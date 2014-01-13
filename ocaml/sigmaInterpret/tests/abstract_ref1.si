@@ -1,0 +1,10 @@
+let scope_a = 
+    [ sub_scope_a0 = [/* ... */],
+      sub_scope_a0_indirection = scope_a.sub_scope_a0,
+      /* what is the difference with the following definition ??? */
+      /* sub_scope_a0_indirection = S(s) s.sub_scope_a0, */
+      sub_scope_a1 = [/* ... */] ]
+and scope_b = 
+    [ sub_scope_b = scope_a.sub_scope_a0_indirection ]
+in
+	scope_b.sub_scope_b

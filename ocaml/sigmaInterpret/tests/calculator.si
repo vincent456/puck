@@ -1,0 +1,12 @@
+let calculator = 
+    [ arg = 0.0,
+      acc = 0.0,
+      enter = S(s) L(n) s.arg := n,
+      add = S(s) (s.acc := s.equals).equals <- S(s2) s2.acc + s2.arg,
+      /*sub = S(s) (s.acc := s.equals).equals <- S(s2) s2.acc - s2.arg,*/
+      equals = S(s) s.arg]
+in
+	/*calculator .enter(5.0).equals*/
+	/*calculator.enter(5.0).add.equals*/
+	calculator.enter(5.0).add.add.equals
+      

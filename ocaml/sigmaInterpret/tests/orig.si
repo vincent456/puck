@@ -1,0 +1,9 @@
+
+let orig1 = [ x = 0,
+		    set_x = S(s) L(nx) s.x <- nx
+		    /*,
+		    mv_x = S(s) L(dx) s.x <- s.x + dx
+		    /*inc_x = S(s) s.x <- s.x + 1*/
+		    ]
+in 
+   (orig1.set_x 5 ).x
