@@ -1,167 +1,199 @@
 
+:-module(solver, 
+	 [solve/3,
+	  solve/1,
+	  find_graph_and_constraints/2,
+	  find_constraints/1,
+	  find_violations/4,
+	  friend/4]).
+
+:-use_module(library(assoc)).
+:-use_module(graph).
+:-use_module(pl2dot).
+:-use_module(constraints).
+
+:-reexport(graph,[find_graph/1]).
+%:-reexport(pl2dot).
 
 
-'contains*'(X,X, Nodes, _) :- member(node(X, _, _), Nodes).
-'contains*'(X,Z, Nodes, Contains) :- member(edge(contains,X,Y), Contains), 'contains*'(Y,Z, Nodes, Contains).
+find_graph_and_constraints(Graph, Constraints):- 
+    find_graph(Graph), find_constraints(FNCts),
+    constraintsListFullName2Ids(FNCts, Constraints, Graph).    
 
-friend(User, Usee, graph(Nodes, Contains, _), Constraints):-
-    member(isFriendOf(UserAncestor, UseeAncestor), Constraints),
-    'contains*'(UserAncestor, User, Nodes, Contains),
-    'contains*'(UseeAncestor, Usee, Nodes, Contains). 
+find_constraints(FNCts):-
+    findall(hideFrom(Hidee,Interloper), hideFrom(Hidee,Interloper), FNCts0),
+    findall(isFriendOf(User,Usee), isFriendOf(User,Usee), FNCts, FNCts0).
+
+solve(CorrectedGraph):-
+    find_graph_and_constraints(Graph, Cts),
+    find_violations(Graph, Cts, Vs, G2), pl2dot('graph_before.dot', G2, Vs),
+    solve(Graph, Cts, CorrectedGraph), pl2dot('graph_after.dot', CorrectedGraph).
+
+excluded(Id, List, Value):- get_assoc(Id,List,Value).
+excluded(Id, List, []):- \+get_assoc(Id,List,_).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% host
+%% we search a host for an abstraction, the goal is to redirect a use of node to a use of abstraction
+%% if the abstraction has just been introduced we select a host that does not violate the constraint
+%% it the abstraction has already been introduced, before redirecting we must check if the abstraction 
+%% does not violate the newly studied constraint : if it is the case we move the abstraction
+%%
+%% another solution would be to create another abstraction and use this one but we aim to introduce as 
+%% few node as possible
+%%
+%% on entry 2 cases :
+%% -the node has no host 
+%% -the node has already a host (it has to be changed otherwise
+%% -                                        and it satisfies the newly studied constraint
+%% -                                        and it does not satisfy the newly studied constraint
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+potential_host(Node, hideFrom(HideeId, InterloperId), Graph, HostId):-
+    can_contain(Host, Node),
+    get_node(HostId, Host, Graph),
+    \+'contains*'(HideeId, HostId, Graph), 
+    \+'contains*'(InterloperId, HostId, Graph),
+    % for some obvious reason Node cannot be hosting himself
+    % we have to explicitly tell it to prolog, because since nobody contains him,
+    % it cannot break any constraint !!
+    Host\=Node.
+
+
+%% find an acceptable existing host
+%% Excluded stores the host previously excluded for the node(Uid,_,_)
+host(Node, Graph, hideFrom(HideeId, InterloperId), Excluded, GraphOut, NewExcluded):-
+    id_of_node(Id, Node), 
+    \+contains(_,Id,Graph),
+    potential_host(Node, hideFrom(HideeId, InterloperId), Graph, HostId),
+    put_contains(HostId, Id, Graph, GraphOut),
+    %% since nobody contains Node, this is the first call to host for him
+    %% therefore the excluded list must be empty
+    excluded(Id, Excluded, []), 
+    put_assoc(Id, Excluded, [HideeId| [InterloperId]], NewExcluded).
+
+
+host(Node, Graph, hideFrom(HideeId, InterloperId), Excluded, Graph, NewExcluded):-
+    %%has already a host and and it satisfies the newly studied constraint
+    %% -> no reason to move host
+    id_of_node(Id,Node), contains(HostId, Id, Graph),
+    \+'contains*'(HideeId, HostId, Graph), \+'contains*'(InterloperId, HostId, Graph),
+    
+    excluded(Id, Excluded, IdEx), 
+    put_assoc(Id, Excluded, [  HideeId | [ InterloperId | IdEx] ], NewExcluded).
+
+
+
+host(Node, Graph, hideFrom(HideeId, InterloperId), Excluded, GraphOut, NewExcluded):-
+    id_of_node(Id, Node),
+    select_contains(PreviousHostId, Id, Graph, Graph2),
+    
+    ('contains*'(HideeId, PreviousHostId, Graph); 'contains*'(InterloperId, PreviousHostId, Graph)),
+    
+    potential_host(Node, hideFrom(HideeId, InterloperId), Graph2, HostId),
+    put_contains(HostId, Id, Graph2, GraphOut),
+    
+    %check if the host do not break a violation previously solved
+    excluded(Id, Excluded, IdEx), member(Ex, IdEx), 
+    \+'contains*'(Ex, HostId, Graph2),
+    put_assoc(Id, Excluded, [  HideeId | [ InterloperId | IdEx] ], NewExcluded).
 
 %%
-%%abstract(+LocalName, +UseeType,+ParentUid, -Abstraction)
-%%
-
-abstract(LocalName, UseeType, ParentUid, node(AbsUid, UseeType, AbsName)):-
-    atomic_concat('abstract_',LocalName, AbsName),
-    atomic_concat(ParentUid, '.', Pdot),
-    atomic_concat(Pdot, AbsName, AbsUid).
-
-%%
-%%fold(+Graph, +Violation, +RuleViolated, +Abstractions,
+%%intro(+Graph, +Violation, +RuleViolated, +Abstractions,
 %%         -GraphOut, -Abstractions).
 %%
-
 %if alreadey abstracted, do not recreate it
-fold(graph(N,C,U), edge(uses, User, Usee), _, Abstractions, 
-     graph(N,C,[edge(uses, User, AbsUsee) | U]), Abstractions):- 
-    member(abstract(Usee,AbsUsee), Abstractions).
+intro(Graph,  NodeId, Abstractions, Graph, Abs, Use, Abstractions):- 
+    get_assoc(NodeId, Abstractions, (AbsId,Use) ), get_node(AbsId, Abs, Graph).
 
-fold(graph(N, C, UsesWithoutViolation),
-     edge(uses, User,Usee), hideFrom(Hidee, _), Abstractions, 
-     graph([node(AbsUid, AbsType,AbsName) | N], 
-	   [ edge(contains,HideeParent, AbsUid)| C],
-	   [ edge(uses, User, AbsUid)| [edge(uses, AbsUid, Usee)| UsesWithoutViolation]] ), 
-     [abstract(Usee, AbsUid)| Abstractions]) :- 
-    \+member(abstract(Usee, _), Abstractions),
-    member(node(Usee,UseeType,Nick), N), member(edge(contains,HideeParent, Hidee), C),
-    abstract(Nick, UseeType, HideeParent, node(AbsUid, AbsType, AbsName)).
+intro(GIn, NodeId, Abstractions, GOut , Abs, Use, NewAbstractions ):-
+    %% check if not previously introduced
+    \+get_assoc(NodeId, Abstractions, _), get_node(NodeId, Node, GIn), 
+    %build abstraction
+    abstract(Node, GIn, Abs, Use, GOut), id_of_node(AbsId, Abs),
+
+    put_assoc(NodeId, Abstractions, (AbsId, Use), NewAbstractions1),
+    %% little hack (?) : an abstraction is its own abstraction otherwise,
+    %% on a later iteration, instead of moving the abstraction it will create an abstraction's abstraction ... 
+    %% and that can go on...
+    ids_to_use(AbsId, AbsId, FakeUse),
+    put_assoc(AbsId, NewAbstractions1, (AbsId, FakeUse), NewAbstractions).
+
+%    put_assoc(NodeId, Abstractions, (AbsId, Use), NewAbstractions).
+
+%%the input graph has already the uses (UserId,UseeId) removed
+fold(GraphIn, UserId, UseeId, RuleViolated, Constraints, Abstractions, Excluded, 
+     GraphOut3, NewAbstractions, NewExcluded) :- 
+    intro(GraphIn, UseeId, Abstractions, GraphOut1, UseeAbs, AbsUse, NewAbstractions),
+    host(UseeAbs, GraphOut1, RuleViolated, Excluded, GraphOut2, NewExcluded),
+    id_of_node(AbsId, UseeAbs), 
+    
+    %check that the use introduced between the node and his abstraction does not violate a rule
+    % this test can only be done once the abstraction has a host
+    ids_to_use(AbsUser, AbsUsee, AbsUse), \+violation(GraphOut2, Constraints, AbsUser, AbsUsee, _, _),
+
+    put_uses(UserId, AbsId, GraphOut2, GraphOut3).
 
 %%
 %%solve(+GraphIn, +Constraints, -GraphOut)
 %%
-solve(GraphIn, Constraints, GraphOut):- solve(GraphIn, Constraints, [], GraphOut, _).
+solve(GraphIn, Constraints, GraphOut):- 
+    empty_assoc(Excluded), empty_assoc(Abstractions),
+    solve(GraphIn, Constraints, Abstractions, Excluded, GraphOut, _, _).
+
+solve(GraphIn, Constraints, Abstractions, Excluded, GraphOut, AbsOut, NewExcluded) :-
+    violation(GraphIn , Constraints, UserId, UseeId, ViolatedConstraint, GraphWithoutViolation),
+    fold(GraphWithoutViolation, UserId, UseeId, ViolatedConstraint, Constraints,
+	     Abstractions, Excluded, GraphO1, AbsOut1, Excluded1), 
+    solve(GraphO1, Constraints, AbsOut1, Excluded1, GraphOut, AbsOut, NewExcluded).
+
+solve(Graph, Constraints, Abs, Exc, Graph, Abs, Exc):- \+ violation(Graph, Constraints, _, _, _, _).
 
 %%
-%%solve(+GraphIn, +Constraints, +Abstractions, -GraphOut, -GraphOut)
+%% alternative definition that create a dot at each step
 %%
-solve(graph(N,C,U), Constraints, Abstractions, GraphOut,AbsOut) :-
-    violation(graph(N, C, U) , Constraints, Violation, ViolatedConstraint, UsesWithoutViolation),
-    fold(graph(N, C, UsesWithoutViolation), Violation, ViolatedConstraint, 
-	     Abstractions, GraphO1,AbsOut1), 
-    solve(GraphO1, Constraints, AbsOut1, GraphOut, AbsOut).
+%% solve(GraphIn, Constraints, GraphOut):- 
+%%     empty_assoc(Excluded), empty_assoc(Abstractions),
+%%     solve(GraphIn, Constraints, Abstractions, Excluded, GraphOut, _, _, 1).
 
-solve(Graph, Constraints, Abs, Graph, Abs):- \+ violation(Graph, Constraints, _, _,_).
+%% solve(GraphIn, Constraints, Abstractions, Excluded, GraphOut, AbsOut, NewExcluded, NumCall) :-
+%%     violation(GraphIn , Constraints, UserId, UseeId, ViolatedConstraint, GraphWithoutViolation),
+%%     fold(GraphWithoutViolation, UserId, UseeId, ViolatedConstraint, Constraints,
+%% 	     Abstractions, Excluded, GraphO1, AbsOut1, Excluded1), 
 
-%violation(+Uses, +Contains, +Constraints, -Violation, -Cause)
-violation(graph(Nodes, Contains, Uses), Constraints, edge(uses, User,Usee), hideFrom(Hidee, Interloper), OtherUses):-
-    member(hideFrom(Hidee, Interloper),Constraints),
-    select(edge(uses, User,Usee), Uses, OtherUses), 
-    \+friend(User, Usee, graph(Nodes, Contains, Uses), Constraints),
-    'contains*'(Hidee, Usee, Nodes, Contains), 'contains*'(Interloper,User, Nodes, Contains).
+%%     atom_concat('visual_trace', NumCall, VT), atom_concat(VT, '.dot', FileName),
+%%     find_violations(GraphO1, Constraints, Vs, GTmp),
+%%     pl2dot(FileName, GTmp, Vs),
+%%     NextNumCall is NumCall + 1,
+
+%%     solve(GraphO1, Constraints, AbsOut1, Excluded1, GraphOut, AbsOut, NewExcluded, NextNumCall).
+
+%% solve(Graph, Constraints, Abs, Exc, Graph, Abs, Exc, _):- \+ violation(Graph, Constraints, _, _, _, _).
+
+
+
+friend(UserId, UseeId, Graph, Constraints):-
+    member(isFriendOf(UserAncestorId, UseeAncestorId), Constraints),
+    'contains*'(UserAncestorId, UserId, Graph),
+    'contains*'(UseeAncestorId, UseeId, Graph). 
+
+%%
+%% violation(+Graph, +Constraints, -Violation, -Cause, - Uses\Violation)
+%%
+violation(GraphIn, Constraints, 
+	  UserId, UseeId, hideFrom(HideeId, InterloperId), GraphOut):-
+    member(hideFrom(HideeId, InterloperId),Constraints),
+    select_uses(UserId, UseeId, GraphIn, GraphOut),
+    \+friend(UserId, UseeId, GraphOut, Constraints),
+    'contains*'(HideeId, UseeId, GraphOut), 
+    'contains*'(InterloperId,UserId, GraphOut).
     
+find_violations(GraphIn, Constraints, Violations, GraphOut):- find_violations(GraphIn, Constraints, [], Violations, GraphOut).
 
+find_violations(GraphIn, Constraints, Acc, Violations, GraphOut):-
+    violation(GraphIn, Constraints, UserId, UseeId, _, GraphO1),
+    ids_to_use(UserId, UseeId, Use),
+    find_violations(GraphO1, Constraints, [ Use | Acc ], Violations, GraphOut).
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%% writing a graph.
-
-
-pl2dot(File, graph(N,C,U)):- 
-    tell(File),
-    writeln('digraph G {'), %linux dotty parser doesn't accept anonym graph %'
-    nodes2dot(N),
-    edges2dot(C),
-    edges2dot(U),
-    writeln('}'),
-    told.
-
-%% ru2dot(File):- 		pl2dot(File, redUses),!.
-%% ru2dot		:- 		ru2dot('ru.dot').
-
-pl2dot(Graph)	:- pl2dot('graph.dot', Graph).
-
-% writes all the nodes to the current output in the .dot format
-nodes2dot(Ns):- maplist(writelnNode, Ns).
-
-writeQuoted(Node):-
-	write('"'),
-	write(Node),
-	write('"').
-	
-writelnNode(node(Uid, Kind, Name)) :- 
-	assertz(written(Uid)),
-	writeQuoted(Uid),
-	write(' [ label = '),
-	writeQuoted(Name),
-	write(', shape = '),
-	kind2shape(Kind, Shape),
-	write(Shape),
-	write(', style = filled, fillcolor = '),
-	nodeKind2fillColor(Kind, Color),
-	write(Color),
-	writeln(' ];').
-
-
-kind2shape(object, ellipse).
-
-kind2shape(class,rectangle).
-kind2shape(method,diamond).
-kind2shape(attribute,ellipse).
-kind2shape(package,trapezium).
-kind2shape(virtualScope,invtriangle).
-kind2shape(interface,parallelogram).
-kind2shape(constructor,diamond).
-kind2shape(stringLiteral,note).
-
-nodeKind2fillColor(object,'"#FFFFFF"').%White
-
-nodeKind2fillColor(virtualScope,'"#33FF33"').%Green
-nodeKind2fillColor(package,'"#FF9933"').%Orange
-nodeKind2fillColor(interface,'"#FFFF99"').%Light yellow
-nodeKind2fillColor(class,'"#FFFF33"').%Yellow
-nodeKind2fillColor(constructor,'"#FFFF33"').%yellow
-nodeKind2fillColor(method,'"#FFFFFF"').%White
-nodeKind2fillColor(attribute,'"#FFFFFF"').%White
-nodeKind2fillColor(stringLiteral,'"#CCFFCC"').%Very light green
-
-edges2dot(Es):- maplist(writelnEdge,Es).
-
-writelnEdge(edge(Kind, Source, Target)) :- 
-	assertz(written(edge(Kind,Source,Target))),
-	writeQuoted(Source),
-	write(' -> '),
-	writeQuoted(Target),
-	write(' [ style = '),
-	kind2style(Kind, Style),
-	write(Style),
-
-	%% write(', color = '),
-	%% status2Color(Status, Color),
-	%% write(Color),
-
-	%% write(', penwidth = '),
-	%% status2thickness(Status, T),
-	%% write(T),
-	
-	write(', arrowhead = '),
-	kind2headStyle(Kind, HeadStyle),
-	write(HeadStyle),
-	writeln(' ];').
-
-%% status2Color(correct, black).
-%% status2Color(incorrect, red).
-
-%% status2thickness(correct, 1).
-%% status2thickness(incorrect, 5).
-
-
-kind2style(isa, solid).
-kind2style(contains, dashed).
-kind2style(virtualContains, dashed).
-kind2style(uses, bold).
-
-kind2headStyle(isa, empty).
-kind2headStyle(contains, 'open').
-kind2headStyle(virtualContains, 'open').
-kind2headStyle(uses, normal).
+find_violations(GraphIn, Constraints, Acc, Acc, GraphIn):-  \+ violation(GraphIn, Constraints, _, _, _, _).
