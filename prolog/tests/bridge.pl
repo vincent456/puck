@@ -145,4 +145,4 @@ hideFrom('bridge2.candidate.StackArray', 'bridge2.candidate.StackHanoi').
 hideFrom('bridge2.candidate.StackList', 'bridge2.candidate.StackFIFO').
 hideFrom('bridge2.candidate.StackList', 'bridge2.candidate.StackHanoi').
 
-:-solve(_), halt. 
+%:-solve(_), halt. 

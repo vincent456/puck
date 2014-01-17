@@ -20,10 +20,6 @@ abstract_type(interface,interface).
 abstract_type(class, interface).
 abstract_type(method, method). %% methodImpl methodSig ??
 
-%% abstract_uses(+AbstractionType, +NodeId, +AbsId, -UserId, -UseeId)
-abstract_uses(interface, NodeId, AbsId, NodeId, AbsId).
-abstract_uses(_, NodeId, AbsId, AbsId, NodeId).
-
 abstract_method_list([], _, Graph, AbsAssocs, Graph, AbsAssocs).
 abstract_method_list([M|ML], InterfaceId, Graph, AbsAssocs, NewGraph, NewAbsAssocs):-
     abstract_node(M, Graph, AbsAssocs, Abs, G2, AA2),

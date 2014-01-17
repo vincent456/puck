@@ -9,7 +9,6 @@
 
 :-use_module(library(assoc)).
 :-use_module(graph).
-:-use_module(pl2dot).
 :-use_module(constraints).
 
 :-reexport(graph,[find_graph/1]).
@@ -65,7 +64,7 @@ potential_host(Node, hideFrom(HideeId, InterloperId), Graph, HostId):-
 %% Excluded stores the host previously excluded for the node(Uid,_,_)
 host(Node, Graph, hideFrom(HideeId, InterloperId), Excluded, GraphOut, NewExcluded):-
     id_of_node(Id, Node), 
-    \+contains(_,Id,Graph),
+    root(Id,Graph),
     potential_host(Node, hideFrom(HideeId, InterloperId), Graph, HostId),
     put_contains(HostId, Id, Graph, GraphOut),
     %% since nobody contains Node, this is the first call to host for him
@@ -153,39 +152,38 @@ fold(GraphIn, UserId, UseeId, RuleViolated, Constraints, AbsAssocs, Excluded,
 %%
 %%solve(+GraphIn, +Constraints, -GraphOut)
 %%
-%% solve(GraphIn, Constraints, GraphOut):- 
-%%     empty_assoc(Excluded), empty_assoc(AbsAssocs),
-%%     solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, _, _).
+solve(GraphIn, Constraints, GraphOut):- 
+    empty_assoc(Excluded), empty_assoc(AbsAssocs),
+    solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, _, _).
 
-%% solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, AbsOut, NewExcluded) :-
-%%     violation(GraphIn , Constraints, UserId, UseeId, ViolatedConstraint, GraphWithoutViolation),
-%%     fold(GraphWithoutViolation, UserId, UseeId, ViolatedConstraint, Constraints,
-%% 	     AbsAssocs, Excluded, GraphO1, AbsOut1, Excluded1), 
-%%     solve(GraphO1, Constraints, AbsOut1, Excluded1, GraphOut, AbsOut, NewExcluded).
+solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, AbsOut, NewExcluded) :-
+    violation(GraphIn , Constraints, UserId, UseeId, ViolatedConstraint, GraphWithoutViolation),
+    fold(GraphWithoutViolation, UserId, UseeId, ViolatedConstraint, Constraints,
+	     AbsAssocs, Excluded, GraphO1, AbsOut1, Excluded1), 
+    solve(GraphO1, Constraints, AbsOut1, Excluded1, GraphOut, AbsOut, NewExcluded).
 
-%% solve(Graph, Constraints, Abs, Exc, Graph, Abs, Exc):- \+ violation(Graph, Constraints, _, _, _, _).
+solve(Graph, Constraints, Abs, Exc, Graph, Abs, Exc):- \+ violation(Graph, Constraints, _, _, _, _).
 
 %%
 %% alternative definition that create a dot at each step
 %%
-solve(GraphIn, Constraints, GraphOut):- 
-    empty_assoc(Excluded), empty_assoc(AbsAssocs),
-    solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, _, _, 1).
+%% solve(GraphIn, Constraints, GraphOut):- 
+%%     empty_assoc(Excluded), empty_assoc(AbsAssocs),
+%%     solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, _, _, 1).
 
-solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, AbsOut, NewExcluded, NumCall) :-
-    violation(GraphIn , Constraints, UserId, UseeId, ViolatedConstraint, GraphWithoutViolation),
-    fold(GraphWithoutViolation, UserId, UseeId, ViolatedConstraint, Constraints,
-	     AbsAssocs, Excluded, GraphO1, AbsOut1, Excluded1), 
+%% solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, AbsOut, NewExcluded, NumCall) :-
+%%     violation(GraphIn , Constraints, UserId, UseeId, ViolatedConstraint, GraphWithoutViolation),
+%%     fold(GraphWithoutViolation, UserId, UseeId, ViolatedConstraint, Constraints,
+%% 	     AbsAssocs, Excluded, GraphO1, AbsOut1, Excluded1), 
 
-    atom_concat('visual_trace', NumCall, VT), atom_concat(VT, '.dot', FileName),
-    find_violations(GraphO1, Constraints, Vs, GTmp),
-    pl2dot(FileName, GTmp, Vs),
-    NextNumCall is NumCall + 1,
+%%     atom_concat('visual_trace', NumCall, VT), atom_concat(VT, '.dot', FileName),
+%%     find_violations(GraphO1, Constraints, Vs, GTmp),
+%%     pl2dot(FileName, GTmp, Vs),
+%%     NextNumCall is NumCall + 1,
 
-    solve(GraphO1, Constraints, AbsOut1, Excluded1, GraphOut, AbsOut, NewExcluded, NextNumCall).
+%%     solve(GraphO1, Constraints, AbsOut1, Excluded1, GraphOut, AbsOut, NewExcluded, NextNumCall).
 
-solve(Graph, Constraints, Abs, Exc, Graph, Abs, Exc, _):- \+ violation(Graph, Constraints, _, _, _, _).
-
+%% solve(Graph, Constraints, Abs, Exc, Graph, Abs, Exc, _):- \+ violation(Graph, Constraints, _, _, _, _).
 
 
 friend(UserId, UseeId, Graph, Constraints):-
