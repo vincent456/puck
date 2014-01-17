@@ -42,9 +42,9 @@ excluded(Id, List, []):- \+get_assoc(Id,List,_).
 %% another solution would be to create another abstraction and use this one but we aim to introduce as 
 %% few node as possible
 %%
-%% on entry 2 cases :
+%% on entry 3 cases :
 %% -the node has no host 
-%% -the node has already a host (it has to be changed otherwise
+%% | the node has already a host 
 %% -                                        and it satisfies the newly studied constraint
 %% -                                        and it does not satisfy the newly studied constraint
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -100,76 +100,91 @@ host(Node, Graph, hideFrom(HideeId, InterloperId), Excluded, GraphOut, NewExclud
     put_assoc(Id, Excluded, [  HideeId | [ InterloperId | IdEx] ], NewExcluded).
 
 %%
-%%intro(+Graph, +Violation, +RuleViolated, +Abstractions,
-%%         -GraphOut, -Abstractions).
+%%intro(+Graph, +Violation, +RuleViolated, +AbsAssocs,
+%%         -GraphOut, -AbsAssocs).
 %%
 %if alreadey abstracted, do not recreate it
-intro(Graph,  NodeId, Abstractions, Graph, Abs, Use, Abstractions):- 
-    get_assoc(NodeId, Abstractions, (AbsId,Use) ), get_node(AbsId, Abs, Graph).
+intro(Graph,  NodeId, AbsAssocs, Graph, Abs, AbsAssocs):- 
+    get_assoc(NodeId, AbsAssocs, AbsId), get_node(AbsId, Abs, Graph).
 
-intro(GIn, NodeId, Abstractions, GOut , Abs, Use, NewAbstractions ):-
+intro(GIn, NodeId, AbsAssocs, GOut , Abs, NewAbsAssocs ):-
     %% check if not previously introduced
-    \+get_assoc(NodeId, Abstractions, _), get_node(NodeId, Node, GIn), 
-    %build abstraction
-    abstract(Node, GIn, Abs, Use, GOut), id_of_node(AbsId, Abs),
+    \+get_assoc(NodeId, AbsAssocs, _), get_node(NodeId, Node, GIn), 
+    abstract(Node, GIn, AbsAssocs, Abs, GOut, NewAbsAssocs).
 
-    put_assoc(NodeId, Abstractions, (AbsId, Use), NewAbstractions1),
-    %% little hack (?) : an abstraction is its own abstraction otherwise,
-    %% on a later iteration, instead of moving the abstraction it will create an abstraction's abstraction ... 
-    %% and that can go on...
-    ids_to_use(AbsId, AbsId, FakeUse),
-    put_assoc(AbsId, NewAbstractions1, (AbsId, FakeUse), NewAbstractions).
 
-%    put_assoc(NodeId, Abstractions, (AbsId, Use), NewAbstractions).
+redirect_to_abs([], _, G, G).
+
+redirect_to_abs([(_, UseeId) | UsesList], AbsAssocs, GraphIn, GraphOut) :-
+    \+get_assoc(UseeId, AbsAssocs,_),
+    redirect_to_abs( UsesList, AbsAssocs, GraphIn, GraphOut).
+
+redirect_to_abs([(UserId, UseeId) | UsesList], AbsAssocs, GraphIn, GraphOut) :-
+    get_assoc(UseeId, AbsAssocs,AbsId),
+    select_uses(UserId, UseeId, GraphIn, G2),
+    put_uses(UserId, AbsId, G2, G3),
+    redirect_to_abs(UsesList, AbsAssocs, G3, GraphOut).
 
 %%the input graph has already the uses (UserId,UseeId) removed
-fold(GraphIn, UserId, UseeId, RuleViolated, Constraints, Abstractions, Excluded, 
-     GraphOut3, NewAbstractions, NewExcluded) :- 
-    intro(GraphIn, UseeId, Abstractions, GraphOut1, UseeAbs, AbsUse, NewAbstractions),
+fold(GraphIn, UserId, UseeId, RuleViolated, Constraints, AbsAssocs, Excluded, 
+     GraphOut4, NewAbsAssocs, NewExcluded) :- 
+    intro(GraphIn, UseeId, AbsAssocs, GraphOut1, UseeAbs, NewAbsAssocs),
     host(UseeAbs, GraphOut1, RuleViolated, Excluded, GraphOut2, NewExcluded),
     id_of_node(AbsId, UseeAbs), 
     
     %check that the use introduced between the node and his abstraction does not violate a rule
     % this test can only be done once the abstraction has a host
-    ids_to_use(AbsUser, AbsUsee, AbsUse), \+violation(GraphOut2, Constraints, AbsUser, AbsUsee, _, _),
-
-    put_uses(UserId, AbsId, GraphOut2, GraphOut3).
+    (uses(AbsId, UseeId, GraphOut2), \+violation(GraphOut2, Constraints, AbsId, UseeId, _, _);
+     uses(UseeId, AbsId, GraphOut2), \+violation(GraphOut2, Constraints, UseeId, AbsId, _, _)),
+    put_uses(UserId, AbsId, GraphOut2, GraphOut3),
+    
+    %% when redirecting a use from a class toward an interface,
+    %% we need to redirect all method uses,
+    %% i don't know if it is generalisable, but we try anyway:
+    % /!\ si une méthode de la classe abstraite en interface avait déjà été abstraite !
+    %%  -> on peut les chercher
+    %%  -> on peut forcer à résoudre les violations d'abords sur les classes
+    findall((UserDescId, UseeDescId), 
+	    ('contains*'(UserId, UserDescId,GraphIn),
+	     'contains*'(UseeId, UseeDescId,GraphIn),
+	     uses(UserDescId, UseeDescId, GraphIn)), DescUses),
+    redirect_to_abs(DescUses, AbsAssocs, GraphOut3, GraphOut4).
 
 %%
 %%solve(+GraphIn, +Constraints, -GraphOut)
 %%
-solve(GraphIn, Constraints, GraphOut):- 
-    empty_assoc(Excluded), empty_assoc(Abstractions),
-    solve(GraphIn, Constraints, Abstractions, Excluded, GraphOut, _, _).
+%% solve(GraphIn, Constraints, GraphOut):- 
+%%     empty_assoc(Excluded), empty_assoc(AbsAssocs),
+%%     solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, _, _).
 
-solve(GraphIn, Constraints, Abstractions, Excluded, GraphOut, AbsOut, NewExcluded) :-
-    violation(GraphIn , Constraints, UserId, UseeId, ViolatedConstraint, GraphWithoutViolation),
-    fold(GraphWithoutViolation, UserId, UseeId, ViolatedConstraint, Constraints,
-	     Abstractions, Excluded, GraphO1, AbsOut1, Excluded1), 
-    solve(GraphO1, Constraints, AbsOut1, Excluded1, GraphOut, AbsOut, NewExcluded).
+%% solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, AbsOut, NewExcluded) :-
+%%     violation(GraphIn , Constraints, UserId, UseeId, ViolatedConstraint, GraphWithoutViolation),
+%%     fold(GraphWithoutViolation, UserId, UseeId, ViolatedConstraint, Constraints,
+%% 	     AbsAssocs, Excluded, GraphO1, AbsOut1, Excluded1), 
+%%     solve(GraphO1, Constraints, AbsOut1, Excluded1, GraphOut, AbsOut, NewExcluded).
 
-solve(Graph, Constraints, Abs, Exc, Graph, Abs, Exc):- \+ violation(Graph, Constraints, _, _, _, _).
+%% solve(Graph, Constraints, Abs, Exc, Graph, Abs, Exc):- \+ violation(Graph, Constraints, _, _, _, _).
 
 %%
 %% alternative definition that create a dot at each step
 %%
-%% solve(GraphIn, Constraints, GraphOut):- 
-%%     empty_assoc(Excluded), empty_assoc(Abstractions),
-%%     solve(GraphIn, Constraints, Abstractions, Excluded, GraphOut, _, _, 1).
+solve(GraphIn, Constraints, GraphOut):- 
+    empty_assoc(Excluded), empty_assoc(AbsAssocs),
+    solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, _, _, 1).
 
-%% solve(GraphIn, Constraints, Abstractions, Excluded, GraphOut, AbsOut, NewExcluded, NumCall) :-
-%%     violation(GraphIn , Constraints, UserId, UseeId, ViolatedConstraint, GraphWithoutViolation),
-%%     fold(GraphWithoutViolation, UserId, UseeId, ViolatedConstraint, Constraints,
-%% 	     Abstractions, Excluded, GraphO1, AbsOut1, Excluded1), 
+solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, AbsOut, NewExcluded, NumCall) :-
+    violation(GraphIn , Constraints, UserId, UseeId, ViolatedConstraint, GraphWithoutViolation),
+    fold(GraphWithoutViolation, UserId, UseeId, ViolatedConstraint, Constraints,
+	     AbsAssocs, Excluded, GraphO1, AbsOut1, Excluded1), 
 
-%%     atom_concat('visual_trace', NumCall, VT), atom_concat(VT, '.dot', FileName),
-%%     find_violations(GraphO1, Constraints, Vs, GTmp),
-%%     pl2dot(FileName, GTmp, Vs),
-%%     NextNumCall is NumCall + 1,
+    atom_concat('visual_trace', NumCall, VT), atom_concat(VT, '.dot', FileName),
+    find_violations(GraphO1, Constraints, Vs, GTmp),
+    pl2dot(FileName, GTmp, Vs),
+    NextNumCall is NumCall + 1,
 
-%%     solve(GraphO1, Constraints, AbsOut1, Excluded1, GraphOut, AbsOut, NewExcluded, NextNumCall).
+    solve(GraphO1, Constraints, AbsOut1, Excluded1, GraphOut, AbsOut, NewExcluded, NextNumCall).
 
-%% solve(Graph, Constraints, Abs, Exc, Graph, Abs, Exc, _):- \+ violation(Graph, Constraints, _, _, _, _).
+solve(Graph, Constraints, Abs, Exc, Graph, Abs, Exc, _):- \+ violation(Graph, Constraints, _, _, _, _).
 
 
 

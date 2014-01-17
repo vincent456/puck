@@ -32,8 +32,8 @@ hideFrom('root.scope_a.sub_scope_a0', 'root.scope_b').
 
 isFriendOf('root.scope_b.friend', 'root.scope_a').
 
-%% :-solve(CorrectedGraph), halt. 
+:-solve(_), halt. 
 
-:-find_graph_and_constraints(Graph,Cts), 
-  findall(CG, solve(Graph,Cts, CG), CGs), length(CGs, L), halt.
+%% :-find_graph_and_constraints(Graph,Cts), 
+%%   findall(CG, solve(Graph,Cts, CG), CGs), length(CGs, L), halt.
 
