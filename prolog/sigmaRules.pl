@@ -1,11 +1,11 @@
-:-module(javaRules, 
-       [can_contain/2,
+:-module(sigmaRules, 
+       [can_contain_type/2,
 	abstract/6,
 	abstract_type/2]).
 :-use_module(graph).
 
-can_contain(object, object).
-can_contain(object,method).
+can_contain_type(object, object).
+can_contain_type(object, method).
 
 abstract_type(object, object).
 

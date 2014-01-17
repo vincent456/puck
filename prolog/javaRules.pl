@@ -1,5 +1,5 @@
 :-module(javaRules, 
-	 [can_contain/2,
+	 [can_contain_type/2,
 	  abstract/6,
 	  abstract_type/2]).
 :-use_module(graph).
@@ -11,8 +11,6 @@ can_contain_type(class, class).
 can_contain_type(class, method).
 can_contain_type(interface, method).
 %can_contain_type(method, param).
-
-can_contain(node(_,HostType,_,_), node(_,Type,_,_)):- can_contain_type(HostType,Type).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -25,14 +25,13 @@
 	     name_of_node/2,
 	     type_of_node/2,
 	     id_of_node/2,
-	     ids_to_use/3]).
+	     ids_to_use/3,
+	     can_contain/2]).
 
 :-use_module(javaRules).
-:-reexport(javaRules,
-	   [can_contain/2,
-	    abstract/6]).
-%:-use_module(sigmaRules).
-%:-reexport(sigmaRules).
+:-reexport(javaRules, [abstract/6]).
+%% :-use_module(sigmaRules).
+%% :-reexport(sigmaRules, [abstract/6]).
 
 find_graph(graph(Ns,Cs,Us)):-
     findall(node(Id,Typ,Nm, Sig), node(Id,Typ,Nm,Sig), Ns),
@@ -56,6 +55,7 @@ name_of_node(NameSig, node(_,_,Name,Signature)):-
 
 type_of_node(Type, node(_,Type, _,_)).
 
+can_contain(node(_,HostType,_,_), node(_,Type,_,_)):- can_contain_type(HostType,Type).
 
 name_from_id(NodeId,NameSig, Graph):- 
     get_node(NodeId, Node, Graph), name_of_node(NameSig, Node).
