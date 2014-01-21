@@ -4,134 +4,135 @@
 node(0, package, 'bridge2', '').
 node(1, package, 'candidate', '').
 edge(contains,0,1).
-node(100, class, 'BridgeDisc', '').
-edge(contains,1,100).
-node(3, method, 'main', '__java.lang.String').
-edge(contains,100,3).
-node(46, constructor, 'StackHanoi', '#_void').
-edge(uses,3,46).
-node(93, method, 'reportRejected', '__void').
-edge(uses,3,93).
-node(60, method, 'isEmpty', '__void').
-edge(uses,3,60).
-node(8, method, 'push', '__@primitive.int').
-edge(uses,3,8).
-node(44, constructor, 'StackArray', '#_void').
-edge(uses,3,44).
+node(29, class, 'BridgeDisc', '').
+edge(contains,1,29).
+node(4, method, 'main', '__java.lang.String').
+edge(contains,29,4).
+node(15, constructor, 'StackHanoi', '#_void').
+edge(uses,4,15).
+node(28, method, 'reportRejected', '__void').
+edge(uses,4,28).
+node(20, method, 'isEmpty', '__void').
+edge(uses,4,20).
+node(6, method, 'push', '__@primitive.int').
+edge(uses,4,6).
+node(14, constructor, 'StackArray', '#_void').
+edge(uses,4,14).
 node(2, class, 'StackArray', '').
-edge(uses,3,2).
-node(10, method, 'pop', '__void').
-edge(uses,3,10).
-node(77, class, 'StackFIFO', '').
-edge(uses,3,77).
-node(62, method, 'pop', '__void').
-edge(uses,3,62).
-node(47, constructor, 'StackFIFO', '#_void').
-edge(uses,3,47).
-node(49, class, 'StackList', '').
-edge(uses,3,49).
-node(53, method, 'push', '__@primitive.int').
-edge(uses,3,53).
-node(75, constructor, 'StackList', '#_void').
-edge(uses,3,75).
-node(88, class, 'StackHanoi', '').
-edge(uses,3,88).
-node(13, method, 'isEmpty', '__void').
-edge(uses,3,13).
-node(102, constructor, 'BridgeDisc', '#_void').
-edge(contains,100,102).
-edge(contains,1,49).
-node(61, method, 'top', '__void').
-edge(contains,49,61).
-node(109, attribute, 'value', '').
-edge(uses,61,109).
-node(52, attribute, 'last', '').
-edge(uses,61,52).
-edge(uses,61,60).
-edge(contains,49,53).
-node(112, constructor, 'Node', '#_@primitive.int').
-edge(uses,53,112).
-edge(uses,53,52).
-node(106, attribute, 'prev', '').
-edge(uses,53,106).
-node(108, attribute, 'next', '').
-edge(uses,53,108).
-node(103, class, 'Node', '').
-edge(uses,53,103).
-edge(contains,49,52).
-edge(uses,52,103).
-edge(contains,49,60).
-edge(uses,60,52).
-edge(contains,49,75).
-node(71, method, 'isFull', '__void').
-edge(contains,49,71).
-edge(contains,49,62).
-edge(uses,62,109).
-edge(uses,62,52).
-edge(uses,62,106).
-edge(uses,62,60).
-edge(contains,1,88).
-edge(contains,88,46).
-edge(uses,46,44).
-edge(contains,88,93).
-node(92, attribute, 'totalRejected', '').
-edge(uses,93,92).
-edge(contains,88,92).
-node(20, method, 'push', '__@primitive.int').
-edge(contains,88,20).
-edge(uses,20,92).
-node(9, method, 'top', '__void').
-edge(uses,20,9).
-edge(uses,20,8).
-edge(uses,20,13).
-%edge(isa,88,2).
-edge(uses,88,2).
-edge(contains,1,2).
-edge(contains,2,9).
-edge(uses,9,13).
-node(7, attribute, 'items', '').
-edge(uses,9,7).
-node(11, attribute, 'total', '').
-edge(uses,9,11).
-edge(contains,2,8).
-node(14, method, 'isFull', '__void').
-edge(uses,8,14).
-edge(uses,8,7).
-edge(uses,8,11).
-edge(contains,2,14).
-edge(uses,14,11).
-edge(contains,2,44).
-edge(contains,2,13).
-edge(uses,13,11).
-edge(contains,2,10).
-edge(uses,10,13).
-edge(uses,10,7).
-edge(uses,10,11).
-edge(contains,2,7).
-edge(contains,2,11).
-edge(contains,1,77).
-node(4, attribute, 'temp', '').
-edge(contains,77,4).
-edge(uses,4,44).
 edge(uses,4,2).
-node(18, method, 'pop', '__void').
-edge(contains,77,18).
-edge(uses,18,4).
-edge(uses,18,8).
-edge(uses,18,13).
-edge(uses,18,10).
-edge(contains,77,47).
-edge(uses,47,44).
-%edge(isa,77,2).
-edge(uses,77,2).
-edge(contains,1,103).
-edge(contains,103,109).
-edge(contains,103,112).
-edge(uses,112,109).
-edge(contains,103,106).
-edge(uses,106,103).
-edge(contains,103,108).
-edge(uses,108,103).
+node(8, method, 'pop', '__void').
+edge(uses,4,8).
+node(25, class, 'StackFIFO', '').
+edge(uses,4,25).
+node(22, method, 'pop', '__void').
+edge(uses,4,22).
+node(16, constructor, 'StackFIFO', '#_void').
+edge(uses,4,16).
+node(17, class, 'StackList', '').
+edge(uses,4,17).
+node(19, method, 'push', '__@primitive.int').
+edge(uses,4,19).
+node(24, constructor, 'StackList', '#_void').
+edge(uses,4,24).
+node(26, class, 'StackHanoi', '').
+edge(uses,4,26).
+node(10, method, 'isEmpty', '__void').
+edge(uses,4,10).
+node(30, constructor, 'BridgeDisc', '#_void').
+edge(contains,29,30).
+edge(contains,1,17).
+node(21, method, 'top', '__void').
+edge(contains,17,21).
+node(34, attribute, 'value', '').
+edge(uses,21,34).
+node(18, attribute, 'last', '').
+edge(uses,21,18).
+edge(uses,21,20).
+edge(contains,17,19).
+node(35, constructor, 'Node', '#_@primitive.int').
+edge(uses,19,35).
+edge(uses,19,18).
+node(32, attribute, 'prev', '').
+edge(uses,19,32).
+node(33, attribute, 'next', '').
+edge(uses,19,33).
+node(31, class, 'Node', '').
+edge(uses,19,31).
+edge(contains,17,18).
+edge(uses,18,31).
+edge(contains,17,20).
+edge(uses,20,18).
+edge(contains,17,24).
+node(23, method, 'isFull', '__void').
+edge(contains,17,23).
+edge(contains,17,22).
+edge(uses,22,34).
+edge(uses,22,18).
+edge(uses,22,32).
+edge(uses,22,20).
+edge(contains,1,26).
+edge(contains,26,15).
+edge(uses,15,14).
+edge(contains,26,28).
+node(27, attribute, 'totalRejected', '').
+edge(uses,28,27).
+edge(contains,26,27).
+node(13, method, 'push', '__@primitive.int').
+edge(contains,26,13).
+edge(uses,13,27).
+node(7, method, 'top', '__void').
+edge(uses,13,7).
+edge(uses,13,6).
+edge(uses,13,10).
+%edge(isa,26,2).
+edge(uses,26,2).
+edge(contains,1,2).
+edge(contains,2,7).
+edge(uses,7,10).
+node(5, attribute, 'items', '').
+edge(uses,7,5).
+node(9, attribute, 'total', '').
+edge(uses,7,9).
+edge(contains,2,6).
+node(11, method, 'isFull', '__void').
+edge(uses,6,11).
+edge(uses,6,5).
+edge(uses,6,9).
+edge(contains,2,11).
+edge(uses,11,9).
+edge(contains,2,14).
+edge(contains,2,10).
+edge(uses,10,9).
+edge(contains,2,8).
+edge(uses,8,10).
+edge(uses,8,5).
+edge(uses,8,9).
+edge(contains,2,5).
+edge(contains,2,9).
+edge(contains,1,25).
+node(3, attribute, 'temp', '').
+edge(contains,25,3).
+edge(uses,3,14).
+edge(uses,3,2).
+node(12, method, 'pop', '__void').
+edge(contains,25,12).
+edge(uses,12,3).
+edge(uses,12,6).
+edge(uses,12,10).
+edge(uses,12,8).
+edge(contains,25,16).
+edge(uses,16,14).
+%edge(isa,25,2).
+edge(uses,25,2).
+edge(contains,1,31).
+edge(contains,31,34).
+edge(contains,31,35).
+edge(uses,35,34).
+edge(contains,31,32).
+edge(uses,32,31).
+edge(contains,31,33).
+edge(uses,33,31).
+
 
 %%hideScopeSetFrom(refinedAbstractions, implementations).
 hideFrom('bridge2.candidate.StackFIFO', 'bridge2.candidate.StackArray').

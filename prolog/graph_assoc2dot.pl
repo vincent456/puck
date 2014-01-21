@@ -23,10 +23,15 @@ writeQuoted(Node):-
 
 writelnContains(Cee, Cer, Cer):- writelnEdge((contains, Cer, Cee)).
 	
-writelnNode((Uid, Kind, Name,_, _, Cees)) :- 
-    writeQuoted(Uid),
+writelnNode((Uid, Kind, Name,_, Cer, Cees)) :- 
+    write(Uid),
     write(' [ label = '),
-    writeQuoted(Name),
+    write('"'),
+    write(Name), write(' ('),write(Uid),
+    write(')"'),
+    write(', fontcolor = '),
+    container2fontcolor(Cer, FColor),
+    write(FColor),
     write(', shape = '),
     kind2shape(Kind, Shape),
     write(Shape),
@@ -36,6 +41,9 @@ writelnNode((Uid, Kind, Name,_, _, Cees)) :-
     writeln(' ];'),
     foldl(writelnContains, Cees, Uid, _).
 
+
+container2fontcolor(no_parent, red).
+container2fontcolor(X, black):- number(X).
 
 kind2shape(object, ellipse).
 
@@ -66,9 +74,9 @@ writelnEdge(Edge) :- writelnEdgeStatus(Edge, correct).
 writelnViolation(Edge) :- writelnEdgeStatus(Edge, incorrect).
 
 writelnEdgeStatus((Kind, Source, Target), Status) :- 
-	writeQuoted(Source),
+	write(Source),
 	write(' -> '),
-	writeQuoted(Target),
+	write(Target),
 	write(' [ style = '),
 	kind2style(Kind, Style),
 	write(Style),

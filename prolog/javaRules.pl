@@ -8,8 +8,11 @@ can_contain_type(package, package).
 can_contain_type(package, class).
 can_contain_type(package, interface).
 can_contain_type(class, class).
+%can_contain_type(class, interface).
 can_contain_type(class, method).
-can_contain_type(interface, method).
+can_contain_type(class, constructor).
+can_contain_type(class, attribute).
+can_contain_type(interface, method). 
 %can_contain_type(method, param).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -18,7 +21,9 @@ can_contain_type(interface, method).
 abstract_type(package, package). %% is it ?
 abstract_type(interface,interface).
 abstract_type(class, interface).
+abstract_type(attribute, method).
 abstract_type(method, method). %% methodImpl methodSig ??
+abstract_type(constructor, method).
 
 abstract_method_list([], _, Graph, AbsAssocs, Graph, AbsAssocs).
 abstract_method_list([M|ML], InterfaceId, Graph, AbsAssocs, NewGraph, NewAbsAssocs):-

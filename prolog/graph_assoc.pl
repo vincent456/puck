@@ -26,7 +26,10 @@ find_graph((Ns,Us,Nb)):-
     length(NsList, Nb), list_to_assoc(NsList, Ns),
     findall((uses,USrc, UTgt), edge(uses,USrc, UTgt), Us).
 
-get_node(Id, N, (Ns, _, _)):- get_assoc(Id,Ns, N).
+get_node(Id, N, (Ns, _, _)):- get_assoc(Id, Ns, N).
+
+gen_node(Id, N, (Ns,_,_)):- gen_assoc(Id, Ns, N).
+
 
 put_node(N, (Ns, U, Nb), (NewNs, U, Nb1)):- 
     id_of_node(Id, N), put_assoc(Id, Ns,  N, NewNs), Nb1 is Nb + 1.
@@ -69,14 +72,19 @@ contains(CerId, CeeId, (Ns, _, _)):-
     get_assoc(CerId, Ns, Cer), containees_of_node(CeesId, Cer),
     member(CeeId, CeesId).
 
-
-contains(CerId, CeeId, (Ns, _, _)):- 
+contains(CerId, CeeId, G):- 
     \+ground(CerId), \+ground(CeeId),
-    assoc_to_list(Ns, NsList),
-    member(CeeId- Cee, NsList), container_of_node(CerId, Cee).
+    container_of_node(CerId, Cee),
+    gen_node(CeeId, Cee, G).
 
-root(Id, (Ns, _, _)):-get_assoc(Id, Ns, N), container_of_node(no_parent, N).
-leaf(Id, (Ns, _, _)):-get_assoc(Id, Ns, N), containees_of_node([], N).
+is_root(N):- container_of_node(no_parent, N).
+
+root(Id, G):- ground(Id), is_root(N), get_node(Id, N, G).
+root(Id, G):- \+ground(Id), is_root(N), gen_node(Id, N, G).
+
+leaf(Id, G):- ground(Id), containees_of_node([], N), get_node(Id, N, G).
+leaf(Id, G):- \+ground(Id), containees_of_node([], N), gen_node(Id, N, G).
+
 
 put_contains(CerId, CeeId, (Ns, Us, Nb), (Ns3, Us, Nb)):-
     get_assoc(CerId, Ns, (CerId, CerT, CerN, CerS, CerCer, CerCees)),

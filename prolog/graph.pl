@@ -6,10 +6,12 @@
 
 	    %% graph_impl interface
 	    find_graph/1,
-	    get_node/3,
+	    get_node/3, %get a node from a known id
+	    gen_node/3,%select randomly a node
 	    contains/3,
 	    uses/3,
 	    
+	    get_roots/2,
 	    root/2,
 	    leaf/2,
 	    
@@ -43,7 +45,6 @@
 	    [abstract/6,
 	     abstract_type/2]).
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%        graph impl         %%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -56,6 +57,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% generic higher level operations %%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+get_roots(Ids, G):-
+    findall(Id, (is_root(N), gen_node(Id,N,G)), Ids).
 
 can_contain(Cer, Cee):- 
     type_of_node(CerType, Cer), type_of_node(CeeType,Cee),

@@ -3,7 +3,6 @@
 	 [solve/3,
 	  solve/1,
 	  find_graph_and_constraints/2,
-	  find_constraints/1,
 	  find_violations/4,
 	  friend/4]).
 
@@ -16,12 +15,9 @@
 
 
 find_graph_and_constraints(Graph, Constraints):- 
-    find_graph(Graph), find_constraints(FNCts),
-    constraintsListFullName2Ids(FNCts, Constraints, Graph).    
+    find_graph(Graph), find_constraints(Constraints, Graph).    
 
-find_constraints(FNCts):-
-    findall(hideFrom(Hidee,Interloper), hideFrom(Hidee,Interloper), FNCts0),
-    findall(isFriendOf(User,Usee), isFriendOf(User,Usee), FNCts, FNCts0).
+
 
 solve(CorrectedGraph):-
     find_graph_and_constraints(Graph, Cts),
@@ -51,7 +47,7 @@ excluded(Id, List, []):- \+get_assoc(Id,List,_).
 
 potential_host(Node, hideFrom(HideeId, InterloperId), Graph, HostId):-
     can_contain(Host, Node),
-    get_node(HostId, Host, Graph),
+    gen_node(HostId, Host, Graph),
     \+'contains*'(HideeId, HostId, Graph), 
     \+'contains*'(InterloperId, HostId, Graph),
     % for some obvious reason Node cannot be hosting himself
@@ -65,6 +61,7 @@ potential_host(Node, hideFrom(HideeId, InterloperId), Graph, HostId):-
 host(Node, Graph, hideFrom(HideeId, InterloperId), Excluded, GraphOut, NewExcluded):-
     id_of_node(Id, Node), 
     root(Id,Graph),
+    
     potential_host(Node, hideFrom(HideeId, InterloperId), Graph, HostId),
     put_contains(HostId, Id, Graph, GraphOut),
     %% since nobody contains Node, this is the first call to host for him
@@ -152,38 +149,39 @@ fold(GraphIn, UserId, UseeId, RuleViolated, Constraints, AbsAssocs, Excluded,
 %%
 %%solve(+GraphIn, +Constraints, -GraphOut)
 %%
-solve(GraphIn, Constraints, GraphOut):- 
-    empty_assoc(Excluded), empty_assoc(AbsAssocs),
-    solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, _, _).
+%% solve(GraphIn, Constraints, GraphOut):- 
+%%     empty_assoc(Excluded), empty_assoc(AbsAssocs),
+%%     solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, _, _).
 
-solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, AbsOut, NewExcluded) :-
-    violation(GraphIn , Constraints, UserId, UseeId, ViolatedConstraint, GraphWithoutViolation),
-    fold(GraphWithoutViolation, UserId, UseeId, ViolatedConstraint, Constraints,
-	     AbsAssocs, Excluded, GraphO1, AbsOut1, Excluded1), 
-    solve(GraphO1, Constraints, AbsOut1, Excluded1, GraphOut, AbsOut, NewExcluded).
+%% solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, AbsOut, NewExcluded) :-
+%%     violation(GraphIn , Constraints, UserId, UseeId, ViolatedConstraint, GraphWithoutViolation),
+%%     fold(GraphWithoutViolation, UserId, UseeId, ViolatedConstraint, Constraints,
+%% 	     AbsAssocs, Excluded, GraphO1, AbsOut1, Excluded1), 
+%%     solve(GraphO1, Constraints, AbsOut1, Excluded1, GraphOut, AbsOut, NewExcluded).
 
-solve(Graph, Constraints, Abs, Exc, Graph, Abs, Exc):- \+ violation(Graph, Constraints, _, _, _, _).
+%% solve(Graph, Constraints, Abs, Exc, Graph, Abs, Exc):- \+ violation(Graph, Constraints, _, _, _, _).
 
 %%
 %% alternative definition that create a dot at each step
 %%
-%% solve(GraphIn, Constraints, GraphOut):- 
-%%     empty_assoc(Excluded), empty_assoc(AbsAssocs),
-%%     solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, _, _, 1).
+solve(GraphIn, Constraints, GraphOut):- 
+    empty_assoc(Excluded), empty_assoc(AbsAssocs),
+    solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, _, _, 1).
 
-%% solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, AbsOut, NewExcluded, NumCall) :-
-%%     violation(GraphIn , Constraints, UserId, UseeId, ViolatedConstraint, GraphWithoutViolation),
-%%     fold(GraphWithoutViolation, UserId, UseeId, ViolatedConstraint, Constraints,
-%% 	     AbsAssocs, Excluded, GraphO1, AbsOut1, Excluded1), 
+solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, AbsOut, NewExcluded, NumCall) :-
+    violation(GraphIn , Constraints, UserId, UseeId, ViolatedConstraint, GraphWithoutViolation),
+    fold(GraphWithoutViolation, UserId, UseeId, ViolatedConstraint, Constraints,
+	     AbsAssocs, Excluded, GraphO1, AbsOut1, Excluded1), 
+    
+    atom_concat('visual_trace', NumCall, VT), atom_concat(VT, '.dot', FileName),
 
-%%     atom_concat('visual_trace', NumCall, VT), atom_concat(VT, '.dot', FileName),
-%%     find_violations(GraphO1, Constraints, Vs, GTmp),
-%%     pl2dot(FileName, GTmp, Vs),
-%%     NextNumCall is NumCall + 1,
+    find_violations(GraphO1, Constraints, Vs, GTmp),
+    pl2dot(FileName, GTmp, Vs),
+    NextNumCall is NumCall + 1,
 
-%%     solve(GraphO1, Constraints, AbsOut1, Excluded1, GraphOut, AbsOut, NewExcluded, NextNumCall).
+    solve(GraphO1, Constraints, AbsOut1, Excluded1, GraphOut, AbsOut, NewExcluded, NextNumCall).
 
-%% solve(Graph, Constraints, Abs, Exc, Graph, Abs, Exc, _):- \+ violation(Graph, Constraints, _, _, _, _).
+solve(Graph, Constraints, Abs, Exc, Graph, Abs, Exc, _):- \+ violation(Graph, Constraints, _, _, _, _).
 
 
 friend(UserId, UseeId, Graph, Constraints):-
