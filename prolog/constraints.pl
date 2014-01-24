@@ -1,105 +1,188 @@
-:-module(constraintsTranformations,
-	 [constraintsListFullName2Ids/3]).
+:-module(constraints,
+	 [read_constraints/3,
+	  is_violation/3,
+	  collect_constraints/3,
+	  interloper/3]).
 :-use_module(graph).
 
 %%% named set
 
-gMember(A,B):- member(A,B).
-gMember(A,B):- declaredMember(A,B).
+%% gMember(A,B):- member(A,B).
+%% gMember(A,B):- declaredMember(A,B).
 
-gSelect(A,B,C) :- select(A,B,C).
-gSelect(A,B,C) :- selectedMember(A,B,C).
+%% gSelect(A,B,C) :- select(A,B,C).
+%% gSelect(A,B,C) :- selectedMember(A,B,C).
 
-declaredMember(Element, SetName):- declareSet(SetName, Set),
-				    member(Element, Set).
+%% declaredMember(Element, SetName):- declareSet(SetName, Set),
+%%				    member(Element, Set).
 
-declaredMember(Element, UnionName) :- declareSetUnion(UnionName, SetList),
-				      member(Set, SetList), gMember(Element, Set).
+%% declaredMember(Element, UnionName) :- declareSetUnion(UnionName, SetList),
+%%				      member(Set, SetList), gMember(Element, Set).
 
 %% declaredMember(Element, SetName):- collectSubtypesOf(SuperType, SetName),
-%% 	'isa+'(Element, SuperType).
+%%	'isa+'(Element, SuperType).
 
-selectedMember(Element, ListName, OtherElements) :- 
-	bagof(E,declaredMember(E, ListName), List), select(Element, List, OtherElements).
-
+%% selectedMember(Element, ListName, OtherElements) :-
+%%	bagof(E,declaredMember(E, ListName), List), select(Element, List, OtherElements).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%% Root = param en entré
-% hide_ : first param is a scope, other params are scopes set
-% hide_set: all param are scope set
-% hide_scope(_set) : hidee(s), interlopers, friends
-% friendsOf
+fold_cts_fn_to_id(CtFN, (List, Graph), ([CtID | List], Graph)):-
+    constraint_full_name_to_id(CtFN, CtID, Graph).
+
+read_constraints_aux(Stream, RootFN, Graph, CtAcc, Cts):-
+	read_term(Stream, T, []), 
+	(T=end_of_file *-> Cts=CtAcc;
+	 findall(NCt, normal_constraint(NCt, RootFN, T),NCts),
+	 foldl(fold_cts_fn_to_id, NCts,(CtAcc, Graph), (CtAcc2, _)),
+	 read_constraints_aux(Stream, RootFN, Graph, CtAcc2, Cts)).
+
+
+%% it's not satisfactory to translate rootId to its fullname to make the translation the other way
+%% in read_constraints_aux, but I don't find any more satisfying solution
+%% either the translation would have to be done in normal_constraint, (and then, it has to be written numerous time)
+%% either a test can be add in full_name_to_id
+%% anyway the root has a short name so the translation is not too costly
+
+decorate_graph_aux(Id-Ct, Ns, NewNs):-
+    get_assoc(Id, Ns, (Id, Desc, Edges, no_constraint)),
+    put_assoc(Id, Ns, (Id, Desc, Edges, Ct), NewNs).
+
+decorate_graph(CtsAssoc, (Ns, Us, Nb), (NewNs, Us, Nb)):-
+    assoc_to_list(CtsAssoc, CtsList),
+    foldl(decorate_graph_aux, CtsList, Ns, NewNs).
+
+read_constraints(FileName, GraphIn, GraphOut):-
+    get_roots([RootID], GraphIn), full_name_to_id(RootFN, RootID, GraphIn),
+    open(FileName, read, Stream),
+    read_constraints_aux(Stream, RootFN, GraphIn, [], CtList),
+    close(Stream),
+    group_constraints(CtList, CtsAssoc),
+    decorate_graph(CtsAssoc, GraphIn, GraphOut),!.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% normal_constraint(-NC, +RootFullName, +UserConstraint)
+% NC : ( hidee : Scope * interlopers : Scope Set * friends : Scope Set)
 %%
+normal_constraint((S, Interlopers, []), _, hideScopeFrom(S, Interlopers)).
+normal_constraint((S, Interlopers, []), _, hideScopeSetFrom(ScopeSet, Interlopers)):-
+    member(S, ScopeSet).
 
-% lightweight constraint   
-hide(S, Interlopers, [], _)            :- hide_scope_from(S, Interlopers).
-%hideScopeSet(ScopeSet, [], Interlopers, [])   :- hideScopeSetFrom(ScopeSet, Interlopers).
+normal_constraint((Member, OtherActors,[]), _, hideFromEachOther(Actors)):-
+    select(Member, Actors, OtherActors).
 
-hide(Member, OtherActors,[], _) :- hide_from_each_other(Actors), gSelect(Member, Actors, OtherActors).
+normal_constraint((S, [Root], Friends), Root, hideScopeButFrom(S, Friends)).
+normal_constraint((S, [Root], Friends), Root, hideScopeSetButFrom(ScopeSet, Friends)):-
+    member(S, ScopeSet).
 
-hide(S, Root, Friends, Root)       :- hide_scope_but_from(S, Friends).
+normal_constraint((S, [Root], []), Root, hideScope(S)).
+normal_constraint((S, [Root], []), Root, hideScopeSet(ScopeSet)):-
+    member(S,ScopeSet).
 
-%% hideScopeButFrom(S, AllFriends)    :- hideScopeSetButFrom(ScopeSet, Friends), 
-%% 				      friends(ScopeSet, Friends, AllFriends), gMember(S, ScopeSet).
+normal_constraint((Befriended, [], [User]), _, isFriendOfScope(User, Befriended)).
+normal_constraint((Befriended, [], [User]), _, isFriendOfScopeSet(User, BefriendedSet)):-
+    member(Befriended, BefriendedSet).
 
-hide(S, Root, [], Root)               :- hide_scope(S).
-%% hideScopeButFrom(S, Friends)        :- hideScopeSet(ScopeSet),
-%% 				       friends(ScopeSet, Friends), gMember(S,ScopeSet).
+normal_constraint((Befriended, [], Users), _, areFriendOfScope(Users, Befriended)).
 
+%% TODO
+%%hide_scope_set
 
 %%%
 %%(hidee, interloper list, (interloper * friend) list, friend, %% hideeAncestorConstraint, hideeDescendantConstraint)
 %%%%%%%%%%%%%%%
-add_hide((Hidee, NewInterlopers, []), CtsAssoc, NewCtsAssoc):-
-    get_assoc(Hidee, CtsAssoc, (Hidee, Interlopers, InterlopersWithFriends, Friends)),
-    append(NewInterlopers, Interlopers, Is), %% make it a set ??
-    put_assoc(Hidee, CtsAssoc, (Hidee, Is, InterlopersWithFriends, Friends), NewCtsAssoc).
 
-add_hide((Hidee, Interlopers, Friends), CtsAssoc, NewCtsAssoc):-
-    get_assoc(Hidee, CtsAssoc, (Hidee, Interlopers, InterlopersWithFriends, Friends)),
-    put_assoc(Hidee, CtsAssoc, (Hidee, Interlopers, [(Interlopers, Friends)| InterlopersWithFriends] , Friends), NewCtsAssoc).
+non_empty_list([]):- !, false.
+non_empty_list(L):- is_list(L).
 
-add_hide((Hidee, Interlopers, []), CtsAssoc, NewCtsAssoc):-
-    \+get_assoc(Hidee, CtsAssoc,_), 
-    put_assoc(Hidee, CtsAssoc, (Hidee, Interlopers,[], []), NewCtsAssoc).
+add_constraint((HideeID, Interlopers, []), CtsAssoc, NewCtsAssoc):-
+    get_assoc(HideeID, CtsAssoc, (OldInterlopers, InterlopersWithFriends, Friends))
+	     *-> append(Interlopers, OldInterlopers, Is), %% make it a set ??
+    put_assoc(HideeID, CtsAssoc, (Is, InterlopersWithFriends, Friends), NewCtsAssoc);
+    put_assoc(HideeID, CtsAssoc, (Interlopers,[], []), NewCtsAssoc).
 
-add_hide((Hidee, Interlopers, Friends), CtsAssoc, NewCtsAssoc):-
-    \+get_assoc(Hidee, CtsAssoc,_), 
-    put_assoc(Hidee, CtsAssoc, (Hidee, [],[(Interlopers,Friends)], []), NewCtsAssoc).
-
-%% if it is not hidden from anybody, we can ignore the friend rule
-add_friend((_,Befriended), CtsAssoc, CtsAssoc):- \+get_assoc(Befriended, CtsAssoc,_).
-
-add_friend((Users,Befriended), CtsAssoc, NewCtsAssoc):- 
-    get_assoc(Befriended, CtsAssoc, (Befriended, Is, IsWF, Friends)),
-    append(Users, Friends, Fs), 
-    put_assoc(Befriended, CtsAssoc, (Befriended, Is, IsWF, Fs), NewCtsAssoc).
+add_constraint((BefriendedID, [], Friends), CtsAssoc, NewCtsAssoc):-
+    get_assoc(BefriendedID, CtsAssoc, (Is, IsWF, OldFs))
+	     *-> append(Friends, OldFs, Fs),
+    put_assoc(BefriendedID, CtsAssoc, (Is, IsWF, Fs), NewCtsAssoc);
+    put_assoc(BefriendedID, CtsAssoc, ([], [], Friends), NewCtsAssoc).
 
 
-build_constraints(HideList, FriendList, Assoc) :-
-    empty_assoc(A), foldl(add_hide, HideList, A, A2),
-    foldl(add_friend, FriendList, A2, Assoc).
-%%%%%%
+add_constraint((ScopeID, Interlopers,Friends), CtsAssoc, NewCtsAssoc):-
+    non_empty_list(Interlopers), non_empty_list(Friends),
+    (get_assoc(ScopeID, CtsAssoc, (Is, IsWF, Fs))
+	     *-> put_assoc(ScopeID, CtsAssoc, (Is, [(Interlopers, Friends)| IsWF] , Fs), NewCtsAssoc);
+    put_assoc(ScopeID, CtsAssoc, ([], [(Interlopers, Friends)] , []), NewCtsAssoc)).
 
-find_constraints(Constraints, Graph):-
-    findall(hideFrom(Hidee,Interloper), hideFrom(Hidee,Interloper), FNCts0),
-    findall(isFriendOf(User,Usee), isFriendOf(User,Usee), FNCts, FNCts0),
-    constraintsListFullName2Ids(FNCts, Constraints, Graph).
+group_constraints(CtList, Assoc) :- 
+    empty_assoc(A), foldl(add_constraint, CtList, A, Assoc).
 
-constraintsListFullName2Ids(FNcts, IdsCts, Graph):-
-    constraintsListFullName2Ids(FNcts, [], IdsCts, Graph).
+%%%%%%%%%%%
 
-constraintsListFullName2Ids([], IdsCts, IdsCts, _).
+list_full_name_to_ids_aux(FName,(IdList, Graph), ([Id | IdList], Graph)):-
+    full_name_to_id(FName, Id, Graph).
 
-constraintsListFullName2Ids([hideFrom(HideeFN,InterloperFN)| FNcts] , Acc, IdsCts, Graph):-
-    full_name_from_id(Hid, HideeFN, Graph), full_name_from_id(Iid, InterloperFN, Graph),
-    constraintsListFullName2Ids(FNcts, [hideFrom(Hid, Iid)| Acc], IdsCts, Graph).
+list_full_name_to_ids(FNList, IDList, Graph) :-
+    foldl(list_full_name_to_ids_aux, FNList, ([], Graph), (IDList,_)).
 
-constraintsListFullName2Ids([isFriendOf(HideeFN,InterloperFN)|FNcts] , Acc, IdsCts, Graph):-
-    full_name_from_id(Hid, HideeFN, Graph), full_name_from_id(Iid, InterloperFN, Graph),
-    constraintsListFullName2Ids(FNcts, [isFriendOf(Hid, Iid)| Acc], IdsCts, Graph).
-
+constraint_full_name_to_id((SFN, InterlopersFN, FriendsFN), (SID, InterlopersID, FriendsID), Graph):-
+			   full_name_to_id(SFN, SID, Graph),
+			   list_full_name_to_ids(InterlopersFN, InterlopersID, Graph),
+			   list_full_name_to_ids(FriendsFN, FriendsID, Graph).
 
 
+%%%%%%%%%%%%%%%%
+
+constraint_of_node(Ct, (_,_,_, Ct)).
+
+find_constraint_node(no_parent, _, _):- !, fail.
+
+find_constraint_node(Id, Ns, Hn):-
+    get_assoc(Id, Ns, N), 
+    (constraint_of_node(no_constraint, N) *->
+		       container_of_node(Cer, N), find_constraint_node(Cer, Ns, Hn);
+     Hn= N).
+
+%%
+
+collect_friends(no_parent, _, Fs, Fs).
+
+collect_friends(Id, Ns, Fs1, Fs):-
+    get_assoc(Id, Ns, N), constraint_of_node(no_constraint, N),
+    container_of_node(Cer, N), collect_friends(Cer, Ns, Fs1, Fs).
+
+collect_friends(Id, Ns, Fs1, Fs):-
+    get_assoc(Id, Ns, N), constraint_of_node((_,_, Fs2), N), append(Fs2, Fs1, Fs3),
+    container_of_node(Cer, N), collect_friends(Cer, Ns, Fs3, Fs).
+
+%%
+
+scope_set_contained(ScopeId, ScopeIdList, Graph):-
+    member(Id, ScopeIdList), 'contains*'(Id, ScopeId, Graph).
+
+interloper0(UserId, InterloperIdList, FriendIdList, Graph):-
+    scope_set_contained(UserId, InterloperIdList, Graph),
+    \+ scope_set_contained(UserId, FriendIdList, Graph).
+
+interloper(Id, (Is, IsWF, Fs), Graph):-
+    interloper0(Id, Is, Fs, Graph);
+    member((Is1, Fs1), IsWF), append(Fs1, Fs, Fs2), interloper0(Id, Is1, Fs2).
+
+
+
+is_violation(UserId, UseeId, Graph):- 
+    (Ns, _, _)=Graph,
+    find_constraint_node(UseeId, Ns, HNode),
+    id_of_node(HId, HNode), constraint_of_node((Is, IsWF, _), HNode), 
+    collect_friends(HId, Ns, [], Fs), interloper(UserId, (Is, IsWF, Fs), Graph).
+    
+
+collect_constraints_aux(no_parent, _, Cts, Cts).
+collect_constraints_aux(Id, G, (Is, IsWF, Fs), Cts):-
+    get_node(Id, G, Node), constraint_of_node(Cts0, Node), container_of_node(CerId, Node),
+    (Cts0=no_constraint *-> collect_constraints_aux(CerId, G, (Is, IsWF, Fs), Cts);
+     Cts0=(Is0, IsWF0, Fs0), append(Is0, Is, Is1), append(IsWF0, IsWF, IsWF1), append(Fs0, Fs, Fs1),
+     collect_constraints_aux(CerId, G, (Is1, IsWF1, Fs1), Cts)).
+
+collect_constraints(Id, G, Cts):- collect_constraints_aux(Id, G, ([],[],[]), Cts).

@@ -1,5 +1,5 @@
-:- use_module('../solver').
-:- discontiguous node/4, edge/3, hideFrom/2, isFriendOf/2.
+%% :- use_module('../solver').
+%% :- discontiguous node/4, edge/3.
 
 node(0, package, 'prototype', '').
 node(1, package, 'candidate', '').
@@ -54,13 +54,5 @@ node(8, method, 'slap_stick', '__void').
 edge(contains,6,8).
 edge(isa,6,2).
 edge(uses,6,2).
-
-hideFrom('prototype.candidate.Curly', 'prototype'). %%hideFrom root -> hideFrom everybody
-hideFrom('prototype.candidate.Moe', 'prototype').
-hideFrom('prototype.candidate.Larry', 'prototype').
-
-isFriendOf('prototype.candidate.PrototypeDemo.main__java.lang.String', 'prototype.candidate.Curly').
-isFriendOf('prototype.candidate.PrototypeDemo.main__java.lang.String', 'prototype.candidate.Moe').
-isFriendOf('prototype.candidate.PrototypeDemo.main__java.lang.String', 'prototype.candidate.Larry').
 
 %:-solve(_), halt.

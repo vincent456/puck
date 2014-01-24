@@ -1,11 +1,12 @@
 :- module(graph, 
 	  [ 'contains*'/3,
 	    name_from_id/3,
-	    full_name_from_id/3,
+	    full_name_to_id/3,
 	    can_contain/2, 	 
 
 	    %% graph_impl interface
 	    find_graph/1,
+	    read_graph/2,
 	    get_node/3, %get a node from a known id
 	    gen_node/3,%select randomly a node
 	    contains/3,
@@ -30,6 +31,8 @@
 	    %node getters
 	    name_of_node/2,
 	    type_of_node/2,
+	    container_of_node/2,
+	    containees_of_node/2,
 	    id_of_node/2,
 	    ids_to_use/3]).
 
@@ -73,7 +76,8 @@ name_from_id(NodeId,NameSig, Graph):-
 
 %%%%%%%%%%%%%%%%
 
-full_name_from_id(NodeId,FullName, Graph):- 
+%% a cache can be added in the graph ...
+full_name_to_id(FullName, NodeId, Graph):- 
 		path_to_node(NodeId,Path, Graph),
 		names_on_path(Path, Names, Graph),
 		atomic_list_concat(Names,'.',FullName).

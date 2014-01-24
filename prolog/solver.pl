@@ -1,23 +1,19 @@
 
 :-module(solver, 
-	 [solve/3,
+	 [solve/2,
 	  solve/1,
-	  find_graph_and_constraints/2,
-	  find_violations/4,
-	  friend/4]).
+	  find_violations/3,
+	  solver_read/3]).
 
 :-use_module(library(assoc)).
 :-use_module(graph).
 :-use_module(constraints).
-
-:-reexport(graph,[find_graph/1]).
+:-reexport(constraints).
+:-reexport(graph).
 %:-reexport(pl2dot).
 
-
-find_graph_and_constraints(Graph, Constraints):- 
-    find_graph(Graph), find_constraints(Constraints, Graph).    
-
-
+solver_read(GraphFile, ConstraintFile, Graph):-
+    read_graph(GraphFile, G), read_constraints(ConstraintFile, G, Graph),!.
 
 solve(CorrectedGraph):-
     find_graph_and_constraints(Graph, Cts),
@@ -56,84 +52,90 @@ potential_host(Node, hideFrom(HideeId, InterloperId), Graph, HostId):-
     Host\=Node.
 
 
-%% find an acceptable existing host
-%% Excluded stores the host previously excluded for the node(Uid,_,_)
-host(Node, Graph, hideFrom(HideeId, InterloperId), Excluded, GraphOut, NewExcluded):-
+host(Node, HideeId, GraphIn, GraphOut):-
+    collect_constraints(HideeId, GraphIn, Cts),
+    % for some obvious reason Node cannot be hosting himself
+    % we have to explicitly tell it to prolog, because since nobody contains him,
+    % it cannot break any constraint !!
+    Host\=Node, can_contain(Host, Node),
+    gen_node(HostId, Host, GraphIn), \+interloper(HostId, Cts, GraphIn),
     id_of_node(Id, Node), 
-    root(Id,Graph),
+    put_contains(HostId, Id, GraphIn, GraphOut).
+
+%% %% find an acceptable existing host
+%% %% Excluded stores the host previously excluded for the node(Uid,_,_)
+%% host(Node, Graph, hideFrom(HideeId, InterloperId), Excluded, GraphOut, NewExcluded):-
+%%     id_of_node(Id, Node), 
+%%     root(Id,Graph),
     
-    potential_host(Node, hideFrom(HideeId, InterloperId), Graph, HostId),
-    put_contains(HostId, Id, Graph, GraphOut),
-    %% since nobody contains Node, this is the first call to host for him
-    %% therefore the excluded list must be empty
-    excluded(Id, Excluded, []), 
-    put_assoc(Id, Excluded, [HideeId| [InterloperId]], NewExcluded).
+%%     potential_host(Node, hideFrom(HideeId, InterloperId), Graph, HostId),
+%%     put_contains(HostId, Id, Graph, GraphOut),
+%%     %% since nobody contains Node, this is the first call to host for him
+%%     %% therefore the excluded list must be empty
+%%     excluded(Id, Excluded, []), 
+%%     put_assoc(Id, Excluded, [HideeId| [InterloperId]], NewExcluded).
 
 
-host(Node, Graph, hideFrom(HideeId, InterloperId), Excluded, Graph, NewExcluded):-
-    %%has already a host and and it satisfies the newly studied constraint
-    %% -> no reason to move host
-    id_of_node(Id,Node), contains(HostId, Id, Graph),
-    \+'contains*'(HideeId, HostId, Graph), \+'contains*'(InterloperId, HostId, Graph),
+%% host(Node, Graph, hideFrom(HideeId, InterloperId), Excluded, Graph, NewExcluded):-
+%%     %%has already a host and and it satisfies the newly studied constraint
+%%     %% -> no reason to move host
+%%     id_of_node(Id,Node), contains(HostId, Id, Graph),
+%%     \+'contains*'(HideeId, HostId, Graph), \+'contains*'(InterloperId, HostId, Graph),
     
-    excluded(Id, Excluded, IdEx), 
-    put_assoc(Id, Excluded, [  HideeId | [ InterloperId | IdEx] ], NewExcluded).
+%%     excluded(Id, Excluded, IdEx), 
+%%     put_assoc(Id, Excluded, [  HideeId | [ InterloperId | IdEx] ], NewExcluded).
 
 
 
-host(Node, Graph, hideFrom(HideeId, InterloperId), Excluded, GraphOut, NewExcluded):-
-    id_of_node(Id, Node),
-    select_contains(PreviousHostId, Id, Graph, Graph2),
+%% host(Node, Graph, hideFrom(HideeId, InterloperId), Excluded, GraphOut, NewExcluded):-
+%%     id_of_node(Id, Node),
+%%     select_contains(PreviousHostId, Id, Graph, Graph2),
     
-    ('contains*'(HideeId, PreviousHostId, Graph); 'contains*'(InterloperId, PreviousHostId, Graph)),
+%%     ('contains*'(HideeId, PreviousHostId, Graph); 'contains*'(InterloperId, PreviousHostId, Graph)),
     
-    potential_host(Node, hideFrom(HideeId, InterloperId), Graph2, HostId),
-    put_contains(HostId, Id, Graph2, GraphOut),
+%%     potential_host(Node, hideFrom(HideeId, InterloperId), Graph2, HostId),
+%%     put_contains(HostId, Id, Graph2, GraphOut),
     
-    %check if the host do not break a violation previously solved
-    excluded(Id, Excluded, IdEx), member(Ex, IdEx), 
-    \+'contains*'(Ex, HostId, Graph2),
-    put_assoc(Id, Excluded, [  HideeId | [ InterloperId | IdEx] ], NewExcluded).
+%%     %check if the host do not break a violation previously solved
+%%     excluded(Id, Excluded, IdEx), member(Ex, IdEx), 
+%%     \+'contains*'(Ex, HostId, Graph2),
+%%     put_assoc(Id, Excluded, [  HideeId | [ InterloperId | IdEx] ], NewExcluded).
 
 %%
 %%intro(+Graph, +Violation, +RuleViolated, +AbsAssocs,
 %%         -GraphOut, -AbsAssocs).
 %%
-%if alreadey abstracted, do not recreate it
-intro(Graph,  NodeId, AbsAssocs, Graph, Abs, AbsAssocs):- 
-    get_assoc(NodeId, AbsAssocs, AbsId), get_node(AbsId, Abs, Graph).
+intro(GraphIn, NodeId, AbsAssocsIn, GraphOut, Abs, AbsAssocsOut):- 
+    %if alreadey abstracted, do not recreate it
+    get_assoc(NodeId, AbsAssocsIn, AbsId) *-> 
+	     get_node(AbsId, Abs, GraphIn), GraphOut=GraphIn, AbsAssocsOut=AbsAssocsIn;
+    get_node(NodeId, Node, GraphIn), 
+    abstract(Node, GraphIn, AbsAssocsIn, Abs, GraphOut, AbsAssocsOut).
 
-intro(GIn, NodeId, AbsAssocs, GOut , Abs, NewAbsAssocs ):-
-    %% check if not previously introduced
-    \+get_assoc(NodeId, AbsAssocs, _), get_node(NodeId, Node, GIn), 
-    abstract(Node, GIn, AbsAssocs, Abs, GOut, NewAbsAssocs).
+redirect_to_abs_aux((UserId, UseeId) , (AbsAssocs, GraphIn), (AbsAssocs, GraphOut)) :-
+    get_assoc(UseeId, AbsAssocs,AbsId) *->
+	     select_uses(UserId, UseeId, GraphIn, G2),
+    put_uses(UserId, AbsId, G2, GraphOut); 
+    GraphIn=GraphOut.
 
+redirect_to_abs(UsesList, AbsAssocs, GraphIn, GraphOut):-
+    foldl(redirect_to_abs_aux, UsesList, (AbsAssocs, GraphIn), (_, GraphOut)).
 
-redirect_to_abs([], _, G, G).
-
-redirect_to_abs([(_, UseeId) | UsesList], AbsAssocs, GraphIn, GraphOut) :-
-    \+get_assoc(UseeId, AbsAssocs,_),
-    redirect_to_abs( UsesList, AbsAssocs, GraphIn, GraphOut).
-
-redirect_to_abs([(UserId, UseeId) | UsesList], AbsAssocs, GraphIn, GraphOut) :-
-    get_assoc(UseeId, AbsAssocs,AbsId),
-    select_uses(UserId, UseeId, GraphIn, G2),
-    put_uses(UserId, AbsId, G2, G3),
-    redirect_to_abs(UsesList, AbsAssocs, G3, GraphOut).
 
 %%the input graph has already the uses (UserId,UseeId) removed
-fold(GraphIn, UserId, UseeId, RuleViolated, Constraints, AbsAssocs, Excluded, 
-     GraphOut4, NewAbsAssocs, NewExcluded) :- 
+fold(Use, GraphIn, AbsAssocs, GraphOut4, NewAbsAssocs) :- 
+    ids_to_use(UseeId,UserId, Use),
     intro(GraphIn, UseeId, AbsAssocs, GraphOut1, UseeAbs, NewAbsAssocs),
-    host(UseeAbs, GraphOut1, RuleViolated, Excluded, GraphOut2, NewExcluded),
+
+    host(UseeAbs, UseeId, GraphOut1, GraphOut2),
     id_of_node(AbsId, UseeAbs), 
     
     %check that the use introduced between the node and his abstraction does not violate a rule
     % this test can only be done once the abstraction has a host
-    (uses(AbsId, UseeId, GraphOut2), \+violation(GraphOut2, Constraints, AbsId, UseeId, _, _);
-     uses(UseeId, AbsId, GraphOut2), \+violation(GraphOut2, Constraints, UseeId, AbsId, _, _)),
-    put_uses(UserId, AbsId, GraphOut2, GraphOut3),
+    (uses(AbsId, UseeId, GraphOut2), \+is_violation(AbsId, UseeId, GraphOut2);
+     uses(UseeId, AbsId, GraphOut2), \+is_violation(UseeId, AbsId, GraphOut2)),
     
+    put_uses(UserId, AbsId, GraphOut2, GraphOut3),
     %% when redirecting a use from a class toward an interface,
     %% we need to redirect all method uses,
     %% i don't know if it is generalisable, but we try anyway:
@@ -149,62 +151,52 @@ fold(GraphIn, UserId, UseeId, RuleViolated, Constraints, AbsAssocs, Excluded,
 %%
 %%solve(+GraphIn, +Constraints, -GraphOut)
 %%
-%% solve(GraphIn, Constraints, GraphOut):- 
-%%     empty_assoc(Excluded), empty_assoc(AbsAssocs),
-%%     solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, _, _).
+solve(GraphIn, GraphOut):- 
+    empty_assoc(AbsAssocs), solve(GraphIn, AbsAssocs, GraphOut, _).
 
-%% solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, AbsOut, NewExcluded) :-
-%%     violation(GraphIn , Constraints, UserId, UseeId, ViolatedConstraint, GraphWithoutViolation),
-%%     fold(GraphWithoutViolation, UserId, UseeId, ViolatedConstraint, Constraints,
-%% 	     AbsAssocs, Excluded, GraphO1, AbsOut1, Excluded1), 
-%%     solve(GraphO1, Constraints, AbsOut1, Excluded1, GraphOut, AbsOut, NewExcluded).
-
-%% solve(Graph, Constraints, Abs, Exc, Graph, Abs, Exc):- \+ violation(Graph, Constraints, _, _, _, _).
+solve(GraphIn, AbsAssocs, GraphOut, AbsOut) :-
+    (violation(GraphIn , Use, GraphWithoutViolation) *->
+	      fold(Use, GraphWithoutViolation, AbsAssocs, GraphO1, AbsOut1), 
+     solve(GraphO1, AbsOut1, GraphOut, AbsOut);
+     GraphOut=GraphIn, AbsOut = AbsAssocs).
 
 %%
 %% alternative definition that create a dot at each step
 %%
-solve(GraphIn, Constraints, GraphOut):- 
-    empty_assoc(Excluded), empty_assoc(AbsAssocs),
-    solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, _, _, 1).
+%% solve(GraphIn, Constraints, GraphOut):- 
+%%     empty_assoc(Excluded), empty_assoc(AbsAssocs),
+%%     solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, _, _, 1).
 
-solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, AbsOut, NewExcluded, NumCall) :-
-    violation(GraphIn , Constraints, UserId, UseeId, ViolatedConstraint, GraphWithoutViolation),
-    fold(GraphWithoutViolation, UserId, UseeId, ViolatedConstraint, Constraints,
-	     AbsAssocs, Excluded, GraphO1, AbsOut1, Excluded1), 
+%% solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, AbsOut, NewExcluded, NumCall) :-
+%%     violation(GraphIn , Constraints, UserId, UseeId, ViolatedConstraint, GraphWithoutViolation),
+%%     fold(GraphWithoutViolation, UserId, UseeId, ViolatedConstraint, Constraints,
+%% 	     AbsAssocs, Excluded, GraphO1, AbsOut1, Excluded1), 
     
-    atom_concat('visual_trace', NumCall, VT), atom_concat(VT, '.dot', FileName),
+%%     atom_concat('visual_trace', NumCall, VT), atom_concat(VT, '.dot', FileName),
 
-    find_violations(GraphO1, Constraints, Vs, GTmp),
-    pl2dot(FileName, GTmp, Vs),
-    NextNumCall is NumCall + 1,
+%%     find_violations(GraphO1, Constraints, Vs, GTmp),
+%%     pl2dot(FileName, GTmp, Vs),
+%%     NextNumCall is NumCall + 1,
 
-    solve(GraphO1, Constraints, AbsOut1, Excluded1, GraphOut, AbsOut, NewExcluded, NextNumCall).
+%%     solve(GraphO1, Constraints, AbsOut1, Excluded1, GraphOut, AbsOut, NewExcluded, NextNumCall).
 
-solve(Graph, Constraints, Abs, Exc, Graph, Abs, Exc, _):- \+ violation(Graph, Constraints, _, _, _, _).
+%% solve(Graph, Constraints, Abs, Exc, Graph, Abs, Exc, _):- \+ violation(Graph, Constraints, _, _, _, _).
 
-
-friend(UserId, UseeId, Graph, Constraints):-
-    member(isFriendOf(UserAncestorId, UseeAncestorId), Constraints),
-    'contains*'(UserAncestorId, UserId, Graph),
-    'contains*'(UseeAncestorId, UseeId, Graph). 
 
 %%
 %% violation(+Graph, +Constraints, -Violation, -Cause, - Uses\Violation)
 %%
-violation(GraphIn, Constraints, 
-	  UserId, UseeId, hideFrom(HideeId, InterloperId), GraphOut):-
-    member(hideFrom(HideeId, InterloperId),Constraints),
+
+find_violations(GraphIn, Violations, GraphOut):- find_violations(GraphIn, [], Violations, GraphOut), !.
+
+find_violations(GraphIn, Acc, Violations, GraphOut):-
+    violation(GraphIn, Use, GraphO1) *->
+	     find_violations(GraphO1, [ Use | Acc ], Violations, GraphOut);
+    Violations=Acc, GraphOut= GraphIn,!.
+
+violation(GraphIn, Use, GraphOut):-
     select_uses(UserId, UseeId, GraphIn, GraphOut),
-    \+friend(UserId, UseeId, GraphOut, Constraints),
-    'contains*'(HideeId, UseeId, GraphOut), 
-    'contains*'(InterloperId,UserId, GraphOut).
+    is_violation(UserId, UseeId, GraphOut), 
+    ids_to_use(UserId, UseeId, Use).
     
-find_violations(GraphIn, Constraints, Violations, GraphOut):- find_violations(GraphIn, Constraints, [], Violations, GraphOut).
-
-find_violations(GraphIn, Constraints, Acc, Violations, GraphOut):-
-    violation(GraphIn, Constraints, UserId, UseeId, _, GraphO1),
-    ids_to_use(UserId, UseeId, Use),
-    find_violations(GraphO1, Constraints, [ Use | Acc ], Violations, GraphOut).
-
-find_violations(GraphIn, Constraints, Acc, Acc, GraphIn):-  \+ violation(GraphIn, Constraints, _, _, _, _).
+    
