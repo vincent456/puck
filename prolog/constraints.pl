@@ -7,23 +7,23 @@
 
 %%% named set
 
-%% gMember(A,B):- member(A,B).
-%% gMember(A,B):- declaredMember(A,B).
+% gMember(A,B):- member(A,B).
+% gMember(A,B):- declaredMember(A,B).
 
-%% gSelect(A,B,C) :- select(A,B,C).
-%% gSelect(A,B,C) :- selectedMember(A,B,C).
+% gSelect(A,B,C) :- select(A,B,C).
+% gSelect(A,B,C) :- selectedMember(A,B,C).
 
-%% declaredMember(Element, SetName):- declareSet(SetName, Set),
-%%				    member(Element, Set).
+% declaredMember(Element, SetName):- declareSet(SetName, Set),
+%				    member(Element, Set).
 
-%% declaredMember(Element, UnionName) :- declareSetUnion(UnionName, SetList),
-%%				      member(Set, SetList), gMember(Element, Set).
+% declaredMember(Element, UnionName) :- declareSetUnion(UnionName, SetList),
+%				      member(Set, SetList), gMember(Element, Set).
 
-%% declaredMember(Element, SetName):- collectSubtypesOf(SuperType, SetName),
-%%	'isa+'(Element, SuperType).
+% declaredMember(Element, SetName):- collectSubtypesOf(SuperType, SetName),
+%	'isa+'(Element, SuperType).
 
-%% selectedMember(Element, ListName, OtherElements) :-
-%%	bagof(E,declaredMember(E, ListName), List), select(Element, List, OtherElements).
+% selectedMember(Element, ListName, OtherElements) :-
+%	bagof(E,declaredMember(E, ListName), List), select(Element, List, OtherElements).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -180,7 +180,7 @@ is_violation(UserId, UseeId, Graph):-
 
 collect_constraints_aux(no_parent, _, Cts, Cts).
 collect_constraints_aux(Id, G, (Is, IsWF, Fs), Cts):-
-    get_node(Id, G, Node), constraint_of_node(Cts0, Node), container_of_node(CerId, Node),
+    get_node(Id, Node, G), constraint_of_node(Cts0, Node), container_of_node(CerId, Node),
     (Cts0=no_constraint *-> collect_constraints_aux(CerId, G, (Is, IsWF, Fs), Cts);
      Cts0=(Is0, IsWF0, Fs0), append(Is0, Is, Is1), append(IsWF0, IsWF, IsWF1), append(Fs0, Fs, Fs1),
      collect_constraints_aux(CerId, G, (Is1, IsWF1, Fs1), Cts)).

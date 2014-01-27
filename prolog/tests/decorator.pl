@@ -1,6 +1,3 @@
-:- use_module('../solver').
-:- discontiguous node/4, edge/3, hideFrom/2, isFriendOf/2.
-
 node(0, package, 'decorator', '').
 node(1, package, 'candidate', '').
 edge(contains,0,1).
@@ -18,7 +15,7 @@ node(21, method, 'doY', '__void').
 edge(uses,6,21).
 edge(contains,18,21).
 node(2, class, 'A', '').
-%edge(isa,18,2).
+edge(isa,18,2).
 edge(uses,18,2).
 edge(contains,1,2).
 edge(contains,2,8).
@@ -34,7 +31,7 @@ edge(contains,22,24).
 node(10, constructor, 'AwithZ', '#_void').
 edge(contains,22,10).
 edge(uses,10,8).
-%edge(isa,22,2).
+edge(isa,22,2).
 edge(uses,22,2).
 node(25, class, 'AwithXY', '').
 edge(contains,1,25).
@@ -53,7 +50,7 @@ edge(contains,25,19).
 edge(uses,19,11).
 edge(uses,19,18).
 node(12, class, 'AwithX', '').
-%edge(isa,25,12).
+edge(isa,25,12).
 edge(uses,25,12).
 node(27, class, 'DecoratorDemo', '').
 edge(contains,1,27).
@@ -89,7 +86,7 @@ edge(uses,14,20).
 edge(uses,14,23).
 edge(uses,14,24).
 edge(uses,14,21).
-%edge(isa,26,12).
+edge(isa,26,12).
 edge(uses,26,12).
 edge(contains,1,12).
 edge(contains,12,5).
@@ -99,43 +96,5 @@ edge(uses,5,15).
 edge(contains,12,9).
 edge(uses,9,8).
 edge(contains,12,15).
-%edge(isa,12,2).
+edge(isa,12,2).
 edge(uses,12,2).
-
-hideFrom('decorator.candidate.A', 'decorator.candidate.AwithX').
-hideFrom('decorator.candidate.A', 'decorator.candidate.AwithY').
-hideFrom('decorator.candidate.A', 'decorator.candidate.AwithZ'). 
-hideFrom('decorator.candidate.A', 'decorator.candidate.AwithXY'). 
-hideFrom('decorator.candidate.A', 'decorator.candidate.AwithXYZ').
-
-hideFrom('decorator.candidate.AwithX', 'decorator.candidate.A').
-hideFrom('decorator.candidate.AwithX', 'decorator.candidate.AwithY').
-hideFrom('decorator.candidate.AwithX', 'decorator.candidate.AwithZ').
-hideFrom('decorator.candidate.AwithX', 'decorator.candidate.AwithXY'). 
-hideFrom('decorator.candidate.AwithX', 'decorator.candidate.AwithXYZ').
-
-hideFrom('decorator.candidate.AwithY', 'decorator.candidate.A').
-hideFrom('decorator.candidate.AwithY', 'decorator.candidate.AwithX').
-hideFrom('decorator.candidate.AwithY', 'decorator.candidate.AwithZ').
-hideFrom('decorator.candidate.AwithY', 'decorator.candidate.AwithXY'). 
-hideFrom('decorator.candidate.AwithY', 'decorator.candidate.AwithXYZ').
- 
-hideFrom('decorator.candidate.AwithZ', 'decorator.candidate.A').
-hideFrom('decorator.candidate.AwithZ', 'decorator.candidate.AwithX').
-hideFrom('decorator.candidate.AwithZ', 'decorator.candidate.AwithY').
-hideFrom('decorator.candidate.AwithZ','decorator.candidate.AwithXY'). 
-hideFrom('decorator.candidate.AwithZ', 'decorator.candidate.AwithXYZ').
-
-hideFrom('decorator.candidate.AwithXY', 'decorator.candidate.A').
-hideFrom('decorator.candidate.AwithXY', 'decorator.candidate.AwithX').
-hideFrom('decorator.candidate.AwithXY', 'decorator.candidate.AwithY').
-hideFrom('decorator.candidate.AwithXY', 'decorator.candidate.AwithZ').
-hideFrom('decorator.candidate.AwithXY', 'decorator.candidate.AwithXYZ').
-
-hideFrom('decorator.candidate.AwithXYZ', 'decorator.candidate.A').
-hideFrom('decorator.candidate.AwithXYZ', 'decorator.candidate.AwithX').
-hideFrom('decorator.candidate.AwithXYZ', 'decorator.candidate.AwithY').
-hideFrom('decorator.candidate.AwithXYZ', 'decorator.candidate.AwithZ').
-hideFrom('decorator.candidate.AwithXYZ', 'decorator.candidate.AwithXY'). 
-
-:-solve(_),halt. 

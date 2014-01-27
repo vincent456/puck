@@ -54,11 +54,13 @@ potential_host(Node, hideFrom(HideeId, InterloperId), Graph, HostId):-
 
 host(Node, HideeId, GraphIn, GraphOut):-
     collect_constraints(HideeId, GraphIn, Cts),
+    can_contain(Host, Node),
+    gen_node(HostId, Host, GraphIn), 
     % for some obvious reason Node cannot be hosting himself
     % we have to explicitly tell it to prolog, because since nobody contains him,
     % it cannot break any constraint !!
-    Host\=Node, can_contain(Host, Node),
-    gen_node(HostId, Host, GraphIn), \+interloper(HostId, Cts, GraphIn),
+    Host\=Node,
+    \+interloper(HostId, Cts, GraphIn),
     id_of_node(Id, Node), 
     put_contains(HostId, Id, GraphIn, GraphOut).
 
@@ -151,36 +153,31 @@ fold(Use, GraphIn, AbsAssocs, GraphOut4, NewAbsAssocs) :-
 %%
 %%solve(+GraphIn, +Constraints, -GraphOut)
 %%
-solve(GraphIn, GraphOut):- 
-    empty_assoc(AbsAssocs), solve(GraphIn, AbsAssocs, GraphOut, _).
+%% solve(GraphIn, GraphOut):- 
+%%     empty_assoc(AbsAssocs), solve(GraphIn, AbsAssocs, GraphOut, _).
 
-solve(GraphIn, AbsAssocs, GraphOut, AbsOut) :-
+%% solve(GraphIn, AbsAssocs, GraphOut, AbsOut) :-
+%%     (violation(GraphIn , Use, GraphWithoutViolation) *->
+%% 	      fold(Use, GraphWithoutViolation, AbsAssocs, GraphO1, AbsOut1), 
+%%      solve(GraphO1, AbsOut1, GraphOut, AbsOut);
+%%      GraphOut=GraphIn, AbsOut = AbsAssocs).
+
+
+solve(GraphIn, GraphOut):- 
+    empty_assoc(AbsAssocs), solve(GraphIn, AbsAssocs, GraphOut, _, 1).
+
+solve(GraphIn, AbsAssocs, GraphOut, AbsOut, NumCall) :-
     (violation(GraphIn , Use, GraphWithoutViolation) *->
 	      fold(Use, GraphWithoutViolation, AbsAssocs, GraphO1, AbsOut1), 
-     solve(GraphO1, AbsOut1, GraphOut, AbsOut);
+     
+     atom_concat('visual_trace', NumCall, VT), atom_concat(VT, '.dot', FileName),
+
+     find_violations(GraphO1, Vs, GTmp),
+     pl2dot(FileName, GTmp, Vs),
+     NextNumCall is NumCall + 1,
+     
+     solve(GraphO1, AbsOut1, GraphOut, AbsOut, NextNumCall);
      GraphOut=GraphIn, AbsOut = AbsAssocs).
-
-%%
-%% alternative definition that create a dot at each step
-%%
-%% solve(GraphIn, Constraints, GraphOut):- 
-%%     empty_assoc(Excluded), empty_assoc(AbsAssocs),
-%%     solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, _, _, 1).
-
-%% solve(GraphIn, Constraints, AbsAssocs, Excluded, GraphOut, AbsOut, NewExcluded, NumCall) :-
-%%     violation(GraphIn , Constraints, UserId, UseeId, ViolatedConstraint, GraphWithoutViolation),
-%%     fold(GraphWithoutViolation, UserId, UseeId, ViolatedConstraint, Constraints,
-%% 	     AbsAssocs, Excluded, GraphO1, AbsOut1, Excluded1), 
-    
-%%     atom_concat('visual_trace', NumCall, VT), atom_concat(VT, '.dot', FileName),
-
-%%     find_violations(GraphO1, Constraints, Vs, GTmp),
-%%     pl2dot(FileName, GTmp, Vs),
-%%     NextNumCall is NumCall + 1,
-
-%%     solve(GraphO1, Constraints, AbsOut1, Excluded1, GraphOut, AbsOut, NewExcluded, NextNumCall).
-
-%% solve(Graph, Constraints, Abs, Exc, Graph, Abs, Exc, _):- \+ violation(Graph, Constraints, _, _, _, _).
 
 
 %%

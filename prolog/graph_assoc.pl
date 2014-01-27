@@ -145,7 +145,7 @@ select_contains(CerId, CeeId, (Ns, Us, Nb), (Ns3, Us, Nb)):-
     put_assoc(CeeId, Ns2, NCee, Ns3).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-abstract_node((NodeId, Type, Name, Sig, _, _), (Ns, Us, AbsId), AbsAssocs, 
+abstract_node((NodeId, (Type, Name, Sig), _, _), (Ns, Us, AbsId), AbsAssocs, 
 	      Abs, NewG, NewAbsAssocs):-
     abstract_type(Type, AbsType), 
     atomic_concat('abstract_', Name, AbsName), 

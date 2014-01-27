@@ -1,6 +1,3 @@
-:- use_module('../solver').
-:- discontiguous node/4, edge/3, hideFrom/2, isFriendOf/2.
-
 node(0, package, 'bridge2', '').
 node(1, package, 'candidate', '').
 edge(contains,0,1).
@@ -84,7 +81,7 @@ node(7, method, 'top', '__void').
 edge(uses,13,7).
 edge(uses,13,6).
 edge(uses,13,10).
-%edge(isa,26,2).
+edge(isa,26,2).
 edge(uses,26,2).
 edge(contains,1,2).
 edge(contains,2,7).
@@ -122,7 +119,7 @@ edge(uses,12,10).
 edge(uses,12,8).
 edge(contains,25,16).
 edge(uses,16,14).
-%edge(isa,25,2).
+edge(isa,25,2).
 edge(uses,25,2).
 edge(contains,1,31).
 edge(contains,31,34).
@@ -132,18 +129,3 @@ edge(contains,31,32).
 edge(uses,32,31).
 edge(contains,31,33).
 edge(uses,33,31).
-
-
-%%hideScopeSetFrom(refinedAbstractions, implementations).
-hideFrom('bridge2.candidate.StackFIFO', 'bridge2.candidate.StackArray').
-hideFrom('bridge2.candidate.StackFIFO', 'bridge2.candidate.StackList').
-hideFrom('bridge2.candidate.StackHanoi', 'bridge2.candidate.StackArray').
-hideFrom('bridge2.candidate.StackHanoi', 'bridge2.candidate.StackList').
-
-%%hideScopeSetFrom(concreteImplementations, abstractions).
-hideFrom('bridge2.candidate.StackArray', 'bridge2.candidate.StackFIFO').
-hideFrom('bridge2.candidate.StackArray', 'bridge2.candidate.StackHanoi').
-hideFrom('bridge2.candidate.StackList', 'bridge2.candidate.StackFIFO').
-hideFrom('bridge2.candidate.StackList', 'bridge2.candidate.StackHanoi').
-
-%:-solve(_), halt. 
