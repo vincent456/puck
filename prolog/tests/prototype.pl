@@ -1,6 +1,3 @@
-%% :- use_module('../solver').
-%% :- discontiguous node/4, edge/3.
-
 node(0, package, 'prototype', '').
 node(1, package, 'candidate', '').
 edge(contains,0,1).
@@ -55,4 +52,6 @@ edge(contains,6,8).
 edge(isa,6,2).
 edge(uses,6,2).
 
-%:-solve(_), halt.
+node(18, class,'Creator','').
+edge(contains, 1, 18). 
+

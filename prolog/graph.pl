@@ -42,11 +42,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :- use_module(javaRules).
-:- reexport(javaRules,
+:- reexport(javaRules).
 %% :- use_module(sigmaRules).
-%% :- reexport(sigmaRules, 
-	    [abstract/6,
-	     abstract_type/2]).
+%% :- reexport(sigmaRules).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%        graph impl         %%%%%%%%%

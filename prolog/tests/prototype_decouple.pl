@@ -4,7 +4,9 @@ hideScopeSet(
      'prototype.candidate.Larry',
      'prototype.candidate.Moe']).
 
-isFriendOfScopeSet('prototype.candidate.PrototypeDemo.main__java.lang.String', 
+areFriendOfScopeSet(
+	['prototype.candidate.PrototypeDemo.main__java.lang.String', 
+	 'prototype.candidate.Creator'],
 		   ['prototype.candidate.Curly',
 		    'prototype.candidate.Moe',
 		    'prototype.candidate.Larry']).

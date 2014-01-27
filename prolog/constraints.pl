@@ -2,7 +2,9 @@
 	 [read_constraints/3,
 	  is_violation/3,
 	  collect_constraints/3,
-	  interloper/3]).
+	  collect_constraints/4,
+	  interloper/3,
+	  empty_constraint/1]).
 :-use_module(graph).
 
 %%% named set
@@ -85,6 +87,8 @@ normal_constraint((Befriended, [], [User]), _, isFriendOfScopeSet(User, Befriend
     member(Befriended, BefriendedSet).
 
 normal_constraint((Befriended, [], Users), _, areFriendOfScope(Users, Befriended)).
+normal_constraint((Befriended, [], Users), _, areFriendOfScopeSet(Users, BefriendedSet)):-
+    member(Befriended, BefriendedSet).
 
 %% TODO
 %%hide_scope_set
@@ -178,11 +182,13 @@ is_violation(UserId, UseeId, Graph):-
     collect_friends(HId, Ns, [], Fs), interloper(UserId, (Is, IsWF, Fs), Graph).
     
 
-collect_constraints_aux(no_parent, _, Cts, Cts).
-collect_constraints_aux(Id, G, (Is, IsWF, Fs), Cts):-
+collect_constraints(no_parent, _, Cts, Cts).
+collect_constraints(Id, G, (Is, IsWF, Fs), Cts):-
     get_node(Id, Node, G), constraint_of_node(Cts0, Node), container_of_node(CerId, Node),
-    (Cts0=no_constraint *-> collect_constraints_aux(CerId, G, (Is, IsWF, Fs), Cts);
+    (Cts0=no_constraint *-> collect_constraints(CerId, G, (Is, IsWF, Fs), Cts);
      Cts0=(Is0, IsWF0, Fs0), append(Is0, Is, Is1), append(IsWF0, IsWF, IsWF1), append(Fs0, Fs, Fs1),
-     collect_constraints_aux(CerId, G, (Is1, IsWF1, Fs1), Cts)).
+     collect_constraints(CerId, G, (Is1, IsWF1, Fs1), Cts)).
 
-collect_constraints(Id, G, Cts):- collect_constraints_aux(Id, G, ([],[],[]), Cts).
+collect_constraints(Id, G, Cts):- collect_constraints(Id, G, ([],[],[]), Cts).
+
+empty_constraint(([],[],[])).

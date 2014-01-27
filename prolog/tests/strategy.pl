@@ -1,6 +1,3 @@
-:- use_module('../solver').
-:- discontiguous node/4, edge/3, hideFrom/2, isFriendOf/2.
-
 node(0, package, 'strategy', '').
 node(1, package, 'candidate', '').
 edge(contains,0,1).
@@ -34,9 +31,3 @@ edge(contains,2,7).
 node(4, method, 'methodUnrelatedWithTheSorting', '__void').
 edge(contains,2,4).
 edge(contains,2,6).
-
-
-hideFrom('strategy.candidate.SortingContext.bubbleSort__@primitive.int', 'strategy.candidate.SortingContext').
-hideFrom('strategy.candidate.SortingContext.linearSort__@primitive.int', 'strategy.candidate.SortingContext').
-
-%:-solve(_), halt. 

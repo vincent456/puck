@@ -6,105 +6,83 @@
 pl2dot(File, Graph) :- pl2dot(File, Graph, []).
 
 pl2dot(File, G, V):- 
-    tell(File),
-    writeln('digraph G {'), %linux dotty parser doesn't accept anonym graph %'
-    writeln('rankdir=LR;'),
-    nodes2dot(G),
-    edges2dot(G),
-    violations2dot(V, G),
-    writeln('}'),
-    told.
+    open(File, write, Stream, []),
+    write(Stream, 'digraph G {\n'), %linux dotty parser doesn't accept anonym graph %'
+    write(Stream, 'rankdir=LR; ranksep=2;\n'),
+    nodes2dot(G, Stream),
+    edges2dot(G, Stream),
+    violations2dot(V, G, Stream),
+    write(Stream, '}\n'),
+    close(Stream).
 
-nodes2dot(G):- 
+nodes2dot(G, Stream):- 
     get_roots(Ids, G),
-    foldl(writeln_node, Ids, G, G).
+    foldl(writeln_node, Ids, (G, Stream), (G, Stream)).
 
-writeQuoted(Node):-
-    write('"'),
-    write(Node),
-    write('"').
+writeln_contains(Cee, (Cer, G, S), (Cer, G, S)):- writeln_edge((contains, Cer, Cee), (G,S), (G,S)).
 
-writeln_contains(Cee, (Cer, G), (Cer, G)):- writeln_edge((contains, Cer, Cee), G, G).
 
-hook(interface).
-hook(class).
-
-hooked(method).
-hooked(attribute).
-hooked(constructor).
-
-write_label(Id, (Nb, G), (Nb1, G)):-
+write_label(Id, (Nb, G, S), (Nb1, G, S)):-
     Nb1 is Nb +1,
-    write(' | <f'), write(Nb),write('> '), 
-    get_node(Id, (Id, (_,Name,_),_,_), G), write(Name), write(' ('),write(Id),write(')').
+    write(S, ' | <f'), write(S, Nb),write(S, '> '), 
+    get_node(Id, (Id, (_,Name,_),_,_), G), write(S, Name), write(S, ' ('),write(S, Id),write(S, ')').
 
-writeln_node(Id, G, G) :- 
+writeln_node(Id, (G, S), (G, S)) :- 
     get_node(Id, (Id, (Kind, Name,_), (_, Cees), _), G),
-    write(Id),
-    write(' [ label = '),
-    write('"<f0> '), 
-    write(Name), write(' ('),write(Id),write(')'),
-    (hook(Kind) *-> foldl(write_label, Cees, (1, G), (_, G)); true),
-    writeln('"'),
-    writeln(', shape = "record", style = filled, fillcolor = '),
-    nodeKind2fillColor(Kind, Color),
-    write(Color),
-    writeln(' ];'),
-    ( (hook(Kind); hooked(Kind)) *-> true; 
-      foldl(writeln_node, Cees, G, G),
-      foldl(writeln_contains, Cees, (Id, G), (_, G))).
+    write(S, Id),
+    write(S, ' [ label = '),
+    write(S, '"<f0> '), 
+    write(S, Name), write(S, ' ('),write(S, Id),write(S, ')'),
+    (hook(Kind) *-> foldl(write_label, Cees, (1, G, S), _); true),
+    write(S,'"\n'),
+    write(S, ', shape = "record", style = filled, fillcolor = '),
+    node_kind_to_fill_color(Kind, Color),
+    write(S, Color),
+    write(S, ' ];\n'),
+    ((hook(Kind); hooked(Kind)) *-> true; 
+      foldl(writeln_node, Cees, (G, S), (G, S)),
+      foldl(writeln_contains, Cees, (Id, G, S), (_, G, S))).
 	
 
-nodeKind2fillColor(virtualScope,'"#33FF33"').%Green
-nodeKind2fillColor(package,'"#FF9933"').%Orange
-nodeKind2fillColor(interface,'"#FFFF99"').%Light yellow
-nodeKind2fillColor(class,'"#FFFF33"').%Yellow
-
-nodeKind2fillColor(constructor,'"#FFFF33"').%yellow
-nodeKind2fillColor(method,'"#FFFFFF"').%White
-nodeKind2fillColor(attribute,'"#FFFFFF"').%White
-nodeKind2fillColor(stringLiteral,'"#CCFFCC"').%Very light green
 
 
-edges2dot((Ns, Us, Nb)):- foldl(writeln_edge, Us, (Ns, Us, Nb), (Ns, Us, Nb)).
-violations2dot(Vs, G):- foldl(writeln_violation, Vs, G, G).
+edges2dot((Ns, Us, Nb), S):- foldl(writeln_edge, Us, ((Ns, Us, Nb),S), _).
+violations2dot(Vs, G, S):- foldl(writeln_violation, Vs, (G,S), _).
 
-writeln_edge(Edge,G,G) :- writeln_edge_status(Edge, G, correct).
-writeln_violation(Edge,G,G) :- writeln_edge_status(Edge, G, incorrect).
+writeln_edge(Edge,(G,S),(G,S)) :- writeln_edge_status(Edge, G, correct, S).
+writeln_violation(Edge,(G,S),(G,S)) :- writeln_edge_status(Edge, G, incorrect, S).
 
-record_top(X):-hook(X).
-record_top(package).
 
-write_dot_id(Id, G):-
+write_dot_id(Id, G, S):-
     get_node(Id, N, G), type_of_node(T, N), 
-    (record_top(T) *-> write_dot_id_aux(Id, 0);
+    (record_top(T) *-> write_dot_id_aux(Id, 0,S);
      container_of_node(CerId, N),
      get_node(CerId, Cer, G), containees_of_node(Cees,Cer),
-     nth1(Nth, Cees, Id), write_dot_id_aux(CerId, Nth)).
+     nth1(Nth, Cees, Id), write_dot_id_aux(CerId, Nth, S)).
 
-write_dot_id_aux(Src, Nth):-write(Src), write(':f'), write(Nth).
+write_dot_id_aux(Src, Nth, Stream):-write(Stream, Src), write(Stream, ':f'), write(Stream, Nth).
 
-writeln_edge_status((Kind, Source, Target), G, Status) :- 
-    write_dot_id(Source, G),
-    write(' -> '),
-    write_dot_id(Target, G),
+writeln_edge_status((Kind, Source, Target), G, Status, Stream) :- 
+    write_dot_id(Source, G, Stream),
+    write(Stream, ' -> '),
+    write_dot_id(Target, G, Stream),
 
-    write(' [ style = '),
+    write(Stream, ' [ style = '),
     kind2style(Kind, Style),
-    write(Style),
+    write(Stream, Style),
 
-    write(', color = '),
+    write(Stream, ', color = '),
     status2Color(Status, Color),
-    write(Color),
+    write(Stream, Color),
 
-    write(', penwidth = '),
+    write(Stream, ', penwidth = '),
     status2thickness(Status, T),
-    write(T),
+    write(Stream, T),
     
-    write(', arrowhead = '),
+    write(Stream, ', arrowhead = '),
     kind2headStyle(Kind, HeadStyle),
-    write(HeadStyle),
-    writeln(' ];').
+    write(Stream, HeadStyle),
+    write(Stream, ' ];\n').
 
 status2Color(correct, black).
 status2Color(incorrect, red).
