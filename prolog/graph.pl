@@ -1,6 +1,5 @@
 :- module(graph, 
 	  [ 'contains*'/3,
-	    name_from_id/3,
 	    full_name_to_id/3,
 	    can_contain/2, 	 
 
@@ -26,13 +25,16 @@
 	    select_uses/4,
 	    select_contains/4,
 
-	    abstract_node/6, %exposed for javaRules and sigmaRules, the solver should use abstract/6
+	    abstract_node/4, %exposed for javaRules and sigmaRules, the solver should use abstract/6
+	    get_abstractions/3,
 	    
 	    %node getters
 	    name_of_node/2,
+	    namesig_of_node/2,
 	    type_of_node/2,
 	    container_of_node/2,
 	    containees_of_node/2,
+	    users_of_node/2,
 	    id_of_node/2,
 	    ids_to_use/3]).
 
@@ -66,9 +68,6 @@ can_contain(Cer, Cee):-
     type_of_node(CerType, Cer), type_of_node(CeeType,Cee),
     can_contain_type(CerType,CeeType).
 
-name_from_id(NodeId,NameSig, Graph):- 
-    get_node(NodeId, Node, Graph), name_of_node(NameSig, Node).
-
 'contains*'(X,Z, Graph) :- contains(Y,Z,Graph), 'contains*'(X,Y, Graph).
 'contains*'(X,X, Graph) :- get_node(X, _, Graph).
 
@@ -87,7 +86,8 @@ names_on_path(NodesIds, Names, Graph):-
 
 names_on_path([],Acc,Acc, _).
 names_on_path([NodeId|NodesIds],Acc, Names,Graph):- 
-    name_from_id(NodeId, Name, Graph),
+    get_node(NodeId, Node, Graph), 
+    namesig_of_node(Name, Node),
     names_on_path(NodesIds, [Name | Acc], Names, Graph).
 
 % Path to Node through scopes (Ids only)

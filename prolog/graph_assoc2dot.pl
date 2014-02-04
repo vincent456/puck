@@ -9,49 +9,68 @@ pl2dot(File, G, V):-
     open(File, write, Stream, []),
     write(Stream, 'digraph G {\n'), %linux dotty parser doesn't accept anonym graph %'
     write(Stream, 'rankdir=LR; ranksep=2;\n'),
-    nodes2dot(G, Stream),
-    edges2dot(G, Stream),
+    graph2dot(G, Stream),
     violations2dot(V, G, Stream),
     write(Stream, '}\n'),
     close(Stream).
 
-nodes2dot(G, Stream):- 
+graph2dot(G, Stream):- 
     get_roots(Ids, G),
     foldl(writeln_node, Ids, (G, Stream), (G, Stream)).
 
 writeln_contains(Cee, (Cer, G, S), (Cer, G, S)):- writeln_edge((contains, Cer, Cee), (G,S), (G,S)).
-
+writeln_uses(User, (Usee, G, S), (Usee, G, S)):- writeln_edge((uses, User, Usee), (G,S), (G,S)).
 
 write_label(Id, (Nb, G, S), (Nb1, G, S)):-
     Nb1 is Nb +1,
     write(S, ' | <f'), write(S, Nb),write(S, '> '), 
-    get_node(Id, (Id, (_,Name,_),_,_), G), write(S, Name), write(S, ' ('),write(S, Id),write(S, ')').
+    get_node(Id, (Id, (Kind,Name,_),_,_), G), write(S, Name), 
+    ((Kind=method; Kind=constructor) *-> write(S, '()'); true),
+    write(S, ' ('),write(S, Id),write(S, ')').
 
-writeln_node(Id, (G, S), (G, S)) :- 
-    get_node(Id, (Id, (Kind, Name,_), (_, Cees), _), G),
+writeln_hooked_node(Id, (G,S), (G,S)):-
+    get_node(Id, (Id, _, (_, _, Users), _), G),
+    foldl(writeln_uses, Users, (Id, G, S), _).
+
+writeln_node(Id, (G, S), (G, S)):-
+    get_node(Id, N, G),
+    type_of_node(Kind, N),
+    name_of_node(Name,N),
+    containees_of_node(Cees, N),
+    users_of_node(Users, N),
+    (subgraph(Kind) *-> writeln_subgraph((Id,Kind,Name,Cees, Users), (G,S));
+     (hook(Kind)*-> writeln_hook((Id,Kind,Name,Cees, Users), (G,S)); false)).
+	    
+writeln_subgraph((Id,Kind,Name,Cees, Users) , (G,S)):-
+    write(S, 'subgraph cluster'), write(S, Id), write(S, ' {\n'),
+    write(S, 'label= "\\<\\<'), write(S, Kind), write(S, '\\>\\> '), write(S, Name), write(S,' ";\n'),
+    write(S, 'color=black;\n'),	
+    foldl(writeln_node, Cees, (G, S), _), 
+    write(S,'}\n'),
+    foldl(writeln_uses, Users, (Id, G, S), _).
+
+
+writeln_hook( (Id,Kind,Name,Cees, Users), (G, S)) :- 
     write(S, Id),
-    write(S, ' [ label = '),
-    write(S, '"<f0> '), 
+    write(S, ' [ label = "<f0> \\<\\<'),
+    write(S, Kind),
+    write(S,'\\>\\> '),
     write(S, Name), write(S, ' ('),write(S, Id),write(S, ')'),
-    (hook(Kind) *-> foldl(write_label, Cees, (1, G, S), _); true),
+    (hook(Kind)*-> foldl(write_label, Cees, (1, G, S), _); true),
     write(S,'"\n'),
     write(S, ', shape = "record", style = filled, fillcolor = '),
     node_kind_to_fill_color(Kind, Color),
     write(S, Color),
     write(S, ' ];\n'),
-    ((hook(Kind); hooked(Kind)) *-> true; 
-      foldl(writeln_node, Cees, (G, S), (G, S)),
-      foldl(writeln_contains, Cees, (Id, G, S), (_, G, S))).
-	
+    (hook(Kind) *-> foldl(writeln_hooked_node, Cees, ( G, S), _);
+     foldl(writeln_node, Cees, (G, S), _), 
+     foldl(writeln_contains, Cees, (Id, G, S), _)),
+    foldl(writeln_uses, Users, (Id, G, S), _).
 
-
-
-edges2dot((Ns, Us, Nb), S):- foldl(writeln_edge, Us, ((Ns, Us, Nb),S), _).
 violations2dot(Vs, G, S):- foldl(writeln_violation, Vs, (G,S), _).
 
 writeln_edge(Edge,(G,S),(G,S)) :- writeln_edge_status(Edge, G, correct, S).
 writeln_violation(Edge,(G,S),(G,S)) :- writeln_edge_status(Edge, G, incorrect, S).
-
 
 write_dot_id(Id, G, S):-
     get_node(Id, N, G), type_of_node(T, N), 

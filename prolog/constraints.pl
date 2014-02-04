@@ -51,7 +51,7 @@ decorate_graph_aux(Id-Ct, Ns, NewNs):-
     get_assoc(Id, Ns, (Id, Desc, Edges, no_constraint)),
     put_assoc(Id, Ns, (Id, Desc, Edges, Ct), NewNs).
 
-decorate_graph(CtsAssoc, (Ns, Us, Nb), (NewNs, Us, Nb)):-
+decorate_graph(CtsAssoc, (Ns, AbsAssoc, Nb), (NewNs, AbsAssoc, Nb)):-
     assoc_to_list(CtsAssoc, CtsList),
     foldl(decorate_graph_aux, CtsList, Ns, NewNs).
 
@@ -82,6 +82,11 @@ normal_constraint((S, [Root], []), Root, hideScope(S)).
 normal_constraint((S, [Root], []), Root, hideScopeSet(ScopeSet)):-
     member(S,ScopeSet).
 
+normal_constraint((S, Interlopers, Friends), _, hideScope(S, Interlopers, Friends)).
+normal_constraint((S, Interlopers, Friends), _, hideScopeSet(ScopeSet, Interlopers, Friends)):-
+    member(S,ScopeSet).
+
+
 normal_constraint((Befriended, [], [User]), _, isFriendOfScope(User, Befriended)).
 normal_constraint((Befriended, [], [User]), _, isFriendOfScopeSet(User, BefriendedSet)):-
     member(Befriended, BefriendedSet).
@@ -90,9 +95,6 @@ normal_constraint((Befriended, [], Users), _, areFriendOfScope(Users, Befriended
 normal_constraint((Befriended, [], Users), _, areFriendOfScopeSet(Users, BefriendedSet)):-
     member(Befriended, BefriendedSet).
 
-%% TODO
-%%hide_scope_set
-
 %%%
 %%(hidee, interloper list, (interloper * friend) list, friend, %% hideeAncestorConstraint, hideeDescendantConstraint)
 %%%%%%%%%%%%%%%
@@ -100,10 +102,13 @@ normal_constraint((Befriended, [], Users), _, areFriendOfScopeSet(Users, Befrien
 non_empty_list([]):- !, false.
 non_empty_list(L):- is_list(L).
 
+%% empty constraint, do nothing
+add_constraint((_, [], []), CtsAssoc, CtsAssoc):-!.
+
 add_constraint((HideeID, Interlopers, []), CtsAssoc, NewCtsAssoc):-
-    get_assoc(HideeID, CtsAssoc, (OldInterlopers, InterlopersWithFriends, Friends))
+    get_assoc(HideeID, CtsAssoc, (OldInterlopers, IsWFs, Friends))
 	     *-> append(Interlopers, OldInterlopers, Is), %% make it a set ??
-    put_assoc(HideeID, CtsAssoc, (Is, InterlopersWithFriends, Friends), NewCtsAssoc);
+    put_assoc(HideeID, CtsAssoc, (Is, IsWFs, Friends), NewCtsAssoc);
     put_assoc(HideeID, CtsAssoc, (Interlopers,[], []), NewCtsAssoc).
 
 add_constraint((BefriendedID, [], Friends), CtsAssoc, NewCtsAssoc):-
@@ -111,7 +116,6 @@ add_constraint((BefriendedID, [], Friends), CtsAssoc, NewCtsAssoc):-
 	     *-> append(Friends, OldFs, Fs),
     put_assoc(BefriendedID, CtsAssoc, (Is, IsWF, Fs), NewCtsAssoc);
     put_assoc(BefriendedID, CtsAssoc, ([], [], Friends), NewCtsAssoc).
-
 
 add_constraint((ScopeID, Interlopers,Friends), CtsAssoc, NewCtsAssoc):-
     non_empty_list(Interlopers), non_empty_list(Friends),
@@ -142,23 +146,23 @@ constraint_of_node(Ct, (_,_,_, Ct)).
 
 find_constraint_node(no_parent, _, _):- !, fail.
 
-find_constraint_node(Id, Ns, Hn):-
-    get_assoc(Id, Ns, N), 
+find_constraint_node(Id, G, Hn):-
+    get_node(Id, N, G), 
     (constraint_of_node(no_constraint, N) *->
-		       container_of_node(Cer, N), find_constraint_node(Cer, Ns, Hn);
+		       container_of_node(Cer, N), find_constraint_node(Cer, G, Hn);
      Hn= N).
 
 %%
 
 collect_friends(no_parent, _, Fs, Fs).
 
-collect_friends(Id, Ns, Fs1, Fs):-
-    get_assoc(Id, Ns, N), constraint_of_node(no_constraint, N),
-    container_of_node(Cer, N), collect_friends(Cer, Ns, Fs1, Fs).
+collect_friends(Id, G, Fs1, Fs):-
+    get_node(Id, N, G), constraint_of_node(no_constraint, N),
+    container_of_node(Cer, N), collect_friends(Cer, G, Fs1, Fs).
 
-collect_friends(Id, Ns, Fs1, Fs):-
-    get_assoc(Id, Ns, N), constraint_of_node((_,_, Fs2), N), append(Fs2, Fs1, Fs3),
-    container_of_node(Cer, N), collect_friends(Cer, Ns, Fs3, Fs).
+collect_friends(Id, G, Fs1, Fs):-
+    get_node(Id, N, G), constraint_of_node((_,_, Fs2), N), append(Fs2, Fs1, Fs3),
+    container_of_node(Cer, N), collect_friends(Cer, G, Fs3, Fs).
 
 %%
 
@@ -176,10 +180,9 @@ interloper(Id, (Is, IsWF, Fs), Graph):-
 
 
 is_violation(UserId, UseeId, Graph):- 
-    (Ns, _, _)=Graph,
-    find_constraint_node(UseeId, Ns, HNode),
+    find_constraint_node(UseeId, Graph, HNode),
     id_of_node(HId, HNode), constraint_of_node((Is, IsWF, _), HNode), 
-    collect_friends(HId, Ns, [], Fs), interloper(UserId, (Is, IsWF, Fs), Graph).
+    collect_friends(HId, Graph, [], Fs), interloper(UserId, (Is, IsWF, Fs), Graph).
     
 
 collect_constraints(no_parent, _, Cts, Cts).

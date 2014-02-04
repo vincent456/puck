@@ -1,7 +1,10 @@
 :-module(javaRules, 
 	 [can_contain_type/2,
-	  abstract/7,
+	  abstract/5,
 	  abstract_type/2,
+	  violations_node_type_priority/1,
+	  %%%% printing predicates
+	  subgraph/1,
 	  hook/1,
 	  hooked/1,
 	  record_top/1,
@@ -29,27 +32,27 @@ abstract_type(attribute, method).
 abstract_type(method, method). %% methodImpl methodSig ??
 abstract_type(constructor, method).
 
-abstract_method_list([], _, Graph, AbsAssocs, Graph, AbsAssocs).
-abstract_method_list([M|ML], InterfaceId, Graph, AbsAssocs, NewGraph, NewAbsAssocs):-
-    abstract_node(M, Graph, AbsAssocs, Abs, G2, AA2),
+abstract_method_list([], _, Graph, Graph).
+abstract_method_list([M|ML], InterfaceId, Graph, NewGraph):-
+    abstract_node(M, Graph, Abs, G2),
     id_of_node(AbsId, Abs),
     put_contains(InterfaceId, AbsId, G2, G3),
-    abstract_method_list(ML, InterfaceId, G3, AA2, NewGraph, NewAbsAssocs).
+    abstract_method_list(ML, InterfaceId, G3, NewGraph).
     
 %%%%%%%%%%%%%
 %% (+Node, +Graph, +AbsAssoc
 %% -Abs, -UseeId, -NewGraph, - NewAbsAssoc
-abstract(Node, GraphIn, AbstractAssoc, Abs, NodeId, G3, AbstractAssocOut):-
+abstract(Node, GraphIn, Abs, NodeId, G3):-
     type_of_node(Type, Node), id_of_node(NodeId, Node),
     \+abstract_type(Type, interface),
-    abstract_node(Node, GraphIn, AbstractAssoc, Abs, G2, AbstractAssocOut),
+    abstract_node(Node, GraphIn, Abs, G2),
     id_of_node(AbsId, Abs), put_uses(AbsId, NodeId, G2, G3).
 
-abstract(Node, GraphIn, AbstractAssoc, Abs, AbsId, G4, AbstractAssocOut):-
+abstract(Node, GraphIn, Abs, AbsId, G4):-
     type_of_node(Type, Node), id_of_node(NodeId, Node),
     abstract_type(Type, interface),
 	    
-    abstract_node(Node, GraphIn, AbstractAssoc, Abs, G2, AA2),
+    abstract_node(Node, GraphIn, Abs, G2),
     
     id_of_node(AbsId, Abs),  put_uses(NodeId, AbsId, G2, G3),
     
@@ -59,10 +62,15 @@ abstract(Node, GraphIn, AbstractAssoc, Abs, AbsId, G4, AbstractAssocOut):-
 	     get_node(MId, M, GraphIn)), 
 	    Methods),
     
-    abstract_method_list(Methods, AbsId, G3, AA2, G4, AbstractAssocOut).
+    abstract_method_list(Methods, AbsId, G3, G4).
 
+%%%%%
+
+violations_node_type_priority([class, interface]).
 
 %%%% printing predicates
+
+subgraph(package).
 
 hook(interface).
 hook(class).
