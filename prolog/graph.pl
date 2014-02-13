@@ -1,16 +1,18 @@
 :- module(graph, 
 	  [ 'contains*'/3,
+	    'isa*'/3,
 	    full_name_to_id/3,
 	    can_contain/2, 	 
 
 	    %% graph_impl interface
 	    find_graph/1,
-	    read_graph/2,
+	    graph_read/2,
 	    get_node/3, %get a node from a known id
 	    gen_node/3,%select randomly a node
 	    contains/3,
 	    uses/3,
-	    
+	    isa/3,
+
 	    get_roots/2,
 	    root/2,
 	    leaf/2,
@@ -27,18 +29,23 @@
 
 	    abstract_node/4, %exposed for javaRules and sigmaRules, the solver should use abstract/6
 	    get_abstractions/3,
-	    
+	    add_abstraction/4,
+
 	    %node getters
 	    name_of_node/2,
 	    namesig_of_node/2,
+	    kind_of_node/2,
 	    type_of_node/2,
 	    container_of_node/2,
 	    containees_of_node/2,
 	    users_of_node/2,
+	    super_types_of_node/2,
+	    sub_types_of_node/2,
 	    id_of_node/2,
 	    ids_to_use/3]).
 
-
+:- use_module(typing).
+:-reexport(typing).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%  language specific rules %%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -62,14 +69,17 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 get_roots(Ids, G):-
-    findall(Id, (is_root(N), gen_node(Id,N,G)), Ids).
+    findall(Id, (is_root(N), gen_node(Id, G, N)), Ids).
 
 can_contain(Cer, Cee):- 
-    type_of_node(CerType, Cer), type_of_node(CeeType,Cee),
-    can_contain_type(CerType,CeeType).
+    kind_of_node(CerType, Cer), kind_of_node(CeeType,Cee),
+    can_contain_kind(CerType,CeeType).
 
 'contains*'(X,Z, Graph) :- contains(Y,Z,Graph), 'contains*'(X,Y, Graph).
-'contains*'(X,X, Graph) :- get_node(X, _, Graph).
+'contains*'(X,X, Graph) :- get_node(X, Graph, _).
+
+'isa*'(X, Z, Graph):- isa(X, Y, Graph), 'isa*'(Y, Z, Graph).
+'isa*'(X, X, Graph) :- get_node(X, Graph, _).
 
 %%%%%%%%%%%%%%%%
 
@@ -86,8 +96,7 @@ names_on_path(NodesIds, Names, Graph):-
 
 names_on_path([],Acc,Acc, _).
 names_on_path([NodeId|NodesIds],Acc, Names,Graph):- 
-    get_node(NodeId, Node, Graph), 
-    namesig_of_node(Name, Node),
+    namesig(Graph, NodeId, Name),
     names_on_path(NodesIds, [Name | Acc], Names, Graph).
 
 % Path to Node through scopes (Ids only)

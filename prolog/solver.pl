@@ -3,7 +3,8 @@
 	 [solve/2,
 	  find_violations/3,
 	  solver_read/3,
-	  solver_read_and_solve/2]).
+	  solver_read_and_solve/2,
+	  solver_read_and_print_violations/1]).
 
 :-use_module(library(assoc)).
 :-use_module(graph).
@@ -12,7 +13,7 @@
 :-reexport(constraints).
 
 solver_read(GraphFile, ConstraintFile, Graph):-
-    read_graph(GraphFile, G), read_constraints(ConstraintFile, G, Graph),!.
+    graph_read(GraphFile, G), read_constraints(ConstraintFile, G, Graph),!.
 
 solver_read_and_solve(BaseName, G3):-
     atomic_list_concat([BaseName, '.pl'], GFile),
@@ -23,12 +24,19 @@ solver_read_and_solve(BaseName, G3):-
     find_violations(G, Vs, G2), pl2dot(BeforeFile, G2, Vs),
     solve(G, G3), pl2dot(AfterFile, G3).
 
+solver_read_and_print_violations(BaseName):-
+    atomic_list_concat([BaseName, '.pl'], GFile),
+    atomic_list_concat([BaseName, '_decouple.pl'], DecoupleFile),
+    atomic_list_concat([BaseName, '.dot'], DotFile),
+    solver_read(GFile, DecoupleFile, G),
+    find_violations(G, Vs, G2), pl2dot(DotFile, G2, Vs).
+
 excluded(Id, List, Value):- get_assoc(Id,List,Value).
 excluded(Id, List, []):- \+get_assoc(Id,List,_).
 
 gen_container_id(Node, HostId, Graph):-
     can_contain(Host, Node),
-    gen_node(HostId, Host, Graph), 
+    gen_node(HostId, Graph, Host), 
     Host\=Node.
 
 %%%
@@ -67,20 +75,32 @@ usee_host(Abs, RealId, GraphIn, GraphOut):-
     put_contains(HostId, AbsId, GraphIn, GraphOut).
 
 
+valid_super_type(GraphIn, NodeId, GraphOut) :-
+    subtype(GraphIn, NodeId, SuperId),
+    NodeId\=SuperId,
+    
+    collect_constraints(SuperId, GraphIn, Cts),
+
+    (empty_constraint(Cts);
+     forall((uses(UserId, NodeId, GraphIn), is_violation(UserId, NodeId, GraphIn)),
+	    \+interloper(UserId, Cts, GraphIn))),
+
+    add_abstraction(NodeId, SuperId, GraphIn, GraphOut).
+
 %%
 %%intro(+Graph, +Violation, +RuleViolated, +AbsAssocs,
 %%         -GraphOut, -AbsAssocs).
 %%
 intro(GraphIn, NodeId, GraphOut):- 
     %if alreadey abstracted, do not recreate it
-    get_abstractions(NodeId, _, GraphIn) *-> GraphOut=GraphIn;
-    
-    (get_node(NodeId, Node, GraphIn), 
-     abstract(Node, GraphIn, Abs, UseeId, GraphOut1),
+    get_node(NodeId, GraphIn, Node), 
      
+    abstract(Node, GraphIn, Abs, UseeId, GraphOut1),
+     
+    %%find host for newly created abstraction
     %%if UseeId = AbsId
-     (id_of_node(UseeId, Abs) *-> usee_host(Abs, NodeId, GraphOut1, GraphOut);
-      user_host(Abs, NodeId, GraphOut1, GraphOut))).
+    (id_of_node(UseeId, Abs) *-> usee_host(Abs, NodeId, GraphOut1, GraphOut);
+     user_host(Abs, NodeId, GraphOut1, GraphOut)).
 
 
 redirect_to_abs_aux((UserId, UseeId) , GraphIn, GraphOut) :-
@@ -96,7 +116,9 @@ redirect_to_abs(UsesList, GraphIn, GraphOut):-
 %%the input graph has already the uses (UserId,UseeId) removed
 fold(UserId, UseeId, GraphIn, GraphOut2) :- 
     
-    intro(GraphIn, UseeId, GraphOut1),
+    (get_abstractions(UseeId, _, GraphIn) *-> GraphOut1=GraphIn;
+     (valid_super_type(GraphIn, UseeId, GraphOut1);
+      intro(GraphIn, UseeId, GraphOut1))),
 
     %% when redirecting a use from a class toward an interface,
     %% we need to redirect all method uses,
@@ -109,6 +131,8 @@ fold(UserId, UseeId, GraphIn, GraphOut2) :-
 	     'contains*'(UseeId, UseeDescId,GraphIn),
 	     uses(UserDescId, UseeDescId, GraphIn)), DescUses),
     redirect_to_abs(DescUses, GraphOut1, GraphOut2).
+%% il faut trouver tout 
+
 
 %%
 %%solve(+GraphIn, +Constraints, -GraphOut)
@@ -136,12 +160,12 @@ solve(GraphIn, Priority, NumCall, GraphOut) :-
 prioritized_violation([], [], UserId, UseeId, G):-!, violation(UserId, UseeId, G).
 
 prioritized_violation([P|Priority], [P|Priority], UserId, UseeId, G):-
-    type_of_node(P, Usee),
-    gen_node(UseeId, Usee, G), 
+    kind_of_node(P, Usee),
+    gen_node(UseeId, G, Usee), 
     violation(UserId, UseeId, G).
 
 prioritized_violation([P|Priority], PriorityOut, UserId, UseeId, G):-
-    forall((type_of_node(P, Usee), gen_node(UseeId0, Usee, G)),
+    forall((kind_of_node(P, Usee), gen_node(UseeId0, G, Usee)),
 	    \+violation(_, UseeId0, G)), prioritized_violation(Priority, PriorityOut, UserId, UseeId, G).
 
 

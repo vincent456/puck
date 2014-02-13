@@ -1,7 +1,7 @@
 :-module(sigmaRules, 
-       [can_contain_type/2,
+       [can_contain_kind/2,
 	abstract/6,
-	abstract_type/2,
+	abstract_kind/2,
 	violations_node_type_priority/1,
 	
 	hook/1,
@@ -10,10 +10,10 @@
 	node_kind_to_fill_color/2]).
 :-use_module(graph).
 
-can_contain_type(object, object).
-can_contain_type(object, method).
+can_contain_kind(object, object).
+can_contain_kind(object, method).
 
-abstract_type(object, object).
+abstract_kind(object, object).
 
 abstract(Node, GraphIn, AbstractAssoc, Abs, G3, AbstractAssocOut):-
     abstract_node(Node, GraphIn, AbstractAssoc, Abs, G2, AbstractAssocOut),

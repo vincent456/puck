@@ -14,10 +14,10 @@ select_node(NodeId, node(NodeId, Ntype, Nname, Nsig), graph(N,C,U), graph(NewN,C
 
 id_of_node(NodeId, node(NodeId,_,_,_)).
     
-name_of_node(NameSig, node(_,_,Name,Signature)):-
+namesig_of_node(NameSig, node(_,_,Name,Signature)):-
     atom_concat(Name,Signature,NameSig).
 
-type_of_node(Type, node(_,Type, _,_)).
+kind_of_node(Type, node(_,Type, _,_)).
 
 uses(UserId, UseeId, graph(_,_,U)):-
     member(edge(uses,UserId, UseeId), U).
@@ -42,7 +42,7 @@ ids_to_use(SourceId, TargetId, edge(uses,SourceId, TargetId)).
 
 abstract_node(node(NodeId, Type, Name, Sig), graph(N,C,U), AbsAssocs, 
 	      Abs, graph([ Abs | N ], C, U), NewAbsAssocs):-
-    abstract_type(Type, AbsType), 
+    abstract_kind(Type, AbsType), 
     atomic_concat('abstract_', Name, AbsName),
     length(N, AbsId),
     Abs=node(AbsId, AbsType, AbsName, Sig),
