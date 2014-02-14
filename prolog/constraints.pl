@@ -7,62 +7,29 @@
 	  empty_constraint/1]).
 :-use_module(graph).
 
-%%% named set
+fold_cts_fn_to_id(Graph, Imports, CtFN, List, [CtID | List]):-
+    constraint_full_name_to_id(Graph, Imports, CtFN, CtID).
 
-% gMember(A,B):- member(A,B).
-% gMember(A,B):- declaredMember(A,B).
-
-% gSelect(A,B,C) :- select(A,B,C).
-% gSelect(A,B,C) :- selectedMember(A,B,C).
-
-% declaredMember(Element, SetName):- declareSet(SetName, Set),
-%				    member(Element, Set).
-
-% declaredMember(Element, UnionName) :- declareSetUnion(UnionName, SetList),
-%				      member(Set, SetList), gMember(Element, Set).
-
-% declaredMember(Element, SetName):- collectSubtypesOf(SuperType, SetName),
-%	'isa+'(Element, SuperType).
-
-% selectedMember(Element, ListName, OtherElements) :-
-%	bagof(E,declaredMember(E, ListName), List), select(Element, List, OtherElements).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-fold_cts_fn_to_id(Graph, CtFN, List, [CtID | List]):-
-    constraint_full_name_to_id(CtFN, CtID, Graph).
-
-read_constraint0(SetDefs, Cts, declareSet(Name,Values), NewSetDefs, Cts):-
+read_constraint0((SetDefs, Imports, Cts), declareSet(Name,Values), (NewSetDefs, Imports, Cts)):-
     put_assoc(Name, SetDefs, Values, NewSetDefs),!.
-read_constraint0(SetDefs, Cts, Ct, SetDefs, [Ct|Cts]).
 
-read_constraints_aux(Stream, SetsDefsAcc, CtsAcc, SetsDefs, Cts):-
+read_constraint0((SetDefs, Imports, Cts), java_import(Values), (SetDefs, NewImports, Cts)):-
+    append(Values, Imports, NewImports),!.
+
+read_constraint0((SetDefs, Imports, Cts), Ct, (SetDefs, Imports, [Ct|Cts])).
+
+read_constraints_aux(Stream, CtsIn, CtsOut):-
 	read_term(Stream, T, []), 
-	(T=end_of_file *-> Cts=CtsAcc, SetsDefs=SetsDefsAcc;
-	 read_constraint0(SetsDefsAcc, CtsAcc, T , SetsDefsAcc2, CtsAcc2),
-	 read_constraints_aux(Stream, SetsDefsAcc2, CtsAcc2, SetsDefs, Cts)).
+	(T=end_of_file *-> CtsIn=CtsOut;
+	 read_constraint0(CtsIn, T , CtsOut0),
+	 read_constraints_aux(Stream, CtsOut0, CtsOut)).
 
-normalize_constraints_aux(Graph, SetDefs, RootFN, Ct, CtsAcc, CtsAcc2):-
+normalize_constraints_aux(Graph, Imports, SetDefs, RootFN, Ct, CtsAcc, CtsAcc2):-
     findall(NCt, normal_constraint(NCt, RootFN, SetDefs, Ct),NCts0),
-    foldl(call(fold_cts_fn_to_id(Graph)), NCts0, CtsAcc, CtsAcc2).
+    foldl(call(fold_cts_fn_to_id(Graph, Imports)), NCts0, CtsAcc, CtsAcc2).
 
-normalize_constraints(Graph, SetDefs, RootFN, Cts, NCts):-
-    foldl(call(normalize_constraints_aux(Graph, SetDefs, RootFN)), Cts, [], NCts).
-
-%% read_constraints_aux(Stream, RootFN, Graph, CtAcc, Cts):-
-%% 	read_term(Stream, T, []), 
-%% 	(T=end_of_file *-> Cts=CtAcc;
-%% 	 findall(NCt, normal_constraint(NCt, RootFN, T),NCts),
-%% 	 foldl(call(fold_cts_fn_to_id(Graph)), NCts, CtAcc, CtAcc2),
-%% 	 read_constraints_aux(Stream, RootFN, Graph, CtAcc2, Cts)).
-
-
-%% it's not satisfactory to translate rootId to its fullname to make the translation the other way
-%% in read_constraints_aux, but I don't find any more satisfying solution
-%% either the translation would have to be done in normal_constraint, (and then, it has to be written numerous time)
-%% either a test can be add in full_name_to_id
-%% anyway the root has a short name so the translation is not too costly
+normalize_constraints(Graph, Imports, SetDefs, RootFN, Cts, NCts):-
+    foldl(call(normalize_constraints_aux(Graph, Imports, SetDefs, RootFN)), Cts, [], NCts).
 
 decorate_graph_aux(Id-Ct, Ns, NewNs):-
     get_assoc(Id, Ns, (Id, Desc, Edges, no_constraint)),
@@ -73,11 +40,11 @@ decorate_graph(CtsAssoc, (Ns, AbsAssoc, Nb), (NewNs, AbsAssoc, Nb)):-
     foldl(decorate_graph_aux, CtsList, Ns, NewNs).
 
 read_constraints(FileName, GraphIn, GraphOut):-
-    get_roots([RootID], GraphIn), full_name_to_id(RootFN, RootID, GraphIn),
+    get_roots([RootID], GraphIn), full_name_to_id(GraphIn, RootFN, RootID),
     open(FileName, read, Stream),
     empty_assoc(SetDefs0),
-    read_constraints_aux(Stream, SetDefs0, [], SetDefs, CtList),
-    normalize_constraints(GraphIn, SetDefs, RootFN, CtList, NCtList),
+    read_constraints_aux(Stream, (SetDefs0, [], []), (SetDefs, Imports, CtList)),
+    normalize_constraints(GraphIn, Imports, SetDefs, RootFN, CtList, NCtList),
     close(Stream),
     group_constraints(NCtList, CtsAssoc),
     decorate_graph(CtsAssoc, GraphIn, GraphOut),!.
@@ -147,6 +114,10 @@ normal_constraint((Befriended, [], UsersDef), _, SetDefs, areFriendOfScopeSet(Us
 non_empty_list([]):- !, false.
 non_empty_list(L):- is_list(L).
 
+rev_append_aux(X, Ys, [X| Ys]).
+
+rev_append(L1, L2, L3):- foldl(rev_appends_aux, L1, L2, L3).
+
 %% empty constraint, do nothing
 add_constraint((_, [], []), CtsAssoc, CtsAssoc):-!.
 
@@ -173,16 +144,15 @@ group_constraints(CtList, Assoc) :-
 
 %%%%%%%%%%%
 
-list_full_name_to_ids_aux(Graph, FName, IdList, [Id | IdList]):-
-    full_name_to_id(FName, Id, Graph).
+full_name_to_id_with_imports(Graph, _, FN, ID):- full_name_to_id(Graph, FN, ID),!.
+full_name_to_id_with_imports(Graph, Imports, LocalName, ID):- 
+    member(Package, Imports), atomic_list_concat([Package, '.', LocalName], FN),
+    full_name_to_id(Graph, FN, ID),!.
 
-list_full_name_to_ids(FNList, IDList, Graph) :-
-    foldl(call(list_full_name_to_ids_aux(Graph)), FNList, [], IDList).
-
-constraint_full_name_to_id((SFN, InterlopersFN, FriendsFN), (SID, InterlopersID, FriendsID), Graph):-
-			   full_name_to_id(SFN, SID, Graph),
-			   list_full_name_to_ids(InterlopersFN, InterlopersID, Graph),
-			   list_full_name_to_ids(FriendsFN, FriendsID, Graph).
+constraint_full_name_to_id(Graph, Imports, (SFN, InterlopersFN, FriendsFN), (SID, InterlopersID, FriendsID)):-
+			   full_name_to_id_with_imports(Graph, Imports, SFN, SID),
+			   maplist(call(full_name_to_id_with_imports(Graph, Imports)), InterlopersFN, InterlopersID),
+			   maplist(call(full_name_to_id_with_imports(Graph, Imports)), FriendsFN, FriendsID).
 
 
 %%%%%%%%%%%%%%%%

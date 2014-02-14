@@ -13,22 +13,24 @@
 
 id_of_node(Id, (Id,_,_,_)).
     
-
 sig_string(G, tuple(ParamsIds), Str):-
-    !,maplist(call(type_name_to_id(G)), ParamsNames, ParamsIds), 
+    !,maplist(call(type_name_to_id(G)), ParamsNames0, ParamsIds), 
+    maplist(full_name_to_local_name, ParamsNames0, ParamsNames),
     atomic_list_concat(ParamsNames,'_', Str). 
     
-sig_string(G, ParamId, Str):- type_name_to_id(G, Str, ParamId).
+sig_string(G, ParamId, Str):- 
+    type_name_to_id(G, Str0, ParamId), 
+    full_name_to_local_name(Str0, Str).
 
-name_sig(G, Name, arrow(ParamsIds,_), Kind, NameSig):-
+namesig0(G, Name, arrow(ParamsIds,_), Kind, NameSig):-
     !,(Kind=method, Sep='__'; Kind=constructor, Sep='#_'),
     sig_string(G, ParamsIds, Ps), atomic_list_concat([Name, Sep, Ps], NameSig).
 
-name_sig(_,Name, _, _, Name).
+namesig0(_,Name, _, _, Name).
 
 namesig(G, NodeId, NameSig):-
     get_node(NodeId, G, (_,(Kind, Name, Type),_,_)), 
-    name_sig(G, Name, Type, Kind, NameSig).
+    namesig0(G, Name, Type, Kind, NameSig).
 
 namesig_of_node(Name, (_,(_,Name,_),_,_)):-!.
 

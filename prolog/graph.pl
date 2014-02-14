@@ -84,20 +84,14 @@ can_contain(Cer, Cee):-
 %%%%%%%%%%%%%%%%
 
 %% a cache can be added in the graph ...
-full_name_to_id(FullName, NodeId, Graph):- 
-		path_to_node(NodeId,Path, Graph),
-		names_on_path(Path, Names, Graph),
+full_name_to_id(Graph, FullName, NodeId):- 
+		path_to_node(NodeId, IdPath, Graph),
+		maplist(call(namesig(Graph)), IdPath, Names),
 		atomic_list_concat(Names,'.',FullName).
 
-%%%%%%%%%%%%
-
-names_on_path(NodesIds, Names, Graph):- 
-    names_on_path(NodesIds, [], RevNames, Graph), reverse(RevNames, Names).
-
-names_on_path([],Acc,Acc, _).
-names_on_path([NodeId|NodesIds],Acc, Names,Graph):- 
-    namesig(Graph, NodeId, Name),
-    names_on_path(NodesIds, [Name | Acc], Names, Graph).
+full_name_to_local_name(FullName, LocalName):-
+    atomic_list_concat(Names,'.',FullName),
+    last(Names, LocalName).
 
 % Path to Node through scopes (Ids only)
 path_to_node(Node,Path, Graph):- path(Node,[],Path, Graph).

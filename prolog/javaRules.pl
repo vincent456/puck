@@ -92,7 +92,7 @@ type_name_to_id(_, 'int[]', -12).
 type_name_to_id(G, tuple(Names), tuple(Ids)):- maplist(call(type_name_to_id(G)), Names, Ids).
 type_name_to_id(G, arrow(N1, N2), arrow(Id1, Id2)):- 
     type_name_to_id(G, N1, Id1), type_name_to_id(G, N2, Id2).
-type_name_to_id(G, CoI, Id):- full_name_to_id(CoI, Id, G).
+type_name_to_id(G, CoI, Id):- full_name_to_id(G, CoI, Id).
 
 
 instance_type_aux(G, NodeId, Sigs, Sigs):- 
