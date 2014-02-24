@@ -53,7 +53,7 @@ sub_types_of_node(Sub, (_,_,(_,_,_, _, Sub),_)).
 %%%%%
 
     
-create_node(Id, Type, Name, Sig, (Id, (Type, Name, Sig), (no_parent, [],[]), no_constraint)).
+create_node(Id, Type, Name, Sig, (Id, (Type, Name, Sig), (no_parent, [],[], [], []), no_constraint)).
 
 set_container((Id, Desc, (_, Cee, Users, Sup, Sub), Ct), Cer, (Id, Desc, (Cer, Cee, Users, Sup, Sub), Ct)).
 

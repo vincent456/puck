@@ -1,12 +1,8 @@
+java_import(['prototype.candidate']).
 
-hideScopeSet(
-    ['prototype.candidate.Curly',
-     'prototype.candidate.Larry',
-     'prototype.candidate.Moe']).
+declareSet(prototypes,['Curly', 'Larry', 'Moe']).
+hideScopeSet(prototypes).
 
 areFriendOfScopeSet(
-	['prototype.candidate.PrototypeDemo.main__String[]', 
-	 'prototype.candidate.Creator'],
-		   ['prototype.candidate.Curly',
-		    'prototype.candidate.Moe',
-		    'prototype.candidate.Larry']).
+	['PrototypeDemo.main__String[]', 'Creator'],
+	prototypes).

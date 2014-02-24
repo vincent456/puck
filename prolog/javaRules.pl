@@ -10,7 +10,6 @@
 	  subgraph/1,
 	  hook/1,
 	  hooked/1,
-	  record_top/1,
 	  node_kind_to_fill_color/2]).
 
 :-use_module(graph).
@@ -149,18 +148,14 @@ hooked(method).
 hooked(attribute).
 hooked(constructor).
 
-record_top(X):-hook(X).
-record_top(package).
+node_kind_to_fill_color(virtualScope,'#33FF33').%Green
+node_kind_to_fill_color(package,'#FF9933').%Orange
+node_kind_to_fill_color(interface,'#FFFF99').%Light yellow
+node_kind_to_fill_color(class,'#FFFF33').%Yellow
 
-
-node_kind_to_fill_color(virtualScope,'"#33FF33"').%Green
-node_kind_to_fill_color(package,'"#FF9933"').%Orange
-node_kind_to_fill_color(interface,'"#FFFF99"').%Light yellow
-node_kind_to_fill_color(class,'"#FFFF33"').%Yellow
-
-node_kind_to_fill_color(constructor,'"#FFFF33"').%yellow
-node_kind_to_fill_color(method,'"#FFFFFF"').%White
-node_kind_to_fill_color(attribute,'"#FFFFFF"').%White
-node_kind_to_fill_color(stringLiteral,'"#CCFFCC"').%Very light green
+node_kind_to_fill_color(constructor,'#FFFF33').%yellow
+node_kind_to_fill_color(method,'#FFFFFF').%White
+node_kind_to_fill_color(attribute,'#FFFFFF').%White
+node_kind_to_fill_color(stringLiteral,'#CCFFCC').%Very light green
 
 
