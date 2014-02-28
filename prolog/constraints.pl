@@ -2,7 +2,7 @@
 	 [read_constraints/3,
 	  is_violation/3,
 	  collect_constraints/3,
-	  collect_constraints/4,
+	  %collect_constraints/4,
 	  interloper/3,
 	  empty_constraint/1]).
 :-use_module(graph).
@@ -188,6 +188,9 @@ interloper0(UserId, InterloperIdList, FriendIdList, Graph):-
     scope_set_contained(UserId, InterloperIdList, Graph),
     \+ scope_set_contained(UserId, FriendIdList, Graph).
 
+empty_constraint(([], [], [])).
+
+interloper(_, Ct, _):-empty_constraint(Ct), !, false.
 interloper(Id, (Is, IsWF, Fs), Graph):-
     interloper0(Id, Is, Fs, Graph);
     member((Is1, Fs1), IsWF), append(Fs1, Fs, Fs2), interloper0(Id, Is1, Fs2).
@@ -200,13 +203,16 @@ is_violation(UserId, UseeId, Graph):-
     collect_friends(HId, Graph, [], Fs), interloper(UserId, (Is, IsWF, Fs), Graph).
     
 
-collect_constraints(no_parent, _, Cts, Cts).
-collect_constraints(Id, G, (Is, IsWF, Fs), Cts):-
+collect_constraints_aux(no_parent, _, Cts, Cts).
+collect_constraints_aux(Id, G, (Is, IsWF, Fs), Cts):-
     get_node(Id, G, Node), constraint_of_node(Cts0, Node), container_of_node(CerId, Node),
-    (Cts0=no_constraint *-> collect_constraints(CerId, G, (Is, IsWF, Fs), Cts);
+    (Cts0=no_constraint *-> collect_constraints_aux(CerId, G, (Is, IsWF, Fs), Cts);
      Cts0=(Is0, IsWF0, Fs0), append(Is0, Is, Is1), append(IsWF0, IsWF, IsWF1), append(Fs0, Fs, Fs1),
-     collect_constraints(CerId, G, (Is1, IsWF1, Fs1), Cts)).
+     collect_constraints_aux(CerId, G, (Is1, IsWF1, Fs1), Cts)).
 
-collect_constraints(Id, G, Cts):- collect_constraints(Id, G, ([],[],[]), Cts).
+collect_constraints(Id, G, Cts):- collect_constraints_aux(Id, G, ([],[],[]), Cts).
 
-empty_constraint(([],[],[])).
+interloper_of(UserId, UseeId, Graph):-
+    collect_constraints(UseeId, Graph, Cts),
+    interloper(UserId, Cts, Graph).
+

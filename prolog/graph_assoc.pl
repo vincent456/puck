@@ -40,6 +40,8 @@ kind_of_node(Kind, (_,(Kind, _, _), _, _)).
 
 type_of_node(Type, (_,(_, _, Type), _, _)).
 
+identity_of_node(Identity, (_, Identity, _, _)).
+
 container_of_node(C, (_, _, (C, _, _, _, _),_)).
 
 containees_of_node(Cs, (_, _, (_, Cs, _, _, _) ,_)).
@@ -157,6 +159,10 @@ select_uses(UserId, UseeId, G, NewG):-
     select_user(UserId, Usee, NUsee),
     put_node(NUsee, G, NewG).
 
+redirect_uses(UserId, OldUseeId, NewUseeId, G, NewG):-
+    select_uses(UserId, OldUseeId, G, G1),
+    put_uses(UserId, NewUseeId, G1, NewG).
+
 ids_to_use(SourceId, TargetId, (uses, SourceId, TargetId)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -204,8 +210,11 @@ isa(SubId, SupId, G):-
      gen_node(SubId, G, Sub), super_types_of_node(SuperTypes, Sub), member(SupId, SuperTypes)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-get_abstractions(RealId, AbsIds, (_, Abs, _)):-
+get_abstractions(RealId, (_, Abs, _), AbsIds):-
     get_assoc(RealId, Abs, AbsIds).
+
+gen_abstraction(RealId, (_,Abs,_), AbsId):-
+    gen_assoc(RealId, Abs, AbsIds), member(AbsId, AbsIds).
 
 add_abstraction(RealId, AbsId, (Ns, AbsAssoc, Nb), (Ns, NewAbsAssoc, Nb)):-
     get_assoc(RealId, AbsAssoc, AbsIds) -> put_assoc(RealId, AbsAssoc, [AbsId|AbsIds], NewAbsAssoc);
@@ -224,3 +233,19 @@ abstract_node((NodeId, (Type, Name, Sig), _, _), (Ns, AbsAssoc, AbsId),  Abs, Ne
     put_node(Abs, G3, NewG).
 
 
+copy_contains_tree_aux(CerId, OriginalNodeId, (_,(Ns, AbsAssoc, NewId)), (NewId, GOut)):-
+    get_node(OriginalNodeId, (Ns, _, _), OriginalNode),
+    identity_of_node((Kind, Name, Type), OriginalNode),
+    create_node(NewId, Kind, Name, Type, Copy),
+    put_node(Copy, (Ns, AbsAssoc, NewId), G0),
+    %if copy an abstraction, register it as an abstraction
+    (gen_abstraction(RealId,OriginalNodeId, G0) *-> 
+        add_abstraction(RealId, NewId, G0, G1); G1=G0),
+
+    (CerId=no_parent*-> G2=G1;
+        put_contains(CerId, NewId, G1, G2)),
+    containees_of_node(Cees, OriginalNode),
+    foldl(call(copy_contains_tree_aux(NewId)), Cees, (_,G2), (_,GOut)).
+
+copy_contains_tree(NodeId, GIn, NodeCopyId, GOut):-
+    copy_contains_tree_aux(no_parent, NodeId, (_,GIn), (NodeCopyId, GOut)).

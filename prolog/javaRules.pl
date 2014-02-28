@@ -6,6 +6,7 @@
 	  type_name_to_id/3,
 	  node_named_type_to_id/3,
 	  struct_type/3,
+      redirect_to_abs/5,
 	  %%%% printing predicates
 	  subgraph/1,
 	  hook/1,
@@ -132,10 +133,46 @@ node_named_type_to_id(G, N, (Id, (Kind, Name, TypeId), Edges, Cts)):-
     to_self(Cer, TypeId0, TypeId),!.
 
 node_named_type_to_id(_, N, N).
+
+%%%%%
+
+%%TODO : répercute le changement de type des signatures !!!
+redirect_to_type_methods(AbsId, UserId, UseeId, GraphIn, GraphOut):-
+    (get_node(UseeId, GraphIn, Usee),
+        kind_of_node(method, Usee)) *-> 
+        contains(AbsId, AbsCeeId), gen_abstraction(UseeId, AbsCeeId, GraphIn),
+        redirect_uses(UserId, UseeId, AbsCeeId)
+    ;true. 
+
+redirect_to_type_abs_aux(RealId, AbsId, UserId, GraphIn, GraphOut):-
+    get_node(UserId, GraphIn, Node),
+    findall(UseeId, 
+        (uses(UserId, UseeId, GraphIn), 
+            contains(RealId, UseeId), GraphIn), Usees),
+    foldl(call(redirect_to_type_methods(AbsId, UserId)), Usees, GraphIn, G1),
+        redirect_uses(UserId, RealId, AbsId, G1, GraphOut).
+
+redirect_to_type_abs(UserIds, RealId, AbsId, GraphIn, GraphOut):-
+    foldl(call(redirect_to_type_abs_aux(RealId, AbsId)),UserIds, GraphIn, GraphOut).
+
+redirect_to_method_abs_aux(RealId, AbsId, UserId, GraphIn, GraphOut):-
+        redirect_uses(UserId, RealId, AbsId, GraphIn, GraphOut).
+
+redirect_to_method_abs(UserIds, RealId, AbsId, GraphIn, GraphOut):-
+        %% au moins ajoute uses vers container de Abs ! (éventuellement redirect)
+        foldl(call(redirect_to_method_abs_aux(RealId, AbsId)), UserIds, GraphIn, GraphOut).
+
+redirect_to_abstraction(UserIds, RealId, AbsId, GraphIn, GraphOut):-
+    get_node(AbsId, GraphIn, Abs),
+    ((kind_of_node(class, Abs); kind_of_node(interface, Abs)), 
+        redirect_to_type_abs(UserIds, RealId, AbsId, GraphIn, GraphOut);
+     kind_of_node(method, Abs),
+        redirect_to_method_abs(UserIds, RealId, AbsId, GraphIn, GraphOut)).
+
     
 %%%%% solver strategy
 
-violations_node_type_priority([class, interface]).
+violations_node_type_priority([attribute, class, interface]).
 
 %%%% printing predicates
 

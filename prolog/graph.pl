@@ -31,6 +31,8 @@
 	    get_abstractions/3,
 	    add_abstraction/4,
 
+	    copy_contains_tree/4,
+
 	    %node getters
 	    name_of_node/2,
 	    namesig_of_node/2,
