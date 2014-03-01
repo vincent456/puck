@@ -134,46 +134,9 @@ attrib_host_aux0(ViolationsId, PotentialHostsId, Bindings, NumHost):-
 		attrib_host_aux0(ViolationsId, PotentialHostsId, Bindings, NumHost1)).
 	
 attrib_host(ViolationsId, PotentialHosts, Bindings):-
-	attrib_host_aux0(ViolationsId, PotentialHosts, Bindings, 1).
+	attrib_host_aux0(ViolationsId, PotentialHosts, Bindings, 2).
 
 %%%%%%%%%%%%
-%%%%
-
-%%
-%%intro(+Graph, +Violation, +RuleViolated, +AbsAssocs,
-%%         -GraphOut, -AbsAssocs).
-%%
-intro(GraphIn, NodeId, GraphOut):- 
-    %if alreadey abstracted, do not recreate it
-    get_node(NodeId, GraphIn, Node), 
-     
-    abstract(Node, GraphIn, Abs, UseeId, GraphOut1),
-    %%find host for newly created abstraction
-    %%if UseeId = AbsId
-    (id_of_node(UseeId, Abs) *-> usee_host(Abs, NodeId, GraphOut1, GraphOut);
-     user_host(Abs, NodeId, GraphOut1, GraphOut)).
-
-
-%%the input graph has already the uses (UserId,UseeId) removed
-fold(UserId, UseeId, GraphIn, GraphOut2):- 
-    
-    (get_abstractions(UseeId, GraphIn, _) *-> GraphOut1=GraphIn;
-     (find_valid_abstraction(GraphIn, UseeId, GraphOut1);
-      intro(GraphIn, UseeId, GraphOut1))),
-
-    %% when redirecting a use from a class toward an interface,
-    %% we need to redirect all method uses,
-    %% i don't know if it is generalisable, but we try anyway:
-    % /!\ si une méthode de la classe abstraite en interface avait déjà été abstraite !
-    %%  -> on peut les chercher
-    %%  -> on peut forcer à résoudre les violations d'abords sur les classes
-    findall((UserDescId, UseeDescId), 
-	    ('contains*'(UserId, UserDescId,GraphIn),
-	     'contains*'(UseeId, UseeDescId,GraphIn),
-	     uses(UserDescId, UseeDescId, GraphIn)), DescUses),
-    redirect_to_abs(DescUses, GraphOut1, GraphOut2).
-
-%%%%
 
 find_existing_abstractions(NodeId, GraphIn, GraphOut):-
     get_node(NodeId, GraphIn, Node),
@@ -186,7 +149,7 @@ find_existing_abstractions(NodeId, GraphIn, GraphOut):-
     GraphIn=GraphOut.
 
 
-
+%%%%
 
 redirect_toward_aux([],_, X, X).
 redirect_toward_aux([WrongUserId | WUsId], UseeId, 
@@ -202,11 +165,33 @@ redirect_toward_existing_abstractions(WrongUsersId, UseeId, GraphIn, Unsolveds, 
         redirect_toward_aux(WrongUsersId, UseeId, ([], GraphIn), (Unsolveds, GraphOut)).
 
 %%%%
+%% UseeId is either RealId or AbsId, tell us who use who
 
+one_intro(Real, Abs, UseeId, GraphIn, GraphOut):-
+    (id_of_node(UseeId, Abs) *-> usee_host(Abs, NodeId, GraphIn, GraphOut);
+     user_host(Abs, NodeId, GraphIn, GraphOut)).
+
+multiple_intro(Real, Abs, UseeId, WrongUsersId , GraphIn, GraphOut):-
+    id_of_node(RealId, Real),
+    potential_host_set(Abs, RealId, UseeId, WrongUsersId, GraphIn, PHSet),!,
+    attrib_host()
+
+
+
+
+intro(NodeId, WrongUsersId, GraphIn, GraphOut):-
+    get_node(NodeId, GraphIn, Node), 
+    abstract(Node, GraphIn, Abs, UseeId, GraphOut1),
+    (one_intro(Node, Abs, UseeId, GraphOut1, GraphOut),!; %%does this cut work ? 
+        %% it is intended to force one intro solution over multi intro solution, 
+        %% but it musn't prevent to compute all "one intro" solutions
+        multiple_intro(Node, Abs, UseeId, WrongUsersId, GraphOut1, GraphOut)).
+
+%%%%
 solve_violations_toward(UseeId, GraphIn, GraphOut):-
-    findall(UserId, violation(UserId,UseeId, GraphIn), WrongUsers),
+    findall(UserId, violation(UserId,UseeId, GraphIn), WrongUsersId),
     find_existing_abstractions(UseeId, GraphIn, G1),
-    redirect_toward_existing_abstractions(WrongUsers, UseeId, G1, RemainingWrongUsers, G2),
+    redirect_toward_existing_abstractions(WrongUsersId, UseeId, G1, RemainingWrongUsers, G2),
     %%TODO finish function
     %% intro one or multiple abstractions at the same time !!!
     .
