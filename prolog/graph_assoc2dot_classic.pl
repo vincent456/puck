@@ -1,45 +1,44 @@
-:-module(pl2dot, 
+:-module(graph_assoc2dot, 
 	 [pl2dot/2,
 	  pl2dot/3]).
+:-use_module(graph).
 
 pl2dot(File, Graph) :- pl2dot(File, Graph, []).
 
-pl2dot(File, (Ns, Us, _), V):- 
+pl2dot(File, (Ns,_,_), V):- 
     tell(File),
     writeln('digraph G {'), %linux dotty parser doesn't accept anonym graph %'
     nodes2dot(Ns),
-    edges2dot(Us),
     violations2dot(V),
     writeln('}'),
     told.
 
 nodes2dot(Ns):- 
-    map_assoc(writelnNode, Ns).
+    map_assoc(writeln_node, Ns).
 
-writeQuoted(Node):-
-    write('"'),
-    write(Node),
-    write('"').
+writeln_contains(Cer, Cee):- writeln_edge((contains, Cer, Cee)).
+writeln_uses(Usee, User):-writeln_edge((uses, User, Usee)).
+writeln_isa(Sub, Super):-writeln_edge((isa, Sub, Super)).
 
-writelnContains(Cee, Cer, Cer):- writelnEdge((contains, Cer, Cee)).
-	
-writelnNode((Uid, (Kind, Name,_), (Cer, Cees), _)) :- 
-    write(Uid),
-    write(' [ label = '),
-    write('"'),
-    write(Name), write(' ('),write(Uid),
-    write(')"'),
-    write(', fontcolor = '),
+writeln_node(Node) :- 
+    id_of_node(Uid, Node),
+    identity_of_node((Kind, Name, _), Node),
+    container_of_node(Cer, Node),
+    containees_of_node(Cees, Node),
+    users_of_node(Users, Node),
+    super_types_of_node(Supers, Node),
+
     container2fontcolor(Cer, FColor),
-    write(FColor),
-    write(', shape = '),
     kind2shape(Kind, Shape),
-    write(Shape),
-    write(', style = filled, fillcolor = '),
     nodeKind2fillColor(Kind, Color),
-    write(Color),
-    writeln(' ];'),
-    foldl(writelnContains, Cees, Uid, _).
+    
+    atomic_list_concat([Uid, ' [ label = "', Name, ' (', Uid, 
+        ')", fontcolor = ', FColor, ', shape = ', Shape, 
+        ', style = filled, fillcolor = ', Color, ' ];'], Str),
+    write(Str),
+    maplist(call(writeln_contains(Uid)), Cees),
+    maplist(call(writeln_uses(Uid)), Users),
+    maplist(call(writeln_isa(Uid)), Supers).
 
 
 container2fontcolor(no_parent, red).
@@ -67,32 +66,21 @@ nodeKind2fillColor(method,'"#FFFFFF"').%White
 nodeKind2fillColor(attribute,'"#FFFFFF"').%White
 nodeKind2fillColor(stringLiteral,'"#CCFFCC"').%Very light green
 
-edges2dot(Es):- maplist(writelnEdge,Es).
-violations2dot(Vs):- maplist(writelnViolation, Vs).
+violations2dot(Vs):- maplist(writeln_violation, Vs).
 
-writelnEdge(Edge) :- writelnEdgeStatus(Edge, correct).
-writelnViolation(Edge) :- writelnEdgeStatus(Edge, incorrect).
+writeln_edge(Edge) :- writeln_edge_status(Edge, correct).
+writeln_violation(Edge) :- writeln_edge_status(Edge, incorrect).
 
-writelnEdgeStatus((Kind, Source, Target), Status) :- 
-	write(Source),
-	write(' -> '),
-	write(Target),
-	write(' [ style = '),
+writeln_edge_status((Kind, Source, Target), Status) :- 
 	kind2style(Kind, Style),
-	write(Style),
-
-	write(', color = '),
-	status2Color(Status, Color),
-	write(Color),
-
-	write(', penwidth = '),
-	status2thickness(Status, T),
-	write(T),
-	
-	write(', arrowhead = '),
-	kind2headStyle(Kind, HeadStyle),
-	write(HeadStyle),
-	writeln(' ];').
+    status2Color(Status, Color),
+    status2thickness(Status, T),
+    
+    kind2headStyle(Kind, HeadStyle),
+    atomic_list_concat([Source, ' -> ', Target, ' [ style = ',
+	   Style, ', color = ', Color, ', penwidth = ', T, ', arrowhead = ',
+	   HeadStyle, ' ];'], Str),
+    write(Str).
 
 status2Color(correct, black).
 status2Color(incorrect, red).

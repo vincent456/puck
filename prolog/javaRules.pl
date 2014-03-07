@@ -1,17 +1,18 @@
 :-module(javaRules, 
 	 [can_contain_kind/2,
-	  abstract/5,
+	  abstract/4,
 	  abstract_kind/2,
 	  violations_node_type_priority/1,
 	  type_name_to_id/3,
 	  node_named_type_to_id/3,
 	  struct_type/3,
-      redirect_to_abs/5,
+      redirect_to_abstraction/5,
 	  %%%% printing predicates
 	  subgraph/1,
 	  hook/1,
 	  hooked/1,
-	  node_kind_to_fill_color/2]).
+	  node_kind_to_fill_color/2,
+      real_kind_use_abs_kind/1]).
 
 :-use_module(graph).
 :-use_module(typing).
@@ -37,23 +38,23 @@ abstract_kind(attribute, method).
 abstract_kind(method, method). %% methodImpl methodSig ??
 abstract_kind(constructor, method).
 
-abstract_method_list([], _, Graph, Graph).
-abstract_method_list([M|ML], InterfaceId, Graph, NewGraph):-
-    abstract_node(M, Graph, Abs, G2),
+abstract_method(InterfaceId, NodeId, GraphIn, GraphOut):-
+    get_node(NodeId, GraphIn, Node),
+    (kind_of_node(method, Node)-> abstract_node(Node, GraphIn, Abs, G2),
     id_of_node(AbsId, Abs),
-    put_contains(InterfaceId, AbsId, G2, G3),
-    abstract_method_list(ML, InterfaceId, G3, NewGraph).
+    put_contains(InterfaceId, AbsId, G2, GraphOut);
+    GraphOut=GraphIn).
     
 %%%%%%%%%%%%%
 %% (+Node, +Graph, +AbsAssoc
 %% -Abs, -UseeId, -NewGraph, - NewAbsAssoc
-abstract(Node, GraphIn, Abs, NodeId, G3):-
+abstract(Node, GraphIn, Abs, G3):-
     kind_of_node(Type, Node), id_of_node(NodeId, Node),
     \+abstract_kind(Type, interface),
     abstract_node(Node, GraphIn, Abs, G2),
     id_of_node(AbsId, Abs), put_uses(AbsId, NodeId, G2, G3).
 
-abstract(Node, GraphIn, Abs, AbsId, G4):-
+abstract(Node, GraphIn, Abs2, G4):-
     kind_of_node(Type, Node), id_of_node(NodeId, Node),
     abstract_kind(Type, interface),
 	    
@@ -61,15 +62,20 @@ abstract(Node, GraphIn, Abs, AbsId, G4):-
     
     id_of_node(AbsId, Abs),  put_uses(NodeId, AbsId, G2, G3),
     
-    findall(M, 
-	    (contains(NodeId, MId, GraphIn),
-	     kind_of_node(method, M),
-	     get_node(MId, GraphIn, M)), 
-	    Methods),
+    containees_of_node(Cees, Node),
     
-    abstract_method_list(Methods, AbsId, G3, G4).
+    foldl(call(abstract_method(AbsId)), Cees, G3, G4),
+    get_node(AbsId, G4, Abs2).
+
+%%%%%%%
+
+real_kind_use_abs_kind(Real):-
+    (kind_of_node(class, Real); 
+        kind_of_node(interface, Real)).
+
 
 %%%%%%% typing
+
 
 type_name_to_id(_, '@primitive.void', -1).
 
@@ -137,23 +143,39 @@ node_named_type_to_id(_, N, N).
 %%%%%
 
 %%TODO : répercute le changement de type des signatures !!!
-redirect_to_type_methods(AbsId, UserId, UseeId, GraphIn, GraphOut):-
+redirect_to_type_abs_aux_methods(AbsId, UserId, UseeId, GraphIn, GraphOut):-
     (get_node(UseeId, GraphIn, Usee),
-        kind_of_node(method, Usee)) *-> 
-        contains(AbsId, AbsCeeId), gen_abstraction(UseeId, AbsCeeId, GraphIn),
-        redirect_uses(UserId, UseeId, AbsCeeId)
-    ;true. 
+        kind_of_node(method, Usee)) ->
+        contains(AbsId, AbsCeeId, GraphIn), 
+        gen_abstraction(UseeId, GraphIn, AbsCeeId),
+        redirect_uses(UserId, UseeId, AbsCeeId, GraphIn, GraphOut)
+    ;GraphOut=GraphIn. %% flou -> quid des attibuts et des constructeurs ?
 
-redirect_to_type_abs_aux(RealId, AbsId, UserId, GraphIn, GraphOut):-
-    get_node(UserId, GraphIn, Node),
-    findall(UseeId, 
-        (uses(UserId, UseeId, GraphIn), 
-            contains(RealId, UseeId), GraphIn), Usees),
-    foldl(call(redirect_to_type_methods(AbsId, UserId)), Usees, GraphIn, G1),
-        redirect_uses(UserId, RealId, AbsId, G1, GraphOut).
+redirect_to_type_abs_aux(RealId, TypeAbsId, UserId, GraphIn, GraphOut):-
+    get_node(RealId, GraphIn, Real),
+    containees_of_node(RAttributesId, Real),
+    findall(RAttributeId, 
+        (member(RAttributeId, RAttributesId),
+            uses(UserId, RAttributeId, GraphIn)), Usees), %% UseesList),
+    %% list_to_set(UseesList, Usees), %%shouldn't be necessary
+    foldl(call(redirect_to_type_abs_aux_methods(TypeAbsId, UserId)), Usees, GraphIn, G1),
+    %%via recursive call, User may use only a containee of Real and not real itself
+    (uses(UserId, RealId, G1) ->
+        redirect_uses(UserId, RealId, TypeAbsId, G1, G2);G1=G2),
+    
+    get_node(UserId, G2, User), 
+    ((kind_of_node(class, User); kind_of_node(interface, User))->
+    %% if we redirect from a class, we also have to redirect for all the methods:
+    %% if use in an extends context, replace super by call to delegate
+    %% if it forbidden for a class to use another, it also forbidden for its method:
+    %% we have to replace the optionnal class declaration
+        containees_of_node(AttributesIds, User),
+        redirect_to_type_abs(AttributesIds, RealId, TypeAbsId, G2, GraphOut);
+        GraphOut=G2).
+
 
 redirect_to_type_abs(UserIds, RealId, AbsId, GraphIn, GraphOut):-
-    foldl(call(redirect_to_type_abs_aux(RealId, AbsId)),UserIds, GraphIn, GraphOut).
+    foldl(call(redirect_to_type_abs_aux(RealId, AbsId)),UserIds, GraphIn, GraphOut). %%G1),
 
 redirect_to_method_abs_aux(RealId, AbsId, UserId, GraphIn, GraphOut):-
         redirect_uses(UserId, RealId, AbsId, GraphIn, GraphOut).

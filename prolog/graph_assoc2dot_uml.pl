@@ -1,4 +1,4 @@
-:-module(pl2dot, 
+:-module(graph_assoc2dot, 
 	 [pl2dot/2,
 	  pl2dot/3]).
 :-use_module(graph).

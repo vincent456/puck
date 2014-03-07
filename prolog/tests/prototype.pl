@@ -52,5 +52,5 @@ edge(contains,6,8).
 edge(isa,6,2).
 edge(uses,6,2).
 
-node(18,class,'Creator','').
-edge(contains, 1, 18).
+%% node(18,class,'Creator','').
+%% edge(contains, 1, 18).

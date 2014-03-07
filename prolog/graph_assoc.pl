@@ -12,6 +12,8 @@
 %%
 
 id_of_node(Id, (Id,_,_,_)).
+
+set_id_of_node(Id, (_,Identity, Edges, Constraint), (Id, Identity, Edges, Constraint)).
     
 sig_string(G, tuple(ParamsIds), Str):-
     !,maplist(call(type_name_to_id(G)), ParamsNames0, ParamsIds), 
@@ -55,7 +57,16 @@ sub_types_of_node(Sub, (_,_,(_,_,_, _, Sub),_)).
 %%%%%
 
     
-create_node(Id, Type, Name, Sig, (Id, (Type, Name, Sig), (no_parent, [],[], [], []), no_constraint)).
+create_node0(Type, Name, Sig, (none, (Type, Name, Sig), (no_parent, [],[], [], []), no_constraint)).
+
+put_new_node(N, (Ns, Abs, Id), NId, (Ns1, Abs, Nb)):- 
+    id_of_node(none, N), 
+    set_id_of_node(Id, N, NId),
+    put_assoc(Id, Ns, NId, Ns1), Nb is Id + 1.
+
+create_node(Type, Name, Sig, GraphIn, NewNode, GraphOut):-
+    create_node0(Type, Name, Sig, N),
+    put_new_node(N, GraphIn, NewNode, GraphOut).
 
 set_container((Id, Desc, (_, Cee, Users, Sup, Sub), Ct), Cer, (Id, Desc, (Cer, Cee, Users, Sup, Sub), Ct)).
 
@@ -136,9 +147,14 @@ get_node(Id, (Ns, _, _), N):- get_assoc(Id, Ns, N).
 
 gen_node(Id, (Ns, _, _), N):- gen_assoc(Id, Ns, N).
 
-put_node(N, (Ns, Abs, Nb), (Ns1, Abs, Nb1)):- 
+put_node(N, (Ns, Abs, Nb), (Ns1, Abs, Nb)):- 
     id_of_node(Id, N), 
-    put_assoc(Id, Ns,  N, Ns1), Nb1 is Nb + 1.
+    put_assoc(Id, Ns, N, Ns1).
+
+gen_syntaxicaly_correct_container(NodeK, Graph, Container):-
+    gen_node(_, Graph, Container), 
+        kind_of_node(ContainerK, Container),
+        can_contain_kind(ContainerK, NodeK).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -221,31 +237,36 @@ add_abstraction(RealId, AbsId, (Ns, AbsAssoc, Nb), (Ns, NewAbsAssoc, Nb)):-
     put_assoc(RealId, AbsAssoc, [AbsId], NewAbsAssoc).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-abstract_node((NodeId, (Type, Name, Sig), _, _), (Ns, AbsAssoc, AbsId),  Abs, NewG):-
-    abstract_kind(Type, AbsType), 
+abstract_node(Node, G, Abs, GraphOut):-
+    id_of_node(NodeId, Node), identity_of_node((Kind, Name, Type), Node),
+    abstract_kind(Kind, AbsKind), 
     atomic_concat('abstract_', Name, AbsName), 
-    create_node(AbsId, AbsType, AbsName, Sig, Abs),
-    add_abstraction(NodeId, AbsId, (Ns, AbsAssoc, AbsId), G2),
-    %% %% little hack (?) : an abstraction is its own abstraction otherwise,
-    %% %% on a later iteration, instead of moving the abstraction it will create an abstraction's abstraction ... 
-    %% %% and that can go on...
-    add_abstraction(AbsId, AbsId, G2, G3),
-    put_node(Abs, G3, NewG).
+    create_node(AbsKind, AbsName, Type, G, Abs, G1),
+    id_of_node(AbsId, Abs),
+    add_abstraction(NodeId, AbsId, G1, G2),
+    %% little hack (?) : an abstraction is its own abstraction otherwise,
+    %% on a later iteration, instead of moving the abstraction it will create an abstraction's abstraction ... 
+    %% and that can go on...
+    add_abstraction(AbsId, AbsId, G2, GraphOut).
 
+create_host(Node, GraphIn, Host, GraphOut):-
+    identity_of_node((Kind, Name, _), Node),
+    can_contain_kind(HostK, Kind),
+    atomic_concat(Name, '_container', HostName),
+    create_node(HostK, HostName, '', GraphIn, Host, GraphOut).
 
-copy_contains_tree_aux(CerId, OriginalNodeId, (_,(Ns, AbsAssoc, NewId)), (NewId, GOut)):-
-    get_node(OriginalNodeId, (Ns, _, _), OriginalNode),
+copy_contains_tree_aux(CerId, OriginalNodeId, (_,GraphIn), (CopyId, GraphOut)):-
+    get_node(OriginalNodeId, GraphIn, OriginalNode),
     identity_of_node((Kind, Name, Type), OriginalNode),
-    create_node(NewId, Kind, Name, Type, Copy),
-    put_node(Copy, (Ns, AbsAssoc, NewId), G0),
+    create_node(Kind, Name, Type, GraphIn, Copy, G0), id_of_node(CopyId, Copy),
     %if copy an abstraction, register it as an abstraction
-    (gen_abstraction(RealId,OriginalNodeId, G0) *-> 
-        add_abstraction(RealId, NewId, G0, G1); G1=G0),
+    (gen_abstraction(RealId, G0, OriginalNodeId) *-> 
+        add_abstraction(RealId, CopyId, G0, G1); G1=G0),
 
     (CerId=no_parent*-> G2=G1;
-        put_contains(CerId, NewId, G1, G2)),
+        put_contains(CerId, CopyId, G1, G2)),
     containees_of_node(Cees, OriginalNode),
-    foldl(call(copy_contains_tree_aux(NewId)), Cees, (_,G2), (_,GOut)).
+    foldl(call(copy_contains_tree_aux(CopyId)), Cees, (_,G2), (_,GraphOut)).
 
-copy_contains_tree(NodeId, GIn, NodeCopyId, GOut):-
-    copy_contains_tree_aux(no_parent, NodeId, (_,GIn), (NodeCopyId, GOut)).
+copy_contains_tree(NodeId, GraphIn, NodeCopyId, GraphOut):-
+    copy_contains_tree_aux(no_parent, NodeId, (_,GraphIn), (NodeCopyId, GraphOut)).

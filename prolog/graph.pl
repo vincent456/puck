@@ -27,17 +27,22 @@
 	    select_uses/4,
 	    select_contains/4,
 
+	    redirect_uses/5,
+	    gen_syntaxicaly_correct_container/3,
+
 	    abstract_node/4, %exposed for javaRules and sigmaRules, the solver should use abstract/6
 	    get_abstractions/3,
+	    gen_abstraction/3,
 	    add_abstraction/4,
 
 	    copy_contains_tree/4,
-
+	    create_host/4,
 	    %node getters
 	    name_of_node/2,
 	    namesig_of_node/2,
 	    kind_of_node/2,
 	    type_of_node/2,
+	    identity_of_node/2,
 	    container_of_node/2,
 	    containees_of_node/2,
 	    users_of_node/2,
@@ -63,7 +68,8 @@
 %% :-reexport(graph_list2dot).
 %% :- ensure_loaded(graph_list).
 
-:- reexport(graph_assoc2dot).
+:- reexport(graph_assoc2dot_uml).
+%:- reexport(graph_assoc2dot_classic).
 :- ensure_loaded(graph_assoc).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

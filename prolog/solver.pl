@@ -1,5 +1,5 @@
 
-:-module(solver, 
+:-module(solver,
 	 [solve/2,
 	  find_violations/3,
 	  solver_read/3,
@@ -36,70 +36,71 @@ solver_read_and_print_violations(BaseName):-
 excluded(Id, List, Value):- get_assoc(Id,List,Value).
 excluded(Id, List, []):- \+get_assoc(Id,List,_).
 
-gen_container_id(Node, HostId, Graph):-
-    can_contain(Host, Node),
-    gen_node(HostId, Graph, Host), 
-    Host\=Node.
-
 %%%
 % we search a host for an abstraction who use its realisation
 %% ex : delegate call
-user_host(Abs, RealId, GraphIn, GraphOut):-
+user_host(Real, CeeK, WrongUsersId, Graph, HostId):-
 
-    collect_constraints(RealId, GraphIn, Cts),
-    
-    gen_container_id(Abs, HostId, GraphIn),
+    id_of_node(RealId, Real),
+    collect_constraints(RealId, Graph, RCts),!,
 
-    \+interloper(HostId, Cts, GraphIn),
- 
-    collect_constraints(HostId, GraphIn, HCts),
+    gen_syntaxicaly_correct_container(CeeK, Graph, Host),
+    id_of_node(HostId, Host),
+
+    \+interloper(HostId, RCts, Graph),
+
+    collect_constraints(HostId, Graph, HCts),
     (empty_constraint(HCts);
-    	forall((uses(UserId, RealId, GraphIn), is_violation(UserId, RealId, GraphIn)),
-				\+interloper(UserId, HCts, GraphIn))),
- 
-    id_of_node(AbsId, Abs), 
-    put_contains(HostId, AbsId, GraphIn, GraphOut).
+    	forall(member(UserId, WrongUsersId),
+				\+interloper(UserId, HCts, Graph))).
 
 %%%
 % we search a host an abstraction used by its realisation
 % ex: abstraction = interface, realisation = class
-usee_host(Abs, RealId, GraphIn, GraphOut):-
-    
-    gen_container_id(Abs, HostId, GraphIn),
+usee_host(Real, CeeK, WrongUsersId, Graph, HostId):-
 
-    collect_constraints(HostId, GraphIn, Cts),
-    (empty_constraint(Cts);
-	  	\+interloper(RealId, Cts, GraphIn),
-     forall((uses(UserId, RealId, GraphIn), is_violation(UserId, RealId, GraphIn)),
-		\+interloper(UserId, Cts, GraphIn))),
+    id_of_node(RealId, Real),
 
-    id_of_node(AbsId, Abs), 
-    put_contains(HostId, AbsId, GraphIn, GraphOut).
+    gen_syntaxicaly_correct_container(CeeK, Graph, Host),
+    id_of_node(HostId, Host),
 
+    collect_constraints(HostId, Graph, HCts),
+    (empty_constraint(HCts);
+	  	\+interloper(RealId, HCts, Graph),
+     forall(member(UserId, WrongUsersId),
+		\+interloper(UserId, HCts, Graph))).
 
-permited_users_usee_abs(RealId, ViolationsId, Graph, PotentialHostId, 
+find_host(Real, CeeK, WrongUsersId, GraphIn, HostId):-
+    real_kind_use_abs_kind(Real) -> usee_host(Real, CeeK, WrongUsersId, GraphIn, HostId);
+     user_host(Real, CeeK, WrongUsersId, GraphIn, HostId).
+
+%%%%%
+
+permited_users_usee_abs(RealId, ViolationsId, Graph, PotentialHostId,
 		(PotentialHostId, PermitedUsers)):-
 	collect_constraints(PotentialHostId, Graph, Cts),
-	findall(User, (member(User, ViolationsId), 
-					\+interloper(User, Cts, Graph),	
+	findall(User, (member(User, ViolationsId),
+					\+interloper(User, Cts, Graph),
 					\+interloper(RealId, Cts, Graph)),
 		PermitedUsers).
 
 
-permited_users_usee_real(RealId, ViolationsId, Graph, PotentialHostId, 
+permited_users_usee_real(RealId, ViolationsId, Graph, PotentialHostId,
 		(PotentialHostId, PermitedUsers)):-
 	collect_constraints(RealId, Graph, CtsReal),
 	collect_constraints(PotentialHostId, Graph, Cts),
-	findall(User, (member(User, ViolationsId), 
-					\+interloper(User, Cts, Graph),	
+	findall(User, (member(User, ViolationsId),
+					\+interloper(User, Cts, Graph),
 					\+interloper(PotentialHostId, CtsReal, Graph)),
 		PermitedUsers).
 
 
 %% compute a list of pair (HostId, "subset of violations id solved with this host")
-potential_host_set(Abs, RealId, UseeId, ViolationsId, Graph, PHSet):-
-	findall(H, (can_contain(H, Abs), gen_node(_, Graph, H)), Hosts),
-		(id_of_node(UseeId, Abs) ->
+potential_host_set(Real, ViolationsId, Graph, PHSet):-
+    kind_of_node(RealK, Real), abstract_kind(RealK, AbsK),
+	findall(H, gen_syntaxicaly_correct_container(AbsK, Graph, H), Hosts),
+		id_of_node(RealId, Real),
+        (real_kind_use_abs_kind(Real) ->
 	maplist(call(permited_users_usee_abs(RealId, ViolationsId, Graph)), Hosts, PHSet);
 	maplist(call(permited_users_usee_real(RealId, ViolationsId, Graph)), Hosts, PHSet)).
 
@@ -112,19 +113,19 @@ potential_host_set(Abs, RealId, UseeId, ViolationsId, Graph, PHSet):-
 
 member_for_call(List, Elt):-member(Elt, List).
 
-
+%%% find host for abstractions where the original wrong user can use it without
+%%% violating any contstraint
 %% à réimplenter en utilisant une structure union-find ?
-
 attrib_host_aux1(_,[], B, B).
 attrib_host_aux1(PotentialHostsId, ViolationsIdIn, BindingsIn, BindingsOut):-
 	member((PHId, PermitedUsers), PotentialHostsId),
-	partition(call(member_for_call(PermitedUsers)), ViolationsIdIn, 
+	partition(call(member_for_call(PermitedUsers)), ViolationsIdIn,
 		AttributedIds, ViolationsIdOut),
 		length(AttributedIds, L), L\=0,
-	attrib_host_aux1(PotentialHostsId, ViolationsIdOut, 
+	attrib_host_aux1(PotentialHostsId, ViolationsIdOut,
 		[(PHId, AttributedIds)|BindingsIn], BindingsOut).
 
-attrib_host_aux0(_,_,_, NumHost):- 
+attrib_host_aux0(_,_,_, NumHost):-
 		max_number_host(Max), NumHost > Max, false.
 
 attrib_host_aux0(ViolationsId, PotentialHostsId, Bindings, NumHost):-
@@ -132,9 +133,16 @@ attrib_host_aux0(ViolationsId, PotentialHostsId, Bindings, NumHost):-
 	(length(Bindings, L), L=<NumHost;
 		NumHost1 is NumHost +1,
 		attrib_host_aux0(ViolationsId, PotentialHostsId, Bindings, NumHost1)).
-	
-attrib_host(ViolationsId, PotentialHosts, Bindings):-
-	attrib_host_aux0(ViolationsId, PotentialHosts, Bindings, 2).
+
+apply_bindings(Real, (HostId, WrongUsersId), GraphIn, GraphOut):-
+    abstract(Real, GraphIn, Abs, G1),
+    id_of_node(AbsId, Abs), put_contains(HostId, AbsId, G1, G2),
+    id_of_node(RealId, Real),
+    redirect_to_abstraction(WrongUsersId, RealId, AbsId, G2, GraphOut).
+
+attrib_host(Real, ViolationsId, PotentialHosts, GraphIn, GraphOut):-
+	attrib_host_aux0(ViolationsId, PotentialHosts, Bindings, 2),
+    foldl(call(apply_bindings(Real)), Bindings, GraphIn, GraphOut).
 
 %%%%%%%%%%%%
 
@@ -142,59 +150,68 @@ find_existing_abstractions(NodeId, GraphIn, GraphOut):-
     get_node(NodeId, GraphIn, Node),
     %%move to java_rules !!
     (kind_of_node(class, Node); kind_of_node(interface, Node))*->
-    get_abstractions(NodeId, GraphIn, KnownAbsIds),
+    (get_abstractions(NodeId, GraphIn, KnownAbsIds)*->true;
+        KnownAbsIds=[]),
     findall(SuperId, (subtype(GraphIn, NodeId, SuperId),
                NodeId\=SuperId, \+member(SuperId, KnownAbsIds)), SuperIds),
     foldl(call(add_abstraction(NodeId)), SuperIds, GraphIn, GraphOut);
     GraphIn=GraphOut.
 
-
 %%%%
 
 redirect_toward_aux([],_, X, X).
-redirect_toward_aux([WrongUserId | WUsId], UseeId, 
+redirect_toward_aux([WrongUserId | WUsId], UseeId,
     (UnsolvedsIn, GraphIn), Out):-
-    
-    (gen_abstraction(UseeId, AbsId, GraphIn), 
+
+    (gen_abstraction(UseeId, GraphIn, AbsId),
         \+is_violation(WrongUserId, AbsId, GraphIn)) *->
     redirect_to_abstraction([WrongUserId], UseeId, AbsId, GraphIn, G1),
     redirect_toward_aux(WUsId, UseeId, (UnsolvedsIn, G1), Out);
     redirect_toward_aux(WUsId, UseeId, ([WrongUserId | UnsolvedsIn], GraphIn), Out).
 
-redirect_toward_existing_abstractions(WrongUsersId, UseeId, GraphIn, Unsolveds, GraphOut):-
+redirect_toward_known_abstractions(WrongUsersId, UseeId, GraphIn, Unsolveds, GraphOut):-
         redirect_toward_aux(WrongUsersId, UseeId, ([], GraphIn), (Unsolveds, GraphOut)).
 
 %%%%
 %% UseeId is either RealId or AbsId, tell us who use who
-
-one_intro(Real, Abs, UseeId, GraphIn, GraphOut):-
-    (id_of_node(UseeId, Abs) *-> usee_host(Abs, NodeId, GraphIn, GraphOut);
-     user_host(Abs, NodeId, GraphIn, GraphOut)).
-
-multiple_intro(Real, Abs, UseeId, WrongUsersId , GraphIn, GraphOut):-
+one_intro(Real, WrongUsersId, GraphIn, GraphOut):-
+    kind_of_node(RealK, Real),
+    abstract_kind(RealK, AbsK),
+    find_host(Real, AbsK, WrongUsersId, GraphIn, HostId),
+    abstract(Real, GraphIn, Abs, G1),
+    id_of_node(AbsId, Abs),
+    put_contains(HostId, AbsId, G1, G2),
     id_of_node(RealId, Real),
-    potential_host_set(Abs, RealId, UseeId, WrongUsersId, GraphIn, PHSet),!,
-    attrib_host()
+    redirect_to_abstraction(WrongUsersId, RealId, AbsId, G2, GraphOut).
 
+multiple_intro(Real, WrongUsersId , GraphIn, GraphOut):-
+    potential_host_set(Real, WrongUsersId, GraphIn, PHSet),!,
+    attrib_host(Real, WrongUsersId, PHSet, GraphIn, GraphOut).
 
-
-
+intro(_, [], G, G):-!.
 intro(NodeId, WrongUsersId, GraphIn, GraphOut):-
-    get_node(NodeId, GraphIn, Node), 
-    abstract(Node, GraphIn, Abs, UseeId, GraphOut1),
-    (one_intro(Node, Abs, UseeId, GraphOut1, GraphOut),!; %%does this cut work ? 
-        %% it is intended to force one intro solution over multi intro solution, 
-        %% but it musn't prevent to compute all "one intro" solutions
-        multiple_intro(Node, Abs, UseeId, WrongUsersId, GraphOut1, GraphOut)).
+    get_node(NodeId, GraphIn, Node),
+    ((one_intro(Node, WrongUsersId, GraphIn, GraphOut)*->true;
+        multiple_intro(Node, WrongUsersId, GraphIn, GraphOut))*->true;
+    %%intro abs + host
+    abstract(Node, GraphIn, Abs, G2),
+    create_host(Abs, G2, Host, G3),
+    id_of_node(AbsId, Abs), id_of_node(HostId, Host),
+    put_contains(HostId, AbsId, G3, G4),
+    kind_of_node(HostK, Host),
+    find_host(Node, HostK, WrongUsersId, G4, HHostId),
+    put_contains(HHostId, HostId, G4, G5),
+    redirect_to_abstraction(WrongUsersId, NodeId, AbsId, G5, GraphOut)).
+
+
+
 
 %%%%
 solve_violations_toward(UseeId, GraphIn, GraphOut):-
     findall(UserId, violation(UserId,UseeId, GraphIn), WrongUsersId),
     find_existing_abstractions(UseeId, GraphIn, G1),
-    redirect_toward_existing_abstractions(WrongUsersId, UseeId, G1, RemainingWrongUsers, G2),
-    %%TODO finish function
-    %% intro one or multiple abstractions at the same time !!!
-    .
+    redirect_toward_known_abstractions(WrongUsersId, UseeId, G1, RemainingWrongUsersId, G2),
+    intro(UseeId, RemainingWrongUsersId, G2, GraphOut).
 
 %%
 %%solve(+GraphIn, +Constraints, -GraphOut)
@@ -202,28 +219,29 @@ solve_violations_toward(UseeId, GraphIn, GraphOut):-
 
 print_vtrace(G, NumCall, NextNumCall):-
     atomic_list_concat(['visual_trace', NumCall,  '.dot'], FileName),
-     find_violations(G, Vs, GTmp),
-     pl2dot(FileName, GTmp, Vs),
-     NextNumCall is NumCall + 1.
+    pl2dot('tmp.dot',G,[]),
+    find_violations(G, Vs, GTmp),
+    pl2dot(FileName, GTmp, Vs),
+    NextNumCall is NumCall + 1.
 
-solve(GraphIn, GraphOut):- 
-    violations_node_type_priority(Priority), 
+solve(GraphIn, GraphOut):-
+    violations_node_type_priority(Priority),
     solve(GraphIn, Priority, 1, GraphOut).
 
 solve(GraphIn, Priority, NumCall, GraphOut) :-
-    (prioritized_violation(Priority, P1, UserId, UseeId, GraphIn) *->
+    (prioritized_violation(Priority, P1, _, UseeId, GraphIn) *->
 
-			  fold(UserId, UseeId, GraphIn, GraphO1), 
+			  solve_violations_toward(UseeId, GraphIn, GraphO1),
      print_vtrace(GraphO1, NumCall, NextNumCall),
      solve(GraphO1, P1, NextNumCall, GraphOut);
-     
+
      GraphOut=GraphIn).
 
 prioritized_violation([], [], UserId, UseeId, G):-!, violation(UserId, UseeId, G).
 
 prioritized_violation([P|Priority], [P|Priority], UserId, UseeId, G):-
     kind_of_node(P, Usee),
-    gen_node(UseeId, G, Usee), 
+    gen_node(UseeId, G, Usee),
     violation(UserId, UseeId, G).
 
 prioritized_violation([P|Priority], PriorityOut, UserId, UseeId, G):-
@@ -245,9 +263,9 @@ find_violations(GraphIn, Acc, Violations, GraphOut):-
 
 select_violation(GraphIn, Use, GraphOut):-
     select_uses(UserId, UseeId, GraphIn, GraphOut),
-    is_violation(UserId, UseeId, GraphOut), 
+    is_violation(UserId, UseeId, GraphOut),
     ids_to_use(UserId, UseeId, Use).
 
 
-    
-    
+
+

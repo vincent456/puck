@@ -4,5 +4,5 @@ declareSet(prototypes,['Curly', 'Larry', 'Moe']).
 hideScopeSet(prototypes).
 
 areFriendOfScopeSet(
-	['PrototypeDemo.main__String[]', 'Creator'],
+	['PrototypeDemo.main__String[]'], %%, 'Creator'],
 	prototypes).
