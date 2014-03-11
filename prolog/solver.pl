@@ -42,6 +42,7 @@ excluded(Id, List, []):- \+get_assoc(Id,List,_).
 user_host(Real, CeeK, WrongUsersId, Graph, HostId):-
 
     id_of_node(RealId, Real),
+    RealId\=HostId,
     collect_constraints(RealId, Graph, RCts),!,
 
     gen_syntaxicaly_correct_container(CeeK, Graph, Host),
@@ -60,7 +61,7 @@ user_host(Real, CeeK, WrongUsersId, Graph, HostId):-
 usee_host(Real, CeeK, WrongUsersId, Graph, HostId):-
 
     id_of_node(RealId, Real),
-
+    RealId\=HostId,
     gen_syntaxicaly_correct_container(CeeK, Graph, Host),
     id_of_node(HostId, Host),
 

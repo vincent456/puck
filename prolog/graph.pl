@@ -59,8 +59,8 @@
 
 :- use_module(javaRules).
 :- reexport(javaRules).
-%% :- use_module(sigmaRules).
-%% :- reexport(sigmaRules).
+% :- use_module(sigmaRules).
+% :- reexport(sigmaRules).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%        graph impl         %%%%%%%%%
@@ -68,8 +68,8 @@
 %% :-reexport(graph_list2dot).
 %% :- ensure_loaded(graph_list).
 
-:- reexport(graph_assoc2dot_uml).
-%:- reexport(graph_assoc2dot_classic).
+%:- reexport(graph_assoc2dot_uml).
+:- reexport(graph_assoc2dot_classic).
 :- ensure_loaded(graph_assoc).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

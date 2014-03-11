@@ -1,18 +1,18 @@
 :-module(typing, [subtype/3]).
 
-%% :-op(800,xfx, <:).
-%% :-op(800,xfx, =:).
-%% :-op(750, yfx, =>).
-%:-op(750, yfx, *).
+% :-op(800,xfx, <:).
+% :-op(800,xfx, =:).
+% :-op(750, yfx, =>).
+% :-op(750, yfx, *).
 
-%% T<:T.
+% T<:T.
 
-%% (T1=>T2)<:(S1=>S2):-(T2<:S2), (S1<:T1).
+% (T1=>T2)<:(S1=>S2):-(T2<:S2), (S1<:T1).
 
-%% %T1*T2<:S1*S2:- T1<:S1 , T2<: S2.
-%% %% alternately an n-uplet can be represented by a list
-%% []<:[].
-%% [T1|T2]<:[S1|S2]:- T1<:S1, T2<:S2.
+% %T1*T2<:S1*S2:- T1<:S1 , T2<: S2.
+% %% alternately an n-uplet can be represented by a list
+% []<:[].
+% [T1|T2]<:[S1|S2]:- T1<:S1, T2<:S2.
 
 
 

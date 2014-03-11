@@ -196,7 +196,6 @@ interloper(Id, (Is, IsWF, Fs), Graph):-
     member((Is1, Fs1), IsWF), append(Fs1, Fs, Fs2), interloper0(Id, Is1, Fs2).
 
 
-
 is_violation(UserId, UseeId, Graph):- 
     find_constraint_node(UseeId, Graph, HNode),
     id_of_node(HId, HNode), constraint_of_node((Is, IsWF, _), HNode), 
@@ -211,6 +210,9 @@ collect_constraints_aux(Id, G, (Is, IsWF, Fs), Cts):-
      collect_constraints_aux(CerId, G, (Is1, IsWF1, Fs1), Cts)).
 
 collect_constraints(Id, G, Cts):- collect_constraints_aux(Id, G, ([],[],[]), Cts).
+
+interloper_of(UserId, UseeId, Graph):-
+    'contains*'(UseeId, UserId, Graph), false,!.
 
 interloper_of(UserId, UseeId, Graph):-
     collect_constraints(UseeId, Graph, Cts),
