@@ -157,8 +157,6 @@ constraint_full_name_to_id(Graph, Imports, (SFN, InterlopersFN, FriendsFN), (SID
 
 %%%%%%%%%%%%%%%%
 
-constraint_of_node(Ct, (_,_,_, Ct)).
-
 find_constraint_node(no_parent, _, _):- !, fail.
 
 find_constraint_node(Id, G, Hn):-

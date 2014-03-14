@@ -39,10 +39,10 @@
 	    create_host/4,
 	    %node getters
 	    name_of_node/2,
-	    namesig_of_node/2,
 	    kind_of_node/2,
 	    type_of_node/2,
 	    identity_of_node/2,
+	    constraint_of_node/2,
 	    container_of_node/2,
 	    containees_of_node/2,
 	    users_of_node/2,
