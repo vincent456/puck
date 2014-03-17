@@ -32,8 +32,9 @@ normalize_constraints(Graph, Imports, SetDefs, RootFN, Cts, NCts):-
     foldl(call(normalize_constraints_aux(Graph, Imports, SetDefs, RootFN)), Cts, [], NCts).
 
 decorate_graph_aux(Id-Ct, Ns, NewNs):-
-    get_assoc(Id, Ns, (Id, Desc, Edges, no_constraint)),
-    put_assoc(Id, Ns, (Id, Desc, Edges, Ct), NewNs).
+    get_assoc(Id, Ns, N),
+    set_constraint_of_node(Ct, N, NN),
+    put_assoc(Id, Ns, NN, NewNs).
 
 decorate_graph(CtsAssoc, (Ns, AbsAssoc, Nb), (NewNs, AbsAssoc, Nb)):-
     assoc_to_list(CtsAssoc, CtsList),

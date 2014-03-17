@@ -11,19 +11,29 @@
 % getters to encapsulate node representation
 %%
 
-id_of_node(Id, (Id,_,_,_)).
+id_of_node(Id, (Id,_,_,_,_)).
 
-set_id_of_node(Id, (_,Identity, Edges, Constraint), 
-                    (Id, Identity, Edges, Constraint)).
+set_id_of_node(Id, (_,Identity, Edges, UsesDepencies, Constraint), 
+                    (Id, Identity, Edges, UsesDepencies, Constraint)).
 
-identity_of_node(Identity, (_, Identity, _, _)).
+identity_of_node(Identity, (_, Identity, _, _, _)).
 
-set_identity_of_node(Identity, (Id, _, Edges, Constraint),
-                                (Id, Identity, Edges, Constraint)).
+set_identity_of_node(Identity, (Id, _, Edges, UsesDepencies, Constraint),
+                                (Id, Identity, Edges, UsesDepencies, Constraint)).
 
-edges_of_node(Edges, (_, _, Edges, _)).
+edges_of_node(Edges, (_, _, Edges, _, _)).
 
-constraint_of_node(Ct, (_, _, _, Ct)).
+set_edges_of_node(NEdges, (Id, Identity, _, UsesDepencies, Constraint),
+                           (Id, Identity, NEdges, UsesDepencies, Constraint)).
+
+uses_dependencies_of_node(UD, (_, _, _, UD, _)).
+
+set_uses_dependencies_of_node(NUD, (Id, Identity, Edges, _, Constraint), 
+                                    (Id, Identity, Edges, NUD, Constraint)).
+
+constraint_of_node(Ct, (_, _, _, _, Ct)).
+set_constraint_of_node(Ct, (Id, Identity, Edges, UD, _),
+                            (Id, Identity, Edges, UD, Ct)).
 
 %%%%%%%%%%%%%%%%%%%%%
 
@@ -43,7 +53,8 @@ namesig0(G, Name, arrow(ParamsIds,_), Kind, NameSig):-
 namesig0(_,Name, _, _, Name).
 
 namesig(G, NodeId, NameSig):-
-    get_node(NodeId, G, (_,(Kind, Name, Type),_,_)), 
+    get_node(NodeId, G, N),
+    identity_of_node((Kind, Name, Type), N), 
     namesig0(G, Name, Type, Kind, NameSig).
 %%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -58,26 +69,36 @@ type_of_node(Type, N):-
 
 %%%
 container_of_node(C, N):-
-    edges_of_node((C, _, _, _, _, _), N).
+    edges_of_node((C, _, _, _, _), N).
 
 containees_of_node(Cs, N):-
-    edges_of_node((_, Cs, _, _, _, _), N).
+    edges_of_node((_, Cs, _, _, _), N).
 
 users_of_node(Users, N):-
-    edges_of_node((_,_,Users, _, _, _), N).
+    edges_of_node((_,_,Users, _, _), N).
 
 super_types_of_node(Super, N):-
-    edges_of_node((_, _, _, Super, _, _), N).
+    edges_of_node((_, _, _, Super, _), N).
 
 sub_types_of_node(Sub, N):-
-    edges_of_node((_, _, _, _, Sub, _), N).
+    edges_of_node((_, _, _, _, Sub), N).
 
-incidental_uses_of_node(IUses, N):-
-    edges_of_node((_, _, _, _, _, IUses), N).
+side_uses_of_node(SUses, N):-
+    uses_dependencies_of_node((SUses, _), N).
 
+primary_uses_of_node(PUses, N):-
+    uses_dependencies_of_node((_, PUses), N).
+
+    
 %%%%%
 
-create_node0(Desc, (none, Desc, (no_parent, [],[], [], [], []), no_constraint)).
+create_node0(Desc, 
+    (none, Desc, 
+        (no_parent, [], [], [], []), 
+        (A1, A2),
+        no_constraint)):-
+    empty_assoc(A1),
+    empty_assoc(A2).
 
 empty_node(N):-create_node0(_, N).
 
@@ -90,48 +111,96 @@ create_node(Type, Name, Sig, GraphIn, NewNode, GraphOut):-
     create_node0((Type, Name, Sig), N),
     put_new_node(N, GraphIn, NewNode, GraphOut).
 
-set_container((Id, Desc, (_, Cee, Users, Sup, Sub, IUses), Ct), Cer, 
-                (Id, Desc, (Cer, Cee, Users, Sup, Sub, IUses), Ct)).
+set_container(N, Cer, NN):-
+    edges_of_node((_, Cee, Users, Sup, Sub), N),
+    set_edges_of_node((Cer, Cee, Users, Sup, Sub), N, NN).
 
-add_containee((Id, Desc, (Cer, Cees, Users, Sup, Sub, IUses), Ct), Cee, 
-                (Id, Desc, (Cer, [Cee| Cees], Users, Sup, Sub, IUses), Ct)).
+add_containee(N, Cee, NN):-
+    edges_of_node((Cer, Cees, Users, Sup, Sub), N),
+    set_edges_of_node((Cer, [Cee| Cees], Users, Sup, Sub), N, NN).
 
-select_containee(Cee, (Id, Desc, (Cer, Cees, Users, Sup, Sub, IUses), Ct), 
-                    (Id, Desc, (Cer, NCees, Users, Sup, Sub, IUses), Ct)):-
-    select(Cee, Cees, NCees).
+select_containee(Cee, N, NN):-
+    edges_of_node((Cer, Cees, Users, Sup, Sub), N),
+    select(Cee, Cees, NCees),
+    set_edges_of_node((Cer, NCees, Users, Sup, Sub), N, NN).
 
-add_user((Id, Desc, (Cer, Cees,Users, Sup, Sub, IUses), Ct), User, 
-            (Id, Desc, (Cer, Cees, [User |Users], Sup, Sub, IUses), Ct)).
-select_user(User, (Id, Desc, (Cer, Cees, Users, Sup, Sub, IUses), Ct), 
-                (Id, Desc, (Cer, Cees, NUsers, Sup, Sub, IUses), Ct)):-
-    select(User, Users, NUsers).
+add_user(N, User, NN):-
+    edges_of_node((Cer, Cees, Users, Sup, Sub), N),
+    set_edges_of_node((Cer, Cees, [User |Users], Sup, Sub), N, NN).
 
-add_super((Id, Desc, (Cer, Cees,Users, Sup, Sub, IUses), Ct), Super, 
-            (Id, Desc, (Cer, Cees, Users, [Super|Sup], Sub, IUses), Ct)).
-select_super(Super, (Id, Desc, (Cer, Cees, Users, Sup, Sub, IUses), Ct), 
-                (Id, Desc, (Cer, Cees, Users, NSup, Sub, IUses), Ct)):-
-    select(Super, Sup, NSup).
+    
 
-add_sub((Id, Desc, (Cer, Cees,Users, Sup, Subs, IUses), Ct), Sub, 
-            (Id, Desc, (Cer, Cees, Users, Sup, [Sub| Subs], IUses), Ct)).
-select_sub(Sub, (Id, Desc, (Cer, Cees, Users, Sup, Subs, IUses), Ct), 
-            (Id, Desc, (Cer, Cees, Users, Sup, NSubs, IUses), Ct)):-
-    select(Sub, Subs, NSubs).
+select_user(User, N, NN):-
+    edges_of_node((Cer, Cees, Users, Sup, Sub), N),
+    select(User, Users, NUsers),
+    set_edges_of_node((Cer, Cees, NUsers, Sup, Sub), N, NN).
+
+add_super(N, Super, NN):-
+    edges_of_node((Cer, Cees, Users, Sup, Sub), N),
+    set_edges_of_node((Cer, Cees, Users, [Super|Sup], Sub), N, NN).
+
+select_super(Super, N, NN):-
+    edges_of_node((Cer, Cees, Users, Sup, Sub), N),
+    select(Super, Sup, NSup),
+    set_edges_of_node((Cer, Cees, Users, NSup, Sub), N, NN).
+
+add_sub(N, Sub, NN):-
+    edges_of_node((Cer, Cees, Users, Sup, Subs), N),
+    set_edges_of_node((Cer, Cees, Users, Sup, [Sub| Subs]), N, NN).
+
+select_sub(Sub, N, NN):-
+    edges_of_node((Cer, Cees, Users, Sup, Subs), N),
+    select(Sub, Subs, NSubs),
+    set_edges_of_node((Cer, Cees, Users, Sup, NSubs), N, NN).
 
 
-add_incidental_uses0(PrimaryUserId, IncidentalUse, IUses, [(PrimaryUserId, [IncidentalUse | IU]) |IUses1]):-
-    select((PrimaryUserId, IU), IUses, IUses1),!.
-add_incidental_uses0(PrimaryUserId, IncidentalUse, IUses, [(PrimaryUserId, [IncidentalUse]) |IUses]):-!.
+add_without_duplicate(E, Set, Set):- member(E, Set),!.
+add_without_duplicate(E, Set, [E|Set]).
 
-add_incidental_uses((Id, Desc, (Cer, Cees, Users, Sup, Subs, IUses), Ct), 
-                    PrimaryUserId, IncidentalUse, 
-                    (Id, Desc, (Cer, Cees, Users, Sup, Subs, NIUses),Ct)):-
-    add_incidental_uses0(PrimaryUserId, IncidentalUse, IUses, NIUses).
+add_side_uses(N, PrimaryUserId, SideUse, NN):-
+    uses_dependencies_of_node((PUAssoc, SUAssoc), N),
+    (get_assoc(PrimaryUserId, SUAssoc, SUses),!; SUses=[],!),
+    add_without_duplicate(SideUse, SUses, NSUses),
+    put_assoc(PrimaryUserId, SUAssoc, NSUses, NSUAssoc),
+    set_uses_dependencies_of_node((PUAssoc, NSUAssoc), N, NN).
 
-get_incidental_uses((PrimaryUserId, PrimaryUseeId), G, IUses):-
+set_side_uses(N, PrimaryUserId, NSUses, NN):-
+    uses_dependencies_of_node((PUAssoc, SUAssoc), N),
+    put_assoc(PrimaryUserId, SUAssoc, NSUses, NSUAssoc),
+    set_uses_dependencies_of_node((PUAssoc, NSUAssoc), N, NN).
+
+del_side_uses(N, PrimaryUserId, NN):-
+    uses_dependencies_of_node((PUAssoc, SUAssoc), N),
+    del_assoc(PrimaryUserId, SUAssoc, _, NSUAssoc),
+    set_uses_dependencies_of_node((PUAssoc, NSUAssoc), N, NN).
+
+get_side_uses((PrimaryUserId, PrimaryUseeId), G, SUses):-
     get_node(PrimaryUseeId, G, PrimaryUsee),
-    incidental_uses_of_node(AllIUses, PrimaryUsee),
-    (member((PrimaryUserId, IUses), AllIUses),!; IUses=[]).
+    side_uses_of_node(SUsesAssoc, PrimaryUsee),
+     (get_assoc(PrimaryUserId, SUsesAssoc, SUses),!; SUses=[],!).
+
+
+add_primary_uses(N, SideUserId, PrimaryUse, NN):-
+    uses_dependencies_of_node((PUAssoc, SUAssoc), N),
+    (get_assoc(SideUserId, PUAssoc, PUses),!; PUses=[],!),
+    add_without_duplicate(PrimaryUse, PUses, NPUses),
+    put_assoc(SideUserId, PUAssoc, NPUses, NPUAssoc),
+    set_uses_dependencies_of_node((NPUAssoc, SUAssoc), N, NN).
+
+set_primary_uses(N, SideUserId, NPUses, NN):-
+    uses_dependencies_of_node((PUAssoc, SUAssoc), N),
+    put_assoc(SideUserId, PUAssoc, NPUses, NPUAssoc),
+    set_uses_dependencies_of_node((NPUAssoc, SUAssoc), N, NN).
+
+del_primary_uses(N, SideUserId, NN):-
+    uses_dependencies_of_node((PUAssoc, SUAssoc), N),
+    del_assoc(SideUserId, PUAssoc, _, NPUAssoc),
+    set_uses_dependencies_of_node((NPUAssoc, SUAssoc), N, NN).
+
+get_primary_uses((SideUserId, SideUseeId), G, PUses):-
+    get_node(SideUseeId, G, SideUsee),
+    primary_uses_of_node(PUsesAssoc, SideUsee),
+     (get_assoc(SideUserId, PUsesAssoc, PUses),!; PUses=[],!).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% functions to build the graph on the fly while reading the file
@@ -170,12 +239,15 @@ build_graph(edge(isa, SubId, SuperId), G, G2):-
 
 %% 
 %% uses_dependency( method call uses, variable declaration type uses)
-build_graph(uses_dependency(IncidentalUse, 
+build_graph(uses_dependency((SideUserId, SideUseeId), 
                                 (PrimaryUserId, PrimaryUseeId)), 
-                                    G, G2):-
+                                    G, G3):-
     get_node_or_create_empty(PrimaryUseeId, G, PrimaryUsee),
-    add_incidental_uses(PrimaryUsee, PrimaryUserId, IncidentalUse, NPrimaryUsee),
-    put_node(NPrimaryUsee, G, G2).
+    add_side_uses(PrimaryUsee, PrimaryUserId, (SideUserId, SideUseeId), NPrimaryUsee),
+    put_node(NPrimaryUsee, G, G2),
+    get_node_or_create_empty(SideUseeId, G2, SideUsee),
+    add_primary_uses(SideUsee, SideUserId, (PrimaryUserId, PrimaryUseeId), NSideUsee),
+    put_node(NSideUsee, G2, G3).
 
 
 

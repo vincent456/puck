@@ -43,13 +43,16 @@
 	    type_of_node/2,
 	    identity_of_node/2,
 	    constraint_of_node/2,
+	    set_constraint_of_node/3,
 	    container_of_node/2,
 	    containees_of_node/2,
 	    users_of_node/2,
 	    super_types_of_node/2,
 	    sub_types_of_node/2,
 	    id_of_node/2,
-	    ids_to_use/3]).
+	    ids_to_use/3,
+	    get_side_uses/3,
+	    del_side_uses/3]).
 
 :- use_module(typing).
 :-reexport(typing).
