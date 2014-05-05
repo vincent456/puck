@@ -55,7 +55,7 @@ user_host(Real, CeeK, WrongUsersId, Graph, HostId):-
 				\+interloper(UserId, HCts, Graph))).
 
 %%%
-% we search a host an abstraction used by its realisation
+% we search a host for an abstraction used by its realisation
 % ex: abstraction = interface, realisation = class
 usee_host(Real, CeeK, WrongUsersId, Graph, HostId):-
 
@@ -265,7 +265,4 @@ select_violation(GraphIn, Use, GraphOut):-
     select_uses(UserId, UseeId, GraphIn, GraphOut),
     is_violation(UserId, UseeId, GraphOut),
     ids_to_use(UserId, UseeId, Use).
-
-
-
 
