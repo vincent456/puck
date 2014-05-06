@@ -31,14 +31,14 @@ class AGNode (val graph: AccessGraph,
   private[graph] def addContent(n:AGNode) { this.content += n}
 
 
-  private var superTypes : Set[Int] = Set()
-  private[graph] def addSuperType(st:Int) { this.superTypes = this.superTypes + st}
+  private var superTypes : mutable.Set[AGNode] = mutable.HashSet()
+  private[graph] def addSuperType(st:AGNode) { this.superTypes += st}
 
-  private var subTypes : Set[Int] = Set()
-  private[graph] def addSubType(st:Int) { this.subTypes = this.subTypes + st}
+  private var subTypes : mutable.Set[AGNode] = mutable.HashSet()
+  private[graph] def addSubType(st:AGNode) { this.subTypes += st}
 
-  private var users : Set[Int] = Set()
-  private[graph] def addUser(u:Int) { this.users = this.users + u}
+  private var users : mutable.Set[AGNode] = mutable.HashSet()
+  private[graph] def addUser(n:AGNode) { this.users += n}
 
   private var primaryUses : Set[Int] = Set()
   private var sideUses : Set[Int] = Set()

@@ -20,38 +20,30 @@ class AccessGraphBuilder {
         graph.nodes += ((id, n))
         n
       case Some(n) => n /* check that the kind and type is indeed the same ??*/
-
     }
 
   def addPackageNode(fullName: String, localName:String) : AGNode =
     addNode(fullName, localName, NodeKind.Package, None)
 
   def addPackage(p : String): AGNode = {
-    val fp = filterPackageName(p)
+    val fp = AccessGraphBuilder.filterPackageName(p)
     val path = fp split "[.]" //TODO test split
     if (path.length == 0)
       addPackageNode(fp, fp)
     else {
-      val (_, n) = path.foldLeft[mutable.StringBuilder, AGNode](new mutable.StringBuilder(), null){
-        ((sb, nodeParent), p) =>
-        sb append p
-        val n = addPackageNode(sb.toString(), p)
-        nodeParent addContent n
-        sb append "."
-        (sb, n)
-      }
+      val (_, n):(mutable.StringBuilder, AGNode) = path.foldLeft(new mutable.StringBuilder(), null : AGNode){
+        (sb_nodeParent:(mutable.StringBuilder, AGNode), p:String) => sb_nodeParent match {
+          case (sb, nodeParent) =>
+            sb append p
+            val n = addPackageNode(sb.toString(), p)
+            nodeParent addContent n
+            sb append "."
+            (sb, n)
+        }
+      };
       n
     }
   }
-
-  //def addCompilationUnit(c: AST.CompilationUnit)
-
-  private def addTypeDecl(td : AST.TypeDecl) : AGNode = {
-    val tdNode = if(td.isInstanceOf[AST.ClassDecl])
-             addClassDecl()
-  }
-
-
 }
 
 object AccessGraphBuilder{
@@ -61,6 +53,11 @@ object AccessGraphBuilder{
   def filterPackageName(name:String) = name match {
     case "" => defaultPackageName
     case _ => name
+  }
+
+  def addIsa(sub : AGNode, sup: AGNode){
+    sub.addSuperType(sup)
+    sup.addSubType(sub)
   }
 
 }

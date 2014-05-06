@@ -1,0 +1,161 @@
+import puck.graph.AccessGraphBuilder;
+import puck.graph.AccessGraph;
+import puck.graph.AGNode;
+import puck.graph.AGBuildingError;
+
+
+aspect AccessGraphFactory {
+
+	public AccessGraph Program.buildAccessGraph(){
+
+		AccessGraphBuilder builder = new AccessGraphBuilder();
+
+		List<CompilationUnit> compUnitList = getCompilationUnitList();
+		for (CompilationUnit cu : compUnitList) {
+			cu.buildAG(builder);
+		}
+
+	}
+
+	void ASTNode.buildAG(AccessGraphBuilder builder){
+		for(int i=0; i< getNumChild(); i++){
+			getChild(i).buildAG(builder);
+		}
+	}
+
+	void CompilationUnit.buildAG(AccessGraphBuilder builder){
+		if(pathName() != null){
+			AGNode packageNode = builder.addPackage(getPackageDecl());
+
+			for (TypeDecl td : getTypeDecls()){
+				//TODO correct and finish !!! cf addCompilationUnit
+				td.buildAG(builder, packageNode);
+				packageNode.addContains(addTypeDecl(td));
+			}
+		}
+		else{ //TODO : delete
+			System.out.println(getPackageDecl()+" : pathName = null");
+		}
+	}
+
+	static scala.Option<puck.graph.Type> TypeDecl.noType = scala.Option.apply(null);
+
+
+
+	scala.Enumeration.Value TypeDecl.getAGNodeKind(){
+		throw new AGBuildingError(this.getClass()+" : Unkown nodekind");
+	}
+
+	scala.Enumeration.Value ClassDecl.getAGNodeKind(){
+		return puck.graph.NodeKind.Class();
+	}
+
+	scala.Enumeration.Value InterfaceDecl.getAGNodeKind(){
+		return puck.graph.NodeKind.Interface();
+	}
+
+	AGNode TypeDecl.buildAGNode(AccessGraphBuilder builder){
+		return builder.addNode(fullName(), name(), getAGNodeKind(), TypeDecl.noType);
+	}
+
+	AGNode Access.buildAGNode(AccessGraphBuilder builder){
+		throw new AGBuildingError(this.getClass()+" : not a type or partype access");
+	}
+
+	AGNode TypeAccess.buildAGNode(AccessGraphBuilder builder){
+		return decl().buildAGNode(builder);
+	}
+
+	AGNode ParTypeAccess.buildAGNode(AccessGraphBuilder builder){
+		return builder.addNode(fullName(), name(), 
+				getTypeDecl().getAGNodeKind(), TypeDecl.noType);
+	}
+	
+
+	interface TypeDeclared{
+		TypeDecl getTypeDecl();
+	}
+
+	TypeAccess implements TypeDeclared;
+	public TypeDecl TypeAccess.getTypeDecl(){
+		return decl();
+	}
+	ParTypeAccess implements TypeDeclared;
+	public TypeDecl ParTypeAccess.getTypeDecl(){
+		return ((TypeAccess)getTypeAccess()).decl();
+	}
+
+	boolean TypeDecl.isFromStdLib(){
+			return compilationUnit().pathName().startsWith(System.getProperty("java.home"));
+	}
+
+	void TypeDecl.buildAG(AccessGraphBuilder builder){
+		
+		AGNode tdNode = buildAG_TypeDecl(builder);
+
+		for (Access use : uses()) {
+			//TODO FINISH !!! cf addTypeDecl
+		}
+	}
+
+    static void TypeDecl.addImplements(AccessGraphBuilder builder, 
+    	AGNode sub, AST.List<Access> implementList){
+
+    	for(Access a : implementList){
+    		
+    		if(!((TypeDeclared)a).getTypeDecl().isFromStdLib()){
+				AccessGraphBuilder.addIsa(sub, a.buildAGNode(builder));
+			}
+
+			a.addExtendsAndImplementsUses(builder, sub);
+    	}
+	}
+
+	AGNode TypeDecl.buildAG_TypeDecl(AccessGraphBuilder builder){
+		throw new AGBuildingError(this.getClass() + " : expected ClassDecl or InterfaceDecl");
+	}
+	AGNode ClassDecl.buildAG_TypeDecl(AccessGraphBuilder builder){
+		AGNode agNode = buildAGNode(builder);
+
+		if (hasSuperclass() && !"java.lang.Object".equals(superclass().fullName())){
+			
+			if(!superclass().isFromStdLib())
+				AccessGraphBuilder.addIsa(agNode, getSuperClassAccess().buildAGNode(builder));
+
+			getSuperClassAccess().addExtendsAndImplementsUses(builder, agNode);
+		}
+
+		TypeDecl.addImplements(builder, agNode, getImplementss());
+
+		return agNode;
+	}
+
+	AGNode InterfaceDecl.buildAG_TypeDecl(AccessGraphBuilder builder){
+		AGNode agNode = buildAGNode(builder);
+		
+		TypeDecl.addImplements(builder, agNode, getSuperInterfaceIdList());
+
+		return agNode;
+	}
+
+
+	void Access.addExtendsAndImplementsUses(AccessGraphBuilder builder, AGNode sub){
+		throw new AGBuildingError(this.getClass() + " : expected TypeAccess or ParTypeAccess");
+	}
+
+
+	void TypeAccess.addExtendsAndImplementsUses(AccessGraphBuilder builder, AGNode sub){
+		if(!decl().isFromStdLib()){
+			AGNode sn = decl().buildAGNode(builder);
+			sn.addUser(sub);
+		}
+	}
+
+	void ParTypeAccess.addExtendsAndImplementsUses(AccessGraphBuilder builder, AGNode sub){
+		getTypeAccess().addExtendsAndImplementsUses(builder, sub);
+		for(Access typeArg : getTypeArguments()){
+			typeArg.addExtendsAndImplementsUses(builder, sub);
+		}
+	}
+
+}

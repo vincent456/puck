@@ -31,7 +31,9 @@
   <!-- <property name="base-outdir" value="." /> -->
 
   <!-- location of puck -->
-  <property name="puck" value="${svn-dir}/jrrtEngine"/>
+  <property name="puck-java" value="${svn-dir}/jrrtEngine"/>
+
+  <property name="puck-scala" value="."/>
 
   <!-- location of evaluator -->
   <property name="evaluator" value="${svn-dir}/evaluator"/>
@@ -39,7 +41,7 @@
   <property name="distrib" value="${svn-dir}/distrib"/>
   
 
-	<echo message="Java1.4Frontend = ${Java1.4Frontend}, Java1.5Frontend = ${Java1.5Frontend}, ControlFlowGraph = ${ControlFlowGraph}, puck = ${puck}, evaluator = ${evaluator}, distrib = ${distrib}"/>
+	<echo message="Java1.4Frontend = ${Java1.4Frontend}, Java1.5Frontend = ${Java1.5Frontend}, ControlFlowGraph = ${ControlFlowGraph}, puck = ${puck-java}, evaluator = ${evaluator}, distrib = ${distrib}"/>
 </target>
 		
 <target name="settings" depends="defaultsettings">
@@ -58,7 +60,7 @@
 	<!-- "lib" is the directory where additional libraries are located -->
   <property name="lib" value="${Refactoring}/lib"/>
   <!-- "libpuck" is the directory where additional puck libraries are located -->
-  <property name="libpuck" value="${puck}/lib"/>
+  <property name="libpuck" value="${puck-java}/lib"/>
 </target>
 
 <!-- compile sources -->
@@ -73,7 +75,7 @@
          destdir="./bin"
          classpath=".:${tools}/beaver-rt.jar:${lib}/junit.jar:${lib}/cream106.jar:${libpuck}/commons-cli-1.2.jar:${libpuck}/commons-io-2.4.jar" >
 
-    <src path="${puck}"/>
+    <src path="${puck-java}"/>
 	  <src path="${Refactoring}"/>
     
     <include name="**/*.java"/>
@@ -109,7 +111,7 @@
                   value="puck.Puck"/>
     </manifest>
   </jar>
-  <copy file="${puck}/puck.jar" todir="${distrib}"/>
+  <copy file="${puck-java}/puck.jar" todir="${distrib}"/>
 </target> -->
 
 <!-- generate compiler source files and compile sources; change
@@ -146,11 +148,11 @@
             <include name="**/*.jrag"/>
             <include name="**/*.jadd"/>
     </fileset>
-		<fileset dir="${puck}/jrrt_modified_files">
+		<fileset dir="${puck-java}/jrrt_modified_files">
             <include name="**/*.jrag"/>
             <exclude name="Renaming/RenameMethod.jrag"/>
     </fileset>
-    <fileset dir="${puck}/puck/jrag">
+    <fileset dir="${puck-java}/puck/jrag">
      <!--        <include name="**/*.jrag"/>
             <include name="**/*.jadd"/> -->
             <include name="Desambiguation.jadd"/>
@@ -177,15 +179,13 @@
       <exclude name="ChangeMethodSignature/ChangeParameterType.jrag"/>
 		</fileset>
   	
-    <!-- <fileset dir="${puck}">
-      <include name="jrr_modified_files/**/*.jrag"/>
-  	  <exclude name="bin/tests/*.jrag"/>
-    </fileset> -->
+    <fileset dir="${puck-scala}/jrag" includes="AccessGraphFactory.jrag"/>
     
     <fileset dir="${Refactoring}">
   		<include name="TypeConstraints/TypeConstraintSolving.jrag"/>
 			<include name="TypeConstraints/CollectTypeConstraints.jrag"/>
   	</fileset>
+
   </jastadd>
   <!-- copy library files-->
   <copy todir="${base-outdir}/beaver" preservelastmodified="true">
