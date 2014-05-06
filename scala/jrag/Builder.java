@@ -89,28 +89,30 @@ public class Builder {
 	
 	AGNode getBodyDeclNode(BodyDecl bd){
 
-		if (bd instanceof FieldDeclaration ){
-			return ag.addFieldNode((FieldDeclaration) bd);
-		}
+		//replace with bd.buildAGNode(builder)
 
-		if( bd instanceof MethodDecl){
-			return ag.addMethodNode((MethodDecl)bd);
-		}
+		// if (bd instanceof FieldDeclaration ){
+		// 	return ag.addFieldNode((FieldDeclaration) bd);
+		// }
 
-		if( bd instanceof ConstructorDecl){
-			return ag.addConstructorNode((ConstructorDecl)bd);
-		}
+		// if( bd instanceof MethodDecl){
+		// 	return ag.addMethodNode((MethodDecl)bd);
+		// }
 
-		if(bd instanceof FieldDecl){
-			return NodeFactory.createNode(ag.getId(), (FieldDecl)bd);
-		}
+		// if( bd instanceof ConstructorDecl){
+		// 	return ag.addConstructorNode((ConstructorDecl)bd);
+		// }
 
-		if(bd instanceof InstanceInitializer
-				|| bd instanceof StaticInitializer)
-			return ag.addTypeNode(bd.hostType());
+		// if(bd instanceof FieldDecl){
+		// 	return NodeFactory.createNode(ag.getId(), (FieldDecl)bd);
+		// }
+
+		// if(bd instanceof InstanceInitializer
+		// 		|| bd instanceof StaticInitializer)
+		// 	return ag.addTypeNode(bd.hostType());
 
 
-		return NullNode.instance;
+		// return NullNode.instance;
 
 	}
 
@@ -153,9 +155,10 @@ public class Builder {
 			tdNode = addInterfaceDecl((InterfaceDecl)td);
 		}*/
 
-		for (Access use : td.uses()) {
-			getBodyDeclNode(use.hostBodyDecl()).addUse(tdNode);
-		}
+		// for (Access use : td.uses()) {
+		// 	getBodyDeclNode(use.hostBodyDecl()).addUse(tdNode);
+		// }
+
 		for (BodyDecl bd : td.getBodyDeclList()) {
 			AGNode bdNode = addBodyDeclAndUses(bd, tdNode);
 
@@ -192,71 +195,14 @@ public class Builder {
 		}
 	}
 	
-	private AGNode addBodyDeclAndUses(BodyDecl bd, AGNode typehostAGNode){
-		if(bd instanceof MemberClassDecl){
-			return addTypeDecl(((MemberClassDecl)bd).typeDecl());
-		}
-
-		AGNode bdNode = getBodyDeclNode(bd);
-
-		if (bd instanceof FieldDeclaration ) {
-
-			FieldDeclaration fd = (FieldDeclaration) bd;
-
-			for (Access use : fd.uses()) {
-				BodyDecl hbd = use.hostBodyDecl(); // peut-etre incorrect, que ce passe-t-il si use = TypeDecl et pas BodyDecl !!!
-				addBodyDecl(hbd, bdNode).addUse(bdNode); 
-			}
-
-		}
-		else if (bd instanceof FieldDecl ) {
-			for (VariableDecl vd : ((FieldDecl) bd).getVariableDeclList()) {
-				ag.addFieldNode(vd);
-			}
-		}
-		else if (bd instanceof MethodDecl) {
-			MethodDecl md = (MethodDecl) bd;
-
-			for (Access use : md.uses()) {
-				AGNode user = addBodyDecl(use.hostBodyDecl(), bdNode);
-				user.addUse(bdNode);
-				addMethodUsesDependencies(use, user, bdNode, typehostAGNode);
-			}
-		}
-		else if (bd instanceof ConstructorDecl) {
-			for (Access use : ((ConstructorDecl) bd).uses()) {
-				addBodyDecl(use.hostBodyDecl(), bdNode);
-			}
-		}else if(bd instanceof InstanceInitializer){
-			InstanceInitializer ii = (InstanceInitializer) bd;
-			//ii.
-			System.out.println("TODO !! add instanceInitializer");
-		}
-		else if(bd instanceof StaticInitializer){
-			System.out.println("TODO !! add staticInitializer");
-		}
-		return bdNode;
+	//private AGNode addBodyDeclAndUses(BodyDecl bd, AGNode typehostAGNode){
+		// use bd.buildAG(builder); no need for typehostAGNode
 	}
 
 
-	private AGNode addBodyDecl(BodyDecl bd, AGNode usedNode){
-		//create but add nothing if FieldDecl
-		AGNode bdNode = getBodyDeclNode(bd);
+	//private AGNode addBodyDecl(BodyDecl bd, AGNode usedNode){
+		// use bd.buildAG(builder, usedNode); instead
 
-		if(bd instanceof FieldDecl){
-			FieldDecl fd = (FieldDecl) bd;
-			AST.List<VariableDecl> vdl = fd.getVariableDeclList();
-			for (VariableDecl vd : vdl) {
-				AGNode vdNode = ag.addFieldNode(vd);
-				usedNode.addUse(vdNode);
-			}
-		}
-		else{
-			bdNode.addUse(usedNode);
-		}
-
-		return bdNode;
-	}
 
 
 	/**

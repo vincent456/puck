@@ -1,24 +1,17 @@
 package puck.graph
 
+import scala.collection.mutable
+
 /**
  * Created by lorilan on 05/05/14.
  */
 
-import scala.collection.mutable
-
-object NodeKind extends Enumeration{
-  val Package = Value //unused in core LJ
-  val Interface = Value //unused in LJ
-
-  val Class = Value
-  val Constructor = Value
-  val Method = Value
-}
+class NodeKind
 
 class AGNode (val graph: AccessGraph,
               val id: Int,
               var name: String,
-              val kind: NodeKind.Value,
+              val kind: NodeKind,
               var `type`: Option[Type]){
 
   def ==(that:AGNode):Boolean = this.id == that.id

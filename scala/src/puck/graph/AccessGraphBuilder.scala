@@ -12,7 +12,7 @@ class AccessGraphBuilder {
 
   val nodes : mutable.Map[String, AGNode] = new mutable.HashMap[String, AGNode]()
 
-  def addNode(fullName: String, localName:String, kind: NodeKind.Value, `type`: Option[Type]): AGNode =
+  def addNode(fullName: String, localName:String, kind: NodeKind, `type`: Option[Type]): AGNode =
     nodes get fullName match{
       case None => id = id + 1
         val n = new AGNode(graph, id, localName, kind,`type`)
@@ -23,7 +23,7 @@ class AccessGraphBuilder {
     }
 
   def addPackageNode(fullName: String, localName:String) : AGNode =
-    addNode(fullName, localName, NodeKind.Package, None)
+    addNode(fullName, localName, java.JavaNodeKind.`package`, None)
 
   def addPackage(p : String): AGNode = {
     val fp = AccessGraphBuilder.filterPackageName(p)
