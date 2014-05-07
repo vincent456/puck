@@ -1,11 +1,9 @@
 package puck.gui;
 
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.FileDialog;
 import java.awt.Frame;
-import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
@@ -16,21 +14,18 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
-import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
-import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingWorker;
 
-import puck.Puck;
+import puck.ProgramHelper;
 import puck.graph.AccessGraph;
 
 public class PuckGui extends JFrame {
@@ -47,7 +42,7 @@ public class PuckGui extends JFrame {
 	private JScrollPane packagePanel;
 	private JTextArea jta;
 
-	private Puck puck;
+	private ProgramHelper programHelper;
 
 	private List<JComponent> buttonToShow;
 
@@ -59,9 +54,9 @@ public class PuckGui extends JFrame {
 	
 	//private PackageOnlyCheckBox ponlyCheckBox;
 
-	
-	Puck getPuck(){
-		return puck;
+
+    ProgramHelper getProgramHelper(){
+		return programHelper;
 	}
 	
 	class PuckWorker extends SwingWorker<Void, Void>{
@@ -81,7 +76,7 @@ public class PuckGui extends JFrame {
 	}
 
 	private void onAppDirectoryChoice(){
-		JFileChooser jfc = new JFileChooser(new File(puck.getApplication().getSrcDirectory().getAbsolutePath()));	
+		JFileChooser jfc = new JFileChooser(new File(programHelper.getSrcDirectory().getAbsolutePath()));
 		jfc.setDialogTitle("What directory contains your Java application ?");
 		jfc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY); 
 		jfc.showDialog(null, null);
@@ -90,10 +85,10 @@ public class PuckGui extends JFrame {
 			try {
 				f = f.getCanonicalFile();
 
-				if(!f.getPath().equals(puck.getApplication().getSrcDirectory())){
-					puck.getApplication().setSrcDirectory(f);
-					puck.getPrologHandler().setGenDir(f);
-					decoupleEditor.setEditedFile(puck.getPrologHandler().getDecouple());
+				if(!f.getPath().equals(programHelper.getSrcDirectory())){
+					programHelper.setSrcDirectory(f);
+					programHelper.getPrologHandler().setGenDir(f);
+					decoupleEditor.setEditedFile(programHelper.getPrologHandler().getDecouple());
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -101,11 +96,11 @@ public class PuckGui extends JFrame {
 		}
 
 		System.out.println("Application directory : ");
-		System.out.println(puck.getApplication().getSrcDirectory().getAbsolutePath());
+		System.out.println(programHelper.getSrcDirectory().getAbsolutePath());
 	}
 
 	private void onJarListFileChoice(){
-		JFileChooser jfc = new JFileChooser(new File(puck.getApplication().getSrcDirectory().getAbsolutePath()));	
+		JFileChooser jfc = new JFileChooser(new File(programHelper.getSrcDirectory().getAbsolutePath()));
 		jfc.setDialogTitle("Select the file containing a list of the jars needed to compile");
 		jfc.setFileSelectionMode(JFileChooser.FILES_ONLY); 
 		jfc.showDialog(null, null);
@@ -113,13 +108,13 @@ public class PuckGui extends JFrame {
 		if(f != null ){
 			try {
 				f = f.getCanonicalFile();
-				puck.getApplication().setJarListFile(f);
+				programHelper.setJarListFile(f);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
 
-		System.out.println("Jars list file :\n" +puck.getApplication().getJarListFile().getAbsolutePath());
+		System.out.println("Jars list file :\n" + programHelper.getJarListFile().getAbsolutePath());
 	}
 
 	private void onEvaluatorChoice(){
@@ -128,25 +123,18 @@ public class PuckGui extends JFrame {
 		choix1.setVisible(true);
 
 		if (choix1.getFile() != null) {
-			puck.getPrologHandler().setEvaluator(new File(choix1.getDirectory()+choix1.getFile()));
+			programHelper.getPrologHandler().setEvaluator(new File(choix1.getDirectory()+choix1.getFile()));
 			System.out.println("SWIProlog Evaluator ... OK.");
 		}
 		maframe.dispose();
 	}
 
 	private void onRun(){
-		try{
-			puck.writePL();
-		}catch(Error e){
-			System.out.println("writePL exception catched : "+ e.getMessage());
-			e.printStackTrace();
-			return;
-		}
-		
+
 		System.out.println("Running the evaluator ... ");
 		
 		try {
-			Process evalPr = puck.getPrologHandler().launchEvaluator();
+			Process evalPr = programHelper.getPrologHandler().launchEvaluator();
 			evaluatorInterrupter.setProcess(evalPr);
 			evaluatorStopButton.setVisible(true);
 			
@@ -168,7 +156,7 @@ public class PuckGui extends JFrame {
 		
 		
 		System.out.println("Begining dot to png conversion ... ");
-		puck.getPrologHandler().dot2png();
+		programHelper.getPrologHandler().dot2png();
 		
 		
 		
@@ -176,8 +164,8 @@ public class PuckGui extends JFrame {
 			public void run(){
 				try{
 
-					ImageFrame frame = new ImageFrame(puck.getPrologHandler().getPlGraph().getParentFile().getAbsolutePath()+File.separator+ 
-							puck.getPrologHandler().getGraphName() +".png");
+					ImageFrame frame = new ImageFrame(programHelper.getPrologHandler().getPlGraph().getParentFile().getAbsolutePath()+File.separator+
+							programHelper.getPrologHandler().getGraphName() +".png");
 					frame.setVisible(true);
 				}
 				catch(ImageFrameError e){
@@ -187,15 +175,13 @@ public class PuckGui extends JFrame {
 		});
 	}
 	
-
-
 	void displayTree(AccessGraph g){
 
 		if(ppController!=null)
 			packagePanel.remove(ppController.getTreePanel());
 
 		try{
-			ppController = new PackagePanelController(g, puck.getApplication().getSrcDirectory().getName());
+			ppController = new PackagePanelController(g);
 		}catch(Error e){
 			return;
 		}
@@ -206,8 +192,6 @@ public class PuckGui extends JFrame {
 		}
 
 	}
-
-	
 
 	private JButton makeButton(String name, String toolTip, ActionListener actl, boolean delayedDisplay){
 		JButton b = new JButton(name);
@@ -261,7 +245,7 @@ public class PuckGui extends JFrame {
 //		}
 //
 //		public void itemStateChanged(ItemEvent e) {
-//			puck.setDelegateFiltering(checkBox.isSelected());
+//			programHelper.setDelegateFiltering(checkBox.isSelected());
 //		}
 //
 //	}
@@ -272,7 +256,7 @@ public class PuckGui extends JFrame {
 //		}
 //
 //		public void itemStateChanged(ItemEvent e) {
-//			puck.setRedUsesOnly(checkBox.isSelected());
+//			programHelper.setRedUsesOnly(checkBox.isSelected());
 //		}
 //
 //	}
@@ -287,7 +271,7 @@ public class PuckGui extends JFrame {
 				EventQueue.invokeLater(new Runnable(){
 					public void run(){
 						try{
-							SettingsFrame frame = new SettingsFrame(puck);
+							SettingsFrame frame = new SettingsFrame(programHelper);
 							frame.setVisible(true);
 						}
 						catch(ImageFrameError e){
@@ -308,7 +292,7 @@ public class PuckGui extends JFrame {
 		},
 		false);
 
-		if(puck.getPrologHandler().getEvaluator() == null){
+		if(programHelper.getPrologHandler().getEvaluator() == null){
 			makeButton("SWIProlog evaluator ?",
 					"Select prolog file containing the coupling constraint evaluator",
 					new ActionListener() {
@@ -346,7 +330,7 @@ public class PuckGui extends JFrame {
 
 		buttonToShow = new ArrayList<JComponent>();
 
-		makeButton("View None",
+		/*makeButton("View None",
 				"Deselect all access graph node",
 				new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -362,7 +346,7 @@ public class PuckGui extends JFrame {
 				//ponlyCheckBox.getCheckBox().setSelected(false);
 				ppController.setVisibilityAll(true);
 			}
-		}, true);
+		}, true);*/
 		
 		
 
@@ -408,7 +392,7 @@ public class PuckGui extends JFrame {
 	public PuckGui(){
 		super("Puck V1.2");
 		try {
-			puck = new Puck();
+			programHelper = new ProgramHelper();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -452,33 +436,23 @@ public class PuckGui extends JFrame {
 		PrintStream ps = new PrintStream(new puck.gui.TextOutputStream(jta));
 		System.setOut(ps);
 		System.setErr(ps);
-		System.out.println("Application Directory : "+puck.getApplication().getSrcDirectory().getAbsolutePath());
-		decoupleEditor = new SimpleEditController(puck.getPrologHandler().getDecouple());
+		System.out.println("Application Directory : " + programHelper.getSrcDirectory().getAbsolutePath());
+		decoupleEditor = new SimpleEditController(programHelper.getPrologHandler().getDecouple());
 		decoupleEditor.setChangeFileListener(new FileChangeListener() {
 			public void change(File f) {
-				puck.getPrologHandler().setDecouple(f);
+				programHelper.getPrologHandler().setDecouple(f);
 			}
 		});
-		if(!puck.getApplication().getJarListFile().exists())
+		if(!programHelper.getJarListFile().exists())
 			System.out.println("No jars list file selected");
 		else
-			System.out.println("Jars list file : " +puck.getApplication().getJarListFile().getAbsolutePath());
+			System.out.println("Jars list file : " + programHelper.getJarListFile().getAbsolutePath());
 
 		textsPannel.setRightComponent(decoupleEditor.getPanel());
 
 		this.setVisible(true);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		this.addWindowListener(new OnExit());
 
 	}
-
-	class OnExit extends WindowAdapter{
-		public void windowClosing(WindowEvent e){
-			puck.cleanEvaluator();
-		}
-	}
-
-
-
 }

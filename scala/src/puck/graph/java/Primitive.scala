@@ -1,10 +1,12 @@
 package puck.graph.java
 
-import puck.graph.NamedType
+import puck.graph.{NodeKind, AccessGraph, StatelessAGNode, NamedType}
 
 /**
  * Created by lorilan on 05/05/14.
  */
+case class Primitive private () extends NodeKind
+
 object Primitive {
 
   val void = NamedType("@primitive.void", -1)
@@ -19,4 +21,23 @@ object Primitive {
 
   // not primitive but ...
   val string = NamedType("java.lang.String", -10)
+
+  private def makePrimitiveNode (t:NamedType, g: AccessGraph) = {
+    val n = new StatelessAGNode(g, t.id, t.name, Primitive(), Some(t))
+    /*to prevent attach this node to the AG root */
+    n setContainer n
+    n
+  }
+
+  def voidNode(g : AccessGraph) = makePrimitiveNode(void, g)
+  def booleanNode(g : AccessGraph) = makePrimitiveNode(boolean, g)
+  def byteNode(g : AccessGraph) = makePrimitiveNode(byte, g)
+  def charNode(g : AccessGraph) = makePrimitiveNode(char, g)
+  def doubleNode(g : AccessGraph) = makePrimitiveNode(double, g)
+  def floatNode(g : AccessGraph) = makePrimitiveNode(float, g)
+  def intNode(g : AccessGraph) = makePrimitiveNode(int, g)
+  def longNode(g : AccessGraph) = makePrimitiveNode(long, g)
+  def shortNode(g : AccessGraph) = makePrimitiveNode(short, g)
+
+  def stringNode(g : AccessGraph) = makePrimitiveNode(string, g)
 }

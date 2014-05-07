@@ -3,8 +3,7 @@ package puck.gui;
 import javax.swing.JCheckBox;
 import javax.swing.tree.DefaultMutableTreeNode;
 
-import puck.graph.nodes.AGNode;
-import puck.graph.nodes.AGNode.NodeType;
+import puck.graph.AGNode;
 
 class PuckTreeNode 	extends DefaultMutableTreeNode {
 	
@@ -14,7 +13,7 @@ class PuckTreeNode 	extends DefaultMutableTreeNode {
 	private static final long serialVersionUID = 1L;
 	private AGNode agn;
 	private JCheckBox checkBox;
-	private boolean isVisible; 
+	//private boolean isVisible;
 	
 	PuckTreeNode(AGNode node){
 		super(node);
@@ -22,17 +21,18 @@ class PuckTreeNode 	extends DefaultMutableTreeNode {
 		
 		this.checkBox = new JCheckBox();
 		this.checkBox.setSelected(true);
-		isVisible = true;
+		//isVisible = true;
 	}
 	
 	public String toString(){
-		return agn.desambiguateLocalName();
+		return agn.nameTypeString();
 	}
 	
 	JCheckBox getCheckBox() {
 		return checkBox;
 	}
 
+    /*
 	void setVisible(boolean isVisible, boolean propagate){
 		if(this.isVisible != isVisible){
 
@@ -53,7 +53,8 @@ class PuckTreeNode 	extends DefaultMutableTreeNode {
 			}
 		}
 	}
-	
+
+
 	void packageVisible(){
 		boolean visibility = (agn.getType() == NodeType.Package);
 		
@@ -69,7 +70,7 @@ class PuckTreeNode 	extends DefaultMutableTreeNode {
 	
 	void toggleFilter(){
 		setVisible(!isVisible, true);
-	}
+	} */
 	
 	public AGNode getAGNode(){
 		return agn;

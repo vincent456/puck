@@ -12,7 +12,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import puck.Puck;
+import puck.ProgramHelper;
 
 public class SettingsFrame extends JFrame{
 
@@ -28,9 +28,9 @@ public class SettingsFrame extends JFrame{
 	private JLabel swiplPath;
 	private JLabel dotPath;
 	
-	private Puck puck;
-	SettingsFrame(Puck puck){
-		this.puck = puck;
+	private ProgramHelper programHelper;
+	SettingsFrame(ProgramHelper programHelper){
+		this.programHelper = programHelper;
 		
 		setTitle("Settings");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -43,35 +43,35 @@ public class SettingsFrame extends JFrame{
 			public void actionPerformed(ActionEvent arg0) {
 				File f = selectDirectory("swipl");
 			
-				SettingsFrame.this.puck.getPrologHandler().setSwiplPath(f);
+				SettingsFrame.this.programHelper.getPrologHandler().setSwiplPath(f);
 				
 				swiplPath.setText(f.getAbsolutePath());
 			}
 		});
 		
 		String path = "";
-		if(puck.getPrologHandler().getSwiplPath() != null)
-			path = puck.getPrologHandler().getSwiplPath().getAbsolutePath();
+		if(programHelper.getPrologHandler().getSwiplPath() != null)
+			path = programHelper.getPrologHandler().getSwiplPath().getAbsolutePath();
 		swiplPath = new JLabel(path);
 		
 		
 		
 		JButton dotb = new JButton("Set dot path");
 		dotb.addActionListener(new ActionListener() {
-			
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				File f = selectDirectory("dot");
-			
-				SettingsFrame.this.puck.getPrologHandler().setDotPath(f);
-				
-				dotPath.setText(f.getAbsolutePath());
-			}
-		});
+
+            @Override
+            public void actionPerformed(ActionEvent arg0) {
+                File f = selectDirectory("dot");
+
+                SettingsFrame.this.programHelper.getPrologHandler().setDotPath(f);
+
+                dotPath.setText(f.getAbsolutePath());
+            }
+        });
 		
 		path = "";
-		if(puck.getPrologHandler().getDotPath() != null)
-			path = puck.getPrologHandler().getDotPath().getAbsolutePath();
+		if(programHelper.getPrologHandler().getDotPath() != null)
+			path = programHelper.getPrologHandler().getDotPath().getAbsolutePath();
 		dotPath = new JLabel(path);
 		
 		

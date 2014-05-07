@@ -8,14 +8,22 @@ import scala.collection.mutable
 class AccessGraph {
 
   private[graph] val nodesById : mutable.Map[Int, AGNode] = new mutable.HashMap[Int, AGNode]()
-  private var id : Int = 0
-  private val nodesByName : mutable.Map[String, AGNode] = new mutable.HashMap[String, AGNode]()
+  private var id : Int = 1
+  val root : AGNode = new AGNode(this, 0, "root", AGRoot(), None)
 
-  private val roots : mutable.Set[AGNode] = new mutable.HashSet[AGNode]()
+  private[graph] val nodesByName : mutable.Map[String, AGNode] = new mutable.HashMap[String, AGNode]()
 
-  def computeRoots{
-    throw new Error("TODO implement computeRoots !!")
+  def attachNodesWithoutContainer() {
+    for((_, n) <- nodesById){
+      n.getContainer match {
+        case None => ()
+        case Some(_) => root addContent n
+      }
+    }
   }
+
+  def getNode(fullName:String) = nodesByName(fullName)
+  def getNode(id: Int) = nodesById(id)
 
   def addNode(fullName: String, localName:String, kind: NodeKind, `type`: Option[Type]): AGNode =
     nodesByName get fullName match{
@@ -36,7 +44,7 @@ class AccessGraph {
     if (path.length == 0)
       addPackageNode(fp, fp)
     else {
-      val (_, n):(mutable.StringBuilder, AGNode) = path.foldLeft(new mutable.StringBuilder(), null : AGNode){
+      val (_, n):(mutable.StringBuilder, AGNode) = path.foldLeft(new mutable.StringBuilder(), root){
         (sb_nodeParent:(mutable.StringBuilder, AGNode), p:String) => sb_nodeParent match {
           case (sb, nodeParent) =>
             sb append p
@@ -116,11 +124,6 @@ object AccessGraph{
   def filterPackageName(name:String) = name match {
     case "" => defaultPackageName
     case _ => name
-  }
-
-  def addIsa(sub : AGNode, sup: AGNode){
-    sub.addSuperType(sup)
-    sup.addSubType(sub)
   }
 
 }

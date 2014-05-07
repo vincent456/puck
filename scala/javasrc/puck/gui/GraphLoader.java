@@ -4,10 +4,9 @@ import javax.swing.JProgressBar;
 import javax.swing.SwingWorker;
 
 import puck.graph.AccessGraph;
-import puck.graph.LoadGraphError;
-import puck.graph.LoadingListener;
+import puck.graph.AGBuildingError;
 
-class GraphLoader implements LoadingListener{
+class GraphLoader implements AST.LoadingListener{
 
 	private PuckGui gui;
 	private JProgressBar progressBar;
@@ -29,11 +28,11 @@ class GraphLoader implements LoadingListener{
 		progressBar.setValue(0);
 		
 		try{
-			 AccessGraph ag = gui.getPuck().loadGraph(this);
+			 AccessGraph ag = gui.getProgramHelper().loadGraph(this);
 			 gui.displayTree(ag);
 			 return;
 		}
-		catch(LoadGraphError e){
+		catch(AGBuildingError e){
 			System.err.println(e.getMessage());
 			
 		}

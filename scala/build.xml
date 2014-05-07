@@ -156,6 +156,7 @@
      <!--        <include name="**/*.jrag"/>
             <include name="**/*.jadd"/> -->
             <include name="Desambiguation.jadd"/>
+            <include name="StringUses.jrag"/>
             <!-- <exclude name="CodeComparator.jadd"/>
             <exclude name="MoveOutOfScope.jadd"/>
             <exclude name="TypeId.jadd"/> -->

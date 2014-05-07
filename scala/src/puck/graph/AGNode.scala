@@ -6,7 +6,8 @@ import scala.collection.mutable
  * Created by lorilan on 05/05/14.
  */
 
-class NodeKind
+abstract class NodeKind
+case class AGRoot private[graph]() extends NodeKind
 
 class AGNode (val graph: AccessGraph,
               val id: Int,
@@ -16,25 +17,44 @@ class AGNode (val graph: AccessGraph,
 
   def ==(that:AGNode):Boolean = this.id == that.id
 
-  private var container : Option[Int] = None
+  private var container : Option[AGNode] = None
 
-  private[graph] def setContainer(container:Option[Int]) { this.container = container}
+  private[graph] val getContainer = container
+  private[graph] def setContainer(n: AGNode){
+    container = Some(n)
+    n.addContent(this)
+  }
+  //private[graph] def setContainer(container:Option[Int]) { this.container = container}
 
   private var content : mutable.Set[AGNode] = mutable.HashSet()
-  private[graph] def addContent(n:AGNode) { this.content += n}
+  private[graph] def addContent(n:AGNode) {
+    this.content += n
+    n.container = Some(this)
+  }
+  def getContent : mutable.Iterable[AGNode] = content
+  def isContentEmpty = content.isEmpty
 
 
   private var superTypes : mutable.Set[AGNode] = mutable.HashSet()
-  private[graph] def addSuperType(st:AGNode) { this.superTypes += st}
+  private[graph] def addSuperType(st:AGNode) {
+    this.superTypes += st
+    st.subTypes += this
+  }
 
   private var subTypes : mutable.Set[AGNode] = mutable.HashSet()
-  private[graph] def addSubType(st:AGNode) { this.subTypes += st}
+  private[graph] def addSubType(st:AGNode) {
+    this.subTypes += st
+    st.superTypes += this
+  }
 
   private var users : mutable.Set[AGNode] = mutable.HashSet()
   private[graph] def addUser(n:AGNode) { this.users += n}
 
   private var primaryUses : Set[Int] = Set()
   private var sideUses : Set[Int] = Set()
+
+
+  def nameTypeString = name + ( `type` match{ case None =>""; case Some(t) => " : " + t })
 
   //constraints
   /**
@@ -59,6 +79,5 @@ class AGNode (val graph: AccessGraph,
    * 2-tuple (Interlopers id, Friends Id)
    */
   private var elementInterlopers : List[(List[Int], List[Int])]= List()
-
 
 }

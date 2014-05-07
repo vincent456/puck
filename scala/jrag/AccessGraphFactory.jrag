@@ -9,14 +9,13 @@ aspect AccessGraphFactory {
 		public void update(double loading);
 	}	
 
-	public AccessGraph Program.buildAccessGraph(Map<String,Collection<BodyDecl>> allStringUses, LoadingListener ll){
+	public AccessGraph Program.buildAccessGraph(Map<String,Collection<BodyDecl>> stringsRequest, LoadingListener ll){
 
-		AccessGraph accessGraph = new AccessGraph();
+		AccessGraph accessGraph = puck.graph.java.JavaAccessGraph.apply();
 
-		if(allStringUses != null){
-			allStringUses = p.AllStringUses(allStringUses);
-			for (Entry<String, Collection<BodyDecl>>  entry : allStringUses.entrySet()) {
-				addStringLiteral(entry.getKey(), entry.getValue());
+		if(stringsRequest != null){
+			for (java.util.Map.Entry<String, Collection<BodyDecl>>  entry : allStringUses(stringsRequest).entrySet()) {
+				accessGraph.addStringLiteral(entry.getKey(), entry.getValue());
 			}
 		}
 
@@ -26,15 +25,15 @@ aspect AccessGraphFactory {
 			verboseBuild(accessGraph, ll);
 
 		//ag.ensureContainers(); 
-		ag.computeRoots();
+		accessGraph.attachNodesWithoutContainer();
 
 		return accessGraph;
 	}
 
 	private void Program.silentBuild(AccessGraph accessGraph){
-		List<CompilationUnit> compUnitList = program.getCompilationUnitList();
+		List<CompilationUnit> compUnitList = getCompilationUnitList();
 		for (CompilationUnit cu : compUnitList) {
-			if (!cu.buildAG(accessGraph))				
+			if (!cu.buildAccessGraph_CU(accessGraph))				
 				break;
 		}
 	}
@@ -44,7 +43,7 @@ aspect AccessGraphFactory {
 		double nchild = compUnitList.getNumChild();
 		double d = 0.0;
 		for (CompilationUnit cu : compUnitList) {
-			if (!cu.buildAG(accessGraph))				
+			if (!cu.buildAccessGraph_CU(accessGraph))				
 				break;
 			d++;
 			ll.update(d/nchild);
@@ -186,7 +185,7 @@ aspect AccessGraphFactory {
     	for(Access a : implementList){
     		
     		if(!((TypeDeclared)a).getTypeDecl().isFromStdLib()){
-				AccessGraph.addIsa(sub, a.buildAGNode(accessGraph));
+    			sub.addSuperType(a.buildAGNode(accessGraph));
 			}
 
 			a.addExtendsAndImplementsUses(accessGraph, sub);
@@ -202,7 +201,7 @@ aspect AccessGraphFactory {
 		if (hasSuperclass() && !"java.lang.Object".equals(superclass().fullName())){
 			
 			if(!superclass().isFromStdLib())
-				AccessGraph.addIsa(agNode, getSuperClassAccess().buildAGNode(accessGraph));
+				agNode.addSuperType(getSuperClassAccess().buildAGNode(accessGraph));
 
 			getSuperClassAccess().addExtendsAndImplementsUses(accessGraph, agNode);
 		}
@@ -291,6 +290,13 @@ aspect AccessGraphFactory {
 		return accessGraph.addNode(fullName(), name(), 
 				puck.graph.java.JavaNodeKind.field(), 
 				scala.Option.apply(type));
+	}
+
+	public AGNode VoidType.buildAGNode(AccessGraph accessGraph){
+		return accessGraph.getNode(fullName());
+	}
+	public AGNode PrimitiveType.buildAGNode(AccessGraph accessGraph){
+		return accessGraph.getNode(fullName());
 	}
 
 	/*public AGNode FieldDecl.buildAGNode(AccessGraph accessGraph){
@@ -401,4 +407,9 @@ aspect AccessGraphFactory {
 		ag.addUsesDependency(methodUses, methodReceiverTypeDeclaration);
 	}
 	*/
+
+	//also present in jrrt-read-only/test/Testing.jrag
+	public Program Frontend.getProgram() {
+		return program;
+	}
 }

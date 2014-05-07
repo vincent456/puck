@@ -1,13 +1,9 @@
 package puck;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 
 import org.apache.commons.io.IOUtils;
-
-import puck.graph.AccessGraph;
 
 public class PrologHandler {
 	
@@ -69,9 +65,9 @@ public class PrologHandler {
 		
 		String absPath = this.genDir.getAbsolutePath() + File.separator; 
 		plGraph = new File(absPath + this.genDir.getName() + ".pl");
-		graphName = Puck.defaultGraphFileName;
+		graphName = Front.defaultGraphFileName;
 		dotGraph = new File(absPath + graphName + ".dot");
-		decouple = new File(absPath + Puck.defaultPlDecoupleFileName);
+		decouple = new File(absPath + Front.defaultPlDecoupleFileName);
 	}
 	
 	public File getPlGraph() {
@@ -128,15 +124,16 @@ public class PrologHandler {
 		}
 	}
 	
-	public boolean isPl2dot() {
-		return pl2dot;
-	}
 
 	public void setPl2dot(boolean pl2dot) {
 		this.pl2dot = pl2dot;
 	}
 
-	public boolean isRu2dot() {
+    public boolean isPl2dot() {
+        return pl2dot;
+    }
+
+    public boolean isRu2dot() {
 		return ru2dot;
 	}
 
@@ -151,7 +148,7 @@ public class PrologHandler {
 	public void setRu2txt(boolean ru2txt) {
 		this.ru2txt = ru2txt;
 	}
-	
+
 	public String getGoal(){
 		
 		
@@ -192,8 +189,7 @@ public class PrologHandler {
 
 		System.out.println("launch evaluator process");
 		
-		Process pr = null;
-		pr = pb.start();
+		Process pr = pb.start();
 		IOUtils.copy(pr.getErrorStream(), System.out);
 		IOUtils.copy(pr.getInputStream(), System.out);
 

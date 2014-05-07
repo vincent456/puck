@@ -1,51 +1,40 @@
 package puck.gui;
 
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-
 import javax.swing.JComponent;
 import javax.swing.JTree;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.TreePath;
+//import javax.swing.tree.TreePath;
 
 import puck.graph.AccessGraph;
-import puck.graph.nodes.AGNode;
+import puck.graph.AGNode;
 
 public class PackagePanelController {
 
 	private AccessGraph ag;
 	
 	private JTree tree;
-	private DefaultMutableTreeNode top;
-	
+	private PuckTreeNode root;
+
 	private void addChildren(PuckTreeNode ptn){
-		
-		for(AGNode agn: ptn.getAGNode().getContains()){
+
+		for(AGNode agn:
+                scala.collection.JavaConversions.asJavaIterable(ptn.getAGNode().getContent())){
 			PuckTreeNode child_ptn = new PuckTreeNode(agn);
 			ptn.add(child_ptn);
 			addChildren(child_ptn);
 		}
 	}
 	
-	private void initTree(String rootName){
-		
-		top = new DefaultMutableTreeNode(rootName);
-		
-	    PuckTreeNode packageTreeNode;
-
+	private void initTree(){
 		//TODO check JTree.DynamicUtilTreeNode !!
-		for(AGNode pnode: ag.getRootNodes()){
-				packageTreeNode = new PuckTreeNode(pnode);
-				top.add(packageTreeNode);
-				addChildren(packageTreeNode);
+		root = new PuckTreeNode(ag.root());
+		addChildren(root);
 			
-		}
-		
-		tree = new JTree(top);
+
+		tree = new JTree(root);
 		
 		tree.setCellRenderer(new PuckTreeCellRenderer(tree.getCellRenderer())); 
 		
-		tree.addMouseListener(new MouseAdapter() {
+		/*tree.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				TreePath path = tree.getPathForLocation(e.getX(), e.getY()); 
@@ -58,32 +47,32 @@ public class PackagePanelController {
 					}
 				}
 			}
-		});
+		});*/
 	}
 	
-	public PackagePanelController(AccessGraph ag, String rootName){
+	public PackagePanelController(AccessGraph ag){
 		this.ag= ag;
-		this.initTree(rootName);
+		this.initTree();
 	}
 	
 	public JComponent getTreePanel(){
 		return tree;
 	}
 	
-	void setVisibilityAll(boolean b){
-		int cc = top.getChildCount();
+	/*void setVisibilityAll(boolean b){
+		int cc = root.getChildCount();
 		for(int i =0; i<cc; i++){
-			((PuckTreeNode) top.getChildAt(i)).setVisible(b, true);
+			((PuckTreeNode) root.getChildAt(i)).setVisible(b, true);
 		}
 		tree.repaint();
 	}
 	
 	void setVisiblePackagesOnly(){
-		int cc = top.getChildCount();
+		int cc = root.getChildCount();
 		for(int i =0; i<cc; i++){
-			((PuckTreeNode) top.getChildAt(i)).packageVisible();
+			((PuckTreeNode) root.getChildAt(i)).packageVisible();
 		}
 		tree.repaint();
-	}
+	}*/
 
 }
