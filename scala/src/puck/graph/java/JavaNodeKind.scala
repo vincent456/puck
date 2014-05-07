@@ -14,6 +14,8 @@ object JavaNodeKind {
   case class Method private[JavaNodeKind]() extends NodeKind
   case class Field private[JavaNodeKind]() extends NodeKind
 
+  case class Literal private[JavaNodeKind]() extends NodeKind
+
   val `package` = new Package()
 
   val interface = new Interface()
@@ -22,6 +24,8 @@ object JavaNodeKind {
   val constructor = new Constructor()
   val method = new Method()
   val field = new Field()
+
+  val literal = new Literal()
 
   //fix for accessing the field in java
   val interfaceKind = interface
