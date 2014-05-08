@@ -28,7 +28,7 @@ class GraphLoader implements AST.LoadingListener{
 		progressBar.setValue(0);
 		
 		try{
-			 AccessGraph ag = gui.getProgramHelper().loadGraph(this);
+			 AccessGraph ag = gui.getFilesHandler().loadGraph(this);
 			 gui.displayTree(ag);
 			 return;
 		}

@@ -1,7 +1,7 @@
 package puck.graph
 
 import scala.collection.mutable
-
+import scala.collection.JavaConversions.collectionAsScalaIterable
 /**
  * Created by lorilan on 05/05/14.
  */
@@ -64,7 +64,7 @@ class AccessGraph {
     val packageNode = addPackage(td.compilationUnit().getPackageDecl)
     val tdNode = td.buildAGNode(this)
 
-    for (use <- scala.collection.JavaConversions.asScalaIterator(td.uses().iterator())) {
+    for (use <- td.uses()) {
       tdNode.addUser(use.buildAGNode(this))
     }
 
@@ -102,8 +102,8 @@ class AccessGraph {
   def addStringLiteral(literal: String, occurrences: _root_.java.util.Collection[AST.BodyDecl]){
     println("string "+literal + " "+ occurrences.size()+" occurences" )
 
-    for(bd <- scala.collection.JavaConversions.asScalaIterator(occurrences.iterator())){
-      val packageNode = addPackage(bd.hostBodyDecl().compilationUnit().getPackageDecl())
+    for(bd <- occurrences){
+        val packageNode = addPackage(bd.hostBodyDecl().compilationUnit().getPackageDecl())
 
       val bdNode = bd buildAGNode this
       val strNode = addNode(bd.fullName()+literal, literal, java.JavaNodeKind.literal, Some(java.Primitive.string))

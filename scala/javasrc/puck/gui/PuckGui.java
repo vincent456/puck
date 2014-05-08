@@ -6,8 +6,6 @@ import java.awt.FileDialog;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -25,7 +23,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingWorker;
 
-import puck.ProgramHelper;
+import puck.FilesHandler;
 import puck.graph.AccessGraph;
 
 public class PuckGui extends JFrame {
@@ -42,7 +40,7 @@ public class PuckGui extends JFrame {
 	private JScrollPane packagePanel;
 	private JTextArea jta;
 
-	private ProgramHelper programHelper;
+	private FilesHandler filesHandler;
 
 	private List<JComponent> buttonToShow;
 
@@ -55,8 +53,8 @@ public class PuckGui extends JFrame {
 	//private PackageOnlyCheckBox ponlyCheckBox;
 
 
-    ProgramHelper getProgramHelper(){
-		return programHelper;
+    FilesHandler getFilesHandler(){
+		return filesHandler;
 	}
 	
 	class PuckWorker extends SwingWorker<Void, Void>{
@@ -76,7 +74,7 @@ public class PuckGui extends JFrame {
 	}
 
 	private void onAppDirectoryChoice(){
-		JFileChooser jfc = new JFileChooser(new File(programHelper.getSrcDirectory().getAbsolutePath()));
+		JFileChooser jfc = new JFileChooser(new File(filesHandler.getSrcDirectory().getAbsolutePath()));
 		jfc.setDialogTitle("What directory contains your Java application ?");
 		jfc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY); 
 		jfc.showDialog(null, null);
@@ -85,10 +83,10 @@ public class PuckGui extends JFrame {
 			try {
 				f = f.getCanonicalFile();
 
-				if(!f.getPath().equals(programHelper.getSrcDirectory())){
-					programHelper.setSrcDirectory(f);
-					programHelper.getPrologHandler().setGenDir(f);
-					decoupleEditor.setEditedFile(programHelper.getPrologHandler().getDecouple());
+				if(!f.getPath().equals(filesHandler.getSrcDirectory())){
+					filesHandler.setSrcDirectory(f);
+					filesHandler.getPrologHandler().setGenDir(f);
+					decoupleEditor.setEditedFile(filesHandler.getPrologHandler().getDecouple());
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -96,11 +94,11 @@ public class PuckGui extends JFrame {
 		}
 
 		System.out.println("Application directory : ");
-		System.out.println(programHelper.getSrcDirectory().getAbsolutePath());
+		System.out.println(filesHandler.getSrcDirectory().getAbsolutePath());
 	}
 
 	private void onJarListFileChoice(){
-		JFileChooser jfc = new JFileChooser(new File(programHelper.getSrcDirectory().getAbsolutePath()));
+		JFileChooser jfc = new JFileChooser(new File(filesHandler.getSrcDirectory().getAbsolutePath()));
 		jfc.setDialogTitle("Select the file containing a list of the jars needed to compile");
 		jfc.setFileSelectionMode(JFileChooser.FILES_ONLY); 
 		jfc.showDialog(null, null);
@@ -108,13 +106,13 @@ public class PuckGui extends JFrame {
 		if(f != null ){
 			try {
 				f = f.getCanonicalFile();
-				programHelper.setJarListFile(f);
+				filesHandler.setJarListFile(f);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
 
-		System.out.println("Jars list file :\n" + programHelper.getJarListFile().getAbsolutePath());
+		System.out.println("Jars list file :\n" + filesHandler.getJarListFile().getAbsolutePath());
 	}
 
 	private void onEvaluatorChoice(){
@@ -123,7 +121,7 @@ public class PuckGui extends JFrame {
 		choix1.setVisible(true);
 
 		if (choix1.getFile() != null) {
-			programHelper.getPrologHandler().setEvaluator(new File(choix1.getDirectory()+choix1.getFile()));
+			filesHandler.getPrologHandler().setEvaluator(new File(choix1.getDirectory()+choix1.getFile()));
 			System.out.println("SWIProlog Evaluator ... OK.");
 		}
 		maframe.dispose();
@@ -134,7 +132,7 @@ public class PuckGui extends JFrame {
 		System.out.println("Running the evaluator ... ");
 		
 		try {
-			Process evalPr = programHelper.getPrologHandler().launchEvaluator();
+			Process evalPr = filesHandler.getPrologHandler().launchEvaluator();
 			evaluatorInterrupter.setProcess(evalPr);
 			evaluatorStopButton.setVisible(true);
 			
@@ -156,7 +154,7 @@ public class PuckGui extends JFrame {
 		
 		
 		System.out.println("Begining dot to png conversion ... ");
-		programHelper.getPrologHandler().dot2png();
+		filesHandler.getPrologHandler().dot2png();
 		
 		
 		
@@ -164,8 +162,8 @@ public class PuckGui extends JFrame {
 			public void run(){
 				try{
 
-					ImageFrame frame = new ImageFrame(programHelper.getPrologHandler().getPlGraph().getParentFile().getAbsolutePath()+File.separator+
-							programHelper.getPrologHandler().getGraphName() +".png");
+					ImageFrame frame = new ImageFrame(filesHandler.getPrologHandler().getPlGraph().getParentFile().getAbsolutePath()+File.separator+
+							filesHandler.getPrologHandler().getGraphName() +".png");
 					frame.setVisible(true);
 				}
 				catch(ImageFrameError e){
@@ -271,7 +269,7 @@ public class PuckGui extends JFrame {
 				EventQueue.invokeLater(new Runnable(){
 					public void run(){
 						try{
-							SettingsFrame frame = new SettingsFrame(programHelper);
+							SettingsFrame frame = new SettingsFrame(filesHandler);
 							frame.setVisible(true);
 						}
 						catch(ImageFrameError e){
@@ -292,7 +290,7 @@ public class PuckGui extends JFrame {
 		},
 		false);
 
-		if(programHelper.getPrologHandler().getEvaluator() == null){
+		if(filesHandler.getPrologHandler().getEvaluator() == null){
 			makeButton("SWIProlog evaluator ?",
 					"Select prolog file containing the coupling constraint evaluator",
 					new ActionListener() {
@@ -392,7 +390,7 @@ public class PuckGui extends JFrame {
 	public PuckGui(){
 		super("Puck V1.2");
 		try {
-			programHelper = new ProgramHelper();
+			filesHandler = new FilesHandler();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -436,17 +434,17 @@ public class PuckGui extends JFrame {
 		PrintStream ps = new PrintStream(new puck.gui.TextOutputStream(jta));
 		System.setOut(ps);
 		System.setErr(ps);
-		System.out.println("Application Directory : " + programHelper.getSrcDirectory().getAbsolutePath());
-		decoupleEditor = new SimpleEditController(programHelper.getPrologHandler().getDecouple());
+		System.out.println("Application Directory : " + filesHandler.getSrcDirectory().getAbsolutePath());
+		decoupleEditor = new SimpleEditController(filesHandler.getPrologHandler().getDecouple());
 		decoupleEditor.setChangeFileListener(new FileChangeListener() {
 			public void change(File f) {
-				programHelper.getPrologHandler().setDecouple(f);
+				filesHandler.getPrologHandler().setDecouple(f);
 			}
 		});
-		if(!programHelper.getJarListFile().exists())
+		if(!filesHandler.getJarListFile().exists())
 			System.out.println("No jars list file selected");
 		else
-			System.out.println("Jars list file : " + programHelper.getJarListFile().getAbsolutePath());
+			System.out.println("Jars list file : " + filesHandler.getJarListFile().getAbsolutePath());
 
 		textsPannel.setRightComponent(decoupleEditor.getPanel());
 

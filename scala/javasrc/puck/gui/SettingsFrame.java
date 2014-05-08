@@ -12,7 +12,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import puck.ProgramHelper;
+import puck.FilesHandler;
 
 public class SettingsFrame extends JFrame{
 
@@ -28,9 +28,9 @@ public class SettingsFrame extends JFrame{
 	private JLabel swiplPath;
 	private JLabel dotPath;
 	
-	private ProgramHelper programHelper;
-	SettingsFrame(ProgramHelper programHelper){
-		this.programHelper = programHelper;
+	private FilesHandler filesHandler;
+	SettingsFrame(FilesHandler filesHandler){
+		this.filesHandler = filesHandler;
 		
 		setTitle("Settings");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -43,15 +43,15 @@ public class SettingsFrame extends JFrame{
 			public void actionPerformed(ActionEvent arg0) {
 				File f = selectDirectory("swipl");
 			
-				SettingsFrame.this.programHelper.getPrologHandler().setSwiplPath(f);
+				SettingsFrame.this.filesHandler.getPrologHandler().setSwiplPath(f);
 				
 				swiplPath.setText(f.getAbsolutePath());
 			}
 		});
 		
 		String path = "";
-		if(programHelper.getPrologHandler().getSwiplPath() != null)
-			path = programHelper.getPrologHandler().getSwiplPath().getAbsolutePath();
+		if(filesHandler.getPrologHandler().getSwiplPath() != null)
+			path = filesHandler.getPrologHandler().getSwiplPath().getAbsolutePath();
 		swiplPath = new JLabel(path);
 		
 		
@@ -63,15 +63,15 @@ public class SettingsFrame extends JFrame{
             public void actionPerformed(ActionEvent arg0) {
                 File f = selectDirectory("dot");
 
-                SettingsFrame.this.programHelper.getPrologHandler().setDotPath(f);
+                SettingsFrame.this.filesHandler.getPrologHandler().setDotPath(f);
 
                 dotPath.setText(f.getAbsolutePath());
             }
         });
 		
 		path = "";
-		if(programHelper.getPrologHandler().getDotPath() != null)
-			path = programHelper.getPrologHandler().getDotPath().getAbsolutePath();
+		if(filesHandler.getPrologHandler().getDotPath() != null)
+			path = filesHandler.getPrologHandler().getDotPath().getAbsolutePath();
 		dotPath = new JLabel(path);
 		
 		

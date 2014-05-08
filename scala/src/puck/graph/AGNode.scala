@@ -40,6 +40,7 @@ class AGNode (val graph: AccessGraph,
     this.superTypes += st
     st.subTypes += this
   }
+  private[graph] def getSuperTypes:Iterable[AGNode] = superTypes
 
   private var subTypes : mutable.Set[AGNode] = mutable.HashSet()
   private[graph] def addSubType(st:AGNode) {
@@ -49,6 +50,7 @@ class AGNode (val graph: AccessGraph,
 
   private var users : mutable.Set[AGNode] = mutable.HashSet()
   private[graph] def addUser(n:AGNode) { this.users += n}
+  private[graph] def getUsers: mutable.Iterable[AGNode] = users
 
   private var primaryUses : Set[Int] = Set()
   private var sideUses : Set[Int] = Set()

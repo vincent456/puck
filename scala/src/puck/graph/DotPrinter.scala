@@ -23,6 +23,9 @@ object DotPrinter {
   val containsStyle = ("dashed", "open")
   val usesStyle = ("bold", "normal")
 
+  //(color, thickness)
+  val correctStatus = ("black", "1")
+  val violationStatus = ("red", "5")
 
   def print(writer: BufferedWriter, graph : AccessGraph,
             helper : DotHelper, printId : Boolean){
@@ -37,13 +40,13 @@ object DotPrinter {
     }
 
     def printNode(n:AGNode){
-      if(helper isDotSubGraph n.kind) printSubGraph(n)
+      if(helper isDotSubgraph n.kind) printSubGraph(n)
       else if(helper isDotClass n.kind) printClass(n)
     }
 
     def printSubGraph(n:AGNode){
       List("subgraph cluster" + n.id + " {",
-        helper.namePrefix(n.kind)+ name + idPrinter(n.id),
+        helper.namePrefix(n.kind)+ n.name + idPrinter(n.id),
         "color=black;") foreach writeln
 
       if(n.isContentEmpty) writeln(n.id + "[label=\"\" shape=none ]")
@@ -51,7 +54,7 @@ object DotPrinter {
 
       writeln("}")
 
-      //TODO print uses
+      n.getUsers.foreach(printArc(usesStyle, _, n, correctStatus))
     }
 
     def printClass(n:AGNode){
@@ -65,7 +68,7 @@ object DotPrinter {
 
       writeln(n.id + " [ label = <<TABLE BGCOLOR=\"" + helper.fillColor(n.kind)+
         "\"> <TR> <TD PORT=\""+ n.id+"\" BORDER=\"0\"> <B>" +
-        helper.namePrefix(n.kind)+ name + idPrinter(n.id) +" </B></TD></TR>")
+        helper.namePrefix(n.kind)+ n.name + idPrinter(n.id) +" </B></TD></TR>")
 
       if(!fields.isEmpty || !ctrs.isEmpty || ! mts.isEmpty) writeln("<HR/>")
       fields foreach writeTableLine
@@ -77,7 +80,12 @@ object DotPrinter {
 
       innerClasses foreach printClass
 
-      //TODO write innerClasses write uses
+      n.getContent foreach{
+        (n:AGNode) =>
+          n.getUsers.foreach(printArc(usesStyle, _, n, correctStatus))
+      }
+      n.getUsers.foreach(printArc(usesStyle, _, n, correctStatus))
+      n.getSuperTypes.foreach(printArc(isaStyle, _, n, correctStatus))
     }
 
 
@@ -96,7 +104,7 @@ object DotPrinter {
         if(helper isDotSubgraph n.kind) pos+"=cluster"+n.id+", "
         else ""
 
-      source.id + " -> "+ target.id + "[ " +
+      dotId(source) + " -> " + dotId(target) + "[ " +
         subGraphArc(source, "ltail") +
         subGraphArc(target, "lhead") +
         "style=" + style._1 + ", arrowhead=" + style._2 +
@@ -109,6 +117,7 @@ object DotPrinter {
     writer write "rankdir=LR; ranksep=2; compound=true"
     writer newLine()
 
+    graph.root.getContent.foreach(printNode)
 
     writer write "}"
 

@@ -27,13 +27,6 @@ import AST.BodyDecl;
 
 public class Utils {
 	
-	public static class Paire <X,Y>{
-		public X x;
-		public Y y;
-		public Paire(){}
-		public Paire(X x, Y y){this.x=x; this.y=y;}
-	}
-	
 	public static Map<String,Collection<BodyDecl>> initStringLiteralsMap(File file) {
 		Map<String,Collection<BodyDecl>> smap = new HashMap<String,Collection<BodyDecl>>();
 		try {
@@ -61,35 +54,6 @@ public class Utils {
 			e.printStackTrace();
 		}
 		return smap;
-	}
-
-	public static java.util.List<String> fileLines(File file, boolean keepEmptyLines){
-		java.util.List<String> linesList = new ArrayList<String>();
-		
-		try {
-			
-			InputStream fis = new FileInputStream(file.getCanonicalFile());
-			BufferedReader reader = new BufferedReader(new InputStreamReader(fis, Charset.forName("UTF-8")));;
-			
-			String line;
-
-			while ((line = reader.readLine()) != null) {
-				if( line.length() > 0 || keepEmptyLines)
-					linesList.add(line);
-			}
-			
-			reader.close();
-		} catch (FileNotFoundException e) { //-> return an empty List and that's it
-			//e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
-		return linesList;
-	}
-	
-	public static java.util.List<String> fileLines(String fileName, boolean keepEmptyLines){
-		return fileLines(new File(fileName), keepEmptyLines);
 	}
 
 	public static String cleanLiteral(String lit) {

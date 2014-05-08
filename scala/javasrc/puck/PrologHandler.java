@@ -65,9 +65,9 @@ public class PrologHandler {
 		
 		String absPath = this.genDir.getAbsolutePath() + File.separator; 
 		plGraph = new File(absPath + this.genDir.getName() + ".pl");
-		graphName = Front.defaultGraphFileName;
+		graphName = FilesHandler.defaultGraphFileName();
 		dotGraph = new File(absPath + graphName + ".dot");
-		decouple = new File(absPath + Front.defaultPlDecoupleFileName);
+		decouple = new File(absPath + FilesHandler.defaultPlDecoupleFileName());
 	}
 	
 	public File getPlGraph() {
