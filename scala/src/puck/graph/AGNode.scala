@@ -18,8 +18,18 @@ class AGNode (val graph: AccessGraph,
   def ==(that:AGNode):Boolean = this.id == that.id
 
   private var container : Option[AGNode] = None
+/*  private var container0 : Option[AGNode] = None
 
-  private[graph] val getContainer = container
+  private def container = container0
+  private def container_=(n : Option[AGNode]){
+    n match {
+      case None => println(this.nameTypeString + " no container")
+      case Some(n) => println (this.nameTypeString + " container is " + n.nameTypeString)
+    }
+    container0 = n
+  }*/
+
+  private[graph] def getContainer = container
   private[graph] def setContainer(n: AGNode){
     container = Some(n)
     n.addContent(this)

@@ -73,59 +73,9 @@ public class PuckGui extends JFrame {
 		
 	}
 
-	private void onAppDirectoryChoice(){
-		JFileChooser jfc = new JFileChooser(new File(filesHandler.getSrcDirectory().getAbsolutePath()));
-		jfc.setDialogTitle("What directory contains your Java application ?");
-		jfc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY); 
-		jfc.showDialog(null, null);
-		File f = jfc.getSelectedFile();
-		if(f != null ){
-			try {
-				f = f.getCanonicalFile();
 
-				if(!f.getPath().equals(filesHandler.getSrcDirectory())){
-					filesHandler.setSrcDirectory(f);
-					filesHandler.getPrologHandler().setGenDir(f);
-					decoupleEditor.setEditedFile(filesHandler.getPrologHandler().getDecouple());
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
 
-		System.out.println("Application directory : ");
-		System.out.println(filesHandler.getSrcDirectory().getAbsolutePath());
-	}
 
-	private void onJarListFileChoice(){
-		JFileChooser jfc = new JFileChooser(new File(filesHandler.getSrcDirectory().getAbsolutePath()));
-		jfc.setDialogTitle("Select the file containing a list of the jars needed to compile");
-		jfc.setFileSelectionMode(JFileChooser.FILES_ONLY); 
-		jfc.showDialog(null, null);
-		File f = jfc.getSelectedFile();
-		if(f != null ){
-			try {
-				f = f.getCanonicalFile();
-				filesHandler.setJarListFile(f);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-
-		System.out.println("Jars list file :\n" + filesHandler.getJarListFile().getAbsolutePath());
-	}
-
-	private void onEvaluatorChoice(){
-		Frame maframe = new Frame();
-		FileDialog choix1 = new FileDialog(maframe, "Which SWIProlog evaluator ?", FileDialog.LOAD);
-		choix1.setVisible(true);
-
-		if (choix1.getFile() != null) {
-			filesHandler.getPrologHandler().setEvaluator(new File(choix1.getDirectory()+choix1.getFile()));
-			System.out.println("SWIProlog Evaluator ... OK.");
-		}
-		maframe.dispose();
-	}
 
 	private void onRun(){
 
@@ -173,154 +123,14 @@ public class PuckGui extends JFrame {
 		});
 	}
 	
-	void displayTree(AccessGraph g){
 
-		if(ppController!=null)
-			packagePanel.remove(ppController.getTreePanel());
-
-		try{
-			ppController = new PackagePanelController(g);
-		}catch(Error e){
-			return;
-		}
-
-		packagePanel.setViewportView(ppController.getTreePanel());
-		for(JComponent c: buttonToShow){
-			c.setVisible(true);
-		}
-
-	}
-
-	private JButton makeButton(String name, String toolTip, ActionListener actl, boolean delayedDisplay){
-		JButton b = new JButton(name);
-		b.addActionListener(actl);
-		//b.setAlignmentX(Component.LEFT_ALIGNMENT);
-		b.setSize(buttonDimension);
-		b.setPreferredSize(buttonDimension);
-		b.setMinimumSize(buttonDimension);
-		b.setMaximumSize(buttonDimension);
-		buttonPanel.add(b);
-		
-		b.setToolTipText(toolTip);
-		if(delayedDisplay){
-			b.setVisible(false);
-			buttonToShow.add(b);
-		}
-		return b;
-
-	}
-
-//	private abstract class JCheckBoxHandler implements ItemListener{
-//		JCheckBox checkBox;
-//		public JCheckBoxHandler(String text) {
-//			checkBox = new JCheckBox(text);
-//			buttonPanel.add(checkBox);
-//			checkBox.setVisible(false);
-//			buttonToShow.add(checkBox);
-//			checkBox.addItemListener(this);
-//		}
-//	}
-
-//	private class PackageOnlyCheckBox extends JCheckBoxHandler{
-//		public PackageOnlyCheckBox() {
-//			super("Packages Only (overrides view)");
-//		}
-//
-//		public void itemStateChanged(ItemEvent e) {
-//			if(checkBox.isSelected()){
-//				ppController.setVisiblePackagesOnly();
-//			}
-//		}
-//		public JCheckBox getCheckBox(){
-//			return checkBox;
-//		}
-//
-//	}
-//
-//	private class DelegateFilteringCheckBox extends JCheckBoxHandler{
-//		public DelegateFilteringCheckBox() {
-//			super("Delegate filtering to prolog");
-//		}
-//
-//		public void itemStateChanged(ItemEvent e) {
-//			programHelper.setDelegateFiltering(checkBox.isSelected());
-//		}
-//
-//	}
-//
-//	private class RedUsesOnlyCheckBox extends JCheckBoxHandler{
-//		public RedUsesOnlyCheckBox() {
-//			super("Display \"constraint violating\" uses only");
-//		}
-//
-//		public void itemStateChanged(ItemEvent e) {
-//			programHelper.setRedUsesOnly(checkBox.isSelected());
-//		}
-//
-//	}
 	private void initButtons(){
 		buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
 
 		
-		makeButton("Settings", "To set swipl and dot path", new ActionListener() {
-			
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				EventQueue.invokeLater(new Runnable(){
-					public void run(){
-						try{
-							SettingsFrame frame = new SettingsFrame(filesHandler);
-							frame.setVisible(true);
-						}
-						catch(ImageFrameError e){
-							System.err.println(e.getMessage());
-						}
-					}
-				});
-				
-			}
-		}, false);
-		
-		makeButton("Application ?", 
-				"Select the root directory containing the java (up to 1.5) source code you want to analyse",
-				new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				onAppDirectoryChoice();
-			}
-		},
-		false);
-
-		if(filesHandler.getPrologHandler().getEvaluator() == null){
-			makeButton("SWIProlog evaluator ?",
-					"Select prolog file containing the coupling constraint evaluator",
-					new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					onEvaluatorChoice();
-				}
-			},
-			false);
-		}
-
-
-		makeButton("Jars list file", 
-				"Select a file containing a list of the jar libraries required by the analysed program",
-				new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				onJarListFileChoice();
-			}
-		},
-		false);
-
 		final GraphLoader loader = new GraphLoader(this);
 		
-		makeButton("Load code",
-				"Load the selected source code and build the access graph",
-				new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				loader.launch();
-			}
-		}, 
-		false);
+
 		
 		
 		buttonPanel.add(loader.getProgressBar());
@@ -328,32 +138,10 @@ public class PuckGui extends JFrame {
 
 		buttonToShow = new ArrayList<JComponent>();
 
-		/*makeButton("View None",
-				"Deselect all access graph node",
-				new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				//ponlyCheckBox.getCheckBox().setSelected(false);
-				ppController.setVisibilityAll(false);
-			}
-		}, true);
 
-		makeButton("View All",
-				"Select all access graph node",
-				new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				//ponlyCheckBox.getCheckBox().setSelected(false);
-				ppController.setVisibilityAll(true);
-			}
-		}, true);*/
-		
-		
-
-//		ponlyCheckBox = new PackageOnlyCheckBox();
-//		//new DelegateFilteringCheckBox();
-//		new RedUsesOnlyCheckBox();
 
 		makeButton("Run",
-				"Launch the coupling constraint evaluation",
+				,
 				new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				new PuckWorker(PuckGui.this).execute();
@@ -368,24 +156,6 @@ public class PuckGui extends JFrame {
 		
 
 	}
-
-//	private static void normalizeButtonsSize(List<JButton> btList){
-//		int normalWidth = 0;
-//		for(JButton b : btList){
-//			if(b.getWidth()>normalWidth)
-//				normalWidth = b.getWidth();
-//		}
-//		System.out.println("width = "+normalWidth);
-//		for(JButton b : btList){
-//			int h = b.getHeight();
-//			Dimension d = new Dimension(normalWidth, h);
-////			b.setSize(d);
-////			b.setPreferredSize(d);
-////			b.setMinimumSize(d);
-//			b.setMaximumSize(d);
-//		}
-//	}
-
 
 	public PuckGui(){
 		super("Puck V1.2");

@@ -5,7 +5,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 
 import puck.graph.AGNode;
 
-class PuckTreeNode 	extends DefaultMutableTreeNode {
+class PuckTreeNode extends DefaultMutableTreeNode {
 	
 	/**
 	 * 

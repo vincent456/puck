@@ -8,6 +8,6 @@ import puck.FilesHandler
  */
 class PuckMainPanel(private val helper: FilesHandler) extends SplitPane(Orientation.Vertical){
   dividerSize = 3
-  leftComponent =
+  //leftComponent =
 }
 

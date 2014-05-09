@@ -65,7 +65,9 @@ aspect AccessGraphFactory {
 			AGNode packageNode = accessGraph.addPackage(getPackageDecl());
 
 			for (TypeDecl td : getTypeDecls()){
-				packageNode.addContent(td.buildAG(accessGraph));
+				AGNode typeNode = td.buildAG(accessGraph);
+				System.out.println("adding " + typeNode.name() + " to " + packageNode.name());
+				packageNode.addContent(typeNode);
 			}
 			return true;
 		}

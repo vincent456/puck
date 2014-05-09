@@ -67,7 +67,7 @@ public class PrologHandler {
 		plGraph = new File(absPath + this.genDir.getName() + ".pl");
 		graphName = FilesHandler.defaultGraphFileName();
 		dotGraph = new File(absPath + graphName + ".dot");
-		decouple = new File(absPath + FilesHandler.defaultPlDecoupleFileName());
+		decouple = new File(absPath + FilesHandler.defaultDecoupleFileName());
 	}
 	
 	public File getPlGraph() {
@@ -150,8 +150,7 @@ public class PrologHandler {
 	}
 
 	public String getGoal(){
-		
-		
+
 		StringBuilder sb = new StringBuilder();
 		sb.append("evaluate('");
 		sb.append(getPlGraph().getAbsolutePath().replace('\\', '/')); //swipl use unix file separator even on windows

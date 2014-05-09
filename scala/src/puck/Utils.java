@@ -6,9 +6,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,49 +16,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import AST.BodyDecl;
 
 public class Utils {
-	
-	public static Map<String,Collection<BodyDecl>> initStringLiteralsMap(File file) {
-		Map<String,Collection<BodyDecl>> smap = new HashMap<String,Collection<BodyDecl>>();
-		try {
-			BufferedReader readerHideStrings = new BufferedReader(new FileReader(file));
-			
-			
-			String literalPatternBegining = Pattern.quote("string('");
-			String literalPatternEnding =  Pattern.quote("')");
-			
-			Pattern pat = Pattern.compile( literalPatternBegining + "([^']*)" + literalPatternEnding);
-			
-			
-			String line = readerHideStrings.readLine();
-			while (line != null) {
-				Matcher m = pat.matcher(line);
-				while(m.find()){
-					smap.put(m.group(1), new ArrayList<BodyDecl>());
-				}
-				line = readerHideStrings.readLine();
-			}
-			readerHideStrings.close();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return smap;
-	}
-
-	public static String cleanLiteral(String lit) {
-		String cleanLit = lit;
-		cleanLit = lit.replace("#SN#", "").replace("\'", "");
-		return cleanLit;
-	}
 	
 	public static void pipeStream(InputStream input, OutputStream output)throws IOException{
 		byte buffer[] = new byte[1024];
@@ -137,14 +95,4 @@ public class Utils {
 			reader.close();
 			in.close();
 	}
-	
-	public static File canonicalFile(File f){
-		try {
-			return new File(f.getCanonicalPath());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
-
 }

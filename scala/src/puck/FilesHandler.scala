@@ -1,40 +1,73 @@
 package puck
 
-import java.io.File
-import scala.List
-import puck.graph.AGBuildingError
+import java.io.{BufferedWriter, FileWriter, File}
+
+import puck.graph.{DotPrinter, AGBuildingError, AccessGraph}
+import puck.graph.java.JavaNodeKind
+import scala.sys.process.Process
 
 /**
  * Created by lorilan on 08/05/14.
  */
-class FilesHandler private (private [this] var srcDir : File)
-                    (var jlFile: File =
-                      new File(srcDir.getCanonicalFile +
-                                  File.separator + FilesHandler.defaultJarListFileName),
-                     var anFile :File =
-                     new File(srcDir.getCanonicalFile +
-                       File.separator + FilesHandler.defaultApiNodesFileName)){
+class FilesHandler private (private [this] var srcDir : File,
+                            private [this] var jlFile: File,
+                            private [this] var anFile :File,
+                            private [this] var dcpl : File,
+                            private [this] var g: File){
 
-  private def this(srcDir: String) = this(new File(srcDir).getCanonicalFile)()
+
+  private [this] var ag : AccessGraph = _
+  def accessGraph = ag
 
   def srcDirectory = this.srcDir
   def srcDirectory_=(dir : File){ this.srcDir = dir.getCanonicalFile }
-  def srcDirectory_=(dir: String){srcDirectory_=(new File(dir))}
 
-  def jarListFile = jlFile
+  def jarListFile = this.jlFile
   def jarListFile_=(f:File){ this.jlFile = f.getCanonicalFile}
 
-  def apiNodesFile = anFile
+  def apiNodesFile = this.anFile
   def apiNodesFile_=(f:File){this.anFile= f.getCanonicalFile}
 
+  private [this] var gdot : File = _
+  def graphvizDot = this.gdot
+  def graphvizDot_=(f: File){this.gdot = f.getCanonicalFile}
 
-  def loadGraph(ll : AST.LoadingListener){
-    FilesHandler.compile (FilesHandler.findAllJavaFiles(this.srcDirectory),
-      fileLines(jarListFile)) match {
+  def decouple = this.dcpl
+  def decouple_=(f:File){this.dcpl = f.getCanonicalFile}
+
+  def graph = this.g
+  def graph_=(f: File){this.g= f.getCanonicalFile}
+
+  def loadGraph(ll : AST.LoadingListener) : AccessGraph = {
+    FilesHandler.compile(FilesHandler.findAllJavaFiles(this.srcDirectory),
+      puck.fileLines(jarListFile)) match {
       case None => throw new AGBuildingError("Compilation error, no AST generated")
-      case Some(p) => p.buildAccessGraph(null, ll)
+      case Some(p) =>
+        ag = p.buildAccessGraph(puck.initStringLiteralsMap(decouple), ll)
+        fileLines(apiNodesFile).foreach {
+          (l: String) =>
+            val tab = l.split(" ")
+            ag.addApiNode(p, tab(0), tab(1), tab(2))
+        }
+        ag.attachNodesWithoutContainer()
+        ag
     }
+  }
 
+  def makeDot(printId : Boolean = false){
+    DotPrinter.print(new BufferedWriter(new FileWriter(graph.getCanonicalPath+".dot")),
+      ag, JavaNodeKind, printId)
+  }
+
+  def dot2png() : Int = {
+    val processBuilder = Process(List(
+      if(graphvizDot == null) "dot"  // relies on dot directory being in the PATH variable
+      else graphvizDot.getCanonicalPath, "-Tpng", graph.getCanonicalPath+".dot"))
+
+    processBuilder #> new File(graph.getCanonicalPath+".png")
+
+    processBuilder.!
+  }
     /*
         File f = plHandler.getDecouple();
 
@@ -43,38 +76,31 @@ class FilesHandler private (private [this] var srcDir : File)
         if(f.exists()){
             allStringUses = Utils.initStringLiteralsMap(f);
         }
+    */
 
-        System.out.println("Begining AccessGraph generation ...");
 
-        try{
-            graph = p.buildAccessGraph(allStringUses, ll);
-        }catch(Throwable e){
-            e.printStackTrace();
-        }
-
-        System.out.println("AccessGraph construction finished");
-
-        java.util.List<String> apiNodesFileLines = Utils.fileLines(getApiNodesFile(), false);
-        if (apiNodesFileLines.size()>0) {
-            for(String apiNode : apiNodesFileLines){
-                String tab[] = apiNode.split(" ");
-                graph.addApiNode(p, tab[0], tab[1], tab[2]);
-            }
-
-            graph.attachNodesWithoutContainer();
-        }
-     */
-
-  }
 }
 
 object FilesHandler{
-  final val defaultPlDecoupleFileName: String = "decouple.pl"
+  final val defaultDecoupleFileName: String = "decouple.pl"
   final val defaultGraphFileName: String = "graph"
   final val defaultJarListFileName: String = "jar.list"
   final val defaultApiNodesFileName: String = "api_nodes"
 
-  def apply(srcDir: File) = new FilesHandler(srcDir.getCanonicalFile) ()
+  private def defaultFile(dir:File, file: File) =
+    new File(dir.getCanonicalFile + File.separator + file)
+
+  def apply(srcDir: File)(jarListFile: File =
+                          defaultFile(srcDir, defaultJarListFileName),
+                          apiNodesFile :File =
+                          defaultFile(srcDir, defaultApiNodesFileName),
+                          decouple : File =
+                          defaultFile(srcDir, defaultDecoupleFileName),
+                          graph : File =
+                          defaultFile(srcDir, defaultGraphFileName))
+  = new FilesHandler(srcDir.getCanonicalFile, jarListFile, apiNodesFile, decouple, graph)
+
+  def apply() : FilesHandler= apply(new File("."))()
 
   def findAllJavaFiles(f:File) : List[String] = findAllJavaFiles(List(), f)
 

@@ -40,6 +40,7 @@ object DotPrinter {
     }
 
     def printNode(n:AGNode){
+      println("print node "+ n.name)
       if(helper isDotSubgraph n.kind) printSubGraph(n)
       else if(helper isDotClass n.kind) printClass(n)
     }
@@ -95,7 +96,7 @@ object DotPrinter {
       //val (color, thickness) = status
       def dotId(n: AGNode) =
         if(helper isDotClass n.kind) n.getContainer match{
-          case None => throw new Error("node should have a container")
+          case None => throw new Error("node " + n.nameTypeString + " should have a container")
           case Some(ctr) => ctr.id + ":" + n.id
         }
         else n.id
