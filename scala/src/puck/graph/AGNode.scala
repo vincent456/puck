@@ -17,54 +17,50 @@ class AGNode (val graph: AccessGraph,
 
   def ==(that:AGNode):Boolean = this.id == that.id
 
-  private var container : Option[AGNode] = None
-/*  private var container0 : Option[AGNode] = None
-
-  private def container = container0
-  private def container_=(n : Option[AGNode]){
-    n match {
-      case None => println(this.nameTypeString + " no container")
-      case Some(n) => println (this.nameTypeString + " container is " + n.nameTypeString)
+  private var container0 : Option[AGNode] = None
+  def container = container0
+  def container_=(sn: Option[AGNode]){
+    container0 = sn
+    sn match {
+      case Some(n) => n.content0 += this
+      case None => ()
     }
-    container0 = n
-  }*/
-
-  private[graph] def getContainer = container
-  private[graph] def setContainer(n: AGNode){
-    container = Some(n)
-    n.addContent(this)
-  }
-  //private[graph] def setContainer(container:Option[Int]) { this.container = container}
-
-  private var content : mutable.Set[AGNode] = mutable.HashSet()
-  private[graph] def addContent(n:AGNode) {
-    this.content += n
-    n.container = Some(this)
-  }
-  def getContent : mutable.Iterable[AGNode] = content
-  def isContentEmpty = content.isEmpty
-
-
-  private var superTypes : mutable.Set[AGNode] = mutable.HashSet()
-  private[graph] def addSuperType(st:AGNode) {
-    this.superTypes += st
-    st.subTypes += this
-  }
-  private[graph] def getSuperTypes:Iterable[AGNode] = superTypes
-
-  private var subTypes : mutable.Set[AGNode] = mutable.HashSet()
-  private[graph] def addSubType(st:AGNode) {
-    this.subTypes += st
-    st.superTypes += this
   }
 
-  private var users : mutable.Set[AGNode] = mutable.HashSet()
-  private[graph] def addUser(n:AGNode) { this.users += n}
-  private[graph] def getUsers: mutable.Iterable[AGNode] = users
+  private var content0 : mutable.Set[AGNode] = mutable.HashSet()
+
+  def content : mutable.Iterable[AGNode] = content0
+  def content_+=(n:AGNode) {
+    this.content0 += n
+    n.container0 = Some(this)
+  }
+
+  private[graph] def isContentEmpty = content0.isEmpty
+
+
+  private var superTypes0 : mutable.Set[AGNode] = mutable.HashSet()
+
+  def superTypes:Iterable[AGNode] = superTypes0
+  def superTypes_+=(st:AGNode) {
+    this.superTypes0 += st
+    st.subTypes0 += this
+  }
+
+  private var subTypes0 : mutable.Set[AGNode] = mutable.HashSet()
+  def subTypes_+=(st:AGNode) {
+    this.subTypes0 += st
+    st.superTypes0 += this
+  }
+
+  private var users0 : mutable.Set[AGNode] = mutable.HashSet()
+  def users_+=(n:AGNode) { this.users0 += n}
+  def users: mutable.Iterable[AGNode] = users0
 
   private var primaryUses : Set[Int] = Set()
   private var sideUses : Set[Int] = Set()
 
+
+  override def toString: String = nameTypeString
 
   def nameTypeString = name + ( `type` match{ case None =>""; case Some(t) => " : " + t })
 

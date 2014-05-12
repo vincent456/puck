@@ -5,7 +5,7 @@ import scala.concurrent.Future
 
 import scala.swing._
 import puck.FilesHandler
-import java.io.File
+import java.io.{PipedInputStream, PipedOutputStream, File}
 import puck.graph.{AGNode, AccessGraph}
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -18,11 +18,12 @@ class PuckControlPanel(val filesHandler : FilesHandler)
   extends SplitPane(Orientation.Vertical){
 
   val leftWidth = 100
-  val rightWidth = 100
+  val rightWidth = 200
   val height = 300
 
   val treeDisplayer = new ScrollPane(){
     minimumSize = new Dimension(rightWidth, height)
+    preferredSize = minimumSize
   }
   val delayedDisplay = ArrayBuffer[Component]()
 
@@ -30,8 +31,8 @@ class PuckControlPanel(val filesHandler : FilesHandler)
     new Button(){
       tooltip = tip
       minimumSize = new Dimension(leftWidth, 30)
-      maximumSize = new Dimension(leftWidth, 30)
-      preferredSize = new Dimension(leftWidth, 30)
+      maximumSize = minimumSize
+      preferredSize = minimumSize
 
       action = new Action(title){ def apply(){act()}}
     }
@@ -86,7 +87,7 @@ class PuckControlPanel(val filesHandler : FilesHandler)
     contents += makeButton("Load code",
       "Load the selected source code and build the access graph"){
       () =>
-        val f: Future[Unit] = future {
+        val f: Future[Unit] = Future {
           progressBar.visible = true
           progressBar.value = 0
 
@@ -113,15 +114,33 @@ class PuckControlPanel(val filesHandler : FilesHandler)
     val show = makeButton("Show graph",
       "Display a visual representation of the graph without evaluating the constraint"){
       () =>
-        future {
+        Future {
           println("Printing dot ...")
           filesHandler.makeDot ()
           println("Dot printing finished")
           print("dot2png ...")
-          if(filesHandler.dot2png() ==0)
+/*          if(filesHandler.dot2png() ==0)
             println(" success")
           else
             println(" fail")
+
+          val imgframe = ImageFrame(new File(filesHandler.graph.getCanonicalPath + ".png"))
+          imgframe.visible = true*/
+
+          val pipedOutput = new PipedOutputStream()
+          val pipedInput = new PipedInputStream(pipedOutput)
+
+          Future {
+            val imgframe = ImageFrame(pipedInput)
+            imgframe.visible = true
+          }
+
+          if(filesHandler.dot2png(soutput = Some(pipedOutput)) ==0)
+            println(" success")
+          else
+            println(" fail")
+
+
         }
 
     }

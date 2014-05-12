@@ -211,7 +211,7 @@ public class PuckGui extends JFrame {
 				filesHandler.getPrologHandler().setDecouple(f);
 			}
 		});
-		if(!filesHandler.getJarListFile().exists())
+		if(!filesHandler.jarListFile().exists())
 			System.out.println("No jars list file selected");
 		else
 			System.out.println("Jars list file : " + filesHandler.getJarListFile().getAbsolutePath());

@@ -25,7 +25,7 @@ object Primitive {
   private def makePrimitiveNode (t:NamedType, g: AccessGraph) = {
     val n = new StatelessAGNode(g, t.id, t.name, Primitive(), Some(t))
     /*to prevent attach this node to the AG root */
-    n setContainer n
+    n.container= Some(n)
     n
   }
 

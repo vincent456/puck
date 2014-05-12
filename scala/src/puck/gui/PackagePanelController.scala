@@ -9,7 +9,7 @@ import javax.swing.JTree
 class PackagePanelController(private [this] var ag : AccessGraph) {
 
   def addChildren(ptn: PuckTreeNode){
-    ptn.getAGNode.getContent.foreach{
+    ptn.getAGNode.content.foreach{
       (n: AGNode) =>
         val child = new PuckTreeNode(n)
         ptn add child

@@ -34,7 +34,6 @@ package puck.gui;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
-import javax.swing.border.*;
 
 /* ScrollablePicture.java is used by ScrollDemo.java. */
 
@@ -60,6 +59,8 @@ public class ScrollablePicture extends JLabel
         setAutoscrolls(true); //enable synthetic drag events
         addMouseMotionListener(this); //handle mouse drags
     }
+
+
 
     //Methods required by the MouseMotionListener interface:
     public void mouseMoved(MouseEvent e) { }

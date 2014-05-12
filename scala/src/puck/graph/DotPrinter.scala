@@ -30,9 +30,9 @@ object DotPrinter {
   def print(writer: BufferedWriter, graph : AccessGraph,
             helper : DotHelper, printId : Boolean){
 
-    val idPrinter =
-      if(printId) (_:Int) => ""
-      else (id:Int) => " (" + id + ")"
+     val idPrinter =
+      if(printId) (id:Int) => " (" + id + ")"
+      else (_:Int) => ""
 
     def writeln(str:String){
       writer write str
@@ -40,22 +40,22 @@ object DotPrinter {
     }
 
     def printNode(n:AGNode){
-      println("print node "+ n.name)
+      //println("print node "+ n.nameTypeString)
       if(helper isDotSubgraph n.kind) printSubGraph(n)
       else if(helper isDotClass n.kind) printClass(n)
     }
 
     def printSubGraph(n:AGNode){
       List("subgraph cluster" + n.id + " {",
-        helper.namePrefix(n.kind)+ n.name + idPrinter(n.id),
+        "label=\"" +helper.namePrefix(n.kind)+ n.name + idPrinter(n.id) +"\";",
         "color=black;") foreach writeln
 
       if(n.isContentEmpty) writeln(n.id + "[label=\"\" shape=none ]")
-      else for(n <- n.getContent) printNode(n)
+      else for(n <- n.content) printNode(n)
 
       writeln("}")
 
-      n.getUsers.foreach(printArc(usesStyle, _, n, correctStatus))
+      n.users.foreach(printArc(usesStyle, _, n, correctStatus))
     }
 
     def printClass(n:AGNode){
@@ -81,12 +81,12 @@ object DotPrinter {
 
       innerClasses foreach printClass
 
-      n.getContent foreach{
+      n.content foreach{
         (n:AGNode) =>
-          n.getUsers.foreach(printArc(usesStyle, _, n, correctStatus))
+          n.users.foreach(printArc(usesStyle, _, n, correctStatus))
       }
-      n.getUsers.foreach(printArc(usesStyle, _, n, correctStatus))
-      n.getSuperTypes.foreach(printArc(isaStyle, _, n, correctStatus))
+      n.users.foreach(printArc(usesStyle, _, n, correctStatus))
+      n.superTypes.foreach(printArc(isaStyle, _, n, correctStatus))
     }
 
 
@@ -94,33 +94,38 @@ object DotPrinter {
                  status:(String, String)){
       //val (lineStyle, headStyle) = style
       //val (color, thickness) = status
-      def dotId(n: AGNode) =
-        if(helper isDotClass n.kind) n.getContainer match{
-          case None => throw new Error("node " + n.nameTypeString + " should have a container")
-          case Some(ctr) => ctr.id + ":" + n.id
+      //println("print arc "+ source.nameTypeString + " -> " + target.nameTypeString)
+      def dotId(n: AGNode) : String =
+        if(helper isDotSubgraph n.kind) n.id.toString
+        else{
+          val containerId = if(helper isDotClass n.kind) n.id
+          else n.container match {
+            case None => throw new Error("node " + n.nameTypeString + " should have a container")
+            case Some(ctr) => ctr.id
+          }
+          containerId + ":" + n.id
         }
-        else n.id
+
 
       def subGraphArc(n: AGNode, pos:String) =
         if(helper isDotSubgraph n.kind) pos+"=cluster"+n.id+", "
         else ""
 
-      dotId(source) + " -> " + dotId(target) + "[ " +
+      writeln(dotId(source) + " -> " + dotId(target) + "[ " +
         subGraphArc(source, "ltail") +
         subGraphArc(target, "lhead") +
         "style=" + style._1 + ", arrowhead=" + style._2 +
-        ", color =" + status._1 + ", penwidth=" + status._2+ "];"
+        ", color =" + status._1 + ", penwidth=" + status._2+ "];")
 
     }
 
-    writer write "digraph G{"
-    writer newLine()
-    writer write "rankdir=LR; ranksep=2; compound=true"
-    writer newLine()
+    writeln("digraph G{")
+    writeln("rankdir=LR; ranksep=2; compound=true")
 
-    graph.root.getContent.foreach(printNode)
+    graph.root.content.foreach(printNode)
 
-    writer write "}"
+    writeln("}")
+    writer.close()
 
   }
 }

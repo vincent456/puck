@@ -1,6 +1,6 @@
 package puck
 
-import java.io.{BufferedWriter, FileWriter, File}
+import java.io.{OutputStream, BufferedWriter, FileWriter, File}
 
 import puck.graph.{DotPrinter, AGBuildingError, AccessGraph}
 import puck.graph.java.JavaNodeKind
@@ -12,8 +12,8 @@ import scala.sys.process.Process
 class FilesHandler private (private [this] var srcDir : File,
                             private [this] var jlFile: File,
                             private [this] var anFile :File,
-                            private [this] var dcpl : File,
-                            private [this] var g: File){
+                            private [this] var decouple0 : File,
+                            private [this] var graph0: File){
 
 
   private [this] var ag : AccessGraph = _
@@ -32,11 +32,11 @@ class FilesHandler private (private [this] var srcDir : File,
   def graphvizDot = this.gdot
   def graphvizDot_=(f: File){this.gdot = f.getCanonicalFile}
 
-  def decouple = this.dcpl
-  def decouple_=(f:File){this.dcpl = f.getCanonicalFile}
+  def decouple = this.decouple0
+  def decouple_=(f:File){this.decouple0 = f.getCanonicalFile}
 
-  def graph = this.g
-  def graph_=(f: File){this.g= f.getCanonicalFile}
+  def graph = this.graph0
+  def graph_=(f: File){this.graph0= f.getCanonicalFile}
 
   def loadGraph(ll : AST.LoadingListener) : AccessGraph = {
     FilesHandler.compile(FilesHandler.findAllJavaFiles(this.srcDirectory),
@@ -59,25 +59,17 @@ class FilesHandler private (private [this] var srcDir : File,
       ag, JavaNodeKind, printId)
   }
 
-  def dot2png() : Int = {
+  def dot2png(soutput : Option[OutputStream] = None) : Int = {
     val processBuilder = Process(List(
       if(graphvizDot == null) "dot"  // relies on dot directory being in the PATH variable
       else graphvizDot.getCanonicalPath, "-Tpng", graph.getCanonicalPath+".dot"))
 
-    processBuilder #> new File(graph.getCanonicalPath+".png")
+    soutput match {
+      case None =>(processBuilder #> new File(graph.getCanonicalPath + ".png")).!
+      case Some(output) => (processBuilder #> output).!
+    }
 
-    processBuilder.!
   }
-    /*
-        File f = plHandler.getDecouple();
-
-        Map<String,Collection<BodyDecl>> allStringUses = null;
-
-        if(f.exists()){
-            allStringUses = Utils.initStringLiteralsMap(f);
-        }
-    */
-
 
 }
 

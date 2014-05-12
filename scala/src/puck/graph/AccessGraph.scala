@@ -5,19 +5,43 @@ import scala.collection.JavaConversions.collectionAsScalaIterable
 /**
  * Created by lorilan on 05/05/14.
  */
+
+object AccessGraph{
+
+  val defaultPackageName = "<default package>"
+
+  def filterPackageName(name:String) = name match {
+    case "" => defaultPackageName
+    case _ => name
+  }
+
+  val rootId = 0
+
+}
+
 class AccessGraph {
 
   private[graph] val nodesById : mutable.Map[Int, AGNode] = new mutable.HashMap[Int, AGNode]()
   private var id : Int = 1
-  val root : AGNode = new AGNode(this, 0, "root", AGRoot(), None)
+  val root : AGNode = new AGNode(this, AccessGraph.rootId, "root", AGRoot(), None)
 
   private[graph] val nodesByName : mutable.Map[String, AGNode] = new mutable.HashMap[String, AGNode]()
 
+  /*def list(){
+    nodesByName.foreach((kn) => {
+      val (key, node) = kn
+      println(" ******** " + key + "( "+ node.id +" ) ******** ")
+      println(" contained by " + node.container)
+      println(" contains " + node.content)
+      println()
+    })
+  }*/
+
   def attachNodesWithoutContainer() {
     for((_, n) <- nodesById){
-      n.getContainer match {
-        case None => ()
-        case Some(_) => root addContent n
+      n.container match {
+        case None => root content_+= n
+        case Some(_) => ()
       }
     }
   }
@@ -25,15 +49,20 @@ class AccessGraph {
   def getNode(fullName:String) = nodesByName(fullName)
   def getNode(id: Int) = nodesById(id)
 
-  def addNode(fullName: String, localName:String, kind: NodeKind, `type`: Option[Type]): AGNode =
-    nodesByName get fullName match{
+  def addNode(fullName: String, localName:String, kind: NodeKind, `type`: Option[Type]): AGNode = {
+    val unambiguousFullName = `type` match {
+      case None => fullName
+      case Some(t) => fullName + " : " + t
+    }
+    nodesByName get unambiguousFullName match {
       case None => id = id + 1
-        val n = new AGNode(this, id, localName, kind,`type`)
-        this.nodesByName += ((fullName, n))
+        val n = new AGNode(this, id, localName, kind, `type`)
+        this.nodesByName += ((unambiguousFullName, n))
         this.nodesById += ((id, n))
         n
       case Some(n) => n /* check that the kind and type is indeed the same ??*/
     }
+  }
 
   def addPackageNode(fullName: String, localName:String) : AGNode =
     addNode(fullName, localName, java.JavaNodeKind.`package`, None)
@@ -49,11 +78,11 @@ class AccessGraph {
           case (sb, nodeParent) =>
             sb append p
             val n = addPackageNode(sb.toString(), p)
-            nodeParent addContent n
+            nodeParent content_+=  n
             sb append "."
             (sb, n)
         }
-      };
+      }
       n
     }
   }
@@ -65,10 +94,10 @@ class AccessGraph {
     val tdNode = td.buildAGNode(this)
 
     for (use <- td.uses()) {
-      tdNode.addUser(use.buildAGNode(this))
+      tdNode.users_+=(use.buildAGNode(this))
     }
 
-    packageNode.addContent(tdNode)
+    packageNode content_+= tdNode
     tdNode
   }
 
@@ -87,7 +116,7 @@ class AccessGraph {
       if(bd == null)
         System.err.println("Method or constructor" + bodydeclName + " not found in the program ...")
       else
-        tdNode addContent (bd buildAG this)
+        tdNode content_+= (bd buildAG this)
     }
 
     nodeKind match {
@@ -111,19 +140,9 @@ class AccessGraph {
       /*
         this is obviously wrong: TODO FIX
       */
-      packageNode addContent strNode
-      strNode addUser bdNode
+      packageNode content_+= strNode
+      strNode users_+= bdNode
     }
   }
 }
 
-object AccessGraph{
-
-  val defaultPackageName = "<default package>"
-
-  def filterPackageName(name:String) = name match {
-    case "" => defaultPackageName
-    case _ => name
-  }
-
-}

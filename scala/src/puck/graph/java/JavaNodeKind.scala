@@ -49,7 +49,7 @@ object JavaNodeKind extends DotHelper{
   }
 
   def splitDotClassContent(n: AGNode)={
-      n.getContent.foldLeft( (List[AGNode](), List[AGNode](), List[AGNode](), List[AGNode]()) ){
+      n.content.foldLeft( (List[AGNode](), List[AGNode](), List[AGNode](), List[AGNode]()) ){
         ( lists : (List[AGNode], List[AGNode], List[AGNode] , List[AGNode]), n : AGNode ) =>
          val (fds, cts, mts, cls) = lists
          n.kind match{

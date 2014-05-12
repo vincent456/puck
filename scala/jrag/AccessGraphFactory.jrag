@@ -65,14 +65,13 @@ aspect AccessGraphFactory {
 			AGNode packageNode = accessGraph.addPackage(getPackageDecl());
 
 			for (TypeDecl td : getTypeDecls()){
-				AGNode typeNode = td.buildAG(accessGraph);
-				System.out.println("adding " + typeNode.name() + " to " + packageNode.name());
-				packageNode.addContent(typeNode);
+				packageNode.content_$plus$eq(td.buildAG(accessGraph));
 			}
 			return true;
 		}
-		else{ //TODO : delete
-			System.out.println(getPackageDecl()+" : pathName = null");
+		else{
+			if(!getPackageDecl().equals("@primitive"))
+				System.err.println(getPackageDecl()+" : pathName = null");
 			return false;
 		}
 	}
@@ -87,7 +86,7 @@ aspect AccessGraphFactory {
 
 	public AGNode BodyDecl.buildAG(AccessGraph accessGraph, AGNode usedNode){
 		AGNode agNode = buildAGNode(accessGraph);
-		usedNode.addUser(agNode);
+		usedNode.users_$plus$eq(agNode);
 		return agNode;
 	}
 
@@ -97,7 +96,7 @@ aspect AccessGraphFactory {
 		//AST.List<VariableDecl> vdl = getVariableDeclList();
 		for (VariableDecl vd : getVariableDeclList()) {
 			AGNode vdNode = vd.buildAGNode(accessGraph);
-			vdNode.addUser(usedNode); //TODO check why (?!)
+			vdNode.users_$plus$eq(usedNode); //TODO check why (?!)
 		}
 
 		return agNode;
@@ -109,7 +108,7 @@ aspect AccessGraphFactory {
 
 		for (Access use : uses()) {
 			BodyDecl hbd = use.hostBodyDecl(); 
-			agNode.addUser(hbd.buildAG(accessGraph, agNode));
+			agNode.users_$plus$eq(hbd.buildAG(accessGraph, agNode));
 		}
 
 		return agNode;
@@ -132,7 +131,7 @@ aspect AccessGraphFactory {
 
 			//TODO check why the use cycle
 			AGNode user = use.hostBodyDecl().buildAG(accessGraph, agNode);
-			agNode.addUser(user);
+			agNode.users_$plus$eq(user);
 			
 			AGNode hostTypeAGNode = hostType().buildAGNode(accessGraph);
 
@@ -166,7 +165,7 @@ aspect AccessGraphFactory {
 		AGNode tdNode = buildAG_TypeDecl(accessGraph);
 
 		for (Access use : uses()) {
-			tdNode.addUser(use.buildAGNode(accessGraph));
+			tdNode.users_$plus$eq(use.buildAGNode(accessGraph));
 		}
 
 		for (BodyDecl bd : getBodyDeclList()) {
@@ -175,7 +174,7 @@ aspect AccessGraphFactory {
 			//if bd is an initializer (static or not), 
 			//the corresponding AGNode is tdNode !!
 			if(bdNode!=tdNode)
-				tdNode.addContent(bdNode);
+				tdNode.content_$plus$eq(bdNode);
 		}
 
 		return tdNode;
@@ -187,7 +186,7 @@ aspect AccessGraphFactory {
     	for(Access a : implementList){
     		
     		if(!((TypeDeclared)a).getTypeDecl().isFromStdLib()){
-    			sub.addSuperType(a.buildAGNode(accessGraph));
+    			sub.superTypes_$plus$eq(a.buildAGNode(accessGraph));
 			}
 
 			a.addExtendsAndImplementsUses(accessGraph, sub);
@@ -203,7 +202,7 @@ aspect AccessGraphFactory {
 		if (hasSuperclass() && !"java.lang.Object".equals(superclass().fullName())){
 			
 			if(!superclass().isFromStdLib())
-				agNode.addSuperType(getSuperClassAccess().buildAGNode(accessGraph));
+				agNode.superTypes_$plus$eq(getSuperClassAccess().buildAGNode(accessGraph));
 
 			getSuperClassAccess().addExtendsAndImplementsUses(accessGraph, agNode);
 		}
@@ -230,7 +229,7 @@ aspect AccessGraphFactory {
 	void TypeAccess.addExtendsAndImplementsUses(AccessGraph accessGraph, AGNode sub){
 		if(!decl().isFromStdLib()){
 			AGNode sn = decl().buildAGNode(accessGraph);
-			sn.addUser(sub);
+			sn.users_$plus$eq(sub);
 		}
 	}
 
