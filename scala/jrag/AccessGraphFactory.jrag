@@ -294,10 +294,10 @@ aspect AccessGraphFactory {
 	}
 
 	public AGNode VoidType.buildAGNode(AccessGraph accessGraph){
-		return accessGraph.getNode(fullName());
+		return accessGraph.apply(fullName());
 	}
 	public AGNode PrimitiveType.buildAGNode(AccessGraph accessGraph){
-		return accessGraph.getNode(fullName());
+		return accessGraph.apply(fullName());
 	}
 
 	/*public AGNode FieldDecl.buildAGNode(AccessGraph accessGraph){
@@ -315,7 +315,7 @@ aspect AccessGraphFactory {
 			tparams.add(new puck.graph.NamedType(pdecl.getTypeAccess().fullName(), 
 							agTypeNode.id()));
 		}
-		return new puck.graph.Tuple(scala.collection.JavaConversions.asScalaBuffer(tparams));
+		return new puck.graph.Tuple(scala.collection.JavaConversions.asScalaBuffer(tparams).toList());
 	}
 
 

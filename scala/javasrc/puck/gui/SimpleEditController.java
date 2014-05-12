@@ -22,6 +22,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
 import puck.Utils;
+import puck.package$;
 
 public class SimpleEditController {
 	
@@ -118,7 +119,8 @@ public class SimpleEditController {
 	void loadFile(){
 		title.setText(editedFile.getAbsolutePath());
 		//A refaire proprement
-		for(String str : Utils.fileLines(editedFile,true)){
+		for(String str : scala.collection.JavaConversions.
+                asJavaCollection(package$.MODULE$.fileLines(editedFile, true))){
 			jta.append(str);
 			jta.append(System.getProperty("line.separator"));
 		}

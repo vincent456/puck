@@ -1,10 +1,12 @@
 package puck
 
-import java.io.{OutputStream, BufferedWriter, FileWriter, File}
+import java.io._
 
 import puck.graph.{DotPrinter, AGBuildingError, AccessGraph}
-import puck.graph.java.JavaNodeKind
+import puck.graph.java.JavaNode
 import scala.sys.process.Process
+import puck.graph.constraints.ConstraintsParser
+import scala.Some
 
 /**
  * Created by lorilan on 08/05/14.
@@ -56,7 +58,7 @@ class FilesHandler private (private [this] var srcDir : File,
 
   def makeDot(printId : Boolean = false){
     DotPrinter.print(new BufferedWriter(new FileWriter(graph.getCanonicalPath+".dot")),
-      ag, JavaNodeKind, printId)
+      ag, JavaNode, printId)
   }
 
   def dot2png(soutput : Option[OutputStream] = None) : Int = {
@@ -69,6 +71,13 @@ class FilesHandler private (private [this] var srcDir : File,
       case Some(output) => (processBuilder #> output).!
     }
 
+  }
+
+  def parseConstraints(){
+      val parser = new ConstraintsParser(accessGraph)
+      accessGraph.list()
+      val l = parser(new FileReader(decouple))
+      println(l)
   }
 
 }

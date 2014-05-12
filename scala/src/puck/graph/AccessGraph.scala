@@ -19,11 +19,11 @@ object AccessGraph{
 
 }
 
-class AccessGraph {
+class AccessGraph (nodeBuilder : AGNodeBuilder){
 
   private[graph] val nodesById : mutable.Map[Int, AGNode] = new mutable.HashMap[Int, AGNode]()
   private var id : Int = 1
-  val root : AGNode = new AGNode(this, AccessGraph.rootId, "root", AGRoot(), None)
+  val root : AGNode = nodeBuilder(this, AccessGraph.rootId, "root", AGRoot(), None)
 
   private[graph] val nodesByName : mutable.Map[String, AGNode] = new mutable.HashMap[String, AGNode]()
 
@@ -36,6 +36,9 @@ class AccessGraph {
       println()
     })
   }*/
+  def list(){
+    nodesByName.foreach((kn) => println(kn._1))
+  }
 
   def attachNodesWithoutContainer() {
     for((_, n) <- nodesById){
@@ -46,17 +49,20 @@ class AccessGraph {
     }
   }
 
-  def getNode(fullName:String) = nodesByName(fullName)
-  def getNode(id: Int) = nodesById(id)
+  /*
+    throw exception on failure
+   */
+  def apply(fullName:String) : AGNode= nodesByName(fullName)
+  def apply(id: Int) : AGNode = nodesById(id)
+
+  def getNode(fullName:String) : Option[AGNode] = nodesByName get fullName
+  def getNode(id: Int) : Option[AGNode] = nodesById get id
 
   def addNode(fullName: String, localName:String, kind: NodeKind, `type`: Option[Type]): AGNode = {
-    val unambiguousFullName = `type` match {
-      case None => fullName
-      case Some(t) => fullName + " : " + t
-    }
+    val unambiguousFullName = nodeBuilder.makeKey(fullName, localName,kind, `type`)
     nodesByName get unambiguousFullName match {
       case None => id = id + 1
-        val n = new AGNode(this, id, localName, kind, `type`)
+        val n = nodeBuilder(this, id, localName, kind, `type`)
         this.nodesByName += ((unambiguousFullName, n))
         this.nodesById += ((id, n))
         n
@@ -65,11 +71,11 @@ class AccessGraph {
   }
 
   def addPackageNode(fullName: String, localName:String) : AGNode =
-    addNode(fullName, localName, java.JavaNodeKind.`package`, None)
+    addNode(fullName, localName, java.JavaNode.`package`, None)
 
   def addPackage(p : String): AGNode = {
     val fp = AccessGraph.filterPackageName(p)
-    val path = fp split "[.]" //TODO test split
+    val path = fp split "[.]"
     if (path.length == 0)
       addPackageNode(fp, fp)
     else {
@@ -135,7 +141,7 @@ class AccessGraph {
         val packageNode = addPackage(bd.hostBodyDecl().compilationUnit().getPackageDecl())
 
       val bdNode = bd buildAGNode this
-      val strNode = addNode(bd.fullName()+literal, literal, java.JavaNodeKind.literal, Some(java.Primitive.string))
+      val strNode = addNode(bd.fullName()+literal, literal, java.JavaNode.literal, Some(java.Primitive.string))
 
       /*
         this is obviously wrong: TODO FIX

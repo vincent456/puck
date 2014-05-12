@@ -1,12 +1,10 @@
 package puck.gui
 
-import scala.concurrent.future
 import scala.concurrent.Future
 
 import scala.swing._
 import puck.FilesHandler
-import java.io.{PipedInputStream, PipedOutputStream, File}
-import puck.graph.{AGNode, AccessGraph}
+import java.io.{OutputStream, PipedInputStream, PipedOutputStream, File}
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import AST.LoadingListener
@@ -14,12 +12,12 @@ import AST.LoadingListener
 /**
  * Created by lorilan on 08/05/14.
  */
-class PuckControlPanel(val filesHandler : FilesHandler)
+class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
   extends SplitPane(Orientation.Vertical){
 
-  val leftWidth = 100
-  val rightWidth = 200
-  val height = 300
+  val leftWidth = PuckMainPanel.width * 1/3
+  val rightWidth = PuckMainPanel.width *2/3
+  val height = PuckMainPanel.height * 2/3
 
   val treeDisplayer = new ScrollPane(){
     minimumSize = new Dimension(rightWidth, height)
@@ -34,7 +32,14 @@ class PuckControlPanel(val filesHandler : FilesHandler)
       maximumSize = minimumSize
       preferredSize = minimumSize
 
-      action = new Action(title){ def apply(){act()}}
+      action = new Action(title){ def apply(){
+        Console.withOut(out) {
+          Console.withErr(out) {
+            act()
+          }
+        }
+      }
+      }
     }
 
   leftComponent = new BoxPanel(Orientation.Vertical) {
@@ -119,13 +124,6 @@ class PuckControlPanel(val filesHandler : FilesHandler)
           filesHandler.makeDot ()
           println("Dot printing finished")
           print("dot2png ...")
-/*          if(filesHandler.dot2png() ==0)
-            println(" success")
-          else
-            println(" fail")
-
-          val imgframe = ImageFrame(new File(filesHandler.graph.getCanonicalPath + ".png"))
-          imgframe.visible = true*/
 
           val pipedOutput = new PipedOutputStream()
           val pipedInput = new PipedInputStream(pipedOutput)

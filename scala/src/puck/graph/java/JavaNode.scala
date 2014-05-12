@@ -1,20 +1,20 @@
 package puck.graph.java
 
-import puck.graph.{AGNode, DotHelper, NodeKind}
+import puck.graph._
 /**
  * Created by lorilan on 06/05/14.
  */
 
-object JavaNodeKind extends DotHelper{
-  case class Package private[JavaNodeKind]() extends NodeKind  //unused in core LJ
-  case class Interface private[JavaNodeKind]() extends NodeKind //unused in LJ
+object JavaNode extends DotHelper with AGNodeBuilder{
+  case class Package private[JavaNode]() extends NodeKind  //unused in core LJ
+  case class Interface private[JavaNode]() extends NodeKind //unused in LJ
 
-  case class Class private[JavaNodeKind]() extends NodeKind
-  case class Constructor private[JavaNodeKind]() extends NodeKind
-  case class Method private[JavaNodeKind]() extends NodeKind
-  case class Field private[JavaNodeKind]() extends NodeKind
+  case class Class private[JavaNode]() extends NodeKind
+  case class Constructor private[JavaNode]() extends NodeKind
+  case class Method private[JavaNode]() extends NodeKind
+  case class Field private[JavaNode]() extends NodeKind
 
-  case class Literal private[JavaNodeKind]() extends NodeKind
+  case class Literal private[JavaNode]() extends NodeKind
 
   val `package` = new Package()
 
@@ -60,10 +60,33 @@ object JavaNodeKind extends DotHelper{
            case _ => throw new Error("Wrong NodeKind contained by a class")
          }
       }
-
-
   }
 
+  override def apply(g: AccessGraph,
+            id: Int, name : String,
+            kind : NodeKind, st : Option[Type]) : AGNode = AGNode(g,id,name,kind,st)
 
+  /*
+    using the Prolog constraint convention as key ease the node finding when parsing constraints
+   */
+  override def makeKey(fullName: String, localName:String,
+                       kind: NodeKind, `type`: Option[Type]) :String =
+    AGNode.makeKey(fullName, localName, kind, `type`)
+  /*
+  override def makeKey(fullName: String, localName:String, kind: NodeKind, `type`: Option[Type]) : String = {
+    (kind, `type`) match {
+      case (_, None) => fullName
+      case (Field(), _) => fullName
+      case (Constructor(), Some(t)) => fullName + "#_" + prologTypeString(t)
+      case (Method(), Some(t)) =>  fullName + "__" + prologTypeString(t)
+      case _ => throw new Error("don't know how to do a key - should not happen")
+    }
+  }
 
+  private def prologTypeString(t: Type) : String = t match {
+    case NamedType(name, id) => (name split "[.]").last
+    case Tuple(tu) => tu mkString "_"
+    case Arrow(i, _) => prologTypeString(i)
+  }
+   */
 }

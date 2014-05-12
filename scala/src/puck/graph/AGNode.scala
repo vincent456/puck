@@ -9,6 +9,11 @@ import scala.collection.mutable
 abstract class NodeKind
 case class AGRoot private[graph]() extends NodeKind
 
+trait AGNodeBuilder {
+  def apply(g: AccessGraph, id: Int, name:String, kind : NodeKind, st : Option[Type]) : AGNode
+  def makeKey(fullName: String, localName:String, kind: NodeKind, `type`: Option[Type]) : String
+}
+
 class AGNode (val graph: AccessGraph,
               val id: Int,
               var name: String,
@@ -27,7 +32,7 @@ class AGNode (val graph: AccessGraph,
     }
   }
 
-  private var content0 : mutable.Set[AGNode] = mutable.HashSet()
+  private var content0 : mutable.Set[AGNode] = mutable.Set()
 
   def content : mutable.Iterable[AGNode] = content0
   def content_+=(n:AGNode) {
@@ -38,7 +43,7 @@ class AGNode (val graph: AccessGraph,
   private[graph] def isContentEmpty = content0.isEmpty
 
 
-  private var superTypes0 : mutable.Set[AGNode] = mutable.HashSet()
+  private var superTypes0 : mutable.Set[AGNode] = mutable.Set()
 
   def superTypes:Iterable[AGNode] = superTypes0
   def superTypes_+=(st:AGNode) {
@@ -46,13 +51,13 @@ class AGNode (val graph: AccessGraph,
     st.subTypes0 += this
   }
 
-  private var subTypes0 : mutable.Set[AGNode] = mutable.HashSet()
+  private var subTypes0 : mutable.Set[AGNode] = mutable.Set()
   def subTypes_+=(st:AGNode) {
     this.subTypes0 += st
     st.superTypes0 += this
   }
 
-  private var users0 : mutable.Set[AGNode] = mutable.HashSet()
+  private var users0 : mutable.Set[AGNode] = mutable.Set()
   def users_+=(n:AGNode) { this.users0 += n}
   def users: mutable.Iterable[AGNode] = users0
 
@@ -71,21 +76,38 @@ class AGNode (val graph: AccessGraph,
   /**
    * friends bypass other constraints
    */
-  private var friends : List[Int] = List()
+  private var friends : mutable.Set[AGNode] = mutable.Set()
   /**
    * this scope is hidden
    * 3-tuple (Constraint - id, Interlopers id, Friends Id)
    */
-  private var scopeInterlopers: List[(Int, List[Int], List[Int])]= List()
+  private var scopeInterlopers: List[(AGNode, List[AGNode], List[AGNode])]= List()
   /**
    * pairs of (nodeId, constraintId)
    * this is a facade for the scope rooted by nodId for the constraint constraintId
    */
-  private var facadeOf:List[(Int, Int)] = List()
+  private var facadeOf:List[(AGNode, AGNode)] = List()
   /**
    * this element is hidden but not the elements that it contains
    * 2-tuple (Interlopers id, Friends Id)
    */
   private var elementInterlopers : List[(List[Int], List[Int])]= List()
 
+}
+
+object AGNode extends AGNodeBuilder{
+  override def apply(g: AccessGraph,
+                     id: Int, name : String,
+                     kind : NodeKind, st : Option[Type]) : AGNode ={
+    new AGNode(g,id, name, kind,st)
+  }
+
+  override def makeKey(fullName: String, localName:String,
+                       kind : NodeKind, `type`: Option[Type]) : String ={
+    fullName /* already contain the #_type string */
+    /*`type` match {
+      case None => fullName
+      case Some(t) => fullName + " : " + t
+    }*/
+  }
 }

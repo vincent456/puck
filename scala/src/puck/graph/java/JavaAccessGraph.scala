@@ -7,7 +7,7 @@ import puck.graph.{AGNode, AccessGraph}
  */
 object JavaAccessGraph {
   def apply(): AccessGraph = {
-    val g = new AccessGraph()
+    val g = new AccessGraph(AGNode)
 
     List(Primitive.voidNode(g),
       Primitive.booleanNode(g),
