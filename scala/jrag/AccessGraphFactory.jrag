@@ -80,10 +80,6 @@ aspect AccessGraphFactory {
 		return typeDecl().buildAG(accessGraph);
 	}
 
-	//TODO check need for BodyDecl.buildAG(AccessGraph accessGraph){
-	// return buildAGNode(accessGraph);
-	// }
-
 	public AGNode BodyDecl.buildAG(AccessGraph accessGraph, AGNode usedNode){
 		AGNode agNode = buildAGNode(accessGraph);
 		usedNode.users_$plus$eq(agNode);
@@ -135,12 +131,39 @@ aspect AccessGraphFactory {
 			
 			AGNode hostTypeAGNode = hostType().buildAGNode(accessGraph);
 
-			//TODO add implem
+			use.getQualifier().addMethodUsesDependencies(accessGraph, 
+				user, agNode, hostTypeAGNode);
 			//addMethodUsesDependencies(use, user, agNode, hostTypeAGNode);
+			
 		}
 
 		return agNode;
 	}
+
+	public void Expr.addMethodUsesDependencies(AccessGraph accessGraph,
+		AGNode user, 
+		AGNode methodNode, 
+		AGNode typehostAGNode){
+		/* "this : Access" is a method qualifier access*/
+		System.out.println("Method uses dependencie not treated, qualifier : " + this);
+		
+	}
+
+	public AGNode Variable.buildAGNode(AccessGraph accessGraph);
+	public void VarAccess.addMethodUsesDependencies(AccessGraph accessGraph,
+		AGNode user, 
+		AGNode methodNode, 
+		AGNode typehostAGNode){
+	
+		AGNode declAGNode = decl().buildAGNode(accessGraph);
+			
+		// AGEdge methodUses = AGEdge.createUsesEdge(user, methodNode);
+		// AGEdge methodReceiverTypeDeclaration = AGEdge.createUsesEdge(bodyDeclAGNode, typehostAGNode);
+
+		// ag.addUsesDependency(methodUses, methodReceiverTypeDeclaration);
+	}
+
+
 
 	public AGNode ConstructorDecl.buildAG(AccessGraph accessGraph){
 		AGNode agNode = buildAGNode(accessGraph);
@@ -165,7 +188,11 @@ aspect AccessGraphFactory {
 		AGNode tdNode = buildAG_TypeDecl(accessGraph);
 
 		for (Access use : uses()) {
-			tdNode.users_$plus$eq(use.buildAGNode(accessGraph));
+			BodyDecl hostBodyDecl = use.hostBodyDecl();
+            if (hostBodyDecl != null) {
+                AGNode userNode = hostBodyDecl.buildAGNode(accessGraph);
+                tdNode.users_$plus$eq(userNode);
+            }
 		}
 
 		for (BodyDecl bd : getBodyDeclList()) {
@@ -255,20 +282,22 @@ aspect AccessGraphFactory {
 	}
 
 	puck.graph.NodeKind ClassDecl.getAGNodeKind(){
-		return puck.graph.java.JavaNodeKind.classKind();
+		return puck.graph.java.JavaNode.classKind();
 	}
 
 	puck.graph.NodeKind InterfaceDecl.getAGNodeKind(){
-		return puck.graph.java.JavaNodeKind.interfaceKind();
+		return puck.graph.java.JavaNode.interfaceKind();
+	}
+
+	public AGNode ASTNode.buildAGNode(AccessGraph accessGraph){
+		throw new AGBuildingError(this.getClass()+" does not know how to create an AG Node");
 	}
 
 	public AGNode TypeDecl.buildAGNode(AccessGraph accessGraph){
 		return accessGraph.addNode(fullName(), name(), getAGNodeKind(), TypeDecl.noType);
 	}
 
-	public AGNode ASTNode.buildAGNode(AccessGraph accessGraph){
-		throw new AGBuildingError(this.getClass()+" does not know how to create an AG Node");
-	}
+	
 
 	public AGNode TypeAccess.buildAGNode(AccessGraph accessGraph){
 		return decl().buildAGNode(accessGraph);
@@ -280,16 +309,16 @@ aspect AccessGraphFactory {
 	}
 	
 
-	public AGNode BodyDecl.buildAGNode(AccessGraph accessGraph){
+	/*public AGNode BodyDecl.buildAGNode(AccessGraph accessGraph){
 		System.out.println("Bodydecl or subclass");
 		return super.buildAGNode(accessGraph);
-	}
+	}*/
 
 	public AGNode FieldDeclaration.buildAGNode(AccessGraph accessGraph){
 		AGNode agTypeNode = type().buildAGNode(accessGraph);
 		puck.graph.Type type = new puck.graph.NamedType(type().fullName(), agTypeNode.id());
 		return accessGraph.addNode(fullName(), name(), 
-				puck.graph.java.JavaNodeKind.field(), 
+				puck.graph.java.JavaNode.field(), 
 				scala.Option.apply(type));
 	}
 
@@ -304,9 +333,10 @@ aspect AccessGraphFactory {
 		AGNode agTypeNode = getTypeAccess().buildAGNode(accessGraph);
 
 		return accessGraph.addNode(fullName(), name(), 
-				puck.graph.java.JavaNodeKind.field(), 
+				puck.graph.java.JavaNode.field(), 
 				scala.Option.apply(new puck.graph.NamedType(getTypeAccess().fullName(), agTypeNode.id())));
 	}*/
+
 
 	static puck.graph.Type ASTNode.astParamsToAGType(AccessGraph accessGraph, Callable c){
 		ArrayList<puck.graph.Type> tparams = new ArrayList<puck.graph.Type>();
@@ -327,7 +357,7 @@ aspect AccessGraphFactory {
               new puck.graph.NamedType(getTypeAccess().fullName(),agReturnTypeNode.id()));
 
       return accessGraph.addNode(fullName(), name(),
-      		puck.graph.java.JavaNodeKind.method(), 
+      		puck.graph.java.JavaNode.method(), 
       		scala.Option.apply(methodAGType));
 	}
 
@@ -339,7 +369,7 @@ aspect AccessGraphFactory {
               new puck.graph.NamedType(hostType().fullName(),agReturnTypeNode.id()));
 
       return accessGraph.addNode(fullName(), name(),
-      			puck.graph.java.JavaNodeKind.constructor(), 
+      			puck.graph.java.JavaNode.constructor(), 
       			scala.Option.apply(constructorAGType));
 	}
 
@@ -389,25 +419,6 @@ aspect AccessGraphFactory {
 		return null;
 	}
 	
-
-	/*
-	void Expr.addMethodUsesDependencies(AccessGraph accessGraph, 
-					AGNode user, AGNode methodNode, AGNode typehostAGNode){
-		System.err.println("Method uses dependencie not treated, qualifier : " + this);
-	}
-
-	void VarAccess.addMethodUsesDependencies(AccessGraph accessGraph, 
-					AGNode user, AGNode methodNode, AGNode typehostAGNode){
-		
-		AGNode bodyDeclAGNode = decl().buildAGNode(accessGraph);
-		
-		//TODO FINISH !!	
-		AGEdge methodUses = AGEdge.createUsesEdge(user, methodNode);
-		AGEdge methodReceiverTypeDeclaration = AGEdge.createUsesEdge(bodyDeclAGNode, typehostAGNode);
-
-		ag.addUsesDependency(methodUses, methodReceiverTypeDeclaration);
-	}
-	*/
 
 	//also present in jrrt-read-only/test/Testing.jrag
 	public Program Frontend.getProgram() {

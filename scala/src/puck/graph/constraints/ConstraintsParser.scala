@@ -4,11 +4,14 @@ import scala.util.parsing.combinator.RegexParsers
 import puck.graph.{AGNode, AccessGraph}
 import scala.collection.mutable
 import scala.util.parsing.input.{Reader, StreamReader}
+import scala.util.parsing.combinator.token.Tokens
 
 /**
  * Created by lorilan on 12/05/14.
  */
-class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers{
+class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers with Tokens{
+
+  protected override val whiteSpace = """(\s|%.*)+""".r  //to skip comments
 
   val defs : mutable.Map[String, List[AGNode]] = mutable.Map[String, List[AGNode]]()
   val imports : mutable.Buffer[String] = mutable.Buffer("")
@@ -71,6 +74,14 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers{
         HideScope(findNode(i), toDef(facades), toDef(interlopers), toDef(friends))
     }
 
+  def hideScopeSet1 : Parser[List[HideScope]] =
+    "hideScopeSet(" ~> listOrIdent <~ ")." ^^ {
+      case s =>
+        toDef(s) map {
+          HideScope(_, List(), List(accessGraph.root), List())
+        }
+    }
+
   def hideScopeSetFrom : Parser[List[HideScope]] =
     "hideScopeSetFrom(" ~> listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
       case s ~ _ ~ interlopers =>
@@ -80,12 +91,44 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers{
         }
     }
 
-  def constraints : Parser[Option[List[HideScope]]] = (
-    java_import ^^ ( x => None)
+
+  def friend : Parser[List[AreFriendsOf]] =
+    "isFriendOf(" ~> listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
+      case friends ~ _ ~ befriended =>
+         val fs = toDef(friends)
+        toDef(befriended) map {
+          AreFriendsOf(fs, _)
+        }
+  }
+
+  def hideElement : Parser[HideElement] =
+    "hide(" ~> ident ~ "," ~ listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
+      case elt ~ _ ~ interlopers ~ _ ~ friends =>
+      HideElement(findNode(elt), toDef(interlopers), toDef(friends))
+    }
+
+  def hideElementSet : Parser[List[HideElement]] =
+    "hideSet(" ~> listOrIdent ~ "," ~ listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
+      case set ~ _ ~ interlopers ~ _ ~ friends =>
+        val is = toDef(interlopers)
+        val fs = toDef(friends)
+        toDef(set) map {
+          HideElement(_, is, fs)
+        }
+
+  }
+
+  def constraints : Parser[Option[List[Constraint]]] = {
+    def some(x : List[Constraint]) = Some(x)
+    def somelist(x : Constraint) = Some(List(x))
+    ( java_import ^^ ( x => None)
       | declare_set ^^ (x => None)
-      | hideScope ^^ (x => Some(List(x)))
-      | hideScopeSetFrom ^^ (x => Some(x))
-    )
+      | hideElement ^^ somelist
+      | hideElementSet ^^ some
+      | hideScope ^^ somelist
+      | hideScopeSet1 ^^ some
+      | hideScopeSetFrom ^^ some
+    )}
 
   /*def apply(input : java.io.Reader) = parseAll(constraints, input) match{
     case Success(result, _ ) => result
@@ -93,14 +136,16 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers{
   }*/
 
   def apply(input : java.io.Reader) = {
-    def aux(input : Reader[Char], acc: List[HideScope]) : List[HideScope] =
+    def aux(input : Reader[Char], acc: List[Constraint]) : List[Constraint] =
       if(input.atEnd) acc
       else parse(constraints, input) match {
         case Success(r, i) => r match {
           case None => aux(i, acc)
           case Some(res) => aux(i, res ::: acc)
         }
-        case NoSuccess(msg, i) => throw new scala.Error("at position " + i.pos + " " + msg)
+        case x : NoSuccess =>  if(x.isEmpty) acc //to deal with empty lines at the end of a file ... good way ?
+        else
+          throw new scala.Error("at position " + x.next.pos + " " + x.msg)
       }
     aux(StreamReader(input), List())
   }

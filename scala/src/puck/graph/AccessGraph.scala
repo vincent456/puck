@@ -2,6 +2,9 @@ package puck.graph
 
 import scala.collection.mutable
 import scala.collection.JavaConversions.collectionAsScalaIterable
+import puck.graph.AccessGraph.Violation
+import puck.graph.constraints._
+
 /**
  * Created by lorilan on 05/05/14.
  */
@@ -17,15 +20,36 @@ object AccessGraph{
 
   val rootId = 0
 
+  type Violation = (AGNode, AGNode)
+
 }
 
-class AccessGraph (nodeBuilder : AGNodeBuilder){
+class AccessGraph (nodeBuilder : AGNodeBuilder) {
+//extends Iterable[AGNode]{ //is NOT iterable (see scala doc for requirements) but
+// has a valid iterator + implicit conversion in puck.graph package object
 
-  private[graph] val nodesById : mutable.Map[Int, AGNode] = new mutable.HashMap[Int, AGNode]()
+  private[graph] val nodesById : mutable.Map[Int, AGNode] = mutable.Map()
+  private[graph] val nodesByName : mutable.Map[String, AGNode] = mutable.Map()
   private var id : Int = 1
   val root : AGNode = nodeBuilder(this, AccessGraph.rootId, "root", AGRoot(), None)
 
-  private[graph] val nodesByName : mutable.Map[String, AGNode] = new mutable.HashMap[String, AGNode]()
+  def iterator = root.iterator
+
+  def violations : List[Violation] = {
+    this.foldLeft(List[Violation]()){(acc: List[Violation], n :AGNode) => n.targetingViolations(acc)}
+  }
+
+  /*def violations : Set[Violation] = {
+    this.foldLeft(Set[Violation]()){(acc: Set[Violation], n :AGNode) => n.targetingViolations(acc)}
+  }*/
+
+  def discardConstraints() {
+    this.foreach(_.discardConstraints())
+  }
+
+  def printConstraints(){
+    this.foreach((n) => println(n.constraintsString))
+  }
 
   /*def list(){
     nodesByName.foreach((kn) => {
@@ -49,6 +73,19 @@ class AccessGraph (nodeBuilder : AGNodeBuilder){
     }
   }
 
+  def apply(cts : List[Constraint]){
+
+    cts foreach {
+      case HideScope(s, facades, interlopers, friends) =>
+        s scopeConstraints_+= new ScopeConstraint(facades, interlopers, friends)
+
+      case AreFriendsOf(friends, befriended) => befriended friends_++= friends
+
+      case HideElement(elt, interlopers, friends) =>
+        elt elementConstraints_+= new ElementConstraint(interlopers, friends)
+    }
+  }
+
   /*
     throw exception on failure
    */
@@ -58,17 +95,21 @@ class AccessGraph (nodeBuilder : AGNodeBuilder){
   def getNode(fullName:String) : Option[AGNode] = nodesByName get fullName
   def getNode(id: Int) : Option[AGNode] = nodesById get id
 
+
   def addNode(fullName: String, localName:String, kind: NodeKind, `type`: Option[Type]): AGNode = {
-    val unambiguousFullName = nodeBuilder.makeKey(fullName, localName,kind, `type`)
+    val unambiguousFullName = nodeBuilder.makeKey(fullName, localName, kind, `type`)
     nodesByName get unambiguousFullName match {
       case None => id = id + 1
         val n = nodeBuilder(this, id, localName, kind, `type`)
-        this.nodesByName += ((unambiguousFullName, n))
-        this.nodesById += ((id, n))
+        this.nodesByName += (unambiguousFullName -> n)
+        this.nodesById += (id -> n)
         n
       case Some(n) => n /* check that the kind and type is indeed the same ??*/
     }
   }
+
+  def addNode(fullName: String, localName:String): AGNode =
+    addNode(fullName, localName, VanillaKind(), None)
 
   def addPackageNode(fullName: String, localName:String) : AGNode =
     addNode(fullName, localName, java.JavaNode.`package`, None)
@@ -138,7 +179,7 @@ class AccessGraph (nodeBuilder : AGNodeBuilder){
     println("string "+literal + " "+ occurrences.size()+" occurences" )
 
     for(bd <- occurrences){
-        val packageNode = addPackage(bd.hostBodyDecl().compilationUnit().getPackageDecl())
+      val packageNode = addPackage(bd.hostBodyDecl().compilationUnit().getPackageDecl())
 
       val bdNode = bd buildAGNode this
       val strNode = addNode(bd.fullName()+literal, literal, java.JavaNode.literal, Some(java.Primitive.string))

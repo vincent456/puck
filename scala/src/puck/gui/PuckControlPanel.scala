@@ -62,12 +62,29 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
           if (!(f == filesHandler.srcDirectory)) {
             filesHandler.srcDirectory = f
             //filesHandler.getPrologHandler.setGenDir(f)
-            System.err.println("onAppDirectoryChoice : TO FINISH !!")
             //decoupleEditor.setEditedFile(filesHandler.getPrologHandler.getDecouple)
           }
         }
         println("Application directory : ")
-        println(filesHandler.srcDirectory.getAbsolutePath)
+        println(filesHandler.srcDirectory)
+    }
+
+    contents += makeButton("Decouple",
+      "Select the file containing the decoupling constraints"){
+      () => val fc = new FileChooser(filesHandler.srcDirectory)
+        fc.title = "What directory contains your Java application ?"
+        fc.fileSelectionMode = FileChooser.SelectionMode.FilesOnly
+        fc showDialog(null, "Select")
+        var f: File = fc.selectedFile
+        if (f != null) {
+          f = f.getCanonicalFile
+          if (!(f == filesHandler.decouple)) {
+            filesHandler.decouple = f
+            //filesHandler.getPrologHandler.setGenDir(f)
+          }
+        }
+        println("Decouple : ")
+        println(filesHandler.decouple)
     }
 
     contents += makeButton("Jar list file",
@@ -116,6 +133,15 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
     //val run = makeButton("Eval constraint",
     // "Launch the coupling constraint evaluation")
 
+    val loadConstraints = makeButton("Load constraints",
+    "Decorate the graph with the constraints of the selected decouple file"){
+      () =>
+        filesHandler.accessGraph(filesHandler.parseConstraints())
+    }
+    loadConstraints.visible = false
+    contents += loadConstraints
+    delayedDisplay += loadConstraints
+
     val show = makeButton("Show graph",
       "Display a visual representation of the graph without evaluating the constraint"){
       () =>
@@ -134,9 +160,9 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
           }
 
           if(filesHandler.dot2png(soutput = Some(pipedOutput)) ==0)
-            println(" success")
+            println("success")
           else
-            println(" fail")
+            println("fail")
 
 
         }

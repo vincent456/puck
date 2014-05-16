@@ -53,7 +53,8 @@ public class Builder {
 	//  td.buildAG(builder)
 
 
-	private void addMethodUsesDependencies(Access methodUse, AGNode user, AGNode methodNode, AGNode typehostAGNode){
+	private void addMethodUsesDependencies(Access methodUse, AGNode user, 
+		AGNode methodNode, AGNode typehostAGNode){
 		//methodUse.getQualifier().
 		if(methodUse.getQualifier() instanceof VarAccess){
 			Variable varUser = ((VarAccess) methodUse.getQualifier()).decl();

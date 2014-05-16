@@ -18,25 +18,42 @@ trait DotHelper{
 
 object DotPrinter {
 
-  //arrow styles (line, head)
-  val isaStyle = ("dashed", "empty")
-  val containsStyle = ("dashed", "open")
-  val usesStyle = ("bold", "normal")
+  class Style(val line: String, val arrowHead : String)
+  val isaStyle = new Style("dashed", "empty")
+  val containsStyle = new Style("dashed", "open")
+  val usesStyle = new Style("bold", "normal")
 
-  //(color, thickness)
-  val correctStatus = ("black", "1")
-  val violationStatus = ("red", "5")
+  class Status(val color : String, val thickness : String)
+  val correctStatus = new Status("black", "1")
+  val violationStatus = new Status("red", "5")
+
 
   def print(writer: BufferedWriter, graph : AccessGraph,
             helper : DotHelper, printId : Boolean){
 
-     val idPrinter =
+    val idPrinter =
       if(printId) (id:Int) => " (" + id + ")"
       else (_:Int) => ""
 
     def writeln(str:String){
       writer write str
       writer newLine()
+    }
+
+    val violations = graph.violations
+
+    def printUse(source : AGNode, target : AGNode) =
+      printArc(usesStyle, source, target,
+        if(violations.contains((source, target)))
+          violationStatus
+        else correctStatus )
+
+    def decorate_name(n : AGNode):String =
+        n.container match {
+      case None => n.name + idPrinter (n.id)
+      case Some (c) => if (violations.contains((c, n)))
+        "<FONT COLOR=\"" + violationStatus.color + "\"><U>" + helper.namePrefix(n.kind)+ n.name + idPrinter(n.id) +"</U></FONT>"
+        else helper.namePrefix(n.kind)+ n.name + idPrinter(n.id)
     }
 
     def printNode(n:AGNode){
@@ -47,7 +64,7 @@ object DotPrinter {
 
     def printSubGraph(n:AGNode){
       List("subgraph cluster" + n.id + " {",
-        "label=\"" +helper.namePrefix(n.kind)+ n.name + idPrinter(n.id) +"\";",
+        "label=\"" + decorate_name(n) +"\";",
         "color=black;") foreach writeln
 
       if(n.isContentEmpty) writeln(n.id + "[label=\"\" shape=none ]")
@@ -55,21 +72,21 @@ object DotPrinter {
 
       writeln("}")
 
-      n.users.foreach(printArc(usesStyle, _, n, correctStatus))
+      n.users.foreach(printUse(_, n))
     }
 
     def printClass(n:AGNode){
 
       def writeTableLine(n:AGNode){
         writeln("<TR><TD PORT=\"" +n.id + "\" ALIGN=\"LEFT\" BORDER=\"0\">"+
-          n.name + idPrinter(n.id) +"</TD></TR>")
+          decorate_name(n) +"</TD></TR>")
       }
 
       val (fields, ctrs, mts, innerClasses) = helper splitDotClassContent n
 
       writeln(n.id + " [ label = <<TABLE BGCOLOR=\"" + helper.fillColor(n.kind)+
         "\"> <TR> <TD PORT=\""+ n.id+"\" BORDER=\"0\"> <B>" +
-        helper.namePrefix(n.kind)+ n.name + idPrinter(n.id) +" </B></TD></TR>")
+        decorate_name(n) +" </B></TD></TR>")
 
       if(!fields.isEmpty || !ctrs.isEmpty || ! mts.isEmpty) writeln("<HR/>")
       fields foreach writeTableLine
@@ -83,15 +100,16 @@ object DotPrinter {
 
       n.content foreach{
         (n:AGNode) =>
-          n.users.foreach(printArc(usesStyle, _, n, correctStatus))
+          n.users.foreach(printUse(_, n))
       }
-      n.users.foreach(printArc(usesStyle, _, n, correctStatus))
-      n.superTypes.foreach(printArc(isaStyle, _, n, correctStatus))
+      n.users.foreach(printUse(_, n))
+      n.superTypes.foreach(printArc(isaStyle, n, _, correctStatus))
     }
 
 
-    def printArc(style :(String, String), source:AGNode, target:AGNode,
-                 status:(String, String)){
+
+    def printArc(style :Style, source:AGNode, target:AGNode,
+                 status:Status){
       //val (lineStyle, headStyle) = style
       //val (color, thickness) = status
       //println("print arc "+ source.nameTypeString + " -> " + target.nameTypeString)
@@ -108,19 +126,19 @@ object DotPrinter {
 
 
       def subGraphArc(n: AGNode, pos:String) =
-        if(helper isDotSubgraph n.kind) pos+"=cluster"+n.id+", "
+        if(helper isDotSubgraph n.kind) pos + "=cluster" + n.id + ", "
         else ""
 
       writeln(dotId(source) + " -> " + dotId(target) + "[ " +
         subGraphArc(source, "ltail") +
         subGraphArc(target, "lhead") +
-        "style=" + style._1 + ", arrowhead=" + style._2 +
-        ", color =" + status._1 + ", penwidth=" + status._2+ "];")
+        "style = " + style.line + ", arrowhead = " + style.arrowHead +
+        ", color = " + status.color + ", penwidth = " + status.thickness+ "];")
 
     }
 
     writeln("digraph G{")
-    writeln("rankdir=LR; ranksep=2; compound=true")
+    writeln("rankdir=LR; ranksep=equally; compound=true")
 
     graph.root.content.foreach(printNode)
 

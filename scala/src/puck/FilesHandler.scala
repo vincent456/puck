@@ -5,15 +5,15 @@ import java.io._
 import puck.graph.{DotPrinter, AGBuildingError, AccessGraph}
 import puck.graph.java.JavaNode
 import scala.sys.process.Process
-import puck.graph.constraints.ConstraintsParser
+import puck.graph.constraints.{ConstraintsParser, Constraint}
 import scala.Some
 
 /**
  * Created by lorilan on 08/05/14.
  */
 class FilesHandler private (private [this] var srcDir : File,
-                            private [this] var jlFile: File,
-                            private [this] var anFile :File,
+                            private [this] var jarlistFile0: File,
+                            private [this] var apiNodesFile0 :File,
                             private [this] var decouple0 : File,
                             private [this] var graph0: File){
 
@@ -22,13 +22,18 @@ class FilesHandler private (private [this] var srcDir : File,
   def accessGraph = ag
 
   def srcDirectory = this.srcDir
-  def srcDirectory_=(dir : File){ this.srcDir = dir.getCanonicalFile }
+  def srcDirectory_=(dir : File){ this.srcDir = dir.getCanonicalFile
+    jarlistFile0 = FilesHandler.defaultFile(srcDir, FilesHandler.defaultJarListFileName)
+    apiNodesFile0 = FilesHandler.defaultFile(srcDir, FilesHandler.defaultApiNodesFileName)
+    decouple0 = FilesHandler.defaultFile(srcDir, FilesHandler.defaultDecoupleFileName)
+    graph0 = FilesHandler.defaultFile(srcDir, FilesHandler.defaultGraphFileName)
+  }
 
-  def jarListFile = this.jlFile
-  def jarListFile_=(f:File){ this.jlFile = f.getCanonicalFile}
+  def jarListFile = this.jarlistFile0
+  def jarListFile_=(f:File){ this.jarlistFile0 = f.getCanonicalFile}
 
-  def apiNodesFile = this.anFile
-  def apiNodesFile_=(f:File){this.anFile= f.getCanonicalFile}
+  def apiNodesFile = this.apiNodesFile0
+  def apiNodesFile_=(f:File){this.apiNodesFile0= f.getCanonicalFile}
 
   private [this] var gdot : File = _
   def graphvizDot = this.gdot
@@ -73,11 +78,9 @@ class FilesHandler private (private [this] var srcDir : File,
 
   }
 
-  def parseConstraints(){
+  def parseConstraints(): List[Constraint] = {
       val parser = new ConstraintsParser(accessGraph)
-      accessGraph.list()
-      val l = parser(new FileReader(decouple))
-      println(l)
+      parser(new FileReader(decouple))
   }
 
 }
@@ -128,8 +131,9 @@ object FilesHandler{
         (new parser.JavaParser).parse(is, fileName)
       }
     }
-    if (f.process(arglist, br, jp))
-      Some(f.getProgram)
+
+    if (f.process(arglist, br, jp)){
+      Some(f.getProgram)}
     else
       None
   }
