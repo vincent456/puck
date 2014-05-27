@@ -4,14 +4,15 @@ import scala.util.parsing.combinator.RegexParsers
 import puck.graph.{AGNode, AccessGraph}
 import scala.collection.mutable
 import scala.util.parsing.input.{Reader, StreamReader}
-import scala.util.parsing.combinator.token.Tokens
+
 
 /**
  * Created by lorilan on 12/05/14.
  */
-class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers with Tokens{
+class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
 
   protected override val whiteSpace = """(\s|%.*)+""".r  //to skip comments
+
 
   val defs : mutable.Map[String, List[AGNode]] = mutable.Map[String, List[AGNode]]()
   val imports : mutable.Buffer[String] = mutable.Buffer("")
@@ -43,10 +44,10 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers with
   }
 
   def ident : Parser[String] = (
-    """[^\s',().]+""".r
+    """[^\[\]\s',().]+""".r
   | "'" ~> """[^\s']+""".r <~ "'"
   )
-  def list : Parser[List[String]] = "[" ~> rep1sep(ident, ",") <~ "]"
+  def list : Parser[List[String]] = "[" ~> repsep(ident, ",") <~ "]"     //rep1sep ??
 
   def listOrIdent : Parser[Either[String, List[String]]] = (
     list  ^^ (Right(_))
@@ -61,7 +62,15 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers with
     "declareSet(" ~> ident ~ "," ~ list <~ ")." ^^ {
       case ident ~ _ ~ list => defs get ident match {
         case Some(_) => throw new scala.Error("Set " + ident + " already defined")
-        case None => defs += ((ident, list map findNode))
+        case None => defs += (ident -> (list map findNode))
+      }
+    }
+
+  def declare_set_union : Parser[Unit] =
+    "declareSetUnion(" ~> ident ~ "," ~ list <~ ")." ^^ {
+      case ident ~ _ ~ list => defs get ident match {
+        case Some(_) => throw new scala.Error("Set " + ident + " already defined")
+        case None => defs += (ident -> (list map {defs}).flatten )
       }
     }
 
@@ -123,6 +132,7 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers with
     def somelist(x : Constraint) = Some(List(x))
     ( java_import ^^ ( x => None)
       | declare_set ^^ (x => None)
+      | declare_set_union ^^ (x => None )
       | hideElement ^^ somelist
       | hideElementSet ^^ some
       | hideScope ^^ somelist
@@ -137,16 +147,17 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers with
 
   def apply(input : java.io.Reader) = {
     def aux(input : Reader[Char], acc: List[Constraint]) : List[Constraint] =
-      if(input.atEnd) acc
-      else parse(constraints, input) match {
+      parse(constraints, input) match {
         case Success(r, i) => r match {
           case None => aux(i, acc)
           case Some(res) => aux(i, res ::: acc)
         }
-        case x : NoSuccess =>  if(x.isEmpty) acc //to deal with empty lines at the end of a file ... good way ?
-        else
-          throw new scala.Error("at position " + x.next.pos + " " + x.msg)
-      }
+        case Error(msg, next) =>
+          throw new scala.Error("!!! Error !!! at position " + next.pos + " " + msg)
+        case Failure(msg, next) =>
+          if(next.atEnd) acc
+          else throw new scala.Error("Failure at position " + next.pos + " " + msg )
+    }
     aux(StreamReader(input), List())
   }
 }

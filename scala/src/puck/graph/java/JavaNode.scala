@@ -1,44 +1,21 @@
 package puck.graph.java
 
 import puck.graph._
+import JavaNodeKind._
 /**
  * Created by lorilan on 06/05/14.
  */
 
+
 object JavaNode extends DotHelper with AGNodeBuilder{
-  case class Package private[JavaNode]() extends NodeKind  //unused in core LJ
-  case class Interface private[JavaNode]() extends NodeKind //unused in LJ
-
-  case class Class private[JavaNode]() extends NodeKind
-  case class Constructor private[JavaNode]() extends NodeKind
-  case class Method private[JavaNode]() extends NodeKind
-  case class Field private[JavaNode]() extends NodeKind
-
-  case class Literal private[JavaNode]() extends NodeKind
-
-  val `package` = new Package()
-
-  val interface = new Interface()
-  val `class` = new Class()
-
-  val constructor = new Constructor()
-  val method = new Method()
-  val field = new Field()
-
-  val literal = new Literal()
-
-  //fix for accessing the field in java
-  val interfaceKind = interface
-  val classKind = `class`
-
   def isDotSubgraph(k:NodeKind) = k match {case Package() => true; case _ => false}
   def isDotClass(k:NodeKind)= k match { case Class() | Interface() => true; case _ => false}
   def fillColor(k:NodeKind)= k match {
     case Package() => "#FF9933" //Orange
     case Interface() => "#FFFF99" // Light yellow
-    case Class() | Constructor() => "#FFFF33" //Yellow
-    case Method() | Field() => "#FFFFFF" //White
-    case Literal() => "#CCFFCC" //Very Light green
+    case Class() | Constructor(_) => "#FFFF33" //Yellow
+    case Method(_) | Field(_) => "#FFFFFF" //White
+    case Literal(_) => "#CCFFCC" //Very Light green
     case _ => throw new Error("Unknown JavaNodeKind")
   }
 
@@ -54,9 +31,9 @@ object JavaNode extends DotHelper with AGNodeBuilder{
          val (fds, cts, mts, cls) = lists
          n.kind match{
            case Interface() | Class() => (fds, cts, mts, n::cls)
-           case Field() => (n::fds, cts, mts, cls)
-           case Constructor() => (fds, n::cts, mts, cls)
-           case Method() => (fds, cts, n::mts, cls)
+           case Field(_) => (n::fds, cts, mts, cls)
+           case Constructor(_) => (fds, n::cts, mts, cls)
+           case Method(_) => (fds, cts, n::mts, cls)
            case _ => throw new Error("Wrong NodeKind contained by a class")
          }
       }
@@ -64,14 +41,14 @@ object JavaNode extends DotHelper with AGNodeBuilder{
 
   override def apply(g: AccessGraph,
             id: Int, name : String,
-            kind : NodeKind, st : Option[Type]) : AGNode = AGNode(g,id,name,kind,st)
+            kind : NodeKind) : AGNode = AGNode(g,id,name,kind)
 
   /*
     using the Prolog constraint convention as key ease the node finding when parsing constraints
    */
   override def makeKey(fullName: String, localName:String,
-                       kind: NodeKind, `type`: Option[Type]) :String =
-    AGNode.makeKey(fullName, localName, kind, `type`)
+                       kind: NodeKind) :String =
+    AGNode.makeKey(fullName, localName, kind)
   /*
   override def makeKey(fullName: String, localName:String, kind: NodeKind, `type`: Option[Type]) : String = {
     (kind, `type`) match {
@@ -89,4 +66,36 @@ object JavaNode extends DotHelper with AGNodeBuilder{
     case Arrow(i, _) => prologTypeString(i)
   }
    */
+}
+
+class JavaNode( graph : AccessGraph,
+                id : Int,
+                name : String,
+                kind : NodeKind)
+  extends AGNode(graph, id, name, kind){
+
+  def canContain(other : AGNode) : Boolean = {
+    (this.kind, other.kind) match {
+      case (Package(), Package())
+           | (Package(), Class())
+           | (Package(), Interface())
+           //| (Class(), Class())
+           | (Class(), Constructor(_))
+           | (Class(), Field(_))
+           | (Class(), Method(_))
+           | (Interface(), AbstractMethod(_))
+      => true
+
+      case _ => false
+    }
+  }
+
+  override def `may be an abstraction of`(other : AGNode) = {
+    (this.kind, other.kind) match {
+      case (Interface(), Class()) => new JavaType(other).subtypeOf(new JavaType(this))
+      case (Class(), Class()) => new JavaType(other).subtypeOf(new JavaType(this))
+      case _ => false
+    }
+
+  }
 }

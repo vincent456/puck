@@ -3,14 +3,36 @@ package puck.graph
 /**
  * Created by lorilan on 05/05/14.
  */
-abstract class Type
-case class NamedType(name: String, id: Int)extends Type{
-  override def toString = name
+abstract class Type {
+  def subtypeOf(other : Type) : Boolean
 }
-case class Tuple(types: List[Type]) extends Type{
+case class NamedType(n : AGNode) extends Type{
+  override def toString = n.name
+  def subtypeOf(other : Type) : Boolean = this == other ||
+    (other match {
+      case NamedType(othern) => othern `is super type of` n
+      case _ => false
+    })
+}
+
+case class Tuple(types: List[Type]) extends Type {
   override def toString = types mkString ("(", ", ", ")")
+
+  def subtypeOf(other : Type) : Boolean = this == other ||
+    (other match {
+      case Tuple(ts) => (types, ts).zipped forall( _.subtypeOf(_))
+      case _ => false
+    })
+
 }
 
 case class Arrow(input:Type, output:Type) extends Type{
   override def toString = input + " -> " + output
+
+  def subtypeOf(other : Type) : Boolean = this == other ||
+    ( other match{
+      case Arrow( i, o) => i.subtypeOf(input) && output.subtypeOf(o)
+      case _ => false })
+
+  def canOverride(other : Arrow) : Boolean = this subtypeOf other
 }

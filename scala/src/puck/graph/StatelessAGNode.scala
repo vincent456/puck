@@ -8,7 +8,7 @@ class StatelessAGNode (graph: AccessGraph,
                        name: String,
                        kind: NodeKind,
                        `type`: Option[Type])
-  extends AGNode(graph, id, name, kind, `type`){
+  extends AGNode(graph, id, name, kind){
 
   override def superTypes_+=(st:AGNode) = ()
   override def subTypes_+=(st:AGNode) = ()

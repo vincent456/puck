@@ -8,18 +8,18 @@ import scala.annotation.tailrec
 
 
 trait AGNodeBuilder {
-  def apply(g: AccessGraph, id: Int, name:String, kind : NodeKind, st : Option[Type]) : AGNode
-  def makeKey(fullName: String, localName:String, kind: NodeKind, `type`: Option[Type]) : String
+  def apply(g: AccessGraph, id: Int, name:String, kind : NodeKind) : AGNode
+  def makeKey(fullName: String, localName:String, kind: NodeKind) : String
 }
 
 object AGNode extends AGNodeBuilder{
   override def apply(g: AccessGraph,
                      id: Int, name : String,
-                     kind : NodeKind, st : Option[Type]) : AGNode = new AGNode(g, id, name, kind,st)
+                     kind : NodeKind) : AGNode = new AGNode(g, id, name, kind)
 
 
   override def makeKey(fullName: String, localName:String,
-                       kind : NodeKind, `type`: Option[Type]) : String = fullName
+                       kind : NodeKind) : String = fullName
 
 
   implicit def toScopeSet( n: mutable.Set[AGNode]) : ScopeSet = new ScopeSet(n.iterator)
@@ -48,12 +48,11 @@ class ScopeSet(it : Iterator[AGNode]){
 class AGNode (val graph: AccessGraph,
               val id: Int,
               var name: String,
-              val kind: NodeKind,
-              var `type`: Option[Type]) { //extends Iterable[AGNode]{
+              val kind: NodeKind) { //extends Iterable[AGNode]{
 
 
 
-  /*override  def equals(obj:Any) : Boolean = obj match {
+  /*override def equals(obj:Any) : Boolean = obj match {
     case that : AGNode => this.id == that.id
     case _ => false
   }
@@ -67,7 +66,8 @@ class AGNode (val graph: AccessGraph,
 
   override def toString: String = name
 
-  def nameTypeString = name + ( `type` match{ case None =>""; case Some(t) => " : " + t })
+  //TODO FIX def
+  def nameTypeString = name //+ ( `type` match{ case None =>""; case Some(t) => " : " + t })
 
 
   def fullName : String = container match{
@@ -111,6 +111,11 @@ class AGNode (val graph: AccessGraph,
 
 
   private var superTypes0 : mutable.Set[AGNode] = mutable.Set()
+
+  def `is super type of`(other : AGNode) : Boolean = {
+    subTypes0.contains(other) ||
+    subTypes0.exists(_.`is super type of`(other))
+  }
 
   def superTypes:Iterable[AGNode] = superTypes0
   def superTypes_+=(st:AGNode) {
@@ -267,6 +272,32 @@ class AGNode (val graph: AccessGraph,
     }
   }
 
+  /**
+   * Solving
+   */
+
+  private var abstractions0: mutable.Buffer[AGNode]= mutable.Buffer()
+  def abstractions : mutable.Iterable[AGNode] = abstractions0
+
+  def `may be an abstraction of`(other : AGNode) = false
+
+  def searchExistingAbstractions(){
+    graph.iterator foreach { ( n : AGNode) =>
+      if(n != this && n `may be an abstraction of` this)
+        this.abstractions0 += n
+    }
+  }
+
+  def createAbstraction() : AGNode = {
+    // TODO find a strategy or way to make the user choose which abstractkind is used !
+    val n = graph.addNode(name + "_abstraction", kind.abstractKinds.head)
+    abstractions0 += n
+    /* little hack (?) : an abstraction is its own abstraction otherwise,
+     on a later iteration, instead of moving the abstraction it will create an abstraction's abstraction ...
+     and that can go on... */
+    n.abstractions0 += n
+    n
+  }
 }
 
 

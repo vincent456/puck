@@ -1,6 +1,6 @@
 package puck.graph.java
 
-import puck.graph.{AGNode, AccessGraph}
+import puck.graph.{NamedType, AGNode, AccessGraph}
 
 /**
  * Created by lorilan on 07/05/14.
@@ -19,8 +19,9 @@ object JavaAccessGraph {
       Primitive.longNode(g),
       Primitive.shortNode(g),
       Primitive.stringNode(g)) foreach {
-      (n : AGNode) => g.nodesByName += ((n.name, n))
-                      g.nodesById += ((n.id, n))
+      (n : AGNode) => g.nodesByName += (n.name -> n)
+                      g.nodesById += (n.id -> n)
+                      //g.predefTypes += (n.name -> NamedType(n))
 
     }
 

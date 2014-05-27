@@ -10,6 +10,7 @@ import puck.graph.AccessGraph
 /**
  * Created by lorilan on 08/05/14.
  */
+
 object Front extends SwingApplication{
 
   override def startup(args: Array[String]){
@@ -32,7 +33,7 @@ object Front extends SwingApplication{
 object Front{
 
   def main(args : Array[String]){
-    val fh = FilesHandler("/home/lorilan/puck_svn/distrib/examples/prototype/actors/candidate")()
+    val fh = FilesHandler("/home/lorilan/puck_svn/distrib/examples/bridge/hannemann/candidate")()
     val graph = fh.loadGraph(null)
     println("graph loaded")
     //fh.accessGraph.list()
