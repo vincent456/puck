@@ -1,54 +1,67 @@
 package puck.graph.java
 
-import puck.graph.{NodeKind, Type}
+import puck.graph._
 
 /**
  * Created by lorilan on 27/05/14.
  */
+
 object JavaNodeKind {
-  case class Package private[JavaNodeKind]() extends NodeKind {  //unused in LJ
+  case class Package private[java]() extends NodeKind {  //unused in LJ
   val abstractKinds = List(`package`)
   }
-  case class Interface private[JavaNodeKind]() extends NodeKind { //unused in LJ
+  case class Interface private[java]() extends NodeKind { //unused in LJ
   val abstractKinds = List(interface)
   }
-  case class Class private[JavaNodeKind]() extends NodeKind {
+  case class Class private[java]() extends NodeKind {
     val abstractKinds = List(interface) //  `class` ?
   }
-  case class Constructor private[JavaNodeKind](t : Type) extends NodeKind {
-    val abstractKinds = List(method(t))
+  case class Constructor private[java]() extends NodeKind with HasType[Arrow]{
+    def abstractKinds = List(method(`type`))
   }
-  case class Method private[JavaNodeKind](t : Type) extends NodeKind {
-    val abstractKinds = List[NodeKind](abstractMethod(t), method(t))
+  case class Method private[java]() extends NodeKind with HasType[Arrow] {
+    def abstractKinds = List[NodeKind](abstractMethod(`type`), method(`type`))
   }
-  case class Field private[JavaNodeKind](t : Type) extends NodeKind{
+  case class Field private[java]() extends NodeKind with HasType[NamedType]{
     //TODO check abstraction : FieldRead != FieldWrite
     // fieldread abstraction type = () -> t
     // fielwrite abstraction type = t -> () (think of t -> t case of jrrt ... )
-    val abstractKinds = List(method(t))
+    def abstractKinds = List(Method())
   }
 
-  case class AbstractMethod private[JavaNodeKind](t : Type) extends NodeKind {
-    val abstractKinds = List(method(t))
+  case class AbstractMethod private[java]() extends NodeKind with HasType[Arrow] {
+    def abstractKinds = List(abstractMethod(`type`), method(`type`))
   }
 
-  case class Literal private[JavaNodeKind](t : Type) extends NodeKind {
+  case class Literal private[java]() extends NodeKind with HasType[NamedType]{
     //TODO in case of method abstraction cf field comment
-    val abstractKinds = List(field(t), method(t))
+    def abstractKinds = List(field(`type`), Method())
   }
 
-  val `package` = new Package()
+  def typedKind[S<:Type, T<:HasType[S]]( ctr : Unit => T, t: S) = {
+    val k = ctr()
+    k.`type` = t
+    k
+  }
 
-  val interface = new Interface()
-  val `class` = new Class()
+  val `package` = Package()
 
-  def constructor(t : Type) = new Constructor(t)
+  val interface = Interface()
+  val `class` = Class()
+
+  def constructor(t : Arrow) = typedKind ( _ => Constructor(), t )
+  def method(t : Arrow) = typedKind ( _ => Method(), t )
+  def field(t : NamedType) = typedKind ( _ => Field(), t )
+  def abstractMethod(t : Arrow) = typedKind ( _ => AbstractMethod(), t )
+  def literal(t : NamedType) = typedKind ( _ => Literal(), t )
+
+  /*def constructor(t : Type) = new Constructor(t)
   def method(t : Type) = new Method(t)
   def field(t : Type) = new Field(t)
 
   def abstractMethod(t : Type) = new AbstractMethod(t)
 
-  def literal(t : Type) = new Literal(t)
+  def literal(t : Type) = new Literal(t)*/
 
   //fix for accessing the field in java
   val interfaceKind = interface

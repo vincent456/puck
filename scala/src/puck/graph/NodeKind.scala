@@ -14,3 +14,7 @@ case class AGRoot private[graph]() extends NodeKind{
 case class VanillaKind private[graph]() extends NodeKind{
   override val abstractKinds = List(new VanillaKind())
 }
+
+trait HasType[T<:Type] {
+  var `type` : T = _
+}

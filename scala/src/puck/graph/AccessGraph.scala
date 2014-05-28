@@ -2,14 +2,13 @@ package puck.graph
 
 import scala.collection.mutable
 import scala.collection.JavaConversions.collectionAsScalaIterable
-import puck.graph.AccessGraph.Violation
 import puck.graph.constraints._
 
 /**
  * Created by lorilan on 05/05/14.
  */
 
-object AccessGraph{
+object AccessGraph {
 
   val defaultPackageName = "<default package>"
 
@@ -19,8 +18,6 @@ object AccessGraph{
   }
 
   val rootId = 0
-
-  type Violation = (AGNode, AGNode)
 
 }
 
@@ -38,8 +35,14 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
 
   def iterator = root.iterator
 
-  def violations : List[Violation] = {
-    this.foldLeft(List[Violation]()){(acc: List[Violation], n :AGNode) => n.targetingViolations(acc)}
+  def violations : List[AGEdge] = {
+     this.foldLeft(List[AGEdge]()){
+      (acc: List[AGEdge], n :AGNode) =>
+      n.wrongUsers.map{AGEdge.uses(n, _)} :::(
+        if(n.isWronglyContained )
+          AGEdge.contains(n.container_!, n) :: acc
+        else acc)
+    }
   }
 
   /*def violations : Set[Violation] = {
@@ -141,7 +144,6 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
       n
     }
   }
-
 
   def addApiTypeNode(td: AST.TypeDecl): AGNode = {
 

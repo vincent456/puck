@@ -14,7 +14,7 @@ class JavaType(n : AGNode) extends NamedType(n){
     n.content.exists{ (childThis : AGNode) =>
       childThis.name == name &&
         (childThis.kind match {
-          case Method(thist : Arrow) => thist.canOverride(sig)
+          case m @ Method() => m.`type`.canOverride(sig)
           case _ => false
         })
     }
@@ -30,8 +30,8 @@ class JavaType(n : AGNode) extends NamedType(n){
                for now let's consider only the methods */
             othern.content forall { (childOther : AGNode) =>
                 childOther.kind match {
-                case Method(t : Arrow) => hasMethodThantCanOverride(childOther.name, t)
-                case AbstractMethod(t : Arrow) => hasMethodThantCanOverride(childOther.name, t)
+                case m @ Method() => hasMethodThantCanOverride(childOther.name, m.`type`)
+                case am @ AbstractMethod() => hasMethodThantCanOverride(childOther.name, am.`type`)
                 case _ => true
               }
             }

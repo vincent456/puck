@@ -6,7 +6,6 @@ import AGNode.toScopeSet
 import scala.annotation.tailrec
 
 
-
 trait AGNodeBuilder {
   def apply(g: AccessGraph, id: Int, name:String, kind : NodeKind) : AGNode
   def makeKey(fullName: String, localName:String, kind: NodeKind) : String
@@ -26,17 +25,17 @@ object AGNode extends AGNodeBuilder{
   implicit def toScopeSet( l: List[AGNode]) : ScopeSet = new ScopeSet(l.iterator)
 
 
-  def addUsesDependancy(primaryUser : AGNode, primaryUsee : AGNode,
+  def addUsesDependency(primaryUser : AGNode, primaryUsee : AGNode,
                         sideUser : AGNode, sideUsee : AGNode) {
     primaryUser.sideUses get primaryUsee match {
       case None =>
-        primaryUser.sideUses += (primaryUsee -> mutable.Set(AGEdge(Uses(), sideUser, sideUsee)))
+        primaryUser.sideUses += (primaryUsee -> mutable.Set(AGEdge.uses(sideUser, sideUsee)))
       case Some(s)=>
-        primaryUser.sideUses += (primaryUsee -> s.+=(AGEdge(Uses(), sideUser, sideUsee)))
+        primaryUser.sideUses += (primaryUsee -> s.+=(AGEdge.uses(sideUser, sideUsee)))
 
     }
 
-    sideUser.primaryUses += (sideUsee -> AGEdge(Uses(), primaryUser, primaryUsee))
+    sideUser.primaryUses += (sideUsee -> AGEdge.uses(primaryUser, primaryUsee))
   }
 }
 
@@ -90,6 +89,13 @@ class AGNode (val graph: AccessGraph,
     }
   }
 
+  def container_! = container0 match {
+    case None => throw new AGError(this + " does not have a container")
+    case Some(c) => c
+  }
+
+  def canContain(k : NodeKind) = true
+
   private var content0 : mutable.Set[AGNode] = mutable.Set()
 
   def content : mutable.Iterable[AGNode] = content0
@@ -138,8 +144,57 @@ class AGNode (val graph: AccessGraph,
     this.users0 += other
     other.uses0 += this
   }
+
+  def removeUser(user : AGNode){
+    users0.remove(user)
+    user.uses0.remove(this)
+  }
+
   def users: mutable.Iterable[AGNode] = users0
 
+  def unsuscribeSideUses(sideUsee : AGNode){
+    primaryUses.get(sideUsee) match {
+      case None => ()
+      case Some(primary_uses) =>
+        val primUser = primary_uses.source
+        val sec_uses = primUser.sideUses(primary_uses.target)
+        sec_uses.remove(AGEdge.uses(this, sideUsee))
+        if(sec_uses.isEmpty){
+          primUser.sideUses.remove(primary_uses.target)
+        }
+    }
+  }
+
+  def redirectSideUses(primaryUsee: AGNode, newUsee : AGNode){
+    sideUses.get(primaryUsee) match {
+      case None => ()
+      case Some( sides_uses ) =>
+        val new_side_uses = sides_uses map {(edge : AGEdge) =>
+          val side_usee_opt =
+              edge.target.abstractions.find { (abs: AGNode) =>
+                newUsee.contains_*(abs)
+              }
+          side_usee_opt match {
+            case None => throw new AGError("No satisfying abstraction to redirect side use !")
+            case Some( new_side_usee ) => AGEdge.uses(edge.source, new_side_usee)
+          }
+
+        }
+        sideUses.remove(primaryUsee)
+        sideUses.get(newUsee) match {
+          case None => sideUses.put(primaryUsee, new_side_uses)
+          case Some(oldSideUses) => oldSideUses ++= new_side_uses
+        }
+    }
+  }
+
+  def redirectUses(oldUsee : AGNode, newUsee : AGNode){
+    oldUsee removeUser this
+    newUsee users_+= this
+
+    unsuscribeSideUses(oldUsee)
+    redirectSideUses(oldUsee, newUsee)
+  }
 
   /* a primary use is for example the use of a class when declaring a variable or a parameter
      a side use is in this example a call to a method with the same variable/parameter
@@ -149,6 +204,8 @@ class AGNode (val graph: AccessGraph,
 
   /*(this, key) is a primary uses and sidesUses(key) are the corresponding side uses */
   private var sideUses : mutable.Map[AGNode, mutable.Set[AGEdge]] = mutable.Map()
+
+
 
   /*(this, key) is a side uses and primaryUses(key) is the corresponding primary use */
   private var primaryUses : mutable.Map[AGNode, AGEdge] = mutable.Map()
@@ -259,15 +316,16 @@ class AGNode (val graph: AccessGraph,
     (potentialScopeInterloperOf(other)
       || potentialElementInterloperOf(other)) && !friendOf(other)
 
-  def targetingViolations(initAcc : List[AccessGraph.Violation]) : List[AccessGraph.Violation] = {
-    val acc0 = container match {
-      case None => initAcc
-      case Some(c) => if(c interloperOf this) (c, this) :: initAcc
-      else initAcc
+  def isWronglyContained : Boolean = {
+    container match {
+      case None => false
+      case Some(c) => c interloperOf this
     }
+  }
 
-    users.foldLeft(acc0){(acc:List[AccessGraph.Violation], user:AGNode) =>
-      if( user interloperOf this ) (user, this)::acc
+  def wrongUsers : List[AGNode] = {
+    users.foldLeft(List[AGNode]()){(acc:List[AGNode], user:AGNode) =>
+      if( user interloperOf this ) user :: acc
       else acc
     }
   }
@@ -276,19 +334,21 @@ class AGNode (val graph: AccessGraph,
    * Solving
    */
 
-  private var abstractions0: mutable.Buffer[AGNode]= mutable.Buffer()
+  private var abstractions0: mutable.Set[AGNode]= mutable.Set()
   def abstractions : mutable.Iterable[AGNode] = abstractions0
 
   def `may be an abstraction of`(other : AGNode) = false
 
   def searchExistingAbstractions(){
     graph.iterator foreach { ( n : AGNode) =>
-      if(n != this && n `may be an abstraction of` this)
+      if(n != this && (n `may be an abstraction of` this))
         this.abstractions0 += n
     }
   }
 
-  def createAbstraction() : AGNode = {
+  def isUserOfItsAbstractionKind = true
+
+  def createNodeAbstraction() : AGNode = {
     // TODO find a strategy or way to make the user choose which abstractkind is used !
     val n = graph.addNode(name + "_abstraction", kind.abstractKinds.head)
     abstractions0 += n
@@ -298,6 +358,13 @@ class AGNode (val graph: AccessGraph,
     n.abstractions0 += n
     n
   }
+
+  def createAbstraction() : AGNode = {
+      val abs = createNodeAbstraction()
+      users_+=(abs)
+      abs
+  }
+
 }
 
 

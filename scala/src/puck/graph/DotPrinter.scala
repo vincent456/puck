@@ -44,14 +44,14 @@ object DotPrinter {
 
     def printUse(source : AGNode, target : AGNode) =
       printArc(usesStyle, source, target,
-        if(violations.contains((source, target)))
+        if(violations.contains(AGEdge.uses(source, target)))
           violationStatus
         else correctStatus )
 
     def decorate_name(n : AGNode):String =
         n.container match {
       case None => n.name + idPrinter (n.id)
-      case Some (c) => if (violations.contains((c, n)))
+      case Some (c) => if (violations.contains(AGEdge.contains(c, n)))
         "<FONT COLOR=\"" + violationStatus.color + "\"><U>" + helper.namePrefix(n.kind)+ n.name + idPrinter(n.id) +"</U></FONT>"
         else helper.namePrefix(n.kind)+ n.name + idPrinter(n.id)
     }

@@ -13,9 +13,9 @@ object JavaNode extends DotHelper with AGNodeBuilder{
   def fillColor(k:NodeKind)= k match {
     case Package() => "#FF9933" //Orange
     case Interface() => "#FFFF99" // Light yellow
-    case Class() | Constructor(_) => "#FFFF33" //Yellow
-    case Method(_) | Field(_) => "#FFFFFF" //White
-    case Literal(_) => "#CCFFCC" //Very Light green
+    case Class() | Constructor() => "#FFFF33" //Yellow
+    case Method() | Field() => "#FFFFFF" //White
+    case Literal() => "#CCFFCC" //Very Light green
     case _ => throw new Error("Unknown JavaNodeKind")
   }
 
@@ -31,9 +31,9 @@ object JavaNode extends DotHelper with AGNodeBuilder{
          val (fds, cts, mts, cls) = lists
          n.kind match{
            case Interface() | Class() => (fds, cts, mts, n::cls)
-           case Field(_) => (n::fds, cts, mts, cls)
-           case Constructor(_) => (fds, n::cts, mts, cls)
-           case Method(_) => (fds, cts, n::mts, cls)
+           case Field() => (n::fds, cts, mts, cls)
+           case Constructor() => (fds, n::cts, mts, cls)
+           case Method() => (fds, cts, n::mts, cls)
            case _ => throw new Error("Wrong NodeKind contained by a class")
          }
       }
@@ -41,10 +41,10 @@ object JavaNode extends DotHelper with AGNodeBuilder{
 
   override def apply(g: AccessGraph,
             id: Int, name : String,
-            kind : NodeKind) : AGNode = AGNode(g,id,name,kind)
+            kind : NodeKind) : AGNode = new JavaNode(g, id, name, kind)
 
   /*
-    using the Prolog constraint convention as key ease the node finding when parsing constraints
+    using the Prolog constraint convention as key eases the node finding when parsing constraints
    */
   override def makeKey(fullName: String, localName:String,
                        kind: NodeKind) :String =
@@ -74,16 +74,16 @@ class JavaNode( graph : AccessGraph,
                 kind : NodeKind)
   extends AGNode(graph, id, name, kind){
 
-  def canContain(other : AGNode) : Boolean = {
-    (this.kind, other.kind) match {
+  override def canContain(k : NodeKind) : Boolean = {
+    (this.kind, k) match {
       case (Package(), Package())
            | (Package(), Class())
            | (Package(), Interface())
            //| (Class(), Class())
-           | (Class(), Constructor(_))
-           | (Class(), Field(_))
-           | (Class(), Method(_))
-           | (Interface(), AbstractMethod(_))
+           | (Class(), Constructor())
+           | (Class(), Field())
+           | (Class(), Method())
+           | (Interface(), AbstractMethod())
       => true
 
       case _ => false
@@ -97,5 +97,30 @@ class JavaNode( graph : AccessGraph,
       case _ => false
     }
 
+  }
+
+  override def isUserOfItsAbstractionKind = {
+    //TODO find if valid !! depend only of the kind ??
+    this.kind match{
+      case Class() | Interface() => true
+      case _ => false
+    }
+  }
+
+  override def createAbstraction() = {
+    // TODO find a strategy or way to make the user choose which abstractkind is used !
+    if(kind.abstractKinds.head == Interface()){
+      val abs = createNodeAbstraction()
+      abs.users_+=(this)
+      content.foreach { (child: AGNode) =>
+        child.kind match {
+          case Method() | AbstractMethod() =>
+            abs.content_+=(child.createNodeAbstraction())
+          case _ => ()
+        }
+      }
+      abs
+    }
+    else super.createAbstraction()
   }
 }
