@@ -2,7 +2,6 @@ package puck.graph
 
 import scala.collection.mutable
 import scala.collection.JavaConversions.collectionAsScalaIterable
-import puck.graph.constraints._
 
 /**
  * Created by lorilan on 05/05/14.
@@ -25,20 +24,24 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
 //extends Iterable[AGNode]{ //is NOT iterable (see scala doc for requirements) but
 // has a valid iterator + implicit conversion in puck.graph package object
 
-  private[graph] val nodesById : mutable.Map[Int, AGNode] = mutable.Map()
-  private[graph] val nodesByName : mutable.Map[String, AGNode] = mutable.Map()
+  println("Node builder : " + nodeBuilder.getClass)
+
+  private [puck] val nodesById : mutable.Map[Int, AGNode] = mutable.Map()
+  private [puck] val nodesByName : mutable.Map[String, AGNode] = mutable.Map()
   /*private[graph] val predefTypes : mutable.Map[String, Type] = mutable.Map()
   def predefType(name : String ) = predefTypes(name)*/
 
   private var id : Int = 1
   val root : AGNode = nodeBuilder(this, AccessGraph.rootId, "root", AGRoot())
 
+  def nodeKinds = nodeBuilder.kinds
+
   def iterator = root.iterator
 
   def violations : List[AGEdge] = {
      this.foldLeft(List[AGEdge]()){
       (acc: List[AGEdge], n :AGNode) =>
-      n.wrongUsers.map{AGEdge.uses(n, _)} :::(
+      n.wrongUsers.map{AGEdge.uses(_, n)} :::(
         if(n.isWronglyContained )
           AGEdge.contains(n.container_!, n) :: acc
         else acc)
@@ -54,7 +57,7 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
   }
 
   def printConstraints(){
-    this.foreach((n) => println(n.constraintsString))
+    this.foreach((n) => print(n.constraintsString))
   }
 
   /*def list(){
@@ -76,19 +79,6 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
         case None => root content_+= n
         case Some(_) => ()
       }
-    }
-  }
-
-  def apply(cts : List[Constraint]){
-
-    cts foreach {
-      case HideScope(s, facades, interlopers, friends) =>
-        s scopeConstraints_+= new ScopeConstraint(facades, interlopers, friends)
-
-      case AreFriendsOf(friends, befriended) => befriended friends_++= friends
-
-      case HideElement(elt, interlopers, friends) =>
-        elt elementConstraints_+= new ElementConstraint(interlopers, friends)
     }
   }
 
@@ -123,7 +113,7 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
     addNode(fullName, localName, VanillaKind())
 
   def addPackageNode(fullName: String, localName:String) : AGNode =
-    addNode(fullName, localName, java.JavaNodeKind.`package`)
+    addNode(fullName, localName, puck.javaAG.JavaNodeKind.`package`)
 
   def addPackage(p : String): AGNode = {
     val fp = AccessGraph.filterPackageName(p)
@@ -193,7 +183,7 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
 
       val bdNode = bd buildAGNode this
       val strNode = addNode(bd.fullName()+literal, literal,
-        java.JavaNodeKind.literal(NamedType(this("java.lang.String"))))
+        puck.javaAG.JavaNodeKind.literal(NamedType(this("java.lang.String"))))
 
       /*
         this is obviously wrong: TODO FIX

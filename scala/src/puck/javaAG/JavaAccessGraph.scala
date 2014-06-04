@@ -1,13 +1,13 @@
-package puck.graph.java
+package puck.javaAG
 
-import puck.graph.{NamedType, AGNode, AccessGraph}
+import puck.graph.{AGNode, AccessGraph}
 
 /**
  * Created by lorilan on 07/05/14.
  */
 object JavaAccessGraph {
   def apply(): AccessGraph = {
-    val g = new AccessGraph(AGNode)
+    val g = new AccessGraph(JavaNode)
 
     List(Primitive.voidNode(g),
       Primitive.booleanNode(g),

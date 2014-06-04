@@ -1,6 +1,6 @@
 package puck.gui
 
-import scala.swing.{ScrollPane, TextArea, Orientation, SplitPane}
+import scala.swing._
 import puck.FilesHandler
 import java.awt.Dimension
 import java.io.OutputStream
@@ -10,7 +10,7 @@ import java.io.OutputStream
  */
 
 object PuckMainPanel{
-  val width = 300
+  val width = 400
   val height = 600
 }
 
@@ -28,7 +28,21 @@ class PuckMainPanel(private val filesHandler: FilesHandler) extends SplitPane(Or
   /*console.preferredSize = new Dimension(PuckMainPanel.width, PuckMainPanel.height * 1 / 3)
   console.minimumSize = console.preferredSize*/
 
-  rightComponent = new ScrollPane(console)
+  rightComponent = new BoxPanel(Orientation.Vertical) {
+    contents += new ScrollPane(console)
+
+    contents += new Button(){
+      tooltip = "Clear the console"
+      /*minimumSize =
+      maximumSize = minimumSize
+      preferredSize = minimumSize*/
+
+      action = new Action("Clear"){ def apply(){
+          console.text = ""
+        }
+      }
+    }
+  }
 
 
 

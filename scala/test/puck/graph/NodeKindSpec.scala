@@ -1,6 +1,6 @@
 package puck.graph
 
-import puck.graph.java.{JavaAccessGraph, JavaNodeKind}
+import puck.javaAG.{JavaAccessGraph, JavaNodeKind}
 
 /**
  * Created by lorilan on 28/05/14.

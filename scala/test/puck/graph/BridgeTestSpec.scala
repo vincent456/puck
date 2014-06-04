@@ -2,7 +2,7 @@ package puck.graph
 
 import puck.FilesHandler
 import scala.collection.mutable.Set
-import puck.graph.java.Primitive
+import puck.javaAG.Primitive
 import puck.string2file
 /**
  * Created by lorilan on 15/05/14.

@@ -3,9 +3,9 @@ package puck
 import java.io._
 
 import puck.graph.{DotPrinter, AGBuildingError, AccessGraph}
-import puck.graph.java.JavaNode
+import puck.javaAG.{DefaultDecisionMaker, JavaSolver, JavaNode}
 import scala.sys.process.Process
-import puck.graph.constraints.{ConstraintsParser, Constraint}
+import puck.graph.constraints.ConstraintsParser
 import scala.Some
 
 /**
@@ -66,6 +66,23 @@ class FilesHandler private (private [this] var srcDir : File,
       ag, JavaNode, printId)
   }
 
+  def solve (trace : Boolean = false){
+    var inc = 0
+
+    new JavaSolver(accessGraph, DefaultDecisionMaker).solve(
+      if(trace) {() =>
+        println("solve iteration " + inc)
+        dot2png(Some(new FileOutputStream(
+          new File(graph.getCanonicalPath + "_trace" + inc +".png"))))
+        inc += 1
+      }
+      else
+        () => ()
+
+    )
+  }
+
+
   def dot2png(soutput : Option[OutputStream] = None) : Int = {
     val processBuilder = Process(List(
       if(graphvizDot == null) "dot"  // relies on dot directory being in the PATH variable
@@ -78,7 +95,12 @@ class FilesHandler private (private [this] var srcDir : File,
 
   }
 
-  def parseConstraints(): List[Constraint] = {
+  def makePng(printId : Boolean = false, soutput : Option[OutputStream] = None) = {
+    makeDot(printId)
+    dot2png(soutput)
+  }
+
+  def parseConstraints() {
       val parser = new ConstraintsParser(accessGraph)
       parser(new FileReader(decouple))
   }

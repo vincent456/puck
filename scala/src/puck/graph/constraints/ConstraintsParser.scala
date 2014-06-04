@@ -1,9 +1,10 @@
 package puck.graph.constraints
 
 import scala.util.parsing.combinator.RegexParsers
-import puck.graph.{AGNode, AccessGraph}
 import scala.collection.mutable
 import scala.util.parsing.input.{Reader, StreamReader}
+import scala.Some
+import puck.graph.{AGNode, AccessGraph}
 
 
 /**
@@ -45,8 +46,8 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
 
   def ident : Parser[String] = (
     """[^\[\]\s',().]+""".r
-  | "'" ~> """[^\s']+""".r <~ "'"
-  )
+      | "'" ~> """[^\s']+""".r <~ "'"
+    )
   def list : Parser[List[String]] = "[" ~> repsep(ident, ",") <~ "]"     //rep1sep ??
 
   def listOrIdent : Parser[Either[String, List[String]]] = (
@@ -70,64 +71,78 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
     "declareSetUnion(" ~> ident ~ "," ~ list <~ ")." ^^ {
       case ident ~ _ ~ list => defs get ident match {
         case Some(_) => throw new scala.Error("Set " + ident + " already defined")
-        case None => defs += (ident -> (list map {defs}).flatten )
+        case None => defs += (ident -> (list map defs).flatten )
       }
     }
 
-  def hideScope : Parser[HideScope] =
+  def hideScope : Parser[Unit] =
     "hideScope(" ~> ident ~ "," ~
       listOrIdent ~ "," ~
       listOrIdent ~ "," ~
       listOrIdent <~ ")." ^^ {
       case  i ~ _ ~ facades ~ _ ~ interlopers ~ _ ~ friends =>
-        HideScope(findNode(i), toDef(facades), toDef(interlopers), toDef(friends))
+        findNode(i) scopeConstraints_+= (toDef(facades), toDef(interlopers), toDef(friends))
     }
 
-  def hideScopeSet1 : Parser[List[HideScope]] =
+
+
+  def hideScopeSet1 : Parser[Unit] =
     "hideScopeSet(" ~> listOrIdent <~ ")." ^^ {
       case s =>
-        toDef(s) map {
-          HideScope(_, List(), List(accessGraph.root), List())
-        }
+        toDef(s) map {_.scopeConstraints_+=(List(), List(accessGraph.root), List()) }
     }
 
-  def hideScopeSetFrom : Parser[List[HideScope]] =
+  def hideScopeSet4 : Parser[Unit] =
+    "hideScopeSet(" ~> listOrIdent ~ "," ~
+      listOrIdent ~ "," ~
+      listOrIdent ~ "," ~
+      listOrIdent <~ ")." ^^ {
+      case s ~ _ ~ facades ~ _ ~ interlopers ~ _ ~ friends =>
+        val fcs = toDef(facades)
+        val is = toDef(interlopers)
+        val frs = toDef(friends)
+        toDef(s) map { _.scopeConstraints_+=(fcs, is, frs)}
+    }
+
+
+  def hideScopeSetFrom : Parser[Unit] =
     "hideScopeSetFrom(" ~> listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
       case s ~ _ ~ interlopers =>
         val is = toDef(interlopers)
-        toDef(s) map {
-          HideScope(_, List(), is, List())
-        }
+        toDef(s) map {_.scopeConstraints_+=(List(), is, List())}
     }
 
 
-  def friend : Parser[List[AreFriendsOf]] =
+  def friend : Parser[Unit] =
     "isFriendOf(" ~> listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
       case friends ~ _ ~ befriended =>
-         val fs = toDef(friends)
-        toDef(befriended) map {
-          AreFriendsOf(fs, _)
-        }
-  }
-
-  def hideElement : Parser[HideElement] =
-    "hide(" ~> ident ~ "," ~ listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
-      case elt ~ _ ~ interlopers ~ _ ~ friends =>
-      HideElement(findNode(elt), toDef(interlopers), toDef(friends))
+        val fs = toDef(friends)
+        toDef(befriended) map { _ friends_++= fs }
     }
 
-  def hideElementSet : Parser[List[HideElement]] =
+  def hideElement : Parser[Unit] =
+    "hide(" ~> ident ~ "," ~ listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
+      case elt ~ _ ~ interlopers ~ _ ~ friends =>
+        findNode(elt).elementConstraints_+=(toDef(interlopers), toDef(friends))
+    }
+
+  def hideElementSet1 : Parser[Unit] =
+    "hideSet(" ~> listOrIdent <~ ")." ^^ {
+      case s =>
+        toDef(s) map {_.elementConstraints_+=(List(accessGraph.root), List())}
+    }
+
+  def hideElementSet4 : Parser[Unit] =
     "hideSet(" ~> listOrIdent ~ "," ~ listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
       case set ~ _ ~ interlopers ~ _ ~ friends =>
         val is = toDef(interlopers)
         val fs = toDef(friends)
-        toDef(set) map {
-          HideElement(_, is, fs)
-        }
+        toDef(set) map {_.elementConstraints_+=(is, fs)}
+    }
 
-  }
 
-  def constraints : Parser[Option[List[Constraint]]] = {
+
+  /*def constraints : Parser[Option[List[Constraint]]] = {
     def some(x : List[Constraint]) = Some(x)
     def somelist(x : Constraint) = Some(List(x))
     ( java_import ^^ ( x => None)
@@ -136,9 +151,24 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
       | hideElement ^^ somelist
       | hideElementSet ^^ some
       | hideScope ^^ somelist
-      | hideScopeSet1 ^^ some
+      | hideScopeSet ^^ some
       | hideScopeSetFrom ^^ some
-    )}
+      | friend ^^ some
+      )}*/
+
+  def constraints : Parser[Unit] = {
+    ( java_import
+      | declare_set
+      | declare_set_union
+      | hideElement
+      | hideElementSet1
+      | hideElementSet4
+      | hideScope
+      | hideScopeSet1
+      | hideScopeSet4
+      | hideScopeSetFrom
+      | friend
+      )}
 
   /*def apply(input : java.io.Reader) = parseAll(constraints, input) match{
     case Success(result, _ ) => result
@@ -146,18 +176,16 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
   }*/
 
   def apply(input : java.io.Reader) = {
-    def aux(input : Reader[Char], acc: List[Constraint]) : List[Constraint] =
+    def aux(input : Reader[Char]) {
       parse(constraints, input) match {
-        case Success(r, i) => r match {
-          case None => aux(i, acc)
-          case Some(res) => aux(i, res ::: acc)
-        }
+        case Success(_, i) => aux(i)
         case Error(msg, next) =>
           throw new scala.Error("!!! Error !!! at position " + next.pos + " " + msg)
         case Failure(msg, next) =>
-          if(next.atEnd) acc
-          else throw new scala.Error("Failure at position " + next.pos + " " + msg )
+          if (next.atEnd) ()
+          else throw new scala.Error("Failure at position " + next.pos + " " + msg)
+      }
     }
-    aux(StreamReader(input), List())
+    aux(StreamReader(input))
   }
 }

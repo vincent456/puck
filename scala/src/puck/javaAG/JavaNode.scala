@@ -1,7 +1,9 @@
-package puck.graph.java
+package puck.javaAG
 
 import puck.graph._
 import JavaNodeKind._
+import puck.graph.constraints.AbstractionPolicy
+
 /**
  * Created by lorilan on 06/05/14.
  */
@@ -33,8 +35,10 @@ object JavaNode extends DotHelper with AGNodeBuilder{
            case Interface() | Class() => (fds, cts, mts, n::cls)
            case Field() => (n::fds, cts, mts, cls)
            case Constructor() => (fds, n::cts, mts, cls)
-           case Method() => (fds, cts, n::mts, cls)
-           case _ => throw new Error("Wrong NodeKind contained by a class")
+           case AbstractMethod()
+             | Method() => (fds, cts, n::mts, cls)
+
+           case _ => throw new Error(n.kind + " : wrong NodeKind contained by a class" )
          }
       }
   }
@@ -49,23 +53,8 @@ object JavaNode extends DotHelper with AGNodeBuilder{
   override def makeKey(fullName: String, localName:String,
                        kind: NodeKind) :String =
     AGNode.makeKey(fullName, localName, kind)
-  /*
-  override def makeKey(fullName: String, localName:String, kind: NodeKind, `type`: Option[Type]) : String = {
-    (kind, `type`) match {
-      case (_, None) => fullName
-      case (Field(), _) => fullName
-      case (Constructor(), Some(t)) => fullName + "#_" + prologTypeString(t)
-      case (Method(), Some(t)) =>  fullName + "__" + prologTypeString(t)
-      case _ => throw new Error("don't know how to do a key - should not happen")
-    }
-  }
 
-  private def prologTypeString(t: Type) : String = t match {
-    case NamedType(name, id) => (name split "[.]").last
-    case Tuple(tu) => tu mkString "_"
-    case Arrow(i, _) => prologTypeString(i)
-  }
-   */
+  val kinds : List[NodeKind] = JavaNodeKind.list
 }
 
 class JavaNode( graph : AccessGraph,
@@ -73,22 +62,6 @@ class JavaNode( graph : AccessGraph,
                 name : String,
                 kind : NodeKind)
   extends AGNode(graph, id, name, kind){
-
-  override def canContain(k : NodeKind) : Boolean = {
-    (this.kind, k) match {
-      case (Package(), Package())
-           | (Package(), Class())
-           | (Package(), Interface())
-           //| (Class(), Class())
-           | (Class(), Constructor())
-           | (Class(), Field())
-           | (Class(), Method())
-           | (Interface(), AbstractMethod())
-      => true
-
-      case _ => false
-    }
-  }
 
   override def `may be an abstraction of`(other : AGNode) = {
     (this.kind, other.kind) match {
@@ -99,28 +72,22 @@ class JavaNode( graph : AccessGraph,
 
   }
 
-  override def isUserOfItsAbstractionKind = {
-    //TODO find if valid !! depend only of the kind ??
-    this.kind match{
-      case Class() | Interface() => true
-      case _ => false
+  override def createAbstraction(abskind : NodeKind,
+                                 policy : AbstractionPolicy) = {
+    abskind match {
+      case Interface() =>
+        val abs = createNodeAbstraction(abskind)
+        abs.users_+=(this)
+        content.foreach { (child: AGNode) =>
+          child.kind match {
+            case Method() | AbstractMethod() =>
+              abs.content_+=(child.createNodeAbstraction(AbstractMethod()))
+            case _ => ()
+          }
+        }
+        abs
+      case _ => super.createAbstraction(abskind, policy)
     }
   }
 
-  override def createAbstraction() = {
-    // TODO find a strategy or way to make the user choose which abstractkind is used !
-    if(kind.abstractKinds.head == Interface()){
-      val abs = createNodeAbstraction()
-      abs.users_+=(this)
-      content.foreach { (child: AGNode) =>
-        child.kind match {
-          case Method() | AbstractMethod() =>
-            abs.content_+=(child.createNodeAbstraction())
-          case _ => ()
-        }
-      }
-      abs
-    }
-    else super.createAbstraction()
-  }
 }

@@ -1,7 +1,7 @@
-package puck.graph.java
+package puck.javaAG
 
 import puck.graph.{AGNode, NamedType, Arrow, Type}
-import puck.graph.java.JavaNodeKind.{AbstractMethod, Method, Class, Interface}
+import puck.javaAG.JavaNodeKind.{AbstractMethod, Method, Class, Interface}
 
 /**
  * Created by lorilan on 27/05/14.

@@ -130,17 +130,18 @@ aspect AccessGraphFactory {
 			AGNode user = use.hostBodyDecl().buildAG(accessGraph, agNode);
 			agNode.users_$plus$eq(user);
 			
-			try{
-				AGNode primaryUser = use.getQualifier().getPrimaryUser(accessGraph);
-				
-				AGNode hostTypeAGNode = hostType().buildAGNode(accessGraph);
+			//TODO find why qualifier can be null !!
+            if(use.getQualifier()!=null)
+                try {
+                    AGNode primaryUser = use.getQualifier().getPrimaryUser(accessGraph);
 
-				
-				AGNode.addUsesDependency(user, agNode, 
-					primaryUser, hostTypeAGNode);
-			} catch (AGBuildingError e) {
-                System.out.println(e.getMessage());
-            }
+                    AGNode hostTypeAGNode = hostType().buildAGNode(accessGraph);
+
+                    AGNode.addUsesDependency(user, agNode,
+                        primaryUser, hostTypeAGNode);
+                } catch (AGBuildingError e) {
+                    System.out.println(e.getMessage());
+                }
 		}
 
 		return agNode;

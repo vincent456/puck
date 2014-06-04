@@ -8,6 +8,8 @@ import java.io.{OutputStream, PipedInputStream, PipedOutputStream, File}
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import AST.LoadingListener
+import puck.javaAG.JavaSolver
+import scala.util.{Failure, Success}
 
 /**
  * Created by lorilan on 08/05/14.
@@ -115,15 +117,18 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
 
           val ag = filesHandler.loadGraph(new LoadingListener {
             override def update(loading: Double): Unit =
-              progressBar.value = (loading*100).toInt
+              progressBar.value = (loading * 100).toInt
           })
           progressBar.visible = false
           val ppController = new PackagePanelController(ag)
           treeDisplayer.contents = Component.wrap(ppController.tree)
           delayedDisplay.foreach(_.visible = true)
         }
-        f onSuccess{
-          case _ => println("Graph loaded")
+        f onComplete {
+          case Success(_) => println("Graph loaded")
+          case Failure(exc) =>
+            progressBar.visible = false
+            println(exc.getMessage)
         }
     }
     contents += progressBar
@@ -136,20 +141,35 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
     val loadConstraints = makeButton("Load constraints",
     "Decorate the graph with the constraints of the selected decouple file"){
       () =>
-        filesHandler.accessGraph(filesHandler.parseConstraints())
+        print("Loading constraints ...")
+        try {
+          filesHandler.parseConstraints()
+          println(" done:")
+          filesHandler.accessGraph.printConstraints()
+        }
+        catch{
+          case e : Error => println("\n" + e.getMessage)
+        }
+
     }
     loadConstraints.visible = false
     contents += loadConstraints
     delayedDisplay += loadConstraints
 
+    val showConstraints = makeButton("Show constraints",
+      "Show the constraints the graph has to satisfy"){
+      () =>
+          filesHandler.accessGraph.printConstraints()
+    }
+    showConstraints.visible = false
+    contents += showConstraints
+    delayedDisplay += showConstraints
+
     val show = makeButton("Show graph",
       "Display a visual representation of the graph without evaluating the constraint"){
       () =>
         Future {
-          println("Printing dot ...")
-          filesHandler.makeDot ()
-          println("Dot printing finished")
-          print("dot2png ...")
+          print("Printing graph ...")
 
           val pipedOutput = new PipedOutputStream()
           val pipedInput = new PipedInputStream(pipedOutput)
@@ -159,7 +179,7 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
             imgframe.visible = true
           }
 
-          if(filesHandler.dot2png(soutput = Some(pipedOutput)) ==0)
+          if(filesHandler.makePng(soutput = Some(pipedOutput)) ==0)
             println("success")
           else
             println("fail")
@@ -172,6 +192,20 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
     contents +=show
     delayedDisplay += show
 
+    val solve = makeButton("Solve", "solve the loaded constraints"){
+      () =>
+        print("Solving constraints ...")
+        try {
+          filesHandler.solve()
+          println(" done")
+        }catch {
+          case e : Error => println("\n"+e.getMessage)
+        }
+    }
+
+    solve.visible = false
+    contents += solve
+    delayedDisplay += solve
   }
 
   rightComponent = treeDisplayer

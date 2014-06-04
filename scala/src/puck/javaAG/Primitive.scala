@@ -1,13 +1,17 @@
-package puck.graph.java
+package puck.javaAG
 
 import puck.graph.{AGError, NodeKind, AccessGraph, StatelessAGNode}
-import puck.graph.java.JavaNodeKind.{`class`}
+import puck.javaAG.JavaNodeKind.{`class`}
+import puck.graph.constraints.AbstractionPolicy
 
 /**
  * Created by lorilan on 05/05/14.
  */
-case class Primitive private () extends NodeKind {
-  def abstractKinds = throw new AGError("do not know how to abstract primitive kind")
+case class Primitive private [javaAG] () extends NodeKind {
+
+  def canContain(k: NodeKind) = false
+  def abstractKinds(p : AbstractionPolicy) =
+    throw new AGError("do not know how to abstract primitive kind")
 }
 
 object Primitive {

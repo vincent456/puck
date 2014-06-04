@@ -42,6 +42,41 @@ object DotPrinter {
 
     val violations = graph.violations
 
+    /*
+     * dot -Tpng give a wrong drawing of the graph when mixing nodes and arcs
+     * in the dot file. We stock the arcs and print them separately at the end
+     */
+    val arcs = scala.collection.mutable.Buffer[String]()
+    def printArc(style :Style, source:AGNode, target:AGNode,
+                 status:Status){
+      //val (lineStyle, headStyle) = style
+      //val (color, thickness) = status
+      //println("print arc "+ source.nameTypeString + " -> " + target.nameTypeString)
+      def dotId(n: AGNode) : String =
+        if(helper isDotSubgraph n.kind) n.id.toString
+        else{
+          val containerId = if(helper isDotClass n.kind) n.id
+          else n.container match {
+            case None => throw new Error("node " + n.nameTypeString + " should have a container")
+            case Some(ctr) => ctr.id
+          }
+          containerId + ":" + n.id
+        }
+
+
+      def subGraphArc(n: AGNode, pos:String) =
+        if(helper isDotSubgraph n.kind) pos + "=cluster" + n.id + ", "
+        else ""
+
+      /*writeln*/
+      arcs += (dotId(source) + " -> " + dotId(target) + "[ " +
+        subGraphArc(source, "ltail") +
+        subGraphArc(target, "lhead") +
+        "style = " + style.line + ", arrowhead = " + style.arrowHead +
+        ", color = " + status.color + ", penwidth = " + status.thickness+ "];")
+
+    }
+
     def printUse(source : AGNode, target : AGNode) =
       printArc(usesStyle, source, target,
         if(violations.contains(AGEdge.uses(source, target)))
@@ -57,7 +92,6 @@ object DotPrinter {
     }
 
     def printNode(n:AGNode){
-      //println("print node "+ n.nameTypeString)
       if(helper isDotSubgraph n.kind) printSubGraph(n)
       else if(helper isDotClass n.kind) printClass(n)
     }
@@ -68,7 +102,8 @@ object DotPrinter {
         "color=black;") foreach writeln
 
       if(n.isContentEmpty) writeln(n.id + "[label=\"\" shape=none ]")
-      else for(n <- n.content) printNode(n)
+      else
+        n.content.foreach(printNode)
 
       writeln("}")
 
@@ -108,39 +143,13 @@ object DotPrinter {
 
 
 
-    def printArc(style :Style, source:AGNode, target:AGNode,
-                 status:Status){
-      //val (lineStyle, headStyle) = style
-      //val (color, thickness) = status
-      //println("print arc "+ source.nameTypeString + " -> " + target.nameTypeString)
-      def dotId(n: AGNode) : String =
-        if(helper isDotSubgraph n.kind) n.id.toString
-        else{
-          val containerId = if(helper isDotClass n.kind) n.id
-          else n.container match {
-            case None => throw new Error("node " + n.nameTypeString + " should have a container")
-            case Some(ctr) => ctr.id
-          }
-          containerId + ":" + n.id
-        }
-
-
-      def subGraphArc(n: AGNode, pos:String) =
-        if(helper isDotSubgraph n.kind) pos + "=cluster" + n.id + ", "
-        else ""
-
-      writeln(dotId(source) + " -> " + dotId(target) + "[ " +
-        subGraphArc(source, "ltail") +
-        subGraphArc(target, "lhead") +
-        "style = " + style.line + ", arrowhead = " + style.arrowHead +
-        ", color = " + status.color + ", penwidth = " + status.thickness+ "];")
-
-    }
 
     writeln("digraph G{")
     writeln("rankdir=LR; ranksep=equally; compound=true")
 
     graph.root.content.foreach(printNode)
+
+    arcs.foreach(writeln)
 
     writeln("}")
     writer.close()
