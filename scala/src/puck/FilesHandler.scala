@@ -2,11 +2,13 @@ package puck
 
 import java.io._
 
-import puck.graph.{DotPrinter, AGBuildingError, AccessGraph}
+import puck.graph.{AGError, DotPrinter, AGBuildingError, AccessGraph}
 import puck.javaAG.{DefaultDecisionMaker, JavaSolver, JavaNode}
 import scala.sys.process.Process
-import puck.graph.constraints.ConstraintsParser
+import puck.graph.constraints.{DecisionMaker, ConstraintsParser}
 import scala.Some
+import puck.gui.GUIDecisionMaker
+import java.util.NoSuchElementException
 
 /**
  * Created by lorilan on 08/05/14.
@@ -66,13 +68,14 @@ class FilesHandler private (private [this] var srcDir : File,
       ag, JavaNode, printId)
   }
 
-  def solve (trace : Boolean = false){
+  def solve (trace : Boolean = false,
+             decisionMaker : DecisionMaker = DefaultDecisionMaker){
     var inc = 0
 
-    new JavaSolver(accessGraph, DefaultDecisionMaker).solve(
+    new JavaSolver(accessGraph, decisionMaker).solve(
       if(trace) {() =>
         println("solve iteration " + inc)
-        dot2png(Some(new FileOutputStream(
+        makePng(soutput = Some(new FileOutputStream(
           new File(graph.getCanonicalPath + "_trace" + inc +".png"))))
         inc += 1
       }
@@ -95,14 +98,21 @@ class FilesHandler private (private [this] var srcDir : File,
 
   }
 
-  def makePng(printId : Boolean = false, soutput : Option[OutputStream] = None) = {
+  def makePng(printId : Boolean = false, soutput : Option[OutputStream] = None) : Int = {
     makeDot(printId)
     dot2png(soutput)
   }
 
   def parseConstraints() {
       val parser = new ConstraintsParser(accessGraph)
-      parser(new FileReader(decouple))
+      try {
+        parser(new FileReader(decouple))
+      } catch {
+        case e : NoSuchElementException =>
+          accessGraph.discardConstraints()
+          throw new AGError("parsing failed :" + e.getLocalizedMessage)
+
+      }
   }
 
 }

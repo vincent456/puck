@@ -137,8 +137,8 @@ aspect AccessGraphFactory {
 
                     AGNode hostTypeAGNode = hostType().buildAGNode(accessGraph);
 
-                    AGNode.addUsesDependency(user, agNode,
-                        primaryUser, hostTypeAGNode);
+                    AGNode.addUsesDependency(primaryUser, hostTypeAGNode,
+                    						user, agNode);
                 } catch (AGBuildingError e) {
                     System.out.println(e.getMessage());
                 }

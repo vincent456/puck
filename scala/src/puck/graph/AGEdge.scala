@@ -18,7 +18,24 @@ class AGEdge private (val kind : EdgeKind, val source : AGNode, val target: AGNo
   override def hashCode : Int = source.id + target.id
 
   override def toString : String = {
-    "(" + kind+ ", " + source.fullName + ", " + target.fullName + ")"
+    "(" + kind+ ", " + source + ", " + target + ")"
+  }
+
+  def create() {
+    kind match {
+      case Uses() =>
+        source.uses_+=(target)
+      case _ => throw new AGError(kind + " edge create not implemented")
+
+    }
+  }
+  def delete() {
+    kind match {
+      case Uses() =>
+        source.uses_-=(target)
+      case _ => throw new AGError(kind + " edge delete not implemented")
+
+    }
   }
 }
 

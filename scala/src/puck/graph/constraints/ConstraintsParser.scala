@@ -112,6 +112,16 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
         toDef(s) map {_.scopeConstraints_+=(List(), is, List())}
     }
 
+  def hideScopeFromEachOther : Parser[Unit] = {
+    "hideFromEachOther(" ~> listOrIdent <~ ")." ^^ {
+      case s =>
+        val d = toDef(s)
+        d.foreach{ node =>
+          val others = d.filter(_ != node)
+          node.scopeConstraints_+=(List(), others, List())
+        }
+    }
+  }
 
   def friend : Parser[Unit] =
     "isFriendOf(" ~> listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
@@ -132,7 +142,7 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
         toDef(s) map {_.elementConstraints_+=(List(accessGraph.root), List())}
     }
 
-  def hideElementSet4 : Parser[Unit] =
+  def hideElementSet3 : Parser[Unit] =
     "hideSet(" ~> listOrIdent ~ "," ~ listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
       case set ~ _ ~ interlopers ~ _ ~ friends =>
         val is = toDef(interlopers)
@@ -140,6 +150,17 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
         toDef(set) map {_.elementConstraints_+=(is, fs)}
     }
 
+  def hideElementFrom : Parser[Unit] =
+    "hideFrom(" ~> ident ~ "," ~ listOrIdent <~ ")." ^^ {
+    case elt ~ _ ~ is =>
+        findNode(elt).elementConstraints_+=(toDef(is), List())
+  }
+  def hideElementSetFrom : Parser[Unit] =
+    "hideSetFrom(" ~> listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
+      case set ~ _ ~ interlopers =>
+        val is = toDef(interlopers)
+        toDef(set).foreach{ _.elementConstraints_+=(is, List())}
+    }
 
 
   /*def constraints : Parser[Option[List[Constraint]]] = {
@@ -161,12 +182,15 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
       | declare_set
       | declare_set_union
       | hideElement
+      | hideElementFrom
       | hideElementSet1
-      | hideElementSet4
+      | hideElementSet3
+      | hideElementSetFrom
       | hideScope
       | hideScopeSet1
       | hideScopeSet4
       | hideScopeSetFrom
+      | hideScopeFromEachOther
       | friend
       )}
 

@@ -2,11 +2,14 @@ package puck.javaAG
 
 import puck.graph.{AccessGraph, AGNode}
 import puck.graph.constraints.{ElementConstraint, ScopeConstraint, DecisionMaker}
+import scala.concurrent.Future
 
 /**
  * Created by lorilan on 03/06/14.
  */
 object DefaultDecisionMaker extends DecisionMaker{
+
+  override def toString = "Default Strategy"
 
   def abstractionKindAndPolicy(impl : AGNode) = {
     val policy = impl.kind.abstractionPolicies.head

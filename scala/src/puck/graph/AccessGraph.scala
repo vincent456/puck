@@ -57,9 +57,17 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
   }
 
   def printConstraints(){
-    this.foreach((n) => print(n.constraintsString))
+    this.foreach(n => print(n.constraintsString))
   }
 
+  def printUsesDependancies(){
+    this.foreach { node =>
+      if (node.hasPrimaryUses)
+        println(node.primaryUsesString)
+      if (node.hasSideUses)
+        println(node.sideUsesString)
+    }
+  }
   /*def list(){
     nodesByName.foreach((kn) => {
       val (key, node) = kn

@@ -11,7 +11,7 @@ case class NamedType(n : AGNode) extends Type{
   override def toString = n.name
   override def subtypeOf(other : Type) : Boolean = super.subtypeOf(other) ||
     (other match {
-      case NamedType(othern) => othern `is super type of` n
+      case NamedType(othern) => othern isSuperTypeOf n
       case _ => false
     })
 }

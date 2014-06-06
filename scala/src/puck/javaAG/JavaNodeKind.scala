@@ -1,7 +1,7 @@
 package puck.javaAG
 
 import puck.graph._
-import puck.graph.constraints.{Supertype, AbstractionPolicy, Delegation}
+import puck.graph.constraints.{AbstractionPolicy, SupertypeAbstraction, DelegationAbstraction}
 
 /**
  * Created by lorilan on 27/05/14.
@@ -20,7 +20,7 @@ object JavaNodeKind {
       }
     }
 
-    override def abstractionPolicies = List(Delegation())
+    override def abstractionPolicies = List(DelegationAbstraction())
     def abstractKinds(p : AbstractionPolicy) = List(`package`)
 
     override def canBeRootContent = true
@@ -36,8 +36,8 @@ object JavaNodeKind {
     }
 
     def abstractKinds(p : AbstractionPolicy) = p match {
-      case Supertype() => List(interface)
-      case Delegation() => List(`class`)//also interface ?
+      case SupertypeAbstraction() => List(interface)
+      case DelegationAbstraction() => List(`class`)//also interface ?
     }
   }
   case class Class private[javaAG]() extends NodeKind {
@@ -51,15 +51,15 @@ object JavaNodeKind {
     }
 
     def abstractKinds(p : AbstractionPolicy) = p match {
-      case Supertype() => List(interface, `class`)
-      case Delegation() => List(`class`)//also interface ?
+      case SupertypeAbstraction() => List(interface, `class`)
+      case DelegationAbstraction() => List(`class`)//also interface ?
     }
   }
 
   case class Constructor private[javaAG]() extends NodeKind with HasType[Arrow]{
     def canContain(k : NodeKind) = false
 
-    override def abstractionPolicies = List(Delegation())
+    override def abstractionPolicies = List(DelegationAbstraction())
 
     def abstractKinds(p : AbstractionPolicy) = List(method(`type`))
   }
@@ -67,8 +67,8 @@ object JavaNodeKind {
     def canContain(k : NodeKind) = false
 
     def abstractKinds(p : AbstractionPolicy) = p match {
-      case Supertype() => List(abstractMethod(`type`), method(`type`))
-      case Delegation() => List(method(`type`))//also abstractMethod ?
+      case SupertypeAbstraction() => List(abstractMethod(`type`), method(`type`))
+      case DelegationAbstraction() => List(method(`type`))//also abstractMethod ?
     }
   }
 
@@ -79,15 +79,15 @@ object JavaNodeKind {
     // fielwrite abstraction type = t -> () (think of t -> t case of jrrt ... )
     def abstractKinds(p : AbstractionPolicy) = List(Method())
 
-    override def abstractionPolicies = List(Delegation())
+    override def abstractionPolicies = List(DelegationAbstraction())
   }
 
   case class AbstractMethod private[javaAG]() extends NodeKind with HasType[Arrow] {
     def canContain(k : NodeKind) = false
 
     def abstractKinds(p : AbstractionPolicy) = p match {
-      case Supertype() => List(abstractMethod(`type`))
-      case Delegation() => List(method(`type`))//also abstractMethod ?
+      case SupertypeAbstraction() => List(abstractMethod(`type`))
+      case DelegationAbstraction() => List(method(`type`))//also abstractMethod ?
     }
 
   }
@@ -95,7 +95,7 @@ object JavaNodeKind {
   case class Literal private[javaAG]() extends NodeKind with HasType[NamedType]{
     def canContain(k : NodeKind) = false
     //TODO in case of method abstraction cf field comment
-    override def abstractionPolicies = List(Delegation())
+    override def abstractionPolicies = List(DelegationAbstraction())
     def abstractKinds(p : AbstractionPolicy) = List(field(`type`), Method())
   }
 

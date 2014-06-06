@@ -1,6 +1,6 @@
 package puck.graph
 
-import puck.graph.constraints.{Supertype, Delegation, AbstractionPolicy}
+import puck.graph.constraints.{AbstractionPolicy, SupertypeAbstraction, DelegationAbstraction}
 
 /**
  * Created by lorilan on 05/05/14.
@@ -8,7 +8,7 @@ import puck.graph.constraints.{Supertype, Delegation, AbstractionPolicy}
 
 abstract class NodeKind {
   def canContain(k : NodeKind) : Boolean
-  def abstractionPolicies : List[AbstractionPolicy] = List(Supertype(), Delegation())
+  def abstractionPolicies : List[AbstractionPolicy] = List(SupertypeAbstraction(), DelegationAbstraction())
   def abstractKinds(p : AbstractionPolicy) : List[NodeKind]
   def canBeRootContent = false
 }
@@ -24,7 +24,7 @@ case class VanillaKind private[graph]() extends NodeKind{
 
   //change priority order
   override def abstractionPolicies : List[AbstractionPolicy] =
-    List(Delegation(), Supertype())
+    List(DelegationAbstraction(), SupertypeAbstraction())
 
   def canContain(k : NodeKind) : Boolean = {
     k match {

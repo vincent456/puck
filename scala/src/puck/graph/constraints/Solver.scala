@@ -26,11 +26,13 @@ trait Solver {
     aux(violationsKindPriority)
   }
 
-  def redirectTowardExistingAbstractions(usee: AGNode, wrongUsers : List[AGNode]) = {
+  def redirectTowardExistingAbstractions(usee: AGNode,
+                                         wrongUsers : List[AGNode]) = {
     wrongUsers.foldLeft(List[AGNode]()){(unsolved : List[AGNode], wu : AGNode) =>
-      usee.abstractions find {!wu.interloperOf(_)} match {
+      usee.abstractions find { case (node, _) => !wu.interloperOf(node)
+      } match {
         case None => wu :: unsolved
-        case Some( abs ) => wu redirectUses (usee, abs)
+        case Some((abs, absPolicy )) => wu redirectUses (usee, abs, absPolicy)
           unsolved
       }
     }
@@ -45,16 +47,16 @@ trait Solver {
         n.kind.canContain(kind) &&
           predicate(n) &&
           wrongUsers.forall(!_.interloperOf(n))
-      }
     }
+  }
 
 
   def singleAbsIntroPredicate(impl : AGNode,
                               absPolicy : AbstractionPolicy,
                               absKind : NodeKind) : AGNode => Boolean = absPolicy match {
-    case Supertype() =>
+    case SupertypeAbstraction() =>
       potentialHost => !(impl interloperOf potentialHost)
-    case Delegation() =>
+    case DelegationAbstraction() =>
       potentialHost => !(potentialHost interloperOf impl)
   }
 
@@ -70,7 +72,7 @@ trait Solver {
       case Some(host) =>
         val abs = impl.createAbstraction(absKind, absPolicy)
         host.content_+=(abs)
-        wrongUsers.foreach(_.redirectUses(impl, abs))
+        wrongUsers.foreach(_.redirectUses(impl, abs, absPolicy))
         true
     }
   }
@@ -85,16 +87,45 @@ trait Solver {
                  absPolicy : AbstractionPolicy,
                  absKind : NodeKind,
                  wrongUsers : List[AGNode]) : Boolean = {
-    //println("hostIntro")
+    println("hostIntro")
+    graph.nodeKinds.find(_.canContain(absKind)) match {
+      case None => throw new AGError("container abstraction creation error")
+      case Some(cterAbsKind) =>
+        val cterAbs = impl.container_!.createAbstraction(cterAbsKind,
+          absPolicy)
+        val abs = impl.abstractions.find{
+          case (existingAbs, `absPolicy`) => cterAbs.contains(existingAbs)
+          case _ => false
+        } match {
+          case None =>
+            val newAbs = impl.createAbstraction(absKind, absPolicy)
+            newAbs.container = Some(cterAbs)
+            newAbs
+          case Some((existingAbs,_)) => existingAbs
+        }
+
+        findHost(cterAbs.kind, wrongUsers)() match {
+          case None => false
+          case h => cterAbs.container = h
+            wrongUsers.foreach(_.redirectUses(impl, abs, absPolicy))
+            true
+        }
+    }
+  }
+
+/*  def hostIntro (impl : AGNode,
+                 absPolicy : AbstractionPolicy,
+                 absKind : NodeKind,
+                 wrongUsers : List[AGNode]) : Boolean = {
     val abs = impl.createAbstraction(absKind, absPolicy)
     val parent = abs.createContainer()
     findHost(parent.kind, wrongUsers)() match {
       case None => false
       case h => parent.container = h
-        wrongUsers.foreach(_.redirectUses(impl, abs))
+        wrongUsers.foreach(_.redirectUses(impl, abs, absPolicy))
         true
     }
-  }
+  }*/
 
   def intro(impl : AGNode, wrongUsers : List[AGNode]) {
     if(impl.kind.abstractionPolicies.isEmpty){
@@ -102,21 +133,20 @@ trait Solver {
     }
     val policies = impl.kind.abstractionPolicies
     val (absKind, absPolicy) =
-    if(policies.tail.isEmpty
-      && impl.kind.abstractKinds(policies.head).tail.isEmpty){
+      if(policies.tail.isEmpty
+        && impl.kind.abstractKinds(policies.head).tail.isEmpty){
         (impl.kind.abstractKinds(policies.head).head, policies.head)
       }
-    else
-      decisionMaker.abstractionKindAndPolicy(impl)
+      else
+        decisionMaker.abstractionKindAndPolicy(impl)
 
-    if(!singleAbsIntro(impl, absPolicy, absKind, wrongUsers)){
-      if(!multipleAbsIntro(impl, absPolicy, absKind, wrongUsers))
-        if(!hostIntro(impl, absPolicy, absKind, wrongUsers)){
-          throw new AGError("cannot perform intro for "+impl)
+    if (!singleAbsIntro(impl, absPolicy, absKind, wrongUsers)) {
+      if (!multipleAbsIntro(impl, absPolicy, absKind, wrongUsers))
+        if (!hostIntro(impl, absPolicy, absKind, wrongUsers)) {
+          throw new AGError("cannot perform intro for " + impl)
         }
     }
   }
-
 
 
   def solve(step : () => Unit) {
@@ -131,20 +161,25 @@ trait Solver {
           val eltViolations = cter.violatesElementConstraintOf(n)
 
           if(!decisionMaker.grantContainingAuth(cter, n,
-                        scopeViolations, eltViolations)){
-             n.detach()
-             findHost(n.kind, List()){
-               (potentialHost: AGNode) => !(potentialHost interloperOf n)
-             } match {
-               case None =>
-                 val newCter = n.createContainer()
-                 n.addHideFromRootException(newCter)
-                 n.container = Some(newCter)
-                 newCter.container = findHost(newCter.kind, List())()
-               case sh => n.container = sh
-             }
+            scopeViolations, eltViolations)){
+            // detach for host searching : do not want to consider parent constraints
+            n.detach()
 
+            val newCter = findHost(n.kind, List()){
+              (potentialHost: AGNode) => !(potentialHost interloperOf n)
+            } match {
+              case None =>
+                val newCter = n.createContainer()
+                n.addHideFromRootException(newCter)
+                newCter.container = findHost(newCter.kind, List())()
+                newCter
+              case Some(h) => h
+            }
+            //re-attach before moving
+            n.container = Some(cter)
+            n.moveTo(newCter)
           }
+          step()
           solveContains()
       }
     }
@@ -162,7 +197,9 @@ trait Solver {
           solveUses()
       }
     }
+    println("solving contains violations")
     solveContains()
+    println("solving uses violations")
     solveUses()
   }
 

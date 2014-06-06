@@ -8,12 +8,14 @@ import java.io.{OutputStream, PipedInputStream, PipedOutputStream, File}
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import AST.LoadingListener
-import puck.javaAG.JavaSolver
+import puck.javaAG.{DefaultDecisionMaker, JavaSolver}
 import scala.util.{Failure, Success}
+import puck.graph.constraints.DecisionMaker
 
 /**
  * Created by lorilan on 08/05/14.
  */
+
 class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
   extends SplitPane(Orientation.Vertical){
 
@@ -166,7 +168,7 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
     delayedDisplay += showConstraints
 
     val show = makeButton("Show graph",
-      "Display a visual representation of the graph without evaluating the constraint"){
+      "Display a visual representation of the graph"){
       () =>
         Future {
           print("Printing graph ...")
@@ -192,14 +194,28 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
     contents +=show
     delayedDisplay += show
 
+    val decisionStrategy = new ComboBox[DecisionMaker](List(GUIDecisionMaker,
+    DefaultDecisionMaker)){
+      minimumSize = new Dimension(leftWidth, 30)
+      maximumSize = minimumSize
+      preferredSize = minimumSize
+    }
+
+    decisionStrategy.visible = false
+    contents += decisionStrategy
+    delayedDisplay += decisionStrategy
+
+
     val solve = makeButton("Solve", "solve the loaded constraints"){
       () =>
-        print("Solving constraints ...")
-        try {
-          filesHandler.solve()
-          println(" done")
-        }catch {
-          case e : Error => println("\n"+e.getMessage)
+        val f = Future {
+          println("Solving constraints ...")
+          filesHandler.solve(decisionMaker = decisionStrategy.selection.item)
+        }
+
+        f onComplete{
+          case Success(_) => println("Solving done")
+          case Failure(exc) => println(exc.getMessage)
         }
     }
 

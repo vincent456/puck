@@ -19,6 +19,7 @@ class JavaType(n : AGNode) extends NamedType(n){
         })
     }
 
+  // compute structural subtyping in addition to registered named subtyping
   override def subtypeOf(other : Type) : Boolean = super.subtypeOf(other) ||
     ( other match {
       case NamedType(othern) =>

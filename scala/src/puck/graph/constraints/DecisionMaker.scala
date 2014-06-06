@@ -1,6 +1,8 @@
 package puck.graph.constraints
 
 import puck.graph.{AccessGraph, NodeKind, AGNode}
+import scala.concurrent.Future
+
 
 /**
  * Created by lorilan on 28/05/14.

@@ -4,7 +4,8 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 import AGNode.toScopeSet
 import scala.annotation.tailrec
-import puck.graph.constraints.{AbstractionPolicy, Constraint, ElementConstraint, ScopeConstraint}
+import puck.graph.constraints._
+import scala.Some
 
 
 trait AGNodeBuilder {
@@ -30,15 +31,8 @@ object AGNode extends AGNodeBuilder{
 
   def addUsesDependency(primaryUser : AGNode, primaryUsee : AGNode,
                         sideUser : AGNode, sideUsee : AGNode) {
-    primaryUser.sideUses get primaryUsee match {
-      case None =>
-        primaryUser.sideUses += (primaryUsee -> mutable.Set(AGEdge.uses(sideUser, sideUsee)))
-      case Some(s)=>
-        primaryUser.sideUses += (primaryUsee -> s.+=(AGEdge.uses(sideUser, sideUsee)))
-
-    }
-
-    sideUser.primaryUses += (sideUsee -> AGEdge.uses(primaryUser, primaryUsee))
+    primaryUser.sideUses_+=(primaryUsee, AGEdge.uses(sideUser, sideUsee))
+    sideUser.primaryUses_+=(sideUsee, AGEdge.uses(primaryUser, primaryUsee))
   }
 
   val kinds = List(VanillaKind())
@@ -162,9 +156,9 @@ class AGNode (val graph: AccessGraph,
 
   private var superTypes0 : mutable.Set[AGNode] = mutable.Set()
 
-  def `is super type of`(other : AGNode) : Boolean = {
+  def isSuperTypeOf(other : AGNode) : Boolean = {
     subTypes0.contains(other) ||
-      subTypes0.exists(_.`is super type of`(other))
+      subTypes0.exists(_.isSuperTypeOf(other))
   }
 
   def superTypes:Iterable[AGNode] = superTypes0
@@ -179,22 +173,26 @@ class AGNode (val graph: AccessGraph,
     st.superTypes0 += this
   }
 
-  private var uses0 : mutable.Set[AGNode] = mutable.Set()
+  //TODO think about removing uses0 & users0 and keep only the sideUses0/primaryUses0 maps
+  //private var uses0 : mutable.Set[AGNode] = mutable.Set()
+  def uses(other : AGNode) = other.isUsedBy(this)// uses0.contains(other)
+  def uses_+=(other: AGNode) = other.users_+=(this)
+  def uses_-=(other: AGNode) = other.users_-=(this)
 
-  def uses(other : AGNode) = uses0.contains(other)
-
-  private var users0 : mutable.Set[AGNode] = mutable.Set()
+  private [this] var users0 : mutable.Set[AGNode] = mutable.Set()
   def users_+=(other : AGNode) {
     this.users0 += other
-    other.uses0 += this
+    //other.uses0 += this
   }
 
-  def removeUser(user : AGNode){
+  def users_-=(user : AGNode){
     users0.remove(user)
-    user.uses0.remove(this)
+    //user.uses0.remove(this)
   }
 
   def users: mutable.Iterable[AGNode] = users0
+
+  def isUsedBy(other : AGNode) = users0.contains(other)
 
   /* a primary use is for example the use of a class when declaring a variable or a parameter
    a side use is in this example a call to a method with the same variable/parameter
@@ -203,53 +201,186 @@ class AGNode (val graph: AccessGraph,
  */
 
   /*(this, key) is a primary uses and sidesUses(key) are the corresponding side uses */
-  private var sideUses : mutable.Map[AGNode, mutable.Set[AGEdge]] = mutable.Map()
+  private [this] val sideUses0 : mutable.Map[AGNode, mutable.Set[AGEdge]] = mutable.Map()
 
-  /*(this, key) is a side uses and primaryUses(key) is the corresponding primary use */
-  private var primaryUses : mutable.Map[AGNode, AGEdge] = mutable.Map()
-
-  def unsuscribeSideUses(sideUsee : AGNode){
-    primaryUses.get(sideUsee) match {
-      case None => ()
-      case Some(primary_uses) =>
-        val primUser = primary_uses.source
-        val sec_uses = primUser.sideUses(primary_uses.target)
-        sec_uses.remove(AGEdge.uses(this, sideUsee))
-        if(sec_uses.isEmpty){
-          primUser.sideUses.remove(primary_uses.target)
-        }
-    }
-  }
-
-  def redirectSideUses(primaryUsee: AGNode, newUsee : AGNode){
-    sideUses.get(primaryUsee) match {
-      case None => ()
-      case Some( sides_uses ) =>
-        val new_side_uses = sides_uses map {(edge : AGEdge) =>
-          val side_usee_opt =
-            edge.target.abstractions.find { (abs: AGNode) =>
-              newUsee.contains_*(abs)
-            }
-          side_usee_opt match {
-            case None => throw new AGError("No satisfying abstraction to redirect side use !")
-            case Some( new_side_usee ) => AGEdge.uses(edge.source, new_side_usee)
+  def hasSideUses = !sideUses0.isEmpty
+  def usesMapString( map : mutable.Map[AGNode, mutable.Set[AGEdge]],
+                     keyType : String,
+                     contentType : String) : String = {
+    map.map{
+      case (key, content) =>
+        val contentStr =
+          if(content.isEmpty){"(no "+ contentType+")\n"}
+          else {
+            content.mkString("\n" + contentType + " :\n\t", "\n\t", "\n")
           }
 
-        }
-        sideUses.remove(primaryUsee)
-        sideUses.get(newUsee) match {
-          case None => sideUses.put(primaryUsee, new_side_uses)
-          case Some(oldSideUses) => oldSideUses ++= new_side_uses
+        keyType + " : (" + this + ", " + key + ")" + contentStr
+
+    }.mkString("")
+  }
+  def sideUsesString = usesMapString(sideUses0, "primary", "secondaries")
+  def primaryUsesString = usesMapString(primaryUses0, "secondary", "primary")
+
+  def sideUses(primaryUsee : AGNode) : Option[Iterable[AGEdge]] = sideUses0.get(primaryUsee)
+
+  def sideUses_+=(primaryUsee : AGNode, sideUse : AGEdge) = {
+    sideUses_++=(primaryUsee, mutable.Set(sideUse))
+  }
+
+  def sideUses_++=(primaryUsee : AGNode, sideUses: mutable.Set[AGEdge]){
+    sideUses0 get primaryUsee match {
+      case None =>
+        sideUses0 += (primaryUsee -> sideUses)
+      case Some(s) =>
+        sideUses0 += (primaryUsee -> s.++=(sideUses))
+    }
+    sideUses.foreach{ _.create() }
+    primaryUsee.users_+=(this)
+  }
+
+  def sideUses_-=(primaryUsee : AGNode){
+    sideUses0 get primaryUsee match {
+      case None => ()
+      case Some(sideUses) =>
+        sideUses.foreach{ _.delete() }
+        sideUses0.remove(primaryUsee)
+    }
+
+  }
+
+  def sideUses_-=(primaryUsee : AGNode, sideUse : AGEdge){
+    val side_uses = sideUses0(primaryUsee)
+    side_uses.remove(sideUse)
+    sideUse.delete()
+    if(side_uses.isEmpty)
+      sideUses0.remove(primaryUsee)
+    primaryUsee.users_-=(this)
+  }
+
+
+  /*(this, key) is a side uses and primaryUses(key) is the corresponding primary uses */
+  private [this] val primaryUses0 : mutable.Map[AGNode, mutable.Set[AGEdge]] = mutable.Map()
+
+  def hasPrimaryUses = !primaryUses0.isEmpty
+  def primaryUses(sideUsee : AGNode) : Option[Iterable[AGEdge]] =
+    primaryUses0.get(sideUsee)
+
+  def primaryUses_+=(sideUsee : AGNode, primaryUse : AGEdge) = {
+    primaryUses0 get sideUsee match {
+      case None =>
+        primaryUses0 += (sideUsee -> mutable.Set(primaryUse))
+      case Some(s) =>
+        primaryUses0 += (sideUsee -> s.+=(primaryUse))
+    }
+    primaryUse.create()
+    sideUsee.users_+=(this)
+  }
+
+  def primaryUses_-=(sideUsee: AGNode){
+    primaryUses0 get sideUsee match {
+      case None => ()
+      case Some( primUses ) =>
+        primUses.foreach(_.delete())
+        primaryUses0.remove(sideUsee)
+
+    }
+    sideUsee.users_-=(this)
+  }
+
+
+  def findNewPrimaryUsee(primaryUsee : AGNode,
+                         newSideUsee : AGNode,
+                         policy : RedirectionPolicy) : AGNode = {
+    policy match {
+      case Move() => newSideUsee.container_!
+      case absPolicy : AbstractionPolicy =>
+        primaryUsee.abstractions.find{
+          case (node, `absPolicy`) => node.contains_*(newSideUsee)
+          case _ => false
+        } match {
+          case Some((n, _)) => n
+          case None =>
+            graph.iterator.find{ node =>
+              node.contains_*(newSideUsee) &&
+                primaryUsee.kind.abstractKinds(absPolicy).contains(node.kind)
+            } match {
+              case Some(n) => n
+              case None => throw new AGError("no correct primary abstraction found !")
+            }
         }
     }
   }
 
-  def redirectUses(oldUsee : AGNode, newUsee : AGNode){
-    oldUsee removeUser this
+  def redirectPrimaryUses(sideUsee : AGNode,
+                          newUsee : AGNode,
+                          policy : RedirectionPolicy){
+    primaryUses(sideUsee) match {
+      case None => ()
+      case Some(primary_uses) =>
+        if(primary_uses.isEmpty){
+          throw new AGError("WTF? empty primary uses set")
+        }
+        val primary_use = primary_uses.head
+        if(! primary_uses.tail.isEmpty) {
+          println("redirecting side uses : (" + this + ", " + sideUsee
+            + ") to (" + this + ", " + newUsee + ")")
+          println("primary uses are ")
+          println( primary_use)
+          primary_uses.tail.mkString("\n")
+          throw new AGError("Do not know how to unsuscribe a side use with multiple primary uses")
+        }
+        else {
+
+          val primUser = primary_use.source
+          primUser.sideUses_-=(primary_use.target, AGEdge.uses(this, sideUsee))
+          primaryUses_-=(sideUsee)
+
+          val newPrimUsee = findNewPrimaryUsee(primary_use.target,
+            newUsee, policy)
+
+          primUser.sideUses_+=(newPrimUsee, AGEdge.uses(this, newUsee))
+          primaryUses_+=(newUsee, AGEdge.uses(primUser, newPrimUsee))
+        }
+    }
+  }
+
+  def redirectSideUses(primaryUsee: AGNode,
+                       newUsee : AGNode,
+                       policy : RedirectionPolicy){
+    sideUses(primaryUsee) match {
+      case None => ()
+      case Some( sides_uses ) =>
+        val new_side_uses = mutable.Set[AGEdge]()
+        sides_uses foreach {
+          edge =>
+            val side_usee_opt =
+              edge.target.abstractions.find {
+                case (abs, `policy`) => newUsee.contains_*(abs)
+                case _ => false
+              }
+            side_usee_opt match {
+              case None => throw new AGError("While redirecting primary uses (" + this +", " + primaryUsee +") to ("
+                + this + ", " + newUsee
+                + ")\nno satisfying abstraction to redirect side use "+ edge)
+              case Some( (new_side_usee, _) ) =>
+                new_side_uses += AGEdge.uses(edge.source, new_side_usee)
+            }
+        }
+
+        sideUses_-=(primaryUsee)
+
+        sideUses_++=(newUsee, new_side_uses)
+    }
+  }
+
+  def redirectUses(oldUsee : AGNode, newUsee : AGNode,
+                   policy : RedirectionPolicy){
+    oldUsee users_-= this
     newUsee users_+= this
 
-    unsuscribeSideUses(oldUsee)
-    redirectSideUses(oldUsee, newUsee)
+    redirectPrimaryUses(oldUsee, newUsee, policy)
+    redirectSideUses(oldUsee, newUsee, policy)
   }
 
 
@@ -263,6 +394,16 @@ class AGNode (val graph: AccessGraph,
         n
     }
   }
+
+
+  def moveTo(newContainer : AGNode) {
+    detach()
+    this.container = Some(newContainer)
+    users.foreach{
+      _.redirectPrimaryUses(this, this, Move())
+    }
+  }
+
 
 
   /**********************************************/
@@ -287,8 +428,8 @@ class AGNode (val graph: AccessGraph,
   def scopeConstraints_+=(ct : ScopeConstraint) = scopeConstraints += ct
 
   def scopeConstraints_+=(facades : List[AGNode],
-                           interlopers : List[AGNode],
-                           friends : List[AGNode]) =
+                          interlopers : List[AGNode],
+                          friends : List[AGNode]) =
     scopeConstraints += new ScopeConstraint(this, facades, interlopers, friends)
 
 
@@ -321,8 +462,8 @@ class AGNode (val graph: AccessGraph,
 
     ifNotEmpty(friendsSet,
       "areFriendsOf([" + friendsSet.mkString(", ") + "], " + this + ").\n") +
-    ifNotEmpty(scopeConstraints, scopeConstraints.mkString("", "\n", "\n")) +
-    ifNotEmpty(elementConstraints, elementConstraints.mkString("", "\n", "\n"))
+      ifNotEmpty(scopeConstraints, scopeConstraints.mkString("", "\n", "\n")) +
+      ifNotEmpty(elementConstraints, elementConstraints.mkString("", "\n", "\n"))
   }
 
 
@@ -368,12 +509,14 @@ class AGNode (val graph: AccessGraph,
     def aux(other: AGNode): Boolean =
       !other.contains_*(this) &&
         other.scopeConstraints.exists(violated(other0)) ||
-      (other.container match {
-      case None => false
-      case Some(p) => aux(p)
-    })
+        (other.container match {
+          case None => false
+          case Some(p) => aux(p)
+        })
     aux(other0)
   }
+
+
 
   /*
       hiddenFrom(Element, Interloper) :- hide(Element, Interlopers, Friends),
@@ -415,31 +558,25 @@ class AGNode (val graph: AccessGraph,
    * Solving
    */
 
-  private var abstractions0: mutable.Set[AGNode]= mutable.Set()
-  def abstractions : mutable.Iterable[AGNode] = abstractions0
+  protected var abstractions0: mutable.Set[(AGNode, AbstractionPolicy)]= mutable.Set()
+  def abstractions : mutable.Iterable[(AGNode, AbstractionPolicy)] = abstractions0
 
-  def `may be an abstraction of`(other : AGNode) = false
+  def searchExistingAbstractions(){}
 
-  def searchExistingAbstractions(){
-    graph.iterator foreach { ( n : AGNode) =>
-      if(n != this && (n `may be an abstraction of` this))
-        this.abstractions0 += n
-    }
-  }
 
-  def createNodeAbstraction( abskind :  NodeKind ) : AGNode = {
+  def createNodeAbstraction(abskind :  NodeKind, policy : AbstractionPolicy) : AGNode = {
     // TODO find a strategy or way to make the user choose which abstractkind is used !
     val n = graph.addNode(name + "_abstraction", abskind)
-    abstractions0 += n
+    abstractions0 += ((n, policy))
     /* little hack (?) : an abstraction is its own abstraction otherwise,
      on a later iteration, instead of moving the abstraction it will create an abstraction's abstraction ...
      and that can go on... */
-    n.abstractions0 += n
+    n.abstractions0 += ((n, policy))
     n
   }
 
-  def createAbstraction( abskind : NodeKind , policy : AbstractionPolicy) : AGNode = {
-    val abs = createNodeAbstraction(abskind)
+  def createAbstraction(abskind : NodeKind , policy : AbstractionPolicy) : AGNode = {
+    val abs = createNodeAbstraction(abskind, policy)
     users_+=(abs)
     abs
   }
