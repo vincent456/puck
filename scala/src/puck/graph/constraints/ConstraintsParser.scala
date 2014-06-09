@@ -15,7 +15,8 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
   protected override val whiteSpace = """(\s|%.*)+""".r  //to skip comments
 
 
-  val defs : mutable.Map[String, List[AGNode]] = mutable.Map[String, List[AGNode]]()
+  val defs : mutable.Map[String, NamedNodeSet] = accessGraph.nodeSets
+
   val imports : mutable.Buffer[String] = mutable.Buffer("")
 
   def findNode(k : String) : AGNode ={
@@ -34,13 +35,13 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
     }
   }
 
-  def toDef (request : Either[String, List[String]]) : List[AGNode]= {
+  def toDef (request : Either[String, List[String]]) : NodeSet = {
     request match {
       case Left(key) => defs get key match {
         case Some(l) => l
-        case None => List(findNode(key))
+        case None => LiteralNodeSet(findNode(key))
       }
-      case Right(l) => l map findNode
+      case Right(l) => LiteralNodeSet(l map findNode)
     }
   }
 
@@ -63,17 +64,42 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
     "declareSet(" ~> ident ~ "," ~ list <~ ")." ^^ {
       case ident ~ _ ~ list => defs get ident match {
         case Some(_) => throw new scala.Error("Set " + ident + " already defined")
-        case None => defs += (ident -> (list map findNode))
+        case None => defs += (ident -> new NamedNodeSet(ident,
+          LiteralNodeSet(list map findNode)))
       }
     }
 
-  def declare_set_union : Parser[Unit] =
+  def declare_set_union : Parser[Unit] = {
+
+
+    def normal(list : List[NodeSet]) = {
+
+      val lit = LiteralNodeSet()
+      val buf = mutable.Buffer[NodeSet]()
+
+      list.foreach{
+        case l : LiteralNodeSet => l.foreach(lit.+=)
+        case s => buf += s
+      }
+      new NodeSetUnion(buf, lit)
+    }
+
     "declareSetUnion(" ~> ident ~ "," ~ list <~ ")." ^^ {
       case ident ~ _ ~ list => defs get ident match {
         case Some(_) => throw new scala.Error("Set " + ident + " already defined")
-        case None => defs += (ident -> (list map defs).flatten )
+        case None => defs +=(ident -> new NamedNodeSetUnion(ident, normal(list map defs)))
       }
     }
+  }
+
+  def addScopeConstraint(owners : NodeSet,
+                         facades : NodeSet,
+                         interlopers : NodeSet,
+                         friends : NodeSet) = {
+    val ct = new ScopeConstraint(owners, facades, interlopers, friends)
+    owners.foreach(_.scopeConstraints_+=(ct))
+    accessGraph.constraints += ct
+  }
 
   def hideScope : Parser[Unit] =
     "hideScope(" ~> ident ~ "," ~
@@ -81,7 +107,8 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
       listOrIdent ~ "," ~
       listOrIdent <~ ")." ^^ {
       case  i ~ _ ~ facades ~ _ ~ interlopers ~ _ ~ friends =>
-        findNode(i) scopeConstraints_+= (toDef(facades), toDef(interlopers), toDef(friends))
+        addScopeConstraint(LiteralNodeSet(findNode(i)),
+          toDef(facades), toDef(interlopers), toDef(friends))
     }
 
 
@@ -89,7 +116,8 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
   def hideScopeSet1 : Parser[Unit] =
     "hideScopeSet(" ~> listOrIdent <~ ")." ^^ {
       case s =>
-        toDef(s) map {_.scopeConstraints_+=(List(), List(accessGraph.root), List()) }
+        addScopeConstraint(toDef(s), LiteralNodeSet(),
+          LiteralNodeSet(accessGraph.root), LiteralNodeSet())
     }
 
   def hideScopeSet4 : Parser[Unit] =
@@ -98,68 +126,77 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
       listOrIdent ~ "," ~
       listOrIdent <~ ")." ^^ {
       case s ~ _ ~ facades ~ _ ~ interlopers ~ _ ~ friends =>
-        val fcs = toDef(facades)
-        val is = toDef(interlopers)
-        val frs = toDef(friends)
-        toDef(s) map { _.scopeConstraints_+=(fcs, is, frs)}
+        addScopeConstraint(toDef(s), toDef(facades),
+          toDef(interlopers), toDef(friends))
     }
 
 
   def hideScopeSetFrom : Parser[Unit] =
     "hideScopeSetFrom(" ~> listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
       case s ~ _ ~ interlopers =>
-        val is = toDef(interlopers)
-        toDef(s) map {_.scopeConstraints_+=(List(), is, List())}
+        addScopeConstraint(toDef(s), LiteralNodeSet(),
+          toDef(interlopers), LiteralNodeSet())
     }
 
   def hideScopeFromEachOther : Parser[Unit] = {
     "hideFromEachOther(" ~> listOrIdent <~ ")." ^^ {
       case s =>
-        val d = toDef(s)
-        d.foreach{ node =>
-          val others = d.filter(_ != node)
-          node.scopeConstraints_+=(List(), others, List())
-        }
+        val owners = toDef(s)
+        addScopeConstraint(owners, LiteralNodeSet(),
+          owners, LiteralNodeSet())
     }
   }
 
   def friend : Parser[Unit] =
     "isFriendOf(" ~> listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
       case friends ~ _ ~ befriended =>
-        val fs = toDef(friends)
-        toDef(befriended) map { _ friends_++= fs }
+        val owners = toDef(befriended)
+        val ct = new FriendConstraint(toDef(friends), owners)
+        owners.foreach(_.friendConstraints += ct)
+        accessGraph.constraints += ct
     }
 
-  def hideElement : Parser[Unit] =
+  def addElementConstraint(owners : NodeSet,
+                           interlopers : NodeSet,
+                           friends : NodeSet) = {
+    val ct = new ElementConstraint(owners, interlopers, friends)
+    owners.foreach(_.elementConstraints_+=(ct))
+    accessGraph.constraints += ct
+  }
+
+  def hideElement3 : Parser[Unit] =
     "hide(" ~> ident ~ "," ~ listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
       case elt ~ _ ~ interlopers ~ _ ~ friends =>
-        findNode(elt).elementConstraints_+=(toDef(interlopers), toDef(friends))
+        addElementConstraint(LiteralNodeSet(findNode(elt)),
+          toDef(interlopers), toDef(friends))
     }
 
   def hideElementSet1 : Parser[Unit] =
     "hideSet(" ~> listOrIdent <~ ")." ^^ {
       case s =>
-        toDef(s) map {_.elementConstraints_+=(List(accessGraph.root), List())}
+        addElementConstraint(toDef(s),
+          LiteralNodeSet(accessGraph.root), LiteralNodeSet())
     }
 
   def hideElementSet3 : Parser[Unit] =
     "hideSet(" ~> listOrIdent ~ "," ~ listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
       case set ~ _ ~ interlopers ~ _ ~ friends =>
-        val is = toDef(interlopers)
-        val fs = toDef(friends)
-        toDef(set) map {_.elementConstraints_+=(is, fs)}
-    }
+        addElementConstraint(toDef(set),
+          toDef(interlopers), toDef(friends))
+  }
 
   def hideElementFrom : Parser[Unit] =
     "hideFrom(" ~> ident ~ "," ~ listOrIdent <~ ")." ^^ {
-    case elt ~ _ ~ is =>
-        findNode(elt).elementConstraints_+=(toDef(is), List())
+    case elt ~ _ ~ interlopers =>
+      addElementConstraint(LiteralNodeSet(findNode(elt)),
+        toDef(interlopers), LiteralNodeSet())
   }
+
   def hideElementSetFrom : Parser[Unit] =
     "hideSetFrom(" ~> listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
-      case set ~ _ ~ interlopers =>
-        val is = toDef(interlopers)
-        toDef(set).foreach{ _.elementConstraints_+=(is, List())}
+      case s ~ _ ~ interlopers =>
+        addElementConstraint(toDef(s),
+          toDef(interlopers), LiteralNodeSet())
     }
 
 
@@ -181,7 +218,7 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
     ( java_import
       | declare_set
       | declare_set_union
-      | hideElement
+      | hideElement3
       | hideElementFrom
       | hideElementSet1
       | hideElementSet3

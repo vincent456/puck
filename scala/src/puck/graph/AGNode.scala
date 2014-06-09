@@ -1,8 +1,6 @@
 package puck.graph
 
 import scala.collection.mutable
-import scala.language.implicitConversions
-import AGNode.toScopeSet
 import scala.annotation.tailrec
 import puck.graph.constraints._
 import scala.Some
@@ -24,11 +22,6 @@ object AGNode extends AGNodeBuilder{
   override def makeKey(fullName: String, localName:String,
                        kind : NodeKind) : String = fullName
 
-
-  implicit def toScopeSet( n: mutable.Set[AGNode]) : ScopeSet = new ScopeSet(n.iterator)
-  implicit def toScopeSet( l: List[AGNode]) : ScopeSet = new ScopeSet(l.iterator)
-
-
   def addUsesDependency(primaryUser : AGNode, primaryUsee : AGNode,
                         sideUser : AGNode, sideUsee : AGNode) {
     primaryUser.sideUses_+=(primaryUsee, AGEdge.uses(sideUser, sideUsee))
@@ -42,32 +35,6 @@ object AGNode extends AGNodeBuilder{
       case (VanillaKind(), VanillaKind()) => false
       case _ => throw new AGError("do not know if impl (%s) uses abs (%s)".format(implKind, absKind))
     }
-}
-
-class ScopeSet(it : Iterator[AGNode]){
-  def scopeThatContains_*(elem: AGNode) = it.find { _.contains_*(elem) }
-  def hasScopeThatContains_*(elem: AGNode) = it.exists { _.contains_*(elem) }
-
-  def findCommonRoot : AGNode = {
-    if(!it.hasNext)
-      throw new AGError("empty node set")
-
-    def aux(root : AGNode) : AGNode = {
-      if(!it.hasNext)
-        root
-      else{
-        val n = it.next()
-        if(root.contains_*(n))
-          aux(root)
-        else if(n.contains_*(root))
-          aux(n)
-        else
-          throw new AGError("no common root in ScopeSet")
-      }
-    }
-    aux(it.next())
-  }
-
 }
 
 class AGNode (val graph: AccessGraph,
@@ -412,49 +379,66 @@ class AGNode (val graph: AccessGraph,
   /**
    * Friends, Interlopers and Facade are scopes.
    */
+  class FriendConstraintSet{
+
+    class Success extends Exception
+
+    private [AGNode] val content : mutable.Buffer[FriendConstraint] = mutable.Buffer()
+    def += (ct : FriendConstraint) = content += ct
+    def scopeThatContains_*(n: AGNode) = {
+      var res : Option[AGNode] = None
+      try {
+        content.foreach {
+          _.friends.scopeThatContains_*(n) match {
+            case None => false
+            case s =>
+              res = s
+              throw new Success()
+          }
+        }
+        None
+      } catch {
+        case _: Success => res
+      }
+    }
+    def hasScopeThatContains_*(n : AGNode)=
+      content.exists( _.friends.hasScopeThatContains_*(n))
+  }
+
   /**
    * friends bypass other constraints
    */
-  private var friendsSet : mutable.Set[AGNode] = mutable.Set()
-
-  def friends : mutable.Iterable[AGNode] = friendsSet
-  def friends_++= = friendsSet ++= _
+  val friendConstraints = new FriendConstraintSet
 
   /**
    * this scope is hidden
    */
-  private var scopeConstraints: mutable.Buffer[ScopeConstraint]= mutable.Buffer()
+  private val scopeConstraints: mutable.Buffer[ScopeConstraint]= mutable.Buffer()
 
+
+  /*
+   * assert owners contains this
+   */
   def scopeConstraints_+=(ct : ScopeConstraint) = scopeConstraints += ct
-
-  def scopeConstraints_+=(facades : List[AGNode],
-                          interlopers : List[AGNode],
-                          friends : List[AGNode]) =
-    scopeConstraints += new ScopeConstraint(this, facades, interlopers, friends)
-
 
   /**
    * this element is hidden but not the elements that it contains
    */
-  private var elementConstraints : mutable.Buffer[ElementConstraint]= mutable.Buffer()
+  private val elementConstraints : mutable.Buffer[ElementConstraint]= mutable.Buffer()
 
-  def elementConstraints_+=(x : ElementConstraint) = elementConstraints += x
-
-  def elementConstraints_+=(interlopers : List[AGNode],
-                            friends : List[AGNode]) =
-    elementConstraints += new ElementConstraint(this, interlopers, friends)
+  def elementConstraints_+=(ct : ElementConstraint) = elementConstraints += ct
 
   /**
    * Constraints Handling
    */
 
   def discardConstraints() {
-    friendsSet = mutable.Set()
-    scopeConstraints = mutable.Buffer()
-    elementConstraints = mutable.Buffer()
+    friendConstraints.content.clear()
+    scopeConstraints.clear()
+    elementConstraints.clear()
   }
 
-  def constraintsString : String = {
+ /* def constraintsString : String = {
 
     def ifNotEmpty(coll: mutable.Iterable[_ <: Any], str: => String) : String =
       if (coll.isEmpty) ""
@@ -464,11 +448,11 @@ class AGNode (val graph: AccessGraph,
       "areFriendsOf([" + friendsSet.mkString(", ") + "], " + this + ").\n") +
       ifNotEmpty(scopeConstraints, scopeConstraints.mkString("", "\n", "\n")) +
       ifNotEmpty(elementConstraints, elementConstraints.mkString("", "\n", "\n"))
-  }
+  }*/
 
 
   @tailrec
-  final def friendOf(other : AGNode) : Boolean = other.friendsSet.hasScopeThatContains_*( this ) ||
+  final def friendOf(other : AGNode) : Boolean = other.friendConstraints.hasScopeThatContains_*( this ) ||
     (other.container match {
       case None => false
       case Some(p) => friendOf(p)
@@ -582,13 +566,13 @@ class AGNode (val graph: AccessGraph,
   }
 
   def addHideFromRootException(friend : AGNode){
-    def addExc(sct : Constraint) {
-      if (sct.interlopers.head == graph.root)
-        sct friends_+= friend
+    def addExc(interlopers : NodeSet, friends : NodeSet ) {
+      if (interlopers.iterator.contains(graph.root))
+        friends += friend
     }
 
-    scopeConstraints foreach addExc
-    elementConstraints foreach addExc
+    scopeConstraints foreach (ct => addExc(ct.interlopers, ct.friends))
+    elementConstraints foreach (ct => addExc(ct.interlopers, ct.friends))
   }
 
 }

@@ -36,7 +36,7 @@ package puck
  */
 
 
-/*
+
  import scala.swing._
  import javax.swing.UIManager
  import puck.gui.PuckMainPanel
@@ -56,11 +56,11 @@ package puck
     contents  = new PuckMainPanel(FilesHandler())
 
   }
-}*/
+}
 
 
 
-import java.io._
+/*import java.io._
 import puck.gui.GUIDecisionMaker
 
 object Front{
@@ -89,4 +89,4 @@ object Front{
 
 
   }
-}
+}*/

@@ -2,6 +2,7 @@ package puck.graph
 
 import scala.collection.mutable
 import scala.collection.JavaConversions.collectionAsScalaIterable
+import puck.graph.constraints.{Constraint, NamedNodeSet, NodeSet}
 
 /**
  * Created by lorilan on 05/05/14.
@@ -25,6 +26,9 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
 // has a valid iterator + implicit conversion in puck.graph package object
 
   println("Node builder : " + nodeBuilder.getClass)
+
+  private [graph] val nodeSets : mutable.Map[String, NamedNodeSet] = mutable.Map()
+  private [graph] val constraints : mutable.Buffer[Constraint] = mutable.Buffer()
 
   private [puck] val nodesById : mutable.Map[Int, AGNode] = mutable.Map()
   private [puck] val nodesByName : mutable.Map[String, AGNode] = mutable.Map()
@@ -57,7 +61,10 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
   }
 
   def printConstraints(){
-    this.foreach(n => print(n.constraintsString))
+    nodeSets.foreach{
+      case (_, namedSet) => println(namedSet.defString)
+    }
+    constraints.foreach(ct => print(ct))
   }
 
   def printUsesDependancies(){
