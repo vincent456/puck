@@ -72,7 +72,7 @@ class JavaNode( graph : AccessGraph,
   }
 
   override def searchExistingAbstractions(){
-
+    println("searching abstractions for " +this)
     graph.iterator foreach { n =>
       if(n != this && (this isSubtypeOf n) &&
         //to be a valid abstraction, in addition to be a supertype,
@@ -88,8 +88,10 @@ class JavaNode( graph : AccessGraph,
               case None => true
             }
         })
+        println("found " + n)
         this.abstractions0 += ((n, SupertypeAbstraction()))
     }
+    println("search terminated")
   }
 
   override def createAbstraction(abskind : NodeKind,
@@ -138,13 +140,13 @@ class JavaNode( graph : AccessGraph,
            * when redirecting primary uses
            */
           if(user.container == this.container){
-            AGNode.addUsesDependency(user, user.container_!,
+            graph.addUsesDependency(user, user.container_!,
               user, this)
 //            println("addding uses dependancy ("+ user + ", " + user.container_!
 //              + ") (" + user +", " + this + ")")
           }
           if(container_!.uses(this)){
-            AGNode.addUsesDependency(oldContainer, oldContainer,
+            graph.addUsesDependency(oldContainer, oldContainer,
               oldContainer, this)
 //            println("addding uses dependancy ("+ oldContainer + ", " + oldContainer
 //              + ") (" + oldContainer +", " + this + ")")

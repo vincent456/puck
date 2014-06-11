@@ -10,8 +10,8 @@ import java.io.OutputStream
  */
 
 object PuckMainPanel{
-  val width = 400
-  val height = 600
+  val width = 600
+  val height = 800
 }
 
 class PuckMainPanel(private val filesHandler: FilesHandler) extends SplitPane(Orientation.Horizontal){

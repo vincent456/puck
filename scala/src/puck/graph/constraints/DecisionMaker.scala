@@ -20,12 +20,10 @@ trait DecisionMaker{
 
   def chooseNode(graph : AccessGraph)(predicate : AGNode => Boolean) : Option[AGNode]
 
-  def grantContainingAuth(container : AGNode, content : AGNode,
-                           violatedScopeConstraints : List[ScopeConstraint],
-                           violatedElementConstraints : List[ElementConstraint]) : Boolean
-
-  def grantUsesAuth(user : AGNode, usee : AGNode,
-                    violatedScopeConstraints : List[ScopeConstraint],
-                    violatedElementConstraints : List[ElementConstraint]) : Boolean
+  /**
+   * to return true, the method must first modify the constraint acccordingly
+   */
+  def grantContainingAuth(container : AGNode, content : AGNode) : Boolean
+  def grantUsesAuth(user : AGNode, usee : AGNode) : Boolean
 
 }

@@ -9,7 +9,6 @@ import scala.Some
 trait AGNodeBuilder {
   def apply(g: AccessGraph, id: Int, name:String, kind : NodeKind) : AGNode
   def makeKey(fullName: String, localName:String, kind: NodeKind) : String
-
   def kinds : List[NodeKind]
 }
 
@@ -22,11 +21,7 @@ object AGNode extends AGNodeBuilder{
   override def makeKey(fullName: String, localName:String,
                        kind : NodeKind) : String = fullName
 
-  def addUsesDependency(primaryUser : AGNode, primaryUsee : AGNode,
-                        sideUser : AGNode, sideUsee : AGNode) {
-    primaryUser.sideUses_+=(primaryUsee, AGEdge.uses(sideUser, sideUsee))
-    sideUser.primaryUses_+=(sideUsee, AGEdge.uses(primaryUser, primaryUsee))
-  }
+
 
   val kinds = List(VanillaKind())
 
@@ -41,8 +36,6 @@ class AGNode (val graph: AccessGraph,
               val id: Int,
               var name: String,
               val kind: NodeKind) { //extends Iterable[AGNode]{
-
-
 
   /*
   override def equals(obj:Any) : Boolean = obj match {
@@ -65,8 +58,9 @@ class AGNode (val graph: AccessGraph,
 
   def fullName : String = container match{
     case None => nameTypeString
-    case Some(p) => if(p == graph.root) nameTypeString
-    else p.fullName + "." + nameTypeString
+    case Some(p) =>
+      if(p == graph.root) nameTypeString
+      else containerPath(graph.root).tail.map(_.nameTypeString).mkString(".")
   }
 
   /**
@@ -87,8 +81,7 @@ class AGNode (val graph: AccessGraph,
     container0 match{
       case None => ()
       case Some(c) =>
-        container0 = None
-        c.content0.remove(this)
+        c.content_-=(this)
     }
   }
 
@@ -109,6 +102,11 @@ class AGNode (val graph: AccessGraph,
     n.container0 = Some(this)
   }
 
+  def content_-=(n:AGNode) {
+    this.content0 -= n
+    n.container0 = None
+  }
+
   private[graph] def isContentEmpty = content0.isEmpty
 
   def contains(other :AGNode) = content0.contains(other)
@@ -120,25 +118,44 @@ class AGNode (val graph: AccessGraph,
         case Some(p) => this.contains_*(p)
       })
 
+  private def containerPath_aux(ancestor : AGNode, acc : List[AGNode]) : List[AGNode] =
+    if(ancestor == this) this :: acc
+    else container match {
+      case None => throw new AGError("container path, ancestor not found !")
+      case Some(c) => c.containerPath_aux(ancestor, this :: acc)
+    }
+
+  def containerPath(ancestor : AGNode) : List[AGNode] = containerPath_aux(ancestor, List())
+
 
   private var superTypes0 : mutable.Set[AGNode] = mutable.Set()
 
   def isSuperTypeOf(other : AGNode) : Boolean = {
+    other.superTypes.exists(_ == this) ||
+      other.superTypes.exists(_.isSuperTypeOf(this))
+  }
+
+
+  def superTypes : Iterable[AGNode] = superTypes0
+  def superTypes_+=(st:AGNode) {
+    this.superTypes0 += st
+    //st.subTypes0 += this
+  }
+
+  def superTypes_-=(st:AGNode) {
+    this.superTypes0 -= st
+    //st.subTypes0 -= this
+  }
+
+  /*def isSuperTypeOf(other : AGNode) : Boolean = {
     subTypes0.contains(other) ||
       subTypes0.exists(_.isSuperTypeOf(other))
   }
-
-  def superTypes:Iterable[AGNode] = superTypes0
-  def superTypes_+=(st:AGNode) {
-    this.superTypes0 += st
-    st.subTypes0 += this
-  }
-
   private var subTypes0 : mutable.Set[AGNode] = mutable.Set()
   def subTypes_+=(st:AGNode) {
     this.subTypes0 += st
     st.superTypes0 += this
-  }
+  }*/
 
   //TODO think about removing uses0 & users0 and keep only the sideUses0/primaryUses0 maps
   //private var uses0 : mutable.Set[AGNode] = mutable.Set()
@@ -149,12 +166,10 @@ class AGNode (val graph: AccessGraph,
   private [this] var users0 : mutable.Set[AGNode] = mutable.Set()
   def users_+=(other : AGNode) {
     this.users0 += other
-    //other.uses0 += this
   }
 
   def users_-=(user : AGNode){
     users0.remove(user)
-    //user.uses0.remove(this)
   }
 
   def users: mutable.Iterable[AGNode] = users0
@@ -168,93 +183,10 @@ class AGNode (val graph: AccessGraph,
  */
 
   /*(this, key) is a primary uses and sidesUses(key) are the corresponding side uses */
-  private [this] val sideUses0 : mutable.Map[AGNode, mutable.Set[AGEdge]] = mutable.Map()
-
-  def hasSideUses = !sideUses0.isEmpty
-  def usesMapString( map : mutable.Map[AGNode, mutable.Set[AGEdge]],
-                     keyType : String,
-                     contentType : String) : String = {
-    map.map{
-      case (key, content) =>
-        val contentStr =
-          if(content.isEmpty){"(no "+ contentType+")\n"}
-          else {
-            content.mkString("\n" + contentType + " :\n\t", "\n\t", "\n")
-          }
-
-        keyType + " : (" + this + ", " + key + ")" + contentStr
-
-    }.mkString("")
-  }
-  def sideUsesString = usesMapString(sideUses0, "primary", "secondaries")
-  def primaryUsesString = usesMapString(primaryUses0, "secondary", "primary")
-
-  def sideUses(primaryUsee : AGNode) : Option[Iterable[AGEdge]] = sideUses0.get(primaryUsee)
-
-  def sideUses_+=(primaryUsee : AGNode, sideUse : AGEdge) = {
-    sideUses_++=(primaryUsee, mutable.Set(sideUse))
-  }
-
-  def sideUses_++=(primaryUsee : AGNode, sideUses: mutable.Set[AGEdge]){
-    sideUses0 get primaryUsee match {
-      case None =>
-        sideUses0 += (primaryUsee -> sideUses)
-      case Some(s) =>
-        sideUses0 += (primaryUsee -> s.++=(sideUses))
-    }
-    sideUses.foreach{ _.create() }
-    primaryUsee.users_+=(this)
-  }
-
-  def sideUses_-=(primaryUsee : AGNode){
-    sideUses0 get primaryUsee match {
-      case None => ()
-      case Some(sideUses) =>
-        sideUses.foreach{ _.delete() }
-        sideUses0.remove(primaryUsee)
-    }
-
-  }
-
-  def sideUses_-=(primaryUsee : AGNode, sideUse : AGEdge){
-    val side_uses = sideUses0(primaryUsee)
-    side_uses.remove(sideUse)
-    sideUse.delete()
-    if(side_uses.isEmpty)
-      sideUses0.remove(primaryUsee)
-    primaryUsee.users_-=(this)
-  }
-
+  val sideUses = new UsesDependencyMap(this, "primary", "secondaries")
 
   /*(this, key) is a side uses and primaryUses(key) is the corresponding primary uses */
-  private [this] val primaryUses0 : mutable.Map[AGNode, mutable.Set[AGEdge]] = mutable.Map()
-
-  def hasPrimaryUses = !primaryUses0.isEmpty
-  def primaryUses(sideUsee : AGNode) : Option[Iterable[AGEdge]] =
-    primaryUses0.get(sideUsee)
-
-  def primaryUses_+=(sideUsee : AGNode, primaryUse : AGEdge) = {
-    primaryUses0 get sideUsee match {
-      case None =>
-        primaryUses0 += (sideUsee -> mutable.Set(primaryUse))
-      case Some(s) =>
-        primaryUses0 += (sideUsee -> s.+=(primaryUse))
-    }
-    primaryUse.create()
-    sideUsee.users_+=(this)
-  }
-
-  def primaryUses_-=(sideUsee: AGNode){
-    primaryUses0 get sideUsee match {
-      case None => ()
-      case Some( primUses ) =>
-        primUses.foreach(_.delete())
-        primaryUses0.remove(sideUsee)
-
-    }
-    sideUsee.users_-=(this)
-  }
-
+  val primaryUses = new UsesDependencyMap(this, "secondary", "primary")
 
   def findNewPrimaryUsee(primaryUsee : AGNode,
                          newSideUsee : AGNode,
@@ -300,14 +232,14 @@ class AGNode (val graph: AccessGraph,
         else {
 
           val primUser = primary_use.source
-          primUser.sideUses_-=(primary_use.target, AGEdge.uses(this, sideUsee))
-          primaryUses_-=(sideUsee)
+          primUser.sideUses -= (primary_use.target, AGEdge.uses(this, sideUsee))
+          primaryUses -= sideUsee
 
           val newPrimUsee = findNewPrimaryUsee(primary_use.target,
             newUsee, policy)
 
-          primUser.sideUses_+=(newPrimUsee, AGEdge.uses(this, newUsee))
-          primaryUses_+=(newUsee, AGEdge.uses(primUser, newPrimUsee))
+          primUser.sideUses += (newPrimUsee, AGEdge.uses(this, newUsee))
+          primaryUses += (newUsee, AGEdge.uses(primUser, newPrimUsee))
         }
     }
   }
@@ -335,9 +267,9 @@ class AGNode (val graph: AccessGraph,
             }
         }
 
-        sideUses_-=(primaryUsee)
+        sideUses -= primaryUsee
 
-        sideUses_++=(newUsee, new_side_uses)
+        sideUses ++= (newUsee, new_side_uses)
     }
   }
 
@@ -371,88 +303,48 @@ class AGNode (val graph: AccessGraph,
     }
   }
 
-
-
   /**********************************************/
   /************** Constraints********************/
   /**********************************************/
   /**
    * Friends, Interlopers and Facade are scopes.
    */
-  class FriendConstraintSet{
-
-    class Success extends Exception
-
-    private [AGNode] val content : mutable.Buffer[FriendConstraint] = mutable.Buffer()
-    def += (ct : FriendConstraint) = content += ct
-    def scopeThatContains_*(n: AGNode) = {
-      var res : Option[AGNode] = None
-      try {
-        content.foreach {
-          _.friends.scopeThatContains_*(n) match {
-            case None => false
-            case s =>
-              res = s
-              throw new Success()
-          }
-        }
-        None
-      } catch {
-        case _: Success => res
-      }
-    }
-    def hasScopeThatContains_*(n : AGNode)=
-      content.exists( _.friends.hasScopeThatContains_*(n))
-  }
 
   /**
    * friends bypass other constraints
    */
-  val friendConstraints = new FriendConstraintSet
-
-  /**
-   * this scope is hidden
-   */
-  private val scopeConstraints: mutable.Buffer[ScopeConstraint]= mutable.Buffer()
-
-
+  val friendConstraints = new ConstraintSet[FriendConstraint]()
   /*
    * assert owners contains this
    */
-  def scopeConstraints_+=(ct : ScopeConstraint) = scopeConstraints += ct
+  /**
+   * this scope is hidden
+   */
+  val scopeConstraints = new ConstraintSet[ScopeConstraint]()
 
   /**
    * this element is hidden but not the elements that it contains
    */
-  private val elementConstraints : mutable.Buffer[ElementConstraint]= mutable.Buffer()
-
-  def elementConstraints_+=(ct : ElementConstraint) = elementConstraints += ct
+  val elementConstraints = new ConstraintSet[ElementConstraint]()
 
   /**
    * Constraints Handling
    */
 
   def discardConstraints() {
-    friendConstraints.content.clear()
+    friendConstraints.clear()
     scopeConstraints.clear()
     elementConstraints.clear()
   }
 
- /* def constraintsString : String = {
-
-    def ifNotEmpty(coll: mutable.Iterable[_ <: Any], str: => String) : String =
-      if (coll.isEmpty) ""
-      else str
-
-    ifNotEmpty(friendsSet,
-      "areFriendsOf([" + friendsSet.mkString(", ") + "], " + this + ").\n") +
-      ifNotEmpty(scopeConstraints, scopeConstraints.mkString("", "\n", "\n")) +
-      ifNotEmpty(elementConstraints, elementConstraints.mkString("", "\n", "\n"))
-  }*/
-
+  def remove(ct : Constraint) = ct match {
+    case fct @ FriendConstraint(_,_) => friendConstraints -= fct
+    case ect @ ElementConstraint(_,_,_) => elementConstraints -= ect
+    case sct @ ScopeConstraint(_,_,_,_) => scopeConstraints -= sct
+  }
 
   @tailrec
-  final def friendOf(other : AGNode) : Boolean = other.friendConstraints.hasScopeThatContains_*( this ) ||
+  final def friendOf(other : AGNode) : Boolean = other.friendConstraints.hasFriendScopeThatContains_*( this ) ||
     (other.container match {
       case None => false
       case Some(p) => friendOf(p)
@@ -474,7 +366,7 @@ class AGNode (val graph: AccessGraph,
       !(ct.friends.hasScopeThatContains_*(this) ||
         ct.facades.hasScopeThatContains_*(originalTarget))
 
-  def violatesScopeConstraintsOf(other0 : AGNode) : List[ScopeConstraint] = {
+  def violatedScopeConstraintsOf(other0 : AGNode) : List[ScopeConstraint] = {
     def aux(other : AGNode, acc : List[ScopeConstraint]) : List[ScopeConstraint] = {
       val acc2 = if(!other.contains_*(this))
         other.scopeConstraints.filter(violated(other0)).toList ::: acc
@@ -500,8 +392,6 @@ class AGNode (val graph: AccessGraph,
     aux(other0)
   }
 
-
-
   /*
       hiddenFrom(Element, Interloper) :- hide(Element, Interlopers, Friends),
            friends(Element, Friends, AllFriends),
@@ -514,7 +404,7 @@ class AGNode (val graph: AccessGraph,
     ct.interlopers.hasScopeThatContains_*(this) &&
       !ct.friends.hasScopeThatContains_*(this)
 
-  def violatesElementConstraintOf(other : AGNode) =
+  def violatedElementConstraintOf(other : AGNode) =
     other.elementConstraints.filter(violated).toList
 
   def potentialElementInterloperOf(other:AGNode) =
@@ -544,25 +434,34 @@ class AGNode (val graph: AccessGraph,
 
   protected var abstractions0: mutable.Set[(AGNode, AbstractionPolicy)]= mutable.Set()
   def abstractions : mutable.Iterable[(AGNode, AbstractionPolicy)] = abstractions0
-
+  def abstractions_-=(n : AGNode, p : AbstractionPolicy){
+    abstractions0.remove( (n,p) )
+  }
+  def abstractions_+= (n : AGNode, p : AbstractionPolicy){
+    abstractions0 +=( (n,p) )
+  }
   def searchExistingAbstractions(){}
 
 
   def createNodeAbstraction(abskind :  NodeKind, policy : AbstractionPolicy) : AGNode = {
     // TODO find a strategy or way to make the user choose which abstractkind is used !
     val n = graph.addNode(name + "_abstraction", abskind)
-    abstractions0 += ((n, policy))
+    abstractions_+=(n, policy)
     /* little hack (?) : an abstraction is its own abstraction otherwise,
      on a later iteration, instead of moving the abstraction it will create an abstraction's abstraction ...
      and that can go on... */
-    n.abstractions0 += ((n, policy))
+    n.abstractions_+=(n, policy)
     n
   }
 
   def createAbstraction(abskind : NodeKind , policy : AbstractionPolicy) : AGNode = {
-    val abs = createNodeAbstraction(abskind, policy)
-    users_+=(abs)
-    abs
+    graph.careTaker.sequence[AGNode] {
+      val abs = createNodeAbstraction(abskind, policy)
+      users_+=(abs)
+      graph.careTaker.addNode(abs)
+      graph.careTaker.addEdge(AGEdge.uses(abs, this))
+      abs
+    }
   }
 
   def addHideFromRootException(friend : AGNode){

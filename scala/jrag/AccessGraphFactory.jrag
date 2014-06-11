@@ -1,4 +1,4 @@
-import puck.graph.AccessGraph;
+import puck.javaAG.JavaAccessGraph;
 import puck.graph.AGNode;
 import puck.graph.AGBuildingError;
 
@@ -9,9 +9,9 @@ aspect AccessGraphFactory {
 		public void update(double loading);
 	}	
 
-	public AccessGraph Program.buildAccessGraph(Map<String,Collection<BodyDecl>> stringsRequest, LoadingListener ll){
+	public JavaAccessGraph Program.buildAccessGraph(Map<String,Collection<BodyDecl>> stringsRequest, LoadingListener ll){
 
-		AccessGraph accessGraph = puck.graph.java.JavaAccessGraph.apply();
+		JavaAccessGraph accessGraph = new puck.javaAG.JavaAccessGraph();
 
 		if(stringsRequest != null){
 			for (java.util.Map.Entry<String, Collection<BodyDecl>>  entry : allStringUses(stringsRequest).entrySet()) {
@@ -30,7 +30,7 @@ aspect AccessGraphFactory {
 		return accessGraph;
 	}
 
-	private void Program.silentBuild(AccessGraph accessGraph){
+	private void Program.silentBuild(JavaAccessGraph accessGraph){
 		List<CompilationUnit> compUnitList = getCompilationUnitList();
 		for (CompilationUnit cu : compUnitList) {
 			if (!cu.buildAccessGraph_CU(accessGraph))				
@@ -38,7 +38,7 @@ aspect AccessGraphFactory {
 		}
 	}
 
-	private void Program.verboseBuild(AccessGraph accessGraph, LoadingListener ll){
+	private void Program.verboseBuild(JavaAccessGraph accessGraph, LoadingListener ll){
 		List<CompilationUnit> compUnitList = getCompilationUnitList();
 		double nchild = compUnitList.getNumChild();
 		double d = 0.0;
@@ -52,7 +52,7 @@ aspect AccessGraphFactory {
 	}
 
 
-	public AGNode ASTNode.buildAG(AccessGraph accessGraph){
+	public AGNode ASTNode.buildAG(JavaAccessGraph accessGraph){
 		// for(int i=0; i< getNumChild(); i++){
 		// 	getChild(i).buildAG(accessGraph);
 		// }
@@ -60,7 +60,7 @@ aspect AccessGraphFactory {
 		throw new AGBuildingError(this.getClass()+" does not know how to create an AccessGraph");
 	}
 
-	public boolean CompilationUnit.buildAccessGraph_CU(AccessGraph accessGraph){
+	public boolean CompilationUnit.buildAccessGraph_CU(JavaAccessGraph accessGraph){
 		if(pathName() != null){
 			AGNode packageNode = accessGraph.addPackage(getPackageDecl());
 
@@ -76,17 +76,17 @@ aspect AccessGraphFactory {
 		}
 	}
 
-	public AGNode MemberClassDecl.buildAG(AccessGraph accessGraph){
+	public AGNode MemberClassDecl.buildAG(JavaAccessGraph accessGraph){
 		return typeDecl().buildAG(accessGraph);
 	}
 
-	public AGNode BodyDecl.buildAG(AccessGraph accessGraph, AGNode usedNode){
+	public AGNode BodyDecl.buildAG(JavaAccessGraph accessGraph, AGNode usedNode){
 		AGNode agNode = buildAGNode(accessGraph);
 		usedNode.users_$plus$eq(agNode);
 		return agNode;
 	}
 
-	public AGNode FieldDecl.buildAG(AccessGraph accessGraph, AGNode usedNode){
+	public AGNode FieldDecl.buildAG(JavaAccessGraph accessGraph, AGNode usedNode){
 		AGNode agNode = buildAGNode(accessGraph);
 		
 		//AST.List<VariableDecl> vdl = getVariableDeclList();
@@ -99,7 +99,7 @@ aspect AccessGraphFactory {
 	}
 
 
-	public AGNode FieldDeclaration.buildAG(AccessGraph accessGraph){
+	public AGNode FieldDeclaration.buildAG(JavaAccessGraph accessGraph){
 		AGNode agNode = buildAGNode(accessGraph);
 
 		for (Access use : uses()) {
@@ -112,7 +112,7 @@ aspect AccessGraphFactory {
 
 
 
-	public AGNode FieldDecl.buildAG(AccessGraph accessGraph){
+	public AGNode FieldDecl.buildAG(JavaAccessGraph accessGraph){
 		AGNode agNode = buildAGNode(accessGraph);
 		for (VariableDecl vd : getVariableDeclList()) {
 			vd.buildAGNode(accessGraph);
@@ -121,65 +121,76 @@ aspect AccessGraphFactory {
 	}
 
 
-	public AGNode MethodDecl.buildAG(AccessGraph accessGraph){
+	public static AGNode MethodDecl.addDependantUse(JavaAccessGraph accessGraph,
+                                         Access dominatedUserAccess,
+                                         AGNode dominatedUsee,
+                                         AGNode dominantUsee){
+        AGNode dominatedUser = dominatedUserAccess.hostBodyDecl().buildAG(accessGraph, dominatedUsee);
+
+        //TODO find why qualifier can be null !! (call from an implicit this ?)
+        if(dominatedUserAccess.getQualifier()!=null)
+            try {
+                AGNode primaryUser = dominatedUserAccess.getQualifier().getPrimaryUser(accessGraph);
+                accessGraph.addUsesDependency(primaryUser, dominantUsee,
+                        dominatedUser, dominatedUsee);
+            } catch (AGBuildingError e) {
+                System.out.println(e.getMessage());
+            }
+
+        return dominatedUser;
+    }
+
+	public AGNode MethodDecl.buildAG(JavaAccessGraph accessGraph){
+        AGNode agNode = buildAGNode(accessGraph);
+
+        AGNode hostTypeAGNode = hostType().buildAGNode(accessGraph);
+
+        for (Access user : uses()) {
+
+            AGNode agUser = MethodDecl.addDependantUse(accessGraph,
+                    user, agNode, hostTypeAGNode);
+
+            agNode.users_$plus$eq(agUser);
+        }
+
+        return agNode;
+    }
+
+	public AGNode ConstructorDecl.buildAG(JavaAccessGraph accessGraph){
 		AGNode agNode = buildAGNode(accessGraph);
 
-		for (Access use : uses()) {
+        AGNode hostTypeAGNode = hostType().buildAGNode(accessGraph);
 
-			//TODO check why the use cycle
-			AGNode user = use.hostBodyDecl().buildAG(accessGraph, agNode);
-			agNode.users_$plus$eq(user);
-			
-			//TODO find why qualifier can be null !!
-            if(use.getQualifier()!=null)
-                try {
-                    AGNode primaryUser = use.getQualifier().getPrimaryUser(accessGraph);
-
-                    AGNode hostTypeAGNode = hostType().buildAGNode(accessGraph);
-
-                    AGNode.addUsesDependency(primaryUser, hostTypeAGNode,
-                    						user, agNode);
-                } catch (AGBuildingError e) {
-                    System.out.println(e.getMessage());
-                }
+        for (Access user : uses()) {
+            MethodDecl.addDependantUse(accessGraph, user, agNode, hostTypeAGNode);
 		}
-
 		return agNode;
 	}
 
-	public AGNode Expr.getPrimaryUser(AccessGraph accessGraph){
+
+	public AGNode Expr.getPrimaryUser(JavaAccessGraph accessGraph){
 		/* "this : Access" is a method qualifier access*/
 		throw new AGBuildingError("Cannot get a primary user from the qualifier : " + this);
 	}
 
-	public AGNode VarAccess.getPrimaryUser(AccessGraph accessGraph){
+	public AGNode VarAccess.getPrimaryUser(JavaAccessGraph accessGraph){
 		return decl().buildAGNode(accessGraph);
 	}
 
-	public AGNode Variable.buildAGNode(AccessGraph accessGraph);
+	public AGNode Variable.buildAGNode(JavaAccessGraph accessGraph);
 	
 
-
-
-	public AGNode ConstructorDecl.buildAG(AccessGraph accessGraph){
-		AGNode agNode = buildAGNode(accessGraph);
-		for (Access use : uses()) {
-			use.hostBodyDecl().buildAG(accessGraph, agNode);
-		}
-		return agNode;
-	}
-
-	public AGNode InstanceInitializer.buildAG(AccessGraph accessGraph){
+	public AGNode InstanceInitializer.buildAG(JavaAccessGraph accessGraph){
 		System.err.println("TODO !! InstanceInitializer.buildAG");
 		return buildAGNode(accessGraph);
 	}
 
-	public AGNode StaticInitializer.buildAG(AccessGraph accessGraph){
+	public AGNode StaticInitializer.buildAG(JavaAccessGraph accessGraph){
 		System.err.println("TODO !! StaticInitializer.buildAG");
 		return buildAGNode(accessGraph);
 	}
 
-	public AGNode TypeDecl.buildAG(AccessGraph accessGraph){
+	public AGNode TypeDecl.buildAG(JavaAccessGraph accessGraph){
 		
 		AGNode tdNode = buildAG_TypeDecl(accessGraph);
 
@@ -203,7 +214,7 @@ aspect AccessGraphFactory {
 		return tdNode;
 	}
 
-    static void TypeDecl.addImplements(AccessGraph accessGraph, 
+    static void TypeDecl.addImplements(JavaAccessGraph accessGraph, 
     	AGNode sub, AST.List<Access> implementList){
 
     	for(Access a : implementList){
@@ -216,10 +227,11 @@ aspect AccessGraphFactory {
     	}
 	}
 
-	AGNode TypeDecl.buildAG_TypeDecl(AccessGraph accessGraph){
+	AGNode TypeDecl.buildAG_TypeDecl(JavaAccessGraph accessGraph){
 		throw new AGBuildingError(this.getClass() + " : expected ClassDecl or InterfaceDecl");
 	}
-	AGNode ClassDecl.buildAG_TypeDecl(AccessGraph accessGraph){
+
+	AGNode ClassDecl.buildAG_TypeDecl(JavaAccessGraph accessGraph){
 		AGNode agNode = buildAGNode(accessGraph);
 
 		if (hasSuperclass() && !"java.lang.Object".equals(superclass().fullName())){
@@ -235,7 +247,7 @@ aspect AccessGraphFactory {
 		return agNode;
 	}
 
-	AGNode InterfaceDecl.buildAG_TypeDecl(AccessGraph accessGraph){
+	AGNode InterfaceDecl.buildAG_TypeDecl(JavaAccessGraph accessGraph){
 		AGNode agNode = buildAGNode(accessGraph);
 		
 		TypeDecl.addImplements(accessGraph, agNode, getSuperInterfaceIdList());
@@ -244,19 +256,19 @@ aspect AccessGraphFactory {
 	}
 
 
-	void Access.addExtendsAndImplementsUses(AccessGraph accessGraph, AGNode sub){
+	void Access.addExtendsAndImplementsUses(JavaAccessGraph accessGraph, AGNode sub){
 		throw new AGBuildingError(this.getClass() + " : expected TypeAccess or ParTypeAccess");
 	}
 
 
-	void TypeAccess.addExtendsAndImplementsUses(AccessGraph accessGraph, AGNode sub){
+	void TypeAccess.addExtendsAndImplementsUses(JavaAccessGraph accessGraph, AGNode sub){
 		if(!decl().isFromStdLib()){
 			AGNode sn = decl().buildAGNode(accessGraph);
 			sn.users_$plus$eq(sub);
 		}
 	}
 
-	void ParTypeAccess.addExtendsAndImplementsUses(AccessGraph accessGraph, AGNode sub){
+	void ParTypeAccess.addExtendsAndImplementsUses(JavaAccessGraph accessGraph, AGNode sub){
 		getTypeAccess().addExtendsAndImplementsUses(accessGraph, sub);
 		for(Access typeArg : getTypeArguments()){
 			typeArg.addExtendsAndImplementsUses(accessGraph, sub);
@@ -269,60 +281,60 @@ aspect AccessGraphFactory {
 	}
 
 	puck.graph.NodeKind ClassDecl.getAGNodeKind(){
-		return puck.graph.java.JavaNodeKind.classKind();
+		return puck.javaAG.JavaNodeKind.classKind();
 	}
 
 	puck.graph.NodeKind InterfaceDecl.getAGNodeKind(){
-		return puck.graph.java.JavaNodeKind.interfaceKind();
+		return puck.javaAG.JavaNodeKind.interfaceKind();
 	}
 
-	public AGNode ASTNode.buildAGNode(AccessGraph accessGraph){
+	public AGNode ASTNode.buildAGNode(JavaAccessGraph accessGraph){
 		throw new AGBuildingError(this.getClass()+" does not know how to create an AG Node");
 	}
 
-	public AGNode TypeDecl.buildAGNode(AccessGraph accessGraph){
+	public AGNode TypeDecl.buildAGNode(JavaAccessGraph accessGraph){
 		return accessGraph.addNode(fullName(), name(), getAGNodeKind());
 	}
 
 	
 
-	public AGNode TypeAccess.buildAGNode(AccessGraph accessGraph){
+	public AGNode TypeAccess.buildAGNode(JavaAccessGraph accessGraph){
 		return decl().buildAGNode(accessGraph);
 	}
 
-	public AGNode ParTypeAccess.buildAGNode(AccessGraph accessGraph){
+	public AGNode ParTypeAccess.buildAGNode(JavaAccessGraph accessGraph){
 		return accessGraph.addNode(fullName(), name(), 
 				getTypeDecl().getAGNodeKind());
 	}
 	
 
-	/*public AGNode BodyDecl.buildAGNode(AccessGraph accessGraph){
+	/*public AGNode BodyDecl.buildAGNode(JavaAccessGraph accessGraph){
 		System.out.println("Bodydecl or subclass");
 		return super.buildAGNode(accessGraph);
 	}*/
 
-	public AGNode FieldDeclaration.buildAGNode(AccessGraph accessGraph){
+	public AGNode FieldDeclaration.buildAGNode(JavaAccessGraph accessGraph){
 		puck.graph.NamedType type = new puck.graph.NamedType(type().buildAGNode(accessGraph));
 		return accessGraph.addNode(fullName(), name(), 
-				puck.graph.java.JavaNodeKind.field(type));
+				puck.javaAG.JavaNodeKind.field(type));
 	}
 
-	public AGNode VoidType.buildAGNode(AccessGraph accessGraph){
+	public AGNode VoidType.buildAGNode(JavaAccessGraph accessGraph){
 		return accessGraph.apply(fullName());
 	}
-	public AGNode PrimitiveType.buildAGNode(AccessGraph accessGraph){
+	public AGNode PrimitiveType.buildAGNode(JavaAccessGraph accessGraph){
 		return accessGraph.apply(fullName());
 	}
 
-	/*public AGNode FieldDecl.buildAGNode(AccessGraph accessGraph){
+	/*public AGNode FieldDecl.buildAGNode(JavaAccessGraph accessGraph){
 		AGNode agTypeNode = getTypeAccess().buildAGNode(accessGraph);
 
 		return accessGraph.addNode(fullName(), name(), 
-				puck.graph.java.JavaNodeKind.field(new puck.graph.NamedType(agTypeNode)));
+				puck.javaAG.JavaNodeKind.field(new puck.graph.NamedType(agTypeNode)));
 	}*/
 
 
-	static puck.graph.Type ASTNode.astParamsToAGType(AccessGraph accessGraph, Callable c){
+	static puck.graph.Type ASTNode.astParamsToAGType(JavaAccessGraph accessGraph, Callable c){
 		ArrayList<puck.graph.Type> tparams = new ArrayList<puck.graph.Type>();
 		for(ParameterDeclaration pdecl: c.getParameterList()){
 			AGNode agTypeNode = pdecl.getTypeAccess().buildAGNode(accessGraph);
@@ -332,39 +344,39 @@ aspect AccessGraphFactory {
 	}
 
 
-	public AGNode MethodDecl.buildAGNode(AccessGraph accessGraph){
+	public AGNode MethodDecl.buildAGNode(JavaAccessGraph accessGraph){
 		
       puck.graph.Arrow methodAGType = new puck.graph.Arrow(ASTNode.astParamsToAGType(accessGraph,this),
               new puck.graph.NamedType(getTypeAccess().buildAGNode(accessGraph)));
 
       return accessGraph.addNode(fullName(), name(),
-      		puck.graph.java.JavaNodeKind.method(methodAGType));
+      		puck.javaAG.JavaNodeKind.method(methodAGType));
 	}
 
-	public AGNode ConstructorDecl.buildAGNode(AccessGraph accessGraph){
+	public AGNode ConstructorDecl.buildAGNode(JavaAccessGraph accessGraph){
 		
       puck.graph.Arrow constructorAGType = new puck.graph.Arrow(ASTNode.astParamsToAGType(accessGraph,this),
               new puck.graph.NamedType(hostType().buildAGNode(accessGraph)));
 
       return accessGraph.addNode(fullName(), name(),
-      			puck.graph.java.JavaNodeKind.constructor(constructorAGType));
+      			puck.javaAG.JavaNodeKind.constructor(constructorAGType));
 	}
 
 	
 
-	public AGNode InstanceInitializer.buildAGNode(AccessGraph accessGraph){
+	public AGNode InstanceInitializer.buildAGNode(JavaAccessGraph accessGraph){
 		return hostType().buildAGNode(accessGraph);
 	}
 
-	public AGNode StaticInitializer.buildAGNode(AccessGraph accessGraph){
+	public AGNode StaticInitializer.buildAGNode(JavaAccessGraph accessGraph){
 		return hostType().buildAGNode(accessGraph);
 	}
 
-	public AGNode VariableDeclaration.buildAGNode(AccessGraph accessGraph){
+	public AGNode VariableDeclaration.buildAGNode(JavaAccessGraph accessGraph){
 		return hostBodyDecl().buildAGNode(accessGraph);
 	}
 
-	public AGNode ParameterDeclaration.buildAGNode(AccessGraph accessGraph){
+	public AGNode ParameterDeclaration.buildAGNode(JavaAccessGraph accessGraph){
 		return hostBodyDecl().buildAGNode(accessGraph);
 	}
 

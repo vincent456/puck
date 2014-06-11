@@ -5,6 +5,7 @@ package puck.graph
  */
 
 sealed abstract class EdgeKind
+case class Undefined() extends EdgeKind
 case class Uses() extends EdgeKind
 case class Contains() extends EdgeKind
 case class Isa() extends EdgeKind
@@ -23,16 +24,18 @@ class AGEdge private (val kind : EdgeKind, val source : AGNode, val target: AGNo
 
   def create() {
     kind match {
-      case Uses() =>
-        source.uses_+=(target)
+      case Uses() => source.uses_+=(target)
+      case Contains() => source.content_+=(target)
+      case Isa() => source.superTypes_+=(target)
       case _ => throw new AGError(kind + " edge create not implemented")
 
     }
   }
   def delete() {
     kind match {
-      case Uses() =>
-        source.uses_-=(target)
+      case Uses() => source.uses_-=(target)
+      case Contains() => source.content_-=(target)
+      case Isa() => source.superTypes_-=(target)
       case _ => throw new AGError(kind + " edge delete not implemented")
 
     }
@@ -41,6 +44,8 @@ class AGEdge private (val kind : EdgeKind, val source : AGNode, val target: AGNo
 
 object AGEdge{
   def apply(kind : EdgeKind, source : AGNode, target: AGNode) = new AGEdge(kind, source, target)
+  def apply(source : AGNode, target: AGNode) = new AGEdge(Undefined(), source, target)
+
   def uses(source : AGNode, target: AGNode) = apply(Uses(), source, target)
   def contains(source : AGNode,target: AGNode) = apply(Contains(), source, target)
 }

@@ -1,24 +1,14 @@
 package puck.graph
 
 import scala.collection.mutable
-import scala.collection.JavaConversions.collectionAsScalaIterable
-import puck.graph.constraints.{Constraint, NamedNodeSet, NodeSet}
+import puck.graph.constraints.{Constraint, NamedNodeSet}
 
 /**
  * Created by lorilan on 05/05/14.
  */
 
 object AccessGraph {
-
-  val defaultPackageName = "<default package>"
-
-  def filterPackageName(name:String) = name match {
-    case "" => defaultPackageName
-    case _ => name
-  }
-
   val rootId = 0
-
 }
 
 class AccessGraph (nodeBuilder : AGNodeBuilder) {
@@ -27,11 +17,10 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
 
   println("Node builder : " + nodeBuilder.getClass)
 
-  private [graph] val nodeSets : mutable.Map[String, NamedNodeSet] = mutable.Map()
-  private [graph] val constraints : mutable.Buffer[Constraint] = mutable.Buffer()
+  val nodeSets : mutable.Map[String, NamedNodeSet] = mutable.Map()
+  val constraints : mutable.Buffer[Constraint] = mutable.Buffer()
 
-  private [puck] val nodesById : mutable.Map[Int, AGNode] = mutable.Map()
-  private [puck] val nodesByName : mutable.Map[String, AGNode] = mutable.Map()
+  val nodes = mutable.Buffer[AGNode]()
   /*private[graph] val predefTypes : mutable.Map[String, Type] = mutable.Map()
   def predefType(name : String ) = predefTypes(name)*/
 
@@ -64,54 +53,36 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
     nodeSets.foreach{
       case (_, namedSet) => println(namedSet.defString)
     }
-    constraints.foreach(ct => print(ct))
+    constraints.foreach(ct => println(ct))
   }
 
   def printUsesDependancies(){
     this.foreach { node =>
-      if (node.hasPrimaryUses)
-        println(node.primaryUsesString)
-      if (node.hasSideUses)
-        println(node.sideUsesString)
+      if (!node.primaryUses.isEmpty)
+        println(node.primaryUses)
+      if (!node.sideUses.isEmpty)
+        println(node.sideUses)
     }
   }
-  /*def list(){
-    nodesByName.foreach((kn) => {
-      val (key, node) = kn
-      println(" ******** " + key + "( "+ node.id +" ) ******** ")
-      println(" contained by " + node.container)
-      println(" contains " + node.content)
-      println()
-    })
-  }*/
+
   def list(){
-    nodesByName.foreach((kn) => println(kn._1))
+    nodes.foreach(println)
   }
 
   def attachNodesWithoutContainer() {
-    for((_, n) <- nodesById){
+    nodes.foreach{ n =>
       n.container match {
         case None => root content_+= n
         case Some(_) => ()
       }
+
     }
   }
 
-  /*
-    throw exception on failure
-   */
+  private [puck] val nodesByName = mutable.Map[String, AGNode]()
+
   def apply(fullName:String) : AGNode= nodesByName(fullName)
-  def apply(id: Int) : AGNode = nodesById(id)
-
   def getNode(fullName:String) : Option[AGNode] = nodesByName get fullName
-  def getNode(id: Int) : Option[AGNode] = nodesById get id
-
-  def addNode(localName:String, kind: NodeKind) : AGNode = {
-    id = id + 1
-    val n = nodeBuilder(this, id, localName, kind)
-    this.nodesById += (id -> n)
-    n
-  }
 
   def addNode(fullName: String, localName:String, kind: NodeKind): AGNode = {
     val unambiguousFullName = nodeBuilder.makeKey(fullName, localName, kind)
@@ -127,85 +98,35 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
   def addNode(fullName: String, localName:String): AGNode =
     addNode(fullName, localName, VanillaKind())
 
-  def addPackageNode(fullName: String, localName:String) : AGNode =
-    addNode(fullName, localName, puck.javaAG.JavaNodeKind.`package`)
 
-  def addPackage(p : String): AGNode = {
-    val fp = AccessGraph.filterPackageName(p)
-    val path = fp split "[.]"
-    if (path.length == 0)
-      addPackageNode(fp, fp)
-    else {
-      val (_, n):(mutable.StringBuilder, AGNode) = path.foldLeft(new mutable.StringBuilder(), root){
-        (sb_nodeParent:(mutable.StringBuilder, AGNode), p:String) => sb_nodeParent match {
-          case (sb, nodeParent) =>
-            sb append p
-            val n = addPackageNode(sb.toString(), p)
-            nodeParent content_+=  n
-            sb append "."
-            (sb, n)
-        }
-      }
-      n
-    }
+  var careTaker : CareTaker = new CareTakerNoop()
+
+  def registerModifications() {
+      careTaker = new CareTakerRegister()
   }
 
-  def addApiTypeNode(td: AST.TypeDecl): AGNode = {
-
-    val packageNode = addPackage(td.compilationUnit().getPackageDecl)
-    val tdNode = td.buildAGNode(this)
-
-    for (use <- td.uses()) {
-      tdNode.users_+=(use.buildAGNode(this))
-    }
-
-    packageNode content_+= tdNode
-    tdNode
+  def stopModificationsRegistrations(){
+    careTaker = new CareTakerNoop()
   }
 
-
-  def addApiNode(program : AST.Program, nodeKind : String, `type` : String, bodydeclName: String){
-    println("trying to add type "+`type` + " " + bodydeclName+ " ... ")
-    val td = program  findType `type`
-    if(td == null){
-      System.err.println(`type` + " not found")
-      return
-    }
-
-    val tdNode = addApiTypeNode(td)
-
-    def addBodyDecl(bd : AST.BodyDecl){
-      if(bd == null)
-        System.err.println("Method or constructor" + bodydeclName + " not found in the program ...")
-      else
-        tdNode content_+= (bd buildAG this)
-    }
-
-    nodeKind match {
-      case "type" => ()
-      case "method" => addBodyDecl (td findMethodBySig bodydeclName)
-      case "constructor" => addBodyDecl (td findConstructorBySignature ("#_" + bodydeclName))
-
-      case _ => System.err.println("node kind unknown")
-    }
+  def addNode(localName:String, kind: NodeKind) : AGNode = {
+    id = id + 1
+    val n = nodeBuilder(this, id, localName, kind)
+    this.nodes += n
+    n
   }
 
-  def addStringLiteral(literal: String, occurrences: _root_.java.util.Collection[AST.BodyDecl]){
-    println("string "+literal + " "+ occurrences.size()+" occurences" )
-
-    for(bd <- occurrences){
-      val packageNode = addPackage(bd.hostBodyDecl.compilationUnit.getPackageDecl)
-
-      val bdNode = bd buildAGNode this
-      val strNode = addNode(bd.fullName()+literal, literal,
-        puck.javaAG.JavaNodeKind.literal(NamedType(this("java.lang.String"))))
-
-      /*
-        this is obviously wrong: TODO FIX
-      */
-      packageNode content_+= strNode
-      strNode users_+= bdNode
-    }
+  def addUsesDependency(primaryUser : AGNode, primaryUsee : AGNode,
+                        sideUser : AGNode, sideUsee : AGNode) {
+    primaryUser.sideUses += (primaryUsee, AGEdge.uses(sideUser, sideUsee))
+    sideUser.primaryUses += (sideUsee, AGEdge.uses(primaryUser, primaryUsee))
   }
+
+  def removeUsesDependency(primaryUser : AGNode, primaryUsee : AGNode,
+                           sideUser : AGNode, sideUsee : AGNode) {
+    primaryUser.sideUses -= (primaryUsee, AGEdge.uses(sideUser, sideUsee))
+    sideUser.primaryUses -= (sideUsee, AGEdge.uses(primaryUser, primaryUsee))
+  }
+
 }
 

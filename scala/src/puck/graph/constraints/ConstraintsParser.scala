@@ -97,7 +97,7 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
                          interlopers : NodeSet,
                          friends : NodeSet) = {
     val ct = new ScopeConstraint(owners, facades, interlopers, friends)
-    owners.foreach(_.scopeConstraints_+=(ct))
+    owners.foreach(_.scopeConstraints.+=(ct))
     accessGraph.constraints += ct
   }
 
@@ -160,7 +160,7 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
                            interlopers : NodeSet,
                            friends : NodeSet) = {
     val ct = new ElementConstraint(owners, interlopers, friends)
-    owners.foreach(_.elementConstraints_+=(ct))
+    owners.foreach(_.elementConstraints.+=(ct))
     accessGraph.constraints += ct
   }
 

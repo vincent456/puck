@@ -157,11 +157,8 @@ trait Solver {
         case Some(n) =>
 
           val cter = n.container_!
-          val scopeViolations = cter.violatesScopeConstraintsOf(n)
-          val eltViolations = cter.violatesElementConstraintOf(n)
 
-          if(!decisionMaker.grantContainingAuth(cter, n,
-            scopeViolations, eltViolations)){
+          if(!decisionMaker.grantContainingAuth(cter, n)){
             // detach for host searching : do not want to consider parent constraints
             n.detach()
 

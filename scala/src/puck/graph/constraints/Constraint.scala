@@ -1,46 +1,71 @@
 package puck.graph.constraints
 
-import puck.graph.AGError
+import puck.graph.{AGEdge, AGError}
 
 /**
  * Created by lorilan on 03/06/14.
  */
 
-abstract class Constraint(val owners : NodeSet,
-                          val friends : NodeSet)
+trait ConstraintWithInterlopers {
+  val owners : NodeSet
+  val friends : NodeSet
+  val interlopers : NodeSet
 
-class ScopeConstraint(scope : NodeSet,
-                      val facades: NodeSet,
-                      val interlopers : NodeSet,
-                      frs : NodeSet) extends Constraint(scope, frs){
-
-  override def toString =
-    "hideScopeSet" +  ConstraintPrinter.format(owners, facades, interlopers, friends)
+  def isViolatedBy(edge : AGEdge): Boolean =
+    owners.hasScopeThatContains_*(edge.target) &&
+    interlopers.hasScopeThatContains_*(edge.source) &&
+    !friends.hasScopeThatContains_*(edge.target)
 
 }
 
-class ElementConstraint(elt : NodeSet,
-                        val interlopers : NodeSet,
-                        frs : NodeSet) extends Constraint(elt, frs){
+abstract class Constraint{
+  val owners : NodeSet
+  val friends : NodeSet
+  val predicate : String
+}
 
+case class ScopeConstraint(owners : NodeSet,
+                           facades: NodeSet,
+                           interlopers : NodeSet,
+                           friends : NodeSet) extends Constraint with ConstraintWithInterlopers{
+
+  val predicate = "hideScopeSet"
+
+  override def toString =
+     predicate +  ConstraintPrinter.format(owners, facades, interlopers, friends)
+
+  override def isViolatedBy(edge : AGEdge)=
+    super.isViolatedBy(edge) &&
+      !facades.hasScopeThatContains_*(edge.target)
+
+}
+
+case class ElementConstraint(owners : NodeSet,
+                        interlopers : NodeSet,
+                        friends : NodeSet) extends Constraint with ConstraintWithInterlopers{
+
+  val predicate = "hideElementSet"
   override def toString = {
     val fmtStr =
       if (!interlopers.isEmpty && !friends.isEmpty)
-        "(" + elt + ",\n" +
+        "(" + owners + ",\n" +
           interlopers.mkString("[", ",\n", "],\n") +
           friends.mkString("[", ",\n", "]).")
       else
         ConstraintPrinter.format(owners, NodeSet.emptySet(),
           interlopers, friends)
-    "hideElementSet" + fmtStr
+    predicate + fmtStr
   }
 }
 
-class FriendConstraint(frds : NodeSet,
-                       befriended : NodeSet) 
-  extends Constraint(befriended, frds){
+case class FriendConstraint(friends : NodeSet,
+                       befriended : NodeSet)
+  extends Constraint{
+
+  val owners = befriended
+  val predicate = "areFriendsOf"
   override def toString =
-    "areFriendsOf(" + frds + ", " + befriended +")."
+    predicate + "(" + friends + ", " + befriended +")."
 }
 
 object ConstraintPrinter{
@@ -59,16 +84,15 @@ object ConstraintPrinter{
          "(" + hidden + ")."
         else
          twoArgsFormat("From", interlopers)
-      case (true, true, false) => twoArgsFormat("ButFrom", friends)
-      case (false, true, true) => twoArgsFormat("But", facades)
-      case (false, false, false) => "("+ hidden + ",\n" +
+      case (true, false, false)
+        if interlopers.head  == interlopers.head.graph.root => twoArgsFormat("ButFrom", friends)
+      case (false, false, true)
+        if interlopers.head  == interlopers.head.graph.root => twoArgsFormat("But", facades)
+      case (_, _, _) => "("+ hidden + ",\n" +
         facades + ",\n" +
         interlopers +  ",\n" +
         friends + ")."
-      case _ => throw new AGError("ConstraintPrinter.format unhandled case !")
     }
-
-
   }
 
 }

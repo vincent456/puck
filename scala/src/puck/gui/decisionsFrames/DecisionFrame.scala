@@ -2,15 +2,28 @@ package puck.gui.decisionsFrames
 
 import scala.swing.Frame
 import java.awt.Dimension
-import scala.concurrent.Promise
+import scala.concurrent.{Await, Promise}
 import scala.util.Success
+import scala.concurrent.duration.Duration
+
 
 /**
  * Created by lorilan on 06/06/14.
  */
-class DecisionFrame[T] extends Frame{
+
+object DecisionFrame{
+  def apply[T](frameCtor : () => DecisionFrame[T]) : T = {
+    val frame = frameCtor()
+    frame.visible = true
+    Await.result(frame.result, Duration.Inf)
+  }
+}
+
+class DecisionFrame[T] extends Frame {
 
   size = new Dimension(300, 200)
+
+  centerOnScreen()
 
   val promise = Promise[T]()
 
@@ -25,5 +38,4 @@ class DecisionFrame[T] extends Frame{
     this.peer.setDefaultCloseOperation(DISPOSE_ON_CLOSE)
     this.close()
   }
-
 }

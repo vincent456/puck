@@ -1,10 +1,10 @@
 package puck.gui
 
-import puck.graph.constraints.{RedirectionPolicy, ElementConstraint, ScopeConstraint, DecisionMaker}
-import puck.graph.{NodeKind, AccessGraph, AGNode}
+import puck.graph.constraints._
+import puck.graph.{AccessGraph, AGNode}
 import puck.javaAG.DefaultDecisionMaker
-import puck.gui.decisionsFrames.{ContainingAuthChooser, AbstractionKindAndPolicyChooser}
-import scala.concurrent.{Promise, Await}
+import puck.gui.decisionsFrames.{ConstraintExceptionFrame, AbstractionKindAndPolicyChooser}
+import scala.concurrent.{Await}
 import scala.concurrent.duration.Duration
 
 /**
@@ -12,39 +12,28 @@ import scala.concurrent.duration.Duration
  */
 object GUIDecisionMaker extends DecisionMaker{
 
+
+
   override def toString = "User Decision Maker"
 
   def abstractionKindAndPolicy(impl : AGNode) = {
 
-    val frame = new AbstractionKindAndPolicyChooser(impl)
-    frame.visible = true
+    AbstractionKindAndPolicyChooser(impl)
     /*val policy = impl.kind.abstractionPolicies.head
     (impl.kind.abstractKinds(policy).head, policy)*/
-    Await.result(frame.result, Duration.Inf)
+    //Await.result(frame.result, Duration.Inf)
   }
 
   def chooseNode(graph : AccessGraph)(predicate : AGNode => Boolean) : Option[AGNode] =
     DefaultDecisionMaker.chooseNode(graph)(predicate)
 
-  def grantContainingAuth(container : AGNode, content : AGNode,
-                          violatedScopeConstraints : List[ScopeConstraint],
-                          violatedElementConstraints : List[ElementConstraint]) : Boolean = {
-
-    val frame = new ContainingAuthChooser(container, content,
-                            violatedScopeConstraints,
-                            violatedElementConstraints)
-    frame.visible = true
-
-    Await.result(frame.result, Duration.Inf)
-
+  def grantContainingAuth(container : AGNode, content : AGNode) : Boolean = {
+    ConstraintExceptionFrame(LiteralNodeSet(container), content)
+    //Await.result(frame.result, Duration.Inf)
   }
 
 
-  def grantUsesAuth(user : AGNode, usee : AGNode,
-                    violatedScopeConstraints : List[ScopeConstraint],
-                    violatedElementConstraints : List[ElementConstraint]) =
-    DefaultDecisionMaker.grantUsesAuth(user, usee,
-      violatedScopeConstraints,
-      violatedElementConstraints)
+  def grantUsesAuth(user : AGNode, usee : AGNode) =
+    DefaultDecisionMaker.grantUsesAuth(user, usee)
 
 }

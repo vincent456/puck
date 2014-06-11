@@ -9,6 +9,7 @@ import scala.collection.mutable
 
 abstract class NodeSet extends mutable.Iterable[AGNode] {
   def +=(n : AGNode)
+  def -=(n : AGNode)
 
   def scopeThatContains_*(elem: AGNode) = this.find { _.contains_*(elem) }
   def hasScopeThatContains_*(elem: AGNode) = this.exists { _.contains_*(elem) }
@@ -33,6 +34,8 @@ abstract class NodeSet extends mutable.Iterable[AGNode] {
     }
     aux(it.next())
   }
+
+  def literalCopy() : LiteralNodeSet
 }
 
 object NodeSet {
@@ -51,6 +54,8 @@ class NamedNodeSet(val id : String,
 
   def iterator : Iterator[AGNode] = setDef.iterator
   def +=(n : AGNode) = setDef += n
+  def -=(n : AGNode) = setDef -= n
+  def literalCopy() = LiteralNodeSet(setDef)
 }
 
 class NamedNodeSetUnion(id0 : String,
@@ -75,17 +80,37 @@ class NodeSetUnion(val sets : mutable.Buffer[NodeSet],
     s.iterator
   }
   def +=(n : AGNode) = set += n
+
+  def -=(n : AGNode) = throw new AGError("Do not know how to remove a node from a nodeSet union")
+
+  def literalCopy() = LiteralNodeSet(this.iterator)
+}
+
+class NodeSetDiff(private val plus : NodeSet,
+                   private val minus : NodeSet) extends NodeSetDef{
+
+  override def toString() = plus.mkString("[", ",\n", "]\\") + minus.mkString("[", ",\n", "]")
+
+  def iterator : Iterator[AGNode] = {
+    val s = mutable.Set[AGNode]()
+    s ++= plus
+    s --= minus
+    s.iterator
+  }
+  def +=(n: AGNode) = plus += n
+  def -=(n: AGNode) = minus += n
+  def literalCopy() = LiteralNodeSet(this.iterator)
 }
 
 class LiteralNodeSet private (private val content : mutable.Set[AGNode])
   extends NodeSetDef{
 
-
-
   def iterator : Iterator[AGNode] = content.iterator
   def +=(n : AGNode) = content += n
+  def -=(n : AGNode) = content -= n
 
-  override def toString() = content.mkString("[", ", ", "]")
+  override def toString() = content.mkString("[", ",\n", "]")
+  def literalCopy() = LiteralNodeSet(this.iterator)
 }
 
 object LiteralNodeSet{

@@ -61,8 +61,13 @@ object JavaNodeKind {
 
     override def abstractionPolicies = List(DelegationAbstraction())
 
-    def abstractKinds(p : AbstractionPolicy) = List(method(`type`))
+    def abstractKinds(p : AbstractionPolicy) = p match {
+      case DelegationAbstraction() => List(method(`type`))
+      case SupertypeAbstraction() => throw new AGError("Constructor cannot be abstracted by SuperType strategy")
+    }
+
   }
+
   case class Method private[javaAG]() extends NodeKind with HasType[Arrow] {
     def canContain(k : NodeKind) = false
 

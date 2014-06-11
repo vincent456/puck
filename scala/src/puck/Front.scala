@@ -66,7 +66,7 @@ import puck.gui.GUIDecisionMaker
 object Front{
 
   def main(args : Array[String]){
-    val fh = FilesHandler("/home/lorilan/puck_svn/distrib/examples/adapter/candidate")()
+    val fh = FilesHandler("/home/lorilan/puck_svn/distrib/examples/bridge/hannemann_inspired/candidate")()
     //fh.decouple = "/home/lorilan/puck_svn/distrib/examples/composite/candidate/decouple_strict.pl"
     fh.loadGraph(null)
     println("graph loaded")
@@ -86,7 +86,6 @@ object Front{
     fh.makePng(soutput = Some(new FileOutputStream(
       new File(fh.graph.getCanonicalPath + "_after.png"))))
     println("done")
-
 
   }
 }*/

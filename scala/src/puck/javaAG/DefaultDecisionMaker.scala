@@ -1,8 +1,8 @@
 package puck.javaAG
 
 import puck.graph.{AccessGraph, AGNode}
-import puck.graph.constraints.{ElementConstraint, ScopeConstraint, DecisionMaker}
-import scala.concurrent.Future
+import puck.graph.constraints.DecisionMaker
+
 
 /**
  * Created by lorilan on 03/06/14.
@@ -20,14 +20,10 @@ object DefaultDecisionMaker extends DecisionMaker{
       graph.iterator.find(predicate)
   }
 
-  def grantContainingAuth(container : AGNode, content : AGNode,
-                          violatedScopeConstraints : List[ScopeConstraint],
-                          violatedElementConstraints : List[ElementConstraint]) : Boolean ={
+  def grantContainingAuth(container : AGNode, content : AGNode) : Boolean ={
     false
   }
 
-  def grantUsesAuth(user : AGNode, usee : AGNode,
-                    violatedScopeConstraints : List[ScopeConstraint],
-                    violatedElementConstraints : List[ElementConstraint]) =
+  def grantUsesAuth(user : AGNode, usee : AGNode) =
     throw new Error("grantUsesAuth not implemented")
 }

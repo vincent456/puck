@@ -30,7 +30,7 @@ object Primitive {
 
 
   private def makePrimitiveNode (name_id : (String, Int), g: AccessGraph) = {
-    val n = new StatelessAGNode(g, name_id._2, name_id._1, Primitive(), None)
+    val n = new StatelessAGNode(g, name_id._2, name_id._1, Primitive())
     /*to prevent attach this node to the AG root */
     n.container= Some(n)
     n
@@ -47,7 +47,7 @@ object Primitive {
   def shortNode(g : AccessGraph) = makePrimitiveNode(short, g)
 
   def stringNode(g : AccessGraph) = {
-    val n = new StatelessAGNode(g, string._2, string._1, `class`, None)
+    val n = new StatelessAGNode(g, string._2, string._1, `class`)
     n.container= Some(n)
     n
   }

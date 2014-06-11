@@ -29,22 +29,32 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
   }
   val delayedDisplay = ArrayBuffer[Component]()
 
-  def makeButton(title:String, tip: String)(act:() => Unit): Button =
-    new Button(){
+  def leftGlued(c : Component) : Component = {
+    new BoxPanel(Orientation.Horizontal) {
+      contents += c
+      contents += Swing.HGlue
+    }
+  }
+
+  def makeButton(title:String, tip: String)(act:() => Unit): Component =
+    leftGlued(new Button() {
       tooltip = tip
       minimumSize = new Dimension(leftWidth, 30)
       maximumSize = minimumSize
       preferredSize = minimumSize
 
-      action = new Action(title){ def apply(){
-        Console.withOut(out) {
-          Console.withErr(out) {
-            act()
+      action = new Action(title) {
+        def apply() {
+          Console.withOut(out) {
+            Console.withErr(out) {
+              act()
+            }
           }
         }
       }
-      }
-    }
+    })
+
+
 
   leftComponent = new BoxPanel(Orientation.Vertical) {
     minimumSize = new Dimension(leftWidth, height)
@@ -141,7 +151,7 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
     // "Launch the coupling constraint evaluation")
 
     val loadConstraints = makeButton("Load constraints",
-    "Decorate the graph with the constraints of the selected decouple file"){
+      "Decorate the graph with the constraints of the selected decouple file"){
       () =>
         print("Loading constraints ...")
         try {
@@ -154,18 +164,22 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
         }
 
     }
-    loadConstraints.visible = false
-    contents += loadConstraints
-    delayedDisplay += loadConstraints
+
+    def addDelayedComponent(c : Component){
+      c.visible = false
+      contents += c
+      delayedDisplay += c
+    }
+
+    addDelayedComponent(loadConstraints)
 
     val showConstraints = makeButton("Show constraints",
       "Show the constraints the graph has to satisfy"){
       () =>
-          filesHandler.accessGraph.printConstraints()
+        filesHandler.accessGraph.printConstraints()
     }
-    showConstraints.visible = false
-    contents += showConstraints
-    delayedDisplay += showConstraints
+
+    addDelayedComponent(showConstraints)
 
     val show = makeButton("Show graph",
       "Display a visual representation of the graph"){
@@ -190,32 +204,31 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
         }
 
     }
-    show.visible = false
-    contents +=show
-    delayedDisplay += show
+    addDelayedComponent(show)
 
-    val decisionStrategy = new ComboBox[DecisionMaker](List(GUIDecisionMaker,
-    DefaultDecisionMaker)){
-      minimumSize = new Dimension(leftWidth, 30)
-      maximumSize = minimumSize
-      preferredSize = minimumSize
-    }
 
-    decisionStrategy.visible = false
-    contents += decisionStrategy
-    delayedDisplay += decisionStrategy
-
+    val decisionStrategy = new CheckBox("GUI Decision Maker")
+    addDelayedComponent(leftGlued(decisionStrategy))
+    val printTrace = new CheckBox("Print trace")
+    addDelayedComponent(leftGlued(printTrace))
 
     val solve = makeButton("Solve", "solve the loaded constraints"){
       () =>
         val f = Future {
           println("Solving constraints ...")
-          filesHandler.solve(decisionMaker = decisionStrategy.selection.item)
+          filesHandler.solve(
+            decisionMaker = if(decisionStrategy.selected)
+              GUIDecisionMaker
+            else
+              DefaultDecisionMaker,
+            trace = printTrace.selected
+
+          )
         }
 
         f onComplete{
           case Success(_) => println("Solving done")
-          case Failure(exc) => println(exc.getMessage)
+          case Failure(exc) => println(exc.printStackTrace())
         }
     }
 

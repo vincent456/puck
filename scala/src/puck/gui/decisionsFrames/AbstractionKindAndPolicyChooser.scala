@@ -13,8 +13,16 @@ import scala.util.Success
 /**
  * Created by lorilan on 04/06/14.
  */
-class AbstractionKindAndPolicyChooser(val impl : AGNode)
-  extends DecisionFrame[(NodeKind, AbstractionPolicy)] {
+
+object AbstractionKindAndPolicyChooser{
+
+  def apply(impl : AGNode) : (NodeKind, AbstractionPolicy) = DecisionFrame {
+    () => new AbstractionKindAndPolicyChooser(impl)
+  }
+}
+
+class AbstractionKindAndPolicyChooser private (val impl : AGNode)
+  extends DecisionFrame[(NodeKind, AbstractionPolicy)]{
 
   title = "Choose abstraction kind and policy"
 
@@ -41,7 +49,9 @@ class AbstractionKindAndPolicyChooser(val impl : AGNode)
   }
 
   contents = new BoxPanel(Orientation.Vertical) {
-    contents += new Label("Abstracting " + impl)
+    contents += new FlowPanel(){
+      contents += new Label("Abstracting " + impl)
+    }
 
     contents +=  new FlowPanel(){
       contents += policyChoice
@@ -50,7 +60,10 @@ class AbstractionKindAndPolicyChooser(val impl : AGNode)
 
     val default = DefaultDecisionMaker.abstractionKindAndPolicy(impl)
 
-    contents += new Label("Default decision is " + default)
+    contents += new FlowPanel() {
+      contents += new Label("Default decision is " + default)
+    }
+
     contents += new FlowPanel(){
       contents += Button("Default"){
         AbstractionKindAndPolicyChooser.this.complete(default)

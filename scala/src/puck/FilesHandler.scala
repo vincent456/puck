@@ -3,11 +3,9 @@ package puck
 import java.io._
 
 import puck.graph.{AGError, DotPrinter, AGBuildingError, AccessGraph}
-import puck.javaAG.{DefaultDecisionMaker, JavaSolver, JavaNode}
+import puck.javaAG.{JavaAccessGraph, DefaultDecisionMaker, JavaSolver, JavaNode}
 import scala.sys.process.Process
 import puck.graph.constraints.{DecisionMaker, ConstraintsParser}
-import scala.Some
-import puck.gui.GUIDecisionMaker
 import java.util.NoSuchElementException
 
 /**
@@ -20,7 +18,7 @@ class FilesHandler private (private [this] var srcDir : File,
                             private [this] var graph0: File){
 
 
-  private [this] var ag : AccessGraph = _
+  private [this] var ag : JavaAccessGraph = _
   def accessGraph = ag
 
   def srcDirectory = this.srcDir
