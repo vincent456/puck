@@ -56,7 +56,6 @@ class FilesHandler private (private [this] var srcDir : File,
             val tab = l.split(" ")
             ag.addApiNode(p, tab(0), tab(1), tab(2))
         }
-        ag.attachNodesWithoutContainer()
         ag
     }
   }

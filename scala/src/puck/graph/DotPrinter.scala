@@ -41,7 +41,6 @@ object DotPrinter {
     }
 
     val violations = graph.violations
-
     /*
      * dot -Tpng give a wrong drawing of the graph when mixing nodes and arcs
      * in the dot file. We stock the arcs and print them separately at the end
@@ -56,10 +55,7 @@ object DotPrinter {
         if(helper isDotSubgraph n.kind) n.id.toString
         else{
           val containerId = if(helper isDotClass n.kind) n.id
-          else n.container match {
-            case None => throw new Error("node " + n.nameTypeString + " should have a container")
-            case Some(ctr) => ctr.id
-          }
+          else n.container.id
           containerId + ":" + n.id
         }
 
@@ -84,12 +80,9 @@ object DotPrinter {
         else correctStatus )
 
     def decorate_name(n : AGNode):String =
-        n.container match {
-      case None => n.name + idPrinter (n.id)
-      case Some (c) => if (violations.contains(AGEdge.contains(c, n)))
+        if (violations.contains(AGEdge.contains(n.container, n)))
         "<FONT COLOR=\"" + violationStatus.color + "\"><U>" + helper.namePrefix(n.kind)+ n.name + idPrinter(n.id) +"</U></FONT>"
         else helper.namePrefix(n.kind)+ n.name + idPrinter(n.id)
-    }
 
     def printNode(n:AGNode){
       if(helper isDotSubgraph n.kind) printSubGraph(n)
@@ -123,9 +116,9 @@ object DotPrinter {
         "\"> <TR> <TD PORT=\""+ n.id+"\" BORDER=\"0\"> <B>" +
         decorate_name(n) +" </B></TD></TR>")
 
-      if(!fields.isEmpty || !ctrs.isEmpty || ! mts.isEmpty) writeln("<HR/>")
+      if(fields.nonEmpty || ctrs.nonEmpty || mts.nonEmpty) writeln("<HR/>")
       fields foreach writeTableLine
-      if(!fields.isEmpty && !ctrs.isEmpty && !mts.isEmpty) writeln("<HR/>")
+      if(fields.nonEmpty && ctrs.nonEmpty && mts.nonEmpty) writeln("<HR/>")
       ctrs foreach writeTableLine
       mts foreach writeTableLine
 
@@ -133,9 +126,8 @@ object DotPrinter {
 
       innerClasses foreach printClass
 
-      n.content foreach{
-        (n:AGNode) =>
-          n.users.foreach(printUse(_, n))
+      n.content foreach{ nc =>
+          nc.users.foreach(printUse(_, nc))
       }
       n.users.foreach(printUse(_, n))
       n.superTypes.foreach(printArc(isaStyle, n, _, correctStatus))

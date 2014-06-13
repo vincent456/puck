@@ -37,13 +37,11 @@ class AGNode (val graph: AccessGraph,
               var name: String,
               val kind: NodeKind) { //extends Iterable[AGNode]{
 
-  /*
   override def equals(obj:Any) : Boolean = obj match {
-    case that : AGNode => this.graph == that.graph && this.id == that.id
+    case that : AGNode => (this.graph eq that.graph) && this.id == that.id
     case _ => false
   }
-  override def hashCode : Int = this.id
- */
+  override def hashCode : Int = (this.id  + kind.hashCode()) / 41
 
   /**
    * relies on the contains tree : do not modify it while traversing
@@ -56,38 +54,24 @@ class AGNode (val graph: AccessGraph,
   def nameTypeString = name //+ ( `type` match{ case None =>""; case Some(t) => " : " + t })
 
 
-  def fullName : String = container match{
-    case None => nameTypeString
-    case Some(p) =>
-      if(p == graph.root) nameTypeString
-      else containerPath(graph.root).tail.map(_.nameTypeString).mkString(".")
-  }
+  def fullName : String =
+    if (isRoot) nameTypeString
+    else containerPath(graph.root).tail.map(_.nameTypeString).mkString(".")
 
   /**
    * Arcs
    */
 
-  private var container0 : Option[AGNode] = None
+  private var container0 : AGNode = this
+
   def container = container0
-  def container_=(sn: Option[AGNode]){
-    container0 = sn
-    sn match {
-      case Some(n) => n.content0 += this
-      case None => ()
-    }
-  }
 
+  def isRoot = container == this
+
+  /* !!!! unregistred operation use only to undo node creation !!!! */
   def detach(){
-    container0 match{
-      case None => ()
-      case Some(c) =>
-        c.content_-=(this)
-    }
-  }
-
-  def container_! = container0 match {
-    case None => throw new AGError(this + " does not have a container")
-    case Some(c) => c
+    container0.content0 -= this
+    container0 = this
   }
 
   def canContain(n : AGNode) : Boolean = {
@@ -98,13 +82,16 @@ class AGNode (val graph: AccessGraph,
 
   def content : mutable.Iterable[AGNode] = content0
   def content_+=(n:AGNode) {
+    n.container0.content0 -= n
+    n.container0 = this
     this.content0 += n
-    n.container0 = Some(this)
+    graph.transformations.addEdge(AGEdge.contains(this, n))
   }
 
   def content_-=(n:AGNode) {
+    n.container0 = n
     this.content0 -= n
-    n.container0 = None
+    graph.transformations.removeEdge(AGEdge.contains(this, n))
   }
 
   private[graph] def isContentEmpty = content0.isEmpty
@@ -112,18 +99,13 @@ class AGNode (val graph: AccessGraph,
   def contains(other :AGNode) = content0.contains(other)
 
   def contains_*(other:AGNode) : Boolean =
-    other == this ||
-      (other.container match {
-        case None => false
-        case Some(p) => this.contains_*(p)
-      })
+    other == this || !other.isRoot && this.contains_*(other.container)
+
 
   private def containerPath_aux(ancestor : AGNode, acc : List[AGNode]) : List[AGNode] =
     if(ancestor == this) this :: acc
-    else container match {
-      case None => throw new AGError("container path, ancestor not found !")
-      case Some(c) => c.containerPath_aux(ancestor, this :: acc)
-    }
+    else if(isRoot) throw new AGError("container path, ancestor not found !")
+    else container.containerPath_aux(ancestor, this :: acc)
 
   def containerPath(ancestor : AGNode) : List[AGNode] = containerPath_aux(ancestor, List())
 
@@ -139,11 +121,14 @@ class AGNode (val graph: AccessGraph,
   def superTypes : Iterable[AGNode] = superTypes0
   def superTypes_+=(st:AGNode) {
     this.superTypes0 += st
+    graph.transformations.addEdge(AGEdge.isa(this, st))
     //st.subTypes0 += this
   }
 
   def superTypes_-=(st:AGNode) {
     this.superTypes0 -= st
+    graph.transformations.removeEdge(AGEdge.isa(this, st))
+
     //st.subTypes0 -= this
   }
 
@@ -166,10 +151,11 @@ class AGNode (val graph: AccessGraph,
   private [this] var users0 : mutable.Set[AGNode] = mutable.Set()
   def users_+=(other : AGNode) {
     this.users0 += other
+    graph.transformations.addEdge(AGEdge.uses(other, this))
   }
-
   def users_-=(user : AGNode){
     users0.remove(user)
+    graph.transformations.removeEdge(AGEdge.uses(user, this))
   }
 
   def users: mutable.Iterable[AGNode] = users0
@@ -183,16 +169,16 @@ class AGNode (val graph: AccessGraph,
  */
 
   /*(this, key) is a primary uses and sidesUses(key) are the corresponding side uses */
-  val sideUses = new UsesDependencyMap(this, "primary", "secondaries")
+  val sideUses = new UsesDependencyMap(this, Dominant())
 
   /*(this, key) is a side uses and primaryUses(key) is the corresponding primary uses */
-  val primaryUses = new UsesDependencyMap(this, "secondary", "primary")
+  val primaryUses = new UsesDependencyMap(this, Dominated())
 
   def findNewPrimaryUsee(primaryUsee : AGNode,
                          newSideUsee : AGNode,
                          policy : RedirectionPolicy) : AGNode = {
     policy match {
-      case Move() => newSideUsee.container_!
+      case Move() => newSideUsee.container
       case absPolicy : AbstractionPolicy =>
         primaryUsee.abstractions.find{
           case (node, `absPolicy`) => node.contains_*(newSideUsee)
@@ -221,7 +207,7 @@ class AGNode (val graph: AccessGraph,
           throw new AGError("WTF? empty primary uses set")
         }
         val primary_use = primary_uses.head
-        if(! primary_uses.tail.isEmpty) {
+        if(primary_uses.tail.nonEmpty) {
           println("redirecting side uses : (" + this + ", " + sideUsee
             + ") to (" + this + ", " + newUsee + ")")
           println("primary uses are ")
@@ -289,15 +275,15 @@ class AGNode (val graph: AccessGraph,
       case None => throw new AGError("do not know how to create a valid parent for " + this.kind)
       case Some(parentKind) =>
         val n = graph.addNode (this.name + "_container", parentKind)
-        this.container = Some(n)
+        n content_+= this
         n
     }
   }
 
 
   def moveTo(newContainer : AGNode) {
-    detach()
-    this.container = Some(newContainer)
+    container.content_-=(this)
+    newContainer content_+= this
     users.foreach{
       _.redirectPrimaryUses(this, this, Move())
     }
@@ -343,83 +329,46 @@ class AGNode (val graph: AccessGraph,
     case sct @ ScopeConstraint(_,_,_,_) => scopeConstraints -= sct
   }
 
-  @tailrec
   final def friendOf(other : AGNode) : Boolean = other.friendConstraints.hasFriendScopeThatContains_*( this ) ||
-    (other.container match {
-      case None => false
-      case Some(p) => friendOf(p)
-    })
+    !other.isRoot && friendOf(other.container)
 
+  def violatedScopeConstraintsOf(usee0 : AGNode) : List[ScopeConstraint] = {
+    val uses = AGEdge.uses(this, usee0)
 
-  /*
-      hiddenFrom(Element, Interloper) :- hideScope(S, Facades, Interlopers, Friends),
-          friends(S,Friends,AllFriends),
-          'vContains*'(S,Element),			% Element is in S
-          \+ 'gContains*'(Facades,Element),		% Element is not in one of the Facades
-          'gContains*'(Interlopers,Interloper),	% Interloper is in one of the Interlopers
-          \+ 'gContains*'(AllFriends, Interloper),	% but not in one the Friends
-          \+ 'vContains*'(S,Interloper).		% Interloper is not in S
-  */
-
-  private def violated(originalTarget : AGNode)(ct : ScopeConstraint) : Boolean =
-    ct.interlopers.hasScopeThatContains_*(this) &&
-      !(ct.friends.hasScopeThatContains_*(this) ||
-        ct.facades.hasScopeThatContains_*(originalTarget))
-
-  def violatedScopeConstraintsOf(other0 : AGNode) : List[ScopeConstraint] = {
-    def aux(other : AGNode, acc : List[ScopeConstraint]) : List[ScopeConstraint] = {
-      val acc2 = if(!other.contains_*(this))
-        other.scopeConstraints.filter(violated(other0)).toList ::: acc
+    def aux(usee : AGNode, acc : List[ScopeConstraint]) : List[ScopeConstraint] = {
+      val acc2 = if(!usee.contains_*(this))
+        usee.scopeConstraints.filter(_.violated(uses)).toList ::: acc
       else acc
 
-      other.container match {
-        case None => acc2
-        case Some(p) => aux(p, acc2)
-      }
+      if(usee.isRoot) acc2
+      else aux(usee.container, acc2)
     }
-    aux(other0,List())
+    aux(usee0,List())
   }
 
-  def potentialScopeInterloperOf(other0 : AGNode) : Boolean = {
-    @tailrec
-    def aux(other: AGNode): Boolean =
-      !other.contains_*(this) &&
-        other.scopeConstraints.exists(violated(other0)) ||
-        (other.container match {
-          case None => false
-          case Some(p) => aux(p)
-        })
-    aux(other0)
+
+  def potentialScopeInterloperOf(usee0 : AGNode) : Boolean = {
+    val uses = AGEdge.uses(this, usee0)
+
+    def aux(usee: AGNode): Boolean =
+      !usee.contains_*(this) &&
+        usee.scopeConstraints.exists(_.violated(uses)) ||
+        !usee.isRoot && aux(usee.container)
+
+    aux(usee0)
   }
 
-  /*
-      hiddenFrom(Element, Interloper) :- hide(Element, Interlopers, Friends),
-           friends(Element, Friends, AllFriends),
-           'gContains*'(Interlopers, Interloper),
-           \+ 'gContains*'(AllFriends, Interloper).
+  def violatedElementConstraintOf(usee : AGNode) =
+    usee.elementConstraints.filter(_.violated(AGEdge.uses(this, usee))).toList
 
-  */
-
-  private def violated(ct : ElementConstraint) : Boolean =
-    ct.interlopers.hasScopeThatContains_*(this) &&
-      !ct.friends.hasScopeThatContains_*(this)
-
-  def violatedElementConstraintOf(other : AGNode) =
-    other.elementConstraints.filter(violated).toList
-
-  def potentialElementInterloperOf(other:AGNode) =
-    other.elementConstraints.exists(violated)
+  def potentialElementInterloperOf(usee:AGNode) =
+    usee.elementConstraints.exists(_.violated(AGEdge.uses(this, usee)))
 
   def interloperOf(other : AGNode) =
     (potentialScopeInterloperOf(other)
       || potentialElementInterloperOf(other)) && !friendOf(other)
 
-  def isWronglyContained : Boolean = {
-    container match {
-      case None => false
-      case Some(c) => c interloperOf this
-    }
-  }
+  def isWronglyContained : Boolean = !isRoot && (container interloperOf this)
 
   def wrongUsers : List[AGNode] = {
     users.foldLeft(List[AGNode]()){(acc:List[AGNode], user:AGNode) =>
@@ -436,9 +385,12 @@ class AGNode (val graph: AccessGraph,
   def abstractions : mutable.Iterable[(AGNode, AbstractionPolicy)] = abstractions0
   def abstractions_-=(n : AGNode, p : AbstractionPolicy){
     abstractions0.remove( (n,p) )
+    graph.transformations.unregisterAbstraction(this, n, p)
+
   }
   def abstractions_+= (n : AGNode, p : AbstractionPolicy){
     abstractions0 +=( (n,p) )
+    graph.transformations.registerAbstraction(this, n, p)
   }
   def searchExistingAbstractions(){}
 
@@ -455,23 +407,19 @@ class AGNode (val graph: AccessGraph,
   }
 
   def createAbstraction(abskind : NodeKind , policy : AbstractionPolicy) : AGNode = {
-    graph.careTaker.sequence[AGNode] {
-      val abs = createNodeAbstraction(abskind, policy)
-      users_+=(abs)
-      graph.careTaker.addNode(abs)
-      graph.careTaker.addEdge(AGEdge.uses(abs, this))
-      abs
-    }
+    val abs = createNodeAbstraction(abskind, policy)
+    users_+=(abs)
+    abs
   }
 
   def addHideFromRootException(friend : AGNode){
-    def addExc(interlopers : NodeSet, friends : NodeSet ) {
-      if (interlopers.iterator.contains(graph.root))
-        friends += friend
+    def addExc(ct : ConstraintWithInterlopers) {
+      if (ct.interlopers.iterator.contains(graph.root))
+        ct.friends += friend
     }
 
-    scopeConstraints foreach (ct => addExc(ct.interlopers, ct.friends))
-    elementConstraints foreach (ct => addExc(ct.interlopers, ct.friends))
+    scopeConstraints foreach addExc
+    elementConstraints foreach addExc
   }
 
 }

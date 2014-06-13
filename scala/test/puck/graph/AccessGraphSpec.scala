@@ -43,9 +43,9 @@ class AccessGraphSpec extends UnitSpec{
     a0.contains(ab) should be (true)
     a0.contains(ac) should be (true)
 
-    aa.container should be (Some(a0))
-    ab.container should be (Some(a0))
-    ac.container should be (Some(a0))
+    aa.container should be (a0)
+    ab.container should be (a0)
+    ac.container should be (a0)
   }
 
 

@@ -24,9 +24,6 @@ aspect AccessGraphFactory {
 		else
 			verboseBuild(accessGraph, ll);
 
-		//ag.ensureContainers(); 
-		accessGraph.attachNodesWithoutContainer();
-
 		return accessGraph;
 	}
 

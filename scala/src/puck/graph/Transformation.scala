@@ -28,12 +28,14 @@ class CompositeTransformation extends Transformation{
 class AddNode( node : AGNode) extends Transformation {
   def undo(){
     val g = node.graph
+    node.detach()
     g.nodes -= node
   }
 }
 class RemoveNode( node : AGNode) extends Transformation{
   def undo(){
     val g = node.graph
+    g.root.content_+=(node)
     g.nodes += node
   }
 }
@@ -43,14 +45,14 @@ class AddEdge( edge : AGEdge) extends Transformation {
 class RemoveEdge( edge : AGEdge) extends Transformation{
   def undo(){ edge.create()}
 }
-class AddEdgeDependancy( dominant : AGEdge, dominated : AGEdge) extends Transformation{
+class AddEdgeDependency( dominant : AGEdge, dominated : AGEdge) extends Transformation{
   def undo(){
     val g = dominant.source.graph
     g.removeUsesDependency(dominant.source, dominant.target,
       dominated.source, dominated.target)
   }
 }
-class RemoveEdgeDependancy( dominant : AGEdge, dominated : AGEdge) extends Transformation{
+class RemoveEdgeDependency( dominant : AGEdge, dominated : AGEdge) extends Transformation{
   def undo(){
     val g = dominant.source.graph
     g.addUsesDependency(dominant.source, dominant.target,

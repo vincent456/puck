@@ -82,14 +82,14 @@ class JavaNode( graph : AccessGraph,
             user.sideUses(this) match {
               case Some(sideUses) =>
                 sideUses.forall{ sideUse =>
-                n.content.exists(nchild =>
-                  new JavaType(nchild).subtypeOf(new JavaType(sideUse.target)))
-              }
+                  n.content.exists(nchild =>
+                    new JavaType(nchild).subtypeOf(new JavaType(sideUse.target)))
+                }
               case None => true
             }
         })
         println("found " + n)
-        this.abstractions0 += ((n, SupertypeAbstraction()))
+      this.abstractions0 += ((n, SupertypeAbstraction()))
     }
     println("search terminated")
   }
@@ -98,6 +98,7 @@ class JavaNode( graph : AccessGraph,
                                  policy : AbstractionPolicy) = {
     (abskind, policy) match {
       case (Interface(), SupertypeAbstraction()) =>
+
         val abs = createNodeAbstraction(Interface(), SupertypeAbstraction())
         abs.users_+=(this)
         content.foreach { (child: AGNode) =>
@@ -111,26 +112,26 @@ class JavaNode( graph : AccessGraph,
         this.superTypes_+=(abs)
         abs
 
-      //no (abs, impl) or (impl, abs) uses
-      //case (AbstractMethod(), SupertypeAbstraction()) =>
-        /*val cterAbs =
-          container_!.createAbstraction(Interface(), SupertypeAbstraction())
-        this.abstractions.find{
-          case (n , SupertypeAbstraction()) =>
-             n.container_! == container_!
-          case _ => false
-        } match {
-          case Some(abs) => abs
-          case None => throw new AGError("Error while creating abstract method !")
-        }
-      */
+      case (AbstractMethod(), SupertypeAbstraction()) =>
+        //no (abs, impl) or (impl, abs) uses
+        createNodeAbstraction(abskind, policy)
+      /*val interface =
+        container.createAbstraction(Interface(), SupertypeAbstraction())
+      this.abstractions.find{
+        case (n , SupertypeAbstraction()) =>
+           n.container == interface
+        case _ => false
+      } match {
+        case Some((abs, _)) => abs
+        case None => throw new AGError("Error while creating abstract method !")
+      } */
       case _ => super.createAbstraction(abskind, policy)
     }
   }
 
   override def moveTo(newContainer : AGNode) {
-//    println("moving " + this +" from " + container_! + " to " + newContainer)
-    val oldContainer = container_!
+    //    println("moving " + this +" from " + container_! + " to " + newContainer)
+    val oldContainer = container
     this.kind match{
       case Method()
            // | AbstractMethod() // ?
@@ -140,16 +141,12 @@ class JavaNode( graph : AccessGraph,
            * when redirecting primary uses
            */
           if(user.container == this.container){
-            graph.addUsesDependency(user, user.container_!,
+            graph.addUsesDependency(user, user.container,
               user, this)
-//            println("addding uses dependancy ("+ user + ", " + user.container_!
-//              + ") (" + user +", " + this + ")")
           }
-          if(container_!.uses(this)){
+          if(container.uses(this)){
             graph.addUsesDependency(oldContainer, oldContainer,
               oldContainer, this)
-//            println("addding uses dependancy ("+ oldContainer + ", " + oldContainer
-//              + ") (" + oldContainer +", " + this + ")")
           }
         }
       case _ => ()

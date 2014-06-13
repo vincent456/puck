@@ -27,7 +27,7 @@ class JavaSolver(val graph : AccessGraph,
     (impl.kind, absPolicy) match {
     case (Method(), SupertypeAbstraction())
     | (AbstractMethod(), SupertypeAbstraction()) =>
-      potentialHost => !(impl.container_! interloperOf potentialHost)
+      potentialHost => !(impl.container interloperOf potentialHost)
     case _ => super.singleAbsIntroPredicate(impl, absPolicy, absKind)
   }
 

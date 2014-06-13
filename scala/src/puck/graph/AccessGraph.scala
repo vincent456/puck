@@ -36,14 +36,10 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
       (acc: List[AGEdge], n :AGNode) =>
       n.wrongUsers.map{AGEdge.uses(_, n)} :::(
         if(n.isWronglyContained )
-          AGEdge.contains(n.container_!, n) :: acc
+          AGEdge.contains(n.container, n) :: acc
         else acc)
     }
   }
-
-  /*def violations : Set[Violation] = {
-    this.foldLeft(Set[Violation]()){(acc: Set[Violation], n :AGNode) => n.targetingViolations(acc)}
-  }*/
 
   def discardConstraints() {
     this.foreach(_.discardConstraints())
@@ -69,16 +65,6 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
     nodes.foreach(println)
   }
 
-  def attachNodesWithoutContainer() {
-    nodes.foreach{ n =>
-      n.container match {
-        case None => root content_+= n
-        case Some(_) => ()
-      }
-
-    }
-  }
-
   private [puck] val nodesByName = mutable.Map[String, AGNode]()
 
   def apply(fullName:String) : AGNode= nodesByName(fullName)
@@ -99,20 +85,21 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
     addNode(fullName, localName, VanillaKind())
 
 
-  var careTaker : CareTaker = new CareTakerNoop()
+  var transformations : CareTaker = new CareTakerNoop(this)
 
-  def registerModifications() {
-      careTaker = new CareTakerRegister()
-  }
-
-  def stopModificationsRegistrations(){
-    careTaker = new CareTakerNoop()
+  def register[T](op : => T) : T = {
+    transformations.startRegister()
+    val res = transformations.sequence[T](op)
+    transformations.stopRegister()
+    res
   }
 
   def addNode(localName:String, kind: NodeKind) : AGNode = {
     id = id + 1
     val n = nodeBuilder(this, id, localName, kind)
+    root.content_+=(n)
     this.nodes += n
+    transformations.addNode(n)
     n
   }
 
@@ -120,12 +107,16 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
                         sideUser : AGNode, sideUsee : AGNode) {
     primaryUser.sideUses += (primaryUsee, AGEdge.uses(sideUser, sideUsee))
     sideUser.primaryUses += (sideUsee, AGEdge.uses(primaryUser, primaryUsee))
+    transformations.addEdgeDependency(AGEdge.uses(primaryUser, primaryUsee),
+      AGEdge.uses(sideUser,sideUsee))
   }
 
   def removeUsesDependency(primaryUser : AGNode, primaryUsee : AGNode,
                            sideUser : AGNode, sideUsee : AGNode) {
     primaryUser.sideUses -= (primaryUsee, AGEdge.uses(sideUser, sideUsee))
     sideUser.primaryUses -= (sideUsee, AGEdge.uses(primaryUser, primaryUsee))
+    transformations.removeEdgeDependency(AGEdge.uses(primaryUser, primaryUsee),
+      AGEdge.uses(sideUser,sideUsee))
   }
 
 }

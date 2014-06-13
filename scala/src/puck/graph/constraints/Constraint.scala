@@ -1,6 +1,6 @@
 package puck.graph.constraints
 
-import puck.graph.{AGEdge, AGError}
+import puck.graph.{AGNode, AGEdge, AGError}
 
 /**
  * Created by lorilan on 03/06/14.
@@ -13,8 +13,12 @@ trait ConstraintWithInterlopers {
 
   def isViolatedBy(edge : AGEdge): Boolean =
     owners.hasScopeThatContains_*(edge.target) &&
-    interlopers.hasScopeThatContains_*(edge.source) &&
-    !friends.hasScopeThatContains_*(edge.target)
+    violated(edge)
+
+  //assert owners.hasScopeThatContains_*(edge.target)
+  def violated(edge : AGEdge): Boolean =
+      interlopers.hasScopeThatContains_*(edge.source) &&
+      !friends.hasScopeThatContains_*(edge.source)
 
 }
 
@@ -23,6 +27,16 @@ abstract class Constraint{
   val friends : NodeSet
   val predicate : String
 }
+
+/*
+    hiddenFrom(Element, Interloper) :- hideScope(S, Facades, Interlopers, Friends),
+        friends(S,Friends,AllFriends),
+        'vContains*'(S,Element),			% Element is in S
+        \+ 'gContains*'(Facades,Element),		% Element is not in one of the Facades
+        'gContains*'(Interlopers,Interloper),	% Interloper is in one of the Interlopers
+        \+ 'gContains*'(AllFriends, Interloper),	% but not in one the Friends
+        \+ 'vContains*'(S,Interloper).		% Interloper is not in S
+*/
 
 case class ScopeConstraint(owners : NodeSet,
                            facades: NodeSet,
@@ -38,7 +52,18 @@ case class ScopeConstraint(owners : NodeSet,
     super.isViolatedBy(edge) &&
       !facades.hasScopeThatContains_*(edge.target)
 
+  override def violated(edge : AGEdge)=
+    super.violated(edge) &&
+      !facades.hasScopeThatContains_*(edge.target)
 }
+
+/*
+    hiddenFrom(Element, Interloper) :- hide(Element, Interlopers, Friends),
+         friends(Element, Friends, AllFriends),
+         'gContains*'(Interlopers, Interloper),
+         \+ 'gContains*'(AllFriends, Interloper).
+
+*/
 
 case class ElementConstraint(owners : NodeSet,
                         interlopers : NodeSet,
@@ -47,7 +72,7 @@ case class ElementConstraint(owners : NodeSet,
   val predicate = "hideElementSet"
   override def toString = {
     val fmtStr =
-      if (!interlopers.isEmpty && !friends.isEmpty)
+      if (interlopers.nonEmpty && friends.nonEmpty)
         "(" + owners + ",\n" +
           interlopers.mkString("[", ",\n", "],\n") +
           friends.mkString("[", ",\n", "]).")

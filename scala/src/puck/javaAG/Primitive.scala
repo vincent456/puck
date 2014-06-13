@@ -29,12 +29,9 @@ object Primitive {
   val string = ("java.lang.String", -10)
 
 
-  private def makePrimitiveNode (name_id : (String, Int), g: AccessGraph) = {
-    val n = new StatelessAGNode(g, name_id._2, name_id._1, Primitive())
-    /*to prevent attach this node to the AG root */
-    n.container= Some(n)
-    n
-  }
+  private def makePrimitiveNode (name_id : (String, Int), g: AccessGraph) =
+    new StatelessAGNode(g, name_id._2, name_id._1, Primitive())
+
 
   def voidNode(g : AccessGraph) = makePrimitiveNode(void, g)
   def booleanNode(g : AccessGraph) = makePrimitiveNode(boolean, g)
@@ -46,9 +43,6 @@ object Primitive {
   def longNode(g : AccessGraph) = makePrimitiveNode(long, g)
   def shortNode(g : AccessGraph) = makePrimitiveNode(short, g)
 
-  def stringNode(g : AccessGraph) = {
-    val n = new StatelessAGNode(g, string._2, string._1, `class`)
-    n.container= Some(n)
-    n
-  }
+  def stringNode(g : AccessGraph) = new StatelessAGNode(g, string._2, string._1, `class`)
+
 }

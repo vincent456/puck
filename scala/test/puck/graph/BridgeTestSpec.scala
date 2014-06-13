@@ -21,8 +21,7 @@ class BridgeTestSpec extends UnitSpec{
     // 1 root + 2 packages + 5 classes + 2 methods in screen + 4 * 3 methods in screen subclasses = 22 nodes
     graph.size should be (22)
 
-    graph.nodesByName.foreach{ (key_node) =>
-      val node = key_node._2
+    graph.nodes.foreach{ node =>
       node.kind match {
       case Primitive() => ()
       case _ => val `nodeSet contains node` = nodeSet contains node

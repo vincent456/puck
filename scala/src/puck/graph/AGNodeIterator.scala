@@ -15,7 +15,7 @@ class AGNodeIterator (private var nextOne : AGNode) extends Iterator[AGNode]{
 
   nexts ++= nextOne.content
 
-  override def hasNext : Boolean = !nexts.isEmpty || !(nextOne == null)
+  override def hasNext : Boolean = nexts.nonEmpty || !(nextOne == null)
 
   override def next() : AGNode = {
     val n = nextOne
@@ -23,6 +23,7 @@ class AGNodeIterator (private var nextOne : AGNode) extends Iterator[AGNode]{
     try{
       nextOne = nexts.dequeue()
       nexts ++= nextOne.content
+
     } catch {
       case e : NoSuchElementException => nextOne = null
     }

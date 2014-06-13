@@ -27,7 +27,7 @@ class AGEdge private (val kind : EdgeKind, val source : AGNode, val target: AGNo
       case Uses() => source.uses_+=(target)
       case Contains() => source.content_+=(target)
       case Isa() => source.superTypes_+=(target)
-      case _ => throw new AGError(kind + " edge create not implemented")
+      case Undefined() => throw new AGError("cannot create arc with undefined kind")
 
     }
   }
@@ -36,7 +36,7 @@ class AGEdge private (val kind : EdgeKind, val source : AGNode, val target: AGNo
       case Uses() => source.uses_-=(target)
       case Contains() => source.content_-=(target)
       case Isa() => source.superTypes_-=(target)
-      case _ => throw new AGError(kind + " edge delete not implemented")
+      case Undefined() => throw new AGError("cannot delete arc with undefined kind")
 
     }
   }
@@ -44,8 +44,9 @@ class AGEdge private (val kind : EdgeKind, val source : AGNode, val target: AGNo
 
 object AGEdge{
   def apply(kind : EdgeKind, source : AGNode, target: AGNode) = new AGEdge(kind, source, target)
-  def apply(source : AGNode, target: AGNode) = new AGEdge(Undefined(), source, target)
+  def apply(source : AGNode, target: AGNode) : AGEdge = apply(Undefined(), source, target)
 
   def uses(source : AGNode, target: AGNode) = apply(Uses(), source, target)
-  def contains(source : AGNode,target: AGNode) = apply(Contains(), source, target)
+  def contains(source : AGNode, target: AGNode) = apply(Contains(), source, target)
+  def isa(source : AGNode, target : AGNode) = apply(Isa(), source, target)
 }

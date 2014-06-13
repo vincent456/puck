@@ -37,7 +37,7 @@ package puck
 
 
 
- import scala.swing._
+ /*import scala.swing._
  import javax.swing.UIManager
  import puck.gui.PuckMainPanel
 
@@ -56,17 +56,18 @@ package puck
     contents  = new PuckMainPanel(FilesHandler())
 
   }
-}
+}*/
 
 
 
-/*import java.io._
+import java.io._
 import puck.gui.GUIDecisionMaker
+import puck.javaAG.DefaultDecisionMaker
 
 object Front{
 
   def main(args : Array[String]){
-    val fh = FilesHandler("/home/lorilan/puck_svn/distrib/examples/bridge/hannemann_inspired/candidate")()
+    val fh = FilesHandler("/home/lorilan/puck_svn/distrib/examples/prototype/actors/candidate")()
     //fh.decouple = "/home/lorilan/puck_svn/distrib/examples/composite/candidate/decouple_strict.pl"
     fh.loadGraph(null)
     println("graph loaded")
@@ -80,12 +81,13 @@ object Front{
       new File(fh.graph.getCanonicalPath + "_before.png"))))
     println("done")
 
-    fh.solve(trace = true, decisionMaker = GUIDecisionMaker)
+    fh.solve(trace = true,
+        decisionMaker = DefaultDecisionMaker)
 
-    print("make png ... ")
+   /* print("make png ... ")
     fh.makePng(soutput = Some(new FileOutputStream(
       new File(fh.graph.getCanonicalPath + "_after.png"))))
-    println("done")
+    println("done")*/
 
   }
-}*/
+}
