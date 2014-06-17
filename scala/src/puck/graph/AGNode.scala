@@ -1,22 +1,20 @@
 package puck.graph
 
-import scala.collection.mutable
-import scala.annotation.tailrec
+import scala.collection.{mutable => smutable}
 import puck.graph.constraints._
-import scala.Some
 
 
 trait AGNodeBuilder {
   def apply(g: AccessGraph, id: Int, name:String, kind : NodeKind) : AGNode
   def makeKey(fullName: String, localName:String, kind: NodeKind) : String
   def kinds : List[NodeKind]
+  val scopeSeparator : String = "."
 }
 
 object AGNode extends AGNodeBuilder{
   override def apply(g: AccessGraph,
                      id: Int, name : String,
                      kind : NodeKind) : AGNode = new AGNode(g, id, name, kind)
-
 
   override def makeKey(fullName: String, localName:String,
                        kind : NodeKind) : String = fullName
@@ -35,28 +33,39 @@ object AGNode extends AGNodeBuilder{
 class AGNode (val graph: AccessGraph,
               val id: Int,
               var name: String,
-              val kind: NodeKind) { //extends Iterable[AGNode]{
+              val kind: NodeKind) {
+  //extends Iterable[AGNode]{
 
-  override def equals(obj:Any) : Boolean = obj match {
-    case that : AGNode => (this.graph eq that.graph) && this.id == that.id
+ /* override def equals(obj: Any): Boolean = obj match {
+    case that: AGNode => (this.graph eq that.graph) && this.id == that.id
     case _ => false
   }
-  override def hashCode : Int = (this.id  + kind.hashCode()) / 41
+
+  override def hashCode: Int = (this.id + kind.hashCode()) / 41*/
 
   /**
    * relies on the contains tree : do not modify it while traversing
    */
   def iterator = new AGNodeIterator(this)
 
-  override def toString: String = "(" + fullName +", "+ kind+ ")"
+  override def toString: String = "(" + fullName + ", " + kind + ")"
 
   //TODO FIX def
   def nameTypeString = name //+ ( `type` match{ case None =>""; case Some(t) => " : " + t })
 
 
-  def fullName : String =
-    if (isRoot) nameTypeString
-    else containerPath(graph.root).tail.map(_.nameTypeString).mkString(".")
+  def fullName: String = {
+
+      /*if (isRoot) nameTypeString
+        else {*/
+      val path = containerPath.map(_.nameTypeString)
+      (if (path.head == AccessGraph.rootName)
+        path.tail
+      else
+        AccessGraph.unrootedStringId :: path ).mkString(graph.scopeSeparator)
+    }
+
+  var mutable = true
 
   /**
    * Arcs
@@ -68,30 +77,68 @@ class AGNode (val graph: AccessGraph,
 
   def isRoot = container == this
 
-  /* !!!! unregistred operation use only to undo node creation !!!! */
   def detach(){
-    container0.content0 -= this
-    container0 = this
+    if(container0 != this)
+      container.content_-=(this)
+    /*container0.content0 -= this
+    container0 = this*/
   }
 
   def canContain(n : AGNode) : Boolean = {
-    this.kind canContain n.kind
+    (this.kind canContain n.kind) &&
+      this.mutable
   }
 
-  private var content0 : mutable.Set[AGNode] = mutable.Set()
+  private val content0 : smutable.Set[AGNode] = smutable.Set()
 
-  def content : mutable.Iterable[AGNode] = content0
+  def content : smutable.Iterable[AGNode] = content0
+
+
   def content_+=(n:AGNode) {
-    n.container0.content0 -= n
     n.container0 = this
-    this.content0 += n
+    this.content0.add(n)
     graph.transformations.addEdge(AGEdge.contains(this, n))
+  }
+  def content_-=(n:AGNode) {
+    n.container0 = n
+    this.content0.remove(n)
+    graph.transformations.removeEdge(AGEdge.contains(this, n))
+  }
+
+  /*def content_+=(n:AGNode) {
+    if( n.container0 == this)
+      throw new IllegalAGOperation("content += error " + n + "container is already "+ this)
+
+    n.container0 = this
+
+    if(!this.content0.add(n))
+      throw new IllegalAGOperation("content += error "+ this +" already contains "+ n)
+
+    graph.transformations.addEdge(AGEdge.contains(this, n))
+
   }
 
   def content_-=(n:AGNode) {
+
+    if( n.container0 != this)
+      throw new IllegalAGOperation("content -= error " +n + "container is not "+ this)
+
     n.container0 = n
-    this.content0 -= n
+
+    if(!this.content0.remove(n))
+      throw new IllegalAGOperation("content -= error "+ this +" does not contains "+ n)
+
+
     graph.transformations.removeEdge(AGEdge.contains(this, n))
+  }*/
+
+  def moveTo(newContainer : AGNode) {
+    container content_-= this
+    newContainer content_+= this
+
+    users.foreach{
+      _.redirectPrimaryUses(this, this, Move())
+    }
   }
 
   private[graph] def isContentEmpty = content0.isEmpty
@@ -102,15 +149,30 @@ class AGNode (val graph: AccessGraph,
     other == this || !other.isRoot && this.contains_*(other.container)
 
 
-  private def containerPath_aux(ancestor : AGNode, acc : List[AGNode]) : List[AGNode] =
-    if(ancestor == this) this :: acc
-    else if(isRoot) throw new AGError("container path, ancestor not found !")
-    else container.containerPath_aux(ancestor, this :: acc)
+  def containerPath(ancestor : AGNode) : List[AGNode] = {
 
-  def containerPath(ancestor : AGNode) : List[AGNode] = containerPath_aux(ancestor, List())
+    def aux(current : AGNode, acc : List[AGNode]) : List[AGNode] =
+      if (ancestor == current) this :: acc
+      else if (current.isRoot) throw new AGError("container path computation error :"+
+        "\nfollowed path : " + acc.foldRight(List[String]()){
+        case (n, acc0) => n.name :: acc0} +
+        "\ncurrent node : " + current.name +
+        "\nancestor " + ancestor.name + " not found !")
+      else aux(current.container, current :: acc)
 
+    aux(this, List())
+  }
 
-  private var superTypes0 : mutable.Set[AGNode] = mutable.Set()
+  def containerPath : List[AGNode] = {
+
+    def aux(current : AGNode, acc : List[AGNode]) : List[AGNode] =
+      if (current.isRoot) current :: acc
+      else aux(current.container, current :: acc)
+
+    aux(this, List())
+  }
+
+  private [this] val superTypes0 : smutable.Set[AGNode] = smutable.Set()
 
   def isSuperTypeOf(other : AGNode) : Boolean = {
     other.superTypes.exists(_ == this) ||
@@ -119,46 +181,47 @@ class AGNode (val graph: AccessGraph,
 
 
   def superTypes : Iterable[AGNode] = superTypes0
+  private val subTypes0 : smutable.Set[AGNode] = smutable.Set()
+  def subTypes : Iterable[AGNode] = subTypes0
+
   def superTypes_+=(st:AGNode) {
-    this.superTypes0 += st
-    graph.transformations.addEdge(AGEdge.isa(this, st))
-    //st.subTypes0 += this
+    if(superTypes0.add(st)) {
+      st.subTypes0.add(this)
+      graph.transformations.addEdge(AGEdge.isa(this, st))
+      abstractions_+=(st, SupertypeAbstraction())
+    }
   }
 
   def superTypes_-=(st:AGNode) {
-    this.superTypes0 -= st
-    graph.transformations.removeEdge(AGEdge.isa(this, st))
 
-    //st.subTypes0 -= this
+    if(superTypes0.remove(st)) {
+      st.subTypes0.remove(this)
+      graph.transformations.removeEdge(AGEdge.isa(this, st))
+      abstractions_-=(st, SupertypeAbstraction())
+    }
   }
 
-  /*def isSuperTypeOf(other : AGNode) : Boolean = {
-    subTypes0.contains(other) ||
-      subTypes0.exists(_.isSuperTypeOf(other))
+  def isa(other : AGNode) : Boolean = {
+    superTypes.exists( n => n == other)
   }
-  private var subTypes0 : mutable.Set[AGNode] = mutable.Set()
-  def subTypes_+=(st:AGNode) {
-    this.subTypes0 += st
-    st.superTypes0 += this
-  }*/
 
   //TODO think about removing uses0 & users0 and keep only the sideUses0/primaryUses0 maps
-  //private var uses0 : mutable.Set[AGNode] = mutable.Set()
+  //private var uses0 : smutable.Set[AGNode] = smutable.Set()
   def uses(other : AGNode) = other.isUsedBy(this)// uses0.contains(other)
   def uses_+=(other: AGNode) = other.users_+=(this)
   def uses_-=(other: AGNode) = other.users_-=(this)
 
-  private [this] var users0 : mutable.Set[AGNode] = mutable.Set()
+  private [this] val users0 : smutable.Set[AGNode] = smutable.Set()
   def users_+=(other : AGNode) {
-    this.users0 += other
-    graph.transformations.addEdge(AGEdge.uses(other, this))
+    if(users0.add(other))
+      graph.transformations.addEdge(AGEdge.uses(other, this))
   }
   def users_-=(user : AGNode){
-    users0.remove(user)
-    graph.transformations.removeEdge(AGEdge.uses(user, this))
+    if(users0.remove(user))
+      graph.transformations.removeEdge(AGEdge.uses(user, this))
   }
 
-  def users: mutable.Iterable[AGNode] = users0
+  def users: smutable.Iterable[AGNode] = users0
 
   def isUsedBy(other : AGNode) = users0.contains(other)
 
@@ -198,18 +261,22 @@ class AGNode (val graph: AccessGraph,
   }
 
   def redirectPrimaryUses(sideUsee : AGNode,
-                          newUsee : AGNode,
+                          newSideUsee : AGNode,
                           policy : RedirectionPolicy){
+    println("redirecting primary uses ... ")
     primaryUses(sideUsee) match {
-      case None => ()
+      case None =>
+        println("no primary uses to redirect")
+        ()
       case Some(primary_uses) =>
+        println("uses to redirect:%s".format(primary_uses.mkString("\n", "\n","\nend of list")))
         if(primary_uses.isEmpty){
           throw new AGError("WTF? empty primary uses set")
         }
         val primary_use = primary_uses.head
         if(primary_uses.tail.nonEmpty) {
           println("redirecting side uses : (" + this + ", " + sideUsee
-            + ") to (" + this + ", " + newUsee + ")")
+            + ") to (" + this + ", " + newSideUsee + ")")
           println("primary uses are ")
           println( primary_use)
           primary_uses.tail.mkString("\n")
@@ -222,31 +289,31 @@ class AGNode (val graph: AccessGraph,
           primaryUses -= sideUsee
 
           val newPrimUsee = findNewPrimaryUsee(primary_use.target,
-            newUsee, policy)
+            newSideUsee, policy)
 
-          primUser.sideUses += (newPrimUsee, AGEdge.uses(this, newUsee))
-          primaryUses += (newUsee, AGEdge.uses(primUser, newPrimUsee))
+          primUser.sideUses += (newPrimUsee, AGEdge.uses(this, newSideUsee))
+          primaryUses += (newSideUsee, AGEdge.uses(primUser, newPrimUsee))
         }
     }
   }
 
   def redirectSideUses(primaryUsee: AGNode,
-                       newUsee : AGNode,
+                       newSideUsee : AGNode,
                        policy : RedirectionPolicy){
     sideUses(primaryUsee) match {
       case None => ()
       case Some( sides_uses ) =>
-        val new_side_uses = mutable.Set[AGEdge]()
+        val new_side_uses = smutable.Set[AGEdge]()
         sides_uses foreach {
           edge =>
             val side_usee_opt =
               edge.target.abstractions.find {
-                case (abs, `policy`) => newUsee.contains_*(abs)
+                case (abs, _) => newSideUsee.contains(abs)
                 case _ => false
               }
             side_usee_opt match {
               case None => throw new AGError("While redirecting primary uses (" + this +", " + primaryUsee +") to ("
-                + this + ", " + newUsee
+                + this + ", " + newSideUsee
                 + ")\nno satisfying abstraction to redirect side use "+ edge)
               case Some( (new_side_usee, _) ) =>
                 new_side_uses += AGEdge.uses(edge.source, new_side_usee)
@@ -255,12 +322,14 @@ class AGNode (val graph: AccessGraph,
 
         sideUses -= primaryUsee
 
-        sideUses ++= (newUsee, new_side_uses)
+        sideUses ++= (newSideUsee, new_side_uses)
     }
   }
 
   def redirectUses(oldUsee : AGNode, newUsee : AGNode,
                    policy : RedirectionPolicy){
+
+    println("redirecting uses %s -> %s to %s (%s)".format(this, oldUsee, newUsee, policy))
     oldUsee users_-= this
     newUsee users_+= this
 
@@ -268,26 +337,6 @@ class AGNode (val graph: AccessGraph,
     redirectSideUses(oldUsee, newUsee, policy)
   }
 
-
-  def createContainer() : AGNode = {
-    //TODO user choice ? better strategy ?
-    graph.nodeKinds.find(_.canContain(this.kind)) match {
-      case None => throw new AGError("do not know how to create a valid parent for " + this.kind)
-      case Some(parentKind) =>
-        val n = graph.addNode (this.name + "_container", parentKind)
-        n content_+= this
-        n
-    }
-  }
-
-
-  def moveTo(newContainer : AGNode) {
-    container.content_-=(this)
-    newContainer content_+= this
-    users.foreach{
-      _.redirectPrimaryUses(this, this, Move())
-    }
-  }
 
   /**********************************************/
   /************** Constraints********************/
@@ -381,23 +430,28 @@ class AGNode (val graph: AccessGraph,
    * Solving
    */
 
-  protected var abstractions0: mutable.Set[(AGNode, AbstractionPolicy)]= mutable.Set()
-  def abstractions : mutable.Iterable[(AGNode, AbstractionPolicy)] = abstractions0
+  /*private[this] lazy val abstractions0: smutable.Set[(AGNode, AbstractionPolicy)] =
+    searchExistingAbstractions()
+  def searchExistingAbstractions() = smutable.Set[(AGNode, AbstractionPolicy)]()*/
+
+  private[this] val abstractions0 = smutable.Set[(AGNode, AbstractionPolicy)]()
+
+  def abstractions : smutable.Iterable[(AGNode, AbstractionPolicy)] = abstractions0
   def abstractions_-=(n : AGNode, p : AbstractionPolicy){
-    abstractions0.remove( (n,p) )
-    graph.transformations.unregisterAbstraction(this, n, p)
+    if(abstractions0.remove( (n,p) ))
+      graph.transformations.unregisterAbstraction(this, n, p)
 
   }
   def abstractions_+= (n : AGNode, p : AbstractionPolicy){
-    abstractions0 +=( (n,p) )
-    graph.transformations.registerAbstraction(this, n, p)
+    if(abstractions0.add( (n,p) ))
+      graph.transformations.registerAbstraction(this, n, p)
   }
-  def searchExistingAbstractions(){}
 
+  def abstractionName(abskind :  NodeKind, policy : AbstractionPolicy) : String =
+    name + "_" + policy
 
   def createNodeAbstraction(abskind :  NodeKind, policy : AbstractionPolicy) : AGNode = {
-    // TODO find a strategy or way to make the user choose which abstractkind is used !
-    val n = graph.addNode(name + "_abstraction", abskind)
+    val n = graph.addNode(abstractionName(abskind, policy), abskind)
     abstractions_+=(n, policy)
     /* little hack (?) : an abstraction is its own abstraction otherwise,
      on a later iteration, instead of moving the abstraction it will create an abstraction's abstraction ...

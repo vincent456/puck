@@ -1,8 +1,8 @@
 package puck.javaAG
 
-import puck.graph.{NamedType, AGNode, AccessGraph}
+import puck.graph._
 import scala.collection.JavaConversions.collectionAsScalaIterable
-import scala.collection.mutable
+import scala.collection.mutable.StringBuilder
 
 /**
  * Created by lorilan on 07/05/14.
@@ -31,42 +31,55 @@ class JavaAccessGraph extends AccessGraph(JavaNode){
     Primitive.stringNode(this)) foreach {
     (n : AGNode) =>
       nodesByName += (n.name -> n)
-      nodes += n
+      addNode(n)
   }
 
   def addPackageNode(fullName: String, localName:String) : AGNode =
     addNode(fullName, localName, puck.javaAG.JavaNodeKind.`package`)
 
-  def addPackage(p : String): AGNode = {
-    val fp = JavaAccessGraph.filterPackageName(p)
-    val path = fp split "[.]"
-    if (path.length == 0)
-      addPackageNode(fp, fp)
-    else {
-      val (_, n):(mutable.StringBuilder, AGNode) = path.foldLeft(new mutable.StringBuilder(), root){
-        (sb_nodeParent:(mutable.StringBuilder, AGNode), p:String) => sb_nodeParent match {
-          case (sb, nodeParent) =>
-            sb append p
-            val n = addPackageNode(sb.toString(), p)
-            nodeParent content_+=  n
-            sb append "."
-            (sb, n)
+  def addPackage(p : String, mutable : Boolean): AGNode =
+    getNode(p) match {
+    case None =>
+      val fp = JavaAccessGraph.filterPackageName(p)
+      val path = fp split "[.]"
+      if (path.length == 0)
+        addPackageNode(fp, fp)
+      else {
+        val (_, n):(StringBuilder, AGNode) = path.foldLeft(new StringBuilder(), root){
+          (sb_nodeParent:(StringBuilder, AGNode), p:String) => sb_nodeParent match {
+            case (sb, nodeParent) =>
+              sb append p
+              val n = addPackageNode(sb.toString, p)
+              n.mutable = mutable
+              nodeParent content_+= n
+              sb append "."
+              (sb, n)
+          }
         }
+        n
       }
-      n
-    }
+     case  Some(pn) => pn
   }
 
-  def addApiTypeNode(td: AST.TypeDecl): AGNode = {
 
-    val packageNode = addPackage(td.compilationUnit().getPackageDecl)
-    val tdNode = td.buildAGNode(this)
 
-    for (use <- td.uses()) {
-      tdNode.users_+=(use.buildAGNode(this))
-    }
+  def addApiTypeNode(td: AST.TypeDecl, addUses : Boolean): AGNode = {
+    //println("adding api td " + td.fullName())
+    val packageNode = addPackage(td.compilationUnit().getPackageDecl, mutable = false)
+    val tdNode = addNode(td.fullName(), td.name(), td.getAGNodeKind)
+    tdNode.mutable = false
 
-    packageNode content_+= tdNode
+    if(addUses)
+      for (use <- td.uses()) {
+        tdNode.users_+=(use.buildAGNode(this))
+      }
+
+//    try{
+      packageNode content_+= tdNode
+//    }catch{
+//      case e : IllegalAGOperation => ()
+//    }
+
     tdNode
   }
 
@@ -79,7 +92,7 @@ class JavaAccessGraph extends AccessGraph(JavaNode){
       return
     }
 
-    val tdNode = addApiTypeNode(td)
+    val tdNode = addApiTypeNode(td, true)
 
     def addBodyDecl(bd : AST.BodyDecl){
       if(bd == null)
@@ -101,7 +114,7 @@ class JavaAccessGraph extends AccessGraph(JavaNode){
     println("string "+literal + " "+ occurrences.size()+" occurences" )
 
     for(bd <- occurrences){
-      val packageNode = addPackage(bd.hostBodyDecl.compilationUnit.getPackageDecl)
+      val packageNode = this(bd.hostBodyDecl.compilationUnit.getPackageDecl)
 
       val bdNode = bd buildAGNode this
       val strNode = addNode(bd.fullName()+literal, literal,

@@ -59,7 +59,7 @@ aspect AccessGraphFactory {
 
 	public boolean CompilationUnit.buildAccessGraph_CU(JavaAccessGraph accessGraph){
 		if(pathName() != null){
-			AGNode packageNode = accessGraph.addPackage(getPackageDecl());
+			AGNode packageNode = accessGraph.addPackage(getPackageDecl(), true);
 
 			for (TypeDecl td : getTypeDecls()){
 				packageNode.content_$plus$eq(td.buildAG(accessGraph));
@@ -273,15 +273,15 @@ aspect AccessGraphFactory {
 	}
 
 
-	puck.graph.NodeKind TypeDecl.getAGNodeKind(){
+	public puck.graph.NodeKind TypeDecl.getAGNodeKind(){
 		throw new AGBuildingError(this.getClass()+" : Unkown nodekind");
 	}
 
-	puck.graph.NodeKind ClassDecl.getAGNodeKind(){
+	public puck.graph.NodeKind ClassDecl.getAGNodeKind(){
 		return puck.javaAG.JavaNodeKind.classKind();
 	}
 
-	puck.graph.NodeKind InterfaceDecl.getAGNodeKind(){
+	public puck.graph.NodeKind InterfaceDecl.getAGNodeKind(){
 		return puck.javaAG.JavaNodeKind.interfaceKind();
 	}
 
@@ -290,8 +290,11 @@ aspect AccessGraphFactory {
 	}
 
 	public AGNode TypeDecl.buildAGNode(JavaAccessGraph accessGraph){
-		return accessGraph.addNode(fullName(), name(), getAGNodeKind());
-	}
+      if(isFromStdLib())
+          return accessGraph.addNode(fullName(), name(), getAGNodeKind());
+      else
+          return accessGraph.addApiTypeNode(this, false);
+  	}
 
 	
 

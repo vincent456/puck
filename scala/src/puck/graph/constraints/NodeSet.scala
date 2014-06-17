@@ -71,7 +71,7 @@ class NodeSetUnion(val sets : mutable.Buffer[NodeSet],
                    val set : LiteralNodeSet) extends NodeSetDef{
 
   override def toString() = sets.mkString("[", ", ", ", ") +
-    set.mkString("", ", ", "]")
+    set.map( n => "'%s'".format(n.fullName)).mkString("", ", ", "]")
 
   def iterator : Iterator[AGNode] = {
     val s = mutable.Set[AGNode]()
@@ -109,7 +109,7 @@ class LiteralNodeSet private (private val content : mutable.Set[AGNode])
   def +=(n : AGNode) = content += n
   def -=(n : AGNode) = content -= n
 
-  override def toString() = content.mkString("[", ",\n", "]")
+  override def toString() = content.map( n => "'%s'".format(n.fullName)).mkString("[", ",\n", "]")
   def literalCopy() = LiteralNodeSet(this.iterator)
 }
 

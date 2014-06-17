@@ -2,7 +2,8 @@ package puck.javaAG
 
 import puck.graph._
 import JavaNodeKind._
-import puck.graph.constraints.{AbstractionPolicy, Move, SupertypeAbstraction, RedirectionPolicy}
+import puck.graph.constraints.{AbstractionPolicy, SupertypeAbstraction}
+
 
 /**
  * Created by lorilan on 06/05/14.
@@ -63,6 +64,38 @@ class JavaNode( graph : AccessGraph,
                 kind : NodeKind)
   extends AGNode(graph, id, name, kind){
 
+  override def canContain(n : AGNode) : Boolean =
+    super.canContain(n) &&
+      (n.kind match {
+        case nk @ AbstractMethod() =>
+          /*
+            All subtypes must implement the method
+           */
+          this.subTypes.forall{ _.content.exists{ c =>
+            c.kind match{
+              case ck @ Method() => n.name == c.name && nk.`type` == ck.`type`
+              case _ => false
+            }
+          }
+        }
+        /*/*
+          cannot have two methods with same name and same type
+        */
+        case nk @ Method() =>
+
+           this.content.forall{ c =>
+            //TODO factorize !
+            c.kind match {
+              case ck @ Method() => c.name != n.name ||
+                ck.`type`.input != nk.`type`.input
+              case ck @ AbstractMethod() => c.name != n.name ||
+                ck.`type`.input != nk.`type`.input
+              case _ => true
+            }
+          }*/
+        case _ => true
+      })
+
   def isSubtypeOf(other : AGNode) = {
     (this.kind, other.kind) match {
       case (Class(), Interface()) => new JavaType(this).subtypeOf(new JavaType(other))
@@ -71,28 +104,40 @@ class JavaNode( graph : AccessGraph,
     }
   }
 
-  override def searchExistingAbstractions(){
-    println("searching abstractions for " +this)
-    graph.iterator foreach { n =>
-      if(n != this && (this isSubtypeOf n) &&
-        //to be a valid abstraction, in addition to be a supertype,
-        // needed method signature
-        users.forall {
-          user =>
-            user.sideUses(this) match {
-              case Some(sideUses) =>
-                sideUses.forall{ sideUse =>
-                  n.content.exists(nchild =>
-                    new JavaType(nchild).subtypeOf(new JavaType(sideUse.target)))
-                }
-              case None => true
-            }
-        })
-        println("found " + n)
-      this.abstractions0 += ((n, SupertypeAbstraction()))
+  /*  override def searchExistingAbstractions() = {
+      val abstractionSet =  smutable.Set[(AGNode, AbstractionPolicy)]()
+      println("searching abstractions for " +this)
+      graph.iterator foreach { n =>
+        if(n != this && (this isSubtypeOf n) &&
+          //to be a valid abstraction, in addition to be a supertype,
+          // needed method signature
+          users.forall {
+            user =>
+              user.sideUses(this) match {
+                case Some(sideUses) =>
+                  sideUses.forall{ sideUse =>
+                    n.content.exists(nchild =>
+                      new JavaType(nchild).subtypeOf(new JavaType(sideUse.target)))
+                  }
+                case None => true
+              }
+          }) {
+          println("found " + n)
+          abstractionSet += ((n, SupertypeAbstraction()))
+        }
+      }
+      println("search terminated")
+      abstractionSet
+    }*/
+
+  override def abstractionName(abskind :  NodeKind, policy : AbstractionPolicy) : String =
+    (abskind, policy) match {
+      case (Method(), SupertypeAbstraction())
+        | (AbstractMethod(), SupertypeAbstraction()) => this.name
+
+      case _ => super.abstractionName(abskind, policy)
+
     }
-    println("search terminated")
-  }
 
   override def createAbstraction(abskind : NodeKind,
                                  policy : AbstractionPolicy) = {

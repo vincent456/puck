@@ -16,10 +16,10 @@ class SettingsFrame(filesHandler : FilesHandler) extends Frame{
     var path : Label = _
     contents += new Button("Set dot path"){
       path = new Label(
-        if(filesHandler.graphvizDot == null)
-          "no path setted: puck will use PATH variable to seek dot"
-        else
-          filesHandler.graphvizDot.getPath)
+        filesHandler.graphvizDot match {
+          case None => "no path setted: puck will use PATH variable to seek dot"
+          case Some(f) => f.getPath
+        })
 
       action = new Action("Choosing dot path"){
           def apply() {
@@ -30,7 +30,7 @@ class SettingsFrame(filesHandler : FilesHandler) extends Frame{
             val f = fc.selectedFile
             if(f != null) {
               filesHandler.graphvizDot = f
-              path.text = filesHandler.graphvizDot.getPath
+              path.text = f.getPath
             }
           }
       }

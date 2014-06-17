@@ -18,7 +18,7 @@ trait DecisionMaker{
 
   def abstractionKindAndPolicy(impl : AGNode) : (NodeKind, AbstractionPolicy)
 
-  def chooseNode(graph : AccessGraph)(predicate : AGNode => Boolean) : Option[AGNode]
+  def chooseNode(graph : AccessGraph, context : String)(predicate : AGNode => Boolean) : Option[AGNode]
 
   /**
    * to return true, the method must first modify the constraint acccordingly

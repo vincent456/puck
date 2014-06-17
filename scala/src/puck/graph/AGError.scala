@@ -6,3 +6,7 @@ package puck.graph
 class AGError(msg:String) extends Error(msg){
   def this()=this("")
 }
+
+class IllegalAGOperation(msg : String) extends AGError(msg){
+  def this() = this("")
+}

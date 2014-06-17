@@ -45,13 +45,13 @@ trait Solver {
     }
   }
 
-  def findHost(kind : NodeKind,
-               wrongUsers: List[AGNode])
+  def findHost(toBeContained : AGNode,
+               wrongUsers: List[AGNode], context : String)
               (predicate : (AGNode) => Boolean = _ => true ) : Option[AGNode] = {
 
-    decisionMaker.chooseNode(graph){
+    decisionMaker.chooseNode(graph, context){
       n =>
-        n.kind.canContain(kind) &&
+        n.canContain(toBeContained) &&
           predicate(n) &&
           wrongUsers.forall(!_.interloperOf(n))
     }
@@ -63,6 +63,7 @@ trait Solver {
                               absKind : NodeKind) : AGNode => Boolean = absPolicy match {
     case SupertypeAbstraction() =>
       potentialHost => !(impl interloperOf potentialHost)
+
     case DelegationAbstraction() =>
       potentialHost => !(potentialHost interloperOf impl)
   }
@@ -74,35 +75,85 @@ trait Solver {
                      wrongUsers : List[AGNode],
                      degree : Int = 1) : Option[AGNode] = {
 
-    def intro (currentImpl : AGNode, wrongUsers : List[AGNode]) : Option[AGNode] ={
+    def intro (currentImpl : AGNode, wrongUsers : List[AGNode]) : Option[(AGNode, AbstractionPolicy)] ={
       val (absKind, absPolicy) = getAbsKindAndPolicy(currentImpl)
       println("single abs intro")
-      findHost(absKind, wrongUsers) {
-        singleAbsIntroPredicate(currentImpl, absPolicy, absKind)
-      } match {
-        case None => None
-        case Some(host) =>
-          println("found host for abs : " + host)
-          val abs = currentImpl.createAbstraction(absKind, absPolicy)
-          host.content_+=(abs)
-          // /!\ redirect from original impl !
-          // wrongUsers not empty only when degree == deg
-          wrongUsers.foreach(_.redirectUses(impl, abs, absPolicy))
-          Some(abs)
+      graph.register {
+        val abs = currentImpl.createAbstraction(absKind, absPolicy)
+        findHost(abs, wrongUsers,
+          "Searching host for %s\n abstraction of %s ( %s )".format(abs, currentImpl, absPolicy)) {
+          singleAbsIntroPredicate(currentImpl, absPolicy, absKind)
+        } match {
+          case None =>
+            graph.transformations.undo()
+            println("host not found, trying hostIntro")
+            hostIntro(currentImpl, absKind, absPolicy, wrongUsers)
+          case Some(host) =>
+            println("found host : " + host)
+            host.content_+=(abs)
+            Some(abs, absPolicy)
+        }
       }
     }
 
-    def aux(deg : Int, currentImpl : AGNode) : Option[AGNode] = {
-        if(deg == degree)
-          intro (currentImpl, wrongUsers)
-        else
-          intro (currentImpl, List()) match {
-            case None => throw new AGError("Single abs intro degree %d/%d error".format(deg, degree))
-            case Some(abs) =>
-              aux(deg + 1, abs)
-          }
+    def hostIntro (toBeContained : AGNode,
+                   absKind : NodeKind,
+                   absPolicy : AbstractionPolicy,
+                   wrongUsers : List[AGNode]) : Option[(AGNode, AbstractionPolicy)] = {
+      println("hostIntro")
+      toBeContained.container.kind.abstractKinds(absPolicy).find(_.canContain(absKind)) match {
+        case None => throw new AGError("container abstraction creation error")
+        case Some(cterAbsKind) =>
+            val cterAbs = toBeContained.container.createAbstraction(cterAbsKind,
+              absPolicy)
+            val abs = toBeContained.abstractions.find {
+              case (existingAbs, `absPolicy`) => cterAbs.contains(existingAbs)
+              case _ => false
+            } match {
+              case None =>
+                val newAbs = toBeContained.createAbstraction(absKind, absPolicy)
+                cterAbs content_+= newAbs
+                newAbs
+              case Some((existingAbs, _)) => existingAbs
+            }
+
+            findHost(cterAbs, wrongUsers,
+              toBeContained + " abstracted as " + abs + "("+ absPolicy+")\n"+
+                cterAbs + " ("+ absPolicy +") was introduced to contains it.\n" +
+                "Searching a container for " + cterAbs
+            )( n => n != cterAbs) match {
+              case None => None
+              case Some(h) =>
+                h content_+= cterAbs
+                Some(abs, absPolicy)
+            }
+      }
     }
-    aux(1, impl)
+
+    def aux(deg : Int, currentImpl : AGNode) : Option[(AGNode, AbstractionPolicy)] = {
+      if(deg == degree)
+        intro (currentImpl, wrongUsers)
+      else
+        intro (currentImpl, List()) match {
+          case None => throw new AGError("Single abs intro degree %d/%d error".format(deg, degree))
+          case Some((abs, _)) =>
+            aux(deg + 1, abs)
+        }
+    }
+    graph.register {
+      aux(1, impl) match {
+        case None => None
+        case Some((abs, absPolicy)) =>
+          wrongUsers.foreach(_.redirectUses(impl, abs, absPolicy))
+          if(impl.wrongUsers.nonEmpty){
+            graph.transformations.undo()
+            None
+          }
+          else{
+            Some(abs)
+          }
+      }
+    }
   }
 
   def multipleAbsIntro (impl : AGNode,
@@ -111,71 +162,33 @@ trait Solver {
     false
   }
 
-  def hostIntro (impl : AGNode,
-                 wrongUsers : List[AGNode]) : Boolean = {
-    val (absKind, absPolicy) = getAbsKindAndPolicy(impl)
-    println("hostIntro")
-    //graph.nodeKinds.find(_.canContain(absKind))
-    impl.container.kind.abstractKinds(absPolicy).find(_.canContain(absKind)) match {
-      case None => throw new AGError("container abstraction creation error")
-      case Some(cterAbsKind) =>
-        graph.register[Boolean]{
 
-          val cterAbs = impl.container.createAbstraction(cterAbsKind,
-            absPolicy)
-          val abs = impl.abstractions.find {
-            case (existingAbs, `absPolicy`) => cterAbs.contains(existingAbs)
-            case _ => false
-          } match {
-            case None =>
-              val newAbs = impl.createAbstraction(absKind, absPolicy)
-              cterAbs content_+= newAbs
-              newAbs
-            case Some((existingAbs, _)) => existingAbs
-          }
-
-          val success = findHost(cterAbs.kind, wrongUsers)() match {
-            case None => false
-            case Some(h) =>
-              h content_+= cterAbs
-              wrongUsers.foreach(_.redirectUses(impl, abs, absPolicy))
-              impl.wrongUsers.isEmpty
-          }
-
-          if(!success)
-            graph.transformations.undo()
-
-          success
-        }
-    }
-  }
 
   def getAbsKindAndPolicy(impl : AGNode) : (NodeKind, AbstractionPolicy) = {
     if(impl.kind.abstractionPolicies.isEmpty){
       throw new AGError(impl + " has no abstraction policy !")
     }
     val policies = impl.kind.abstractionPolicies
-      if(policies.tail.isEmpty
-        && impl.kind.abstractKinds(policies.head).tail.isEmpty){
-        (impl.kind.abstractKinds(policies.head).head, policies.head)
-      }
-      else
-        decisionMaker.abstractionKindAndPolicy(impl)
+    if(policies.tail.isEmpty
+      && impl.kind.abstractKinds(policies.head).tail.isEmpty){
+      (impl.kind.abstractKinds(policies.head).head, policies.head)
+    }
+    else
+      decisionMaker.abstractionKindAndPolicy(impl)
   }
 
   def solveUsesToward(impl : AGNode) {
-
+    println("###################################################")
+    println("##### Solving uses violations toward %s ######".format(impl))
     val wrongUsers = redirectTowardExistingAbstractions(impl, impl.wrongUsers)
 
     if (wrongUsers.nonEmpty){
       singleAbsIntro(impl, wrongUsers) match {
         case None =>
           if (!multipleAbsIntro(impl, wrongUsers))
-            if (!hostIntro(impl, wrongUsers)) {
-              singleAbsIntro(impl, wrongUsers, 2) match {
-                case None => throw new AGError ("cannot perform intro for " + impl)
-                case _ => ()
-              }
+            singleAbsIntro(impl, wrongUsers, 2) match {
+              case None => throw new AGError ("cannot perform intro for " + impl)
+              case _ => ()
             }
         case _ => ()
       }
@@ -188,32 +201,43 @@ trait Solver {
     def solveContains() {
       graph.iterator.find(_.isWronglyContained) match {
         case None => ()
-        case Some(n) =>
+        case Some(wronglyContained) =>
 
-          val cter = n.container
+          val cter = wronglyContained.container
 
-          if(!decisionMaker.grantContainingAuth(cter, n)){
+          if(!decisionMaker.grantContainingAuth(cter, wronglyContained)){
             // detach for host searching : do not want to consider parent constraints
-            n.container.content_-=(n)
+            wronglyContained.detach()
 
-            val newCter = findHost(n.kind, List()){
-              (potentialHost: AGNode) => !(potentialHost interloperOf n)
+            val newCter = findHost(wronglyContained, List(),
+              "Moving " + wronglyContained +"\nSearching a host for it"){
+              (potentialHost: AGNode) => !(potentialHost interloperOf wronglyContained) &&
+                potentialHost != wronglyContained
             } match {
               case None =>
-                val newCter = n.createContainer()
-                n.addHideFromRootException(newCter)
+                val newCter = graph.nodeKinds.find(_.canContain(wronglyContained.kind)) match {
+                  case None => throw new AGError("do not know how to create a valid parent for " + wronglyContained.kind)
+                  case Some(parentKind) =>
+                    graph.addNode (wronglyContained.name + "_container", parentKind)
+                }
 
-                findHost(newCter.kind, List())() match {
+                wronglyContained.addHideFromRootException(newCter)
+
+                findHost(newCter, List(),
+                  "Moving " + wronglyContained +"\n"+
+                    newCter+" created to contain it.\n" +
+                    "Searching a host for " + newCter)( n => n != newCter) match {
                   case None => throw new AGError("Cannot find a container's container")
                   case Some(h) =>
+                    graph.root.content_-=(newCter)
                     h.content_+=(newCter)
                     newCter
                 }
               case Some(h) => h
             }
             //re-attach before moving
-            cter content_+= n
-            n.moveTo(newCter)
+            cter content_+= wronglyContained
+            wronglyContained.moveTo(newCter)
           }
           step()
           solveContains()
@@ -224,7 +248,6 @@ trait Solver {
       priorityViolationTarget match {
         case None => ()
         case Some(target) =>
-          target.searchExistingAbstractions()
           solveUsesToward(target)
           step()
           solveUses()

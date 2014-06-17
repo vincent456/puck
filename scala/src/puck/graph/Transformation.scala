@@ -20,29 +20,33 @@ class CompositeTransformation extends Transformation{
 
   def undo(){
     while(sequence.nonEmpty){
-      sequence.pop().undo()
+      val t = sequence.pop()
+      t.undo()
     }
   }
 }
 
 class AddNode( node : AGNode) extends Transformation {
+  override def toString = "add node %s".format(node)
+
   def undo(){
     val g = node.graph
-    node.detach()
-    g.nodes -= node
+    g.remove(node)
   }
 }
 class RemoveNode( node : AGNode) extends Transformation{
+  override def toString = "remove node %s".format(node)
   def undo(){
     val g = node.graph
-    g.root.content_+=(node)
-    g.nodes += node
+    g.addNode(node)
   }
 }
 class AddEdge( edge : AGEdge) extends Transformation {
+  override def toString = "add edge " + edge
   def undo(){ edge.delete()}
 }
 class RemoveEdge( edge : AGEdge) extends Transformation{
+  override def toString = "remove edge " + edge
   def undo(){ edge.create()}
 }
 class AddEdgeDependency( dominant : AGEdge, dominated : AGEdge) extends Transformation{

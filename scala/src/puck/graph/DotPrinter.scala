@@ -74,6 +74,7 @@ object DotPrinter {
     }
 
     def printUse(source : AGNode, target : AGNode) =
+      if(!source.isa(target)) //TODO remove test. quickfix to avoid dot crash
       printArc(usesStyle, source, target,
         if(violations.contains(AGEdge.uses(source, target)))
           violationStatus

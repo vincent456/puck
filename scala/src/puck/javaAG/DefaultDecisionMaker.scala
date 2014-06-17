@@ -1,7 +1,7 @@
 package puck.javaAG
 
 import puck.graph.{AccessGraph, AGNode}
-import puck.graph.constraints.DecisionMaker
+import puck.graph.constraints.{LiteralNodeSet, DecisionMaker}
 
 
 /**
@@ -16,8 +16,11 @@ object DefaultDecisionMaker extends DecisionMaker{
     (impl.kind.abstractKinds(policy).head, policy)
   }
 
-  def chooseNode(graph : AccessGraph)(predicate : AGNode => Boolean) : Option[AGNode] = {
-      graph.iterator.find(predicate)
+  def chooseNode(graph : AccessGraph, context : String)(predicate : AGNode => Boolean) : Option[AGNode] = {
+    println(context)
+    val found = graph.iterator.find(predicate)
+    println("found : " + found)
+    found
   }
 
   def grantContainingAuth(container : AGNode, content : AGNode) : Boolean ={

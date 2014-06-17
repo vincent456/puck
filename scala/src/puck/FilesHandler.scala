@@ -2,7 +2,7 @@ package puck
 
 import java.io._
 
-import puck.graph.{AGError, DotPrinter, AGBuildingError, AccessGraph}
+import puck.graph._
 import puck.javaAG.{JavaAccessGraph, DefaultDecisionMaker, JavaSolver, JavaNode}
 import scala.sys.process.Process
 import puck.graph.constraints.{DecisionMaker, ConstraintsParser}
@@ -35,9 +35,14 @@ class FilesHandler private (private [this] var srcDir : File,
   def apiNodesFile = this.apiNodesFile0
   def apiNodesFile_=(f:File){this.apiNodesFile0= f.getCanonicalFile}
 
-  private [this] var gdot : File = _
+  private [this] var gdot : Option[File] = Some(new File("/home/lorilan/graphviz/bin/dot"))
   def graphvizDot = this.gdot
-  def graphvizDot_=(f: File){this.gdot = f.getCanonicalFile}
+  def graphvizDot_=(f: File){this.gdot = Some(f.getCanonicalFile)}
+  def graphvizDot_=(sf: Option[File]){ sf match {
+    case Some(f) => graphvizDot_=(f)
+    case None => this.gdot = None
+    }
+  }
 
   def decouple = this.decouple0
   def decouple_=(f:File){this.decouple0 = f.getCanonicalFile}
@@ -65,13 +70,19 @@ class FilesHandler private (private [this] var srcDir : File,
       ag, JavaNode, printId)
   }
 
+  def makeProlog(){
+    PrologPrinter.print(new BufferedWriter(new FileWriter(graph.getCanonicalPath+".pl")), ag)
+  }
+
   def solve (trace : Boolean = false,
              decisionMaker : DecisionMaker = DefaultDecisionMaker){
     var inc = 0
 
     new JavaSolver(accessGraph, decisionMaker).solve(
       if(trace) {() =>
-        println("solve iteration " + inc)
+        println("*****************************************************")
+        println("*********** solve end of iteration %d *************".format(inc))
+        println()
         makePng(soutput = Some(new FileOutputStream(
           new File(graph.getCanonicalPath + "_trace" + inc +".png"))))
         inc += 1
@@ -85,8 +96,10 @@ class FilesHandler private (private [this] var srcDir : File,
 
   def dot2png(soutput : Option[OutputStream] = None) : Int = {
     val processBuilder = Process(List(
-      if(graphvizDot == null) "dot"  // relies on dot directory being in the PATH variable
-      else graphvizDot.getCanonicalPath, "-Tpng", graph.getCanonicalPath+".dot"))
+      graphvizDot match {
+        case None => "dot" // relies on dot directory being in the PATH variable
+        case Some(f) => f.getCanonicalPath
+      } , "-Tpng", graph.getCanonicalPath+".dot"))
 
     soutput match {
       case None =>(processBuilder #> new File(graph.getCanonicalPath + ".png")).!
@@ -101,15 +114,15 @@ class FilesHandler private (private [this] var srcDir : File,
   }
 
   def parseConstraints() {
-      val parser = new ConstraintsParser(accessGraph)
-      try {
-        parser(new FileReader(decouple))
-      } catch {
-        case e : NoSuchElementException =>
-          accessGraph.discardConstraints()
-          throw new AGError("parsing failed :" + e.getLocalizedMessage)
+    val parser = new ConstraintsParser(accessGraph)
+    try {
+      parser(new FileReader(decouple))
+    } catch {
+      case e : NoSuchElementException =>
+        accessGraph.discardConstraints()
+        throw new AGError("parsing failed :" + e.getLocalizedMessage)
 
-      }
+    }
   }
 
 }

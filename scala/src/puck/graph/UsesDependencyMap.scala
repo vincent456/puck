@@ -64,7 +64,7 @@ class UsesDependencyMap(val user : AGNode,
       val (dominant, dominated) = order(usee, e)
       user.graph.transformations.addEdgeDependency(dominant, dominated)
     }
-    usee.users_+=(user)
+    usee .users_+=(user)
   }
 
   def -=(usee : AGNode){
@@ -92,7 +92,7 @@ class UsesDependencyMap(val user : AGNode,
 
     if(dependencies.isEmpty)
       content.remove(usee)
-    usee.users_-=(user)
+    usee users_-= user
   }
 
   def isEmpty = content.isEmpty

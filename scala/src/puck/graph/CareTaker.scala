@@ -12,9 +12,9 @@ import scala.collection.mutable
  */
 trait CareTaker {
 
-  def startRegister()
+  def startRegister() : CareTaker
 
-  def stopRegister()
+  def stopRegister() : CareTaker
 
   def sequence[T]( op : => T ) : T
 
@@ -40,9 +40,15 @@ trait CareTaker {
 
 class CareTakerNoop(val graph : AccessGraph) extends CareTaker{
 
-  def startRegister(){graph.transformations = new CareTakerRegister(graph)}
+  def startRegister()={
+    graph.transformations = new CareTakerRegister(graph)
+    graph.transformations
+  }
 
-  def stopRegister(){graph.transformations = this}
+  def stopRegister()={
+    graph.transformations = this
+    this
+  }
 
   def sequence[T]( op : => T ) = op
 
@@ -65,11 +71,23 @@ class CareTakerNoop(val graph : AccessGraph) extends CareTaker{
                           policy: AbstractionPolicy){}
 }
 
-class CareTakerRegister(val graph : AccessGraph) extends CareTaker {
+class CareTakerRegister (val graph : AccessGraph) extends CareTaker {
 
-  def startRegister(){graph.transformations = this}
+  private [this] var registering = 1
 
-  def stopRegister(){graph.transformations = new CareTakerNoop(graph)}
+  def startRegister()={
+    registering += 1
+    graph.transformations = this
+    this
+  }
+
+  def stopRegister()={
+    registering -= 1
+    if(registering == 0 ){
+      graph.transformations = new CareTakerNoop(graph)
+    }
+    graph.transformations
+  }
 
   private val sequencesStack = new mutable.Stack[CompositeTransformation]()
   sequencesStack.push(new CompositeTransformation())
@@ -93,9 +111,13 @@ class CareTakerRegister(val graph : AccessGraph) extends CareTaker {
   }
 
   def undo() {
-    stopRegister()
+    graph.transformations = new CareTakerNoop(graph)
+    /*println("sequence to undo : ")
+    currentSequence.sequence.foreach(println)
+    println("end of sequence to undo.")*/
     currentSequence.undo()
-    startRegister()
+
+    graph.transformations = this
   }
 
   def addNode(n: AGNode) {

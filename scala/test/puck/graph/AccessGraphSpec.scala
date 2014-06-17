@@ -32,13 +32,20 @@ class AccessGraphSpec extends UnitSpec{
     a0 content_+= ab
     a0 content_+= ac
 
-    a0 should be (a2)
-    a0 should not be (aa)
+    a0 should equal (a2)
+    a0 should not equal (aa)
 
   }
 
+  it should "contains nodes that are added to it" in {
+    ag.nodes.toStream should contain (a0)
+    ag.nodes.toStream should contain (aa)
+    ag.nodes.toStream should contain (ab)
+    ag.nodes.toStream should contain (ac)
+  }
 
-  "An Access Graph Node" should "contains its content" in {
+
+ /* "An Access Graph Node" should "contains its content" in {
     a0.contains(aa) should be (true)
     a0.contains(ab) should be (true)
     a0.contains(ac) should be (true)
@@ -46,7 +53,5 @@ class AccessGraphSpec extends UnitSpec{
     aa.container should be (a0)
     ab.container should be (a0)
     ac.container should be (a0)
-  }
-
-
+  }*/
 }

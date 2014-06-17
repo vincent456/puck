@@ -10,7 +10,7 @@ import puck.javaAG.JavaNodeKind.{AbstractMethod, Method, Class, Interface}
 
 class JavaType(n : AGNode) extends NamedType(n){
 
-/*  def hasMethodThantCanOverride(name : String, sig : Arrow) : Boolean =
+ def hasMethodThantCanOverride(name : String, sig : Arrow) : Boolean =
     n.content.exists{ (childThis : AGNode) =>
       childThis.name == name &&
         (childThis.kind match {
@@ -18,7 +18,7 @@ class JavaType(n : AGNode) extends NamedType(n){
           case _ => false
         })
     }
-
+/*
   // compute structural subtyping in addition to registered named subtyping
   override def subtypeOf(other : Type) : Boolean = super.subtypeOf(other) ||
     ( other match {

@@ -67,27 +67,37 @@ import puck.javaAG.DefaultDecisionMaker
 object Front{
 
   def main(args : Array[String]){
-    val fh = FilesHandler("/home/lorilan/puck_svn/distrib/examples/prototype/actors/candidate")()
+
+    val example = "/home/lorilan/puck_svn/distrib/examples/"
+    //val prototype ="prototype/actors/candidate"
+    val bridge = "bridge/hannemann_inspired/candidate"
+
+    val fh = FilesHandler(example + bridge)()
     //fh.decouple = "/home/lorilan/puck_svn/distrib/examples/composite/candidate/decouple_strict.pl"
     fh.loadGraph(null)
     println("graph loaded")
 
-    //fh.accessGraph.list()
-    //println(fh.parseConstraints() == fh.parseConstraints())
-    fh.parseConstraints()
 
-    print("make png ... ")
-    fh.makePng(soutput = Some(new FileOutputStream(
-      new File(fh.graph.getCanonicalPath + "_before.png"))))
-    println("done")
+       //fh.accessGraph.list()
+       //println(fh.parseConstraints() == fh.parseConstraints())
+       fh.parseConstraints()
 
-    fh.solve(trace = true,
-        decisionMaker = DefaultDecisionMaker)
+       print("make png ... ")
+       fh.makePng(soutput = Some(new FileOutputStream(
+         new File(fh.graph.getCanonicalPath + "_before.png"))))
+       println("done")
 
-   /* print("make png ... ")
-    fh.makePng(soutput = Some(new FileOutputStream(
-      new File(fh.graph.getCanonicalPath + "_after.png"))))
+       fh.solve(trace = true,
+           decisionMaker = DefaultDecisionMaker)
+
+   /* print("make pl ... ")
+
+    scala.Console.withOut(new FileOutputStream(fh.srcDirectory+ "/decouple_after.pl")) {
+      fh.accessGraph.printConstraints()
+    }
+    fh.makeProlog()
     println("done")*/
 
+    fh.accessGraph.printConstraints()
   }
 }

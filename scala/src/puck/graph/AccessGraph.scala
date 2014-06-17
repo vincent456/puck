@@ -9,6 +9,8 @@ import puck.graph.constraints.{Constraint, NamedNodeSet}
 
 object AccessGraph {
   val rootId = 0
+  val rootName = "root"
+  val unrootedStringId = "<DETACHED>"
 }
 
 class AccessGraph (nodeBuilder : AGNodeBuilder) {
@@ -20,12 +22,24 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
   val nodeSets : mutable.Map[String, NamedNodeSet] = mutable.Map()
   val constraints : mutable.Buffer[Constraint] = mutable.Buffer()
 
-  val nodes = mutable.Buffer[AGNode]()
+  private [this] val nodes0 = mutable.Buffer[AGNode]()
+  def nodes : Iterator[AGNode] = nodes0.iterator
+
   /*private[graph] val predefTypes : mutable.Map[String, Type] = mutable.Map()
   def predefType(name : String ) = predefTypes(name)*/
 
   private var id : Int = 1
-  val root : AGNode = nodeBuilder(this, AccessGraph.rootId, "root", AGRoot())
+  val root : AGNode = nodeBuilder(this, AccessGraph.rootId, AccessGraph.rootName, AGRoot())
+
+  val scopeSeparator = nodeBuilder.scopeSeparator
+
+/*  def attachRoots() {
+    this.foreach{ n =>
+      if(n.container == n && n != root){
+           root content_+= n
+      }
+    }
+  }*/
 
   def nodeKinds = nodeBuilder.kinds
 
@@ -62,7 +76,9 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
   }
 
   def list(){
-    nodes.foreach(println)
+    println("AG nodes :")
+    nodes0.foreach(n => println("- " + n))
+    println("list end")
   }
 
   private [puck] val nodesByName = mutable.Map[String, AGNode]()
@@ -84,6 +100,10 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
   def addNode(fullName: String, localName:String): AGNode =
     addNode(fullName, localName, VanillaKind())
 
+  def remove(n : AGNode){
+    nodes0 -= n
+    transformations.removeNode(n)
+  }
 
   var transformations : CareTaker = new CareTakerNoop(this)
 
@@ -94,14 +114,23 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
     res
   }
 
-  def addNode(localName:String, kind: NodeKind) : AGNode = {
-    id = id + 1
-    val n = nodeBuilder(this, id, localName, kind)
-    root.content_+=(n)
-    this.nodes += n
+  def addNode(n : AGNode) : AGNode = {
+    //assert n.graph == this ?
+    this.nodes0 += n
     transformations.addNode(n)
     n
   }
+
+  def addNode(localName:String, kind: NodeKind) : AGNode = {
+    id = id + 1
+    val n = nodeBuilder(this, id, localName, kind)
+    addNode(n)
+    //this.root.content_+=(n)
+    //n
+  }
+
+  def addNode(localName : String) : AGNode =
+    addNode(localName, VanillaKind())
 
   def addUsesDependency(primaryUser : AGNode, primaryUsee : AGNode,
                         sideUser : AGNode, sideUsee : AGNode) {
