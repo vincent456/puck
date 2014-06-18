@@ -35,6 +35,7 @@ object PrologPrinter {
         case Isa() => "isa"
         case Uses() => "uses"
         case Contains() => "contains"
+        case Undefined() => throw new AGError("cannot print an edge with an undefined type")
       }
       "edge(%s, %d, %d).".format(kind, edge.source.id, edge.target.id)
     }

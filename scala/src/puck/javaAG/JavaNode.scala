@@ -64,37 +64,50 @@ class JavaNode( graph : AccessGraph,
                 kind : NodeKind)
   extends AGNode(graph, id, name, kind){
 
-  override def canContain(n : AGNode) : Boolean =
+  override def canContain(n : AGNode) : Boolean = {
+
+    def noNameClash(l : Int)(c: AGNode) : Boolean = c.kind match {
+
+      /*case ck @ Method() =>
+        c.name != n.name || ck.`type`.input.length != l
+      case ck @ AbstractMethod() =>
+        c.name != n.name || ck.`type`.input.length != l
+*/
+      case ck @(Method() | AbstractMethod()) =>
+        println("comparing %s and %s".format(c, n))
+        c.name != n.name || {
+
+          if(ck.asInstanceOf[HasType[MethodType]].`type` == null)
+            println("type is null")
+
+          ck.asInstanceOf[HasType[MethodType]].`type`.input.length != l}
+      case _ => true
+    }
+
     super.canContain(n) &&
       (n.kind match {
-        case nk @ AbstractMethod() =>
+        case nk@AbstractMethod() =>
           /*
             All subtypes must implement the method
            */
-          this.subTypes.forall{ _.content.exists{ c =>
-            c.kind match{
-              case ck @ Method() => n.name == c.name && nk.`type` == ck.`type`
-              case _ => false
+          this.content.forall(noNameClash(nk.`type`.input.length)) &&
+          this.subTypes.forall {
+            _.content.exists { c =>
+              c.kind match {
+                case ck@Method() => n.name == c.name && nk.`type` == ck.`type`
+                case _ => false
+              }
             }
           }
-        }
-        /*/*
+        /*
           cannot have two methods with same name and same type
-        */
+          */
         case nk @ Method() =>
+          this.content.forall(noNameClash(nk.`type`.input.length))
 
-           this.content.forall{ c =>
-            //TODO factorize !
-            c.kind match {
-              case ck @ Method() => c.name != n.name ||
-                ck.`type`.input != nk.`type`.input
-              case ck @ AbstractMethod() => c.name != n.name ||
-                ck.`type`.input != nk.`type`.input
-              case _ => true
-            }
-          }*/
         case _ => true
       })
+  }
 
   def isSubtypeOf(other : AGNode) = {
     (this.kind, other.kind) match {
@@ -148,8 +161,9 @@ class JavaNode( graph : AccessGraph,
         abs.users_+=(this)
         content.foreach { (child: AGNode) =>
           child.kind match {
-            case Method() | AbstractMethod() =>
-              abs.content_+=(child.createNodeAbstraction(AbstractMethod(),
+            case ck @ (Method() | AbstractMethod()) =>
+              val t = ck.asInstanceOf[HasType[MethodType]].`type`
+              abs.content_+=(child.createNodeAbstraction(abstractMethod(t),
                 SupertypeAbstraction()))
             case _ => ()
           }

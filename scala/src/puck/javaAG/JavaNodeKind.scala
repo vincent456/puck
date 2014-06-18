@@ -56,7 +56,7 @@ object JavaNodeKind {
     }
   }
 
-  case class Constructor private[javaAG]() extends NodeKind with HasType[Arrow]{
+  case class Constructor private[javaAG]() extends NodeKind with HasType[MethodType]{
     def canContain(k : NodeKind) = false
 
     override def abstractionPolicies = List(DelegationAbstraction())
@@ -68,7 +68,7 @@ object JavaNodeKind {
 
   }
 
-  case class Method private[javaAG]() extends NodeKind with HasType[Arrow] {
+  case class Method private[javaAG]() extends NodeKind with HasType[MethodType] {
     def canContain(k : NodeKind) = false
 
     def abstractKinds(p : AbstractionPolicy) = p match {
@@ -77,7 +77,7 @@ object JavaNodeKind {
     }
   }
 
-  case class Field private[javaAG]() extends NodeKind with HasType[NamedType]{
+  case class Field private[javaAG]() extends NodeKind with HasType[JavaType]{
     def canContain(k : NodeKind) = false
     //TODO check abstraction : FieldRead != FieldWrite
     // fieldread abstraction type = () -> t
@@ -87,7 +87,7 @@ object JavaNodeKind {
     override def abstractionPolicies = List(DelegationAbstraction())
   }
 
-  case class AbstractMethod private[javaAG]() extends NodeKind with HasType[Arrow] {
+  case class AbstractMethod private[javaAG]() extends NodeKind with HasType[MethodType] {
     def canContain(k : NodeKind) = false
 
     def abstractKinds(p : AbstractionPolicy) = p match {
@@ -97,7 +97,7 @@ object JavaNodeKind {
 
   }
 
-  case class Literal private[javaAG]() extends NodeKind with HasType[NamedType]{
+  case class Literal private[javaAG]() extends NodeKind with HasType[JavaType]{
     def canContain(k : NodeKind) = false
     //TODO in case of method abstraction cf field comment
     override def abstractionPolicies = List(DelegationAbstraction())
@@ -115,11 +115,11 @@ object JavaNodeKind {
   val interface = Interface()
   val `class` = Class()
 
-  def constructor(t : Arrow) = typedKind ( () => Constructor(), t )
-  def method(t : Arrow) = typedKind ( () => Method(), t )
-  def field(t : NamedType) = typedKind ( () => Field(), t )
-  def abstractMethod(t : Arrow) = typedKind ( () => AbstractMethod(), t )
-  def literal(t : NamedType) = typedKind ( () => Literal(), t )
+  def constructor(t : MethodType) = typedKind ( () => Constructor(), t )
+  def method(t : MethodType) = typedKind ( () => Method(), t )
+  def field(t : JavaType) = typedKind ( () => Field(), t )
+  def abstractMethod(t : MethodType) = typedKind ( () => AbstractMethod(), t )
+  def literal(t : JavaType) = typedKind ( () => Literal(), t )
 
   /*def constructor(t : Type) = new Constructor(t)
   def method(t : Type) = new Method(t)

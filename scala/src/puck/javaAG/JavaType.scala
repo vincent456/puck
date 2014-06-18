@@ -1,6 +1,6 @@
 package puck.javaAG
 
-import puck.graph.{AGNode, NamedType, Arrow, Type}
+import puck.graph._
 import puck.javaAG.JavaNodeKind.{AbstractMethod, Method, Class, Interface}
 
 /**
@@ -10,7 +10,7 @@ import puck.javaAG.JavaNodeKind.{AbstractMethod, Method, Class, Interface}
 
 class JavaType(n : AGNode) extends NamedType(n){
 
- def hasMethodThantCanOverride(name : String, sig : Arrow) : Boolean =
+ def hasMethodThatCanOverride(name : String, sig : MethodType) : Boolean =
     n.content.exists{ (childThis : AGNode) =>
       childThis.name == name &&
         (childThis.kind match {
@@ -42,8 +42,8 @@ class JavaType(n : AGNode) extends NamedType(n){
     })*/
 }
 
-class MethodType(input:Type, output:Type) extends Arrow(input, output){
-     override def canOverride(other : Arrow) : Boolean = other match {
-       case Arrow(i, o) => i == input && output.subtypeOf(o)
-     }
+class MethodType(override val input: Tuple, output:Type) extends Arrow(input, output){
+     def canOverride(other : MethodType) : Boolean =
+        other.input == input && output.subtypeOf(other.output)
+
 }

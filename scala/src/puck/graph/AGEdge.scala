@@ -12,6 +12,15 @@ case class Isa() extends EdgeKind
 
 class AGEdge private (val kind : EdgeKind, val source : AGNode, val target: AGNode){
 
+  /*
+   * aliases for readibility
+   */
+  def user = source
+  def usee = target
+
+  def container = source
+  def content = target
+
   override def equals(obj:Any) : Boolean = obj match {
     case that : AGEdge => this.kind == that.kind && this.source == that.source && this.target == that.target
     case _ => false
@@ -22,7 +31,15 @@ class AGEdge private (val kind : EdgeKind, val source : AGNode, val target: AGNo
     "(" + kind+ ", " + source + ", " + target + ")"
   }
 
+  def exists = kind match {
+    case Uses() => source uses target
+    case Contains() => source contains target
+    case Isa() => source isa target
+    case Undefined() => throw new AGError("undefined type edge cannot exist")
+  }
+
   def create() {
+    //println("creating "+ this)
     kind match {
       case Uses() => source.uses_+=(target)
       case Contains() => source.content_+=(target)
@@ -32,6 +49,7 @@ class AGEdge private (val kind : EdgeKind, val source : AGNode, val target: AGNo
     }
   }
   def delete() {
+    //println("deleting "+ this)
     kind match {
       case Uses() => source.uses_-=(target)
       case Contains() => source.content_-=(target)

@@ -92,7 +92,7 @@ class JavaAccessGraph extends AccessGraph(JavaNode){
       return
     }
 
-    val tdNode = addApiTypeNode(td, true)
+    val tdNode = addApiTypeNode(td, addUses = true)
 
     def addBodyDecl(bd : AST.BodyDecl){
       if(bd == null)
@@ -118,7 +118,7 @@ class JavaAccessGraph extends AccessGraph(JavaNode){
 
       val bdNode = bd buildAGNode this
       val strNode = addNode(bd.fullName()+literal, literal,
-        puck.javaAG.JavaNodeKind.literal(NamedType(this("java.lang.String"))))
+        puck.javaAG.JavaNodeKind.literal(new JavaType(this("java.lang.String"))))
 
       /*
         this is obviously wrong: TODO FIX

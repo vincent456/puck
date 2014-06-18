@@ -49,7 +49,39 @@ class CareTakerSpec extends UnitSpec {
     careTaker.undo()
 
     na.contains(nb) should be (false)
+  }
 
+  it should "be able to undo the creation of an edge dependency" in {
+    val ag = new AccessGraph(AGNode)
+    val na = ag.addNode("a")
+    val nb = ag.addNode("b")
+    val nc = ag.addNode("c")
+
+    ag.root.content_+=(na)
+    ag.root.content_+=(nb)
+    nb.content_+=(nc)
+
+    nb.users_+=(na)
+    nc.users_+=(na)
+
+    ag.register {
+      ag.addUsesDependency(AGEdge.uses(na, nb), AGEdge.uses(na, nc))
+
+      na.sideUses(nb).toStream should contain (AGEdge.uses(na, nc))
+      na.primaryUses(nc).toStream should contain (AGEdge.uses(na, nb))
+      (na uses nb) should be (true)
+      (na uses nc) should be (true)
+
+
+      ag.transformations.undo()
+
+      na.sideUses.get(nb) should be (None)
+      na.primaryUses.get(nc) should be (None)
+
+      (na uses nb) should be (true)
+      (na uses nc) should be (true)
+
+    }
   }
 
 }

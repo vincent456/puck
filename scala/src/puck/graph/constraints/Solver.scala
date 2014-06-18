@@ -74,10 +74,10 @@ trait Solver {
   def singleAbsIntro(impl : AGNode,
                      wrongUsers : List[AGNode],
                      degree : Int = 1) : Option[AGNode] = {
+    println("\nsingle abs intro degree "+degree)
 
     def intro (currentImpl : AGNode, wrongUsers : List[AGNode]) : Option[(AGNode, AbstractionPolicy)] ={
       val (absKind, absPolicy) = getAbsKindAndPolicy(currentImpl)
-      println("single abs intro")
       graph.register {
         val abs = currentImpl.createAbstraction(absKind, absPolicy)
         findHost(abs, wrongUsers,
@@ -85,6 +85,7 @@ trait Solver {
           singleAbsIntroPredicate(currentImpl, absPolicy, absKind)
         } match {
           case None =>
+
             graph.transformations.undo()
             println("host not found, trying hostIntro")
             hostIntro(currentImpl, absKind, absPolicy, wrongUsers)
@@ -100,7 +101,7 @@ trait Solver {
                    absKind : NodeKind,
                    absPolicy : AbstractionPolicy,
                    wrongUsers : List[AGNode]) : Option[(AGNode, AbstractionPolicy)] = {
-      println("hostIntro")
+      println("\nhostIntro")
       toBeContained.container.kind.abstractKinds(absPolicy).find(_.canContain(absKind)) match {
         case None => throw new AGError("container abstraction creation error")
         case Some(cterAbsKind) =>
@@ -118,9 +119,8 @@ trait Solver {
             }
 
             findHost(cterAbs, wrongUsers,
-              toBeContained + " abstracted as " + abs + "("+ absPolicy+")\n"+
-                cterAbs + " ("+ absPolicy +") was introduced to contains it.\n" +
-                "Searching a container for " + cterAbs
+              ("%s abstracted as\n %s (%s)\n%s (%s) was introduced to contains it.\n" +
+                "Searching a container for %s").format(toBeContained, abs, absPolicy, cterAbs, absPolicy, cterAbs)
             )( n => n != cterAbs) match {
               case None => None
               case Some(h) =>
@@ -131,6 +131,7 @@ trait Solver {
     }
 
     def aux(deg : Int, currentImpl : AGNode) : Option[(AGNode, AbstractionPolicy)] = {
+      println("*** abs intro degree %d/%d ***".format(deg,degree))
       if(deg == degree)
         intro (currentImpl, wrongUsers)
       else
@@ -144,8 +145,11 @@ trait Solver {
       aux(1, impl) match {
         case None => None
         case Some((abs, absPolicy)) =>
+
           wrongUsers.foreach(_.redirectUses(impl, abs, absPolicy))
           if(impl.wrongUsers.nonEmpty){
+            println("abs intro failure, remaing wrongusers :")
+            print(impl.wrongUsers.mkString("-","\n-", "\n"))
             graph.transformations.undo()
             None
           }
@@ -158,7 +162,7 @@ trait Solver {
 
   def multipleAbsIntro (impl : AGNode,
                         wrongUsers : List[AGNode]) : Boolean ={
-    println("multipleAbsIntro not implemented")
+    println("\nmultipleAbsIntro not implemented")
     false
   }
 
@@ -187,7 +191,8 @@ trait Solver {
         case None =>
           if (!multipleAbsIntro(impl, wrongUsers))
             singleAbsIntro(impl, wrongUsers, 2) match {
-              case None => throw new AGError ("cannot perform intro for " + impl)
+              case None =>
+                throw new AGError ("cannot solve uses toward " + impl)
               case _ => ()
             }
         case _ => ()

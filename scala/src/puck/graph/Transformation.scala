@@ -49,18 +49,16 @@ class RemoveEdge( edge : AGEdge) extends Transformation{
   override def toString = "remove edge " + edge
   def undo(){ edge.create()}
 }
-class AddEdgeDependency( dominant : AGEdge, dominated : AGEdge) extends Transformation{
+class AddEdgeDependency(dominant : AGEdge, dominated : AGEdge) extends Transformation{
   def undo(){
     val g = dominant.source.graph
-    g.removeUsesDependency(dominant.source, dominant.target,
-      dominated.source, dominated.target)
+    g.removeUsesDependency(dominant, dominated)
   }
 }
-class RemoveEdgeDependency( dominant : AGEdge, dominated : AGEdge) extends Transformation{
+class RemoveEdgeDependency(dominant : AGEdge, dominated : AGEdge) extends Transformation{
   def undo(){
     val g = dominant.source.graph
-    g.addUsesDependency(dominant.source, dominant.target,
-      dominated.source, dominated.target)
+    g.addUsesDependency(dominant, dominated)
   }
 }
 

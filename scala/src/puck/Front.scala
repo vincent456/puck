@@ -68,11 +68,11 @@ object Front{
 
   def main(args : Array[String]){
 
-    val example = "/home/lorilan/puck_svn/distrib/examples/"
-    //val prototype ="prototype/actors/candidate"
-    val bridge = "bridge/hannemann_inspired/candidate"
+    //val example ="prototype/actors/candidate"
+    val example = "bridge/hannemann_inspired/candidate"
 
-    val fh = FilesHandler(example + bridge)()
+    val fh = FilesHandler("/home/lorilan/puck_svn/distrib/examples/" +
+      example)()
     //fh.decouple = "/home/lorilan/puck_svn/distrib/examples/composite/candidate/decouple_strict.pl"
     fh.loadGraph(null)
     println("graph loaded")

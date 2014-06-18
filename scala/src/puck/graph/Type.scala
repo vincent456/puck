@@ -25,6 +25,7 @@ case class Tuple(types: List[Type]) extends Type {
       case _ => false
     })
 
+  def length = types.length
 }
 
 case class Arrow(input:Type, output:Type) extends Type{
@@ -35,5 +36,4 @@ case class Arrow(input:Type, output:Type) extends Type{
       case Arrow( i, o) => i.subtypeOf(input) && output.subtypeOf(o)
       case _ => false })
 
-  def canOverride(other : Arrow) : Boolean = this subtypeOf other
 }

@@ -39,60 +39,28 @@ class UsesDependencyMap(val user : AGNode,
     }.mkString("")
   }
 
-  def apply(key : AGNode) : Option[Iterable[AGEdge]] = content.get(key)
+  def get(key : AGNode) : Option[Iterable[AGEdge]] = content.get(key)
 
-  def +=(usee : AGNode, dependencies : AGEdge) = {
-    this.++=(usee, mutable.Set(dependencies))
-  }
+  def apply(key : AGNode) : Iterable[AGEdge] = content(key)
 
-  def order(usee : AGNode, dependency : AGEdge) : (AGEdge, AGEdge) = {
-    keyType match {
-      case Dominant() => (AGEdge.uses(user, usee), dependency)
-      case Dominated() => (dependency, AGEdge.uses(usee, user))
-    }
-  }
+  def +=(usee : AGNode, dependency : AGEdge) = {
 
-  def ++=(usee : AGNode, dependencies: mutable.Set[AGEdge]){
     content get usee match {
       case None =>
-        content += (usee -> dependencies)
+        content += (usee -> mutable.Set(dependency))
       case Some(s) =>
-        content += (usee -> s.++=(dependencies))
+        content += (usee -> s.+=(dependency))
     }
-    dependencies.foreach{ e =>
-      e.create()
-      val (dominant, dominated) = order(usee, e)
-      user.graph.transformations.addEdgeDependency(dominant, dominated)
-    }
-    usee .users_+=(user)
-  }
-
-  def -=(usee : AGNode){
-    content get usee match {
-      case None => ()
-      case Some(dependencies) =>
-        dependencies.foreach{ e =>
-          e.delete()
-          val (dominant, dominated) = order(usee, e)
-          user.graph.transformations.removeEdgeDependency(dominant, dominated)
-        }
-        content.remove(usee)
-    }
-    usee users_-= user
 
   }
 
   def -=(usee : AGNode, dependency : AGEdge){
     val dependencies = content(usee)
+
     dependencies.remove(dependency)
-    dependency.delete()
-
-    val (dominant, dominated) = order(usee, dependency)
-    user.graph.transformations.removeEdgeDependency(dominant, dominated)
-
     if(dependencies.isEmpty)
       content.remove(usee)
-    usee users_-= user
+
   }
 
   def isEmpty = content.isEmpty
