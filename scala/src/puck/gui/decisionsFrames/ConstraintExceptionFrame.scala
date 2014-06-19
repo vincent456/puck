@@ -11,14 +11,16 @@ import scala.swing._
  */
 
 object ConstraintExceptionFrame{
-  def apply(sources : NodeSet, target : AGNode) : Boolean = DecisionFrame {
-    () => new ConstraintExceptionFrame(sources, target)
+  def apply(sources : NodeSet, target : AGNode) {
+    DecisionFrame {
+      () => new ConstraintExceptionFrame(sources, target)
+    }
   }
 }
 
 class ConstraintExceptionFrame private (val sources : NodeSet,
                                         val target : AGNode)
-  extends DecisionFrame[Boolean]{
+  extends DecisionFrame[Unit]{
 
   title = "Constraint Exceptions"
 
@@ -70,7 +72,7 @@ class ConstraintExceptionFrame private (val sources : NodeSet,
           target.graph.constraints.toList, callMakePanel)
       }
       contents += Button("OK"){
-        ConstraintExceptionFrame.this.complete(vsc.isEmpty && vec.isEmpty)
+        ConstraintExceptionFrame.this.complete(())
       }
     }
 

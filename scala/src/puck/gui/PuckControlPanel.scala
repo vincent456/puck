@@ -218,9 +218,9 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
           println("Solving constraints ...")
           filesHandler.solve(
             decisionMaker = if(decisionStrategy.selected)
-              GUIDecisionMaker
+              new GUIDecisionMaker(filesHandler.accessGraph)
             else
-              DefaultDecisionMaker,
+              new DefaultDecisionMaker(filesHandler.accessGraph),
             trace = printTrace.selected
 
           )

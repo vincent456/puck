@@ -16,14 +16,16 @@ case class NoAuthorisation() extends AuthorisationPolicy
 
 trait DecisionMaker{
 
+  val graph : AccessGraph
+
+  def containViolationTarget : Option[AGNode]
+
+  def usesViolationTarget : Option[AGNode]
+
   def abstractionKindAndPolicy(impl : AGNode) : (NodeKind, AbstractionPolicy)
 
-  def chooseNode(graph : AccessGraph, context : String)(predicate : AGNode => Boolean) : Option[AGNode]
+  def chooseNode(context : String)(predicate : AGNode => Boolean) : Option[AGNode]
 
-  /**
-   * to return true, the method must first modify the constraint acccordingly
-   */
-  def grantContainingAuth(container : AGNode, content : AGNode) : Boolean
-  def grantUsesAuth(user : AGNode, usee : AGNode) : Boolean
+  def modifyConstraints(sources : NodeSet, target : AGNode) : Unit
 
 }

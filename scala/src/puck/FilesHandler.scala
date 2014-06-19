@@ -75,7 +75,7 @@ class FilesHandler private (private [this] var srcDir : File,
   }
 
   def solve (trace : Boolean = false,
-             decisionMaker : DecisionMaker = DefaultDecisionMaker){
+             decisionMaker : DecisionMaker = new DefaultDecisionMaker(accessGraph)){
     var inc = 0
 
     new JavaSolver(accessGraph, decisionMaker).solve(

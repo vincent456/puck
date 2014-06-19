@@ -37,7 +37,7 @@ package puck
 
 
 
- /*import scala.swing._
+ import scala.swing._
  import javax.swing.UIManager
  import puck.gui.PuckMainPanel
 
@@ -56,11 +56,11 @@ package puck
     contents  = new PuckMainPanel(FilesHandler())
 
   }
-}*/
+}
 
 
 
-import java.io._
+/*import java.io._
 import puck.gui.GUIDecisionMaker
 import puck.javaAG.DefaultDecisionMaker
 
@@ -88,7 +88,7 @@ object Front{
        println("done")
 
        fh.solve(trace = true,
-           decisionMaker = DefaultDecisionMaker)
+           decisionMaker = new DefaultDecisionMaker(fh.accessGraph))
 
    /* print("make pl ... ")
 
@@ -100,4 +100,4 @@ object Front{
 
     fh.accessGraph.printConstraints()
   }
-}
+}*/

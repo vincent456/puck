@@ -151,8 +151,6 @@ aspect AccessGraphFactory {
 
         AGNode hostTypeAGNode = hostType().buildAGNode(accessGraph);
 
-        System.out.println("build "+ hostType().name() +" constructor node and uses");
-
         for (Access user : uses()) {
             AGNode agUser = user.hostBodyDecl().buildAGNode(accessGraph);
 

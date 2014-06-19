@@ -58,7 +58,7 @@ class AbstractionKindAndPolicyChooser private (val impl : AGNode)
       contents += kindChoiceWrapper
     }
 
-    val default = DefaultDecisionMaker.abstractionKindAndPolicy(impl)
+    val default = new DefaultDecisionMaker(impl.graph).abstractionKindAndPolicy(impl)
 
     contents += new FlowPanel() {
       contents += new Label("Default decision is " + default)

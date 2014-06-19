@@ -18,9 +18,6 @@ import puck.javaAG.JavaNodeKind.Class
 class JavaSolver(val graph : AccessGraph,
                  val decisionMaker : DecisionMaker) extends Solver{
 
-  val violationsKindPriority = List[NodeKind](Field(), Constructor(),
-    Class(), Interface())
-
   override  def singleAbsIntroPredicate(impl : AGNode,
                                         absPolicy : AbstractionPolicy,
                                         absKind : NodeKind) : AGNode => Boolean =

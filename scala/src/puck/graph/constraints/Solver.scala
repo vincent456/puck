@@ -1,30 +1,12 @@
 package puck.graph.constraints
 
 import puck.graph._
-import scala.Some
 
 trait Solver {
 
   val graph : AccessGraph
 
-  val violationsKindPriority : List[NodeKind]
-
   val decisionMaker : DecisionMaker
-
-  def priorityViolationTarget : Option[AGNode] = {
-
-    def aux (priorities : List[NodeKind]) : Option[AGNode] = priorities match {
-      case topPriority :: tl => graph.iterator.find{ (n : AGNode) =>
-        n.kind == topPriority && n.wrongUsers.nonEmpty
-      } match {
-        case None => aux(tl)
-        case res => res
-      }
-      case List() => graph.iterator.find{ _.wrongUsers.nonEmpty }
-    }
-
-    aux(violationsKindPriority)
-  }
 
   def redirectTowardExistingAbstractions(usee: AGNode,
                                          wrongUsers : List[AGNode]) = {
@@ -49,9 +31,10 @@ trait Solver {
                wrongUsers: List[AGNode], context : String)
               (predicate : (AGNode) => Boolean = _ => true ) : Option[AGNode] = {
 
-    decisionMaker.chooseNode(graph, context){
+    decisionMaker.chooseNode(context){
       n =>
-        n.canContain(toBeContained) &&
+        n != toBeContained &&
+          n.canContain(toBeContained) &&
           predicate(n) &&
           wrongUsers.forall(!_.interloperOf(n))
     }
@@ -192,7 +175,9 @@ trait Solver {
           if (!multipleAbsIntro(impl, wrongUsers))
             singleAbsIntro(impl, wrongUsers, 2) match {
               case None =>
-                throw new AGError ("cannot solve uses toward " + impl)
+                decisionMaker.modifyConstraints(LiteralNodeSet(wrongUsers), impl)
+                if(impl.wrongUsers.nonEmpty)
+                  throw new AGError ("cannot solve uses toward " + impl)
               case _ => ()
             }
         case _ => ()
@@ -203,54 +188,67 @@ trait Solver {
 
   def solve(step : () => Unit) {
 
+    var newCterNumGen = 0
     def solveContains() {
-      graph.iterator.find(_.isWronglyContained) match {
+      decisionMaker.containViolationTarget match {
         case None => ()
         case Some(wronglyContained) =>
+          graph.register{
 
-          val cter = wronglyContained.container
+              // detach for host searching : do not want to consider parent constraints
+              val oldCter = wronglyContained.container
+              wronglyContained.detach()
 
-          if(!decisionMaker.grantContainingAuth(cter, wronglyContained)){
-            // detach for host searching : do not want to consider parent constraints
-            wronglyContained.detach()
+              val newCterOpt = findHost(wronglyContained, List(),
+                "Moving " + wronglyContained + "\nSearching a host for it") {
+                (potentialHost: AGNode) => !(potentialHost interloperOf wronglyContained)
+              } match {
+                case None =>
+                  val newCter = graph.nodeKinds.find(_.canContain(wronglyContained.kind)) match {
+                    case None =>
+                      throw new AGError("do not know how to create a valid parent for " + wronglyContained.kind)
+                    case Some(parentKind) =>
+                      newCterNumGen += 1
+                      graph.addNode("%s_container%d".format(wronglyContained.name, newCterNumGen), parentKind)
+                  }
 
-            val newCter = findHost(wronglyContained, List(),
-              "Moving " + wronglyContained +"\nSearching a host for it"){
-              (potentialHost: AGNode) => !(potentialHost interloperOf wronglyContained) &&
-                potentialHost != wronglyContained
-            } match {
+                  wronglyContained.addHideFromRootException(newCter)
+
+                  findHost(newCter, List(),
+                    "Moving " + wronglyContained + "\n" +
+                      newCter + " created to contain it.\n" +
+                      "Searching a host for " + newCter)(n => n != newCter) match {
+                    case None => None
+
+
+                    case Some(h) =>
+                      graph.root.content_-=(newCter)
+                      h.content_+=(newCter)
+                      Some(newCter)
+                  }
+                case somehost => somehost
+              }
+            newCterOpt match {
+              case Some(newCter) =>
+                //re-attach before moving
+                oldCter content_+= wronglyContained
+                wronglyContained.moveTo(newCter)
               case None =>
-                val newCter = graph.nodeKinds.find(_.canContain(wronglyContained.kind)) match {
-                  case None => throw new AGError("do not know how to create a valid parent for " + wronglyContained.kind)
-                  case Some(parentKind) =>
-                    graph.addNode (wronglyContained.name + "_container", parentKind)
-                }
-
-                wronglyContained.addHideFromRootException(newCter)
-
-                findHost(newCter, List(),
-                  "Moving " + wronglyContained +"\n"+
-                    newCter+" created to contain it.\n" +
-                    "Searching a host for " + newCter)( n => n != newCter) match {
-                  case None => throw new AGError("Cannot find a container's container")
-                  case Some(h) =>
-                    graph.root.content_-=(newCter)
-                    h.content_+=(newCter)
-                    newCter
-                }
-              case Some(h) => h
+                graph.transformations.undo()
+                decisionMaker.modifyConstraints(LiteralNodeSet(wronglyContained.container), wronglyContained)
+                if(wronglyContained.isWronglyContained)
+                  throw new SolvingError("Cannot solve %s contains violation".
+                    format(AGEdge.contains(wronglyContained.container, wronglyContained)))
             }
-            //re-attach before moving
-            cter content_+= wronglyContained
-            wronglyContained.moveTo(newCter)
           }
+
           step()
           solveContains()
       }
     }
 
     def solveUses() {
-      priorityViolationTarget match {
+      decisionMaker.usesViolationTarget match {
         case None => ()
         case Some(target) =>
           solveUsesToward(target)
