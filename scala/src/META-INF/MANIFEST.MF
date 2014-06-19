@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Class-Path: scala-xml_2.11.0-RC4-1.0.1.jar scala-parser-combinators_2.
+ 11.0-RC4-1.0.1.jar scala-library.jar scala-actors.jar scala-swing_2.1
+ 1.0-RC4-1.0.1.jar cream106.jar
+Main-Class: puck.Front
+
