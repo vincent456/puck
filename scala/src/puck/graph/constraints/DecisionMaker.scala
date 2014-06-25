@@ -18,9 +18,7 @@ trait DecisionMaker{
 
   val graph : AccessGraph
 
-  def containViolationTarget : Option[AGNode]
-
-  def usesViolationTarget : Option[AGNode]
+  def violationTarget : Option[AGNode]
 
   def abstractionKindAndPolicy(impl : AGNode) : (NodeKind, AbstractionPolicy)
 

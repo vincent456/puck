@@ -74,7 +74,6 @@ class JavaNode( graph : AccessGraph,
         c.name != n.name || ck.`type`.input.length != l
 */
       case ck @(Method() | AbstractMethod()) =>
-        println("comparing %s and %s".format(c, n))
         c.name != n.name || {
 
           if(ck.asInstanceOf[HasType[MethodType]].`type` == null)
@@ -157,8 +156,8 @@ class JavaNode( graph : AccessGraph,
     (abskind, policy) match {
       case (Interface(), SupertypeAbstraction()) =>
 
-        val abs = createNodeAbstraction(Interface(), SupertypeAbstraction())
-        abs.users_+=(this)
+        val abs = super.createAbstraction(Interface(), SupertypeAbstraction())
+
         content.foreach { (child: AGNode) =>
           child.kind match {
             case ck @ (Method() | AbstractMethod()) =>

@@ -16,9 +16,7 @@ class GUIDecisionMaker(val graph : AccessGraph) extends DecisionMaker{
 
   override def toString = "User Decision Maker"
 
-  def containViolationTarget = fallback.containViolationTarget
-
-  def usesViolationTarget = fallback.usesViolationTarget
+  def violationTarget = fallback.violationTarget
 
   def abstractionKindAndPolicy(impl : AGNode) =
     AbstractionKindAndPolicyChooser(impl)

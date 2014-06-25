@@ -1,9 +1,6 @@
 package puck.graph
 
-import puck.javaAG.JavaNodeKind.{AbstractMethod, Method}
-import puck.javaAG.MethodType
-
-import scala.collection.{mutable => smutable}
+import scala.collection.mutable
 import puck.graph.constraints._
 
 
@@ -68,7 +65,7 @@ class AGNode (val graph: AccessGraph,
       AccessGraph.unrootedStringId :: path ).mkString(graph.scopeSeparator)
   }
 
-  var mutable = true
+  var isMutable = true
 
   /**
    * Arcs
@@ -88,13 +85,14 @@ class AGNode (val graph: AccessGraph,
   }
 
   def canContain(n : AGNode) : Boolean = {
+    n != this &&
     (this.kind canContain n.kind) &&
-      this.mutable
+      this.isMutable
   }
 
-  private val content0 : smutable.Set[AGNode] = smutable.Set()
+  private val content0 : mutable.Set[AGNode] = mutable.Set()
 
-  def content : smutable.Iterable[AGNode] = content0
+  def content : mutable.Iterable[AGNode] = content0
 
 
   def content_+=(n:AGNode) {
@@ -175,7 +173,7 @@ class AGNode (val graph: AccessGraph,
     aux(this, List())
   }
 
-  private [this] val superTypes0 : smutable.Set[AGNode] = smutable.Set()
+  private [this] val superTypes0 : mutable.Set[AGNode] = mutable.Set()
 
   def isSuperTypeOf(other : AGNode) : Boolean = {
     other.superTypes.exists(_ == this) ||
@@ -184,7 +182,7 @@ class AGNode (val graph: AccessGraph,
 
 
   def superTypes : Iterable[AGNode] = superTypes0
-  private val subTypes0 : smutable.Set[AGNode] = smutable.Set()
+  private val subTypes0 : mutable.Set[AGNode] = mutable.Set()
   def subTypes : Iterable[AGNode] = subTypes0
 
   def superTypes_+=(st:AGNode) {
@@ -209,12 +207,12 @@ class AGNode (val graph: AccessGraph,
   }
 
   //TODO think about removing uses0 & users0 and keep only the sideUses0/primaryUses0 maps
-  //private var uses0 : smutable.Set[AGNode] = smutable.Set()
+  //private var uses0 : mutable.Set[AGNode] = mutable.Set()
   def uses(other : AGNode) = other.isUsedBy(this)// uses0.contains(other)
   def uses_+=(other: AGNode) = other.users_+=(this)
   def uses_-=(other: AGNode) = other.users_-=(this)
 
-  private [this] val users0 : smutable.Set[AGNode] = smutable.Set()
+  private [this] val users0 : mutable.Set[AGNode] = mutable.Set()
   def users_+=(other : AGNode) {
     if(users0.add(other))
       graph.transformations.addEdge(AGEdge.uses(other, this))
@@ -224,7 +222,7 @@ class AGNode (val graph: AccessGraph,
       graph.transformations.removeEdge(AGEdge.uses(user, this))
   }
 
-  def users: smutable.Iterable[AGNode] = users0
+  def users: mutable.Iterable[AGNode] = users0
 
   def isUsedBy(other : AGNode) = users0.contains(other)
 
@@ -308,13 +306,13 @@ class AGNode (val graph: AccessGraph,
       case Some( sides_uses ) =>
         sides_uses foreach {
           side =>
-            val side_usee_opt =
-              side.target.abstractions.find {
+            val new_side_usee_opt =
+              side.usee.abstractions.find {
                 case (abs, _) => newPrimaryUsee.contains(abs)
                 case _ => false
               }
-            side_usee_opt match {
-              case None => throw new AGError(("While redirecting primary uses (%s, %s) to (%s, %s)\n" +
+            new_side_usee_opt match {
+              case None => throw new RedirectionError(("While redirecting primary uses (%s, %s) to (%s, %s)\n" +
                 "no satisfying abstraction to redirect side use %s").
                 format( this, currentPrimaryUsee, this, newPrimaryUsee, side))
 
@@ -440,9 +438,9 @@ class AGNode (val graph: AccessGraph,
     searchExistingAbstractions()
   def searchExistingAbstractions() = smutable.Set[(AGNode, AbstractionPolicy)]()*/
 
-  private[this] val abstractions0 = smutable.Set[(AGNode, AbstractionPolicy)]()
+  private[this] val abstractions0 = mutable.Set[(AGNode, AbstractionPolicy)]()
 
-  def abstractions : smutable.Iterable[(AGNode, AbstractionPolicy)] = abstractions0
+  def abstractions : mutable.Iterable[(AGNode, AbstractionPolicy)] = abstractions0
   def abstractions_-=(n : AGNode, p : AbstractionPolicy){
     if(abstractions0.remove( (n,p) ))
       graph.transformations.unregisterAbstraction(this, n, p)
@@ -468,7 +466,10 @@ class AGNode (val graph: AccessGraph,
 
   def createAbstraction(abskind : NodeKind , policy : AbstractionPolicy) : AGNode = {
     val abs = createNodeAbstraction(abskind, policy)
-    users_+=(abs)
+    policy match {
+      case SupertypeAbstraction() =>  abs users_+= this
+      case DelegationAbstraction() => this users_+= abs
+    }
     abs
   }
 

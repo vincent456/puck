@@ -50,7 +50,7 @@ class JavaAccessGraph extends AccessGraph(JavaNode){
             case (sb, nodeParent) =>
               sb append p
               val n = addPackageNode(sb.toString, p)
-              n.mutable = mutable
+              n.isMutable = mutable
               nodeParent content_+= n
               sb append "."
               (sb, n)
@@ -67,7 +67,7 @@ class JavaAccessGraph extends AccessGraph(JavaNode){
     //println("adding api td " + td.fullName())
     val packageNode = addPackage(td.compilationUnit().getPackageDecl, mutable = false)
     val tdNode = addNode(td.fullName(), td.name(), td.getAGNodeKind)
-    tdNode.mutable = false
+    tdNode.isMutable = false
 
     if(addUses)
       for (use <- td.uses()) {

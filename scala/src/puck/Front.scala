@@ -37,6 +37,7 @@ package puck
 
 
 
+/*
  import scala.swing._
  import javax.swing.UIManager
  import puck.gui.PuckMainPanel
@@ -57,10 +58,11 @@ package puck
 
   }
 }
+*/
 
 
 
-/*import java.io._
+import java.io._
 import puck.gui.GUIDecisionMaker
 import puck.javaAG.DefaultDecisionMaker
 
@@ -90,14 +92,14 @@ object Front{
        fh.solve(trace = true,
            decisionMaker = new DefaultDecisionMaker(fh.accessGraph))
 
-   /* print("make pl ... ")
-
-    scala.Console.withOut(new FileOutputStream(fh.srcDirectory+ "/decouple_after.pl")) {
-      fh.accessGraph.printConstraints()
-    }
-    fh.makeProlog()
-    println("done")*/
-
-    fh.accessGraph.printConstraints()
+//    print("make pl ... ")
+//
+//    scala.Console.withOut(new FileOutputStream(fh.srcDirectory+ "/decouple_after.pl")) {
+//      fh.accessGraph.printConstraints()
+//    }
+//    fh.makeProlog()
+//    println("done")
+//
+//    fh.accessGraph.printConstraints()
   }
-}*/
+}
