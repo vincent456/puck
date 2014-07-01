@@ -2,6 +2,10 @@ package puck.graph.constraints
 
 import puck.graph._
 
+trait SolverBuilder{
+  def apply(g : AccessGraph, dm : DecisionMaker) : Solver
+}
+
 trait Solver {
 
   val graph : AccessGraph
@@ -42,16 +46,19 @@ trait Solver {
                wrongUsers: List[AGNode], context : => String)
               (predicate : (AGNode) => Boolean = _ => true ) : Option[AGNode] = {
 
-    decisionMaker.chooseNode(context){
-      n =>
-        n != toBeContained &&
-          n.canContain(toBeContained) &&
-          predicate(n) //TODO !!! find if following is needed
-          // &&
-          //wrongUsers.forall(!_.interloperOf(n))
+    def loosePredicate(n : AGNode) =
+      n != toBeContained &&
+        n.canContain(toBeContained) &&
+        predicate(n)
+
+    def strictPredicate( n :AGNode ) = loosePredicate(n) &&
+      wrongUsers.forall(!_.interloperOf(n))
+
+    decisionMaker.chooseNode(context)(strictPredicate) match {
+      case None => decisionMaker.chooseNode(context)(loosePredicate)
+      case sn => sn
     }
   }
-
 
   def singleAbsIntroPredicate(impl : AGNode,
                               absPolicy : AbstractionPolicy,
@@ -127,73 +134,6 @@ trait Solver {
           }
         }
     }
-
-    /*def intro (currentImpl : AGNode, wrongUsers : List[AGNode]) : Option[(AGNode, AbstractionPolicy)] ={
-      val (absKind, absPolicy) = getAbsKindAndPolicy(currentImpl)
-      graph.register {
-        val abs = currentImpl.createAbstraction(absKind, absPolicy)
-        findHost(abs, wrongUsers,
-          "Searching host for %s\n abstraction of %s ( %s )".format(abs, currentImpl, absPolicy)) {
-          singleAbsIntroPredicate(currentImpl, absPolicy, absKind)
-        } match {
-          case None =>
-
-            graph.transformations.undo()
-            println("host not found, trying hostIntro")
-            hostIntro(currentImpl, absKind, absPolicy, wrongUsers)
-          case Some(host) =>
-            println("found host : " + host)
-            host.content_+=(abs)
-            Some(abs, absPolicy)
-        }
-      }
-    }
-
-    def hostIntro (toBeContained : AGNode,
-                   absKind : NodeKind,
-                   absPolicy : AbstractionPolicy,
-                   wrongUsers : List[AGNode]) : Option[(AGNode, AbstractionPolicy)] = {
-      println("\nhostIntro")
-      toBeContained.container.kind.abstractKinds(absPolicy).find(_.canContain(absKind)) match {
-        case None => throw new AGError("container abstraction creation error")
-        case Some(cterAbsKind) =>
-            val cterAbs = toBeContained.container.createAbstraction(cterAbsKind,
-              absPolicy)
-            val abs = toBeContained.abstractions.find {
-              case (existingAbs, `absPolicy`) => cterAbs.contains(existingAbs)
-              case _ => false
-            } match {
-              case None =>
-                val newAbs = toBeContained.createAbstraction(absKind, absPolicy)
-                cterAbs content_+= newAbs
-                newAbs
-              case Some((existingAbs, _)) => existingAbs
-            }
-
-            findHost(cterAbs, wrongUsers,
-              ("%s abstracted as\n %s (%s)\n%s (%s) was introduced to contains it.\n" +
-                "Searching a container for %s").format(toBeContained, abs, absPolicy, cterAbs, absPolicy, cterAbs)
-            )( n => n != cterAbs) match {
-              case None => None
-              case Some(h) =>
-                h content_+= cterAbs
-                Some(abs, absPolicy)
-            }
-      }
-    }
-
-    def aux(deg : Int, currentImpl : AGNode) : Option[(AGNode, AbstractionPolicy)] = {
-      println("*** abs intro degree %d/%d ***".format(deg,degree))
-      if(deg == degree)
-        intro (currentImpl, wrongUsers)
-      else
-        intro (currentImpl, List()) match {
-          case None => throw new AGError("Single abs intro degree %d/%d error".format(deg, degree))
-          case Some((abs, _)) =>
-            aux(deg + 1, abs)
-        }
-    }
-    */
 
     def aux(deg : Int, currentImpl : AGNode) : Option[(AGNode, AbstractionPolicy)] = {
       println("*** abs intro degree %d/%d ***".format(deg,degree))
@@ -328,6 +268,12 @@ trait Solver {
     }
   }
 
+  def solveViolationsToward(target : AGNode){
+    if(target.isWronglyContained)
+      solveContains(target)
+    if(target.wrongUsers.nonEmpty)
+      solveUsesToward(target)
+  }
 
   def solve(step : () => Unit) {
 
@@ -335,10 +281,7 @@ trait Solver {
       decisionMaker.violationTarget match {
         case None => ()
         case Some(target) =>
-          if(target.isWronglyContained)
-            solveContains(target)
-          if(target.wrongUsers.nonEmpty)
-            solveUsesToward(target)
+          solveViolationsToward(target)
           step()
           aux()
       }

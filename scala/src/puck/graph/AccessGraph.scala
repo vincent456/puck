@@ -1,5 +1,7 @@
 package puck.graph
 
+import puck.graph.backTrack.{CareTakerNoop, CareTaker}
+
 import scala.collection.mutable
 import puck.graph.constraints.{Constraint, NamedNodeSet}
 
@@ -23,7 +25,10 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
   val constraints : mutable.Buffer[Constraint] = mutable.Buffer()
 
   private [this] val nodes0 = mutable.Buffer[AGNode]()
+
   def nodes : Iterator[AGNode] = nodes0.iterator
+
+  def iterator = root.iterator
 
   /*private[graph] val predefTypes : mutable.Map[String, Type] = mutable.Map()
   def predefType(name : String ) = predefTypes(name)*/
@@ -32,6 +37,13 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
   val root : AGNode = nodeBuilder(this, AccessGraph.rootId, AccessGraph.rootName, AGRoot())
 
   val scopeSeparator = nodeBuilder.scopeSeparator
+
+  /*override def equals(obj : Any) : Boolean = obj match {
+    case that : AccessGraph => root == that.root
+    case _ => false
+  }
+  override def hashCode: Int = this.id * 42 // ???
+  */
 
   /*  def attachRoots() {
       this.foreach{ n =>
@@ -43,7 +55,7 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
 
   def nodeKinds = nodeBuilder.kinds
 
-  def iterator = root.iterator
+
 
   def violations : List[AGEdge] = {
     this.foldLeft(List[AGEdge]()){

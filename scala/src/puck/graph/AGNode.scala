@@ -36,8 +36,22 @@ class AGNode (val graph: AccessGraph,
               val kind: NodeKind) {
   //extends Iterable[AGNode]{
 
-  /* override def equals(obj: Any): Boolean = obj match {
-     case that: AGNode => (this.graph eq that.graph) && this.id == that.id
+   /*override def equals(obj: Any): Boolean = obj match {
+     case that: AGNode =>
+       if (this.graph eq that.graph)
+        this.id == that.id
+       else {
+
+         def softEqual(n1 : AGNode, n2 :AGNode) =
+           n1.name == n2.name && n1.kind == n2.kind //TODO see type equality ...
+         //TODO use soft equality to compare uses arcs
+
+         softEqual(this, that) &&
+         this.name == that.name && this.kind == that.kind &&
+           content.forall { c =>
+             that.content.find(tc => tc == c)
+           }
+       }
      case _ => false
    }
 
@@ -50,8 +64,7 @@ class AGNode (val graph: AccessGraph,
 
   override def toString: String = "(" + fullName + ", " + kind + ")"
 
-  //TODO FIX def
-  def nameTypeString = name //+ ( `type` match{ case None =>""; case Some(t) => " : " + t })
+  def nameTypeString = name + (kind match{case k : HasType => " : " + k.`type`; case _ => ""})
 
 
   def fullName: String = {
@@ -271,9 +284,9 @@ class AGNode (val graph: AccessGraph,
         ()
       case Some(primary_uses) =>
         println("uses to redirect:%s".format(primary_uses.mkString("\n", "\n","\nend of list")))
-        if(primary_uses.isEmpty){
-          throw new AGError("WTF? empty primary uses set")
-        }
+
+        assert(primary_uses.nonEmpty)
+
         val primary = primary_uses.head
         if(primary_uses.tail.nonEmpty) {
           println("redirecting side uses : (%s, %s) to (%s, %s)".format(this, currentSideUsee, this, newSideUsee))
@@ -434,9 +447,9 @@ class AGNode (val graph: AccessGraph,
    * Solving
    */
 
-  /*private[this] lazy val abstractions0: smutable.Set[(AGNode, AbstractionPolicy)] =
+  /*private[this] lazy val abstractions0: mutable.Set[(AGNode, AbstractionPolicy)] =
     searchExistingAbstractions()
-  def searchExistingAbstractions() = smutable.Set[(AGNode, AbstractionPolicy)]()*/
+  def searchExistingAbstractions() = mutable.Set[(AGNode, AbstractionPolicy)]()*/
 
   private[this] val abstractions0 = mutable.Set[(AGNode, AbstractionPolicy)]()
 
@@ -457,10 +470,6 @@ class AGNode (val graph: AccessGraph,
   def createNodeAbstraction(abskind :  NodeKind, policy : AbstractionPolicy) : AGNode = {
     val n = graph.addNode(abstractionName(abskind, policy), abskind)
     abstractions_+=(n, policy)
-    /* little hack (?) : an abstraction is its own abstraction otherwise,
-     on a later iteration, instead of moving the abstraction it will create an abstraction's abstraction ...
-     and that can go on... */
-    n.abstractions_+=(n, policy)
     n
   }
 
@@ -475,8 +484,9 @@ class AGNode (val graph: AccessGraph,
 
   def addHideFromRootException(friend : AGNode){
     def addExc(ct : ConstraintWithInterlopers) {
-      if (ct.interlopers.iterator.contains(graph.root))
+      if (ct.interlopers.iterator.contains(graph.root)){
         ct.friends += friend
+      }
     }
 
     scopeConstraints foreach addExc

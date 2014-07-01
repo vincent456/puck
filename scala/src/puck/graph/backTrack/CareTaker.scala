@@ -1,6 +1,7 @@
-package puck.graph
+package puck.graph.backTrack
 
-import puck.graph.constraints.AbstractionPolicy
+import puck.graph.constraints.{AbstractionPolicy, Constraint}
+import puck.graph.{AGError, AccessGraph, AGEdge, AGNode}
 
 import scala.collection.mutable
 
@@ -18,7 +19,9 @@ trait CareTaker {
 
   def sequence[T]( op : => T ) : T
 
-  def undo()
+  def undo() : Transformation
+
+  val recording : Recording
 
   def addNode(n: AGNode)
 
@@ -36,6 +39,14 @@ trait CareTaker {
                           policy: AbstractionPolicy)
   def unregisterAbstraction(impl: AGNode, abs: AGNode,
                           policy: AbstractionPolicy)
+
+  def addFriend(ct : Constraint, friend : AGNode)
+}
+
+class Recording( private [backTrack] val graph : AccessGraph,
+                 private [backTrack] val registering : Int,
+                 private [backTrack] val sequences : List[CompositeTransformation]){
+  def redo(){sequences.foreach(_.redo())}
 }
 
 class CareTakerNoop(val graph : AccessGraph) extends CareTaker{
@@ -49,10 +60,15 @@ class CareTakerNoop(val graph : AccessGraph) extends CareTaker{
     graph.transformations = this
     this
   }
+  val emptyRecording = new Recording(graph, 0, List())
+
+  def recording = emptyRecording
+
+  def recording_=(r : Recording){}
 
   def sequence[T]( op : => T ) = op
 
-  def undo(){}
+  def undo() = new CompositeTransformation()
 
   def addNode(n: AGNode){}
 
@@ -69,6 +85,8 @@ class CareTakerNoop(val graph : AccessGraph) extends CareTaker{
                           policy: AbstractionPolicy){}
   def unregisterAbstraction(impl: AGNode, abs: AGNode,
                           policy: AbstractionPolicy){}
+
+  def addFriend(ct : Constraint, friend : AGNode){}
 }
 
 class CareTakerRegister (val graph : AccessGraph) extends CareTaker {
@@ -98,6 +116,18 @@ class CareTakerRegister (val graph : AccessGraph) extends CareTaker {
     currentSequence.push(t)
   }
 
+  def recording = new Recording(graph, registering, sequencesStack.reverseIterator.toList)
+
+  def recording_=(r : Recording){
+    if(graph != r.graph)
+      throw new AGError("Illegal recording !")
+
+    this.registering = r.registering
+
+    sequencesStack.clear()
+    r.sequences.foreach(sequencesStack.push)
+  }
+
   def sequence[T]( op : => T ) = {
     var seq = new CompositeTransformation()
     this += seq
@@ -115,9 +145,11 @@ class CareTakerRegister (val graph : AccessGraph) extends CareTaker {
     /*println("sequence to undo : ")
     currentSequence.sequence.foreach(println)
     println("end of sequence to undo.")*/
-    currentSequence.undo()
+    val undoSeq = sequencesStack.pop()
+    sequencesStack.push(new CompositeTransformation)
 
-    graph.transformations = this
+    undoSeq.undo()
+    undoSeq
   }
 
   def addNode(n: AGNode) {
@@ -152,5 +184,8 @@ class CareTakerRegister (val graph : AccessGraph) extends CareTaker {
   def unregisterAbstraction(impl: AGNode, abs: AGNode,
                           policy: AbstractionPolicy) {
     this += new UnregisterAbstraction(impl, abs, policy)
+  }
+  def addFriend(ct : Constraint, friend : AGNode){
+    this += new AddFriend(ct, friend)
   }
 }
