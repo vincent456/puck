@@ -29,7 +29,7 @@ object DotPrinter {
 
 
   def print(writer: BufferedWriter, graph : AccessGraph,
-            helper : DotHelper, printId : Boolean){
+            helper : DotHelper, printId : Boolean, searchRoots : Boolean = false){
 
     val idPrinter =
       if(printId) (id:Int) => " (" + id + ")"
@@ -140,7 +140,10 @@ object DotPrinter {
     writeln("digraph G{")
     writeln("rankdir=LR; ranksep=equally; compound=true")
 
-    graph.root.content.foreach(printNode)
+    if(!searchRoots)
+      graph.root.content.foreach(printNode)
+    else
+      graph.nodes.foreach{n => if(n.container == null) printNode(n)}
 
     arcs.foreach(writeln)
 

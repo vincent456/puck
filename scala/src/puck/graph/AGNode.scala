@@ -33,29 +33,36 @@ object AGNode extends AGNodeBuilder{
 class AGNode (val graph: AccessGraph,
               val id: Int,
               var name: String,
-              val kind: NodeKind) {
+              val kind: NodeKind) extends HasChildren[AGNode]{
   //extends Iterable[AGNode]{
 
-   /*override def equals(obj: Any): Boolean = obj match {
-     case that: AGNode =>
-       if (this.graph eq that.graph)
-        this.id == that.id
-       else {
+  /*override def equals(obj: Any): Boolean = obj match {
+    case that: AGNode =>
+      if (this.graph eq that.graph)
+       this.id == that.id
+      else {
 
-         def softEqual(n1 : AGNode, n2 :AGNode) =
-           n1.name == n2.name && n1.kind == n2.kind //TODO see type equality ...
-         //TODO use soft equality to compare uses arcs
+        def softEqual(n1 : AGNode, n2 :AGNode) =
+          n1.name == n2.name && n1.kind == n2.kind //TODO see type equality ...
+        //TODO use soft equality to compare uses arcs
 
-         softEqual(this, that) &&
-         this.name == that.name && this.kind == that.kind &&
-           content.forall { c =>
-             that.content.find(tc => tc == c)
-           }
-       }
-     case _ => false
-   }
+        softEqual(this, that) &&
+        this.name == that.name && this.kind == that.kind &&
+          content.forall { c =>
+            that.content.find(tc => tc == c)
+          }
+      }
+    case _ => false
+  }
 
-   override def hashCode: Int = (this.id + kind.hashCode()) / 41*/
+  override def hashCode: Int = (this.id + kind.hashCode()) / 41*/
+
+  def softEqual(other : AGNode) : Boolean = {
+    //this.name == other.name && // NO !!
+    this.kind == other.kind &&
+    users.forall{n => other.users.exists(_.softEqual(n))}  &&
+    content.forall{n => other.content.exists(_.softEqual(n))}
+  }
 
   /**
    * relies on the contains tree : do not modify it while traversing
@@ -64,7 +71,7 @@ class AGNode (val graph: AccessGraph,
 
   override def toString: String = "(" + fullName + ", " + kind + ")"
 
-  def nameTypeString = name + (kind match{case k : HasType => " : " + k.`type`; case _ => ""})
+  def nameTypeString = name + (kind match{case k : HasType[_] => " : " + k.`type`; case _ => ""})
 
 
   def fullName: String = {
@@ -99,7 +106,7 @@ class AGNode (val graph: AccessGraph,
 
   def canContain(n : AGNode) : Boolean = {
     n != this &&
-    (this.kind canContain n.kind) &&
+      (this.kind canContain n.kind) &&
       this.isMutable
   }
 
@@ -107,6 +114,7 @@ class AGNode (val graph: AccessGraph,
 
   def content : mutable.Iterable[AGNode] = content0
 
+  def children = content
 
   def content_+=(n:AGNode) {
     n.container0 = this
@@ -314,18 +322,22 @@ class AGNode (val graph: AccessGraph,
   def redirectSideUses(currentPrimaryUsee: AGNode,
                        newPrimaryUsee : AGNode,
                        policy : RedirectionPolicy){
+    println("redirecting side uses ... ")
     sideUses get currentPrimaryUsee match {
-      case None => ()
+      case None =>
+        println("no side uses to redirect")
+        ()
       case Some( sides_uses ) =>
+        println("uses to redirect:%s".format(sides_uses.mkString("\n", "\n","\nend of list")))
+
         sides_uses foreach {
           side =>
-            val new_side_usee_opt =
-              side.usee.abstractions.find {
-                case (abs, _) => newPrimaryUsee.contains(abs)
-                case _ => false
-              }
-            new_side_usee_opt match {
-              case None => throw new RedirectionError(("While redirecting primary uses (%s, %s) to (%s, %s)\n" +
+            side.usee.abstractions.find {
+              case (abs, _) => newPrimaryUsee.contains(abs)
+              case _ => false
+            } match {
+              case None =>
+                throw new RedirectionError(("While redirecting primary uses (%s, %s) to (%s, %s)\n" +
                 "no satisfying abstraction to redirect side use %s").
                 format( this, currentPrimaryUsee, this, newPrimaryUsee, side))
 
@@ -335,7 +347,7 @@ class AGNode (val graph: AccessGraph,
                 graph.removeUsesDependency(AGEdge.uses(this, currentPrimaryUsee), side)
                 //TODO redirection en cascade !!!
                 side.delete()
-                newSide.delete()
+                newSide.create()
                 graph.addUsesDependency(AGEdge.uses(this, newPrimaryUsee), newSide)
 
             }
@@ -346,7 +358,7 @@ class AGNode (val graph: AccessGraph,
   def redirectUses(oldUsee : AGNode, newUsee : AGNode,
                    policy : RedirectionPolicy){
 
-    println("redirecting uses %s -> %s to\n%s (%s)".format(this, oldUsee, newUsee, policy))
+    println("redirecting uses %s --> %s to\n%s (%s)".format(this, oldUsee, newUsee, policy))
     oldUsee users_-= this
     newUsee users_+= this
 
@@ -486,6 +498,7 @@ class AGNode (val graph: AccessGraph,
     def addExc(ct : ConstraintWithInterlopers) {
       if (ct.interlopers.iterator.contains(graph.root)){
         ct.friends += friend
+        graph.transformations.addFriend(ct, friend)
       }
     }
 

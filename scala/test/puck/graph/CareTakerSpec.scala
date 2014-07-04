@@ -64,7 +64,7 @@ class CareTakerSpec extends UnitSpec {
     nb.users_+=(na)
     nc.users_+=(na)
 
-    ag.register {
+    ag.transformations.register {
       ag.addUsesDependency(AGEdge.uses(na, nb), AGEdge.uses(na, nc))
 
       na.sideUses(nb).toStream should contain (AGEdge.uses(na, nc))

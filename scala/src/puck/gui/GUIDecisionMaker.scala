@@ -16,13 +16,17 @@ class GUIDecisionMaker(val graph : AccessGraph) extends DecisionMaker{
 
   override def toString = "User Decision Maker"
 
-  def violationTarget = fallback.violationTarget
+  def violationTarget(k: Option[AGNode] => Unit) {
+    fallback.violationTarget(k)
+  }
 
   def abstractionKindAndPolicy(impl : AGNode) =
     AbstractionKindAndPolicyChooser(impl)
 
-  def chooseNode(context : String)(predicate : AGNode => Boolean) : Option[AGNode] =
-    NodeChooser(LiteralNodeSet(graph.filter(predicate)), context)
+  def chooseNode(context : => String,
+                 predicate : AGNode => Boolean,
+                 k : Option[AGNode] => Unit) : Unit =
+    k(NodeChooser(LiteralNodeSet(graph.filter(predicate)), context))
 
   def modifyConstraints(sources : NodeSet, target : AGNode) {
     ConstraintExceptionFrame(sources, target)

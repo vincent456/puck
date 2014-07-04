@@ -12,6 +12,9 @@ import scala.collection.mutable
 trait Transformation {
   def undo() : Unit
   def redo() : Unit
+
+  def copy() : Transformation = this
+
 }
 
 trait Reverse[T <: Transformation] extends Transformation{
@@ -20,49 +23,60 @@ trait Reverse[T <: Transformation] extends Transformation{
   def redo() = reverse.undo()
 }
 
-class CompositeTransformation extends Transformation{
+/*class CompositeTransformation extends Transformation{
 
   val sequence = new mutable.Stack[Transformation]()
 
+  override def toString =
+    sequence.mkString("CompositeTransformation[\n", ",\n", "]\n")
+
   def push(t : Transformation) = sequence.push(t)
+  def pop() = sequence.pop()
+
 
   def undo() { sequence.iterator.foreach(_.undo()) }
   def redo() { sequence.reverseIterator.foreach(_.redo()) }
-  /*def undo(){
 
-    while(sequence.nonEmpty){
-      val t = sequence.pop()
-      t.undo()
-    }
+  override def copy() : CompositeTransformation = {
+    val ct = new CompositeTransformation()
+    sequence.reverseIterator.foreach(ct.push)
+    ct
+  }
+}*/
 
-  }*/
-
+abstract class BreakPoint extends Transformation {
+  def undo(){}
+  def redo(){}
 }
+case class UndoBreakPoint() extends BreakPoint
+case class SearchStateBreakPoint() extends BreakPoint
 
-class AddNode( node : AGNode) extends Transformation {
+case class AddNode( node : AGNode) extends Transformation {
   override def toString = "add node %s".format(node)
 
   def undo(){ node.graph.remove(node) }
   def redo(){ node.graph.addNode(node) }
 }
 
-class RemoveNode(node : AGNode) extends Reverse[AddNode]{
+case class RemoveNode(node : AGNode) extends Reverse[AddNode]{
   override def toString = "remove node %s".format(node)
   val reverse = new AddNode( node)
 }
 
-class AddEdge( edge : AGEdge) extends Transformation {
+case class AddEdge( edge : AGEdge) extends Transformation {
   override def toString = "add edge " + edge
   def undo(){ edge.delete() }
   def redo(){ edge.create() }
 }
 
-class RemoveEdge( edge : AGEdge) extends Reverse[AddEdge]{
+case class RemoveEdge( edge : AGEdge) extends Reverse[AddEdge]{
   override def toString = "remove edge " + edge
   val reverse = new AddEdge(edge)
 }
 
-class AddEdgeDependency(dominant : AGEdge, dominated : AGEdge) extends Transformation{
+case class AddEdgeDependency(dominant : AGEdge, dominated : AGEdge) extends Transformation{
+  //override def toString = "add edge dependency ( %s , %s) ".format(dominant, dominated)
+
   def undo(){
     val g = dominant.source.graph
     g.removeUsesDependency(dominant, dominated)
@@ -72,23 +86,25 @@ class AddEdgeDependency(dominant : AGEdge, dominated : AGEdge) extends Transform
     g.addUsesDependency(dominant, dominated)
   }
 }
-class RemoveEdgeDependency(dominant : AGEdge, dominated : AGEdge)
+case class RemoveEdgeDependency(dominant : AGEdge, dominated : AGEdge)
   extends Reverse[AddEdgeDependency]{
+  //override def toString = "remove edge dependency ( %s , %s) ".format(dominant, dominated)
+
   val reverse = new AddEdgeDependency(dominant, dominated)
 }
 
-class RegisterAbstraction( impl : AGNode, abs :AGNode,
+case class RegisterAbstraction( impl : AGNode, abs :AGNode,
                            policy : AbstractionPolicy) extends Transformation {
   def undo(){ impl.abstractions_-=(abs, policy) }
   def redo(){ impl.abstractions_+=(abs, policy) }
 }
-class UnregisterAbstraction( impl : AGNode, abs : AGNode,
+case class UnregisterAbstraction( impl : AGNode, abs : AGNode,
                              policy : AbstractionPolicy)
   extends Reverse[RegisterAbstraction]{
   val reverse = new RegisterAbstraction(impl, abs, policy)
 }
 
-class AddFriend (ct : Constraint, friend : AGNode) extends Transformation{
+case class AddFriend (ct : Constraint, friend : AGNode) extends Transformation{
   def undo(){ ct.friends -= friend }
   def redo(){ ct.friends += friend }
 }

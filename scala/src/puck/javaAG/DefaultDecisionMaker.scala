@@ -16,7 +16,7 @@ class DefaultDecisionMaker(val graph : AccessGraph) extends DecisionMaker{
   val violationsKindPriority = List[NodeKind](Field(), Constructor(),
     Class(), Interface())
 
-  def violationTarget : Option[AGNode] = {
+  def violationTarget(k: Option[AGNode] => Unit){
     def aux (priorities : List[NodeKind]) : Option[AGNode] = priorities match {
       case topPriority :: tl => graph.iterator.find{ (n : AGNode) =>
         n.kind == topPriority && (n.wrongUsers.nonEmpty ||
@@ -29,7 +29,7 @@ class DefaultDecisionMaker(val graph : AccessGraph) extends DecisionMaker{
         n.isWronglyContained }
     }
 
-    aux(violationsKindPriority)
+    k(aux(violationsKindPriority))
   }
 
 
@@ -38,11 +38,13 @@ class DefaultDecisionMaker(val graph : AccessGraph) extends DecisionMaker{
     (impl.kind.abstractKinds(policy).head, policy)
   }
 
-  def chooseNode(context : String)(predicate : AGNode => Boolean) : Option[AGNode] = {
+  def chooseNode(context : => String,
+                 predicate : AGNode => Boolean,
+                 k : Option[AGNode] => Unit) : Unit = {
     println(context)
     val found = graph.iterator.find(predicate)
     println("found : " + found)
-    found
+    k(found)
   }
 
   def modifyConstraints(sources : NodeSet, target : AGNode){}

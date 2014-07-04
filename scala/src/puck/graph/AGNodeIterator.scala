@@ -7,11 +7,39 @@ import scala.collection.mutable
  * Created by lorilan on 13/05/14.
  */
 /*
-  implements a width cross (parcours en largeur ?) of the graph via the contains tree
+  implements a Breadth-first search of a tree
  */
-class AGNodeIterator (private var nextOne : AGNode) extends Iterator[AGNode]{
+trait HasChildren[T] {
+  def children : Iterable[T]
+}
+
+trait BreadthFirstTreeIterator[T <: HasChildren[T]] extends Iterator[T]{
+
+  val root : T
+
+  private val nexts : mutable.Queue[T] = mutable.Queue[T]()
+
+  nexts += root
+
+  override def hasNext : Boolean = nexts.nonEmpty
+
+  override def next() : T = {
+    val n = nexts.dequeue()
+    nexts ++= n.children
+    n
+  }
+
+}
+
+class AGNodeIterator (val root : AGNode)
+  extends BreadthFirstTreeIterator[AGNode]
+
+/*
+class AGNodeIterator (protected var nextOne : AGNode) extends Iterator[AGNode]{
 
   private val nexts : mutable.Queue[AGNode] = mutable.Queue[AGNode]()
+
+
 
   nexts ++= nextOne.content
 /*  println("next one is "+ nextOne)
@@ -40,3 +68,4 @@ class AGNodeIterator (private var nextOne : AGNode) extends Iterator[AGNode]{
     n
   }
 }
+*/

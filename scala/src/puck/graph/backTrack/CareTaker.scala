@@ -11,112 +11,130 @@ import scala.collection.mutable
 /*
   by default no op
  */
-trait CareTaker {
-
-  def startRegister() : CareTaker
-
-  def stopRegister() : CareTaker
-
-  def sequence[T]( op : => T ) : T
-
-  def undo() : Transformation
-
-  val recording : Recording
-
-  def addNode(n: AGNode)
-
-  def removeNode(n: AGNode)
-
-  def addEdge(e: AGEdge)
-
-  def removeEdge(e: AGEdge)
-
-  def addEdgeDependency(dominant: AGEdge, dominated: AGEdge)
-
-  def removeEdgeDependency(dominant: AGEdge, dominated: AGEdge)
-
-  def registerAbstraction(impl: AGNode, abs: AGNode,
-                          policy: AbstractionPolicy)
-  def unregisterAbstraction(impl: AGNode, abs: AGNode,
-                          policy: AbstractionPolicy)
-
-  def addFriend(ct : Constraint, friend : AGNode)
-}
-
 class Recording( private [backTrack] val graph : AccessGraph,
                  private [backTrack] val registering : Int,
-                 private [backTrack] val sequences : List[CompositeTransformation]){
-  def redo(){sequences.foreach(_.redo())}
-}
+                 private [backTrack] val composition : List[Transformation]){
+  def redo(){composition.foreach(_.redo())}
+  def undo(){composition.reverseIterator.foreach(_.undo())}
 
-class CareTakerNoop(val graph : AccessGraph) extends CareTaker{
 
-  def startRegister()={
-    graph.transformations = new CareTakerRegister(graph)
-    graph.transformations
+  def partialGraph() : AccessGraph = {
+    val g = graph.newGraph()
+    val map = mutable.Map[AGNode, AGNode]()
+    map += (graph.root -> g.root)
+
+    def get(n : AGNode) =
+      map.getOrElse(n, g.addNode(n.name, n.kind))
+
+    composition.foreach{
+      case AddNode(n) =>
+        val n2 = get(n)
+        map += (n -> n2)
+        g.addNode(n2)
+      case RemoveNode(n) =>
+        throw new AGError("partial graph remove node should not happen")
+      case AddEdge(e) =>
+        AGEdge(e.kind, get(e.source), get(e.target)).create()
+      case RemoveEdge(e) =>
+        AGEdge(e.kind, get(e.source), get(e.target)).delete()
+      case _ => ()
+    }
+
+    g
   }
 
-  def stopRegister()={
-    graph.transformations = this
-    this
+  def produceSameGraph(other : Recording) : Boolean = {
+    (composition.length == other.composition.length) &&
+    partialGraph().softEqual(other.partialGraph())
+    /*val mapping = Map[AGNode, AGNode]()
+
+    def normalizeNodeTransfos(l : List[Transformation]) = {
+      val (m2, l2) = l.foldLeft( (Map[AGNode, Int](), List[Transformation]()) ){
+        case ((m,l1), AddNode(n))=>
+          val i = m.getOrElse(n, 0)
+          (m + (n -> i + 1), l1)
+        case ((m,l1), RemoveNode(n)) =>
+          val i = m.getOrElse(n, 0)
+          (m + (n -> i - 1), l1)
+        case ((m,l1),t) => (m, t :: l1)
+      }
+
+      (m2, l2.reverse)
+    }
+
+    (composition.length == other.composition.length) && {
+
+      def predicate = {case AddNode(_) | RemoveNode(_) => true
+      case _ => false}
+
+      val (nodeMap, remainingTransfos) = normalizeNodeTransfos(composition)
+
+      val (nodeTransfosOther, remainingTransfosOther) = normalizeNodeTransfos(other.composition)
+
+
+
+
+    }*/
   }
-  val emptyRecording = new Recording(graph, 0, List())
-
-  def recording = emptyRecording
-
-  def recording_=(r : Recording){}
-
-  def sequence[T]( op : => T ) = op
-
-  def undo() = new CompositeTransformation()
-
-  def addNode(n: AGNode){}
-
-  def removeNode(n: AGNode) {}
-
-  def addEdge(e: AGEdge){}
-
-  def removeEdge(e: AGEdge){}
-
-  def addEdgeDependency(dominant: AGEdge, dominated: AGEdge) {}
-  def removeEdgeDependency(dominant: AGEdge, dominated: AGEdge) {}
-
-  def registerAbstraction(impl: AGNode, abs: AGNode,
-                          policy: AbstractionPolicy){}
-  def unregisterAbstraction(impl: AGNode, abs: AGNode,
-                          policy: AbstractionPolicy){}
-
-  def addFriend(ct : Constraint, friend : AGNode){}
 }
 
-class CareTakerRegister (val graph : AccessGraph) extends CareTaker {
+object EmptyRecording extends Recording(null, 0, null){
+  override def redo(){}
+  override def undo(){}
+}
+
+object Recording{
+  def apply(g : AccessGraph, r: Int, s : mutable.Stack[Transformation]) = {
+
+    val buf = mutable.ListBuffer[Transformation]()
+
+    s.reverseIterator.foreach{ t =>
+      //println("copying " + t)
+      buf += t.copy()
+    }
+
+    new Recording(g,r,buf.toList)
+  }
+}
+
+
+
+class CareTaker (val graph : AccessGraph) {
 
   private [this] var registering = 1
 
+  def register[T](op : => T) : T = {
+    startRegister()
+    val res = sequence[T](op)
+    stopRegister()
+    res
+  }
+
   def startRegister()={
     registering += 1
+
     graph.transformations = this
     this
   }
 
   def stopRegister()={
     registering -= 1
-    if(registering == 0 ){
+
+    if(registering == 0 )
       graph.transformations = new CareTakerNoop(graph)
-    }
+
     graph.transformations
   }
 
-  private val sequencesStack = new mutable.Stack[CompositeTransformation]()
-  sequencesStack.push(new CompositeTransformation())
+  private val transformationsStack = new mutable.Stack[Transformation]()
 
-  private def currentSequence : CompositeTransformation = sequencesStack.head
-
-  def +=(t : Transformation) {
-    currentSequence.push(t)
+  private def +=(t : Transformation) {
+    transformationsStack.push(t)
   }
 
-  def recording = new Recording(graph, registering, sequencesStack.reverseIterator.toList)
+  def recording = {
+    Recording(graph, registering, transformationsStack)
+  }
 
   def recording_=(r : Recording){
     if(graph != r.graph)
@@ -124,32 +142,30 @@ class CareTakerRegister (val graph : AccessGraph) extends CareTaker {
 
     this.registering = r.registering
 
-    sequencesStack.clear()
-    r.sequences.foreach(sequencesStack.push)
+    transformationsStack.clear()
+    r.composition.foreach(transformationsStack.push)
   }
+
+
+  def startSequence(){
+    transformationsStack.push(UndoBreakPoint())
+  }
+
 
   def sequence[T]( op : => T ) = {
-    var seq = new CompositeTransformation()
-    this += seq
-    sequencesStack.push(seq)
-
-    val res = op
-
-    sequencesStack.pop()
-
-    res
+    startSequence()
+    op
   }
 
-  def undo() {
-    graph.transformations = new CareTakerNoop(graph)
-    /*println("sequence to undo : ")
-    currentSequence.sequence.foreach(println)
-    println("end of sequence to undo.")*/
-    val undoSeq = sequencesStack.pop()
-    sequencesStack.push(new CompositeTransformation)
+  def undo(breakPoint : BreakPoint = UndoBreakPoint()) = {
 
-    undoSeq.undo()
-    undoSeq
+    graph.transformations = new CareTakerNoop(graph)
+
+    while(transformationsStack.nonEmpty &&
+        transformationsStack.head != breakPoint)
+        transformationsStack.pop().undo()
+
+    graph.transformations = this
   }
 
   def addNode(n: AGNode) {
@@ -188,4 +204,47 @@ class CareTakerRegister (val graph : AccessGraph) extends CareTaker {
   def addFriend(ct : Constraint, friend : AGNode){
     this += new AddFriend(ct, friend)
   }
+}
+
+class CareTakerNoop(g : AccessGraph) extends CareTaker(g){
+
+  override def register[T](op : => T) : T = op
+
+  override def startRegister()={
+    graph.transformations = new CareTaker(graph)
+    graph.transformations
+  }
+
+  override def stopRegister()={
+    graph.transformations = this
+    this
+  }
+
+  override def recording = EmptyRecording
+
+  override def recording_=(r : Recording){}
+
+  override def sequence[T]( op : => T ) = op
+
+  override def startSequence(){}
+
+  override def undo(breakPoint : BreakPoint) {}
+
+  override def addNode(n: AGNode){}
+
+  override def removeNode(n: AGNode) {}
+
+  override def addEdge(e: AGEdge){}
+
+  override def removeEdge(e: AGEdge){}
+
+  override def addEdgeDependency(dominant: AGEdge, dominated: AGEdge) {}
+  override def removeEdgeDependency(dominant: AGEdge, dominated: AGEdge) {}
+
+  override def registerAbstraction(impl: AGNode, abs: AGNode,
+                          policy: AbstractionPolicy){}
+  override def unregisterAbstraction(impl: AGNode, abs: AGNode,
+                            policy: AbstractionPolicy){}
+
+  override def addFriend(ct : Constraint, friend : AGNode){}
 }

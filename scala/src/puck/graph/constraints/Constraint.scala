@@ -6,9 +6,13 @@ import puck.graph.{AGNode, AGEdge, AGError}
  * Created by lorilan on 03/06/14.
  */
 
-trait ConstraintWithInterlopers {
+trait Constraint{
   val owners : NodeSet
   val friends : NodeSet
+  val predicate : String
+}
+
+trait ConstraintWithInterlopers extends Constraint{
   val interlopers : NodeSet
 
   def isViolatedBy(edge : AGEdge): Boolean =
@@ -22,11 +26,7 @@ trait ConstraintWithInterlopers {
 
 }
 
-abstract class Constraint{
-  val owners : NodeSet
-  val friends : NodeSet
-  val predicate : String
-}
+
 
 /*
     hiddenFrom(Element, Interloper) :- hideScope(S, Facades, Interlopers, Friends),
@@ -41,7 +41,7 @@ abstract class Constraint{
 case class ScopeConstraint(owners : NodeSet,
                            facades: NodeSet,
                            interlopers : NodeSet,
-                           friends : NodeSet) extends Constraint with ConstraintWithInterlopers{
+                           friends : NodeSet) extends ConstraintWithInterlopers {
 
   val predicate = "hideScopeSet"
 
@@ -67,7 +67,7 @@ case class ScopeConstraint(owners : NodeSet,
 
 case class ElementConstraint(owners : NodeSet,
                         interlopers : NodeSet,
-                        friends : NodeSet) extends Constraint with ConstraintWithInterlopers{
+                        friends : NodeSet) extends ConstraintWithInterlopers{
 
   val predicate = "hideElementSet"
   override def toString = {

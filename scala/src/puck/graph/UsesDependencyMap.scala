@@ -48,8 +48,8 @@ class UsesDependencyMap(val user : AGNode,
     content get usee match {
       case None =>
         content += (usee -> mutable.Set(dependency))
-      case Some(s) =>
-        content += (usee -> s.+=(dependency))
+      case Some(s) => s += dependency
+        //content += (usee -> s.+=(dependency))
     }
 
   }

@@ -3,7 +3,7 @@ package puck
 import java.io._
 
 import puck.graph._
-import puck.javaAG.{JavaAccessGraph, DefaultDecisionMaker, JavaSolver, JavaNode}
+import puck.javaAG._
 import scala.sys.process.Process
 import puck.graph.constraints.{DecisionMaker, ConstraintsParser}
 import java.util.NoSuchElementException
@@ -91,6 +91,30 @@ class FilesHandler private (private [this] var srcDir : File,
         () => ()
 
     )
+  }
+
+  def explore (trace : Boolean = false){
+
+    val engine = new JavaSearchEngine(accessGraph,
+      if(trace) { state =>
+        state.isStep = true
+
+        val f = new File("%s_traces%c%s".format(graph.getCanonicalPath,
+          File.separatorChar, state.uuid(File.separator, "_", ".png")))
+
+        println("*****************************************************")
+        println("*********** solve end of iteration %d *****************".format(state.depth))
+        println("***********  %s ***************".format(f.getAbsolutePath))
+
+        println()
+
+        f.getParentFile.mkdirs()
+        makePng(soutput = Some(new FileOutputStream(f)))
+      }
+      else
+        _ => ()
+    )
+    engine.explore()
   }
 
 

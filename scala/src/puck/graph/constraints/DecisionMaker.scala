@@ -18,11 +18,13 @@ trait DecisionMaker{
 
   val graph : AccessGraph
 
-  def violationTarget : Option[AGNode]
+  def violationTarget(k: Option[AGNode] => Unit) : Unit
 
   def abstractionKindAndPolicy(impl : AGNode) : (NodeKind, AbstractionPolicy)
 
-  def chooseNode(context : String)(predicate : AGNode => Boolean) : Option[AGNode]
+  def chooseNode(context : => String,
+                 predicate : AGNode => Boolean,
+                 k : Option[AGNode] => Unit) : Unit
 
   def modifyConstraints(sources : NodeSet, target : AGNode) : Unit
 

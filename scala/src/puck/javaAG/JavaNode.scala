@@ -90,14 +90,14 @@ class JavaNode( graph : AccessGraph,
             All subtypes must implement the method
            */
           this.content.forall(noNameClash(nk.`type`.input.length)) &&
-          this.subTypes.forall {
-            _.content.exists { c =>
-              c.kind match {
-                case ck@Method() => n.name == c.name && nk.`type` == ck.`type`
-                case _ => false
+            this.subTypes.forall {
+              _.content.exists { c =>
+                c.kind match {
+                  case ck@Method() => n.name == c.name && nk.`type` == ck.`type`
+                  case _ => false
+                }
               }
             }
-          }
         /*
           cannot have two methods with same name and same type
           */
@@ -145,7 +145,7 @@ class JavaNode( graph : AccessGraph,
   override def abstractionName(abskind :  NodeKind, policy : AbstractionPolicy) : String =
     (abskind, policy) match {
       case (Method(), SupertypeAbstraction())
-        | (AbstractMethod(), SupertypeAbstraction()) => this.name
+           | (AbstractMethod(), SupertypeAbstraction()) => this.name
 
       case _ => super.abstractionName(abskind, policy)
 
@@ -214,5 +214,18 @@ class JavaNode( graph : AccessGraph,
     super.moveTo(newContainer)
   }
 
+
+  override def softEqual(other : AGNode) : Boolean = {
+    super.softEqual(other) &&
+      ((kind, other.kind) match {
+      case (m1 @ Method() , m2 @ Method() ) =>
+        this.name == other.name &&
+          m1.`type`.input.length == m2.`type`.input.length
+      case (m1 @ AbstractMethod(), m2 @ AbstractMethod ()) =>
+        this.name == other.name &&
+          m1.`type`.input.length == m2.`type`.input.length
+      case  _=> true
+    })
+  }
 
 }

@@ -2,6 +2,7 @@ package puck.graph
 
 import puck.graph.backTrack.{CareTakerNoop, CareTaker}
 
+import scala.language.implicitConversions
 import scala.collection.mutable
 import puck.graph.constraints.{Constraint, NamedNodeSet}
 
@@ -13,11 +14,18 @@ object AccessGraph {
   val rootId = 0
   val rootName = "root"
   val unrootedStringId = "<DETACHED>"
+
+  implicit def agToIterator(ag : AccessGraph) : Iterator[AGNode] = ag.iterator
+
 }
 
 class AccessGraph (nodeBuilder : AGNodeBuilder) {
   //extends Iterable[AGNode]{ //is NOT iterable (see scala doc for requirements) but
   // has a valid iterator + implicit conversion in puck.graph package object
+
+  def newGraph() : AccessGraph = {
+    new AccessGraph(nodeBuilder)
+  }
 
   println("Node builder : " + nodeBuilder.getClass)
 
@@ -29,9 +37,6 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
   def nodes : Iterator[AGNode] = nodes0.iterator
 
   def iterator = root.iterator
-
-  /*private[graph] val predefTypes : mutable.Map[String, Type] = mutable.Map()
-  def predefType(name : String ) = predefTypes(name)*/
 
   private var id : Int = 1
   val root : AGNode = nodeBuilder(this, AccessGraph.rootId, AccessGraph.rootName, AGRoot())
@@ -45,17 +50,7 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
   override def hashCode: Int = this.id * 42 // ???
   */
 
-  /*  def attachRoots() {
-      this.foreach{ n =>
-        if(n.container == n && n != root){
-             root content_+= n
-        }
-      }
-    }*/
-
   def nodeKinds = nodeBuilder.kinds
-
-
 
   def violations : List[AGEdge] = {
     this.foldLeft(List[AGEdge]()){
@@ -66,6 +61,7 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
           else acc)
     }
   }
+
 
   def discardConstraints() {
     this.foreach(_.discardConstraints())
@@ -119,13 +115,6 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
 
   var transformations : CareTaker = new CareTakerNoop(this)
 
-  def register[T](op : => T) : T = {
-    transformations.startRegister()
-    val res = transformations.sequence[T](op)
-    transformations.stopRegister()
-    res
-  }
-
   def addNode(n : AGNode) : AGNode = {
     //assert n.graph == this ?
     this.nodes0 += n
@@ -165,6 +154,9 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
     removeUsesDependency(AGEdge.uses(primaryUser, primaryUsee),
       AGEdge.uses(sideUser, sideUsee))
   }
+
+  def softEqual(other : AccessGraph) = nodes.forall{ n =>
+    other.nodes.exists(_.softEqual(n))}
 
 }
 

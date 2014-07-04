@@ -34,6 +34,10 @@ class JavaAccessGraph extends AccessGraph(JavaNode){
       addNode(n)
   }
 
+  override def newGraph() : JavaAccessGraph ={
+    new JavaAccessGraph()
+  }
+
   def addPackageNode(fullName: String, localName:String) : AGNode =
     addNode(fullName, localName, puck.javaAG.JavaNodeKind.`package`)
 

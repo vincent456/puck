@@ -63,15 +63,16 @@ package puck
 
 
 import java.io._
+import puck.graph.DotPrinter
 import puck.gui.GUIDecisionMaker
-import puck.javaAG.DefaultDecisionMaker
+import puck.javaAG.{JavaNode, DefaultDecisionMaker}
 
 object Front{
 
   def main(args : Array[String]){
 
-    //val example ="prototype/actors/candidate"
-    val example = "bridge/hannemann_inspired/candidate"
+    val example ="prototype/actors/candidate"
+    //val example = "bridge/hannemann_inspired/candidate"
 
     val fh = FilesHandler("/home/lorilan/puck_svn/distrib/examples/" +
       example)()
@@ -80,26 +81,55 @@ object Front{
     println("graph loaded")
 
 
-       //fh.accessGraph.list()
-       //println(fh.parseConstraints() == fh.parseConstraints())
-       fh.parseConstraints()
+    //fh.accessGraph.list()
+    //println(fh.parseConstraints() == fh.parseConstraints())
+    fh.parseConstraints()
 
-       print("make png ... ")
-       fh.makePng(soutput = Some(new FileOutputStream(
-         new File(fh.graph.getCanonicalPath + "_before.png"))))
-       println("done")
+    print("make png ... ")
+    fh.makePng(soutput = Some(new FileOutputStream(
+      new File(fh.graph.getCanonicalPath + "_before.png"))))
+    println("done")
 
-       fh.solve(trace = true,
-           decisionMaker = new DefaultDecisionMaker(fh.accessGraph))
+    /*fh.accessGraph.transformations.startRegister()
+    fh.solve(trace = true,
+      decisionMaker = new DefaultDecisionMaker(fh.accessGraph))
 
-//    print("make pl ... ")
-//
-//    scala.Console.withOut(new FileOutputStream(fh.srcDirectory+ "/decouple_after.pl")) {
-//      fh.accessGraph.printConstraints()
-//    }
-//    fh.makeProlog()
-//    println("done")
-//
-//    fh.accessGraph.printConstraints()
+    val g = fh.accessGraph.transformations.recording.partialGraph()
+
+    DotPrinter.print(new BufferedWriter(new FileWriter(fh.graph.getCanonicalPath+"_partial.dot")),
+      g, JavaNode, printId=false, searchRoots = true)
+
+    g.nodes.foreach(println)
+
+    println(fh.accessGraph.transformations.getClass)
+
+    val r = fh.accessGraph.transformations.recording
+    println("undo everything !")
+    r.undo()
+
+    print("make png ... ")
+    fh.makePng(soutput = Some(new FileOutputStream(
+      new File(fh.graph.getCanonicalPath + "_undone.png"))))
+    println("done")
+
+    r.redo()
+
+    print("make png ... ")
+    fh.makePng(soutput = Some(new FileOutputStream(
+      new File(fh.graph.getCanonicalPath + "_redone.png"))))
+    println("done")*/
+
+    fh.explore(trace = true)
+
+
+    //    print("make pl ... ")
+    //
+    //    scala.Console.withOut(new FileOutputStream(fh.srcDirectory+ "/decouple_after.pl")) {
+    //      fh.accessGraph.printConstraints()
+    //    }
+    //    fh.makeProlog()
+    //    println("done")
+    //
+    //    fh.accessGraph.printConstraints()
   }
 }
