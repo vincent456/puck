@@ -26,7 +26,7 @@ writeln_hooked_node(S, G, Id):-
     get_node(Id, G, N), users_of_node(Users,N),
     maplist(call(writeln_uses(S, G, Id)), Users).
 
-extract_node(N, (Id,Kind,Name,Cees, Users, Supers)):-
+extract_node(N, (Id, Kind, Name, Cees, Users, Supers)):-
     id_of_node(Id, N),
     kind_of_node(Kind, N),
     name_of_node(Name,N),

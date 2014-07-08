@@ -143,40 +143,74 @@ node_named_type_to_id(_, N, N).
 %%%%%
 
 %%TODO : répercute le changement de type des signatures !!!
-redirect_to_type_abs_aux_methods(AbsId, UserId, UseeId, GraphIn, GraphOut):-
-    (get_node(UseeId, GraphIn, Usee),
-        kind_of_node(method, Usee)) ->
-        contains(AbsId, AbsCeeId, GraphIn), 
-        gen_abstraction(UseeId, GraphIn, AbsCeeId),
-        redirect_uses(UserId, UseeId, AbsCeeId, GraphIn, GraphOut)
-    ;GraphOut=GraphIn. %% flou -> quid des attibuts et des constructeurs ?
+%% version sans utilisation des "sides uses"
+%% redirect_to_type_abs_aux_methods(AbsId, UserId, UseeId, GraphIn, GraphOut):-
+%%     (get_node(UseeId, GraphIn, Usee),
+%%         kind_of_node(method, Usee)) ->
+%%         contains(AbsId, AbsCeeId, GraphIn), 
+%%         gen_abstraction(UseeId, GraphIn, AbsCeeId),
+%%         redirect_uses(UserId, UseeId, AbsCeeId, GraphIn, GraphOut)
+%%     ;GraphOut=GraphIn. %% flou -> quid des attibuts et des constructeurs ?
+
+%% redirect_to_type_abs_aux(RealId, TypeAbsId, UserId, GraphIn, GraphOut):-
+%%     get_node(RealId, GraphIn, Real),
+%%     containees_of_node(RAttributesId, Real),
+%%     findall(RAttributeId, 
+%%         (member(RAttributeId, RAttributesId),
+%%             uses(UserId, RAttributeId, GraphIn)), Usees), %% UseesList),
+%%     %% list_to_set(UseesList, Usees), %%shouldn't be necessary
+%%     foldl(call(redirect_to_type_abs_aux_methods(TypeAbsId, UserId)), Usees, GraphIn, G1),
+%%     %%via recursive call, User may use only a containee of Real and not real itself
+%%     (uses(UserId, RealId, G1) ->
+%%         redirect_uses(UserId, RealId, TypeAbsId, G1, G2);G1=G2),
+    
+%%     get_node(UserId, G2, User), 
+%%     ((kind_of_node(class, User); kind_of_node(interface, User))->
+%%     %% if we redirect from a class, we also have to redirect for all the methods:
+%%     %% if use in an extends context, replace super by call to delegate
+%%     %% if it forbidden for a class to use another, it also forbidden for its method:
+%%     %% we have to replace the optionnal class declaration
+%%         containees_of_node(AttributesIds, User),
+%%         redirect_to_type_abs(AttributesIds, RealId, TypeAbsId, G2, GraphOut);
+%%         GraphOut=G2).
+
+redirect_side_use(PUse, TypeAbs, (SUserId, SUseeId), GraphIn, GraphOut):-
+    containees_of_node(TypeAbsCeesId, TypeAbs),
+    member(TAMethodId, TypeAbsCeesId), 
+    gen_abstraction(SUseeId, GraphIn, TAMethodId),
+    
+    get_primary_uses((SUserId, SUseeId), GraphIn, PUses),
+    (PUses=[]-> fail;
+        
+        get_node(SUseeId, GraphIn, SUsee),
+        (select(PUse, PUses, [])-> 
+            del_primary_uses(SUsee, SUserId, NSUsee),
+            redirect_uses(SUserId, SUseeId, TAMethodId, GraphIn, G2);
+
+            select(PUse, PUses, NPUses),
+            set_primary_uses(SUsee, NPUses, NSUsee),
+            put_uses(SUserId, TAMethodId, GraphIn, G2)),
+
+            put_node(NSUsee, G2, G3),
+            get_node(TAMethodId, G3, TAMethod),
+            add_primary_uses(TAMethod, PUse, SUserId, NTAMethod),
+            put_node(NTAMethod, G3, GraphOut)).
+
 
 redirect_to_type_abs_aux(RealId, TypeAbsId, UserId, GraphIn, GraphOut):-
-    get_node(RealId, GraphIn, Real),
-    containees_of_node(RAttributesId, Real),
-    findall(RAttributeId, 
-        (member(RAttributeId, RAttributesId),
-            uses(UserId, RAttributeId, GraphIn)), Usees), %% UseesList),
-    %% list_to_set(UseesList, Usees), %%shouldn't be necessary
-    foldl(call(redirect_to_type_abs_aux_methods(TypeAbsId, UserId)), Usees, GraphIn, G1),
+    get_side_uses((UserId, RealId), GraphIn, SideUses),
+    get_node(TypeAbsId, GraphIn, TypeAbs),
+    foldl(call(redirect_side_use((UserId, RealId), TypeAbs)), SideUses, GraphIn, G1),
     %%via recursive call, User may use only a containee of Real and not real itself
-    (uses(UserId, RealId, G1) ->
-        redirect_uses(UserId, RealId, TypeAbsId, G1, G2);G1=G2),
-    
-    get_node(UserId, G2, User), 
-    ((kind_of_node(class, User); kind_of_node(interface, User))->
-    %% if we redirect from a class, we also have to redirect for all the methods:
-    %% if use in an extends context, replace super by call to delegate
-    %% if it forbidden for a class to use another, it also forbidden for its method:
-    %% we have to replace the optionnal class declaration
-        containees_of_node(AttributesIds, User),
-        redirect_to_type_abs(AttributesIds, RealId, TypeAbsId, G2, GraphOut);
-        GraphOut=G2).
-
+    redirect_uses(UserId, RealId, TypeAbsId, G1, G2),
+    get_node(RealId, G2, Real),
+    del_side_uses(Real, UserId, NReal),
+    put_node(NReal, G2, GraphOut).
 
 redirect_to_type_abs(UserIds, RealId, AbsId, GraphIn, GraphOut):-
     foldl(call(redirect_to_type_abs_aux(RealId, AbsId)),UserIds, GraphIn, GraphOut). %%G1),
 
+%%
 redirect_to_method_abs_aux(RealId, AbsId, UserId, GraphIn, GraphOut):-
         redirect_uses(UserId, RealId, AbsId, GraphIn, GraphOut).
 
@@ -184,6 +218,7 @@ redirect_to_method_abs(UserIds, RealId, AbsId, GraphIn, GraphOut):-
         %% au moins ajoute uses vers container de Abs ! (éventuellement redirect)
         foldl(call(redirect_to_method_abs_aux(RealId, AbsId)), UserIds, GraphIn, GraphOut).
 
+%%
 redirect_to_abstraction(UserIds, RealId, AbsId, GraphIn, GraphOut):-
     get_node(AbsId, GraphIn, Abs),
     ((kind_of_node(class, Abs); kind_of_node(interface, Abs)), 

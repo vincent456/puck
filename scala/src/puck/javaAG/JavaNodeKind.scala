@@ -1,0 +1,140 @@
+package puck.javaAG
+
+import puck.graph._
+import puck.graph.constraints.{AbstractionPolicy, SupertypeAbstraction, DelegationAbstraction}
+
+/**
+ * Created by lorilan on 27/05/14.
+ */
+
+object JavaNodeKind {
+
+  case class Package() extends NodeKind {  //unused in LJ
+
+    def canContain(k : NodeKind) : Boolean = {
+      k match {
+        case Package()
+             | Class()
+             | Interface() => true
+        case _ => false
+      }
+    }
+
+    override def abstractionPolicies = List(DelegationAbstraction())
+    def abstractKinds(p : AbstractionPolicy) = List(`package`)
+
+    override def canBeRootContent = true
+  }
+
+  case class Interface private[javaAG]() extends NodeKind { //unused in LJ
+
+    def canContain(k : NodeKind) : Boolean = {
+      k match {
+        case AbstractMethod() => true
+        case _ => false
+      }
+    }
+
+    def abstractKinds(p : AbstractionPolicy) = p match {
+      case SupertypeAbstraction() => List(interface)
+      case DelegationAbstraction() => List(`class`)//also interface ?
+    }
+  }
+  case class Class private[javaAG]() extends NodeKind {
+    def canContain(k : NodeKind) : Boolean = {
+      k match {
+        case Constructor()
+             | Field()
+             | Method() => true
+        case _ => false
+      }
+    }
+
+    def abstractKinds(p : AbstractionPolicy) = p match {
+      case SupertypeAbstraction() => List(interface, `class`)
+      case DelegationAbstraction() => List(`class`)//also interface ?
+    }
+  }
+
+  case class Constructor private[javaAG]() extends NodeKind with HasType[MethodType]{
+    def canContain(k : NodeKind) = false
+
+    override def abstractionPolicies = List(DelegationAbstraction())
+
+    def abstractKinds(p : AbstractionPolicy) = p match {
+      case DelegationAbstraction() => List(method(`type`))
+      case SupertypeAbstraction() => throw new AGError("Constructor cannot be abstracted by SuperType strategy")
+    }
+
+  }
+
+  case class Method private[javaAG]() extends NodeKind with HasType[MethodType] {
+    def canContain(k : NodeKind) = false
+
+    def abstractKinds(p : AbstractionPolicy) = p match {
+      case SupertypeAbstraction() => List(abstractMethod(`type`), method(`type`))
+      case DelegationAbstraction() => List(method(`type`))//also abstractMethod ?
+    }
+  }
+
+  case class Field private[javaAG]() extends NodeKind with HasType[JavaType]{
+    def canContain(k : NodeKind) = false
+    //TODO check abstraction : FieldRead != FieldWrite
+    // fieldread abstraction type = () -> t
+    // fielwrite abstraction type = t -> () (think of t -> t case of jrrt ... )
+    def abstractKinds(p : AbstractionPolicy) = List(Method())
+
+    override def abstractionPolicies = List(DelegationAbstraction())
+  }
+
+  case class AbstractMethod private[javaAG]() extends NodeKind with HasType[MethodType] {
+    def canContain(k : NodeKind) = false
+
+    def abstractKinds(p : AbstractionPolicy) = p match {
+      case SupertypeAbstraction() => List(abstractMethod(`type`))
+      case DelegationAbstraction() => List(method(`type`))//also abstractMethod ?
+    }
+
+  }
+
+  case class Literal private[javaAG]() extends NodeKind with HasType[JavaType]{
+    def canContain(k : NodeKind) = false
+    //TODO in case of method abstraction cf field comment
+    override def abstractionPolicies = List(DelegationAbstraction())
+    def abstractKinds(p : AbstractionPolicy) = List(field(`type`), Method())
+  }
+
+  def typedKind[S<:Type, T<:HasType[S]]( ctr : () => T, t: S) = {
+    val k = ctr ()
+    k.`type` = t
+    k
+  }
+
+  val `package` = Package()
+
+  val interface = Interface()
+  val `class` = Class()
+
+  def constructor(t : MethodType) = typedKind ( () => Constructor(), t )
+  def method(t : MethodType) = typedKind ( () => Method(), t )
+  def field(t : JavaType) = typedKind ( () => Field(), t )
+  def abstractMethod(t : MethodType) = typedKind ( () => AbstractMethod(), t )
+  def literal(t : JavaType) = typedKind ( () => Literal(), t )
+
+  /*def constructor(t : Type) = new Constructor(t)
+  def method(t : Type) = new Method(t)
+  def field(t : Type) = new Field(t)
+
+  def abstractMethod(t : Type) = new AbstractMethod(t)
+
+  def literal(t : Type) = new Literal(t)*/
+
+  //fix for accessing the field in java
+  val interfaceKind = interface
+  val classKind = `class`
+
+  val list = List[NodeKind](Package(), Interface(),
+    Class(), Constructor(),
+    Method(), Field(), AbstractMethod(), Literal(), Primitive())
+
+}
