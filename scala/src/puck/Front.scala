@@ -71,8 +71,8 @@ object Front{
 
   def main(args : Array[String]){
 
-    val example ="prototype/actors/candidate"
-    //val example = "bridge/hannemann_inspired/candidate"
+    //val example ="prototype/actors/candidate"
+    val example = "bridge/hannemann_inspired/candidate"
 
     val fh = FilesHandler("/home/lorilan/puck_svn/distrib/examples/" +
       example)()
@@ -87,7 +87,7 @@ object Front{
 
     print("make png ... ")
     fh.makePng(soutput = Some(new FileOutputStream(
-      new File(fh.graph.getCanonicalPath + "_before.png"))))
+      new File(fh.graphStubFile.getCanonicalPath + "_before.png"))))
     println("done")
 
     /*fh.accessGraph.transformations.startRegister()

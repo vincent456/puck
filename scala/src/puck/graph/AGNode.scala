@@ -1,7 +1,12 @@
 package puck.graph
 
+import puck.util.{HasChildren, BreadthFirstTreeIterator}
+
 import scala.collection.mutable
 import puck.graph.constraints._
+
+
+class AGNodeIterator (val root : AGNode)extends BreadthFirstTreeIterator[AGNode]
 
 
 trait AGNodeBuilder {

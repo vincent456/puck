@@ -157,7 +157,7 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
         try {
           filesHandler.parseConstraints()
           println(" done:")
-          filesHandler.accessGraph.printConstraints()
+          filesHandler.graph.printConstraints()
         }
         catch{
           case e : Error => println("\n" + e.getMessage)
@@ -176,7 +176,7 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
     val showConstraints = makeButton("Show constraints",
       "Show the constraints the graph has to satisfy"){
       () =>
-        filesHandler.accessGraph.printConstraints()
+        filesHandler.graph.printConstraints()
     }
 
     addDelayedComponent(showConstraints)
@@ -218,9 +218,9 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
           println("Solving constraints ...")
           filesHandler.solve(
             decisionMaker = if(decisionStrategy.selected)
-              new GUIDecisionMaker(filesHandler.accessGraph)
+              new GUIDecisionMaker(filesHandler.graph)
             else
-              new DefaultDecisionMaker(filesHandler.accessGraph),
+              new DefaultDecisionMaker(filesHandler.graph),
             trace = printTrace.selected
 
           )

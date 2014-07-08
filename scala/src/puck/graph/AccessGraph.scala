@@ -1,6 +1,6 @@
 package puck.graph
 
-import puck.graph.backTrack.{CareTakerNoop, CareTaker}
+import puck.graph.backTrack.{Recording, CareTakerNoop, CareTaker}
 
 import scala.language.implicitConversions
 import scala.collection.mutable
@@ -94,6 +94,7 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
   def apply(fullName:String) : AGNode= nodesByName(fullName)
   def getNode(fullName:String) : Option[AGNode] = nodesByName get fullName
 
+
   def addNode(fullName: String, localName:String, kind: NodeKind): AGNode = {
     val unambiguousFullName = nodeBuilder.makeKey(fullName, localName, kind)
     nodesByName get unambiguousFullName match {
@@ -114,6 +115,12 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
   }
 
   var transformations : CareTaker = new CareTakerNoop(this)
+
+  def apply(r : Recording){
+    transformations.recording.undo()
+    transformations.recording = r
+  }
+
 
   def addNode(n : AGNode) : AGNode = {
     //assert n.graph == this ?

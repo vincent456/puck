@@ -5,100 +5,6 @@ import puck.graph.{AGError, AccessGraph, AGEdge, AGNode}
 
 import scala.collection.mutable
 
-/**
- * Created by lorilan on 11/06/14.
- */
-/*
-  by default no op
- */
-class Recording( private [backTrack] val graph : AccessGraph,
-                 private [backTrack] val registering : Int,
-                 private [backTrack] val composition : List[Transformation]){
-  def redo(){composition.foreach(_.redo())}
-  def undo(){composition.reverseIterator.foreach(_.undo())}
-
-
-  def partialGraph() : AccessGraph = {
-    val g = graph.newGraph()
-    val map = mutable.Map[AGNode, AGNode]()
-    map += (graph.root -> g.root)
-
-    def get(n : AGNode) =
-      map.getOrElse(n, g.addNode(n.name, n.kind))
-
-    composition.foreach{
-      case AddNode(n) =>
-        val n2 = get(n)
-        map += (n -> n2)
-        g.addNode(n2)
-      case RemoveNode(n) =>
-        throw new AGError("partial graph remove node should not happen")
-      case AddEdge(e) =>
-        AGEdge(e.kind, get(e.source), get(e.target)).create()
-      case RemoveEdge(e) =>
-        AGEdge(e.kind, get(e.source), get(e.target)).delete()
-      case _ => ()
-    }
-
-    g
-  }
-
-  def produceSameGraph(other : Recording) : Boolean = {
-    (composition.length == other.composition.length) &&
-    partialGraph().softEqual(other.partialGraph())
-    /*val mapping = Map[AGNode, AGNode]()
-
-    def normalizeNodeTransfos(l : List[Transformation]) = {
-      val (m2, l2) = l.foldLeft( (Map[AGNode, Int](), List[Transformation]()) ){
-        case ((m,l1), AddNode(n))=>
-          val i = m.getOrElse(n, 0)
-          (m + (n -> i + 1), l1)
-        case ((m,l1), RemoveNode(n)) =>
-          val i = m.getOrElse(n, 0)
-          (m + (n -> i - 1), l1)
-        case ((m,l1),t) => (m, t :: l1)
-      }
-
-      (m2, l2.reverse)
-    }
-
-    (composition.length == other.composition.length) && {
-
-      def predicate = {case AddNode(_) | RemoveNode(_) => true
-      case _ => false}
-
-      val (nodeMap, remainingTransfos) = normalizeNodeTransfos(composition)
-
-      val (nodeTransfosOther, remainingTransfosOther) = normalizeNodeTransfos(other.composition)
-
-
-
-
-    }*/
-  }
-}
-
-object EmptyRecording extends Recording(null, 0, null){
-  override def redo(){}
-  override def undo(){}
-}
-
-object Recording{
-  def apply(g : AccessGraph, r: Int, s : mutable.Stack[Transformation]) = {
-
-    val buf = mutable.ListBuffer[Transformation]()
-
-    s.reverseIterator.foreach{ t =>
-      //println("copying " + t)
-      buf += t.copy()
-    }
-
-    new Recording(g,r,buf.toList)
-  }
-}
-
-
-
 class CareTaker (val graph : AccessGraph) {
 
   private [this] var registering = 1
@@ -126,7 +32,7 @@ class CareTaker (val graph : AccessGraph) {
     graph.transformations
   }
 
-  private val transformationsStack = new mutable.Stack[Transformation]()
+  private val transformationsStack = new mutable.Stack[Recordable]()
 
   private def +=(t : Transformation) {
     transformationsStack.push(t)
@@ -140,8 +46,10 @@ class CareTaker (val graph : AccessGraph) {
     if(graph != r.graph)
       throw new AGError("Illegal recording !")
 
-    this.registering = r.registering
+    r.redo()
 
+
+    this.registering = r.registering
     transformationsStack.clear()
     r.composition.foreach(transformationsStack.push)
   }
@@ -220,7 +128,7 @@ class CareTakerNoop(g : AccessGraph) extends CareTaker(g){
     this
   }
 
-  override def recording = EmptyRecording
+  override def recording = Recording.empty(g)
 
   override def recording_=(r : Recording){}
 

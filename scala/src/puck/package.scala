@@ -1,6 +1,4 @@
 import java.io._
-import java.nio.charset.Charset
-import java.util
 import java.util.regex.{Matcher, Pattern}
 import scala.language.implicitConversions
 /**
@@ -9,6 +7,14 @@ import scala.language.implicitConversions
 package object puck {
 
   implicit def string2file(filePath : String) = new File(filePath)
+
+  def time[A](a: => A) = {
+    val now = System.nanoTime
+    val result = a
+    val micros = (System.nanoTime - now) / 1000
+    println("%d microseconds".format(micros))
+    result
+  }
 
   def fileLines(file: File, keepEmptyLines: Boolean = false): List[String] = {
     if(!file.exists()) return List()
@@ -32,20 +38,20 @@ package object puck {
   def fileLines(fileName: String, keepEmptyLines: Boolean): List[String] =
     fileLines(new File(fileName), keepEmptyLines)
 
-  def initStringLiteralsMap(file: File): java.util.Map[String, util.Collection[AST.BodyDecl]] = {
+  def initStringLiteralsMap(file: File): java.util.Map[String, java.util.Collection[AST.BodyDecl]] = {
     val reader: BufferedReader = new BufferedReader(new FileReader(file))
 
     val pat = Pattern.compile(Pattern.quote("string('") + "([^']*)" +
       Pattern.quote("')"))
 
-    val smap = new util.HashMap[String, util.Collection[AST.BodyDecl]]()
+    val smap = new java.util.HashMap[String, java.util.Collection[AST.BodyDecl]]()
 
     def read() : Unit = {
       val line = reader.readLine
       if (line != null) {
         val m: Matcher = pat.matcher(line)
         while (m.find) {
-          smap.put(m.group(1), new util.ArrayList[AST.BodyDecl])
+          smap.put(m.group(1), new java.util.ArrayList[AST.BodyDecl])
         }
         read()
       }

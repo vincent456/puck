@@ -293,7 +293,7 @@ trait Solver {
 
     def aux(){
       decisionMaker.violationTarget {
-        case None => ()
+        case None => step()
         case Some(target) =>
           solveViolationsToward(target){ () =>
             step()
