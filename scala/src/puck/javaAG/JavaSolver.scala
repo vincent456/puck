@@ -1,26 +1,23 @@
 package puck.javaAG
 
 import puck.graph.constraints._
-import puck.graph.AccessGraph._
 import puck.graph._
-import puck.javaAG.JavaNodeKind._
 import puck.graph.constraints.SupertypeAbstraction
-import puck.graph.constraints.SupertypeAbstraction
-import puck.graph.constraints.DelegationAbstraction
-import puck.javaAG.JavaNodeKind.Field
-import puck.javaAG.JavaNodeKind.Interface
-import puck.javaAG.JavaNodeKind.Method
-import puck.javaAG.JavaNodeKind.Class
 
 /**
  * Created by lorilan on 28/05/14.
  */
-class JavaSolver(val graph : AccessGraph,
-                 val decisionMaker : DecisionMaker) extends Solver{
 
-  override  def singleAbsIntroPredicate(impl : AGNode,
+class JavaDefaultDecisionMaker(graph : JavaAccessGraph) extends DefaultDecisionMaker[JavaNodeKind](graph){
+  val violationsKindPriority = List[JavaNodeKind](Field(), Constructor(), Class(), Interface())
+}
+
+class JavaSolver(val graph : AccessGraph[JavaNodeKind],
+                 val decisionMaker : DecisionMaker[JavaNodeKind]) extends Solver[JavaNodeKind]{
+
+  override  def singleAbsIntroPredicate(impl : NodeType,
                                         absPolicy : AbstractionPolicy,
-                                        absKind : NodeKind) : AGNode => Boolean =
+                                        absKind : JavaNodeKind) : NodeType => Boolean =
     (impl.kind, absPolicy) match {
     case (Method(), SupertypeAbstraction())
     | (AbstractMethod(), SupertypeAbstraction()) =>

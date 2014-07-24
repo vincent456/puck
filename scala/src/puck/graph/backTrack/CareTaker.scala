@@ -1,11 +1,11 @@
 package puck.graph.backTrack
 
 import puck.graph.constraints.{AbstractionPolicy, Constraint}
-import puck.graph.{AGError, AccessGraph, AGEdge, AGNode}
+import puck.graph._
 
 import scala.collection.mutable
 
-class CareTaker (val graph : AccessGraph) {
+class CareTaker[Kind <: NodeKind[Kind]] (val graph : AccessGraph[Kind]) {
 
   private [this] var registering = 1
 
@@ -32,9 +32,9 @@ class CareTaker (val graph : AccessGraph) {
     graph.transformations
   }
 
-  private val transformationsStack = new mutable.Stack[Recordable]()
+  private val transformationsStack = new mutable.Stack[Recordable[Kind]]()
 
-  private def +=(t : Transformation) {
+  private def +=(t : Transformation[Kind]) {
     transformationsStack.push(t)
   }
 
@@ -42,7 +42,7 @@ class CareTaker (val graph : AccessGraph) {
     Recording(graph, registering, transformationsStack)
   }
 
-  def recording_=(r : Recording){
+  def recording_=(r : Recording[Kind]){
     if(graph != r.graph)
       throw new AGError("Illegal recording !")
 
@@ -56,7 +56,7 @@ class CareTaker (val graph : AccessGraph) {
 
 
   def startSequence(){
-    transformationsStack.push(UndoBreakPoint())
+    transformationsStack.push(UndoBreakPoint[Kind]())
   }
 
 
@@ -65,7 +65,7 @@ class CareTaker (val graph : AccessGraph) {
     op
   }
 
-  def undo(breakPoint : BreakPoint = UndoBreakPoint()) = {
+  def undo(breakPoint : BreakPoint[Kind] = UndoBreakPoint()) = {
 
     graph.transformations = new CareTakerNoop(graph)
 
@@ -76,45 +76,62 @@ class CareTaker (val graph : AccessGraph) {
     graph.transformations = this
   }
 
-  def addNode(n: AGNode) {
-    this += new AddNode(n)
+  type NodeType = AGNode[Kind]
+  type EdgeType = AGEdge[Kind]
+
+  def addNode(n: NodeType) {
+    this += Transformation(Add(), TTNode(n))
   }
 
-  def removeNode(n: AGNode) {
-    this += new RemoveNode(n)
+  def removeNode(n: NodeType) {
+    this += Transformation(Remove(), TTNode(n))
   }
 
-  def addEdge(e: AGEdge) {
-    this += new AddEdge(e)
+  def addEdge(e: EdgeType) {
+    this += Transformation(Add(), TTEdge(e))
   }
 
-  def removeEdge(e: AGEdge) {
-    this += new RemoveEdge(e)
+  def removeEdge(e: EdgeType) {
+    this += Transformation(Remove(), TTEdge(e))
   }
 
-  def addEdgeDependency(dominant: AGEdge, dominated: AGEdge) {
-    this += new AddEdgeDependency(dominant, dominated)
+  def addEdgeDependency(dominant: EdgeType, dominated: EdgeType) {
+    this += Transformation(Add(), TTDependency(dominant, dominated))
   }
 
-  def removeEdgeDependency(dominant: AGEdge, dominated: AGEdge) {
-    this += new RemoveEdgeDependency(dominant, dominated)
+  def removeEdgeDependency(dominant: EdgeType, dominated: EdgeType) {
+    this += Transformation(Remove(), TTDependency(dominant, dominated))
   }
-  
-  def registerAbstraction(impl: AGNode, abs: AGNode,
+
+  def createAbstraction(impl: NodeType, abs: NodeType,
                           policy: AbstractionPolicy) {
-    this += new RegisterAbstraction(impl, abs, policy)
+    this += Transformation(Add(), TTAbstraction(impl, abs, policy))
+    this += Transformation(Add(), TTNode(abs))
   }
 
-  def unregisterAbstraction(impl: AGNode, abs: AGNode,
+  def registerAbstraction(impl: NodeType, abs: NodeType,
                           policy: AbstractionPolicy) {
-    this += new UnregisterAbstraction(impl, abs, policy)
+    this += Transformation(Add(), TTAbstraction(impl, abs, policy))
   }
-  def addFriend(ct : Constraint, friend : AGNode){
-    this += new AddFriend(ct, friend)
+
+  def unregisterAbstraction(impl: NodeType, abs: NodeType,
+                          policy: AbstractionPolicy) {
+    this += Transformation(Remove(), TTAbstraction(impl, abs, policy))
+  }
+  def addFriend(ct : Constraint[Kind], friend : NodeType){
+    this += Transformation(Add(), TTConstraint(ct, friend))
+  }
+
+  def addChangeEdgeTarget(e : AGEdge[Kind], newTarget : AGNode[Kind]){
+    this += Transformation(Add(), TTRedirection(e, Target(newTarget)))
+  }
+
+  def addChangeEdgeSource(e : AGEdge[Kind], newSource : AGNode[Kind]){
+    this += Transformation(Add(), TTRedirection(e, Source(newSource)))
   }
 }
 
-class CareTakerNoop(g : AccessGraph) extends CareTaker(g){
+class CareTakerNoop[Kind <: NodeKind[Kind]](g : AccessGraph[Kind]) extends CareTaker[Kind](g){
 
   override def register[T](op : => T) : T = op
 
@@ -130,29 +147,32 @@ class CareTakerNoop(g : AccessGraph) extends CareTaker(g){
 
   override def recording = Recording.empty(g)
 
-  override def recording_=(r : Recording){}
+  override def recording_=(r : Recording[Kind]){}
 
   override def sequence[T]( op : => T ) = op
 
   override def startSequence(){}
 
-  override def undo(breakPoint : BreakPoint) {}
+  override def undo(breakPoint : BreakPoint[Kind]) {}
 
-  override def addNode(n: AGNode){}
+  override def addNode(n: NodeType){}
 
-  override def removeNode(n: AGNode) {}
+  override def removeNode(n: NodeType) {}
 
-  override def addEdge(e: AGEdge){}
+  override def addEdge(e: EdgeType){}
 
-  override def removeEdge(e: AGEdge){}
+  override def removeEdge(e: EdgeType){}
 
-  override def addEdgeDependency(dominant: AGEdge, dominated: AGEdge) {}
-  override def removeEdgeDependency(dominant: AGEdge, dominated: AGEdge) {}
+  override def addEdgeDependency(dominant: EdgeType, dominated: EdgeType) {}
+  override def removeEdgeDependency(dominant: EdgeType, dominated: EdgeType) {}
 
-  override def registerAbstraction(impl: AGNode, abs: AGNode,
+  override def registerAbstraction(impl: NodeType, abs: NodeType,
                           policy: AbstractionPolicy){}
-  override def unregisterAbstraction(impl: AGNode, abs: AGNode,
+  override def unregisterAbstraction(impl: NodeType, abs: NodeType,
                             policy: AbstractionPolicy){}
 
-  override def addFriend(ct : Constraint, friend : AGNode){}
+  override def addFriend(ct : Constraint[Kind], friend : NodeType){}
+
+  override def addChangeEdgeTarget(e : AGEdge[Kind], newTarget : AGNode[Kind]){}
+  override def addChangeEdgeSource(e : AGEdge[Kind], newSource : AGNode[Kind]){}
 }

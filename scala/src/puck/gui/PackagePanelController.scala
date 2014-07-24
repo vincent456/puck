@@ -1,28 +1,55 @@
 package puck.gui
 
-import puck.graph.{AGNode, AccessGraph}
+import java.awt.event.{MouseEvent, MouseAdapter}
+import javax.swing.tree.TreePath
+
+import puck.graph.{NodeKind, AGNode, AccessGraph}
 import javax.swing.JTree
+
+import scala.swing.Publisher
+import scala.swing.event.Event
 
 /**
  * Created by lorilan on 09/05/14.
  */
-class PackagePanelController(private [this] var ag : AccessGraph) {
 
-  def addChildren(ptn: PuckTreeNode){
-    ptn.getAGNode.content.foreach{
-      (n: AGNode) =>
+case class PuckTreeNodeClicked[Kind <: NodeKind[Kind]](node : PuckTreeNode[Kind]) extends Event
+
+class PackagePanelController[Kind <: NodeKind[Kind]](private [this] var ag : AccessGraph[Kind])
+  extends Publisher {
+
+  def addChildren(ptn: PuckTreeNode[Kind]){
+    ptn.agNode.content.foreach{
+      (n: AGNode[Kind]) =>
         val child = new PuckTreeNode(n)
         ptn add child
         addChildren(child)
     }
   }
 
-  val root = new PuckTreeNode(ag.root)
+  val root = new PuckTreeNode[Kind](ag.root)
   addChildren(root)
 
 
   val tree: JTree = new JTree(root)
   tree.setCellRenderer(new PuckTreeCellRenderer(tree.getCellRenderer))
+
+  tree.addMouseListener( new MouseAdapter {
+
+    override def mouseClicked(e : MouseEvent) {
+      val path : TreePath = tree.getPathForLocation(e.getX, e.getY)
+
+      if(path!= null){
+        path.getLastPathComponent match {
+          case node : PuckTreeNode[Kind] =>
+            publish(PuckTreeNodeClicked(node))
+            //obj.asInstanceOf[PuckTreeNode].toggleFilter()
+            tree.repaint()
+          case _ => ()
+        }
+      }
+    }
+  })
 
   /*tree.addMouseListener(new MouseAdapter() {
 			@Override

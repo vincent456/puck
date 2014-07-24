@@ -1,6 +1,6 @@
 package puck.graph
 
-import puck.graph
+
 
 import scala.collection.mutable
 
@@ -22,9 +22,10 @@ case class Dominated() extends DependencyStatus {
   def other = Dominant()
 }
 
-class UsesDependencyMap(val user : AGNode,
+class UsesDependencyMap[Kind <: NodeKind[Kind]](val user : AGNode[Kind],
                         val keyType : DependencyStatus) {
-  private [this] val content : mutable.Map[AGNode, mutable.Set[AGEdge]] = mutable.Map()
+  type NodeType = AGNode[Kind]
+  private [this] val content : mutable.Map[NodeType, mutable.Set[AGEdge[Kind]]] = mutable.Map()
 
   override def toString : String = {
     val contentType = keyType.other.contentString
@@ -39,11 +40,13 @@ class UsesDependencyMap(val user : AGNode,
     }.mkString("")
   }
 
-  def get(key : AGNode) : Option[Iterable[AGEdge]] = content.get(key)
+  def get(key : NodeType) : Option[Iterable[AGEdge[Kind]]] = content.get(key)
 
-  def apply(key : AGNode) : Iterable[AGEdge] = content(key)
+  def getOrElse(key : NodeType, default : Iterable[AGEdge[Kind]]) = content.getOrElse(key, default)
 
-  def +=(usee : AGNode, dependency : AGEdge) = {
+  def apply(key : NodeType) : Iterable[AGEdge[Kind]] = content(key)
+
+  def +=(usee : NodeType, dependency : AGEdge[Kind]) = {
 
     content get usee match {
       case None =>
@@ -54,7 +57,7 @@ class UsesDependencyMap(val user : AGNode,
 
   }
 
-  def -=(usee : AGNode, dependency : AGEdge){
+  def -=(usee : NodeType, dependency : AGEdge[Kind]){
     val dependencies = content(usee)
 
     dependencies.remove(dependency)

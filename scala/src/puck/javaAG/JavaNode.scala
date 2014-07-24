@@ -10,10 +10,10 @@ import puck.graph.constraints.{AbstractionPolicy, SupertypeAbstraction}
  */
 
 
-object JavaNode extends DotHelper with AGNodeBuilder{
-  def isDotSubgraph(k:NodeKind) = k match {case Package() => true; case _ => false}
-  def isDotClass(k:NodeKind)= k match { case Class() | Interface() => true; case _ => false}
-  def fillColor(k:NodeKind)= k match {
+object JavaNode extends DotHelper[JavaNodeKind] with AGNodeBuilder[JavaNodeKind]{
+  def isDotSubgraph(k : JavaNodeKind) = k match {case Package() => true; case _ => false}
+  def isDotClass(k : JavaNodeKind)= k match { case Class() | Interface() => true; case _ => false}
+  def fillColor(k : JavaNodeKind)= k match {
     case Package() => "#FF9933" //Orange
     case Interface() => "#FFFF99" // Light yellow
     case Class() | Constructor() => "#FFFF33" //Yellow
@@ -22,15 +22,17 @@ object JavaNode extends DotHelper with AGNodeBuilder{
     case _ => throw new Error("Unknown JavaNodeKind")
   }
 
-  def namePrefix(k:NodeKind)= k match {
+  def rootKind = JavaRoot()
+
+  def namePrefix(k : JavaNodeKind)= k match {
     case Package() => "&lt;&lt;package&gt;&gt; "
     case Interface() => "&lt;&lt;interface&gt;&gt; "
     case _ => ""
   }
 
-  def splitDotClassContent(n: AGNode)={
-    n.content.foldLeft( (List[AGNode](), List[AGNode](), List[AGNode](), List[AGNode]()) ){
-      ( lists : (List[AGNode], List[AGNode], List[AGNode] , List[AGNode]), n : AGNode ) =>
+  def splitDotClassContent(n: AGNode[JavaNodeKind])={
+    n.content.foldLeft( (List[AGNode[JavaNodeKind]](), List[AGNode[JavaNodeKind]](), List[AGNode[JavaNodeKind]](), List[AGNode[JavaNodeKind]]()) ){
+      ( lists : (List[AGNode[JavaNodeKind]], List[AGNode[JavaNodeKind]], List[AGNode[JavaNodeKind]] , List[AGNode[JavaNodeKind]]), n : AGNode[JavaNodeKind] ) =>
         val (fds, cts, mts, cls) = lists
         n.kind match{
           case Interface() | Class() => (fds, cts, mts, n::cls)
@@ -44,29 +46,28 @@ object JavaNode extends DotHelper with AGNodeBuilder{
     }
   }
 
-  override def apply(g: AccessGraph,
+  override def apply(g: AccessGraph[JavaNodeKind],
                      id: Int, name : String,
-                     kind : NodeKind) : AGNode = new JavaNode(g, id, name, kind)
+                     kind : JavaNodeKind) : AGNode[JavaNodeKind] = new JavaNode(g, id, name, kind)
 
   /*
     using the Prolog constraint convention as key eases the node finding when parsing constraints
    */
   override def makeKey(fullName: String, localName:String,
-                       kind: NodeKind) :String =
-    AGNode.makeKey(fullName, localName, kind)
+                       kind: JavaNodeKind) :String = fullName
 
-  val kinds : List[NodeKind] = JavaNodeKind.list
+  val kinds : List[JavaNodeKind] = JavaNodeKind.list
 }
 
-class JavaNode( graph : AccessGraph,
+class JavaNode( graph : AccessGraph[JavaNodeKind],
                 id : Int,
                 name : String,
-                kind : NodeKind)
-  extends AGNode(graph, id, name, kind){
+                kind : JavaNodeKind)
+  extends AGNode[JavaNodeKind](graph, id, name, kind){
 
-  override def canContain(n : AGNode) : Boolean = {
+  override def canContain(n : AGNode[JavaNodeKind]) : Boolean = {
 
-    def noNameClash(l : Int)(c: AGNode) : Boolean = c.kind match {
+    def noNameClash(l : Int)(c: AGNode[JavaNodeKind]) : Boolean = c.kind match {
 
       /*case ck @ Method() =>
         c.name != n.name || ck.`type`.input.length != l
@@ -108,7 +109,7 @@ class JavaNode( graph : AccessGraph,
       })
   }
 
-  def isSubtypeOf(other : AGNode) = {
+  def isSubtypeOf(other : AGNode[JavaNodeKind]) = {
     (this.kind, other.kind) match {
       case (Class(), Interface()) => new JavaType(this).subtypeOf(new JavaType(other))
       case (Class(), Class()) => new JavaType(this).subtypeOf(new JavaType(other))
@@ -142,23 +143,25 @@ class JavaNode( graph : AccessGraph,
       abstractionSet
     }*/
 
-  override def abstractionName(abskind :  NodeKind, policy : AbstractionPolicy) : String =
-    (abskind, policy) match {
-      case (Method(), SupertypeAbstraction())
-           | (AbstractMethod(), SupertypeAbstraction()) => this.name
+  override def abstractionName(abskind :  JavaNodeKind, policy : AbstractionPolicy) : String =
+    if(this.kind == Constructor())
+      "create"
+    else
+      (abskind, policy) match {
+        case (Method(), SupertypeAbstraction())
+             | (AbstractMethod(), SupertypeAbstraction()) => this.name
+        case _ => super.abstractionName(abskind, policy)
 
-      case _ => super.abstractionName(abskind, policy)
+      }
 
-    }
-
-  override def createAbstraction(abskind : NodeKind,
+  override def createAbstraction(abskind : JavaNodeKind,
                                  policy : AbstractionPolicy) = {
     (abskind, policy) match {
       case (Interface(), SupertypeAbstraction()) =>
 
         val abs = super.createAbstraction(Interface(), SupertypeAbstraction())
 
-        content.foreach { (child: AGNode) =>
+        content.foreach { (child: AGNode[JavaNodeKind]) =>
           child.kind match {
             case ck @ (Method() | AbstractMethod()) =>
               val t = ck.asInstanceOf[HasType[MethodType]].`type`
@@ -183,11 +186,18 @@ class JavaNode( graph : AccessGraph,
         case Some((abs, _)) => abs
         case None => throw new AGError("Error while creating abstract method !")
       } */
-      case _ => super.createAbstraction(abskind, policy)
+      case _ =>
+        val abs = super.createAbstraction(abskind, policy)
+        this.kind match {
+          case c @ Constructor() =>
+            abs.kind.asInstanceOf[ConstructorMethod].ctorDecl = c.decl
+          case _ => ()
+        }
+        abs
     }
   }
 
-  override def moveTo(newContainer : AGNode) {
+  override def moveTo(newContainer : AGNode[JavaNodeKind]) {
     //    println("moving " + this +" from " + container_! + " to " + newContainer)
     val oldContainer = container
     this.kind match{
@@ -199,8 +209,11 @@ class JavaNode( graph : AccessGraph,
            * when redirecting primary uses
            */
           if(user.container == this.container){
+            //need to create dependency before edge to apply "well"
             graph.addUsesDependency(user, user.container,
               user, this)
+            AGEdge.uses(user, user.container).create()
+
           }
           if(container.uses(this)){
             graph.addUsesDependency(oldContainer, oldContainer,
@@ -215,7 +228,7 @@ class JavaNode( graph : AccessGraph,
   }
 
 
-  override def softEqual(other : AGNode) : Boolean = {
+  override def softEqual(other : AGNode[JavaNodeKind]) : Boolean = {
     super.softEqual(other) &&
       ((kind, other.kind) match {
       case (m1 @ Method() , m2 @ Method() ) =>

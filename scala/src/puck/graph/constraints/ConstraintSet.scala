@@ -1,12 +1,12 @@
 package puck.graph.constraints
 
 import scala.collection.mutable
-import puck.graph.AGNode
+import puck.graph.{NodeKind, AGNode}
 
 /**
  * Created by lorilan on 11/06/14.
  */
-class ConstraintSet[T <: Constraint] extends Iterable[T]{
+class ConstraintSet[Kind <: NodeKind[Kind], T <: Constraint[Kind]] extends Iterable[T]{
 
   class Success extends Exception
 
@@ -21,8 +21,8 @@ class ConstraintSet[T <: Constraint] extends Iterable[T]{
 
   def clear() = content.clear()
 
-  def friendScopeThatContains_*(n: AGNode) = {
-    var res : Option[AGNode] = None
+  def friendScopeThatContains_*(n: AGNode[Kind]) = {
+    var res : Option[AGNode[Kind]] = None
     try {
       content.foreach {
         _.friends.scopeThatContains_*(n) match {
@@ -37,6 +37,6 @@ class ConstraintSet[T <: Constraint] extends Iterable[T]{
       case _: Success => res
     }
   }
-  def hasFriendScopeThatContains_*(n : AGNode)=
+  def hasFriendScopeThatContains_*(n : AGNode[Kind])=
     content.exists( _.friends.hasScopeThatContains_*(n))
 }

@@ -3,24 +3,23 @@ package puck.graph.constraints
 import scala.util.parsing.combinator.RegexParsers
 import scala.collection.mutable
 import scala.util.parsing.input.{Reader, StreamReader}
-import scala.Some
-import puck.graph.{AGNode, AccessGraph}
+import puck.graph.{NodeKind, AGNode, AccessGraph}
 
 
 /**
  * Created by lorilan on 12/05/14.
  */
-class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
+class ConstraintsParser[Kind <: NodeKind[Kind]](val accessGraph : AccessGraph[Kind]) extends RegexParsers {
 
   protected override val whiteSpace = """(\s|%.*)+""".r  //to skip comments
 
 
-  val defs : mutable.Map[String, NamedNodeSet] = accessGraph.nodeSets
+  val defs : mutable.Map[String, NamedNodeSet[Kind]] = accessGraph.nodeSets
 
   val imports : mutable.Buffer[String] = mutable.Buffer("")
 
-  def findNode(k : String) : AGNode ={
-    case class Found(n : AGNode) extends scala.Error
+  def findNode(k : String) : AGNode[Kind] ={
+    case class Found(n : AGNode[Kind]) extends Throwable
     try {
       imports foreach { (imp : String) =>
         accessGraph getNode (imp + k) match {
@@ -35,7 +34,7 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
     }
   }
 
-  def toDef (request : Either[String, List[String]]) : NodeSet = {
+  def toDef (request : Either[String, List[String]]) : NodeSet[Kind] = {
     request match {
       case Left(key) => defs get key match {
         case Some(l) => l
@@ -72,13 +71,13 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
   def declare_set_union : Parser[Unit] = {
 
 
-    def normal(list : List[NodeSet]) = {
+    def normal(list : List[NodeSet[Kind]]) = {
 
-      val lit = LiteralNodeSet()
-      val buf = mutable.Buffer[NodeSet]()
+      val lit = LiteralNodeSet[Kind]()
+      val buf = mutable.Buffer[NodeSet[Kind]]()
 
       list.foreach{
-        case l : LiteralNodeSet => l.foreach(lit.+=)
+        case l : LiteralNodeSet[Kind] => l.foreach(lit.+=)
         case s => buf += s
       }
       new NodeSetUnion(buf, lit)
@@ -92,10 +91,10 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
     }
   }
 
-  def addScopeConstraint(owners : NodeSet,
-                         facades : NodeSet,
-                         interlopers : NodeSet,
-                         friends : NodeSet) = {
+  def addScopeConstraint(owners : NodeSet[Kind],
+                         facades : NodeSet[Kind],
+                         interlopers : NodeSet[Kind],
+                         friends : NodeSet[Kind]) = {
     val ct = new ScopeConstraint(owners, facades, interlopers, friends)
     owners.foreach(_.scopeConstraints.+=(ct))
     accessGraph.constraints += ct
@@ -156,9 +155,9 @@ class ConstraintsParser(val accessGraph : AccessGraph) extends RegexParsers {
         accessGraph.constraints += ct
     }
 
-  def addElementConstraint(owners : NodeSet,
-                           interlopers : NodeSet,
-                           friends : NodeSet) = {
+  def addElementConstraint(owners : NodeSet[Kind],
+                           interlopers : NodeSet[Kind],
+                           friends : NodeSet[Kind]) = {
     val ct = new ElementConstraint(owners, interlopers, friends)
     owners.foreach(_.elementConstraints.+=(ct))
     accessGraph.constraints += ct

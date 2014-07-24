@@ -6,37 +6,48 @@ import puck.graph.constraints.{AbstractionPolicy, SupertypeAbstraction, Delegati
  * Created by lorilan on 05/05/14.
  */
 
-abstract class NodeKind {
-  def canContain(k : NodeKind) : Boolean
+trait NodeKind[K <: NodeKind[K]] {
+  def create() : K
+  def canContain(k : K) : Boolean
   def abstractionPolicies : List[AbstractionPolicy] = List(SupertypeAbstraction(), DelegationAbstraction())
-  def abstractKinds(p : AbstractionPolicy) : List[NodeKind]
-  def canBeRootContent = false
-}
-case class AGRoot private[graph]() extends NodeKind{
+  def abstractKinds(p : AbstractionPolicy) : List[K]
+  val canBeRootContent = false
 
+}
+
+trait AGRoot[K <: NodeKind[K]] extends NodeKind[K] {
   override def abstractionPolicies = List()
-  def canContain(k: NodeKind) = false
+  def canContain(k: K) = false
   def abstractKinds(p : AbstractionPolicy) =
     throw new AGError("Root node cannot be abstracted")
-
 }
-case class VanillaKind private[graph]() extends NodeKind{
+
+sealed abstract class VanillaKind extends NodeKind[VanillaKind]
+
+case class VanillaNodeKind private[graph]() extends VanillaKind {
+
+  def create() = VanillaNodeKind()
 
   //change priority order
   override def abstractionPolicies : List[AbstractionPolicy] =
     List(DelegationAbstraction(), SupertypeAbstraction())
 
-  def canContain(k : NodeKind) : Boolean = {
+  def canContain(k : VanillaKind) : Boolean = {
     k match {
-      case VanillaKind() => true
+      case VanillaNodeKind() => true
       case _ => false
     }
   }
 
   def abstractKinds(p : AbstractionPolicy) = List(this)
 
-  override def canBeRootContent = true
+  override val canBeRootContent = true
 }
+
+case class VanillaRoot() extends VanillaKind with AGRoot[VanillaKind]{
+  def create() = VanillaRoot()
+}
+
 
 trait HasType[T<:Type] {
   var `type` : T = _

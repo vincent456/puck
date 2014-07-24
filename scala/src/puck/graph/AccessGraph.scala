@@ -15,31 +15,34 @@ object AccessGraph {
   val rootName = "root"
   val unrootedStringId = "<DETACHED>"
 
-  implicit def agToIterator(ag : AccessGraph) : Iterator[AGNode] = ag.iterator
+  implicit def agToIterator[Kind <: NodeKind[Kind]](ag : AccessGraph[Kind]) : Iterator[AGNode[Kind]] = ag.iterator
 
 }
 
-class AccessGraph (nodeBuilder : AGNodeBuilder) {
+class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
   //extends Iterable[AGNode]{ //is NOT iterable (see scala doc for requirements) but
   // has a valid iterator + implicit conversion in puck.graph package object
 
-  def newGraph() : AccessGraph = {
+  type NodeType = AGNode[Kind]
+  type EdgeType = AGEdge[Kind]
+
+  def newGraph() : AccessGraph[Kind] = {
     new AccessGraph(nodeBuilder)
   }
 
   println("Node builder : " + nodeBuilder.getClass)
 
-  val nodeSets : mutable.Map[String, NamedNodeSet] = mutable.Map()
-  val constraints : mutable.Buffer[Constraint] = mutable.Buffer()
+  val nodeSets : mutable.Map[String, NamedNodeSet[Kind]] = mutable.Map()
+  val constraints : mutable.Buffer[Constraint[Kind]] = mutable.Buffer()
 
-  private [this] val nodes0 = mutable.Buffer[AGNode]()
+  private [this] val nodes0 = mutable.Buffer[NodeType]()
 
-  def nodes : Iterator[AGNode] = nodes0.iterator
+  def nodes : Iterator[NodeType] = nodes0.iterator
 
   def iterator = root.iterator
 
   private var id : Int = 1
-  val root : AGNode = nodeBuilder(this, AccessGraph.rootId, AccessGraph.rootName, AGRoot())
+  val root : NodeType = nodeBuilder(this, AccessGraph.rootId, AccessGraph.rootName, nodeBuilder.rootKind)
 
   val scopeSeparator = nodeBuilder.scopeSeparator
 
@@ -52,9 +55,9 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
 
   def nodeKinds = nodeBuilder.kinds
 
-  def violations : List[AGEdge] = {
-    this.foldLeft(List[AGEdge]()){
-      (acc: List[AGEdge], n :AGNode) =>
+  def violations : List[EdgeType] = {
+    this.foldLeft(List[EdgeType]()){
+      (acc: List[EdgeType], n :NodeType) =>
         n.wrongUsers.map{AGEdge.uses(_, n)} :::(
           if(n.isWronglyContained )
             AGEdge.contains(n.container, n) :: acc
@@ -89,13 +92,13 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
     println("list end")
   }
 
-  private [puck] val nodesByName = mutable.Map[String, AGNode]()
+  private [puck] val nodesByName = mutable.Map[String, NodeType]()
 
-  def apply(fullName:String) : AGNode= nodesByName(fullName)
-  def getNode(fullName:String) : Option[AGNode] = nodesByName get fullName
+  def apply(fullName:String) : NodeType= nodesByName(fullName)
+  def getNode(fullName:String) : Option[NodeType] = nodesByName get fullName
 
 
-  def addNode(fullName: String, localName:String, kind: NodeKind): AGNode = {
+  def addNode(fullName: String, localName:String, kind: Kind): NodeType = {
     val unambiguousFullName = nodeBuilder.makeKey(fullName, localName, kind)
     nodesByName get unambiguousFullName match {
       case None =>
@@ -106,63 +109,65 @@ class AccessGraph (nodeBuilder : AGNodeBuilder) {
     }
   }
 
-  def addNode(fullName: String, localName:String): AGNode =
-    addNode(fullName, localName, VanillaKind())
+  /*
+   def addNode(localName : String) : NodeType =
+    addNode(localName, VanillaKind())
+   def addNode(fullName: String, localName:String): NodeType =
+    addNode(fullName, localName, VanillaKind())*/
 
-  def remove(n : AGNode){
+  def remove(n : NodeType){
     nodes0 -= n
     transformations.removeNode(n)
   }
 
-  var transformations : CareTaker = new CareTakerNoop(this)
+  var transformations : CareTaker[Kind] = new CareTakerNoop(this)
 
-  def apply(r : Recording){
+  def apply(r : Recording[Kind]){
     transformations.recording.undo()
     transformations.recording = r
   }
 
 
-  def addNode(n : AGNode) : AGNode = {
+  def addNode(n : NodeType) : NodeType = {
     //assert n.graph == this ?
     this.nodes0 += n
     transformations.addNode(n)
     n
   }
 
-  def addNode(localName:String, kind: NodeKind) : AGNode = {
+  def addNode(localName:String, kind: Kind) : NodeType = {
     id = id + 1
-    val n = nodeBuilder(this, id, localName, kind)
+    val n = nodeBuilder(this, id, localName, kind.create())
     addNode(n)
     //this.root.content_+=(n)
     //n
   }
 
-  def addNode(localName : String) : AGNode =
-    addNode(localName, VanillaKind())
 
-  def addUsesDependency(primary : AGEdge, side : AGEdge){
+
+  def addUsesDependency(primary : EdgeType, side : EdgeType){
     primary.user.sideUses += (primary.usee, side)
     side.user.primaryUses += (side.usee, primary)
     transformations.addEdgeDependency(primary, side)
   }
-  def addUsesDependency(primaryUser : AGNode, primaryUsee : AGNode,
-                        sideUser : AGNode, sideUsee : AGNode) {
+  def addUsesDependency(primaryUser : NodeType, primaryUsee : NodeType,
+                        sideUser : NodeType, sideUsee : NodeType) {
     addUsesDependency(AGEdge.uses(primaryUser, primaryUsee),
       AGEdge.uses(sideUser, sideUsee))
   }
 
-  def removeUsesDependency(primary : AGEdge, side : AGEdge){
+  def removeUsesDependency(primary : EdgeType, side : EdgeType){
     primary.user.sideUses -= (primary.usee, side)
     side.user.primaryUses -= (side.usee, primary)
     transformations.removeEdgeDependency(primary, side)
   }
-  def removeUsesDependency(primaryUser : AGNode, primaryUsee : AGNode,
-                           sideUser : AGNode, sideUsee : AGNode) {
+  def removeUsesDependency(primaryUser : NodeType, primaryUsee : NodeType,
+                           sideUser : NodeType, sideUsee : NodeType) {
     removeUsesDependency(AGEdge.uses(primaryUser, primaryUsee),
       AGEdge.uses(sideUser, sideUsee))
   }
 
-  def softEqual(other : AccessGraph) = nodes.forall{ n =>
+  def softEqual(other : AccessGraph[Kind]) = nodes.forall{ n =>
     other.nodes.exists(_.softEqual(n))}
 
 }

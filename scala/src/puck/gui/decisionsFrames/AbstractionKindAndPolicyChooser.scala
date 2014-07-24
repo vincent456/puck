@@ -3,9 +3,8 @@ package puck.gui.decisionsFrames
 import scala.swing._
 import puck.graph.{NodeKind, AGNode}
 import scala.swing.event.{SelectionChanged, Event}
-import puck.graph.constraints.{AbstractionPolicy, RedirectionPolicy}
+import puck.graph.constraints.{DefaultDecisionMaker, AbstractionPolicy, RedirectionPolicy}
 import scala.concurrent.Promise
-import puck.javaAG.DefaultDecisionMaker
 import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.util.Success
@@ -16,20 +15,21 @@ import scala.util.Success
 
 object AbstractionKindAndPolicyChooser{
 
-  def apply(impl : AGNode) : (NodeKind, AbstractionPolicy) = DecisionFrame {
+  def apply[Kind <: NodeKind[Kind]](impl : AGNode[Kind]) : (Kind, AbstractionPolicy) = DecisionFrame {
     () => new AbstractionKindAndPolicyChooser(impl)
   }
 }
 
-class AbstractionKindAndPolicyChooser private (val impl : AGNode)
-  extends DecisionFrame[(NodeKind, AbstractionPolicy)]{
+class AbstractionKindAndPolicyChooser[Kind <: NodeKind[Kind]] private (val impl : AGNode[Kind])
+  extends DecisionFrame[(Kind, AbstractionPolicy)]{
+
 
   title = "Choose abstraction kind and policy"
 
   val policyChoice = new ComboBox(impl.kind.abstractionPolicies)
   var absPolicy : AbstractionPolicy = policyChoice.selection.item
   var kindChoice = new ComboBox(impl.kind.abstractKinds(absPolicy))
-  var absKind : NodeKind = kindChoice.selection.item
+  var absKind : Kind = kindChoice.selection.item
 
   val kindChoiceWrapper = new FlowPanel(){ contents += kindChoice}
   listenTo(policyChoice.selection)
@@ -58,16 +58,16 @@ class AbstractionKindAndPolicyChooser private (val impl : AGNode)
       contents += kindChoiceWrapper
     }
 
-    val default = new DefaultDecisionMaker(impl.graph).abstractionKindAndPolicy(impl)
+    /*val default = new DefaultDecisionMaker(impl.graph).abstractionKindAndPolicy(impl)
 
     contents += new FlowPanel() {
       contents += new Label("Default decision is " + default)
-    }
+    }*/
 
     contents += new FlowPanel(){
-      contents += Button("Default"){
+      /*contents += Button("Default"){
         AbstractionKindAndPolicyChooser.this.complete(default)
-      }
+      }*/
       contents += Button("OK") {
         AbstractionKindAndPolicyChooser.this.complete((absKind, absPolicy))
       }

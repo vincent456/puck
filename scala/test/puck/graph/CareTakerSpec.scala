@@ -4,16 +4,16 @@ package puck.graph
  * Created by lorilan on 17/06/14.
  */
 class CareTakerSpec extends UnitSpec {
-  val ag: AccessGraph = new AccessGraph(AGNode)
+  val ag: AccessGraph[VanillaKind] = new AccessGraph(AGNode)
 
-  var na: AGNode = _
-  var nb: AGNode = _
-  var nc: AGNode = _
+  var na: AGNode[VanillaKind] = _
+  var nb: AGNode[VanillaKind] = _
+  var nc: AGNode[VanillaKind] = _
 
   val careTaker = ag.transformations.startRegister()
 
   "An AG careTaker" should "be able to undo an addNode operation" in {
-    na = ag.addNode("a")
+    na = ag.addNode("a", VanillaNodeKind())
     ag.nodes.toStream should contain (na)
     careTaker.undo()
     ag.nodes.toStream should not contain (na)
@@ -24,8 +24,8 @@ class CareTakerSpec extends UnitSpec {
   it should "be able to undo a sequence of addNode operation" in {
     careTaker.sequence {
       ag.addNode(na)
-      nb = ag.addNode("b")
-      nc = ag.addNode("c")
+      nb = ag.addNode("b", VanillaNodeKind())
+      nc = ag.addNode("c", VanillaNodeKind())
     }
 
     ag.nodes.toStream should contain (na)
@@ -52,10 +52,10 @@ class CareTakerSpec extends UnitSpec {
   }
 
   it should "be able to undo the creation of an edge dependency" in {
-    val ag = new AccessGraph(AGNode)
-    val na = ag.addNode("a")
-    val nb = ag.addNode("b")
-    val nc = ag.addNode("c")
+    val ag = new AccessGraph[VanillaKind](AGNode)
+    val na = ag.addNode("a", VanillaNodeKind())
+    val nb = ag.addNode("b", VanillaNodeKind())
+    val nc = ag.addNode("c", VanillaNodeKind())
 
     ag.root.content_+=(na)
     ag.root.content_+=(nb)

@@ -2,35 +2,36 @@ package puck.graph
 
 import java.io.BufferedWriter
 
-import puck.javaAG.JavaNodeKind._
-import puck.javaAG.Primitive
+import puck.javaAG._
 
 /**
  * Created by lorilan on 17/06/14.
  */
+
 object PrologPrinter {
 
-  def nodeKindStr(nk : NodeKind) = nk match {
-    case Package() => "package"
-    case Interface() => "interface"
-    case Class() => "class"
-    case AbstractMethod() => "method"
-    case Constructor() => "constructor"
-    case Method() => "method"
-    case Field() => "attribute"
-  }
+  def print[Kind <: NodeKind[Kind]](writer: BufferedWriter, graph : AccessGraph[Kind]){
 
-  def print(writer: BufferedWriter, graph : AccessGraph){
+    def nodeKindStr(nk : Kind) = nk match {
+      case Package() => "package"
+      case Interface() => "interface"
+      case Class() => "class"
+      case AbstractMethod() => "method"
+      case Constructor() => "constructor"
+      case Method() => "method"
+      case Field() => "attribute"
+    }
+
 
     def writeln(str : String){
       writer write str
       writer newLine()
     }
 
-    def nodeStr(n : AGNode) =
+    def nodeStr(n : AGNode[Kind]) =
       "node(%d, %s, '%s', typeNotPrinted).".format(n.id, nodeKindStr(n.kind), n.name)
 
-    def edgeStr(edge : AGEdge) = {
+    def edgeStr(edge : AGEdge[_]) = {
       val kind = edge.kind match {
         case Isa() => "isa"
         case Uses() => "uses"
@@ -41,9 +42,7 @@ object PrologPrinter {
     }
 
     graph.nodes.foreach(n=> n.kind match {
-      case Primitive()
-      | AGRoot() => ()
-
+      case Primitive() | JavaRoot() => ()
       case _ => writeln(nodeStr(n))
     })
 

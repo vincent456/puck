@@ -4,12 +4,12 @@ package puck.graph
  * Created by lorilan on 15/05/14.
  */
 class AccessGraphSpec extends UnitSpec{
-  val ag : AccessGraph = new AccessGraph(AGNode)
+  val ag : AccessGraph[VanillaKind] = new AccessGraph(AGNode)
 
-  var a0 : AGNode = _
-  var aa : AGNode = _
-  var ab : AGNode = _
-  var ac : AGNode = _
+  var a0 : AGNode[VanillaKind] = _
+  var aa : AGNode[VanillaKind] = _
+  var ab : AGNode[VanillaKind] = _
+  var ac : AGNode[VanillaKind] = _
 
 
   "An Access Graph" should "have a root node" in {
@@ -21,11 +21,11 @@ class AccessGraphSpec extends UnitSpec{
 
   it should "have nodes with a unique full name" in {
 
-    a0 = ag.addNode("a", "a")
-    val a2 = ag.addNode("a", "a")
-    aa = ag.addNode("a.a", "a")
-    ab = ag.addNode("a.b", "b")
-    ac = ag.addNode("a.c", "c")
+    a0 = ag.addNode("a", "a", VanillaNodeKind())
+    val a2 = ag.addNode("a", "a", VanillaNodeKind())
+    aa = ag.addNode("a.a", "a", VanillaNodeKind())
+    ab = ag.addNode("a.b", "b", VanillaNodeKind())
+    ac = ag.addNode("a.c", "c", VanillaNodeKind())
 
 
     a0 content_+= aa

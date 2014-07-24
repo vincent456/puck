@@ -2,7 +2,7 @@ package puck.gui.decisionsFrames
 
 import puck.graph.constraints._
 import scala.swing._
-import puck.graph.{AGEdge, AGError, AGNode}
+import puck.graph.{NodeKind, AGEdge, AGError, AGNode}
 import java.awt.Color
 import scala.Some
 import scala.collection.mutable
@@ -20,9 +20,9 @@ object ConstraintEditor{
     }
 }
 
-abstract class ConstraintEditor[T<: Constraint] protected (val constraint : T,
-                                                           var users : NodeSet,
-                                                           val usee : AGNode,
+abstract class ConstraintEditor[K <: NodeKind[K], T<: Constraint[K]] protected (val constraint : T,
+                                                           var users : NodeSet[K],
+                                                           val usee : AGNode[K],
                                                            finish : () => Unit)
   extends BoxPanel(Orientation.Vertical){
 
@@ -66,14 +66,14 @@ abstract class ConstraintEditor[T<: Constraint] protected (val constraint : T,
 }
 
 
-class FriendPanel[T <: Constraint with ConstraintWithInterlopers](val editor : ConstraintEditor[T])
+class FriendPanel[K <: NodeKind[K], T <: ConstraintWithInterlopers[K]](val editor : ConstraintEditor[K, T])
   extends BoxPanel(Orientation.Vertical){
 
   val constraint : T = editor.constraint
-  val users : NodeSet = editor.users
-  val usee : AGNode = editor.usee
+  val users : NodeSet[K] = editor.users
+  val usee : AGNode[K] = editor.usee
 
-  val nsd: NodeSetDiff = new NodeSetDiff(users, LiteralNodeSet())
+  val nsd: NodeSetDiff[K] = new NodeSetDiff(users, LiteralNodeSet())
   constraint.friends.foreach { f =>
     contents += (users.scopeThatContains_*(f) match {
       case Some(s) =>
@@ -103,11 +103,11 @@ class FriendPanel[T <: Constraint with ConstraintWithInterlopers](val editor : C
 
 }
 
-class InterlopersPanel[T <: Constraint with ConstraintWithInterlopers](val editor : ConstraintEditor[T])
+class InterlopersPanel[K <: NodeKind[K], T <: ConstraintWithInterlopers[K]](val editor : ConstraintEditor[K, T])
   extends BoxPanel(Orientation.Vertical){
   val constraint : T = editor.constraint
-  val users : NodeSet = editor.users
-  val usee : AGNode = editor.usee
+  val users : NodeSet[K] = editor.users
+  val usee : AGNode[K] = editor.usee
 
   constraint.interlopers.foreach{ n =>
 
@@ -129,12 +129,12 @@ class InterlopersPanel[T <: Constraint with ConstraintWithInterlopers](val edito
   contents+= Swing.VGlue
 }
 
-class OwnerPanel[T <: Constraint](val editor : ConstraintEditor[T])
+class OwnerPanel[K <: NodeKind[K], T <: Constraint[K]](val editor : ConstraintEditor[K, T])
   extends BoxPanel(Orientation.Vertical){
 
   val constraint : T = editor.constraint
-  val users : NodeSet = editor.users
-  val usee : AGNode = editor.usee
+  val users : NodeSet[K] = editor.users
+  val usee : AGNode[K] = editor.usee
 
   constraint.owners.foreach{ n =>
 
@@ -161,20 +161,20 @@ class OwnerPanel[T <: Constraint](val editor : ConstraintEditor[T])
 }
 
 object ScopeConstraintEditor{
-  def apply(constraint : ScopeConstraint,
-            users : NodeSet,
-            usee : AGNode,
+  def apply[K <: NodeKind[K]](constraint : ScopeConstraint[K],
+            users : NodeSet[K],
+            usee : AGNode[K],
             finish : () => Unit) = new ScopeConstraintEditor(constraint, users, usee, finish)
 }
 
-class ScopeConstraintEditor private (constraint0 : ScopeConstraint,
-                                     users0 : NodeSet,
-                                     usee0 : AGNode,
+class ScopeConstraintEditor[K <: NodeKind[K]] private (constraint0 : ScopeConstraint[K],
+                                     users0 : NodeSet[K],
+                                     usee0 : AGNode[K],
                                      finish0 : () => Unit)
-  extends ConstraintEditor[ScopeConstraint](constraint0, users0, usee0, finish0){
+  extends ConstraintEditor[K, ScopeConstraint[K]](constraint0, users0, usee0, finish0){
 
   def onReload(){
-    val set = LiteralNodeSet()
+    val set = LiteralNodeSet[K]()
     users.foreach{ u =>
       if(constraint.isViolatedBy(AGEdge(u, usee))){
         set += u
@@ -200,7 +200,7 @@ class ScopeConstraintEditor private (constraint0 : ScopeConstraint,
         val c =
           if (usee.contains_*(f)){
             needNewCell = false
-            new ComboBox[AGNode](f.containerPath(usee))
+            new ComboBox[AGNode[K]](f.containerPath(usee))
           }
           else
             new Label(f.toString)
@@ -230,20 +230,20 @@ class ScopeConstraintEditor private (constraint0 : ScopeConstraint,
 
 
 object ElementConstraintEditor{
-  def apply(constraint : ElementConstraint,
-            users : NodeSet,
-            usee : AGNode,
+  def apply[K <: NodeKind[K]](constraint : ElementConstraint[K],
+            users : NodeSet[K],
+            usee : AGNode[K],
             finish : () => Unit) = new ElementConstraintEditor(constraint, users, usee, finish)
 }
 
-class ElementConstraintEditor private (constraint0 : ElementConstraint,
-                                       users0 : NodeSet,
-                                       usee0 : AGNode,
+class ElementConstraintEditor[K <: NodeKind[K]] private (constraint0 : ElementConstraint[K],
+                                       users0 : NodeSet[K],
+                                       usee0 : AGNode[K],
                                        finish0 : () => Unit)
-  extends ConstraintEditor[ElementConstraint](constraint0, users0, usee0, finish0){
+  extends ConstraintEditor[K, ElementConstraint[K]](constraint0, users0, usee0, finish0){
 
   def onReload(){
-    val set = LiteralNodeSet()
+    val set = LiteralNodeSet[K]()
     users.foreach{ u =>
       if(constraint.isViolatedBy(AGEdge(u, usee))){
         set += u

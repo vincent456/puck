@@ -10,13 +10,13 @@ import scala.swing._
  */
 object NodeChooser{
 
-  def apply(set : NodeSet, context : String) : Option[AGNode] = DecisionFrame {
+  def apply[Kind <: NodeKind[Kind]](set : NodeSet[Kind], context : String) : Option[AGNode[Kind]] = DecisionFrame {
     () => new NodeChooser(set, context)
   }
 }
 
-class NodeChooser (nodes : NodeSet, context : String)
-  extends DecisionFrame[Option[AGNode]]{
+class NodeChooser[Kind <: NodeKind[Kind]](nodes : NodeSet[Kind], context : String)
+  extends DecisionFrame[Option[AGNode[Kind]]]{
 
   title = "Node selection"
 

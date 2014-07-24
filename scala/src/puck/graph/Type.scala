@@ -7,16 +7,17 @@ abstract class Type {
   def subtypeOf(other : Type) : Boolean = this == other
 }
 
-case class NamedType(n : AGNode) extends Type{
+case class NamedType[Kind <: NodeKind[Kind]](n : AGNode[Kind]) extends Type{
   override def toString = n.name
   override def subtypeOf(other : Type) : Boolean = super.subtypeOf(other) ||
     (other match {
-      case NamedType(othern) => othern isSuperTypeOf n
+        //TODO fix cast
+      case NamedType(othern) => othern.asInstanceOf[AGNode[Kind]] isSuperTypeOf n
       case _ => false
     })
 }
 
-case class Tuple(types: List[Type]) extends Type {
+case class Tuple[T <: Type](types: List[T]) extends Type {
   override def toString = types mkString ("(", ", ", ")")
 
   override def subtypeOf(other : Type) : Boolean = super.subtypeOf(other) ||

@@ -180,7 +180,12 @@
       <exclude name="ChangeMethodSignature/ChangeParameterType.jrag"/>
 		</fileset>
   	
-    <fileset dir="${puck-scala}/jrag" includes="AccessGraphFactory.jrag"/>
+
+    <!-- <fileset dir="${puck-scala}/jrag" includes="AccessGraphFactory.jrag"/> -->
+    
+    <fileset dir="${puck-scala}/jrag" >
+      <include name="**/*.jrag"/>
+    </fileset>
     
     <fileset dir="${Refactoring}">
   		<include name="TypeConstraints/TypeConstraintSolving.jrag"/>

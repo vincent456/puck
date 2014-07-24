@@ -1,5 +1,7 @@
 package puck.gui
 
+import puck.javaAG.{JavaNodeKind, JavaNode, JavaDefaultDecisionMaker}
+
 import scala.concurrent.Future
 
 import scala.swing._
@@ -8,9 +10,7 @@ import java.io.{OutputStream, PipedInputStream, PipedOutputStream, File}
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import AST.LoadingListener
-import puck.javaAG.{DefaultDecisionMaker, JavaSolver}
 import scala.util.{Failure, Success}
-import puck.graph.constraints.DecisionMaker
 
 /**
  * Created by lorilan on 08/05/14.
@@ -24,8 +24,19 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
   val height = PuckMainPanel.height * 2/3
 
   val treeDisplayer = new ScrollPane(){
-    minimumSize = new Dimension(rightWidth, height)
+    minimumSize = new Dimension(rightWidth/2, height)
     preferredSize = minimumSize
+  }
+
+  val nodeInfos = new ScrollPane(){
+    minimumSize = new Dimension(rightWidth/2, height)
+    preferredSize = minimumSize
+
+    reactions += {
+      case PuckTreeNodeClicked(n) =>
+        contents = new NodeInfosPanel[JavaNodeKind](filesHandler, n.agNode.asInstanceOf[JavaNode])
+
+    }
   }
   val delayedDisplay = ArrayBuffer[Component]()
 
@@ -134,13 +145,14 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
           progressBar.visible = false
           val ppController = new PackagePanelController(ag)
           treeDisplayer.contents = Component.wrap(ppController.tree)
+          nodeInfos.listenTo(ppController)
           delayedDisplay.foreach(_.visible = true)
         }
         f onComplete {
           case Success(_) => println("Graph loaded")
           case Failure(exc) =>
             progressBar.visible = false
-            println(exc.getMessage)
+            exc.printStackTrace()
         }
     }
     contents += progressBar
@@ -220,7 +232,7 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
             decisionMaker = if(decisionStrategy.selected)
               new GUIDecisionMaker(filesHandler.graph)
             else
-              new DefaultDecisionMaker(filesHandler.graph),
+              new JavaDefaultDecisionMaker(filesHandler.graph),
             trace = printTrace.selected
 
           )
@@ -235,9 +247,30 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
     solve.visible = false
     contents += solve
     delayedDisplay += solve
+
+    val explore = makeButton("Explore", "search all solutions (gui decision maker unused)"){
+      () =>
+        val f = Future {
+          println("Solving constraints ...")
+          filesHandler.explore(trace = printTrace.selected)
+        }
+
+        f onComplete{
+          case Success(_) => println("Solving done")
+          case Failure(exc) => println(exc.printStackTrace())
+        }
+    }
+
+    explore.visible = false
+    contents += explore
+    delayedDisplay += explore
+
   }
 
-  rightComponent = treeDisplayer
+  rightComponent = new SplitPane(Orientation.Vertical) {
+    leftComponent = treeDisplayer
+    rightComponent = nodeInfos
+  }
 
 
 }

@@ -1,15 +1,15 @@
 package puck.graph.backTrack
 
-import puck.graph.{AGEdge, AGError, AccessGraph, AGNode}
+import puck.graph._
 import scala.collection.mutable
 
 /**
  * Created by lorilan on 07/07/14.
  */
 object Recording{
-  def apply(g : AccessGraph, r: Int, s : mutable.Stack[Recordable]) = {
+  def apply[Kind <: NodeKind[Kind]](g : AccessGraph[Kind], r: Int, s : mutable.Stack[Recordable[Kind]]) = {
 
-    val buf = mutable.ListBuffer[Recordable]()
+    val buf = mutable.ListBuffer[Recordable[Kind]]()
 
     s.reverseIterator.foreach{ t =>
       //println("copying " + t)
@@ -19,7 +19,7 @@ object Recording{
     new Recording(g,r,buf.toList)
   }
 
-  def empty(g : AccessGraph) = new Recording(g, 0, List())
+  def empty[Kind <: NodeKind[Kind]](g : AccessGraph[Kind]) = new Recording[Kind](g, 0, List())
 }
 
 /**
@@ -28,36 +28,36 @@ object Recording{
 /*
   by default no op
  */
-class Recording( val graph : AccessGraph,
+class Recording[Kind <: NodeKind[Kind]]( val graph : AccessGraph[Kind],
                  private [backTrack] val registering : Int,
-                 private [backTrack] val composition : List[Recordable]){
+                 private [backTrack] val composition : List[Recordable[Kind]])
+  extends Iterable[Recordable[Kind]]{
+
+  def iterator = composition.iterator
 
   def apply(){graph(this)}
 
   def redo(){composition.foreach(_.redo())}
   def undo(){composition.reverseIterator.foreach(_.undo())}
 
-  def isEmpty = composition.isEmpty
-  def nonEmpty = composition.nonEmpty
-
-  def partialGraph() : AccessGraph = {
+  def partialGraph() : AccessGraph[Kind] = {
     val g = graph.newGraph()
-    val map = mutable.Map[AGNode, AGNode]()
+    val map = mutable.Map[AGNode[Kind], AGNode[Kind]]()
     map += (graph.root -> g.root)
 
-    def get(n : AGNode) =
+    def get(n : AGNode[Kind]) =
       map.getOrElse(n, g.addNode(n.name, n.kind))
 
     composition.foreach{
-      case AddNode(n) =>
+      case Transformation(Add(), TTNode(n)) =>
         val n2 = get(n)
         map += (n -> n2)
         g.addNode(n2)
-      case RemoveNode(n) =>
+      case Transformation(Remove(), TTNode(n)) =>
         throw new AGError("partial graph remove node should not happen")
-      case AddEdge(e) =>
+      case Transformation(Add(), TTEdge(e)) =>
         AGEdge(e.kind, get(e.source), get(e.target)).create()
-      case RemoveEdge(e) =>
+      case Transformation(Remove(), TTEdge(e)) =>
         AGEdge(e.kind, get(e.source), get(e.target)).delete()
       case _ => ()
     }
@@ -65,7 +65,7 @@ class Recording( val graph : AccessGraph,
     g
   }
 
-  def produceSameGraph(other : Recording) : Boolean = {
+  def produceSameGraph(other : Recording[Kind]) : Boolean = {
     composition.length == other.composition.length && {
        new RecordingComparator(this, other).search() match {
          case None => false

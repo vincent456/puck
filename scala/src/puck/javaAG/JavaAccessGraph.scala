@@ -1,6 +1,7 @@
 package puck.javaAG
 
 import puck.graph._
+import puck.graph.backTrack._
 import scala.collection.JavaConversions.collectionAsScalaIterable
 import scala.collection.mutable.StringBuilder
 
@@ -18,56 +19,46 @@ object JavaAccessGraph {
   }
 }
 
-class JavaAccessGraph extends AccessGraph(JavaNode){
-  List(Primitive.voidNode(this),
-    Primitive.booleanNode(this),
-    Primitive.byteNode(this),
-    Primitive.charNode(this),
-    Primitive.doubleNode(this),
-    Primitive.floatNode(this),
-    Primitive.intNode(this),
-    Primitive.longNode(this),
-    Primitive.shortNode(this),
-    Primitive.stringNode(this)) foreach {
-    (n : AGNode) =>
-      nodesByName += (n.name -> n)
-      addNode(n)
+class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
+
+  Predefined.list.foreach{ p =>
+    addNode(p.fullName, p.name, p.kind)
   }
 
   override def newGraph() : JavaAccessGraph ={
     new JavaAccessGraph()
   }
 
-  def addPackageNode(fullName: String, localName:String) : AGNode =
+  def addPackageNode(fullName: String, localName:String) : AGNode[JavaNodeKind] =
     addNode(fullName, localName, puck.javaAG.JavaNodeKind.`package`)
 
-  def addPackage(p : String, mutable : Boolean): AGNode =
+  def addPackage(p : String, mutable : Boolean): AGNode[JavaNodeKind] =
     getNode(p) match {
-    case None =>
-      val fp = JavaAccessGraph.filterPackageName(p)
-      val path = fp split "[.]"
-      if (path.length == 0)
-        addPackageNode(fp, fp)
-      else {
-        val (_, n):(StringBuilder, AGNode) = path.foldLeft(new StringBuilder(), root){
-          (sb_nodeParent:(StringBuilder, AGNode), p:String) => sb_nodeParent match {
-            case (sb, nodeParent) =>
-              sb append p
-              val n = addPackageNode(sb.toString, p)
-              n.isMutable = mutable
-              nodeParent content_+= n
-              sb append "."
-              (sb, n)
+      case None =>
+        val fp = JavaAccessGraph.filterPackageName(p)
+        val path = fp split "[.]"
+        if (path.length == 0)
+          addPackageNode(fp, fp)
+        else {
+          val (_, n):(StringBuilder, AGNode[JavaNodeKind]) = path.foldLeft(new StringBuilder(), root){
+            (sb_nodeParent:(StringBuilder, AGNode[JavaNodeKind]), p:String) => sb_nodeParent match {
+              case (sb, nodeParent) =>
+                sb append p
+                val n = addPackageNode(sb.toString, p)
+                n.isMutable = mutable
+                nodeParent content_+= n
+                sb append "."
+                (sb, n)
+            }
           }
+          n
         }
-        n
-      }
-     case  Some(pn) => pn
-  }
+      case  Some(pn) => pn
+    }
 
 
 
-  def addApiTypeNode(td: AST.TypeDecl, addUses : Boolean): AGNode = {
+  def addApiTypeNode(td: AST.TypeDecl, addUses : Boolean): AGNode[JavaNodeKind] = {
     //println("adding api td " + td.fullName())
     val packageNode = addPackage(td.compilationUnit().getPackageDecl, mutable = false)
     val tdNode = addNode(td.fullName(), td.name(), td.getAGNodeKind)
@@ -78,11 +69,11 @@ class JavaAccessGraph extends AccessGraph(JavaNode){
         tdNode.users_+=(use.buildAGNode(this))
       }
 
-//    try{
-      packageNode content_+= tdNode
-//    }catch{
-//      case e : IllegalAGOperation => ()
-//    }
+    //    try{
+    packageNode content_+= tdNode
+    //    }catch{
+    //      case e : IllegalAGOperation => ()
+    //    }
 
     tdNode
   }
@@ -131,5 +122,107 @@ class JavaAccessGraph extends AccessGraph(JavaNode){
       strNode users_+= bdNode
     }
   }
+
+  private def throwRegisteringError(n : AGNode[JavaNodeKind], astType : String) =
+    throw new Error("Wrong registering ! AGNode.kind : %s while AST.Node is an %s".format(n.kind, astType))
+
+  def program = root.kind match {
+    case r @ JavaRoot() => r.program
+    case _ => throw new Error("root.kind must be JavaRoot")
+  }
+
+  def program_=(prog: AST.Program) {
+    root.kind match {
+      case r @ JavaRoot() => r.program = prog
+
+        Predefined.list.foreach{
+          case p @ Predefined(pkg, name, _) =>
+
+            val decl = prog.findType(pkg, name)
+
+            if(decl == null){
+              throw new Error(name + " : " + this(p.fullName).kind + ", decl not found")
+            }
+            (this(p.fullName).kind, decl) match {
+              case (p @ Primitive(), d : AST.TypeDecl) => p.decl = d
+              case (c @ Class(), d : AST.ClassDecl) => c.decl = d
+              case (k, d) => println( k + " with decl of type " +d.getClass + " : case unhandled")
+            }
+        }
+      case _ => assert(false)
+    }
+  }
+
+  def registerDecl(n : AGNode[JavaNodeKind], decl : AST.InterfaceDecl){
+    n.kind match {
+      case i @ Interface() =>
+        i.decl = decl
+      case _ => throwRegisteringError(n, "InterfaceDecl")
+    }
+  }
+
+  def registerDecl(n : AGNode[JavaNodeKind], decl : AST.ClassDecl){
+    n.kind match {
+      case c @ Class() => c.decl = decl
+      case _ => throwRegisteringError(n, "ClassDecl")
+    }
+  }
+
+  def registerDecl(n : AGNode[JavaNodeKind], decl : AST.ConstructorDecl){
+    n.kind match {
+      case c @ Constructor() => c.decl = decl
+      case _ => throwRegisteringError(n, "ConstructorDecl")
+    }
+  }
+
+  def registerDecl(n : AGNode[JavaNodeKind], decl : AST.MethodDecl){
+    n.kind match {
+      case m @ Method() => m.decl = decl
+      case m @ AbstractMethod() => m.decl = decl
+      case _ => throwRegisteringError(n, "MethodDecl")
+    }
+  }
+
+  def registerDecl(n : AGNode[JavaNodeKind], decl : AST.FieldDeclaration){
+    n.kind match {
+      case f @ Field() => f.decl = decl
+      case _ => throwRegisteringError(n, "FieldDeclaration")
+    }
+  }
+
+  def registerDecl(n : AGNode[JavaNodeKind], decl : AST.PrimitiveType){
+    n.kind match {
+      case f @ Primitive() => f.decl = decl
+      case _ => throwRegisteringError(n, "PrimitiveType")
+    }
+  }
+
+  def applyChangeOnProgram(){
+
+    val rec = transformations.recording
+
+    rec.undo()
+
+    /*println( "rec to apply :" )
+    rec.foreach(println)*/
+    println("applying change !")
+
+    /*val primPkgName = program.typeBoolean().packageName()
+    for( c  <-
+         scala.collection.JavaConversions.asScalaIterator(program.compilationUnitIterator())){
+      val cu: AST.CompilationUnit = c.asInstanceOf[AST.CompilationUnit]
+
+      if(cu.packageName() != primPkgName)
+        cu.lockAllNames()
+    }*/
+
+    rec.foreach { r =>
+      AG2AST(r)
+      r.redo()
+    }
+
+    program.eliminateLockedNames()
+  }
+
 
 }

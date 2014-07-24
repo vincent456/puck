@@ -1,26 +1,26 @@
 package puck.graph.constraints
 
-import puck.graph.{AGNode, AGEdge, AGError}
+import puck.graph.{NodeKind, AGEdge}
 
 /**
  * Created by lorilan on 03/06/14.
  */
 
-trait Constraint{
-  val owners : NodeSet
-  val friends : NodeSet
+trait Constraint[Kind <: NodeKind[Kind]]{
+  val owners : NodeSet[Kind]
+  val friends : NodeSet[Kind]
   val predicate : String
 }
 
-trait ConstraintWithInterlopers extends Constraint{
-  val interlopers : NodeSet
+trait ConstraintWithInterlopers[Kind <: NodeKind[Kind]] extends Constraint[Kind]{
+  val interlopers : NodeSet[Kind]
 
-  def isViolatedBy(edge : AGEdge): Boolean =
+  def isViolatedBy(edge : AGEdge[Kind]): Boolean =
     owners.hasScopeThatContains_*(edge.target) &&
     violated(edge)
 
   //assert owners.hasScopeThatContains_*(edge.target)
-  def violated(edge : AGEdge): Boolean =
+  def violated(edge : AGEdge[Kind]): Boolean =
       interlopers.hasScopeThatContains_*(edge.source) &&
       !friends.hasScopeThatContains_*(edge.source)
 
@@ -38,21 +38,21 @@ trait ConstraintWithInterlopers extends Constraint{
         \+ 'vContains*'(S,Interloper).		% Interloper is not in S
 */
 
-case class ScopeConstraint(owners : NodeSet,
-                           facades: NodeSet,
-                           interlopers : NodeSet,
-                           friends : NodeSet) extends ConstraintWithInterlopers {
+case class ScopeConstraint[Kind <: NodeKind[Kind]](owners : NodeSet[Kind],
+                           facades: NodeSet[Kind],
+                           interlopers : NodeSet[Kind],
+                           friends : NodeSet[Kind]) extends ConstraintWithInterlopers[Kind] {
 
   val predicate = "hideScopeSet"
 
   override def toString =
      predicate +  ConstraintPrinter.format(owners, facades, interlopers, friends)
 
-  override def isViolatedBy(edge : AGEdge)=
+  override def isViolatedBy(edge : AGEdge[Kind])=
     super.isViolatedBy(edge) &&
       !facades.hasScopeThatContains_*(edge.target)
 
-  override def violated(edge : AGEdge)=
+  override def violated(edge : AGEdge[Kind])=
     super.violated(edge) &&
       !facades.hasScopeThatContains_*(edge.target)
 }
@@ -65,9 +65,9 @@ case class ScopeConstraint(owners : NodeSet,
 
 */
 
-case class ElementConstraint(owners : NodeSet,
-                        interlopers : NodeSet,
-                        friends : NodeSet) extends ConstraintWithInterlopers{
+case class ElementConstraint[Kind <: NodeKind[Kind]](owners : NodeSet[Kind],
+                        interlopers : NodeSet[Kind],
+                        friends : NodeSet[Kind]) extends ConstraintWithInterlopers[Kind]{
 
   val predicate = "hideElementSet"
   override def toString = {
@@ -83,9 +83,9 @@ case class ElementConstraint(owners : NodeSet,
   }
 }
 
-case class FriendConstraint(friends : NodeSet,
-                       befriended : NodeSet)
-  extends Constraint{
+case class FriendConstraint[Kind <: NodeKind[Kind]](friends : NodeSet[Kind],
+                       befriended : NodeSet[Kind])
+  extends Constraint[Kind]{
 
   val owners = befriended
   val predicate = "areFriendsOf"
@@ -95,12 +95,12 @@ case class FriendConstraint(friends : NodeSet,
 
 object ConstraintPrinter{
 
-  def format(hidden : NodeSet,
-             facades: NodeSet,
-             interlopers : NodeSet,
-             friends : NodeSet) = {
+  def format[Kind <: NodeKind[Kind]](hidden : NodeSet[Kind],
+             facades: NodeSet[Kind],
+             interlopers : NodeSet[Kind],
+             friends : NodeSet[Kind]) = {
 
-    def twoArgsFormat(constraint : String, set : NodeSet) =
+    def twoArgsFormat(constraint : String, set : NodeSet[Kind]) =
       constraint + "(" + hidden + ", " + set + ")."
 
     (facades.isEmpty, interlopers.isEmpty, friends.isEmpty) match {

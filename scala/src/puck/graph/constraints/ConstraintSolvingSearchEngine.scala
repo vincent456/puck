@@ -12,16 +12,16 @@ import scala.collection.mutable
  */
 
 
-class ConstraintSolvingChoices(val recording : Recording,
-                               val remainingChoices : mutable.Set[AGNode],
-                               val triedChoices : mutable.Set[AGNode])
+class ConstraintSolvingChoices[Kind <: NodeKind[Kind]](val recording : Recording[Kind],
+                               val remainingChoices : mutable.Set[AGNode[Kind]],
+                               val triedChoices : mutable.Set[AGNode[Kind]])
 
-class ConstraintSolvingSearchState(val id : Int,
-                                   val engine : SearchEngine[ConstraintSolvingChoices, Option[AGNode]],
-                                   val internal: ConstraintSolvingChoices,
-                                   val k: Option[AGNode] => Unit,
-                                   val prevState : Option[SearchState[ConstraintSolvingChoices, Option[AGNode]]])
-  extends SearchState[ConstraintSolvingChoices, Option[AGNode]]{
+class ConstraintSolvingSearchState[Kind <: NodeKind[Kind]](val id : Int,
+                                   val engine : SearchEngine[ConstraintSolvingChoices[Kind], Option[AGNode[Kind]]],
+                                   val internal: ConstraintSolvingChoices[Kind],
+                                   val k: Option[AGNode[Kind]] => Unit,
+                                   val prevState : Option[SearchState[ConstraintSolvingChoices[Kind], Option[AGNode[Kind]]]])
+  extends SearchState[ConstraintSolvingChoices[Kind], Option[AGNode[Kind]]]{
 
   println("creating searchState "+ id)
   prevState match {
@@ -30,10 +30,10 @@ class ConstraintSolvingSearchState(val id : Int,
   }
 
   def createState(id : Int,
-                  engine : SearchEngine[ConstraintSolvingChoices, Option[AGNode]],
-                  k: Option[AGNode] => Unit,
-                  prevState : Option[SearchState[ConstraintSolvingChoices, Option[AGNode]]],
-                  hook : ConstraintSolvingChoices) : ConstraintSolvingSearchState = {
+                  engine : SearchEngine[ConstraintSolvingChoices[Kind], Option[AGNode[Kind]]],
+                  k: Option[AGNode[Kind]] => Unit,
+                  prevState : Option[SearchState[ConstraintSolvingChoices[Kind], Option[AGNode[Kind]]]],
+                  hook : ConstraintSolvingChoices[Kind]) : ConstraintSolvingSearchState[Kind] = {
     new ConstraintSolvingSearchState(id, engine, hook, k, prevState)
   }
 
@@ -78,10 +78,10 @@ class ConstraintSolvingSearchState(val id : Int,
 
 }
 
-class CSInitialSearchState(e : SearchEngine[ConstraintSolvingChoices, Option[AGNode]],
-                           solver : Solver,
-                           printTrace : SearchState[ConstraintSolvingChoices, Option[AGNode]] => Unit)
-  extends ConstraintSolvingSearchState(0, e, new ConstraintSolvingChoices(solver.graph.transformations.recording,
+class CSInitialSearchState[Kind <: NodeKind[Kind]](e : SearchEngine[ConstraintSolvingChoices[Kind], Option[AGNode[Kind]]],
+                           solver : Solver[Kind],
+                           printTrace : SearchState[ConstraintSolvingChoices[Kind], Option[AGNode[Kind]]] => Unit)
+  extends ConstraintSolvingSearchState[Kind](0, e, new ConstraintSolvingChoices(solver.graph.transformations.recording,
     mutable.Set(), mutable.Set()), null, None){
 
   override val triedAll = true
@@ -91,18 +91,18 @@ class CSInitialSearchState(e : SearchEngine[ConstraintSolvingChoices, Option[AGN
 }
 
 
-trait ConstraintSolvingSearchEngine
-  extends TryAllSearchEngine[ConstraintSolvingChoices,
-    Option[AGNode]] with DecisionMaker{
+trait ConstraintSolvingSearchEngine[Kind <: NodeKind[Kind]]
+  extends TryAllSearchEngine[ConstraintSolvingChoices[Kind],
+    Option[AGNode[Kind]]] with DecisionMaker[Kind]{
 
   val logger : Logger
 
-  val violationsKindPriority : List[NodeKind]
+  val violationsKindPriority : List[Kind]
 
   override def toString = "Try all Strategy"
 
-  def violationTarget(k: Option[AGNode] => Unit) {
-    def aux : List[NodeKind] => Iterator[AGNode] =  {
+  def violationTarget(k: Option[NodeType] => Unit) {
+    def aux : List[Kind] => Iterator[NodeType] =  {
       case topPriority :: tl =>
         val it = graph.filter{ n =>
           n.kind == topPriority && (n.wrongUsers.nonEmpty ||
@@ -115,8 +115,8 @@ trait ConstraintSolvingSearchEngine
         n.isWronglyContained }
     }
     val choices = new ConstraintSolvingChoices(graph.transformations.recording,
-      mutable.Set[AGNode]() ++ aux(violationsKindPriority),
-      mutable.Set[AGNode]())
+      mutable.Set[NodeType]() ++ aux(violationsKindPriority),
+      mutable.Set[NodeType]())
 
     if(choices.remainingChoices.nonEmpty)
       newCurrentState(k, choices)
@@ -135,21 +135,21 @@ trait ConstraintSolvingSearchEngine
     }
   }
 
-  def abstractionKindAndPolicy(impl : AGNode) = {
+  def abstractionKindAndPolicy(impl : NodeType) = {
     val policy = impl.kind.abstractionPolicies.head
     (impl.kind.abstractKinds(policy).head, policy)
   }
 
   def chooseNode(context : => String,
-                 predicate : AGNode => Boolean,
-                 k : Option[AGNode] => Unit) {
+                 predicate : NodeType => Boolean,
+                 k : Option[NodeType] => Unit) {
     println(context)
     newCurrentState(k, new ConstraintSolvingChoices(graph.transformations.recording,
-      mutable.Set[AGNode]() ++ graph.filter(predicate),
-      mutable.Set[AGNode]()))
+      mutable.Set[NodeType]() ++ graph.filter(predicate),
+      mutable.Set[NodeType]()))
   }
 
-  def modifyConstraints(sources : NodeSet, target : AGNode){}
+  def modifyConstraints(sources : NodeSet[Kind], target : NodeType){}
 
   override def keepGoing(){
     if(currentState.internal.recording.isEmpty)

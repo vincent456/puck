@@ -2,7 +2,7 @@ package puck.graph
 
 import puck.FilesHandler
 import scala.collection.mutable.Set
-import puck.javaAG.Primitive
+import puck.javaAG.{JavaNodeKind, Primitive}
 import puck.string2file
 /**
  * Created by lorilan on 15/05/14.
@@ -14,7 +14,7 @@ class BridgeTestSpec extends UnitSpec{
   println("graph loaded")
   /*fh.accessGraph(fh.parseConstraints())
   println("constraint parsed")*/
-  val nodeSet : Set[AGNode] = Set()
+  val nodeSet : Set[AGNode[JavaNodeKind]] = Set()
 
   "The Access Graph of the bridge example" should " iterate over all its node that are not primitive" in {
     nodeSet ++= graph

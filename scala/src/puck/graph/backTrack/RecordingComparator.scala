@@ -1,6 +1,6 @@
 package puck.graph.backTrack
 
-import puck.graph.{AGEdge, AGNode}
+import puck.graph.{NodeKind, AGEdge, AGNode}
 import puck.search.{SearchEngine, SearchState, FindFirstSearchEngine}
 
 import scala.collection.mutable
@@ -15,10 +15,10 @@ object RecordingComparator{
   val deleted : NodeTransfoStatus = -1
   val neuter : NodeTransfoStatus = 0
 
-  type ResMapping = Map[AGNode, (NodeTransfoStatus, Option[AGNode])]
-  type NodesToMap = Map[NodeTransfoStatus, List[AGNode]]
+  type ResMapping[Kind <: NodeKind[Kind]] = Map[AGNode[Kind], (NodeTransfoStatus, Option[AGNode[Kind]])]
+  type NodesToMap[Kind <: NodeKind[Kind]] = Map[NodeTransfoStatus, List[AGNode[Kind]]]
 
-  type Kargs = (AGNode, ResMapping, NodesToMap)
+  type Kargs[Kind <: NodeKind[Kind]] = (AGNode[Kind], ResMapping[Kind], NodesToMap[Kind])
 
 }
 
@@ -26,25 +26,25 @@ import RecordingComparator.{NodeTransfoStatus,ResMapping, NodesToMap, Kargs}
 class NoSolution extends Throwable
 
 
-class AssumedChoices(val node : AGNode,
+class AssumedChoices[Kind <: NodeKind[Kind]](val node : AGNode[Kind],
                      val nts : NodeTransfoStatus,
-                     val map : ResMapping,
-                     val nodesToMap : NodesToMap,
-                     val remainingChoices : mutable.Set[AGNode],
-                     val triedChoices : mutable.Set[AGNode])
+                     val map : ResMapping[Kind],
+                     val nodesToMap : NodesToMap[Kind],
+                     val remainingChoices : mutable.Set[AGNode[Kind]],
+                     val triedChoices : mutable.Set[AGNode[Kind]])
 
-class NodeMappingState(val id : Int,
-                       val engine : SearchEngine[AssumedChoices, Kargs],
-                       val internal: AssumedChoices,
-                       val k: Kargs => Unit,
-                       val prevState : Option[SearchState[AssumedChoices, Kargs]])
-  extends SearchState[AssumedChoices, Kargs] {
+class NodeMappingState[Kind <: NodeKind[Kind]](val id : Int,
+                       val engine : SearchEngine[AssumedChoices[Kind], Kargs[Kind]],
+                       val internal: AssumedChoices[Kind],
+                       val k: Kargs[Kind] => Unit,
+                       val prevState : Option[SearchState[AssumedChoices[Kind], Kargs[Kind]]])
+  extends SearchState[AssumedChoices[Kind], Kargs[Kind]] {
 
   def createState(id : Int,
-                  engine : SearchEngine[AssumedChoices, Kargs],
-                  k: Kargs => Unit,
-                  prevState : Option[SearchState[AssumedChoices, Kargs]],
-                  choices : AssumedChoices) : NodeMappingState = {
+                  engine : SearchEngine[AssumedChoices[Kind], Kargs[Kind]],
+                  k: Kargs[Kind] => Unit,
+                  prevState : Option[SearchState[AssumedChoices[Kind], Kargs[Kind]]],
+                  choices : AssumedChoices[Kind]) : NodeMappingState[Kind] = {
     new NodeMappingState(id, engine, choices, k, prevState)
   }
 
@@ -68,22 +68,22 @@ class NodeMappingState(val id : Int,
 }
 
 
-class NodeMappingInitialState (e : RecordingComparator,
-                               lr1 : List[Recordable],
-                               lr2 : List[Recordable])
+class NodeMappingInitialState[Kind <: NodeKind[Kind]] (e : RecordingComparator[Kind],
+                               lr1 : List[Recordable[Kind]],
+                               lr2 : List[Recordable[Kind]])
   extends NodeMappingState(0, e, null, null, None) {
 
-  def normalizeNodeTransfos(l : List[Recordable]) : (Map[AGNode, Int], List[Transformation])= {
+  def normalizeNodeTransfos(l : List[Recordable[Kind]]) : (Map[AGNode[Kind], Int], List[Transformation[Kind]])= {
 
-    l.foldLeft( (Map[AGNode, Int](), List[Transformation]()) ){
-      case ((m,l1), AddNode(n))=>
+    l.foldLeft( (Map[AGNode[Kind], Int](), List[Transformation[Kind]]()) ){
+      case ((m,l1), Transformation(Add(), TTNode(n)))=>
         val i = m.getOrElse(n, 0)
         (m + (n -> (i + 1)), l1)
-      case ((m,l1), RemoveNode(n)) =>
+      case ((m,l1), Transformation(Remove(), TTNode(n))) =>
         val i = m.getOrElse(n, 0)
         (m + (n -> (i - 1)), l1)
-      case ((m, l1), t : BreakPoint) => (m , l1)
-      case ((m,l1), t : Transformation) => (m, t :: l1)
+      case ((m, l1), t : BreakPoint[Kind]) => (m , l1)
+      case ((m,l1), t : Transformation[Kind]) => (m, t :: l1)
     }
   }
 
@@ -91,13 +91,13 @@ class NodeMappingInitialState (e : RecordingComparator,
 
   val (nodeMap2, remainingTransfos2) = normalizeNodeTransfos(lr2)
 
-  val initialMapping = nodeMap1.foldLeft(Map[AGNode, (Int, Option[AGNode])]()){
+  val initialMapping = nodeMap1.foldLeft(Map[AGNode[Kind], (Int, Option[AGNode[Kind]])]()){
     case (m, (n,i)) => m + (n -> (i, None))
   }
 
-  val otherNodes = nodeMap2.foldLeft(Map[Int, List[AGNode]]()){
+  val otherNodes = nodeMap2.foldLeft(Map[Int, List[AGNode[Kind]]]()){
     case (m, (n, i)) =>
-      val l = m.getOrElse(i, List[AGNode]())
+      val l = m.getOrElse(i, List[AGNode[Kind]]())
       m + (i -> (n :: l))
   }
 
@@ -109,15 +109,15 @@ class NodeMappingInitialState (e : RecordingComparator,
   }
 }
 
-class RecordingComparator(recording1 : Recording,
-                          recording2 : Recording)
-  extends FindFirstSearchEngine[AssumedChoices, Kargs] {
+class RecordingComparator[Kind <: NodeKind[Kind]](recording1 : Recording[Kind],
+                          recording2 : Recording[Kind])
+  extends FindFirstSearchEngine[AssumedChoices[Kind], Kargs[Kind]] {
 
 
-  def attribNode(node : AGNode,
-                 map : ResMapping,
-                 nodesToMap : NodesToMap)
-                (k : Kargs => Unit) {
+  def attribNode(node : AGNode[Kind],
+                 map : ResMapping[Kind],
+                 nodesToMap : NodesToMap[Kind])
+                (k : Kargs[Kind] => Unit) {
 
     map.getOrElse(node, (0, Some(node))) match {
       case (_ , Some(n)) => k(n, map, nodesToMap)
@@ -126,13 +126,21 @@ class RecordingComparator(recording1 : Recording,
         case None => throw new NoSolution()
         case Some(l) =>
           val choices = new AssumedChoices(node, i, map, nodesToMap,
-            mutable.Set[AGNode]() ++ l,
-            mutable.Set[AGNode]())
+            mutable.Set[AGNode[Kind]]() ++ l,
+            mutable.Set[AGNode[Kind]]())
 
           newCurrentState(k , choices)
       }
     }
   }
+
+  def attribNode(nodes : List[AGNode[Kind]],
+                 map : ResMapping[Kind],
+                 nodesToMap : NodesToMap[Kind])
+                (k : (AGNode[Kind], ResMapping[Kind], NodesToMap[Kind]) => Unit) {
+
+  }
+
 
   def removeFirst[T](l : List[T], pred : T => Boolean) : Option[List[T]] = {
     def aux(l1 : List[T], acc : List[T]) : Option[List[T]] =
@@ -145,22 +153,22 @@ class RecordingComparator(recording1 : Recording,
     aux(l, List[T]())
   }
   
-  def removeFirst(l : List[Transformation],
+  def removeFirst(l : List[Transformation[Kind]],
              op : Operation,
-             tgt : TransformationTarget) :  Option[List[Transformation]] = {
+             tgt : TransformationTarget[Kind]) :  Option[List[Transformation[Kind]]] = {
 
-    removeFirst(l, {(t : Transformation) => t.operation == op && t.target == tgt})
+    removeFirst(l, {(t : Transformation[Kind]) => t.operation == op && t.target == tgt})
   }
 
 
 
-  def compare(ts1 : List[Transformation], ts2 : List[Transformation],
-              map : ResMapping, nodesToMap : NodesToMap){
+  def compare(ts1 : List[Transformation[Kind]], ts2 : List[Transformation[Kind]],
+              map : ResMapping[Kind], nodesToMap : NodesToMap[Kind]){
     if (ts1. isEmpty) finalStates += currentState
     else {
 
-      def removeFirstAndCompareNext(tgt : TransformationTarget,
-                               map : ResMapping, nodesToMap : NodesToMap){
+      def removeFirstAndCompareNext(tgt : TransformationTarget[Kind],
+                               map : ResMapping[Kind], nodesToMap : NodesToMap[Kind]){
         removeFirst(ts2, ts1.head.operation, tgt) match {
           case None => ()
           case Some(newTs2) => compare(ts1.tail, newTs2, map, nodesToMap)
@@ -181,6 +189,21 @@ class RecordingComparator(recording1 : Recording,
                 }
             }
         }
+
+        case TTRedirection(e, extremity) => attribNode(e.source, map, nodesToMap){
+          case (src, map1, nodesToMap1) =>
+            attribNode(e.target, map1, nodesToMap1){
+              case(tgt, map2, nodesToMap2) =>
+                attribNode(extremity.node, map2, nodesToMap2){
+                  case (newExtyNode, map3, nodesToMap3) =>
+                    removeFirstAndCompareNext(TTRedirection(AGEdge(src,tgt),
+                      extremity.create(newExtyNode)),
+                      map3, nodesToMap3)
+                }
+            }
+        }
+
+
 
         case TTDependency(dominant, dominated) =>
           attribNode(dominant.source, map, nodesToMap){
@@ -212,10 +235,13 @@ class RecordingComparator(recording1 : Recording,
 
           }
 
-        case TTConstraint(ct) =>
+        case TTConstraint(ct, fr) =>
           //TODO give proper definition
           //this should be enough for the tests
-          removeFirstAndCompareNext(TTConstraint(ct), map, nodesToMap)
+        attribNode(fr, map, nodesToMap) {
+            case(fr1, map1, nodesToMap1) =>
+            removeFirstAndCompareNext(TTConstraint(ct, fr), map, nodesToMap)
+          }
 
         case TTNode(_) => throw new Error("should not happen !!")
       }

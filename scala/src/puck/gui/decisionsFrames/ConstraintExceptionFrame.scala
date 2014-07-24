@@ -1,6 +1,6 @@
 package puck.gui.decisionsFrames
 
-import puck.graph.AGNode
+import puck.graph.{NodeKind, AGNode}
 import puck.graph.constraints._
 import scala.swing._
 
@@ -11,22 +11,22 @@ import scala.swing._
  */
 
 object ConstraintExceptionFrame{
-  def apply(sources : NodeSet, target : AGNode) {
+  def apply[Kind <: NodeKind[Kind]] (sources : NodeSet[Kind], target : AGNode[Kind]) {
     DecisionFrame {
       () => new ConstraintExceptionFrame(sources, target)
     }
   }
 }
 
-class ConstraintExceptionFrame private (val sources : NodeSet,
-                                        val target : AGNode)
+class ConstraintExceptionFrame[Kind <: NodeKind[Kind]] private (val sources : NodeSet[Kind],
+                                        val target : AGNode[Kind])
   extends DecisionFrame[Unit]{
 
   title = "Constraint Exceptions"
 
-  def violatedScopeConstraints() : List[ScopeConstraint] =
+  def violatedScopeConstraints() : List[ScopeConstraint[Kind]] =
     sources.map(_.violatedScopeConstraintsOf(target)).flatten.toList
-  def violatedElementConstraints() : List[ElementConstraint] =
+  def violatedElementConstraints() : List[ElementConstraint[Kind]] =
     sources.map(_.violatedElementConstraintOf(target)).flatten.toList
 
   def makePanel() : Panel =  new BoxPanel(Orientation.Vertical) {
@@ -44,8 +44,8 @@ class ConstraintExceptionFrame private (val sources : NodeSet,
     contents += new BoxPanel(Orientation.Vertical){
 
 
-      def constraintEditor[T <: Constraint, U<:DecisionFrame[Unit]](ct : T,
-                                                                    getPanel : (T, NodeSet, AGNode, () => Unit) => Panel ){
+      def constraintEditor[T <: Constraint[Kind], U<:DecisionFrame[Unit]](ct : T,
+                                                                    getPanel : (T, NodeSet[Kind], AGNode[Kind], () => Unit) => Panel ){
         contents += new BoxPanel(Orientation.Horizontal){
           contents += new Label(ct.toString)
           contents += Swing.HGlue

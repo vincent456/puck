@@ -3,12 +3,12 @@ package puck.graph
 /**
  * Created by lorilan on 07/05/14.
  */
-class StatelessAGNode (graph: AccessGraph,
+class StatelessAGNode[Kind <: NodeKind[Kind]] (graph: AccessGraph[Kind],
                        id: Int,
                        name: String,
-                       kind: NodeKind)
-  extends AGNode(graph, id, name, kind){
+                       kind: Kind)
+  extends AGNode[Kind](graph, id, name, kind){
 
-  override def superTypes_+=(st:AGNode) = ()
-  override def users_+=(n:AGNode) = ()
+  override def superTypes_+=(st:AGNode[Kind], register : Boolean) = ()
+  override def users_+=(n:AGNode[Kind], register : Boolean) = ()
 }

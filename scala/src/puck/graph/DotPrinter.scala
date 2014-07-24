@@ -1,18 +1,20 @@
 package puck.graph
 
 import _root_.java.io.BufferedWriter
+import puck.javaAG.JavaNodeKind
+
 import scala.None
 
 /**
  * Created by lorilan on 07/05/14.
  */
 
-trait DotHelper{
-  def isDotSubgraph(k:NodeKind) : Boolean
-  def isDotClass(k:NodeKind) : Boolean
-  def fillColor(k:NodeKind) : String
-  def namePrefix(k:NodeKind) : String
-  def splitDotClassContent(n: AGNode) : (Iterable[AGNode], Iterable[AGNode], Iterable[AGNode] , Iterable[AGNode])
+trait DotHelper[Kind <: NodeKind[Kind]]{
+  def isDotSubgraph(k : Kind) : Boolean
+  def isDotClass(k: Kind) : Boolean
+  def fillColor(k: Kind) : String
+  def namePrefix(k: Kind) : String
+  def splitDotClassContent(n: AGNode[Kind]) : (Iterable[AGNode[Kind]], Iterable[AGNode[Kind]], Iterable[AGNode[Kind]] , Iterable[AGNode[Kind]])
   //with java ((fields, Constructors, Methods), inner classes)
 }
 
@@ -23,13 +25,25 @@ object DotPrinter {
   val containsStyle = new Style("dashed", "open")
   val usesStyle = new Style("bold", "normal")
 
-  class Status(val color : String, val thickness : String)
-  val correctStatus = new Status("black", "1")
-  val violationStatus = new Status("red", "5")
+  class ColorThickness(val color : String, val thickness : Int)
+
+  object ColorThickness {
+    val regular = new ColorThickness("black", 1)
+    val violation = new ColorThickness("red", 5)
+
+    val dominant = new ColorThickness("blue", 2)
+    val dominated = new ColorThickness("green", 2)
+    val selected = new ColorThickness("black", 5)
+  }
 
 
-  def print(writer: BufferedWriter, graph : AccessGraph,
-            helper : DotHelper, printId : Boolean, searchRoots : Boolean = false){
+
+  def print[K <: NodeKind[K]](writer: BufferedWriter, graph : AccessGraph[K],
+                                                  helper : DotHelper[K], printId : Boolean,
+                                                  searchRoots : Boolean = false,
+                                                  selectedUse : Option[AGEdge[K]] = None){
+
+    type NodeType = AGNode[K]
 
     val idPrinter =
       if(printId) (id:Int) => " (" + id + ")"
@@ -40,18 +54,21 @@ object DotPrinter {
       writer newLine()
     }
 
-    val violations = graph.violations
+    val violations = selectedUse match{
+      case None => graph.violations
+      case Some(_) => List()
+    }
     /*
      * dot -Tpng give a wrong drawing of the graph when mixing nodes and arcs
      * in the dot file. We stock the arcs and print them separately at the end
      */
     val arcs = scala.collection.mutable.Buffer[String]()
-    def printArc(style :Style, source:AGNode, target:AGNode,
-                 status:Status){
+    def printArc(style : Style, source : NodeType, target : NodeType,
+                 status: ColorThickness){
       //val (lineStyle, headStyle) = style
       //val (color, thickness) = status
       //println("print arc "+ source.nameTypeString + " -> " + target.nameTypeString)
-      def dotId(n: AGNode) : String =
+      def dotId(n: NodeType) : String =
         if(helper isDotSubgraph n.kind) n.id.toString
         else{
           val containerId = if(helper isDotClass n.kind) n.id
@@ -60,7 +77,7 @@ object DotPrinter {
         }
 
 
-      def subGraphArc(n: AGNode, pos:String) =
+      def subGraphArc(n: NodeType, pos:String) =
         if(helper isDotSubgraph n.kind) pos + "=cluster" + n.id + ", "
         else ""
 
@@ -73,24 +90,40 @@ object DotPrinter {
 
     }
 
-    def printUse(source : AGNode, target : AGNode) =
+    val printUsesViolations = (source : NodeType, target : NodeType) =>
       if(!source.isa(target)) //TODO remove test. quickfix to avoid dot crash
-      printArc(usesStyle, source, target,
-        if(violations.contains(AGEdge.uses(source, target)))
-          violationStatus
-        else correctStatus )
+        printArc(usesStyle, source, target,
+          if(violations.contains(AGEdge.uses(source, target)))
+            ColorThickness.violation
+          else ColorThickness.regular )
 
-    def decorate_name(n : AGNode):String =
-        if (violations.contains(AGEdge.contains(n.container, n)))
-        "<FONT COLOR=\"" + violationStatus.color + "\"><U>" + helper.namePrefix(n.kind)+ n.name + idPrinter(n.id) +"</U></FONT>"
-        else helper.namePrefix(n.kind)+ n.name + idPrinter(n.id)
+    val printUse = selectedUse match {
+      case None => printUsesViolations
+      case Some(selected) =>  (source: NodeType, target: NodeType) =>
+        val printed = AGEdge.uses(source, target)
+        val ct = if (printed == selected) ColorThickness.selected
+        else if (selected.source.primaryUses.getOrElse(selected.target, List()).exists(_ == printed))
+          ColorThickness.dominant
+        else if (selected.source.sideUses.getOrElse(selected.target, List()).exists(_ == printed))
+          ColorThickness.dominated
+        else ColorThickness.regular
 
-    def printNode(n:AGNode){
+
+        printArc(usesStyle, source, target, ct)
+
+    }
+
+    def decorate_name(n : NodeType):String =
+      if (violations.contains(AGEdge.contains(n.container, n)))
+        "<FONT COLOR=\"" + ColorThickness.violation.color + "\"><U>" + helper.namePrefix(n.kind)+ n.name + idPrinter(n.id) +"</U></FONT>"
+      else helper.namePrefix(n.kind)+ n.name + idPrinter(n.id)
+
+    def printNode(n : NodeType){
       if(helper isDotSubgraph n.kind) printSubGraph(n)
       else if(helper isDotClass n.kind) printClass(n)
     }
 
-    def printSubGraph(n:AGNode){
+    def printSubGraph(n : NodeType){
       List("subgraph cluster" + n.id + " {",
         "label=\"" + decorate_name(n) +"\";",
         "color=black;") foreach writeln
@@ -104,9 +137,9 @@ object DotPrinter {
       n.users.foreach(printUse(_, n))
     }
 
-    def printClass(n:AGNode){
+    def printClass(n:NodeType){
 
-      def writeTableLine(n:AGNode){
+      def writeTableLine(n:NodeType){
         writeln("<TR><TD PORT=\"" +n.id + "\" ALIGN=\"LEFT\" BORDER=\"0\">"+
           decorate_name(n) +"</TD></TR>")
       }
@@ -128,10 +161,10 @@ object DotPrinter {
       innerClasses foreach printClass
 
       n.content foreach{ nc =>
-          nc.users.foreach(printUse(_, nc))
+        nc.users.foreach(printUse(_, nc))
       }
       n.users.foreach(printUse(_, n))
-      n.superTypes.foreach(printArc(isaStyle, n, _, correctStatus))
+      n.superTypes.foreach(printArc(isaStyle, n, _, ColorThickness.regular))
     }
 
 

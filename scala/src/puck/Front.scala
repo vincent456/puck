@@ -37,7 +37,6 @@ package puck
 
 
 
-/*
  import scala.swing._
  import javax.swing.UIManager
  import puck.gui.PuckMainPanel
@@ -58,70 +57,43 @@ package puck
 
   }
 }
-*/
 
 
 
-import java.io._
-import puck.graph.DotPrinter
-import puck.gui.GUIDecisionMaker
-import puck.javaAG.{JavaNode, DefaultDecisionMaker}
+/*import java.io._
+
 
 object Front{
 
   def main(args : Array[String]){
 
+    /*val folder = "/home/lorilan/puck_svn/distrib/examples/"
     //val example ="prototype/actors/candidate"
     val example = "bridge/hannemann_inspired/candidate"
+*/
+    val folder = "/home/lorilan/projects/constraintsSolver/scala/test/examples/"
+    val example = "02"
 
-    val fh = FilesHandler("/home/lorilan/puck_svn/distrib/examples/" +
-      example)()
+    val fh = FilesHandler( folder + example)()
     //fh.decouple = "/home/lorilan/puck_svn/distrib/examples/composite/candidate/decouple_strict.pl"
     fh.loadGraph(null)
+    fh.parseConstraints()
     println("graph loaded")
 
-
-    //fh.accessGraph.list()
-    //println(fh.parseConstraints() == fh.parseConstraints())
-    fh.parseConstraints()
 
     print("make png ... ")
     fh.makePng(soutput = Some(new FileOutputStream(
       new File(fh.graphStubFile.getCanonicalPath + "_before.png"))))
     println("done")
 
-    /*fh.accessGraph.transformations.startRegister()
-    fh.solve(trace = true,
-      decisionMaker = new DefaultDecisionMaker(fh.accessGraph))
-
-    val g = fh.accessGraph.transformations.recording.partialGraph()
-
-    DotPrinter.print(new BufferedWriter(new FileWriter(fh.graph.getCanonicalPath+"_partial.dot")),
-      g, JavaNode, printId=false, searchRoots = true)
-
-    g.nodes.foreach(println)
-
-    println(fh.accessGraph.transformations.getClass)
-
-    val r = fh.accessGraph.transformations.recording
-    println("undo everything !")
-    r.undo()
-
-    print("make png ... ")
-    fh.makePng(soutput = Some(new FileOutputStream(
-      new File(fh.graph.getCanonicalPath + "_undone.png"))))
-    println("done")
-
-    r.redo()
-
-    print("make png ... ")
-    fh.makePng(soutput = Some(new FileOutputStream(
-      new File(fh.graph.getCanonicalPath + "_redone.png"))))
-    println("done")*/
-
-    fh.explore(trace = true)
 
 
+    //fh.explore(trace = true)
+    fh.graph.transformations.startRegister()
+    fh.solve(trace = true)
+    fh.graph.applyChangeOnProgram()
+
+    println(fh.graph.program)
     //    print("make pl ... ")
     //
     //    scala.Console.withOut(new FileOutputStream(fh.srcDirectory+ "/decouple_after.pl")) {
@@ -132,4 +104,4 @@ object Front{
     //
     //    fh.accessGraph.printConstraints()
   }
-}
+}*/

@@ -6,11 +6,11 @@ import puck.graph._
 import puck.javaAG._
 import puck.util.{FileLogger, Logger}
 import scala.sys.process.Process
-import puck.graph.constraints.{DecisionMaker, ConstraintsParser}
+import puck.graph.constraints.{DefaultDecisionMaker, DecisionMaker, ConstraintsParser}
 import java.util.NoSuchElementException
 
 class FilesHandler private (private [this] var srcDir : File,
-                            private [this] var jarlistFile0: File,
+                            private [this] var jarListFile0: File,
                             private [this] var apiNodesFile0 :File,
                             private [this] var decouple0 : File,
                             private [this] var graph0: File,
@@ -22,20 +22,20 @@ class FilesHandler private (private [this] var srcDir : File,
 
   def srcDirectory = this.srcDir
   def srcDirectory_=(dir : File){ this.srcDir = dir.getCanonicalFile
-    jarlistFile0 = FilesHandler.defaultFile(srcDir, FilesHandler.Default.jarListFileName)
+    jarListFile0 = FilesHandler.defaultFile(srcDir, FilesHandler.Default.jarListFileName)
     apiNodesFile0 = FilesHandler.defaultFile(srcDir, FilesHandler.Default.apiNodesFileName)
     decouple0 = FilesHandler.defaultFile(srcDir, FilesHandler.Default.decoupleFileName)
     graph0 = FilesHandler.defaultFile(srcDir, FilesHandler.Default.graphFileName)
     logFile0 = FilesHandler.defaultFile(srcDir, FilesHandler.Default.logFileName)
   }
 
-  def jarListFile = this.jarlistFile0
-  def jarListFile_=(f:File){ this.jarlistFile0 = f.getCanonicalFile}
+  def jarListFile = this.jarListFile0
+  def jarListFile_=(f:File){ this.jarListFile0 = f.getCanonicalFile}
 
   def apiNodesFile = this.apiNodesFile0
   def apiNodesFile_=(f:File){this.apiNodesFile0= f.getCanonicalFile}
 
-  private [this] var gdot : Option[File] = Some(new File("/home/lorilan/graphviz/bin/dot"))
+  private [this] var gdot : Option[File] = None
   def graphvizDot = this.gdot
   def graphvizDot_=(f: File){this.gdot = Some(f.getCanonicalFile)}
   def graphvizDot_=(sf: Option[File]){ sf match {
@@ -50,7 +50,7 @@ class FilesHandler private (private [this] var srcDir : File,
   def graphStubFile = this.graph0
   def graphStubFile_=(f: File){this.graph0= f.getCanonicalFile}
 
-  def loadGraph(ll : AST.LoadingListener) : AccessGraph = {
+  def loadGraph(ll : AST.LoadingListener) : AccessGraph[JavaNodeKind] = {
     FilesHandler.compile(FilesHandler.findAllJavaFiles(this.srcDirectory),
       puck.fileLines(jarListFile)) match {
       case None => throw new AGBuildingError("Compilation error, no AST generated")
@@ -62,20 +62,23 @@ class FilesHandler private (private [this] var srcDir : File,
             ag.addApiNode(p, tab(0), tab(1), tab(2))
         }
         ag
+
     }
   }
 
-  def makeDot(printId : Boolean = false){
+  def makeDot(printId : Boolean = false, selectedUse : Option[AGEdge[JavaNodeKind]]){
     DotPrinter.print(new BufferedWriter(new FileWriter(graphStubFile.getCanonicalPath+".dot")),
-      ag, JavaNode, printId)
+      ag, JavaNode, printId, searchRoots = false, selectedUse)
   }
 
   def makeProlog(){
     PrologPrinter.print(new BufferedWriter(new FileWriter(graphStubFile.getCanonicalPath+".pl")), ag)
   }
 
+
   def solve (trace : Boolean = false,
-             decisionMaker : DecisionMaker = new DefaultDecisionMaker(graph)){
+             decisionMaker : DecisionMaker[JavaNodeKind] = new JavaDefaultDecisionMaker(graph)){
+
     var inc = 0
 
     new JavaSolver(graph, decisionMaker).solve(
@@ -151,8 +154,10 @@ class FilesHandler private (private [this] var srcDir : File,
 
   }
 
-  def makePng(printId : Boolean = false, soutput : Option[OutputStream] = None) : Int = {
-    makeDot(printId)
+  def makePng(printId : Boolean = false,
+              soutput : Option[OutputStream] = None,
+              selectedUse : Option[AGEdge[JavaNodeKind]] = None) : Int = {
+    makeDot(printId, selectedUse)
     dot2png(soutput)
   }
 

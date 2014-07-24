@@ -1,17 +1,17 @@
 package puck.javaAG
 
 import puck.graph._
-import puck.javaAG.JavaNodeKind.{AbstractMethod, Method, Class, Interface}
+
 
 /**
  * Created by lorilan on 27/05/14.
  */
 
 
-class JavaType(n : AGNode) extends NamedType(n){
+class JavaType(n : AGNode[JavaNodeKind]) extends NamedType(n){
 
  def hasMethodThatCanOverride(name : String, sig : MethodType) : Boolean =
-    n.content.exists{ (childThis : AGNode) =>
+    n.content.exists{ (childThis : AGNode[JavaNodeKind]) =>
       childThis.name == name &&
         (childThis.kind match {
           case m @ Method() => m.`type`.canOverride(sig)
@@ -42,8 +42,27 @@ class JavaType(n : AGNode) extends NamedType(n){
     })*/
 }
 
-class MethodType(override val input: Tuple, output:Type) extends Arrow(input, output){
+class MethodType(override val input: Tuple[NamedType[JavaNodeKind]],
+                 override val output: NamedType[JavaNodeKind]) extends Arrow(input, output){
      def canOverride(other : MethodType) : Boolean =
         other.input == input && output.subtypeOf(other.output)
 
+  def createReturnAccess() = output.n.kind match {
+    case tk : TypeKind => tk.createLockedAccess()
+    case _ => throw new JavaAGError("need a typekind as output node")
+  }
+
+  def createASTParamList() = {
+    input.types.map { t =>
+
+      t.n.kind match {
+        case tk: TypeKind =>
+          new AST.ParameterDeclaration(new AST.Modifiers,
+            tk.createLockedAccess(),
+            t.n.name)
+        case _ => throw new JavaAGError("need type kind for param list !")
+      }
+
+    }
+  }
 }

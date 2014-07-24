@@ -5,10 +5,10 @@ package puck.graph
  */
 class AGNodeSpec extends UnitSpec {
 
-  val ag : AccessGraph = new AccessGraph(AGNode)
-  val na = ag.addNode("a")
-  val nb = ag.addNode("b")
-  val nc = ag.addNode("c")
+  val ag : AccessGraph[VanillaKind] = new AccessGraph(AGNode)
+  val na = ag.addNode("a", VanillaNodeKind())
+  val nb = ag.addNode("b", VanillaNodeKind())
+  val nc = ag.addNode("c", VanillaNodeKind())
 
   "An access graph node" should "contains what is added in its content" in {
 

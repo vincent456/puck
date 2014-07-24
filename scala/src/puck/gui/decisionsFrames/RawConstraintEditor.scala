@@ -2,15 +2,15 @@ package puck.gui.decisionsFrames
 
 import scala.swing.{TextArea, Button, Orientation, BoxPanel}
 import puck.graph.constraints.{Constraint, ConstraintsParser, NamedNodeSet}
-import puck.graph.AccessGraph
+import puck.graph.{NodeKind, AccessGraph}
 import java.io.StringReader
 
 /**
  * Created by lorilan on 11/06/14.
  */
-class RawConstraintEditor( graph : AccessGraph,
-                           defs : List[NamedNodeSet],
-                           constraints : List[Constraint],
+class RawConstraintEditor[K <: NodeKind[K]]( graph : AccessGraph[K],
+                           defs : List[NamedNodeSet[K]],
+                           constraints : List[Constraint[K]],
                            finish : () => Unit)
   extends BoxPanel(Orientation.Vertical) {
 
