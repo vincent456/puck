@@ -9,8 +9,9 @@ import puck.javaAG.JavaNodeKind._
  */
 
 abstract class JavaNodeKind extends NodeKind[JavaNodeKind]{
-  def createDecl(n : AGNode[JavaNodeKind]) : AST.Declaration =
+  def createDecl(n : AGNode[JavaNodeKind]) {
     throw new Error("do not know how to create declaration for" + getClass)
+  }
 }
 case class JavaRoot() extends JavaNodeKind with AGRoot[JavaNodeKind]{
   def create() = JavaRoot()
@@ -62,7 +63,7 @@ object JavaNodeKind {
 case class Package() extends JavaNodeKind {
 
   def create() = Package()
-
+  override def createDecl(n : AGNode[JavaNodeKind]){}
   //var decl : AST.PackageDecl = _
 
   def canContain(k : JavaNodeKind) : Boolean = {
@@ -89,14 +90,13 @@ case class Interface private[javaAG]() extends TypeKind { //unused in LJ
 
   def create() = Interface()
 
-  override def createDecl( n : AGNode[JavaNodeKind]) = {
+  override def createDecl( n : AGNode[JavaNodeKind]){
     assert(n.kind eq this)
     if(decl == null){
       decl  = new AST.InterfaceDecl()
       decl.setID(n.name)
       addDeclToProgram(n, decl)
     }
-    decl
   }
 
   var decl : AST.InterfaceDecl = _
@@ -119,14 +119,13 @@ case class Class private[javaAG]() extends TypeKind {
 
   var decl : AST.ClassDecl = _
 
-  override def createDecl( n : AGNode[JavaNodeKind]) = {
+  override def createDecl( n : AGNode[JavaNodeKind]){
     assert(n.kind eq this)
     if(decl == null){
       decl = new AST.ClassDecl()
       decl.setID(n.name)
       addDeclToProgram(n, decl)
     }
-    decl
   }
 
   def canContain(k : JavaNodeKind) : Boolean = {
@@ -224,7 +223,6 @@ class ConstructorMethod extends Method {
   override def createDecl(n : AGNode[JavaNodeKind]) = {
     assert(n.kind eq this)
     decl = ctorDecl.createConstructorMethod(n.name)
-    decl
   }
 }
 
@@ -238,7 +236,6 @@ case class AbstractMethod private[javaAG]() extends  MethodKind {
       decl = AST.MethodDecl.createAbstractMethod(`type`.createReturnAccess(),
         n.name, `type`.createASTParamList().toArray)
     }
-    decl
   }
 
   def abstractKinds(p : AbstractionPolicy) = p match {

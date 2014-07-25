@@ -67,12 +67,12 @@ object Front{
 
   def main(args : Array[String]){
 
-    /*val folder = "/home/lorilan/puck_svn/distrib/examples/"
-    //val example ="prototype/actors/candidate"
+    val folder = "/home/lorilan/puck_svn/distrib/examples/"
+//    val example ="prototype/actors/candidate"
     val example = "bridge/hannemann_inspired/candidate"
-*/
-    val folder = "/home/lorilan/projects/constraintsSolver/scala/test/examples/"
-    val example = "02"
+
+//    val folder = "/home/lorilan/projects/constraintsSolver/scala/test/examples/"
+//    val example = "01"
 
     val fh = FilesHandler( folder + example)()
     //fh.decouple = "/home/lorilan/puck_svn/distrib/examples/composite/candidate/decouple_strict.pl"

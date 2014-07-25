@@ -46,11 +46,7 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
 
   val scopeSeparator = nodeBuilder.scopeSeparator
 
-  /*override def equals(obj : Any) : Boolean = obj match {
-    case that : AccessGraph => root == that.root
-    case _ => false
-  }
-  override def hashCode: Int = this.id * 42 // ???
+  /*override def hashCode: Int = this.id * 42 // ???
   */
 
   def nodeKinds = nodeBuilder.kinds
@@ -109,12 +105,6 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
     }
   }
 
-  /*
-   def addNode(localName : String) : NodeType =
-    addNode(localName, VanillaKind())
-   def addNode(fullName: String, localName:String): NodeType =
-    addNode(fullName, localName, VanillaKind())*/
-
   def remove(n : NodeType){
     nodes0 -= n
     transformations.removeNode(n)
@@ -143,8 +133,6 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
     //n
   }
 
-
-
   def addUsesDependency(primary : EdgeType, side : EdgeType){
     primary.user.sideUses += (primary.usee, side)
     side.user.primaryUses += (side.usee, primary)
@@ -167,8 +155,7 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
       AGEdge.uses(sideUser, sideUsee))
   }
 
-  def softEqual(other : AccessGraph[Kind]) = nodes.forall{ n =>
-    other.nodes.exists(_.softEqual(n))}
+
 
 }
 

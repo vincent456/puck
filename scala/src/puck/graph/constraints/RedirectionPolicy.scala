@@ -6,6 +6,10 @@ package puck.graph.constraints
 sealed abstract class RedirectionPolicy
 sealed abstract class AbstractionPolicy extends RedirectionPolicy
 
-case class DelegationAbstraction() extends AbstractionPolicy
-case class SupertypeAbstraction() extends AbstractionPolicy
+case class DelegationAbstraction() extends AbstractionPolicy {
+  override val toString = "DelegationAbstraction"
+}
+case class SupertypeAbstraction() extends AbstractionPolicy{
+  override val toString = "SuperTypeAbstraction"
+}
 case class Move() extends RedirectionPolicy

@@ -119,7 +119,14 @@ aspect AccessGraphFactory {
                 " ("+this.getClass()+")");
 	}
 
+
+
 	public AGNode<JavaNodeKind> VarAccess.buildDominantUserAGNode(JavaAccessGraph accessGraph){
+      return decl().buildAGNode(accessGraph);
+  	}
+
+  	//in case of static call
+  	public AGNode<JavaNodeKind> TypeAccess.buildDominantUserAGNode(JavaAccessGraph accessGraph){
       return decl().buildAGNode(accessGraph);
   	}
 
@@ -423,7 +430,8 @@ aspect AccessGraphFactory {
 	}
 
 	boolean TypeDecl.isFromStdLib(){
-			return compilationUnit().pathName().startsWith(System.getProperty("java.home"));
+			return compilationUnit().packageName() == PRIMITIVE_PACKAGE_NAME ||
+              compilationUnit().pathName().startsWith(System.getProperty("java.home"));
 	}
 
 

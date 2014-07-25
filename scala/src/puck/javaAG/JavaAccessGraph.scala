@@ -220,7 +220,7 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
       AG2AST(r)
       r.redo()
     }
-
+    program.flushCaches()
     program.eliminateLockedNames()
   }
 

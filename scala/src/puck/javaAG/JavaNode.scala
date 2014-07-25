@@ -2,7 +2,7 @@ package puck.javaAG
 
 import puck.graph._
 import JavaNodeKind._
-import puck.graph.constraints.{AbstractionPolicy, SupertypeAbstraction}
+import puck.graph.constraints.{RedirectionPolicy, AbstractionPolicy, SupertypeAbstraction}
 
 
 /**
@@ -227,18 +227,19 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
     super.moveTo(newContainer)
   }
 
+  override def redirectUses(oldUsee : NodeType, newUsee : NodeType,
+                   policy : RedirectionPolicy,
+                   redirectPrimary : Boolean = true,
+                   redirectSide : Boolean = true) = {
 
-  override def softEqual(other : AGNode[JavaNodeKind]) : Boolean = {
-    super.softEqual(other) &&
-      ((kind, other.kind) match {
-      case (m1 @ Method() , m2 @ Method() ) =>
-        this.name == other.name &&
-          m1.`type`.input.length == m2.`type`.input.length
-      case (m1 @ AbstractMethod(), m2 @ AbstractMethod ()) =>
-        this.name == other.name &&
-          m1.`type`.input.length == m2.`type`.input.length
-      case  _=> true
-    })
+    (oldUsee.kind, newUsee.kind) match {
+      case (Constructor(), Method())
+      | (Constructor(), AbstractMethod())=>
+        this.users.foreach{ AGEdge.uses(_,oldUsee).create()}
+      case _ => ()
+    }
+
+    super.redirectUses(oldUsee, newUsee, policy, redirectPrimary, redirectSide)
   }
 
 }

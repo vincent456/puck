@@ -37,40 +37,15 @@ object AGNode extends AGNodeBuilder[VanillaKind]{
 }
 
 class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
-              val id: Int,
-              var name: String,
-              val kind: Kind) extends HasChildren[AGNode[Kind]]{
+                                      val id: Int,
+                                      var name: String,
+                                      val kind: Kind) extends HasChildren[AGNode[Kind]]{
 
   type NodeType = AGNode[Kind]
   //extends Iterable[NodeType]{
 
-  /*override def equals(obj: Any): Boolean = obj match {
-    case that: NodeType =>
-      if (this.graph eq that.graph)
-       this.id == that.id
-      else {
 
-        def softEqual(n1 : NodeType, n2 :NodeType) =
-          n1.name == n2.name && n1.kind == n2.kind //TODO see type equality ...
-        //TODO use soft equality to compare uses arcs
-
-        softEqual(this, that) &&
-        this.name == that.name && this.kind == that.kind &&
-          content.forall { c =>
-            that.content.find(tc => tc == c)
-          }
-      }
-    case _ => false
-  }
-
-  override def hashCode: Int = (this.id + kind.hashCode()) / 41*/
-
-  def softEqual(other : NodeType) : Boolean = {
-    //this.name == other.name && // NO !!
-    this.kind == other.kind &&
-    users.forall{n => other.users.exists(_.softEqual(n))}  &&
-    content.forall{n => other.content.exists(_.softEqual(n))}
-  }
+  /*override def hashCode: Int = (this.id + kind.hashCode()) / 41*/
 
   /**
    * relies on the contains tree : do not modify it while traversing
@@ -131,33 +106,6 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
     if(register)
       graph.transformations.removeEdge(AGEdge.contains(this, n))
   }
-
-  /*def content_+=(n:NodeType) {
-    if( n.container0 == this)
-      throw new IllegalAGOperation("content += error " + n + "container is already "+ this)
-
-    n.container0 = this
-
-    if(!this.content0.add(n))
-      throw new IllegalAGOperation("content += error "+ this +" already contains "+ n)
-
-    graph.transformations.addEdge(AGEdge.contains(this, n))
-
-  }
-
-  def content_-=(n:NodeType) {
-
-    if( n.container0 != this)
-      throw new IllegalAGOperation("content -= error " +n + "container is not "+ this)
-
-    n.container0 = n
-
-    if(!this.content0.remove(n))
-      throw new IllegalAGOperation("content -= error "+ this +" does not contains "+ n)
-
-
-    graph.transformations.removeEdge(AGEdge.contains(this, n))
-  }*/
 
   def moveTo(newContainer : NodeType) {
     AGEdge.contains(container, this).changeSource(newContainer)
@@ -224,7 +172,7 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
     if(superTypes0.remove(st)) {
       st.subTypes0.remove(this)
       if(register)
-      graph.transformations.removeEdge(AGEdge.isa(this, st))
+        graph.transformations.removeEdge(AGEdge.isa(this, st))
       abstractions_-=(st, SupertypeAbstraction())
     }
   }
@@ -312,8 +260,9 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
         else {
 
           graph.removeUsesDependency(primary, AGEdge.uses(this, currentSideUsee))
-          //TODO redirection en cascade !!!
-          val newPrimary = primary.changeTarget(findNewPrimaryUsee(primary.usee, newSideUsee, policy))
+          //val newPrimary = primary.changeTarget(findNewPrimaryUsee(primary.usee, newSideUsee, policy))
+          val newPrimary = primary.user.redirectUses(primary.usee, findNewPrimaryUsee(primary.usee, newSideUsee, policy),
+            policy, redirectPrimary = true, redirectSide = false)
           graph.addUsesDependency(newPrimary, AGEdge.uses(this, newSideUsee))
 
         }
@@ -339,14 +288,16 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
             } match {
               case None =>
                 throw new RedirectionError(("While redirecting primary uses (%s, %s) to (%s, %s)\n" +
-                "no satisfying abstraction to redirect side use %s").
-                format( this, currentPrimaryUsee, this, newPrimaryUsee, side))
+                  "no satisfying abstraction to redirect side use %s").
+                  format( this, currentPrimaryUsee, this, newPrimaryUsee, side))
 
               case Some( (new_side_usee, _) ) =>
 
                 graph.removeUsesDependency(AGEdge.uses(this, currentPrimaryUsee), side)
-                //TODO redirection en cascade !!!
-                val newSide = side.changeTarget(new_side_usee)
+                //val newSide = side.changeTarget(new_side_usee)
+                val newSide = side.user.redirectUses(side.usee, new_side_usee, policy,
+                  redirectPrimary = false,
+                  redirectSide = true)
                 graph.addUsesDependency(AGEdge.uses(this, newPrimaryUsee), newSide)
 
             }
@@ -355,13 +306,19 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
   }
 
   def redirectUses(oldUsee : NodeType, newUsee : NodeType,
-                   policy : RedirectionPolicy){
+                   policy : RedirectionPolicy,
+                   redirectPrimary : Boolean = true,
+                   redirectSide : Boolean = true) = {
 
     println("redirecting uses %s --> %s to\n%s (%s)".format(this, oldUsee, newUsee, policy))
-    AGEdge.uses(this, oldUsee).changeTarget(newUsee)
+    val newUses = AGEdge.uses(this, oldUsee).changeTarget(newUsee)
 
-    redirectPrimaryUses(oldUsee, newUsee, policy)
-    redirectSideUses(oldUsee, newUsee, policy)
+    if(redirectPrimary)
+      redirectPrimaryUses(oldUsee, newUsee, policy)
+    if(redirectSide)
+      redirectSideUses(oldUsee, newUsee, policy)
+
+    newUses
   }
 
 

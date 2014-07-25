@@ -1,0 +1,117 @@
+
+aspect TransformationApplying {
+	
+	//scala compiler does not like ASTNode type parameter bound
+	public CompilationUnit Program.insertUnusedType(String path, String pkg, TypeDecl td) {
+       return insertUnusedType(path, pkg, new List<ImportDecl>(), td);
+    }
+
+    public static MethodDecl MethodDecl.createAbstractMethod(Access returnType, String name, ParameterDeclaration[] params){
+      List<ParameterDeclaration> paramList = new List<ParameterDeclaration>();
+      for(ParameterDeclaration p : params){
+          paramList.add(p);
+      }
+      return new MethodDecl(new Modifiers("public", "abstract"), returnType, name, paramList, new List<Access>(), new Opt());
+  	}
+
+  	public MethodDecl ConstructorDecl.createConstructorMethod(String name){
+        List<ParameterDeclaration> params = this.getParameterList().copy();
+        ConstructorAccess ctorAccess = this.getConstructorAccess();
+
+        for(int i =0; i< params.getNumChild(); i++)
+            ctorAccess.insertArg(params.getChild(i).createLockedAccess(),i);
+
+        return new MethodDecl(new Modifiers("public"),
+                this.hostType().createLockedAccess(),
+                name, params, new List<Access>(),
+                new Opt<Block>(new Block(new ReturnStmt( ctorAccess))));
+    }
+
+	public void ASTNode.replaceTypeAccess(Access oldUsee, Access newUsee){
+      for(int i = 0; i < getNumChild(); i++)
+          getChild(i).replaceAccess(oldUsee, newUsee);
+  	}
+
+  	public void TypeAccess.replaceTypeAccess(Access oldUsee, Access newUsee){
+        if( oldUsee instanceof TypeAccess
+                && this.decl().equals(((TypeAccess)oldUsee).decl())){
+            replace(this).with(newUsee);
+        }
+    }
+  //stop propagation
+  public void ClassInstanceExpr.replaceTypeAccess(Access oldUsee, Access newUsee){ }
+
+
+  public void ASTNode.replaceMethodCall(MethodDecl oldUsee, MethodDecl newUsee){
+      for(int i = 0; i < getNumChild(); i++)
+          getChild(i).replaceMethodCall(oldUsee, newUsee);
+  } 
+
+  public void MethodDecl.replaceMethodCall(MethodDecl oldUsee, MethodDecl newUsee){
+        if(this.decl() == oldUsee){
+            replace(this).with(newUsee.createLockedAccess(this.getArgList()));
+        }
+    }
+
+  public void MethodDecl.replaceMethodCall(MethodDecl oldUsee, MethodDecl newUsee){
+        if(this.decl() == oldUsee){
+            MethodAccess ma =
+                this.accessMethod(newUsee).constructAccess(this, this.getArgList());
+            replace(this).with(ma);
+        }
+    }
+
+
+  public void ASTNode.replaceByConstructorMethodCall(MethodDecl cm){
+        for(int i = 0; i < getNumChild(); i++)
+            getChild(i).replaceByConstructorMethodCall(cm);
+    }
+
+  private ParameterDeclaration MethodDecl.factoryParameter = null;
+    ParameterDeclaration MethodDecl.getFactoryParameter(TypeDecl typeCreated){
+         if(factoryParameter == null){
+             factoryParameter = new ParameterDeclaration();
+             factoryParameter.setTypeAccess(typeCreated.createLockedAccess()); // !!!
+             factoryParameter.setID(typeCreated.name().toLowerCase() + "Ktor");
+             addParameter(factoryParameter);
+         }
+         return factoryParameter;
+    }
+
+    public void MethodDecl.replaceByConstructorMethodCall(MethodDecl cm){
+        super.replaceByConstructorMethodCall(cm);
+        factoryParameter = null;
+    }
+
+  public void ClassInstanceExpr.replaceByConstructorMethodCall(MethodDecl cm){
+        if( !(this.hostBodyDecl() instanceof MethodDecl))
+            throw new Error("replaceByConstructorMethodCall, this.hostBodyDecl is " +
+                    this.hostBodyDecl().getClass() + "does not know what to do !!");
+
+        MethodDecl enclosingMethod = (MethodDecl)this.hostBodyDecl();
+
+        //TODO make code ok for generic type !
+        TypeDecl typeCreated = ((TypeAccess)this.getAccess()).decl();
+
+        Collection<ConstructorDecl> ctors = typeCreated.constructors();
+        ConstructorDecl noArgsCtor = null;
+        for(ConstructorDecl ctor : ctors){
+            if(ctor.getParameterList().getNumChild() == 0)
+                noArgsCtor= ctor;
+        }
+        if(noArgsCtor == null)
+            throw new Error("no parameterless constructor for class " + typeCreated.fullName());
+
+        ParameterDeclaration factoryParameter =
+                enclosingMethod.getFactoryParameter(typeCreated);
+
+        replace(this).with(new Dot(factoryParameter.createLockedAccess(),
+                cm.createLockedAccess(this.getArgs())));
+
+        for(MethodAccess methodUse : enclosingMethod.uses()){
+            methodUse.addArg(new ClassInstanceExpr(typeCreated.createLockedAccess(),  new List<Expr>()));
+        }
+
+    }
+
+}
