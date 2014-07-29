@@ -50,9 +50,6 @@ object JavaNode extends DotHelper[JavaNodeKind] with AGNodeBuilder[JavaNodeKind]
                      id: Int, name : String,
                      kind : JavaNodeKind) : AGNode[JavaNodeKind] = new JavaNode(g, id, name, kind)
 
-  /*
-    using the Prolog constraint convention as key eases the node finding when parsing constraints
-   */
   override def makeKey(fullName: String, localName:String,
                        kind: JavaNodeKind) :String = fullName
 
@@ -69,11 +66,6 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
 
     def noNameClash(l : Int)(c: AGNode[JavaNodeKind]) : Boolean = c.kind match {
 
-      /*case ck @ Method() =>
-        c.name != n.name || ck.`type`.input.length != l
-      case ck @ AbstractMethod() =>
-        c.name != n.name || ck.`type`.input.length != l
-*/
       case ck @(Method() | AbstractMethod()) =>
         c.name != n.name || {
 
@@ -165,8 +157,8 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
           child.kind match {
             case ck @ (Method() | AbstractMethod()) =>
               val t = ck.asInstanceOf[HasType[MethodType]].`type`
-              abs.content_+=(child.createNodeAbstraction(abstractMethod(t),
-                SupertypeAbstraction()))
+              abs.content += child.createNodeAbstraction(abstractMethod(t),
+                SupertypeAbstraction())
             case _ => ()
           }
         }

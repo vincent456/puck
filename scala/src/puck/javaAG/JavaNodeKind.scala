@@ -14,6 +14,7 @@ abstract class JavaNodeKind extends NodeKind[JavaNodeKind]{
   }
 }
 case class JavaRoot() extends JavaNodeKind with AGRoot[JavaNodeKind]{
+  override val toString = "JavaRoot"
   def create() = JavaRoot()
   var program : AST.Program = _
 }
@@ -61,6 +62,7 @@ object JavaNodeKind {
 }
 
 case class Package() extends JavaNodeKind {
+  override val toString = "Package"
 
   def create() = Package()
   override def createDecl(n : AGNode[JavaNodeKind]){}
@@ -88,6 +90,8 @@ abstract class TypeKind extends JavaNodeKind {
 
 case class Interface private[javaAG]() extends TypeKind { //unused in LJ
 
+  override val toString = "Interface"
+
   def create() = Interface()
 
   override def createDecl( n : AGNode[JavaNodeKind]){
@@ -97,6 +101,52 @@ case class Interface private[javaAG]() extends TypeKind { //unused in LJ
       decl.setID(n.name)
       addDeclToProgram(n, decl)
     }
+  }
+
+  def useSuperTypeWherePossible( n : AGNode[JavaNodeKind], implementor : AGNode[JavaNodeKind]){
+    assert(n.kind eq this)
+
+    n.content foreach { absMethod =>
+      absMethod.kind match {
+        case absMethKind @ AbstractMethod() =>
+          implementor.content find { c =>
+            c.kind match {
+              case implKind @ Method() =>
+                absMethKind.`type` == implKind.`type`
+              case _ => false
+            }
+          } match {
+            case None => throw new AGError("Interface has a method not implemented") //what if implementor is an abstract class ?
+            case Some(impl) =>
+              val newOutput =
+                if (absMethKind.`type`.output.n == implementor ) new JavaType(n)
+                else absMethKind.`type`.output
+
+              val newInput = Tuple(
+                absMethKind.`type`.input.types.map { t =>
+                  if (t.n == implementor) new JavaType(n)
+                  else t
+                })
+
+              absMethKind.`type` = new MethodType(newInput, newOutput)
+
+              impl.kind match {
+                case m @ Method() => m.`type` = absMethKind.`type`.copy()
+                case _ => assert(false)
+              }
+
+              impl.users.foreach{ user =>
+                val primUses = user.primaryUses.getOrEmpty(impl)
+                if(primUses.nonEmpty){
+                   user.redirectUses(implementor, n)
+                }
+              }
+          }
+
+        case _ => throw new AGError("interface should contains only abstract method !!!")
+      }
+    }
+
   }
 
   var decl : AST.InterfaceDecl = _
@@ -114,6 +164,8 @@ case class Interface private[javaAG]() extends TypeKind { //unused in LJ
   }
 }
 case class Class private[javaAG]() extends TypeKind {
+
+  override val toString = "Class"
 
   def create() = Class()
 
@@ -145,6 +197,8 @@ case class Class private[javaAG]() extends TypeKind {
 
 case class Constructor private[javaAG]() extends JavaNodeKind with HasType[MethodType]{
 
+  override val toString = "Constructor"
+
   def create() = constructor(`type`)
 
   var decl : AST.ConstructorDecl = _
@@ -161,6 +215,8 @@ case class Constructor private[javaAG]() extends JavaNodeKind with HasType[Metho
 }
 
 case class Field private[javaAG]() extends JavaNodeKind with HasType[JavaType]{
+
+  override val toString = "Field"
 
   def create() = field(`type`)
 
@@ -185,6 +241,8 @@ abstract class MethodKind extends JavaNodeKind with HasType[MethodType] {
 }
 
 case class Method private[javaAG]() extends MethodKind {
+
+  override val toString = "Method"
 
   def create() = method(`type`)
 
@@ -228,6 +286,8 @@ class ConstructorMethod extends Method {
 
 case class AbstractMethod private[javaAG]() extends  MethodKind {
 
+  override val toString = "AbstractMethod"
+
   def create() = abstractMethod(`type`)
 
   override def createDecl( n : AGNode[JavaNodeKind]) = {
@@ -246,6 +306,7 @@ case class AbstractMethod private[javaAG]() extends  MethodKind {
 }
 
 case class Literal private[javaAG]() extends JavaNodeKind with HasType[JavaType]{
+  override val toString = "Literal"
 
   def create() = literal(`type`)
 
@@ -256,6 +317,7 @@ case class Literal private[javaAG]() extends JavaNodeKind with HasType[JavaType]
 }
 
 case class Primitive private[javaAG] () extends TypeKind {
+  override val toString = "Primitive"
 
   def create() = Primitive()
 

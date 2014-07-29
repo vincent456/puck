@@ -46,7 +46,7 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
                 sb append p
                 val n = addPackageNode(sb.toString, p)
                 n.isMutable = mutable
-                nodeParent content_+= n
+                nodeParent.content += n
                 sb append "."
                 (sb, n)
             }
@@ -70,7 +70,7 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
       }
 
     //    try{
-    packageNode content_+= tdNode
+    packageNode.content += tdNode
     //    }catch{
     //      case e : IllegalAGOperation => ()
     //    }
@@ -93,7 +93,7 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
       if(bd == null)
         System.err.println("Method or constructor" + bodydeclName + " not found in the program ...")
       else
-        tdNode content_+= (bd buildAG this)
+        tdNode.content += (bd buildAG this)
     }
 
     nodeKind match {
@@ -118,7 +118,7 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
       /*
         this is obviously wrong: TODO FIX
       */
-      packageNode content_+= strNode
+      packageNode.content += strNode
       strNode users_+= bdNode
     }
   }

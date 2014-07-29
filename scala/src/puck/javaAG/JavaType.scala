@@ -10,6 +10,8 @@ import puck.graph._
 
 class JavaType(n : AGNode[JavaNodeKind]) extends NamedType(n){
 
+ override def copy() = new JavaType(n)
+
  def hasMethodThatCanOverride(name : String, sig : MethodType) : Boolean =
     n.content.exists{ (childThis : AGNode[JavaNodeKind]) =>
       childThis.name == name &&
@@ -46,6 +48,8 @@ class MethodType(override val input: Tuple[NamedType[JavaNodeKind]],
                  override val output: NamedType[JavaNodeKind]) extends Arrow(input, output){
      def canOverride(other : MethodType) : Boolean =
         other.input == input && output.subtypeOf(other.output)
+
+  override def copy() = new MethodType(input.copy(), output.copy())
 
   def createReturnAccess() = output.n.kind match {
     case tk : TypeKind => tk.createLockedAccess()

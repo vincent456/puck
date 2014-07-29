@@ -43,6 +43,7 @@ class UsesDependencyMap[Kind <: NodeKind[Kind]](val user : AGNode[Kind],
   def get(key : NodeType) : Option[Iterable[AGEdge[Kind]]] = content.get(key)
 
   def getOrElse(key : NodeType, default : Iterable[AGEdge[Kind]]) = content.getOrElse(key, default)
+  def getOrEmpty(key : NodeType) = content.getOrElse(key, Iterator.empty)
 
   def apply(key : NodeType) : Iterable[AGEdge[Kind]] = content(key)
 

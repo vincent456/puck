@@ -6,9 +6,17 @@ package puck.graph
 
 sealed abstract class EdgeKind
 case class Undefined() extends EdgeKind
-case class Uses() extends EdgeKind
-case class Contains() extends EdgeKind
-case class Isa() extends EdgeKind
+case class Uses() extends EdgeKind {
+  override val toString = "uses"
+}
+case class Contains() extends EdgeKind{
+  override val toString = "contains"
+
+}
+case class Isa() extends EdgeKind{
+  override val toString = "isa"
+
+}
 
 case class AGEdge[NK <: NodeKind[NK]](kind : EdgeKind,
                                       source : AGNode[NK],
@@ -30,7 +38,7 @@ case class AGEdge[NK <: NodeKind[NK]](kind : EdgeKind,
   override def hashCode : Int = source.id + target.id
 
   override def toString : String = {
-    "(" + kind+ ", " + source + ", " + target + ")"
+    kind+ "( " + source + ", " + target + ")"
   }
 
   def exists = kind match {
@@ -44,7 +52,7 @@ case class AGEdge[NK <: NodeKind[NK]](kind : EdgeKind,
     //println("creating "+ this)
     kind match {
       case Uses() => source.uses_+=(target, register)
-      case Contains() => source.content_+=(target, register)
+      case Contains() => source.content += (target, register)
       case Isa() => source.superTypes_+=(target, register)
       case Undefined() => throw new AGError("cannot create arc with undefined kind")
 
@@ -54,7 +62,7 @@ case class AGEdge[NK <: NodeKind[NK]](kind : EdgeKind,
     //println("deleting "+ this)
     kind match {
       case Uses() => source.uses_-=(target, register)
-      case Contains() => source.content_-=(target, register)
+      case Contains() => source.content -= (target, register)
       case Isa() => source.superTypes_-=(target, register)
       case Undefined() => throw new AGError("cannot delete arc with undefined kind")
 

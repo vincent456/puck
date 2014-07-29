@@ -42,7 +42,7 @@ class CareTakerSpec extends UnitSpec {
 
   it should "be able to undo the creation of a contains arc" in {
 
-    na content_+= nb
+    na.content += nb
 
     na.contains(nb) should be (true)
 
@@ -57,9 +57,9 @@ class CareTakerSpec extends UnitSpec {
     val nb = ag.addNode("b", VanillaNodeKind())
     val nc = ag.addNode("c", VanillaNodeKind())
 
-    ag.root.content_+=(na)
-    ag.root.content_+=(nb)
-    nb.content_+=(nc)
+    ag.root.content += na
+    ag.root.content += nb
+    nb.content += nc
 
     nb.users_+=(na)
     nc.users_+=(na)

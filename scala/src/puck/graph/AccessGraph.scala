@@ -63,6 +63,7 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
 
 
   def discardConstraints() {
+    nodeSets.clear()
     this.foreach(_.discardConstraints())
   }
 

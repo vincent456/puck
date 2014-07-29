@@ -28,9 +28,9 @@ class AccessGraphSpec extends UnitSpec{
     ac = ag.addNode("a.c", "c", VanillaNodeKind())
 
 
-    a0 content_+= aa
-    a0 content_+= ab
-    a0 content_+= ac
+    a0.content += aa
+    a0.content += ab
+    a0.content += ac
 
     a0 should equal (a2)
     a0 should not equal (aa)

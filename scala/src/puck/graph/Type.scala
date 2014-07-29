@@ -4,11 +4,15 @@ package puck.graph
  * Created by lorilan on 05/05/14.
  */
 abstract class Type {
+  def copy() : Type
   def subtypeOf(other : Type) : Boolean = this == other
 }
 
 case class NamedType[Kind <: NodeKind[Kind]](n : AGNode[Kind]) extends Type{
   override def toString = n.name
+
+  def copy() = NamedType(n)
+
   override def subtypeOf(other : Type) : Boolean = super.subtypeOf(other) ||
     (other match {
         //TODO fix cast
@@ -19,6 +23,8 @@ case class NamedType[Kind <: NodeKind[Kind]](n : AGNode[Kind]) extends Type{
 
 case class Tuple[T <: Type](types: List[T]) extends Type {
   override def toString = types mkString ("(", ", ", ")")
+
+  def copy() = Tuple(types.map(_.copy()))
 
   override def subtypeOf(other : Type) : Boolean = super.subtypeOf(other) ||
     (other match {
@@ -31,6 +37,9 @@ case class Tuple[T <: Type](types: List[T]) extends Type {
 
 case class Arrow(input:Type, output:Type) extends Type{
   override def toString = input + " -> " + output
+
+  def copy() = Arrow(input.copy(), output.copy())
+
 
   override def subtypeOf(other : Type) : Boolean = super.subtypeOf(other) ||
     ( other match{

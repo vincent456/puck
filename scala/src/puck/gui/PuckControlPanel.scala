@@ -23,10 +23,9 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
   val rightWidth = PuckMainPanel.width *2/3
   val height = PuckMainPanel.height * 2/3
 
-  val treeDisplayer = new ScrollPane(){
-    minimumSize = new Dimension(rightWidth/2, height)
-    preferredSize = minimumSize
-  }
+  val treeDisplayer = new GraphExplorer[JavaNodeKind](rightWidth/2, height)
+  treeDisplayer.listenTo(this)
+
 
   val nodeInfos = new ScrollPane(){
     minimumSize = new Dimension(rightWidth/2, height)
@@ -38,6 +37,8 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
 
     }
   }
+  nodeInfos.listenTo(treeDisplayer)
+
   val delayedDisplay = ArrayBuffer[Component]()
 
   def leftGlued(c : Component) : Component = {
@@ -65,7 +66,38 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
       }
     })
 
+  val progressBar  = new ProgressBar()
 
+  def loadCode( onSuccess : => Unit = println("Graph loaded") ) = Future {
+    progressBar.visible = true
+    progressBar.value = 0
+
+    val ag = filesHandler.loadGraph(new LoadingListener {
+      override def update(loading: Double): Unit =
+        progressBar.value = (loading * 100).toInt
+    })
+    progressBar.visible = false
+    publish(AccessGraphModified(ag))
+
+    delayedDisplay.foreach(_.visible = true)
+  } onComplete {
+    case Success(_) => onSuccess
+    case Failure(exc) =>
+      progressBar.visible = false
+      exc.printStackTrace()
+  }
+
+  def loadConstraints() =
+    try {
+      print("Loading constraints ...")
+      filesHandler.graph.discardConstraints()
+      filesHandler.parseConstraints()
+      println(" done:")
+      filesHandler.graph.printConstraints()
+    }
+    catch{
+      case e : Error => println("\n" + e.getMessage)
+    }
 
   leftComponent = new BoxPanel(Orientation.Vertical) {
     minimumSize = new Dimension(leftWidth, height)
@@ -86,8 +118,8 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
           f = f.getCanonicalFile
           if (!(f == filesHandler.srcDirectory)) {
             filesHandler.srcDirectory = f
-            //filesHandler.getPrologHandler.setGenDir(f)
-            //decoupleEditor.setEditedFile(filesHandler.getPrologHandler.getDecouple)
+            loadCode(loadConstraints())
+
           }
         }
         println("Application directory : ")
@@ -105,6 +137,8 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
           f = f.getCanonicalFile
           if (!(f == filesHandler.decouple)) {
             filesHandler.decouple = f
+            if(filesHandler.graph != null)
+              loadConstraints()
             //filesHandler.getPrologHandler.setGenDir(f)
           }
         }
@@ -124,36 +158,17 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
         }
     }
 
-    val progressBar  = new ProgressBar()
+
     progressBar.min = 0
     progressBar.max = 100
     progressBar.value = 0
     progressBar.labelPainted = true
     progressBar.visible = false
 
-    contents += makeButton("Load code",
+    contents += makeButton("(Re)load code + cts",
       "Load the selected source code and build the access graph"){
       () =>
-        val f: Future[Unit] = Future {
-          progressBar.visible = true
-          progressBar.value = 0
-
-          val ag = filesHandler.loadGraph(new LoadingListener {
-            override def update(loading: Double): Unit =
-              progressBar.value = (loading * 100).toInt
-          })
-          progressBar.visible = false
-          val ppController = new PackagePanelController(ag)
-          treeDisplayer.contents = Component.wrap(ppController.tree)
-          nodeInfos.listenTo(ppController)
-          delayedDisplay.foreach(_.visible = true)
-        }
-        f onComplete {
-          case Success(_) => println("Graph loaded")
-          case Failure(exc) =>
-            progressBar.visible = false
-            exc.printStackTrace()
-        }
+        loadCode(loadConstraints())
     }
     contents += progressBar
 
@@ -162,20 +177,8 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
     //val run = makeButton("Eval constraint",
     // "Launch the coupling constraint evaluation")
 
-    val loadConstraints = makeButton("Load constraints",
-      "Decorate the graph with the constraints of the selected decouple file"){
-      () =>
-        print("Loading constraints ...")
-        try {
-          filesHandler.parseConstraints()
-          println(" done:")
-          filesHandler.graph.printConstraints()
-        }
-        catch{
-          case e : Error => println("\n" + e.getMessage)
-        }
-
-    }
+    val loadConstraintsButton = makeButton("(Re)load constraints",
+      "Decorate the graph with the constraints of the selected decouple file"){ loadConstraints }
 
     def addDelayedComponent(c : Component){
       c.visible = false
@@ -183,7 +186,12 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
       delayedDisplay += c
     }
 
-    addDelayedComponent(loadConstraints)
+    addDelayedComponent(loadConstraintsButton)
+
+    val printPl = makeButton("Print prolog",
+    "Print a prolog version of the graph"){() => filesHandler.makeProlog()}
+
+    addDelayedComponent(printPl)
 
     val showConstraints = makeButton("Show constraints",
       "Show the constraints the graph has to satisfy"){
@@ -239,14 +247,14 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
         }
 
         f onComplete{
-          case Success(_) => println("Solving done")
+          case Success(_) =>
+            PuckControlPanel.this.publish(AccessGraphModified(filesHandler.graph))
+            println("Solving done")
           case Failure(exc) => println(exc.printStackTrace())
         }
     }
 
-    solve.visible = false
-    contents += solve
-    delayedDisplay += solve
+    addDelayedComponent(solve)
 
     val explore = makeButton("Explore", "search all solutions (gui decision maker unused)"){
       () =>
@@ -261,9 +269,8 @@ class PuckControlPanel(val filesHandler : FilesHandler, val out :OutputStream)
         }
     }
 
-    explore.visible = false
-    contents += explore
-    delayedDisplay += explore
+    addDelayedComponent(explore)
+
 
   }
 

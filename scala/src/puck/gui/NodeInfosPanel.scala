@@ -59,7 +59,7 @@ class NodeInfosPanel[K <: NodeKind[K]]( val filesHandler : FilesHandler,
                 case None => ()
                 case Some(sideUses) =>
                   useDetails.contents += new Label("Dominated Uses :")
-                  sideUsesOpt.foreach( e => useDetails.contents += new Label(e.toString()))
+                  sideUses.foreach(e => useDetails.contents += new Label(e.toString()))
               }
 
               useDetails.revalidate()

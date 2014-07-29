@@ -65,7 +65,7 @@ aspect AccessGraphFactory {
 			AGNode<JavaNodeKind> packageNode = accessGraph.addPackage(getPackageDecl(), true);
 
 			for (TypeDecl td : getTypeDecls()){
-				packageNode.content_$plus$eq(td.buildAG(accessGraph), true);
+				packageNode.contentAdd(td.buildAG(accessGraph), true);
 			}
 			return true;
 		}
@@ -131,7 +131,7 @@ aspect AccessGraphFactory {
   	}
 
   	public AGNode<JavaNodeKind> MethodAccess.buildDominantUserAGNode(JavaAccessGraph accessGraph){
-      return decl().getTypeAccess().buildAGNode(accessGraph);
+      return decl().buildAGNode(accessGraph);
   	}
 
 	public AGNode<JavaNodeKind> MethodDecl.buildAG(JavaAccessGraph accessGraph){
@@ -205,7 +205,7 @@ aspect AccessGraphFactory {
 			//if bd is an initializer (static or not), 
 			//the corresponding AGNode is tdNode !!
 			if(bdNode!=tdNode)
-				tdNode.content_$plus$eq(bdNode, true);
+				tdNode.contentAdd(bdNode, true);
 		}
 
 		return tdNode;

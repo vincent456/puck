@@ -138,7 +138,7 @@ class ConstraintsParser[Kind <: NodeKind[Kind]](val accessGraph : AccessGraph[Ki
     }
 
   def hideScopeFromEachOther : Parser[Unit] = {
-    "hideFromEachOther(" ~> listOrIdent <~ ")." ^^ {
+    "hideScopeFromEachOther(" ~> listOrIdent <~ ")." ^^ {
       case s =>
         val owners = toDef(s)
         addScopeConstraint(owners, LiteralNodeSet(),

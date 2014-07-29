@@ -2,6 +2,7 @@ package puck.graph
 
 import puck.util.{HasChildren, BreadthFirstTreeIterator}
 
+import scala.language.implicitConversions
 import scala.collection.mutable
 import puck.graph.constraints._
 
@@ -34,6 +35,8 @@ object AGNode extends AGNodeBuilder[VanillaKind]{
       case (VanillaNodeKind(), VanillaNodeKind()) => false
       case _ => throw new AGError("do not know if impl (%s) uses abs (%s)".format(implKind, absKind))
     }
+
+
 }
 
 class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
@@ -52,10 +55,48 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
    */
   def iterator = new AGNodeIterator(this)
 
-  override def toString: String = "(" + fullName + ", " + kind + ")"
+  def distance(other : AGNode[Kind]) = {
+    println("***** distance from %s to %s".format(this.fullName, other.fullName))
+    if(this == other) 0
+    else if(this contains_*  other)
+      other.containerPath(this).length - 1
+    else if (other contains_* this)
+      this.containerPath(other).length  - 1
+    else {
+      val thisPathToRoot = this.containerPath.reverse
+      val otherPathToRoot = other.containerPath.reverse
+      println(thisPathToRoot)
+      println(otherPathToRoot)
+      thisPathToRoot.foldLeft[Option[AGNode[Kind]]](None) {
+        case (sn@Some(_), _) => sn
+        case (None, n) =>
+          if (otherPathToRoot contains n)
+            Some(n)
+          else
+            None
+
+      } match {
+        case None =>
+          Int.MaxValue
+        case Some(commonAncestor) =>
+          val count: ((Int, Boolean), AGNode[Kind]) => (Int, Boolean) = {
+            case ((i, alreadyFound), n) =>
+              if (alreadyFound || n == commonAncestor) (i, true)
+              else (i + 1, false)
+          }
+
+          (thisPathToRoot.foldLeft((0, false))(count),
+            otherPathToRoot.foldLeft((0, false))(count)) match {
+            case ((i, _), (j, _)) => i + j
+          }
+      }
+    }
+
+  }
+
+  override def toString: String = kind + "(" + fullName + ")"
 
   def nameTypeString = name + (kind match{case k : HasType[_] => " : " + k.`type`; case _ => ""})
-
 
   def fullName: String = {
 
@@ -80,32 +121,44 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
 
   def isRoot = container == this
 
-
-
   def canContain(n : NodeType) : Boolean = {
     n != this &&
       (this.kind canContain n.kind) &&
       this.isMutable
   }
 
-  private val content0 : mutable.Set[NodeType] = mutable.Set()
 
-  def content : mutable.Iterable[NodeType] = content0
+  object content {
 
-  def children = content
+    private [AGNode] val content0 : mutable.Set[NodeType] = mutable.Set()
 
-  def content_+=(n : NodeType, register : Boolean = true) {
-    n.container0 = this
-    this.content0.add(n)
-    if(register)
-      graph.transformations.addEdge(AGEdge.contains(this, n))
+    def apply() : mutable.Iterable[NodeType] = content0
+
+    implicit def iterableContent(c : AGNode.this.content.type ) : mutable.Iterable[NodeType] = content0
+
+    def contains(n : NodeType) = content0.contains(n)
+
+    def +=(n : NodeType, register : Boolean = true){
+      n.container0 = AGNode.this
+      content0.add(n)
+      if(register)
+        graph.transformations.addEdge(AGEdge.contains(AGNode.this, n))
+    }
+
+    def -=(n : NodeType, register : Boolean = true){
+      n.container0 = n
+      content0.remove(n)
+      if(register)
+        graph.transformations.removeEdge(AGEdge.contains(AGNode.this, n))
+    }
   }
-  def content_-=(n : NodeType, register : Boolean = true) {
-    n.container0 = n
-    this.content0.remove(n)
-    if(register)
-      graph.transformations.removeEdge(AGEdge.contains(this, n))
-  }
+
+  def children = content()
+
+  //java accessor
+  def contentAdd(n : NodeType, register : Boolean) = content.+=(n, register)
+
+
 
   def moveTo(newContainer : NodeType) {
     AGEdge.contains(container, this).changeSource(newContainer)
@@ -115,9 +168,7 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
     }
   }
 
-  private[graph] def isContentEmpty = content0.isEmpty
-
-  def contains(other :NodeType) = content0.contains(other)
+  def contains(other :NodeType) = content.contains(other)
 
   def contains_*(other:NodeType) : Boolean =
     other == this || !other.isRoot && this.contains_*(other.container)

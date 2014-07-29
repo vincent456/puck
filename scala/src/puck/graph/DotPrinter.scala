@@ -102,9 +102,9 @@ object DotPrinter {
       case Some(selected) =>  (source: NodeType, target: NodeType) =>
         val printed = AGEdge.uses(source, target)
         val ct = if (printed == selected) ColorThickness.selected
-        else if (selected.source.primaryUses.getOrElse(selected.target, List()).exists(_ == printed))
+        else if (selected.source.primaryUses.getOrEmpty(selected.target).exists(_ == printed))
           ColorThickness.dominant
-        else if (selected.source.sideUses.getOrElse(selected.target, List()).exists(_ == printed))
+        else if (selected.source.sideUses.getOrEmpty(selected.target).exists(_ == printed))
           ColorThickness.dominated
         else ColorThickness.regular
 
@@ -128,7 +128,7 @@ object DotPrinter {
         "label=\"" + decorate_name(n) +"\";",
         "color=black;") foreach writeln
 
-      if(n.isContentEmpty) writeln(n.id + "[label=\"\" shape=none ]")
+      if(n.content.isEmpty) writeln(n.id + "[label=\"\" shape=none ]")
       else
         n.content.foreach(printNode)
 
@@ -160,7 +160,7 @@ object DotPrinter {
 
       innerClasses foreach printClass
 
-      n.content foreach{ nc =>
+      n.content.foreach { nc =>
         nc.users.foreach(printUse(_, nc))
       }
       n.users.foreach(printUse(_, n))

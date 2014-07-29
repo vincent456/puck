@@ -6,7 +6,7 @@ import javax.swing.tree.TreePath
 import puck.graph.{NodeKind, AGNode, AccessGraph}
 import javax.swing.JTree
 
-import scala.swing.Publisher
+import scala.swing.{Component, Dimension, Publisher, ScrollPane}
 import scala.swing.event.Event
 
 /**
@@ -14,12 +14,17 @@ import scala.swing.event.Event
  */
 
 case class PuckTreeNodeClicked[Kind <: NodeKind[Kind]](node : PuckTreeNode[Kind]) extends Event
+case class AccessGraphModified[Kind <: NodeKind[Kind]](graph : AccessGraph[Kind]) extends Event
 
-class PackagePanelController[Kind <: NodeKind[Kind]](private [this] var ag : AccessGraph[Kind])
-  extends Publisher {
+class GraphExplorer[Kind <: NodeKind[Kind]](width : Int, height : Int)
+  extends ScrollPane with Publisher {
+
+  minimumSize = new Dimension(width, height)
+  preferredSize = minimumSize
+
 
   def addChildren(ptn: PuckTreeNode[Kind]){
-    ptn.agNode.content.foreach{
+    ptn.agNode.content foreach {
       (n: AGNode[Kind]) =>
         val child = new PuckTreeNode(n)
         ptn add child
@@ -27,29 +32,39 @@ class PackagePanelController[Kind <: NodeKind[Kind]](private [this] var ag : Acc
     }
   }
 
-  val root = new PuckTreeNode[Kind](ag.root)
-  addChildren(root)
+  reactions += {
+    case e : AccessGraphModified[Kind] =>
+      println("modified !!")
+      val root = new PuckTreeNode[Kind](e.graph.root)
+      addChildren(root)
 
 
-  val tree: JTree = new JTree(root)
-  tree.setCellRenderer(new PuckTreeCellRenderer(tree.getCellRenderer))
+      val tree: JTree = new JTree(root)
+      tree.setCellRenderer(new PuckTreeCellRenderer(tree.getCellRenderer))
 
-  tree.addMouseListener( new MouseAdapter {
+      tree.addMouseListener( new MouseAdapter {
 
-    override def mouseClicked(e : MouseEvent) {
-      val path : TreePath = tree.getPathForLocation(e.getX, e.getY)
+        override def mouseClicked(e : MouseEvent) {
+          val path : TreePath = tree.getPathForLocation(e.getX, e.getY)
 
-      if(path!= null){
-        path.getLastPathComponent match {
-          case node : PuckTreeNode[Kind] =>
-            publish(PuckTreeNodeClicked(node))
-            //obj.asInstanceOf[PuckTreeNode].toggleFilter()
-            tree.repaint()
-          case _ => ()
+          if(path!= null){
+            path.getLastPathComponent match {
+              case node : PuckTreeNode[Kind] =>
+                publish(PuckTreeNodeClicked(node))
+                //obj.asInstanceOf[PuckTreeNode].toggleFilter()
+                tree.repaint()
+              case _ => ()
+            }
+          }
         }
-      }
-    }
-  })
+      })
+      contents = Component.wrap(tree)
+      this.repaint()
+
+  }
+
+
+
 
   /*tree.addMouseListener(new MouseAdapter() {
 			@Override

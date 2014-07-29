@@ -111,7 +111,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
           else
             k(None)
         case Some(host) =>
-          host.content_+=(abs)
+          host.content += abs
           k(Some(abs, absPolicy))
       }
 
@@ -139,7 +139,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
             } match {
               case None =>
                 val newAbs = toBeContained.createAbstraction(absKind, absPolicy)
-                cterAbs content_+= newAbs
+                cterAbs.content += newAbs
                 k(Some(newAbs, absPolicy))
               case existingAbsAndPolicy => k(existingAbsAndPolicy)
             }
@@ -230,7 +230,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
     val oldCter = wronglyContained.container
 
     if(wronglyContained.container != wronglyContained)
-      oldCter.content_-=(wronglyContained, register = false)
+      oldCter.content -= (wronglyContained, register = false)
 
     /*
       snode is either the wrongly contained node
@@ -241,7 +241,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
         case Some(newCter) =>
           //re-attach before moving
           if(oldCter != wronglyContained)
-          oldCter content_+= (wronglyContained, register = false)
+          oldCter.content += (wronglyContained, register = false)
           wronglyContained.moveTo(newCter)
         case None =>
           graph.transformations.undo()
@@ -274,7 +274,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
           case None => moveToNewCter(None)
 
           case Some(h) =>
-            h.content_+=(newCter)
+            h.content += newCter
             moveToNewCter(Some(newCter))
         }
       case somehost => moveToNewCter(somehost)
