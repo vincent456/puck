@@ -20,7 +20,7 @@ class AGNodeSpec extends UnitSpec {
 
   it should "uses what is added in its uses" in {
     na.uses(nc) should be (false)
-    na.uses_+=(nc)
+    na.uses += nc
     na.uses(nc) should be (true)
   }
 

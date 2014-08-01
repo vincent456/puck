@@ -1,8 +1,7 @@
 package puck.graph
 
 import java.io.BufferedWriter
-
-import puck.javaAG._
+import puck.javaAG.nodeKind._
 
 /**
  * Created by lorilan on 17/06/14.

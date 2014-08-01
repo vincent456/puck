@@ -51,7 +51,7 @@ case class AGEdge[NK <: NodeKind[NK]](kind : EdgeKind,
   def create(register : Boolean = true) {
     //println("creating "+ this)
     kind match {
-      case Uses() => source.uses_+=(target, register)
+      case Uses() => source.uses += (target, register)
       case Contains() => source.content += (target, register)
       case Isa() => source.superTypes_+=(target, register)
       case Undefined() => throw new AGError("cannot create arc with undefined kind")
@@ -61,7 +61,7 @@ case class AGEdge[NK <: NodeKind[NK]](kind : EdgeKind,
   def delete(register : Boolean = true) {
     //println("deleting "+ this)
     kind match {
-      case Uses() => source.uses_-=(target, register)
+      case Uses() => source.uses -= (target, register)
       case Contains() => source.content -= (target, register)
       case Isa() => source.superTypes_-=(target, register)
       case Undefined() => throw new AGError("cannot delete arc with undefined kind")

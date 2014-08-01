@@ -37,7 +37,7 @@ package puck
 
 
 
- import scala.swing._
+/* import scala.swing._
  import javax.swing.UIManager
  import puck.gui.PuckMainPanel
 
@@ -56,23 +56,23 @@ package puck
     contents  = new PuckMainPanel(FilesHandler())
 
   }
-}
+}*/
 
 
 
-/*import java.io._
+import java.io._
 
 
 object Front{
 
   def main(args : Array[String]){
 
-    val folder = "/home/lorilan/puck_svn/distrib/examples/"
+//    val folder = "/home/lorilan/puck_svn/distrib/examples/"
 //    val example ="prototype/actors/candidate"
-    val example = "bridge/hannemann_inspired/candidate"
+   // val example = "bridge/hannemann_inspired/candidate"
 
-//    val folder = "/home/lorilan/projects/constraintsSolver/scala/test/examples/"
-//    val example = "01"
+    val folder = "/home/lorilan/projects/constraintsSolver/scala/test/examples/"
+    val example = "SuperTypeExtraction/04/"
 
     val fh = FilesHandler( folder + example)()
     //fh.decouple = "/home/lorilan/puck_svn/distrib/examples/composite/candidate/decouple_strict.pl"
@@ -86,14 +86,21 @@ object Front{
       new File(fh.graphStubFile.getCanonicalPath + "_before.png"))))
     println("done")
 
-
-
     //fh.explore(trace = true)
     fh.graph.transformations.startRegister()
     fh.solve(trace = true)
-    fh.graph.applyChangeOnProgram()
 
+    print("make png ... ")
+    fh.makePng(printSignatures = true,
+      soutput = Some(new FileOutputStream(
+      new File(fh.graphStubFile.getCanonicalPath + "_after.png"))))
+    println("done")
+
+    fh.graph.applyChangeOnProgram()
     println(fh.graph.program)
+
+
+    //println(fh.graph.program)
     //    print("make pl ... ")
     //
     //    scala.Console.withOut(new FileOutputStream(fh.srcDirectory+ "/decouple_after.pl")) {
@@ -104,4 +111,4 @@ object Front{
     //
     //    fh.accessGraph.printConstraints()
   }
-}*/
+}

@@ -1,6 +1,7 @@
 package puck.graph.constraints
 
 import puck.graph.{AccessGraph, NodeKind, AGNode}
+import puck.util.Logger
 
 
 /**

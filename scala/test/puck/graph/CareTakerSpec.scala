@@ -61,8 +61,8 @@ class CareTakerSpec extends UnitSpec {
     ag.root.content += nb
     nb.content += nc
 
-    nb.users_+=(na)
-    nc.users_+=(na)
+    nb.users += na
+    nc.users += na
 
     ag.transformations.register {
       ag.addUsesDependency(AGEdge.uses(na, nb), AGEdge.uses(na, nc))

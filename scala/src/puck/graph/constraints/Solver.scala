@@ -1,10 +1,12 @@
 package puck.graph.constraints
 
 import puck.graph._
+import puck.util.Logger
 
 trait Solver[Kind <: NodeKind[Kind]] {
 
   val graph : AccessGraph[Kind]
+  def logger : Logger = graph.logger
 
   val decisionMaker : DecisionMaker[Kind]
 
@@ -14,7 +16,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
                                          wrongUsers : List[NodeType]) = {
     val (absKind, absPolicy) = getAbsKindAndPolicy(usee)
 
-    println("redirect toward existing abstractions")
+    logger.writeln("redirect toward existing abstractions", 2)
     wrongUsers.foldLeft(List[NodeType]()) { (unsolved: List[NodeType], wu: NodeType) =>
       usee.abstractions find {
         case (node, `absPolicy`) if node.kind == absKind => !wu.interloperOf(node)
@@ -22,7 +24,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
       } match {
         case None => wu :: unsolved
         case Some((abs, _)) =>
-          println(wu + " will use abstraction " + abs)
+          logger.writeln(wu + " will use abstraction " + abs, 3)
 
           graph.transformations.startSequence()
 
@@ -32,7 +34,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
           }
           catch {
             case e :RedirectionError =>
-              println("redirection error catched !!")
+              logger.writeln("redirection error catched !!", 3)
               graph.transformations.undo()
               wu :: unsolved
           }
@@ -86,7 +88,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
                      wrongUsers : List[NodeType],
                      degree : Int = 1)
                     (k : Option[NodeType] => Unit){
-    println("\nsingle abs intro degree "+degree)
+    logger.writeln("\nsingle abs intro degree "+degree, 2)
 
     def intro (currentImpl : NodeType,
                absKind : Kind,
@@ -123,7 +125,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
                    wrongUsers : List[NodeType],
                    parentsThatCanBeCreated : Int,
                    k : Option[(NodeType, AbstractionPolicy)] => Unit){
-      println("\nhostIntro")
+      logger.writeln("\nhostIntro", 3)
       toBeContained.container.kind.abstractKinds(absPolicy).find(_.canContain(absKind)) match {
         case None => throw new AGError("container abstraction creation error")
         case Some(cterAbsKind) =>
@@ -149,7 +151,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
 
     def aux(deg : Int, currentImpl : NodeType)
            (k :Option[(NodeType, AbstractionPolicy)] => Unit) {
-      println("*** abs intro degree %d/%d ***".format(deg,degree))
+      logger.writeln("*** abs intro degree %d/%d ***".format(deg,degree), 3)
 
       val (absKind, absPolicy) = getAbsKindAndPolicy(currentImpl)
 
@@ -174,8 +176,11 @@ trait Solver[Kind <: NodeKind[Kind]] {
       case None => k(None)
       case Some((abs, absPolicy)) =>
 
-        println("redirecting wrong users !!")
+        logger.writeln("redirecting wrong users !!", 3)
         wrongUsers.foreach(_.redirectUses(impl, abs, absPolicy))
+
+        /*if(absPolicy == SupertypeAbstraction())
+          impl.kind.promoteToSuperTypeWherePossible(abs)*/
         /*if(impl.wrongUsers.nonEmpty){
           println("abs intro failure, remaing wrongusers :")
           print(impl.wrongUsers.mkString("-","\n-", "\n"))
@@ -203,8 +208,8 @@ trait Solver[Kind <: NodeKind[Kind]] {
   }
 
   def solveUsesToward(impl : NodeType, k : () => Unit) {
-    println("###################################################")
-    println("##### Solving uses violations toward %s ######".format(impl))
+    logger.writeln("###################################################")
+    logger.writeln("##### Solving uses violations toward %s ######".format(impl))
     val wrongUsers = redirectTowardExistingAbstractions(impl, impl.wrongUsers)
 
     if (wrongUsers.nonEmpty){
@@ -225,6 +230,9 @@ trait Solver[Kind <: NodeKind[Kind]] {
 
   var newCterNumGen = 0
   def solveContains(wronglyContained : NodeType, k : () => Unit) {
+    logger.writeln("###################################################")
+    logger.writeln("##### Solving contains violations toward %s ######".format(wronglyContained))
+
     graph.transformations.startSequence()
     // detach for host searching : do not want to consider parent constraints
     val oldCter = wronglyContained.container
@@ -282,8 +290,6 @@ trait Solver[Kind <: NodeKind[Kind]] {
   }
 
   def solveViolationsToward(target : NodeType) (k: () => Unit){
-    println("solving violation toward "+ target)
-
     def end() =
       if(target.wrongUsers.nonEmpty)
         solveUsesToward(target, k)

@@ -1,11 +1,10 @@
 package puck.gui
 
 import puck.graph.constraints._
-import puck.graph.{NodeKind, AccessGraph, AGNode}
-import puck.javaAG.{JavaDefaultDecisionMaker, JavaNodeKind, JavaAccessGraph}
+import puck.javaAG.nodeKind.JavaNodeKind
+import puck.javaAG.{JavaDefaultDecisionMaker, JavaAccessGraph}
 import puck.gui.decisionsFrames.{NodeChooser, ConstraintExceptionFrame, AbstractionKindAndPolicyChooser}
-import scala.concurrent.{Await}
-import scala.concurrent.duration.Duration
+import puck.util.NoopLogger
 
 /**
  * Created by lorilan on 04/06/14.

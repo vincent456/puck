@@ -2,6 +2,7 @@ package puck.javaAG
 
 import puck.graph.constraints.{CSInitialSearchState, ConstraintSolvingChoices, ConstraintSolvingSearchEngine}
 import puck.graph.{AGNode, AccessGraph}
+import puck.javaAG.nodeKind._
 import puck.search.SearchState
 import puck.util.Logger
 

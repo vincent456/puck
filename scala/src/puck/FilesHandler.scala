@@ -4,7 +4,8 @@ import java.io._
 
 import puck.graph._
 import puck.javaAG._
-import puck.util.{FileLogger, Logger}
+import puck.javaAG.nodeKind.JavaNodeKind
+import puck.util.{SystemLogger, FileLogger, Logger}
 import scala.sys.process.Process
 import puck.graph.constraints.{DefaultDecisionMaker, DecisionMaker, ConstraintsParser}
 import java.util.NoSuchElementException
@@ -66,28 +67,30 @@ class FilesHandler private (private [this] var srcDir : File,
     }
   }
 
-  def makeDot(printId : Boolean = false, selectedUse : Option[AGEdge[JavaNodeKind]]){
+  def makeDot(printId : Boolean, printSignatures : Boolean, useOption : Option[AGEdge[JavaNodeKind]]){
     DotPrinter.print(new BufferedWriter(new FileWriter(graphStubFile.getCanonicalPath+".dot")),
-      ag, JavaNode, printId, searchRoots = false, selectedUse)
+      ag, JavaNode, printId, printSignatures, searchRoots = false, selectedUse = useOption)
   }
 
   def makeProlog(){
     PrologPrinter.print(new BufferedWriter(new FileWriter(graphStubFile.getCanonicalPath+".pl")), ag)
   }
 
-
   def solve (trace : Boolean = false,
              decisionMaker : DecisionMaker[JavaNodeKind] = new JavaDefaultDecisionMaker(graph)){
 
+    graph.logger = new SystemLogger()
+    graph.logger. verboseLevel = 10
     var inc = 0
 
     new JavaSolver(graph, decisionMaker).solve(
       if(trace) {() =>
-        println("*****************************************************")
-        println("*********** solve end of iteration %d *************".format(inc))
-        println()
-        makePng(soutput = Some(new FileOutputStream(
-          new File(graphStubFile.getCanonicalPath + "_trace" + inc +".png"))))
+        graph.logger.writeln("*****************************************************")
+        graph.logger.writeln("*********** solve end of iteration %d *************".format(inc))
+        graph.logger.writeln()
+        makePng(printSignatures = true,
+          soutput = Some(new FileOutputStream(
+            new File(graphStubFile.getCanonicalPath + "_trace" + inc +".png"))))
         inc += 1
       }
       else
@@ -98,6 +101,7 @@ class FilesHandler private (private [this] var srcDir : File,
 
 
   val logger : Logger = new FileLogger(logFile0)
+  logger.verboseLevel = 10
 
   def explore (trace : Boolean = false){
 
@@ -108,11 +112,11 @@ class FilesHandler private (private [this] var srcDir : File,
         val f = new File("%s_traces%c%s".format(graphStubFile.getCanonicalPath,
           File.separatorChar, state.uuid(File.separator, "_", ".png")))
 
-        println("*****************************************************")
-        println("*********** solve end of iteration %d *****************".format(state.depth))
-        println("***********  %s ***************".format(f.getAbsolutePath))
+        logger.writeln("*****************************************************")
+        logger.writeln("*********** solve end of iteration %d *****************".format(state.depth))
+        logger.writeln("***********  %s ***************".format(f.getAbsolutePath))
 
-        println()
+        logger.writeln()
 
         f.getParentFile.mkdirs()
         makePng(soutput = Some(new FileOutputStream(f)))
@@ -120,23 +124,23 @@ class FilesHandler private (private [this] var srcDir : File,
       else
         _ => ()
     )
-    logger.log{
 
-      time {
-        engine.explore()
-      }
 
-      var i = 0
-      val d = new File("%s_results".format(graphStubFile.getCanonicalPath))
-      d.mkdir()
-      engine.finalStates.foreach { s =>
-        s.internal.recording()
-        makePng(soutput = Some(new FileOutputStream(
-          new File("%s_results%c%04d.png".format(graphStubFile.getCanonicalPath,
-            File.separatorChar, i)))))
-        i += 1
-      }
+    time(logger) {
+      engine.explore()
     }
+
+    var i = 0
+    val d = new File("%s_results".format(graphStubFile.getCanonicalPath))
+    d.mkdir()
+    engine.finalStates.foreach { s =>
+      s.internal.recording()
+      makePng(soutput = Some(new FileOutputStream(
+        new File("%s_results%c%04d.png".format(graphStubFile.getCanonicalPath,
+          File.separatorChar, i)))))
+      i += 1
+    }
+
   }
 
 
@@ -155,9 +159,10 @@ class FilesHandler private (private [this] var srcDir : File,
   }
 
   def makePng(printId : Boolean = false,
+              printSignatures : Boolean = false,
               soutput : Option[OutputStream] = None,
               selectedUse : Option[AGEdge[JavaNodeKind]] = None) : Int = {
-    makeDot(printId, selectedUse)
+    makeDot(printId, printSignatures, selectedUse)
     dot2png(soutput)
   }
 

@@ -1,6 +1,7 @@
 package puck.graph
 
 import puck.graph.backTrack.{Recording, CareTakerNoop, CareTaker}
+import puck.util.{NoopLogger, Logger}
 
 import scala.language.implicitConversions
 import scala.collection.mutable
@@ -26,11 +27,13 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
   type NodeType = AGNode[Kind]
   type EdgeType = AGEdge[Kind]
 
+  var logger : Logger = new NoopLogger()
+
   def newGraph() : AccessGraph[Kind] = {
     new AccessGraph(nodeBuilder)
   }
 
-  println("Node builder : " + nodeBuilder.getClass)
+  logger.writeln("Node builder : " + nodeBuilder.getClass)
 
   val nodeSets : mutable.Map[String, NamedNodeSet[Kind]] = mutable.Map()
   val constraints : mutable.Buffer[Constraint[Kind]] = mutable.Buffer()

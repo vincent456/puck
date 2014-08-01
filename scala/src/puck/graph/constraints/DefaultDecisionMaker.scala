@@ -8,7 +8,6 @@ import puck.graph.{AGNode, AccessGraph, NodeKind}
  */
 abstract class DefaultDecisionMaker[Kind <: NodeKind[Kind]](val graph : AccessGraph[Kind]) extends DecisionMaker[Kind]{
 
-
   override def toString = "Default Strategy"
 
   val violationsKindPriority : List[Kind]
@@ -38,9 +37,9 @@ abstract class DefaultDecisionMaker[Kind <: NodeKind[Kind]](val graph : AccessGr
   def chooseNode(context : => String,
                  predicate : NodeType => Boolean,
                  k : Option[NodeType] => Unit) : Unit = {
-    println(context)
+    graph.logger.writeln(context,3)
     val found = graph.iterator.find(predicate)
-    println("found : " + found)
+    graph.logger.writeln("found : " + found, 3)
     k(found)
   }
 

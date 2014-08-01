@@ -1,8 +1,8 @@
 package puck.graph
 
 import puck.FilesHandler
+import puck.javaAG.nodeKind.{Primitive, JavaNodeKind}
 import scala.collection.mutable.Set
-import puck.javaAG.{JavaNodeKind, Primitive}
 import puck.string2file
 /**
  * Created by lorilan on 15/05/14.

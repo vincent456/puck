@@ -1,7 +1,8 @@
 package puck.javaAG
 
 import puck.graph._
-import puck.graph.backTrack._
+import puck.javaAG.nodeKind._
+import puck.util.SystemLogger
 import scala.collection.JavaConversions.collectionAsScalaIterable
 import scala.collection.mutable.StringBuilder
 
@@ -30,7 +31,7 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
   }
 
   def addPackageNode(fullName: String, localName:String) : AGNode[JavaNodeKind] =
-    addNode(fullName, localName, puck.javaAG.JavaNodeKind.`package`)
+    addNode(fullName, localName, puck.javaAG.nodeKind.JavaNodeKind.`package`)
 
   def addPackage(p : String, mutable : Boolean): AGNode[JavaNodeKind] =
     getNode(p) match {
@@ -66,7 +67,7 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
 
     if(addUses)
       for (use <- td.uses()) {
-        tdNode.users_+=(use.buildAGNode(this))
+        tdNode.users += use.buildAGNode(this)
       }
 
     //    try{
@@ -113,13 +114,13 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
 
       val bdNode = bd buildAGNode this
       val strNode = addNode(bd.fullName()+literal, literal,
-        puck.javaAG.JavaNodeKind.literal(new JavaType(this("java.lang.String"))))
+        puck.javaAG.nodeKind.JavaNodeKind.literal(new JavaType(this("java.lang.String"))))
 
       /*
         this is obviously wrong: TODO FIX
       */
       packageNode.content += strNode
-      strNode users_+= bdNode
+      strNode.users += bdNode
     }
   }
 

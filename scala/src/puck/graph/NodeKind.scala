@@ -7,11 +7,17 @@ import puck.graph.constraints.{AbstractionPolicy, SupertypeAbstraction, Delegati
  */
 
 trait NodeKind[K <: NodeKind[K]] {
+
+  var node : AGNode[K] = _
+
   def create() : K
   def canContain(k : K) : Boolean
   def abstractionPolicies : List[AbstractionPolicy] = List(SupertypeAbstraction(), DelegationAbstraction())
   def abstractKinds(p : AbstractionPolicy) : List[K]
   val canBeRootContent = false
+
+ /* def promoteToSuperTypeWherePossible(superType : AGNode[K]){}*/
+  def redirectUses(oldUsee : AGNode[K], newUsee : AGNode[K]) {}   //TODO (?) move in HasType
 
 }
 
@@ -49,6 +55,6 @@ case class VanillaRoot() extends VanillaKind with AGRoot[VanillaKind]{
 }
 
 
-trait HasType[T<:Type] {
+trait HasType[T <: Type] {
   var `type` : T = _
 }

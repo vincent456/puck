@@ -1,6 +1,7 @@
 package puck.gui
 
-import puck.javaAG.{JavaNodeKind, JavaNode, JavaDefaultDecisionMaker}
+import puck.javaAG.nodeKind.JavaNodeKind
+import puck.javaAG.{JavaNode, JavaDefaultDecisionMaker}
 
 import scala.concurrent.Future
 

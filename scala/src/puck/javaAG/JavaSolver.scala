@@ -3,6 +3,8 @@ package puck.javaAG
 import puck.graph.constraints._
 import puck.graph._
 import puck.graph.constraints.SupertypeAbstraction
+import puck.javaAG.nodeKind._
+import puck.util.Logger
 
 /**
  * Created by lorilan on 28/05/14.

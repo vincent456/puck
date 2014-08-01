@@ -1,8 +1,8 @@
 package puck.javaAG
 
 import puck.graph._
-import JavaNodeKind._
 import puck.graph.constraints.{RedirectionPolicy, AbstractionPolicy, SupertypeAbstraction}
+import puck.javaAG.nodeKind._
 
 
 /**
@@ -153,31 +153,68 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
 
         val abs = super.createAbstraction(Interface(), SupertypeAbstraction())
 
-        content.foreach { (child: AGNode[JavaNodeKind]) =>
+        content.foreach { child =>
           child.kind match {
-            case ck @ (Method() | AbstractMethod()) =>
-              val t = ck.asInstanceOf[HasType[MethodType]].`type`
-              abs.content += child.createNodeAbstraction(abstractMethod(t),
+            case ck @ Method() =>
+
+              val absChild = child.createAbstraction(JavaNodeKind.abstractMethod(ck.`type`),
                 SupertypeAbstraction())
+              abs.content += absChild
+
+              val absChildKind = absChild.kind.asInstanceOf[HasType[MethodType]]
+              absChildKind.`type` = absChildKind.`type` copyWith this replacedBy abs
+
+            case AbstractMethod() => throw new AGError("unhandled case !")
             case _ => ()
           }
         }
         this.superTypes_+=(abs)
+
+        content.foreach { child =>
+          child.kind match {
+            // even fields can need to be promoted if they are written
+            //case Field() =>
+            case AbstractMethod() => throw new AGError("unhandled case !")
+            case ck @ Method() =>
+              val tcopy = ck.`type` copyWith this replacedBy abs
+              ck.`type` = new MethodType(tcopy.input, ck.`type`.output)
+
+              //we will do a second pass to see if the loss of information
+              // in the output is really necessary
+
+              /*content.foreach { sibling =>
+                if(child != sibling){
+                  if(child uses sibling &&
+                    child.primaryUses.getOrEmpty(sibling).nonEmpty){
+                    val siblingAbs = sibling.abstractions.find{
+                      case (n, SupertypeAbstraction()) => abs.contains(n)
+                      case _ => false
+                    } match {
+                      case Some(s) => s
+                      case None => assert(false)
+                    }
+                    child.redirectUses(sibling, siblingAbs)
+                  }
+
+
+                }
+              }*/
+
+              if(child uses this) {
+                graph.logger.writeln("interface creation : redirecting %s target to %s".format(AGEdge.uses(child, this), abs), 3)
+                child.redirectUses(this, abs, SupertypeAbstraction())
+              }
+            case _ => ()
+
+          }
+        }
+
         abs
 
       case (AbstractMethod(), SupertypeAbstraction()) =>
         //no (abs, impl) or (impl, abs) uses
         createNodeAbstraction(abskind, policy)
-      /*val interface =
-        container.createAbstraction(Interface(), SupertypeAbstraction())
-      this.abstractions.find{
-        case (n , SupertypeAbstraction()) =>
-           n.container == interface
-        case _ => false
-      } match {
-        case Some((abs, _)) => abs
-        case None => throw new AGError("Error while creating abstract method !")
-      } */
+
       case _ =>
         val abs = super.createAbstraction(abskind, policy)
         this.kind match {
@@ -220,18 +257,16 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
   }
 
   override def redirectUses(oldUsee : NodeType, newUsee : NodeType,
-                   policy : RedirectionPolicy,
-                   redirectPrimary : Boolean = true,
-                   redirectSide : Boolean = true) = {
+                            policy : RedirectionPolicy) = {
 
     (oldUsee.kind, newUsee.kind) match {
       case (Constructor(), Method())
-      | (Constructor(), AbstractMethod())=>
+           | (Constructor(), AbstractMethod())=>
         this.users.foreach{ AGEdge.uses(_,oldUsee).create()}
       case _ => ()
     }
 
-    super.redirectUses(oldUsee, newUsee, policy, redirectPrimary, redirectSide)
+    super.redirectUses(oldUsee, newUsee, policy)
   }
 
 }

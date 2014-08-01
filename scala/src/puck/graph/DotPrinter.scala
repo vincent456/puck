@@ -1,9 +1,6 @@
 package puck.graph
 
 import _root_.java.io.BufferedWriter
-import puck.javaAG.JavaNodeKind
-
-import scala.None
 
 /**
  * Created by lorilan on 07/05/14.
@@ -39,7 +36,9 @@ object DotPrinter {
 
 
   def print[K <: NodeKind[K]](writer: BufferedWriter, graph : AccessGraph[K],
-                                                  helper : DotHelper[K], printId : Boolean,
+                                                  helper : DotHelper[K],
+                                                  printId : Boolean,
+                                                  printSignatures : Boolean = false,
                                                   searchRoots : Boolean = false,
                                                   selectedUse : Option[AGEdge[K]] = None){
 
@@ -140,8 +139,14 @@ object DotPrinter {
     def printClass(n:NodeType){
 
       def writeTableLine(n:NodeType){
+        val sig = if (printSignatures) n.kind match {
+         case k : HasType[_] => " : " + k.`type`.toString.replaceAllLiterally(">", "&gt;") + " "
+         case _ => ""
+        }
+        else ""
+
         writeln("<TR><TD PORT=\"" +n.id + "\" ALIGN=\"LEFT\" BORDER=\"0\">"+
-          decorate_name(n) +"</TD></TR>")
+          decorate_name(n) + sig + "</TD></TR>")
       }
 
       val (fields, ctrs, mts, innerClasses) = helper splitDotClassContent n

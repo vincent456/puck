@@ -8,15 +8,15 @@ abstract class Type {
   def subtypeOf(other : Type) : Boolean = this == other
 }
 
-case class NamedType[Kind <: NodeKind[Kind]](n : AGNode[Kind]) extends Type{
-  override def toString = n.name
+case class NamedType[Kind <: NodeKind[Kind]](node : AGNode[Kind]) extends Type{
+  override def toString = node.name
 
-  def copy() = NamedType(n)
+  def copy() = NamedType(node)
 
   override def subtypeOf(other : Type) : Boolean = super.subtypeOf(other) ||
     (other match {
         //TODO fix cast
-      case NamedType(othern) => othern.asInstanceOf[AGNode[Kind]] isSuperTypeOf n
+      case NamedType(othern) => othern.asInstanceOf[AGNode[Kind]] isSuperTypeOf node
       case _ => false
     })
 }

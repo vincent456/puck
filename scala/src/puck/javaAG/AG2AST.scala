@@ -2,6 +2,7 @@ package puck.javaAG
 
 import puck.graph._
 import puck.graph.backTrack._
+import puck.javaAG.nodeKind._
 
 /**
  * Created by lorilan on 23/07/14.
@@ -17,6 +18,7 @@ object AG2AST {
       add(e)
 
     case Transformation(Add(), TTRedirection(e, Target(newTarget))) =>
+      println("redirecting %s target to %s".format(e, newTarget))
       redirectTarget(e, newTarget)
 
     case Transformation(Add(), TTRedirection(e, Source(newSource))) =>

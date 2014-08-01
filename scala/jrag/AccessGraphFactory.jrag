@@ -1,5 +1,5 @@
 import puck.javaAG.JavaAccessGraph;
-import puck.javaAG.JavaNodeKind;
+import puck.javaAG.nodeKind.JavaNodeKind;
 import puck.graph.AGNode;
 import puck.graph.AGBuildingError;
 
@@ -86,7 +86,7 @@ aspect AccessGraphFactory {
 		//AST.List<VariableDecl> vdl = getVariableDeclList();
 		for (VariableDecl vd : getVariableDeclList()) {
 			AGNode<JavaNodeKind> vdNode = vd.buildAGNode(accessGraph);
-			vdNode.users_$plus$eq(usedNode, true); //TODO check why (?!)
+			vdNode.userAdd(usedNode, true); //TODO check why (?!)
 		}
 
 		return agNode;
@@ -98,7 +98,7 @@ aspect AccessGraphFactory {
 
 		for (Access user : uses()) {
 			AGNode<JavaNodeKind> agUser = user.hostBodyDecl().buildAGNode(accessGraph);
-			agNode.users_$plus$eq(agUser, true);
+			agNode.userAdd(agUser, true);
 		}
 
 		return agNode;
@@ -141,7 +141,7 @@ aspect AccessGraphFactory {
 
         for (Access user : uses()) {
             AGNode<JavaNodeKind> agUser = user.hostBodyDecl().buildAGNode(accessGraph);
-            agNode.users_$plus$eq(agUser, true);
+            agNode.userAdd(agUser, true);
 
             //if user.getQualifier == null
             //then the method is called from within the hosting class (implicit "this" qualifier)
@@ -164,7 +164,7 @@ aspect AccessGraphFactory {
         for (Access user : uses()) {
             AGNode<JavaNodeKind> agUser = user.hostBodyDecl().buildAGNode(accessGraph);
 
-            agNode.users_$plus$eq(agUser, true);
+            agNode.userAdd(agUser, true);
 
         //    MethodDecl.addDependantUse(accessGraph, user, agNode, hostTypeAGNode);
             accessGraph.addUsesDependency(agUser, hostTypeAGNode,
@@ -195,7 +195,7 @@ aspect AccessGraphFactory {
 			BodyDecl hostBodyDecl = use.hostBodyDecl();
             if (hostBodyDecl != null) {
                 AGNode<JavaNodeKind> userNode = hostBodyDecl.buildAGNode(accessGraph);
-                tdNode.users_$plus$eq(userNode, true);
+                tdNode.userAdd(userNode, true);
             }
 		}
 
@@ -261,7 +261,7 @@ aspect AccessGraphFactory {
 	void TypeAccess.addExtendsAndImplementsUses(JavaAccessGraph accessGraph, AGNode<JavaNodeKind> sub){
 		if(!decl().isFromStdLib()){
 			AGNode<JavaNodeKind> sn = decl().buildAGNode(accessGraph);
-			sn.users_$plus$eq(sub, true);
+			sn.userAdd(sub, true);
 		}
 	}
 
@@ -278,11 +278,11 @@ aspect AccessGraphFactory {
 	}
 
 	public JavaNodeKind ClassDecl.getAGNodeKind(){
-		return puck.javaAG.JavaNodeKind.classKind();
+		return JavaNodeKind.classKind();
 	}
 
 	public JavaNodeKind InterfaceDecl.getAGNodeKind(){
-		return puck.javaAG.JavaNodeKind.interfaceKind();
+		return JavaNodeKind.interfaceKind();
 	}
 
 	public AGNode<JavaNodeKind> ASTNode.buildAGNode(JavaAccessGraph accessGraph){
@@ -334,7 +334,7 @@ aspect AccessGraphFactory {
 	public AGNode<JavaNodeKind> FieldDeclaration.buildAGNode(JavaAccessGraph accessGraph){
 		puck.javaAG.JavaType type = new puck.javaAG.JavaType(type().buildAGNode(accessGraph));
 		AGNode<JavaNodeKind> node = accessGraph.addNode(fullName(), name(),
-				puck.javaAG.JavaNodeKind.field(type));
+				JavaNodeKind.field(type));
 
         accessGraph.registerDecl(node, this);
         return node;
@@ -359,7 +359,7 @@ aspect AccessGraphFactory {
 		AGNode agTypeNode = getTypeAccess().buildAGNode(accessGraph);
 
 		return accessGraph.addNode(fullName(), name(), 
-				puck.javaAG.JavaNodeKind.field(new puck.graph.NamedType(agTypeNode)));
+				JavaNodeKind.field(new puck.graph.NamedType(agTypeNode)));
 	}*/
 
 
@@ -378,8 +378,13 @@ aspect AccessGraphFactory {
       puck.javaAG.MethodType methodAGType = new puck.javaAG.MethodType(ASTNode.astParamsToAGType(accessGraph,this),
               new puck.graph.NamedType<JavaNodeKind>(getTypeAccess().buildAGNode(accessGraph)));
 
-      AGNode<JavaNodeKind> node = accessGraph.addNode(fullName(), name(),
-      		puck.javaAG.JavaNodeKind.method(methodAGType));
+      JavaNodeKind kind;
+        if(this.isAbstract())
+            kind = JavaNodeKind.abstractMethod(methodAGType);
+        else
+            kind = JavaNodeKind.method(methodAGType);
+
+      AGNode<JavaNodeKind> node = accessGraph.addNode(fullName(), name(), kind);
 
       accessGraph.registerDecl(node, this);
 

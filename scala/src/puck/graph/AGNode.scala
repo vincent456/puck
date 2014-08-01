@@ -46,7 +46,7 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
 
   type NodeType = AGNode[Kind]
   //extends Iterable[NodeType]{
-
+  kind.node = this
 
   /*override def hashCode: Int = (this.id + kind.hashCode()) / 41*/
 
@@ -56,7 +56,6 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
   def iterator = new AGNodeIterator(this)
 
   def distance(other : AGNode[Kind]) = {
-    println("***** distance from %s to %s".format(this.fullName, other.fullName))
     if(this == other) 0
     else if(this contains_*  other)
       other.containerPath(this).length - 1
@@ -130,7 +129,7 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
 
   object content {
 
-    private [AGNode] val content0 : mutable.Set[NodeType] = mutable.Set()
+    private val content0 : mutable.Set[NodeType] = mutable.Set()
 
     def apply() : mutable.Iterable[NodeType] = content0
 
@@ -232,26 +231,40 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
     superTypes.exists( n => n == other)
   }
 
-  //TODO think about removing uses0 & users0 and keep only the sideUses0/primaryUses0 maps
-  //private var uses0 : mutable.Set[NodeType] = mutable.Set()
-  def uses(other : NodeType) = other.isUsedBy(this)// uses0.contains(other)
-  def uses_+=(other: NodeType, register : Boolean = true) = other.users_+=(this, register)
-  def uses_-=(other: NodeType, register : Boolean = true) = other.users_-=(this, register)
-
-  private [this] val users0 : mutable.Set[NodeType] = mutable.Set()
-  def users_+=(other : NodeType, register : Boolean = true) {
-    if(users0.add(other) && register)
-      graph.transformations.addEdge(AGEdge.uses(other, this))
+  object uses {
+    private [AGNode] val uses0 = mutable.Set[NodeType]()
+    def apply() : mutable.Iterable[NodeType] = uses0
+    implicit def iterableUses(c : AGNode.this.users.type ) : mutable.Iterable[NodeType] = uses0
+    def apply(other : NodeType) = uses0.contains(other)
+    def += (usee: NodeType, register : Boolean = true) = usee.users += (AGNode.this, register)
+    def -= (usee: NodeType, register : Boolean = true) = usee.users -= (AGNode.this, register)
   }
 
-  def users_-=(user : NodeType, register : Boolean = true){
-    if(users0.remove(user) && register)
-      graph.transformations.removeEdge(AGEdge.uses(user, this))
+  object users {
+    private val users0 = mutable.Set[NodeType]()
+
+    def apply() : mutable.Iterable[NodeType] = users0
+    implicit def iterableUsers(c : AGNode.this.users.type ) : mutable.Iterable[NodeType] = users0
+    def contains(n : NodeType) = users0.contains(n)
+
+    def +=(user : NodeType, register : Boolean = true) {
+      if(users0.add(user) && register) {
+        graph.transformations.addEdge(AGEdge.uses(user, AGNode.this))
+      }
+      user.uses.uses0.add(AGNode.this)
+    }
+
+    def -=(user : NodeType, register : Boolean = true) {
+      if(users0.remove(user) && register) {
+        graph.transformations.removeEdge(AGEdge.uses(user, AGNode.this))
+      }
+      user.uses.uses0.remove(AGNode.this)
+
+    }
   }
 
-  def users: mutable.Iterable[NodeType] = users0
-
-  def isUsedBy(other : NodeType) = users0.contains(other)
+  //java accessor
+  def userAdd(n : NodeType, register : Boolean) = users.+=(n, register)
 
   /* a primary use is for example the use of a class when declaring a variable or a parameter
    a side use is in this example a call to a method with the same variable/parameter
@@ -291,19 +304,19 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
   def redirectPrimaryUses(currentSideUsee : NodeType,
                           newSideUsee : NodeType,
                           policy : RedirectionPolicy){
-    println("redirecting primary uses ... ")
+    graph.logger.writeln("redirecting primary uses ... ",3)
     primaryUses get currentSideUsee match {
       case None =>
-        println("no primary uses to redirect")
+        graph.logger.writeln("no primary uses to redirect",3)
         ()
       case Some(primary_uses) =>
-        println("uses to redirect:%s".format(primary_uses.mkString("\n", "\n","\nend of list")))
+        graph.logger.writeln("uses to redirect:%s".format(primary_uses.mkString("\n", "\n","\nend of list")),3)
 
         assert(primary_uses.nonEmpty)
 
         val primary = primary_uses.head
         if(primary_uses.tail.nonEmpty) {
-          println("redirecting side uses : (%s, %s) to (%s, %s)".format(this, currentSideUsee, this, newSideUsee))
+          println("redirecting side uses (%s, %s) target to %s".format(this, currentSideUsee, newSideUsee))
           println("primary uses are ")
           primary_uses.mkString("-", "\n-", "\n")
           throw new AGError("Do not know how to unsuscribe a side use with multiple primary uses")
@@ -311,9 +324,10 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
         else {
 
           graph.removeUsesDependency(primary, AGEdge.uses(this, currentSideUsee))
-          //val newPrimary = primary.changeTarget(findNewPrimaryUsee(primary.usee, newSideUsee, policy))
-          val newPrimary = primary.user.redirectUses(primary.usee, findNewPrimaryUsee(primary.usee, newSideUsee, policy),
-            policy, redirectPrimary = true, redirectSide = false)
+
+          val newPrimary = primary.user.redirectUses(primary.usee,
+            findNewPrimaryUsee(primary.usee, newSideUsee, policy),  policy)
+
           graph.addUsesDependency(newPrimary, AGEdge.uses(this, newSideUsee))
 
         }
@@ -323,13 +337,13 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
   def redirectSideUses(currentPrimaryUsee: NodeType,
                        newPrimaryUsee : NodeType,
                        policy : RedirectionPolicy){
-    println("redirecting side uses ... ")
+    graph.logger.writeln("redirecting side uses ... ", 3)
     sideUses get currentPrimaryUsee match {
       case None =>
-        println("no side uses to redirect")
+        graph.logger.writeln("no side uses to redirect", 3)
         ()
       case Some( sides_uses ) =>
-        println("uses to redirect:%s".format(sides_uses.mkString("\n", "\n","\nend of list")))
+        graph.logger.writeln("uses to redirect:%s".format(sides_uses.mkString("\n", "\n","\nend of list")),3)
 
         sides_uses foreach {
           side =>
@@ -338,17 +352,16 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
               case _ => false
             } match {
               case None =>
-                throw new RedirectionError(("While redirecting primary uses (%s, %s) to (%s, %s)\n" +
+                throw new RedirectionError(("While redirecting primary uses (%s, %s) target to %s\n" +
                   "no satisfying abstraction to redirect side use %s").
-                  format( this, currentPrimaryUsee, this, newPrimaryUsee, side))
+                  format( this, currentPrimaryUsee, newPrimaryUsee, side))
 
               case Some( (new_side_usee, _) ) =>
 
                 graph.removeUsesDependency(AGEdge.uses(this, currentPrimaryUsee), side)
-                //val newSide = side.changeTarget(new_side_usee)
-                val newSide = side.user.redirectUses(side.usee, new_side_usee, policy,
-                  redirectPrimary = false,
-                  redirectSide = true)
+
+                val newSide = side.user.redirectUses(side.usee, new_side_usee, policy)
+
                 graph.addUsesDependency(AGEdge.uses(this, newPrimaryUsee), newSide)
 
             }
@@ -357,19 +370,39 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
   }
 
   def redirectUses(oldUsee : NodeType, newUsee : NodeType,
-                   policy : RedirectionPolicy,
-                   redirectPrimary : Boolean = true,
-                   redirectSide : Boolean = true) = {
+                   policy : RedirectionPolicy) = {
+    if(oldUsee == newUsee)
+      AGEdge.uses(this, oldUsee)
 
-    println("redirecting uses %s --> %s to\n%s (%s)".format(this, oldUsee, newUsee, policy))
-    val newUses = AGEdge.uses(this, oldUsee).changeTarget(newUsee)
+    else if(this uses oldUsee) {
 
-    if(redirectPrimary)
+      graph.logger.writeln("redirecting %s target to\n%s (%s)".format(AGEdge.uses(this, oldUsee), newUsee, policy), 3)
+      val newUses = AGEdge.uses(this, oldUsee).changeTarget(newUsee)
+
+      this.kind.redirectUses(oldUsee, newUsee)
+
       redirectPrimaryUses(oldUsee, newUsee, policy)
-    if(redirectSide)
       redirectSideUses(oldUsee, newUsee, policy)
 
-    newUses
+      newUses
+    }
+    else if (this uses newUsee) {
+      //if m uses  both A and A.mi, the first uses dominate the second
+      //if both are identified as violations and are in a wrongusers list
+      //redirecting the one will redirect the other
+      // when iterating on the wrongusers, the next call to redirectuses will arrive here
+      graph.logger.writeln("redirecting uses %s --> %s to\n%s (%s) : FAILURE !! %s is not used".format(this, oldUsee, newUsee, policy, oldUsee))
+      AGEdge.uses(this, newUsee)
+    }
+    else {
+      if(oldUsee.users.contains(this) || newUsee.users.contains(this))
+        throw new AGError("incoherent state !!!!!!!!!!!!")
+
+      throw new AGError(("redirecting uses %s --> %s to\n%s (%s)\n" +
+        "!!! nor the oldUsee or the newUsee is really used !!! ").format(this, oldUsee, newUsee, policy))
+    }
+
+
   }
 
 
@@ -494,8 +527,8 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
   def createAbstraction(abskind : Kind , policy : AbstractionPolicy) : NodeType = {
     val abs = createNodeAbstraction(abskind, policy)
     policy match {
-      case SupertypeAbstraction() =>  abs users_+= this
-      case DelegationAbstraction() => this users_+= abs
+      case SupertypeAbstraction() =>  abs.users += this
+      case DelegationAbstraction() => this.users += abs
     }
     abs
   }

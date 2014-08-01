@@ -67,32 +67,9 @@ aspect TransformationApplying {
             getChild(i).replaceByConstructorMethodCall(cm);
     }
 
-  private ParameterDeclaration MethodDecl.factoryParameter = null;
-    ParameterDeclaration MethodDecl.getFactoryParameter(TypeDecl typeCreated){
-         if(factoryParameter == null){
-             factoryParameter = new ParameterDeclaration();
-             factoryParameter.setTypeAccess(typeCreated.createLockedAccess()); // !!!
-             factoryParameter.setID(typeCreated.name().toLowerCase() + "Ktor");
-             addParameter(factoryParameter);
-         }
-         return factoryParameter;
-    }
-
-    public void MethodDecl.replaceByConstructorMethodCall(MethodDecl cm){
-        super.replaceByConstructorMethodCall(cm);
-        factoryParameter = null;
-    }
-
-  public void ClassInstanceExpr.replaceByConstructorMethodCall(MethodDecl cm){
-        if( !(this.hostBodyDecl() instanceof MethodDecl))
-            throw new Error("replaceByConstructorMethodCall, this.hostBodyDecl is " +
-                    this.hostBodyDecl().getClass() + "does not know what to do !!");
-
-        MethodDecl enclosingMethod = (MethodDecl)this.hostBodyDecl();
-
+  private int MethodDecl.uidSeed = 0;
+  public ParameterDeclaration MethodDecl.introduceParameter(TypeDecl typeCreated, String suffix){
         //TODO make code ok for generic type !
-        TypeDecl typeCreated = ((TypeAccess)this.getAccess()).decl();
-
         Collection<ConstructorDecl> ctors = typeCreated.constructors();
         ConstructorDecl noArgsCtor = null;
         for(ConstructorDecl ctor : ctors){
@@ -102,15 +79,31 @@ aspect TransformationApplying {
         if(noArgsCtor == null)
             throw new Error("no parameterless constructor for class " + typeCreated.fullName());
 
+        ParameterDeclaration newParameter =
+                new ParameterDeclaration(new Modifiers(),
+                        typeCreated.createLockedAccess(),
+                        typeCreated.name().toLowerCase() + suffix + uidSeed);
+        uidSeed ++;
+
+        addParameter(newParameter);
+
+        for(MethodAccess methodUse : uses())
+            methodUse.addArg(new ClassInstanceExpr(typeCreated.createLockedAccess(),  new List<Expr>()));
+            return newParameter;
+    }
+  
+  public void ClassInstanceExpr.replaceByConstructorMethodCall(MethodDecl cm){
+        if( !(this.hostBodyDecl() instanceof MethodDecl))
+            throw new Error("replaceByConstructorMethodCall, this.hostBodyDecl is " +
+                    this.hostBodyDecl().getClass() + "does not know what to do !!");
+
+        MethodDecl enclosingMethod = (MethodDecl)this.hostBodyDecl();
+
         ParameterDeclaration factoryParameter =
-                enclosingMethod.getFactoryParameter(typeCreated);
+                enclosingMethod.introduceParameter(((TypeAccess)this.getAccess()).decl(), "Ktor");
 
         replace(this).with(new Dot(factoryParameter.createLockedAccess(),
-                cm.createLockedAccess(this.getArgs())));
-
-        for(MethodAccess methodUse : enclosingMethod.uses()){
-            methodUse.addArg(new ClassInstanceExpr(typeCreated.createLockedAccess(),  new List<Expr>()));
-        }
+                cm.createBoundAccess(this.getArgs())));
 
     }
 

@@ -7,38 +7,51 @@ import java.io.{FileWriter, BufferedWriter, File}
  */
 
 trait Logger{
-  def writeln(msg : String) : Unit
-  def write(msg : String) : Unit
-  def log[T](op : => T) : T
+  var verboseLevel = 0
+
+  def writeln(msg : => String, verboseLevelRequiredToDisplay : Int) : Unit
+  def write(msg : => String, verboseLevelRequiredToDisplay : Int) : Unit
+
+  def writeln(msg : => String = "" ){writeln(msg, 1)}
+  def write(msg : => String) {write(msg, 1)}
+
 }
 
 class NoopLogger extends Logger {
-  def writeln(msg : String){}
-  def write(msg : String){}
+  def writeln(msg : => String, v : Int){}
+  def write(msg : => String, v : Int){}
 
-  def log[T](op : => T) : T = op
 }
 
 class FileLogger(val f : File) extends Logger{
-  private [this] var writter : BufferedWriter = _
+  private [this] val writter : BufferedWriter =  new BufferedWriter(new FileWriter(f))
 
-  def writeln(msg : String){
-    writter.write(msg)
-    writter.newLine()
+  def writeln(msg : => String, verboseLevelRequiredToDisplay : Int){
+    if(verboseLevel >= verboseLevelRequiredToDisplay) {
+      writter.write(msg)
+      writter.newLine()
+      writter.flush()
+    }
   }
-  def write(msg : String){
-    writter.write(msg)
-  }
-
-  def log[T](op : => T) : T = {
-    writter = new BufferedWriter(new FileWriter(f))
-
-    val res = op
-
-    writter.close()
-
-    res
+  def write(msg : => String, verboseLevelRequiredToDisplay : Int){
+    if(verboseLevel >= verboseLevelRequiredToDisplay) {
+      writter.write(msg)
+      writter.flush()
+    }
   }
 }
 
 
+class SystemLogger() extends Logger{
+
+  def writeln(msg : => String, verboseLevelRequiredToDisplay : Int){
+    if(verboseLevel >= verboseLevelRequiredToDisplay) {
+      println(msg)
+    }
+  }
+  def write(msg : => String, verboseLevelRequiredToDisplay : Int){
+    if(verboseLevel >= verboseLevelRequiredToDisplay) {
+      print(msg)
+    }
+  }
+}

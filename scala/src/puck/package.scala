@@ -1,5 +1,7 @@
 import java.io._
 import java.util.regex.{Matcher, Pattern}
+import puck.util.Logger
+
 import scala.language.implicitConversions
 /**
  * Created by lorilan on 08/05/14.
@@ -8,11 +10,11 @@ package object puck {
 
   implicit def string2file(filePath : String) = new File(filePath)
 
-  def time[A](a: => A) = {
+  def time[A](logger : Logger)(a: => A) = {
     val now = System.nanoTime
     val result = a
     val micros = (System.nanoTime - now) / 1000
-    println("%d microseconds".format(micros))
+    logger.writeln("%d microseconds".format(micros))
     result
   }
 
