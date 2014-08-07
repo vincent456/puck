@@ -7,7 +7,8 @@ import puck.javaAG.MethodType
 /**
  * Created by lorilan on 31/07/14.
  */
-case class Constructor private[javaAG]() extends JavaNodeKind with HasType[MethodType]{
+
+case class Constructor private[javaAG]() extends JavaNodeKind with HasType[JavaNodeKind, MethodType.T]{
 
   override val toString = "Constructor"
 

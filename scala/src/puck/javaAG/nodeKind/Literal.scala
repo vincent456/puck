@@ -1,13 +1,13 @@
 package puck.javaAG.nodeKind
 
-import puck.graph.HasType
+import puck.graph.{NamedType, HasType}
 import puck.graph.constraints.{AbstractionPolicy, DelegationAbstraction}
-import puck.javaAG.JavaType
+import puck.javaAG.JavaNamedType
 
 /**
  * Created by lorilan on 31/07/14.
  */
-case class Literal private[javaAG]() extends JavaNodeKind with HasType[JavaType]{
+case class Literal private[javaAG]() extends JavaNodeKind with HasType[JavaNodeKind, NamedType[JavaNodeKind]]{
   override val toString = "Literal"
 
   def create() = JavaNodeKind.literal(`type`)

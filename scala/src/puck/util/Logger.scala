@@ -23,20 +23,21 @@ class NoopLogger extends Logger {
 
 }
 
-class FileLogger(val f : File) extends Logger{
-  private [this] val writter : BufferedWriter =  new BufferedWriter(new FileWriter(f))
+class FileLogger(f : File) extends Logger{
+
+  private [this] val writer : BufferedWriter =  new BufferedWriter(new FileWriter(f))
 
   def writeln(msg : => String, verboseLevelRequiredToDisplay : Int){
     if(verboseLevel >= verboseLevelRequiredToDisplay) {
-      writter.write(msg)
-      writter.newLine()
-      writter.flush()
+      writer.write(msg)
+      writer.newLine()
+      writer.flush()
     }
   }
   def write(msg : => String, verboseLevelRequiredToDisplay : Int){
     if(verboseLevel >= verboseLevelRequiredToDisplay) {
-      writter.write(msg)
-      writter.flush()
+      writer.write(msg)
+      writer.flush()
     }
   }
 }

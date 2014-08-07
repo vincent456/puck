@@ -23,11 +23,14 @@ case class Dominated() extends DependencyStatus {
 }
 
 class UsesDependencyMap[Kind <: NodeKind[Kind]](val user : AGNode[Kind],
-                        val keyType : DependencyStatus) {
+                        val keyType : DependencyStatus) extends Iterable[(AGNode[Kind],  Iterable[AGEdge[Kind]])]{
   type NodeType = AGNode[Kind]
   private [this] val content : mutable.Map[NodeType, mutable.Set[AGEdge[Kind]]] = mutable.Map()
 
-  override def toString : String = {
+  def iterator = content.iterator
+
+
+  override def toString() : String = {
     val contentType = keyType.other.contentString
     content.map{
       case (key, values) =>
@@ -66,6 +69,4 @@ class UsesDependencyMap[Kind <: NodeKind[Kind]](val user : AGNode[Kind],
       content.remove(usee)
 
   }
-
-  def isEmpty = content.isEmpty
 }

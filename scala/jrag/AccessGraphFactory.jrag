@@ -376,7 +376,7 @@ aspect AccessGraphFactory {
 	public AGNode<JavaNodeKind> MethodDecl.buildAGNode(JavaAccessGraph accessGraph){
 		
       puck.javaAG.MethodType methodAGType = new puck.javaAG.MethodType(ASTNode.astParamsToAGType(accessGraph,this),
-              new puck.graph.NamedType<JavaNodeKind>(getTypeAccess().buildAGNode(accessGraph)));
+              new puck.javaAG.JavaNamedType(getTypeAccess().buildAGNode(accessGraph)));
 
       JavaNodeKind kind;
         if(this.isAbstract())
@@ -394,7 +394,7 @@ aspect AccessGraphFactory {
 	public AGNode<JavaNodeKind> ConstructorDecl.buildAGNode(JavaAccessGraph accessGraph){
 		
       puck.javaAG.MethodType constructorAGType = new puck.javaAG.MethodType(ASTNode.astParamsToAGType(accessGraph,this),
-              new puck.graph.NamedType<JavaNodeKind>(hostType().buildAGNode(accessGraph)));
+              new puck.javaAG.JavaNamedType(hostType().buildAGNode(accessGraph)));
 
       AGNode<JavaNodeKind> node = accessGraph.addNode(fullName(), name(),
       			puck.javaAG.JavaNodeKind.constructor(constructorAGType));

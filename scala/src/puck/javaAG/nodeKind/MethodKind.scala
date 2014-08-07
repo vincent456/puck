@@ -1,24 +1,17 @@
 package puck.javaAG.nodeKind
 
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
-import puck.graph.{AGNode, HasType}
+import puck.graph.{AGError, AGNode, HasType}
 import puck.javaAG.MethodType
 
 /**
  * Created by lorilan on 31/07/14.
  */
-abstract class MethodKind extends JavaNodeKind with HasType[MethodType] {
+abstract class MethodKind extends JavaNodeKind with HasType[JavaNodeKind, MethodType.T] {
 
   var decl : AST.MethodDecl = _
 
   def canContain(k : JavaNodeKind) = false
-
-  override def redirectUses(oldUsee : AGNode[JavaNodeKind],
-                            newUsee : AGNode[JavaNodeKind]){
-
-    `type` = `type`.copyWith(oldUsee).replacedBy(newUsee)
-
-  }
 
 }
 
@@ -75,8 +68,13 @@ case class AbstractMethod private[javaAG]() extends  MethodKind {
   override def createDecl( n : AGNode[JavaNodeKind]) = {
     assert(n.kind eq this)
     if(decl == null){
-      decl = AST.MethodDecl.createAbstractMethod(`type`.createReturnAccess(),
-        n.name, `type`.createASTParamList().toArray)
+      `type` match {
+        case mt : MethodType =>
+          decl = AST.MethodDecl.createAbstractMethod(mt.createReturnAccess(),
+            n.name, mt.createASTParamList().toArray)
+        case _ => throw new AGError(" not a method type !!")
+      }
+
     }
   }
 
@@ -85,4 +83,19 @@ case class AbstractMethod private[javaAG]() extends  MethodKind {
     case DelegationAbstraction() => List(JavaNodeKind.method(`type`))//also abstractMethod ?
   }
 
+  def findMergingCandidate(interface : AGNode[JavaNodeKind]) = {
+    node.graph.logger.writeln("searching merging candidate for %s".format(node), 8)
+    val mType = `type`.copyWith(node.container).replacedBy(interface)
+    interface.content.find { nc =>
+      nc.kind match {
+        case ncKind @ AbstractMethod() =>
+          node.graph.logger.write("trying %s : ".format(nc), 8)
+          val isMergingCandidate = nc.name == node.name &&
+            ncKind.`type` == mType
+          node.graph.logger.writeln(isMergingCandidate.toString, 8)
+          isMergingCandidate
+        case _ => false
+      }
+    }
+  }
 }

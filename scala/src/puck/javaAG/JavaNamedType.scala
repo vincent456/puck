@@ -9,18 +9,18 @@ import puck.javaAG.nodeKind._
  */
 
 
-class JavaType(n : AGNode[JavaNodeKind]) extends NamedType(n){
+class JavaNamedType(n : AGNode[JavaNodeKind]) extends NamedType(n){
 
- override def copy() = new JavaType(n)
+ override def create(n : AGNode[JavaNodeKind]) = new JavaNamedType(n)
 
- def hasMethodThatCanOverride(name : String, sig : MethodType) : Boolean =
+ /*def hasMethodThatCanOverride(name : String, sig : MethodType) : Boolean =
     n.content.exists{ (childThis : AGNode[JavaNodeKind]) =>
       childThis.name == name &&
         (childThis.kind match {
           case m @ Method() => m.`type`.canOverride(sig)
           case _ => false
         })
-    }
+    }*/
 /*
   // compute structural subtyping in addition to registered named subtyping
   override def subtypeOf(other : Type) : Boolean = super.subtypeOf(other) ||
@@ -45,12 +45,41 @@ class JavaType(n : AGNode[JavaNodeKind]) extends NamedType(n){
     })*/
 }
 
-class MethodType(override val input: Tuple[NamedType[JavaNodeKind]],
-                 override val output: NamedType[JavaNodeKind]) extends Arrow(input, output){
-     def canOverride(other : MethodType) : Boolean =
-        other.input == input && output.subtypeOf(other.output)
+object MethodType{
+  type InputType =  Tuple[JavaNodeKind, NamedType[JavaNodeKind]]
+  type OutputType = NamedType[JavaNodeKind]
 
-  override def copy() = new MethodType(Tuple(input.types.map(_.copy())), output.copy())
+  type T =  Arrow[JavaNodeKind, MethodType.InputType, MethodType.OutputType]
+
+/*  def unapply( m : MethodType) : Option[(MethodType.InputType, MethodType.OutputType)] =
+  Some(m.input, m.output)*/
+}
+
+class MethodType(i: MethodType.InputType,
+                 o: MethodType.OutputType)
+  extends MethodType.T(i, o){
+
+  /*override def equals(other : Any) = other match {
+    case that : MethodType => that.canEqual(this) &&
+      that.input == this.input && that.output == this.output
+    case _ => false
+  }
+
+  def canEqual( that : MethodType ) = true
+
+  override def hashCode = 41 * input.hashCode + output.hashCode() + 41*/
+  override def toString = "MethodType(" + input +" -> " + output +")"
+
+  override def canOverride(other : Type[JavaNodeKind, _]) : Boolean =
+    other match {
+      case om : MethodType => om.input == input &&
+        output.subtypeOf(om.output)
+      case _ => false
+    }
+
+
+  override def create(i : MethodType.InputType,
+              o : MethodType.OutputType) = new MethodType(i, o)
 
   def createReturnAccess() = output.node.kind match {
     case tk : TypeKind => tk.createLockedAccess()
@@ -70,22 +99,6 @@ class MethodType(override val input: Tuple[NamedType[JavaNodeKind]],
 
     }
   }
-
-
-  class Replacer private[MethodType] (oldUsee : AGNode[JavaNodeKind]) {
-    def replacedBy(newUsee: AGNode[JavaNodeKind]) = {
-      def replaceOrCopy(t: NamedType[JavaNodeKind]) =
-        if (t.node == oldUsee) new JavaType(newUsee)
-        else t.copy()
-
-      new MethodType(Tuple(input.types.map(replaceOrCopy)),
-        replaceOrCopy(output))
-    }
-
-  }
-
-  def copyWith (oldUsee : AGNode[JavaNodeKind]) = new Replacer(oldUsee)
-
 }
 
 case class Predefined(pkg: String,  name : String, kind : JavaNodeKind){

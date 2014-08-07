@@ -107,4 +107,16 @@ aspect TransformationApplying {
 
     }
 
+  public void ClassDecl.replaceImplements(Access oldAccess, Access newAccess){
+       if(!oldAccess.isTypeAccess() || !newAccess.isTypeAccess())
+           throw new Error("Both access should be type access !");
+
+       TypeDecl decl = ((TypeAccess)oldAccess).decl();
+
+       for(Access acc : getImplementsList()){
+          if(((TypeAccess)acc).decl().equals(decl))
+              replace(acc).with(newAccess);
+       }
+   }
+
 }

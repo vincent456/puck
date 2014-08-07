@@ -140,7 +140,7 @@ object DotPrinter {
 
       def writeTableLine(n:NodeType){
         val sig = if (printSignatures) n.kind match {
-         case k : HasType[_] => " : " + k.`type`.toString.replaceAllLiterally(">", "&gt;") + " "
+         case k : HasType[_,_] => " : " + k.`type`.toString.replaceAllLiterally(">", "&gt;") + " "
          case _ => ""
         }
         else ""

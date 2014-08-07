@@ -1,13 +1,13 @@
 package puck.javaAG.nodeKind
 
 import puck.graph.constraints.{AbstractionPolicy, DelegationAbstraction}
-import puck.graph.{AGNode, HasType}
-import puck.javaAG.JavaType
+import puck.graph.{NamedType, AGNode, HasType}
+import puck.javaAG.JavaNamedType
 
 /**
  * Created by lorilan on 31/07/14.
  */
-case class Field private[javaAG]() extends JavaNodeKind with HasType[JavaType]{
+case class Field private[javaAG]() extends JavaNodeKind with HasType[JavaNodeKind, NamedType[JavaNodeKind]]{
 
   override val toString = "Field"
 
@@ -16,7 +16,7 @@ case class Field private[javaAG]() extends JavaNodeKind with HasType[JavaType]{
   override def redirectUses(oldUsee : AGNode[JavaNodeKind],
                             newUsee : AGNode[JavaNodeKind]){
     if(`type`.node == oldUsee)
-      `type` = new JavaType(newUsee)
+      `type` = new JavaNamedType(newUsee)
   }
 
   var decl : AST.FieldDeclaration = _

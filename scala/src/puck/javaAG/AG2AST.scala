@@ -44,7 +44,14 @@ object AG2AST {
     case b : BreakPoint[JavaNodeKind] => ()
     //case Transformation(_, TTConstraint(_,_)) =>
 
-    case r1 => println("%s not applied on program".format(r1))
+    case Transformation(Remove(), TTNode(node)) =>
+      node.kind match {
+        case k : TypeKind => k.decl.deleteAGNode()
+        case _ => println("%s not applied on program".format(t))
+      }
+
+
+    case _ => println("%s not applied on program".format(t))
   }
 
 
@@ -54,8 +61,16 @@ object AG2AST {
 
     case Contains() =>
       (e.source.kind, e.target.kind) match {
-        case (p@Package(), i: TypeKind) =>
-          i.decl.compilationUnit().setPackageDecl(e.source.fullName)
+        case (Package(), i: TypeKind) =>
+          val cu = i.decl.compilationUnit()
+
+          val cpath = e.source.containerPath.map(_.name)
+          val sepPath = cpath.tail.mkString(java.io.File.separator)
+
+          val relativePath = sepPath + java.io.File.separator + e.target.name + ".java"
+          cu.setPathName( relativePath )
+          cu.setRelativeName(relativePath) // weird but seems to be the default behavior
+          cu.setPackageDecl(e.source.fullName)
 
         case (i@Interface(), m@AbstractMethod()) =>
           i.decl.addBodyDecl(m.decl)
@@ -100,6 +115,13 @@ object AG2AST {
 
   def redirectTarget(e : AGEdge[JavaNodeKind], newTarget : AGNode[JavaNodeKind]){
     (e.target.kind, newTarget.kind) match {
+      case ( k @ Interface(), newk @ Interface()) if e.kind == Isa() =>
+     e.source.kind match {
+       case src @ Class() =>
+         src.decl.replaceImplements(k.createLockedAccess(), newk.createLockedAccess())
+       case _ => throw new JavaAGError("isa arc should only be between TypeKinds")
+     }
+
       case (oldk: TypeKind, newk: TypeKind) =>
         e.source.kind match {
           case f @ Field() =>
@@ -110,6 +132,10 @@ object AG2AST {
 
           case m @ AbstractMethod() =>
             m.decl.replaceTypeAccess(oldk.createLockedAccess(), newk.createLockedAccess())
+
+          case Class() =>
+            e.target.graph.logger.writeln("Class user of TypeKind, assume this is the \"doublon\" of " +
+            "an isa arc, redirection ignored",1)
 
           case k => throw new JavaAGError(k + " as user of TypeKind, redirection unhandled !")
         }

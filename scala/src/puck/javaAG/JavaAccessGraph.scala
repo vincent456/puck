@@ -114,7 +114,7 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
 
       val bdNode = bd buildAGNode this
       val strNode = addNode(bd.fullName()+literal, literal,
-        puck.javaAG.nodeKind.JavaNodeKind.literal(new JavaType(this("java.lang.String"))))
+        puck.javaAG.nodeKind.JavaNodeKind.literal(new JavaNamedType(this("java.lang.String"))))
 
       /*
         this is obviously wrong: TODO FIX
@@ -196,6 +196,31 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
       case f @ Primitive() => f.decl = decl
       case _ => throwRegisteringError(n, "PrimitiveType")
     }
+  }
+
+  def doMerges(){
+
+    class MergeDone extends Throwable
+
+    try {
+      this.foreach { n =>
+        n.kind match {
+          case Interface() =>
+            println("searching merging candidate for %s :".format(n))
+            n.searchMergingCandidate() match {
+              case Some(other) => n.mergeWith(other)
+                throw new MergeDone()
+              case None => ()
+            }
+
+          case _ => ()
+        }
+      }
+    } catch {
+      case e : MergeDone => doMerges()
+    }
+
+
   }
 
   def applyChangeOnProgram(){

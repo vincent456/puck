@@ -14,11 +14,6 @@ trait NodeKind[K <: NodeKind[K]] {
   def canContain(k : K) : Boolean
   def abstractionPolicies : List[AbstractionPolicy] = List(SupertypeAbstraction(), DelegationAbstraction())
   def abstractKinds(p : AbstractionPolicy) : List[K]
-  val canBeRootContent = false
-
- /* def promoteToSuperTypeWherePossible(superType : AGNode[K]){}*/
-  def redirectUses(oldUsee : AGNode[K], newUsee : AGNode[K]) {}   //TODO (?) move in HasType
-
 }
 
 trait AGRoot[K <: NodeKind[K]] extends NodeKind[K] {
@@ -47,7 +42,6 @@ case class VanillaNodeKind private[graph]() extends VanillaKind {
 
   def abstractKinds(p : AbstractionPolicy) = List(this)
 
-  override val canBeRootContent = true
 }
 
 case class VanillaRoot() extends VanillaKind with AGRoot[VanillaKind]{
@@ -55,6 +49,10 @@ case class VanillaRoot() extends VanillaKind with AGRoot[VanillaKind]{
 }
 
 
-trait HasType[T <: Type] {
+trait HasType[K <: NodeKind[K], T <: Type[K, T]] extends NodeKind[K]{
   var `type` : T = _
+  def redirectUses(oldUsee : AGNode[K], newUsee : AGNode[K]) {
+    `type` = `type`.copyWith(oldUsee).replacedBy(newUsee)
+  }
+
 }

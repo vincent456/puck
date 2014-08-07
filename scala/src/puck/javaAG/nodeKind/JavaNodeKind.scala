@@ -1,7 +1,7 @@
 package puck.javaAG.nodeKind
 
-import puck.graph.{HasType, Type, AGNode, NodeKind}
-import puck.javaAG.{JavaType, MethodType}
+import puck.graph._
+import puck.javaAG.{JavaNamedType, MethodType}
 
 /**
  * Created by lorilan on 31/07/14.
@@ -14,7 +14,7 @@ abstract class JavaNodeKind extends NodeKind[JavaNodeKind]{
 
 object JavaNodeKind {
 
-  def typedKind[S<:Type, T<:HasType[S]]( ctr : () => T, t: S) = {
+  def typedKind[S <: Type[JavaNodeKind, S], T <: HasType[JavaNodeKind, S]]( ctr : () => T, t: S) = {
     val k = ctr ()
     k.`type` = t
     k
@@ -28,11 +28,11 @@ object JavaNodeKind {
   def interfaceKind = interface
   def classKind = `class`
 
-  def constructor(t : MethodType) = typedKind ( () => Constructor(), t )
-  def method(t : MethodType) = typedKind ( () => Method(), t )
-  def field(t : JavaType) = typedKind ( () => Field(), t )
-  def abstractMethod(t : MethodType) = typedKind ( () => AbstractMethod(), t )
-  def literal(t : JavaType) = typedKind ( () => Literal(), t )
+  def constructor(t : MethodType.T) = typedKind ( () => Constructor(), t )
+  def method(t : MethodType.T) = typedKind ( () => Method(), t )
+  def field(t : NamedType[JavaNodeKind]) = typedKind ( () => Field(), t )
+  def abstractMethod(t : MethodType.T) = typedKind ( () => AbstractMethod(), t )
+  def literal(t : NamedType[JavaNodeKind]) = typedKind ( () => Literal(), t )
 
 
   val list = List[JavaNodeKind](Package(), Interface(),

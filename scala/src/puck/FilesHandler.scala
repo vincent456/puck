@@ -80,7 +80,7 @@ class FilesHandler private (private [this] var srcDir : File,
              decisionMaker : DecisionMaker[JavaNodeKind] = new JavaDefaultDecisionMaker(graph)){
 
     graph.logger = new SystemLogger()
-    graph.logger. verboseLevel = 10
+    graph.logger. verboseLevel = 1
     var inc = 0
 
     new JavaSolver(graph, decisionMaker).solve(
@@ -176,6 +176,32 @@ class FilesHandler private (private [this] var srcDir : File,
         throw new AGError("parsing failed :" + e.getLocalizedMessage)
 
     }
+  }
+
+  def printCode(outDir : File = new File(srcDirectory + File.separator + "out")){
+    val l : AST.List[AST.CompilationUnit] = graph.program.getCompilationUnits
+
+    import scala.collection.JavaConversions.asScalaIterator
+    asScalaIterator(l.iterator()).foreach{ cu =>
+
+      if(cu.fromSource()) {
+        val relativePath = cu.getPackageDecl.replace('.', File.separatorChar)
+
+       /* println("my relativePath is " + relativePath)
+
+        println("path name is " + cu.pathName())
+        println("relative name is " + cu.relativeName())
+        println("id is " + cu.getID)*/
+        val f = new File(outDir + File.separator +
+          relativePath + File.separator + cu.getID + ".java")
+
+        f.getParent.mkdirs()
+        val writer = new BufferedWriter(new FileWriter(f))
+        writer.write(cu.toString())
+        writer.close()
+      }
+    }
+
   }
 
 }

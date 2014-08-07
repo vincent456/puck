@@ -19,6 +19,14 @@ abstract class TypeKind extends JavaNodeKind {
     decl.setID(node.name)
     decl.setModifiers(new AST.Modifiers("public"))
     val cu = new AST.CompilationUnit()
+    cu.setRelativeName(node.name)
+
+    val cpath = node.containerPath
+    if(! cpath.head.isRoot)
+      throw new AGError("cannot create decl for unrooted node")
+
+    println("setting pathname with " + cpath)
+    cu.setPathName(cpath.tail.mkString(java.io.File.separator))
     cu.setTypeDecl(decl, 0)
     cu.setFromSource(true)
     prog.addCompilationUnit(cu)

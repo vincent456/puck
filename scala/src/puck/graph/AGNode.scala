@@ -95,7 +95,7 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
 
   override def toString: String = kind + "(" + fullName + ")"
 
-  def nameTypeString = name + (kind match{case k : HasType[_] => " : " + k.`type`; case _ => ""})
+  def nameTypeString = name + (kind match{case k : HasType[_, _] => " : " + k.`type`; case _ => ""})
 
   def fullName: String = {
 
@@ -117,6 +117,8 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
   private var container0 : NodeType = this
 
   def container = container0
+
+  //def isRoot = graph.root == this
 
   def isRoot = container == this
 
@@ -234,7 +236,7 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
   object uses {
     private [AGNode] val uses0 = mutable.Set[NodeType]()
     def apply() : mutable.Iterable[NodeType] = uses0
-    implicit def iterableUses(c : AGNode.this.users.type ) : mutable.Iterable[NodeType] = uses0
+    implicit def iterableUses(c : AGNode.this.uses.type ) : mutable.Iterable[NodeType] = uses0
     def apply(other : NodeType) = uses0.contains(other)
     def += (usee: NodeType, register : Boolean = true) = usee.users += (AGNode.this, register)
     def -= (usee: NodeType, register : Boolean = true) = usee.users -= (AGNode.this, register)
@@ -242,8 +244,8 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
 
   object users {
     private val users0 = mutable.Set[NodeType]()
-
     def apply() : mutable.Iterable[NodeType] = users0
+
     implicit def iterableUsers(c : AGNode.this.users.type ) : mutable.Iterable[NodeType] = users0
     def contains(n : NodeType) = users0.contains(n)
 
@@ -379,7 +381,10 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
       graph.logger.writeln("redirecting %s target to\n%s (%s)".format(AGEdge.uses(this, oldUsee), newUsee, policy), 3)
       val newUses = AGEdge.uses(this, oldUsee).changeTarget(newUsee)
 
-      this.kind.redirectUses(oldUsee, newUsee)
+      this.kind match {
+        case k : HasType[Kind, _] => k.redirectUses(oldUsee, newUsee)
+        case _ => ()
+      }
 
       redirectPrimaryUses(oldUsee, newUsee, policy)
       redirectSideUses(oldUsee, newUsee, policy)
@@ -543,6 +548,43 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
 
     scopeConstraints foreach addExc
     elementConstraints foreach addExc
+  }
+
+
+  def searchMergingCandidate() : Option[NodeType] = None
+
+  def mergeWith(other : NodeType){
+
+    other.users.foreach { user =>
+      AGEdge.uses(user, other).changeTarget(this)
+      user.kind match {
+        case k : HasType[Kind, _] => k.redirectUses(other, this)
+        case _ => ()
+      }
+    }
+
+    other.uses.foreach { AGEdge.uses(other, _).changeSource(this) }
+
+    other.superTypes.foreach { AGEdge.isa(other, _).changeSource(this) }
+
+    other.subTypes.foreach { AGEdge.isa(_, other).changeTarget(this) }
+
+    other.primaryUses.foreach{
+      case (sideUsee, primUses) =>
+        primUses.foreach { pUse =>
+          graph.addUsesDependency(pUse, AGEdge.uses(this, sideUsee))
+          graph.removeUsesDependency(pUse, AGEdge.uses(other, sideUsee))
+        }
+    }
+    other.sideUses.foreach{
+      case (primeUsee, sidUses) =>
+        sidUses.foreach { sUse =>
+          graph.addUsesDependency(AGEdge.uses(this, primeUsee), sUse)
+          graph.removeUsesDependency(AGEdge.uses(other, primeUsee), sUse)
+        }
+    }
+    AGEdge.contains(other.container, other).delete()
+    graph.remove(other)
   }
 
 }

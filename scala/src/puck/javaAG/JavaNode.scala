@@ -66,13 +66,13 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
 
     def noNameClash(l : Int)(c: AGNode[JavaNodeKind]) : Boolean = c.kind match {
 
-      case ck @(Method() | AbstractMethod()) =>
+      case ck : MethodKind  =>
         c.name != n.name || {
 
-          if(ck.asInstanceOf[HasType[MethodType]].`type` == null)
+          if(ck.`type` == null)
             println("type is null")
 
-          ck.asInstanceOf[HasType[MethodType]].`type`.input.length != l}
+          ck.`type`.input.length != l}
       case _ => true
     }
 
@@ -101,39 +101,74 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
       })
   }
 
-  def isSubtypeOf(other : AGNode[JavaNodeKind]) = {
-    (this.kind, other.kind) match {
-      case (Class(), Interface()) => new JavaType(this).subtypeOf(new JavaType(other))
-      case (Class(), Class()) => new JavaType(this).subtypeOf(new JavaType(other))
-      case _ => false
-    }
+  /* def isSubtypeOf(other : AGNode[JavaNodeKind]) = {
+     (this.kind, other.kind) match {
+       case (Class(), Interface()) => new JavaNamedType(this).subtypeOf(new JavaNamedType(other))
+       case (Class(), Class()) => new JavaNamedType(this).subtypeOf(new JavaNamedType(other))
+       case _ => false
+     }
+   }*/
+
+  override def searchMergingCandidate() : Option[AGNode[JavaNodeKind]] = this.kind match{
+    case Interface() =>
+      if(this.content.isEmpty)
+        None
+      else
+        graph.find{ n =>
+          if(n == this || n.kind != Interface())
+            false
+          else
+          {
+
+            val sameSize = n.content.size == this.content.size
+            if(sameSize)
+              graph.logger.writeln("comparing %s with %s".format(this.name, n.name), 8)
+            sameSize &&
+              this.content.forall { absMethod =>
+                absMethod.kind match {
+                  case absMethKind @ AbstractMethod() =>
+                    absMethKind.findMergingCandidate(n) match {
+                      case None => false
+                      case Some(_) => true
+                    }
+                  case _ => throw new AGError("Interface should contain only abstract method !!")
+                }
+              }
+          }
+
+        }
+    case _ => None
   }
 
-  /*  override def searchExistingAbstractions() = {
+
+
+  /*override def searchExistingAbstractions() = this.kind match {
+    case Class() =>
       val abstractionSet =  smutable.Set[(AGNode, AbstractionPolicy)]()
-      println("searching abstractions for " +this)
+      println("searching abstractions for " + this)
       graph.iterator foreach { n =>
-        if(n != this && (this isSubtypeOf n) &&
-          //to be a valid abstraction, in addition to be a supertype,
-          // needed method signature
-          users.forall {
-            user =>
-              user.sideUses(this) match {
-                case Some(sideUses) =>
-                  sideUses.forall{ sideUse =>
-                    n.content.exists(nchild =>
-                      new JavaType(nchild).subtypeOf(new JavaType(sideUse.target)))
-                  }
-                case None => true
-              }
-          }) {
-          println("found " + n)
-          abstractionSet += ((n, SupertypeAbstraction()))
-        }
-      }
-      println("search terminated")
-      abstractionSet
-    }*/
+      /*if(n != this && (this isSubtypeOf n) &&
+        //to be a valid abstraction, in addition to be a supertype,
+        // needed method signature
+        users.forall {
+          user =>
+            user.sideUses(this) match {
+              case Some(sideUses) =>
+                sideUses.forall{ sideUse =>
+                  n.content.exists(nchild =>
+                    new JavaType(nchild).subtypeOf(new JavaType(sideUse.target)))
+                }
+              case None => true
+            }
+        }) {
+        println("found " + n)
+        abstractionSet += ((n, SupertypeAbstraction()))
+      }*/
+    }
+    println("search terminated")
+    abstractionSet
+    case _ => super.searchExistingAbstractions()
+  }*/
 
   override def abstractionName(abskind :  JavaNodeKind, policy : AbstractionPolicy) : String =
     if(this.kind == Constructor())
@@ -150,7 +185,6 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
                                  policy : AbstractionPolicy) = {
     (abskind, policy) match {
       case (Interface(), SupertypeAbstraction()) =>
-
         val abs = super.createAbstraction(Interface(), SupertypeAbstraction())
 
         content.foreach { child =>
@@ -161,7 +195,7 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
                 SupertypeAbstraction())
               abs.content += absChild
 
-              val absChildKind = absChild.kind.asInstanceOf[HasType[MethodType]]
+              val absChildKind = absChild.kind.asInstanceOf[AbstractMethod]
               absChildKind.`type` = absChildKind.`type` copyWith this replacedBy abs
 
             case AbstractMethod() => throw new AGError("unhandled case !")
@@ -269,4 +303,24 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
     super.redirectUses(oldUsee, newUsee, policy)
   }
 
+  override def mergeWith(other : AGNode[JavaNodeKind]){
+    (this.kind, other.kind) match {
+      case (Interface(), Interface()) =>
+        this.content.foreach { m =>
+          m.kind match {
+            case absm @ AbstractMethod() =>
+              absm.findMergingCandidate(other) match {
+                case Some(otherMethod) => m.mergeWith(otherMethod)
+                case None => throw new Error("no method to merge with")
+              }
+            case _ => assert(false)
+          }
+        }
+        super.mergeWith(other)
+
+      case (AbstractMethod(), AbstractMethod()) =>
+        super.mergeWith(other)
+      case _ => ()
+    }
+  }
 }

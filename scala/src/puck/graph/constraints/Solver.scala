@@ -210,6 +210,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
   def solveUsesToward(impl : NodeType, k : () => Unit) {
     logger.writeln("###################################################")
     logger.writeln("##### Solving uses violations toward %s ######".format(impl))
+
     val wrongUsers = redirectTowardExistingAbstractions(impl, impl.wrongUsers)
 
     if (wrongUsers.nonEmpty){

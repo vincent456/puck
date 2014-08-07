@@ -37,7 +37,7 @@ package puck
 
 
 
-/* import scala.swing._
+ import scala.swing._
  import javax.swing.UIManager
  import puck.gui.PuckMainPanel
 
@@ -56,23 +56,26 @@ package puck
     contents  = new PuckMainPanel(FilesHandler())
 
   }
-}*/
+}
 
 
 
+/*
 import java.io._
+
+import puck.javaAG.nodeKind.{Method, AbstractMethod, Interface}
 
 
 object Front{
 
   def main(args : Array[String]){
 
-//    val folder = "/home/lorilan/puck_svn/distrib/examples/"
-//    val example ="prototype/actors/candidate"
+    val folder = "/home/lorilan/puck_svn/distrib/examples/"
+    val example ="prototype/actors/candidate"
    // val example = "bridge/hannemann_inspired/candidate"
 
-    val folder = "/home/lorilan/projects/constraintsSolver/scala/test/examples/"
-    val example = "SuperTypeExtraction/04/"
+//    val folder = "/home/lorilan/projects/constraintsSolver/scala/test/examples/"
+//    val example = "SuperTypeExtraction/01/"
 
     val fh = FilesHandler( folder + example)()
     //fh.decouple = "/home/lorilan/puck_svn/distrib/examples/composite/candidate/decouple_strict.pl"
@@ -90,6 +93,8 @@ object Front{
     fh.graph.transformations.startRegister()
     fh.solve(trace = true)
 
+    fh.graph.doMerges()
+
     print("make png ... ")
     fh.makePng(printSignatures = true,
       soutput = Some(new FileOutputStream(
@@ -97,7 +102,8 @@ object Front{
     println("done")
 
     fh.graph.applyChangeOnProgram()
-    println(fh.graph.program)
+
+    fh.printCode()
 
 
     //println(fh.graph.program)
@@ -112,3 +118,4 @@ object Front{
     //    fh.accessGraph.printConstraints()
   }
 }
+*/

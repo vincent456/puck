@@ -25,5 +25,4 @@ case class Package() extends JavaNodeKind {
   override def abstractionPolicies = List(DelegationAbstraction())
   def abstractKinds(p : AbstractionPolicy) = List(JavaNodeKind.`package`)
 
-  override val canBeRootContent = true
 }
