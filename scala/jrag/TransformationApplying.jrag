@@ -14,26 +14,28 @@ aspect TransformationApplying {
       return new MethodDecl(new Modifiers("public", "abstract"), returnType, name, paramList, new List<Access>(), new Opt());
   	}
 
-  	public MethodDecl ConstructorDecl.createConstructorMethod(String name){
-        List<ParameterDeclaration> params = this.getParameterList().copy();
-        ConstructorAccess ctorAccess = this.getConstructorAccess();
-
-        for(int i =0; i< params.getNumChild(); i++)
-            ctorAccess.insertArg(params.getChild(i).createLockedAccess(),i);
-
-        return new MethodDecl(new Modifiers("public"),
-                this.hostType().createLockedAccess(),
-                name, params, new List<Access>(),
-                new Opt<Block>(new Block(new ReturnStmt( ctorAccess))));
-    }
+  	public MethodDecl ConstructorDecl.createConstructorMethod(String name){                                                                               
+         List<ParameterDeclaration> params = this.getParameterList().copy();                                                               
+         List<Expr> args = new List<Expr>();                                                                                               
+         for(int i =0; i< params.getNumChild(); i++)                                                                                       
+             args.add(params.getChild(i).createLockedAccess());                                                                            
+                                                                                                                                           
+         return new MethodDecl(new Modifiers("public"),                                                                                    
+                 this.hostType().createLockedAccess(),                                                                                     
+                 name, params, new List<Access>(),                                                                                         
+                 new Opt<Block>(new Block(new ReturnStmt( new ClassInstanceExpr(hostType().createLockedAccess(), args)))));                
+                                                                                                                                           
+     }                 
+    
 
 	public void ASTNode.replaceTypeAccess(Access oldUsee, Access newUsee){
       for(int i = 0; i < getNumChild(); i++)
-          getChild(i).replaceAccess(oldUsee, newUsee);
+          getChild(i).replaceTypeAccess(oldUsee, newUsee);
   	}
 
   	public void TypeAccess.replaceTypeAccess(Access oldUsee, Access newUsee){
-        if( oldUsee instanceof TypeAccess
+        
+        if( oldUsee.isTypeAccess()
                 && this.decl().equals(((TypeAccess)oldUsee).decl())){
             replace(this).with(newUsee);
         }
@@ -47,19 +49,26 @@ aspect TransformationApplying {
           getChild(i).replaceMethodCall(oldUsee, newUsee);
   } 
 
-  public void MethodDecl.replaceMethodCall(MethodDecl oldUsee, MethodDecl newUsee){
-        if(this.decl() == oldUsee){
-            replace(this).with(newUsee.createLockedAccess(this.getArgList()));
-        }
-    }
-
-  public void MethodDecl.replaceMethodCall(MethodDecl oldUsee, MethodDecl newUsee){
-        if(this.decl() == oldUsee){
-            MethodAccess ma =
-                this.accessMethod(newUsee).constructAccess(this, this.getArgList());
-            replace(this).with(ma);
-        }
-    }
+  public void MethodAccess.replaceMethodCall(MethodDecl oldUsee, MethodDecl newUsee){                                                                  
+        if(this.decl() == oldUsee){                                                                                                         
+                                                                                                                                            
+            MethodAccessInfo mai = newUsee.hostType().accessMemberMethod(newUsee);                                                          
+            //MethodAccessInfo mai = this.accessMethod(newUsee);                                                                            
+                                                                                                                                            
+            if(mai == null)                                                                                                                 
+                System.out.println("mai is null !!");                                                                                       
+                                                                                                                                            
+            MethodAccess ma = mai.constructAccess(this, this.getArgList());                                                                 
+                                                                                                                                            
+            if(ma.getQualifier() == null) {                                                                                                 
+                ParameterDeclaration p =                                                                                                    
+                        ((MethodDecl) this.hostBodyDecl()).introduceParameter(newUsee.hostType(), "");                                      
+                replace(this).with(new Dot(p.createLockedAccess(), ma));                                                                    
+            }                                                                                                                               
+            else                                                                                                                            
+                replace(this).with(ma);                                                                                                     
+        }                                                                                                                                   
+    } 
 
 
   public void ASTNode.replaceByConstructorMethodCall(MethodDecl cm){
@@ -119,4 +128,16 @@ aspect TransformationApplying {
        }
    }
 
+  public void ASTNode.deleteAGNode(){
+         getParent().removeChild(this);
+         this.setParent(null);
+     }
+
+  public void TypeDecl.deleteAGNode(){                                                                                                           
+         if(compilationUnit().getNumTypeDecl() == 1)                                                                                       
+             compilationUnit().deleteAGNode();                                                                                             
+         else                                                                                                                              
+             super.deleteAGNode();                                                                                                         
+     }
+ 
 }

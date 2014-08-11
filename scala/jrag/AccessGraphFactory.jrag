@@ -332,7 +332,7 @@ aspect AccessGraphFactory {
 	}*/
 
 	public AGNode<JavaNodeKind> FieldDeclaration.buildAGNode(JavaAccessGraph accessGraph){
-		puck.javaAG.JavaType type = new puck.javaAG.JavaType(type().buildAGNode(accessGraph));
+		puck.javaAG.JavaNamedType type = new puck.javaAG.JavaNamedType(type().buildAGNode(accessGraph));
 		AGNode<JavaNodeKind> node = accessGraph.addNode(fullName(), name(),
 				JavaNodeKind.field(type));
 
@@ -397,7 +397,7 @@ aspect AccessGraphFactory {
               new puck.javaAG.JavaNamedType(hostType().buildAGNode(accessGraph)));
 
       AGNode<JavaNodeKind> node = accessGraph.addNode(fullName(), name(),
-      			puck.javaAG.JavaNodeKind.constructor(constructorAGType));
+      			JavaNodeKind.constructor(constructorAGType));
 
       accessGraph.registerDecl(node, this);
       return node;
