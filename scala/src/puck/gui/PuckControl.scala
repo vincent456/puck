@@ -93,6 +93,7 @@ class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
       filesHandler.solve(trace, decisionMaker)
     } onComplete {
       case Success(_) =>
+        publish(AccessGraphModified(filesHandler.graph))
         onSuccess
       case Failure(exc) => println(exc.printStackTrace())
     }
@@ -115,11 +116,10 @@ class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
 
     case GraphDisplayRequest() => displayGraph()
 
-    case ApplyOnCodeRequest() =>  applyOnCode()
+    case ApplyOnCodeRequest() => applyOnCode()
 
     case SolveRequest(dm, trace) =>
       doSolve(dm.asInstanceOf[DecisionMaker[Kind]], trace){
-        PuckControl.this.publish(AccessGraphModified(filesHandler.graph))
         filesHandler.logger.writeln("Solving done")
       }
 
@@ -139,7 +139,6 @@ class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
         doSolve(filesHandler.decisionMaker(), trace){
           displayGraph()
           applyOnCode()
-          PuckControl.this.publish(AccessGraphModified(filesHandler.graph))
           filesHandler.openSources()
           filesHandler.openProduction()
         }

@@ -8,7 +8,10 @@ import puck.search.SearchState
 import puck.util.FileHelper.findAllFiles
 import puck.util._
 
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.sys.process.Process
+import scala.util.{Failure, Success}
 
 
 sealed abstract class DotOutputFormat
@@ -28,13 +31,16 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
   private [this] var decouple0 : Option[File] = None
   private [this] var logFile0 : Option[File] = None
 
-  setWorkingDirectory(workindDirectory)
-
   var graphStubFileName : String = FilesHandler.Default.graphFileName
 
-  private [this] var logger0 : Logger[Int] = new NoopLogger()
+  private [this] var logger0 : Logger[Int] = new DefaultSystemLogger()
 
   def logger : Logger[Int] = logger0
+
+  private [this] var ag : AccessGraph[Kind] = _
+  def graph = ag
+  protected def graph_=(g : AccessGraph[Kind]){ ag = g }
+
 
   def setCanonicalOptionFile(prev : Option[File], sf : Option[File]) = {
     sf match {
@@ -49,9 +55,6 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
     }
   }
 
-  private [this] var ag : AccessGraph[Kind] = _
-  def graph = ag
-  protected def graph_=(g : AccessGraph[Kind]){ ag = g }
 
   def setWorkingDirectory(dir : File){
     this.srcDir0 = setCanonicalOptionFile(this.srcDir0, Some(dir))
@@ -72,17 +75,11 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
         jarListFile0 = defaultFile(Default.jarListFileName)
         apiNodesFile0 = defaultFile(Default.apiNodesFileName)
         decouple0 = defaultFile(Default.decoupleFileName)
-        val Some(lf) = defaultFile(Default.logFileName)
-
-        logFile0 = Some(lf)
-
-
-        val intlogger = new DefaultFileLogger(lf)
-        logger0 = intlogger
-        intlogger.verboseLevel = 10
-
+        logFile0 = defaultFile(Default.logFileName)
     }
   }
+
+  setWorkingDirectory(workindDirectory)
 
   def srcDirectory = this.srcDir0
   def srcDirectory_=(sdir : Option[File]) {
@@ -141,6 +138,73 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
     PrologPrinter.print(new BufferedWriter(new FileWriter(graphFile(".pl"))), ag)
   }
 
+  def convertDot( sinput : Option[InputStream] = None,
+                  soutput : Option[OutputStream] = None,
+                  outputFormat : DotOutputFormat) : Int = {
+
+    val dot = graphvizDot match {
+      case None => "dot" // relies on dot directory being in the PATH variable
+      case Some(f) => f.getCanonicalPath
+    }
+
+    val processBuilder =
+      sinput match {
+        case None => Process(List(dot,
+          "-T" + outputFormat, graphFile(".dot").toString))
+        case Some(input) => Process(List(dot,
+          "-T" + outputFormat)) #< input
+      }
+
+    soutput match {
+      case None =>(processBuilder #>  graphFile( "." + outputFormat)).!
+      case Some(output) => (processBuilder #> output).!
+    }
+
+  }
+
+  def makePng(printId : Boolean = false,
+              printSignatures : Boolean = false,
+              soutput : Option[OutputStream] = None,
+              outputFormat : DotOutputFormat = Png(),
+              selectedUse : Option[AGEdge[Kind]] = None) : Int = {
+
+    val pipedOutput = new PipedOutputStream()
+    val pipedInput = new PipedInputStream(pipedOutput)
+
+    val f = Future {
+      convertDot(Some(pipedInput), soutput, outputFormat)
+    }
+    makeDot(printId, printSignatures, selectedUse,
+      writer = new OutputStreamWriter(pipedOutput))
+
+    f onComplete {
+      case Success(_) => ()
+      case Failure(tr) => throw tr
+    }
+
+    f.value match {
+      case Some(Success(ret)) => ret
+      case Some(Failure(tr)) => throw tr
+      case None => throw new AGError("dafuk ?")
+    }
+
+  }
+
+  def parseConstraints() {
+    val parser = new ConstraintsParser(graph)
+    try {
+      decouple match{
+        case None => throw new AGError("cannot parse : no decouple file given")
+        case Some(f) => parser(new FileReader(f))
+      }
+    } catch {
+      case e : NoSuchElementException =>
+        graph.discardConstraints()
+        throw new AGError("parsing failed :" + e.getLocalizedMessage)
+
+    }
+  }
+
   def decisionMaker() : DecisionMaker[Kind]
 
   def solver(dm : DecisionMaker[Kind]) : Solver[Kind]
@@ -190,18 +254,21 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
 
   def explore (trace : Boolean = false){
 
-    val engine = constraintSolvingSearchEngine(graph, logger,
+    val intlogger = new DefaultFileLogger(logFile0.get)
+    intlogger.verboseLevel = 10
+
+    val engine = constraintSolvingSearchEngine(graph, intlogger,
       if(trace) { state =>
         state.isStep = true
 
         val f = graphFile("_traces%c%s".format(
           File.separatorChar, state.uuid(File.separator, "_", ".png")))
 
-        logger.writeln("*****************************************************")
-        logger.writeln("*********** solve end of iteration %d *****************".format(state.depth))
-        logger.writeln("***********  %s ***************".format(f.getAbsolutePath))
+        intlogger.writeln("*****************************************************")
+        intlogger.writeln("*********** solve end of iteration %d *****************".format(state.depth))
+        intlogger.writeln("***********  %s ***************".format(f.getAbsolutePath))
 
-        logger.writeln()
+        intlogger.writeln()
 
         f.getParentFile.mkdirs()
         makePng(soutput = Some(new FileOutputStream(f)))
@@ -225,60 +292,6 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
       i += 1
     }
 
-  }
-
-
-  def convertDot( sinput : Option[InputStream] = None,
-                  soutput : Option[OutputStream] = None,
-                  outputFormat : DotOutputFormat) : Int = {
-
-    val dot = graphvizDot match {
-      case None => "dot" // relies on dot directory being in the PATH variable
-      case Some(f) => f.getCanonicalPath
-    }
-
-    val processBuilder =
-      sinput match {
-        case None => Process(List(dot,
-          "-T" + outputFormat, graphFile(".dot").toString))
-        case Some(input) => Process(List(dot,
-          "-T" + outputFormat)) #< input
-      }
-
-    soutput match {
-      case None =>(processBuilder #>  graphFile( "." + outputFormat)).!
-      case Some(output) => (processBuilder #> output).!
-    }
-
-  }
-
-  def makePng(printId : Boolean = false,
-              printSignatures : Boolean = false,
-              soutput : Option[OutputStream] = None,
-              outputFormat : DotOutputFormat = Png(),
-              selectedUse : Option[AGEdge[Kind]] = None) : Int = {
-
-    val pipedOutput = new PipedOutputStream()
-    val pipedInput = new PipedInputStream(pipedOutput)
-
-    makeDot(printId, printSignatures, selectedUse,
-      writer = new OutputStreamWriter(pipedOutput))
-    convertDot(Some(pipedInput), soutput, outputFormat)
-  }
-
-  def parseConstraints() {
-    val parser = new ConstraintsParser(graph)
-    try {
-      decouple match{
-        case None => throw new AGError("cannot parse : no decouple file given")
-        case Some(f) => parser(new FileReader(f))
-      }
-    } catch {
-      case e : NoSuchElementException =>
-        graph.discardConstraints()
-        throw new AGError("parsing failed :" + e.getLocalizedMessage)
-
-    }
   }
 
   def printCode() : Unit

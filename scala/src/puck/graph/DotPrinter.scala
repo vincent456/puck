@@ -186,7 +186,7 @@ object DotPrinter {
     arcs.foreach(writeln)
 
     writeln("}")
-    writer.close()
+    writer.flush()
 
   }
 }

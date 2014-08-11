@@ -19,7 +19,7 @@ trait Logger[V]{
 }
 
 trait IntLogger extends Logger[Int]{
-  var verboseLevel = 0
+  var verboseLevel = 10
   def mustPrint(v : Int) = verboseLevel >= v
 
   def writeln(msg : => String = "" ){writeln(msg, 1)}
