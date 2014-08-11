@@ -6,53 +6,71 @@ import java.io.{FileWriter, BufferedWriter, File}
  * Created by lorilan on 08/05/14.
  */
 
-trait Logger{
-  var verboseLevel = 0
+trait Logger[V]{
 
-  def writeln(msg : => String, verboseLevelRequiredToDisplay : Int) : Unit
-  def write(msg : => String, verboseLevelRequiredToDisplay : Int) : Unit
+  protected def mustPrint(v : V) : Boolean
+
+  def writeln(msg : => String, v : V) : Unit
+  def write(msg : => String, v : V) : Unit
+
+  def writeln(msg : => String = "" ): Unit
+  def write(msg : => String) : Unit
+
+}
+
+trait IntLogger extends Logger[Int]{
+  var verboseLevel = 0
+  def mustPrint(v : Int) = verboseLevel >= v
 
   def writeln(msg : => String = "" ){writeln(msg, 1)}
-  def write(msg : => String) {write(msg, 1)}
-
+  def write(msg : => String){write(msg, 1)}
 }
 
-class NoopLogger extends Logger {
-  def writeln(msg : => String, v : Int){}
-  def write(msg : => String, v : Int){}
 
+class NoopLogger[V] extends Logger[V] {
+  def mustPrint(v : V) = false
+  def writeln(msg : => String, v : V){}
+  def write(msg : => String, v : V){}
+  def writeln(msg : => String = "" ){}
+  def write(msg : => String) {}
 }
 
-class FileLogger(f : File) extends Logger{
+trait FileLogger[V] extends Logger[V]{
 
-  private [this] val writer : BufferedWriter =  new BufferedWriter(new FileWriter(f))
+  val file : File
 
-  def writeln(msg : => String, verboseLevelRequiredToDisplay : Int){
-    if(verboseLevel >= verboseLevelRequiredToDisplay) {
+  private [this] val writer : BufferedWriter =  new BufferedWriter(new FileWriter(file))
+
+  def writeln(msg : => String, v : V){
+    if(mustPrint(v)) {
       writer.write(msg)
       writer.newLine()
       writer.flush()
     }
   }
-  def write(msg : => String, verboseLevelRequiredToDisplay : Int){
-    if(verboseLevel >= verboseLevelRequiredToDisplay) {
+  def write(msg : => String, v : V){
+    if(mustPrint(v)) {
       writer.write(msg)
       writer.flush()
     }
   }
 }
 
+class DefaultFileLogger(val file : File) extends FileLogger[Int] with IntLogger
 
-class SystemLogger() extends Logger{
 
-  def writeln(msg : => String, verboseLevelRequiredToDisplay : Int){
-    if(verboseLevel >= verboseLevelRequiredToDisplay) {
+trait SystemLogger[V] extends Logger[V]{
+
+  def writeln(msg : => String, v : V){
+    if(mustPrint(v)) {
       println(msg)
     }
   }
-  def write(msg : => String, verboseLevelRequiredToDisplay : Int){
-    if(verboseLevel >= verboseLevelRequiredToDisplay) {
+  def write(msg : => String, v : V){
+    if(mustPrint(v)) {
       print(msg)
     }
   }
 }
+
+class DefaultSystemLogger extends SystemLogger[Int] with IntLogger

@@ -1,17 +1,18 @@
 package puck.gui
 
+import puck.graph.{FilesHandler, NodeKind}
 import puck.graph.constraints._
 import puck.javaAG.nodeKind.JavaNodeKind
-import puck.javaAG.{JavaDefaultDecisionMaker, JavaAccessGraph}
 import puck.gui.decisionsFrames.{NodeChooser, ConstraintExceptionFrame, AbstractionKindAndPolicyChooser}
-import puck.util.NoopLogger
 
 /**
  * Created by lorilan on 04/06/14.
  */
-class GUIDecisionMaker(val graph : JavaAccessGraph) extends DecisionMaker[JavaNodeKind]{
+class GUIDecisionMaker[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind])
+  extends DecisionMaker[Kind]{
 
-  val fallback = new JavaDefaultDecisionMaker(graph)
+  val graph = filesHandler.graph
+  val fallback = filesHandler.decisionMaker()
 
   override def toString = "User Decision Maker"
 
@@ -27,7 +28,7 @@ class GUIDecisionMaker(val graph : JavaAccessGraph) extends DecisionMaker[JavaNo
                  k : Option[NodeType] => Unit) : Unit =
     k(NodeChooser(LiteralNodeSet(graph.filter(predicate)), context))
 
-  def modifyConstraints(sources : NodeSet[JavaNodeKind], target : NodeType) {
+  def modifyConstraints(sources : NodeSet[Kind], target : NodeType) {
     ConstraintExceptionFrame(sources, target)
   }
 

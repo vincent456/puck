@@ -1,15 +1,16 @@
 package puck.graph
 
-import puck.FilesHandler
+import java.io.File
+
+import puck.javaAG.JavaFilesHandler
 import puck.javaAG.nodeKind.{Primitive, JavaNodeKind}
 import scala.collection.mutable.Set
-import puck.string2file
 /**
  * Created by lorilan on 15/05/14.
  */
 class BridgeTestSpec extends UnitSpec{
 
-  val fh = FilesHandler("/home/lorilan/puck_svn/distrib/examples/bridge/hannemann_inspired/candidate")()
+  val fh = new JavaFilesHandler(new File("/home/lorilan/puck_svn/distrib/examples/bridge/hannemann_inspired/candidate"))
   val graph = fh.loadGraph(null)
   println("graph loaded")
   /*fh.accessGraph(fh.parseConstraints())

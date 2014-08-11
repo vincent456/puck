@@ -1,40 +1,68 @@
 package puck.gui
 
+import java.io.File
+
+import puck.graph.{NodeKind, FilesHandler}
+
 import scala.swing._
-import puck.FilesHandler
 import java.awt.Dimension
 
 /**
  * Created by lorilan on 09/05/14.
  */
-class SettingsFrame(filesHandler : FilesHandler) extends Frame{
+class SettingsFrame[Kind <: NodeKind[Kind]](filesHandler : FilesHandler[Kind]) extends Frame{
 
   title = "Settings"
   size = new Dimension(300, 150)
 
-  contents = new FlowPanel{
-    var path : Label = _
-    contents += new Button("Set dot path"){
-      path = new Label(
-        filesHandler.graphvizDot match {
-          case None => "no path setted: puck will use PATH variable to seek dot"
-          case Some(f) => f.getPath
-        })
+  contents =  new BoxPanel(Orientation.Vertical){
 
-      action = new Action("Choosing dot path"){
+    def makeFileSelectionLine(title : String,
+                              tip : String,
+                              initValue : Option[File])
+                             (setter : File => Unit) = {
+      val path : Label = new Label(initValue match {
+        case None => "None"
+        case Some(f) => f.toString
+      })
+
+      val hbox = PuckMainPanel.leftGlued(new Button(title){
+
+        tooltip = tip
+
+        action = new Action(title){
           def apply() {
-            val fc = new FileChooser
-            fc.title = "Select dot path"
+            val fc = new FileChooser(filesHandler.srcDirectory.get)
+            fc.title = title
             fc.fileSelectionMode = FileChooser.SelectionMode.FilesOnly
             fc showDialog(null, "Select")
             val f = fc.selectedFile
             if(f != null) {
-              filesHandler.graphvizDot = f
+              setter(f)
               path.text = f.getPath
             }
           }
-      }
+        }
+      })
+      hbox.contents += path
+      hbox
     }
-    contents += path
+
+    contents += makeFileSelectionLine("Dot", "",
+      filesHandler.graphvizDot){ f =>
+      filesHandler.graphvizDot = Some(f)
+    }
+
+    contents += makeFileSelectionLine("Decouple",
+      "Select the file containing the decoupling constraints",
+      filesHandler.decouple){ f =>
+      filesHandler.decouple = Some(f)
+    }
+
+    contents += makeFileSelectionLine("Jar list file",
+      "Select a file containing a list of the jar libraries required by the analysed program",
+      filesHandler.jarListFile){ f =>
+      filesHandler.jarListFile = Some(f)
+    }
   }
 }

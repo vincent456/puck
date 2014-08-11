@@ -1,9 +1,7 @@
 package puck.gui
 
 import java.io.{PipedInputStream, PipedOutputStream}
-
-import puck.FilesHandler
-import puck.graph.{AGEdge, AGNode, NodeKind}
+import puck.graph.{FilesHandler, AGEdge, AGNode, NodeKind}
 import puck.javaAG.JavaNode
 
 import scala.concurrent.Future
@@ -15,7 +13,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 /**
  * Created by lorilan on 10/07/14.
  */
-class NodeInfosPanel[K <: NodeKind[K]]( val filesHandler : FilesHandler,
+class NodeInfosPanel[K <: NodeKind[K]]( val filesHandler : FilesHandler[K],
                       val node : AGNode[K])
   extends SplitPane(Orientation.Horizontal) {
 
@@ -81,7 +79,7 @@ class NodeInfosPanel[K <: NodeKind[K]]( val filesHandler : FilesHandler,
             }
 
             //TODO CLEAN CAST !!
-            if(filesHandler.makePng(soutput = Some(pipedOutput), selectedUse = Some(AGEdge.uses(user.asInstanceOf[JavaNode], node.asInstanceOf[JavaNode]))) ==0)
+            if(filesHandler.makePng(soutput = Some(pipedOutput), selectedUse = Some(AGEdge.uses(user, node))) ==0)
               println("success")
             else
               println("fail")

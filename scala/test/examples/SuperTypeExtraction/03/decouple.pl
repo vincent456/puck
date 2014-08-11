@@ -1,0 +1,1 @@
+hideScopeFrom('A', 'B').

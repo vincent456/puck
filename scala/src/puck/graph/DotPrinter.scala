@@ -1,6 +1,6 @@
 package puck.graph
 
-import _root_.java.io.BufferedWriter
+import java.io.BufferedWriter
 
 /**
  * Created by lorilan on 07/05/14.

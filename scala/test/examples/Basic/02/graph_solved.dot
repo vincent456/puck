@@ -1,0 +1,24 @@
+digraph G{
+rankdir=LR; ranksep=equally; compound=true
+subgraph cluster12 {
+label="&lt;&lt;package&gt;&gt; p";
+color=black;
+17 [ label = <<TABLE BGCOLOR="#FFFF33"> <TR> <TD PORT="17" BORDER="0"> <B>A </B></TD></TR>
+<HR/>
+<TR><TD PORT="18" ALIGN="LEFT" BORDER="0">A</TD></TR>
+<TR><TD PORT="14" ALIGN="LEFT" BORDER="0">ma</TD></TR>
+</TABLE>>, shape = "none" ];
+20 [ label = <<TABLE BGCOLOR="#FFFF99"> <TR> <TD PORT="20" BORDER="0"> <B>&lt;&lt;interface&gt;&gt; B_SuperTypeAbstraction </B></TD></TR>
+<HR/>
+<TR><TD PORT="21" ALIGN="LEFT" BORDER="0">mb</TD></TR>
+</TABLE>>, shape = "none" ];
+13 [ label = <<TABLE BGCOLOR="#FFFF33"> <TR> <TD PORT="13" BORDER="0"> <B>B </B></TD></TR>
+<HR/>
+<TR><TD PORT="16" ALIGN="LEFT" BORDER="0">B</TD></TR>
+<TR><TD PORT="15" ALIGN="LEFT" BORDER="0">mb</TD></TR>
+</TABLE>>, shape = "none" ];
+}
+17:14 -> 20:21[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+17:14 -> 20:20[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+13:13 -> 20:20[ style = dashed, arrowhead = empty, color = black, penwidth = 1];
+}

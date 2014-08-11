@@ -10,7 +10,7 @@ import puck.util.Logger
  * Created by lorilan on 28/05/14.
  */
 
-class JavaDefaultDecisionMaker(graph : JavaAccessGraph) extends DefaultDecisionMaker[JavaNodeKind](graph){
+class JavaDefaultDecisionMaker(graph : AccessGraph[JavaNodeKind]) extends DefaultDecisionMaker[JavaNodeKind](graph){
   val violationsKindPriority = List[JavaNodeKind](Field(), Constructor(), Class(), Interface())
 }
 

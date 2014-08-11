@@ -36,13 +36,15 @@ package puck
  */
 
 
+import puck.javaAG.JavaFilesHandler
 
- import scala.swing._
+import scala.swing._
  import javax.swing.UIManager
  import puck.gui.PuckMainPanel
 
  object Front extends SwingApplication{
-  override def startup(args: Array[String]){
+
+   def startup(args: Array[String]){
     UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
     if (top.size == new Dimension(0,0)) top.pack()
     top.visible = true
@@ -51,17 +53,81 @@ package puck
   def top = new MainFrame {
     title = "Puck"
 
-    size = new Dimension(300, 200)
-
-    contents  = new PuckMainPanel(FilesHandler())
+    contents  = new PuckMainPanel(new JavaFilesHandler())
 
   }
 }
 
+/*import java.io.{PipedInputStream, PipedOutputStream}
+
+import org.apache.batik.swing.{JSVGScrollPane, JSVGCanvas}
+import puck.graph.Svg
+import puck.javaAG.JavaFilesHandler
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.swing._
+import javax.swing.UIManager
+import puck.util.FileHelper.string2file
+
+object Front extends SwingApplication{
+  val folder = "/home/lorilan/projects/constraintsSolver/scala/test/examples/"
+  //val example = "SuperTypeExtraction/01/"
+  val example = "Basic/01/"
+
+  val fh = new JavaFilesHandler(folder + example)
+  //fh.decouple = "/home/lorilan/puck_svn/distrib/examples/composite/candidate/decouple_strict.pl"
+  println("load graph")
+  fh.loadGraph(null)
+  println("parse cts")
+  fh.parseConstraints()
+  println("plop")
+
+  override def startup(args: Array[String]){
+    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
+    if (top.size == new Dimension(0,0)) top.pack()
+    top.visible = true
+  }
+
+  def top = new MainFrame {
+
+    val pipedOutput = new PipedOutputStream()
+    val pipedInput = new PipedInputStream(pipedOutput)
 
 
-/*
-import java.io._
+    import org.apache.batik.dom.svg.SAXSVGDocumentFactory
+    import org.apache.batik.util.XMLResourceDescriptor
+    val parser = XMLResourceDescriptor.getXMLParserClassName
+    val f = new SAXSVGDocumentFactory(parser)
+
+
+    val canvas = new JSVGCanvas()
+    val futDoc = Future {
+      f.createSVGDocument(null, pipedInput)
+    }
+
+    if(fh.makePng(soutput = Some(pipedOutput), outputFormat = Svg()) ==0)
+      println("success")
+    else
+      println("fail")
+
+    futDoc onSuccess {
+      case doc =>  canvas.setSVGDocument(doc)
+    }
+
+
+    title = "Puck"
+
+    //size = new Dimension(401, 220)
+
+    contents  = Component.wrap(new JSVGScrollPane(canvas))
+    //contents  = Component.wrap(canvas)
+
+
+  }
+}*/
+
+
+/*import java.io._
 
 import puck.javaAG.nodeKind.{Method, AbstractMethod, Interface}
 
@@ -70,19 +136,18 @@ object Front{
 
   def main(args : Array[String]){
 
-    val folder = "/home/lorilan/puck_svn/distrib/examples/"
-    val example ="prototype/actors/candidate"
+//    val folder = "/home/lorilan/puck_svn/distrib/examples/"
+//    val example ="prototype/actors/candidate"
    // val example = "bridge/hannemann_inspired/candidate"
 
-//    val folder = "/home/lorilan/projects/constraintsSolver/scala/test/examples/"
-//    val example = "SuperTypeExtraction/01/"
-
+    val folder = "/home/lorilan/projects/constraintsSolver/scala/test/examples/"
+    //val example = "SuperTypeExtraction/01/"
+    val example = "Basic/01/"
     val fh = FilesHandler( folder + example)()
     //fh.decouple = "/home/lorilan/puck_svn/distrib/examples/composite/candidate/decouple_strict.pl"
     fh.loadGraph(null)
     fh.parseConstraints()
     println("graph loaded")
-
 
     print("make png ... ")
     fh.makePng(soutput = Some(new FileOutputStream(
@@ -117,5 +182,4 @@ object Front{
     //
     //    fh.accessGraph.printConstraints()
   }
-}
-*/
+}*/

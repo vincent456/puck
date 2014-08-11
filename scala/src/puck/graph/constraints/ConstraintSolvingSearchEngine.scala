@@ -95,7 +95,7 @@ trait ConstraintSolvingSearchEngine[Kind <: NodeKind[Kind]]
   extends TryAllSearchEngine[ConstraintSolvingChoices[Kind],
     Option[AGNode[Kind]]] with DecisionMaker[Kind]{
 
-  val logger : Logger
+  val logger : Logger[Int]
 
   val violationsKindPriority : List[Kind]
 

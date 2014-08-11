@@ -1,22 +1,15 @@
-import java.io._
-import java.util.regex.{Matcher, Pattern}
-import puck.util.Logger
+package puck.util
 
+import java.io.{FileReader, BufferedReader, File}
+import java.util.regex.{Matcher, Pattern}
 import scala.language.implicitConversions
+
 /**
- * Created by lorilan on 08/05/14.
+ * Created by lorilan on 11/08/14.
  */
-package object puck {
+object FileHelper {
 
   implicit def string2file(filePath : String) = new File(filePath)
-
-  def time[A](logger : Logger)(a: => A) = {
-    val now = System.nanoTime
-    val result = a
-    val micros = (System.nanoTime - now) / 1000
-    logger.writeln("%d microseconds".format(micros))
-    result
-  }
 
   def fileLines(file: File, keepEmptyLines: Boolean = false): List[String] = {
     if(!file.exists()) return List()
@@ -62,4 +55,34 @@ package object puck {
     reader.close()
     smap
   }
+
+  def findAllFiles(root : File,
+                   suffix : String,
+                    ignore: String) : List[String] =
+    findAllFiles(suffix, ignore, List(), root)
+
+  def findAllFiles(suffix : String,
+                   ignore: String,
+                   res: List[String],
+                    f: File) : List[String] = {
+    def aux(res: List[String],
+            f: File) : List[String] = {
+      if (f.isDirectory)
+        f.listFiles().foldLeft(res) {
+          case (l, f0) =>
+            if(f0.getName == ignore) l
+            else aux(l, f0)
+        }
+      else {
+        if (f.getName.endsWith(suffix))
+          f.getPath :: res
+        else
+          res
+      }
+    }
+
+    aux(res, f)
+
+  }
+  
 }

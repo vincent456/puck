@@ -27,7 +27,7 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
   type NodeType = AGNode[Kind]
   type EdgeType = AGEdge[Kind]
 
-  var logger : Logger = new NoopLogger()
+  var logger : Logger[Int] = new NoopLogger()
 
   def newGraph() : AccessGraph[Kind] = {
     new AccessGraph(nodeBuilder)
@@ -160,6 +160,8 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
   }
 
 
+  def doMerges(){}
+  def applyChangeOnProgram(){}
 
 }
 

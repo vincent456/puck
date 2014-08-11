@@ -34,7 +34,6 @@ class GraphExplorer[Kind <: NodeKind[Kind]](width : Int, height : Int)
 
   reactions += {
     case e : AccessGraphModified[Kind] =>
-      println("modified !!")
       val root = new PuckTreeNode[Kind](e.graph.root)
       addChildren(root)
 

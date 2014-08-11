@@ -198,7 +198,7 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
     }
   }
 
-  def doMerges(){
+  override def doMerges(){
 
     class MergeDone extends Throwable
 
@@ -223,7 +223,7 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
 
   }
 
-  def applyChangeOnProgram(){
+  override def applyChangeOnProgram(){
 
     val rec = transformations.recording
 

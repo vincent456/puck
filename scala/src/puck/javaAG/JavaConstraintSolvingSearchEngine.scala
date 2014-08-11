@@ -10,7 +10,7 @@ import puck.util.Logger
  * Created by lorilan on 02/07/14.
  */
 class JavaConstraintSolvingSearchEngine(val graph : AccessGraph[JavaNodeKind],
-                                        val logger : Logger,
+                                        val logger : Logger[Int],
                                         val printTrace : SearchState[ConstraintSolvingChoices[JavaNodeKind],
                                           Option[AGNode[JavaNodeKind]]] => Unit)
   extends ConstraintSolvingSearchEngine[JavaNodeKind] {
