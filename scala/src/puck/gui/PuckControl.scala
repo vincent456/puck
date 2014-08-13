@@ -4,7 +4,7 @@ import java.io.{PipedInputStream, PipedOutputStream}
 
 import AST.LoadingListener
 import puck.graph.constraints.DecisionMaker
-import puck.graph.{FilesHandler, NodeKind}
+import puck.graph.{AGEdge, FilesHandler, NodeKind}
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -20,7 +20,7 @@ import scala.util.{Failure, Success}
 sealed abstract class ControlRequest extends Event
 
 case class LoadConstraintRequest() extends ControlRequest
-case class GraphDisplayRequest() extends ControlRequest
+case class GraphDisplayRequest[Kind <: NodeKind[Kind]](sUse : Option[AGEdge[Kind]] = None) extends ControlRequest
 case class ApplyOnCodeRequest() extends ControlRequest
 case class LoadCodeRequest() extends ControlRequest
 case class SolveRequest[Kind <: NodeKind[Kind]](decisionStrategy : DecisionMaker[Kind],
@@ -61,14 +61,14 @@ class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
       filesHandler.graph.discardConstraints()
       filesHandler.parseConstraints()
       filesHandler.logger.writeln(" done:")
-      filesHandler.graph.printConstraints()
+      filesHandler.graph.printConstraints(filesHandler.logger)
     }
     catch {
       case e: Error => println("\n" + e.getMessage)
     }
   }
 
-  def displayGraph(): Unit = {
+  def displayGraph(someUse : Option[AGEdge[Kind]] = None){
     filesHandler.logger.write("Printing graph ...")
 
     val pipedOutput = new PipedOutputStream()
@@ -79,10 +79,12 @@ class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
       imgframe.visible = true
     }
 
-    if(filesHandler.makePng(soutput = Some(pipedOutput)) ==0)
-      filesHandler.logger.writeln("success")
-    else
-      filesHandler.logger.writeln("fail")
+    filesHandler.makePng(sOutput = Some(pipedOutput),
+                         selectedUse = someUse){
+      case Success(i) if i == 0 =>
+        filesHandler.logger.writeln("success")
+      case _ => filesHandler.logger.writeln("fail")
+    }
   }
 
   def doSolve(decisionMaker : DecisionMaker[Kind],
@@ -114,7 +116,9 @@ class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
 
     case LoadConstraintRequest() => loadConstraints()
 
-    case GraphDisplayRequest() => displayGraph()
+    case GraphDisplayRequest(sUse) =>
+      println("request received")
+      displayGraph(sUse.asInstanceOf[Option[AGEdge[Kind]]])
 
     case ApplyOnCodeRequest() => applyOnCode()
 

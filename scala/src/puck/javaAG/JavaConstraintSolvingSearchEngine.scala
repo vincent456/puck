@@ -10,13 +10,16 @@ import puck.util.Logger
  * Created by lorilan on 02/07/14.
  */
 class JavaConstraintSolvingSearchEngine(val graph : AccessGraph[JavaNodeKind],
-                                        val logger : Logger[Int],
+                                        searchEnginelogger : Logger[Int],
+                                        solverLogger : Logger[Int],
                                         val printTrace : SearchState[ConstraintSolvingChoices[JavaNodeKind],
                                           Option[AGNode[JavaNodeKind]]] => Unit)
   extends ConstraintSolvingSearchEngine[JavaNodeKind] {
 
+  val logger = searchEnginelogger
+
   val initialState = new CSInitialSearchState(this,
-    new JavaSolver(graph, this), printTrace)
+    new JavaSolver(graph, solverLogger, this), printTrace)
 
   val violationsKindPriority = List[JavaNodeKind](Field(), Constructor(), Class(), Interface())
 

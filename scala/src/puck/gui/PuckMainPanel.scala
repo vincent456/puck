@@ -49,6 +49,8 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
 
   }
 
+  filesHandler.logger = new ConsoleLogger()
+
   /*val out = new OutputStream {
     override def write(p1: Int): Unit = console.append(String.valueOf(p1.toChar))
   }*/
@@ -61,17 +63,25 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
 
     val treeDisplayer = new GraphExplorer[Kind](rightWidth/2, height)
 
+    val progressBar  = new ProgressBar()
+    val delayedDisplay = ArrayBuffer[Component]()
+    val control = new PuckControl(filesHandler, progressBar, delayedDisplay)
+
     val nodeInfos = new ScrollPane(){
       minimumSize = new Dimension(rightWidth/2, height)
       preferredSize = minimumSize
 
       reactions += {
         case PuckTreeNodeClicked(n) =>
-          contents = new NodeInfosPanel[Kind](filesHandler, n.asInstanceOf[Kind].node)
+          val nip = new NodeInfosPanel[Kind]( n.asInstanceOf[PuckTreeNode[Kind]].agNode)
+          contents = nip
+          control.listenTo(nip)
 
       }
     }
-    nodeInfos.listenTo(treeDisplayer)
+    nodeInfos listenTo treeDisplayer
+
+
 
     def makeButton(title:String, tip: String)(act:() => Unit): Component =
       PuckMainPanel.leftGlued(new Button() {
@@ -88,9 +98,6 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
     leftComponent = new BoxPanel(Orientation.Vertical) {
       minimumSize = new Dimension(leftWidth, height)
 
-      val progressBar  = new ProgressBar()
-      val delayedDisplay = ArrayBuffer[Component]()
-      val control = new PuckControl(filesHandler, progressBar, delayedDisplay)
 
       control.listenTo(this)
       treeDisplayer.listenTo(control)
@@ -104,7 +111,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
           frame.visible = true
       }
 
-      contents += makeButton("Sources",
+      contents += makeButton("Work space",
         "Select the root directory containing the java (up to 1.5) source code you want to analyse"){
         () => val fc = new FileChooser(filesHandler.srcDirectory.get)
           fc.title = "What directory contains your application ?"
@@ -126,12 +133,12 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
       progressBar.visible = false
 
 
-      contents += makeButton("Do everything",
+      contents += makeButton("Do it !",
         "Magic !"){
         () => publish(DoWholeProcessRequest(printTrace.selected))
       }
 
-      contents += makeButton("(Re)load code + cts",
+      contents += makeButton("(Re)load code & constraints",
         "Load the selected source code and build the access graph"){
         () => publish(LoadCodeRequest())
       }
@@ -157,8 +164,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
 
       val showConstraints = makeButton("Show constraints",
         "Show the constraints the graph has to satisfy"){
-        () =>
-          filesHandler.graph.printConstraints()
+        () => filesHandler.graph.printConstraints(filesHandler.logger)
       }
 
       addDelayedComponent(showConstraints)

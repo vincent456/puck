@@ -206,7 +206,6 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
       this.foreach { n =>
         n.kind match {
           case Interface() =>
-            println("searching merging candidate for %s :".format(n))
             n.searchMergingCandidate() match {
               case Some(other) => n.mergeWith(other)
                 throw new MergeDone()
@@ -229,18 +228,7 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
 
     rec.undo()
 
-    /*println( "rec to apply :" )
-    rec.foreach(println)*/
-    println("applying change !")
-
-    /*val primPkgName = program.typeBoolean().packageName()
-    for( c  <-
-         scala.collection.JavaConversions.asScalaIterator(program.compilationUnitIterator())){
-      val cu: AST.CompilationUnit = c.asInstanceOf[AST.CompilationUnit]
-
-      if(cu.packageName() != primPkgName)
-        cu.lockAllNames()
-    }*/
+    logger.writeln("applying change !")
 
     rec.foreach { r =>
       AG2AST(r)

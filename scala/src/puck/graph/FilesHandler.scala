@@ -11,7 +11,7 @@ import puck.util._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.sys.process.Process
-import scala.util.{Failure, Success}
+import scala.util.{Try, Failure, Success}
 
 
 sealed abstract class DotOutputFormat
@@ -36,6 +36,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
   private [this] var logger0 : Logger[Int] = new DefaultSystemLogger()
 
   def logger : Logger[Int] = logger0
+  def logger_=( l : Logger[Int]){logger0 = l}
 
   private [this] var ag : AccessGraph[Kind] = _
   def graph = ag
@@ -83,9 +84,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
 
   def srcDirectory = this.srcDir0
   def srcDirectory_=(sdir : Option[File]) {
-    println("set srcDirectory " + sdir)
     this.srcDir0 = setCanonicalOptionFile(this.srcDir0, sdir)
-    println("this.srcDir0 = " + this.srcDir0 )
   }
 
   def outDirectory = this.outDir0
@@ -138,8 +137,8 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
     PrologPrinter.print(new BufferedWriter(new FileWriter(graphFile(".pl"))), ag)
   }
 
-  def convertDot( sinput : Option[InputStream] = None,
-                  soutput : Option[OutputStream] = None,
+  def convertDot( sInput : Option[InputStream] = None,
+                  sOutput : Option[OutputStream] = None,
                   outputFormat : DotOutputFormat) : Int = {
 
     val dot = graphvizDot match {
@@ -148,45 +147,48 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
     }
 
     val processBuilder =
-      sinput match {
+      sInput match {
         case None => Process(List(dot,
           "-T" + outputFormat, graphFile(".dot").toString))
         case Some(input) => Process(List(dot,
           "-T" + outputFormat)) #< input
       }
 
-    soutput match {
-      case None =>(processBuilder #>  graphFile( "." + outputFormat)).!
-      case Some(output) => (processBuilder #> output).!
+    sOutput match {
+      case None =>(processBuilder #> graphFile( "." + outputFormat)).!
+      case Some(output) =>(processBuilder #> output).!
     }
-
   }
 
   def makePng(printId : Boolean = false,
               printSignatures : Boolean = false,
-              soutput : Option[OutputStream] = None,
+              sOutput : Option[OutputStream] = None,
               outputFormat : DotOutputFormat = Png(),
-              selectedUse : Option[AGEdge[Kind]] = None) : Int = {
+              selectedUse : Option[AGEdge[Kind]] = None)
+             (finish : Try[Int] => Unit = {case _ => ()}){
 
+    //TODO fix bug when chaining the two function with a pipe
+    // and calling it in "do everything"
+    makeDot(printId, printSignatures, selectedUse)
+
+    convertDot(sInput = None, sOutput, outputFormat)
+
+/*
     val pipedOutput = new PipedOutputStream()
     val pipedInput = new PipedInputStream(pipedOutput)
 
-    val f = Future {
-      convertDot(Some(pipedInput), soutput, outputFormat)
-    }
+    println("launchig convert dot future")
+    Future {
+      convertDot(Some(pipedInput), sOutput, outputFormat)
+    } onComplete finish
+    println("post launching")
+
+
     makeDot(printId, printSignatures, selectedUse,
       writer = new OutputStreamWriter(pipedOutput))
+    println("post make dot")
+*/
 
-    f onComplete {
-      case Success(_) => ()
-      case Failure(tr) => throw tr
-    }
-
-    f.value match {
-      case Some(Success(ret)) => ret
-      case Some(Failure(tr)) => throw tr
-      case None => throw new AGError("dafuk ?")
-    }
 
   }
 
@@ -207,28 +209,25 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
 
   def decisionMaker() : DecisionMaker[Kind]
 
-  def solver(dm : DecisionMaker[Kind]) : Solver[Kind]
+  def solver(dm : DecisionMaker[Kind], logger: Logger[Int]) : Solver[Kind]
 
   def solve (trace : Boolean = false,
              decisionMaker : DecisionMaker[Kind]){
 
-    val intlogger = new DefaultSystemLogger()
-    graph.logger = intlogger
-    intlogger.verboseLevel = 1
     var inc = 0
 
     def printTrace(){
       makePng(printSignatures = true,
-        soutput = Some(new FileOutputStream(graphFile( "_trace" + inc +".png"))))
+        sOutput = Some(new FileOutputStream(graphFile( "_trace" + inc +".png"))))()
       inc += 1
     }
 
     graph.transformations.startRegister()
-    solver(decisionMaker).solve(
+    solver(decisionMaker, this.logger).solve(
       if(trace) {() =>
-        graph.logger.writeln("*****************************************************")
-        graph.logger.writeln("*********** solve end of iteration %d *************".format(inc))
-        graph.logger.writeln()
+        this.logger.writeln("*****************************************************")
+        this.logger.writeln("*********** solve end of iteration %d *************".format(inc))
+        this.logger.writeln()
         printTrace()
       }
       else
@@ -237,9 +236,9 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
     )
     graph.doMerges()
     if(trace) {
-      graph.logger.writeln("*****************************************************")
-      graph.logger.writeln("*****************   merge done   ********************")
-      graph.logger.writeln()
+      this.logger.writeln("*****************************************************")
+      this.logger.writeln("*****************   merge done   ********************")
+      this.logger.writeln()
       printTrace()
     }
   }
@@ -248,30 +247,31 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
   type PrinterType = SearchState[ConstraintSolvingChoices[Kind], Option[AGNode[Kind]]] => Unit
 
   def constraintSolvingSearchEngine(graph : AccessGraph[Kind],
-                                    logger: Logger[Int],
+                                    searchEnginelogger: Logger[Int],
+                                    solverLogger: Logger[Int],
                                     printer : PrinterType) : ConstraintSolvingSearchEngine[Kind]
 
 
   def explore (trace : Boolean = false){
 
-    val intlogger = new DefaultFileLogger(logFile0.get)
-    intlogger.verboseLevel = 10
+    val searchEngineLogger = new DefaultFileLogger(logFile0.get)
+    searchEngineLogger.verboseLevel = 10
 
-    val engine = constraintSolvingSearchEngine(graph, intlogger,
+    val engine = constraintSolvingSearchEngine(graph, searchEngineLogger, this.logger,
       if(trace) { state =>
         state.isStep = true
 
         val f = graphFile("_traces%c%s".format(
           File.separatorChar, state.uuid(File.separator, "_", ".png")))
 
-        intlogger.writeln("*****************************************************")
-        intlogger.writeln("*********** solve end of iteration %d *****************".format(state.depth))
-        intlogger.writeln("***********  %s ***************".format(f.getAbsolutePath))
+        this.logger.writeln("*****************************************************")
+        this.logger.writeln("*********** solve end of iteration %d *****************".format(state.depth))
+        this.logger.writeln("***********  %s ***************".format(f.getAbsolutePath))
 
-        intlogger.writeln()
+        this.logger.writeln()
 
         f.getParentFile.mkdirs()
-        makePng(soutput = Some(new FileOutputStream(f)))
+        makePng(sOutput = Some(new FileOutputStream(f)))()
       }
       else
         _ => ()
@@ -287,8 +287,8 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
     d.mkdir()
     engine.finalStates.foreach { s =>
       s.internal.recording()
-      makePng(soutput = Some(new FileOutputStream(
-        graphFile("_results%c%04d.png".format(File.separatorChar, i)))))
+      makePng(sOutput = Some(new FileOutputStream(
+        graphFile("_results%c%04d.png".format(File.separatorChar, i)))))()
       i += 1
     }
 
@@ -306,9 +306,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
   //TODO ? change to List[String] ?
   val srcSuffix : String
 
-  private def openList(files : List[String]): Unit ={
-    Process(editor  :: files ).!
-  }
+  private def openList(files : List[String]){ Process(editor  :: files ).! }
 
   def openSources() = openList(findAllFiles(srcDirectory.get, srcSuffix,
     outDirectory.get.getName))

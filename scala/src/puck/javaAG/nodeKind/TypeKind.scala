@@ -13,7 +13,7 @@ abstract class TypeKind extends JavaNodeKind {
   def addDeclToProgram(){
     val prog = node.graph.root.kind match {
       case r @ JavaRoot() => r.program
-      case r => throw new Error("root shoold be of kind JavaRoot instead of " + r)
+      case r => throw new Error("root should be of kind JavaRoot instead of " + r)
     }
 
     decl.setID(node.name)

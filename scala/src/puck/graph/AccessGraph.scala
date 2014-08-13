@@ -70,26 +70,20 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
     this.foreach(_.discardConstraints())
   }
 
-  def printConstraints(){
+  def printConstraints[V](logger : Logger[V]){
     nodeSets.foreach{
-      case (_, namedSet) => println(namedSet.defString)
+      case (_, namedSet) => logger.writeln(namedSet.defString)
     }
-    constraints.foreach(ct => println(ct))
+    constraints.foreach(ct => logger.writeln(ct.toString))
   }
 
-  def printUsesDependancies(){
+  def printUsesDependancies[V](logger : Logger[V]){
     this.foreach { node =>
-      if (!node.primaryUses.isEmpty)
-        println(node.primaryUses)
-      if (!node.sideUses.isEmpty)
-        println(node.sideUses)
+      if (node.primaryUses.nonEmpty)
+        logger.writeln(node.primaryUses.toString())
+      if (node.sideUses.nonEmpty)
+        logger.writeln(node.sideUses.toString())
     }
-  }
-
-  def list(){
-    println("AG nodes :")
-    nodes0.foreach(n => println("- " + n))
-    println("list end")
   }
 
   private [puck] val nodesByName = mutable.Map[String, NodeType]()

@@ -174,7 +174,6 @@ object DotPrinter {
 
 
 
-
     writeln("digraph G{")
     writeln("rankdir=LR; ranksep=equally; compound=true")
 
@@ -186,7 +185,8 @@ object DotPrinter {
     arcs.foreach(writeln)
 
     writeln("}")
-    writer.flush()
+
+    writer.close()
 
   }
 }

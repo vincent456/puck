@@ -6,7 +6,7 @@ import puck.util.Logger
 trait Solver[Kind <: NodeKind[Kind]] {
 
   val graph : AccessGraph[Kind]
-  def logger : Logger[Int] = graph.logger
+  val logger : Logger[Int]
 
   val decisionMaker : DecisionMaker[Kind]
 

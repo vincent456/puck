@@ -39,13 +39,17 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler[JavaNodeKi
 
   def decisionMaker() = new JavaDefaultDecisionMaker(graph)
 
-  def solver(dm : DecisionMaker[JavaNodeKind]) =
-    new JavaSolver(graph, dm)
+  def solver(dm : DecisionMaker[JavaNodeKind], logger: Logger[Int]) =
+    new JavaSolver(graph, logger, dm)
 
   def constraintSolvingSearchEngine(graph : AccessGraph[JavaNodeKind],
-                                    logger: Logger[Int],
+                                    searchEnginelogger: Logger[Int],
+                                    solverLogger: Logger[Int],
                                     printer : PrinterType) =
-    new JavaConstraintSolvingSearchEngine(graph, logger, printer)
+    new JavaConstraintSolvingSearchEngine(graph,
+      searchEnginelogger,
+      solverLogger,
+      printer)
 
   def printCode() {
     val l : AST.List[AST.CompilationUnit] = graph.asInstanceOf[JavaAccessGraph].program.getCompilationUnits

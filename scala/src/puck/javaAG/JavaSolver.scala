@@ -15,6 +15,7 @@ class JavaDefaultDecisionMaker(graph : AccessGraph[JavaNodeKind]) extends Defaul
 }
 
 class JavaSolver(val graph : AccessGraph[JavaNodeKind],
+                 val logger : Logger[Int],
                  val decisionMaker : DecisionMaker[JavaNodeKind]) extends Solver[JavaNodeKind]{
 
   override  def singleAbsIntroPredicate(impl : NodeType,

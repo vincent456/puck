@@ -3,12 +3,15 @@ package puck.javaAG
 import puck.graph._
 import puck.graph.backTrack._
 import puck.javaAG.nodeKind._
+import puck.util.{NoopLogger, Logger}
 
 /**
  * Created by lorilan on 23/07/14.
  */
 object AG2AST {
-  def apply(t : Recordable[JavaNodeKind])= t match {
+  var logger : Logger[Int] = new NoopLogger[Int]
+
+  def apply(t : Recordable[JavaNodeKind]) = t match {
     case Transformation(Add(), TTNode(node)) =>
       //println("creating node " + node)
       add(node)
@@ -18,7 +21,7 @@ object AG2AST {
       add(e)
 
     case Transformation(Add(), TTRedirection(e, Target(newTarget))) =>
-      println("redirecting %s target to %s".format(e, newTarget))
+      logger.writeln("redirecting %s target to %s".format(e, newTarget))
       redirectTarget(e, newTarget)
 
     case Transformation(Add(), TTRedirection(e, Source(newSource))) =>
@@ -47,11 +50,11 @@ object AG2AST {
     case Transformation(Remove(), TTNode(node)) =>
       node.kind match {
         case k : TypeKind => k.decl.deleteAGNode()
-        case _ => println("%s not applied on program".format(t))
+        case _ => logger.writeln("%s not applied on program".format(t))
       }
 
 
-    case _ => println("%s not applied on program".format(t))
+    case _ => logger.writeln("%s not applied on program".format(t))
   }
 
 
@@ -81,7 +84,7 @@ object AG2AST {
 
         case (Package(), Package()) => ()// can be ignored
 
-        case _ => println("%s not created".format(e))
+        case _ => logger.writeln("%s not created".format(e))
 
       }
 
@@ -89,14 +92,14 @@ object AG2AST {
       (e.source.kind, e.target.kind) match {
         case (c@Class(), i@Interface()) =>
           c.decl.addImplements(i.createLockedAccess())
-        case _ => println("%s not created".format(e))
+        case _ => logger.writeln("%s not created".format(e))
       }
 
     case Uses() =>
 
       (e.source.kind, e.target.kind) match {
         case (cm : ConstructorMethod, Constructor()) => ()//already generated when creating ConstructorMethod decl
-        case (Class(), Interface()) => println("do not create %s : assuming its an isa edge (TOCHECK)".format(e)) // class imple
+        case (Class(), Interface()) => logger.writeln("do not create %s : assuming its an isa edge (TOCHECK)".format(e)) // class imple
 
         /*case (f @ Field(), k : TypeKind) =>
           f.decl.setTypeAccess(k.lockedAccess())
@@ -106,10 +109,10 @@ object AG2AST {
             case NamedType(n) =>
 
           }*/
-        case _ => println(" =========> need to create " + e)
+        case _ => logger.writeln(" =========> need to create " + e)
       }
 
-    case Undefined() => println("cannot create " + e + " !!!")
+    case Undefined() => logger.writeln("cannot create " + e + " !!!")
   }
 
 
