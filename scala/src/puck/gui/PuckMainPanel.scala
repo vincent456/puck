@@ -1,6 +1,7 @@
 package puck.gui
 
-import puck.graph.{NodeKind, FilesHandler}
+import puck.graph.NodeKind
+import puck.graph.io.FilesHandler
 import puck.util.IntLogger
 
 import scala.collection.mutable.ArrayBuffer

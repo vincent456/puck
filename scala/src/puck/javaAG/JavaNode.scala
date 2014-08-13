@@ -2,6 +2,7 @@ package puck.javaAG
 
 import puck.graph._
 import puck.graph.constraints.{RedirectionPolicy, AbstractionPolicy, SupertypeAbstraction}
+import puck.graph.io.DotHelper
 import puck.javaAG.nodeKind._
 
 

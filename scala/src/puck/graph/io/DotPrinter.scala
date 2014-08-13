@@ -1,20 +1,11 @@
-package puck.graph
+package puck.graph.io
 
 import java.io.BufferedWriter
 
+import puck.graph._
 /**
- * Created by lorilan on 07/05/14.
+ * Created by lorilan on 13/08/14.
  */
-
-trait DotHelper[Kind <: NodeKind[Kind]]{
-  def isDotSubgraph(k : Kind) : Boolean
-  def isDotClass(k: Kind) : Boolean
-  def fillColor(k: Kind) : String
-  def namePrefix(k: Kind) : String
-  def splitDotClassContent(n: AGNode[Kind]) : (Iterable[AGNode[Kind]], Iterable[AGNode[Kind]], Iterable[AGNode[Kind]] , Iterable[AGNode[Kind]])
-  //with java ((fields, Constructors, Methods), inner classes)
-}
-
 object DotPrinter {
 
   class Style(val line: String, val arrowHead : String)

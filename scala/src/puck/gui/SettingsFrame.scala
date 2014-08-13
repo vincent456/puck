@@ -2,8 +2,8 @@ package puck.gui
 
 import java.io.File
 
-import puck.graph.{NodeKind, FilesHandler}
-
+import puck.graph.NodeKind
+import puck.graph.io.FilesHandler
 import scala.swing._
 import java.awt.Dimension
 

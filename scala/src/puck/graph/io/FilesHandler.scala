@@ -1,25 +1,28 @@
-package puck.graph
+package puck.graph.io
 
 import java.io._
-import java.util.NoSuchElementException
 
 import puck.graph.constraints._
+import puck.graph._
 import puck.search.SearchState
-import puck.util.FileHelper.findAllFiles
-import puck.util._
+import puck.util.{DefaultFileLogger, DefaultSystemLogger, Logger}
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.sys.process.Process
-import scala.util.{Try, Failure, Success}
+import scala.util.Try
 
-
-sealed abstract class DotOutputFormat
-case class Png() extends DotOutputFormat{
-  override def toString = "png"
-}
-case class Svg() extends DotOutputFormat{
-  override def toString = "svg"
+/**
+ * Created by lorilan on 13/08/14.
+ */
+object FilesHandler{
+  object Default{
+    final val srcDirName : String = "src"
+    final val outDirName : String = "out"
+    final val decoupleFileName: String = "decouple.pl"
+    final val graphFileName: String = "graph"
+    final val jarListFileName: String = "jar.list"
+    final val apiNodesFileName: String = "api_nodes"
+    final val logFileName: String = "graph_solving.log"
+  }
 }
 
 abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
@@ -308,21 +311,11 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
 
   private def openList(files : List[String]){ Process(editor  :: files ).! }
 
+  import puck.util.FileHelper.findAllFiles
+
   def openSources() = openList(findAllFiles(srcDirectory.get, srcSuffix,
     outDirectory.get.getName))
   def openProduction() = openList(findAllFiles(outDirectory.get, srcSuffix,
     outDirectory.get.getName))
 
-}
-
-object FilesHandler{
-  object Default{
-    final val srcDirName : String = "src"
-    final val outDirName : String = "out"
-    final val decoupleFileName: String = "decouple.pl"
-    final val graphFileName: String = "graph"
-    final val jarListFileName: String = "jar.list"
-    final val apiNodesFileName: String = "api_nodes"
-    final val logFileName: String = "graph_solving.log"
-  }
 }

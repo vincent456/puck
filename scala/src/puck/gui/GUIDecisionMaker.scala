@@ -1,8 +1,8 @@
 package puck.gui
 
-import puck.graph.{FilesHandler, NodeKind}
+import puck.graph.NodeKind
 import puck.graph.constraints._
-import puck.javaAG.nodeKind.JavaNodeKind
+import puck.graph.io.FilesHandler
 import puck.gui.decisionsFrames.{NodeChooser, ConstraintExceptionFrame, AbstractionKindAndPolicyChooser}
 
 /**

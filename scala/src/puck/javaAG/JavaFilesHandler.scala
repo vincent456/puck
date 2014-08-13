@@ -2,8 +2,9 @@ package puck.javaAG
 
 import java.io.{FileWriter, BufferedWriter, File}
 
-import puck.graph.constraints.{DecisionMaker}
-import puck.graph.{AGBuildingError, AccessGraph, FilesHandler}
+import puck.graph.constraints.DecisionMaker
+import puck.graph.{AGBuildingError, AccessGraph}
+import puck.graph.io.FilesHandler
 import puck.javaAG.nodeKind.JavaNodeKind
 import puck.util.Logger
 

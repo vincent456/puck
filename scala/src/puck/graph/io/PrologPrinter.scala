@@ -1,6 +1,8 @@
-package puck.graph
+package puck.graph.io
 
 import java.io.BufferedWriter
+
+import puck.graph._
 import puck.javaAG.nodeKind._
 
 /**
@@ -10,7 +12,7 @@ import puck.javaAG.nodeKind._
 object PrologPrinter {
 
   def print[Kind <: NodeKind[Kind]](writer: BufferedWriter, graph : AccessGraph[Kind]){
-
+    //TODO move in javaAG !!!
     def nodeKindStr(nk : Kind) = nk match {
       case Package() => "package"
       case Interface() => "interface"

@@ -12,7 +12,6 @@ class SearchStateIterator[S, U] (val root : SearchState[S, U])
 
 trait SearchState[S, K]  extends HasChildren[SearchState[S, K]]{
 
-
   val internal : S
   val id : Int
   val engine : SearchEngine[S, K]

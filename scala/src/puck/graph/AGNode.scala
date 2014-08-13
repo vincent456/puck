@@ -242,7 +242,9 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
     def -= (usee: NodeType, register : Boolean = true) = usee.users -= (AGNode.this, register)
   }
 
-  object users {
+  val users = usersObject
+
+  object usersObject {
     private val users0 = mutable.Set[NodeType]()
     def apply() : mutable.Iterable[NodeType] = users0
 

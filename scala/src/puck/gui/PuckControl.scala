@@ -4,7 +4,8 @@ import java.io.{PipedInputStream, PipedOutputStream}
 
 import AST.LoadingListener
 import puck.graph.constraints.DecisionMaker
-import puck.graph.{AGEdge, FilesHandler, NodeKind}
+import puck.graph.{AGEdge, NodeKind}
+import puck.graph.io.FilesHandler
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global

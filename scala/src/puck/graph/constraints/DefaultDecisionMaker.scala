@@ -1,6 +1,6 @@
 package puck.graph.constraints
 
-import puck.graph.{AGNode, AccessGraph, NodeKind}
+import puck.graph.{AccessGraph, NodeKind}
 
 
 /**
