@@ -14,19 +14,19 @@ abstract class DefaultDecisionMaker[Kind <: NodeKind[Kind]](val graph : AccessGr
 
   def violationTarget(k: Option[NodeType] => Unit){
     def aux (priorities : List[Kind]) : Option[NodeType] = priorities match {
-      case topPriority :: tl => graph.iterator.find{ (n : NodeType) =>
+      case topPriority :: tl => graph.find{ (n : NodeType) =>
         n.kind == topPriority && (n.wrongUsers.nonEmpty ||
           n.isWronglyContained)
       } match {
         case None => aux(tl)
         case res => res
       }
-      case List() => graph.iterator.find{ n => n.wrongUsers.nonEmpty ||
+      case List() => graph.find{ n => n.wrongUsers.nonEmpty ||
         n.isWronglyContained }
     }
 
     k(aux(violationsKindPriority))
-  }
+}
 
 
   def abstractionKindAndPolicy(impl : NodeType) = {

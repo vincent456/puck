@@ -88,6 +88,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
                      wrongUsers : List[NodeType],
                      degree : Int = 1)
                     (k : Option[NodeType] => Unit){
+
     logger.writeln("\nsingle abs intro degree "+degree, 2)
 
     def intro (currentImpl : NodeType,
@@ -216,6 +217,8 @@ trait Solver[Kind <: NodeKind[Kind]] {
     if (wrongUsers.nonEmpty){
       singleAbsIntro(impl, wrongUsers){
         case None =>
+          //dead code : en acceptant qu'une abstraction nouvellement introduite
+          //soit la cible de violation, on a jamais besoin d'utiliser le degré 2
           singleAbsIntro(impl, wrongUsers, 2) {
             case None =>
               decisionMaker.modifyConstraints(LiteralNodeSet(wrongUsers), impl)
@@ -250,7 +253,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
         case Some(newCter) =>
           //re-attach before moving
           if(oldCter != wronglyContained)
-          oldCter.content += (wronglyContained, register = false)
+            oldCter.content += (wronglyContained, register = false)
           wronglyContained.moveTo(newCter)
         case None =>
           graph.transformations.undo()
@@ -277,9 +280,8 @@ trait Solver[Kind <: NodeKind[Kind]] {
         wronglyContained.addHideFromRootException(newCter)
 
         findHost(newCter, List(),
-          "Moving " + wronglyContained + "\n" +
-            newCter + " created to contain it.\n" +
-            "Searching a host for " + newCter, n => n != newCter) {
+          ("Moving %s\n%s created to contain it.\n" +
+            "Searching a host for %s").format(wronglyContained, newCter, newCter)) {
           case None => moveToNewCter(None)
 
           case Some(h) =>

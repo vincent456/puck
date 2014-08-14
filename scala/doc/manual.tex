@@ -2,6 +2,7 @@
 \usepackage{graphicx}
 \usepackage{hyperref}
 
+\usepackage{framed}
 \usepackage{color}
 %\usepackage{listings}
 
@@ -10,7 +11,7 @@
 
 
 \newcommand{\todo}[1]{\textcolor{red}{\textbf{TODO : #1}}}
-\newcommand{\important}[1]{\textcolor{red}{/!\textbackslash} #1}
+\newcommand{\important}[1]{\textcolor{red}{/!\textbackslash #1}}
 
 %opening
 \title{Puck manual}
@@ -238,32 +239,111 @@ The solver trait (\verb|puck.graph.constraints.Solver|) uses a decision maker. A
 However some decisions are hard coded. Some are imposed by the fact that the solving process is done on an access graph and we rely on the available information.
 Other are the product of a heuristic to reduce the search state space. This choices are what is called the built-in strategy and explained here:
 
+\subsection{Main loop}
 The main loop of the solver has the following instructions. It search for violations target, then try to solve as many of the violations with the same target as possible. Then it loop and do it again until there is no more violation.\\
 
 The decision of the violation target is delegated to the decision maker.
 
+Two kinds of arcs can be labeled as violations : uses and contains.
+
+To remove a contains violation, we move the target into another host.
+
 To remove a uses violation we redirect it toward an abstraction of the target, in general a super type. Redirecting the source of use arc in term of code means doing an extract method. This refactoring is not computable on the access graph since to do it properly we need precise information about the context in which a element is used. The access graph does not give such informations.
 
-To remove a contains violation, we move the target into another host, newly created if needed.
-
-For a given violations target $t$, if it is wrongly contained, meaning that contains(\_, $t$) is a violations, we solve it before the uses violations.
+For a given violations target $t$, if it is wrongly contained, meaning that contains(\_, $t$) is a violation, we solve it before the uses violations.
 If we solve the uses violations first, however $t$ is abstracted it won't change $t$ container and this contains violation will still have to be solved.
 While when choosing a new host for $t$, we can find a host such that is also solves uses violations, thus preventing the creation of an uneeded abstraction that would complicate the software architecture.
 
+\subsection{Removing contains violation}
+As said above, to remove a contains violation, we move the target into another host. If there is no suited host, a new one is created.
+The choice of the host is delegated to the decision maker.
+In case of an unsolvable coupling problem, caused by a constraint hiding an element from anything, a new host is created and an exception is automatically added:
+\verb|hide('A')| is transformed into \verb|hideButFrom('A', ['A_container'])|
+
+\cmt{Ajouter exception pour les uses quand toute les violations ont pour origine le même noeud ?\\
+Ou mettre une exception "globale" pour le main}
+
+\subsection{Removing uses violation}
+We create a new abstraction after having failed to find an existing one. The decision of the kind and the policy of the abstraction is delegated to the decision maker. With the information of the access graph, we can assume that if A is a B (there is an ``isa'' arc between A and B) then B is a potential abstraction for A. Outside of that we have to rely on the abstraction mapping produced while creating the graph (how to build is thus a language dependent issue).
+
+The policy of the abstraction is \emph{super type} or \emph{delegate}. In the most general fashion, the difference between the two policies is that with \emph{super type}, the abstracted node uses its abstraction while with \emph{delegation} it's the abstraction that uses the abstracted node.
+
+By which node kind another kind can be abstracted depends of the abstraction's policy. Both policy are not always available.
+
+For instance in java neither a constructor nor a field can be abstracted using a super type strategy. In scala a field can be abstracted using super type.
+In java an interface can be abstracted by super type policy only with another interface while if we use delegate policy it can only be abstracted by a class.
+So which kind of strategy and abstraction kind is available for each kind is a language specific knowledge. 
+
+ 
+Once these decisions are made, we ask the graph to build an abstraction, another language specific process. What is general is that this abstraction will need a host if we do not find one we will build one by abstracting the host of the node we were originally abstracting. This host will itself need a container and thus it can recursively create another host and so on.
+The reason why the host is creating by using the abstraction process and not ``ex nihilo'' as for the contains violation removal process is to generalize the specific case of a method abstraction.
+If we abstract a method using super type strategy, its potential host have to satisfy some restriction. It has to be an interface implemented by the class containing the abstracted method. This restriction will be automatically respected because of the abstraction building process.
 
 
+After an abstraction is found or created, the next step is to redirect uses. The general algorithm is to redirect also the dependant uses but there some special cases that have to be handled in a language specific way.
 
 
 \subsection{Hard coded choices}
 \begin{itemize}
 	\item for a given violations target, we solve the contain violation before the uses
+	\item we try to find an acceptable host before creating a new one 
 	\item the uses violations are solved by abstracting the target
+	\item we try to find an existing abstraction before creating a new one
+	\item when searching a host, it has to satisfy a certain predicate\\
+		$potentialHost\neq toBeContained\\
+		 \wedge\; potentialHost.kind\; canContain\; toBeContained.kind\\
+		 \wedge\; potentialHost.isMutable$
+		\begin{itemize}
+			\item for a moving node\\
+			$\wedge\; \neg (potentialHost\; interloperOf\; toBeContained)$
+			\item for the newly created host of a moving node\\
+			$\wedge\; true$
+			\item for a newly created abstraction
+			\begin{tabbing}
+			if \=super type abstraction\\
+			\>$\wedge\; \neg(abstractedNode\; interloperOf\; potentialHost)$\\
+			else if delegation abstraction\\
+			\>$\wedge\; \neg(potentialHost\; interloperOf\; abstractedNode)$
+			\end{tabbing}
+			\item for an abstraction recursively created to host another abstraction
+			$\wedge\; true$
+		\end{itemize}
 \end{itemize}
 
 
 \section{DefaultDecisionMaker : explanation of the heuristic }
 
+A decision maker has the responsability to decide
+\begin{itemize}
+\item which node targeted by violations will be handled by the solver
+\item what abstraction policy and node kind will be used to abstract a node
+\item which host to use when searching one
+\end{itemize}
 
+For the first two questions I paste here the subsection ``Decisions and heuristics'' of the documents couplingProblems/searchProblem.tex in my ``document'' git repository:
+
+
+\begin{framed}
+
+The decisions concern the arguments of the rules and the choice made on the existential quantifiers. They can be summarize as follows :
+\begin{enumerate}
+%\item \label{enum:rule_choice} which rule use ?
+\item \label{enum:violation_target_choice} which node will a rule be applied on ?
+\item \label{enum:strategy_choice} which kind of abstraction and strategy use ?
+\item \label{enum:host_choice} which node choose as host when moving a node or creating an abstraction ?
+\end{enumerate}
+
+After solving manually constraints violations on code examples, a strategy emerged. This strategy guides the exploration of the search state. About question \ref{enum:violation_target_choice}, it seems reasonable when applying a rule on node to try to remove as many violations as possible. In java we solve violations targeting classes before the ones targeting methods. Abstracting a class with an interface and redirecting the methods' uses toward their abstraction in the interface can solve several violations in one step. 
+In a more general way we establish a node kind priority list.
+[...]\\
+\emph{``Program to an interface, not an implementation''} (\cite{gamma1993gof} p.18) is a well known practice. It decouples software pieces and allow a better re-usability. In our problem, it means using super types rather than delegates. Thus to answer question \ref{enum:strategy_choice} we always favor the one other the second when possible (for example constructors cannot be used via polymorphism). \\
+This make us go back to question \ref{enum:violation_target_choice}: we solve violation toward fields and constructor before solving violation toward classes. Then when solving violations toward classes, we will be to able include field and constructor abstractions signature in the interfaces abstracting the classes.
+\end{framed}
+
+About the host, since it has to respect the predicate given in argument, the choice is pretty limited. Actually we take the first node making the predicate true. Which node will be find first depends of the underlying iterator : we use a breadth first search through the access graph tree composed by the contains arcs.
+
+\section{Merge}
+For now the merge is done after the coupling constraint problem solving. It is completely language dependent.
 
 
 \bibliographystyle{abbrv}

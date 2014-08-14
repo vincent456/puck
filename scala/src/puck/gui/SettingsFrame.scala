@@ -52,6 +52,10 @@ class SettingsFrame[Kind <: NodeKind[Kind]](filesHandler : FilesHandler[Kind]) e
       filesHandler.graphvizDot){ f =>
       filesHandler.graphvizDot = Some(f)
     }
+    contents += makeFileSelectionLine("Editor", "",
+      filesHandler.editor){ f =>
+      filesHandler.editor = Some(f)
+    }
 
     contents += makeFileSelectionLine("Decouple",
       "Select the file containing the decoupling constraints",

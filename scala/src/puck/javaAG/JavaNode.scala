@@ -12,9 +12,9 @@ import puck.javaAG.nodeKind._
 
 
 object JavaNode extends DotHelper[JavaNodeKind] with AGNodeBuilder[JavaNodeKind]{
-  def isDotSubgraph(k : JavaNodeKind) = k match {case Package() => true; case _ => false}
-  def isDotClass(k : JavaNodeKind)= k match { case Class() | Interface() => true; case _ => false}
-  def fillColor(k : JavaNodeKind)= k match {
+  def isDotSubgraph( k : JavaNodeKind ) = k match {case Package() => true; case _ => false}
+  def isDotClass( k : JavaNodeKind ) = k match { case Class() | Interface() => true; case _ => false}
+  def fillColor( k : JavaNodeKind ) = k match {
     case Package() => "#FF9933" //Orange
     case Interface() => "#FFFF99" // Light yellow
     case Class() | Constructor() => "#FFFF33" //Yellow
@@ -25,7 +25,7 @@ object JavaNode extends DotHelper[JavaNodeKind] with AGNodeBuilder[JavaNodeKind]
 
   def rootKind = JavaRoot()
 
-  def namePrefix(k : JavaNodeKind)= k match {
+  def namePrefix( k : JavaNodeKind ) = k match {
     case Package() => "&lt;&lt;package&gt;&gt; "
     case Interface() => "&lt;&lt;interface&gt;&gt; "
     case _ => ""
@@ -60,12 +60,12 @@ object JavaNode extends DotHelper[JavaNodeKind] with AGNodeBuilder[JavaNodeKind]
 class JavaNode( graph : AccessGraph[JavaNodeKind],
                 id : Int,
                 name : String,
-                kind : JavaNodeKind)
+                kind : JavaNodeKind )
   extends AGNode[JavaNodeKind](graph, id, name, kind){
 
   override def canContain(n : AGNode[JavaNodeKind]) : Boolean = {
 
-    def noNameClash(l : Int)(c: AGNode[JavaNodeKind]) : Boolean = c.kind match {
+    def noNameClash( l : Int )( c : AGNode[JavaNodeKind] ) : Boolean = c.kind match {
 
       case ck : MethodKind  =>
         c.name != n.name || {

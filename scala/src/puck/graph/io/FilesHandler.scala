@@ -34,6 +34,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
   private [this] var decouple0 : Option[File] = None
   private [this] var logFile0 : Option[File] = None
 
+
   var graphStubFileName : String = FilesHandler.Default.graphFileName
 
   private [this] var logger0 : Logger[Int] = new DefaultSystemLogger()
@@ -105,6 +106,12 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
     this.apiNodesFile0 = setCanonicalOptionFile(this.apiNodesFile0, sf)
   }
 
+  def decouple = this.decouple0
+  def decouple_=(sf: Option[File]){
+    this.decouple0 = setCanonicalOptionFile(this.decouple0, sf)
+  }
+
+
   private [this] var gdot : Option[File] = None
 
   def graphvizDot = this.gdot
@@ -112,10 +119,14 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
     this.gdot = setCanonicalOptionFile(this.gdot, sf)
   }
 
-  def decouple = this.decouple0
-  def decouple_=(sf: Option[File]){
-    this.decouple0 = setCanonicalOptionFile(this.decouple0, sf)
+  private [this] var editor0 : Option[File] = None
+
+  def editor = editor0
+  def editor_=(sf: Option[File]){
+    this.editor0 = setCanonicalOptionFile(this.editor0, sf)
   }
+
+
 
   def graphFile(suffix : String) : File = outDirectory match {
     case None => throw new AGError("no output directory !!")
@@ -301,15 +312,21 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
 
   //TODO change to File
   //private [this] var editor0 : File = _
-  private [this] var editor0 : String = "sublime_text"
+  //private [this] var editor0 : String = "sublime_text"
 
-  def editor = editor0
-  def editor_=(editor : File){ editor0 = editor.getCanonicalPath }
+
 
   //TODO ? change to List[String] ?
   val srcSuffix : String
 
-  private def openList(files : List[String]){ Process(editor  :: files ).! }
+
+  private def openList(files : List[String]){
+    val ed = editor match {
+      case None => sys.env("EDITOR")
+      case Some(f) => f.getCanonicalPath
+    }
+    Process(ed  :: files ).!
+  }
 
   import puck.util.FileHelper.findAllFiles
 
