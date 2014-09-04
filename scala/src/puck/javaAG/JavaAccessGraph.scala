@@ -207,8 +207,16 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
         n.kind match {
           case Interface() =>
             n.searchMergingCandidate() match {
-              case Some(other) => n.mergeWith(other)
-                throw new MergeDone()
+              case Some(other) =>
+                if(n.users.forall{!_.interloperOf(other)}) {
+                  n.mergeWith(other)
+                  throw new MergeDone()
+                }
+                else if(other.users.forall{!_.interloperOf(n)}){
+                  other.mergeWith(n)
+                  throw new MergeDone()
+                }
+                //else do nothing
               case None => ()
             }
 

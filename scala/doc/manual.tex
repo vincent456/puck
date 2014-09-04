@@ -12,6 +12,10 @@
 
 \newcommand{\todo}[1]{\textcolor{red}{\textbf{TODO : #1}}}
 \newcommand{\important}[1]{\textcolor{red}{/!\textbackslash #1}}
+\newcommand{\textarc}[1]{\textit{#1}}
+\newcommand{\textuses}{\textarc{uses}}
+\newcommand{\textisa}{\textarc{isa}}
+\newcommand{\textcontains}{\textarc{contains}}
 
 %opening
 \title{Puck manual}
@@ -82,7 +86,7 @@ The most simple use case, if you have a work space containing the above mention 
 	Let you choose a work space and try to load the source code.
 	
 	\item \verb|Do it !|\\
-	Do the process describe above.
+	Do the process described above.
 	
 	\item \verb|(Re)load code & constraints|\\
 	(Re)load the code from the current source path. If you edit your sources outside of puck, or if you open puck at the root directory of your sources files you can (re)load them with this button. It will also load the constraint file.
@@ -191,7 +195,7 @@ Puck is written in scala. It's architecture is composed of the following package
 	This package and its subpackages contains the generic elements of the access graph. A lot of classes including AccessGraph and AGNode are parameterized by the node kind. This package contains mainly the classes describing the structure of the graph and its node.
 
 \item \verb|puck.graph.backTrack|\\
-	Even if scala promote the functional paradigm, the main purpose of puck is to compute modification on potential huge access graph. For this reason, AccessGraph and AGNode are mutable structure. This package contains what is necessary to undo/redo modification applied on the access graph.
+	Even if scala promotes the functional paradigm, the main purpose of puck is to compute modification on potential huge access graph. For this reason, AccessGraph and AGNode are mutable structure. This package contains what is necessary to undo/redo modification applied on the access graph.
 
 \item \verb|puck.graph.constraints|\\
 	It is here that we find the classes that relate to the constraints. It goes from the parser to the solver.
@@ -225,11 +229,13 @@ This package contains
 \end{itemize}
 
 
+\paragraph{puck.search} The search engine is coded and meant to be used in a continuation passing style
+
 \section{Solver built-in strategy}
 The solver trait (\verb|puck.graph.constraints.Solver|) uses a decision maker. A decision maker is an interface that abstract how decision are made. Three implementations can be found in puck:
 \begin{itemize}
 	\item \verb|puck.graph.constraints.DefaultDecisionMaker|\\
-	This decision maker make decisions based on a heuristic that will be explained in section.
+	This decision maker make decisions based on a heuristic that will be explained in section \ref{section:defaultDecisionMaker}.
 	\item \verb|puck.gui.GUIDecisionMaker|\\
 	This implementation uses windows to ask the user which decision to make. \todo{Implementation to finish}
 	\item \verb|puck.graph.constraints.ConstraintSolvingSearchEngine|
@@ -240,17 +246,17 @@ However some decisions are hard coded. Some are imposed by the fact that the sol
 Other are the product of a heuristic to reduce the search state space. This choices are what is called the built-in strategy and explained here:
 
 \subsection{Main loop}
-The main loop of the solver has the following instructions. It search for violations target, then try to solve as many of the violations with the same target as possible. Then it loop and do it again until there is no more violation.\\
+The main loop of the solver searches for violations target, then tries to solve as many of the violations with the same target as possible. Then it loops and do it again until there is no more violation.\\
 
 The decision of the violation target is delegated to the decision maker.
 
-Two kinds of arcs can be labeled as violations : uses and contains.
+Two kinds of arcs can be labeled as violations : \textuses{} and \textcontains.
 
 To remove a contains violation, we move the target into another host.
 
-To remove a uses violation we redirect it toward an abstraction of the target, in general a super type. Redirecting the source of use arc in term of code means doing an extract method. This refactoring is not computable on the access graph since to do it properly we need precise information about the context in which a element is used. The access graph does not give such informations.
+To remove a \textuses{} violation we redirect it toward an abstraction of the target, in general a super type. Redirecting the source of a \textuses{} arc in term of code means doing an extract method. This refactoring is not computable on the access graph since to do it properly we need precise information about the context in which an element is used. The access graph does not give such informations.
 
-For a given violations target $t$, if it is wrongly contained, meaning that contains(\_, $t$) is a violation, we solve it before the uses violations.
+For a given violations target $t$, if the \textcontains{} arc (\_, $t$) is a violation, we solve it before the \textuses{} violations.
 If we solve the uses violations first, however $t$ is abstracted it won't change $t$ container and this contains violation will still have to be solved.
 While when choosing a new host for $t$, we can find a host such that is also solves uses violations, thus preventing the creation of an uneeded abstraction that would complicate the software architecture.
 
@@ -288,7 +294,9 @@ After an abstraction is found or created, the next step is to redirect uses. The
 	\item for a given violations target, we solve the contain violation before the uses
 	\item we try to find an acceptable host before creating a new one 
 	\item the uses violations are solved by abstracting the target
-	\item we try to find an existing abstraction before creating a new one
+	\item we try to find and use existing abstraction before creating a new one\\
+		this prevents the proliferation of abstractions that would uselessly complicate the software design
+	
 	\item when searching a host, it has to satisfy a certain predicate\\
 		$potentialHost\neq toBeContained\\
 		 \wedge\; potentialHost.kind\; canContain\; toBeContained.kind\\
@@ -311,9 +319,10 @@ After an abstraction is found or created, the next step is to redirect uses. The
 \end{itemize}
 
 
-\section{DefaultDecisionMaker : explanation of the heuristic }
+\section{DefaultDecisionMaker : explanation of the heuristic}
+\label{section:defaultDecisionMaker}
 
-A decision maker has the responsability to decide
+A decision maker has the responsibility to decide
 \begin{itemize}
 \item which node targeted by violations will be handled by the solver
 \item what abstraction policy and node kind will be used to abstract a node
@@ -342,8 +351,20 @@ This make us go back to question \ref{enum:violation_target_choice}: we solve vi
 
 About the host, since it has to respect the predicate given in argument, the choice is pretty limited. Actually we take the first node making the predicate true. Which node will be find first depends of the underlying iterator : we use a breadth first search through the access graph tree composed by the contains arcs.
 
+\section{ConstraintSolvingSearchEngine : Exploring the search space}
+
+Similar solutions
+
+Obvious (for a human) wrong choices : prototype where prototype are dispatched in several packages 
+
 \section{Merge}
 For now the merge is done after the coupling constraint problem solving. It is completely language dependent.
+
+In only merge identical interfaces given that redirecting the uses do not create new violations.
+
+Cannot reason on the control flow \todo{but same uses target set can be looked in details ??}
+
+What about merging methods ?  we can find heuristic based on names (see bridge example where printText and printGraphic should be merge in the interface as a unique print signature -> but then we have to divide the implementation in two classes)
 
 
 \bibliographystyle{abbrv}
