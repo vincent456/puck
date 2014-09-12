@@ -1,7 +1,5 @@
 package puck.gui
 
-import java.awt.Color
-
 import puck.graph.{AGEdge, AGNode, NodeKind}
 import scala.swing._
 import scala.swing.event.MouseClicked
@@ -19,6 +17,30 @@ class NodeInfosPanel[K <: NodeKind[K]](val node : AGNode[K])
 
   leftComponent = new BoxPanel(Orientation.Vertical) {
     contents += PuckMainPanel.leftGlued(new Label(node.kind + " : " + node.nameTypeString))
+    val prov = node.providers
+    val cl = node.clients
+    contents += new TextArea("Internal dependencies : " + node.internalDependencies.size + "\n" +
+      "Outgoing dependencies : " + node.outgoingDependencies.size + "\n" +
+      "Incoming dependencies : " + node.incomingDependencies.size + "\n" +
+      "Providers : " +
+      (if (prov.isEmpty) "none\n"
+      else prov.mkString("\n", "\n", "\n")) +
+      "Clients : " +
+      (if (cl.isEmpty) "none\n"
+      else cl.mkString("\n", "\n", "\n")) +
+      "Coupling = " + node.coupling + ", Cohesion :  " + node.cohesion)
+
+    contents += new BoxPanel(Orientation.Horizontal) {
+      contents += new Label("Move into :")
+      val cb = new ComboBox(node.graph.filter(n => (n canContain node) && n != node).toSeq)
+      contents += cb
+      contents += Button(">>") {
+        node.moveTo(cb.selection.item)
+        NodeInfosPanel.this.publish(AccessGraphModified(node.graph))
+      }
+      contents += Swing.HGlue
+
+    }
 
     contents +=  PuckMainPanel.leftGlued(new Label("used by:"))
 

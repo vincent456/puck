@@ -1,7 +1,9 @@
 package puck.javaAG
 
+import AST.CompilationUnit
 import puck.graph._
 import puck.graph.backTrack._
+import puck.graph.constraints.SupertypeAbstraction
 import puck.javaAG.nodeKind._
 import puck.util.{NoopLogger, Logger}
 
@@ -41,6 +43,13 @@ object AG2AST {
     case _ => println("%s not removed".format(e))
 
     }*/
+
+    case Transformation(_, TTAbstraction(impl, abs, SupertypeAbstraction())) =>
+      (impl.kind, abs.kind) match {
+        case (m @ Method(), AbstractMethod()) =>
+            m.decl.setVisibility(AST.ASTNode.VIS_PUBLIC)
+        case _ => ()
+      }
 
     case Transformation(_, TTAbstraction(_, _, _)) => ()
     case Transformation(_, TTDependency(_,_)) => ()
@@ -119,11 +128,11 @@ object AG2AST {
   def redirectTarget(e : AGEdge[JavaNodeKind], newTarget : AGNode[JavaNodeKind]){
     (e.target.kind, newTarget.kind) match {
       case ( k @ Interface(), newk @ Interface()) if e.kind == Isa() =>
-     e.source.kind match {
-       case src @ Class() =>
-         src.decl.replaceImplements(k.createLockedAccess(), newk.createLockedAccess())
-       case _ => throw new JavaAGError("isa arc should only be between TypeKinds")
-     }
+        e.source.kind match {
+          case src @ Class() =>
+            src.decl.replaceImplements(k.createLockedAccess(), newk.createLockedAccess())
+          case _ => throw new JavaAGError("isa arc should only be between TypeKinds")
+        }
 
       case (oldk: TypeKind, newk: TypeKind) =>
         e.source.kind match {
@@ -138,7 +147,7 @@ object AG2AST {
 
           case Class() =>
             e.target.graph.logger.writeln("Class user of TypeKind, assume this is the \"doublon\" of " +
-            "an isa arc, redirection ignored",1)
+              "an isa arc, redirection ignored",1)
 
           case k => throw new JavaAGError(k + " as user of TypeKind, redirection unhandled !")
         }
@@ -154,15 +163,15 @@ object AG2AST {
         }
 
       case (oldk @ Constructor(), newk : ConstructorMethod) =>
-         e.source.kind match {
-           case c @ Constructor() =>
-             throw new JavaAGError("redirection to constructor method within constructor no implemented (see methodDecl)")
+        e.source.kind match {
+          case c @ Constructor() =>
+            throw new JavaAGError("redirection to constructor method within constructor no implemented (see methodDecl)")
 
-           case m @ Method() =>
-             m.decl.replaceByConstructorMethodCall(newk.decl)
+          case m @ Method() =>
+            m.decl.replaceByConstructorMethodCall(newk.decl)
 
-           case k => throw new JavaAGError(k + " as user of MethodKind, redirection unhandled !")
-         }
+          case k => throw new JavaAGError(k + " as user of MethodKind, redirection unhandled !")
+        }
 
       case _ => throw new JavaAGError("redirecting TARGET of %s to %s : application failure !".format(e, newTarget))
     }
@@ -170,18 +179,56 @@ object AG2AST {
 
 
   def redirectSource(e : AGEdge[JavaNodeKind], newSource : AGNode[JavaNodeKind]){
-    (e.source.kind, newSource.kind, e.target.kind) match {
-      case (c1 @ Class(), c2 @ Class(), m @ Method()) =>
+    import AST.ASTNode.VIS_PUBLIC
 
-        c1.decl.removeBodyDecl(m.decl)
-        c2.decl.addBodyDecl(m.decl)
-        //TODO fix : following call create a qualifier if it is null
-        //the qualifier is a parameter for witch a new instance is created
-        //in some case it changes the meaning of the program !!
-        c1.decl.replaceMethodCall(m.decl, m.decl)
-      case (p1 @ Package(), p2 @ Package(), i: TypeKind) =>
-        i.decl.compilationUnit().setPackageDecl(newSource.fullName)
-      case _ =>throw new JavaAGError("redirecting SOURCE of %s to %s : application failure !".format(e, newSource))
-    }
+    if (e.source != newSource)//else do nothing
+      (e.source.kind, newSource.kind, e.target.kind) match {
+        case (c1 @ Class(), c2 @ Class(), m @ Method()) =>
+          c1.decl.removeBodyDecl(m.decl)
+          c2.decl.addBodyDecl(m.decl)
+          //TODO fix : following call create a qualifier if it is null
+          //the qualifier is a parameter for which a new instance is created
+          //in some case it changes the meaning of the program !!
+          c1.decl.replaceMethodCall(m.decl, m.decl)
+
+          if(c1.decl.getVisibility != VIS_PUBLIC){
+            m.node.users().find{_.kind.packageNode != c2.packageNode} match {
+              case Some(_) => m.decl.setVisibility(VIS_PUBLIC)
+              case None =>
+            }
+          }
+
+        case (p1 @ Package(), p2 @ Package(), i: TypeKind) =>
+          /*println("moving typedecl %s of package (cu contains %d typedecl)".format(e.target.fullName,
+            i.decl.compilationUnit().getNumTypeDecl))*/
+
+          if(i.decl.compilationUnit().getNumTypeDecl > 1) {
+            val oldcu = i.decl.compilationUnit()
+
+            val rootPathName = oldcu.getRootPath
+            oldcu.removeTypeDecl(i.decl)
+
+            val path =  rootPathName + newSource.fullName . replaceAllLiterally(".", java.io.File.separator) +
+              java.io.File.separator
+
+            //val newCu =
+            oldcu.programRoot().insertUnusedType(path, newSource.fullName, i.decl)
+
+            /*import scala.collection.JavaConversions.asScalaIterator
+            asScalaIterator(oldcu.getImportDeclList.iterator).foreach{newCu.addImportDecl}*/
+          }
+          else
+            i.decl.compilationUnit().setPackageDecl(newSource.fullName)
+
+          if(i.decl.getVisibility != VIS_PUBLIC ){
+            i.node.users().find{_.kind.packageNode != p2.node} match {
+              case Some(_) => i.decl.setVisibility(VIS_PUBLIC)
+              case None => ()
+            }
+          }
+
+
+        case _ =>throw new JavaAGError("redirecting SOURCE of %s to %s : application failure !".format(e, newSource))
+      }
   }
 }

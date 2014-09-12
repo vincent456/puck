@@ -10,6 +10,12 @@ abstract class JavaNodeKind extends NodeKind[JavaNodeKind]{
   def createDecl(n : AGNode[JavaNodeKind]) {
     throw new Error("do not know how to create declaration for" + getClass)
   }
+
+  def packageNode : AGNode[JavaNodeKind] =
+   this match {
+     case Package() => this.node
+     case _ => this.node.container.kind.packageNode
+   }
 }
 
 object JavaNodeKind {

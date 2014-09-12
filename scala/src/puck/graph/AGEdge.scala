@@ -31,6 +31,8 @@ case class AGEdge[NK <: NodeKind[NK]](kind : EdgeKind,
   def container = source
   def content = target
 
+  def graph = source.graph
+
   override def equals(obj:Any) : Boolean = obj match {
     case that : AGEdge[_] => this.kind == that.kind && this.source == that.source && this.target == that.target
     case _ => false

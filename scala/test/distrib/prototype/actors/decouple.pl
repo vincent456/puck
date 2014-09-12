@@ -1,4 +1,4 @@
-java_import(['prototype.candidate']).
+java_import(['prototype.actors']).
 
 declareSet(concrete_prototypes, ['Tragedian', 'Comedian', 'Extra']).
 

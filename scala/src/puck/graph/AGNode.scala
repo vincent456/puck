@@ -233,7 +233,9 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
     superTypes.exists( n => n == other)
   }
 
-  object uses {
+  val uses = usesObject
+
+  object usesObject {
     private [AGNode] val uses0 = mutable.Set[NodeType]()
     def apply() : mutable.Iterable[NodeType] = uses0
     implicit def iterableUses(c : AGNode.this.uses.type ) : mutable.Iterable[NodeType] = uses0
@@ -589,6 +591,93 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
     graph.remove(other)
   }
 
+  private def outgoingDependencies(root : AGNode[Kind], acc0 : Set[AGEdge[Kind]]) : Set[AGEdge[Kind]]= {
+    val acc1 = uses.foldLeft(acc0){
+      (acc, usee) =>
+        if(root contains_* usee) acc
+        else acc + AGEdge.uses(this, usee)
+    }
+    content.foldLeft(acc1){(acc, child) => child.outgoingDependencies(root, acc)}
+  }
+
+  def outgoingDependencies : Set[AGEdge[Kind]] = outgoingDependencies(this, Set[AGEdge[Kind]]())
+
+  private def incomingDependencies(root : AGNode[Kind], acc0 : Set[AGEdge[Kind]]) : Set[AGEdge[Kind]]= {
+    val acc1 = users.foldLeft(acc0){
+      (acc, user) =>
+        if(root contains_* user) acc
+        else acc + AGEdge.uses(user, this)
+    }
+    content.foldLeft(acc1){(acc, child) => child.incomingDependencies(root, acc)}
+  }
+
+  def incomingDependencies : Set[AGEdge[Kind]] = incomingDependencies(this, Set[AGEdge[Kind]]())
+
+
+  private def internalDependencies(root : AGNode[Kind], acc0 : Set[AGEdge[Kind]]) : Set[AGEdge[Kind]]= {
+    val acc1 = uses.foldLeft(acc0) {
+      (acc, usee) =>
+        if (root contains_* usee)
+          acc + AGEdge.uses(this, usee)
+        else acc
+    }
+    /* not necessary
+        val acc2 = users.foldLeft(acc1){
+          (acc, user) =>
+            if(root contains_* user)
+              acc + AGEdge.uses(user, this)
+            else acc
+        }
+    */
+
+    content.foldLeft(acc1){(acc, child) => child.internalDependencies(root, acc)}
+  }
+
+  def internalDependencies : Set[AGEdge[Kind]] = internalDependencies(this, Set[AGEdge[Kind]]())
+
+
+  /*def provides(other : AGNode[Kind]) = {
+    val these0 = Set[AGNode[Kind]]() ++ this.iterator
+    val others0 = Set[AGNode[Kind]]() ++ other.iterator
+
+    val these = these0 -- others0
+    val others = others0 -- these0
+    these.exists { t => others.exists(o => o uses t) }
+  }*/
+
+  def provides(other : AGNode[Kind]) = {
+    val these = Set[AGNode[Kind]]() ++ this.iterator
+    val others = Set[AGNode[Kind]]() ++ other.iterator
+
+    these.exists { t => others.exists(o => (o uses t) && !(other.contains_*(o) && other.contains_*(t)) ) }
+  }
+
+  private def connection( f : AGNode[Kind] => Boolean) = {
+    graph.foldLeft(Set[AGNode[Kind]]()){ (acc, n) =>
+      if(n == this || n.kind != this.kind) acc
+      else if(f(n)) acc + n
+      else acc
+    }
+  }
+
+  def providers : Set[AGNode[Kind]] = connection{ n => n provides this}
+  def clients : Set[AGNode[Kind]] = connection{ n => this provides n}
+
+  def cohesion : Double = {
+    val intd = internalDependencies.size
+    intd.toDouble / (outgoingDependencies.size + incomingDependencies.size + intd).toDouble
+  }
+
+  def coupling : Double = {
+    val dependencies = outgoingDependencies.size + incomingDependencies.size + internalDependencies.size
+    1 - (providers ++ clients).size.toDouble / dependencies.toDouble
+  }
+
+  /*def outGoingDependencies : NodeSet[Kind] = {
+    val ns = LiteralNodeSet[Kind](uses())
+    content.foreach{ n => ns ++= n.outGoingDependencies}
+    ns
+  }*/
 }
 
 

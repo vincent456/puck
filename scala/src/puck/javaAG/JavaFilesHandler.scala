@@ -32,7 +32,6 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler[JavaNodeKi
         }
         graph = jgraph
         jgraph
-
     }
   }
 

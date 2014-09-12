@@ -77,6 +77,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
           val nip = new NodeInfosPanel[Kind]( n.asInstanceOf[PuckTreeNode[Kind]].agNode)
           contents = nip
           control.listenTo(nip)
+          treeDisplayer.listenTo(nip)
 
       }
     }
@@ -120,7 +121,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
           fc showDialog(null, "Select")
           val f: File = fc.selectedFile
           if( f != null && !(f == filesHandler.srcDirectory.get)) {
-            filesHandler.srcDirectory = Some(f)
+            filesHandler.setWorkingDirectory(f)
             publish(LoadCodeRequest())
           }
           filesHandler.logger.writeln("Application directory : ")

@@ -1,4 +1,4 @@
-package prototype.candidate;
+package prototype.actors;
 
 import java.io.BufferedReader;
 import java.io.IOException;

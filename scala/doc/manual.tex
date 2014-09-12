@@ -3,15 +3,32 @@
 \usepackage{hyperref}
 
 \usepackage{framed}
-\usepackage{color}
-%\usepackage{listings}
+\usepackage{listings}
 
-\definecolor{light-gray}{gray}{0.60}
-\newcommand{\cmt}[1]{ {\color{light-gray}\it/** #1 **/} }
+\input{/home/lorilan/thesis/common_macros.tex}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
 
 
-\newcommand{\todo}[1]{\textcolor{red}{\textbf{TODO : #1}}}
-\newcommand{\important}[1]{\textcolor{red}{/!\textbackslash #1}}
+\lstset{frame=tb,
+  language=Java,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true
+  tabsize=2
+}
+
 \newcommand{\textarc}[1]{\textit{#1}}
 \newcommand{\textuses}{\textarc{uses}}
 \newcommand{\textisa}{\textarc{isa}}
@@ -20,8 +37,6 @@
 %opening
 \title{Puck manual}
 \author{}
-
-
 
 \begin{document}
 
@@ -186,7 +201,16 @@ The parsed constraints have the following formal grammar:\footnote{facades, inte
 
 
 \section{Puck's Architecture}
-Puck is written in scala. It's architecture is composed of the following packages: 
+Puck is written in scala. 
+It is build in top of JastAddJ \cite{ekman2007jastaddj} and Jrrt \cite{jrrt, schafer2012accessibility}.
+\subsection{Based-on code}
+AST of JastAddJ\\
+Some functions introduced by Jrrt (uses() ! + lexer/parser rewritten using beaver)\\
+AST generate Access Graph (Composed of generic parts + java/JasAddJ specific binders)
+
+
+\subsection{New parts}
+Its architecture is composed of the following packages: 
 \begin{itemize}
 \item \verb|puck|\\
 	It is the root package, it contains only the Front object
@@ -318,6 +342,9 @@ After an abstraction is found or created, the next step is to redirect uses. The
 		\end{itemize}
 \end{itemize}
 
+\paragraph{Java specifics}
+We do not consider the static elements.
+
 
 \section{DefaultDecisionMaker : explanation of the heuristic}
 \label{section:defaultDecisionMaker}
@@ -357,6 +384,71 @@ Similar solutions
 
 Obvious (for a human) wrong choices : prototype where prototype are dispatched in several packages 
 
+Definitions of \cite{abdeen2009automatic} adapted to our AG definitions :
+A dependency is a use
+
+let $G$ be an access graph and $n$ a node of $G$.
+The set of dependencies of $n$ is defined as:\\
+$n_D \equalByDef n_{Ext.D}\cup n_{Int.D}$\\
+\cmt{union of external and internal dependencies}\\
+$n_{Ext.D} \equalByDef n_{Out.D}\cup n_{Inc.D}$\\
+\cmt{union of outgoing and incoming dependencies}\\
+$n_{Out.D} \equalByDef \{(uses, s, t)\in G \suchthat \containedByTrC{s}{n} \wedge \neg (\containedByTrC{t}{n}) \}$\\
+$n_{Inc.D} \equalByDef \{(uses, s, t)\in G \suchthat \neg(\containedByTrC{s}{n}) \wedge \containedByTrC{t}{n} \}$\\
+$n_{Int.D} \equalByDef \{(uses, s, t)\in G \suchthat \containedByTrC{s}{n} \wedge \containedByTrC{t}{n} \}$\\
+
+\noindent$provides(G, p, c)\equalByDef \exists (uses, s, t) \in G \suchthat \containedByTrC{s}{c} \wedge \containedByTrC{t}{p} \wedge \neg((uses, s, t)\in c_{Int.D} )$\\
+$providers(n) \equalByDef \{ p \in G  \suchthat p\neq n 
+\wedge n.kind=p.kind 
+\wedge provides(G, p, n) \}$\\
+$clients(n) \equalByDef \{ c \in G  \suchthat c\neq n 
+\wedge n.kind=c.kind 
+\wedge provides(G, n, c) \}$
+
+\noindent$CohesionQ(n) \equalByDef \frac{|n_{Int.D}|}{|n_D|}$\\
+$CouplingQ(n) \equalByDef 1 - \frac{|providers(n) \cup clients(n)|}{|n_D|}$
+
+
+\section{Preservation of welltypedness}
+
+In order to preserve the behavior we preserve the welltypedness of the program. To remove coupling constraint violation, we introduce abstraction.
+To abstract a class we create an interface and we redirect \textuses of the class on the interface. We use the super type wherever it is possible.
+
+"normal" algorithm :\\
+1) intro abstraction\\
+2) foreach wrong user uses abstraction instead\\
+
+when introducing a super type:\\
+1) intro abstraction\\
+2) foreach wrong user uses abstraction instead\\
+3) bring back well typedness
+
+
+\begin{figure}
+\centerline{
+\begin{minipage}[t]{.6\textwidth}
+\lstinputlisting[language=prolog]{examples/extractSuperType/decouple.pl}\lstinputlisting{examples/extractSuperType/D.java}
+\end{minipage}
+\hfil
+\begin{minipage}[t]{.6\textwidth}
+\lstinputlisting{examples/extractSuperType/out/p/A_SuperTypeAbstraction.java}
+\lstinputlisting[numbers=left,    
+  numbersep=5pt,                  
+  numberstyle=\tiny\color{light-gray},]{examples/extractSuperType/out/p/D.java}
+\end{minipage}}
+\caption{A code, its constraint and a wrong production}
+\label{fig:wrongExtract}
+\end{figure}
+
+Figure \ref{fig:wrongExtract} describe a class D using a forbidden class A. C and DUser use A legitimately. When we redirect all wrong uses from \texttt{A} to \texttt{A\_SuperTypeAbstraction} and only them, we obtain the code on the right column.
+This code is not well typed : 
+
+\begin{itemize}
+\item C.m requires an argument typed A hence line 19 is wrong since a is typed with \texttt{A\_SuperTypeAbstraction}.
+\item D.m3 return a value typed \texttt{A\_SuperTypeAbstraction} hence allocation of line 35 is also wrong. 
+\end{itemize}
+
+
 \section{Merge}
 For now the merge is done after the coupling constraint problem solving. It is completely language dependent.
 
@@ -366,6 +458,28 @@ Cannot reason on the control flow \todo{but same uses target set can be looked i
 
 What about merging methods ?  we can find heuristic based on names (see bridge example where printText and printGraphic should be merge in the interface as a unique print signature -> but then we have to divide the implementation in two classes)
 
+
+\section{Applying graph transformations on the code}
+We use a tool, JastAdd that produces parse Java Code and produces an AST. The access graph data type is then produced by this AST. The access graph is from some point of view a lightened AST.
+For the purpose of backtracking, graph transformations are broken down to elementary transformations : 
+\begin{itemize}
+\item Add/Remove
+	\begin{itemize}
+	\item node
+	\item edge
+	\item edges dependency 
+	\item abstraction registration
+	\end{itemize}
+\item Edge redirection (change source or target)
+\item add constraint	
+\end{itemize}
+
+To apply the transformation on the graph we iterate over the recorded transformations and we apply them on the graph.
+
+Edge dependency and abstraction registration are ignored during this phase. These are just information generalized on the access graph level but that can be recompute in the AST.
+Edge redirection can be broke down into a pair of edge add/remove but in some case it is impossible to apply them separately on the AST. For example redirecting the use of a class by a field toward another class means changing its type. Deleting this arc produce an illegal AST and cannot thus be done.
+
+When the AST generates the access graph it stores references of AST nodes in the AG nodes.
 
 \bibliographystyle{abbrv}
 \bibliography{manual}

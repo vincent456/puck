@@ -1,6 +1,38 @@
 
 aspect TransformationApplying {
 	
+      public String CompilationUnit.getRootPath(){
+        String packagePath = packageName().replaceAll("\\.", File.separator);
+//        System.out.println("packagePath : " + packagePath);
+        int idx = pathName().indexOf(packagePath);
+        if(idx != -1)
+            return pathName().substring(0, idx-1);
+        else {
+            //if the compilation unit path does not match the package it is contained in
+            // we define the folder containing it as the root
+            idx = pathName().lastIndexOf(File.separatorChar);
+            return pathName().substring(0, idx -1);
+        }
+    }
+
+    public void CompilationUnit.removeTypeDecl(TypeDecl td){
+        String name = td.name();
+        int idx =  getIndexOfChild(td);
+        if(idx != -1) {
+            removeChild(idx);
+
+            if (pathName().endsWith(name + ".java")) {
+                for (int i = 0; i < getNumTypeDecl(); i++) {
+                    TypeDecl td2 = getTypeDecl(i);
+                    if (td != td2) { //sanity check
+                        String newPath = pathName.replace(name + ".java", td2.name() + ".java");
+                        this.setPathName(newPath);
+                    }
+                }
+            }
+        }
+    }
+
 	//scala compiler does not like ASTNode type parameter bound
 	public CompilationUnit Program.insertUnusedType(String path, String pkg, TypeDecl td) {
        return insertUnusedType(path, pkg, new List<ImportDecl>(), td);

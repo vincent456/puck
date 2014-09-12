@@ -109,6 +109,7 @@ class LiteralNodeSet[Kind <: NodeKind[Kind]] private (private val content : muta
 
   def iterator : Iterator[NodeType] = content.iterator
   def +=(n : NodeType) = content += n
+  def ++=(ns : NodeSet[Kind]) = content ++= ns
   def -=(n : NodeType) = content -= n
 
   override def toString() = content.map( n => "'%s'".format(n.fullName)).mkString("[", ",\n", "]")

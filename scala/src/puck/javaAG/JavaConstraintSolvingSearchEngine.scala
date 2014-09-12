@@ -1,6 +1,6 @@
 package puck.javaAG
 
-import puck.graph.constraints.{CSInitialSearchState, ConstraintSolvingChoices, ConstraintSolvingSearchEngine}
+import puck.graph.constraints.{GradedConstraintSolvingSearchEngine, CSInitialSearchState, ConstraintSolvingChoices}
 import puck.graph.{AGNode, AccessGraph}
 import puck.javaAG.nodeKind._
 import puck.search.SearchState
@@ -14,7 +14,7 @@ class JavaConstraintSolvingSearchEngine(val graph : AccessGraph[JavaNodeKind],
                                         solverLogger : Logger[Int],
                                         val printTrace : SearchState[ConstraintSolvingChoices[JavaNodeKind],
                                           Option[AGNode[JavaNodeKind]]] => Unit)
-  extends ConstraintSolvingSearchEngine[JavaNodeKind] {
+  extends GradedConstraintSolvingSearchEngine[JavaNodeKind] {
 
   val logger = searchEnginelogger
 
@@ -23,8 +23,11 @@ class JavaConstraintSolvingSearchEngine(val graph : AccessGraph[JavaNodeKind],
 
   val violationsKindPriority = List[JavaNodeKind](Field(), Constructor(), Class(), Interface())
 
-  override def explore(){
+  def grade(st : SearchState[ConstraintSolvingChoices[JavaNodeKind], Option[AGNode[JavaNodeKind]]]) =
+    (st.internal.recording.graph.coupling * 1000 ).toInt
+
+  override def search() = {
     graph.transformations.startRegister()
-    super.explore()
+    super.search()
   }
 }

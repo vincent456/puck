@@ -2,7 +2,6 @@ package puck.javaAG
 
 import puck.graph._
 import puck.javaAG.nodeKind._
-import puck.util.SystemLogger
 import scala.collection.JavaConversions.collectionAsScalaIterable
 import scala.collection.mutable.StringBuilder
 
@@ -246,5 +245,12 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
     program.eliminateLockedNames()
   }
 
+  override def coupling = this.foldLeft(0 : Double){ (acc, n) => n.kind match {
+    case Package() =>
+      val c = n.coupling
+      if(c.isNaN) acc
+      else acc + c
+    case _ => acc
+  }}
 
 }

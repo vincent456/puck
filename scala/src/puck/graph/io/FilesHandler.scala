@@ -4,7 +4,7 @@ import java.io._
 
 import puck.graph.constraints._
 import puck.graph._
-import puck.search.SearchState
+import puck.search.{SearchEngine, SearchState}
 import puck.util.{DefaultFileLogger, DefaultSystemLogger, Logger}
 
 import scala.sys.process.Process
@@ -187,21 +187,21 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
 
     convertDot(sInput = None, sOutput, outputFormat)
 
-/*
-    val pipedOutput = new PipedOutputStream()
-    val pipedInput = new PipedInputStream(pipedOutput)
+    /*
+        val pipedOutput = new PipedOutputStream()
+        val pipedInput = new PipedInputStream(pipedOutput)
 
-    println("launchig convert dot future")
-    Future {
-      convertDot(Some(pipedInput), sOutput, outputFormat)
-    } onComplete finish
-    println("post launching")
+        println("launchig convert dot future")
+        Future {
+          convertDot(Some(pipedInput), sOutput, outputFormat)
+        } onComplete finish
+        println("post launching")
 
 
-    makeDot(printId, printSignatures, selectedUse,
-      writer = new OutputStreamWriter(pipedOutput))
-    println("post make dot")
-*/
+        makeDot(printId, printSignatures, selectedUse,
+          writer = new OutputStreamWriter(pipedOutput))
+        println("post make dot")
+    */
 
 
   }
@@ -263,7 +263,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
   def constraintSolvingSearchEngine(graph : AccessGraph[Kind],
                                     searchEnginelogger: Logger[Int],
                                     solverLogger: Logger[Int],
-                                    printer : PrinterType) : ConstraintSolvingSearchEngine[Kind]
+                                    printer : PrinterType) : SearchEngine[ConstraintSolvingChoices[Kind], Option[AGNode[Kind]]]
 
 
   def explore (trace : Boolean = false){
@@ -293,7 +293,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
 
 
     puck.util.Time.time(logger) {
-      engine.explore()
+      engine.search()
     }
 
     var i = 0
@@ -301,8 +301,12 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
     d.mkdir()
     engine.finalStates.foreach { s =>
       s.internal.recording()
+
+      val subdir = (graph.coupling * 100).toInt
+      val sd = graphFile("_results" + File.separator + subdir)
+      sd.mkdir()
       makePng(sOutput = Some(new FileOutputStream(
-        graphFile("_results%c%04d.png".format(File.separatorChar, i)))))()
+        graphFile("_results%c%d%c%04d.png".format(File.separatorChar, subdir, File.separatorChar, i)))))()
       i += 1
     }
 

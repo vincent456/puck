@@ -6,9 +6,9 @@ import scala.language.implicitConversions
  * Created by lorilan on 07/05/14.
  */
 class StatelessAGNode[Kind <: NodeKind[Kind]] (graph: AccessGraph[Kind],
-                       id: Int,
-                       name: String,
-                       kind: Kind)
+                                               id: Int,
+                                               name: String,
+                                               kind: Kind)
   extends AGNode[Kind](graph, id, name, kind){
 
   override def superTypes_+=(st:AGNode[Kind], register : Boolean) = ()
@@ -17,7 +17,7 @@ class StatelessAGNode[Kind <: NodeKind[Kind]] (graph: AccessGraph[Kind],
 
   override val users = stateLessUsersObject
 
-    object stateLessUsersObject {
+  object stateLessUsersObject {
     def apply() : mutable.Iterable[NodeType] = mutable.Iterable.empty
 
     implicit def iterableUsers(c : StatelessAGNode.this.users.type ) : mutable.Iterable[NodeType] = mutable.Iterable.empty

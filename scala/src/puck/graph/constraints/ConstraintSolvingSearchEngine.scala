@@ -2,7 +2,7 @@ package puck.graph.constraints
 
 import puck.graph.backTrack.{SearchStateBreakPoint, Recording}
 import puck.graph._
-import puck.search.{SearchEngine, TryAllSearchEngine, SearchState}
+import puck.search.{GradedSearchEngine, SearchEngine, TryAllSearchEngine, SearchState}
 import puck.util.Logger
 
 import scala.collection.mutable
@@ -91,8 +91,8 @@ class CSInitialSearchState[Kind <: NodeKind[Kind]](e : SearchEngine[ConstraintSo
 }
 
 
-trait ConstraintSolvingSearchEngine[Kind <: NodeKind[Kind]]
-  extends TryAllSearchEngine[ConstraintSolvingChoices[Kind],
+trait ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]]
+  extends SearchEngine[ConstraintSolvingChoices[Kind],
     Option[AGNode[Kind]]] with DecisionMaker[Kind]{
 
   val logger : Logger[Int]
@@ -114,14 +114,15 @@ trait ConstraintSolvingSearchEngine[Kind <: NodeKind[Kind]]
       case List() => graph.filter{ n => n.wrongUsers.nonEmpty ||
         n.isWronglyContained }
     }
-    val choices = new ConstraintSolvingChoices(graph.transformations.recording,
+
+    val violationTargets = new ConstraintSolvingChoices(graph.transformations.recording,
       mutable.Set[NodeType]() ++ aux(violationsKindPriority),
       mutable.Set[NodeType]())
 
-    if(choices.remainingChoices.nonEmpty)
-      newCurrentState(k, choices)
+    if(violationTargets.remainingChoices.nonEmpty)
+      newCurrentState(k, violationTargets)
     else {
-      val fs = currentState.createNextState(k, choices)
+      val fs = currentState.createNextState(k, violationTargets)
       finalStates.find( s =>
           s.internal.recording.produceSameGraph(fs.internal.recording)) match{
         case Some(s) =>
@@ -143,13 +144,20 @@ trait ConstraintSolvingSearchEngine[Kind <: NodeKind[Kind]]
   def chooseNode(context : => String,
                  predicate : NodeType => Boolean,
                  k : Option[NodeType] => Unit) {
-    println(context)
+    //println(context)
     newCurrentState(k, new ConstraintSolvingChoices(graph.transformations.recording,
       mutable.Set[NodeType]() ++ graph.filter(predicate),
       mutable.Set[NodeType]()))
   }
 
   def modifyConstraints(sources : NodeSet[Kind], target : NodeType){}
+
+}
+
+
+trait TryAllConstraintSolvingSearchEngine[Kind <: NodeKind[Kind]]
+  extends TryAllSearchEngine[ConstraintSolvingChoices[Kind],
+    Option[AGNode[Kind]]] with ConstraintSolvingSearchEngineDecisionMaker[Kind]{
 
   override def keepGoing(){
     if(currentState.internal.recording.isEmpty)
@@ -164,5 +172,12 @@ trait ConstraintSolvingSearchEngine[Kind <: NodeKind[Kind]]
         case None => super.keepGoing()
       }
   }
+}
 
+
+trait GradedConstraintSolvingSearchEngine[Kind <: NodeKind[Kind]]
+  extends GradedSearchEngine[ConstraintSolvingChoices[Kind],
+    Option[AGNode[Kind]]] with ConstraintSolvingSearchEngineDecisionMaker[Kind]{
+
+  override def keepGoing(){}
 }

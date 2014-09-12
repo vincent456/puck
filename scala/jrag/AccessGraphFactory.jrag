@@ -120,6 +120,9 @@ aspect AccessGraphFactory {
 	}
 
 
+	public AGNode<JavaNodeKind> SuperAccess.buildDominantUserAGNode(JavaAccessGraph accessGraph){
+         return decl().buildAGNode(accessGraph);
+    }
 
 	public AGNode<JavaNodeKind> VarAccess.buildDominantUserAGNode(JavaAccessGraph accessGraph){
       return decl().buildAGNode(accessGraph);
