@@ -1,38 +1,15 @@
 \documentclass[]{article}
 \usepackage{graphicx}
 \usepackage{hyperref}
+\usepackage{siunitx}
 
 \usepackage{framed}
-\usepackage{listings}
 
 \input{/home/lorilan/thesis/common_macros.tex}
-
-\definecolor{dkgreen}{rgb}{0,0.6,0}
-\definecolor{gray}{rgb}{0.5,0.5,0.5}
-\definecolor{mauve}{rgb}{0.58,0,0.82}
+\input{/home/lorilan/thesis/java_listing.tex}
 
 
-\lstset{frame=tb,
-  language=Java,
-  aboveskip=3mm,
-  belowskip=3mm,
-  showstringspaces=false,
-  columns=flexible,
-  basicstyle={\small\ttfamily},
-  numbers=none,
-  numberstyle=\tiny\color{gray},
-  keywordstyle=\color{blue},
-  commentstyle=\color{dkgreen},
-  stringstyle=\color{mauve},
-  breaklines=true,
-  breakatwhitespace=true
-  tabsize=2
-}
 
-\newcommand{\textarc}[1]{\textit{#1}}
-\newcommand{\textuses}{\textarc{uses}}
-\newcommand{\textisa}{\textarc{isa}}
-\newcommand{\textcontains}{\textarc{contains}}
 
 %opening
 \title{Puck manual}
@@ -203,7 +180,7 @@ The parsed constraints have the following formal grammar:\footnote{facades, inte
 \section{Puck's Architecture}
 Puck is written in scala. 
 It is build in top of JastAddJ \cite{ekman2007jastaddj} and Jrrt \cite{jrrt, schafer2012accessibility}.
-\subsection{Based-on code}
+\subsection{Legacy code}
 AST of JastAddJ\\
 Some functions introduced by Jrrt (uses() ! + lexer/parser rewritten using beaver)\\
 AST generate Access Graph (Composed of generic parts + java/JasAddJ specific binders)
@@ -409,6 +386,22 @@ $clients(n) \equalByDef \{ c \in G  \suchthat c\neq n
 $CouplingQ(n) \equalByDef 1 - \frac{|providers(n) \cup clients(n)|}{|n_D|}$
 
 
+\subsection{Recording comparison : another search problem}
+When different path converge to the same graph we want to stop following the new path. Hence we do graph comparison or more precisely we compare the list of transformations done on the graph and try to find a mapping between the newly introduced node in both path.
+
+prototype/actors\\
+1944 results in \SI{2}{\second}  \SI{382192}{\micro \second}\\
+comparison reduces to 54 different results (without merging)\\
+comparison without sorting by coupling first :
+\SI{57}{\second} \SI{495923}{\micro\second}\\
+comparison with coupling sort first :
+\SI{11}{\second} \SI{177939}{\micro\second}
+
+around 54000 result in around 50s
+
+filter 216 results in one hour Oo
+
+
 \section{Preservation of welltypedness}
 
 In order to preserve the behavior we preserve the welltypedness of the program. To remove coupling constraint violation, we introduce abstraction.
@@ -471,7 +464,7 @@ For the purpose of backtracking, graph transformations are broken down to elemen
 	\item abstraction registration
 	\end{itemize}
 \item Edge redirection (change source or target)
-\item add constraint	
+\item Add coupling constraint	
 \end{itemize}
 
 To apply the transformation on the graph we iterate over the recorded transformations and we apply them on the graph.

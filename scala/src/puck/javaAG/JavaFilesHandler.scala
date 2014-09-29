@@ -4,7 +4,7 @@ import java.io.{FileWriter, BufferedWriter, File}
 
 import puck.graph.constraints.DecisionMaker
 import puck.graph.{AGBuildingError, AccessGraph}
-import puck.graph.io.FilesHandler
+import puck.graph.io.{ConstraintSolvingSearchEngineBuilder, FilesHandler}
 import puck.javaAG.nodeKind.JavaNodeKind
 import puck.util.Logger
 
@@ -42,15 +42,6 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler[JavaNodeKi
   def solver(dm : DecisionMaker[JavaNodeKind], logger: Logger[Int]) =
     new JavaSolver(graph, logger, dm)
 
-  def constraintSolvingSearchEngine(graph : AccessGraph[JavaNodeKind],
-                                    searchEnginelogger: Logger[Int],
-                                    solverLogger: Logger[Int],
-                                    printer : PrinterType) =
-    new JavaConstraintSolvingSearchEngine(graph,
-      searchEnginelogger,
-      solverLogger,
-      printer)
-
   def printCode() {
     val l : AST.List[AST.CompilationUnit] = graph.asInstanceOf[JavaAccessGraph].program.getCompilationUnits
 
@@ -78,6 +69,10 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler[JavaNodeKi
 
   }
 
+  override def searchingStrategies: List[ConstraintSolvingSearchEngineBuilder[JavaNodeKind]] =
+    List(JavaTryAllCSSEBuilder,
+      //JavaGradedCSSEBuilder,
+    JavaFindFirstCSSEBuilder)
 }
 
 

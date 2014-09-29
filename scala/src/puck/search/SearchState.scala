@@ -7,29 +7,31 @@ import scala.collection.mutable
 /**
  * Created by lorilan on 22/07/14.
  */
-class SearchStateIterator[S, U] (val root : SearchState[S, U])
-  extends BreadthFirstTreeIterator[SearchState[S, U]]
+class SearchStateIterator[T <: StateCreator[T,T]](val root : SearchState[_, T])
+  extends BreadthFirstTreeIterator[SearchState[_, T]]
 
-trait SearchState[S, K]  extends HasChildren[SearchState[S, K]]{
+trait StateCreator[S <: StateCreator[S,F], F <: StateCreator[F,F]]{
+  def createState(id : Int,
+                  engine : SearchEngine[F],
+                  prevState : Option[SearchState[_, F]],
+                  choices : S) : SearchState[S, F]
+}
+
+trait SearchState[S <: StateCreator[S, F],
+                  F <: StateCreator[F, F]] extends HasChildren[SearchState[_, F]]{
 
   val internal : S
   val id : Int
-  val engine : SearchEngine[S, K]
-  val k: K => Unit
-  val prevState : Option[SearchState[S, K]]
+  val engine : SearchEngine[F]
+  val prevState : Option[SearchState[_, F]]
 
-  def createState(id : Int,
-                  engine : SearchEngine[S, K],
-                  k: K => Unit,
-                  prevState : Option[SearchState[S, K]],
-                  choices : S) : SearchState[S, K]
-
-  def createNextState(k: K => Unit,
-                      choices : S) : SearchState[S, K] = {
-    val s = createState(this.nextChildId(), this.engine, k, Some(this), choices)
+  def createNextState[S2 <: StateCreator[S2, F]](choices : S2) : SearchState[S2, F] = {
+    val s = choices.createState(this.nextChildId(), this.engine, Some(this), choices)
     this.nextStates += s
     s
   }
+
+  override def toString = uuid()
 
   def children = nextStates
 
@@ -37,7 +39,7 @@ trait SearchState[S, K]  extends HasChildren[SearchState[S, K]]{
 
 
 
-  val nextStates = mutable.ListBuffer[SearchState[S, K]]()
+  val nextStates = mutable.ListBuffer[SearchState[_, F]]()
 
   var cid = -1
 
@@ -77,7 +79,7 @@ trait SearchState[S, K]  extends HasChildren[SearchState[S, K]]{
   }
 
   def depth : Int = {
-    def aux(sstate : Option[SearchState[S, K]], acc : Int) : Int = sstate match {
+    def aux(sstate : Option[SearchState[_, F]], acc : Int) : Int = sstate match {
       case None => acc
       case Some(s) => aux(s.prevState,
         if(s.isStep) acc + 1

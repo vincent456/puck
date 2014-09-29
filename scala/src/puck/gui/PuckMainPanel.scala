@@ -1,6 +1,8 @@
 package puck.gui
 
 import puck.graph.NodeKind
+import puck.graph.backTrack.{Recording, RecordingComparator}
+import puck.graph.constraints.search.ConstraintSolving
 import puck.graph.io.FilesHandler
 import puck.util.IntLogger
 
@@ -8,6 +10,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.swing._
 import java.awt.Dimension
 import java.io.File
+
 
 /**
  * Created by lorilan on 08/05/14.
@@ -101,8 +104,101 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
       minimumSize = new Dimension(leftWidth, height)
 
 
-      control.listenTo(this)
-      treeDisplayer.listenTo(control)
+      val resultsWrapper = new BoxPanel(Orientation.Vertical)
+      var resultsCB : CSSearchStateComboBox[Kind] = _
+
+      control listenTo this
+      this listenTo control
+      treeDisplayer listenTo control
+
+      reactions += {
+        case ExplorationFinished(res0) =>
+          resultsWrapper.contents.clear()
+
+          def filterDifferentStates(l : List[ST]): List[ST] = {
+
+            def aux(l : List[ST], acc : List[ST]) : List[ST] = {
+              if (l.nonEmpty) {
+                aux(l.tail,
+                  if (!l.tail.exists { st => st.internal.recording.produceSameGraph(l.head.internal.recording)})
+                    l.head :: acc
+                  else acc)
+              }
+              else acc
+            }
+            aux(l, List())
+          }
+
+          type ST = ConstraintSolving.FinalState[Kind]
+          val res = res0.asInstanceOf[List[ConstraintSolving.FinalState[Kind]]]
+          filesHandler.logger.writeln("%d final states".format(res.size))
+
+          /*filesHandler.logger.write("compute different final states (without sorting by coupling first) : ")
+
+          val plop = puck.util.Time.time(filesHandler.logger){
+            filterDifferentStates(res)
+          }
+          filesHandler.logger.writeln("%d final states".format(plop.size))
+*/
+          filesHandler.logger.write("compute different final states (after sorting by coupling value) : ")
+          val sortedRes  =
+            puck.util.Time.time(filesHandler.logger){
+
+              //CSSearchStateComboBox.sort(res).mapValues(filterDifferentStates)
+              // do not actually apply the function and hence give a false compute time
+              CSSearchStateComboBox.sort(res).foldLeft(Map[Int, List[ConstraintSolving.FinalState[Kind]]]()){
+                case (acc, (k, v)) => acc + (k -> filterDifferentStates(v))
+              }
+            }
+
+          val total = sortedRes.foldLeft(0) { case (acc, (_, l)) => acc + l.size}
+
+          filesHandler.logger.writeln("%d final states".format(res.size))
+          filesHandler.logger.writeln("%d different final states ".format(total))
+
+          resultsCB = new CSSearchStateComboBox(sortedRes)
+          this listenTo resultsCB
+
+          resultsWrapper.contents += resultsCB
+          resultsWrapper.contents += new FlowPanel(){
+            contents += new Label("Compare")
+            val cb1 = new CSSearchStateComboBox(sortedRes)
+            val cb2 = new CSSearchStateComboBox(sortedRes)
+            contents += cb1
+            contents += new Label("and")
+            contents += cb2
+            contents += Button(">>"){
+              val r1 = cb1.selectedState.internal.recording
+              val r2 = cb2.selectedState.internal.recording
+              println("Comparing %s and %s".format(r1, r2))
+              new RecordingComparator(r1, r2).search() match {
+                case None => println("no mapping")
+                case Some(st) => println(st.internal.map)
+              }
+            }
+          }
+
+          resultsWrapper.contents += new FlowPanel(){
+            val couplingValues = new ComboBox(sortedRes.keys.toSeq)
+            contents += couplingValues
+            contents += Button("Print"){
+              val d = filesHandler.graphFile("_results")
+              d.mkdir()
+              val subDir = filesHandler.graphFile("_results%c%d".format(File.separatorChar,
+                couplingValues.selection.item))
+              subDir.mkdir()
+              filesHandler.printCSSearchStatesGraph(subDir, sortedRes(couplingValues.selection.item))
+            }
+          }
+
+          resultsWrapper.contents += Button("Print all"){
+            filesHandler.printCSSearchStatesGraph(sortedRes)
+          }
+
+        case StateSelected(cb) if cb == resultsCB =>
+          resultsCB.selectedState.internal.recording()
+
+      }
 
       val decisionStrategy = new CheckBox("GUI Decision Maker")
       val printTrace = new CheckBox("Print trace")
@@ -192,11 +288,22 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
 
       addDelayedComponent(solve)
 
-      val explore = makeButton("Explore", "search all solutions (gui decision maker unused)"){
-        () => publish(ExploreRequest(printTrace.selected))
+      val searchStrategies = new ComboBox(filesHandler.searchingStrategies){
+        minimumSize = new Dimension(leftWidth, 30)
+        maximumSize = minimumSize
+        preferredSize = minimumSize
+      }
+
+      addDelayedComponent(searchStrategies)
+
+      val explore = makeButton("Solve with search engine",""){
+        () => publish(ExploreRequest(printTrace.selected,
+          searchStrategies.selection.item))
       }
 
       addDelayedComponent(explore)
+
+      addDelayedComponent(resultsWrapper)
 
       val printCode = makeButton("Apply on code",
         "apply the planned modifications on the code"){

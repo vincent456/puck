@@ -6,61 +6,60 @@ import scala.collection.mutable
  * Created by lorilan on 07/07/14.
  */
 
-trait SearchEngine[S, U]{
+trait SearchEngine[F <: StateCreator[F, F]]{
 
-  val initialState : SearchState[S, U]
+  val initialState : SearchState[_, F]
 
-  var currentState : SearchState[S, U] = _
+  var currentState : SearchState[_, F] = _
 
-  val finalStates = mutable.ListBuffer[SearchState[S, U]]()
+  val finalStates = mutable.ListBuffer[SearchState[F, F]]()
 
-  def start(){
+  def init(){
     currentState = initialState
-    currentState.executeNextChoice()
   }
 
-  def keepGoing() { currentState.executeNextChoice() }
-
-
-  def newCurrentState(k: U => Unit,
-                      choices : S) {
-
-    //only one choice : no state created
-    /*if(it.isEmpty)
-      k(None)
-    else {
-      if (remainingChoices.size == 1)
-        k(Some(remainingChoices.head))
-      else {*/
-    val newState = currentState.createNextState(k, choices)
-    currentState = newState
-    keepGoing()
-    /*  }
-    }*/
+  def newCurrentState[S <: StateCreator[S, F]](choices : S) {
+    currentState = currentState.createNextState[S](choices)
   }
 
-
-  def search() : Option[SearchState[S, U]]
+  def search() : Option[SearchState[F, F]]
 }
 
 
-trait TryAllSearchEngine[S, U] extends SearchEngine[S, U]{
+trait StackedSearchEngine[F <: StateCreator[F, F]] extends SearchEngine[F]{
 
-  val stateStack = mutable.Stack[SearchState[S, U]]()
+  val stateStack = mutable.Stack[SearchState[_, F]]()
+
+  override def init(){
+    //println("StackedSearchEngine.init")
+    super.init()
+    stateStack.push(initialState)
+  }
+
+  override def newCurrentState[S <: StateCreator[S, F]](choices : S) {
+    //println("StackedSearchEngine.newCurrentState")
+    super.newCurrentState(choices)
+    stateStack.push(currentState)
+
+  }
+}
+
+trait TryAllSearchEngine[F <: StateCreator[F, F]] extends StackedSearchEngine[F]{
 
   override def search() = {
-    start()
-    while(stateStack.nonEmpty){
+    init()
+
+  while(stateStack.nonEmpty){
       if(stateStack.head.triedAll)
         stateStack.pop()
       else {
-        val state = stateStack.head
+/*
         println("#########################################################################################")
         println("#########################################################################################")
         println("#########################################################################################")
-        println("EXPLORING FROM " + state.uuid("/","_",""))
+        println("EXPLORING FROM " + stateStack.head.uuid("/","_",""))*/
 
-        /* state.prevState match {
+        /* stateStack.head.prevState match {
            case None => ()
            case Some(s) => println("PREVSTATE    : " + s.uuid("/","_","") )
          }*/
@@ -71,32 +70,27 @@ trait TryAllSearchEngine[S, U] extends SearchEngine[S, U]{
     None
   }
 
-  override def keepGoing(){
-    stateStack.push(currentState)
-    currentState.executeNextChoice()
-  }
 
 }
 
-trait GradedSearchEngine[S, U] extends SearchEngine[S, U]{
+/*trait GradedSearchEngine[S] extends SearchEngine[S]{
 
   def grade(state : SearchState[S, U]) : Int
 
   override def search() : Option[SearchState[S, U]] = {
-    val states = mutable.Buffer[SearchState[S, U]]()
+    val states = mutable.Buffer[(SearchState[S, U], Int)]()
 
     def selectBest() = {
-      val (choosedState, _) = states.tail.foldLeft[(SearchState[S, U], Int)]((states.head, grade(states.head))){
-        case ((bestState, bestGrade), st) =>
-          val gr = grade(st)
-          if(gr > bestGrade) (st, gr)
+      val (choosedState, _) = states.tail.foldLeft[(SearchState[S, U], Int)](states.head){
+        case ((bestState, bestGrade), (state, grade)) =>
+          if(grade > bestGrade) (state, grade)
           else (bestState, bestGrade)
       }
       choosedState
     }
 
 
-    start()
+    init()
     var prev = currentState
 
 
@@ -105,55 +99,53 @@ trait GradedSearchEngine[S, U] extends SearchEngine[S, U]{
       while (!prev.triedAll) {
         prev.setAsCurrentState()
         prev.executeNextChoice()
-        states.append(currentState)
+        states.append((currentState, grade(currentState)))
       }
 
       println("choosing between %d solutions".format(states.length))
-      states.foreach(st => println(grade(st)))
+      states.foreach{case (_, grade) => println(grade)}
 
       prev = selectBest()
     }
 
     states.clear()
 
-    states ++= finalStates
+    states ++= finalStates.map{
+      st =>
+        st.setAsCurrentState()
+        (st, grade(st))
+    }
 
     println("final states ! choosing between %d solutions".format(states.length))
-    states.foreach(st => println(grade(st)))
+    states.foreach{
+      case (_, grade) => println(grade)
+    }
 
     if(finalStates.nonEmpty)
       Some(selectBest())
     else
       None
   }
+}*/
 
+trait FindFirstSearchEngine[F <: StateCreator[F, F]] extends StackedSearchEngine[F] {
 
-
-}
-
-trait FindFirstSearchEngine[S, U] extends SearchEngine[S, U] {
-
-  val stateStack = mutable.Stack[SearchState[S, U]]()
-
-  override def search() : Option[SearchState[S, U]] = {
-    start()
+  override def search() = {
+    init()
     while(stateStack.nonEmpty && finalStates.isEmpty){
-      if(stateStack.head.triedAll)
+      if(stateStack.head.triedAll)  //curentState
         stateStack.pop()
       else {
-        /*   val state = stateStack.head
+         /*val state = stateStack.head
            println("#########################################################################################")
            println("#########################################################################################")
            println("#########################################################################################")
            println("EXPLORING FROM " + state.uuid("/","_",""))
-           println(state.triedChoices.mkString("tried :\n", "\n", "\n"))
-           println(state.remainingChoices.mkString("remaining choices :\n", "\n", "\n"))
 
            state.prevState match {
              case None => ()
              case Some(s) => println("PREVSTATE    : " + s.uuid("/","_","") )
-           }
-   */
+           }*/
         stateStack.head.executeNextChoice()
       }
     }
@@ -163,8 +155,4 @@ trait FindFirstSearchEngine[S, U] extends SearchEngine[S, U] {
       None
   }
 
-  override def keepGoing(){
-    stateStack.push(currentState)
-    currentState.executeNextChoice()
-  }
 }

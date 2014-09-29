@@ -4,9 +4,11 @@ import java.io._
 
 import puck.graph.constraints._
 import puck.graph._
+import puck.graph.constraints.search.{ConstraintSolvingNodesChoice, ConstraintSolving}
 import puck.search.{SearchEngine, SearchState}
-import puck.util.{DefaultFileLogger, DefaultSystemLogger, Logger}
+import puck.util.{NoopLogger, DefaultFileLogger, DefaultSystemLogger, Logger}
 
+import scala.collection.mutable
 import scala.sys.process.Process
 import scala.util.Try
 
@@ -21,11 +23,18 @@ object FilesHandler{
     final val graphFileName: String = "graph"
     final val jarListFileName: String = "jar.list"
     final val apiNodesFileName: String = "api_nodes"
-    final val logFileName: String = "graph_solving.log"
+    final val logFileName: String = outDirName + File.separator + "graph_solving.log"
   }
 }
 
-abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
+trait ConstraintSolvingSearchEngineBuilder[Kind <: NodeKind[Kind]] {
+  def apply(searchEngineLogger : Logger[Int],
+            solverLogger : Logger[Int],
+            graph : AccessGraph[Kind]) :
+  SearchEngine[ConstraintSolvingNodesChoice[Kind]]
+}
+
+abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
 
   private [this] var srcDir0 : Option[File] = None
   private [this] var outDir0 : Option[File] = None
@@ -84,7 +93,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
     }
   }
 
-  setWorkingDirectory(workindDirectory)
+  setWorkingDirectory(workingDirectory)
 
   def srcDirectory = this.srcDir0
   def srcDirectory_=(sdir : Option[File]) {
@@ -237,7 +246,8 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
     }
 
     graph.transformations.startRegister()
-    solver(decisionMaker, this.logger).solve(
+    //solver(decisionMaker, this.logger).solve(
+    solver(decisionMaker, new NoopLogger() ).solve(/*
       if(trace) {() =>
         this.logger.writeln("*****************************************************")
         this.logger.writeln("*********** solve end of iteration %d *************".format(inc))
@@ -245,7 +255,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
         printTrace()
       }
       else
-        () => ()
+        () => ()*/
 
     )
     graph.doMerges()
@@ -258,21 +268,23 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
   }
 
 
-  type PrinterType = SearchState[ConstraintSolvingChoices[Kind], Option[AGNode[Kind]]] => Unit
-
-  def constraintSolvingSearchEngine(graph : AccessGraph[Kind],
-                                    searchEnginelogger: Logger[Int],
-                                    solverLogger: Logger[Int],
-                                    printer : PrinterType) : SearchEngine[ConstraintSolvingChoices[Kind], Option[AGNode[Kind]]]
+  def searchingStrategies : List[ConstraintSolvingSearchEngineBuilder[Kind]]
 
 
-  def explore (trace : Boolean = false){
+  type ST = ConstraintSolving.FinalState[Kind]
+
+  def explore (trace : Boolean = false,
+               builder : ConstraintSolvingSearchEngineBuilder[Kind]) : List[ST] = {
 
     val searchEngineLogger = new DefaultFileLogger(logFile0.get)
     searchEngineLogger.verboseLevel = 10
 
-    val engine = constraintSolvingSearchEngine(graph, searchEngineLogger, this.logger,
-      if(trace) { state =>
+
+    val engine = builder(searchEngineLogger, new NoopLogger(), graph)
+
+    /*
+    val engine = builder(searchEngineLogger, this.logger, graph,
+    if(trace) { state =>
         state.isStep = true
 
         val f = graphFile("_traces%c%s".format(
@@ -289,17 +301,34 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
       }
       else
         _ => ()
-    )
+    )*/
 
-
+    graph.transformations.startRegister()
     puck.util.Time.time(logger) {
       engine.search()
     }
 
-    var i = 0
+    /*var i = 0
     val d = graphFile("_results")
     d.mkdir()
-    engine.finalStates.foreach { s =>
+
+    def filterDifferentStates(l : mutable.ListBuffer[ST], acc : List[ST]): List[ST] ={
+      if(l.nonEmpty){
+        filterDifferentStates(l.tail,
+          if(!l.tail.exists{st => st.internal.recording.produceSameGraph(l.head.internal.recording)})
+            l.head :: acc
+          else acc)
+      }
+      else acc
+    }
+
+    println("results : %d".format(engine.finalStates.size))
+*/
+    /*val filtSize =filterDifferentStates(engine.finalStates, List()).size
+    println("diff results : %d".format(filtSize))
+*/
+
+    /*engine.finalStates.foreach { s =>
       s.internal.recording()
 
       val subdir = (graph.coupling * 100).toInt
@@ -308,8 +337,30 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workindDirectory : File){
       makePng(sOutput = Some(new FileOutputStream(
         graphFile("_results%c%d%c%04d.png".format(File.separatorChar, subdir, File.separatorChar, i)))))()
       i += 1
-    }
+    }*/
 
+    engine.finalStates.toList
+
+  }
+
+
+  def printCSSearchStatesGraph(states : Map[Int, List[ConstraintSolving.FinalState[Kind]]]){
+    val d = graphFile("_results")
+    d.mkdir()
+    states.foreach{
+      case (cVal, l) =>
+        val subDir = graphFile("_results%c%d".format(File.separatorChar, cVal))
+        subDir.mkdir()
+        printCSSearchStatesGraph(subDir, l)
+    }
+  }
+
+  def printCSSearchStatesGraph(dir : File, states : List[ConstraintSolving.FinalState[Kind]]){
+    states.foreach { s =>
+      s.internal.recording()
+      val f = new File("%s%c%s.png".format(dir.getAbsolutePath, File.separatorChar, s.uuid()))
+      makePng(sOutput = Some(new FileOutputStream(f)))()
+    }
   }
 
   def printCode() : Unit

@@ -129,41 +129,46 @@ object Front extends SwingApplication{
 
 /*import java.io._
 
-import puck.javaAG.nodeKind.{Method, AbstractMethod, Interface}
+import puck.javaAG.{JavaDefaultDecisionMaker, JavaFilesHandler}
 
 
 object Front{
 
   def main(args : Array[String]){
 
-//    val folder = "/home/lorilan/puck_svn/distrib/examples/"
-//    val example ="prototype/actors/candidate"
+   /* import scala.reflect.runtime.universe._
+
+    val tpe = typeOf[puck.graph.constraints.search.TryAllCSSE[_]]
+    tpe.baseClasses foreach { s => println(s.fullName) }*/
+
+    val folder = "/home/lorilan/projects/constraintsSolver/scala/test/distrib/"
+    val example ="prototype/actors/"
    // val example = "bridge/hannemann_inspired/candidate"
 
-    val folder = "/home/lorilan/projects/constraintsSolver/scala/test/examples/"
+/*    val folder = "/home/lorilan/projects/constraintsSolver/scala/test/examples/"
     //val example = "SuperTypeExtraction/01/"
-    val example = "Basic/01/"
-    val fh = FilesHandler( folder + example)()
+    val example = "Basic/01/"*/
+
+    val fh = new JavaFilesHandler( new File(folder + example))
     //fh.decouple = "/home/lorilan/puck_svn/distrib/examples/composite/candidate/decouple_strict.pl"
     fh.loadGraph(null)
     fh.parseConstraints()
     println("graph loaded")
 
     print("make png ... ")
-    fh.makePng(soutput = Some(new FileOutputStream(
-      new File(fh.graphStubFile.getCanonicalPath + "_before.png"))))
+    fh.makePng(sOutput = Some(new FileOutputStream(fh.graphFile( "_before.png"))))
     println("done")
 
     //fh.explore(trace = true)
     fh.graph.transformations.startRegister()
-    fh.solve(trace = true)
+
+    fh.solve(trace = true, new JavaDefaultDecisionMaker(fh.graph))
 
     fh.graph.doMerges()
 
     print("make png ... ")
     fh.makePng(printSignatures = true,
-      soutput = Some(new FileOutputStream(
-      new File(fh.graphStubFile.getCanonicalPath + "_after.png"))))
+      sOutput = Some(new FileOutputStream(fh.graphFile( "_before.png"))))
     println("done")
 
     fh.graph.applyChangeOnProgram()

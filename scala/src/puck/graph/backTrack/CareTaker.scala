@@ -9,16 +9,8 @@ class CareTaker[Kind <: NodeKind[Kind]] (val graph : AccessGraph[Kind]) {
 
   private [this] var registering = 1
 
-  def register[T](op : => T) : T = {
-    startRegister()
-    val res = sequence[T](op)
-    stopRegister()
-    res
-  }
-
   def startRegister()={
     registering += 1
-
     graph.transformations = this
     this
   }
@@ -70,8 +62,8 @@ class CareTaker[Kind <: NodeKind[Kind]] (val graph : AccessGraph[Kind]) {
     graph.transformations = new CareTakerNoop(graph)
 
     while(transformationsStack.nonEmpty &&
-        transformationsStack.head != breakPoint)
-        transformationsStack.pop().undo()
+      transformationsStack.head != breakPoint)
+      transformationsStack.pop().undo()
 
     graph.transformations = this
   }
@@ -104,7 +96,7 @@ class CareTaker[Kind <: NodeKind[Kind]] (val graph : AccessGraph[Kind]) {
   }
 
   def createAbstraction(impl: NodeType, abs: NodeType,
-                          policy: AbstractionPolicy) {
+                        policy: AbstractionPolicy) {
     this += Transformation(Add(), TTAbstraction(impl, abs, policy))
     this += Transformation(Add(), TTNode(abs))
   }
@@ -115,7 +107,7 @@ class CareTaker[Kind <: NodeKind[Kind]] (val graph : AccessGraph[Kind]) {
   }
 
   def unregisterAbstraction(impl: NodeType, abs: NodeType,
-                          policy: AbstractionPolicy) {
+                            policy: AbstractionPolicy) {
     this += Transformation(Remove(), TTAbstraction(impl, abs, policy))
   }
   def addFriend(ct : Constraint[Kind], friend : NodeType){
@@ -132,8 +124,6 @@ class CareTaker[Kind <: NodeKind[Kind]] (val graph : AccessGraph[Kind]) {
 }
 
 class CareTakerNoop[Kind <: NodeKind[Kind]](g : AccessGraph[Kind]) extends CareTaker[Kind](g){
-
-  override def register[T](op : => T) : T = op
 
   override def startRegister()={
     graph.transformations = new CareTaker(graph)
@@ -153,7 +143,7 @@ class CareTakerNoop[Kind <: NodeKind[Kind]](g : AccessGraph[Kind]) extends CareT
 
   override def startSequence(){}
 
-  override def undo(breakPoint : BreakPoint[Kind]) {}
+  override def undo(breakPoint : BreakPoint[Kind]){}
 
   override def addNode(n: NodeType){}
 
@@ -163,13 +153,14 @@ class CareTakerNoop[Kind <: NodeKind[Kind]](g : AccessGraph[Kind]) extends CareT
 
   override def removeEdge(e: EdgeType){}
 
-  override def addEdgeDependency(dominant: EdgeType, dominated: EdgeType) {}
+  override def addEdgeDependency(dominant: EdgeType, dominated: EdgeType){}
+
   override def removeEdgeDependency(dominant: EdgeType, dominated: EdgeType) {}
 
   override def registerAbstraction(impl: NodeType, abs: NodeType,
-                          policy: AbstractionPolicy){}
+                                   policy: AbstractionPolicy){}
   override def unregisterAbstraction(impl: NodeType, abs: NodeType,
-                            policy: AbstractionPolicy){}
+                                     policy: AbstractionPolicy){}
 
   override def addFriend(ct : Constraint[Kind], friend : NodeType){}
 

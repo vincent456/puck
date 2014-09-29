@@ -21,7 +21,7 @@ trait DecisionMaker[Kind <: NodeKind[Kind]]{
 
   def violationTarget(k: Option[NodeType] => Unit) : Unit
 
-  def abstractionKindAndPolicy(impl : NodeType) : (Kind, AbstractionPolicy)
+  def abstractionKindAndPolicy(impl : NodeType)(k : Option[(Kind, AbstractionPolicy)] => Unit) : Unit
 
   def chooseNode(context : => String,
                  predicate : NodeType => Boolean,

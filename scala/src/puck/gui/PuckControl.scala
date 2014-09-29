@@ -4,8 +4,10 @@ import java.io.{PipedInputStream, PipedOutputStream}
 
 import AST.LoadingListener
 import puck.graph.constraints.DecisionMaker
-import puck.graph.{AGEdge, NodeKind}
-import puck.graph.io.FilesHandler
+import puck.graph.constraints.search.ConstraintSolvingNodesChoice
+import puck.graph.{AGNode, AGEdge, NodeKind}
+import puck.graph.io.{ConstraintSolvingSearchEngineBuilder, FilesHandler}
+import puck.search.SearchState
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -26,9 +28,14 @@ case class ApplyOnCodeRequest() extends ControlRequest
 case class LoadCodeRequest() extends ControlRequest
 case class SolveRequest[Kind <: NodeKind[Kind]](decisionStrategy : DecisionMaker[Kind],
                                                 trace : Boolean) extends ControlRequest
-case class ExploreRequest(trace : Boolean) extends ControlRequest
+case class ExploreRequest[Kind <: NodeKind[Kind]](trace : Boolean,
+                                                  builder : ConstraintSolvingSearchEngineBuilder[Kind]) extends ControlRequest
 case class DoWholeProcessRequest(trace : Boolean) extends ControlRequest
 case class PrintConstraintRequest() extends ControlRequest
+
+
+sealed abstract class Answer extends Event
+case class ExplorationFinished[Kind <: NodeKind[Kind]](finalStates : List[SearchState[ConstraintSolvingNodesChoice[Kind], ConstraintSolvingNodesChoice[Kind]]]) extends Answer
 
 
 class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
@@ -128,12 +135,15 @@ class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
         filesHandler.logger.writeln("Solving done")
       }
 
-    case ExploreRequest(trace) =>
+    case ExploreRequest(trace, builder) =>
       Future {
         filesHandler.logger.writeln("Solving constraints ...")
-        filesHandler.explore(trace)
+        filesHandler.explore(trace,
+          builder.asInstanceOf[ConstraintSolvingSearchEngineBuilder[Kind]])
       } onComplete {
-        case Success(_) => filesHandler.logger.writeln("Solving done")
+        case Success(res) =>
+          filesHandler.logger.writeln("Solving done")
+          publish(ExplorationFinished(res))
         case Failure(exc) => println(exc.printStackTrace())
       }
 

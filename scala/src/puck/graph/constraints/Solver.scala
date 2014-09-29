@@ -13,33 +13,36 @@ trait Solver[Kind <: NodeKind[Kind]] {
   type NodeType = AGNode[Kind]
 
   def redirectTowardExistingAbstractions(usee: NodeType,
-                                         wrongUsers : List[NodeType]) = {
-    val (absKind, absPolicy) = getAbsKindAndPolicy(usee)
+                                         wrongUsers : List[NodeType])(k : List[NodeType] => Unit){
+    absKindAndPolicy(usee) {
+      case (absKind, absPolicy) =>
 
-    logger.writeln("redirect toward existing abstractions", 2)
-    wrongUsers.foldLeft(List[NodeType]()) { (unsolved: List[NodeType], wu: NodeType) =>
-      usee.abstractions find {
-        case (node, `absPolicy`) if node.kind == absKind => !wu.interloperOf(node)
-        case _ => false
-      } match {
-        case None => wu :: unsolved
-        case Some((abs, _)) =>
-          logger.writeln(wu + " will use abstraction " + abs, 3)
+        logger.writeln("redirect toward existing abstractions", 2)
+        val allUnsolved = wrongUsers.foldLeft(List[NodeType]()) { (unsolved: List[NodeType], wu: NodeType) =>
+          usee.abstractions find {
+            case (node, `absPolicy`) if node.kind == absKind => !wu.interloperOf(node)
+            case _ => false
+          } match {
+            case None => wu :: unsolved
+            case Some((abs, _)) =>
+              logger.writeln(wu + " will use abstraction " + abs, 3)
 
-          graph.transformations.startSequence()
+              graph.transformations.startSequence()
 
-          try {
-            wu redirectUses(usee, abs, absPolicy)
-            unsolved
+              try {
+                wu redirectUses(usee, abs, absPolicy)
+                unsolved
+              }
+              catch {
+                case e: RedirectionError =>
+                  logger.writeln("redirection error catched !!", 3)
+                  graph.transformations.undo()
+                  wu :: unsolved
+              }
+
           }
-          catch {
-            case e :RedirectionError =>
-              logger.writeln("redirection error catched !!", 3)
-              graph.transformations.undo()
-              wu :: unsolved
-          }
-
-      }
+        }
+        k(allUnsolved)
     }
   }
 
@@ -152,23 +155,25 @@ trait Solver[Kind <: NodeKind[Kind]] {
 
     def aux(deg : Int, currentImpl : NodeType)
            (k :Option[(NodeType, AbstractionPolicy)] => Unit) {
-      logger.writeln("*** abs intro degree %d/%d ***".format(deg,degree), 3)
+      logger.writeln("*** abs intro degree %d/%d ***".format(deg, degree), 3)
 
-      val (absKind, absPolicy) = getAbsKindAndPolicy(currentImpl)
+      absKindAndPolicy(currentImpl){
+        case (absKind, absPolicy) =>
 
-      def doIntro(currentWrongUsers : List[NodeType],
-                  k : Option[(NodeType, AbstractionPolicy)] => Unit) =
-        intro (currentImpl, absKind, absPolicy, currentWrongUsers)()(k)
+          def doIntro(currentWrongUsers: List[NodeType],
+                      k: Option[(NodeType, AbstractionPolicy)] => Unit) =
+            intro(currentImpl, absKind, absPolicy, currentWrongUsers)()(k)
 
-      if(deg == degree)
-        doIntro(wrongUsers, k)
-      else
-        doIntro(List(), {
-          case None => throw new AGError("Single abs intro degree %d/%d error (currentImpl = %s)".
-            format(deg, degree, currentImpl))
-          case Some((abs, _)) =>
-            aux(deg + 1, abs)(k)
-        })
+          if (deg == degree)
+            doIntro(wrongUsers, k)
+          else
+            doIntro(List(), {
+              case None => throw new AGError("Single abs intro degree %d/%d error (currentImpl = %s)".
+                format(deg, degree, currentImpl))
+              case Some((abs, _)) =>
+                aux(deg + 1, abs)(k)
+            })
+      }
     }
 
 
@@ -195,39 +200,44 @@ trait Solver[Kind <: NodeKind[Kind]] {
 
   }
 
-  def getAbsKindAndPolicy(impl : NodeType) : (Kind, AbstractionPolicy) = {
-    if(impl.kind.abstractionPolicies.isEmpty){
-      throw new AGError(impl + " has no abstraction policy !")
+  def absKindAndPolicy(impl : NodeType) (k : ((Kind, AbstractionPolicy)) => Unit) {
+    decisionMaker.abstractionKindAndPolicy(impl) {
+      case None => throw new AGError(impl + " has no abstraction policy !")
+      case Some(kabs) => k(kabs)
     }
-    val policies = impl.kind.abstractionPolicies
-    if(policies.tail.isEmpty
-      && impl.kind.abstractKinds(policies.head).tail.isEmpty){
-      (impl.kind.abstractKinds(policies.head).head, policies.head)
-    }
-    else
-      decisionMaker.abstractionKindAndPolicy(impl)
   }
+
+  /*if(impl.kind.abstractionPolicies.isEmpty){
+  }
+  val policies = impl.kind.abstractionPolicies
+  if(policies.tail.isEmpty
+    && impl.kind.abstractKinds(policies.head).tail.isEmpty){
+    (impl.kind.abstractKinds(policies.head).head, policies.head)
+  }
+  else*/
+
+
 
   def solveUsesToward(impl : NodeType, k : () => Unit) {
     logger.writeln("###################################################")
     logger.writeln("##### Solving uses violations toward %s ######".format(impl))
 
-    val wrongUsers = redirectTowardExistingAbstractions(impl, impl.wrongUsers)
-
-    if (wrongUsers.nonEmpty){
-      singleAbsIntro(impl, wrongUsers){
-        case None =>
-          //dead code : en acceptant qu'une abstraction nouvellement introduite
-          //soit la cible de violation, on a jamais besoin d'utiliser le degré 2
-          singleAbsIntro(impl, wrongUsers, 2) {
-            case None =>
-              decisionMaker.modifyConstraints(LiteralNodeSet(wrongUsers), impl)
-              /*if(impl.wrongUsers.nonEmpty)
-                throw new AGError ("cannot solve uses toward " + impl)*/
-              k ()
-            case _ => k ()
-          }
-        case _ => k ()
+    redirectTowardExistingAbstractions(impl, impl.wrongUsers){ wrongUsers =>
+      if (wrongUsers.nonEmpty){
+        singleAbsIntro(impl, wrongUsers){
+          case None =>
+            //dead code : en acceptant qu'une abstraction nouvellement introduite
+            //soit la cible de violation, on a jamais besoin d'utiliser le degré 2
+            singleAbsIntro(impl, wrongUsers, 2) {
+              case None =>
+                decisionMaker.modifyConstraints(LiteralNodeSet(wrongUsers), impl)
+                /*if(impl.wrongUsers.nonEmpty)
+                  throw new AGError ("cannot solve uses toward " + impl)*/
+                k ()
+              case _ => k ()
+            }
+          case _ => k ()
+        }
       }
     }
   }
@@ -303,14 +313,14 @@ trait Solver[Kind <: NodeKind[Kind]] {
       end()
   }
 
-  def solve(step : () => Unit) {
+  def solve() {
 
     def aux(){
       decisionMaker.violationTarget {
         case None => ()
         case Some(target) =>
           solveViolationsToward(target){ () =>
-            step()
+            //step()
             aux()
           }
       }

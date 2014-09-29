@@ -29,9 +29,14 @@ abstract class DefaultDecisionMaker[Kind <: NodeKind[Kind]](val graph : AccessGr
 }
 
 
-  def abstractionKindAndPolicy(impl : NodeType) = {
-    val policy = impl.kind.abstractionPolicies.head
-    (impl.kind.abstractKinds(policy).head, policy)
+  def abstractionKindAndPolicy(impl : NodeType) (k : Option[(Kind, AbstractionPolicy)] => Unit)= {
+
+    if(impl.kind.abstractionPolicies.isEmpty)
+      k(None)
+    else {
+      val policy = impl.kind.abstractionPolicies.head
+      k(Some(impl.kind.abstractKinds(policy).head, policy))
+    }
   }
 
   def chooseNode(context : => String,

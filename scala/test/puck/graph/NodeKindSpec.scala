@@ -8,6 +8,7 @@ import puck.javaAG.{JavaNamedType, JavaAccessGraph}
  */
 class NodeKindSpec extends UnitSpec{
 
+
     "A node kind" should "be equal to other instances of the same kind" in {
       val g  = new JavaAccessGraph()
 

@@ -33,12 +33,20 @@ class Recording[Kind <: NodeKind[Kind]]( val graph : AccessGraph[Kind],
                  private [backTrack] val composition : List[Recordable[Kind]])
   extends Iterable[Recordable[Kind]]{
 
+  override def toString =
+  composition.mkString("Recording(",",\n", ")\n")
+
   def iterator = composition.iterator
 
   def apply(){graph(this)}
 
   def redo(){composition.foreach(_.redo())}
-  def undo(){composition.reverseIterator.foreach(_.undo())}
+  def undo(){
+    val ct =  graph.transformations
+    graph.transformations = new CareTakerNoop(graph)
+    composition.reverseIterator.foreach(_.undo())
+    graph.transformations = ct
+  }
 
   def partialGraph() : AccessGraph[Kind] = {
     val g = graph.newGraph()

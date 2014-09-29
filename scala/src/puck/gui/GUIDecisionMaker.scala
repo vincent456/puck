@@ -20,8 +20,6 @@ class GUIDecisionMaker[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[K
     fallback.violationTarget(k)
   }
 
-  def abstractionKindAndPolicy(impl : NodeType) =
-    AbstractionKindAndPolicyChooser(impl)
 
   def chooseNode(context : => String,
                  predicate : NodeType => Boolean,
@@ -32,4 +30,11 @@ class GUIDecisionMaker[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[K
     ConstraintExceptionFrame(sources, target)
   }
 
+/*
+  def abstractionKindAndPolicy(impl : NodeType) =
+    AbstractionKindAndPolicyChooser(impl)
+*/
+
+
+  def abstractionKindAndPolicy(impl: NodeType)(k: (Option[(Kind, AbstractionPolicy)]) => Unit): Unit = ???
 }
