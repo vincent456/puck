@@ -154,7 +154,6 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
   }
 
 
-  def doMerges(){}
   def applyChangeOnProgram(){}
 
   def coupling = this.foldLeft(0 : Double){ (acc, n) => acc + n.coupling }

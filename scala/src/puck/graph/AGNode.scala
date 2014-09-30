@@ -1,5 +1,6 @@
 package puck.graph
 
+import puck.javaAG.nodeKind.{AbstractMethod, Interface, JavaNodeKind}
 import puck.util.{HasChildren, BreadthFirstTreeIterator}
 
 import scala.language.implicitConversions
@@ -555,8 +556,56 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
   }
 
 
-  def searchMergingCandidate() : Option[NodeType] = None
 
+  def findMergingCandidate() : Option[AGNode[Kind]] = None
+
+  /*def filterMergingCandidate(acceptEmptyContent : Boolean = true,
+                             rootSearch : AGNode[Kind] = graph.root,
+                             typeComparator : () => Boolean = () => true) : List[NodeType] = {
+
+    if(this.content.isEmpty && acceptEmptyContent ||
+      this.content.nonEmpty){
+      rootSearch.iterator.filter{ n =>
+        n != this && n.kind == this.kind &&
+          {
+            val sameSize = n.content.size == this.content.size
+
+
+            if(sameSize)
+              graph.logger.writeln("comparing %s with %s".format(this.name, n.name), 8)
+            sameSize &&
+              this.content.forall { child =>
+
+                def typeC(other : HasType[Kind, _]) = {
+                  child match {
+                    case typedChild : HasType[Kind, _] =>
+                      typedChild.`type`.copyWith(this).replacedBy(n) == other
+                    case _ => false
+                  }
+                }
+
+
+                child.searchMergingCandidate(rootSearch = this)
+
+                child.kind match {
+                  case absMethKind @ AbstractMethod() =>
+                    absMethKind.findMergingCandidate(n) match {
+                      case None => false
+                      case Some(_) => true
+                    }
+                  case _ => throw new AGError("Interface should contain only abstract method !!")
+                }
+              }
+          }
+
+      }
+    }
+    else
+        List()
+  }*/
+
+  //TODO deep merge : merge also content need to refactor find merging candidate
+  //(deep merge is now done in JavaNode for interface node only)
   def mergeWith(other : NodeType){
 
     other.users.foreach { user =>

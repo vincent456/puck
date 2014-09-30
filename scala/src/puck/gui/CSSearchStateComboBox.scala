@@ -17,9 +17,9 @@ object CSSearchStateComboBox{
     Map[Int, List[ConstraintSolving.FinalState[Kind]]] = l match  {
       case List() => acc
       case hd :: tl =>
-        val r = hd.internal.recording
-        r()
-        val value = (r.graph.coupling * 100).toInt
+        val recording = hd.result
+        recording()
+        val value = (recording.graph.coupling * 100).toInt
         val oldl = acc.getOrElse(value, List())
         aux(acc + (value -> (hd :: oldl)), tl)
     }

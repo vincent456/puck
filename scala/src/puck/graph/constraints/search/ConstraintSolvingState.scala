@@ -9,18 +9,16 @@ import scala.collection.mutable
 /**
  * Created by lorilan on 26/09/14.
  */
-import ConstraintSolving.NodeChoice
 
 trait ConstraintSolvingChoice[Kind <: NodeKind[Kind], S, T <: ConstraintSolvingChoice[Kind, S, T]]
-  extends StateCreator[T , NodeChoice[Kind]] {
-  val recording : Recording[Kind]
+  extends StateCreator[Recording[Kind] , T] {
   val k : Option[S] => Unit
   val remainingChoices : mutable.Set[S]
   val triedChoices : mutable.Set[S]
 }
 
 trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, T <: ConstraintSolvingChoice[Kind, S, T]]
-  extends SearchState[T, NodeChoice[Kind]]{
+  extends SearchState[Recording[Kind], T]{
 
   /*println("creating searchState "+ id)
   prevState match {
@@ -30,8 +28,9 @@ trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, T <: ConstraintSolvingCh
 
   import internal._
 
+
   override def setAsCurrentState(){
-    recording()
+    result()
     super.setAsCurrentState()
   }
 
@@ -57,7 +56,7 @@ trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, T <: ConstraintSolvingCh
         case e : RedirectionError =>
           //TODO see if need to plug the logger
           //println("state %s, choice %s aborted :\n %s".format(uuid(), c, e.getMessage))
-          recording.graph.transformations.undo(SearchStateBreakPoint())
+          result.graph.transformations.undo(SearchStateBreakPoint())
           executeNextChoice()
       }
 

@@ -1,6 +1,7 @@
 package puck.graph.constraints
 
 import puck.graph._
+import puck.javaAG.nodeKind.Interface
 import puck.util.Logger
 
 trait Solver[Kind <: NodeKind[Kind]] {
@@ -265,6 +266,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
           if(oldCter != wronglyContained)
             oldCter.content += (wronglyContained, register = false)
           wronglyContained.moveTo(newCter)
+
         case None =>
           graph.transformations.undo()
           decisionMaker.modifyConstraints(LiteralNodeSet(wronglyContained.container), wronglyContained)
@@ -313,11 +315,33 @@ trait Solver[Kind <: NodeKind[Kind]] {
       end()
   }
 
+
+  def doMerges(){
+
+    object MergeDone extends Throwable
+
+    try {
+      graph.foreach { n =>
+        n.findMergingCandidate() match {
+          //other is either structurally equal
+          //either a subtype so we can merge n in other
+          case Some(other) =>
+              other.mergeWith(n)
+              throw MergeDone
+          case None => ()
+        }
+      }
+    } catch {
+      case t if t == MergeDone => doMerges()
+    }
+
+  }
+
   def solve() {
 
     def aux(){
       decisionMaker.violationTarget {
-        case None => ()
+        case None => doMerges()
         case Some(target) =>
           solveViolationsToward(target){ () =>
             //step()

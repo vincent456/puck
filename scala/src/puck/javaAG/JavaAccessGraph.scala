@@ -197,7 +197,7 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
     }
   }
 
-  override def doMerges(){
+  /*def doMerges(){
 
     class MergeDone extends Throwable
 
@@ -205,7 +205,7 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
       this.foreach { n =>
         n.kind match {
           case Interface() =>
-            n.searchMergingCandidate() match {
+            n.findMergingCandidate() match {
               case Some(other) =>
                 if(n.users.forall{!_.interloperOf(other)}) {
                   n.mergeWith(other)
@@ -226,8 +226,7 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
       case e : MergeDone => doMerges()
     }
 
-
-  }
+  }*/
 
   override def applyChangeOnProgram(){
 

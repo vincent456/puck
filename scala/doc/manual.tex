@@ -443,6 +443,14 @@ This code is not well typed :
 
 
 \section{Merge}
+
+When do we do the merge ?\\
+hypothesis : no merge necessary on the candidate code
+
+the merge can be done either after or during the constraint solving.
+if we do it during the constraint solving, we can ask the operation only on nodes that are newly created wheres if we do it in the end we have to search over all nodes (or we can store which nodes are created)
+
+
 For now the merge is done after the coupling constraint problem solving. It is completely language dependent.
 
 In only merge identical interfaces given that redirecting the uses do not create new violations.

@@ -2,6 +2,7 @@ package puck.graph.io
 
 import java.io._
 
+import puck.graph.backTrack.Recording
 import puck.graph.constraints._
 import puck.graph._
 import puck.graph.constraints.search.{ConstraintSolvingNodesChoice, ConstraintSolving}
@@ -31,7 +32,7 @@ trait ConstraintSolvingSearchEngineBuilder[Kind <: NodeKind[Kind]] {
   def apply(searchEngineLogger : Logger[Int],
             solverLogger : Logger[Int],
             graph : AccessGraph[Kind]) :
-  SearchEngine[ConstraintSolvingNodesChoice[Kind]]
+  SearchEngine[Recording[Kind]]
 }
 
 abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
@@ -258,7 +259,6 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
         () => ()*/
 
     )
-    graph.doMerges()
     if(trace) {
       this.logger.writeln("*****************************************************")
       this.logger.writeln("*****************   merge done   ********************")
@@ -357,7 +357,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
 
   def printCSSearchStatesGraph(dir : File, states : List[ConstraintSolving.FinalState[Kind]]){
     states.foreach { s =>
-      s.internal.recording()
+      s.result()
       val f = new File("%s%c%s.png".format(dir.getAbsolutePath, File.separatorChar, s.uuid()))
       makePng(sOutput = Some(new FileOutputStream(f)))()
     }

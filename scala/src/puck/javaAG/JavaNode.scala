@@ -110,31 +110,54 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
      }
    }*/
 
-  override def searchMergingCandidate() : Option[AGNode[JavaNodeKind]] = this.kind match{
-    case Interface() =>
-      if(this.content.isEmpty)
-        None
-      else
-        graph.find{ n =>
-          if(n == this || n.kind != Interface())
+
+  //A merging candidate is either structurally equal
+  //either a subtype of this
+  //hence if we do the merge "this" will disappear
+  // and all its user redirected to the candidate
+  override def findMergingCandidate() : Option[AGNode[JavaNodeKind]] = this.kind match{
+
+    case Interface() if this.content.nonEmpty =>
+        graph.find{ otherItc =>
+          if(otherItc == this || otherItc.kind != Interface())
             false
           else
           {
 
-            val sameSize = n.content.size == this.content.size
-            if(sameSize)
-              graph.logger.writeln("comparing %s with %s".format(this.name, n.name), 8)
-            sameSize &&
-              this.content.forall { absMethod =>
-                absMethod.kind match {
-                  case absMethKind @ AbstractMethod() =>
-                    absMethKind.findMergingCandidate(n) match {
-                      case None => false
-                      case Some(_) => true
-                    }
-                  case _ => throw new AGError("Interface should contain only abstract method !!")
+            def hasMatchingMethodIn(itc : AGNode[JavaNodeKind])
+                                 (absm : AGNode[JavaNodeKind])= absm.kind match{
+              case absMethKind@AbstractMethod() =>
+                absMethKind.findMergingCandidate(itc) match {
+                  case None => false
+                  case Some(_) => true
                 }
-              }
+              case _ => throw new AGError("Interface should contain only abstract method !!")
+
+            }
+
+
+            otherItc.content.size >= this.content.size && {
+              val otherHaveAllMethods =
+                this.content.forall (hasMatchingMethodIn(otherItc))
+
+              otherHaveAllMethods && (otherItc.content.size == this.content.size ||
+              {
+                //otherItc has more methods, it is a potential subtype
+                otherItc.superTypes.forall{superType =>
+                  superType == this || superType.superTypes.exists{ _ == this}
+                }
+                //TODO structual type check
+                /*val missingMethodsInThis =
+                  otherItc.content.filter{m => !hasMatchingMethodIn(this)(m)}*/
+
+
+              }) &&
+                this.users.forall(!_.interloperOf(otherItc)) &&
+                this.uses.forall(!otherItc.interloperOf(_))
+
+
+
+            }
           }
 
         }
@@ -304,14 +327,15 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
     super.redirectUses(oldUsee, newUsee, policy)
   }
 
+  //other is potentialy a superType and thus may have less methods than this
   override def mergeWith(other : AGNode[JavaNodeKind]){
     (this.kind, other.kind) match {
       case (Interface(), Interface()) =>
-        this.content.foreach { m =>
-          m.kind match {
-            case absm @ AbstractMethod() =>
-              absm.findMergingCandidate(other) match {
-                case Some(otherMethod) => m.mergeWith(otherMethod)
+        other.content.foreach { otherAbsMethod =>
+          otherAbsMethod.kind match {
+            case otherKind @ AbstractMethod() =>
+              otherKind.findMergingCandidate(this) match {
+                case Some(thisAbsMethod) => thisAbsMethod.mergeWith(otherAbsMethod)
                 case None => throw new Error("no method to merge with")
               }
             case _ => assert(false)

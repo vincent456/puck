@@ -1,7 +1,8 @@
 package puck.graph.constraints.search
 
-import puck.graph.{AGNode, AccessGraph, NodeKind}
-import puck.search.{FindFirstSearchEngine, SearchState}
+import puck.graph.backTrack.Recording
+import puck.graph.{AccessGraph, NodeKind}
+import puck.search.FindFirstSearchEngine
 import puck.util.Logger
 
 /**
@@ -14,4 +15,4 @@ class FindFirstCSSE[Kind <: NodeKind[Kind]](val logger : Logger[Int],
                                              sb : SolverBuilder[Kind],
                                              solverLogger : Logger[Int])
   extends ConstraintSolvingSearchEngineDecisionMaker[Kind](sb, solverLogger)
-  with FindFirstSearchEngine[ConstraintSolvingNodesChoice[Kind]]
+  with FindFirstSearchEngine[Recording[Kind]]

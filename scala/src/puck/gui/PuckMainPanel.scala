@@ -1,7 +1,8 @@
 package puck.gui
 
 import puck.graph.NodeKind
-import puck.graph.backTrack.{Recording, RecordingComparator}
+import puck.graph.backTrack.Recording
+import puck.graph.backTrack.comparison.RecordingComparator
 import puck.graph.constraints.search.ConstraintSolving
 import puck.graph.io.FilesHandler
 import puck.util.IntLogger
@@ -120,7 +121,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
             def aux(l : List[ST], acc : List[ST]) : List[ST] = {
               if (l.nonEmpty) {
                 aux(l.tail,
-                  if (!l.tail.exists { st => st.internal.recording.produceSameGraph(l.head.internal.recording)})
+                  if (!l.tail.exists { st => st.result.produceSameGraph(l.head.result)})
                     l.head :: acc
                   else acc)
               }
@@ -168,12 +169,12 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
             contents += new Label("and")
             contents += cb2
             contents += Button(">>"){
-              val r1 = cb1.selectedState.internal.recording
-              val r2 = cb2.selectedState.internal.recording
-              println("Comparing %s and %s".format(r1, r2))
-              new RecordingComparator(r1, r2).search() match {
+              val recording1 = cb1.selectedState.result
+              val recording2 = cb2.selectedState.result
+              println("Comparing %s and %s".format(recording1, recording2))
+              new RecordingComparator(recording1, recording2).search() match {
                 case None => println("no mapping")
-                case Some(st) => println(st.internal.map)
+                case Some(st) => println(st.result)
               }
             }
           }
@@ -196,7 +197,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
           }
 
         case StateSelected(cb) if cb == resultsCB =>
-          resultsCB.selectedState.internal.recording()
+          resultsCB.selectedState.result()
 
       }
 

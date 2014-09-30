@@ -1,6 +1,7 @@
 package puck.graph.backTrack
 
 import puck.graph._
+import puck.graph.backTrack.comparison.RecordingComparator
 import scala.collection.mutable
 
 /**

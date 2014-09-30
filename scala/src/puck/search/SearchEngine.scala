@@ -6,29 +6,29 @@ import scala.collection.mutable
  * Created by lorilan on 07/07/14.
  */
 
-trait SearchEngine[F <: StateCreator[F, F]]{
+trait SearchEngine[Result]{
 
-  val initialState : SearchState[_, F]
+  val initialState : SearchState[Result, _]
 
-  var currentState : SearchState[_, F] = _
+  var currentState : SearchState[Result, _] = _
 
-  val finalStates = mutable.ListBuffer[SearchState[F, F]]()
+  val finalStates = mutable.ListBuffer[SearchState[Result, _]]()
 
   def init(){
     currentState = initialState
   }
 
-  def newCurrentState[S <: StateCreator[S, F]](choices : S) {
-    currentState = currentState.createNextState[S](choices)
+  def newCurrentState[S <: StateCreator[Result, S]](cr : Result, choices : S) {
+    currentState = currentState.createNextState[S](cr, choices)
   }
 
-  def search() : Option[SearchState[F, F]]
+  def search() : Option[SearchState[Result, _]]
 }
 
 
-trait StackedSearchEngine[F <: StateCreator[F, F]] extends SearchEngine[F]{
+trait StackedSearchEngine[Result] extends SearchEngine[Result]{
 
-  val stateStack = mutable.Stack[SearchState[_, F]]()
+  val stateStack = mutable.Stack[SearchState[Result, _]]()
 
   override def init(){
     //println("StackedSearchEngine.init")
@@ -36,15 +36,15 @@ trait StackedSearchEngine[F <: StateCreator[F, F]] extends SearchEngine[F]{
     stateStack.push(initialState)
   }
 
-  override def newCurrentState[S <: StateCreator[S, F]](choices : S) {
+  override def newCurrentState[S <: StateCreator[Result, S]](cr : Result, choices : S) {
     //println("StackedSearchEngine.newCurrentState")
-    super.newCurrentState(choices)
+    super.newCurrentState(cr, choices)
     stateStack.push(currentState)
 
   }
 }
 
-trait TryAllSearchEngine[F <: StateCreator[F, F]] extends StackedSearchEngine[F]{
+trait TryAllSearchEngine[Result] extends StackedSearchEngine[Result]{
 
   override def search() = {
     init()
@@ -128,7 +128,7 @@ trait TryAllSearchEngine[F <: StateCreator[F, F]] extends StackedSearchEngine[F]
   }
 }*/
 
-trait FindFirstSearchEngine[F <: StateCreator[F, F]] extends StackedSearchEngine[F] {
+trait FindFirstSearchEngine[Result] extends StackedSearchEngine[Result] {
 
   override def search() = {
     init()

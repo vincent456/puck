@@ -3,6 +3,7 @@ package puck.gui
 import java.io.{PipedInputStream, PipedOutputStream}
 
 import AST.LoadingListener
+import puck.graph.backTrack.Recording
 import puck.graph.constraints.DecisionMaker
 import puck.graph.constraints.search.ConstraintSolvingNodesChoice
 import puck.graph.{AGNode, AGEdge, NodeKind}
@@ -35,7 +36,7 @@ case class PrintConstraintRequest() extends ControlRequest
 
 
 sealed abstract class Answer extends Event
-case class ExplorationFinished[Kind <: NodeKind[Kind]](finalStates : List[SearchState[ConstraintSolvingNodesChoice[Kind], ConstraintSolvingNodesChoice[Kind]]]) extends Answer
+case class ExplorationFinished[Kind <: NodeKind[Kind]](finalStates : List[SearchState[Recording[Kind], _]]) extends Answer
 
 
 class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],

@@ -1,5 +1,6 @@
 package puck.javaAG
 
+import puck.graph.backTrack.Recording
 import puck.graph.constraints.search._
 import puck.graph.{AGNode, AccessGraph}
 import puck.graph.constraints._
@@ -30,7 +31,7 @@ object JavaTryAllCSSEBuilder
 
   def apply( searchEngineLogger : Logger[Int],
              solverLogger : Logger[Int],
-             graph : AccessGraph[JavaNodeKind]) : SearchEngine[ConstraintSolvingNodesChoice[JavaNodeKind]] =
+             graph : AccessGraph[JavaNodeKind]) : SearchEngine[Recording[JavaNodeKind]] =
     new TryAllCSSE(searchEngineLogger,
       violationsKindPriority,
       graph, JavaSolverBuilder, solverLogger)
@@ -59,7 +60,7 @@ object JavaFindFirstCSSEBuilder
 
   def apply( searchEngineLogger : Logger[Int],
              solverLogger : Logger[Int],
-             graph : AccessGraph[JavaNodeKind]) : SearchEngine[ConstraintSolvingNodesChoice[JavaNodeKind]] =
+             graph : AccessGraph[JavaNodeKind]) : SearchEngine[Recording[JavaNodeKind]] =
     new FindFirstCSSE(searchEngineLogger,
       violationsKindPriority,
       graph, JavaSolverBuilder, solverLogger)

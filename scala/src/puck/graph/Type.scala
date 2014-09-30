@@ -13,6 +13,7 @@ abstract class Type[Kind <: NodeKind[Kind], T <: Type[Kind, T]] {
   def copyWith (oldUsee : AGNode[Kind]) : Replacer
 
   def canOverride(other : Type[Kind, _]) : Boolean = this subtypeOf other
+
 }
 
 case class NamedType[Kind <: NodeKind[Kind]](node : AGNode[Kind])
