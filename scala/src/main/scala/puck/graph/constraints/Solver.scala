@@ -326,7 +326,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
           //other is either structurally equal
           //either a subtype so we can merge n in other
           case Some(other) =>
-              other.mergeWith(n)
+              other mergeWith n
               throw MergeDone
           case None => ()
         }

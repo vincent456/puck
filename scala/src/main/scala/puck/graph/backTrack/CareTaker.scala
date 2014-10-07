@@ -113,12 +113,16 @@ class CareTaker[Kind <: NodeKind[Kind]] (val graph : AccessGraph[Kind]) {
     this += Transformation(Add(), TTConstraint(ct, friend))
   }
 
-  def addChangeEdgeTarget(e : AGEdge[Kind], newTarget : AGNode[Kind]){
+  def changeEdgeTarget(e : AGEdge[Kind], newTarget : AGNode[Kind]){
     this += Transformation(Add(), TTRedirection(e, Target(newTarget)))
   }
 
-  def addChangeEdgeSource(e : AGEdge[Kind], newSource : AGNode[Kind]){
+  def changeEdgeSource(e : AGEdge[Kind], newSource : AGNode[Kind]){
     this += Transformation(Add(), TTRedirection(e, Source(newSource)))
+  }
+
+  def changeType[T <: Type[Kind, T]](kind : HasType[Kind, T], oldUsee : AGNode[Kind], newUsee : AGNode[Kind]){
+    this += Transformation(Add(), TTTypeRedirection(kind, oldUsee, newUsee))
   }
 }
 
@@ -163,6 +167,8 @@ class CareTakerNoop[Kind <: NodeKind[Kind]](g : AccessGraph[Kind]) extends CareT
 
   override def addFriend(ct : Constraint[Kind], friend : NodeType){}
 
-  override def addChangeEdgeTarget(e : AGEdge[Kind], newTarget : AGNode[Kind]){}
-  override def addChangeEdgeSource(e : AGEdge[Kind], newSource : AGNode[Kind]){}
+  override def changeEdgeTarget(e : AGEdge[Kind], newTarget : AGNode[Kind]){}
+  override def changeEdgeSource(e : AGEdge[Kind], newSource : AGNode[Kind]){}
+
+  override def changeType[T <: Type[Kind, T]](kind : HasType[Kind, T], oldUsee : AGNode[Kind], newUsee : AGNode[Kind]){}
 }

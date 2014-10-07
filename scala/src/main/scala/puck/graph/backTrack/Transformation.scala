@@ -1,6 +1,6 @@
 package puck.graph.backTrack
 
-import puck.graph.{NodeKind, AGEdge, AGNode}
+import puck.graph._
 import puck.graph.constraints.{AbstractionPolicy, Constraint}
 
 /**
@@ -60,6 +60,16 @@ case class TTRedirection[Kind <: NodeKind[Kind]](edge : AGEdge[Kind],
     case (Remove(), Target(newTarget)) => AGEdge(edge.kind, edge.source, newTarget).changeTarget(edge.target)
     case (Add(), Source(newSource)) => edge.changeSource(newSource)
     case (Remove(),Source(newSource)) => AGEdge(edge.kind, newSource, edge.target).changeSource(edge.source)
+  }
+}
+
+case class TTTypeRedirection[Kind <: NodeKind[Kind], T <: Type[Kind, T]](kind : HasType[Kind,T],
+                                                      oldUsee : AGNode[Kind],
+                                                      newUsee : AGNode[Kind])
+  extends TransformationTarget[Kind]{
+  override def execute(op: Operation) = op match {
+    case Add() => kind.redirectUses(oldUsee, newUsee)
+    case Remove() => kind.redirectUses(newUsee, oldUsee)
   }
 }
 

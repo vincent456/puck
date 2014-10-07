@@ -4,7 +4,7 @@ import puck.graph.NodeKind
 import puck.graph.backTrack.comparison.RecordingComparator
 import puck.graph.constraints.search.ConstraintSolving
 import puck.graph.io.FilesHandler
-import puck.util.IntLogger
+import puck.util.{DefaultSystemLogger, IntLogger}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.swing._
@@ -142,7 +142,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
 
 
           //filesHandler.logger.write("compute different final states (after sorting by coupling value) : ")
-          /*filesHandler.logger.write("comparing final states : ")
+          filesHandler.logger.write("comparing final states : ")
 
           val sortedRes  =
             puck.util.Time.time(filesHandler.logger){
@@ -152,8 +152,8 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
               CSSearchStateComboBox.sort(res).foldLeft(Map[Int, List[ConstraintSolving.FinalState[Kind]]]()){
                 case (acc, (k, v)) => acc + (k -> filterDifferentStates(v))
               }
-            }*/
-          val sortedRes  =  CSSearchStateComboBox.sort(res)
+            }
+          //val sortedRes  =  CSSearchStateComboBox.sort(res)
 
 
           val total = sortedRes.foldLeft(0) { case (acc, (_, l)) => acc + l.size}
@@ -177,7 +177,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
               val recording1 = cb1.selectedState.result
               val recording2 = cb2.selectedState.result
               new RecordingComparator(filesHandler.graph.initialRecord,
-                recording1, recording2).search() match {
+                recording1, recording2, new DefaultSystemLogger).search() match {
                 case None => println("no mapping")
                 case Some(st) => println(st.result)
               }

@@ -53,6 +53,8 @@ trait HasType[K <: NodeKind[K], T <: Type[K, T]] extends NodeKind[K]{
   var `type` : T = _
   def redirectUses(oldUsee : AGNode[K], newUsee : AGNode[K]) {
     `type` = `type`.copyWith(oldUsee).replacedBy(newUsee)
+
+    node.graph.transformations.changeType(this, oldUsee, newUsee)
   }
 
 }

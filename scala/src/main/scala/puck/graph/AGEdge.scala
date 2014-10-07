@@ -81,7 +81,7 @@ case class AGEdge[NK <: NodeKind[NK]](kind : EdgeKind,
     this.delete(register = false)
     val newEdge = new AGEdge(this.kind, this.source, newTarget)
     newEdge.create(register = false)
-    this.source.graph.transformations.addChangeEdgeTarget(this, newTarget)
+    this.source.graph.transformations.changeEdgeTarget(this, newTarget)
     newEdge
   }
 
@@ -89,7 +89,7 @@ case class AGEdge[NK <: NodeKind[NK]](kind : EdgeKind,
     this.delete(register = false)
     val newEdge = new AGEdge(this.kind, newSource, this.target)
     newEdge.create(register = false)
-    this.source.graph.transformations.addChangeEdgeSource(this, newSource)
+    this.source.graph.transformations.changeEdgeSource(this, newSource)
     newEdge
   }
 

@@ -27,7 +27,7 @@
   <!-- location of ControlFlowGraph -->
   <property name="ControlFlowGraph" value="${jrrt-home}/ControlFlowGraph"/>
 
-  <property name="base-outdir" value="/" />
+  <property name="base-outdir" value="./src/main/java" />
   <!-- <property name="base-outdir" value="." /> -->
 
   <!-- location of puck -->
@@ -183,7 +183,7 @@
 
     <!-- <fileset dir="${puck-scala}/jrag" includes="AccessGraphFactory.jrag"/> -->
     
-    <fileset dir="${puck-scala}/jrag" >
+    <fileset dir="${puck-scala}/src/main/jrag" >
       <include name="**/*.jrag"/>
     </fileset>
     

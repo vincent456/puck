@@ -3,6 +3,7 @@ package puck.graph.backTrack.comparison
 import puck.graph.backTrack._
 import puck.graph.{AGEdge, AGNode, NodeKind}
 import puck.search.FindFirstSearchEngine
+import puck.util.{Logger, NoopLogger}
 
 import scala.collection.mutable
 
@@ -28,7 +29,8 @@ class NoSolution extends Throwable
 
 class RecordingComparator[Kind <: NodeKind[Kind]](private [comparison] val initialTransfos : List[Transformation[Kind]],
                                                   recording1 : Recording[Kind],
-                                                  recording2 : Recording[Kind])
+                                                  recording2 : Recording[Kind],
+                                                   logger : Logger[Int] = new NoopLogger[Int]())
   extends FindFirstSearchEngine[ResMapping[Kind]] {
 
   def attribNode(node : AGNode[Kind],
@@ -165,7 +167,8 @@ class RecordingComparator[Kind <: NodeKind[Kind]](private [comparison] val initi
 
   lazy val initialState = new NodeMappingInitialState(this,
     recording1.composition,
-    recording2.composition)
+    recording2.composition,
+    logger)
 
   override def search() =
     try {

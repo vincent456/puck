@@ -2,6 +2,7 @@ package puck.graph.backTrack.comparison
 
 import puck.graph._
 import puck.graph.backTrack._
+import puck.util.Logger
 
 import scala.collection.immutable.HashSet
 
@@ -44,6 +45,7 @@ object NodeMappingInitialState{
       case ((m,l1), Transformation(_, TTDependency(_, _))) => (m, l1)
       case ((m,l1), Transformation(_, TTAbstraction(_, _, _))) => (m, l1)
       case ((m,l1), Transformation(_, TTConstraint(_,_))) => (m, l1)
+      case ((m,l1), Transformation(_, TTTypeRedirection(_,_,_))) => (m, l1)
       case ((m,l1), t : Transformation[Kind]) => (m, t :: l1)
     }
 
@@ -72,16 +74,68 @@ object NodeMappingInitialState{
     aux(l, List[T]())
   }
 
-  def printRule(name : String, op1 : String, op2 : String, res : String ){
-    println(name +" : ")
-    println(op1)
-    println("+ " + op2)
-    println("= " + res)
-    println("----------------------------------------------")
 
+  def filterNoise[Kind <: NodeKind[Kind]](transfos : List[Transformation[Kind]], logger : Logger[Int]):
+  List[Transformation[Kind]] = {
+
+    def printRule(name : => String, op1 : => String, op2 : => String, res : => String ){
+      logger.writeln(name +" : ")
+      logger.writeln(op1)
+      logger.writeln("+ " + op2)
+      logger.writeln("= " + res)
+      logger.writeln("----------------------------------------------")
+    }
+
+
+    // We are going backwards !
+    def aux(l1 : List[Transformation[Kind]],
+            l2 : List[Transformation[Kind]]): List[Transformation[Kind]] = {
+      l2 match {
+        case List() => l1
+        case (op2 @ Transformation(Remove(), TTEdge(AGEdge(Contains(), n1, n2)))) :: tl =>
+          select[Transformation[Kind]](tl,
+          { case Transformation(Add(), TTEdge(AGEdge(Contains(), `n1`, `n2`))) => true
+          case _ => false
+          }) match {
+            case (Some( op1 @ Transformation(Add(),_)), newTl) =>
+              printRule("AddDel", op1.toString, op2.toString, "None")
+              aux(l1, newTl)
+            case (None, _) => aux(l2.head :: l1, l2.tail)
+            case _ => sys.error("should not happen !")
+          }
+        case (op1 @ Transformation(Add(), TTRedirection(AGEdge(kind, n1, n2), Source(n3)))) :: tl =>
+          aux(l1, tl map { case op2 @ Transformation(Add(), TTRedirection(AGEdge(`kind`, n0, `n2`), Source(`n1`))) =>
+            val res = Transformation(Add(), TTRedirection(AGEdge(kind, n0, n2), Source(n3)))
+            printRule("RedRed_src", op2.toString, op1.toString, res.toString)
+            res
+          case op2 @ Transformation(Add(), TTEdge(AGEdge(`kind`, `n1`, `n2`))) =>
+            val res = Transformation(Add(), TTEdge(AGEdge(kind, n3, n2)))
+            printRule("AddRed_src", op2.toString, op1.toString, res.toString)
+            res
+          case t => t
+          })
+
+        case (op1 @ Transformation(Add(), TTRedirection(AGEdge(kind, n1, n2), Target(n3)))) :: tl =>
+          aux(l1, tl map { case op2 @ Transformation(Add(), TTRedirection(AGEdge(`kind`, `n1`, n0), Target(`n2`))) =>
+            val res = Transformation(Add(), TTRedirection(AGEdge(kind, n1, n0), Target(n3)))
+            printRule("RedRed_tgt", op2.toString, op1.toString, res.toString)
+            res
+          case op2 @ Transformation(Add(), TTEdge(AGEdge(`kind`, `n1`, `n2`))) =>
+            val res = Transformation(Add(), TTEdge(AGEdge(kind, n1, n3)))
+            printRule("AddRed_tgt", op2.toString, op1.toString, res.toString)
+            res
+          case t => t
+          })
+
+        case (t @ Transformation(Add(), TTEdge(_))):: tl => aux(t :: l1, tl)
+        case hd :: _ => sys.error(hd  + " should not be in list")
+      }
+    }
+
+    aux(List(), transfos.reverse)
   }
 
-  def filterNoise[Kind <: NodeKind[Kind]](transfos : List[Transformation[Kind]]):
+  /*def filterNoise[Kind <: NodeKind[Kind]](transfos : List[Transformation[Kind]]):
   List[Transformation[Kind]] = {
     def aux(l1 : List[Transformation[Kind]],
             l2 : List[Transformation[Kind]]): List[Transformation[Kind]] = {
@@ -138,7 +192,7 @@ object NodeMappingInitialState{
     }
 
     aux(List(), transfos)
-  }
+  }*/
 
   def filterDuplicates[Kind <: NodeKind[Kind]](transfos : List[Transformation[Kind]]): List[Transformation[Kind]] = {
     /*can be needed for cases like
@@ -153,56 +207,12 @@ object NodeMappingInitialState{
     aux(List(), transfos)
   }
 
-  /*def filterNoise[Kind <: NodeKind[Kind]](transfos : List[Transformation[Kind]]):
-  List[Transformation[Kind]] = {
-
-
-    val simplificationRules = new SimplificationRules[Kind]()
-
-    var ruleApplied = false
-
-
-    def aux(l1 : List[Transformation[Kind]],
-            l2 : List[Transformation[Kind]]): List[Transformation[Kind]] = {
-
-      l2 match {
-        case List() => l1
-        case transfo :: tl =>simplificationRules.otherMemberPred(transfo) match {
-          case Some(pred) => select(tl, pred) match {
-            case (Some(transfo2), newTl) =>
-              ruleApplied = true
-              simplificationRules(transfo, transfo2) match {
-                case Some(newTransfo) => aux( newTransfo :: l1, newTl)
-                case None => aux(l1, newTl)
-              }
-
-            case (None, _) => aux(transfo :: l1, tl)
-          }
-          case None => aux(transfo :: l1, tl)
-        }
-      }
-    }
-
-    def fix_aux(transfos : List[Transformation[Kind]]) : List[Transformation[Kind]] = {
-      val res = aux(List(), transfos)
-      if(!ruleApplied)
-        res
-      else{
-        ruleApplied = false
-        fix_aux(res)
-      }
-
-    }
-
-    fix_aux(transfos)
-
-  }*/
-
 }
 
 class NodeMappingInitialState[Kind <: NodeKind[Kind]](eng : RecordingComparator[Kind],
                                                       lr1 : List[Recordable[Kind]],
-                                                      lr2 : List[Recordable[Kind]])
+                                                      lr2 : List[Recordable[Kind]],
+                                                      logger : Logger[Int])
   extends NodeMappingState(0, eng, null, null, None) {
 
   //println("creating initial state")
@@ -236,7 +246,10 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind]](eng : RecordingComparator[
 
   override def triedAll = triedAll0
 
-  def printlnNode(n : AGNode[Kind]) {println("%d = %s(%s)".format(n.id, n.kind, n.fullName))}
+  def printlnNode(n : AGNode[Kind]){
+    logger.writeln("%d = %s(%s)".format(n.id, n.kind, n.fullName))
+  }
+
 
   override def executeNextChoice() {
     triedAll0 = true
@@ -245,25 +258,25 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind]](eng : RecordingComparator[
       !(removedNode forall otherRemovedNodes.contains)) {
       val sameNumberOfNodesToMap = nodesToMap.length == initialMapping.size
       val sameRemovedNodes = removedNode forall otherRemovedNodes.contains
-      println("sameNumberOfNodesToMap  = " + sameNumberOfNodesToMap)
-      println("same removed nodes = " + sameRemovedNodes)
+      logger.writeln("sameNumberOfNodesToMap  = " + sameNumberOfNodesToMap)
+      logger.writeln("same removed nodes = " + sameRemovedNodes)
 
-      println("initialMapping : %s, %d remaining transfo".format(initialMapping, remainingTransfos1.size))
+      logger.writeln("initialMapping : %s, %d remaining transfo".format(initialMapping, remainingTransfos1.size))
 
-      println("created nodes :")
+      logger.writeln("created nodes :")
       initialMapping.keys foreach printlnNode
-      println("neuter nodes : ")
+      logger.writeln("neuter nodes : ")
       neuterNodes foreach printlnNode
 
-      println("*******************************************************")
-      println()
-      println()
+      logger.writeln("*******************************************************")
+      logger.writeln("")
+      logger.writeln("")
 
-      println("nodes to map : %s, %d remaining transfo".format(nodesToMap, remainingTransfos2.size))
+      logger.writeln("nodes to map : %s, %d remaining transfo".format(nodesToMap, remainingTransfos2.size))
 
-      println("created nodes :")
+      logger.writeln("created nodes :")
       nodesToMap foreach printlnNode
-      println("neuter nodes : ")
+      logger.writeln("neuter nodes : ")
       otherNeuterNodes foreach printlnNode
 
       throw new NoSolution()
@@ -271,64 +284,62 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind]](eng : RecordingComparator[
     else {
 
 
+      logger.writeln("initialMapping : %s, %d remaining transfo".format(initialMapping, remainingTransfos1.size))
 
-
-      println("initialMapping : %s, %d remaining transfo".format(initialMapping, remainingTransfos1.size))
-
-      println("created nodes :")
+      logger.writeln("created nodes :")
       initialMapping.keys foreach printlnNode
-      println("neuter nodes : ")
+      logger.writeln("neuter nodes : ")
       neuterNodes foreach printlnNode
 
-      println()
-      println()
-      remainingTransfos1 foreach println
+      logger.writeln("")
+      logger.writeln("")
+      remainingTransfos1 foreach { t => logger.writeln(t.toString)}
 
-      println("*******************************************************")
-      println("***************** filtering 1 *************************")
-      println("*******************************************************")
+      logger.writeln("*******************************************************")
+      logger.writeln("***************** filtering 1 *************************")
+      logger.writeln("*******************************************************")
 
-      val filteredTransfos1 = if(neuterNodes.nonEmpty) filterDuplicates(filterNoise(remainingTransfos1))
+      val filteredTransfos1 = if(neuterNodes.nonEmpty) filterDuplicates(filterNoise(remainingTransfos1, logger))
       else remainingTransfos1
 
-      println("*******************************************************")
-      println("*******************************************************")
+      logger.writeln("*******************************************************")
+      logger.writeln("*******************************************************")
 
-      filteredTransfos1 foreach println
+      filteredTransfos1 foreach { t => logger.writeln(t.toString)}
 
-      println()
-      println()
-      println("*******************************************************")
-      println("*******************************************************")
-      println("************************* and *************************")
-      println("*******************************************************")
-      println("*******************************************************")
-      println()
-      println()
+      logger.writeln("")
+      logger.writeln("")
+      logger.writeln("*******************************************************")
+      logger.writeln("*******************************************************")
+      logger.writeln("************************* and *************************")
+      logger.writeln("*******************************************************")
+      logger.writeln("*******************************************************")
+      logger.writeln()
+      logger.writeln()
 
-      println("nodes to map : %s, %d remaining transfo".format(nodesToMap, remainingTransfos2.size))
+      logger.writeln("nodes to map : %s, %d remaining transfo".format(nodesToMap, remainingTransfos2.size, logger))
 
-      println("created nodes :")
+      logger.writeln("created nodes :")
       nodesToMap foreach printlnNode
-      println("neuter nodes : ")
+      logger.writeln("neuter nodes : ")
       otherNeuterNodes foreach printlnNode
 
-      println()
-      println()
-      remainingTransfos2.foreach(println)
+      logger.writeln()
+      logger.writeln()
+      remainingTransfos2 foreach { t => logger.writeln(t.toString)}
 
 
-      println("*******************************************************")
-      println("***************** filtering 2 *************************")
-      println("*******************************************************")
+      logger.writeln("*******************************************************")
+      logger.writeln("***************** filtering 2 *************************")
+      logger.writeln("*******************************************************")
 
-      val filteredTransfos2 = if(otherNeuterNodes.nonEmpty) filterDuplicates(filterNoise(remainingTransfos2))
+      val filteredTransfos2 = if(otherNeuterNodes.nonEmpty) filterDuplicates(filterNoise(remainingTransfos2, logger))
       else remainingTransfos2
 
-      println("*******************************************************")
-      println("*******************************************************")
+      logger.writeln("*******************************************************")
+      logger.writeln("*******************************************************")
 
-      filteredTransfos2 foreach println
+      filteredTransfos2 foreach { t => logger.writeln(t.toString)}
 
       eng.compare(filteredTransfos1, filteredTransfos2, initialMapping, nodesToMap)
       /*eng.compare(filteredTransfos1, filteredTransfos2,
