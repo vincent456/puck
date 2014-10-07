@@ -27,7 +27,7 @@
   <!-- location of ControlFlowGraph -->
   <property name="ControlFlowGraph" value="${jrrt-home}/ControlFlowGraph"/>
 
-  <property name="base-outdir" value="/home/lorilan/projects/constraintsSolver/scala/javasrc" />
+  <property name="base-outdir" value="/" />
   <!-- <property name="base-outdir" value="." /> -->
 
   <!-- location of puck -->

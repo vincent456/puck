@@ -1,0 +1,208 @@
+nodes to map : List(2693, 2694, 2695, 2714, 2715, 2716)
+
+1857 = Method(prototype.actors.Tragedian_container18.Tragedian.create : MethodType(() -> Tragedian))
+2313 = Method(prototype.actors.Tragedian_container18.Extra.create : MethodType(() -> Extra))
+2314 = Method(prototype.actors.Tragedian_container18.Comedian.create : MethodType(() -> Comedian))
+2617 = Package(prototype.actors.Tragedian_container18)
+2693 = Interface(<DETACHED>.Tragedian_SuperTypeAbstraction)
+2694 = AbstractMethod(<DETACHED>.create : MethodType(() -> Tragedian_SuperTypeAbstraction))
+2695 = AbstractMethod(<DETACHED>.act : MethodType(() -> void))
+2708 = Interface(prototype.actors.Tragedian_container18.Extra_SuperTypeAbstraction)
+2709 = AbstractMethod(prototype.actors.Tragedian_container18.Extra_SuperTypeAbstraction.act : MethodType(() -> void))
+2710 = AbstractMethod(prototype.actors.Tragedian_container18.Extra_SuperTypeAbstraction.create : MethodType(() -> Extra_SuperTypeAbstraction))
+2714 = Interface(<DETACHED>.Comedian_SuperTypeAbstraction)
+2715 = AbstractMethod(<DETACHED>.act : MethodType(() -> void))
+2716 = AbstractMethod(<DETACHED>.create : MethodType(() -> Comedian_SuperTypeAbstraction))
+
+
+
+Transformation(Remove(),TTEdge(contains( 13, 14)))
+Transformation(Add(),TTRedirection(isa( 27, 14),Target(2708)))
+Transformation(Add(),TTRedirection(isa( 30, 14),Target(2708)))
+Transformation(Add(),TTRedirection(isa( 23, 14),Target(2708)))
+Transformation(Add(),TTRedirection(uses( 21, 14),Target(2708)))
+Transformation(Add(),TTRedirection(uses( 18, 14),Target(2708)))
+Transformation(Add(),TTRedirection(uses( 27, 14),Target(2708)))
+Transformation(Add(),TTRedirection(uses( 30, 14),Target(2708)))
+Transformation(Add(),TTRedirection(uses( 23, 14),Target(2708)))
+Transformation(Remove(),TTEdge(contains( 14, 22)))
+Transformation(Add(),TTRedirection(uses( 18, 22),Target(2709)))
+Transformation(Remove(),TTEdge(contains( 12, 2693)))
+Transformation(Add(),TTRedirection(isa( 27, 2693),Target(2708)))
+Transformation(Add(),TTRedirection(isa( 23, 2693),Target(2708)))
+Transformation(Add(),TTRedirection(uses( 27, 2693),Target(2708)))
+Transformation(Add(),TTRedirection(uses( 23, 2693),Target(2708)))
+Transformation(Remove(),TTEdge(contains( 2693, 2695)))
+Transformation(Remove(),TTEdge(contains( 2693, 2694)))
+Transformation(Add(),TTRedirection(uses( 24, 2694),Target(2710)))
+Transformation(Remove(),TTEdge(contains( 12, 2714)))
+Transformation(Add(),TTRedirection(isa( 23, 2714),Target(2693)))
+Transformation(Add(),TTRedirection(uses( 24, 2714),Target(2693)))
+Transformation(Add(),TTRedirection(uses( 23, 2714),Target(2693)))
+Transformation(Remove(),TTEdge(contains( 2714, 2716)))
+Transformation(Add(),TTRedirection(uses( 24, 2716),Target(2694)))
+Transformation(Remove(),TTEdge(contains( 2714, 2715)))
+Transformation(Add(),TTRedirection(uses( 24, 2314),Target(2716)))
+Transformation(Add(),TTRedirection(uses( 24, 23),Target(2714)))
+Transformation(Add(),TTEdge(contains( 12, 2714)))
+Transformation(Add(),TTEdge(isa( 23, 2714)))
+Transformation(Add(),TTEdge(contains( 2714, 2716)))
+Transformation(Add(),TTEdge(contains( 2714, 2715)))
+Transformation(Add(),TTEdge(uses( 23, 2714)))
+Transformation(Add(),TTRedirection(contains( 13, 23),Source(2617)))
+Transformation(Add(),TTRedirection(uses( 24, 2313),Target(2710)))
+Transformation(Add(),TTRedirection(uses( 24, 30),Target(2708)))
+Transformation(Add(),TTEdge(contains( 2617, 2708)))
+Transformation(Add(),TTEdge(isa( 30, 2708)))
+Transformation(Add(),TTEdge(contains( 2708, 2710)))
+Transformation(Add(),TTEdge(contains( 2708, 2709)))
+Transformation(Add(),TTEdge(uses( 30, 2708)))
+Transformation(Add(),TTRedirection(contains( 13, 30),Source(2617)))
+Transformation(Add(),TTRedirection(uses( 24, 1857),Target(2694)))
+Transformation(Add(),TTRedirection(uses( 24, 27),Target(2693)))
+Transformation(Add(),TTEdge(contains( 12, 2693)))
+Transformation(Add(),TTEdge(isa( 27, 2693)))
+Transformation(Add(),TTEdge(contains( 2693, 2695)))
+Transformation(Add(),TTEdge(contains( 2693, 2694)))
+Transformation(Add(),TTEdge(uses( 27, 2693)))
+Transformation(Add(),TTRedirection(contains( 13, 27),Source(2617)))
+Transformation(Add(),TTEdge(contains( 13, 2617)))
+Transformation(Add(),TTConstraint(hideScopeSetButFrom(concrete_prototypes, ['prototype.actors.Tragedian_container18']).,2617))
+Transformation(Add(),TTRedirection(uses( 24, 25),Target(2314)))
+Transformation(Add(),TTEdge(uses( 18, 25)))
+Transformation(Add(),TTEdge(contains( 23, 2314)))
+Transformation(Add(),TTEdge(uses( 2314, 25)))
+Transformation(Add(),TTRedirection(uses( 24, 32),Target(2313)))
+Transformation(Add(),TTEdge(uses( 18, 32)))
+Transformation(Add(),TTEdge(contains( 30, 2313)))
+Transformation(Add(),TTEdge(uses( 2313, 32)))
+Transformation(Add(),TTRedirection(uses( 24, 29),Target(1857)))
+Transformation(Add(),TTEdge(uses( 18, 29)))
+Transformation(Add(),TTEdge(contains( 27, 1857)))
+Transformation(Add(),TTEdge(uses( 1857, 29)))
+*******************************************************
+***************** filtering 2 *************************
+*******************************************************
+------------------------------------------------------
+Transformation(Remove(),TTEdge(contains( 12, 2693)))
++ Transformation(Add(),TTEdge(contains( 12, 2693)))
+= None
+------------------------------------------------------
+Transformation(Add(),TTEdge(isa( 27, 2693)))
++ Transformation(Add(),TTRedirection(isa( 27, 2693),Target(2708)))
+= Some(Transformation(Add(),TTEdge(isa( 27, 2708))))
+------------------------------------------------------
+Transformation(Add(),TTRedirection(isa( 23, 2693),Target(2708)))
++ Transformation(Add(),TTRedirection(isa( 23, 2714),Target(2693)))
+= Some(Transformation(Add(),TTRedirection(isa( 23, 2714),Target(2708))))
+------------------------------------------------------
+Transformation(Add(),TTRedirection(uses( 24, 2714),Target(2693)))
++ Transformation(Add(),TTRedirection(uses( 24, 23),Target(2714)))
+= Some(Transformation(Add(),TTRedirection(uses( 24, 23),Target(2693))))
+------------------------------------------------------
+Transformation(Add(),TTEdge(contains( 12, 2714)))
++ Transformation(Remove(),TTEdge(contains( 12, 2714)))
+= None
+------------------------------------------------------
+Transformation(Add(),TTRedirection(uses( 24, 2694),Target(2710)))
++ Transformation(Add(),TTRedirection(uses( 24, 2716),Target(2694)))
+= Some(Transformation(Add(),TTRedirection(uses( 24, 2716),Target(2710))))
+------------------------------------------------------
+Transformation(Remove(),TTEdge(contains( 2714, 2716)))
++ Transformation(Add(),TTEdge(contains( 2714, 2716)))
+= None
+------------------------------------------------------
+Transformation(Remove(),TTEdge(contains( 2714, 2715)))
++ Transformation(Add(),TTEdge(contains( 2714, 2715)))
+= None
+------------------------------------------------------
+Transformation(Add(),TTEdge(uses( 23, 2714)))
++ Transformation(Add(),TTRedirection(uses( 23, 2714),Target(2693)))
+= Some(Transformation(Add(),TTEdge(uses( 23, 2693))))
+------------------------------------------------------
+Transformation(Remove(),TTEdge(contains( 2693, 2694)))
++ Transformation(Add(),TTEdge(contains( 2693, 2694)))
+= None
+------------------------------------------------------
+Transformation(Add(),TTEdge(uses( 27, 2693)))
++ Transformation(Add(),TTRedirection(uses( 27, 2693),Target(2708)))
+= Some(Transformation(Add(),TTEdge(uses( 27, 2708))))
+------------------------------------------------------
+Transformation(Remove(),TTEdge(contains( 2693, 2695)))
++ Transformation(Add(),TTEdge(contains( 2693, 2695)))
+= None
+------------------------------------------------------
+Transformation(Add(),TTRedirection(uses( 24, 2313),Target(2710)))
++ Transformation(Add(),TTRedirection(uses( 24, 32),Target(2313)))
+= Some(Transformation(Add(),TTRedirection(uses( 24, 32),Target(2710))))
+------------------------------------------------------
+Transformation(Add(),TTRedirection(uses( 24, 25),Target(2314)))
++ Transformation(Add(),TTRedirection(uses( 24, 2314),Target(2716)))
+= Some(Transformation(Add(),TTRedirection(uses( 24, 25),Target(2716))))
+------------------------------------------------------
+Transformation(Add(),TTRedirection(uses( 24, 29),Target(1857)))
++ Transformation(Add(),TTRedirection(uses( 24, 1857),Target(2694)))
+= Some(Transformation(Add(),TTRedirection(uses( 24, 29),Target(2694))))
+------------------------------------------------------
+Transformation(Add(),TTRedirection(uses( 24, 25),Target(2716)))
++ Transformation(Add(),TTRedirection(uses( 24, 2716),Target(2710)))
+= Some(Transformation(Add(),TTRedirection(uses( 24, 25),Target(2710))))
+------------------------------------------------------
+Transformation(Add(),TTRedirection(isa( 23, 2714),Target(2708)))
++ Transformation(Add(),TTEdge(isa( 23, 2714)))
+= Some(Transformation(Add(),TTEdge(isa( 23, 2708))))
+------------------------------------------------------
+Transformation(Add(),TTEdge(uses( 23, 2693)))
++ Transformation(Add(),TTRedirection(uses( 23, 2693),Target(2708)))
+= Some(Transformation(Add(),TTEdge(uses( 23, 2708))))
+*******************************************************
+*******************************************************
+
+Filtered recording :
+
+Transformation(Add(),TTEdge(uses( 18, 29)))
+Transformation(Add(),TTEdge(contains( 27, 1857)))
+Transformation(Add(),TTEdge(uses( 1857, 29)))
+Transformation(Add(),TTRedirection(uses( 24, 27),Target(2693)))
+Transformation(Add(),TTConstraint(hideScopeSetButFrom(concrete_prototypes, ['prototype.actors.Tragedian_container18']).,2617))
+Transformation(Add(),TTEdge(contains( 13, 2617)))
+Transformation(Add(),TTRedirection(contains( 13, 27),Source(2617)))
+Transformation(Add(),TTRedirection(uses( 24, 30),Target(2708)))
+Transformation(Add(),TTEdge(contains( 2617, 2708)))
+Transformation(Add(),TTEdge(isa( 30, 2708)))
+Transformation(Add(),TTEdge(contains( 2708, 2710)))
+Transformation(Add(),TTEdge(contains( 2708, 2709)))
+Transformation(Add(),TTEdge(uses( 30, 2708)))
+Transformation(Add(),TTRedirection(contains( 13, 30),Source(2617)))
+Transformation(Add(),TTRedirection(uses( 24, 29),Target(2694)))
+Transformation(Add(),TTEdge(uses( 2313, 32)))
+Transformation(Add(),TTEdge(contains( 30, 2313)))
+Transformation(Add(),TTEdge(uses( 18, 32)))
+Transformation(Add(),TTRedirection(uses( 24, 25),Target(2710)))
+Transformation(Add(),TTRedirection(uses( 24, 23),Target(2693)))
+Transformation(Add(),TTEdge(isa( 23, 2708)))
+Transformation(Add(),TTEdge(uses( 23, 2708)))
+Transformation(Add(),TTRedirection(contains( 13, 23),Source(2617)))
+Transformation(Add(),TTRedirection(uses( 24, 32),Target(2710)))
+Transformation(Add(),TTEdge(uses( 2314, 25)))
+Transformation(Add(),TTEdge(contains( 23, 2314)))
+Transformation(Add(),TTEdge(uses( 18, 25)))
+Transformation(Remove(),TTEdge(contains( 13, 14)))
+Transformation(Add(),TTRedirection(isa( 27, 14),Target(2708)))
+Transformation(Add(),TTRedirection(isa( 30, 14),Target(2708)))
+Transformation(Add(),TTRedirection(isa( 23, 14),Target(2708)))
+Transformation(Add(),TTRedirection(uses( 21, 14),Target(2708)))
+Transformation(Add(),TTRedirection(uses( 18, 14),Target(2708)))
+Transformation(Add(),TTRedirection(uses( 27, 14),Target(2708)))
+Transformation(Add(),TTRedirection(uses( 30, 14),Target(2708)))
+Transformation(Add(),TTRedirection(uses( 23, 14),Target(2708)))
+Transformation(Remove(),TTEdge(contains( 14, 22)))
+Transformation(Add(),TTRedirection(uses( 18, 22),Target(2709)))
+Transformation(Add(),TTEdge(isa( 27, 2708)))
+Transformation(Add(),TTEdge(uses( 27, 2708)))
+
+
+
+Diff from other filtered recording:
+Transformation(Add(),TTRedirection(uses( 24, 23),Target(2693)))
+Transformation(Add(),TTRedirection(uses( 24, 30),Target(2708)))
