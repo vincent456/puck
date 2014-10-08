@@ -331,12 +331,16 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
   override def mergeWith(other : AGNode[JavaNodeKind]){
     (this.kind, other.kind) match {
       case (Interface(), Interface()) =>
-        other.content.foreach { otherAbsMethod =>
+        //TODO see why the call to apply on content is needed (other.content.toList compile but doesn't give the right result)
+        //the toList is necessary :
+        // removing the firsts children (AGEdge.contains(other.container, other).delete() in AGNode.mergeWith)
+        // modifies the content set and thus the iterator
+        other.content().toList foreach { otherAbsMethod =>
           otherAbsMethod.kind match {
             case otherKind @ AbstractMethod() =>
               otherKind.findMergingCandidate(this) match {
-                case Some(thisAbsMethod) => thisAbsMethod.mergeWith(otherAbsMethod)
-                case None => throw new Error("no method to merge with")
+                case Some(thisAbsMethod) => thisAbsMethod mergeWith otherAbsMethod
+                case None => throw new Error(otherAbsMethod.fullName + " has no method to merge with")
               }
             case _ => assert(false)
           }

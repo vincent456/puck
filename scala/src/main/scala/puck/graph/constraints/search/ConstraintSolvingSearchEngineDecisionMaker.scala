@@ -89,11 +89,11 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]
     if(needSearch) {
       val choices = abstractionPolicies.map { p => abstractKinds(p).map { kind => (kind, p)}}.flatten
 
-      newCurrentState(new ConstraintSolvingAbstractionChoice(graph.transformations.recording, k,
-        mutable.Set[(Kind, AbstractionPolicy)]() ++ choices,
-        mutable.Set[(Kind, AbstractionPolicy)]()))
+      newCurrentState(graph.transformations.recording,
+        new ConstraintSolvingAbstractionChoice(k,
+          mutable.Set[(Kind, AbstractionPolicy)]() ++ choices,
+          mutable.Set[(Kind, AbstractionPolicy)]()))
     }*/
-
   }
 
   def chooseNode(context : => String,

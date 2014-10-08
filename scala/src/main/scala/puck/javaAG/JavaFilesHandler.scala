@@ -18,7 +18,7 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler[JavaNodeKi
 
   val srcSuffix = ".java"
 
-  def loadGraph(ll : AST.LoadingListener) : JavaAccessGraph = {
+  def loadGraph(ll : AST.LoadingListener = null) : JavaAccessGraph = {
     import puck.util.FileHelper.{fileLines, initStringLiteralsMap, findAllFiles}
 
     JavaFilesHandler.compile(findAllFiles(this.srcDirectory.get, srcSuffix,
@@ -37,7 +37,9 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler[JavaNodeKi
         val (_, tranfos) = NodeMappingInitialState.normalizeNodeTransfos(jgraph.transformations.recording.composition)
 
         graph.initialRecord = tranfos
+        //create a new caretaker for the comming transformations
         graph.transformations.stopRegister()
+        graph.transformations.startRegister()
 
         jgraph
     }

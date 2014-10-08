@@ -94,7 +94,7 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
   }
 
   override def toString: String = id.toString
-  //"%d %s (%s)".format(id, kind, fullName)
+  //override def toString: String = "%d %s (%s)".format(id, kind, fullName)
 
   def nameTypeString = name + (kind match{case k : HasType[_, _] => " : " + k.`type`; case _ => ""})
 

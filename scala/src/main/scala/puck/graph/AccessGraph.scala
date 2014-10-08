@@ -148,6 +148,7 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
     side.user.primaryUses -= (side.usee, primary)
     transformations.removeEdgeDependency(primary, side)
   }
+
   def removeUsesDependency(primaryUser : NodeType, primaryUsee : NodeType,
                            sideUser : NodeType, sideUsee : NodeType) {
     removeUsesDependency(AGEdge.uses(primaryUser, primaryUsee),

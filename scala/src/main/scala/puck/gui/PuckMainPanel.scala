@@ -177,7 +177,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
               val recording1 = cb1.selectedState.result
               val recording2 = cb2.selectedState.result
               new RecordingComparator(filesHandler.graph.initialRecord,
-                recording1, recording2, new DefaultSystemLogger).search() match {
+                recording1, recording2, DefaultSystemLogger).search() match {
                 case None => println("no mapping")
                 case Some(st) => println(st.result)
               }

@@ -28,7 +28,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
             case Some((abs, _)) =>
               logger.writeln(wu + " will use abstraction " + abs, 3)
 
-              graph.transformations.startSequence()
+              val breakPoint = graph.transformations.startSequence()
 
               try {
                 wu redirectUses(usee, abs, absPolicy)
@@ -37,7 +37,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
               catch {
                 case e: RedirectionError =>
                   logger.writeln("redirection error catched !!", 3)
-                  graph.transformations.undo()
+                  graph.transformations.undo(breakPoint)
                   wu :: unsolved
               }
 
@@ -107,11 +107,12 @@ trait Solver[Kind <: NodeKind[Kind]] {
                parentsThatCanBeCreated : Int = 2)
               (k : Option[(NodeType, AbstractionPolicy)] => Unit){
 
-      graph.transformations.startSequence()
+
+      val breakPoint = graph.transformations.startSequence()
       val abs = currentImpl.createAbstraction(absKind, absPolicy)
       findHost(abs, wrongUsers, context, predicate) {
         case None =>
-          graph.transformations.undo()
+          graph.transformations.undo(breakPoint)
           if(parentsThatCanBeCreated > 0)
             hostIntro(currentImpl, absKind, absPolicy, wrongUsers,
               parentsThatCanBeCreated - 1, k)
@@ -248,7 +249,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
     logger.writeln("###################################################")
     logger.writeln("##### Solving contains violations toward %s ######".format(wronglyContained))
 
-    graph.transformations.startSequence()
+    val breakPoint = graph.transformations.startSequence()
     // detach for host searching : do not want to consider parent constraints
     val oldCter = wronglyContained.container
 
@@ -268,7 +269,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
           wronglyContained.moveTo(newCter)
 
         case None =>
-          graph.transformations.undo()
+          graph.transformations.undo(breakPoint)
           decisionMaker.modifyConstraints(LiteralNodeSet(wronglyContained.container), wronglyContained)
           if(wronglyContained.isWronglyContained)
             throw new SolvingError("Cannot solve %s contains violation".
@@ -318,22 +319,19 @@ trait Solver[Kind <: NodeKind[Kind]] {
 
   def doMerges(){
 
-    object MergeDone extends Throwable
-
-    try {
-      graph.foreach { n =>
+    def aux(it : Iterator[AGNode[Kind]]) : Unit =
+      if(it.hasNext){
+        val n = it.next()
         n.findMergingCandidate() match {
-          //other is either structurally equal
-          //either a subtype so we can merge n in other
           case Some(other) =>
-              other mergeWith n
-              throw MergeDone
-          case None => ()
+            other mergeWith n
+            aux(graph.iterator)
+          case None => aux(it)
         }
       }
-    } catch {
-      case t if t == MergeDone => doMerges()
-    }
+      else None
+
+    aux(graph.iterator)
 
   }
 

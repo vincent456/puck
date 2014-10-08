@@ -33,7 +33,9 @@ object FileHelper {
   def fileLines(fileName: String, keepEmptyLines: Boolean): List[String] =
     fileLines(new File(fileName), keepEmptyLines)
 
-  def initStringLiteralsMap(file: File): java.util.Map[String, java.util.Collection[AST.BodyDecl]] = {
+  def initStringLiteralsMap(file: File): java.util.Map[String, java.util.Collection[AST.BodyDecl]] =
+  if(!file.exists()) new java.util.HashMap()
+  else {
     val reader: BufferedReader = new BufferedReader(new FileReader(file))
 
     val pat = Pattern.compile(Pattern.quote("string('") + "([^']*)" +

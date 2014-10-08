@@ -15,14 +15,14 @@ case class Uses() extends EdgeKind {
                                 target: AGNode[NK]) = AGEdge.uses(source, target)
 
 }
-case class Contains() extends EdgeKind{
+case class Contains() extends EdgeKind {
   override val toString = "contains"
   def apply[NK <: NodeKind[NK]](source : AGNode[NK],
                                 target: AGNode[NK]) = AGEdge.contains(source, target)
 
 
 }
-case class Isa() extends EdgeKind{
+case class Isa() extends EdgeKind {
   override val toString = "isa"
   def apply[NK <: NodeKind[NK]](source : AGNode[NK],
                                 target: AGNode[NK]) = AGEdge.isa(source, target)
@@ -30,7 +30,7 @@ case class Isa() extends EdgeKind{
 
 case class AGEdge[NK <: NodeKind[NK]](kind : EdgeKind,
                                       source : AGNode[NK],
-                                      target: AGNode[NK]){
+                                      target: AGNode[NK]) {
 
   /*
    * aliases for readibility
@@ -80,16 +80,16 @@ case class AGEdge[NK <: NodeKind[NK]](kind : EdgeKind,
   def changeTarget(newTarget : AGNode[NK]) = {
     this.delete(register = false)
     val newEdge = new AGEdge(this.kind, this.source, newTarget)
+    this.source.graph.transformations.changeEdgeTarget(this, newTarget, withMerge = newEdge.exists)
     newEdge.create(register = false)
-    this.source.graph.transformations.changeEdgeTarget(this, newTarget)
     newEdge
   }
 
   def changeSource(newSource : AGNode[NK]) = {
     this.delete(register = false)
     val newEdge = new AGEdge(this.kind, newSource, this.target)
+    this.source.graph.transformations.changeEdgeSource(this, newSource, withMerge = newEdge.exists)
     newEdge.create(register = false)
-    this.source.graph.transformations.changeEdgeSource(this, newSource)
     newEdge
   }
 

@@ -157,7 +157,8 @@ class RecordingComparator[Kind <: NodeKind[Kind]](private [comparison] val initi
         //removing the dependendency and abstraction of the comparison
         // they are used to compute the change on the graph, its the change themselves we want to compare
         // removed in NodeMappingInitialState.normalizeNodeTransfos
-        case TTDependency(_, _)
+        case TTTypeRedirection(_, _, _) // TODO see if need to be compared
+             | TTDependency(_, _)
              | TTAbstraction(_,_,_)
              | TTNode(_) => throw new Error("should not happen !!")
 

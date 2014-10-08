@@ -20,8 +20,6 @@ case class Created() extends NodeTransfoStatus
 case class Deleted() extends NodeTransfoStatus
 case class Neuter() extends NodeTransfoStatus
 
-class CannotApplySimplificationRule extends Error
-
 /**
  * Created by lorilan on 30/09/14.
  */
@@ -37,7 +35,7 @@ object NodeMappingInitialState{
       case ((m,l1), Transformation(Remove(), TTNode(n))) =>
         val i = m.getOrElse(n, 0)
         (m + (n -> (i - 1)), l1)
-      case ((m, l1), t : BreakPoint[Kind]) => (m , l1)
+      case ((m, l1), UndoBreakPoint(_)) => (m , l1)
 
       //removing the dependendency and abstraction of the comparison
       // they are used to compute the change on the graph, its the change themselves we want to compare
@@ -259,6 +257,8 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind]](eng : RecordingComparator[
       val sameNumberOfNodesToMap = nodesToMap.length == initialMapping.size
       val sameRemovedNodes = removedNode forall otherRemovedNodes.contains
       logger.writeln("sameNumberOfNodesToMap  = " + sameNumberOfNodesToMap)
+
+      logger.writeln("same number of removed nodes = " + (removedNode.length == otherRemovedNodes.length))
       logger.writeln("same removed nodes = " + sameRemovedNodes)
 
       logger.writeln("initialMapping : %s, %d remaining transfo".format(initialMapping, remainingTransfos1.size))
@@ -278,6 +278,16 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind]](eng : RecordingComparator[
       nodesToMap foreach printlnNode
       logger.writeln("neuter nodes : ")
       otherNeuterNodes foreach printlnNode
+
+      logger.writeln("recording1")
+      lr1 foreach { t => logger.writeln(t.toString)}
+
+      logger.writeln("*******************************************************")
+      logger.writeln("")
+      logger.writeln("")
+
+      logger.writeln("recording2")
+      lr2 foreach { t => logger.writeln(t.toString)}
 
       throw new NoSolution()
     }
@@ -340,6 +350,9 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind]](eng : RecordingComparator[
       logger.writeln("*******************************************************")
 
       filteredTransfos2 foreach { t => logger.writeln(t.toString)}
+
+      if(filteredTransfos1.length != filteredTransfos2.length)
+        throw new NoSolution()
 
       eng.compare(filteredTransfos1, filteredTransfos2, initialMapping, nodesToMap)
       /*eng.compare(filteredTransfos1, filteredTransfos2,

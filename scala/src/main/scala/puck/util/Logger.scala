@@ -73,4 +73,4 @@ trait SystemLogger[V] extends Logger[V]{
   }
 }
 
-class DefaultSystemLogger extends SystemLogger[Int] with IntLogger
+object DefaultSystemLogger extends SystemLogger[Int] with IntLogger

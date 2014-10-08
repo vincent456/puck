@@ -1,7 +1,7 @@
 package puck.graph.constraints.search
 
-import puck.graph.backTrack.{Recording, SearchStateBreakPoint}
 import puck.graph.{RedirectionError, NodeKind}
+import puck.graph.backTrack.Recording
 import puck.search.{StateCreator, SearchState}
 
 import scala.collection.mutable
@@ -50,13 +50,15 @@ trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, T <: ConstraintSolvingCh
       val c = remainingChoices.head
       remainingChoices.remove(c)
       triedChoices.add(c)
+
+      val breakPoint = result.graph.transformations.startSequence()
       try {
         k(Some(c))
       }catch{
         case e : RedirectionError =>
           //TODO see if need to plug the logger
           //println("state %s, choice %s aborted :\n %s".format(uuid(), c, e.getMessage))
-          result.graph.transformations.undo(SearchStateBreakPoint())
+          result.graph.transformations.undo(breakPoint)
           executeNextChoice()
       }
 

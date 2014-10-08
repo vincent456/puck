@@ -47,7 +47,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
 
   var graphStubFileName : String = FilesHandler.Default.graphFileName
 
-  private [this] var logger0 : Logger[Int] = new DefaultSystemLogger()
+  private [this] var logger0 : Logger[Int] = DefaultSystemLogger
 
   def logger : Logger[Int] = logger0
   def logger_=( l : Logger[Int]){logger0 = l}

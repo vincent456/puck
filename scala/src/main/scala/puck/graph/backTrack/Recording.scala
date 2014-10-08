@@ -43,25 +43,25 @@ class Recording[Kind <: NodeKind[Kind]]( val graph : AccessGraph[Kind],
   def redo(){
     val careTaker = graph.transformations
     graph.transformations = new CareTakerNoop(graph)
-    composition.foreach(_.redo())
+
+    composition foreach { _.redo() }
     graph.transformations = careTaker
   }
 
   def undo(){
     val careTaker = graph.transformations
     graph.transformations = new CareTakerNoop(graph)
-    composition.reverseIterator.foreach(_.undo())
+    composition.reverseIterator foreach { _.undo() }
     graph.transformations = careTaker
   }
 
-  def produceSameGraph(other : Recording[Kind]) : Boolean = {
-    composition.length == other.composition.length && {
-       new RecordingComparator(graph.initialRecord, this, other).search() match {
+  def produceSameGraph(other : Recording[Kind]) : Boolean =
+      new RecordingComparator(graph.initialRecord, this, other).search() match {
          case None => false
          case Some(_) => true
-       }
-    }
-  }
+      }
+
+
 }
 
 

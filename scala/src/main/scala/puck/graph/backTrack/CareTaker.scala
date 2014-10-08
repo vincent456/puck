@@ -46,23 +46,23 @@ class CareTaker[Kind <: NodeKind[Kind]] (val graph : AccessGraph[Kind]) {
   }
 
 
-  def startSequence(){
-    transformationsStack.push(UndoBreakPoint[Kind]())
+  private var undoId = 0
+
+  def startSequence() : UndoBreakPoint[Kind] = {
+    undoId += 1
+    val bp = UndoBreakPoint[Kind](undoId)
+    transformationsStack.push(bp)
+    bp
   }
 
 
-  def sequence[T]( op : => T ) = {
-    startSequence()
-    op
-  }
-
-  def undo(breakPoint : BreakPoint[Kind] = UndoBreakPoint()) = {
+  def undo(breakPoint : UndoBreakPoint[Kind]){
 
     graph.transformations = new CareTakerNoop(graph)
 
     while(transformationsStack.nonEmpty &&
       transformationsStack.head != breakPoint)
-      transformationsStack.pop().undo()
+        transformationsStack.pop().undo()
 
     graph.transformations = this
   }
@@ -113,18 +113,27 @@ class CareTaker[Kind <: NodeKind[Kind]] (val graph : AccessGraph[Kind]) {
     this += Transformation(Add(), TTConstraint(ct, friend))
   }
 
-  def changeEdgeTarget(e : AGEdge[Kind], newTarget : AGNode[Kind]){
-    this += Transformation(Add(), TTRedirection(e, Target(newTarget)))
+  def changeEdgeTarget(e : AGEdge[Kind], newTarget : AGNode[Kind], withMerge : Boolean){
+    this += Transformation(Add(),
+      if(withMerge)
+        new RedirectionWithMerge(e, Target(newTarget))
+      else
+        TTRedirection(e, Target(newTarget)))
   }
 
-  def changeEdgeSource(e : AGEdge[Kind], newSource : AGNode[Kind]){
-    this += Transformation(Add(), TTRedirection(e, Source(newSource)))
+  def changeEdgeSource(e : AGEdge[Kind], newSource : AGNode[Kind], withMerge : Boolean){
+    this += Transformation(Add(),
+      if(withMerge)
+        new RedirectionWithMerge(e, Source(newSource))
+      else
+        TTRedirection(e, Source(newSource)))
   }
 
   def changeType[T <: Type[Kind, T]](kind : HasType[Kind, T], oldUsee : AGNode[Kind], newUsee : AGNode[Kind]){
     this += Transformation(Add(), TTTypeRedirection(kind, oldUsee, newUsee))
   }
 }
+
 
 class CareTakerNoop[Kind <: NodeKind[Kind]](g : AccessGraph[Kind]) extends CareTaker[Kind](g){
 
@@ -142,11 +151,11 @@ class CareTakerNoop[Kind <: NodeKind[Kind]](g : AccessGraph[Kind]) extends CareT
 
   override def recording_=(r : Recording[Kind]){}
 
-  override def sequence[T]( op : => T ) = op
+  override def startSequence() = NoopBreakPoint
 
-  override def startSequence(){}
+  object NoopBreakPoint extends UndoBreakPoint[Kind](-1)
 
-  override def undo(breakPoint : BreakPoint[Kind]){}
+  override def undo(breakPoint : UndoBreakPoint[Kind]) {}
 
   override def addNode(n: NodeType){}
 
@@ -167,8 +176,8 @@ class CareTakerNoop[Kind <: NodeKind[Kind]](g : AccessGraph[Kind]) extends CareT
 
   override def addFriend(ct : Constraint[Kind], friend : NodeType){}
 
-  override def changeEdgeTarget(e : AGEdge[Kind], newTarget : AGNode[Kind]){}
-  override def changeEdgeSource(e : AGEdge[Kind], newSource : AGNode[Kind]){}
+  override def changeEdgeTarget(e : AGEdge[Kind], newTarget : AGNode[Kind], withMerge : Boolean){}
+  override def changeEdgeSource(e : AGEdge[Kind], newSource : AGNode[Kind], withMerge : Boolean){}
 
   override def changeType[T <: Type[Kind, T]](kind : HasType[Kind, T], oldUsee : AGNode[Kind], newUsee : AGNode[Kind]){}
 }

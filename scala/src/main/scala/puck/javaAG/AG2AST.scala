@@ -53,7 +53,7 @@ object AG2AST {
 
     case Transformation(_, TTAbstraction(_, _, _)) => ()
     case Transformation(_, TTDependency(_,_)) => ()
-    case b : BreakPoint[JavaNodeKind] => ()
+    case UndoBreakPoint(_) => ()
     //case Transformation(_, TTConstraint(_,_)) =>
 
     case Transformation(Remove(), TTNode(node)) =>
