@@ -22,6 +22,12 @@ class NodeInfosPanel[K <: NodeKind[K]](val node : AGNode[K])
     contents += new TextArea("Internal dependencies : " + node.internalDependencies.size + "\n" +
       "Outgoing dependencies : " + node.outgoingDependencies.size + "\n" +
       "Incoming dependencies : " + node.incomingDependencies.size + "\n" +
+      "Subtypes : " +
+      (if(node.directSubTypes.isEmpty) "none\n"
+      else node.directSubTypes.mkString("\n", "\n", "\n")) +
+      "SuperTypes :" +
+      (if(node.directSuperTypes.isEmpty) "none\n"
+      else node.directSuperTypes.mkString("\n", "\n", "\n")) +
       "Providers : " +
       (if (prov.isEmpty) "none\n"
       else prov.mkString("\n", "\n", "\n")) +

@@ -73,7 +73,31 @@ aspect TransformationApplying {
         }
     }
   //stop propagation
-  public void ClassInstanceExpr.replaceTypeAccess(Access oldUsee, Access newUsee){ }
+  public void ClassInstanceExpr.replaceTypeAccess(Access oldUsee, Access newUsee){
+
+        /*System.out.println("****************************************************");
+        System.out.println("****************************************************");
+        System.out.println("****************************************************");
+        System.out.println();
+
+
+        System.out.println(this + " stop propagation of replaceTypeAccess("+oldUsee+", "+newUsee+")");
+        System.out.println(" getAccess() instanceof ParTypeAccess = " + (getAccess() instanceof ParTypeAccess));
+        for(int i=0; i<getNumChild(); i++){
+            System.out.println("child "+ i + " : " + getChild(i).getClass() + " = " + getChild(i).getClass());
+
+        }*/
+
+        if( getAccess() instanceof ParTypeAccess){
+            List<Access> typeArgs =  ((ParTypeAccess) getAccess()).getTypeArguments();
+            for(int i = 0; i<typeArgs.getNumChild(); i++){
+                typeArgs.getChild(i).replaceTypeAccess(oldUsee, newUsee);
+            }
+            //parTypeAccess.getTypeArguments().replaceTypeAccess(oldUsee, newUsee);
+        }
+        getArgList().replaceTypeAccess(oldUsee, newUsee);
+        getTypeDeclOpt().replaceTypeAccess(oldUsee, newUsee);
+    }
 
 
   public void ASTNode.replaceMethodCall(MethodDecl oldUsee, MethodDecl newUsee){
@@ -152,13 +176,25 @@ aspect TransformationApplying {
        if(!oldAccess.isTypeAccess() || !newAccess.isTypeAccess())
            throw new Error("Both access should be type access !");
 
-       TypeDecl decl = ((TypeAccess)oldAccess).decl();
+       TypeDecl oldDecl = ((TypeAccess)oldAccess).decl();
+       TypeDecl newDecl = ((TypeAccess)newAccess).decl();
 
-       for(Access acc : getImplementsList()){
-          if(((TypeAccess)acc).decl().equals(decl))
-              replace(acc).with(newAccess);
-       }
-   }
+       boolean containsNewAccess = false;
+       Access oldAccess0 = null;
+
+      for(Access acc : getImplementsList()){
+          if(((TypeAccess)acc).decl().equals(newDecl))
+              containsNewAccess = true;
+
+          if(((TypeAccess)acc).decl().equals(oldDecl))
+              oldAccess0 = acc;
+      }
+
+      if(containsNewAccess)
+           getImplementsList().removeChild(oldAccess0);
+      else
+           replace(oldAccess0).with(newAccess);
+  }
 
   public void ASTNode.deleteAGNode(){
          getParent().removeChild(this);

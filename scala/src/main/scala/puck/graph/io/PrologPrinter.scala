@@ -51,7 +51,7 @@ object PrologPrinter {
     }
 
     graph.nodes.foreach{n =>
-      n.superTypes.foreach(c => writeln(edgeStr(AGEdge.isa(n, c))))
+      n.directSuperTypes.foreach(c => writeln(edgeStr(AGEdge.isa(n, c))))
     }
 
     graph.nodes.foreach{n =>

@@ -11,12 +11,12 @@ case class Field private[javaAG]() extends JavaNodeKind with HasType[JavaNodeKin
 
   override val toString = "Field"
 
-  def create() = JavaNodeKind.field(`type`)
+  def create() = JavaNodeKind.field(typ)
 
   override def redirectUses(oldUsee : AGNode[JavaNodeKind],
                             newUsee : AGNode[JavaNodeKind]){
-    if(`type`.node == oldUsee)
-      `type` = new JavaNamedType(newUsee)
+    if(typ.node == oldUsee)
+      typ = new JavaNamedType(newUsee)
   }
 
   var decl : AST.FieldDeclaration = _

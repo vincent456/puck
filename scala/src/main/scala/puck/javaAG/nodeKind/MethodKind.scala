@@ -19,7 +19,7 @@ case class Method private[javaAG]() extends MethodKind {
 
   override val toString = "Method"
 
-  def create() = JavaNodeKind.method(`type`)
+  def create() = JavaNodeKind.method(typ)
 
   /*override def createDecl(n : AGNode[JavaNodeKind]) = {
     assert(n.kind eq this)
@@ -39,8 +39,8 @@ case class Method private[javaAG]() extends MethodKind {
   }*/
 
   def abstractKinds(p : AbstractionPolicy) = p match {
-    case SupertypeAbstraction() => List(JavaNodeKind.abstractMethod(`type`), JavaNodeKind.method(`type`))
-    case DelegationAbstraction() => List(JavaNodeKind.method(`type`))//also abstractMethod ?
+    case SupertypeAbstraction() => List(JavaNodeKind.abstractMethod(typ), JavaNodeKind.method(typ))
+    case DelegationAbstraction() => List(JavaNodeKind.method(typ))//also abstractMethod ?
   }
 }
 
@@ -49,7 +49,7 @@ class ConstructorMethod extends Method {
   var ctorDecl : AST.ConstructorDecl = _
 
   override def create() = { val nc = new ConstructorMethod()
-    nc.`type`= this.`type`
+    nc.typ= this.typ
     nc
   }
 
@@ -63,12 +63,12 @@ case class AbstractMethod private[javaAG]() extends  MethodKind {
 
   override val toString = "AbstractMethod"
 
-  def create() = JavaNodeKind.abstractMethod(`type`)
+  def create() = JavaNodeKind.abstractMethod(typ)
 
   override def createDecl( n : AGNode[JavaNodeKind]) = {
     assert(n.kind eq this)
     if(decl == null){
-      `type` match {
+      typ match {
         case mt : MethodType =>
           decl = AST.MethodDecl.createAbstractMethod(mt.createReturnAccess(),
             n.name, mt.createASTParamList().toArray)
@@ -79,23 +79,25 @@ case class AbstractMethod private[javaAG]() extends  MethodKind {
   }
 
   def abstractKinds(p : AbstractionPolicy) = p match {
-    case SupertypeAbstraction() => List(JavaNodeKind.abstractMethod(`type`))
-    case DelegationAbstraction() => List(JavaNodeKind.method(`type`))//also abstractMethod ?
+    case SupertypeAbstraction() => List(JavaNodeKind.abstractMethod(typ))
+    case DelegationAbstraction() => List(JavaNodeKind.method(typ))//also abstractMethod ?
   }
 
   def findMergingCandidate(interface : AGNode[JavaNodeKind]) = {
-    node.graph.logger.writeln("searching merging candidate for %s".format(node), 8)
-    val mType = `type`.copyWith(node.container).replacedBy(interface)
+    //node.graph.logger.writeln("searching merging candidate for %s".format(node), 8)
+    val mType = typ.copyWith(node.container).replacedBy(interface)
+
     interface.content.find { nc =>
       nc.kind match {
         case ncKind @ AbstractMethod() =>
-          node.graph.logger.write("trying %s : ".format(nc), 8)
+      //    node.graph.logger.write("trying %s : ".format(nc), 8)
           val isMergingCandidate = nc.name == node.name &&
-            ncKind.`type` == mType
-          node.graph.logger.writeln(isMergingCandidate.toString, 8)
+            ncKind.typ == mType
+      //    node.graph.logger.writeln(isMergingCandidate.toString, 8)
           isMergingCandidate
         case _ => false
       }
     }
+
   }
 }

@@ -7,5 +7,7 @@ declareSet(concreteImplem,['DecoratedStringGenerator.prepareFancy__String',
 			    'DecoratedStringGenerator.filterSimple__String',
 			    'DecoratedStringGenerator.finalizeSimple__String']).
 			    
-declareSet(template_method,['DecoratedStringGenerator.generate__String']).
+%declareSet(template_method,['DecoratedStringGenerator.generate__String']).
+declareSet(template_method,['DecoratedStringGenerator']).
+
 hideScopeSetFrom(concreteImplem, template_method).

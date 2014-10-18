@@ -64,6 +64,7 @@ class StackHanoi extends StackArray {
 }   }
 
 class BridgeDisc {
+    
     public static void main( String[] args ) {
         StackArray[] stacks = { new StackArray(), new StackFIFO(), new StackHanoi() };
         StackList    stack2 = new StackList();

@@ -1,7 +1,10 @@
 package puck.gui
 
 import puck.graph.NodeKind
+import puck.graph.backTrack.Recording
 import puck.graph.constraints.search.ConstraintSolving
+import puck.graph.constraints.search.ConstraintSolving.FinalState
+import puck.search.SearchState
 
 import scala.swing.{Action, Button, ComboBox, FlowPanel}
 import scala.swing.event.{SelectionChanged, Event}
@@ -46,6 +49,30 @@ class CSSearchStateComboBox[Kind <: NodeKind[Kind]](map : Map[Int, List[Constrai
         CSSearchStateComboBox.this publish
           GraphDisplayRequest(couplingValues.selection.item + " " + searchStateComboBox.selection.item.uuid(),
             Some(searchStateComboBox.selection.item.result))
+      }
+    }
+  }
+
+  contents += new Button(""){
+    action = new Action("History"){
+      def apply() {
+
+        val state: SearchState[Recording[Kind], _] = searchStateComboBox.selection.item
+        var id = -1
+
+        CSSearchStateComboBox.this publish SearchStateListPrintingRequest[Kind](state.uuid()+"history",
+        state.ancestors(includeSelf = true), Some({s => id +=1
+            id.toString}))
+
+      }
+    }
+  }
+
+
+  contents += new Button(""){
+    action = new Action("Apply"){
+      def apply(){
+        CSSearchStateComboBox.this publish ApplyOnCodeRequest(searchStateComboBox.selection.item.result)
       }
     }
   }

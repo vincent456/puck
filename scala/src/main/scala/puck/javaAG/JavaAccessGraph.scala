@@ -1,6 +1,7 @@
 package puck.javaAG
 
 import puck.graph._
+import puck.graph.backTrack.Recording
 import puck.javaAG.nodeKind._
 import scala.collection.JavaConversions.collectionAsScalaIterable
 import scala.collection.mutable.StringBuilder
@@ -228,15 +229,13 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
 
   }*/
 
-  override def applyChangeOnProgram(){
+  override def applyChangeOnProgram(record : Recording[JavaNodeKind]){
 
-    val rec = transformations.recording
-
-    rec.undo()
+    transformations.recording.undo()
 
     logger.writeln("applying change !")
 
-    rec.foreach { r =>
+    record.foreach { r =>
       AG2AST(r)
       r.redo()
     }

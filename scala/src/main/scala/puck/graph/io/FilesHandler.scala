@@ -5,11 +5,10 @@ import java.io._
 import puck.graph.backTrack.Recording
 import puck.graph.constraints._
 import puck.graph._
-import puck.graph.constraints.search.{ConstraintSolvingNodesChoice, ConstraintSolving}
+import puck.graph.constraints.search.ConstraintSolving
 import puck.search.{SearchEngine, SearchState}
 import puck.util.{NoopLogger, DefaultFileLogger, DefaultSystemLogger, Logger}
 
-import scala.collection.mutable
 import scala.sys.process.Process
 import scala.util.Try
 
@@ -279,86 +278,43 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
     searchEngineLogger.verboseLevel = 10
 
 
-    val engine = builder(searchEngineLogger, new NoopLogger(), graph)
-
-    /*
-    val engine = builder(searchEngineLogger, this.logger, graph,
-    if(trace) { state =>
-        state.isStep = true
-
-        val f = graphFile("_traces%c%s".format(
-          File.separatorChar, state.uuid(File.separator, "_", ".png")))
-
-        this.logger.writeln("*****************************************************")
-        this.logger.writeln("*********** solve end of iteration %d *****************".format(state.depth))
-        this.logger.writeln("***********  %s ***************".format(f.getAbsolutePath))
-
-        this.logger.writeln()
-
-        f.getParentFile.mkdirs()
-        makePng(sOutput = Some(new FileOutputStream(f)))()
-      }
-      else
-        _ => ()
-    )*/
+    val engine = builder(searchEngineLogger,  new NoopLogger(), graph)
 
     graph.transformations.startRegister()
     puck.util.Time.time(logger) {
       engine.search()
     }
 
-    /*var i = 0
-    val d = graphFile("_results")
-    d.mkdir()
-
-    def filterDifferentStates(l : mutable.ListBuffer[ST], acc : List[ST]): List[ST] ={
-      if(l.nonEmpty){
-        filterDifferentStates(l.tail,
-          if(!l.tail.exists{st => st.internal.recording.produceSameGraph(l.head.internal.recording)})
-            l.head :: acc
-          else acc)
-      }
-      else acc
-    }
-
-    println("results : %d".format(engine.finalStates.size))
-*/
-    /*val filtSize =filterDifferentStates(engine.finalStates, List()).size
-    println("diff results : %d".format(filtSize))
-*/
-
-    /*engine.finalStates.foreach { s =>
-      s.internal.recording()
-
-      val subdir = (graph.coupling * 100).toInt
-      val sd = graphFile("_results" + File.separator + subdir)
-      sd.mkdir()
-      makePng(sOutput = Some(new FileOutputStream(
-        graphFile("_results%c%d%c%04d.png".format(File.separatorChar, subdir, File.separatorChar, i)))))()
-      i += 1
-    }*/
-
     engine.finalStates.toList
 
   }
 
 
-  def printCSSearchStatesGraph(states : Map[Int, List[ConstraintSolving.FinalState[Kind]]]){
+  def printCSSearchStatesGraph(states : Map[Int, List[SearchState[Recording[Kind], _]]]){
     val d = graphFile("_results")
     d.mkdir()
     states.foreach{
       case (cVal, l) =>
         val subDir = graphFile("_results%c%d".format(File.separatorChar, cVal))
         subDir.mkdir()
-        printCSSearchStatesGraph(subDir, l)
+        printCSSearchStatesGraph(subDir, l, None)
     }
   }
 
-  def printCSSearchStatesGraph(dir : File, states : List[ConstraintSolving.FinalState[Kind]]){
+  def printCSSearchStatesGraph(dir : File,
+                               states : List[SearchState[Recording[Kind], _]],
+                               sPrinter : Option[(SearchState[Recording[Kind],_] => String)]){
+
+    val printer = sPrinter match {
+      case Some(p) => p
+      case None =>
+        s : SearchState[Recording[Kind],_] => s.uuid()
+    }
+
     states.foreach { s =>
       s.result()
-      val f = new File("%s%c%s.png".format(dir.getAbsolutePath, File.separatorChar, s.uuid()))
-      makePng(sOutput = Some(new FileOutputStream(f)))()
+      val f = new File("%s%c%s.png".format(dir.getAbsolutePath, File.separatorChar, printer(s)))
+      makePng(printId = true, sOutput = Some(new FileOutputStream(f)))()
     }
   }
 

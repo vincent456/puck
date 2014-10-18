@@ -131,7 +131,7 @@ object DotPrinter {
 
       def writeTableLine(n:NodeType){
         val sig = if (printSignatures) n.kind match {
-         case k : HasType[_,_] => " : " + k.`type`.toString.replaceAllLiterally(">", "&gt;") + " "
+         case k : HasType[_,_] => " : " + k.typ.toString.replaceAllLiterally(">", "&gt;") + " "
          case _ => ""
         }
         else ""
@@ -160,7 +160,7 @@ object DotPrinter {
         nc.users.foreach(printUse(_, nc))
       }
       n.users.foreach(printUse(_, n))
-      n.superTypes.foreach(printArc(isaStyle, n, _, ColorThickness.regular))
+      n.directSuperTypes.foreach(printArc(isaStyle, n, _, ColorThickness.regular))
     }
 
 

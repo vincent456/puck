@@ -10,7 +10,9 @@ class WelcomeScreenText extends Screen{
 	void welcome(){
 		printText();
 	}
-	void printText(){}
+	void printText(){
+		System.out.println("Welcome");
+	}
 }
 
 class WelcomeScreenGraphic extends Screen{
@@ -18,7 +20,9 @@ class WelcomeScreenGraphic extends Screen{
 	void welcome(){
 		printGraphic();
 	}
-	void printGraphic(){}
+	void printGraphic(){
+		System.out.println("\\/\\/€|_<0/\\/\\€");
+	}
 }
 
 
@@ -27,7 +31,9 @@ class InfoScreenText extends Screen{
 	void info(){
 		printText();
 	}
-	void printText(){}
+	void printText(){
+		System.out.println("Info");
+	}
 }
 
 class InfoScreenGraphic extends Screen{
@@ -35,5 +41,22 @@ class InfoScreenGraphic extends Screen{
 	void info(){
 		printGraphic();
 	}
-	void printGraphic(){}
+	void printGraphic(){
+		System.out.println("||\\||=O");
+	}
 }
+
+// public class ScreenDemo{
+
+// 	public static void main(String[] args){
+// 		Screen[] screens = {new WelcomeScreenText(),
+// 			new WelcomeScreenGraphic(),
+// 			new InfoScreenGraphic(),
+// 			new InfoScreenText()};
+
+// 		for(Screen s: screens){
+			
+// 		}
+
+// 	}
+// }

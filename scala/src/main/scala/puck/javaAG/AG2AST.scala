@@ -76,6 +76,7 @@ object AG2AST {
         case (Package(), i: TypeKind) =>
           val cu = i.decl.compilationUnit()
 
+
           val cpath = e.source.containerPath.map(_.name)
           val sepPath = cpath.tail.mkString(java.io.File.separator)
 
@@ -129,14 +130,15 @@ object AG2AST {
       case ( k @ Interface(), newk @ Interface()) if e.kind == Isa() =>
         e.source.kind match {
           case src @ Class() =>
-            src.decl.replaceImplements(k.createLockedAccess(), newk.createLockedAccess())
+           src.decl.replaceImplements(k.createLockedAccess(), newk.createLockedAccess())
+
           case _ => throw new JavaAGError("isa arc should only be between TypeKinds")
         }
 
       case (oldk: TypeKind, newk: TypeKind) =>
         e.source.kind match {
           case f @ Field() =>
-            f.decl.setTypeAccess(newk.createLockedAccess())
+            f.decl.replaceTypeAccess(oldk.createLockedAccess(), newk.createLockedAccess())
 
           case m @ Method() =>
             m.decl.replaceTypeAccess(oldk.createLockedAccess(), newk.createLockedAccess())
@@ -201,16 +203,17 @@ object AG2AST {
           /*println("moving typedecl %s of package (cu contains %d typedecl)".format(e.target.fullName,
             i.decl.compilationUnit().getNumTypeDecl))*/
 
+          println("moving " + i +" from package "+ p1 +" to package" + p2)
           if(i.decl.compilationUnit().getNumTypeDecl > 1) {
             val oldcu = i.decl.compilationUnit()
 
             val rootPathName = oldcu.getRootPath
-            oldcu.removeTypeDecl(i.decl)
+            oldcu.getTypeDeclList.removeChild(i.decl)
 
             val path =  rootPathName + newSource.fullName . replaceAllLiterally(".", java.io.File.separator) +
               java.io.File.separator
 
-            //val newCu =
+            val newCu = new CompilationUnit()
             oldcu.programRoot().insertUnusedType(path, newSource.fullName, i.decl)
 
             /*import scala.collection.JavaConversions.asScalaIterator

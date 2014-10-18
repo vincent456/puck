@@ -101,4 +101,16 @@ trait SearchState[Result, Internal] extends HasChildren[SearchState[Result, _]]{
 
   def executeNextChoice() : Unit
 
+  def ancestors(includeSelf : Boolean) :List[SearchState[Result, _]] = {
+    def aux(sState : Option[SearchState[Result,_]],
+            acc : List[SearchState[Result,_ ]]) : List[SearchState[Result,_ ]] =
+    sState match {
+      case None => acc
+      case Some(state) => aux(state.prevState, state :: acc)
+    }
+
+    aux(if(includeSelf) Some(this) else this.prevState, List())
+
+  }
+
 }

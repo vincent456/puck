@@ -22,7 +22,7 @@ object JavaNodeKind {
 
   def typedKind[S <: Type[JavaNodeKind, S], T <: HasType[JavaNodeKind, S]]( ctr : () => T, t: S) = {
     val k = ctr ()
-    k.`type` = t
+    k.typ = t
     k
   }
 

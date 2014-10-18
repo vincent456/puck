@@ -36,6 +36,34 @@ abstract class TypeKind extends JavaNodeKind {
 
 case class Interface private[javaAG]() extends TypeKind {
 
+
+
+  def isMergingCandidate(itc : Interface): Boolean ={
+
+    def hasMatchingMethod(absm : AGNode[JavaNodeKind])= absm.kind match{
+      case absMethKind@AbstractMethod() =>
+        absMethKind.findMergingCandidate(itc.node) match {
+          case None => false
+          case Some(_) => true
+        }
+      case _ => throw new AGError("Interface should contain only abstract method !!")
+
+    }
+
+    val otherItc = itc.node
+
+    otherItc.content().size >= node.content().size &&
+      (node.content() forall hasMatchingMethod) &&
+        (otherItc.content().size == node.content().size ||
+        {
+          //otherItc has more methods, it is a potential subtype
+          node.subTypes() forall otherItc.isSuperTypeOf
+          //TODO structual type check
+          /*val missingMethodsInThis =
+            otherItc.content.filterNot{hasMatchingMethodIn(this)}*/
+        })
+  }
+
   override val toString = "Interface"
 
   def create() = Interface()
@@ -95,6 +123,11 @@ case class Class private[javaAG]() extends TypeKind {
     case DelegationAbstraction() => List(JavaNodeKind.`class`)//also interface ?
   }
 
+  //TODO prendre en compte le cas des classes abstraite
+  def implements(itc : Interface): Unit = {
+
+
+  }
 
   /*override def promoteToSuperTypeWherePossible(superType : AGNode[JavaNodeKind]){
     val implementor = this.node

@@ -133,6 +133,13 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
   }
 
   def addUsesDependency(primary : EdgeType, side : EdgeType){
+
+    side.user.primaryUses get side.usee match {
+      case None => ()
+      case Some(s) => println("adding" + primary + " as primary uses of " + side + ": edge already has primary uses : " + s)
+      //content += (usee -> s.+=(dependency))
+    }
+
     primary.user.sideUses += (primary.usee, side)
     side.user.primaryUses += (side.usee, primary)
     transformations.addEdgeDependency(primary, side)
@@ -156,7 +163,7 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
   }
 
 
-  def applyChangeOnProgram(){}
+  def applyChangeOnProgram(record : Recording[Kind]){}
 
   def coupling = this.foldLeft(0 : Double){ (acc, n) => acc + n.coupling }
 

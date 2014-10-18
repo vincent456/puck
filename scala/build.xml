@@ -276,6 +276,8 @@
   <copy todir="${base-outdir}/scanner" file="${Java1.4Frontend}/scanner/Unicode.java" preservelastmodified="true"/>
 </target>
 
+
+
 <target name="parser1.4">
   <mkdir dir="${base-outdir}/parser"/>
   <!-- generate the parser phase 1, create a full .lalr specification from fragments-->
@@ -295,6 +297,9 @@
   <!-- generate the parser phase 3, translating .beaver to .java -->
   <beaver file="${base-outdir}/parser/JavaParser.beaver" terminalNames="yes" compress="yes" useSwitch="yes"/>
 </target>
+
+
+
 
 <target name="parser1.5">
   <mkdir dir="${base-outdir}/parser"/>

@@ -120,10 +120,6 @@ aspect AccessGraphFactory {
 	}
 
 
-	public AGNode<JavaNodeKind> SuperAccess.buildDominantUserAGNode(JavaAccessGraph accessGraph){
-         return decl().buildAGNode(accessGraph);
-    }
-
 	public AGNode<JavaNodeKind> VarAccess.buildDominantUserAGNode(JavaAccessGraph accessGraph){
       return decl().buildAGNode(accessGraph);
   	}
@@ -136,8 +132,12 @@ aspect AccessGraphFactory {
   	public AGNode<JavaNodeKind> MethodAccess.buildDominantUserAGNode(JavaAccessGraph accessGraph){
       return decl().buildAGNode(accessGraph);
   	}
+  	 public AGNode<JavaNodeKind> ArrayAccess.buildDominantUserAGNode(JavaAccessGraph accessGraph){
+      System.out.println("ArrayAccess.buildDominantUserAGNode " +this.toString());
+      return varDecl().buildAGNode(accessGraph);
+  }
 
-	public AGNode<JavaNodeKind> MethodDecl.buildAG(JavaAccessGraph accessGraph){
+  	public AGNode<JavaNodeKind> MethodDecl.buildAG(JavaAccessGraph accessGraph){
         AGNode<JavaNodeKind> agNode = buildAGNode(accessGraph);
 
         AGNode<JavaNodeKind> hostTypeAGNode = hostType().buildAGNode(accessGraph);
@@ -148,12 +148,44 @@ aspect AccessGraphFactory {
 
             //if user.getQualifier == null
             //then the method is called from within the hosting class (implicit "this" qualifier)
-            if(user.getQualifier()!=null) {
-                AGNode<JavaNodeKind> agDominantUser = user.getQualifier().buildDominantUserAGNode(accessGraph);
-                accessGraph.addUsesDependency(agDominantUser, hostTypeAGNode,
-                        agUser, agNode);
-
+            AGNode<JavaNodeKind> agDominantUser;
+            if(user.getQualifier()==null
+                    || user.getQualifier().isThisAccess()
+                    || user.getQualifier().isSuperAccess()) {
+                //agDominantUser = user.hostBodyDecl().buildAGNode(accessGraph);
+                agDominantUser =  user.hostType().buildAGNode(accessGraph);
+                hostTypeAGNode.users().$plus$eq(agDominantUser, true);
             }
+            else{
+                Expr qualifier = user.getQualifier();
+                if(qualifier.isArrayAccess()){
+                    /*System.out.println("exploring uses of "+this.getDesambiguateFullName());
+                	System.out.println(qualifier +" isArrayAccess nextAccess: " +qualifier.nextAccess());*/
+
+                    //TODO check if always works !!!
+                    // in StackArray exemple
+                    // expression  stacks[0].push( i )
+                    // ArrayAccess is [0]
+                    //parentDot is [0].push(i)
+                    //parentDot.parentDot is  stacks[0].push( i ) ...
+                    AbstractDot d = qualifier.parentDot().parentDot();
+                    d.rotateRight();
+                    /*System.out.println("leftSide of ancestor dot rotated right : " + d.leftSide());
+                    System.out.println(" parent is : " + qualifier.parent);
+                    System.out.println(" parentDot is : " + qualifier.parentDot());
+                    System.out.println(" parentDot().parentDot is : " + qualifier.parentDot().parentDot());*/
+
+                    qualifier = d.leftSide();
+                }
+
+                agDominantUser = qualifier.buildDominantUserAGNode(accessGraph);
+            }
+            accessGraph.addUsesDependency(agDominantUser, hostTypeAGNode,
+                    agUser, agNode);
+            System.out.print("uses( "+agUser+ ", "+agNode+")");
+            //System.out.println(" = uses( "+user+ ", "+this+")");
+            System.out.println(" dominated by : uses ("+agDominantUser + ", "+ hostTypeAGNode+")");
+            //System.out.println(" = uses( "+user.hostType()+ ", "+ hostType()+")");
         }
 
         return agNode;

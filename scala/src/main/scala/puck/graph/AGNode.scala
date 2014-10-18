@@ -96,7 +96,7 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
   override def toString: String = id.toString
   //override def toString: String = "%d %s (%s)".format(id, kind, fullName)
 
-  def nameTypeString = name + (kind match{case k : HasType[_, _] => " : " + k.`type`; case _ => ""})
+  def nameTypeString = name + (kind match{case k : HasType[_, _] => " : " + k.typ; case _ => ""})
 
   def fullName: String = {
 
@@ -202,14 +202,24 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
   private [this] val superTypes0 : mutable.Set[NodeType] = mutable.Set()
 
   def isSuperTypeOf(other : NodeType) : Boolean = {
-    other.superTypes.exists(_ == this) ||
-      other.superTypes.exists(_.isSuperTypeOf(this))
+    other.directSuperTypes.exists(_ == this) ||
+      other.directSuperTypes.exists(_.isSuperTypeOf(this))
   }
 
+  def directSuperTypes : Iterable[NodeType] = superTypes0
 
-  def superTypes : Iterable[NodeType] = superTypes0
+  def superTypes() : Set[NodeType] =
+    superTypes0.foldLeft(superTypes0.toSet){
+      case (acc, n) => acc ++ n.superTypes()
+    }
+
   private val subTypes0 : mutable.Set[NodeType] = mutable.Set()
-  def subTypes : Iterable[NodeType] = subTypes0
+  def directSubTypes : Iterable[NodeType] = subTypes0
+
+  def subTypes(): Set[NodeType] =
+    subTypes0.foldLeft(subTypes0.toSet){
+      case (acc, n) => acc ++ n.subTypes()
+    }
 
   def superTypes_+=(st:NodeType, register : Boolean = true) {
     if(superTypes0.add(st)) {
@@ -231,7 +241,7 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
   }
 
   def isa(other : NodeType) : Boolean = {
-    superTypes.exists( n => n == other)
+    directSuperTypes.exists( n => n == other)
   }
 
   val uses = usesObject
@@ -315,7 +325,7 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
     primaryUses get currentSideUsee match {
       case None =>
         graph.logger.writeln("no primary uses to redirect",3)
-        ()
+
       case Some(primary_uses) =>
         graph.logger.writeln("uses to redirect:%s".format(primary_uses.mkString("\n", "\n","\nend of list")),3)
 
@@ -325,7 +335,7 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
         if(primary_uses.tail.nonEmpty) {
           println("redirecting side uses (%s, %s) target to %s".format(this, currentSideUsee, newSideUsee))
           println("primary uses are ")
-          primary_uses.mkString("-", "\n-", "\n")
+          println(primary_uses.mkString("-", "\n-", "\n"))
           throw new AGError("Do not know how to unsuscribe a side use with multiple primary uses")
         }
         else {
@@ -608,7 +618,7 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
   //(deep merge is now done in JavaNode for interface node only)
   def mergeWith(other : NodeType){
 
-    other.users.foreach { user =>
+    other.users().toList foreach { user =>
       AGEdge.uses(user, other).changeTarget(this)
       user.kind match {
         case k : HasType[Kind, _] => k.redirectUses(other, this)
@@ -616,20 +626,28 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
       }
     }
 
-    other.uses.foreach { AGEdge.uses(other, _).changeSource(this) }
+    other.uses().toList foreach { AGEdge.uses(other, _).changeSource(this) }
 
-    other.superTypes.foreach { AGEdge.isa(other, _).changeSource(this) }
+    other.directSuperTypes.toList foreach {st =>
+      if(st != this) AGEdge.isa(other, st).changeSource(this)
+      else AGEdge.isa(other, st).delete()
+    }
 
-    other.subTypes.foreach { AGEdge.isa(_, other).changeTarget(this) }
+    other.directSubTypes.toList foreach { st =>
+      if(st != this) AGEdge.isa(st, other).changeTarget(this)
+      else AGEdge.isa(st, other).delete()
+    }
 
-    other.primaryUses.foreach{
+
+
+    other.primaryUses.toList foreach {
       case (sideUsee, primUses) =>
         primUses.foreach { pUse =>
           graph.addUsesDependency(pUse, AGEdge.uses(this, sideUsee))
           graph.removeUsesDependency(pUse, AGEdge.uses(other, sideUsee))
         }
     }
-    other.sideUses.foreach{
+    other.sideUses.toList foreach {
       case (primeUsee, sidUses) =>
         sidUses.foreach { sUse =>
           graph.addUsesDependency(AGEdge.uses(this, primeUsee), sUse)

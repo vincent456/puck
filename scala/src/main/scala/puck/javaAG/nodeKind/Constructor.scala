@@ -12,7 +12,7 @@ case class Constructor private[javaAG]() extends JavaNodeKind with HasType[JavaN
 
   override val toString = "Constructor"
 
-  def create() = JavaNodeKind.constructor(`type`)
+  def create() = JavaNodeKind.constructor(typ)
 
   var decl : AST.ConstructorDecl = _
 
@@ -21,7 +21,7 @@ case class Constructor private[javaAG]() extends JavaNodeKind with HasType[JavaN
   override def abstractionPolicies = List(DelegationAbstraction())
 
   def abstractKinds(p : AbstractionPolicy) = p match {
-    case DelegationAbstraction() => List( JavaNodeKind.typedKind( () => new ConstructorMethod(), `type`))
+    case DelegationAbstraction() => List( JavaNodeKind.typedKind( () => new ConstructorMethod(), typ))
     case SupertypeAbstraction() => throw new AGError("Constructor cannot be abstracted by SuperType strategy")
   }
 

@@ -70,10 +70,10 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
       case ck : MethodKind  =>
         c.name != n.name || {
 
-          if(ck.`type` == null)
+          if(ck.typ == null)
             println("type is null")
 
-          ck.`type`.input.length != l}
+          ck.typ.input.length != l}
       case _ => true
     }
 
@@ -83,11 +83,11 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
           /*
             All subtypes must implement the method
            */
-          this.content.forall(noNameClash(nk.`type`.input.length)) &&
-            this.subTypes.forall {
+          this.content.forall(noNameClash(nk.typ.input.length)) &&
+            this.directSubTypes.forall {
               _.content.exists { c =>
                 c.kind match {
-                  case ck@Method() => n.name == c.name && nk.`type` == ck.`type`
+                  case ck@Method() => n.name == c.name && nk.typ == ck.typ
                   case _ => false
                 }
               }
@@ -96,7 +96,7 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
           cannot have two methods with same name and same type
           */
         case nk @ Method() =>
-          this.content.forall(noNameClash(nk.`type`.input.length))
+          this.content.forall(noNameClash(nk.typ.input.length))
 
         case _ => true
       })
@@ -117,49 +117,16 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
   // and all its user redirected to the candidate
   override def findMergingCandidate() : Option[AGNode[JavaNodeKind]] = this.kind match{
 
-    case Interface() if this.content.nonEmpty =>
+    case k @ Interface() if this.content.nonEmpty =>
         graph.find{ otherItc =>
-          if(otherItc == this || otherItc.kind != Interface())
-            false
-          else
-          {
-
-            def hasMatchingMethodIn(itc : AGNode[JavaNodeKind])
-                                 (absm : AGNode[JavaNodeKind])= absm.kind match{
-              case absMethKind@AbstractMethod() =>
-                absMethKind.findMergingCandidate(itc) match {
-                  case None => false
-                  case Some(_) => true
-                }
-              case _ => throw new AGError("Interface should contain only abstract method !!")
-
-            }
-
-
-            otherItc.content.size >= this.content.size && {
-              val otherHaveAllMethods =
-                this.content.forall (hasMatchingMethodIn(otherItc))
-
-              otherHaveAllMethods && (otherItc.content.size == this.content.size ||
-              {
-                //otherItc has more methods, it is a potential subtype
-                otherItc.superTypes.forall{superType =>
-                  superType == this || superType.superTypes.exists{ _ == this}
-                }
-                //TODO structual type check
-                /*val missingMethodsInThis =
-                  otherItc.content.filterNot{hasMatchingMethodIn(this)}*/
-
-
-              }) &&
+          otherItc.kind match {
+            case otherk @ Interface() if otherItc != this =>
+              (k isMergingCandidate otherk) &&
                 this.users.forall(!_.interloperOf(otherItc)) &&
                 this.uses.forall(!otherItc.interloperOf(_))
 
-
-
-            }
+            case _ => false
           }
-
         }
     case _ => None
   }
@@ -213,16 +180,16 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
 
         content.foreach { child =>
           child.kind match {
-            case ck @ Method() =>
-
-              val absChild = child.createAbstraction(JavaNodeKind.abstractMethod(ck.`type`),
+            //case ck @ Method() =>
+            case ck : MethodKind =>
+              val absChild = child.createAbstraction(JavaNodeKind.abstractMethod(ck.typ),
                 SupertypeAbstraction())
               abs.content += absChild
 
               val absChildKind = absChild.kind.asInstanceOf[AbstractMethod]
-              absChildKind.`type` = absChildKind.`type` copyWith this replacedBy abs
+              absChildKind.typ = absChildKind.typ copyWith this replacedBy abs
 
-            case AbstractMethod() => throw new AGError("unhandled case !")
+            //case AbstractMethod() => throw new AGError("unhandled case !")
             case _ => ()
           }
         }
@@ -232,10 +199,11 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
           child.kind match {
             // even fields can need to be promoted if they are written
             //case Field() =>
-            case AbstractMethod() => throw new AGError("unhandled case !")
-            case ck @ Method() =>
-              val tcopy = ck.`type` copyWith this replacedBy abs
-              ck.`type` = new MethodType(tcopy.input, ck.`type`.output)
+            case ck : MethodKind =>
+            /*case AbstractMethod() => throw new AGError("unhandled case !")
+            case ck @ Method() =>*/
+              val tcopy = ck.typ copyWith this replacedBy abs
+              ck.typ = new MethodType(tcopy.input, ck.typ.output)
 
               //we will do a second pass to see if the loss of information
               // in the output is really necessary

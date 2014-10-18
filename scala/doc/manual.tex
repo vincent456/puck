@@ -460,11 +460,65 @@ Cannot reason on the control flow \todo{but same uses target set can be looked i
 What about merging methods ?  we can find heuristic based on names (see bridge example where printText and printGraphic should be merge in the interface as a unique print signature -> but then we have to divide the implementation in two classes)
 
 
+\section{Graph comparison}
+Solving constraint using a search engine generates many solutions (\textasciitilde 1700 for a code composed of 4 classes one interface and 2 methods per class). Among these solutions many are the same. They are considered different because we got them following a different path.
+We need to automatically compare these graphs and only keep the different solution.
+
+Instead of comparing directly the graphs, we compare the transformations we operated on them. Two sets of transformations $S_1$ and $S_2$ are considered equal if there exists a mapping between the newly introduced nodes such that $|S_1| = |S_2| \wedge \forall t_1 \in S_1, \exists t_2 \in S_2 \suchthat t_1 = t_2$
+
+Why not comparing directly the graph ? 
+\begin{itemize}
+\item the starting graph is potentially really big : we want to compare only the newly introduced elements
+\item the recording necessary for backtracking purposes already stores which elements are newly introduced so we uses them
+\end{itemize}
+
+\subsection{Normalizing the record}
+First we need to normalize the record. The merging process introduces the fact that some record producing the same graph cannot be compared as is.
+\begin{figure}
+	\centerline{
+	\begin{minipage}{0.8\textwidth}
+		\includegraphics[keepaspectratio, width=\textwidth]{examples/why_normalize/graph0.png}
+		\centering Graph 0
+	\end{minipage}
+	\begin{minipage}{0.8\textwidth}
+		\includegraphics[keepaspectratio, width=\textwidth]{examples/why_normalize/graph1a.png}
+		\centering Graph 1a
+	\end{minipage}}
+	\centerline{
+	\begin{minipage}{0.8\textwidth}
+		\includegraphics[keepaspectratio, width=\textwidth]{examples/why_normalize/graph1b.png}
+		\centering Graph 1b
+	\end{minipage}
+	\begin{minipage}{0.8\textwidth}
+		\includegraphics[keepaspectratio, width=\textwidth]{examples/why_normalize/graph2.png}
+		\centering Graph 2
+	\end{minipage}}
+	\caption{Why normalize}
+	\label{fig:why_normalize}
+\end{figure}
+Let us consider the scenario exhibited on figure \ref{fig:why_normalize}. On the top left we can see the starting point. On top right and bottom left we have two possible intermediate states before the final graph displayed on bottom right.
+
+While graph 1a and 1b both converge to graph 2 by merging nodes 14, 120 and 117 into node 114 (and recursively their children) the contains arc (38, 120) of graph 1a is different of the contains arc (12, 120) of the graph 1b.
+
+\subsection{How to normalize the record}
+We have defined the following rewriting rules:
+$AddRem \equalByDef Add(Edge(a,b)) + Remove(Edge(a,b)) \leadsto \emptyset$\\
+$AddRed_{Tgt} \equalByDef\\ Add(Edge(a,b)) + Redirection(Edge(a,b), Target(c)) \leadsto Add(Edge(a,c)))$\\
+$AddRed_{Src} \equalByDef\\ Add(Edge(a,b)) + Redirection(Edge(a,b), Source(c)) \leadsto Add(Edge(c,a)))$\\
+$RedRed_{Tgt} \equalByDef\\ Redirection(Edge(a,b), Target(c)) + Redirection(Edge(a,c), Target(d)) \\\leadsto Redirection(Edge(a,b), Target(d))$\\
+$RedRed_{Src} \equalByDef\\ Redirection(Edge(a,b), Source(c)) + Redirection(Edge(c,b), Source(d)) \\\leadsto Redirection(Edge(a,b), Source(d))$
+
+The application of these rules on a set of transformation until no more rule can be applied is not confluent. Thus we have a strategy.
+
+The transformation list is ordered. 
+We go backward 
+
+
 \section{Applying graph transformations on the code}
 We use a tool, JastAdd that produces parse Java Code and produces an AST. The access graph data type is then produced by this AST. The access graph is from some point of view a lightened AST.
 For the purpose of backtracking, graph transformations are broken down to elementary transformations : 
 \begin{itemize}
-\item Add/Remove
+	\item Add/Remove
 	\begin{itemize}
 	\item node
 	\item edge

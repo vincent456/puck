@@ -65,7 +65,7 @@ object NodeMappingInitialState{
 
   def select[T](l : List[T], pred : T => Boolean) : (Option[T], List[T]) = {
     def aux(l1 : List[T], acc : List[T]) : (Option[T], List[T]) =
-      if(l1.isEmpty) (None, acc.reverse)
+      if(l1.isEmpty) (None, l)
       else if(pred(l1.head)) (Some(l1.head), acc reverse_::: l1.tail)
       else aux(l1.tail, l1.head :: acc)
 
@@ -84,25 +84,47 @@ object NodeMappingInitialState{
       logger.writeln("----------------------------------------------")
     }
 
+    def mapUntil( stoppingEdge : AGEdge[Kind],
+                  transfos : List[Transformation[Kind]])
+                (rule : (Transformation[Kind] => Transformation[Kind])): List[Transformation[Kind]] = {
+
+      def aux(acc : List[Transformation[Kind]], l : List[Transformation[Kind]]) : List[Transformation[Kind]] ={
+        if(l.isEmpty) acc.reverse
+        else
+          l.head match {
+            case Transformation(_, TTRedirection(`stoppingEdge`, _)) => acc reverse_::: l
+            case _ => aux(rule(l.head) :: acc, l.tail)
+
+          }
+      }
+      aux(List(), transfos)
+    }
 
     // We are going backwards !
-    def aux(l1 : List[Transformation[Kind]],
-            l2 : List[Transformation[Kind]]): List[Transformation[Kind]] = {
-      l2 match {
-        case List() => l1
+    def aux(filteredTransfos : List[Transformation[Kind]],
+            l : List[Transformation[Kind]],
+             removedEdges : List[AGEdge[Kind]]): (List[Transformation[Kind]], List[AGEdge[Kind]]) = {
+      l match {
+        case List() => (filteredTransfos, removedEdges)
         case (op2 @ Transformation(Remove(), TTEdge(AGEdge(Contains(), n1, n2)))) :: tl =>
+          /*val (applied, newTl) = applyRuleOnce[Transformation[Kind]](tl)
+          { case Transformation(Add(), TTEdge(AGEdge(Contains(), `n1`, `n2`))) => (true, None)
+          case _ => (false, None)
+          }
+          if(applied) aux(filteredTransfos, newTl)
+          else aux(l.head :: filteredTransfos, l)*/
           select[Transformation[Kind]](tl,
           { case Transformation(Add(), TTEdge(AGEdge(Contains(), `n1`, `n2`))) => true
           case _ => false
           }) match {
-            case (Some( op1 @ Transformation(Add(),_)), newTl) =>
+            case (Some( op1 ), newTl) =>
               printRule("AddDel", op1.toString, op2.toString, "None")
-              aux(l1, newTl)
-            case (None, _) => aux(l2.head :: l1, l2.tail)
-            case _ => sys.error("should not happen !")
+              aux(filteredTransfos, newTl, removedEdges)
+            case (None, _) => aux(l.head :: filteredTransfos, l.tail, removedEdges)
           }
-        case (op1 @ Transformation(Add(), TTRedirection(AGEdge(kind, n1, n2), Source(n3)))) :: tl =>
-          aux(l1, tl map { case op2 @ Transformation(Add(), TTRedirection(AGEdge(`kind`, n0, `n2`), Source(`n1`))) =>
+        case (op1 @ Transformation(Add(), TTRedirection(stopingEdge @ AGEdge(kind, n1, n2), Source(n3)))) :: tl =>
+          aux(filteredTransfos, mapUntil(stopingEdge, tl)
+          { case op2 @ Transformation(Add(), TTRedirection(AGEdge(`kind`, n0, `n2`), Source(`n1`))) =>
             val res = Transformation(Add(), TTRedirection(AGEdge(kind, n0, n2), Source(n3)))
             printRule("RedRed_src", op2.toString, op1.toString, res.toString)
             res
@@ -111,10 +133,11 @@ object NodeMappingInitialState{
             printRule("AddRed_src", op2.toString, op1.toString, res.toString)
             res
           case t => t
-          })
+          }, removedEdges)
 
-        case (op1 @ Transformation(Add(), TTRedirection(AGEdge(kind, n1, n2), Target(n3)))) :: tl =>
-          aux(l1, tl map { case op2 @ Transformation(Add(), TTRedirection(AGEdge(`kind`, `n1`, n0), Target(`n2`))) =>
+        case (op1 @ Transformation(Add(), TTRedirection(stopingEdge @ AGEdge(kind, n1, n2), Target(n3)))) :: tl =>
+          aux(filteredTransfos, mapUntil(stopingEdge, tl)
+          { case op2 @ Transformation(Add(), TTRedirection(AGEdge(`kind`, `n1`, n0), Target(`n2`))) =>
             val res = Transformation(Add(), TTRedirection(AGEdge(kind, n1, n0), Target(n3)))
             printRule("RedRed_tgt", op2.toString, op1.toString, res.toString)
             res
@@ -123,87 +146,110 @@ object NodeMappingInitialState{
             printRule("AddRed_tgt", op2.toString, op1.toString, res.toString)
             res
           case t => t
-          })
+          }, removedEdges)
 
-        case (t @ Transformation(Add(), TTEdge(_))):: tl => aux(t :: l1, tl)
+        case (t @ Transformation(Add(), TTEdge(_))):: tl => aux(t :: filteredTransfos, tl, removedEdges)
+        case (Transformation(Remove(), TTEdge(e))):: tl => aux(filteredTransfos, tl, e :: removedEdges)
+
         case hd :: _ => sys.error(hd  + " should not be in list")
       }
     }
 
-    aux(List(), transfos.reverse)
+    val (normalTransfos, removedEdges) = aux(List(), transfos.reverse, List())
+
+    removedEdges.foldLeft(normalTransfos){case (normalTransfos0, e) =>
+      normalTransfos0 filter {
+        case Transformation(Add(), TTEdge(`e`)) => false
+        case _ => true
+      }
+    }
+
   }
 
-  /*def filterNoise[Kind <: NodeKind[Kind]](transfos : List[Transformation[Kind]]):
+  /*def filterNoise[Kind <: NodeKind[Kind]](transfos : List[Transformation[Kind]], logger : Logger[Int]):
   List[Transformation[Kind]] = {
+
+    def printRule(name : => String, op1 : => String, op2 : => String, res : => String ){
+      logger.writeln(name +" : ")
+      logger.writeln(op1)
+      logger.writeln("+ " + op2)
+      logger.writeln("= " + res)
+      logger.writeln("----------------------------------------------")
+    }
+
+    def applyRuleOnce[T](l : List[T])(rule : T => (Boolean, Option[T])) : (Boolean, List[T]) = {
+      def aux(l1 : List[T], acc : List[T]) : (Boolean, List[T]) =
+        if(l1.isEmpty) (false, l)
+        else rule(l1.head) match {
+          case (true, None) => (true, acc reverse_::: l1.tail)
+          case (true, Some(t)) => (true, acc reverse_::: t :: l1.tail)
+          case (false, _ ) => aux(l1.tail, l1.head :: acc)
+        }
+      aux(l, List[T]())
+    }
+
     def aux(l1 : List[Transformation[Kind]],
             l2 : List[Transformation[Kind]]): List[Transformation[Kind]] = {
-      l2 match {
-        case List() => l1.reverse
-        case Transformation(_, TTRedirection(_, _)) :: _ =>
-          l1.reverse foreach println
-          println(" --> " + l2.head)
-          l2.tail foreach println
-          sys.error(l2.head  + "should be eaten !")
-        case (op1 @ Transformation(Add(), TTEdge(AGEdge(Contains(), n1, n2)))) :: tl =>
-          select[Transformation[Kind]](tl,
-          {
-            //case Transformation(Add(), TTEdge(AGEdge(Contains(), `n1`, `n2`))) => true
-            case Transformation(Remove(), TTEdge(AGEdge(Contains(), `n1`, `n2`))) => true
-            case Transformation(Add(), TTRedirection(AGEdge(Contains(), `n1`, `n2`), Source(_))) => true
-            case Transformation(Add(), TTRedirection(AGEdge(Contains(), `n1`, `n2`), Target(_))) =>
-            sys.error("contains redirection target should not happen !")
-            case _ => false
-          }) match {
-            case (Some( op2 @ Transformation(Remove(),_)), newTl) =>
-              printRule("AddDel", op1.toString, op2.toString, "None")
-              aux(l1, newTl)
-            case (Some(op2 @ Transformation(Add(), TTRedirection(_, Source(n3)))), newTl) =>
-              val res = Transformation(Add(), TTEdge(AGEdge.contains(n3, n2)))
-              printRule("AddRed_Src", op1.toString, op2.toString, res.toString)
-              aux(l1, res :: newTl)
-            case (None, _) => aux(l2.head :: l1, l2.tail)
-            case _ => sys.error("should not happen !")
-          }
-        case (op1 @ Transformation(Add(), TTEdge(AGEdge(kind, n1, n2)))) :: tl =>
-          select[Transformation[Kind]](tl,
-          { case Transformation(Add(), TTEdge(AGEdge(`kind`, `n1`, `n2`))) => true
-            case Transformation(Add(), TTRedirection(AGEdge(`kind`, `n1`, `n2`), _)) => true
-            case _ => false
-          }) match {
-            case (Some( replicate @ Transformation(Add(), TTEdge(_))), newTl) =>
-              printRule("AddAdd", op1.toString, replicate.toString, replicate.toString)
-              aux (l1, replicate :: newTl)
-            case (Some(op2 @ Transformation(Add(), TTRedirection(_, Source(n3)))), newTl) =>
+      if(l2.isEmpty) l1.reverse
+      else{
+        val (applied, tl) = l2.head match {
+          case (op1 @ Transformation(Add(), TTEdge(AGEdge(Contains(), n1, n2)))) =>
+            applyRuleOnce[Transformation[Kind]](l2.tail)
+            {
+              //case Transformation(Add(), TTEdge(AGEdge(Contains(), `n1`, `n2`))) => true
+              case op2 @ Transformation(Remove(), TTEdge(AGEdge(Contains(), `n1`, `n2`))) =>
+                printRule("AddDel", op1.toString, op2.toString, "None")
+                (true, None)
+              case op2 @ Transformation(Add(), TTRedirection(AGEdge(Contains(), `n1`, `n2`), Source(n3))) =>
+                val res = Transformation(Add(), TTEdge(AGEdge.contains(n3, n2)))
+                printRule("AddRed_Src", op1.toString, op2.toString, res.toString)
+                (true, Some(res))
+
+              case Transformation(Add(), TTRedirection(AGEdge(Contains(), `n1`, `n2`), Target(_))) =>
+                sys.error("contains redirection target should not happen !")
+              case _ => (false, None)
+            }
+
+          case (op1 @ Transformation(Add(), TTEdge(AGEdge(kind, n1, n2)))) =>
+            applyRuleOnce[Transformation[Kind]](l2.tail)
+            { case duplicate @ Transformation(Add(), TTEdge(AGEdge(`kind`, `n1`, `n2`))) =>
+              printRule("AddAdd", op1.toString, duplicate.toString, duplicate.toString)
+              (true, Some(duplicate))
+            case op2 @ Transformation(Add(), TTRedirection(AGEdge(`kind`, `n1`, `n2`), Source(n3))) =>
               val res = Transformation(Add(), TTEdge(kind(n3, n2)))
               printRule("AddRed_Src", op1.toString, op2.toString, res.toString)
-              aux(l1, res :: newTl)
-            case (Some(op2 @ Transformation(Add(), TTRedirection(_, Target(n3)))), newTl) =>
+              (true, Some(res))
+            case op2 @Transformation(Add(), TTRedirection(AGEdge(`kind`, `n1`, `n2`), Target(n3))) =>
               val res = Transformation(Add(), TTEdge(kind(n1, n3)))
               printRule("AddRed_Tgt", op1.toString, op2.toString, res.toString)
-              aux(l1, res :: newTl)
+              (true, Some(res))
 
-            case (None, _) => aux(l2.head ::l1, l2.tail)
-            case _ => sys.error("should not happen !")
-          }
-        case hd :: tl => sys.error(hd  + " should not be in list")
+            case t => (false, None)
+            }
+          case t => sys.error(t  + " should not be in list")
+        }
+
+        if(applied) aux(l1, tl)
+        else aux(l2.head :: l1, tl)
       }
+
     }
 
     aux(List(), transfos)
   }*/
 
-  def filterDuplicates[Kind <: NodeKind[Kind]](transfos : List[Transformation[Kind]]): List[Transformation[Kind]] = {
-    /*can be needed for cases like
-     [... add(a,b) .. red((a,b), tgt(c)) ... add(a,d) .. red((a, d), tgt(c)) ... ]
-     */
-    def aux(l0 : List[Transformation[Kind]],
-            l1 : List[Transformation[Kind]]) : List[Transformation[Kind]]= {
-      if(l1.isEmpty) l0.reverse
-      else aux(l1.head :: l0, l1.tail filter { _ != l1.head })
-    }
+  /* def filterDuplicates[Kind <: NodeKind[Kind]](transfos : List[Transformation[Kind]]): List[Transformation[Kind]] = {
+     /*can be needed for cases like
+      [... add(a,b) .. red((a,b), tgt(c)) ... add(a,d) .. red((a, d), tgt(c)) ... ]
+      */
+     def aux(l0 : List[Transformation[Kind]],
+             l1 : List[Transformation[Kind]]) : List[Transformation[Kind]]= {
+       if(l1.isEmpty) l0.reverse
+       else aux(l1.head :: l0, l1.tail filter { _ != l1.head })
+     }
 
-    aux(List(), transfos)
-  }
+     aux(List(), transfos)
+   }*/
 
 }
 
@@ -309,7 +355,7 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind]](eng : RecordingComparator[
       logger.writeln("***************** filtering 1 *************************")
       logger.writeln("*******************************************************")
 
-      val filteredTransfos1 = if(neuterNodes.nonEmpty) filterDuplicates(filterNoise(remainingTransfos1, logger))
+      val filteredTransfos1 = if(neuterNodes.nonEmpty) filterNoise(remainingTransfos1, logger)
       else remainingTransfos1
 
       logger.writeln("*******************************************************")
@@ -343,7 +389,7 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind]](eng : RecordingComparator[
       logger.writeln("***************** filtering 2 *************************")
       logger.writeln("*******************************************************")
 
-      val filteredTransfos2 = if(otherNeuterNodes.nonEmpty) filterDuplicates(filterNoise(remainingTransfos2, logger))
+      val filteredTransfos2 = if(otherNeuterNodes.nonEmpty) filterNoise(remainingTransfos2, logger)
       else remainingTransfos2
 
       logger.writeln("*******************************************************")

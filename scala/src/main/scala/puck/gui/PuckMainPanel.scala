@@ -3,6 +3,7 @@ package puck.gui
 import puck.graph.NodeKind
 import puck.graph.backTrack.comparison.RecordingComparator
 import puck.graph.constraints.search.ConstraintSolving
+import puck.graph.constraints.search.ConstraintSolving.FinalState
 import puck.graph.io.FilesHandler
 import puck.util.{DefaultSystemLogger, IntLogger}
 
@@ -17,7 +18,7 @@ import java.io.File
  */
 
 object PuckMainPanel{
-  val width = 600
+  val width = 1024
   val height = 800
 
   def leftGlued(c : Component) : BoxPanel = {
@@ -26,7 +27,6 @@ object PuckMainPanel{
       contents += Swing.HGlue
     }
   }
-
 }
 
 class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind])
@@ -60,7 +60,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
   }*/
 
   //topComponent
-  leftComponent = new  SplitPane(Orientation.Vertical) {
+  leftComponent = new SplitPane(Orientation.Vertical) {
     val leftWidth = PuckMainPanel.width * 1/3
     val rightWidth = PuckMainPanel.width *2/3
     val height = PuckMainPanel.height * 2/3
@@ -144,7 +144,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
           //filesHandler.logger.write("compute different final states (after sorting by coupling value) : ")
           filesHandler.logger.write("comparing final states : ")
 
-          val sortedRes  =
+          val sortedRes: Map[Int, List[FinalState[Kind]]] =
             puck.util.Time.time(filesHandler.logger){
 
               //CSSearchStateComboBox.sort(res).mapValues(filterDifferentStates)
@@ -162,43 +162,43 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
           filesHandler.logger.writeln("%d different final states ".format(total))
 
 
-          resultsWrapper.contents += new FlowPanel(){
-            contents += new Label("Compare")
-            val cb1 = new CSSearchStateComboBox(sortedRes)
-            val cb2 = new CSSearchStateComboBox(sortedRes)
+          if(sortedRes.nonEmpty) {
+            resultsWrapper.contents += new BoxPanel(Orientation.Vertical) {
+              contents += new Label("Compare")
+              val cb1 = new CSSearchStateComboBox(sortedRes)
+              val cb2 = new CSSearchStateComboBox(sortedRes)
 
-            control listenTo cb1
-            control listenTo cb2
+              control listenTo cb1
+              control listenTo cb2
 
-            contents += cb1
-            contents += new Label("and")
-            contents += cb2
-            contents += Button(">>"){
-              val recording1 = cb1.selectedState.result
-              val recording2 = cb2.selectedState.result
-              new RecordingComparator(filesHandler.graph.initialRecord,
-                recording1, recording2, DefaultSystemLogger).search() match {
-                case None => println("no mapping")
-                case Some(st) => println(st.result)
+              contents += cb1
+              contents += new Label("and")
+              contents += cb2
+              contents += Button(">>") {
+                val recording1 = cb1.selectedState.result
+                val recording2 = cb2.selectedState.result
+                new RecordingComparator(filesHandler.graph.initialRecord,
+                  recording1, recording2, DefaultSystemLogger).search() match {
+                  case None => println("no mapping")
+                  case Some(st) => println(st.result)
+                }
               }
             }
-          }
 
-          resultsWrapper.contents += new FlowPanel(){
-            val couplingValues = new ComboBox(sortedRes.keys.toSeq)
-            contents += couplingValues
-            contents += Button("Print"){
-              val d = filesHandler.graphFile("_results")
-              d.mkdir()
-              val subDir = filesHandler.graphFile("_results%c%d".format(File.separatorChar,
-                couplingValues.selection.item))
-              subDir.mkdir()
-              filesHandler.printCSSearchStatesGraph(subDir, sortedRes(couplingValues.selection.item))
+            resultsWrapper.contents += new FlowPanel() {
+              val couplingValues = new ComboBox(sortedRes.keys.toSeq)
+              contents += couplingValues
+              contents += Button("Print") {
+                control listenTo this
+                publish(SearchStateListPrintingRequest(couplingValues.selection.item.toString,
+                  sortedRes(couplingValues.selection.item), None))
+              }
             }
-          }
 
-          resultsWrapper.contents += Button("Print all"){
-            filesHandler.printCSSearchStatesGraph(sortedRes)
+            resultsWrapper.contents += Button("Print all") {
+              control listenTo this
+              publish(SearchStateMapPrintingRequest(sortedRes))
+            }
           }
   }
 
@@ -233,11 +233,11 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
       progressBar.visible = false
 
 
-      contents += makeButton("Do it !",
+      /*contents += makeButton("Do it !",
         "Magic !"){
         () => publish(DoWholeProcessRequest(printTrace.selected))
       }
-
+*/
       contents += makeButton("(Re)load code & constraints",
         "Load the selected source code and build the access graph"){
         () => publish(LoadCodeRequest())
@@ -257,11 +257,11 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
 
       addDelayedComponent(loadConstraintsButton)
 
-      val printPl = makeButton("Print prolog",
+      /*val printPl = makeButton("Print prolog",
         "Print a prolog version of the graph"){() => filesHandler.makeProlog()}
 
       addDelayedComponent(printPl)
-
+*/
       val showConstraints = makeButton("Show constraints",
         "Show the constraints the graph has to satisfy"){
         () => filesHandler.graph.printConstraints(filesHandler.logger)
@@ -276,10 +276,10 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
 
       addDelayedComponent(show)
 
-      addDelayedComponent(PuckMainPanel.leftGlued(decisionStrategy))
-      addDelayedComponent(PuckMainPanel.leftGlued(printTrace))
+      /*addDelayedComponent(PuckMainPanel.leftGlued(decisionStrategy))
+      addDelayedComponent(PuckMainPanel.leftGlued(printTrace)) */
 
-      val solve = makeButton("Solve", "solve the loaded constraints"){
+     /* val solve = makeButton("Solve", "solve the loaded constraints"){
         () => publish(SolveRequest(if(decisionStrategy.selected)
           new GUIDecisionMaker(filesHandler)
         else
@@ -288,7 +288,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
 
       }
 
-      addDelayedComponent(solve)
+      addDelayedComponent(solve)*/
 
       val searchStrategies = new ComboBox(filesHandler.searchingStrategies){
         minimumSize = new Dimension(leftWidth, 30)
@@ -307,11 +307,11 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
 
       addDelayedComponent(resultsWrapper)
 
-      val printCode = makeButton("Apply on code",
+      /*val printCode = makeButton("Apply on code",
         "apply the planned modifications on the code"){
         () => publish(ApplyOnCodeRequest())
       }
-      addDelayedComponent(printCode)
+      addDelayedComponent(printCode)*/
     }
 
     rightComponent = new SplitPane(Orientation.Vertical) {

@@ -29,7 +29,8 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]
   val violationsKindPriority : List[Kind]
 
   def violationTarget(k: Option[NodeType] => Unit) {
-    def findTargets : List[Kind] => Iterator[NodeType] =  {
+
+    def findTargets(l : List[Kind]) : Iterator[NodeType] =  l match {
       case topPriority :: tl =>
         val it = graph.filter{ n =>
           n.kind == topPriority && (n.wrongUsers.nonEmpty ||
@@ -72,19 +73,20 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]
           abstractionPolicies.head)))
     }
 
-    /*var needSearch = true
-
-    if(abstractionPolicies.isEmpty) {
-      needSearch = false
-      k(None)
+    /*val (needSearch, karg) =
+      if(abstractionPolicies.isEmpty) {
+        (false, None)
     }
     else if(abstractionPolicies.tail.isEmpty){
       val absk = abstractKinds(abstractionPolicies.head)
       if(absk.tail.isEmpty) {
-        needSearch = false
-        k(Some((absk.head, abstractionPolicies.head)))
+        (false, Some((absk.head, abstractionPolicies.head)))
       }
+      else (true, None)
+
     }
+    else (true, None)
+
 
     if(needSearch) {
       val choices = abstractionPolicies.map { p => abstractKinds(p).map { kind => (kind, p)}}.flatten
@@ -93,7 +95,9 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]
         new ConstraintSolvingAbstractionChoice(k,
           mutable.Set[(Kind, AbstractionPolicy)]() ++ choices,
           mutable.Set[(Kind, AbstractionPolicy)]()))
-    }*/
+    }
+    else k(karg)*/
+
   }
 
   def chooseNode(context : => String,
