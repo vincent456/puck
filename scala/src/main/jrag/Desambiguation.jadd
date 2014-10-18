@@ -1,0 +1,170 @@
+
+aspect Desambiguation{
+
+	interface NamedAccess extends Named{
+		String name();
+	}
+ 
+	ParTypeAccess implements NamedAccess;
+	TypeAccess implements NamedAccess; //method in Java1.4Frontend/QualifiedName.jadd
+
+	String ParTypeAccess.typeArgumentListString(){
+	  StringBuilder sb = new StringBuilder();
+
+	  sb.append("<");
+	  for(int i = 0; i < getNumTypeArgument(); i++) {
+		  if(i != 0)
+			  sb.append(", ");
+		  sb.append(((TypeAccess)getTypeArgument(i)).fullName());
+	  }
+
+	  sb.append(">");
+
+	  return sb.toString();
+  	}
+
+	public String ParTypeAccess.name(){
+		return ((TypeAccess)getTypeAccess()).name() + typeArgumentListString();
+	}
+
+	interface Named{
+		String fullName();
+	}
+	
+	public class FullNameException extends Error {
+		private ASTNode<?> node;
+		
+		public FullNameException(ASTNode<?> node){
+			this.node = node;
+		}
+		
+		public ASTNode<?> getNode(){
+			return node;
+		}
+	}
+	
+	public class ProgramRootFullNameException extends FullNameException {
+		public ProgramRootFullNameException(ASTNode<?> node){
+			super(node);
+		}
+	}
+	
+	ASTNode implements Named;
+	
+	public String ASTNode.fullName(){
+		throw new FullNameException(this);
+	}
+	
+	public String Program.fullName(){
+		throw new ProgramRootFullNameException(this);
+	}
+
+
+    public String TypeAccess.fullName(){
+    	return decl().fullName();
+    }
+
+    public String ArrayTypeAccess.fullName(){
+    	return getAccess().fullName()+"[]";
+    }
+	
+	public String ParTypeAccess.fullName(){
+		return ((TypeAccess)getTypeAccess()).fullName() + typeArgumentListString();
+    }
+
+	public String ConstructorDecl.fullName(){
+		return getDesambiguateFullName();
+	}
+	public String MethodDecl.fullName(){
+		return getDesambiguateFullName();
+	}
+
+	public String FieldDecl.fullName(){
+		//TODO seem strange, check if correct
+		String fullName="";
+		List<VariableDecl> vdl = getVariableDeclList();
+		for (VariableDecl vd : vdl) {
+			fullName+=vd.hostBodyDecl().hostType().fullName()+"."+vd.name();
+		}
+		return fullName;
+	}
+	
+	public String FieldDeclaration.fullName(){
+		return hostType().fullName()+"."+name();
+	}
+	
+	public String VariableDecl.fullName(){
+		return hostBodyDecl().fullName()+"."+name();		
+	}
+	public String InstanceInitializer.fullName(){
+		return hostType().fullName()+".InstanceInitializer";//add an id number ??
+	}
+	public String StaticInitializer.fullName(){
+		return hostType().fullName()+".StaticInitializer";//add an id number ??
+	}
+
+	
+	
+	public boolean ASTNode.isInScope(String scope){
+		return fullName().contains(scope);
+	}
+	
+	
+	
+    interface Desambiguable{
+    	
+    	String getParametersAsString();
+    	String getDesambiguateFullName();
+    	
+    	String getNameParametersSeparator();
+    	TypeDecl hostType();
+    	String name();
+    	
+    	int getNumParameter();
+    	List<ParameterDeclaration> getParameterList();
+    	
+    }
+    
+    Callable extends Desambiguable;
+
+    public String ConstructorDecl.getNameParametersSeparator(){ return "#"; }
+    public String MethodDecl.getNameParametersSeparator(){ return "_"; }
+    
+    public static String BodyDecl.getParametersAsString(Desambiguable d){
+    	
+    	if( d.getNumParameter()==0 ){
+    		return d.getNameParametersSeparator()+"_void";
+    	}
+    	
+    	StringBuilder stringParameters = new StringBuilder();
+    	stringParameters.append(d.getNameParametersSeparator());
+    	
+    	for (ParameterDeclaration pdecl : d.getParameterList()) {
+    		stringParameters.append('_');
+    		String[] splitName = pdecl.type().fullName().split("[.]");
+    		stringParameters.append(splitName[splitName.length-1]);
+    	}
+    		
+    	return stringParameters.toString();
+    }
+
+    public static String BodyDecl.getDesambiguateFullName(Desambiguable d){
+    	return d.hostType().fullName()+"."+d.name()
+    		    + d.getParametersAsString();
+    }
+    
+    public String MethodDecl.getParametersAsString(){
+    	return BodyDecl.getParametersAsString(this);
+    }
+    public String MethodDecl.getDesambiguateFullName(){
+    	return BodyDecl.getDesambiguateFullName(this);
+    }
+ 
+    public String ConstructorDecl.getParametersAsString(){
+    	return BodyDecl.getParametersAsString(this);
+    }
+    
+    public String ConstructorDecl.getDesambiguateFullName(){
+    	return BodyDecl.getDesambiguateFullName(this);
+    }
+}

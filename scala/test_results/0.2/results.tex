@@ -1,0 +1,258 @@
+\documentclass[french]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[a4paper]{geometry}
+\usepackage{babel}
+
+\newcommand{\puckVersion}{0.2}
+
+%opening
+\title{Tests results of puck v\puckVersion}
+\author{Loïc Girault}
+
+\begin{document}
+
+\maketitle
+
+Previously reported bugs: 
+\begin{itemize}
+\item when changing folder with the workspace button the graph.dot file path does not seems to change : fixed
+\item in composite example with decouple strict, need to start twice the solving process to remove all violations
+\item exception "Do not know how to unsuscribe a side use with multiple primary uses" often raised while solving
+\end{itemize}
+
+Notes :
+Tests sources folders root  is \texttt{<scala puck dir>/src/test/resources/distrib}\\
+default abstraction strategy only is searched
+
+\section*{Prototype}
+\noindent\begin{tabular}{ l p{12cm} }
+\textbf{Sources folder} &  \texttt{prototype/actors}\\
+\textbf{Violations detected} &  9\\
+\textbf{Violations removed} & yes (1750 final states 6 differents )\\
+\textbf{Code produced compiles} & no \\
+\textbf{Behavior preserved} & N/A (if we manually solve the compiling error, yes)\\
+\textbf{Design satisfying} & yes\\
+\textbf{Notes} & \\
+\end{tabular}
+\begin{itemize}
+\item Compilation fails because parameterized type of PrototypeDemo.roles was not changed : not fixed
+\item The prototype super type abstraction is merged with the Actor interface
+\item 0.1 bug fix : classes are moved independently
+\end{itemize}
+
+\section*{Bridge}
+\noindent\begin{tabular}{ l p{12cm} }
+\textbf{Sources folder} &  \texttt{bridge/hanneman\_inspired}\\
+\textbf{Violations detected} & 8\\
+\textbf{Violations removed} & yes\\
+\textbf{Code produced compiles} & yes\\
+\textbf{Behavior preserved} & N/A (no main, but inspecting the code it seems to be the case)\\
+\textbf{Design satisfying} & no\\
+\textbf{Notes} & \\
+\end{tabular}
+
+\begin{itemize}
+\item Design is not satisfying because printGraphic and printText signatures should be merged in one ``print'' signature (and the method thus placed in two separated classes)
+\end{itemize}
+
+\section*{Abstract Factory}
+\noindent\begin{tabular}{ l p{12cm} }
+\textbf{Sources folder} &  \texttt{abstractFactory}\\
+\textbf{Violations detected} & 24\\
+\textbf{Violations removed} & 24\\
+\textbf{Code produced compiles} & N/A\\
+\textbf{Behavior preserved} & N/A \\
+\textbf{Design satisfying} & N/A\\
+\textbf{Notes} & \\
+\end{tabular}
+
+\begin{itemize}
+\item solved with try first strategy, try all too long
+\item exception raised while applying modification on code
+% %\item exception raised while solving the constraints
+\end{itemize}
+
+\section*{Observer}
+\noindent\begin{tabular}{ l p{12cm} }
+\textbf{Sources folder} &  \texttt{observer}\\
+\textbf{Violations detected} & 8\\
+\textbf{Violations removed} & 8 (64 finals states 16 different)\\
+\textbf{Code produced compiles} & N/A\\
+\textbf{Behavior preserved} & N/A \\
+\textbf{Design satisfying} & N/A\\
+\textbf{Notes} & \\
+\end{tabular}
+
+\begin{itemize}
+\item exception raised while applying modification on code
+\end{itemize}			
+
+\section*{Proxy}
+\noindent\begin{tabular}{ l p{12cm} }
+\textbf{Sources folder} &  \texttt{proxy}\\
+\textbf{Violations detected} & 5\\
+\textbf{Violations removed} & 5 (6 finals states 6 different)\\
+\textbf{Code produced compiles} & No\\
+\textbf{Behavior preserved} & N/A \\
+\textbf{Design satisfying} & N/A\\
+\textbf{Notes} & \\
+\end{tabular}
+
+\begin{itemize}
+\item class Image was moved in another package but references where not updated accordingly
+\item constructor argument added to the main method
+\item type error in affectation sub <- super
+\end{itemize}			
+
+\section*{Composite}
+\noindent\begin{tabular}{ l p{12cm} }
+\textbf{Sources folder} &  \texttt{composite}\\
+\textbf{Constraint file} & \texttt{decouple\_strict.pl} \\
+\textbf{Violations detected} & 9\\
+\textbf{Violations removed} & no final states\\
+\textbf{Code produced compiles} & N/A\\
+\textbf{Behavior preserved} & N/A\\
+\textbf{Design satisfying} & no\\
+\textbf{Notes} & \\
+\end{tabular}
+
+\section*{Template Method}
+\noindent\begin{tabular}{ l p{12cm} }
+\textbf{Sources folder} &  \texttt{templateMethod}\\
+\textbf{Violations detected} & 6\\
+\textbf{Violations removed} & 6 (12 final states - 2 differents)\\
+\textbf{Code produced compiles} & N/A\\
+\textbf{Behavior preserved} & N/A\\
+\textbf{Design satisfying} & no\\
+\textbf{Notes} & \\
+\end{tabular}
+\begin{itemize}
+\item exception raised while applying modification on code
+\item tried to improve the resulting design by modifying the constraint so that the wrongly used method are also wrongly contained. Then an exception is raised while solving it
+\end{itemize}
+
+
+\section*{Adapter}
+\noindent\begin{tabular}{ l p{12cm} }
+\textbf{Sources folder} &  \texttt{adapter}\\
+\textbf{Violations detected} & 12\\
+\textbf{Violations removed} & N/A\\
+\textbf{Code produced compiles} & N/A\\
+\textbf{Behavior preserved} & N/A \\
+\textbf{Design satisfying} & N/A\\
+\textbf{Notes} & \\
+\end{tabular}
+
+\begin{itemize}
+\item exception raised while solving process
+\end{itemize}
+
+\section*{Command}
+\noindent\begin{tabular}{ l p{12cm} }
+\textbf{Sources folder} &  \texttt{command}\\
+\textbf{Violations detected} & N/A\\
+\textbf{Violations removed} & N/A\\
+\textbf{Code produced compiles} & N/A\\
+\textbf{Behavior preserved} & N/A \\
+\textbf{Design satisfying} & N/A\\
+\textbf{Notes} & \\
+\end{tabular}
+
+\begin{itemize}
+\item exception raised while building access graph
+\end{itemize}
+			
+
+\section*{Decorator}
+\noindent\begin{tabular}{ l p{12cm} }
+\textbf{Sources folder} &  \texttt{decorator/shrinked}\\
+\textbf{Violations detected} & 14\\
+\textbf{Violations removed} & N/A\\
+\textbf{Code produced compiles} & N/A\\
+\textbf{Behavior preserved} & N/A \\
+\textbf{Design satisfying} & N/A\\
+\textbf{Notes} & \\
+\end{tabular}
+
+\begin{itemize}
+\item exception raised while solving the constraints
+\end{itemize}
+
+\section*{Factory Method}
+\noindent\begin{tabular}{ l p{12cm} }
+\textbf{Sources folder} &  \texttt{factoryMethod}\\
+\textbf{Violations detected} & 4\\
+\textbf{Violations removed} & N/A\\
+\textbf{Code produced compiles} & N/A\\
+\textbf{Behavior preserved} & N/A \\
+\textbf{Design satisfying} & N/A\\
+\textbf{Notes} & \\
+\end{tabular}
+
+\begin{itemize}
+\item exception raised while solving the constraints
+\end{itemize}
+
+
+\section*{Mediator}
+\noindent\begin{tabular}{ l p{12cm} }
+\textbf{Sources folder} &  \texttt{mediator}\\
+\textbf{Violations detected} & 3\\
+\textbf{Violations removed} & N/A\\
+\textbf{Code produced compiles} & N/A\\
+\textbf{Behavior preserved} & N/A \\
+\textbf{Design satisfying} & N/A\\
+\textbf{Notes} & \\
+\end{tabular}
+
+\begin{itemize}
+\item exception raised while solving the constraints
+\end{itemize}
+
+\section*{State}
+\noindent\begin{tabular}{ l p{12cm} }
+\textbf{Sources folder} &  \texttt{state}\\
+\textbf{Violations detected} & 8\\
+\textbf{Violations removed} & N/A\\
+\textbf{Code produced compiles} & N/A\\
+\textbf{Behavior preserved} & N/A \\
+\textbf{Design satisfying} & N/A\\
+\textbf{Notes} & \\
+\end{tabular}
+
+\begin{itemize}
+\item exception raised while solving process
+\end{itemize}
+
+\section*{Strategy}
+\noindent\begin{tabular}{ l p{12cm} }
+\textbf{Sources folder} &  \texttt{strategy}\\
+\textbf{Violations detected} & 4\\
+\textbf{Violations removed} & N/A\\
+\textbf{Code produced compiles} & N/A\\
+\textbf{Behavior preserved} & N/A\\
+\textbf{Design satisfying} & no\\
+\textbf{Notes} & \\
+\end{tabular}
+\begin{itemize}
+\item exception raised while solving process
+\end{itemize}
+
+\section*{Visitor}
+\noindent\begin{tabular}{ l p{12cm} }
+\textbf{Sources folder} &  \texttt{visitor}\\
+\textbf{Violations detected} & 2\\
+\textbf{Violations removed} & N/A\\
+\textbf{Code produced compiles} & N/A\\
+\textbf{Behavior preserved} & N/A\\
+\textbf{Design satisfying} & no\\
+\textbf{Notes} & \\
+\end{tabular}
+\begin{itemize}
+\item java\_import is not correctly expansed
+\item exception raised while solving process
+\end{itemize}
+
+\end{document}

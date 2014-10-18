@@ -1,0 +1,56 @@
+
+aspect StringUses {
+	// bind all uses of a string literal to its LSA
+
+	syn Map<String,Collection<BodyDecl>> Program.allStringUses(Map<String,Collection<BodyDecl>> smap) {
+		programRoot().collectAllStringUses(smap);
+		return smap;
+	}
+	protected void ASTNode.collectAllStringUses(Map<String,Collection<BodyDecl>> smap) {
+		for(int i = 0; i < getNumChild(); i++)
+			 getChild(i).collectAllStringUses(smap);
+	}
+	protected void Literal.collectAllStringUses(Map<String,Collection<BodyDecl>> smap) {
+		if (this instanceof StringLiteral) {
+			Collection<BodyDecl> col = (Collection<BodyDecl>) smap.get(this.getLITERAL());
+			if ( col != null) {
+				col.add(this.enclosingBodyDecl());
+				smap.put(this.getLITERAL(), col);
+			}
+		}
+	}
+
+/*	syn lazy Collection<BodyDecl> Program.StringUses() {
+		Collection<BodyDecl> col = new LinkedList<BodyDecl>();
+		programRoot().collectStringUses(this.anLSA("hello").getLITERAL(), col);
+		return col;
+	}
+	protected void ASTNode.collectStringUses(String lsa_value, Collection<BodyDecl> col) {
+		for(int i = 0; i < getNumChild(); i++)
+			 getChild(i).collectStringUses(lsa_value, col);
+	}
+	protected void Literal.collectStringUses(String lsa_value, Collection<BodyDecl> col) {
+		if (this instanceof StringLiteral) {
+			if (this.getLITERAL().equals(lsa_value)) col.add(this.enclosingBodyDecl());
+		}
+	}
+*/
+/*	// collect the number of uses of a string literal to its LSA 
+	syn lazy int Program.StringUses() {
+		return programRoot().collectStringUses(this.anLSA().getLITERAL(), 0);
+	}
+	protected int ASTNode.collectStringUses(String lsa_value, int cpt) {
+		for(int i = 0; i < getNumChild(); i++)
+			 cpt+= getChild(i).collectStringUses(lsa_value, 0);
+		return cpt;
+	}
+	protected int Literal.collectStringUses(String lsa_value, int cpt) {
+		if (this instanceof StringLiteral) {
+			if (this.getLITERAL().equals(lsa_value)) cpt++;
+			return cpt;
+		} else {
+			return 0;
+		}
+	}	*/
+
+}
