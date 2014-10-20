@@ -121,7 +121,7 @@
   <!-- create AST node types and weave aspect modules -->
   <jastadd package="${package}" rewrite="true" beaver="true" novisitcheck="true" noCacheCycle="true"
   	       outdir="${base-outdir}" debug="false">
-		<fileset dir="${Java1.4Frontend}">
+		<fileset dir="${Java1.4Frontend}" id="fs1">
 			<include name="**/*.ast"/>
 			<include name="**/*.jrag"/>
 			<include name="**/*.jadd"/> 
@@ -129,12 +129,12 @@
 			<exclude name="BytecodeDescriptor.jrag"/>
 			<exclude name="BytecodeReader.jrag"/>
 		</fileset>
-		<fileset dir="${Java1.5Frontend}">
+		<fileset dir="${Java1.5Frontend}" id="fs2">
 			<include name="**/*.ast"/>
 			<include name="**/*.jrag"/>
 			<include name="**/*.jadd"/>
 		</fileset>
-		<fileset dir="${ControlFlowGraph}">
+		<fileset dir="${ControlFlowGraph}" id="fs3">
 		    <include name="Nodes.ast"/>
 			<include name="ControlFlowGraph.jrag"/>
 			<include name="Sets.jrag"/>
@@ -143,27 +143,28 @@
 			<include name="ReachingDefinitions.jrag"/>
 			<include name="DotGeneration.jrag"/>
 		</fileset>
-		<fileset dir="${Refactoring}/util">
+		<fileset dir="${Refactoring}/util" id="fs4">
             <include name="**/*.ast"/>
             <include name="**/*.jrag"/>
             <include name="**/*.jadd"/>
     </fileset>
-		<fileset dir="${puck-java}/jrrt_modified_files">
+
+      <!--<fileset dir="${puck-java}/jrrt_modified_files">
             <include name="**/*.jrag"/>
             <exclude name="Renaming/RenameMethod.jrag"/>
     </fileset>
     <fileset dir="${puck-java}/puck/jrag">
-     <!--        <include name="**/*.jrag"/>
-            <include name="**/*.jadd"/> -->
+     &lt;!&ndash;        <include name="**/*.jrag"/>
+            <include name="**/*.jadd"/> &ndash;&gt;
             <include name="Desambiguation.jadd"/>
             <include name="StringUses.jrag"/>
-            <!-- <exclude name="CodeComparator.jadd"/>
+            &lt;!&ndash; <exclude name="CodeComparator.jadd"/>
             <exclude name="MoveOutOfScope.jadd"/>
-            <exclude name="TypeId.jadd"/> -->
-    </fileset>
+            <exclude name="TypeId.jadd"/> &ndash;&gt;
+    </fileset>-->
 
 
-    <fileset dir="${Refactoring}">
+    <fileset dir="${Refactoring}" id="fs5">
 		  <include name="**/*.ast"/>
 			<include name="**/*.jrag"/>
 			<include name="**/*.jadd"/>
@@ -183,22 +184,39 @@
 
     <!-- <fileset dir="${puck-scala}/jrag" includes="AccessGraphFactory.jrag"/> -->
     
-    <fileset dir="${puck-scala}/src/main/jrag" >
+    <fileset dir="${puck-scala}/src/main/jrag" id="fs6">
       <include name="**/*.jrag"/>
     </fileset>
     
-    <fileset dir="${Refactoring}">
+    <fileset dir="${Refactoring}" id="fs7">
   		<include name="TypeConstraints/TypeConstraintSolving.jrag"/>
 			<include name="TypeConstraints/CollectTypeConstraints.jrag"/>
   	</fileset>
 
-  </jastadd>
-  <!-- copy library files-->
-  <copy todir="${base-outdir}/beaver" preservelastmodified="true">
-    <fileset dir="${Java1.4Frontend}/beaver">
-      <include name="**/*.java"/>
-    </fileset>
-  </copy>
+<!--
+    <pathconvert pathsep="&#xA;" property="fsflat1" refid="fs1"/>
+    <echo>${fsflat1}</echo>
+    <pathconvert pathsep="&#xA;" property="fsflat2" refid="fs2"/>
+    <echo>${fsflat2}</echo>
+    <pathconvert pathsep="&#xA;" property="fsflat3" refid="fs3"/>
+    <echo>${fsflat3}</echo>
+    <pathconvert pathsep="&#xA;" property="fsflat4" refid="fs4"/>
+    <echo>${fsflat4}</echo>
+    <pathconvert pathsep="&#xA;" property="fsflat5" refid="fs5"/>
+    <echo>${fsflat5}</echo>
+    <pathconvert pathsep="&#xA;" property="fsflat6" refid="fs6"/>
+    <echo>${fsflat6}</echo>
+    <pathconvert pathsep="&#xA;" property="fsflat7" refid="fs7"/>
+    <echo>${fsflat7}</echo>
+-->
+
+      </jastadd>
+      <!-- copy library files-->
+      <copy todir="${base-outdir}/beaver" preservelastmodified="true">
+        <fileset dir="${Java1.4Frontend}/beaver">
+          <include name="**/*.java"/>
+        </fileset>
+      </copy>
 </target>
 
 <target name="scanner1.4">
