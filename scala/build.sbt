@@ -29,6 +29,11 @@ libraryDependencies ++= Seq(
   "org.scalatest" % "scalatest_2.11" % "2.2.1"
 	)
 
+//libraryDependencies in JrrtTasks ++= Seq(
+//	"net.sf.beaver" % "beaver-cc" % "0.9.11",
+//	"net.sf.beaver" % "beaver-rt" % "0.9.11",
+//	"de.jflex" % "jflex" % "1.6.0")
+
 //http://mvnrepository.com/artifact/net.sf.beaver/beaver-cc/0.9.11
 //http://mvnrepository.com/artifact/net.sf.beaver/beaver-rt/0.9.11
 //http://mvnrepository.com/artifact/de.jflex/jflex/1.6.0
