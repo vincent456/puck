@@ -63,12 +63,12 @@ def beaverTask(srcFile : File){
         log.report(srcFile.getName, srcReader)  
 
         if(log.hasErrors){
-          error("Error while generating parser")
+          sys.error("Error while generating parser")
         }
         
 
       } catch {
-          case e : Exception => error(e.getMessage())
+          case e : Exception => sys.error(e.getMessage())
       }
   }
 
@@ -83,6 +83,7 @@ def beaverTask(srcFile : File){
           //helper function to avoid a call to beaver main method that uses System.exit
   
           (sourceManaged.value / "parser").mkdirs()
+
           val parserAll = sourceManaged.value / "parser" / "JavaParser.all"
           /* generate the parser phase 1, create a full .lalr specification from fragments */
 
@@ -115,7 +116,6 @@ def beaverTask(srcFile : File){
 
          Seq(sourceManaged.value / "parser" / "JavaParser.java")
         },
-
       scanner := {
 
         val scannerFlex = sourceManaged.value / "scanner" / "JavaScanner.flex"
@@ -200,9 +200,11 @@ def beaverTask(srcFile : File){
                 jrrtDir / "undo" / "NoUndo.jrag",
                 jrrtDir / "AccessibilityConstraints" / "SolverChoco.jrag",
                 jrrtDir / "TypeConstraints" / "TypeConstraintSolving.jrag",
-                jrrtDir / "TypeConstraints" / "CollectTypeConstraints.jrag",
+                jrrtDir / "TypeConstraints" / "CollectTypeConstraints.jrag"/*,
                 jrrtDir / "MakeMethodStatic" / "MakeMethodStatic.jrag",
-                jrrtDir / "ChangeMethodSignature" / "ChangeParameterType.jrag")
+                jrrtDir / "ChangeMethodSignature" / "ChangeParameterType.jrag"
+                jrrtDir / "Renaming" / "RenameMethod.jrag"
+                */)
 
           val puckFiles = PathFinder(jastaddSrcDir.value) ** ("*.jrag" | "*.jadd")
 
@@ -215,9 +217,7 @@ def beaverTask(srcFile : File){
             ++: jrrtUtilFiles.getPaths.sorted
             ++: jrrtFiles2.getPaths.sorted
             ++: puckFiles.getPaths
-            //++: jrrtFiles3.getPaths
-
-            )
+            ++: jrrtFiles3.getPaths)
 
           // Fork.java(new ForkOptions(), 
           //       "jastadd.JastAdd.main" 
@@ -232,6 +232,7 @@ def beaverTask(srcFile : File){
           //         +: paths )
 
           // /!\ breakable : main uses System.exit !!
+          println("generating ast and weaving aspects")
           jastadd.JastAdd.main(("--beaver"
             +: "--package=AST"
             +: ("--o=" + sourceManaged.value)

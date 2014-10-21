@@ -1,3 +1,11 @@
+
+import com.github.retronym.SbtOneJar._
+
+//https://github.com/retronym/sbt-onejar
+oneJarSettings
+
+libraryDependencies += "commons-lang" % "commons-lang" % "2.6"
+
 name := "PuckConstraintSolver"
 
 version := "1.0"
@@ -28,3 +36,5 @@ libraryDependencies ++= Seq(
 (sourceGenerators in Compile) ++= Seq(parser.taskValue, scanner.taskValue, ast.taskValue)
 
 (sourceGenerators in Test) ++= Seq(parser.taskValue, scanner.taskValue, ast.taskValue)
+
+cleanFiles += sourceManaged.value

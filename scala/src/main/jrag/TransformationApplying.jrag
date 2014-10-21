@@ -33,16 +33,17 @@ aspect TransformationApplying {
         }
     }
 
-  public void Program.printCodeInDirectory(File dir){
+  public void Program.printCodeInDirectory(File dir) throws IOException {
 
-    for(CompilationUnit cu : getCompilationUnits){
+    for(CompilationUnit cu : getCompilationUnits()){
+
       if(cu.fromSource()) {
-        String relativePath = cu.getPackageDecl.replace('.', File.separatorChar);
+        String relativePath = cu.getPackageDecl().replace('.', File.separatorChar);
 
         File f = new File(dir + File.separator +
-          relativePath + File.separator + cu.getID + ".java");
+          relativePath + File.separator + cu.getID() + ".java");
 
-        f.getParentFile.mkdirs();
+        f.getParentFile().mkdirs();
         BufferedWriter writer = new BufferedWriter(new FileWriter(f));
         writer.write(cu.toString());
         writer.close();
