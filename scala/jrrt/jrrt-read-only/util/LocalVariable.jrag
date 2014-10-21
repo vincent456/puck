@@ -1,0 +1,39 @@
+aspect LocalVariable {
+	// for the purposes of refactoring, local variables include parameters
+	interface LocalDeclaration extends Variable {
+		public BodyDecl enclosingBodyDecl();
+	}
+	
+	VariableDeclaration implements LocalDeclaration;
+	ParameterDeclaration implements LocalDeclaration;
+	
+	// find all variable accesses in a subtree
+	public java.util.Set<VarAccess> ASTNode.varAccesses() {
+		java.util.Set<VarAccess> res = new LinkedHashSet<VarAccess>();
+		varAccesses(res);
+		return res;
+	}
+
+	public void ASTNode.varAccesses(java.util.Set<VarAccess> res) {
+		for(int i=0;i<getNumChild();++i) {
+			ASTNode child = getChild(i);
+			if(child != null)
+				child.varAccesses(res);
+		}
+	}
+	
+	public void VarAccess.varAccesses(java.util.Set<VarAccess> res) {
+		res.add(this);
+		super.varAccesses(res);
+	}
+	
+	// find only the local ones
+	public java.util.Set<VarAccess> ASTNode.localVarAccesses() {
+		java.util.Set<VarAccess> res = new LinkedHashSet<VarAccess>();
+		for(VarAccess va : varAccesses()) {
+			if(va.decl() instanceof LocalDeclaration)
+				res.add(va);
+		}
+		return res;
+	}
+}

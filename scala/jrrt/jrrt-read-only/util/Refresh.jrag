@@ -1,0 +1,63 @@
+aspect Refresh {
+	public Variable Variable.refresh() { return refreshVariable(); }
+	
+	syn Variable Variable.refreshVariable();
+	eq FieldDeclaration.refreshVariable() {
+		// the "length" field of array types is synthesised anew for every new array type
+		if(name().equals("length") && hostType().isArrayDecl())
+			return (FieldDeclaration)hostType().refresh().localFields("length").iterator().next();
+		return this;
+	}
+	eq FieldDeclarationSubstituted.refreshVariable() {
+		TypeDecl ptd = hostType().refresh();
+		String name = sourceVariableDecl().name();
+		return (FieldDeclarationSubstituted)ptd.localFields(name).iterator().next();
+	}
+	eq ParameterDeclaration.refreshVariable() = this;
+	eq VariableDeclaration.refreshVariable() = this;
+	
+	// TODO: same for ParameterDeclarationSubstituted and VariableArityParameterSubstituted
+	
+	public TypeDecl TypeDecl.refresh() { return refreshType(); }
+	public TypeDecl ParTypeDecl.refresh() { return refreshType(); }
+	
+	syn ConstructorDecl ConstructorDecl.refreshConstructor() = this;
+	eq ParConstructorDecl.refreshConstructor() {
+		ArrayList<TypeDecl> types = new ArrayList<TypeDecl>();
+		for(int i=0;i<getNumTypeArgument();++i)
+			types.add(getTypeArgument(i).type().refresh());
+		return ((GenericConstructorDecl)((ConstructorDecl)getParent().getParent()).refresh()).lookupParConstructorDecl(types);
+	}
+	eq RawConstructorDecl.refreshConstructor() = ((GenericConstructorDecl)((ConstructorDecl)getParent().getParent()).refresh()).rawConstructor();
+	eq ConstructorDeclSubstituted.refreshConstructor() {
+		TypeDecl encl = hostType().refreshType();
+		ArrayList<TypeDecl> parmTypes = new ArrayList<TypeDecl>();
+		for(int i=0;i<getNumParameter();++i)
+			parmTypes.add(getParameter(i).type().refresh());
+		return encl.constructorSignature(parmTypes, isVariableArity());
+	}
+	
+	public ConstructorDecl ConstructorDecl.refresh() { return refreshConstructor(); }
+	
+	syn TypeDecl TypeDecl.refreshType() = this;
+	eq ArrayDecl.refreshType() = componentType().refresh().arrayType();
+	eq ParTypeDecl.refreshType() {
+		ArrayList<TypeDecl> types = new ArrayList<TypeDecl>();
+		for(int i=0;i<getNumArgument();++i)
+			types.add(getArgument(i).type().refresh());
+		return ((GenericTypeDecl)((TypeDecl)getParent().getParent()).refresh()).lookupParTypeDecl(types);
+	}
+	eq RawClassDecl.refreshType() = ((GenericTypeDecl)((TypeDecl)getParent().getParent()).refresh()).rawType();
+	eq RawInterfaceDecl.refreshType() = ((GenericTypeDecl)((TypeDecl)getParent().getParent()).refresh()).rawType();
+	eq WildcardType.refreshType() = programRoot().wildcards().typeWildcard();
+	eq WildcardExtendsType.refreshType() = programRoot().wildcards().lookupWildcardExtends(getAccess().type().refresh());
+	eq WildcardSuperType.refreshType() = programRoot().wildcards().lookupWildcardSuper(getAccess().type().refresh());
+	eq TypeDeclSubstituted.refreshType() {
+		TypeDecl encl = enclosingType().refreshType();
+		String name = sourceTypeDecl().name();
+		return (TypeDecl)encl.localTypeDecls(name).iterator().next();
+	}
+	
+	// bound type accesses may sometimes hold onto stale copies of parameterised types
+	refine BoundNames eq BoundTypeAccess.decls() = SimpleSet.emptySet.add(getTypeDecl().refresh());
+}

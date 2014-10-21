@@ -1,0 +1,29 @@
+aspect PromoteTempToField {
+	inh boolean VariableDeclaration.inStaticContext();
+
+	// note: not thread-safe
+	public void VariableDeclaration.promoteToField(int vis) {
+		split();
+		Modifiers mods = new Modifiers(vis);
+		if(inStaticContext())
+			mods.addModifier("static");
+		FieldDeclaration fd = new FieldDeclaration(mods, type().createLockedAccess(), name(), new Opt<Expr>());
+		hostType().insertField(fd, hostBodyDecl());
+		for(VarAccess va : uses()) {
+			va.lock(fd);
+			va.lockReachingDefs();
+		}
+		programRoot().flushCaches();
+		removeUnused();
+	}
+	
+	public void VariableDeclaration.doPromoteToField(int vis) {
+		BodyDecl bd = this.hostBodyDecl();
+		promoteToField(vis);
+		bd.programRoot().eliminate(LOCKED_NAMES, LOCKED_DATAFLOW);
+	}
+	
+	public void VariableDeclaration.doPromoteToField() {
+		doPromoteToField(VIS_PRIVATE);
+	}
+}

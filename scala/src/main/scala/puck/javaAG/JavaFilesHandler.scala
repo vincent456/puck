@@ -53,30 +53,7 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler[JavaNodeKi
     new JavaSolver(graph, logger, dm)
 
   def printCode() {
-    val l : AST.List[AST.CompilationUnit] = graph.asInstanceOf[JavaAccessGraph].program.getCompilationUnits
-
-    import scala.collection.JavaConversions.asScalaIterator
-    asScalaIterator(l.iterator()).foreach{ cu =>
-
-      if(cu.fromSource()) {
-        val relativePath = cu.getPackageDecl.replace('.', File.separatorChar)
-
-        /* println("my relativePath is " + relativePath)
-
-         println("path name is " + cu.pathName())
-         println("relative name is " + cu.relativeName())
-         println("id is " + cu.getID)*/
-
-        val f = new File(outDirectory.get + File.separator +
-          relativePath + File.separator + cu.getID + ".java")
-
-        f.getParentFile.mkdirs()
-        val writer = new BufferedWriter(new FileWriter(f))
-        writer.write(cu.toString())
-        writer.close()
-      }
-    }
-
+    graph.asInstanceOf[JavaAccessGraph].program.printCodeInDirectory(outDirectory.get)
   }
 
   override def searchingStrategies: List[ConstraintSolvingSearchEngineBuilder[JavaNodeKind]] =

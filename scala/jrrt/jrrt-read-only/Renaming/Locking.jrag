@@ -1,0 +1,160 @@
+import java.util.Collection;
+import java.util.Map;
+
+aspect Locking {
+	public ASTNode ASTNode.lockNames(String... endangered) {
+		return lockNames(Arrays.asList(endangered));
+	}
+	public ASTNode ASTNode.lockNames(Collection<String> endangered) {
+		for(int i=0;i<getNumChild();++i)
+			getChild(i).lockNames(endangered);
+		return this;
+	}
+	public ASTNode ClassInstanceExpr.lockNames(Collection<String> endangered) {
+		if(isLocked()) {
+			// skip over type access
+			for(int i=1;i<getNumChild();++i)
+				getChild(i).lockNames(endangered);
+			return this;
+		} else {
+			return super.lockNames(endangered);
+		}
+	}
+	
+	public ASTNode ASTNode.lockMethodNames(String... endangered) {
+		return lockMethodNames(Arrays.asList(endangered));
+	}
+	public ASTNode ASTNode.lockMethodNames(Collection<String> endangered) {
+		for(int i=0;i<getNumChild();++i)
+			getChild(i).lockMethodNames(endangered);
+		return this;
+	}
+	
+	public void ASTNode.lockConstructorCalls(Collection<TypeDecl> endangered) {
+		for(int i=0;i<getNumChild();++i)
+			getChild(i).lockConstructorCalls(endangered);
+	}
+	
+	public ASTNode ASTNode.lockAllNames() {
+		for(int i=0;i<getNumChild();++i)
+			getChild(i).lockAllNames();
+		return this;
+	}
+	
+	interface LockableName {
+		public ASTNode lock();
+		public Expr unlock();
+		public boolean isLocked();
+	}
+	PackageAccess implements LockableName;
+	TypeAccess implements LockableName;
+	VarAccess implements LockableName;
+	MethodAccess implements LockableName;
+	ClassInstanceExpr implements LockableName;
+	ConstructorAccess implements LockableName;
+	
+	public ASTNode LockableName.lockAllNames() {
+		ASTNode res = lock();
+		if(res == this)
+			return super.lockAllNames();
+		else
+			return res.lockAllNames();
+	}
+	
+	public ASTNode ClassInstanceExpr.lockAllNames() {
+		// if this instance expression creates an anonymous class, we don't need
+		// to lock the constructor invocation: the constructor is auto-generated anyway
+		if(hasTypeDecl()) {
+			getAccess().lockAllNames();
+		} else {
+			lock();
+		}
+		// skip over type access
+		for(int i=1;i<getNumChild();++i)
+			getChild(i).lockAllNames();
+		return this;
+	}
+	
+	public void AbstractDot.eliminateLockedNames() {
+		if(getRight() instanceof AbstractDot)
+			rotateLeft();
+		super.eliminateLockedNames();	
+	}
+	
+	// check coarse-grained naming constraints
+	public void ASTNode.checkNamingConstraints() {
+		for(int i=0;i<getNumChild();++i)
+			getChild(i).checkNamingConstraints();
+	}
+	public void TypeDecl.checkNamingConstraints() {
+		if(fromSource() && !this.isEnumDecl() && this.sourceTypeDecl()==this) {
+			// check whether there are conflicting body declarations
+			Collection<String> constructorSigs = new HashSet<String>(),
+			                   methodSigs = new HashSet<String>(),
+			                   fieldNames = new HashSet<String>(),
+			                   typeNames = new HashSet<String>();
+			for(BodyDecl bd : getBodyDecls()) {
+				if(bd instanceof ConstructorDecl) {
+					ConstructorDecl cd = (ConstructorDecl)bd;
+					if(constructorSigs.contains(cd.signature()))
+						throw new RefactoringException("two or more constructors with same signature");
+					constructorSigs.add(cd.signature());
+				} else if(bd instanceof MethodDecl) {
+					MethodDecl md = (MethodDecl)bd;
+					if(methodSigs.contains(md.signature()))
+						throw new RefactoringException("two or more methods with same signature");
+					methodSigs.add(md.signature());
+				} else if(bd instanceof FieldDeclaration) {
+					FieldDeclaration fd = (FieldDeclaration)bd;
+					if(fieldNames.contains(fd.name()))
+							throw new RefactoringException("two or more fields with same name");
+					fieldNames.add(fd.name());
+				} if(bd instanceof MemberTypeDecl) {
+					TypeDecl td = ((MemberTypeDecl)bd).typeDecl();
+					if(typeNames.contains(td.name()))
+						throw new RefactoringException("two or more member types with the same name");
+					typeNames.add(td.name());
+				}
+			}
+		}
+		super.checkNamingConstraints();
+	}
+	
+	
+	
+	// locked copy of a subtree
+	public ASTNode ASTNode.lockedCopy() {
+		ASTNode res = (ASTNode)copy();
+		for(int i=0;i<getNumChildNoTransform();++i) {
+			ASTNode child = getChildNoTransform(i);
+			if(child != null)
+				child = child.lockedCopy();
+			res.setChild(child, i);
+		}
+		return res;
+	}
+	
+	public PackageAccess PackageAccess.lockedCopy() {
+		PackageAccess res = (PackageAccess)super.lockedCopy();
+		res.lock(decl());
+		return res;
+	}
+	
+	public TypeAccess TypeAccess.lockedCopy() {
+		TypeAccess res = (TypeAccess)super.lockedCopy();
+		res.lock(decl());
+		return res;
+	}
+	
+	public VarAccess VarAccess.lockedCopy() {
+		VarAccess res = (VarAccess)super.lockedCopy();
+		res.lock(decl());
+		return res;
+	}
+	
+	public MethodAccess MethodAccess.lockedCopy() {
+		MethodAccess res = (MethodAccess)super.lockedCopy();
+		res.lock(decl());
+		return res;
+	}
+}

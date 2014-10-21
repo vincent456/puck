@@ -1,0 +1,13 @@
+aspect InlineTemp {
+	public void VariableDeclaration.inline() {
+		AssignSimpleExpr assgn = split();
+		if(assgn != null)
+			assgn.doInline();
+		removeUnused();
+	}
+	
+    // stand-alone refactoring
+    public void VariableDeclaration.doInline() {
+    	inline();
+    }
+}

@@ -1,0 +1,61 @@
+aspect InsertUnusedType {
+	// insert an unused member type into a given type
+	public MemberTypeDecl TypeDecl.insertUnusedType(TypeDecl td) {
+		return insertUnusedType(td, getNumBodyDecl());
+	}
+	public MemberTypeDecl TypeDecl.insertUnusedType(TypeDecl td, int idx) {
+		throw new RefactoringException("cannot insert type into this kind of type declaration");
+	}
+	
+	public MemberTypeDecl ClassDecl.insertUnusedType(TypeDecl td, int idx) { 
+		if(this instanceof ArrayDecl)
+			throw new RefactoringException("cannot insert type into array declaration");
+		return insertUnusedType(this, td.asMemberTypeDecl(), idx);
+	}
+	public MemberTypeDecl InterfaceDecl.insertUnusedType(TypeDecl td, int idx) { return insertUnusedType(this, td.asMemberTypeDecl(), idx); }
+	public MemberTypeDecl ParTypeDecl.insertUnusedType(TypeDecl td, int idx) { return sourceTypeDecl().insertUnusedType(td, idx); }
+	public MemberTypeDecl ClassDeclSubstituted.insertUnusedType(TypeDecl td, int idx) { return sourceTypeDecl().insertUnusedType(td, idx); }
+	
+	protected static MemberTypeDecl TypeDecl.insertUnusedType(TypeDecl host, MemberTypeDecl member, int idx) {
+		TypeDecl td = member.typeDecl();
+		if(!host.localTypeDecls(td.name()).isEmpty())
+			throw new RefactoringException("host type contains type of the same name");
+		host.getBodyDeclList().insertChild(member, idx);
+		if(td.isStatic() && host.isInnerClass())
+			throw new RefactoringException("cannot insert static type into inner class");
+		member.checkEnclosingTypeNames(host);
+		Program root = host.programRoot();
+		root.lockNames(td.name());
+		root.flushCaches();
+		return member;
+	}
+	
+	// insert a local class before this statement
+	public LocalClassDeclStmt Stmt.insertLocalClass(ClassDecl cd) {
+		LocalClassDeclStmt lcd = new LocalClassDeclStmt(cd);
+		insertStmtBefore(lcd);
+		cd.checkEnclosingTypeNames(hostType());
+		hostBodyDecl().flushCaches();
+		return lcd;
+	}
+	
+	// insert an unused toplevel type into a given compilation unit
+	public void CompilationUnit.insertUnusedType(TypeDecl td) {
+		TypeDecl res = programRoot().lookupType(getPackageDecl(), td.name());
+		if(res != null && res != td || programRoot().hasPackage(getPackageDecl()+td.name()))
+			throw new RefactoringException("different toplevel type of same name exists");
+		addTypeDecl(td);
+	}
+	
+	// insert an unused toplevel type in its own compilation unit
+	public CompilationUnit Program.insertUnusedType(String path, String pkg, List<ImportDecl> imports, TypeDecl td) {
+		TypeDecl res = lookupType(pkg, td.name());
+		if(res != null && res != td || hasPackage(pkg + td.name()))
+			throw new RefactoringException("different toplevel type of same name exists");
+		CompilationUnit new_cu = new CompilationUnit(pkg, imports, new List<TypeDecl>().add(td));
+		new_cu.setFromSource(true);
+		new_cu.setPathName(path + td.name() + ".java");
+		addCompilationUnit(new_cu);
+		return new_cu;
+	}
+}

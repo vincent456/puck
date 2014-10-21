@@ -1,0 +1,102 @@
+aspect EliminateOutParams {
+	public void AnonymousMethod.eliminateOutParams() throws RefactoringException {
+		makeReturnExplicit();
+		try {
+			if(getNumWriteParameter() == 0)
+				return;
+			if(getNumWriteParameter() > 1)
+				throw new RefactoringException("ambiguous return value: two or more output parameters");
+			if(!getReturnType().type().isVoid())
+				throw new RefactoringException("ambiguous return value: output parameter and return statement");
+			int idx = getFirstWriteParameterPos();
+			ParameterDeclaration pd = getParameter(idx);
+			if(!(getArg(idx) instanceof VarAccess))
+				throw new RefactoringException("cannot eliminate out parameter");
+			VarAccess v = (VarAccess)getArg(idx);
+			if(hasOutgoingDataflowEdgeThroughException(pd, v.getLocation()))
+				throw new RefactoringException("cannot eliminate out parameter");
+			for(Stmt s : exit().predStmt())
+				((ReturnStmt)s).setResult(new VarAccess(pd.name()));
+			setReturnType(pd.type().createLockedAccess());
+			hostType().flushCaches();
+			if(pd.isRef() || !entry().reachedUsesFor(pd).isEmpty()) {
+				pd.makeIn();
+			} else {
+				// make it a local variable
+				getBlock().insertStmt(0, new VariableDeclaration(v.type().createLockedAccess(), v.name()));
+				removeParameter(idx);
+				removeArg(idx);
+			}
+			AssignExpr assgn = new AssignSimpleExpr(new VarAccess(v.name()), null);
+			replaceWith(assgn);
+			assgn.setSource(this);
+			hostType().flushCaches();
+		} finally {
+			makeReturnImplicit();
+		}
+	}
+	
+	// insert an explicit return statement at the end of all control paths that complete normally
+	public void AnonymousMethod.makeReturnExplicit() {
+		if(getBlock().canCompleteNormally())
+			getBlock().addStmt(new ReturnStmt());
+	}
+	
+	public void AnonymousMethod.makeReturnImplicit() {
+		int n = getBlock().getNumStmt();
+		if(n == 0)
+			return;
+		Stmt s = getBlock().getStmt(n-1);
+		if(s instanceof ReturnStmt && !((ReturnStmt)s).hasResult())
+			getBlock().removeStmt(n-1);
+	}
+		
+	// determine if any use of this variable has an outgoing data flow edge that crosses one of the exception
+	// exits; in that case, we cannot eliminate this output parameter (see test58)
+	private boolean AnonymousMethod.hasOutgoingDataflowEdgeThroughException(Variable v, Location l) {
+		for(VarAccess acc : v.allUses()) {
+			for(Access exn : getExceptions())
+				if(acc.hasReachedUseAfter(l, exn))
+					return true;
+			if(acc.hasReachedUseAfter(l, uncheckedExceptionExit()))
+				return true;
+		}
+		return false;
+	}
+
+	// get the number of write parameters (either out or ref)
+	syn int AnonymousMethod.getNumWriteParameter() {
+		int res = 0;
+		for(int i = 0; i < getNumParameter(); ++i)
+			if(getParameter(i).isWrite())
+				++res;
+		return res;
+	}
+	
+	syn int AnonymousMethod.getFirstWriteParameterPos() {
+		for(int i=0; i < getNumParameter(); ++i)
+			if(getParameter(i).isWrite())
+				return i;
+		return -1;
+	}
+	
+	public void ParameterDeclaration.makeIn() {
+		List<Modifier> newmods = new List<Modifier>();
+		for(Modifier mod : getModifiers().getModifierList())
+			if(!mod.getID().equals("ref") && !mod.getID().equals("out"))
+				newmods.add(mod);
+		getModifiers().setModifierList(newmods);
+	}
+
+	public void ParameterDeclaration.makeRef() {
+		assert(!isRef());
+		for(Modifier mod : getModifiers().getModifierList()) {
+			if(mod.getID().equals("out")) {
+				mod.setID("ref");
+				return;
+			}
+		}
+		getModifiers().addModifier(new Modifier("ref"));
+	}
+
+}

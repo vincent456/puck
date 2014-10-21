@@ -1,0 +1,229 @@
+aspect Overriding {
+	syn lazy boolean MethodDecl.canOverrideOrHide(MethodDecl md) {
+		// this code is copy-n-pasted from TypeHierarchyCheck.jrag sans error messages
+		if(!isStatic() && !md.isPrivate() && 
+				md.accessibleFrom(hostType()) && hostType().instanceOf(md.hostType())) {
+			if(md.isStatic())
+				return false;
+			if(!mayOverrideReturn(md))
+				return false;
+			for(int i = 0; i < getNumException(); i++) {
+				Access e = getException(i);
+				boolean found = false;
+				for(int j = 0; !found && j < md.getNumException(); j++) {
+					if(e.type().instanceOf(md.getException(j).type()))
+						found = true;
+				}
+				if(!found && e.type().isUncheckedException())
+					return false;
+			}
+			if(md.isPublic() && !isPublic() ||
+		       md.isProtected() && !(isPublic() || isProtected()) ||
+		       !md.isPrivate() && !md.isProtected() && !md.isPublic() && isPrivate())
+				return false;
+			if(md.isFinal())
+				return false;
+		} else if(isStatic() && !md.isPrivate() && 
+				md.accessibleFrom(hostType()) && hostType().instanceOf(md.hostType())) {
+			if(!md.isStatic())
+				return false;
+			if(type() != md.type())
+				return false;
+			for(int i = 0; i < getNumException(); i++) {
+				Access e = getException(i);
+				boolean found = false;
+				for(int j = 0; !found && j < md.getNumException(); j++) {
+					if(e.type().instanceOf(md.getException(j).type()))
+						found = true;
+				}
+				if(!found)
+					return false;
+			}
+			if(md.isPublic() && !isPublic() ||
+			   md.isProtected() && !(isPublic() || isProtected()) ||
+			   !md.isPrivate() && !md.isProtected() && !md.isPublic() && isPrivate())
+				return false;
+			if(md.isFinal())
+				return false;
+		}
+		return true;
+	}
+
+	// collect all method declarations overriding a given method declaration
+	coll HashSet<MethodDecl> MethodDecl.coll_overridingMethods() [new HashSet<MethodDecl>()] with add root Program;
+	MethodDecl contributes this to MethodDecl.coll_overridingMethods() for each overriddenMethods();
+	
+	/* Problem with generics for overriding/overriddenMethods:
+	 * 
+	 * overriddenMethods returns MethodDeclSubstituted, so overridingMethods from generic superclass 
+	 * don't work as expected
+	 */
+	
+	public Collection<MethodDecl> MethodDecl.overridingMethods() {
+		if(this.isFinal() || this.isPrivate() || this.isStatic())
+			return Collections.EMPTY_SET;
+		return coll_overridingMethods();
+	}
+	
+	// get all method declarations overridden by a given method declaration
+	syn lazy HashSet<MethodDecl> MethodDecl.overriddenMethods() {
+		HashSet<MethodDecl> ret = new HashSet<MethodDecl>();
+		if(this.isPrivate() || this.isStatic())
+			return ret;
+		for(Iterator<MethodDecl> iter=possiblyOverriddenAncestors().iterator();
+			iter.hasNext();) {
+			MethodDecl md = iter.next();
+			if(overrides(md))
+				ret.add(md);
+		}
+		return ret;
+	}
+	
+	// get all method declaration hidden by a given method declaration
+	syn lazy HashSet<MethodDecl> MethodDecl.hiddenMethods() {
+		HashSet<MethodDecl> ret = new HashSet<MethodDecl>();
+		if(!this.isStatic())
+			return ret;
+		for(Iterator<MethodDecl> iter=possiblyOverriddenAncestors().iterator();
+			iter.hasNext();) {
+			MethodDecl md = iter.next();
+			if(hides(md))
+				ret.add(md);
+		}
+		return ret;		
+	}
+	
+	public HashSet<MethodDecl> MethodDecl.possiblyOverriddenAncestors() {
+		return hostType().possiblyOverriddenAncestors(signature());
+	}
+	
+	syn HashSet<MethodDecl> TypeDecl.possiblyOverriddenAncestors(String signature) {
+		HashSet<MethodDecl> s = new HashSet<MethodDecl>();
+		possiblyOverriddenAncestors(s, signature);
+		return s;
+	}
+	
+	protected void TypeDecl.possiblyOverriddenAncestors(HashSet<MethodDecl> s, String signature) {
+		for(TypeDecl supertp : supertypes())
+			possiblyOverriddenAncestorsFrom(supertp, s, signature);
+	}
+	
+	protected void TypeDecl.possiblyOverriddenAncestorsFrom(TypeDecl supertp, HashSet<MethodDecl> s, String signature) {
+		SimpleSet r = supertp.localMethodsSignature(signature);
+		if(r.isEmpty()) {
+			supertp.possiblyOverriddenAncestors(s, signature);
+		} else {
+			for(Iterator<MethodDecl> iter=r.iterator(); iter.hasNext();)
+				s.add(iter.next());
+		}
+	}
+	
+	protected void InterfaceDecl.possiblyOverriddenAncestors(HashSet<MethodDecl> s, String signature) {
+		super.possiblyOverriddenAncestors(s, signature);
+		if(getNumSuperInterfaceId() == 0)
+			possiblyOverriddenAncestorsFrom(typeObject(), s, signature);
+	}
+	
+	syn lazy Collection<MethodDecl> MethodDecl.rootDefs() {
+		if(isPrivate() || isStatic())
+			return Collections.singleton(this);
+		Collection<MethodDecl> res = new LinkedHashSet<MethodDecl>();
+		LinkedList<MethodDecl> worklist = new LinkedList<MethodDecl>();
+		worklist.addFirst(this);
+		while(!worklist.isEmpty()) {
+			MethodDecl md = worklist.removeFirst();
+			if(res.contains(md))
+				continue;
+			if(md.overriddenMethods().isEmpty())
+				res.add(md);
+			worklist.addAll(md.overriddenMethods());
+		}
+		return res;
+	}
+	
+	syn lazy Collection<TypeDecl> TypeDecl.supertypestransitive() {
+		java.util.Set<TypeDecl> supertypestransitive = new HashSet<TypeDecl>();
+		for (TypeDecl supertype : supertypes()) {
+			supertypestransitive.addAll(supertype.supertypestransitive());
+			supertypestransitive.add(supertype);
+		} 
+		if(supertypes().size() == 0 && isInterfaceDecl())
+			supertypestransitive.add(programRoot().findType("java.lang.Object"));
+		return supertypestransitive;
+	}
+	
+	syn lazy Collection<TypeDecl> TypeDecl.childtypestransitive() {
+		java.util.Set<TypeDecl> childtypestransitive = new HashSet<TypeDecl>();
+		for (TypeDecl childtype : childTypes()) {
+			childtypestransitive.addAll(childtype.childtypestransitive());
+			childtypestransitive.add(childtype);
+		} 
+		return childtypestransitive;
+	}
+		
+	syn lazy Collection<TypeDecl> TypeDecl.supertypes() = Collections.emptySet();
+	eq ClassDecl.supertypes() {
+		Collection<TypeDecl> res = new LinkedList<TypeDecl>();
+		if(superclass() != null)
+			res.add(superclass());
+		for(Iterator<InterfaceDecl> iter = interfacesIterator(); iter.hasNext();)
+			res.add(iter.next());
+		return res;
+	}
+	eq InterfaceDecl.supertypes() {
+		Collection<TypeDecl> res = new LinkedList<TypeDecl>();
+		for(Iterator<InterfaceDecl> iter = superinterfacesIterator(); iter.hasNext();)
+			res.add(iter.next());
+		return res;		
+	}
+	
+	syn lazy Collection<InterfaceDecl> TypeDecl.superinterfaces() = Collections.emptySet();
+	eq ClassDecl.superinterfaces() {
+		Collection<InterfaceDecl> res = new LinkedList<InterfaceDecl>();
+		for(Iterator<InterfaceDecl> iter = interfacesIterator(); iter.hasNext();)
+			res.add(iter.next());
+		return res;
+	}
+	eq InterfaceDecl.superinterfaces() {
+		Collection<InterfaceDecl> res = new LinkedList<InterfaceDecl>();
+		for(Iterator<InterfaceDecl> iter = superinterfacesIterator(); iter.hasNext();)
+			res.add(iter.next());
+		return res;			
+	}
+	
+	syn lazy Collection<FieldDeclaration> FieldDeclaration.hiddenFields() {
+		Collection<FieldDeclaration> res = new LinkedHashSet<FieldDeclaration>();
+		for(TypeDecl std : hostType().supertypes()) {
+			for(Iterator<FieldDeclaration> iter=std.memberFields(name()).iterator();iter.hasNext();) {
+				FieldDeclaration that = iter.next();
+				if(that.accessibleFrom(hostType()))
+					res.add(that);
+			}
+		}
+		return res;
+	}
+	
+	/* Indirect overriding: We say that a method m in a class A indirectly overrides a method m' in an interface
+	 * 						I if there is some class C inheriting both m from A and m' from I under the same
+	 *                      signature, yet A itself does not inherit m' under the signature of m.
+	 */
+	syn lazy Collection<MethodDecl> MethodDecl.indirectlyOverriddenMethods() {
+		Collection<TypeDecl> inheritors = inheritingTypes();
+		Collection<MethodDecl> res = new HashSet<MethodDecl>();
+		for(TypeDecl inheritor : inheritors) {
+			if(inheritor == hostType())
+				continue;
+			for(InterfaceDecl sup : inheritor.superinterfaces())
+				for(Iterator<MethodDecl> iter = sup.methodsSignature(signature()).iterator();iter.hasNext();)
+					res.add(iter.next());
+		}
+		return res;
+	}
+	
+	syn lazy Collection<MethodDecl> MethodDecl.possiblyHiddenMethods() {
+		HashSet<MethodDecl> ret = new HashSet<MethodDecl>();
+		if(!this.isStatic())
+			return ret;
+		return possiblyOverriddenAncestors();
+	}
+}

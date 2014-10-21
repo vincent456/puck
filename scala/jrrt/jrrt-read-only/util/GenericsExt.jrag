@@ -1,0 +1,74 @@
+aspect GenericsExt {
+	refine Generics Opt MethodDecl.substituteBody(Parameterization parTypeDecl) {
+		return (Opt)getBlockOpt().substituteAll(parTypeDecl);
+	}
+	
+	public ASTNode ASTNode.substituteAll(Parameterization parTypeDecl) {
+		ASTNode res = (ASTNode)copy();
+		for(int i=0;i<getNumChild();++i) {
+			ASTNode child = getChild(i);
+			if(child != null)
+				child = child.substituteAll(parTypeDecl);
+			res.setChild(child, i);
+		}
+		return res;
+	}
+	
+	public ASTNode TypeAccess.substituteAll(Parameterization parTypeDecl) {
+		if(decl().isTypeVariable())
+			return parTypeDecl.substitute((TypeVariable)decl()).createBoundAccess();
+		else
+			return super.substituteAll(parTypeDecl);
+	}
+	
+	public TypeAccess BoundTypeAccess.substituteAll(Parameterization parTypeDecl) {
+		return decl().createBoundAccess();
+	}
+	
+	interface TypeDeclSubstituted { }
+	ClassDeclSubstituted implements TypeDeclSubstituted;
+	InterfaceDeclSubstituted implements TypeDeclSubstituted;
+	GenericClassDeclSubstituted implements TypeDeclSubstituted;
+	GenericInterfaceDeclSubstituted implements TypeDeclSubstituted;
+	
+	
+	syn lazy ArrayList<VarAccess> FieldDeclaration.usesOfAllCopies() {
+		ArrayList<VarAccess> col = new ArrayList<VarAccess>();
+		programRoot().collectFieldUsesWithCopies(this, name(), col);
+		return col;
+	}
+	protected void ASTNode.collectFieldUsesWithCopies(FieldDeclaration decl, String name, ArrayList<VarAccess> col) {
+		for(int i = 0; i < getNumChild(); i++)
+			getChild(i).collectFieldUsesWithCopies(decl, name, col);
+	}
+	protected void VarAccess.collectFieldUsesWithCopies(FieldDeclaration decl, String name, ArrayList<VarAccess> col) {
+		super.collectFieldUsesWithCopies(decl, name, col);
+		if (name.equals(name()) && decl().sourceVariableDecl() == decl.sourceVariableDecl())
+			col.add(this);
+	}
+	
+	// for an inherited method, get the method that is actually inherited (may be substituted copy)
+	public SimpleSet TypeDecl.memberMethods(MethodDecl md) {
+		SimpleSet res = SimpleSet.emptySet;
+		for(Iterator iter=memberMethods(md.name()).iterator(); iter.hasNext();) {
+			MethodDecl md2 = (MethodDecl)iter.next();
+			if(md.sourceMethodDecl() == md2.sourceMethodDecl())
+				res = res.add(md2);
+		}
+		return res;
+	}
+	
+	public MethodDecl TypeDecl.memberMethod(MethodDecl md) {
+		SimpleSet res = memberMethods(md);
+		if(res.size() > 1)
+			throw new Error("inherited multiple methods with the same source declaration");
+		return res.isEmpty() ? null : (MethodDecl)res.iterator().next();
+	}
+	
+	public MethodDecl MethodDecl.copyIn(TypeDecl host) {
+		SimpleSet res = host.memberMethods(this);
+		if(res.size() == 1)
+			return (MethodDecl)res.iterator().next();
+		throw new RefactoringException("unable to find copy of " + fullName() + " in " + host.fullName());
+	}
+}

@@ -1,0 +1,36 @@
+aspect ChangeParameterType {
+	inh TypeDecl ParameterDeclaration.typeThrowable();
+	
+	public void ParameterDeclaration.changeType(TypeDecl newType) {
+		if(getParameterisedCallable() != null && 
+				(!getParameterisedCallable().fromSource() || getParameterisedCallable().isNative()))
+			throw new RefactoringException("cannot change this parameter declaration");
+		if(!type().subtype(newType))
+			throw new RefactoringException("unsupported type change");
+		if(type().subtype(typeThrowable())) 
+			throw new RefactoringException("cannot change throwable types");
+		Program root = programRoot();
+		
+		// construct typeUpdate map
+		Map<Expr, TypeDecl> typeUpdate = new HashMap<Expr, TypeDecl>();
+		for(TypeConstraintVariable tcv : propagateGeneralisation(root.typeConstraints(type()), getTypeAccess(), newType))
+			if(tcv instanceof Expr)
+				typeUpdate.put((Expr)tcv, newType);
+		
+		// construct movement map (trivial)
+		Map<MemberDecl, TypeDecl> memberMove = new HashMap<MemberDecl, TypeDecl>();
+		
+		// construct overriding map (trivial)
+		Map<MethodDecl, Collection<MethodDecl>> methodOverriding = new HashMap<MethodDecl, Collection<MethodDecl>>();
+		
+		root.lockOverridingAndNames(typeUpdate, memberMove, methodOverriding);
+
+		// perform actual refactoring
+		for(Expr e : typeUpdate.keySet())
+			if(e.isTypeAccess())
+				e.replaceWith(newType.createLockedAccess());
+		
+		root.adjustVirtualCalls(typeUpdate);
+		root.eliminate(LOCKED_NAMES, LOCKED_OVERRIDING);
+	}
+}

@@ -1,0 +1,104 @@
+aspect Visibility {
+	// unfortunately, JastAdd doesn't support enums very well
+	public static final int ASTNode.VIS_PRIVATE = 0;
+	public static final int ASTNode.VIS_PACKAGE = 1;
+	public static final int ASTNode.VIS_PROTECTED = 2;
+	public static final int ASTNode.VIS_PUBLIC = 3;
+	
+	public static String ASTNode.visibilityToString(int vis) {
+		switch(vis) {
+		case VIS_PRIVATE: return "private";
+		case VIS_PACKAGE: return "package";
+		case VIS_PROTECTED: return "protected";
+		case VIS_PUBLIC: return "public";
+		}
+		return null;
+	}
+	
+	interface Visible {
+		public boolean isPrivate();
+		public boolean isProtected();
+		public boolean isPublic();
+		public Modifiers getModifiers();
+		public boolean fromSource();
+		public Program programRoot();
+		public String name();
+	}
+	TypeDecl implements Visible;
+	MethodDecl implements Visible;
+	ConstructorDecl implements Visible;
+	FieldDeclaration implements Visible;
+	
+	public int Visible.getVisibility() {
+		if(isPrivate()) return VIS_PRIVATE;
+		if(isProtected()) return VIS_PROTECTED;
+		if(isPublic()) return VIS_PUBLIC;
+		return VIS_PACKAGE;
+	}
+	
+	public void Visible.setVisibility(int vis) {
+		getModifiers().setVisibility(vis);
+	}
+	
+	public Modifiers.Modifiers(int vis) {
+		this();
+		switch(vis) {
+		case VIS_PRIVATE: addModifier("private"); return;
+		case VIS_PROTECTED: addModifier("protected"); return;
+		case VIS_PUBLIC: addModifier("public"); return;
+		}
+	}
+	
+	syn boolean Modifier.isVisibility() = getID().equals("public") || getID().equals("protected") || getID().equals("private");
+	public void Modifiers.setVisibility(int vis) {
+		String v;
+		switch(vis) {
+		case VIS_PRIVATE: v = "private"; break;
+		case VIS_PACKAGE: v = null; break;
+		case VIS_PROTECTED: v = "protected"; break;
+		case VIS_PUBLIC: v = "public"; break;
+		default: throw new Error("unknown visibility "+vis);
+		}
+		for(int i=0;i<getNumModifier();++i) {
+			Modifier mod = getModifier(i);
+			if(mod.isVisibility()) {
+				if(v == null) {
+					getModifierList().removeChild(i);
+				} else {
+					mod.setID(v);
+				}
+				return;
+			}
+		}
+		if(v != null)
+			addModifier(v);
+	}	
+	
+	public void ClassDecl.setVisibility(int v) {
+		getModifiers().setVisibility(v);
+		setVisibilityOfImplicitConstructor(v);
+	}
+	
+	// collect all visible elements that are from source
+	public Collection<Visible> Program.sourceVisibles() {
+		Collection<Visible> visibles = new HashSet<Visible>();
+		collectSourceVisibles(visibles);
+		return visibles;
+	}
+	
+	public void ASTNode.collectSourceVisibles(Collection<Visible> visibles) {
+		for(int i=0;i<getNumChild();++i)
+			getChild(i).collectSourceVisibles(visibles);
+	}
+	
+	public void CompilationUnit.collectSourceVisibles(Collection<Visible> visibles) {
+		if(!fromSource())
+			return;
+		super.collectSourceVisibles(visibles);
+	}
+	
+	public void Visible.collectSourceVisibles(Collection<Visible> visibles) {
+		visibles.add(this);
+		super.collectSourceVisibles(visibles);
+	}
+}

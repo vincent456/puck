@@ -1,0 +1,122 @@
+
+aspect Uses {
+	// bind all uses of a variable to its declaration
+	public Collection<VarAccess> Variable.allUses() { return uses(); }
+	
+	public boolean Variable.isUsed() { return !allUses().isEmpty(); }
+	
+	syn lazy Collection<VarAccess> FieldDeclaration.uses() {
+		Collection<VarAccess> col = new LinkedList<VarAccess>();
+		programRoot().collectFieldUses(this, name(), col);
+		return col;
+	}
+	protected void ASTNode.collectFieldUses(FieldDeclaration decl, String name, Collection<VarAccess> col) {
+		for(int i = 0; i < getNumChild(); i++)
+			getChild(i).collectFieldUses(decl, name, col);
+	}
+	protected void VarAccess.collectFieldUses(FieldDeclaration decl, String name, Collection<VarAccess> col) {
+		super.collectFieldUses(decl, name, col);
+		if (name.equals(name()) && decl() == decl)
+			col.add(this);
+	}
+	
+	coll Collection<VarAccess> VariableDeclaration.uses() [new HashSet<VarAccess>()] 
+	                           with add root BodyDecl;
+	VarAccess contributes
+	this when decl() instanceof VariableDeclaration
+	to VariableDeclaration.uses() for (VariableDeclaration)decl();
+
+	coll Collection<VarAccess> ParameterDeclaration.uses() [new HashSet<VarAccess>()] 
+	                           with add root BodyDecl;
+	VarAccess contributes
+	this when decl() instanceof ParameterDeclaration
+	to ParameterDeclaration.uses() for (ParameterDeclaration)decl();
+	
+	// bind all uses of a type to its declaration
+	coll Collection<Access> TypeDecl.uses() [new HashSet<Access>()]
+	                        with add root Program;
+	TypeAccess contributes this to TypeDecl.uses() for decl();
+	ParTypeAccess contributes this to TypeDecl.uses() for type();
+	
+	// bind all method uses to any declaration they may resolve to at runtime
+	coll Collection<MethodAccess> MethodDecl.polyUses_() [new HashSet<MethodAccess>()]
+	                              with add root Program;
+	MethodAccess contributes this to MethodDecl.polyUses_() for each possibleTargets();
+	// optimization 
+	syn Collection<MethodAccess> MethodDecl.polyUses() {
+		if (((hostType() instanceof ClassDecl &&
+				!((ClassDecl)hostType()).hasSuperClassAccess() &&
+				!((ClassDecl)hostType()).interfacesIterator().hasNext())
+			  ||
+				(hostType() instanceof InterfaceDecl &&
+				!((InterfaceDecl)hostType()).superinterfacesIterator().hasNext()))
+			&&
+				programRoot().typeObject().methodsSignature(signature()).isEmpty())
+				return uses();
+		return polyUses_();
+	}
+	
+	// bind all method uses to the declaration they resolve to
+//	coll Collection<MethodAccess> MethodDecl.uses() [new HashSet<MethodAccess>()]
+//	                              with add root Program;
+//	MethodAccess contributes this to MethodDecl.uses() for decl();
+	syn lazy Collection<MethodAccess> MethodDecl.uses() {
+		Collection<MethodAccess> col = new LinkedList<MethodAccess>();
+		programRoot().collect__MethodDecl_Uses(this, name(), col);
+		return col;
+	}
+	protected void ASTNode.collect__MethodDecl_Uses(MethodDecl decl, String name, Collection<MethodAccess> col) {
+		for(int i = 0; i < getNumChild(); i++)
+			getChild(i).collect__MethodDecl_Uses(decl, name, col);
+	}
+	protected void MethodAccess.collect__MethodDecl_Uses(MethodDecl decl, String name, Collection<MethodAccess> col) {
+		super.collect__MethodDecl_Uses(decl, name, col);
+		if (name.equals(name()) && decl() == decl)
+			col.add(this);
+	}
+	
+	
+	
+	// bind all class instance expressions and constructor accesses to the constructor they resolve to
+	coll Collection<Access> ConstructorDecl.uses() [new HashSet<Access>()]
+	                        with add root Program;
+	ClassInstanceExpr contributes this to ConstructorDecl.uses() for decl(); 
+	ConstructorAccess contributes this to ConstructorDecl.uses() for decl();
+	
+	// bind all class instance expressions and constructor accesses to the type they instantiate
+	coll Collection<Access> TypeDecl.instantiations() [new HashSet<Access>()]
+	                        with add root Program;
+	ClassInstanceExpr contributes this to TypeDecl.instantiations() for getAccess().type();
+	ConstructorAccess contributes this to TypeDecl.instantiations() for decl().hostType();
+	
+	// bind all uses of a label to its declaration
+	coll Collection<Stmt> LabeledStmt.uses() [new HashSet<Stmt>()] 
+	                                         with add root BodyDecl;
+	BreakStmt contributes
+	this when targetStmt() instanceof LabeledStmt
+	to LabeledStmt.uses() for (LabeledStmt)targetStmt();
+	
+	ContinueStmt contributes
+	this when targetStmt() instanceof LabeledStmt
+	to LabeledStmt.uses() for (LabeledStmt)targetStmt();
+
+	// field declarations can be used by static imports
+	public boolean FieldDeclaration.isUsed() {
+		return !uses().isEmpty() || isStatic() && !staticImports().isEmpty();
+	}
+
+	coll Collection<StaticImportDecl> FieldDeclaration.staticImports() [new HashSet<StaticImportDecl>()]
+	                                                                    with add root Program;
+	StaticImportDecl contributes this
+	to FieldDeclaration.staticImports() for each importedFields();
+	
+	public abstract SimpleSet StaticImportDecl.importedFields();
+	syn lazy SimpleSet SingleStaticImportDecl.importedFields() = removeInstanceVariables(type().memberFields(name()));
+	syn lazy SimpleSet StaticImportOnDemandDecl.importedFields() {
+		SimpleSet res = SimpleSet.emptySet;
+		for(Object o : type().memberFieldsMap().values())
+			if(o instanceof FieldDeclaration && ((FieldDeclaration)o).isStatic())
+				res = res.add(o);
+		return res;
+	}
+}

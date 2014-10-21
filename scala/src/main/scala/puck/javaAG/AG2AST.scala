@@ -208,7 +208,7 @@ object AG2AST {
             val oldcu = i.decl.compilationUnit()
 
             val rootPathName = oldcu.getRootPath
-            oldcu.getTypeDeclList.removeChild(i.decl)
+            oldcu.removeTypeDecl(i.decl)
 
             val path =  rootPathName + newSource.fullName . replaceAllLiterally(".", java.io.File.separator) +
               java.io.File.separator

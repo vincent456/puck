@@ -1,0 +1,52 @@
+aspect IntroduceParameterObject {
+	public MemberTypeDecl MethodDecl.introduceParameterObject(Collection<String> parms_to_wrap, String className, String parmName) {
+		ArrayList<ParameterDeclaration> parms = new ArrayList<ParameterDeclaration>();
+		java.util.BitSet positions_to_wrap = new java.util.BitSet(this.getNumParameter());
+		List<ParameterDeclaration> old_parms = (List<ParameterDeclaration>)getParameters().fullCopyAndDetach();
+		for(int i=0;i<getNumParameter();++i) {
+			if(parms_to_wrap == null || parms_to_wrap.contains(getParameter(i).name())) {
+				parms.add(getParameter(i));
+				positions_to_wrap.set(i);
+			}
+		}
+		Pair<ClassDecl, Map<String, FieldDeclaration>> tmp = createStruct(className, parms);
+		ClassDecl struct = tmp.fst();
+		programRoot().lockMethodNames(name());
+		
+		// adjust this method and all its relatives
+		for(MethodDecl md : relatives())
+			md.uses();
+		for(MethodDecl md : relatives()) {
+			eliminateVarArgs();
+			for(MethodAccess ma : md.uses()) {
+				List<Expr> wrapped_args = new List<Expr>();
+				List<Expr> newargs = new List<Expr>().add(new ClassInstanceExpr(struct.createLockedAccess(), wrapped_args));
+				for(int i=0;i<md.getNumParameter();++i)
+					if(positions_to_wrap.get(i))
+						wrapped_args.add(ma.getArg(i));
+					else
+						newargs.add(ma.getArg(i));
+				ma.setArgList(newargs);
+			}
+			ParameterDeclaration parm = new ParameterDeclaration(struct.createLockedAccess(), parmName);
+			List<ParameterDeclaration> newparms = new List<ParameterDeclaration>().add(parm);
+			for(int i=0;i<md.getNumParameter();++i) {
+				ParameterDeclaration pd = md.getParameter(i);
+				if(positions_to_wrap.get(i) && md.hasBlock())
+					md.getBlock().insertStmt(i, pd.asVariableDeclaration(parm.createLockedAccess().qualifiesAccess(new VarAccess(old_parms.getChild(i).name()))));
+				if(!positions_to_wrap.get(i))
+					newparms.add(pd);
+			}
+			md.setParameterList(newparms);
+		}
+		
+		return hostType().insertUnusedType(struct, getChildIndex());
+	}
+	
+	public void MethodDecl.doIntroduceParameterObject(Collection<String> parms, String className, String parmName, boolean toplevel) {
+		MemberTypeDecl mcd = introduceParameterObject(parms, className, parmName);
+		if(toplevel)
+			mcd.moveToToplevel(true, null, true);
+		programRoot().eliminate(LOCKED_NAMES);
+	}
+}

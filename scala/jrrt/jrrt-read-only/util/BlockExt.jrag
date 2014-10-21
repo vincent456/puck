@@ -1,0 +1,42 @@
+aspect BlockExt {
+	public void Block.removeStmt(Stmt s) {
+    	getStmtList().removeChild(getStmtList().getIndexOfChild(s));
+	}
+	
+	public void Block.removeStmt(int i) {
+		getStmtList().removeChild(i);
+	}
+	
+	public int Block.getIndexOfStmt(Stmt s) {
+		return getStmtList().getIndexOfChild(s);
+	}
+	
+	public void Block.insertStmt(int i, Stmt s) {
+		getStmtList().insertChild(s, i);
+	}
+	
+	public Block Stmt.enclosingBlock() {
+		ASTNode n = this;
+		while(n!=null && !(n instanceof Block))
+			n = n.getParent();
+		return (Block)n;
+	}
+	
+	public Block Expr.enclosingBlock() {
+		return enclosingStmt().enclosingBlock();
+	}
+	
+	public Block.Block(Stmt... stmts) {
+		List<Stmt> l = new List<Stmt>();
+		for(Stmt stmt : stmts)
+			l.add(stmt);
+		setStmtList(l);
+	}
+	
+	// whether this block is the body of a body declaration
+	syn boolean Block.isBodyDeclBody() =
+		   getParent() instanceof ConstructorDecl
+		|| getParent() instanceof InstanceInitializer
+		|| getParent() instanceof StaticInitializer
+		|| getParent() instanceof Opt && getParent().getParent() instanceof MethodDecl;
+}

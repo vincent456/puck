@@ -17,9 +17,9 @@ aspect TransformationApplying {
 
     public void CompilationUnit.removeTypeDecl(TypeDecl td){
         String name = td.name();
-        int idx =  getIndexOfChild(td);
+        int idx =  getTypeDeclList().getIndexOfChild(td);
         if(idx != -1) {
-            removeChild(idx);
+            getTypeDeclList().removeChild(idx);
 
             if (pathName().endsWith(name + ".java")) {
                 for (int i = 0; i < getNumTypeDecl(); i++) {
@@ -32,6 +32,23 @@ aspect TransformationApplying {
             }
         }
     }
+
+  public void Program.printCodeInDirectory(File dir){
+
+    for(CompilationUnit cu : getCompilationUnits){
+      if(cu.fromSource()) {
+        String relativePath = cu.getPackageDecl.replace('.', File.separatorChar);
+
+        File f = new File(dir + File.separator +
+          relativePath + File.separator + cu.getID + ".java");
+
+        f.getParentFile.mkdirs();
+        BufferedWriter writer = new BufferedWriter(new FileWriter(f));
+        writer.write(cu.toString());
+        writer.close();
+      }
+    }
+  }
 
 	//scala compiler does not like ASTNode type parameter bound
 	public CompilationUnit Program.insertUnusedType(String path, String pkg, TypeDecl td) {

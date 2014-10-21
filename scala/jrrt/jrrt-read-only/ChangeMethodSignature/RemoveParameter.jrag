@@ -1,0 +1,28 @@
+aspect RemoveParameter {
+	public void MethodDecl.removeUnusedParameter(int i) {
+		// lock all calls
+		programRoot().lockMethodNames(name());
+		programRoot().lockOverridingDependencies(name());
+		// consider every relative in turn
+		for(MethodDecl rel : relatives()) {
+			if(!rel.getParameter(i).allUses().isEmpty())
+				throw new RefactoringException("parameter is used");
+			Collection<MethodAccess> uses = rel.uses();
+			for(MethodAccess call : uses)
+				if(!call.getArg(i).isPure())
+					throw new RefactoringException("invocation has impure argument");
+			// remove arguments and parameter
+			rel.removeParameter(i);
+			rel.flushCaches();
+			if(!rel.hostType().canIntroduceMethod(rel))
+				throw new RefactoringException("signature conflict");
+			for(MethodAccess call : uses)
+				call.getArgList().removeChild(i);
+		}
+	}
+	
+	public void MethodDecl.doRemoveUnusedParameter(int i) {
+		removeUnusedParameter(i);
+		programRoot().eliminate(LOCKED_NAMES, LOCKED_OVERRIDING);
+	}
+}

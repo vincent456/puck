@@ -1,0 +1,100 @@
+aspect LockedOverriding {
+	public void ASTNode.lockOverridingDependencies(String... names) {
+		lockOverridingDependencies(Arrays.asList(names));
+	}
+	public void ASTNode.lockOverridingDependencies(Collection<String> names) {
+		for(int i=0;i<getNumChild();++i) {
+			ASTNode child = getChild(i);
+			if(child != null)
+				child.lockOverridingDependencies(names);
+		}
+	}
+	
+	private HashSet<SavedMethodDecl> MethodDecl.lockedOverridingDependencies = null;
+	public void MethodDecl.lockOverridingDependencies(Collection<String> names) {
+		if(names.contains(name()))
+			lockOverriding();
+		super.lockOverridingDependencies(names);
+	}
+	
+	public void MethodDecl.lockOverriding() {
+		if(lockedOverridingDependencies != null)
+			return;
+		HashSet<SavedMethodDecl> deps = new HashSet<SavedMethodDecl>();
+		for(MethodDecl md : overriddenMethods())
+			deps.add(md.save());
+		setOverridingDependencies(deps);
+	}
+	
+	public void MethodDecl.lockOverriding(Collection<MethodDecl> ovr) {
+		HashSet<SavedMethodDecl> deps = new HashSet<SavedMethodDecl>();
+		for(MethodDecl md : ovr)
+			deps.add(md.save());
+		setOverridingDependencies(deps);
+	}
+	
+	refine Overriding eq MethodDecl.overriddenMethods() {
+		if(lockedOverridingDependencies == null) {
+			return refined();
+		} else {
+			HashSet<MethodDecl> res = new HashSet<MethodDecl>();
+			for(SavedMethodDecl md : lockedOverridingDependencies)
+				res.add(md.getDecl());
+			return res;
+		}
+	}
+	
+	refine LookupMethod eq MethodDecl.overrides(MethodDecl m) {
+		if(lockedOverridingDependencies == null) {
+			return refined(m);
+		} else {
+			return overriddenMethods().contains(m);
+		}
+	}
+	
+	private void MethodDecl.setOverridingDependencies(HashSet<SavedMethodDecl> deps) {
+		if(deps != null) {
+			if(this.isStatic() && !deps.isEmpty())
+				throw new RefactoringException("static methods cannot override other methods");
+			for(SavedMethodDecl smd : deps)
+				if(smd.isFinal() || smd.isStatic())
+					throw new RefactoringException("cannot override static or final method");
+		}
+		this.lockedOverridingDependencies = deps;
+	}
+	
+	public void MethodDecl.clearOverridingDependencies() {
+		setOverridingDependencies(null);
+	}
+	
+	public static LanguageExtension ASTNode.LOCKED_OVERRIDING = new LanguageExtension("locked overriding") {
+		public void eliminateOn(ASTNode n) {
+			n.unlockOverriding();
+			n.flushCaches();
+		}
+	};
+	
+	public void ASTNode.unlockOverriding() {
+		for(int i=0;i<getNumChild();++i) {
+			ASTNode ch = getChild(i);
+			if(ch != null)
+				ch.unlockOverriding();
+		}
+	}
+	public void MethodDecl.unlockOverriding() {
+		if(lockedOverridingDependencies != null) {
+			HashSet<MethodDecl> old_overridden = overriddenMethods();
+			clearOverridingDependencies();
+			this.flushCaches();
+			if(!old_overridden.equals(overriddenMethods()))
+				throw new RefactoringException("overriding has changed");
+		}
+		super.unlockOverriding();
+	}
+	
+	refine PrettyPrint public void MethodDecl.toString(StringBuffer s) {
+		if(lockedOverridingDependencies != null)
+			s.append("@LockedOverriding\n");
+		refined(s);
+	}
+}

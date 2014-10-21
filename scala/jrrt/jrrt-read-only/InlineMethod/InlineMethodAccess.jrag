@@ -1,0 +1,155 @@
+aspect InlineMethodAccess {
+	
+	public AnonymousMethod MethodAccess.inlineToAnonymousMethod() {
+		expatiateQualifiers();
+		MethodDecl target = getUniqueTarget();
+		if(target == null)
+			throw new RefactoringException("cannot inline ambiguous method call");
+		if(!target.hasBlock() || !target.fromSource())
+			throw new RefactoringException("cannot inline call to method without body");
+		MethodDecl target_cp = (MethodDecl) target.fullCopyAndDetach();
+		target.unfoldSynchronized();
+		target.expatiateQualifiers();
+		target.lockAllNames();
+		AnonymousMethod anon;
+		bundleQualifier();
+		if(isRightChildOfDot()) {
+			Expr qual = qualifier();
+			if(qual.isSuperAccess()) {
+				TypeDecl sup = qual.type();
+				// construct typeUpdate map
+				Map<Expr, TypeDecl> typeUpdate = new HashMap<Expr, TypeDecl>();
+				for(ThisAccess acc : target.collectThisAccesses()) {
+					if(acc.isQualified()) {
+						if(acc.type() == sup)
+							acc.unqualify();
+						else
+							throw new RefactoringException("cannot preserve enclosing instances");
+					}
+					typeUpdate.put(acc, hostType());
+				}
+				Program.adjustVirtualCalls(typeUpdate);
+				anon = target.asAnonymousMethod();
+			} else if(decl().hostType() != this.hostType()) {
+				qual.lockAllNames();
+				anon = target.asAnonymousMethod();
+				anon.setBlock(new Block(new List<Stmt>().add(new WithStmt((Access)qual, anon.getBlock()))));
+			} else {
+				anon = target.asAnonymousMethod();
+			}
+			parentDot().replaceWith(anon);
+		} else {
+			anon = target.asAnonymousMethod();
+			replaceWith(anon);
+		}
+		target.replaceWith(target_cp);
+		anon.setArgList(getArgList());
+		anon.removeSyntheticThis();
+		target_cp.hostType().flushCaches();
+		return anon;
+	}
+
+	// make implicit "this" qualifiers explicit
+	public void ASTNode.expatiateQualifiers() {
+		for(int i=0;i<getNumChild();++i)
+			getChild(i).expatiateQualifiers();
+	}
+	
+	public void VarAccess.expatiateQualifiers() {
+		if(decl().isInstanceVariable() && !isQualified()) {
+			SymbolicVarAccess acc = accessVariable(decl());
+			assert(acc != null && acc instanceof SymbolicFieldAccess);
+			Expr qual = ((SymbolicFieldAccess)acc).getBend().createLockedAccess().qualifiesAccess(new ThisAccess(true));
+			replace(this).with(qual.qualifiesAccess(this));
+			flushCaches();
+		}
+		super.expatiateQualifiers();
+	}
+	
+	public void MethodAccess.expatiateQualifiers() {
+		if(!isQualified()) {
+			MethodAccessInfo acc = accessMethod(decl());
+			assert(acc != null);
+			Expr qual = acc.getBend().createLockedAccess().qualifiesAccess(new ThisAccess(true));
+			replace(this).with(qual.qualifiesAccess(this));
+			flushCaches();
+		}
+		super.expatiateQualifiers();
+	}
+	
+	// remove or simplify "this" or "super" qualifiers marked "synthetic"
+	private boolean ThisAccess.synthetic = false;
+	private boolean SuperAccess.synthetic = false;
+	public ThisAccess.ThisAccess(boolean synthetic) {
+		this("this");
+		this.synthetic = synthetic;
+	}
+	public SuperAccess.SuperAccess(boolean synthetic) {
+		this("super");
+		this.synthetic = synthetic;
+	}
+	
+	public void ASTNode.removeSyntheticThis() {
+		for(int i=0;i<getNumChild();++i)
+			getChild(i).removeSyntheticThis();
+	}
+	
+	public void ThisAccess.removeSyntheticThis() {
+		if(synthetic && hasNextAccess()) {
+			Access acc = nextAccess();
+			boolean canRemove = false;
+			if(acc instanceof VarAccess) {
+				canRemove = true;
+				((VarAccess)acc).lock();
+			} else if(acc instanceof MethodAccess) {
+				canRemove = true;
+				((MethodAccess)acc).lock();
+			} else if(acc instanceof ClassInstanceExpr) {
+				canRemove = true;
+				Access tacc = ((ClassInstanceExpr)acc).getAccess();
+				((TypeAccess)tacc.lastAccess()).lock();
+			} else if(acc instanceof ConstructorAccess) {
+				canRemove = true;
+			}
+			this.bundleQualifier();
+			if(canRemove) {
+				if(isLeftChildOfDot()) {
+					replace(getParent()).with(parentDot().getRight());
+				} else if(isRightChildOfDot()) {
+					AbstractDot parent = (AbstractDot)getParent();
+					if(parent.isLeftChildOfDot())
+						replace(parent.getParent()).with(parent.parentDot().getRight());
+				}
+			}
+		}
+	}
+	
+	public void SuperAccess.removeSyntheticThis() {
+		if(synthetic) {
+			Access acc = nextAccess();
+			if(acc instanceof VarAccess) {
+				((VarAccess)acc).lock();
+				bundleQualifier();
+				if(isLeftChildOfDot()) {
+					replace(getParent()).with(parentDot().getRight());
+				} else if(isRightChildOfDot()) {
+					AbstractDot parent = (AbstractDot)getParent();
+					if(parent.isLeftChildOfDot())
+						replace(parent.getParent()).with(parent.parentDot().getRight());					
+				}
+			} else if(acc instanceof MethodAccess) {
+				// cannot remove it, but we can simplify A.super.m(...) to super.m(...) if A is the host class
+				if(isQualified() && qualifier().type() == hostType()) {
+					bundleQualifier();
+					replace(getParent()).with(new SuperAccess(false));
+				}
+			}
+		}
+	}
+	
+	public void Access.unqualify() {
+		bundleQualifier();
+		if(isRightChildOfDot())
+			replace(getParent()).with(this);
+	}
+}

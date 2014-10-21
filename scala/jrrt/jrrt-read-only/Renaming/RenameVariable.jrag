@@ -1,0 +1,26 @@
+/*
+ * The Rename Variable refactoring
+ */
+
+aspect RenameVariable {
+	public void Variable.rename(String new_name) {
+		if(name().equals(new_name))
+			return;
+		if(!isValidName(new_name))
+			throw new RefactoringException("not a valid name: "+new_name);
+		checkRenamingPreconds(new_name);
+		programRoot().lockNames(name(), new_name);
+		setID(new_name);
+		programRoot().eliminate(LOCKED_NAMES);
+	}
+	
+	public void FieldDeclaration.checkRenamingPreconds(String new_name) {
+		if(!hostType().localFields(new_name).isEmpty())
+			throw new RefactoringException("field named "+new_name+" exists");
+	}
+
+	public void LocalDeclaration.checkRenamingPreconds(String new_name) {
+		if(!canIntroduceLocal(new_name))
+			throw new RefactoringException("renamed variable's scope would intersect with other variable of same name");
+	}
+}

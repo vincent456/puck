@@ -1,0 +1,151 @@
+aspect PullUpMethod {
+	public void MethodDecl.pullUp(boolean onlyAbstract) {
+		if(onlyAbstract)
+			throw new RefactoringException("onlyAbstract not supported");
+		if(!hostType().isClassDecl() || !hostType().fromSource() || !((ClassDecl)hostType()).superclass().fromSource())
+			throw new RefactoringException("no fitting super class");
+		Program root = programRoot();
+		ClassDecl host = (ClassDecl)hostType();
+		ClassDecl sup = host.superclass();
+		MethodDecl md = this;
+		
+		if(host.isGenericType() || sup.isParameterizedType() || sup.isSubstitutedType())
+			throw new RefactoringException("cannot pull up in the presence of generics");
+		
+		Collection<TypeDecl> inheritors = sup.inheritingTypes(this);
+		if(!inheritors.isEmpty())
+			throw new RefactoringException("method could be invoked dynamically");
+		
+		// construct typeUpdate map
+		Map<Expr, TypeDecl> typeUpdate = new HashMap<Expr, TypeDecl>();
+		for(ThisAccess acc : collectThisAccesses()) {
+			if(acc.isQualified())
+				throw new RefactoringException("Pull Up cannot preserve enclosing instances");
+			typeUpdate.put(acc, sup);
+		}
+		
+		// construct movement map
+		Map<MemberDecl, TypeDecl> memberMove = new HashMap<MemberDecl, TypeDecl>();
+		memberMove.put(this, sup);
+		
+		// construct overriding map
+		Map<MethodDecl, Collection<MethodDecl>> methodOverriding = new HashMap<MethodDecl, Collection<MethodDecl>>();
+		for(MethodDecl ovr : sup.overridingMethods(this)) {
+			Collection<MethodDecl> mds = new HashSet<MethodDecl>();
+			mds.addAll(ovr.overriddenMethods());
+			mds.removeAll(this.overriddenMethods());
+			mds.add(this);
+			methodOverriding.put(ovr, mds);
+		}
+		
+		root.lockOverridingAndNames(typeUpdate, memberMove, methodOverriding);
+		
+		// perform actual refactoring
+		removeSuper();
+		host.removeBodyDecl(this);
+		sup.addBodyDecl(this);
+		root.flushCaches();
+		if(isAbstract())
+			for(TypeDecl td : inheritingTypes())
+				td.makeAbstract();
+		root.flushCaches();
+		
+		// check that everything went OK wrt types
+		Collection<TypeConstraint> typeConstraints =
+			programRoot().typeConstraints(new Predicate<TypeConstraint>() {
+				public boolean holds(TypeConstraint constr) {
+					return constr.relevantForSubtree(MethodDecl.this);
+				}
+			});
+		for(TypeConstraint typeConstraint : typeConstraints)
+			if(!typeConstraint.solved())
+				throw new RefactoringException("type constraint violated: " + typeConstraint.describe());
+		
+		root.adjustVirtualCalls(typeUpdate);
+	}
+	
+	public void MethodDecl.doPullUp(boolean onlyAbstract) {
+		pullUp(onlyAbstract);
+		programRoot().eliminate(LOCKED_NAMES, LOCKED_OVERRIDING);
+	}
+	
+	public void MethodDecl.doPullUp() {
+		doPullUp(false);
+	}
+
+	// remove "super" qualifiers on field accesses
+	public void ASTNode.removeSuper() {
+		for(int i=0;i<getNumChild();++i)
+			getChild(i).removeSuper();
+	}
+	
+	public void TypeDecl.removeSuper() { }
+	
+	public void AbstractDot.removeSuper() {
+		rotateLeft();
+		if(getLeft().isSuperAccess() && !getRight().isMethodAccess())
+			replaceWith(getRight());
+		else
+			super.removeSuper();
+	}
+	
+	// all "this" accesses in a subtree
+	public Collection<ThisAccess> ASTNode.collectThisAccesses() {
+		Collection<ThisAccess> res = new LinkedList<ThisAccess>();
+		collectThisAccesses(res);
+		return res;
+	}
+	
+	protected void ASTNode.collectThisAccesses(Collection<ThisAccess> res) {
+		for(int i=0;i<getNumChild();++i)
+			getChild(i).collectThisAccesses(res);
+	}
+	
+	protected void ThisAccess.collectThisAccesses(Collection<ThisAccess> res) {
+		res.add(this);
+		super.collectThisAccesses(res);
+	}
+	
+	// returns the set of subtypes of this that inherit a different method with the same signature as md
+	syn lazy Collection<TypeDecl> TypeDecl.inheritingTypes(MethodDecl md) {
+		Collection<TypeDecl> res = new HashSet<TypeDecl>();
+		inheritingTypes(md, res);
+		return res;
+	}
+	
+	protected void TypeDecl.inheritingTypes(MethodDecl md, Collection<TypeDecl> res) {
+		for(MethodDecl mmd : (Collection<MethodDecl>)memberMethods(md.name())) {
+			if(mmd != md && mmd.signature().equals(md.signature()))
+				res.add(this);
+		}
+		for(TypeDecl child : childTypes()) {
+			if(!child.supertypes().contains(this))
+				throw new RefactoringException("cannot deal with parameterised/substituted types");
+			if(child.localMethodsSignature(md.signature()).isEmpty())
+				child.inheritingTypes(md, res);
+		}
+	}
+	
+	// returns the set of new overriding methods md would pick up, were it moved to this
+	syn lazy Collection<MethodDecl> TypeDecl.overridingMethods(MethodDecl md) {
+		Collection<MethodDecl> res = new HashSet<MethodDecl>();
+		overridingMethods(md, res);
+		return res;
+	}
+	
+	protected void TypeDecl.overridingMethods(MethodDecl md, Collection<MethodDecl> res) {
+		SimpleSet s = localMethodsSignature(md.signature());
+		if(s instanceof MethodDecl) {
+			if(s != md)
+				res.add((MethodDecl)s);
+			return;
+		}
+		for(TypeDecl child : childTypes()) {
+			if(!child.supertypes().contains(this))
+				throw new RefactoringException("cannot deal with parameterised/substituted types");
+			if(child.minMemberAccess(this) > md.getVisibility())
+				continue;
+			child.overridingMethods(md, res);
+		}
+	}
+}

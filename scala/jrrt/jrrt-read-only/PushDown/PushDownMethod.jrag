@@ -1,0 +1,98 @@
+aspect PushDownMethod {
+	public void MethodDecl.pushDown(boolean leaveAbstract) {
+		if(!fromSource())
+			throw new RefactoringException("cannot push library method");
+		if(isPrivate() || isStatic())
+			pushDownMono(leaveAbstract);
+		else
+			pushDownVirtual(leaveAbstract);
+	}
+	
+	public void MethodDecl.pushDownMono(boolean leaveAbstract) {
+		Program root = programRoot();
+		MethodDecl md = this;
+		unfoldSynchronized();
+		root.lockMethodNames(md.name());
+		for(TypeDecl child : hostType().childTypes()) {
+			if(!child.localMethodsSignature(this.signature()).isEmpty() || this.isStatic() && child.isInnerClass())
+				throw new RefactoringException("cannot insert method into child type "+child.name());
+			MethodDecl new_md = (MethodDecl) md.fullCopyAndDetach();
+			md.lockAllNames();
+			md.replaceWith(new_md);
+			child.addBodyDecl(md);
+			md.foldSynchronized();
+			md = new_md;
+		}
+		root.flushCaches();
+		md.removeUnused(leaveAbstract);
+	}
+	
+	public void MethodDecl.pushDownVirtual(boolean leaveAbstract) {
+		ASTNode parent = getParent();
+		int idx = parent.getIndexOfChild(this);
+		MethodDecl md = this;
+		for(TypeDecl child : hostType().childTypes()) {
+			MethodAccess ma = child.triviallyOverrideInheritedMethod(md);
+			MethodDecl pushed_down = null;
+			if(ma != null) {
+				pushed_down = (MethodDecl)ma.hostBodyDecl();
+				ma.inline();
+			}
+			md = (MethodDecl)parent.getChild(idx);
+			child.eliminate(WITH_STMT, FRESH_VARIABLES);
+			if(pushed_down != null) {
+				pushed_down.removeSyntheticThis();
+				pushed_down.foldSynchronized();
+			}
+		}
+		final MethodDecl md_ = md;
+		md.removeUnused(leaveAbstract);
+	}
+	
+	public void MethodDecl.doPushDown(boolean leaveAbstract) {
+		Program root = programRoot();
+		pushDown(leaveAbstract);
+		root.eliminate(RETURN_VOID, LOCKED_NAMES, LOCKED_DATAFLOW);
+	}
+	
+	public MethodAccess TypeDecl.triviallyOverrideInheritedMethod(MethodDecl md) {
+		throw new RefactoringException("cannot override in this kind of type");
+	}
+	
+	public MethodAccess ClassDecl.triviallyOverrideInheritedMethod(MethodDecl md) {
+		md = memberMethod(md);
+		if(md == null)
+			return null;
+		MethodDecl new_md = md.lockedCopyWithEmptyBody();
+		if(md.hostType().isInterfaceDecl())
+			new_md.getModifiers().addModifiers("public", "abstract");
+		md.getModifiers().removeModifier("final");
+		MethodAccess lockedAccess = null;
+		if(md.isAbstract()) {
+			makeAbstract();
+		} else {
+			List<Expr> args = new List<Expr>();
+			for(ParameterDeclaration pd : new_md.getParameters())
+				args.add(new VarAccess(pd.name()));
+			lockedAccess = new MethodAccess(md, args, true);
+			ReturnStmt ret = new ReturnStmt(new AbstractDot(new SuperAccess("super"), lockedAccess));
+			new_md.setBlock(new Block(new List<Stmt>().add(ret)));
+		}
+		addBodyDecl(new_md);
+		programRoot().flushCaches();
+		return lockedAccess; 
+	}
+	
+	public MethodAccess InterfaceDecl.triviallyOverrideInheritedMethod(MethodDecl md) {
+		assert md.isAbstract();
+		md = memberMethod(md);
+		if(md == null)
+			return null;
+		MethodDecl new_md = md.lockedCopyWithEmptyBody();
+		new_md.getModifiers().removeModifiers("public", "abstract");
+		addBodyDecl(new_md);
+		programRoot().flushCaches();
+		return null;
+	}
+
+}

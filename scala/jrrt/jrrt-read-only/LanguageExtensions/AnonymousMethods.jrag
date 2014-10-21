@@ -1,0 +1,266 @@
+aspect AnonymousMethods {
+	public void AnonymousMethod.toString(StringBuffer s) {
+		s.append("({ ");
+		if(getNumTypeParameter() > 0) {
+			s.append("<");
+    		getTypeParameter(0).toString(s);
+    		for (int i = 1; i < getNumTypeParameter(); i++) {
+    			s.append(", ");
+    			getTypeParameter(i).toString(s);
+    		}
+	    	s.append("> ");		
+	    }
+		s.append("(");
+		if(getNumParameter() > 0) {
+			getParameter(0).toString(s);
+			for(int i = 1; i < getNumParameter(); i++) {
+				s.append(", ");
+				getParameter(i).toString(s);
+			}
+		}
+		s.append(") : ");
+		getReturnType().toString(s);
+		if(getNumException() > 0) {
+			s.append(" throws ");
+			getException(0).toString(s);
+			for(int i = 1; i < getNumException(); i++) {
+				s.append(", ");
+				getException(i).toString(s);
+			}
+		}
+		s.append(" => ");
+		getBlock().toString(s);
+		s.append("}) (");
+		if(getNumArg() > 0) {
+			getArg(0).toString(s);
+			for(int i = 1; i < getNumArg(); i++) {
+				s.append(", ");
+				getArg(i).toString(s);
+			}
+		}
+		s.append(")");
+	}
+	
+	public boolean Access.isDeclaredClosureException() {
+		if(!(getParent().getParent() instanceof AnonymousMethod))
+			return false;
+		return ((AnonymousMethod)getParent().getParent()).getExceptions() == getParent();
+	}
+	
+	// equations for some attributes defined elsewhere
+	eq AnonymousMethod.getParameter().canIntroduceLocal(String name) = !hasNestedLocal(name);
+	
+	// name types
+	eq AnonymousMethod.getReturnType().nameType() = NameType.TYPE_NAME;
+	eq AnonymousMethod.getParameter().nameType() = NameType.TYPE_NAME;
+	eq AnonymousMethod.getException().nameType() = NameType.TYPE_NAME;
+    eq AnonymousMethod.getArg().nameType() = NameType.EXPRESSION_NAME;
+    eq AnonymousMethod.getTypeParameter().nameType() = NameType.TYPE_NAME;	
+
+	// we're not interested in reachability checking for anonymous methods
+	eq AnonymousMethod.getBlock().reachable() = true;
+
+	eq AnonymousMethod.type() = getReturnType().type();
+
+	// control flow for AnonymousMethod invocations
+	eq AnonymousMethod.precedence() = 0;
+	
+	inh SmallSet<CFGNode> AnonymousMethod.throwTarget(TypeDecl exn);
+	
+	// artificial node to represent throws of uncaught exceptions
+	private final ExitStmt AnonymousMethod.uncheckedExceptionExit = new ExitStmt();
+	syn nta Stmt AnonymousMethod.uncheckedExceptionExit() = uncheckedExceptionExit;
+	
+	eq AnonymousMethod.first() = getNumArg() == 0 ? getBlock() : getArg(0).first();
+	
+	syn CFGNode AnonymousMethod.entry() = getBlock();
+	syn CFGNode AnonymousMethod.exit() = this;
+	
+	eq AnonymousMethod.getArg(int i).following() {
+		if(i < getNumArg()-1)
+			return SmallSet.<CFGNode>singleton(getArg(i+1).first());
+		if(getNumParameter() > 0)
+			return SmallSet.<CFGNode>singleton(getParameter(0).first());
+		return SmallSet.<CFGNode>singleton(getBlock());
+	}
+	eq AnonymousMethod.getParameter(int i).following() {
+		if(i < getNumParameter()-1)
+			return SmallSet.<CFGNode>singleton(getParameter(i+1).first());
+		return SmallSet.<CFGNode>singleton(getBlock());
+	}
+	eq AnonymousMethod.getBlock().following() = SmallSet.<CFGNode>singleton(getReturnType());
+	eq AnonymousMethod.getReturnType().following() = SmallSet.<CFGNode>singleton(exit());
+	eq AnonymousMethod.getException(int i).following() = throwTarget(getException(i).type());
+	eq AnonymousMethod.uncheckedExceptionExit().following() = uncheckedExnTarget();
+
+	eq AnonymousMethod.getChild().breakTarget(BreakStmt stmt) = SmallSet.empty();
+	eq AnonymousMethod.getChild().continueTarget(ContinueStmt stmt) = SmallSet.empty();
+	eq AnonymousMethod.getChild().returnTarget() = SmallSet.<CFGNode>singleton(getReturnType());
+	eq AnonymousMethod.getChild().throwTarget(TypeDecl exn) {
+		// this selects (somewhat arbitrarily) the left-most matching exception type
+		for(Access acc : getExceptions())
+			if(exn.instanceOf(acc.type()))
+				return SmallSet.<CFGNode>singleton(acc);
+		if(exn.isCheckedException())	// JastAddJ's definition of checked/unchecked is confused...
+			return SmallSet.<CFGNode>singleton(uncheckedExceptionExit());
+		return SmallSet.empty();
+	}
+	eq AnonymousMethod.getChild().uncheckedExnTarget() = SmallSet.<CFGNode>singleton(uncheckedExceptionExit());
+
+	// all return statements inside the AnonymousMethod
+	syn lazy SmallSet<Stmt> AnonymousMethod.returns() = getReturnType().predStmt();
+	// all final, non-return statements inside the AnonymousMethod
+	syn lazy SmallSet<Stmt> AnonymousMethod.finals() {
+    	SmallSet<Stmt> res = SmallSet.empty();
+    	for(CFGNode n : pred()) {
+    		if(n == getReturnType())
+    			continue;
+    		if(n instanceof Stmt) {
+    			if(((Stmt)n).canCompleteNormally())
+    				res = res.union((Stmt)n);
+    		} else {
+    			for(Stmt stmt : (SmallSet<Stmt>)n.predStmt())
+    				if(stmt.canCompleteNormally())
+    					res = res.union(stmt);
+    		}
+    	}
+    	return res;
+	}
+
+	// lookup and access is done as for methods
+	eq AnonymousMethod.getBlock().lookupVariable(String name) {
+		SimpleSet set = parameterDeclaration(name);
+		if(!set.isEmpty()) return set;
+		return lookupVariable(name);
+	}
+	eq AnonymousMethod.getParameter().lookupVariable(String name) 
+	  = parameterDeclaration(name);
+	
+	syn SimpleSet AnonymousMethod.parameterDeclaration(String name) {
+		for(int i = 0; i < getNumParameter(); i++)
+			if(getParameter(i).name().equals(name))
+				return (ParameterDeclaration)getParameter(i);
+		return SimpleSet.emptySet;
+	}
+	
+	eq AnonymousMethod.getBlock().accessVariable(Variable decl) {
+		SymbolicVarAccess acc = accessParameter(decl);
+		if(!acc.isUnknownVarAccess()) return acc;
+		return accessVariable(decl).moveInto(this);
+	}
+	eq AnonymousMethod.getParameter().accessVariable(Variable decl) =
+		accessParameter(decl);
+	
+	syn lazy SymbolicVarAccess AnonymousMethod.accessParameter(Variable decl) {
+		for(ParameterDeclaration pd : getParameters())
+			if(pd == decl)
+				return pd;
+		return unknownVarAccess();
+	}
+	
+	syn SimpleSet AnonymousMethod.localLookupType(String name) {
+		for(TypeVariable tv : getTypeParameters())
+			if(tv.name().equals(name))
+				return SimpleSet.emptySet.add(tv);
+		return SimpleSet.emptySet;
+	}
+	
+	eq AnonymousMethod.getChild().lookupType(String name) 
+		= localLookupType(name).isEmpty() ? lookupType(name) : localLookupType(name);
+	
+	AnonymousMethod implements Scope;
+	eq AnonymousMethod.hasVariable(String name) = !parameterDeclaration(name).isEmpty();
+	
+	eq AnonymousMethod.isFlowThrough() = true;
+	eq ExitStmt.isFlowThrough() = getParent() instanceof AnonymousMethod;
+	
+	syn lazy boolean ParameterDeclaration.isIn() = !isOut() && !isRef();
+	syn lazy boolean ParameterDeclaration.isOut() = getModifiers().numModifier("out") != 0;
+	syn lazy boolean ParameterDeclaration.isRef() = getModifiers().numModifier("ref") != 0;
+	syn lazy boolean ParameterDeclaration.isWrite() = !isIn();
+	syn lazy boolean ParameterDeclaration.isRead() = !isOut();
+	
+	public void AnonymousMethod.removeArg(int i) {
+		getArgList().removeChild(i);
+	}
+	
+	public void AnonymousMethod.removeParameter(int i) {
+		getParameterList().removeChild(i);
+	}
+	
+	syn boolean AnonymousMethod.isVariableArity() = getNumParameter() == 0 ? false : getParameter(getNumParameter()-1).isVariableArity();
+	syn ParameterDeclaration AnonymousMethod.lastParameter() = getParameter(getNumParameter()-1);
+	syn Expr AnonymousMethod.lastArg() = getArg(getNumArg()-1);
+	
+	syn boolean AnonymousMethod.invokesVariableArityAsArray() {
+		if(!isVariableArity())
+			return false;
+		if(getNumParameter() != getNumArg())
+			return false;
+		return lastArg().type().methodInvocationConversionTo(lastParameter().type());
+	}
+	
+	// find argument for parameter
+	public Expr AnonymousMethod.lookupArg(String parmname) {
+		for(int i = 0; i < getNumParameter(); ++i)
+			if(getParameter(i).name().equals(parmname))
+				return getArg(i);
+		return null;
+	}
+	
+	syn AnonymousMethod MethodDecl.asAnonymousMethod() {
+		return new AnonymousMethod(getParameterList(),
+								   new List<TypeVariable>(),
+								   getTypeAccess(),
+								   getExceptions(),
+								   getBlock(),
+								   new List<Expr>());
+	}
+	
+	syn AnonymousMethod GenericMethodDecl.asAnonymousMethod() {
+		return new AnonymousMethod(getParameterList(),
+								   getTypeParameterList(),
+								   getTypeAccess(),
+								   getExceptions(),
+								   getBlock(),
+								   new List<Expr>());
+	}
+	
+	syn MethodDecl AnonymousMethod.asNamedMethod(int visibility, String name) {
+		Modifiers mods = new Modifiers(visibility);
+		if(inStaticContext() || inExplicitConstructorInvocation())
+			mods.addModifier("static");
+		if(getNumTypeParameter() == 0)
+			return new MethodDecl(mods, getReturnType(), name, getParameters(), getExceptions(), new Opt(getBlock()));
+		else
+			return new GenericMethodDecl(mods, getReturnType(), name, getParameters(), getExceptions(), new Opt(getBlock()), getTypeParameterList());
+	}
+	
+	public void AnonymousMethod.eliminateVarargs() {
+		if(!isVariableArity())
+			return;
+		VariableArityParameterDeclaration last = (VariableArityParameterDeclaration)lastParameter();
+		ParameterDeclaration new_last = last.asFixedArityParameter();
+		for(VarAccess va : last.uses())
+			if(va.isLocked())
+				va.lock(new_last);
+		setParameter(new_last, getNumParameter()-1);
+		if(!invokesVariableArityAsArray()) {
+			List<Expr> varargs = new List<Expr>();
+			for(int i=getNumArg()-1; i>getNumParameter()-1;--i) {
+				Expr arg = getArg(i);
+				removeArg(i);
+				varargs.insertChild(arg, 0);
+			}
+			varargs.insertChild(getArg(getNumParameter()-1), 0);
+			setArg(new ArrayCreationExpr(last.type().createLockedAccess(), new Opt(new ArrayInit(varargs))), getNumParameter()-1);
+		}
+	}
+
+	// anonymous method is expression closure if its body is just a return statement
+	syn boolean AnonymousMethod.isExprClosure() 
+	  = getBlock().getNumStmt() == 1 && getBlock().getStmt(0) instanceof ReturnStmt &&
+	      ((ReturnStmt)getBlock().getStmt(0)).hasResult();
+	
+	syn Expr AnonymousMethod.getExpr() = ((ReturnStmt)getBlock().getStmt(0)).getResult();
+}

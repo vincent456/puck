@@ -1,0 +1,36 @@
+aspect LocalClassToMemberClass {
+	public MemberTypeDecl LocalClassDeclStmt.promoteToMemberClass(boolean makePublic) {
+		Program root = programRoot();
+		// close over accesses to local variables
+		closeOverTypeVariables();
+		closeOverLocalVariables();
+		ClassDecl cd = getClassDecl();
+		if(!cd.enclosingType().isLocalClass() && !cd.enclosingType().isAnonymous()) {
+			int vis = makePublic ? VIS_PUBLIC : VIS_PRIVATE;
+			cd.setVisibility(vis);
+			// for Eclipse compatibility
+			for(ConstructorDecl ctor : (Collection<ConstructorDecl>)cd.constructors())
+				ctor.setVisibility(vis);
+		}
+		if(cd.inStaticContext())
+			cd.getModifiers().addModifier("static");
+		// lock names
+		root.lockNames(cd.name());
+		cd.lockAllNames();
+		// move
+		TypeDecl encl = cd.enclosingType();
+		enclosingBlock().removeStmt(this);
+		return encl.insertUnusedType(cd, 0);
+	}
+	
+	public MemberTypeDecl LocalClassDeclStmt.doPromoteToMemberClass(boolean makePublic) {
+		Program root = programRoot();
+		MemberTypeDecl mtd = promoteToMemberClass(makePublic);
+		root.eliminate(FRESH_VARIABLES, LOCKED_NAMES);
+		return mtd;
+	}
+	
+	public MemberTypeDecl LocalClassDeclStmt.doPromoteToMemberClass() {
+		return doPromoteToMemberClass(false);
+	}
+}

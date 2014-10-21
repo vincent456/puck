@@ -1,0 +1,71 @@
+aspect UndoRefines {
+	
+	// package names and package decls
+	refine java public void CompilationUnit.setPackageDecl(final java.lang.String value) {
+		if (Program.isRecordingASTChanges()) {
+			Program.addUndoAction(new ASTModificationReplaceEdit(this.isInTree(), this, PackageDeclstart, PackageDeclend, tokenjava_lang_String_PackageDecl, value) {
+				@Override
+				public void undo() {
+					refined(oldValue);
+				}
+				@Override
+				public String toString() {
+					return "CompilationUnit.setPackageDecl";
+				}
+				@Override
+				public void redo() {
+					if (Program.isRecordingASTChanges()) Program.addUndoAction(this);
+					refined(value);
+				}
+			});
+		}
+		refined(value);
+	}
+	refine PackageDecl private void Program.addPackageDecl(final PackageDecl pd) {
+		if (Program.isRecordingASTChanges()) {
+			final PackageDecl fpd = pd;
+			Program.addUndoAction(new ASTModification() {
+				@Override
+				public void undo() {
+					packageDecls.remove(fpd);
+				}
+				@Override
+				public String toString() {
+					return "Program.addPackageDecl";
+				}
+				@Override
+				public void redo() {
+					if (Program.isRecordingASTChanges()) Program.addUndoAction(this);
+					refined(pd);
+				}
+			});
+		}
+		refined(pd);
+	}
+
+	// compilation unit ID
+	refine CompilationUnitExt public void CompilationUnit.setID(final String value) {
+		String oldPathName = pathName();
+		String oldValue = getID();
+		refined(value);
+		if (Program.isRecordingASTChanges()) {
+			Program.addUndoAction(new ASTModificationCompilationUnitSetId(this.isInTree(), this, oldValue, value, oldPathName, pathName()) {
+				@Override
+				public void undo() {
+					refined(oldValue);
+				}
+				@Override
+				public String toString() {
+					return "CompilationUnit.setID";
+				}
+				@Override
+				public void redo() {
+					if (Program.isRecordingASTChanges()) Program.addUndoAction(this);
+					refined(value);
+				}
+			});
+		}
+	}
+	
+	
+}

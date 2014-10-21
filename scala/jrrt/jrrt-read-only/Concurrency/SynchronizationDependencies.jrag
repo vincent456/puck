@@ -1,0 +1,82 @@
+/*******************************************************************************
+ * Copyright (c) 2009 IBM Corporation.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *     IBM Corporation - initial API and implementation
+ *******************************************************************************/
+
+aspect SynchronizationDependencies {
+	syn boolean CFGNode.isAcquire() = false;
+	syn boolean CFGNode.isRelease() = false;
+	syn boolean CFGNode.isThreadManagementAction() = false;
+	syn boolean CFGNode.isSyncAction() = isAcquire() || isRelease() || isThreadManagementAction();
+	syn boolean CFGNode.isMemoryAction() = isSyncAction();
+	
+	eq SynchronizedStmt.isAcquire() = true;
+	eq SynchronizedStmt.isRelease() = true;
+	
+	eq VarAccess.isAcquire() = isSource() && decl().isVolatile();
+	eq VarAccess.isRelease() = isDest() && decl().isVolatile();
+	eq VarAccess.isMemoryAction() = decl().isField();
+	
+	eq ArrayAccess.isMemoryAction() = true;
+	
+	// conservatively assume the worst about method calls
+	eq Call.isAcquire() = true;
+	eq Call.isRelease() = true;
+	eq Call.isThreadManagementAction() = true;
+	
+	class AcquireDependency extends IrreflexiveBackwardEdge {
+		public static final AcquireDependency edge = new AcquireDependency();
+		protected boolean isStart(CFGNode node) { return node.isMemoryAction(); }
+		public boolean isTarget(CFGNode start, CFGNode end) { return end.isAcquire(); }
+		public boolean terminates(CFGNode start, CFGNode end) { return end.isAcquire(); }
+	}
+	
+	class ReleaseDependency extends IrreflexiveForwardEdge {
+		public static final ReleaseDependency edge = new ReleaseDependency();
+		protected boolean isStart(CFGNode node) { return node.isMemoryAction(); }
+		public boolean isTarget(CFGNode start, CFGNode end) { return end.isRelease(); }
+		public boolean terminates(CFGNode start, CFGNode end) { return end.isRelease(); }
+		public SmallSet<CFGNode> collect(CFGNode start) {
+			SmallSet<CFGNode> res = super.collect(start);
+			// additionally, any sync block we are nested inside is also a release-after
+			for(ASTNode n=((ASTNode)start).getParent();n!=null&&!(n instanceof TypeDecl);n=n.getParent())
+				if(n instanceof SynchronizedStmt)
+					res = res.union((SynchronizedStmt)n);
+			return res;
+		}
+	}
+	
+	class ThreadManagementDependency extends IrreflexiveForwardEdge {
+		public static final ThreadManagementDependency edge = new ThreadManagementDependency();
+		protected boolean isStart(CFGNode node) { return node.isMemoryAction(); }
+		public boolean isTarget(CFGNode start, CFGNode end) { return end.isThreadManagementAction(); }
+		public boolean terminates(CFGNode start, CFGNode end) { return end.isThreadManagementAction(); }
+	}
+	
+	public void ASTNode.lockSyncDependencies() {
+		lockDependencies(AcquireDependency.edge, ReleaseDependency.edge, ThreadManagementDependency.edge);
+	}
+	
+	public void ASTNode.unlockSyncDependencies() {
+		unlockDependencies(new PreservationStrategy(AcquireDependency.edge) {
+			public boolean reflect(CFGNode n) { return n.isSyncAction(); }
+		});
+		unlockDependencies(new PreservationStrategy(ReleaseDependency.edge) {
+			public boolean reflect(CFGNode n) { return n.isSyncAction(); }
+		});
+		unlockDependencies(new PreservationStrategy(ThreadManagementDependency.edge));
+	}
+	
+	public static LanguageExtension ASTNode.LOCKED_SYNC = new LanguageExtension("locked synchronisation") {
+		public void eliminateOn(ASTNode n) {
+			n.unlockSyncDependencies();
+			n.flushCaches();
+		}
+	};	
+}

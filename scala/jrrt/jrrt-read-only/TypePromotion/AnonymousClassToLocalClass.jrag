@@ -1,0 +1,37 @@
+aspect AnonymousClassToLocalClass {
+	public LocalClassDeclStmt AnonymousDecl.promoteToLocalClass(String name, boolean makeFinal) {
+		Stmt stmt;
+		ClassInstanceExpr cie = (ClassInstanceExpr)getParent().getParent();
+		// the first two are special cases to mimick Eclipse behaviour
+		if(cie.getParent() instanceof ExprStmt) {
+			stmt = (Stmt)cie.getParent();
+		} else if(cie.getParent().getParent() instanceof VariableDeclaration) {
+			stmt = (Stmt)cie.getParent().getParent();
+		} else {
+			stmt = cie.doExtract(unCapitalise(name));
+		}
+		// lock names
+		BodyDecl bd= stmt.enclosingBodyDecl();
+		bd.lockNames(name);
+		// move
+		ClassDecl cd = asNamedClass(name, getVisibility());
+		cie.setTypeDeclOpt(new Opt<TypeDecl>());
+		cie.setAccess(cd.createLockedAccess());
+		if(!makeFinal)
+			cd.getModifiers().removeModifier("final");
+		LocalClassDeclStmt lcd = stmt.insertLocalClass(cd);
+		bd.hostType().flushCaches();
+		return lcd;
+	}
+	
+	public LocalClassDeclStmt AnonymousDecl.doPromoteToLocalClass(String name, boolean makeFinal) {
+		Program root = programRoot();
+		LocalClassDeclStmt lcd = promoteToLocalClass(name, makeFinal);
+		root.eliminate(LOCKED_NAMES);
+		return lcd;
+	}
+	
+	public LocalClassDeclStmt AnonymousDecl.doPromoteToLocalClass(String name) {
+		return doPromoteToLocalClass(name, true);
+	}
+}

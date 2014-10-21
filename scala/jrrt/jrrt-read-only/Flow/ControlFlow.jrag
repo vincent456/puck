@@ -1,0 +1,93 @@
+aspect ControlFlow {
+	public void ASTNode.lockControlFlow() {
+		for(int i=0;i<getNumChild();++i)
+			getChild(i).lockControlFlow();
+	}
+	
+	public void ASTNode.unlockControlFlow() {
+		for(int i=0;i<getNumChild();++i)
+			getChild(i).unlockControlFlow();
+	}
+	
+	protected SmallSet<CFGNode> ASTNode.lockedSucc = null;
+	
+	public void CFGNode.lockControlFlow() {
+		if(lockedSucc == null)
+			lockedSucc = weakSucc();
+		super.lockControlFlow();
+	}
+	
+	public void CFGNode.unlockControlFlow() {
+		if(lockedSucc != null) {
+			if(!lockedSucc.equals(weakSucc()))
+				throw new RefactoringException("control flow successors not preserved");
+			lockedSucc = null;
+		}
+		super.unlockControlFlow();
+	}
+	
+	public static LanguageExtension ASTNode.LOCKED_CONTROLFLOW = new LanguageExtension("locked control flow") {
+		public void eliminateOn(ASTNode n) {
+			n.unlockControlFlow();
+			n.flushCaches();
+		}
+	};
+	
+	syn boolean CFGNode.isFlowThrough() = false;
+	eq Block.isFlowThrough() = true;
+	eq TypeAccess.isFlowThrough() = true;
+	eq ExprStmt.isFlowThrough() = true;
+	eq ReturnStmt.isFlowThrough() = true;
+	eq LabeledStmt.isFlowThrough() = true;
+	eq BreakStmt.isFlowThrough() = true;
+	eq ContinueStmt.isFlowThrough() = true;
+	
+	syn lazy SmallSet<CFGNode> CFGNode.weakSucc() {
+		SmallSet<CFGNode> res = SmallSet.<CFGNode>empty();
+		for(CFGNode s : succ())
+			if(s.isFlowThrough())
+				res = res.union(s.weakSucc());
+			else
+				res = res.union(s);
+		return res;
+	}
+	
+	// sometimes it is useful to just lock exceptional control flow edges
+	
+	public void ASTNode.lockThrowEdges() {
+		for(int i=0;i<getNumChild();++i)
+			getChild(i).lockThrowEdges();
+	}
+	
+	public void ASTNode.unlockThrowEdges() {
+		for(int i=0;i<getNumChild();++i)
+			getChild(i).unlockThrowEdges();
+	}
+	
+	protected SmallSet<CFGNode> ASTNode.lockedThrowEdges = null;
+	
+	public void CFGNode.lockThrowEdges() {
+		if(lockedThrowEdges == null) {
+			SmallSet<CFGNode> throwEdges = exceptionalSucc();
+			if(!throwEdges.isEmpty())
+				lockedThrowEdges = throwEdges;
+		}
+		super.lockThrowEdges();
+	}
+	
+	public void CFGNode.unlockThrowEdges() {
+		if(lockedThrowEdges != null) {
+			if(!exceptionalSucc().equals(lockedThrowEdges))
+				throw new RefactoringException("throw edges have changed");
+			lockedThrowEdges = null;
+		}
+		super.unlockThrowEdges();
+	}
+	
+	public static LanguageExtension ASTNode.LOCKED_THROW = new LanguageExtension("locked throw edges") {
+		public void eliminateOn(ASTNode n) {
+			n.unlockThrowEdges();
+			n.flushCaches();
+		}
+	};
+}

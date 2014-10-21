@@ -1,0 +1,22 @@
+aspect LanguageExtensions {
+	public abstract class LanguageExtension {
+		private String name;
+		
+		public LanguageExtension(String name) { 
+			this.name = name;
+		}
+		
+		public String toString() {
+			return name;
+		}
+		
+		public abstract void eliminateOn(ASTNode node);
+	}
+
+	public void ASTNode.eliminate(LanguageExtension... les) {
+		flushCaches();
+		for(LanguageExtension le : les) {
+			le.eliminateOn(this);
+		}
+	}
+}

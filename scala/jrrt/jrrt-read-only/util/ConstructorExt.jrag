@@ -1,0 +1,116 @@
+aspect ConstructorExt {
+	syn lazy ConstructorAccess ConstructorDecl.getConstructorAccess() = 
+		(ConstructorAccess)((ExprStmt)getConstructorInvocation()).getExpr();
+	
+	syn boolean ConstructorDecl.isChained() = getConstructorAccess() != null && !(getConstructorAccess() instanceof SuperConstructorAccess);
+	
+	// fill in some missing methods
+	syn ConstructorDecl GenericConstructorDecl.rawConstructor() = lookupParConstructorDecl(new ArrayList());
+	
+	syn lazy ConstructorDecl GenericConstructorDecl.lookupParConstructorDecl(ArrayList<TypeDecl> list) {
+        for(int i = 0; i < getNumTypeParameter(); i++) {
+	        ParConstructorDecl decl = (ParConstructorDecl)((ParTypeDecl)getTypeParameter(i));
+	        if(decl.isRawConstructor() ? list.isEmpty() : (!list.isEmpty() && decl.sameSignature(list)))
+	            return decl;
+	    }
+        throw new Error("not implemented yet");
+	}
+
+	syn lazy boolean ParConstructorDecl.sameSignature(ArrayList<TypeDecl> list) circular [true] {
+	    if(getNumTypeArgument() != list.size())
+	        return false;
+		for(int i = 0; i < list.size(); i++)
+		    if(getTypeArgument(i).type() != list.get(i))
+		        return false;
+		return true;
+    }
+	
+	syn boolean ConstructorDecl.isRawConstructor() = false;
+	eq RawConstructorDecl.isRawConstructor() = true;
+
+	inh ConstructorDecl TypeDecl.unknownConstructor();
+	syn lazy ConstructorDecl TypeDecl.constructorSignature(ArrayList<TypeDecl> parmTypes, boolean isVariableArity) {
+		outer:
+		for(ConstructorDecl ctor : (Collection<ConstructorDecl>)constructors()) {
+			if(ctor.isVariableArity() != isVariableArity || ctor.getNumParameter() != parmTypes.size())
+				continue;
+			for(int i=0;i<parmTypes.size();++i)
+				if(ctor.getParameter(i).type() != parmTypes.get(i))
+					continue outer;
+			return ctor;
+		}
+		return unknownConstructor();
+	}
+	
+	public boolean ConstructorDecl.equals(Object o) {
+		if(!(o instanceof ConstructorDecl))
+			return false;
+		ConstructorDecl that = (ConstructorDecl)o;
+		return this.hostType().equals(that.hostType()) && this.signature().equals(that.signature());
+	}
+		
+	// uses of a constructor, including its substituted and parameterised copies
+	public Collection<Access> ConstructorDecl.usesOfAllCopies() {
+		Collection<Access> res = new HashSet<Access>(uses());
+		for(ConstructorDecl cd : substitutedCopies())
+			res.addAll(cd.uses());
+		return res;
+	}
+	
+	public Collection<Access> GenericConstructorDecl.usesOfAllCopies() {
+		Collection<Access> res = super.usesOfAllCopies();
+		res.addAll(parUses());
+		return res;
+	}
+	
+	public Collection<ConstructorDeclSubstituted> ConstructorDecl.substitutedCopies() {
+		Collection<ConstructorDeclSubstituted> res = new LinkedList<ConstructorDeclSubstituted>();
+		if(!hostType().isGenericType())
+			return res;
+		GenericTypeDecl host = (GenericTypeDecl)hostType();
+		for(int i=0;i<host.getNumTypeParameter();++i) {
+			ParClassDecl pcd = (ParClassDecl)((ParTypeDecl)host.getTypeParameter(i));
+			for(Object o : pcd.constructors())
+				if(o instanceof ConstructorDeclSubstituted && ((ConstructorDeclSubstituted)o).sourceConstructorDecl() == this)
+					res.add((ConstructorDeclSubstituted)o);
+		}
+		return res;
+	}
+	
+	// all class instantiations and constructor calls that resolve to a parameterized instance of a generic method
+	coll Collection<Access> GenericConstructorDecl.parUses() [new HashSet<Access>()]
+	                                                          with add root Program;
+	ClassInstanceExpr contributes this when decl() instanceof ParConstructorDecl 
+									   to GenericConstructorDecl.parUses()
+									   for ((ParConstructorDecl)decl()).sourceConstructorDecl(); 
+	ConstructorAccess contributes this when decl() instanceof ParConstructorDecl
+									   to GenericConstructorDecl.parUses()
+									   for ((ParConstructorDecl)decl()).sourceConstructorDecl();
+
+	// create a static factory method that calls the constructor
+	public MethodDecl ConstructorDecl.createFactoryMethod() {
+		if(hostType().isEnumDecl())
+			throw new RefactoringException("cannot introduce factory method for enum constructor");
+		String name = "create" + hostType().name();
+		List<ParameterDeclaration> parms = new List<ParameterDeclaration>();
+		List<Expr> args = new List<Expr>();
+		for(ParameterDeclaration pd : getParameters()) {
+			parms.add((ParameterDeclaration)pd.lockedCopy());
+			args.add(new VarAccess(pd.name()));
+		}
+		List<Access> exns = new List<Access>();
+		for(Access acc : getExceptions())
+			exns.add(acc.type().createLockedAccess());
+		Block body = new Block(new List<Stmt>().add(new ReturnStmt(new ClassInstanceExpr(hostType().createLockedAccess(), args))));
+		MethodDecl factoryMethod = new MethodDecl(new Modifiers("public", "static"), hostType().createLockedAccess(), name, parms, exns, new Opt<Block>(body));
+		hostType().insertUnusedMethod(factoryMethod, 0);
+		factoryMethod = factoryMethod.closeOverTypeVariables(factoryMethod);
+		return factoryMethod;
+	}
+	public MethodDecl ConstructorDeclSubstituted.createFactoryMethod() {
+		return sourceConstructorDecl().createFactoryMethod();
+	}
+	public MethodDecl ParConstructorDecl.createFactoryMethod() {
+		return sourceConstructorDecl().createFactoryMethod();
+	}	
+}

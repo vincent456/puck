@@ -1,0 +1,223 @@
+import java.util.Arrays;
+import java.util.Iterator;
+
+/*
+ * Classes for representing type constraints and the constraint variables occuring in them. 
+ */
+
+aspect TypeConstraints {
+	public abstract class TypeConstraint {
+		// node giving rise to the constraint
+		private ASTNode node;
+		
+		// further description of why the constraint was generated
+		private String cause;
+		
+		public TypeConstraint(ASTNode node, String cause) {
+			this.node = node;
+			this.cause = cause;
+		}
+		
+		public abstract boolean solved();
+		public abstract String describe();
+		
+		public boolean fromSource() {
+			return node.fromSource();
+		}
+		
+		public String toString() {
+			return cause + " at node " + node.toString() + ": " + describe(); 
+		}
+	}
+	
+	// a simple type constraint records a subtype or equality constraint between two type constraint variables
+	class SimpleTypeConstraint extends TypeConstraint {
+		private TypeConstraintVariable left, right;
+		private Operator op;
+		
+		public SimpleTypeConstraint(ASTNode node, String cause, TypeConstraintVariable left, Operator op, TypeConstraintVariable right) {
+			super(node, cause);
+			this.left = left;
+			this.op = op;
+			this.right = right;
+		}
+		
+		public boolean solved() {
+			TypeDecl lefttp = left.getConstrainedType().refresh(),
+			         righttp = right.getConstrainedType().refresh();
+			return op.eval(lefttp, righttp);
+		}
+		
+		public String describe() {
+			return left.describeConstraintVariable() + " " + op + " " + right.describeConstraintVariable();
+		}
+		
+		public boolean equals(Object o) {
+			if(!(o instanceof SimpleTypeConstraint))
+				return false;
+			SimpleTypeConstraint that = (SimpleTypeConstraint)o;
+			return this.left.equals(that.left) && this.op == that.op && this.right.equals(that.right);
+		}
+		
+		public TypeConstraintVariable getLeft() { return left; }
+		public TypeConstraintVariable getRight() { return right; }
+	}
+	
+	// an is-array type constraint records that a certain constraint variable has to be an array
+	// TODO: Eclipse seems to have a better way of dealing with this (see test cases)
+	class IsArrayTypeConstraint extends TypeConstraint {
+		private TypeConstraintVariable var;
+		
+		public IsArrayTypeConstraint(ASTNode node, String cause, TypeConstraintVariable var) {
+			super(node, cause);
+			this.var = var;
+		}
+		
+		public boolean solved() {
+			return var.getConstrainedType().refresh().isArrayDecl();
+		}
+		
+		public String describe() {
+			return var.describeConstraintVariable() + " is array type";
+		}
+		
+		public boolean equals(Object o) {
+			if(!(o instanceof IsArrayTypeConstraint))
+				return false;
+			return this.var.equals(((IsArrayTypeConstraint)o).var);
+		}
+	}
+	
+	// an exception compatibility constraint enforces that an overriding method may not throw more exceptions
+	// than its overridden method; we have no way of solving such constraints, but just check them (relying on
+	// the fact that the currently implemented refactorings don't change thrown exceptions)
+	class ExceptionCompatibilityConstraint extends TypeConstraint {
+		private MethodDecl sub, sup;
+		
+		public ExceptionCompatibilityConstraint(MethodDecl sub, MethodDecl sup) {
+			super(sub, "compatible throws clauses");
+			this.sub = sub;
+			this.sup = sup;
+		}
+		
+		public boolean solved() {
+			for(Access acc : sub.getExceptions())
+				if(!acc.type().isCheckedException() && !sup.throwsException(acc.type()))
+					return false;
+			return true;
+		}
+		
+		public String describe() {
+			return sub.fullName() + " cannot throw more exceptions than " + sup.fullName();
+		}
+		
+		public boolean equals(Object o) {
+			if(!(o instanceof ExceptionCompatibilityConstraint))
+				return false;
+			ExceptionCompatibilityConstraint that = (ExceptionCompatibilityConstraint)o;
+			return this.sub.equals(that.sub) && this.sup.equals(that.sup);
+		}
+	}
+	
+	// a disjunctive type constraint is a disjunction of type constraints
+	// at the moment, all disjunctive constraints are disjunctions of simple type constraints whose left hand side is
+	// the same
+	class DisjunctiveTypeConstraint extends TypeConstraint {
+		private Collection<TypeConstraint> constraints;
+		
+		public DisjunctiveTypeConstraint(ASTNode node, String cause, TypeConstraintVariable left, Operator op, Collection<? extends TypeConstraintVariable> rights) {
+			super(node, cause);
+			this.constraints = new LinkedList<TypeConstraint>();
+			for(TypeConstraintVariable right : rights)
+				this.constraints.add(new SimpleTypeConstraint(node, cause, left, op, right));
+		}
+		
+		public DisjunctiveTypeConstraint(ASTNode node, String cause, TypeConstraintVariable left, Operator op, TypeConstraintVariable... rights) {
+			this(node, cause, left, op, Arrays.asList(rights));
+		}
+		
+		public boolean solved() {
+			for(TypeConstraint tc : constraints)
+				if(tc.solved())
+					return true;
+			return false;
+		}
+		
+		public String describe() {
+			StringBuffer res = new StringBuffer();
+			boolean first = true;
+			for(TypeConstraint tc : constraints) {
+				if(first) {
+					first = false;
+				} else {
+					res.append(" or ");
+				}
+				res.append(tc.describe());
+			}
+			return res.toString();
+		}
+		
+		public boolean equals(Object o) {
+			if(!(o instanceof DisjunctiveTypeConstraint))
+				return false;
+			DisjunctiveTypeConstraint that = (DisjunctiveTypeConstraint)o;
+			return this.constraints.equals(that.constraints);
+		}
+		
+		public int getNumAlternatives() {
+			return constraints.size();
+		}
+		
+		public Iterator<TypeConstraint> getSubconstraints() {
+			return constraints.iterator();
+		}
+	}
+	
+	TypeDecl implements IAmPartiallyOrdered<TypeDecl>;
+	public boolean TypeDecl.leq(TypeDecl that) {
+		return this.subtype(that);
+	}
+	
+	// a type constraint variable constrains either the type of a program element ([E]),
+	// or the host type in which it is declared (Decl(E))
+	interface TypeConstraintVariable { }
+	syn TypeDecl TypeConstraintVariable.getConstrainedType();
+	syn String TypeConstraintVariable.describeConstraintVariable();
+	syn boolean TypeConstraintVariable.isFixed();
+	
+	BodyDecl implements TypeConstraintVariable;
+	eq BodyDecl.getConstrainedType() = hostType();
+	eq BodyDecl.describeConstraintVariable() = "Decl(" + toString() + ")";
+	eq MethodDecl.describeConstraintVariable() = "Decl(" + hostType().fullName() + "." + signature() + ")";
+	eq ConstructorDecl.describeConstraintVariable() = "Decl(" + signature() + ")";
+	eq FieldDeclaration.describeConstraintVariable() = "Decl(" + name() + ")";
+	eq BodyDecl.isFixed() = true;
+	
+	Expr implements TypeConstraintVariable;
+	eq Expr.getConstrainedType() = type();
+	eq Expr.describeConstraintVariable() = "[" + this + "]";
+	eq Expr.isFixed() {
+		if(!fromSource() || !type().isSubtypeConstrainable())
+			return true;
+		if(isTypeAccess()) {
+			// only types of declarations and types appearing in casts are variable
+			// method return types are not adjusted (see ExtractInterfaceTests.test9)
+			if(getParent() instanceof Variable) {
+				Variable v = (Variable)getParent();
+				return this != v.getTypeAccess() 
+					|| v.isSubstituted() 
+					|| v instanceof VariableArityParameterDeclaration;
+			}
+			if(getParent() instanceof CastExpr)
+				return this != ((CastExpr)getParent()).getTypeAccess();
+			return true;
+		}
+		return false;
+	}
+	
+	// type declarations represent constant types appearing in type constraints
+	TypeDecl implements TypeConstraintVariable;
+	eq TypeDecl.getConstrainedType() = this;
+	eq TypeDecl.describeConstraintVariable() = fullName();
+	eq TypeDecl.isFixed() = true;
+}

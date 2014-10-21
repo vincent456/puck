@@ -1,0 +1,43 @@
+aspect InlineConstant {
+	public void FieldDeclaration.inlineConstant(boolean remove) {
+		if(hasInit())
+			setInit(getInit().makeConversionExplicit(type()));
+		for(VarAccess va : uses())
+			va.inlineConstant();
+		programRoot().flushCaches();
+		if(remove)
+			removeUnused();
+	}
+	
+	public void VarAccess.inlineConstant() {
+		if(!decl().isField() || !decl().isFinal() || !decl().isStatic())
+			throw new RefactoringException("not a use of a constant");
+		FieldDeclaration cnst = (FieldDeclaration)decl();
+		if(!cnst.hasInit())
+			throw new RefactoringException("no initialiser");
+		if(cnst.isEnumConstant())
+			throw new RefactoringException("cannot inline enum constant");
+		bundleQualifier();
+		if(isQualified() && !qualifier().isPure())
+			throw new RefactoringException("cannot discard impure qualifier");
+		Expr p = this;
+		if(isQualified())
+			p = (Expr)p.getParent();
+		Expr init = cnst.getInit();
+		init.lockAllNames();
+		init.lockDataFlow();
+		cnst.setInit((Expr)init.fullCopyAndDetach());
+		p.replaceWith(init.precedence() > p.maxPrecedence() ? new ParExpr(init) : init);
+	}
+	
+	public void FieldDeclaration.doInlineConstant(boolean remove) {
+		Program root = programRoot();
+		inlineConstant(remove);
+		root.eliminate(LOCKED_NAMES, LOCKED_DATAFLOW);
+	}
+	
+	public void VarAccess.doInlineConstant() {
+		inlineConstant();
+		programRoot().eliminate(LOCKED_NAMES, LOCKED_DATAFLOW);
+	}
+}

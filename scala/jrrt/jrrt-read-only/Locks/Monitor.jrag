@@ -1,0 +1,114 @@
+aspect Monitor {
+	class Monitor {
+		private TypeDecl type;
+
+		public Monitor(TypeDecl type) {
+			if(type instanceof ClassDecl) {
+				ClassDecl cd = (ClassDecl)type;
+				while(cd.fromSource()) {
+					type = cd;
+					cd = cd.superclass();
+				}
+			}
+			this.type = type;
+		}
+
+		public TypeDecl type() {
+			return type;
+		}
+
+		public boolean mayAlias(Monitor that) {
+			if(that instanceof FieldMonitor)
+				return false;
+			return this.type().hasCommonSubtypeWith(that.type());
+		}
+		
+		public boolean equals(Object that) {
+			return that.getClass().equals(this.getClass()) && ((Monitor)that).type == this.type;
+		}
+	}
+
+	// monitor associated with a class object
+	class ClassMonitor extends Monitor {
+		private TypeDecl clazz;
+
+		public ClassMonitor(TypeDecl clazz) {
+			super(clazz.classType());
+			this.clazz = clazz;
+		}
+
+		public TypeDecl getClazz() {
+			return clazz;
+		}
+
+		public boolean equals(Object that) {
+			return that instanceof ClassMonitor && ((ClassMonitor)that).clazz == this.clazz;
+		}
+
+		public boolean mayAlias(Monitor that) {
+			if(that instanceof FieldMonitor)
+				return false;
+			if(that instanceof ClassMonitor)
+				return this.equals(that);
+			return type().subtype(that.type());
+		}
+	}
+
+	// monitor associated with an object that is stored in a final field and nowhere else
+	class FieldMonitor extends Monitor {
+		private FieldDeclaration field;
+
+		public FieldMonitor(FieldDeclaration field) {
+			super(field.type());
+			this.field = field;
+		}
+
+		public FieldDeclaration getField() {
+			return field;
+		}
+
+		public boolean equals(Object that) {
+			return that instanceof FieldMonitor && ((FieldMonitor)that).field == this.field;
+		}
+
+		public boolean mayAlias(Monitor that) {
+			if(that instanceof FieldMonitor)
+				return this.equals(that);
+			return false;
+		}
+	}
+
+	syn lazy Monitor Expr.getMonitor() {
+		TypeDecl tp = type();
+		if(tp.isObject())
+			tp = computeType(1);
+		// if expression is of type Class<A> for a type access A, return class monitor for A
+		if(tp.isParameterizedType()) {
+			ParTypeDecl ptd = (ParTypeDecl)tp;
+			if(ptd.genericDecl().fullName().equals("java.lang.Class")) {
+				TypeDecl argtp = ptd.getArgument(0).type();
+				if(argtp.isClassDecl() || argtp.isInterfaceDecl())
+					return new ClassMonitor(argtp);
+			}
+		}
+		// otherwise just use general monitor
+		return new Monitor(tp);
+	}
+	eq ParExpr.getMonitor() = getExpr().getMonitor();
+	eq CastExpr.getMonitor() {
+		Monitor m = getExpr().getMonitor();
+		if(m instanceof ClassMonitor || m instanceof FieldMonitor)
+			return m;
+		return super.getMonitor();
+	}
+	eq AbstractDot.getMonitor() = getRight().getMonitor();
+	eq ClassAccess.getMonitor() = new ClassMonitor(qualifier().type());
+	eq VarAccess.getMonitor() {
+		if(decl() instanceof FieldDeclaration) {
+			FieldDeclaration fd = (FieldDeclaration)decl();
+			if(/*for performance improvement: fd.type().isObject() &&*/ !fd.refEscapes())
+				return new FieldMonitor(fd);
+		}
+		return super.getMonitor();
+	}
+}

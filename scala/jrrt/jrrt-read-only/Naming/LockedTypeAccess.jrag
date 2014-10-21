@@ -1,0 +1,342 @@
+aspect LockedTypeAccess {
+	// not all types have a name
+	public boolean TypeDecl.hasName() { return true; }
+	public boolean AbstractWildcardType.hasName() { return false; }
+	public boolean NullType.hasName() { return false; }
+	public boolean EmptyType.hasName() { return false; }
+	public boolean AnonymousDecl.hasName() { return false; }
+	public boolean UnknownType.hasName() { return false; }
+	public boolean GLBType.hasName() { return false; }
+	public boolean LUBType.hasName() { return false; }
+	
+	/* A locked type access is a type access that does not obey the normal type lookup
+	 * rules, but instead immediately binds to its target. */
+	private TypeDecl TypeAccess.targetType = null;
+	private void TypeAccess.setTargetType(TypeDecl td) {
+		targetType = td;
+	}
+	
+	public boolean TypeAccess.isLocked() { return targetType != null; }
+	
+	refine LookupType eq TypeAccess.decls() = isLocked() ? targetType.refresh() : refined();
+	refine Generics eq TypeAccess.decl() = isLocked() ? targetType.refresh() : refined();
+	
+	refine PrettyPrint public void TypeAccess.toString(StringBuffer s) {
+		if(!isLocked()) {
+			refined(s);
+		} else {
+			s.append("[[");
+			refined(s);
+			s.append("]]");
+		}
+	}
+	
+	public Access TypeDecl.createLockedAccess() {
+		TypeAccess acc = new TypeAccess(name());
+		acc.lock(this);
+		return acc;
+	}
+	
+	public Access ArrayDecl.createLockedAccess() {
+		return new ArrayTypeAccess(componentType().createLockedAccess());
+	}
+	
+	public Access GenericTypeDecl.createLockedAccess() {
+		TypeAccess tacc = new TypeAccess(name());
+		tacc.lock(this);
+		List<Access> targs = new List<Access>();
+		for(int i=0;i<getNumTypeParameter();++i)
+			targs.add(getTypeParameter(i).createLockedAccess());
+		return new ParTypeAccess(tacc, targs); 
+	}
+	
+	public Access ParTypeDecl.createLockedAccess() {
+		TypeAccess tacc = new TypeAccess(genericDecl().name());
+		tacc.lock(genericDecl());
+		List<Access> targs = new List<Access>();
+		for(int i=0;i<getNumArgument();++i)
+			targs.add(getArgument(i).type().createLockedAccess());
+		return new ParTypeAccess(tacc, targs);
+	}
+	
+	public Access RawClassDecl.createLockedAccess() {
+		TypeAccess acc = new TypeAccess(name());
+		acc.lock(this);
+		return acc;
+	}
+	
+	public Access RawInterfaceDecl.createLockedAccess() {
+		TypeAccess acc = new TypeAccess(name());
+		acc.lock(this);
+		return acc;
+	}
+	
+	public Access WildcardType.createLockedAccess() {
+		return new Wildcard();
+	}
+	
+	public Access WildcardExtendsType.createLockedAccess() {
+		return new WildcardExtends(extendsType().createLockedAccess());
+	}
+	
+	public Access WildcardSuperType.createLockedAccess() {
+		return new WildcardSuper(superType().createLockedAccess());
+	}
+	
+	public ASTNode TypeAccess.lockNames(Collection<String> endangered) {
+		if(!isLocked() &&
+				(endangered.contains(name()) || endangered.contains(getTopLevelPackage())))
+			return lock();
+		return super.lockNames(endangered);
+	}
+	
+	public ASTNode ArrayTypeAccess.lockNames(Collection<String> endangered) {
+		setAccess((Access)getAccess().lockNames(endangered));
+		return super.lockNames(endangered);
+	}
+	
+	// absolute type access; can't get shadowed anyway
+	public ASTNode BytecodeTypeAccess.lockNames(Collection<String> endangered) { return this; }
+	
+	public void TypeAccess.eliminateLockedNames() {
+		if(isLocked())
+			unlock();
+		super.eliminateLockedNames();
+	}
+
+	public void CompilationUnit.eliminateLockedNames() {
+		if(fromSource()) {
+			for(int i=getNumImportDecl()-1;i>=0;--i) {
+				ImportDecl id = getImportDecl(i);
+				if(id.shouldRemove())
+					getImportDeclList().removeChild(i);
+			}
+		}
+		super.eliminateLockedNames();
+	}
+	
+	syn boolean ImportDecl.shouldRemove() = false;
+	eq SingleTypeImportDecl.shouldRemove() {
+		if(((LockableName)getAccess().lastAccess()).isLocked()) {
+			// a type of the same name cannot be imported twice, and neither can an imported type
+			// clash with a visible type
+			String targetName = getAccess().type().name();
+			SimpleSet localTypes = compilationUnit().localLookupType(targetName);
+			if(allImportedTypes(targetName).size() > 1 || !localTypes.isEmpty() && !localTypes.isSingleton(getAccess().type()))
+				return true;
+		}
+		return false;
+	}
+	
+	public ASTNode Access.lock() { return this; }
+	public ASTNode TypeAccess.lock() { return decl().isVoid() ? this : lock(decl()); }
+	public ASTNode AbstractWildcard.lock() { return this; }
+	public ASTNode TypeAccess.lock(TypeDecl decl) {
+		assert decl != null && !decl.isUnknown();
+		setTargetType(decl);
+		return this;
+	}
+	
+	public ASTNode ArrayTypeAccess.lock() {
+		setAccess((Access)getAccess().lock());
+		return this;
+	}
+	
+	// primitive types can never be shadowed, so there's no point in locking them
+	public ASTNode PrimitiveTypeAccess.lock() { return this; }
+	public Access PrimitiveTypeAccess.unlock() { return this; }
+	
+	public Access TypeAccess.unlock() {
+		Expr qual = getQualifier();
+		assert qual == null || qual.isPure();
+		TypeDecl target = targetType.refresh();
+		setTargetType(null);
+		flushCaches();
+		if(!target.hasName())
+			throw new RefactoringException("cannot unlock access to nameless type");
+		try {
+			if(!isObscured() && decl().equals(target))
+				return this;
+			return unlock(qual, target);
+		} finally {
+			setTargetType(null);
+		}
+	}
+	
+	public boolean TypeAccess.isObscured() {
+		if(!fromSource())
+			return false;
+		String tlpkg = getTopLevelPackage();
+		if(tlpkg != null && !tlpkg.equals(""))
+			return !(lookupName(tlpkg) instanceof PackageDecl);
+		return !(lookupName(name()) instanceof TypeDecl);
+	}
+	
+	syn boolean TypeDecl.inaccessibleFrom(TypeAccess acc) {
+		if(acc.hostType() == null)
+			return !this.accessibleFromPackage(acc.hostPackage());
+		else
+			return !this.accessibleFrom(acc.hostType());
+	}
+	
+	public Access TypeAccess.unlock(Expr qual, TypeDecl target) {
+		if(!fromSource() || hostBodyDecl() instanceof MethodDecl && ((MethodDecl)hostBodyDecl()).isNative())
+			throw new RefactoringException("cannot fix access in library");
+		if(target.isRawType())
+			target = target.erasure();
+		if(target.isParameterizedType())
+			return unlockParTypeAccess((ParTypeDecl)target, qual);
+		if(target.isTypeVariable())
+			return unlockTypeVariableAccess((TypeVariable)target, qual);
+		if(target instanceof PrimitiveType || target instanceof VoidType)
+			return unlockPrimitiveTypeAccess(target, qual);
+		if(target.isArrayDecl())
+			return unlockArrayTypeAccess((ArrayDecl)target, qual);
+		if(target.isLocalClass())
+			return unlockLocalClassAccess((ClassDecl)target, qual);
+		if(target.isMemberType())
+			return unlockMemberTypeAccess(target, qual);
+		if(target.isTopLevelType())
+			return unlockTopLevelTypeAccess(target, qual);
+		throw new Error("cannot fix access to this kind of type");		
+	}
+	
+	protected Access TypeAccess.unlockPrimitiveTypeAccess(TypeDecl target, Expr qual) {
+		assert qual == null;
+		setID(target.name());
+		return this;
+	}
+	
+	protected Access TypeAccess.unlockTypeVariableAccess(TypeVariable target, Expr qual) {
+		if(!lookupName(target.name()).isSingleton(target))
+			throw new RefactoringException("cannot access shadowed/obscured type variable");
+		setPackage("");
+		setID(target.name());
+		if (qual!=null) {
+			this.flushCache();
+			replace(parentDot()).with(this);
+		}
+		return this;
+	}
+	
+	protected Access TypeAccess.unlockLocalClassAccess(ClassDecl target, Expr qual) {
+		if(!lookupName(target.name()).isSingleton(target))
+			throw new RefactoringException("cannot access shadowed/obscured local class");
+		setPackage("");
+		setID(target.name());
+		if (qual!=null) {
+			this.flushCache();
+			replace(parentDot()).with(this);
+		}
+		return this;
+	}
+
+	protected Access TypeAccess.unlockMemberTypeAccess(TypeDecl target, Expr qual) {
+		assert qual == this.getQualifier();
+		if(qual != null) {
+			// try to build an access using the given qualifier
+			if(qual.isTypeAccess()) {
+				TypeDecl outer = qual.type().refresh();
+				if(outer.memberTypes(target.name()).isSingleton(target)) {
+					if(target.inaccessibleFrom(this))
+						throw new RefactoringException("inaccessible type");
+					setPackage("");
+					setID(target.name());
+					return parentDot();
+				}
+			}
+			// we need to throw away the qualifier, but make sure it is pure
+			if(!qual.isPure())
+				throw new RefactoringException("cannot access member type");
+		}
+		if(lookupName(target.name()).isSingleton(target)) {
+			setPackage("");
+			setID(target.name());
+			if (qual!=null) {
+				this.flushCache();
+				replace(parentDot()).with(this);
+			}
+			return this;
+		} else {
+			TypeDecl outer = target.enclosingType();
+			if(!target.isStatic() && getParent() instanceof ClassInstanceExpr && hostType().withinBodyThatSubclasses(outer) == null)
+				throw new RefactoringException("cannot access non-static member types without enclosing instance in instanceof");
+			if(!outer.memberTypes(target.name()).isSingleton(target))
+				throw new RefactoringException("cannot access shadowed member type");
+			setPackage("");
+			setID(target.name());
+			// TODO: more thought on when precisely this is necessary
+			// (rationale here is that if target is a generic type declaration, we are actually
+			// trying to build an access to its raw type)
+			if(target.isGenericType() && outer.isGenericType())
+				outer = ((GenericTypeDecl)outer).rawType();
+			if (qual!=null && qual.type()!=outer || qual==null) {
+				this.flushCache();
+				Access outerAccess = outer.createLockedAccess();
+				target.affectedByUnlock(outerAccess, this);
+				this.lock(target);
+				return (Access) replace(qual!=null?parentDot():this).with(outerAccess.qualifiesAccess(this));
+			}
+			return parentDot();
+		}
+	}
+	
+	protected Access TypeAccess.unlockTopLevelTypeAccess(TypeDecl target, Expr qual) {
+		if(lookupName(target.name()).isSingleton(target)) {
+			setPackage("");
+			setID(target.name());
+			if (qual!=null) {
+				this.flushCache();
+				replace(parentDot()).with(this);
+			}
+			return this;
+		}
+		setPackage(target.packageName());
+		setID(target.name());
+		String pkg = getTopLevelPackage();
+		SimpleSet s = lookupName(pkg);
+		if(!s.isEmpty() && !s.isSingleton(lookupPackage(pkg)) || 
+				!lookupType(target.packageName(), target.name()).equals(target))
+			throw new RefactoringException("cannot access toplevel type");
+		if (qual!=null) {
+			this.flushCache();
+			return (Access) replace(parentDot()).with(this);
+		}
+		return this;
+	}
+	
+	protected Access TypeAccess.unlockParTypeAccess(ParTypeDecl target, Expr qual) {
+		List<Access> args = new List<Access>();
+		for(int i=0;i<target.getNumArgument();++i) {
+			Access targetAccess = target.getArgument(i).type().createLockedAccess();
+			affectedByUnlock(targetAccess);
+			args.add(targetAccess);
+		}
+		Access rawAccess = ((GenericTypeDecl)target.genericDecl()).rawType().createLockedAccess();
+		affectedByUnlock(rawAccess);
+		Access acc = new ParTypeAccess(rawAccess, args);
+		if(qual != null) {
+			affectedByUnlock(acc);
+			acc = qual.qualifiesAccess(acc);
+		}
+		// do we always need to replace ?
+		return (Access) replace(qual!=null?parentDot():this).with(acc);
+	}
+	
+	protected Access TypeAccess.unlockArrayTypeAccess(ArrayDecl target, Expr qual) {
+		Access acc = target.componentType().createLockedAccess();
+		affectedByUnlock(acc);
+		if (acc.type() == this.type())
+			return this;
+		if(qual != null)
+			acc = qual.qualifiesAccess(acc);
+		return (Access) replace(qual!=null?parentDot():this).with(new ArrayTypeAccess(acc));
+	}
+	
+	protected Access ArrayTypeAccess.unlockArrayTypeAccess(ArrayDecl target, Expr qual) {
+		Access acc = target.componentType().createLockedAccess();
+		affectedByUnlock(acc);
+		setAccess(acc);
+		return qual == null ? this : parentDot();
+	}
+}

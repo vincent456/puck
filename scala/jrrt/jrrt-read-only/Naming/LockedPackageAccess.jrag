@@ -1,0 +1,68 @@
+aspect LockedPackageAccess {
+	private PackageDecl PackageAccess.targetPackage = null;
+	private PackageDecl TypeAccess.targetPackage = null;
+	
+	private void PackageAccess.setTargetPackage(PackageDecl pd) {
+		targetPackage = pd;
+	}
+	
+	public ASTNode ASTNode.lockAllPackageAccesses() {
+		for(int i=0;i<getNumChild();++i) {
+			ASTNode child = getChild(i);
+			if(child != null)
+				child.lockAllPackageAccesses();
+		}
+		return this;
+	}
+	
+	public ASTNode CompilationUnit.lockAllPackageAccesses() {
+		// make sure the package of this compilation unit is registered with the program root
+		programRoot().getPackageDecl(getPackageDecl());
+		return super.lockAllPackageAccesses();
+	}
+	
+	public ASTNode PackageAccess.lockAllPackageAccesses() {
+		if(!isLocked())
+			lock();
+		return super.lockAllPackageAccesses();
+	}
+	
+	public ASTNode TypeAccess.lockAllPackageAccesses() {
+		if(!(this instanceof ArrayTypeAccess) && !getPackage().equals("") && !getPackage().equals("@primitive"))
+			lock();
+		return super.lockAllPackageAccesses();
+	}
+	
+	public ASTNode PackageAccess.lockNames(Collection<String> endangered) {
+		if(!isLocked() && endangered.contains(getTopLevelPackage()))
+			lock();
+		return super.lockNames(endangered);
+	}
+	
+	public ASTNode PackageAccess.lock() {
+		return lock(decl());
+	}
+	
+	public ASTNode PackageAccess.lock(PackageDecl target) { 
+		setTargetPackage(target);
+		return this;
+	}
+	
+	public void PackageAccess.eliminateLockedNames() {
+		unlock();
+		super.eliminateLockedNames();
+	}
+	
+	public PackageAccess PackageAccess.unlock() {
+		if(isLocked()) {
+			if(fromSource())
+				setPackage(targetPackage.getName());
+			if(!lookupName(getTopLevelPackage()).isSingleton(lookupPackage(getTopLevelPackage())))
+				throw new RefactoringException("cannot access obscured package");
+			setTargetPackage(null);
+		}
+		return this;
+	}
+	
+	public boolean PackageAccess.isLocked() { return targetPackage != null; }
+}

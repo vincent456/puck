@@ -1,0 +1,198 @@
+aspect UndoASTNodeChildren {
+	
+	refine ASTNode public void ASTNode.setChild(final ASTNode node, final int i) {
+		if (Program.isRecordingASTChanges()) {
+			Program.addUndoAction(new ASTModificationSetChild() {
+				{
+					parent = ASTNode.this;
+					isInTree = parent!=null && parent.isInTree();
+					newChild = node;
+					index = i;
+					children_null = children == null;
+					children_length = children == null ? -1 : children.length;
+					oldNumChildren = numChildren;
+					newChild_oldParent = node == null ? null : node.parent;
+					newChild_oldChildIndex = node == null ? -1 : node.childIndex;
+					
+					oldChild = index < oldNumChildren ? children[index] : null;
+//					ASTNode oldChild_parent = oldChild != null ? oldChild.parent : null;
+//					int oldChild_childIndex = oldChild != null ? oldChild.childIndex : -1;
+				}
+				
+				@Override
+				public void undo() {
+					if (children_null)
+						children = null;
+					else if (index >= children_length) {
+						ASTNode[] c = new ASTNode[children_length];
+						System.arraycopy(children, 0, c, 0, children_length);
+						children = c;
+					}
+					if (!children_null && index < oldNumChildren)
+						children[index] = oldChild;
+					
+					// restore parent and child index of old node on this place
+					// this shouldn't be necessary, but...
+//					if (oldChild != null) {
+//						oldChild.parent = oldChild_parent;
+//						oldChild.childIndex = oldChild_childIndex;
+//					}
+					if (newChild != null) {
+						newChild.parent = newChild_oldParent;
+						newChild.childIndex = newChild_oldChildIndex;
+					}
+					numChildren = oldNumChildren;
+				}
+				@Override
+				public void redo() {
+					if (Program.isRecordingASTChanges()) Program.addUndoAction(this);
+					refined(node, i);
+				}
+				@Override
+				public String toString() {
+					return "ASTNode.setChild";
+				}
+			});
+		}
+		refined(node, i);
+	}
+	abstract class ASTModificationSetChild extends ASTModification {
+		boolean isInTree;
+		ASTNode parent;
+		ASTNode newChild;
+		int index;
+		boolean children_null;
+		int children_length;
+		int oldNumChildren;
+		ASTNode newChild_oldParent;
+		int newChild_oldChildIndex;
+		
+		ASTNode oldChild;
+//		ASTNode oldChild_parent;
+//		int oldChild_childIndex;
+	}
+
+	refine ASTNode public void ASTNode.removeChild(final int i) {
+		if (Program.isRecordingASTChanges()) {
+			Program.addUndoAction(new ASTModificationRemoveChild() {
+				{
+					parent = ASTNode.this;
+					isInTree = parent!=null && parent.isInTree();
+					index = i;
+					children_null = children == null;
+					children_length = children == null ? -1 : children.length;
+					child = children == null ? null : children[index];
+					child_parent = child == null ? null : child.parent;
+					child_childIndex = child == null ? -1 : child.childIndex;
+					oldNumChildren = numChildren;
+				}
+				
+				@Override
+				public void undo() {
+					if (!children_null) {
+						if (children.length < children_length) {
+							ASTNode[] c = new ASTNode[children_length];
+							System.arraycopy(children, 0, c, 0, children.length);
+							children = c;
+						}
+						System.arraycopy(children, index, children, index + 1, children_length - index - 1);
+						children[index] = child;
+						if (child != null) {
+							child.childIndex = child_childIndex;
+							child.parent = child_parent;
+							numChildren = oldNumChildren;
+						}
+					}
+				}
+				@Override
+				public void redo() {
+					if (Program.isRecordingASTChanges()) Program.addUndoAction(this);
+					refined(i);
+				}
+				@Override
+				public String toString() {
+					return "ASTNode.removeChild";
+				}
+			});
+		}
+		refined(i);
+	}
+	abstract class ASTModificationRemoveChild extends ASTModification {
+		boolean isInTree;
+		ASTNode parent;
+		int index;
+		boolean children_null;
+		int children_length;
+		ASTNode child;
+		ASTNode child_parent;
+		int child_childIndex;
+		int oldNumChildren;
+	}
+	
+	refine ASTNode public void ASTNode.insertChild(final ASTNode node, final int i) {
+		if (Program.isRecordingASTChanges()) {
+			Program.addUndoAction(new ASTModificationInsertChild() {
+				{
+					parent = ASTNode.this;
+					isInTree = parent!=null && parent.isInTree();
+					newChild = node;
+					index = i;
+					children_null = children == null;
+					children_length = children == null ? -1 : children.length;
+					oldNumChildren = numChildren;
+					newChild_oldParent = node == null ? null : node.parent;
+					newChild_oldChildIndex = node == null ? -1 : node.childIndex;
+				}
+				
+				@Override
+				public void undo() {
+					if (children_null)
+						children = null;
+					else {
+						ASTNode[] c = new ASTNode[children_length];
+						System.arraycopy(children, 0, c, 0, index);
+						if (index < children_length)
+							System.arraycopy(children, index+1, c, index, children_length - index);
+						children = c;
+					}
+					if (newChild != null) {
+						newChild.setParent(newChild_oldParent);
+						newChild.childIndex = newChild_oldChildIndex;
+					}
+					numChildren = oldNumChildren;
+				}
+				@Override
+				public void redo() {
+					if (Program.isRecordingASTChanges()) Program.addUndoAction(this);
+					refined(node, i);
+				}
+				@Override
+				public String toString() {
+					return "ASTNode.insertChild";
+				}
+			});
+		}
+		refined(node, i);
+	}
+	abstract class ASTModificationInsertChild extends ASTModification {
+		boolean isInTree;
+		ASTNode parent;
+		ASTNode newChild;
+		int index;
+		boolean children_null;
+		int children_length;
+		int oldNumChildren;
+		ASTNode newChild_oldParent;
+		int newChild_oldChildIndex;
+	}
+	
+	
+	refine PermuteParameters public void ASTNode.permute(int[] perm) {
+		if (Program.isRecordingASTChanges()) {
+			// Recording of permute action for undo.
+			throw new Error("not implemented");
+		}
+		refined(perm);
+	}
+	
+}

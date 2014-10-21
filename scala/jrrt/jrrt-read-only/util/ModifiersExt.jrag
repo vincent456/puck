@@ -1,0 +1,65 @@
+aspect Modifiers {
+	inh Variable Modifiers.getModifiedVariable();
+	
+	eq Program.getChild().getModifiedVariable() = null;
+	eq TypeDecl.getModifiers().getModifiedVariable() = null;
+	eq ConstructorDecl.getModifiers().getModifiedVariable() = null;
+	eq MethodDecl.getModifiers().getModifiedVariable() = null;
+	eq FieldDeclaration.getModifiers().getModifiedVariable() = this;
+	eq VariableDeclaration.getModifiers().getModifiedVariable() = this;
+	eq ParameterDeclaration.getModifiers().getModifiedVariable() = this;
+	
+	syn boolean MethodDecl.isPackageProtected() = !isPublic() && !isPrivate() && !isProtected();
+	
+	public void Modifiers.removeModifier(String mod) {
+		for(int i=0;i<getNumModifier();++i) {
+			Modifier m = getModifier(i);
+			if(m.getID().equals(mod))
+				getModifierList().removeChild(i);
+		}
+	}
+	
+	public void Modifiers.removeModifiers(String... mods) {
+		for(String mod : mods)
+			removeModifier(mod);
+	}
+	
+	public void Modifiers.addModifier(String mod) {
+		for(Modifier m : getModifiers())
+			if(m.getID().equals(mod))
+				return;
+		addModifier(new Modifier(mod));
+	}
+	
+	public void Modifiers.addModifiers(String... mods) {
+		for(String mod : mods)
+			addModifier(mod);
+	}
+	
+	public Modifiers.Modifiers(String... mods) {
+		List<Modifier> l = new List<Modifier>();
+		for(String mod : mods)
+			l.add(new Modifier(mod));
+		setModifierList(l);
+	}
+	
+	public void MemberDecl.makeModifiersExplicit() { }
+	public void FieldDeclaration.makeModifiersExplicit() {
+		if(hostType().isInterfaceDecl())
+			getModifiers().addModifiers("public", "static", "final");
+	}
+	public void MethodDecl.makeModifiersExplicit() {
+		if(hostType().isInterfaceDecl())
+			getModifiers().addModifiers("public", "static", "abstract");
+	}
+	
+	public boolean MemberDecl.isNative() { return false; }
+	
+	public void Modifiers.removeAnnotations() {
+		for(int i=getNumModifier()-1;i>=0;--i) {
+			Modifier mod = getModifier(i);
+			if(mod instanceof Annotation)
+				getModifierList().removeChild(i);
+		}
+	}
+}

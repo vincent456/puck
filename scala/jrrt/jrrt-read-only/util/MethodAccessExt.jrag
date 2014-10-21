@@ -1,0 +1,28 @@
+aspect MethodAccessExt {
+	syn boolean MethodAccess.isSuperCall() = this.isQualified() && this.qualifier().isSuperAccess();
+	syn boolean MethodAccess.isMonoCall() = decl().isStatic() || decl().isPrivate() || isSuperCall();
+	syn boolean MethodAccess.isPolyCall() = !isMonoCall();
+	
+	syn lazy Collection<MethodDecl> MethodAccess.possibleTargets() {
+		HashSet<MethodDecl> res = new HashSet<MethodDecl>();
+		res.add(decl());
+		if(isMonoCall())
+			return res;
+		int sz;
+		do {
+			sz = res.size();
+			HashSet<MethodDecl> next_layer = new HashSet<MethodDecl>();
+			for(MethodDecl md : res)
+				next_layer.addAll(md.overridingMethods());
+			res.addAll(next_layer);
+		} while(res.size() != sz);
+		return res;
+	}
+	
+	syn lazy MethodDecl MethodAccess.getUniqueTarget() {
+		MethodDecl md = decl();
+		if(isPolyCall() && !md.overridingMethods().isEmpty())
+			return null;
+		return decl();
+	}
+}

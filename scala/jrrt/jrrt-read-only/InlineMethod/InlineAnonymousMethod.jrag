@@ -1,0 +1,43 @@
+aspect InlineAnonymousMethod {
+	
+	public ASTNode AnonymousMethod.inline() {
+		TypeDecl root = hostType();
+		if(getNumParameter() > 0)
+			throw new RefactoringException("cannot inline this closure");
+		if(getParent() instanceof ExprStmt) {
+			this.makeReturnExplicit();
+			String label = getBlock().pickFreshLabel("l");
+			java.util.Set<BreakStmt> breaks = new HashSet<BreakStmt>();
+			for(Stmt node : returns()) {
+				ReturnStmt ret = (ReturnStmt)node;
+				if(ret.hasResult() && !ret.getResult().isPure()) {
+					if(!ret.getResult().isStatementExpression())
+						throw new RefactoringException("cannot inline this closure");
+					ret.insertStmtBefore(new ExprStmt(ret.getResult()));
+				}
+				BreakStmt brk = new BreakStmt(label);
+				breaks.add(brk);
+				ret.replaceWith(brk);
+			}
+			LabeledStmt body = new LabeledStmt(label, getBlock());
+			getParent().replaceWith(body);
+			root.flushCaches();
+			for(BreakStmt brk : breaks)
+				brk.removeUseless();
+			this.makeReturnImplicit();
+			return body.removeUselessLabel();
+		} else if(isExprClosure()) {
+			Expr expr = getExpr();
+			replaceWith(expr);
+			root.flushCaches();
+			return expr;
+		} else if(getParent().getParent() instanceof ReturnStmt) {
+			Block block = getBlock();
+			getParent().getParent().replaceWith(block);
+			root.flushCaches();
+			return block;
+		} else {
+			throw new RefactoringException("cannot inline this closure");
+		}
+	}	
+}

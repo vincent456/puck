@@ -1,0 +1,124 @@
+aspect FieldAnalysis {
+	syn lazy boolean FieldDeclaration.effectivelyFinal() {
+		if(isFinal())
+			return true;
+		if(!hasInit())
+			return false;
+		for(VarAccess va : allUses())
+			if(va.isDest())
+				return false;
+		return true;
+	}
+	
+	syn lazy boolean FieldDeclaration.refEscapes() {
+		if(isDedicatedLock())
+			return false;
+		if(hasInit() && !(getInit() instanceof NullLiteral || getInit() instanceof ClassInstanceExpr || getInit() instanceof ArrayCreationExpr))
+			return true;
+		computePossibleTypes();
+		for(VarAccess va : allUses()) {
+			if(va.isSource() && va.escapes())
+				return true;
+			if(va.isDest()) {
+				// assignments are OK, as long as we either assign null or a fresh object
+				AssignExpr assgn = va.modifyingAssignExpr();
+				if(assgn == null)
+					return true;
+				Expr rhs = assgn.getSource();
+				if(!(rhs instanceof NullLiteral || rhs instanceof ClassInstanceExpr || rhs instanceof ArrayCreationExpr))
+					return true;
+			}
+		}
+		return false;
+	}
+	
+	syn lazy boolean FieldDeclaration.isDedicatedLock() {
+		for(VarAccess va : allUses()) {
+			Expr e = va.unqualifiedScope();
+			ASTNode p = e.getParent();
+			if(!(p instanceof SynchronizedStmt) || e != ((SynchronizedStmt)p).getExpr())
+				return false;
+		}
+		return true;
+	}
+	
+	inh boolean Access.escapes();
+	eq BodyDecl.getChild().escapes() = false;
+	eq ReturnStmt.getResult().escapes() = true;
+	eq AssignExpr.getSource().escapes() = true;
+	eq MethodAccess.getArg().escapes() = true;
+	eq ConstructorAccess.getArg().escapes() = true;
+	eq ClassInstanceExpr.getArg().escapes() = true;
+	eq ArrayInit.getInit().escapes() = true;
+	eq AbstractDot.getLeft().escapes() {
+		Access acc = rightSide();
+		if(acc instanceof MethodAccess) {
+			return ((MethodAccess)acc).thisEscapes(getLeft());
+		} else {
+			return acc instanceof ConstructorAccess || acc instanceof ClassInstanceExpr;
+		}
+	}
+	eq Program.getChild().escapes() = false;
+	
+	// very rough
+	syn lazy boolean MethodAccess.thisEscapes(Expr qual) {
+		Collection<TypeDecl> possibleTypes = qual.possibleTypes();
+		if(possibleTypes == null) {
+			for(MethodDecl md : possibleTargets())
+				if(md.sourceMethodDecl().thisEscapes())
+					return true;			
+		} else {
+			for(TypeDecl td : possibleTypes) {
+				Collection mds = td.memberMethods(name());
+				SimpleSet maxSpecific = maxSpecific(mds);
+				if(qual.staticContextQualifier())
+					maxSpecific = removeInstanceMethods(maxSpecific);
+				for(Iterator<MethodDecl> iter=maxSpecific.iterator();iter.hasNext();)
+					if(iter.next().sourceMethodDecl().thisEscapes())
+						return true;
+			}
+		}
+		return false;
+	}
+	syn lazy boolean MethodDecl.thisEscapes() {
+		if(isStatic())
+			return false;
+		String fullName = hostType().fullName() + "." + signature();
+		String[] nonLeakyMethods = {
+			"java.lang.Object.wait(long)", "java.lang.Object.wait(long, int)", "java.lang.Object.wait()",
+			"java.lang.Object.notify()", "java.lang.Object.notifyAll()",
+			
+			"java.util.ArrayList.size()", "java.util.ArrayList.get(int)", "java.util.ArrayList.set(int, java.lang.Object)", "java.util.ArrayList.subList(int, int)", "java.util.ArrayList.add(java.lang.Object)",
+			"java.util.AbstractList.subList(int, int)",
+			
+			"java.util.HashSet.size()", "java.util.HashSet.isEmpty()", "java.util.HashSet.contains(java.lang.Object)", "java.util.HashSet.add(java.lang.Object)", 
+			"java.util.HashSet.remove(java.lang.Object)", "java.util.HashSet.containsAll(java.util.Collection)", "java.util.HashSet.iterator()",
+			
+			"java.util.AbstractCollection.addAll(java.util.Collection)",
+			
+			"java.util.HashMap.get(java.lang.Object)", "java.util.HashMap.put(java.lang.Object, java.lang.Object)", "java.util.HashMap.keySet()", "java.util.HashMap.containsKey(java.lang.Object)",
+			"java.util.HashMap.size()", "java.util.HashMap.remove(java.lang.Object)", "java.util.HashMap.entrySet()", "java.util.HashMap.values()",
+			"java.util.HashMap.isEmpty()", "java.util.HashMap.clear()",
+			
+			"java.util.IdentityHashMap.get(java.lang.Object)", "java.util.IdentityHashMap.put(java.lang.Object, java.lang.Object)", "java.util.IdentityHashMap.keySet()", "java.util.IdentityHashMap.containsKey(java.lang.Object)",
+			"java.util.IdentityHashMap.size()", "java.util.IdentityHashMap.remove(java.lang.Object)", "java.util.IdentityHashMap.entrySet()", "java.util.IdentityHashMap.values()",
+			"java.util.IdentityHashMap.isEmpty()", "java.util.IdentityHashMap.clear()",
+			
+			"java.util.WeakHashMap.get(java.lang.Object)", "java.util.WeakHashMap.put(java.lang.Object, java.lang.Object)", "java.util.WeakHashMap.keySet()", "java.util.WeakHashMap.containsKey(java.lang.Object)",
+			"java.util.WeakHashMap.size()", "java.util.WeakHashMap.remove(java.lang.Object)", "java.util.WeakHashMap.entrySet()", "java.util.WeakHashMap.values()",
+			"java.util.WeakHashMap.isEmpty()", "java.util.WeakHashMap.clear()",
+			
+			"java.util.TreeMap.get(java.lang.Object)", "java.util.TreeMap.put(java.lang.Object, java.lang.Object)", "java.util.TreeMap.keySet()", "java.util.TreeMap.containsKey(java.lang.Object)",
+			"java.util.TreeMap.size()", "java.util.TreeMap.remove(java.lang.Object)", "java.util.TreeMap.entrySet()", "java.util.TreeMap.values()",
+			"java.util.TreeMap.isEmpty()", "java.util.TreeMap.clear()",
+			
+			"java.util.TreeSet.add(java.lang.Object)", "java.util.TreeSet.iterator()"
+
+//			"java.text.SimpleDateFormat.parse(java.lang.String, java.text.ParsePosition)", "java.text.SimpleDateFormat.format(java.util.Date, java.lang.StringBuffer, java.text.FieldPosition)"
+		};
+		boolean contains = Arrays.asList(nonLeakyMethods).contains(fullName);
+		if(contains)
+			return false;
+		return true;
+	}
+}

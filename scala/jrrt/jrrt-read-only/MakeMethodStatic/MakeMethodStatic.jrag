@@ -1,0 +1,65 @@
+aspect MakeMethodStatic {
+	public void MethodDecl.makeStatic() {
+		if(isStatic())
+			return;
+		if(!fromSource() || !hasBlock())
+			throw new RefactoringException("cannot make static");
+		programRoot().lockMethodNames(Collections.singleton(name()));
+		MethodDecl delegator = this;
+		MethodDecl newMethod = (MethodDecl)this.fullCopyAndDetach();
+		TypeDecl hostType = hostType();
+		// make new method static
+		newMethod.getModifiers().addModifier(new Modifier("static"));
+		// insert new method
+		hostType.addBodyDecl(newMethod);
+		// insert extra parameter
+		String newParmName = hostType.name().toLowerCase();
+		ParameterDeclaration newParm = new FreshParameter(hostType.createLockedAccess(), newParmName);
+		newParm.setDemandFinal();
+		newMethod.getParameterList().insertChild(newParm, 0);
+		// fix type arguments
+		newMethod = closeOverTypeVariables(newMethod);
+		// fix body
+		Access newParmAcc = newParm.createLockedAccess();
+		WithStmt withStmt = new WithStmt(new List<Access>().add(newParmAcc), newMethod.getBlock());
+		newMethod.setBlock(new Block(new List<Stmt>().add(withStmt)));
+		newMethod.flushCaches();
+		// prepare delegating method
+		List<Expr> delegationArgs = new List<Expr>().add(new ThisAccess("this"));
+		for(int i=1;i<newMethod.getNumParameter();++i)
+			delegationArgs.add(new VarAccess(newMethod.getParameter(i).name()));
+		Expr delegationCall = new MethodAccess(newMethod.name(), delegationArgs);
+		delegator.setBlock(new Block(new List<Stmt>().add(new ReturnStmt(delegationCall))));
+		// plug in delegating method
+		delegator.programRoot().flushCaches();
+		newMethod.programRoot().eliminate(RETURN_VOID, FRESH_VARIABLES, WITH_STMT, LOCKED_NAMES, DEMAND_FINAL_MODIFIER);
+	}
+	
+	MethodDecl MethodDecl.closeOverTypeVariables(MethodDecl newMethod) {
+		if(newMethod.usesForeignTypeVars()) {
+			newMethod = newMethod.makeGeneric();
+			for(TypeVariable tv : newMethod.usedTypeVars()) {
+				if(!tv.isDescendantTo(newMethod)) {
+					TypeVariable new_tv = (TypeVariable)tv.fullCopyAndDetach();
+					((GenericMethodDecl)newMethod).addTypeParameter(new_tv);
+					for(Access tvu : tv.uses())
+						if(tvu.isDescendantTo(newMethod))
+							((TypeAccess)tvu).lock(new_tv);				
+				}
+			}
+		}
+		return newMethod;
+	}
+	
+	GenericMethodDecl MethodDecl.makeGeneric() {
+		GenericMethodDecl g = new GenericMethodDecl(getModifiers(), getTypeAccess(), getID(), 
+				                                    getParameterList(), getExceptionList(), 
+				                                    getBlockOpt(), new List<TypeVariable>());
+		replaceWith(g);
+		return g;
+	}
+	
+	GenericMethodDecl GenericMethodDecl.makeGeneric() {
+		return this;
+	}
+}

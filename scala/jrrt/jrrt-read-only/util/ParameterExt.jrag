@@ -1,0 +1,40 @@
+aspect ParameterExt {
+	public ParameterDeclaration VariableArityParameterDeclaration.asFixedArityParameter() {
+		Modifiers mod = (Modifiers)this.getModifiers().fullCopyAndDetach();
+		Access acc = type().createLockedAccess();
+		return new ParameterDeclaration(mod, acc, getID());
+	}
+	
+	public ParameterDeclaration ParameterDeclaration.lockedCopy() {
+		return new ParameterDeclaration((Modifiers)getModifiers().fullCopyAndDetach(), type().createLockedAccess(), name());
+	}
+	
+	public ParameterDeclaration VariableArityParameterDeclaration.lockedCopy() {
+		return new VariableArityParameterDeclaration((Modifiers)getModifiers().fullCopyAndDetach(), getTypeAccess().type().createLockedAccess(), name());
+	}
+	
+	interface Parameterisable {
+		int getNumParameter();
+		ParameterDeclaration getParameter(int i);
+		int getIndexOfParameter(ParameterDeclaration d);
+	}
+	
+	CatchClause implements Parameterisable;
+	Callable extends Parameterisable;
+	
+	public int BasicCatch.getNumParameter() { return 1; }
+	public ParameterDeclaration BasicCatch.getParameter(int i) {
+		if(i == 0)
+			return getParameter();
+		throw new IllegalArgumentException("catch clauses only have one argument");
+	}
+	public int BasicCatch.getIndexOfParameter(ParameterDeclaration pd) {
+		return pd == this.getParameter() ? 0 : -1;
+	}
+	
+	inh Parameterisable ParameterDeclaration.parameterOwner();
+	eq Program.getChild().parameterOwner() { throw new IllegalStateException("parameterOwner() invoked on ParameterDeclaration not in tree"); }
+	eq ConstructorDecl.getParameter().parameterOwner() = this;
+	eq MethodDecl.getParameter().parameterOwner() = this;
+	eq BasicCatch.getParameter().parameterOwner() = this;
+}

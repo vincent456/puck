@@ -1,0 +1,117 @@
+aspect InlineAssignment {	
+	public void AssignSimpleExpr.inline() {
+		if(!(getParent() instanceof ExprStmt))
+			throw new RefactoringException("cannot inline this assignment");
+		if(!(getDest() instanceof VarAccess) || !((VarAccess)getDest()).decl().isLocalVariable())
+			throw new RefactoringException("can only inline assignment to local variable");
+		Stmt stmt = (Stmt)getParent();
+		VarAccess v = (VarAccess)getDest();
+		Expr rhs = makeConversionExplicit();
+		if(!rhs.locationsWritten().isEmpty())
+			throw new RefactoringException("cannot inline expressions with side effects");
+		SmallSet<Access> U = v.reachedUses();
+		SmallSet<CFGNode> C = rhs.collectExceptionalSucc();
+		if(!C.isEmpty() && !isAnticipated((VariableDeclaration)v.decl()))
+			throw new RefactoringException("expression may throw exception, but not inlined along all paths");
+		for(Access u : U) {
+			if(u.isDest())
+				throw new RefactoringException("cannot inline into destinations");
+			if(!u.reachingDefinitions().isSingleton())
+				throw new RefactoringException("ambiguous dataflow");
+			if(u.hostBodyDecl() != stmt.hostBodyDecl())
+				throw new RefactoringException("cannot inline across method boundaries");
+			if(!u.isAvailable(rhs))
+				throw new RefactoringException("expression to inline not available at inline location");
+			for(CFGNode c : C)
+				for(CFGNode w : u.precedingDefsUpTo(v))
+					if(!c.reachedUsesFor(((Access)w).getLocation()).isEmpty())
+						throw new RefactoringException("write to live variable may be lost");
+			Expr old_rhs = (Expr)rhs.fullCopyAndDetach();
+			rhs.lockAllNames();
+			rhs.lockThrowEdges();
+			rhs.lockSyncDependencies();
+			rhs.replaceWith(old_rhs);
+			u.replaceWith(rhs.precedence() > u.maxPrecedence() ? new ParExpr(rhs) : rhs);
+			rhs = old_rhs;
+			hostType().flushCaches();
+		}
+		// delete assignment
+		stmt.delete();
+	}
+	
+	public void AssignSimpleExpr.doInline() {
+		TypeDecl td = hostType();
+		inline();
+    	td.eliminate(LOCKED_THROW, LOCKED_SYNC, LOCKED_NAMES);
+	}
+	
+	public SmallSet<CFGNode> ASTNode.collectExceptionalSucc() {
+		SmallSet<CFGNode> res = SmallSet.<CFGNode>empty();
+		for(int i=0;i<getNumChild();++i)
+			res = res.union(getChild(i).collectExceptionalSucc());
+		return res;
+	}
+	public SmallSet<CFGNode> CFGNode.collectExceptionalSucc() {
+		return exceptionalSucc().union(super.collectExceptionalSucc());
+	}
+	
+	// all definitions preceding this node on the way back to n
+	syn lazy SmallSet<CFGNode> CFGNode.precedingDefsUpTo(CFGNode n) circular [SmallSet.<CFGNode>empty()] {
+		SmallSet<CFGNode> res = SmallSet.<CFGNode>empty();
+		if(this == n)
+			return res;
+		if(isDef())
+			res = SmallSet.singleton((CFGNode)this);
+		for(CFGNode p : pred())
+			res = res.union(p.precedingDefsUpTo(n));
+		return res;
+	}
+	
+	// determines whether v is anticipated at this node
+	syn lazy boolean CFGNode.isAnticipated(VariableDeclaration v) circular [true] {
+		if(makesAnticipated(v))
+			return true;
+		for(CFGNode s : succ())
+			if(!s.isAnticipated(v))
+				return false;
+		return !killsAnticipated(v);
+	}
+	eq ExitStmt.isAnticipated(VariableDeclaration v) = false;
+	
+	syn lazy boolean CFGNode.makesAnticipated(VariableDeclaration v) = false;
+	eq Access.makesAnticipated(VariableDeclaration v) = isSource() && v == getLocation();
+	
+	syn lazy boolean CFGNode.killsAnticipated(VariableDeclaration v) = false;
+	eq Access.killsAnticipated(VariableDeclaration v) = isDest() && v == getLocation();
+	
+	// determines whether e is available at this node
+	syn lazy boolean CFGNode.isAvailable(ASTNode e) circular [false] {
+		if(makesAvailable(e))
+			return true;
+		if(makesUnavailable(e))
+			return false;
+		for(CFGNode p : pred())
+			if(!p.isAvailable(e))
+				return false;
+		return true;
+	}
+	
+	public boolean CFGNode.makesAvailable(ASTNode e) {
+		return this == e;
+	}
+	
+	public boolean CFGNode.makesUnavailable(ASTNode e) {
+		for(Location l : (Collection<Location>)e.locationsRead())
+			if(isReachingDefinitionFor(l))
+				return true;
+		return false;
+	}
+	
+	public boolean Access.makesUnavailable(ASTNode e) {
+		if(getLocation() != null)
+			for(Location l : (Collection<Location>)e.locationsWritten())
+				if(getLocation().mayAlias(l))
+					return true;
+		return super.makesUnavailable(e);
+	}
+}

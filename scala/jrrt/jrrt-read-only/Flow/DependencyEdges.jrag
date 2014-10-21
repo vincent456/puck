@@ -1,0 +1,130 @@
+aspect DependencyEdges {
+	abstract class DependencyEdge {
+		protected abstract boolean isStart(CFGNode node);
+		protected abstract boolean isTarget(CFGNode start, CFGNode end);
+		public abstract SmallSet<CFGNode> collect(CFGNode start);
+	}
+	
+	abstract class BackwardEdge extends DependencyEdge {
+		public abstract boolean terminates(CFGNode start, CFGNode end);
+		public SmallSet<CFGNode> collect(CFGNode start) {
+			if(!isStart(start))
+				return SmallSet.<CFGNode>empty();
+			return start.collect(this, start);
+		}
+	}
+	
+	abstract class IrreflexiveBackwardEdge extends BackwardEdge {
+		public SmallSet<CFGNode> collect(CFGNode start) {
+			if(!isStart(start))
+				return SmallSet.<CFGNode>empty();
+			SmallSet<CFGNode> res = SmallSet.<CFGNode>empty();
+			for(CFGNode p : (SmallSet<CFGNode>)start.pred())
+				res = res.union(p.collect(this, start));
+			return res;
+		}
+	}
+	
+	syn lazy SmallSet<CFGNode> CFGNode.collect(BackwardEdge be, CFGNode start) 
+		circular [SmallSet.<CFGNode> empty()] {
+		SmallSet<CFGNode> res = be.isTarget(start, this) ? SmallSet.singleton((CFGNode)this)
+													  : SmallSet.<CFGNode>empty();
+		if(be.terminates(start, this))
+			return res;
+		for(CFGNode p : pred())
+			res = res.union(p.collect(be, start));
+		return res;
+	}
+	
+	abstract class ForwardEdge extends DependencyEdge {
+		public abstract boolean terminates(CFGNode start, CFGNode end);
+		public SmallSet<CFGNode> collect(CFGNode start) {
+			if(!isStart(start))
+				return SmallSet.<CFGNode>empty();
+			return start.collect(this, start);
+		}
+	}
+	
+	abstract class IrreflexiveForwardEdge extends ForwardEdge {
+		public SmallSet<CFGNode> collect(CFGNode start) {
+			if(!isStart(start))
+				return SmallSet.<CFGNode>empty();
+			SmallSet<CFGNode> res = SmallSet.<CFGNode>empty();
+			for(CFGNode p : (SmallSet<CFGNode>)start.succ())
+				res = res.union(p.collect(this, start));
+			return res;
+		}
+	}
+	
+	syn lazy SmallSet<CFGNode> CFGNode.collect(ForwardEdge fe, CFGNode start) 
+		circular [SmallSet.<CFGNode> empty()] {
+		SmallSet<CFGNode> res = fe.isTarget(start, this) ? SmallSet.singleton((CFGNode)this)
+												  	  : SmallSet.<CFGNode>empty();
+		if(fe.terminates(start, this))
+			return res;
+		for(CFGNode p : succ())
+			res = res.union(p.collect(fe, start));
+		return res;
+	}
+
+	class PreservationStrategy {
+		private DependencyEdge edge;
+		
+		public PreservationStrategy(DependencyEdge edge) {
+			this.edge = edge;
+		}
+		
+		public DependencyEdge getEdge() {
+			return edge;
+		}
+		
+		public boolean preserve(CFGNode n) { return true; }
+		public boolean reflect(CFGNode n) { return true; }
+	}
+	
+	protected IdentityHashMap<DependencyEdge, SmallSet<CFGNode>> ASTNode.dependencies = null;
+	public IdentityHashMap<DependencyEdge, SmallSet<CFGNode>> CFGNode.getDependencies() {
+		if(dependencies == null)
+			dependencies = new IdentityHashMap<DependencyEdge, SmallSet<CFGNode>>();
+		return dependencies;
+	}
+	
+	public void ASTNode.lockDependencies(DependencyEdge... edges) {
+		for(int i=0;i<getNumChild();++i) {
+			ASTNode child = getChild(i);
+			if(child != null)
+				child.lockDependencies(edges);
+		}
+	}
+	
+	public void CFGNode.lockDependencies(DependencyEdge... edges) {
+		for(DependencyEdge e : edges)
+			if(e.isStart(this))
+				getDependencies().put(e, e.collect(this));
+		super.lockDependencies(edges);
+	}
+
+	public void ASTNode.unlockDependencies(PreservationStrategy r) {
+		for(int i=0;i<getNumChild();++i) {
+			ASTNode child = getChild(i);
+			if(child != null)
+				child.unlockDependencies(r);
+		}		
+	}
+	
+	public void CFGNode.unlockDependencies(PreservationStrategy r) {
+		DependencyEdge e = r.getEdge();
+		if(e.isStart(this)) {
+			SmallSet<CFGNode> old_edges = getDependencies().get(e);
+			if(old_edges != null) {
+				SmallSet<CFGNode> new_edges = e.collect(this);
+				if(r.preserve(this) && !old_edges.subsetOf(new_edges))
+					throw new RefactoringException("couldn't preserve edge: "+e);
+				if(r.reflect(this) && !new_edges.subsetOf(old_edges))
+					throw new RefactoringException("couldn't reflect edge: "+e);
+			}
+		}
+		super.unlockDependencies(r);
+	}
+	
+}

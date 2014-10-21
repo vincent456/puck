@@ -1,0 +1,35 @@
+aspect ExtractClosureToMethod {
+	public MethodDecl AnonymousMethod.extractToMethod(int visibility, String name) {
+		Program root = programRoot();
+		TypeDecl typedecl = hostType();
+		eliminateOutParams();
+		lockAllNames();
+		MethodDecl md = asNamedMethod(visibility, name);
+		Literal placeHolder = new NullLiteral("null");
+		replaceWith(placeHolder);
+		int index = typedecl.getBodyDeclList().getIndexOfChild(hostBodyDecl());
+		root.lockMethodNames(name);
+		typedecl.getBodyDeclList().insertChild(md, index+1);
+		typedecl.flushCaches();
+		for(Iterator<MethodDecl> iter=typedecl.localMethodsIterator();iter.hasNext();) {
+			MethodDecl md2 = iter.next();
+			if(md != md2 && md.signature().equals(md2.signature()))
+				throw new RefactoringException("method with same signature exists");
+		}
+		if(!typedecl.ancestorMethods(md.signature()).isEmpty())
+			throw new RefactoringException("extracted method would override or hide other method");
+		if(!typedecl.descendantMethods(md.signature()).isEmpty())
+			throw new RefactoringException("extracted method would be overridden or hidden by other method");
+		placeHolder.replaceWith(md.createLockedAccess((List<Expr>) getArgList().fullCopyAndDetach()));
+		return md;
+	}
+
+	inh boolean AnonymousMethod.inExplicitConstructorInvocation();
+	
+	public MethodDecl AnonymousMethod.doExtractToMethod(int visibility, String name) {
+		TypeDecl td = hostType();
+		MethodDecl md = extractToMethod(visibility, name);
+		td.eliminate(LOCKED_NAMES);
+		return md;
+	}
+}

@@ -1,0 +1,3 @@
+FreshParameter : ParameterDeclaration;
+FreshLocalVariable : VariableDeclaration;
+FreshField : FieldDeclaration;

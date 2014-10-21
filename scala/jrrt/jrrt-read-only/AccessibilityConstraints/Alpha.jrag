@@ -1,0 +1,50 @@
+aspect Alpha {
+	// computes minimal access modifier that "this" needs to have in order to be accessible from inside type "type" in package "pkg"
+	// "type" may be null, but "pkg" may not
+	syn lazy int TypeDecl.minAccess(String pkg, TypeDecl type) {
+		if(sourceTypeDecl() != this)
+			return sourceTypeDecl().minAccess(pkg, type);
+		if(type != null && this.topLevelType() == type.topLevelType())
+			return ASTNode.VIS_PRIVATE;
+		if(isTopLevelType()) {
+			if(this.hostPackage().equals(pkg))
+				return ASTNode.VIS_PACKAGE;
+		} else if(isMemberType() && !isLocalClass()) {
+			BodyDecl bd = (BodyDecl)getParent();
+			return bd.minAccess(pkg, type);
+		} else {
+			// local or anonymous class
+			return ASTNode.VIS_PACKAGE;
+		}
+		return ASTNode.VIS_PUBLIC;
+	}
+	eq ArrayDecl.minAccess(String pkg, TypeDecl type) = elementType().minAccess(pkg, type);
+	
+	// see TypeDecl.minAccess(String, TypeDecl)
+	syn lazy int BodyDecl.minAccess(String pkg, TypeDecl type) {
+		if(type != null && this.hostType().topLevelType() == type.topLevelType())
+			return ASTNode.VIS_PRIVATE;
+		if(pkg.equals(this.hostType().hostPackage()))
+			return ASTNode.VIS_PACKAGE;
+		if(type != null && type.withinBodyThatSubclasses(hostType()) != null)
+			return ASTNode.VIS_PROTECTED;
+		return ASTNode.VIS_PUBLIC;
+	}
+	eq InstanceInitializer.minAccess(String pkg, TypeDecl type) = -1;
+	eq StaticInitializer.minAccess(String pkg, TypeDecl type) = -1;
+	
+	public int TypeDecl.minAccess(Access acc) { return minAccess(acc.hostPackage(), acc.hostType()); }
+	public int BodyDecl.minAccess(Access acc) { return minAccess(acc.hostPackage(), acc.hostType()); }
+	
+	// the minimum accessibility needed for a member of "that" to be accessible within "this"
+	// should be merged with BodyDecl.minAccess above
+	syn lazy int TypeDecl.minMemberAccess(TypeDecl that) {
+		if(this.topLevelType() == that.topLevelType())
+			return ASTNode.VIS_PRIVATE;
+		if(this.hostPackage().equals(that.hostPackage()))
+			return ASTNode.VIS_PACKAGE;
+		if(this.withinBodyThatSubclasses(that) != null)
+			return ASTNode.VIS_PROTECTED;
+		return ASTNode.VIS_PUBLIC;
+	}
+}

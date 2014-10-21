@@ -1,0 +1,138 @@
+aspect MoveMembers {
+	public void TypeDecl.moveMembers(Collection<MemberDecl> members, TypeDecl target) {
+		for(MemberDecl md : members) {
+			if(!md.fromSource() || md.isNative())
+				throw new RefactoringException("cannot move this member");
+			md.makeModifiersExplicit();
+			md.moveTo(target);
+		}
+		programRoot().flushCaches();
+	}
+	
+	public void TypeDecl.doMoveMembers(Collection<MemberDecl> members, TypeDecl target) {
+		moveMembers(members, target);
+		programRoot().eliminate(LOCKED_DATAFLOW, LOCKED_NAMES, LOCKED_OVERRIDING);
+	}
+	
+	public void MemberDecl.moveTo(TypeDecl target) {
+		throw new RefactoringException("cannot move this kind of member");
+	}
+	
+	public void FieldDeclaration.moveTo(TypeDecl target) {
+		if(!target.fromSource())
+			throw new RefactoringException("cannot insert field into library class");
+		if(hasInit())
+			getInit().lockDataFlow();
+		else if(isFinal())
+			throw new RefactoringException("cannot move uninitialised final field");
+		for(ThisAccess acc : collectThisAccesses())
+			if(acc.isQualified())
+				throw new RefactoringException("Pull Up cannot preserve enclosing instances");
+		
+		lockAllNames();
+		programRoot().lockNames(name());
+		hostType().removeBodyDecl(this);
+		target.insertField(this);
+		
+		// check that everything went OK wrt types
+		Collection<TypeConstraint> typeConstraints =
+			programRoot().typeConstraints(new Predicate<TypeConstraint>() {
+				public boolean holds(TypeConstraint constr) {
+					return constr.relevantForSubtree(FieldDeclaration.this);
+				}
+			});
+		for(TypeConstraint typeConstraint : typeConstraints)
+			if(!typeConstraint.solved())
+				throw new RefactoringException("type constraint violated: " + typeConstraint.describe());
+	}
+	
+	public void MethodDecl.moveTo(TypeDecl target) {
+		if(!target.fromSource())
+			throw new RefactoringException("cannot insert method into library class");
+		if(!isStatic())
+			throw new RefactoringException("cannot move instance methods");
+		lockAllNames();
+		programRoot().lockNames(name());
+		TypeDecl host = hostType();
+		MethodDecl dummy = (MethodDecl) this.fullCopyAndDetach();
+		dummy.setBlockOpt(new Opt());
+		target.insertUnusedMethod(dummy);
+		host.removeBodyDecl(this);
+		dummy.replaceWith(this);
+	}
+	
+	public void MemberTypeDecl.moveTo(TypeDecl target) {
+		if(!target.fromSource())
+			throw new RefactoringException("cannot insert type into library class");
+		for(ThisAccess acc : collectThisAccesses())
+			if(acc.isQualified())
+				throw new RefactoringException("Pull Up cannot preserve enclosing instances");
+		
+		Program root = programRoot();
+		typeDecl().lockAllNames();
+		Collection<String> endangeredNames = new HashSet<String>();
+		endangeredNames.add(typeDecl().name());
+		collectAllFieldAndTypeNames(endangeredNames);
+		root.lockNames(endangeredNames);
+		endangeredNames.clear();
+		collectAllMethodNames(endangeredNames);
+		root.lockMethodNames(endangeredNames);
+		root.lockOverridingDependencies(endangeredNames);
+		
+		Collection<TypeDecl> endangeredTypeDecls = new LinkedList<TypeDecl>();
+		collectAllMemberTypeDecls(endangeredTypeDecls);
+		root.lockConstructorCalls(endangeredTypeDecls);
+
+		hostType().removeBodyDecl(this);
+		target.insertUnusedType(typeDecl());
+		
+		// check that everything went OK wrt types
+		Collection<TypeConstraint> typeConstraints =
+			root.typeConstraints(new Predicate<TypeConstraint>() {
+				public boolean holds(TypeConstraint constr) {
+					return constr.relevantForSubtree(MemberTypeDecl.this);
+				}
+			});
+		for(TypeConstraint typeConstraint : typeConstraints)
+			if(!typeConstraint.solved())
+				throw new RefactoringException("type constraint violated: " + typeConstraint.describe());		
+	}
+	
+	// collect of all member type declarations in the AST below this node
+	protected void ASTNode.collectAllMemberTypeDecls(Collection<TypeDecl> res) {
+		for(int i=0;i<getNumChild();++i)
+			getChild(i).collectAllMemberTypeDecls(res);		
+	}
+	
+	protected void MemberTypeDecl.collectAllMemberTypeDecls(Collection<TypeDecl> res) {
+		res.add(typeDecl());
+		super.collectAllMemberTypeDecls(res);
+	}	
+	
+	// collect the names of all fields and types in the AST below this node
+	protected void ASTNode.collectAllFieldAndTypeNames(Collection<String> res) {
+		for(int i=0;i<getNumChild();++i)
+			getChild(i).collectAllFieldAndTypeNames(res);
+	}
+	
+	protected void FieldDeclaration.collectAllFieldAndTypeNames(Collection<String> res) {
+		res.add(name());
+		super.collectAllFieldAndTypeNames(res);
+	}
+	
+	protected void TypeDecl.collectAllFieldAndTypeNames(Collection<String> res) {
+		res.add(name());
+		super.collectAllFieldAndTypeNames(res);
+	}
+	
+	// collect the names of all methods in the AST below this node
+	protected void ASTNode.collectAllMethodNames(Collection<String> res) {
+		for(int i=0;i<getNumChild();++i)
+			getChild(i).collectAllMethodNames(res);
+	}
+	
+	protected void MethodDecl.collectAllMethodNames(Collection<String> res) {
+		res.add(name());
+		super.collectAllMethodNames(res);
+	}
+}

@@ -1,0 +1,7 @@
+aspect RemoveUnusedLocal {
+	/* remove an unused local variable declaration */
+	public void VariableDeclaration.removeUnused() {
+		if(uses().isEmpty() && !hasInit())
+			delete();
+	}
+}

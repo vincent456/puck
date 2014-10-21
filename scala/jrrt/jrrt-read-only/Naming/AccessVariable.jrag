@@ -1,0 +1,372 @@
+import java.util.*;
+
+/*
+ * The inherited attribute accessVariable(v) computes a SymbolicVarAccess which
+ * describes how to access variable v from the current location in the AST. This
+ * SymbolicVarAccess can in turn be used to construct an actual access.
+ * 
+ * The implementation of accessVariable is mostly parallel to lookupVariable with
+ * the same clauses and the same control flow, but with additional calls to
+ * methods "moveDownTo" and "moveInto", which transport a symbolic access from a
+ * parent type to a child type resp. an enclosing type to a nested type, adding
+ * information about required qualifications in the process.
+ */
+
+aspect AccessVariable {
+	interface Scope { }
+	TypeDecl implements Scope;
+	Callable extends Scope;
+	CatchClause implements Scope;
+	ForStmt implements Scope;
+	EnhancedForStmt implements Scope;
+	
+	syn boolean Scope.hasVariable(String name);
+	syn boolean Callable.hasVariable(String name);
+	eq TypeDecl.hasVariable(String name) = !memberFields(name).isEmpty();
+	eq Callable.hasVariable(String name) = !parameterDeclaration(name).isEmpty();
+	eq BasicCatch.hasVariable(String name) = getParameter().name().equals(name);
+	eq ForStmt.hasVariable(String name) = localVariableDeclaration(name) != null;
+	eq EnhancedForStmt.hasVariable(String name) = getVariableDeclaration().name().equals(name);
+	
+	interface SymbolicVarAccess {
+		SymbolicVarAccess moveInto(Scope s);
+		boolean isUnknownVarAccess();
+		public SymbolicVarAccess ensureFinal();
+		public SymbolicVarAccess ensureStatic();
+		public Access accessByModifyingAccess(VarAccess originalAccess);
+	}
+	
+	class SymbolicFieldAccess implements SymbolicVarAccess {
+		private FieldDeclaration target;
+		private TypeDecl source;
+		private TypeDecl bend;
+		private boolean directlyVisible;  // i.e., neither shadowed nor hidden
+		
+		public SymbolicFieldAccess(FieldDeclaration target) {
+			this.target = target;
+			this.source = target.hostType();
+			this.bend = target.hostType();
+			this.directlyVisible = true;
+		}
+		
+		public TypeDecl getSource() { return source; }
+		public TypeDecl getBend() { return bend; }
+		
+		public SymbolicFieldAccess moveDownTo(TypeDecl td) {
+			bend = td;
+			if(!td.localFields(target.name()).isEmpty() || td.ambiguousFieldName(target.name()))
+				directlyVisible = false;
+			else if(directlyVisible)
+				source = td;
+			return this;
+		}
+		
+		public SymbolicFieldAccess moveInto(Scope s) {
+			if(s.hasVariable(target.name()))
+				directlyVisible = false;
+			return this;
+		}
+		
+		public SymbolicFieldAccess ensureStatic() {
+			return target.isStatic() ? this : target.unknownVarAccess();
+		}
+		
+		public SymbolicFieldAccess ensureFinal() {
+			return target.isFinal() ? this : target.unknownVarAccess();
+		}
+		
+		public SymbolicFieldAccess ensureAccessible(Expr e) {
+			if(target instanceof FieldDeclaration && e.mayAccess((FieldDeclaration)target))
+				return this;
+			return target.unknownVarAccess();
+		}
+		
+		public boolean isUnknownVarAccess() { return false; }
+	}
+	
+	LocalDeclaration extends SymbolicVarAccess;
+	public SymbolicVarAccess LocalDeclaration.moveInto(Scope s) {
+		if(s.hasVariable(name()))
+			return unknownVarAccess();
+		return this;
+	}
+	public boolean LocalDeclaration.isUnknownVarAccess() {
+		return false;
+	}
+	public SymbolicVarAccess LocalDeclaration.ensureStatic() {
+		return unknownVarAccess();
+	}
+	public SymbolicVarAccess LocalDeclaration.ensureFinal() {
+		return isFinal() ? this : unknownVarAccess();
+	}
+	
+	class UnknownVarAccess extends SymbolicFieldAccess {
+		public UnknownVarAccess(FieldDeclaration unknownField) {
+			super(unknownField);
+		}
+		
+		public UnknownVarAccess moveDownTo(TypeDecl td) { return this; }
+		public UnknownVarAccess moveInto(Scope s) { return this; }
+		public UnknownVarAccess ensureStatic() { return this; }
+		public UnknownVarAccess ensureFinal() { return this; }
+		public UnknownVarAccess ensureAccessible(Expr e) { return this; }
+		
+		public boolean isUnknownVarAccess() { return true; }
+	}
+	syn lazy UnknownVarAccess Program.unknownVarAccess() = new UnknownVarAccess(unknownType().findSingleVariable("unknown"));
+	eq Program.getChild().unknownVarAccess() = unknownVarAccess();
+	inh UnknownVarAccess Expr.unknownVarAccess();
+	inh UnknownVarAccess TypeDecl.unknownVarAccess();
+	inh UnknownVarAccess Stmt.unknownVarAccess();
+	inh UnknownVarAccess Callable.unknownVarAccess();
+	inh UnknownVarAccess Variable.unknownVarAccess();
+	inh UnknownVarAccess CatchClause.unknownVarAccess();
+	
+	// a field name is ambiguous in a type if it is inherited from more than one ancestor (e.g., both from a superclass and
+	// a superinterface)
+	syn boolean TypeDecl.ambiguousFieldName(String name) = memberFields(name).size() > 1;
+	
+	// cf. lookupVariable(String)
+	inh SymbolicVarAccess TypeDecl.accessVariable(Variable decl);
+	inh SymbolicVarAccess BodyDecl.accessVariable(Variable decl);
+	inh SymbolicVarAccess Stmt.accessVariable(Variable decl);
+	inh SymbolicVarAccess Block.accessVariable(Variable decl);
+	inh SymbolicVarAccess ForStmt.accessVariable(Variable decl);
+	inh SymbolicVarAccess Expr.accessVariable(Variable decl);
+	inh SymbolicVarAccess CatchClause.accessVariable(Variable decl);
+	inh SymbolicVarAccess VariableDeclaration.accessVariable(Variable decl);
+	inh SymbolicVarAccess ParameterDeclaration.accessVariable(Variable decl);
+
+	eq Program.getChild().accessVariable(Variable decl) = unknownVarAccess();
+
+	eq TypeDecl.getBodyDecl(int i).accessVariable(Variable decl) {
+		SymbolicVarAccess acc = accessMemberField(decl);
+		if(!acc.isUnknownVarAccess()) return acc;
+		acc = accessVariable(decl).moveInto(this);
+		if(inStaticContext() || isStatic())
+			acc = acc.ensureStatic();
+		if(acc instanceof Variable)
+			acc = acc.ensureFinal();
+		return acc;
+	}
+
+	// The scope of a parameter of a method is the entire body of the method
+	eq MethodDecl.getBlock().accessVariable(Variable decl) {
+		SymbolicVarAccess acc = accessParameter(decl);
+		if(!acc.isUnknownVarAccess()) return acc;
+		return accessVariable(decl).moveInto(this);
+	}
+	
+	eq MethodDecl.getParameter().accessVariable(Variable decl) = accessParameter(decl);
+
+	eq ConstructorDecl.getBlock().accessVariable(Variable decl) {
+		SymbolicVarAccess acc = accessParameter(decl);
+		if(!acc.isUnknownVarAccess()) return acc;
+		return accessVariable(decl).moveInto(this);
+	}
+
+	eq ConstructorDecl.getConstructorInvocation().accessVariable(Variable decl) {
+		SymbolicVarAccess acc = accessParameter(decl);
+		if(!acc.isUnknownVarAccess()) return acc;
+		if(hostType().memberFields(decl.name()).contains(decl) && !decl.isStatic())
+			return unknownVarAccess();
+		return accessVariable(decl).moveInto(this);
+	}
+	
+	eq ConstructorDecl.getParameter().accessVariable(Variable decl) = accessParameter(decl);
+
+	// The scope of a local variable declaration in a block is the rest of
+	// the block in which the declaration appears
+	eq Block.getStmt(int index).accessVariable(Variable decl) {
+		SymbolicVarAccess acc = accessLocalVariable(decl, index);
+		if(!acc.isUnknownVarAccess()) return acc;
+		return accessVariable(decl).moveInto(asScope(index));
+	}
+	
+	// does this block declare a variable [name] at or before index i?
+	syn lazy Scope Block.asScope(int index) {
+		final int j = index;
+		return new Scope() {
+			public boolean hasVariable(String name) {
+				for(int i=0;i<=j;++i)
+					if(getStmt(i) instanceof VariableDeclaration &&
+							((VariableDeclaration)getStmt(i)).name().equals(name))
+						return true;
+				return false;
+			}
+		};
+	}
+
+	// The scope of the parameter of an exception handler that is declared in a
+	// catch clause of a try statement is the entire block associated with the catch
+	eq CatchClause.getBlock().accessVariable(Variable decl) {
+		SymbolicVarAccess acc = accessParameter(decl);
+		if(!acc.isUnknownVarAccess()) return acc;
+		return accessVariable(decl).moveInto(this);
+	}
+	eq BasicCatch.getParameter().accessVariable(Variable decl) = accessParameter(decl);
+
+	// The scope of a local variable declared in the ForInit part of the for
+	// statement includes all of the following:
+	eq ForStmt.getInitStmt().accessVariable(Variable decl) = localAccess(decl);
+	eq ForStmt.getCondition().accessVariable(Variable decl) = localAccess(decl);
+	eq ForStmt.getUpdateStmt().accessVariable(Variable decl) = localAccess(decl);
+	eq ForStmt.getStmt().accessVariable(Variable decl) = localAccess(decl);
+
+	// cf. localLookup(String)
+	syn SymbolicVarAccess ForStmt.localAccess(Variable decl) {
+		SymbolicVarAccess acc = accessLocalVariable(decl);
+		if(!acc.isUnknownVarAccess()) return acc;
+		return accessVariable(decl).moveInto(this);
+	}
+	
+	// cf. parameterDeclaration(String)
+	syn lazy SymbolicVarAccess Callable.accessParameter(Variable decl) {
+		for(ParameterDeclaration pd : getParameterList())
+			if(pd == decl)
+				return pd;
+		return unknownVarAccess();
+	}
+	
+	syn lazy SymbolicVarAccess CatchClause.accessParameter(Variable decl);
+	eq BasicCatch.accessParameter(Variable decl) =
+		getParameter() == decl ? getParameter() : unknownVarAccess();
+
+	syn lazy SymbolicVarAccess Block.accessLocalVariable(Variable decl, int index) {
+		for(int i=0;i<index&&i<getNumStmt();++i)
+			if(getStmt(i) == decl)
+				return (LocalDeclaration)decl;
+		return unknownVarAccess();
+	}
+	
+	syn lazy SymbolicVarAccess ForStmt.accessLocalVariable(Variable decl) {
+		for(Stmt s : getInitStmts())
+			if(s == decl)
+				return (LocalDeclaration)decl;
+		return unknownVarAccess();
+	}
+		
+	eq MethodAccess.getArg().accessVariable(Variable decl) = unqualifiedScope().accessVariable(decl);
+	eq ConstructorAccess.getArg().accessVariable(Variable decl) = unqualifiedScope().accessVariable(decl);
+	eq SuperConstructorAccess.getArg().accessVariable(Variable decl) = unqualifiedScope().accessVariable(decl);
+	eq ArrayAccess.getExpr().accessVariable(Variable decl) = unqualifiedScope().accessVariable(decl);
+	eq ArrayTypeWithSizeAccess.getExpr().accessVariable(Variable decl) = unqualifiedScope().accessVariable(decl);
+	eq ClassInstanceExpr.getArg().accessVariable(Variable decl) = unqualifiedScope().accessVariable(decl);
+
+	eq AbstractDot.getRight().accessVariable(Variable decl) = getLeft().qualifiedAccessVariable(decl);
+
+	eq ParseName.qualifiedAccessVariable(Variable decl) = unknownVarAccess();
+	eq PackageOrTypeAccess.qualifiedAccessVariable(Variable decl) = unknownVarAccess();
+	eq AmbiguousAccess.qualifiedAccessVariable(Variable decl) = unknownVarAccess();
+
+	// cf. qualifiedLookupVariable(String)
+	syn SymbolicVarAccess Expr.qualifiedAccessVariable(Variable decl) {
+		if(type().accessibleFrom(hostType()))
+			return type().accessMemberField(decl).ensureAccessible(this);
+		return unknownVarAccess();
+	}
+
+	eq PackageAccess.qualifiedAccessVariable(Variable decl) = unknownVarAccess();
+
+	eq TypeAccess.qualifiedAccessVariable(Variable decl) {
+		if(type().accessibleFrom(hostType())) {
+			SymbolicFieldAccess acc = type().accessMemberField(decl);
+			acc = acc.ensureAccessible(this);
+			if(type().isClassDecl())
+				acc = acc.ensureStatic();
+			return acc;
+		}
+		return unknownVarAccess();
+	}
+
+	// cf. memberFields(String)
+	syn SymbolicFieldAccess TypeDecl.accessMemberField(Variable decl) = 
+		accessField(decl);
+
+	// cf. localFields(String)
+	syn SymbolicFieldAccess TypeDecl.accessLocalField(Variable decl) {
+		for(Iterator iter = localFields(decl.name()).iterator(); iter.hasNext(); ) {
+			FieldDeclaration f = (FieldDeclaration)iter.next();
+			if(f.equals(decl))
+				return new SymbolicFieldAccess(f);
+		}
+		return unknownVarAccess();
+	}
+
+	// cf. fields(String)
+	syn SymbolicFieldAccess TypeDecl.accessField(Variable decl) = 
+		accessLocalField(decl);
+	
+	syn boolean TypeDecl.canInherit(Variable v) {
+		if(v instanceof FieldDeclaration) {
+			FieldDeclaration fd = (FieldDeclaration)v;
+			return !fd.isPrivate() && fd.accessibleFrom(this); 
+		}
+		return false;
+	}
+
+	eq ClassDecl.accessField(Variable decl) {
+		SymbolicFieldAccess acc = accessLocalField(decl);
+		if(!acc.isUnknownVarAccess()) return acc;
+		if(hasSuperclass()) {
+			acc = superclass().accessField(decl);
+			if(!acc.isUnknownVarAccess() && canInherit(decl))
+				return acc.moveDownTo(this);
+		}
+		for(Iterator iter = interfacesIterator(); iter.hasNext(); ) {
+			TypeDecl type = (TypeDecl)iter.next();
+			acc = type.accessField(decl);
+			if(!acc.isUnknownVarAccess() && canInherit(decl))
+				return acc.moveDownTo(this);
+		}
+		return unknownVarAccess();
+	}
+
+	eq InterfaceDecl.accessField(Variable decl) {
+		SymbolicFieldAccess acc = accessLocalField(decl);
+		if(!acc.isUnknownVarAccess()) return acc;
+		for(Iterator iter = superinterfacesIterator(); iter.hasNext(); ) {
+			TypeDecl type = (TypeDecl)iter.next();
+			acc = type.accessField(decl);
+			if(!acc.isUnknownVarAccess() && canInherit(decl))
+				return acc.moveDownTo(this);
+		}
+		return unknownVarAccess();
+	}
+		
+	// Java 5 extensions
+	eq ConstCase.getValue().accessVariable(Variable decl)
+  		= switchType().isEnumDecl() ? switchType().accessMemberField(decl) 
+  									: accessVariable(decl);
+
+	eq CompilationUnit.getTypeDecl().accessVariable(Variable decl) {
+		String name = decl.name();
+		for(ImportDecl i : getImportDecls())
+			if(!i.isOnDemand())
+				for(Iterator iter = i.importedFields(name).iterator(); iter.hasNext(); ) {
+					FieldDeclaration fd = (FieldDeclaration)iter.next();
+					if(fd == decl)
+						return new SymbolicFieldAccess(fd);
+				}
+		for(ImportDecl i : getImportDecls())
+			if(i.isOnDemand())
+				for(Iterator iter = i.importedFields(name).iterator(); iter.hasNext(); ) {
+					FieldDeclaration fd = (FieldDeclaration)iter.next();
+					if(fd == decl)
+						return new SymbolicFieldAccess(fd);
+				}
+		return accessVariable(decl);
+	}
+	inh SymbolicVarAccess CompilationUnit.accessVariable(Variable decl);
+	
+	eq EnhancedForStmt.getVariableDeclaration().accessVariable(Variable decl) = localAccessVariable(decl);
+	eq EnhancedForStmt.getExpr().accessVariable(Variable decl) = localAccessVariable(decl);
+	eq EnhancedForStmt.getStmt().accessVariable(Variable decl) = localAccessVariable(decl);
+
+	// cf. localLookupVariable(String)
+	syn SymbolicVarAccess EnhancedForStmt.localAccessVariable(Variable decl) {
+		if(getVariableDeclaration() == decl)
+			return getVariableDeclaration();
+		return accessVariable(decl).moveInto(this);
+	}	
+}

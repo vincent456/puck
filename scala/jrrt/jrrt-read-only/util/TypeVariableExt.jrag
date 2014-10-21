@@ -1,0 +1,131 @@
+aspect TypeVariableExt {
+	public TypeVariable TypeVariable.lockedCopy() {
+		List<Access> bounds = new List<Access>();
+		for(Access bound : getTypeBounds())
+			bounds.add(bound.type().createLockedAccess());
+		return new TypeVariable(new Modifiers(new List()), name(), new List(), bounds);
+	}
+	
+	interface GenericElement {
+		int getNumTypeParameter();
+		TypeVariable getTypeParameter(int i);
+	}
+	
+	GenericMethodDecl implements GenericElement;
+	GenericConstructorDecl implements GenericElement;
+	GenericTypeDecl implements GenericElement;
+	
+	inh GenericElement TypeVariable.owner();
+	eq Program.getChild().owner() { throw new IllegalStateException("owner() on type variable that is not in tree"); }
+	eq GenericElement.getTypeParameter().owner() = this;
+	eq GenericTypeDecl.getTypeParameter().owner() = this;
+	
+	// collect all references to type variables in a subtree
+	public java.util.Set<TypeAccess> ASTNode.typeVarAccesses() {
+		java.util.Set<TypeAccess> res = new LinkedHashSet<TypeAccess>();
+		typeVarAccesses(res);
+		return res;
+	}
+
+	public void ASTNode.typeVarAccesses(java.util.Set<TypeAccess> res) {
+		for(int i=0;i<getNumChild();++i) {
+			ASTNode child = getChild(i);
+			if(child != null)
+				child.typeVarAccesses(res);
+		}
+	}
+	
+	public void TypeAccess.typeVarAccesses(java.util.Set<TypeAccess> res) {
+		if(decl().isTypeVariable())
+			res.add(this);
+		super.typeVarAccesses(res);
+	}
+	
+	// collect all type variables used in a subtree
+	syn lazy Collection<TypeVariable> ASTNode.usedTypeVars() {
+		Collection<TypeVariable> res = new LinkedHashSet<TypeVariable>();
+		collectUsedTypeVars(res);
+		return res;
+	}
+	
+	protected void ASTNode.collectUsedTypeVars(Collection<TypeVariable> tvars) {
+		for(int i=0;i<getNumChild();++i) {
+			ASTNode child = getChild(i);
+			if(child != null)
+				child.collectUsedTypeVars(tvars);
+		}
+	}
+	
+	protected void TypeAccess.collectUsedTypeVars(Collection<TypeVariable> tvars) {
+		if(decl().isTypeVariable())
+			tvars.add((TypeVariable)decl());
+		super.collectUsedTypeVars(tvars);
+	}
+	
+	syn lazy Collection<TypeVariable> ASTNode.usedForeignTypeVars() {
+		Collection<TypeVariable> res = new LinkedHashSet<TypeVariable>();
+		for(TypeVariable tv : usedTypeVars())
+			if (!tv.isDescendantTo(this))
+				res.add(tv);
+		return res;
+	}
+
+	// does this subtree use type variables declared outside it?
+	public boolean ASTNode.usesForeignTypeVars() {
+		Collection<TypeVariable> tvars = usedTypeVars();
+		for(TypeVariable tv : tvars)
+			if(!tv.isDescendantTo(this))
+				return true;
+		return false;
+	}
+	
+	// translating type variables
+	public void ASTNode.translateTypeVars(Map<TypeVariable, TypeVariable> dict) {
+		for(int i=0;i<getNumChild();++i) {
+			ASTNode child = getChild(i);
+			if(child != null)
+				child.translateTypeVars(dict);
+		}
+	}
+	
+	public void TypeAccess.translateTypeVars(Map<TypeVariable, TypeVariable> dict) {
+		if(decl().isTypeVariable()) {
+			TypeVariable tv = (TypeVariable)decl();
+			TypeVariable tv2 = dict.get(tv);
+			if(tv2 != null)
+				lock(tv2);
+		}
+		super.translateTypeVars(dict);
+	}
+	
+	// translate type variables in a method from sup to sub
+	public void MethodDecl.translateTypeVars(TypeDecl sub, TypeDecl sup) {
+		if(!sub.isGenericType() || !sup.isParameterizedType())
+			return;
+		GenericTypeDecl gsub = (GenericTypeDecl)sub;
+		ParTypeDecl psup = (ParTypeDecl)sup;
+		GenericTypeDecl gsup = (GenericTypeDecl)psup.genericDecl();
+		Map<TypeVariable, TypeVariable> dict = new HashMap<TypeVariable, TypeVariable>();
+		for(TypeVariable tv : (List<TypeVariable>)gsub.getTypeParameterList()) {
+			for(int i=0;i<psup.getNumArgument();++i) {
+				if(psup.getArgument(i).type() == tv)
+					dict.put(tv, gsup.getTypeParameter(i));
+			}
+		}
+		translateTypeVars(dict);
+	}
+	
+	// JastAddJ represents type variable captures as bound accesses to type variables of the generic type
+	// this solution is a bit hackish, so let's solve it in a hackish way ;-)
+	public boolean Expr.isInaccessibleTypeVariable(TypeDecl td) {
+		if(!td.isTypeVariable())
+			return false;
+		return lookupType(td.name()) != td;
+	}
+	
+	public TypeDecl TypeVariable.uniqueUpperBound() {
+		if(getNumTypeBound() != 1)
+			throw new RefactoringException("captured type variable does not have unique bound");
+		return getTypeBound(0).type();
+	}
+}

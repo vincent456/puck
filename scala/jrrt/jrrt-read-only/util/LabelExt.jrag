@@ -1,0 +1,50 @@
+aspect LabelExt {
+	public boolean BreakStmt.removeUseless() {
+		// compute set of following CFG nodes, modulo flow-through constructs
+		/* for instance, in the following example _both_ "break" statements are useless:
+		 * 
+		 *   l: {
+		 *     {
+		 *       break l;
+		 *     }
+		 *     break l;
+		 *   }*/
+		SmallSet<CFGNode> following = SmallSet.<CFGNode>empty();
+		for(CFGNode f : following())
+			if(f.isFlowThrough())
+				following = following.union(f.weakSucc());
+			else
+				following = following.union(f);
+		SmallSet<CFGNode> succ = SmallSet.<CFGNode>empty();
+		for(CFGNode s : succ())
+			if(s.isFlowThrough())
+				succ = succ.union(s.weakSucc());
+			else
+				succ = succ.union(s);
+		if(following.equals(succ)) {
+			delete();
+			return true;
+		}
+		return false;
+	}
+	
+	public Stmt LabeledStmt.removeUselessLabel() {
+		if(uses().isEmpty()) {
+			Stmt stmt = getStmt();
+			replaceWith(stmt);
+			return stmt;
+		}
+		return this;
+	}
+	
+	inh LabeledStmt Block.lookupLabel(String name);
+	public String Block.pickFreshLabel(String base) {
+		if(lookupLabel(base) == null && canIntroduceLabel(base))
+			return base;
+		for(int i=0;;++i) {
+			String l = base + i;
+			if(lookupLabel(l) == null && canIntroduceLabel(l))
+				return l;
+		}
+	}	
+}

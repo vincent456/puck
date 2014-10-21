@@ -1,0 +1,76 @@
+aspect ClosureConversion {
+	public AnonymousMethod AnonymousMethod.convert() {
+		java.util.Set<Variable> V = new java.util.LinkedHashSet<Variable>(),
+								Val = new java.util.LinkedHashSet<Variable>(),
+								Out = new java.util.LinkedHashSet<Variable>(),
+								Ref = new java.util.LinkedHashSet<Variable>();
+		for(VarAccess va : getBlock().varAccesses()) {
+			if(va.hostBodyDecl() == hostBodyDecl() && va.isDest() && va.decl().isFinal())
+				throw new RefactoringException("cannot extract writes to final fields");
+			Variable v = va.decl();
+			if(v instanceof LocalDeclaration && !((ASTNode)v).isDescendantTo(this)) {
+				V.add(v);
+				if(hasIncomingDataflowEdge(va)) {
+					if(Out.contains(v)) {
+						Out.remove(v);
+						Ref.add(v);
+					} else if(!Ref.contains(v)) {
+						Val.add(v);
+					}
+				}
+				if(hasOutgoingDataflowEdge(va)) {
+					if(Val.contains(v)) {
+						Val.remove(v);
+						Ref.add(v);
+					} else if(!Ref.contains(v)) {
+						Out.add(v);
+					}
+				}
+			}
+		}
+		hostType().flushCaches();
+		for(Variable v : V) {
+			Modifiers mod = (Modifiers)v.getModifiers().fullCopyAndDetach();
+			Access tp = v.type().createLockedAccess();
+			String n = v.name();
+			if(Val.contains(v) || Out.contains(v) || Ref.contains(v)) {
+				if(Out.contains(v))
+					mod.addModifier("out");
+				else if(Ref.contains(v))
+					mod.addModifier("ref");
+				addParameter(new ParameterDeclaration(mod, tp, n));
+				addArg(new VarAccess(n));
+			} else {
+				getBlock().insertStmt(0, new VariableDeclaration(mod, tp, n, new Opt()));
+			}
+		}
+		for(TypeAccess ta : typeVarAccesses()) {
+			TypeVariable tv = (TypeVariable)ta.decl();
+			if(tv.owner() == enclosingBodyDecl())
+				addTypeVariable(tv);
+		}
+		hostType().flushCaches();
+		return this;
+	}
+	
+	private boolean AnonymousMethod.hasIncomingDataflowEdge(VarAccess v) {
+		return v.hasReachingDefinitionBefore(entry());
+	}
+	
+	private boolean AnonymousMethod.hasOutgoingDataflowEdge(VarAccess v) {
+		if(v.hasReachedUseAfter(exit()))
+			return true;
+		for(Access acc : getExceptions())
+			if(v.hasReachedUseAfter(acc))
+				return true;
+		return v.hasReachedUseAfter(uncheckedExceptionExit());
+	}
+	
+	// add a type variable
+	private void AnonymousMethod.addTypeVariable(TypeVariable tv) {
+		for(TypeVariable tv2 : getTypeParameters())
+			if(tv2.name().equals(tv.name()))
+				return;
+		addTypeParameter((TypeVariable)tv.fullCopyAndDetach());
+	}
+}

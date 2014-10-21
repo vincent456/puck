@@ -1,0 +1,93 @@
+/*
+ * The Extract Interface refactoring
+ */
+aspect ExtractInterface {
+	public void ClassDecl.extractInterface(String pkg, String name, Collection<MethodDecl> methods) {
+		if(!fromSource())
+			throw new RefactoringException("cannot extract from non-source type");
+		if(isEnumDecl())
+			throw new RefactoringException("cannot extract from enum");
+		if(subtype(typeThrowable())) 
+			throw new RefactoringException("cannot extract from throwable type");
+		for(MethodDecl md : methods) {
+			if(md.hostType() != this)
+				throw new RefactoringException("selected method is not a member of this type");
+			if(md.isStatic())
+				throw new RefactoringException("selected method is static");
+		}
+		
+		Program root = programRoot();
+		
+		// create new interface
+		List<BodyDecl> body = new List<BodyDecl>();
+		InterfaceDecl newInterface = new InterfaceDecl(new Modifiers(), name, new List<Access>(), body);
+		for(MethodDecl md : methods) {
+			Collection<MethodDecl> ovr = md.overriddenMethods();
+			MethodDecl new_md = md.lockedCopyWithEmptyBody();
+			new_md.setModifiers(new Modifiers("public", "abstract"));
+			body.add(new_md);
+			ovr.add(new_md);
+			md.lockOverriding(ovr);
+		}
+		
+		// insert it into the program
+		// TODO: determine path to put new compilation unit at
+		String pathName = compilationUnit().pathName();
+		String path = pathName.substring(0, pathName.lastIndexOf(File.separatorChar)+1);
+		root.insertUnusedType(path, pkg == null ? packageName() : pkg, new List<ImportDecl>(), newInterface);
+		
+		// make class implement it
+		addImplements(newInterface.createLockedAccess());
+		
+		// compute updatable expressions
+		Collection<TypeConstraintVariable> updatable = computeUpdatableExprs(root.typeConstraints(this), this, newInterface);
+		Collection<String> affectedMethods = new HashSet<String>();
+		Collection<TypeDecl> affectedConstructors = new HashSet<TypeDecl>();
+		
+		findAffectedCallables(updatable, newInterface, affectedMethods, affectedConstructors);
+		
+		root.lockMethodNames(affectedMethods);
+		root.lockConstructorCalls(affectedConstructors);
+		root.lockOverridingDependencies(affectedMethods);
+		
+		for(TypeConstraintVariable tcv : updatable) {
+			if(tcv instanceof Expr) {
+				Expr e = (Expr)tcv;
+				if(e.isTypeAccess())
+					e.replaceWith(newInterface.createLockedAccess());
+			}			
+		}
+	}
+	
+	public void ClassDecl.doExtractInterface(String pkg, String name, Collection<MethodDecl> methods) {
+		Program root = programRoot();
+		extractInterface(pkg, name, methods);
+		root.eliminate(LOCKED_NAMES, LOCKED_OVERRIDING);
+	}
+	
+	public static void ASTNode.findAffectedCallables(Collection<TypeConstraintVariable> update, TypeDecl newType, Collection<String> affectedMethods, Collection<TypeDecl> affectedConstructors) {
+		for(TypeConstraintVariable tcv : update) {
+			if(tcv instanceof Expr) {
+				Expr e = (Expr)tcv;
+				if(e.isParameterType()) {
+					Callable c = ((ParameterDeclaration)e.getParent()).getParameterisedCallable();
+					if(c instanceof MethodDecl)
+						affectedMethods.add(((MethodDecl)c).name());
+					else if(c instanceof ConstructorDecl)
+						affectedConstructors.add(((ConstructorDecl)c).hostType());
+				}
+				if(e.isLeftChildOfDot() && e.nextAccess() instanceof MethodAccess) {
+					MethodAccess ma = (MethodAccess)e.nextAccess();
+					MethodDecl oldTarget = ma.decl(),
+							   newTarget = oldTarget.ancestorIn(newType);
+					// TODO: this should be part of the type constraints
+					if(!oldTarget.throwsSameExceptionsAs(newTarget))
+						throw new RefactoringException("new target throws different exceptions");
+					if(oldTarget.type() != newTarget.type())
+						throw new RefactoringException("new target has different return type");
+					ma.lock(newTarget);
+				}
+			}
+		}		
+	}
+}

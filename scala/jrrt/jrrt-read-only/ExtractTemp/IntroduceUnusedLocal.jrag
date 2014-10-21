@@ -1,0 +1,23 @@
+aspect InsertUnusedLocal {
+	// insert an unused local variable declaration before a given statement
+	public VariableDeclaration Stmt.insertUnusedLocal(VariableDeclaration decl) {
+		Block block = this.enclosingBlock();
+		if(block == null)
+			throw new RefactoringException("local variable cannot be created outside block");
+		// ensure that output compiles
+		if(!canIntroduceLocal(decl.name()))
+			throw new RefactoringException("local variable of same name exists");
+		// ensure that bindings are preserved
+		block.lockNames(Collections.singleton(decl.name()));
+		insertStmtBefore(decl);
+		block.hostType().flushCaches();
+		return decl;
+	}
+	
+	public VariableDeclaration Expr.insertUnusedLocal(VariableDeclaration decl) {
+		Stmt s = enclosingStmt();
+		if(s == null)
+			throw new RefactoringException("no surrounding statement");
+		return s.insertUnusedLocal(decl);
+	}
+}

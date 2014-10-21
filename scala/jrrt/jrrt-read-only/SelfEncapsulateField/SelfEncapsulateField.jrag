@@ -1,0 +1,45 @@
+aspect SelfEncapsulateField {
+	public void FieldDeclaration.selfEncapsulate() {
+		MethodDecl getter = createGetter();
+		MethodDecl setter = null;
+		if(!isFinal())
+			setter = createSetter();
+		
+		programRoot().lockNames(name());
+		ArrayList<VarAccess> uses = usesOfAllCopies();
+		for(int i=0;i<uses.size();++i) {
+			VarAccess va = uses.get(i);
+			if(va.hostBodyDecl() == getter || va.hostBodyDecl() == setter)
+				continue;
+			TypeDecl receiver_type = va.decl().hostType();
+			if(va.isDest()) {
+				// constructors can write final fields
+				if(setter == null)
+					continue;
+				va.unfoldAbbrevAssign(uses);
+				ASTNode p = va;
+				if(va.isRightChildOfDot())
+					p = va.getParent();
+				if(p.getParent() instanceof AssignSimpleExpr && p.getChildIndex() == 0) {
+					AssignSimpleExpr assgn = (AssignSimpleExpr)p.getParent();
+					Access setter_invocation = setter.copyIn(receiver_type).createLockedAccess(new List<Expr>().add(assgn.getSource()));
+					if(va.isQualified())
+						setter_invocation = va.qualifier().qualifiesAccess(setter_invocation);
+					assgn.replaceWith(setter_invocation);
+				} else {
+					throw new RefactoringException("cannot encapsulate this access");
+				}
+			} else {
+				va.replaceWith(getter.copyIn(receiver_type).createLockedAccess(new List<Expr>()));
+			}
+		}
+		
+		getModifiers().setVisibility(VIS_PRIVATE);
+		programRoot().flushCaches();
+	}
+	
+	public void FieldDeclaration.doSelfEncapsulate() {
+		selfEncapsulate();
+		programRoot().eliminate(LOCKED_NAMES);
+	}
+}

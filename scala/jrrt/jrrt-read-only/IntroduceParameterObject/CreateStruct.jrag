@@ -1,0 +1,34 @@
+aspect CreateStruct {
+	// create a struct, i.e. a class with fields and no methods except a constructor
+	public static Pair<ClassDecl, Map<String, FieldDeclaration>> ASTNode.createStruct(String name, Iterable<? extends Variable> vars) {
+		return createStruct(name, VIS_PUBLIC, vars);
+	}
+	
+	public static Pair<ClassDecl, Map<String, FieldDeclaration>> ASTNode.createStruct(String name, int vis, Iterable<? extends Variable> vars) {
+		Map<String, FieldDeclaration> map = new HashMap<String, FieldDeclaration>();
+		List<BodyDecl> bds = new List<BodyDecl>();
+		List<ParameterDeclaration> ctor_parms = new List<ParameterDeclaration>();
+		Block ctor_body = new Block();
+		Modifiers ctor_mods = new Modifiers();
+		ctor_mods.setVisibility(vis);
+		ConstructorDecl ctor = new ConstructorDecl(ctor_mods, name, ctor_parms, new List<Access>(), new Opt<Stmt>(), ctor_body);
+		for(Variable v : vars) {
+			if(map.containsKey(v.name()))
+				throw new RefactoringException("duplicate field name");
+			Modifiers field_mods = (Modifiers) v.getModifiers().fullCopyAndDetach();
+			field_mods.setVisibility(v.isField() ? ((FieldDeclaration)v).getVisibility() : VIS_PUBLIC);
+			FieldDeclaration fd = new FieldDeclaration(field_mods, v.type().createLockedAccess(), v.name(), new Opt<Expr>());
+			bds.add(fd);
+			map.put(v.name(), fd);
+			if(!v.isField() || v.hasInit()) {
+				ParameterDeclaration pd = new ParameterDeclaration(v.type().createLockedAccess(), v.name());
+				ctor_parms.add(pd);
+				ctor_body.addStmt(AssignExpr.asStmt(fd.createLockedAccess(), pd.createLockedAccess()));
+			}
+		}
+		bds.add(ctor);
+		Modifiers class_mods = (Modifiers)ctor_mods.fullCopyAndDetach();
+		class_mods.addModifier("static");
+		return new Pair(new ClassDecl(class_mods, name, new Opt<Access>(), new List<Access>(), bds), map);
+	}
+}
