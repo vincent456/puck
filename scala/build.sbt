@@ -6,9 +6,7 @@ scalaVersion := "2.11.2"
 
 mainClass in Compile := Some("puck.Front")
 
-puckSvnDir := file(System.getenv("PUCK_SVN_DIR"))
-
-jrrtHome := puckSvnDir.value / "build"
+jrrtHome := baseDirectory.value / "jrrt"
 
 jrrtReadOnly := jrrtHome.value / "jrrt-read-only"
 

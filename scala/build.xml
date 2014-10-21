@@ -15,7 +15,7 @@
 <target name="defaultsettings" depends="configurablesettings">
   
   <property name="svn-dir" value="/home/lorilan/puck_svn"/>
-  <property name="jrrt-home" value="/${svn-dir}/build"/>
+  <property name="jrrt-home" value="./jrrt"/>
   <!-- <property name="jrrt-home" value="../build" /> -->
 
   <!-- location of jrrt-read-only -->
@@ -52,11 +52,11 @@
 	<!-- "tools" is the directory where generators and libraries are located. -->
 	<property name="tools" value="${Java1.4Frontend}/tools"/>
 	<!-- "jflex" is an ant task class for the scanner generator in JFlex.jar -->
-	<taskdef name="jflex" classname="JFlex.anttask.JFlexTask" classpath="${tools}/JFlex.jar"/>
+	<taskdef name="jflex" classname="jflex.anttask.JFlexTask" classpath="./lib/jflex-1.6.0.jar"/>
 	<!-- "beaver" is an ant task class for the parser generator in beaver.jar -->
-	<taskdef name="beaver" classname="beaver.comp.run.AntTask" classpath="${tools}/beaver-ant.jar"/>
+	<taskdef name="beaver" classname="beaver.comp.run.AntTask" classpath="./lib/beaver-ant-0.9.11.jar"/>
 	<!-- "jastadd" is an ant task class in jastadd2.jar -->
-	<taskdef name="jastadd" classname="jastadd.JastAddTask" classpath="${tools}/jastadd2.jar"/>
+	<taskdef name="jastadd" classname="jastadd.JastAddTask" classpath="./lib/jastadd2.jar"/>
 	<!-- "lib" is the directory where additional libraries are located -->
   <property name="lib" value="${Refactoring}/lib"/>
   <!-- "libpuck" is the directory where additional puck libraries are located -->
@@ -186,6 +186,7 @@
     
     <fileset dir="${puck-scala}/src/main/jrag" id="fs6">
       <include name="**/*.jrag"/>
+      <include name="**/*.jadd"/>
     </fileset>
     
     <fileset dir="${Refactoring}" id="fs7">
@@ -193,8 +194,7 @@
 			<include name="TypeConstraints/CollectTypeConstraints.jrag"/>
   	</fileset>
 
-<!--
-    <pathconvert pathsep="&#xA;" property="fsflat1" refid="fs1"/>
+    <!-- <pathconvert pathsep="&#xA;" property="fsflat1" refid="fs1"/>
     <echo>${fsflat1}</echo>
     <pathconvert pathsep="&#xA;" property="fsflat2" refid="fs2"/>
     <echo>${fsflat2}</echo>
@@ -207,8 +207,7 @@
     <pathconvert pathsep="&#xA;" property="fsflat6" refid="fs6"/>
     <echo>${fsflat6}</echo>
     <pathconvert pathsep="&#xA;" property="fsflat7" refid="fs7"/>
-    <echo>${fsflat7}</echo>
--->
+    <echo>${fsflat7}</echo> -->
 
       </jastadd>
       <!-- copy library files-->
@@ -247,7 +246,7 @@
   <copy todir="${base-outdir}/scanner" file="${Java1.4Frontend}/scanner/Unicode.java" preservelastmodified="true"/>
 </target>
 
-<target name="scanner1.5">
+<target name="scanner1.5" depends="settings">
   <mkdir dir="${base-outdir}/scanner"/>
   <concat destfile="${base-outdir}/scanner/JavaScanner.flex" binary="true" force="false">
     <filelist dir="${Refactoring}">
@@ -296,7 +295,7 @@
 
 
 
-<target name="parser1.4">
+<target name="parser1.4" depends="settings">
   <mkdir dir="${base-outdir}/parser"/>
   <!-- generate the parser phase 1, create a full .lalr specification from fragments-->
   <concat destfile="${base-outdir}/parser/JavaParser.all" binary="true" force="false">
@@ -319,7 +318,7 @@
 
 
 
-<target name="parser1.5">
+<target name="parser1.5" depends="settings">
   <mkdir dir="${base-outdir}/parser"/>
   <!-- generate the parser phase 1, create a full .lalr specification from fragments-->
   <concat destfile="${base-outdir}/parser/JavaParser.all" 
@@ -336,7 +335,7 @@
     </fileset>
   </concat>
   <!-- generate the parser phase 2, translating .lalr to .beaver -->
-  <java classpath="${tools}/JastAddParser.jar:${tools}/beaver-rt.jar" classname="Main" fork="true">
+  <java classpath="${tools}/JastAddParser.jar:${tools}/beaver-rt-0.9.11.jar" classname="Main" fork="true">
     <arg line="${base-outdir}/parser/JavaParser.all ${base-outdir}/parser/JavaParser.beaver"/>
   </java>
   <!-- generate the parser phase 3, translating .beaver to .java -->

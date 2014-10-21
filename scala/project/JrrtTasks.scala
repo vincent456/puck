@@ -3,11 +3,8 @@ import sbt._
 import Keys.baseDirectory
 import scala.sys.process.Process
 
-
 object JrrtTasks extends Build {
 
-
-  val puckSvnDir = settingKey[File]("Location puck svn directory")
 
   val jrrtHome = settingKey[File]("Jrrt build directory")
 
@@ -28,10 +25,10 @@ object JrrtTasks extends Build {
     Tasks
    */
 
-  val jastadd = taskKey[Unit]("use ast, jrag and jadd files to generates java")
+  val ast = taskKey[Unit]("use ast, jrag and jadd files to generates java")
 
-  val parser14 = taskKey[Unit]("create java 1.4 parser")
-  val scanner14 = taskKey[Unit]("create java 1.4 scanner")
+  val parser = taskKey[Unit]("create java parser")
+  val scanner = taskKey[Unit]("create java scanner")
 
 /*
   val gen = taskKey[Unit]("generates parser, scanner and AST files")
@@ -51,7 +48,7 @@ object JrrtTasks extends Build {
 	    Project(id = "PuckConstraintSolver", base = file("."))
 	      .settings(
 
-        parser14 := {
+        parser := {
           (jastaddOutDir.value / "parser").mkdirs()
           val parserAll = jastaddOutDir.value / "parser" / "JavaParser.all"
           /* generate the parser phase 1, create a full .lalr specification from fragments */
@@ -69,7 +66,7 @@ object JrrtTasks extends Build {
 
           /* generate the parser phase 2, translating .lalr to .beaver */
           val jastAddPaserJar = baseDirectory.value / "lib" / "JastAddParser.jar"
-          val beaverRtJar = baseDirectory.value / "lib" / "beaver-rt-0.9.11.jar"
+          val beaverRtJar = baseDirectory.value / "lib" / "beaver-rt.jar"
           val javaParserBeaver = jastaddOutDir.value / "parser" / "JavaParser.beaver"
           Process(Seq("java", "-cp", jastAddPaserJar.getPath + ":" + beaverRtJar.getPath,
             "Main", parserAll.getPath,  javaParserBeaver.getPath) ).!
@@ -77,13 +74,12 @@ object JrrtTasks extends Build {
           val beaverAnt = baseDirectory.value / "lib" / "beaver-cc-0.9.11.jar"
 
           /* generate the parser phase 3, translating .beaver to .java */
-          Process(Seq("java", "-jar",  beaverAnt.getPath, "-T", "-w", javaParserBeaver.getPath )).!
+          Process(Seq("java", "-jar",  beaverAnt.getPath, "-t", "-w", javaParserBeaver.getPath )).!
         },
 
-      scanner14 := {
+      scanner := {
+
         val scannerFlex = jastaddOutDir.value / "scanner" / "JavaScanner.flex"
-
-
 
         val files = if(java15comply.value)
           Seq(jrrtReadOnly.value / "util" / "preamble.flex",
@@ -122,15 +118,18 @@ object JrrtTasks extends Build {
 
         val jflexJar = baseDirectory.value / "lib" / "jflex-1.6.0.jar"
         Process(Seq ("java", "-jar", jflexJar.getPath,
+          "--nobak",
+          "--legacydot",
           "-d", (jastaddOutDir.value / "scanner").getPath,
-          scannerFlex.getPath  //nobak="yes" option ?
-        ))
+          scannerFlex.getPath
+        )).!
+
         IO.copyFile(java14frontend.value / "scanner" / "Unicode.java",
           jastaddOutDir.value / "scanner" / "Unicode.java",
           preserveLastModified = true)
       },
 
-	    jastadd := {
+	    ast := {
 
           val java14Files : PathFinder = java14frontend.value ** ("*.jrag" | "*.jadd" | "*.ast") filter
             {f : File => f.name match {
@@ -140,7 +139,7 @@ object JrrtTasks extends Build {
               case _ => true
             }}
 
-          val java15Files : PathFinder = java15frontend.value ** ("*.jrag" | "*.jadd" | "*.ast")
+          val java15Files : PathFinder = java15frontend.value ** ( "*.ast" | "*.jrag" | "*.jadd")
 
           val cfgFiles : PathFinder = Seq( controlFlowGraph.value / "Nodes.ast",
             controlFlowGraph.value / "ControlFlowGraph.jrag",
@@ -151,12 +150,12 @@ object JrrtTasks extends Build {
             controlFlowGraph.value / "DotGeneration.jrag" )
 
           val jrrtDir = jrrtReadOnly.value
-          val jrrtFiles : PathFinder = (jrrtDir / "util") ** ("*.jrag" | "*.jadd" | "*.ast")
+          val jrrtUtilFiles : PathFinder = (jrrtDir / "util") ** ("*.jrag" | "*.jadd" | "*.ast")
 
 //          val jrrtFiles2 = (PathFinder(jrrtReadOnly.value ) ** (("*.jrag" | "*.jadd" | "*.ast") -- "util/*")).getPaths
 
           val jrrtFiles2 : PathFinder =
-            jrrtDir ** ("*.ast" | "*.jrag" | "*.jadd") --- jrrtFiles ---
+            jrrtDir ** ("*.ast" | "*.jrag" | "*.jadd") --- jrrtUtilFiles ---
               Seq(jrrtDir / "tests" / "ProgramFactory.jrag",
                 jrrtDir / "tests" / "RTXF.jrag",
                 jrrtDir / "tests" / "Testing.jrag",
@@ -175,29 +174,31 @@ object JrrtTasks extends Build {
           if (!jastaddOutDir.value.exists())
             jastaddOutDir.value.mkdirs()
 
-          //TODO check how to use it directly !!
-          val jastAddJar = baseDirectory.value / "lib" / "jastadd2.jar"
-          Process("java" +: "-jar"
-            +: jastAddJar.toString
+          
+          val paths = (java14Files.getPaths.sorted
+            ++: java15Files.getPaths.sorted
+            ++: cfgFiles.getPaths
+            ++: jrrtUtilFiles.getPaths.sorted
+            ++: jrrtFiles2.getPaths.sorted
+            ++: puckFiles.getPaths
+            ++: jrrtFiles3.getPaths)
+
+          jastadd.JastAdd.main(("--beaver"
+            +: "--package=AST"
             +: ("--o=" + jastaddOutDir.value)
             +: "--rewrite"
-            +: "--beaver"
             +: "--novisitcheck"
             +: "--noCacheCycle"
-            +: java14Files.getPaths
-            ++: java15Files.getPaths
-            ++: cfgFiles.getPaths
-            ++: jrrtFiles.getPaths
-            ++: jrrtFiles2.getPaths
-            ++: puckFiles.getPaths
-            ++: jrrtFiles3.getPaths).!
-       /* java14Files.getPaths foreach println
-        java15Files.getPaths foreach println
-        cfgFiles.getPaths foreach println
-        jrrtFiles.getPaths foreach println
-        jrrtFiles2.getPaths foreach println
-        puckFiles.getPaths foreach println
-        jrrtFiles3.getPaths foreach println*/
+            +: "--noComponentCheck"
+            +: "--refineLegacy"
+            +: paths ).toArray)
+          /*java14Files.getPaths.sorted foreach println
+          java15Files.getPaths.sorted foreach println
+          cfgFiles.getPaths.sorted foreach println
+          jrrtUtilFiles.getPaths.sorted foreach println
+          jrrtFiles2.getPaths.sorted foreach println
+          puckFiles.getPaths.sorted foreach println
+          jrrtFiles3.getPaths.sorted foreach println*/
 
        IO.copyDirectory(java14frontend.value / "beaver",
          jastaddOutDir.value / "beaver",
