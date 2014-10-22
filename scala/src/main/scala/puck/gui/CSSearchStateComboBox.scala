@@ -15,22 +15,21 @@ import scala.swing.event.{SelectionChanged, Event}
 case class StateSelected[Kind <: NodeKind[Kind]](box : CSSearchStateComboBox[Kind]) extends Event
 
 object CSSearchStateComboBox{
-  def sort[Kind <: NodeKind[Kind]](l : List[ConstraintSolving.FinalState[Kind]])={
-    def aux(acc : Map[Int, List[ConstraintSolving.FinalState[Kind]]], l : List[ConstraintSolving.FinalState[Kind]]) :
-    Map[Int, List[ConstraintSolving.FinalState[Kind]]] = l match  {
-      case List() => acc
-      case hd :: tl =>
-        val recording = hd.result
+  def sort[Kind <: NodeKind[Kind]](l : Seq[ConstraintSolving.FinalState[Kind]])={
+    def aux(acc : Map[Int, Seq[ConstraintSolving.FinalState[Kind]]], l : Seq[ConstraintSolving.FinalState[Kind]]) :
+    Map[Int, Seq[ConstraintSolving.FinalState[Kind]]] =
+      if(l.isEmpty) acc
+      else{
+        val recording = l.head.result
         recording()
         val value = (recording.graph.coupling * 100).toInt
-        val oldl = acc.getOrElse(value, List())
-        aux(acc + (value -> (hd :: oldl)), tl)
-    }
-
-    aux(Map[Int, List[ConstraintSolving.FinalState[Kind]]](), l)
+        val olds = acc.getOrElse(value, Seq())
+        aux(acc + (value -> (l.head +: olds)), l.tail)
+      }
+    aux(Map[Int, Seq[ConstraintSolving.FinalState[Kind]]](), l)
   }
 }
-class CSSearchStateComboBox[Kind <: NodeKind[Kind]](map : Map[Int, List[ConstraintSolving.FinalState[Kind]]])
+class CSSearchStateComboBox[Kind <: NodeKind[Kind]](map : Map[Int, Seq[ConstraintSolving.FinalState[Kind]]])
   extends FlowPanel{
 
   val combobox2wrapper = new FlowPanel()
@@ -43,15 +42,15 @@ class CSSearchStateComboBox[Kind <: NodeKind[Kind]](map : Map[Int, List[Constrai
   contents += couplingValues
   contents += combobox2wrapper
   val showButton =
-  contents += new Button(""){
-    action = new Action("Show"){
-      def apply() {
-        CSSearchStateComboBox.this publish
-          GraphDisplayRequest(couplingValues.selection.item + " " + searchStateComboBox.selection.item.uuid(),
-            Some(searchStateComboBox.selection.item.result))
+    contents += new Button(""){
+      action = new Action("Show"){
+        def apply() {
+          CSSearchStateComboBox.this publish
+            GraphDisplayRequest(couplingValues.selection.item + " " + searchStateComboBox.selection.item.uuid(),
+              Some(searchStateComboBox.selection.item.result))
+        }
       }
     }
-  }
 
   contents += new Button(""){
     action = new Action("History"){
@@ -60,8 +59,8 @@ class CSSearchStateComboBox[Kind <: NodeKind[Kind]](map : Map[Int, List[Constrai
         val state: SearchState[Recording[Kind], _] = searchStateComboBox.selection.item
         var id = -1
 
-        CSSearchStateComboBox.this publish SearchStateListPrintingRequest[Kind](state.uuid()+"history",
-        state.ancestors(includeSelf = true), Some({s => id +=1
+        CSSearchStateComboBox.this publish SearchStateSeqPrintingRequest[Kind](state.uuid()+"history",
+          state.ancestors(includeSelf = true), Some({s => id +=1
             id.toString}))
 
       }

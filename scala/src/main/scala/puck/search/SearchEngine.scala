@@ -6,13 +6,16 @@ import scala.collection.mutable
  * Created by lorilan on 07/07/14.
  */
 
-trait SearchEngine[Result]{
-
+trait Search[Result]{
   val initialState : SearchState[Result, _]
+  val finalStates : Seq[SearchState[Result, _]]
+  def exploredStates() : Int = initialState.iterator.size
+}
+
+trait SearchEngine[Result] extends Search[Result]{
 
   var currentState : SearchState[Result, _] = _
-
-  val finalStates = mutable.ListBuffer[SearchState[Result, _]]()
+  override val finalStates = mutable.ListBuffer[SearchState[Result, _]]()
 
   def init(){
     currentState = initialState
@@ -23,6 +26,7 @@ trait SearchEngine[Result]{
   }
 
   def search() : Option[SearchState[Result, _]]
+
 }
 
 

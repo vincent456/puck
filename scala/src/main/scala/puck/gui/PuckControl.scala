@@ -8,7 +8,7 @@ import puck.graph.constraints.DecisionMaker
 import puck.graph.constraints.search.ConstraintSolvingNodesChoice
 import puck.graph.{AGNode, AGEdge, NodeKind}
 import puck.graph.io.{ConstraintSolvingSearchEngineBuilder, FilesHandler}
-import puck.search.SearchState
+import puck.search.{Search, SearchState}
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -28,10 +28,10 @@ case class GraphDisplayRequest[Kind <: NodeKind[Kind]](title : String,
                                                        sRecording : Option[Recording[Kind]] = None,
                                                        sUse : Option[AGEdge[Kind]] = None) extends ControlRequest
 
-case class SearchStateMapPrintingRequest[Kind <: NodeKind[Kind]](stateMap : Map[Int, List[SearchState[Recording[Kind],_]]])
+case class SearchStateMapPrintingRequest[Kind <: NodeKind[Kind]](stateMap : Map[Int, Seq[SearchState[Recording[Kind],_]]])
   extends ControlRequest
-case class SearchStateListPrintingRequest[Kind <: NodeKind[Kind]](subDir : String,
-                                                                  states : List[SearchState[Recording[Kind],_]],
+case class SearchStateSeqPrintingRequest[Kind <: NodeKind[Kind]](subDir : String,
+                                                                  states : Seq[SearchState[Recording[Kind],_]],
                                                                   sPrinter : Option[SearchState[Recording[Kind],_] => String])
   extends ControlRequest
 
@@ -47,7 +47,7 @@ case class PrintConstraintRequest() extends ControlRequest
 
 
 sealed abstract class Answer extends Event
-case class ExplorationFinished[Kind <: NodeKind[Kind]](finalStates : List[SearchState[Recording[Kind], _]]) extends Answer
+case class ExplorationFinished[Kind <: NodeKind[Kind]](result : Search[Recording[Kind]]) extends Answer
 
 
 class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
@@ -146,8 +146,8 @@ class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
     }
   }
 
-  def printStateList( subDirStr : String,
-                      states : List[SearchState[Recording[Kind],_]],
+  def printStateSeq( subDirStr : String,
+                     states : Seq[SearchState[Recording[Kind],_]],
                      sPrinter : Option[SearchState[Recording[Kind],_] => String]): Unit ={
     val d = filesHandler.graphFile("_results")
     d.mkdir()
@@ -203,9 +203,9 @@ class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
       val treq = req.asInstanceOf[SearchStateMapPrintingRequest[Kind]]
       filesHandler.printCSSearchStatesGraph(treq.stateMap)
 
-    case req @ SearchStateListPrintingRequest(_, _, _) =>
-       val treq = req.asInstanceOf[SearchStateListPrintingRequest[Kind]]
-      printStateList(treq.subDir, treq.states, treq.sPrinter)
+    case req @ SearchStateSeqPrintingRequest(_, _, _) =>
+       val treq = req.asInstanceOf[SearchStateSeqPrintingRequest[Kind]]
+      printStateSeq(treq.subDir, treq.states, treq.sPrinter)
 
   }
 

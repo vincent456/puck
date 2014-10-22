@@ -35,6 +35,8 @@ class NoopLogger[V] extends Logger[V] {
   def write(msg : => String) {}
 }
 
+
+
 trait FileLogger[V] extends Logger[V]{
 
   val file : File

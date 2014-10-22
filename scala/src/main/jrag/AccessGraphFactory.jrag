@@ -133,7 +133,7 @@ aspect AccessGraphFactory {
       return decl().buildAGNode(accessGraph);
   	}
   	 public AGNode<JavaNodeKind> ArrayAccess.buildDominantUserAGNode(JavaAccessGraph accessGraph){
-      System.out.println("ArrayAccess.buildDominantUserAGNode " +this.toString());
+      //System.out.println("ArrayAccess.buildDominantUserAGNode " +this.toString());
       return varDecl().buildAGNode(accessGraph);
   }
 
@@ -182,9 +182,9 @@ aspect AccessGraphFactory {
             }
             accessGraph.addUsesDependency(agDominantUser, hostTypeAGNode,
                     agUser, agNode);
-            System.out.print("uses( "+agUser+ ", "+agNode+")");
+            //System.out.print("uses( "+agUser+ ", "+agNode+")");
             //System.out.println(" = uses( "+user+ ", "+this+")");
-            System.out.println(" dominated by : uses ("+agDominantUser + ", "+ hostTypeAGNode+")");
+            //System.out.println(" dominated by : uses ("+agDominantUser + ", "+ hostTypeAGNode+")");
             //System.out.println(" = uses( "+user.hostType()+ ", "+ hostType()+")");
         }
 

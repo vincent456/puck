@@ -331,7 +331,7 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
 
         assert(primary_uses.nonEmpty)
 
-        val primary = primary_uses.head
+        /*val primary = primary_uses.head
         if(primary_uses.tail.nonEmpty) {
           println("redirecting side uses (%s, %s) target to %s".format(this, currentSideUsee, newSideUsee))
           println("primary uses are ")
@@ -347,7 +347,19 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
 
           graph.addUsesDependency(newPrimary, AGEdge.uses(this, newSideUsee))
 
+        }*/
+
+        primary_uses foreach {
+          primary =>
+            graph.removeUsesDependency(primary, AGEdge.uses(this, currentSideUsee))
+
+            val newPrimary = primary.user.redirectUses(primary.usee,
+              findNewPrimaryUsee(primary.usee, newSideUsee, policy),  policy)
+
+            graph.addUsesDependency(newPrimary, AGEdge.uses(this, newSideUsee))
+
         }
+
     }
   }
 

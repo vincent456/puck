@@ -6,7 +6,7 @@ import puck.graph.backTrack.Recording
 import puck.graph.constraints._
 import puck.graph._
 import puck.graph.constraints.search.ConstraintSolving
-import puck.search.{SearchEngine, SearchState}
+import puck.search.{Search, SearchEngine, SearchState}
 import puck.util.{NoopLogger, DefaultFileLogger, DefaultSystemLogger, Logger}
 
 import scala.sys.process.Process
@@ -272,7 +272,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
   type ST = ConstraintSolving.FinalState[Kind]
 
   def explore (trace : Boolean = false,
-               builder : ConstraintSolvingSearchEngineBuilder[Kind]) : List[ST] = {
+               builder : ConstraintSolvingSearchEngineBuilder[Kind]) : Search[Recording[Kind]] = {
 
     val searchEngineLogger = new DefaultFileLogger(logFile0.get)
     searchEngineLogger.verboseLevel = 10
@@ -285,12 +285,11 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
       engine.search()
     }
 
-    engine.finalStates.toList
-
+    engine
   }
 
 
-  def printCSSearchStatesGraph(states : Map[Int, List[SearchState[Recording[Kind], _]]]){
+  def printCSSearchStatesGraph(states : Map[Int, Seq[SearchState[Recording[Kind], _]]]){
     val d = graphFile("_results")
     d.mkdir()
     states.foreach{
@@ -302,7 +301,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
   }
 
   def printCSSearchStatesGraph(dir : File,
-                               states : List[SearchState[Recording[Kind], _]],
+                               states : Seq[SearchState[Recording[Kind], _]],
                                sPrinter : Option[(SearchState[Recording[Kind],_] => String)]){
 
     val printer = sPrinter match {

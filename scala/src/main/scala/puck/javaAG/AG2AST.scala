@@ -203,7 +203,7 @@ object AG2AST {
           /*println("moving typedecl %s of package (cu contains %d typedecl)".format(e.target.fullName,
             i.decl.compilationUnit().getNumTypeDecl))*/
 
-          println("moving " + i +" from package "+ p1 +" to package" + p2)
+          //println("moving " + i +" from package "+ p1 +" to package" + p2)
           if(i.decl.compilationUnit().getNumTypeDecl > 1) {
             val oldcu = i.decl.compilationUnit()
 
