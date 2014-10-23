@@ -44,31 +44,31 @@ trait SearchState[Result, Internal] extends HasChildren[SearchState[Result, _]]{
 
   var cid = -1
 
-  var isStep = false
-
-  private def uuid0 : List[(Int, Boolean)] = {
+  private def uuid0 : Seq[Int] = {
     prevState match{
-      case None => List((id, isStep))
-      case Some(parent) => (id, isStep) :: parent.uuid0
+      case None => Seq(id)
+      case Some(parent) => id +: parent.uuid0
     }
   }
 
-  def uuid : List[(Int, Boolean)] = {
+  def uuid : Seq[Int] = {
     this.uuid0.reverse
   }
 
 
-  def uuid(printPointSep : String = "/",
+  def uuid(sep : String = "_") : String = uuid.mkString(sep)
+
+/*  def uuid(printPointSep : String = "/",
            normalSep : String = "_",
            end : String = "") : String = {
     val sb = new StringBuilder()
 
-    def aux(uuid: List[(Int, Boolean)]): Unit = uuid match {
-      case List() => throw new Error("invalid uuid !!")
-      case (i, _) :: List() =>
+    def aux(uuid: Seq[(Int, Boolean)]): Unit = uuid match {
+      case Seq() => throw new Error("invalid uuid !!")
+      case (i, _) +: Seq() =>
         sb.append(i)
         sb.append(end)
-      case (i, printPoint) :: tl =>
+      case (i, printPoint) +: tl =>
         sb.append(i)
         sb.append(if (printPoint) printPointSep
         else normalSep)
@@ -77,9 +77,9 @@ trait SearchState[Result, Internal] extends HasChildren[SearchState[Result, _]]{
 
     aux(uuid)
     sb.toString()
-  }
+  }*/
 
-  def depth : Int = {
+  /*def depth : Int = {
     def aux(sstate : Option[SearchState[Result, _]], acc : Int) : Int = sstate match {
       case None => acc
       case Some(s) => aux(s.prevState,
@@ -87,8 +87,9 @@ trait SearchState[Result, Internal] extends HasChildren[SearchState[Result, _]]{
         else acc)
     }
     aux(prevState, 0)
-  }
+  }*/
 
+  def depth : Int = uuid0.size
 
   def nextChildId() : Int = {
     cid += 1
