@@ -53,10 +53,11 @@ class NodeInfosPanel[K <: NodeKind[K]](val node : AGNode[K])
 
     contents += new BoxPanel(Orientation.Vertical) {
 
+      val graph = node.graph
       node.users.foreach { user =>
 
-        val sideUsesOpt = user.sideUses.get(node)
-        val primaryUsesOpt = user.primaryUses.get(node)
+        val sideUsesOpt = graph.sideUses.get(AGEdge.uses(user, node))
+        val primaryUsesOpt = graph.primaryUses.get(AGEdge.uses(user, node))
 
         def tag = (sideUsesOpt, primaryUsesOpt) match {
           case (None, None) => ""

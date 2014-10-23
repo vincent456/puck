@@ -167,8 +167,8 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
 
     AGEdge.contains(container, this).changeSource(newContainer)
 
-    users.foreach{
-      _.redirectPrimaryUses(this, this, Move())
+    users.foreach{ user =>
+      graph.redirectPrimaryUses(AGEdge.uses(user,this), this, Move())
     }
   }
 
@@ -285,185 +285,7 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
   //java accessor
   def userAdd(n : NodeType, register : Boolean) = users.+=(n, register)
 
-  /* a primary use is for example the use of a class when declaring a variable or a parameter
-   a side use is in this example a call to a method with the same variable/parameter
-      the use of the method is a side use of the declaration
-       a couple primary use/ side use is a use dependency
- */
 
-  /*(this, key) is a primary uses and sidesUses(key) are the corresponding side uses */
-  val sideUses = new UsesDependencyMap(this, Dominant())
-
-  /*(this, key) is a side uses and primaryUses(key) is the corresponding primary uses */
-  val primaryUses = new UsesDependencyMap(this, Dominated())
-
-  implicit def logVerbosity(lvl : PuckLog.Level) = (PuckLog.InGraph(), lvl)
-
-  def findNewPrimaryUsee(currentPrimaryUsee : NodeType,
-                         newSideUsee : NodeType,
-                         policy : RedirectionPolicy) : NodeType = {
-
-    graph.logger.writeln("searching new primary usee ("+ policy + ") : currentPrimaryUsee is " +
-      currentPrimaryUsee + ", new side usee " + newSideUsee)
-
-    val newPrimaryUsee =
-      policy match {
-        case Move() => newSideUsee.container
-        case absPolicy : AbstractionPolicy =>
-          currentPrimaryUsee.abstractions.find{
-            case (node, `absPolicy`) => node.contains_*(newSideUsee)
-            case _ => false
-          } match {
-            case Some((n, _)) => n
-            case None =>
-              graph.iterator.find{ node =>
-                node.contains_*(newSideUsee) &&
-                  currentPrimaryUsee.kind.abstractKinds(absPolicy).contains(node.kind)
-              } match {
-                case Some(n) => n
-                case None =>
-                  val msg = "no correct primary abstraction found !"
-                  graph.logger.writeln(msg)(PuckLog.Error())
-                  throw new RedirectionError(msg)
-              }
-          }
-      }
-    graph.logger.writeln("new primary usee found : " + newPrimaryUsee)
-    newPrimaryUsee
-  }
-
-  implicit val logVerbosity : PuckLog.Verbosity = (PuckLog.InGraph(), PuckLog.Info())
-
-  def redirectPrimaryUses(currentSideUsee : NodeType,
-                          newSideUsee : NodeType,
-                          policy : RedirectionPolicy){
-
-
-    graph.logger.writeln("redirecting primary uses of side use (%s, %s) (new side usee is %s) ".
-      format(this, currentSideUsee, newSideUsee))
-    primaryUses get currentSideUsee match {
-      case None =>
-        graph.logger.writeln("no primary uses to redirect")
-
-      case Some(primary_uses) =>
-        assert(primary_uses.nonEmpty)
-
-        graph.logger.writeln("uses to redirect:%s".format(primary_uses.mkString("\n\t", "\n\t","\n")))
-
-
-        /*val primary = primary_uses.head
-        if(primary_uses.tail.nonEmpty) {
-          println("redirecting side uses (%s, %s) target to %s".format(this, currentSideUsee, newSideUsee))
-          println("primary uses are ")
-          println(primary_uses.mkString("-", "\n-", "\n"))
-          throw new AGError("Do not know how to unsuscribe a side use with multiple primary uses")
-        }
-        else {
-
-          graph.removeUsesDependency(primary, AGEdge.uses(this, currentSideUsee))
-
-          val newPrimary = primary.user.redirectUses(primary.usee,
-            findNewPrimaryUsee(primary.usee, newSideUsee, policy),  policy)
-
-          graph.addUsesDependency(newPrimary, AGEdge.uses(this, newSideUsee))
-
-        }*/
-
-        primary_uses foreach {
-          primary =>
-            graph.removeUsesDependency(primary, AGEdge.uses(this, currentSideUsee))
-
-            val newPrimary = primary.user.redirectUses(primary.usee,
-              findNewPrimaryUsee(primary.usee, newSideUsee, policy),  policy)
-
-            graph.addUsesDependency(newPrimary, AGEdge.uses(this, newSideUsee))
-
-        }
-
-    }
-  }
-
-  def redirectSideUses(currentPrimaryUsee: NodeType,
-                       newPrimaryUsee : NodeType,
-                       policy : RedirectionPolicy){
-    graph.logger.writeln("redirecting side uses of primary use (%s, %s) (new primary usee is %s) ".
-      format(this, currentPrimaryUsee, newPrimaryUsee))
-
-    sideUses get currentPrimaryUsee match {
-      case None =>
-        graph.logger.writeln("no side uses to redirect")
-        ()
-      case Some( sides_uses ) =>
-        graph.logger.writeln("uses to redirect:%s".format(sides_uses.mkString("\n\t", "\n\t","\n")))
-
-        sides_uses foreach {
-          side =>
-            side.usee.abstractions.find {
-              case (abs, _) => newPrimaryUsee.contains(abs)
-              case _ => false
-            } match {
-              case None =>
-                val msg = ("While redirecting primary uses (%s, %s) target to %s\n" +
-            "no satisfying abstraction to redirect side use %s").
-            format( this, currentPrimaryUsee, newPrimaryUsee, side)
-                graph.logger.writeln(msg)(PuckLog.Error())
-
-                throw new RedirectionError(msg)
-
-              case Some( (new_side_usee, _) ) =>
-
-                graph.removeUsesDependency(AGEdge.uses(this, currentPrimaryUsee), side)
-
-                val newSide = side.user.redirectUses(side.usee, new_side_usee, policy)
-
-                graph.addUsesDependency(AGEdge.uses(this, newPrimaryUsee), newSide)
-
-            }
-        }
-    }
-  }
-
-  def redirectUses(oldUsee : NodeType, newUsee : NodeType,
-                   policy : RedirectionPolicy) = {
-    if(oldUsee == newUsee)
-      AGEdge.uses(this, oldUsee)
-
-    else if(this uses oldUsee) {
-
-      graph.logger.writeln("redirecting %s target to %s (%s)".
-        format(AGEdge.uses(this, oldUsee), newUsee, policy))
-      val newUses = AGEdge.uses(this, oldUsee).changeTarget(newUsee)
-
-      this.kind match {
-        case k : HasType[Kind, _] => k.redirectUses(oldUsee, newUsee)
-        case _ => ()
-      }
-
-      redirectPrimaryUses(oldUsee, newUsee, policy)
-      redirectSideUses(oldUsee, newUsee, policy)
-
-      newUses
-    }
-    else if (this uses newUsee) {
-      //if m uses  both A and A.mi, the first uses dominate the second
-      //if both are identified as violations and are in a wrongusers list
-      //redirecting the one will redirect the other
-      // when iterating on the wrongusers, the next call to redirectuses will arrive here
-      graph.logger.writeln("redirecting uses' (%s, %s) target to %s (%s) : FAILURE !! %s is not used".
-        format(this, oldUsee, newUsee, policy, oldUsee))
-      AGEdge.uses(this, newUsee)
-    }
-    else {
-      if(oldUsee.users.contains(this) || newUsee.users.contains(this))
-        throw new AGError("incoherent state !!!!!!!!!!!!")
-
-      throw new AGError(("redirecting uses' (%s, %s) target to %s (%s)\n" +
-        "!!! nor the oldUsee or the newUsee is really used !!! ").
-        format(this, oldUsee, newUsee, policy))
-    }
-
-
-  }
 
 
   /**********************************************/
@@ -678,17 +500,27 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
       else AGEdge.isa(st, other).delete()
     }
 
+    /*(this, key) is a primary uses and sidesUses(key) are the corresponding side uses */
+    //val sideUses = new UsesDependencyMap(this, Dominant())
+
+    /*(other, key) is a side uses and primaryUses(key) is the corresponding primary uses */
+    //val primaryUses = new UsesDependencyMap(this, Dominated())
 
 
-    other.primaryUses.toList foreach {
-      case (sideUsee, primUses) =>
+    val side_prim_list = graph.primaryUses.filter { case (e, _) => e.user == other }.toList
+
+    side_prim_list foreach {
+      case (AGEdge(Uses(), _, sideUsee), primUses) =>
         primUses.foreach { pUse =>
           graph.addUsesDependency(pUse, AGEdge.uses(this, sideUsee))
           graph.removeUsesDependency(pUse, AGEdge.uses(other, sideUsee))
         }
     }
-    other.sideUses.toList foreach {
-      case (primeUsee, sidUses) =>
+
+    val prim_side_list = graph.sideUses.filter { case (e, _) => e.user == other }.toList
+
+    prim_side_list foreach {
+      case (AGEdge(Uses(), _, primeUsee), sidUses) =>
         sidUses.foreach { sUse =>
           graph.addUsesDependency(AGEdge.uses(this, primeUsee), sUse)
           graph.removeUsesDependency(AGEdge.uses(other, primeUsee), sUse)

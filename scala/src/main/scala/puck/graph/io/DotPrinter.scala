@@ -92,9 +92,9 @@ object DotPrinter {
       case Some(selected) =>  (source: NodeType, target: NodeType) =>
         val printed = AGEdge.uses(source, target)
         val ct = if (printed == selected) ColorThickness.selected
-        else if (selected.source.primaryUses.getOrEmpty(selected.target).exists(_ == printed))
+        else if (graph.primaryUses.getOrEmpty(selected).exists(_ == printed))
           ColorThickness.dominant
-        else if (selected.source.sideUses.getOrEmpty(selected.target).exists(_ == printed))
+        else if (graph.sideUses.getOrEmpty(selected).exists(_ == printed))
           ColorThickness.dominated
         else ColorThickness.regular
 

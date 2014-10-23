@@ -94,13 +94,13 @@ case class AGEdge[NK <: NodeKind[NK]](kind : EdgeKind,
   }
 
   def isDominant : Boolean = {
-    source.sideUses.get(target) match {
+    source.graph.sideUses.get(this) match {
       case Some(_) => true
       case None => false
     }
   }
   def isDominated : Boolean = {
-    source.primaryUses.get(target) match {
+    source.graph.primaryUses.get(this) match {
       case Some(_) => true
       case None => false
     }

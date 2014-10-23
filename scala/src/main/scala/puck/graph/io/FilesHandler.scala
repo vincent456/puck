@@ -268,7 +268,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
     if(trace) {
       this.logger.writeln("*****************************************************")
       this.logger.writeln("*****************   merge done   ********************")
-      this.logger.writeln()
+      this.logger.writeln("")
       printTrace()
     }
   }

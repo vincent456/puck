@@ -231,7 +231,7 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
 
               if(child uses this) {
                 graph.logger.writeln("interface creation : redirecting %s target to %s".format(AGEdge.uses(child, this), abs), 3)
-                child.redirectUses(this, abs, SupertypeAbstraction())
+                graph.redirectUses(AGEdge.uses(child, this), abs, SupertypeAbstraction())
               }
             case _ => ()
 
@@ -284,19 +284,6 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
 
     super.moveTo(newContainer)
   }*/
-
-  override def redirectUses(oldUsee : NodeType, newUsee : NodeType,
-                            policy : RedirectionPolicy) = {
-
-    (oldUsee.kind, newUsee.kind) match {
-      case (Constructor(), Method())
-           | (Constructor(), AbstractMethod())=>
-        this.users.foreach{ AGEdge.uses(_,oldUsee).create()}
-      case _ => ()
-    }
-
-    super.redirectUses(oldUsee, newUsee, policy)
-  }
 
   //other is potentialy a superType and thus may have less methods than this
   override def mergeWith(other : AGNode[JavaNodeKind]){

@@ -5,7 +5,7 @@ import puck.util.{PuckNoopLogger, PuckLogger, Logger, PuckLog}
 
 import scala.language.implicitConversions
 import scala.collection.mutable
-import puck.graph.constraints.{Constraint, NamedNodeSet}
+import puck.graph.constraints._
 
 /**
  * Created by lorilan on 05/05/14.
@@ -28,7 +28,8 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
   type EdgeType = AGEdge[Kind]
 
   var logger : PuckLogger = PuckNoopLogger
-  implicit val defaulVerbosity : PuckLog.Verbosity = (PuckLog.InGraph(), PuckLog.Info())
+  implicit val defaulVerbosity : PuckLog.Verbosity = (PuckLog.InGraph(), PuckLog.Debug())
+  implicit def logVerbosity(lvl : PuckLog.Level) = (PuckLog.InGraph(), lvl)
 
   def newGraph() : AccessGraph[Kind] = {
     new AccessGraph(nodeBuilder)
@@ -78,15 +79,6 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
     constraints.foreach(ct => logger.writeln(ct)(v))
   }
 
-  def printUsesDependancies[V](logger : Logger[V], v : V){
-    this.foreach { node =>
-      if (node.primaryUses.nonEmpty)
-        logger.writeln(node.primaryUses)(v)
-      if (node.sideUses.nonEmpty)
-        logger.writeln(node.sideUses)(v)
-    }
-  }
-
   private [puck] val nodesByName = mutable.Map[String, NodeType]()
 
   def apply(fullName:String) : NodeType= nodesByName(fullName)
@@ -133,6 +125,18 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
     //n
   }
 
+  /* a primary use is for example the use of a class when declaring a variable or a parameter
+ a side use is in this example a call to a method with the same variable/parameter
+    the use of the method is a side use of the declaration
+     a couple primary use/ side use is a use dependency
+*/
+
+  /* keys are side uses and values ar primary uses */
+  val primaryUses = new UsesDependencyMap[Kind](Dominated())
+
+  /* keys are primary uses and values ar side uses */
+  val sideUses = new UsesDependencyMap[Kind](Dominant())
+
   def addUsesDependency(primary : EdgeType, side : EdgeType){
 
     /*side.user.primaryUses get side.usee match {
@@ -141,8 +145,8 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
       //content += (usee -> s.+=(dependency))
     }*/
 
-    primary.user.sideUses += (primary.usee, side)
-    side.user.primaryUses += (side.usee, primary)
+    sideUses += (primary, side)
+    primaryUses += (side, primary)
     transformations.addEdgeDependency(primary, side)
   }
   def addUsesDependency(primaryUser : NodeType, primaryUsee : NodeType,
@@ -152,8 +156,8 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
   }
 
   def removeUsesDependency(primary : EdgeType, side : EdgeType){
-    primary.user.sideUses -= (primary.usee, side)
-    side.user.primaryUses -= (side.usee, primary)
+    sideUses -= (primary, side)
+    primaryUses -= (side, primary)
     transformations.removeEdgeDependency(primary, side)
   }
 
@@ -167,6 +171,150 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
   def applyChangeOnProgram(record : Recording[Kind]){}
 
   def coupling = this.foldLeft(0 : Double){ (acc, n) => acc + n.coupling }
+
+
+  def redirectUses(oldEdge : EdgeType, newUsee : NodeType,
+                   policy : RedirectionPolicy) = {
+    if(oldEdge.usee == newUsee) oldEdge
+    else if(oldEdge.exists) {
+
+      logger.writeln("redirecting %s target to %s (%s)".format(oldEdge, newUsee, policy))
+
+      val newUses = oldEdge.changeTarget(newUsee)
+
+      oldEdge.user.kind match {
+        case k : HasType[Kind, _] => k.redirectUses(oldEdge.usee, newUsee)
+        case _ => ()
+      }
+
+      redirectPrimaryUses(oldEdge, newUsee, policy)
+      redirectSideUses(oldEdge, newUsee, policy)
+
+      newUses
+    }
+    else if (oldEdge.user uses newUsee) {
+      //if m uses  both A and A.mi, the first uses dominate the second
+      //if both are identified as violations and are in a wrongusers list
+      //redirecting the one will redirect the other
+      // when iterating on the wrongusers, the next call to redirectuses will arrive here
+      logger.writeln("redirecting uses' %s target to %s (%s) : FAILURE !! %s is not used".
+        format(oldEdge, newUsee, policy, oldEdge.usee))
+      AGEdge.uses(oldEdge.user, newUsee)
+    }
+    else {
+      if(oldEdge.usee.users.contains(oldEdge.user) || newUsee.users.contains(oldEdge.user))
+        throw new AGError("incoherent state !!!!!!!!!!!!")
+
+      throw new AGError(("redirecting uses' %s target to %s (%s)\n" +
+        "!!! nor the oldUsee or the newUsee is really used !!! ").
+        format(oldEdge, newUsee, policy))
+    }
+  }
+
+  def redirectPrimaryUses(currentSideUse : EdgeType,
+                          newSideUsee : NodeType,
+                          policy : RedirectionPolicy){
+
+
+    logger.writeln("redirecting primary uses of side use %s (new side usee is %s) ".
+      format(currentSideUse, newSideUsee))
+    primaryUses get currentSideUse match {
+      case None =>
+        logger.writeln("no primary uses to redirect")
+
+      case Some(primary_uses) =>
+        assert(primary_uses.nonEmpty)
+
+        logger.writeln("uses to redirect:%s".format(primary_uses.mkString("\n\t", "\n\t","\n")))
+
+
+        primary_uses foreach {
+          primary =>
+            removeUsesDependency(primary, currentSideUse)
+
+            val newPrimary = redirectUses(primary,
+              findNewPrimaryUsee(primary.usee, newSideUsee, policy),  policy)
+
+            addUsesDependency(newPrimary, AGEdge.uses(currentSideUse.user, newSideUsee))
+
+        }
+
+    }
+  }
+
+  def findNewPrimaryUsee(currentPrimaryUsee : NodeType,
+                         newSideUsee : NodeType,
+                         policy : RedirectionPolicy) : NodeType = {
+
+    logger.writeln("searching new primary usee ("+ policy + ") : currentPrimaryUsee is " +
+      currentPrimaryUsee + ", new side usee " + newSideUsee)
+
+    val newPrimaryUsee =
+      policy match {
+        case Move() => newSideUsee.container
+        case absPolicy : AbstractionPolicy =>
+          currentPrimaryUsee.abstractions.find{
+            case (node, `absPolicy`) => node.contains_*(newSideUsee)
+            case _ => false
+          } match {
+            case Some((n, _)) => n
+            case None =>
+              iterator.find{ node =>
+                node.contains_*(newSideUsee) &&
+                  currentPrimaryUsee.kind.abstractKinds(absPolicy).contains(node.kind)
+              } match {
+                case Some(n) => n
+                case None =>
+                  val msg = "no correct primary abstraction found !"
+                  logger.writeln(msg)(PuckLog.Error())
+                  throw new RedirectionError(msg)
+              }
+          }
+      }
+    logger.writeln("new primary usee found : " + newPrimaryUsee)
+    newPrimaryUsee
+  }
+
+
+  def redirectSideUses(currentPrimaryUse: EdgeType,
+                       newPrimaryUsee : NodeType,
+                       policy : RedirectionPolicy){
+    logger.writeln("redirecting side uses of primary use %s (new primary usee is %s) ".
+      format(currentPrimaryUse, newPrimaryUsee))
+
+    sideUses get currentPrimaryUse match {
+      case None =>
+        logger.writeln("no side uses to redirect")
+        ()
+      case Some( sides_uses ) =>
+        logger.writeln("uses to redirect:%s".format(sides_uses.mkString("\n\t", "\n\t","\n")))
+
+        sides_uses foreach {
+          side =>
+            side.usee.abstractions.find {
+              case (abs, _) => newPrimaryUsee.contains(abs)
+              case _ => false
+            } match {
+              case None =>
+                val msg = ("While redirecting primary uses %s target to %s\n" +
+                  "no satisfying abstraction to redirect side use %s").
+                  format(currentPrimaryUse, newPrimaryUsee, side)
+                logger.writeln(msg)(PuckLog.Error())
+
+                throw new RedirectionError(msg)
+
+              case Some( (new_side_usee, _) ) =>
+
+                removeUsesDependency(currentPrimaryUse, side)
+
+                val newSide = redirectUses(side, new_side_usee, policy)
+
+                addUsesDependency(AGEdge.uses(currentPrimaryUse.user, newPrimaryUsee), newSide)
+
+            }
+        }
+    }
+  }
 
 }
 

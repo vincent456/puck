@@ -2,6 +2,7 @@ package puck.javaAG
 
 import puck.graph._
 import puck.graph.backTrack.Recording
+import puck.graph.constraints.RedirectionPolicy
 import puck.javaAG.nodeKind._
 import puck.util.PuckLog
 import scala.collection.JavaConversions.collectionAsScalaIterable
@@ -261,4 +262,16 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
     case _ => acc
   }}
 
+  override def redirectUses(oldUse : EdgeType, newUsee : NodeType,
+                            policy : RedirectionPolicy) = {
+
+    (oldUse.usee.kind, newUsee.kind) match {
+      case (Constructor(), Method())
+           | (Constructor(), AbstractMethod())=>
+        oldUse.user.users().foreach{ AGEdge.uses(_,oldUse.usee).create()}
+      case _ => ()
+    }
+
+    super.redirectUses(oldUse, newUsee, policy)
+  }
 }

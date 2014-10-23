@@ -22,13 +22,13 @@ case class Dominated() extends DependencyStatus {
   def other = Dominant()
 }
 
-class UsesDependencyMap[Kind <: NodeKind[Kind]](val user : AGNode[Kind],
-                        val keyType : DependencyStatus) extends Iterable[(AGNode[Kind],  Iterable[AGEdge[Kind]])]{
+class UsesDependencyMap[Kind <: NodeKind[Kind]](val keyType : DependencyStatus)
+  extends Iterable[(AGEdge[Kind],  Iterable[AGEdge[Kind]])]{
+
   type NodeType = AGNode[Kind]
-  private [this] val content : mutable.Map[NodeType, mutable.Set[AGEdge[Kind]]] = mutable.Map()
+  private [this] val content : mutable.Map[AGEdge[Kind], mutable.Set[AGEdge[Kind]]] = mutable.Map()
 
   def iterator = content.iterator
-
 
   override def toString() : String = {
     val contentType = keyType.other.contentString
@@ -39,34 +39,34 @@ class UsesDependencyMap[Kind <: NodeKind[Kind]](val user : AGNode[Kind],
           else {
             values.mkString("\n" + contentType + " :\n\t", "\n\t", "\n")
           }
-        keyType + " : (" + this + ", " + key + ")" + contentStr
+        keyType + " : (" + key + ")" + contentStr
     }.mkString("")
   }
 
-  def get(key : NodeType) : Option[Iterable[AGEdge[Kind]]] = content.get(key)
+  def get(key : AGEdge[Kind]) : Option[Iterable[AGEdge[Kind]]] = content.get(key)
 
-  def getOrElse(key : NodeType, default : Iterable[AGEdge[Kind]]) = content.getOrElse(key, default)
-  def getOrEmpty(key : NodeType) = content.getOrElse(key, Iterator.empty)
+  def getOrElse(key : AGEdge[Kind], default : Iterable[AGEdge[Kind]]) = content.getOrElse(key, default)
+  def getOrEmpty(key : AGEdge[Kind]) = content.getOrElse(key, Iterator.empty)
 
-  def apply(key : NodeType) : Iterable[AGEdge[Kind]] = content(key)
+  def apply(key : AGEdge[Kind]) : Iterable[AGEdge[Kind]] = content(key)
 
-  def +=(usee : NodeType, dependency : AGEdge[Kind]) = {
+  def +=(key : AGEdge[Kind], dependency : AGEdge[Kind]) = {
 
-    content get usee match {
+    content get key match {
       case None =>
-        content += (usee -> mutable.Set(dependency))
+        content += (key -> mutable.Set(dependency))
       case Some(s) => s += dependency
         //content += (usee -> s.+=(dependency))
     }
 
   }
 
-  def -=(usee : NodeType, dependency : AGEdge[Kind]){
-    val dependencies = content(usee)
+  def -=(key : AGEdge[Kind], dependency : AGEdge[Kind]){
+    val dependencies = content(key)
 
     dependencies.remove(dependency)
     if(dependencies.isEmpty)
-      content.remove(usee)
+      content.remove(key)
 
   }
 }

@@ -31,7 +31,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
               val breakPoint = graph.transformations.startSequence()
 
               try {
-                wu redirectUses(usee, abs, absPolicy)
+                 graph.redirectUses(AGEdge.uses(wu, usee), abs, absPolicy)
                 unsolved
               }
               catch {
@@ -185,7 +185,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
       case Some((abs, absPolicy)) =>
 
         logger.writeln("redirecting wrong users !!", 3)
-        wrongUsers.foreach(_.redirectUses(impl, abs, absPolicy))
+        wrongUsers.foreach(wu => graph.redirectUses(AGEdge.uses(wu, impl), abs, absPolicy))
 
         /*if(absPolicy == SupertypeAbstraction())
           impl.kind.promoteToSuperTypeWherePossible(abs)*/
