@@ -2,7 +2,7 @@ package puck.graph.backTrack.comparison
 
 import puck.graph._
 import puck.graph.backTrack._
-import puck.util.Logger
+import puck.util.{PuckLogger, PuckLog, Logger}
 
 import scala.collection.immutable.HashSet
 
@@ -73,8 +73,12 @@ object NodeMappingInitialState{
   }
 
 
-  def filterNoise[Kind <: NodeKind[Kind]](transfos : List[Transformation[Kind]], logger : Logger[Int]):
+  implicit val defaultVerbosity = (PuckLog.Search(), PuckLog.Debug())
+
+  def filterNoise[Kind <: NodeKind[Kind]](transfos : List[Transformation[Kind]], logger : PuckLogger):
   List[Transformation[Kind]] = {
+
+    implicit val defaultVerbosity = 1
 
     def printRule(name : => String, op1 : => String, op2 : => String, res : => String ){
       logger.writeln(name +" : ")
@@ -256,7 +260,7 @@ object NodeMappingInitialState{
 class NodeMappingInitialState[Kind <: NodeKind[Kind]](eng : RecordingComparator[Kind],
                                                       lr1 : List[Recordable[Kind]],
                                                       lr2 : List[Recordable[Kind]],
-                                                      logger : Logger[Int])
+                                                      logger : PuckLogger)
   extends NodeMappingState(0, eng, null, null, None) {
 
   //println("creating initial state")
@@ -289,6 +293,8 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind]](eng : RecordingComparator[
   var triedAll0 = false
 
   override def triedAll = triedAll0
+
+  import NodeMappingInitialState.defaultVerbosity
 
   def printlnNode(n : AGNode[Kind]){
     logger.writeln("%d = %s(%s)".format(n.id, n.kind, n.fullName))
@@ -370,8 +376,8 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind]](eng : RecordingComparator[
       logger.writeln("************************* and *************************")
       logger.writeln("*******************************************************")
       logger.writeln("*******************************************************")
-      logger.writeln()
-      logger.writeln()
+      logger.writeln("")
+      logger.writeln("")
 
       logger.writeln("nodes to map : %s, %d remaining transfo".format(nodesToMap, remainingTransfos2.size, logger))
 
@@ -380,8 +386,8 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind]](eng : RecordingComparator[
       logger.writeln("neuter nodes : ")
       otherNeuterNodes foreach printlnNode
 
-      logger.writeln()
-      logger.writeln()
+      logger.writeln("")
+      logger.writeln("")
       remainingTransfos2 foreach { t => logger.writeln(t.toString)}
 
 

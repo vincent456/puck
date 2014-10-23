@@ -20,8 +20,7 @@ trait JavaCSSEBuilder
 
 object JavaSolverBuilder extends SolverBuilder[JavaNodeKind]{
   def apply(graph : AccessGraph[JavaNodeKind],
-            logger : Logger[Int],
-            dm : DecisionMaker[JavaNodeKind]) = new JavaSolver(graph, logger, dm)
+            dm : DecisionMaker[JavaNodeKind]) = new JavaSolver(graph, dm)
 }
 
 object JavaTryAllCSSEBuilder
@@ -29,12 +28,8 @@ object JavaTryAllCSSEBuilder
 
   override def toString = "Try all"
 
-  def apply( searchEngineLogger : Logger[Int],
-             solverLogger : Logger[Int],
-             graph : AccessGraph[JavaNodeKind]) : SearchEngine[Recording[JavaNodeKind]] =
-    new TryAllCSSE(searchEngineLogger,
-      violationsKindPriority,
-      graph, JavaSolverBuilder, solverLogger)
+  def apply(graph : AccessGraph[JavaNodeKind]) : SearchEngine[Recording[JavaNodeKind]] =
+    new TryAllCSSE(violationsKindPriority, graph, JavaSolverBuilder)
 }
 
 /*object JavaGradedCSSEBuilder
@@ -58,10 +53,6 @@ object JavaFindFirstCSSEBuilder
 
   override def toString = "First solution"
 
-  def apply( searchEngineLogger : Logger[Int],
-             solverLogger : Logger[Int],
-             graph : AccessGraph[JavaNodeKind]) : SearchEngine[Recording[JavaNodeKind]] =
-    new FindFirstCSSE(searchEngineLogger,
-      violationsKindPriority,
-      graph, JavaSolverBuilder, solverLogger)
+  def apply(graph : AccessGraph[JavaNodeKind]) : SearchEngine[Recording[JavaNodeKind]] =
+    new FindFirstCSSE(violationsKindPriority, graph, JavaSolverBuilder)
 }

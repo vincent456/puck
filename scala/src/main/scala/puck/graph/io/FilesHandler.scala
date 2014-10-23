@@ -7,7 +7,7 @@ import puck.graph.constraints._
 import puck.graph._
 import puck.graph.constraints.search.ConstraintSolving
 import puck.search.{Search, SearchEngine, SearchState}
-import puck.util.{NoopLogger, DefaultFileLogger, DefaultSystemLogger, Logger}
+import puck.util._
 
 import scala.sys.process.Process
 import scala.util.Try
@@ -28,9 +28,7 @@ object FilesHandler{
 }
 
 trait ConstraintSolvingSearchEngineBuilder[Kind <: NodeKind[Kind]] {
-  def apply(searchEngineLogger : Logger[Int],
-            solverLogger : Logger[Int],
-            graph : AccessGraph[Kind]) :
+  def apply(graph : AccessGraph[Kind]) :
   SearchEngine[Recording[Kind]]
 }
 
@@ -46,10 +44,20 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
 
   var graphStubFileName : String = FilesHandler.Default.graphFileName
 
-  private [this] var logger0 : Logger[Int] = DefaultSystemLogger
+  import PuckLog.defaultVerbosity
 
-  def logger : Logger[Int] = logger0
-  def logger_=( l : Logger[Int]){logger0 = l}
+  val logPolicy : PuckLog.Verbosity => Boolean = {
+    case (PuckLog.Solver(), _)
+    | (PuckLog.Search(),_)
+    | (PuckLog.InGraph(), _) => true
+
+    case _ => false
+  }
+
+  private [this] var logger0 : PuckLogger = new PuckSystemLogger(logPolicy)
+
+  def logger : PuckLogger = logger0
+  def logger_=( l : PuckLogger){logger0 = l}
 
   private [this] var ag : AccessGraph[Kind] = _
   def graph = ag
@@ -231,7 +239,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
 
   def decisionMaker() : DecisionMaker[Kind]
 
-  def solver(dm : DecisionMaker[Kind], logger: Logger[Int]) : Solver[Kind]
+  def solver(dm : DecisionMaker[Kind]) : Solver[Kind]
 
   def solve (trace : Boolean = false,
              decisionMaker : DecisionMaker[Kind]){
@@ -246,7 +254,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
 
     graph.transformations.startRegister()
     //solver(decisionMaker, this.logger).solve(
-    solver(decisionMaker, new NoopLogger() ).solve(/*
+    solver(decisionMaker).solve(/*
       if(trace) {() =>
         this.logger.writeln("*****************************************************")
         this.logger.writeln("*********** solve end of iteration %d *************".format(inc))
@@ -274,14 +282,10 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
   def explore (trace : Boolean = false,
                builder : ConstraintSolvingSearchEngineBuilder[Kind]) : Search[Recording[Kind]] = {
 
-    val searchEngineLogger = new DefaultFileLogger(logFile0.get)
-    searchEngineLogger.verboseLevel = 10
-
-
-    val engine = builder(searchEngineLogger,  new NoopLogger(), graph)
+    val engine = builder(graph)
 
     graph.transformations.startRegister()
-    puck.util.Time.time(logger) {
+    puck.util.Time.time(logger, defaultVerbosity) {
       engine.search()
     }
 

@@ -2,12 +2,9 @@ package puck.gui
 
 import puck.graph.NodeKind
 import puck.graph.backTrack.Recording
-import puck.graph.backTrack.comparison.RecordingComparator
-import puck.graph.constraints.search.ConstraintSolving
-import puck.graph.constraints.search.ConstraintSolving.FinalState
 import puck.graph.io.FilesHandler
 import puck.search.Search
-import puck.util.{DefaultSystemLogger, IntLogger}
+import puck.util.{PuckLog, PuckLogger}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.swing._
@@ -40,22 +37,23 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
   val console = new TextArea()
   console.editable = false
 
-  class ConsoleLogger extends IntLogger{
-    def writeln(msg : => String, v : Int){
+  class ConsoleLogger(val askPrint : PuckLog.Verbosity => Boolean) extends PuckLogger{
+
+    def writeln(msg : => Any)(implicit v : PuckLog.Verbosity){
       if(mustPrint(v)) {
-        console.append(msg)
+        console.append(preMsg(v) + msg)
         console.append(System.lineSeparator())
       }
     }
-    def write(msg : => String, v : Int){
+    def write(msg : => Any)(implicit v : PuckLog.Verbosity){
       if(mustPrint(v)) {
-        console.append(msg)
+        console.append(preMsg(v) + msg)
       }
     }
 
   }
 
-  filesHandler.logger = new ConsoleLogger()
+  filesHandler.logger = new ConsoleLogger(filesHandler.logPolicy)
 
   /*val out = new OutputStream {
     override def write(p1: Int): Unit = console.append(String.valueOf(p1.toChar))
@@ -131,6 +129,8 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
           frame.visible = true
       }
 
+      import PuckLog.defaultVerbosity
+
       contents += makeButton("Work space",
         "Select the root directory containing the java (up to 1.5) source code you want to analyse"){
         () => val fc = new FileChooser(filesHandler.srcDirectory.get)
@@ -184,7 +184,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
 */
       val showConstraints = makeButton("Show constraints",
         "Show the constraints the graph has to satisfy"){
-        () => filesHandler.graph.printConstraints(filesHandler.logger)
+        () => filesHandler.graph.printConstraints(filesHandler.logger, defaultVerbosity)
       }
 
       addDelayedComponent(showConstraints)

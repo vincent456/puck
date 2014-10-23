@@ -1,13 +1,13 @@
 package puck.graph.constraints
 
 import puck.graph._
-import puck.javaAG.nodeKind.Interface
-import puck.util.Logger
+import puck.util.{PuckLog, PuckLogger}
 
 trait Solver[Kind <: NodeKind[Kind]] {
 
+  implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.Solver(), PuckLog.Info())
   val graph : AccessGraph[Kind]
-  val logger : Logger[Int]
+  val logger : PuckLogger
 
   val decisionMaker : DecisionMaker[Kind]
 

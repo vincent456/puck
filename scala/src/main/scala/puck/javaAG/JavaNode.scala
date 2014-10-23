@@ -4,6 +4,7 @@ import puck.graph._
 import puck.graph.constraints.{RedirectionPolicy, AbstractionPolicy, SupertypeAbstraction}
 import puck.graph.io.DotHelper
 import puck.javaAG.nodeKind._
+import puck.util.PuckLog
 
 
 /**
@@ -62,6 +63,8 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
                 name : String,
                 kind : JavaNodeKind )
   extends AGNode[JavaNodeKind](graph, id, name, kind){
+
+  implicit val defaultVerbosity = (InJavaGraph(), PuckLog.Info())
 
   override def canContain(n : AGNode[JavaNodeKind]) : Boolean = {
 
@@ -252,8 +255,8 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
     }
   }
 
-  override def moveTo(newContainer : AGNode[JavaNodeKind]) {
-    //    println("moving " + this +" from " + container_! + " to " + newContainer)
+  /*override def moveTo(newContainer : AGNode[JavaNodeKind]) {
+    graph.logger.writeln("moving " + this +" from " + container + " to " + newContainer)
     val oldContainer = container
     this.kind match{
       case Method()
@@ -280,7 +283,7 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
 
 
     super.moveTo(newContainer)
-  }
+  }*/
 
   override def redirectUses(oldUsee : NodeType, newUsee : NodeType,
                             policy : RedirectionPolicy) = {

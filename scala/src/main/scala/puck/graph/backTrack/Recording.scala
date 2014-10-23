@@ -3,7 +3,7 @@ package puck.graph.backTrack
 import puck.graph._
 import puck.graph.backTrack.comparison.RecordingComparator
 import puck.javaAG.AG2AST
-import puck.util.{NoopLogger, Logger}
+import puck.util._
 import scala.collection.mutable
 
 /**
@@ -58,12 +58,14 @@ class Recording[Kind <: NodeKind[Kind]]( val graph : AccessGraph[Kind],
   }
 
   def produceSameGraph(other : Recording[Kind],
-                       logger : Logger[Int] = new NoopLogger[Int]()) : Boolean =
+                       logger : PuckLogger = PuckNoopLogger) : Boolean =
+
+
       new RecordingComparator(graph.initialRecord, this, other).search() match {
          case None =>
-           logger.writeln("no mapping")
+           logger.writeln("no mapping")((PuckLog.Vanilla(), PuckLog.Debug()))
            false
-         case Some(st) => logger.writeln(st.result.toString())
+         case Some(st) => logger.writeln(st.result.toString())(PuckLog.Vanilla(), PuckLog.Debug())
            true
       }
 

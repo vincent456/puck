@@ -7,72 +7,65 @@ import java.io.{FileWriter, BufferedWriter, File}
  */
 
 trait Logger[V]{
-
-  protected def mustPrint(v : V) : Boolean
-
-  def writeln(msg : => String, v : V) : Unit
-  def write(msg : => String, v : V) : Unit
-
-  def writeln(msg : => String = "" ): Unit
-  def write(msg : => String) : Unit
-
+  def writeln(msg : => Any)(implicit v : V) : Unit
+  def write(msg : => Any)(implicit v : V) : Unit
 }
 
-trait IntLogger extends Logger[Int]{
+trait LogBehavior[V]{
+  def mustPrint(v : V) : Boolean
+}
+
+trait IntLogBehavior extends LogBehavior[Int]{
   var verboseLevel = 10
   def mustPrint(v : Int) = verboseLevel >= v
 
-  def writeln(msg : => String = "" ){writeln(msg, 1)}
-  def write(msg : => String){write(msg, 1)}
 }
 
-
-class NoopLogger[V] extends Logger[V] {
-  def mustPrint(v : V) = false
-  def writeln(msg : => String, v : V){}
-  def write(msg : => String, v : V){}
-  def writeln(msg : => String = "" ){}
-  def write(msg : => String) {}
+class NoopLogger[V] extends Logger[V]  {
+  def writeln(msg : => Any)(implicit v : V){}
+  def write(msg : => Any)(implicit v : V){}
 }
 
 
 
 trait FileLogger[V] extends Logger[V]{
+  this : LogBehavior[V] =>
 
   val file : File
 
   private [this] val writer : BufferedWriter =  new BufferedWriter(new FileWriter(file))
 
-  def writeln(msg : => String, v : V){
+  def writeln(msg : => Any)(implicit v : V){
     if(mustPrint(v)) {
-      writer.write(msg)
+      writer.write(msg.toString)
       writer.newLine()
       writer.flush()
     }
   }
-  def write(msg : => String, v : V){
+  def write(msg : => Any)(implicit v : V){
     if(mustPrint(v)) {
-      writer.write(msg)
+      writer.write(msg.toString)
       writer.flush()
     }
   }
 }
 
-class DefaultFileLogger(val file : File) extends FileLogger[Int] with IntLogger
+class DefaultFileLogger(val file : File) extends FileLogger[Int] with IntLogBehavior
 
 
 trait SystemLogger[V] extends Logger[V]{
+  this : LogBehavior[V] =>
 
-  def writeln(msg : => String, v : V){
+  def writeln(msg : => Any)(implicit v : V){
     if(mustPrint(v)) {
       println(msg)
     }
   }
-  def write(msg : => String, v : V){
+  def write(msg : => Any)(implicit v : V){
     if(mustPrint(v)) {
       print(msg)
     }
   }
 }
 
-object DefaultSystemLogger extends SystemLogger[Int] with IntLogger
+object DefaultSystemLogger extends SystemLogger[Int] with IntLogBehavior

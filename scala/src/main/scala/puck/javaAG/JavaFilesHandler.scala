@@ -34,6 +34,8 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler[JavaNodeKi
         }
         graph = jgraph
 
+        graph.logger = this.logger
+
         val (_, tranfos) = NodeMappingInitialState.normalizeNodeTransfos(jgraph.transformations.recording.composition)
 
         graph.initialRecord = tranfos
@@ -49,8 +51,8 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler[JavaNodeKi
 
   def decisionMaker() = new JavaDefaultDecisionMaker(graph)
 
-  def solver(dm : DecisionMaker[JavaNodeKind], logger: Logger[Int]) =
-    new JavaSolver(graph, logger, dm)
+  def solver(dm : DecisionMaker[JavaNodeKind]) =
+    new JavaSolver(graph, dm)
 
   def printCode() {
     graph.asInstanceOf[JavaAccessGraph].program.printCodeInDirectory(outDirectory.get)

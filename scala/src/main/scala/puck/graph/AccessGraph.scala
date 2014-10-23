@@ -1,7 +1,7 @@
 package puck.graph
 
 import puck.graph.backTrack.{Transformation, Recording, CareTakerNoop, CareTaker}
-import puck.util.{NoopLogger, Logger}
+import puck.util.{PuckNoopLogger, PuckLogger, Logger, PuckLog}
 
 import scala.language.implicitConversions
 import scala.collection.mutable
@@ -27,13 +27,14 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
   type NodeType = AGNode[Kind]
   type EdgeType = AGEdge[Kind]
 
-  var logger : Logger[Int] = new NoopLogger()
+  var logger : PuckLogger = PuckNoopLogger
+  implicit val defaulVerbosity : PuckLog.Verbosity = (PuckLog.InGraph(), PuckLog.Info())
 
   def newGraph() : AccessGraph[Kind] = {
     new AccessGraph(nodeBuilder)
   }
 
-  logger.writeln("Node builder : " + nodeBuilder.getClass)
+  logger.writeln("Node builder : " + nodeBuilder.getClass)(PuckLog.InGraph(), PuckLog.Debug())
 
   val nodeSets : mutable.Map[String, NamedNodeSet[Kind]] = mutable.Map()
   val constraints : mutable.Buffer[Constraint[Kind]] = mutable.Buffer()
@@ -70,19 +71,19 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
     this.foreach(_.discardConstraints())
   }
 
-  def printConstraints[V](logger : Logger[V]){
+  def printConstraints[V](logger : Logger[V], v : V){
     nodeSets.foreach{
-      case (_, namedSet) => logger.writeln(namedSet.defString)
+      case (_, namedSet) => logger.writeln(namedSet.defString)(v)
     }
-    constraints.foreach(ct => logger.writeln(ct.toString))
+    constraints.foreach(ct => logger.writeln(ct)(v))
   }
 
-  def printUsesDependancies[V](logger : Logger[V]){
+  def printUsesDependancies[V](logger : Logger[V], v : V){
     this.foreach { node =>
       if (node.primaryUses.nonEmpty)
-        logger.writeln(node.primaryUses.toString())
+        logger.writeln(node.primaryUses)(v)
       if (node.sideUses.nonEmpty)
-        logger.writeln(node.sideUses.toString())
+        logger.writeln(node.sideUses)(v)
     }
   }
 

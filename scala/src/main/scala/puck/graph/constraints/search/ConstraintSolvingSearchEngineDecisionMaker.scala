@@ -4,7 +4,7 @@ import puck.graph.backTrack.Recording
 import puck.graph.constraints.{AbstractionPolicy, DecisionMaker, NodeSet}
 import puck.graph.NodeKind
 import puck.search.{SearchState, SearchEngine}
-import puck.util.Logger
+import puck.util.PuckLogger
 
 import scala.collection.mutable
 
@@ -18,14 +18,14 @@ object ConstraintSolving {
  * Created by lorilan on 25/09/14.
  */
 abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]]
-(solverBuilder : SolverBuilder[Kind],
- solverLogger : Logger[Int])
+(solverBuilder : SolverBuilder[Kind])
   extends SearchEngine[Recording[Kind]]
   with DecisionMaker[Kind]{
 
-  val initialState = new CSInitialSearchState(this, solverBuilder(graph, solverLogger, this))
+  val logger : PuckLogger = graph.logger
 
-  val logger : Logger[Int]
+  val initialState = new CSInitialSearchState(this, solverBuilder(graph, this))
+
   val violationsKindPriority : List[Kind]
 
   def violationTarget(k: Option[NodeType] => Unit) {

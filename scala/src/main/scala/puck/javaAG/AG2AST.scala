@@ -5,13 +5,14 @@ import puck.graph._
 import puck.graph.backTrack._
 import puck.graph.constraints.SupertypeAbstraction
 import puck.javaAG.nodeKind._
-import puck.util.{NoopLogger, Logger}
+import puck.util._
 
 /**
  * Created by lorilan on 23/07/14.
  */
 object AG2AST {
-  var logger : Logger[Int] = new NoopLogger[Int]
+  var logger : PuckLogger = PuckNoopLogger
+  implicit val defaultVerbosity = (PuckLog.AG2AST(), PuckLog.Info())
 
   def apply(t : Recordable[JavaNodeKind]) = t match {
     case Transformation(Add(), TTNode(node)) =>

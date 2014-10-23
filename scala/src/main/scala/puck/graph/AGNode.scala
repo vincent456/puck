@@ -1,6 +1,6 @@
 package puck.graph
 
-import puck.util.{HasChildren, BreadthFirstTreeIterator}
+import puck.util.{PuckLog, HasChildren, BreadthFirstTreeIterator}
 
 import scala.language.implicitConversions
 import scala.collection.mutable
@@ -163,6 +163,8 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
 
 
   def moveTo(newContainer : NodeType) {
+    graph.logger.writeln("moving " + this +" from " + container + " to " + newContainer)
+
     AGEdge.contains(container, this).changeSource(newContainer)
 
     users.foreach{
@@ -295,41 +297,59 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
   /*(this, key) is a side uses and primaryUses(key) is the corresponding primary uses */
   val primaryUses = new UsesDependencyMap(this, Dominated())
 
+  implicit def logVerbosity(lvl : PuckLog.Level) = (PuckLog.InGraph(), lvl)
+
   def findNewPrimaryUsee(currentPrimaryUsee : NodeType,
                          newSideUsee : NodeType,
                          policy : RedirectionPolicy) : NodeType = {
-    policy match {
-      case Move() => newSideUsee.container
-      case absPolicy : AbstractionPolicy =>
-        currentPrimaryUsee.abstractions.find{
-          case (node, `absPolicy`) => node.contains_*(newSideUsee)
-          case _ => false
-        } match {
-          case Some((n, _)) => n
-          case None =>
-            graph.iterator.find{ node =>
-              node.contains_*(newSideUsee) &&
-                currentPrimaryUsee.kind.abstractKinds(absPolicy).contains(node.kind)
-            } match {
-              case Some(n) => n
-              case None => throw new AGError("no correct primary abstraction found !")
-            }
-        }
-    }
+
+    graph.logger.writeln("searching new primary usee ("+ policy + ") : currentPrimaryUsee is " +
+      currentPrimaryUsee + ", new side usee " + newSideUsee)
+
+    val newPrimaryUsee =
+      policy match {
+        case Move() => newSideUsee.container
+        case absPolicy : AbstractionPolicy =>
+          currentPrimaryUsee.abstractions.find{
+            case (node, `absPolicy`) => node.contains_*(newSideUsee)
+            case _ => false
+          } match {
+            case Some((n, _)) => n
+            case None =>
+              graph.iterator.find{ node =>
+                node.contains_*(newSideUsee) &&
+                  currentPrimaryUsee.kind.abstractKinds(absPolicy).contains(node.kind)
+              } match {
+                case Some(n) => n
+                case None =>
+                  val msg = "no correct primary abstraction found !"
+                  graph.logger.writeln(msg)(PuckLog.Error())
+                  throw new RedirectionError(msg)
+              }
+          }
+      }
+    graph.logger.writeln("new primary usee found : " + newPrimaryUsee)
+    newPrimaryUsee
   }
+
+  implicit val logVerbosity : PuckLog.Verbosity = (PuckLog.InGraph(), PuckLog.Info())
 
   def redirectPrimaryUses(currentSideUsee : NodeType,
                           newSideUsee : NodeType,
                           policy : RedirectionPolicy){
-    graph.logger.writeln("redirecting primary uses ... ",3)
+
+
+    graph.logger.writeln("redirecting primary uses of side use (%s, %s) (new side usee is %s) ".
+      format(this, currentSideUsee, newSideUsee))
     primaryUses get currentSideUsee match {
       case None =>
-        graph.logger.writeln("no primary uses to redirect",3)
+        graph.logger.writeln("no primary uses to redirect")
 
       case Some(primary_uses) =>
-        graph.logger.writeln("uses to redirect:%s".format(primary_uses.mkString("\n", "\n","\nend of list")),3)
-
         assert(primary_uses.nonEmpty)
+
+        graph.logger.writeln("uses to redirect:%s".format(primary_uses.mkString("\n\t", "\n\t","\n")))
+
 
         /*val primary = primary_uses.head
         if(primary_uses.tail.nonEmpty) {
@@ -366,13 +386,15 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
   def redirectSideUses(currentPrimaryUsee: NodeType,
                        newPrimaryUsee : NodeType,
                        policy : RedirectionPolicy){
-    graph.logger.writeln("redirecting side uses ... ", 3)
+    graph.logger.writeln("redirecting side uses of primary use (%s, %s) (new primary usee is %s) ".
+      format(this, currentPrimaryUsee, newPrimaryUsee))
+
     sideUses get currentPrimaryUsee match {
       case None =>
-        graph.logger.writeln("no side uses to redirect", 3)
+        graph.logger.writeln("no side uses to redirect")
         ()
       case Some( sides_uses ) =>
-        graph.logger.writeln("uses to redirect:%s".format(sides_uses.mkString("\n", "\n","\nend of list")),3)
+        graph.logger.writeln("uses to redirect:%s".format(sides_uses.mkString("\n\t", "\n\t","\n")))
 
         sides_uses foreach {
           side =>
@@ -381,9 +403,12 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
               case _ => false
             } match {
               case None =>
-                throw new RedirectionError(("While redirecting primary uses (%s, %s) target to %s\n" +
-                  "no satisfying abstraction to redirect side use %s").
-                  format( this, currentPrimaryUsee, newPrimaryUsee, side))
+                val msg = ("While redirecting primary uses (%s, %s) target to %s\n" +
+            "no satisfying abstraction to redirect side use %s").
+            format( this, currentPrimaryUsee, newPrimaryUsee, side)
+                graph.logger.writeln(msg)(PuckLog.Error())
+
+                throw new RedirectionError(msg)
 
               case Some( (new_side_usee, _) ) =>
 
@@ -405,7 +430,8 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
 
     else if(this uses oldUsee) {
 
-      graph.logger.writeln("redirecting %s target to\n%s (%s)".format(AGEdge.uses(this, oldUsee), newUsee, policy), 3)
+      graph.logger.writeln("redirecting %s target to %s (%s)".
+        format(AGEdge.uses(this, oldUsee), newUsee, policy))
       val newUses = AGEdge.uses(this, oldUsee).changeTarget(newUsee)
 
       this.kind match {
@@ -423,15 +449,17 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
       //if both are identified as violations and are in a wrongusers list
       //redirecting the one will redirect the other
       // when iterating on the wrongusers, the next call to redirectuses will arrive here
-      graph.logger.writeln("redirecting uses %s --> %s to\n%s (%s) : FAILURE !! %s is not used".format(this, oldUsee, newUsee, policy, oldUsee))
+      graph.logger.writeln("redirecting uses' (%s, %s) target to %s (%s) : FAILURE !! %s is not used".
+        format(this, oldUsee, newUsee, policy, oldUsee))
       AGEdge.uses(this, newUsee)
     }
     else {
       if(oldUsee.users.contains(this) || newUsee.users.contains(this))
         throw new AGError("incoherent state !!!!!!!!!!!!")
 
-      throw new AGError(("redirecting uses %s --> %s to\n%s (%s)\n" +
-        "!!! nor the oldUsee or the newUsee is really used !!! ").format(this, oldUsee, newUsee, policy))
+      throw new AGError(("redirecting uses' (%s, %s) target to %s (%s)\n" +
+        "!!! nor the oldUsee or the newUsee is really used !!! ").
+        format(this, oldUsee, newUsee, policy))
     }
 
 

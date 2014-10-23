@@ -5,7 +5,7 @@ import puck.graph.backTrack.Recording
 import puck.graph.constraints.search.ConstraintSolving
 import puck.graph.constraints.search.ConstraintSolving._
 import puck.search.Search
-import puck.util.Logger
+import puck.util.{PuckLog, PuckLogger, Logger}
 
 import scala.swing._
 
@@ -13,8 +13,10 @@ import scala.swing._
  * Created by lorilan on 22/10/14.
  */
 class SearchResultPanel[Kind <: NodeKind[Kind]](res : Search[Recording[Kind]],
-                                                logger : Logger[Int])
+                                                logger : PuckLogger)
       extends BoxPanel(Orientation.Vertical){
+
+  implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.Search(), PuckLog.Info())
 
   type ST = ConstraintSolving.FinalState[Kind]
 
@@ -34,7 +36,7 @@ class SearchResultPanel[Kind <: NodeKind[Kind]](res : Search[Recording[Kind]],
   logger.write("comparing final states : ")
 
   val sortedRes: Map[Int, Seq[FinalState[Kind]]] =
-    puck.util.Time.time(logger){
+    puck.util.Time.time(logger, defaultVerbosity){
 
       //CSSearchStateComboBox.sort(res).mapValues(filterDifferentStates)
       // do not actually apply the function and hence give a false compute time
@@ -76,16 +78,16 @@ class SearchResultPanel[Kind <: NodeKind[Kind]](res : Search[Recording[Kind]],
       }
     }
 
-    val allStates = res.initialState.iterator.toSeq.groupBy{ s => s.depth }
-    val comp2 : Component = new CSSearchStateComboBox(allStates)
-    contents += comp2
-
-    this listenTo comp
-
     contents += Button("Print all") {
       SearchResultPanel.this.
         publish(SearchStateMapPrintingRequest(sortedRes))
     }
   }
+
+  val allStates = res.initialState.iterator.toSeq.groupBy{ s => s.depth }
+  val comp2 : Component = new CSSearchStateComboBox(allStates)
+  contents += comp2
+
+  this listenTo comp2
 
 }

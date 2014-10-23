@@ -10,11 +10,8 @@ import puck.util.Logger
  */
 //CSSE : Constraint Solving Search Engine
 class TryAllCSSE[Kind <: NodeKind[Kind]](
-  val logger : Logger[Int],
   val violationsKindPriority : List[Kind],
   val graph : AccessGraph[Kind],
-  sb : SolverBuilder[Kind],
-  solverLogger : Logger[Int])
-  extends ConstraintSolvingSearchEngineDecisionMaker[Kind](
-     sb, solverLogger)
+  sb : SolverBuilder[Kind])
+  extends ConstraintSolvingSearchEngineDecisionMaker[Kind](sb)
   with TryAllSearchEngine[Recording[Kind]]

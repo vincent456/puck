@@ -9,6 +9,7 @@ import puck.graph.constraints.search.ConstraintSolvingNodesChoice
 import puck.graph.{AGNode, AGEdge, NodeKind}
 import puck.graph.io.{ConstraintSolvingSearchEngineBuilder, FilesHandler}
 import puck.search.{Search, SearchState}
+import puck.util.PuckLog
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -55,6 +56,8 @@ class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
                                           private val delayedDisplay : ArrayBuffer[Component])
   extends Publisher{
 
+  import PuckLog.defaultVerbosity
+
   def loadCode( onSuccess : => Unit) = Future {
     progressBar.visible = true
     progressBar.value = 0
@@ -81,7 +84,7 @@ class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
       filesHandler.graph.discardConstraints()
       filesHandler.parseConstraints()
       filesHandler.logger.writeln(" done:")
-      filesHandler.graph.printConstraints(filesHandler.logger)
+      filesHandler.graph.printConstraints(filesHandler.logger, defaultVerbosity)
     }
     catch {
       case e: Error => filesHandler.logger writeln ("\n" + e.getMessage)

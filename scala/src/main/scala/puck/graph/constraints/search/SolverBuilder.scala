@@ -9,6 +9,5 @@ import puck.util.Logger
  */
 trait SolverBuilder[Kind <: NodeKind[Kind]]{
   def apply(graph : AccessGraph[Kind],
-             logger : Logger[Int],
-             dm : DecisionMaker[Kind]) : Solver[Kind]
+            dm : DecisionMaker[Kind]) : Solver[Kind]
 }
