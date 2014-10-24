@@ -44,6 +44,8 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
                                       var name: String,
                                       val kind: Kind) extends HasChildren[AGNode[Kind]]{
 
+  import graph.{defaulVerbosity, logVerbosity}
+
   type NodeType = AGNode[Kind]
   //extends Iterable[NodeType]{
   kind.node = this
@@ -93,8 +95,8 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
 
   }
 
-  override def toString: String = id.toString
-  //override def toString: String = "%d %s (%s)".format(id, kind, fullName)
+  //override def toString: String = id.toString
+  override def toString: String = "%d %s (%s)".format(id, kind, fullName)
 
   def nameTypeString = name + (kind match{case k : HasType[_, _] => " : " + k.typ; case _ => ""})
 
@@ -168,7 +170,8 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
     AGEdge.contains(container, this).changeSource(newContainer)
 
     users.foreach{ user =>
-      graph.redirectPrimaryUses(AGEdge.uses(user,this), this, Move())
+      graph.redirectPrimaryUses(AGEdge.uses(user,this), this,
+        Move(), propagateRedirection = false)
     }
   }
 

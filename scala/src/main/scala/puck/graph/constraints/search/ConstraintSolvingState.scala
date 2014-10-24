@@ -34,7 +34,7 @@ trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, T <: ConstraintSolvingCh
     super.setAsCurrentState()
   }
 
-  private val needToTryNone = internal.remainingChoices.isEmpty
+  private val needToTryNone = true//internal.remainingChoices.isEmpty
   private var triedNone = false
 
   def triedAll =
@@ -45,8 +45,7 @@ trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, T <: ConstraintSolvingCh
     if(engine.currentState != this)
       setAsCurrentState()
 
-    if(remainingChoices.nonEmpty
-      && !needToTryNone) {
+    if(remainingChoices.nonEmpty){
       val c = remainingChoices.head
       remainingChoices.remove(c)
       triedChoices.add(c)
@@ -63,7 +62,7 @@ trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, T <: ConstraintSolvingCh
       }
 
     }
-    if(needToTryNone){
+    else if(needToTryNone){
       triedNone = true
       k(None)
     }

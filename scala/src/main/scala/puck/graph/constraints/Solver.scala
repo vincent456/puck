@@ -5,7 +5,9 @@ import puck.util.{PuckLog, PuckLogger}
 
 trait Solver[Kind <: NodeKind[Kind]] {
 
-  implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.Solver(), PuckLog.Info())
+  implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.Solver(), PuckLog.Debug())
+  implicit def logVerbosity(lvl : PuckLog.Level) = (PuckLog.Solver(), lvl)
+
   val graph : AccessGraph[Kind]
   val logger : PuckLogger
 
@@ -18,7 +20,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
     absKindAndPolicy(usee) {
       case (absKind, absPolicy) =>
 
-        logger.writeln("redirect toward existing abstractions", 2)
+        logger.writeln("redirect toward existing abstractions")
         val allUnsolved = wrongUsers.foldLeft(List[NodeType]()) { (unsolved: List[NodeType], wu: NodeType) =>
           usee.abstractions find {
             case (node, `absPolicy`) if node.kind == absKind => !wu.interloperOf(node)
@@ -26,7 +28,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
           } match {
             case None => wu :: unsolved
             case Some((abs, _)) =>
-              logger.writeln(wu + " will use abstraction " + abs, 3)
+              logger.writeln(wu + " will use abstraction " + abs)
 
               val breakPoint = graph.transformations.startSequence()
 
@@ -36,7 +38,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
               }
               catch {
                 case e: RedirectionError =>
-                  logger.writeln("redirection error catched !!", 3)
+                  logger.writeln("redirection error catched !!")
                   graph.transformations.undo(breakPoint)
                   wu :: unsolved
               }
@@ -50,7 +52,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
   def findHost(toBeContained : NodeType,
                wrongUsers: List[NodeType],
                context : => String,
-               predicate : (NodeType) => Boolean = _ => true )
+               predicate : (NodeType) => Boolean = _ => true)
               (k : Option[NodeType] => Unit) {
 
     def loosePredicate(n : NodeType) =
@@ -70,12 +72,9 @@ trait Solver[Kind <: NodeKind[Kind]] {
       case None => decisionMaker.chooseNode(context, loosePredicate, k)
       case sn => k(sn)
     })*/
-
-
-
   }
 
-  def singleAbsIntroPredicate(impl : NodeType,
+  def absIntroPredicate(impl : NodeType,
                               absPolicy : AbstractionPolicy,
                               absKind : Kind) : NodeType => Boolean = absPolicy match {
     case SupertypeAbstraction() =>
@@ -88,19 +87,19 @@ trait Solver[Kind <: NodeKind[Kind]] {
 
 
 
-  def singleAbsIntro(impl : NodeType,
+  def absIntro(impl : NodeType,
                      wrongUsers : List[NodeType],
                      degree : Int = 1)
                     (k : Option[NodeType] => Unit){
 
-    logger.writeln("\nsingle abs intro degree "+degree, 2)
+    logger.writeln("\nabs of "+ impl +" intro degree "+degree)
 
     def intro (currentImpl : NodeType,
                absKind : Kind,
                absPolicy : AbstractionPolicy,
                wrongUsers : List[NodeType])
               (predicate : (NodeType) => Boolean =
-               singleAbsIntroPredicate(currentImpl, absPolicy, absKind),
+               absIntroPredicate(currentImpl, absPolicy, absKind),
                context : => String =
                "Searching host for abstraction of %s ( %s, %s )".
                  format(currentImpl, absKind, absPolicy),
@@ -116,8 +115,10 @@ trait Solver[Kind <: NodeKind[Kind]] {
           if(parentsThatCanBeCreated > 0)
             hostIntro(currentImpl, absKind, absPolicy, wrongUsers,
               parentsThatCanBeCreated - 1, k)
-          else
+          else {
+            logger.writeln("node intro, host intro max limit is not enough")(PuckLog.Warning())
             k(None)
+          }
         case Some(host) =>
           host.content += abs
           k(Some(abs, absPolicy))
@@ -131,20 +132,25 @@ trait Solver[Kind <: NodeKind[Kind]] {
                    wrongUsers : List[NodeType],
                    parentsThatCanBeCreated : Int,
                    k : Option[(NodeType, AbstractionPolicy)] => Unit){
-      logger.writeln("\nhostIntro", 3)
+      logger.writeln("\nhostIntro")
+      //searching container's abstraction kind
       toBeContained.container.kind.abstractKinds(absPolicy).find(_.canContain(absKind)) match {
         case None => throw new AGError("container abstraction creation error")
         case Some(cterAbsKind) =>
+          //introducing container's abstraction
           intro(toBeContained.container,
             cterAbsKind, absPolicy, wrongUsers)({ n: NodeType => true},
           "Searching host for abstraction of %s's container:\n%s ( %s, %s )\n".
             format(toBeContained, toBeContained.container, cterAbsKind, absPolicy),
           parentsThatCanBeCreated){
             case None => k(None)
+              //assuming an abstraction of toBeContained has been created
+              // while abstracting its container, try to retrieve it
             case Some((cterAbs, _ )) => toBeContained.abstractions.find {
               case (existingAbs, `absPolicy`) => cterAbs.contains(existingAbs)
               case _ => false
             } match {
+                //if none retrieven create an abstraction of to be contained
               case None =>
                 val newAbs = toBeContained.createAbstraction(absKind, absPolicy)
                 cterAbs.content += newAbs
@@ -157,7 +163,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
 
     def aux(deg : Int, currentImpl : NodeType)
            (k :Option[(NodeType, AbstractionPolicy)] => Unit) {
-      logger.writeln("*** abs intro degree %d/%d ***".format(deg, degree), 3)
+      logger.writeln("*** abs intro degree %d/%d ***".format(deg, degree))
 
       absKindAndPolicy(currentImpl){
         case (absKind, absPolicy) =>
@@ -184,7 +190,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
       case None => k(None)
       case Some((abs, absPolicy)) =>
 
-        logger.writeln("redirecting wrong users !!", 3)
+        logger.writeln("redirecting wrong users !!")
         wrongUsers.foreach(wu => graph.redirectUses(AGEdge.uses(wu, impl), abs, absPolicy))
 
         /*if(absPolicy == SupertypeAbstraction())
@@ -226,11 +232,11 @@ trait Solver[Kind <: NodeKind[Kind]] {
 
     redirectTowardExistingAbstractions(impl, impl.wrongUsers){ wrongUsers =>
       if (wrongUsers.nonEmpty){
-        singleAbsIntro(impl, wrongUsers){
+        absIntro(impl, wrongUsers){
           case None =>
             //dead code : en acceptant qu'une abstraction nouvellement introduite
             //soit la cible de violation, on a jamais besoin d'utiliser le degré 2
-            singleAbsIntro(impl, wrongUsers, 2) {
+            absIntro(impl, wrongUsers, 2) {
               case None =>
                 decisionMaker.modifyConstraints(LiteralNodeSet(wrongUsers), impl)
                 /*if(impl.wrongUsers.nonEmpty)
@@ -245,6 +251,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
   }
 
   var newCterNumGen = 0
+
   def solveContains(wronglyContained : NodeType, k : () => Unit) {
     logger.writeln("###################################################")
     logger.writeln("##### Solving contains violations toward %s ######".format(wronglyContained))
@@ -256,10 +263,6 @@ trait Solver[Kind <: NodeKind[Kind]] {
     if(wronglyContained.container != wronglyContained)
       oldCter.content -= (wronglyContained, register = false)
 
-    /*
-      snode is either the wrongly contained node
-      either another container introduced to contains the wrongly contained node
-     */
     def moveToNewCter (snode : Option[NodeType]) {
       snode match {
         case Some(newCter) =>

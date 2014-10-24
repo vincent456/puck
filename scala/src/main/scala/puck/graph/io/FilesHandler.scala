@@ -47,10 +47,13 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
   import PuckLog.defaultVerbosity
 
   val logPolicy : PuckLog.Verbosity => Boolean = {
-    case (PuckLog.Solver(), _)
+    /*case (PuckLog.Solver(), _)
     | (PuckLog.Search(),_)
-    | (PuckLog.InGraph(), _) => true
-
+    | (PuckLog.InGraph(), _) => true*/
+    case (_, PuckLog.Debug())
+    | (_, PuckLog.Warning())
+    | (_, PuckLog.Error())
+    | (PuckLog.NoSpecialContext(), _) => true
     case _ => false
   }
 

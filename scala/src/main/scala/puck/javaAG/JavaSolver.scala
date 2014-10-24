@@ -19,14 +19,14 @@ class JavaSolver(val graph : AccessGraph[JavaNodeKind],
 
   val logger = graph.logger
 
-  override  def singleAbsIntroPredicate(impl : NodeType,
+  override  def absIntroPredicate(impl : NodeType,
                                         absPolicy : AbstractionPolicy,
                                         absKind : JavaNodeKind) : NodeType => Boolean =
     (impl.kind, absPolicy) match {
     case (Method(), SupertypeAbstraction())
     | (AbstractMethod(), SupertypeAbstraction()) =>
       potentialHost => !(impl.container interloperOf potentialHost)
-    case _ => super.singleAbsIntroPredicate(impl, absPolicy, absKind)
+    case _ => super.absIntroPredicate(impl, absPolicy, absKind)
   }
 
 }

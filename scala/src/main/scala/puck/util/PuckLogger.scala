@@ -1,6 +1,6 @@
 package puck.util
 
-import puck.util.PuckLog.{Vanilla, Level, Kind, Info}
+import puck.util.PuckLog.{NoSpecialContext, Level, Kind, Info}
 
 /**
  * Created by lorilan on 23/10/14.
@@ -12,7 +12,7 @@ object PuckLog{
   sealed abstract class Kind{
     def logString : String
   }
-  case class Vanilla() extends Kind{
+  case class NoSpecialContext() extends Kind{
     def logString = ""
   }
   case class InGraph() extends Kind {
@@ -28,7 +28,7 @@ object PuckLog{
     def logString = "ag2ast"
   }
 
-  implicit val defaultVerbosity = (Vanilla(), Info())
+  implicit val defaultVerbosity = (NoSpecialContext(), Info())
 
   sealed abstract class Level{
     def logString : String
@@ -53,12 +53,12 @@ trait PuckLogger extends LogBehavior[PuckLog.Verbosity]
 
   val askPrint : PuckLog.Verbosity => Boolean
 
-  implicit val defaultVerbosity = (Vanilla(), Info())
+  implicit val defaultVerbosity = (NoSpecialContext(), Info())
 
   def mustPrint(v : (Kind, Level)) = askPrint(v)
 
   def preMsg(v : (Kind, Level)) = v match {
-    case (Vanilla(), lvl) => "[ " +lvl.logString + "] "
+    case (NoSpecialContext(), lvl) => "[ " +lvl.logString + "] "
     case (k, lvl) => "[ %s - %s ] ".format(k.logString, lvl.logString)
   }
 }

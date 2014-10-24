@@ -263,7 +263,9 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
   }}
 
   override def redirectUses(oldUse : EdgeType, newUsee : NodeType,
-                            policy : RedirectionPolicy) = {
+                            policy : RedirectionPolicy,
+                            propagateRedirection : Boolean = true,
+                            keepOldUse : Boolean = false) = {
 
     (oldUse.usee.kind, newUsee.kind) match {
       case (Constructor(), Method())
@@ -272,6 +274,6 @@ class JavaAccessGraph extends AccessGraph[JavaNodeKind](JavaNode){
       case _ => ()
     }
 
-    super.redirectUses(oldUse, newUsee, policy)
+    super.redirectUses(oldUse, newUsee, policy, propagateRedirection, keepOldUse)
   }
 }

@@ -63,9 +63,9 @@ class Recording[Kind <: NodeKind[Kind]]( val graph : AccessGraph[Kind],
 
       new RecordingComparator(graph.initialRecord, this, other).search() match {
          case None =>
-           logger.writeln("no mapping")((PuckLog.Vanilla(), PuckLog.Debug()))
+           logger.writeln("no mapping")((PuckLog.NoSpecialContext(), PuckLog.Debug()))
            false
-         case Some(st) => logger.writeln(st.result.toString())(PuckLog.Vanilla(), PuckLog.Debug())
+         case Some(st) => logger.writeln(st.result.toString())(PuckLog.NoSpecialContext(), PuckLog.Debug())
            true
       }
 

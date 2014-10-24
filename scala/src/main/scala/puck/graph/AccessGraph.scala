@@ -174,21 +174,32 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
 
 
   def redirectUses(oldEdge : EdgeType, newUsee : NodeType,
-                   policy : RedirectionPolicy) = {
+                   policy : RedirectionPolicy,
+                   propagateRedirection : Boolean = true,
+                   keepOldUse : Boolean = false ) = {
     if(oldEdge.usee == newUsee) oldEdge
     else if(oldEdge.exists) {
 
       logger.writeln("redirecting %s target to %s (%s)".format(oldEdge, newUsee, policy))
 
-      val newUses = oldEdge.changeTarget(newUsee)
+      val newUses =
+          if(keepOldUse) {
+            val newUse = AGEdge.uses(oldEdge.user, newUsee)
+            newUse.create()
+            newUse
+          }
+          else
+            oldEdge.changeTarget(newUsee)
 
       oldEdge.user.kind match {
         case k : HasType[Kind, _] => k.redirectUses(oldEdge.usee, newUsee)
         case _ => ()
       }
 
-      redirectPrimaryUses(oldEdge, newUsee, policy)
-      redirectSideUses(oldEdge, newUsee, policy)
+      if(propagateRedirection) {
+        redirectPrimaryUses(oldEdge, newUsee, policy)
+        redirectSideUses(oldEdge, newUsee, policy)
+      }
 
       newUses
     }
@@ -213,11 +224,13 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
 
   def redirectPrimaryUses(currentSideUse : EdgeType,
                           newSideUsee : NodeType,
-                          policy : RedirectionPolicy){
+                          policy : RedirectionPolicy,
+                          propagateRedirection : Boolean = true){
 
 
     logger.writeln("redirecting primary uses of side use %s (new side usee is %s) ".
       format(currentSideUse, newSideUsee))
+
     primaryUses get currentSideUse match {
       case None =>
         logger.writeln("no primary uses to redirect")
@@ -228,18 +241,22 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
         logger.writeln("uses to redirect:%s".format(primary_uses.mkString("\n\t", "\n\t","\n")))
 
 
+
         primary_uses foreach {
           primary =>
             removeUsesDependency(primary, currentSideUse)
 
-            val newPrimary = redirectUses(primary,
-              findNewPrimaryUsee(primary.usee, newSideUsee, policy),  policy)
+            val keepOldUse = (sideUses get primary).nonEmpty //is empty if primary had only one side use
+
+            val newPrimary =
+              redirectUses(primary, findNewPrimaryUsee(primary.usee, newSideUsee, policy),
+              policy, propagateRedirection, keepOldUse)
+
 
             addUsesDependency(newPrimary, AGEdge.uses(currentSideUse.user, newSideUsee))
-
         }
-
     }
+
   }
 
   def findNewPrimaryUsee(currentPrimaryUsee : NodeType,
