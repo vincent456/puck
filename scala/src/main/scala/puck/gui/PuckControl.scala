@@ -133,7 +133,8 @@ class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
       case Success(_) =>
         publish(AccessGraphModified(filesHandler.graph))
         onSuccess
-      case Failure(exc) => exc.printStackTrace()
+      case Failure(exc) =>
+        exc.printStackTrace()
         //filesHandler.logger writeln exc.getStackTrace.mkString("\n")
     }
 
@@ -178,15 +179,26 @@ class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
       }
 
     case ExploreRequest(trace, builder) =>
+
+      val tbuilder = builder.asInstanceOf[ConstraintSolvingSearchEngineBuilder[Kind]]
+
+      val engine = tbuilder(filesHandler.graph)
+
       Future {
         filesHandler.logger.writeln("Solving constraints ...")
-        filesHandler.explore(trace,
-          builder.asInstanceOf[ConstraintSolvingSearchEngineBuilder[Kind]])
+      /*  filesHandler.explore(trace,
+          builder.asInstanceOf[ConstraintSolvingSearchEngineBuilder[Kind]])*/
+        puck.util.Time.time(filesHandler.logger, defaultVerbosity) {
+          engine.search()
+        }
+        engine
       } onComplete {
         case Success(res) =>
           filesHandler.logger.writeln("Solving done")
           publish(ExplorationFinished(res))
-        case Failure(exc) => exc.printStackTrace()
+        case Failure(exc) =>
+          exc.printStackTrace()
+          publish(ExplorationFinished(engine))
           //filesHandler.logger writeln exc.getStackTrace.mkString("\n")
       }
 

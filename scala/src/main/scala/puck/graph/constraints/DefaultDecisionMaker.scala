@@ -39,12 +39,10 @@ abstract class DefaultDecisionMaker[Kind <: NodeKind[Kind]](val graph : AccessGr
     }
   }
 
-  def chooseNode(context : => String,
-                 predicate : NodeType => Boolean,
-                 k : Option[NodeType] => Unit) : Unit = {
-    graph.logger.writeln(context,3)
+  def chooseNode(predicate : NodeType => Boolean)
+                (k : Option[NodeType] => Unit) : Unit = {
     val found = graph.iterator.find(predicate)
-    graph.logger.writeln("found : " + found, 3)
+    graph.logger.writeln("found : " + found)
     k(found)
   }
 

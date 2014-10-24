@@ -52,6 +52,9 @@ class UsesDependencyMap[Kind <: NodeKind[Kind]](val keyType : DependencyStatus)
 
   def +=(key : AGEdge[Kind], dependency : AGEdge[Kind]) = {
 
+    if(key == dependency)
+      sys.error("WTF !")
+
     content get key match {
       case None =>
         content += (key -> mutable.Set(dependency))

@@ -23,9 +23,8 @@ trait DecisionMaker[Kind <: NodeKind[Kind]]{
 
   def abstractionKindAndPolicy(impl : NodeType)(k : Option[(Kind, AbstractionPolicy)] => Unit) : Unit
 
-  def chooseNode(context : => String,
-                 predicate : NodeType => Boolean,
-                 k : Option[NodeType] => Unit) : Unit
+  def chooseNode(predicate : NodeType => Boolean)
+                (k : Option[NodeType] => Unit) : Unit
 
   def modifyConstraints(sources : NodeSet[Kind], target : NodeType) : Unit
 

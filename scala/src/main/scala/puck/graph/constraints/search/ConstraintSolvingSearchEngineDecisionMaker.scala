@@ -100,9 +100,8 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]
 
   }
 
-  def chooseNode(context : => String,
-                 predicate : NodeType => Boolean,
-                 k : Option[NodeType] => Unit) {
+  def chooseNode(predicate : NodeType => Boolean)
+                (k : Option[NodeType] => Unit) {
     //println(context)
     newCurrentState(graph.transformations.recording,
       new ConstraintSolvingNodesChoice(k,

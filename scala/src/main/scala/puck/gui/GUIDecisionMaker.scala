@@ -21,10 +21,9 @@ class GUIDecisionMaker[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[K
   }
 
 
-  def chooseNode(context : => String,
-                 predicate : NodeType => Boolean,
-                 k : Option[NodeType] => Unit) : Unit =
-    k(NodeChooser(LiteralNodeSet(graph.filter(predicate)), context))
+  def chooseNode(predicate : NodeType => Boolean)
+                (k : Option[NodeType] => Unit) : Unit =
+    k(NodeChooser(LiteralNodeSet(graph.filter(predicate)), "Empty context in GUIDecisionMaker"))
 
   def modifyConstraints(sources : NodeSet[Kind], target : NodeType) {
     ConstraintExceptionFrame(sources, target)

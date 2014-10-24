@@ -38,4 +38,4 @@ libraryDependencies ++= Seq(
 
 cleanFiles += sourceManaged.value
 
-scalacOptions += "-deprecation"
+scalacOptions ++=Seq("-deprecation","-unchecked","-feature")
