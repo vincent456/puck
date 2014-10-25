@@ -16,7 +16,7 @@ class SearchResultPanel[Kind <: NodeKind[Kind]](res : Search[Recording[Kind]],
                                                 logger : PuckLogger)
       extends BoxPanel(Orientation.Vertical){
 
-  implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.Search(), PuckLog.Info())
+  implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.NoSpecialContext(), PuckLog.Info())
 
   type ST = ConstraintSolving.FinalState[Kind]
 
@@ -49,7 +49,7 @@ class SearchResultPanel[Kind <: NodeKind[Kind]](res : Search[Recording[Kind]],
 
   val total = sortedRes.foldLeft(0) { case (acc, (_, l)) => acc + l.size}
 
-  logger.writeln("%d states explored".format(res.exploredStates()))
+  logger.writeln("%d states explored".format(res.exploredStates))
   logger.writeln("%d final states".format(res.finalStates.size))
   logger.writeln("%d different final states ".format(total))
 

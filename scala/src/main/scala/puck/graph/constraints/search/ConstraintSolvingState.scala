@@ -34,18 +34,21 @@ trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, T <: ConstraintSolvingCh
     super.setAsCurrentState()
   }
 
-  private val needToTryNone = true//internal.remainingChoices.isEmpty
+  private val needToTryNone0 = remainingChoices.isEmpty
+  protected def needToTryNone = needToTryNone0
   private var triedNone = false
 
   def triedAll =
-    (!needToTryNone && internal.remainingChoices.isEmpty) ||
-      (needToTryNone && triedNone)
+    remainingChoices.isEmpty &&
+      (!needToTryNone ||  (needToTryNone && triedNone))
 
   def executeNextChoice(){
     if(engine.currentState != this)
       setAsCurrentState()
 
     if(remainingChoices.nonEmpty){
+   /*if(remainingChoices.nonEmpty
+      && !needToTryNone) {*/
       val c = remainingChoices.head
       remainingChoices.remove(c)
       triedChoices.add(c)
@@ -55,8 +58,8 @@ trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, T <: ConstraintSolvingCh
         k(Some(c))
       }catch{
         case e : RedirectionError =>
-          result.graph.logger.writeln(("state %s, redirection error catched, " +
-            "choice %s aborted :\n %s").format(uuid(), c, e.getMessage))(PuckLog.Search(), PuckLog.Info())
+          result.graph.logger.writeln(("redirection error catched, " +
+            "choice %s aborted :\n %s").format(c, e.getMessage))(PuckLog.Search(), PuckLog.Info())
           result.graph.transformations.undo(breakPoint)
           executeNextChoice()
       }

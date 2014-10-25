@@ -50,14 +50,9 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
     /*case (PuckLog.Solver(), _)
     | (PuckLog.Search(),_)
     | (PuckLog.InGraph(), _) => true*/
-    case/* (_, PuckLog.Debug())
-    |*/ (_, PuckLog.Warning())
-    | (_, PuckLog.Error())
-    | (PuckLog.NoSpecialContext(), _) => true
+    case (PuckLog.NoSpecialContext(), _) => true
     case _ => false
   }
-
-  private [this] var logger0 : PuckLogger = new PuckSystemLogger(logPolicy)
 
   def logger : PuckLogger = logger0
   def logger_=( l : PuckLogger){logger0 = l}
@@ -105,6 +100,13 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
 
   setWorkingDirectory(workingDirectory)
 
+  /*private [this] var logger0 : PuckLogger = logFile match {
+    case None => new PuckSystemLogger(logPolicy)
+    case Some(f) => new PuckFileLogger (logPolicy, f)
+  }*/
+  private [this] var logger0 : PuckLogger = new PuckSystemLogger(logPolicy)
+
+
   def srcDirectory = this.srcDir0
   def srcDirectory_=(sdir : Option[File]) {
     this.srcDir0 = setCanonicalOptionFile(this.srcDir0, sdir)
@@ -145,6 +147,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
     this.editor0 = setCanonicalOptionFile(this.editor0, sf)
   }
 
+  def logFile = logFile0
 
 
   def graphFile(suffix : String) : File = outDirectory match {

@@ -5,7 +5,7 @@ import puck.util.{PuckLog, PuckLogger}
 
 trait Solver[Kind <: NodeKind[Kind]] {
 
-  implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.Solver(), PuckLog.Debug())
+  implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.Solver(), PuckLog.Info())
   import scala.language.implicitConversions
   implicit def logVerbosity(lvl : PuckLog.Level) = (PuckLog.Solver(), lvl)
 
@@ -34,12 +34,12 @@ trait Solver[Kind <: NodeKind[Kind]] {
               val breakPoint = graph.transformations.startSequence()
 
               try {
-                 graph.redirectUses(AGEdge.uses(wu, usee), abs, absPolicy)
+                graph.redirectUses(AGEdge.uses(wu, usee), abs, absPolicy)
                 unsolved
               }
               catch {
                 case e: RedirectionError =>
-                  logger.writeln("redirection error catched !!")
+                  logger.writeln("redirection error catched !!")(PuckLog.Debug())
                   graph.transformations.undo(breakPoint)
                   wu :: unsolved
               }
@@ -74,13 +74,16 @@ trait Solver[Kind <: NodeKind[Kind]] {
     def hostIntro(toBeContained : NodeType) {
       graph.nodeKinds.find(_.canContain(toBeContained.kind)) match {
         case None =>
-          logger.write("do not know how to create a valid host for " + toBeContained.kind)(PuckLog.Warning())
+          logger.write("do not know how to create a valid host for " + toBeContained.kind)(PuckLog.Debug())
           FindHostError()
         case Some(hostKind) =>
           newCterNumGen += 1
           val hostName = "%s_container%d".format(toBeContained.name, newCterNumGen)
           val h = graph.addNode(hostName, hostKind)
-          findHost(h, specificPredicate, parentsThatCanBeCreated - 1){
+          logger.writeln("creating" + hostName )(PuckLog.Debug())
+
+          logger.writeln("host intro, rec call to find host " +parentsThatCanBeCreated )
+          findHost(h, allwaysTrue, parentsThatCanBeCreated - 1){
             case Host(hostsHost) =>
               hostsHost.content += h
               k(Host(h))
@@ -90,6 +93,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
       }
     }
 
+    logger.writeln("find host for "+ toBeContained + ", call to choose Node "+ parentsThatCanBeCreated)(PuckLog.Debug())
     // with the search engine, all solutions will be explored anyway
     decisionMaker.chooseNode(predicate){
       case None =>
@@ -98,8 +102,13 @@ trait Solver[Kind <: NodeKind[Kind]] {
           logger.writeln(msg)(PuckLog.Warning())
           k(FindHostError())
         }
-        hostIntro(toBeContained)
-      case Some(h) => k(Host(h))
+        else {
+          logger.writeln("find host, no node given by decision maker : call to host intro")(PuckLog.Debug())
+          hostIntro(toBeContained)
+        }
+      case Some(h) =>
+        logger.writeln("find host, node given by decision maker")
+        k(Host(h))
     }
   }
 
@@ -139,7 +148,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
                 logger.writeln("absIntro : host of %s is %s".format(abs, h))
                 h.content += abs
                 k(Some(abs, absPolicy))
-              case FindHostError() => ()
+              case FindHostError() => logger.writeln("error while searching host for abstraction")
             }
           }
 
@@ -204,13 +213,11 @@ trait Solver[Kind <: NodeKind[Kind]] {
     logger.writeln("###################################################")
     logger.writeln("##### Solving contains violations toward %s ######".format(wronglyContained))
 
-    val breakPoint = graph.transformations.startSequence()
     // detach for host searching : do not want to consider parent constraints
     val oldCter = wronglyContained.container
     if(wronglyContained.container != wronglyContained)
       oldCter.content -= (wronglyContained, register = false)
 
-    //wronglyContained.addHideFromRootException(newCter)
     logger.writeln( "Moving " + wronglyContained + ": searching a host for it !")
 
      findHost(wronglyContained,
@@ -221,16 +228,14 @@ trait Solver[Kind <: NodeKind[Kind]] {
         if(oldCter != wronglyContained)
           oldCter.content += (wronglyContained, register = false)
         wronglyContained.moveTo(newCter)
+
+        if(wronglyContained.isWronglyContained) {
+          wronglyContained.addHideFromRootException(newCter)
+        }
+
         k()
        case FindHostError() =>
-        logger.writeln("HostIntroError caught")
-        decisionMaker.modifyConstraints(LiteralNodeSet(wronglyContained.container), wronglyContained)
-        if(wronglyContained.isWronglyContained) {
-          graph.transformations.undo(breakPoint)
-          logger.writeln("Cannot solve %s contains violation".
-            format(AGEdge.contains(wronglyContained.container, wronglyContained)))(PuckLog.Error())
-        }
-        else k()
+        logger.writeln("FindHostError caught")
     }
   }
 
@@ -272,7 +277,6 @@ trait Solver[Kind <: NodeKind[Kind]] {
         case None => doMerges()
         case Some(target) =>
           solveViolationsToward(target){ () =>
-            //step()
             aux()
           }
       }

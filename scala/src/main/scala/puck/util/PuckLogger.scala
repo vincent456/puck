@@ -57,25 +57,30 @@ trait PuckLogger extends LogBehavior[PuckLog.Verbosity]
 
   def mustPrint(v : (Kind, Level)) = askPrint(v)
 
-  def preMsg(v : (Kind, Level)) = v match {
+  def preMsg(v : (Kind, Level)) : String = v match {
     case (NoSpecialContext(), lvl) => "[ " +lvl.logString + "] "
     case (k, lvl) => "[ %s - %s ] ".format(k.logString, lvl.logString)
   }
 }
 
 class PuckSystemLogger(val askPrint : PuckLog.Verbosity => Boolean )
-  extends Logger[PuckLog.Verbosity] with PuckLogger {
+  extends SystemLogger[PuckLog.Verbosity] with PuckLogger {
 
-  def writeln(msg : => Any)(implicit v : (Kind, Level)){
-    if(mustPrint(v)) {
-      println(preMsg(v) + msg)
-    }
-  }
-  def write(msg : => Any)(implicit v : (Kind, Level)){
-    if(mustPrint(v)) {
-      print(preMsg(v) + msg)
-    }
-  }
+  override def writeln(msg : => Any)(implicit v : (Kind, Level)) =
+    super.writeln(preMsg(v) + msg)(v)
+
+  override def write(msg : => Any)(implicit v : (Kind, Level))=
+    super.write(preMsg(v) + msg)(v)
+}
+
+class PuckFileLogger(val askPrint : PuckLog.Verbosity => Boolean,
+                     val file : puck.File) extends FileLogger[PuckLog.Verbosity] with PuckLogger {
+
+  override def writeln(msg : => Any)(implicit v : (Kind, Level)) =
+    super.writeln(preMsg(v) + msg)(v)
+
+  override def write(msg : => Any)(implicit v : (Kind, Level))=
+    super.write(preMsg(v) + msg)(v)
 }
 
 object PuckNoopLogger extends PuckLogger {

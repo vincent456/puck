@@ -42,18 +42,9 @@ class ConstraintSolvingNodeChoiceSearchState[Kind <: NodeKind[Kind]](val id : In
                                                                      val engine : SearchEngine[Recording[Kind]],
                                                                      val internal: CSNC[Kind],
                                                                      val prevState : Option[SearchState[Recording[Kind], _]])
-extends ConstraintSolvingState[Kind, AGNode[Kind], CSNC[Kind]]
-
-class CSInitialSearchState[Kind <: NodeKind[Kind]](e : SearchEngine[Recording[Kind]],
-                                                   solver : Solver[Kind])
-  extends ConstraintSolvingNodeChoiceSearchState[Kind](0, solver.graph.transformations.recording, e,
-    new ConstraintSolvingNodesChoice[Kind](null, mutable.Set(), mutable.Set()), None){
-
-  var executedOnce = false
-  override def triedAll = executedOnce
-  override def executeNextChoice(){
-    //solver.solve(() => printTrace(e.currentState))
-    solver.solve()
-    executedOnce = true
-  }
+extends ConstraintSolvingState[Kind, AGNode[Kind], CSNC[Kind]]{
+  override protected def needToTryNone = true
 }
+
+
+

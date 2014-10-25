@@ -68,7 +68,8 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
 
   override def canContain(n : AGNode[JavaNodeKind]) : Boolean = {
 
-    def noNameClash( l : Int )( c : AGNode[JavaNodeKind] ) : Boolean = c.kind match {
+    def noNameClash( l : Int )( c : AGNode[JavaNodeKind] ) : Boolean =
+      c.kind match {
 
       case ck : MethodKind  =>
         c.name != n.name || {

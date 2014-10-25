@@ -7,9 +7,9 @@ import scala.collection.mutable
  */
 
 trait Search[Result]{
-  val initialState : SearchState[Result, _]
-  val finalStates : Seq[SearchState[Result, _]]
-  def exploredStates() : Int = initialState.iterator.size
+  def initialState : SearchState[Result, _]
+  def finalStates : Seq[SearchState[Result, _]]
+  def exploredStates : Int
 }
 
 trait SearchEngine[Result] extends Search[Result]{
@@ -17,16 +17,21 @@ trait SearchEngine[Result] extends Search[Result]{
   var currentState : SearchState[Result, _] = _
   override val finalStates = mutable.ListBuffer[SearchState[Result, _]]()
 
+  private var numExploredStates = 0
+
   def init(){
     currentState = initialState
+    numExploredStates = 1
   }
 
   def newCurrentState[S <: StateCreator[Result, S]](cr : Result, choices : S) {
     currentState = currentState.createNextState[S](cr, choices)
+    numExploredStates = numExploredStates + 1
   }
 
   def search() : Option[SearchState[Result, _]]
 
+  def exploredStates = numExploredStates
 }
 
 
@@ -140,16 +145,14 @@ trait FindFirstSearchEngine[Result] extends StackedSearchEngine[Result] {
       if(stateStack.head.triedAll)  //curentState
         stateStack.pop()
       else {
-         /*val state = stateStack.head
+        /* val state = stateStack.head
            println("#########################################################################################")
            println("#########################################################################################")
            println("#########################################################################################")
-           println("EXPLORING FROM " + state.uuid("/","_",""))
+           println("EXPLORING FROM " + state.uuid())
 
-           state.prevState match {
-             case None => ()
-             case Some(s) => println("PREVSTATE    : " + s.uuid("/","_","") )
-           }*/
+           state.prevState foreach {s => println("PREVSTATE    : " + s.uuid())}*/
+
         stateStack.head.executeNextChoice()
       }
     }
