@@ -1,5 +1,7 @@
 .idea/
+.history
 batik/
+ConstraintsSolver.iml
 distrib
 target/
 out/

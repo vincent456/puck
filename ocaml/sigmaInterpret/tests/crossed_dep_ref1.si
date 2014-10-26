@@ -1,9 +1,0 @@
-let scope_a = 
-    [ elt_a = 5,
-      get_elt_a = S(x) x.elt_a,
-      sub_scope_a = scope_b.elt_b ]
-and scope_b = 
-    [ elt_b = 3,
-      sub_scope_b = scope_a.get_elt_a ]
-in
-	scope_b.sub_scope_b

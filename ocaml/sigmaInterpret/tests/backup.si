@@ -1,7 +1,0 @@
-let obj =
-    [ x = 0,
-      set_x = S(s) L(y) s.x := y,
-      retrieve = S(s) s,
-      backup = S(s2) s2.retrieve <- S(s1) s2 ]     
-in
-	 obj.backup.set_x(5).backup.x
