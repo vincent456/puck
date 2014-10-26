@@ -256,6 +256,22 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
     }
   }
 
+  override def abstractionCreationPostTreatment(abstraction : NodeType, policy : AbstractionPolicy): Unit ={
+    (abstraction.kind, policy) match {
+      case (AbstractMethod(), SupertypeAbstraction()) =>
+        val thisClassNeedsImplement = (this.container.abstractions find
+          {case (abs,absPolicy) => absPolicy == SupertypeAbstraction() &&
+            abs == abstraction.container}).isEmpty
+
+        if(thisClassNeedsImplement){
+          this.container.uses += abstraction.container
+          this.container.superTypes_+=(abstraction.container)
+        }
+
+      case _ => ()
+    }
+  }
+
   /*override def moveTo(newContainer : AGNode[JavaNodeKind]) {
     graph.logger.writeln("moving " + this +" from " + container + " to " + newContainer)
     val oldContainer = container

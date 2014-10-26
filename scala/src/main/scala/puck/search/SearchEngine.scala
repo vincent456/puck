@@ -29,7 +29,7 @@ trait SearchEngine[Result] extends Search[Result]{
     numExploredStates = numExploredStates + 1
   }
 
-  def search() : Option[SearchState[Result, _]]
+  def search() : Unit
 
   def exploredStates = numExploredStates
 }
@@ -55,7 +55,7 @@ trait StackedSearchEngine[Result] extends SearchEngine[Result]{
 
 trait TryAllSearchEngine[Result] extends StackedSearchEngine[Result]{
 
-  override def search() = {
+  override def search() {
     init()
 
   while(stateStack.nonEmpty){
@@ -76,7 +76,6 @@ trait TryAllSearchEngine[Result] extends StackedSearchEngine[Result]{
         stateStack.head.executeNextChoice()
       }
     }
-    None
   }
 
 
@@ -139,7 +138,7 @@ trait TryAllSearchEngine[Result] extends StackedSearchEngine[Result]{
 
 trait FindFirstSearchEngine[Result] extends StackedSearchEngine[Result] {
 
-  override def search() = {
+  override def search(){
     init()
     while(stateStack.nonEmpty && finalStates.isEmpty){
       if(stateStack.head.triedAll)  //curentState
@@ -156,10 +155,7 @@ trait FindFirstSearchEngine[Result] extends StackedSearchEngine[Result] {
         stateStack.head.executeNextChoice()
       }
     }
-    if(finalStates.nonEmpty)
-      Some(finalStates.head)
-    else
-      None
   }
 
 }
+

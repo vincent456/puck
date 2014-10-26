@@ -3,7 +3,7 @@ package puck.graph.constraints.search
 import puck.graph.backTrack.Recording
 import puck.graph.constraints.{AbstractionPolicy, DecisionMaker, NodeSet}
 import puck.graph.NodeKind
-import puck.search.{SearchState, SearchEngine}
+import puck.search.{Evaluator, SearchState, SearchEngine}
 import puck.util.PuckLogger
 
 import scala.collection.mutable
@@ -20,13 +20,20 @@ object ConstraintSolving {
 abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]]
 (solverBuilder : SolverBuilder[Kind])
   extends SearchEngine[Recording[Kind]]
-  with DecisionMaker[Kind]{
+  with DecisionMaker[Kind] with Evaluator[Recording[Kind]]{
 
   val logger : PuckLogger = graph.logger
 
   val initialState = new CSInitialSearchState(this, solverBuilder(graph, this))
 
   val violationsKindPriority : List[Kind]
+
+  def evaluate(s : SearchState[Recording[Kind], _]): Double ={
+    if(currentState!=s)
+      s.setAsCurrentState()
+
+    graph.coupling
+  }
 
   def violationTarget(k: Option[NodeType] => Unit) {
 
@@ -105,7 +112,7 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]
     //println(context)
     newCurrentState(graph.transformations.recording,
       new ConstraintSolvingNodesChoice(k,
-      mutable.Set[NodeType]() ++ graph.filter(predicate),
+      mutable.Set[NodeType]() ++ graph.filter(predicate).toSeq,
       mutable.Set[NodeType]()))
   }
 

@@ -50,6 +50,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
     /*case (PuckLog.Solver(), _)
     | (PuckLog.Search(),_)
     | (PuckLog.InGraph(), _) => true*/
+    case (PuckLog.Search(),_) | (PuckLog.Solver(), _) => true
     case (PuckLog.NoSpecialContext(), _) => true
     case _ => false
   }

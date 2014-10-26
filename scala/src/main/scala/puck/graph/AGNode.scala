@@ -95,8 +95,9 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
 
   }
 
+  override def toString: String = (containerPath map (_.id)).mkString(".")
   //override def toString: String = id.toString
-  override def toString: String = "%d %s (%s)".format(id, kind, fullName)
+  //override def toString: String = "%d %s (%s)".format(id, kind, fullName)
 
   def nameTypeString = name + (kind match{case k : HasType[_, _] => " : " + k.typ; case _ => ""})
 
@@ -125,8 +126,13 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
 
   def isRoot = container == this
 
+  def root() : NodeType = {
+    if(isRoot) this
+    else container.root()
+  }
+
   def canContain(n : NodeType) : Boolean = {
-    n != this &&
+    n != this && !(n contains_* this) && // no cycle !
       (this.kind canContain n.kind) &&
       this.isMutable
   }
@@ -179,7 +185,6 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
 
   def contains_*(other:NodeType) : Boolean =
     other == this || !other.isRoot && this.contains_*(other.container)
-
 
   def containerPath(ancestor : NodeType) : List[NodeType] = {
 
@@ -417,6 +422,8 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
     }
     abs
   }
+
+  def abstractionCreationPostTreatment(abstraction : NodeType, policy : AbstractionPolicy){}
 
   def addHideFromRootException(friend : NodeType){
     def addExc(ct : ConstraintWithInterlopers[Kind]) {

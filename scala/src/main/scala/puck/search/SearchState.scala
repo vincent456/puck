@@ -56,40 +56,42 @@ trait SearchState[Result, Internal] extends HasChildren[SearchState[Result, _]]{
   }
 
 
-  def uuid(sep : String = "_") : String = uuid.mkString(sep)
-
-/*  def uuid(printPointSep : String = "/",
-           normalSep : String = "_",
-           end : String = "") : String = {
-    val sb = new StringBuilder()
-
-    def aux(uuid: Seq[(Int, Boolean)]): Unit = uuid match {
-      case Seq() => throw new Error("invalid uuid !!")
-      case (i, _) +: Seq() =>
-        sb.append(i)
-        sb.append(end)
-      case (i, printPoint) +: tl =>
-        sb.append(i)
-        sb.append(if (printPoint) printPointSep
-        else normalSep)
-        aux(tl)
-    }
-
-    aux(uuid)
-    sb.toString()
-  }*/
-
-  /*def depth : Int = {
-    def aux(sstate : Option[SearchState[Result, _]], acc : Int) : Int = sstate match {
-      case None => acc
-      case Some(s) => aux(s.prevState,
-        if(s.isStep) acc + 1
-        else acc)
-    }
-    aux(prevState, 0)
-  }*/
-
   def depth : Int = uuid0.size
+
+  def isMarkPointState = true
+
+  def uuid(sep : String = "_",
+           considerMarkPoint : Boolean = false,
+           markPointSep : String = "/") : String = {
+
+    if(!considerMarkPoint) uuid.mkString(sep)
+    else ??? //todo decide if markpointSep is after or before the mark point state !
+    /*
+    {
+      val ancestorsSeq = ancestors(includeSelf = true)
+       //here the markPointSep is before the mark point state !
+      val tailStrList =  ancestorsSeq.tail map {s =>
+          (if(s.isMarkPointState) markPointSep
+          else sep) + s.id.toString
+        }
+      (ancestorsSeq.head.id.toString +: tailStrList).mkString
+    }*/
+
+
+  }
+  
+  def markedPointDepth : Int = {
+  def aux(sstate : Option[SearchState[Result, _]], acc : Int) : Int = sstate match {
+    case None => acc
+    case Some(s) => aux(s.prevState,
+      if(s.isMarkPointState) acc + 1
+      else acc)
+  }
+  aux(prevState, 0)
+}
+
+  
+  
 
   def nextChildId() : Int = {
     cid += 1
@@ -102,15 +104,15 @@ trait SearchState[Result, Internal] extends HasChildren[SearchState[Result, _]]{
 
   def executeNextChoice() : Unit
 
-  def ancestors(includeSelf : Boolean) :List[SearchState[Result, _]] = {
+  def ancestors(includeSelf : Boolean) :Seq[SearchState[Result, _]] = {
     def aux(sState : Option[SearchState[Result,_]],
-            acc : List[SearchState[Result,_ ]]) : List[SearchState[Result,_ ]] =
+            acc : Seq[SearchState[Result,_ ]]) : Seq[SearchState[Result,_ ]] =
     sState match {
       case None => acc
-      case Some(state) => aux(state.prevState, state :: acc)
+      case Some(state) => aux(state.prevState, state +: acc)
     }
 
-    aux(if(includeSelf) Some(this) else this.prevState, List())
+    aux(if(includeSelf) Some(this) else this.prevState, Seq())
 
   }
 

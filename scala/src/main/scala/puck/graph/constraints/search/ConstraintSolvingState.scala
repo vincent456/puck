@@ -42,6 +42,10 @@ trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, T <: ConstraintSolvingCh
     remainingChoices.isEmpty &&
       (!needToTryNone ||  (needToTryNone && triedNone))
 
+  override def isMarkPointState = {
+    result.nonEmpty && (prevState forall {_.result.size < result.size})
+  }
+
   def executeNextChoice(){
     if(engine.currentState != this)
       setAsCurrentState()

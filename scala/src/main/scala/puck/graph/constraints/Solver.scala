@@ -62,16 +62,14 @@ trait Solver[Kind <: NodeKind[Kind]] {
 
   def findHost(toBeContained : NodeType,
                specificPredicate : PredicateT = allwaysTrue,
-               parentsThatCanBeCreated : Int = 2)
+               parentsThatCanBeCreated : Int = 1)
               (k : FindHostResult => Unit) : Unit = {
 
-    def basePredicate(n : NodeType) =
-      n != toBeContained &&
-        n.canContain(toBeContained)
-
-    def predicate(n : NodeType) = basePredicate(n) && specificPredicate(n)
+    def predicate(n : NodeType) =
+      (n canContain toBeContained) && specificPredicate(n)
 
     def hostIntro(toBeContained : NodeType) {
+      logger.writeln("call hostIntro " + toBeContained )(PuckLog.Debug())
       graph.nodeKinds.find(_.canContain(toBeContained.kind)) match {
         case None =>
           logger.write("do not know how to create a valid host for " + toBeContained.kind)(PuckLog.Debug())
@@ -107,7 +105,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
           hostIntro(toBeContained)
         }
       case Some(h) =>
-        logger.writeln("find host, node given by decision maker")
+        logger.writeln("find host: decision maker chose " + h + " to contain " + toBeContained)
         k(Host(h))
     }
   }
@@ -147,6 +145,11 @@ trait Solver[Kind <: NodeKind[Kind]] {
               case Host(h) =>
                 logger.writeln("absIntro : host of %s is %s".format(abs, h))
                 h.content += abs
+
+                //TODO check if can find another way more generic
+                //whitout passing by abstracting the container
+                currentImpl.abstractionCreationPostTreatment(abs, absPolicy)
+
                 k(Some(abs, absPolicy))
               case FindHostError() => logger.writeln("error while searching host for abstraction")
             }
@@ -215,24 +218,23 @@ trait Solver[Kind <: NodeKind[Kind]] {
 
     // detach for host searching : do not want to consider parent constraints
     val oldCter = wronglyContained.container
-    if(wronglyContained.container != wronglyContained)
-      oldCter.content -= (wronglyContained, register = false)
 
-    logger.writeln( "Moving " + wronglyContained + ": searching a host for it !")
+    oldCter.content -= (wronglyContained, register = false)
 
-     findHost(wronglyContained,
+    findHost(wronglyContained,
       (potentialHost: NodeType) => !(potentialHost interloperOf wronglyContained)) {
        case Host(newCter) =>
         //re-attach before moving
-        logger.writeln("Move : host of "+ wronglyContained +" is now " + newCter)
-        if(oldCter != wronglyContained)
-          oldCter.content += (wronglyContained, register = false)
+        logger.writeln("solveContains : host of "+ wronglyContained +" will now be " + newCter)
+
+        oldCter.content += (wronglyContained, register = false)
+
         wronglyContained.moveTo(newCter)
 
         if(wronglyContained.isWronglyContained) {
           wronglyContained.addHideFromRootException(newCter)
         }
-
+         logger.writeln("solveContains : calling k()")
         k()
        case FindHostError() =>
         logger.writeln("FindHostError caught")
@@ -241,9 +243,13 @@ trait Solver[Kind <: NodeKind[Kind]] {
 
 
   def solveViolationsToward(target : NodeType) (k: () => Unit){
-    def end() =
-      if(target.wrongUsers.nonEmpty)
+    def end() = {
+      logger.writeln("solveViolationsToward$end")
+      if (target.wrongUsers.nonEmpty)
         solveUsesToward(target, k)
+      else
+        k()
+    }
 
     if(target.isWronglyContained)
       solveContains(target, end)

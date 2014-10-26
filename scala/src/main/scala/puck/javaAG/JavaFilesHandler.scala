@@ -59,7 +59,8 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler[JavaNodeKi
   }
 
   override def searchingStrategies: List[ConstraintSolvingSearchEngineBuilder[JavaNodeKind]] =
-    List(JavaTryAllCSSEBuilder,
+    List(JavaFunneledCSSEBuilder,
+      JavaTryAllCSSEBuilder,
       //JavaGradedCSSEBuilder,
     JavaFindFirstCSSEBuilder)
 }

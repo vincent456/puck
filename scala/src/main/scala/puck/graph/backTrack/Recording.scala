@@ -58,17 +58,20 @@ class Recording[Kind <: NodeKind[Kind]]( val graph : AccessGraph[Kind],
   }
 
   def produceSameGraph(other : Recording[Kind],
-                       logger : PuckLogger = PuckNoopLogger) : Boolean =
+                       logger : PuckLogger = PuckNoopLogger) : Boolean = {
 
 
-      new RecordingComparator(graph.initialRecord, this, other).search() match {
-         case None =>
-           logger.writeln("no mapping")((PuckLog.NoSpecialContext(), PuckLog.Debug()))
-           false
-         case Some(st) => logger.writeln(st.result.toString())(PuckLog.NoSpecialContext(), PuckLog.Debug())
-           true
-      }
-
+    val engine = new RecordingComparator(graph.initialRecord, this, other)
+    engine.search()
+    if(engine.finalStates.isEmpty) {
+      logger.writeln("no mapping")((PuckLog.NoSpecialContext(), PuckLog.Debug()))
+      false
+    }
+    else {
+      logger.writeln(engine.finalStates.head.result.toString())(PuckLog.NoSpecialContext(), PuckLog.Debug())
+      true
+    }
+  }
 
 }
 

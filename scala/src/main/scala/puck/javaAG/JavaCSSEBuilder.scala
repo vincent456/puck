@@ -2,12 +2,11 @@ package puck.javaAG
 
 import puck.graph.backTrack.Recording
 import puck.graph.constraints.search._
-import puck.graph.{AGNode, AccessGraph}
+import puck.graph.AccessGraph
 import puck.graph.constraints._
 import puck.graph.io.ConstraintSolvingSearchEngineBuilder
 import puck.javaAG.nodeKind._
-import puck.search.{SearchState, SearchEngine}
-import puck.util.Logger
+import puck.search.SearchEngine
 
 /**
  * Created by lorilan on 12/09/14.
@@ -30,6 +29,15 @@ object JavaTryAllCSSEBuilder
 
   def apply(graph : AccessGraph[JavaNodeKind]) : SearchEngine[Recording[JavaNodeKind]] =
     new TryAllCSSE(violationsKindPriority, graph, JavaSolverBuilder)
+}
+
+object JavaFunneledCSSEBuilder
+  extends JavaCSSEBuilder{
+
+  override def toString = "Funneled"
+
+  def apply(graph : AccessGraph[JavaNodeKind]) : SearchEngine[Recording[JavaNodeKind]] =
+    new FunneledCSSE(violationsKindPriority, graph, JavaSolverBuilder)
 }
 
 /*object JavaGradedCSSEBuilder

@@ -43,7 +43,7 @@ class ConstraintSolvingNodeChoiceSearchState[Kind <: NodeKind[Kind]](val id : In
                                                                      val internal: CSNC[Kind],
                                                                      val prevState : Option[SearchState[Recording[Kind], _]])
 extends ConstraintSolvingState[Kind, AGNode[Kind], CSNC[Kind]]{
-  override protected def needToTryNone = true
+  //override protected def needToTryNone = true
 }
 
 
