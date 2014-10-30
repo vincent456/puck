@@ -1,8 +1,9 @@
 package puck.gui.decisionsFrames
 
+import puck.graph.mutable.{AccessGraph, NodeKind}
+
 import scala.swing.{TextArea, Button, Orientation, BoxPanel}
-import puck.graph.constraints.{Constraint, ConstraintsParser, NamedNodeSet}
-import puck.graph.{NodeKind, AccessGraph}
+import puck.graph.mutable.constraints.{Constraint, ConstraintsParser, NamedNodeSet}
 import java.io.StringReader
 
 /**

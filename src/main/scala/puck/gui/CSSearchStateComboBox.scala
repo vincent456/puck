@@ -1,9 +1,9 @@
 package puck.gui
 
-import puck.graph.NodeKind
-import puck.graph.backTrack.Recording
-import puck.graph.constraints.search.ConstraintSolving
-import puck.graph.constraints.search.ConstraintSolving.FinalState
+import puck.graph.mutable.backTrack.Recording
+import puck.graph.mutable.NodeKind
+import puck.graph.mutable.constraints.search.ConstraintSolving
+import puck.graph.mutable.constraints.search.ConstraintSolving.FinalState
 import puck.search.SearchState
 
 import scala.swing.{Action, Button, ComboBox, FlowPanel}

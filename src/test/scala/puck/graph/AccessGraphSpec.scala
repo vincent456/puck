@@ -1,5 +1,7 @@
 package puck.graph
 
+import puck.graph.mutable.{AGNode, AccessGraph, VanillaNodeKind, VanillaKind}
+
 /**
  * Created by lorilan on 15/05/14.
  */

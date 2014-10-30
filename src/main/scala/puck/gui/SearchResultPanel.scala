@@ -1,9 +1,9 @@
 package puck.gui
 
-import puck.graph.NodeKind
-import puck.graph.backTrack.Recording
-import puck.graph.constraints.search.ConstraintSolving
-import puck.graph.constraints.search.ConstraintSolving._
+import puck.graph.mutable.backTrack.Recording
+import puck.graph.mutable.NodeKind
+import puck.graph.mutable.constraints.search.ConstraintSolving
+import puck.graph.mutable.constraints.search.ConstraintSolving._
 import puck.search.Search
 import puck.util.{PuckLog, PuckLogger, Logger}
 

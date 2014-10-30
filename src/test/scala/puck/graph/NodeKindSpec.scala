@@ -1,7 +1,8 @@
 package puck.graph
 
-import puck.javaAG.nodeKind.JavaNodeKind
-import puck.javaAG.{JavaNamedType, JavaAccessGraph}
+import puck.javaAG.mutable.{JavaAccessGraph, JavaNamedType}
+import puck.javaAG.mutable.nodeKind.JavaNodeKind
+import puck.javaAG.JavaAccessGraph
 
 /**
  * Created by lorilan on 28/05/14.

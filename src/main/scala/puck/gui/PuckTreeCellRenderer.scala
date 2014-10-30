@@ -4,7 +4,7 @@ import java.awt.{Component, BorderLayout}
 import javax.swing.{JPanel, JTree}
 import javax.swing.tree.{TreePath, TreeCellRenderer}
 
-import puck.graph.NodeKind
+import puck.graph.mutable.NodeKind
 
 
 /**

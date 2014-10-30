@@ -1,6 +1,11 @@
-import puck.javaAG.JavaAccessGraph;
-import puck.javaAG.nodeKind.JavaNodeKind;
-import puck.graph.AGNode;
+import puck.javaAG.mutable.JavaAccessGraph;
+import puck.javaAG.mutable.nodeKind.JavaNodeKind;
+import puck.javaAG.mutable.JavaNamedType;
+import puck.javaAG.mutable.MethodType;
+import puck.graph.mutable.AGNode;
+import puck.graph.mutable.NamedType;
+import puck.graph.mutable.Tuple;
+import puck.graph.mutable.Type;
 import puck.graph.AGBuildingError;
 
 
@@ -12,7 +17,7 @@ aspect AccessGraphFactory {
 
 	public JavaAccessGraph Program.buildAccessGraph(Map<String,Collection<BodyDecl>> stringsRequest, LoadingListener ll){
 
-		JavaAccessGraph accessGraph = new puck.javaAG.JavaAccessGraph();
+		JavaAccessGraph accessGraph = new JavaAccessGraph();
 
 		accessGraph.program_$eq(this);
 
@@ -367,7 +372,7 @@ aspect AccessGraphFactory {
 	}*/
 
 	public AGNode<JavaNodeKind> FieldDeclaration.buildAGNode(JavaAccessGraph accessGraph){
-		puck.javaAG.JavaNamedType type = new puck.javaAG.JavaNamedType(type().buildAGNode(accessGraph));
+		JavaNamedType type = new JavaNamedType(type().buildAGNode(accessGraph));
 		AGNode<JavaNodeKind> node = accessGraph.addNode(fullName(), name(),
 				JavaNodeKind.field(type));
 
@@ -394,24 +399,24 @@ aspect AccessGraphFactory {
 		AGNode agTypeNode = getTypeAccess().buildAGNode(accessGraph);
 
 		return accessGraph.addNode(fullName(), name(), 
-				JavaNodeKind.field(new puck.graph.NamedType(agTypeNode)));
+				JavaNodeKind.field(new NamedType(agTypeNode)));
 	}*/
 
 
-	static puck.graph.Tuple ASTNode.astParamsToAGType(JavaAccessGraph accessGraph, Callable c){
-		ArrayList<puck.graph.Type> tparams = new ArrayList<puck.graph.Type>();
+	static Tuple ASTNode.astParamsToAGType(JavaAccessGraph accessGraph, Callable c){
+		ArrayList<Type> tparams = new ArrayList<Type>();
 		for(ParameterDeclaration pdecl: c.getParameterList()){
 			AGNode<JavaNodeKind> agTypeNode = pdecl.getTypeAccess().buildAGNode(accessGraph);
-			tparams.add(new puck.graph.NamedType<JavaNodeKind>(agTypeNode));
+			tparams.add(new NamedType<JavaNodeKind>(agTypeNode));
 		}
-		return new puck.graph.Tuple(scala.collection.JavaConversions.asScalaBuffer(tparams).toList());
+		return new Tuple(scala.collection.JavaConversions.asScalaBuffer(tparams).toList());
 	}
 
 
 	public AGNode<JavaNodeKind> MethodDecl.buildAGNode(JavaAccessGraph accessGraph){
 		
-      puck.javaAG.MethodType methodAGType = new puck.javaAG.MethodType(ASTNode.astParamsToAGType(accessGraph,this),
-              new puck.javaAG.JavaNamedType(getTypeAccess().buildAGNode(accessGraph)));
+      MethodType methodAGType = new MethodType(ASTNode.astParamsToAGType(accessGraph,this),
+              new JavaNamedType(getTypeAccess().buildAGNode(accessGraph)));
 
       JavaNodeKind kind;
         if(this.isAbstract())
@@ -428,8 +433,8 @@ aspect AccessGraphFactory {
 
 	public AGNode<JavaNodeKind> ConstructorDecl.buildAGNode(JavaAccessGraph accessGraph){
 		
-      puck.javaAG.MethodType constructorAGType = new puck.javaAG.MethodType(ASTNode.astParamsToAGType(accessGraph,this),
-              new puck.javaAG.JavaNamedType(hostType().buildAGNode(accessGraph)));
+      MethodType constructorAGType = new MethodType(ASTNode.astParamsToAGType(accessGraph,this),
+              new JavaNamedType(hostType().buildAGNode(accessGraph)));
 
       AGNode<JavaNodeKind> node = accessGraph.addNode(fullName(), name(),
       			JavaNodeKind.constructor(constructorAGType));

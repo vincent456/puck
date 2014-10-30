@@ -19,6 +19,8 @@ object JrrtTasks extends Build {
 
   val jastaddSrcDir = settingKey[File]("Location of puck jrag files")
 
+  val jastaddOutDir = settingKey[File]("Location of puck jrag files")
+
   /*
     Tasks
    */
@@ -86,9 +88,9 @@ def beaverTask(srcFile : File){
           println("Parser generation")
           //helper function to avoid a call to beaver main method that uses System.exit
   
-          (sourceManaged.value / "parser").mkdirs()
+          (jastaddOutDir.value / "parser").mkdirs()
 
-          val parserAll = sourceManaged.value / "parser" / "JavaParser.all"
+          val parserAll = jastaddOutDir.value / "parser" / "JavaParser.all"
           /* generate the parser phase 1, create a full .lalr specification from fragments */
 
           val java15Files = if(java15comply.value)
@@ -100,7 +102,7 @@ def beaverTask(srcFile : File){
             java14frontend.value / "parser" / "java14.parser",
             java14frontend.value / "parser" / "errorrecovery.parser" ) ++ java15Files
 
-          val javaParserJava = sourceManaged.value / "parser" / "JavaParser.java"
+          val javaParserJava = jastaddOutDir.value / "parser" / "JavaParser.java"
 
           if(!needUpdate(concatFiles, parserAll) && javaParserJava.exists)
              println("Parser generation : no update needed")
@@ -112,7 +114,7 @@ def beaverTask(srcFile : File){
             /* generate the parser phase 2, translating .lalr to .beaver */
             // val jastAddPaserJar = baseDirectory.value / "lib" / "JastAddParser.jar"
             // val beaverRtJar = baseDirectory.value / "lib" / "beaver-rt.jar"
-            val javaParserBeaver = sourceManaged.value / "parser" / "JavaParser.beaver"
+            val javaParserBeaver = jastaddOutDir.value / "parser" / "JavaParser.beaver"
             // Process(Seq("java", "-cp", jastAddPaserJar.getPath + ":" + beaverRtJar.getPath,
             //   "Main", parserAll.getPath,  javaParserBeaver.getPath) ).!
 
@@ -131,7 +133,7 @@ def beaverTask(srcFile : File){
       scanner := {
         println("Scanner generation")
 
-        val scannerFlex = sourceManaged.value / "scanner" / "JavaScanner.flex"
+        val scannerFlex = jastaddOutDir.value / "scanner" / "JavaScanner.flex"
 
         val files = if(java15comply.value)
           Seq(jrrtReadOnly.value / "util" / "preamble.flex",
@@ -167,8 +169,8 @@ def beaverTask(srcFile : File){
             java14frontend.value / "scanner" / "postamble.flex")
 
         val producedFiles =
-          Seq(sourceManaged.value / "scanner" / "JavaScanner.java",
-            sourceManaged.value / "scanner" / "Unicode.java")
+          Seq(jastaddOutDir.value / "scanner" / "JavaScanner.java",
+            jastaddOutDir.value / "scanner" / "Unicode.java")
 
         if( (producedFiles forall (_.exists)) && !needUpdate(files, scannerFlex))
           println("Scanner generation : no update needed")
@@ -177,11 +179,11 @@ def beaverTask(srcFile : File){
 
           jflex.Main.generate(Array("--nobak",
             "--legacydot",
-            "-d", (sourceManaged.value / "scanner").getPath,
+            "-d", (jastaddOutDir.value / "scanner").getPath,
             scannerFlex.getPath))
 
           IO.copyFile(java14frontend.value / "scanner" / "Unicode.java",
-            sourceManaged.value / "scanner" / "Unicode.java",
+            jastaddOutDir.value / "scanner" / "Unicode.java",
             preserveLastModified = true)
         }
         producedFiles
@@ -232,7 +234,7 @@ def beaverTask(srcFile : File){
             jrrtDir / "TypeConstraints" / "CollectTypeConstraints.jrag")
 
 
-          val generated = sourceManaged.value / "AST" / "ASTNode.java"
+          val generated = jastaddOutDir.value / "AST" / "ASTNode.java"
           val mustUpdate =
             if(generated.exists()){
               val allFiles : PathFinder = java14Files +++ java15Files +++ cfgFiles +++
@@ -257,7 +259,7 @@ def beaverTask(srcFile : File){
             //       "jastadd.JastAdd.main"
             //         +: "--beaver"
             //         +: "--package=AST"
-            //         +: ("--o=" + sourceManaged.value)
+            //         +: ("--o=" + jastaddOutDir.value)
             //         +: "--rewrite"
             //         +: "--novisitcheck"
             //         +: "--noCacheCycle"
@@ -269,7 +271,7 @@ def beaverTask(srcFile : File){
             println("generating ast and weaving aspects")
             jastadd.JastAdd.main(("--beaver"
               +: "--package=AST"
-              +: ("--o=" + sourceManaged.value)
+              +: ("--o=" + jastaddOutDir.value)
               +: "--rewrite"
               +: "--novisitcheck"
               +: "--noCacheCycle"
@@ -278,10 +280,10 @@ def beaverTask(srcFile : File){
               +: orderedPaths).toArray)
 
             IO.copyDirectory(java14frontend.value / "beaver",
-              sourceManaged.value / "beaver",
+              jastaddOutDir.value / "beaver",
               preserveLastModified = true)
           }
-        (PathFinder( sourceManaged.value / "beaver" ) * "*" +++ PathFinder(sourceManaged.value / "AST") * "*").get
+        (PathFinder( jastaddOutDir.value / "beaver" ) * "*" +++ PathFinder(jastaddOutDir.value / "AST") * "*").get
 			}
 		)
 

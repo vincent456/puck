@@ -3,11 +3,11 @@ package puck.gui
 import java.io.{File, PipedInputStream, PipedOutputStream}
 
 import AST.LoadingListener
-import puck.graph.backTrack.Recording
-import puck.graph.constraints.DecisionMaker
-import puck.graph.constraints.search.ConstraintSolvingNodesChoice
-import puck.graph.{AGNode, AGEdge, NodeKind}
-import puck.graph.io.{ConstraintSolvingSearchEngineBuilder, FilesHandler}
+import puck.graph.mutable.backTrack.Recording
+import puck.graph.mutable.{NodeKind, AGEdge}
+import puck.graph.mutable.constraints.DecisionMaker
+import puck.graph.mutable.constraints.search.ConstraintSolvingNodesChoice
+import puck.graph.mutable.io.{ConstraintSolvingSearchEngineBuilder, FilesHandler}
 import puck.search.{Search, SearchState}
 import puck.util.PuckLog
 import scala.collection.mutable.ArrayBuffer

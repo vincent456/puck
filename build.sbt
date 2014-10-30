@@ -24,6 +24,8 @@ controlFlowGraph := jrrtHome.value / "ControlFlowGraph"
 
 jastaddSrcDir := baseDirectory.value / "src" / "main" / "jrag"
 
+jastaddOutDir := sourceManaged.value / "main"
+
 java15comply := true
 
 libraryDependencies ++= Seq( 
@@ -36,6 +38,6 @@ libraryDependencies ++= Seq(
 
 (sourceGenerators in Test) ++= Seq(parser.taskValue, scanner.taskValue, ast.taskValue)
 
-cleanFiles += sourceManaged.value
+cleanFiles += jastaddOutDir.value
 
 scalacOptions ++=Seq("-deprecation","-unchecked","-feature")

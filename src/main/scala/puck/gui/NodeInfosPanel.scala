@@ -1,6 +1,6 @@
 package puck.gui
 
-import puck.graph.{AGEdge, AGNode, NodeKind}
+import puck.graph.mutable.{AGNode, NodeKind, AGEdge}
 import scala.swing._
 import scala.swing.event.MouseClicked
 

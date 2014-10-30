@@ -36,7 +36,7 @@ package puck
  */
 
 
-import puck.javaAG.JavaFilesHandler
+import puck.javaAG.mutable.JavaFilesHandler
 
 import scala.swing._
  import javax.swing.UIManager
@@ -62,7 +62,7 @@ import scala.swing._
 
 import org.apache.batik.swing.{JSVGScrollPane, JSVGCanvas}
 import puck.graph.Svg
-import puck.javaAG.JavaFilesHandler
+import puck.javaAG.mutable.JavaFilesHandler
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.swing._
@@ -138,7 +138,7 @@ object Front{
 
    /* import scala.reflect.runtime.universe._
 
-    val tpe = typeOf[puck.graph.constraints.search.TryAllCSSE[_]]
+    val tpe = typeOf[puck.graph.mutable.constraints.search.TryAllCSSE[_]]
     tpe.baseClasses foreach { s => println(s.fullName) }*/
 
     val folder = "/home/lorilan/projects/constraintsSolver/scala/test/distrib/"

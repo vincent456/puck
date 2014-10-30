@@ -14,3 +14,6 @@ class RedirectionError(msg : String) extends AGError(msg){
 class IllegalAGOperation(msg : String) extends AGError(msg){
   def this() = this("")
 }
+class AGBuildingError(msg:String) extends AGError(msg){
+  def this()=this("")
+}

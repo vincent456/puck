@@ -1,7 +1,7 @@
 package puck.gui.decisionsFrames
 
-import puck.graph.{NodeKind, AGNode}
-import puck.graph.constraints._
+import puck.graph.mutable.{AGNode, NodeKind}
+import puck.graph.mutable.constraints._
 import scala.swing._
 
 

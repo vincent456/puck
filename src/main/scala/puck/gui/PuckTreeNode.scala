@@ -1,7 +1,7 @@
 package puck.gui
 
 import javax.swing.tree.DefaultMutableTreeNode
-import puck.graph.{AGNode, NodeKind}
+import puck.graph.mutable.{AGNode, NodeKind}
 import scala.swing.CheckBox
 
 /**

@@ -1,8 +1,8 @@
 package puck.gui
 
-import puck.graph.NodeKind
-import puck.graph.constraints._
-import puck.graph.io.FilesHandler
+import puck.graph.mutable.NodeKind
+import puck.graph.mutable.constraints._
+import puck.graph.mutable.io.FilesHandler
 import puck.gui.decisionsFrames.{NodeChooser, ConstraintExceptionFrame, AbstractionKindAndPolicyChooser}
 
 /**

@@ -1,7 +1,7 @@
 package puck.gui
 
-import puck.graph.NodeKind
-import puck.graph.constraints.search.ConstraintSolving._
+import puck.graph.mutable.NodeKind
+import puck.graph.mutable.constraints.search.ConstraintSolving._
 
 import scala.swing.{Button, Label, Orientation, BoxPanel}
 

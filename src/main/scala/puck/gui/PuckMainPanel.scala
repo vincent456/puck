@@ -1,8 +1,8 @@
 package puck.gui
 
-import puck.graph.NodeKind
-import puck.graph.backTrack.Recording
-import puck.graph.io.FilesHandler
+import puck.graph.mutable.backTrack.Recording
+import puck.graph.mutable.NodeKind
+import puck.graph.mutable.io.FilesHandler
 import puck.search.Search
 import puck.util.{PuckLog, PuckLogger}
 

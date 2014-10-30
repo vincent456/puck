@@ -2,8 +2,9 @@ package puck.graph
 
 import java.io.File
 
-import puck.javaAG.JavaFilesHandler
-import puck.javaAG.nodeKind.{Primitive, JavaNodeKind}
+import puck.graph.mutable.AGNode
+import puck.javaAG.mutable.JavaFilesHandler
+import puck.javaAG.mutable.nodeKind.{Primitive, JavaNodeKind}
 import scala.collection.mutable.Set
 /**
  * Created by lorilan on 15/05/14.

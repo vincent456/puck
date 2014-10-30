@@ -3,7 +3,7 @@ package puck.gui
 import java.awt.event.{MouseEvent, MouseAdapter}
 import javax.swing.tree.TreePath
 
-import puck.graph.{NodeKind, AGNode, AccessGraph}
+import puck.graph.mutable.{AGNode, AccessGraph, NodeKind}
 import javax.swing.JTree
 
 import scala.swing.{Component, Dimension, Publisher, ScrollPane}
