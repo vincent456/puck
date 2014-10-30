@@ -1,5 +1,6 @@
 package puck.graph.mutable.constraints
 
+import puck.graph.constraints.AbstractionPolicy
 import puck.graph.mutable.{AccessGraph, NodeKind}
 
 

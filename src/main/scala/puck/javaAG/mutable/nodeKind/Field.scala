@@ -1,7 +1,7 @@
 package puck.javaAG.mutable.nodeKind
 
+import puck.graph.constraints.{DelegationAbstraction, AbstractionPolicy}
 import puck.graph.mutable.{NamedType, AGNode, HasType}
-import puck.graph.mutable.constraints.{AbstractionPolicy, DelegationAbstraction}
 import puck.javaAG.mutable.JavaNamedType
 
 /**

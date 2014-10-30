@@ -1,7 +1,8 @@
 package puck.graph.mutable
 
 import puck.graph.AGError
-import puck.graph.mutable.constraints.{AbstractionPolicy, DelegationAbstraction, SupertypeAbstraction}
+import puck.graph.constraints._
+
 
 /**
  * Created by lorilan on 05/05/14.

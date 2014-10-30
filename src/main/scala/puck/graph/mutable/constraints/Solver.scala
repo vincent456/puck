@@ -1,6 +1,7 @@
 package puck.graph.mutable.constraints
 
 import puck.graph._
+import puck.graph.constraints._
 import puck.graph.mutable.{AGNode, AccessGraph, NodeKind, AGEdge}
 import puck.util.{PuckLog, PuckLogger}
 

@@ -1,17 +1,19 @@
-package puck.javaAG.mutable.nodeKind
+package puck.javaAG.immutable.nodeKind
 
+import puck.graph.immutable.AccessGraph.NodeId
 import puck.graph.AGError
 import puck.graph.constraints.AbstractionPolicy
 
 /**
  * Created by lorilan on 31/07/14.
  */
-case class Primitive private[javaAG] () extends TypeKind {
+case class Primitive private[javaAG] (node : NodeId[JavaNodeKind],
+                                      decl : Option[AST.TypeDecl]) extends TypeKind {
   override val toString = "Primitive"
 
-  def create() = Primitive()
+  def create(node : NodeId[JavaNodeKind]) = Primitive(node, None)
 
-  var decl : AST.TypeDecl = _
+
 
   def canContain(k: JavaNodeKind) = false
   def abstractKinds(p : AbstractionPolicy) =

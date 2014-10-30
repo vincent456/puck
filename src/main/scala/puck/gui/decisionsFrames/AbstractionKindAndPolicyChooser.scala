@@ -1,10 +1,11 @@
 package puck.gui.decisionsFrames
 
+import puck.graph.constraints.AbstractionPolicy
 import puck.graph.mutable.{AGNode, NodeKind}
 
 import scala.swing._
 import scala.swing.event.{SelectionChanged, Event}
-import puck.graph.mutable.constraints.{DefaultDecisionMaker, AbstractionPolicy, RedirectionPolicy}
+import puck.graph.mutable.constraints.DefaultDecisionMaker
 import scala.concurrent.Promise
 import scala.concurrent.ExecutionContext.Implicits.global
 

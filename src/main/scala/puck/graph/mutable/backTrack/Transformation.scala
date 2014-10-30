@@ -2,7 +2,7 @@ package puck.graph.mutable.backTrack
 
 import puck.graph._
 import puck.graph.mutable.NodeKind
-import puck.graph.mutable.constraints.{AbstractionPolicy, Constraint}
+import puck.graph.mutable.constraints.Constraint
 
 /**
  * Created by lorilan on 11/06/14.

@@ -1,5 +1,6 @@
 package puck.gui
 
+import puck.graph.constraints.AbstractionPolicy
 import puck.graph.mutable.NodeKind
 import puck.graph.mutable.constraints._
 import puck.graph.mutable.io.FilesHandler

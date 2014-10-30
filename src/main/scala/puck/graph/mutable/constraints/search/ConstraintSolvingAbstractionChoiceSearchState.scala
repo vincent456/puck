@@ -1,8 +1,8 @@
 package puck.graph.mutable.constraints.search
 
+import puck.graph.constraints.AbstractionPolicy
 import puck.graph.mutable.NodeKind
 import puck.graph.mutable.backTrack.Recording
-import puck.graph.mutable.constraints.AbstractionPolicy
 import puck.search.{SearchState, SearchEngine}
 
 import scala.collection.mutable

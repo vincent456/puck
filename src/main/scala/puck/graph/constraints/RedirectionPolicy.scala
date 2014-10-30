@@ -1,4 +1,4 @@
-package puck.graph.mutable.constraints
+package puck.graph.constraints
 
 /**
  * Created by lorilan on 04/06/14.

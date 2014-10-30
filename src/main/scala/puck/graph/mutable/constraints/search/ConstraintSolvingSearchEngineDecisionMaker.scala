@@ -1,8 +1,9 @@
 package puck.graph.mutable.constraints.search
 
+import puck.graph.constraints.AbstractionPolicy
 import puck.graph.mutable.backTrack.Recording
 import puck.graph.mutable.NodeKind
-import puck.graph.mutable.constraints.{AbstractionPolicy, DecisionMaker, NodeSet}
+import puck.graph.mutable.constraints.{DecisionMaker, NodeSet}
 import puck.search.{Evaluator, SearchState, SearchEngine}
 import puck.util.PuckLogger
 

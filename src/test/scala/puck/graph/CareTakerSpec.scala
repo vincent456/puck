@@ -4,8 +4,9 @@ import java.io.FileOutputStream
 
 import puck.graph.backTrack._
 import puck.graph.backTrack.comparison.{RecordingComparator, NodeMappingInitialState}
+import puck.graph.constraints.{SupertypeAbstraction, DelegationAbstraction}
 import puck.graph.mutable._
-import puck.graph.mutable.constraints.{DelegationAbstraction, SupertypeAbstraction}
+import puck.graph.mutable.constraints.SupertypeAbstraction
 import puck.javaAG.mutable.{JavaFilesHandler, JavaAccessGraph}
 import puck.javaAG.mutable.nodeKind.JavaNodeKind
 import puck.javaAG.JavaAccessGraph

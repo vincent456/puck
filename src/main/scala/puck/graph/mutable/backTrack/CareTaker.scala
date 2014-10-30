@@ -1,8 +1,9 @@
 package puck.graph.mutable.backTrack
 
 import puck.graph.AGError
+import puck.graph.constraints.AbstractionPolicy
 import puck.graph.mutable._
-import puck.graph.mutable.constraints.{AbstractionPolicy, Constraint}
+import puck.graph.mutable.constraints.Constraint
 
 import scala.collection.{mutable => smutable}
 

@@ -1,8 +1,8 @@
 package puck.javaAG.mutable
 
 import AST.CompilationUnit
+import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.mutable.backTrack._
-import puck.graph.mutable.constraints.SupertypeAbstraction
 import puck.graph.mutable._
 import puck.javaAG.JavaAGError
 import puck.javaAG.mutable.nodeKind._

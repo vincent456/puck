@@ -1,7 +1,8 @@
 package puck.graph.mutable
 
+import puck.graph.constraints._
 import puck.graph.mutable.constraints._
-import puck.graph.{AGError, mutable}
+import puck.graph.AGError
 import puck.util.{BreadthFirstTreeIterator, HasChildren}
 
 import scala.collection.{mutable => smutable}

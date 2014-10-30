@@ -1,5 +1,6 @@
 package puck.graph.mutable
 
+import puck.graph.constraints._
 import puck.graph.{RedirectionError, AGError}
 import puck.graph.mutable.backTrack.{Recording, Transformation, CareTaker}
 import puck.graph.mutable.constraints._
@@ -80,22 +81,7 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
     constraints.foreach(ct => logger.writeln(ct)(v))
   }
 
-  private [puck] val nodesByName = smutable.Map[String, NodeType]()
 
-  def apply(fullName:String) : NodeType= nodesByName(fullName)
-  def getNode(fullName:String) : Option[NodeType] = nodesByName get fullName
-
-
-  def addNode(fullName: String, localName:String, kind: Kind): NodeType = {
-    val unambiguousFullName = nodeBuilder.makeKey(fullName, localName, kind)
-    nodesByName get unambiguousFullName match {
-      case None =>
-        val n = addNode(localName, kind)
-        this.nodesByName += (unambiguousFullName -> n)
-        n
-      case Some(n) => n /* check that the kind and type is indeed the same ??*/
-    }
-  }
 
   def remove(n : NodeType){
     nodes0 -= n

@@ -1,44 +1,52 @@
-package puck.javaAG.mutable.nodeKind
+package puck.javaAG.immutable.nodeKind
 
+import puck.graph.immutable.AccessGraph
+import puck.graph.immutable.AccessGraph.NodeId
 import puck.graph.AGError
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
-import puck.graph.mutable.AGNode
 
 /**
  * Created by lorilan on 31/07/14.
  */
 abstract class TypeKind extends JavaNodeKind {
-  def decl : AST.TypeDecl
-  def createLockedAccess() : AST.Access = decl.createLockedAccess()
-  def addDeclToProgram(){
-    val prog = node.graph.root.kind match {
+  def decl : Option[AST.TypeDecl]
+  def createLockedAccess() : AST.Access = decl.get.createLockedAccess()
+  def addDeclToProgram(prog : AST.Program, graph : AccessGraph[JavaNodeKind]){
+    /*val prog = node.graph.root.kind match {
       case r @ JavaRoot() => r.program
       case r => throw new Error("root should be of kind JavaRoot instead of " + r)
+    }*/
+    decl match {
+      case None => ()
+      case Some(decl) =>
+        val node0 = graph.getNode(node)
+        decl.setID(node0.name)
+        decl.setModifiers(new AST.Modifiers("public"))
+        val cu = new AST.CompilationUnit()
+        cu.setRelativeName(node0.name)
+
+        val cpath = node0.containerPath
+        if(! graph.getNode(cpath.head).isRoot)
+          throw new AGError("cannot create decl for unrooted node")
+
+        val names = cpath.tail.map(graph.getNode(_).name)
+        println("setting pathname with " + cpath)
+        cu.setPathName(names.mkString(java.io.File.separator))
+        cu.setTypeDecl(decl, 0)
+        cu.setFromSource(true)
+        prog.addCompilationUnit(cu)
     }
-
-    decl.setID(node.name)
-    decl.setModifiers(new AST.Modifiers("public"))
-    val cu = new AST.CompilationUnit()
-    cu.setRelativeName(node.name)
-
-    val cpath = node.containerPath
-    if(! cpath.head.isRoot)
-      throw new AGError("cannot create decl for unrooted node")
-
-    println("setting pathname with " + cpath)
-    cu.setPathName(cpath.tail.mkString(java.io.File.separator))
-    cu.setTypeDecl(decl, 0)
-    cu.setFromSource(true)
-    prog.addCompilationUnit(cu)
   }
+
 }
 
 
-case class Interface private[javaAG]() extends TypeKind {
+case class Interface private[javaAG](node : NodeId[JavaNodeKind],
+                                     decl : Option[AST.TypeDecl]) extends TypeKind {
 
 
 
-  def isMergingCandidate(itc : Interface): Boolean ={
+  def isMergingCandidate(itc : Interface): Boolean = ??? /*{
 
     def hasMatchingMethod(absm : AGNode[JavaNodeKind])= absm.kind match{
       case absMethKind@AbstractMethod() =>
@@ -60,67 +68,70 @@ case class Interface private[javaAG]() extends TypeKind {
           node.subTypes() forall otherItc.isSuperTypeOf
           //TODO structual type check
           /*val missingMethodsInThis =
-            otherItc.content.filterNot{hasMatchingMethodIn(this)}*/
+            otherItc.content.filterNot{hasMatchingMethodIn(this)}
         })
-  }
+  }*/*/
 
   override val toString = "Interface"
 
-  def create() = Interface()
+  def create(node : NodeId[JavaNodeKind]) = Interface(node, None)
 
-  override def createDecl( n : AGNode[JavaNodeKind]){
-    assert(n.kind eq this)
-    if(decl == null){
-      decl = new AST.InterfaceDecl()
+  override def createDecl(prog : AST.Program,
+                          graph : AccessGraph[JavaNodeKind]) : AccessGraph[JavaNodeKind] = {
 
-      addDeclToProgram()
+    decl match {
+      case None =>
+        val itc = Interface(node, Some(new AST.InterfaceDecl()))
+        itc.addDeclToProgram(prog, graph)
+        graph.setKind(node, itc).graph
+      case Some(_) => graph
     }
   }
 
-  var decl : AST.InterfaceDecl = _
-
   def canContain(k : JavaNodeKind) : Boolean = {
     k match {
-      case AbstractMethod() => true
+      case _ : AbstractMethod => true
       case _ => false
     }
   }
 
   def abstractKinds(p : AbstractionPolicy) = p match {
     case SupertypeAbstraction() => List(JavaNodeKind.interface)
-    case DelegationAbstraction() => List(JavaNodeKind.`class`)//also interface ?
+    case DelegationAbstraction() => List(JavaNodeKind.classKind)//also interface ?
   }
 }
 
-case class Class private[javaAG]() extends TypeKind {
+case class Class private[javaAG](node : NodeId[JavaNodeKind],
+                                 decl : Option[AST.ClassDecl]) extends TypeKind {
 
   override val toString = "Class"
 
-  def create() = Class()
+  def create(node : NodeId[JavaNodeKind]) = Class(node, None)
 
-  var decl : AST.ClassDecl = _
+  override def createDecl(prog : AST.Program,
+                          graph : AccessGraph[JavaNodeKind]) : AccessGraph[JavaNodeKind] = {
 
-  override def createDecl( n : AGNode[JavaNodeKind]){
-    assert(n.kind eq this)
-    if(decl == null){
-      decl = new AST.ClassDecl()
-
-      addDeclToProgram()
+    decl match {
+      case None =>
+        val cls = Class(node, Some(new AST.ClassDecl()))
+        cls.addDeclToProgram(prog, graph)
+        graph.setKind(node, cls).graph
+      case Some(_) => graph
     }
   }
 
   def canContain(k : JavaNodeKind) : Boolean = {
     k match {
-      case Constructor()
-           | Field()
-           | Method() => true
+      case _ : Constructor
+           | _ : Field
+           | _ : Method => true
       case _ => false
     }
   }
 
   def abstractKinds(p : AbstractionPolicy) = p match {
-    case SupertypeAbstraction() => List(JavaNodeKind.interface, JavaNodeKind.`class`)
-    case DelegationAbstraction() => List(JavaNodeKind.`class`)//also interface ?
+    case SupertypeAbstraction() => List(JavaNodeKind.interface, JavaNodeKind.classKind)
+    case DelegationAbstraction() => List(JavaNodeKind.classKind)//also interface ?
   }
 
   //TODO prendre en compte le cas des classes abstraite

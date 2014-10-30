@@ -1,7 +1,8 @@
 package puck.javaAG.mutable
 
+import puck.graph.constraints.{AbstractionPolicy, SupertypeAbstraction}
 import puck.graph.mutable.AccessGraph
-import puck.graph.mutable.constraints.{SupertypeAbstraction, _}
+import puck.graph.mutable.constraints._
 import puck.javaAG.mutable.nodeKind._
 
 /**

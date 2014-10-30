@@ -1,6 +1,6 @@
 package puck.javaAG.mutable
 
-import puck.graph.mutable.constraints.{AbstractionPolicy, SupertypeAbstraction}
+import puck.graph.constraints.{SupertypeAbstraction, AbstractionPolicy}
 import puck.graph.mutable.io.DotHelper
 import puck.graph.mutable.{AGEdge, AGNode, AGNodeBuilder, AccessGraph}
 import puck.javaAG.mutable.nodeKind._
