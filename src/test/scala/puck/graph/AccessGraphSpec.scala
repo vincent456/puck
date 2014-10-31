@@ -15,9 +15,9 @@ class AccessGraphSpec extends UnitSpec{
 
 
   "An Access Graph" should "have a root node" in {
-    ag.root should not be (null)
+    ag.rootId should not be (null)
     ag.iterator.hasNext should be (true)
-    ag.iterator.next() should be (ag.root)
+    ag.iterator.next() should be (ag.rootId)
     ag.size should be (1)
   }
 

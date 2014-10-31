@@ -1,9 +1,6 @@
 package puck.gui
 
-import puck.graph.mutable.backTrack.Recording
-import puck.graph.mutable.NodeKind
-import puck.graph.mutable.io.FilesHandler
-import puck.search.Search
+import puck.graph.{NodeId, AccessGraph, FilesHandler, NodeKind}
 import puck.util.{PuckLog, PuckLogger}
 
 import scala.collection.mutable.ArrayBuffer
@@ -76,8 +73,8 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
       preferredSize = minimumSize
 
       reactions += {
-        case PuckTreeNodeClicked(n) =>
-          val nodeInfoPanel = new NodeInfosPanel[Kind]( n.asInstanceOf[PuckTreeNode[Kind]].agNode)
+        case PuckTreeNodeClicked(graph, n) =>
+          val nodeInfoPanel = new NodeInfosPanel(graph.asInstanceOf[AccessGraph[Kind]], n.asInstanceOf[NodeId[Kind]])
           contents = nodeInfoPanel
           control.listenTo(nodeInfoPanel)
           treeDisplayer.listenTo(nodeInfoPanel)
@@ -110,7 +107,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
       this listenTo control
       treeDisplayer listenTo control
 
-      reactions += {
+      /*reactions += {
         case ExplorationFinished(res0) =>
           resultsWrapper.contents.clear()
           val searchResultPanel = new SearchResultPanel[Kind](res0.asInstanceOf[Search[Recording[Kind]]],
@@ -118,7 +115,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
           resultsWrapper.contents += searchResultPanel
           control listenTo searchResultPanel
 
-  }
+      }*/
 
       val decisionStrategy = new CheckBox("GUI Decision Maker")
       val printTrace = new CheckBox("Print trace")
@@ -153,11 +150,6 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
       progressBar.visible = false
 
 
-      /*contents += makeButton("Do it !",
-        "Magic !"){
-        () => publish(DoWholeProcessRequest(printTrace.selected))
-      }
-*/
       contents += makeButton("(Re)load code & constraints",
         "Load the selected source code and build the access graph"){
         () => publish(LoadCodeRequest())
@@ -182,16 +174,16 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
 
       addDelayedComponent(printPl)
 */
-      val showConstraints = makeButton("Show constraints",
+      /*val showConstraints = makeButton("Show constraints",
         "Show the constraints the graph has to satisfy"){
         () => filesHandler.graph.printConstraints(filesHandler.logger, defaultVerbosity)
       }
 
       addDelayedComponent(showConstraints)
-
+*/
       val show = makeButton("Show graph",
         "Display a visual representation of the graph"){
-        () => publish(GraphDisplayRequest("Graph"))
+        () => publish(GraphDisplayRequest("Graph", filesHandler.graph))
       }
 
       addDelayedComponent(show)
@@ -210,7 +202,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
 
       addDelayedComponent(solve)*/
 
-      val searchStrategies = new ComboBox(filesHandler.searchingStrategies){
+     /* val searchStrategies = new ComboBox(filesHandler.searchingStrategies){
         minimumSize = new Dimension(leftWidth, 30)
         maximumSize = minimumSize
         preferredSize = minimumSize
@@ -225,7 +217,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
 
       addDelayedComponent(explore)
 
-      addDelayedComponent(resultsWrapper)
+      addDelayedComponent(resultsWrapper)*/
 
       /*val printCode = makeButton("Apply on code",
         "apply the planned modifications on the code"){

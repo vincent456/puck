@@ -1,6 +1,6 @@
 package puck.javaAG.immutable
 
-import puck.graph.immutable.GraphBuilder
+import puck.graph.immutable.{AGNode, GraphBuilder}
 import puck.graph.immutable.transformations.Recording
 import puck.javaAG._
 import puck.javaAG.immutable.nodeKind._
@@ -12,12 +12,20 @@ import puck.graph.immutable.AccessGraph._
  * Created by lorilan on 29/10/14.
  */
 class JavaGraphBuilder(program : AST.Program) extends GraphBuilder[JavaNodeKind](JavaNode){
-   g = new JavaAccessGraph(program, PuckNoopLogger, 1,
-    NodeSet(), EdgeMap(), EdgeMap(), EdgeMap(),
+  var idSeed = rootId + 1
+
+   g = new JavaAccessGraph(program, PuckNoopLogger, {() => idSeed += 1; idSeed},
+    NodeSet() + (0 -> (rootName, new JavaRoot(rootId), false)),
+    EdgeMap(), EdgeMap(), EdgeMap(),
     Node2NodeMap() + (0 -> 0), EdgeMap(), EdgeMap(),
     UseDependencyMap(), UseDependencyMap(),
     AbstractionMap(), Recording())
 
+  def addPredefined( p : Predefined): Unit = {
+    super.addPredefined(p.fullName, p.name, p.kind)
+  }
+
+  Predefined.list foreach addPredefined
 
   def addPackageNode(fullName: String, localName:String) : NodeIdT =
     super.addNode(fullName, localName, JavaNodeKind.packageKind)
@@ -112,15 +120,15 @@ class JavaGraphBuilder(program : AST.Program) extends GraphBuilder[JavaNodeKind]
     }
   }
 
-  private def throwRegisteringError(n : NodeIdT, astType : String) =
-    throw new Error("Wrong registering ! AGNode.kind : %s while AST.Node is an %s".format(n, astType))
+  private def throwRegisteringError(n : AGNode[JavaNodeKind], astType : String) =
+    throw new Error("Wrong registering ! AGNode.kind : %s while AST.Node is an %s".format(n.kind, astType))
 
 
   def registerDecl(n : NodeIdT, decl : AST.InterfaceDecl){
     g.getNode(n).kind match {
       case Interface(_,_) =>
         g = g.setKind(n, Interface(n, Some(decl))).graph
-      case _ => throwRegisteringError(n, "InterfaceDecl")
+      case _ => throwRegisteringError(g.getNode(n), "InterfaceDecl")
     }
   }
 
@@ -128,7 +136,7 @@ class JavaGraphBuilder(program : AST.Program) extends GraphBuilder[JavaNodeKind]
     g.getNode(n).kind match {
       case Class(_, _) =>
         g = g.setKind(n, Class(n, Some(decl))).graph
-      case _ => throwRegisteringError(n, "ClassDecl")
+      case _ => throwRegisteringError(g.getNode(n), "ClassDecl")
     }
   }
 
@@ -136,7 +144,7 @@ class JavaGraphBuilder(program : AST.Program) extends GraphBuilder[JavaNodeKind]
     g.getNode(n).kind match {
       case Constructor(_,typ,_) =>
         g = g.setKind(n, Constructor(n, typ , Some(decl))).graph
-      case _ => throwRegisteringError(n, "ConstructorDecl")
+      case _ => throwRegisteringError(g.getNode(n), "ConstructorDecl")
     }
   }
 
@@ -146,7 +154,7 @@ class JavaGraphBuilder(program : AST.Program) extends GraphBuilder[JavaNodeKind]
         g = g.setKind(n, Method(n, typ , Some(decl))).graph
       case AbstractMethod(_, typ, _) =>
         g = g.setKind(n, AbstractMethod(n, typ , Some(decl))).graph
-      case _ => throwRegisteringError(n, "MethodDecl")
+      case _ => throwRegisteringError(g.getNode(n), "MethodDecl")
     }
   }
 
@@ -154,7 +162,7 @@ class JavaGraphBuilder(program : AST.Program) extends GraphBuilder[JavaNodeKind]
     g.getNode(n).kind match {
       case Field(_, typ, _) =>
         g = g.setKind(n, Field(n, typ, Some(decl))).graph
-      case _ => throwRegisteringError(n, "FieldDeclaration")
+      case _ => throwRegisteringError(g.getNode(n), "FieldDeclaration")
     }
   }
 
@@ -162,7 +170,7 @@ class JavaGraphBuilder(program : AST.Program) extends GraphBuilder[JavaNodeKind]
     g.getNode(n).kind match {
       case Primitive(_, _) =>
         g = g.setKind(n, Primitive(n, Some(decl))).graph
-      case _ => throwRegisteringError(n, "PrimitiveType")
+      case _ => throwRegisteringError(g.getNode(n), "PrimitiveType")
     }
   }
 

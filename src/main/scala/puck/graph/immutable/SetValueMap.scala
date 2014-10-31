@@ -10,8 +10,6 @@ object SetValueMap {
 }
 class SetValueMap[K,V](val content : Map[K, Set[V]]){
 
-  def apply(key : K) = content(key)
-
   def get(key : K) = content get key
 
   def getFlat(key : K) : Iterable[V]= content.getOrElse(key, Iterable.empty)

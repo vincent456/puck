@@ -1,19 +1,21 @@
 package puck.gui
 
 import javax.swing.tree.DefaultMutableTreeNode
-import puck.graph.mutable.{AGNode, NodeKind}
+
+import puck.graph.{NodeId, NodeKind}
+
 import scala.swing.CheckBox
 
 /**
  * Created by lorilan on 10/07/14.
  */
-class PuckTreeNode[K <: NodeKind[K]](val agNode : AGNode[K])
+class PuckTreeNode[K <: NodeKind[K]](val agNode : NodeId[K], name : String)
   extends DefaultMutableTreeNode(agNode){
 
   val checkBox = new CheckBox()
   checkBox.selected = true
 
-  override def toString = agNode.nameTypeString
+  override def toString = name
 
   //var isVisible = true
 

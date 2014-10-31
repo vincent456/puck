@@ -44,7 +44,7 @@ import AccessGraph._
 class AccessGraph[NK <: NodeKind[NK]]
 ( private [this] val nodeBuilder : AGNodeBuilder[NK],
   val logger : PuckLogger = PuckNoopLogger,
-  private [this] val idSeed : NodeId[NK],
+  private [this] val idSeed : () => Int,
   private [this] val nodesSet : NodeSet[NK],
   private [this] val usersMap : EdgeMap[NK],
   private [this] val usesMap  : EdgeMap[NK],
@@ -62,7 +62,6 @@ class AccessGraph[NK <: NodeKind[NK]]
   type EdgeType = AGEdge[NK]
 
   def newGraph(nLogger : PuckLogger = logger,
-               nIdSeed : NodeIdT = idSeed,
                nNodesSet : NodeSet[NK] = nodesSet,
                nUsersMap : EdgeMap[NK] = usersMap,
                nUsesMap  : EdgeMap[NK] = usesMap,
@@ -75,13 +74,13 @@ class AccessGraph[NK <: NodeKind[NK]]
                nAbstractionsMap : AbstractionMap[NK] = abstractionsMap,
                nRecording : Recording[NK] = recording) : AccessGraph[NK] =
     new AccessGraph[NK](nodeBuilder, nLogger,
-                        nIdSeed,
+                        idSeed,
                         nNodesSet, nUsersMap, nUsesMap,
                         nContentMap, nContainerMap, nSuperTypesMap, nSubTypesMap,
                         nDominantUsesMap, nDominatedUsesMap,
                         nAbstractionsMap, nRecording)
 
-  def logger_=(l : PuckLogger) = newGraph(nLogger = l)
+  def withLogger(l : PuckLogger) = newGraph(nLogger = l)
   implicit val defaulVerbosity : PuckLog.Verbosity =
     (PuckLog.InGraph(), PuckLog.Debug())
   import scala.language.implicitConversions
@@ -90,16 +89,19 @@ class AccessGraph[NK <: NodeKind[NK]]
 
 
   private [immutable] def addNode(id : NodeIdT, localName:String, kind: NK) : AccessGraph[NK] =
-    newGraph(nIdSeed = id,
-             nNodesSet = nodesSet + (id -> (localName, kind, true)),
+    newGraph(nNodesSet = nodesSet + (id -> (localName, kind, false)),
              nRecording = recording.addNode(id, localName, kind),
              nContainerMap = containerMap + (id -> id))
 
 
-  val root : NodeIdT = 0
+
+
+  val rootId : NodeIdT = 0
+  def root = getNode(rootId)
+  def isRoot(id : NodeIdT) = container(id) == id
 
   def addNode(localName:String, kind: NK) : AGNode[NK] = {
-    val id = idSeed + 1
+    val id = idSeed()
     val k = kind.create(id)
     val newG = addNode(id, localName, k)
     nodeBuilder(newG, id, localName, kind, true)
@@ -107,7 +109,10 @@ class AccessGraph[NK <: NodeKind[NK]]
     //n
   }
 
-  def nodes : Seq[NodeIdT] = Range(0, idSeed + 1)
+  /*def nodes : Seq[NodeIdT] = Range(0, idSeed + 1) */
+  def nodes : Iterable[AGNode[NK]] = nodesSet.values map {
+    case (name, kind, mutable) => new AGNode(this, kind.node, name, kind, mutable)
+  }
 
   def getNode(id : NodeIdT): AGNode[NK] = nodesSet get id match {
     case None => throw new AGError("illegal node request : no node has id " + id.toString)
@@ -133,7 +138,7 @@ class AccessGraph[NK <: NodeKind[NK]]
   }
 
   def container(contentId : NodeIdT) : NodeIdT = containerMap(contentId)
-  def content(containerId: NodeIdT) : Iterable[NodeIdT] = contentsMap(containerId)
+  def content(containerId: NodeIdT) : Iterable[NodeIdT] = contentsMap.getFlat(containerId)
 
   def addContains(containerId: NodeIdT, contentId :NodeIdT): AccessGraph[NK] =
      newGraph(nContentMap = contentsMap + (containerId, contentId),
@@ -154,14 +159,14 @@ class AccessGraph[NK <: NodeKind[NK]]
 
   def uses(userId: NodeIdT, useeId: NodeIdT) : Boolean = usersMap.bind(useeId, userId)
 
-  def users(useeId: NodeIdT) : Iterable[NodeIdT] = usersMap(useeId)
+  def users(useeId: NodeIdT) : Iterable[NodeIdT] = usersMap getFlat useeId
 
   def addIsa(subTypeId: NodeIdT, superTypeId: NodeIdT): AccessGraph[NK]=
     newGraph(nSubTypesMap = subTypesMap + (superTypeId, subTypeId),
              nSuperTypesMap = superTypesMap + (subTypeId, superTypeId))
 
   def isa(subId : NodeIdT, superId: NodeIdT): Boolean = superTypesMap.bind(subId, superId)
-  def directSuperTypes(sub: NodeIdT) : Iterable[NodeIdT] = superTypesMap(sub)
+  def directSuperTypes(sub: NodeIdT) : Iterable[NodeIdT] = superTypesMap getFlat sub
 
 
   def dominantUses(dominatedEdge : (NodeIdT, NodeIdT)) : Iterable[(NodeIdT, NodeIdT)] =
@@ -181,7 +186,7 @@ class AccessGraph[NK <: NodeKind[NK]]
 
 
   def abstractions(id : NodeIdT) : Iterable[(NodeIdT, AbstractionPolicy)] =
-    abstractionsMap(id)
+    abstractionsMap getFlat id
 
   def violations : Seq[EdgeType] = Seq()
 }

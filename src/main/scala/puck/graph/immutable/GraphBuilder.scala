@@ -14,6 +14,11 @@ class GraphBuilder[Kind <: NodeKind[Kind]]
 
   def getNodeByName( k : String) : NodeIdT = nodesByName(k) //java accessor
 
+  def addPredefined(fullName : String, name : String, kind : Kind): Unit ={
+    g = g.addNode(kind.node, name, kind)
+    nodesByName += (fullName -> kind.node)
+  }
+
   def addNode(unambiguousFullName: String, localName:String, kind: Kind): NodeIdT = {
     nodesByName get unambiguousFullName match {
       case None =>

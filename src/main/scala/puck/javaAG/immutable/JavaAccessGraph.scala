@@ -12,7 +12,7 @@ import puck.util.{PuckNoopLogger, PuckLogger}
 class JavaAccessGraph
 (program : AST.Program,
  logger : PuckLogger = PuckNoopLogger,
- idSeed : NodeId[JavaNodeKind],
+ idSeed : () => Int,
  nodesSet : NodeSet[JavaNodeKind],
  usersMap : EdgeMap[JavaNodeKind],
  usesMap  : EdgeMap[JavaNodeKind],
@@ -29,7 +29,6 @@ class JavaAccessGraph
   dominantUsesMap, dominatedUsesMap, abstractionsMap, recording){
 
   override def newGraph(nLogger : PuckLogger = logger,
-               nIdSeed : NodeIdT = idSeed,
                nNodesSet : NodeSet[JavaNodeKind] = nodesSet,
                nUsersMap : EdgeMap[JavaNodeKind] = usersMap,
                nUsesMap  : EdgeMap[JavaNodeKind] = usesMap,
@@ -41,7 +40,7 @@ class JavaAccessGraph
                nDominatedUsesMap : UseDependencyMap[JavaNodeKind] = dominatedUsesMap,
                nAbstractionsMap : AbstractionMap[JavaNodeKind] = abstractionsMap,
                nRecording : Recording[JavaNodeKind] = recording) : AccessGraph[JavaNodeKind] =
-    new JavaAccessGraph(program, nLogger, nIdSeed,
+    new JavaAccessGraph(program, nLogger, idSeed,
       nNodesSet, nUsersMap, nUsesMap,
       nContentMap, nContainerMap, nSuperTypesMap, nSubTypesMap,
       nDominantUsesMap, nDominatedUsesMap,

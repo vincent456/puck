@@ -3,8 +3,9 @@ package puck.gui
 import java.awt.event.{MouseEvent, MouseAdapter}
 import javax.swing.tree.TreePath
 
-import puck.graph.mutable.{AGNode, AccessGraph, NodeKind}
 import javax.swing.JTree
+
+import puck.graph.{AccessGraph, NodeKind, NodeId}
 
 import scala.swing.{Component, Dimension, Publisher, ScrollPane}
 import scala.swing.event.Event
@@ -13,7 +14,8 @@ import scala.swing.event.Event
  * Created by lorilan on 09/05/14.
  */
 
-case class PuckTreeNodeClicked[Kind <: NodeKind[Kind]](node : PuckTreeNode[Kind]) extends Event
+case class PuckTreeNodeClicked[Kind <: NodeKind[Kind]](graph : AccessGraph[Kind],
+                                                       node : NodeId[Kind]) extends Event
 case class AccessGraphModified[Kind <: NodeKind[Kind]](graph : AccessGraph[Kind]) extends Event
 
 class GraphExplorer[Kind <: NodeKind[Kind]](width : Int, height : Int)
@@ -23,19 +25,22 @@ class GraphExplorer[Kind <: NodeKind[Kind]](width : Int, height : Int)
   preferredSize = minimumSize
 
 
-  def addChildren(ptn: PuckTreeNode[Kind]){
-    ptn.agNode.content foreach {
-      (n: AGNode[Kind]) =>
-        val child = new PuckTreeNode(n)
+  def addChildren(graph : AccessGraph[Kind],
+                  ptn: PuckTreeNode[Kind]){
+    graph.getNode(ptn.agNode).content foreach {
+      (nid: NodeId[Kind]) =>
+        val n = graph.getNode(nid)
+        val child = new PuckTreeNode[Kind](nid, n.nameTypeString)
         ptn add child
-        addChildren(child)
+        addChildren(graph, child)
     }
   }
 
   reactions += {
     case e : AccessGraphModified[Kind] =>
-      val root = new PuckTreeNode[Kind](e.graph.root)
-      addChildren(root)
+      val graph = e.graph
+      val root = new PuckTreeNode[Kind](graph.rootId, "<>")
+      addChildren(graph, root)
 
 
       val tree: JTree = new JTree(root)
@@ -49,7 +54,7 @@ class GraphExplorer[Kind <: NodeKind[Kind]](width : Int, height : Int)
           if(path!= null){
             path.getLastPathComponent match {
               case node : PuckTreeNode[Kind] =>
-                publish(PuckTreeNodeClicked(node))
+                publish(PuckTreeNodeClicked(graph, node.agNode))
                 //obj.asInstanceOf[PuckTreeNode].toggleFilter()
                 tree.repaint()
               case _ => ()

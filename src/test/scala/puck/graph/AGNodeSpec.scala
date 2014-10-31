@@ -37,7 +37,7 @@ class AGNodeSpec extends UnitSpec {
   }
 
   it should "have a fullName composed by its ancestor's local name" in {
-    ag.root.content += na
+    ag.rootId.content += na
     nb.content += nc
     nc.fullName should be ("a.b.c")
   }
@@ -57,8 +57,8 @@ class AGNodeSpec extends UnitSpec {
     val nf = ag.addNode("f", VanillaNodeKind())
     val ng = ag.addNode("g", VanillaNodeKind())
 
-    ag.root.content += na
-    ag.root.content += nb
+    ag.rootId.content += na
+    ag.rootId.content += nb
     na.content += nc
     na.content += nd
     nc.content += ne

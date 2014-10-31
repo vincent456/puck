@@ -85,8 +85,8 @@ class CareTakerSpec extends UnitSpec {
     val nb = ag.addNode("b", VanillaNodeKind())
     val nc = ag.addNode("c", VanillaNodeKind())
 
-    ag.root.content += na
-    ag.root.content += nb
+    ag.rootId.content += na
+    ag.rootId.content += nb
     nb.content += nc
 
     nb.users += na

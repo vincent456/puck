@@ -3,12 +3,11 @@ package puck.gui
 import java.io.{File, PipedInputStream, PipedOutputStream}
 
 import AST.LoadingListener
+/*
 import puck.graph.mutable.backTrack.Recording
-import puck.graph.mutable.{NodeKind, AGEdge}
 import puck.graph.mutable.constraints.DecisionMaker
-import puck.graph.mutable.constraints.search.ConstraintSolvingNodesChoice
-import puck.graph.mutable.io.{ConstraintSolvingSearchEngineBuilder, FilesHandler}
-import puck.search.{Search, SearchState}
+*/
+import puck.graph.{AccessGraph, FilesHandler, NodeKind, AGEdge}
 import puck.util.PuckLog
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
@@ -24,12 +23,14 @@ import scala.util.{Failure, Success}
 
 sealed abstract class ControlRequest extends Event
 
+case class LoadCodeRequest() extends ControlRequest
 case class LoadConstraintRequest() extends ControlRequest
 case class GraphDisplayRequest[Kind <: NodeKind[Kind]](title : String,
-                                                       sRecording : Option[Recording[Kind]] = None,
+                                                       graph : AccessGraph[Kind],
                                                        sUse : Option[AGEdge[Kind]] = None) extends ControlRequest
 
-case class SearchStateMapPrintingRequest[Kind <: NodeKind[Kind]](stateMap : Map[Int, Seq[SearchState[Recording[Kind],_]]])
+
+/*case class SearchStateMapPrintingRequest[Kind <: NodeKind[Kind]](stateMap : Map[Int, Seq[SearchState[Recording[Kind],_]]])
   extends ControlRequest
 case class SearchStateSeqPrintingRequest[Kind <: NodeKind[Kind]](subDir : String,
                                                                   states : Seq[SearchState[Recording[Kind],_]],
@@ -38,7 +39,6 @@ case class SearchStateSeqPrintingRequest[Kind <: NodeKind[Kind]](subDir : String
 
 
 case class ApplyOnCodeRequest[Kind <: NodeKind[Kind]](record : Recording[Kind]) extends ControlRequest
-case class LoadCodeRequest() extends ControlRequest
 case class SolveRequest[Kind <: NodeKind[Kind]](decisionStrategy : DecisionMaker[Kind],
                                                 trace : Boolean) extends ControlRequest
 case class ExploreRequest[Kind <: NodeKind[Kind]](trace : Boolean,
@@ -48,7 +48,7 @@ case class PrintConstraintRequest() extends ControlRequest
 
 
 sealed abstract class Answer extends Event
-case class ExplorationFinished[Kind <: NodeKind[Kind]](result : Search[Recording[Kind]]) extends Answer
+case class ExplorationFinished[Kind <: NodeKind[Kind]](result : Search[Recording[Kind]]) extends Answer*/
 
 
 class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
@@ -80,7 +80,7 @@ class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
   }
 
 
-  def loadConstraints(){
+  /*def loadConstraints(){
     try {
       logger.write("Loading constraints ...")
       filesHandler.graph.discardConstraints()
@@ -91,19 +91,19 @@ class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
     catch {
       case e: Error => logger writeln ("\n" + e.getMessage)
     }
-  }
+  }*/
 
   def displayGraph(title : String,
-                   sRecording : Option[Recording[Kind]] = None,
+                   graph : AccessGraph[Kind],
                    someUse : Option[AGEdge[Kind]] = None){
 
-    sRecording match {
+   /* sRecording match {
       case Some(rec) =>
         rec()
         PuckControl.this.publish(AccessGraphModified(rec.graph))
 
       case None => ()
-    }
+    }*/
 
     logger.write("Printing graph ...")
 
@@ -124,22 +124,7 @@ class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
     }
   }
 
-/*  def doSolve(decisionMaker : DecisionMaker[Kind],
-              trace : Boolean)
-             (onSuccess : => Unit ) =
-    Future {
-      filesHandler.logger.writeln("Solving constraints ...")
-      filesHandler.solve(trace, decisionMaker)
-    } onComplete {
-      case Success(_) =>
-        publish(AccessGraphModified(filesHandler.graph))
-        onSuccess
-      case Failure(exc) =>
-        exc.printStackTrace()
-        //filesHandler.logger writeln exc.getStackTrace.mkString("\n")
-    }*/
-
-  def applyOnCode(record : Recording[Kind]){
+  /*def applyOnCode(record : Recording[Kind]){
     Future {
       filesHandler.logger.write("generating code ...")
       filesHandler.graph.applyChangeOnProgram(record)
@@ -159,27 +144,27 @@ class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
     val subDir = filesHandler.graphFile("_results%c%s".format(File.separatorChar, subDirStr))
     subDir.mkdir()
     filesHandler.printCSSearchStatesGraph(subDir, states, sPrinter)
-  }
+  }*/
 
   reactions += {
-    case LoadCodeRequest() => loadCode(loadConstraints())
+    case LoadCodeRequest() => loadCode( () ) //loadCode(loadConstraints())
 
-    case LoadConstraintRequest() => loadConstraints()
+    //case LoadConstraintRequest() => loadConstraints()
 
-    case GraphDisplayRequest(title, rec, sUse) =>
+    case GraphDisplayRequest(title, graph, sUse) =>
       displayGraph(title,
-        rec.asInstanceOf[Option[Recording[Kind]]],
+        graph.asInstanceOf[AccessGraph[Kind]],
         sUse.asInstanceOf[Option[AGEdge[Kind]]])
 
-    case ApplyOnCodeRequest(record) =>
+    /*case ApplyOnCodeRequest(record) =>
       applyOnCode(record.asInstanceOf[Recording[Kind]])
-
+*/
   /*  case SolveRequest(dm, trace) =>
       doSolve(dm.asInstanceOf[DecisionMaker[Kind]], trace){
         filesHandler.logger.writeln("Solving done")
       }*/
 
-    case ExploreRequest(trace, builder) =>
+  /*  case ExploreRequest(trace, builder) =>
 
       val tbuilder = builder.asInstanceOf[ConstraintSolvingSearchEngineBuilder[Kind]]
 
@@ -187,8 +172,6 @@ class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
 
       Future {
         filesHandler.logger.writeln("Solving constraints ...")
-      /*  filesHandler.explore(trace,
-          builder.asInstanceOf[ConstraintSolvingSearchEngineBuilder[Kind]])*/
         puck.util.Time.time(filesHandler.logger, defaultVerbosity) {
           engine.search()
         }
@@ -204,18 +187,6 @@ class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
           //filesHandler.logger writeln exc.getStackTrace.mkString("\n")
       }
 
-/*    case DoWholeProcessRequest(trace) =>
-      loadCode {
-        loadConstraints()
-        displayGraph("Graph before")
-        doSolve(filesHandler.decisionMaker(), trace){
-          displayGraph("Graph after")
-          applyOnCode(filesHandler.graph.transformations.recording)
-          filesHandler.openSources()
-          filesHandler.openProduction()
-        }
-      }*/
-
     case req @ SearchStateMapPrintingRequest(_) =>
       val treq = req.asInstanceOf[SearchStateMapPrintingRequest[Kind]]
       filesHandler.printCSSearchStatesGraph(treq.stateMap)
@@ -223,7 +194,7 @@ class PuckControl[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind],
     case req @ SearchStateSeqPrintingRequest(_, _, _) =>
        val treq = req.asInstanceOf[SearchStateSeqPrintingRequest[Kind]]
       printStateSeq(treq.subDir, treq.states, treq.sPrinter)
-
+*/
   }
 
 }

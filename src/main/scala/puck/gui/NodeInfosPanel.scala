@@ -1,6 +1,6 @@
 package puck.gui
 
-import puck.graph.mutable.{AGNode, NodeKind, AGEdge}
+import puck.graph._
 import scala.swing._
 import scala.swing.event.MouseClicked
 
@@ -8,16 +8,20 @@ import scala.swing.event.MouseClicked
 /**
  * Created by lorilan on 10/07/14.
  */
-class NodeInfosPanel[K <: NodeKind[K]](val node : AGNode[K])
+class NodeInfosPanel[K <: NodeKind[K]](val graph : AccessGraph[K],
+                                        val nodeId : NodeId[K])
   extends SplitPane(Orientation.Horizontal) {
 
   val useDetails = new BoxPanel(Orientation.Vertical)
 
   resizeWeight = 0.75
 
+  val node = graph.getNode(nodeId)
+
   leftComponent = new BoxPanel(Orientation.Vertical) {
     contents += PuckMainPanel.leftGlued(new Label(node.kind + " : " + node.nameTypeString))
-    val prov = node.providers
+    println("a lot to do ...")
+    /*val prov = node.providers
     val cl = node.clients
     contents += new TextArea("Internal dependencies : " + node.internalDependencies.size + "\n" +
       "Outgoing dependencies : " + node.outgoingDependencies.size + "\n" +
@@ -34,14 +38,15 @@ class NodeInfosPanel[K <: NodeKind[K]](val node : AGNode[K])
       "Clients : " +
       (if (cl.isEmpty) "none\n"
       else cl.mkString("\n", "\n", "\n")) +
-      "Coupling = " + node.coupling + ", Cohesion :  " + node.cohesion)
+      "Coupling = " + node.coupling + ", Cohesion :  " + node.cohesion)*/
 
     contents += new BoxPanel(Orientation.Horizontal) {
       contents += new Label("Move into :")
-      val cb = new ComboBox(node.graph.filter(n => (n canContain node) && n != node).toSeq)
+      val cb = new ComboBox((graph.nodes filter {n : AGNode[K] => n canContain nodeId}).toSeq)
       contents += cb
       contents += Button(">>") {
-        node.moveTo(cb.selection.item)
+        throw new AGError("node.moveTo(cb.selection.item) not implemented")
+        //node.moveTo(cb.selection.item)
         NodeInfosPanel.this.publish(AccessGraphModified(node.graph))
       }
       contents += Swing.HGlue
@@ -53,16 +58,15 @@ class NodeInfosPanel[K <: NodeKind[K]](val node : AGNode[K])
 
     contents += new BoxPanel(Orientation.Vertical) {
 
-      val graph = node.graph
       node.users.foreach { user =>
 
-        val sideUsesOpt = graph.sideUses.get(AGEdge.uses(user, node))
-        val primaryUsesOpt = graph.primaryUses.get(AGEdge.uses(user, node))
+        val sideUses = graph.dominatedUses(user, nodeId)
+        val primaryUses = graph.dominantUses(user, nodeId)
 
-        def tag = (sideUsesOpt, primaryUsesOpt) match {
-          case (None, None) => ""
-          case (Some(_), None) => "(dominant use)"
-          case (None, Some(_)) => "(dominated use)"
+        def tag = (sideUses.isEmpty, primaryUses.isEmpty) match {
+          case (true, true) => ""
+          case (false, true) => "(dominant use)"
+          case (true, false) => "(dominated use)"
           case _ => "(both dominant and dominated)"
         }
 
@@ -70,10 +74,9 @@ class NodeInfosPanel[K <: NodeKind[K]](val node : AGNode[K])
         contents += new BoxPanel(Orientation.Horizontal){
 
           contents += Button("<o>") {
-            println("send request !")
             NodeInfosPanel.this publish
               GraphDisplayRequest("Graph with uses selected",
-                sUse = Some(AGEdge.uses(user, node)))
+              graph, sUse = Some(AGEdge.uses(graph, user, nodeId)))
           }
 
           contents += new Label(user + " " + tag) {
@@ -85,18 +88,14 @@ class NodeInfosPanel[K <: NodeKind[K]](val node : AGNode[K])
               case MouseClicked(_, _, _, _, _) =>
 
                 useDetails.contents.clear()
-                useDetails.contents += new Label(AGEdge.uses(user, node).toString)
+                useDetails.contents += new Label(AGEdge.uses(graph, user, nodeId).toString)
 
-                primaryUsesOpt match {
-                  case None => ()
-                  case Some(primaryUses) =>
+                if (primaryUses.nonEmpty){
                     useDetails.contents += new Label("Dominant Uses :")
                     primaryUses.foreach(e => useDetails.contents += new Label(e.toString()))
                 }
 
-                sideUsesOpt match {
-                  case None => ()
-                  case Some(sideUses) =>
+                if(sideUses.nonEmpty) {
                     useDetails.contents += new Label("Dominated Uses :")
                     sideUses.foreach(e => useDetails.contents += new Label(e.toString()))
                 }

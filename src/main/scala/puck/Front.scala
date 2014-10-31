@@ -36,7 +36,7 @@ package puck
  */
 
 
-import puck.javaAG.mutable.JavaFilesHandler
+import puck.graph.JavaFilesHandler
 
 import scala.swing._
  import javax.swing.UIManager
@@ -53,7 +53,7 @@ import scala.swing._
   def top = new MainFrame {
     title = "Puck"
 
-    contents  = new PuckMainPanel(new JavaFilesHandler())
+    contents  = new PuckMainPanel(JavaFilesHandler())
 
   }
 }

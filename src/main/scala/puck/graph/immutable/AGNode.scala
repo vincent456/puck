@@ -27,6 +27,15 @@ class AGNode[Kind <: NodeKind[Kind]]
 
   type NodeIdT = NodeId[Kind]
 
+  def canContain(otherId : NodeIdT) : Boolean = {
+    val n = graph.getNode(otherId)
+    otherId != id && graph.contains_*(otherId, id) && // no cycle !
+      (this.kind canContain n.kind) &&
+      this.isMutable
+  }
+
+  override def toString = name + " : " + kind.toString + "(" + id +")"
+
   def container = graph.container(id)
   def content = graph.content(id)
 
@@ -40,6 +49,10 @@ class AGNode[Kind <: NodeKind[Kind]]
   def containerPath  : Seq[NodeIdT] = ???
 
   def abstractions :  Iterable[(NodeIdT, AbstractionPolicy)] = graph.abstractions(id)
+
+  def nameTypeString : String = name + " type string to add"
+
+  def fullName : String = ???
 
   /*def canContain(n : NodeType) : Boolean = {
     n != this && !(n contains_* this) && // no cycle !
