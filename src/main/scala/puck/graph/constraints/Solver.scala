@@ -302,6 +302,8 @@ trait Solver[Kind <: NodeKind[Kind], T] {
     logger.writeln("solve begins !")
     val sortedId = graph.nodesId.toSeq.sorted
     sortedId.foreach{id => logger.writeln("("+ id + ", " + graph.container(id)+ ")")}
+    val nodes = graph.nodes.toSeq.sortBy(_.id)
+    nodes foreach {n => logger.writeln(n)}
 
     def aux(graph : GraphT){
       decisionMaker.violationTarget(graph) {

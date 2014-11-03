@@ -257,6 +257,7 @@ class AccessGraph[NK <: NodeKind[NK], T]
 
   def changeType(id : NIdT, typ : STyp, oldUsee: NIdT, newUsee : NIdT) : GraphT = {
     val newTyp= typ.redirectUses(oldUsee, getNode(newUsee))
+
     setType(id, newTyp).
       newGraph(nRecording = recording.addTypeChange(id, typ, oldUsee, newUsee))
 
@@ -362,9 +363,10 @@ class AccessGraph[NK <: NodeKind[NK], T]
                         abskind : NK ,
                         policy : AbstractionPolicy) : (NIdT, GraphT) = {
     val (absId, g) = createNode(implId, abskind, policy)
+    val g2 = g.setType(absId, getNode(implId).styp)
     (absId, policy match {
-      case SupertypeAbstraction => g.addUses(implId, absId)
-      case DelegationAbstraction => g.addUses(absId, implId)
+      case SupertypeAbstraction => g2.addUses(implId, absId)
+      case DelegationAbstraction => g2.addUses(absId, implId)
     })
 
   }

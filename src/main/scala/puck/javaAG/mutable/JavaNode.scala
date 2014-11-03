@@ -171,8 +171,8 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
       "create"
     else
       (abskind, policy) match {
-        case (Method(), SupertypeAbstraction())
-             | (AbstractMethod(), SupertypeAbstraction()) => this.name
+        case (Method(), SupertypeAbstraction)
+             | (AbstractMethod(), SupertypeAbstraction) => this.name
         case _ => super.abstractionName(abskind, policy)
 
       }
@@ -180,15 +180,15 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
   override def createAbstraction(abskind : JavaNodeKind,
                                  policy : AbstractionPolicy) = {
     (abskind, policy) match {
-      case (Interface(), SupertypeAbstraction()) =>
-        val abs = super.createAbstraction(Interface(), SupertypeAbstraction())
+      case (Interface(), SupertypeAbstraction) =>
+        val abs = super.createAbstraction(Interface(), SupertypeAbstraction)
 
         content.foreach { child =>
           child.kind match {
             //case ck @ Method() =>
             case ck : MethodKind =>
               val absChild = child.createAbstraction(JavaNodeKind.abstractMethod(ck.typ),
-                SupertypeAbstraction())
+                SupertypeAbstraction)
               abs.content += absChild
 
               val absChildKind = absChild.kind.asInstanceOf[AbstractMethod]
@@ -242,7 +242,7 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
 
         abs
 
-      case (AbstractMethod(), SupertypeAbstraction()) =>
+      case (AbstractMethod(), SupertypeAbstraction) =>
         //no (abs, impl) or (impl, abs) uses
         createNodeAbstraction(abskind, policy)
 
@@ -259,9 +259,9 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
 
   override def abstractionCreationPostTreatment(abstraction : NodeType, policy : AbstractionPolicy): Unit ={
     (abstraction.kind, policy) match {
-      case (AbstractMethod(), SupertypeAbstraction()) =>
+      case (AbstractMethod(), SupertypeAbstraction) =>
         val thisClassNeedsImplement = (this.container.abstractions find
-          {case (abs,absPolicy) => absPolicy == SupertypeAbstraction() &&
+          {case (abs,absPolicy) => absPolicy == SupertypeAbstraction &&
             abs == abstraction.container}).isEmpty
 
         if(thisClassNeedsImplement){

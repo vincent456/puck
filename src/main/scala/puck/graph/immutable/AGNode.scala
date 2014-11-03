@@ -42,7 +42,7 @@ class AGNode[Kind <: NodeKind[Kind], T]
       this.isMutable
   }
 
-  override def toString = name + " : " + kind.toString + "(" + id +")"
+  override def toString = id + " - " + kind +" " +name + styp.mkString(graph) + "(" + id +")"
 
   def container = graph.container(id)
   def content = graph.content(id)

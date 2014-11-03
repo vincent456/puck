@@ -419,8 +419,8 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
   def createAbstraction(abskind : Kind , policy : AbstractionPolicy) : NodeType = {
     val abs = createNodeAbstraction(abskind, policy)
     policy match {
-      case SupertypeAbstraction() =>  abs.users += this
-      case DelegationAbstraction() => this.users += abs
+      case SupertypeAbstraction =>  abs.users += this
+      case DelegationAbstraction => this.users += abs
     }
     abs
   }

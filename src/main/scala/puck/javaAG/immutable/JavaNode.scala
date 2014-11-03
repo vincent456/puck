@@ -105,7 +105,7 @@ class JavaNode
                 }
               }
             }
-        case (AbstractMethod, _) => throw new AGError()
+        case (AbstractMethod, _) => throw new AGError(n + " does not have a MethodTypeHolder")
         /* cannot have two methods with same name and same type */
         case (Method, MethodTypeHolder(typ)) =>
           this.content.forall(noNameClash(typ.input.length))

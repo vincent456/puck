@@ -96,7 +96,7 @@ class JavaAccessGraph
               val absChildNode = g3.getNode(absChild)
               absChildNode.kind match {
                 case AbstractMethod =>
-                  g3.changeType(absChild,absChildNode.styp, implId, absId)
+                  g3.changeType(absChild, absChildNode.styp, implId, absId)
                 case k =>
                   throw new AGError(k + " should be an abstract method !")
               }
@@ -131,7 +131,9 @@ class JavaAccessGraph
 
       case (AbstractMethod, SupertypeAbstraction) =>
         //no (abs, impl) or (impl, abs) uses
-        createNode(implId, abskind, policy)
+        val n = getNode(implId)
+        val (id, g0) = createNode(implId, abskind, policy)
+        (id, g0.setType(id, n.styp))
 
       case _ =>
         val (abs, g1) = super.createAbstraction(implId, abskind, policy)
@@ -142,8 +144,10 @@ class JavaAccessGraph
           case (Constructor, ConstructorMethod) =>
  //         case (Constructor(_, _, cdecl), ConstructorMethod(_, typ, decl, _)) =>
             (implNode.t, absNode.t) match {
-              case (ConstructorDeclHolder(cdecl), ConstructorMethodDecl(decl,_)) =>
-                g1.setInternal(abs, ConstructorMethodDecl(decl, cdecl))
+              /*case (ConstructorDeclHolder(cdecl), ConstructorMethodDecl(decl,_)) =>
+                g1.setInternal(abs, ConstructorMethodDecl(decl, cdecl))*/
+              case (ConstructorDeclHolder(cdecl), EmptyDeclHolder) =>
+                g1.setInternal(abs, ConstructorMethodDecl(None, cdecl))
               case (_,_) => throw new AGError()
             }
           case (Constructor, _) => throw new AGError()
@@ -167,7 +171,12 @@ class JavaAccessGraph
         if(!thisClassNeedsImplement) this
         else {
           val absContainer = container(absId)
-          addUses(implContainer, absContainer).addIsa(implContainer, absContainer)
+          val g1 = addUses(implContainer, absContainer).addIsa(implContainer, absContainer)
+
+          g1.content(absId).foldLeft(g1){
+            case (g0, absMethodId) => val absMeth = g0.getNode(absMethodId)
+              g0.changeType(absMethodId, absMeth.styp, implId, absId)
+          }
         }
       case _ => this
     }
