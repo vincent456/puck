@@ -1,27 +1,29 @@
-package puck.javaAG.immutable
+package puck.javaAG
 
 import java.io.File
 
-import puck.graph.AGBuildingError
-import puck.graph.immutable.AccessGraph
-import puck.graph.immutable.io.FilesHandler
-import puck.javaAG.immutable.nodeKind.JavaNodeKind
+import puck.graph.constraints.{Solver, DecisionMaker}
+import puck.graph.constraints.search.SolverBuilder
+import puck.graph.{AccessGraph, JavaNode, JavaNodeKind,JavaSolver, AGBuildingError}
+import puck.graph.io.{ConstraintSolvingSearchEngineBuilder, FilesHandler}
+import puck.javaAG.immutable.DeclHolder
+
 
 /**
  * Created by lorilan on 11/08/14.
  */
 
-/*object JavaSolverBuilder extends SolverBuilder[JavaNodeKind]{
-  def apply(graph : AccessGraph[JavaNodeKind],
-            dm : DecisionMaker[JavaNodeKind]) : Solver[JavaNodeKind] = new JavaSolver(graph, dm)
-}*/
+object JavaSolverBuilder extends SolverBuilder[JavaNodeKind, DeclHolder]{
+  def apply(graph : AccessGraph[JavaNodeKind, DeclHolder],
+            dm : DecisionMaker[JavaNodeKind, DeclHolder]) : Solver[JavaNodeKind, DeclHolder] = JavaSolver(graph, dm)
+}
 
-class JavaFilesHandler (workingDirectory : File) extends FilesHandler[JavaNodeKind](workingDirectory) {
+class JavaFilesHandler (workingDirectory : File) extends FilesHandler[JavaNodeKind, DeclHolder](workingDirectory) {
   def this() = this(new File("."))
 
   val srcSuffix = ".java"
 
-  def loadGraph(ll : AST.LoadingListener = null) : AccessGraph[JavaNodeKind] = {
+  def loadGraph(ll : AST.LoadingListener = null) : AccessGraph[JavaNodeKind, DeclHolder] = {
     import puck.util.FileHelper.{fileLines, findAllFiles, initStringLiteralsMap}
 
     JavaFilesHandler.compile(findAllFiles(this.srcDirectory.get, srcSuffix,
@@ -29,18 +31,14 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler[JavaNodeKi
       fileLines(jarListFile.get)) match {
       case None => throw new AGBuildingError("Compilation error, no AST generated")
       case Some(p) =>
-        val jgraph = p.buildAccessGraph(initStringLiteralsMap(decouple.get), ll)
+        val jGraphBuilder = p.buildAccessGraph(initStringLiteralsMap(decouple.get), ll)
         fileLines(apiNodesFile.get).foreach {
           (l: String) =>
             val tab = l.split(" ")
-            jgraph.addApiNode(p, tab(0), tab(1), tab(2))
+            jGraphBuilder.addApiNode(p, tab(0), tab(1), tab(2))
         }
-
-
-
-        graph = jgraph.g withLogger this.logger
-
-        makePng(printId = true){case _ => println("done")}
+        graphBuilder = jGraphBuilder
+        graph = graphBuilder.g withLogger this.logger
         graph
     }
   }
@@ -50,24 +48,24 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler[JavaNodeKi
   /*def decisionMaker() = new JavaDefaultDecisionMaker(graph)
 
   def solver(dm : DecisionMaker[JavaNodeKind]) =
-    new JavaSolver(graph, dm)
+    new JavaSolver(graph, dm)*/
 
-  def printCode() {
+  /*def printCode() {
     graph.asInstanceOf[JavaAccessGraph].program.printCodeInDirectory(outDirectory.get)
-  }
+  }*/
 
-  override def searchingStrategies: List[ConstraintSolvingSearchEngineBuilder[JavaNodeKind]] =
+  override def searchingStrategies: Seq[ConstraintSolvingSearchEngineBuilder[JavaNodeKind, DeclHolder]] =
     List(JavaFunneledCSSEBuilder,
       JavaTryAllCSSEBuilder,
       //JavaGradedCSSEBuilder,
-    JavaFindFirstCSSEBuilder)*/
+      JavaFindFirstCSSEBuilder)
 }
 
 
 object JavaFilesHandler{
 
   def apply() = new JavaFilesHandler()
-  def apply(file : puck.File) = new JavaFilesHandler(file)
+  def apply(file : java.io.File) = new JavaFilesHandler(file)
 
   def compile(sources: List[String], jars: List[String]): Option[AST.Program] = {
     val arglist = createArglist(sources, jars, None)

@@ -8,12 +8,6 @@ import puck.graph.mutable.{AGNode, AccessGraph, NodeKind}
  * Created by lorilan on 28/05/14.
  */
 
-sealed class AuthorisationPolicy
-case class FacadeAuth() extends AuthorisationPolicy
-case class LocalFriendAuth() extends AuthorisationPolicy
-case class GlobalFriendAuth() extends AuthorisationPolicy
-case class NoAuthorisation() extends AuthorisationPolicy
-
 trait DecisionMaker[Kind <: NodeKind[Kind]]{
   type NodeType = AGNode[Kind]
 

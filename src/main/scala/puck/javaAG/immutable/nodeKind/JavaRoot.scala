@@ -1,13 +1,14 @@
 package puck.javaAG.immutable.nodeKind
 
 import puck.graph.immutable.AGRoot
-import puck.graph.immutable.AccessGraph.NodeId
 
 /**
  * Created by lorilan on 31/07/14.
  */
-case class JavaRoot(node : NodeId[JavaNodeKind]) extends JavaNodeKind with AGRoot[JavaNodeKind]{
+case object JavaRoot extends JavaNodeKind with AGRoot[JavaNodeKind]{
   override val toString = "JavaRoot"
-  def create(node : NodeId[JavaNodeKind]) = JavaRoot(node)
-  var program : AST.Program = _
+  /*override def canContain(k: JavaNodeKind) = k match {
+    case Package(_) => true
+    case _ => false
+  }*/
 }

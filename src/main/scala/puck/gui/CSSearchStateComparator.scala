@@ -1,14 +1,14 @@
 package puck.gui
 
-import puck.graph.mutable.NodeKind
-import puck.graph.mutable.constraints.search.ConstraintSolving._
+import puck.graph.{ResultT, NodeKind, recordOfResult}
+import puck.search.SearchState
 
 import scala.swing.{Button, Label, Orientation, BoxPanel}
 
 /**
  * Created by lorilan on 22/10/14.
  */
-class CSSearchStateComparator[Kind <: NodeKind[Kind]](sortedRes: Map[Int, Seq[FinalState[Kind]]])
+class CSSearchStateComparator[Kind <: NodeKind[Kind], T](sortedRes: Map[Int, Seq[SearchState[ResultT[Kind,T], _]]])
   extends BoxPanel(Orientation.Vertical) {
   contents += new Label("Compare")
   val cb1 = new CSSearchStateComboBox(sortedRes)
@@ -28,8 +28,8 @@ class CSSearchStateComparator[Kind <: NodeKind[Kind]](sortedRes: Map[Int, Seq[Fi
   contents += new Label("and")
   contents += cb2
   contents += Button(">>") {
-    val recording1 = cb1.selectedState.result
-    val recording2 = cb2.selectedState.result
+    val recording1 = recordOfResult(cb1.selectedState.result)
+    val recording2 = recordOfResult(cb2.selectedState.result)
     recording1.produceSameGraph(recording2)
   }
 }

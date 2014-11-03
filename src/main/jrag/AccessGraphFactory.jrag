@@ -17,7 +17,8 @@ import puck.javaAG.immutable.MethodType;
 import puck.graph.immutable.NamedType;
 import puck.graph.immutable.Tuple;
 import puck.graph.immutable.Type;
-
+import puck.javaAG.immutable.nodeKind.MethodTypeHolder;
+import puck.javaAG.immutable.nodeKind.NamedTypeHolder;
 
 aspect AccessGraphFactory {
 
@@ -356,7 +357,8 @@ aspect AccessGraphFactory {
       if(isFromStdLib())
           node = accessGraph.addApiTypeNode(this, false);
       else
-          node = accessGraph.addNode(fullName(), name(), getAGNodeKind());
+          node = accessGraph.addNode(fullName(), name(), getAGNodeKind(), JavaNodeKind.noType());
+
 
       registerDecl(accessGraph, node);
       return node;
@@ -370,7 +372,7 @@ aspect AccessGraphFactory {
 
 	public int ParTypeAccess.buildAGNode(JavaGraphBuilder accessGraph){
 		return accessGraph.addNode(fullName(), name(), 
-				getTypeDecl().getAGNodeKind());
+				getTypeDecl().getAGNodeKind(), JavaNodeKind.noType());
 	}
 	
 
@@ -381,8 +383,8 @@ aspect AccessGraphFactory {
 
 	public int FieldDeclaration.buildAGNode(JavaGraphBuilder accessGraph){
 		JavaNamedType type = new JavaNamedType(type().buildAGNode(accessGraph), type().name());
-		int node = accessGraph.addNode(fullName(), name(),
-				JavaNodeKind.field(type));
+        NamedTypeHolder th = new NamedTypeHolder(type);
+        int node = accessGraph.addNode(fullName(), name(), JavaNodeKind.field(), th);
 
         accessGraph.registerDecl(node, this);
         return node;
@@ -421,30 +423,33 @@ aspect AccessGraphFactory {
 
 
 	public int MethodDecl.buildAGNode(JavaGraphBuilder accessGraph){
-		
-      MethodType methodAGType = new MethodType(ASTNode.astParamsToAGType(accessGraph,this),
-              new JavaNamedType(getTypeAccess().buildAGNode(accessGraph), getTypeAccess().typeName()));
 
-      JavaNodeKind kind;
-        if(this.isAbstract())
-            kind = JavaNodeKind.abstractMethod(methodAGType);
-        else
-            kind = JavaNodeKind.method(methodAGType);
+	  MethodType mt = new MethodType(ASTNode.astParamsToAGType(accessGraph,this),
+                 new JavaNamedType(getTypeAccess().buildAGNode(accessGraph), getTypeAccess().typeName()));
 
-      int node = accessGraph.addNode(fullName(), name(), kind);
+      MethodTypeHolder typeHolder = new MethodTypeHolder( mt );
 
-      accessGraph.registerDecl(node, this);
+            JavaNodeKind kind;
+              if(this.isAbstract())
+                  kind = JavaNodeKind.abstractMethod();
+              else
+                  kind = JavaNodeKind.method();
 
-      return node;
+            int node = accessGraph.addNode(fullName(), name(), kind, typeHolder);
+
+            accessGraph.registerDecl(node, this);
+
+            return node;
 	}
 
 	public int ConstructorDecl.buildAGNode(JavaGraphBuilder accessGraph){
 		
       MethodType constructorAGType = new MethodType(ASTNode.astParamsToAGType(accessGraph,this),
-              new JavaNamedType(hostType().buildAGNode(accessGraph), hostType().name()));
+                    new JavaNamedType(hostType().buildAGNode(accessGraph), hostType().name()));
 
+      MethodTypeHolder typeHolder = new MethodTypeHolder( constructorAGType );
       int node = accessGraph.addNode(fullName(), name(),
-      			JavaNodeKind.constructor(constructorAGType));
+            			JavaNodeKind.constructor(), typeHolder);
 
       accessGraph.registerDecl(node, this);
       return node;

@@ -1,4 +1,4 @@
-package puck.graph.immutable.io
+package puck.graph.io
 
 /**
  * Created by lorilan on 13/08/14.

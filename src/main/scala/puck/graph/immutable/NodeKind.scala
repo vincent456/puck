@@ -1,18 +1,17 @@
 package puck.graph.immutable
 
-import AccessGraph.NodeId
 import puck.graph.AGError
 import puck.graph.constraints.{AbstractionPolicy, DelegationAbstraction, SupertypeAbstraction}
+import puck.graph.immutable.AccessGraph.NodeId
+
 /**
  * Created by lorilan on 26/10/14.
  */
 trait NodeKind[K <: NodeKind[K]] {
 
-  def node : NodeId[K]
-  def create(id : NodeId[K]) : K
   def canContain(k : K) : Boolean
   def abstractionPolicies : Seq[AbstractionPolicy] =
-    Seq(SupertypeAbstraction(), DelegationAbstraction())
+    Seq(SupertypeAbstraction, DelegationAbstraction)
   def abstractKinds(p : AbstractionPolicy) : Seq[K]
 }
 
@@ -23,7 +22,15 @@ trait AGRoot[K <: NodeKind[K]] extends NodeKind[K] {
     throw new AGError("Root node cannot be abstracted")
 }
 
+trait TypeHolder[K <: NodeKind[K]] {
+  def redirectUses(oldUsee : NodeId[K], newUsee: AGNode[K, _]) : TypeHolder[K]
+  def redirectContravariantUses(oldUsee : NodeId[K], newUsee: AGNode[K, _]) : TypeHolder[K]
+  def mkString(graph : AccessGraph[K,_]) : String
 
-trait HasType[K <: NodeKind[K], T <: Type[K, T]] extends NodeKind[K] {
-  def typ : T
+}
+
+case class NoType[K <: NodeKind[K]]() extends TypeHolder[K] {
+  def redirectUses(oldUsee : NodeId[K], newUsee: AGNode[K, _]) = this
+  def redirectContravariantUses(oldUsee : NodeId[K], newUsee: AGNode[K, _]) = this
+  def mkString(graph : AccessGraph[K,_]) : String = ""
 }

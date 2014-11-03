@@ -1,46 +1,46 @@
 package puck.gui
 
-import puck.graph.mutable.backTrack.Recording
-import puck.graph.mutable.NodeKind
-import puck.graph.mutable.constraints.search.ConstraintSolving
-import puck.graph.mutable.constraints.search.ConstraintSolving._
-import puck.search.Search
-import puck.util.{PuckLog, PuckLogger, Logger}
+import puck.graph.{ResultT, recordOfResult, NodeKind}
+import puck.search.{SearchState, Search}
+import puck.util.{PuckLog, PuckLogger}
 
 import scala.swing._
 
 /**
  * Created by lorilan on 22/10/14.
  */
-class SearchResultPanel[Kind <: NodeKind[Kind]](res : Search[Recording[Kind]],
-                                                logger : PuckLogger)
+class SearchResultPanel[Kind <: NodeKind[Kind], T](res : Search[ResultT[Kind, T]],
+                                                  logger : PuckLogger)
       extends BoxPanel(Orientation.Vertical){
 
-  implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.NoSpecialContext(), PuckLog.Info())
+  implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.NoSpecialContext, PuckLog.Info)
 
-  type ST = ConstraintSolving.FinalState[Kind]
+  type ST = SearchState[ResultT[Kind, T],_]
 
   def filterDifferentStates(l : Seq[ST]): Seq[ST] = {
     def aux(l : Seq[ST], acc : Seq[ST]) : Seq[ST] = {
       if (l.nonEmpty) {
         aux(l.tail,
-          if (!l.tail.exists { st => st.result.produceSameGraph(l.head.result)})
+          if (!l.tail.exists { st =>
+              recordOfResult(st.result).
+                produceSameGraph(recordOfResult(l.head.result))
+          })
             l.head +: acc
           else acc)
       }
       else acc
     }
-    aux(l, Seq())
+    aux(l, Seq[ST]())
   }
 
   logger.write("comparing final states : ")
 
-  val sortedRes: Map[Int, Seq[FinalState[Kind]]] =
+  val sortedRes: Map[Int, Seq[ST]] =
     puck.util.Time.time(logger, defaultVerbosity){
 
       //CSSearchStateComboBox.sort(res).mapValues(filterDifferentStates)
       // do not actually apply the function and hence give a false compute time
-      CSSearchStateComboBox.sort(res.finalStates).foldLeft(Map[Int, Seq[ConstraintSolving.FinalState[Kind]]]()){
+      CSSearchStateComboBox.sort[Kind, T](res.finalStates).foldLeft(Map[Int, Seq[ST]]()){
         case (acc, (k, v)) => acc + (k -> filterDifferentStates(v))
       }
     }

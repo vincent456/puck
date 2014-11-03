@@ -1,9 +1,8 @@
-package puck.graph.immutable.io
+package puck.graph.io
 
 import java.io.BufferedWriter
 
-import puck.graph.immutable.AccessGraph.NodeId
-import puck.graph.immutable._
+import puck.graph._
 
 /**
  * Created by lorilan on 13/08/14.
@@ -29,19 +28,14 @@ object DotPrinter {
 
 
   def print[K <: NodeKind[K]](writer: BufferedWriter,
-                              graph : AccessGraph[K],
+                              graph : AccessGraph[K, _],
                               helper : DotHelper[K],
                               printId : Boolean,
                               printSignatures : Boolean = false,
                               searchRoots : Boolean = false,
                               selectedUse : Option[AGEdge[K]] = None){
 
-    graph.nodes foreach println
-
     type NodeType = NodeId[K]
-
-    import scala.language.implicitConversions
-    implicit def edgeToPair(edge : AGEdge[K]) = (edge.source, edge.target)
 
     val idPrinter =
       if(printId) (id:Int) => " (" + id + ")"
@@ -53,7 +47,7 @@ object DotPrinter {
     }
 
     val violations = selectedUse match{
-      case None => graph.violations
+      case None => graph.violations()
       case Some(_) => Seq()
     }
     /*
@@ -94,14 +88,14 @@ object DotPrinter {
     val printUsesViolations = (source : NodeId[K], target : NodeId[K]) =>
       if(! graph.isa(source, target)) //TODO remove test. quickfix to avoid dot crash
         printArc(usesStyle, source, target,
-          if(violations.contains(AGEdge.uses(graph, source, target)))
+          if(violations.contains(AGEdge.uses(source, target)))
             ColorThickness.violation
           else ColorThickness.regular )
 
     val printUse = selectedUse match {
       case None => printUsesViolations
       case Some(selected) =>  (source: NodeId[K], target: NodeId[K]) =>
-        val printed = AGEdge.uses(graph, source, target)
+        val printed = AGEdge.uses[K](source, target)
         val ct = if (printed == selected) ColorThickness.selected
         else if (graph.dominates(printed, selected))
           ColorThickness.dominant
@@ -114,8 +108,8 @@ object DotPrinter {
 
     }
 
-    def decorate_name(n : AGNode[K]):String =
-      if (violations.contains(AGEdge.contains(graph, n.container, n.id)))
+    def decorate_name(n : AGNode[K, _]):String =
+      if (violations.contains(AGEdge.contains[K](n.container, n.id)))
         "<FONT COLOR=\"" + ColorThickness.violation.color + "\"><U>" + helper.namePrefix(n.kind) + n.name + idPrinter(n.id) + "</U></FONT>"
       else helper.namePrefix(n.kind) + n.name + idPrinter(n.id)
 
@@ -126,7 +120,7 @@ object DotPrinter {
       else if(helper isDotClass n.kind) printClass(n.id)
     }
 
-    def printSubGraph(n : AGNode[K]){
+    def printSubGraph(n : AGNode[K, _]){
       List("subgraph cluster" + n.id + " {",
         "label=\"" + decorate_name(n) +"\";",
         "color=black;") foreach writeln
@@ -144,10 +138,8 @@ object DotPrinter {
       val n = graph.getNode(nid)
       def writeTableLine(nid: NodeId[K]){
         val n = graph.getNode(nid)
-        val sig = if (printSignatures) n.kind match {
-         case k : HasType[_,_] => " : " + k.typ.toString.replaceAllLiterally(">", "&gt;") + " "
-         case _ => ""
-        }
+        val sig = if (printSignatures)
+          n.styp.mkString(graph).replaceAllLiterally(">", "&gt;") + " "
         else ""
 
         writeln("<TR><TD PORT=\"" +n.id + "\" ALIGN=\"LEFT\" BORDER=\"0\">"+

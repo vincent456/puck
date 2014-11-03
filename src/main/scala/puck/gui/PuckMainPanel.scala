@@ -1,6 +1,7 @@
 package puck.gui
 
-import puck.graph.{NodeId, AccessGraph, FilesHandler, NodeKind}
+import puck.graph.{NodeId, AccessGraph, FilesHandler, NodeKind, ResultT}
+import puck.search.Search
 import puck.util.{PuckLog, PuckLogger}
 
 import scala.collection.mutable.ArrayBuffer
@@ -25,7 +26,7 @@ object PuckMainPanel{
   }
 }
 
-class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind])
+class PuckMainPanel[Kind <: NodeKind[Kind], T](val filesHandler: FilesHandler[Kind, T])
   extends SplitPane(Orientation.Horizontal){
   dividerSize = 3
 
@@ -50,7 +51,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
 
   }
 
-  filesHandler.logger = new ConsoleLogger(filesHandler.logPolicy)
+  //filesHandler.logger = new ConsoleLogger(filesHandler.logPolicy)
 
   /*val out = new OutputStream {
     override def write(p1: Int): Unit = console.append(String.valueOf(p1.toChar))
@@ -62,7 +63,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
     val rightWidth = PuckMainPanel.width *2/3
     val height = PuckMainPanel.height * 2/3
 
-    val treeDisplayer = new GraphExplorer[Kind](rightWidth/2, height)
+    val treeDisplayer = new GraphExplorer[Kind, T](rightWidth/2, height)
 
     val progressBar  = new ProgressBar()
     val delayedDisplay = ArrayBuffer[Component]()
@@ -74,7 +75,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
 
       reactions += {
         case PuckTreeNodeClicked(graph, n) =>
-          val nodeInfoPanel = new NodeInfosPanel(graph.asInstanceOf[AccessGraph[Kind]], n.asInstanceOf[NodeId[Kind]])
+          val nodeInfoPanel = new NodeInfosPanel(graph.asInstanceOf[AccessGraph[Kind, T]], n.asInstanceOf[NodeId[Kind]])
           contents = nodeInfoPanel
           control.listenTo(nodeInfoPanel)
           treeDisplayer.listenTo(nodeInfoPanel)
@@ -107,15 +108,15 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
       this listenTo control
       treeDisplayer listenTo control
 
-      /*reactions += {
+      reactions += {
         case ExplorationFinished(res0) =>
           resultsWrapper.contents.clear()
-          val searchResultPanel = new SearchResultPanel[Kind](res0.asInstanceOf[Search[Recording[Kind]]],
+          val searchResultPanel = new SearchResultPanel[Kind, T](res0.asInstanceOf[Search[ResultT[Kind, T]]],
             filesHandler.logger)
           resultsWrapper.contents += searchResultPanel
           control listenTo searchResultPanel
 
-      }*/
+      }
 
       val decisionStrategy = new CheckBox("GUI Decision Maker")
       val printTrace = new CheckBox("Print trace")
@@ -174,13 +175,13 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
 
       addDelayedComponent(printPl)
 */
-      /*val showConstraints = makeButton("Show constraints",
+      val showConstraints = makeButton("Show constraints",
         "Show the constraints the graph has to satisfy"){
         () => filesHandler.graph.printConstraints(filesHandler.logger, defaultVerbosity)
       }
 
       addDelayedComponent(showConstraints)
-*/
+
       val show = makeButton("Show graph",
         "Display a visual representation of the graph"){
         () => publish(GraphDisplayRequest("Graph", filesHandler.graph))
@@ -188,21 +189,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
 
       addDelayedComponent(show)
 
-      /*addDelayedComponent(PuckMainPanel.leftGlued(decisionStrategy))
-      addDelayedComponent(PuckMainPanel.leftGlued(printTrace)) */
-
-     /* val solve = makeButton("Solve", "solve the loaded constraints"){
-        () => publish(SolveRequest(if(decisionStrategy.selected)
-          new GUIDecisionMaker(filesHandler)
-        else
-          filesHandler.decisionMaker(),
-          printTrace.selected))
-
-      }
-
-      addDelayedComponent(solve)*/
-
-     /* val searchStrategies = new ComboBox(filesHandler.searchingStrategies){
+      val searchStrategies = new ComboBox(filesHandler.searchingStrategies){
         minimumSize = new Dimension(leftWidth, 30)
         maximumSize = minimumSize
         preferredSize = minimumSize
@@ -217,13 +204,8 @@ class PuckMainPanel[Kind <: NodeKind[Kind]](val filesHandler: FilesHandler[Kind]
 
       addDelayedComponent(explore)
 
-      addDelayedComponent(resultsWrapper)*/
+      addDelayedComponent(resultsWrapper)
 
-      /*val printCode = makeButton("Apply on code",
-        "apply the planned modifications on the code"){
-        () => publish(ApplyOnCodeRequest())
-      }
-      addDelayedComponent(printCode)*/
     }
 
     rightComponent = new SplitPane(Orientation.Vertical) {

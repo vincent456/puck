@@ -5,6 +5,7 @@ import puck.graph.mutable.io.DotHelper
 import puck.graph.mutable.{AGEdge, AGNode, AGNodeBuilder, AccessGraph}
 import puck.javaAG.mutable.nodeKind._
 import puck.util.PuckLog
+import puck.util.PuckLog.InJavaGraph
 
 
 /**
@@ -64,7 +65,7 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
                 kind : JavaNodeKind )
   extends AGNode[JavaNodeKind](graph, id, name, kind){
 
-  implicit val defaultVerbosity = (InJavaGraph(), PuckLog.Info())
+  implicit val defaultVerbosity = (InJavaGraph, PuckLog.Info())
 
   override def canContain(n : AGNode[JavaNodeKind]) : Boolean = {
 

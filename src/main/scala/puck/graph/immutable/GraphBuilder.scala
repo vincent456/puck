@@ -1,38 +1,39 @@
 package puck.graph.immutable
 
 import AccessGraph.NodeId
+import puck.graph.immutable.constraints._
 import scala.collection.mutable
 /**
  * Created by lorilan on 27/10/14.
  */
 
-class GraphBuilder[Kind <: NodeKind[Kind]]
-( val nodeBuilder : AGNodeBuilder[Kind] ){
-  var g : AccessGraph[Kind] = _
+class GraphBuilder[Kind <: NodeKind[Kind], T]
+( val nodeBuilder : AGNodeBuilder[Kind, T] ){
+  var g : AccessGraph[Kind, T] = _
   type NodeIdT = NodeId[Kind]
   val nodesByName = mutable.Map[String, NodeIdT]()
 
   def getNodeByName( k : String) : NodeIdT = nodesByName(k) //java accessor
 
-  def addPredefined(fullName : String, name : String, kind : Kind): Unit ={
-    g = g.addNode(kind.node, name, kind)
-    nodesByName += (fullName -> kind.node)
+
+  def addPredefined(id : NodeIdT, fullName : String, name : String, kind : Kind, t : T): Unit ={
+    g = g.addNode(id, name, kind, NoType(), mutable = false, t)
+    nodesByName += (fullName -> id)
   }
 
-  def addNode(unambiguousFullName: String, localName:String, kind: Kind): NodeIdT = {
+  def addNode(unambiguousFullName: String, localName:String, kind: Kind, th : TypeHolder[Kind]): NodeIdT = {
     nodesByName get unambiguousFullName match {
       case None =>
-        val n = g.addNode(localName, kind)
-        this.nodesByName += (unambiguousFullName -> n.id)
-        g = n.graph
-        n.id
+        val (id, g2) = g.addNode(localName, kind, th)
+        this.nodesByName += (unambiguousFullName -> id)
+        g = g2
+        id
       case Some(id) => id /* check that the kind and type is indeed the same ??*/
     }
   }
 
   def setMutability(id : NodeIdT, mutable : Boolean): Unit ={
-    val node = g.setMutability(id, mutable)
-    g = node.graph
+    g = g.setMutability(id, mutable)
   }
 
   def addContains(containerId: NodeIdT, contentId :NodeIdT): Unit ={
@@ -50,5 +51,54 @@ class GraphBuilder[Kind <: NodeKind[Kind]]
                          dominatedUser: NodeIdT, dominatedUsee:NodeIdT): Unit ={
     g = g.addUsesDependency( (dominantUser, dominantUsee),
                               (dominatedUser, dominatedUsee))
+  }
+
+  var constraintsMap = ConstraintsMaps[Kind]()
+
+  def discardConstraints(): Unit ={
+    constraintsMap = ConstraintsMaps[Kind]()
+  }
+
+  def addScopeConstraint(owners : NodeSet[Kind],
+                         facades : NodeSet[Kind],
+                         interlopers : NodeSet[Kind],
+                         friends : NodeSet[Kind]) = {
+    val ct = new ScopeConstraint(owners, facades, interlopers, friends)
+
+    val scopeCtsMap = owners.foldLeft(constraintsMap.scopeConstraints){
+      case (map, ownerId) =>
+        val s = map.getOrElse(ownerId, new ConstraintSet[Kind, ScopeConstraint[Kind]]())
+        map + (ownerId -> (s + ct) )
+    }
+    constraintsMap = constraintsMap.newConstraintsMaps(nScopeConstraints = scopeCtsMap)
+  }
+
+  def addElementConstraint(owners : NodeSet[Kind],
+                           interlopers : NodeSet[Kind],
+                           friends : NodeSet[Kind]) = {
+    val ct = new ElementConstraint(owners, interlopers, friends)
+
+    val eltCtsMap = owners.foldLeft(constraintsMap.elementsConstraints){
+      case (map, ownerId) =>
+        val s = map.getOrElse(ownerId, new ConstraintSet[Kind, ElementConstraint[Kind]]())
+        map + (ownerId -> (s + ct) )
+    }
+
+    constraintsMap = constraintsMap.newConstraintsMaps(nElementsConstraints = eltCtsMap)
+
+  }
+
+  def addFriendConstraint(befriended : NodeSet[Kind],
+                          friends : NodeSet[Kind]) = {
+    val ct = new FriendConstraint[Kind](friends, befriended)
+
+    val friendCtsMap = befriended.foldLeft(constraintsMap.friendConstraints){
+      case (map, ownerId) =>
+        val s = map.getOrElse(ownerId, new ConstraintSet[Kind, FriendConstraint[Kind]]())
+        map + (ownerId -> (s + ct) )
+    }
+
+    constraintsMap = constraintsMap.newConstraintsMaps(nFriendConstraints = friendCtsMap)
+
   }
 }

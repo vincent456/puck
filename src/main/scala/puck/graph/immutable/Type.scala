@@ -6,13 +6,13 @@ import AccessGraph.NodeId
  * Created by lorilan on 28/10/14.
  */
 abstract class Type[Kind <: NodeKind[Kind], T <: Type[Kind, T]] {
+
+  type NIdT = NodeId[Kind]
+
   def copy() : T
   def subtypeOf(other : Type[Kind, _]) : Boolean = this == other
 
-  trait Replacer{
-    def replacedBy(newUsee: AGNode[Kind]) : T
-  }
-  def copyWith (oldUsee : NodeId[Kind]) : Replacer
+  def redirectUses(oldUsee : NIdT, newUsee: AGNode[Kind, _]) : T
 
   def canOverride(other : Type[Kind, _]) : Boolean = this subtypeOf other
 }
@@ -31,12 +31,9 @@ case class NamedType[Kind <: NodeKind[Kind]](node : NodeId[Kind],
 
   def copy() = create(node, name)
 
-  protected class NTReplacer (oldUsee : NodeId[Kind]) extends Replacer {
-    def replacedBy(newUsee: AGNode[Kind]) =
-      if(node == oldUsee) create(newUsee.id, newUsee.name)
-      else copy()
-  }
-  def copyWith (oldUsee : NodeId[Kind]) = new NTReplacer(oldUsee)
+  def redirectUses(oldUsee : NIdT, newUsee: AGNode[Kind,_]) =
+    if(node == oldUsee) create(newUsee.id, newUsee.name)
+    else copy()
 
   override def subtypeOf(other : Type[Kind, _]) : Boolean = ??? /*super.subtypeOf(other) ||
     (other match {
@@ -62,13 +59,8 @@ case class Tuple[Kind <: NodeKind[Kind], T <: Type[Kind, T]](types: Seq[T])
   def create(ts: Seq[T]) = Tuple[Kind, T](ts)
   def copy() = create(types)
 
-  protected class TupleReplacer (oldUsee : NodeId[Kind]) extends Replacer{
-    def replacedBy(newUsee: AGNode[Kind]) =
-      create(types.map(_.copyWith(oldUsee).replacedBy(newUsee)))
-  }
-
-  def copyWith (oldUsee : NodeId[Kind]) = new TupleReplacer(oldUsee)
-
+  def redirectUses(oldUsee : NIdT, newUsee: AGNode[Kind, _]) : Tuple[Kind, T] =
+    create(types.map(_.redirectUses(oldUsee, newUsee)))
 
   override def subtypeOf(other : Type[Kind, _]) : Boolean = super.subtypeOf(other) ||
     (other match {
@@ -96,14 +88,12 @@ S <: Type[Kind, S]](input : T, output : S)
   def create(i : T, o : S) = Arrow[Kind, T, S](i, o)
   def copy() = create(input.copy(), output.copy())
 
-  protected class ArrowReplacer (oldUsee : NodeId[Kind]) extends Replacer{
-    def replacedBy(newUsee: AGNode[Kind]) =
-      create(input.copyWith(oldUsee).replacedBy(newUsee),
-        output.copyWith(oldUsee).replacedBy(newUsee))
+  def redirectUses(oldUsee : NIdT, newUsee: AGNode[Kind, _]) : Arrow[Kind, T, S]=
+    create(input.redirectUses(oldUsee, newUsee),
+      output.redirectUses(oldUsee, newUsee))
 
-
-  }
-  def copyWith (oldUsee : NodeId[Kind]) = new ArrowReplacer(oldUsee)
+  def redirectContravariantUses(oldUsee : NIdT, newUsee: AGNode[Kind, _]) =
+    create(input, output.redirectUses(oldUsee, newUsee))
 
   override def subtypeOf(other : Type[Kind, _]) : Boolean = ??? /*super.subtypeOf(other) ||
     ( other match{

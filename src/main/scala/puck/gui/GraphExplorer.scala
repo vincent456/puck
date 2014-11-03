@@ -14,18 +14,18 @@ import scala.swing.event.Event
  * Created by lorilan on 09/05/14.
  */
 
-case class PuckTreeNodeClicked[Kind <: NodeKind[Kind]](graph : AccessGraph[Kind],
+case class PuckTreeNodeClicked[Kind <: NodeKind[Kind], T](graph : AccessGraph[Kind, T],
                                                        node : NodeId[Kind]) extends Event
-case class AccessGraphModified[Kind <: NodeKind[Kind]](graph : AccessGraph[Kind]) extends Event
+case class AccessGraphModified[Kind <: NodeKind[Kind], T](graph : AccessGraph[Kind, T]) extends Event
 
-class GraphExplorer[Kind <: NodeKind[Kind]](width : Int, height : Int)
+class GraphExplorer[Kind <: NodeKind[Kind], T](width : Int, height : Int)
   extends ScrollPane with Publisher {
 
   minimumSize = new Dimension(width, height)
   preferredSize = minimumSize
 
 
-  def addChildren(graph : AccessGraph[Kind],
+  def addChildren(graph : AccessGraph[Kind, T],
                   ptn: PuckTreeNode[Kind]){
     graph.getNode(ptn.agNode).content foreach {
       (nid: NodeId[Kind]) =>
@@ -37,7 +37,7 @@ class GraphExplorer[Kind <: NodeKind[Kind]](width : Int, height : Int)
   }
 
   reactions += {
-    case e : AccessGraphModified[Kind] =>
+    case e : AccessGraphModified[Kind, T] =>
       val graph = e.graph
       val root = new PuckTreeNode[Kind](graph.rootId, "<>")
       addChildren(graph, root)

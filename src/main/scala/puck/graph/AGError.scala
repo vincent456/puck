@@ -17,3 +17,9 @@ class IllegalAGOperation(msg : String) extends AGError(msg){
 class AGBuildingError(msg:String) extends AGError(msg){
   def this()=this("")
 }
+
+class SolvingError(msg : String) extends AGError(msg){
+  def this() = this("")
+}
+
+class Unsolved extends SolvingError

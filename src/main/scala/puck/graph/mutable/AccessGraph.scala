@@ -270,7 +270,7 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
                 case Some(n) => n
                 case None =>
                   val msg = "no correct primary abstraction found !"
-                  logger.writeln(msg)(PuckLog.Error())
+                  logger.writeln(msg)(PuckLog.Error)
                   throw new RedirectionError(msg)
               }
           }

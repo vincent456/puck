@@ -12,37 +12,40 @@ object PuckLog{
   sealed abstract class Kind{
     def logString : String
   }
-  case class NoSpecialContext() extends Kind{
+  case object NoSpecialContext extends Kind{
     def logString = ""
   }
-  case class InGraph() extends Kind {
+  case object InGraph extends Kind {
     def logString ="graph"
   }
-  case class Solver() extends Kind{
+  case object InJavaGraph extends Kind {
+    def logString = "JavaGraph"
+  }
+  case object Solver extends Kind{
     def logString = "solver"
   }
-  case class Search() extends Kind{
+  case object Search extends Kind{
     def logString = "search"
   }
-  case class AG2AST() extends Kind{
+  case object AG2AST extends Kind{
     def logString = "ag2ast"
   }
 
-  implicit val defaultVerbosity = (NoSpecialContext(), Info())
+  implicit val defaultVerbosity = (NoSpecialContext, Info)
 
   sealed abstract class Level{
     def logString : String
   }
-  case class Info() extends Level{
+  case object Info extends Level{
     def logString = "info"
   }
-  case class Warning() extends Level{
+  case object Warning extends Level{
     def logString = "warning"
   }
-  case class Error() extends Level{
+  case object Error extends Level{
     def logString = "error"
   }
-  case class Debug() extends Level{
+  case object Debug extends Level{
     def logString = "debug"
   }
 
@@ -53,12 +56,12 @@ trait PuckLogger extends LogBehavior[PuckLog.Verbosity]
 
   val askPrint : PuckLog.Verbosity => Boolean
 
-  implicit val defaultVerbosity = (NoSpecialContext(), Info())
+  implicit val defaultVerbosity = (NoSpecialContext, Info)
 
   def mustPrint(v : (Kind, Level)) = askPrint(v)
 
   def preMsg(v : (Kind, Level)) : String = v match {
-    case (NoSpecialContext(), lvl) => "[ " +lvl.logString + "] "
+    case (NoSpecialContext, lvl) => "[ " +lvl.logString + "] "
     case (k, lvl) => "[ %s - %s ] ".format(k.logString, lvl.logString)
   }
 }
@@ -74,7 +77,7 @@ class PuckSystemLogger(val askPrint : PuckLog.Verbosity => Boolean )
 }
 
 class PuckFileLogger(val askPrint : PuckLog.Verbosity => Boolean,
-                     val file : puck.File) extends FileLogger[PuckLog.Verbosity] with PuckLogger {
+                     val file : java.io.File) extends FileLogger[PuckLog.Verbosity] with PuckLogger {
 
   override def writeln(msg : => Any)(implicit v : (Kind, Level)) =
     super.writeln(preMsg(v) + msg)(v)

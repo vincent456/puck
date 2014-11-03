@@ -1,14 +1,19 @@
-package puck.graph.immutable.io
+package puck.graph.io
 
 import java.io._
 
 
-import puck.graph.immutable.{AccessGraph, NodeKind, AGEdge}
 import puck.graph._
+import puck.search.{Search, SearchState, SearchEngine}
 import puck.util._
 
 import scala.sys.process.Process
 import scala.util.Try
+
+trait ConstraintSolvingSearchEngineBuilder[Kind <: NodeKind[Kind], T] {
+  def apply(graph : AccessGraph[Kind, T]) :
+  SearchEngine[ResultT[Kind, T]]
+}
 
 /**
  * Created by lorilan on 13/08/14.
@@ -30,7 +35,7 @@ object FilesHandler{
   SearchEngine[Recording[Kind]]
 }*/
 
-abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
+abstract class FilesHandler[Kind <: NodeKind[Kind], T](workingDirectory : File){
 
   private [this] var srcDir0 : Option[File] = None
   private [this] var outDir0 : Option[File] = None
@@ -45,20 +50,22 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
   import PuckLog.defaultVerbosity
 
   val logPolicy : PuckLog.Verbosity => Boolean = {
-    /*case (PuckLog.Solver(), _)
-    | (PuckLog.Search(),_)
-    | (PuckLog.InGraph(), _) => true*/
-    case (PuckLog.Search(),_) | (PuckLog.Solver(), _) => true
-    case (PuckLog.NoSpecialContext(), _) => true
+    case (PuckLog.Search,_) /*| (PuckLog.Solver, _) */=> true
+    case (PuckLog.NoSpecialContext, _) => true
+    case (PuckLog.InGraph,_) | (PuckLog.InJavaGraph, _ ) => true
     case _ => false
   }
 
   def logger : PuckLogger = logger0
   def logger_=( l : PuckLogger){logger0 = l}
 
-  private [this] var ag : AccessGraph[Kind] = _
+  type GraphT = AccessGraph[Kind, T]
+
+  private [this] var ag : GraphT = _
   def graph = ag
-  protected def graph_=(g : AccessGraph[Kind]){ ag = g }
+  protected def graph_=(g : GraphT){ ag = g }
+
+  var graphBuilder : GraphBuilder[Kind, T] = _
 
   def setCanonicalOptionFile(prev : Option[File], sf : Option[File]) = {
     sf match {
@@ -156,15 +163,16 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
 
 
 
-  def loadGraph(ll : AST.LoadingListener) : AccessGraph[Kind]
+  def loadGraph(ll : AST.LoadingListener) : GraphT
 
   val dotHelper : DotHelper[Kind]
 
-  def makeDot(printId : Boolean,
+  def makeDot(graph : GraphT,
+              printId : Boolean,
               printSignatures : Boolean,
               useOption : Option[AGEdge[Kind]],
               writer : OutputStreamWriter = new FileWriter(graphFile(".dot"))){
-    DotPrinter.print(new BufferedWriter(writer), ag, dotHelper, printId,
+    DotPrinter.print(new BufferedWriter(writer), graph, dotHelper, printId,
       printSignatures, searchRoots = false, selectedUse = useOption)
   }
 
@@ -195,7 +203,8 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
     }
   }
 
-  def makePng(printId : Boolean = false,
+  def makePng(graph : GraphT,
+              printId : Boolean = false,
               printSignatures : Boolean = false,
               sOutput : Option[OutputStream] = None,
               outputFormat : DotOutputFormat = Png(),
@@ -204,7 +213,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
 
     //TODO fix bug when chaining the two function with a pipe
     // and calling it in "do everything"
-    makeDot(printId, printSignatures, selectedUse)
+    makeDot(graph, printId, printSignatures, selectedUse)
 
     convertDot(sInput = None, sOutput, outputFormat)
 
@@ -227,8 +236,11 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
 
   }
 
-  def parseConstraints()  = ???/*{
-    val parser = new ConstraintsParser(graph)
+
+
+  def parseConstraints()  = {
+    if(graphBuilder == null) throw new AGError("WTF !!")
+    val parser = ConstraintsParser(graphBuilder)
     try {
       decouple match{
         case None => throw new AGError("cannot parse : no decouple file given")
@@ -236,11 +248,10 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
       }
     } catch {
       case e : NoSuchElementException =>
-        graph.discardConstraints()
-        throw new AGError("parsing failed :" + e.getLocalizedMessage)
-
+        logger.writeln("parsing failed :" + e.getLocalizedMessage)(PuckLog.NoSpecialContext, PuckLog.Error)
     }
-  }*/
+    graph = graph.newGraph(nConstraints = graphBuilder.constraintsMap)
+  }
 
   /*def decisionMaker() : DecisionMaker[Kind]
 
@@ -266,19 +277,18 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
       printTrace()
     }
   }
+  */
+
+  def searchingStrategies : Seq[ConstraintSolvingSearchEngineBuilder[Kind, T]]
 
 
-  def searchingStrategies : List[ConstraintSolvingSearchEngineBuilder[Kind]]
-
-
-  type ST = ConstraintSolving.FinalState[Kind]
+  type ST = SearchState[ResultT[Kind, T], _]
 
   def explore (trace : Boolean = false,
-               builder : ConstraintSolvingSearchEngineBuilder[Kind]) : Search[Recording[Kind]] = {
+               builder : ConstraintSolvingSearchEngineBuilder[Kind,T]) : Search[ResultT[Kind, T]] = {
 
     val engine = builder(graph)
 
-    graph.transformations.startRegister()
     puck.util.Time.time(logger, defaultVerbosity) {
       engine.search()
     }
@@ -287,7 +297,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
   }
 
 
-  def printCSSearchStatesGraph(states : Map[Int, Seq[SearchState[Recording[Kind], _]]]){
+  def printCSSearchStatesGraph(states : Map[Int, Seq[SearchState[ResultT[Kind, T], _]]]){
     val d = graphFile("_results")
     d.mkdir()
     states.foreach{
@@ -299,35 +309,36 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
   }
 
   def printCSSearchStatesGraph(dir : File,
-                               states : Seq[SearchState[Recording[Kind], _]],
-                               sPrinter : Option[(SearchState[Recording[Kind],_] => String)]){
+                               states : Seq[SearchState[ResultT[Kind,T], _]],
+                               sPrinter : Option[(SearchState[ResultT[Kind,T],_] => String)]){
 
     val printer = sPrinter match {
       case Some(p) => p
       case None =>
-        s : SearchState[Recording[Kind],_] => s.uuid()
+        s : SearchState[ResultT[Kind,T],_] => s.uuid()
     }
 
     states.foreach { s =>
-      s.result()
+      val (graph, recording) = s.result
+      recording()
       val f = new File("%s%c%s.png".format(dir.getAbsolutePath, File.separatorChar, printer(s)))
-      makePng(printId = true, sOutput = Some(new FileOutputStream(f)))()
+      makePng(graph, printId = true, sOutput = Some(new FileOutputStream(f)))()
     }
   }
 
-  def printCode() : Unit*/
+  //def printCode() : Unit
 
 
   //TODO ? change to List[String] ?
   val srcSuffix : String
 
 
-  private def openList(files : List[String]){
+  private def openList(files : Seq[String]){
     val ed = editor match {
       case None => sys.env("EDITOR")
       case Some(f) => f.getCanonicalPath
     }
-    Process(ed  :: files ).!
+    Process(ed  +: files ).!
   }
 
   import puck.util.FileHelper.findAllFiles

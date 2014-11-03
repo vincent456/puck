@@ -34,4 +34,6 @@ class SetValueMap[K,V](val content : Map[K, Set[V]]){
     (content get key) exists { _ contains v}
   }
 
+  def toSeq = content.toSeq
+
 }

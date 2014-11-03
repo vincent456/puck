@@ -83,20 +83,24 @@ class MethodType(i: MethodType.InputType,
   override def create(i : MethodType.InputType,
               o : MethodType.OutputType) = new MethodType(i, o)
 
-  def createReturnAccess(graph : AccessGraph[JavaNodeKind]) =
-    graph.getNode(output.node).kind match {
-    case tk : TypeKind => tk.createLockedAccess()
+  def createReturnAccess(graph : AccessGraph[JavaNodeKind, DeclHolder]) =
+    graph.getNode(output.node).t match {
+    case tk : TypedKindDeclHolder => tk.createLockedAccess()
     case _ => throw new JavaAGError("need a typekind as output node")
   }
 
-  def createASTParamList(graph : AccessGraph[JavaNodeKind]) : Seq[AST.ParameterDeclaration] = {
+  def createASTParamList(graph : AccessGraph[JavaNodeKind, DeclHolder]) : Seq[AST.ParameterDeclaration] = {
     input.types.map { t =>
       val node = graph.getNode(t.node)
-      node.kind match {
-        case tk: TypeKind =>
-          new AST.ParameterDeclaration(new AST.Modifiers,
-            tk.createLockedAccess(),
-            node.name.toLowerCase)
+      node.t match {
+        case tk : TypedKindDeclHolder =>
+          tk.createLockedAccess() match {
+            case Some(lkAccess) =>
+              new AST.ParameterDeclaration(new AST.Modifiers,
+                    lkAccess, node.name.toLowerCase)
+            case None => throw new JavaAGError()
+          }
+
         case _ => throw new JavaAGError("need type kind for param list !")
       }
 
@@ -104,25 +108,24 @@ class MethodType(i: MethodType.InputType,
   }
 }
 
-case class Predefined(pkg: String,  name : String, kind : JavaNodeKind){
+case class Predefined(id : NodeId[JavaNodeKind], pkg: String,  name : String, kind : JavaNodeKind){
   def fullName = pkg + "." + name
 }
 
 object Predefined {
 
-  val void = Predefined("@primitive", "void", Primitive(-1, None))
-  val boolean = Predefined("@primitive", "boolean", Primitive(-2, None))
-  val byte = Predefined("@primitive", "byte", Primitive(-3, None))
-  val char = Predefined("@primitive", "char", Primitive(-4, None))
-  val double = Predefined("@primitive", "double", Primitive(-5, None))
-  val float = Predefined("@primitive", "float", Primitive(-6, None))
-  val int = Predefined("@primitive", "int", Primitive(-7, None))
-  val long = Predefined("@primitive", "long", Primitive(-8, None))
-  val short = Predefined("@primitive", "short", Primitive(-9, None))
+  val void = Predefined(-1, "@primitive", "void", Primitive)
+  val boolean = Predefined(-2, "@primitive", "boolean", Primitive)
+  val byte = Predefined(-3, "@primitive", "byte", Primitive)
+  val char = Predefined(-4, "@primitive", "char", Primitive)
+  val double = Predefined(-5, "@primitive", "double", Primitive)
+  val float = Predefined(-6, "@primitive", "float", Primitive)
+  val int = Predefined(-7, "@primitive", "int", Primitive)
+  val long = Predefined(-8, "@primitive", "long", Primitive)
+  val short = Predefined(-9, "@primitive", "short", Primitive)
 
-  val string = Predefined("java.lang", "String", JavaNodeKind.classKind.create(-10)) // not a primitive ...
-
-  val stringLiteralPrototype = Literal(AccessGraph.dummyId, new JavaNamedType(-10, "string"))
+  val string = Predefined(-10, "java.lang", "String", Class) // not a primitive ...
+  val stringTyp = NamedTypeHolder(new JavaNamedType(-10, "string"))
 
   val list = List(void, boolean, byte, char, double, float, int, long, short, string)
 

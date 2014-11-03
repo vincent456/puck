@@ -9,9 +9,13 @@ import puck.graph.immutable.AccessGraph.NodeId
 
 abstract class NodeSet[Kind <: NodeKind[Kind]] extends Iterable[NodeId[Kind]] {
   type NodeType = NodeId[Kind]
-  type GraphT = AccessGraph[Kind]
+  type GraphT = AccessGraph[Kind, _]
   def +(n : NodeType) : NodeSet[Kind]
   def -(n : NodeType) : NodeSet[Kind]
+
+  def contains(id : NodeType) = this.iterator contains id
+
+  def mkString(graph : AccessGraph[Kind, _]) : String
 
   def scopeThatContains_*(graph : GraphT, elem: NodeType) =
     this.find { graph.contains_*(_, elem) }
@@ -47,15 +51,15 @@ object NodeSet {
   def emptySet[Kind <: NodeKind[Kind]]() = LiteralNodeSet[Kind]()
 }
 
-class NamedNodeSet[Kind <: NodeKind[Kind]](val id : String,
-                   val setDef : NodeSetDef[Kind]) extends NodeSet[Kind]{
+case class NamedNodeSet[Kind <: NodeKind[Kind]]
+( id : String,
+  setDef : NodeSetDef[Kind]) extends NodeSet[Kind]{
 
   override def toString() = id
 
   val declare : String = "declareSet"
 
-  def defString = declare + "(" + id + ", " + setDef +")."
-
+  def mkString(graph : GraphT) = declare + "(" + id + ", " + setDef.mkString(graph) +")."
 
   def iterator : Iterator[NodeType] = setDef.iterator
   def +(n : NodeType) = new NamedNodeSet(id, setDef + n)
@@ -78,7 +82,7 @@ abstract class NodeSetDef[Kind <: NodeKind[Kind]] extends NodeSet[Kind]{
 class NodeSetUnion[Kind <: NodeKind[Kind]](val sets : Seq[NodeSet[Kind]],
                    val set : LiteralNodeSet[Kind]) extends NodeSetDef[Kind]{
 
-  def mkString(graph : AccessGraph[Kind]) = sets.mkString("[", ", ", ", ") +
+  def mkString(graph : GraphT) = sets.mkString("[", ", ", ", ") +
     set.map( n => "'%s'".format(graph.getNode(n).fullName)).mkString("", ", ", "]")
 
   def iterator : Iterator[NodeType] = {
@@ -96,7 +100,7 @@ class NodeSetUnion[Kind <: NodeKind[Kind]](val sets : Seq[NodeSet[Kind]],
 class NodeSetDiff[Kind <: NodeKind[Kind]](private val plus : NodeSet[Kind],
                    private val minus : NodeSet[Kind]) extends NodeSetDef[Kind]{
 
-  override def toString() = plus.mkString("[", ",\n", "]\\") + minus.mkString("[", ",\n", "]")
+  def mkString(graph : GraphT) = plus.mkString(graph) + "\\" + minus.mkString(graph)
 
 
   def iterator : Iterator[NodeType] =
@@ -112,10 +116,10 @@ class LiteralNodeSet[Kind <: NodeKind[Kind]] private (private val content : Set[
 
   def iterator : Iterator[NodeType] = content.iterator
   def +(n : NodeType) = new LiteralNodeSet(content + n)
-  def ++ (ns : NodeSet[Kind]) = new LiteralNodeSet(content ++ ns)
+  def ++ (ns : NodeSet[Kind]) : LiteralNodeSet[Kind] = new LiteralNodeSet(content ++ ns)
   def -(n : NodeType) = new LiteralNodeSet(content - n)
 
-  def mkString(graph : AccessGraph[Kind]) =
+  def mkString(graph : GraphT) =
     content.map( n => "'%s'".format(graph.getNode(n).fullName)).mkString("[", ",\n", "]")
   def literalCopy() = this
 }

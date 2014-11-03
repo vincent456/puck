@@ -12,15 +12,6 @@ import scala.collection.mutable.StringBuilder
 /**
  * Created by lorilan on 07/05/14.
  */
-class InJavaGraph private() extends PuckLog.InGraph{
-  override def logString = "JavaGraph"
-}
-
-object InJavaGraph {
-  private val instance = new InJavaGraph()
-  def apply() : PuckLog.InGraph = instance
-}
-
 
 object JavaAccessGraph {
 

@@ -27,12 +27,13 @@ object DotPrinter {
 
 
 
-  def print[K <: NodeKind[K]](writer: BufferedWriter, graph : AccessGraph[K],
-                                                  helper : DotHelper[K],
-                                                  printId : Boolean,
-                                                  printSignatures : Boolean = false,
-                                                  searchRoots : Boolean = false,
-                                                  selectedUse : Option[AGEdge[K]] = None){
+  def print[K <: NodeKind[K]](writer: BufferedWriter,
+                              graph : AccessGraph[K],
+                              helper : DotHelper[K],
+                              printId : Boolean,
+                              printSignatures : Boolean = false,
+                              searchRoots : Boolean = false,
+                              selectedUse : Option[AGEdge[K]] = None){
 
     type NodeType = AGNode[K]
 

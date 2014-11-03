@@ -7,9 +7,9 @@ import puck.util.{PuckLog, PuckLogger}
 
 trait Solver[Kind <: NodeKind[Kind]] {
 
-  implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.Solver(), PuckLog.Info())
+  implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.Solver, PuckLog.Info)
   import scala.language.implicitConversions
-  implicit def logVerbosity(lvl : PuckLog.Level) = (PuckLog.Solver(), lvl)
+  implicit def logVerbosity(lvl : PuckLog.Level) = (PuckLog.Solver, lvl)
 
   val graph : AccessGraph[Kind]
   val logger : PuckLogger
@@ -41,7 +41,7 @@ trait Solver[Kind <: NodeKind[Kind]] {
               }
               catch {
                 case e: RedirectionError =>
-                  logger.writeln("redirection error catched !!")(PuckLog.Debug())
+                  logger.writeln("redirection error catched !!")(PuckLog.Debug)
                   graph.transformations.undo(breakPoint)
                   wu :: unsolved
               }
@@ -71,16 +71,16 @@ trait Solver[Kind <: NodeKind[Kind]] {
       (n canContain toBeContained) && specificPredicate(n)
 
     def hostIntro(toBeContained : NodeType) {
-      logger.writeln("call hostIntro " + toBeContained )(PuckLog.Debug())
+      logger.writeln("call hostIntro " + toBeContained )(PuckLog.Debug)
       graph.nodeKinds.find(_.canContain(toBeContained.kind)) match {
         case None =>
-          logger.write("do not know how to create a valid host for " + toBeContained.kind)(PuckLog.Debug())
+          logger.write("do not know how to create a valid host for " + toBeContained.kind)(PuckLog.Debug)
           FindHostError()
         case Some(hostKind) =>
           newCterNumGen += 1
           val hostName = "%s_container%d".format(toBeContained.name, newCterNumGen)
           val h = graph.addNode(hostName, hostKind)
-          logger.writeln("creating" + hostName )(PuckLog.Debug())
+          logger.writeln("creating" + hostName )(PuckLog.Debug)
 
           logger.writeln("host intro, rec call to find host " +parentsThatCanBeCreated )
           findHost(h, allwaysTrue, parentsThatCanBeCreated - 1){
@@ -93,17 +93,17 @@ trait Solver[Kind <: NodeKind[Kind]] {
       }
     }
 
-    logger.writeln("find host for "+ toBeContained + ", call to choose Node "+ parentsThatCanBeCreated)(PuckLog.Debug())
+    logger.writeln("find host for "+ toBeContained + ", call to choose Node "+ parentsThatCanBeCreated)(PuckLog.Debug)
     // with the search engine, all solutions will be explored anyway
     decisionMaker.chooseNode(predicate){
       case None =>
         if(parentsThatCanBeCreated == 0){
           val msg = "host intro, ancestor's max limit is not enough"
-          logger.writeln(msg)(PuckLog.Warning())
+          logger.writeln(msg)(PuckLog.Warning)
           k(FindHostError())
         }
         else {
-          logger.writeln("find host, no node given by decision maker : call to host intro")(PuckLog.Debug())
+          logger.writeln("find host, no node given by decision maker : call to host intro")(PuckLog.Debug)
           hostIntro(toBeContained)
         }
       case Some(h) =>
