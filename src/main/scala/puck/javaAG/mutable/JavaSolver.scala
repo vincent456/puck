@@ -22,8 +22,8 @@ class JavaSolver(val graph : AccessGraph[JavaNodeKind],
                                         absPolicy : AbstractionPolicy,
                                         absKind : JavaNodeKind) : NodeType => Boolean =
     (impl.kind, absPolicy) match {
-    case (Method(), SupertypeAbstraction())
-    | (AbstractMethod(), SupertypeAbstraction()) =>
+    case (Method(), SupertypeAbstraction)
+    | (AbstractMethod(), SupertypeAbstraction) =>
       potentialHost => !(impl.container interloperOf potentialHost)
     case _ => super.absIntroPredicate(impl, absPolicy, absKind)
   }

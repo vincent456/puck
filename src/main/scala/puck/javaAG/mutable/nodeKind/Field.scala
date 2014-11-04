@@ -27,5 +27,5 @@ case class Field private[javaAG]() extends JavaNodeKind with HasType[JavaNodeKin
   // fielwrite abstraction type = t -> () (think of t -> t case of jrrt ... )
   def abstractKinds(p : AbstractionPolicy) = List(Method())
 
-  override def abstractionPolicies = List(DelegationAbstraction())
+  override def abstractionPolicies = List(DelegationAbstraction)
 }

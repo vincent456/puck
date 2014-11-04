@@ -17,8 +17,8 @@ trait ConstraintSolvingChoice[Kind <: NodeKind[Kind], S, U, T <: ConstraintSolvi
   val triedChoices : mutable.Set[S]
 }
 
-trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, U, T <: ConstraintSolvingChoice[Kind, S, U, T]]
-  extends SearchState[ResultT[Kind, U], T]{
+trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, U, T]
+  extends SearchState[ResultT[Kind, U]]{
 
   /*println("creating searchState "+ id)
   prevState match {
@@ -26,6 +26,7 @@ trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, U, T <: ConstraintSolvin
     case Some(p) =>  println("parent is " + p.uuid())
   }*/
 
+  val internal : ConstraintSolvingChoice[Kind, S, U, T]
   import internal._
 
 

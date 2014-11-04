@@ -14,7 +14,7 @@ trait NodeKind[K <: NodeKind[K]] {
 
   def create() : K
   def canContain(k : K) : Boolean
-  def abstractionPolicies : List[AbstractionPolicy] = List(SupertypeAbstraction(), DelegationAbstraction())
+  def abstractionPolicies : List[AbstractionPolicy] = List(SupertypeAbstraction, DelegationAbstraction)
   def abstractKinds(p : AbstractionPolicy) : List[K]
 }
 
@@ -33,7 +33,7 @@ case class VanillaNodeKind private[graph]() extends VanillaKind {
 
   //change priority order
   override def abstractionPolicies : List[AbstractionPolicy] =
-    List(DelegationAbstraction(), SupertypeAbstraction())
+    List(DelegationAbstraction, SupertypeAbstraction)
 
   def canContain(k : VanillaKind) : Boolean = {
     k match {

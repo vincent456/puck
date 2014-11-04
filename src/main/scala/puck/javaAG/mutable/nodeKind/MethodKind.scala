@@ -40,8 +40,8 @@ case class Method private[javaAG]() extends MethodKind {
   }*/
 
   def abstractKinds(p : AbstractionPolicy) = p match {
-    case SupertypeAbstraction() => List(JavaNodeKind.abstractMethod(typ), JavaNodeKind.method(typ))
-    case DelegationAbstraction() => List(JavaNodeKind.method(typ))//also abstractMethod ?
+    case SupertypeAbstraction => List(JavaNodeKind.abstractMethod(typ), JavaNodeKind.method(typ))
+    case DelegationAbstraction => List(JavaNodeKind.method(typ))//also abstractMethod ?
   }
 }
 
@@ -80,8 +80,8 @@ case class AbstractMethod private[javaAG]() extends  MethodKind {
   }
 
   def abstractKinds(p : AbstractionPolicy) = p match {
-    case SupertypeAbstraction() => List(JavaNodeKind.abstractMethod(typ))
-    case DelegationAbstraction() => List(JavaNodeKind.method(typ))//also abstractMethod ?
+    case SupertypeAbstraction => List(JavaNodeKind.abstractMethod(typ))
+    case DelegationAbstraction => List(JavaNodeKind.method(typ))//also abstractMethod ?
   }
 
   def findMergingCandidate(interface : AGNode[JavaNodeKind]) = {

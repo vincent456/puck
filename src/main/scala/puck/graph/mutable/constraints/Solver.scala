@@ -115,10 +115,10 @@ trait Solver[Kind <: NodeKind[Kind]] {
   def absIntroPredicate(impl : NodeType,
                               absPolicy : AbstractionPolicy,
                               absKind : Kind) : PredicateT = absPolicy match {
-    case SupertypeAbstraction() =>
+    case SupertypeAbstraction =>
       potentialHost => !(impl interloperOf potentialHost)
 
-    case DelegationAbstraction() =>
+    case DelegationAbstraction =>
       potentialHost => !(potentialHost interloperOf impl)
   }
 

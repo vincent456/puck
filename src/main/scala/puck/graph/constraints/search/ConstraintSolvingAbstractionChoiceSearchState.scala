@@ -16,7 +16,7 @@ class ConstraintSolvingAbstractionChoice[Kind <: NodeKind[Kind], T]
 extends ConstraintSolvingChoice[Kind, (Kind, AbstractionPolicy), T, ConstraintSolvingAbstractionChoice[Kind, T]] {
   def createState(id: Int,
                   engine: SearchEngine[ResultT[Kind, T]],
-                  prevState: Option[SearchState[ResultT[Kind, T], _]],
+                  prevState: Option[SearchState[ResultT[Kind, T]]],
                   currentResult : ResultT[Kind, T],
                   choices: ConstraintSolvingAbstractionChoice[Kind, T]) =
     new ConstraintSolvingAbstractionChoiceSearchState[Kind, T](id, currentResult, engine, choices, prevState)
@@ -29,5 +29,5 @@ class ConstraintSolvingAbstractionChoiceSearchState[Kind <: NodeKind[Kind], T]
  val result : ResultT[Kind, T],
  val engine : SearchEngine[ResultT[Kind, T]],
  val internal: ConstraintSolvingAbstractionChoice[Kind, T],
- val prevState : Option[SearchState[ResultT[Kind, T],_]])
+ val prevState : Option[SearchState[ResultT[Kind, T]]])
 extends ConstraintSolvingState[Kind, (Kind, AbstractionPolicy), T, ConstraintSolvingAbstractionChoice[Kind, T]]

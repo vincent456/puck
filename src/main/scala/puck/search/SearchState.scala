@@ -7,26 +7,25 @@ import scala.collection.mutable
 /**
  * Created by lorilan on 22/07/14.
  */
-class SearchStateIterator[R](val root : SearchState[R, _])
-  extends BreadthFirstTreeIterator[SearchState[R, _]]
+class SearchStateIterator[R](val root : SearchState[R])
+  extends BreadthFirstTreeIterator[SearchState[R]]
 
 trait StateCreator[Result, Internal]{
   def createState(id : Int,
                   engine : SearchEngine[Result],
-                  prevState : Option[SearchState[Result, _]],
+                  prevState : Option[SearchState[Result]],
                   currentResult : Result,
-                  choices : Internal) : SearchState[Result, Internal]
+                  choices : Internal) : SearchState[Result]
 }
 
-trait SearchState[Result, Internal] extends HasChildren[SearchState[Result, _]]{
+trait SearchState[Result] extends HasChildren[SearchState[Result]]{
 
   val result : Result
-  val internal : Internal
   val id : Int
   val engine : SearchEngine[Result]
-  val prevState : Option[SearchState[Result, _]]
+  val prevState : Option[SearchState[Result]]
 
-  def createNextState[S <: StateCreator[Result, S]](cr : Result, choices : S) : SearchState[Result, S] = {
+  def createNextState[S <: StateCreator[Result, S]](cr : Result, choices : S) : SearchState[Result] = {
     val s = choices.createState(this.nextChildId(), this.engine, Some(this), cr, choices)
     this.nextStates += s
     s
@@ -40,7 +39,7 @@ trait SearchState[Result, Internal] extends HasChildren[SearchState[Result, _]]{
 
 
 
-  val nextStates = mutable.ListBuffer[SearchState[Result, _]]()
+  val nextStates = mutable.ListBuffer[SearchState[Result]]()
 
   var cid = -1
 
@@ -81,7 +80,7 @@ trait SearchState[Result, Internal] extends HasChildren[SearchState[Result, _]]{
   }
   
   def markedPointDepth : Int = {
-  def aux(sstate : Option[SearchState[Result, _]], acc : Int) : Int = sstate match {
+  def aux(sstate : Option[SearchState[Result]], acc : Int) : Int = sstate match {
     case None => acc
     case Some(s) => aux(s.prevState,
       if(s.isMarkPointState) acc + 1
@@ -102,11 +101,11 @@ trait SearchState[Result, Internal] extends HasChildren[SearchState[Result, _]]{
 
   def triedAll : Boolean
 
-  def executeNextChoice() : Unit
+  def executeNextChoice() : Option[Result]
 
-  def ancestors(includeSelf : Boolean) :Seq[SearchState[Result, _]] = {
-    def aux(sState : Option[SearchState[Result,_]],
-            acc : Seq[SearchState[Result,_ ]]) : Seq[SearchState[Result,_ ]] =
+  def ancestors(includeSelf : Boolean) :Seq[SearchState[Result]] = {
+    def aux(sState : Option[SearchState[Result]],
+            acc : Seq[SearchState[Result]]) : Seq[SearchState[Result]] =
     sState match {
       case None => acc
       case Some(state) => aux(state.prevState, state +: acc)
@@ -116,4 +115,15 @@ trait SearchState[Result, Internal] extends HasChildren[SearchState[Result, _]]{
 
   }
 
+}
+
+class FinalState[Result]
+(val id: Int,
+ val result : Result,
+ val engine: SearchEngine[Result],
+ val prevState: Option[SearchState[Result]])
+  extends SearchState[Result]{
+
+  override def executeNextChoice(): Option[Result] = throw new Error("No next choice for a final state")
+  override def triedAll: Boolean = true
 }

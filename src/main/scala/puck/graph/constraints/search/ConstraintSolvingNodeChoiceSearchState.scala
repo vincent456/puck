@@ -12,13 +12,13 @@ import scala.collection.mutable
 
 
 class ConstraintSolvingNodesChoice[Kind <: NodeKind[Kind], T]
-(val k : Option[NodeId[Kind]] => Unit,
+(val k : Option[NodeId[Kind]] => Option[ResultT[Kind, T]],
  val remainingChoices : mutable.Set[NodeId[Kind]],
  val triedChoices : mutable.Set[NodeId[Kind]])
  extends ConstraintSolvingChoice[Kind, NodeId[Kind], T, ConstraintSolvingNodesChoice[Kind, T]] {
   def createState(id : Int,
                   engine : SearchEngine[ResultT[Kind, T]],
-                  prevState : Option[SearchState[ResultT[Kind, T], _]],
+                  prevState : Option[SearchState[ResultT[Kind, T]]],
                   currentResult: ResultT[Kind, T],
                   choices : ConstraintSolvingNodesChoice[Kind, T]) = {
     new ConstraintSolvingNodeChoiceSearchState(id, currentResult, engine, choices, prevState)
@@ -40,7 +40,7 @@ class ConstraintSolvingNodeChoiceSearchState[Kind <: NodeKind[Kind], T]
  val result : ResultT[Kind, T],
  val engine : SearchEngine[ResultT[Kind, T]],
  val internal: ConstraintSolvingNodesChoice[Kind, T],
- val prevState : Option[SearchState[ResultT[Kind, T], _]])
+ val prevState : Option[SearchState[ResultT[Kind, T]]])
 extends ConstraintSolvingState[Kind, NodeId[Kind], T, ConstraintSolvingNodesChoice[Kind, T]]{
   //override protected def needToTryNone = true
 }

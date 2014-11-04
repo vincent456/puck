@@ -87,8 +87,8 @@ case class Interface private[javaAG]() extends TypeKind {
   }
 
   def abstractKinds(p : AbstractionPolicy) = p match {
-    case SupertypeAbstraction() => List(JavaNodeKind.interface)
-    case DelegationAbstraction() => List(JavaNodeKind.`class`)//also interface ?
+    case SupertypeAbstraction => List(JavaNodeKind.interface)
+    case DelegationAbstraction => List(JavaNodeKind.`class`)//also interface ?
   }
 }
 
@@ -119,8 +119,8 @@ case class Class private[javaAG]() extends TypeKind {
   }
 
   def abstractKinds(p : AbstractionPolicy) = p match {
-    case SupertypeAbstraction() => List(JavaNodeKind.interface, JavaNodeKind.`class`)
-    case DelegationAbstraction() => List(JavaNodeKind.`class`)//also interface ?
+    case SupertypeAbstraction => List(JavaNodeKind.interface, JavaNodeKind.`class`)
+    case DelegationAbstraction => List(JavaNodeKind.`class`)//also interface ?
   }
 
   //TODO prendre en compte le cas des classes abstraite

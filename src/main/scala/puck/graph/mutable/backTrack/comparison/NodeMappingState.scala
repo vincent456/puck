@@ -28,7 +28,7 @@ class AssumedChoices[Kind <: NodeKind[Kind]](val k: Kargs[Kind] => Unit,
 
   def createState (id: Int,
                    engine: SearchEngine[ResMapping[Kind]],
-                   prevState: Option[SearchState[ResMapping[Kind], _]],
+                   prevState: Option[SearchState[ResMapping[Kind]]],
                    currentResult : ResMapping[Kind],
                    choices: AssumedChoices[Kind]): NodeMappingState[Kind] = {
     new NodeMappingState (id, engine, currentResult, choices, prevState)
@@ -39,8 +39,8 @@ class NodeMappingState[Kind <: NodeKind[Kind]](val id : Int,
                                                 val engine : SearchEngine[ResMapping[Kind]],
                                                 val result : ResMapping[Kind],
                                                 val internal: AssumedChoices[Kind],
-                                                val prevState : Option[SearchState[ResMapping[Kind], _]])
-  extends SearchState[ResMapping[Kind], AssumedChoices[Kind]] {
+                                                val prevState : Option[SearchState[ResMapping[Kind]]])
+  extends SearchState[ResMapping[Kind]] {
 
 
 

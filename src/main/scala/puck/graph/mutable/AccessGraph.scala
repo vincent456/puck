@@ -30,14 +30,14 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
   type EdgeType = AGEdge[Kind]
 
   var logger : PuckLogger = PuckNoopLogger
-  implicit val defaulVerbosity : PuckLog.Verbosity = (PuckLog.InGraph(), PuckLog.Debug())
-  implicit def logVerbosity(lvl : PuckLog.Level) = (PuckLog.InGraph(), lvl)
+  implicit val defaulVerbosity : PuckLog.Verbosity = (PuckLog.InGraph, PuckLog.Debug)
+  implicit def logVerbosity(lvl : PuckLog.Level) = (PuckLog.InGraph, lvl)
 
   def newGraph() : AccessGraph[Kind] = {
     new AccessGraph(nodeBuilder)
   }
 
-  logger.writeln("Node builder : " + nodeBuilder.getClass)(PuckLog.InGraph(), PuckLog.Debug())
+  logger.writeln("Node builder : " + nodeBuilder.getClass)(PuckLog.InGraph, PuckLog.Debug)
 
   val nodeSets : smutable.Map[String, NamedNodeSet[Kind]] = smutable.Map()
   val constraints : smutable.Buffer[Constraint[Kind]] = smutable.Buffer()
@@ -255,7 +255,7 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
 
     val newPrimaryUsee =
       policy match {
-        case Move() => newSideUsee.container
+        case Move => newSideUsee.container
         case absPolicy : AbstractionPolicy =>
           currentPrimaryUsee.abstractions.find{
             case (node, `absPolicy`) => node.contains_*(newSideUsee)
@@ -303,7 +303,7 @@ class AccessGraph[Kind <: NodeKind[Kind]] (nodeBuilder : AGNodeBuilder[Kind]) {
                 val msg = ("While redirecting primary uses %s target to %s\n" +
                   "no satisfying abstraction to redirect side use %s").
                   format(currentPrimaryUse, newPrimaryUsee, side)
-                logger.writeln(msg)(PuckLog.Error())
+                logger.writeln(msg)(PuckLog.Error)
 
                 throw new RedirectionError(msg)
 

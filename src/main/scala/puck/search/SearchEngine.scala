@@ -1,21 +1,29 @@
 package puck.search
 
 import scala.collection.mutable
+import scala.util.continuations.reset
 
 /**
  * Created by lorilan on 07/07/14.
  */
 
 trait Search[Result]{
-  def initialState : SearchState[Result, _]
-  def finalStates : Seq[SearchState[Result, _]]
+  def initialState : SearchState[Result]
+  def finalStates : Seq[FinalState[Result]]
   def exploredStates : Int
 }
 
 trait SearchEngine[Result] extends Search[Result]{
 
-  var currentState : SearchState[Result, _] = _
-  override val finalStates = mutable.ListBuffer[SearchState[Result, _]]()
+  var currentState : SearchState[Result] = _
+  override val finalStates = mutable.ListBuffer[SearchState[Result]]()
+
+  private [this] var idSeed = 0
+  private def idGen() : Int = {idSeed += 1; idSeed}
+
+  def storeResult(prevState : Option[SearchState[Result]], res : Result): Unit = {
+    finalStates += new FinalState[Result](idGen(), res, this, prevState)
+  }
 
   private var numExploredStates = 0
 
@@ -24,20 +32,29 @@ trait SearchEngine[Result] extends Search[Result]{
     numExploredStates = 1
   }
 
-  def newCurrentState[S <: StateCreator[Result, S]](cr : Result, choices : S) {
+  def newCurrentState[S <: StateCreator[Result, S]](cr : Result, choices : S)  = {
     currentState = currentState.createNextState[S](cr, choices)
     numExploredStates = numExploredStates + 1
   }
 
-  def search() : Unit
+  def search() : Option[Result] = {
+    init()
+    currentState.executeNextChoice()
+  }
 
   def exploredStates = numExploredStates
+
+  def doExplore() : Unit
+
+  def explore() : Unit ={
+    reset { doExplore() }
+  }
 }
 
 
 trait StackedSearchEngine[Result] extends SearchEngine[Result]{
 
-  val stateStack = mutable.Stack[SearchState[Result, _]]()
+  val stateStack = mutable.Stack[SearchState[Result]]()
 
   override def init(){
     //println("StackedSearchEngine.init")
@@ -55,8 +72,12 @@ trait StackedSearchEngine[Result] extends SearchEngine[Result]{
 
 trait TryAllSearchEngine[Result] extends StackedSearchEngine[Result]{
 
-  override def search() {
-    init()
+  def doExplore() {
+
+    this.search() match {
+      case Some(res) => storeResult(Some(stateStack.head), res)
+      case None => ()
+    }
 
   while(stateStack.nonEmpty){
       if(stateStack.head.triedAll)
@@ -73,12 +94,13 @@ trait TryAllSearchEngine[Result] extends StackedSearchEngine[Result]{
            case Some(s) => println("PREVSTATE    : " + s.uuid("/","_","") )
          }*/
 
-        stateStack.head.executeNextChoice()
+        stateStack.head.executeNextChoice() match {
+          case Some(res) => storeResult(Some(stateStack.head), res)
+          case None => ()
+        }
       }
     }
   }
-
-
 }
 
 /*trait GradedSearchEngine[S] extends SearchEngine[S]{
@@ -138,22 +160,21 @@ trait TryAllSearchEngine[Result] extends StackedSearchEngine[Result]{
 
 trait FindFirstSearchEngine[Result] extends StackedSearchEngine[Result] {
 
-  override def search(){
-    init()
-    while(stateStack.nonEmpty && finalStates.isEmpty){
-      if(stateStack.head.triedAll)  //curentState
-        stateStack.pop()
-      else {
-        /* val state = stateStack.head
-           println("#########################################################################################")
-           println("#########################################################################################")
-           println("#########################################################################################")
-           println("EXPLORING FROM " + state.uuid())
+  def doExplore() {
 
-           state.prevState foreach {s => println("PREVSTATE    : " + s.uuid())}*/
-
-        stateStack.head.executeNextChoice()
-      }
+   this.search() match {
+      case Some(res) => storeResult(Some(stateStack.head), res)
+      case None =>
+        while(stateStack.nonEmpty && finalStates.isEmpty){
+          if(stateStack.head.triedAll)
+            stateStack.pop()
+          else {
+            stateStack.head.executeNextChoice() match {
+              case Some(res) => storeResult(Some(stateStack.head), res)
+              case None => ()
+            }
+          }
+        }
     }
   }
 

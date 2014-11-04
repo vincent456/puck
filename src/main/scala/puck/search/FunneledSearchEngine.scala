@@ -6,10 +6,11 @@ import scala.collection.mutable
  */
 
 trait Evaluator[Result]{
-  def evaluate(r : SearchState[Result, _]) : Double
+  def evaluate(r : SearchState[Result]) : Double
 }
 
 
+/*
 
 trait FunneledSeachEngine[Result] extends StackedSearchEngine[Result]{
   this : Evaluator[Result] =>
@@ -100,3 +101,4 @@ class FunneledStates[Result](val sizeMax : Int,
   }
 
 }
+*/

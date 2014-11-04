@@ -25,7 +25,7 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]
 
   val violationsKindPriority : Seq[Kind]
 
-  def evaluate(s : SearchState[ResultT[Kind, T], _]): Double ={
+  def evaluate(s : SearchState[ResultT[Kind, T]]): Double ={
     if(currentState!=s)
       s.setAsCurrentState()
     val graph = s.result._1
@@ -33,7 +33,7 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]
   }
 
   def violationTarget(graph : GraphT)
-                     (k: Option[NIdT] => Unit) {
+                     (k: Option[NIdT] => Option[ResT]) : Option[ResT] = {
 
     def findTargets(l : Seq[Kind]) : Iterator[AGNode[Kind, T]] =  l match {
       case topPriority :: tl =>
@@ -55,10 +55,8 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]
       mutable.Set[NIdT]())
 
     targets match {
-      case Seq() =>
-        k(None) // will call doMerge
-        newCurrentState( (graph, graph.recording), targetsChoice)
-        finalStates += currentState
+      case Seq() => k(None) // will call doMerge
+
       case Seq(oneTarget) =>
         k(Some(oneTarget))
       case _ => //more than one target
@@ -68,7 +66,7 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]
   }
 
   def abstractionKindAndPolicy(graph : GraphT, implId : NIdT)
-                              (k : Option[(Kind, AbstractionPolicy)] => Unit) {
+                              (k : Option[(Kind, AbstractionPolicy)] => Option[ResT]) : Option[ResT] = {
     val impl = graph.getNode(implId)
     import impl.kind.{abstractionPolicies, abstractKinds}
 
@@ -108,12 +106,11 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]
   }
 
   def chooseNode(graph : GraphT, predicate : PredicateT)
-                (k : Option[NIdT] => Unit) {
+                (k : Option[NIdT] => Option[ResT]) : Option[ResT] =
     newCurrentState((graph, graph.recording),
       new ConstraintSolvingNodesChoice[Kind, T](k,
       mutable.Set[NIdT]() ++ graph.nodesId.filter(predicate(graph,_)).toSeq,
       mutable.Set[NIdT]()))
-  }
 
 /*  def modifyConstraints(sources : NodeSet[Kind], target : NodeType){}*/
 

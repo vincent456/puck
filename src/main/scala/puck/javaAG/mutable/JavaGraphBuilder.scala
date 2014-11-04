@@ -51,7 +51,7 @@ class JavaGraphBuilder(prog : AST.Program) {
     }
   }
 
-  def addPackageNode(fullName: String, localName:String) : Int =
+  /*def addPackageNode(fullName: String, localName:String) : Int =
     addNode(fullName, localName, puck.javaAG.mutable.nodeKind.JavaNodeKind.`package`)
 
   def addPackage(p : String, mutable : Boolean): Int =
@@ -145,7 +145,7 @@ class JavaGraphBuilder(prog : AST.Program) {
       packageNode.content += nodeById(strNode)
       nodeById(strNode).users += nodeById(bdNode)
     }
-  }
+  }*/
 
   private def throwRegisteringError(n : AGNode[JavaNodeKind], astType : String) =
     throw new Error("Wrong registering ! AGNode.kind : %s while AST.Node is an %s".format(n.kind, astType))

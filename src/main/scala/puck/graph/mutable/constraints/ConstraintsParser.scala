@@ -11,7 +11,7 @@ import scala.util.parsing.input.{Reader, StreamReader}
  * Created by lorilan on 12/05/14.
  */
 class ConstraintsParser[Kind <: NodeKind[Kind]](val accessGraph : AccessGraph[Kind]) extends RegexParsers {
-
+                                                 //TODO replace mutable.AccessGraph with a mutable.GraphBuilder
   protected override val whiteSpace = """(\s|%.*)+""".r  //to skip comments
 
 
@@ -19,7 +19,7 @@ class ConstraintsParser[Kind <: NodeKind[Kind]](val accessGraph : AccessGraph[Ki
 
   val imports : mutable.Buffer[String] = mutable.Buffer("")
 
-  def findNode(k : String) : AGNode[Kind] ={
+  def findNode(k : String) : AGNode[Kind] = ???/*{
     case class Found(n : AGNode[Kind]) extends Throwable
     try {
       imports foreach { (imp : String) =>
@@ -33,7 +33,7 @@ class ConstraintsParser[Kind <: NodeKind[Kind]](val accessGraph : AccessGraph[Ki
     catch{
       case Found(n) => n
     }
-  }
+  }*/
 
   def toDef (request : Either[String, List[String]]) : NodeSet[Kind] = {
     request match {

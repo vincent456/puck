@@ -13,6 +13,6 @@ case class Literal private[javaAG]() extends JavaNodeKind with HasType[JavaNodeK
 
   def canContain(k : JavaNodeKind) = false
   //TODO in case of method abstraction cf field comment
-  override def abstractionPolicies = List(DelegationAbstraction())
+  override def abstractionPolicies = List(DelegationAbstraction)
   def abstractKinds(p : AbstractionPolicy) = List(JavaNodeKind.field(typ), Method())
 }

@@ -65,7 +65,7 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
                 kind : JavaNodeKind )
   extends AGNode[JavaNodeKind](graph, id, name, kind){
 
-  implicit val defaultVerbosity = (InJavaGraph, PuckLog.Info())
+  implicit val defaultVerbosity = (InJavaGraph, PuckLog.Info)
 
   override def canContain(n : AGNode[JavaNodeKind]) : Boolean = {
 
@@ -233,7 +233,7 @@ class JavaNode( graph : AccessGraph[JavaNodeKind],
 
               if(child uses this) {
                 graph.logger.writeln("interface creation : redirecting %s target to %s".format(AGEdge.uses(child, this), abs), 3)
-                graph.redirectUses(AGEdge.uses(child, this), abs, SupertypeAbstraction())
+                graph.redirectUses(AGEdge.uses(child, this), abs, SupertypeAbstraction)
               }
             case _ => ()
 

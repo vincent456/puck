@@ -19,11 +19,11 @@ case class Constructor private[javaAG]() extends JavaNodeKind with HasType[JavaN
 
   def canContain(k : JavaNodeKind) = false
 
-  override def abstractionPolicies = List(DelegationAbstraction())
+  override def abstractionPolicies = List(DelegationAbstraction)
 
   def abstractKinds(p : AbstractionPolicy) = p match {
-    case DelegationAbstraction() => List( JavaNodeKind.typedKind( () => new ConstructorMethod(), typ))
-    case SupertypeAbstraction() => throw new AGError("Constructor cannot be abstracted by SuperType strategy")
+    case DelegationAbstraction => List( JavaNodeKind.typedKind( () => new ConstructorMethod(), typ))
+    case SupertypeAbstraction => throw new AGError("Constructor cannot be abstracted by SuperType strategy")
   }
 
 }

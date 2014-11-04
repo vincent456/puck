@@ -13,7 +13,7 @@ import puck.util.{PuckLog, PuckLogger, PuckNoopLogger}
  */
 object AG2AST {
   var logger : PuckLogger = PuckNoopLogger
-  implicit val defaultVerbosity = (PuckLog.AG2AST(), PuckLog.Info())
+  implicit val defaultVerbosity = (PuckLog.AG2AST, PuckLog.Info)
 
   def apply(t : Recordable[JavaNodeKind]) = t match {
     case Transformation(Add(), TTNode(node)) =>
@@ -46,7 +46,7 @@ object AG2AST {
 
     }*/
 
-    case Transformation(_, TTAbstraction(impl, abs, SupertypeAbstraction())) =>
+    case Transformation(_, TTAbstraction(impl, abs, SupertypeAbstraction)) =>
       (impl.kind, abs.kind) match {
         case (m @ Method(), AbstractMethod()) =>
             m.decl.setVisibility(AST.ASTNode.VIS_PUBLIC)

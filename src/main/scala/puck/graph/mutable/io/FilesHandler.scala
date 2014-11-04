@@ -2,10 +2,10 @@ package puck.graph.mutable.io
 
 import java.io._
 
+import puck.graph.AGError
 import puck.graph.mutable.backTrack.Recording
 import puck.graph.mutable.{AccessGraph, NodeKind, AGEdge}
 import puck.graph.mutable.constraints._
-import puck.graph._
 import puck.graph.mutable.constraints.search.ConstraintSolving
 import puck.search.{Search, SearchEngine, SearchState}
 import puck.util._
@@ -51,8 +51,8 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
     /*case (PuckLog.Solver(), _)
     | (PuckLog.Search(),_)
     | (PuckLog.InGraph(), _) => true*/
-    case (PuckLog.Search(),_) | (PuckLog.Solver(), _) => true
-    case (PuckLog.NoSpecialContext(), _) => true
+    case (PuckLog.Search,_) | (PuckLog.Solver, _) => true
+    case (PuckLog.NoSpecialContext, _) => true
     case _ => false
   }
 

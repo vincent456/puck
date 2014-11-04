@@ -179,7 +179,7 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
 
     users.foreach{ user =>
       graph.redirectPrimaryUses(AGEdge.uses(user,this), this,
-        Move(), propagateRedirection = false)
+        Move, propagateRedirection = false)
     }
   }
 
@@ -238,7 +238,7 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
       st.subTypes0.add(this)
       if(register)
         graph.transformations.addEdge(AGEdge.isa(this, st))
-      abstractions_+=(st, SupertypeAbstraction())
+      abstractions_+=(st, SupertypeAbstraction)
     }
   }
 
@@ -248,7 +248,7 @@ class AGNode[Kind <: NodeKind[Kind]] (val graph: AccessGraph[Kind],
       st.subTypes0.remove(this)
       if(register)
         graph.transformations.removeEdge(AGEdge.isa(this, st))
-      abstractions_-=(st, SupertypeAbstraction())
+      abstractions_-=(st, SupertypeAbstraction)
     }
   }
 
