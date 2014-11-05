@@ -1,6 +1,7 @@
 package puck.gui
 
-import puck.graph.{ResultT, recordOfResult, NodeKind}
+import puck.graph.immutable.transformations.{Transformation, RecordingComparator}
+import puck.graph.{ResultT, AccessGraph, graphOfResult, NodeKind}
 import puck.search.{SearchState, Search}
 import puck.util.{PuckLog, PuckLogger}
 
@@ -9,8 +10,9 @@ import scala.swing._
 /**
  * Created by lorilan on 22/10/14.
  */
-class SearchResultPanel[Kind <: NodeKind[Kind], T](res : Search[ResultT[Kind, T]],
-                                                  logger : PuckLogger)
+class SearchResultPanel[Kind <: NodeKind[Kind], T](initialRecord : Seq[Transformation[Kind, T]],
+                                                   res : Search[ResultT[Kind, T]],
+                                                   logger : PuckLogger)
       extends BoxPanel(Orientation.Vertical){
 
   implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.NoSpecialContext, PuckLog.Info)
@@ -22,8 +24,7 @@ class SearchResultPanel[Kind <: NodeKind[Kind], T](res : Search[ResultT[Kind, T]
       if (l.nonEmpty) {
         aux(l.tail,
           if (!l.tail.exists { st =>
-              recordOfResult(st.result).
-                produceSameGraph(recordOfResult(l.head.result))
+            AccessGraph.areEquivalent(initialRecord, graphOfResult(st.result),graphOfResult(l.head.result))
           })
             l.head +: acc
           else acc)

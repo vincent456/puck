@@ -7,7 +7,7 @@ import puck.search.{FindFirstSearchEngine, SearchState}
 import puck.util.{PuckLogger, PuckNoopLogger}
 
 import scala.collection.mutable
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /**
  * Created by lorilan on 07/07/14.
@@ -31,16 +31,13 @@ class NoSolution extends Throwable
 
 class RecordingComparator[Kind <: NodeKind[Kind], T]
 ( initialTransfos : Seq[Transformation[Kind, T]],
-  initialGraph : AccessGraph[Kind, T],
   graph1 : AccessGraph[Kind, T],
-  recording1 : Recording[Kind, T],
   graph2 : AccessGraph[Kind, T],
-  recording2 : Recording[Kind, T],
   logger : PuckLogger = PuckNoopLogger)
   extends FindFirstSearchEngine[ResMapping[Kind]] {
 
   def createInitialState(k: Try[ResMapping[Kind]] => Unit): SearchState[ResMapping[Kind]] =
-     new NodeMappingInitialState(initialTransfos, this, recording1(), recording2(), k, logger)
+     new NodeMappingInitialState(initialTransfos, this, graph1, graph2, k, logger)
 
   def attribNode(node : NodeId[Kind],
                  map : ResMapping[Kind],
@@ -74,7 +71,7 @@ class RecordingComparator[Kind <: NodeKind[Kind], T]
       kargs match {
         case (node, map0, nodesToMap0) =>
           nodes0 match {
-            case List() =>
+            case Seq() =>
               val l = (node +: nodes1).reverse.tail // we do not forget the last node and we drop the first dummy value
               k(l, map0, nodesToMap0)
             case _ =>
@@ -82,7 +79,7 @@ class RecordingComparator[Kind <: NodeKind[Kind], T]
           }
       }
     }
-    aux(nodes, Seq[NodeId[Kind]]())((null, map, nodesToMap)) //null will be dropped in aux
+    aux(nodes, Seq[NodeId[Kind]]())((AccessGraph.dummyId, map, nodesToMap)) //null will be dropped in aux
   }
 
 
@@ -104,15 +101,15 @@ class RecordingComparator[Kind <: NodeKind[Kind], T]
 
   def compare(ts1 : Seq[Transformation[Kind, T]],
               ts2 : Seq[Transformation[Kind, T]],
-              map : ResMapping[Kind], nodesToMap : NodesToMap[Kind]){
+              map : ResMapping[Kind], nodesToMap : NodesToMap[Kind],
+              k : Try[ResMapping[Kind]] => Unit){
     if (ts1.isEmpty && ts2.isEmpty)
-      throw new AGError("currentState should be added to final states")
-      //finalStates += currentState
+      k(Success(map))
     else {
       def removeFirstAndCompareNext(tgt : TransformationTarget[Kind, T],
                                     map : ResMapping[Kind], nodesToMap : NodesToMap[Kind]){
         removeFirst(ts2, ts1.head.operation, tgt) match {
-          case None => ()
+          case None => k(Failure(new Error("wrong mapping")))
            /* println("Failure on mapping : ")
             println(map.mkString("\t", "\n\t", "\n"))
             println(ts1.head + " mapped as ")
@@ -122,7 +119,7 @@ class RecordingComparator[Kind <: NodeKind[Kind], T]
 */
           case Some(newTs2) =>
             //println("success")
-            compare(ts1.tail, newTs2, map, nodesToMap)
+            compare(ts1.tail, newTs2, map, nodesToMap, k)
         }
       }
 
@@ -144,20 +141,10 @@ class RecordingComparator[Kind <: NodeKind[Kind], T]
         //removing the dependendency and abstraction of the comparison
         // they are used to compute the change on the graph, its the change themselves we want to compare
         // removed in NodeMappingInitialState.normalizeNodeTransfos
-        case TTTypeRedirection(_, _, _) // TODO see if need to be compared
-             | TTNode(_) => throw new Error("should not happen !!")
+        case TTTypeRedirection(_, _, _, _) // TODO see if need to be compared
+             | TTNode(_, _, _, _, _, _) => throw new Error("should not happen !!")
 
       }
     }
   }
-
-
-
-  /*override def search(k : Try[ResMapping[Kind]] => Unit) =
-    try {
-      super.search()
-    } catch {
-      case e: NoSolution => None
-    }*/
-
 }

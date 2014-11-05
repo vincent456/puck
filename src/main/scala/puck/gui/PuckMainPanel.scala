@@ -107,7 +107,8 @@ class PuckMainPanel[Kind <: NodeKind[Kind], T](val filesHandler: FilesHandler[Ki
       reactions += {
         case ExplorationFinished(res0) =>
           resultsWrapper.contents.clear()
-          val searchResultPanel = new SearchResultPanel[Kind, T](res0.asInstanceOf[Search[ResultT[Kind, T]]],
+          val searchResultPanel = new SearchResultPanel[Kind, T](filesHandler.initialRecord,
+            res0.asInstanceOf[Search[ResultT[Kind, T]]],
             filesHandler.logger)
           resultsWrapper.contents += searchResultPanel
           control listenTo searchResultPanel

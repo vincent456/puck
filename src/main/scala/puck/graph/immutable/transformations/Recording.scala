@@ -26,8 +26,6 @@ class Recording[Kind <: NodeKind[Kind], T]
   def nonEmpty = record.nonEmpty
   def size = record.size
 
-  def produceSameGraph( other : Recording[Kind, T]) : Boolean = false
-
   def addNode(id : NIdT, name : String, kind : Kind, styp: TypeHolder[Kind],
               mutable : Boolean, t : T) : RecT =
     Transformation(Add, TTNode(id, name, kind, styp, mutable, t)) +: this

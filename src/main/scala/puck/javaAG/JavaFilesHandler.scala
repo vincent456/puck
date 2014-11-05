@@ -4,6 +4,7 @@ import java.io.File
 
 import puck.graph.constraints.{Solver, DecisionMaker}
 import puck.graph.constraints.search.SolverBuilder
+import puck.graph.immutable.transformations.{NodeMappingInitialState, Transformation}
 import puck.graph.{AccessGraph, JavaNode, JavaNodeKind,JavaSolver, AGBuildingError}
 import puck.graph.io.{ConstraintSolvingSearchEngineBuilder, FilesHandler}
 import puck.javaAG.immutable.DeclHolder
@@ -23,6 +24,8 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler[JavaNodeKi
 
   val srcSuffix = ".java"
 
+  var initialRecord : Seq[Transformation[JavaNodeKind, DeclHolder]] = _
+
   def loadGraph(ll : AST.LoadingListener = null) : AccessGraph[JavaNodeKind, DeclHolder] = {
     import puck.util.FileHelper.{fileLines, findAllFiles, initStringLiteralsMap}
 
@@ -39,6 +42,8 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler[JavaNodeKi
         }
         graphBuilder = jGraphBuilder
         graph = graphBuilder.g withLogger this.logger
+        val (_, transfos) = NodeMappingInitialState.normalizeNodeTransfos(graph.recording(), Seq())
+        initialRecord = transfos
         graph
     }
   }

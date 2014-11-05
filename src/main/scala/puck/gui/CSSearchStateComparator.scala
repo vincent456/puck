@@ -1,6 +1,7 @@
 package puck.gui
 
-import puck.graph.{ResultT, NodeKind, recordOfResult}
+import puck.graph.immutable.transformations.Transformation
+import puck.graph._
 import puck.search.SearchState
 
 import scala.swing.{Button, Label, Orientation, BoxPanel}
@@ -8,7 +9,8 @@ import scala.swing.{Button, Label, Orientation, BoxPanel}
 /**
  * Created by lorilan on 22/10/14.
  */
-class CSSearchStateComparator[Kind <: NodeKind[Kind], T](sortedRes: Map[Int, Seq[SearchState[ResultT[Kind,T]]]])
+class CSSearchStateComparator[Kind <: NodeKind[Kind], T](initialRecord : Seq[Transformation[Kind,T]],
+                                                         sortedRes: Map[Int, Seq[SearchState[ResultT[Kind,T]]]])
   extends BoxPanel(Orientation.Vertical) {
   contents += new Label("Compare")
   val cb1 = new CSSearchStateComboBox(sortedRes)
@@ -28,8 +30,9 @@ class CSSearchStateComparator[Kind <: NodeKind[Kind], T](sortedRes: Map[Int, Seq
   contents += new Label("and")
   contents += cb2
   contents += Button(">>") {
-    val recording1 = recordOfResult(cb1.selectedState.result)
-    val recording2 = recordOfResult(cb2.selectedState.result)
-    recording1.produceSameGraph(recording2)
+    AccessGraph.areEquivalent(initialRecord,
+      graphOfResult(cb1.selectedState.result),
+      graphOfResult(cb2.selectedState.result))
+
   }
 }

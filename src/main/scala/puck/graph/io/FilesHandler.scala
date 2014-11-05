@@ -4,6 +4,7 @@ import java.io._
 
 
 import puck.graph._
+import puck.graph.immutable.transformations.Transformation
 import puck.search.{Search, SearchState, SearchEngine}
 import puck.util._
 
@@ -65,6 +66,8 @@ abstract class FilesHandler[Kind <: NodeKind[Kind], T](workingDirectory : File){
   private [this] var ag : GraphT = _
   def graph = ag
   protected def graph_=(g : GraphT){ ag = g }
+
+  def initialRecord : Seq[Transformation[Kind, T]]
 
   var graphBuilder : GraphBuilder[Kind, T] = _
 
@@ -254,31 +257,6 @@ abstract class FilesHandler[Kind <: NodeKind[Kind], T](workingDirectory : File){
     graph = graph.newGraph(nConstraints = graphBuilder.constraintsMap)
   }
 
-  /*def decisionMaker() : DecisionMaker[Kind]
-
-  def solver(dm : DecisionMaker[Kind]) : Solver[Kind]
-
-  def solve (trace : Boolean = false,
-             decisionMaker : DecisionMaker[Kind]){
-
-    var inc = 0
-
-    def printTrace(){
-      makePng(printSignatures = true,
-        sOutput = Some(new FileOutputStream(graphFile( "_trace" + inc +".png"))))()
-      inc += 1
-    }
-
-    graph.transformations.startRegister()
-    solver(decisionMaker).solve()
-    if(trace) {
-      this.logger.writeln("*****************************************************")
-      this.logger.writeln("*****************   merge done   ********************")
-      this.logger.writeln("")
-      printTrace()
-    }
-  }
-  */
 
   def searchingStrategies : Seq[ConstraintSolvingSearchEngineBuilder[Kind, T]]
 

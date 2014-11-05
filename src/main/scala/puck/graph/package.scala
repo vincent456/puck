@@ -17,6 +17,7 @@ package object graph {
   val AGEdge = immutable.AGEdge
 
   type AccessGraph[Kind <: NodeKind[Kind], T] = immutable.AccessGraph[Kind, T]
+  val AccessGraph = immutable.AccessGraph
   type GraphBuilder[Kind <: NodeKind[Kind], T] = immutable.GraphBuilder[Kind, T]
 
   type JavaNodeKind = javaAG.immutable.nodeKind.JavaNodeKind

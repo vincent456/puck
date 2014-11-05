@@ -1,11 +1,11 @@
 package puck.graph.immutable
 
-import puck.graph.{RedirectionError, AGError}
+import puck.graph._
 import puck.graph.constraints._
+import puck.graph.immutable.AccessGraph.NodeId
 import puck.graph.immutable.constraints._
-import puck.graph.edgeToPair
 import puck.util.{Logger, PuckLog, PuckNoopLogger, PuckLogger}
-import puck.graph.immutable.transformations.Recording
+import puck.graph.immutable.transformations.{RecordingComparator, Transformation, Recording}
 
 import scala.language.existentials
 import scala.util.{Failure, Success, Try}
@@ -13,8 +13,8 @@ import scala.util.{Failure, Success, Try}
 object AccessGraph {
 
   val rootId = 0
-  /*val dummyId = 0
-  val dummyNamedType = NamedType(0, "DummyType")
+  val dummyId = Int.MinValue
+  /*val dummyNamedType = NamedType(0, "DummyType")
   val dummyArrowType = Arrow(dummyNamedType, dummyNamedType)*/
   val rootName = "root"
   val unrootedStringId = "<DETACHED>"
@@ -46,6 +46,15 @@ object AccessGraph {
 
   //for compliace with mutable version
   type Breakpoint[Kind <: NodeKind[Kind], T] = AccessGraph[Kind, T]
+
+  def areEquivalent[Kind <: NodeKind[Kind], T](initialRecord : Seq[Transformation[Kind, T]],
+                      graph1 : AccessGraph[Kind, T],
+                      graph2 : AccessGraph[Kind, T]) : Boolean = {
+    val engine = new RecordingComparator[Kind, T](initialRecord,graph1,graph2)
+    engine.explore()
+    engine.finalStates.nonEmpty
+
+  }
 
 }
 import AccessGraph._

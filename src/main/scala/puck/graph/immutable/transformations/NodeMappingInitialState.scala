@@ -2,7 +2,7 @@ package puck.graph.immutable.transformations
 
 import puck.graph.immutable.AccessGraph.NodeId
 import puck.graph.immutable.transformations.MappingChoices._
-import puck.graph.immutable.{AGNode, Contains, AGEdge, NodeKind}
+import puck.graph.immutable._
 import puck.javaAG.immutable.nodeKind.JavaRoot
 import puck.util.{PuckLog, PuckLogger}
 
@@ -171,113 +171,23 @@ object NodeMappingInitialState{
     }
 
   }
-
-  /*def filterNoise[Kind <: NodeKind[Kind]](transfos : List[Transformation[Kind]], logger : Logger[Int]):
-  List[Transformation[Kind]] = {
-
-    def printRule(name : => String, op1 : => String, op2 : => String, res : => String ){
-      logger.writeln(name +" : ")
-      logger.writeln(op1)
-      logger.writeln("+ " + op2)
-      logger.writeln("= " + res)
-      logger.writeln("----------------------------------------------")
-    }
-
-    def applyRuleOnce[T](l : List[T])(rule : T => (Boolean, Option[T])) : (Boolean, List[T]) = {
-      def aux(l1 : List[T], acc : List[T]) : (Boolean, List[T]) =
-        if(l1.isEmpty) (false, l)
-        else rule(l1.head) match {
-          case (true, None) => (true, acc reverse_::: l1.tail)
-          case (true, Some(t)) => (true, acc reverse_::: t :: l1.tail)
-          case (false, _ ) => aux(l1.tail, l1.head :: acc)
-        }
-      aux(l, List[T]())
-    }
-
-    def aux(l1 : List[Transformation[Kind]],
-            l2 : List[Transformation[Kind]]): List[Transformation[Kind]] = {
-      if(l2.isEmpty) l1.reverse
-      else{
-        val (applied, tl) = l2.head match {
-          case (op1 @ Transformation(Add(), TTEdge(AGEdge(Contains(), n1, n2)))) =>
-            applyRuleOnce[Transformation[Kind]](l2.tail)
-            {
-              //case Transformation(Add(), TTEdge(AGEdge(Contains(), `n1`, `n2`))) => true
-              case op2 @ Transformation(Remove(), TTEdge(AGEdge(Contains(), `n1`, `n2`))) =>
-                printRule("AddDel", op1.toString, op2.toString, "None")
-                (true, None)
-              case op2 @ Transformation(Add(), TTRedirection(AGEdge(Contains(), `n1`, `n2`), Source(n3))) =>
-                val res = Transformation(Add(), TTEdge(AGEdge.contains(n3, n2)))
-                printRule("AddRed_Src", op1.toString, op2.toString, res.toString)
-                (true, Some(res))
-
-              case Transformation(Add(), TTRedirection(AGEdge(Contains(), `n1`, `n2`), Target(_))) =>
-                sys.error("contains redirection target should not happen !")
-              case _ => (false, None)
-            }
-
-          case (op1 @ Transformation(Add(), TTEdge(AGEdge(kind, n1, n2)))) =>
-            applyRuleOnce[Transformation[Kind]](l2.tail)
-            { case duplicate @ Transformation(Add(), TTEdge(AGEdge(`kind`, `n1`, `n2`))) =>
-              printRule("AddAdd", op1.toString, duplicate.toString, duplicate.toString)
-              (true, Some(duplicate))
-            case op2 @ Transformation(Add(), TTRedirection(AGEdge(`kind`, `n1`, `n2`), Source(n3))) =>
-              val res = Transformation(Add(), TTEdge(kind(n3, n2)))
-              printRule("AddRed_Src", op1.toString, op2.toString, res.toString)
-              (true, Some(res))
-            case op2 @Transformation(Add(), TTRedirection(AGEdge(`kind`, `n1`, `n2`), Target(n3))) =>
-              val res = Transformation(Add(), TTEdge(kind(n1, n3)))
-              printRule("AddRed_Tgt", op1.toString, op2.toString, res.toString)
-              (true, Some(res))
-
-            case t => (false, None)
-            }
-          case t => sys.error(t  + " should not be in list")
-        }
-
-        if(applied) aux(l1, tl)
-        else aux(l2.head :: l1, tl)
-      }
-
-    }
-
-    aux(List(), transfos)
-  }*/
-
-  /* def filterDuplicates[Kind <: NodeKind[Kind]](transfos : List[Transformation[Kind]]): List[Transformation[Kind]] = {
-     /*can be needed for cases like
-      [... add(a,b) .. red((a,b), tgt(c)) ... add(a,d) .. red((a, d), tgt(c)) ... ]
-      */
-     def aux(l0 : List[Transformation[Kind]],
-             l1 : List[Transformation[Kind]]) : List[Transformation[Kind]]= {
-       if(l1.isEmpty) l0.reverse
-       else aux(l1.head :: l0, l1.tail filter { _ != l1.head })
-     }
-
-     aux(List(), transfos)
-   }*/
-
 }
 
 class NodeMappingInitialState[Kind <: NodeKind[Kind], T]
 (initialTransfos : Seq[Transformation[Kind, T]],
  eng : RecordingComparator[Kind, T],
- lr1 : Seq[Transformation[Kind, T]],
- lr2 : Seq[Transformation[Kind, T]],
+ graph1 : AccessGraph[Kind, T],
+ graph2 : AccessGraph[Kind, T],
  k: Try[ResMapping[Kind]] => Unit,
  logger : PuckLogger)
   extends NodeMappingState(0, eng, null, null, None) {
 
-  //println("creating initial state")
-  //println("Comparing %s and %s".format(recording1, recording2))
-
-
   import NodeMappingInitialState._
 
 
-  val (nodeStatuses, remainingTransfos1) = normalizeNodeTransfos(lr1, initialTransfos)
+  val (nodeStatuses, remainingTransfos1) = normalizeNodeTransfos(graph1.recording(), initialTransfos)
 
-  val (nodeStatuses2, remainingTransfos2) = normalizeNodeTransfos(lr2, initialTransfos)
+  val (nodeStatuses2, remainingTransfos2) = normalizeNodeTransfos(graph2.recording(), initialTransfos)
 
   /* def switch(nts : NodeTransfoStatus, c : Int, d : Int, n : Int) = nts match {
      case Created() => (c + 1 , d , n)
@@ -301,8 +211,10 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind], T]
 
   import puck.graph.immutable.transformations.NodeMappingInitialState.defaultVerbosity
 
-  def printlnNode(n : AGNode[Kind, T]){
-    logger.writeln("%d = %s(%s)".format(n.id, n.kind, n.fullName))
+  def printlnNode(graph: AccessGraph[Kind, T])( nid : NodeId[Kind]){
+    /*val n = graph.getNode(nid)
+    logger.writeln("%d = %s(%s)".format(n.id, n.kind, n.fullName))*/
+    logger.writeln(nid.toString)
   }
 
 
@@ -321,9 +233,9 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind], T]
       logger.writeln("initialMapping : %s, %d remaining transfo".format(initialMapping, remainingTransfos1.size))
 
       logger.writeln("created nodes :")
-      initialMapping.keys foreach printlnNode
+      initialMapping.keys foreach printlnNode(graph1)
       logger.writeln("neuter nodes : ")
-      neuterNodes foreach printlnNode
+      neuterNodes foreach printlnNode(graph1)
 
       logger.writeln("*******************************************************")
       logger.writeln("")
@@ -332,19 +244,19 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind], T]
       logger.writeln("nodes to map : %s, %d remaining transfo".format(nodesToMap, remainingTransfos2.size))
 
       logger.writeln("created nodes :")
-      nodesToMap foreach printlnNode
+      nodesToMap foreach printlnNode(graph2)
       logger.writeln("neuter nodes : ")
-      otherNeuterNodes foreach printlnNode
+      otherNeuterNodes foreach printlnNode(graph2)
 
       logger.writeln("recording1")
-      lr1 foreach { t => logger.writeln(t.toString)}
+      graph1.recording() foreach { t => logger.writeln(t.toString)}
 
       logger.writeln("*******************************************************")
       logger.writeln("")
       logger.writeln("")
 
       logger.writeln("recording2")
-      lr2 foreach { t => logger.writeln(t.toString)}
+      graph2.recording() foreach { t => logger.writeln(t.toString)}
 
       throw new NoSolution()
     }
@@ -354,9 +266,9 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind], T]
       logger.writeln("initialMapping : %s, %d remaining transfo".format(initialMapping, remainingTransfos1.size))
 
       logger.writeln("created nodes :")
-      initialMapping.keys foreach printlnNode
+      initialMapping.keys foreach printlnNode(graph1)
       logger.writeln("neuter nodes : ")
-      neuterNodes foreach printlnNode
+      neuterNodes foreach printlnNode(graph1)
 
       logger.writeln("")
       logger.writeln("")
@@ -387,9 +299,9 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind], T]
       logger.writeln("nodes to map : %s, %d remaining transfo".format(nodesToMap, remainingTransfos2.size, logger))
 
       logger.writeln("created nodes :")
-      nodesToMap foreach printlnNode
+      nodesToMap foreach printlnNode(graph2)
       logger.writeln("neuter nodes : ")
-      otherNeuterNodes foreach printlnNode
+      otherNeuterNodes foreach printlnNode(graph2)
 
       logger.writeln("")
       logger.writeln("")
@@ -411,7 +323,7 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind], T]
       if(filteredTransfos1.length != filteredTransfos2.length)
         throw new NoSolution()
 
-      eng.compare(filteredTransfos1, filteredTransfos2, initialMapping, nodesToMap)
+      eng.compare(filteredTransfos1, filteredTransfos2, initialMapping, nodesToMap, k)
       /*eng.compare(filteredTransfos1, filteredTransfos2,
         neuterNodes.foldLeft(initialMapping){ (m, n) => m + (n -> None) },
         nodesToMap ++ otherNeuterNodes)*/
