@@ -1,7 +1,7 @@
 package puck.search
 
 import scala.collection.mutable
-import scala.util.continuations.reset
+import scala.util.{Failure, Success, Try}
 
 /**
  * Created by lorilan on 07/07/14.
@@ -13,16 +13,16 @@ trait Search[Result]{
   def exploredStates : Int
 }
 
-trait SearchEngine[Result] extends Search[Result]{
+trait SearchEngine[T] extends Search[T]{
 
-  var currentState : SearchState[Result] = _
-  override val finalStates = mutable.ListBuffer[SearchState[Result]]()
+  var currentState : SearchState[T] = _
+  override val finalStates = mutable.ListBuffer[SearchState[T]]()
 
-  private [this] var idSeed = 0
+  private [this] var idSeed : Int = 0
   private def idGen() : Int = {idSeed += 1; idSeed}
 
-  def storeResult(prevState : Option[SearchState[Result]], res : Result): Unit = {
-    finalStates += new FinalState[Result](idGen(), res, this, prevState)
+  def storeResult(prevState : Option[SearchState[T]], res : T): Unit = {
+    finalStates += new FinalState[T](idGen(), res, this, prevState)
   }
 
   private var numExploredStates = 0
@@ -32,22 +32,25 @@ trait SearchEngine[Result] extends Search[Result]{
     numExploredStates = 1
   }
 
-  def newCurrentState[S <: StateCreator[Result, S]](cr : Result, choices : S)  = {
+  def newCurrentState[S <: StateCreator[T, S]](cr : T, choices : S)  = {
     currentState = currentState.createNextState[S](cr, choices)
     numExploredStates = numExploredStates + 1
   }
 
-  def search() : Option[Result] = {
+  def search(k : Try[T] => Unit) {
     init()
-    currentState.executeNextChoice()
+    currentState.executeNextChoice(k)
   }
 
   def exploredStates = numExploredStates
 
-  def doExplore() : Unit
+  def doExplore(k : Try[T] => Unit) : Unit
 
   def explore() : Unit ={
-    reset { doExplore() }
+    doExplore {
+      case Success(result) =>storeResult(Some(currentState), result)
+      case Failure(e) => println(e.getMessage)
+    }
   }
 }
 
@@ -70,14 +73,11 @@ trait StackedSearchEngine[Result] extends SearchEngine[Result]{
   }
 }
 
-trait TryAllSearchEngine[Result] extends StackedSearchEngine[Result]{
+trait TryAllSearchEngine[ResT] extends StackedSearchEngine[ResT]{
 
-  def doExplore() {
+  def doExplore( k : Try[ResT] => Unit) {
 
-    this.search() match {
-      case Some(res) => storeResult(Some(stateStack.head), res)
-      case None => ()
-    }
+  this.search(k)
 
   while(stateStack.nonEmpty){
       if(stateStack.head.triedAll)
@@ -94,10 +94,7 @@ trait TryAllSearchEngine[Result] extends StackedSearchEngine[Result]{
            case Some(s) => println("PREVSTATE    : " + s.uuid("/","_","") )
          }*/
 
-        stateStack.head.executeNextChoice() match {
-          case Some(res) => storeResult(Some(stateStack.head), res)
-          case None => ()
-        }
+        stateStack.head.executeNextChoice(k)
       }
     }
   }
@@ -158,25 +155,15 @@ trait TryAllSearchEngine[Result] extends StackedSearchEngine[Result]{
   }
 }*/
 
-trait FindFirstSearchEngine[Result] extends StackedSearchEngine[Result] {
+trait FindFirstSearchEngine[T] extends StackedSearchEngine[T] {
 
-  def doExplore() {
+  def doExplore( k : Try[T] => Unit) {
+     this.search(k)
 
-   this.search() match {
-      case Some(res) => storeResult(Some(stateStack.head), res)
-      case None =>
-        while(stateStack.nonEmpty && finalStates.isEmpty){
-          if(stateStack.head.triedAll)
-            stateStack.pop()
-          else {
-            stateStack.head.executeNextChoice() match {
-              case Some(res) => storeResult(Some(stateStack.head), res)
-              case None => ()
-            }
-          }
-        }
-    }
+     while(stateStack.nonEmpty && finalStates.isEmpty){
+        if(stateStack.head.triedAll) stateStack.pop()
+        else  stateStack.head.executeNextChoice(k)
+     }
   }
-
 }
 

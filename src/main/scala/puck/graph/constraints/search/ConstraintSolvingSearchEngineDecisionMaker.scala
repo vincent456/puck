@@ -33,7 +33,7 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]
   }
 
   def violationTarget(graph : GraphT)
-                     (k: Option[NIdT] => Option[ResT]) : Option[ResT] = {
+                     (k: Option[NIdT] => Unit) : Unit = {
 
     def findTargets(l : Seq[Kind]) : Iterator[AGNode[Kind, T]] =  l match {
       case topPriority :: tl =>
@@ -66,7 +66,7 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]
   }
 
   def abstractionKindAndPolicy(graph : GraphT, implId : NIdT)
-                              (k : Option[(Kind, AbstractionPolicy)] => Option[ResT]) : Option[ResT] = {
+                              (k : Option[(Kind, AbstractionPolicy)] => Unit) : Unit = {
     val impl = graph.getNode(implId)
     import impl.kind.{abstractionPolicies, abstractKinds}
 
@@ -106,7 +106,7 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]
   }
 
   def chooseNode(graph : GraphT, predicate : PredicateT)
-                (k : Option[NIdT] => Option[ResT]) : Option[ResT] =
+                (k : Option[NIdT] => Unit) : Unit =
     newCurrentState((graph, graph.recording),
       new ConstraintSolvingNodesChoice[Kind, T](k,
       mutable.Set[NIdT]() ++ graph.nodesId.filter(predicate(graph,_)).toSeq,

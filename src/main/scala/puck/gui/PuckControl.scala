@@ -35,11 +35,11 @@ case class GraphDisplayRequest[Kind <: NodeKind[Kind], T](title : String,
 case class ExploreRequest[Kind <: NodeKind[Kind],T](trace : Boolean,
                                                   builder : ConstraintSolvingSearchEngineBuilder[Kind, T]) extends ControlRequest
 
-case class SearchStateMapPrintingRequest[Kind <: NodeKind[Kind], T](stateMap : Map[Int, Seq[SearchState[ResultT[Kind, T],_]]])
+case class SearchStateMapPrintingRequest[Kind <: NodeKind[Kind], T](stateMap : Map[Int, Seq[SearchState[ResultT[Kind, T]]]])
   extends ControlRequest
 case class SearchStateSeqPrintingRequest[Kind <: NodeKind[Kind], T](subDir : String,
-                                                                  states : Seq[SearchState[ResultT[Kind, T],_]],
-                                                                  sPrinter : Option[SearchState[ResultT[Kind,T],_] => String])
+                                                                  states : Seq[SearchState[ResultT[Kind, T]]],
+                                                                  sPrinter : Option[SearchState[ResultT[Kind,T]] => String])
   extends ControlRequest
 
 case class PrintConstraintRequest() extends ControlRequest
@@ -141,7 +141,7 @@ class PuckControl[Kind <: NodeKind[Kind], T](val filesHandler : FilesHandler[Kin
     }
   }
 */
-  type StateT = SearchState[ResultT[Kind, T],_]
+  type StateT = SearchState[ResultT[Kind, T]]
   def printStateSeq( subDirStr : String,
                      states : Seq[StateT],
                      sPrinter : Option[StateT => String]): Unit ={

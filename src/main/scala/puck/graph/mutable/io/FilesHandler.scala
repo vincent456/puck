@@ -301,7 +301,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
   }
 
 
-  def printCSSearchStatesGraph(states : Map[Int, Seq[SearchState[Recording[Kind], _]]]){
+  def printCSSearchStatesGraph(states : Map[Int, Seq[SearchState[Recording[Kind]]]]){
     val d = graphFile("_results")
     d.mkdir()
     states.foreach{
@@ -313,13 +313,13 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
   }
 
   def printCSSearchStatesGraph(dir : File,
-                               states : Seq[SearchState[Recording[Kind], _]],
-                               sPrinter : Option[(SearchState[Recording[Kind],_] => String)]){
+                               states : Seq[SearchState[Recording[Kind]]],
+                               sPrinter : Option[(SearchState[Recording[Kind]] => String)]){
 
     val printer = sPrinter match {
       case Some(p) => p
       case None =>
-        s : SearchState[Recording[Kind],_] => s.uuid()
+        s : SearchState[Recording[Kind]] => s.uuid()
     }
 
     states.foreach { s =>

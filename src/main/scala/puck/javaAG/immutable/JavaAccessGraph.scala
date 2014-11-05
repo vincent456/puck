@@ -10,6 +10,8 @@ import puck.javaAG.immutable.nodeKind._
 import puck.util.PuckLog.InJavaGraph
 import puck.util.{PuckLog, PuckNoopLogger, PuckLogger}
 
+import scala.util.{Try, Failure, Success}
+
 /**
  * Created by lorilan on 29/10/14.
  */
@@ -72,88 +74,100 @@ class JavaAccessGraph
   }
   override def createAbstraction(implId: NIdT,
                                  abskind : NK ,
-                                 policy : AbstractionPolicy) : (NIdT, GraphT) = {
+                                 policy : AbstractionPolicy) : Try[(NIdT, GraphT)] = {
 
     (abskind, policy) match {
       case (Interface, SupertypeAbstraction) =>
         val implContent = content(implId)
-        val (absId, g) = super.createAbstraction( implId,
-                                                  Interface,
-                                                  SupertypeAbstraction)
+        super.createAbstraction( implId,
+                                 Interface,
+                                 SupertypeAbstraction) match {
+          case Success ((absId, g)) =>
+            val abs = g.getNode(absId)
+            val g2Try = implContent.foldLeft(Success(g) : Try[GraphT]){
+              case (Success(g0), child) =>
+              getNode(child).kind match {
+                //case ck @ Method() =>
+                case ck : MethodKind =>
+                   val gAbsTry = g.createAbstraction(child, AbstractMethod,  SupertypeAbstraction)
+                   gAbsTry match {
+                      case Success((absChild, g21)) =>
+                        val g3 = g21.addContains(absId, absChild)
+                        val absChildNode = g3.getNode(absChild)
+                        absChildNode.kind match {
+                          case AbstractMethod =>
+                            Success(g3.changeType(absChild, absChildNode.styp, implId, absId))
+                          case k => Failure(new AGError(k + " should be an abstract method !"))
+                        }
+                    }
 
-        val abs = g.getNode(absId)
-        val g2 = implContent.foldLeft(g) { (g0, child) =>
-          getNode(child).kind match {
-            //case ck @ Method() =>
-            case ck : MethodKind =>
-              val (absChild, g2) =
-                        g.createAbstraction(child,
-                                            AbstractMethod,
-                                            SupertypeAbstraction)
-
-              val g3 = g2.addContains(absId, absChild)
-
-              val absChildNode = g3.getNode(absChild)
-              absChildNode.kind match {
-                case AbstractMethod =>
-                  g3.changeType(absChild, absChildNode.styp, implId, absId)
-                case k =>
-                  throw new AGError(k + " should be an abstract method !")
+                //case AbstractMethod() => throw new AGError("unhandled case !")
+                case _ => Success(g0)
               }
+              case (Failure(f),_) => Failure(f)
+            }
+            g2Try match {
+              case Failure(f) => Failure(f)
+              case Success(g2) =>
+                val g3 = g2.addIsa(implId, absId)
 
-            //case AbstractMethod() => throw new AGError("unhandled case !")
-            case _ => g0
-          }
+                val g4Try = implContent.foldLeft(Success(g3) : Try[GraphT]) {
+                  case (Success(g0), child) =>
+                  val node = g0.getNode(child)
+                  (node.kind, node.styp) match {
+                    // even fields can need to be promoted if they are written
+                    //case Field() =>
+                    case (ck : MethodKind, MethodTypeHolder(typ))  =>
+
+                      val newTyp = typ.redirectContravariantUses(implId, abs)
+                      val g1 = g0.setType(child, MethodTypeHolder(newTyp))
+
+                      if(g1.uses(child, implId)) {
+                        logger.writeln("interface creation : redirecting %s target to %s".format(AGEdge.uses(child, implId), abs), 3)
+                        g1.redirectUses(AGEdge.uses(child, implId), absId, SupertypeAbstraction) match {
+                          case Success((_, g22)) => Success(g22)
+                          case Failure(f) => Failure(f)
+                        }
+                      }
+                      else Success(g1)
+                    case _ => Success(g0)
+                  }
+                  case (Failure(f), _) => Failure(f)
+                }
+                g4Try match {
+                  case Success(g4) => Success((absId, g4))
+                  case Failure(f) => Failure(f)
+                }            }
         }
-        val g3 = g2.addIsa(implId, absId)
 
-        val g4 = implContent.foldLeft(g3) { (g0, child) =>
-          val node = g0.getNode(child)
-          (node.kind, node.styp) match {
-            // even fields can need to be promoted if they are written
-            //case Field() =>
-            case (ck : MethodKind, MethodTypeHolder(typ))  =>
 
-              val newTyp = typ.redirectContravariantUses(implId, abs)
-              val g1 = g0.setType(child, MethodTypeHolder(newTyp))
-
-              if(g1.uses(child, implId)) {
-                logger.writeln("interface creation : redirecting %s target to %s".format(AGEdge.uses(child, implId), abs), 3)
-                val(_,g2) = g1.redirectUses(AGEdge.uses(child, implId), absId, SupertypeAbstraction)
-                g2
-              }
-              else g1
-            case _ => g0
-
-          }
-        }
-        (absId, g4)
 
       case (AbstractMethod, SupertypeAbstraction) =>
         //no (abs, impl) or (impl, abs) uses
         val n = getNode(implId)
         val (id, g0) = createNode(implId, abskind, policy)
-        (id, g0.setType(id, n.styp))
+        Success((id, g0.setType(id, n.styp)))
 
       case _ =>
-        val (abs, g1) = super.createAbstraction(implId, abskind, policy)
-        val g2 = {
-          val implNode =g1.getNode(implId)
-          val absNode = g1.getNode(abs)
-          (implNode.kind, absNode.kind) match {
-          case (Constructor, ConstructorMethod) =>
- //         case (Constructor(_, _, cdecl), ConstructorMethod(_, typ, decl, _)) =>
-            (implNode.t, absNode.t) match {
-              /*case (ConstructorDeclHolder(cdecl), ConstructorMethodDecl(decl,_)) =>
-                g1.setInternal(abs, ConstructorMethodDecl(decl, cdecl))*/
-              case (ConstructorDeclHolder(cdecl), EmptyDeclHolder) =>
-                g1.setInternal(abs, ConstructorMethodDecl(None, cdecl))
-              case (_,_) => throw new AGError()
-            }
-          case (Constructor, _) => throw new AGError()
-          case _ => g1
-        }}
-        (abs, g2)
+        super.createAbstraction(implId, abskind, policy) match {
+          case Failure(f) => Failure(f)
+          case Success ((abs, g1)) =>
+              val implNode =g1.getNode(implId)
+              val absNode = g1.getNode(abs)
+              (implNode.kind, absNode.kind) match {
+                case (Constructor, ConstructorMethod) =>
+                  //         case (Constructor(_, _, cdecl), ConstructorMethod(_, typ, decl, _)) =>
+                  (implNode.t, absNode.t) match {
+                    /*case (ConstructorDeclHolder(cdecl), ConstructorMethodDecl(decl,_)) =>
+                      g1.setInternal(abs, ConstructorMethodDecl(decl, cdecl))*/
+                    case (ConstructorDeclHolder(cdecl), EmptyDeclHolder) =>
+                      Success((abs, g1.setInternal(abs, ConstructorMethodDecl(None, cdecl))))
+                    case (_,_) => Failure(new AGError())
+                  }
+                case (Constructor, _) => Failure(throw new AGError())
+                case _ => Success((abs, g1))
+              }
+        }
     }
   }
 

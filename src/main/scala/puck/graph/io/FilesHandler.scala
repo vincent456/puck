@@ -283,7 +283,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind], T](workingDirectory : File){
   def searchingStrategies : Seq[ConstraintSolvingSearchEngineBuilder[Kind, T]]
 
 
-  type ST = SearchState[ResultT[Kind, T], _]
+  type ST = SearchState[ResultT[Kind, T]]
 
   def explore (trace : Boolean = false,
                builder : ConstraintSolvingSearchEngineBuilder[Kind,T]) : Search[ResultT[Kind, T]] = {
@@ -298,7 +298,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind], T](workingDirectory : File){
   }
 
 
-  def printCSSearchStatesGraph(states : Map[Int, Seq[SearchState[ResultT[Kind, T], _]]]){
+  def printCSSearchStatesGraph(states : Map[Int, Seq[SearchState[ResultT[Kind, T]]]]){
     val d = graphFile("_results")
     d.mkdir()
     states.foreach{
@@ -310,13 +310,13 @@ abstract class FilesHandler[Kind <: NodeKind[Kind], T](workingDirectory : File){
   }
 
   def printCSSearchStatesGraph(dir : File,
-                               states : Seq[SearchState[ResultT[Kind,T], _]],
-                               sPrinter : Option[(SearchState[ResultT[Kind,T],_] => String)]){
+                               states : Seq[SearchState[ResultT[Kind,T]]],
+                               sPrinter : Option[(SearchState[ResultT[Kind,T]] => String)]){
 
     val printer = sPrinter match {
       case Some(p) => p
       case None =>
-        s : SearchState[ResultT[Kind,T],_] => s.uuid()
+        s : SearchState[ResultT[Kind,T]] => s.uuid()
     }
 
     states.foreach { s =>

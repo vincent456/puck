@@ -5,6 +5,7 @@ import puck.search.{StateCreator, SearchState}
 import puck.util.PuckLog
 
 import scala.collection.mutable
+import scala.util.Try
 
 /**
  * Created by lorilan on 26/09/14.
@@ -49,7 +50,7 @@ trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, U, T]
     })
   }
 
-  def executeNextChoice(){
+  def executeNextChoice(end : Try[ResultT[Kind, U]] => Unit){
     if(engine.currentState != this)
       setAsCurrentState()
 
@@ -70,7 +71,7 @@ trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, U, T]
           graph.logger.writeln(("redirection error catched, " +
             "choice %s aborted :\n %s").format(c, e.getMessage))(PuckLog.Search, PuckLog.Info)
           graph.undo(breakPoint)
-          executeNextChoice()
+          executeNextChoice(end)
       }
 
     }

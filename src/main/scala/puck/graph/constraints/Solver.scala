@@ -4,6 +4,8 @@ import puck.graph._
 import puck.graph.immutable.NoType
 import puck.util.{PuckLog, PuckLogger}
 
+import scala.util.{Success, Try, Failure}
+
 trait Solver[Kind <: NodeKind[Kind], T] {
 
   implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.Solver, PuckLog.Info)
@@ -21,13 +23,13 @@ trait Solver[Kind <: NodeKind[Kind], T] {
   def redirectTowardExistingAbstractions(graph : GraphT,
                                          usee : NIdT,
                                          wrongUsers : Seq[NIdT])
-                                        (k : (GraphT, Seq[NIdT]) => Option[ResT]) : Option[ResT] = {
+                                        (k : (GraphT, Seq[NIdT]) => Unit) {
     decisionMaker.abstractionKindAndPolicy(graph, usee) {
-      case (absKind, absPolicy) =>
+      case Some((absKind, absPolicy)) =>
 
         logger.writeln("redirect toward existing abstractions")
         val (g3, allUnsolved) = wrongUsers.foldLeft((graph, Seq[NIdT]())) {
-          case ((g,unsolved), wu) =>
+          case ((g, unsolved), wu) =>
           g.abstractions(usee) find {
             case (node, `absPolicy`) if g.getNode(node).kind == absKind =>
               !graph.interloperOf(wu, node)
@@ -39,19 +41,16 @@ trait Solver[Kind <: NodeKind[Kind], T] {
 
               val breakPoint = g.startSequence()
 
-              try {
-                val (_, g2) = g.redirectUses(AGEdge.uses(wu, usee), abs, absPolicy)
-                (g2, unsolved)
+              g.redirectUses(AGEdge.uses(wu, usee), abs, absPolicy) match {
+                  case Success((_, g2)) => (g2, unsolved)
+                  case Failure(e) =>
+                    logger.writeln("redirection error catched !!")(PuckLog.Debug)
+                    (g.undo(breakPoint), wu +: unsolved)
               }
-              catch {
-                case e: RedirectionError =>
-                  logger.writeln("redirection error catched !!")(PuckLog.Debug)
-                  (g.undo(breakPoint), wu +: unsolved)
-              }
-
           }
         }
         k(g3, allUnsolved)
+      case None =>k(graph, wrongUsers)
     }
   }
 
@@ -61,18 +60,18 @@ trait Solver[Kind <: NodeKind[Kind], T] {
 
   trait FindHostResult
   case class Host(host : NIdT, graph : GraphT) extends FindHostResult
-  case class FindHostError() extends FindHostResult
+  case class FindHostError() extends Throwable with FindHostResult
 
   def findHost(graph : GraphT,
                toBeContained : NIdT,
                specificPredicate : PredicateT = allwaysTrue,
                parentsThatCanBeCreated : Int = 1)
-              (k : FindHostResult => Option[ResT]) : Option[ResT] = {
+              (k : FindHostResult => Unit) {
 
     def predicate(graph : GraphT, n : NIdT) : Boolean =
       (graph.getNode(n) canContain toBeContained) && specificPredicate(graph, n)
 
-    def hostIntro(toBeContainedId : NIdT) : Option[ResT] = {
+    def hostIntro(toBeContainedId : NIdT) {
       logger.writeln("call hostIntro " + toBeContainedId )(PuckLog.Debug)
       val toBeContained = graph.getNode(toBeContainedId)
       graph.nodeKinds.find(_.canContain(toBeContained.kind)) match {
@@ -130,41 +129,43 @@ trait Solver[Kind <: NodeKind[Kind], T] {
                impl : NIdT,
                wrongUsers : Seq[NIdT],
                degree : Int = 1)
-               (k : Option[GraphT] => Option[ResT]) : Option[ResT] = {
+               (k : Try[GraphT] => Unit) : Unit = {
 
     logger.writeln("abs of "+ impl +" intro degree "+degree)
 
 
     def aux(graph : GraphT, deg : Int, currentImpl : NIdT)
-           (k : Option[(GraphT, NIdT, AbstractionPolicy)] => Option[ResT]) : Option[ResT] = {
+           (k : Try[(GraphT, NIdT, AbstractionPolicy)] => Unit) : Unit = {
       logger.writeln("*** abs intro degree %d/%d ***".format(deg, degree))
 
       decisionMaker.abstractionKindAndPolicy(graph, currentImpl){
         case Some((absKind, absPolicy)) =>
 
-          def doIntro(k: Option[(GraphT, NIdT, AbstractionPolicy)] => Option[ResT]) : Option[ResT] = {
+          def doIntro(k: Try[(GraphT, NIdT, AbstractionPolicy)] => Unit) : Unit = {
             logger.writeln("Searching host for abstraction( %s, %s ) of %s ".
               format(absKind, absPolicy, currentImpl))
 
-            val (absId, graph2) = graph.createAbstraction(currentImpl, absKind, absPolicy)
+            graph.createAbstraction(currentImpl, absKind, absPolicy) match {
+              case Failure(f) => Failure(f)
+              case Success((absId, graph2)) =>
+                logger.writeln("in solver "+ absId + " introduced as "+ absPolicy + " for " + currentImpl)(PuckLog.Search, PuckLog.Debug)
 
-            logger.writeln("in solver "+ absId + " introduced as "+ absPolicy + " for " + currentImpl)(PuckLog.Search, PuckLog.Debug)
+                findHost(graph2, absId,
+                  absIntroPredicate(graph2, currentImpl, absPolicy, absKind)) {
+                  case Host(h, graph3) =>
+                    logger.writeln("absIntro : host of %s is %s".format(absId, h))
 
-            findHost(graph2, absId,
-                     absIntroPredicate(graph2, currentImpl, absPolicy, absKind)) {
-              case Host(h, graph3) =>
-                logger.writeln("absIntro : host of %s is %s".format(absId, h))
+                    val graph4 = graph3.addContains(h, absId)
 
-                val graph4 = graph3.addContains(h, absId)
+                    //TODO check if can find another way more generic
+                    //whitout passing by abstracting the container
+                    val graph5 = graph4.abstractionCreationPostTreatment(currentImpl, absId, absPolicy)
 
-                //TODO check if can find another way more generic
-                //whitout passing by abstracting the container
-                val graph5 = graph4.abstractionCreationPostTreatment(currentImpl, absId, absPolicy)
-
-                k(Some(graph5, absId, absPolicy))
-              case FindHostError() =>
-                logger.writeln("error while searching host for abstraction")
-                k(None)
+                    k(Success((graph5, absId, absPolicy)))
+                  case FindHostError() =>
+                    logger.writeln("error while searching host for abstraction")
+                    k(Failure(FindHostError()))
+                }
             }
           }
 
@@ -172,45 +173,49 @@ trait Solver[Kind <: NodeKind[Kind], T] {
             doIntro(k)
           else
             doIntro({
-              case None => throw new AGError("Single abs intro degree %d/%d error (currentImpl = %s)".
-                format(deg, degree, currentImpl))
-              case Some((g, abs, _)) =>
-                aux(g, deg + 1, abs)(k)
+              case Failure(_) =>
+                k(Failure(new AGError("Single abs intro degree %d/%d error (currentImpl = %s)".
+                format(deg, degree, currentImpl))))
+              case Success((g, abs, _)) => aux(g, deg + 1, abs)(k)
             })
 
-        case None => k(None)
+        case None => k(Failure(new AGError("no abstraction for impl of kind " + graph.getNode(currentImpl).kind)))
       }
     }
 
 
     aux(graph, 1, impl) {
-      case None => k(None)
-      case Some((g, abs, absPolicy)) =>
+      case Success((g, abs, absPolicy)) =>
 
         logger.writeln("redirecting wrong users !!")
-        val g2 = wrongUsers.foldLeft(g){
-          case (g0, wuId) =>
-            val (_, g1) = g0.redirectUses(AGEdge.uses(wuId, impl), abs, absPolicy)
-            g1
+        val res = wrongUsers.foldLeft(Success(g) : Try[GraphT]){
+          case (f : Failure, wuId) => Failure(f.exception)
+          case (Success(g0), wuId) =>
+            g0.redirectUses(AGEdge.uses(wuId, impl), abs, absPolicy) match {
+              case Success((_, g1)) => Success(g1)
+              case Failure(e) => Failure(e)
+            }
         }
-        k(Some(g2))
+        k(res)
+      case Failure(e) => k(Failure(e))
+
     }
 
   }
 
-  def solveUsesToward(graph : GraphT, impl : NIdT, k : Option[GraphT] => Option[ResT]) : Option[ResT] = {
+  def solveUsesToward(graph : GraphT, impl : NIdT, k : Try[GraphT] => Unit) {
     logger.writeln("###################################################")
     logger.writeln("##### Solving uses violations toward %s ######".format(impl))
 
     redirectTowardExistingAbstractions(graph, impl, graph.wrongUsers(impl)){
-      case (graph2, wrongUsers) =>
+      (graph2, wrongUsers) =>
       if (wrongUsers.nonEmpty){
         absIntro(graph2, impl, wrongUsers){
-          case None =>
+          case Failure(_) =>
             //dead code : en acceptant qu'une abstraction nouvellement introduite
             //soit la cible de violation, on a jamais besoin d'utiliser le degré 2
             absIntro(graph2, impl, wrongUsers, 2){
-              case None => k(None)
+              case Failure(e) => k(Failure(e))
 
                 /*decisionMaker.modifyConstraints(LiteralNodeSet(wrongUsers), impl)
                 if(impl.wrongUsers.nonEmpty)
@@ -221,13 +226,13 @@ trait Solver[Kind <: NodeKind[Kind], T] {
           case sg => k (sg)
         }
       }
-      else k(Some(graph2))
+      else k(Success(graph2))
     }
   }
 
   def solveContains(graph : GraphT,
                     wronglyContained : NIdT,
-                    k : Option[GraphT] => Option[ResT]) : Option[ResT] = {
+                    k : Try[GraphT] => Unit) {
     logger.writeln("###################################################")
     logger.writeln("##### Solving contains violations toward %s ######".format(wronglyContained))
 
@@ -254,33 +259,31 @@ trait Solver[Kind <: NodeKind[Kind], T] {
         else graph3
 
         logger.writeln("solveContains : calling k()")
-        k(Some(graph4))
-       case FindHostError() =>
-        logger.writeln("FindHostError caught")
-        k(None)
+        k(Success(graph4))
+       case FindHostError() => k(Failure(new AGError("FindHostError caught")))
     }
   }
 
 
-  def solveViolationsToward(graph : GraphT, target : NIdT) (k: Option[GraphT] => Option[ResT] ) : Option[ResT] = {
-    def end: Option[GraphT] => Option[ResT] = {
-      case Some(g) =>
+  def solveViolationsToward(graph : GraphT, target : NIdT) (k: Try[GraphT] => Unit ) = {
+    def end: Try[GraphT] => Unit = {
+      case Success(g) =>
       logger.writeln("solveViolationsToward$end")
       if (g.wrongUsers(target).nonEmpty)
         solveUsesToward(g, target, k)
       else
-        k(Some(g))
-      case None =>k(None)
+        k(Success(g))
+      case noRes =>k(noRes)
     }
 
     if(graph.isWronglyContained(target))
       solveContains(graph, target, end)
     else
-      end(Some(graph))
+      end(Success(graph))
   }
 
 
-  def doMerges(graph : GraphT) : Option[ResT] = ??? /*{
+  def doMerges(graph : GraphT, k : Try[ResT] => Unit) : Option[ResT] = ??? /*{
 
     def aux(it : Iterator[AGNode[Kind]]) : Unit =
       if(it.hasNext){
@@ -296,26 +299,28 @@ trait Solver[Kind <: NodeKind[Kind], T] {
 
     aux(graph.nodes.iterator)
 
+    k((graph, graph.record))
+
   }*/
 
-  def solve(graph : GraphT) : Option[ResT] = {
+  def solve(graph : GraphT, k : Try[ResT] => Unit) {
     logger.writeln("solve begins !")
     val sortedId = graph.nodesId.toSeq.sorted
     sortedId.foreach{id => logger.writeln("("+ id + ", " + graph.container(id)+ ")")}
     val nodes = graph.nodes.toSeq.sortBy(_.id)
     nodes foreach {n => logger.writeln(n)}
 
-    def aux: Option[GraphT] => Option[ResT] = {
-      case Some(g) =>
+    def aux: Try[GraphT] => Unit = {
+      case Success(g) =>
       decisionMaker.violationTarget(g) {
-        case None => doMerges(g)
+        case None => doMerges(g, k)
         case Some(target) =>
           solveViolationsToward(g, target)(aux)
       }
-      case None => None
+      case Failure(e) => k(Failure(e))
     }
 
-    aux(Some(graph))
+    aux(Success(graph))
   }
 
 

@@ -12,7 +12,7 @@ import scala.collection.mutable
 
 
 class ConstraintSolvingNodesChoice[Kind <: NodeKind[Kind], T]
-(val k : Option[NodeId[Kind]] => Option[ResultT[Kind, T]],
+(val k : Option[NodeId[Kind]] => Unit,
  val remainingChoices : mutable.Set[NodeId[Kind]],
  val triedChoices : mutable.Set[NodeId[Kind]])
  extends ConstraintSolvingChoice[Kind, NodeId[Kind], T, ConstraintSolvingNodesChoice[Kind, T]] {

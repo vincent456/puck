@@ -13,9 +13,9 @@ case class StateSelected[Kind <: NodeKind[Kind], T](box : CSSearchStateComboBox[
 
 object CSSearchStateComboBox{
 
-  def sort[Kind <: NodeKind[Kind], T](l : Seq[SearchState[ResultT[Kind, T], _]])={
-    def aux( acc : Map[Int, Seq[SearchState[ResultT[Kind, T], _]]],
-               l : Seq[SearchState[ResultT[Kind, T], _]]) : Map[Int, Seq[SearchState[ResultT[Kind, T], _]]] =
+  def sort[Kind <: NodeKind[Kind], T](l : Seq[SearchState[ResultT[Kind, T]]])={
+    def aux( acc : Map[Int, Seq[SearchState[ResultT[Kind, T]]]],
+               l : Seq[SearchState[ResultT[Kind, T]]]) : Map[Int, Seq[SearchState[ResultT[Kind, T]]]] =
       if(l.isEmpty) acc
       else{
         val graph = graphOfResult(l.head.result)
@@ -24,13 +24,13 @@ object CSSearchStateComboBox{
         val olds = acc.getOrElse(value, Seq())
         aux(acc + (value -> (l.head +: olds)), l.tail)
       }
-    aux(Map[Int, Seq[SearchState[ResultT[Kind, T], _]]](), l)
+    aux(Map[Int, Seq[SearchState[ResultT[Kind, T]]]](), l)
   }
 }
-class CSSearchStateComboBox[Kind <: NodeKind[Kind], T](map : Map[Int, Seq[SearchState[ResultT[Kind, T], _]]])
+class CSSearchStateComboBox[Kind <: NodeKind[Kind], T](map : Map[Int, Seq[SearchState[ResultT[Kind, T]]]])
   extends FlowPanel{
 
-  type StateT = SearchState[ResultT[Kind, T], _]
+  type StateT = SearchState[ResultT[Kind, T]]
 
   val combobox2wrapper = new FlowPanel()
   val couplingValues = new ComboBox(map.keys.toSeq)
@@ -56,7 +56,7 @@ class CSSearchStateComboBox[Kind <: NodeKind[Kind], T](map : Map[Int, Seq[Search
     action = new Action("History"){
       def apply() {
 
-        val state: SearchState[ResultT[Kind, T], _] = searchStateComboBox.selection.item
+        val state: SearchState[ResultT[Kind, T]] = searchStateComboBox.selection.item
         var id = -1
 
         CSSearchStateComboBox.this publish SearchStateSeqPrintingRequest[Kind, T](state.uuid()+"history",

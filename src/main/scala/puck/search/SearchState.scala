@@ -3,6 +3,7 @@ package puck.search
 import puck.util.{HasChildren, BreadthFirstTreeIterator}
 
 import scala.collection.mutable
+import scala.util.Try
 
 /**
  * Created by lorilan on 22/07/14.
@@ -18,14 +19,14 @@ trait StateCreator[Result, Internal]{
                   choices : Internal) : SearchState[Result]
 }
 
-trait SearchState[Result] extends HasChildren[SearchState[Result]]{
+trait SearchState[ResT] extends HasChildren[SearchState[ResT]]{
 
-  val result : Result
+  val result : ResT
   val id : Int
-  val engine : SearchEngine[Result]
-  val prevState : Option[SearchState[Result]]
+  val engine : SearchEngine[ResT]
+  val prevState : Option[SearchState[ResT]]
 
-  def createNextState[S <: StateCreator[Result, S]](cr : Result, choices : S) : SearchState[Result] = {
+  def createNextState[S <: StateCreator[ResT, S]](cr : ResT, choices : S) : SearchState[ResT] = {
     val s = choices.createState(this.nextChildId(), this.engine, Some(this), cr, choices)
     this.nextStates += s
     s
@@ -39,7 +40,7 @@ trait SearchState[Result] extends HasChildren[SearchState[Result]]{
 
 
 
-  val nextStates = mutable.ListBuffer[SearchState[Result]]()
+  val nextStates = mutable.ListBuffer[SearchState[ResT]]()
 
   var cid = -1
 
@@ -80,7 +81,7 @@ trait SearchState[Result] extends HasChildren[SearchState[Result]]{
   }
   
   def markedPointDepth : Int = {
-  def aux(sstate : Option[SearchState[Result]], acc : Int) : Int = sstate match {
+  def aux(sstate : Option[SearchState[ResT]], acc : Int) : Int = sstate match {
     case None => acc
     case Some(s) => aux(s.prevState,
       if(s.isMarkPointState) acc + 1
@@ -101,11 +102,11 @@ trait SearchState[Result] extends HasChildren[SearchState[Result]]{
 
   def triedAll : Boolean
 
-  def executeNextChoice() : Option[Result]
+  def executeNextChoice : (Try[ResT] => Unit) => Unit
 
-  def ancestors(includeSelf : Boolean) :Seq[SearchState[Result]] = {
-    def aux(sState : Option[SearchState[Result]],
-            acc : Seq[SearchState[Result]]) : Seq[SearchState[Result]] =
+  def ancestors(includeSelf : Boolean) :Seq[SearchState[ResT]] = {
+    def aux(sState : Option[SearchState[ResT]],
+            acc : Seq[SearchState[ResT]]) : Seq[SearchState[ResT]] =
     sState match {
       case None => acc
       case Some(state) => aux(state.prevState, state +: acc)
@@ -117,13 +118,13 @@ trait SearchState[Result] extends HasChildren[SearchState[Result]]{
 
 }
 
-class FinalState[Result]
+class FinalState[T]
 (val id: Int,
- val result : Result,
- val engine: SearchEngine[Result],
- val prevState: Option[SearchState[Result]])
-  extends SearchState[Result]{
+ val result : T,
+ val engine: SearchEngine[T],
+ val prevState: Option[SearchState[T]])
+  extends SearchState[T]{
 
-  override def executeNextChoice(): Option[Result] = throw new Error("No next choice for a final state")
+  override def executeNextChoice : (Try[T] => Unit) => Unit = throw new Error("No next choice for a final state")
   override def triedAll: Boolean = true
 }

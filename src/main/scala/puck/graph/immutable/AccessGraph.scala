@@ -8,6 +8,7 @@ import puck.util.{Logger, PuckLog, PuckNoopLogger, PuckLogger}
 import puck.graph.immutable.transformations.Recording
 
 import scala.language.existentials
+import scala.util.{Failure, Success, Try}
 
 object AccessGraph {
 
@@ -361,13 +362,13 @@ class AccessGraph[NK <: NodeKind[NK], T]
 
   def createAbstraction(implId: NIdT,
                         abskind : NK ,
-                        policy : AbstractionPolicy) : (NIdT, GraphT) = {
+                        policy : AbstractionPolicy) : Try[(NIdT, GraphT)] = {
     val (absId, g) = createNode(implId, abskind, policy)
     val g2 = g.setType(absId, getNode(implId).styp)
-    (absId, policy match {
+    Success((absId, policy match {
       case SupertypeAbstraction => g2.addUses(implId, absId)
       case DelegationAbstraction => g2.addUses(absId, implId)
-    })
+    }))
 
   }
 
@@ -378,8 +379,8 @@ class AccessGraph[NK <: NodeKind[NK], T]
   def redirectUses(oldEdge : EdgeT, newUsee : NIdT,
                    policy : RedirectionPolicy,
                    propagateRedirection : Boolean = true,
-                   keepOldUse : Boolean = false ) : (EdgeT, GraphT) = {
-    if(oldEdge.usee == newUsee) (oldEdge, this)
+                   keepOldUse : Boolean = false ) : Try[(EdgeT, GraphT)] = {
+    if(oldEdge.usee == newUsee) Success((oldEdge, this))
     else if(oldEdge.exists(this)) {
 
       logger.writeln("redirecting %s target to %s (%s)".format(oldEdge, newUsee, policy))
@@ -405,7 +406,7 @@ class AccessGraph[NK <: NodeKind[NK], T]
       }
       else g3
 
-      (newUse, g4)
+      Success((newUse, g4))
     }
     else if (uses(oldEdge.user, newUsee)) {
       //if m uses  both A and A.mi, the first uses dominate the second
@@ -414,16 +415,16 @@ class AccessGraph[NK <: NodeKind[NK], T]
       // when iterating on the wrongusers, the next call to redirectuses will arrive here
       logger.writeln("redirecting uses' %s target to %s (%s) : FAILURE !! %s is not used".
         format(oldEdge, newUsee, policy, oldEdge.usee))
-      (AGEdge.uses(oldEdge.user, newUsee), this)
+      Success((AGEdge.uses[NK](oldEdge.user, newUsee), this))
     }
     else {
       if(users(oldEdge.usee).exists(_ == oldEdge.user) ||
         users(newUsee).exists(_==oldEdge.user))
-        throw new AGError("incoherent state !!!!!!!!!!!!")
+        Failure(new AGError("incoherent state !!!!!!!!!!!!"))
 
-      throw new AGError(("redirecting uses' %s target to %s (%s)\n" +
+      Failure(new AGError(("redirecting uses' %s target to %s (%s)\n" +
         "!!! nor the oldUsee or the newUsee is really used !!! ").
-        format(oldEdge, newUsee, policy))
+        format(oldEdge, newUsee, policy)))
     }
   }
 

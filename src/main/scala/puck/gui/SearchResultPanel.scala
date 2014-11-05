@@ -15,7 +15,7 @@ class SearchResultPanel[Kind <: NodeKind[Kind], T](res : Search[ResultT[Kind, T]
 
   implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.NoSpecialContext, PuckLog.Info)
 
-  type ST = SearchState[ResultT[Kind, T],_]
+  type ST = SearchState[ResultT[Kind, T]]
 
   def filterDifferentStates(l : Seq[ST]): Seq[ST] = {
     def aux(l : Seq[ST], acc : Seq[ST]) : Seq[ST] = {

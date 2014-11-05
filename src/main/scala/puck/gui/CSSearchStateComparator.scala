@@ -8,7 +8,7 @@ import scala.swing.{Button, Label, Orientation, BoxPanel}
 /**
  * Created by lorilan on 22/10/14.
  */
-class CSSearchStateComparator[Kind <: NodeKind[Kind], T](sortedRes: Map[Int, Seq[SearchState[ResultT[Kind,T], _]]])
+class CSSearchStateComparator[Kind <: NodeKind[Kind], T](sortedRes: Map[Int, Seq[SearchState[ResultT[Kind,T]]]])
   extends BoxPanel(Orientation.Vertical) {
   contents += new Label("Compare")
   val cb1 = new CSSearchStateComboBox(sortedRes)
