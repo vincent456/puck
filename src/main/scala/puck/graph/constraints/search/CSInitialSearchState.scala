@@ -14,7 +14,8 @@ trait InitialStateCreator[Kind <: NodeKind[Kind], T] {
   val solverBuilder : SolverBuilder[Kind, T]
 
   def logger = graph.logger
-  def initialState = new CSInitialSearchState(this, solverBuilder(graph, this), graph)
+  def createInitialState(k : Try[ResultT[Kind, T]] => Unit) =
+    new CSInitialSearchState(this, solverBuilder(graph, this), graph, k)
 
 }
 
@@ -23,14 +24,15 @@ trait InitialStateCreator[Kind <: NodeKind[Kind], T] {
  */
 class CSInitialSearchState[Kind <: NodeKind[Kind], T](e : SearchEngine[ResultT[Kind, T]],
                                                    solver : Solver[Kind, T],
-                                                   graph : AccessGraph[Kind, T])
+                                                   graph : AccessGraph[Kind, T],
+                                                   k : Try[ResultT[Kind, T]] => Unit)
   extends ConstraintSolvingNodeChoiceSearchState[Kind, T](0, (graph, graph.recording), e,
     new ConstraintSolvingNodesChoice[Kind, T](null, mutable.Set(), mutable.Set()), None){
 
   var executedOnce = false
   override def triedAll = executedOnce
 
-  override def executeNextChoice(k : Try[ResultT[Kind, T]] => Unit){
+  override def executeNextChoice(){
     //solver.solve(() => printTrace(e.currentState))
     solver.solve(graph, k)
     executedOnce = true

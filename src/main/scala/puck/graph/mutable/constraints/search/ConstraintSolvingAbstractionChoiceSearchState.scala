@@ -22,7 +22,7 @@ class ConstraintSolvingAbstractionChoice[Kind <: NodeKind[Kind]](val k : Option[
   extends ConstraintSolvingChoice[Kind, (Kind, AbstractionPolicy), CSAC[Kind]] {
   def createState(id: Int,
                   engine: SearchEngine[Recording[Kind]],
-                  prevState: Option[SearchState[Recording[Kind], _]],
+                  prevState: Option[SearchState[Recording[Kind]]],
                   currentResult : Recording[Kind],
                   choices: CSAC[Kind]) =
     new ConstraintSolvingAbstractionChoiceSearchState[Kind](id, currentResult, engine, choices, prevState)
@@ -34,5 +34,5 @@ class ConstraintSolvingAbstractionChoiceSearchState[Kind <: NodeKind[Kind]](val 
                                                                             val result : Recording[Kind],
                                                                             val engine : SearchEngine[Recording[Kind]],
                                                                             val internal: CSAC[Kind],
-                                                                            val prevState : Option[SearchState[Recording[Kind],_]])
+                                                                            val prevState : Option[SearchState[Recording[Kind]]])
   extends ConstraintSolvingState[Kind, (Kind, AbstractionPolicy), CSAC[Kind]]

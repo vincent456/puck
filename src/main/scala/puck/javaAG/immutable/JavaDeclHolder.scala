@@ -70,24 +70,6 @@ case class AbstractMethodDeclHolder(decl : Option[AST.MethodDecl]) extends DeclH
       case (Some(_),_) => graph
     }
   }
-
-  def findMergingCandidate(interface : AGNode[JavaNodeKind, DeclHolder]) = ??? /*{
-    //node.graph.logger.writeln("searching merging candidate for %s".format(node), 8)
-    val mType = typ.copyWith(node.container).replacedBy(interface)
-
-    interface.content.find { nc =>
-      nc.kind match {
-        case ncKind @ AbstractMethod() =>
-      //    node.graph.logger.write("trying %s : ".format(nc), 8)
-          val isMergingCandidate = nc.name == node.name &&
-            ncKind.typ == mType
-      //    node.graph.logger.writeln(isMergingCandidate.toString, 8)
-          isMergingCandidate
-        case _ => false
-      }
-    }
-
-  }*/
 }
 
 case class ConstructorMethodDecl( decl : Option[AST.MethodDecl],
@@ -141,34 +123,7 @@ trait TypedKindDeclHolder extends DeclHolder {
 
 case class InterfaceDeclHolder(decl : Option[AST.TypeDecl]) extends TypedKindDeclHolder {
 
-
-  def isMergingCandidate(itc : AGNode[JavaNodeKind, _]): Boolean = ??? /*{
-
-    def hasMatchingMethod(absm : AGNode[JavaNodeKind])= absm.kind match{
-      case absMethKind@AbstractMethod() =>
-        absMethKind.findMergingCandidate(itc.node) match {
-          case None => false
-          case Some(_) => true
-        }
-      case _ => throw new AGError("Interface should contain only abstract method !!")
-
-    }
-
-    val otherItc = itc.node
-
-    otherItc.content().size >= node.content().size &&
-      (node.content() forall hasMatchingMethod) &&
-        (otherItc.content().size == node.content().size ||
-        {
-          //otherItc has more methods, it is a potential subtype
-          node.subTypes() forall otherItc.isSuperTypeOf
-          //TODO structual type check
-          /*val missingMethodsInThis =
-            otherItc.content.filterNot{hasMatchingMethodIn(this)}
-        })
-  }*/*/
-
-  override val toString = "Interface"
+override val toString = "Interface"
 
 
   override def createDecl(prog : AST.Program,

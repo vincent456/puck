@@ -179,7 +179,7 @@ class PuckControl[Kind <: NodeKind[Kind], T](val filesHandler : FilesHandler[Kin
       Future {
         filesHandler.logger.writeln("Solving constraints ...")
         puck.util.Time.time(filesHandler.logger, defaultVerbosity) {
-          engine.search()
+          engine.explore()
         }
         engine
       } onComplete {

@@ -189,7 +189,7 @@ trait Solver[Kind <: NodeKind[Kind], T] {
 
         logger.writeln("redirecting wrong users !!")
         val res = wrongUsers.foldLeft(Success(g) : Try[GraphT]){
-          case (f : Failure, wuId) => Failure(f.exception)
+          case (Failure(exc), wuId) => Failure(exc)
           case (Success(g0), wuId) =>
             g0.redirectUses(AGEdge.uses(wuId, impl), abs, absPolicy) match {
               case Success((_, g1)) => Success(g1)
@@ -250,16 +250,18 @@ trait Solver[Kind <: NodeKind[Kind], T] {
 
 
 
-         val graph3 = graph2. //re-attach before moving
+         val tryGraph3 = graph2. //re-attach before moving
                         addContains(oldCter, wronglyContained, register = false).
                         moveTo(wronglyContained, newCter)
 
-        val graph4 = if(graph3.isWronglyContained(wronglyContained))
-          graph3.addHideFromRootException(wronglyContained, newCter)
-        else graph3
+        val tryGraph4 = tryGraph3.map {graph3 =>
+          if(graph3.isWronglyContained(wronglyContained))
+            graph3.addHideFromRootException(wronglyContained, newCter)
+          else graph3
+        }
 
         logger.writeln("solveContains : calling k()")
-        k(Success(graph4))
+        k(tryGraph4)
        case FindHostError() => k(Failure(new AGError("FindHostError caught")))
     }
   }
@@ -283,25 +285,25 @@ trait Solver[Kind <: NodeKind[Kind], T] {
   }
 
 
-  def doMerges(graph : GraphT, k : Try[ResT] => Unit) : Option[ResT] = ??? /*{
+  def doMerges(graph : GraphT, k : Try[ResT] => Unit) {
 
-    def aux(it : Iterator[AGNode[Kind]]) : Unit =
+    def aux(graph : GraphT, it : Iterator[NIdT]) : GraphT =
       if(it.hasNext){
         val n = it.next()
-        n.findMergingCandidate() match {
+        graph.findMergingCandidate(n) match {
           case Some(other) =>
-            other mergeWith n
-            aux(graph.iterator)
-          case None => aux(it)
+            val g1 = graph.merge(other, n)
+            aux(g1, g1.nodesId.iterator)
+          case None => aux(graph, it)
         }
       }
-      else None
+      else graph
 
-    aux(graph.nodes.iterator)
+    val g = aux(graph, graph.nodesId.iterator)
 
-    k((graph, graph.record))
+    k(Success(g, g.recording))
 
-  }*/
+  }
 
   def solve(graph : GraphT, k : Try[ResT] => Unit) {
     logger.writeln("solve begins !")

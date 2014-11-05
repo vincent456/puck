@@ -18,7 +18,7 @@ trait ConstraintSolvingChoice[Kind <: NodeKind[Kind], S, U, T <: ConstraintSolvi
   val triedChoices : mutable.Set[S]
 }
 
-trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, U, T]
+trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, U, T <: ConstraintSolvingChoice[Kind, S, U, T]]
   extends SearchState[ResultT[Kind, U]]{
 
   /*println("creating searchState "+ id)
@@ -50,7 +50,7 @@ trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, U, T]
     })
   }
 
-  def executeNextChoice(end : Try[ResultT[Kind, U]] => Unit){
+  def executeNextChoice(){
     if(engine.currentState != this)
       setAsCurrentState()
 
@@ -63,6 +63,10 @@ trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, U, T]
 
       val graph = graphOfResult(result)
 
+      k(Some(c))
+
+
+/*
       val breakPoint = graph.startSequence()
       try {
         k(Some(c))
@@ -73,6 +77,7 @@ trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, U, T]
           graph.undo(breakPoint)
           executeNextChoice(end)
       }
+*/
 
     }
     else if(needToTryNone){

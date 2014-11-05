@@ -5,7 +5,7 @@ import puck.graph.constraints.{SupertypeAbstraction, AbstractionPolicy}
 import puck.graph.immutable.AccessGraph._
 import puck.graph.immutable.constraints.ConstraintsMaps
 import puck.graph.immutable.transformations.Recording
-import puck.graph.immutable.{AGEdge, AccessGraph}
+import puck.graph.immutable.{AGNode, AGEdge, AccessGraph}
 import puck.javaAG.immutable.nodeKind._
 import puck.util.PuckLog.InJavaGraph
 import puck.util.{PuckLog, PuckNoopLogger, PuckLogger}
@@ -56,7 +56,6 @@ class JavaAccessGraph
 
 
   type NK = JavaNodeKind
-  override type NIdT = NodeId[NK]
 
   implicit val defaultVerbosity = (InJavaGraph, PuckLog.Info)
 
@@ -82,6 +81,7 @@ class JavaAccessGraph
         super.createAbstraction( implId,
                                  Interface,
                                  SupertypeAbstraction) match {
+          case Failure(exc) => Failure(exc)
           case Success ((absId, g)) =>
             val abs = g.getNode(absId)
             val g2Try = implContent.foldLeft(Success(g) : Try[GraphT]){
@@ -99,6 +99,7 @@ class JavaAccessGraph
                             Success(g3.changeType(absChild, absChildNode.styp, implId, absId))
                           case k => Failure(new AGError(k + " should be an abstract method !"))
                         }
+                      case Failure(exc) => Failure(exc)
                     }
 
                 //case AbstractMethod() => throw new AGError("unhandled case !")
@@ -137,7 +138,8 @@ class JavaAccessGraph
                 g4Try match {
                   case Success(g4) => Success((absId, g4))
                   case Failure(f) => Failure(f)
-                }            }
+                }
+            }
         }
 
 
@@ -196,29 +198,105 @@ class JavaAccessGraph
     }
   }
 
-  //other is potentialy a superType and thus may have less methods than this
- /* override def mergeWith(other : AGNode[JavaNodeKind]){
-    (this.kind, other.kind) match {
-      case (Interface(), Interface()) =>
+
+  /*
+   * Merging
+   */
+
+  //!\ becarefull with AGNode use only to read values
+  type AGNodeT = AGNode[JavaNodeKind, DeclHolder]
+
+  //findMergingCandidate find only candidates for interfaces
+  //A merging candidate is either structurally equal
+  //either a subtype of this
+  //hence if we do the merge getNode(nid) will disappear
+  // and all its user redirected to the candidate
+  override def findMergingCandidate(nid : NIdT) : Option[NIdT] = {
+
+
+    def areMergingCandidates(n1 : AGNodeT, n2: AGNodeT): Boolean = {
+
+      def hasMatchingMethod(absmId : NIdT) = {
+        val absm = getNode(absmId)
+        absm.kind match {
+          case AbstractMethod => findMergingCandidateIn(absm, n2).isDefined
+          case _ => throw new AGError("Interface should contain only abstract method !!")
+        }
+      }
+
+      n2.content.size >= n1.content.size &&
+        (n1.content forall hasMatchingMethod) &&
+        (n2.content.size == n1.content.size ||
+          { //otherItc has more methods, it is a potential subtype
+            n1.subTypes forall n2.isSuperTypeOf
+            //TODO structual type check
+            /*val missingMethodsInThis =
+              otherItc.content.filterNot{hasMatchingMethodIn(this)}*/
+          })
+    }
+
+
+    val node = getNode(nid)
+    node.kind match {
+
+      case Interface if content(nid).nonEmpty =>
+        nodes.find { other =>
+           other.kind == Interface && other.id != nid &&
+             areMergingCandidates(node, other) &&
+                users(nid).forall(!interloperOf(_,other.id)) &&
+                usedBy(nid).forall(!interloperOf(other.id, _))
+        }.map(_.id)
+      case _ => None
+    }
+
+  }
+
+
+
+  def findMergingCandidateIn(method : AGNodeT, interface : AGNodeT) = {
+    //node.graph.logger.writeln("searching merging candidate for %s".format(node), 8)
+    if(method.styp.isEmpty)
+      throw new AGError("Method must have a type")
+
+    val mType = method.styp.redirectUses(method.container, interface)
+
+    interface.content.find { ncId =>
+      val nc =getNode(ncId)
+      nc.kind match {
+        case AbstractMethod =>  nc.name == method.name && nc.styp == mType
+        case _ => false
+      }
+    }
+
+  }
+  //"consumed" is potentialy a superType and thus may have less methods than this
+  override def merge(consumerId : NIdT, consumedId : NIdT) : GraphT = {
+    val consumer = getNode(consumedId)
+    val consumed = getNode(consumedId)
+    (consumer.kind, consumed.kind) match {
+      case (Interface, Interface) =>
         //TODO see why the call to apply on content is needed (other.content.toList compile but doesn't give the right result)
         //the toList is necessary :
         // removing the firsts children (AGEdge.contains(other.container, other).delete() in AGNode.mergeWith)
         // modifies the content set and thus the iterator
-        other.content().toList foreach { otherAbsMethod =>
-          otherAbsMethod.kind match {
-            case otherKind @ AbstractMethod() =>
-              otherKind.findMergingCandidate(this) match {
-                case Some(thisAbsMethod) => thisAbsMethod mergeWith otherAbsMethod
-                case None => throw new Error(otherAbsMethod.fullName + " has no method to merge with")
+        val g1 = super.merge(consumerId, consumedId)
+        consumed.content.foldLeft(g1) {
+          case (g0, consumedAbsMethodId) =>
+            val consumedAbsMethod = getNode(consumedAbsMethodId)
+
+            consumedAbsMethod.kind match {
+            case AbstractMethod =>
+              findMergingCandidateIn(consumedAbsMethod, consumer) match {
+                case Some(thisAbsMethod) => g0.merge(thisAbsMethod, consumedAbsMethodId)
+                case None => throw new AGError(consumedAbsMethod.fullName + " has no method to merge with")
               }
-            case _ => assert(false)
+            case _ => throw new AGError("interface must have only abstract method")
           }
         }
-        super.mergeWith(other)
 
-      case (AbstractMethod(), AbstractMethod()) =>
-        super.mergeWith(other)
-      case _ => ()
+      case (AbstractMethod, AbstractMethod) =>
+        super.merge(consumerId, consumedId)
+      case _ => this
     }
-  }*/
+  }
 }

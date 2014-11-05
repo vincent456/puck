@@ -294,7 +294,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind]](workingDirectory : File){
 
     graph.transformations.startRegister()
     puck.util.Time.time(logger, defaultVerbosity) {
-      engine.search()
+      engine.explore()
     }
 
     engine

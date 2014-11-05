@@ -51,11 +51,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind], T](val filesHandler: FilesHandler[Ki
 
   }
 
-  //filesHandler.logger = new ConsoleLogger(filesHandler.logPolicy)
-
-  /*val out = new OutputStream {
-    override def write(p1: Int): Unit = console.append(String.valueOf(p1.toChar))
-  }*/
+  filesHandler.logger = new ConsoleLogger(filesHandler.logPolicy)
 
   //topComponent
   leftComponent = new SplitPane(Orientation.Vertical) {

@@ -1,5 +1,6 @@
 package puck.graph.mutable.constraints.search
 
+import puck.graph.AGError
 import puck.graph.constraints.AbstractionPolicy
 import puck.graph.mutable.backTrack.Recording
 import puck.graph.mutable.NodeKind
@@ -12,7 +13,7 @@ import scala.collection.mutable
 object ConstraintSolving {
   type NodeChoice[Kind <: NodeKind[Kind]] = ConstraintSolvingNodesChoice[Kind]
   type AbsChoice[Kind <: NodeKind[Kind]] = ConstraintSolvingAbstractionChoice[Kind]
-  type FinalState[Kind <: NodeKind[Kind]] = SearchState[Recording[Kind], _]
+  type FinalState[Kind <: NodeKind[Kind]] = SearchState[Recording[Kind]]
 }
 
 /**
@@ -25,11 +26,12 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]
 
   val logger : PuckLogger = graph.logger
 
-  val initialState = new CSInitialSearchState(this, solverBuilder(graph, this))
+
+  //val initialState = new CSInitialSearchState(this, solverBuilder(graph, this))
 
   val violationsKindPriority : List[Kind]
 
-  def evaluate(s : SearchState[Recording[Kind], _]): Double ={
+  def evaluate(s : SearchState[Recording[Kind]]): Double ={
     if(currentState!=s)
       s.setAsCurrentState()
 
@@ -61,7 +63,8 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]
       case List() =>
         k(None) // will call doMerge
         newCurrentState(graph.transformations.recording, targetsChoice)
-        finalStates += currentState
+          throw new AGError("currentState should be added to final states")
+        //finalStates += currentState
       case List(oneTarget) =>
         k(Some(oneTarget))
       case _ => //more than one target

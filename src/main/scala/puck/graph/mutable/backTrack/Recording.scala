@@ -61,7 +61,7 @@ class Recording[Kind <: NodeKind[Kind]]( val graph : AccessGraph[Kind],
 
 
     val engine = new RecordingComparator(graph.initialRecord, this, other)
-    engine.search()
+    engine.explore()
     if(engine.finalStates.isEmpty) {
       logger.writeln("no mapping")((PuckLog.NoSpecialContext, PuckLog.Debug))
       false

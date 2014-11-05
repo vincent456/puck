@@ -16,7 +16,7 @@ trait Search[Result]{
 trait SearchEngine[T] extends Search[T]{
 
   var currentState : SearchState[T] = _
-  override val finalStates = mutable.ListBuffer[SearchState[T]]()
+  override val finalStates = mutable.ListBuffer[FinalState[T]]()
 
   private [this] var idSeed : Int = 0
   private def idGen() : Int = {idSeed += 1; idSeed}
@@ -25,21 +25,25 @@ trait SearchEngine[T] extends Search[T]{
     finalStates += new FinalState[T](idGen(), res, this, prevState)
   }
 
+  var initialState : SearchState[T] = _
   private var numExploredStates = 0
 
-  def init(){
-    currentState = initialState
-    numExploredStates = 1
-  }
+  def createInitialState(k : Try[T] => Unit) : SearchState[T]
 
   def newCurrentState[S <: StateCreator[T, S]](cr : T, choices : S)  = {
     currentState = currentState.createNextState[S](cr, choices)
     numExploredStates = numExploredStates + 1
   }
 
+  def init(k : Try[T] => Unit){
+    initialState = createInitialState(k)
+    currentState = initialState
+    numExploredStates = 1
+  }
+
   def search(k : Try[T] => Unit) {
-    init()
-    currentState.executeNextChoice(k)
+    init(k)
+    currentState.executeNextChoice()
   }
 
   def exploredStates = numExploredStates
@@ -59,9 +63,9 @@ trait StackedSearchEngine[Result] extends SearchEngine[Result]{
 
   val stateStack = mutable.Stack[SearchState[Result]]()
 
-  override def init(){
+  override def init(k : Try[Result] => Unit){
     //println("StackedSearchEngine.init")
-    super.init()
+    super.init(k)
     stateStack.push(initialState)
   }
 
@@ -94,7 +98,7 @@ trait TryAllSearchEngine[ResT] extends StackedSearchEngine[ResT]{
            case Some(s) => println("PREVSTATE    : " + s.uuid("/","_","") )
          }*/
 
-        stateStack.head.executeNextChoice(k)
+        stateStack.head.executeNextChoice()
       }
     }
   }
@@ -162,7 +166,7 @@ trait FindFirstSearchEngine[T] extends StackedSearchEngine[T] {
 
      while(stateStack.nonEmpty && finalStates.isEmpty){
         if(stateStack.head.triedAll) stateStack.pop()
-        else  stateStack.head.executeNextChoice(k)
+        else  stateStack.head.executeNextChoice()
      }
   }
 }

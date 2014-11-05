@@ -1,24 +1,27 @@
-package puck.graph.mutable.backTrack.comparison
+package puck.graph.immutable.transformations
 
-import puck.graph.mutable.backTrack._
-import puck.graph.mutable.{Contains, AGNode, NodeKind, AGEdge}
-import puck.util.{PuckLogger, PuckLog}
+import puck.graph.immutable.AccessGraph.NodeId
+import puck.graph.immutable.transformations.MappingChoices._
+import puck.graph.immutable.{AGNode, Contains, AGEdge, NodeKind}
+import puck.javaAG.immutable.nodeKind.JavaRoot
+import puck.util.{PuckLog, PuckLogger}
 
 import scala.collection.immutable.HashSet
+import scala.util.Try
 
 object NodeTransfoStatus {
   def apply( i : Int) = i match {
-    case 1 => Created()
-    case 0 => Neuter()
-    case -1 => Deleted()
+    case 1 => Created
+    case 0 => Neuter
+    case -1 => Deleted
     case _ => throw new Error("Illegal node transfo status value !")
   }
 }
 
 sealed abstract class NodeTransfoStatus
-case class Created() extends NodeTransfoStatus
-case class Deleted() extends NodeTransfoStatus
-case class Neuter() extends NodeTransfoStatus
+case object Created extends NodeTransfoStatus
+case object Deleted extends NodeTransfoStatus
+case object Neuter extends NodeTransfoStatus
 
 /**
  * Created by lorilan on 30/09/14.
@@ -26,39 +29,38 @@ case class Neuter() extends NodeTransfoStatus
 
 object NodeMappingInitialState{
 
-  def normalizeNodeTransfos[Kind <: NodeKind[Kind]](l : List[Recordable[Kind]],
-                                                    init : List[Transformation[Kind]] = List()) : (Map[AGNode[Kind], Int], List[Transformation[Kind]])= {
-    val (map, rl) = l.foldLeft( (Map[AGNode[Kind], Int](), init) ){
-      case ((m,l1), Transformation(Add(), TTNode(n)))=>
-        val i = m.getOrElse(n, 0)
-        (m + (n -> (i + 1)), l1)
-      case ((m,l1), Transformation(Remove(), TTNode(n))) =>
-        val i = m.getOrElse(n, 0)
-        (m + (n -> (i - 1)), l1)
-      case ((m, l1), UndoBreakPoint(_)) => (m , l1)
+  def normalizeNodeTransfos[Kind <: NodeKind[Kind], T](l : Seq[Transformation[Kind, T]],
+                                                       init : Seq[Transformation[Kind, T]] = Seq()) : (Map[NodeId[Kind], (Int, Kind)], Seq[Transformation[Kind, T]])= {
+    val (map, rl) = l.foldLeft( (Map[NodeId[Kind], (Int, Kind)](), init) ){
+      case ((m,l1), Transformation(Add, TTNode(id, _, kind, _, _, _ )))=>
+        val (i, _) = m.getOrElse(id, (0, JavaRoot) )
+        (m + (id -> (i + 1, kind)), l1)
+      case ((m,l1), Transformation(Remove, TTNode(id, _, kind, _, _, _ ))) =>
+        val (i, _) = m.getOrElse(id, (0, JavaRoot))
+        (m + (id -> (i - 1, kind)), l1)
 
       //removing the dependendency and abstraction of the comparison
       // they are used to compute the change on the graph, its the change themselves we want to compare
       //if added back think to uncommment comparison in RecordingComparator.compare
-      case ((m,l1), Transformation(_, TTDependency(_, _))) => (m, l1)
+      /*case ((m,l1), Transformation(_, TTDependency(_, _))) => (m, l1)
       case ((m,l1), Transformation(_, TTAbstraction(_, _, _))) => (m, l1)
-      case ((m,l1), Transformation(_, TTConstraint(_,_))) => (m, l1)
-      case ((m,l1), Transformation(_, TTTypeRedirection(_,_,_))) => (m, l1)
-      case ((m,l1), t : Transformation[Kind]) => (m, t :: l1)
+      case ((m,l1), Transformation(_, TTConstraint(_,_))) => (m, l1)*/
+      case ((m,l1), Transformation(_, TTTypeRedirection(_,_,_, _))) => (m, l1)
+      case ((m,l1), t : Transformation[Kind, T]) => (m, t +: l1)
     }
 
     (map, rl.reverse)
   }
 
-  def switchNodes[Kind <: NodeKind[Kind], T](nodeStatusesMap : Map[AGNode[Kind], Int],
-                                             init : T)
-                                            (add : (T, AGNode[Kind]) => T) : (T, List[AGNode[Kind]], Set[AGNode[Kind]]) = {
-    nodeStatusesMap.foldLeft[(T, List[AGNode[Kind]], Set[AGNode[Kind]])](init, List(), HashSet()) {
-      case ((addAcc, rmAcc, neuterAcc), (node, i)) =>
+  def switchNodes[Kind <: NodeKind[Kind], T]
+          (nodeStatusesMap : Map[NodeId[Kind], (Int, Kind)], init : T)
+          (add : (T, NodeId[Kind]) => T) : (T, Seq[NodeId[Kind]], Set[NodeId[Kind]]) = {
+    nodeStatusesMap.foldLeft[(T, Seq[NodeId[Kind]], Set[NodeId[Kind]])](init, List(), HashSet()) {
+      case ((addAcc, rmAcc, neuterAcc), (node, (i, kind))) =>
         NodeTransfoStatus(i) match {
-          case Created() => (add(addAcc, node), rmAcc, neuterAcc)
-          case Deleted() => (addAcc, node :: rmAcc, neuterAcc)
-          case Neuter() => (addAcc, rmAcc, neuterAcc + node)
+          case Created => (add(addAcc, node), rmAcc, neuterAcc)
+          case Deleted => (addAcc, node +: rmAcc, neuterAcc)
+          case Neuter => (addAcc, rmAcc, neuterAcc + node)
         }
     }
   }
@@ -75,8 +77,8 @@ object NodeMappingInitialState{
 
   implicit val defaultVerbosity = (PuckLog.Search, PuckLog.Debug)
 
-  def filterNoise[Kind <: NodeKind[Kind]](transfos : List[Transformation[Kind]], logger : PuckLogger):
-  List[Transformation[Kind]] = {
+  def filterNoise[Kind <: NodeKind[Kind], T](transfos : Seq[Transformation[Kind, T]], logger : PuckLogger):
+  Seq[Transformation[Kind, T]] = {
 
     implicit val defaultVerbosity = 1
 
@@ -89,15 +91,15 @@ object NodeMappingInitialState{
     }
 
     def mapUntil( stoppingEdge : AGEdge[Kind],
-                  transfos : List[Transformation[Kind]])
-                (rule : (Transformation[Kind] => Transformation[Kind])): List[Transformation[Kind]] = {
+                  transfos : List[Transformation[Kind, T]])
+                (rule : (Transformation[Kind, T] => Transformation[Kind, T])): Seq[Transformation[Kind, T]] = {
 
-      def aux(acc : List[Transformation[Kind]], l : List[Transformation[Kind]]) : List[Transformation[Kind]] ={
+      def aux(acc : Seq[Transformation[Kind, T]], l : Seq[Transformation[Kind, T]]) : Seq[Transformation[Kind, T]] ={
         if(l.isEmpty) acc.reverse
         else
           l.head match {
-            case Transformation(_, TTRedirection(`stoppingEdge`, _)) => acc reverse_::: l
-            case _ => aux(rule(l.head) :: acc, l.tail)
+            case Transformation(_, TTRedirection(`stoppingEdge`, _)) => acc.reverse ++: l
+            case _ => aux(rule(l.head) +: acc, l.tail)
 
           }
       }
@@ -105,65 +107,65 @@ object NodeMappingInitialState{
     }
 
     // We are going backwards !
-    def aux(filteredTransfos : List[Transformation[Kind]],
-            l : List[Transformation[Kind]],
-             removedEdges : List[AGEdge[Kind]]): (List[Transformation[Kind]], List[AGEdge[Kind]]) = {
+    def aux(filteredTransfos : Seq[Transformation[Kind, T]],
+            l : Seq[Transformation[Kind, T]],
+             removedEdges : Seq[AGEdge[Kind]]): (Seq[Transformation[Kind, T]], Seq[AGEdge[Kind]]) = {
       l match {
         case List() => (filteredTransfos, removedEdges)
-        case (op2 @ Transformation(Remove(), TTEdge(AGEdge(Contains(), n1, n2)))) :: tl =>
+        case (op2 @ Transformation(Remove, TTEdge(AGEdge(Contains, n1, n2)))) :: tl =>
           /*val (applied, newTl) = applyRuleOnce[Transformation[Kind]](tl)
           { case Transformation(Add(), TTEdge(AGEdge(Contains(), `n1`, `n2`))) => (true, None)
           case _ => (false, None)
           }
           if(applied) aux(filteredTransfos, newTl)
           else aux(l.head :: filteredTransfos, l)*/
-          select[Transformation[Kind]](tl,
-          { case Transformation(Add(), TTEdge(AGEdge(Contains(), `n1`, `n2`))) => true
+          select[Transformation[Kind,T]](tl,
+          { case Transformation(Add, TTEdge(AGEdge(Contains, `n1`, `n2`))) => true
           case _ => false
           }) match {
             case (Some( op1 ), newTl) =>
               printRule("AddDel", op1.toString, op2.toString, "None")
               aux(filteredTransfos, newTl, removedEdges)
-            case (None, _) => aux(l.head :: filteredTransfos, l.tail, removedEdges)
+            case (None, _) => aux(l.head +: filteredTransfos, l.tail, removedEdges)
           }
-        case (op1 @ Transformation(Add(), TTRedirection(stopingEdge @ AGEdge(kind, n1, n2), Source(n3)))) :: tl =>
+        case (op1 @ Transformation(Add, TTRedirection(stopingEdge @ AGEdge(kind, n1, n2), Source(n3)))) :: tl =>
           aux(filteredTransfos, mapUntil(stopingEdge, tl)
-          { case op2 @ Transformation(Add(), TTRedirection(AGEdge(`kind`, n0, `n2`), Source(`n1`))) =>
-            val res = Transformation(Add(), TTRedirection(AGEdge(kind, n0, n2), Source(n3)))
+          { case op2 @ Transformation(Add, TTRedirection(AGEdge(`kind`, n0, `n2`), Source(`n1`))) =>
+            val res = Transformation[Kind,T](Add, TTRedirection(AGEdge(kind, n0, n2), Source(n3)))
             printRule("RedRed_src", op2.toString, op1.toString, res.toString)
             res
-          case op2 @ Transformation(Add(), TTEdge(AGEdge(`kind`, `n1`, `n2`))) =>
-            val res = Transformation(Add(), TTEdge(AGEdge(kind, n3, n2)))
+          case op2 @ Transformation(Add, TTEdge(AGEdge(`kind`, `n1`, `n2`))) =>
+            val res = Transformation[Kind,T](Add, TTEdge(AGEdge(kind, n3, n2)))
             printRule("AddRed_src", op2.toString, op1.toString, res.toString)
             res
           case t => t
           }, removedEdges)
 
-        case (op1 @ Transformation(Add(), TTRedirection(stopingEdge @ AGEdge(kind, n1, n2), Target(n3)))) :: tl =>
+        case (op1 @ Transformation(Add, TTRedirection(stopingEdge @ AGEdge(kind, n1, n2), Target(n3)))) :: tl =>
           aux(filteredTransfos, mapUntil(stopingEdge, tl)
-          { case op2 @ Transformation(Add(), TTRedirection(AGEdge(`kind`, `n1`, n0), Target(`n2`))) =>
-            val res = Transformation(Add(), TTRedirection(AGEdge(kind, n1, n0), Target(n3)))
+          { case op2 @ Transformation(Add, TTRedirection(AGEdge(`kind`, `n1`, n0), Target(`n2`))) =>
+            val res = Transformation[Kind,T](Add, TTRedirection(AGEdge(kind, n1, n0), Target(n3)))
             printRule("RedRed_tgt", op2.toString, op1.toString, res.toString)
             res
-          case op2 @ Transformation(Add(), TTEdge(AGEdge(`kind`, `n1`, `n2`))) =>
-            val res = Transformation(Add(), TTEdge(AGEdge(kind, n1, n3)))
+          case op2 @ Transformation(Add, TTEdge(AGEdge(`kind`, `n1`, `n2`))) =>
+            val res = Transformation[Kind,T](Add, TTEdge(AGEdge(kind, n1, n3)))
             printRule("AddRed_tgt", op2.toString, op1.toString, res.toString)
             res
           case t => t
           }, removedEdges)
 
-        case (t @ Transformation(Add(), TTEdge(_))):: tl => aux(t :: filteredTransfos, tl, removedEdges)
-        case (Transformation(Remove(), TTEdge(e))):: tl => aux(filteredTransfos, tl, e :: removedEdges)
+        case (t @ Transformation(Add, TTEdge(_))):: tl => aux(t +: filteredTransfos, tl, removedEdges)
+        case (Transformation(Remove, TTEdge(e))):: tl => aux(filteredTransfos, tl, e +: removedEdges)
 
         case hd :: _ => sys.error(hd  + " should not be in list")
       }
     }
 
-    val (normalTransfos, removedEdges) = aux(List(), transfos.reverse, List())
+    val (normalTransfos, removedEdges) = aux(Seq(), transfos.reverse, Seq())
 
     removedEdges.foldLeft(normalTransfos){case (normalTransfos0, e) =>
       normalTransfos0 filter {
-        case Transformation(Add(), TTEdge(`e`)) => false
+        case Transformation(Add, TTEdge(`e`)) => false
         case _ => true
       }
     }
@@ -257,10 +259,12 @@ object NodeMappingInitialState{
 
 }
 
-class NodeMappingInitialState[Kind <: NodeKind[Kind]]
-(eng : RecordingComparator[Kind],
- lr1 : List[Recordable[Kind]],
- lr2 : List[Recordable[Kind]],
+class NodeMappingInitialState[Kind <: NodeKind[Kind], T]
+(initialTransfos : Seq[Transformation[Kind, T]],
+ eng : RecordingComparator[Kind, T],
+ lr1 : Seq[Transformation[Kind, T]],
+ lr2 : Seq[Transformation[Kind, T]],
+ k: Try[ResMapping[Kind]] => Unit,
  logger : PuckLogger)
   extends NodeMappingState(0, eng, null, null, None) {
 
@@ -271,9 +275,9 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind]]
   import NodeMappingInitialState._
 
 
-  val (nodeStatuses, remainingTransfos1) = normalizeNodeTransfos(lr1, eng.initialTransfos)
+  val (nodeStatuses, remainingTransfos1) = normalizeNodeTransfos(lr1, initialTransfos)
 
-  val (nodeStatuses2, remainingTransfos2) = normalizeNodeTransfos(lr2, eng.initialTransfos)
+  val (nodeStatuses2, remainingTransfos2) = normalizeNodeTransfos(lr2, initialTransfos)
 
   /* def switch(nts : NodeTransfoStatus, c : Int, d : Int, n : Int) = nts match {
      case Created() => (c + 1 , d , n)
@@ -282,12 +286,12 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind]]
    }*/
 
   val (initialMapping, removedNode, neuterNodes) =
-    switchNodes(nodeStatuses, Map[AGNode[Kind], Option[AGNode[Kind]]]()){
+    switchNodes(nodeStatuses, Map[NodeId[Kind], Option[NodeId[Kind]]]()){
       case (m, n) => m + (n -> None)
     }
 
   val (nodesToMap, otherRemovedNodes, otherNeuterNodes) =
-    switchNodes(nodeStatuses2, List[AGNode[Kind]]()){case (l, n) => n :: l}
+    switchNodes(nodeStatuses2, Seq[NodeId[Kind]]()){case (l, n) => n +: l}
 
 
 
@@ -295,9 +299,9 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind]]
 
   override def triedAll = triedAll0
 
-  import NodeMappingInitialState.defaultVerbosity
+  import puck.graph.immutable.transformations.NodeMappingInitialState.defaultVerbosity
 
-  def printlnNode(n : AGNode[Kind]){
+  def printlnNode(n : AGNode[Kind, T]){
     logger.writeln("%d = %s(%s)".format(n.id, n.kind, n.fullName))
   }
 

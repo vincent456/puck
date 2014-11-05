@@ -296,6 +296,16 @@ class AccessGraph[NK <: NodeKind[NK], T]
   def directSuperTypes(sub: NIdT) : Iterable[NIdT] = superTypesMap getFlat sub
   def directSubTypes(sup: NIdT) : Iterable[NIdT] = subTypesMap getFlat sup
 
+  def subTypes(sup : NIdT) : Iterable[NIdT]= {
+    val dst = directSubTypes(sup).toSeq
+    dst.foldLeft(dst) { case (acc, id) => acc ++ subTypes(id) }
+  }
+
+  def isSuperTypeOf(superCandidate: NIdT, subCandidate : NIdT) : Boolean = {
+    directSuperTypes(subCandidate).exists(_ == superCandidate) ||
+      directSuperTypes(subCandidate).exists(isSuperTypeOf(superCandidate, _))
+  }
+
   def isa(subId : NIdT, superId: NIdT): Boolean = superTypesMap.bind(subId, superId)
 
   def uses(userId: NIdT, useeId: NIdT) : Boolean = usersMap.bind(useeId, userId)
@@ -399,14 +409,14 @@ class AccessGraph[NK <: NodeKind[NK], T]
         case sTyp => g2.changeType(oldEdge.user, sTyp, oldEdge.usee, newUsee)
       }
 
-      val g4 =
-      if(propagateRedirection) {
-        g3.redirectPrimaryUses(oldEdge, newUsee, policy).
-        redirectSideUses(oldEdge, newUsee, policy)
+      val tryG4 = if(propagateRedirection) {
+        g3.redirectPrimaryUses(oldEdge, newUsee, policy).flatMap {
+          _.redirectSideUses(oldEdge, newUsee, policy)
+        }
       }
-      else g3
+      else Success(g3)
 
-      Success((newUse, g4))
+      tryG4 map {(newUse, _)}
     }
     else if (uses(oldEdge.user, newUsee)) {
       //if m uses  both A and A.mi, the first uses dominate the second
@@ -431,7 +441,7 @@ class AccessGraph[NK <: NodeKind[NK], T]
   def redirectPrimaryUses(currentSideUse : EdgeT,
                           newSideUsee : NIdT,
                           policy : RedirectionPolicy,
-                          propagateRedirection : Boolean = true) : GraphT = {
+                          propagateRedirection : Boolean = true) : Try[GraphT] = {
 
 
     logger.writeln("redirecting primary uses of side use %s (new side usee is %s) ".
@@ -440,25 +450,31 @@ class AccessGraph[NK <: NodeKind[NK], T]
      val primaryUses = dominantUses(currentSideUse)
      if(primaryUses.isEmpty) {
        logger.writeln("no primary uses to redirect")
-       this
+       Success(this)
      }
      else{
        logger.writeln("uses to redirect:%s".format(primaryUses.mkString("\n\t", "\n\t","\n")))
 
-       primaryUses.foldLeft(this){
+       primaryUses.foldLeft[Try[GraphT]](Success(this)){
          case (g, primary0) =>
            val primary = AGEdge.uses[NK](primary0)
-           val g1 = g.removeUsesDependency(primary, currentSideUse)
 
            val keepOldUse = dominatedUses(primary).nonEmpty //is empty if primary had only one side use
 
-           val (newPrimary, g2) =
-             g1.redirectUses(primary,
-                g1.findNewPrimaryUsee(primary.usee, newSideUsee, policy),
-                policy, propagateRedirection, keepOldUse)
+           val tryG1 : Try[GraphT] =
+              g.map { _.removeUsesDependency(primary, currentSideUse)}
 
+           val tryG2 : Try[(EdgeT, GraphT)]= tryG1.flatMap { g1 =>
+              g1.redirectUses(primary,
+               g1.findNewPrimaryUsee(primary.usee, newSideUsee, policy),
+               policy, propagateRedirection, keepOldUse)
+           }
 
-           g2.addUsesDependency(newPrimary, (currentSideUse.user, newSideUsee))
+           tryG2 map {
+             case (newPrimary, g2) =>
+               g2.addUsesDependency(newPrimary, (currentSideUse.user, newSideUsee))
+           }
+
        }
      }
   }
@@ -508,19 +524,19 @@ class AccessGraph[NK <: NodeKind[NK], T]
 
   def redirectSideUses(currentPrimaryUse: EdgeT,
                        newPrimaryUsee : NIdT,
-                       policy : RedirectionPolicy) : GraphT = {
+                       policy : RedirectionPolicy) : Try[GraphT] = {
     logger.writeln("redirecting side uses of primary use %s (new primary usee is %s) ".
       format(currentPrimaryUse, newPrimaryUsee))
 
     val sideUses = dominatedUses(currentPrimaryUse)
     if(sideUses.isEmpty){
       logger.writeln("no side uses to redirect")
-      this
+      Success(this)
     }
     else{
       logger.writeln("uses to redirect:%s".format(sideUses.mkString("\n\t", "\n\t","\n")))
 
-      sideUses.foldLeft(this){
+      sideUses.foldLeft(Success(this) : Try[GraphT]){
         case (g, side0) =>
           val side = AGEdge.uses[NK](side0)
           abstractions(side.usee).find {
@@ -532,36 +548,38 @@ class AccessGraph[NK <: NodeKind[NK], T]
                 "no satisfying abstraction to redirect side use %s").
                 format(currentPrimaryUse, newPrimaryUsee, side)
               logger.writeln(msg)(PuckLog.Error)
-
-              throw new RedirectionError(msg)
-
+              Failure(new RedirectionError(msg))
             case Some( (new_side_usee, _) ) =>
 
-              val g1 = removeUsesDependency(currentPrimaryUse, side)
+              val tryG1 : Try[GraphT] =
+                  g.map(_.removeUsesDependency(currentPrimaryUse, side))
 
-              val (newSide, g2) = g1.redirectUses(side, new_side_usee, policy)
+              val tryG2 : Try[(EdgeT, GraphT)] =
+                  tryG1.flatMap(_.redirectUses(side, new_side_usee, policy))
 
-              g2.addUsesDependency((currentPrimaryUse.user, newPrimaryUsee), newSide)
+               tryG2.map {
+                 case (newSide, g2) =>
+                  g2.addUsesDependency((currentPrimaryUse.user, newPrimaryUsee), newSide)
+              }
 
           }
       }
     }
   }
 
-  def moveTo(movedId : NIdT, newContainer : NIdT): GraphT = {
+  def moveTo(movedId : NIdT, newContainer : NIdT): Try[GraphT] = {
     val oldContainer = container(movedId)
     logger.writeln("moving " + movedId +" from " + oldContainer + " to " + newContainer)
     val g2 = changeSource(AGEdge.contains(oldContainer, movedId), newContainer)
-    users(movedId).foldLeft(g2){
+    users(movedId).foldLeft(Success(g2) : Try[GraphT]){
       case (g0, userId) =>
-        g0.redirectPrimaryUses(AGEdge.uses(userId, movedId), movedId,
-                                      Move, propagateRedirection = false)
+        g0.flatMap(_.redirectPrimaryUses(AGEdge.uses(userId, movedId), movedId,
+                                      Move, propagateRedirection = false))
     }
   }
 
   def addHideFromRootException(node : NIdT, friend : NIdT): GraphT =
       newGraph(nConstraints = constraints.addHideFromRootException(node, friend))
-
   /*def addHideFromRootException(node : NIdT, friend : NIdT): GraphT = {
     constraints.printConstraints(this, logger, (PuckLog.InGraph, PuckLog.Debug))
     val ng = newGraph(nConstraints = constraints.addHideFromRootException(this, node,friend))
@@ -569,6 +587,61 @@ class AccessGraph[NK <: NodeKind[NK], T]
     ng
   }*/
 
+  def findMergingCandidate(nid : NIdT) : Option[NIdT] = None
+
+  //TODO deep merge : merge also content need to refactor find merging candidate
+  //(deep merge is now done in JavaNode for interface node only)
+  def merge(consumerId : NIdT, consumedId : NIdT) : GraphT = {
+    val consumed = getNode(consumedId)
+    val consumer = getNode(consumerId)
+    val g1 = consumed.users.foldLeft(this) {
+      case (g0, userId) =>
+        g0.changeTarget(AGEdge.uses(userId, consumedId), consumerId)
+                    .changeType(userId, getNode(userId).styp, consumedId, consumerId)
+    }
+
+    val g2 = consumed.used.foldLeft(g1) {
+      case (g0, usedId) => g0.changeSource(AGEdge.uses(consumedId, usedId), consumerId)
+    }
+
+    val g3 = consumed.directSuperTypes.foldLeft(g2) {
+      case (g0, stId) =>
+      if(stId != consumerId) g0.changeSource(AGEdge.isa(consumedId, stId), consumerId)
+      else g0.removeIsa(consumedId, stId)
+    }
+
+    val g4 = consumed.directSubTypes.foldLeft(g3) {
+      case (g0, stId) =>
+      if(stId != consumerId) g0.changeTarget(AGEdge.isa(stId, consumedId), consumerId)
+      else g0.removeIsa(stId, consumedId)
+    }
+
+    /*(consumerId, key) is a primary uses and sidesUses(key) are the corresponding side uses */
+    //val sideUses = new UsesDependencyMap(consumerId, Dominant())
+
+    /*(other, key) is a side uses and primaryUses(key) is the corresponding primary uses */
+    //val primaryUses = new UsesDependencyMap(consumerId, Dominated())
 
 
+    val side_prim_list = dominantUsesMap.toSeq.filter { case ((userId, _), _) => userId == consumedId }
+
+    val g5 : GraphT = side_prim_list.foldLeft(g4) {
+      case (g0, (( _, sideUseeId), primUses)) =>
+        primUses.foldLeft(g0) { case (g00, pUse) =>
+          g00.addUsesDependency(pUse, (consumerId, sideUseeId))
+             .removeUsesDependency(pUse, (consumedId, sideUseeId))
+        }
+    }
+
+    val prim_side_list = dominatedUsesMap.toSeq.filter { case ((userId,_), _) => userId == consumedId }
+
+    val g6 = prim_side_list.foldLeft(g5) {
+      case (g0, (( _, primeUseeId), sidUses)) =>
+        sidUses.foldLeft(g0) { case (g00, sUse) =>
+          g00.addUsesDependency((consumerId, primeUseeId), sUse)
+             .removeUsesDependency((consumedId, primeUseeId), sUse)
+        }
+    }
+    g6.removeContains(consumed.container, consumedId).removeNode(consumedId)
+  }
 }

@@ -1,11 +1,13 @@
 package puck.graph.mutable.backTrack.comparison
 
+import puck.graph.AGError
 import puck.graph.mutable.backTrack._
 import puck.graph.mutable.{AGNode, NodeKind, AGEdge}
-import puck.search.FindFirstSearchEngine
+import puck.search.{SearchState, FindFirstSearchEngine}
 import puck.util.{PuckNoopLogger, PuckLogger}
 
 import scala.collection.mutable
+import scala.util.Try
 
 /**
  * Created by lorilan on 07/07/14.
@@ -32,6 +34,9 @@ class RecordingComparator[Kind <: NodeKind[Kind]](private [comparison] val initi
                                                   recording2 : Recording[Kind],
                                                   logger : PuckLogger = PuckNoopLogger)
   extends FindFirstSearchEngine[ResMapping[Kind]] {
+
+  def createInitialState(k: Try[ResMapping[Kind]] => Unit): SearchState[ResMapping[Kind]] = ???
+     //new NodeMappingInitialState(this, recording1.composition, recording2.composition, logger)
 
   def attribNode(node : AGNode[Kind],
                  map : ResMapping[Kind],
@@ -96,7 +101,9 @@ class RecordingComparator[Kind <: NodeKind[Kind]](private [comparison] val initi
   def compare(ts1 : List[Transformation[Kind]],
               ts2 : List[Transformation[Kind]],
               map : ResMapping[Kind], nodesToMap : NodesToMap[Kind]){
-    if (ts1.isEmpty && ts2.isEmpty) finalStates += currentState
+    if (ts1.isEmpty && ts2.isEmpty)
+      throw new AGError("currentState should be added to final states")
+      //finalStates += currentState
     else {
       def removeFirstAndCompareNext(tgt : TransformationTarget[Kind],
                                     map : ResMapping[Kind], nodesToMap : NodesToMap[Kind]){
@@ -166,16 +173,13 @@ class RecordingComparator[Kind <: NodeKind[Kind]](private [comparison] val initi
     }
   }
 
-  lazy val initialState = new NodeMappingInitialState(this,
-    recording1.composition,
-    recording2.composition,
-    logger)
 
-  override def search() =
+
+  /*override def search(k : Try[ResMapping[Kind]] => Unit) =
     try {
       super.search()
     } catch {
       case e: NoSolution => None
-    }
+    }*/
 
 }

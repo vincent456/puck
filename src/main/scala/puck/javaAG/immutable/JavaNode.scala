@@ -45,7 +45,8 @@ object JavaNode extends AGNodeBuilder[JavaNodeKind, DeclHolder] with DotHelper[J
           case Field => (n+:fds, cts, mts, cls)
           case Constructor => (fds, n+:cts, mts, cls)
           case AbstractMethod
-               | Method => (fds, cts, n+:mts, cls)
+               | Method
+               | ConstructorMethod => (fds, cts, n+:mts, cls)
 
           case _ => throw new Error(kind + " : wrong NodeKind contained by a class" )
         }
@@ -74,11 +75,11 @@ class JavaNode
   t : DeclHolder)
   extends AGNode[JavaNodeKind, DeclHolder](graph, id, name, kind, styp, isMutable, t){
 
-  override type NodeIdT = NodeId[JavaNodeKind]
+  override type NIdT = NodeId[JavaNodeKind]
 
-  override def canContain(otherId : NodeIdT) : Boolean = {
+  override def canContain(otherId : NIdT) : Boolean = {
     val n = graph.getNode(otherId)
-    def noNameClash( l : Int )( cId : NodeIdT ) : Boolean = {
+    def noNameClash( l : Int )( cId : NIdT ) : Boolean = {
       val c = graph.getNode(cId)
       (c.kind, c.styp) match {
          case (ck: MethodKind, MethodTypeHolder(typ))=>
@@ -113,26 +114,4 @@ class JavaNode
         case _ => true
       })
   }
-
-  //A merging candidate is either structurally equal
-  //either a subtype of this
-  //hence if we do the merge "this" will disappear
-  // and all its user redirected to the candidate
-  /*override def findMergingCandidate() : Option[AGNode[JavaNodeKind]] = this.kind match{
-
-    case k @ Interface() if this.content.nonEmpty =>
-      graph.find{ otherItc =>
-        otherItc.kind match {
-          case otherk @ Interface() if otherItc != this =>
-            (k isMergingCandidate otherk) &&
-              this.users.forall(!_.interloperOf(otherItc)) &&
-              this.uses.forall(!otherItc.interloperOf(_))
-
-          case _ => false
-        }
-      }
-    case _ => None
-  }*/
-
-
 }

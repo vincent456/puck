@@ -20,7 +20,7 @@ trait ConstraintSolvingChoice[Kind <: NodeKind[Kind], S, T <: ConstraintSolvingC
 }
 
 trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, T <: ConstraintSolvingChoice[Kind, S, T]]
-  extends SearchState[Recording[Kind], T]{
+  extends SearchState[Recording[Kind]]{
 
   /*println("creating searchState "+ id)
   prevState match {
@@ -28,6 +28,7 @@ trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, T <: ConstraintSolvingCh
     case Some(p) =>  println("parent is " + p.uuid())
   }*/
 
+  val internal : ConstraintSolvingChoice[Kind, S, T]
   import internal._
 
   override def setAsCurrentState(){

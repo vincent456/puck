@@ -38,8 +38,6 @@ trait SearchState[ResT] extends HasChildren[SearchState[ResT]]{
 
   def iterator = new SearchStateIterator(this)
 
-
-
   val nextStates = mutable.ListBuffer[SearchState[ResT]]()
 
   var cid = -1
@@ -102,7 +100,7 @@ trait SearchState[ResT] extends HasChildren[SearchState[ResT]]{
 
   def triedAll : Boolean
 
-  def executeNextChoice : (Try[ResT] => Unit) => Unit
+  def executeNextChoice() : Unit
 
   def ancestors(includeSelf : Boolean) :Seq[SearchState[ResT]] = {
     def aux(sState : Option[SearchState[ResT]],
@@ -125,6 +123,6 @@ class FinalState[T]
  val prevState: Option[SearchState[T]])
   extends SearchState[T]{
 
-  override def executeNextChoice : (Try[T] => Unit) => Unit = throw new Error("No next choice for a final state")
+  override def executeNextChoice() : Unit = throw new Error("No next choice for a final state")
   override def triedAll: Boolean = true
 }

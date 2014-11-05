@@ -2,7 +2,6 @@ package puck.javaAG.mutable
 
 import puck.graph.mutable.AccessGraph
 import puck.graph.mutable.backTrack.Recording
-import puck.graph.mutable.constraints.search.{TryAllCSSE, FunneledCSSE, FindFirstCSSE}
 import puck.graph.mutable.io.ConstraintSolvingSearchEngineBuilder
 import puck.javaAG.mutable.nodeKind._
 import puck.search.SearchEngine
@@ -16,7 +15,7 @@ trait JavaCSSEBuilder
   val violationsKindPriority = List[JavaNodeKind](Field(), Constructor(), Class(), Interface())
 }
 
-object JavaFindFirstCSSEBuilder
+/*object JavaFindFirstCSSEBuilder
   extends JavaCSSEBuilder{
 
   override def toString = "First solution"
@@ -41,4 +40,4 @@ object JavaTryAllCSSEBuilder
 
   def apply(graph : AccessGraph[JavaNodeKind]) : SearchEngine[Recording[JavaNodeKind]] =
     new TryAllCSSE(violationsKindPriority, graph, JavaSolverBuilder)
-}
+}*/

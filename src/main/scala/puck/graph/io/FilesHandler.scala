@@ -50,11 +50,11 @@ abstract class FilesHandler[Kind <: NodeKind[Kind], T](workingDirectory : File){
   import PuckLog.defaultVerbosity
 
   val logPolicy : PuckLog.Verbosity => Boolean = {
-    /*case (PuckLog.Search,_) /*| (PuckLog.Solver, _) */=> true
-    case (PuckLog.NoSpecialContext, _) => true
+/*    case (PuckLog.Search,_) | (PuckLog.Solver, _) => true
     case (PuckLog.InGraph,_) | (PuckLog.InJavaGraph, _ ) => true*/
-    //case _ => false
-    case _ => true
+    case (PuckLog.NoSpecialContext, _) => true
+    case _ => false
+
   }
 
   def logger : PuckLogger = logger0
@@ -291,7 +291,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind], T](workingDirectory : File){
     val engine = builder(graph)
 
     puck.util.Time.time(logger, defaultVerbosity) {
-      engine.search()
+      engine.explore()
     }
 
     engine

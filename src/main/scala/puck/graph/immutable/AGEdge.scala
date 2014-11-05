@@ -10,14 +10,14 @@ sealed abstract class EdgeKind {
                                 target: NodeId[NK]) : AGEdge[NK]
 }
 
-case class Uses() extends EdgeKind {
+case object Uses extends EdgeKind {
   override val toString = "uses"
   def apply[NK <: NodeKind[NK]](source : NodeId[NK],
                                 target: NodeId[NK]) =
     AGEdge.uses[NK](source, target)
 
 }
-case class Contains() extends EdgeKind {
+case object Contains extends EdgeKind {
   override val toString = "contains"
   def apply[NK <: NodeKind[NK]](source : NodeId[NK],
                                 target: NodeId[NK]) =
@@ -25,7 +25,7 @@ case class Contains() extends EdgeKind {
 
 
 }
-case class Isa() extends EdgeKind {
+case object Isa extends EdgeKind {
   override val toString = "isa"
   def apply[NK <: NodeKind[NK]](source : NodeId[NK],
                                 target: NodeId[NK]) =
@@ -59,26 +59,26 @@ case class AGEdge[NK <: NodeKind[NK]]
   }
 
   def exists[T](graph : GraphT[T]) = kind match {
-    case Uses() => graph.uses(source, target)
-    case Contains() => graph.contains(source, target)
-    case Isa() => graph.isa(source, target)
+    case Uses => graph.uses(source, target)
+    case Contains => graph.contains(source, target)
+    case Isa => graph.isa(source, target)
   }
 
   def create[T](graph : GraphT[T], register : Boolean = true) : GraphT[T] = {
     //println("creating "+ this)
     kind match {
-      case Uses() => graph.addUses(source, target, register)
-      case Contains() => graph.addContains(source, target, register)
-      case Isa() => graph.addIsa(source, target, register)
+      case Uses => graph.addUses(source, target, register)
+      case Contains => graph.addContains(source, target, register)
+      case Isa => graph.addIsa(source, target, register)
 
     }
   }
   def delete[T](graph : GraphT[T], register : Boolean = true)  : GraphT[T] = {
     //println("deleting "+ this)
     kind match {
-      case Uses() => graph.removeUses(source, target, register)
-      case Contains() => graph.removeContains(source, target, register)
-      case Isa() => graph.removeIsa(source, target, register)
+      case Uses => graph.removeUses(source, target, register)
+      case Contains => graph.removeContains(source, target, register)
+      case Isa => graph.removeIsa(source, target, register)
     }
   }
 
@@ -92,17 +92,17 @@ case class AGEdge[NK <: NodeKind[NK]]
 
 object AGEdge{
   def uses[NK <: NodeKind[NK]](pair : (NodeId[NK], NodeId[NK])) =
-    AGEdge[NK](Uses(), pair._1, pair._2)
+    AGEdge[NK](Uses, pair._1, pair._2)
 
   def uses[NK <: NodeKind[NK]](source : NodeId[NK],
                                target: NodeId[NK]) =
-      AGEdge[NK](Uses(), source, target)
+      AGEdge[NK](Uses, source, target)
 
   def contains[NK <: NodeKind[NK]](source : NodeId[NK],
                                    target: NodeId[NK]) =
-    AGEdge[NK](Contains(), source, target)
+    AGEdge[NK](Contains, source, target)
 
   def isa[NK <: NodeKind[NK]](source : NodeId[NK],
                               target : NodeId[NK]) =
-    AGEdge[NK](Isa(), source, target)
+    AGEdge[NK](Isa, source, target)
 }

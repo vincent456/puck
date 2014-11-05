@@ -26,6 +26,7 @@ trait TypeHolder[K <: NodeKind[K]] {
   def redirectUses(oldUsee : NodeId[K], newUsee: AGNode[K, _]) : TypeHolder[K]
   def redirectContravariantUses(oldUsee : NodeId[K], newUsee: AGNode[K, _]) : TypeHolder[K]
   def mkString(graph : AccessGraph[K,_]) : String
+  def isEmpty = false
 
 }
 
@@ -33,4 +34,5 @@ case class NoType[K <: NodeKind[K]]() extends TypeHolder[K] {
   def redirectUses(oldUsee : NodeId[K], newUsee: AGNode[K, _]) = this
   def redirectContravariantUses(oldUsee : NodeId[K], newUsee: AGNode[K, _]) = this
   def mkString(graph : AccessGraph[K,_]) : String = ""
+  override def isEmpty = true
 }

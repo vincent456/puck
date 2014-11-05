@@ -20,7 +20,7 @@ class ConstraintSolvingNodesChoice[Kind <: NodeKind[Kind]](val k : Option[AGNode
   extends ConstraintSolvingChoice[Kind, AGNode[Kind], CSNC[Kind]] {
   def createState(id : Int,
                   engine : SearchEngine[Recording[Kind]],
-                  prevState : Option[SearchState[Recording[Kind], _]],
+                  prevState : Option[SearchState[Recording[Kind]]],
                   currentResult: Recording[Kind],
                   choices : CSNC[Kind]) = {
     new ConstraintSolvingNodeChoiceSearchState(id, currentResult, engine, choices, prevState)
@@ -40,7 +40,7 @@ class ConstraintSolvingNodeChoiceSearchState[Kind <: NodeKind[Kind]](val id : In
                                                                      val result : Recording[Kind],
                                                                      val engine : SearchEngine[Recording[Kind]],
                                                                      val internal: CSNC[Kind],
-                                                                     val prevState : Option[SearchState[Recording[Kind], _]])
+                                                                     val prevState : Option[SearchState[Recording[Kind]]])
 extends ConstraintSolvingState[Kind, AGNode[Kind], CSNC[Kind]]{
   //override protected def needToTryNone = true
 }

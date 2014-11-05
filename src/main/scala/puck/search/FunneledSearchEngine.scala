@@ -1,5 +1,6 @@
 package puck.search
 import scala.collection.mutable
+import scala.util.Try
 
 /**
  * Created by lorilan on 26/10/14.
@@ -10,7 +11,6 @@ trait Evaluator[Result]{
 }
 
 
-/*
 
 trait FunneledSeachEngine[Result] extends StackedSearchEngine[Result]{
   this : Evaluator[Result] =>
@@ -22,8 +22,8 @@ trait FunneledSeachEngine[Result] extends StackedSearchEngine[Result]{
 
   var currentMileStone = markPointPeriod
 
-  override def search() = {
-    init()
+  override def doExplore( k : Try[Result] => Unit) {
+    this.search(k)
 
     def searchIteration(){
       println(exploredStates)
@@ -54,11 +54,11 @@ trait FunneledSeachEngine[Result] extends StackedSearchEngine[Result]{
 class FunneledStates[Result](val sizeMax : Int,
                              val evaluator : Evaluator[Result]) {
 
-  private [this] val content = mutable.Queue[SearchState[Result, _]]()
+  private [this] val content = mutable.Queue[SearchState[Result]]()
 
   val r = new scala.util.Random()
 
-  def apply() : Iterable[SearchState[Result, _]] = content
+  def apply() : Iterable[SearchState[Result]] = content
 
   def clear() = {
     content.clear()
@@ -77,7 +77,7 @@ class FunneledStates[Result](val sizeMax : Int,
   }
 
 
-  def +=(s : SearchState[Result, _]){
+  def +=(s : SearchState[Result]){
 
     def willBeAdd() : Boolean = {
       val value = evaluator.evaluate(s)
@@ -101,4 +101,3 @@ class FunneledStates[Result](val sizeMax : Int,
   }
 
 }
-*/
