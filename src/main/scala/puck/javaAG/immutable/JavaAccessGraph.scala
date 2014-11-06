@@ -62,6 +62,14 @@ class JavaAccessGraph
 
   implicit val defaultVerbosity = (InJavaGraph, PuckLog.Info)
 
+  override def coupling = nodes.foldLeft(0 : Double){ (acc, n) => n.kind match {
+    case Package =>
+      val c = n.coupling
+      if(c.isNaN) acc
+      else acc + c
+    case _ => acc
+  }}
+
   override def abstractionName(implId: NIdT, abskind : NodeKind, policy : AbstractionPolicy) : String = {
     val impl = getNode(implId)
     if (impl.kind == Constructor)

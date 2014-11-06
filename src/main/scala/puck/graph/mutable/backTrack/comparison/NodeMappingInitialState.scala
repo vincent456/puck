@@ -73,7 +73,7 @@ object NodeMappingInitialState{
   }
 
 
-  implicit val defaultVerbosity = (PuckLog.Search, PuckLog.Debug)
+  implicit val defaultVerbosity = (PuckLog.ConstraintSearch, PuckLog.Debug)
 
   def filterNoise[Kind <: NodeKind[Kind]](transfos : List[Transformation[Kind]], logger : PuckLogger):
   List[Transformation[Kind]] = {

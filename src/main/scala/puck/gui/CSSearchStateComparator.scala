@@ -3,6 +3,7 @@ package puck.gui
 import puck.graph.immutable.transformations.Transformation
 import puck.graph._
 import puck.search.SearchState
+import puck.util.PuckSystemLogger
 
 import scala.swing.{Button, Label, Orientation, BoxPanel}
 
@@ -30,9 +31,11 @@ class CSSearchStateComparator(initialRecord : Seq[Transformation],
   contents += new Label("and")
   contents += cb2
   contents += Button(">>") {
-    AccessGraph.areEquivalent(initialRecord,
+    val equivalent = AccessGraph.areEquivalent(initialRecord,
       graphOfResult(cb1.selectedState.result),
-      graphOfResult(cb2.selectedState.result))
+      graphOfResult(cb2.selectedState.result), new PuckSystemLogger(_ => true))
+
+    println("equivalent = " + equivalent)
 
   }
 }

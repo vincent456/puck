@@ -29,6 +29,9 @@ class Recording
   def addNode(id : NIdT, name : String, kind : NodeKind, styp: TypeHolder, mutable : Boolean, t : Hook) : RecT =
     Transformation(Add, TTNode(id, name, kind, styp, mutable, t)) +: this
 
+  def removeNode(id : NIdT, name : String, kind : NodeKind, styp: TypeHolder, mutable : Boolean, t : Hook) : RecT =
+    Transformation(Remove, TTNode(id, name, kind, styp, mutable, t)) +: this
+
   def addEdge(edge : EdgeT) : RecT =
     Transformation(Add, TTEdge(edge)) +: this
 

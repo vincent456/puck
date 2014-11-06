@@ -44,11 +44,11 @@ object AccessGraph {
 
   def areEquivalent[Kind <: NodeKind, T](initialRecord : Seq[Transformation],
                       graph1 : AccessGraph,
-                      graph2 : AccessGraph) : Boolean = {
-    val engine = new RecordingComparator(initialRecord,graph1,graph2)
+                      graph2 : AccessGraph,
+                      logger : PuckLogger = PuckNoopLogger) : Boolean = {
+    val engine = new RecordingComparator(initialRecord,graph1,graph2, logger)
     engine.explore()
     engine.finalStates.nonEmpty
-
   }
 
 }
@@ -101,7 +101,7 @@ class AccessGraph
                         nNodesSet, nRemovedNodes, nUsersMap, nUsesMap,
                         nContentMap, nContainerMap, nSuperTypesMap, nSubTypesMap,
                         nDominantUsesMap, nDominatedUsesMap,
-                        nAbstractionsMap, constraints, nRecording)
+                        nAbstractionsMap, nConstraints, nRecording)
 
   def withLogger(l : PuckLogger) = newGraph(nLogger = l)
   implicit val defaulVerbosity : PuckLog.Verbosity =
@@ -159,10 +159,17 @@ class AccessGraph
       case _ => throw new AGError("incoherent index left and right id are different")
     }
   }
+
   def removeNode(id : NIdT) = {
-    val node = nodesIndex(id)
-    newGraph(nNodesSet = nodesIndex - id, nRemovedNodes = removedNodes + (id -> node))
-  }
+    nodesIndex(id) match {
+      case node @ (`id`, localName, kind, styp, mutable, t) =>
+        newGraph(nNodesSet = nodesIndex - id,
+          nRemovedNodes = removedNodes + (id -> node),
+          nRecording = recording.removeNode(id, localName, kind, styp, mutable, t))
+      case _ => throw new AGError("incoherent index left and right id are different")
+
+    }
+}
 
   def setNode(id : NIdT, name : String, k : NodeKind, styp : STyp, mutable : Boolean, t : Hook) : GraphT =
     newGraph(nNodesSet = nodesIndex + (id -> (id, name, k, styp, mutable, t)))

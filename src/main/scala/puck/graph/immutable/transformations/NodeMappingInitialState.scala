@@ -30,9 +30,9 @@ case object Neuter extends NodeTransfoStatus
 object NodeMappingInitialState{
 
   def normalizeNodeTransfos(l : Seq[Transformation],
-                                                       init : Seq[Transformation] = Seq()) : (Map[NodeId, (Int, NodeKind)], Seq[Transformation])= {
+                            init : Seq[Transformation] = Seq()) : (Map[NodeId, (Int, NodeKind)], Seq[Transformation])= {
     val (map, rl) = l.foldLeft( (Map[NodeId, (Int, NodeKind)](), init) ){
-      case ((m,l1), Transformation(Add, TTNode(id, _, kind, _, _, _ )))=>
+      case ((m,l1), Transformation(Add, TTNode(id, _, kind, _, _, _ ))) =>
         val (i, _) = m.getOrElse(id, (0, JavaRoot) )
         (m + (id -> (i + 1, kind)), l1)
       case ((m,l1), Transformation(Remove, TTNode(id, _, kind, _, _, _ ))) =>
@@ -54,13 +54,13 @@ object NodeMappingInitialState{
 
   def switchNodes[Kind <: NodeKind, T]
           (nodeStatusesMap : Map[NodeId, (Int, Kind)], init : T)
-          (add : (T, NodeId) => T) : (T, Seq[NodeId], Set[NodeId]) = {
-    nodeStatusesMap.foldLeft[(T, Seq[NodeId], Set[NodeId])](init, List(), HashSet()) {
-      case ((addAcc, rmAcc, neuterAcc), (node, (i, kind))) =>
+          (add : (T, (NodeId, NodeKind)) => T) : (Int, T, Seq[NodeId], Set[NodeId]) = {
+    nodeStatusesMap.foldLeft[(Int, T, Seq[NodeId], Set[NodeId])](0, init, List(), HashSet()) {
+      case ((cpt, addAcc, rmAcc, neuterAcc), (node, (i, kind))) =>
         NodeTransfoStatus(i) match {
-          case Created => (add(addAcc, node), rmAcc, neuterAcc)
-          case Deleted => (addAcc, node +: rmAcc, neuterAcc)
-          case Neuter => (addAcc, rmAcc, neuterAcc + node)
+          case Created => (cpt + 1, add(addAcc, (node, kind)), rmAcc, neuterAcc)
+          case Deleted => (cpt, addAcc, node +: rmAcc, neuterAcc)
+          case Neuter => (cpt, addAcc, rmAcc, neuterAcc + node)
         }
     }
   }
@@ -75,12 +75,10 @@ object NodeMappingInitialState{
   }
 
 
-  implicit val defaultVerbosity = (PuckLog.Search, PuckLog.Debug)
+  implicit val defaultVerbosity = (PuckLog.GraphComparisonSearch, PuckLog.Debug)
 
   def filterNoise[Kind <: NodeKind, T](transfos : Seq[Transformation], logger : PuckLogger):
   Seq[Transformation] = {
-
-    implicit val defaultVerbosity = 1
 
     def printRule(name : => String, op1 : => String, op2 : => String, res : => String ){
       logger.writeln(name +" : ")
@@ -91,14 +89,15 @@ object NodeMappingInitialState{
     }
 
     def mapUntil( stoppingEdge : AGEdge,
-                  transfos : List[Transformation])
+                  transfos : Seq[Transformation])
                 (rule : (Transformation => Transformation)): Seq[Transformation] = {
 
       def aux(acc : Seq[Transformation], l : Seq[Transformation]) : Seq[Transformation] ={
         if(l.isEmpty) acc.reverse
         else
           l.head match {
-            case Transformation(_, TTRedirection(`stoppingEdge`, _)) => acc.reverse ++: l
+            case Transformation(_, TTRedirection(`stoppingEdge`, _)) =>
+              RecordingComparator.revAppend(acc, l)
             case _ => aux(rule(l.head) +: acc, l.tail)
 
           }
@@ -178,7 +177,7 @@ class NodeMappingInitialState
  eng : RecordingComparator,
  graph1 : AccessGraph,
  graph2 : AccessGraph,
- k: Try[ResMapping] => Unit,
+ k: Try[ResMap] => Unit,
  logger : PuckLogger)
   extends NodeMappingState(0, eng, null, null, None) {
 
@@ -189,19 +188,17 @@ class NodeMappingInitialState
 
   val (nodeStatuses2, remainingTransfos2) = normalizeNodeTransfos(graph2.recording(), initialTransfos)
 
-  /* def switch(nts : NodeTransfoStatus, c : Int, d : Int, n : Int) = nts match {
-     case Created() => (c + 1 , d , n)
-     case Deleted() => (c, d + 1, n)
-     case Neuter() => (c, d, n + 1)
-   }*/
-
-  val (initialMapping, removedNode, neuterNodes) =
-    switchNodes(nodeStatuses, Map[NodeId, Option[NodeId]]()){
-      case (m, n) => m + (n -> None)
+  val (numCreatedNodes, initialMapping, removedNode, neuterNodes) =
+    switchNodes(nodeStatuses, ResMap()){
+      case (m, (n, k0)) => m + (n -> (k0, None))
     }
 
-  val (nodesToMap, otherRemovedNodes, otherNeuterNodes) =
-    switchNodes(nodeStatuses2, Seq[NodeId]()){case (l, n) => n +: l}
+  val (numCreatedNodes2, nodesToMap, otherRemovedNodes, otherNeuterNodes) =
+    switchNodes(nodeStatuses2, NodesToMap()){
+      case (m, (n, k0)) =>
+        val s = m getOrElse (k0, Seq[NodeId]())
+        m + (k0 -> (n +: s))
+    }
 
 
 
@@ -209,21 +206,20 @@ class NodeMappingInitialState
 
   override def triedAll = triedAll0
 
-  import puck.graph.immutable.transformations.NodeMappingInitialState.defaultVerbosity
+  import NodeMappingInitialState.defaultVerbosity
 
   def printlnNode(graph: AccessGraph)( nid : NodeId){
-    /*val n = graph.getNode(nid)
-    logger.writeln("%d = %s(%s)".format(n.id, n.kind, n.fullName))*/
-    logger.writeln(nid.toString)
+    val n = graph.getNode(nid)
+    logger.writeln("%d = %s(%s)".format(n.id, n.kind, n.fullName))
   }
 
 
   override def executeNextChoice() {
     triedAll0 = true
 
-    if( nodesToMap.length != initialMapping.size ||
+    if( numCreatedNodes != numCreatedNodes2 ||
       !(removedNode forall otherRemovedNodes.contains)) {
-      val sameNumberOfNodesToMap = nodesToMap.length == initialMapping.size
+      val sameNumberOfNodesToMap = numCreatedNodes == numCreatedNodes2
       val sameRemovedNodes = removedNode forall otherRemovedNodes.contains
       logger.writeln("sameNumberOfNodesToMap  = " + sameNumberOfNodesToMap)
 
@@ -244,7 +240,7 @@ class NodeMappingInitialState
       logger.writeln("nodes to map : %s, %d remaining transfo".format(nodesToMap, remainingTransfos2.size))
 
       logger.writeln("created nodes :")
-      nodesToMap foreach printlnNode(graph2)
+      nodesToMap foreach {case (_, s) => s foreach printlnNode(graph2)}
       logger.writeln("neuter nodes : ")
       otherNeuterNodes foreach printlnNode(graph2)
 
@@ -299,7 +295,7 @@ class NodeMappingInitialState
       logger.writeln("nodes to map : %s, %d remaining transfo".format(nodesToMap, remainingTransfos2.size, logger))
 
       logger.writeln("created nodes :")
-      nodesToMap foreach printlnNode(graph2)
+      nodesToMap foreach {case (_, s) => s foreach printlnNode(graph2)}
       logger.writeln("neuter nodes : ")
       otherNeuterNodes foreach printlnNode(graph2)
 

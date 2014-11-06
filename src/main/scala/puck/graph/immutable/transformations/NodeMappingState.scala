@@ -11,25 +11,28 @@ import scala.util.{Success, Try}
  */
 
 object MappingChoices{
-  type ResMapping = Map[NodeId, Option[NodeId]]
-  type NodesToMap = Seq[NodeId]
-
-  type Kargs = (NodeId, Try[ResMapping], NodesToMap)
+  type ResMap = Map[NodeId, (NodeKind, Option[NodeId])]
+  def ResMap() = Map[NodeId, (NodeKind, Option[NodeId])]()
+  type NodesToMap = Map[NodeKind, Seq[NodeId]]
+  def NodesToMap() = Map[NodeKind, Seq[NodeId]]()
+  type Kargs = (NodeId, Try[ResMap], NodesToMap)
 }
 
-import MappingChoices.{Kargs, NodesToMap, ResMapping}
+import MappingChoices.{Kargs, NodesToMap, ResMap}
 
-class MappingChoices(val k: Kargs => Unit,
-                                             val node : NodeId,
-                                             val nodesToMap : NodesToMap,
-                                             val remainingChoices : mutable.Set[NodeId],
-                                             val triedChoices : mutable.Set[NodeId])
-  extends StateCreator[ResMapping, MappingChoices] {
+class MappingChoices
+(val k: Kargs => Unit,
+ val node : NodeId,
+ val kind : NodeKind,
+ val nodesToMap : NodesToMap,
+ val remainingChoices : mutable.Stack[NodeId],
+ val triedChoices : mutable.Stack[NodeId])
+  extends StateCreator[ResMap, MappingChoices] {
 
   def createState (id: Int,
-                   engine: SearchEngine[ResMapping],
-                   prevState: Option[SearchState[ResMapping]],
-                   currentResult : ResMapping,
+                   engine: SearchEngine[ResMap],
+                   prevState: Option[SearchState[ResMap]],
+                   currentResult : ResMap,
                    choices: MappingChoices): NodeMappingState = {
     new NodeMappingState (id, engine, currentResult, choices, prevState)
   }
@@ -37,11 +40,11 @@ class MappingChoices(val k: Kargs => Unit,
 
 class NodeMappingState
 (val id : Int,
- val engine : SearchEngine[ResMapping],
- val result : ResMapping,
+ val engine : SearchEngine[ResMap],
+ val result : ResMap,
  val mappingChoices: MappingChoices,
- val prevState : Option[SearchState[ResMapping]])
-  extends SearchState[ResMapping] {
+ val prevState : Option[SearchState[ResMap]])
+  extends SearchState[ResMap] {
 
 
      import mappingChoices._
@@ -53,14 +56,13 @@ class NodeMappingState
          if (engine.currentState != this)
            setAsCurrentState()
 
-         val c = remainingChoices.head
-         remainingChoices.remove(c)
+         val c = remainingChoices.pop()
 
-         val remainingNodesToMap = triedChoices.toList ::: remainingChoices.toList
+         val remainingNodesToMap = nodesToMap + (kind -> (triedChoices.toSeq ++: remainingChoices.toSeq))
 
-         triedChoices.add(c)
+         triedChoices.push(c)
 
-         k((c, Success(result + (node -> Some(c))), remainingNodesToMap))
+         k((c, Success(result + (node -> (kind, Some(c)))), remainingNodesToMap))
        }
      }
 

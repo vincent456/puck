@@ -65,7 +65,7 @@ trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, T <: ConstraintSolvingCh
       }catch{
         case e : RedirectionError =>
           result.graph.logger.writeln(("redirection error catched, " +
-            "choice %s aborted :\n %s").format(c, e.getMessage))(PuckLog.Search, PuckLog.Info)
+            "choice %s aborted :\n %s").format(c, e.getMessage))(PuckLog.ConstraintSearch, PuckLog.Info)
           result.graph.transformations.undo(breakPoint)
           executeNextChoice()
       }

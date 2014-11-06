@@ -53,7 +53,7 @@ trait SearchEngine[T] extends Search[T]{
   def explore() : Unit ={
     doExplore {
       case Success(result) =>storeResult(Some(currentState), result)
-      case Failure(e) => println(e.getMessage)
+      case Failure(e) => ()//if(e.getMessage!=null)println(e.getMessage) else println(e)
     }
   }
 }
@@ -162,12 +162,13 @@ trait TryAllSearchEngine[ResT] extends StackedSearchEngine[ResT]{
 trait FindFirstSearchEngine[T] extends StackedSearchEngine[T] {
 
   def doExplore( k : Try[T] => Unit) {
-     this.search(k)
 
-     while(stateStack.nonEmpty && finalStates.isEmpty){
+    this.search(k)
+    while(stateStack.nonEmpty && finalStates.isEmpty){
         if(stateStack.head.triedAll) stateStack.pop()
-        else  stateStack.head.executeNextChoice()
+        else stateStack.head.executeNextChoice()
      }
+
   }
 }
 

@@ -24,7 +24,12 @@ object PuckLog{
   case object Solver extends Kind{
     def logString = "solver"
   }
-  case object Search extends Kind{
+
+  case object GraphComparisonSearch extends Kind{
+    def logString = "node mapping"
+  }
+
+  case object ConstraintSearch extends Kind{
     def logString = "search"
   }
   case object AG2AST extends Kind{

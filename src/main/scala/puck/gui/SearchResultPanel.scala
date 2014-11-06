@@ -24,7 +24,7 @@ class SearchResultPanel(initialRecord : Seq[Transformation],
       if (l.nonEmpty) {
         aux(l.tail,
           if (!l.tail.exists { st =>
-            AccessGraph.areEquivalent(initialRecord, graphOfResult(st.result),graphOfResult(l.head.result))
+            AccessGraph.areEquivalent(initialRecord, graphOfResult(st.result), graphOfResult(l.head.result), logger)
           })
             l.head +: acc
           else acc)
@@ -45,7 +45,7 @@ class SearchResultPanel(initialRecord : Seq[Transformation],
         case (acc, (k, v)) => acc + (k -> filterDifferentStates(v))
       }
     }
-  //val sortedRes  =  CSSearchStateComboBox.sort(res)
+  //val sortedRes  =  CSSearchStateComboBox.sort(res.finalStates)
 
 
   val total = sortedRes.foldLeft(0) { case (acc, (_, l)) => acc + l.size}
@@ -57,12 +57,11 @@ class SearchResultPanel(initialRecord : Seq[Transformation],
   this deafTo this
 
   reactions += {
-    case e => //println("SearchResultPanel : chaining event")
-      publish(e)
+    case e => publish(e)
   }
 
   if(sortedRes.nonEmpty) {
-    //val comp : Component = new CSSearchStateComparator(sortedRes)
+    //val comp : Component = new CSSearchStateComparator(initialRecord, sortedRes)
     val comp : Component = new CSSearchStateComboBox(sortedRes)
     contents += comp
 

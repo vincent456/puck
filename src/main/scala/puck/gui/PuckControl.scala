@@ -106,14 +106,6 @@ class PuckControl(val filesHandler : FilesHandler,
                    graph : GraphT,
                    someUse : Option[AGEdge] = None){
 
-   /* sRecording match {
-      case Some(rec) =>
-        rec()
-        PuckControl.this.publish(AccessGraphModified(rec.graph))
-
-      case None => ()
-    }*/
-
     logger.write("Printing graph ...")
 
     val pipedOutput = new PipedOutputStream()
@@ -170,10 +162,7 @@ class PuckControl(val filesHandler : FilesHandler,
     case ApplyOnCodeRequest(record) => ???
       //applyOnCode(record.asInstanceOf[Recording[Kind]])
 
-  /*  case SolveRequest(dm, trace) =>
-      doSolve(dm.asInstanceOf[DecisionMaker[Kind]], trace){
-        filesHandler.logger.writeln("Solving done")
-      }*/
+
 
     case ExploreRequest(trace, builder) =>
 

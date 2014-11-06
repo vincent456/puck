@@ -148,7 +148,7 @@ trait Solver {
             graph.createAbstraction(currentImpl, absKind, absPolicy) match {
               case Failure(f) => Failure(f)
               case Success((absId, graph2)) =>
-                logger.writeln("in solver "+ absId + " introduced as "+ absPolicy + " for " + currentImpl)(PuckLog.Search, PuckLog.Debug)
+                logger.writeln("in solver "+ absId + " introduced as "+ absPolicy + " for " + currentImpl)(PuckLog.ConstraintSearch, PuckLog.Debug)
 
                 findHost(graph2, absId,
                   absIntroPredicate(graph2, currentImpl, absPolicy, absKind)) {

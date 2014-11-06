@@ -4,10 +4,9 @@ import java.io.File
 
 import puck.graph.constraints.{Solver, DecisionMaker}
 import puck.graph.constraints.search.SolverBuilder
-import puck.graph.immutable.transformations.{NodeMappingInitialState, Transformation}
-import puck.graph.{AccessGraph, JavaNode, JavaNodeKind,JavaSolver, AGBuildingError}
+import puck.graph.immutable.transformations.{Recording, NodeMappingInitialState, Transformation}
+import puck.graph.{AccessGraph, JavaNode, JavaSolver, AGBuildingError}
 import puck.graph.io.{ConstraintSolvingSearchEngineBuilder, FilesHandler}
-import puck.javaAG.immutable.DeclHolder
 
 
 /**
@@ -40,10 +39,16 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
             val tab = l.split(" ")
             jGraphBuilder.addApiNode(p, tab(0), tab(1), tab(2))
         }
+
         graphBuilder = jGraphBuilder
-        graph = graphBuilder.g withLogger this.logger
-        val (_, transfos) = NodeMappingInitialState.normalizeNodeTransfos(graph.recording(), Seq())
+        graph = (graphBuilder.g withLogger this.logger).newGraph(nRecording = Recording())
+
+        val (_, transfos) = NodeMappingInitialState.normalizeNodeTransfos(graphBuilder.g.recording(), Seq())
         initialRecord = transfos
+
+
+
+
         graph
     }
   }

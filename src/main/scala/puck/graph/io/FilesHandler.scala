@@ -54,6 +54,7 @@ abstract class FilesHandler(workingDirectory : File){
 /*    case (PuckLog.Search,_) | (PuckLog.Solver, _) => true
     case (PuckLog.InGraph,_) | (PuckLog.InJavaGraph, _ ) => true*/
     case (PuckLog.NoSpecialContext, _) => true
+    //case (PuckLog.GraphComparisonSearch, _) => true
     case _ => false
 
   }
