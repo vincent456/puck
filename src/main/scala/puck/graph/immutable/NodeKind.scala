@@ -7,32 +7,32 @@ import puck.graph.immutable.AccessGraph.NodeId
 /**
  * Created by lorilan on 26/10/14.
  */
-trait NodeKind[K <: NodeKind[K]] {
+trait NodeKind {
 
-  def canContain(k : K) : Boolean
+  def canContain(k : NodeKind) : Boolean
   def abstractionPolicies : Seq[AbstractionPolicy] =
     Seq(SupertypeAbstraction, DelegationAbstraction)
-  def abstractKinds(p : AbstractionPolicy) : Seq[K]
+  def abstractKinds(p : AbstractionPolicy) : Seq[NodeKind]
 }
 
-trait AGRoot[K <: NodeKind[K]] extends NodeKind[K] {
-  def canContain(k: K) = false
+trait AGRoot extends NodeKind {
+  def canContain(k: NodeKind) = false
   override def abstractionPolicies = Seq()
   def abstractKinds(p : AbstractionPolicy) =
     throw new AGError("Root node cannot be abstracted")
 }
 
-trait TypeHolder[K <: NodeKind[K]] {
-  def redirectUses(oldUsee : NodeId[K], newUsee: AGNode[K, _]) : TypeHolder[K]
-  def redirectContravariantUses(oldUsee : NodeId[K], newUsee: AGNode[K, _]) : TypeHolder[K]
-  def mkString(graph : AccessGraph[K,_]) : String
+trait TypeHolder {
+  def redirectUses(oldUsee : NodeId, newUsee: AGNode) : TypeHolder
+  def redirectContravariantUses(oldUsee : NodeId, newUsee: AGNode) : TypeHolder
+  def mkString(graph : AccessGraph) : String
   def isEmpty = false
 
 }
 
-case class NoType[K <: NodeKind[K]]() extends TypeHolder[K] {
-  def redirectUses(oldUsee : NodeId[K], newUsee: AGNode[K, _]) = this
-  def redirectContravariantUses(oldUsee : NodeId[K], newUsee: AGNode[K, _]) = this
-  def mkString(graph : AccessGraph[K,_]) : String = ""
+case object NoType extends TypeHolder {
+  def redirectUses(oldUsee : NodeId, newUsee: AGNode) = this
+  def redirectContravariantUses(oldUsee : NodeId, newUsee: AGNode) = this
+  def mkString(graph : AccessGraph) : String = ""
   override def isEmpty = true
 }

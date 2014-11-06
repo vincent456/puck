@@ -12,7 +12,7 @@ import puck.search.SearchEngine
  */
 //CSSE : Constraint Solving Search Engine
 trait JavaCSSEBuilder
-  extends ConstraintSolvingSearchEngineBuilder[JavaNodeKind, DeclHolder]{
+  extends ConstraintSolvingSearchEngineBuilder{
   val violationsKindPriority = JavaSolver.violationPrioritySeq
 }
 
@@ -21,7 +21,7 @@ object JavaFindFirstCSSEBuilder
 
   override def toString = "First solution"
 
-  def apply(graph : AccessGraph[JavaNodeKind, DeclHolder]) : SearchEngine[ResultT[JavaNodeKind, DeclHolder]] =
+  def apply(graph : AccessGraph) : SearchEngine[ResultT] =
     new FindFirstCSSE(violationsKindPriority, graph, JavaSolverBuilder)
 }
 
@@ -30,7 +30,7 @@ object JavaFunneledCSSEBuilder
 
   override def toString = "Funneled"
 
-  def apply(graph : AccessGraph[JavaNodeKind, DeclHolder]) : SearchEngine[ResultT[JavaNodeKind, DeclHolder]] =
+  def apply(graph : AccessGraph) : SearchEngine[ResultT] =
     new FunneledCSSE(violationsKindPriority, graph, JavaSolverBuilder)
 }
 
@@ -39,6 +39,6 @@ object JavaTryAllCSSEBuilder
 
   override def toString = "Try all"
 
-  def apply(graph : AccessGraph[JavaNodeKind, DeclHolder]) : SearchEngine[ResultT[JavaNodeKind, DeclHolder]] =
+  def apply(graph : AccessGraph) : SearchEngine[ResultT] =
     new TryAllCSSE(violationsKindPriority, graph, JavaSolverBuilder)
 }

@@ -1,7 +1,7 @@
 package puck.gui
 
-import puck.graph.immutable.transformations.{Transformation, RecordingComparator}
-import puck.graph.{ResultT, AccessGraph, graphOfResult, NodeKind}
+import puck.graph.immutable.transformations.{Transformation}
+import puck.graph.{ResultT, AccessGraph, graphOfResult}
 import puck.search.{SearchState, Search}
 import puck.util.{PuckLog, PuckLogger}
 
@@ -10,14 +10,14 @@ import scala.swing._
 /**
  * Created by lorilan on 22/10/14.
  */
-class SearchResultPanel[Kind <: NodeKind[Kind], T](initialRecord : Seq[Transformation[Kind, T]],
-                                                   res : Search[ResultT[Kind, T]],
-                                                   logger : PuckLogger)
+class SearchResultPanel(initialRecord : Seq[Transformation],
+                        res : Search[ResultT],
+                        logger : PuckLogger)
       extends BoxPanel(Orientation.Vertical){
 
   implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.NoSpecialContext, PuckLog.Info)
 
-  type ST = SearchState[ResultT[Kind, T]]
+  type ST = SearchState[ResultT]
 
   def filterDifferentStates(l : Seq[ST]): Seq[ST] = {
     def aux(l : Seq[ST], acc : Seq[ST]) : Seq[ST] = {
@@ -41,7 +41,7 @@ class SearchResultPanel[Kind <: NodeKind[Kind], T](initialRecord : Seq[Transform
 
       //CSSearchStateComboBox.sort(res).mapValues(filterDifferentStates)
       // do not actually apply the function and hence give a false compute time
-      CSSearchStateComboBox.sort[Kind, T](res.finalStates).foldLeft(Map[Int, Seq[ST]]()){
+      CSSearchStateComboBox.sort(res.finalStates).foldLeft(Map[Int, Seq[ST]]()){
         case (acc, (k, v)) => acc + (k -> filterDifferentStates(v))
       }
     }

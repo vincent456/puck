@@ -10,6 +10,7 @@ import puck.graph.immutable.transformations.{RecordingComparator, Transformation
 import scala.language.existentials
 import scala.util.{Failure, Success, Try}
 
+
 object AccessGraph {
 
   val rootId = 0
@@ -22,35 +23,29 @@ object AccessGraph {
 
   //phantom type of NodeId used to ease Mutable/Immutable transition
   //in mutable NodeId[K] =:= AGNode[K]
-  type NodeId[Kind <: NodeKind[Kind]] = Int
-  type EdgeMap[Kind <: NodeKind[Kind]] = SetValueMap[NodeId[Kind], NodeId[Kind]]
+  type NodeId = Int
+  type EdgeMap = SetValueMap[NodeId, NodeId]
   val EdgeMap = SetValueMap
-  type UseDependencyMap[Kind <: NodeKind[Kind]] =
-       SetValueMap[(NodeId[Kind],NodeId[Kind]), (NodeId[Kind],NodeId[Kind])]
+  type UseDependencyMap = SetValueMap[(NodeId,NodeId), (NodeId,NodeId)]
   val UseDependencyMap = SetValueMap
-  type AbstractionMap[Kind <: NodeKind[Kind]] =
-       SetValueMap[NodeId[Kind], (NodeId[Kind], AbstractionPolicy)]
+  type AbstractionMap = SetValueMap[NodeId, (NodeId, AbstractionPolicy)]
   val AbstractionMap = SetValueMap
-  type Node2NodeMap[Kind <: NodeKind[Kind]] = Map[NodeId[Kind], NodeId[Kind]]
+  type Node2NodeMap = Map[NodeId, NodeId]
   val Node2NodeMap = Map
 
-  type NodeT[K <: NodeKind[K], T] = (NodeId[K], String, K, TypeHolder[K], Mutability , T)
-  type NodeIndex[Kind <: NodeKind[Kind], T] = Map[NodeId[Kind], NodeT[Kind, T]]
+  type NodeT = (NodeId, String, NodeKind, TypeHolder, Mutability , Hook)
+  type NodeIndex = Map[NodeId, NodeT]
   val NodeIndex = Map
 
-  implicit def idToNode[Kind <: NodeKind[Kind], T](implicit graph : AccessGraph[Kind, T],
-                                                   id : NodeId[Kind]) : AGNode[Kind, T] =
+  implicit def idToNode(implicit graph : AccessGraph, id : NodeId) : AGNode =
                graph.getNode(id)
 
   type Mutability = Boolean
 
-  //for compliace with mutable version
-  type Breakpoint[Kind <: NodeKind[Kind], T] = AccessGraph[Kind, T]
-
-  def areEquivalent[Kind <: NodeKind[Kind], T](initialRecord : Seq[Transformation[Kind, T]],
-                      graph1 : AccessGraph[Kind, T],
-                      graph2 : AccessGraph[Kind, T]) : Boolean = {
-    val engine = new RecordingComparator[Kind, T](initialRecord,graph1,graph2)
+  def areEquivalent[Kind <: NodeKind, T](initialRecord : Seq[Transformation],
+                      graph1 : AccessGraph,
+                      graph2 : AccessGraph) : Boolean = {
+    val engine = new RecordingComparator(initialRecord,graph1,graph2)
     engine.explore()
     engine.finalStates.nonEmpty
 
@@ -60,45 +55,50 @@ object AccessGraph {
 import AccessGraph._
 
 
-class AccessGraph[NK <: NodeKind[NK], T]
-( private [this] val nodeBuilder : AGNodeBuilder[NK, T],
+trait Hook
+
+class AccessGraph
+( private [this] val nodeBuilder : AGNodeBuilder,
   val logger : PuckLogger = PuckNoopLogger,
   private [this] val idSeed : () => Int,
-  private [this] val nodesIndex : NodeIndex[NK, T],
-  private [this] val usersMap : EdgeMap[NK],
-  private [this] val usesMap  : EdgeMap[NK],
-  private [this] val contentsMap  : EdgeMap[NK],
-  private [this] val containerMap : Node2NodeMap[NK],
-  private [this] val superTypesMap : EdgeMap[NK],
-  private [this] val subTypesMap : EdgeMap[NK],
-  private [this] val dominantUsesMap : UseDependencyMap[NK],
-  private [this] val dominatedUsesMap : UseDependencyMap[NK],
-  private [this] val abstractionsMap : AbstractionMap[NK],
-  private [this] val constraints : ConstraintsMaps[NK],
-  val recording : Recording[NK, T]) {
+  private [this] val nodesIndex : NodeIndex,
+  private [this] val removedNodes : NodeIndex,
+  private [this] val usersMap : EdgeMap,
+  private [this] val usesMap  : EdgeMap,
+  private [this] val contentsMap  : EdgeMap,
+  private [this] val containerMap : Node2NodeMap,
+  private [this] val superTypesMap : EdgeMap,
+  private [this] val subTypesMap : EdgeMap,
+  private [this] val dominantUsesMap : UseDependencyMap,
+  private [this] val dominatedUsesMap : UseDependencyMap,
+  private [this] val abstractionsMap : AbstractionMap,
+  private [this] val constraints : ConstraintsMaps,
+  val recording : Recording) {
 
-  type NIdT = NodeId[NK]
-  type NT = NodeT[NK, T]
-  type EdgeT = AGEdge[NK]
-  type GraphT = AccessGraph[NK, T]
-  type STyp = TypeHolder[NK]
+
+  type NIdT = NodeId
+  type NT = NodeT
+  type EdgeT = AGEdge
+  type GraphT = AccessGraph
+  type STyp = TypeHolder
 
   def newGraph(nLogger : PuckLogger = logger,
-               nNodesSet : NodeIndex[NK, T] = nodesIndex,
-               nUsersMap : EdgeMap[NK] = usersMap,
-               nUsesMap  : EdgeMap[NK] = usesMap,
-               nContentMap  : EdgeMap[NK] = contentsMap,
-               nContainerMap : Node2NodeMap[NK] = containerMap,
-               nSuperTypesMap : EdgeMap[NK] = superTypesMap,
-               nSubTypesMap : EdgeMap[NK] = subTypesMap,
-               nDominantUsesMap : UseDependencyMap[NK] = dominantUsesMap,
-               nDominatedUsesMap : UseDependencyMap[NK] = dominatedUsesMap,
-               nAbstractionsMap : AbstractionMap[NK] = abstractionsMap,
-               nConstraints : ConstraintsMaps[NK] = constraints,
-               nRecording : Recording[NK, T] = recording) : AccessGraph[NK, T] =
-    new AccessGraph[NK, T](nodeBuilder, nLogger,
+               nNodesSet : NodeIndex = nodesIndex,
+               nRemovedNodes : NodeIndex = removedNodes,
+               nUsersMap : EdgeMap = usersMap,
+               nUsesMap  : EdgeMap = usesMap,
+               nContentMap  : EdgeMap = contentsMap,
+               nContainerMap : Node2NodeMap = containerMap,
+               nSuperTypesMap : EdgeMap = superTypesMap,
+               nSubTypesMap : EdgeMap = subTypesMap,
+               nDominantUsesMap : UseDependencyMap = dominantUsesMap,
+               nDominatedUsesMap : UseDependencyMap = dominatedUsesMap,
+               nAbstractionsMap : AbstractionMap = abstractionsMap,
+               nConstraints : ConstraintsMaps = constraints,
+               nRecording : Recording = recording) : AccessGraph =
+    new AccessGraph(nodeBuilder, nLogger,
                         idSeed,
-                        nNodesSet, nUsersMap, nUsesMap,
+                        nNodesSet, nRemovedNodes, nUsersMap, nUsesMap,
                         nContentMap, nContainerMap, nSuperTypesMap, nSubTypesMap,
                         nDominantUsesMap, nDominatedUsesMap,
                         nAbstractionsMap, constraints, nRecording)
@@ -113,11 +113,12 @@ class AccessGraph[NK <: NodeKind[NK], T]
 
   private [immutable] def addNode(id : NIdT,
                                   localName:String,
-                                  kind: NK,
+                                  kind: NodeKind,
                                   styp: STyp,
                                   mutable : Mutability,
-                                  t : T) : AccessGraph[NK, T] =
+                                  t : Hook) : AccessGraph =
     newGraph(nNodesSet = nodesIndex + (id -> (id, localName, kind, styp, mutable, t)),
+             nRemovedNodes = removedNodes - id,
              nRecording = recording.addNode(id, localName, kind, styp, mutable, t))
 
 
@@ -126,39 +127,47 @@ class AccessGraph[NK <: NodeKind[NK], T]
   def root = getNode(rootId)
   def isRoot(id : NIdT) = container(id) == id
 
-  def addNode(localName:String, kind: NK, th : TypeHolder[NK], mutable : Mutability = true) : (NIdT, GraphT) = {
+  def addNode(localName:String, kind: NodeKind, th : TypeHolder, mutable : Mutability = true) : (NIdT, GraphT) = {
     val id = idSeed()
     (id, addNode(id, localName, kind, th, mutable, nodeBuilder.createT()))
   }
 
   /*def nodes : Seq[NodeIdT] = Range(0, idSeed + 1) */
-  def nodes : Iterable[AGNode[NK, T]] = nodesIndex.values map {
+  def nodes : Iterable[AGNode] = nodesIndex.values map {
     case (id, name, kind, styp, mutable, t) =>
       new AGNode(this, id, name, kind, styp, mutable, t)
   }
 
   private def sortedMap : Seq[(NIdT,  NT)] = nodesIndex.toSeq sortBy(_._1)
 
-  def nodesId : Iterable[NodeId[NK]] = nodesIndex.keys
+  def nodesId : Iterable[NodeId] = nodesIndex.keys
 
-  def getNode(id : NIdT): AGNode[NK, T] = nodesIndex get id match {
-    case None =>
-      val msg = "AccessGraph.getNode : no node has id " + id.toString
-      logger.writeln(msg)(PuckLog.Error)
-      logger.writeln("nodes of graph : ")(PuckLog.Error)
-      logger.writeln(sortedMap.mkString("\n", "\n\t", ""))(PuckLog.Error)
-      throw new AGError("illegal node request : no node has id " + id.toString)
-    case Some( (`id`, name, kind, styp, mutability, t) ) =>
-      nodeBuilder(this, id, name, kind, styp, mutability, t)
-    case _ => throw new AGError("incoherent index left and right id are different")
+  def getNode(id : NIdT): AGNode = {
+   val sNode =  nodesIndex get id match {
+      case None => removedNodes get id
+      case sn => sn
     }
+    sNode match {
+      case None =>
+        val msg = "AccessGraph.getNode : no node has id " + id.toString
+        logger.writeln(msg)(PuckLog.Error)
+        logger.writeln("nodes of graph : ")(PuckLog.Error)
+        logger.writeln(sortedMap.mkString("\n", "\n\t", ""))(PuckLog.Error)
+        throw new AGError("illegal node request : no node has id " + id.toString)
+      case Some((`id`, name, kind, styp, mutability, t)) =>
+        nodeBuilder(this, id, name, kind, styp, mutability, t)
+      case _ => throw new AGError("incoherent index left and right id are different")
+    }
+  }
+  def removeNode(id : NIdT) = {
+    val node = nodesIndex(id)
+    newGraph(nNodesSet = nodesIndex - id, nRemovedNodes = removedNodes + (id -> node))
+  }
 
-  def removeNode(id : NIdT) = newGraph(nNodesSet = nodesIndex - id)
-
-  def setNode(id : NIdT, name : String, k : NK, styp : STyp, mutable : Boolean, t : T) : GraphT =
+  def setNode(id : NIdT, name : String, k : NodeKind, styp : STyp, mutable : Boolean, t : Hook) : GraphT =
     newGraph(nNodesSet = nodesIndex + (id -> (id, name, k, styp, mutable, t)))
 
-  def setKind(id : NIdT, k : NK) = nodesIndex get id match {
+  def setKind(id : NIdT, k : NodeKind) = nodesIndex get id match {
     case None => throw new AGError("illegal node request : no node has id " + id.toString)
     case Some( (`id`, name, _, styp, mutability, t) ) => setNode(id, name, k, styp, mutability, t)
     case _ => throw new AGError("incoherent index left and right id are different")
@@ -175,7 +184,7 @@ class AccessGraph[NK <: NodeKind[NK], T]
     case _ => throw new AGError("incoherent index left and right id are different")
   }
 
-  def setInternal(id : NIdT, t : T) = nodesIndex get id match {
+  def setInternal(id : NIdT, t : Hook) = nodesIndex get id match {
     case None => throw new AGError("illegal node request : no node has id " + id.toString)
     case Some(  (`id`, name, kind, styp, mutable, _) ) => setNode(id, name, kind, styp, mutable, t)
     case _ => throw new AGError("incoherent index left and right id are different")
@@ -239,13 +248,13 @@ class AccessGraph[NK <: NodeKind[NK], T]
   def removeAbstraction(id : NIdT, abs : (NIdT, AbstractionPolicy)) : GraphT =
     newGraph(nAbstractionsMap = abstractionsMap - (id, abs))
 
-  /*def addEdge(edge : EdgeType, register : Boolean = true) : AccessGraph[NK] = edge.kind match {
+  /*def addEdge(edge : EdgeType, register : Boolean = true) : AccessGraph = edge.kind match {
     case Uses() => addUses(edge.user, edge.usee, register)
     case Contains() => addContains(edge.source, edge.target, register)
     case Isa() => addIsa(edge.source, edge.target, register)
   }
 
-  def removeEdge(edge : EdgeType, register : Boolean = true) : AccessGraph[NK] = edge.kind match {
+  def removeEdge(edge : EdgeType, register : Boolean = true) : AccessGraph = edge.kind match {
     case Uses() => removeUses(edge.user, edge.usee, register)
     case Contains() => removeContains(edge.source, edge.target, register)
     case Isa() => removeIsa(edge.source, edge.target, register)
@@ -337,9 +346,9 @@ class AccessGraph[NK <: NodeKind[NK], T]
 
   def violations() : Seq[EdgeT] =
     nodesIndex.keys.flatMap {n =>
-      val wu = constraints.wrongUsers(this, n).map(AGEdge.uses[NK](_,n))
+      val wu = constraints.wrongUsers(this, n).map(AGEdge.uses(_,n))
       if(constraints.isWronglyContained(this, n))
-         AGEdge.contains[NK](container(n), n) +: wu
+         AGEdge.contains(container(n), n) +: wu
       else wu
     }.toSeq
 
@@ -350,11 +359,7 @@ class AccessGraph[NK <: NodeKind[NK], T]
   def printConstraints[V](logger : Logger[V], v : V) : Unit =
     constraints.printConstraints(this, logger, v)
 
-
-  def startSequence() : Breakpoint[NK, T] = this
-  def undo(bp : Breakpoint[NK, T]) : GraphT = bp
-
-  def coupling = nodes.foldLeft(0 : Double){ (acc, n) => acc + n.coupling }
+ def coupling = nodes.foldLeft(0 : Double){ (acc, n) => acc + n.coupling }
 
   def subTree(root : NIdT) : Seq[NIdT] = {
     def aux(roots : Seq[NIdT], acc : Seq[NIdT]): Seq[NIdT] = roots match {
@@ -371,16 +376,16 @@ class AccessGraph[NK <: NodeKind[NK], T]
    * High level modifications
    */
 
-  def abstractionName(implId: NIdT, abskind : NK, policy : AbstractionPolicy) : String =
+  def abstractionName(implId: NIdT, abskind : NodeKind, policy : AbstractionPolicy) : String =
     getNode(implId).name + "_" + policy
 
-  def createNode(implId: NIdT, abskind : NK, policy : AbstractionPolicy) : (NIdT, GraphT) = {
-    val (id, g) = addNode(abstractionName(implId, abskind, policy), abskind, NoType())
+  def createNode(implId: NIdT, abskind : NodeKind, policy : AbstractionPolicy) : (NIdT, GraphT) = {
+    val (id, g) = addNode(abstractionName(implId, abskind, policy), abskind, NoType)
     (id, g.addAbstraction(implId, (id, policy)))
   }
 
   def createAbstraction(implId: NIdT,
-                        abskind : NK ,
+                        abskind : NodeKind ,
                         policy : AbstractionPolicy) : Try[(NIdT, GraphT)] = {
     val (absId, g) = createNode(implId, abskind, policy)
     val g2 = g.setType(absId, getNode(implId).styp)
@@ -414,7 +419,7 @@ class AccessGraph[NK <: NodeKind[NK], T]
 
 
       val g3 = getNode(oldEdge.user).styp match {
-        case NoType() => g2
+        case NoType => g2
         case sTyp => g2.changeType(oldEdge.user, sTyp, oldEdge.usee, newUsee)
       }
 
@@ -434,7 +439,7 @@ class AccessGraph[NK <: NodeKind[NK], T]
       // when iterating on the wrongusers, the next call to redirectuses will arrive here
       logger.writeln("redirecting uses' %s target to %s (%s) : FAILURE !! %s is not used".
         format(oldEdge, newUsee, policy, oldEdge.usee))
-      Success((AGEdge.uses[NK](oldEdge.user, newUsee), this))
+      Success((AGEdge.uses(oldEdge.user, newUsee), this))
     }
     else {
       if(users(oldEdge.usee).exists(_ == oldEdge.user) ||
@@ -466,9 +471,9 @@ class AccessGraph[NK <: NodeKind[NK], T]
 
        primaryUses.foldLeft[Try[GraphT]](Success(this)){
          case (g, primary0) =>
-           val primary = AGEdge.uses[NK](primary0)
+           val primary = AGEdge.uses(primary0)
 
-           val keepOldUse = dominatedUses(primary).nonEmpty //is empty if primary had only one side use
+           val keepOldUse = dominatedUses(primary0).nonEmpty //is empty if primary had only one side use
 
            val tryG1 : Try[GraphT] =
               g.map { _.removeUsesDependency(primary, currentSideUse)}
@@ -547,7 +552,7 @@ class AccessGraph[NK <: NodeKind[NK], T]
 
       sideUses.foldLeft(Success(this) : Try[GraphT]){
         case (g, side0) =>
-          val side = AGEdge.uses[NK](side0)
+          val side = AGEdge.uses(side0)
           abstractions(side.usee).find {
             case (abs, _) => contains(newPrimaryUsee, abs)
             case _ => false

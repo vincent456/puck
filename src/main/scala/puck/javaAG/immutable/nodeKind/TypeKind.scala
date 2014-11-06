@@ -1,6 +1,7 @@
 package puck.javaAG.immutable.nodeKind
 
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
+import puck.graph.immutable.NodeKind
 
 /**
  * Created by lorilan on 31/07/14.
@@ -9,7 +10,7 @@ abstract class TypeKind extends JavaNodeKind
 
 case object Interface extends TypeKind {
 
-def canContain(k : JavaNodeKind) : Boolean = {
+def canContain(k : NodeKind) : Boolean = {
     k match {
       case AbstractMethod => true
       case _ => false
@@ -27,7 +28,7 @@ case object Class extends TypeKind {
 
 
 
-  def canContain(k : JavaNodeKind) : Boolean = {
+  def canContain(k : NodeKind) : Boolean = {
     k match {
       case Constructor
          | Field

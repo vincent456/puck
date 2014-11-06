@@ -7,7 +7,7 @@ import puck.javaAG.immutable.nodeKind.JavaRoot
 import puck.util.{PuckLog, PuckLogger}
 
 import scala.collection.immutable.HashSet
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 object NodeTransfoStatus {
   def apply( i : Int) = i match {
@@ -29,9 +29,9 @@ case object Neuter extends NodeTransfoStatus
 
 object NodeMappingInitialState{
 
-  def normalizeNodeTransfos[Kind <: NodeKind[Kind], T](l : Seq[Transformation[Kind, T]],
-                                                       init : Seq[Transformation[Kind, T]] = Seq()) : (Map[NodeId[Kind], (Int, Kind)], Seq[Transformation[Kind, T]])= {
-    val (map, rl) = l.foldLeft( (Map[NodeId[Kind], (Int, Kind)](), init) ){
+  def normalizeNodeTransfos(l : Seq[Transformation],
+                                                       init : Seq[Transformation] = Seq()) : (Map[NodeId, (Int, NodeKind)], Seq[Transformation])= {
+    val (map, rl) = l.foldLeft( (Map[NodeId, (Int, NodeKind)](), init) ){
       case ((m,l1), Transformation(Add, TTNode(id, _, kind, _, _, _ )))=>
         val (i, _) = m.getOrElse(id, (0, JavaRoot) )
         (m + (id -> (i + 1, kind)), l1)
@@ -46,16 +46,16 @@ object NodeMappingInitialState{
       case ((m,l1), Transformation(_, TTAbstraction(_, _, _))) => (m, l1)
       case ((m,l1), Transformation(_, TTConstraint(_,_))) => (m, l1)*/
       case ((m,l1), Transformation(_, TTTypeRedirection(_,_,_, _))) => (m, l1)
-      case ((m,l1), t : Transformation[Kind, T]) => (m, t +: l1)
+      case ((m,l1), t : Transformation) => (m, t +: l1)
     }
 
     (map, rl.reverse)
   }
 
-  def switchNodes[Kind <: NodeKind[Kind], T]
-          (nodeStatusesMap : Map[NodeId[Kind], (Int, Kind)], init : T)
-          (add : (T, NodeId[Kind]) => T) : (T, Seq[NodeId[Kind]], Set[NodeId[Kind]]) = {
-    nodeStatusesMap.foldLeft[(T, Seq[NodeId[Kind]], Set[NodeId[Kind]])](init, List(), HashSet()) {
+  def switchNodes[Kind <: NodeKind, T]
+          (nodeStatusesMap : Map[NodeId, (Int, Kind)], init : T)
+          (add : (T, NodeId) => T) : (T, Seq[NodeId], Set[NodeId]) = {
+    nodeStatusesMap.foldLeft[(T, Seq[NodeId], Set[NodeId])](init, List(), HashSet()) {
       case ((addAcc, rmAcc, neuterAcc), (node, (i, kind))) =>
         NodeTransfoStatus(i) match {
           case Created => (add(addAcc, node), rmAcc, neuterAcc)
@@ -77,8 +77,8 @@ object NodeMappingInitialState{
 
   implicit val defaultVerbosity = (PuckLog.Search, PuckLog.Debug)
 
-  def filterNoise[Kind <: NodeKind[Kind], T](transfos : Seq[Transformation[Kind, T]], logger : PuckLogger):
-  Seq[Transformation[Kind, T]] = {
+  def filterNoise[Kind <: NodeKind, T](transfos : Seq[Transformation], logger : PuckLogger):
+  Seq[Transformation] = {
 
     implicit val defaultVerbosity = 1
 
@@ -90,11 +90,11 @@ object NodeMappingInitialState{
       logger.writeln("----------------------------------------------")
     }
 
-    def mapUntil( stoppingEdge : AGEdge[Kind],
-                  transfos : List[Transformation[Kind, T]])
-                (rule : (Transformation[Kind, T] => Transformation[Kind, T])): Seq[Transformation[Kind, T]] = {
+    def mapUntil( stoppingEdge : AGEdge,
+                  transfos : List[Transformation])
+                (rule : (Transformation => Transformation)): Seq[Transformation] = {
 
-      def aux(acc : Seq[Transformation[Kind, T]], l : Seq[Transformation[Kind, T]]) : Seq[Transformation[Kind, T]] ={
+      def aux(acc : Seq[Transformation], l : Seq[Transformation]) : Seq[Transformation] ={
         if(l.isEmpty) acc.reverse
         else
           l.head match {
@@ -107,19 +107,19 @@ object NodeMappingInitialState{
     }
 
     // We are going backwards !
-    def aux(filteredTransfos : Seq[Transformation[Kind, T]],
-            l : Seq[Transformation[Kind, T]],
-             removedEdges : Seq[AGEdge[Kind]]): (Seq[Transformation[Kind, T]], Seq[AGEdge[Kind]]) = {
+    def aux(filteredTransfos : Seq[Transformation],
+            l : Seq[Transformation],
+             removedEdges : Seq[AGEdge]): (Seq[Transformation], Seq[AGEdge]) = {
       l match {
         case List() => (filteredTransfos, removedEdges)
         case (op2 @ Transformation(Remove, TTEdge(AGEdge(Contains, n1, n2)))) :: tl =>
-          /*val (applied, newTl) = applyRuleOnce[Transformation[Kind]](tl)
+          /*val (applied, newTl) = applyRuleOnce[Transformation](tl)
           { case Transformation(Add(), TTEdge(AGEdge(Contains(), `n1`, `n2`))) => (true, None)
           case _ => (false, None)
           }
           if(applied) aux(filteredTransfos, newTl)
           else aux(l.head :: filteredTransfos, l)*/
-          select[Transformation[Kind,T]](tl,
+          select[Transformation](tl,
           { case Transformation(Add, TTEdge(AGEdge(Contains, `n1`, `n2`))) => true
           case _ => false
           }) match {
@@ -131,11 +131,11 @@ object NodeMappingInitialState{
         case (op1 @ Transformation(Add, TTRedirection(stopingEdge @ AGEdge(kind, n1, n2), Source(n3)))) :: tl =>
           aux(filteredTransfos, mapUntil(stopingEdge, tl)
           { case op2 @ Transformation(Add, TTRedirection(AGEdge(`kind`, n0, `n2`), Source(`n1`))) =>
-            val res = Transformation[Kind,T](Add, TTRedirection(AGEdge(kind, n0, n2), Source(n3)))
+            val res = Transformation(Add, TTRedirection(AGEdge(kind, n0, n2), Source(n3)))
             printRule("RedRed_src", op2.toString, op1.toString, res.toString)
             res
           case op2 @ Transformation(Add, TTEdge(AGEdge(`kind`, `n1`, `n2`))) =>
-            val res = Transformation[Kind,T](Add, TTEdge(AGEdge(kind, n3, n2)))
+            val res = Transformation(Add, TTEdge(AGEdge(kind, n3, n2)))
             printRule("AddRed_src", op2.toString, op1.toString, res.toString)
             res
           case t => t
@@ -144,11 +144,11 @@ object NodeMappingInitialState{
         case (op1 @ Transformation(Add, TTRedirection(stopingEdge @ AGEdge(kind, n1, n2), Target(n3)))) :: tl =>
           aux(filteredTransfos, mapUntil(stopingEdge, tl)
           { case op2 @ Transformation(Add, TTRedirection(AGEdge(`kind`, `n1`, n0), Target(`n2`))) =>
-            val res = Transformation[Kind,T](Add, TTRedirection(AGEdge(kind, n1, n0), Target(n3)))
+            val res = Transformation(Add, TTRedirection(AGEdge(kind, n1, n0), Target(n3)))
             printRule("RedRed_tgt", op2.toString, op1.toString, res.toString)
             res
           case op2 @ Transformation(Add, TTEdge(AGEdge(`kind`, `n1`, `n2`))) =>
-            val res = Transformation[Kind,T](Add, TTEdge(AGEdge(kind, n1, n3)))
+            val res = Transformation(Add, TTEdge(AGEdge(kind, n1, n3)))
             printRule("AddRed_tgt", op2.toString, op1.toString, res.toString)
             res
           case t => t
@@ -173,12 +173,12 @@ object NodeMappingInitialState{
   }
 }
 
-class NodeMappingInitialState[Kind <: NodeKind[Kind], T]
-(initialTransfos : Seq[Transformation[Kind, T]],
- eng : RecordingComparator[Kind, T],
- graph1 : AccessGraph[Kind, T],
- graph2 : AccessGraph[Kind, T],
- k: Try[ResMapping[Kind]] => Unit,
+class NodeMappingInitialState
+(initialTransfos : Seq[Transformation],
+ eng : RecordingComparator,
+ graph1 : AccessGraph,
+ graph2 : AccessGraph,
+ k: Try[ResMapping] => Unit,
  logger : PuckLogger)
   extends NodeMappingState(0, eng, null, null, None) {
 
@@ -196,12 +196,12 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind], T]
    }*/
 
   val (initialMapping, removedNode, neuterNodes) =
-    switchNodes(nodeStatuses, Map[NodeId[Kind], Option[NodeId[Kind]]]()){
+    switchNodes(nodeStatuses, Map[NodeId, Option[NodeId]]()){
       case (m, n) => m + (n -> None)
     }
 
   val (nodesToMap, otherRemovedNodes, otherNeuterNodes) =
-    switchNodes(nodeStatuses2, Seq[NodeId[Kind]]()){case (l, n) => n +: l}
+    switchNodes(nodeStatuses2, Seq[NodeId]()){case (l, n) => n +: l}
 
 
 
@@ -211,7 +211,7 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind], T]
 
   import puck.graph.immutable.transformations.NodeMappingInitialState.defaultVerbosity
 
-  def printlnNode(graph: AccessGraph[Kind, T])( nid : NodeId[Kind]){
+  def printlnNode(graph: AccessGraph)( nid : NodeId){
     /*val n = graph.getNode(nid)
     logger.writeln("%d = %s(%s)".format(n.id, n.kind, n.fullName))*/
     logger.writeln(nid.toString)
@@ -258,7 +258,7 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind], T]
       logger.writeln("recording2")
       graph2.recording() foreach { t => logger.writeln(t.toString)}
 
-      throw new NoSolution()
+      k(Failure(NoSolution))
     }
     else {
 
@@ -321,7 +321,7 @@ class NodeMappingInitialState[Kind <: NodeKind[Kind], T]
       filteredTransfos2 foreach { t => logger.writeln(t.toString)}
 
       if(filteredTransfos1.length != filteredTransfos2.length)
-        throw new NoSolution()
+        k(Failure(NoSolution))
 
       eng.compare(filteredTransfos1, filteredTransfos2, initialMapping, nodesToMap, k)
       /*eng.compare(filteredTransfos1, filteredTransfos2,

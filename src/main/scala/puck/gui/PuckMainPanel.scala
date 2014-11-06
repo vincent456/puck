@@ -26,7 +26,7 @@ object PuckMainPanel{
   }
 }
 
-class PuckMainPanel[Kind <: NodeKind[Kind], T](val filesHandler: FilesHandler[Kind, T])
+class PuckMainPanel(val filesHandler: FilesHandler)
   extends SplitPane(Orientation.Horizontal){
   dividerSize = 3
 
@@ -59,7 +59,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind], T](val filesHandler: FilesHandler[Ki
     val rightWidth = PuckMainPanel.width *2/3
     val height = PuckMainPanel.height * 2/3
 
-    val treeDisplayer = new GraphExplorer[Kind, T](rightWidth/2, height)
+    val treeDisplayer = new GraphExplorer(rightWidth/2, height)
 
     val progressBar  = new ProgressBar()
     val delayedDisplay = ArrayBuffer[Component]()
@@ -71,7 +71,7 @@ class PuckMainPanel[Kind <: NodeKind[Kind], T](val filesHandler: FilesHandler[Ki
 
       reactions += {
         case PuckTreeNodeClicked(graph, n) =>
-          val nodeInfoPanel = new NodeInfosPanel(graph.asInstanceOf[AccessGraph[Kind, T]], n.asInstanceOf[NodeId[Kind]])
+          val nodeInfoPanel = new NodeInfosPanel(graph, n)
           contents = nodeInfoPanel
           control.listenTo(nodeInfoPanel)
           treeDisplayer.listenTo(nodeInfoPanel)
@@ -107,9 +107,8 @@ class PuckMainPanel[Kind <: NodeKind[Kind], T](val filesHandler: FilesHandler[Ki
       reactions += {
         case ExplorationFinished(res0) =>
           resultsWrapper.contents.clear()
-          val searchResultPanel = new SearchResultPanel[Kind, T](filesHandler.initialRecord,
-            res0.asInstanceOf[Search[ResultT[Kind, T]]],
-            filesHandler.logger)
+          val searchResultPanel =
+            new SearchResultPanel(filesHandler.initialRecord, res0, filesHandler.logger)
           resultsWrapper.contents += searchResultPanel
           control listenTo searchResultPanel
 

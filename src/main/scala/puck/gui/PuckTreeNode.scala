@@ -9,7 +9,7 @@ import scala.swing.CheckBox
 /**
  * Created by lorilan on 10/07/14.
  */
-class PuckTreeNode[K <: NodeKind[K]](val agNode : NodeId[K], name : String)
+class PuckTreeNode(val agNode : NodeId, name : String)
   extends DefaultMutableTreeNode(agNode){
 
   val checkBox = new CheckBox()

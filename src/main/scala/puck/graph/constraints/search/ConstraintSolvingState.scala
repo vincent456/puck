@@ -11,15 +11,15 @@ import scala.util.Try
  * Created by lorilan on 26/09/14.
  */
 
-trait ConstraintSolvingChoice[Kind <: NodeKind[Kind], S, U, T <: ConstraintSolvingChoice[Kind, S, U, T]]
-  extends StateCreator[ResultT[Kind, U] , T] {
+trait ConstraintSolvingChoice[S, T <: ConstraintSolvingChoice[S, T]]
+  extends StateCreator[ResultT, T] {
   val k : Option[S] => Unit
   val remainingChoices : mutable.Set[S]
   val triedChoices : mutable.Set[S]
 }
 
-trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, U, T <: ConstraintSolvingChoice[Kind, S, U, T]]
-  extends SearchState[ResultT[Kind, U]]{
+trait ConstraintSolvingState[ S, T <: ConstraintSolvingChoice[S, T]]
+  extends SearchState[ResultT]{
 
   /*println("creating searchState "+ id)
   prevState match {
@@ -27,7 +27,7 @@ trait ConstraintSolvingState[Kind <: NodeKind[Kind], S, U, T <: ConstraintSolvin
     case Some(p) =>  println("parent is " + p.uuid())
   }*/
 
-  val internal : ConstraintSolvingChoice[Kind, S, U, T]
+  val internal : ConstraintSolvingChoice[S, T]
   import internal._
 
 

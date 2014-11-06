@@ -4,42 +4,44 @@ import puck.graph.immutable.AccessGraph.NodeId
 import puck.graph.immutable.NodeKind
 import puck.search.{SearchEngine, SearchState, StateCreator}
 import scala.collection.mutable
+import scala.util.{Success, Try}
 
 /**
  * Created by lorilan on 30/09/14.
  */
 
 object MappingChoices{
-  type ResMapping[Kind <: NodeKind[Kind]] = Map[NodeId[Kind], Option[NodeId[Kind]]]
-  type NodesToMap[Kind <: NodeKind[Kind]] = Seq[NodeId[Kind]]
+  type ResMapping = Map[NodeId, Option[NodeId]]
+  type NodesToMap = Seq[NodeId]
 
-  type Kargs[Kind <: NodeKind[Kind]] = (NodeId[Kind], ResMapping[Kind], NodesToMap[Kind])
+  type Kargs = (NodeId, Try[ResMapping], NodesToMap)
 }
 
 import MappingChoices.{Kargs, NodesToMap, ResMapping}
 
-class MappingChoices[Kind <: NodeKind[Kind]](val k: Kargs[Kind] => Unit,
-                                             val node : NodeId[Kind],
-                                             val nodesToMap : NodesToMap[Kind],
-                                             val remainingChoices : mutable.Set[NodeId[Kind]],
-                                             val triedChoices : mutable.Set[NodeId[Kind]])
-  extends StateCreator[ResMapping[Kind], MappingChoices[Kind]] {
+class MappingChoices(val k: Kargs => Unit,
+                                             val node : NodeId,
+                                             val nodesToMap : NodesToMap,
+                                             val remainingChoices : mutable.Set[NodeId],
+                                             val triedChoices : mutable.Set[NodeId])
+  extends StateCreator[ResMapping, MappingChoices] {
 
   def createState (id: Int,
-                   engine: SearchEngine[ResMapping[Kind]],
-                   prevState: Option[SearchState[ResMapping[Kind]]],
-                   currentResult : ResMapping[Kind],
-                   choices: MappingChoices[Kind]): NodeMappingState[Kind] = {
+                   engine: SearchEngine[ResMapping],
+                   prevState: Option[SearchState[ResMapping]],
+                   currentResult : ResMapping,
+                   choices: MappingChoices): NodeMappingState = {
     new NodeMappingState (id, engine, currentResult, choices, prevState)
   }
 }
 
-class NodeMappingState[Kind <: NodeKind[Kind]](val id : Int,
-                                                val engine : SearchEngine[ResMapping[Kind]],
-                                                val result : ResMapping[Kind],
-                                                val mappingChoices: MappingChoices[Kind],
-                                                val prevState : Option[SearchState[ResMapping[Kind]]])
-  extends SearchState[ResMapping[Kind]] {
+class NodeMappingState
+(val id : Int,
+ val engine : SearchEngine[ResMapping],
+ val result : ResMapping,
+ val mappingChoices: MappingChoices,
+ val prevState : Option[SearchState[ResMapping]])
+  extends SearchState[ResMapping] {
 
 
      import mappingChoices._
@@ -58,7 +60,7 @@ class NodeMappingState[Kind <: NodeKind[Kind]](val id : Int,
 
          triedChoices.add(c)
 
-         k((c, result + (node -> Some(c)), remainingNodesToMap))
+         k((c, Success(result + (node -> Some(c))), remainingNodesToMap))
        }
      }
 

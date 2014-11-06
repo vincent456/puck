@@ -9,7 +9,7 @@ import java.awt.Dimension
 /**
  * Created by lorilan on 09/05/14.
  */
-class SettingsFrame[Kind <: NodeKind[Kind]](filesHandler : FilesHandler[Kind, _]) extends Frame{
+class SettingsFrame(filesHandler : FilesHandler) extends Frame{
 
   title = "Settings"
   size = new Dimension(300, 150)

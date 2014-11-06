@@ -12,32 +12,32 @@ import puck.javaAG.immutable.nodeKind._
 
 import scala.language.existentials
 
-object JavaNode extends AGNodeBuilder[JavaNodeKind, DeclHolder] with DotHelper[JavaNodeKind]{
-  def apply(graph : AccessGraph[JavaNodeKind, DeclHolder],
-            id : NodeId[JavaNodeKind],
+object JavaNode extends AGNodeBuilder with DotHelper{
+  def apply(graph : AccessGraph,
+            id : NodeId,
             name : String,
-            kind : JavaNodeKind,
-            styp : TypeHolder[JavaNodeKind],
+            kind : NodeKind,
+            styp : TypeHolder,
             isMutable : Mutability,
-            t : DeclHolder) : JavaNode =
+            t : Hook) : JavaNode =
     new JavaNode(graph, id, name, kind, styp, isMutable, t)
 
   def createT() = EmptyDeclHolder
 
   def rootKind : JavaNodeKind = JavaRoot
-  def kinds : Seq[JavaNodeKind] = JavaNodeKind.list
+  def kinds : Seq[NodeKind] = JavaNodeKind.list
 
-  override def isDotSubgraph(k: JavaNodeKind): Boolean = k == Package
+  override def isDotSubgraph(k: NodeKind): Boolean = k == Package
 
-  override def namePrefix(k: JavaNodeKind): String =  k match {
+  override def namePrefix(k: NodeKind): String =  k match {
     case Package => "&lt;&lt;package&gt;&gt; "
     case Interface => "&lt;&lt;interface&gt;&gt; "
     case _ => ""
   }
 
-  override def splitDotClassContent(graph : AccessGraph[JavaNodeKind, _], n: NodeId[JavaNodeKind]) = {
-    graph.getNode(n).content.foldLeft( (Seq[NodeId[JavaNodeKind]](), Seq[NodeId[JavaNodeKind]](), Seq[NodeId[JavaNodeKind]](), Seq[NodeId[JavaNodeKind]]()) ){
-      ( lists : (Seq[NodeId[JavaNodeKind]], Seq[NodeId[JavaNodeKind]], Seq[NodeId[JavaNodeKind]] , Seq[NodeId[JavaNodeKind]]), n : NodeId[JavaNodeKind] ) =>
+  override def splitDotClassContent(graph : AccessGraph, n: NodeId) = {
+    graph.getNode(n).content.foldLeft( (Seq[NodeId](), Seq[NodeId](), Seq[NodeId](), Seq[NodeId]()) ){
+      ( lists : (Seq[NodeId], Seq[NodeId], Seq[NodeId] , Seq[NodeId]), n : NodeId ) =>
         val (fds, cts, mts, cls) = lists
         val kind = graph.getNode(n).kind
         kind match {
@@ -53,9 +53,9 @@ object JavaNode extends AGNodeBuilder[JavaNodeKind, DeclHolder] with DotHelper[J
     }
   }
 
-  override def isDotClass(k: JavaNodeKind): Boolean = k match { case Class | Interface => true; case _ => false}
+  override def isDotClass(k: NodeKind): Boolean = k match { case Class | Interface => true; case _ => false}
 
-  override def fillColor(k: JavaNodeKind): String = k match {
+  override def fillColor(k: NodeKind): String = k match {
     case Package => "#FF9933" //Orange
     case Interface => "#FFFF99" // Light yellow
     case Class | Constructor => "#FFFF33" //Yellow
@@ -66,16 +66,16 @@ object JavaNode extends AGNodeBuilder[JavaNodeKind, DeclHolder] with DotHelper[J
 }
 
 class JavaNode
-( graph : AccessGraph[JavaNodeKind, DeclHolder],
-  id : NodeId[JavaNodeKind],
+( graph : AccessGraph,
+  id : NodeId,
   name : String,
-  override val kind : JavaNodeKind,
-  styp : TypeHolder[JavaNodeKind],
+  override val kind : NodeKind,
+  styp : TypeHolder,
   isMutable : Mutability,
-  t : DeclHolder)
-  extends AGNode[JavaNodeKind, DeclHolder](graph, id, name, kind, styp, isMutable, t){
+  t : Hook)
+  extends AGNode(graph, id, name, kind, styp, isMutable, t){
 
-  override type NIdT = NodeId[JavaNodeKind]
+  override type NIdT = NodeId
 
   override def canContain(otherId : NIdT) : Boolean = {
     val n = graph.getNode(otherId)

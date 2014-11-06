@@ -7,14 +7,14 @@ import puck.search.SearchEngine
 import scala.collection.mutable
 import scala.util.Try
 
-trait InitialStateCreator[Kind <: NodeKind[Kind], T] {
-  this : SearchEngine[ResultT[Kind, T]] with  DecisionMaker[Kind, T] =>
+trait InitialStateCreator {
+  this : SearchEngine[ResultT] with  DecisionMaker =>
 
-  val graph : AccessGraph[Kind, T]
-  val solverBuilder : SolverBuilder[Kind, T]
+  val graph : AccessGraph
+  val solverBuilder : SolverBuilder
 
   def logger = graph.logger
-  def createInitialState(k : Try[ResultT[Kind, T]] => Unit) =
+  def createInitialState(k : Try[ResultT] => Unit) =
     new CSInitialSearchState(this, solverBuilder(graph, this), graph, k)
 
 }
@@ -22,12 +22,12 @@ trait InitialStateCreator[Kind <: NodeKind[Kind], T] {
 /**
  * Created by lorilan on 25/10/14.
  */
-class CSInitialSearchState[Kind <: NodeKind[Kind], T](e : SearchEngine[ResultT[Kind, T]],
-                                                   solver : Solver[Kind, T],
-                                                   graph : AccessGraph[Kind, T],
-                                                   k : Try[ResultT[Kind, T]] => Unit)
-  extends ConstraintSolvingNodeChoiceSearchState[Kind, T](0, (graph, graph.recording), e,
-    new ConstraintSolvingNodesChoice[Kind, T](null, mutable.Set(), mutable.Set()), None){
+class CSInitialSearchState(e : SearchEngine[ResultT],
+                                                   solver : Solver,
+                                                   graph : AccessGraph,
+                                                   k : Try[ResultT] => Unit)
+  extends ConstraintSolvingNodeChoiceSearchState(0, (graph, graph.recording), e,
+    new ConstraintSolvingNodesChoice(null, mutable.Set(), mutable.Set()), None){
 
   var executedOnce = false
   override def triedAll = executedOnce

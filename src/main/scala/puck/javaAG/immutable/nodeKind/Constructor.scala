@@ -2,6 +2,7 @@ package puck.javaAG.immutable.nodeKind
 
 import puck.graph.constraints.{AbstractionPolicy, DelegationAbstraction, SupertypeAbstraction}
 import puck.graph.AGError
+import puck.graph.immutable.NodeKind
 
 /**
  * Created by lorilan on 31/07/14.
@@ -11,7 +12,7 @@ case object Constructor extends JavaNodeKind {
 
   override val toString = "Constructor"
 
-  def canContain(k : JavaNodeKind) = false
+  def canContain(k : NodeKind) = false
 
   override def abstractionPolicies = Seq(DelegationAbstraction)
 

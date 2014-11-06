@@ -28,22 +28,27 @@ sealed abstract class ControlRequest extends Event
 
 case class LoadCodeRequest() extends ControlRequest
 case class LoadConstraintRequest() extends ControlRequest
-case class GraphDisplayRequest[Kind <: NodeKind[Kind], T](title : String,
-                                                       graph : AccessGraph[Kind, T],
-                                                       sUse : Option[AGEdge[Kind]] = None) extends ControlRequest
-
-case class ExploreRequest[Kind <: NodeKind[Kind],T](trace : Boolean,
-                                                  builder : ConstraintSolvingSearchEngineBuilder[Kind, T]) extends ControlRequest
-
-case class SearchStateMapPrintingRequest[Kind <: NodeKind[Kind], T](stateMap : Map[Int, Seq[SearchState[ResultT[Kind, T]]]])
+case class GraphDisplayRequest
+(title : String,
+ graph : AccessGraph,
+ sUse : Option[AGEdge] = None)
   extends ControlRequest
-case class SearchStateSeqPrintingRequest[Kind <: NodeKind[Kind], T](subDir : String,
-                                                                  states : Seq[SearchState[ResultT[Kind, T]]],
-                                                                  sPrinter : Option[SearchState[ResultT[Kind,T]] => String])
+
+case class ExploreRequest
+(trace : Boolean,
+ builder : ConstraintSolvingSearchEngineBuilder)
+  extends ControlRequest
+
+case class SearchStateMapPrintingRequest(stateMap : Map[Int, Seq[SearchState[ResultT]]])
+  extends ControlRequest
+case class SearchStateSeqPrintingRequest
+(subDir : String,
+ states : Seq[SearchState[ResultT]],
+ sPrinter : Option[SearchState[ResultT] => String])
   extends ControlRequest
 
 case class PrintConstraintRequest() extends ControlRequest
-case class ApplyOnCodeRequest[Kind <: NodeKind[Kind], T](searchResult : ResultT[Kind, T]) extends ControlRequest
+case class ApplyOnCodeRequest(searchResult : ResultT) extends ControlRequest
 
 /*
 case class SolveRequest[Kind <: NodeKind[Kind]](decisionStrategy : DecisionMaker[Kind],
@@ -52,15 +57,15 @@ case class DoWholeProcessRequest(trace : Boolean) extends ControlRequest
 
 */
 sealed abstract class Answer extends Event
-case class ExplorationFinished[Kind <: NodeKind[Kind], T](result : Search[ResultT[Kind, T]]) extends Answer
+case class ExplorationFinished(result : Search[ResultT]) extends Answer
 
 
-class PuckControl[Kind <: NodeKind[Kind], T](val filesHandler : FilesHandler[Kind, T],
-                                          private val progressBar : ProgressBar,
-                                          private val delayedDisplay : ArrayBuffer[Component])
+class PuckControl(val filesHandler : FilesHandler,
+                  private val progressBar : ProgressBar,
+                  private val delayedDisplay : ArrayBuffer[Component])
   extends Publisher{
 
-  type GraphT = AccessGraph[Kind, T]
+  type GraphT = AccessGraph
   import PuckLog.defaultVerbosity
 
   import filesHandler.logger
@@ -99,7 +104,7 @@ class PuckControl[Kind <: NodeKind[Kind], T](val filesHandler : FilesHandler[Kin
 
   def displayGraph(title : String,
                    graph : GraphT,
-                   someUse : Option[AGEdge[Kind]] = None){
+                   someUse : Option[AGEdge] = None){
 
    /* sRecording match {
       case Some(rec) =>
@@ -141,7 +146,7 @@ class PuckControl[Kind <: NodeKind[Kind], T](val filesHandler : FilesHandler[Kin
     }
   }
 */
-  type StateT = SearchState[ResultT[Kind, T]]
+  type StateT = SearchState[ResultT]
   def printStateSeq( subDirStr : String,
                      states : Seq[StateT],
                      sPrinter : Option[StateT => String]): Unit ={
@@ -160,7 +165,7 @@ class PuckControl[Kind <: NodeKind[Kind], T](val filesHandler : FilesHandler[Kin
     case GraphDisplayRequest(title, graph, sUse) =>
       displayGraph(title,
         graph.asInstanceOf[GraphT],
-        sUse.asInstanceOf[Option[AGEdge[Kind]]])
+        sUse.asInstanceOf[Option[AGEdge]])
 
     case ApplyOnCodeRequest(record) => ???
       //applyOnCode(record.asInstanceOf[Recording[Kind]])
@@ -172,9 +177,7 @@ class PuckControl[Kind <: NodeKind[Kind], T](val filesHandler : FilesHandler[Kin
 
     case ExploreRequest(trace, builder) =>
 
-      val tbuilder = builder.asInstanceOf[ConstraintSolvingSearchEngineBuilder[Kind,T]]
-
-      val engine = tbuilder(filesHandler.graph)
+      val engine = builder(filesHandler.graph)
 
       Future {
         filesHandler.logger.writeln("Solving constraints ...")
@@ -193,12 +196,10 @@ class PuckControl[Kind <: NodeKind[Kind], T](val filesHandler : FilesHandler[Kin
           //filesHandler.logger writeln exc.getStackTrace.mkString("\n")
       }
 
-    case req @ SearchStateMapPrintingRequest(_) =>
-      val treq = req.asInstanceOf[SearchStateMapPrintingRequest[Kind, T]]
+    case treq @ SearchStateMapPrintingRequest(_) =>
       filesHandler.printCSSearchStatesGraph(treq.stateMap)
 
-    case req @ SearchStateSeqPrintingRequest(_, _, _) =>
-       val treq = req.asInstanceOf[SearchStateSeqPrintingRequest[Kind, T]]
+    case treq @ SearchStateSeqPrintingRequest(_, _, _) =>
       printStateSeq(treq.subDir, treq.states, treq.sPrinter)
   }
 

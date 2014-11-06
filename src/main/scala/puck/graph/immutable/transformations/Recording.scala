@@ -8,53 +8,52 @@ import puck.graph.immutable.AccessGraph.NodeId
  */
 
 object Recording {
-  def apply[Kind <: NodeKind[Kind], T]() = new Recording[Kind, T](Seq())
+  def apply() = new Recording(Seq())
 }
 
-class Recording[Kind <: NodeKind[Kind], T]
-(private [this] val record : Seq[Transformation[Kind, T]]) {
+class Recording
+(private [this] val record : Seq[Transformation]) {
 
-  type NIdT = NodeId[Kind]
-  type EdgeT = AGEdge[Kind]
-  type RecT = Recording[Kind, T]
+  type NIdT = NodeId
+  type EdgeT = AGEdge
+  type RecT = Recording
   def apply() = record
 
 
-  def +:(r : Transformation[Kind, T]) : Recording[Kind, T] =
+  def +:(r : Transformation) : Recording =
     new Recording(r +: record)
 
   def nonEmpty = record.nonEmpty
   def size = record.size
 
-  def addNode(id : NIdT, name : String, kind : Kind, styp: TypeHolder[Kind],
-              mutable : Boolean, t : T) : RecT =
+  def addNode(id : NIdT, name : String, kind : NodeKind, styp: TypeHolder, mutable : Boolean, t : Hook) : RecT =
     Transformation(Add, TTNode(id, name, kind, styp, mutable, t)) +: this
 
   def addEdge(edge : EdgeT) : RecT =
-    Transformation(Add, TTEdge[Kind,T](edge)) +: this
+    Transformation(Add, TTEdge(edge)) +: this
 
   def removeEdge(edge : EdgeT) : RecT=
-    Transformation(Remove, TTEdge[Kind,T](edge)) +: this
+    Transformation(Remove, TTEdge(edge)) +: this
 
   def changeEdgeTarget(edge : EdgeT, newTarget : NIdT, withMerge : Boolean) : RecT = {
-    val red = if(withMerge) new RedirectionWithMerge[Kind,T](edge, Target(newTarget))
-              else TTRedirection[Kind, T](edge, Target(newTarget))
+    val red = if(withMerge) new RedirectionWithMerge(edge, Target(newTarget))
+              else TTRedirection(edge, Target(newTarget))
     Transformation(Add, red) +: this
   }
 
   def changeEdgeSource(edge : EdgeT, newTarget : NIdT, withMerge : Boolean) : RecT = {
-    val red = if(withMerge) new RedirectionWithMerge[Kind,T](edge, Source(newTarget))
-    else TTRedirection[Kind, T](edge, Source(newTarget))
+    val red = if(withMerge) new RedirectionWithMerge(edge, Source(newTarget))
+    else TTRedirection(edge, Source(newTarget))
     Transformation(Add, red) +: this
   }
   def addTypeChange( typed : NIdT,
-                     typ: TypeHolder[Kind],
+                     typ: TypeHolder,
                      oldUsee: NIdT,
                      newUsee : NIdT) : RecT =
-    Transformation(Add, TTTypeRedirection[Kind,T](typed, typ, oldUsee, newUsee)) +: this
+    Transformation(Add, TTTypeRedirection(typed, typ, oldUsee, newUsee)) +: this
 
 /*  def addAbstraction(impl : NIdT, abs : NIdT, absPolicy : AbstractionPolicy) : RecT =
-    Transformation(Add(), TTAbstraction[Kind,T](impl, abs, absPolicy)) +: this*/
+    Transformation(Add(), TTAbstraction(impl, abs, absPolicy)) +: this*/
 }
 
 sealed abstract class Operation {
@@ -67,10 +66,10 @@ case object Remove extends Operation{
   def reverse = Add
 }
 
-case class Transformation[Kind <: NodeKind[Kind], T]
+case class Transformation
 (operation : Operation,
- target : TransformationTarget[Kind, T]){
-  type GraphT = AccessGraph[Kind,T]
+ target : TransformationTarget){
+  type GraphT = AccessGraph
 
   def undo(g: GraphT)= target.execute(g, operation)
   def redo(g: GraphT) = target.execute(g, operation.reverse)

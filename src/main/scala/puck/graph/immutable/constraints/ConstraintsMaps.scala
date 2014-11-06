@@ -8,45 +8,43 @@ import puck.util.Logger
  * Created by lorilan on 31/10/14.
  */
 object ConstraintsMaps{
-  type FriendsMap[Kind <: NodeKind[Kind]] = Map[NodeId[Kind], ConstraintSet[Kind, FriendConstraint[Kind]]]
-  type CtWithInterlopersMap[Kind <: NodeKind[Kind], CtT <: ConstraintWithInterlopers[Kind]] =
-                  Map [NodeId[Kind], ConstraintSet[Kind, CtT]]
+  type FriendsMap = Map[NodeId, ConstraintSet[FriendConstraint]]
+  type CtWithInterlopersMap[CtT <: ConstraintWithInterlopers] = Map [NodeId, ConstraintSet[CtT]]
 
+  type EltConstraintsMap = Map [NodeId, ConstraintSet[ElementConstraint]]
+  type ScopeConstraintsMap = Map [NodeId, ConstraintSet[ScopeConstraint]]
 
-  type EltConstraintsMap[Kind <: NodeKind[Kind]] = Map [NodeId[Kind], ConstraintSet[Kind, ElementConstraint[Kind]]]
-  type ScopeConstraintsMap[Kind <: NodeKind[Kind]] = Map [NodeId[Kind], ConstraintSet[Kind, ScopeConstraint[Kind]]]
-
-  def apply[Kind  <: NodeKind[Kind]]() = new ConstraintsMaps[Kind](Map(), Map(), Map(), Map())
+  def apply() = new ConstraintsMaps(Map(), Map(), Map(), Map())
 }
 
 import ConstraintsMaps._
 
-class ConstraintsMaps[Kind <: NodeKind[Kind]]
-(val nodeSets : Map[String, NamedNodeSet[Kind]],
- val friendConstraints : FriendsMap[Kind],
- val elementsConstraints : EltConstraintsMap[Kind],
- val scopeConstraints : ScopeConstraintsMap[Kind])
+class ConstraintsMaps
+(val nodeSets : Map[String, NamedNodeSet],
+ val friendConstraints : FriendsMap,
+ val elementsConstraints : EltConstraintsMap,
+ val scopeConstraints : ScopeConstraintsMap)
  {
 
-   def newConstraintsMaps( nNodeSets : Map[String, NamedNodeSet[Kind]] = nodeSets,
-                           nFriendConstraints : FriendsMap[Kind] = friendConstraints,
-   nElementsConstraints : EltConstraintsMap[Kind] = elementsConstraints,
-   nScopeConstraints : ScopeConstraintsMap[Kind] = scopeConstraints) =
+   def newConstraintsMaps( nNodeSets : Map[String, NamedNodeSet] = nodeSets,
+                           nFriendConstraints : FriendsMap = friendConstraints,
+   nElementsConstraints : EltConstraintsMap = elementsConstraints,
+   nScopeConstraints : ScopeConstraintsMap = scopeConstraints) =
     new ConstraintsMaps(nNodeSets,
                         nFriendConstraints,
                         nElementsConstraints,
                         nScopeConstraints)
 
-   type GraphT = AccessGraph[Kind, _]
-   type NIdT = NodeId[Kind]
+   type GraphT = AccessGraph
+   type NIdT = NodeId
 
 
    def printConstraints[V](graph : GraphT, logger : Logger[V], v : V){
      nodeSets.foreach{
        case (_, namedSet) => logger.writeln(namedSet.mkString(graph))(v)
      }
-     type CtMap[CtT <: Constraint[Kind]] = Map [NodeId[Kind], ConstraintSet[Kind, CtT]]
-     def printMap[CtT <: Constraint[Kind]]( m : CtMap[CtT]) = m foreach { case (k, s) =>
+     type CtMap[CtT <: Constraint] = Map [NodeId, ConstraintSet[CtT]]
+     def printMap[CtT <: Constraint]( m : CtMap[CtT]) = m foreach { case (k, s) =>
          s.foreach { s => if(s.owners.head == k) logger.writeln(s.mkString(graph))(v)}
      }
      printMap(scopeConstraints)
@@ -61,10 +59,10 @@ class ConstraintsMaps[Kind <: NodeKind[Kind]]
        !graph.isRoot(befriended) && friendOf(graph, node, graph.container(befriended))
    }
 
-   def violatedScopeConstraintsOf(graph : GraphT, user : NIdT, usee0 : NIdT) : Seq[ScopeConstraint[Kind]] = {
-     val uses = AGEdge.uses[Kind](user, usee0)
+   def violatedScopeConstraintsOf(graph : GraphT, user : NIdT, usee0 : NIdT) : Seq[ScopeConstraint] = {
+     val uses = AGEdge.uses(user, usee0)
 
-     def aux(usee : NIdT, acc : Seq[ScopeConstraint[Kind]]) : Seq[ScopeConstraint[Kind]] = {
+     def aux(usee : NIdT, acc : Seq[ScopeConstraint]) : Seq[ScopeConstraint] = {
        val acc2 = if(!graph.contains_*(usee, user))
          scopeConstraints.getOrElse(usee, Iterable.empty).filter(_.violated(graph, uses)) ++: acc
        else acc
@@ -77,7 +75,7 @@ class ConstraintsMaps[Kind <: NodeKind[Kind]]
 
 
    def potentialScopeInterloperOf(graph : GraphT, user : NIdT, usee0 : NIdT) : Boolean = {
-     val uses = AGEdge.uses[Kind](user, usee0)
+     val uses = AGEdge.uses(user, usee0)
 
      def aux(usee: NIdT): Boolean =
        !graph.contains_*(usee, user) &&
@@ -109,10 +107,10 @@ class ConstraintsMaps[Kind <: NodeKind[Kind]]
    }
 
    // ! \\ do not change hideFrom
-   def addHideFromRootException(node : NIdT, friend : NIdT): ConstraintsMaps[Kind] ={
+   def addHideFromRootException(node : NIdT, friend : NIdT): ConstraintsMaps ={
 
-     def aux[CtT <: ConstraintWithInterlopers[Kind]](constraintsMap : Map [NodeId[Kind], ConstraintSet[Kind, CtT]]) :
-     Map [NodeId[Kind], ConstraintSet[Kind, CtT]] = {
+     def aux[CtT <: ConstraintWithInterlopers](constraintsMap : Map [NodeId, ConstraintSet[CtT]]) :
+     Map [NodeId, ConstraintSet[CtT]] = {
        val nodeConstraintsSet = constraintsMap.getOrElse(node, ConstraintSet.empty)
        if(nodeConstraintsSet.isEmpty) constraintsMap
        else {
@@ -130,7 +128,7 @@ class ConstraintsMaps[Kind <: NodeKind[Kind]]
                else (ct +: acc, map, owners)
            }
 
-        val newConstraintsMap = constraintsMap + (node -> new ConstraintSet[Kind, CtT](newCts))
+        val newConstraintsMap = constraintsMap + (node -> new ConstraintSet[CtT](newCts))
 
          allOwners.foldLeft(newConstraintsMap){
             case (m2, id) if id != node =>

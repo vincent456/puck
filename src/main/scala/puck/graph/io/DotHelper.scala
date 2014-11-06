@@ -5,12 +5,12 @@ import puck.graph.{AccessGraph, NodeKind, NodeId}
  * Created by lorilan on 07/05/14.
  */
 
-trait DotHelper[Kind <: NodeKind[Kind]]{
-  def isDotSubgraph(k : Kind) : Boolean
-  def isDotClass(k: Kind) : Boolean
-  def fillColor(k: Kind) : String
-  def namePrefix(k: Kind) : String
-  def splitDotClassContent(graph : AccessGraph[Kind,_], n: NodeId[Kind]) :
-  (Iterable[NodeId[Kind]], Iterable[NodeId[Kind]], Iterable[NodeId[Kind]] , Iterable[NodeId[Kind]])
+trait DotHelper{
+  def isDotSubgraph(k : NodeKind) : Boolean
+  def isDotClass(k: NodeKind) : Boolean
+  def fillColor(k: NodeKind) : String
+  def namePrefix(k: NodeKind) : String
+  def splitDotClassContent(graph : AccessGraph, n: NodeId) :
+  (Iterable[NodeId], Iterable[NodeId], Iterable[NodeId] , Iterable[NodeId])
   //with java ((fields, Constructors, Methods), inner classes)
 }

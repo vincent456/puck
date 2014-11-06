@@ -11,23 +11,23 @@ import scala.util.parsing.input.{Reader, StreamReader}
  * Created by lorilan on 12/05/14.
  */
 object ConstraintsParser{
-  def apply[Kind <: NodeKind[Kind]](builder : GraphBuilder[Kind, _]) =
+  def apply(builder : GraphBuilder) =
     new ConstraintsParser(builder)
 }
-class ConstraintsParser[Kind <: NodeKind[Kind]] private
-( val builder : GraphBuilder[Kind, _]) extends RegexParsers {
+class ConstraintsParser private
+( val builder : GraphBuilder) extends RegexParsers {
 
   builder.discardConstraints()
   protected override val whiteSpace = """(\s|%.*)+""".r  //to skip comments
 
 
-  var defs : Map[String, NamedNodeSet[Kind]] = Map()
+  var defs : Map[String, NamedNodeSet] = Map()
 
   var imports : Seq[String] = Seq("")
 
-  def findNode(k : String) : Seq[NodeId[Kind]] ={
+  def findNode(k : String) : Seq[NodeId] ={
 
-    def aux(imports : Seq[String], acc : Seq[NodeId[Kind]]) : Seq[NodeId[Kind]] =
+    def aux(imports : Seq[String], acc : Seq[NodeId]) : Seq[NodeId] =
       imports match {
         case Seq() if acc.isEmpty => throw new NoSuchElementException(k + " not found")
         case Seq() => acc
@@ -41,7 +41,7 @@ class ConstraintsParser[Kind <: NodeKind[Kind]] private
     aux(imports, Seq())
   }
 
-  def toDef (request : Either[String, Seq[String]]) : NodeSet[Kind] = {
+  def toDef (request : Either[String, Seq[String]]) : NodeSet = {
     request match {
       case Left(key) => defs get key match {
         case Some(l) => l
@@ -80,10 +80,10 @@ class ConstraintsParser[Kind <: NodeKind[Kind]] private
   def declare_set_union : Parser[Unit] = {
 
 
-    def normal(list : Seq[NodeSet[Kind]]) = {
+    def normal(list : Seq[NodeSet]) = {
 
-      val (namedSets, lit) = list.foldLeft(( Seq[NodeSet[Kind]](),LiteralNodeSet[Kind]())){
-        case ((nsAcc, litAcc), l : LiteralNodeSet[Kind]) => (nsAcc, litAcc ++ l)
+      val (namedSets, lit) = list.foldLeft(( Seq[NodeSet](),LiteralNodeSet())){
+        case ((nsAcc, litAcc), l : LiteralNodeSet) => (nsAcc, litAcc ++ l)
         case ((nsAcc, litAcc), ns) => (ns +: nsAcc, litAcc)
       }
 

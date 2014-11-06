@@ -1,6 +1,7 @@
 package puck.javaAG.immutable.nodeKind
 
 import puck.graph.constraints.{AbstractionPolicy, DelegationAbstraction}
+import puck.graph.immutable.NodeKind
 
 /**
  * Created by lorilan on 31/07/14.
@@ -9,7 +10,7 @@ case object Field extends JavaNodeKind {
 
   override val toString = "Field"
 
-  def canContain(k : JavaNodeKind) = false
+  def canContain(k : NodeKind) = false
   //TODO check abstraction : FieldRead != FieldWrite
   // fieldread abstraction type = () -> t
   // fielwrite abstraction type = t -> () (think of t -> t case of jrrt ... )

@@ -10,7 +10,7 @@ import puck.graph.NodeKind
 /**
  * Created by lorilan on 10/07/14.
  */
-class PuckTreeCellRenderer[K <: NodeKind[K]](delegate : TreeCellRenderer)
+class PuckTreeCellRenderer(delegate : TreeCellRenderer)
   extends JPanel with TreeCellRenderer {
 
   setLayout(new BorderLayout())
@@ -29,7 +29,7 @@ class PuckTreeCellRenderer[K <: NodeKind[K]](delegate : TreeCellRenderer)
     val path: TreePath = tree.getPathForRow(row)
     if (path != null) {
       path.getLastPathComponent match {
-        case node : PuckTreeNode[K] => add(node.checkBox.peer, BorderLayout.WEST)
+        case node : PuckTreeNode => add(node.checkBox.peer, BorderLayout.WEST)
         case _ => ()
       }
       add(renderer, BorderLayout.CENTER)

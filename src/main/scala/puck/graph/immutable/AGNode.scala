@@ -7,33 +7,33 @@ package puck.graph.immutable
 import puck.graph.constraints.AbstractionPolicy
 import puck.graph.immutable.AccessGraph.{Mutability, NodeId}
 
-trait AGNodeBuilder[Kind <: NodeKind[Kind], T] {
-  def apply(graph : AccessGraph[Kind, T],
-            id : NodeId[Kind],
+trait AGNodeBuilder {
+  def apply(graph : AccessGraph,
+            id : NodeId,
             name : String,
-            kind : Kind,
-            styp : TypeHolder[Kind],
+            kind : NodeKind,
+            styp : TypeHolder,
             isMutable : Mutability,
-            t : T) : AGNode[Kind, T]
+            t : Hook) : AGNode
 
-  def createT() : T
+  def createT() : Hook
 
-  def rootKind : Kind
-  def kinds : Seq[Kind]
+  def rootKind : NodeKind
+  def kinds : Seq[NodeKind]
 }
 
 import scala.language.existentials
-class AGNode[Kind <: NodeKind[Kind], T]
-( val graph : AccessGraph[Kind, T],
-  val id : NodeId[Kind],
+class AGNode
+( val graph : AccessGraph,
+  val id : NodeId,
   val name : String,
-  val kind : Kind,
-  val styp : TypeHolder[Kind],
+  val kind : NodeKind,
+  val styp : TypeHolder,
   val isMutable : Boolean,
-  val t : T){
+  val t : Any){
 
 
-  type NIdT = NodeId[Kind]
+  type NIdT = NodeId
 
   def canContain(otherId : NIdT) : Boolean = {
     val n = graph.getNode(otherId)
@@ -127,35 +127,35 @@ class AGNode[Kind <: NodeKind[Kind], T]
   }*/
 
 
-  private def outgoingDependencies(root : NIdT, acc0 : Set[AGEdge[Kind]]) : Set[AGEdge[Kind]]= {
+  private def outgoingDependencies(root : NIdT, acc0 : Set[AGEdge]) : Set[AGEdge]= {
     val acc1 = graph.usedBy(id).foldLeft(acc0){
       (acc, usee) =>
         if(graph.contains_*(root,usee)) acc
-        else acc + AGEdge.uses[Kind](this.id, usee)
+        else acc + AGEdge.uses(this.id, usee)
     }
     content.foldLeft(acc1){(acc, child) => graph.getNode(child).outgoingDependencies(root, acc)}
   }
 
-  def outgoingDependencies : Set[AGEdge[Kind]] = outgoingDependencies(this.id, Set[AGEdge[Kind]]())
+  def outgoingDependencies : Set[AGEdge] = outgoingDependencies(this.id, Set[AGEdge]())
 
-  private def incomingDependencies(root : NIdT, acc0 : Set[AGEdge[Kind]]) : Set[AGEdge[Kind]]= {
+  private def incomingDependencies(root : NIdT, acc0 : Set[AGEdge]) : Set[AGEdge]= {
     val acc1 = graph.users(id).foldLeft(acc0){
       (acc, user) =>
         if(graph.contains_*(root, user)) acc
-        else acc + AGEdge.uses[Kind](user, this.id)
+        else acc + AGEdge.uses(user, this.id)
     }
     content.foldLeft(acc1){(acc, child) => graph.getNode(child).incomingDependencies(root, acc)}
   }
 
-  def incomingDependencies : Set[AGEdge[Kind]] = incomingDependencies(this.id, Set[AGEdge[Kind]]())
+  def incomingDependencies : Set[AGEdge] = incomingDependencies(this.id, Set[AGEdge]())
 
 
-  private def internalDependencies(root : NIdT, acc0 : Set[AGEdge[Kind]]) : Set[AGEdge[Kind]]= {
+  private def internalDependencies(root : NIdT, acc0 : Set[AGEdge]) : Set[AGEdge]= {
 
     val acc1 = graph.usedBy(id).foldLeft(acc0) {
       (acc, usee) =>
         if (graph.contains_*(root,usee))
-          acc + AGEdge.uses[Kind](id, usee)
+          acc + AGEdge.uses(id, usee)
         else acc
     }
     /* not necessary
@@ -170,12 +170,12 @@ class AGNode[Kind <: NodeKind[Kind], T]
     content.foldLeft(acc1){(acc, child) => graph.getNode(child).internalDependencies(root, acc)}
   }
 
-  def internalDependencies : Set[AGEdge[Kind]] = internalDependencies(this.id, Set[AGEdge[Kind]]())
+  def internalDependencies : Set[AGEdge] = internalDependencies(this.id, Set[AGEdge]())
 
 
-  /*def provides(other : AGNode[Kind]) = {
-    val these0 = Set[AGNode[Kind]]() ++ this.iterator
-    val others0 = Set[AGNode[Kind]]() ++ other.iterator
+  /*def provides(other : AGNode) = {
+    val these0 = Set[AGNode]() ++ this.iterator
+    val others0 = Set[AGNode]() ++ other.iterator
 
     val these = these0 -- others0
     val others = others0 -- these0
@@ -195,7 +195,7 @@ class AGNode[Kind <: NodeKind[Kind], T]
     }
   }
 
-  private def connection( f : AGNode[Kind, T] => Boolean) = {
+  private def connection( f : AGNode => Boolean) = {
     graph.nodes.foldLeft(Set[NIdT]()){ (acc, n) =>
       if(n.id == this.id || n.kind != this.kind) acc
       else if(f(n)) acc + n.id

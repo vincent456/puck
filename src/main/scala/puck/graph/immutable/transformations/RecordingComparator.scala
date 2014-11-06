@@ -27,47 +27,48 @@ object RecordingComparator{
 
 import puck.graph.immutable.transformations.MappingChoices.{Kargs, NodesToMap, ResMapping}
 
-class NoSolution extends Throwable
+object NoSolution extends Throwable
+object WrongMapping extends Throwable
 
-class RecordingComparator[Kind <: NodeKind[Kind], T]
-( initialTransfos : Seq[Transformation[Kind, T]],
-  graph1 : AccessGraph[Kind, T],
-  graph2 : AccessGraph[Kind, T],
+class RecordingComparator
+( initialTransfos : Seq[Transformation],
+  graph1 : AccessGraph,
+  graph2 : AccessGraph,
   logger : PuckLogger = PuckNoopLogger)
-  extends FindFirstSearchEngine[ResMapping[Kind]] {
+  extends FindFirstSearchEngine[ResMapping] {
 
-  def createInitialState(k: Try[ResMapping[Kind]] => Unit): SearchState[ResMapping[Kind]] =
+  def createInitialState(k: Try[ResMapping] => Unit): SearchState[ResMapping] =
      new NodeMappingInitialState(initialTransfos, this, graph1, graph2, k, logger)
 
-  def attribNode(node : NodeId[Kind],
-                 map : ResMapping[Kind],
-                 nodesToMap : NodesToMap[Kind])
-                (k : Kargs[Kind] => Unit) {
+  def attribNode(node : NodeId,
+                 map : ResMapping,
+                 nodesToMap : NodesToMap)
+                (k : Kargs => Unit) {
 
     map.getOrElse(node, Some(node)) match {
-      case Some(n) => k(n, map, nodesToMap)
+      case Some(n) => k(n, Success(map), nodesToMap)
 
       case None =>
         nodesToMap match {
-          case Seq() => throw new NoSolution()
+          case Seq() => k(node, Failure(NoSolution), nodesToMap)
           case l =>
             val (sameKind, others) = l partition {n => graph2.getNode(n).kind == graph1.getNode(node).kind}
             val choices = new MappingChoices(k, node, nodesToMap,
-              mutable.Set[NodeId[Kind]]() ++ sameKind,
-              mutable.Set[NodeId[Kind]]() ++ others)
+              mutable.Set[NodeId]() ++ sameKind,
+              mutable.Set[NodeId]() ++ others)
 
             newCurrentState(map, choices)
         }
     }
   }
 
-  def attribNode(nodes : Seq[NodeId[Kind]],
-                 map : ResMapping[Kind],
-                 nodesToMap : NodesToMap[Kind])
-                (k : (Seq[NodeId[Kind]], ResMapping[Kind], NodesToMap[Kind]) => Unit) {
+  def attribNode(nodes : Seq[NodeId],
+                 map : ResMapping,
+                 nodesToMap : NodesToMap)
+                (k : (Seq[NodeId], Try[ResMapping], NodesToMap) => Unit) {
 
 
-    def aux(nodes0 : Seq[NodeId[Kind]], nodes1: Seq[NodeId[Kind]])(kargs : Kargs[Kind]){
+    def aux(nodes0 : Seq[NodeId], nodes1: Seq[NodeId])(kargs : Kargs){
       kargs match {
         case (node, map0, nodesToMap0) =>
           nodes0 match {
@@ -75,41 +76,45 @@ class RecordingComparator[Kind <: NodeKind[Kind], T]
               val l = (node +: nodes1).reverse.tail // we do not forget the last node and we drop the first dummy value
               k(l, map0, nodesToMap0)
             case _ =>
-              attribNode(nodes0.head, map0, nodesToMap0){aux(nodes0.tail, node +: nodes1)}
+              if(map0.isSuccess)
+                attribNode(nodes0.head, map0.get, nodesToMap0){aux(nodes0.tail, node +: nodes1)}
+              else
+                k(nodes, map0, nodesToMap)
           }
       }
     }
-    aux(nodes, Seq[NodeId[Kind]]())((AccessGraph.dummyId, map, nodesToMap)) //null will be dropped in aux
+    aux(nodes, Seq[NodeId]())((AccessGraph.dummyId, Success(map), nodesToMap)) //null will be dropped in aux
   }
 
 
 
-  def removeFirst(l : Seq[Transformation[Kind, T]],
+  def removeFirst(l : Seq[Transformation],
                   op : Operation,
-                  tgt : TransformationTarget[Kind, T]) :  Option[Seq[Transformation[Kind, T]]] = {
+                  tgt : TransformationTarget) :  Option[Seq[Transformation]] = {
 
-    RecordingComparator.removeFirst(l, {(t : Transformation[Kind, T]) => t.operation == op && t.target == tgt})
+    RecordingComparator.removeFirst(l, {(t : Transformation) => t.operation == op && t.target == tgt})
   }
 
 
-  def printAssociatedChoices(map : ResMapping[Kind]) = {
+  def printAssociatedChoices(map : ResMapping) = {
     map.foreach{
       case (n, Some(mapping)) => println("*  %s ==> %s".format(n, mapping))
       case _ => ()
     }
   }
 
-  def compare(ts1 : Seq[Transformation[Kind, T]],
-              ts2 : Seq[Transformation[Kind, T]],
-              map : ResMapping[Kind], nodesToMap : NodesToMap[Kind],
-              k : Try[ResMapping[Kind]] => Unit){
+  def compare(ts1 : Seq[Transformation],
+              ts2 : Seq[Transformation],
+              map : ResMapping, nodesToMap : NodesToMap,
+              k : Try[ResMapping] => Unit){
     if (ts1.isEmpty && ts2.isEmpty)
       k(Success(map))
     else {
-      def removeFirstAndCompareNext(tgt : TransformationTarget[Kind, T],
-                                    map : ResMapping[Kind], nodesToMap : NodesToMap[Kind]){
-        removeFirst(ts2, ts1.head.operation, tgt) match {
-          case None => k(Failure(new Error("wrong mapping")))
+      def removeFirstAndCompareNext(tgt : TransformationTarget,
+                                    tryMap : Try[ResMapping], nodesToMap : NodesToMap){
+        if(tryMap.isFailure) k(tryMap)
+        else removeFirst(ts2, ts1.head.operation, tgt) match {
+          case None => k(Failure(WrongMapping))
            /* println("Failure on mapping : ")
             println(map.mkString("\t", "\n\t", "\n"))
             println(ts1.head + " mapped as ")
@@ -119,7 +124,7 @@ class RecordingComparator[Kind <: NodeKind[Kind], T]
 */
           case Some(newTs2) =>
             //println("success")
-            compare(ts1.tail, newTs2, map, nodesToMap, k)
+            compare(ts1.tail, newTs2, tryMap.get, nodesToMap, k)
         }
       }
 

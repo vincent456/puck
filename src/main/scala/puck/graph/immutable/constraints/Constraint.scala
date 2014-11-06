@@ -7,26 +7,26 @@ import puck.graph.immutable.{AccessGraph, NodeSet, NodeKind, AGEdge}
  * Created by lorilan on 03/06/14.
  */
 
-trait Constraint[Kind <: NodeKind[Kind]]{
+trait Constraint{
 
-  type GraphT = AccessGraph[Kind,_]
-  val owners : NodeSet[Kind]
-  val friends : NodeSet[Kind]
+  type GraphT = AccessGraph
+  val owners : NodeSet
+  val friends : NodeSet
   val predicate : String
   def mkString(graph : GraphT) : String
 
-  def addFriend(friend : NodeId[Kind]) : Constraint[Kind]
+  def addFriend(friend : NodeId) : Constraint
 }
 
-trait ConstraintWithInterlopers[Kind <: NodeKind[Kind]] extends Constraint[Kind]{
-  val interlopers : NodeSet[Kind]
+trait ConstraintWithInterlopers extends Constraint{
+  val interlopers : NodeSet
 
-  def isViolatedBy(graph : GraphT, edge : AGEdge[Kind]): Boolean =
+  def isViolatedBy(graph : GraphT, edge : AGEdge): Boolean =
     owners.hasScopeThatContains_*(graph, edge.target) &&
     violated(graph, edge)
 
   //assert owners.hasScopeThatContains_*(edge.target)
-  def violated(graph : GraphT, edge : AGEdge[Kind]): Boolean =
+  def violated(graph : GraphT, edge : AGEdge): Boolean =
       interlopers.hasScopeThatContains_*(graph, edge.source) &&
       !friends.hasScopeThatContains_*(graph, edge.source)
 
@@ -44,25 +44,25 @@ trait ConstraintWithInterlopers[Kind <: NodeKind[Kind]] extends Constraint[Kind]
         \+ 'vContains*'(S,Interloper).		% Interloper is not in S
 */
 
-case class ScopeConstraint[Kind <: NodeKind[Kind]](owners : NodeSet[Kind],
-                           facades: NodeSet[Kind],
-                           interlopers : NodeSet[Kind],
-                           friends : NodeSet[Kind]) extends ConstraintWithInterlopers[Kind] {
+case class ScopeConstraint(owners : NodeSet,
+                           facades: NodeSet,
+                           interlopers : NodeSet,
+                           friends : NodeSet) extends ConstraintWithInterlopers {
 
   val predicate = "hideScopeSet"
 
   def mkString(graph : GraphT) =
      predicate +  ConstraintPrinter.format(graph, owners, facades, interlopers, friends)
 
-  override def isViolatedBy(graph : GraphT, edge : AGEdge[Kind])=
+  override def isViolatedBy(graph : GraphT, edge : AGEdge)=
     super.isViolatedBy(graph, edge) &&
       !facades.hasScopeThatContains_*(graph, edge.target)
 
-  override def violated(graph : GraphT, edge : AGEdge[Kind])=
+  override def violated(graph : GraphT, edge : AGEdge)=
     super.violated(graph, edge) &&
       !facades.hasScopeThatContains_*(graph, edge.target)
 
-  def addFriend(friend : NodeId[Kind]) = ScopeConstraint(owners, facades, interlopers, friends + friend)
+  def addFriend(friend : NodeId) = ScopeConstraint(owners, facades, interlopers, friends + friend)
 }
 
 /*
@@ -73,9 +73,9 @@ case class ScopeConstraint[Kind <: NodeKind[Kind]](owners : NodeSet[Kind],
 
 */
 
-case class ElementConstraint[Kind <: NodeKind[Kind]](owners : NodeSet[Kind],
-                        interlopers : NodeSet[Kind],
-                        friends : NodeSet[Kind]) extends ConstraintWithInterlopers[Kind]{
+case class ElementConstraint(owners : NodeSet,
+                        interlopers : NodeSet,
+                        friends : NodeSet) extends ConstraintWithInterlopers{
 
   val predicate = "hideElementSet"
   def mkString(graph : GraphT) = {
@@ -90,31 +90,31 @@ case class ElementConstraint[Kind <: NodeKind[Kind]](owners : NodeSet[Kind],
     predicate + fmtStr
   }
 
-  def addFriend(friend : NodeId[Kind]) = ElementConstraint(owners, interlopers, friends + friend)
+  def addFriend(friend : NodeId) = ElementConstraint(owners, interlopers, friends + friend)
 }
 
-case class FriendConstraint[Kind <: NodeKind[Kind]](friends : NodeSet[Kind],
-                       befriended : NodeSet[Kind])
-  extends Constraint[Kind]{
+case class FriendConstraint(friends : NodeSet,
+                       befriended : NodeSet)
+  extends Constraint{
 
   val owners = befriended
   val predicate = "areFriendsOf"
   def mkString(graph : GraphT) : String =
     predicate + "(" + friends.mkString(graph) + ", " + befriended.mkString(graph) +")."
 
-  def addFriend(friend : NodeId[Kind]) = FriendConstraint(friends + friend, befriended)
+  def addFriend(friend : NodeId) = FriendConstraint(friends + friend, befriended)
 }
 
 object ConstraintPrinter{
 
-  def format[Kind <: NodeKind[Kind]]
-  ( graph : AccessGraph[Kind, _],
-    hidden : NodeSet[Kind],
-    facades: NodeSet[Kind],
-    interlopers : NodeSet[Kind],
-    friends : NodeSet[Kind]) = {
+  def format[Kind <: NodeKind]
+  ( graph : AccessGraph,
+    hidden : NodeSet,
+    facades: NodeSet,
+    interlopers : NodeSet,
+    friends : NodeSet) = {
 
-    def twoArgsFormat(constraint : String, set : NodeSet[Kind]) =
+    def twoArgsFormat(constraint : String, set : NodeSet) =
       constraint + "(" + hidden + ", " + set + ")."
 
     (facades.isEmpty, interlopers.isEmpty, friends.isEmpty) match {

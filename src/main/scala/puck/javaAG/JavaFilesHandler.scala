@@ -14,19 +14,19 @@ import puck.javaAG.immutable.DeclHolder
  * Created by lorilan on 11/08/14.
  */
 
-object JavaSolverBuilder extends SolverBuilder[JavaNodeKind, DeclHolder]{
-  def apply(graph : AccessGraph[JavaNodeKind, DeclHolder],
-            dm : DecisionMaker[JavaNodeKind, DeclHolder]) : Solver[JavaNodeKind, DeclHolder] = JavaSolver(graph, dm)
+object JavaSolverBuilder extends SolverBuilder{
+  def apply(graph : AccessGraph,
+            dm : DecisionMaker) : Solver = JavaSolver(graph, dm)
 }
 
-class JavaFilesHandler (workingDirectory : File) extends FilesHandler[JavaNodeKind, DeclHolder](workingDirectory) {
+class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDirectory) {
   def this() = this(new File("."))
 
   val srcSuffix = ".java"
 
-  var initialRecord : Seq[Transformation[JavaNodeKind, DeclHolder]] = _
+  var initialRecord : Seq[Transformation] = _
 
-  def loadGraph(ll : AST.LoadingListener = null) : AccessGraph[JavaNodeKind, DeclHolder] = {
+  def loadGraph(ll : AST.LoadingListener = null) : AccessGraph = {
     import puck.util.FileHelper.{fileLines, findAllFiles, initStringLiteralsMap}
 
     JavaFilesHandler.compile(findAllFiles(this.srcDirectory.get, srcSuffix,
@@ -59,7 +59,7 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler[JavaNodeKi
     graph.asInstanceOf[JavaAccessGraph].program.printCodeInDirectory(outDirectory.get)
   }*/
 
-  override def searchingStrategies: Seq[ConstraintSolvingSearchEngineBuilder[JavaNodeKind, DeclHolder]] =
+  override def searchingStrategies: Seq[ConstraintSolvingSearchEngineBuilder] =
     List(JavaFunneledCSSEBuilder,
       JavaTryAllCSSEBuilder,
       //JavaGradedCSSEBuilder,

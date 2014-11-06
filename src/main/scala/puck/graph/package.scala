@@ -9,37 +9,37 @@ package object graph {
    type AccessGraph[Kind <: NodeKind[Kind]] = mutable.AccessGraph[Kind]*/
 
 
-  type NodeKind[Kind <: NodeKind[Kind]] = immutable.NodeKind[Kind]
-  type Type[Kind <: NodeKind[Kind], T <: Type[Kind, T]]= immutable.Type[Kind, T]
-  type AGNode[Kind <: NodeKind[Kind], T] = immutable.AGNode[Kind, T]
-  type NodeId[Kind <: NodeKind[Kind]] = immutable.AccessGraph.NodeId[Kind]
-  type AGEdge[Kind <: NodeKind[Kind]] = immutable.AGEdge[Kind]
+  type NodeKind = immutable.NodeKind
+  type Type[T <: Type[ T]]= immutable.Type[T]
+  type AGNode = immutable.AGNode
+  type NodeId = immutable.AccessGraph.NodeId
+  type AGEdge = immutable.AGEdge
   val AGEdge = immutable.AGEdge
 
-  type AccessGraph[Kind <: NodeKind[Kind], T] = immutable.AccessGraph[Kind, T]
+  type AccessGraph = immutable.AccessGraph
   val AccessGraph = immutable.AccessGraph
-  type GraphBuilder[Kind <: NodeKind[Kind], T] = immutable.GraphBuilder[Kind, T]
+  type GraphBuilder = immutable.GraphBuilder
 
   type JavaNodeKind = javaAG.immutable.nodeKind.JavaNodeKind
   val JavaFilesHandler = javaAG.JavaFilesHandler
   val JavaNode = javaAG.immutable.JavaNode
   val JavaSolver = javaAG.immutable.JavaSolver
 
-  type ConstraintsParser[Kind <: NodeKind[Kind]] = immutable.constraints.ConstraintsParser[Kind]
+  type ConstraintsParser = immutable.constraints.ConstraintsParser
   val ConstraintsParser = immutable.constraints.ConstraintsParser
 
-  type Recording[Kind <: NodeKind[Kind], T] = immutable.transformations.Recording[Kind, T]
+  type Recording = immutable.transformations.Recording
 
 
   import scala.language.implicitConversions
-  implicit def edgeToPair[Kind <: NodeKind[Kind]] (edge : AGEdge[Kind]) = (edge.source, edge.target)
+  implicit def edgeToPair(edge : AGEdge) = (edge.source, edge.target)
 
-  type FilesHandler[Kind <: NodeKind[Kind], T] = io.FilesHandler[Kind, T]
+  type FilesHandler = io.FilesHandler
 
-  type ResultT[Kind <: NodeKind[Kind], T] = (AccessGraph[Kind,T], Recording[Kind, T])
+  type ResultT = (AccessGraph, Recording)
 
-  def graphOfResult[Kind <: NodeKind[Kind], T](result : ResultT[Kind, T]) : AccessGraph[Kind,T] = result._1
+  def graphOfResult(result : ResultT) : AccessGraph = result._1
   //in mutable version apply record before returning graph !
-  def recordOfResult[Kind <: NodeKind[Kind], T](result : ResultT[Kind, T]) : Recording[Kind,T] = result._2
+  def recordOfResult(result : ResultT) : Recording = result._2
 
 }

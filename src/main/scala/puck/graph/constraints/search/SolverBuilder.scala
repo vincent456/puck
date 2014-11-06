@@ -6,7 +6,6 @@ import puck.graph.{AccessGraph, NodeKind}
 /**
  * Created by lorilan on 25/09/14.
  */
-trait SolverBuilder[Kind <: NodeKind[Kind], T]{
-  def apply(graph : AccessGraph[Kind, T],
-            dm : DecisionMaker[Kind, T]) : Solver[Kind, T]
+trait SolverBuilder{
+  def apply(graph : AccessGraph, dm : DecisionMaker) : Solver
 }

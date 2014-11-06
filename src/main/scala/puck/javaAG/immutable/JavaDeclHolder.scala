@@ -2,13 +2,13 @@ package puck.javaAG.immutable
 import puck.graph.AGError
 import puck.graph.constraints.DelegationAbstraction
 import puck.graph.immutable.AccessGraph.NodeId
-import puck.graph.immutable.{AGNode, AccessGraph}
+import puck.graph.immutable.{Hook, AGNode, AccessGraph}
 import puck.javaAG.immutable.nodeKind.{MethodTypeHolder, Constructor, JavaNodeKind}
 
-sealed trait DeclHolder {
+sealed trait DeclHolder extends Hook{
   def createDecl(prog : AST.Program,
-                 graph : AccessGraph[JavaNodeKind, DeclHolder],
-                 node : NodeId[JavaNodeKind]) : AccessGraph[JavaNodeKind, DeclHolder] =
+                 graph : AccessGraph,
+                 node : NodeId) : AccessGraph =
     throw new DeclarationCreationError
 }
 
@@ -21,8 +21,8 @@ case class ConstructorDeclHolder( decl : Option[AST.ConstructorDecl]) extends De
 case class FieldDeclHolder(decl : Option[AST.FieldDeclaration]) extends DeclHolder
 case class MethodDeclHolder(decl : Option[AST.MethodDecl]) extends DeclHolder {
   override def createDecl(prog : AST.Program,
-                          graph : AccessGraph[JavaNodeKind, DeclHolder],
-                          node : NodeId[JavaNodeKind]) : AccessGraph[JavaNodeKind, DeclHolder] = {
+                          graph : AccessGraph,
+                          node : NodeId) : AccessGraph = {
 
     decl match {
       case None =>
@@ -52,8 +52,8 @@ case class MethodDeclHolder(decl : Option[AST.MethodDecl]) extends DeclHolder {
 
 case class AbstractMethodDeclHolder(decl : Option[AST.MethodDecl]) extends DeclHolder {
   override def createDecl(prog : AST.Program,
-                          graph : AccessGraph[JavaNodeKind, DeclHolder],
-                          nodeId : NodeId[JavaNodeKind]) : AccessGraph[JavaNodeKind, DeclHolder] = {
+                          graph : AccessGraph,
+                          nodeId : NodeId) : AccessGraph = {
     val node = graph.getNode(nodeId)
     (decl, node.styp) match {
       case (None, MethodTypeHolder(arrow)) =>
@@ -76,8 +76,8 @@ case class ConstructorMethodDecl( decl : Option[AST.MethodDecl],
                                   ctorDecl : Option[AST.ConstructorDecl]) extends DeclHolder {
 
   override def createDecl(prog : AST.Program,
-                          graph : AccessGraph[JavaNodeKind, DeclHolder],
-                          node : NodeId[JavaNodeKind]) : AccessGraph[JavaNodeKind, DeclHolder] = {
+                          graph : AccessGraph,
+                          node : NodeId) : AccessGraph = {
     decl match {
       case None =>
         val n = graph.getNode(node)
@@ -92,8 +92,8 @@ trait TypedKindDeclHolder extends DeclHolder {
   def decl : Option[AST.TypeDecl]
   def createLockedAccess() : Option[AST.Access] = decl.map(_.createLockedAccess())
   def addDeclToProgram(prog : AST.Program,
-                       graph : AccessGraph[JavaNodeKind, DeclHolder],
-                       node : NodeId[JavaNodeKind]){
+                       graph : AccessGraph,
+                       node : NodeId){
     /*val prog = node.graph.root.kind match {
       case r @ JavaRoot() => r.program
       case r => throw new Error("root should be of kind JavaRoot instead of " + r)
@@ -127,8 +127,8 @@ override val toString = "Interface"
 
 
   override def createDecl(prog : AST.Program,
-                          graph : AccessGraph[JavaNodeKind, DeclHolder],
-                          node : NodeId[JavaNodeKind]) : AccessGraph[JavaNodeKind, DeclHolder] = {
+                          graph : AccessGraph,
+                          node : NodeId) : AccessGraph = {
 
     decl match {
       case None =>
@@ -142,8 +142,8 @@ override val toString = "Interface"
 
 case class ClassDeclHolder(decl : Option[AST.ClassDecl]) extends TypedKindDeclHolder {
   override def createDecl(prog : AST.Program,
-                          graph : AccessGraph[JavaNodeKind, DeclHolder],
-                          node : NodeId[JavaNodeKind]) : AccessGraph[JavaNodeKind, DeclHolder] = {
+                          graph : AccessGraph,
+                          node : NodeId) : AccessGraph = {
 
     decl match {
       case None =>
@@ -154,7 +154,7 @@ case class ClassDeclHolder(decl : Option[AST.ClassDecl]) extends TypedKindDeclHo
     }
   }
 
-  /*override def promoteToSuperTypeWherePossible(superType : AGNode[JavaNodeKind]){
+  /*override def promoteToSuperTypeWherePossible(superType : AGNode){
    val implementor = this.node
 
    superType.content foreach { absMethod =>

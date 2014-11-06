@@ -14,32 +14,31 @@ import scala.swing.event.Event
  * Created by lorilan on 09/05/14.
  */
 
-case class PuckTreeNodeClicked[Kind <: NodeKind[Kind], T](graph : AccessGraph[Kind, T],
-                                                       node : NodeId[Kind]) extends Event
-case class AccessGraphModified[Kind <: NodeKind[Kind], T](graph : AccessGraph[Kind, T]) extends Event
+case class PuckTreeNodeClicked(graph : AccessGraph, node : NodeId) extends Event
+case class AccessGraphModified(graph : AccessGraph) extends Event
 
-class GraphExplorer[Kind <: NodeKind[Kind], T](width : Int, height : Int)
+class GraphExplorer(width : Int, height : Int)
   extends ScrollPane with Publisher {
 
   minimumSize = new Dimension(width, height)
   preferredSize = minimumSize
 
 
-  def addChildren(graph : AccessGraph[Kind, T],
-                  ptn: PuckTreeNode[Kind]){
+  def addChildren(graph : AccessGraph,
+                  ptn: PuckTreeNode){
     graph.getNode(ptn.agNode).content foreach {
-      (nid: NodeId[Kind]) =>
+      (nid: NodeId) =>
         val n = graph.getNode(nid)
-        val child = new PuckTreeNode[Kind](nid, n.nameTypeString)
+        val child = new PuckTreeNode(nid, n.nameTypeString)
         ptn add child
         addChildren(graph, child)
     }
   }
 
   reactions += {
-    case e : AccessGraphModified[Kind, T] =>
+    case e : AccessGraphModified =>
       val graph = e.graph
-      val root = new PuckTreeNode[Kind](graph.rootId, "<>")
+      val root = new PuckTreeNode(graph.rootId, "<>")
       addChildren(graph, root)
 
 
@@ -53,7 +52,7 @@ class GraphExplorer[Kind <: NodeKind[Kind], T](width : Int, height : Int)
 
           if(path!= null){
             path.getLastPathComponent match {
-              case node : PuckTreeNode[Kind] =>
+              case node : PuckTreeNode =>
                 publish(PuckTreeNodeClicked(graph, node.agNode))
                 //obj.asInstanceOf[PuckTreeNode].toggleFilter()
                 tree.repaint()

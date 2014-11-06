@@ -1,7 +1,7 @@
 package puck.javaAG.immutable
 
 import puck.graph.constraints.{AbstractionPolicy, DecisionMaker, Solver, SupertypeAbstraction}
-import puck.graph.immutable.AccessGraph
+import puck.graph.immutable.{NodeKind, AccessGraph}
 import puck.javaAG.immutable.nodeKind._
 
 
@@ -10,22 +10,22 @@ import puck.javaAG.immutable.nodeKind._
  */
 
 object JavaSolver{
-  def apply(graph : AccessGraph[JavaNodeKind, DeclHolder],
-            decisionMaker : DecisionMaker[JavaNodeKind, DeclHolder]) = new JavaSolver(graph, decisionMaker)
+  def apply(graph : AccessGraph,
+            decisionMaker : DecisionMaker) = new JavaSolver(graph, decisionMaker)
 
   val violationPrioritySeq =
               Seq[JavaNodeKind]( Field, Constructor, Class, Interface)
 }
 
-class JavaSolver(val graph : AccessGraph[JavaNodeKind, DeclHolder],
-                 val decisionMaker : DecisionMaker[JavaNodeKind, DeclHolder]) extends Solver[JavaNodeKind, DeclHolder]{
+class JavaSolver(val graph : AccessGraph,
+                 val decisionMaker : DecisionMaker) extends Solver{
 
   val logger = graph.logger
 
   override def absIntroPredicate( graph : GraphT,
                                   implId : NIdT,
                                   absPolicy : AbstractionPolicy,
-                                  absKind : JavaNodeKind) : PredicateT = {
+                                  absKind : NodeKind) : PredicateT = {
     (graph.getNode(implId).kind, absPolicy) match {
       case (Method, SupertypeAbstraction)
            | (AbstractMethod, SupertypeAbstraction) =>

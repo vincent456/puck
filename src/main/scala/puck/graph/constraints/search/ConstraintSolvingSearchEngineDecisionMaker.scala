@@ -8,24 +8,24 @@ import puck.util.PuckLogger
 import scala.collection.mutable
 
 object ConstraintSolving {
-  type NodeChoice[Kind <: NodeKind[Kind], T] = ConstraintSolvingNodesChoice[Kind, T]
-  type AbsChoice[Kind <: NodeKind[Kind], T] = ConstraintSolvingAbstractionChoice[Kind, T]
+  type NodeChoice = ConstraintSolvingNodesChoice
+  type AbsChoice = ConstraintSolvingAbstractionChoice
 }
 
 /**
  * Created by lorilan on 25/09/14.
  */
-abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind], T]
-  extends SearchEngine[ResultT[Kind, T]]
-  with DecisionMaker[Kind, T] with Evaluator[ResultT[Kind, T]]{
+abstract class ConstraintSolvingSearchEngineDecisionMaker
+  extends SearchEngine[ResultT]
+  with DecisionMaker with Evaluator[ResultT]{
 
   def logger : PuckLogger
 
   //def initialState = new CSInitialSearchState(this, solverBuilder(graph, this))
 
-  val violationsKindPriority : Seq[Kind]
+  val violationsKindPriority : Seq[NodeKind]
 
-  def evaluate(s : SearchState[ResultT[Kind, T]]): Double ={
+  def evaluate(s : SearchState[ResultT]): Double ={
     if(currentState!=s)
       s.setAsCurrentState()
     val graph = s.result._1
@@ -35,7 +35,7 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]
   def violationTarget(graph : GraphT)
                      (k: Option[NIdT] => Unit) : Unit = {
 
-    def findTargets(l : Seq[Kind]) : Iterator[AGNode[Kind, T]] =  l match {
+    def findTargets(l : Seq[NodeKind]) : Iterator[AGNode] =  l match {
       case topPriority :: tl =>
         val it = graph.nodes.iterator filter { n =>
           n.kind == topPriority && (n.wrongUsers.nonEmpty ||
@@ -50,7 +50,7 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]
 
     val targets = (findTargets(violationsKindPriority) map (_.id)).toSeq
 
-    lazy val targetsChoice =  new ConstraintSolvingNodesChoice[Kind, T](k,
+    lazy val targetsChoice =  new ConstraintSolvingNodesChoice(k,
       mutable.Set[NIdT]() ++ targets,
       mutable.Set[NIdT]())
 
@@ -66,7 +66,7 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]
   }
 
   def abstractionKindAndPolicy(graph : GraphT, implId : NIdT)
-                              (k : Option[(Kind, AbstractionPolicy)] => Unit) : Unit = {
+                              (k : Option[(NodeKind, AbstractionPolicy)] => Unit) : Unit = {
     val impl = graph.getNode(implId)
     import impl.kind.{abstractionPolicies, abstractKinds}
 
@@ -108,7 +108,7 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker[Kind <: NodeKind[Kind]
   def chooseNode(graph : GraphT, predicate : PredicateT)
                 (k : Option[NIdT] => Unit) : Unit =
     newCurrentState((graph, graph.recording),
-      new ConstraintSolvingNodesChoice[Kind, T](k,
+      new ConstraintSolvingNodesChoice(k,
       mutable.Set[NIdT]() ++ graph.nodesId.filter(predicate(graph,_)).toSeq,
       mutable.Set[NIdT]()))
 

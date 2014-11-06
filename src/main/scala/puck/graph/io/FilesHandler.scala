@@ -11,9 +11,9 @@ import puck.util._
 import scala.sys.process.Process
 import scala.util.Try
 
-trait ConstraintSolvingSearchEngineBuilder[Kind <: NodeKind[Kind], T] {
-  def apply(graph : AccessGraph[Kind, T]) :
-  SearchEngine[ResultT[Kind, T]]
+trait ConstraintSolvingSearchEngineBuilder {
+  def apply(graph : AccessGraph) :
+  SearchEngine[ResultT]
 }
 
 /**
@@ -36,7 +36,7 @@ object FilesHandler{
   SearchEngine[Recording[Kind]]
 }*/
 
-abstract class FilesHandler[Kind <: NodeKind[Kind], T](workingDirectory : File){
+abstract class FilesHandler(workingDirectory : File){
 
   private [this] var srcDir0 : Option[File] = None
   private [this] var outDir0 : Option[File] = None
@@ -61,15 +61,15 @@ abstract class FilesHandler[Kind <: NodeKind[Kind], T](workingDirectory : File){
   def logger : PuckLogger = logger0
   def logger_=( l : PuckLogger){logger0 = l}
 
-  type GraphT = AccessGraph[Kind, T]
+  type GraphT = AccessGraph
 
   private [this] var ag : GraphT = _
   def graph = ag
   protected def graph_=(g : GraphT){ ag = g }
 
-  def initialRecord : Seq[Transformation[Kind, T]]
+  def initialRecord : Seq[Transformation]
 
-  var graphBuilder : GraphBuilder[Kind, T] = _
+  var graphBuilder : GraphBuilder = _
 
   def setCanonicalOptionFile(prev : Option[File], sf : Option[File]) = {
     sf match {
@@ -169,12 +169,12 @@ abstract class FilesHandler[Kind <: NodeKind[Kind], T](workingDirectory : File){
 
   def loadGraph(ll : AST.LoadingListener) : GraphT
 
-  val dotHelper : DotHelper[Kind]
+  val dotHelper : DotHelper
 
   def makeDot(graph : GraphT,
               printId : Boolean,
               printSignatures : Boolean,
-              useOption : Option[AGEdge[Kind]],
+              useOption : Option[AGEdge],
               writer : OutputStreamWriter = new FileWriter(graphFile(".dot"))){
     DotPrinter.print(new BufferedWriter(writer), graph, dotHelper, printId,
       printSignatures, searchRoots = false, selectedUse = useOption)
@@ -212,7 +212,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind], T](workingDirectory : File){
               printSignatures : Boolean = false,
               sOutput : Option[OutputStream] = None,
               outputFormat : DotOutputFormat = Png(),
-              selectedUse : Option[AGEdge[Kind]] = None)
+              selectedUse : Option[AGEdge] = None)
              (finish : Try[Int] => Unit = {case _ => ()}){
 
     //TODO fix bug when chaining the two function with a pipe
@@ -258,13 +258,13 @@ abstract class FilesHandler[Kind <: NodeKind[Kind], T](workingDirectory : File){
   }
 
 
-  def searchingStrategies : Seq[ConstraintSolvingSearchEngineBuilder[Kind, T]]
+  def searchingStrategies : Seq[ConstraintSolvingSearchEngineBuilder]
 
 
-  type ST = SearchState[ResultT[Kind, T]]
+  type ST = SearchState[ResultT]
 
   def explore (trace : Boolean = false,
-               builder : ConstraintSolvingSearchEngineBuilder[Kind,T]) : Search[ResultT[Kind, T]] = {
+               builder : ConstraintSolvingSearchEngineBuilder) : Search[ResultT] = {
 
     val engine = builder(graph)
 
@@ -276,7 +276,7 @@ abstract class FilesHandler[Kind <: NodeKind[Kind], T](workingDirectory : File){
   }
 
 
-  def printCSSearchStatesGraph(states : Map[Int, Seq[SearchState[ResultT[Kind, T]]]]){
+  def printCSSearchStatesGraph(states : Map[Int, Seq[SearchState[ResultT]]]){
     val d = graphFile("_results")
     d.mkdir()
     states.foreach{
@@ -288,18 +288,17 @@ abstract class FilesHandler[Kind <: NodeKind[Kind], T](workingDirectory : File){
   }
 
   def printCSSearchStatesGraph(dir : File,
-                               states : Seq[SearchState[ResultT[Kind,T]]],
-                               sPrinter : Option[(SearchState[ResultT[Kind,T]] => String)]){
+                               states : Seq[SearchState[ResultT]],
+                               sPrinter : Option[(SearchState[ResultT] => String)]){
 
     val printer = sPrinter match {
       case Some(p) => p
       case None =>
-        s : SearchState[ResultT[Kind,T]] => s.uuid()
+        s : SearchState[ResultT] => s.uuid()
     }
 
     states.foreach { s =>
-      val (graph, recording) = s.result
-      recording()
+      val graph = graphOfResult(s.result)
       val f = new File("%s%c%s.png".format(dir.getAbsolutePath, File.separatorChar, printer(s)))
       makePng(graph, printId = true, sOutput = Some(new FileOutputStream(f)))()
     }

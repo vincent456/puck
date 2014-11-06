@@ -8,7 +8,7 @@ import puck.javaAG.immutable.{MethodType, JavaNamedType}
 /**
  * Created by lorilan on 31/07/14.
  */
-abstract class JavaNodeKind extends NodeKind[JavaNodeKind]{
+abstract class JavaNodeKind extends NodeKind{
   /*def packageNode : AGNode[JavaNodeKind] =
    this match {
      case Package(id) => this.node
@@ -30,7 +30,7 @@ object JavaNodeKind {
   def abstractMethod = AbstractMethod
   def method = Method
 
-  def noType = NoType[JavaNodeKind]()
+  def noType = NoType
 /*  def constructor(t : MethodType.T) = Constructor(dummyId, t, None)
   def method(t : MethodType.T) = Method(dummyId, t, None)
   def field(t : NamedType[JavaNodeKind]) = Field(dummyId, t, None)
@@ -48,30 +48,30 @@ object JavaNodeKind {
   val literalPrototype = literal(dummyJavaNamedType)
   val primitivePrototype = Primitive(dummyId, None)*/
 
-  val list = Seq[JavaNodeKind](Package, Interface,
+  val list = Seq[NodeKind](Package, Interface,
     Class, Constructor, Method, /*ConstructorMethod,*/
     Field, AbstractMethod, Literal, Primitive)
 }
 
-case class NamedTypeHolder(typ : NamedType[JavaNodeKind]) extends TypeHolder[JavaNodeKind]{
+case class NamedTypeHolder(typ : NamedType) extends TypeHolder{
 
-  def redirectUses(oldUsee : NodeId[JavaNodeKind],
-                   newUsee: AGNode[JavaNodeKind, _]) : TypeHolder[JavaNodeKind]=
+  def redirectUses(oldUsee : NodeId,
+                   newUsee: AGNode) : TypeHolder=
   NamedTypeHolder(typ.redirectUses(oldUsee, newUsee))
 
-  def redirectContravariantUses(oldUsee : NodeId[JavaNodeKind], newUsee: AGNode[JavaNodeKind, _]) =
+  def redirectContravariantUses(oldUsee : NodeId, newUsee: AGNode) =
     redirectUses(oldUsee, newUsee)
 
-  def mkString(graph : AccessGraph[JavaNodeKind,_]) : String =  " : " + typ.toString
+  def mkString(graph : AccessGraph) : String =  " : " + typ.toString
 }
 
-case class MethodTypeHolder(typ :  Arrow[JavaNodeKind, MethodType.InputType, MethodType.OutputType]) extends TypeHolder[JavaNodeKind]{
+case class MethodTypeHolder(typ : Arrow[Tuple[NamedType], NamedType]) extends TypeHolder{
 
-  def redirectUses(oldUsee : NodeId[JavaNodeKind],
-                   newUsee: AGNode[JavaNodeKind, _]) : TypeHolder[JavaNodeKind]=
+  def redirectUses(oldUsee : NodeId,
+                   newUsee: AGNode) : TypeHolder=
     MethodTypeHolder(typ.redirectUses(oldUsee, newUsee))
-  def redirectContravariantUses(oldUsee : NodeId[JavaNodeKind], newUsee: AGNode[JavaNodeKind, _]) =
+  def redirectContravariantUses(oldUsee : NodeId, newUsee: AGNode) =
     MethodTypeHolder(typ.redirectContravariantUses(oldUsee, newUsee))
 
-  def mkString(graph : AccessGraph[JavaNodeKind,_]) : String =  " : " + typ.toString
+  def mkString(graph : AccessGraph ) : String =  " : " + typ.toString
 }

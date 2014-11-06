@@ -7,21 +7,21 @@ import scala.collection.mutable
  * Created by lorilan on 27/10/14.
  */
 
-class GraphBuilder[Kind <: NodeKind[Kind], T]
-( val nodeBuilder : AGNodeBuilder[Kind, T] ){
-  var g : AccessGraph[Kind, T] = _
-  type NodeIdT = NodeId[Kind]
+class GraphBuilder
+( val nodeBuilder : AGNodeBuilder ){
+  var g : AccessGraph = _
+  type NodeIdT = NodeId
   val nodesByName = mutable.Map[String, NodeIdT]()
 
   def getNodeByName( k : String) : NodeIdT = nodesByName(k) //java accessor
 
 
-  def addPredefined(id : NodeIdT, fullName : String, name : String, kind : Kind, t : T): Unit ={
-    g = g.addNode(id, name, kind, NoType(), mutable = false, t)
+  def addPredefined(id : NodeIdT, fullName : String, name : String, kind : NodeKind, t : Hook): Unit ={
+    g = g.addNode(id, name, kind, NoType, mutable = false, t)
     nodesByName += (fullName -> id)
   }
 
-  def addNode(unambiguousFullName: String, localName:String, kind: Kind, th : TypeHolder[Kind]): NodeIdT = {
+  def addNode(unambiguousFullName: String, localName:String, kind: NodeKind, th : TypeHolder): NodeIdT = {
     nodesByName get unambiguousFullName match {
       case None =>
         val (id, g2) = g.addNode(localName, kind, th)
@@ -53,34 +53,34 @@ class GraphBuilder[Kind <: NodeKind[Kind], T]
                               (dominatedUser, dominatedUsee))
   }
 
-  var constraintsMap = ConstraintsMaps[Kind]()
+  var constraintsMap = ConstraintsMaps()
 
   def discardConstraints(): Unit ={
-    constraintsMap = ConstraintsMaps[Kind]()
+    constraintsMap = ConstraintsMaps()
   }
 
-  def addScopeConstraint(owners : NodeSet[Kind],
-                         facades : NodeSet[Kind],
-                         interlopers : NodeSet[Kind],
-                         friends : NodeSet[Kind]) = {
+  def addScopeConstraint(owners : NodeSet,
+                         facades : NodeSet,
+                         interlopers : NodeSet,
+                         friends : NodeSet) = {
     val ct = new ScopeConstraint(owners, facades, interlopers, friends)
 
     val scopeCtsMap = owners.foldLeft(constraintsMap.scopeConstraints){
       case (map, ownerId) =>
-        val s = map.getOrElse(ownerId, new ConstraintSet[Kind, ScopeConstraint[Kind]]())
+        val s = map.getOrElse(ownerId, new ConstraintSet[ScopeConstraint]())
         map + (ownerId -> (s + ct) )
     }
     constraintsMap = constraintsMap.newConstraintsMaps(nScopeConstraints = scopeCtsMap)
   }
 
-  def addElementConstraint(owners : NodeSet[Kind],
-                           interlopers : NodeSet[Kind],
-                           friends : NodeSet[Kind]) = {
+  def addElementConstraint(owners : NodeSet,
+                           interlopers : NodeSet,
+                           friends : NodeSet) = {
     val ct = new ElementConstraint(owners, interlopers, friends)
 
     val eltCtsMap = owners.foldLeft(constraintsMap.elementsConstraints){
       case (map, ownerId) =>
-        val s = map.getOrElse(ownerId, new ConstraintSet[Kind, ElementConstraint[Kind]]())
+        val s = map.getOrElse(ownerId, new ConstraintSet[ElementConstraint]())
         map + (ownerId -> (s + ct) )
     }
 
@@ -88,13 +88,13 @@ class GraphBuilder[Kind <: NodeKind[Kind], T]
 
   }
 
-  def addFriendConstraint(befriended : NodeSet[Kind],
-                          friends : NodeSet[Kind]) = {
-    val ct = new FriendConstraint[Kind](friends, befriended)
+  def addFriendConstraint(befriended : NodeSet,
+                          friends : NodeSet) = {
+    val ct = new FriendConstraint(friends, befriended)
 
     val friendCtsMap = befriended.foldLeft(constraintsMap.friendConstraints){
       case (map, ownerId) =>
-        val s = map.getOrElse(ownerId, new ConstraintSet[Kind, FriendConstraint[Kind]]())
+        val s = map.getOrElse(ownerId, new ConstraintSet[FriendConstraint]())
         map + (ownerId -> (s + ct) )
     }
 

@@ -9,13 +9,13 @@ import scala.swing.event.{SelectionChanged, Event}
 /**
  * Created by lorilan on 18/09/14.
  */
-case class StateSelected[Kind <: NodeKind[Kind], T](box : CSSearchStateComboBox[Kind, T]) extends Event
+case class StateSelected(box : CSSearchStateComboBox) extends Event
 
 object CSSearchStateComboBox{
 
-  def sort[Kind <: NodeKind[Kind], T](l : Seq[SearchState[ResultT[Kind, T]]])={
-    def aux( acc : Map[Int, Seq[SearchState[ResultT[Kind, T]]]],
-               l : Seq[SearchState[ResultT[Kind, T]]]) : Map[Int, Seq[SearchState[ResultT[Kind, T]]]] =
+  def sort(l : Seq[SearchState[ResultT]])={
+    def aux( acc : Map[Int, Seq[SearchState[ResultT]]],
+               l : Seq[SearchState[ResultT]]) : Map[Int, Seq[SearchState[ResultT]]] =
       if(l.isEmpty) acc
       else{
         val graph = graphOfResult(l.head.result)
@@ -24,13 +24,13 @@ object CSSearchStateComboBox{
         val olds = acc.getOrElse(value, Seq())
         aux(acc + (value -> (l.head +: olds)), l.tail)
       }
-    aux(Map[Int, Seq[SearchState[ResultT[Kind, T]]]](), l)
+    aux(Map[Int, Seq[SearchState[ResultT]]](), l)
   }
 }
-class CSSearchStateComboBox[Kind <: NodeKind[Kind], T](map : Map[Int, Seq[SearchState[ResultT[Kind, T]]]])
+class CSSearchStateComboBox(map : Map[Int, Seq[SearchState[ResultT]]])
   extends FlowPanel{
 
-  type StateT = SearchState[ResultT[Kind, T]]
+  type StateT = SearchState[ResultT]
 
   val combobox2wrapper = new FlowPanel()
   val couplingValues = new ComboBox(map.keys.toSeq)
@@ -56,10 +56,10 @@ class CSSearchStateComboBox[Kind <: NodeKind[Kind], T](map : Map[Int, Seq[Search
     action = new Action("History"){
       def apply() {
 
-        val state: SearchState[ResultT[Kind, T]] = searchStateComboBox.selection.item
+        val state: SearchState[ResultT] = searchStateComboBox.selection.item
         var id = -1
 
-        CSSearchStateComboBox.this publish SearchStateSeqPrintingRequest[Kind, T](state.uuid()+"history",
+        CSSearchStateComboBox.this publish SearchStateSeqPrintingRequest(state.uuid()+"history",
           state.ancestors(includeSelf = true), Some({s => id +=1
             id.toString}))
 

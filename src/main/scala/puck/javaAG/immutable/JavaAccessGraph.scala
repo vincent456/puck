@@ -5,7 +5,7 @@ import puck.graph.constraints.{SupertypeAbstraction, AbstractionPolicy}
 import puck.graph.immutable.AccessGraph._
 import puck.graph.immutable.constraints.ConstraintsMaps
 import puck.graph.immutable.transformations.Recording
-import puck.graph.immutable.{AGNode, AGEdge, AccessGraph}
+import puck.graph.immutable.{NodeKind, AGNode, AGEdge, AccessGraph}
 import puck.javaAG.immutable.nodeKind._
 import puck.util.PuckLog.InJavaGraph
 import puck.util.{PuckLog, PuckNoopLogger, PuckLogger}
@@ -15,51 +15,54 @@ import scala.util.{Try, Failure, Success}
 /**
  * Created by lorilan on 29/10/14.
  */
+
+
+
 class JavaAccessGraph
 (program : AST.Program,
  logger : PuckLogger = PuckNoopLogger,
  idSeed : () => Int,
- nodesSet : NodeIndex[JavaNodeKind, DeclHolder],
- usersMap : EdgeMap[JavaNodeKind],
- usesMap  : EdgeMap[JavaNodeKind],
- contentsMap  : EdgeMap[JavaNodeKind],
- containerMap : Node2NodeMap[JavaNodeKind],
- superTypesMap : EdgeMap[JavaNodeKind],
- subTypesMap : EdgeMap[JavaNodeKind],
- dominantUsesMap : UseDependencyMap[JavaNodeKind],
- dominatedUsesMap : UseDependencyMap[JavaNodeKind],
- abstractionsMap : AbstractionMap[JavaNodeKind],
- constraints : ConstraintsMaps[JavaNodeKind],
- recording : Recording[JavaNodeKind, DeclHolder])
-  extends AccessGraph[JavaNodeKind, DeclHolder](JavaNode, logger, idSeed, nodesSet,
+ nodesSet : NodeIndex,
+ removedNodes : NodeIndex,
+ usersMap : EdgeMap,
+ usesMap  : EdgeMap,
+ contentsMap  : EdgeMap,
+ containerMap : Node2NodeMap,
+ superTypesMap : EdgeMap,
+ subTypesMap : EdgeMap,
+ dominantUsesMap : UseDependencyMap,
+ dominatedUsesMap : UseDependencyMap,
+ abstractionsMap : AbstractionMap,
+ constraints : ConstraintsMaps,
+ recording : Recording)
+  extends AccessGraph(JavaNode, logger, idSeed, nodesSet, removedNodes,
   usersMap, usesMap, contentsMap, containerMap, superTypesMap, subTypesMap,
   dominantUsesMap, dominatedUsesMap, abstractionsMap, constraints, recording){
 
   override def newGraph(nLogger : PuckLogger = logger,
-               nNodesSet : NodeIndex[JavaNodeKind, DeclHolder] = nodesSet,
-               nUsersMap : EdgeMap[JavaNodeKind] = usersMap,
-               nUsesMap  : EdgeMap[JavaNodeKind] = usesMap,
-               nContentMap  : EdgeMap[JavaNodeKind] = contentsMap,
-               nContainerMap : Node2NodeMap[JavaNodeKind] = containerMap,
-               nSuperTypesMap : EdgeMap[JavaNodeKind] = superTypesMap,
-               nSubTypesMap : EdgeMap[JavaNodeKind] = subTypesMap,
-               nDominantUsesMap : UseDependencyMap[JavaNodeKind] = dominantUsesMap,
-               nDominatedUsesMap : UseDependencyMap[JavaNodeKind] = dominatedUsesMap,
-               nAbstractionsMap : AbstractionMap[JavaNodeKind] = abstractionsMap,
-               nConstraints : ConstraintsMaps[JavaNodeKind] = constraints,
-               nRecording : Recording[JavaNodeKind, DeclHolder] = recording) : AccessGraph[JavaNodeKind, DeclHolder] =
+               nNodesSet : NodeIndex = nodesSet,
+               nRemovedNodes : NodeIndex = removedNodes,
+               nUsersMap : EdgeMap = usersMap,
+               nUsesMap  : EdgeMap = usesMap,
+               nContentMap  : EdgeMap = contentsMap,
+               nContainerMap : Node2NodeMap = containerMap,
+               nSuperTypesMap : EdgeMap = superTypesMap,
+               nSubTypesMap : EdgeMap = subTypesMap,
+               nDominantUsesMap : UseDependencyMap = dominantUsesMap,
+               nDominatedUsesMap : UseDependencyMap = dominatedUsesMap,
+               nAbstractionsMap : AbstractionMap = abstractionsMap,
+               nConstraints : ConstraintsMaps = constraints,
+               nRecording : Recording = recording) : AccessGraph =
     new JavaAccessGraph(program, nLogger, idSeed,
-      nNodesSet, nUsersMap, nUsesMap,
+      nNodesSet, nRemovedNodes, nUsersMap, nUsesMap,
       nContentMap, nContainerMap, nSuperTypesMap, nSubTypesMap,
       nDominantUsesMap, nDominatedUsesMap,
       nAbstractionsMap, nConstraints, nRecording)
 
 
-  type NK = JavaNodeKind
-
   implicit val defaultVerbosity = (InJavaGraph, PuckLog.Info)
 
-  override def abstractionName(implId: NIdT, abskind : NK, policy : AbstractionPolicy) : String = {
+  override def abstractionName(implId: NIdT, abskind : NodeKind, policy : AbstractionPolicy) : String = {
     val impl = getNode(implId)
     if (impl.kind == Constructor)
       "create"
@@ -72,7 +75,7 @@ class JavaAccessGraph
       }
   }
   override def createAbstraction(implId: NIdT,
-                                 abskind : NK ,
+                                 abskind : NodeKind ,
                                  policy : AbstractionPolicy) : Try[(NIdT, GraphT)] = {
 
     (abskind, policy) match {
@@ -204,7 +207,7 @@ class JavaAccessGraph
    */
 
   //!\ becarefull with AGNode use only to read values
-  type AGNodeT = AGNode[JavaNodeKind, DeclHolder]
+  type AGNodeT = AGNode
 
   //findMergingCandidate find only candidates for interfaces
   //A merging candidate is either structurally equal

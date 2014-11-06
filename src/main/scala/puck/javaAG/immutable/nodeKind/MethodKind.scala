@@ -1,13 +1,14 @@
 package puck.javaAG.immutable.nodeKind
 
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
+import puck.graph.immutable.NodeKind
 
 /**
  * Created by lorilan on 31/07/14.
  */
 trait MethodKind extends JavaNodeKind {
 
-  def canContain(k : JavaNodeKind) = false
+  def canContain(k : NodeKind) = false
 
 }
 

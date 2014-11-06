@@ -9,25 +9,25 @@ import scala.collection.mutable
 /**
  * Created by lorilan on 25/09/14.
  */
-class ConstraintSolvingAbstractionChoice[Kind <: NodeKind[Kind], T]
-(val k : Option[(Kind, AbstractionPolicy)] => Unit,
- val remainingChoices : mutable.Set[(Kind, AbstractionPolicy)],
- val triedChoices : mutable.Set[(Kind, AbstractionPolicy)])
-extends ConstraintSolvingChoice[Kind, (Kind, AbstractionPolicy), T, ConstraintSolvingAbstractionChoice[Kind, T]] {
+class ConstraintSolvingAbstractionChoice
+(val k : Option[(NodeKind, AbstractionPolicy)] => Unit,
+ val remainingChoices : mutable.Set[(NodeKind, AbstractionPolicy)],
+ val triedChoices : mutable.Set[(NodeKind, AbstractionPolicy)])
+extends ConstraintSolvingChoice[(NodeKind, AbstractionPolicy), ConstraintSolvingAbstractionChoice] {
   def createState(id: Int,
-                  engine: SearchEngine[ResultT[Kind, T]],
-                  prevState: Option[SearchState[ResultT[Kind, T]]],
-                  currentResult : ResultT[Kind, T],
-                  choices: ConstraintSolvingAbstractionChoice[Kind, T]) =
-    new ConstraintSolvingAbstractionChoiceSearchState[Kind, T](id, currentResult, engine, choices, prevState)
+                  engine: SearchEngine[ResultT],
+                  prevState: Option[SearchState[ResultT]],
+                  currentResult : ResultT,
+                  choices: ConstraintSolvingAbstractionChoice) =
+    new ConstraintSolvingAbstractionChoiceSearchState(id, currentResult, engine, choices, prevState)
 
 }
 
 
-class ConstraintSolvingAbstractionChoiceSearchState[Kind <: NodeKind[Kind], T]
+class ConstraintSolvingAbstractionChoiceSearchState
 (val id : Int,
- val result : ResultT[Kind, T],
- val engine : SearchEngine[ResultT[Kind, T]],
- val internal: ConstraintSolvingAbstractionChoice[Kind, T],
- val prevState : Option[SearchState[ResultT[Kind, T]]])
-extends ConstraintSolvingState[Kind, (Kind, AbstractionPolicy), T, ConstraintSolvingAbstractionChoice[Kind, T]]
+ val result : ResultT,
+ val engine : SearchEngine[ResultT],
+ val internal: ConstraintSolvingAbstractionChoice,
+ val prevState : Option[SearchState[ResultT]])
+extends ConstraintSolvingState[(NodeKind, AbstractionPolicy), ConstraintSolvingAbstractionChoice]

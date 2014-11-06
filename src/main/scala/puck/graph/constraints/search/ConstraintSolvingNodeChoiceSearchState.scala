@@ -11,37 +11,33 @@ import scala.collection.mutable
 
 
 
-class ConstraintSolvingNodesChoice[Kind <: NodeKind[Kind], T]
-(val k : Option[NodeId[Kind]] => Unit,
- val remainingChoices : mutable.Set[NodeId[Kind]],
- val triedChoices : mutable.Set[NodeId[Kind]])
- extends ConstraintSolvingChoice[Kind, NodeId[Kind], T, ConstraintSolvingNodesChoice[Kind, T]] {
+class ConstraintSolvingNodesChoice
+(val k : Option[NodeId] => Unit,
+ val remainingChoices : mutable.Set[NodeId],
+ val triedChoices : mutable.Set[NodeId])
+ extends ConstraintSolvingChoice[NodeId, ConstraintSolvingNodesChoice] {
   def createState(id : Int,
-                  engine : SearchEngine[ResultT[Kind, T]],
-                  prevState : Option[SearchState[ResultT[Kind, T]]],
-                  currentResult: ResultT[Kind, T],
-                  choices : ConstraintSolvingNodesChoice[Kind, T]) = {
+                  engine : SearchEngine[ResultT],
+                  prevState : Option[SearchState[ResultT]],
+                  currentResult: ResultT,
+                  choices : ConstraintSolvingNodesChoice) = {
     new ConstraintSolvingNodeChoiceSearchState(id, currentResult, engine, choices, prevState)
   }
 
 
 }
 
-object ConstraintSolvingNodesChoice{
-  type CSNC[Kind <: NodeKind[Kind], T] = ConstraintSolvingNodesChoice[Kind, T]
-}
-
 /**
  * Created by lorilan on 25/09/14.
  */
 
-class ConstraintSolvingNodeChoiceSearchState[Kind <: NodeKind[Kind], T]
+class ConstraintSolvingNodeChoiceSearchState
 (val id : Int,
- val result : ResultT[Kind, T],
- val engine : SearchEngine[ResultT[Kind, T]],
- val internal: ConstraintSolvingNodesChoice[Kind, T],
- val prevState : Option[SearchState[ResultT[Kind, T]]])
-extends ConstraintSolvingState[Kind, NodeId[Kind], T, ConstraintSolvingNodesChoice[Kind, T]]{
+ val result : ResultT,
+ val engine : SearchEngine[ResultT],
+ val internal: ConstraintSolvingNodesChoice,
+ val prevState : Option[SearchState[ResultT]])
+extends ConstraintSolvingState[NodeId, ConstraintSolvingNodesChoice]{
   //override protected def needToTryNone = true
 }
 

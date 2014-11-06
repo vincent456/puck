@@ -1,57 +1,56 @@
 package puck.graph.immutable.transformations
 
 import puck.graph.immutable.AccessGraph._
-import puck.graph.immutable.{AccessGraph, AGEdge, TypeHolder, NodeKind}
+import puck.graph.immutable._
 
 /**
  * Created by lorilan on 05/11/14.
  */
-sealed abstract class TransformationTarget[Kind <: NodeKind[Kind], T]{
-  type GraphT= AccessGraph[Kind,T]
-  type STyp = TypeHolder[Kind]
+sealed abstract class TransformationTarget{
+  type GraphT= AccessGraph
+  type STyp = TypeHolder
   def execute(g: GraphT, op : Operation) : GraphT
 }
 
-case class TTNode[Kind <: NodeKind[Kind], T]
-( id : NodeId[Kind],
+case class TTNode
+( id : NodeId,
   name : String,
-  kind : Kind,
-  styp : TypeHolder[Kind],
+  kind : NodeKind,
+  styp : TypeHolder,
   mutable : Boolean,
-  t : T)
-  extends TransformationTarget[Kind, T]{
+  t : Hook)
+  extends TransformationTarget{
 
   def execute(g: GraphT, op : Operation) = op match {
     case Add => g.addNode(id, name, kind, styp, mutable, t)
     case Remove => g.removeNode(id)
   }
 }
-case class TTEdge[Kind <: NodeKind[Kind], T](edge : AGEdge[Kind])
-  extends TransformationTarget[Kind, T]{
+case class TTEdge(edge : AGEdge)
+  extends TransformationTarget{
 
   def execute(g: GraphT, op : Operation) = op match {
-    case Add =>edge.create[T](g)
+    case Add =>edge.create(g)
     case Remove => edge.delete(g)
   }
 }
 
-sealed abstract class Extremity[Kind <: NodeKind[Kind]]{
-  val node : NodeId[Kind]
-  def create(n : NodeId[Kind]) : Extremity[Kind]
+sealed abstract class Extremity{
+  val node : NodeId
+  def create(n : NodeId) : Extremity
   /*def apply[K <: NodeKind[K]](e : AGEdge[K]): AGNode[K]*/
 }
-case class Source[Kind <: NodeKind[Kind]](node : NodeId[Kind]) extends Extremity[Kind]{
+case class Source(node : NodeId) extends Extremity{
   /*def apply[K <: NodeKind[K]](e : AGEdge[K]) = e.source*/
-  def create(n : NodeId[Kind]) : Extremity[Kind] = Source(n)
+  def create(n : NodeId) : Extremity = Source(n)
 }
-case class Target[Kind <: NodeKind[Kind]](node : NodeId[Kind]) extends Extremity[Kind]  {
+case class Target(node : NodeId) extends Extremity  {
   /*def apply[K <: NodeKind[K]](e : AGEdge[K]) = e.target*/
-  def create(n : NodeId[Kind]) : Extremity[Kind] = Target(n)
+  def create(n : NodeId) : Extremity = Target(n)
 }
 
-case class TTRedirection[Kind <: NodeKind[Kind], T](edge : AGEdge[Kind],
-                                                    extremity : Extremity[Kind])
-  extends TransformationTarget[Kind, T]{
+case class TTRedirection(edge : AGEdge, extremity : Extremity)
+  extends TransformationTarget{
 
   def execute(g: GraphT, op : Operation) = (op, extremity) match {
     case (Add, Target(newTarget)) => edge.changeTarget(g, newTarget)
@@ -61,9 +60,8 @@ case class TTRedirection[Kind <: NodeKind[Kind], T](edge : AGEdge[Kind],
   }
 }
 
-class RedirectionWithMerge[Kind <: NodeKind[Kind], T](edge : AGEdge[Kind],
-                                                      extremity : Extremity[Kind])
-  extends TTRedirection[Kind, T](edge, extremity){
+class RedirectionWithMerge(edge : AGEdge, extremity : Extremity)
+  extends TTRedirection(edge, extremity){
 
   override def execute(g: GraphT, op : Operation) = (op, extremity) match {
     case (Add, _) => super.execute(g, op)
@@ -72,39 +70,39 @@ class RedirectionWithMerge[Kind <: NodeKind[Kind], T](edge : AGEdge[Kind],
 
 }
 
-case class TTTypeRedirection[Kind <: NodeKind[Kind], T2]
-(typed : NodeId[Kind],
- typ : TypeHolder[Kind],
- oldUsee: NodeId[Kind],
- newUsee : NodeId[Kind])
-  extends TransformationTarget[Kind, T2]{
+case class TTTypeRedirection
+(typed : NodeId,
+ typ : TypeHolder,
+ oldUsee: NodeId,
+ newUsee : NodeId)
+  extends TransformationTarget{
 
-  override def execute(g: AccessGraph[Kind, T2], op: Operation) = op match {
+  override def execute(g: AccessGraph, op: Operation) = op match {
     case Add => g.changeType(typed, typ, oldUsee, newUsee)
     case Remove => g.changeType(typed, typ, newUsee, oldUsee)
   }
 }
 
 /*
-case class TTDependency[Kind <: NodeKind[Kind], T](dominant : AGEdge[Kind],
-                                                   dominated : AGEdge[Kind])
+case class TTDependency[Kind <: NodeKind, T](dominant : AGEdge,
+                                                   dominated : AGEdge)
   extends TransformationTarget[Kind,T]{
 
   def execute(g: GraphT, op : Operation) = ???
 }
 
-case class TTAbstraction[Kind <: NodeKind[Kind], T](impl: NodeId[Kind],
-                                                    abs: NodeId[Kind],
+case class TTAbstraction[Kind <: NodeKind, T](impl: NodeId,
+                                                    abs: NodeId,
                                                     policy: AbstractionPolicy)
-  extends TransformationTarget[Kind, T]{
+  extends TransformationTarget{
 
   def execute(g: GraphT, op : Operation) = ???
 }
 
 
-case class TTConstraint[Kind <: NodeKind[Kind]](ct : Constraint[Kind],
-                                                friend : AGNode[Kind])
-  extends TransformationTarget[Kind]{
+case class TTConstraint[Kind <: NodeKind](ct : Constraint,
+                                                friend : AGNode)
+  extends TransformationTarget{
 
   def execute(op : Operation) = ???
 }*/

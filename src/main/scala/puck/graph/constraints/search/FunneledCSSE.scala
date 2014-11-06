@@ -6,9 +6,9 @@ import puck.search.FunneledSeachEngine
 /**
  * Created by lorilan on 26/10/14.
  */
-class FunneledCSSE[Kind <: NodeKind[Kind], T](val violationsKindPriority : Seq[Kind],
-                                     val graph : AccessGraph[Kind, T],
-                                     val solverBuilder : SolverBuilder[Kind, T])
-  extends ConstraintSolvingSearchEngineDecisionMaker[Kind, T]
-  with FunneledSeachEngine[ResultT[Kind, T]]
-  with InitialStateCreator[Kind, T]
+class FunneledCSSE(val violationsKindPriority : Seq[NodeKind],
+                                     val graph : AccessGraph,
+                                     val solverBuilder : SolverBuilder)
+  extends ConstraintSolvingSearchEngineDecisionMaker
+  with FunneledSeachEngine[ResultT]
+  with InitialStateCreator

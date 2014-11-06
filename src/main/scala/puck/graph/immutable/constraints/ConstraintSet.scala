@@ -8,10 +8,10 @@ import puck.graph.immutable.AccessGraph.NodeId
  */
 
 object ConstraintSet{
-  def empty[Kind <: NodeKind[Kind], T <: Constraint[Kind]] =
-    new ConstraintSet[Kind, T](Seq())
+  def empty[T <: Constraint] =
+    new ConstraintSet[T](Seq())
 }
-class ConstraintSet[Kind <: NodeKind[Kind], T <: Constraint[Kind]]
+class ConstraintSet[T <: Constraint]
 (private val content : Seq[T])
   extends Iterable[T]{
 
@@ -20,22 +20,22 @@ class ConstraintSet[Kind <: NodeKind[Kind], T <: Constraint[Kind]]
   override def toString = content.mkString("\n")
 
   // /!\ uses eq and not ==
-  def replaceEq(ct : T, newCt : T) : ConstraintSet[Kind, T] =
+  def replaceEq(ct : T, newCt : T) : ConstraintSet[T] =
     new ConstraintSet(content.map {ct0 => if(ct0 eq ct) newCt else ct0})
 
-  def replaceEq(cts : Seq[(T, T)]) : ConstraintSet[Kind, T] =
+  def replaceEq(cts : Seq[(T, T)]) : ConstraintSet[T] =
     cts.foldLeft(this){
       case (m, (oldCt, newCt)) => m.replaceEq(oldCt, newCt)
     }
 
   def iterator = content.iterator
 
-  def + (ct : T) : ConstraintSet[Kind, T] = new ConstraintSet( ct +: content )
+  def + (ct : T) : ConstraintSet[T] = new ConstraintSet( ct +: content )
   //def - (ct : T) : ConstraintSet[Kind, T] = new ConstraintSet( content - ct )
 
-  def friendScopeThatContains_*(graph : AccessGraph[Kind,_], n: NodeId[Kind]) = {
+  def friendScopeThatContains_*(graph : AccessGraph, n: NodeId) = {
 
-    def aux(l : Seq[T]) : Option[NodeId[Kind]] =
+    def aux(l : Seq[T]) : Option[NodeId] =
       if(l.isEmpty) None
       else{
         l.head.friends.scopeThatContains_*(graph, n) match {
@@ -47,7 +47,7 @@ class ConstraintSet[Kind <: NodeKind[Kind], T <: Constraint[Kind]]
     aux(content)
 
   }
-  def hasFriendScopeThatContains_*(graph : AccessGraph[Kind, _], n : NodeId[Kind])=
+  def hasFriendScopeThatContains_*(graph : AccessGraph, n : NodeId)=
     content.exists( _.friends.hasScopeThatContains_*(graph, n))
 
 }

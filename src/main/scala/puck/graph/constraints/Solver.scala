@@ -6,18 +6,18 @@ import puck.util.{PuckLog, PuckLogger}
 
 import scala.util.{Success, Try, Failure}
 
-trait Solver[Kind <: NodeKind[Kind], T] {
+trait Solver {
 
   implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.Solver, PuckLog.Info)
   import scala.language.implicitConversions
   implicit def logVerbosity(lvl : PuckLog.Level) = (PuckLog.Solver, lvl)
 
   val logger : PuckLogger
-  val decisionMaker : DecisionMaker[Kind, T]
+  val decisionMaker : DecisionMaker
 
-  type GraphT = AccessGraph[Kind, T]
-  type ResT = ResultT[Kind, T]
-  type NIdT = NodeId[Kind]
+  type GraphT = AccessGraph
+  type ResT = ResultT
+  type NIdT = NodeId
   type PredicateT = decisionMaker.PredicateT
 
   def redirectTowardExistingAbstractions(graph : GraphT,
@@ -39,13 +39,13 @@ trait Solver[Kind <: NodeKind[Kind], T] {
             case Some((abs, _)) =>
               logger.writeln(wu + " will use abstraction " + abs)
 
-              val breakPoint = g.startSequence()
+              //val breakPoint = g.startSequence()
 
               g.redirectUses(AGEdge.uses(wu, usee), abs, absPolicy) match {
                   case Success((_, g2)) => (g2, unsolved)
                   case Failure(e) =>
                     logger.writeln("redirection error catched !!")(PuckLog.Debug)
-                    (g.undo(breakPoint), wu +: unsolved)
+                    (g/*.undo(breakPoint)*/, wu +: unsolved)
               }
           }
         }
@@ -81,7 +81,7 @@ trait Solver[Kind <: NodeKind[Kind], T] {
         case Some(hostKind) =>
           newCterNumGen += 1
           val hostName = "%s_container%d".format(toBeContained.name, newCterNumGen)
-          val (hid, graph2) = graph.addNode(hostName, hostKind, NoType())
+          val (hid, graph2) = graph.addNode(hostName, hostKind, NoType)
           logger.writeln("creating " + hostName )(PuckLog.Debug)
           logger.writeln("host intro, rec call to find host " + parentsThatCanBeCreated )
           findHost(graph2, hid, allwaysTrue, parentsThatCanBeCreated - 1){
@@ -117,7 +117,7 @@ trait Solver[Kind <: NodeKind[Kind], T] {
   def absIntroPredicate(graph : GraphT,
                         impl : NIdT,
                         absPolicy : AbstractionPolicy,
-                        absKind : Kind) : PredicateT = absPolicy match {
+                        absKind : NodeKind) : PredicateT = absPolicy match {
     case SupertypeAbstraction =>
       (graph, potentialHost) => !graph.interloperOf(impl, potentialHost)
 

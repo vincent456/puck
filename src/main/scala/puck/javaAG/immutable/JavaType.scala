@@ -1,19 +1,18 @@
 package puck.javaAG.immutable
 
+import puck.javaAG.JavaAGError
 import puck.graph.immutable.AccessGraph.NodeId
 import puck.graph.immutable._
-import puck.javaAG.JavaAGError
 import puck.javaAG.immutable.nodeKind._
-
 
 /**
  * Created by lorilan on 27/05/14.
  */
 
 
-class JavaNamedType(n : NodeId[JavaNodeKind], name : String) extends NamedType[JavaNodeKind](n, name){
+class JavaNamedType(n : NodeId, name : String) extends NamedType(n, name){
 
- override def create(n : NodeId[JavaNodeKind], name : String) = new JavaNamedType(n, name)
+ override def create(n : NodeId, name : String) = new JavaNamedType(n, name)
 
  /*def hasMethodThatCanOverride(name : String, sig : MethodType) : Boolean =
     n.content.exists{ (childThis : AGNode[JavaNodeKind]) =>
@@ -48,10 +47,10 @@ class JavaNamedType(n : NodeId[JavaNodeKind], name : String) extends NamedType[J
 }
 
 object MethodType{
-  type InputType =  Tuple[JavaNodeKind, NamedType[JavaNodeKind]]
-  type OutputType = NamedType[JavaNodeKind]
+  type InputType =  Tuple[NamedType]
+  type OutputType = NamedType
 
-  type T =  Arrow[JavaNodeKind, MethodType.InputType, MethodType.OutputType]
+  type T =  Arrow[Tuple[NamedType], NamedType]
 
 /*  def unapply( m : MethodType) : Option[(MethodType.InputType, MethodType.OutputType)] =
   Some(m.input, m.output)*/
@@ -59,7 +58,7 @@ object MethodType{
 
 class MethodType(i: MethodType.InputType,
                  o: MethodType.OutputType)
-  extends MethodType.T(i, o){
+  extends Arrow[Tuple[NamedType], NamedType](i, o){
 
   /*override def equals(other : Any) = other match {
     case that : MethodType => that.canEqual(this) &&
@@ -72,7 +71,7 @@ class MethodType(i: MethodType.InputType,
   override def hashCode = 41 * input.hashCode + output.hashCode() + 41*/
   override def toString = "MethodType(" + input +" -> " + output +")"
 
-  override def canOverride(other : Type[JavaNodeKind, _]) : Boolean =
+  override def canOverride(other : Type[_]) : Boolean =
     other match {
       case om : MethodType => om.input == input &&
         output.subtypeOf(om.output)
@@ -83,13 +82,13 @@ class MethodType(i: MethodType.InputType,
   override def create(i : MethodType.InputType,
               o : MethodType.OutputType) = new MethodType(i, o)
 
-  def createReturnAccess(graph : AccessGraph[JavaNodeKind, DeclHolder]) =
+  def createReturnAccess(graph : AccessGraph) =
     graph.getNode(output.node).t match {
     case tk : TypedKindDeclHolder => tk.createLockedAccess()
     case _ => throw new JavaAGError("need a typekind as output node")
   }
 
-  def createASTParamList(graph : AccessGraph[JavaNodeKind, DeclHolder]) : Seq[AST.ParameterDeclaration] = {
+  def createASTParamList(graph : AccessGraph) : Seq[AST.ParameterDeclaration] = {
     input.types.map { t =>
       val node = graph.getNode(t.node)
       node.t match {
@@ -108,7 +107,7 @@ class MethodType(i: MethodType.InputType,
   }
 }
 
-case class Predefined(id : NodeId[JavaNodeKind], pkg: String,  name : String, kind : JavaNodeKind){
+case class Predefined(id : NodeId, pkg: String,  name : String, kind : JavaNodeKind){
   def fullName = pkg + "." + name
 }
 

@@ -7,15 +7,15 @@ import puck.graph.immutable.AccessGraph.NodeId
  * Created by lorilan on 09/06/14.
  */
 
-abstract class NodeSet[Kind <: NodeKind[Kind]] extends Iterable[NodeId[Kind]] {
-  type NodeType = NodeId[Kind]
-  type GraphT = AccessGraph[Kind, _]
-  def +(n : NodeType) : NodeSet[Kind]
-  def -(n : NodeType) : NodeSet[Kind]
+abstract class NodeSet extends Iterable[NodeId] {
+  type NodeType = NodeId
+  type GraphT = AccessGraph
+  def +(n : NodeType) : NodeSet
+  def -(n : NodeType) : NodeSet
 
   def contains(id : NodeType) = this.iterator contains id
 
-  def mkString(graph : AccessGraph[Kind, _]) : String
+  def mkString(graph : AccessGraph) : String
 
   def scopeThatContains_*(graph : GraphT, elem: NodeType) =
     this.find { graph.contains_*(_, elem) }
@@ -44,16 +44,16 @@ abstract class NodeSet[Kind <: NodeKind[Kind]] extends Iterable[NodeId[Kind]] {
     aux(it.next())
   }
 
-  def literalCopy() : LiteralNodeSet[Kind]
+  def literalCopy() : LiteralNodeSet
 }
 
 object NodeSet {
-  def emptySet[Kind <: NodeKind[Kind]]() = LiteralNodeSet[Kind]()
+  def emptySet() = LiteralNodeSet()
 }
 
-case class NamedNodeSet[Kind <: NodeKind[Kind]]
+case class NamedNodeSet
 ( id : String,
-  setDef : NodeSetDef[Kind]) extends NodeSet[Kind]{
+  setDef : NodeSetDef) extends NodeSet{
 
   override def toString() = id
 
@@ -67,20 +67,20 @@ case class NamedNodeSet[Kind <: NodeKind[Kind]]
   def literalCopy() = LiteralNodeSet(setDef)
 }
 
-class NamedNodeSetUnion[Kind <: NodeKind[Kind]](id0 : String,
-                        override val setDef : NodeSetUnion[Kind])
-  extends NamedNodeSet[Kind](id0, setDef){
+class NamedNodeSetUnion(id0 : String,
+                        override val setDef : NodeSetUnion)
+  extends NamedNodeSet(id0, setDef){
   override val declare = "declareUnionSet"
 }
 
 
-abstract class NodeSetDef[Kind <: NodeKind[Kind]] extends NodeSet[Kind]{
-  def +(n : NodeType) : NodeSetDef[Kind]
-  def -(n : NodeType) : NodeSetDef[Kind]
+abstract class NodeSetDef extends NodeSet{
+  def +(n : NodeType) : NodeSetDef
+  def -(n : NodeType) : NodeSetDef
 }
 
-class NodeSetUnion[Kind <: NodeKind[Kind]](val sets : Seq[NodeSet[Kind]],
-                   val set : LiteralNodeSet[Kind]) extends NodeSetDef[Kind]{
+class NodeSetUnion(val sets : Seq[NodeSet],
+                   val set : LiteralNodeSet) extends NodeSetDef {
 
   def mkString(graph : GraphT) = sets.mkString("[", ", ", ", ") +
     set.map( n => "'%s'".format(graph.getNode(n).fullName)).mkString("", ", ", "]")
@@ -97,8 +97,8 @@ class NodeSetUnion[Kind <: NodeKind[Kind]](val sets : Seq[NodeSet[Kind]],
   def literalCopy() = LiteralNodeSet(this.iterator)
 }
 
-class NodeSetDiff[Kind <: NodeKind[Kind]](private val plus : NodeSet[Kind],
-                   private val minus : NodeSet[Kind]) extends NodeSetDef[Kind]{
+class NodeSetDiff(private val plus : NodeSet,
+                   private val minus : NodeSet) extends NodeSetDef{
 
   def mkString(graph : GraphT) = plus.mkString(graph) + "\\" + minus.mkString(graph)
 
@@ -111,12 +111,12 @@ class NodeSetDiff[Kind <: NodeKind[Kind]](private val plus : NodeSet[Kind],
   def literalCopy() = LiteralNodeSet(this.iterator)
 }
 
-class LiteralNodeSet[Kind <: NodeKind[Kind]] private (private val content : Set[NodeId[Kind]])
-  extends NodeSetDef[Kind]{
+class LiteralNodeSet private (private val content : Set[NodeId])
+  extends NodeSetDef{
 
   def iterator : Iterator[NodeType] = content.iterator
   def +(n : NodeType) = new LiteralNodeSet(content + n)
-  def ++ (ns : NodeSet[Kind]) : LiteralNodeSet[Kind] = new LiteralNodeSet(content ++ ns)
+  def ++ (ns : NodeSet) : LiteralNodeSet = new LiteralNodeSet(content ++ ns)
   def -(n : NodeType) = new LiteralNodeSet(content - n)
 
   def mkString(graph : GraphT) =
@@ -125,9 +125,9 @@ class LiteralNodeSet[Kind <: NodeKind[Kind]] private (private val content : Set[
 }
 
 object LiteralNodeSet{
-  def apply[Kind <: NodeKind[Kind]]() = new LiteralNodeSet[Kind](Set())
-  def apply[Kind <: NodeKind[Kind]](n : NodeId[Kind]) = new LiteralNodeSet[Kind](Set(n))
-  def apply[Kind <: NodeKind[Kind]](ns : TraversableOnce[NodeId[Kind]]) = {
-    new LiteralNodeSet[Kind](Set() ++ ns)
+  def apply() = new LiteralNodeSet(Set())
+  def apply(n : NodeId) = new LiteralNodeSet(Set(n))
+  def apply(ns : TraversableOnce[NodeId]) = {
+    new LiteralNodeSet(Set() ++ ns)
   }
 }

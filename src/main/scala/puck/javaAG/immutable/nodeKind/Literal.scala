@@ -1,6 +1,7 @@
 package puck.javaAG.immutable.nodeKind
 
 import puck.graph.constraints.{AbstractionPolicy, DelegationAbstraction}
+import puck.graph.immutable.NodeKind
 
 /**
  * Created by lorilan on 31/07/14.
@@ -8,7 +9,7 @@ import puck.graph.constraints.{AbstractionPolicy, DelegationAbstraction}
 case object Literal extends JavaNodeKind {
   override val toString = "Literal"
 
-  def canContain(k : JavaNodeKind) = false
+  def canContain(k : NodeKind) = false
   //TODO in case of method abstraction cf field comment
   override def abstractionPolicies = Seq(DelegationAbstraction)
   def abstractKinds(p : AbstractionPolicy) = ???

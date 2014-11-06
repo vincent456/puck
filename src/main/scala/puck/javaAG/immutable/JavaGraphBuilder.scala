@@ -12,13 +12,13 @@ import puck.graph.immutable.AccessGraph._
 /**
  * Created by lorilan on 29/10/14.
  */
-class JavaGraphBuilder(program : AST.Program) extends GraphBuilder[JavaNodeKind, DeclHolder](JavaNode){
+class JavaGraphBuilder(program : AST.Program) extends GraphBuilder(JavaNode){
   var idSeed = rootId + 1
 
-    val root = (rootId, rootName, JavaRoot, NoType[JavaNodeKind](), true, EmptyDeclHolder)
+    val root = (rootId, rootName, JavaRoot, NoType, true, EmptyDeclHolder)
 
    g = new JavaAccessGraph(program, PuckNoopLogger, {() => val id = idSeed; idSeed += 1; id},
-   NodeIndex() + (rootId -> root),
+   NodeIndex() + (rootId -> root), NodeIndex(),
     EdgeMap(), EdgeMap(), EdgeMap(),
     Node2NodeMap(), EdgeMap(), EdgeMap(),
     UseDependencyMap(), UseDependencyMap(),
@@ -31,7 +31,7 @@ class JavaGraphBuilder(program : AST.Program) extends GraphBuilder[JavaNodeKind,
   Predefined.list foreach addPredefined
 
   def addPackageNode(fullName: String, localName:String) : NodeIdT =
-    super.addNode(fullName, localName, Package, NoType())
+    super.addNode(fullName, localName, Package, NoType)
 
   def addPackage(p : String, mutable : Boolean): NodeIdT =
     nodesByName get p match {
@@ -62,7 +62,7 @@ class JavaGraphBuilder(program : AST.Program) extends GraphBuilder[JavaNodeKind,
   def addApiTypeNode(td: AST.TypeDecl, doAddUses : Boolean): NodeIdT = {
     //println("adding api td " + td.fullName())
     val packageNode = addPackage(td.compilationUnit().getPackageDecl, mutable = false)
-    val tdNode = addNode(td.fullName(), td.name(), td.getAGNodeKind, NoType())
+    val tdNode = addNode(td.fullName(), td.name(), td.getAGNodeKind, NoType)
     setMutability(tdNode, mutable = false)
 
     if(doAddUses)
@@ -124,7 +124,7 @@ class JavaGraphBuilder(program : AST.Program) extends GraphBuilder[JavaNodeKind,
     }
   }
 
-  private def throwRegisteringError(n : AGNode[JavaNodeKind, DeclHolder], astType : String) =
+  private def throwRegisteringError(n : AGNode, astType : String) =
     throw new Error("Wrong registering ! AGNode.kind : %s while AST.Node is an %s".format(n.kind, astType))
 
 

@@ -8,8 +8,8 @@ import scala.swing.event.MouseClicked
 /**
  * Created by lorilan on 10/07/14.
  */
-class NodeInfosPanel[K <: NodeKind[K], T](val graph : AccessGraph[K, T],
-                                        val nodeId : NodeId[K])
+class NodeInfosPanel(val graph : AccessGraph,
+                     val nodeId : NodeId)
   extends SplitPane(Orientation.Horizontal) {
 
   val useDetails = new BoxPanel(Orientation.Vertical)
@@ -42,7 +42,7 @@ class NodeInfosPanel[K <: NodeKind[K], T](val graph : AccessGraph[K, T],
 
     contents += new BoxPanel(Orientation.Horizontal) {
       contents += new Label("Move into :")
-      val cb = new ComboBox((graph.nodes filter {n : AGNode[K, T] => n canContain nodeId}).toSeq)
+      val cb = new ComboBox((graph.nodes filter {n : AGNode => n canContain nodeId}).toSeq)
       contents += cb
       contents += Button(">>") {
         throw new AGError("node.moveTo(cb.selection.item) not implemented")
@@ -76,7 +76,7 @@ class NodeInfosPanel[K <: NodeKind[K], T](val graph : AccessGraph[K, T],
           contents += Button("<o>") {
             NodeInfosPanel.this publish
               GraphDisplayRequest("Graph with uses selected",
-              graph, sUse = Some(AGEdge.uses[K](user, nodeId)))
+              graph, sUse = Some(AGEdge.uses(user, nodeId)))
           }
 
           contents += new Label(user + " " + tag) {
@@ -88,7 +88,7 @@ class NodeInfosPanel[K <: NodeKind[K], T](val graph : AccessGraph[K, T],
               case MouseClicked(_, _, _, _, _) =>
 
                 useDetails.contents.clear()
-                useDetails.contents += new Label(AGEdge.uses[K](user, nodeId).toString)
+                useDetails.contents += new Label(AGEdge.uses(user, nodeId).toString)
 
                 if (primaryUses.nonEmpty){
                     useDetails.contents += new Label("Dominant Uses :")

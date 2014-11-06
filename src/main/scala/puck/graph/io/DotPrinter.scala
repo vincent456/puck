@@ -27,15 +27,15 @@ object DotPrinter {
 
 
 
-  def print[K <: NodeKind[K]](writer: BufferedWriter,
-                              graph : AccessGraph[K, _],
-                              helper : DotHelper[K],
+  def print(writer: BufferedWriter,
+                              graph : AccessGraph,
+                              helper : DotHelper,
                               printId : Boolean,
                               printSignatures : Boolean = false,
                               searchRoots : Boolean = false,
-                              selectedUse : Option[AGEdge[K]] = None){
+                              selectedUse : Option[AGEdge] = None){
 
-    type NodeType = NodeId[K]
+    type NIdT = NodeId
 
     val idPrinter =
       if(printId) (id:Int) => " (" + id + ")"
@@ -55,12 +55,12 @@ object DotPrinter {
      * in the dot file. We stock the arcs and print them separately at the end
      */
     val arcs = scala.collection.mutable.Buffer[String]()
-    def printArc(style : Style, source : NodeType, target : NodeType,
+    def printArc(style : Style, source : NIdT, target : NIdT,
                  status: ColorThickness){
       //val (lineStyle, headStyle) = style
       //val (color, thickness) = status
       //println("print arc "+ source.nameTypeString + " -> " + target.nameTypeString)
-      def dotId(nid: NodeType) : String = {
+      def dotId(nid: NIdT) : String = {
         val n = graph.getNode(nid)
         if (helper isDotSubgraph n.kind) n.id.toString
         else {
@@ -70,7 +70,7 @@ object DotPrinter {
         }
       }
 
-      def subGraphArc(nid: NodeType, pos:String) = {
+      def subGraphArc(nid: NIdT, pos:String) = {
         val n = graph.getNode(nid)
         if (helper isDotSubgraph n.kind) pos + "=cluster" + n.id + ", "
         else ""
@@ -85,7 +85,7 @@ object DotPrinter {
 
     }
 
-    val printUsesViolations = (source : NodeId[K], target : NodeId[K]) =>
+    val printUsesViolations = (source : NIdT, target : NIdT) =>
       if(! graph.isa(source, target)) //TODO remove test. quickfix to avoid dot crash
         printArc(usesStyle, source, target,
           if(violations.contains(AGEdge.uses(source, target)))
@@ -94,8 +94,8 @@ object DotPrinter {
 
     val printUse = selectedUse match {
       case None => printUsesViolations
-      case Some(selected) =>  (source: NodeId[K], target: NodeId[K]) =>
-        val printed = AGEdge.uses[K](source, target)
+      case Some(selected) =>  (source: NIdT, target: NIdT) =>
+        val printed = AGEdge.uses(source, target)
         val ct = if (printed == selected) ColorThickness.selected
         else if (graph.dominates(printed, selected))
           ColorThickness.dominant
@@ -108,19 +108,19 @@ object DotPrinter {
 
     }
 
-    def decorate_name(n : AGNode[K, _]):String =
-      if (violations.contains(AGEdge.contains[K](n.container, n.id)))
+    def decorate_name(n : AGNode):String =
+      if (violations.contains(AGEdge.contains(n.container, n.id)))
         "<FONT COLOR=\"" + ColorThickness.violation.color + "\"><U>" + helper.namePrefix(n.kind) + n.name + idPrinter(n.id) + "</U></FONT>"
       else helper.namePrefix(n.kind) + n.name + idPrinter(n.id)
 
 
-    def printNode(nid : NodeId[K]){
+    def printNode(nid : NodeId){
       val n = graph.getNode(nid)
       if(helper isDotSubgraph n.kind) printSubGraph(n)
       else if(helper isDotClass n.kind) printClass(n.id)
     }
 
-    def printSubGraph(n : AGNode[K, _]){
+    def printSubGraph(n : AGNode){
       List("subgraph cluster" + n.id + " {",
         "label=\"" + decorate_name(n) +"\";",
         "color=black;") foreach writeln
@@ -134,9 +134,9 @@ object DotPrinter {
       n.users.foreach(printUse(_, n.id))
     }
 
-    def printClass(nid: NodeId[K]){
+    def printClass(nid: NodeId){
       val n = graph.getNode(nid)
-      def writeTableLine(nid: NodeId[K]){
+      def writeTableLine(nid: NodeId){
         val n = graph.getNode(nid)
         val sig = if (printSignatures)
           n.styp.mkString(graph).replaceAllLiterally(">", "&gt;") + " "
