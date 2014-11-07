@@ -144,11 +144,18 @@ class ConstraintsParser private
     }
   }
 
-  def friend : Parser[Unit] =
-    "isFriendOf(" ~> listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
+  def friendsOfScope : Parser[Unit] =
+    "friendOfScope(" ~> listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
       case friends ~ _ ~ befriended =>
-        builder.addFriendConstraint(toDef(befriended), toDef(friends))
+        builder.addScopeFriendOfScopeConstraint(toDef(friends), toDef(befriended))
     }
+
+  def friendsOfElement : Parser[Unit] =
+    "friendOfElement(" ~> listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
+      case friends ~ _ ~ befriended =>
+        builder.addScopeFriendOfElementConstraint(toDef(friends), toDef(befriended))
+    }
+
 
   def hideElement3 : Parser[Unit] =
     "hide(" ~> ident ~ "," ~ listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
@@ -214,7 +221,8 @@ class ConstraintsParser private
       | hideScopeSet4
       | hideScopeSetFrom
       | hideScopeFromEachOther
-      | friend
+      | friendsOfScope
+      | friendsOfElement
       )}
 
   /*def apply(input : java.io.Reader) = parseAll(constraints, input) match{

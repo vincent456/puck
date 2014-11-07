@@ -8,30 +8,34 @@ import puck.util.Logger
  * Created by lorilan on 31/10/14.
  */
 object ConstraintsMaps{
-  type FriendsMap = Map[NodeId, ConstraintSet[FriendConstraint]]
+  type FriendsOfScopesMap = Map[NodeId, ConstraintSet[ScopeFriendOfScopesConstraint]]
+  type FriendsOfElementsMap = Map[NodeId, ConstraintSet[ScopeFriendOfElementsConstraint]]
   type CtWithInterlopersMap[CtT <: ConstraintWithInterlopers] = Map [NodeId, ConstraintSet[CtT]]
 
   type EltConstraintsMap = Map [NodeId, ConstraintSet[ElementConstraint]]
   type ScopeConstraintsMap = Map [NodeId, ConstraintSet[ScopeConstraint]]
 
-  def apply() = new ConstraintsMaps(Map(), Map(), Map(), Map())
+  def apply() = new ConstraintsMaps(Map(), Map(), Map(), Map(), Map())
 }
 
 import ConstraintsMaps._
 
 class ConstraintsMaps
 (val nodeSets : Map[String, NamedNodeSet],
- val friendConstraints : FriendsMap,
+ val friendOfElementsConstraints : FriendsOfElementsMap,
+ val friendOfScopesConstraints : FriendsOfScopesMap,
  val elementsConstraints : EltConstraintsMap,
  val scopeConstraints : ScopeConstraintsMap)
  {
 
    def newConstraintsMaps( nNodeSets : Map[String, NamedNodeSet] = nodeSets,
-                           nFriendConstraints : FriendsMap = friendConstraints,
+                           nFriendsOfElementsConstraints : FriendsOfElementsMap = friendOfElementsConstraints,
+                           nFriendOfScopesConstraints : FriendsOfScopesMap = friendOfScopesConstraints,
    nElementsConstraints : EltConstraintsMap = elementsConstraints,
    nScopeConstraints : ScopeConstraintsMap = scopeConstraints) =
     new ConstraintsMaps(nNodeSets,
-                        nFriendConstraints,
+                        nFriendsOfElementsConstraints,
+                        nFriendOfScopesConstraints,
                         nElementsConstraints,
                         nScopeConstraints)
 
@@ -48,15 +52,20 @@ class ConstraintsMaps
          s.foreach { s => if(s.owners.head == k) logger.writeln(s.mkString(graph))(v)}
      }
      printMap(scopeConstraints)
-     printMap(friendConstraints)
+     printMap(scopeConstraints)
+     printMap(friendOfScopesConstraints)
      printMap(elementsConstraints)
    }
 
 
-   def friendOf(graph : GraphT, node : NIdT, befriended : NIdT) : Boolean = {
-     val frCtSet = friendConstraints.getOrElse(befriended, ConstraintSet.empty)
+   def friendOfScope(graph : GraphT, node : NIdT, befriended : NIdT) : Boolean = {
+     val frCtSet = friendOfScopesConstraints.getOrElse(befriended, ConstraintSet.empty)
      frCtSet.hasFriendScopeThatContains_*(graph, node) ||
-       !graph.isRoot(befriended) && friendOf(graph, node, graph.container(befriended))
+       !graph.isRoot(befriended) && friendOfScope(graph, node, graph.container(befriended))
+   }
+   def friendOfElement(graph : GraphT, node : NIdT, befriended : NIdT) : Boolean = {
+     val frCtSet = friendOfElementsConstraints.getOrElse(befriended, ConstraintSet.empty)
+     frCtSet.hasFriendScopeThatContains_*(graph, node)
    }
 
    def violatedScopeConstraintsOf(graph : GraphT, user : NIdT, usee0 : NIdT) : Seq[ScopeConstraint] = {
@@ -94,7 +103,7 @@ class ConstraintsMaps
    def interloperOf(graph : GraphT, user : NIdT, usee : NIdT) =
      (potentialScopeInterloperOf(graph, user, usee)
        || potentialElementInterloperOf(graph, user, usee)) &&
-       !friendOf(graph, user, usee)
+       !(friendOfElement(graph,user,usee) || friendOfScope(graph, user, usee))
 
    def isWronglyContained(graph : GraphT, node : NIdT) : Boolean =
      !graph.isRoot(node) && interloperOf(graph, graph.container(node), node)
@@ -118,7 +127,7 @@ class ConstraintsMaps
            nodeConstraintsSet.foldLeft(Seq[CtT](), Seq[(CtT, CtT)](), Seq[NIdT]()) {
              case ((acc, map, owners), ct) =>
                if (ct.interlopers contains AccessGraph.rootId){
-                 ct.friends match {
+                 ct.scopeFriends match {
                    case NamedNodeSet(name, definition) => ???
                    case _ =>
                      val newCt = ct.addFriend(friend).asInstanceOf[CtT] // /!\

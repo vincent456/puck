@@ -23,6 +23,7 @@ trait SearchEngine[T] extends Search[T]{
 
   def storeResult(prevState : Option[SearchState[T]], res : T): Unit = {
     finalStates += new FinalState[T](idGen(), res, this, prevState)
+    numExploredStates = numExploredStates + 1
   }
 
   var initialState : SearchState[T] = _

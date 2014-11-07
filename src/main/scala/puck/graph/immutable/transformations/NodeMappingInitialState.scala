@@ -89,7 +89,7 @@ object NodeMappingInitialState{
     }
 
     def mapUntil( stoppingEdge : AGEdge,
-                  transfos : Seq[Transformation])
+                  transfos : List[Transformation])
                 (rule : (Transformation => Transformation)): Seq[Transformation] = {
 
       def aux(acc : Seq[Transformation], l : Seq[Transformation]) : Seq[Transformation] ={
@@ -160,7 +160,7 @@ object NodeMappingInitialState{
       }
     }
 
-    val (normalTransfos, removedEdges) = aux(Seq(), transfos.reverse, Seq())
+    val (normalTransfos, removedEdges) = aux(Seq(), transfos, Seq())
 
     removedEdges.foldLeft(normalTransfos){case (normalTransfos0, e) =>
       normalTransfos0 filter {

@@ -88,17 +88,31 @@ class GraphBuilder
 
   }
 
-  def addFriendConstraint(befriended : NodeSet,
-                          friends : NodeSet) = {
-    val ct = new FriendConstraint(friends, befriended)
+  def addScopeFriendOfScopeConstraint( friends : NodeSet,
+                           befriended : NodeSet) = {
+    val ct = new ScopeFriendOfScopesConstraint(friends, befriended)
 
-    val friendCtsMap = befriended.foldLeft(constraintsMap.friendConstraints){
+    val friendCtsMap = befriended.foldLeft(constraintsMap.friendOfScopesConstraints){
       case (map, ownerId) =>
-        val s = map.getOrElse(ownerId, new ConstraintSet[FriendConstraint]())
+        val s = map.getOrElse(ownerId, new ConstraintSet[ScopeFriendOfScopesConstraint]())
         map + (ownerId -> (s + ct) )
     }
 
-    constraintsMap = constraintsMap.newConstraintsMaps(nFriendConstraints = friendCtsMap)
+    constraintsMap = constraintsMap.newConstraintsMaps(nFriendOfScopesConstraints = friendCtsMap)
+
+  }
+
+  def addScopeFriendOfElementConstraint( friends : NodeSet,
+                                befriended : NodeSet) = {
+    val ct = new ScopeFriendOfElementsConstraint(friends, befriended)
+
+    val friendCtsMap = befriended.foldLeft(constraintsMap.friendOfElementsConstraints){
+      case (map, ownerId) =>
+        val s = map.getOrElse(ownerId, new ConstraintSet[ScopeFriendOfElementsConstraint]())
+        map + (ownerId -> (s + ct) )
+    }
+
+    constraintsMap = constraintsMap.newConstraintsMaps(nFriendsOfElementsConstraints = friendCtsMap)
 
   }
 }

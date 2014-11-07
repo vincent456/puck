@@ -38,7 +38,7 @@ class ConstraintSet[T <: Constraint]
     def aux(l : Seq[T]) : Option[NodeId] =
       if(l.isEmpty) None
       else{
-        l.head.friends.scopeThatContains_*(graph, n) match {
+        l.head.scopeFriends.scopeThatContains_*(graph, n) match {
           case None => aux(l.tail)
           case sn => sn
         }
@@ -48,6 +48,6 @@ class ConstraintSet[T <: Constraint]
 
   }
   def hasFriendScopeThatContains_*(graph : AccessGraph, n : NodeId)=
-    content.exists( _.friends.hasScopeThatContains_*(graph, n))
+    content.exists( _.scopeFriends.hasScopeThatContains_*(graph, n))
 
 }
