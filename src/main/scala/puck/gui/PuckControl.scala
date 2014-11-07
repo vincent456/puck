@@ -50,12 +50,6 @@ case class SearchStateSeqPrintingRequest
 case class PrintConstraintRequest() extends ControlRequest
 case class ApplyOnCodeRequest(searchResult : ResultT) extends ControlRequest
 
-/*
-case class SolveRequest[Kind <: NodeKind[Kind]](decisionStrategy : DecisionMaker[Kind],
-                                                trace : Boolean) extends ControlRequest
-case class DoWholeProcessRequest(trace : Boolean) extends ControlRequest
-
-*/
 sealed abstract class Answer extends Event
 case class ExplorationFinished(result : Search[ResultT]) extends Answer
 
@@ -126,7 +120,7 @@ class PuckControl(val filesHandler : FilesHandler,
     }
   }
 
-  /*def applyOnCode(record : Recording[Kind]){
+  def applyOnCode(record : Recording){
     Future {
       filesHandler.logger.write("generating code ...")
       filesHandler.graph.applyChangeOnProgram(record)
@@ -137,7 +131,7 @@ class PuckControl(val filesHandler : FilesHandler,
       case Failure(exc) => exc.printStackTrace()
     }
   }
-*/
+
   type StateT = SearchState[ResultT]
   def printStateSeq( subDirStr : String,
                      states : Seq[StateT],
@@ -166,7 +160,8 @@ class PuckControl(val filesHandler : FilesHandler,
 
     case ExploreRequest(trace, builder) =>
 
-      val engine = builder(filesHandler.graph)
+      val engine = builder(filesHandler.initialRecord,
+                           filesHandler.graph)
 
       Future {
         filesHandler.logger.writeln("Solving constraints ...")

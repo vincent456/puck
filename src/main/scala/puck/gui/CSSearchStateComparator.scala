@@ -10,7 +10,7 @@ import scala.swing.{Button, Label, Orientation, BoxPanel}
 /**
  * Created by lorilan on 22/10/14.
  */
-class CSSearchStateComparator(initialRecord : Seq[Transformation],
+class CSSearchStateComparator(initialRecord : Recording,
                               sortedRes: Map[Int, Seq[SearchState[ResultT]]])
   extends BoxPanel(Orientation.Vertical) {
   contents += new Label("Compare")

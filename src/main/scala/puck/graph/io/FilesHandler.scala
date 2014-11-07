@@ -12,7 +12,7 @@ import scala.sys.process.Process
 import scala.util.Try
 
 trait ConstraintSolvingSearchEngineBuilder {
-  def apply(graph : AccessGraph) :
+  def apply(initialRecord : Recording, graph : AccessGraph) :
   SearchEngine[ResultT]
 }
 
@@ -68,7 +68,7 @@ abstract class FilesHandler(workingDirectory : File){
   def graph = ag
   protected def graph_=(g : GraphT){ ag = g }
 
-  def initialRecord : Seq[Transformation]
+  def initialRecord : Recording
 
   var graphBuilder : GraphBuilder = _
 
@@ -267,7 +267,7 @@ abstract class FilesHandler(workingDirectory : File){
   def explore (trace : Boolean = false,
                builder : ConstraintSolvingSearchEngineBuilder) : Search[ResultT] = {
 
-    val engine = builder(graph)
+    val engine = builder(initialRecord, graph)
 
     puck.util.Time.time(logger, defaultVerbosity) {
       engine.explore()
@@ -305,7 +305,7 @@ abstract class FilesHandler(workingDirectory : File){
     }
   }
 
-  //def printCode() : Unit
+  def printCode() : Unit
 
 
   //TODO ? change to List[String] ?

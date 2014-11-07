@@ -42,11 +42,11 @@ object AccessGraph {
 
   type Mutability = Boolean
 
-  def areEquivalent[Kind <: NodeKind, T](initialRecord : Seq[Transformation],
+  def areEquivalent[Kind <: NodeKind, T](initialRecord : Recording,
                       graph1 : AccessGraph,
                       graph2 : AccessGraph,
                       logger : PuckLogger = PuckNoopLogger) : Boolean = {
-    val engine = new RecordingComparator(initialRecord,graph1,graph2, logger)
+    val engine = new RecordingComparator(initialRecord(),graph1,graph2, logger)
     engine.explore()
     engine.finalStates.nonEmpty
   }
@@ -250,10 +250,12 @@ class AccessGraph
       nDominatedUsesMap = dominatedUsesMap - (dominantEdge, dominatedEdge))
 
   def addAbstraction(id : NIdT, abs : (NIdT, AbstractionPolicy)) : GraphT =
-    newGraph(nAbstractionsMap = abstractionsMap + (id, abs))
+    newGraph(nAbstractionsMap = abstractionsMap + (id, abs),
+             nRecording = recording.addAbstraction(id, abs._1, abs._2))
 
   def removeAbstraction(id : NIdT, abs : (NIdT, AbstractionPolicy)) : GraphT =
-    newGraph(nAbstractionsMap = abstractionsMap - (id, abs))
+    newGraph(nAbstractionsMap = abstractionsMap - (id, abs),
+             nRecording = recording.removeAbstraction(id, abs._1, abs._2))
 
   /*def addEdge(edge : EdgeType, register : Boolean = true) : AccessGraph = edge.kind match {
     case Uses() => addUses(edge.user, edge.usee, register)

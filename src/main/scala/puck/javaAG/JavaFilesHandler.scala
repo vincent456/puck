@@ -7,6 +7,7 @@ import puck.graph.constraints.search.SolverBuilder
 import puck.graph.immutable.transformations.{Recording, NodeMappingInitialState, Transformation}
 import puck.graph.{AccessGraph, JavaNode, JavaSolver, AGBuildingError}
 import puck.graph.io.{ConstraintSolvingSearchEngineBuilder, FilesHandler}
+import puck.javaAG.immutable.JavaAccessGraph
 
 
 /**
@@ -23,7 +24,9 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
 
   val srcSuffix = ".java"
 
-  var initialRecord : Seq[Transformation] = _
+  var initialRecord : Recording = _
+
+  var sProgram : Option[AST.Program] = None
 
   def loadGraph(ll : AST.LoadingListener = null) : AccessGraph = {
     import puck.util.FileHelper.{fileLines, findAllFiles, initStringLiteralsMap}
@@ -32,7 +35,7 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
       this.outDirectory.get.getName),
       fileLines(jarListFile.get)) match {
       case None => throw new AGBuildingError("Compilation error, no AST generated")
-      case Some(p) =>
+      case Some(p) =>   sProgram = Some(p)
         val jGraphBuilder = p.buildAccessGraph(initStringLiteralsMap(decouple.get), ll)
         fileLines(apiNodesFile.get).foreach {
           (l: String) =>
@@ -44,10 +47,7 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
         graph = (graphBuilder.g withLogger this.logger).newGraph(nRecording = Recording())
 
         val (_, transfos) = NodeMappingInitialState.normalizeNodeTransfos(graphBuilder.g.recording(), Seq())
-        initialRecord = transfos
-
-
-
+        initialRecord = new Recording(transfos)
 
         graph
     }
@@ -60,9 +60,25 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
   def solver(dm : DecisionMaker[JavaNodeKind]) =
     new JavaSolver(graph, dm)*/
 
-  /*def printCode() {
-    graph.asInstanceOf[JavaAccessGraph].program.printCodeInDirectory(outDirectory.get)
-  }*/
+  def applyChangeOnProgram(record : Recording){
+
+    logger.writeln("applying change !")
+
+    record.foreach { r =>
+      AG2AST(r)
+      r.redo()
+    }
+    program.flushCaches()
+    program.eliminateLockedNames()
+  }
+
+  def printCode() {
+    sProgram match {
+      case Some(p) => p.printCodeInDirectory(outDirectory.get)
+      case None => logger.writeln("no program registered")
+    }
+
+  }
 
   override def searchingStrategies: Seq[ConstraintSolvingSearchEngineBuilder] =
     List(JavaFunneledCSSEBuilder,

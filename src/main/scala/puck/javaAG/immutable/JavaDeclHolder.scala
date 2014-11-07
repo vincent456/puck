@@ -80,8 +80,8 @@ case class ConstructorMethodDecl( decl : Option[AST.MethodDecl],
                           node : NodeId) : AccessGraph = {
     decl match {
       case None =>
-        val n = graph.getNode(node)
-        val decl = Some(ctorDecl.get.createConstructorMethod(n.name))
+        val name = graph.getNode(node).name
+        val decl = Some(ctorDecl.get.createConstructorMethod(name))
         graph.setInternal(node, ConstructorMethodDecl(decl, ctorDecl))
       case Some(_) => graph
     }

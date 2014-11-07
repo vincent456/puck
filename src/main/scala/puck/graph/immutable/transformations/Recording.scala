@@ -1,5 +1,6 @@
 package puck.graph.immutable.transformations
 
+import puck.graph.constraints.AbstractionPolicy
 import puck.graph.immutable._
 import puck.graph.immutable.AccessGraph.NodeId
 
@@ -55,8 +56,11 @@ class Recording
                      newUsee : NIdT) : RecT =
     Transformation(Add, TTTypeRedirection(typed, typ, oldUsee, newUsee)) +: this
 
-/*  def addAbstraction(impl : NIdT, abs : NIdT, absPolicy : AbstractionPolicy) : RecT =
-    Transformation(Add(), TTAbstraction(impl, abs, absPolicy)) +: this*/
+  def addAbstraction(impl : NIdT, abs : NIdT, absPolicy : AbstractionPolicy) : RecT =
+    Transformation(Add, TTAbstraction(impl, abs, absPolicy)) +: this
+
+  def removeAbstraction(impl : NIdT, abs : NIdT, absPolicy : AbstractionPolicy) : RecT =
+    Transformation(Remove, TTAbstraction(impl, abs, absPolicy)) +: this
 }
 
 sealed abstract class Operation {

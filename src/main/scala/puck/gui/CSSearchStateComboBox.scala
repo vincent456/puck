@@ -11,22 +11,6 @@ import scala.swing.event.{SelectionChanged, Event}
  */
 case class StateSelected(box : CSSearchStateComboBox) extends Event
 
-object CSSearchStateComboBox{
-
-  def sort(l : Seq[SearchState[ResultT]])={
-    def aux( acc : Map[Int, Seq[SearchState[ResultT]]],
-               l : Seq[SearchState[ResultT]]) : Map[Int, Seq[SearchState[ResultT]]] =
-      if(l.isEmpty) acc
-      else{
-        val graph = graphOfResult(l.head.result)
-
-        val value = (graph.coupling * 100).toInt
-        val olds = acc.getOrElse(value, Seq())
-        aux(acc + (value -> (l.head +: olds)), l.tail)
-      }
-    aux(Map[Int, Seq[SearchState[ResultT]]](), l)
-  }
-}
 class CSSearchStateComboBox(map : Map[Int, Seq[SearchState[ResultT]]])
   extends FlowPanel{
 

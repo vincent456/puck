@@ -1,7 +1,8 @@
 package puck.gui
 
+import puck.graph.constraints.search.ConstraintSolvingStateEvaluator
 import puck.graph.immutable.transformations.{Transformation}
-import puck.graph.{ResultT, AccessGraph, graphOfResult}
+import puck.graph.{Recording, ResultT, AccessGraph, graphOfResult}
 import puck.search.{SearchState, Search}
 import puck.util.{PuckLog, PuckLogger}
 
@@ -10,7 +11,7 @@ import scala.swing._
 /**
  * Created by lorilan on 22/10/14.
  */
-class SearchResultPanel(initialRecord : Seq[Transformation],
+class SearchResultPanel(initialRecord : Recording,
                         res : Search[ResultT],
                         logger : PuckLogger)
       extends BoxPanel(Orientation.Vertical){
@@ -19,34 +20,16 @@ class SearchResultPanel(initialRecord : Seq[Transformation],
 
   type ST = SearchState[ResultT]
 
-  def filterDifferentStates(l : Seq[ST]): Seq[ST] = {
-    def aux(l : Seq[ST], acc : Seq[ST]) : Seq[ST] = {
-      if (l.nonEmpty) {
-        aux(l.tail,
-          if (!l.tail.exists { st =>
-            AccessGraph.areEquivalent(initialRecord, graphOfResult(st.result), graphOfResult(l.head.result), logger)
-          })
-            l.head +: acc
-          else acc)
-      }
-      else acc
-    }
-    aux(l, Seq[ST]())
-  }
+  val evaluator = new ConstraintSolvingStateEvaluator(initialRecord)
+
 
   logger.write("comparing final states : ")
 
   val sortedRes: Map[Int, Seq[ST]] =
     puck.util.Time.time(logger, defaultVerbosity){
-
-      //CSSearchStateComboBox.sort(res).mapValues(filterDifferentStates)
-      // do not actually apply the function and hence give a false compute time
-      CSSearchStateComboBox.sort(res.finalStates).foldLeft(Map[Int, Seq[ST]]()){
-        case (acc, (k, v)) => acc + (k -> filterDifferentStates(v))
-      }
+      evaluator.filterDifferentStates(evaluator.sort(res.finalStates))
     }
   //val sortedRes  =  CSSearchStateComboBox.sort(res.finalStates)
-
 
   val total = sortedRes.foldLeft(0) { case (acc, (_, l)) => acc + l.size}
 

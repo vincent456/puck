@@ -1,5 +1,6 @@
 package puck.graph.immutable.transformations
 
+import puck.graph.constraints.AbstractionPolicy
 import puck.graph.immutable.AccessGraph._
 import puck.graph.immutable._
 
@@ -83,24 +84,27 @@ case class TTTypeRedirection
   }
 }
 
+case class TTAbstraction
+(impl: NodeId,
+ abs: NodeId,
+ policy: AbstractionPolicy)
+ extends TransformationTarget{
+
+  def execute(g: GraphT, op : Operation) = ???
+}
+
 /*
-case class TTDependency[Kind <: NodeKind, T](dominant : AGEdge,
+case class TTDependency(dominant : AGEdge,
                                                    dominated : AGEdge)
   extends TransformationTarget[Kind,T]{
 
   def execute(g: GraphT, op : Operation) = ???
 }
 
-case class TTAbstraction[Kind <: NodeKind, T](impl: NodeId,
-                                                    abs: NodeId,
-                                                    policy: AbstractionPolicy)
-  extends TransformationTarget{
-
-  def execute(g: GraphT, op : Operation) = ???
-}
 
 
-case class TTConstraint[Kind <: NodeKind](ct : Constraint,
+
+case class TTConstraint(ct : Constraint,
                                                 friend : AGNode)
   extends TransformationTarget{
 

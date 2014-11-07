@@ -2,7 +2,7 @@ package puck.graph.constraints.search
 
 import puck.graph.{ResultT, AGNode, NodeKind}
 import puck.graph.constraints.{AbstractionPolicy, DecisionMaker}
-import puck.search.{Evaluator, SearchState, SearchEngine}
+import puck.search.SearchEngine
 import puck.util.PuckLogger
 
 import scala.collection.mutable
@@ -17,20 +17,13 @@ object ConstraintSolving {
  */
 abstract class ConstraintSolvingSearchEngineDecisionMaker
   extends SearchEngine[ResultT]
-  with DecisionMaker with Evaluator[ResultT]{
+  with DecisionMaker {
 
   def logger : PuckLogger
 
   //def initialState = new CSInitialSearchState(this, solverBuilder(graph, this))
 
   val violationsKindPriority : Seq[NodeKind]
-
-  def evaluate(s : SearchState[ResultT]): Double ={
-    if(currentState!=s)
-      s.setAsCurrentState()
-    val graph = s.result._1
-    graph.coupling
-  }
 
   def violationTarget(graph : GraphT)
                      (k: Option[NIdT] => Unit) : Unit = {

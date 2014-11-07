@@ -27,7 +27,7 @@ trait SearchEngine[T] extends Search[T]{
   }
 
   var initialState : SearchState[T] = _
-  private var numExploredStates = 0
+  protected var numExploredStates = 0
 
   def createInitialState(k : Try[T] => Unit) : SearchState[T]
 
