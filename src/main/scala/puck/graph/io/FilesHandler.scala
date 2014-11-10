@@ -211,7 +211,7 @@ abstract class FilesHandler(workingDirectory : File){
 
   def makePng(graph : GraphT,
               printId : Boolean = false,
-              printSignatures : Boolean = false,
+              printSignatures : Boolean = true,
               sOutput : Option[OutputStream] = None,
               outputFormat : DotOutputFormat = Png(),
               selectedUse : Option[AGEdge] = None)

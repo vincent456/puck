@@ -91,7 +91,7 @@ case class Arrow[T <: Type[T],
       output.redirectUses(oldUsee, newUsee))
 
   def redirectContravariantUses(oldUsee : NIdT, newUsee: AGNode) =
-    create(input, output.redirectUses(oldUsee, newUsee))
+    create(input.redirectUses(oldUsee, newUsee), output)
 
   override def subtypeOf(other : Type[_]) : Boolean = ??? /*super.subtypeOf(other) ||
     ( other match{

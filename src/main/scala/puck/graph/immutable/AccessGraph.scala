@@ -74,8 +74,8 @@ class AccessGraph
   private [this] val containerMap : Node2NodeMap,
   private [this] val superTypesMap : EdgeMap,
   private [this] val subTypesMap : EdgeMap,
-  private [this] val dominantUsesMap : UseDependencyMap,
-  private [this] val dominatedUsesMap : UseDependencyMap,
+  private [this] val dominated2dominantUsesMap : UseDependencyMap,
+  private [this] val dominant2dominatedUsesMap : UseDependencyMap,
   private [this] val abstractionsMap : AbstractionMap,
   private [this] val constraints : ConstraintsMaps,
   val recording : Recording) {
@@ -96,8 +96,8 @@ class AccessGraph
                nContainerMap : Node2NodeMap = containerMap,
                nSuperTypesMap : EdgeMap = superTypesMap,
                nSubTypesMap : EdgeMap = subTypesMap,
-               nDominantUsesMap : UseDependencyMap = dominantUsesMap,
-               nDominatedUsesMap : UseDependencyMap = dominatedUsesMap,
+               nDominantUsesMap : UseDependencyMap = dominated2dominantUsesMap,
+               nDominatedUsesMap : UseDependencyMap = dominant2dominatedUsesMap,
                nAbstractionsMap : AbstractionMap = abstractionsMap,
                nConstraints : ConstraintsMaps = constraints,
                nRecording : Recording = recording) : AccessGraph =
@@ -250,8 +250,8 @@ class AccessGraph
 
   def addUsesDependency(dominantEdge : (NIdT, NIdT),
                         dominatedEdge : (NIdT, NIdT)) : GraphT =
-    newGraph(nDominantUsesMap = dominantUsesMap + (dominatedEdge, dominantEdge),
-      nDominatedUsesMap = dominatedUsesMap + (dominantEdge, dominatedEdge))
+    newGraph(nDominantUsesMap = dominated2dominantUsesMap + (dominatedEdge, dominantEdge),
+      nDominatedUsesMap = dominant2dominatedUsesMap + (dominantEdge, dominatedEdge))
 
   def removeUsesDependency(dominantEdge : EdgeT,
                            dominatedEdge :EdgeT) : GraphT =
@@ -260,8 +260,8 @@ class AccessGraph
 
   def removeUsesDependency(dominantEdge : (NIdT, NIdT),
                            dominatedEdge : (NIdT, NIdT)) : GraphT =
-    newGraph(nDominantUsesMap = dominantUsesMap - (dominatedEdge, dominantEdge),
-      nDominatedUsesMap = dominatedUsesMap - (dominantEdge, dominatedEdge))
+    newGraph(nDominantUsesMap = dominated2dominantUsesMap - (dominatedEdge, dominantEdge),
+      nDominatedUsesMap = dominant2dominatedUsesMap - (dominantEdge, dominatedEdge))
 
   def addAbstraction(id : NIdT, abs : (NIdT, AbstractionPolicy)) : GraphT =
     newGraph(nAbstractionsMap = abstractionsMap + (id, abs),
@@ -299,6 +299,14 @@ class AccessGraph
 
   def changeType(id : NIdT, typ : STyp, oldUsee: NIdT, newUsee : NIdT) : GraphT = {
     val newTyp= typ.redirectUses(oldUsee, getNode(newUsee))
+
+    setType(id, newTyp).
+      newGraph(nRecording = recording.addTypeChange(id, typ, oldUsee, newUsee))
+
+  }
+
+  def changeContravariantType(id : NIdT, typ : STyp, oldUsee: NIdT, newUsee : NIdT) : GraphT = {
+    val newTyp= typ.redirectContravariantUses(oldUsee, getNode(newUsee))
 
     setType(id, newTyp).
       newGraph(nRecording = recording.addTypeChange(id, typ, oldUsee, newUsee))
@@ -355,10 +363,10 @@ class AccessGraph
   def users(useeId: NIdT) : Iterable[NIdT] = usersMap getFlat useeId
 
   def dominantUses(dominatedEdge : (NIdT, NIdT)) : Iterable[(NIdT, NIdT)] =
-    dominantUsesMap getFlat dominatedEdge
+    dominated2dominantUsesMap getFlat dominatedEdge
 
   def dominatedUses(dominantEdge : (NIdT, NIdT)) : Iterable[(NIdT, NIdT)] =
-    dominatedUsesMap  getFlat dominantEdge
+    dominant2dominatedUsesMap  getFlat dominantEdge
 
   def dominates(dominantEdge : (NIdT, NIdT),
                 dominatedEdge : (NIdT, NIdT)) : Boolean =
@@ -403,7 +411,7 @@ class AccessGraph
     getNode(implId).name + "_" + policy
 
   def createNode(implId: NIdT, abskind : NodeKind, policy : AbstractionPolicy) : (NIdT, GraphT) = {
-    val (id, g) = addNode(abstractionName(implId, abskind, policy), abskind, NoType)
+    val (id, g) = addNode(abstractionName(implId, abskind, policy), abskind, getNode(implId).styp)
     (id, g.addAbstraction(implId, (id, policy)))
   }
 
@@ -411,11 +419,10 @@ class AccessGraph
                         abskind : NodeKind ,
                         policy : AbstractionPolicy) : Try[(NIdT, GraphT)] = {
     val (absId, g) = createNode(implId, abskind, policy)
-    val g2 = g.setType(absId, getNode(implId).styp)
 
     Success((absId, policy match {
-      case SupertypeAbstraction => g2.addUses(implId, absId)
-      case DelegationAbstraction => g2.addUses(absId, implId)
+      case SupertypeAbstraction => g.addUses(implId, absId)
+      case DelegationAbstraction => g.addUses(absId, implId)
     }))
 
   }
@@ -627,6 +634,8 @@ class AccessGraph
 
   def findMergingCandidate(nid : NIdT) : Option[NIdT] = None
 
+  def findMergingCandidateIn(id : NIdT, root : NIdT) : Option[NIdT] = None
+
   //TODO deep merge : merge also content need to refactor find merging candidate
   //(deep merge is now done in JavaNode for interface node only)
   def merge(consumerId : NIdT, consumedId : NIdT) : GraphT = {
@@ -661,25 +670,63 @@ class AccessGraph
     //val primaryUses = new UsesDependencyMap(consumerId, Dominated())
 
 
-    val side_prim_list = dominantUsesMap.toSeq.filter { case ((userId, _), _) => userId == consumedId }
+    val dominated_dominant_seq = dominated2dominantUsesMap.toSeq
 
-    val g5 : GraphT = side_prim_list.foldLeft(g4) {
-      case (g0, (( _, sideUseeId), primUses)) =>
+
+    val g5 : GraphT = dominated_dominant_seq.foldLeft(g4) {
+      case (g0, (( `consumedId`, sideUseeId), primUses)) =>
         primUses.foldLeft(g0) { case (g00, pUse) =>
           g00.addUsesDependency(pUse, (consumerId, sideUseeId))
              .removeUsesDependency(pUse, (consumedId, sideUseeId))
         }
+      case (g0, _) => g0
     }
 
-    val prim_side_list = dominatedUsesMap.toSeq.filter { case ((userId,_), _) => userId == consumedId }
 
-    val g6 = prim_side_list.foldLeft(g5) {
-      case (g0, (( _, primeUseeId), sidUses)) =>
+    val g6 = dominant2dominatedUsesMap.toSeq.foldLeft(g5) {
+      case (g0, (( `consumedId`, primeUseeId), sidUses)) =>
         sidUses.foldLeft(g0) { case (g00, sUse) =>
           g00.addUsesDependency((consumerId, primeUseeId), sUse)
              .removeUsesDependency((consumedId, primeUseeId), sUse)
         }
+      case (g0, _) => g0
     }
-    g6.removeContains(consumed.container, consumedId).removeNode(consumedId)
+
+
+    val g7 = consumer.content.foldLeft(g6) {
+      case (g0, childId) =>
+        g0.findMergingCandidateIn(childId, consumedId) match {
+          case Some(consumedChild) => g0.merge(childId, consumedChild)
+          case None => g0
+        }
+
+    }
+    val g8 = g7.content(consumedId).foldLeft(g7){
+      case(g0, childId) =>
+        g0.moveTo(childId, consumerId).get
+          .changeType(childId, g0.getNode(childId).styp, consumedId, consumerId)
+    }
+    /*consumed.content.foldLeft(g6) {
+      case (g0, childId) =>
+        findMergingCandidateIn(childId, consumedId) match {
+          case Some()
+        }
+        //println("moving " + childId +" into " + consumerId)
+
+        /*val g1 = g0.changeSource(AGEdge.contains(consumedId, childId), consumerId)
+        dominated_dominant_seq.foldLeft(g1){
+          case (g00, ((sideUser, `childId`), primUses)) =>
+            primUses.foldLeft(g00){case (g000, (pUser, `consumedId`)) =>
+                val nPuser = if(pUser == consumedId) consumerId else pUser
+                g000.addUsesDependency((sideUser, childId), (nPuser, consumerId))
+                    .removeUsesDependency((sideUser, childId), (pUser, consumedId))
+            case (g000, _) => g000
+            }
+          case (g00, _) => g00
+        }*/
+    }*/
+
+
+    g8.removeContains(consumed.container, consumedId).removeNode(consumedId)
   }
 }

@@ -141,8 +141,7 @@ class JavaAccessGraph
                       //case Field() =>
                       case (ck : MethodKind, MethodTypeHolder(typ))  =>
 
-                        val newTyp = typ.redirectContravariantUses(implId, abs)
-                        val g1 = g0.setType(child, MethodTypeHolder(newTyp))
+                        val g1 = g0.changeContravariantType(child, node.styp, implId, abs.id)
 
                         if(g1.uses(child, implId)) {
                           logger.writeln("interface creation : redirecting %s target to %s".format(AGEdge.uses(child, implId), abs), 3)
@@ -228,9 +227,7 @@ class JavaAccessGraph
 
       case (AbstractMethod, SupertypeAbstraction) =>
         //no (abs, impl) or (impl, abs) uses
-        val n = getNode(implId)
-        val (id, g0) = createNode(implId, abskind, policy)
-        Success((id, g0.setType(id, n.styp)))
+        Success(createNode(implId, abskind, policy))
 
       case _ =>
         val tryAbs = super.createAbstraction(implId, abskind, policy)
@@ -262,7 +259,8 @@ class JavaAccessGraph
         if(!thisClassNeedsImplement) this
         else {
           val absContainer = container(absId)
-          val g1 = addUses(implContainer, absContainer).addIsa(implContainer, absContainer)
+          val g1 = addUses(implContainer, absContainer)
+            .addIsa(implContainer, absContainer)
 
           g1.content(absId).foldLeft(g1){
             case (g0, absMethodId) => val absMeth = g0.getNode(absMethodId)
@@ -289,25 +287,29 @@ class JavaAccessGraph
   override def findMergingCandidate(nid : NIdT) : Option[NIdT] = {
 
 
-    def areMergingCandidates(n1 : AGNodeT, n2: AGNodeT): Boolean = {
+    def areMergingCandidates(interface1 : AGNodeT, interface2: AGNodeT): Boolean = {
 
       def hasMatchingMethod(absmId : NIdT) = {
         val absm = getNode(absmId)
         absm.kind match {
-          case AbstractMethod => findMergingCandidateIn(absm, n2).isDefined
+          case AbstractMethod => findMergingCandidateIn(absm, interface2).isDefined
           case _ => throw new AGError("Interface should contain only abstract method !!")
         }
       }
 
-      n2.content.size >= n1.content.size &&
-        (n1.content forall hasMatchingMethod) &&
-        (n2.content.size == n1.content.size ||
-          { //otherItc has more methods, it is a potential subtype
-            n1.subTypes forall n2.isSuperTypeOf
+
+      //the two interface are structurally compatible to merge
+      interface2.content.size >= interface1.content.size &&
+        (interface1.content forall hasMatchingMethod) &&
+        (interface2.content.size == interface1.content.size ||
+          { interface1.directSubTypes forall interface2.isSuperTypeOf
             //TODO structual type check
             /*val missingMethodsInThis =
               otherItc.content.filterNot{hasMatchingMethodIn(this)}*/
-          })
+          }) ||
+      //the two interfaces introduced an uneeded level of indirection
+      interface1.isa(interface2.id) && (interface1.directSubTypes forall interface2.isSuperTypeOf)
+
     }
 
 
@@ -326,6 +328,8 @@ class JavaAccessGraph
 
   }
 
+  override def findMergingCandidateIn(methodId : NIdT,  interface : NIdT): Option[NIdT] =
+    findMergingCandidateIn(getNode(methodId), getNode(interface))
 
 
   def findMergingCandidateIn(method : AGNodeT, interface : AGNodeT) = {
@@ -344,16 +348,29 @@ class JavaAccessGraph
     }
 
   }
+
+ /* def findMergingCandidateIn(method : AGNodeT, interface : AGNodeT) = {
+    //node.graph.logger.writeln("searching merging candidate for %s".format(node), 8)
+    if(method.styp.isEmpty)
+      throw new AGError("Method must have a type")
+
+    val mType = method.styp.redirectUses(method.container, interface)
+
+    interface.content.find { ncId =>
+      val nc =getNode(ncId)
+      nc.kind match {
+        case AbstractMethod =>  nc.name == method.name && nc.styp == mType
+        case _ => false
+      }
+    }
+
+  }*/
   //"consumed" is potentialy a superType and thus may have less methods than this
-  override def merge(consumerId : NIdT, consumedId : NIdT) : GraphT = {
+  /*override def merge(consumerId : NIdT, consumedId : NIdT) : GraphT = {
     val consumer = getNode(consumedId)
     val consumed = getNode(consumedId)
     (consumer.kind, consumed.kind) match {
       case (Interface, Interface) =>
-        //TODO see why the call to apply on content is needed (other.content.toList compile but doesn't give the right result)
-        //the toList is necessary :
-        // removing the firsts children (AGEdge.contains(other.container, other).delete() in AGNode.mergeWith)
-        // modifies the content set and thus the iterator
         val g1 = super.merge(consumerId, consumedId)
         consumed.content.foldLeft(g1) {
           case (g0, consumedAbsMethodId) =>
@@ -363,7 +380,7 @@ class JavaAccessGraph
             case AbstractMethod =>
               findMergingCandidateIn(consumedAbsMethod, consumer) match {
                 case Some(thisAbsMethod) => g0.merge(thisAbsMethod, consumedAbsMethodId)
-                case None => throw new AGError(consumedAbsMethod.fullName + " has no method to merge with")
+                case None => g0 //throw new AGError(consumedAbsMethod.fullName + " has no method to merge with")
               }
             case _ => throw new AGError("interface must have only abstract method")
           }
@@ -373,7 +390,7 @@ class JavaAccessGraph
         super.merge(consumerId, consumedId)
       case _ => this
     }
-  }
+  }*/
 
   def packageNode(id : NodeId) : NodeId =
     getNode(id).kind match {
