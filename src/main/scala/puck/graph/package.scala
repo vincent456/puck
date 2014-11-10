@@ -29,7 +29,7 @@ package object graph {
   val ConstraintsParser = immutable.constraints.ConstraintsParser
 
   type Recording = immutable.transformations.Recording
-
+  val Recording = immutable.transformations.Recording
 
   import scala.language.implicitConversions
   implicit def edgeToPair(edge : AGEdge) = (edge.source, edge.target)

@@ -13,7 +13,7 @@ object Recording {
 }
 
 class Recording
-(private [this] val record : Seq[Transformation]) {
+(private [this] val record : Seq[Transformation]) extends Iterable[Transformation] {
 
   type NIdT = NodeId
   type EdgeT = AGEdge
@@ -24,8 +24,9 @@ class Recording
   def +:(r : Transformation) : Recording =
     new Recording(r +: record)
 
-  def nonEmpty = record.nonEmpty
-  def size = record.size
+  override def iterator: Iterator[Transformation] = record.iterator
+ /* def nonEmpty = record.nonEmpty
+  def size = record.size*/
 
   def addNode(id : NIdT, name : String, kind : NodeKind, styp: TypeHolder, mutable : Boolean, t : Hook) : RecT =
     Transformation(Add, TTNode(id, name, kind, styp, mutable, t)) +: this
@@ -61,6 +62,7 @@ class Recording
 
   def removeAbstraction(impl : NIdT, abs : NIdT, absPolicy : AbstractionPolicy) : RecT =
     Transformation(Remove, TTAbstraction(impl, abs, absPolicy)) +: this
+
 }
 
 sealed abstract class Operation {
@@ -78,8 +80,9 @@ case class Transformation
  target : TransformationTarget){
   type GraphT = AccessGraph
 
-  def undo(g: GraphT)= target.execute(g, operation)
-  def redo(g: GraphT) = target.execute(g, operation.reverse)
+  def redo(g: GraphT) = target.execute(g, operation)
+  def undo(g: GraphT) = target.execute(g, operation.reverse)
+
 }
 
 

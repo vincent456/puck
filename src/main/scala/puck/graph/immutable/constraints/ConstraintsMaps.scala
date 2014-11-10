@@ -8,6 +8,7 @@ import puck.util.Logger
  * Created by lorilan on 31/10/14.
  */
 object ConstraintsMaps{
+  type CanSeeMap = Map[NodeId, CanSeeSet]
   type FriendsOfScopesMap = Map[NodeId, ConstraintSet[ScopeFriendOfScopesConstraint]]
   type FriendsOfElementsMap = Map[NodeId, ConstraintSet[ScopeFriendOfElementsConstraint]]
   type CtWithInterlopersMap[CtT <: ConstraintWithInterlopers] = Map [NodeId, ConstraintSet[CtT]]
@@ -15,7 +16,7 @@ object ConstraintsMaps{
   type EltConstraintsMap = Map [NodeId, ConstraintSet[ElementConstraint]]
   type ScopeConstraintsMap = Map [NodeId, ConstraintSet[ScopeConstraint]]
 
-  def apply() = new ConstraintsMaps(Map(), Map(), Map(), Map(), Map())
+  def apply() = new ConstraintsMaps(Map(), Map(), Map(), Map(), Map(), Map())
 }
 
 import ConstraintsMaps._
@@ -24,6 +25,7 @@ class ConstraintsMaps
 (val nodeSets : Map[String, NamedNodeSet],
  val friendOfElementsConstraints : FriendsOfElementsMap,
  val friendOfScopesConstraints : FriendsOfScopesMap,
+ val canSeeConstraints : CanSeeMap,
  val elementsConstraints : EltConstraintsMap,
  val scopeConstraints : ScopeConstraintsMap)
  {
@@ -31,11 +33,13 @@ class ConstraintsMaps
    def newConstraintsMaps( nNodeSets : Map[String, NamedNodeSet] = nodeSets,
                            nFriendsOfElementsConstraints : FriendsOfElementsMap = friendOfElementsConstraints,
                            nFriendOfScopesConstraints : FriendsOfScopesMap = friendOfScopesConstraints,
-   nElementsConstraints : EltConstraintsMap = elementsConstraints,
-   nScopeConstraints : ScopeConstraintsMap = scopeConstraints) =
+                           nCanSeeConstraints : CanSeeMap = canSeeConstraints,
+                           nElementsConstraints : EltConstraintsMap = elementsConstraints,
+                           nScopeConstraints : ScopeConstraintsMap = scopeConstraints) =
     new ConstraintsMaps(nNodeSets,
                         nFriendsOfElementsConstraints,
                         nFriendOfScopesConstraints,
+                        nCanSeeConstraints,
                         nElementsConstraints,
                         nScopeConstraints)
 
@@ -51,10 +55,11 @@ class ConstraintsMaps
      def printMap[CtT <: Constraint]( m : CtMap[CtT]) = m foreach { case (k, s) =>
          s.foreach { s => if(s.owners.head == k) logger.writeln(s.mkString(graph))(v)}
      }
-     printMap(scopeConstraints)
-     printMap(scopeConstraints)
+     printMap(canSeeConstraints)
+     printMap(friendOfElementsConstraints)
      printMap(friendOfScopesConstraints)
      printMap(elementsConstraints)
+     printMap(scopeConstraints)
    }
 
 
@@ -67,6 +72,12 @@ class ConstraintsMaps
      val frCtSet = friendOfElementsConstraints.getOrElse(befriended, ConstraintSet.empty)
      frCtSet.hasFriendScopeThatContains_*(graph, node)
    }
+
+   def eltFriendOfElement(graph: GraphT, node : NIdT, befriended : NIdT) : Boolean = {
+     val frCtSet = canSeeConstraints.getOrElse(befriended, CanSeeSet())
+     frCtSet.isFriend(node)
+   }
+
 
    def violatedScopeConstraintsOf(graph : GraphT, user : NIdT, usee0 : NIdT) : Seq[ScopeConstraint] = {
      val uses = AGEdge.uses(user, usee0)
@@ -103,7 +114,9 @@ class ConstraintsMaps
    def interloperOf(graph : GraphT, user : NIdT, usee : NIdT) =
      (potentialScopeInterloperOf(graph, user, usee)
        || potentialElementInterloperOf(graph, user, usee)) &&
-       !(friendOfElement(graph,user,usee) || friendOfScope(graph, user, usee))
+       !(friendOfElement(graph, user, usee) ||
+         friendOfScope(graph, user, usee) ||
+         eltFriendOfElement(graph, user, usee))
 
    def isWronglyContained(graph : GraphT, node : NIdT) : Boolean =
      !graph.isRoot(node) && interloperOf(graph, graph.container(node), node)

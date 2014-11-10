@@ -3,6 +3,7 @@ package puck.javaAG.immutable
 import AST.CompilationUnit
 import puck.graph.AccessGraph
 import puck.graph.constraints.SupertypeAbstraction
+import puck.graph.immutable.AccessGraph.NodeId
 import puck.graph.immutable.{Uses, Isa, Contains, AGEdge}
 import puck.graph.immutable.transformations._
 import puck.javaAG.JavaAGError
@@ -13,25 +14,30 @@ import puck.util.{PuckLog, PuckLogger, PuckNoopLogger}
  * Created by lorilan on 23/07/14.
  */
 class AG2AST(val program : AST.Program) {
-  var logger : PuckLogger = PuckNoopLogger
+  var logger: PuckLogger = PuckNoopLogger
   implicit val defaultVerbosity = (PuckLog.AG2AST, PuckLog.Info)
 
-  def apply(graph : AccessGraph, t : Transformation) = t match {
-    case Transformation(Add, TTNode(id, name, kind, styp, mutable, dh : DeclHolder)) =>
-      //println("creating node " + node)
-      dh.createDecl(program, graph, id)
+  def apply(reenactor: JavaAccessGraph,
+            resultGraph : AccessGraph,
+            t: Transformation) : AccessGraph = t match {
+    case Transformation(Add, TTNode(id, name, kind, styp, mutable, dh: DeclHolder)) =>
+      //redo t before createDecl
+      val n = resultGraph.getNode(id)
+      n.t.asInstanceOf[DeclHolder].createDecl(program, resultGraph, id)
 
-    case Transformation(Add, TTEdge(e)) =>
-      //println("creating edge " + e)
-      add(e)
+      //redo t after applying on code other transformations
+    case `t` => t match {
+      case Transformation(Add, TTEdge(e)) =>
+        //println("creating edge " + e)
+        add(resultGraph, e)
 
-    case Transformation(Add, TTRedirection(e, Target(newTarget))) =>
-      logger.writeln("redirecting %s target to %s".format(e, newTarget))
-      redirectTarget(e, newTarget)
+      case Transformation(Add, TTRedirection(e, Target(newTarget))) =>
+        logger.writeln("redirecting %s target to %s".format(e, newTarget))
+        redirectTarget(resultGraph, e, newTarget)
 
-    case Transformation(Add, TTRedirection(e, Source(newSource))) =>
-      redirectSource(e, newSource)
-    /*case Transformation(Remove(), TTEdge(e@AGEdge(Contains(), source, target))) =>
+      case Transformation(Add, TTRedirection(e, Source(newSource))) =>
+        redirectSource(resultGraph, reenactor, e, newSource); t.redo(reenactor)
+      /*case Transformation(Remove(), TTEdge(e@AGEdge(Contains(), source, target))) =>
     println("removing edge " + e)
     (source.kind, target.kind) match {
     case (p@Package(), i: TypeKind) =>
@@ -47,31 +53,33 @@ class AG2AST(val program : AST.Program) {
 
     }*/
 
-    case Transformation(_, TTAbstraction(impl, abs, SupertypeAbstraction)) =>
-      (graph.getNode(impl).t, graph.getNode(abs).kind) match {
-        case (MethodDeclHolder(Some(decl)), AbstractMethod) =>
+      case Transformation(_, TTAbstraction(impl, abs, SupertypeAbstraction)) =>
+        (reenactor.getNode(impl).t, reenactor.getNode(abs).kind) match {
+          case (ConcreteMethodDeclHolder(Some(decl)), AbstractMethod) =>
             decl.setVisibility(AST.ASTNode.VIS_PUBLIC)
-        case _ => ()
-      }
+          case _ => ()
+        }
 
-    case Transformation(_, TTAbstraction(_, _, _)) => ()
+      case Transformation(_, TTAbstraction(_, _, _)) => ()
 
-    case Transformation(Remove, TTNode(id, name, kind, styp, mutable, dh : TypedKindDeclHolder)) =>
-      if(dh.decl.nonEmpty)
-        dh.decl.get.deleteAGNode()
+      case Transformation(Remove, TTNode(id, name, kind, styp, mutable, dh: TypedKindDeclHolder)) =>
+        if (dh.decl.nonEmpty)
+          dh.decl.get.deleteAGNode()
 
-    case _ => logger.writeln("%s not applied on program".format(t))
+      case _ => logger.writeln("%s not applied on program".format(t))
+    }
+    resultGraph
   }
 
 
-  def add(graph : AccessGraph, e : AGEdge) = {
+  def add(graph: AccessGraph, e: AGEdge) = {
     val source = graph.getNode(e.source)
     val target = graph.getNode(e.target)
     e.kind match {
 
       case Contains =>
-       (source.kind, target.t) match {
-          case (Package, i: TypedKindDeclHolder) =>
+        (source.kind, source.t, target.t) match {
+          case (Package, _, i: TypedKindDeclHolder) =>
 
             val cu = i.decl.get.compilationUnit()
 
@@ -84,35 +92,33 @@ class AG2AST(val program : AST.Program) {
             cu.setRelativeName(relativePath) // weird but seems to be the default behavior
             cu.setPackageDecl(source.fullName)
 
-          case (Interface, AbstractMethodDeclHolder(smdecl)) =>
-            source.t match {
-              case th: TypedKindDeclHolder => th.decl.get.addBodyDecl(smdecl.get)
-            }
+          case (Interface, th: TypedKindDeclHolder, AbstractMethodDeclHolder(smdecl)) =>
+            th.decl.get.addBodyDecl(smdecl.get)
 
-          case (Class, MethodDeclHolder(smdecl)) =>
-            source.t match {
-              case th: TypedKindDeclHolder => th.decl.get.addBodyDecl(smdecl.get)
-            }
+          case (Class, th: TypedKindDeclHolder, ConcreteMethodDeclHolder(smdecl)) =>
+            th.decl.get.addBodyDecl(smdecl.get)
 
 
-          case (Package, Package) => () // can be ignored
+          case (Package, _, Package) => () // can be ignored
 
           case _ => logger.writeln("%s not created".format(e))
 
         }
 
       case Isa =>
-        (source.kind, target.kind) match {
-          case (Class, Interface) =>
-            c.decl.addImplements(i.createLockedAccess())
+        (source.t, target.t) match {
+          case (ClassDeclHolder(sDecl), idh: InterfaceDeclHolder) =>
+            sDecl.get.addImplements(idh.createLockedAccess().get)
           case _ => logger.writeln("%s not created".format(e))
         }
 
       case Uses =>
 
-        (e.source.kind, e.target.kind) match {
-          case (cm: ConstructorMethod, Constructor()) => () //already generated when creating ConstructorMethod decl
-          case (Class(), Interface()) => logger.writeln("do not create %s : assuming its an isa edge (TOCHECK)".format(e)) // class imple
+        (source.kind, target.kind) match {
+          case (ConstructorMethod, Constructor) =>
+            () //already generated when creating ConstructorMethod decl
+          case (Class, Interface) =>
+            logger.writeln("do not create %s : assuming its an isa edge (TOCHECK)".format(e)) // class imple
 
           /*case (f @ Field(), k : TypeKind) =>
           f.decl.setTypeAccess(k.lockedAccess())
@@ -129,112 +135,146 @@ class AG2AST(val program : AST.Program) {
   }
 
 
-  def redirectTarget(e : AGEdge, newTarget : AGNode){
-    (e.target.kind, newTarget.kind) match {
-      case ( k @ Interface(), newk @ Interface()) if e.kind == Isa() =>
-        e.source.kind match {
-          case src @ Class() =>
-           src.decl.replaceImplements(k.createLockedAccess(), newk.createLockedAccess())
+  def redirectTarget(graph: AccessGraph, e: AGEdge, newTargetId: NodeId) {
+    if(e.target != newTargetId) {
+      val target = graph.getNode(e.target)
+      val source = graph.getNode(e.source)
+      val newTarget = graph.getNode(newTargetId)
+      (target.t, newTarget.t) match {
+        case (InterfaceDeclHolder(Some(odlDecl)), InterfaceDeclHolder(Some(newDecl)))
+          if e.kind == Isa =>
+          source.t match {
+            case ClassDeclHolder(Some(srcDecl)) =>
+              srcDecl.replaceImplements(odlDecl.createLockedAccess(), newDecl.createLockedAccess())
+            case _ => throw new JavaAGError("isa arc should only be between TypeKinds")
+          }
 
-          case _ => throw new JavaAGError("isa arc should only be between TypeKinds")
-        }
 
-      case (oldk: TypeKind, newk: TypeKind) =>
-        e.source.kind match {
-          case f @ Field() =>
-            f.decl.replaceTypeAccess(oldk.createLockedAccess(), newk.createLockedAccess())
 
-          case m @ Method() =>
-            m.decl.replaceTypeAccess(oldk.createLockedAccess(), newk.createLockedAccess())
+        case (oldk: TypedKindDeclHolder, newk: TypedKindDeclHolder) =>
+          source.t match {
+            case FieldDeclHolder(Some(fdecl)) =>
+              fdecl.replaceTypeAccess(oldk.createLockedAccess().get, newk.createLockedAccess().get)
+            case ConcreteMethodDeclHolder(Some(mdecl)) =>
+              mdecl.replaceTypeAccess(oldk.createLockedAccess().get, newk.createLockedAccess().get)
+            case AbstractMethodDeclHolder(Some(mdecl)) =>
+              mdecl.replaceTypeAccess(oldk.createLockedAccess().get, newk.createLockedAccess().get)
 
-          case m @ AbstractMethod() =>
-            m.decl.replaceTypeAccess(oldk.createLockedAccess(), newk.createLockedAccess())
+            case  ClassDeclHolder(_) =>
+              logger.writeln("Class user of TypeKind, assume this is the \"doublon\" of " +
+                "an isa arc, redirection ignored", 1)
+            case k =>
+              throw new JavaAGError(k + " as user of TypeKind, redirection unhandled !")
+          }
 
-          case Class() =>
-            e.target.graph.logger.writeln("Class user of TypeKind, assume this is the \"doublon\" of " +
-              "an isa arc, redirection ignored",1)
 
-          case k => throw new JavaAGError(k + " as user of TypeKind, redirection unhandled !")
-        }
+        case (oldk: MethodDeclHolder, newk: MethodDeclHolder) =>
+          source.t match {
+            case ConstructorDeclHolder(Some(cdecl)) =>
+              cdecl.replaceMethodCall(oldk.decl.get, newk.decl.get)
+            case mdh: MethodDeclHolder =>
+              mdh.decl.get.replaceMethodCall(oldk.decl.get, newk.decl.get)
+            case k =>
+              throw new JavaAGError(k + " as user of Method, redirection unhandled !")
+          }
 
-      case (oldk: MethodKind, newk: MethodKind) =>
 
-        e.source.kind match {
-          case c @ Constructor() =>
-            c.decl.replaceMethodCall(oldk.decl, newk.decl)
-          case m @ Method() =>
-            m.decl.replaceMethodCall(oldk.decl, newk.decl)
-          case k => throw new JavaAGError(k + " as user of MethodKind, redirection unhandled !")
-        }
 
-      case (oldk @ Constructor(), newk : ConstructorMethod) =>
-        e.source.kind match {
-          case c @ Constructor() =>
-            throw new JavaAGError("redirection to constructor method within constructor no implemented (see methodDecl)")
+        case (ConstructorDeclHolder(_), ConstructorMethodDeclHolder(Some(newDecl), _)) =>
+          source.t match {
+            case ConstructorDeclHolder(_) =>
+              throw new JavaAGError("redirection to constructor method within " +
+                "constructor no implemented (see methodDecl)")
+            case mdh: MethodDeclHolder =>
+              mdh.decl.get.replaceByConstructorMethodCall(newDecl)
 
-          case m @ Method() =>
-            m.decl.replaceByConstructorMethodCall(newk.decl)
+            case k =>
+              throw new JavaAGError(k + " as user of MethodKind, redirection unhandled !")
+          }
 
-          case k => throw new JavaAGError(k + " as user of MethodKind, redirection unhandled !")
-        }
 
-      case _ => throw new JavaAGError("redirecting TARGET of %s to %s : application failure !".format(e, newTarget))
+        case _ =>
+          println("source = " + source)
+          println("target = " + target)
+          println("new target = " + newTarget)
+          throw new JavaAGError("redirecting TARGET of %s to %s : application failure !".format(e, newTarget))
+      }
     }
   }
 
 
-  def redirectSource(e : AGEdge, newSource : AGNode){
+  def redirectSource(resultGraph: AccessGraph,
+                     reenactor : JavaAccessGraph,
+                     e: AGEdge, newSourceId: NodeId) {
     import AST.ASTNode.VIS_PUBLIC
 
-    if (e.source != newSource)//else do nothing
-      (e.source.kind, newSource.kind, e.target.kind) match {
-        case (c1 @ Class(), c2 @ Class(), m @ Method()) =>
-          c1.decl.removeBodyDecl(m.decl)
-          c2.decl.addBodyDecl(m.decl)
+    if (e.source != newSourceId) {
+      //else do nothing*
+      val source = resultGraph.getNode(e.source)
+      val target = resultGraph.getNode(e.target)
+      val newSource = resultGraph.getNode(newSourceId)
+      (source.t, newSource.t, target.t) match {
+        case (ClassDeclHolder(Some(c1Decl)), ClassDeclHolder(Some(c2Decl)),
+        ConcreteMethodDeclHolder(Some(mdecl))) =>
+          c1Decl.removeBodyDecl(mdecl)
+          c2Decl.addBodyDecl(mdecl)
           //TODO fix : following call create a qualifier if it is null
           //the qualifier is a parameter for which a new instance is created
           //in some case it changes the meaning of the program !!
-          c1.decl.replaceMethodCall(m.decl, m.decl)
+          c1Decl.replaceMethodCall(mdecl, mdecl)
 
-          if(c1.decl.getVisibility != VIS_PUBLIC){
-            m.node.users().find{_.kind.packageNode != c2.packageNode} match {
-              case Some(_) => m.decl.setVisibility(VIS_PUBLIC)
+          if (c1Decl.getVisibility != VIS_PUBLIC) {
+            reenactor.users(e.target).find { uerId =>
+              reenactor.packageNode(uerId) != reenactor.packageNode(newSourceId)
+            } match {
+              case Some(_) => mdecl.setVisibility(VIS_PUBLIC)
               case None =>
             }
           }
 
-        case (p1 @ Package(), p2 @ Package(), i: TypeKind) =>
+        case (PackageDeclHolder, PackageDeclHolder, i: TypedKindDeclHolder) =>
           /*println("moving typedecl %s of package (cu contains %d typedecl)".format(e.target.fullName,
             i.decl.compilationUnit().getNumTypeDecl))*/
 
+          val idecl = i.decl.get
           //println("moving " + i +" from package "+ p1 +" to package" + p2)
-          if(i.decl.compilationUnit().getNumTypeDecl > 1) {
-            val oldcu = i.decl.compilationUnit()
+          if (idecl.compilationUnit().getNumTypeDecl > 1) {
+            val oldcu = idecl.compilationUnit()
 
             val rootPathName = oldcu.getRootPath
-            oldcu.removeTypeDecl(i.decl)
+            oldcu.removeTypeDecl(idecl)
 
-            val path =  rootPathName + newSource.fullName . replaceAllLiterally(".", java.io.File.separator) +
+            val path = rootPathName + newSource.fullName.replaceAllLiterally(".", java.io.File.separator) +
               java.io.File.separator
 
             val newCu = new CompilationUnit()
-            oldcu.programRoot().insertUnusedType(path, newSource.fullName, i.decl)
+            oldcu.programRoot().insertUnusedType(path, newSource.fullName, idecl)
 
             /*import scala.collection.JavaConversions.asScalaIterator
             asScalaIterator(oldcu.getImportDeclList.iterator).foreach{newCu.addImportDecl}*/
           }
           else
-            i.decl.compilationUnit().setPackageDecl(newSource.fullName)
+            idecl.compilationUnit().setPackageDecl(newSource.fullName)
 
-          if(i.decl.getVisibility != VIS_PUBLIC ){
-            i.node.users().find{_.kind.packageNode != p2.node} match {
-              case Some(_) => i.decl.setVisibility(VIS_PUBLIC)
+          if (idecl.getVisibility != VIS_PUBLIC) {
+            reenactor.users(e.target).find { userId =>
+              reenactor.packageNode(userId) != newSourceId
+            } match {
+              case Some(_) => idecl.setVisibility(VIS_PUBLIC)
               case None => ()
             }
           }
 
+        case (ClassDeclHolder(Some(classDecl)), InterfaceDeclHolder(Some(absDecl)), idh @ InterfaceDeclHolder(Some(superDecl))) =>
+          classDecl.removeImplements(superDecl)
+          absDecl.addSuperInterfaceId(idh.createLockedAccess().get)
 
-        case _ =>throw new JavaAGError("redirecting SOURCE of %s to %s : application failure !".format(e, newSource))
+        case (InterfaceDeclHolder(Some(subDecl)), InterfaceDeclHolder(Some(absDecl)), idh @ InterfaceDeclHolder(Some(superDecl))) =>
+          subDecl.removeSuperInterface(superDecl)
+          absDecl.addSuperInterfaceId(idh.createLockedAccess().get)
+
+        case _ => throw new JavaAGError("redirecting SOURCE of %s to %s : application failure !".format(e, newSource))
       }
+    }
   }
 }

@@ -155,7 +155,7 @@ class JavaGraphBuilder(program : AST.Program) extends GraphBuilder(JavaNode){
   def registerDecl(n : NodeIdT, decl : AST.MethodDecl){
     g.getNode(n).kind match {
       case Method =>
-        g = g.setInternal(n, MethodDeclHolder(Some(decl)))
+        g = g.setInternal(n, ConcreteMethodDeclHolder(Some(decl)))
       case AbstractMethod =>
         g = g.setInternal(n, AbstractMethodDeclHolder(Some(decl)))
       case _ => throwRegisteringError(g.getNode(n), "MethodDecl")

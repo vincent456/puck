@@ -29,7 +29,7 @@ class ConstraintsParser private
 
     def aux(imports : Seq[String], acc : Seq[NodeId]) : Seq[NodeId] =
       imports match {
-        case Seq() if acc.isEmpty => throw new NoSuchElementException(k + " not found")
+        case Seq() if acc.isEmpty => throw new NoSuchElementException("named element " + k + " not found")
         case Seq() => acc
         case _ =>
           builder.nodesByName get (imports.head + k) match {
@@ -156,6 +156,12 @@ class ConstraintsParser private
         builder.addScopeFriendOfElementConstraint(toDef(friends), toDef(befriended))
     }
 
+  def canSee  : Parser[Unit] =
+    "canSee(" ~> listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
+      case friends ~ _ ~ befriended =>
+        builder.addCanSee(toDef(friends), toDef(befriended))
+    }
+
 
   def hideElement3 : Parser[Unit] =
     "hide(" ~> ident ~ "," ~ listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
@@ -223,6 +229,7 @@ class ConstraintsParser private
       | hideScopeFromEachOther
       | friendsOfScope
       | friendsOfElement
+      | canSee
       )}
 
   /*def apply(input : java.io.Reader) = parseAll(constraints, input) match{

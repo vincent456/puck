@@ -16,7 +16,7 @@ trait AGNodeBuilder {
             isMutable : Mutability,
             t : Hook) : AGNode
 
-  def createT() : Hook
+  def createT(kind : NodeKind) : Hook
 
   def rootKind : NodeKind
   def kinds : Seq[NodeKind]
@@ -42,7 +42,7 @@ class AGNode
       this.isMutable
   }
 
-  override def toString = id + " - " + kind +" " +name + styp.mkString(graph) + "(" + id +")"
+  override def toString = id + " - " + kind +" " +name + styp.mkString(graph) + " (" + t +")"
 
   def container = graph.container(id)
   def content = graph.content(id)

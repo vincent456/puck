@@ -89,7 +89,78 @@ class JavaAccessGraph
     (abskind, policy) match {
       case (Interface, SupertypeAbstraction) =>
         val implContent = content(implId)
-        super.createAbstraction( implId,
+
+        val tryAbs = super.createAbstraction( implId,
+          Interface,
+          SupertypeAbstraction)
+
+        val tryAbs1 = directSuperTypes(implId).foldLeft(tryAbs){
+          case (tryAbs0, superType) =>
+            tryAbs map {
+              case (absId, g) =>
+                (absId, g.changeSource(AGEdge.isa(implId, superType), absId))
+            }
+        }
+
+
+        tryAbs1 flatMap {
+          case (absId, g) =>
+            val abs = g.getNode(absId)
+            val g2Try = implContent.foldLeft(Success(g) : Try[GraphT]){
+              case (tryG0, child) =>
+                tryG0 flatMap {
+                  case g0 =>
+                    getNode(child).kind match {
+                      //case ck @ Method() =>
+                      case ck : MethodKind =>
+                        val gAbsTry = g.createAbstraction(child, AbstractMethod,  SupertypeAbstraction)
+                        gAbsTry flatMap {
+                          case (absChild, g21) =>
+                            val g3 = g21.addContains(absId, absChild)
+                            val absChildNode = g3.getNode(absChild)
+                            absChildNode.kind match {
+                              case AbstractMethod =>
+                                Success(g3.changeType(absChild, absChildNode.styp, implId, absId))
+                              case k => Failure(new AGError(k + " should be an abstract method !"))
+                            }
+                        }
+                      case _ => Success(g0)
+                    }
+                }
+            }
+            g2Try match {
+              case Failure(f) => Failure(f)
+              case Success(g2) =>
+                val g3 = g2.addIsa(implId, absId)
+
+                val g4Try = implContent.foldLeft(Success(g3) : Try[GraphT]) {
+                  case (Success(g0), child) =>
+                    val node = g0.getNode(child)
+                    (node.kind, node.styp) match {
+                      // even fields can need to be promoted if they are written
+                      //case Field() =>
+                      case (ck : MethodKind, MethodTypeHolder(typ))  =>
+
+                        val newTyp = typ.redirectContravariantUses(implId, abs)
+                        val g1 = g0.setType(child, MethodTypeHolder(newTyp))
+
+                        if(g1.uses(child, implId)) {
+                          logger.writeln("interface creation : redirecting %s target to %s".format(AGEdge.uses(child, implId), abs), 3)
+                          g1.redirectUses(AGEdge.uses(child, implId), absId, SupertypeAbstraction) map {
+                            case (_, g22) => g22
+                          }
+                        }
+                        else Success(g1)
+                      case _ => Success(g0)
+                    }
+                  case (Failure(f), _) => Failure(f)
+                }
+                g4Try map {case g4 => (absId, g4)}
+            }
+        }
+
+
+        /*super.createAbstraction( implId,
                                  Interface,
                                  SupertypeAbstraction) match {
           case Failure(exc) => Failure(exc)
@@ -151,7 +222,7 @@ class JavaAccessGraph
                   case Failure(f) => Failure(f)
                 }
             }
-        }
+        }*/
 
 
 
@@ -162,25 +233,18 @@ class JavaAccessGraph
         Success((id, g0.setType(id, n.styp)))
 
       case _ =>
-        super.createAbstraction(implId, abskind, policy) match {
-          case Failure(f) => Failure(f)
-          case Success ((abs, g1)) =>
-              val implNode =g1.getNode(implId)
-              val absNode = g1.getNode(abs)
-              (implNode.kind, absNode.kind) match {
-                case (Constructor, ConstructorMethod) =>
-                  //         case (Constructor(_, _, cdecl), ConstructorMethod(_, typ, decl, _)) =>
-                  (implNode.t, absNode.t) match {
-                    /*case (ConstructorDeclHolder(cdecl), ConstructorMethodDecl(decl,_)) =>
-                      g1.setInternal(abs, ConstructorMethodDecl(decl, cdecl))*/
-                    case (ConstructorDeclHolder(cdecl), EmptyDeclHolder) =>
-                      Success((abs, g1.setInternal(abs, ConstructorMethodDecl(None, cdecl))))
-                    case (_,_) => Failure(new AGError())
-                  }
-                case (Constructor, _) => Failure(throw new AGError())
-                case _ => Success((abs, g1))
-              }
-        }
+        val tryAbs = super.createAbstraction(implId, abskind, policy)
+         tryAbs flatMap {
+           case (abs, g1) =>
+             val implNode =g1.getNode(implId)
+             val absNode = g1.getNode(abs)
+             (implNode.t, absNode.t) match {
+               case (ConstructorDeclHolder(cdecl), ConstructorMethodDeclHolder(decl,_)) =>
+                  Success(abs, g1.setInternal(abs, ConstructorMethodDeclHolder(decl, cdecl)))
+               case (ConstructorDeclHolder(_),_) => Failure(new AGError())
+               case _ => Success((abs, g1))
+             }
+         }
     }
   }
 
@@ -310,4 +374,11 @@ class JavaAccessGraph
       case _ => this
     }
   }
+
+  def packageNode(id : NodeId) : NodeId =
+    getNode(id).kind match {
+      case Package => id
+      case _ => packageNode(container(id))
+    }
+
 }

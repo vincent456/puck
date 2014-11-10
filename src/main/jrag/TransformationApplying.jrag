@@ -33,6 +33,28 @@ aspect TransformationApplying {
         }
     }
 
+    public void ClassDecl.removeImplements(InterfaceDecl decl) {
+          int idx = -1;
+          for(int i = 0; i < getImplementsList().getNumChild(); i++){
+              if(((TypeAccess)getImplements(i)).decl().equals(decl)){
+                  idx = i;
+              }
+          }
+          if(idx!= -1)
+              getImplementsList().removeChild(idx);
+      }
+
+    public void InterfaceDecl.removeSuperInterface(InterfaceDecl decl) {
+           int idx = -1;
+           for(int i = 0; i < getSuperInterfaceIdList().getNumChild(); i++){
+               if(((TypeAccess)getSuperInterfaceId(i)).decl().equals(decl)){
+                   idx = i;
+               }
+           }
+           if(idx!= -1)
+               getSuperInterfaceIdList().removeChild(idx);
+       }
+
   public void Program.printCodeInDirectory(File dir) throws IOException {
 
     for(CompilationUnit cu : getCompilationUnits()){

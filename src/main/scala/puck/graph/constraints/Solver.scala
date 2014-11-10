@@ -142,13 +142,20 @@ trait Solver {
         case Some((absKind, absPolicy)) =>
 
           def doIntro(k: Try[(GraphT, NIdT, AbstractionPolicy)] => Unit) : Unit = {
-            logger.writeln("Searching host for abstraction( %s, %s ) of %s ".
+            logger.writeln("trying to create abstraction( %s, %s ) of %s ".
               format(absKind, absPolicy, currentImpl))
 
-            graph.createAbstraction(currentImpl, absKind, absPolicy) match {
-              case Failure(f) => Failure(f)
-              case Success((absId, graph2)) =>
+            val tryAbs = graph.createAbstraction(currentImpl, absKind, absPolicy)
+
+            if(tryAbs.isFailure)
+              logger.writeln("failure !!")
+
+            tryAbs map {
+              case (absId, graph2) =>
                 logger.writeln("in solver "+ absId + " introduced as "+ absPolicy + " for " + currentImpl)(PuckLog.ConstraintSearch, PuckLog.Debug)
+
+                logger.writeln("Searching host for abstraction( %s, %s ) of %s ".
+                  format(absKind, absPolicy, currentImpl))
 
                 findHost(graph2, absId,
                   absIntroPredicate(graph2, currentImpl, absPolicy, absKind)) {
@@ -167,6 +174,7 @@ trait Solver {
                     k(Failure(FindHostError()))
                 }
             }
+
           }
 
           if (deg == degree)
@@ -306,12 +314,12 @@ trait Solver {
   }
 
   def solve(graph : GraphT, k : Try[ResT] => Unit) {
-    logger.writeln("solve begins !")
+    /*logger.writeln("solve begins !")
     val sortedId = graph.nodesId.toSeq.sorted
     sortedId.foreach{id => logger.writeln("("+ id + ", " + graph.container(id)+ ")")}
     val nodes = graph.nodes.toSeq.sortBy(_.id)
     nodes foreach {n => logger.writeln(n)}
-
+*/
     def aux: Try[GraphT] => Unit = {
       case Success(g) =>
       decisionMaker.violationTarget(g) {

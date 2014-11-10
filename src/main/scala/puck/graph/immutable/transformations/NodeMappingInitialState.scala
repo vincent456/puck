@@ -4,6 +4,7 @@ import puck.graph.immutable.AccessGraph.NodeId
 import puck.graph.immutable.transformations.MappingChoices._
 import puck.graph.immutable._
 import puck.javaAG.immutable.nodeKind.JavaRoot
+import puck.search.SearchState
 import puck.util.{PuckLog, PuckLogger}
 
 import scala.collection.immutable.HashSet
@@ -43,8 +44,8 @@ object NodeMappingInitialState{
       // they are used to compute the change on the graph, its the change themselves we want to compare
       //if added back think to uncommment comparison in RecordingComparator.compare
       /*case ((m,l1), Transformation(_, TTDependency(_, _))) => (m, l1)
-      case ((m,l1), Transformation(_, TTAbstraction(_, _, _))) => (m, l1)
       case ((m,l1), Transformation(_, TTConstraint(_,_))) => (m, l1)*/
+      case ((m,l1), Transformation(_, TTAbstraction(_, _, _))) => (m, l1)
       case ((m,l1), Transformation(_, TTTypeRedirection(_,_,_, _))) => (m, l1)
       case ((m,l1), t : Transformation) => (m, t +: l1)
     }
@@ -174,12 +175,15 @@ object NodeMappingInitialState{
 
 class NodeMappingInitialState
 (initialTransfos : Seq[Transformation],
- eng : RecordingComparator,
+ val engine : RecordingComparator,
  graph1 : AccessGraph,
  graph2 : AccessGraph,
  k: Try[ResMap] => Unit,
  logger : PuckLogger)
-  extends NodeMappingState(0, eng, null, null, None) {
+  extends SearchState[ResMap]{
+  //extends NodeMappingState(0, eng, null, null, None) {
+  val id = 0
+  val prevState = None
 
   import NodeMappingInitialState._
 
@@ -201,7 +205,7 @@ class NodeMappingInitialState
     }
 
 
-
+  val result = initialMapping
   var triedAll0 = false
 
   override def triedAll = triedAll0
@@ -319,7 +323,7 @@ class NodeMappingInitialState
       if(filteredTransfos1.length != filteredTransfos2.length)
         k(Failure(NoSolution))
 
-      eng.compare(filteredTransfos1, filteredTransfos2, initialMapping, nodesToMap, k)
+      engine.compare(filteredTransfos1, filteredTransfos2, initialMapping, nodesToMap, k)
       /*eng.compare(filteredTransfos1, filteredTransfos2,
         neuterNodes.foldLeft(initialMapping){ (m, n) => m + (n -> None) },
         nodesToMap ++ otherNeuterNodes)*/

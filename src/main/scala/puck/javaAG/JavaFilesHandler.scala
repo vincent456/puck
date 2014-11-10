@@ -4,10 +4,10 @@ import java.io.File
 
 import puck.graph.constraints.{Solver, DecisionMaker}
 import puck.graph.constraints.search.SolverBuilder
-import puck.graph.immutable.transformations.{Recording, NodeMappingInitialState, Transformation}
-import puck.graph.{AccessGraph, JavaNode, JavaSolver, AGBuildingError}
+import puck.graph.immutable.transformations.NodeMappingInitialState
+import puck.graph._
 import puck.graph.io.{ConstraintSolvingSearchEngineBuilder, FilesHandler}
-import puck.javaAG.immutable.JavaAccessGraph
+import puck.javaAG.immutable.{AG2AST, JavaAccessGraph}
 
 
 /**
@@ -60,14 +60,23 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
   def solver(dm : DecisionMaker[JavaNodeKind]) =
     new JavaSolver(graph, dm)*/
 
-  def applyChangeOnProgram(record : Recording){
+  def applyChangeOnProgram(result : ResultT){
 
     logger.writeln("applying change !")
 
-    record.foreach { r =>
-      AG2AST(r)
-      r.redo()
+    val record = recordOfResult(result)
+    val program = sProgram.get
+    val applyer = new AG2AST(program)
+
+    record.foldRight((graph, graphOfResult(result))) {
+      case (r, (reenactor, resultGraph)) =>
+      //println(r)
+
+      val jreenactor = reenactor.asInstanceOf[JavaAccessGraph]
+      (r.redo(reenactor), applyer(jreenactor, resultGraph, r))
+
     }
+    //printCode()
     program.flushCaches()
     program.eliminateLockedNames()
   }

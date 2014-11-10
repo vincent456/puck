@@ -54,6 +54,11 @@ object AccessGraph {
 }
 import AccessGraph._
 
+sealed trait NodeStatus{
+  val node : NodeT
+}
+case class Removed(node : NodeT) extends NodeStatus
+case class Created(node : NodeT) extends NodeStatus
 
 trait Hook
 
@@ -129,7 +134,7 @@ class AccessGraph
 
   def addNode(localName:String, kind: NodeKind, th : TypeHolder, mutable : Mutability = true) : (NIdT, GraphT) = {
     val id = idSeed()
-    (id, addNode(id, localName, kind, th, mutable, nodeBuilder.createT()))
+    (id, addNode(id, localName, kind, th, mutable, nodeBuilder.createT(kind)))
   }
 
   /*def nodes : Seq[NodeIdT] = Range(0, idSeed + 1) */
@@ -142,22 +147,24 @@ class AccessGraph
 
   def nodesId : Iterable[NodeId] = nodesIndex.keys
 
+  private def getNodeStatus(id : NIdT) : NodeStatus = {
+    nodesIndex get id match {
+      case Some(n) => Created(n)
+      case None => removedNodes get id match {
+        case Some(n) => Removed(n)
+        case None =>
+          val msg = "AccessGraph.getNode : no node has id " + id.toString
+          logger.writeln(msg)(PuckLog.Error)
+          logger.writeln("nodes of graph : ")(PuckLog.Error)
+          logger.writeln(sortedMap.mkString("\n", "\n\t", ""))(PuckLog.Error)
+          throw new AGError("illegal node request : no node has id " + id.toString)
+      }
+    }
+  }
+
   def getNode(id : NIdT): AGNode = {
-   val sNode =  nodesIndex get id match {
-      case None => removedNodes get id
-      case sn => sn
-    }
-    sNode match {
-      case None =>
-        val msg = "AccessGraph.getNode : no node has id " + id.toString
-        logger.writeln(msg)(PuckLog.Error)
-        logger.writeln("nodes of graph : ")(PuckLog.Error)
-        logger.writeln(sortedMap.mkString("\n", "\n\t", ""))(PuckLog.Error)
-        throw new AGError("illegal node request : no node has id " + id.toString)
-      case Some((`id`, name, kind, styp, mutability, t)) =>
-        nodeBuilder(this, id, name, kind, styp, mutability, t)
-      case _ => throw new AGError("incoherent index left and right id are different")
-    }
+    val (_, name, kind, styp, mutability, t) = getNodeStatus(id).node
+    nodeBuilder(this, id, name, kind, styp, mutability, t)
   }
 
   def removeNode(id : NIdT) = {
@@ -169,35 +176,42 @@ class AccessGraph
       case _ => throw new AGError("incoherent index left and right id are different")
 
     }
-}
+  }
+
+
 
   def setNode(id : NIdT, name : String, k : NodeKind, styp : STyp, mutable : Boolean, t : Hook) : GraphT =
     newGraph(nNodesSet = nodesIndex + (id -> (id, name, k, styp, mutable, t)))
 
-  def setKind(id : NIdT, k : NodeKind) = nodesIndex get id match {
-    case None => throw new AGError("illegal node request : no node has id " + id.toString)
-    case Some( (`id`, name, _, styp, mutability, t) ) => setNode(id, name, k, styp, mutability, t)
-    case _ => throw new AGError("incoherent index left and right id are different")
-  }
-  def setType(id : NIdT, st : STyp) = nodesIndex get id match {
-    case None => throw new AGError("illegal node request : no node has id " + id.toString)
-    case Some( (`id`, name, k, _, mutability, t) ) => setNode(id, name, k, st, mutability, t)
-    case _ => throw new AGError("incoherent index left and right id are different")
+  private def setRemovedNode(id : NIdT, name : String, k : NodeKind, styp : STyp, mutable : Boolean, t : Hook) : GraphT =
+    newGraph(nRemovedNodes = removedNodes + (id -> (id, name, k, styp, mutable, t)))
+
+
+
+  def setKind(id : NIdT, k : NodeKind) = getNodeStatus(id) match {
+    case Created((_, name, _, styp, mutability, t)) =>  setNode(id, name, k, styp, mutability, t)
+    case Removed((_, name, _, styp, mutability, t)) => setRemovedNode(id, name, k, styp, mutability, t)
   }
 
-  def setMutability(id : NIdT, mutable : Boolean) = nodesIndex get id match {
-    case None => throw new AGError("illegal node request : no node has id " + id.toString)
-    case Some(  (`id`, name, kind, styp, _, t) ) => setNode(id, name, kind, styp, mutable, t)
-    case _ => throw new AGError("incoherent index left and right id are different")
-  }
+  def setType(id : NIdT, st : STyp) =
+    getNodeStatus(id) match {
+      case Created((_, name, k, _, mutability, t)) =>  setNode(id, name, k, st, mutability, t)
+      case Removed((_, name, k, _, mutability, t)) => setRemovedNode(id, name, k, st, mutability, t)
+    }
 
-  def setInternal(id : NIdT, t : Hook) = nodesIndex get id match {
-    case None => throw new AGError("illegal node request : no node has id " + id.toString)
-    case Some(  (`id`, name, kind, styp, mutable, _) ) => setNode(id, name, kind, styp, mutable, t)
-    case _ => throw new AGError("incoherent index left and right id are different")
-  }
+ def setMutability(id : NIdT, mutable : Boolean) =
+   getNodeStatus(id) match {
+     case Created((_, name, k, st, _, t)) =>  setNode(id, name, k, st, mutable, t)
+     case Removed((_, name, k, st, _, t)) => setRemovedNode(id, name, k, st, mutable, t)
+   }
 
-  def addContains(containerId: NIdT, contentId :NIdT, register : Boolean = true): GraphT =
+ def setInternal(id : NIdT, t : Hook) =
+   getNodeStatus(id) match {
+     case Created((_, name, k, st, mutable, _)) =>  setNode(id, name, k, st, mutable, t)
+     case Removed((_, name, k, st, mutable, _)) => setRemovedNode(id, name, k, st, mutable, t)
+   }
+
+ def addContains(containerId: NIdT, contentId :NIdT, register : Boolean = true): GraphT =
      newGraph(nContentMap = contentsMap + (containerId, contentId),
               nContainerMap = containerMap + (contentId -> containerId),
               nRecording = if(register) recording.addEdge(AGEdge.contains(containerId, contentId))
@@ -398,6 +412,7 @@ class AccessGraph
                         policy : AbstractionPolicy) : Try[(NIdT, GraphT)] = {
     val (absId, g) = createNode(implId, abskind, policy)
     val g2 = g.setType(absId, getNode(implId).styp)
+
     Success((absId, policy match {
       case SupertypeAbstraction => g2.addUses(implId, absId)
       case DelegationAbstraction => g2.addUses(absId, implId)

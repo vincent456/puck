@@ -86,7 +86,7 @@ class PuckControl(val filesHandler : FilesHandler,
 
   def loadConstraints(){
     try {
-      logger.write("Loading constraints ...")
+      logger.writeln("Loading constraints ...")
       filesHandler.parseConstraints()
       logger.writeln(" done:")
       filesHandler.graph.printConstraints(logger, defaultVerbosity)
@@ -100,7 +100,7 @@ class PuckControl(val filesHandler : FilesHandler,
                    graph : GraphT,
                    someUse : Option[AGEdge] = None){
 
-    logger.write("Printing graph ...")
+    logger.writeln("Printing graph ...")
 
     val pipedOutput = new PipedOutputStream()
     val pipedInput = new PipedInputStream(pipedOutput)
@@ -120,10 +120,10 @@ class PuckControl(val filesHandler : FilesHandler,
     }
   }
 
-  def applyOnCode(record : Recording){
+  def applyOnCode(record : ResultT){
     Future {
       filesHandler.logger.write("generating code ...")
-      filesHandler.graph.applyChangeOnProgram(record)
+      filesHandler.applyChangeOnProgram(record)
       filesHandler.printCode()
       filesHandler.logger.writeln(" done")
     } onComplete {
@@ -153,10 +153,7 @@ class PuckControl(val filesHandler : FilesHandler,
         graph.asInstanceOf[GraphT],
         sUse.asInstanceOf[Option[AGEdge]])
 
-    case ApplyOnCodeRequest(record) => ???
-      //applyOnCode(record.asInstanceOf[Recording[Kind]])
-
-
+    case ApplyOnCodeRequest(searchResult) => applyOnCode(searchResult)
 
     case ExploreRequest(trace, builder) =>
 

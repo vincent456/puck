@@ -1,7 +1,7 @@
 package puck.graph.immutable.constraints
 
 import puck.graph.immutable.AccessGraph.NodeId
-import puck.graph.immutable.{AccessGraph, NodeSet, NodeKind, AGEdge}
+import puck.graph.immutable._
 
 /**
  * Created by lorilan on 03/06/14.
@@ -94,7 +94,7 @@ case class ElementConstraint(owners : NodeSet,
 }
 
 case class ScopeFriendOfScopesConstraint(scopeFriends : NodeSet,
-                                        befriendedScopes : NodeSet)
+                                         befriendedScopes : NodeSet)
   extends Constraint{
 
   val owners = befriendedScopes
@@ -114,6 +114,22 @@ case class ScopeFriendOfElementsConstraint(scopeFriends : NodeSet,
     predicate + "(" + scopeFriends.mkString(graph) + ", " + befriendedElements.mkString(graph) +")."
 
   def addFriend(friend : NodeId) = ScopeFriendOfElementsConstraint(scopeFriends + friend, befriendedElements)
+}
+
+case class ElementFriendOfElementsConstraint
+(elementFriends : NodeSet,
+ befriendedElements : NodeSet)
+  extends Constraint {
+
+  def mkString(graph : GraphT) : String =
+      predicate + "(" + elementFriends.mkString(graph) + ", " + befriendedElements.mkString(graph) +")."
+
+  override val owners: NodeSet = befriendedElements
+  override val predicate: String = "canSee"
+
+  override val scopeFriends: NodeSet = LiteralNodeSet()
+
+  override def addFriend(friend: NodeId): Constraint = ???
 }
 
 object ConstraintPrinter{

@@ -3,8 +3,9 @@ package puck.graph.io
 import java.io._
 
 
+import puck.graph.Recording
 import puck.graph._
-import puck.graph.immutable.transformations.Transformation
+import puck.graph.immutable.transformations.{Recording, Transformation}
 import puck.search.{Search, SearchState, SearchEngine}
 import puck.util._
 
@@ -249,11 +250,14 @@ abstract class FilesHandler(workingDirectory : File){
     try {
       decouple match{
         case None => throw new AGError("cannot parse : no decouple file given")
-        case Some(f) => parser(new FileReader(f))
+        case Some(f) =>
+          logger.writeln("parsing " + f)
+          parser(new FileReader(f))
       }
     } catch {
       case e : NoSuchElementException =>
-        logger.writeln("parsing failed :" + e.getLocalizedMessage)(PuckLog.NoSpecialContext, PuckLog.Error)
+        e.printStackTrace()
+        logger.writeln("parsing failed : " + e.getLocalizedMessage)(PuckLog.NoSpecialContext, PuckLog.Error)
     }
     graph = graph.newGraph(nConstraints = graphBuilder.constraintsMap)
   }
@@ -307,6 +311,7 @@ abstract class FilesHandler(workingDirectory : File){
 
   def printCode() : Unit
 
+  def applyChangeOnProgram(record : ResultT) : Unit
 
   //TODO ? change to List[String] ?
   val srcSuffix : String

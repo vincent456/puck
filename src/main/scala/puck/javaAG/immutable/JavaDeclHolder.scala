@@ -9,17 +9,27 @@ sealed trait DeclHolder extends Hook{
   def createDecl(prog : AST.Program,
                  graph : AccessGraph,
                  node : NodeId) : AccessGraph =
-    throw new DeclarationCreationError
+    throw new DeclarationCreationError(graph.getNode(node).toString)
 }
 
 case object EmptyDeclHolder extends DeclHolder
 
-class DeclarationCreationError extends AGError
+case object PackageDeclHolder extends DeclHolder {
+  override def createDecl(prog : AST.Program,
+                 graph : AccessGraph,
+                 node : NodeId) : AccessGraph = graph
 
-case class ConstructorDeclHolder( decl : Option[AST.ConstructorDecl]) extends DeclHolder
+}
+class DeclarationCreationError(msg : String) extends AGError(msg)
+
+case class ConstructorDeclHolder(decl : Option[AST.ConstructorDecl]) extends DeclHolder
 
 case class FieldDeclHolder(decl : Option[AST.FieldDeclaration]) extends DeclHolder
-case class MethodDeclHolder(decl : Option[AST.MethodDecl]) extends DeclHolder {
+
+trait MethodDeclHolder extends DeclHolder {
+  val decl : Option[AST.MethodDecl]
+}
+case class ConcreteMethodDeclHolder(decl : Option[AST.MethodDecl]) extends MethodDeclHolder {
   override def createDecl(prog : AST.Program,
                           graph : AccessGraph,
                           node : NodeId) : AccessGraph = {
@@ -38,11 +48,11 @@ case class MethodDeclHolder(decl : Option[AST.MethodDecl]) extends DeclHolder {
         }
 
         someKtor match {
-          case None => throw new DeclarationCreationError
+          case None => throw new DeclarationCreationError("no constructor found")
           case Some(c) =>
-            val ktor = graph.getNode(c).styp.asInstanceOf[ConstructorMethodDecl]
+            val ktor = graph.getNode(c).styp.asInstanceOf[ConstructorMethodDeclHolder]
             val decl = ktor.ctorDecl.map(_.createConstructorMethod(n.name))
-            graph.setInternal(node, MethodDeclHolder(decl))
+            graph.setInternal(node, ConcreteMethodDeclHolder(decl))
         }
 
       case Some(_) => graph
@@ -50,7 +60,7 @@ case class MethodDeclHolder(decl : Option[AST.MethodDecl]) extends DeclHolder {
   }
 }
 
-case class AbstractMethodDeclHolder(decl : Option[AST.MethodDecl]) extends DeclHolder {
+case class AbstractMethodDeclHolder(decl : Option[AST.MethodDecl]) extends MethodDeclHolder {
   override def createDecl(prog : AST.Program,
                           graph : AccessGraph,
                           nodeId : NodeId) : AccessGraph = {
@@ -72,8 +82,8 @@ case class AbstractMethodDeclHolder(decl : Option[AST.MethodDecl]) extends DeclH
   }
 }
 
-case class ConstructorMethodDecl( decl : Option[AST.MethodDecl],
-                                  ctorDecl : Option[AST.ConstructorDecl]) extends DeclHolder {
+case class ConstructorMethodDeclHolder( decl : Option[AST.MethodDecl],
+                                  ctorDecl : Option[AST.ConstructorDecl]) extends MethodDeclHolder {
 
   override def createDecl(prog : AST.Program,
                           graph : AccessGraph,
@@ -82,7 +92,7 @@ case class ConstructorMethodDecl( decl : Option[AST.MethodDecl],
       case None =>
         val name = graph.getNode(node).name
         val decl = Some(ctorDecl.get.createConstructorMethod(name))
-        graph.setInternal(node, ConstructorMethodDecl(decl, ctorDecl))
+        graph.setInternal(node, ConstructorMethodDeclHolder(decl, ctorDecl))
       case Some(_) => graph
     }
   }
@@ -121,7 +131,7 @@ trait TypedKindDeclHolder extends DeclHolder {
   }
 }
 
-case class InterfaceDeclHolder(decl : Option[AST.TypeDecl]) extends TypedKindDeclHolder {
+case class InterfaceDeclHolder(decl : Option[AST.InterfaceDecl]) extends TypedKindDeclHolder {
 
 override val toString = "Interface"
 

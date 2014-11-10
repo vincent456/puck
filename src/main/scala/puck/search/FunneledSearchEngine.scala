@@ -49,10 +49,10 @@ trait Evaluator[Result]{
 
 trait FunneledSeachEngine[Result] extends SearchEngine[Result]{
 
-  val evaluator : Evaluator[Result]
+  def evaluator : Evaluator[Result]
   var stateStack = new mutable.Stack[SearchState[Result]]()
 
-  val funneledStates = new FunneledStatesStack[Result](evaluator)
+  lazy val funneledStates = new FunneledStatesStack[Result](evaluator)
 
   def markPointPeriod : Int = 5
 

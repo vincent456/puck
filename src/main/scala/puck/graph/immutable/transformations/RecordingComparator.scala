@@ -156,6 +156,7 @@ class RecordingComparator
         // they are used to compute the change on the graph, its the change themselves we want to compare
         // removed in NodeMappingInitialState.normalizeNodeTransfos
         case TTTypeRedirection(_, _, _, _) // TODO see if need to be compared
+             | TTAbstraction(_, _, _)
              | TTNode(_, _, _, _, _, _) => throw new Error("should not happen !!")
 
       }

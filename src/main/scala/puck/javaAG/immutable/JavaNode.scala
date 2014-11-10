@@ -22,7 +22,19 @@ object JavaNode extends AGNodeBuilder with DotHelper{
             t : Hook) : JavaNode =
     new JavaNode(graph, id, name, kind, styp, isMutable, t)
 
-  def createT() = EmptyDeclHolder
+  def createT(kind : NodeKind) =
+   kind match {
+     case Constructor => ConstructorDeclHolder(None)
+     case Field => FieldDeclHolder(None)
+     case Method => ConcreteMethodDeclHolder(None)
+     case ConstructorMethod => ConstructorMethodDeclHolder(None, None)
+     case AbstractMethod => AbstractMethodDeclHolder(None)
+     case Interface => InterfaceDeclHolder(None)
+     case Class => ClassDeclHolder(None)
+     case Package => PackageDeclHolder
+     case _ => EmptyDeclHolder
+   }
+
 
   def rootKind : JavaNodeKind = JavaRoot
   def kinds : Seq[NodeKind] = JavaNodeKind.list
@@ -114,4 +126,5 @@ class JavaNode
         case _ => true
       })
   }
+
 }

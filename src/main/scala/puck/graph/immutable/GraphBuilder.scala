@@ -115,4 +115,18 @@ class GraphBuilder
     constraintsMap = constraintsMap.newConstraintsMaps(nFriendsOfElementsConstraints = friendCtsMap)
 
   }
+
+  def addCanSee( friends : NodeSet,
+                 befriended : NodeSet) = {
+    val ct = new ElementFriendOfElementsConstraint(friends, befriended)
+
+    val friendCtsMap = befriended.foldLeft(constraintsMap.canSeeConstraints){
+      case (map, ownerId) =>
+        val s = map.getOrElse(ownerId, CanSeeSet())
+        map + (ownerId -> (s + ct) )
+    }
+
+    constraintsMap = constraintsMap.newConstraintsMaps(nCanSeeConstraints = friendCtsMap)
+
+  }
 }

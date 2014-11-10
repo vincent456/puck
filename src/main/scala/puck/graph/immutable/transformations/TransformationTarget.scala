@@ -90,7 +90,10 @@ case class TTAbstraction
  policy: AbstractionPolicy)
  extends TransformationTarget{
 
-  def execute(g: GraphT, op : Operation) = ???
+  def execute(g: GraphT, op : Operation) = op match {
+    case Add => g.addAbstraction(impl, (abs, policy))
+    case Remove => g.removeAbstraction(impl, (abs, policy))
+  }
 }
 
 /*

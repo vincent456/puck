@@ -12,7 +12,7 @@ object ConstraintSet{
     new ConstraintSet[T](Seq())
 }
 class ConstraintSet[T <: Constraint]
-(private val content : Seq[T])
+(protected val content : Seq[T])
   extends Iterable[T]{
 
   def this() = this(Seq[T]())
@@ -50,4 +50,22 @@ class ConstraintSet[T <: Constraint]
   def hasFriendScopeThatContains_*(graph : AccessGraph, n : NodeId)=
     content.exists( _.scopeFriends.hasScopeThatContains_*(graph, n))
 
+}
+object CanSeeSet {
+  def apply() = new CanSeeSet(Seq())
+}
+class CanSeeSet(s : Seq[ElementFriendOfElementsConstraint])
+  extends ConstraintSet[ElementFriendOfElementsConstraint](s){
+
+  def isFriend(n: NodeId) = {
+
+    def aux(l : Seq[ElementFriendOfElementsConstraint]) : Boolean =
+      if(l.isEmpty) false
+      else l.head.elementFriends.contains(n) || aux(l.tail)
+
+    aux(content)
+
+  }
+
+  override def + (ct : ElementFriendOfElementsConstraint) : CanSeeSet = new CanSeeSet( ct +: content )
 }
