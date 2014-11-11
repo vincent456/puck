@@ -53,6 +53,7 @@ class AG2AST(val program : AST.Program) {
 
     }*/
 
+      // TODO see if can be performed in add node instead
       case Transformation(_, TTAbstraction(impl, abs, SupertypeAbstraction)) =>
         (reenactor.getNode(impl).t, reenactor.getNode(abs).kind) match {
           case (ConcreteMethodDeclHolder(Some(decl)), AbstractMethod) =>

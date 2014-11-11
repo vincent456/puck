@@ -9,7 +9,9 @@ import scala.swing.event.MouseClicked
  * Created by lorilan on 10/07/14.
  */
 class NodeInfosPanel(val graph : AccessGraph,
-                     val nodeId : NodeId)
+                     val nodeId : NodeId,
+                      printId : () => Boolean,
+                      printSig: () => Boolean)
   extends SplitPane(Orientation.Horizontal) {
 
   val useDetails = new BoxPanel(Orientation.Vertical)
@@ -76,7 +78,8 @@ class NodeInfosPanel(val graph : AccessGraph,
           contents += Button("<o>") {
             NodeInfosPanel.this publish
               GraphDisplayRequest("Graph with uses selected",
-              graph, sUse = Some(AGEdge.uses(user, nodeId)))
+              graph, printId(), printSig(),
+              sUse = Some(AGEdge.uses(user, nodeId)))
           }
 
           contents += new Label(user + " " + tag) {

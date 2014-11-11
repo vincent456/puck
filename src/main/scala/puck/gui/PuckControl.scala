@@ -31,20 +31,26 @@ case class LoadConstraintRequest() extends ControlRequest
 case class GraphDisplayRequest
 (title : String,
  graph : AccessGraph,
+ printId : Boolean,
+ printSignature : Boolean,
  sUse : Option[AGEdge] = None)
-  extends ControlRequest
+ extends ControlRequest
 
 case class ExploreRequest
-(trace : Boolean,
- builder : ConstraintSolvingSearchEngineBuilder)
+(builder : ConstraintSolvingSearchEngineBuilder)
   extends ControlRequest
 
-case class SearchStateMapPrintingRequest(stateMap : Map[Int, Seq[SearchState[ResultT]]])
+case class SearchStateMapPrintingRequest
+(stateMap : Map[Int, Seq[SearchState[ResultT]]],
+ printId : Boolean,
+ printSignature : Boolean)
   extends ControlRequest
 case class SearchStateSeqPrintingRequest
 (subDir : String,
  states : Seq[SearchState[ResultT]],
- sPrinter : Option[SearchState[ResultT] => String])
+ sPrinter : Option[SearchState[ResultT] => String],
+ printId : Boolean,
+ printSignature : Boolean)
   extends ControlRequest
 
 case class PrintConstraintRequest() extends ControlRequest
@@ -98,7 +104,9 @@ class PuckControl(val filesHandler : FilesHandler,
 
   def displayGraph(title : String,
                    graph : GraphT,
-                   someUse : Option[AGEdge] = None){
+                   someUse : Option[AGEdge],
+                    printId : Boolean,
+                    printSignature : Boolean){
 
     logger.writeln("Printing graph ...")
 
@@ -112,9 +120,10 @@ class PuckControl(val filesHandler : FilesHandler,
     }
 
     filesHandler.makePng(graph,
-                         printId = true,
-                         sOutput = Some(pipedOutput),
-                         selectedUse = someUse){
+                         printId,
+                         printSignature,
+                         someUse,
+                         sOutput = Some(pipedOutput)){
       case Success(i) if i == 0 => logger.writeln("success")
       case _ => logger.writeln("fail")
     }
@@ -135,12 +144,14 @@ class PuckControl(val filesHandler : FilesHandler,
   type StateT = SearchState[ResultT]
   def printStateSeq( subDirStr : String,
                      states : Seq[StateT],
-                     sPrinter : Option[StateT => String]): Unit ={
+                     sPrinter : Option[StateT => String],
+                     printId : Boolean,
+                     printSignature : Boolean): Unit ={
     val d = filesHandler.graphFile("_results")
     d.mkdir()
     val subDir = filesHandler.graphFile("_results%c%s".format(File.separatorChar, subDirStr))
     subDir.mkdir()
-    filesHandler.printCSSearchStatesGraph(subDir, states, sPrinter)
+    filesHandler.printCSSearchStatesGraph(subDir, states, sPrinter, printId, printSignature)
   }
 
   reactions += {
@@ -148,14 +159,12 @@ class PuckControl(val filesHandler : FilesHandler,
 
     case LoadConstraintRequest() => loadConstraints()
 
-    case GraphDisplayRequest(title, graph, sUse) =>
-      displayGraph(title,
-        graph.asInstanceOf[GraphT],
-        sUse.asInstanceOf[Option[AGEdge]])
+    case GraphDisplayRequest(title, graph, printId, printSignature, sUse) =>
+      displayGraph(title, graph, sUse, printId, printSignature)
 
     case ApplyOnCodeRequest(searchResult) => applyOnCode(searchResult)
 
-    case ExploreRequest(trace, builder) =>
+    case ExploreRequest(builder) =>
 
       val engine = builder(filesHandler.initialRecord,
                            filesHandler.graph)
@@ -177,11 +186,11 @@ class PuckControl(val filesHandler : FilesHandler,
           //filesHandler.logger writeln exc.getStackTrace.mkString("\n")
       }
 
-    case treq @ SearchStateMapPrintingRequest(_) =>
-      filesHandler.printCSSearchStatesGraph(treq.stateMap)
+    case SearchStateMapPrintingRequest(stateMap, printId, printSignature) =>
+      filesHandler.printCSSearchStatesGraph(stateMap, printId, printSignature)
 
-    case treq @ SearchStateSeqPrintingRequest(_, _, _) =>
-      printStateSeq(treq.subDir, treq.states, treq.sPrinter)
+    case SearchStateSeqPrintingRequest(subDir, states, sPrinter, printId, printSignature) =>
+      printStateSeq(subDir, states, sPrinter, printId, printSignature)
   }
 
 }

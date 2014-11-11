@@ -11,7 +11,9 @@ import scala.swing.event.{SelectionChanged, Event}
  */
 case class StateSelected(box : CSSearchStateComboBox) extends Event
 
-class CSSearchStateComboBox(map : Map[Int, Seq[SearchState[ResultT]]])
+class CSSearchStateComboBox(map : Map[Int, Seq[SearchState[ResultT]]],
+                            printId : () => Boolean,
+                            printSig: () => Boolean)
   extends FlowPanel{
 
   type StateT = SearchState[ResultT]
@@ -31,7 +33,7 @@ class CSSearchStateComboBox(map : Map[Int, Seq[SearchState[ResultT]]])
         def apply() {
           CSSearchStateComboBox.this publish
             GraphDisplayRequest(couplingValues.selection.item + " " + searchStateComboBox.selection.item.uuid(),
-              graphOfResult(searchStateComboBox.selection.item.result))
+              graphOfResult(searchStateComboBox.selection.item.result), printId(), printSig())
         }
       }
     }
@@ -45,7 +47,7 @@ class CSSearchStateComboBox(map : Map[Int, Seq[SearchState[ResultT]]])
 
         CSSearchStateComboBox.this publish SearchStateSeqPrintingRequest(state.uuid()+"history",
           state.ancestors(includeSelf = true), Some({s => id +=1
-            id.toString}))
+            id.toString}), printId(), printSig())
 
       }
     }

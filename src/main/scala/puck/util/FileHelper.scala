@@ -70,8 +70,7 @@ object FileHelper {
     def aux(res: List[String],
             f: File) : List[String] = {
       if (f.isDirectory)
-        f.listFiles().foldLeft(res)/*(aux)*/
-        {
+        f.listFiles().foldLeft(res){
           case (l, f0) =>
             if(f0.getName == ignore) l
             else aux(l, f0)

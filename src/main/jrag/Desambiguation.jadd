@@ -15,7 +15,11 @@ aspect Desambiguation{
 	  for(int i = 0; i < getNumTypeArgument(); i++) {
 		  if(i != 0)
 			  sb.append(", ");
-		  sb.append(((TypeAccess)getTypeArgument(i)).fullName());
+		  
+		  if(getTypeArgument(i) instanceof Wildcard)
+              sb.append("?");
+          else
+		    sb.append(((TypeAccess)getTypeArgument(i)).fullName());
 	  }
 
 	  sb.append(">");

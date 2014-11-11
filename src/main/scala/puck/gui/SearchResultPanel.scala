@@ -13,7 +13,9 @@ import scala.swing._
  */
 class SearchResultPanel(initialRecord : Recording,
                         res : Search[ResultT],
-                        logger : PuckLogger)
+                        logger : PuckLogger,
+                         printId : () => Boolean,
+                         printSig: () => Boolean)
       extends BoxPanel(Orientation.Vertical){
 
   implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.NoSpecialContext, PuckLog.Info)
@@ -45,7 +47,7 @@ class SearchResultPanel(initialRecord : Recording,
 
   if(sortedRes.nonEmpty) {
     //val comp : Component = new CSSearchStateComparator(initialRecord, sortedRes)
-    val comp : Component = new CSSearchStateComboBox(sortedRes)
+    val comp : Component = new CSSearchStateComboBox(sortedRes, printId, printSig)
     contents += comp
 
     this listenTo comp
@@ -57,18 +59,18 @@ class SearchResultPanel(initialRecord : Recording,
       contents += Button("Print") {
         SearchResultPanel.this.
           publish(SearchStateSeqPrintingRequest(couplingValues.selection.item.toString,
-          sortedRes(couplingValues.selection.item), None))
+          sortedRes(couplingValues.selection.item), None, printId(), printSig()))
       }
     }
 
     contents += Button("Print all") {
       SearchResultPanel.this.
-        publish(SearchStateMapPrintingRequest(sortedRes))
+        publish(SearchStateMapPrintingRequest(sortedRes, printId(), printSig()))
     }
   }
 
   val allStates = res.initialState.iterator.toSeq.groupBy{ s => s.depth }
-  val comp2 : Component = new CSSearchStateComboBox(allStates)
+  val comp2 : Component = new CSSearchStateComboBox(allStates, printId, printSig)
   contents += comp2
 
   this listenTo comp2

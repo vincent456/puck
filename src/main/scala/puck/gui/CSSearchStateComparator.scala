@@ -11,11 +11,13 @@ import scala.swing.{Button, Label, Orientation, BoxPanel}
  * Created by lorilan on 22/10/14.
  */
 class CSSearchStateComparator(initialRecord : Recording,
-                              sortedRes: Map[Int, Seq[SearchState[ResultT]]])
+                              sortedRes: Map[Int, Seq[SearchState[ResultT]]],
+                               printId : () => Boolean,
+                               printSig : () => Boolean)
   extends BoxPanel(Orientation.Vertical) {
   contents += new Label("Compare")
-  val cb1 = new CSSearchStateComboBox(sortedRes)
-  val cb2 = new CSSearchStateComboBox(sortedRes)
+  val cb1 = new CSSearchStateComboBox(sortedRes, printId, printSig)
+  val cb2 = new CSSearchStateComboBox(sortedRes, printId, printSig)
 
   this deafTo this
 

@@ -103,7 +103,7 @@ object JavaFilesHandler{
   def apply(file : java.io.File) = new JavaFilesHandler(file)
 
   def compile(sources: List[String], jars: List[String]): Option[AST.Program] = {
-    val arglist = createArglist(sources, jars, None)
+    val arglist = createArglist(sources, jars, List())
     val f = new AST.Frontend {
       protected override def processWarnings(errors: java.util.Collection[_], unit: AST.CompilationUnit) {
       }
@@ -121,16 +121,17 @@ object JavaFilesHandler{
       None
   }
 
-  private[puck] def createArglist(sources: List[String], jars: List[String],
-                                  srcdirs:Option[List[String]]): Array[String] = {
-    if (jars.length == 0) return sources.toArray
+  private[puck] def createArglist(sources: List[String],
+                                  jars: List[String],
+                                  srcdirs:List[String]): Array[String] = {
 
-    val args : List[String] = "-classpath" :: jars.mkString("", File.pathSeparator, ".") :: (
-      srcdirs match {
-        case Some(dirs) =>"-sourcespath" :: dirs.mkString("", ":", ".") :: sources
-        case None => sources
-      })
-    args.toArray
+    if (jars.isEmpty) sources.toArray
+    else {
+    val args: List[String] = "-classpath" :: jars.mkString("", File.pathSeparator, File.pathSeparator + ".") :: (
+        if (srcdirs.isEmpty) sources
+        else "-sourcepath" :: srcdirs.mkString("", File.pathSeparator, File.pathSeparator + ".") :: sources)
+      args.toArray
+    }
   }
 
 }

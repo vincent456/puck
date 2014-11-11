@@ -210,11 +210,11 @@ abstract class FilesHandler(workingDirectory : File){
   }
 
   def makePng(graph : GraphT,
-              printId : Boolean = false,
-              printSignatures : Boolean = true,
+              printId : Boolean,
+              printSignatures : Boolean,
+              selectedUse : Option[AGEdge],
               sOutput : Option[OutputStream] = None,
-              outputFormat : DotOutputFormat = Png(),
-              selectedUse : Option[AGEdge] = None)
+              outputFormat : DotOutputFormat = Png())
              (finish : Try[Int] => Unit = {case _ => ()}){
 
     //TODO fix bug when chaining the two function with a pipe
@@ -281,20 +281,24 @@ abstract class FilesHandler(workingDirectory : File){
   }
 
 
-  def printCSSearchStatesGraph(states : Map[Int, Seq[SearchState[ResultT]]]){
+  def printCSSearchStatesGraph(states : Map[Int, Seq[SearchState[ResultT]]],
+                               printId : Boolean,
+                               printSignature : Boolean){
     val d = graphFile("_results")
     d.mkdir()
     states.foreach{
       case (cVal, l) =>
         val subDir = graphFile("_results%c%d".format(File.separatorChar, cVal))
         subDir.mkdir()
-        printCSSearchStatesGraph(subDir, l, None)
+        printCSSearchStatesGraph(subDir, l, None, printId, printSignature)
     }
   }
 
   def printCSSearchStatesGraph(dir : File,
                                states : Seq[SearchState[ResultT]],
-                               sPrinter : Option[(SearchState[ResultT] => String)]){
+                               sPrinter : Option[(SearchState[ResultT] => String)],
+                               printId : Boolean,
+                               printSignature : Boolean){
 
     val printer = sPrinter match {
       case Some(p) => p
@@ -305,7 +309,7 @@ abstract class FilesHandler(workingDirectory : File){
     states.foreach { s =>
       val graph = graphOfResult(s.result)
       val f = new File("%s%c%s.png".format(dir.getAbsolutePath, File.separatorChar, printer(s)))
-      makePng(graph, printId = true, sOutput = Some(new FileOutputStream(f)))()
+      makePng(graph, printId, printSignature, None, sOutput = Some(new FileOutputStream(f)))()
     }
   }
 

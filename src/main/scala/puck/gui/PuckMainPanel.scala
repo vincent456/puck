@@ -65,13 +65,19 @@ class PuckMainPanel(val filesHandler: FilesHandler)
     val delayedDisplay = ArrayBuffer[Component]()
     val control = new PuckControl(filesHandler, progressBar, delayedDisplay)
 
+    val printIdsBox = new CheckBox("Show nodes ID")
+    val printSignaturesBox = new CheckBox("Show signagures")
+
+    def printIds() = printIdsBox.selected
+    def printSigs() = printSignaturesBox.selected
+    
     val nodeInfos = new ScrollPane(){
       minimumSize = new Dimension(rightWidth/2, height)
       preferredSize = minimumSize
 
       reactions += {
         case PuckTreeNodeClicked(graph, n) =>
-          val nodeInfoPanel = new NodeInfosPanel(graph, n)
+          val nodeInfoPanel = new NodeInfosPanel(graph, n, printIds, printSigs)
           contents = nodeInfoPanel
           control.listenTo(nodeInfoPanel)
           treeDisplayer.listenTo(nodeInfoPanel)
@@ -108,15 +114,12 @@ class PuckMainPanel(val filesHandler: FilesHandler)
         case ExplorationFinished(res0) =>
           resultsWrapper.contents.clear()
           val searchResultPanel =
-            new SearchResultPanel(filesHandler.initialRecord, res0, filesHandler.logger)
+            new SearchResultPanel(filesHandler.initialRecord, res0, filesHandler.logger,
+              printIds, printSigs)
           resultsWrapper.contents += searchResultPanel
           control listenTo searchResultPanel
 
       }
-
-      val decisionStrategy = new CheckBox("GUI Decision Maker")
-      val printTrace = new CheckBox("Print trace")
-
 
       contents += makeButton("Settings", "To set graphviz dot path"){
         () => val frame = new SettingsFrame(filesHandler)
@@ -178,9 +181,13 @@ class PuckMainPanel(val filesHandler: FilesHandler)
 
       addDelayedComponent(showConstraints)
 
+      addDelayedComponent(printIdsBox)
+      addDelayedComponent(printSignaturesBox)
+
+
       val show = makeButton("Show graph",
         "Display a visual representation of the graph"){
-        () => publish(GraphDisplayRequest("Graph", filesHandler.graph))
+        () => publish(GraphDisplayRequest("Graph", filesHandler.graph, printIdsBox.selected, printSignaturesBox.selected))
       }
 
       addDelayedComponent(show)
@@ -194,8 +201,7 @@ class PuckMainPanel(val filesHandler: FilesHandler)
       addDelayedComponent(searchStrategies)
 
       val explore = makeButton("Solve with search engine",""){
-        () => publish(ExploreRequest(printTrace.selected,
-          searchStrategies.selection.item))
+        () => publish(ExploreRequest(searchStrategies.selection.item))
       }
 
       addDelayedComponent(explore)

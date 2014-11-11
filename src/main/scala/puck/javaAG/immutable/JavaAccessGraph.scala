@@ -158,73 +158,6 @@ class JavaAccessGraph
             }
         }
 
-
-        /*super.createAbstraction( implId,
-                                 Interface,
-                                 SupertypeAbstraction) match {
-          case Failure(exc) => Failure(exc)
-          case Success ((absId, g)) =>
-            val abs = g.getNode(absId)
-            val g2Try = implContent.foldLeft(Success(g) : Try[GraphT]){
-              case (Success(g0), child) =>
-              getNode(child).kind match {
-                //case ck @ Method() =>
-                case ck : MethodKind =>
-                   val gAbsTry = g.createAbstraction(child, AbstractMethod,  SupertypeAbstraction)
-                   gAbsTry match {
-                      case Success((absChild, g21)) =>
-                        val g3 = g21.addContains(absId, absChild)
-                        val absChildNode = g3.getNode(absChild)
-                        absChildNode.kind match {
-                          case AbstractMethod =>
-                            Success(g3.changeType(absChild, absChildNode.styp, implId, absId))
-                          case k => Failure(new AGError(k + " should be an abstract method !"))
-                        }
-                      case Failure(exc) => Failure(exc)
-                    }
-
-                //case AbstractMethod() => throw new AGError("unhandled case !")
-                case _ => Success(g0)
-              }
-              case (Failure(f),_) => Failure(f)
-            }
-            g2Try match {
-              case Failure(f) => Failure(f)
-              case Success(g2) =>
-                val g3 = g2.addIsa(implId, absId)
-
-                val g4Try = implContent.foldLeft(Success(g3) : Try[GraphT]) {
-                  case (Success(g0), child) =>
-                  val node = g0.getNode(child)
-                  (node.kind, node.styp) match {
-                    // even fields can need to be promoted if they are written
-                    //case Field() =>
-                    case (ck : MethodKind, MethodTypeHolder(typ))  =>
-
-                      val newTyp = typ.redirectContravariantUses(implId, abs)
-                      val g1 = g0.setType(child, MethodTypeHolder(newTyp))
-
-                      if(g1.uses(child, implId)) {
-                        logger.writeln("interface creation : redirecting %s target to %s".format(AGEdge.uses(child, implId), abs), 3)
-                        g1.redirectUses(AGEdge.uses(child, implId), absId, SupertypeAbstraction) match {
-                          case Success((_, g22)) => Success(g22)
-                          case Failure(f) => Failure(f)
-                        }
-                      }
-                      else Success(g1)
-                    case _ => Success(g0)
-                  }
-                  case (Failure(f), _) => Failure(f)
-                }
-                g4Try match {
-                  case Success(g4) => Success((absId, g4))
-                  case Failure(f) => Failure(f)
-                }
-            }
-        }*/
-
-
-
       case (AbstractMethod, SupertypeAbstraction) =>
         //no (abs, impl) or (impl, abs) uses
         Success(createNode(implId, abskind, policy))
@@ -348,49 +281,6 @@ class JavaAccessGraph
     }
 
   }
-
- /* def findMergingCandidateIn(method : AGNodeT, interface : AGNodeT) = {
-    //node.graph.logger.writeln("searching merging candidate for %s".format(node), 8)
-    if(method.styp.isEmpty)
-      throw new AGError("Method must have a type")
-
-    val mType = method.styp.redirectUses(method.container, interface)
-
-    interface.content.find { ncId =>
-      val nc =getNode(ncId)
-      nc.kind match {
-        case AbstractMethod =>  nc.name == method.name && nc.styp == mType
-        case _ => false
-      }
-    }
-
-  }*/
-  //"consumed" is potentialy a superType and thus may have less methods than this
-  /*override def merge(consumerId : NIdT, consumedId : NIdT) : GraphT = {
-    val consumer = getNode(consumedId)
-    val consumed = getNode(consumedId)
-    (consumer.kind, consumed.kind) match {
-      case (Interface, Interface) =>
-        val g1 = super.merge(consumerId, consumedId)
-        consumed.content.foldLeft(g1) {
-          case (g0, consumedAbsMethodId) =>
-            val consumedAbsMethod = getNode(consumedAbsMethodId)
-
-            consumedAbsMethod.kind match {
-            case AbstractMethod =>
-              findMergingCandidateIn(consumedAbsMethod, consumer) match {
-                case Some(thisAbsMethod) => g0.merge(thisAbsMethod, consumedAbsMethodId)
-                case None => g0 //throw new AGError(consumedAbsMethod.fullName + " has no method to merge with")
-              }
-            case _ => throw new AGError("interface must have only abstract method")
-          }
-        }
-
-      case (AbstractMethod, AbstractMethod) =>
-        super.merge(consumerId, consumedId)
-      case _ => this
-    }
-  }*/
 
   def packageNode(id : NodeId) : NodeId =
     getNode(id).kind match {
