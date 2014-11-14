@@ -62,8 +62,8 @@ class NodeInfosPanel(val graph : AccessGraph,
 
       node.users.foreach { user =>
 
-        val sideUses = graph.dominatedUses(user, nodeId)
-        val primaryUses = graph.dominantUses(user, nodeId)
+        val sideUses = graph.usesDominatedBy(user, nodeId)
+        val primaryUses = graph.usesDominating(user, nodeId)
 
         def tag = (sideUses.isEmpty, primaryUses.isEmpty) match {
           case (true, true) => ""

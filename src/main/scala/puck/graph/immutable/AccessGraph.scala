@@ -362,15 +362,15 @@ class AccessGraph
   def usedBy(userId : NIdT) : Iterable[NIdT] = usesMap getFlat userId
   def users(useeId: NIdT) : Iterable[NIdT] = usersMap getFlat useeId
 
-  def dominantUses(dominatedEdge : (NIdT, NIdT)) : Iterable[(NIdT, NIdT)] =
+  def usesDominating(dominatedEdge : (NIdT, NIdT)) : Iterable[(NIdT, NIdT)] =
     dominated2dominantUsesMap getFlat dominatedEdge
 
-  def dominatedUses(dominantEdge : (NIdT, NIdT)) : Iterable[(NIdT, NIdT)] =
+  def usesDominatedBy(dominantEdge : (NIdT, NIdT)) : Iterable[(NIdT, NIdT)] =
     dominant2dominatedUsesMap  getFlat dominantEdge
 
   def dominates(dominantEdge : (NIdT, NIdT),
                 dominatedEdge : (NIdT, NIdT)) : Boolean =
-    dominatedUses( dominantEdge ).exists(_ == dominatedEdge)
+    usesDominatedBy( dominantEdge ).exists(_ == dominatedEdge)
 
   def abstractions(id : NIdT) : Iterable[(NIdT, AbstractionPolicy)] =
     abstractionsMap getFlat id
@@ -492,7 +492,7 @@ class AccessGraph
     logger.writeln("redirecting primary uses of side use %s (new side usee is %s) ".
       format(currentSideUse, newSideUsee))
 
-     val primaryUses = dominantUses(currentSideUse)
+     val primaryUses = usesDominating(currentSideUse)
      if(primaryUses.isEmpty) {
        logger.writeln("no primary uses to redirect")
        Success(this)
@@ -504,7 +504,7 @@ class AccessGraph
          case (g, primary0) =>
            val primary = AGEdge.uses(primary0)
 
-           val keepOldUse = dominatedUses(primary0).nonEmpty //is empty if primary had only one side use
+           val keepOldUse = usesDominatedBy(primary0).nonEmpty //is empty if primary had only one side use
 
            val tryG1 : Try[GraphT] =
               g.map { _.removeUsesDependency(primary, currentSideUse)}
@@ -573,7 +573,7 @@ class AccessGraph
     logger.writeln("redirecting side uses of primary use %s (new primary usee is %s) ".
       format(currentPrimaryUse, newPrimaryUsee))
 
-    val sideUses = dominatedUses(currentPrimaryUse)
+    val sideUses = usesDominatedBy(currentPrimaryUse)
     if(sideUses.isEmpty){
       logger.writeln("no side uses to redirect")
       Success(this)

@@ -59,7 +59,9 @@ case class NamedNodeSet
 
   val declare : String = "declareSet"
 
-  def mkString(graph : GraphT) = declare + "(" + id + ", " + setDef.mkString(graph) +")."
+  def mkDefString(graph : GraphT) = declare + "(" + id + ", " + setDef.mkString(graph) +")."
+
+  def mkString(graph : GraphT) = id
 
   def iterator : Iterator[NodeType] = setDef.iterator
   def +(n : NodeType) = new NamedNodeSet(id, setDef + n)

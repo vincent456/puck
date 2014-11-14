@@ -23,6 +23,7 @@ class ConstraintsParser private
 
   var defs : Map[String, NamedNodeSet] = Map()
 
+
   var imports : Seq[String] = Seq("")
 
   def findNode(k : String) : Seq[NodeId] ={
@@ -249,5 +250,6 @@ class ConstraintsParser private
       }
     }
     aux(StreamReader(input))
+    builder.setDefs(defs)
   }
 }

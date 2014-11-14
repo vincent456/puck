@@ -22,7 +22,7 @@ object ConstraintsMaps{
 import ConstraintsMaps._
 
 class ConstraintsMaps
-(val nodeSets : Map[String, NamedNodeSet],
+(val namedSets : Map[String, NamedNodeSet],
  val friendOfElementsConstraints : FriendsOfElementsMap,
  val friendOfScopesConstraints : FriendsOfScopesMap,
  val canSeeConstraints : CanSeeMap,
@@ -30,13 +30,13 @@ class ConstraintsMaps
  val scopeConstraints : ScopeConstraintsMap)
  {
 
-   def newConstraintsMaps( nNodeSets : Map[String, NamedNodeSet] = nodeSets,
+   def newConstraintsMaps( nNamedSets : Map[String, NamedNodeSet] = namedSets,
                            nFriendsOfElementsConstraints : FriendsOfElementsMap = friendOfElementsConstraints,
                            nFriendOfScopesConstraints : FriendsOfScopesMap = friendOfScopesConstraints,
                            nCanSeeConstraints : CanSeeMap = canSeeConstraints,
                            nElementsConstraints : EltConstraintsMap = elementsConstraints,
                            nScopeConstraints : ScopeConstraintsMap = scopeConstraints) =
-    new ConstraintsMaps(nNodeSets,
+    new ConstraintsMaps(nNamedSets,
                         nFriendsOfElementsConstraints,
                         nFriendOfScopesConstraints,
                         nCanSeeConstraints,
@@ -48,8 +48,8 @@ class ConstraintsMaps
 
 
    def printConstraints[V](graph : GraphT, logger : Logger[V], v : V){
-     nodeSets.foreach{
-       case (_, namedSet) => logger.writeln(namedSet.mkString(graph))(v)
+     namedSets.foreach{
+       case (_, namedSet) => logger.writeln(namedSet.mkDefString(graph))(v)
      }
      type CtMap[CtT <: Constraint] = Map [NodeId, ConstraintSet[CtT]]
      def printMap[CtT <: Constraint]( m : CtMap[CtT]) = m foreach { case (k, s) =>

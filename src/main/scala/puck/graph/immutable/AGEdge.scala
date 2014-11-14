@@ -81,8 +81,8 @@ case class AGEdge
 
   def changeSource(graph : AccessGraph, newSource : NIdT) : AccessGraph = graph.changeSource(this, newSource)
 
-  def isDominant(graph : AccessGraph) : Boolean = graph.dominatedUses(this.source, this.target).nonEmpty
-  def isDominated(graph : AccessGraph) : Boolean = graph.dominantUses(this.source, this.target).nonEmpty
+  def isDominant(graph : AccessGraph) : Boolean = graph.usesDominatedBy(this.source, this.target).nonEmpty
+  def isDominated(graph : AccessGraph) : Boolean = graph.usesDominating(this.source, this.target).nonEmpty
 }
 
 object AGEdge{

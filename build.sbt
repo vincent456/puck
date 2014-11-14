@@ -8,7 +8,7 @@ name := "PuckConstraintSolver"
 
 version := "1.0"
 
-scalaVersion := "2.11.4"
+scalaVersion := "2.11.0"
 
 sbtVersion := "0.13.5"
 
@@ -30,12 +30,11 @@ jastaddOutDir := sourceManaged.value / "main"
 
 java15comply := true
 
-//libraryDependencies ++= Seq(
-//	"org.scala-lang" % "scala-swing" % "2.11.0-M7",
-//	"org.scala-lang" % "scala-parser-combinators" % "2.11.0-M4")
-// also continuation
+libraryDependencies ++= Seq(
+	"org.scala-lang" % "scala-swing" % "2.11.0-M7",
+	"org.scala-lang" % "scala-parser-combinators" % "2.11.0-M4")
 
-libraryDependencies += "org.scala-lang" % "scala-library-all" % "2.11.4" //before the modularize them
+//libraryDependencies += "org.scala-lang" % "scala-library-all" % "2.11.4" //before the modularize them
 
 (libraryDependencies in Test) += "org.scalatest" % "scalatest_2.11" % "2.2.1"
 

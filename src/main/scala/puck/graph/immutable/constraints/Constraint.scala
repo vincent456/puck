@@ -142,22 +142,22 @@ object ConstraintPrinter{
     friends : NodeSet) = {
 
     def twoArgsFormat(constraint : String, set : NodeSet) =
-      constraint + "(" + hidden + ", " + set + ")."
+      constraint + "(" + hidden.mkString(graph) + ", " + set.mkString(graph) + ")."
 
     (facades.isEmpty, interlopers.isEmpty, friends.isEmpty) match {
       case (true, false, true) =>
         if(graph.isRoot(interlopers.head))
-         "(" + hidden + ")."
+         "(" + hidden.mkString(graph) + ")."
         else
          twoArgsFormat("From", interlopers)
       case (true, false, false)
         if graph.isRoot(interlopers.head) => twoArgsFormat("ButFrom", friends)
       case (false, false, true)
         if graph.isRoot(interlopers.head) => twoArgsFormat("But", facades)
-      case (_, _, _) => "("+ hidden + ",\n" +
-        facades + ",\n" +
-        interlopers +  ",\n" +
-        friends + ")."
+      case (_, _, _) => "("+ hidden.mkString(graph) + ",\n" +
+        facades.mkString(graph) + ",\n" +
+        interlopers.mkString(graph) +  ",\n" +
+        friends.mkString(graph) + ")."
     }
   }
 

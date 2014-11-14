@@ -222,7 +222,8 @@ class NodeMappingInitialState
     triedAll0 = true
 
     if( numCreatedNodes != numCreatedNodes2 ||
-      !(removedNode forall otherRemovedNodes.contains)) {
+      !(removedNode forall otherRemovedNodes.contains) ||
+      remainingTransfos1.size != remainingTransfos2.size) {
       val sameNumberOfNodesToMap = numCreatedNodes == numCreatedNodes2
       val sameRemovedNodes = removedNode forall otherRemovedNodes.contains
       logger.writeln("sameNumberOfNodesToMap  = " + sameNumberOfNodesToMap)

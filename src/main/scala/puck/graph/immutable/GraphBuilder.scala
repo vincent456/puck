@@ -59,6 +59,10 @@ class GraphBuilder
     constraintsMap = ConstraintsMaps()
   }
 
+  def setDefs(defs : Map[String, NamedNodeSet]): Unit = {
+    constraintsMap = constraintsMap.newConstraintsMaps(nNamedSets =  defs)
+  }
+
   def addScopeConstraint(owners : NodeSet,
                          facades : NodeSet,
                          interlopers : NodeSet,

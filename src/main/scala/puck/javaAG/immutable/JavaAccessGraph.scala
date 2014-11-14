@@ -1,7 +1,7 @@
 package puck.javaAG.immutable
 
 import puck.graph.AGError
-import puck.graph.constraints.{SupertypeAbstraction, AbstractionPolicy}
+import puck.graph.constraints.{RedirectionPolicy, SupertypeAbstraction, AbstractionPolicy}
 import puck.graph.immutable.AccessGraph._
 import puck.graph.immutable.constraints.ConstraintsMaps
 import puck.graph.immutable.transformations.Recording
@@ -82,6 +82,13 @@ class JavaAccessGraph
 
       }
   }
+
+  def traverse[A, B](a: Iterable[A], b: B)(f: (B, A) => Try[B]): Try[B] =
+    a.foldLeft(Success(b): Try[B]){case (b0, a0) =>
+      if(b0.isSuccess)f(b0.get, a0)
+      else b0
+    }
+
   override def createAbstraction(implId: NIdT,
                                  abskind : NodeKind ,
                                  policy : AbstractionPolicy) : Try[(NIdT, GraphT)] = {
@@ -106,7 +113,26 @@ class JavaAccessGraph
         tryAbs1 flatMap {
           case (absId, g) =>
             val abs = g.getNode(absId)
-            val g2Try = implContent.foldLeft(Success(g) : Try[GraphT]){
+            val g2Try = traverse(implContent, g){
+              case (g0, child) =>
+                getNode(child).kind match {
+                  //case ck @ Method() =>
+                  case ck : MethodKind =>
+                    val gAbsTry = g.createAbstraction(child, AbstractMethod,  SupertypeAbstraction)
+                    gAbsTry flatMap {
+                      case (absChild, g21) =>
+                        val g3 = g21.addContains(absId, absChild)
+                        val absChildNode = g3.getNode(absChild)
+                        absChildNode.kind match {
+                          case AbstractMethod =>
+                            Success(g3.changeType(absChild, absChildNode.styp, implId, absId))
+                          case k => Failure(new AGError(k + " should be an abstract method !"))
+                        }
+                    }
+                  case _ => Success(g0)
+                }
+            }
+           /* val g2Try = implContent.foldLeft(Success(g) : Try[GraphT]){
               case (tryG0, child) =>
                 tryG0 flatMap {
                   case g0 =>
@@ -127,13 +153,34 @@ class JavaAccessGraph
                       case _ => Success(g0)
                     }
                 }
-            }
+            }*/
             g2Try match {
               case Failure(f) => Failure(f)
               case Success(g2) =>
                 val g3 = g2.addIsa(implId, absId)
 
-                val g4Try = implContent.foldLeft(Success(g3) : Try[GraphT]) {
+                val g4Try = traverse(implContent, g3){
+                  case (g0, child) =>
+                    val node = g0.getNode(child)
+                    (node.kind, node.styp) match {
+                      // even fields can need to be promoted if they are written
+                      //case Field() =>
+                      case (ck : MethodKind, MethodTypeHolder(typ))  =>
+
+                        val g1 = g0.changeContravariantType(child, node.styp, implId, abs.id)
+
+                        if(g1.uses(child, implId)) {
+                          logger.writeln("interface creation : redirecting %s target to %s".format(AGEdge.uses(child, implId), abs), 3)
+                          g1.redirectUses(AGEdge.uses(child, implId), absId, SupertypeAbstraction) map {
+                            case (_, g22) => g22
+                          }
+                        }
+                        else Success(g1)
+                      case _ => Success(g0)
+                    }
+                }
+
+                /*val g4Try = implContent.foldLeft(Success(g3) : Try[GraphT]) {
                   case (Success(g0), child) =>
                     val node = g0.getNode(child)
                     (node.kind, node.styp) match {
@@ -153,7 +200,7 @@ class JavaAccessGraph
                       case _ => Success(g0)
                     }
                   case (Failure(f), _) => Failure(f)
-                }
+                }*/
                 g4Try map {case g4 => (absId, g4)}
             }
         }
@@ -204,6 +251,26 @@ class JavaAccessGraph
     }
   }
 
+
+
+  override def redirectUses(oldEdge : EdgeT, newUsee : NIdT,
+                   policy : RedirectionPolicy,
+                   propagateRedirection : Boolean = true,
+                   keepOldUse : Boolean = false ) : Try[(EdgeT, GraphT)] = {
+
+    val tryEdgeGraph =
+        super.redirectUses(oldEdge, newUsee, policy,
+          propagateRedirection, keepOldUse)
+
+    getNode(oldEdge.usee).kind match {
+      case Constructor =>
+        tryEdgeGraph map {case (e, g) =>
+          (e, users(oldEdge.user).foldLeft(g){ case (g0, userId) =>
+              g0.addUses(userId, oldEdge.usee)})
+      }
+      case _ => tryEdgeGraph
+    }
+  }
 
   /*
    * Merging
