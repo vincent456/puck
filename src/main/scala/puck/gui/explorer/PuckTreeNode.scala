@@ -9,54 +9,63 @@ import scala.swing.CheckBox
 /**
  * Created by lorilan on 10/07/14.
  */
-class PuckTreeNode(val agNode : NodeId, name : String)
-  extends DefaultMutableTreeNode(agNode){
+object PuckTreeNode {
+  def selected : Visibility => Boolean = {
+    case Visible => true
+    case Hidden => false
+  }
+}
+class PuckTreeNode(val nodeId : NodeId,
+                   val hiddens : HiddenSetBuilder,
+                   name : String)
+  extends DefaultMutableTreeNode(nodeId){
 
   val checkBox = new CheckBox()
   checkBox.selected = true
 
   override def toString = name
 
-  //var isVisible = true
+  var isVisible = true
 
-  /*
- void setVisible(boolean isVisible, boolean propagate){
-   if(this.isVisible != isVisible){
 
-     this.isVisible = isVisible;
-     if(isVisible && this.getParent() instanceof PuckTreeNode){
-       ((PuckTreeNode) this.getParent()).setVisible(true, false);
+  def setVisible(visibility : Visibility, propagate : Boolean){
+
+
+   if(hiddens.visibility(nodeId) != visibility){
+
+     hiddens.setVisibility(nodeId, visibility)
+
+     if(visibility == Visible && this.getParent.isInstanceOf[PuckTreeNode]){
+       this.getParent.asInstanceOf[PuckTreeNode].setVisible(Visible, propagate =false)
      }
 
-     agNode.setVisible(this.isVisible);
-     checkBox.setSelected(this.isVisible);
+     //agNode.setVisible(this.isVisible);
+     checkBox.selected = this.isVisible
 
    }
 
    if(propagate){
-     int cc = this.getChildCount();
-     for(int i=0; i<cc; i++){
-       ((PuckTreeNode) this.getChildAt(i)).setVisible(isVisible, true);
+     for( i <- 0 until this.getChildCount){
+       this.getChildAt(i).asInstanceOf[PuckTreeNode].setVisible(visibility, propagate =true)
      }
    }
  }
 
 
- void packageVisible(){
-   boolean visibility = (agNode.getType() == NodeType.Package);
+ /*def packageVisible(){
+   val visibility = (agNode.getType() == NodeType.Package);
 
-   this.isVisible = visibility;
-   checkBox.setSelected(visibility);
-   agNode.setVisible(visibility);
+   this.isVisible = visibility
+   checkBox.selected = visibility
+   //agNode.setVisible(visibility)
 
-   int cc = this.getChildCount();
-   for(int i=0; i<cc; i++){
-     ((PuckTreeNode) this.getChildAt(i)).packageVisible();
+   for(i <- 0 until this.getChildCount){
+     this.getChildAt(i).asInstanceOf[PuckTreeNode].packageVisible()
    }
- }
+ }*/
 
- void toggleFilter(){
-   setVisible(!isVisible, true);
- } */
+ def toggleFilter(){
+   setVisible(hiddens.visibility(nodeId).opposite, propagate = true)
+ }
 
 }

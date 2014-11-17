@@ -25,7 +25,7 @@ class GraphExplorer(width : Int, height : Int)
 
   def addChildren(graph : AccessGraph,
                   ptn: PuckTreeNode){
-    graph.getNode(ptn.agNode).content foreach {
+    graph.getNode(ptn.nodeId).content foreach {
       (nid: NodeId) =>
         val n = graph.getNode(nid)
         val child = new PuckTreeNode(nid, n.nameTypeString)
@@ -52,7 +52,7 @@ class GraphExplorer(width : Int, height : Int)
           if(path!= null){
             path.getLastPathComponent match {
               case node : PuckTreeNode =>
-                publish(PuckTreeNodeClicked(graph, node.agNode))
+                publish(PuckTreeNodeClicked(graph, node.nodeId))
                 //obj.asInstanceOf[PuckTreeNode].toggleFilter()
                 tree.repaint()
               case _ => ()
