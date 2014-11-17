@@ -1,6 +1,6 @@
-package puck.gui.explorer
+package puck.graph.io
 
-import puck.graph.{NodeId, AccessGraph}
+import puck.graph.NodeId
 
 trait Visibility{
   def opposite : Visibility
@@ -15,7 +15,7 @@ case object Visible extends Visibility {
 /**
  * Created by lorilan on 17/11/14.
  */
-class HiddenSetBuilder/*(val graph : AccessGraph)*/ {
+class VisibilitySet/*(val graph : AccessGraph)*/ {
 
   var hiddens = Set[NodeId]()
 

@@ -174,12 +174,14 @@ abstract class FilesHandler(workingDirectory : File){
   val dotHelper : DotHelper
 
   def makeDot(graph : GraphT,
+              visibility : VisibilitySet,
               printId : Boolean,
               printSignatures : Boolean,
               useOption : Option[AGEdge],
               writer : OutputStreamWriter = new FileWriter(graphFile(".dot"))){
-    DotPrinter.print(new BufferedWriter(writer), graph, dotHelper, printId,
+    val printer = new DotPrinter(new BufferedWriter(writer), graph, visibility, dotHelper, printId,
       printSignatures, searchRoots = false, selectedUse = useOption)
+    printer()
   }
 
   /*def makeProlog(){
@@ -210,6 +212,7 @@ abstract class FilesHandler(workingDirectory : File){
   }
 
   def makePng(graph : GraphT,
+              visibility : VisibilitySet,
               printId : Boolean,
               printSignatures : Boolean,
               selectedUse : Option[AGEdge],
@@ -219,7 +222,7 @@ abstract class FilesHandler(workingDirectory : File){
 
     //TODO fix bug when chaining the two function with a pipe
     // and calling it in "do everything"
-    makeDot(graph, printId, printSignatures, selectedUse)
+    makeDot(graph, visibility, printId, printSignatures, selectedUse)
 
     convertDot(sInput = None, sOutput, outputFormat)
 
@@ -282,6 +285,7 @@ abstract class FilesHandler(workingDirectory : File){
 
 
   def printCSSearchStatesGraph(states : Map[Int, Seq[SearchState[ResultT]]],
+                               visibility : VisibilitySet,
                                printId : Boolean,
                                printSignature : Boolean){
     val d = graphFile("_results")
@@ -290,12 +294,13 @@ abstract class FilesHandler(workingDirectory : File){
       case (cVal, l) =>
         val subDir = graphFile("_results%c%d".format(File.separatorChar, cVal))
         subDir.mkdir()
-        printCSSearchStatesGraph(subDir, l, None, printId, printSignature)
+        printCSSearchStatesGraph(subDir, l, visibility, None, printId, printSignature)
     }
   }
 
   def printCSSearchStatesGraph(dir : File,
                                states : Seq[SearchState[ResultT]],
+                               visibility : VisibilitySet,
                                sPrinter : Option[(SearchState[ResultT] => String)],
                                printId : Boolean,
                                printSignature : Boolean){
@@ -309,7 +314,7 @@ abstract class FilesHandler(workingDirectory : File){
     states.foreach { s =>
       val graph = graphOfResult(s.result)
       val f = new File("%s%c%s.png".format(dir.getAbsolutePath, File.separatorChar, printer(s)))
-      makePng(graph, printId, printSignature, None, sOutput = Some(new FileOutputStream(f)))()
+      makePng(graph, visibility, printId, printSignature, None, sOutput = Some(new FileOutputStream(f)))()
     }
   }
 

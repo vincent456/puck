@@ -6,6 +6,7 @@ import javax.imageio.ImageIO
 import javax.swing.ImageIcon
 
 import puck.graph._
+import puck.graph.io.VisibilitySet
 import puck.search.SearchState
 import puck.util.PuckLog
 
@@ -20,6 +21,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
  */
 class ImageExplorer(val filesHandler : FilesHandler,
                     val states : IndexedSeq[SearchState[ResultT]],
+                    visibility : VisibilitySet,
                      printId : Boolean,
                      printSignature : Boolean) extends Frame{
 
@@ -52,6 +54,7 @@ class ImageExplorer(val filesHandler : FilesHandler,
     }
 
     filesHandler.makePng(graphOfResult(state.result),
+      visibility,
       printId,
       printSignature,
       None,

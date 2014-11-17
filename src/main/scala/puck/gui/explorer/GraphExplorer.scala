@@ -4,6 +4,7 @@ import java.awt.event.{MouseAdapter, MouseEvent}
 import javax.swing.JTree
 import javax.swing.tree.TreePath
 
+import puck.graph.io.VisibilitySet
 import puck.graph.{AccessGraph, NodeId}
 
 import scala.swing.event.Event
@@ -16,11 +17,15 @@ import scala.swing.{Component, Dimension, Publisher, ScrollPane}
 case class PuckTreeNodeClicked(graph : AccessGraph, node : NodeId) extends Event
 case class AccessGraphModified(graph : AccessGraph) extends Event
 
-class GraphExplorer(width : Int, height : Int)
+class GraphExplorer
+(val hiddens :VisibilitySet,
+ width : Int,
+ height : Int)
   extends ScrollPane with Publisher {
 
   minimumSize = new Dimension(width, height)
   preferredSize = minimumSize
+
 
 
   def addChildren(graph : AccessGraph,
@@ -28,7 +33,7 @@ class GraphExplorer(width : Int, height : Int)
     graph.getNode(ptn.nodeId).content foreach {
       (nid: NodeId) =>
         val n = graph.getNode(nid)
-        val child = new PuckTreeNode(nid, n.nameTypeString)
+        val child = new PuckTreeNode(nid, hiddens, n.nameTypeString)
         ptn add child
         addChildren(graph, child)
     }
@@ -37,7 +42,7 @@ class GraphExplorer(width : Int, height : Int)
   reactions += {
     case e : AccessGraphModified =>
       val graph = e.graph
-      val root = new PuckTreeNode(graph.rootId, "<>")
+      val root = new PuckTreeNode(graph.rootId, hiddens, "<>")
       addChildren(graph, root)
 
 

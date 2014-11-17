@@ -3,7 +3,7 @@ package puck.gui
 import java.io.{File, PipedInputStream, PipedOutputStream}
 
 import AST.LoadingListener
-import puck.graph.io.ConstraintSolvingSearchEngineBuilder
+import puck.graph.io.{VisibilitySet, ConstraintSolvingSearchEngineBuilder}
 import puck.gui.explorer.AccessGraphModified
 import puck.gui.imageDisplay.{ImageFrame, ImageExplorer}
 import puck.search.{SearchState, Search}
@@ -63,6 +63,7 @@ case class ExplorationFinished(result : Search[ResultT]) extends Answer
 
 
 class PuckControl(val filesHandler : FilesHandler,
+                  private val visibility : VisibilitySet,
                   private val progressBar : ProgressBar,
                   private val delayedDisplay : ArrayBuffer[Component])
   extends Publisher{
@@ -120,11 +121,8 @@ class PuckControl(val filesHandler : FilesHandler,
       imgframe.title = title
     }
 
-    filesHandler.makePng(graph,
-                         printId,
-                         printSignature,
-                         someUse,
-                         sOutput = Some(pipedOutput)){
+    filesHandler.makePng(graph, visibility, printId, printSignature,
+                         someUse, sOutput = Some(pipedOutput)){
       case Success(i) if i == 0 => logger.writeln("success")
       case _ => logger.writeln("fail")
     }
@@ -152,14 +150,14 @@ class PuckControl(val filesHandler : FilesHandler,
     d.mkdir()
     val subDir = filesHandler.graphFile("_results%c%s".format(File.separatorChar, subDirStr))
     subDir.mkdir()
-    filesHandler.printCSSearchStatesGraph(subDir, states, sPrinter, printId, printSignature)
+    filesHandler.printCSSearchStatesGraph(subDir, states, visibility, sPrinter, printId, printSignature)
   }
 
   def showStateSeq(states : Seq[StateT],
                    printId : Boolean,
                    printSignature : Boolean): Unit = {
     Future {
-      new ImageExplorer(filesHandler, states.toIndexedSeq, printId, printSignature)
+      new ImageExplorer(filesHandler, states.toIndexedSeq, visibility, printId, printSignature)
     }
   }
 
@@ -196,7 +194,7 @@ class PuckControl(val filesHandler : FilesHandler,
       }
 
     case SearchStateMapPrintingRequest(stateMap, printId, printSignature) =>
-      filesHandler.printCSSearchStatesGraph(stateMap, printId, printSignature)
+      filesHandler.printCSSearchStatesGraph(stateMap, visibility, printId, printSignature)
 
     case SearchStateSeqPrintingRequest(subDir, states, sPrinter, printId, printSignature) =>
      // printStateSeq(subDir, states, sPrinter, printId, printSignature)

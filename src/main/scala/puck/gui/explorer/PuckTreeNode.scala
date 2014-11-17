@@ -3,6 +3,7 @@ package puck.gui.explorer
 import javax.swing.tree.DefaultMutableTreeNode
 
 import puck.graph.NodeId
+import puck.graph.io.{Visible, Hidden, Visibility, VisibilitySet}
 
 import scala.swing.CheckBox
 
@@ -10,13 +11,13 @@ import scala.swing.CheckBox
  * Created by lorilan on 10/07/14.
  */
 object PuckTreeNode {
-  def selected : Visibility => Boolean = {
+  def isSelected : Visibility => Boolean = {
     case Visible => true
     case Hidden => false
   }
 }
 class PuckTreeNode(val nodeId : NodeId,
-                   val hiddens : HiddenSetBuilder,
+                   val hiddens : VisibilitySet,
                    name : String)
   extends DefaultMutableTreeNode(nodeId){
 
@@ -25,7 +26,7 @@ class PuckTreeNode(val nodeId : NodeId,
 
   override def toString = name
 
-  var isVisible = true
+  hiddens.setVisibility(nodeId, Visible)
 
 
   def setVisible(visibility : Visibility, propagate : Boolean){
@@ -40,7 +41,7 @@ class PuckTreeNode(val nodeId : NodeId,
      }
 
      //agNode.setVisible(this.isVisible);
-     checkBox.selected = this.isVisible
+     checkBox.selected = PuckTreeNode.isSelected(visibility)
 
    }
 

@@ -1,6 +1,7 @@
 package puck.gui
 
 import puck.graph.FilesHandler
+import puck.graph.io.VisibilitySet
 import puck.gui.explorer.{PuckTreeNodeClicked, NodeInfosPanel, GraphExplorer}
 import puck.gui.search.ResultPanel
 import puck.util.{PuckLog, PuckLogger}
@@ -60,11 +61,12 @@ class PuckMainPanel(val filesHandler: FilesHandler)
     val rightWidth = PuckMainPanel.width *5/8
     val height = PuckMainPanel.height * 2/3
 
-    val treeDisplayer = new GraphExplorer(rightWidth/2, height)
+    val visibilitySet = new VisibilitySet()
+    val treeDisplayer = new GraphExplorer(visibilitySet, rightWidth/2, height)
 
     val progressBar  = new ProgressBar()
     val delayedDisplay = ArrayBuffer[Component]()
-    val control = new PuckControl(filesHandler, progressBar, delayedDisplay)
+    val control = new PuckControl(filesHandler, visibilitySet, progressBar, delayedDisplay)
 
     val printIdsBox = new CheckBox("Show nodes ID")
     val printSignaturesBox = new CheckBox("Show signagures")
