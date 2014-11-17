@@ -174,12 +174,12 @@ object NodeMappingInitialState{
 }
 
 class NodeMappingInitialState
-(initialTransfos : Seq[Transformation],
- val engine : RecordingComparator,
- graph1 : AccessGraph,
- graph2 : AccessGraph,
- k: Try[ResMap] => Unit,
- logger : PuckLogger)
+( initialTransfos : Seq[Transformation],
+  val engine : RecordingComparator,
+  graph1 : AccessGraph,
+  graph2 : AccessGraph,
+  k: Try[ResMap] => Unit,
+  logger : PuckLogger)
   extends SearchState[ResMap]{
   //extends NodeMappingState(0, eng, null, null, None) {
   val id = 0
@@ -221,9 +221,8 @@ class NodeMappingInitialState
   override def executeNextChoice() {
     triedAll0 = true
 
-    if( numCreatedNodes != numCreatedNodes2 ||
-      !(removedNode forall otherRemovedNodes.contains) ||
-      remainingTransfos1.size != remainingTransfos2.size) {
+    if(numCreatedNodes != numCreatedNodes2 ||
+      !(removedNode forall otherRemovedNodes.contains)) {
       val sameNumberOfNodesToMap = numCreatedNodes == numCreatedNodes2
       val sameRemovedNodes = removedNode forall otherRemovedNodes.contains
       logger.writeln("sameNumberOfNodesToMap  = " + sameNumberOfNodesToMap)
@@ -231,7 +230,8 @@ class NodeMappingInitialState
       logger.writeln("same number of removed nodes = " + (removedNode.length == otherRemovedNodes.length))
       logger.writeln("same removed nodes = " + sameRemovedNodes)
 
-      logger.writeln("initialMapping : %s, %d remaining transfo".format(initialMapping, remainingTransfos1.size))
+
+      logger.writeln(s"initialMapping : $initialMapping, ${remainingTransfos1.size} remaining transfo")
 
       logger.writeln("created nodes :")
       initialMapping.keys foreach printlnNode(graph1)
@@ -264,7 +264,7 @@ class NodeMappingInitialState
     else {
 
 
-      logger.writeln("initialMapping : %s, %d remaining transfo".format(initialMapping, remainingTransfos1.size))
+      logger.writeln(s"initialMapping : $initialMapping, ${remainingTransfos1.size} remaining transfo")
 
       logger.writeln("created nodes :")
       initialMapping.keys foreach printlnNode(graph1)

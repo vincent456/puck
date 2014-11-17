@@ -112,7 +112,7 @@ class AccessGraph
   implicit val defaulVerbosity : PuckLog.Verbosity =
     (PuckLog.InGraph, PuckLog.Debug)
   import scala.language.implicitConversions
-  implicit def logVerbosity(lvl : PuckLog.Level) =
+  implicit def logVerbosity(lvl : PuckLog.Level) : PuckLog.Verbosity =
     (PuckLog.InGraph, lvl)
 
 
@@ -180,13 +180,14 @@ class AccessGraph
 
 
 
+  def setNode(n : AGNode) : GraphT =
+    newGraph(nNodesSet = nodesIndex + (n.id -> (n.id, n.name, n.kind, n.styp, n.isMutable, n.t)))
+
   def setNode(id : NIdT, name : String, k : NodeKind, styp : STyp, mutable : Boolean, t : Hook) : GraphT =
     newGraph(nNodesSet = nodesIndex + (id -> (id, name, k, styp, mutable, t)))
 
   private def setRemovedNode(id : NIdT, name : String, k : NodeKind, styp : STyp, mutable : Boolean, t : Hook) : GraphT =
     newGraph(nRemovedNodes = removedNodes + (id -> (id, name, k, styp, mutable, t)))
-
-
 
   def setKind(id : NIdT, k : NodeKind) = getNodeStatus(id) match {
     case Created((_, name, _, styp, mutability, t)) =>  setNode(id, name, k, styp, mutability, t)
@@ -566,6 +567,8 @@ class AccessGraph
     newPrimaryUsee
   }
 
+
+  import puck.util.ErrorHandling.traverse
 
   def redirectSideUses(currentPrimaryUse: EdgeT,
                        newPrimaryUsee : NIdT,

@@ -43,9 +43,7 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker
 
     val targets = (findTargets(violationsKindPriority) map (_.id)).toSeq
 
-    lazy val targetsChoice =  new ConstraintSolvingNodesChoice(k,
-      mutable.Set[NIdT]() ++ targets,
-      mutable.Set[NIdT]())
+    lazy val targetsChoice = ConstraintSolvingNodesChoice(k, targets)
 
     targets match {
       case Seq() => k(None) // will call doMerge
@@ -99,11 +97,14 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker
   }
 
   def chooseNode(graph : GraphT, predicate : PredicateT)
-                (k : Option[NIdT] => Unit) : Unit =
-    newCurrentState((graph, graph.recording),
-      new ConstraintSolvingNodesChoice(k,
-      mutable.Set[NIdT]() ++ graph.nodesId.filter(predicate(graph,_)).toSeq,
-      mutable.Set[NIdT]()))
+                (k : Option[NIdT] => Unit) : Unit = {
+    val choices = graph.nodesId.filter(predicate(graph,_)).toSeq
+    if(choices.nonEmpty)
+      newCurrentState((graph, graph.recording),
+        ConstraintSolvingNodesChoice.includeNoneChoice(k, choices))
+    else
+      k(None)
+  }
 
 /*  def modifyConstraints(sources : NodeSet[Kind], target : NodeType){}*/
 

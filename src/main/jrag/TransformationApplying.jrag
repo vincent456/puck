@@ -55,6 +55,39 @@ aspect TransformationApplying {
                getSuperInterfaceIdList().removeChild(idx);
        }
 
+  void TypeDecl.replaceTypeAccessInList(Access oldAccess, Access newAccess, List<Access> list){
+    if(!oldAccess.isTypeAccess() || !newAccess.isTypeAccess())
+      throw new Error("Both access should be type access !");
+    TypeDecl oldDecl = ((TypeAccess)oldAccess).decl();
+    TypeDecl newDecl = ((TypeAccess)newAccess).decl();
+
+    boolean containsNewAccess = false;
+    Access oldAccess0 = null;
+
+    for(Access acc : list){
+      if(((TypeAccess)acc).decl().equals(newDecl))
+        containsNewAccess = true;
+
+      if(((TypeAccess)acc).decl().equals(oldDecl))
+        oldAccess0 = acc;
+    }
+
+    if(containsNewAccess)
+      list.removeChild(oldAccess0);
+    else
+      replace(oldAccess0).with(newAccess);
+
+  }
+
+ public void ClassDecl.replaceImplements(Access oldAccess, Access newAccess){
+       replaceTypeAccessInList(oldAccess, newAccess, getImplementsList());
+  }
+
+ public void InterfaceDecl.replaceSuperInterface(Access oldAccess, Access newAccess){
+    replaceTypeAccessInList(oldAccess, newAccess, getSuperInterfaceIds());
+  }
+
+
   public void Program.printCodeInDirectory(File dir) throws IOException {
 
     for(CompilationUnit cu : getCompilationUnits()){
@@ -212,40 +245,18 @@ aspect TransformationApplying {
 
     }
 
-  public void ClassDecl.replaceImplements(Access oldAccess, Access newAccess){
-       if(!oldAccess.isTypeAccess() || !newAccess.isTypeAccess())
-           throw new Error("Both access should be type access !");
+ 
 
-       TypeDecl oldDecl = ((TypeAccess)oldAccess).decl();
-       TypeDecl newDecl = ((TypeAccess)newAccess).decl();
-
-       boolean containsNewAccess = false;
-       Access oldAccess0 = null;
-
-      for(Access acc : getImplementsList()){
-          if(((TypeAccess)acc).decl().equals(newDecl))
-              containsNewAccess = true;
-
-          if(((TypeAccess)acc).decl().equals(oldDecl))
-              oldAccess0 = acc;
-      }
-
-      if(containsNewAccess)
-           getImplementsList().removeChild(oldAccess0);
-      else
-           replace(oldAccess0).with(newAccess);
-  }
-
-  public void ASTNode.deleteAGNode(){
+  public void ASTNode.puckDelete(){
          getParent().removeChild(this);
          this.setParent(null);
      }
 
-  public void TypeDecl.deleteAGNode(){                                                                                                           
+  public void TypeDecl.puckDelete(){                                                                                                           
          if(compilationUnit().getNumTypeDecl() == 1)                                                                                       
-             compilationUnit().deleteAGNode();                                                                                             
+             compilationUnit().puckDelete();                                                                                             
          else                                                                                                                              
-             super.deleteAGNode();                                                                                                         
+             super.puckDelete();                                                                                                         
      }
  
 }

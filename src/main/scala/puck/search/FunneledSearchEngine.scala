@@ -54,7 +54,7 @@ trait FunneledSeachEngine[Result] extends SearchEngine[Result]{
 
   lazy val funneledStates = new FunneledStatesStack[Result](evaluator)
 
-  def markPointPeriod : Int = 5
+  def markPointPeriod : Int = 3
 
   var currentCheckPoint : Int = markPointPeriod
 

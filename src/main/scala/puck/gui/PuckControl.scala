@@ -4,6 +4,8 @@ import java.io.{File, PipedInputStream, PipedOutputStream}
 
 import AST.LoadingListener
 import puck.graph.io.ConstraintSolvingSearchEngineBuilder
+import puck.gui.explorer.AccessGraphModified
+import puck.gui.imageDisplay.{ImageFrame, ImageExplorer}
 import puck.search.{SearchState, Search}
 
 /*
@@ -105,8 +107,8 @@ class PuckControl(val filesHandler : FilesHandler,
   def displayGraph(title : String,
                    graph : GraphT,
                    someUse : Option[AGEdge],
-                    printId : Boolean,
-                    printSignature : Boolean){
+                   printId : Boolean,
+                   printSignature : Boolean){
 
     logger.writeln("Printing graph ...")
 
@@ -116,7 +118,6 @@ class PuckControl(val filesHandler : FilesHandler,
     Future {
       val imgframe = ImageFrame(pipedInput)
       imgframe.title = title
-      imgframe.visible = true
     }
 
     filesHandler.makePng(graph,
@@ -152,6 +153,14 @@ class PuckControl(val filesHandler : FilesHandler,
     val subDir = filesHandler.graphFile("_results%c%s".format(File.separatorChar, subDirStr))
     subDir.mkdir()
     filesHandler.printCSSearchStatesGraph(subDir, states, sPrinter, printId, printSignature)
+  }
+
+  def showStateSeq(states : Seq[StateT],
+                   printId : Boolean,
+                   printSignature : Boolean): Unit = {
+    Future {
+      new ImageExplorer(filesHandler, states.toIndexedSeq, printId, printSignature)
+    }
   }
 
   reactions += {
@@ -190,7 +199,9 @@ class PuckControl(val filesHandler : FilesHandler,
       filesHandler.printCSSearchStatesGraph(stateMap, printId, printSignature)
 
     case SearchStateSeqPrintingRequest(subDir, states, sPrinter, printId, printSignature) =>
-      printStateSeq(subDir, states, sPrinter, printId, printSignature)
+     // printStateSeq(subDir, states, sPrinter, printId, printSignature)
+      logger.writeln("history request")
+      showStateSeq(states, printId, printSignature)
   }
 
 }

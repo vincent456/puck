@@ -9,10 +9,11 @@ import scala.collection.mutable
 /**
  * Created by lorilan on 25/09/14.
  */
+
 class ConstraintSolvingAbstractionChoice
-(val k : Option[(NodeKind, AbstractionPolicy)] => Unit,
- val remainingChoices : mutable.Set[(NodeKind, AbstractionPolicy)],
- val triedChoices : mutable.Set[(NodeKind, AbstractionPolicy)])
+( val k : Option[(NodeKind, AbstractionPolicy)] => Unit,
+  var remainingChoices : Set[Option[(NodeKind, AbstractionPolicy)]],
+  var triedChoices : Set[Option[(NodeKind, AbstractionPolicy)]])
 extends ConstraintSolvingChoice[(NodeKind, AbstractionPolicy), ConstraintSolvingAbstractionChoice] {
   def createState(id: Int,
                   engine: SearchEngine[ResultT],

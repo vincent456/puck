@@ -30,7 +30,7 @@ class AGNode
   val kind : NodeKind,
   val styp : TypeHolder,
   val isMutable : Boolean,
-  val t : Any){
+  val t : Hook){
 
 
   type NIdT = NodeId

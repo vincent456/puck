@@ -6,6 +6,8 @@ import puck.graph.immutable.{Hook, AGNode, AccessGraph}
 import puck.javaAG.immutable.nodeKind.{MethodTypeHolder, Constructor, JavaNodeKind}
 
 sealed trait DeclHolder extends Hook{
+  //def decl : Option[AST.ASTNode[_]] = throw new AGError("no declaration for " + this.getClass)
+
   def createDecl(prog : AST.Program,
                  graph : AccessGraph,
                  node : NodeId) : AccessGraph =
@@ -122,7 +124,7 @@ trait TypedKindDeclHolder extends DeclHolder {
           throw new AGError("cannot create decl for unrooted node")
 
         val names = cpath.tail.map(graph.getNode(_).name)
-        println("setting pathname with " + cpath)
+        println(s"setting pathname with $cpath")
         cu.setPathName(names.mkString(java.io.File.separator))
         cu.setTypeDecl(decl, 0)
         cu.setFromSource(true)
@@ -132,9 +134,6 @@ trait TypedKindDeclHolder extends DeclHolder {
 }
 
 case class InterfaceDeclHolder(decl : Option[AST.InterfaceDecl]) extends TypedKindDeclHolder {
-
-override val toString = "Interface"
-
 
   override def createDecl(prog : AST.Program,
                           graph : AccessGraph,

@@ -83,11 +83,7 @@ class JavaAccessGraph
       }
   }
 
-  def traverse[A, B](a: Iterable[A], b: B)(f: (B, A) => Try[B]): Try[B] =
-    a.foldLeft(Success(b): Try[B]){case (b0, a0) =>
-      if(b0.isSuccess)f(b0.get, a0)
-      else b0
-    }
+  import puck.util.ErrorHandling.traverse
 
   override def createAbstraction(implId: NIdT,
                                  abskind : NodeKind ,
@@ -114,7 +110,7 @@ class JavaAccessGraph
           case (absId, g) =>
             val abs = g.getNode(absId)
             val g2Try = traverse(implContent, g){
-              case (g0, child) =>
+              (g0, child) =>
                 getNode(child).kind match {
                   //case ck @ Method() =>
                   case ck : MethodKind =>
@@ -132,29 +128,35 @@ class JavaAccessGraph
                   case _ => Success(g0)
                 }
             }
-           /* val g2Try = implContent.foldLeft(Success(g) : Try[GraphT]){
-              case (tryG0, child) =>
-                tryG0 flatMap {
-                  case g0 =>
-                    getNode(child).kind match {
-                      //case ck @ Method() =>
-                      case ck : MethodKind =>
-                        val gAbsTry = g.createAbstraction(child, AbstractMethod,  SupertypeAbstraction)
-                        gAbsTry flatMap {
-                          case (absChild, g21) =>
-                            val g3 = g21.addContains(absId, absChild)
-                            val absChildNode = g3.getNode(absChild)
-                            absChildNode.kind match {
-                              case AbstractMethod =>
-                                Success(g3.changeType(absChild, absChildNode.styp, implId, absId))
-                              case k => Failure(new AGError(k + " should be an abstract method !"))
-                            }
+
+            g2Try flatMap { g2 =>
+                val g3 = g2.addIsa(implId, absId)
+
+                val g4Try = traverse(implContent, g3){
+                  case (g0, child) =>
+                    val node = g0.getNode(child)
+                    (node.kind, node.styp) match {
+                      // even fields can need to be promoted if they are written
+                      //case Field() =>
+                      case (ck : MethodKind, MethodTypeHolder(typ))  =>
+
+                        val g1 = g0.changeContravariantType(child, node.styp, implId, abs.id)
+
+                        if(g1.uses(child, implId)) {
+                          logger.writeln("interface creation : redirecting %s target to %s".format(AGEdge.uses(child, implId), abs), 3)
+                          g1.redirectUses(AGEdge.uses(child, implId), absId, SupertypeAbstraction) map {
+                            case (_, g22) => g22
+                          }
                         }
+                        else Success(g1)
                       case _ => Success(g0)
                     }
                 }
-            }*/
-            g2Try match {
+
+                g4Try map {g4 => (absId, g4)}
+            }
+
+            /*g2Try match {
               case Failure(f) => Failure(f)
               case Success(g2) =>
                 val g3 = g2.addIsa(implId, absId)
@@ -180,29 +182,9 @@ class JavaAccessGraph
                     }
                 }
 
-                /*val g4Try = implContent.foldLeft(Success(g3) : Try[GraphT]) {
-                  case (Success(g0), child) =>
-                    val node = g0.getNode(child)
-                    (node.kind, node.styp) match {
-                      // even fields can need to be promoted if they are written
-                      //case Field() =>
-                      case (ck : MethodKind, MethodTypeHolder(typ))  =>
 
-                        val g1 = g0.changeContravariantType(child, node.styp, implId, abs.id)
-
-                        if(g1.uses(child, implId)) {
-                          logger.writeln("interface creation : redirecting %s target to %s".format(AGEdge.uses(child, implId), abs), 3)
-                          g1.redirectUses(AGEdge.uses(child, implId), absId, SupertypeAbstraction) map {
-                            case (_, g22) => g22
-                          }
-                        }
-                        else Success(g1)
-                      case _ => Success(g0)
-                    }
-                  case (Failure(f), _) => Failure(f)
-                }*/
                 g4Try map {case g4 => (absId, g4)}
-            }
+            }*/
         }
 
       case (AbstractMethod, SupertypeAbstraction) =>

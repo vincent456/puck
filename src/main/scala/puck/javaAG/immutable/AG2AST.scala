@@ -4,7 +4,7 @@ import AST.CompilationUnit
 import puck.graph.AccessGraph
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.immutable.AccessGraph.NodeId
-import puck.graph.immutable.{Uses, Isa, Contains, AGEdge}
+import puck.graph.immutable._
 import puck.graph.immutable.transformations._
 import puck.javaAG.JavaAGError
 import puck.javaAG.immutable.nodeKind._
@@ -17,13 +17,15 @@ class AG2AST(val program : AST.Program) {
   var logger: PuckLogger = PuckNoopLogger
   implicit val defaultVerbosity = (PuckLog.AG2AST, PuckLog.Info)
 
-  def apply(reenactor: JavaAccessGraph,
-            resultGraph : AccessGraph,
-            t: Transformation) : AccessGraph = t match {
+  def apply(resultGraph : AccessGraph,
+            reenactor: JavaAccessGraph,
+            t: Transformation) : (AccessGraph, AccessGraph) = t match {
     case Transformation(Add, TTNode(id, name, kind, styp, mutable, dh: DeclHolder)) =>
       //redo t before createDecl
       val n = resultGraph.getNode(id)
-      n.t.asInstanceOf[DeclHolder].createDecl(program, resultGraph, id)
+      val newRes = n.t.asInstanceOf[DeclHolder].createDecl(program, resultGraph, id)
+      (newRes, reenactor.setNode(newRes.getNode(id)))
+
 
       //redo t after applying on code other transformations
     case `t` => t match {
@@ -36,7 +38,7 @@ class AG2AST(val program : AST.Program) {
         redirectTarget(resultGraph, e, newTarget)
 
       case Transformation(Add, TTRedirection(e, Source(newSource))) =>
-        redirectSource(resultGraph, reenactor, e, newSource); t.redo(reenactor)
+        redirectSource(resultGraph, reenactor, e, newSource)
       /*case Transformation(Remove(), TTEdge(e@AGEdge(Contains(), source, target))) =>
     println("removing edge " + e)
     (source.kind, target.kind) match {
@@ -64,43 +66,56 @@ class AG2AST(val program : AST.Program) {
       case Transformation(_, TTAbstraction(_, _, _)) => ()
 
       case Transformation(Remove, TTNode(id, name, kind, styp, mutable, dh: TypedKindDeclHolder)) =>
+
         if (dh.decl.nonEmpty)
-          dh.decl.get.deleteAGNode()
+          dh.decl.get.puckDelete()
+        else{
+          val actualDh = resultGraph.getNode(id).t.asInstanceOf[TypedKindDeclHolder]
+          if (actualDh.decl.nonEmpty)
+             actualDh.decl.get.puckDelete()
+        }
+
 
       case _ => logger.writeln("%s not applied on program".format(t))
     }
-    resultGraph
+    (resultGraph, t.redo(reenactor))
   }
 
 
+
   def add(graph: AccessGraph, e: AGEdge) = {
+
+    def addTypeDecl(packageAGNode : AGNode, typeDeclAGNode : AGNode, itc : TypedKindDeclHolder) = {
+
+      val cu = itc.decl.get.compilationUnit()
+
+      val cpath = packageAGNode.containerPath.map(graph.getNode(_).name)
+      val sepPath = cpath.tail.mkString(java.io.File.separator)
+
+      val relativePath = sepPath + java.io.File.separator + typeDeclAGNode.name + ".java"
+      cu.setPathName(relativePath)
+      cu.setRelativeName(relativePath) // weird but seems to be the default behavior
+      cu.setPackageDecl(packageAGNode.fullName)
+    }
+
     val source = graph.getNode(e.source)
     val target = graph.getNode(e.target)
+
     e.kind match {
 
       case Contains =>
         (source.kind, source.t, target.t) match {
-          case (Package, _, i: TypedKindDeclHolder) =>
-
-            val cu = i.decl.get.compilationUnit()
-
-
-            val cpath = source.containerPath.map(graph.getNode(_).name)
-            val sepPath = cpath.tail.mkString(java.io.File.separator)
-
-            val relativePath = sepPath + java.io.File.separator + target.name + ".java"
-            cu.setPathName(relativePath)
-            cu.setRelativeName(relativePath) // weird but seems to be the default behavior
-            cu.setPackageDecl(source.fullName)
+          case (Package, _, i: TypedKindDeclHolder) => addTypeDecl(source, target, i)
 
           case (Interface, th: TypedKindDeclHolder, AbstractMethodDeclHolder(smdecl)) =>
             th.decl.get.addBodyDecl(smdecl.get)
 
-          case (Class, th: TypedKindDeclHolder, ConcreteMethodDeclHolder(smdecl)) =>
-            th.decl.get.addBodyDecl(smdecl.get)
+          case (Class, th: TypedKindDeclHolder, mdh : MethodDeclHolder) =>
+          //ConcreteMethodDeclHolder(smdecl)) =>
+            th.decl.get.addBodyDecl(mdh.decl.get)
 
 
-          case (Package, _, Package) => () // can be ignored
+          case (Package, _, PackageDeclHolder) => () // can be ignored
 
           case _ => logger.writeln("%s not created".format(e))
 
@@ -154,6 +169,13 @@ class AG2AST(val program : AST.Program) {
 
         case (oldk: TypedKindDeclHolder, newk: TypedKindDeclHolder) =>
           source.t match {
+            /*case dh @ (FieldDeclHolder(_)
+              | ConcreteMethodDeclHolder(_)
+              | AbstractMethodDeclHolder(_)) =>
+                dh.asInstanceOf[DeclHolder].decl.map {
+                _.replaceTypeAccess(oldk.createLockedAccess().get, newk.createLockedAccess().get)
+              }*/
+
             case FieldDeclHolder(Some(fdecl)) =>
               fdecl.replaceTypeAccess(oldk.createLockedAccess().get, newk.createLockedAccess().get)
             case ConcreteMethodDeclHolder(Some(mdecl)) =>
@@ -209,70 +231,88 @@ class AG2AST(val program : AST.Program) {
                      e: AGEdge, newSourceId: NodeId) {
     import AST.ASTNode.VIS_PUBLIC
 
+    def moveMethod( reenactor : JavaAccessGraph,
+                    tDeclFrom : AST.TypeDecl,
+                    tDeclDest : AST.TypeDecl,
+                    mDecl : AST.MethodDecl) : Unit ={
+      tDeclFrom.removeBodyDecl(mDecl)
+      tDeclDest.addBodyDecl(mDecl)
+      //TODO fix : following call create a qualifier if it is null
+      //the qualifier is a parameter for which a new instance is created
+      //in some case it changes the meaning of the program !!
+      tDeclFrom.replaceMethodCall(mDecl, mDecl)
+
+      if (tDeclFrom.getVisibility != VIS_PUBLIC) {
+        reenactor.users(e.target).find { uerId =>
+          reenactor.packageNode(uerId) != reenactor.packageNode(newSourceId)
+        } match {
+          case Some(_) => mDecl.setVisibility(VIS_PUBLIC)
+          case None => ()
+        }
+      }
+    }
+
+    def moveTypeKind(newPackage: AGNode,  tDecl : AST.TypeDecl): Unit ={
+      //println("moving " + i +" from package "+ p1 +" to package" + p2)
+      if (tDecl.compilationUnit().getNumTypeDecl > 1) {
+        val oldcu = tDecl.compilationUnit()
+
+        val rootPathName = oldcu.getRootPath
+        oldcu.removeTypeDecl(tDecl)
+
+        val path = rootPathName + newPackage.fullName.replaceAllLiterally(".", java.io.File.separator) +
+          java.io.File.separator
+
+        val newCu = new CompilationUnit()
+        oldcu.programRoot().insertUnusedType(path, newPackage.fullName, tDecl)
+
+        /*import scala.collection.JavaConversions.asScalaIterator
+        asScalaIterator(oldcu.getImportDeclList.iterator).foreach{newCu.addImportDecl}*/
+      }
+      else
+        tDecl.compilationUnit().setPackageDecl(newPackage.fullName)
+
+      if (tDecl.getVisibility != VIS_PUBLIC) {
+        reenactor.users(e.target).find { userId =>
+          reenactor.packageNode(userId) != newSourceId
+        } match {
+          case Some(_) => tDecl.setVisibility(VIS_PUBLIC)
+          case None => ()
+        }
+      }
+    }
+
     if (e.source != newSourceId) {
       //else do nothing*
       val source = resultGraph.getNode(e.source)
       val target = resultGraph.getNode(e.target)
       val newSource = resultGraph.getNode(newSourceId)
       (source.t, newSource.t, target.t) match {
-        case (ClassDeclHolder(Some(c1Decl)), ClassDeclHolder(Some(c2Decl)),
+        case (ClassDeclHolder(Some(c1Decl)),
+        ClassDeclHolder(Some(c2Decl)),
         ConcreteMethodDeclHolder(Some(mdecl))) =>
-          c1Decl.removeBodyDecl(mdecl)
-          c2Decl.addBodyDecl(mdecl)
-          //TODO fix : following call create a qualifier if it is null
-          //the qualifier is a parameter for which a new instance is created
-          //in some case it changes the meaning of the program !!
-          c1Decl.replaceMethodCall(mdecl, mdecl)
+          moveMethod(reenactor, c1Decl, c2Decl, mdecl)
 
-          if (c1Decl.getVisibility != VIS_PUBLIC) {
-            reenactor.users(e.target).find { uerId =>
-              reenactor.packageNode(uerId) != reenactor.packageNode(newSourceId)
-            } match {
-              case Some(_) => mdecl.setVisibility(VIS_PUBLIC)
-              case None =>
-            }
-          }
+        case (InterfaceDeclHolder(Some(oldItcDecl)),
+        InterfaceDeclHolder(Some(newItcDecl)),
+        AbstractMethodDeclHolder(Some(mDecl))) =>
+          moveMethod(reenactor, oldItcDecl, newItcDecl, mDecl)
 
         case (PackageDeclHolder, PackageDeclHolder, i: TypedKindDeclHolder) =>
-          /*println("moving typedecl %s of package (cu contains %d typedecl)".format(e.target.fullName,
-            i.decl.compilationUnit().getNumTypeDecl))*/
+          moveTypeKind(newSource, i.decl.get)
 
-          val idecl = i.decl.get
-          //println("moving " + i +" from package "+ p1 +" to package" + p2)
-          if (idecl.compilationUnit().getNumTypeDecl > 1) {
-            val oldcu = idecl.compilationUnit()
-
-            val rootPathName = oldcu.getRootPath
-            oldcu.removeTypeDecl(idecl)
-
-            val path = rootPathName + newSource.fullName.replaceAllLiterally(".", java.io.File.separator) +
-              java.io.File.separator
-
-            val newCu = new CompilationUnit()
-            oldcu.programRoot().insertUnusedType(path, newSource.fullName, idecl)
-
-            /*import scala.collection.JavaConversions.asScalaIterator
-            asScalaIterator(oldcu.getImportDeclList.iterator).foreach{newCu.addImportDecl}*/
-          }
-          else
-            idecl.compilationUnit().setPackageDecl(newSource.fullName)
-
-          if (idecl.getVisibility != VIS_PUBLIC) {
-            reenactor.users(e.target).find { userId =>
-              reenactor.packageNode(userId) != newSourceId
-            } match {
-              case Some(_) => idecl.setVisibility(VIS_PUBLIC)
-              case None => ()
-            }
-          }
-
-        case (ClassDeclHolder(Some(classDecl)), InterfaceDeclHolder(Some(absDecl)), idh @ InterfaceDeclHolder(Some(superDecl))) =>
+        case (ClassDeclHolder(Some(classDecl)),
+                InterfaceDeclHolder(Some(absDecl)),
+                idh @ InterfaceDeclHolder(Some(superDecl))) =>
           classDecl.removeImplements(superDecl)
           absDecl.addSuperInterfaceId(idh.createLockedAccess().get)
 
-        case (InterfaceDeclHolder(Some(subDecl)), InterfaceDeclHolder(Some(absDecl)), idh @ InterfaceDeclHolder(Some(superDecl))) =>
+        case (InterfaceDeclHolder(Some(subDecl)),
+                InterfaceDeclHolder(Some(absDecl)),
+                idh @ InterfaceDeclHolder(Some(superDecl))) =>
           subDecl.removeSuperInterface(superDecl)
           absDecl.addSuperInterfaceId(idh.createLockedAccess().get)
+
 
         case _ => throw new JavaAGError("redirecting SOURCE of %s to %s : application failure !".format(e, newSource))
       }

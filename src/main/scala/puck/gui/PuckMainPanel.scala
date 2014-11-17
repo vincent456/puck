@@ -1,7 +1,8 @@
 package puck.gui
 
-import puck.graph.{NodeId, AccessGraph, FilesHandler, NodeKind, ResultT}
-import puck.search.Search
+import puck.graph.FilesHandler
+import puck.gui.explorer.{PuckTreeNodeClicked, NodeInfosPanel, GraphExplorer}
+import puck.gui.search.ResultPanel
 import puck.util.{PuckLog, PuckLogger}
 
 import scala.collection.mutable.ArrayBuffer
@@ -55,8 +56,8 @@ class PuckMainPanel(val filesHandler: FilesHandler)
 
   //topComponent
   leftComponent = new SplitPane(Orientation.Vertical) {
-    val leftWidth = PuckMainPanel.width * 1/3
-    val rightWidth = PuckMainPanel.width *2/3
+    val leftWidth = PuckMainPanel.width * 3/8
+    val rightWidth = PuckMainPanel.width *5/8
     val height = PuckMainPanel.height * 2/3
 
     val treeDisplayer = new GraphExplorer(rightWidth/2, height)
@@ -114,7 +115,7 @@ class PuckMainPanel(val filesHandler: FilesHandler)
         case ExplorationFinished(res0) =>
           resultsWrapper.contents.clear()
           val searchResultPanel =
-            new SearchResultPanel(filesHandler.initialRecord, res0, filesHandler.logger,
+            new ResultPanel(filesHandler.initialRecord, res0, filesHandler.logger,
               printIds, printSigs)
           resultsWrapper.contents += searchResultPanel
           control listenTo searchResultPanel

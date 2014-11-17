@@ -37,7 +37,7 @@ trait Solver {
           } match {
             case None => (g, wu +: unsolved)
             case Some((abs, _)) =>
-              logger.writeln(wu + " will use abstraction " + abs)
+              logger.writeln(s"$wu will use abstraction $abs")
 
               //val breakPoint = g.startSequence()
 
@@ -80,7 +80,7 @@ trait Solver {
           k(FindHostError())
         case Some(hostKind) =>
           newCterNumGen += 1
-          val hostName = "%s_container%d".format(toBeContained.name, newCterNumGen)
+          val hostName = s"${toBeContained.name}_container$newCterNumGen"
           val (hid, graph2) = graph.addNode(hostName, hostKind, NoType)
           logger.writeln("creating " + hostName )(PuckLog.Debug)
           logger.writeln("host intro, rec call to find host " + parentsThatCanBeCreated )
@@ -136,14 +136,13 @@ trait Solver {
 
     def aux(graph : GraphT, deg : Int, currentImpl : NIdT)
            (k : Try[(GraphT, NIdT, AbstractionPolicy)] => Unit) : Unit = {
-      logger.writeln("*** abs intro degree %d/%d ***".format(deg, degree))
+      logger.writeln(s"*** abs intro degree $deg/$degree ***")
 
       decisionMaker.abstractionKindAndPolicy(graph, currentImpl){
         case Some((absKind, absPolicy)) =>
 
           def doIntro(k: Try[(GraphT, NIdT, AbstractionPolicy)] => Unit) : Unit = {
-            logger.writeln("trying to create abstraction( %s, %s ) of %s ".
-              format(absKind, absPolicy, currentImpl))
+            logger.writeln(s"trying to create abstraction( $absKind, $absPolicy ) of $currentImpl")
 
             val tryAbs = graph.createAbstraction(currentImpl, absKind, absPolicy)
 
@@ -154,13 +153,12 @@ trait Solver {
               case (absId, graph2) =>
                 logger.writeln("in solver "+ absId + " introduced as "+ absPolicy + " for " + currentImpl)(PuckLog.ConstraintSearch, PuckLog.Debug)
 
-                logger.writeln("Searching host for abstraction( %s, %s ) of %s ".
-                  format(absKind, absPolicy, currentImpl))
+                logger.writeln(s"Searching host for abstraction( $absKind, $absPolicy ) of $currentImpl")
 
                 findHost(graph2, absId,
                   absIntroPredicate(graph2, currentImpl, absPolicy, absKind)) {
                   case Host(h, graph3) =>
-                    logger.writeln("absIntro : host of %s is %s".format(absId, h))
+                    logger.writeln(s"absIntro : host of $absId is $h")
 
                     val graph4 = graph3.addContains(h, absId)
 
@@ -182,8 +180,7 @@ trait Solver {
           else
             doIntro({
               case Failure(_) =>
-                k(Failure(new AGError("Single abs intro degree %d/%d error (currentImpl = %s)".
-                format(deg, degree, currentImpl))))
+                k(Failure(new AGError(s"Single abs intro degree $deg/$degree error (currentImpl = $currentImpl)")))
               case Success((g, abs, _)) => aux(g, deg + 1, abs)(k)
             })
 
@@ -213,7 +210,7 @@ trait Solver {
 
   def solveUsesToward(graph : GraphT, impl : NIdT, k : Try[GraphT] => Unit) {
     logger.writeln("###################################################")
-    logger.writeln("##### Solving uses violations toward %s ######".format(impl))
+    logger.writeln(s"##### Solving uses violations toward $impl ######")
 
     redirectTowardExistingAbstractions(graph, impl, graph.wrongUsers(impl)){
       (graph2, wrongUsers) =>
@@ -242,7 +239,7 @@ trait Solver {
                     wronglyContained : NIdT,
                     k : Try[GraphT] => Unit) {
     logger.writeln("###################################################")
-    logger.writeln("##### Solving contains violations toward %s ######".format(wronglyContained))
+    logger.writeln(s"##### Solving contains violations toward $wronglyContained ######")
 
     // detach for host searching : do not want to consider parent constraints
     val oldCter = graph.container(wronglyContained)

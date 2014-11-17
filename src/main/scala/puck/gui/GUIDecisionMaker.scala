@@ -4,7 +4,7 @@ import puck.graph.constraints.AbstractionPolicy
 import puck.graph.mutable.NodeKind
 import puck.graph.mutable.constraints._
 import puck.graph.mutable.io.FilesHandler
-import puck.gui.decisionsFrames.{NodeChooser, ConstraintExceptionFrame, AbstractionKindAndPolicyChooser}
+import puck.gui.search.decisionsFrames.{NodeChooser, ConstraintExceptionFrame, AbstractionKindAndPolicyChooser}
 
 /**
  * Created by lorilan on 04/06/14.

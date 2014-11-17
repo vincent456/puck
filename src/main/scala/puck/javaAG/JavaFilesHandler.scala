@@ -68,13 +68,11 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
     val program = sProgram.get
     val applyer = new AG2AST(program)
 
-    record.foldRight((graph, graphOfResult(result))) {
-      case (r, (reenactor, resultGraph)) =>
+    record.foldRight((graphOfResult(result), graph)) {
+      case (r, (resultGraph, reenactor)) =>
       //println(r)
-
       val jreenactor = reenactor.asInstanceOf[JavaAccessGraph]
-      (r.redo(reenactor), applyer(jreenactor, resultGraph, r))
-
+      applyer(resultGraph, jreenactor, r)
     }
     //printCode()
     program.flushCaches()
@@ -97,7 +95,7 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
 }
 
 
-object JavaFilesHandler{
+object JavaFilesHandler {
 
   def apply() = new JavaFilesHandler()
   def apply(file : java.io.File) = new JavaFilesHandler(file)

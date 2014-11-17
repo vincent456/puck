@@ -60,7 +60,7 @@ object AG2AST {
 
     case Transformation(Remove(), TTNode(node)) =>
       node.kind match {
-        case k : TypeKind => k.decl.deleteAGNode()
+        case k : TypeKind => k.decl.puckDelete()
         case _ => logger.writeln("%s not applied on program".format(t))
       }
 

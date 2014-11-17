@@ -6,33 +6,6 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
-interface Actor {
-	void act();
-}
-
-class Comedian implements Actor{
-
-	public Comedian(){}
-
-	public void act() {
-		System.out.println("Something funny");
-	}
-}
-
-class Tragedian implements Actor{
-
-	public void act() {
-		System.out.println("Something sad");
-	}
-	
-}
-
-class Extra implements Actor{
-
-	public void act() {
-		System.out.println("Something in the background");
-	}
-}
 
 public class PrototypeDemo{
 	

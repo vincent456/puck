@@ -6,4 +6,4 @@ libraryDependencies ++= Seq(
   "commons-lang" % "commons-lang" % "2.6" // for oneJar plugin
 )
 
-scalacOptions ++=Seq("-deprecation","-unchecked","-feature")
+scalacOptions ++=Seq("-deprecation", "-unchecked", "-feature", "-Xfatal-warnings" )
