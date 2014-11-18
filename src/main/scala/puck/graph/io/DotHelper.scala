@@ -10,7 +10,7 @@ trait DotHelper{
   def isDotClass(k: NodeKind) : Boolean
   def fillColor(k: NodeKind) : String
   def namePrefix(k: NodeKind) : String
-  def splitDotClassContent(graph : AccessGraph, n: NodeId) :
+  def splitDotClassContent(graph : AccessGraph, n: NodeId, visibility : VisibilitySet) :
   (Iterable[NodeId], Iterable[NodeId], Iterable[NodeId] , Iterable[NodeId])
   //with java ((fields, Constructors, Methods), inner classes)
 }

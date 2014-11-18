@@ -22,6 +22,10 @@ class NodeInfosPanel(val graph : AccessGraph,
 
   val node = graph.getNode(nodeId)
 
+  def mkStringWithNames(nodes : Iterable[NodeId]): String ={
+    nodes.map(graph.getNode(_).nameTypeString).mkString("\n", "\n", "\n")
+  }
+
   leftComponent = new BoxPanel(Orientation.Vertical) {
     contents += PuckMainPanel.leftGlued(new Label(node.kind + " : " + node.nameTypeString))
     val prov = node.providers
@@ -31,17 +35,17 @@ class NodeInfosPanel(val graph : AccessGraph,
       "Incoming dependencies : " + node.incomingDependencies.size + "\n" +
       "Subtypes : " +
       (if(node.directSubTypes.isEmpty) "none\n"
-      else node.directSubTypes.mkString("\n", "\n", "\n")) +
+      else mkStringWithNames(node.directSubTypes) +
       "SuperTypes :" +
       (if(node.directSuperTypes.isEmpty) "none\n"
-      else node.directSuperTypes.mkString("\n", "\n", "\n")) +
+      else mkStringWithNames(node.directSuperTypes) +
       "Providers : " +
       (if (prov.isEmpty) "none\n"
-      else prov.mkString("\n", "\n", "\n")) +
+      else mkStringWithNames(prov) +
       "Clients : " +
       (if (cl.isEmpty) "none\n"
-      else cl.mkString("\n", "\n", "\n")) +
-      "Coupling = " + node.coupling + ", Cohesion :  " + node.cohesion)
+      else mkStringWithNames(cl) +
+      f"Coupling = ${node.coupling}%.2f  Cohesion :  ${node.cohesion}%.2f")
 
   /*  contents += new BoxPanel(Orientation.Horizontal) {
       contents += new Label("Move into :")

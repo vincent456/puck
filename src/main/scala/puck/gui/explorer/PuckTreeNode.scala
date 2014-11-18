@@ -40,7 +40,6 @@ class PuckTreeNode(val nodeId : NodeId,
        this.getParent.asInstanceOf[PuckTreeNode].setVisible(Visible, propagate =false)
      }
 
-     //agNode.setVisible(this.isVisible);
      checkBox.selected = PuckTreeNode.isSelected(visibility)
 
    }

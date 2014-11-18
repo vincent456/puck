@@ -58,7 +58,7 @@ class GraphExplorer
             path.getLastPathComponent match {
               case node : PuckTreeNode =>
                 publish(PuckTreeNodeClicked(graph, node.nodeId))
-                //obj.asInstanceOf[PuckTreeNode].toggleFilter()
+                node.toggleFilter()
                 tree.repaint()
               case _ => ()
             }

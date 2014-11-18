@@ -155,7 +155,7 @@ class DotPrinter
         decorate_name(n) + sig + "</TD></TR>")
     }
 
-    val (fields, ctrs, mts, innerClasses) = helper splitDotClassContent (graph, n.id)
+    val (fields, ctrs, mts, innerClasses) = helper splitDotClassContent (graph, n.id, visibility)
 
     writeln(n.id + " [ label = <<TABLE BGCOLOR=\"" + helper.fillColor(n.kind)+
       "\"> <TR> <TD PORT=\""+ n.id+"\" BORDER=\"0\"> <B>" +

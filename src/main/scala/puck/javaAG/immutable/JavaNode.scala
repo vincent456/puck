@@ -2,7 +2,7 @@ package puck.javaAG.immutable
 
 import puck.graph.AGError
 import puck.graph.immutable.AccessGraph.{NodeId, Mutability}
-import puck.graph.io.DotHelper
+import puck.graph.io.{VisibilitySet, DotHelper}
 import puck.graph.immutable._
 import puck.javaAG.immutable.nodeKind._
 
@@ -47,20 +47,23 @@ object JavaNode extends AGNodeBuilder with DotHelper{
     case _ => ""
   }
 
-  override def splitDotClassContent(graph : AccessGraph, n: NodeId) = {
+  override def splitDotClassContent(graph : AccessGraph, n: NodeId, visibility : VisibilitySet) = {
     graph.getNode(n).content.foldLeft( (Seq[NodeId](), Seq[NodeId](), Seq[NodeId](), Seq[NodeId]()) ){
       ( lists : (Seq[NodeId], Seq[NodeId], Seq[NodeId] , Seq[NodeId]), n : NodeId ) =>
-        val (fds, cts, mts, cls) = lists
-        val kind = graph.getNode(n).kind
-        kind match {
-          case Interface | Class => (fds, cts, mts, n+:cls)
-          case Field => (n+:fds, cts, mts, cls)
-          case Constructor => (fds, n+:cts, mts, cls)
-          case AbstractMethod
-               | Method
-               | ConstructorMethod => (fds, cts, n+:mts, cls)
+        if(visibility.isHidden(n)) lists
+        else {
+          val (fds, cts, mts, cls) = lists
+          val kind = graph.getNode(n).kind
+          kind match {
+            case Interface | Class => (fds, cts, mts, n +: cls)
+            case Field => (n +: fds, cts, mts, cls)
+            case Constructor => (fds, n +: cts, mts, cls)
+            case AbstractMethod
+                 | Method
+                 | ConstructorMethod => (fds, cts, n +: mts, cls)
 
-          case _ => throw new Error(kind + " : wrong NodeKind contained by a class" )
+            case _ => throw new Error(kind + " : wrong NodeKind contained by a class")
+          }
         }
     }
   }

@@ -20,22 +20,19 @@ class VisibilitySet/*(val graph : AccessGraph)*/ {
   var hiddens = Set[NodeId]()
 
   def setVisibility(id : NodeId, v : Visibility) : Unit = v match {
-    case Visible => hiddens += id
-    case Hidden => hiddens -= id
+    case Visible => hiddens -= id
+    case Hidden => hiddens += id
   }
 
-  def toggle(id : NodeId): Unit ={
-    if(hiddens.contains(id))
-      hiddens -= id
-    else
-      hiddens += id
-  }
+  def toggle(id : NodeId): Unit =
+    setVisibility(id, visibility(id).opposite)
+
 
   def isVisible(id:NodeId) : Boolean = !isHidden(id)
   def isHidden : NodeId => Boolean = hiddens.contains
 
   def visibility(id : NodeId): Visibility = {
-     if(isVisible(id)) Visible
-     else Hidden
+     if(isHidden(id)) Hidden
+     else Visible
   }
 }
