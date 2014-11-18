@@ -13,7 +13,7 @@ import scala.util.{Failure, Success, Try}
 
 object AccessGraph {
 
-  val rootId = 0
+  val rootId : NodeId = 0
   val dummyId = Int.MinValue
   /*val dummyNamedType = NamedType(0, "DummyType")
   val dummyArrowType = Arrow(dummyNamedType, dummyNamedType)*/

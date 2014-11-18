@@ -1,9 +1,11 @@
 package puck.gui
 
 import puck.graph.FilesHandler
-import puck.graph.io.VisibilitySet
+import puck.graph.immutable.AccessGraph
+import puck.graph.io.{Hidden, VisibilitySet}
 import puck.gui.explorer.{PuckTreeNodeClicked, NodeInfosPanel, GraphExplorer}
 import puck.gui.search.ResultPanel
+import puck.javaAG.immutable.Predefined
 import puck.util.{PuckLog, PuckLogger}
 
 import scala.collection.mutable.ArrayBuffer
@@ -61,7 +63,8 @@ class PuckMainPanel(val filesHandler: FilesHandler)
     val rightWidth = PuckMainPanel.width *5/8
     val height = PuckMainPanel.height * 2/3
 
-    val visibilitySet = new VisibilitySet()
+    val visibilitySet = VisibilitySet()
+    visibilitySet.setVisibility(AccessGraph.rootId :: (Predefined.list map (_.id)), Hidden)
     val treeDisplayer = new GraphExplorer(visibilitySet, rightWidth/2, height)
 
     val progressBar  = new ProgressBar()

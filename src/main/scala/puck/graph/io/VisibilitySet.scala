@@ -15,13 +15,21 @@ case object Visible extends Visibility {
 /**
  * Created by lorilan on 17/11/14.
  */
-class VisibilitySet/*(val graph : AccessGraph)*/ {
+object VisibilitySet{
+  def apply() = new VisibilitySet(Set[NodeId]())
+  def apply(ids : NodeId*) = new VisibilitySet(Set()++ ids.toSeq)
 
-  var hiddens = Set[NodeId]()
+}
+class VisibilitySet private (private [this] var hiddens: Set[NodeId])/*(val graph : AccessGraph)*/ {
 
   def setVisibility(id : NodeId, v : Visibility) : Unit = v match {
     case Visible => hiddens -= id
     case Hidden => hiddens += id
+  }
+
+  def setVisibility(ids : Seq[NodeId], v : Visibility) : Unit = v match {
+    case Visible => hiddens --= ids
+    case Hidden => hiddens ++= ids
   }
 
   def toggle(id : NodeId): Unit =

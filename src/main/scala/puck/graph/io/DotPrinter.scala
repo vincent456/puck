@@ -3,6 +3,7 @@ package puck.graph.io
 import java.io.BufferedWriter
 
 import puck.graph._
+import puck.graph.immutable.TypeHolder
 
 /**
  * Created by lorilan on 13/08/14.
@@ -41,9 +42,15 @@ class DotPrinter
 
   type NIdT = NodeId
 
-  val idPrinter =
-    if(printId) (id:Int) => " (" + id + ")"
-    else (_:Int) => ""
+  val idString : Int => String =
+    if(printId) id => " (" + id + ")"
+    else _ => ""
+
+  val signatureString : TypeHolder => String =
+    if (printSignatures)
+      styp => styp.mkString(graph).replaceAllLiterally(">", "&gt;") + " "
+    else _ => ""
+
 
   def writeln(str:String){
     writer write str
@@ -92,6 +99,8 @@ class DotPrinter
 
   }
 
+
+
   val printUsesViolations = (source : NIdT, target : NIdT) =>
     if(! graph.isa(source, target)) //TODO remove test. quickfix to avoid dot crash
       printArc(usesStyle, source, target,
@@ -117,17 +126,24 @@ class DotPrinter
 
   def decorate_name(n : AGNode):String =
     if (violations.contains(AGEdge.contains(n.container, n.id)))
-      "<FONT COLOR=\"" + ColorThickness.violation.color + "\"><U>" + helper.namePrefix(n.kind) + n.name + idPrinter(n.id) + "</U></FONT>"
-    else helper.namePrefix(n.kind) + n.name + idPrinter(n.id)
+      "<FONT COLOR=\"" + ColorThickness.violation.color + "\"><U>" + helper.namePrefix(n.kind) + n.name + idString(n.id) + "</U></FONT>"
+    else helper.namePrefix(n.kind) + n.name + idString(n.id)
 
+  def printOrphanNode(nid : NodeId): Unit = {
+    val n = graph.getNode(nid)
+    writeln(n.id + " [ label = \"" + n.kind + "  " + n.name + idString(n.id) + signatureString(n.styp)+"\" ]")
+  }
 
   def printNode(nid : NodeId){
     if(visibility.isVisible(nid)) {
       val n = graph.getNode(nid)
       if (helper isDotSubgraph n.kind) printSubGraph(n)
       else if (helper isDotClass n.kind) printClass(n.id)
+      else printOrphanNode(nid)
     }
   }
+
+
 
   def printSubGraph(n : AGNode){
     List("subgraph cluster" + n.id + " {",
@@ -147,9 +163,7 @@ class DotPrinter
     val n = graph.getNode(nid)
     def writeTableLine(nid: NodeId){
       val n = graph.getNode(nid)
-      val sig = if (printSignatures)
-        n.styp.mkString(graph).replaceAllLiterally(">", "&gt;") + " "
-      else ""
+      val sig = signatureString(n.styp)
 
       writeln("<TR><TD PORT=\"" +n.id + "\" ALIGN=\"LEFT\" BORDER=\"0\">"+
         decorate_name(n) + sig + "</TD></TR>")
@@ -182,10 +196,9 @@ class DotPrinter
     writeln("digraph G{")
     writeln("rankdir=LR; ranksep=equally; compound=true")
 
-    if(!searchRoots)
-      graph.content(graph.rootId).foreach(printNode)
-    else
-      graph.nodes.foreach{n => if(n.isRoot) printNode(n.id)}
+    graph.root.content.foreach(printNode)
+    visibility.setVisibility(AccessGraph.rootId, Hidden)
+    graph.nodesId.foreach{nid => if(graph.isRoot(nid)) printNode(nid)}
 
     arcs.foreach(writeln)
 

@@ -35,17 +35,17 @@ class NodeInfosPanel(val graph : AccessGraph,
       "Incoming dependencies : " + node.incomingDependencies.size + "\n" +
       "Subtypes : " +
       (if(node.directSubTypes.isEmpty) "none\n"
-      else mkStringWithNames(node.directSubTypes) +
+      else mkStringWithNames(node.directSubTypes)) +
       "SuperTypes :" +
       (if(node.directSuperTypes.isEmpty) "none\n"
-      else mkStringWithNames(node.directSuperTypes) +
+      else mkStringWithNames(node.directSuperTypes)) +
       "Providers : " +
       (if (prov.isEmpty) "none\n"
-      else mkStringWithNames(prov) +
+      else mkStringWithNames(prov)) +
       "Clients : " +
       (if (cl.isEmpty) "none\n"
       else mkStringWithNames(cl) +
-      f"Coupling = ${node.coupling}%.2f  Cohesion :  ${node.cohesion}%.2f")
+      f"Coupling = ${node.coupling}%.2f  Cohesion :  ${node.cohesion}%.2f"))
 
   /*  contents += new BoxPanel(Orientation.Horizontal) {
       contents += new Label("Move into :")
