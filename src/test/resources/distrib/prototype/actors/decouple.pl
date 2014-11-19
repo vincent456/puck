@@ -6,3 +6,4 @@ hideScopeSet(concrete_prototypes).
 
 friendOfScope('PrototypeDemo.main__String[]', concrete_prototypes).
 
+%hideScopeSetFrom(concrete_prototypes, 'PrototypeDemo.makeMovie__int').

@@ -5,6 +5,8 @@ import java.io.{File, InputStream}
 import javax.imageio.ImageIO
 import javax.swing.ImageIcon
 
+import puck.gui.PuckMainPanel
+
 import scala.swing.{Component, Frame, ScrollPane}
 
 /**
@@ -30,13 +32,15 @@ class ImageFrame(private val image: java.awt.Image) extends Frame{
   setSize()
 
   def setSize(){
-    if(image != null) {
+    /*if(image != null) {
       size = new Dimension(scala.math.min(screenSize.getWidth, image.getWidth(null) + 20).toInt,
         scala.math.min(screenSize.getHeight, image.getHeight(null) + 70).toInt)
     }
     else{
-      size = new Dimension(300, 200)
-    }
+      size = new Dimension(PuckMainPanel.width, PuckMainPanel.height)
+    }*/
+
+    size = new Dimension(PuckMainPanel.width, PuckMainPanel.height)
   }
 
 }

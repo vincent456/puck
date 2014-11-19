@@ -20,7 +20,7 @@ import java.io.File
 
 object PuckMainPanel{
   val width = 1024
-  val height = 800
+  val height = 768
 
   def leftGlued(c : Component) : BoxPanel = {
     new BoxPanel(Orientation.Horizontal) {
@@ -66,6 +66,12 @@ class PuckMainPanel(val filesHandler: FilesHandler)
     val visibilitySet = VisibilitySet()
     visibilitySet.setVisibility(AccessGraph.rootId :: (Predefined.list map (_.id)), Hidden)
     val treeDisplayer = new GraphExplorer(visibilitySet, rightWidth/2, height)
+
+    val treeDisplayerWrapper = new ScrollPane(){
+      minimumSize = new Dimension(rightWidth/2, height)
+      preferredSize = minimumSize
+      contents = treeDisplayer
+    }
 
     val progressBar  = new ProgressBar()
     val delayedDisplay = ArrayBuffer[Component]()
@@ -217,7 +223,7 @@ class PuckMainPanel(val filesHandler: FilesHandler)
     }
 
     rightComponent = new SplitPane(Orientation.Vertical) {
-      leftComponent = treeDisplayer
+      leftComponent = treeDisplayerWrapper
       rightComponent = nodeInfos
     }
 

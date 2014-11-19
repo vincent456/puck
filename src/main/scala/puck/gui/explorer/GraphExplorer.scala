@@ -23,8 +23,10 @@ class GraphExplorer
  height : Int)
   extends ScrollPane with Publisher {
 
+/*
   minimumSize = new Dimension(width, height)
   preferredSize = minimumSize
+*/
 
 
 

@@ -7,6 +7,7 @@ import javax.swing.ImageIcon
 
 import puck.graph._
 import puck.graph.io.VisibilitySet
+import puck.gui.PuckMainPanel
 import puck.search.SearchState
 import puck.util.PuckLog
 
@@ -29,10 +30,12 @@ class ImageExplorer(val filesHandler : FilesHandler,
 
   val imageWrapper = new ScrollPane()
 
-  {
+  /*{
     val screenSize = Toolkit.getDefaultToolkit.getScreenSize
     size = new Dimension(screenSize.getWidth.toInt, screenSize.getHeight.toInt)
-  }
+  }*/
+
+  size = new Dimension(PuckMainPanel.width, PuckMainPanel.height)
 
   val numberStates = states.size
   var index = numberStates -1
