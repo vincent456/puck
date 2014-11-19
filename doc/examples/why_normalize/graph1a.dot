@@ -1,0 +1,84 @@
+digraph G{
+rankdir=LR; ranksep=equally; compound=true
+subgraph cluster12 {
+label="&lt;&lt;package&gt;&gt; prototype (12)";
+color=black;
+subgraph cluster13 {
+label="&lt;&lt;package&gt;&gt; actors (13)";
+color=black;
+33 [ label = <<TABLE BGCOLOR="#FFFF33"> <TR> <TD PORT="33" BORDER="0"> <B>PrototypeDemo (33) </B></TD></TR>
+<HR/>
+<TR><TD PORT="18" ALIGN="LEFT" BORDER="0">roles (18)</TD></TR>
+<HR/>
+<TR><TD PORT="34" ALIGN="LEFT" BORDER="0">PrototypeDemo (34)</TD></TR>
+<TR><TD PORT="21" ALIGN="LEFT" BORDER="0">main (21)</TD></TR>
+<TR><TD PORT="24" ALIGN="LEFT" BORDER="0">makeMovie (24)</TD></TR>
+</TABLE>>, shape = "none" ];
+subgraph cluster38 {
+label="&lt;&lt;package&gt;&gt; Extra_container1 (38)";
+color=black;
+30 [ label = <<TABLE BGCOLOR="#FFFF33"> <TR> <TD PORT="30" BORDER="0"> <B>Extra (30) </B></TD></TR>
+<HR/>
+<TR><TD PORT="32" ALIGN="LEFT" BORDER="0">Extra (32)</TD></TR>
+<TR><TD PORT="36" ALIGN="LEFT" BORDER="0">create (36)</TD></TR>
+<TR><TD PORT="31" ALIGN="LEFT" BORDER="0">act (31)</TD></TR>
+</TABLE>>, shape = "none" ];
+120 [ label = <<TABLE BGCOLOR="#FFFF99"> <TR> <TD PORT="120" BORDER="0"> <B>&lt;&lt;interface&gt;&gt; Comedian_SuperTypeAbstraction (120) </B></TD></TR>
+<HR/>
+<TR><TD PORT="121" ALIGN="LEFT" BORDER="0">create (121)</TD></TR>
+<TR><TD PORT="122" ALIGN="LEFT" BORDER="0">act (122)</TD></TR>
+</TABLE>>, shape = "none" ];
+114 [ label = <<TABLE BGCOLOR="#FFFF99"> <TR> <TD PORT="114" BORDER="0"> <B>&lt;&lt;interface&gt;&gt; Extra_SuperTypeAbstraction (114) </B></TD></TR>
+<HR/>
+<TR><TD PORT="116" ALIGN="LEFT" BORDER="0">create (116)</TD></TR>
+<TR><TD PORT="115" ALIGN="LEFT" BORDER="0">act (115)</TD></TR>
+</TABLE>>, shape = "none" ];
+117 [ label = <<TABLE BGCOLOR="#FFFF99"> <TR> <TD PORT="117" BORDER="0"> <B>&lt;&lt;interface&gt;&gt; Tragedian_SuperTypeAbstraction (117) </B></TD></TR>
+<HR/>
+<TR><TD PORT="118" ALIGN="LEFT" BORDER="0">act (118)</TD></TR>
+<TR><TD PORT="119" ALIGN="LEFT" BORDER="0">create (119)</TD></TR>
+</TABLE>>, shape = "none" ];
+27 [ label = <<TABLE BGCOLOR="#FFFF33"> <TR> <TD PORT="27" BORDER="0"> <B>Tragedian (27) </B></TD></TR>
+<HR/>
+<TR><TD PORT="29" ALIGN="LEFT" BORDER="0">Tragedian (29)</TD></TR>
+<TR><TD PORT="35" ALIGN="LEFT" BORDER="0">create (35)</TD></TR>
+<TR><TD PORT="28" ALIGN="LEFT" BORDER="0">act (28)</TD></TR>
+</TABLE>>, shape = "none" ];
+23 [ label = <<TABLE BGCOLOR="#FFFF33"> <TR> <TD PORT="23" BORDER="0"> <B>Comedian (23) </B></TD></TR>
+<HR/>
+<TR><TD PORT="25" ALIGN="LEFT" BORDER="0">Comedian (25)</TD></TR>
+<TR><TD PORT="26" ALIGN="LEFT" BORDER="0">act (26)</TD></TR>
+<TR><TD PORT="37" ALIGN="LEFT" BORDER="0">create (37)</TD></TR>
+</TABLE>>, shape = "none" ];
+}
+14 [ label = <<TABLE BGCOLOR="#FFFF99"> <TR> <TD PORT="14" BORDER="0"> <B>&lt;&lt;interface&gt;&gt; Actor (14) </B></TD></TR>
+<HR/>
+<TR><TD PORT="22" ALIGN="LEFT" BORDER="0">act (22)</TD></TR>
+</TABLE>>, shape = "none" ];
+}
+}
+33:21 -> 33:24[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+33:24 -> 33:18[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+33:21 -> 33:18[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+30:36 -> 30:32[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+33:21 -> 30:32[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+30:30 -> 114:114[ style = dashed, arrowhead = empty, color = black, penwidth = 1];
+30:30 -> 14:14[ style = dashed, arrowhead = empty, color = black, penwidth = 1];
+33:24 -> 120:121[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+33:24 -> 120:120[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+33:24 -> 114:116[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+33:24 -> 114:114[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+33:24 -> 117:119[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+33:24 -> 117:117[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+33:21 -> 27:29[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+27:35 -> 27:29[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+27:27 -> 117:117[ style = dashed, arrowhead = empty, color = black, penwidth = 1];
+27:27 -> 14:14[ style = dashed, arrowhead = empty, color = black, penwidth = 1];
+23:37 -> 23:25[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+33:21 -> 23:25[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+23:23 -> 120:120[ style = dashed, arrowhead = empty, color = black, penwidth = 1];
+23:23 -> 14:14[ style = dashed, arrowhead = empty, color = black, penwidth = 1];
+33:21 -> 14:22[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+33:18 -> 14:14[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+33:21 -> 14:14[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+}

@@ -1,0 +1,62 @@
+digraph G{
+rankdir=LR; ranksep=equally; compound=true
+subgraph cluster12 {
+label="&lt;&lt;package&gt;&gt; prototype (12)";
+color=black;
+subgraph cluster13 {
+label="&lt;&lt;package&gt;&gt; actors (13)";
+color=black;
+subgraph cluster38 {
+label="&lt;&lt;package&gt;&gt; Comedian_container1 (38)";
+color=black;
+23 [ label = <<TABLE BGCOLOR="#FFFF33"> <TR> <TD PORT="23" BORDER="0"> <B>Comedian (23) </B></TD></TR>
+<HR/>
+<TR><TD PORT="25" ALIGN="LEFT" BORDER="0">Comedian (25)</TD></TR>
+<TR><TD PORT="36" ALIGN="LEFT" BORDER="0">create (37)</TD></TR>
+<TR><TD PORT="26" ALIGN="LEFT" BORDER="0">act (26)</TD></TR>
+</TABLE>>, shape = "none" ];
+114 [ label = <<TABLE BGCOLOR="#FFFF99"> <TR> <TD PORT="114" BORDER="0"> <B>&lt;&lt;interface&gt;&gt; Extra_SuperTypeAbstraction (114) </B></TD></TR>
+<HR/>
+<TR><TD PORT="116" ALIGN="LEFT" BORDER="0">create (116)</TD></TR>
+<TR><TD PORT="115" ALIGN="LEFT" BORDER="0">act (115)</TD></TR>
+</TABLE>>, shape = "none" ];
+30 [ label = <<TABLE BGCOLOR="#FFFF33"> <TR> <TD PORT="30" BORDER="0"> <B>Extra (30) </B></TD></TR>
+<HR/>
+<TR><TD PORT="32" ALIGN="LEFT" BORDER="0">Extra (32)</TD></TR>
+<TR><TD PORT="31" ALIGN="LEFT" BORDER="0">act (31)</TD></TR>
+<TR><TD PORT="35" ALIGN="LEFT" BORDER="0">create (36)</TD></TR>
+</TABLE>>, shape = "none" ];
+27 [ label = <<TABLE BGCOLOR="#FFFF33"> <TR> <TD PORT="27" BORDER="0"> <B>Tragedian (27) </B></TD></TR>
+<HR/>
+<TR><TD PORT="29" ALIGN="LEFT" BORDER="0">Tragedian (29)</TD></TR>
+<TR><TD PORT="37" ALIGN="LEFT" BORDER="0">create (35)</TD></TR>
+<TR><TD PORT="28" ALIGN="LEFT" BORDER="0">act (28)</TD></TR>
+</TABLE>>, shape = "none" ];
+}
+33 [ label = <<TABLE BGCOLOR="#FFFF33"> <TR> <TD PORT="33" BORDER="0"> <B>PrototypeDemo (33) </B></TD></TR>
+<HR/>
+<TR><TD PORT="21" ALIGN="LEFT" BORDER="0">roles (21)</TD></TR>
+<HR/>
+<TR><TD PORT="34" ALIGN="LEFT" BORDER="0">PrototypeDemo (34)</TD></TR>
+<TR><TD PORT="18" ALIGN="LEFT" BORDER="0">main (18)</TD></TR>
+<TR><TD PORT="24" ALIGN="LEFT" BORDER="0">makeMovie (24)</TD></TR>
+</TABLE>>, shape = "none" ];
+}
+}
+33:18 -> 23:25[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+23:36 -> 23:25[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+23:23 -> 114:114[ style = dashed, arrowhead = empty, color = black, penwidth = 1];
+33:18 -> 114:115[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+33:24 -> 114:116[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+33:24 -> 114:114[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+33:21 -> 114:114[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+30:35 -> 30:32[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+33:18 -> 30:32[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+30:30 -> 114:114[ style = dashed, arrowhead = empty, color = black, penwidth = 1];
+27:37 -> 27:29[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+33:18 -> 27:29[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+27:27 -> 114:114[ style = dashed, arrowhead = empty, color = black, penwidth = 1];
+33:18 -> 33:24[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+33:24 -> 33:21[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+33:18 -> 33:21[ style = bold, arrowhead = normal, color = black, penwidth = 1];
+}
