@@ -1,7 +1,7 @@
 package puck.gui.search
 
 import puck.graph.{ResultT, graphOfResult}
-import puck.gui.{ApplyOnCodeRequest, GraphDisplayRequest, SearchStateSeqPrintingRequest}
+import puck.gui.{ConstraintDisplayRequest, ApplyOnCodeRequest, GraphDisplayRequest, SearchStateSeqPrintingRequest}
 import puck.search.SearchState
 
 import scala.swing._
@@ -33,7 +33,7 @@ class StateSelector
   contents += firstLine
 
   val secondLine = new FlowPanel()
-  secondLine.contents += new Button(""){
+  /*secondLine.contents += new Button(""){
       action = new Action("Show"){
         def apply() {
           StateSelector.this publish
@@ -42,9 +42,10 @@ class StateSelector
         }
       }
     }
+  */
 
   secondLine.contents += new Button(""){
-    action = new Action("History"){
+    action = new Action("Show"){
       def apply() {
 
         val state: SearchState[ResultT] = searchStateComboBox.selection.item
@@ -58,6 +59,14 @@ class StateSelector
     }
   }
 
+  secondLine.contents += new Button(""){
+    action = new Action("Constraint"){
+      def apply() {
+        val state: SearchState[ResultT] = searchStateComboBox.selection.item
+        StateSelector.this publish ConstraintDisplayRequest(graphOfResult(state.result))
+      }
+    }
+  }
 
   secondLine.contents += new Button(""){
     action = new Action("Apply"){

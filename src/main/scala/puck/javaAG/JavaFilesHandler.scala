@@ -88,10 +88,10 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
   }
 
   override def searchingStrategies: Seq[ConstraintSolvingSearchEngineBuilder] =
-    List(JavaFunneledCSSEBuilder,
-      JavaTryAllCSSEBuilder,
+    List(JavaTryAllCSSEBuilder,
+      JavaFunneledCSSEBuilder/*,
       //JavaGradedCSSEBuilder,
-      JavaFindFirstCSSEBuilder)
+      JavaFindFirstCSSEBuilder*/)
 }
 
 

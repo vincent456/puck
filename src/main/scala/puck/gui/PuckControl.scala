@@ -26,7 +26,7 @@ import scala.util.{Failure, Success}
  * Created by lorilan on 11/08/14.
  */
 
-sealed abstract class ControlRequest extends Event
+sealed trait ControlRequest extends Event
 
 case class LoadCodeRequest() extends ControlRequest
 case class LoadConstraintRequest() extends ControlRequest
@@ -38,6 +38,7 @@ case class GraphDisplayRequest
  sUse : Option[AGEdge] = None)
  extends ControlRequest
 
+case class ConstraintDisplayRequest(graph : AccessGraph) extends ControlRequest
 case class ExploreRequest
 (builder : ConstraintSolvingSearchEngineBuilder)
   extends ControlRequest
@@ -168,6 +169,9 @@ class PuckControl(val filesHandler : FilesHandler,
 
     case GraphDisplayRequest(title, graph, printId, printSignature, sUse) =>
       displayGraph(title, graph, sUse, printId, printSignature)
+
+    case ConstraintDisplayRequest(graph) =>
+      graph.printConstraints(filesHandler.logger, defaultVerbosity)
 
     case ApplyOnCodeRequest(searchResult) => applyOnCode(searchResult)
 

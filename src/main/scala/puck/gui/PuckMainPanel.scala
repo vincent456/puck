@@ -115,7 +115,6 @@ class PuckMainPanel(val filesHandler: FilesHandler)
     leftComponent = new BoxPanel(Orientation.Vertical) {
       minimumSize = new Dimension(leftWidth, height)
 
-
       val resultsWrapper = new FlowPanel()
 
       control listenTo this
@@ -188,7 +187,7 @@ class PuckMainPanel(val filesHandler: FilesHandler)
 */
       val showConstraints = makeButton("Show constraints",
         "Show the constraints the graph has to satisfy"){
-        () => filesHandler.graph.printConstraints(filesHandler.logger, defaultVerbosity)
+        () => publish(ConstraintDisplayRequest(filesHandler.graph))
       }
 
       addDelayedComponent(showConstraints)
