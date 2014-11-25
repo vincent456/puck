@@ -66,13 +66,18 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
 
     val record = recordOfResult(result)
     val program = sProgram.get
-    val applyer = new AG2AST(program)
+    val applyer = new AG2AST(program, logger)
 
     record.foldRight((graphOfResult(result), graph)) {
       case (r, (resultGraph, reenactor)) =>
-      //println(r)
-      val jreenactor = reenactor.asInstanceOf[JavaAccessGraph]
-      applyer(resultGraph, jreenactor, r)
+        logger.writeln("/!\\ cache flushed after each transformations, may take some time")
+        //println(r)
+        //println("before " + program.getNumCUFromSrc + " cus in prog")
+        val jreenactor = reenactor.asInstanceOf[JavaAccessGraph]
+        val res = applyer(resultGraph, jreenactor, r)
+        //println("after " + program.getNumCUFromSrc + " cus in prog")
+        program.flushCaches()
+        res
     }
     //printCode()
     program.flushCaches()

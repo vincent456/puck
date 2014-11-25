@@ -1,6 +1,5 @@
 package puck.javaAG.immutable
 
-import AST.CompilationUnit
 import puck.graph.AccessGraph
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.immutable.AccessGraph.NodeId
@@ -13,9 +12,10 @@ import puck.util.{PuckLog, PuckLogger, PuckNoopLogger}
 /**
  * Created by lorilan on 23/07/14.
  */
-class AG2AST(val program : AST.Program) {
-  var logger: PuckLogger = PuckNoopLogger
+class AG2AST(val program : AST.Program,
+             val logger : PuckLogger) {
   implicit val defaultVerbosity = (PuckLog.AG2AST, PuckLog.Info)
+  def verbosity : PuckLog.Level => PuckLog.Verbosity = l => (PuckLog.AG2AST, l)
 
   def apply(resultGraph : AccessGraph,
             reenactor: JavaAccessGraph,
@@ -260,22 +260,26 @@ class AG2AST(val program : AST.Program) {
 
       val rootPathName = oldcu.getRootPath
 
-      val path = rootPathName + newPackage.fullName.replaceAllLiterally(".", java.io.File.separator) +
+      val path = rootPathName +  java.io.File.separator + newPackage.fullName.replaceAllLiterally(".", java.io.File.separator) +
         java.io.File.separator
 
       if (tDecl.compilationUnit.getNumTypeDecl > 1) {
-        println(tDecl.name + " cu with more than one classe")
+        logger.writeln(tDecl.name + " cu with more than one classe")(verbosity(PuckLog.Debug))
         oldcu.removeTypeDecl(tDecl)
-        val newCu = new CompilationUnit()
+        val newCu = new AST.CompilationUnit()
         oldcu.programRoot().insertUnusedType(path, newPackage.fullName, tDecl)
 
-        /*import scala.collection.JavaConversions.asScalaIterator
+        /*import scala.collection.JavaConvers ions.asScalaIterator
         asScalaIterator(oldcu.getImportDeclList.iterator).foreach{newCu.addImportDecl}*/
       }
       else {
-        println(tDecl.name + " cu with one classe")
+        logger.writeln(tDecl.name + " cu with one classe")(verbosity(PuckLog.Debug))
+        val p: AST.Program = tDecl.programRoot
+        logger.writeln("before " + p.getNumCompilationUnit + " cus in prog")(verbosity(PuckLog.Debug))
         tDecl.compilationUnit.setPackageDecl(newPackage.fullName)
         tDecl.compilationUnit.setPathName(path + tDecl.name + ".java")
+        logger.writeln("after " + p.getNumCompilationUnit + " cus in prog")(verbosity(PuckLog.Debug))
+
       }
 
       if (tDecl.getVisibility != VIS_PUBLIC) {
