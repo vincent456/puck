@@ -46,6 +46,18 @@ class ConstraintsMaps
    type GraphT = AccessGraph
    type NIdT = NodeId
 
+   def forAncestors(graph : GraphT, nid : NodeId)(f : NodeId => Boolean): Boolean =
+     f(nid) || (graph.container(nid) match {
+      case None => false
+      case Some(id) => forAncestors(graph, id)(f)
+     })
+
+   def forContainer(graph : GraphT, nid : NodeId)(f : NodeId => Boolean): Boolean =
+     graph.container(nid) match {
+     case None => false
+     case Some(id) => f(id)
+   }
+
 
    def printConstraints[V](graph : GraphT, logger : Logger[V], v : V){
      namedSets.foreach{
@@ -64,9 +76,10 @@ class ConstraintsMaps
 
 
    def friendOfScope(graph : GraphT, node : NIdT, befriended : NIdT) : Boolean = {
-     val frCtSet = friendOfScopesConstraints.getOrElse(befriended, ConstraintSet.empty)
-     frCtSet.hasFriendScopeThatContains_*(graph, node) ||
-       !graph.isRoot(befriended) && friendOfScope(graph, node, graph.container(befriended))
+     forAncestors(graph, befriended){ befriended0 =>
+       val frCtSet = friendOfScopesConstraints.getOrElse(befriended0, ConstraintSet.empty)
+       frCtSet.hasFriendScopeThatContains_*(graph, node)
+     }
    }
    def friendOfElement(graph : GraphT, node : NIdT, befriended : NIdT) : Boolean = {
      val frCtSet = friendOfElementsConstraints.getOrElse(befriended, ConstraintSet.empty)
@@ -87,8 +100,10 @@ class ConstraintsMaps
          scopeConstraints.getOrElse(usee, Iterable.empty).filter(_.violated(graph, uses)) ++: acc
        else acc
 
-       if(graph.isRoot(usee)) acc2
-       else aux(graph.container(usee), acc2)
+       graph.container(usee) match {
+         case None => acc2
+         case Some(cterId) => aux(cterId, acc2)
+       }
      }
      aux(usee0,List())
    }
@@ -98,9 +113,10 @@ class ConstraintsMaps
      val uses = AGEdge.uses(user, usee0)
 
      def aux(usee: NIdT): Boolean =
-       !graph.contains_*(usee, user) &&
-         scopeConstraints.getOrElse(usee, Iterable.empty).exists(_.violated(graph, uses)) ||
-         !graph.isRoot(usee) && aux(graph.container(usee))
+       forAncestors(graph, usee){ usee1 =>
+         !graph.contains_*(usee1, user) &&
+           scopeConstraints.getOrElse(usee1, Iterable.empty).exists(_.violated(graph, uses))
+       }
 
      aux(usee0)
    }
@@ -119,7 +135,8 @@ class ConstraintsMaps
          eltFriendOfElement(graph, user, usee))
 
    def isWronglyContained(graph : GraphT, node : NIdT) : Boolean =
-     !graph.isRoot(node) && interloperOf(graph, graph.container(node), node)
+    forContainer(graph, node)(interloperOf(graph, _, node))
+
 
    def wrongUsers(graph : GraphT, node : NIdT) : Seq[NIdT] = {
      graph.users(node).foldLeft(Seq[NIdT]()){ case(acc, user) =>

@@ -22,12 +22,14 @@ class AG2AST(val program : AST.Program) {
             t: Transformation) : (AccessGraph, AccessGraph) = t match {
     case Transformation(Add, TTNode(id, name, kind, styp, mutable, dh: DeclHolder)) =>
       //redo t before createDecl
+
+
       val n = resultGraph.getNode(id)
       val newRes = n.t.asInstanceOf[DeclHolder].createDecl(program, resultGraph, id)
       (newRes, reenactor.setNode(newRes.getNode(id)))
 
 
-      //redo t after applying on code other transformations
+        //redo t after applying on code other transformations
     case `t` => t match {
       case Transformation(Add, TTEdge(e)) =>
         //println("creating edge " + e)
@@ -254,23 +256,27 @@ class AG2AST(val program : AST.Program) {
 
     def moveTypeKind(newPackage: AGNode,  tDecl : AST.TypeDecl): Unit ={
       //println("moving " + i +" from package "+ p1 +" to package" + p2)
-      if (tDecl.compilationUnit().getNumTypeDecl > 1) {
-        val oldcu = tDecl.compilationUnit()
+      val oldcu = tDecl.compilationUnit()
 
-        val rootPathName = oldcu.getRootPath
+      val rootPathName = oldcu.getRootPath
+
+      val path = rootPathName + newPackage.fullName.replaceAllLiterally(".", java.io.File.separator) +
+        java.io.File.separator
+
+      if (tDecl.compilationUnit.getNumTypeDecl > 1) {
+        println(tDecl.name + " cu with more than one classe")
         oldcu.removeTypeDecl(tDecl)
-
-        val path = rootPathName + newPackage.fullName.replaceAllLiterally(".", java.io.File.separator) +
-          java.io.File.separator
-
         val newCu = new CompilationUnit()
         oldcu.programRoot().insertUnusedType(path, newPackage.fullName, tDecl)
 
         /*import scala.collection.JavaConversions.asScalaIterator
         asScalaIterator(oldcu.getImportDeclList.iterator).foreach{newCu.addImportDecl}*/
       }
-      else
-        tDecl.compilationUnit().setPackageDecl(newPackage.fullName)
+      else {
+        println(tDecl.name + " cu with one classe")
+        tDecl.compilationUnit.setPackageDecl(newPackage.fullName)
+        tDecl.compilationUnit.setPathName(path + tDecl.name + ".java")
+      }
 
       if (tDecl.getVisibility != VIS_PUBLIC) {
         reenactor.users(e.target).find { userId =>
@@ -285,6 +291,7 @@ class AG2AST(val program : AST.Program) {
     if (e.source != newSourceId) {
       //else do nothing*
       val source = resultGraph.getNode(e.source)
+
       val target = resultGraph.getNode(e.target)
       val newSource = resultGraph.getNode(newSourceId)
       (source.t, newSource.t, target.t) match {

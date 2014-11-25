@@ -2,7 +2,7 @@ package puck.javaAG.immutable
 import puck.graph.AGError
 import puck.graph.constraints.DelegationAbstraction
 import puck.graph.immutable.AccessGraph.NodeId
-import puck.graph.immutable.{Hook, AGNode, AccessGraph}
+import puck.graph.immutable.{Removed, Hook, AGNode, AccessGraph}
 import puck.javaAG.immutable.nodeKind.{MethodTypeHolder, Constructor, JavaNodeKind}
 
 sealed trait DeclHolder extends Hook{
@@ -12,6 +12,7 @@ sealed trait DeclHolder extends Hook{
                  graph : AccessGraph,
                  node : NodeId) : AccessGraph =
     throw new DeclarationCreationError(graph.getNode(node).toString)
+
 }
 
 case object EmptyDeclHolder extends DeclHolder
@@ -40,7 +41,7 @@ case class ConcreteMethodDeclHolder(decl : Option[AST.MethodDecl]) extends Metho
       case None =>
         val n = graph.getNode(node)
 
-        val someKtor = graph.getNode(n.container).content.find{ n0 =>
+        val someKtor = graph.getNode(n.container.get).content.find{ n0 =>
           val n1 = graph.getNode(n0)
           n1.kind == Constructor &&
             n1.abstractions.exists {
@@ -105,7 +106,7 @@ trait TypedKindDeclHolder extends DeclHolder {
   def createLockedAccess() : Option[AST.Access] = decl.map(_.createLockedAccess())
   def addDeclToProgram(prog : AST.Program,
                        graph : AccessGraph,
-                       node : NodeId){
+                       nid : NodeId){
     /*val prog = node.graph.root.kind match {
       case r @ JavaRoot() => r.program
       case r => throw new Error("root should be of kind JavaRoot instead of " + r)
@@ -113,19 +114,25 @@ trait TypedKindDeclHolder extends DeclHolder {
     decl match {
       case None => ()
       case Some(decl) =>
-        val node0 = graph.getNode(node)
-        decl.setID(node0.name)
+        val node = graph.getNode(nid)
+        decl.setID(node.name)
         decl.setModifiers(new AST.Modifiers("public"))
         val cu = new AST.CompilationUnit()
-        cu.setRelativeName(node0.name)
+        cu.setRelativeName(node.name)
 
-        val cpath = node0.containerPath
-        if(! graph.getNode(cpath.head).isRoot)
-          throw new AGError("cannot create decl for unrooted node")
+        val cpath = node.containerPath
 
         val names = cpath.tail.map(graph.getNode(_).name)
-        println(s"setting pathname with $cpath")
-        cu.setPathName(names.mkString(java.io.File.separator))
+
+        var i = 0
+        var rcu = prog.getCompilationUnit(0)
+        while( rcu == null && i < prog.getNumCompilationUnit){
+          i += 1
+          rcu = prog.getCompilationUnit(i)
+        }
+        if(rcu == null) throw new AGError("cannot found rootPath")
+
+        cu.setPathName(rcu.getRootPath + names.mkString(java.io.File.separator) +".java")
         cu.setTypeDecl(decl, 0)
         cu.setFromSource(true)
         prog.addCompilationUnit(cu)

@@ -79,7 +79,7 @@ class DotPrinter
       if (helper isDotSubgraph n.kind) n.id.toString
       else {
         val containerId = if (helper isDotClass n.kind) n.id
-        else graph.container(nid)
+        else graph.container(nid).get
         containerId + ":" + n.id
       }
     }
@@ -124,11 +124,12 @@ class DotPrinter
 
   }
 
-  def decorate_name(n : AGNode):String =
-    if (violations.contains(AGEdge.contains(n.container, n.id)))
+  def decorate_name(n : AGNode):String = {
+    val sCter = n.container
+    if (sCter.isDefined && violations.contains(AGEdge.contains(sCter.get, n.id)))
       "<FONT COLOR=\"" + ColorThickness.violation.color + "\"><U>" + helper.namePrefix(n.kind) + n.name + idString(n.id) + "</U></FONT>"
     else helper.namePrefix(n.kind) + n.name + idString(n.id)
-
+  }
   def printOrphanNode(nid : NodeId): Unit = {
     val n = graph.getNode(nid)
     writeln(n.id + " [ label = \"" + n.kind + "  " + n.name + idString(n.id) + signatureString(n.styp)+"\" ]")
@@ -198,7 +199,7 @@ class DotPrinter
 
     graph.root.content.foreach(printNode)
     visibility.setVisibility(AccessGraph.rootId, Hidden)
-    graph.nodesId.foreach{nid => if(graph.isRoot(nid)) printNode(nid)}
+    graph.nodesId.foreach{nid => if(graph.container(nid).isEmpty) printNode(nid)}
 
     arcs.foreach(writeln)
 

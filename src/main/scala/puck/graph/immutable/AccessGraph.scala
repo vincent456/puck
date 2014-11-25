@@ -130,7 +130,7 @@ class AccessGraph
 
   val rootId : NIdT = 0
   def root = getNode(rootId)
-  def isRoot(id : NIdT) = container(id) == id
+  def isRoot(id : NIdT) = id == rootId
 
   def addNode(localName:String, kind: NodeKind, th : TypeHolder, mutable : Mutability = true) : (NIdT, GraphT) = {
     val id = idSeed()
@@ -162,10 +162,8 @@ class AccessGraph
     }
   }
 
-  def getNode(id : NIdT): AGNode = {
-    val (_, name, kind, styp, mutability, t) = getNodeStatus(id).node
-    nodeBuilder(this, id, name, kind, styp, mutability, t)
-  }
+  def getNode(id : NIdT): AGNode = nodeBuilder(this,  getNodeStatus(id))
+
 
   def removeNode(id : NIdT) = {
     nodesIndex(id) match {
@@ -319,8 +317,8 @@ class AccessGraph
 
   def nodeKinds = nodeBuilder.kinds
 
-  def container(contentId : NIdT) : NIdT =
-    containerMap.get(contentId) match {
+  def container(contentId : NIdT) : Option[NIdT] = containerMap.get(contentId)
+    /*containerMap.get(contentId) match {
       case None => contentId
         /*val msg = "AccessGraph.container : no container for " + getNode(contentId)
         logger.writeln(msg)(PuckLog.Error)
@@ -330,17 +328,24 @@ class AccessGraph
         logger.writeln(containerMap.toSeq.sortBy(_._1).mkString("\n", "\n\t", ""))
         throw new AGError(msg)*/
       case Some(id) => id
-    }
+    }*/
+
+
+
   def content(containerId: NIdT) : Iterable[NIdT] = contentsMap.getFlat(containerId)
 
   def contains(containerId : NIdT, contentId : NIdT) : Boolean =
-    container(contentId) == containerId
+    container(contentId) match {
+      case None => false
+      case Some(id) => id == containerId
+    }
 
   def contains_*(containerId : NIdT, contentId : NIdT) : Boolean =
     containerId == contentId || {
-      val containerOfContentId = container(contentId)
-      !(containerOfContentId == contentId) && //not isRoot
-        contains_*(containerId, containerOfContentId)
+      container(contentId) match {
+        case None => false
+        case Some(id) => contains_*(containerId, id)
+      }
     }
 
   def directSuperTypes(sub: NIdT) : Iterable[NIdT] = superTypesMap getFlat sub
@@ -380,7 +385,7 @@ class AccessGraph
     nodesIndex.keys.flatMap {n =>
       val wu = constraints.wrongUsers(this, n).map(AGEdge.uses(_,n))
       if(constraints.isWronglyContained(this, n))
-         AGEdge.contains(container(n), n) +: wu
+         AGEdge.contains(container(n).get, n) +: wu
       else wu
     }.toSeq
 
@@ -534,7 +539,7 @@ class AccessGraph
 
     val newPrimaryUsee =
       policy match {
-        case Move => container(newSideUsee)
+        case Move => container(newSideUsee).get
         case absPolicy : AbstractionPolicy =>
           abstractions(currentPrimaryUsee).find {
             case (node, `absPolicy`) => contains_*(node, newSideUsee)
@@ -618,7 +623,7 @@ class AccessGraph
   def moveTo(movedId : NIdT, newContainer : NIdT): Try[GraphT] = {
     val oldContainer = container(movedId)
     logger.writeln("moving " + movedId +" from " + oldContainer + " to " + newContainer)
-    val g2 = changeSource(AGEdge.contains(oldContainer, movedId), newContainer)
+    val g2 = changeSource(AGEdge.contains(oldContainer.get, movedId), newContainer)
     users(movedId).foldLeft(Success(g2) : Try[GraphT]){
       case (g0, userId) =>
         g0.flatMap(_.redirectPrimaryUses(AGEdge.uses(userId, movedId), movedId,
@@ -730,6 +735,6 @@ class AccessGraph
     }*/
 
 
-    g8.removeContains(consumed.container, consumedId).removeNode(consumedId)
+    g8.removeContains(consumed.container.get, consumedId).removeNode(consumedId)
   }
 }

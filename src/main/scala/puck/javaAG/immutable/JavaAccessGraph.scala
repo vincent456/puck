@@ -105,7 +105,6 @@ class JavaAccessGraph
             }
         }
 
-
         tryAbs1 flatMap {
           case (absId, g) =>
             val abs = g.getNode(absId)
@@ -155,36 +154,6 @@ class JavaAccessGraph
 
                 g4Try map {g4 => (absId, g4)}
             }
-
-            /*g2Try match {
-              case Failure(f) => Failure(f)
-              case Success(g2) =>
-                val g3 = g2.addIsa(implId, absId)
-
-                val g4Try = traverse(implContent, g3){
-                  case (g0, child) =>
-                    val node = g0.getNode(child)
-                    (node.kind, node.styp) match {
-                      // even fields can need to be promoted if they are written
-                      //case Field() =>
-                      case (ck : MethodKind, MethodTypeHolder(typ))  =>
-
-                        val g1 = g0.changeContravariantType(child, node.styp, implId, abs.id)
-
-                        if(g1.uses(child, implId)) {
-                          logger.writeln("interface creation : redirecting %s target to %s".format(AGEdge.uses(child, implId), abs), 3)
-                          g1.redirectUses(AGEdge.uses(child, implId), absId, SupertypeAbstraction) map {
-                            case (_, g22) => g22
-                          }
-                        }
-                        else Success(g1)
-                      case _ => Success(g0)
-                    }
-                }
-
-
-                g4Try map {case g4 => (absId, g4)}
-            }*/
         }
 
       case (AbstractMethod, SupertypeAbstraction) =>
@@ -213,14 +182,14 @@ class JavaAccessGraph
     val abstraction = getNode(absId)
     (abstraction.kind, policy) match {
       case (AbstractMethod, SupertypeAbstraction) =>
-        val implContainer = container(implId)
+        val implContainer = container(implId).get
         val thisClassNeedsImplement = (abstractions(implContainer) find
           {case (abs, absPolicy) => absPolicy == SupertypeAbstraction &&
-            abs == abstraction.container}).isEmpty
+            abs == abstraction.container.get}).isEmpty
 
         if(!thisClassNeedsImplement) this
         else {
-          val absContainer = container(absId)
+          val absContainer = container(absId).get
           val g1 = addUses(implContainer, absContainer)
             .addIsa(implContainer, absContainer)
 
@@ -319,7 +288,7 @@ class JavaAccessGraph
     if(method.styp.isEmpty)
       throw new AGError("Method must have a type")
 
-    val mType = method.styp.redirectUses(method.container, interface)
+    val mType = method.styp.redirectUses(method.container.get, interface)
 
     interface.content.find { ncId =>
       val nc =getNode(ncId)
@@ -334,7 +303,8 @@ class JavaAccessGraph
   def packageNode(id : NodeId) : NodeId =
     getNode(id).kind match {
       case Package => id
-      case _ => packageNode(container(id))
+      case _ => packageNode(container(id).getOrElse(throw new AGError( getNode(id).fullName + "has no package")))
+
     }
 
 }

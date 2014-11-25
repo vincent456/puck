@@ -8,6 +8,12 @@ import puck.graph.constraints.AbstractionPolicy
 import puck.graph.immutable.AccessGraph.{Mutability, NodeId}
 
 trait AGNodeBuilder {
+
+  def apply(graph : AccessGraph,
+            nst : NodeStatus): AGNode = {
+    val (id, name, kind, styp, mutability, t) = nst.node
+    this.apply(graph, id, name, kind, styp,mutability, t)
+  }
   def apply(graph : AccessGraph,
             id : NodeId,
             name : String,
@@ -56,14 +62,16 @@ class AGNode
   def subTypes = graph.subTypes(id)
   def isSuperTypeOf(subCandidate : NIdT) = graph.isSuperTypeOf(id, subCandidate)
 
-  def isRoot = graph.container(id) == id
+  def isRoot = graph.isRoot(id)
 
   def isa( n : NIdT ) = graph.isa(id, n)
 
   def containerPath  : Seq[NIdT] = {
-    def aux(current : NIdT, acc : Seq[NIdT]) : Seq[NIdT] =
-      if(graph.isRoot(current)) current +: acc
-      else aux(graph.container(current), current +: acc)
+    def aux(current : NIdT, acc : Seq[NIdT]) : Seq[NIdT] = {
+      val cter = graph.container(current)
+      if (cter.isEmpty) current +: acc
+      else aux(cter.get, current +: acc)
+    }
 
     aux(id, Seq())
   }

@@ -242,7 +242,7 @@ trait Solver {
     logger.writeln(s"##### Solving contains violations toward $wronglyContained ######")
 
     // detach for host searching : do not want to consider parent constraints
-    val oldCter = graph.container(wronglyContained)
+    val oldCter = graph.container(wronglyContained).get
 
     val graphWithoutContains = graph.removeContains(oldCter, wronglyContained, register = false)
 
