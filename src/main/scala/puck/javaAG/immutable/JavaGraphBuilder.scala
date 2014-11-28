@@ -33,6 +33,7 @@ class JavaGraphBuilder(program : AST.Program) extends GraphBuilder(JavaNode){
   def addPackageNode(fullName: String, localName:String) : NodeIdT =
     super.addNode(fullName, localName, Package, NoType)
 
+
   def addPackage(p : String, mutable : Boolean): NodeIdT =
     nodesByName get p match {
       case None =>
@@ -75,6 +76,25 @@ class JavaGraphBuilder(program : AST.Program) extends GraphBuilder(JavaNode){
     tdNode
   }
 
+  def addBodyDecl(bd : AST.BodyDecl){
+    val typeNodeId = addApiTypeNode(bd.hostType(), doAddUses = false)
+    bd.buildAG(this, typeNodeId)
+  }
+
+  def attachOrphanNodes(){
+    g.nodesId.foreach{ nodeId =>
+        //println(s"${g.container(nodeId)} contains $nodeId")
+        if(g.container(nodeId).isEmpty && nodeId != g.rootId){
+          val n = g.getNode(nodeId).asInstanceOf[JavaNode]
+          n.t match {
+            case FieldDeclHolder(Some(d)) => addBodyDecl(d)
+            case mdh : MethodDeclHolder => mdh.decl.foreach(addBodyDecl)
+            case tdh : TypedKindDeclHolder => tdh.decl.foreach(addApiTypeNode(_, doAddUses = false))
+            case _ => ()
+          }
+        }
+    }
+  }
 
   def addApiNode(program : AST.Program, 
                  nodeKind : String, 
@@ -86,13 +106,13 @@ class JavaGraphBuilder(program : AST.Program) extends GraphBuilder(JavaNode){
       return
     }
 
-    val tdNode = addApiTypeNode(td, doAddUses = true)
+    val typeNodeId = addApiTypeNode(td, doAddUses = true)
 
     def addBodyDecl(bd : AST.BodyDecl){
       if(bd == null)
         System.err.println("Method or constructor" + bodydeclName + " not found in the program ...")
       else
-        addContains(tdNode, bd buildAG this)
+        bd.buildAG(this, typeNodeId)
     }
 
     nodeKind match {

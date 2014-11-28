@@ -1,0 +1,15 @@
+
+aspect NamedElement {
+
+	syn boolean ASTNode.isNamedElement();
+	eq ASTNode.isNamedElement() = false;
+
+	eq InterfaceDecl.isNamedElement() = true;
+	eq ClassDecl.isNamedElement() = true;
+
+	eq FieldDeclaration.isNamedElement() = true;
+	eq MethodDecl.isNamedElement() = true;
+	eq ConstructorDecl.isNamedElement() = true;
+	
+
+}

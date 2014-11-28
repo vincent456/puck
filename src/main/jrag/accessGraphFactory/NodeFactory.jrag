@@ -1,0 +1,190 @@
+
+import puck.javaAG.immutable.nodeKind.JavaNodeKind;
+
+aspect NodeFactory  {
+
+
+	public void TypeDecl.registerDecl(JavaGraphBuilder builder, int agnode){
+      throw new Error(this.getClass() +" does not know how to register itself");
+  	}
+
+  	public void ClassDecl.registerDecl(JavaGraphBuilder builder, int agnode){
+        builder.registerDecl(agnode, this);
+    }
+
+    public void InterfaceDecl.registerDecl(JavaGraphBuilder builder, int agnode){
+        builder.registerDecl(agnode, this);
+    }
+
+
+    syn JavaNodeKind TypeDecl.getAGNodeKind();
+
+    eq TypeDecl.getAGNodeKind(){
+    	throw new AGBuildingError(this.getClass()+" : Unkown nodekind");
+    }
+    eq ClassDecl.getAGNodeKind() = JavaNodeKind.classKind();
+    eq InterfaceDecl.getAGNodeKind() = JavaNodeKind.interfaceKind();
+
+
+
+	public int ASTNode.buildAGNode(JavaGraphBuilder builder){
+		throw new AGBuildingError(this.getClass()+" does not know how to create an AG Node");
+	}
+
+	public int Variable.buildAGNode(JavaGraphBuilder builder);
+	
+	public int TypeDecl.buildAGNode(JavaGraphBuilder builder){
+      int node = builder.addNode(fullName(), name(), getAGNodeKind(), JavaNodeKind.noType());
+
+      registerDecl(builder, node);
+
+      return node;
+  	}
+
+	public int TypeAccess.buildAGNode(JavaGraphBuilder builder){
+		return decl().buildAGNode(builder);
+	}
+
+	public int ParTypeAccess.buildAGNode(JavaGraphBuilder builder){
+		return ((TypeAccess)getTypeAccess()).decl().buildAGNode(builder);
+	}
+
+
+	interface TypeDeclared{
+		TypeDecl getTypeDecl();
+	}
+
+	TypeAccess implements TypeDeclared;
+	
+	public TypeDecl TypeAccess.getTypeDecl(){
+		return decl();
+	}
+	ParTypeAccess implements TypeDeclared;
+
+	public TypeDecl ParTypeAccess.getTypeDecl(){
+		return ((TypeAccess)getTypeAccess()).decl();
+	}
+
+	/*public AGNode BodyDecl.buildAGNode(JavaGraphBuilder builder){
+		System.out.println("Bodydecl or subclass");
+		return super.buildAGNode(builder);
+	}*/
+
+	public int VoidType.buildAGNode(JavaGraphBuilder builder){
+		int node = builder.getNodeByName(fullName());
+      //TODO FIX !!
+      //builder.registerDecl(node, this);
+      return node;
+	}
+	public int PrimitiveType.buildAGNode(JavaGraphBuilder builder){
+		int node = builder.getNodeByName(fullName());
+      	builder.registerDecl(node, this);
+      	return node;
+	}
+
+	public int VarAccess.buildAGNode(JavaGraphBuilder builder){
+      	return decl().buildAGNode(builder);
+  	}
+
+	public int FieldDeclaration.buildAGNode(JavaGraphBuilder builder){
+		try {
+			return builder.getNodeByName(fullName());
+		}
+		catch(NoSuchElementException e){
+			JavaNamedType type = new JavaNamedType(type().buildAGNode(builder), type().name());
+	        NamedTypeHolder th = new NamedTypeHolder(type);
+	        int node = builder.addNode(fullName(), name(), JavaNodeKind.field(), th);
+
+	        builder.registerDecl(node, this);
+	        return node;
+    	}
+	}
+	
+
+
+	/*public AGNode FieldDecl.buildAGNode(JavaGraphBuilder builder){
+		AGNode agTypeNode = getTypeAccess().buildAGNode(builder);
+
+		return builder.addNode(fullName(), name(), 
+				JavaNodeKind.field(new JavaNamedType(agTypeNode)));
+	}*/
+
+	static Tuple ASTNode.astParamsToAGType(JavaGraphBuilder builder, Callable c){
+		ArrayList<Type> tparams = new ArrayList<Type>();
+		for(ParameterDeclaration pdecl: c.getParameterList()){
+			int agTypeNode = pdecl.getTypeAccess().buildAGNode(builder);
+			tparams.add(new JavaNamedType(agTypeNode, pdecl.getTypeAccess().typeName()));
+		}
+		return new Tuple(scala.collection.JavaConversions.asScalaBuffer(tparams).toList());
+	}
+
+
+	public int MethodAccess.buildAGNode(JavaGraphBuilder builder){
+      	return decl().buildAGNode(builder);
+  	}
+
+	public int MethodDecl.buildAGNode(JavaGraphBuilder builder){
+
+		try {
+			return builder.getNodeByName(fullName());
+		}
+		catch(NoSuchElementException e){
+
+			MethodType mt = new MethodType(ASTNode.astParamsToAGType(builder,this),
+                 new JavaNamedType(getTypeAccess().buildAGNode(builder), getTypeAccess().typeName()));
+
+	      	MethodTypeHolder typeHolder = new MethodTypeHolder( mt );
+
+	      	JavaNodeKind kind;
+	      	if(this.isAbstract())
+	        	kind = JavaNodeKind.abstractMethod();
+	        else
+	        	kind = JavaNodeKind.method();
+
+	        int node = builder.addNode(fullName(), name(), kind, typeHolder);
+
+	        builder.registerDecl(node, this);
+
+	        return node;
+
+		}
+	}
+
+	public int ConstructorDecl.buildAGNode(JavaGraphBuilder builder){
+		
+		try {
+			return builder.getNodeByName(fullName());
+		}
+		catch(NoSuchElementException e){
+
+		      MethodType constructorAGType = new MethodType(ASTNode.astParamsToAGType(builder,this),
+		                    new JavaNamedType(hostType().buildAGNode(builder), hostType().name()));
+
+		      MethodTypeHolder typeHolder = new MethodTypeHolder( constructorAGType );
+		      int node = builder.addNode(fullName(), name(),
+		            			JavaNodeKind.constructor(), typeHolder);
+
+		      builder.registerDecl(node, this);
+		      return node;
+  		}
+	}
+
+	
+
+	public int InstanceInitializer.buildAGNode(JavaGraphBuilder builder){
+		return hostType().buildAGNode(builder);
+	}
+
+	public int StaticInitializer.buildAGNode(JavaGraphBuilder builder){
+		return hostType().buildAGNode(builder);
+	}
+
+	public int VariableDeclaration.buildAGNode(JavaGraphBuilder builder){
+		return hostBodyDecl().buildAGNode(builder);
+	}
+
+	public int ParameterDeclaration.buildAGNode(JavaGraphBuilder builder){
+		return hostBodyDecl().buildAGNode(builder);
+	}
+
+}

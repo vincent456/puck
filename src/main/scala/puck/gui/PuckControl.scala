@@ -67,7 +67,7 @@ class PuckControl(val filesHandler : FilesHandler,
                   private val visibility : VisibilitySet,
                   private val progressBar : ProgressBar,
                   private val delayedDisplay : ArrayBuffer[Component])
-  extends Publisher{
+  extends Publisher {
 
   type GraphT = AccessGraph
   import PuckLog.defaultVerbosity
@@ -102,7 +102,8 @@ class PuckControl(val filesHandler : FilesHandler,
       filesHandler.graph.printConstraints(logger, defaultVerbosity)
     }
     catch {
-      case e: Error => logger writeln ("\n" + e.getMessage)
+      case _ : java.io.FileNotFoundException => logger writeln "constraint file not found"
+      case e: Error => logger writeln e.getMessage
     }
   }
 

@@ -117,6 +117,12 @@ aspect AST {
 	 *    / \
 	 *   A this
 	 */
+
+	private boolean Expr.rightRotated = true;
+	void Expr.setRightRotated(boolean b) { rightRotated = b; }
+	public boolean Expr.isRightRotated(){return rightRotated;}
+
+
 	public void AbstractDot.rotateLeft() {
 		Expr l = getLeft(); setLeft(null);
 		Access r = getRight(); setRight(null);
@@ -128,6 +134,10 @@ aspect AST {
 		}
 		setLeft(l);
 		setRight(r);
+
+		setRightRotated(false);
+		l.setRightRotated(false);
+		r.setRightRotated(false);
 	}
 	
 	public void AbstractDot.rotateRight() {
@@ -141,6 +151,10 @@ aspect AST {
 		}
 		setLeft(l);
 		setRight(r);
+
+		setRightRotated(true);
+		l.setRightRotated(true);
+		r.setRightRotated(true);
 	}
 	
 	// TODO: some bits of the compiler don't work properly when AbstractDots are left-heavy; these refinements are just temporary fixes
@@ -190,10 +204,16 @@ aspect AST {
 		}
 	}
 	
+	//original
+	// public Expr Access.getQualifier() {
+	// 	assert !hasParentDot() || 
+	// 		(isLeftChildOfDot() && (!parentDot().hasParentDot() || parentDot().isLeftChildOfDot())) ||
+	// 		isRightChildOfDot(); // i.e., is rotated to left
+	// 	return isRightChildOfDot() ? parentDot().getLeft() : null;
+	// }
+
 	public Expr Access.getQualifier() {
-		assert !hasParentDot() || 
-			(isLeftChildOfDot() && (!parentDot().hasParentDot() || parentDot().isLeftChildOfDot())) ||
-			isRightChildOfDot(); // i.e., is rotated to left
+		assert !hasParentDot() ||  !isRightRotated(); // i.e., is rotated to left
 		return isRightChildOfDot() ? parentDot().getLeft() : null;
 	}
 	

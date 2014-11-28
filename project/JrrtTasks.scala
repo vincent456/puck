@@ -228,7 +228,7 @@ def beaverTask(srcFile : File){
                 jrrtDir / "Renaming" / "RenameMethod.jrag"
                 */)
 
-          val puckFiles : PathFinder = (jastaddSrcDir.value) ** ("*.jrag" | "*.jadd")
+          val puckFiles : PathFinder = jastaddSrcDir.value ** ("*.jrag" | "*.jadd")
 
           val jrrtFiles3 : PathFinder = Seq(jrrtDir / "TypeConstraints" / "TypeConstraintSolving.jrag",
             jrrtDir / "TypeConstraints" / "CollectTypeConstraints.jrag")
@@ -269,7 +269,7 @@ def beaverTask(srcFile : File){
 
             // /!\ breakable : main uses System.exit !!
             println("generating ast and weaving aspects")
-            jastadd.JastAdd.main(("--beaver"
+           /* jastadd.JastAdd.main(("--beaver"
               +: "--package=AST"
               +: ("--o=" + jastaddOutDir.value)
               +: "--rewrite"
@@ -278,10 +278,29 @@ def beaverTask(srcFile : File){
               +: "--noComponentCheck"
               +: "--refineLegacy"
               +: orderedPaths).toArray)
+*/
+            val jastAddParserJar = baseDirectory.value / "project" / "lib" / "JastAddParser.jar"
+            val jastAddJar = baseDirectory.value / "project" / "lib" / "jastadd2.jar"
 
-            IO.copyDirectory(java14frontend.value / "beaver",
-              jastaddOutDir.value / "beaver",
-              preserveLastModified = true)
+            val retVal = Fork.java(new ForkOptions(bootJars = Seq(jastAddJar, jastAddParserJar) ), "jastadd.JastAdd" +: "--beaver"
+              +: "--package=AST"
+              +: ("--o=" + jastaddOutDir.value)
+              +: "--rewrite"
+              +: "--novisitcheck"
+              +: "--noCacheCycle"
+              +: "--noComponentCheck"
+              +: "--refineLegacy"
+              +: orderedPaths)
+
+            if(retVal == 0) {
+              println("ast creation success")
+              IO.copyDirectory(java14frontend.value / "beaver",
+                jastaddOutDir.value / "beaver",
+                preserveLastModified = true)
+            }
+            else
+              println("ast creation failure")
+
           }
         (PathFinder( jastaddOutDir.value / "beaver" ) * "*" +++ PathFinder(jastaddOutDir.value / "AST") * "*").get
 			}

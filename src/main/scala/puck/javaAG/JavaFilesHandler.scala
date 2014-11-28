@@ -8,6 +8,7 @@ import puck.graph.immutable.transformations.NodeMappingInitialState
 import puck.graph._
 import puck.graph.io.{ConstraintSolvingSearchEngineBuilder, FilesHandler}
 import puck.javaAG.immutable.{AG2AST, JavaAccessGraph}
+import puck.util.PuckLog._
 
 
 /**
@@ -31,26 +32,36 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
   def loadGraph(ll : AST.LoadingListener = null) : AccessGraph = {
     import puck.util.FileHelper.{fileLines, findAllFiles, initStringLiteralsMap}
 
-    JavaFilesHandler.compile(findAllFiles(this.srcDirectory.get, srcSuffix,
-      this.outDirectory.get.getName),
-      fileLines(jarListFile.get)) match {
-      case None => throw new AGBuildingError("Compilation error, no AST generated")
-      case Some(p) =>   sProgram = Some(p)
-        val jGraphBuilder = p.buildAccessGraph(initStringLiteralsMap(decouple.get), ll)
-        fileLines(apiNodesFile.get).foreach {
-          (l: String) =>
-            val tab = l.split(" ")
-            jGraphBuilder.addApiNode(p, tab(0), tab(1), tab(2))
-        }
-
-        graphBuilder = jGraphBuilder
-        graph = (graphBuilder.g withLogger this.logger).newGraph(nRecording = Recording())
-
-        val (_, transfos) = NodeMappingInitialState.normalizeNodeTransfos(graphBuilder.g.recording(), Seq())
-        initialRecord = new Recording(transfos)
-
-        graph
+    val sProg = puck.util.Time.time(logger, defaultVerbosity) {
+        logger.writeln("Compiling sources ...")
+        JavaFilesHandler.compile(findAllFiles(this.srcDirectory.get, srcSuffix,
+        this.outDirectory.get.getName),
+        fileLines(jarListFile.get))
     }
+    puck.util.Time.time(logger, defaultVerbosity) {
+      logger.writeln("Building Access Graph ...")
+      sProg match {
+        case None => throw new AGBuildingError("Compilation error, no AST generated")
+        case Some(p) => sProgram = Some(p)
+          val jGraphBuilder = p.buildAccessGraph(initStringLiteralsMap(decouple.get), ll)
+          fileLines(apiNodesFile.get).foreach {
+            (l: String) =>
+              val tab = l.split(" ")
+              jGraphBuilder.addApiNode(p, tab(0), tab(1), tab(2))
+          }
+
+          jGraphBuilder.attachOrphanNodes()
+
+          graphBuilder = jGraphBuilder
+          graph = (graphBuilder.g withLogger this.logger).newGraph(nRecording = Recording())
+
+          val (_, transfos) = NodeMappingInitialState.normalizeNodeTransfos(graphBuilder.g.recording(), Seq())
+          initialRecord = new Recording(transfos)
+
+          graph
+      }
+    }
+
   }
 
   val dotHelper = JavaNode

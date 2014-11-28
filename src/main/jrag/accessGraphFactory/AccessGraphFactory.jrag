@@ -1,0 +1,309 @@
+
+import puck.graph.AGBuildingError;
+
+
+//import puck.javaAG.mutable.JavaAccessGraph;
+//import puck.javaAG.mutable.nodeKind.JavaNodeKind;
+//import puck.javaAG.mutable.JavaNamedType;
+//import puck.javaAG.mutable.MethodType;
+//import puck.graph.mutable.NamedType;
+//import puck.graph.mutable.Tuple;
+//import puck.graph.mutable.Type;
+
+import puck.javaAG.immutable.JavaGraphBuilder;
+
+import puck.javaAG.immutable.JavaNamedType;
+import puck.javaAG.immutable.MethodType;
+import puck.graph.immutable.NamedType;
+import puck.graph.immutable.Tuple;
+import puck.graph.immutable.Type;
+import puck.javaAG.immutable.nodeKind.MethodTypeHolder;
+import puck.javaAG.immutable.nodeKind.NamedTypeHolder;
+
+aspect AccessGraphFactory {
+
+	public interface LoadingListener {
+		public void update(double loading);
+	}	
+
+
+	public JavaGraphBuilder Program.buildAccessGraph(Map<String,Collection<BodyDecl>> stringsRequest, LoadingListener ll){
+
+		JavaGraphBuilder builder = new JavaGraphBuilder(this);
+
+		if(stringsRequest != null){
+			for (java.util.Map.Entry<String, Collection<BodyDecl>>  entry : allStringUses(stringsRequest).entrySet()) {
+				builder.addStringLiteral(entry.getKey(), entry.getValue());
+			}
+		}
+
+		if(ll == null)
+			silentBuild(builder);
+		else
+			verboseBuild(builder, ll);
+
+		return builder;
+	}
+
+	private void Program.silentBuild(JavaGraphBuilder builder){
+		List<CompilationUnit> compUnitList = getCompilationUnitList();
+		for (CompilationUnit cu : compUnitList) {
+			if (!cu.buildAccessGraph_CU(builder))				
+				break;
+		}
+	}
+
+	private List<CompilationUnit> Program.getCompilationUnitFromSource(){
+		List<CompilationUnit> list = new List<CompilationUnit>();
+		for (CompilationUnit cu : (List<CompilationUnit>)getCompilationUnitList()){
+			if(cu.fromSource()){
+				list.add(cu);
+			}
+		}
+		return list;
+	}
+
+	private void Program.verboseBuild(JavaGraphBuilder builder, LoadingListener ll){
+		List<CompilationUnit> compUnitList = getCompilationUnitFromSource();
+		double nchild = compUnitList.getNumChild();
+		double d = 0.0;
+		for (CompilationUnit cu : compUnitList) {
+			if (!cu.buildAccessGraph_CU(builder))				
+				break;
+			d++;
+			ll.update(d/nchild);
+		}
+		ll.update(1);
+	}
+
+
+	void ASTNode.buildAGInChildren(JavaGraphBuilder builder, int containerId){
+		for(int i=0; i< getNumChild(); i++){
+			getChild(i).buildAG(builder, containerId);
+		}
+	}
+
+	public void ASTNode.buildAG(JavaGraphBuilder builder, int containerId){
+		//System.err.println(this.getClass() + ".buildAG() : " + getNumChild() +" children");
+		buildAGInChildren(builder, containerId);
+	}	
+
+	public boolean CompilationUnit.buildAccessGraph_CU(JavaGraphBuilder builder){
+		if(pathName() != null){
+			int packageNode = builder.addPackage(getPackageDecl(), true);
+
+			for (TypeDecl td : getTypeDecls()){
+				td.buildAG(builder, packageNode);
+			}
+			return true;
+		}
+		else{
+			if(!getPackageDecl().equals("@primitive"))
+				System.err.println(getPackageDecl()+" : pathName = null");
+			return false;
+		}
+	}
+
+	public void TypeDecl.buildAG(JavaGraphBuilder builder, int containerId){
+		
+		int tdNode = buildAG_TypeDecl(builder);
+		builder.addContains(containerId, tdNode);
+
+		for (BodyDecl bd : getBodyDeclList()) {
+			bd.buildAG(builder, tdNode);
+		}
+	}
+
+
+	int TypeDecl.buildAG_TypeDecl(JavaGraphBuilder builder){
+		throw new AGBuildingError(this.getClass() + " : expected ClassDecl or InterfaceDecl");
+	}
+
+
+	void ClassDecl.addExtends(JavaGraphBuilder builder, int thisId){
+		if (hasSuperclass() && !"java.lang.Object".equals(superclass().fullName())){
+			
+			builder.addIsa(thisId, getSuperClassAccess().buildAGNode(builder));
+
+			getSuperClassAccess().addExtendsAndImplementsUses(builder, thisId);
+		}
+	}
+
+	int ClassDecl.buildAG_TypeDecl(JavaGraphBuilder builder){
+		int nodeId = buildAGNode(builder);
+
+		addExtends(builder, nodeId);
+
+		TypeDecl.addImplements(builder, nodeId, getImplementss());
+
+		return nodeId;
+	}
+
+	int InterfaceDecl.buildAG_TypeDecl(JavaGraphBuilder builder){
+		int agNode = buildAGNode(builder);
+
+		TypeDecl.addImplements(builder, agNode, getSuperInterfaceIdList());
+
+		return agNode;
+	}
+
+
+
+	public void BodyDecl.buildAG(JavaGraphBuilder builder, int hostTypeDeclId ){
+		if(isNamedElement()){
+			int nodeId = buildAGNode(builder);
+			builder.addContains(hostTypeDeclId, nodeId);
+			super.buildAG(builder, nodeId);
+
+		}
+		else
+			System.err.println("TODO !! "+ this.getClass() +".buildAG(JavaGraphBuilder, int)");
+		
+	}
+
+	// public void FieldDecl.buildAG(JavaGraphBuilder builder, int hostTypeDeclId){
+	// 	int agNode = buildAGNode(builder);
+	// 	builder.addContains(hostTypeDeclId, agNode);
+	// 	for (VariableDecl vd : getVariableDeclList()) {
+	// 		vd.buildAGNode(builder);
+	// 	}
+	// }
+
+
+	public void MethodAccess.buildAG(JavaGraphBuilder builder, int containerId){
+		int nodeId = decl().buildAGNode(builder);
+		
+		builder.addUses(containerId, nodeId);
+
+		int dominantUserId = buildDominantUserAGNode(builder);
+		int dominantUsedId = decl().hostType().buildAGNode(builder);
+
+		builder.addUsesDependency(dominantUserId, dominantUsedId, 
+            					  containerId, nodeId);
+
+		for(Expr e : getArgList()){
+			e.buildAG(builder, containerId);
+		}
+	}
+	
+
+	public void ClassInstanceExpr.buildAG(JavaGraphBuilder builder, int containerId){
+		System.err.println("ClassInstanceExpr.buildAG : " + this);
+		
+		int nodeId = getAccess().buildAGNode(builder);
+		
+		builder.addUses(containerId, nodeId);
+				
+		int dominantUsedId = decl().hostType().buildAGNode(builder);
+
+		builder.addUsesDependency(containerId, dominantUsedId,
+                    			 containerId, nodeId);
+		
+		for(Expr e : getArgList()){
+			e.buildAG(builder, containerId);
+		}
+
+	}
+
+	syn boolean ASTNode.isAbstractDot();
+	eq ASTNode.isAbstractDot() = false;
+	eq AbstractDot.isAbstractDot() = true;
+
+	public Expr Access.getLeftExpr(){
+		if(!getParent().isAbstractDot())
+			return null;
+		
+		AbstractDot parent = (AbstractDot) getParent();
+		Expr lsibling = parent.getLeft();
+		
+		if(lsibling == this) //already leftmost child
+			return null;
+		
+		if(lsibling.isAbstractDot())
+			return ((AbstractDot)lsibling).getRight();
+		
+		return lsibling;
+	}
+
+	public void AbstractDot.buildAG(JavaGraphBuilder builder, int containerId){
+		if(isRightRotated())
+			rotateLeft();
+
+		buildAGInChildren(builder, containerId);
+	}
+
+	public void Access.buildAG(JavaGraphBuilder builder, int containerId){
+		System.err.println("TODO !! "+this.getClass()+".buildAG : " + this);
+		super.buildAG(builder, containerId);
+	}
+
+	public void TypeAccess.buildAG(JavaGraphBuilder builder, int containerId){
+		int nodeId = buildAGNode(builder);
+		builder.addUses(containerId, nodeId);
+	}
+
+	public void ParTypeAccess.buildAG(JavaGraphBuilder builder, int containerId){
+		int nodeId = buildAGNode(builder);
+		builder.addUses(containerId, nodeId);
+		buildAGInChildren(builder, containerId);
+	}
+
+
+	public void VarAccess.buildAG(JavaGraphBuilder builder, int containerId){
+		if(decl().isInstanceVariable() || decl().isClassVariable()){
+			builder.addUses(containerId, decl().buildAGNode(builder));
+		}
+	}
+  	
+
+	static void TypeDecl.addImplements(JavaGraphBuilder builder,
+    	int sub, AST.List<Access> implementList){
+
+    	for(Access a : implementList){
+    		builder.addIsa(sub, a.buildAGNode(builder));
+			a.addExtendsAndImplementsUses(builder, sub);
+    	}
+	}
+
+	
+
+	void Access.addExtendsAndImplementsUses(JavaGraphBuilder builder, int sub){
+		throw new AGBuildingError(this.getClass() + " : expected TypeAccess or ParTypeAccess");
+	}
+
+
+	void TypeAccess.addExtendsAndImplementsUses(JavaGraphBuilder builder, int sub){
+		int sn = buildAGNode(builder);
+		builder.addUses(sub, sn);
+	}
+
+	void ParTypeAccess.addExtendsAndImplementsUses(JavaGraphBuilder builder, int sub){
+		getTypeAccess().addExtendsAndImplementsUses(builder, sub);
+		for(Access typeArg : getTypeArguments()){
+			typeArg.addExtendsAndImplementsUses(builder, sub);
+		}
+	}
+
+
+	boolean TypeDecl.isFromStdLib(){
+			return compilationUnit().packageName() == PRIMITIVE_PACKAGE_NAME ||
+              compilationUnit().pathName().startsWith(System.getProperty("java.home"));
+	}
+
+
+	public ConstructorDecl TypeDecl.findConstructorBySignature(String paramsDescr){
+		Collection<ConstructorDecl> ctrs = constructors();
+		for(ConstructorDecl c : ctrs){
+			if(c.getParametersAsString().equals(paramsDescr)){
+				return c;
+			}
+		}
+		return null;
+	}
+	
+
+	//also present in jrrt-read-only/test/Testing.jrag
+	public Program Frontend.getProgram() {
+		return program;
+	}
+}

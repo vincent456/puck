@@ -30,6 +30,7 @@ jastaddOutDir := sourceManaged.value / "main"
 
 java15comply := true
 
+
 libraryDependencies ++= Seq(
 	"org.scala-lang" % "scala-swing" % "2.11.0-M7",
 	"org.scala-lang" % "scala-parser-combinators" % "2.11.0-M4")

@@ -1,0 +1,61 @@
+
+aspect DominantUser {
+
+
+
+
+	public int Expr.buildDominantUserAGNode(JavaGraphBuilder builder){
+		throw new AGBuildingError("Cannot get a primary user from the qualifier : " + this +
+                " ("+this.getClass()+")");
+	}
+
+	public int MethodAccess.buildDominantUserAGNode(JavaGraphBuilder builder){
+  		if(isCalledFromTheHostingClass())
+      		return decl().hostType().buildAGNode(builder);
+      	else 
+      		return buildDominantUserAGNodeFromLeftExpr(builder);
+  		
+
+  	}
+  	
+  	public boolean Access.isCalledFromTheHostingClass(){
+		return getQualifier()==null
+            || getQualifier().isThisAccess()
+            || getQualifier().isSuperAccess();
+	}
+	
+	class NoDominantUser extends Error {}
+	
+  	public int Access.buildDominantUserAGNodeFromLeftExpr(JavaGraphBuilder builder){
+  		Expr lexpr = getLeftExpr();
+        
+        if(lexpr == null)
+        	throw new NoDominantUser();
+        else
+      //   if(qualifier.isArrayAccess()){
+	     //    /*System.out.println("exploring uses of "+this.getDesambiguateFullName());
+	    	// System.out.println(qualifier +" isArrayAccess nextAccess: " +qualifier.nextAccess());*/
+	     //   	//TODO check if always works !!!
+	     //    // in StackArray exemple
+	     //    // expression  stacks[0].push( i )
+	     //    // ArrayAccess is [0]
+	     //    //parentDot is [0].push(i)
+	     //    //parentDot.parentDot is  stacks[0].push( i ) ...
+      //       AbstractDot d = qualifier.parentDot().parentDot();
+      //       d.rotateRight();
+      //       /*System.out.println("leftSide of ancestor dot rotated right : " + d.leftSide());
+      //       System.out.println(" parent is : " + qualifier.parent);
+      //       System.out.println(" parentDot is : " + qualifier.parentDot());
+      //       System.out.println(" parentDot().parentDot is : " + qualifier.parentDot().parentDot());*/
+      //       qualifier = d.leftSide();
+      //   }
+        return lexpr.buildAGNode(builder);
+  	}
+
+
+  	public int ArrayAccess.buildDominantUserAGNode(JavaGraphBuilder builder){
+      //System.out.println("ArrayAccess.buildDominantUserAGNode " +this.toString());
+      return varDecl().buildAGNode(builder);
+  	}
+
+}

@@ -15,7 +15,6 @@ class GraphBuilder
 
   def getNodeByName( k : String) : NodeIdT = nodesByName(k) //java accessor
 
-
   def addPredefined(id : NodeIdT, fullName : String, name : String, kind : NodeKind, t : Hook): Unit ={
     g = g.addNode(id, name, kind, NoType, mutable = false, t)
     nodesByName += (fullName -> id)
