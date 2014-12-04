@@ -113,7 +113,7 @@ case class Predefined(id : NodeId, pkg: String,  name : String, kind : JavaNodeK
 
 object Predefined {
 
-  val void = Predefined(-1, "@primitive", "void", Primitive)
+  /*val void = Predefined(-1, "@primitive", "void", Primitive)
   val boolean = Predefined(-2, "@primitive", "boolean", Primitive)
   val byte = Predefined(-3, "@primitive", "byte", Primitive)
   val char = Predefined(-4, "@primitive", "char", Primitive)
@@ -126,6 +126,6 @@ object Predefined {
   val string = Predefined(-10, "java.lang", "String", Class) // not a primitive ...
   val stringTyp = NamedTypeHolder(new JavaNamedType(-10, "string"))
 
-  val list = List(void, boolean, byte, char, double, float, int, long, short, string)
+  val list = List(void, boolean, byte, char, double, float, int, long, short, string)*/
 
 }

@@ -1,4 +1,4 @@
-package prototype.actors;
+package hollyrock;
 
 public class Comedian implements Actor{
 

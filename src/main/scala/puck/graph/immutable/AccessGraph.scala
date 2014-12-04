@@ -146,6 +146,7 @@ class AccessGraph
   private def sortedMap : Seq[(NIdT,  NT)] = nodesIndex.toSeq sortBy(_._1)
 
   def nodesId : Iterable[NodeId] = nodesIndex.keys
+  def numNodes : Int = nodesIndex.size
 
   private def getNodeStatus(id : NIdT) : NodeStatus = {
     nodesIndex get id match {

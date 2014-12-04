@@ -1,5 +1,6 @@
 package puck.javaAG.immutable
 
+import puck.graph.AGBuildingError
 import puck.graph.immutable.constraints.ConstraintsMaps
 import puck.graph.immutable.{NoType, AGNode, GraphBuilder}
 import puck.graph.immutable.transformations.Recording
@@ -12,7 +13,7 @@ import puck.graph.immutable.AccessGraph._
 /**
  * Created by lorilan on 29/10/14.
  */
-class JavaGraphBuilder(program : AST.Program) extends GraphBuilder(JavaNode){
+class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder(JavaNode){
   var idSeed = rootId + 1
 
     val root = (rootId, rootName, JavaRoot, NoType, true, EmptyDeclHolder)
@@ -24,11 +25,11 @@ class JavaGraphBuilder(program : AST.Program) extends GraphBuilder(JavaNode){
     UseDependencyMap(), UseDependencyMap(),
     AbstractionMap(), ConstraintsMaps(), Recording())
 
-  def addPredefined( p : Predefined): Unit = {
+  /*def addPredefined( p : Predefined): Unit = {
     super.addPredefined(p.id, p.fullName, p.name, p.kind, EmptyDeclHolder)
   }
 
-  Predefined.list foreach addPredefined
+  Predefined.list foreach addPredefined*/
 
   def addPackageNode(fullName: String, localName:String) : NodeIdT =
     super.addNode(fullName, localName, Package, NoType)
@@ -60,53 +61,62 @@ class JavaGraphBuilder(program : AST.Program) extends GraphBuilder(JavaNode){
 
 
 
-  def addApiTypeNode(td: AST.TypeDecl, doAddUses : Boolean): NodeIdT = {
-    //println("adding api td " + td.fullName())
-    val packageNode = addPackage(td.compilationUnit().getPackageDecl, mutable = false)
+  def findTypeDecl(typ : String): AST.TypeDecl ={
+    val td = program findType typ
+    if(td == null)
+      throw new AGBuildingError(typ + " not found")
+    td
+  }
+
+  def addApiTypeNode(td: AST.TypeDecl): NodeIdT = {
+    println("adding api td " + td.fullName() + " with packagedecl " + td.packageName())
+    val packageNode = addPackage(td.packageName(), mutable = false)
     val tdNode = addNode(td.fullName(), td.name(), td.getAGNodeKind, NoType)
     setMutability(tdNode, mutable = false)
 
-    if(doAddUses)
+    /*if(doAddUses)
       for (use <- td.uses()) {
         addUses(use.buildAGNode(this), tdNode)
       }
-
+  */
     addContains(packageNode, tdNode)
 
     tdNode
   }
 
   def addBodyDecl(bd : AST.BodyDecl){
-    val typeNodeId = addApiTypeNode(bd.hostType(), doAddUses = false)
+    val typeNodeId = addApiTypeNode(bd.hostType())
     bd.buildAG(this, typeNodeId)
   }
 
-  def attachOrphanNodes(){
-    g.nodesId.foreach{ nodeId =>
+  def attachOrphanNodes(fromId : Int = g.rootId){
+    val lastId = g.numNodes - 1
+    if(fromId < lastId){
+      for(nodeId <- fromId to lastId){
         //println(s"${g.container(nodeId)} contains $nodeId")
         if(g.container(nodeId).isEmpty && nodeId != g.rootId){
           val n = g.getNode(nodeId).asInstanceOf[JavaNode]
+          //println(s"orphan node : ${n.fullName}  : ${n.kind} - container = ${n.container}")
           n.t match {
             case FieldDeclHolder(Some(d)) => addBodyDecl(d)
             case mdh : MethodDeclHolder => mdh.decl.foreach(addBodyDecl)
-            case tdh : TypedKindDeclHolder => tdh.decl.foreach(addApiTypeNode(_, doAddUses = false))
-            case _ => ()
+            case tdh : TypedKindDeclHolder => tdh.decl.foreach(addApiTypeNode)
+            case _ =>
+              println( n.fullName + " " + n.t + " attach orphan nodes unhandled case")
+              ()
           }
         }
+      }
+      //addBodyDecl (case MethodDeclHolder) can add new typeNodes
+      attachOrphanNodes(lastId)
     }
   }
 
-  def addApiNode(program : AST.Program, 
-                 nodeKind : String, 
-                 typ : String, bodydeclName: String){
+  def addApiNode(nodeKind : String, typ : String, bodydeclName: String){
     println("trying to add type "+typ + " " + bodydeclName+ " ... ")
-    val td = program findType typ
-    if(td == null){
-      System.err.println(typ + " not found")
-      return
-    }
 
-    val typeNodeId = addApiTypeNode(td, doAddUses = true)
+    val td = findTypeDecl(typ)
+    val typeNodeId = addApiTypeNode(td)
 
     def addBodyDecl(bd : AST.BodyDecl){
       if(bd == null)
@@ -127,13 +137,22 @@ class JavaGraphBuilder(program : AST.Program) extends GraphBuilder(JavaNode){
 
 
   def addStringLiteral(literal: String, occurrences: _root_.java.util.Collection[AST.BodyDecl]){
+
+    def stringType = {
+      val td = findTypeDecl("java.lang.string")
+      val nid = addApiTypeNode(td)
+      NamedTypeHolder(new JavaNamedType(nid, "string"))
+    }
+
+
+
     println("string "+literal + " "+ occurrences.size()+" occurences" )
 
     for(bd <- occurrences){
       val packageNode = nodesByName(bd.hostBodyDecl.compilationUnit.getPackageDecl)
 
       val bdNode = bd buildAGNode this
-      val strNode = addNode(bd.fullName()+literal, literal, Literal, Predefined.stringTyp)
+      val strNode = addNode(bd.fullName()+literal, literal, Literal, stringType)
       //TODO set type of node to string
 
       /*
@@ -145,32 +164,39 @@ class JavaGraphBuilder(program : AST.Program) extends GraphBuilder(JavaNode){
   }
 
   private def throwRegisteringError(n : AGNode, astType : String) =
-    throw new Error("Wrong registering ! AGNode.kind : %s while AST.Node is an %s".format(n.kind, astType))
+    throw new Error(s"Wrong registering ! AGNode.kind : ${n.kind} while AST.Node is an $astType")
 
-
-  def registerDecl(n : NodeIdT, decl : AST.InterfaceDecl){
-    g.getNode(n).kind match {
-      case Interface =>
-        g = g.setInternal(n, InterfaceDeclHolder(Some(decl)))
-      case _ => throwRegisteringError(g.getNode(n), "InterfaceDecl")
-    }
+  def register(
+        nid : NodeIdT,
+        kindExpected : JavaNodeKind,
+        declHolder : => DeclHolder,
+        kindFound : String): Unit ={
+    if(g.getNode(nid).kind == kindExpected)
+      g = g.setInternal(nid, declHolder)
+    else
+      throwRegisteringError(g.getNode(nid), kindFound)
   }
 
-  def registerDecl(n : NodeIdT, decl : AST.ClassDecl){
-    g.getNode(n).kind match {
-      case Class =>
-        g = g.setInternal(n, ClassDeclHolder(Some(decl)))
-      case _ => throwRegisteringError(g.getNode(n), "ClassDecl")
-    }
-  }
+  def registerDecl(n : NodeIdT, decl : AST.InterfaceDecl) =
+    register(n, Interface, InterfaceDeclHolder(Some(decl)), "InterfaceDecl")
 
-  def registerDecl(n : NodeIdT, decl : AST.ConstructorDecl){
+  def registerDecl(n : NodeIdT, decl : AST.ClassDecl) =
+    register(n, Class, ClassDeclHolder(Some(decl)), "ClassDecl")
+
+  def registerDecl(n : NodeIdT, decl : AST.TypeDecl) =
+    register(n, Primitive, PrimitiveDeclHolder(Some(decl)), "PrimitiveType")
+
+  /*def registerDecl(n : NodeIdT, decl : AST.PrimitiveType){
     g.getNode(n).kind match {
-      case Constructor =>
-        g = g.setInternal(n, ConstructorDeclHolder(Some(decl)))
-      case _ => throwRegisteringError(g.getNode(n), "ConstructorDecl")
+      case Primitive =>
+        g = g.setInternal(n, PrimitiveDeclHolder(Some(decl)))
+      case _ => throwRegisteringError(g.getNode(n), "PrimitiveType")
     }
-  }
+  }*/
+
+  def registerDecl(n : NodeIdT, decl : AST.ConstructorDecl)=
+    register(n, Constructor, ConstructorDeclHolder(Some(decl)), "ConstructorDecl")
+
 
   def registerDecl(n : NodeIdT, decl : AST.MethodDecl){
     g.getNode(n).kind match {
@@ -182,20 +208,7 @@ class JavaGraphBuilder(program : AST.Program) extends GraphBuilder(JavaNode){
     }
   }
 
-  def registerDecl(n : NodeIdT, decl : AST.FieldDeclaration){
-    g.getNode(n).kind match {
-      case Field =>
-        g = g.setInternal(n, FieldDeclHolder(Some(decl)))
-      case _ => throwRegisteringError(g.getNode(n), "FieldDeclaration")
-    }
-  }
-
-  def registerDecl(n : NodeIdT, decl : AST.PrimitiveType){
-    g.getNode(n).kind match {
-      case Primitive =>
-        g = g.setInternal(n, PrimitiveDeclHolder(Some(decl)))
-      case _ => throwRegisteringError(g.getNode(n), "PrimitiveType")
-    }
-  }
+  def registerDecl(n : NodeIdT, decl : AST.FieldDeclaration) =
+    register(n, Field, FieldDeclHolder(Some(decl)), "FieldDeclaration")
 
 }

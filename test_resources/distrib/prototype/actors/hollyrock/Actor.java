@@ -1,4 +1,4 @@
-package prototype.actors;
+package hollyrock;
 
 public interface Actor {
 	void act();

@@ -154,6 +154,7 @@ aspect AccessGraphFactory {
 			int nodeId = buildAGNode(builder);
 			builder.addContains(hostTypeDeclId, nodeId);
 			super.buildAG(builder, nodeId);
+			buildAGType(builder);
 
 		}
 		else
@@ -188,7 +189,7 @@ aspect AccessGraphFactory {
 	
 
 	public void ClassInstanceExpr.buildAG(JavaGraphBuilder builder, int containerId){
-		System.err.println("ClassInstanceExpr.buildAG : " + this);
+		//System.err.println("ClassInstanceExpr.buildAG : " + this);
 		
 		int nodeId = getAccess().buildAGNode(builder);
 		

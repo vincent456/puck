@@ -1,13 +1,6 @@
 
 aspect Desambiguation{
 
-	interface NamedAccess extends Named{
-		String name();
-	}
- 
-	ParTypeAccess implements NamedAccess;
-	TypeAccess implements NamedAccess; //method in Java1.4Frontend/QualifiedName.jadd
-
 	String ParTypeAccess.typeArgumentListString(){
 	  StringBuilder sb = new StringBuilder();
 
@@ -31,9 +24,6 @@ aspect Desambiguation{
 		return ((TypeAccess)getTypeAccess()).name() + typeArgumentListString();
 	}
 
-	interface Named{
-		String fullName();
-	}
 	
 	public class FullNameException extends Error {
 		private ASTNode<?> node;
@@ -52,8 +42,6 @@ aspect Desambiguation{
 			super(node);
 		}
 	}
-	
-	ASTNode implements Named;
 	
 	public String ASTNode.fullName(){
 		throw new FullNameException(this);

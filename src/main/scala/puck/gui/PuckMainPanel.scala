@@ -64,7 +64,7 @@ class PuckMainPanel(val filesHandler: FilesHandler)
     val height = PuckMainPanel.height * 2/3
 
     val visibilitySet = VisibilitySet()
-    visibilitySet.setVisibility(AccessGraph.rootId :: (Predefined.list map (_.id)), Hidden)
+    visibilitySet.setVisibility(AccessGraph.rootId /*:: (Predefined.list map (_.id))*/, Hidden)
     val treeDisplayer = new GraphExplorer(visibilitySet, rightWidth/2, height)
 
     val treeDisplayerWrapper = new ScrollPane(){

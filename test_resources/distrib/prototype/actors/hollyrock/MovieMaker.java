@@ -1,4 +1,4 @@
-package prototype.actors;
+package hollyrock;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -7,11 +7,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class PrototypeDemo{
+public class MovieMaker{
 	
-	static List<Actor> roles = new ArrayList<Actor>();
+	private List<Actor> roles = new ArrayList<Actor>();
 	
-	public static void makeMovie(int choice){
+	public void hire(int choice){
 		
 		if(choice == 1)
 			roles.add(new Comedian());
@@ -20,12 +20,19 @@ public class PrototypeDemo{
 		else
 			roles.add(new Extra());
 	}
+
+	public void play(){
+		for(Actor s: roles)
+				s.act();
+	}
 	
 	public static void main(String args[]){
 		
+		MovieMaker movie = new MovieMaker();
+
 		try {
 			
-			int choice;
+			int choice = -1;
 			
 			while(true){
 				System.out.println("Comedian(1) Tragedian(2) Extra(3) Go(0): ");
@@ -34,15 +41,12 @@ public class PrototypeDemo{
 				
 				if(choice == 0)
 					break;
-				makeMovie(choice);
+				movie.hire(choice);
 			}
 			
-			for(Actor s: roles)
-				s.act();
+			movie.play();
 			
-		} catch (NumberFormatException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		

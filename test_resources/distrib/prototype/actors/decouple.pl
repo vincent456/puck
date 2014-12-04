@@ -1,9 +1,7 @@
-java_import(['prototype.actors']).
+java_import(['hollyrock']).
 
-declareSet(concrete_prototypes, ['Tragedian', 'Comedian', 'Extra']).
+declareSet(actors, ['Tragedian', 'Comedian', 'Extra']).
 
-hideScopeSet(concrete_prototypes).
+hideScopeSet(actors).
 
-friendOfScope('PrototypeDemo.main__String[]', concrete_prototypes).
-
-%hideScopeSetFrom(concrete_prototypes, 'PrototypeDemo.makeMovie__int').
+friendOfScope('MovieMaker.main__String[]', actors).

@@ -47,7 +47,7 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
           fileLines(apiNodesFile.get).foreach {
             (l: String) =>
               val tab = l.split(" ")
-              jGraphBuilder.addApiNode(p, tab(0), tab(1), tab(2))
+              jGraphBuilder.addApiNode(tab(0), tab(1), tab(2))
           }
 
           jGraphBuilder.attachOrphanNodes()

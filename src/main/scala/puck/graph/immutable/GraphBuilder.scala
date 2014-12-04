@@ -35,6 +35,10 @@ class GraphBuilder
     g = g.setMutability(id, mutable)
   }
 
+  def setType(id : NodeIdT, typ : TypeHolder): Unit ={
+    g = g.setType(id, typ)
+  }
+
   def addContains(containerId: NodeIdT, contentId :NodeIdT): Unit ={
     g = g.addContains(containerId, contentId)
   }

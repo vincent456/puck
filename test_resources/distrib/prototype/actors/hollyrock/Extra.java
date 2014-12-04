@@ -1,4 +1,4 @@
-package prototype.actors;
+package hollyrock;
 
 class Extra implements Actor{
 

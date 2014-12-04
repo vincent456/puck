@@ -30,23 +30,9 @@ object JavaNodeKind {
   def abstractMethod = AbstractMethod
   def method = Method
 
+  def primitive = Primitive
+
   def noType = NoType
-/*  def constructor(t : MethodType.T) = Constructor(dummyId, t, None)
-  def method(t : MethodType.T) = Method(dummyId, t, None)
-  def field(t : NamedType[JavaNodeKind]) = Field(dummyId, t, None)
-  def abstractMethod(t : MethodType.T) = AbstractMethod(dummyId, t, None)
-  def literal(t : NamedType[JavaNodeKind]) = Literal(dummyId, t )
-
-
-  val dummyJavaNamedType : NamedType[JavaNodeKind] = new JavaNamedType(dummyId, "DummyJavaClass")
-  val dummyTupleType = new Tuple[JavaNodeKind, NamedType[JavaNodeKind]](Seq(dummyJavaNamedType))
-  val dummyMethodType = new MethodType(dummyTupleType, dummyJavaNamedType)
-  val constructorPrototype = constructor(dummyMethodType)
-  val methodPrototype = method(dummyMethodType)
-  val fieldPrototype = field(dummyJavaNamedType)
-  val abstractMethodPrototype = abstractMethod(dummyMethodType)
-  val literalPrototype = literal(dummyJavaNamedType)
-  val primitivePrototype = Primitive(dummyId, None)*/
 
   val list = Seq[NodeKind](Package, Interface,
     Class, Constructor, Method, /*ConstructorMethod,*/
