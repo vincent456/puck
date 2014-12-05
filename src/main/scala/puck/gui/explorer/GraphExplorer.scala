@@ -16,6 +16,7 @@ import scala.swing.{Component, Dimension, Publisher, ScrollPane}
 
 case class PuckTreeNodeClicked(graph : AccessGraph, node : NodeId) extends Event
 case class AccessGraphModified(graph : AccessGraph) extends Event
+case class PackageOnlyVisible() extends Event
 
 class GraphExplorer
 (val hiddens :VisibilitySet,
@@ -41,10 +42,13 @@ class GraphExplorer
     }
   }
 
+  var root : PuckTreeNode = _
+  var graph : AccessGraph = _
+
   reactions += {
-    case e : AccessGraphModified =>
-      val graph = e.graph
-      val root = new PuckTreeNode(graph.rootId, hiddens, "<>")
+    case AccessGraphModified(g) =>
+      graph = g
+      root = new PuckTreeNode(graph.rootId, hiddens, "<>")
       addChildren(graph, root)
 
 
@@ -69,7 +73,9 @@ class GraphExplorer
       })
       contents = Component.wrap(tree)
       this.repaint()
-
+    case PackageOnlyVisible() =>
+      root.packageOnlyVisible(graph)
+      this.repaint()
   }
 
 

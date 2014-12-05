@@ -6,6 +6,8 @@ import puck.graph.NodeId
 import puck.graph.io.{Visible, Hidden, Visibility, VisibilitySet}
 
 import scala.swing.CheckBox
+import puck.graph.AccessGraph
+import puck.javaAG.immutable.nodeKind.Package
 
 /**
  * Created by lorilan on 10/07/14.
@@ -52,17 +54,18 @@ class PuckTreeNode(val nodeId : NodeId,
  }
 
 
- /*def packageVisible(){
-   val visibility = (agNode.getType() == NodeType.Package);
+ def packageOnlyVisible(graph : AccessGraph){
+   val visibility = graph.getNode(nodeId).kind match {
+     case Package => Visible
+     case _ => Hidden
+   }
 
-   this.isVisible = visibility
-   checkBox.selected = visibility
-   //agNode.setVisible(visibility)
+   setVisible(visibility, propagate = false)
 
    for(i <- 0 until this.getChildCount){
-     this.getChildAt(i).asInstanceOf[PuckTreeNode].packageVisible()
+     this.getChildAt(i).asInstanceOf[PuckTreeNode].packageOnlyVisible(graph)
    }
- }*/
+ }
 
  def toggleFilter(){
    setVisible(hiddens.visibility(nodeId).opposite, propagate = true)

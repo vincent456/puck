@@ -3,7 +3,7 @@ package puck.gui
 import puck.graph.FilesHandler
 import puck.graph.immutable.AccessGraph
 import puck.graph.io.{Hidden, VisibilitySet}
-import puck.gui.explorer.{PuckTreeNodeClicked, NodeInfosPanel, GraphExplorer}
+import puck.gui.explorer.{PackageOnlyVisible, PuckTreeNodeClicked, NodeInfosPanel, GraphExplorer}
 import puck.gui.search.ResultPanel
 import puck.javaAG.immutable.Predefined
 import puck.util.{PuckLog, PuckLogger}
@@ -192,8 +192,20 @@ class PuckMainPanel(val filesHandler: FilesHandler)
 
       addDelayedComponent(showConstraints)
 
-      addDelayedComponent(printIdsBox)
-      addDelayedComponent(printSignaturesBox)
+      addDelayedComponent(new BoxPanel(Orientation.Horizontal){
+        contents+= new Button() {
+          tooltip = "Make packages only visible"
+          action = new Action("Package Visibility") {
+            def apply() { control.publish(PackageOnlyVisible()) }
+          }
+          }
+
+        contents+= new BoxPanel(Orientation.Vertical){
+          contents += printIdsBox
+          contents += printSignaturesBox
+        }
+      })
+
 
 
       val show = makeButton("Show graph",
