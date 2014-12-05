@@ -59,12 +59,16 @@ aspect NamedElement {
     public void MethodDecl.registerDecl(JavaGraphBuilder builder, int thisId){
         builder.registerDecl(thisId, this);
     }
+    public void TypeVariable.registerDecl(JavaGraphBuilder builder, int thisId){
+        builder.registerDecl(thisId, this);
+    }
 
     syn JavaNodeKind AGNamedElement.getAGNodeKind();
 
     eq TypeDecl.getAGNodeKind(){
     	throw new AGBuildingError(this.fullName() + " - " + this.getClass()+" : Unkown nodekind");
     }
+    eq TypeVariable.getAGNodeKind() = JavaNodeKind.typeVariable();
     eq ClassDecl.getAGNodeKind() = JavaNodeKind.classKind();
     eq InterfaceDecl.getAGNodeKind() = JavaNodeKind.interfaceKind();
     eq PrimitiveType.getAGNodeKind() = JavaNodeKind.primitive();

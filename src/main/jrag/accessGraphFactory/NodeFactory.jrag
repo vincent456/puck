@@ -27,8 +27,13 @@ aspect NodeFactory  {
 	}
 
 
+	public int ClassAccess.buildAGNode(JavaGraphBuilder builder){
+		return type().buildAGNode(builder);
+	}
 	
-	
+	public int ArrayAccess.buildAGNode(JavaGraphBuilder builder){
+		return type().buildAGNode(builder);
+	}
 	public int TypeAccess.buildAGNode(JavaGraphBuilder builder){
 		return decl().buildAGNode(builder);
 	}
@@ -97,8 +102,17 @@ aspect NodeFactory  {
 		return hostType().buildAGNode(builder);
 	}
 
-	public int Literal.buildAGNode(JavaGraphBuilder builder){
-		return type().buildAGNode(builder);
+	public int ParExpr.buildAGNode(JavaGraphBuilder builder){
+		return getExpr().buildAGNode(builder);
 	}
+
+	public int Dot.buildAGNode(JavaGraphBuilder builder){
+		if(isRightRotated())
+			rotateLeft();
+
+		return getRight().buildAGNode(builder);
+	}
+
+	
 
 }

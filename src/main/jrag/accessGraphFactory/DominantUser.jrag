@@ -26,36 +26,40 @@ aspect DominantUser {
 	
 	class NoDominantUser extends Error {}
 	
-  	public int Access.buildDominantUserAGNodeFromLeftExpr(JavaGraphBuilder builder){
-  		Expr lexpr = getLeftExpr();
+  public int Access.buildDominantUserAGNodeFromLeftExpr(JavaGraphBuilder builder){
+  	Expr lexpr = getLeftExpr();
         
-        if(lexpr == null)
-        	throw new NoDominantUser();
-        else
-      //   if(qualifier.isArrayAccess()){
-	     //    /*System.out.println("exploring uses of "+this.getDesambiguateFullName());
-	    	// System.out.println(qualifier +" isArrayAccess nextAccess: " +qualifier.nextAccess());*/
-	     //   	//TODO check if always works !!!
-	     //    // in StackArray exemple
-	     //    // expression  stacks[0].push( i )
-	     //    // ArrayAccess is [0]
-	     //    //parentDot is [0].push(i)
-	     //    //parentDot.parentDot is  stacks[0].push( i ) ...
-      //       AbstractDot d = qualifier.parentDot().parentDot();
-      //       d.rotateRight();
-      //       /*System.out.println("leftSide of ancestor dot rotated right : " + d.leftSide());
-      //       System.out.println(" parent is : " + qualifier.parent);
-      //       System.out.println(" parentDot is : " + qualifier.parentDot());
-      //       System.out.println(" parentDot().parentDot is : " + qualifier.parentDot().parentDot());*/
-      //       qualifier = d.leftSide();
-      //   }
-        return lexpr.buildAGNode(builder);
-  	}
+      if(lexpr == null)
+        throw new NoDominantUser();
+      else
+          return lexpr.type().buildAGNode(builder);
+        //return lexpr.buildDominantUserAGNodeOfRightExpr(builder);
+  }
+
+  // public int ASTNode.buildDominantUserAGNodeOfRightExpr(JavaGraphBuilder builder){
+  //   return buildAGNode(builder);
+  // }
+
+  // public int ParExpr.buildDominantUserAGNodeOfRightExpr(JavaGraphBuilder builder){
+  //   return getExpr().buildDominantUserAGNodeOfRightExpr(builder);
+  // }
+
+  // public int CastExpr.buildDominantUserAGNodeOfRightExpr(JavaGraphBuilder builder){
+  //   return getTypeAccess().buildAGNode(builder);
+  // }
+
+  // public int Literal.buildDominantUserAGNodeOfRightExpr(JavaGraphBuilder builder){
+  //   return type().buildAGNode(builder);
+  // }
 
 
-  	public int ArrayAccess.buildDominantUserAGNode(JavaGraphBuilder builder){
-      //System.out.println("ArrayAccess.buildDominantUserAGNode " +this.toString());
-      return varDecl().buildAGNode(builder);
-  	}
+  // public int ClassInstanceExpr.buildDominantUserAGNodeOfRightExpr(JavaGraphBuilder builder){
+  //     return getAccess().buildAGNode(builder);
+  // }
+
+  // public int ArrayAccess.buildDominantUserAGNode(JavaGraphBuilder builder){
+  //   //System.out.println("ArrayAccess.buildDominantUserAGNode " +this.toString());
+  //   return varDecl().buildAGNode(builder);
+  // }
 
 }

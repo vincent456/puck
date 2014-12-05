@@ -1,5 +1,6 @@
 package puck.javaAG.immutable.nodeKind
 
+import puck.graph.constraints.{AbstractionPolicy, DelegationAbstraction}
 import puck.graph.immutable.AccessGraph.NodeId
 import puck.graph.immutable._
 import puck.javaAG.immutable.{MethodType, JavaNamedType}
@@ -14,6 +15,12 @@ abstract class JavaNodeKind extends NodeKind{
      case Package(id) => this.node
      case _ => this.node.container.kind.packageNode
    }*/
+}
+
+case object TypeVariable extends JavaNodeKind{
+  def canContain(k : NodeKind) = false
+  override def abstractionPolicies = Seq()
+  def abstractKinds(p : AbstractionPolicy) = Seq()
 }
 
 object JavaNodeKind {
@@ -31,6 +38,7 @@ object JavaNodeKind {
   def method = Method
 
   def primitive = Primitive
+  def typeVariable = TypeVariable
 
   def noType = NoType
 

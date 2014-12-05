@@ -191,6 +191,8 @@ aspect AccessGraphFactory {
 	public void ClassInstanceExpr.buildAG(JavaGraphBuilder builder, int containerId){
 		//System.err.println("ClassInstanceExpr.buildAG : " + this);
 		
+		buildAGInChildren(builder, containerId);
+
 		int nodeId = getAccess().buildAGNode(builder);
 		
 		builder.addUses(containerId, nodeId);
@@ -200,10 +202,6 @@ aspect AccessGraphFactory {
 		builder.addUsesDependency(containerId, dominantUsedId,
                     			 containerId, nodeId);
 		
-		for(Expr e : getArgList()){
-			e.buildAG(builder, containerId);
-		}
-
 	}
 
 	syn boolean ASTNode.isAbstractDot();
@@ -237,6 +235,14 @@ aspect AccessGraphFactory {
 		System.err.println("TODO !! "+this.getClass()+".buildAG : " + this);
 		super.buildAG(builder, containerId);
 	}
+
+	public void ArrayAccess.buildAG(JavaGraphBuilder builder, int containerId){
+		int nodeId = buildAGNode(builder);
+		builder.addUses(containerId, nodeId);
+		buildAGInChildren(builder, containerId);
+	}
+	
+
 
 	public void TypeAccess.buildAG(JavaGraphBuilder builder, int containerId){
 		int nodeId = buildAGNode(builder);

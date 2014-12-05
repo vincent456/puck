@@ -210,4 +210,5 @@ case class ClassDeclHolder(decl : Option[AST.ClassDecl]) extends TypedKindDeclHo
  }*/
 }
 
+case class TypeVariableHolder(decl : Option[AST.TypeVariable]) extends TypedKindDeclHolder
 case class PrimitiveDeclHolder(decl : Option[AST.TypeDecl]) extends TypedKindDeclHolder
