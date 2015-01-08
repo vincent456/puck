@@ -4,10 +4,9 @@ import java.io.File
 
 import puck.graph.constraints.{Solver, DecisionMaker}
 import puck.graph.constraints.search.SolverBuilder
-import puck.graph.immutable.transformations.NodeMappingInitialState
 import puck.graph._
 import puck.graph.io.{ConstraintSolvingSearchEngineBuilder, FilesHandler}
-import puck.javaAG.immutable.{AG2AST, JavaAccessGraph}
+import puck.graph.transformations.NodeMappingInitialState
 import puck.util.PuckLog._
 
 
@@ -64,9 +63,9 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
     }
 
     val (numClass, numItc) = g.nodes.foldLeft((0,0)){ case ((numClass, numItc), n) =>
-      val numClass1 = if(n.kind == immutable.nodeKind.Class) numClass + 1
+      val numClass1 = if(n.kind == nodeKind.Class) numClass + 1
           else numClass
-        val numItc1 = if(n.kind == immutable.nodeKind.Interface) numItc + 1
+        val numItc1 = if(n.kind == nodeKind.Interface) numItc + 1
         else numItc
       (numClass1, numItc1)
 

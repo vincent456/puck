@@ -1,23 +1,33 @@
 package puck.gui
 
-import puck.graph.constraints.AbstractionPolicy
-import puck.graph.mutable.NodeKind
-import puck.graph.mutable.constraints._
-import puck.graph.mutable.io.FilesHandler
-import puck.gui.search.decisionsFrames.{NodeChooser, ConstraintExceptionFrame, AbstractionKindAndPolicyChooser}
+import puck.graph.NodeKind
+import puck.graph.constraints.{DecisionMaker, AbstractionPolicy}
+import puck.graph.io.FilesHandler
 
 /**
  * Created by lorilan on 04/06/14.
  */
-class GUIDecisionMaker[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[Kind])
-  extends DecisionMaker[Kind]{
+class GUIDecisionMaker(val filesHandler : FilesHandler)
+  extends DecisionMaker{
 
   val graph = filesHandler.graph
-  val fallback = filesHandler.decisionMaker()
 
   override def toString = "User Decision Maker"
 
-  def violationTarget(k: Option[NodeType] => Unit) {
+
+  def violationTarget(graph : GraphT)
+                     (k: Option[NIdT] => Unit) : Unit = ???
+
+  def abstractionKindAndPolicy(graph : GraphT, impl : NIdT)
+                              (k : Option[(NodeKind, AbstractionPolicy)] => Unit) : Unit = ???
+
+  def chooseNode(graph : GraphT, predicate : PredicateT)
+                (k : Option[NIdT] => Unit) : Unit = ???
+
+
+  //val fallback = filesHandler.decisionMaker()
+
+/*  def violationTarget(k: Option[NodeType] => Unit) {
     fallback.violationTarget(k)
   }
 
@@ -30,11 +40,6 @@ class GUIDecisionMaker[Kind <: NodeKind[Kind]](val filesHandler : FilesHandler[K
     ConstraintExceptionFrame(sources, target)
   }
 
-/*
   def abstractionKindAndPolicy(impl : NodeType) =
-    AbstractionKindAndPolicyChooser(impl)
-*/
-
-
-  def abstractionKindAndPolicy(impl: NodeType)(k: (Option[(Kind, AbstractionPolicy)]) => Unit): Unit = ???
+    AbstractionKindAndPolicyChooser(impl)*/
 }

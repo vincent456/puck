@@ -1,23 +1,24 @@
 package puck.gui.search.decisionsFrames
 
-import puck.graph.mutable.{AccessGraph, NodeKind}
+import puck.graph.constraints.Constraint
+import puck.graph.{NamedNodeSet, AccessGraph}
 
 import scala.swing.{TextArea, Button, Orientation, BoxPanel}
-import puck.graph.mutable.constraints.{Constraint, ConstraintsParser, NamedNodeSet}
+
 import java.io.StringReader
 
 /**
  * Created by lorilan on 11/06/14.
  */
-class RawConstraintEditor[K <: NodeKind[K]]( graph : AccessGraph[K],
-                           defs : List[NamedNodeSet[K]],
-                           constraints : List[Constraint[K]],
+class RawConstraintEditor( graph : AccessGraph,
+                           defs : List[NamedNodeSet],
+                           constraints : List[Constraint],
                            finish : () => Unit)
   extends BoxPanel(Orientation.Vertical) {
 
-  val console = new TextArea(defs.map(_.defString).mkString("\n") + "\n" + constraints.mkString("\n"))
+  val console =/* new TextArea(defs.map(_.defString).mkString("\n") + "\n" + constraints.mkString("\n"))*/ ???
   contents += console
-  contents += new BoxPanel(Orientation.Horizontal){
+  /*contents += new BoxPanel(Orientation.Horizontal){
     contents += Button("OK"){
        defs.foreach(d => graph.nodeSets.remove(d.id))
        constraints.foreach{ct =>
@@ -30,5 +31,5 @@ class RawConstraintEditor[K <: NodeKind[K]]( graph : AccessGraph[K],
     contents += Button("Cancel"){
       finish()
     }
-  }
+  }*/
 }

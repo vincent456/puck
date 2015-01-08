@@ -1,5 +1,5 @@
 
-import puck.javaAG.immutable.nodeKind.JavaNodeKind;
+import puck.javaAG.nodeKind.JavaNodeKind;
 
 aspect NodeFactory  {
 

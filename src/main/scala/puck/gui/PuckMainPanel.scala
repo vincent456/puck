@@ -1,7 +1,6 @@
 package puck.gui
 
-import puck.graph.FilesHandler
-import puck.graph.immutable.AccessGraph
+import puck.graph.{AccessGraph, FilesHandler}
 import puck.graph.io.{Hidden, VisibilitySet}
 import puck.gui.explorer.{PackageOnlyVisible, PuckTreeNodeClicked, NodeInfosPanel, GraphExplorer}
 import puck.gui.search.ResultPanel

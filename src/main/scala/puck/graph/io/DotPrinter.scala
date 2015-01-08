@@ -1,9 +1,7 @@
-package puck.graph.io
+package puck.graph
+package io
 
 import java.io.BufferedWriter
-
-import puck.graph._
-import puck.graph.immutable.TypeHolder
 
 /**
  * Created by lorilan on 13/08/14.

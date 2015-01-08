@@ -1,7 +1,7 @@
 package puck.gui.search.decisionsFrames
 
-import puck.graph.mutable.{AGNode, NodeKind}
-import puck.graph.mutable.constraints.NodeSet
+
+import puck.graph.{NodeSet, AGNode}
 
 import scala.swing._
 
@@ -10,13 +10,13 @@ import scala.swing._
  */
 object NodeChooser{
 
-  def apply[Kind <: NodeKind[Kind]](set : NodeSet[Kind], context : String) : Option[AGNode[Kind]] = DecisionFrame {
+  def apply(set : NodeSet, context : String) : Option[AGNode] = DecisionFrame {
     () => new NodeChooser(set, context)
   }
 }
 
-class NodeChooser[Kind <: NodeKind[Kind]](nodes : NodeSet[Kind], context : String)
-  extends DecisionFrame[Option[AGNode[Kind]]]{
+class NodeChooser(nodes : NodeSet, context : String)
+  extends DecisionFrame[Option[AGNode]]{
 
   title = "Node selection"
 
@@ -38,7 +38,8 @@ class NodeChooser[Kind <: NodeKind[Kind]](nodes : NodeSet[Kind], context : Strin
           NodeChooser.this.complete(None)
         }
         contents += Button("OK"){
-          NodeChooser.this.complete(Some(cb.selection.item))
+          ???
+          //NodeChooser.this.complete(Some(cb.selection.item))
         }
       }
     }

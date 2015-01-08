@@ -1,11 +1,10 @@
 package puck.gui.search.decisionsFrames
 
+import puck.graph.{NodeKind, AGNode}
 import puck.graph.constraints.AbstractionPolicy
-import puck.graph.mutable.{AGNode, NodeKind}
 
 import scala.swing._
 import scala.swing.event.{SelectionChanged, Event}
-import puck.graph.mutable.constraints.DefaultDecisionMaker
 import scala.concurrent.Promise
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -17,13 +16,13 @@ import scala.util.Success
 
 object AbstractionKindAndPolicyChooser{
 
-  def apply[Kind <: NodeKind[Kind]](impl : AGNode[Kind]) : (Kind, AbstractionPolicy) = DecisionFrame {
+  def apply(impl : AGNode) : (NodeKind, AbstractionPolicy) = DecisionFrame {
     () => new AbstractionKindAndPolicyChooser(impl)
   }
 }
 
-class AbstractionKindAndPolicyChooser[Kind <: NodeKind[Kind]] private (val impl : AGNode[Kind])
-  extends DecisionFrame[(Kind, AbstractionPolicy)]{
+class AbstractionKindAndPolicyChooser private (val impl : AGNode)
+  extends DecisionFrame[(NodeKind, AbstractionPolicy)]{
 
 
   title = "Choose abstraction kind and policy"
@@ -31,7 +30,7 @@ class AbstractionKindAndPolicyChooser[Kind <: NodeKind[Kind]] private (val impl 
   val policyChoice = new ComboBox(impl.kind.abstractionPolicies)
   var absPolicy : AbstractionPolicy = policyChoice.selection.item
   var kindChoice = new ComboBox(impl.kind.abstractKinds(absPolicy))
-  var absKind : Kind = kindChoice.selection.item
+  var absKind : NodeKind = kindChoice.selection.item
 
   val kindChoiceWrapper = new FlowPanel(){ contents += kindChoice}
   listenTo(policyChoice.selection)

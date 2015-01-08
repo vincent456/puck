@@ -1,7 +1,6 @@
-package puck.graph.constraints
+package puck.graph
+package constraints
 
-import puck.graph._
-import puck.graph.immutable.NoType
 import puck.util.{PuckLog, PuckLogger}
 
 import scala.util.{Success, Try, Failure}

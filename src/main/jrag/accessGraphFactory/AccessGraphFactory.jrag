@@ -2,23 +2,15 @@
 import puck.graph.AGBuildingError;
 
 
-//import puck.javaAG.mutable.JavaAccessGraph;
-//import puck.javaAG.mutable.nodeKind.JavaNodeKind;
-//import puck.javaAG.mutable.JavaNamedType;
-//import puck.javaAG.mutable.MethodType;
-//import puck.graph.mutable.NamedType;
-//import puck.graph.mutable.Tuple;
-//import puck.graph.mutable.Type;
+import puck.javaAG.JavaGraphBuilder;
 
-import puck.javaAG.immutable.JavaGraphBuilder;
-
-import puck.javaAG.immutable.JavaNamedType;
-import puck.javaAG.immutable.MethodType;
-import puck.graph.immutable.NamedType;
-import puck.graph.immutable.Tuple;
-import puck.graph.immutable.Type;
-import puck.javaAG.immutable.nodeKind.MethodTypeHolder;
-import puck.javaAG.immutable.nodeKind.NamedTypeHolder;
+import puck.javaAG.JavaNamedType;
+import puck.javaAG.MethodType;
+import puck.graph.NamedType;
+import puck.graph.Tuple;
+import puck.graph.Type;
+import puck.javaAG.nodeKind.MethodTypeHolder;
+import puck.javaAG.nodeKind.NamedTypeHolder;
 
 aspect AccessGraphFactory {
 

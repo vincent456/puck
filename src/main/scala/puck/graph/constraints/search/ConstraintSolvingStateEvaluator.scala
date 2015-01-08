@@ -1,14 +1,13 @@
-package puck.graph.constraints.search
+package puck.graph
+package constraints.search
 
-import puck.graph._
-import puck.graph.immutable.AccessGraph
 import puck.search.{SearchState, Evaluator}
 
 /**
  * Created by lorilan on 07/11/14.
  */
 class ConstraintSolvingStateEvaluator
-(val initialRecord : Recording)
+(val initialRecord : transformations.Recording)
   extends Evaluator[ResultT]{
 
   def evaluate(s : SearchState[ResultT]): Double ={

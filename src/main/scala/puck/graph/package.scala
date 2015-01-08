@@ -9,30 +9,18 @@ package object graph {
    type AccessGraph[Kind <: NodeKind[Kind]] = mutable.AccessGraph[Kind]*/
 
 
-  type NodeKind = immutable.NodeKind
-  type Type[T <: Type[ T]]= immutable.Type[T]
-  type AGNode = immutable.AGNode
-  type NodeId = immutable.AccessGraph.NodeId
-  type AGEdge = immutable.AGEdge
-  val AGEdge = immutable.AGEdge
+  type NodeId = AccessGraph.NodeId
 
-  type AccessGraph = immutable.AccessGraph
-  val AccessGraph = immutable.AccessGraph
-  type GraphBuilder = immutable.GraphBuilder
-
-  type JavaNodeKind = javaAG.immutable.nodeKind.JavaNodeKind
+  type JavaNodeKind = javaAG.nodeKind.JavaNodeKind
   val JavaFilesHandler = javaAG.JavaFilesHandler
-  val JavaNode = javaAG.immutable.JavaNode
-  val JavaSolver = javaAG.immutable.JavaSolver
+  val JavaNode = javaAG.JavaNode
+  val JavaSolver = javaAG.JavaSolver
 
-  type ConstraintsParser = immutable.constraints.ConstraintsParser
-  val ConstraintsParser = immutable.constraints.ConstraintsParser
-
-  type Recording = immutable.transformations.Recording
-  val Recording = immutable.transformations.Recording
+  type Recording = transformations.Recording
+  val Recording = transformations.Recording
 
   import scala.language.implicitConversions
-  implicit def edgeToPair(edge : AGEdge) = (edge.source, edge.target)
+  implicit def edgeToPair(edge : AGEdge) : (NodeId, NodeId) = (edge.source, edge.target)
 
   type FilesHandler = io.FilesHandler
 

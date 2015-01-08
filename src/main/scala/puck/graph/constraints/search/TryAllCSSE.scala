@@ -1,6 +1,6 @@
 package puck.graph.constraints.search
 
-import puck.graph.immutable.transformations.Recording
+import puck.graph.transformations.Recording
 import puck.graph.{ResultT, AccessGraph, NodeKind}
 import puck.search.TryAllSearchEngine
 

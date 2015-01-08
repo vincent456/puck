@@ -1,10 +1,8 @@
 package puck.javaAG
 
 import puck.graph.constraints.search.{TryAllCSSE, FunneledCSSE, FindFirstCSSE}
-import puck.graph.immutable.AccessGraph
 import puck.graph._
 import puck.graph.io.ConstraintSolvingSearchEngineBuilder
-import puck.javaAG.immutable.DeclHolder
 import puck.search.SearchEngine
 
 /**
