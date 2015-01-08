@@ -18,7 +18,7 @@ class ConstraintsParser private
 ( val builder : GraphBuilder) extends RegexParsers {
 
   builder.discardConstraints()
-  protected override val whiteSpace = """(\s|%.*)+""".r  //to skip comments
+  protected override val whiteSpace = """(\s|%.*|#.*)+""".r  //to skip comments
 
 
   var defs : Map[String, NamedNodeSet] = Map()
@@ -136,6 +136,13 @@ class ConstraintsParser private
           toDef(interlopers), LiteralNodeSet())
     }
 
+  def hideScopeSetButFrom : Parser[Unit] =
+    "hideScopeSetButFrom(" ~> listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
+      case s ~ _ ~ friends =>
+        builder.addScopeConstraint(toDef(s), LiteralNodeSet(),
+          LiteralNodeSet(AccessGraph.rootId), toDef(friends))
+    }
+
   def hideScopeFromEachOther : Parser[Unit] = {
     "hideScopeFromEachOther(" ~> listOrIdent <~ ")." ^^ {
       case s =>
@@ -227,6 +234,7 @@ class ConstraintsParser private
       | hideScopeSet1
       | hideScopeSet4
       | hideScopeSetFrom
+      | hideScopeSetButFrom
       | hideScopeFromEachOther
       | friendsOfScope
       | friendsOfElement

@@ -1,6 +1,7 @@
 package puck.gui.search
 
 import puck.graph._
+import puck.graph.io.VisibilitySet
 import puck.search.SearchState
 import puck.util.PuckSystemLogger
 
@@ -13,11 +14,12 @@ class StateComparator
 ( initialRecord : Recording,
   sortedRes: Map[Int, Seq[SearchState[ResultT]]],
   printId : () => Boolean,
-  printSig : () => Boolean)
+  printSig : () => Boolean,
+  visibility : VisibilitySet)
   extends BoxPanel(Orientation.Vertical) {
   contents += new Label("Compare")
-  val cb1 = new StateSelector(sortedRes, printId, printSig)
-  val cb2 = new StateSelector(sortedRes, printId, printSig)
+  val cb1 = new StateSelector(sortedRes, printId, printSig, visibility )
+  val cb2 = new StateSelector(sortedRes, printId, printSig, visibility )
 
   this deafTo this
 

@@ -479,15 +479,14 @@ class AccessGraph
         format(oldEdge, newUsee, policy, oldEdge.usee))
       Success((AGEdge.uses(oldEdge.user, newUsee), this))
     }
-    else {
-      if(users(oldEdge.usee).exists(_ == oldEdge.user) ||
-        users(newUsee).exists(_==oldEdge.user))
+    else if(users(oldEdge.usee).exists(_ == oldEdge.user) ||
+                users(newUsee).exists(_==oldEdge.user))
         Failure(new AGError("incoherent state !!!!!!!!!!!!"))
-
-      Failure(new AGError(("redirecting uses' %s target to %s (%s)\n" +
+    else
+        Failure(new AGError(("redirecting uses' %s target to %s (%s)\n" +
         "!!! nor the oldUsee or the newUsee is really used !!! ").
         format(oldEdge, newUsee, policy)))
-    }
+
   }
 
   def redirectPrimaryUses(currentSideUse : EdgeT,

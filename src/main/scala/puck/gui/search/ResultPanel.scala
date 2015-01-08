@@ -1,6 +1,7 @@
 package puck.gui.search
 
 import puck.graph.constraints.search.ConstraintSolvingStateEvaluator
+import puck.graph.io.VisibilitySet
 import puck.graph.{Recording, ResultT}
 import puck.search.{Search, SearchState}
 import puck.util.{PuckLog, PuckLogger}
@@ -10,11 +11,13 @@ import scala.swing._
 /**
  * Created by lorilan on 22/10/14.
  */
-class ResultPanel(initialRecord : Recording,
-                        res : Search[ResultT],
-                        logger : PuckLogger,
-                         printId : () => Boolean,
-                         printSig: () => Boolean)
+class ResultPanel
+( initialRecord : Recording,
+  res : Search[ResultT],
+  logger : PuckLogger,
+  printId : () => Boolean,
+  printSig: () => Boolean,
+  visibility : VisibilitySet)
       extends BoxPanel(Orientation.Vertical){
 
   implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.NoSpecialContext, PuckLog.Info)
@@ -46,7 +49,7 @@ class ResultPanel(initialRecord : Recording,
 
   if(sortedRes.nonEmpty) {
     //val comp : Component = new StateComparator(initialRecord, sortedRes, printId, printSig)
-    val comp : Component = new StateSelector(sortedRes, printId, printSig)
+    val comp : Component = new StateSelector(sortedRes, printId, printSig, visibility)
     contents += comp
 
     this listenTo comp

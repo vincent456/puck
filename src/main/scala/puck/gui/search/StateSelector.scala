@@ -1,5 +1,6 @@
 package puck.gui.search
 
+import puck.graph.io.VisibilitySet
 import puck.graph.{ResultT, graphOfResult}
 import puck.gui.{ConstraintDisplayRequest, ApplyOnCodeRequest, GraphDisplayRequest, SearchStateSeqPrintingRequest}
 import puck.search.SearchState
@@ -15,7 +16,8 @@ case class StateSelected(box : StateSelector) extends Event
 class StateSelector
 ( map : Map[Int, Seq[SearchState[ResultT]]],
   printId : () => Boolean,
-  printSig: () => Boolean)
+  printSig: () => Boolean,
+  visibility : VisibilitySet)
   extends BoxPanel(Orientation.Vertical){
 
   type StateT = SearchState[ResultT]
@@ -53,7 +55,7 @@ class StateSelector
 
         StateSelector.this publish SearchStateSeqPrintingRequest(state.uuid()+"history",
           state.ancestors(includeSelf = true), Some({s => id +=1
-            id.toString}), printId(), printSig())
+            id.toString}), printId(), printSig(), visibility)
 
       }
     }

@@ -35,6 +35,7 @@ case class GraphDisplayRequest
  graph : AccessGraph,
  printId : Boolean,
  printSignature : Boolean,
+ visibility : VisibilitySet,
  sUse : Option[AGEdge] = None)
  extends ControlRequest
 
@@ -46,14 +47,16 @@ case class ExploreRequest
 case class SearchStateMapPrintingRequest
 (stateMap : Map[Int, Seq[SearchState[ResultT]]],
  printId : Boolean,
- printSignature : Boolean)
+ printSignature : Boolean,
+ visibility : VisibilitySet)
   extends ControlRequest
 case class SearchStateSeqPrintingRequest
 (subDir : String,
  states : Seq[SearchState[ResultT]],
  sPrinter : Option[SearchState[ResultT] => String],
  printId : Boolean,
- printSignature : Boolean)
+ printSignature : Boolean,
+ visibility : VisibilitySet)
   extends ControlRequest
 
 case class PrintConstraintRequest() extends ControlRequest
@@ -64,7 +67,6 @@ case class ExplorationFinished(result : Search[ResultT]) extends Answer
 
 
 class PuckControl(val filesHandler : FilesHandler,
-                  private val visibility : VisibilitySet,
                   private val progressBar : ProgressBar,
                   private val delayedDisplay : ArrayBuffer[Component])
   extends Publisher {
@@ -111,7 +113,8 @@ class PuckControl(val filesHandler : FilesHandler,
                    graph : GraphT,
                    someUse : Option[AGEdge],
                    printId : Boolean,
-                   printSignature : Boolean){
+                   printSignature : Boolean,
+                   visibility : VisibilitySet){
 
     logger.writeln("Printing graph ...")
 
@@ -147,7 +150,8 @@ class PuckControl(val filesHandler : FilesHandler,
                      states : Seq[StateT],
                      sPrinter : Option[StateT => String],
                      printId : Boolean,
-                     printSignature : Boolean): Unit ={
+                     printSignature : Boolean,
+                     visibility : VisibilitySet): Unit ={
     val d = filesHandler.graphFile("_results")
     d.mkdir()
     val subDir = filesHandler.graphFile("_results%c%s".format(File.separatorChar, subDirStr))
@@ -157,7 +161,8 @@ class PuckControl(val filesHandler : FilesHandler,
 
   def showStateSeq(states : Seq[StateT],
                    printId : Boolean,
-                   printSignature : Boolean): Unit = {
+                   printSignature : Boolean,
+                   visibility : VisibilitySet): Unit = {
     Future {
       new ImageExplorer(filesHandler, states.toIndexedSeq, visibility, printId, printSignature)
     }
@@ -168,8 +173,8 @@ class PuckControl(val filesHandler : FilesHandler,
 
     case LoadConstraintRequest() => loadConstraints()
 
-    case GraphDisplayRequest(title, graph, printId, printSignature, sUse) =>
-      displayGraph(title, graph, sUse, printId, printSignature)
+    case GraphDisplayRequest(title, graph, printId, printSignature, visibility, sUse) =>
+      displayGraph(title, graph, sUse, printId, printSignature, visibility)
 
     case ConstraintDisplayRequest(graph) =>
       graph.printConstraints(filesHandler.logger, defaultVerbosity)
@@ -198,13 +203,13 @@ class PuckControl(val filesHandler : FilesHandler,
           //filesHandler.logger writeln exc.getStackTrace.mkString("\n")
       }
 
-    case SearchStateMapPrintingRequest(stateMap, printId, printSignature) =>
+    case SearchStateMapPrintingRequest(stateMap, printId, printSignature, visibility) =>
       filesHandler.printCSSearchStatesGraph(stateMap, visibility, printId, printSignature)
 
-    case SearchStateSeqPrintingRequest(subDir, states, sPrinter, printId, printSignature) =>
+    case SearchStateSeqPrintingRequest(subDir, states, sPrinter, printId, printSignature, visibility) =>
      // printStateSeq(subDir, states, sPrinter, printId, printSignature)
       logger.writeln("history request")
-      showStateSeq(states, printId, printSignature)
+      showStateSeq(states, printId, printSignature, visibility)
   }
 
 }

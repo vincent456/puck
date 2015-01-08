@@ -52,6 +52,9 @@ case class AGEdge
   override def toString : String = {
     kind + "( " + source + ", " + target + ")"
   }
+  def mkString(graph : AccessGraph) : String =
+    kind + "( " + graph.getNode(source) + ", " + graph.getNode(target) + ")"
+
 
   def exists(graph : AccessGraph) = kind match {
     case Uses => graph.uses(source, target)

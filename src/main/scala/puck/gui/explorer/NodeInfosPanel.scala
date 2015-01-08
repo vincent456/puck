@@ -1,6 +1,7 @@
 package puck.gui.explorer
 
 import puck.graph._
+import puck.graph.io.VisibilitySet
 import puck.gui.{GraphDisplayRequest, PuckMainPanel}
 
 import scala.swing._
@@ -13,7 +14,8 @@ import scala.swing.event.MouseClicked
 class NodeInfosPanel(val graph : AccessGraph,
                      val nodeId : NodeId,
                       printId : () => Boolean,
-                      printSig: () => Boolean)
+                      printSig: () => Boolean,
+                      visibility : VisibilitySet)
   extends SplitPane(Orientation.Horizontal) {
 
   val useDetails = new BoxPanel(Orientation.Vertical)
@@ -65,10 +67,10 @@ class NodeInfosPanel(val graph : AccessGraph,
 
     contents += new BoxPanel(Orientation.Vertical) {
 
-      node.users.foreach { user =>
+      node.users.foreach { userId =>
 
-        val sideUses = graph.usesDominatedBy(user, nodeId)
-        val primaryUses = graph.usesDominating(user, nodeId)
+        val sideUses = graph.usesDominatedBy(userId, nodeId)
+        val primaryUses = graph.usesDominating(userId, nodeId)
 
         def tag = (sideUses.isEmpty, primaryUses.isEmpty) match {
           case (true, true) => ""
@@ -84,10 +86,11 @@ class NodeInfosPanel(val graph : AccessGraph,
             NodeInfosPanel.this publish
               GraphDisplayRequest("Graph with uses selected",
               graph, printId(), printSig(),
-              sUse = Some(AGEdge.uses(user, nodeId)))
+              visibility,
+              sUse = Some(AGEdge.uses(userId, nodeId)))
           }
 
-          contents += new Label(user + " " + tag) {
+          contents += new Label(graph.getNode(userId).fullName + " " + tag) {
 
             minimumSize = new Dimension(this.size.width, 30)
 
@@ -96,16 +99,16 @@ class NodeInfosPanel(val graph : AccessGraph,
               case MouseClicked(_, _, _, _, _) =>
 
                 useDetails.contents.clear()
-                useDetails.contents += new Label(AGEdge.uses(user, nodeId).toString)
+                useDetails.contents += new Label(AGEdge.uses(userId, nodeId).mkString(graph))
 
                 if (primaryUses.nonEmpty){
                     useDetails.contents += new Label("Dominant Uses :")
-                    primaryUses.foreach(e => useDetails.contents += new Label(e.toString()))
+                    primaryUses.foreach(e => useDetails.contents += new Label(AGEdge.uses(e).mkString(graph)))
                 }
 
                 if(sideUses.nonEmpty) {
                     useDetails.contents += new Label("Dominated Uses :")
-                    sideUses.foreach(e => useDetails.contents += new Label(e.toString()))
+                    sideUses.foreach(e => useDetails.contents += new Label(AGEdge.uses(e).mkString(graph)))
                 }
 
                 useDetails.revalidate()

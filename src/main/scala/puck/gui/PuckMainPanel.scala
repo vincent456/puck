@@ -5,7 +5,6 @@ import puck.graph.immutable.AccessGraph
 import puck.graph.io.{Hidden, VisibilitySet}
 import puck.gui.explorer.{PackageOnlyVisible, PuckTreeNodeClicked, NodeInfosPanel, GraphExplorer}
 import puck.gui.search.ResultPanel
-import puck.javaAG.immutable.Predefined
 import puck.util.{PuckLog, PuckLogger}
 
 import scala.collection.mutable.ArrayBuffer
@@ -75,7 +74,7 @@ class PuckMainPanel(val filesHandler: FilesHandler)
 
     val progressBar  = new ProgressBar()
     val delayedDisplay = ArrayBuffer[Component]()
-    val control = new PuckControl(filesHandler, visibilitySet, progressBar, delayedDisplay)
+    val control = new PuckControl(filesHandler, progressBar, delayedDisplay)
 
     val printIdsBox = new CheckBox("Show nodes ID")
     val printSignaturesBox = new CheckBox("Show signagures")
@@ -89,7 +88,7 @@ class PuckMainPanel(val filesHandler: FilesHandler)
 
       reactions += {
         case PuckTreeNodeClicked(graph, n) =>
-          val nodeInfoPanel = new NodeInfosPanel(graph, n, printIds, printSigs)
+          val nodeInfoPanel = new NodeInfosPanel(graph, n, printIds, printSigs, visibilitySet)
           contents = nodeInfoPanel
           control.listenTo(nodeInfoPanel)
           treeDisplayer.listenTo(nodeInfoPanel)
@@ -126,7 +125,7 @@ class PuckMainPanel(val filesHandler: FilesHandler)
           resultsWrapper.contents.clear()
           val searchResultPanel =
             new ResultPanel(filesHandler.initialRecord, res0, filesHandler.logger,
-              printIds, printSigs)
+              printIds, printSigs, visibilitySet)
           resultsWrapper.contents += searchResultPanel
           control listenTo searchResultPanel
 
@@ -210,10 +209,28 @@ class PuckMainPanel(val filesHandler: FilesHandler)
 
       val show = makeButton("Show graph",
         "Display a visual representation of the graph"){
-        () => publish(GraphDisplayRequest("Graph", filesHandler.graph, printIdsBox.selected, printSignaturesBox.selected))
+        () => publish(GraphDisplayRequest(
+                            "Graph",
+                            filesHandler.graph,
+                            printIdsBox.selected,
+                            printSignaturesBox.selected,
+                            visibilitySet))
       }
 
       addDelayedComponent(show)
+
+      val showViolations = makeButton("Focus on violations",
+        "Display a visual representation of the graph"){
+        () => publish(GraphDisplayRequest(
+          "Graph",
+          filesHandler.graph,
+          printIdsBox.selected,
+          printSignaturesBox.selected,
+          VisibilitySet.violationsOnly(filesHandler.graph)))
+      }
+
+      addDelayedComponent(showViolations)
+
 
       val searchStrategies = new ComboBox(filesHandler.searchingStrategies){
         minimumSize = new Dimension(leftWidth, 30)

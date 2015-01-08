@@ -34,11 +34,12 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
 
     val sProg = puck.util.Time.time(logger, defaultVerbosity) {
         logger.writeln("Compiling sources ...")
-        JavaFilesHandler.compile(findAllFiles(this.srcDirectory.get, srcSuffix,
-        this.outDirectory.get.getName),
-        fileLines(jarListFile.get))
+        val sources = findAllFiles(this.srcDirectory.get, srcSuffix, this.outDirectory.get.getName)
+        val jars = findAllFiles(this.srcDirectory.get, ".jar", this.outDirectory.get.getName)
+        JavaFilesHandler.compile(sources, fileLines(jarListFile.get) ++: jars )
+
     }
-    puck.util.Time.time(logger, defaultVerbosity) {
+    val g = puck.util.Time.time(logger, defaultVerbosity) {
       logger.writeln("Building Access Graph ...")
       sProg match {
         case None => throw new AGBuildingError("Compilation error, no AST generated")
@@ -62,6 +63,17 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
       }
     }
 
+    val (numClass, numItc) = g.nodes.foldLeft((0,0)){ case ((numClass, numItc), n) =>
+      val numClass1 = if(n.kind == immutable.nodeKind.Class) numClass + 1
+          else numClass
+        val numItc1 = if(n.kind == immutable.nodeKind.Interface) numItc + 1
+        else numItc
+      (numClass1, numItc1)
+
+    }
+    logger.writeln( numClass + " classes and " + numItc + " interfaces parsed")
+
+    g
   }
 
   val dotHelper = JavaNode

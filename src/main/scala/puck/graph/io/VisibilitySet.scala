@@ -1,6 +1,6 @@
 package puck.graph.io
 
-import puck.graph.NodeId
+import puck.graph.{AccessGraph, NodeId}
 
 trait Visibility{
   def opposite : Visibility
@@ -17,7 +17,27 @@ case object Visible extends Visibility {
  */
 object VisibilitySet{
   def apply() = new VisibilitySet(Set[NodeId]())
-  def apply(ids : NodeId*) = new VisibilitySet(Set()++ ids.toSeq)
+
+  def allVisible(graph : AccessGraph) = apply()
+
+  def allHidden(graph : AccessGraph) ={
+    val s = apply()
+    s.setVisibility(graph.nodesId.toSeq, Hidden)
+    s
+  }
+
+  def violationsOnly(graph : AccessGraph) : VisibilitySet = {
+    val s = allHidden(graph)
+
+    graph.violations().foreach{ edge =>
+      val path1 = graph.getNode(edge.source).containerPath
+      val path2 = graph.getNode(edge.target).containerPath
+
+      s.setVisibility(path1, Visible)
+      s.setVisibility(path2, Visible)
+    }
+    s
+  }
 
 }
 class VisibilitySet private (private [this] var hiddens: Set[NodeId])/*(val graph : AccessGraph)*/ {
