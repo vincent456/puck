@@ -98,6 +98,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder(JavaNode)
           n.t match {
             case FieldDeclHolder(Some(d)) => addBodyDecl(d)
             case mdh : MethodDeclHolder => mdh.decl.foreach(addBodyDecl)
+            case ConstructorDeclHolder(Some(cdecl)) => addBodyDecl(cdecl)
             case tdh : TypedKindDeclHolder => tdh.decl.foreach(addApiTypeNode)
             case _ =>
               println( n.fullName + " " + n.t + " attach orphan nodes unhandled case")

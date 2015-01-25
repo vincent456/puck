@@ -179,20 +179,36 @@ aspect AccessGraphFactory {
 		}
 	}
 	
+	public void SuperConstructorAccess.buildAG(JavaGraphBuilder builder, int containerId){
+		if(!decl().type().fullName().equals( "java.lang.Object")){
+
+	      buildAGInChildren(builder, containerId);
+
+	      int classNodeId = decl().type().buildAGNode(builder);
+	      int ctorNodeId = decl().buildAGNode(builder);
+
+	      builder.addUses(containerId, classNodeId);
+	      builder.addUses(ctorNodeId, classNodeId);
+
+	      builder.addUsesDependency(containerId, classNodeId,
+	              containerId, ctorNodeId);
+
+	    }
+  	}
 
 	public void ClassInstanceExpr.buildAG(JavaGraphBuilder builder, int containerId){
 		//System.err.println("ClassInstanceExpr.buildAG : " + this);
 		
 		buildAGInChildren(builder, containerId);
 
-		int nodeId = getAccess().buildAGNode(builder);
-		
-		builder.addUses(containerId, nodeId);
-				
-		int dominantUsedId = decl().hostType().buildAGNode(builder);
+		int classNodeId = getAccess().buildAGNode(builder);
+        int ctorNodeId = decl().buildAGNode(builder);
 
-		builder.addUsesDependency(containerId, dominantUsedId,
-                    			 containerId, nodeId);
+		builder.addUses(containerId, classNodeId);
+        builder.addUses(containerId, ctorNodeId);
+				
+		builder.addUsesDependency(containerId, classNodeId,
+                    			 containerId, ctorNodeId);
 		
 	}
 
