@@ -1,6 +1,7 @@
 package puck.graph
 package constraints
 
+import puck.graph.transformations.TransformationRules
 import puck.util.{PuckLog, PuckLogger}
 
 import scala.util.{Success, Try, Failure}
@@ -13,11 +14,13 @@ trait Solver {
 
   val logger : PuckLogger
   val decisionMaker : DecisionMaker
+  val rules : TransformationRules
 
-  type GraphT = AccessGraph
+  type GraphT = DependencyGraph
   type ResT = ResultT
   type NIdT = NodeId
   type PredicateT = decisionMaker.PredicateT
+
 
   def redirectTowardExistingAbstractions(graph : GraphT,
                                          usee : NIdT,
@@ -40,7 +43,7 @@ trait Solver {
 
               //val breakPoint = g.startSequence()
 
-              g.redirectUses(AGEdge.uses(wu, usee), abs, absPolicy) match {
+              rules.redirectUses(g, AGEdge.uses(wu, usee), abs, absPolicy) match {
                   case Success((_, g2)) => (g2, unsolved)
                   case Failure(e) =>
                     logger.writeln("redirection error catched !!")(PuckLog.Debug)
@@ -68,7 +71,7 @@ trait Solver {
               (k : FindHostResult => Unit) {
 
     def predicate(graph : GraphT, n : NIdT) : Boolean =
-      (graph.getNode(n) canContain toBeContained) && specificPredicate(graph, n)
+      graph.canContain(n, toBeContained) && specificPredicate(graph, n)
 
     def hostIntro(toBeContainedId : NIdT) {
       logger.writeln("call hostIntro " + toBeContainedId )(PuckLog.Debug)
@@ -143,7 +146,7 @@ trait Solver {
           def doIntro(k: Try[(GraphT, NIdT, AbstractionPolicy)] => Unit) : Unit = {
             logger.writeln(s"trying to create abstraction( $absKind, $absPolicy ) of $currentImpl")
 
-            val tryAbs = graph.createAbstraction(currentImpl, absKind, absPolicy)
+            val tryAbs = rules.createAbstraction(graph, currentImpl, absKind, absPolicy)
 
             if(tryAbs.isFailure)
               logger.writeln("failure !!")
@@ -163,7 +166,7 @@ trait Solver {
 
                     //TODO check if can find another way more generic
                     //whitout passing by abstracting the container
-                    val graph5 = graph4.abstractionCreationPostTreatment(currentImpl, absId, absPolicy)
+                    val graph5 = rules.abstractionCreationPostTreatment(graph4, currentImpl, absId, absPolicy)
 
                     k(Success((graph5, absId, absPolicy)))
                   case FindHostError() =>
@@ -195,7 +198,7 @@ trait Solver {
         val res = wrongUsers.foldLeft(Success(g) : Try[GraphT]){
           case (Failure(exc), wuId) => Failure(exc)
           case (Success(g0), wuId) =>
-            g0.redirectUses(AGEdge.uses(wuId, impl), abs, absPolicy) match {
+            rules.redirectUses(g0, AGEdge.uses(wuId, impl), abs, absPolicy) match {
               case Success((_, g1)) => Success(g1)
               case Failure(e) => Failure(e)
             }
@@ -253,14 +256,13 @@ trait Solver {
         logger.writeln("solveContains : host of "+ wronglyContained +" will now be " + newCter)
 
 
-
-         val tryGraph3 = graph2. //re-attach before moving
-                        addContains(oldCter, wronglyContained, register = false).
-                        moveTo(wronglyContained, newCter)
+         //re-attach before moving
+         val tryGraph3 = rules.moveTo(graph2.addContains(oldCter, wronglyContained, register = false),
+                        wronglyContained, newCter)
 
         val tryGraph4 = tryGraph3.map {graph3 =>
           if(graph3.isWronglyContained(wronglyContained))
-            graph3.addHideFromRootException(wronglyContained, newCter)
+            rules.addHideFromRootException(graph3, wronglyContained, newCter)
           else graph3
         }
 
@@ -294,9 +296,9 @@ trait Solver {
     def aux(graph : GraphT, it : Iterator[NIdT]) : GraphT =
       if(it.hasNext){
         val n = it.next()
-        graph.findMergingCandidate(n) match {
+        rules.findMergingCandidate(graph, n) match {
           case Some(other) =>
-            val g1 = graph.merge(other, n)
+            val g1 = rules.merge(graph, other, n)
             aux(g1, g1.nodesId.iterator)
           case None => aux(graph, it)
         }

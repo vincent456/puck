@@ -8,14 +8,14 @@ import scala.collection.mutable
 
 class GraphBuilder
 ( val nodeBuilder : AGNodeBuilder ){
-  var g : AccessGraph = _
+  var g : DependencyGraph = _
   type NodeIdT = NodeId
   val nodesByName = mutable.Map[String, NodeIdT]()
 
   def getNodeByName( k : String) : NodeIdT = nodesByName(k) //java accessor
 
-  def addPredefined(id : NodeIdT, fullName : String, name : String, kind : NodeKind, t : Hook): Unit ={
-    g = g.addNode(id, name, kind, NoType, mutable = false, t)
+  def addPredefined(id : NodeIdT, fullName : String, name : String, kind : NodeKind): Unit ={
+    g = g.addNode(id, name, kind, NoType, mutable = false)
     nodesByName += (fullName -> id)
   }
 

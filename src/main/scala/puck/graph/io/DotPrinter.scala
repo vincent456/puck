@@ -30,7 +30,7 @@ object DotPrinter {
 import DotPrinter._
 class DotPrinter
 ( writer: BufferedWriter,
-  graph : AccessGraph,
+  graph : DependencyGraph,
   visibility : VisibilitySet,
   helper : DotHelper,
   printId : Boolean,
@@ -38,6 +38,7 @@ class DotPrinter
   searchRoots : Boolean = false,
   selectedUse : Option[AGEdge] = None){
 
+  implicit val g = graph
   type NIdT = NodeId
 
   val idString : Int => String =
@@ -125,7 +126,7 @@ class DotPrinter
   }
 
   def decorate_name(n : AGNode):String = {
-    val sCter = n.container
+    val sCter = graph.container(n.id)
 
     val name = html_safe(n.name)
 
@@ -154,13 +155,13 @@ class DotPrinter
       "label=\"" + decorate_name(n) +"\";",
       "color=black;") foreach writeln
 
-    if(n.content.isEmpty) writeln(n.id + "[label=\"\" shape=none ]")
+    if(graph.content(n.id).isEmpty) writeln(n.id + "[label=\"\" shape=none ]")
     else
-      n.content.foreach(printNode)
+      graph.content(n.id).foreach(printNode)
 
     writeln("}")
 
-    n.users.foreach(printUse(_, n.id))
+    graph.users(n.id).foreach(printUse(_, n.id))
   }
 
   def printClass(nid: NodeId){
@@ -189,19 +190,19 @@ class DotPrinter
 
     innerClasses foreach printClass
 
-    n.content.foreach { nc =>
-      graph.getNode(nc).users.foreach(printUse(_, nc))
+    graph.content(n.id).foreach { nc =>
+      graph.users(nc).foreach(printUse(_, nc))
     }
-    n.users.foreach(printUse(_, n.id))
-    n.directSuperTypes.foreach(printArc(isaStyle, n.id, _, ColorThickness.regular))
+    graph.users(n.id).foreach(printUse(_, n.id))
+    graph.directSuperTypes(n.id).foreach(printArc(isaStyle, n.id, _, ColorThickness.regular))
   }
 
   def apply(){
     writeln("digraph G{")
     writeln("rankdir=LR; ranksep=equally; compound=true")
 
-    graph.root.content.foreach(printNode)
-    visibility.setVisibility(AccessGraph.rootId, Hidden)
+    graph.content(graph.rootId).foreach(printNode)
+    visibility.setVisibility(DependencyGraph.rootId, Hidden)
     graph.nodesId.foreach{nid => if(graph.container(nid).isEmpty) printNode(nid)}
 
     arcs.foreach(writeln)

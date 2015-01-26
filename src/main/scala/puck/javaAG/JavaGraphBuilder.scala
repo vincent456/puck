@@ -1,7 +1,7 @@
 package puck.javaAG
 
 import puck.graph._
-import puck.graph.AccessGraph._
+import puck.graph.DependencyGraph._
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.transformations.Recording
 import puck.javaAG.nodeKind._
@@ -14,15 +14,16 @@ import scala.collection.JavaConversions.collectionAsScalaIterable
 class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder(JavaNode){
   var idSeed = rootId + 1
 
-    val root = (rootId, rootName, JavaRoot, NoType, true, EmptyDeclHolder)
+    val root = (rootId, rootName, JavaRoot, NoType, true)
 
-   g = new JavaAccessGraph(program, PuckNoopLogger, {() => val id = idSeed; idSeed += 1; id},
+   g = new JavaDependencyGraph(program, PuckNoopLogger, {() => val id = idSeed; idSeed += 1; id},
    NodeIndex() + (rootId -> root), NodeIndex(),
     EdgeMap(), EdgeMap(), EdgeMap(),
     Node2NodeMap(), EdgeMap(), EdgeMap(),
     UseDependencyMap(), UseDependencyMap(),
     AbstractionMap(), ConstraintsMaps(), Recording())
 
+   var graph2ASTMap = Map[Int, DeclHolder]()
   /*def addPredefined( p : Predefined): Unit = {
     super.addPredefined(p.id, p.fullName, p.name, p.kind, EmptyDeclHolder)
   }
@@ -56,8 +57,6 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder(JavaNode)
         }
       case  Some(pn) => pn
     }
-
-
 
   def findTypeDecl(typ : String): AST.TypeDecl ={
     val td = program findType typ
@@ -93,15 +92,15 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder(JavaNode)
       for(nodeId <- fromId to lastId){
         //println(s"${g.container(nodeId)} contains $nodeId")
         if(g.container(nodeId).isEmpty && nodeId != g.rootId){
-          val n = g.getNode(nodeId).asInstanceOf[JavaNode]
+          val n = g.getNode(nodeId)
           //println(s"orphan node : ${n.fullName}  : ${n.kind} - container = ${n.container}")
-          n.t match {
-            case FieldDeclHolder(Some(d)) => addBodyDecl(d)
-            case mdh : MethodDeclHolder => mdh.decl.foreach(addBodyDecl)
-            case ConstructorDeclHolder(Some(cdecl)) => addBodyDecl(cdecl)
-            case tdh : TypedKindDeclHolder => tdh.decl.foreach(addApiTypeNode)
-            case _ =>
-              println( n.fullName + " " + n.t + " attach orphan nodes unhandled case")
+          graph2ASTMap get nodeId match {
+            case Some(FieldDeclHolder(d)) => addBodyDecl(d)
+            case Some(mdh : MethodDeclHolder) => addBodyDecl(mdh.decl)
+            case Some(ConstructorDeclHolder(cdecl)) => addBodyDecl(cdecl)
+            case Some(tdh : TypedKindDeclHolder) => addApiTypeNode(tdh.decl)
+            case sdh =>
+              println( g.fullName(nodeId) + " " + sdh + " attach orphan nodes unhandled case")
               ()
           }
         }
@@ -165,28 +164,31 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder(JavaNode)
   private def throwRegisteringError(n : AGNode, astType : String) =
     throw new Error(s"Wrong registering ! AGNode.kind : ${n.kind} while AST.Node is an $astType")
 
+
+
   def register(
         nid : NodeIdT,
         kindExpected : JavaNodeKind,
         declHolder : => DeclHolder,
         kindFound : String): Unit ={
     if(g.getNode(nid).kind == kindExpected)
-      g = g.setInternal(nid, declHolder)
+      graph2ASTMap += (nid -> declHolder)
+      //g = g.setInternal(nid, declHolder)
     else
       throwRegisteringError(g.getNode(nid), kindFound)
   }
 
   def registerDecl(n : NodeIdT, decl : AST.InterfaceDecl) =
-    register(n, Interface, InterfaceDeclHolder(Some(decl)), "InterfaceDecl")
+    register(n, Interface, InterfaceDeclHolder(decl), "InterfaceDecl")
 
   def registerDecl(n : NodeIdT, decl : AST.ClassDecl) =
-    register(n, Class, ClassDeclHolder(Some(decl)), "ClassDecl")
+    register(n, Class, ClassDeclHolder(decl), "ClassDecl")
 
   def registerDecl(n : NodeIdT, decl : AST.TypeVariable) =
-    register(n, TypeVariable, TypeVariableHolder(Some(decl)), "TypeVariable")
+    register(n, TypeVariable, TypeVariableHolder(decl), "TypeVariable")
 
   def registerDecl(n : NodeIdT, decl : AST.TypeDecl) =
-    register(n, Primitive, PrimitiveDeclHolder(Some(decl)), "PrimitiveType")
+    register(n, Primitive, PrimitiveDeclHolder(decl), "PrimitiveType")
 
   /*def registerDecl(n : NodeIdT, decl : AST.PrimitiveType){
     g.getNode(n).kind match {
@@ -197,20 +199,22 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder(JavaNode)
   }*/
 
   def registerDecl(n : NodeIdT, decl : AST.ConstructorDecl)=
-    register(n, Constructor, ConstructorDeclHolder(Some(decl)), "ConstructorDecl")
+    register(n, Constructor, ConstructorDeclHolder(decl), "ConstructorDecl")
 
 
   def registerDecl(n : NodeIdT, decl : AST.MethodDecl){
     g.getNode(n).kind match {
       case Method =>
-        g = g.setInternal(n, ConcreteMethodDeclHolder(Some(decl)))
+        //g = g.setInternal(n, ConcreteMethodDeclHolder(Some(decl)))
+        graph2ASTMap += (n -> ConcreteMethodDeclHolder(decl))
       case AbstractMethod =>
-        g = g.setInternal(n, AbstractMethodDeclHolder(Some(decl)))
+        //g = g.setInternal(n, AbstractMethodDeclHolder(Some(decl)))
+        graph2ASTMap += (n -> AbstractMethodDeclHolder(decl))
       case _ => throwRegisteringError(g.getNode(n), "MethodDecl")
     }
   }
 
   def registerDecl(n : NodeIdT, decl : AST.FieldDeclaration) =
-    register(n, Field, FieldDeclHolder(Some(decl)), "FieldDeclaration")
+    register(n, Field, FieldDeclHolder(decl), "FieldDeclaration")
 
 }

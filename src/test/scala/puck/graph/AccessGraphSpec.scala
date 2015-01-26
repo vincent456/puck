@@ -6,7 +6,7 @@ import puck.graph.mutable.{AGNode, AccessGraph, VanillaNodeKind, VanillaKind}
  * Created by lorilan on 15/05/14.
  */
 class AccessGraphSpec extends UnitSpec{
-  val ag : AccessGraph[VanillaKind] = new AccessGraph(AGNode)
+  val ag : DependencyGraph[VanillaKind] = new DependencyGraph(AGNode)
 
   var a0 : AGNode[VanillaKind] = _
   var aa : AGNode[VanillaKind] = _

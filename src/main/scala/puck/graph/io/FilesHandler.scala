@@ -12,7 +12,7 @@ import scala.sys.process.Process
 import scala.util.Try
 
 trait ConstraintSolvingSearchEngineBuilder {
-  def apply(initialRecord : Recording, graph : AccessGraph) :
+  def apply(initialRecord : Recording, graph : DependencyGraph) :
   SearchEngine[ResultT]
 }
 
@@ -62,7 +62,7 @@ abstract class FilesHandler(workingDirectory : File){
   def logger : PuckLogger = logger0
   def logger_=( l : PuckLogger){logger0 = l}
 
-  type GraphT = AccessGraph
+  type GraphT = DependencyGraph
 
   private [this] var ag : GraphT = _
   def graph = ag

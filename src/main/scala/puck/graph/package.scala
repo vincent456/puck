@@ -9,7 +9,7 @@ package object graph {
    type AccessGraph[Kind <: NodeKind[Kind]] = mutable.AccessGraph[Kind]*/
 
 
-  type NodeId = AccessGraph.NodeId
+  type NodeId = DependencyGraph.NodeId
 
   type JavaNodeKind = javaAG.nodeKind.JavaNodeKind
   val JavaFilesHandler = javaAG.JavaFilesHandler
@@ -24,9 +24,9 @@ package object graph {
 
   type FilesHandler = io.FilesHandler
 
-  type ResultT = (AccessGraph, Recording)
+  type ResultT = (DependencyGraph, Recording)
 
-  def graphOfResult(result : ResultT) : AccessGraph = result._1
+  def graphOfResult(result : ResultT) : DependencyGraph = result._1
   //in mutable version apply record before returning graph !
   def recordOfResult(result : ResultT) : Recording = result._2
 

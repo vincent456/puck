@@ -113,7 +113,7 @@ class ConstraintsParser private
     "hideScopeSet(" ~> listOrIdent <~ ")." ^^ {
       case s =>
         builder.addScopeConstraint(toDef(s), LiteralNodeSet(),
-          LiteralNodeSet(AccessGraph.rootId), LiteralNodeSet())
+          LiteralNodeSet(DependencyGraph.rootId), LiteralNodeSet())
     }
 
   def hideScopeSet4 : Parser[Unit] =
@@ -138,7 +138,7 @@ class ConstraintsParser private
     "hideScopeSetButFrom(" ~> listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
       case s ~ _ ~ friends =>
         builder.addScopeConstraint(toDef(s), LiteralNodeSet(),
-          LiteralNodeSet(AccessGraph.rootId), toDef(friends))
+          LiteralNodeSet(DependencyGraph.rootId), toDef(friends))
     }
 
   def hideScopeFromEachOther : Parser[Unit] = {
@@ -180,7 +180,7 @@ class ConstraintsParser private
     "hideSet(" ~> listOrIdent <~ ")." ^^ {
       case s =>
         builder.addElementConstraint(toDef(s),
-          LiteralNodeSet(AccessGraph.rootId), LiteralNodeSet())
+          LiteralNodeSet(DependencyGraph.rootId), LiteralNodeSet())
     }
 
   def hideElementSet3 : Parser[Unit] =

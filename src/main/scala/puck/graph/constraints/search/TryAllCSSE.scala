@@ -1,7 +1,7 @@
 package puck.graph.constraints.search
 
 import puck.graph.transformations.Recording
-import puck.graph.{ResultT, AccessGraph, NodeKind}
+import puck.graph.{ResultT, DependencyGraph, NodeKind}
 import puck.search.TryAllSearchEngine
 
 /**
@@ -10,7 +10,7 @@ import puck.search.TryAllSearchEngine
 //CSSE : Constraint Solving Search Engine
 class TryAllCSSE
 (val violationsKindPriority : Seq[NodeKind],
- val graph : AccessGraph,
+ val graph : DependencyGraph,
  val solverBuilder : SolverBuilder)
   extends ConstraintSolvingSearchEngineDecisionMaker
   with TryAllSearchEngine[ResultT]

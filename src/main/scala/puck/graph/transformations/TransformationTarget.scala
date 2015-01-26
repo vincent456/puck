@@ -7,7 +7,7 @@ import puck.graph.constraints.AbstractionPolicy
  * Created by lorilan on 05/11/14.
  */
 sealed abstract class TransformationTarget{
-  type GraphT= AccessGraph
+  type GraphT= DependencyGraph
   type STyp = TypeHolder
   def execute(g: GraphT, op : Operation) : GraphT
 }
@@ -17,12 +17,11 @@ case class TTNode
   name : String,
   kind : NodeKind,
   styp : TypeHolder,
-  mutable : Boolean,
-  t : Hook)
+  mutable : Boolean)
   extends TransformationTarget{
 
   def execute(g: GraphT, op : Operation) = op match {
-    case Add => g.addNode(id, name, kind, styp, mutable, t)
+    case Add => g.addNode(id, name, kind, styp, mutable)
     case Remove => g.removeNode(id)
   }
 }
@@ -77,7 +76,7 @@ case class TTTypeRedirection
  newUsee : NodeId)
   extends TransformationTarget{
 
-  override def execute(g: AccessGraph, op: Operation) = op match {
+  override def execute(g: DependencyGraph, op: Operation) = op match {
     case Add => g.changeType(typed, typ, oldUsee, newUsee)
     case Remove => g.changeType(typed, typ, newUsee, oldUsee)
   }

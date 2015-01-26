@@ -6,13 +6,13 @@ package puck.graph
 trait TypeHolder {
   def redirectUses(oldUsee : NodeId, newUsee: AGNode) : TypeHolder
   def redirectContravariantUses(oldUsee : NodeId, newUsee: AGNode) : TypeHolder
-  def mkString(graph : AccessGraph) : String
+  def mkString(graph : DependencyGraph) : String
   def isEmpty = false
 
 }
 case object NoType extends TypeHolder {
   def redirectUses(oldUsee : NodeId, newUsee: AGNode) = this
   def redirectContravariantUses(oldUsee : NodeId, newUsee: AGNode) = this
-  def mkString(graph : AccessGraph) : String = ""
+  def mkString(graph : DependencyGraph) : String = ""
   override def isEmpty = true
 }

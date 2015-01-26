@@ -13,13 +13,13 @@ object NodeSet {
 
 abstract class NodeSet extends Iterable[NodeId] {
   type NodeType = NodeId
-  type GraphT = AccessGraph
+  type GraphT = DependencyGraph
   def +(n : NodeType) : NodeSet
   def -(n : NodeType) : NodeSet
 
   def contains(id : NodeType) = this.iterator contains id
 
-  def mkString(graph : AccessGraph) : String
+  def mkString(graph : DependencyGraph) : String
 
   def scopeThatContains_*(graph : GraphT, elem: NodeType) =
     this.find { graph.contains_*(_, elem) }
@@ -85,7 +85,7 @@ class NodeSetUnion(val sets : Seq[NodeSet],
                    val set : LiteralNodeSet) extends NodeSetDef {
 
   def mkString(graph : GraphT) = sets.mkString("[", ", ", ", ") +
-    set.map( n => "'%s'".format(graph.getNode(n).fullName)).mkString("", ", ", "]")
+    set.map( n => "'%s'".format(graph.fullName(n))).mkString("", ", ", "]")
 
   def iterator : Iterator[NodeType] = {
     val s = Seq[NodeType]() ++ set
@@ -122,7 +122,7 @@ class LiteralNodeSet private (private val content : Set[NodeId])
   def -(n : NodeType) = new LiteralNodeSet(content - n)
 
   def mkString(graph : GraphT) =
-    content.map( n => "'%s'".format(graph.getNode(n).fullName)).mkString("[", ",\n", "]")
+    content.map( n => "'%s'".format(graph.fullName(n))).mkString("[", ",\n", "]")
   def literalCopy() = this
 }
 

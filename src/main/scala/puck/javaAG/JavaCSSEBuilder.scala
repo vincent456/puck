@@ -19,7 +19,7 @@ object JavaFindFirstCSSEBuilder
 
   override def toString = "First solution"
 
-  def apply(initialRecord : Recording, graph : AccessGraph) : SearchEngine[ResultT] =
+  def apply(initialRecord : Recording, graph : DependencyGraph) : SearchEngine[ResultT] =
     new FindFirstCSSE(violationsKindPriority, graph, JavaSolverBuilder)
 }
 
@@ -28,7 +28,7 @@ object JavaFunneledCSSEBuilder
 
   override def toString = "Funneled"
 
-  def apply(initialRecord : Recording, graph : AccessGraph) : SearchEngine[ResultT] =
+  def apply(initialRecord : Recording, graph : DependencyGraph) : SearchEngine[ResultT] =
     new FunneledCSSE(initialRecord, violationsKindPriority, graph, JavaSolverBuilder)
 }
 
@@ -37,6 +37,6 @@ object JavaTryAllCSSEBuilder
 
   override def toString = "Try all"
 
-  def apply(initialRecord : Recording, graph : AccessGraph) : SearchEngine[ResultT] =
+  def apply(initialRecord : Recording, graph : DependencyGraph) : SearchEngine[ResultT] =
     new TryAllCSSE(violationsKindPriority, graph, JavaSolverBuilder)
 }

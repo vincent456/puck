@@ -1,6 +1,6 @@
 package puck.graph.constraints
 
-import puck.graph.{ResultT, NodeId, AccessGraph, NodeKind}
+import puck.graph.{ResultT, NodeId, DependencyGraph, NodeKind}
 
 
 /**
@@ -11,7 +11,7 @@ case class NoAbstractionKindFound(implKind : NodeKind) extends Throwable
 
 trait DecisionMaker{
   type NIdT = NodeId
-  type GraphT = AccessGraph
+  type GraphT = DependencyGraph
   type PredicateT = (GraphT, NIdT) => Boolean
   type ResT = ResultT
 

@@ -79,23 +79,21 @@ class MethodType(i: MethodType.InputType,
   override def create(i : MethodType.InputType,
               o : MethodType.OutputType) = new MethodType(i, o)
 
-  def createReturnAccess(graph : AccessGraph) =
-    graph.getNode(output.node).t match {
-    case tk : TypedKindDeclHolder => tk.createLockedAccess()
+  def createReturnAccess(graph : DependencyGraph,
+                         id2Decl : Map[NodeId, DeclHolder]) =
+    id2Decl(output.id) match {
+    case tk : TypedKindDeclHolder => tk.decl.createLockedAccess()
     case _ => throw new JavaAGError("need a typekind as output node")
   }
 
-  def createASTParamList(graph : AccessGraph) : Seq[AST.ParameterDeclaration] = {
-    input.types.map { t =>
-      val node = graph.getNode(t.node)
-      node.t match {
+  def createASTParamList(graph : DependencyGraph,
+                         id2Decl : Map[NodeId, DeclHolder]) : Seq[AST.ParameterDeclaration] = {
+    input.types.map { ty =>
+      val node = graph.getNode(ty.id)
+      id2Decl(ty.id) match {
         case tk : TypedKindDeclHolder =>
-          tk.createLockedAccess() match {
-            case Some(lkAccess) =>
-              new AST.ParameterDeclaration(new AST.Modifiers,
-                    lkAccess, node.name.toLowerCase)
-            case None => throw new JavaAGError()
-          }
+
+          new AST.ParameterDeclaration(new AST.Modifiers, tk.decl.createLockedAccess(), node.name.toLowerCase)
 
         case _ => throw new JavaAGError("need type kind for param list !")
       }

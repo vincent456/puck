@@ -5,70 +5,50 @@ import puck.graph.constraints.AbstractionPolicy
 /**
  * Created by lorilan on 1/8/15.
  */
-class AGNode
-( val graph : AccessGraph,
-  val id : NodeId,
-  val name : String,
-  val kind : NodeKind,
-  val styp : TypeHolder,
-  val isMutable : Boolean,
-  val t : Hook){
 
+
+
+case class AGNode
+( id : NodeId,
+  name : String,
+  kind : NodeKind,
+  styp : TypeHolder,
+  isMutable : Boolean,
+  status : NodeStatus){
 
   type NIdT = NodeId
-
-  def canContain(otherId : NIdT) : Boolean = {
-    val n = graph.getNode(otherId)
-    !graph.contains_*(otherId, id) && // no cycle !
-      (this.kind canContain n.kind) &&
-      this.isMutable
-  }
-
-  override def toString = id + " - " + kind +" " +name + styp.mkString(graph) + " (" + t +")"
-
-  def container = graph.container(id)
-  def content = graph.content(id)
-
-  def users = graph.users(id)
-  def used = graph.usedBy(id)
-
-  def directSuperTypes = graph.directSuperTypes(id)
-  def directSubTypes = graph.directSubTypes(id)
-
-  def subTypes = graph.subTypes(id)
-  def isSuperTypeOf(subCandidate : NIdT) = graph.isSuperTypeOf(id, subCandidate)
-
-  def isRoot = graph.isRoot(id)
-
-  def isa( n : NIdT ) = graph.isa(id, n)
-
-  def containerPath  : Seq[NIdT] = {
-    def aux(current : NIdT, acc : Seq[NIdT]) : Seq[NIdT] = {
-      val cter = graph.container(current)
-      if (cter.isEmpty) current +: acc
-      else aux(cter.get, current +: acc)
-    }
-
-    aux(id, Seq())
-  }
-
-  def abstractions :  Iterable[(NIdT, AbstractionPolicy)] = graph.abstractions(id)
+  type GraphT = DependencyGraph
 
 
-  def fullName: String = {
-    /*if (isRoot) nameTypeString
-      else {*/
-    val path = containerPath.map{n => graph.getNode(n).nameTypeString}
+  override def toString = id + " - " + kind +" " + name
+  def toString(implicit graph : GraphT) : String =  toString() + styp.mkString(graph)
+  def nameTypeString(implicit graph : GraphT) : String = name + styp.mkString(graph)
 
-    (if (path.head == AccessGraph.rootName)
-      path.tail
-    else
-      AccessGraph.unrootedStringId +: path ).mkString(AccessGraph.scopeSeparator)
-  }
-  def nameTypeString : String = name + styp.mkString(graph)
+  /*def container(implicit graph : GraphT) = graph.container(id)
+  def content(implicit graph : GraphT) = graph.content(id)
 
-  def wrongUsers : Seq[NIdT] = graph.wrongUsers(id)
-  def isWronglyContained : Boolean = graph.isWronglyContained(id)
+  def users(implicit graph : GraphT) = graph.users(id)
+  def used(implicit graph : GraphT) = graph.usedBy(id)
+
+  def directSuperTypes(implicit graph : GraphT) = graph.directSuperTypes(id)
+  def directSubTypes(implicit graph : GraphT) = graph.directSubTypes(id)
+
+  def subTypes(implicit graph : GraphT) = graph.subTypes(id)
+  def isSuperTypeOf(subCandidate : NIdT)(implicit graph : GraphT) = graph.isSuperTypeOf(id, subCandidate)
+
+  def isRoot(implicit graph : GraphT) = graph.isRoot(id)
+
+  def isa( n : NIdT )(implicit graph : GraphT) = graph.isa(id, n)
+
+
+
+  def abstractions(implicit graph : GraphT) :  Iterable[(NIdT, AbstractionPolicy)] = graph.abstractions(id)
+  */
+
+
+
+  def wrongUsers(implicit graph : GraphT) : Seq[NIdT] = graph.wrongUsers(id)
+  def isWronglyContained(implicit graph : GraphT) : Boolean = graph.isWronglyContained(id)
 
 
 
@@ -111,30 +91,30 @@ class AGNode
   }*/
 
 
-  private def outgoingDependencies(root : NIdT, acc0 : Set[AGEdge]) : Set[AGEdge]= {
+  private def outgoingDependencies(root : NIdT, acc0 : Set[AGEdge])(implicit graph : GraphT) : Set[AGEdge]= {
     val acc1 = graph.usedBy(id).foldLeft(acc0){
       (acc, usee) =>
         if(graph.contains_*(root,usee)) acc
         else acc + AGEdge.uses(this.id, usee)
     }
-    content.foldLeft(acc1){(acc, child) => graph.getNode(child).outgoingDependencies(root, acc)}
+    graph.content(id).foldLeft(acc1){(acc, child) => graph.getNode(child).outgoingDependencies(root, acc)}
   }
 
-  def outgoingDependencies : Set[AGEdge] = outgoingDependencies(this.id, Set[AGEdge]())
+  def outgoingDependencies(implicit graph : GraphT) : Set[AGEdge] = outgoingDependencies(this.id, Set[AGEdge]())
 
-  private def incomingDependencies(root : NIdT, acc0 : Set[AGEdge]) : Set[AGEdge]= {
+  private def incomingDependencies(root : NIdT, acc0 : Set[AGEdge])(implicit graph : GraphT) : Set[AGEdge]= {
     val acc1 = graph.users(id).foldLeft(acc0){
       (acc, user) =>
         if(graph.contains_*(root, user)) acc
         else acc + AGEdge.uses(user, this.id)
     }
-    content.foldLeft(acc1){(acc, child) => graph.getNode(child).incomingDependencies(root, acc)}
+    graph.content(id).foldLeft(acc1){(acc, child) => graph.getNode(child).incomingDependencies(root, acc)}
   }
 
-  def incomingDependencies : Set[AGEdge] = incomingDependencies(this.id, Set[AGEdge]())
+  def incomingDependencies(implicit graph : GraphT) : Set[AGEdge] = incomingDependencies(this.id, Set[AGEdge]())
 
 
-  private def internalDependencies(root : NIdT, acc0 : Set[AGEdge]) : Set[AGEdge]= {
+  private def internalDependencies(root : NIdT, acc0 : Set[AGEdge])(implicit graph : GraphT) : Set[AGEdge]= {
 
     val acc1 = graph.usedBy(id).foldLeft(acc0) {
       (acc, usee) =>
@@ -151,10 +131,10 @@ class AGNode
         }
     */
 
-    content.foldLeft(acc1){(acc, child) => graph.getNode(child).internalDependencies(root, acc)}
+    graph.content(id).foldLeft(acc1){(acc, child) => graph.getNode(child).internalDependencies(root, acc)}
   }
 
-  def internalDependencies : Set[AGEdge] = internalDependencies(this.id, Set[AGEdge]())
+  def internalDependencies(implicit graph : GraphT) : Set[AGEdge] = internalDependencies(this.id, Set[AGEdge]())
 
 
   /*def provides(other : AGNode) = {
@@ -167,7 +147,7 @@ class AGNode
   }*/
 
 
-  def provides(other : NIdT) = {
+  def provides(other : NIdT)(implicit graph : GraphT) = {
     val these = graph.subTree(id)
     val others = graph.subTree(other)
 
@@ -179,7 +159,7 @@ class AGNode
     }
   }
 
-  private def connection( f : AGNode => Boolean) = {
+  private def connection(f : AGNode => Boolean)(implicit graph : GraphT) = {
     graph.nodes.foldLeft(Set[NIdT]()){ (acc, n) =>
       if(n.id == this.id || n.kind != this.kind) acc
       else if(f(n)) acc + n.id
@@ -187,15 +167,15 @@ class AGNode
     }
   }
 
-  def providers : Set[NIdT] = connection { n => n provides this.id}
-  def clients : Set[NIdT] = connection{ n => this provides n.id}
+  def providers(implicit graph : GraphT) : Set[NIdT] = connection{ n => n provides this.id}
+  def clients(implicit graph : GraphT) : Set[NIdT] = connection{ n => this provides n.id}
 
-  def cohesion : Double = {
+  def cohesion(implicit graph : GraphT) : Double = {
     val intd = internalDependencies.size
     intd.toDouble / (outgoingDependencies.size + incomingDependencies.size + intd).toDouble
   }
 
-  def coupling : Double = {
+  def coupling(implicit graph : GraphT) : Double = {
     val dependencies = outgoingDependencies.size + incomingDependencies.size + internalDependencies.size
     1 - (providers ++ clients).size.toDouble / dependencies.toDouble
   }

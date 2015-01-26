@@ -42,7 +42,7 @@ class ConstraintsMaps
                         nElementsConstraints,
                         nScopeConstraints)
 
-   type GraphT = AccessGraph
+   type GraphT = DependencyGraph
    type NIdT = NodeId
 
    def forAncestors(graph : GraphT, nid : NodeId)(f : NodeId => Boolean): Boolean =
@@ -155,7 +155,7 @@ class ConstraintsMaps
          val (newCts, changedMap, allOwners) =
            nodeConstraintsSet.foldLeft(Seq[CtT](), Seq[(CtT, CtT)](), Seq[NIdT]()) {
              case ((acc, map, owners), ct) =>
-               if (ct.interlopers contains AccessGraph.rootId){
+               if (ct.interlopers contains DependencyGraph.rootId){
                  ct.scopeFriends match {
                    case NamedNodeSet(name, definition) => ???
                    case _ =>

@@ -16,7 +16,10 @@ object PuckLog{
     def logString = ""
   }
   case object InGraph extends Kind {
-    def logString ="graph"
+    def logString = "graph"
+  }
+  case object GraphTransfoRules extends Kind {
+    def logString = "transfoRules"
   }
   case object InJavaGraph extends Kind {
     def logString = "JavaGraph"

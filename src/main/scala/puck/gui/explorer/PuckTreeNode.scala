@@ -6,7 +6,7 @@ import puck.graph.NodeId
 import puck.graph.io.{Visible, Hidden, Visibility, VisibilitySet}
 
 import scala.swing.CheckBox
-import puck.graph.AccessGraph
+import puck.graph.DependencyGraph
 import puck.javaAG.nodeKind.Package
 
 /**
@@ -54,7 +54,7 @@ class PuckTreeNode(val nodeId : NodeId,
  }
 
 
- def packageOnlyVisible(graph : AccessGraph){
+ def packageOnlyVisible(graph : DependencyGraph){
    val visibility = graph.getNode(nodeId).kind match {
      case Package => Visible
      case _ => Hidden

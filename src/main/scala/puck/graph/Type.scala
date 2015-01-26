@@ -15,21 +15,21 @@ abstract class Type[T <: Type[T]] {
   def canOverride(other : Type[_]) : Boolean = this subtypeOf other
 }
 
-case class NamedType(node : NodeId, name : String)
+case class NamedType(id : NodeId, name : String)
   extends Type[ NamedType]{
   override def toString = name
 
   override def equals(other : Any) = other match {
-    case that : NamedType => that.node == this.node
+    case that : NamedType => that.id == this.id
     case _ => false
   }
 
   def create(n : NodeId, name : String) = NamedType(n, name)
 
-  def copy() = create(node, name)
+  def copy() = create(id, name)
 
   def redirectUses(oldUsee : NIdT, newUsee: AGNode) =
-    if(node == oldUsee) create(newUsee.id, newUsee.name)
+    if(id == oldUsee) create(newUsee.id, newUsee.name)
     else copy()
 
   override def subtypeOf(other : Type[_]) : Boolean = ??? /*super.subtypeOf(other) ||

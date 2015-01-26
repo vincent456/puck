@@ -28,6 +28,8 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker
   def violationTarget(graph : GraphT)
                      (k: Option[NIdT] => Unit) : Unit = {
 
+    implicit val g = graph
+
     def findTargets(l : Seq[NodeKind]) : Iterator[AGNode] =  l match {
       case topPriority :: tl =>
         val it = graph.nodes.iterator filter { n =>

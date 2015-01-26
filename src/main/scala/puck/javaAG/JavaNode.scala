@@ -1,6 +1,6 @@
 package puck.javaAG
 
-import puck.graph.AccessGraph.Mutability
+import puck.graph.DependencyGraph.Mutability
 import puck.graph._
 import puck.graph.io.{VisibilitySet, DotHelper}
 import puck.javaAG.nodeKind._
@@ -13,28 +13,13 @@ import puck.javaAG.nodeKind._
 import scala.language.existentials
 
 object JavaNode extends AGNodeBuilder with DotHelper{
-  def apply(graph : AccessGraph,
-            id : NodeId,
+  def apply(id : NodeId,
             name : String,
             kind : NodeKind,
             styp : TypeHolder,
             isMutable : Mutability,
-            t : Hook) : JavaNode =
-    new JavaNode(graph, id, name, kind, styp, isMutable, t)
-
-  def createT(kind : NodeKind) =
-   kind match {
-     case Constructor => ConstructorDeclHolder(None)
-     case Field => FieldDeclHolder(None)
-     case Method => ConcreteMethodDeclHolder(None)
-     case ConstructorMethod => ConstructorMethodDeclHolder(None, None)
-     case AbstractMethod => AbstractMethodDeclHolder(None)
-     case Interface => InterfaceDeclHolder(None)
-     case Class => ClassDeclHolder(None)
-     case Package => PackageDeclHolder
-     case _ => EmptyDeclHolder
-   }
-
+            status : NodeStatus) : AGNode =
+    new AGNode(id, name, kind, styp, isMutable, status)
 
   def rootKind : JavaNodeKind = JavaRoot
   def kinds : Seq[NodeKind] = JavaNodeKind.list
@@ -47,8 +32,8 @@ object JavaNode extends AGNodeBuilder with DotHelper{
     case _ => ""
   }
 
-  override def splitDotClassContent(graph : AccessGraph, n: NodeId, visibility : VisibilitySet) = {
-    graph.getNode(n).content.foldLeft( (Seq[NodeId](), Seq[NodeId](), Seq[NodeId](), Seq[NodeId]()) ){
+  override def splitDotClassContent(graph : DependencyGraph, n: NodeId, visibility : VisibilitySet) = {
+    graph.content(n).foldLeft( (Seq[NodeId](), Seq[NodeId](), Seq[NodeId](), Seq[NodeId]()) ){
       ( lists : (Seq[NodeId], Seq[NodeId], Seq[NodeId] , Seq[NodeId]), n : NodeId ) =>
         if(visibility.isHidden(n)) lists
         else {
@@ -78,56 +63,4 @@ object JavaNode extends AGNodeBuilder with DotHelper{
     case Literal => "#CCFFCC" //Very Light green
     case _ => throw new Error("Unknown JavaNodeKind")
   }
-}
-
-class JavaNode
-( graph : AccessGraph,
-  id : NodeId,
-  name : String,
-  override val kind : NodeKind,
-  styp : TypeHolder,
-  isMutable : Mutability,
-  t : Hook)
-  extends AGNode(graph, id, name, kind, styp, isMutable, t){
-
-  override type NIdT = NodeId
-
-  override def canContain(otherId : NIdT) : Boolean = {
-    val n = graph.getNode(otherId)
-    def noNameClash( l : Int )( cId : NIdT ) : Boolean = {
-      val c = graph.getNode(cId)
-      (c.kind, c.styp) match {
-         case (ck: MethodKind, MethodTypeHolder(typ))=>
-          c.name != n.name || typ.input.length != l
-         case (ck: MethodKind, _)=> throw new AGError()
-        case _ => true
-      }
-    }
-
-    super.canContain(otherId) &&
-      ( (n.kind, n.styp) match {
-        case (AbstractMethod, MethodTypeHolder(absTyp)) =>
-          /*
-            All subtypes must implement the method
-           */
-          this.content.forall(noNameClash(absTyp.input.length)) &&
-            this.directSubTypes.forall { id =>
-              graph.content(id).exists { cid =>
-                val c = graph.getNode(cid)
-                (c.kind, c.styp) match {
-                  case (Method, MethodTypeHolder(typ)) => n.name == c.name && absTyp == typ
-                  case (Method, _) => throw new AGError()
-                  case _ => false
-                }
-              }
-            }
-        case (AbstractMethod, _) => throw new AGError(n + " does not have a MethodTypeHolder")
-        /* cannot have two methods with same name and same type */
-        case (Method, MethodTypeHolder(typ)) =>
-          this.content.forall(noNameClash(typ.input.length))
-        case (Method, _) => throw new AGError()
-        case _ => true
-      })
-  }
-
 }

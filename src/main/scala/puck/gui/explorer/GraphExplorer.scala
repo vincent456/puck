@@ -5,7 +5,7 @@ import javax.swing.JTree
 import javax.swing.tree.TreePath
 
 import puck.graph.io.VisibilitySet
-import puck.graph.{AGNode, AccessGraph, NodeId}
+import puck.graph.{AGNode, DependencyGraph, NodeId}
 
 import scala.swing.event.Event
 import scala.swing.{Component, Dimension, Publisher, ScrollPane}
@@ -14,8 +14,8 @@ import scala.swing.{Component, Dimension, Publisher, ScrollPane}
  * Created by lorilan on 09/05/14.
  */
 
-case class PuckTreeNodeClicked(graph : AccessGraph, node : NodeId) extends Event
-case class AccessGraphModified(graph : AccessGraph) extends Event
+case class PuckTreeNodeClicked(graph : DependencyGraph, node : NodeId) extends Event
+case class AccessGraphModified(graph : DependencyGraph) extends Event
 case class PackageOnlyVisible() extends Event
 
 class GraphExplorer
@@ -31,19 +31,19 @@ class GraphExplorer
 
 
 
-  def addChildren(graph : AccessGraph,
+  def addChildren(graph : DependencyGraph,
                   ptn: PuckTreeNode){
-    val nodeList = graph.getNode(ptn.nodeId).content.map(graph.getNode).toList
+    val nodeList = graph.content(ptn.nodeId).map(graph.getNode).toList
     nodeList.sortBy(_.name) foreach {
       (n: AGNode) =>
-        val child = new PuckTreeNode(n.id, hiddens, n.nameTypeString)
+        val child = new PuckTreeNode(n.id, hiddens, n.nameTypeString(graph))
         ptn add child
         addChildren(graph, child)
     }
   }
 
   var root : PuckTreeNode = _
-  var graph : AccessGraph = _
+  var graph : DependencyGraph = _
 
   reactions += {
     case AccessGraphModified(g) =>

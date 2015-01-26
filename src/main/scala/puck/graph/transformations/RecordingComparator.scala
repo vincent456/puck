@@ -1,6 +1,6 @@
 package puck.graph.transformations
 
-import puck.graph.{NodeId, AccessGraph, AGEdge}
+import puck.graph.{NodeId, DependencyGraph, AGEdge}
 import puck.search.{FindFirstSearchEngine, SearchState}
 import puck.util.{PuckLogger, PuckNoopLogger}
 
@@ -39,8 +39,8 @@ object WrongMapping extends Throwable
 
 class RecordingComparator
 ( initialTransfos : Seq[Transformation],
-  graph1 : AccessGraph,
-  graph2 : AccessGraph,
+  graph1 : DependencyGraph,
+  graph2 : DependencyGraph,
   logger : PuckLogger = PuckNoopLogger)
   extends FindFirstSearchEngine[ResMap] {
 
@@ -91,7 +91,7 @@ class RecordingComparator
           }
       }
     }
-    aux(nodes, Seq[NodeId]())((AccessGraph.dummyId, Success(map), nodesToMap)) //null will be dropped in aux
+    aux(nodes, Seq[NodeId]())((DependencyGraph.dummyId, Success(map), nodesToMap)) //null will be dropped in aux
   }
 
 
@@ -156,7 +156,7 @@ class RecordingComparator
         // removed in NodeMappingInitialState.normalizeNodeTransfos
         case TTTypeRedirection(_, _, _, _) // TODO see if need to be compared
              | TTAbstraction(_, _, _)
-             | TTNode(_, _, _, _, _, _) => throw new Error("should not happen !!")
+             | TTNode(_, _, _, _, _) => throw new Error("should not happen !!")
 
       }
     }

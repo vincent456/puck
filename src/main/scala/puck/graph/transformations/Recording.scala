@@ -27,11 +27,11 @@ class Recording
  /* def nonEmpty = record.nonEmpty
   def size = record.size*/
 
-  def addNode(id : NIdT, name : String, kind : NodeKind, styp: TypeHolder, mutable : Boolean, t : Hook) : RecT =
-    Transformation(Add, TTNode(id, name, kind, styp, mutable, t)) +: this
+  def addNode(id : NIdT, name : String, kind : NodeKind, styp: TypeHolder, mutable : Boolean) : RecT =
+    Transformation(Add, TTNode(id, name, kind, styp, mutable)) +: this
 
-  def removeNode(id : NIdT, name : String, kind : NodeKind, styp: TypeHolder, mutable : Boolean, t : Hook) : RecT =
-    Transformation(Remove, TTNode(id, name, kind, styp, mutable, t)) +: this
+  def removeNode(id : NIdT, name : String, kind : NodeKind, styp: TypeHolder, mutable : Boolean) : RecT =
+    Transformation(Remove, TTNode(id, name, kind, styp, mutable)) +: this
 
   def addEdge(edge : EdgeT) : RecT =
     Transformation(Add, TTEdge(edge)) +: this
@@ -77,7 +77,7 @@ case object Remove extends Operation{
 case class Transformation
 (operation : Operation,
  target : TransformationTarget){
-  type GraphT = AccessGraph
+  type GraphT = DependencyGraph
 
   def redo(g: GraphT) = target.execute(g, operation)
   def undo(g: GraphT) = target.execute(g, operation.reverse)

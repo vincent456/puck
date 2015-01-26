@@ -7,9 +7,7 @@ import puck.graph.NodeKind
  * Created by lorilan on 31/07/14.
  */
 trait MethodKind extends JavaNodeKind {
-
   def canContain(k : NodeKind) = false
-
 }
 
 case object Method extends MethodKind {

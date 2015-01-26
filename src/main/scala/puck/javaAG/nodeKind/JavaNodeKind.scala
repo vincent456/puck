@@ -55,7 +55,7 @@ case class NamedTypeHolder(typ : NamedType) extends TypeHolder{
   def redirectContravariantUses(oldUsee : NodeId, newUsee: AGNode) =
     redirectUses(oldUsee, newUsee)
 
-  def mkString(graph : AccessGraph) : String =  " : " + typ.toString
+  def mkString(graph : DependencyGraph) : String =  " : " + typ.toString
 }
 
 case class MethodTypeHolder(typ : Arrow[Tuple[NamedType], NamedType]) extends TypeHolder{
@@ -66,5 +66,5 @@ case class MethodTypeHolder(typ : Arrow[Tuple[NamedType], NamedType]) extends Ty
   def redirectContravariantUses(oldUsee : NodeId, newUsee: AGNode) =
     MethodTypeHolder(typ.redirectContravariantUses(oldUsee, newUsee))
 
-  def mkString(graph : AccessGraph ) : String =  " : " + typ.toString
+  def mkString(graph : DependencyGraph ) : String =  " : " + typ.toString
 }

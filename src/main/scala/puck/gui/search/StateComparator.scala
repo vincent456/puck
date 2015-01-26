@@ -35,7 +35,7 @@ class StateComparator
   contents += new Label("and")
   contents += cb2
   contents += Button(">>") {
-    val equivalent = AccessGraph.areEquivalent(initialRecord,
+    val equivalent = DependencyGraph.areEquivalent(initialRecord,
       graphOfResult(cb1.selectedState.result),
       graphOfResult(cb2.selectedState.result), new PuckSystemLogger(_ => true))
 

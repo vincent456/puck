@@ -10,7 +10,7 @@ import scala.util.Try
 trait InitialStateCreator {
   this : SearchEngine[ResultT] with  DecisionMaker =>
 
-  val graph : AccessGraph
+  val graph : DependencyGraph
   val solverBuilder : SolverBuilder
 
   def logger = graph.logger
@@ -24,7 +24,7 @@ trait InitialStateCreator {
  */
 class CSInitialSearchState(val engine : SearchEngine[ResultT],
                            solver : Solver,
-                           graph : AccessGraph,
+                           graph : DependencyGraph,
                            k : Try[ResultT] => Unit)
   extends SearchState[ResultT]{
 

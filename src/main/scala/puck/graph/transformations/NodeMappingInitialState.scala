@@ -33,10 +33,10 @@ object NodeMappingInitialState{
   def normalizeNodeTransfos(l : Seq[Transformation],
                             init : Seq[Transformation] = Seq()) : (Map[NodeId, (Int, NodeKind)], Seq[Transformation])= {
     val (map, rl) = l.foldLeft( (Map[NodeId, (Int, NodeKind)](), init) ){
-      case ((m,l1), Transformation(Add, TTNode(id, _, kind, _, _, _ ))) =>
+      case ((m,l1), Transformation(Add, TTNode(id, _, kind, _, _ ))) =>
         val (i, _) = m.getOrElse(id, (0, JavaRoot) )
         (m + (id -> (i + 1, kind)), l1)
-      case ((m,l1), Transformation(Remove, TTNode(id, _, kind, _, _, _ ))) =>
+      case ((m,l1), Transformation(Remove, TTNode(id, _, kind, _, _ ))) =>
         val (i, _) = m.getOrElse(id, (0, JavaRoot))
         (m + (id -> (i - 1, kind)), l1)
 
@@ -176,8 +176,8 @@ object NodeMappingInitialState{
 class NodeMappingInitialState
 ( initialTransfos : Seq[Transformation],
   val engine : RecordingComparator,
-  graph1 : AccessGraph,
-  graph2 : AccessGraph,
+  graph1 : DependencyGraph,
+  graph2 : DependencyGraph,
   k: Try[ResMap] => Unit,
   logger : PuckLogger)
   extends SearchState[ResMap]{
@@ -212,9 +212,9 @@ class NodeMappingInitialState
 
   import puck.graph.transformations.NodeMappingInitialState.defaultVerbosity
 
-  def printlnNode(graph: AccessGraph)( nid : NodeId){
+  def printlnNode(graph: DependencyGraph)( nid : NodeId){
     val n = graph.getNode(nid)
-    logger.writeln("%d = %s(%s)".format(n.id, n.kind, n.fullName))
+    logger.writeln("%d = %s(%s)".format(n.id, n.kind, graph.fullName(n.id)))
   }
 
 

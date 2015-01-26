@@ -8,7 +8,6 @@ import puck.graph.NodeKind
  */
 case object Package extends JavaNodeKind {
   override val toString = "Package"
-  //val decl : AST.PackageDecl = _
 
   def canContain(k : NodeKind) : Boolean = {
     k match {

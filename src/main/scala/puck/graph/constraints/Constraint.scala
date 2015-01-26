@@ -8,7 +8,7 @@ package constraints
 
 trait Constraint{
 
-  type GraphT = AccessGraph
+  type GraphT = DependencyGraph
   val owners : NodeSet
   val scopeFriends : NodeSet
   val predicate : String
@@ -134,7 +134,7 @@ case class ElementFriendOfElementsConstraint
 object ConstraintPrinter{
 
   def format[Kind <: NodeKind]
-  ( graph : AccessGraph,
+  ( graph : DependencyGraph,
     hidden : NodeSet,
     facades: NodeSet,
     interlopers : NodeSet,

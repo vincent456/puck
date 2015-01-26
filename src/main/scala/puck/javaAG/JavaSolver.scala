@@ -1,6 +1,6 @@
 package puck.javaAG
 
-import puck.graph.{NodeKind, AccessGraph}
+import puck.graph.{NodeKind, DependencyGraph}
 import puck.graph.constraints.{AbstractionPolicy, DecisionMaker, Solver, SupertypeAbstraction}
 import puck.javaAG.nodeKind._
 
@@ -10,17 +10,19 @@ import puck.javaAG.nodeKind._
  */
 
 object JavaSolver{
-  def apply(graph : AccessGraph,
+  def apply(graph : DependencyGraph,
             decisionMaker : DecisionMaker) = new JavaSolver(graph, decisionMaker)
 
   val violationPrioritySeq =
               Seq[JavaNodeKind]( Field, Constructor, Class, Interface)
 }
 
-class JavaSolver(val graph : AccessGraph,
+class JavaSolver(val graph : DependencyGraph,
                  val decisionMaker : DecisionMaker) extends Solver{
 
   val logger = graph.logger
+
+  val rules = JavaTransformationRules
 
   override def absIntroPredicate( graph : GraphT,
                                   implId : NIdT,

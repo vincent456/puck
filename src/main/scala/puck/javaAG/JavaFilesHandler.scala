@@ -15,7 +15,7 @@ import puck.util.PuckLog._
  */
 
 object JavaSolverBuilder extends SolverBuilder{
-  def apply(graph : AccessGraph,
+  def apply(graph : DependencyGraph,
             dm : DecisionMaker) : Solver = JavaSolver(graph, dm)
 }
 
@@ -28,7 +28,10 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
 
   var sProgram : Option[AST.Program] = None
 
-  def loadGraph(ll : AST.LoadingListener = null) : AccessGraph = {
+  //override var graphBuilder : JavaGraphBuilder = _
+  var jgraphBuilder : JavaGraphBuilder = _
+
+  def loadGraph(ll : AST.LoadingListener = null) : DependencyGraph = {
     import puck.util.FileHelper.{fileLines, findAllFiles, initStringLiteralsMap}
 
     val sProg = puck.util.Time.time(logger, defaultVerbosity) {
@@ -43,16 +46,15 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
       sProg match {
         case None => throw new AGBuildingError("Compilation error, no AST generated")
         case Some(p) => sProgram = Some(p)
-          val jGraphBuilder = p.buildAccessGraph(initStringLiteralsMap(decouple.get), ll)
+          jgraphBuilder = p.buildAccessGraph(initStringLiteralsMap(decouple.get), ll)
           fileLines(apiNodesFile.get).foreach {
             (l: String) =>
               val tab = l.split(" ")
-              jGraphBuilder.addApiNode(tab(0), tab(1), tab(2))
+              jgraphBuilder.addApiNode(tab(0), tab(1), tab(2))
           }
 
-          jGraphBuilder.attachOrphanNodes()
-
-          graphBuilder = jGraphBuilder
+          jgraphBuilder.attachOrphanNodes()
+          graphBuilder = jgraphBuilder
           graph = (graphBuilder.g withLogger this.logger).newGraph(nRecording = Recording())
 
           val (_, transfos) = NodeMappingInitialState.normalizeNodeTransfos(graphBuilder.g.recording(), Seq())
@@ -90,16 +92,17 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
     val program = sProgram.get
     val applyer = new AG2AST(program, logger)
 
-    record.foldRight((graphOfResult(result), graph)) {
-      case (r, (resultGraph, reenactor)) =>
-        logger.writeln("/!\\ cache flushed after each transformations, may take some time")
+
+    logger.writeln("/!\\ cache flushed after each transformations, may take some time")
+    record.foldRight((graphOfResult(result), graph, jgraphBuilder.graph2ASTMap)) {
+      case (r, (resultGraph, reenactor, graph2ASTMap)) =>
         //println(r)
         //println("before " + program.getNumCUFromSrc + " cus in prog")
-        val jreenactor = reenactor.asInstanceOf[JavaAccessGraph]
-        val res = applyer(resultGraph, jreenactor, r)
+        val jreenactor = reenactor.asInstanceOf[JavaDependencyGraph]
+        val res = applyer(resultGraph, jreenactor, graph2ASTMap, r)
         //println("after " + program.getNumCUFromSrc + " cus in prog")
         program.flushCaches()
-        res
+        (resultGraph, r.redo(reenactor), res)
     }
     //printCode()
     program.flushCaches()

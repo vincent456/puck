@@ -31,7 +31,7 @@ class ConstraintSet[T <: Constraint]
   def + (ct : T) : ConstraintSet[T] = new ConstraintSet( ct +: content )
   //def - (ct : T) : ConstraintSet[Kind, T] = new ConstraintSet( content - ct )
 
-  def friendScopeThatContains_*(graph : AccessGraph, n: NodeId) = {
+  def friendScopeThatContains_*(graph : DependencyGraph, n: NodeId) = {
 
     def aux(l : Seq[T]) : Option[NodeId] =
       if(l.isEmpty) None
@@ -45,7 +45,7 @@ class ConstraintSet[T <: Constraint]
     aux(content)
 
   }
-  def hasFriendScopeThatContains_*(graph : AccessGraph, n : NodeId)=
+  def hasFriendScopeThatContains_*(graph : DependencyGraph, n : NodeId)=
     content.exists( _.scopeFriends.hasScopeThatContains_*(graph, n))
 
 }

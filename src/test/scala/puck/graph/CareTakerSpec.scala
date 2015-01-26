@@ -9,14 +9,14 @@ import puck.graph.mutable._
 import puck.graph.mutable.constraints.SupertypeAbstraction
 import puck.javaAG.mutable.{JavaFilesHandler, JavaAccessGraph}
 import puck.javaAG.mutable.nodeKind.JavaNodeKind
-import puck.javaAG.JavaAccessGraph
+import puck.javaAG.JavaDependencyGraph
 import puck.util.{DefaultFileLogger, DefaultSystemLogger}
 
 /**
  * Created by lorilan on 17/06/14.
  */
 class CareTakerSpec extends UnitSpec {
-  val ag: AccessGraph[VanillaKind] = new AccessGraph(AGNode)
+  val ag: DependencyGraph[VanillaKind] = new DependencyGraph(AGNode)
 
   var na : AGNode[VanillaKind] = _
   var nb : AGNode[VanillaKind] = _
@@ -79,7 +79,7 @@ class CareTakerSpec extends UnitSpec {
   }
 
   it should "be able to undo the creation of an edge dependency" in {
-    val ag = new AccessGraph[VanillaKind](AGNode)
+    val ag = new DependencyGraph[VanillaKind](AGNode)
     ag.transformations.startRegister()
     val na = ag.addNode("a", VanillaNodeKind())
     val nb = ag.addNode("b", VanillaNodeKind())
@@ -115,7 +115,7 @@ class CareTakerSpec extends UnitSpec {
 
     val fh = new JavaFilesHandler(new java.io.File("/home/lorilan/projects/constraintsSolver/scala/" +
       "src/test/resources/examples/merge/"))
-    val jgraph : JavaAccessGraph = fh.loadGraph()
+    val jgraph : JavaDependencyGraph = fh.loadGraph()
 
     val (_, tranfos) = NodeMappingInitialState.normalizeNodeTransfos(jgraph.transformations.recording.composition)
     jgraph.initialRecord = tranfos

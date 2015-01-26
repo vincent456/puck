@@ -1,6 +1,6 @@
 package puck.gui
 
-import puck.graph.{AccessGraph, FilesHandler}
+import puck.graph.{DependencyGraph, FilesHandler}
 import puck.graph.io.{Hidden, VisibilitySet}
 import puck.gui.explorer.{PackageOnlyVisible, PuckTreeNodeClicked, NodeInfosPanel, GraphExplorer}
 import puck.gui.search.ResultPanel
@@ -62,7 +62,7 @@ class PuckMainPanel(val filesHandler: FilesHandler)
     val height = PuckMainPanel.height * 2/3
 
     val visibilitySet = VisibilitySet()
-    visibilitySet.setVisibility(AccessGraph.rootId /*:: (Predefined.list map (_.id))*/, Hidden)
+    visibilitySet.setVisibility(DependencyGraph.rootId /*:: (Predefined.list map (_.id))*/, Hidden)
     val treeDisplayer = new GraphExplorer(visibilitySet, rightWidth/2, height)
 
     val treeDisplayerWrapper = new ScrollPane(){

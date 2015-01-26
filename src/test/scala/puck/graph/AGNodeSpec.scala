@@ -7,7 +7,7 @@ import puck.graph.mutable.{AGNode, AccessGraph, VanillaNodeKind, VanillaKind}
  */
 class AGNodeSpec extends UnitSpec {
 
-  val ag : AccessGraph[VanillaKind] = new AccessGraph(AGNode)
+  val ag : DependencyGraph[VanillaKind] = new DependencyGraph(AGNode)
   val na = ag.addNode("a", VanillaNodeKind())
   val nb = ag.addNode("b", VanillaNodeKind())
   val nc = ag.addNode("c", VanillaNodeKind())
@@ -44,11 +44,11 @@ class AGNodeSpec extends UnitSpec {
 
   it should "be marked as unrooted if it has no container" in {
     nb.content -= nc
-    nc.fullName should be (AccessGraph.unrootedStringId + ag.scopeSeparator +"c")
+    nc.fullName should be (DependencyGraph.unrootedStringId + ag.scopeSeparator +"c")
   }
 
   it should "have a distance from another node equal to the length of the path composed of contains edge only between the two nodes" in {
-    val ag : AccessGraph[VanillaKind] = new AccessGraph(AGNode)
+    val ag : DependencyGraph[VanillaKind] = new DependencyGraph(AGNode)
     val na = ag.addNode("a", VanillaNodeKind())
     val nb = ag.addNode("b", VanillaNodeKind())
     val nc = ag.addNode("c", VanillaNodeKind())

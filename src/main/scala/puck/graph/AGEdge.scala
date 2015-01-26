@@ -65,17 +65,17 @@ case class AGEdge
   override def toString : String = {
     kind + "( " + source + ", " + target + ")"
   }
-  def mkString(graph : AccessGraph) : String =
+  def mkString(graph : DependencyGraph) : String =
     kind + "( " + graph.getNode(source) + ", " + graph.getNode(target) + ")"
 
 
-  def exists(graph : AccessGraph) = kind match {
+  def exists(graph : DependencyGraph) = kind match {
     case Uses => graph.uses(source, target)
     case Contains => graph.contains(source, target)
     case Isa => graph.isa(source, target)
   }
 
-  def create(graph : AccessGraph, register : Boolean = true) : AccessGraph = {
+  def create(graph : DependencyGraph, register : Boolean = true) : DependencyGraph = {
     //println("creating "+ this)
     kind match {
       case Uses => graph.addUses(source, target, register)
@@ -84,7 +84,7 @@ case class AGEdge
 
     }
   }
-  def delete(graph : AccessGraph, register : Boolean = true)  : AccessGraph = {
+  def delete(graph : DependencyGraph, register : Boolean = true)  : DependencyGraph = {
     //println("deleting "+ this)
     kind match {
       case Uses => graph.removeUses(source, target, register)
@@ -93,10 +93,10 @@ case class AGEdge
     }
   }
 
-  def changeTarget(graph : AccessGraph, newTarget : NIdT) : AccessGraph = graph.changeTarget(this, newTarget)
+  def changeTarget(graph : DependencyGraph, newTarget : NIdT) : DependencyGraph = graph.changeTarget(this, newTarget)
 
-  def changeSource(graph : AccessGraph, newSource : NIdT) : AccessGraph = graph.changeSource(this, newSource)
+  def changeSource(graph : DependencyGraph, newSource : NIdT) : DependencyGraph = graph.changeSource(this, newSource)
 
-  def isDominant(graph : AccessGraph) : Boolean = graph.usesDominatedBy(this.source, this.target).nonEmpty
-  def isDominated(graph : AccessGraph) : Boolean = graph.usesDominating(this.source, this.target).nonEmpty
+  def isDominant(graph : DependencyGraph) : Boolean = graph.usesDominatedBy(this.source, this.target).nonEmpty
+  def isDominated(graph : DependencyGraph) : Boolean = graph.usesDominating(this.source, this.target).nonEmpty
 }

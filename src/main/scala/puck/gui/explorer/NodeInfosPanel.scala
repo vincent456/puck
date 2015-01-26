@@ -11,13 +11,13 @@ import scala.swing.event.MouseClicked
 /**
  * Created by lorilan on 10/07/14.
  */
-class NodeInfosPanel(val graph : AccessGraph,
+class NodeInfosPanel(val graph : DependencyGraph,
                      val nodeId : NodeId,
                       printId : () => Boolean,
                       printSig: () => Boolean,
                       visibility : VisibilitySet)
   extends SplitPane(Orientation.Horizontal) {
-
+  implicit val g = graph
   val useDetails = new BoxPanel(Orientation.Vertical)
 
   resizeWeight = 0.75
@@ -36,11 +36,11 @@ class NodeInfosPanel(val graph : AccessGraph,
       "Outgoing dependencies : " + node.outgoingDependencies.size + "\n" +
       "Incoming dependencies : " + node.incomingDependencies.size + "\n" +
       "Subtypes : " +
-      (if(node.directSubTypes.isEmpty) "none\n"
-      else mkStringWithNames(node.directSubTypes)) +
+      (if(graph.directSubTypes(node.id).isEmpty) "none\n"
+      else mkStringWithNames(graph.directSubTypes(node.id))) +
       "SuperTypes :" +
-      (if(node.directSuperTypes.isEmpty) "none\n"
-      else mkStringWithNames(node.directSuperTypes)) +
+      (if(graph.directSuperTypes(node.id).isEmpty) "none\n"
+      else mkStringWithNames(graph.directSuperTypes(node.id))) +
       "Providers : " +
       (if (prov.isEmpty) "none\n"
       else mkStringWithNames(prov)) +
@@ -67,7 +67,7 @@ class NodeInfosPanel(val graph : AccessGraph,
 
     contents += new BoxPanel(Orientation.Vertical) {
 
-      node.users.foreach { userId =>
+      graph.users(node.id).foreach { userId =>
 
         val sideUses = graph.usesDominatedBy(userId, nodeId)
         val primaryUses = graph.usesDominating(userId, nodeId)
@@ -90,7 +90,7 @@ class NodeInfosPanel(val graph : AccessGraph,
               sUse = Some(AGEdge.uses(userId, nodeId)))
           }
 
-          contents += new Label(graph.getNode(userId).fullName + " " + tag) {
+          contents += new Label(graph.fullName(userId) + " " + tag) {
 
             minimumSize = new Dimension(this.size.width, 30)
 

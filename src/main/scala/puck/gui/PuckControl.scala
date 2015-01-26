@@ -32,14 +32,14 @@ case class LoadCodeRequest() extends ControlRequest
 case class LoadConstraintRequest() extends ControlRequest
 case class GraphDisplayRequest
 (title : String,
- graph : AccessGraph,
+ graph : DependencyGraph,
  printId : Boolean,
  printSignature : Boolean,
  visibility : VisibilitySet,
  sUse : Option[AGEdge] = None)
  extends ControlRequest
 
-case class ConstraintDisplayRequest(graph : AccessGraph) extends ControlRequest
+case class ConstraintDisplayRequest(graph : DependencyGraph) extends ControlRequest
 case class ExploreRequest
 (builder : ConstraintSolvingSearchEngineBuilder)
   extends ControlRequest
@@ -71,7 +71,7 @@ class PuckControl(val filesHandler : FilesHandler,
                   private val delayedDisplay : ArrayBuffer[Component])
   extends Publisher {
 
-  type GraphT = AccessGraph
+  type GraphT = DependencyGraph
   import PuckLog.defaultVerbosity
 
   import filesHandler.logger
