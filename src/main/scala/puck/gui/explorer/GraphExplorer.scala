@@ -5,7 +5,7 @@ import javax.swing.JTree
 import javax.swing.tree.TreePath
 
 import puck.graph.io.VisibilitySet
-import puck.graph.{AGNode, DependencyGraph, NodeId}
+import puck.graph.{DGNode, DependencyGraph, NodeId}
 
 import scala.swing.event.Event
 import scala.swing.{Component, Dimension, Publisher, ScrollPane}
@@ -35,7 +35,7 @@ class GraphExplorer
                   ptn: PuckTreeNode){
     val nodeList = graph.content(ptn.nodeId).map(graph.getNode).toList
     nodeList.sortBy(_.name) foreach {
-      (n: AGNode) =>
+      (n: DGNode) =>
         val child = new PuckTreeNode(n.id, hiddens, n.nameTypeString(graph))
         ptn add child
         addChildren(graph, child)

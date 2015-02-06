@@ -6,12 +6,12 @@ import puck.graph.mutable.{AGNode, AccessGraph, VanillaNodeKind, VanillaKind}
  * Created by lorilan on 15/05/14.
  */
 class AccessGraphSpec extends UnitSpec{
-  val ag : DependencyGraph[VanillaKind] = new DependencyGraph(AGNode)
+  val ag : DependencyGraph[VanillaKind] = new DependencyGraph(DGNode)
 
-  var a0 : AGNode[VanillaKind] = _
-  var aa : AGNode[VanillaKind] = _
-  var ab : AGNode[VanillaKind] = _
-  var ac : AGNode[VanillaKind] = _
+  var a0 : DGNode[VanillaKind] = _
+  var aa : DGNode[VanillaKind] = _
+  var ab : DGNode[VanillaKind] = _
+  var ac : DGNode[VanillaKind] = _
 
 
   "An Access Graph" should "have a root node" in {

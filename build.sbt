@@ -33,7 +33,8 @@ java15comply := true
 
 libraryDependencies ++= Seq(
 	"org.scala-lang" % "scala-swing" % "2.11.0-M7",
-	"org.scala-lang" % "scala-parser-combinators" % "2.11.0-M4")
+	"org.scala-lang" % "scala-parser-combinators" % "2.11.0-M4",
+	"org.scalaz" %% "scalaz-core" % "7.1.0" )
 
 //libraryDependencies += "org.scala-lang" % "scala-library-all" % "2.11.4" //before the modularize them
 

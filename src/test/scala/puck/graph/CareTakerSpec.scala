@@ -16,11 +16,11 @@ import puck.util.{DefaultFileLogger, DefaultSystemLogger}
  * Created by lorilan on 17/06/14.
  */
 class CareTakerSpec extends UnitSpec {
-  val ag: DependencyGraph[VanillaKind] = new DependencyGraph(AGNode)
+  val ag: DependencyGraph[VanillaKind] = new DependencyGraph(DGNode)
 
-  var na : AGNode[VanillaKind] = _
-  var nb : AGNode[VanillaKind] = _
-  var nc : AGNode[VanillaKind] = _
+  var na : DGNode[VanillaKind] = _
+  var nb : DGNode[VanillaKind] = _
+  var nc : DGNode[VanillaKind] = _
 
   val careTaker = ag.transformations.startRegister()
   val breakPoint = ag.transformations.startSequence()
@@ -31,10 +31,10 @@ class CareTakerSpec extends UnitSpec {
     val n2 = ag.addNode("n2", VanillaNodeKind())
     val n3 = ag.addNode("n3", VanillaNodeKind())
 
-    TTEdge(AGEdge.uses(n0, n1)) should equal (TTEdge(AGEdge.uses(n0, n1)))
-    TTRedirection(AGEdge.uses(n0, n1), Source(n2)) should equal (TTRedirection(AGEdge.uses(n0, n1), Source(n2)))
-    TTRedirection(AGEdge.uses(n0, n1), Target(n3)) should equal (TTRedirection(AGEdge.uses(n0, n1), Target(n3)))
-    TTDependency(AGEdge.uses(n0, n1), AGEdge.uses(n2, n3)) should equal (TTDependency(AGEdge.uses(n0, n1), AGEdge.uses(n2, n3)))
+    TTEdge(DGEdge.uses(n0, n1)) should equal (TTEdge(DGEdge.uses(n0, n1)))
+    TTRedirection(DGEdge.uses(n0, n1), Source(n2)) should equal (TTRedirection(DGEdge.uses(n0, n1), Source(n2)))
+    TTRedirection(DGEdge.uses(n0, n1), Target(n3)) should equal (TTRedirection(DGEdge.uses(n0, n1), Target(n3)))
+    TTDependency(DGEdge.uses(n0, n1), DGEdge.uses(n2, n3)) should equal (TTDependency(DGEdge.uses(n0, n1), DGEdge.uses(n2, n3)))
     TTAbstraction(n0, n1, SupertypeAbstraction()) should equal (TTAbstraction(n0, n1, SupertypeAbstraction()))
     TTAbstraction(n0, n1, DelegationAbstraction()) should equal (TTAbstraction(n0, n1, DelegationAbstraction()))
   }
@@ -79,7 +79,7 @@ class CareTakerSpec extends UnitSpec {
   }
 
   it should "be able to undo the creation of an edge dependency" in {
-    val ag = new DependencyGraph[VanillaKind](AGNode)
+    val ag = new DependencyGraph[VanillaKind](DGNode)
     ag.transformations.startRegister()
     val na = ag.addNode("a", VanillaNodeKind())
     val nb = ag.addNode("b", VanillaNodeKind())
@@ -94,10 +94,10 @@ class CareTakerSpec extends UnitSpec {
 
     val bp = ag.transformations.startSequence()
 
-    ag.addUsesDependency(AGEdge.uses(na, nb), AGEdge.uses(na, nc))
+    ag.addUsesDependency(DGEdge.uses(na, nb), DGEdge.uses(na, nc))
 
-    na.sideUses(nb).toStream should contain (AGEdge.uses(na, nc))
-    na.primaryUses(nc).toStream should contain (AGEdge.uses(na, nb))
+    na.sideUses(nb).toStream should contain (DGEdge.uses(na, nc))
+    na.primaryUses(nc).toStream should contain (DGEdge.uses(na, nb))
     (na uses nb) should be (true)
     (na uses nc) should be (true)
 
@@ -120,9 +120,9 @@ class CareTakerSpec extends UnitSpec {
     val (_, tranfos) = NodeMappingInitialState.normalizeNodeTransfos(jgraph.transformations.recording.composition)
     jgraph.initialRecord = tranfos
     val breakPoint = jgraph.transformations.startSequence()
-    val i : AGNode[JavaNodeKind] = jgraph("p.I")
-    val i2 : AGNode[JavaNodeKind] = jgraph("p.I2")
-    val a  : AGNode[JavaNodeKind] = jgraph("p.A")
+    val i : DGNode[JavaNodeKind] = jgraph("p.I")
+    val i2 : DGNode[JavaNodeKind] = jgraph("p.I2")
+    val a  : DGNode[JavaNodeKind] = jgraph("p.A")
 
     fh.makePng(printId = true,
       sOutput = Some(new FileOutputStream(fh.graphFile( "_0.png"))))()

@@ -36,7 +36,7 @@ class DotPrinter
   printId : Boolean,
   printSignatures : Boolean = false,
   searchRoots : Boolean = false,
-  selectedUse : Option[AGEdge] = None){
+  selectedUse : Option[DGEdge] = None){
 
   implicit val g = graph
   type NIdT = NodeId
@@ -103,16 +103,16 @@ class DotPrinter
 
 
   val printUsesViolations = (source : NIdT, target : NIdT) =>
-    if(! graph.isa(source, target)) //TODO remove test. quickfix to avoid dot crash
+    if(!graph.isa(source, target)) //TODO remove test. quickfix to avoid dot crash
       printArc(usesStyle, source, target,
-        if(violations.contains(AGEdge.uses(source, target)))
+        if(violations.contains(DGEdge.uses(source, target)))
           ColorThickness.violation
         else ColorThickness.regular )
 
   val printUse = selectedUse match {
     case None => printUsesViolations
     case Some(selected) =>  (source: NIdT, target: NIdT) =>
-      val printed = AGEdge.uses(source, target)
+      val printed = DGEdge.uses(source, target)
       val ct = if (printed == selected) ColorThickness.selected
       else if (graph.dominates(printed, selected))
         ColorThickness.dominant
@@ -125,12 +125,12 @@ class DotPrinter
 
   }
 
-  def decorate_name(n : AGNode):String = {
+  def decorate_name(n : DGNode):String = {
     val sCter = graph.container(n.id)
 
     val name = html_safe(n.name)
 
-    if (sCter.isDefined && violations.contains(AGEdge.contains(sCter.get, n.id)))
+    if (sCter.isDefined && violations.contains(DGEdge.contains(sCter.get, n.id)))
       "<FONT COLOR=\"" + ColorThickness.violation.color + "\"><U>" + helper.namePrefix(n.kind) + name + idString(n.id) + "</U></FONT>"
     else helper.namePrefix(n.kind) + name + idString(n.id)
   }
@@ -150,7 +150,7 @@ class DotPrinter
 
 
 
-  def printSubGraph(n : AGNode){
+  def printSubGraph(n : DGNode){
     List("subgraph cluster" + n.id + " {",
       "label=\"" + decorate_name(n) +"\";",
       "color=black;") foreach writeln

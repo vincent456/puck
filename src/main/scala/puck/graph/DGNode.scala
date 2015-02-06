@@ -8,7 +8,7 @@ import puck.graph.constraints.AbstractionPolicy
 
 
 
-case class AGNode
+case class DGNode
 ( id : NodeId,
   name : String,
   kind : NodeKind,
@@ -91,35 +91,35 @@ case class AGNode
   }*/
 
 
-  private def outgoingDependencies(root : NIdT, acc0 : Set[AGEdge])(implicit graph : GraphT) : Set[AGEdge]= {
+  private def outgoingDependencies(root : NIdT, acc0 : Set[DGEdge])(implicit graph : GraphT) : Set[DGEdge]= {
     val acc1 = graph.usedBy(id).foldLeft(acc0){
       (acc, usee) =>
         if(graph.contains_*(root,usee)) acc
-        else acc + AGEdge.uses(this.id, usee)
+        else acc + DGEdge.uses(this.id, usee)
     }
     graph.content(id).foldLeft(acc1){(acc, child) => graph.getNode(child).outgoingDependencies(root, acc)}
   }
 
-  def outgoingDependencies(implicit graph : GraphT) : Set[AGEdge] = outgoingDependencies(this.id, Set[AGEdge]())
+  def outgoingDependencies(implicit graph : GraphT) : Set[DGEdge] = outgoingDependencies(this.id, Set[DGEdge]())
 
-  private def incomingDependencies(root : NIdT, acc0 : Set[AGEdge])(implicit graph : GraphT) : Set[AGEdge]= {
+  private def incomingDependencies(root : NIdT, acc0 : Set[DGEdge])(implicit graph : GraphT) : Set[DGEdge]= {
     val acc1 = graph.users(id).foldLeft(acc0){
       (acc, user) =>
         if(graph.contains_*(root, user)) acc
-        else acc + AGEdge.uses(user, this.id)
+        else acc + DGEdge.uses(user, this.id)
     }
     graph.content(id).foldLeft(acc1){(acc, child) => graph.getNode(child).incomingDependencies(root, acc)}
   }
 
-  def incomingDependencies(implicit graph : GraphT) : Set[AGEdge] = incomingDependencies(this.id, Set[AGEdge]())
+  def incomingDependencies(implicit graph : GraphT) : Set[DGEdge] = incomingDependencies(this.id, Set[DGEdge]())
 
 
-  private def internalDependencies(root : NIdT, acc0 : Set[AGEdge])(implicit graph : GraphT) : Set[AGEdge]= {
+  private def internalDependencies(root : NIdT, acc0 : Set[DGEdge])(implicit graph : GraphT) : Set[DGEdge]= {
 
     val acc1 = graph.usedBy(id).foldLeft(acc0) {
       (acc, usee) =>
         if (graph.contains_*(root,usee))
-          acc + AGEdge.uses(id, usee)
+          acc + DGEdge.uses(id, usee)
         else acc
     }
     /* not necessary
@@ -134,7 +134,7 @@ case class AGNode
     graph.content(id).foldLeft(acc1){(acc, child) => graph.getNode(child).internalDependencies(root, acc)}
   }
 
-  def internalDependencies(implicit graph : GraphT) : Set[AGEdge] = internalDependencies(this.id, Set[AGEdge]())
+  def internalDependencies(implicit graph : GraphT) : Set[DGEdge] = internalDependencies(this.id, Set[DGEdge]())
 
 
   /*def provides(other : AGNode) = {
@@ -159,7 +159,7 @@ case class AGNode
     }
   }
 
-  private def connection(f : AGNode => Boolean)(implicit graph : GraphT) = {
+  private def connection(f : DGNode => Boolean)(implicit graph : GraphT) = {
     graph.nodes.foldLeft(Set[NIdT]()){ (acc, n) =>
       if(n.id == this.id || n.kind != this.kind) acc
       else if(f(n)) acc + n.id

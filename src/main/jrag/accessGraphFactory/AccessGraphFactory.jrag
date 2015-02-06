@@ -164,7 +164,7 @@ aspect AccessGraphFactory {
 
 
 	public void MethodAccess.buildAG(JavaGraphBuilder builder, int containerId){
-		int nodeId = decl().buildAGNode(builder);
+		int nodeId = buildAGNode(builder);
 		
 		builder.addUses(containerId, nodeId);
 
@@ -180,12 +180,14 @@ aspect AccessGraphFactory {
 	}
 	
 	public void SuperConstructorAccess.buildAG(JavaGraphBuilder builder, int containerId){
-		if(!decl().type().fullName().equals( "java.lang.Object")){
+		//if(!decl().type().fullName().equals( "java.lang.Object")){
+		if(!decl().type().fullName().equals( "@primitive.Unknown")){
+		//happens when call to constructor of java.lang.Object TODO check if no other cases
 
-	      buildAGInChildren(builder, containerId);
+		  buildAGInChildren(builder, containerId);
 
-	      int classNodeId = decl().type().buildAGNode(builder);
-	      int ctorNodeId = decl().buildAGNode(builder);
+	      int classNodeId = decl().buildAGNode(builder);
+	      int ctorNodeId = buildAGNode(builder);
 
 	      builder.addUses(containerId, classNodeId);
 	      builder.addUses(ctorNodeId, classNodeId);
@@ -202,7 +204,7 @@ aspect AccessGraphFactory {
 		buildAGInChildren(builder, containerId);
 
 		int classNodeId = getAccess().buildAGNode(builder);
-        int ctorNodeId = decl().buildAGNode(builder);
+        int ctorNodeId = buildAGNode(builder);
 
 		builder.addUses(containerId, classNodeId);
         builder.addUses(containerId, ctorNodeId);
@@ -266,7 +268,7 @@ aspect AccessGraphFactory {
 
 	public void VarAccess.buildAG(JavaGraphBuilder builder, int containerId){
 		if(decl().isInstanceVariable() || decl().isClassVariable()){
-			builder.addUses(containerId, decl().buildAGNode(builder));
+			builder.addUses(containerId, buildAGNode(builder));
 		}
 	}
   	

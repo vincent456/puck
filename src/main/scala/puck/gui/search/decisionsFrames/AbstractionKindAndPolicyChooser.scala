@@ -1,6 +1,6 @@
 package puck.gui.search.decisionsFrames
 
-import puck.graph.{NodeKind, AGNode}
+import puck.graph.{NodeKind, DGNode}
 import puck.graph.constraints.AbstractionPolicy
 
 import scala.swing._
@@ -16,12 +16,12 @@ import scala.util.Success
 
 object AbstractionKindAndPolicyChooser{
 
-  def apply(impl : AGNode) : (NodeKind, AbstractionPolicy) = DecisionFrame {
+  def apply(impl : DGNode) : (NodeKind, AbstractionPolicy) = DecisionFrame {
     () => new AbstractionKindAndPolicyChooser(impl)
   }
 }
 
-class AbstractionKindAndPolicyChooser private (val impl : AGNode)
+class AbstractionKindAndPolicyChooser private (val impl : DGNode)
   extends DecisionFrame[(NodeKind, AbstractionPolicy)]{
 
 

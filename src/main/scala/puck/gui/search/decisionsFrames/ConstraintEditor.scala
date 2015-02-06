@@ -1,7 +1,7 @@
 package puck.gui.search.decisionsFrames
 
 import puck.graph.constraints.{ElementConstraint, ScopeConstraint, ConstraintWithInterlopers, Constraint}
-import puck.graph.{AGNode, LiteralNodeSet, NodeSetDiff, NodeSet}
+import puck.graph.{DGNode, LiteralNodeSet, NodeSetDiff, NodeSet}
 
 import scala.swing._
 import java.awt.Color
@@ -23,7 +23,7 @@ object ConstraintEditor {
 abstract class ConstraintEditor[T<: Constraint] protected
 ( val constraint : T,
   var users : NodeSet,
-  val usee : AGNode,
+  val usee : DGNode,
   finish : () => Unit)
   extends BoxPanel(Orientation.Vertical) {
 
@@ -72,7 +72,7 @@ class FriendPanel[T <: ConstraintWithInterlopers](val editor : ConstraintEditor[
 
   val constraint : T = editor.constraint
   val users : NodeSet = editor.users
-  val usee : AGNode = editor.usee
+  val usee : DGNode = editor.usee
 
   val nsd: NodeSetDiff = new NodeSetDiff(users, LiteralNodeSet())
   ???
@@ -109,7 +109,7 @@ class InterlopersPanel[T <: ConstraintWithInterlopers](val editor : ConstraintEd
   extends BoxPanel(Orientation.Vertical){
   val constraint : T = editor.constraint
   val users : NodeSet = editor.users
-  val usee : AGNode = editor.usee
+  val usee : DGNode = editor.usee
 
   ???
   /*constraint.interlopers.foreach{ n =>
@@ -137,7 +137,7 @@ class OwnerPanel[T <: Constraint](val editor : ConstraintEditor[T])
 
   val constraint : T = editor.constraint
   val users : NodeSet= editor.users
-  val usee : AGNode = editor.usee
+  val usee : DGNode = editor.usee
 
   ???
  /* constraint.owners.foreach{ n =>
@@ -167,13 +167,13 @@ class OwnerPanel[T <: Constraint](val editor : ConstraintEditor[T])
 object ScopeConstraintEditor{
   def apply(constraint : ScopeConstraint,
             users : NodeSet,
-            usee : AGNode,
+            usee : DGNode,
             finish : () => Unit) = new ScopeConstraintEditor(constraint, users, usee, finish)
 }
 
 class ScopeConstraintEditor private (constraint0 : ScopeConstraint,
                                      users0 : NodeSet,
-                                     usee0 : AGNode,
+                                     usee0 : DGNode,
                                      finish0 : () => Unit)
   extends ConstraintEditor[ScopeConstraint](constraint0, users0, usee0, finish0) {
 
@@ -237,13 +237,13 @@ class ScopeConstraintEditor private (constraint0 : ScopeConstraint,
 object ElementConstraintEditor{
   def apply(constraint : ElementConstraint,
             users : NodeSet,
-            usee : AGNode,
+            usee : DGNode,
             finish : () => Unit) = new ElementConstraintEditor(constraint, users, usee, finish)
 }
 
 class ElementConstraintEditor private (constraint0 : ElementConstraint,
                                        users0 : NodeSet,
-                                       usee0 : AGNode,
+                                       usee0 : DGNode,
                                        finish0 : () => Unit)
   extends ConstraintEditor[ElementConstraint](constraint0, users0, usee0, finish0){
 

@@ -89,7 +89,7 @@ object NodeMappingInitialState{
       logger.writeln("----------------------------------------------")
     }
 
-    def mapUntil( stoppingEdge : AGEdge,
+    def mapUntil( stoppingEdge : DGEdge,
                   transfos : List[Transformation])
                 (rule : (Transformation => Transformation)): Seq[Transformation] = {
 
@@ -109,10 +109,10 @@ object NodeMappingInitialState{
     // We are going backwards !
     def aux(filteredTransfos : Seq[Transformation],
             l : Seq[Transformation],
-             removedEdges : Seq[AGEdge]): (Seq[Transformation], Seq[AGEdge]) = {
+             removedEdges : Seq[DGEdge]): (Seq[Transformation], Seq[DGEdge]) = {
       l match {
         case List() => (filteredTransfos, removedEdges)
-        case (op2 @ Transformation(Remove, TTEdge(AGEdge(Contains, n1, n2)))) :: tl =>
+        case (op2 @ Transformation(Remove, TTEdge(DGEdge(Contains, n1, n2)))) :: tl =>
           /*val (applied, newTl) = applyRuleOnce[Transformation](tl)
           { case Transformation(Add(), TTEdge(AGEdge(Contains(), `n1`, `n2`))) => (true, None)
           case _ => (false, None)
@@ -120,7 +120,7 @@ object NodeMappingInitialState{
           if(applied) aux(filteredTransfos, newTl)
           else aux(l.head :: filteredTransfos, l)*/
           select[Transformation](tl,
-          { case Transformation(Add, TTEdge(AGEdge(Contains, `n1`, `n2`))) => true
+          { case Transformation(Add, TTEdge(DGEdge(Contains, `n1`, `n2`))) => true
           case _ => false
           }) match {
             case (Some( op1 ), newTl) =>
@@ -128,27 +128,27 @@ object NodeMappingInitialState{
               aux(filteredTransfos, newTl, removedEdges)
             case (None, _) => aux(l.head +: filteredTransfos, l.tail, removedEdges)
           }
-        case (op1 @ Transformation(Add, TTRedirection(stopingEdge @ AGEdge(kind, n1, n2), Source(n3)))) :: tl =>
+        case (op1 @ Transformation(Add, TTRedirection(stopingEdge @ DGEdge(kind, n1, n2), Source(n3)))) :: tl =>
           aux(filteredTransfos, mapUntil(stopingEdge, tl)
-          { case op2 @ Transformation(Add, TTRedirection(AGEdge(`kind`, n0, `n2`), Source(`n1`))) =>
-            val res = Transformation(Add, TTRedirection(AGEdge(kind, n0, n2), Source(n3)))
+          { case op2 @ Transformation(Add, TTRedirection(DGEdge(`kind`, n0, `n2`), Source(`n1`))) =>
+            val res = Transformation(Add, TTRedirection(DGEdge(kind, n0, n2), Source(n3)))
             printRule("RedRed_src", op2.toString, op1.toString, res.toString)
             res
-          case op2 @ Transformation(Add, TTEdge(AGEdge(`kind`, `n1`, `n2`))) =>
-            val res = Transformation(Add, TTEdge(AGEdge(kind, n3, n2)))
+          case op2 @ Transformation(Add, TTEdge(DGEdge(`kind`, `n1`, `n2`))) =>
+            val res = Transformation(Add, TTEdge(DGEdge(kind, n3, n2)))
             printRule("AddRed_src", op2.toString, op1.toString, res.toString)
             res
           case t => t
           }, removedEdges)
 
-        case (op1 @ Transformation(Add, TTRedirection(stopingEdge @ AGEdge(kind, n1, n2), Target(n3)))) :: tl =>
+        case (op1 @ Transformation(Add, TTRedirection(stopingEdge @ DGEdge(kind, n1, n2), Target(n3)))) :: tl =>
           aux(filteredTransfos, mapUntil(stopingEdge, tl)
-          { case op2 @ Transformation(Add, TTRedirection(AGEdge(`kind`, `n1`, n0), Target(`n2`))) =>
-            val res = Transformation(Add, TTRedirection(AGEdge(kind, n1, n0), Target(n3)))
+          { case op2 @ Transformation(Add, TTRedirection(DGEdge(`kind`, `n1`, n0), Target(`n2`))) =>
+            val res = Transformation(Add, TTRedirection(DGEdge(kind, n1, n0), Target(n3)))
             printRule("RedRed_tgt", op2.toString, op1.toString, res.toString)
             res
-          case op2 @ Transformation(Add, TTEdge(AGEdge(`kind`, `n1`, `n2`))) =>
-            val res = Transformation(Add, TTEdge(AGEdge(kind, n1, n3)))
+          case op2 @ Transformation(Add, TTEdge(DGEdge(`kind`, `n1`, `n2`))) =>
+            val res = Transformation(Add, TTEdge(DGEdge(kind, n1, n3)))
             printRule("AddRed_tgt", op2.toString, op1.toString, res.toString)
             res
           case t => t

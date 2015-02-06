@@ -14,7 +14,7 @@ trait TransformationRules {
 
   type NIdT = NodeId
   //type NT = NodeT
-  type EdgeT = AGEdge
+  type EdgeT = DGEdge
   type GraphT = DependencyGraph
   type STyp = TypeHolder
 
@@ -66,7 +66,7 @@ trait TransformationRules {
 
       g.logger.writeln("redirecting %s target to %s (%s)".format(oldEdge, newUsee, policy))
 
-      val newUse : EdgeT = AGEdge.uses(oldEdge.user, newUsee)
+      val newUse : EdgeT = DGEdge.uses(oldEdge.user, newUsee)
 
       val g2 =
         if(keepOldUse)
@@ -96,7 +96,7 @@ trait TransformationRules {
       // when iterating on the wrongusers, the next call to redirectuses will arrive here
       g.logger.writeln("redirecting uses' %s target to %s (%s) : FAILURE !! %s is not used".
         format(oldEdge, newUsee, policy, oldEdge.usee))
-      Success((AGEdge.uses(oldEdge.user, newUsee), g))
+      Success((DGEdge.uses(oldEdge.user, newUsee), g))
     }
     else if(g.users(oldEdge.usee).exists(_ == oldEdge.user) ||
       g.users(newUsee).exists(_==oldEdge.user))
@@ -128,7 +128,7 @@ trait TransformationRules {
 
       primaryUses.foldLeft[Try[GraphT]](Success(g)){
         case (tryG0, primary0) =>
-          val primary = AGEdge.uses(primary0)
+          val primary = DGEdge.uses(primary0)
 
           val keepOldUse = g.usesDominatedBy(primary0).nonEmpty //is empty if primary had only one side use
 
@@ -213,7 +213,7 @@ trait TransformationRules {
 
       sideUses.foldLeft(Success(g) : Try[GraphT]){
         case (tryG, side0) =>
-          val side = AGEdge.uses(side0)
+          val side = DGEdge.uses(side0)
           g.abstractions(side.usee).find {
             case (abs, _) => g.contains(newPrimaryUsee, abs)
             case _ => false
@@ -244,11 +244,11 @@ trait TransformationRules {
 
   def moveTo(g : GraphT, movedId : NIdT, newContainer : NIdT): Try[GraphT] = {
     val oldContainer = g.container(movedId)
-    g.logger.writeln("moving " + movedId +" from " + oldContainer + " to " + newContainer)
-    val g2 = g.changeSource(AGEdge.contains(oldContainer.get, movedId), newContainer)
+    g.logger.writeln("moving " + g.getNode(movedId) +" from " + oldContainer + " to " + g.getNode(newContainer))
+    val g2 = g.changeSource(DGEdge.contains(oldContainer.get, movedId), newContainer)
     g.users(movedId).foldLeft(Success(g2) : Try[GraphT]){
       case (g0, userId) =>
-        g0.flatMap(redirectPrimaryUses(_, AGEdge.uses(userId, movedId), movedId,
+        g0.flatMap(redirectPrimaryUses(_, DGEdge.uses(userId, movedId), movedId,
           Move, propagateRedirection = false))
     }
   }
@@ -269,27 +269,29 @@ trait TransformationRules {
   //TODO deep merge : merge also content need to refactor find merging candidate
   //(deep merge is now done in JavaNode for interface node only)
   def merge(g : GraphT, consumerId : NIdT, consumedId : NIdT) : GraphT = {
+    g.logger.writeln("merging " + g.getNode(consumedId) + " into " +g.getNode(consumerId) )
+
     val consumed = g.getNode(consumedId)
     val consumer = g.getNode(consumerId)
     val g1 = g.users(consumedId).foldLeft(g) {
       case (g0, userId) =>
-        g0.changeTarget(AGEdge.uses(userId, consumedId), consumerId)
+        g0.changeTarget(DGEdge.uses(userId, consumedId), consumerId)
           .changeType(userId, g.getNode(userId).styp, consumedId, consumerId)
     }
 
     val g2 = g.usedBy(consumedId).foldLeft(g1) {
-      case (g0, usedId) => g0.changeSource(AGEdge.uses(consumedId, usedId), consumerId)
+      case (g0, usedId) => g0.changeSource(DGEdge.uses(consumedId, usedId), consumerId)
     }
 
     val g3 = g.directSuperTypes(consumedId).foldLeft(g2) {
       case (g0, stId) =>
-        if(stId != consumerId) g0.changeSource(AGEdge.isa(consumedId, stId), consumerId)
+        if(stId != consumerId) g0.changeSource(DGEdge.isa(consumedId, stId), consumerId)
         else g0.removeIsa(consumedId, stId)
     }
 
     val g4 = g.directSubTypes(consumedId).foldLeft(g3) {
       case (g0, stId) =>
-        if(stId != consumerId) g0.changeTarget(AGEdge.isa(stId, consumedId), consumerId)
+        if(stId != consumerId) g0.changeTarget(DGEdge.isa(stId, consumedId), consumerId)
         else g0.removeIsa(stId, consumedId)
     }
 
@@ -329,9 +331,9 @@ trait TransformationRules {
           case Some(consumedChild) => merge(g0, childId, consumedChild)
           case None => g0
         }
-
     }
-    val g8 = g.content(consumedId).foldLeft(g7){
+
+    val g8 = g7.content(consumedId).foldLeft(g7){
       case(g0, childId) =>
         moveTo(g0, childId, consumerId).get
           .changeType(childId, g0.getNode(childId).styp, consumedId, consumerId)
@@ -357,6 +359,6 @@ trait TransformationRules {
     }*/
 
 
-    g8.removeContains(g.container(consumedId).get, consumedId).removeNode(consumedId)
+    g8.removeContains(g7.container(consumedId).get, consumedId).removeNode(consumedId)
   }
 }

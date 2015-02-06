@@ -1,5 +1,7 @@
 package puck.javaAG
 
+import java.util.NoSuchElementException
+
 import puck.graph._
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations._
@@ -12,6 +14,18 @@ import puck.util.{PuckLog, PuckLogger}
 class AG2AST(val program : AST.Program,
              val logger : PuckLogger) {
   implicit val defaultVerbosity = (PuckLog.AG2AST, PuckLog.Info)
+
+  def safeGet(graph : DependencyGraph, id2declMap : Map[NodeId, DeclHolder])(id :NodeId): DeclHolder =
+  try id2declMap(id)
+  catch {
+    case e : NoSuchElementException =>
+      val n = graph.getNode(id)
+      if(n.kind == Package)
+        PackageDeclHolder
+      else
+        throw e
+  }
+
   def verbosity : PuckLog.Level => PuckLog.Verbosity = l => (PuckLog.AG2AST, l)
 
   def apply(resultGraph : DependencyGraph,
@@ -25,8 +39,11 @@ class AG2AST(val program : AST.Program,
       val newMap = id2declMap get id match {
         case Some(_) => id2declMap
         case None =>
-          val dh = DeclHolder.createDecl(program, resultGraph, id2declMap,
-            new AGNode(id, name, kind, styp, mutable, puck.graph.Created))
+          val node = new DGNode(id, name, kind, styp, mutable, puck.graph.Created)
+          val dh = DeclHolder.createDecl(program, resultGraph, id2declMap, node)
+
+          println(s"creating decl for $node")
+
           id2declMap + (id -> dh)
       }
 
@@ -36,14 +53,14 @@ class AG2AST(val program : AST.Program,
     case `t` => t match {
       case Transformation(Add, TTEdge(e)) =>
         //println("creating edge " + e)
-        add(resultGraph, id2declMap, e)
+        add(resultGraph, safeGet(resultGraph, id2declMap), e)
 
       case Transformation(Add, TTRedirection(e, Target(newTarget))) =>
         logger.writeln("redirecting %s target to %s".format(e, newTarget))
-        redirectTarget(resultGraph, id2declMap, e, newTarget)
+        redirectTarget(resultGraph, safeGet(resultGraph, id2declMap), e, newTarget)
 
       case Transformation(Add, TTRedirection(e, Source(newSource))) =>
-        redirectSource(resultGraph, reenactor, id2declMap, e, newSource)
+        redirectSource(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newSource)
       /*case Transformation(Remove(), TTEdge(e@AGEdge(Contains(), source, target))) =>
     println("removing edge " + e)
     (source.kind, target.kind) match {
@@ -77,7 +94,9 @@ class AG2AST(val program : AST.Program,
           case _ => logger.writeln("%s not applied on program".format(t))
         }
 
-      case _ => logger.writeln("%s not applied on program".format(t))
+      case _ =>
+        println("not applied on program")
+        logger.writeln(s"$t not applied on program")
     }
     id2declMap
   }
@@ -85,31 +104,31 @@ class AG2AST(val program : AST.Program,
 
 
   def add(graph: DependencyGraph,
-          id2declMap: Map[NodeId, DeclHolder],
-          e: AGEdge) = {
+          id2declMap: NodeId => DeclHolder,
+          e: DGEdge) = {
 
-    def addTypeDecl(packageAGNode : AGNode, typeDeclAGNode : AGNode, itc : TypedKindDeclHolder) = {
+    def setPackageDecl(packageAGNode : DGNode, typeDeclAGNode : DGNode, itc : TypedKindDeclHolder) = {
+
+      val cpath = graph.containerPath(typeDeclAGNode.id)
+
+      val names = cpath.tail.map(graph.getNode(_).name)
 
       val cu = itc.decl.compilationUnit()
 
-      val cpath = graph.containerPath(packageAGNode.id).map(graph.getNode(_).name)
-      val sepPath = cpath.tail.mkString(java.io.File.separator)
-
-      val relativePath = sepPath + java.io.File.separator + typeDeclAGNode.name + ".java"
-      cu.setPathName(relativePath)
-      cu.setRelativeName(relativePath) // weird but seems to be the default behavior
+      cu.setPathName(program.getRootPath + names.mkString(java.io.File.separator) +".java")
+      //cu.setRelativeName(relativePath) // weird but seems to be the default behavior
       cu.setPackageDecl(graph.fullName(packageAGNode.id))
+
     }
 
     val source = graph.getNode(e.source)
     val target = graph.getNode(e.target)
 
-
     e.kind match {
 
       case Contains =>
         (source.kind, id2declMap(source.id), id2declMap(target.id)) match {
-          case (Package, _, i: TypedKindDeclHolder) => addTypeDecl(source, target, i)
+          case (Package, _, i: TypedKindDeclHolder) => setPackageDecl(source, target, i)
 
           case (Interface, th: TypedKindDeclHolder, AbstractMethodDeclHolder(mdecl)) =>
             th.decl.addBodyDecl(mdecl)
@@ -155,13 +174,14 @@ class AG2AST(val program : AST.Program,
 
 
   def redirectTarget(graph: DependencyGraph,
-                     id2declMap: Map[NodeId, DeclHolder],
-                     e: AGEdge, newTargetId: NodeId) {
+                     id2declMap: NodeId => DeclHolder,
+                     e: DGEdge, newTargetId: NodeId) {
 
     if(e.target != newTargetId) {
       val target = graph.getNode(e.target)
       val source = graph.getNode(e.source)
       val newTarget = graph.getNode(newTargetId)
+
 
       val sourceDecl = id2declMap(source.id)
 
@@ -217,8 +237,7 @@ class AG2AST(val program : AST.Program,
             case ConstructorDeclHolder(_) =>
               throw new JavaAGError("redirection to constructor method within " +
                 "constructor no implemented (see methodDecl)")
-            case mdh: MethodDeclHolder =>
-              mdh.decl.replaceByConstructorMethodCall(newDecl)
+            case mdh: MethodDeclHolder => mdh.decl.replaceByConstructorMethodCall(newDecl)
 
             case k =>
               throw new JavaAGError(k + " as user of MethodKind, redirection unhandled !")
@@ -237,8 +256,8 @@ class AG2AST(val program : AST.Program,
 
   def redirectSource(resultGraph: DependencyGraph,
                      reenactor : JavaDependencyGraph,
-                     id2declMap: Map[NodeId, DeclHolder],
-                     e: AGEdge, newSourceId: NodeId) {
+                     id2declMap: NodeId => DeclHolder,
+                     e: DGEdge, newSourceId: NodeId) {
     import AST.ASTNode.VIS_PUBLIC
 
     def moveMethod( reenactor : JavaDependencyGraph,
@@ -262,7 +281,7 @@ class AG2AST(val program : AST.Program,
       }
     }
 
-    def moveTypeKind(newPackage: AGNode,  tDecl : AST.TypeDecl): Unit ={
+    def moveTypeKind(newPackage: DGNode,  tDecl : AST.TypeDecl): Unit ={
       //println("moving " + i +" from package "+ p1 +" to package" + p2)
       val oldcu = tDecl.compilationUnit()
 
@@ -274,7 +293,6 @@ class AG2AST(val program : AST.Program,
       if (tDecl.compilationUnit.getNumTypeDecl > 1) {
         logger.writeln(tDecl.name + " cu with more than one classe")(verbosity(PuckLog.Debug))
         oldcu.removeTypeDecl(tDecl)
-        val newCu = new AST.CompilationUnit()
         oldcu.programRoot().insertUnusedType(path, resultGraph.fullName(newPackage.id), tDecl)
 
         /*import scala.collection.JavaConvers ions.asScalaIterator

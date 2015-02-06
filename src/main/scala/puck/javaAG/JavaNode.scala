@@ -18,8 +18,8 @@ object JavaNode extends AGNodeBuilder with DotHelper{
             kind : NodeKind,
             styp : TypeHolder,
             isMutable : Mutability,
-            status : NodeStatus) : AGNode =
-    new AGNode(id, name, kind, styp, isMutable, status)
+            status : NodeStatus) : DGNode =
+    new DGNode(id, name, kind, styp, isMutable, status)
 
   def rootKind : JavaNodeKind = JavaRoot
   def kinds : Seq[NodeKind] = JavaNodeKind.list

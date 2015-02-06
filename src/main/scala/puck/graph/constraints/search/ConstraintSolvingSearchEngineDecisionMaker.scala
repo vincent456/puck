@@ -1,6 +1,6 @@
 package puck.graph.constraints.search
 
-import puck.graph.{ResultT, AGNode, NodeKind}
+import puck.graph.{ResultT, DGNode, NodeKind}
 import puck.graph.constraints.{AbstractionPolicy, DecisionMaker}
 import puck.search.SearchEngine
 import puck.util.PuckLogger
@@ -30,7 +30,7 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker
 
     implicit val g = graph
 
-    def findTargets(l : Seq[NodeKind]) : Iterator[AGNode] =  l match {
+    def findTargets(l : Seq[NodeKind]) : Iterator[DGNode] =  l match {
       case topPriority :: tl =>
         val it = graph.nodes.iterator filter { n =>
           n.kind == topPriority && (n.wrongUsers.nonEmpty ||

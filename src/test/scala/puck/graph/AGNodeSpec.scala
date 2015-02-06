@@ -7,7 +7,7 @@ import puck.graph.mutable.{AGNode, AccessGraph, VanillaNodeKind, VanillaKind}
  */
 class AGNodeSpec extends UnitSpec {
 
-  val ag : DependencyGraph[VanillaKind] = new DependencyGraph(AGNode)
+  val ag : DependencyGraph[VanillaKind] = new DependencyGraph(DGNode)
   val na = ag.addNode("a", VanillaNodeKind())
   val nb = ag.addNode("b", VanillaNodeKind())
   val nc = ag.addNode("c", VanillaNodeKind())
@@ -48,7 +48,7 @@ class AGNodeSpec extends UnitSpec {
   }
 
   it should "have a distance from another node equal to the length of the path composed of contains edge only between the two nodes" in {
-    val ag : DependencyGraph[VanillaKind] = new DependencyGraph(AGNode)
+    val ag : DependencyGraph[VanillaKind] = new DependencyGraph(DGNode)
     val na = ag.addNode("a", VanillaNodeKind())
     val nb = ag.addNode("b", VanillaNodeKind())
     val nc = ag.addNode("c", VanillaNodeKind())

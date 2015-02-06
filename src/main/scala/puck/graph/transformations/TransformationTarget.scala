@@ -6,10 +6,11 @@ import puck.graph.constraints.AbstractionPolicy
 /**
  * Created by lorilan on 05/11/14.
  */
-sealed abstract class TransformationTarget{
+sealed trait TransformationTarget{
   type GraphT= DependencyGraph
   type STyp = TypeHolder
   def execute(g: GraphT, op : Operation) : GraphT
+  def productPrefix : String
 }
 
 case class TTNode
@@ -18,15 +19,15 @@ case class TTNode
   kind : NodeKind,
   styp : TypeHolder,
   mutable : Boolean)
-  extends TransformationTarget{
+  extends TransformationTarget {
 
   def execute(g: GraphT, op : Operation) = op match {
     case Add => g.addNode(id, name, kind, styp, mutable)
     case Remove => g.removeNode(id)
   }
 }
-case class TTEdge(edge : AGEdge)
-  extends TransformationTarget{
+case class TTEdge(edge : DGEdge)
+  extends TransformationTarget {
 
   def execute(g: GraphT, op : Operation) = op match {
     case Add =>edge.create(g)
@@ -37,29 +38,31 @@ case class TTEdge(edge : AGEdge)
 sealed abstract class Extremity{
   val node : NodeId
   def create(n : NodeId) : Extremity
+  def productPrefix : String
   /*def apply[K <: NodeKind[K]](e : AGEdge[K]): AGNode[K]*/
 }
 case class Source(node : NodeId) extends Extremity{
   /*def apply[K <: NodeKind[K]](e : AGEdge[K]) = e.source*/
   def create(n : NodeId) : Extremity = Source(n)
+
 }
 case class Target(node : NodeId) extends Extremity  {
   /*def apply[K <: NodeKind[K]](e : AGEdge[K]) = e.target*/
   def create(n : NodeId) : Extremity = Target(n)
 }
 
-case class TTRedirection(edge : AGEdge, extremity : Extremity)
+case class TTRedirection(edge : DGEdge, extremity : Extremity)
   extends TransformationTarget{
 
   def execute(g: GraphT, op : Operation) = (op, extremity) match {
     case (Add, Target(newTarget)) => edge.changeTarget(g, newTarget)
-    case (Remove, Target(newTarget)) => AGEdge(edge.kind, edge.source, newTarget).changeTarget(g, edge.target)
+    case (Remove, Target(newTarget)) => DGEdge(edge.kind, edge.source, newTarget).changeTarget(g, edge.target)
     case (Add, Source(newSource)) => edge.changeSource(g, newSource)
-    case (Remove,Source(newSource)) => AGEdge(edge.kind, newSource, edge.target).changeSource(g, edge.source)
+    case (Remove,Source(newSource)) => DGEdge(edge.kind, newSource, edge.target).changeSource(g, edge.source)
   }
 }
 
-class RedirectionWithMerge(edge : AGEdge, extremity : Extremity)
+class RedirectionWithMerge(edge : DGEdge, extremity : Extremity)
   extends TTRedirection(edge, extremity){
 
   override def execute(g: GraphT, op : Operation) = (op, extremity) match {

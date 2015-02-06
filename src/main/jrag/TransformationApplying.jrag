@@ -1,6 +1,6 @@
 
 aspect TransformationApplying {
-	
+
       public String CompilationUnit.getRootPath(){
         String packagePath = packageName().replaceAll("\\.", File.separator);
 //        System.out.println("packagePath : " + packagePath);
@@ -130,21 +130,55 @@ aspect TransformationApplying {
                  name, params, new List<Access>(),                                                                                         
                  new Opt<Block>(new Block(new ReturnStmt( new ClassInstanceExpr(hostType().createLockedAccess(), args)))));                
                                                                                                                                            
-     }                 
-    
+     }
+
+
+    /*
+    syn boolean Access.isPrimitiveTypeAccess();
+    eq Access.isPrimitiveTypeAccess() = false;
+    eq PrimitiveTypeAccess.isPrimitiveTypeAccess() = true;
+
+
+    public void ASTNode.replaceTypeAccess(Access oldUsee, Access newUsee){
+      for(int i = 0; i < getNumChild(); i++)
+          getChild(i).replaceTypeAccess(oldUsee, newUsee);
+  	}
+
+    public boolean TypeAccess.sameDeclAs(Access access){
+        return access.isPrimitiveTypeAccess()
+            && decl().equals(((PrimitiveTypeAccess)access).decl())
+            || access.isTypeAccess()
+            && this.decl().equals(((TypeAccess)access).decl());
+    }
+
+  	public void TypeAccess.replaceTypeAccess(Access oldUsee, Access newUsee){
+        if(sameDeclAs(oldUsee))
+            replace(this).with(newUsee);
+    }
+     */
 
 	public void ASTNode.replaceTypeAccess(Access oldUsee, Access newUsee){
       for(int i = 0; i < getNumChild(); i++)
           getChild(i).replaceTypeAccess(oldUsee, newUsee);
   	}
 
-  	public void TypeAccess.replaceTypeAccess(Access oldUsee, Access newUsee){
-        
+/*
+    public void PrimitiveTypeAccess.replaceTypeAccess(Access oldUsee, Access newUsee){
+        System.out.println("replaceType for primitive type : TODO !!!");
+    }
+*/
+
+    public void TypeAccess.replaceTypeAccess(Access oldUsee, Access newUsee){
+
         if( oldUsee.isTypeAccess()
                 && this.decl().equals(((TypeAccess)oldUsee).decl())){
             replace(this).with(newUsee);
         }
     }
+
+
+
+
   //stop propagation
   public void ClassInstanceExpr.replaceTypeAccess(Access oldUsee, Access newUsee){
 
@@ -258,5 +292,17 @@ aspect TransformationApplying {
          else                                                                                                                              
              super.puckDelete();                                                                                                         
      }
- 
+
+  public String Program.getRootPath(){
+        CompilationUnit rcu = getCompilationUnit(0);
+        int i = 0;
+        while(rcu == null && i < getNumCompilationUnit()){
+            i++;
+            rcu = getCompilationUnit(i);
+        }
+
+        if(rcu == null) throw new Error("cannot found rootPath");
+
+        return rcu.getRootPath();
+  }
 }

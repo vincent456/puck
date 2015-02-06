@@ -43,7 +43,7 @@ trait Solver {
 
               //val breakPoint = g.startSequence()
 
-              rules.redirectUses(g, AGEdge.uses(wu, usee), abs, absPolicy) match {
+              rules.redirectUses(g, DGEdge.uses(wu, usee), abs, absPolicy) match {
                   case Success((_, g2)) => (g2, unsolved)
                   case Failure(e) =>
                     logger.writeln("redirection error catched !!")(PuckLog.Debug)
@@ -198,7 +198,7 @@ trait Solver {
         val res = wrongUsers.foldLeft(Success(g) : Try[GraphT]){
           case (Failure(exc), wuId) => Failure(exc)
           case (Success(g0), wuId) =>
-            rules.redirectUses(g0, AGEdge.uses(wuId, impl), abs, absPolicy) match {
+            rules.redirectUses(g0, DGEdge.uses(wuId, impl), abs, absPolicy) match {
               case Success((_, g1)) => Success(g1)
               case Failure(e) => Failure(e)
             }

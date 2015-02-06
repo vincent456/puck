@@ -10,7 +10,7 @@ abstract class Type[T <: Type[T]] {
   def copy() : T
   def subtypeOf(other : Type[_]) : Boolean = this == other
 
-  def redirectUses(oldUsee : NIdT, newUsee: AGNode) : T
+  def redirectUses(oldUsee : NIdT, newUsee: DGNode) : T
 
   def canOverride(other : Type[_]) : Boolean = this subtypeOf other
 }
@@ -28,7 +28,7 @@ case class NamedType(id : NodeId, name : String)
 
   def copy() = create(id, name)
 
-  def redirectUses(oldUsee : NIdT, newUsee: AGNode) =
+  def redirectUses(oldUsee : NIdT, newUsee: DGNode) =
     if(id == oldUsee) create(newUsee.id, newUsee.name)
     else copy()
 
@@ -56,7 +56,7 @@ case class Tuple[T <: Type[T]](types: Seq[T])
   def create(ts: Seq[T]) = Tuple[T](ts)
   def copy() = create(types)
 
-  def redirectUses(oldUsee : NIdT, newUsee: AGNode) : Tuple[T] =
+  def redirectUses(oldUsee : NIdT, newUsee: DGNode) : Tuple[T] =
     create(types.map(_.redirectUses(oldUsee, newUsee)))
 
   override def subtypeOf(other : Type[_]) : Boolean = super.subtypeOf(other) ||
@@ -84,11 +84,11 @@ case class Arrow[T <: Type[T],
   def create(i : T, o : S) = Arrow[T, S](i, o)
   def copy() = create(input.copy(), output.copy())
 
-  def redirectUses(oldUsee : NIdT, newUsee: AGNode) : Arrow[T, S]=
+  def redirectUses(oldUsee : NIdT, newUsee: DGNode) : Arrow[T, S]=
     create(input.redirectUses(oldUsee, newUsee),
       output.redirectUses(oldUsee, newUsee))
 
-  def redirectContravariantUses(oldUsee : NIdT, newUsee: AGNode) =
+  def redirectContravariantUses(oldUsee : NIdT, newUsee: DGNode) =
     create(input.redirectUses(oldUsee, newUsee), output)
 
   override def subtypeOf(other : Type[_]) : Boolean = ??? /*super.subtypeOf(other) ||

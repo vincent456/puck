@@ -16,7 +16,7 @@ class BridgeTestSpec extends UnitSpec{
   println("graph loaded")
   /*fh.accessGraph(fh.parseConstraints())
   println("constraint parsed")*/
-  val nodeSet : Set[AGNode[JavaNodeKind]] = Set()
+  val nodeSet : Set[DGNode[JavaNodeKind]] = Set()
 
   "The Access Graph of the bridge example" should " iterate over all its node that are not primitive" in {
     nodeSet ++= graph

@@ -15,7 +15,7 @@ class Recording
 (private [this] val record : Seq[Transformation]) extends Iterable[Transformation] {
 
   type NIdT = NodeId
-  type EdgeT = AGEdge
+  type EdgeT = DGEdge
   type RecT = Recording
   def apply() = record
 
@@ -66,6 +66,7 @@ class Recording
 
 sealed abstract class Operation {
   def reverse : Operation
+  def productPrefix : String
 }
 case object Add extends Operation {
   def reverse = Remove

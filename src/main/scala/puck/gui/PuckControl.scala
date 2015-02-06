@@ -36,7 +36,7 @@ case class GraphDisplayRequest
  printId : Boolean,
  printSignature : Boolean,
  visibility : VisibilitySet,
- sUse : Option[AGEdge] = None)
+ sUse : Option[DGEdge] = None)
  extends ControlRequest
 
 case class ConstraintDisplayRequest(graph : DependencyGraph) extends ControlRequest
@@ -111,7 +111,7 @@ class PuckControl(val filesHandler : FilesHandler,
 
   def displayGraph(title : String,
                    graph : GraphT,
-                   someUse : Option[AGEdge],
+                   someUse : Option[DGEdge],
                    printId : Boolean,
                    printSignature : Boolean,
                    visibility : VisibilitySet){

@@ -126,6 +126,7 @@ class PuckMainPanel(val filesHandler: FilesHandler)
             new ResultPanel(filesHandler.initialRecord, res0, filesHandler.logger,
               printIds, printSigs, visibilitySet)
           resultsWrapper.contents += searchResultPanel
+          resultsWrapper.revalidate()
           control listenTo searchResultPanel
 
       }

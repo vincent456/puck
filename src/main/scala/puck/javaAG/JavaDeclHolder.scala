@@ -7,7 +7,7 @@ import puck.javaAG.nodeKind._
 
 object DeclHolder{
 
-  type NodeT = AGNode
+  type NodeT = DGNode
 
 
   def addTypeDeclToProgram(decl : AST.TypeDecl,
@@ -21,21 +21,8 @@ object DeclHolder{
     decl.setID(node.name)
     decl.setModifiers(new AST.Modifiers("public"))
     val cu = new AST.CompilationUnit()
+
     cu.setRelativeName(node.name)
-
-    val cpath = graph.containerPath(node.id)
-
-    val names = cpath.tail.map(graph.getNode(_).name)
-
-    var i = 0
-    var rcu = prog.getCompilationUnit(0)
-    while( rcu == null && i < prog.getNumCompilationUnit){
-      i += 1
-      rcu = prog.getCompilationUnit(i)
-    }
-    if(rcu == null) throw new AGError("cannot found rootPath")
-
-    cu.setPathName(rcu.getRootPath + names.mkString(java.io.File.separator) +".java")
     cu.setTypeDecl(decl, 0)
     cu.setFromSource(true)
     prog.addCompilationUnit(cu)

@@ -27,19 +27,32 @@ aspect NodeFactory  {
 	}
 
 
+	public int SuperConstructorAccess.buildAGNode(JavaGraphBuilder builder){
+		this.lock();
+		return decl().buildAGNode(builder);
+	}
+
+	public int ClassInstanceExpr.buildAGNode(JavaGraphBuilder builder){
+		this.lock();
+		return decl().buildAGNode(builder);
+	}
+
 	public int ClassAccess.buildAGNode(JavaGraphBuilder builder){
+		this.lock();
 		return type().buildAGNode(builder);
 	}
-	
+
 	public int ArrayAccess.buildAGNode(JavaGraphBuilder builder){
+		this.lock();
 		return type().buildAGNode(builder);
 	}
 	public int TypeAccess.buildAGNode(JavaGraphBuilder builder){
+		this.lock();
 		return decl().buildAGNode(builder);
 	}
 
 	public int ParTypeAccess.buildAGNode(JavaGraphBuilder builder){
-		return ((TypeAccess)getTypeAccess()).decl().buildAGNode(builder);
+		return ((TypeAccess)getTypeAccess()).buildAGNode(builder);
 	}
 
 
@@ -55,12 +68,16 @@ aspect NodeFactory  {
 	ParTypeAccess implements TypeDeclared;
 
 	public TypeDecl ParTypeAccess.getTypeDecl(){
-		return ((TypeAccess)getTypeAccess()).decl();
+		return ((TypeAccess)getTypeAccess()).getTypeDecl();
 	}
 
-	
+	public int MethodAccess.buildAGNode(JavaGraphBuilder builder){
+		this.lock();
+		return decl().buildAGNode(builder);
+	}
 	public int VarAccess.buildAGNode(JavaGraphBuilder builder){
-      	return decl().buildAGNode(builder);
+		this.lock();
+		return decl().buildAGNode(builder);
   	}
 
 	public int Variable.buildAGNode(JavaGraphBuilder builder);
@@ -89,11 +106,6 @@ aspect NodeFactory  {
 
 	
 
-	public int MethodAccess.buildAGNode(JavaGraphBuilder builder){
-      	return decl().buildAGNode(builder);
-  	}
-
-	
 	public int InstanceInitializer.buildAGNode(JavaGraphBuilder builder){
 		return hostType().buildAGNode(builder);
 	}

@@ -49,10 +49,10 @@ object JavaNodeKind {
 case class NamedTypeHolder(typ : NamedType) extends TypeHolder{
 
   def redirectUses(oldUsee : NodeId,
-                   newUsee: AGNode) : TypeHolder=
+                   newUsee: DGNode) : TypeHolder=
   NamedTypeHolder(typ.redirectUses(oldUsee, newUsee))
 
-  def redirectContravariantUses(oldUsee : NodeId, newUsee: AGNode) =
+  def redirectContravariantUses(oldUsee : NodeId, newUsee: DGNode) =
     redirectUses(oldUsee, newUsee)
 
   def mkString(graph : DependencyGraph) : String =  " : " + typ.toString
@@ -61,9 +61,9 @@ case class NamedTypeHolder(typ : NamedType) extends TypeHolder{
 case class MethodTypeHolder(typ : Arrow[Tuple[NamedType], NamedType]) extends TypeHolder{
 
   def redirectUses(oldUsee : NodeId,
-                   newUsee: AGNode) : TypeHolder=
+                   newUsee: DGNode) : TypeHolder=
     MethodTypeHolder(typ.redirectUses(oldUsee, newUsee))
-  def redirectContravariantUses(oldUsee : NodeId, newUsee: AGNode) =
+  def redirectContravariantUses(oldUsee : NodeId, newUsee: DGNode) =
     MethodTypeHolder(typ.redirectContravariantUses(oldUsee, newUsee))
 
   def mkString(graph : DependencyGraph ) : String =  " : " + typ.toString

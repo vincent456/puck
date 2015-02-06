@@ -52,7 +52,8 @@ abstract class FilesHandler(workingDirectory : File){
 
   val logPolicy : PuckLog.Verbosity => Boolean = {
 /*    case (PuckLog.Search,_) | (PuckLog.Solver, _) => true
-    case (PuckLog.InGraph,_) | (PuckLog.InJavaGraph, _ ) => true*/
+    case (PuckLog.InGraph,_) | (PuckLog.InJavaGraph, _ ) => true
+    case (PuckLog.GraphTransfoRules, _) => true*/
     case (PuckLog.NoSpecialContext, _) => true
     //case (PuckLog.GraphComparisonSearch, _) => true
     case _ => false
@@ -176,7 +177,7 @@ abstract class FilesHandler(workingDirectory : File){
               visibility : VisibilitySet,
               printId : Boolean,
               printSignatures : Boolean,
-              useOption : Option[AGEdge],
+              useOption : Option[DGEdge],
               writer : OutputStreamWriter = new FileWriter(graphFile(".dot"))){
     val printer = new DotPrinter(new BufferedWriter(writer), graph, visibility, dotHelper, printId,
       printSignatures, searchRoots = false, selectedUse = useOption)
@@ -214,7 +215,7 @@ abstract class FilesHandler(workingDirectory : File){
               visibility : VisibilitySet,
               printId : Boolean,
               printSignatures : Boolean,
-              selectedUse : Option[AGEdge],
+              selectedUse : Option[DGEdge],
               sOutput : Option[OutputStream] = None,
               outputFormat : DotOutputFormat = Png())
              (finish : Try[Int] => Unit = {case _ => ()}){

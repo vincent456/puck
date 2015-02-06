@@ -44,7 +44,7 @@ object JavaTransformationRules extends TransformationRules{
           case (tryAbs0, superType) =>
             tryAbs map {
               case (absId, g0) =>
-                (absId, g0.changeSource(AGEdge.isa(implId, superType), absId))
+                (absId, g0.changeSource(DGEdge.isa(implId, superType), absId))
             }
         }
 
@@ -85,8 +85,8 @@ object JavaTransformationRules extends TransformationRules{
                       val g1 = g0.changeContravariantType(child, node.styp, implId, abs.id)
 
                       if(g1.uses(child, implId)) {
-                        g.logger.writeln("interface creation : redirecting %s target to %s".format(AGEdge.uses(child, implId), abs), 3)
-                        redirectUses(g1, AGEdge.uses(child, implId), absId, SupertypeAbstraction) map {
+                        g.logger.writeln("interface creation : redirecting %s target to %s".format(DGEdge.uses(child, implId), abs), 3)
+                        redirectUses(g1, DGEdge.uses(child, implId), absId, SupertypeAbstraction) map {
                           case (_, g22) => g22
                         }
                       }
@@ -161,7 +161,7 @@ object JavaTransformationRules extends TransformationRules{
    */
 
   //!\ becarefull with AGNode use only to read values
-  type AGNodeT = AGNode
+  type AGNodeT = DGNode
 
   //findMergingCandidate find only candidates for interfaces
   //A merging candidate is either structurally equal

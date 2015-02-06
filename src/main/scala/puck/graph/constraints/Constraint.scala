@@ -20,12 +20,12 @@ trait Constraint{
 trait ConstraintWithInterlopers extends Constraint{
   val interlopers : NodeSet
 
-  def isViolatedBy(graph : GraphT, edge : AGEdge): Boolean =
+  def isViolatedBy(graph : GraphT, edge : DGEdge): Boolean =
     owners.hasScopeThatContains_*(graph, edge.target) &&
     violated(graph, edge)
 
   //assert owners.hasScopeThatContains_*(edge.target)
-  def violated(graph : GraphT, edge : AGEdge): Boolean =
+  def violated(graph : GraphT, edge : DGEdge): Boolean =
       interlopers.hasScopeThatContains_*(graph, edge.source) &&
       !scopeFriends.hasScopeThatContains_*(graph, edge.source)
 
@@ -53,11 +53,11 @@ case class ScopeConstraint(owners : NodeSet,
   def mkString(graph : GraphT) =
      predicate +  ConstraintPrinter.format(graph, owners, facades, interlopers, scopeFriends)
 
-  override def isViolatedBy(graph : GraphT, edge : AGEdge)=
+  override def isViolatedBy(graph : GraphT, edge : DGEdge)=
     super.isViolatedBy(graph, edge) &&
       !facades.hasScopeThatContains_*(graph, edge.target)
 
-  override def violated(graph : GraphT, edge : AGEdge)=
+  override def violated(graph : GraphT, edge : DGEdge)=
     super.violated(graph, edge) &&
       !facades.hasScopeThatContains_*(graph, edge.target)
 

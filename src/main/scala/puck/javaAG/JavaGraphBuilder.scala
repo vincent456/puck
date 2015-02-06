@@ -161,7 +161,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder(JavaNode)
     }
   }
 
-  private def throwRegisteringError(n : AGNode, astType : String) =
+  private def throwRegisteringError(n : DGNode, astType : String) =
     throw new Error(s"Wrong registering ! AGNode.kind : ${n.kind} while AST.Node is an $astType")
 
 

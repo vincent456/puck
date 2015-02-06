@@ -92,20 +92,30 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
     val program = sProgram.get
     val applyer = new AG2AST(program, logger)
 
+    println(program)
 
-    logger.writeln("/!\\ cache flushed after each transformations, may take some time")
+    //logger.writeln("/!\\ cache flushed after each transformations, may take some time")
     record.foldRight((graphOfResult(result), graph, jgraphBuilder.graph2ASTMap)) {
       case (r, (resultGraph, reenactor, graph2ASTMap)) =>
-        //println(r)
+        import ShowDG._
+        println(showTransformation(resultGraph).shows(r))
         //println("before " + program.getNumCUFromSrc + " cus in prog")
+        println("apply")
         val jreenactor = reenactor.asInstanceOf[JavaDependencyGraph]
         val res = applyer(resultGraph, jreenactor, graph2ASTMap, r)
+        println("post apply")
         //println("after " + program.getNumCUFromSrc + " cus in prog")
-        program.flushCaches()
+        //program.flushCaches()
+        println(program)
+        println("-----------------------------------------------------")
+        println("-----------------------------------------------------")
+        println("-----------------------------------------------------")
         (resultGraph, r.redo(reenactor), res)
     }
-    //printCode()
+    println("THE END")
+    println("FLUSH CACHES")
     program.flushCaches()
+    println("ELIMINATE LOCKED NAMES")
     program.eliminateLockedNames()
   }
 

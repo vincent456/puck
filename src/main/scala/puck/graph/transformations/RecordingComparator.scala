@@ -1,6 +1,6 @@
 package puck.graph.transformations
 
-import puck.graph.{NodeId, DependencyGraph, AGEdge}
+import puck.graph.{NodeId, DependencyGraph, DGEdge}
 import puck.search.{FindFirstSearchEngine, SearchState}
 import puck.util.{PuckLogger, PuckNoopLogger}
 
@@ -139,14 +139,14 @@ class RecordingComparator
       ts1.head.target match {
         case TTEdge(e) => attribNode(Seq(e.source, e.target), map, nodesToMap) {
           case (Seq(src, tgt), map1, nodesToMap1) =>
-            removeFirstAndCompareNext(TTEdge(AGEdge(e.kind, src, tgt)), map1, nodesToMap1 )
+            removeFirstAndCompareNext(TTEdge(DGEdge(e.kind, src, tgt)), map1, nodesToMap1 )
         }
 
         case TTRedirection(e, extremity) =>
           attribNode(Seq(e.source, e.target, extremity.node), map, nodesToMap){
             case (Seq(src, tgt, newExtyNode), map1, nodesToMap1) =>
               removeFirstAndCompareNext(TTRedirection(
-                AGEdge(e.kind, src, tgt), extremity.create(newExtyNode)), map1, nodesToMap1)
+                DGEdge(e.kind, src, tgt), extremity.create(newExtyNode)), map1, nodesToMap1)
           }
 
 

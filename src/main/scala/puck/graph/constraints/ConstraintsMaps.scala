@@ -92,7 +92,7 @@ class ConstraintsMaps
 
 
    def violatedScopeConstraintsOf(graph : GraphT, user : NIdT, usee0 : NIdT) : Seq[ScopeConstraint] = {
-     val uses = AGEdge.uses(user, usee0)
+     val uses = DGEdge.uses(user, usee0)
 
      def aux(usee : NIdT, acc : Seq[ScopeConstraint]) : Seq[ScopeConstraint] = {
        val acc2 = if(!graph.contains_*(usee, user))
@@ -109,7 +109,7 @@ class ConstraintsMaps
 
 
    def potentialScopeInterloperOf(graph : GraphT, user : NIdT, usee0 : NIdT) : Boolean = {
-     val uses = AGEdge.uses(user, usee0)
+     val uses = DGEdge.uses(user, usee0)
 
      def aux(usee: NIdT): Boolean =
        forAncestors(graph, usee){ usee1 =>
@@ -121,10 +121,10 @@ class ConstraintsMaps
    }
 
    def violatedElementConstraintOf(graph : GraphT, user : NIdT, usee: NIdT) =
-     elementsConstraints.getOrElse(usee, Iterable.empty).filter(_.violated(graph, AGEdge.uses(user, usee)))
+     elementsConstraints.getOrElse(usee, Iterable.empty).filter(_.violated(graph, DGEdge.uses(user, usee)))
 
    def potentialElementInterloperOf(graph : GraphT, user : NIdT, usee: NIdT) : Boolean =
-     elementsConstraints.getOrElse(usee, Iterable.empty).exists(_.violated(graph, AGEdge.uses(user, usee)))
+     elementsConstraints.getOrElse(usee, Iterable.empty).exists(_.violated(graph, DGEdge.uses(user, usee)))
 
    def interloperOf(graph : GraphT, user : NIdT, usee : NIdT) =
      (potentialScopeInterloperOf(graph, user, usee)

@@ -20,7 +20,7 @@ package object graph {
   val Recording = transformations.Recording
 
   import scala.language.implicitConversions
-  implicit def edgeToPair(edge : AGEdge) : (NodeId, NodeId) = (edge.source, edge.target)
+  implicit def edgeToPair(edge : DGEdge) : (NodeId, NodeId) = (edge.source, edge.target)
 
   type FilesHandler = io.FilesHandler
 
@@ -29,5 +29,4 @@ package object graph {
   def graphOfResult(result : ResultT) : DependencyGraph = result._1
   //in mutable version apply record before returning graph !
   def recordOfResult(result : ResultT) : Recording = result._2
-
 }

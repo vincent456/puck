@@ -1,6 +1,6 @@
 package puck.gui.search.decisionsFrames
 
-import puck.graph.{AGNode, NodeSet}
+import puck.graph.{DGNode, NodeSet}
 import puck.graph.constraints.{ElementConstraint, ScopeConstraint, Constraint}
 
 import scala.swing._
@@ -12,7 +12,7 @@ import scala.swing._
  */
 
 object ConstraintExceptionFrame{
-  def apply(sources : NodeSet, target : AGNode) {
+  def apply(sources : NodeSet, target : DGNode) {
     DecisionFrame {
       () => new ConstraintExceptionFrame(sources, target)
     }
@@ -20,7 +20,7 @@ object ConstraintExceptionFrame{
 }
 
 class ConstraintExceptionFrame private (val sources : NodeSet,
-                                        val target : AGNode)
+                                        val target : DGNode)
   extends DecisionFrame[Unit]{
 
   title = "Constraint Exceptions"
@@ -46,7 +46,7 @@ class ConstraintExceptionFrame private (val sources : NodeSet,
 
 
       def constraintEditor[T <: Constraint, U<:DecisionFrame[Unit]](ct : T,
-                                                                    getPanel : (T, NodeSet, AGNode, () => Unit) => Panel ){
+                                                                    getPanel : (T, NodeSet, DGNode, () => Unit) => Panel ){
         contents += new BoxPanel(Orientation.Horizontal){
           contents += new Label(ct.toString)
           contents += Swing.HGlue

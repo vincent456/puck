@@ -1,7 +1,7 @@
 package puck.gui.search.decisionsFrames
 
 
-import puck.graph.{NodeSet, AGNode}
+import puck.graph.{NodeSet, DGNode}
 
 import scala.swing._
 
@@ -10,13 +10,13 @@ import scala.swing._
  */
 object NodeChooser{
 
-  def apply(set : NodeSet, context : String) : Option[AGNode] = DecisionFrame {
+  def apply(set : NodeSet, context : String) : Option[DGNode] = DecisionFrame {
     () => new NodeChooser(set, context)
   }
 }
 
 class NodeChooser(nodes : NodeSet, context : String)
-  extends DecisionFrame[Option[AGNode]]{
+  extends DecisionFrame[Option[DGNode]]{
 
   title = "Node selection"
 
