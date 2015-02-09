@@ -14,18 +14,11 @@ object DeclHolder{
                            prog : AST.Program,
                            graph : DependencyGraph,
                            node : NodeT){
-    /*val prog = node.graph.root.kind match {
-      case r @ JavaRoot() => r.program
-      case r => throw new Error("root should be of kind JavaRoot instead of " + r)
-    }*/
     decl.setID(node.name)
     decl.setModifiers(new AST.Modifiers("public"))
-    val cu = new AST.CompilationUnit()
+    //package en path will be set when the contains arc will be add to the graph
+    prog.insertUnusedType("", "", decl)
 
-    cu.setRelativeName(node.name)
-    cu.setTypeDecl(decl, 0)
-    cu.setFromSource(true)
-    prog.addCompilationUnit(cu)
   }
 
   def createConstructorMethodDecl(prog : AST.Program,

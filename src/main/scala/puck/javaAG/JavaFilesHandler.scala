@@ -46,7 +46,9 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
       sProg match {
         case None => throw new AGBuildingError("Compilation error, no AST generated")
         case Some(p) => sProgram = Some(p)
+
           jgraphBuilder = p.buildAccessGraph(initStringLiteralsMap(decouple.get), ll)
+
           fileLines(apiNodesFile.get).foreach {
             (l: String) =>
               val tab = l.split(" ")
@@ -59,6 +61,8 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
 
           val (_, transfos) = NodeMappingInitialState.normalizeNodeTransfos(graphBuilder.g.recording(), Seq())
           initialRecord = new Recording(transfos)
+
+
 
           graph
       }
@@ -92,31 +96,19 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
     val program = sProgram.get
     val applyer = new AG2AST(program, logger)
 
-    println(program)
-
-    //logger.writeln("/!\\ cache flushed after each transformations, may take some time")
     record.foldRight((graphOfResult(result), graph, jgraphBuilder.graph2ASTMap)) {
       case (r, (resultGraph, reenactor, graph2ASTMap)) =>
         import ShowDG._
-        println(showTransformation(resultGraph).shows(r))
+        //println(showTransformation(resultGraph).shows(r))
         //println("before " + program.getNumCUFromSrc + " cus in prog")
-        println("apply")
         val jreenactor = reenactor.asInstanceOf[JavaDependencyGraph]
         val res = applyer(resultGraph, jreenactor, graph2ASTMap, r)
-        println("post apply")
         //println("after " + program.getNumCUFromSrc + " cus in prog")
-        //program.flushCaches()
-        println(program)
-        println("-----------------------------------------------------")
-        println("-----------------------------------------------------")
-        println("-----------------------------------------------------")
+        //println(program)
         (resultGraph, r.redo(reenactor), res)
     }
-    println("THE END")
-    println("FLUSH CACHES")
     program.flushCaches()
-    println("ELIMINATE LOCKED NAMES")
-    program.eliminateLockedNames()
+    program.eliminateLockedNamesInSources()
   }
 
   def printCode() {

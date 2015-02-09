@@ -42,8 +42,6 @@ class AG2AST(val program : AST.Program,
           val node = new DGNode(id, name, kind, styp, mutable, puck.graph.Created)
           val dh = DeclHolder.createDecl(program, resultGraph, id2declMap, node)
 
-          println(s"creating decl for $node")
-
           id2declMap + (id -> dh)
       }
 
@@ -94,9 +92,7 @@ class AG2AST(val program : AST.Program,
           case _ => logger.writeln("%s not applied on program".format(t))
         }
 
-      case _ =>
-        println("not applied on program")
-        logger.writeln(s"$t not applied on program")
+      case _ => logger.writeln(s"$t not applied on program")
     }
     id2declMap
   }
@@ -147,6 +143,8 @@ class AG2AST(val program : AST.Program,
         (id2declMap(source.id), id2declMap(target.id)) match {
           case (ClassDeclHolder(sDecl), idh: InterfaceDeclHolder) =>
             sDecl.addImplements(idh.decl.createLockedAccess())
+
+
           case _ => logger.writeln("%s not created".format(e))
         }
 

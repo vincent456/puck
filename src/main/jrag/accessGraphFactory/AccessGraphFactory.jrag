@@ -45,26 +45,26 @@ aspect AccessGraphFactory {
 		}
 	}
 
-	private List<CompilationUnit> Program.getCompilationUnitFromSource(){
-		List<CompilationUnit> list = new List<CompilationUnit>();
-		for (CompilationUnit cu : (List<CompilationUnit>)getCompilationUnitList()){
-			if(cu.fromSource()){
-				list.add(cu);
-			}
-		}
-		return list;
-	}
+    private int Program.getNumCuFromSources(){
+        int i =0;
+        for (CompilationUnit cu : (List<CompilationUnit>)getCompilationUnitList()){
+            if(cu.fromSource())
+            i++;
+        }
+        return i;
+    }
 
 	private void Program.verboseBuild(JavaGraphBuilder builder, LoadingListener ll){
-		List<CompilationUnit> compUnitList = getCompilationUnitFromSource();
-		double nchild = compUnitList.getNumChild();
+		double nchild = getNumCuFromSources();
 		double d = 0.0;
-		for (CompilationUnit cu : compUnitList) {
-			if (!cu.buildAccessGraph_CU(builder))				
-				break;
-			d++;
-			ll.update(d/nchild);
-		}
+        for (CompilationUnit cu : (List<CompilationUnit>)getCompilationUnitList()){
+            if(cu.fromSource()){
+                if(!cu.buildAccessGraph_CU(builder))
+                break;
+                d++;
+                ll.update(d/nchild);
+            }
+        }
 		ll.update(1);
 	}
 
