@@ -16,7 +16,7 @@ abstract class Type[T <: Type[T]] {
 }
 
 case class NamedType(id : NodeId, name : String)
-  extends Type[ NamedType]{
+  extends Type[NamedType]{
   override def toString = name
 
   override def equals(other : Any) = other match {

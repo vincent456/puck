@@ -23,7 +23,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder(JavaNode)
     UseDependencyMap(), UseDependencyMap(),
     AbstractionMap(), ConstraintsMaps(), Recording())
 
-   var graph2ASTMap = Map[Int, DeclHolder]()
+   var graph2ASTMap = Map[Int, ASTNodeLink]()
   /*def addPredefined( p : Predefined): Unit = {
     super.addPredefined(p.id, p.fullName, p.name, p.kind, EmptyDeclHolder)
   }
@@ -169,7 +169,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder(JavaNode)
   def register(
         nid : NodeIdT,
         kindExpected : JavaNodeKind,
-        declHolder : => DeclHolder,
+        declHolder : => ASTNodeLink,
         kindFound : String): Unit ={
     if(g.getNode(nid).kind == kindExpected)
       graph2ASTMap += (nid -> declHolder)

@@ -283,7 +283,6 @@ aspect TransformationApplying {
 
   public void ASTNode.puckDelete(){
          getParent().removeChild(this);
-         this.setParent(null);
      }
 
   public void TypeDecl.puckDelete(){                                                                                                           

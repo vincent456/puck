@@ -98,22 +98,29 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
 
     record.foldRight((graphOfResult(result), graph, jgraphBuilder.graph2ASTMap)) {
       case (r, (resultGraph, reenactor, graph2ASTMap)) =>
-        import ShowDG._
-        //println(showTransformation(resultGraph).shows(r))
-        //println("before " + program.getNumCUFromSrc + " cus in prog")
+        /*import ShowDG._
+        println(showTransformation(resultGraph).shows(r))*/
+
         val jreenactor = reenactor.asInstanceOf[JavaDependencyGraph]
         val res = applyer(resultGraph, jreenactor, graph2ASTMap, r)
-        //println("after " + program.getNumCUFromSrc + " cus in prog")
+
         //println(program)
         (resultGraph, r.redo(reenactor), res)
     }
+
+    println(program)
+    println(program.getNumCuFromSources + " before flush")
     program.flushCaches()
+    println(program.getNumCuFromSources + " after flush")
     program.eliminateLockedNamesInSources()
+    println(program.getNumCuFromSources + " after unlock")
+    println(program)
+
   }
 
   def printCode() {
     sProgram match {
-      case Some(p) => p.printCodeInDirectory(outDirectory.get)
+      case Some(p) =>p.printCodeInDirectory(outDirectory.get)
       case None => logger.writeln("no program registered")
     }
 

@@ -30,22 +30,14 @@ aspect AccessGraphFactory {
 		}
 
 		if(ll == null)
-			silentBuild(builder);
-		else
-			verboseBuild(builder, ll);
+            ll = new LoadingListener(){ public void update(double loading){}};
+
+		build(builder, ll);
 
 		return builder;
 	}
 
-	private void Program.silentBuild(JavaGraphBuilder builder){
-		List<CompilationUnit> compUnitList = getCompilationUnitList();
-		for (CompilationUnit cu : compUnitList) {
-			if (!cu.buildAccessGraph_CU(builder))				
-				break;
-		}
-	}
-
-    private int Program.getNumCuFromSources(){
+    public int Program.getNumCuFromSources(){
         int i =0;
         for (CompilationUnit cu : (List<CompilationUnit>)getCompilationUnitList()){
             if(cu.fromSource())
@@ -54,7 +46,7 @@ aspect AccessGraphFactory {
         return i;
     }
 
-	private void Program.verboseBuild(JavaGraphBuilder builder, LoadingListener ll){
+	private void Program.build(JavaGraphBuilder builder, LoadingListener ll){
 		double nchild = getNumCuFromSources();
 		double d = 0.0;
         for (CompilationUnit cu : (List<CompilationUnit>)getCompilationUnitList()){

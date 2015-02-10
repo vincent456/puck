@@ -80,14 +80,14 @@ class MethodType(i: MethodType.InputType,
               o : MethodType.OutputType) = new MethodType(i, o)
 
   def createReturnAccess(graph : DependencyGraph,
-                         id2Decl : Map[NodeId, DeclHolder]) =
+                         id2Decl : Map[NodeId, ASTNodeLink]) =
     id2Decl(output.id) match {
     case tk : TypedKindDeclHolder => tk.decl.createLockedAccess()
     case _ => throw new JavaAGError("need a typekind as output node")
   }
 
   def createASTParamList(graph : DependencyGraph,
-                         id2Decl : Map[NodeId, DeclHolder]) : Seq[AST.ParameterDeclaration] = {
+                         id2Decl : Map[NodeId, ASTNodeLink]) : Seq[AST.ParameterDeclaration] = {
     input.types.map { ty =>
       val node = graph.getNode(ty.id)
       id2Decl(ty.id) match {

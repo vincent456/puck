@@ -31,7 +31,9 @@ trait TransformationRules {
     g.getNode(implId).name + "_" + policy
 
   def createNode(g : GraphT, implId: NIdT, abskind : NodeKind, policy : AbstractionPolicy) : (NIdT, GraphT) = {
-    val (id, g1) = g.addNode(abstractionName(g, implId, abskind, policy), abskind, g.getNode(implId).styp)
+    val implTypHolder = g.getNode(implId).styp
+    val (id, g1) = g.addNode(abstractionName(g, implId, abskind, policy), abskind, implTypHolder)
+    //val g2 = implTypHolder.getTypeNodeIds.foldLeft(g1){(g0, tid) => g0.addUses(id, tid)}
     (id, g1.addAbstraction(implId, (id, policy)))
   }
 

@@ -5,7 +5,7 @@ import puck.graph.constraints.DelegationAbstraction
 import puck.javaAG.nodeKind._
 
 
-object DeclHolder{
+object ASTNodeLink{
 
   type NodeT = DGNode
 
@@ -23,7 +23,7 @@ object DeclHolder{
 
   def createConstructorMethodDecl(prog : AST.Program,
                                   graph : DependencyGraph,
-                                  id2Decl : Map[NodeId, DeclHolder],
+                                  id2Decl : Map[NodeId, ASTNodeLink],
                                   node : NodeT) : ConstructorMethodDeclHolder = {
     val someKtor = graph.container(node.id).flatMap( graph.content(_).find{ n0 =>
       val n1 = graph.getNode(n0)
@@ -47,8 +47,8 @@ object DeclHolder{
 
   def createDecl(prog : AST.Program,
                  graph : DependencyGraph,
-                 id2decl : Map[NodeId, DeclHolder],
-                 node : NodeT) : DeclHolder = {
+                 id2decl : Map[NodeId, ASTNodeLink],
+                 node : NodeT) : ASTNodeLink = {
     node.kind match {
       case Package => PackageDeclHolder
       case Interface =>
@@ -80,17 +80,21 @@ object DeclHolder{
   }
 }
 
-sealed trait DeclHolder
+sealed trait ASTNodeLink
 
-case object EmptyDeclHolder extends DeclHolder
-case object PackageDeclHolder extends DeclHolder
+case object NoDecl extends ASTNodeLink
+case object PackageDeclHolder extends ASTNodeLink
+
+sealed trait HasBodyDecl extends ASTNodeLink{
+  val decl : AST.BodyDecl
+}
 
 class DeclarationCreationError(msg : String) extends AGError(msg)
 
-case class ConstructorDeclHolder(decl : AST.ConstructorDecl) extends DeclHolder
-case class FieldDeclHolder(decl : AST.FieldDeclaration) extends DeclHolder
+case class ConstructorDeclHolder(decl : AST.ConstructorDecl) extends HasBodyDecl
+case class FieldDeclHolder(decl : AST.FieldDeclaration) extends HasBodyDecl
 
-trait MethodDeclHolder extends DeclHolder {
+trait MethodDeclHolder extends HasBodyDecl {
   val decl : AST.MethodDecl
 }
 
@@ -101,7 +105,7 @@ case class AbstractMethodDeclHolder(decl : AST.MethodDecl) extends MethodDeclHol
 case class ConstructorMethodDeclHolder( decl : AST.MethodDecl,
                                         ctorDecl : AST.ConstructorDecl) extends MethodDeclHolder
 
-trait TypedKindDeclHolder extends DeclHolder {
+trait TypedKindDeclHolder extends ASTNodeLink {
   def decl : AST.TypeDecl
 }
 

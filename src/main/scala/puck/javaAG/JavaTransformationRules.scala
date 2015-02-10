@@ -27,6 +27,18 @@ object JavaTransformationRules extends TransformationRules{
 
   import puck.util.ErrorHandling.traverse
 
+
+
+  def insertInTypeHierarchy(g : GraphT, classId : NIdT, interfaceId : NIdT) : GraphT =
+    g.directSuperTypes(classId).foldLeft(g){ (g0, superType) =>
+      g0.changeSource(DGEdge.isa(classId, superType), interfaceId)
+    }
+
+  def addTypesUses(g : GraphT, nodeId : NIdT) : GraphT = {
+    val typesUsed = g.getNode(nodeId).styp.getTypeNodeIds
+    typesUsed.foldLeft(g){(g0, tid) => g0.addUses(nodeId, tid)}
+  }
+
   override def createAbstraction(g : GraphT,
                                  implId: NIdT,
                                  abskind : NodeKind ,
@@ -40,13 +52,8 @@ object JavaTransformationRules extends TransformationRules{
           Interface,
           SupertypeAbstraction)
 
-        val tryAbs1 = g.directSuperTypes(implId).foldLeft(tryAbs){
-          case (tryAbs0, superType) =>
-            tryAbs map {
-              case (absId, g0) =>
-                (absId, g0.changeSource(DGEdge.isa(implId, superType), absId))
-            }
-        }
+        val tryAbs1 = tryAbs.map { case (absId, g0) => (absId, insertInTypeHierarchy(g0, implId, absId))}
+
 
         tryAbs1 flatMap {
           case (absId, g1) =>
@@ -63,7 +70,8 @@ object JavaTransformationRules extends TransformationRules{
                         val absChildNode = g3.getNode(absChild)
                         absChildNode.kind match {
                           case AbstractMethod =>
-                            Success(g3.changeType(absChild, absChildNode.styp, implId, absId))
+                            val g4 = g3.changeType(absChild, absChildNode.styp, implId, absId)
+                            Success(addTypesUses(g4, absChild))
                           case k => Failure(new AGError(k + " should be an abstract method !"))
                         }
                     }
@@ -102,6 +110,10 @@ object JavaTransformationRules extends TransformationRules{
       case (AbstractMethod, SupertypeAbstraction) =>
         //no (abs, impl) or (impl, abs) uses
         Success(createNode(g, implId, abskind, policy))
+      case (ConstructorMethod, _) =>
+        super.createAbstraction(g, implId, abskind, policy) map { case (absId, g0) =>
+          (absId, addTypesUses(g0, absId))
+        }
 
       case _ => super.createAbstraction(g, implId, abskind, policy)
     }

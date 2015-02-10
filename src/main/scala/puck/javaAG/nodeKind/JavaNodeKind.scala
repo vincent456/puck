@@ -48,6 +48,9 @@ object JavaNodeKind {
 
 case class NamedTypeHolder(typ : NamedType) extends TypeHolder{
 
+  def getTypeNodeIds : List[NodeId] = List(typ.id)
+
+
   def redirectUses(oldUsee : NodeId,
                    newUsee: DGNode) : TypeHolder=
   NamedTypeHolder(typ.redirectUses(oldUsee, newUsee))
@@ -59,6 +62,10 @@ case class NamedTypeHolder(typ : NamedType) extends TypeHolder{
 }
 
 case class MethodTypeHolder(typ : Arrow[Tuple[NamedType], NamedType]) extends TypeHolder{
+
+  def getTypeNodeIds : List[NodeId] = {
+    typ.input.types.foldLeft(List[NodeId](typ.output.id)){(acc, nt) => nt.id :: acc}
+  }
 
   def redirectUses(oldUsee : NodeId,
                    newUsee: DGNode) : TypeHolder=

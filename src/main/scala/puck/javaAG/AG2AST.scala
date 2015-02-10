@@ -1,6 +1,7 @@
 package puck.javaAG
 
 import java.util.NoSuchElementException
+import javax.lang.model.`type`.TypeKind
 
 import puck.graph._
 import puck.graph.constraints.SupertypeAbstraction
@@ -15,7 +16,7 @@ class AG2AST(val program : AST.Program,
              val logger : PuckLogger) {
   implicit val defaultVerbosity = (PuckLog.AG2AST, PuckLog.Info)
 
-  def safeGet(graph : DependencyGraph, id2declMap : Map[NodeId, DeclHolder])(id :NodeId): DeclHolder =
+  def safeGet(graph : DependencyGraph, id2declMap : Map[NodeId, ASTNodeLink])(id :NodeId): ASTNodeLink =
   try id2declMap(id)
   catch {
     case e : NoSuchElementException =>
@@ -30,8 +31,8 @@ class AG2AST(val program : AST.Program,
 
   def apply(resultGraph : DependencyGraph,
             reenactor: JavaDependencyGraph,
-            id2declMap: Map[NodeId, DeclHolder],
-            t: Transformation) : Map[NodeId, DeclHolder] = t match {
+            id2declMap: Map[NodeId, ASTNodeLink],
+            t: Transformation) : Map[NodeId, ASTNodeLink] = t match {
     case Transformation(Add, TTNode(id, name, kind, styp, mutable)) =>
       //redo t before createDecl
       val n = resultGraph.getNode(id)
@@ -40,7 +41,7 @@ class AG2AST(val program : AST.Program,
         case Some(_) => id2declMap
         case None =>
           val node = new DGNode(id, name, kind, styp, mutable, puck.graph.Created)
-          val dh = DeclHolder.createDecl(program, resultGraph, id2declMap, node)
+          val dh = ASTNodeLink.createDecl(program, resultGraph, id2declMap, node)
 
           id2declMap + (id -> dh)
       }
@@ -53,11 +54,14 @@ class AG2AST(val program : AST.Program,
         //println("creating edge " + e)
         add(resultGraph, safeGet(resultGraph, id2declMap), e)
 
-      case Transformation(Add, TTRedirection(e, Target(newTarget))) =>
-        logger.writeln("redirecting %s target to %s".format(e, newTarget))
+      case Transformation(_, TTRedirection(e, Target(newTarget))) =>
         redirectTarget(resultGraph, safeGet(resultGraph, id2declMap), e, newTarget)
 
-      case Transformation(Add, TTRedirection(e, Source(newSource))) =>
+      case Transformation(_, TTTypeRedirection(typed, typ, oldUsed, newUsed)) =>
+        redirectTarget(resultGraph: DependencyGraph, safeGet(resultGraph, id2declMap),
+          DGEdge.uses(typed, oldUsed), newUsed)
+
+      case Transformation(_, TTRedirection(e, Source(newSource))) =>
         redirectSource(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newSource)
       /*case Transformation(Remove(), TTEdge(e@AGEdge(Contains(), source, target))) =>
     println("removing edge " + e)
@@ -89,33 +93,45 @@ class AG2AST(val program : AST.Program,
         //val
         id2declMap get id map {
           case  dh: TypedKindDeclHolder => dh.decl.puckDelete()
-          case _ => logger.writeln("%s not applied on program".format(t))
+          case _ => //println(s"$t not applied on program")
+            logger.writeln("%s not applied on program".format(t))
         }
 
-      case _ => logger.writeln(s"$t not applied on program")
+      case _ => //println(s"$t not applied on program")
+        logger.writeln(s"$t not applied on program")
     }
     id2declMap
   }
 
 
 
+  def getPath(graph: DependencyGraph, typeDeclId : NodeId) = {
+    val cpath = graph.containerPath(typeDeclId)
+    val names = cpath.tail.map(graph.getNode(_).name)
+    program.getRootPath + names.mkString(java.io.File.separator) +".java"
+  }
+
+  def setPackageDecl(graph: DependencyGraph,
+                     packageId : NodeId,
+                     typeDeclNodeId : NodeId, itc : AST.TypeDecl) = {
+
+    val cu = itc.compilationUnit()
+    val pkgDecl = graph.fullName(packageId)
+    val path = getPath(graph, typeDeclNodeId)
+    
+    cu.setPackageDecl(pkgDecl)
+    cu.setPathName(path)
+    cu.setRelativeName(path)
+
+    //!\ very important !!
+    cu.flushCaches()
+  }
+
   def add(graph: DependencyGraph,
-          id2declMap: NodeId => DeclHolder,
+          id2declMap: NodeId => ASTNodeLink,
           e: DGEdge) = {
 
-    def setPackageDecl(packageAGNode : DGNode, typeDeclAGNode : DGNode, itc : TypedKindDeclHolder) = {
 
-      val cpath = graph.containerPath(typeDeclAGNode.id)
-
-      val names = cpath.tail.map(graph.getNode(_).name)
-
-      val cu = itc.decl.compilationUnit()
-
-      cu.setPathName(program.getRootPath + names.mkString(java.io.File.separator) +".java")
-      //cu.setRelativeName(relativePath) // weird but seems to be the default behavior
-      cu.setPackageDecl(graph.fullName(packageAGNode.id))
-
-    }
 
     val source = graph.getNode(e.source)
     val target = graph.getNode(e.target)
@@ -124,7 +140,7 @@ class AG2AST(val program : AST.Program,
 
       case Contains =>
         (source.kind, id2declMap(source.id), id2declMap(target.id)) match {
-          case (Package, _, i: TypedKindDeclHolder) => setPackageDecl(source, target, i)
+          case (Package, _, i: TypedKindDeclHolder) => setPackageDecl(graph, source.id, target.id, i.decl)
 
           case (Interface, th: TypedKindDeclHolder, AbstractMethodDeclHolder(mdecl)) =>
             th.decl.addBodyDecl(mdecl)
@@ -143,7 +159,6 @@ class AG2AST(val program : AST.Program,
         (id2declMap(source.id), id2declMap(target.id)) match {
           case (ClassDeclHolder(sDecl), idh: InterfaceDeclHolder) =>
             sDecl.addImplements(idh.decl.createLockedAccess())
-
 
           case _ => logger.writeln("%s not created".format(e))
         }
@@ -172,9 +187,9 @@ class AG2AST(val program : AST.Program,
 
 
   def redirectTarget(graph: DependencyGraph,
-                     id2declMap: NodeId => DeclHolder,
+                     id2declMap: NodeId => ASTNodeLink,
                      e: DGEdge, newTargetId: NodeId) {
-
+    logger.writeln("redirecting %s target to %s".format(e, newTargetId))
     if(e.target != newTargetId) {
       val target = graph.getNode(e.target)
       val source = graph.getNode(e.source)
@@ -196,19 +211,12 @@ class AG2AST(val program : AST.Program,
 
         case (oldk: TypedKindDeclHolder, newk: TypedKindDeclHolder) =>
           sourceDecl match {
-            /*case dh @ (FieldDeclHolder(_)
-              | ConcreteMethodDeclHolder(_)
-              | AbstractMethodDeclHolder(_)) =>
-                dh.asInstanceOf[DeclHolder].decl.map {
-                _.replaceTypeAccess(oldk.createLockedAccess().get, newk.createLockedAccess().get)
-              }*/
 
             case FieldDeclHolder(fdecl) =>
               fdecl.replaceTypeAccess(oldk.decl.createLockedAccess(), newk.decl.createLockedAccess())
-            case ConcreteMethodDeclHolder(mdecl) =>
-              mdecl.replaceTypeAccess(oldk.decl.createLockedAccess(), newk.decl.createLockedAccess())
-            case AbstractMethodDeclHolder(mdecl) =>
-              mdecl.replaceTypeAccess(oldk.decl.createLockedAccess(), newk.decl.createLockedAccess())
+
+            case mdh : MethodDeclHolder =>
+              mdh.decl.replaceTypeAccess(oldk.decl.createLockedAccess(), newk.decl.createLockedAccess())
 
             case  ClassDeclHolder(_) =>
               logger.writeln("Class user of TypeKind, assume this is the \"doublon\" of " +
@@ -254,7 +262,7 @@ class AG2AST(val program : AST.Program,
 
   def redirectSource(resultGraph: DependencyGraph,
                      reenactor : JavaDependencyGraph,
-                     id2declMap: NodeId => DeclHolder,
+                     id2declMap: NodeId => ASTNodeLink,
                      e: DGEdge, newSourceId: NodeId) {
     import AST.ASTNode.VIS_PUBLIC
 
@@ -280,29 +288,22 @@ class AG2AST(val program : AST.Program,
     }
 
     def moveTypeKind(newPackage: DGNode,  tDecl : AST.TypeDecl): Unit ={
-      //println("moving " + i +" from package "+ p1 +" to package" + p2)
-      val oldcu = tDecl.compilationUnit()
-
-      val rootPathName = oldcu.getRootPath
-
-      val path = rootPathName +  java.io.File.separator + resultGraph.fullName(newPackage.id).replaceAllLiterally(".", java.io.File.separator) +
-        java.io.File.separator
+      println("moving " + tDecl.fullName() +" to package" + newPackage)
 
       if (tDecl.compilationUnit.getNumTypeDecl > 1) {
         logger.writeln(tDecl.name + " cu with more than one classe")(verbosity(PuckLog.Debug))
+
+        val path = getPath(resultGraph, e.target)
+        val oldcu = tDecl.compilationUnit()
         oldcu.removeTypeDecl(tDecl)
         oldcu.programRoot().insertUnusedType(path, resultGraph.fullName(newPackage.id), tDecl)
 
-        /*import scala.collection.JavaConvers ions.asScalaIterator
-        asScalaIterator(oldcu.getImportDeclList.iterator).foreach{newCu.addImportDecl}*/
       }
       else {
         logger.writeln(tDecl.name + " cu with one classe")(verbosity(PuckLog.Debug))
-        val p: AST.Program = tDecl.programRoot
-        logger.writeln("before " + p.getNumCompilationUnit + " cus in prog")(verbosity(PuckLog.Debug))
-        tDecl.compilationUnit.setPackageDecl(resultGraph.fullName(newPackage.id))
-        tDecl.compilationUnit.setPathName(path + tDecl.name + ".java")
-        logger.writeln("after " + p.getNumCompilationUnit + " cus in prog")(verbosity(PuckLog.Debug))
+        logger.writeln("before " + program.getNumCompilationUnit + " cus in prog")(verbosity(PuckLog.Debug))
+        setPackageDecl(resultGraph, newPackage.id, e.target, tDecl)
+        logger.writeln("after " + program.getNumCompilationUnit + " cus in prog")(verbosity(PuckLog.Debug))
 
       }
 
@@ -312,6 +313,36 @@ class AG2AST(val program : AST.Program,
         } match {
           case Some(_) => tDecl.setVisibility(VIS_PUBLIC)
           case None => ()
+        }
+      }
+
+      println("tDecl.packageName() = " + tDecl.packageName())
+
+      reenactor.users(e.target).foldLeft(Set[String]()){ (cus, userId) =>
+        val scu = id2declMap(userId) match {
+          case dh : HasBodyDecl =>
+            if(dh.decl.hostType() != tDecl){
+              Some(dh.decl.compilationUnit())
+            }
+            else None
+
+          case tdh : TypedKindDeclHolder =>
+            if(tdh.decl != tDecl)
+              Some(tdh.decl.compilationUnit())
+            else
+              None
+          case _ => throw new AGError("should not happen")
+        }
+        scu match {
+          case Some(cu) if !cus.contains(cu.pathName()) =>
+            if(cu.packageName() != tDecl.packageName()){
+              println(" cu.packageName() = " + cu.packageName())
+              val pa = new AST.TypeAccess(tDecl.fullName())
+              pa.lock(tDecl)
+              cu.addImportDecl(new AST.SingleTypeImportDecl(pa))
+            }
+            cus + cu.pathName()
+          case _ => cus
         }
       }
     }
