@@ -5,6 +5,7 @@ import puck.graph.constraints.{RedirectionPolicy, SupertypeAbstraction, Abstract
 import puck.graph.transformations.TransformationRules
 import puck.javaAG.nodeKind._
 
+
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -70,8 +71,10 @@ object JavaTransformationRules extends TransformationRules{
                         val absChildNode = g3.getNode(absChild)
                         absChildNode.kind match {
                           case AbstractMethod =>
-                            val g4 = g3.changeType(absChild, absChildNode.styp, implId, absId)
-                            Success(addTypesUses(g4, absChild))
+                            /*val g4 = g3.changeType(absChild, absChildNode.styp, implId, absId)
+                            //TODO check why it is not needed
+                            Success(addTypesUses(g4, absChild))*/
+                            Success(g3.changeType(absChild, absChildNode.styp, implId, absId))
                           case k => Failure(new AGError(k + " should be an abstract method !"))
                         }
                     }
@@ -114,7 +117,6 @@ object JavaTransformationRules extends TransformationRules{
         super.createAbstraction(g, implId, abskind, policy) map { case (absId, g0) =>
           (absId, addTypesUses(g0, absId))
         }
-
       case _ => super.createAbstraction(g, implId, abskind, policy)
     }
   }
@@ -229,20 +231,18 @@ object JavaTransformationRules extends TransformationRules{
     findMergingCandidateIn(g, g.getNode(methodId), g.getNode(interfaceId))
 
 
-  def findMergingCandidateIn(g : GraphT, method : AGNodeT, interface : AGNodeT) = {
+  def findMergingCandidateIn(g : GraphT, method : AGNodeT, interface : AGNodeT) : Option[NIdT] = {
     //node.graph.logger.writeln("searching merging candidate for %s".format(node), 8)
     if(method.styp.isEmpty)
       throw new AGError("Method must have a type")
 
     val mType = method.styp.redirectUses(g.container(method.id).get, interface)
-
     g.content(interface.id).find { ncId =>
       val nc = g.getNode(ncId)
       nc.kind match {
-        case AbstractMethod =>  nc.name == method.name && nc.styp == mType
+        case AbstractMethod => nc.name == method.name && nc.styp == mType
         case _ => false
       }
     }
-
   }
 }

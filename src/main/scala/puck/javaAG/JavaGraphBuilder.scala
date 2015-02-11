@@ -139,7 +139,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder(JavaNode)
     def stringType = {
       val td = findTypeDecl("java.lang.string")
       val nid = addApiTypeNode(td)
-      NamedTypeHolder(new JavaNamedType(nid, "string"))
+      NamedTypeHolder(new JavaNamedType(nid))
     }
 
 

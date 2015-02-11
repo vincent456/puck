@@ -1,5 +1,7 @@
 package puck.graph
 
+import scalaz._
+import Scalaz._
 import puck.graph.DependencyGraph._
 import puck.graph.constraints._
 import puck.graph.transformations.RecordingComparator
@@ -146,7 +148,7 @@ class DependencyGraph
 
   /*def nodes : Seq[NodeIdT] = Range(0, idSeed + 1) */
   def nodes : Iterable[DGNode] = nodesIndex.values map {
-    case (id, name, kind, styp, mutable) => nodeBuilder(id, name, kind, styp, mutable, Created)
+    case (nid, name, kind, styp, mutable) => nodeBuilder(nid, name, kind, styp, mutable, Created)
   }
 
   private def sortedMap : Seq[(NIdT,  NT)] = nodesIndex.toSeq sortBy(_._1)
@@ -371,7 +373,8 @@ class DependencyGraph
   def fullName(id : NIdT) : String = {
     /*if (isRoot) nameTypeString
       else {*/
-    val path = containerPath(id).map{n => getNode(n).nameTypeString(this)}
+    import ShowDG._
+    val path = containerPath(id).map{n => showDG[DGNode](this)(nodeNameTypCord).shows(getNode(n))}
 
     (if (path.head == DependencyGraph.rootName)
       path.tail

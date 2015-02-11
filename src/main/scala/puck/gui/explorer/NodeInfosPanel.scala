@@ -1,7 +1,8 @@
 package puck.gui.explorer
 
 import puck.graph._
-import puck.graph.io.VisibilitySet
+import ShowDG._
+import io.VisibilitySet
 import puck.gui.{GraphDisplayRequest, PuckMainPanel}
 
 import scala.swing._
@@ -25,11 +26,16 @@ class NodeInfosPanel(val graph : DependencyGraph,
   val node = graph.getNode(nodeId)
 
   def mkStringWithNames(nodes : Iterable[NodeId]): String ={
-    nodes.map(graph.getNode(_).nameTypeString).mkString("\n", "\n", "\n")
+    nodes.map{ nid =>
+      val node = graph.getNode(nid)
+      showDG(graph)(nodeNameTypCord).shows(node)
+    }.mkString("\n", "\n", "\n")
   }
 
   leftComponent = new BoxPanel(Orientation.Vertical) {
-    contents += PuckMainPanel.leftGlued(new Label(node.kind + " : " + node.nameTypeString))
+    import ShowDG._
+    contents += PuckMainPanel.leftGlued(new Label(node.kind + " : " +
+      showDG(graph)(nodeNameTypCord).shows(node)))
     val prov = node.providers
     val cl = node.clients
     contents += new TextArea("Internal dependencies : " + node.internalDependencies.size + "\n" +

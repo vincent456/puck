@@ -15,21 +15,20 @@ abstract class Type[T <: Type[T]] {
   def canOverride(other : Type[_]) : Boolean = this subtypeOf other
 }
 
-case class NamedType(id : NodeId, name : String)
+case class NamedType(id : NodeId)
   extends Type[NamedType]{
-  override def toString = name
 
   override def equals(other : Any) = other match {
     case that : NamedType => that.id == this.id
     case _ => false
   }
 
-  def create(n : NodeId, name : String) = NamedType(n, name)
+  def create(n : NodeId) = NamedType(n)
 
-  def copy() = create(id, name)
+  def copy() = create(id)
 
   def redirectUses(oldUsee : NIdT, newUsee: DGNode) =
-    if(id == oldUsee) create(newUsee.id, newUsee.name)
+    if(id == oldUsee) create(newUsee.id)
     else copy()
 
   override def subtypeOf(other : Type[_]) : Boolean = ??? /*super.subtypeOf(other) ||
@@ -43,7 +42,6 @@ case class NamedType(id : NodeId, name : String)
 
 case class Tuple[T <: Type[T]](types: Seq[T])
   extends Type[Tuple[T]] {
-  override def toString = types mkString ("(", ", ", ")")
 
   override def equals(other : Any) = other match {
     case Tuple(ts) => types.length == ts.length &&
@@ -74,7 +72,6 @@ case class Tuple[T <: Type[T]](types: Seq[T])
 case class Arrow[T <: Type[T],
                  S <: Type[S]](input : T, output : S)
   extends Type[Arrow[T, S]]{
-  override def toString = input + " -> " + output
 
   override def equals(other : Any) : Boolean = other match {
     case Arrow(i : Type[_], o : Type[_]) => i == input  && output == o

@@ -1,6 +1,10 @@
 package puck.graph
 package io
 
+import scalaz._
+import Scalaz._
+
+
 import java.io.BufferedWriter
 
 /**
@@ -49,7 +53,10 @@ class DotPrinter
 
   val signatureString : TypeHolder => String =
     if (printSignatures)
-      styp => styp.mkString(graph).replaceAllLiterally(">", "&gt;") + " "
+      styp => {
+        import ShowDG._
+        showDG[TypeHolder](graph).shows(styp).replaceAllLiterally(">", "&gt;") + " "
+      }
     else _ => ""
 
 

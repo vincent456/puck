@@ -76,7 +76,7 @@ object NodeMappingInitialState{
   }
 
 
-  implicit val defaultVerbosity = (PuckLog.GraphComparisonSearch, PuckLog.Debug)
+  implicit val defaultVerbosity = (PuckLog.NoSpecialContext, PuckLog.Debug)
 
   def filterNoise[Kind <: NodeKind, T](transfos : Seq[Transformation], logger : PuckLogger):
   Seq[Transformation] = {
@@ -209,8 +209,6 @@ class NodeMappingInitialState
   var triedAll0 = false
 
   override def triedAll = triedAll0
-
-  import puck.graph.transformations.NodeMappingInitialState.defaultVerbosity
 
   def printlnNode(graph: DependencyGraph)( nid : NodeId){
     val n = graph.getNode(nid)

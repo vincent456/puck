@@ -13,7 +13,7 @@ aspect AccessGraphTypeFactory {
 		ArrayList<Type> tparams = new ArrayList<Type>();
 		for(ParameterDeclaration pdecl: c.getParameterList()){
 			int agTypeNode = pdecl.getTypeAccess().buildAGNode(builder);
-			tparams.add(new JavaNamedType(agTypeNode, pdecl.getTypeAccess().typeName()));
+			tparams.add(new JavaNamedType(agTypeNode));
 		}
 		return new Tuple(scala.collection.JavaConversions.asScalaBuffer(tparams).toList());
 	}
@@ -25,7 +25,7 @@ aspect AccessGraphTypeFactory {
 	public void MethodDecl.buildAGType(JavaGraphBuilder builder){
 
 		JavaNamedType retType = 
-			new JavaNamedType(getTypeAccess().buildAGNode(builder), getTypeAccess().typeName());
+			new JavaNamedType(getTypeAccess().buildAGNode(builder));
 		MethodType mt = new MethodType(ASTNode.astParamsToAGType(builder,this), retType);
 
 	    MethodTypeHolder typeHolder = new MethodTypeHolder( mt );
@@ -35,7 +35,7 @@ aspect AccessGraphTypeFactory {
 
 	public void ConstructorDecl.buildAGType(JavaGraphBuilder builder){
 		JavaNamedType retType = 
-		           new JavaNamedType(hostType().buildAGNode(builder), hostType().name());
+		           new JavaNamedType(hostType().buildAGNode(builder));
 
 		MethodType ct = new MethodType(ASTNode.astParamsToAGType(builder,this), retType);
 
@@ -47,7 +47,7 @@ aspect AccessGraphTypeFactory {
 
 	public void FieldDeclaration.buildAGType(JavaGraphBuilder builder){
 		
-		JavaNamedType type = new JavaNamedType(type().buildAGNode(builder), type().name());
+		JavaNamedType type = new JavaNamedType(type().buildAGNode(builder));
 	    NamedTypeHolder typeHolder = new NamedTypeHolder(type);
 		builder.setType(builder.getNodeByName(fullName()), typeHolder);
 	        

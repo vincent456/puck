@@ -7,9 +7,9 @@ import puck.graph._
  */
 
 
-class JavaNamedType(n : NodeId, name : String) extends NamedType(n, name){
+class JavaNamedType(n : NodeId) extends NamedType(n){
 
- override def create(n : NodeId, name : String) = new JavaNamedType(n, name)
+ override def create(n : NodeId) = new JavaNamedType(n)
 
  /*def hasMethodThatCanOverride(name : String, sig : MethodType) : Boolean =
     n.content.exists{ (childThis : AGNode[JavaNodeKind]) =>

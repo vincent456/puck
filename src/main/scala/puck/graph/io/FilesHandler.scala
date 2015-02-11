@@ -55,7 +55,7 @@ abstract class FilesHandler(workingDirectory : File){
     case (PuckLog.InGraph,_) | (PuckLog.InJavaGraph, _ ) => true
     case (PuckLog.GraphTransfoRules, _) => true*/
     case (PuckLog.NoSpecialContext, _) => true
-    //case (PuckLog.GraphComparisonSearch, _) => true
+    /*case (PuckLog.GraphComparisonSearch, _) => true*/
     case _ => false
 
   }

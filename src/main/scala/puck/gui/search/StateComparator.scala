@@ -3,7 +3,7 @@ package puck.gui.search
 import puck.graph._
 import puck.graph.io.VisibilitySet
 import puck.search.SearchState
-import puck.util.PuckSystemLogger
+import puck.util.{PuckFileLogger, PuckSystemLogger}
 
 import scala.swing.{BoxPanel, Button, Label, Orientation}
 
@@ -37,7 +37,9 @@ class StateComparator
   contents += Button(">>") {
     val equivalent = DependencyGraph.areEquivalent(initialRecord,
       graphOfResult(cb1.selectedState.result),
-      graphOfResult(cb2.selectedState.result), new PuckSystemLogger(_ => true))
+      graphOfResult(cb2.selectedState.result), new PuckFileLogger(_ => true,
+        new java.io.File("compare_log")))
+      //new PuckSystemLogger(_ => true))
 
     println("equivalent = " + equivalent)
 

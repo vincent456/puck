@@ -1,6 +1,7 @@
 package puck.graph
 
 import puck.graph.transformations._
+import puck.javaAG.nodeKind.{MethodTypeHolder, NamedTypeHolder}
 
 import scalaz._
 import Scalaz._
@@ -15,43 +16,37 @@ object ShowDG {
   //def showOperation : Show[Operation] = Show.showFromToString
   implicit def showFromToString[A] : Show[A] = Show.showFromToString[A]
 
-  def showTypeHolder(g : DependencyGraph) : Show[TypeHolder] = new Show[TypeHolder] {
-    override def shows(th : TypeHolder) : String = th.mkString(g)
-  }
-
-  implicit def graphToOptionGraph(g : DependencyGraph) : Option[DependencyGraph] = Some(g)
-  /*def showNode( sg : Option[DependencyGraph] = None): Show[TypeHolder] = sg match {
-    case None => Show.showFromToString
-    case Some(g) => new Show[DGNode] {
-      override def show(n : DGNode ) = Cord()
-    }
-  }*/
-
   type CordBuilder[A] = (DependencyGraph, A) => Cord
 
 
-  def showFromGraphOption[A](sg : Option[DependencyGraph] = None)
-                            (s : CordBuilder[A] ) : Show[A] = sg match {
-    case None => Show.showFromToString
-    case Some(g) => new Show[A] {
-      override def show(a : A) = s(g, a)
-    }
-  }
-
   import Cord.stringToCord
 
+  implicit def typeCord : CordBuilder[Type[_]] = (dg, th) => th match {
+    case NamedType(nid) => dg.getNode(nid).name
+    case Tuple(types) =>
+      types.map(t => typeCord(dg,t.asInstanceOf[Type[_]]).toString).mkString("(", ", ", ")")
+      //types.map(typeCord(dg,_)).fold
+    case Arrow(in, out) =>Cord( typeCord(dg, in.asInstanceOf[Type[_]]), " -> ", typeCord(dg, out.asInstanceOf[Type[_]]))
+  }
 
-  def edgeCord : CordBuilder[DGEdge] =  (dg, e) => e.mkString(dg)
-  def extremityCord : CordBuilder[Extremity] =
-    (dg, e) => Cord(e.productPrefix, "(", dg.getNode(e.node).toString(dg), ")")
+  implicit def typeHolderCord : CordBuilder[TypeHolder] = (dg, th) => th match {
+    case NoType => ""
+    case NamedTypeHolder(t) => Cord(" : ", typeCord(dg, t))
+    case MethodTypeHolder(t) => Cord(" : ", typeCord(dg, t))
+  }
 
-  def showEdge(sg : Option[DependencyGraph] = None) =
-    showFromGraphOption[DGEdge](sg)(edgeCord)
+  implicit def nodeIdCord : CordBuilder[NodeId] = { (dg, nid) =>
+    val n = dg.getNode(nid)
+    Cord(s"${n.id} - ${n.kind} ${n.name}", typeHolderCord(dg, n.styp))
+  }
 
-  def showExty(sg : Option[DependencyGraph] = None) =
-    showFromGraphOption[Extremity](sg)(extremityCord)
+  implicit def nodeCord : CordBuilder[DGNode] = (dg, n) => Cord(s"${n.id} - ${n.kind} ${n.name}" , typeHolderCord(dg, n.styp))
+  def nodeNameTypCord : CordBuilder[DGNode] = (dg, n) => Cord(n.name , typeHolderCord(dg, n.styp))
+  implicit def edgeCord : CordBuilder[DGEdge] =  (dg, e) => e.mkString(dg)
+  implicit def extremityCord : CordBuilder[Extremity] =
+    (dg, e) => Cord(e.productPrefix, "(", nodeCord(dg, dg.getNode(e.node)), ")")
 
-  def transfoTargetCord : CordBuilder[TransformationTarget] = (dg, tgt) =>
+  implicit def transfoTargetCord : CordBuilder[TransformationTarget] = (dg, tgt) =>
     tgt match {
       case TTEdge(edge) => edgeCord(dg, edge)
       case TTRedirection(edge, exty) =>
@@ -68,15 +63,21 @@ object ShowDG {
       case _ => tgt.toString
     }
 
-  def showTransfoTarget(sg : Option[DependencyGraph] = None) =
-    showFromGraphOption[TransformationTarget](sg)(transfoTargetCord)
-
-  def showTransformation(sg : Option[DependencyGraph] = None) =
-    showFromGraphOption[Transformation](sg) { (dg, tf) =>
-      tf.target match {
-        case TTNode(_, _ ,_ ,_ ,_) | TTEdge(_) =>
-          Cord(tf.operation.productPrefix, "(", transfoTargetCord(dg, tf.target),")")
-        case _ =>  transfoTargetCord(dg, tf.target)
-      }
+  implicit def transformationtCord : CordBuilder[Transformation] = (dg, tf) =>
+    tf.target match {
+      case TTNode(_, _ ,_ ,_ ,_) | TTEdge(_) =>
+        Cord(tf.operation.productPrefix, "(", transfoTargetCord(dg, tf.target),")")
+      case _ =>  transfoTargetCord(dg, tf.target)
     }
+
+  def showDG[A](sg : Option[DependencyGraph] = None)
+                            (implicit s : CordBuilder[A]): Show[A] = sg match {
+    case None => Show.showFromToString
+    case Some(g) => new Show[A] {
+      override def show(a : A) = s(g, a)
+    }
+  }
+
+  implicit def graphToOptionGraph(g : DependencyGraph) : Option[DependencyGraph] = Some(g)
+
 }

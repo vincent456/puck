@@ -8,7 +8,7 @@ import puck.graph.io.VisibilitySet
 import puck.graph.{DGNode, DependencyGraph, NodeId}
 
 import scala.swing.event.Event
-import scala.swing.{Component, Dimension, Publisher, ScrollPane}
+import scala.swing.{Component, Publisher, ScrollPane}
 
 /**
  * Created by lorilan on 09/05/14.
@@ -33,10 +33,12 @@ class GraphExplorer
 
   def addChildren(graph : DependencyGraph,
                   ptn: PuckTreeNode){
+    import puck.graph.ShowDG._
     val nodeList = graph.content(ptn.nodeId).map(graph.getNode).toList
     nodeList.sortBy(_.name) foreach {
       (n: DGNode) =>
-        val child = new PuckTreeNode(n.id, hiddens, n.nameTypeString(graph))
+        val child = new PuckTreeNode(n.id, hiddens,
+          showDG(graph)(nodeNameTypCord).shows(n))
         ptn add child
         addChildren(graph, child)
     }

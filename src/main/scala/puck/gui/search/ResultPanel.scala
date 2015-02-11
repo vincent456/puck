@@ -48,7 +48,7 @@ class ResultPanel
   }
 
   if(sortedRes.nonEmpty) {
-    //val comp : Component = new StateComparator(initialRecord, sortedRes, printId, printSig)
+    //val comp : Component = new StateComparator(initialRecord, sortedRes, printId, printSig, visibility)
     val comp : Component = new StateSelector(sortedRes, printId, printSig, visibility)
     contents += comp
 
@@ -70,11 +70,5 @@ class ResultPanel
         publish(SearchStateMapPrintingRequest(sortedRes, printId(), printSig()))
     }*/
   }
-
-/*  val allStates = res.initialState.iterator.toSeq.groupBy{ s => s.depth }
-  val comp2 : Component = new CSSearchStateComboBox(allStates, printId, printSig)
-  contents += comp2
-
-  this listenTo comp2*/
 
 }

@@ -268,31 +268,33 @@ trait TransformationRules {
 
   def findMergingCandidateIn(g : GraphT, id : NIdT, root : NIdT) : Option[NIdT] = None
 
+  import ShowDG._
+
   //TODO deep merge : merge also content need to refactor find merging candidate
   //(deep merge is now done in JavaNode for interface node only)
   def merge(g : GraphT, consumerId : NIdT, consumedId : NIdT) : GraphT = {
-    g.logger.writeln("merging " + g.getNode(consumedId) + " into " +g.getNode(consumerId) )
+    g.logger.writeln(s"merging ${g.getNode(consumedId)} into ${g.getNode(consumerId)}" )
 
     val consumed = g.getNode(consumedId)
     val consumer = g.getNode(consumerId)
     val g1 = g.users(consumedId).foldLeft(g) {
-      case (g0, userId) =>
+     (g0, userId) =>
         g0.changeTarget(DGEdge.uses(userId, consumedId), consumerId)
           .changeType(userId, g.getNode(userId).styp, consumedId, consumerId)
     }
 
     val g2 = g.usedBy(consumedId).foldLeft(g1) {
-      case (g0, usedId) => g0.changeSource(DGEdge.uses(consumedId, usedId), consumerId)
+      (g0, usedId) => g0.changeSource(DGEdge.uses(consumedId, usedId), consumerId)
     }
 
     val g3 = g.directSuperTypes(consumedId).foldLeft(g2) {
-      case (g0, stId) =>
+      (g0, stId) =>
         if(stId != consumerId) g0.changeSource(DGEdge.isa(consumedId, stId), consumerId)
         else g0.removeIsa(consumedId, stId)
     }
 
     val g4 = g.directSubTypes(consumedId).foldLeft(g3) {
-      case (g0, stId) =>
+      (g0, stId) =>
         if(stId != consumerId) g0.changeTarget(DGEdge.isa(stId, consumedId), consumerId)
         else g0.removeIsa(stId, consumedId)
     }
@@ -327,19 +329,16 @@ trait TransformationRules {
     }
 
 
-    val g7 = g.content(consumerId).foldLeft(g6) {
-      case (g0, childId) =>
-        findMergingCandidateIn(g0, childId, consumedId) match {
-          case Some(consumedChild) => merge(g0, childId, consumedChild)
-          case None => g0
+
+    val g7 = g.content(consumedId).foldLeft(g6) {
+      (g0, consumedChildId) =>
+        findMergingCandidateIn(g0, consumedChildId, consumerId) match {
+          case Some(consumerChildId) => merge(g0, consumerChildId, consumedChildId)
+          case None => moveTo(g0, consumedChildId, consumerId).get
+            .changeType(consumedChildId, g0.getNode(consumedChildId).styp, consumedId, consumerId)
         }
     }
 
-    val g8 = g7.content(consumedId).foldLeft(g7){
-      case(g0, childId) =>
-        moveTo(g0, childId, consumerId).get
-          .changeType(childId, g0.getNode(childId).styp, consumedId, consumerId)
-    }
     /*consumed.content.foldLeft(g6) {
       case (g0, childId) =>
         findMergingCandidateIn(childId, consumedId) match {
@@ -361,6 +360,7 @@ trait TransformationRules {
     }*/
 
 
-    g8.removeContains(g7.container(consumedId).get, consumedId).removeNode(consumedId)
+    g7.removeContains(g7.container(consumedId).get, consumedId)
+      .removeNode(consumedId)
   }
 }

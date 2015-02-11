@@ -380,8 +380,15 @@ class AG2AST(val program : AST.Program,
           subDecl.removeSuperInterface(superDecl)
           absDecl.addSuperInterfaceId(idh.decl.createLockedAccess())
 
-
-        case _ => throw new JavaAGError("redirecting SOURCE of %s to %s : application failure !".format(e, newSource))
+        case (AbstractMethodDeclHolder(oldMdecl),
+              AbstractMethodDeclHolder(newMdecl),
+               t : TypedKindDeclHolder) =>
+                println("source redirection not applied")
+        case _ =>
+          import ShowDG._
+          val eStr = showDG[DGEdge](reenactor).shows(e)
+          val nsrcStr = showDG[DGNode](reenactor).shows(newSource)
+          throw new JavaAGError(s"redirecting SOURCE of ${eStr} to ${nsrcStr} : application failure !")
       }
     }
   }

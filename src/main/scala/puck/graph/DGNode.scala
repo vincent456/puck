@@ -21,8 +21,6 @@ case class DGNode
 
 
   override def toString = id + " - " + kind +" " + name
-  def toString(implicit graph : GraphT) : String =  toString() + styp.mkString(graph)
-  def nameTypeString(implicit graph : GraphT) : String = name + styp.mkString(graph)
 
   /*def container(implicit graph : GraphT) = graph.container(id)
   def content(implicit graph : GraphT) = graph.content(id)
