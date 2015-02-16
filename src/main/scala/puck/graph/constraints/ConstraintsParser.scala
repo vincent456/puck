@@ -126,12 +126,25 @@ class ConstraintsParser private
           toDef(interlopers), toDef(friends))
     }
 
+  def hideScopeFrom : Parser[Unit] =
+    "hideScopeFrom(" ~> ident ~ "," ~ listOrIdent <~ ")." ^^ {
+      case  i ~ _ ~  friends =>
+        builder.addScopeConstraint(LiteralNodeSet(findNode(i)),
+          LiteralNodeSet(), LiteralNodeSet(), toDef(friends))
+    }
 
   def hideScopeSetFrom : Parser[Unit] =
     "hideScopeSetFrom(" ~> listOrIdent ~ "," ~ listOrIdent <~ ")." ^^ {
       case s ~ _ ~ interlopers =>
         builder.addScopeConstraint(toDef(s), LiteralNodeSet(),
           toDef(interlopers), LiteralNodeSet())
+    }
+
+  def hideScopeButFrom : Parser[Unit] =
+    "hideScopeButFrom(" ~> ident ~ "," ~ listOrIdent <~ ")." ^^ {
+      case i ~ _ ~ friends =>
+        builder.addScopeConstraint(LiteralNodeSet(findNode(i)), LiteralNodeSet(),
+          LiteralNodeSet(DependencyGraph.rootId), toDef(friends))
     }
 
   def hideScopeSetButFrom : Parser[Unit] =
@@ -231,6 +244,8 @@ class ConstraintsParser private
       | hideScope
       | hideScopeSet1
       | hideScopeSet4
+      | hideScopeFrom
+      | hideScopeButFrom
       | hideScopeSetFrom
       | hideScopeSetButFrom
       | hideScopeFromEachOther

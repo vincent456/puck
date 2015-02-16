@@ -38,6 +38,7 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
         logger.writeln("Compiling sources ...")
         val sources = findAllFiles(this.srcDirectory.get, srcSuffix, this.outDirectory.get.getName)
         val jars = findAllFiles(this.srcDirectory.get, ".jar", this.outDirectory.get.getName)
+        println(jars)
         JavaFilesHandler.compile(sources, fileLines(jarListFile.get) ++: jars )
 
     }

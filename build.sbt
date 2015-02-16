@@ -22,6 +22,9 @@ java14frontend := jrrtHome.value / "Java1.4Frontend"
 
 java15frontend := jrrtHome.value / "Java1.5Frontend"
 
+java16frontend := jrrtHome.value / "Java1.6Frontend"
+
+
 controlFlowGraph := jrrtHome.value / "ControlFlowGraph"
 
 jastaddSrcDir := baseDirectory.value / "src" / "main" / "jrag"

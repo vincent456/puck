@@ -187,6 +187,9 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder(JavaNode)
   def registerDecl(n : NodeIdT, decl : AST.TypeVariable) =
     register(n, TypeVariable, TypeVariableHolder(decl), "TypeVariable")
 
+  def registerDecl(n : NodeIdT, decl : AST.WildcardType) =
+    register(n, WildCardType, WildCardTypeHolder(decl), "WildCardType")
+
   def registerDecl(n : NodeIdT, decl : AST.TypeDecl) =
     register(n, Primitive, PrimitiveDeclHolder(decl), "PrimitiveType")
 

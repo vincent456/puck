@@ -12,6 +12,8 @@ object JrrtTasks extends Build {
   val java14frontend = settingKey[File]("Java1.4Frontend directory")
 
   val java15frontend = settingKey[File]("Java1.5Frontend directory")
+  
+  val java16frontend = settingKey[File]("Java1.6Frontend directory")
 
   val controlFlowGraph = settingKey[File]("ControlFlowGraph directory")
 
@@ -201,6 +203,8 @@ def beaverTask(srcFile : File){
             }}
 
           val java15Files : PathFinder = java15frontend.value ** ( "*.ast" | "*.jrag" | "*.jadd")
+          
+          
 
           val cfgFiles : PathFinder = Seq( controlFlowGraph.value / "Nodes.ast",
             controlFlowGraph.value / "ControlFlowGraph.jrag",
@@ -233,22 +237,26 @@ def beaverTask(srcFile : File){
           val jrrtFiles3 : PathFinder = Seq(jrrtDir / "TypeConstraints" / "TypeConstraintSolving.jrag",
             jrrtDir / "TypeConstraints" / "CollectTypeConstraints.jrag")
 
+          val java16Files : PathFinder = java16frontend.value / "Override.jrag"
+
 
           val generated = jastaddOutDir.value / "AST" / "ASTNode.java"
           val mustUpdate =
             if(generated.exists()){
-              val allFiles : PathFinder = java14Files +++ java15Files +++ cfgFiles +++
-               jrrtUtilFiles +++ jrrtFiles2 +++ puckFiles +++ jrrtFiles3
+              val allFiles : PathFinder = java14Files +++ java15Files +++ java16Files +++ 
+               cfgFiles +++ jrrtUtilFiles +++ jrrtFiles2 +++ puckFiles +++ jrrtFiles3
               needUpdate(allFiles.get, generated)
             }
             else
                true
 
+          
           if(!mustUpdate)
             println("AST generation : no update needed")
           else {
             val orderedPaths = (java14Files.getPaths
               ++: java15Files.getPaths.sorted
+              ++: java16Files.getPaths
               ++: cfgFiles.getPaths
               ++: jrrtUtilFiles.getPaths.sorted
               ++: jrrtFiles2.getPaths.sorted

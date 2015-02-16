@@ -5,6 +5,8 @@ aspect NamedElement {
 	eq ASTNode.isNamedElement() = false;
 
 	eq TypeDecl.isNamedElement() = true;
+	eq AbstractWildcardType.isNamedElement() = false;
+    eq WildcardType.isNamedElement() = true;
 	//eq InterfaceDecl.isNamedElement() = true;
 	//eq ClassDecl.isNamedElement() = true;
 
@@ -47,6 +49,11 @@ aspect NamedElement {
 	public void ClassDecl.registerDecl(JavaGraphBuilder builder, int thisId){
         builder.registerDecl(thisId, this);
     }
+
+    public void WildcardType.registerDecl(JavaGraphBuilder builder, int thisId){
+        builder.registerDecl(thisId, this);
+    }
+
     
     public void ConstructorDecl.registerDecl(JavaGraphBuilder builder, int thisId){
         builder.registerDecl(thisId, this);
@@ -71,6 +78,7 @@ aspect NamedElement {
     eq TypeVariable.getAGNodeKind() = JavaNodeKind.typeVariable();
     eq ClassDecl.getAGNodeKind() = JavaNodeKind.classKind();
     eq InterfaceDecl.getAGNodeKind() = JavaNodeKind.interfaceKind();
+    eq WildcardType.getAGNodeKind() = JavaNodeKind.wildcardType();
     eq PrimitiveType.getAGNodeKind() = JavaNodeKind.primitive();
 	eq VoidType.getAGNodeKind() = JavaNodeKind.primitive();
     eq NullType.getAGNodeKind() = JavaNodeKind.primitive();

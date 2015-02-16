@@ -152,5 +152,6 @@ case class ClassDeclHolder(decl : AST.ClassDecl) extends TypedKindDeclHolder {
  }*/
 }
 
+case class WildCardTypeHolder(decl : AST.WildcardType) extends TypedKindDeclHolder
 case class TypeVariableHolder(decl : AST.TypeVariable) extends TypedKindDeclHolder
 case class PrimitiveDeclHolder(decl : AST.TypeDecl) extends TypedKindDeclHolder

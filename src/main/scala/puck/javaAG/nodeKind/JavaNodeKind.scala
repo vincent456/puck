@@ -21,6 +21,11 @@ case object TypeVariable extends JavaNodeKind{
   override def abstractionPolicies = Seq()
   def abstractKinds(p : AbstractionPolicy) = Seq()
 }
+case object WildCardType extends JavaNodeKind{
+  def canContain(k : NodeKind) = false
+  override def abstractionPolicies = Seq()
+  def abstractKinds(p : AbstractionPolicy) = Seq()
+}
 
 object JavaNodeKind {
 
@@ -38,6 +43,7 @@ object JavaNodeKind {
 
   def primitive = Primitive
   def typeVariable = TypeVariable
+  def wildcardType = WildCardType
 
   def noType = NoType
 
