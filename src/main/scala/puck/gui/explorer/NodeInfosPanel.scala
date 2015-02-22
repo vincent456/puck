@@ -105,16 +105,19 @@ class NodeInfosPanel(val graph : DependencyGraph,
               case MouseClicked(_, _, _, _, _) =>
 
                 useDetails.contents.clear()
-                useDetails.contents += new Label(DGEdge.uses(userId, nodeId).mkString(graph))
+                useDetails.contents +=
+                  new Label(showDG[DGEdge](graph).shows(DGEdge.uses(userId, nodeId)))
 
                 if (primaryUses.nonEmpty){
                     useDetails.contents += new Label("Dominant Uses :")
-                    primaryUses.foreach(e => useDetails.contents += new Label(DGEdge.uses(e).mkString(graph)))
+                    primaryUses.foreach(e =>
+                      useDetails.contents += new Label(showDG[DGEdge](graph).shows(DGEdge.uses(e))))
                 }
 
                 if(sideUses.nonEmpty) {
                     useDetails.contents += new Label("Dominated Uses :")
-                    sideUses.foreach(e => useDetails.contents += new Label(DGEdge.uses(e).mkString(graph)))
+                    sideUses.foreach(e =>
+                      useDetails.contents += new Label(showDG[DGEdge](graph).shows(DGEdge.uses(e))))
                 }
 
                 useDetails.revalidate()

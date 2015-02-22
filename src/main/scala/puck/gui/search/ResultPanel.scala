@@ -31,7 +31,8 @@ class ResultPanel
 
   val sortedRes: Map[Int, Seq[ST]] =
     puck.util.Time.time(logger, defaultVerbosity){
-      evaluator.filterDifferentStates(evaluator.sort(res.finalStates))
+      evaluator.filterDifferentStates(evaluator.sort(res.initialState.iterator.toSeq))
+      //evaluator.filterDifferentStates(evaluator.sort(res.finalStates))
     }
   //val sortedRes  =  CSSearchStateComboBox.sort(res.finalStates)
 

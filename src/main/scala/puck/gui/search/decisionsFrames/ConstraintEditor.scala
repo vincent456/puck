@@ -1,7 +1,7 @@
 package puck.gui.search.decisionsFrames
 
-import puck.graph.constraints.{ElementConstraint, ScopeConstraint, ConstraintWithInterlopers, Constraint}
-import puck.graph.{DGNode, LiteralNodeSet, NodeSetDiff, NodeSet}
+import puck.graph.constraints._
+import puck.graph.DGNode
 
 import scala.swing._
 import java.awt.Color
@@ -20,9 +20,9 @@ object ConstraintEditor {
     }
 }
 
-abstract class ConstraintEditor[T<: Constraint] protected
-( val constraint : T,
-  var users : NodeSet,
+abstract class ConstraintEditor protected
+( val constraint : Constraint,
+  var users : RangeSet,
   val usee : DGNode,
   finish : () => Unit)
   extends BoxPanel(Orientation.Vertical) {
@@ -67,14 +67,14 @@ abstract class ConstraintEditor[T<: Constraint] protected
 }
 
 
-class FriendPanel[T <: ConstraintWithInterlopers](val editor : ConstraintEditor[T])
+class FriendPanel(val editor : ConstraintEditor)
   extends BoxPanel(Orientation.Vertical){
 
-  val constraint : T = editor.constraint
-  val users : NodeSet = editor.users
-  val usee : DGNode = editor.usee
+  import editor.constraint
+  import editor.users
+  import editor.usee
 
-  val nsd: NodeSetDiff = new NodeSetDiff(users, LiteralNodeSet())
+  val nsd: RangeSetDiff = ??? //= new RangeSetDiff(users, LiteralRangeSet())
   ???
   /*constraint.scopeFriends.foreach { f =>
     contents += (users.scopeThatContains_*(f) match {
@@ -105,11 +105,11 @@ class FriendPanel[T <: ConstraintWithInterlopers](val editor : ConstraintEditor[
 
 }
 
-class InterlopersPanel[T <: ConstraintWithInterlopers](val editor : ConstraintEditor[T])
+class InterlopersPanel(val editor : ConstraintEditor)
   extends BoxPanel(Orientation.Vertical){
-  val constraint : T = editor.constraint
-  val users : NodeSet = editor.users
-  val usee : DGNode = editor.usee
+  import editor.constraint
+  import editor.users
+  import editor.usee
 
   ???
   /*constraint.interlopers.foreach{ n =>
@@ -132,12 +132,12 @@ class InterlopersPanel[T <: ConstraintWithInterlopers](val editor : ConstraintEd
   contents+= Swing.VGlue
 }
 
-class OwnerPanel[T <: Constraint](val editor : ConstraintEditor[T])
+class OwnerPanel(val editor : ConstraintEditor)
   extends BoxPanel(Orientation.Vertical){
 
-  val constraint : T = editor.constraint
-  val users : NodeSet= editor.users
-  val usee : DGNode = editor.usee
+  import editor.constraint
+  import editor.users
+  import editor.usee
 
   ???
  /* constraint.owners.foreach{ n =>
@@ -165,20 +165,20 @@ class OwnerPanel[T <: Constraint](val editor : ConstraintEditor[T])
 }
 
 object ScopeConstraintEditor{
-  def apply(constraint : ScopeConstraint,
-            users : NodeSet,
+  def apply(constraint : Constraint,
+            users : RangeSet,
             usee : DGNode,
             finish : () => Unit) = new ScopeConstraintEditor(constraint, users, usee, finish)
 }
 
-class ScopeConstraintEditor private (constraint0 : ScopeConstraint,
-                                     users0 : NodeSet,
+class ScopeConstraintEditor private (constraint0 : Constraint,
+                                     users0 : RangeSet,
                                      usee0 : DGNode,
                                      finish0 : () => Unit)
-  extends ConstraintEditor[ScopeConstraint](constraint0, users0, usee0, finish0) {
+  extends ConstraintEditor(constraint0, users0, usee0, finish0) {
 
   def onReload() {
-    val set = LiteralNodeSet()
+    val set = LiteralRangeSet()
     ???
     /*users.foreach{ u =>
       if(constraint.isViolatedBy(AGEdge.uses(u, usee))){
@@ -235,20 +235,20 @@ class ScopeConstraintEditor private (constraint0 : ScopeConstraint,
   }
 }
 object ElementConstraintEditor{
-  def apply(constraint : ElementConstraint,
-            users : NodeSet,
+  def apply(constraint : Constraint,
+            users : RangeSet,
             usee : DGNode,
             finish : () => Unit) = new ElementConstraintEditor(constraint, users, usee, finish)
 }
 
-class ElementConstraintEditor private (constraint0 : ElementConstraint,
-                                       users0 : NodeSet,
+class ElementConstraintEditor private (constraint0 : Constraint,
+                                       users0 : RangeSet,
                                        usee0 : DGNode,
                                        finish0 : () => Unit)
-  extends ConstraintEditor[ElementConstraint](constraint0, users0, usee0, finish0){
+  extends ConstraintEditor(constraint0, users0, usee0, finish0){
 
   def onReload(){
-    val set = LiteralNodeSet()
+    val set = LiteralRangeSet()
     ???
     /*users.foreach{ u =>
       if(constraint.isViolatedBy(AGEdge.uses(u, usee))){

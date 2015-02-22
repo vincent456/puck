@@ -2,6 +2,6 @@ java_import(['hollyrock']).
 
 declareSet(actors, ['Tragedian', 'Comedian', 'Extra']).
 
-hideScopeSet(actors).
+hideSet(actors).
 
-friendOfScope('MovieMaker.main__String[]', actors).
+friendOf('MovieMaker.main__String[]', actors).

@@ -159,7 +159,7 @@ class DotPrinter
 
   def printSubGraph(n : DGNode){
     List("subgraph cluster" + n.id + " {",
-      "label=\"" + decorate_name(n) +"\";",
+      "label=<" + decorate_name(n) +">;",
       "color=black;") foreach writeln
 
     if(graph.content(n.id).isEmpty) writeln(n.id + "[label=\"\" shape=none ]")

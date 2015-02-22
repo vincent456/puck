@@ -6,64 +6,29 @@ package constraints
  */
 
 object ConstraintSet{
-  def empty[T <: Constraint] =
-    new ConstraintSet[T](Seq())
+  def empty = new ConstraintSet(Seq())
 }
-class ConstraintSet[T <: Constraint]
-(protected val content : Seq[T])
-  extends Iterable[T]{
+class ConstraintSet
+(private[constraints] val content : Seq[Constraint])
+  extends Iterable[Constraint]{
 
-  def this() = this(Seq[T]())
-
-  override def toString = content.mkString("\n")
+  def this() = this(Seq[Constraint]())
 
   // /!\ uses eq and not ==
-  def replaceEq(ct : T, newCt : T) : ConstraintSet[T] =
+  def replaceEq(ct : Constraint, newCt : Constraint) : ConstraintSet =
     new ConstraintSet(content.map {ct0 => if(ct0 eq ct) newCt else ct0})
 
-  def replaceEq(cts : Seq[(T, T)]) : ConstraintSet[T] =
+  def replaceEq(cts : Seq[(Constraint, Constraint)]) : ConstraintSet =
     cts.foldLeft(this){
       case (m, (oldCt, newCt)) => m.replaceEq(oldCt, newCt)
     }
 
   def iterator = content.iterator
 
-  def + (ct : T) : ConstraintSet[T] = new ConstraintSet( ct +: content )
-  //def - (ct : T) : ConstraintSet[Kind, T] = new ConstraintSet( content - ct )
+  def + (ct : Constraint) : ConstraintSet = new ConstraintSet( ct +: content )
+  //def - (ct : Constraint) : ConstraintSet[Kind, Constraint] = new ConstraintSet( content - ct )
 
-  def friendScopeThatContains_*(graph : DependencyGraph, n: NodeId) = {
+  def hasFriendRangeThatContains_*(graph : DependencyGraph, n : NodeId)=
+    content.exists( _.friends.hasRangeThatContains_*(graph, n))
 
-    def aux(l : Seq[T]) : Option[NodeId] =
-      if(l.isEmpty) None
-      else{
-        l.head.scopeFriends.scopeThatContains_*(graph, n) match {
-          case None => aux(l.tail)
-          case sn => sn
-        }
-      }
-
-    aux(content)
-
-  }
-  def hasFriendScopeThatContains_*(graph : DependencyGraph, n : NodeId)=
-    content.exists( _.scopeFriends.hasScopeThatContains_*(graph, n))
-
-}
-object CanSeeSet {
-  def apply() = new CanSeeSet(Seq())
-}
-class CanSeeSet(s : Seq[ElementFriendOfElementsConstraint])
-  extends ConstraintSet[ElementFriendOfElementsConstraint](s){
-
-  def isFriend(n: NodeId) = {
-
-    def aux(l : Seq[ElementFriendOfElementsConstraint]) : Boolean =
-      if(l.isEmpty) false
-      else l.head.elementFriends.contains(n) || aux(l.tail)
-
-    aux(content)
-
-  }
-
-  override def + (ct : ElementFriendOfElementsConstraint) : CanSeeSet = new CanSeeSet( ct +: content )
 }

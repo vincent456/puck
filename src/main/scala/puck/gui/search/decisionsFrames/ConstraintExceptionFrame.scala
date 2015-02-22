@@ -1,7 +1,7 @@
 package puck.gui.search.decisionsFrames
 
-import puck.graph.{DGNode, NodeSet}
-import puck.graph.constraints.{ElementConstraint, ScopeConstraint, Constraint}
+import puck.graph.DGNode
+import puck.graph.constraints.{Constraint, RangeSet}
 
 import scala.swing._
 
@@ -12,22 +12,22 @@ import scala.swing._
  */
 
 object ConstraintExceptionFrame{
-  def apply(sources : NodeSet, target : DGNode) {
+  def apply(sources : RangeSet, target : DGNode) {
     DecisionFrame {
       () => new ConstraintExceptionFrame(sources, target)
     }
   }
 }
 
-class ConstraintExceptionFrame private (val sources : NodeSet,
+class ConstraintExceptionFrame private (val sources : RangeSet,
                                         val target : DGNode)
   extends DecisionFrame[Unit]{
 
   title = "Constraint Exceptions"
 
-  def violatedScopeConstraints() : List[ScopeConstraint] = ???
+  def violatedScopeConstraints() : List[Constraint] = ???
     //sources.map(_.violatedScopeConstraintsOf(target)).flatten.toList
-  def violatedElementConstraints() : List[ElementConstraint] = ???
+  def violatedElementConstraints() : List[Constraint] = ???
     //sources.map(_.violatedElementConstraintOf(target)).flatten.toList
 
   def makePanel() : Panel =  new BoxPanel(Orientation.Vertical) {
@@ -46,7 +46,7 @@ class ConstraintExceptionFrame private (val sources : NodeSet,
 
 
       def constraintEditor[T <: Constraint, U<:DecisionFrame[Unit]](ct : T,
-                                                                    getPanel : (T, NodeSet, DGNode, () => Unit) => Panel ){
+                                                                    getPanel : (T, RangeSet, DGNode, () => Unit) => Panel ){
         contents += new BoxPanel(Orientation.Horizontal){
           contents += new Label(ct.toString)
           contents += Swing.HGlue

@@ -61,78 +61,36 @@ class GraphBuilder
     constraintsMap = ConstraintsMaps()
   }
 
-  def setDefs(defs : Map[String, NamedNodeSet]): Unit = {
-    constraintsMap = constraintsMap.newConstraintsMaps(nNamedSets =  defs)
+  def setDefs(defs : Map[String, NamedRangeSet]): Unit = {
+    constraintsMap = constraintsMap.copy(namedSets =  defs)
   }
 
-  def addScopeConstraint(owners : NodeSet,
-                         facades : NodeSet,
-                         interlopers : NodeSet,
-                         friends : NodeSet) = {
-    val ct = new ScopeConstraint(owners, facades, interlopers, friends)
+  def addHideConstraint(owners : RangeSet,
+                        facades : RangeSet,
+                        interlopers : RangeSet,
+                        friends : RangeSet) = {
+    val ct = new Constraint(owners, facades, interlopers, friends)
 
-    val scopeCtsMap = owners.foldLeft(constraintsMap.scopeConstraints){
-      case (map, ownerId) =>
-        val s = map.getOrElse(ownerId, new ConstraintSet[ScopeConstraint]())
-        map + (ownerId -> (s + ct) )
+    val hideConstraintsMap = owners.foldLeft(constraintsMap.hideConstraints){
+      case (map, owner) =>
+        val s = map.getOrElse(owner, new ConstraintSet())
+        map + (owner -> (s + ct) )
     }
-    constraintsMap = constraintsMap.newConstraintsMaps(nScopeConstraints = scopeCtsMap)
+    constraintsMap = constraintsMap.copy(hideConstraints = hideConstraintsMap)
   }
 
-  def addElementConstraint(owners : NodeSet,
-                           interlopers : NodeSet,
-                           friends : NodeSet) = {
-    val ct = new ElementConstraint(owners, interlopers, friends)
+  def addFriendConstraint( friends : RangeSet,
+                           befriended : RangeSet) = {
+    val ct = new Constraint(befriended, RangeSet.empty(), RangeSet.empty(), friends)
 
-    val eltCtsMap = owners.foldLeft(constraintsMap.elementsConstraints){
-      case (map, ownerId) =>
-        val s = map.getOrElse(ownerId, new ConstraintSet[ElementConstraint]())
-        map + (ownerId -> (s + ct) )
-    }
-
-    constraintsMap = constraintsMap.newConstraintsMaps(nElementsConstraints = eltCtsMap)
-
-  }
-
-  def addScopeFriendOfScopeConstraint( friends : NodeSet,
-                           befriended : NodeSet) = {
-    val ct = new ScopeFriendOfScopesConstraint(friends, befriended)
-
-    val friendCtsMap = befriended.foldLeft(constraintsMap.friendOfScopesConstraints){
-      case (map, ownerId) =>
-        val s = map.getOrElse(ownerId, new ConstraintSet[ScopeFriendOfScopesConstraint]())
-        map + (ownerId -> (s + ct) )
+    val friendCtsMap = befriended.foldLeft(constraintsMap.friendConstraints){
+      case (map, owner) =>
+        val s = map.getOrElse(owner, new ConstraintSet())
+        map + (owner -> (s + ct) )
     }
 
-    constraintsMap = constraintsMap.newConstraintsMaps(nFriendOfScopesConstraints = friendCtsMap)
+    constraintsMap = constraintsMap.copy(friendConstraints = friendCtsMap)
 
   }
 
-  def addScopeFriendOfElementConstraint( friends : NodeSet,
-                                befriended : NodeSet) = {
-    val ct = new ScopeFriendOfElementsConstraint(friends, befriended)
-
-    val friendCtsMap = befriended.foldLeft(constraintsMap.friendOfElementsConstraints){
-      case (map, ownerId) =>
-        val s = map.getOrElse(ownerId, new ConstraintSet[ScopeFriendOfElementsConstraint]())
-        map + (ownerId -> (s + ct) )
-    }
-
-    constraintsMap = constraintsMap.newConstraintsMaps(nFriendsOfElementsConstraints = friendCtsMap)
-
-  }
-
-  def addCanSee( friends : NodeSet,
-                 befriended : NodeSet) = {
-    val ct = new ElementFriendOfElementsConstraint(friends, befriended)
-
-    val friendCtsMap = befriended.foldLeft(constraintsMap.canSeeConstraints){
-      case (map, ownerId) =>
-        val s = map.getOrElse(ownerId, CanSeeSet())
-        map + (ownerId -> (s + ct) )
-    }
-
-    constraintsMap = constraintsMap.newConstraintsMaps(nCanSeeConstraints = friendCtsMap)
-
-  }
 }

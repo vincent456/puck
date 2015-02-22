@@ -3,53 +3,42 @@ package constraints
 
 import puck.util.Logger
 
+import scalaz.Show
+
 /**
  * Created by lorilan on 31/10/14.
  */
 object ConstraintsMaps{
-  type CanSeeMap = Map[NodeId, CanSeeSet]
-  type FriendsOfScopesMap = Map[NodeId, ConstraintSet[ScopeFriendOfScopesConstraint]]
-  type FriendsOfElementsMap = Map[NodeId, ConstraintSet[ScopeFriendOfElementsConstraint]]
-  type CtWithInterlopersMap[CtT <: ConstraintWithInterlopers] = Map [NodeId, ConstraintSet[CtT]]
+  //TODO change key type to range ??
+  type FriendConstraintMap = Map[Range, ConstraintSet]
+  type HideConstraintMap = Map [Range, ConstraintSet]
 
-  type EltConstraintsMap = Map [NodeId, ConstraintSet[ElementConstraint]]
-  type ScopeConstraintsMap = Map [NodeId, ConstraintSet[ScopeConstraint]]
-
-  def apply() = new ConstraintsMaps(Map(), Map(), Map(), Map(), Map(), Map())
+  def apply() = new ConstraintsMaps(Map(), Map(), Map())
 }
 
 import puck.graph.constraints.ConstraintsMaps._
 
-class ConstraintsMaps
-(val namedSets : Map[String, NamedNodeSet],
- val friendOfElementsConstraints : FriendsOfElementsMap,
- val friendOfScopesConstraints : FriendsOfScopesMap,
- val canSeeConstraints : CanSeeMap,
- val elementsConstraints : EltConstraintsMap,
- val scopeConstraints : ScopeConstraintsMap)
+case class ConstraintsMaps
+(namedSets : Map[String, NamedRangeSet],
+ friendConstraints : FriendConstraintMap,
+ hideConstraints : HideConstraintMap)
  {
-
-   def newConstraintsMaps( nNamedSets : Map[String, NamedNodeSet] = namedSets,
-                           nFriendsOfElementsConstraints : FriendsOfElementsMap = friendOfElementsConstraints,
-                           nFriendOfScopesConstraints : FriendsOfScopesMap = friendOfScopesConstraints,
-                           nCanSeeConstraints : CanSeeMap = canSeeConstraints,
-                           nElementsConstraints : EltConstraintsMap = elementsConstraints,
-                           nScopeConstraints : ScopeConstraintsMap = scopeConstraints) =
-    new ConstraintsMaps(nNamedSets,
-                        nFriendsOfElementsConstraints,
-                        nFriendOfScopesConstraints,
-                        nCanSeeConstraints,
-                        nElementsConstraints,
-                        nScopeConstraints)
 
    type GraphT = DependencyGraph
    type NIdT = NodeId
 
-   def forAncestors(graph : GraphT, nid : NodeId)(f : NodeId => Boolean): Boolean =
-     f(nid) || (graph.container(nid) match {
-      case None => false
-      case Some(id) => forAncestors(graph, id)(f)
+   def forAncestors(graph : GraphT, nid : NodeId)(f : Range => Boolean): Boolean ={
+
+     def aux(nid : NodeId) : Boolean =
+       f(Scope(nid)) || (graph.container(nid) match {
+       case None => false
+       case Some(id) => aux(id)
      })
+     f(Element(nid)) || aux(nid)
+   }
+
+
+
 
    def forContainer(graph : GraphT, nid : NodeId)(f : NodeId => Boolean): Boolean =
      graph.container(nid) match {
@@ -59,44 +48,34 @@ class ConstraintsMaps
 
 
    def printConstraints[V](graph : GraphT, logger : Logger[V], v : V){
+     import ShowConstraints._
+     import ShowDG.{showDG, graphToOptionGraph}
      namedSets.foreach{
-       case (_, namedSet) => logger.writeln(namedSet.mkDefString(graph))(v)
+       case (_, namedSet) => logger.writeln(showDG(graph)(namedRangeSetDefCord).show(namedSet))(v)
      }
-     type CtMap[CtT <: Constraint] = Map [NodeId, ConstraintSet[CtT]]
-     def printMap[CtT <: Constraint]( m : CtMap[CtT]) = m foreach { case (k, s) =>
-         s.foreach { s => if(s.owners.head == k) logger.writeln(s.mkString(graph))(v)}
-     }
-     printMap(canSeeConstraints)
-     printMap(friendOfElementsConstraints)
-     printMap(friendOfScopesConstraints)
-     printMap(elementsConstraints)
-     printMap(scopeConstraints)
+     def printMap( m : Map [Range, ConstraintSet]) =
+       m foreach { case (k, s) =>
+         s.foreach { c => if(c.owners.head == k )
+           logger.writeln(showDG[Constraint](graph).shows(c))(v)}
+       }
+     printMap(hideConstraints)
+     printMap(friendConstraints)
    }
 
 
-   def friendOfScope(graph : GraphT, node : NIdT, befriended : NIdT) : Boolean = {
+   def friendOf(graph : GraphT, node : NIdT, befriended : NIdT) : Boolean = {
      forAncestors(graph, befriended){ befriended0 =>
-       val frCtSet = friendOfScopesConstraints.getOrElse(befriended0, ConstraintSet.empty)
-       frCtSet.hasFriendScopeThatContains_*(graph, node)
+       val frCtSet = friendConstraints.getOrElse(befriended0, ConstraintSet.empty)
+       frCtSet.hasFriendRangeThatContains_*(graph, node)
      }
    }
-   def friendOfElement(graph : GraphT, node : NIdT, befriended : NIdT) : Boolean = {
-     val frCtSet = friendOfElementsConstraints.getOrElse(befriended, ConstraintSet.empty)
-     frCtSet.hasFriendScopeThatContains_*(graph, node)
-   }
 
-   def eltFriendOfElement(graph: GraphT, node : NIdT, befriended : NIdT) : Boolean = {
-     val frCtSet = canSeeConstraints.getOrElse(befriended, CanSeeSet())
-     frCtSet.isFriend(node)
-   }
-
-
-   def violatedScopeConstraintsOf(graph : GraphT, user : NIdT, usee0 : NIdT) : Seq[ScopeConstraint] = {
+   /*def violatedScopeConstraintsOf(graph : GraphT, user : NIdT, usee0 : NIdT) : Seq[Constraint] = {
      val uses = DGEdge.uses(user, usee0)
 
-     def aux(usee : NIdT, acc : Seq[ScopeConstraint]) : Seq[ScopeConstraint] = {
+     def aux(usee : NIdT, acc : Seq[Constraint]) : Seq[Constraint] = {
        val acc2 = if(!graph.contains_*(usee, user))
-         scopeConstraints.getOrElse(usee, Iterable.empty).filter(_.violated(graph, uses)) ++: acc
+         hideConstraints.getOrElse(usee, Iterable.empty).filter(_.violated(graph, uses)) ++: acc
        else acc
 
        graph.container(usee) match {
@@ -105,33 +84,20 @@ class ConstraintsMaps
        }
      }
      aux(usee0,List())
+   }*/
+
+   def potentialInterloperOf(graph : GraphT, user : NIdT, used : NIdT) : Boolean = {
+     val uses = DGEdge.uses(user, used)
+      forAncestors(graph, used){ used1 =>
+       !graph.contains_*(used1.nid, user) &&
+         hideConstraints.getOrElse(used1, Iterable.empty).exists(_.violated(graph, uses))
+     }
+
    }
-
-
-   def potentialScopeInterloperOf(graph : GraphT, user : NIdT, usee0 : NIdT) : Boolean = {
-     val uses = DGEdge.uses(user, usee0)
-
-     def aux(usee: NIdT): Boolean =
-       forAncestors(graph, usee){ usee1 =>
-         !graph.contains_*(usee1, user) &&
-           scopeConstraints.getOrElse(usee1, Iterable.empty).exists(_.violated(graph, uses))
-       }
-
-     aux(usee0)
-   }
-
-   def violatedElementConstraintOf(graph : GraphT, user : NIdT, usee: NIdT) =
-     elementsConstraints.getOrElse(usee, Iterable.empty).filter(_.violated(graph, DGEdge.uses(user, usee)))
-
-   def potentialElementInterloperOf(graph : GraphT, user : NIdT, usee: NIdT) : Boolean =
-     elementsConstraints.getOrElse(usee, Iterable.empty).exists(_.violated(graph, DGEdge.uses(user, usee)))
 
    def interloperOf(graph : GraphT, user : NIdT, usee : NIdT) =
-     (potentialScopeInterloperOf(graph, user, usee)
-       || potentialElementInterloperOf(graph, user, usee)) &&
-       !(friendOfElement(graph, user, usee) ||
-         friendOfScope(graph, user, usee) ||
-         eltFriendOfElement(graph, user, usee))
+     potentialInterloperOf(graph, user, usee) && !friendOf(graph, user, usee)
+
 
    def isWronglyContained(graph : GraphT, node : NIdT) : Boolean =
     forContainer(graph, node)(interloperOf(graph, _, node))
@@ -145,31 +111,31 @@ class ConstraintsMaps
    }
 
    // ! \\ do not change hideFrom
-   def addHideFromRootException(node : NIdT, friend : NIdT): ConstraintsMaps ={
+   def addHideFromRootException(graph : GraphT, node : NIdT, friend : NIdT): ConstraintsMaps ={
 
-     def aux[CtT <: ConstraintWithInterlopers](constraintsMap : Map [NodeId, ConstraintSet[CtT]]) :
-     Map [NodeId, ConstraintSet[CtT]] = {
-       val nodeConstraintsSet = constraintsMap.getOrElse(node, ConstraintSet.empty)
+     def aux(range : Range, constraintsMap : Map [Range, ConstraintSet]) :
+     Map [Range, ConstraintSet] = {
+       val nodeConstraintsSet = constraintsMap.getOrElse(range, ConstraintSet.empty)
        if(nodeConstraintsSet.isEmpty) constraintsMap
        else {
          val (newCts, changedMap, allOwners) =
-           nodeConstraintsSet.foldLeft(Seq[CtT](), Seq[(CtT, CtT)](), Seq[NIdT]()) {
+           nodeConstraintsSet.foldLeft(Seq[Constraint](), Seq[(Constraint, Constraint)](), Seq[Range]()) {
              case ((acc, map, owners), ct) =>
-               if (ct.interlopers contains DependencyGraph.rootId){
-                 ct.scopeFriends match {
-                   case NamedNodeSet(name, definition) => ???
+               if (ct.interlopers hasRangeThatContains_* (graph, DependencyGraph.rootId) ){
+                 ct.friends match {
+                   case NamedRangeSet(name, definition) => ???
                    case _ =>
-                     val newCt = ct.addFriend(friend).asInstanceOf[CtT] // /!\
+                     val newCt = ct.addFriend(Element(friend)) // /!\
                      (newCt +: acc, (ct, newCt) +: map, owners ++ ct.owners.iterator)
                  }
                }
                else (ct +: acc, map, owners)
            }
 
-        val newConstraintsMap = constraintsMap + (node -> new ConstraintSet[CtT](newCts))
+        val newConstraintsMap = constraintsMap + (range -> new ConstraintSet(newCts))
 
          allOwners.foldLeft(newConstraintsMap){
-            case (m2, id) if id != node =>
+            case (m2, id) if id != range =>
                  m2 + (id -> m2(id).replaceEq(changedMap))
             case (m2, id) => m2
            }
@@ -177,8 +143,7 @@ class ConstraintsMaps
        }
 
 
-     newConstraintsMaps(nScopeConstraints = aux(scopeConstraints),
-                        nElementsConstraints = aux(elementsConstraints))
+     this.copy(hideConstraints = aux(Element(node), aux(Scope(node), hideConstraints)))
 
    }
 

@@ -42,7 +42,9 @@ object ShowDG {
 
   implicit def nodeCord : CordBuilder[DGNode] = (dg, n) => Cord(s"${n.id} - ${n.kind} ${n.name}" , typeHolderCord(dg, n.styp))
   def nodeNameTypCord : CordBuilder[DGNode] = (dg, n) => Cord(n.name , typeHolderCord(dg, n.styp))
-  implicit def edgeCord : CordBuilder[DGEdge] =  (dg, e) => e.mkString(dg)
+  implicit def edgeCord : CordBuilder[DGEdge] =  (dg, e) =>
+    Cord(e.kind.toString, "( " + nodeIdCord(dg, e.source), ", ", nodeIdCord(dg, e.target), ")")
+
   implicit def extremityCord : CordBuilder[Extremity] =
     (dg, e) => Cord(e.productPrefix, "(", nodeCord(dg, dg.getNode(e.node)), ")")
 

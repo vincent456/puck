@@ -1,7 +1,7 @@
 package puck.gui.search.decisionsFrames
 
-import puck.graph.constraints.Constraint
-import puck.graph.{NamedNodeSet, DependencyGraph}
+import puck.graph.constraints.{NamedRangeSet, Constraint}
+import puck.graph.DependencyGraph
 
 import scala.swing.{TextArea, Button, Orientation, BoxPanel}
 
@@ -11,7 +11,7 @@ import java.io.StringReader
  * Created by lorilan on 11/06/14.
  */
 class RawConstraintEditor( graph : DependencyGraph,
-                           defs : List[NamedNodeSet],
+                           defs : List[NamedRangeSet],
                            constraints : List[Constraint],
                            finish : () => Unit)
   extends BoxPanel(Orientation.Vertical) {

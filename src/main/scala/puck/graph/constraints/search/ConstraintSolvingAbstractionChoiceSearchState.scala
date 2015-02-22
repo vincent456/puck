@@ -4,8 +4,6 @@ import puck.graph.{ResultT, NodeKind}
 import puck.graph.constraints.AbstractionPolicy
 import puck.search.{SearchEngine, SearchState}
 
-import scala.collection.mutable
-
 /**
  * Created by lorilan on 25/09/14.
  */

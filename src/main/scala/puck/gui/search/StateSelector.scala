@@ -85,6 +85,7 @@ class StateSelector
       combobox2wrapper.contents.clear()
       searchStateComboBox = new ComboBox(map(couplingValues.selection.item))
       combobox2wrapper.contents += searchStateComboBox
+      this.revalidate()
       this listenTo searchStateComboBox.selection
 
     case SelectionChanged(cb) if cb == searchStateComboBox =>

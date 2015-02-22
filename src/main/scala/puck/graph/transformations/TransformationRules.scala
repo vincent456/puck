@@ -256,7 +256,7 @@ trait TransformationRules {
   }
 
   def addHideFromRootException(g : GraphT, node : NIdT, friend : NIdT): GraphT =
-    g.newGraph(nConstraints = g.constraints.addHideFromRootException(node, friend))
+    g.newGraph(nConstraints = g.constraints.addHideFromRootException(g, node, friend))
   /*def addHideFromRootException(node : NIdT, friend : NIdT): GraphT = {
     constraints.printConstraints(g, logger, (PuckLog.InGraph, PuckLog.Debug))
     val ng = newGraph(nConstraints = constraints.addHideFromRootException(g, node,friend))

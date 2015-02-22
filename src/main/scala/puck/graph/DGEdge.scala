@@ -65,9 +65,6 @@ case class DGEdge
   override def toString : String = {
     kind + "( " + source + ", " + target + ")"
   }
-  def mkString(graph : DependencyGraph) : String =
-    kind + "( " + graph.getNode(source) + ", " + graph.getNode(target) + ")"
-
 
   def exists(graph : DependencyGraph) = kind match {
     case Uses => graph.uses(source, target)

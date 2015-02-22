@@ -57,7 +57,6 @@ abstract class FilesHandler(workingDirectory : File){
     case (PuckLog.NoSpecialContext, _) => true
     /*case (PuckLog.GraphComparisonSearch, _) => true*/
     case _ => false
-
   }
 
   def logger : PuckLogger = logger0

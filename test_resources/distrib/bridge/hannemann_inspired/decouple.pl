@@ -11,5 +11,5 @@ declareSet(abstractions, ['Screen',
 						'WelcomeScreenText', 'WelcomeScreenGraphic',
 						'InfoScreenText', 'InfoScreenGraphic']).
 
-hideScopeSetFrom(implementations, abstractions).
+hideSetFrom(implementations, abstractions).
 %%hideScopeSetFrom(abstractions, ['bridge.candidate']).

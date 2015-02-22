@@ -63,15 +63,15 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker
     val impl = graph.getNode(implId)
     import impl.kind.{abstractionPolicies, abstractKinds}
 
-    if(abstractionPolicies.isEmpty) {
+    /*if(abstractionPolicies.isEmpty) {
       k(None)
     }
     else{
         k(Some((abstractKinds(abstractionPolicies.head).head,
           abstractionPolicies.head)))
-    }
+    }*/
 
-    /*val (needSearch, karg) =
+    val (needSearch, karg) =
       if(abstractionPolicies.isEmpty) {
         (false, None)
     }
@@ -87,14 +87,14 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker
 
 
     if(needSearch) {
-      val choices = abstractionPolicies.map { p => abstractKinds(p).map { kind => (kind, p)}}.flatten
+      val choices = abstractionPolicies.map { p => abstractKinds(p).map { kind => Some((kind, p)) }}.flatten
 
-      newCurrentState(graph.transformations.recording,
+      newCurrentState((graph, graph.recording),
         new ConstraintSolvingAbstractionChoice(k,
-          mutable.Set[(Kind, AbstractionPolicy)]() ++ choices,
-          mutable.Set[(Kind, AbstractionPolicy)]()))
+          Set[Option[(NodeKind, AbstractionPolicy)]]() ++ choices,
+          Set[Option[(NodeKind, AbstractionPolicy)]]()))
     }
-    else k(karg)*/
+    else k(karg)
 
   }
 
