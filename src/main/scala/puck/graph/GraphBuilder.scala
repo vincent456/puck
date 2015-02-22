@@ -6,8 +6,7 @@ import scala.collection.mutable
  * Created by lorilan on 27/10/14.
  */
 
-class GraphBuilder
-( val nodeBuilder : AGNodeBuilder ){
+class GraphBuilder {
   var g : DependencyGraph = _
   type NodeIdT = NodeId
   val nodesByName = mutable.Map[String, NodeIdT]()

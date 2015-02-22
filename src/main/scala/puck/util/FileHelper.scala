@@ -60,7 +60,7 @@ object FileHelper {
 
   def findAllFiles(root : File,
                    suffix : String,
-                    ignore: String) : List[String] =
+                   ignore: String) : List[String] =
     findAllFiles(suffix, ignore, List(), root)
 
   def findAllFiles(suffix : String,

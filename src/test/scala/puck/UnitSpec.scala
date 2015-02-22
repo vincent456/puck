@@ -1,6 +1,6 @@
-package puck.graph
+package puck
 
-import org.scalatest.{Matchers, FlatSpec}
+import org.scalatest.{FlatSpec, Matchers}
 
 /**
  * Created by lorilan on 15/05/14.

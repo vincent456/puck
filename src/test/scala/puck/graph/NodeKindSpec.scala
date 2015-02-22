@@ -1,6 +1,7 @@
+/*
 package puck.graph
 
-import puck.javaAG.mutable.{JavaAccessGraph, JavaNamedType}
+import puck.javaAG.{JavaAccessGraph, JavaNamedType}
 import puck.javaAG.mutable.nodeKind.JavaNodeKind
 import puck.javaAG.JavaDependencyGraph
 
@@ -19,3 +20,4 @@ class NodeKindSpec extends UnitSpec{
       k1 shouldEqual (k2)
     }
 }
+*/

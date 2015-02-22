@@ -37,11 +37,12 @@ java15comply := true
 libraryDependencies ++= Seq(
 	"org.scala-lang" % "scala-swing" % "2.11.0-M7",
 	"org.scala-lang" % "scala-parser-combinators" % "2.11.0-M4",
-	"org.scalaz" %% "scalaz-core" % "7.1.0" )
+	"org.scalaz" %% "scalaz-core" % "7.1.0",
+  "org.scalatest" % "scalatest_2.11" % "2.2.1")
 
 //libraryDependencies += "org.scala-lang" % "scala-library-all" % "2.11.4" //before the modularize them
 
-(libraryDependencies in Test) += "org.scalatest" % "scalatest_2.11" % "2.2.1"
+//(libraryDependencies in Test) += "org.scalatest" % "scalatest_2.11" % "2.2.1"
 
 (sourceGenerators in Compile) ++= Seq(parser.taskValue, scanner.taskValue, ast.taskValue)
 

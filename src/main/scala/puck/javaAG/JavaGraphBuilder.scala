@@ -11,12 +11,13 @@ import scala.collection.JavaConversions.collectionAsScalaIterable
 /**
  * Created by lorilan on 29/10/14.
  */
-class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder(JavaNode){
-  var idSeed = rootId + 1
+class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 
-    val root = (rootId, rootName, JavaRoot, NoType, true)
+   var idSeed = rootId + 1
 
-   g = new JavaDependencyGraph(program, PuckNoopLogger, {() => val id = idSeed; idSeed += 1; id},
+   val root = (rootId, rootName, JavaRoot, NoType, true)
+
+   g = new JavaDependencyGraph(PuckNoopLogger, {() => val id = idSeed; idSeed += 1; id},
    NodeIndex() + (rootId -> root), NodeIndex(),
     EdgeMap(), EdgeMap(), EdgeMap(),
     Node2NodeMap(), EdgeMap(), EdgeMap(),

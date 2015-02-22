@@ -1,6 +1,5 @@
 package puck.javaAG
 
-import puck.graph.DependencyGraph.Mutability
 import puck.graph._
 import puck.graph.io.{VisibilitySet, DotHelper}
 import puck.javaAG.nodeKind._
@@ -10,19 +9,8 @@ import puck.javaAG.nodeKind._
  * Created by lorilan on 29/10/14.
  */
 
-import scala.language.existentials
 
-object JavaNode extends AGNodeBuilder with DotHelper{
-  def apply(id : NodeId,
-            name : String,
-            kind : NodeKind,
-            styp : TypeHolder,
-            isMutable : Mutability,
-            status : NodeStatus) : DGNode =
-    new DGNode(id, name, kind, styp, isMutable, status)
-
-  def rootKind : JavaNodeKind = JavaRoot
-  def kinds : Seq[NodeKind] = JavaNodeKind.list
+object JavaNode extends DotHelper{
 
   override def isDotSubgraph(k: NodeKind): Boolean = k == Package
 

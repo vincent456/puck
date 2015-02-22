@@ -38,10 +38,10 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
         logger.writeln("Compiling sources ...")
         val sources = findAllFiles(this.srcDirectory.get, srcSuffix, this.outDirectory.get.getName)
         val jars = findAllFiles(this.srcDirectory.get, ".jar", this.outDirectory.get.getName)
-        println(jars)
-        JavaFilesHandler.compile(sources, fileLines(jarListFile.get) ++: jars )
+        CompileHelper(sources, fileLines(jarListFile.get) ++: jars )
 
     }
+
     val g = puck.util.Time.time(logger, defaultVerbosity) {
       logger.writeln("Building Access Graph ...")
       sProg match {
@@ -50,20 +50,14 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
 
           jgraphBuilder = p.buildAccessGraph(initStringLiteralsMap(decouple.get), ll)
 
-          fileLines(apiNodesFile.get).foreach {
-            (l: String) =>
-              val tab = l.split(" ")
-              jgraphBuilder.addApiNode(tab(0), tab(1), tab(2))
-          }
-
           jgraphBuilder.attachOrphanNodes()
+
           graphBuilder = jgraphBuilder
+
           graph = (graphBuilder.g withLogger this.logger).newGraph(nRecording = Recording())
 
           val (_, transfos) = NodeMappingInitialState.normalizeNodeTransfos(graphBuilder.g.recording(), Seq())
           initialRecord = new Recording(transfos)
-
-
 
           graph
       }
@@ -140,36 +134,6 @@ object JavaFilesHandler {
   def apply() = new JavaFilesHandler()
   def apply(file : java.io.File) = new JavaFilesHandler(file)
 
-  def compile(sources: List[String], jars: List[String]): Option[AST.Program] = {
-    val arglist = createArglist(sources, jars, List())
-    val f = new AST.Frontend {
-      protected override def processWarnings(errors: java.util.Collection[_], unit: AST.CompilationUnit) {
-      }
-    }
-    val br = new AST.BytecodeParser
-    val jp = new AST.JavaParser {
-      def parse(is: java.io.InputStream, fileName: String): AST.CompilationUnit = {
-        (new parser.JavaParser).parse(is, fileName)
-      }
-    }
 
-    if (f.process(arglist, br, jp)){
-      Some(f.getProgram)}
-    else
-      None
-  }
-
-  private[puck] def createArglist(sources: List[String],
-                                  jars: List[String],
-                                  srcdirs:List[String]): Array[String] = {
-
-    if (jars.isEmpty) sources.toArray
-    else {
-    val args: List[String] = "-classpath" :: jars.mkString("", File.pathSeparator, File.pathSeparator + ".") :: (
-        if (srcdirs.isEmpty) sources
-        else "-sourcepath" :: srcdirs.mkString("", File.pathSeparator, File.pathSeparator + ".") :: sources)
-      args.toArray
-    }
-  }
 
 }

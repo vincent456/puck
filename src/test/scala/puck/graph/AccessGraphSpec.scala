@@ -1,17 +1,18 @@
+/*
 package puck.graph
 
-import puck.graph.mutable.{AGNode, AccessGraph, VanillaNodeKind, VanillaKind}
+import puck.graph.{DGNode, DependencyGraph}
 
 /**
  * Created by lorilan on 15/05/14.
  */
 class AccessGraphSpec extends UnitSpec{
-  val ag : DependencyGraph[VanillaKind] = new DependencyGraph(DGNode)
+  val ag : DependencyGraph = new DependencyGraph(DGNode)
 
-  var a0 : DGNode[VanillaKind] = _
-  var aa : DGNode[VanillaKind] = _
-  var ab : DGNode[VanillaKind] = _
-  var ac : DGNode[VanillaKind] = _
+  var a0 : DGNode = _
+  var aa : DGNode = _
+  var ab : DGNode = _
+  var ac : DGNode = _
 
 
   "An Access Graph" should "have a root node" in {
@@ -57,3 +58,4 @@ class AccessGraphSpec extends UnitSpec{
     ac.container should be (a0)
   }*/
 }
+*/

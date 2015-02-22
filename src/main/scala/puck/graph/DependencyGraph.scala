@@ -16,19 +16,6 @@ sealed trait NodeStatus
 case object Removed extends NodeStatus
 case object Created extends NodeStatus
 
-trait AGNodeBuilder {
-
-  def apply(id : NodeId,
-            name : String,
-            kind : NodeKind,
-            styp : TypeHolder,
-            isMutable : Mutability,
-            status : NodeStatus) : DGNode
-
-  def rootKind : NodeKind
-  def kinds : Seq[NodeKind]
-}
-
 object DependencyGraph {
 
   val rootId : NodeId = 0
@@ -72,8 +59,7 @@ object DependencyGraph {
 }
 
 class DependencyGraph
-( private [this] val nodeBuilder : AGNodeBuilder,
-  val logger : PuckLogger = PuckNoopLogger,
+( val logger : PuckLogger = PuckNoopLogger,
   private [this] val idSeed : () => Int,
   private [this] val nodesIndex : NodeIndex,
   private [this] val removedNodes : NodeIndex,
@@ -111,7 +97,7 @@ class DependencyGraph
                nAbstractionsMap : AbstractionMap = abstractionsMap,
                nConstraints : ConstraintsMaps = constraints,
                nRecording : transformations.Recording = recording) : DependencyGraph =
-    new DependencyGraph(nodeBuilder, nLogger,
+    new DependencyGraph(nLogger,
                         idSeed,
                         nNodesSet, nRemovedNodes, nUsersMap, nUsesMap,
                         nContentMap, nContainerMap, nSuperTypesMap, nSubTypesMap,
@@ -148,7 +134,7 @@ class DependencyGraph
 
   /*def nodes : Seq[NodeIdT] = Range(0, idSeed + 1) */
   def nodes : Iterable[DGNode] = nodesIndex.values map {
-    case (nid, name, kind, styp, mutable) => nodeBuilder(nid, name, kind, styp, mutable, Created)
+    case (nid, name, kind, styp, mutable) => new DGNode(nid, name, kind, styp, mutable, Created)
   }
 
   private def sortedMap : Seq[(NIdT,  NT)] = nodesIndex.toSeq sortBy(_._1)
@@ -171,11 +157,8 @@ class DependencyGraph
 
   def getNode(id : NIdT): DGNode = {
     val t = getNodeTuple(id)
-    nodeBuilder(t._1, t._2, t._3, t._4, t._5, t._6)
+    new DGNode(t._1, t._2, t._3, t._4, t._5, t._6)
   }
-
-
-
 
   def removeNode(id : NIdT) = {
     nodesIndex(id) match {
@@ -319,7 +302,7 @@ class DependencyGraph
    * Read-only queries
    */
 
-  def nodeKinds = nodeBuilder.kinds
+  def nodeKinds : Seq[NodeKind] = Seq()
 
   def container(contentId : NIdT) : Option[NIdT] = containerMap.get(contentId)
     /*containerMap.get(contentId) match {
@@ -443,12 +426,5 @@ class DependencyGraph
     }
     aux(Seq(root), Seq(root))
   }
-
-  /*
-   * High level modifications
-   */
-
-
-
 
 }

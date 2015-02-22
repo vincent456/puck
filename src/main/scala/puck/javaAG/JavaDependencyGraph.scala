@@ -18,8 +18,7 @@ import scala.util.{Try, Failure, Success}
 
 
 class JavaDependencyGraph
-(program : AST.Program,
- logger : PuckLogger = PuckNoopLogger,
+(logger : PuckLogger = PuckNoopLogger,
  idSeed : () => Int,
  nodesSet : NodeIndex,
  removedNodes : NodeIndex,
@@ -34,7 +33,7 @@ class JavaDependencyGraph
  abstractionsMap : AbstractionMap,
  constraints : ConstraintsMaps,
  recording : Recording)
-  extends DependencyGraph(JavaNode, logger, idSeed, nodesSet, removedNodes,
+  extends DependencyGraph(logger, idSeed, nodesSet, removedNodes,
   usersMap, usesMap, contentsMap, containerMap, superTypesMap, subTypesMap,
   dominantUsesMap, dominatedUsesMap, abstractionsMap, constraints, recording){
 
@@ -51,8 +50,8 @@ class JavaDependencyGraph
                nDominatedUsesMap : UseDependencyMap = dominatedUsesMap,
                nAbstractionsMap : AbstractionMap = abstractionsMap,
                nConstraints : ConstraintsMaps = constraints,
-               nRecording : Recording = recording) : DependencyGraph =
-    new JavaDependencyGraph(program, nLogger, idSeed,
+               nRecording : Recording = recording) : JavaDependencyGraph =
+    new JavaDependencyGraph(nLogger, idSeed,
       nNodesSet, nRemovedNodes, nUsersMap, nUsesMap,
       nContentMap, nContainerMap, nSuperTypesMap, nSubTypesMap,
       nDominantUsesMap, nDominatedUsesMap,
@@ -60,6 +59,9 @@ class JavaDependencyGraph
 
 
   implicit val defaultVerbosity = (InJavaGraph, PuckLog.Info)
+
+  override def nodeKinds : Seq[NodeKind] = JavaNodeKind.list
+  //def rootKind : JavaNodeKind = JavaRoot
 
   override def coupling = nodes.foldLeft(0 : Double){ (acc, n) => n.kind match {
     case Package =>
