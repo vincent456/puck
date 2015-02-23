@@ -1,7 +1,5 @@
 package puck.graph
 
-import puck.graph.constraints.AbstractionPolicy
-
 /**
  * Created by lorilan on 1/8/15.
  */

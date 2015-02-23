@@ -2,7 +2,7 @@ package puck.javaAG
 package nodeKind
 
 import puck.graph.constraints.{AbstractionPolicy, DelegationAbstraction, SupertypeAbstraction}
-import puck.graph.{AGError, NodeKind}
+import puck.graph.{DGError, NodeKind}
 
 /**
  * Created by lorilan on 31/07/14.
@@ -18,7 +18,7 @@ case object Constructor extends JavaNodeKind {
 
   def abstractKinds(p : AbstractionPolicy) = p match {
     case DelegationAbstraction => Seq(ConstructorMethod)
-    case SupertypeAbstraction => throw new AGError("Constructor cannot be abstracted by SuperType strategy")
+    case SupertypeAbstraction => throw new DGError("Constructor cannot be abstracted by SuperType strategy")
   }
 
 }

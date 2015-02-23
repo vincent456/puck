@@ -188,7 +188,7 @@ class AG2AST(val program : AST.Program,
 
   def redirectTarget(graph: DependencyGraph,
                      id2declMap: NodeId => ASTNodeLink,
-                     e: DGEdge, newTargetId: NodeId) {
+                     e: DGEdge, newTargetId: NodeId) : Unit =  {
     logger.writeln("redirecting %s target to %s".format(e, newTargetId))
     if(e.target != newTargetId) {
       val target = graph.getNode(e.target)
@@ -220,7 +220,7 @@ class AG2AST(val program : AST.Program,
 
             case  ClassDeclHolder(_) =>
               logger.writeln("Class user of TypeKind, assume this is the \"doublon\" of " +
-                "an isa arc, redirection ignored", 1)
+                "an isa arc, redirection ignored")
             case k =>
               throw new JavaAGError(k + " as user of TypeKind, redirection unhandled !")
           }
@@ -263,7 +263,7 @@ class AG2AST(val program : AST.Program,
   def redirectSource(resultGraph: DependencyGraph,
                      reenactor : JavaDependencyGraph,
                      id2declMap: NodeId => ASTNodeLink,
-                     e: DGEdge, newSourceId: NodeId) {
+                     e: DGEdge, newSourceId: NodeId) : Unit =  {
     import AST.ASTNode.VIS_PUBLIC
 
     def moveMethod( reenactor : JavaDependencyGraph,
@@ -331,7 +331,7 @@ class AG2AST(val program : AST.Program,
               Some(tdh.decl.compilationUnit())
             else
               None
-          case _ => throw new AGError("should not happen")
+          case _ => throw new DGError("should not happen")
         }
         scu match {
           case Some(cu) if !cus.contains(cu.pathName()) =>
@@ -345,6 +345,7 @@ class AG2AST(val program : AST.Program,
           case _ => cus
         }
       }
+      ()
     }
 
     if (e.source != newSourceId) {

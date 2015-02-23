@@ -32,7 +32,7 @@ class DecisionFrame[T] extends Frame {
   import javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE
   peer.setDefaultCloseOperation(DO_NOTHING_ON_CLOSE)
 
-  def complete(res : T) {
+  def complete(res : T) : Unit =  {
     promise.complete(Success(res))
     import javax.swing.WindowConstants.DISPOSE_ON_CLOSE
     this.peer.setDefaultCloseOperation(DISPOSE_ON_CLOSE)

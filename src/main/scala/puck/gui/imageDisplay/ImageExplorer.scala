@@ -53,7 +53,7 @@ class ImageExplorer(val filesHandler : FilesHandler,
         filesHandler.logger.writeln("printing image success")
         imageWrapper.contents = Component.wrap(new ScrollablePicture(new ImageIcon(img),2))
       case _ =>
-        filesHandler.logger.writeln("printing image failure")(PuckLog.NoSpecialContext, PuckLog.Error)
+        filesHandler.logger.writeln("printing image failure")((PuckLog.NoSpecialContext, PuckLog.Error))
     }
 
     filesHandler.makePng(graphOfResult(state.result),
@@ -68,7 +68,7 @@ class ImageExplorer(val filesHandler : FilesHandler,
 
   def iButton(i : Int) = new Button(){
     action = new Action(i.toString) {
-      def apply() {
+      def apply() : Unit = {
         index = i
         setImage()
       }
@@ -81,7 +81,7 @@ class ImageExplorer(val filesHandler : FilesHandler,
       contents += Swing.HGlue
       contents += new Button(){
         action = new Action("<") {
-          def apply() {
+          def apply() : Unit = {
             index = (index - 1) % numberStates
             setImage()
           }
@@ -92,7 +92,7 @@ class ImageExplorer(val filesHandler : FilesHandler,
       }
       contents += new Button(){
         action = new Action(">") {
-          def apply() {
+          def apply() : Unit = {
             index = (index + 1) % numberStates
             setImage()
           }

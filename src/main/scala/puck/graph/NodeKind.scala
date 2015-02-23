@@ -16,5 +16,5 @@ trait AGRoot extends NodeKind {
   def canContain(k: NodeKind) = false
   override def abstractionPolicies = Seq()
   def abstractKinds(p : AbstractionPolicy) =
-    throw new AGError("Root node cannot be abstracted")
+    throw new DGError("Root node cannot be abstracted")
 }

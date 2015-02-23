@@ -1,11 +1,12 @@
 package puck.graph.transformations
 
-import puck.graph.{NodeId, DependencyGraph, DGEdge}
+import puck.PuckError
+import puck.graph.{Try, NodeId, DependencyGraph, DGEdge}
 import puck.search.{FindFirstSearchEngine, SearchState}
 import puck.util.{PuckLogger, PuckNoopLogger}
 
 import scala.collection.mutable
-import scala.util.{Failure, Success, Try}
+import scalaz.{Failure, Success}
 
 /**
  * Created by lorilan on 07/07/14.
@@ -34,8 +35,8 @@ object RecordingComparator{
 
 import puck.graph.transformations.MappingChoices.{Kargs, NodesToMap, ResMap}
 
-object NoSolution extends Throwable
-object WrongMapping extends Throwable
+object NoSolution extends PuckError
+object WrongMapping extends PuckError
 
 class RecordingComparator
 ( initialTransfos : Seq[Transformation],
@@ -51,14 +52,14 @@ class RecordingComparator
   def attribNode(node : NodeId,
                  map : ResMap,
                  nodesToMap : NodesToMap)
-                (k : Kargs => Unit) {
+                (k : Kargs => Unit) : Unit = {
 
     map.getOrElse(node, (graph1.getNode(node).kind, Some(node))) match {
-      case (_, Some(n)) => k(n, Success(map), nodesToMap)
+      case (_, Some(n)) => k((n, Success(map), nodesToMap))
 
       case (kind, None) =>
         nodesToMap.getOrElse(kind, Seq()) match {
-          case Seq() => k(node, Failure(NoSolution), nodesToMap)
+          case Seq() => k((node, Failure(NoSolution).toValidationNel, nodesToMap))
           case l =>
             val choices =
               new MappingChoices(k, node, kind, nodesToMap,
@@ -73,21 +74,19 @@ class RecordingComparator
   def attribNode(nodes : Seq[NodeId],
                  map : ResMap,
                  nodesToMap : NodesToMap)
-                (k : (Seq[NodeId], Try[ResMap], NodesToMap) => Unit) {
+                (k : (Seq[NodeId], Try[ResMap], NodesToMap) => Unit) : Unit = {
 
 
-    def aux(nodes0 : Seq[NodeId], nodes1: Seq[NodeId])(kargs : Kargs){
+    def aux(nodes0 : Seq[NodeId], nodes1: Seq[NodeId])(kargs : Kargs) : Unit = {
       kargs match {
         case (node, map0, nodesToMap0) =>
-          nodes0 match {
-            case Seq() =>
+          (nodes0, map0) match {
+            case (Seq(), _) =>
               val l = (node +: nodes1).reverse.tail // we do not forget the last node and we drop the first dummy value
               k(l, map0, nodesToMap0)
-            case _ =>
-              if(map0.isSuccess)
-                attribNode(nodes0.head, map0.get, nodesToMap0){aux(nodes0.tail, node +: nodes1)}
-              else
-                k(nodes, map0, nodesToMap)
+            case (_, Success(m)) =>
+                attribNode(nodes0.head, m, nodesToMap0){aux(nodes0.tail, node +: nodes1)}
+            case (_, Failure(_)) => k(nodes, map0, nodesToMap)
           }
       }
     }
@@ -114,26 +113,27 @@ class RecordingComparator
   def compare(ts1 : Seq[Transformation],
               ts2 : Seq[Transformation],
               map : ResMap, nodesToMap : NodesToMap,
-              k : Try[ResMap] => Unit){
+              k : Try[ResMap] => Unit) : Unit = {
     if (ts1.isEmpty && ts2.isEmpty)
       k(Success(map))
     else {
       def removeFirstAndCompareNext(tgt : TransformationTarget,
-                                    tryMap : Try[ResMap], nodesToMap : NodesToMap){
-        if(tryMap.isFailure) k(tryMap)
-        else removeFirst(ts2, ts1.head.operation, tgt) match {
-          case None => k(Failure(WrongMapping))
-           /* println("Failure on mapping : ")
-            println(map.mkString("\t", "\n\t", "\n"))
-            println(ts1.head + " mapped as ")
-            println(Transformation(ts1.head.operation, tgt) + "cannot be found in :")
-            println(ts2.mkString("\t", "\n\t", "\n"))
-            println("**************************************")
-*/
-          case Some(newTs2) =>
-            //println("success")
-            compare(ts1.tail, newTs2, tryMap.get, nodesToMap, k)
-        }
+                                    tryMap : Try[ResMap], nodesToMap : NodesToMap) =
+        tryMap match {
+          case Failure(_) => k(tryMap)
+          case Success(m) =>
+            removeFirst(ts2, ts1.head.operation, tgt) match {
+            case None => k(Failure(WrongMapping).toValidationNel)
+             /* println("Failure on mapping : ")
+              println(map.mkString("\t", "\n\t", "\n"))
+              println(ts1.head + " mapped as ")
+              println(Transformation(ts1.head.operation, tgt) + "cannot be found in :")
+              println(ts2.mkString("\t", "\n\t", "\n"))
+              println("**************************************")*/
+            case Some(newTs2) =>
+              //println("success")
+              compare(ts1.tail, newTs2, m, nodesToMap, k)
+          }
       }
 
       ts1.head.target match {

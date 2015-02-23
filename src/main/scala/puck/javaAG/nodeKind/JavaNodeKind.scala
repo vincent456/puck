@@ -3,7 +3,7 @@ package nodeKind
 
 
 import puck.graph._
-import puck.graph.constraints.{AbstractionPolicy, DelegationAbstraction}
+import puck.graph.constraints.AbstractionPolicy
 
 /**
  * Created by lorilan on 31/07/14.

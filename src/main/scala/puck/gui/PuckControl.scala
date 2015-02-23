@@ -96,7 +96,7 @@ class PuckControl(val filesHandler : FilesHandler,
   }
 
 
-  def loadConstraints(){
+  def loadConstraints() : Unit = {
     try {
       logger.writeln("Loading constraints ...")
       filesHandler.parseConstraints()
@@ -114,7 +114,7 @@ class PuckControl(val filesHandler : FilesHandler,
                    someUse : Option[DGEdge],
                    printId : Boolean,
                    printSignature : Boolean,
-                   visibility : VisibilitySet){
+                   visibility : VisibilitySet) : Unit = {
 
     logger.writeln("Printing graph ...")
 
@@ -133,7 +133,7 @@ class PuckControl(val filesHandler : FilesHandler,
     }
   }
 
-  def applyOnCode(record : ResultT){
+  def applyOnCode(record : ResultT) : Unit = {
     Future {
       filesHandler.logger.write("generating code ...")
       filesHandler.applyChangeOnProgram(record)
@@ -163,9 +163,8 @@ class PuckControl(val filesHandler : FilesHandler,
                    printId : Boolean,
                    printSignature : Boolean,
                    visibility : VisibilitySet): Unit = {
-    Future {
-      new ImageExplorer(filesHandler, states.toIndexedSeq, visibility, printId, printSignature)
-    }
+    Future(new ImageExplorer(filesHandler, states.toIndexedSeq, visibility, printId, printSignature))
+    ()
   }
 
   reactions += {

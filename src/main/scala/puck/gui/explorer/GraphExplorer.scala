@@ -32,7 +32,7 @@ class GraphExplorer
 
 
   def addChildren(graph : DependencyGraph,
-                  ptn: PuckTreeNode){
+                  ptn: PuckTreeNode): Unit = {
     import puck.graph.ShowDG._
     val nodeList = graph.content(ptn.nodeId).map(graph.getNode).toList
     nodeList.sortBy(_.name) foreach {
@@ -59,7 +59,7 @@ class GraphExplorer
 
       tree.addMouseListener( new MouseAdapter {
 
-        override def mouseClicked(e : MouseEvent) {
+        override def mouseClicked(e : MouseEvent) : Unit =  {
           val path : TreePath = tree.getPathForLocation(e.getX, e.getY)
 
           if(path!= null){

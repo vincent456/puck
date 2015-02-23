@@ -1,7 +1,7 @@
 package puck.gui
 
 import java.io.File
-import puck.graph.{FilesHandler, NodeKind}
+import puck.graph.FilesHandler
 
 import scala.swing._
 import java.awt.Dimension
@@ -30,7 +30,7 @@ class SettingsFrame(filesHandler : FilesHandler) extends Frame{
         tooltip = tip
 
         action = new Action(title){
-          def apply() {
+          def apply() : Unit = {
             val fc = new FileChooser(filesHandler.srcDirectory.get)
             fc.title = title
             fc.fileSelectionMode = FileChooser.SelectionMode.FilesOnly

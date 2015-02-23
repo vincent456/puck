@@ -4,7 +4,8 @@ package constraints
 import puck.graph.transformations.TransformationRules
 import puck.util.{PuckLog, PuckLogger}
 
-import scala.util.{Success, Try, Failure}
+import scalaz.{Failure, Success}
+
 
 trait Solver {
 
@@ -25,7 +26,7 @@ trait Solver {
   def redirectTowardExistingAbstractions(graph : GraphT,
                                          usee : NIdT,
                                          wrongUsers : Seq[NIdT])
-                                        (k : (GraphT, Seq[NIdT]) => Unit) {
+                                        (k : (GraphT, Seq[NIdT]) => Unit) : Unit = {
     decisionMaker.abstractionKindAndPolicy(graph, usee) {
       case Some((absKind, absPolicy)) =>
 
@@ -62,18 +63,18 @@ trait Solver {
 
   trait FindHostResult
   case class Host(host : NIdT, graph : GraphT) extends FindHostResult
-  case class FindHostError() extends Throwable with FindHostResult
+  case class FindHostError() extends DGError with FindHostResult
 
   def findHost(graph : GraphT,
                toBeContained : NIdT,
                specificPredicate : PredicateT = allwaysTrue,
                parentsThatCanBeCreated : Int = 1)
-              (k : FindHostResult => Unit) {
+              (k : FindHostResult => Unit) : Unit = {
 
     def predicate(graph : GraphT, n : NIdT) : Boolean =
       graph.canContain(n, toBeContained) && specificPredicate(graph, n)
 
-    def hostIntro(toBeContainedId : NIdT) {
+    def hostIntro(toBeContainedId : NIdT) : Unit = {
       logger.writeln("call hostIntro " + toBeContainedId )(PuckLog.Debug)
       val toBeContained = graph.getNode(toBeContainedId)
       graph.nodeKinds.find(_.canContain(toBeContained.kind)) match {
@@ -153,7 +154,7 @@ trait Solver {
 
             tryAbs map {
               case (absId, graph2) =>
-                logger.writeln("in solver "+ absId + " introduced as "+ absPolicy + " for " + currentImpl)(PuckLog.ConstraintSearch, PuckLog.Debug)
+                logger.writeln("in solver "+ absId + " introduced as "+ absPolicy + " for " + currentImpl)((PuckLog.ConstraintSearch, PuckLog.Debug))
 
                 logger.writeln(s"Searching host for abstraction( $absKind, $absPolicy ) of $currentImpl")
 
@@ -171,10 +172,10 @@ trait Solver {
                     k(Success((graph5, absId, absPolicy)))
                   case FindHostError() =>
                     logger.writeln("error while searching host for abstraction")
-                    k(Failure(FindHostError()))
+                    k(Failure(FindHostError()).toValidationNel)
                 }
             }
-
+            ()
           }
 
           if (deg == degree)
@@ -182,11 +183,11 @@ trait Solver {
           else
             doIntro({
               case Failure(_) =>
-                k(Failure(new AGError(s"Single abs intro degree $deg/$degree error (currentImpl = $currentImpl)")))
+                k(Failure(new DGError(s"Single abs intro degree $deg/$degree error (currentImpl = $currentImpl)")).toValidationNel)
               case Success((g, abs, _)) => aux(g, deg + 1, abs)(k)
             })
 
-        case None => k(Failure(new AGError("no abstraction for impl of kind " + graph.getNode(currentImpl).kind)))
+        case None => k(Failure(new DGError("no abstraction for impl of kind " + graph.getNode(currentImpl).kind)).toValidationNel)
       }
     }
 
@@ -210,7 +211,7 @@ trait Solver {
 
   }
 
-  def solveUsesToward(graph : GraphT, impl : NIdT, k : Try[GraphT] => Unit) {
+  def solveUsesToward(graph : GraphT, impl : NIdT, k : Try[GraphT] => Unit) : Unit = {
     logger.writeln("###################################################")
     logger.writeln(s"##### Solving uses violations toward $impl ######")
 
@@ -239,7 +240,7 @@ trait Solver {
 
   def solveContains(graph : GraphT,
                     wronglyContained : NIdT,
-                    k : Try[GraphT] => Unit) {
+                    k : Try[GraphT] => Unit) : Unit = {
     logger.writeln("###################################################")
     logger.writeln(s"##### Solving contains violations toward $wronglyContained ######")
 
@@ -268,7 +269,7 @@ trait Solver {
 
         logger.writeln("solveContains : calling k()")
         k(tryGraph4)
-       case FindHostError() => k(Failure(new AGError("FindHostError caught")))
+       case FindHostError() => k(Failure(new DGError("FindHostError caught")).toValidationNel)
     }
   }
 
@@ -291,27 +292,28 @@ trait Solver {
   }
 
 
-  def doMerges(graph : GraphT, k : Try[ResT] => Unit) {
+  def doMerges(graph : GraphT, k : Try[ResT] => Unit) : Unit = {
 
-    def aux(graph : GraphT, it : Iterator[NIdT]) : GraphT =
+    def aux(graph : GraphT, it : Iterator[NIdT]) : Try[GraphT] =
       if(it.hasNext){
         val n = it.next()
         rules.findMergingCandidate(graph, n) match {
           case Some(other) =>
-            val g1 = rules.merge(graph, other, n)
-            aux(g1, g1.nodesId.iterator)
+            rules.merge(graph, other, n) match {
+              case Success(g1) => aux(g1, g1.nodesId.iterator)
+              case f => f
+            }
+
           case None => aux(graph, it)
         }
       }
-      else graph
+      else Success(graph)
 
-    val g = aux(graph, graph.nodesId.iterator)
-
-    k(Success(g, g.recording))
+    k(aux(graph, graph.nodesId.iterator) map (g => (g, g.recording)))
 
   }
 
-  def solve(graph : GraphT, k : Try[ResT] => Unit) {
+  def solve(graph : GraphT, k : Try[ResT] => Unit) : Unit = {
     /*logger.writeln("solve begins !")
     val sortedId = graph.nodesId.toSeq.sorted
     sortedId.foreach{id => logger.writeln("("+ id + ", " + graph.container(id)+ ")")}

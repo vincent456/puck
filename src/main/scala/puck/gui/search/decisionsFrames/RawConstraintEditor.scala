@@ -1,11 +1,11 @@
+/*
 package puck.gui.search.decisionsFrames
 
 import puck.graph.constraints.{NamedRangeSet, Constraint}
 import puck.graph.DependencyGraph
 
-import scala.swing.{TextArea, Button, Orientation, BoxPanel}
+import scala.swing.{Orientation, BoxPanel}
 
-import java.io.StringReader
 
 /**
  * Created by lorilan on 11/06/14.
@@ -15,10 +15,12 @@ class RawConstraintEditor( graph : DependencyGraph,
                            constraints : List[Constraint],
                            finish : () => Unit)
   extends BoxPanel(Orientation.Vertical) {
+  /*
+    val console = new TextArea(defs.map(_.defString).mkString("\n") + "\n" + constraints.mkString("\n"))
 
-  val console =/* new TextArea(defs.map(_.defString).mkString("\n") + "\n" + constraints.mkString("\n"))*/ ???
-  contents += console
-  /*contents += new BoxPanel(Orientation.Horizontal){
+    contents += console
+
+    contents += new BoxPanel(Orientation.Horizontal){
     contents += Button("OK"){
        defs.foreach(d => graph.nodeSets.remove(d.id))
        constraints.foreach{ct =>
@@ -32,4 +34,6 @@ class RawConstraintEditor( graph : DependencyGraph,
       finish()
     }
   }*/
+  ???
 }
+*/

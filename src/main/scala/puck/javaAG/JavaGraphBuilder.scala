@@ -82,15 +82,15 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
     tdNode
   }
 
-  def addBodyDecl(bd : AST.BodyDecl){
+  def addBodyDecl(bd : AST.BodyDecl) : Unit = {
     val typeNodeId = addApiTypeNode(bd.hostType())
     bd.buildAG(this, typeNodeId)
   }
 
-  def attachOrphanNodes(fromId : Int = g.rootId){
+  def attachOrphanNodes(fromId : Int = g.rootId) : Unit = {
     val lastId = g.numNodes - 1
     if(fromId < lastId){
-      for(nodeId <- fromId to lastId){
+      for(nodeId <- Range(fromId, lastId) ){
         //println(s"${g.container(nodeId)} contains $nodeId")
         if(g.container(nodeId).isEmpty && nodeId != g.rootId){
           val n = g.getNode(nodeId)
@@ -111,13 +111,13 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
     }
   }
 
-  def addApiNode(nodeKind : String, typ : String, bodydeclName: String){
+  def addApiNode(nodeKind : String, typ : String, bodydeclName: String) : Unit = {
     println("trying to add type "+typ + " " + bodydeclName+ " ... ")
 
     val td = findTypeDecl(typ)
     val typeNodeId = addApiTypeNode(td)
 
-    def addBodyDecl(bd : AST.BodyDecl){
+    def addBodyDecl(bd : AST.BodyDecl) : Unit = {
       if(bd == null)
         System.err.println("Method or constructor" + bodydeclName + " not found in the program ...")
       else
@@ -135,7 +135,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 
 
 
-  def addStringLiteral(literal: String, occurrences: _root_.java.util.Collection[AST.BodyDecl]){
+  def addStringLiteral(literal: String, occurrences: _root_.java.util.Collection[AST.BodyDecl]) : Unit = {
 
     def stringType = {
       val td = findTypeDecl("java.lang.string")
@@ -206,7 +206,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
     register(n, Constructor, ConstructorDeclHolder(decl), "ConstructorDecl")
 
 
-  def registerDecl(n : NodeIdT, decl : AST.MethodDecl){
+  def registerDecl(n : NodeIdT, decl : AST.MethodDecl) : Unit = {
     g.getNode(n).kind match {
       case Method =>
         //g = g.setInternal(n, ConcreteMethodDeclHolder(Some(decl)))

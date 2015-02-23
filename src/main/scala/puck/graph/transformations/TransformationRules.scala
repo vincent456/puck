@@ -1,12 +1,13 @@
-package puck.graph
+package puck
+package graph
 package transformations
 
 //import puck.graph.{RedirectionError, AGError, NoType, AGEdge}
-import puck.graph.constraints._
-import puck.util.PuckLog
+import graph.constraints._
+import util.PuckLog
 
-import scala.util.{Failure, Success, Try}
-
+import scalaz._
+import scalaz.Validation.FlatMap._
 /**
  * Created by lorilan on 25/01/15.
  */
@@ -17,7 +18,6 @@ trait TransformationRules {
   type EdgeT = DGEdge
   type GraphT = DependencyGraph
   type STyp = TypeHolder
-
 
   implicit val defaulVerbosity : PuckLog.Verbosity =
     (PuckLog.GraphTransfoRules, PuckLog.Debug)
@@ -102,11 +102,10 @@ trait TransformationRules {
     }
     else if(g.users(oldEdge.usee).exists(_ == oldEdge.user) ||
       g.users(newUsee).exists(_==oldEdge.user))
-      Failure(new AGError("incoherent state !!!!!!!!!!!!"))
+      Failure(new DGError("incoherent state !!!!!!!!!!!!")).toValidationNel
     else
-      Failure(new AGError(("redirecting uses' %s target to %s (%s)\n" +
-        "!!! nor the oldUsee or the newUsee is really used !!! ").
-        format(oldEdge, newUsee, policy)))
+      Failure(new DGError(s"redirecting uses' $oldEdge target to $newUsee ($policy)\n" +
+        s"!!! nor the oldUsee or the newUsee is really used !!! ")).toValidationNel
 
   }
 
@@ -225,7 +224,7 @@ trait TransformationRules {
                 "no satisfying abstraction to redirect side use %s").
                 format(currentPrimaryUse, newPrimaryUsee, side)
               g.logger.writeln(msg)(PuckLog.Error)
-              Failure(new RedirectionError(msg))
+              Failure(new RedirectionError(msg)).toValidationNel
             case Some( (new_side_usee, _) ) =>
 
               val tryG1 : Try[GraphT] =
@@ -268,11 +267,9 @@ trait TransformationRules {
 
   def findMergingCandidateIn(g : GraphT, id : NIdT, root : NIdT) : Option[NIdT] = None
 
-  import ShowDG._
-
   //TODO deep merge : merge also content need to refactor find merging candidate
   //(deep merge is now done in JavaNode for interface node only)
-  def merge(g : GraphT, consumerId : NIdT, consumedId : NIdT) : GraphT = {
+  def merge(g : GraphT, consumerId : NIdT, consumedId : NIdT) : Try[GraphT] = {
     g.logger.writeln(s"merging ${g.getNode(consumedId)} into ${g.getNode(consumerId)}" )
 
     val consumed = g.getNode(consumedId)
@@ -330,12 +327,15 @@ trait TransformationRules {
 
 
 
-    val g7 = g.content(consumedId).foldLeft(g6) {
-      (g0, consumedChildId) =>
-        findMergingCandidateIn(g0, consumedChildId, consumerId) match {
-          case Some(consumerChildId) => merge(g0, consumerChildId, consumedChildId)
-          case None => moveTo(g0, consumedChildId, consumerId).get
-            .changeType(consumedChildId, g0.getNode(consumedChildId).styp, consumedId, consumerId)
+    val g7 = g.content(consumedId).foldLeft(Success(g6): Try[GraphT]) {
+      (tg0, consumedChildId) =>
+        tg0 flatMap { g0 =>
+          findMergingCandidateIn(g0, consumedChildId, consumerId) match {
+            case Some(consumerChildId) => merge(g0, consumerChildId, consumedChildId)
+            case None => moveTo(g0, consumedChildId, consumerId) map {
+              _.changeType(consumedChildId, g0.getNode(consumedChildId).styp, consumedId, consumerId)
+            }
+          }
         }
     }
 
@@ -359,8 +359,10 @@ trait TransformationRules {
         }*/
     }*/
 
+    g7 map { g =>
+      g.removeContains(g.container(consumedId).get, consumedId)
+        .removeNode(consumedId)
+    }
 
-    g7.removeContains(g7.container(consumedId).get, consumedId)
-      .removeNode(consumedId)
   }
 }

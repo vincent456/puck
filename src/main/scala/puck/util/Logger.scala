@@ -22,8 +22,8 @@ trait IntLogBehavior extends LogBehavior[Int]{
 }
 
 class NoopLogger[V] extends Logger[V]  {
-  def writeln(msg : => Any)(implicit v : V){}
-  def write(msg : => Any)(implicit v : V){}
+  def writeln(msg : => Any)(implicit v : V): Unit = {}
+  def write(msg : => Any)(implicit v : V): Unit = {}
 }
 
 
@@ -35,14 +35,14 @@ trait FileLogger[V] extends Logger[V]{
 
   private [this] val writer : BufferedWriter =  new BufferedWriter(new FileWriter(file))
 
-  def writeln(msg : => Any)(implicit v : V){
+  def writeln(msg : => Any)(implicit v : V): Unit = {
     if(mustPrint(v)) {
       writer.write(msg.toString)
       writer.newLine()
       writer.flush()
     }
   }
-  def write(msg : => Any)(implicit v : V){
+  def write(msg : => Any)(implicit v : V): Unit = {
     if(mustPrint(v)) {
       writer.write(msg.toString)
       writer.flush()
@@ -56,12 +56,12 @@ class DefaultFileLogger(val file : File) extends FileLogger[Int] with IntLogBeha
 trait SystemLogger[V] extends Logger[V]{
   this : LogBehavior[V] =>
 
-  def writeln(msg : => Any)(implicit v : V){
+  def writeln(msg : => Any)(implicit v : V): Unit = {
     if(mustPrint(v)) {
       println(msg)
     }
   }
-  def write(msg : => Any)(implicit v : V){
+  def write(msg : => Any)(implicit v : V) : Unit = {
     if(mustPrint(v)) {
       print(msg)
     }

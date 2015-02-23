@@ -13,12 +13,12 @@ object ASTNodeLink{
   def addTypeDeclToProgram(decl : AST.TypeDecl,
                            prog : AST.Program,
                            graph : DependencyGraph,
-                           node : NodeT){
+                           node : NodeT) : Unit = {
     decl.setID(node.name)
     decl.setModifiers(new AST.Modifiers("public"))
     //package en path will be set when the contains arc will be add to the graph
     prog.insertUnusedType("", "", decl)
-
+    ()
   }
 
   def createConstructorMethodDecl(prog : AST.Program,
@@ -89,7 +89,7 @@ sealed trait HasBodyDecl extends ASTNodeLink{
   val decl : AST.BodyDecl
 }
 
-class DeclarationCreationError(msg : String) extends AGError(msg)
+class DeclarationCreationError(msg : String) extends DGError(msg)
 
 case class ConstructorDeclHolder(decl : AST.ConstructorDecl) extends HasBodyDecl
 case class FieldDeclHolder(decl : AST.FieldDeclaration) extends HasBodyDecl

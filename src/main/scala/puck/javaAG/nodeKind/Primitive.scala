@@ -1,6 +1,6 @@
 package puck.javaAG.nodeKind
 
-import puck.graph.{AGError, NodeKind}
+import puck.graph.{DGError, NodeKind}
 import puck.graph.constraints.AbstractionPolicy
 
 /**
@@ -9,5 +9,5 @@ import puck.graph.constraints.AbstractionPolicy
 case object Primitive extends TypeKind {
   def canContain(k: NodeKind) = false
   def abstractKinds(p : AbstractionPolicy) =
-    throw new AGError("do not know how to abstract primitive kind")
+    throw new DGError("do not know how to abstract primitive kind")
 }

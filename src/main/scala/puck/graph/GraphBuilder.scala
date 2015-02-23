@@ -16,6 +16,7 @@ class GraphBuilder {
   def addPredefined(id : NodeIdT, fullName : String, name : String, kind : NodeKind): Unit ={
     g = g.addNode(id, name, kind, NoType, mutable = false)
     nodesByName += (fullName -> id)
+    ()
   }
 
   def addNode(unambiguousFullName: String, localName:String, kind: NodeKind, th : TypeHolder): NodeIdT = {

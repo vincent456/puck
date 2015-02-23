@@ -83,7 +83,7 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
   def solver(dm : DecisionMaker[JavaNodeKind]) =
     new JavaSolver(graph, dm)*/
 
-  def applyChangeOnProgram(result : ResultT){
+  def applyChangeOnProgram(result : ResultT) : Unit = {
 
     logger.writeln("applying change !")
 
@@ -113,7 +113,7 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
 
   }
 
-  def printCode() {
+  def printCode() : Unit = {
     sProgram match {
       case Some(p) =>p.printCodeInDirectory(outDirectory.get)
       case None => logger.writeln("no program registered")

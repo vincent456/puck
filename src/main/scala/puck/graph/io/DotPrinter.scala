@@ -1,9 +1,6 @@
 package puck.graph
 package io
 
-import scalaz._
-import Scalaz._
-
 
 import java.io.BufferedWriter
 
@@ -60,7 +57,7 @@ class DotPrinter
     else _ => ""
 
 
-  def writeln(str:String){
+  def writeln(str:String) : Unit = {
     writer write str
     writer newLine()
   }
@@ -78,7 +75,7 @@ class DotPrinter
   val arcs = scala.collection.mutable.Buffer[String]()
 
   def printArc(style : Style, source : NIdT, target : NIdT,
-               status: ColorThickness){
+               status: ColorThickness): Unit = {
     //val (lineStyle, headStyle) = style
     //val (color, thickness) = status
     //println("print arc "+ source.nameTypeString + " -> " + target.nameTypeString)
@@ -105,6 +102,7 @@ class DotPrinter
       "style = " + style.line + ", arrowhead = " + style.arrowHead +
       ", color = " + status.color + ", penwidth = " + status.thickness+ "];")
 
+    ()
   }
 
 
@@ -146,7 +144,7 @@ class DotPrinter
     writeln(n.id + " [ label = \"" + n.kind + "  " + html_safe(n.name) + idString(n.id) + signatureString(n.styp)+"\" ]")
   }
 
-  def printNode(nid : NodeId){
+  def printNode(nid : NodeId): Unit = {
     if(visibility.isVisible(nid)) {
       val n = graph.getNode(nid)
       if (helper isDotSubgraph n.kind) printSubGraph(n)
@@ -157,7 +155,7 @@ class DotPrinter
 
 
 
-  def printSubGraph(n : DGNode){
+  def printSubGraph(n : DGNode): Unit = {
     List("subgraph cluster" + n.id + " {",
       "label=<" + decorate_name(n) +">;",
       "color=black;") foreach writeln
@@ -171,9 +169,9 @@ class DotPrinter
     graph.users(n.id).foreach(printUse(_, n.id))
   }
 
-  def printClass(nid: NodeId){
+  def printClass(nid: NodeId): Unit = {
     val n = graph.getNode(nid)
-    def writeTableLine(nid: NodeId){
+    def writeTableLine(nid: NodeId): Unit = {
       val n = graph.getNode(nid)
       val sig = signatureString(n.styp)
 
@@ -204,7 +202,7 @@ class DotPrinter
     graph.directSuperTypes(n.id).foreach(printArc(isaStyle, n.id, _, ColorThickness.regular))
   }
 
-  def apply(){
+  def apply(): Unit = {
     writeln("digraph G{")
     writeln("rankdir=LR; ranksep=equally; compound=true")
 

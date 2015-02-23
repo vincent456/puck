@@ -31,7 +31,7 @@ class PuckTreeNode(val nodeId : NodeId,
   hiddens.setVisibility(nodeId, Visible)
 
 
-  def setVisible(visibility : Visibility, propagate : Boolean){
+  def setVisible(visibility : Visibility, propagate : Boolean): Unit = {
 
 
    if(hiddens.visibility(nodeId) != visibility){
@@ -54,7 +54,7 @@ class PuckTreeNode(val nodeId : NodeId,
  }
 
 
- def packageOnlyVisible(graph : DependencyGraph){
+ def packageOnlyVisible(graph : DependencyGraph): Unit = {
    val visibility = graph.getNode(nodeId).kind match {
      case Package => Visible
      case _ => Hidden
@@ -67,7 +67,7 @@ class PuckTreeNode(val nodeId : NodeId,
    }
  }
 
- def toggleFilter(){
+ def toggleFilter() : Unit = {
    setVisible(hiddens.visibility(nodeId).opposite, propagate = true)
  }
 

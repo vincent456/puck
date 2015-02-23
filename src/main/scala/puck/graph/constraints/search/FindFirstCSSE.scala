@@ -1,6 +1,5 @@
 package puck.graph.constraints.search
 
-import puck.graph.transformations.Recording
 import puck.graph.{ResultT, DependencyGraph, NodeKind}
 import puck.search.FindFirstSearchEngine
 

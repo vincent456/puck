@@ -1,7 +1,7 @@
 package puck.search
 
 import scala.collection.mutable
-import scala.util.{Failure, Success, Try}
+import scalaz.{Failure, Success}
 
 /**
  * Created by lorilan on 07/07/14.
@@ -36,13 +36,13 @@ trait SearchEngine[T] extends Search[T]{
     numExploredStates = numExploredStates + 1
   }
 
-  def init(k : Try[T] => Unit){
+  def init(k : Try[T] => Unit) : Unit = {
     initialState = createInitialState(k)
     currentState = initialState
     numExploredStates = 1
   }
 
-  def search(k : Try[T] => Unit) {
+  def search(k : Try[T] => Unit) : Unit =  {
     init(k)
     currentState.executeNextChoice()
   }
@@ -54,7 +54,7 @@ trait SearchEngine[T] extends Search[T]{
   def explore() : Unit ={
     doExplore {
       case Success(result) => storeResult(Some(currentState), result)
-      case Failure(e) => ()//if(e.getMessage!=null)println(e.getMessage) else println(e)
+      case Failure(e) => ()//e.foreach(e0 => println(e0.getMessage))
     }
   }
 }
@@ -64,23 +64,24 @@ trait StackedSearchEngine[Result] extends SearchEngine[Result]{
 
   val stateStack = mutable.Stack[SearchState[Result]]()
 
-  override def init(k : Try[Result] => Unit){
+  override def init(k : Try[Result] => Unit): Unit = {
     //println("StackedSearchEngine.init")
     super.init(k)
     stateStack.push(initialState)
+    ()
   }
 
-  override def newCurrentState[S <: StateCreator[Result, S]](cr : Result, choices : S) {
+  override def newCurrentState[S <: StateCreator[Result, S]](cr : Result, choices : S) : Unit =  {
     //println("StackedSearchEngine.newCurrentState")
     super.newCurrentState(cr, choices)
     stateStack.push(currentState)
-
+    ()
   }
 }
 
 trait TryAllSearchEngine[ResT] extends StackedSearchEngine[ResT]{
 
-  def doExplore( k : Try[ResT] => Unit) {
+  def doExplore( k : Try[ResT] => Unit) : Unit =  {
 
   this.search(k)
 
@@ -162,7 +163,7 @@ trait TryAllSearchEngine[ResT] extends StackedSearchEngine[ResT]{
 
 trait FindFirstSearchEngine[T] extends StackedSearchEngine[T] {
 
-  def doExplore( k : Try[T] => Unit) {
+  def doExplore( k : Try[T] => Unit): Unit = {
 
     this.search(k)
     while(stateStack.nonEmpty && finalStates.isEmpty){

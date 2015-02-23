@@ -45,6 +45,7 @@ class AbstractionKindAndPolicyChooser private (val impl : DGNode)
         kindChoiceWrapper.contents.clear()
         kindChoiceWrapper.contents += kindChoice
         AbstractionKindAndPolicyChooser.this.pack()
+        ()
       }
     //case e : Event => println(e.getClass +" happened !")
   }

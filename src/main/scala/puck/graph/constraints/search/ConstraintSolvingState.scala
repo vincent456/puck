@@ -34,7 +34,7 @@ trait ConstraintSolvingState[ S, T <: ConstraintSolvingChoice[S, T]]
     })
   }
 
-  def executeNextChoice(){
+  def executeNextChoice() : Unit = {
     if(engine.currentState != this)
       setAsCurrentState()
 

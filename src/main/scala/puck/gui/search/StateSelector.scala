@@ -48,7 +48,7 @@ class StateSelector
 
   secondLine.contents += new Button(""){
     action = new Action("Show"){
-      def apply() {
+      def apply() : Unit = {
 
         val state: SearchState[ResultT] = searchStateComboBox.selection.item
         var id = -1
@@ -63,7 +63,7 @@ class StateSelector
 
   secondLine.contents += new Button(""){
     action = new Action("Constraint"){
-      def apply() {
+      def apply() : Unit =  {
         val state: SearchState[ResultT] = searchStateComboBox.selection.item
         StateSelector.this publish ConstraintDisplayRequest(graphOfResult(state.result))
       }
@@ -72,7 +72,7 @@ class StateSelector
 
   secondLine.contents += new Button(""){
     action = new Action("Apply"){
-      def apply(){
+      def apply() : Unit = {
         StateSelector.this publish ApplyOnCodeRequest(searchStateComboBox.selection.item.result)
       }
     }

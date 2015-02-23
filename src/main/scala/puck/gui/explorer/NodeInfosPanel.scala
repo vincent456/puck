@@ -75,8 +75,8 @@ class NodeInfosPanel(val graph : DependencyGraph,
 
       graph.users(node.id).foreach { userId =>
 
-        val sideUses = graph.usesDominatedBy(userId, nodeId)
-        val primaryUses = graph.usesDominating(userId, nodeId)
+        val sideUses = graph.usesDominatedBy((userId, nodeId))
+        val primaryUses = graph.usesDominating((userId, nodeId))
 
         def tag = (sideUses.isEmpty, primaryUses.isEmpty) match {
           case (true, true) => ""

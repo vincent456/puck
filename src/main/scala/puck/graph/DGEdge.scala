@@ -94,6 +94,6 @@ case class DGEdge
 
   def changeSource(graph : DependencyGraph, newSource : NIdT) : DependencyGraph = graph.changeSource(this, newSource)
 
-  def isDominant(graph : DependencyGraph) : Boolean = graph.usesDominatedBy(this.source, this.target).nonEmpty
-  def isDominated(graph : DependencyGraph) : Boolean = graph.usesDominating(this.source, this.target).nonEmpty
+  def isDominant(graph : DependencyGraph) : Boolean = graph.usesDominatedBy((this.source, this.target)).nonEmpty
+  def isDominated(graph : DependencyGraph) : Boolean = graph.usesDominating((this.source, this.target)).nonEmpty
 }

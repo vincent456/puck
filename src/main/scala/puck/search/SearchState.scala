@@ -3,7 +3,6 @@ package puck.search
 import puck.util.{HasChildren, BreadthFirstTreeIterator}
 
 import scala.collection.mutable
-import scala.util.Try
 
 /**
  * Created by lorilan on 22/07/14.
@@ -96,7 +95,7 @@ trait SearchState[ResT] extends HasChildren[SearchState[ResT]]{
     cid
   }
 
-  def setAsCurrentState(){ engine.currentState = this }
+  def setAsCurrentState(): Unit = { engine.currentState = this }
 
   def triedAll : Boolean
 

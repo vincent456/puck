@@ -4,9 +4,6 @@ import puck.graph._
 import puck.graph.constraints.{DecisionMaker, Solver}
 import puck.search.{SearchState, SearchEngine}
 
-import scala.collection.mutable
-import scala.util.Try
-
 trait InitialStateCreator {
   this : SearchEngine[ResultT] with  DecisionMaker =>
 
@@ -34,7 +31,7 @@ class CSInitialSearchState(val engine : SearchEngine[ResultT],
   var executedOnce = false
   override def triedAll = executedOnce
 
-  override def executeNextChoice(){
+  override def executeNextChoice() : Unit = {
     solver.solve(graph, k)
     executedOnce = true
   }

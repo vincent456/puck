@@ -64,7 +64,7 @@ class PuckInterfacePanel (filesHandler : FilesHandler) extends SplitPane(Orienta
       preferredSize = minimumSize
 
       action = new Action(title) {
-        def apply() { act() }
+        def apply() : Unit = { act() }
       }
     })
 
@@ -129,10 +129,11 @@ class PuckInterfacePanel (filesHandler : FilesHandler) extends SplitPane(Orienta
       () => publish(LoadConstraintRequest())
     }
 
-    def addDelayedComponent(c : Component){
+    def addDelayedComponent(c : Component) : Unit = {
       c.visible = false
       contents += c
       delayedDisplay += c
+      ()
     }
 
     addDelayedComponent(loadConstraintsButton)
@@ -153,7 +154,7 @@ class PuckInterfacePanel (filesHandler : FilesHandler) extends SplitPane(Orienta
       contents+= new Button() {
         tooltip = "Make packages only visible"
         action = new Action("Package Visibility") {
-          def apply() { control.publish(PackageOnlyVisible()) }
+          def apply() : Unit = { control.publish(PackageOnlyVisible()) }
         }
       }
 

@@ -1,6 +1,6 @@
 package puck.search
+
 import scala.collection.mutable
-import scala.util.Try
 
 /**
  * Created by lorilan on 26/10/14.
@@ -34,7 +34,7 @@ trait Evaluator[Result]{
       if(l.isEmpty) acc
       else{
         l.head.setAsCurrentState()
-        val presDix = Math.pow(10, pres)
+        val presDix = Math.pow(10, pres.toDouble)
         val value = (evaluate(l.head) * presDix).toInt
         val olds = acc.getOrElse(value, Seq())
         aux(acc + (value -> (l.head +: olds)), l.tail)
@@ -58,21 +58,21 @@ trait FunneledSeachEngine[Result] extends SearchEngine[Result]{
 
   var currentCheckPoint : Int = markPointPeriod
 
-  override def init(k : Try[Result] => Unit){
+  override def init(k : Try[Result] => Unit) : Unit = {
     //println("StackedSearchEngine.init")
     super.init(k)
     stateStack.push(initialState)
     numExploredStates = 1
   }
 
-  override def newCurrentState[S <: StateCreator[Result, S]](cr : Result, choices : S) {
+  override def newCurrentState[S <: StateCreator[Result, S]](cr : Result, choices : S) : Unit =  {
     //println("StackedSearchEngine.newCurrentState")
     super.newCurrentState(cr, choices)
     if ( currentState.markedPointDepth >= currentCheckPoint)
       funneledStates push currentState
     else
       stateStack push currentState
-
+    ()
   }
 
 
@@ -186,7 +186,7 @@ class FunneledStatesStack[Result](val evaluator : Evaluator[Result]) {
   }
 
 
-  def push(s : SearchState[Result]){
+  def push(s : SearchState[Result]): Unit = {
     val value = (evaluator.evaluate(s) * 100).toInt
     val olds = content.getOrElse(value, Seq())
     content =  content + (value -> (s +: olds))

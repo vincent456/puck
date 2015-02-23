@@ -16,13 +16,13 @@ class PuckConsolePanel(val filesHandler: FilesHandler)
 
   class ConsoleLogger(val askPrint : PuckLog.Verbosity => Boolean) extends PuckLogger {
 
-    def writeln(msg : => Any)(implicit v : PuckLog.Verbosity){
+    def writeln(msg : => Any)(implicit v : PuckLog.Verbosity) : Unit = {
       if(mustPrint(v)) {
         console.append(preMsg(v) + msg)
         console.append(System.lineSeparator())
       }
     }
-    def write(msg : => Any)(implicit v : PuckLog.Verbosity){
+    def write(msg : => Any)(implicit v : PuckLog.Verbosity) : Unit = {
       if(mustPrint(v)) {
         console.append(preMsg(v) + msg)
       }
@@ -33,13 +33,13 @@ class PuckConsolePanel(val filesHandler: FilesHandler)
 
   contents += new ScrollPane(console)
 
-  contents += new Button(){
+  contents += new Button() {
     tooltip = "Clear the console"
     /*minimumSize =
     maximumSize = minimumSize
     preferredSize = minimumSize*/
 
-    action = new Action("Clear"){ def apply(){
+    action = new Action("Clear"){ def apply() : Unit = {
       console.text = ""
     }
     }

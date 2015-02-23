@@ -1,3 +1,4 @@
+/*
 package puck.gui.search.decisionsFrames
 
 import puck.graph.constraints._
@@ -70,13 +71,14 @@ abstract class ConstraintEditor protected
 class FriendPanel(val editor : ConstraintEditor)
   extends BoxPanel(Orientation.Vertical){
 
+  val nsd: RangeSetDiff = ??? //= new RangeSetDiff(users, LiteralRangeSet())
+  ???
+  /*
   import editor.constraint
   import editor.users
   import editor.usee
 
-  val nsd: RangeSetDiff = ??? //= new RangeSetDiff(users, LiteralRangeSet())
-  ???
-  /*constraint.scopeFriends.foreach { f =>
+    constraint.scopeFriends.foreach { f =>
     contents += (users.scopeThatContains_*(f) match {
       case Some(s) =>
         nsd -= s
@@ -107,12 +109,13 @@ class FriendPanel(val editor : ConstraintEditor)
 
 class InterlopersPanel(val editor : ConstraintEditor)
   extends BoxPanel(Orientation.Vertical){
+  ???
+  /*
   import editor.constraint
   import editor.users
   import editor.usee
 
-  ???
-  /*constraint.interlopers.foreach{ n =>
+    constraint.interlopers.foreach{ n =>
 
     val c  = users.find(n.contains_*) match {
       case Some(s) if s == n => Button("remove " + n){
@@ -135,12 +138,13 @@ class InterlopersPanel(val editor : ConstraintEditor)
 class OwnerPanel(val editor : ConstraintEditor)
   extends BoxPanel(Orientation.Vertical){
 
+  ???
+ /*
   import editor.constraint
   import editor.users
   import editor.usee
 
-  ???
- /* constraint.owners.foreach{ n =>
+  constraint.owners.foreach{ n =>
 
     val c =
     if(n.contains_*(usee)) {
@@ -177,7 +181,7 @@ class ScopeConstraintEditor private (constraint0 : Constraint,
                                      finish0 : () => Unit)
   extends ConstraintEditor(constraint0, users0, usee0, finish0) {
 
-  def onReload() {
+  def onReload() : Unit = {
     val set = LiteralRangeSet()
     ???
     /*users.foreach{ u =>
@@ -188,12 +192,12 @@ class ScopeConstraintEditor private (constraint0 : Constraint,
     users = set
   }
 
-  def init() {
+  def init() : Unit = {
     val contents = mutable.Buffer[Component]()
 
     contents += new OwnerPanel(this)
 
-    contents += ConstraintEditor.separator()
+    contents += ConstraintEditor.separator();()
 
     /**
      * Facade
@@ -231,7 +235,7 @@ class ScopeConstraintEditor private (constraint0 : Constraint,
     contents += new FriendPanel(this)
     init(contents.iterator)*/
     }
-
+    ()
   }
 }
 object ElementConstraintEditor{
@@ -247,7 +251,7 @@ class ElementConstraintEditor private (constraint0 : Constraint,
                                        finish0 : () => Unit)
   extends ConstraintEditor(constraint0, users0, usee0, finish0){
 
-  def onReload(){
+  def onReload() : Unit = {
     val set = LiteralRangeSet()
     ???
     /*users.foreach{ u =>
@@ -258,7 +262,7 @@ class ElementConstraintEditor private (constraint0 : Constraint,
     users = set
   }
 
-  def init(){
+  def init() : Unit = {
     val contents = mutable.Buffer[Component]()
     //Owners
     contents += new OwnerPanel(this)
@@ -271,10 +275,11 @@ class ElementConstraintEditor private (constraint0 : Constraint,
     contents += ConstraintEditor.separator()
 
     contents += new FriendPanel(this)
-
+    ()
     //init(contents.iterator)
   }
 }
 
 
 
+*/

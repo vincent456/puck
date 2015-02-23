@@ -3,13 +3,11 @@ package puck.javaAG
 import puck.graph.DependencyGraph._
 import puck.graph.NodeId
 import puck.graph._
-import puck.graph.constraints.{ConstraintsMaps, RedirectionPolicy, SupertypeAbstraction, AbstractionPolicy}
+import puck.graph.constraints.ConstraintsMaps
 import puck.graph.transformations.Recording
 import puck.javaAG.nodeKind._
 import puck.util.PuckLog.InJavaGraph
 import puck.util.{PuckLog, PuckNoopLogger, PuckLogger}
-
-import scala.util.{Try, Failure, Success}
 
 /**
  * Created by lorilan on 29/10/14.
@@ -74,7 +72,7 @@ class JavaDependencyGraph
   def packageNode(id : NodeId) : NodeId =
     getNode(id).kind match {
       case Package => id
-      case _ => packageNode(container(id).getOrElse(throw new AGError( this.fullName(id) + "has no package")))
+      case _ => packageNode(container(id).getOrElse(throw new DGError( this.fullName(id) + "has no package")))
 
     }
 
@@ -86,7 +84,7 @@ class JavaDependencyGraph
       (c.kind, c.styp) match {
         case (ck: MethodKind, MethodTypeHolder(typ))=>
           c.name != other.name || typ.input.length != l
-        case (ck: MethodKind, _)=> throw new AGError()
+        case (ck: MethodKind, _)=> throw new DGError()
         case _ => true
       }
     }
@@ -103,16 +101,16 @@ class JavaDependencyGraph
                 val c = getNode(cid)
                 (c.kind, c.styp) match {
                   case (Method, MethodTypeHolder(typ)) => other.name == c.name && absTyp == typ
-                  case (Method, _) => throw new AGError()
+                  case (Method, _) => throw new DGError()
                   case _ => false
                 }
               }
             }
-        case (AbstractMethod, _) => throw new AGError(other + " does not have a MethodTypeHolder")
+        case (AbstractMethod, _) => throw new DGError(other + " does not have a MethodTypeHolder")
         /* cannot have two methods with same name and same type */
         case (Method, MethodTypeHolder(typ)) =>
           content(id).forall(noNameClash(typ.input.length))
-        case (Method, _) => throw new AGError()
+        case (Method, _) => throw new DGError()
         case _ => true
       })
   }

@@ -4,7 +4,6 @@ import puck.graph.transformations._
 import puck.javaAG.nodeKind.{MethodTypeHolder, NamedTypeHolder}
 
 import scalaz._
-import Scalaz._
 
 import scala.language.implicitConversions
 /**

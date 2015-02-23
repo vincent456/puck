@@ -44,7 +44,7 @@ import scala.swing._
 
  object Front extends SwingApplication{
 
-   def startup(args: Array[String]){
+   def startup(args: Array[String]) : Unit = {
     UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
     if (top.size == new Dimension(0,0)) top.pack()
     top.visible = true

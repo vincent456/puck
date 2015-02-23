@@ -47,7 +47,7 @@ case class ConstraintsMaps
    }
 
 
-   def printConstraints[V](graph : GraphT, logger : Logger[V], v : V){
+   def printConstraints[V](graph : GraphT, logger : Logger[V], v : V) : Unit = {
      import ShowConstraints._
      import ShowDG.{showDG, graphToOptionGraph}
      namedSets.foreach{

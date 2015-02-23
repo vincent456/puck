@@ -5,8 +5,6 @@ import puck.graph.constraints.{AbstractionPolicy, DecisionMaker}
 import puck.search.SearchEngine
 import puck.util.PuckLogger
 
-import scala.collection.mutable
-
 object ConstraintSolving {
   type NodeChoice = ConstraintSolvingNodesChoice
   type AbsChoice = ConstraintSolvingAbstractionChoice

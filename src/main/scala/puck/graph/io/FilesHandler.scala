@@ -60,13 +60,13 @@ abstract class FilesHandler(workingDirectory : File){
   }
 
   def logger : PuckLogger = logger0
-  def logger_=( l : PuckLogger){logger0 = l}
+  def logger_=( l : PuckLogger): Unit = {logger0 = l}
 
   type GraphT = DependencyGraph
 
   private [this] var ag : GraphT = _
   def graph = ag
-  protected def graph_=(g : GraphT){ ag = g }
+  protected def graph_=(g : GraphT): Unit = { ag = g }
 
   def initialRecord : Recording
 
@@ -86,10 +86,10 @@ abstract class FilesHandler(workingDirectory : File){
   }
 
 
-  def setWorkingDirectory(dir : File){
+  def setWorkingDirectory(dir : File) : Unit = {
     this.srcDir0 = setCanonicalOptionFile(this.srcDir0, Some(dir))
     this.srcDir0 match {
-      case None => throw new AGError("Invalid working directory !!!")
+      case None => throw new DGError("Invalid working directory !!!")
       case Some(d) =>
 
         def defaultFile(fileName: String) =
@@ -119,27 +119,27 @@ abstract class FilesHandler(workingDirectory : File){
 
 
   def srcDirectory = this.srcDir0
-  def srcDirectory_=(sdir : Option[File]) {
+  def srcDirectory_=(sdir : Option[File]) : Unit = {
     this.srcDir0 = setCanonicalOptionFile(this.srcDir0, sdir)
   }
 
   def outDirectory = this.outDir0
-  def outDirectory_=(sdir : Option[File]){
+  def outDirectory_=(sdir : Option[File]) : Unit = {
     this.outDir0 = setCanonicalOptionFile(this.outDir0, sdir)
   }
 
   def jarListFile = this.jarListFile0
-  def jarListFile_=(sf : Option[File]){
+  def jarListFile_=(sf : Option[File]) : Unit = {
     this.jarListFile0 = setCanonicalOptionFile(this.jarListFile0, sf)
   }
 
   def apiNodesFile = this.apiNodesFile0
-  def apiNodesFile_=(sf : Option[File]){
+  def apiNodesFile_=(sf : Option[File]) : Unit = {
     this.apiNodesFile0 = setCanonicalOptionFile(this.apiNodesFile0, sf)
   }
 
   def decouple = this.decouple0
-  def decouple_=(sf: Option[File]){
+  def decouple_=(sf: Option[File]) : Unit = {
     this.decouple0 = setCanonicalOptionFile(this.decouple0, sf)
   }
 
@@ -147,14 +147,14 @@ abstract class FilesHandler(workingDirectory : File){
   private [this] var gdot : Option[File] = None
 
   def graphvizDot = this.gdot
-  def graphvizDot_=(sf: Option[File]){
+  def graphvizDot_=(sf: Option[File]) : Unit = {
     this.gdot = setCanonicalOptionFile(this.gdot, sf)
   }
 
   private [this] var editor0 : Option[File] = None
 
   def editor = editor0
-  def editor_=(sf: Option[File]){
+  def editor_=(sf: Option[File]): Unit = {
     this.editor0 = setCanonicalOptionFile(this.editor0, sf)
   }
 
@@ -162,7 +162,7 @@ abstract class FilesHandler(workingDirectory : File){
 
 
   def graphFile(suffix : String) : File = outDirectory match {
-    case None => throw new AGError("no output directory !!")
+    case None => throw new DGError("no output directory !!")
     case Some(d) => new File(d + File.separator + graphStubFileName + suffix)
   }
 
@@ -177,7 +177,7 @@ abstract class FilesHandler(workingDirectory : File){
               printId : Boolean,
               printSignatures : Boolean,
               useOption : Option[DGEdge],
-              writer : OutputStreamWriter = new FileWriter(graphFile(".dot"))){
+              writer : OutputStreamWriter = new FileWriter(graphFile(".dot"))) : Unit = {
     val printer = new DotPrinter(new BufferedWriter(writer), graph, visibility, dotHelper, printId,
       printSignatures, searchRoots = false, selectedUse = useOption)
     printer()
@@ -217,13 +217,14 @@ abstract class FilesHandler(workingDirectory : File){
               selectedUse : Option[DGEdge],
               sOutput : Option[OutputStream] = None,
               outputFormat : DotOutputFormat = Png())
-             (finish : Try[Int] => Unit = {case _ => ()}){
+             (finish : Try[Int] => Unit = {case _ => ()}) : Unit = {
 
     //TODO fix bug when chaining the two function with a pipe
     // and calling it in "do everything"
     makeDot(graph, visibility, printId, printSignatures, selectedUse)
 
     convertDot(sInput = None, sOutput, outputFormat)
+    ()
 
     /*
         val pipedOutput = new PipedOutputStream()
@@ -247,11 +248,11 @@ abstract class FilesHandler(workingDirectory : File){
 
 
   def parseConstraints()  = {
-    if(graphBuilder == null) throw new AGError("WTF !!")
+    if(graphBuilder == null) throw new DGError("WTF !!")
     val parser = ConstraintsParser(graphBuilder)
     try {
       decouple match{
-        case None => throw new AGError("cannot parse : no decouple file given")
+        case None => throw new DGError("cannot parse : no decouple file given")
         case Some(f) =>
           logger.writeln("parsing " + f)
           parser(new FileReader(f))
@@ -259,7 +260,7 @@ abstract class FilesHandler(workingDirectory : File){
     } catch {
       case e : NoSuchElementException =>
         e.printStackTrace()
-        logger.writeln("parsing failed : " + e.getLocalizedMessage)(PuckLog.NoSpecialContext, PuckLog.Error)
+        logger.writeln("parsing failed : " + e.getLocalizedMessage)((PuckLog.NoSpecialContext, PuckLog.Error))
     }
     graph = graph.newGraph(nConstraints = graphBuilder.constraintsMap)
   }
@@ -286,7 +287,7 @@ abstract class FilesHandler(workingDirectory : File){
   def printCSSearchStatesGraph(states : Map[Int, Seq[SearchState[ResultT]]],
                                visibility : VisibilitySet,
                                printId : Boolean,
-                               printSignature : Boolean){
+                               printSignature : Boolean) : Unit = {
     val d = graphFile("_results")
     d.mkdir()
     states.foreach{
@@ -302,7 +303,7 @@ abstract class FilesHandler(workingDirectory : File){
                                visibility : VisibilitySet,
                                sPrinter : Option[(SearchState[ResultT] => String)],
                                printId : Boolean,
-                               printSignature : Boolean){
+                               printSignature : Boolean) : Unit = {
 
     val printer = sPrinter match {
       case Some(p) => p
@@ -325,12 +326,12 @@ abstract class FilesHandler(workingDirectory : File){
   val srcSuffix : String
 
 
-  private def openList(files : Seq[String]){
+  private def openList(files : Seq[String]) : Unit = {
     val ed = editor match {
       case None => sys.env("EDITOR")
       case Some(f) => f.getCanonicalPath
     }
-    Process(ed  +: files ).!
+    Process(ed  +: files ).!;()
   }
 
   import puck.util.FileHelper.findAllFiles

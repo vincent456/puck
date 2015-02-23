@@ -5,13 +5,13 @@ import puck.graph.constraints.{RedirectionPolicy, SupertypeAbstraction, Abstract
 import puck.graph.transformations.TransformationRules
 import puck.javaAG.nodeKind._
 
-
-import scala.util.{Failure, Success, Try}
+import scalaz.{Failure, Success}
+import scalaz.Validation.FlatMap._
 
 /**
  * Created by lorilan on 25/01/15.
  */
-object JavaTransformationRules extends TransformationRules{
+object JavaTransformationRules extends TransformationRules {
 
   override def abstractionName( g: GraphT, implId: NIdT, abskind : NodeKind, policy : AbstractionPolicy) : String = {
     val impl = g.getNode(implId)
@@ -75,7 +75,7 @@ object JavaTransformationRules extends TransformationRules{
                             //TODO check why it is not needed
                             Success(addTypesUses(g4, absChild))*/
                             Success(g3.changeType(absChild, absChildNode.styp, implId, absId))
-                          case k => Failure(new AGError(k + " should be an abstract method !"))
+                          case k => Failure(new DGError(k + " should be an abstract method !")).toValidationNel
                         }
                     }
                   case _ => Success(g0)
@@ -96,7 +96,7 @@ object JavaTransformationRules extends TransformationRules{
                       val g1 = g0.changeContravariantType(child, node.styp, implId, abs.id)
 
                       if(g1.uses(child, implId)) {
-                        g.logger.writeln("interface creation : redirecting %s target to %s".format(DGEdge.uses(child, implId), abs), 3)
+                        g.logger.writeln(s"interface creation : redirecting ${DGEdge.uses(child, implId)} target to $abs")
                         redirectUses(g1, DGEdge.uses(child, implId), absId, SupertypeAbstraction) map {
                           case (_, g22) => g22
                         }
@@ -191,7 +191,7 @@ object JavaTransformationRules extends TransformationRules{
         val absm = g.getNode(absmId)
         absm.kind match {
           case AbstractMethod => findMergingCandidateIn(g, absm, g.getNode(interface2)).isDefined
-          case _ => throw new AGError("Interface should contain only abstract method !!")
+          case _ => throw new DGError("Interface should contain only abstract method !!")
         }
       }
 
@@ -234,7 +234,7 @@ object JavaTransformationRules extends TransformationRules{
   def findMergingCandidateIn(g : GraphT, method : AGNodeT, interface : AGNodeT) : Option[NIdT] = {
     //node.graph.logger.writeln("searching merging candidate for %s".format(node), 8)
     if(method.styp.isEmpty)
-      throw new AGError("Method must have a type")
+      throw new DGError("Method must have a type")
 
     val mType = method.styp.redirectUses(g.container(method.id).get, interface)
     g.content(interface.id).find { ncId =>

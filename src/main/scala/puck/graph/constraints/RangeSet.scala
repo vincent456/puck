@@ -1,6 +1,6 @@
 package puck.graph.constraints
 
-import puck.graph.{AGError, DependencyGraph}
+import puck.graph.{DGError, DependencyGraph}
 import puck.graph.DependencyGraph.NodeId
 
 
@@ -80,7 +80,7 @@ case class RangeSetUnion private[constraints]
 
   def +(n : Range) = new RangeSetUnion(sets, set + n)
 
-  def -(n : Range) = throw new AGError("Do not know how to remove a node from a nodeSet union")
+  def -(n : Range) = throw new DGError("Do not know how to remove a node from a nodeSet union")
 
   def literalCopy() = LiteralRangeSet(this.iterator)
 }

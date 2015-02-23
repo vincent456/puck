@@ -96,6 +96,6 @@ class PuckFileLogger(val askPrint : PuckLog.Verbosity => Boolean,
 
 object PuckNoopLogger extends PuckLogger {
   val askPrint = (x : PuckLog.Verbosity) => false
-  def writeln(msg : => Any)(implicit v : PuckLog.Verbosity){}
-  def write(msg : => Any)(implicit v : PuckLog.Verbosity){}
+  def writeln(msg : => Any)(implicit v : PuckLog.Verbosity): Unit = {}
+  def write(msg : => Any)(implicit v : PuckLog.Verbosity): Unit = {}
 }

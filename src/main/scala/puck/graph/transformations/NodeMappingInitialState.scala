@@ -8,7 +8,7 @@ import puck.search.SearchState
 import puck.util.{PuckLog, PuckLogger}
 
 import scala.collection.immutable.HashSet
-import scala.util.{Failure, Try}
+import scalaz.Failure
 
 object NodeTransfoStatus {
   def apply( i : Int) = i match {
@@ -35,10 +35,10 @@ object NodeMappingInitialState{
     val (map, rl) = l.foldLeft( (Map[NodeId, (Int, NodeKind)](), init) ){
       case ((m,l1), Transformation(Add, TTNode(id, _, kind, _, _ ))) =>
         val (i, _) = m.getOrElse(id, (0, JavaRoot) )
-        (m + (id -> (i + 1, kind)), l1)
+        (m + (id -> ((i + 1, kind))), l1)
       case ((m,l1), Transformation(Remove, TTNode(id, _, kind, _, _ ))) =>
         val (i, _) = m.getOrElse(id, (0, JavaRoot))
-        (m + (id -> (i - 1, kind)), l1)
+        (m + (id -> ((i - 1, kind))), l1)
 
       //removing the dependendency and abstraction of the comparison
       // they are used to compute the change on the graph, its the change themselves we want to compare
@@ -81,7 +81,7 @@ object NodeMappingInitialState{
   def filterNoise[Kind <: NodeKind, T](transfos : Seq[Transformation], logger : PuckLogger):
   Seq[Transformation] = {
 
-    def printRule(name : => String, op1 : => String, op2 : => String, res : => String ){
+    def printRule(name : => String, op1 : => String, op2 : => String, res : => String ) : Unit = {
       logger.writeln(name +" : ")
       logger.writeln(op1)
       logger.writeln("+ " + op2)
@@ -194,7 +194,7 @@ class NodeMappingInitialState
 
   val (numCreatedNodes, initialMapping, removedNode, neuterNodes) =
     switchNodes(nodeStatuses, ResMap()){
-      case (m, (n, k0)) => m + (n -> (k0, None))
+      case (m, (n, k0)) => m + (n -> ((k0, None)))
     }
 
   val (numCreatedNodes2, nodesToMap, otherRemovedNodes, otherNeuterNodes) =
@@ -210,13 +210,13 @@ class NodeMappingInitialState
 
   override def triedAll = triedAll0
 
-  def printlnNode(graph: DependencyGraph)( nid : NodeId){
+  def printlnNode(graph: DependencyGraph)( nid : NodeId) : Unit = {
     val n = graph.getNode(nid)
     logger.writeln("%d = %s(%s)".format(n.id, n.kind, graph.fullName(n.id)))
   }
 
 
-  override def executeNextChoice() {
+  override def executeNextChoice() : Unit = {
     triedAll0 = true
 
     if(numCreatedNodes != numCreatedNodes2 ||
@@ -257,7 +257,7 @@ class NodeMappingInitialState
       logger.writeln("recording2")
       graph2.recording() foreach { t => logger.writeln(t.toString)}
 
-      k(Failure(NoSolution))
+      k(Failure(NoSolution).toValidationNel)
     }
     else {
 
@@ -320,7 +320,7 @@ class NodeMappingInitialState
       filteredTransfos2 foreach { t => logger.writeln(t.toString)}
 
       if(filteredTransfos1.length != filteredTransfos2.length)
-        k(Failure(NoSolution))
+        k(Failure(NoSolution).toValidationNel)
 
       engine.compare(filteredTransfos1, filteredTransfos2, initialMapping, nodesToMap, k)
       /*eng.compare(filteredTransfos1, filteredTransfos2,

@@ -31,7 +31,7 @@ class ImageFrame(private val image: java.awt.Image) extends Frame{
   private val screenSize = Toolkit.getDefaultToolkit.getScreenSize
   setSize()
 
-  def setSize(){
+  def setSize() : Unit = {
     /*if(image != null) {
       size = new Dimension(scala.math.min(screenSize.getWidth, image.getWidth(null) + 20).toInt,
         scala.math.min(screenSize.getHeight, image.getHeight(null) + 70).toInt)

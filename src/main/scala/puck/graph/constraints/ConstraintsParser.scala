@@ -215,7 +215,7 @@ class ConstraintsParser private
   }*/
 
   def apply(input : java.io.Reader) = {
-    def aux(input : Reader[Char]) {
+    def aux(input : Reader[Char]) : Unit = {
       parse(constraints, input) match {
         case Success(_, i) => aux(i)
         case Error(msg, next) =>

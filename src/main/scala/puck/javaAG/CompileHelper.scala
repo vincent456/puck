@@ -16,7 +16,7 @@ object CompileHelper {
   def apply(sources: List[String], jars: List[String]): Option[AST.Program] = {
     val arglist = createArglist(sources, jars, List())
     val f = new AST.Frontend {
-      protected override def processWarnings(errors: java.util.Collection[_], unit: AST.CompilationUnit) {
+      protected override def processWarnings(errors: java.util.Collection[_], unit: AST.CompilationUnit) : Unit =  {
       }
     }
     val br = new AST.BytecodeParser

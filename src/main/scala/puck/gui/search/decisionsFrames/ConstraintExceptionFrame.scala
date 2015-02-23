@@ -1,3 +1,4 @@
+/*
 package puck.gui.search.decisionsFrames
 
 import puck.graph.DGNode
@@ -12,7 +13,7 @@ import scala.swing._
  */
 
 object ConstraintExceptionFrame{
-  def apply(sources : RangeSet, target : DGNode) {
+  def apply(sources : RangeSet, target : DGNode) : Unit =  {
     DecisionFrame {
       () => new ConstraintExceptionFrame(sources, target)
     }
@@ -46,7 +47,7 @@ class ConstraintExceptionFrame private (val sources : RangeSet,
 
 
       def constraintEditor[T <: Constraint, U<:DecisionFrame[Unit]](ct : T,
-                                                                    getPanel : (T, RangeSet, DGNode, () => Unit) => Panel ){
+                                                                    getPanel : (T, RangeSet, DGNode, () => Unit) => Panel ) : Unit = {
         contents += new BoxPanel(Orientation.Horizontal){
           contents += new Label(ct.toString)
           contents += Swing.HGlue
@@ -54,6 +55,7 @@ class ConstraintExceptionFrame private (val sources : RangeSet,
             ConstraintExceptionFrame.this.contents = getPanel(ct, sources, target, callMakePanel)
           }
         }
+        ()
       }
 
       vsc.foreach{ constraintEditor(_, ScopeConstraintEditor.apply) }
@@ -68,7 +70,8 @@ class ConstraintExceptionFrame private (val sources : RangeSet,
           target.graph.nodeSets.values.toList,
           vsc ::: vec, callMakePanel)*/
       }
-      contents += Button("Raw Editor (all constraints)"){
+
+      /*contents += Button("Raw Editor (all constraints)"){
         ConstraintExceptionFrame.this.contents = ???
           /*new RawConstraintEditor(target.graph,
           target.graph.nodeSets.values.toList,
@@ -76,7 +79,7 @@ class ConstraintExceptionFrame private (val sources : RangeSet,
       }
       contents += Button("OK"){
         ConstraintExceptionFrame.this.complete(())
-      }
+      }*/
     }
 
 
@@ -84,3 +87,4 @@ class ConstraintExceptionFrame private (val sources : RangeSet,
 
   contents = makePanel()
 }
+*/

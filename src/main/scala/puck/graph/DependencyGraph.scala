@@ -1,13 +1,9 @@
 package puck.graph
 
-import scalaz._
-import Scalaz._
 import puck.graph.DependencyGraph._
 import puck.graph.constraints._
 import puck.graph.transformations.RecordingComparator
 import puck.util.{Logger, PuckNoopLogger, PuckLogger, PuckLog}
-
-import scala.util.{Failure, Try, Success}
 
 /**
  * Created by lorilan on 1/8/15.
@@ -117,7 +113,7 @@ class DependencyGraph
                                   kind: NodeKind,
                                   styp: STyp,
                                   mutable : Mutability) : DependencyGraph =
-    newGraph(nNodesSet = nodesIndex + (id -> (id, localName, kind, styp, mutable)),
+    newGraph(nNodesSet = nodesIndex + (id -> ((id, localName, kind, styp, mutable))),
              nRemovedNodes = removedNodes - id,
              nRecording = recording.addNode(id, localName, kind, styp, mutable))
 
@@ -151,7 +147,7 @@ class DependencyGraph
         logger.writeln(msg)(PuckLog.Error)
         logger.writeln("nodes of graph : ")(PuckLog.Error)
         logger.writeln(sortedMap.mkString("\n", "\n\t", ""))(PuckLog.Error)
-        throw new AGError("illegal node request : no node has id " + id.toString)
+        throw new DGError("illegal node request : no node has id " + id.toString)
     }
   }
 
@@ -166,7 +162,7 @@ class DependencyGraph
         newGraph(nNodesSet = nodesIndex - id,
           nRemovedNodes = removedNodes + (id -> node),
           nRecording = recording.removeNode(id, localName, kind, styp, mutable))
-      case _ => throw new AGError("incoherent index left and right id are different")
+      case _ => throw new DGError("incoherent index left and right id are different")
 
     }
   }
@@ -176,7 +172,7 @@ class DependencyGraph
   def setNode(n : DGNode) : GraphT = setNode(n.id, n.name, n.kind, n.styp, n.isMutable, n.status)
   //def setNode(n : NodeT, status : NodeStatus) : GraphT = setNode(n._1, n._2, n._3, n._4, n._5, status)
   def setNode(id : NIdT, name : String, k : NodeKind, styp : STyp, mutable : Boolean, t : NodeStatus) : GraphT = {
-    val assoc = id -> (id, name, k, styp, mutable)
+    val assoc = id -> ((id, name, k, styp, mutable))
     t match {
       case Created => newGraph(nNodesSet = nodesIndex + assoc )
       case Removed => newGraph(nRemovedNodes = removedNodes + assoc )

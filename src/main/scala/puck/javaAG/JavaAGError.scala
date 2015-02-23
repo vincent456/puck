@@ -1,10 +1,10 @@
 package puck.javaAG
 
-import puck.graph.AGError
+import puck.graph.DGError
 
 /**
  * Created by lorilan on 23/07/14.
  */
-class JavaAGError(msg:String) extends AGError(msg) {
+class JavaAGError(msg:String) extends DGError(msg) {
   def this()=this("")
 }
