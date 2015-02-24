@@ -61,15 +61,15 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker
     val impl = graph.getNode(implId)
     import impl.kind.{abstractionPolicies, abstractKinds}
 
-    /*if(abstractionPolicies.isEmpty) {
+    if(abstractionPolicies.isEmpty) {
       k(None)
     }
     else{
         k(Some((abstractKinds(abstractionPolicies.head).head,
           abstractionPolicies.head)))
-    }*/
+    }
 
-    val (needSearch, karg) =
+    /*val (needSearch, karg) =
       if(abstractionPolicies.isEmpty) {
         (false, None)
     }
@@ -92,7 +92,7 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker
           Set[Option[(NodeKind, AbstractionPolicy)]]() ++ choices,
           Set[Option[(NodeKind, AbstractionPolicy)]]()))
     }
-    else k(karg)
+    else k(karg)*/
 
   }
 

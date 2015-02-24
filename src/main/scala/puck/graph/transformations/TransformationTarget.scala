@@ -54,6 +54,7 @@ case class Target(node : NodeId) extends Extremity  {
 case class TTRedirection(edge : DGEdge, extremity : Extremity)
   extends TransformationTarget{
 
+  val withMerge = false
   def execute(g: GraphT, op : Operation) = (op, extremity) match {
     case (Add, Target(newTarget)) => edge.changeTarget(g, newTarget)
     case (Remove, Target(newTarget)) => DGEdge(edge.kind, edge.source, newTarget).changeTarget(g, edge.target)
@@ -64,6 +65,9 @@ case class TTRedirection(edge : DGEdge, extremity : Extremity)
 
 class RedirectionWithMerge(edge : DGEdge, extremity : Extremity)
   extends TTRedirection(edge, extremity){
+  override val productPrefix = "RedirectionWithMerge"
+
+  override val withMerge = true
 
   override def execute(g: GraphT, op : Operation) = (op, extremity) match {
     case (Add, _) => super.execute(g, op)

@@ -66,111 +66,7 @@ object NodeMappingInitialState{
     }
   }
 
-  def select[T](l : List[T], pred : T => Boolean) : (Option[T], List[T]) = {
-    def aux(l1 : List[T], acc : List[T]) : (Option[T], List[T]) =
-      if(l1.isEmpty) (None, l)
-      else if(pred(l1.head)) (Some(l1.head), acc reverse_::: l1.tail)
-      else aux(l1.tail, l1.head :: acc)
-
-    aux(l, List[T]())
-  }
-
-
   implicit val defaultVerbosity = (PuckLog.NoSpecialContext, PuckLog.Debug)
-
-  def filterNoise[Kind <: NodeKind, T](transfos : Seq[Transformation], logger : PuckLogger):
-  Seq[Transformation] = {
-
-    def printRule(name : => String, op1 : => String, op2 : => String, res : => String ) : Unit = {
-      logger.writeln(name +" : ")
-      logger.writeln(op1)
-      logger.writeln("+ " + op2)
-      logger.writeln("= " + res)
-      logger.writeln("----------------------------------------------")
-    }
-
-    def mapUntil( stoppingEdge : DGEdge,
-                  transfos : List[Transformation])
-                (rule : (Transformation => Transformation)): Seq[Transformation] = {
-
-      def aux(acc : Seq[Transformation], l : Seq[Transformation]) : Seq[Transformation] ={
-        if(l.isEmpty) acc.reverse
-        else
-          l.head match {
-            case Transformation(_, TTRedirection(`stoppingEdge`, _)) =>
-              RecordingComparator.revAppend(acc, l)
-            case _ => aux(rule(l.head) +: acc, l.tail)
-
-          }
-      }
-      aux(List(), transfos)
-    }
-
-    // We are going backwards !
-    def aux(filteredTransfos : Seq[Transformation],
-            l : Seq[Transformation],
-             removedEdges : Seq[DGEdge]): (Seq[Transformation], Seq[DGEdge]) = {
-      l match {
-        case List() => (filteredTransfos, removedEdges)
-        case (op2 @ Transformation(Remove, TTEdge(DGEdge(Contains, n1, n2)))) :: tl =>
-          /*val (applied, newTl) = applyRuleOnce[Transformation](tl)
-          { case Transformation(Add(), TTEdge(AGEdge(Contains(), `n1`, `n2`))) => (true, None)
-          case _ => (false, None)
-          }
-          if(applied) aux(filteredTransfos, newTl)
-          else aux(l.head :: filteredTransfos, l)*/
-          select[Transformation](tl,
-          { case Transformation(Add, TTEdge(DGEdge(Contains, `n1`, `n2`))) => true
-          case _ => false
-          }) match {
-            case (Some( op1 ), newTl) =>
-              printRule("AddDel", op1.toString, op2.toString, "None")
-              aux(filteredTransfos, newTl, removedEdges)
-            case (None, _) => aux(l.head +: filteredTransfos, l.tail, removedEdges)
-          }
-        case (op1 @ Transformation(Add, TTRedirection(stopingEdge @ DGEdge(kind, n1, n2), Source(n3)))) :: tl =>
-          aux(filteredTransfos, mapUntil(stopingEdge, tl)
-          { case op2 @ Transformation(Add, TTRedirection(DGEdge(`kind`, n0, `n2`), Source(`n1`))) =>
-            val res = Transformation(Add, TTRedirection(DGEdge(kind, n0, n2), Source(n3)))
-            printRule("RedRed_src", op2.toString, op1.toString, res.toString)
-            res
-          case op2 @ Transformation(Add, TTEdge(DGEdge(`kind`, `n1`, `n2`))) =>
-            val res = Transformation(Add, TTEdge(DGEdge(kind, n3, n2)))
-            printRule("AddRed_src", op2.toString, op1.toString, res.toString)
-            res
-          case t => t
-          }, removedEdges)
-
-        case (op1 @ Transformation(Add, TTRedirection(stopingEdge @ DGEdge(kind, n1, n2), Target(n3)))) :: tl =>
-          aux(filteredTransfos, mapUntil(stopingEdge, tl)
-          { case op2 @ Transformation(Add, TTRedirection(DGEdge(`kind`, `n1`, n0), Target(`n2`))) =>
-            val res = Transformation(Add, TTRedirection(DGEdge(kind, n1, n0), Target(n3)))
-            printRule("RedRed_tgt", op2.toString, op1.toString, res.toString)
-            res
-          case op2 @ Transformation(Add, TTEdge(DGEdge(`kind`, `n1`, `n2`))) =>
-            val res = Transformation(Add, TTEdge(DGEdge(kind, n1, n3)))
-            printRule("AddRed_tgt", op2.toString, op1.toString, res.toString)
-            res
-          case t => t
-          }, removedEdges)
-
-        case (t @ Transformation(Add, TTEdge(_))):: tl => aux(t +: filteredTransfos, tl, removedEdges)
-        case (Transformation(Remove, TTEdge(e))):: tl => aux(filteredTransfos, tl, e +: removedEdges)
-
-        case hd :: _ => sys.error(hd  + " should not be in list")
-      }
-    }
-
-    val (normalTransfos, removedEdges) = aux(Seq(), transfos, Seq())
-
-    removedEdges.foldLeft(normalTransfos){case (normalTransfos0, e) =>
-      normalTransfos0 filter {
-        case Transformation(Add, TTEdge(`e`)) => false
-        case _ => true
-      }
-    }
-
-  }
 }
 
 class NodeMappingInitialState
@@ -187,6 +83,18 @@ class NodeMappingInitialState
 
   import puck.graph.transformations.NodeMappingInitialState._
 
+  logger.writeln("*********************************** ")
+  logger.writeln("*********************************** ")
+  logger.writeln("*********************************** ")
+  logger.writeln("untouched recording 1 : ")
+  graph1.recording() foreach  { t => logger.writeln(t.toString)}
+  logger.writeln("*********************************** ")
+  logger.writeln("*********************************** ")
+
+  logger.writeln("untouched recording 2 : ")
+  graph2.recording() foreach  { t => logger.writeln(t.toString)}
+  logger.writeln("*********************************** ")
+  logger.writeln("*********************************** ")
 
   val (nodeStatuses, remainingTransfos1) = normalizeNodeTransfos(graph1.recording(), initialTransfos)
 
@@ -277,7 +185,7 @@ class NodeMappingInitialState
       logger.writeln("***************** filtering 1 *************************")
       logger.writeln("*******************************************************")
 
-      val filteredTransfos1 = if(neuterNodes.nonEmpty) filterNoise(remainingTransfos1, logger)
+      val filteredTransfos1 = if(neuterNodes.nonEmpty) FilterNoise(remainingTransfos1, logger)
       else remainingTransfos1
 
       logger.writeln("*******************************************************")
@@ -311,7 +219,7 @@ class NodeMappingInitialState
       logger.writeln("***************** filtering 2 *************************")
       logger.writeln("*******************************************************")
 
-      val filteredTransfos2 = if(otherNeuterNodes.nonEmpty) filterNoise(remainingTransfos2, logger)
+      val filteredTransfos2 = if(otherNeuterNodes.nonEmpty) FilterNoise(remainingTransfos2, logger)
       else remainingTransfos2
 
       logger.writeln("*******************************************************")
@@ -321,8 +229,8 @@ class NodeMappingInitialState
 
       if(filteredTransfos1.length != filteredTransfos2.length)
         k(Failure(NoSolution).toValidationNel)
-
-      engine.compare(filteredTransfos1, filteredTransfos2, initialMapping, nodesToMap, k)
+      else
+        engine.compare(filteredTransfos1, filteredTransfos2, initialMapping, nodesToMap, k)
       /*eng.compare(filteredTransfos1, filteredTransfos2,
         neuterNodes.foldLeft(initialMapping){ (m, n) => m + (n -> None) },
         nodesToMap ++ otherNeuterNodes)*/

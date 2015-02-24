@@ -28,16 +28,20 @@ object DotPrinter {
 
 }
 
+case class PrintingOptions(visibility : VisibilitySet,
+                           printId : Boolean = false,
+                           printSignatures : Boolean = false,
+                           selectedUse : Option[DGEdge] = None)
+
 import DotPrinter._
 class DotPrinter
 ( writer: BufferedWriter,
   graph : DependencyGraph,
-  visibility : VisibilitySet,
   helper : DotHelper,
-  printId : Boolean,
-  printSignatures : Boolean = false,
-  searchRoots : Boolean = false,
-  selectedUse : Option[DGEdge] = None){
+  printingOptions: PrintingOptions,
+  searchRoots : Boolean = false ){
+
+  import printingOptions._
 
   implicit val g = graph
   type NIdT = NodeId

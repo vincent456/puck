@@ -9,7 +9,7 @@ import puck.search.{Search, SearchState, SearchEngine}
 import puck.util._
 
 import scala.sys.process.Process
-import scala.util.Try
+import scala.util.{Success, Try}
 
 trait ConstraintSolvingSearchEngineBuilder {
   def apply(initialRecord : Recording, graph : DependencyGraph) :
@@ -29,6 +29,70 @@ object FilesHandler{
     final val apiNodesFileName: String = "api_nodes"
     final val logFileName: String = outDirName + File.separator + "graph_solving.log"
   }
+
+  def makeDot(graph : DependencyGraph, dotHelper: DotHelper,
+              printingOptions: PrintingOptions,
+              writer : OutputStreamWriter) : Unit = {
+    val printer = new DotPrinter(new BufferedWriter(writer), graph, dotHelper, printingOptions, searchRoots = false)
+    printer()
+  }
+
+  def makeImageFile(graphvizDot : Option[File],
+              graph : DependencyGraph, dotHelper: DotHelper,
+              printingOptions: PrintingOptions,
+              pathWithoutSuffix : String,
+              sOutput : Option[OutputStream] = None,
+              outputFormat : DotOutputFormat = Png)
+             (finish : Try[Int] => Unit = {case _ => ()}) : Unit = {
+
+    //TODO fix bug when chaining the two function with a pipe
+    // and calling it in "do everything"
+    FilesHandler.makeDot(graph, dotHelper, printingOptions, new FileWriter(pathWithoutSuffix + ".dot"))
+
+    finish(Success(convertDot(graphvizDot, pathWithoutSuffix, sInput = None, sOutput, outputFormat)))
+    /*
+        val pipedOutput = new PipedOutputStream()
+        val pipedInput = new PipedInputStream(pipedOutput)
+
+        println("launchig convert dot future")
+        Future {
+          convertDot(Some(pipedInput), sOutput, outputFormat)
+        } onComplete finish
+        println("post launching")
+
+
+        makeDot(printId, printSignatures, selectedUse,
+          writer = new OutputStreamWriter(pipedOutput))
+        println("post make dot")
+    */
+  }
+
+  def convertDot( graphvizDot : Option[File],
+                  pathWithoutSuffix : String,
+                  sInput : Option[InputStream] = None,
+                  sOutput : Option[OutputStream] = None,
+                  outputFormat : DotOutputFormat) : Int = {
+
+    val dot = graphvizDot match {
+      case None => "dot" // relies on dot directory being in the PATH variable
+      case Some(f) => f.getCanonicalPath
+    }
+
+    val processBuilder =
+      sInput match {
+        case None => Process(List(dot,
+          "-T" + outputFormat, pathWithoutSuffix + ".dot"))
+        case Some(input) => Process(List(dot,
+          "-T" + outputFormat)) #< input
+      }
+
+    sOutput match {
+      case None =>(processBuilder #> new File( pathWithoutSuffix + "." + outputFormat)).!
+      case Some(output) =>(processBuilder #> output).!
+    }
+  }
+
+
 }
 
 /*trait ConstraintSolvingSearchEngineBuilder[Kind <: NodeKind[Kind]] {
@@ -160,11 +224,12 @@ abstract class FilesHandler(workingDirectory : File){
 
   def logFile = logFile0
 
-
-  def graphFile(suffix : String) : File = outDirectory match {
+  def graphFilePath : String = outDirectory match {
     case None => throw new DGError("no output directory !!")
-    case Some(d) => new File(d + File.separator + graphStubFileName + suffix)
+    case Some(d) => d + File.separator + graphStubFileName
   }
+
+  def graphFile(suffix : String) : File = new File(graphFilePath + suffix)
 
 
 
@@ -172,80 +237,9 @@ abstract class FilesHandler(workingDirectory : File){
 
   val dotHelper : DotHelper
 
-  def makeDot(graph : GraphT,
-              visibility : VisibilitySet,
-              printId : Boolean,
-              printSignatures : Boolean,
-              useOption : Option[DGEdge],
-              writer : OutputStreamWriter = new FileWriter(graphFile(".dot"))) : Unit = {
-    val printer = new DotPrinter(new BufferedWriter(writer), graph, visibility, dotHelper, printId,
-      printSignatures, searchRoots = false, selectedUse = useOption)
-    printer()
-  }
-
   /*def makeProlog(){
     PrologPrinter.print(new BufferedWriter(new FileWriter(graphFile(".pl"))), ag)
   }*/
-
-  def convertDot( sInput : Option[InputStream] = None,
-                  sOutput : Option[OutputStream] = None,
-                  outputFormat : DotOutputFormat) : Int = {
-
-    val dot = graphvizDot match {
-      case None => "dot" // relies on dot directory being in the PATH variable
-      case Some(f) => f.getCanonicalPath
-    }
-
-    val processBuilder =
-      sInput match {
-        case None => Process(List(dot,
-          "-T" + outputFormat, graphFile(".dot").toString))
-        case Some(input) => Process(List(dot,
-          "-T" + outputFormat)) #< input
-      }
-
-    sOutput match {
-      case None =>(processBuilder #> graphFile( "." + outputFormat)).!
-      case Some(output) =>(processBuilder #> output).!
-    }
-  }
-
-  def makePng(graph : GraphT,
-              visibility : VisibilitySet,
-              printId : Boolean,
-              printSignatures : Boolean,
-              selectedUse : Option[DGEdge],
-              sOutput : Option[OutputStream] = None,
-              outputFormat : DotOutputFormat = Png())
-             (finish : Try[Int] => Unit = {case _ => ()}) : Unit = {
-
-    //TODO fix bug when chaining the two function with a pipe
-    // and calling it in "do everything"
-    makeDot(graph, visibility, printId, printSignatures, selectedUse)
-
-    convertDot(sInput = None, sOutput, outputFormat)
-    ()
-
-    /*
-        val pipedOutput = new PipedOutputStream()
-        val pipedInput = new PipedInputStream(pipedOutput)
-
-        println("launchig convert dot future")
-        Future {
-          convertDot(Some(pipedInput), sOutput, outputFormat)
-        } onComplete finish
-        println("post launching")
-
-
-        makeDot(printId, printSignatures, selectedUse,
-          writer = new OutputStreamWriter(pipedOutput))
-        println("post make dot")
-    */
-
-
-  }
-
-
 
   def parseConstraints()  = {
     if(graphBuilder == null) throw new DGError("WTF !!")
@@ -314,9 +308,28 @@ abstract class FilesHandler(workingDirectory : File){
     states.foreach { s =>
       val graph = graphOfResult(s.result)
       val f = new File("%s%c%s.png".format(dir.getAbsolutePath, File.separatorChar, printer(s)))
-      makePng(graph, visibility, printId, printSignature, None, sOutput = Some(new FileOutputStream(f)))()
+      val options = PrintingOptions(visibility, printId, printSignature, None)
+      makePng(graph, options, sOutput = Some(new FileOutputStream(f)))()
     }
   }
+
+  def makePng(graph : DependencyGraph,
+      printingOptions: PrintingOptions,
+      sOutput : Option[OutputStream] = None,
+      outputFormat : DotOutputFormat = Png)
+      (finish : Try[Int] => Unit = {case _ => ()}) =
+    FilesHandler.makeImageFile(graphvizDot,
+      graph, dotHelper, printingOptions, graphFilePath, sOutput, outputFormat)(finish)
+
+  def makePng(graph : DependencyGraph,
+              visibility: VisibilitySet,
+              printId : Boolean,
+              printSignature : Boolean,
+              someUse : Option[DGEdge],
+              sOutput : Option[OutputStream])
+             (finish : Try[Int] => Unit) =
+    FilesHandler.makeImageFile(graphvizDot,
+      graph, dotHelper, PrintingOptions(visibility, printId, printSignature, someUse), graphFilePath, sOutput, Png)(finish)
 
   def printCode() : Unit
 

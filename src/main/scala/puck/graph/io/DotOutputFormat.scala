@@ -5,10 +5,10 @@ package puck.graph.io
  */
 sealed abstract class DotOutputFormat
 
-case class Png() extends DotOutputFormat{
+case object Png extends DotOutputFormat{
   override def toString = "png"
 }
 
-case class Svg() extends DotOutputFormat{
+case object Svg extends DotOutputFormat{
   override def toString = "svg"
 }

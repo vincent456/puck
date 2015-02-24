@@ -61,7 +61,7 @@ class ImageExplorer(val filesHandler : FilesHandler,
       printId,
       printSignature,
       None,
-      sOutput = Some(pipedOutput))()
+      sOutput = Some(pipedOutput)){x =>()}
 
   }
   setImage()

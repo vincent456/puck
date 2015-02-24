@@ -9,7 +9,7 @@ import scala.language.implicitConversions
  */
 object FileHelper {
 
-  implicit def string2file(filePath : String) = new File(filePath)
+  implicit def string2file(filePath : String) : File = new File(filePath)
 
   def fileLines(file: File, keepEmptyLines: Boolean = false): List[String] = {
     if(!file.exists()) return List()

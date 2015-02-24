@@ -195,8 +195,6 @@ trait TransformationRules {
   }
 
 
-  import puck.util.ErrorHandling.traverse
-
   def redirectSideUses(g : GraphT,
                        currentPrimaryUse: EdgeT,
                        newPrimaryUsee : NIdT,

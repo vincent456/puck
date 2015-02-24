@@ -5,7 +5,7 @@ import puck.graph.constraints.{RedirectionPolicy, SupertypeAbstraction, Abstract
 import puck.graph.transformations.TransformationRules
 import puck.javaAG.nodeKind._
 
-import scalaz.{Failure, Success}
+import scalaz._
 import scalaz.Validation.FlatMap._
 
 /**
@@ -26,7 +26,12 @@ object JavaTransformationRules extends TransformationRules {
       }
   }
 
-  import puck.util.ErrorHandling.traverse
+  //TODO see if it can be rewritten using scalaz !
+  def traverse[A, B, E](a: Iterable[A], b: B)(f: (B, A) => Validation[E, B]): Validation[E,B] =
+    a.foldLeft(Success(b): Validation[E,B]){case (b0, a0) =>
+      if(b0.isSuccess) b0 flatMap (f(_, a0))
+      else b0
+    }
 
 
 
@@ -38,6 +43,20 @@ object JavaTransformationRules extends TransformationRules {
   def addTypesUses(g : GraphT, nodeId : NIdT) : GraphT = {
     val typesUsed = g.getNode(nodeId).styp.getTypeNodeIds
     typesUsed.foldLeft(g){(g0, tid) => g0.addUses(nodeId, tid)}
+  }
+
+  def addAbstractMethodAndRedirectSelfType
+    (g : GraphT, methId : NodeId, itcId : NodeId, classId : NodeId):  Try[GraphT] ={
+    val methodNode = g.getNode(methId)
+    methodNode.kind match {
+      case AbstractMethod =>
+        val g2 = g.addContains(itcId, methId)
+        //TODO check why it is not needed
+        //addTypesUses(g4, absChild)
+          .changeType(methId, methodNode.styp, classId, itcId)
+        Success(g2)
+      case k => Failure(new DGError(k + " should be an abstract method !")).toValidationNel
+    }
   }
 
   override def createAbstraction(g : GraphT,
@@ -55,7 +74,6 @@ object JavaTransformationRules extends TransformationRules {
 
         val tryAbs1 = tryAbs.map { case (absId, g0) => (absId, insertInTypeHierarchy(g0, implId, absId))}
 
-
         tryAbs1 flatMap {
           case (absId, g1) =>
             val abs = g1.getNode(absId)
@@ -67,16 +85,7 @@ object JavaTransformationRules extends TransformationRules {
                     val gAbsTry = createAbstraction(g1, child, AbstractMethod,  SupertypeAbstraction)
                     gAbsTry flatMap {
                       case (absChild, g21) =>
-                        val g3 = g21.addContains(absId, absChild)
-                        val absChildNode = g3.getNode(absChild)
-                        absChildNode.kind match {
-                          case AbstractMethod =>
-                            /*val g4 = g3.changeType(absChild, absChildNode.styp, implId, absId)
-                            //TODO check why it is not needed
-                            Success(addTypesUses(g4, absChild))*/
-                            Success(g3.changeType(absChild, absChildNode.styp, implId, absId))
-                          case k => Failure(new DGError(k + " should be an abstract method !")).toValidationNel
-                        }
+                        addAbstractMethodAndRedirectSelfType(g21, absChild, absId, implId)
                     }
                   case _ => Success(g0)
                 }
