@@ -8,6 +8,7 @@ import puck.util.{Logger, PuckNoopLogger, PuckLogger, PuckLog}
 /**
  * Created by lorilan on 1/8/15.
  */
+
 sealed trait NodeStatus
 case object Removed extends NodeStatus
 case object Created extends NodeStatus
@@ -66,8 +67,8 @@ class DependencyGraph
   private [this] val superTypesMap : EdgeMap,
   private [this] val subTypesMap : EdgeMap,
   //TODO remake private [this]
-  /*private [this]*/ val dominated2dominantUsesMap : UseDependencyMap,
-  /*private [this]*/ val dominant2dominatedUsesMap : UseDependencyMap,
+  /*private [this]*/ val memberUses2typeUsesMap : UseDependencyMap,
+  /*private [this]*/ val typeUses2memberUsesMap : UseDependencyMap,
   private [this] val abstractionsMap : AbstractionMap,
   val constraints : ConstraintsMaps,
   val recording : transformations.Recording) {
@@ -88,8 +89,8 @@ class DependencyGraph
                nContainerMap : Node2NodeMap = containerMap,
                nSuperTypesMap : EdgeMap = superTypesMap,
                nSubTypesMap : EdgeMap = subTypesMap,
-               nDominantUsesMap : UseDependencyMap = dominated2dominantUsesMap,
-               nDominatedUsesMap : UseDependencyMap = dominant2dominatedUsesMap,
+               nDominantUsesMap : UseDependencyMap = memberUses2typeUsesMap,
+               nDominatedUsesMap : UseDependencyMap = typeUses2memberUsesMap,
                nAbstractionsMap : AbstractionMap = abstractionsMap,
                nConstraints : ConstraintsMaps = constraints,
                nRecording : transformations.Recording = recording) : DependencyGraph =
@@ -232,8 +233,8 @@ class DependencyGraph
 
   def addUsesDependency(dominantEdge : (NIdT, NIdT),
                         dominatedEdge : (NIdT, NIdT)) : GraphT =
-    newGraph(nDominantUsesMap = dominated2dominantUsesMap + (dominatedEdge, dominantEdge),
-      nDominatedUsesMap = dominant2dominatedUsesMap + (dominantEdge, dominatedEdge))
+    newGraph(nDominantUsesMap = memberUses2typeUsesMap + (dominatedEdge, dominantEdge),
+      nDominatedUsesMap = typeUses2memberUsesMap + (dominantEdge, dominatedEdge))
 
   def removeUsesDependency(dominantEdge : EdgeT,
                            dominatedEdge :EdgeT) : GraphT =
@@ -242,8 +243,8 @@ class DependencyGraph
 
   def removeUsesDependency(dominantEdge : (NIdT, NIdT),
                            dominatedEdge : (NIdT, NIdT)) : GraphT =
-    newGraph(nDominantUsesMap = dominated2dominantUsesMap - (dominatedEdge, dominantEdge),
-      nDominatedUsesMap = dominant2dominatedUsesMap - (dominantEdge, dominatedEdge))
+    newGraph(nDominantUsesMap = memberUses2typeUsesMap - (dominatedEdge, dominantEdge),
+      nDominatedUsesMap = typeUses2memberUsesMap - (dominantEdge, dominatedEdge))
 
   def addAbstraction(id : NIdT, abs : (NIdT, AbstractionPolicy)) : GraphT =
     newGraph(nAbstractionsMap = abstractionsMap + (id, abs),
@@ -380,17 +381,18 @@ class DependencyGraph
   def uses(userId: NIdT, useeId: NIdT) : Boolean = usersMap.bind(useeId, userId)
 
   def usedBy(userId : NIdT) : Iterable[NIdT] = usesMap getFlat userId
+  
   def users(useeId: NIdT) : Iterable[NIdT] = usersMap getFlat useeId
 
-  def usesDominating(dominatedEdge : (NIdT, NIdT)) : Iterable[(NIdT, NIdT)] =
-    dominated2dominantUsesMap getFlat dominatedEdge
+  def typeUsesOf(typeMemberUse : (NIdT, NIdT)) : Iterable[(NIdT, NIdT)] =
+    memberUses2typeUsesMap getFlat typeMemberUse
 
-  def usesDominatedBy(dominantEdge : (NIdT, NIdT)) : Iterable[(NIdT, NIdT)] =
-    dominant2dominatedUsesMap  getFlat dominantEdge
+  def typeMemberUsesOf(typeUse : (NIdT, NIdT)) : Iterable[(NIdT, NIdT)] =
+    typeUses2memberUsesMap  getFlat typeUse
 
   def dominates(dominantEdge : (NIdT, NIdT),
                 dominatedEdge : (NIdT, NIdT)) : Boolean =
-    usesDominatedBy( dominantEdge ).exists(_ == dominatedEdge)
+    typeMemberUsesOf( dominantEdge ).exists(_ == dominatedEdge)
 
   def abstractions(id : NIdT) : Iterable[(NIdT, AbstractionPolicy)] =
     abstractionsMap getFlat id
@@ -423,4 +425,6 @@ class DependencyGraph
     aux(Seq(root), Seq(root))
   }
 
+  def isTypeUse : DGEdge => Boolean = _ => false
+  def isTypeMemberUse : DGEdge => Boolean = _ => false
 }

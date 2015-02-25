@@ -1,7 +1,7 @@
 package puck.graph
 
 import puck.graph.transformations._
-import puck.javaAG.nodeKind.{MethodTypeHolder, NamedTypeHolder}
+import puck.javaGraph.nodeKind.{MethodTypeHolder, NamedTypeHolder}
 
 import scalaz._
 

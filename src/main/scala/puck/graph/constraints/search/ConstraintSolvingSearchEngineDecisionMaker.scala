@@ -31,14 +31,14 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker
     def findTargets(l : Seq[NodeKind]) : Iterator[DGNode] =  l match {
       case topPriority :: tl =>
         val it = graph.nodes.iterator filter { n =>
-          n.kind == topPriority && (n.wrongUsers.nonEmpty ||
-            n.isWronglyContained)
+          n.kind == topPriority && (g.wrongUsers(n.id).nonEmpty ||
+            g.isWronglyContained(n.id))
         }
         if(it.hasNext) it
         else findTargets(tl)
 
-      case Seq() => graph.nodes.iterator filter { n => n.wrongUsers.nonEmpty ||
-        n.isWronglyContained }
+      case Seq() => graph.nodes.iterator filter { n => g.wrongUsers(n.id).nonEmpty ||
+        g.isWronglyContained(n.id) }
     }
 
     val targets = (findTargets(violationsKindPriority) map (_.id)).toSeq

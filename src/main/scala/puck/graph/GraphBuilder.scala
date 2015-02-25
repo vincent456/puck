@@ -1,7 +1,6 @@
 package puck.graph
 
 import puck.graph.constraints._
-import scala.collection.mutable
 /**
  * Created by lorilan on 27/10/14.
  */
@@ -9,7 +8,7 @@ import scala.collection.mutable
 class GraphBuilder {
   var g : DependencyGraph = _
   type NodeIdT = NodeId
-  val nodesByName = mutable.Map[String, NodeIdT]()
+  var nodesByName = Map[String, NodeIdT]()
 
   def getNodeByName( k : String) : NodeIdT = nodesByName(k) //java accessor
 

@@ -1,8 +1,8 @@
-package puck.javaAG
+package puck.javaGraph
 
 import puck.graph._
 import puck.graph.constraints.DelegationAbstraction
-import puck.javaAG.nodeKind._
+import puck.javaGraph.nodeKind._
 
 
 object ASTNodeLink{

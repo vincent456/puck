@@ -3,7 +3,7 @@ package puck
 /**
  * Created by lorilan on 29/10/14.
  */
-package object javaAG {
+package object javaGraph {
   val defaultPackageName = "<default package>"
 
   def filterPackageName(name: String) = name match {

@@ -9,10 +9,10 @@ trait InitialStateCreator {
 
   val graph : DependencyGraph
   val solverBuilder : SolverBuilder
-
+  val automaticConstraintLoosening : Boolean
   def logger = graph.logger
   def createInitialState(k : Try[ResultT] => Unit) =
-    new CSInitialSearchState(this, solverBuilder(graph, this), graph, k)
+    new CSInitialSearchState(this, solverBuilder(graph, this, automaticConstraintLoosening), graph, k)
 
 }
 

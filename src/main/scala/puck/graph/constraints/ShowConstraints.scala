@@ -42,9 +42,9 @@ object ShowConstraints {
         else
           twoArgsFormat("hideFrom", c.interlopers)
       case (true, false, false)
-        if dg.isRoot(c.interlopers.head.nid) => twoArgsFormat("ButFrom", c.friends)
+        if dg.isRoot(c.interlopers.head.nid) => twoArgsFormat("hideButFrom", c.friends)
       case (false, false, true)
-        if dg.isRoot(c.interlopers.head.nid) => twoArgsFormat("But", c.facades)
+        if dg.isRoot(c.interlopers.head.nid) => twoArgsFormat("hideBut", c.facades)
       case (_, _, _) => Cord("hide(", rangeSetCord(dg, c.owners), ",\n",
         rangeSetCord(dg, c.facades), ",\n",
         rangeSetCord(dg, c.interlopers),  ",\n",

@@ -183,7 +183,8 @@ class PuckControl(val filesHandler : FilesHandler,
     case ExploreRequest(builder) =>
 
       val engine = builder(filesHandler.initialRecord,
-                           filesHandler.graph)
+                           filesHandler.graph,
+                           automaticConstraintLoosening = true)
 
       Future {
         filesHandler.logger.writeln("Solving constraints ...")

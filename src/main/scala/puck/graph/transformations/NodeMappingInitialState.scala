@@ -3,7 +3,7 @@ package transformations
 
 import MappingChoices.{ResMap, NodesToMap}
 
-import puck.javaAG.nodeKind.JavaRoot
+import puck.javaGraph.nodeKind.JavaRoot
 import puck.search.SearchState
 import puck.util.{PuckLog, PuckLogger}
 

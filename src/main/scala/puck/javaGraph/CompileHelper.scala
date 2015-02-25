@@ -1,4 +1,4 @@
-package puck.javaAG
+package puck.javaGraph
 
 import java.io.File
 
@@ -6,7 +6,6 @@ import puck.graph._
 import puck.graph.transformations.{NodeMappingInitialState, Recording}
 import puck.util.FileHelper
 
-import scala.collection.mutable
 
 /**
  * Created by lorilan on 22/02/15.
@@ -35,7 +34,7 @@ object CompileHelper {
   def buildGraph(sources: List[String],
                  jars: List[String],
                  decouple : Option[java.io.File] = None) :
-    (AST.Program, DependencyGraph, Recording, mutable.Map[String, NodeId], Map[NodeId, ASTNodeLink]) =
+    (AST.Program, DependencyGraph, Recording, Map[String, NodeId], Map[NodeId, ASTNodeLink]) =
     this.apply(sources, jars) match {
       case None => throw new AGBuildingError("Compilation error, no AST generated")
       case Some(p) =>

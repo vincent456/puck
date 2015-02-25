@@ -7,5 +7,5 @@ import puck.graph.DependencyGraph
  * Created by lorilan on 25/09/14.
  */
 trait SolverBuilder{
-  def apply(graph : DependencyGraph, dm : DecisionMaker) : Solver
+  def apply(graph : DependencyGraph, dm : DecisionMaker, automaticConstraintLoosening : Boolean) : Solver
 }

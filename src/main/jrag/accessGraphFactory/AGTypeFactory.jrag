@@ -1,3 +1,10 @@
+import puck.graph.AGBuildingError;
+import puck.graph.Tuple;
+import puck.graph.Type;
+import puck.javaGraph.JavaNamedType;
+import puck.javaGraph.MethodType;
+import puck.javaGraph.nodeKind.NamedTypeHolder;
+import puck.javaGraph.nodeKind.MethodTypeHolder;
 
 aspect AccessGraphTypeFactory {
 	

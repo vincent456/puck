@@ -1,9 +1,10 @@
-package puck.javaAG
+package puck.javaGraph
 
+import puck.PuckError
 import puck.graph._
-import puck.graph.constraints.{RedirectionPolicy, SupertypeAbstraction, AbstractionPolicy}
+import puck.graph.constraints.{Move, RedirectionPolicy, SupertypeAbstraction, AbstractionPolicy}
 import puck.graph.transformations.TransformationRules
-import puck.javaAG.nodeKind._
+import puck.javaGraph.nodeKind._
 
 import scalaz._
 import scalaz.Validation.FlatMap._
@@ -106,7 +107,7 @@ object JavaTransformationRules extends TransformationRules {
 
                       if(g1.uses(child, implId)) {
                         g.logger.writeln(s"interface creation : redirecting ${DGEdge.uses(child, implId)} target to $abs")
-                        redirectUses(g1, DGEdge.uses(child, implId), absId, SupertypeAbstraction) map {
+                        redirectUsesOf(g1, DGEdge.uses(child, implId), absId, SupertypeAbstraction) map {
                           case (_, g22) => g22
                         }
                       }
@@ -157,23 +158,38 @@ object JavaTransformationRules extends TransformationRules {
     }
   }
 
+  def redirectThisTypeUse(g : GraphT, thisType : NIdT, movedId : NIdT): Try[(EdgeT, GraphT)] = {
+    val typeNode = g.getNode(thisType)
+    val movedNode = g.getNode(movedId)
+    typeNode.kind match {
+      case Class =>
+        val newTypeUsed = findNewTypeUsed(g, thisType, movedId, Move)
+        val (fid, g2) = g.addNode(movedNode.name + "_delegate", Field, NamedTypeHolder(new JavaNamedType(newTypeUsed)))
+        val g3 = g2.addContains(thisType, fid)
+              .addUses(fid, newTypeUsed)
+              .addUses(movedId, fid)
+        Success( (DGEdge.uses(fid, newTypeUsed),g3))
+      case _=>
+        Failure(new PuckError(s"redirect type uses, expected class got ${typeNode.kind}")).toValidationNel
+    }
+  }
 
 
-  override def redirectUses(g : GraphT,
+  override def redirectUsesOf(g : GraphT,
                             oldEdge : EdgeT, newUsee : NIdT,
                             policy : RedirectionPolicy,
                             propagateRedirection : Boolean = true,
                             keepOldUse : Boolean = false ) : Try[(EdgeT, GraphT)] = {
 
     val tryEdgeGraph =
-      super.redirectUses(g, oldEdge, newUsee, policy,
+      super.redirectUsesOf(g, oldEdge, newUsee, policy,
         propagateRedirection, keepOldUse)
 
-    g.getNode(oldEdge.usee).kind match {
+    g.getNode(oldEdge.used).kind match {
       case Constructor =>
         tryEdgeGraph map {case (e, g0) =>
           (e, g.users(oldEdge.user).foldLeft(g0){ case (g1, userId) =>
-            g1.addUses(userId, oldEdge.usee)})
+            g1.addUses(userId, oldEdge.used)})
         }
       case _ => tryEdgeGraph
     }

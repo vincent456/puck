@@ -1,4 +1,4 @@
-package puck.javaAG
+package puck.javaGraph
 
 import java.util.NoSuchElementException
 import javax.lang.model.`type`.TypeKind
@@ -6,7 +6,7 @@ import javax.lang.model.`type`.TypeKind
 import puck.graph._
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations._
-import puck.javaAG.nodeKind._
+import puck.javaGraph.nodeKind._
 import puck.util.{PuckLog, PuckLogger}
 
 /**

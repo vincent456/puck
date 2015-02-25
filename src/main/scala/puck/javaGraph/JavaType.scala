@@ -1,4 +1,4 @@
-package puck.javaAG
+package puck.javaGraph
 
 import puck.graph._
 

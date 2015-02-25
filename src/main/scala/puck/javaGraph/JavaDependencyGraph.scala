@@ -1,14 +1,15 @@
-package puck.javaAG
+package puck.javaGraph
 
 import puck.graph.DependencyGraph._
 import puck.graph.NodeId
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.transformations.Recording
-import puck.javaAG.nodeKind._
+import puck.javaGraph.nodeKind._
 import puck.util.PuckLog.InJavaGraph
 import puck.util.{PuckLog, PuckNoopLogger, PuckLogger}
 
+import ShowDG._
 /**
  * Created by lorilan on 29/10/14.
  */
@@ -89,7 +90,8 @@ class JavaDependencyGraph
       }
     }
 
-    super.canContain(id, otherId) &&
+    val sc = super.canContain(id, otherId)
+     sc &&
       ( (other.kind, other.styp) match {
         case (AbstractMethod, MethodTypeHolder(absTyp)) =>
           /*
@@ -110,8 +112,22 @@ class JavaDependencyGraph
         /* cannot have two methods with same name and same type */
         case (Method, MethodTypeHolder(typ)) =>
           content(id).forall(noNameClash(typ.input.length))
-        case (Method, _) => throw new DGError()
+        case (Method, _) => throw new DGError(s"canContain(${showDG[NIdT](this).shows(id)}, ${showDG[NIdT](this).shows(otherId)})")
         case _ => true
       })
+  }
+
+  override def isTypeUse : DGEdge => Boolean = {
+    case DGEdge(Uses, _, id) =>
+      val k = getNode(id).kind
+      k == Interface || k == Class
+    case _ => false
+  }
+
+  override def isTypeMemberUse : DGEdge => Boolean = {
+    case DGEdge(Uses, _, id) =>
+      val k = getNode(id).kind
+      k == Method || k == Field || k == Constructor || k == ConstructorMethod
+    case _ => false
   }
 }

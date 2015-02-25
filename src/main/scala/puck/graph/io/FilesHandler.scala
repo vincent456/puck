@@ -12,7 +12,8 @@ import scala.sys.process.Process
 import scala.util.{Success, Try}
 
 trait ConstraintSolvingSearchEngineBuilder {
-  def apply(initialRecord : Recording, graph : DependencyGraph) :
+  def apply(initialRecord : Recording, graph : DependencyGraph,
+  automaticConstraintLoosening : Boolean) :
   SearchEngine[ResultT]
 }
 
@@ -266,9 +267,10 @@ abstract class FilesHandler(workingDirectory : File){
   type ST = SearchState[ResultT]
 
   def explore (trace : Boolean = false,
-               builder : ConstraintSolvingSearchEngineBuilder) : Search[ResultT] = {
+               builder : ConstraintSolvingSearchEngineBuilder,
+               automaticConstraintLoosening: Boolean) : Search[ResultT] = {
 
-    val engine = builder(initialRecord, graph)
+    val engine = builder(initialRecord, graph, automaticConstraintLoosening)
 
     puck.util.Time.time(logger, defaultVerbosity) {
       engine.explore()

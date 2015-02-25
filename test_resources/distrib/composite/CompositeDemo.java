@@ -39,11 +39,16 @@ class Directory {
 }
 
 public class CompositeDemo {
-   public static void main( java.lang.String[] args ) {
-      Directory d = new Directory("dir1");
+
+   public static void client(){
+   	Directory d = new Directory("dir1");
       File  f = new File("a");
       d.add(f);
       f.ls();
       d.ls();
+   }
+
+   public static void main( java.lang.String[] args ) {
+      client();
    }
 }

@@ -15,10 +15,10 @@ package object graph {
 
   type NodeId = DependencyGraph.NodeId
 
-  type JavaNodeKind = javaAG.nodeKind.JavaNodeKind
-  val JavaFilesHandler = javaAG.JavaFilesHandler
-  val JavaNode = javaAG.JavaNode
-  val JavaSolver = javaAG.JavaSolver
+  type JavaNodeKind = javaGraph.nodeKind.JavaNodeKind
+  val JavaFilesHandler = javaGraph.JavaFilesHandler
+  val JavaNode = javaGraph.JavaNode
+  val JavaSolver = javaGraph.JavaSolver
 
   type Recording = graph.transformations.Recording
   val Recording = graph.transformations.Recording

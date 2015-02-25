@@ -20,33 +20,6 @@ case class DGNode
 
   override def toString = id + " - " + kind +" " + name
 
-  /*def container(implicit graph : GraphT) = graph.container(id)
-  def content(implicit graph : GraphT) = graph.content(id)
-
-  def users(implicit graph : GraphT) = graph.users(id)
-  def used(implicit graph : GraphT) = graph.usedBy(id)
-
-  def directSuperTypes(implicit graph : GraphT) = graph.directSuperTypes(id)
-  def directSubTypes(implicit graph : GraphT) = graph.directSubTypes(id)
-
-  def subTypes(implicit graph : GraphT) = graph.subTypes(id)
-  def isSuperTypeOf(subCandidate : NIdT)(implicit graph : GraphT) = graph.isSuperTypeOf(id, subCandidate)
-
-  def isRoot(implicit graph : GraphT) = graph.isRoot(id)
-
-  def isa( n : NIdT )(implicit graph : GraphT) = graph.isa(id, n)
-
-
-
-  def abstractions(implicit graph : GraphT) :  Iterable[(NIdT, AbstractionPolicy)] = graph.abstractions(id)
-  */
-
-
-
-  def wrongUsers(implicit graph : GraphT) : Seq[NIdT] = graph.wrongUsers(id)
-  def isWronglyContained(implicit graph : GraphT) : Boolean = graph.isWronglyContained(id)
-
-
 
   /*def distance(other : AGNode[Kind]) = {
     if(this == other) 0

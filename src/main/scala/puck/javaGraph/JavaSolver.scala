@@ -1,8 +1,8 @@
-package puck.javaAG
+package puck.javaGraph
 
 import puck.graph.{NodeKind, DependencyGraph}
 import puck.graph.constraints.{AbstractionPolicy, DecisionMaker, Solver, SupertypeAbstraction}
-import puck.javaAG.nodeKind._
+import puck.javaGraph.nodeKind._
 
 
 /**
@@ -11,14 +11,17 @@ import puck.javaAG.nodeKind._
 
 object JavaSolver{
   def apply(graph : DependencyGraph,
-            decisionMaker : DecisionMaker) = new JavaSolver(graph, decisionMaker)
+            decisionMaker : DecisionMaker,
+            automaticConstraintLoosening : Boolean) =
+    new JavaSolver(graph, decisionMaker, automaticConstraintLoosening)
 
   val violationPrioritySeq =
               Seq[JavaNodeKind]( Field, Constructor, Class, Interface)
 }
 
 class JavaSolver(val graph : DependencyGraph,
-                 val decisionMaker : DecisionMaker) extends Solver{
+                 val decisionMaker : DecisionMaker,
+                 val automaticConstraintLoosening : Boolean) extends Solver{
 
   val logger = graph.logger
 

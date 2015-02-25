@@ -7,7 +7,7 @@ import puck.graph.io.{Visible, Hidden, Visibility, VisibilitySet}
 
 import scala.swing.CheckBox
 import puck.graph.DependencyGraph
-import puck.javaAG.nodeKind.Package
+import puck.javaGraph.nodeKind.Package
 
 /**
  * Created by lorilan on 10/07/14.

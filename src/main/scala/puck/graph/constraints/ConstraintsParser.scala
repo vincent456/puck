@@ -181,7 +181,7 @@ class ConstraintsParser private
     }
 
   def hideFromEachOther : Parser[Unit] = {
-    "hideScopeFromEachOther(" ~> rangeListOrRange <~ ")." ^^ {
+    "hideFromEachOther(" ~> rangeListOrRange <~ ")." ^^ {
       case s =>
         val owners = toDef(s)
         builder.addHideConstraint(owners, LiteralRangeSet(),

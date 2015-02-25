@@ -1,4 +1,4 @@
-package puck.javaAG.nodeKind
+package puck.javaGraph.nodeKind
 
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
 import puck.graph.NodeKind

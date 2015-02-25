@@ -10,7 +10,8 @@ import puck.search.TryAllSearchEngine
 class TryAllCSSE
 (val violationsKindPriority : Seq[NodeKind],
  val graph : DependencyGraph,
- val solverBuilder : SolverBuilder)
+ val solverBuilder : SolverBuilder,
+ val automaticConstraintLoosening : Boolean)
   extends ConstraintSolvingSearchEngineDecisionMaker
   with TryAllSearchEngine[ResultT]
   with InitialStateCreator

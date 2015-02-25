@@ -1,10 +1,10 @@
-package puck.javaAG
+package puck.javaGraph
 
 import puck.graph._
 import puck.graph.DependencyGraph._
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.transformations.Recording
-import puck.javaAG.nodeKind._
+import puck.javaGraph.nodeKind._
 import puck.util.PuckNoopLogger
 import scala.collection.JavaConversions.collectionAsScalaIterable
 
@@ -90,7 +90,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
   def attachOrphanNodes(fromId : Int = g.rootId) : Unit = {
     val lastId = g.numNodes - 1
     if(fromId < lastId){
-      for(nodeId <- Range(fromId, lastId) ){
+      for(nodeId <- Range.inclusive(fromId, lastId) ){
         //println(s"${g.container(nodeId)} contains $nodeId")
         if(g.container(nodeId).isEmpty && nodeId != g.rootId){
           val n = g.getNode(nodeId)

@@ -54,7 +54,7 @@ trait SearchEngine[T] extends Search[T]{
   def explore() : Unit ={
     doExplore {
       case Success(result) => storeResult(Some(currentState), result)
-      case Failure(e) => ()//e.foreach(e0 => println(e0.getMessage))
+      case Failure(e) => e.foreach(e0 => println(e0.getMessage))
     }
   }
 }

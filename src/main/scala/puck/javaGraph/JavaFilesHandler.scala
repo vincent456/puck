@@ -1,4 +1,4 @@
-package puck.javaAG
+package puck.javaGraph
 
 import java.io.File
 
@@ -16,7 +16,8 @@ import puck.util.PuckLog._
 
 object JavaSolverBuilder extends SolverBuilder{
   def apply(graph : DependencyGraph,
-            dm : DecisionMaker) : Solver = JavaSolver(graph, dm)
+            dm : DecisionMaker,
+            automaticConstraintLoosening : Boolean) : Solver = JavaSolver(graph, dm, automaticConstraintLoosening)
 }
 
 class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDirectory) {

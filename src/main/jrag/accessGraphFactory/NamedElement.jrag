@@ -1,3 +1,4 @@
+import puck.javaGraph.nodeKind.JavaNodeKind;
 
 aspect NamedElement {
 

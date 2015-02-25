@@ -10,7 +10,8 @@ import puck.search.FindFirstSearchEngine
 class FindFirstCSSE
 (val violationsKindPriority : Seq[NodeKind],
  val graph : DependencyGraph,
- val solverBuilder : SolverBuilder)
+ val solverBuilder : SolverBuilder,
+ val automaticConstraintLoosening : Boolean)
   extends ConstraintSolvingSearchEngineDecisionMaker
   with FindFirstSearchEngine[ResultT]
   with InitialStateCreator

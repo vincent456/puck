@@ -1,11 +1,13 @@
 package puck.graph
 package constraints
 
+import puck.PuckError
 import puck.graph.transformations.TransformationRules
 import puck.util.{PuckLog, PuckLogger}
 
 import scalaz.{Failure, Success}
 
+import scalaz.Validation.FlatMap._
 
 trait Solver {
 
@@ -16,6 +18,8 @@ trait Solver {
   val logger : PuckLogger
   val decisionMaker : DecisionMaker
   val rules : TransformationRules
+
+  val automaticConstraintLoosening : Boolean
 
   type GraphT = DependencyGraph
   type ResT = ResultT
@@ -44,7 +48,7 @@ trait Solver {
 
               //val breakPoint = g.startSequence()
 
-              rules.redirectUses(g, DGEdge.uses(wu, usee), abs, absPolicy) match {
+              rules.redirectUsesOf(g, DGEdge.uses(wu, usee), abs, absPolicy) match {
                   case Success((_, g2)) => (g2, unsolved)
                   case Failure(e) =>
                     logger.writeln("redirection error catched !!")(PuckLog.Debug)
@@ -199,7 +203,7 @@ trait Solver {
         val res = wrongUsers.foldLeft(Success(g) : Try[GraphT]){
           case (Failure(exc), wuId) => Failure(exc)
           case (Success(g0), wuId) =>
-            rules.redirectUses(g0, DGEdge.uses(wuId, impl), abs, absPolicy) match {
+            rules.redirectUsesOf(g0, DGEdge.uses(wuId, impl), abs, absPolicy) match {
               case Success((_, g1)) => Success(g1)
               case Failure(e) => Failure(e)
             }
@@ -261,10 +265,13 @@ trait Solver {
          val tryGraph3 = rules.moveTo(graph2.addContains(oldCter, wronglyContained, register = false),
                         wronglyContained, newCter)
 
-        val tryGraph4 = tryGraph3.map {graph3 =>
-          if(graph3.isWronglyContained(wronglyContained))
-            rules.addHideFromRootException(graph3, wronglyContained, newCter)
-          else graph3
+          val tryGraph4 = tryGraph3.flatMap {graph3 =>
+
+          (graph3.isWronglyContained(wronglyContained), automaticConstraintLoosening) match {
+            case (false, _) => Success(graph3)
+            case (true, true) => Success(rules.addHideFromRootException (graph3, wronglyContained, newCter))
+            case (true, false) => Failure(new PuckError("constraint unsolvable")).toValidationNel
+          }
         }
 
         logger.writeln("solveContains : calling k()")
@@ -291,7 +298,6 @@ trait Solver {
       end(Success(graph))
   }
 
-
   def doMerges(graph : GraphT, k : Try[ResT] => Unit) : Unit = {
 
     def aux(graph : GraphT, it : Iterator[NIdT]) : Try[GraphT] =
@@ -299,9 +305,8 @@ trait Solver {
         val n = it.next()
         rules.findMergingCandidate(graph, n) match {
           case Some(other) =>
-            rules.merge(graph, other, n) match {
-              case Success(g1) => aux(g1, g1.nodesId.iterator)
-              case f => f
+            rules.merge(graph, other, n) flatMap {
+              g1 => aux(g1, g1.nodesId.iterator)
             }
 
           case None => aux(graph, it)
