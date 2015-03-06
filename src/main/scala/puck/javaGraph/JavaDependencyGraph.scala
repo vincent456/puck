@@ -64,7 +64,7 @@ class JavaDependencyGraph
 
   override def coupling = nodes.foldLeft(0 : Double){ (acc, n) => n.kind match {
     case Package =>
-      val c = n.coupling(this)
+      val c = Metrics.coupling(n.id, this)
       if(c.isNaN) acc
       else acc + c
     case _ => acc

@@ -412,7 +412,9 @@ class DependencyGraph
   def printConstraints[V](logger : Logger[V], v : V) : Unit =
     constraints.printConstraints(this, logger, v)
 
- def coupling = nodes.foldLeft(0 : Double){ (acc, n) => acc + n.coupling(this) }
+ def coupling = nodesIndex.keys.foldLeft(0 : Double){
+   (acc, id) => acc + Metrics.coupling(id, this)
+ }
 
   def subTree(root : NIdT) : Seq[NIdT] = {
     def aux(roots : Seq[NIdT], acc : Seq[NIdT]): Seq[NIdT] = roots match {

@@ -36,11 +36,16 @@ class NodeInfosPanel(val graph : DependencyGraph,
     import ShowDG._
     contents += PuckMainPanel.leftGlued(new Label(node.kind + " : " +
       showDG(graph)(nodeNameTypCord).shows(node)))
-    val prov = node.providers
-    val cl = node.clients
-    contents += new TextArea("Internal dependencies : " + node.internalDependencies.size + "\n" +
-      "Outgoing dependencies : " + node.outgoingDependencies.size + "\n" +
-      "Incoming dependencies : " + node.incomingDependencies.size + "\n" +
+    val prov = Metrics.providers(node.id, graph)
+    val cl = Metrics.clients(node.id, graph)
+    val internals = Metrics.internalDependencies(node.id, graph).size
+    val outgoings = Metrics.outgoingDependencies(node.id, graph).size
+    val incomings = Metrics.incomingDependencies(node.id, graph).size
+    val coupling = Metrics.coupling(node.id, graph)
+    val cohesion = Metrics.cohesion(node.id, graph)
+    contents += new TextArea(s"Internal dependencies : $internals \n" +
+      s"Outgoing dependencies : $outgoings \n" +
+      s"Incoming dependencies : $incomings \n" +
       "Subtypes : " +
       (if(graph.directSubTypes(node.id).isEmpty) "none\n"
       else mkStringWithNames(graph.directSubTypes(node.id))) +
@@ -53,7 +58,7 @@ class NodeInfosPanel(val graph : DependencyGraph,
       "Clients : " +
       (if (cl.isEmpty) "none\n"
       else mkStringWithNames(cl) +
-      f"Coupling = ${node.coupling}%.2f  Cohesion :  ${node.cohesion}%.2f"))
+      f"Coupling = $coupling%.2f  Cohesion :  $cohesion%.2f"))
 
   /*  contents += new BoxPanel(Orientation.Horizontal) {
       contents += new Label("Move into :")
