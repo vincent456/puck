@@ -1,6 +1,6 @@
 package puck.graph.constraints.search
 
-import puck.graph.{ResultT, DGNode, NodeKind}
+import puck.graph.{ConcreteNode, ResultT, NodeKind}
 import puck.graph.constraints.{AbstractionPolicy, DecisionMaker}
 import puck.search.SearchEngine
 import puck.util.PuckLogger
@@ -57,12 +57,12 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker
   }*/
 
   def violationTarget(graph : GraphT)
-                     (k: Option[NIdT] => Unit) : Unit = {
+                     (k: Option[ConcreteNode] => Unit) : Unit = {
 
 
-    def findTargets(l : Seq[NodeKind]) : Option[DGNode] =  l match {
+    def findTargets(l : Seq[NodeKind]) : Option[ConcreteNode] =  l match {
       case topPriority :: tl =>
-        graph.nodes.iterator find { n =>
+        graph.concreteNodes.iterator find { n =>
           n.kind == topPriority && (graph.wrongUsers(n.id).nonEmpty ||
             graph.isWronglyContained(n.id))
         } match {
@@ -70,16 +70,16 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker
           case st @ Some(_) => st
         }
 
-      case Seq() => graph.nodes.iterator find { n => graph.wrongUsers(n.id).nonEmpty ||
+      case Seq() => graph.concreteNodes find { n => graph.wrongUsers(n.id).nonEmpty ||
         graph.isWronglyContained(n.id) }
     }
 
-    k(findTargets(violationsKindPriority) map (_.id))
+    k(findTargets(violationsKindPriority))
   }
 
-  def abstractionKindAndPolicy(graph : GraphT, implId : NIdT)
+  def abstractionKindAndPolicy(graph : GraphT, impl : ConcreteNode)
                               (k : Option[(NodeKind, AbstractionPolicy)] => Unit) : Unit = {
-    val impl = graph.getNode(implId)
+
     import impl.kind.{abstractionPolicies, abstractKinds}
 
     if(abstractionPolicies.isEmpty) {

@@ -64,11 +64,11 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
       }
     }
 
-    val (numClass, numItc) = g.nodes.foldLeft((0,0)){ case ((numClass, numItc), n) =>
-      val numClass1 = if(n.kind == nodeKind.Class) numClass + 1
-          else numClass
-        val numItc1 = if(n.kind == nodeKind.Interface) numItc + 1
-        else numItc
+    val (numClass, numItc) = g.concreteNodes.foldLeft((0,0)){ case ((numClass0, numItc0), n) =>
+      val numClass1 = if(n.kind == nodeKind.Class) numClass0 + 1
+          else numClass0
+        val numItc1 = if(n.kind == nodeKind.Interface) numItc0 + 1
+        else numItc0
       (numClass1, numItc1)
 
     }

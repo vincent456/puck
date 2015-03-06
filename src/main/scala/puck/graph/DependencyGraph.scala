@@ -37,9 +37,11 @@ object DependencyGraph {
 
   //type NodeT = (NodeId, String, NodeKind, TypeHolder, Mutability)
   type NodeT = DGNode
-  type NodeIndex = Map[NodeId, NodeT]
-  val NodeIndex = Map
-
+  type ConcreteNodeIndex = Map[NodeId, ConcreteNode]
+  val ConcreteNodeIndex = Map
+  type VirtualNodeIndex = Map[NodeId, VirtualNode]
+  val VirtualNodeINdex = Map
+  
   implicit def idToNode(implicit graph : DependencyGraph, id : NodeId) : DGNode =
                graph.getNode(id)
 
@@ -58,9 +60,11 @@ object DependencyGraph {
 
 class DependencyGraph
 ( val logger : PuckLogger = PuckNoopLogger,
-  private [this] val idSeed : () => Int,
-  private [this] val nodesIndex : NodeIndex,
-  private [this] val removedNodes : NodeIndex,
+  private [this] val idSeed : Int,
+  private [this] val nodesIndex : ConcreteNodeIndex,
+  private [this] val removedNodes : ConcreteNodeIndex,
+  private [this] val vNodesIndex : VirtualNodeIndex,
+  private [this] val vRemovedNodes : VirtualNodeIndex,
   private [this] val usersMap : EdgeMap,
   private [this] val usesMap  : EdgeMap,
   private [this] val contentsMap  : EdgeMap,
@@ -81,8 +85,11 @@ class DependencyGraph
   type STyp = TypeHolder
 
   def newGraph(nLogger : PuckLogger = logger,
-               nNodesSet : NodeIndex = nodesIndex,
-               nRemovedNodes : NodeIndex = removedNodes,
+               nIdSeed : Int = idSeed,
+               nNodesSet : ConcreteNodeIndex = nodesIndex,
+               nRemovedNodes : ConcreteNodeIndex = removedNodes,
+               nVNodesIndex : VirtualNodeIndex = vNodesIndex,
+               nVRemovedNodes : VirtualNodeIndex = vRemovedNodes,
                nUsersMap : EdgeMap = usersMap,
                nUsesMap  : EdgeMap = usesMap,
                nContentMap  : EdgeMap = contentsMap,
@@ -94,9 +101,9 @@ class DependencyGraph
                nAbstractionsMap : AbstractionMap = abstractionsMap,
                nConstraints : ConstraintsMaps = constraints,
                nRecording : transformations.Recording = recording) : DependencyGraph =
-    new DependencyGraph(nLogger,
-                        idSeed,
-                        nNodesSet, nRemovedNodes, nUsersMap, nUsesMap,
+    new DependencyGraph(nLogger, nIdSeed,
+                        nNodesSet, nRemovedNodes, nVNodesIndex, nVRemovedNodes,
+                        nUsersMap, nUsesMap,
                         nContentMap, nContainerMap, nSuperTypesMap, nSubTypesMap,
                         nDominantUsesMap, nDominatedUsesMap,
                         nAbstractionsMap, nConstraints, nRecording)
@@ -109,14 +116,26 @@ class DependencyGraph
     (PuckLog.InGraph, lvl)
 
 
-  private [graph] def addNode(id : NIdT,
+
+
+  /*private [graph] def addNode(id : NIdT,
                               localName:String,
                               kind: NodeKind,
                               styp: STyp,
                               mutable : Mutability) : DependencyGraph =
-    newGraph(nNodesSet = nodesIndex + (id -> DGNode(id, localName, kind, styp, mutable, Created)),
+    newGraph(nNodesSet = nodesIndex + (id -> DGNode(id, localName, kind, styp, mutable)),
              nRemovedNodes = removedNodes - id,
-             nRecording = recording.addNode(id, localName, kind, styp, mutable))
+             nRecording = recording.addNode(id, localName, kind, styp, mutable))*/
+
+/*  private [graph] def addNode(n : DGNode) : DependencyGraph =
+    n match {
+      case cn : ConcreteNode => newGraph(nNodesSet = nodesIndex + (n.id -> cn),
+        nRemovedNodes = removedNodes - n.id,
+        nRecording = recording.addNode(n))
+      case vn : VirtualNode => newGraph(nVNodesIndex = vNodesIndex + (n.id -> vn),
+        nVRemovedNodes = vRemovedNodes - n.id,
+        nRecording = recording.addNode(n))
+    }*/
 
 
 
@@ -124,12 +143,24 @@ class DependencyGraph
   def root = getNode(rootId)
   def isRoot(id : NIdT) = id == rootId
 
-  def addNode(localName:String, kind: NodeKind, th : TypeHolder, mutable : Mutability = true) : (NIdT, GraphT) = {
-    val id = idSeed()
-    (id, addNode(id, localName, kind, th, mutable))
+   private [graph] def addConcreteNode(n : ConcreteNode) : DependencyGraph =
+     newGraph(nNodesSet = nodesIndex + (n.id -> n),
+       nRemovedNodes = removedNodes - n.id,
+       nRecording = recording.addConcreteNode(n))
+
+  def addConcreteNode(localName:String, kind: NodeKind, th : TypeHolder, mutable : Mutability = true, sid : Option[NodeId] = None) : (ConcreteNode, GraphT) = {
+    val (id, g) = sid match {
+      case None => (idSeed + 1, newGraph(nIdSeed = idSeed + 1))
+      case Some(i) => (i, this)
+    }
+    val n = ConcreteNode(id, localName, kind, th, mutable)
+    (n, g.addConcreteNode(n))
   }
 
-  def nodes : Iterable[DGNode] = nodesIndex.values /*map {
+  def nodes : Iterable[DGNode] = nodesIndex.values ++ vNodesIndex.values
+  def concreteNodes : Iterable[ConcreteNode] = nodesIndex.values
+
+  /*map {
     case (nid, name, kind, styp, mutable) => ConcreteNode(nid, name, kind, styp, mutable, Created)
   }*/
 
@@ -157,26 +188,33 @@ class DependencyGraph
   }*/
 
 
-  def getNode(id : NIdT): DGNode = nodesIndex get id match {
-    case Some(n) => n
-    case None => removedNodes get id match {
-      case Some(n) => n
-      case None =>
-        val msg = "AccessGraph.getNode : no node has id " + id.toString
+  def getConcreteNodeWithStatus(id : NIdT): (ConcreteNode, NodeStatus) =
+    nodesIndex get id map {(_, Created)} getOrElse{
+      removedNodes get id map {(_, Removed)} getOrElse {
+        val msg =
+          s"AccessGraph.getNode : no node has id ${id.toString}\n" +
+            s"nodes of graph : ${sortedMap.mkString("\n", "\n\t", "")}"
         logger.writeln(msg)(PuckLog.Error)
-        logger.writeln("nodes of graph : ")(PuckLog.Error)
-        logger.writeln(sortedMap.mkString("\n", "\n\t", ""))(PuckLog.Error)
-        throw new DGError("illegal node request : no node has id " + id.toString)
+        throw new DGError(s"illegal node request : no node has id $id")
+      }
     }
-  }
 
-  def removeNode(id : NIdT) = {
+
+  def getNode(id : NIdT): DGNode = getConcreteNodeWithStatus(id)._1
+  def getConcreteNode(id : NIdT): ConcreteNode =
+    getConcreteNodeWithStatus(id)._1 match {
+      case cn : ConcreteNode => cn
+      case _ => throw new DGError("Concrete Node expected !")
+    }
+
+
+  def removeConcreteNode(id : NIdT) = {
     val n = nodesIndex(id)
     if(n.id != id)
       throw new DGError("incoherent index left and right id are different")
     newGraph(nNodesSet = nodesIndex - id,
       nRemovedNodes = removedNodes + (id -> n),
-      nRecording = recording.removeNode(id, n.name, n.kind, n.styp, n.isMutable))
+      nRecording = recording removeConcreteNode n)
    /* match {
       case node @ (`id`, localName, kind, styp, mutable) =>
         newGraph(nNodesSet = nodesIndex - id,
@@ -189,9 +227,15 @@ class DependencyGraph
 
 
 
-  def setNode(n : DGNode) : GraphT = n.status match {
-      case Created => newGraph(nNodesSet = nodesIndex + (n.id -> n) )
-      case Removed => newGraph(nRemovedNodes = removedNodes + (n.id -> n) )
+  private def setNode(n : DGNode, s : NodeStatus) : GraphT = (n, s) match {
+      case (cn: ConcreteNode, Created) =>
+        newGraph(nNodesSet = nodesIndex + (n.id -> cn) )
+      case (cn : ConcreteNode, Removed) =>
+        newGraph(nRemovedNodes = removedNodes + (n.id -> cn) )
+      case (vn: VirtualNode, Created) =>
+        newGraph(nVNodesIndex = vNodesIndex + (n.id -> vn) )
+      case (vn : VirtualNode, Removed) =>
+        newGraph(nVRemovedNodes = vRemovedNodes + (n.id -> vn) )
   }
 
   //def setNode(n : DGNode) : GraphT = setNode(n.id, n.name, n.kind, n.styp, n.isMutable, n.status)
@@ -220,20 +264,16 @@ class DependencyGraph
 
 
   def setType(id : NIdT, st : STyp) : GraphT = {
-    val n = getNode(id) match {
-      case cn : ConcreteNode => cn.copy(styp = st)
-      case _ => throw new DGError("set type unhandled case")
-    }
-    setNode(n)
+    val (n, s) = getConcreteNodeWithStatus(id)
+    setNode(n.copy(styp = st), s)
   }
 
-  def setMutability(id : NIdT, mutable : Boolean) = {
-      val n = getNode(id) match {
-      case cn : ConcreteNode => cn.copy(isMutable = mutable)
-      case _ => throw new DGError("set type unhandled case")
-    }
-    setNode(n)
+
+  def setMutability(id : NIdT, mutable : Boolean) =  {
+    val (n, s) = getConcreteNodeWithStatus(id)
+    setNode(n.copy(isMutable = mutable), s)
   }
+
 
  def addContains(containerId: NIdT, contentId :NIdT, register : Boolean = true): GraphT =
      newGraph(nContentMap = contentsMap + (containerId, contentId),
@@ -373,10 +413,8 @@ class DependencyGraph
       }
     }
 
-  def canContain(id : NIdT, otherId : NIdT): Boolean = {
-    val n = getNode(id)
-    val other = getNode(otherId)
-    !contains_*(otherId, id) && // no cycle !
+  def canContain(n : ConcreteNode, other : ConcreteNode): Boolean = {
+    !contains_*(other.id, n.id) && // no cycle !
       (n.kind canContain other.kind) &&
       n.isMutable
   }

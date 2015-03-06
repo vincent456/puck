@@ -14,15 +14,14 @@ import scalaz.Validation.FlatMap._
  */
 object JavaTransformationRules extends TransformationRules {
 
-  override def abstractionName( g: GraphT, implId: NIdT, abskind : NodeKind, policy : AbstractionPolicy) : String = {
-    val impl = g.getNode(implId)
+  override def abstractionName( g: GraphT, impl: ConcreteNode, abskind : NodeKind, policy : AbstractionPolicy) : String = {
     if (impl.kind == Constructor)
       "create"
     else
       (abskind, policy) match {
         case (Method, SupertypeAbstraction)
              | (AbstractMethod, SupertypeAbstraction) => impl.name
-        case _ => super.abstractionName(g, implId, abskind, policy)
+        case _ => super.abstractionName(g, impl, abskind, policy)
 
       }
   }
@@ -34,100 +33,96 @@ object JavaTransformationRules extends TransformationRules {
       else b0
     }
 
-
-
   def insertInTypeHierarchy(g : GraphT, classId : NIdT, interfaceId : NIdT) : GraphT =
     g.directSuperTypes(classId).foldLeft(g){ (g0, superType) =>
       g0.changeSource(DGEdge.isa(classId, superType), interfaceId)
     }
 
   def addTypesUses(g : GraphT, nodeId : NIdT) : GraphT = {
-    val typesUsed = g.getNode(nodeId).styp.getTypeNodeIds
+    val typesUsed = g.getConcreteNode(nodeId).styp.getTypeNodeIds
     typesUsed.foldLeft(g){(g0, tid) => g0.addUses(nodeId, tid)}
   }
 
-  def addAbstractMethodAndRedirectSelfType
-    (g : GraphT, methId : NodeId, itcId : NodeId, classId : NodeId):  Try[GraphT] ={
-    val methodNode = g.getNode(methId)
-    methodNode.kind match {
-      case AbstractMethod =>
-        val g2 = g.addContains(itcId, methId)
-        //TODO check why it is not needed
-        //addTypesUses(g4, absChild)
-          .changeType(methId, methodNode.styp, classId, itcId)
-        Success(g2)
-      case k => Failure(new DGError(k + " should be an abstract method !")).toValidationNel
+  def createAbstractMethod(g : GraphT, meth : ConcreteNode,
+                           clazz : ConcreteNode, interface : ConcreteNode) : Try[GraphT] ={
+    def addContainsAndRedirectSelfType
+    (g: GraphT, methodNode: ConcreteNode): Try[GraphT] = {
+      if(methodNode.kind != AbstractMethod)
+        Failure(new DGError(s"$methodNode should be an abstract method !")).toValidationNel
+      else Success {
+        g.addContains(interface.id, methodNode.id)
+          //TODO check why it is not needed
+          //addTypesUses(g4, absChild)
+          .changeType(methodNode.id, methodNode.styp, clazz.id, interface.id)}
+    }
+
+    createAbstraction(g, meth, AbstractMethod,  SupertypeAbstraction) flatMap {
+      case (absMethod, g21) => addContainsAndRedirectSelfType(g21, absMethod)
     }
   }
 
+  def changeSelfTypeBySuperInMethodSignature(g : GraphT, meth : ConcreteNode,
+                                             clazz : ConcreteNode, interface : ConcreteNode): Try[GraphT] ={
+
+    val g1 = g.changeContravariantType(meth.id, meth.styp, clazz.id, interface.id)
+
+    if(g1.uses(meth.id, clazz.id)) {
+      g.logger.writeln(s"interface creation : redirecting ${DGEdge.uses(meth.id, clazz.id)} target to $interface")
+      redirectUsesOf(g1, DGEdge.uses(meth.id, clazz.id), interface.id, SupertypeAbstraction) map {
+        case (_, g22) => g22
+      }
+    }
+    else Success(g1)
+  }
+
+  def createInterfaceAndReplaceBySuperWherePossible(g : GraphT, clazz : ConcreteNode) : Try[(ConcreteNode, GraphT)] = {
+    val classMembers = g.content(clazz.id)
+
+    for{
+       itcGraph <- super.createAbstraction(g, clazz, Interface, SupertypeAbstraction).map {
+            case (itc, g0) => (itc, insertInTypeHierarchy(g0, clazz.id, itc.id))
+       }
+
+       (interface, g1) = itcGraph
+       g2 <- traverse(classMembers, g1){ (g0, memberId) =>
+           val member = g.getConcreteNode(memberId)
+           member.kind match {
+              case ck : MethodKind => createAbstractMethod(g, member, clazz, interface)
+              case _ => Success(g0)
+           }
+       }
+       g3 <- traverse(classMembers, g2.addIsa(clazz.id, interface.id)){ (g0, child) =>
+           val node = g0.getConcreteNode(child)
+           (node.kind, node.styp) match {
+              // even fields can need to be promoted if they are written
+              //case Field() =>
+              case (ck : MethodKind, MethodTypeHolder(typ))  =>
+                changeSelfTypeBySuperInMethodSignature(g0, node, clazz, interface)
+              case _ => Success(g0)
+           }
+       }
+    } yield {(interface, g3)}
+  }
+
   override def createAbstraction(g : GraphT,
-                                 implId: NIdT,
+                                 impl: ConcreteNode,
                                  abskind : NodeKind ,
-                                 policy : AbstractionPolicy) : Try[(NIdT, GraphT)] = {
+                                 policy : AbstractionPolicy) : Try[(ConcreteNode, GraphT)] = {
 
     (abskind, policy) match {
       case (Interface, SupertypeAbstraction) =>
-        val implContent = g.content(implId)
-
-        val tryAbs = super.createAbstraction(g, implId,
-          Interface,
-          SupertypeAbstraction)
-
-        val tryAbs1 = tryAbs.map { case (absId, g0) => (absId, insertInTypeHierarchy(g0, implId, absId))}
-
-        tryAbs1 flatMap {
-          case (absId, g1) =>
-            val abs = g1.getNode(absId)
-            val g2Try = traverse(implContent, g1){
-              (g0, child) =>
-                g.getNode(child).kind match {
-                  //case ck @ Method() =>
-                  case ck : MethodKind =>
-                    val gAbsTry = createAbstraction(g1, child, AbstractMethod,  SupertypeAbstraction)
-                    gAbsTry flatMap {
-                      case (absChild, g21) =>
-                        addAbstractMethodAndRedirectSelfType(g21, absChild, absId, implId)
-                    }
-                  case _ => Success(g0)
-                }
-            }
-
-            g2Try flatMap { g2 =>
-              val g3 = g2.addIsa(implId, absId)
-
-              val g4Try = traverse(implContent, g3){
-                case (g0, child) =>
-                  val node = g0.getNode(child)
-                  (node.kind, node.styp) match {
-                    // even fields can need to be promoted if they are written
-                    //case Field() =>
-                    case (ck : MethodKind, MethodTypeHolder(typ))  =>
-
-                      val g1 = g0.changeContravariantType(child, node.styp, implId, abs.id)
-
-                      if(g1.uses(child, implId)) {
-                        g.logger.writeln(s"interface creation : redirecting ${DGEdge.uses(child, implId)} target to $abs")
-                        redirectUsesOf(g1, DGEdge.uses(child, implId), absId, SupertypeAbstraction) map {
-                          case (_, g22) => g22
-                        }
-                      }
-                      else Success(g1)
-                    case _ => Success(g0)
-                  }
-              }
-
-              g4Try map {g4 => (absId, g4)}
-            }
-        }
+        createInterfaceAndReplaceBySuperWherePossible(g, impl)
 
       case (AbstractMethod, SupertypeAbstraction) =>
         //no (abs, impl) or (impl, abs) uses
-        Success(createNode(g, implId, abskind, policy))
+        Success(createAbsNode(g, impl, abskind, policy))
+
       case (ConstructorMethod, _) =>
-        super.createAbstraction(g, implId, abskind, policy) map { case (absId, g0) =>
-          (absId, addTypesUses(g0, absId))
+        super.createAbstraction(g, impl, abskind, policy) map { case (abs, g0) =>
+          (abs, addTypesUses(g0, abs.id))
         }
-      case _ => super.createAbstraction(g, implId, abskind, policy)
+
+      case _ => super.createAbstraction(g, impl, abskind, policy)
     }
   }
 
@@ -135,7 +130,7 @@ object JavaTransformationRules extends TransformationRules {
                                                 implId : NIdT,
                                                 absId : NIdT,
                                                 policy : AbstractionPolicy) : GraphT = {
-    val abstraction = g.getNode(absId)
+    val abstraction = g.getConcreteNode(absId)
     (abstraction.kind, policy) match {
       case (AbstractMethod, SupertypeAbstraction) =>
         val implContainer = g.container(implId).get
@@ -150,7 +145,7 @@ object JavaTransformationRules extends TransformationRules {
             .addIsa(implContainer, absContainer)
 
           g1.content(absId).foldLeft(g1){
-            case (g0, absMethodId) => val absMeth = g0.getNode(absMethodId)
+            case (g0, absMethodId) => val absMeth = g0.getConcreteNode(absMethodId)
               g0.changeType(absMethodId, absMeth.styp, implId, absId)
           }
         }
@@ -159,16 +154,16 @@ object JavaTransformationRules extends TransformationRules {
   }
 
   def redirectThisTypeUse(g : GraphT, thisType : NIdT, movedId : NIdT): Try[(EdgeT, GraphT)] = {
-    val typeNode = g.getNode(thisType)
-    val movedNode = g.getNode(movedId)
+    val typeNode = g.getConcreteNode(thisType)
+    val movedNode = g.getConcreteNode(movedId)
     typeNode.kind match {
       case Class =>
         val newTypeUsed = findNewTypeUsed(g, thisType, movedId, Move)
-        val (fid, g2) = g.addNode(movedNode.name + "_delegate", Field, NamedTypeHolder(new JavaNamedType(newTypeUsed)))
-        val g3 = g2.addContains(thisType, fid)
-              .addUses(fid, newTypeUsed)
-              .addUses(movedId, fid)
-        Success( (DGEdge.uses(fid, newTypeUsed),g3))
+        val (field, g2) = g.addConcreteNode(movedNode.name + "_delegate", Field, NamedTypeHolder(new JavaNamedType(newTypeUsed)))
+        val g3 = g2.addContains(thisType, field.id)
+              .addUses(field.id, newTypeUsed)
+              .addUses(movedId, field.id)
+        Success( (DGEdge.uses(field.id, newTypeUsed),g3))
       case _=>
         Failure(new PuckError(s"redirect type uses, expected class got ${typeNode.kind}")).toValidationNel
     }
@@ -185,7 +180,7 @@ object JavaTransformationRules extends TransformationRules {
       super.redirectUsesOf(g, oldEdge, newUsee, policy,
         propagateRedirection, keepOldUse)
 
-    g.getNode(oldEdge.used).kind match {
+    g.getConcreteNode(oldEdge.used).kind match {
       case Constructor =>
         tryEdgeGraph map {case (e, g0) =>
           (e, g.users(oldEdge.user).foldLeft(g0){ case (g1, userId) =>
@@ -207,15 +202,15 @@ object JavaTransformationRules extends TransformationRules {
   //either a subtype of this
   //hence if we do the merge getNode(nid) will disappear
   // and all its user redirected to the candidate
-  override def findMergingCandidate(g : GraphT, nid : NIdT) : Option[NIdT] = {
+  override def findMergingCandidate(g : GraphT, node : ConcreteNode) : Option[ConcreteNode] = {
 
 
     def areMergingCandidates(interface1 : NodeId, interface2: NodeId): Boolean = {
 
       def hasMatchingMethod(absmId : NIdT) = {
-        val absm = g.getNode(absmId)
+        val absm = g.getConcreteNode(absmId)
         absm.kind match {
-          case AbstractMethod => findMergingCandidateIn(g, absm, g.getNode(interface2)).isDefined
+          case AbstractMethod => findMergingCandidateIn(g, absm, g.getConcreteNode(interface2)).isDefined
           case _ => throw new DGError("Interface should contain only abstract method !!")
         }
       }
@@ -237,33 +232,32 @@ object JavaTransformationRules extends TransformationRules {
     }
 
 
-    val node = g.getNode(nid)
+    val nid = node.id
     node.kind match {
-
       case Interface if g.content(nid).nonEmpty =>
-        g.nodes.find { other =>
+        g.concreteNodes.find { other =>
           other.kind == Interface && other.id != nid &&
             areMergingCandidates(nid, other.id) &&
             g.users(nid).forall(!g.interloperOf(_,other.id)) &&
             g.usedBy(nid).forall(!g.interloperOf(other.id, _))
-        }.map(_.id)
+        }
       case _ => None
     }
 
   }
 
   override def findMergingCandidateIn(g : GraphT, methodId : NIdT,  interfaceId : NIdT): Option[NIdT] =
-    findMergingCandidateIn(g, g.getNode(methodId), g.getNode(interfaceId))
+    findMergingCandidateIn(g, g.getConcreteNode(methodId), g.getConcreteNode(interfaceId))
 
 
-  def findMergingCandidateIn(g : GraphT, method : AGNodeT, interface : AGNodeT) : Option[NIdT] = {
+  def findMergingCandidateIn(g : GraphT, method : ConcreteNode, interface : ConcreteNode) : Option[NIdT] = {
     //node.graph.logger.writeln("searching merging candidate for %s".format(node), 8)
     if(method.styp.isEmpty)
       throw new DGError("Method must have a type")
 
     val mType = method.styp.redirectUses(g.container(method.id).get, interface)
     g.content(interface.id).find { ncId =>
-      val nc = g.getNode(ncId)
+      val nc = g.getConcreteNode(ncId)
       nc.kind match {
         case AbstractMethod => nc.name == method.name && nc.styp == mType
         case _ => false

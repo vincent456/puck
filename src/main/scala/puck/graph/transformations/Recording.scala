@@ -27,11 +27,17 @@ class Recording
  /* def nonEmpty = record.nonEmpty
   def size = record.size*/
 
-  def addNode(id : NIdT, name : String, kind : NodeKind, styp: TypeHolder, mutable : Boolean) : RecT =
+/*  def addNode(id : NIdT, name : String, kind : NodeKind, styp: TypeHolder, mutable : Boolean) : RecT =
     Transformation(Add, TTNode(id, name, kind, styp, mutable)) +: this
 
   def removeNode(id : NIdT, name : String, kind : NodeKind, styp: TypeHolder, mutable : Boolean) : RecT =
-    Transformation(Remove, TTNode(id, name, kind, styp, mutable)) +: this
+    Transformation(Remove, TTNode(id, name, kind, styp, mutable)) +: this*/
+
+  def addConcreteNode(n : ConcreteNode) : RecT =
+    Transformation(Add, TTNode(n)) +: this
+
+  def removeConcreteNode(n : ConcreteNode) : RecT =
+    Transformation(Remove, TTNode(n)) +: this
 
   def addEdge(edge : EdgeT) : RecT =
     Transformation(Add, TTEdge(edge)) +: this

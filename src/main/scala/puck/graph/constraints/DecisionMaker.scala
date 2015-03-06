@@ -1,6 +1,6 @@
 package puck.graph.constraints
 
-import puck.graph.{ResultT, NodeId, DependencyGraph, NodeKind}
+import puck.graph._
 
 
 /**
@@ -16,9 +16,9 @@ trait DecisionMaker{
   type ResT = ResultT
 
   def violationTarget(graph : GraphT)
-                     (k: Option[NIdT] => Unit) : Unit
+                     (k: Option[ConcreteNode] => Unit) : Unit
 
-  def abstractionKindAndPolicy(graph : GraphT, impl : NIdT)
+  def abstractionKindAndPolicy(graph : GraphT, impl : ConcreteNode)
                               (k : Option[(NodeKind, AbstractionPolicy)] => Unit) : Unit
 
   def chooseNode(graph : GraphT, predicate : PredicateT)

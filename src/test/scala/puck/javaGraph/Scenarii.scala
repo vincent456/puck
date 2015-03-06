@@ -26,7 +26,7 @@ object Scenarii {
   }
 
   def introPackage(g : GraphT, pname : String, pcontainer : NodeId) : (GraphT, NodeId) = {
-    val (pid, g2) = g.addNode(pname, Package, NoType)
+    val (pid, g2) = g.addConcreteNode(pname, Package, NoType)
     (g2.addContains(pcontainer, pid), pid)
   }
 

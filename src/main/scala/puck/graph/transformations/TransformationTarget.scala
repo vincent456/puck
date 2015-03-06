@@ -13,17 +13,11 @@ sealed trait TransformationTarget{
   def productPrefix : String
 }
 
-case class TTNode
-( id : NodeId,
-  name : String,
-  kind : NodeKind,
-  styp : TypeHolder,
-  mutable : Boolean)
-  extends TransformationTarget {
+case class TTNode(n : ConcreteNode) extends TransformationTarget {
 
   def execute(g: GraphT, op : Operation) = op match {
-    case Add => g.addNode(id, name, kind, styp, mutable)
-    case Remove => g.removeNode(id)
+    case Add => g.addConcreteNode(n)
+    case Remove => g.removeConcreteNode(n.id)
   }
 }
 case class TTEdge(edge : DGEdge)

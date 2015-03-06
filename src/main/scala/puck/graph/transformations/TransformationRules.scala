@@ -29,27 +29,27 @@ trait TransformationRules {
 
 
 
-  def abstractionName(g: GraphT, implId: NIdT, abskind : NodeKind, policy : AbstractionPolicy) : String =
-    g.getNode(implId).name + "_" + policy
+  def abstractionName(g: GraphT, impl: ConcreteNode, abskind : NodeKind, policy : AbstractionPolicy) : String =
+    impl.name + "_" + policy
 
-  def createNode(g : GraphT, implId: NIdT, abskind : NodeKind, policy : AbstractionPolicy) : (NIdT, GraphT) = {
-    val implTypHolder = g.getNode(implId).styp
-    val (id, g1) = g.addNode(abstractionName(g, implId, abskind, policy), abskind, implTypHolder)
+  def createAbsNode(g : GraphT, impl: ConcreteNode, abskind : NodeKind, policy : AbstractionPolicy) : (ConcreteNode, GraphT) = {
+    val implTypHolder = impl.styp
+    val (n, g1) = g.addConcreteNode(abstractionName(g, impl, abskind, policy), abskind, implTypHolder)
     //val g2 = implTypHolder.getTypeNodeIds.foldLeft(g1){(g0, tid) => g0.addUses(id, tid)}
-    (id, g1.addAbstraction(implId, (id, policy)))
+    (n, g1.addAbstraction(impl.id, (n.id, policy)))
   }
 
 
 
   def createAbstraction(g : GraphT,
-                        implId: NIdT,
+                        impl: ConcreteNode,
                         abskind : NodeKind ,
-                        policy : AbstractionPolicy) : Try[(NIdT, GraphT)] = {
-    val (absId, g1) = createNode(g, implId, abskind, policy)
+                        policy : AbstractionPolicy) : Try[(ConcreteNode, GraphT)] = {
+    val (abs, g1) = createAbsNode(g, impl, abskind, policy)
 
-    Success((absId, policy match {
-      case SupertypeAbstraction => g1.addUses(implId, absId)
-      case DelegationAbstraction => g1.addUses(absId, implId)
+    Success((abs, policy match {
+      case SupertypeAbstraction => g1.addUses(impl.id, abs.id)
+      case DelegationAbstraction => g1.addUses(abs.id, impl.id)
     }))
 
   }
@@ -80,7 +80,7 @@ trait TransformationRules {
           oldEdge.changeTarget(g, newUsed)
 
 
-      val g3 = g.getNode(oldEdge.user).styp match {
+      val g3 = g.getConcreteNode(oldEdge.user).styp match {
         case NoType => g2
         case sTyp => g2.changeType(oldEdge.user, sTyp, oldEdge.used, newUsed)
       }
@@ -203,12 +203,12 @@ trait TransformationRules {
             case Some((n, _)) => n
             case None =>
               val abstractKinds =
-                g.getNode(currentPrimaryUsed).kind.
+                g.getConcreteNode(currentPrimaryUsed).kind.
                   abstractKinds(absPolicy)
 
               g.nodesId.find{node =>
                 g.contains_*(node, newSideUsed) && {
-                  abstractKinds.contains(g.getNode(node).kind)
+                  abstractKinds.contains(g.getConcreteNode(node).kind)
                 }
 
               } match {
@@ -311,7 +311,7 @@ trait TransformationRules {
     ng
   }*/
 
-  def findMergingCandidate(g : GraphT, nid : NIdT) : Option[NIdT] = None
+  def findMergingCandidate(g : GraphT, nid : ConcreteNode) : Option[ConcreteNode] = None
 
   def findMergingCandidateIn(g : GraphT, id : NIdT, root : NIdT) : Option[NIdT] = None
 
@@ -325,7 +325,7 @@ trait TransformationRules {
     val g1 = g.users(consumedId).foldLeft(g) {
      (g0, userId) =>
         g0.changeTarget(DGEdge.uses(userId, consumedId), consumerId)
-          .changeType(userId, g.getNode(userId).styp, consumedId, consumerId)
+          .changeType(userId, g.getConcreteNode(userId).styp, consumedId, consumerId)
     }
 
     val g2 = g.usedBy(consumedId).foldLeft(g1) {
@@ -381,7 +381,7 @@ trait TransformationRules {
           findMergingCandidateIn(g0, consumedChildId, consumerId) match {
             case Some(consumerChildId) => merge(g0, consumerChildId, consumedChildId)
             case None => moveTo(g0, consumedChildId, consumerId) map {
-              _.changeType(consumedChildId, g0.getNode(consumedChildId).styp, consumedId, consumerId)
+              _.changeType(consumedChildId, g0.getConcreteNode(consumedChildId).styp, consumedId, consumerId)
             }
           }
         }
@@ -389,7 +389,7 @@ trait TransformationRules {
 
     g7 map { g =>
       g.removeContains(g.container(consumedId).get, consumedId)
-        .removeNode(consumedId)
+        .removeConcreteNode(consumedId)
     }
 
   }

@@ -7,18 +7,32 @@ package puck.graph
 sealed trait DGNode{
   val id : NodeId
   val name : String
-  val kind : NodeKind
-  val styp : TypeHolder
+  //val kind : NodeKind
+  //val styp : TypeHolder
   val isMutable : Boolean
-  val status : NodeStatus
+
 }
+
 object DGNode {
   def apply(id : NodeId,
             name : String,
             kind : NodeKind,
             styp : TypeHolder,
-            isMutable : Boolean,
-            status : NodeStatus) = ConcreteNode(id, name, kind, styp, isMutable, status)
+            isMutable : Boolean) : DGNode = ConcreteNode(id, name, kind, styp, isMutable)
+}
+
+case class VirtualNode
+(id : NodeId,
+ name : String,
+ /*kind : NodeKind,
+ styp : TypeHolder,*/
+ potentialMatches : Set[ConcreteNode]) extends DGNode {
+  override val isMutable = true
+
+  def kinds : Set[NodeKind]=
+    potentialMatches.foldLeft(Set[NodeKind]()){(s,n) =>
+      s + n.kind
+    }
 }
 
 case class ConcreteNode
@@ -26,8 +40,7 @@ case class ConcreteNode
   name : String,
   kind : NodeKind,
   styp : TypeHolder,
-  isMutable : Boolean,
-  status : NodeStatus) extends DGNode{
+  isMutable : Boolean)  extends DGNode {
 
   override def toString = id + " - " + kind +" " + name
 

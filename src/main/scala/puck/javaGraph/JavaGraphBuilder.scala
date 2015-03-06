@@ -15,10 +15,11 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 
    var idSeed = rootId + 1
 
-   val root = DGNode(rootId, rootName, JavaRoot, NoType, true, Created)
+   val root = ConcreteNode(rootId, rootName, JavaRoot, NoType, true)
 
-   g = new JavaDependencyGraph(PuckNoopLogger, {() => val id = idSeed; idSeed += 1; id},
-   NodeIndex() + (rootId -> root), NodeIndex(),
+   g = new JavaDependencyGraph(PuckNoopLogger, idSeed,
+   ConcreteNodeIndex() + (rootId -> root), ConcreteNodeIndex(),
+     VirtualNodeINdex(), VirtualNodeINdex(),
     EdgeMap(), EdgeMap(), EdgeMap(),
     Node2NodeMap(), EdgeMap(), EdgeMap(),
     UseDependencyMap(), UseDependencyMap(),
@@ -160,7 +161,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
     }
   }
 
-  private def throwRegisteringError(n : DGNode, astType : String) =
+  private def throwRegisteringError(n : ConcreteNode, astType : String) =
     throw new Error(s"Wrong registering ! AGNode.kind : ${n.kind} while AST.Node is an $astType")
 
 
@@ -170,11 +171,11 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
         kindExpected : JavaNodeKind,
         declHolder : => ASTNodeLink,
         kindFound : String): Unit ={
-    if(g.getNode(nid).kind == kindExpected)
+    if(g.getConcreteNode(nid).kind == kindExpected)
       graph2ASTMap += (nid -> declHolder)
       //g = g.setInternal(nid, declHolder)
     else
-      throwRegisteringError(g.getNode(nid), kindFound)
+      throwRegisteringError(g.getConcreteNode(nid), kindFound)
   }
 
   def registerDecl(n : NodeIdT, decl : AST.InterfaceDecl) =
@@ -205,14 +206,14 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 
 
   def registerDecl(n : NodeIdT, decl : AST.MethodDecl) : Unit = {
-    g.getNode(n).kind match {
+    g.getConcreteNode(n).kind match {
       case Method =>
         //g = g.setInternal(n, ConcreteMethodDeclHolder(Some(decl)))
         graph2ASTMap += (n -> ConcreteMethodDeclHolder(decl))
       case AbstractMethod =>
         //g = g.setInternal(n, AbstractMethodDeclHolder(Some(decl)))
         graph2ASTMap += (n -> AbstractMethodDeclHolder(decl))
-      case _ => throwRegisteringError(g.getNode(n), "MethodDecl")
+      case _ => throwRegisteringError(g.getConcreteNode(n), "MethodDecl")
     }
   }
 

@@ -33,12 +33,12 @@ object NodeMappingInitialState{
   def normalizeNodeTransfos(l : Seq[Transformation],
                             init : Seq[Transformation] = Seq()) : (Map[NodeId, (Int, NodeKind)], Seq[Transformation])= {
     val (map, rl) = l.foldLeft( (Map[NodeId, (Int, NodeKind)](), init) ){
-      case ((m,l1), Transformation(Add, TTNode(id, _, kind, _, _ ))) =>
-        val (i, _) = m.getOrElse(id, (0, JavaRoot) )
-        (m + (id -> ((i + 1, kind))), l1)
-      case ((m,l1), Transformation(Remove, TTNode(id, _, kind, _, _ ))) =>
-        val (i, _) = m.getOrElse(id, (0, JavaRoot))
-        (m + (id -> ((i - 1, kind))), l1)
+      case ((m,l1), Transformation(Add, TTNode(n))) =>
+        val (i, _) = m.getOrElse(n.id, (0, JavaRoot) )
+        (m + (n.id -> ((i + 1, n.kind))), l1)
+      case ((m,l1), Transformation(Remove, TTNode(n))) =>
+        val (i, _) = m.getOrElse(n.id, (0, JavaRoot))
+        (m + (n.id -> ((i - 1, n.kind))), l1)
 
       //removing the dependendency and abstraction of the comparison
       // they are used to compute the change on the graph, its the change themselves we want to compare
@@ -119,8 +119,7 @@ class NodeMappingInitialState
   override def triedAll = triedAll0
 
   def writelnNode(graph: DependencyGraph)( nid : NodeId) : Unit = {
-    val n = graph.getNode(nid)
-    logger.writeln("%d = %s(%s)".format(n.id, n.kind, graph.fullName(n.id)))
+    logger.writeln(s"$nid = ${graph.getNode(nid)}")
   }
 
 

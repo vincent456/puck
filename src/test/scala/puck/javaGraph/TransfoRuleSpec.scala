@@ -49,7 +49,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
 
       val logger = new PuckFileLogger({ case _ => true}, new java.io.File( puck.testExamplesPath + "/log"))
 
-      val (classBid, g2) = initialGraph.newGraph(nLogger = logger).addNode("B", Class, NoType)
+      val (classBid, g2) = initialGraph.newGraph(nLogger = logger).addConcreteNode("B", Class, NoType)
       g2.addContains(rootPackage, classBid)
 
       println("initialGraph.uses(classA, classA) = " + initialGraph.uses(classA, classA))

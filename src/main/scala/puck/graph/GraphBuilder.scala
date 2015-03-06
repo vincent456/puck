@@ -12,8 +12,8 @@ class GraphBuilder {
 
   def getNodeByName( k : String) : NodeIdT = nodesByName(k) //java accessor
 
-  def addPredefined(id : NodeIdT, fullName : String, name : String, kind : NodeKind): Unit ={
-    g = g.addNode(id, name, kind, NoType, mutable = false)
+  def addPredefined(id : NodeIdT, fullName : String, name : String, kind : NodeKind): Unit = {
+    g = g.addConcreteNode(name, kind, NoType, mutable = false, Some(id))._2
     nodesByName += (fullName -> id)
     ()
   }
@@ -21,10 +21,10 @@ class GraphBuilder {
   def addNode(unambiguousFullName: String, localName:String, kind: NodeKind, th : TypeHolder): NodeIdT = {
     nodesByName get unambiguousFullName match {
       case None =>
-        val (id, g2) = g.addNode(localName, kind, th)
-        this.nodesByName += (unambiguousFullName -> id)
+        val (n, g2) = g.addConcreteNode(localName, kind, th)
+        this.nodesByName += (unambiguousFullName -> n.id)
         g = g2
-        id
+        n.id
       case Some(id) => id /* check that the kind and type is indeed the same ??*/
     }
   }
