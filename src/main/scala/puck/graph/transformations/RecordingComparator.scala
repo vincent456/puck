@@ -35,8 +35,8 @@ object RecordingComparator{
 
 import puck.graph.transformations.MappingChoices.{Kargs, NodesToMap, ResMap}
 
-object NoSolution extends PuckError
-object WrongMapping extends PuckError
+object NoSolution extends PuckError("No solution")
+object WrongMapping extends PuckError("Wrong mapping")
 
 class RecordingComparator
 ( initialTransfos : Seq[Transformation],
@@ -55,7 +55,8 @@ class RecordingComparator
                 (k : Kargs => Unit) : Unit = {
 
     map.getOrElse(node, (graph1.getNode(node).kind, Some(node))) match {
-      case (_, Some(n)) => k((n, Success(map), nodesToMap))
+      case (_, Some(n)) =>
+        newCurrentState(map, new StackSaver(k, n, nodesToMap))
 
       case (kind, None) =>
         nodesToMap.getOrElse(kind, Seq()) match {
@@ -102,14 +103,13 @@ class RecordingComparator
     RecordingComparator.removeFirst(l, {(t : Transformation) => t.operation == op && t.target == tgt})
   }
 
-
-  def printAssociatedChoices(map : ResMap) = {
+  /*def printAssociatedChoices(map : ResMap) = {
     map.foreach{
       case (n, (_, Some(mapping))) => println("*  %s ==> %s".format(n, mapping))
       case _ => ()
     }
   }
-
+*/
   def compare(ts1 : Seq[Transformation],
               ts2 : Seq[Transformation],
               map : ResMap, nodesToMap : NodesToMap,

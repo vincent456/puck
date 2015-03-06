@@ -124,9 +124,9 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
 
   override def searchingStrategies: Seq[ConstraintSolvingSearchEngineBuilder] =
     List(JavaTryAllCSSEBuilder,
-      JavaFunneledCSSEBuilder/*,
+      JavaFunneledCSSEBuilder,
       //JavaGradedCSSEBuilder,
-      JavaFindFirstCSSEBuilder*/)
+      JavaFindFirstCSSEBuilder)
 }
 
 

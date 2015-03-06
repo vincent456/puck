@@ -67,3 +67,40 @@ class NodeMappingState
      }
 
    }
+
+
+class StackSaver
+(val k: Kargs => Unit,
+ val mappedNode : NodeId,
+ val nodesToMap : NodesToMap)
+  extends StateCreator[ResMap, StackSaver] {
+
+  def createState (id: Int,
+                   engine: SearchEngine[ResMap],
+                   prevState: Option[SearchState[ResMap]],
+                   currentResult : ResMap,
+                   choices: StackSaver): StackSaverState = {
+    new StackSaverState (id, engine, currentResult, choices, prevState)
+  }
+}
+
+class StackSaverState
+( val id : Int,
+  val engine : SearchEngine[ResMap],
+  val result : ResMap,
+  val stackSaver: StackSaver,
+  val prevState : Option[SearchState[ResMap]])
+  extends SearchState[ResMap] {
+
+  import stackSaver._
+
+  var executed = false
+
+  def triedAll = executed
+
+  def executeNextChoice() : Unit = {
+    executed = true
+    k((mappedNode, Success(result), nodesToMap))
+  }
+
+}

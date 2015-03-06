@@ -144,7 +144,25 @@ trait TransformationRules {
           val keepOldUse = g.typeMemberUsesOf(primary0).nonEmpty //is empty if primary had only one side use
           val isThisTypeUse = primary.source == primary.target && g.isTypeUse(primary)
 
-          val tryG1 : Try[GraphT] =
+          val redirect : GraphT => Try[(EdgeT, GraphT)] =
+            if(isThisTypeUse)
+              g => redirectThisTypeUse(g, primary.used, newSideUsed)
+            else
+              g => redirectUsesOf(g, primary,
+                findNewTypeUsed(g, primary.used, newSideUsed, policy),
+                policy, propagateRedirection, keepOldUse)
+
+
+          for(
+            g1 <- tryG0.map { _.removeUsesDependency(primary, currentSideUse)};
+            eg <- redirect(g1);
+            (newPrimary, g2) = eg
+          ) yield
+            g2.addUsesDependency(newPrimary, (currentSideUse.user, newSideUsed))
+
+
+
+         /* val tryG1 : Try[GraphT] =
             tryG0.map { _.removeUsesDependency(primary, currentSideUse)}
 
 
@@ -160,7 +178,7 @@ trait TransformationRules {
           tryG2 map {
             case (newPrimary, g2) =>
               g2.addUsesDependency(newPrimary, (currentSideUse.user, newSideUsed))
-          }
+          }*/
 
       }
     }
@@ -242,7 +260,15 @@ trait TransformationRules {
               Failure(new RedirectionError(msg)).toValidationNel
             case Some( (new_side_usee, _) ) =>
 
-              val tryG1 : Try[GraphT] =
+              for(
+                g <- tryG.map(_.removeUsesDependency(currentPrimaryUse, side));
+                eg <- redirectUsesOf(g, side, new_side_usee, policy);
+                (newSide, g2) = eg
+              ) yield
+                g2.addUsesDependency((currentPrimaryUse.user, newPrimaryUsed), newSide)
+
+
+              /*val tryG1 : Try[GraphT] =
                 tryG.map(_.removeUsesDependency(currentPrimaryUse, side))
 
               val tryG2 : Try[(EdgeT, GraphT)] =
@@ -251,8 +277,7 @@ trait TransformationRules {
               tryG2.map {
                 case (newSide, g2) =>
                   g2.addUsesDependency((currentPrimaryUse.user, newPrimaryUsed), newSide)
-              }
-
+              }*/
           }
       }
     }
@@ -361,26 +386,6 @@ trait TransformationRules {
           }
         }
     }
-
-    /*consumed.content.foldLeft(g6) {
-      case (g0, childId) =>
-        findMergingCandidateIn(childId, consumedId) match {
-          case Some()
-        }
-        //println("moving " + childId +" into " + consumerId)
-
-        /*val g1 = g0.changeSource(AGEdge.contains(consumedId, childId), consumerId)
-        dominated_dominant_seq.foldLeft(g1){
-          case (g00, ((sideUser, `childId`), primUses)) =>
-            primUses.foldLeft(g00){case (g000, (pUser, `consumedId`)) =>
-                val nPuser = if(pUser == consumedId) consumerId else pUser
-                g000.addUsesDependency((sideUser, childId), (nPuser, consumerId))
-                    .removeUsesDependency((sideUser, childId), (pUser, consumedId))
-            case (g000, _) => g000
-            }
-          case (g00, _) => g00
-        }*/
-    }*/
 
     g7 map { g =>
       g.removeContains(g.container(consumedId).get, consumedId)

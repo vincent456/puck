@@ -14,8 +14,8 @@ class ConstraintSolvingStateEvaluator
     graphOfResult(s.result).coupling
   }
 
-  def equals(s1 : SearchState[ResultT], s2 : SearchState[ResultT] ): Boolean = {
+  def equals(s1 : SearchState[ResultT], s2 : SearchState[ResultT] ): Boolean =
     DependencyGraph.areEquivalent(initialRecord, graphOfResult(s1.result), graphOfResult(s2.result))
-  }
+  
 
 }

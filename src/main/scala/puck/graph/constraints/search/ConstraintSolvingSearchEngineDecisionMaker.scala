@@ -23,7 +23,7 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker
 
   val violationsKindPriority : Seq[NodeKind]
 
-  def violationTarget(graph : GraphT)
+  /*def violationTarget(graph : GraphT)
                      (k: Option[NIdT] => Unit) : Unit = {
 
     implicit val g = graph
@@ -54,6 +54,27 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker
         newCurrentState((graph, graph.recording), targetsChoice)
 
     }
+  }*/
+
+  def violationTarget(graph : GraphT)
+                     (k: Option[NIdT] => Unit) : Unit = {
+
+
+    def findTargets(l : Seq[NodeKind]) : Option[DGNode] =  l match {
+      case topPriority :: tl =>
+        graph.nodes.iterator find { n =>
+          n.kind == topPriority && (graph.wrongUsers(n.id).nonEmpty ||
+            graph.isWronglyContained(n.id))
+        } match {
+          case None => findTargets(tl)
+          case st @ Some(_) => st
+        }
+
+      case Seq() => graph.nodes.iterator find { n => graph.wrongUsers(n.id).nonEmpty ||
+        graph.isWronglyContained(n.id) }
+    }
+
+    k(findTargets(violationsKindPriority) map (_.id))
   }
 
   def abstractionKindAndPolicy(graph : GraphT, implId : NIdT)

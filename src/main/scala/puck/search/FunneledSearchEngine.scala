@@ -54,7 +54,7 @@ trait FunneledSeachEngine[Result] extends SearchEngine[Result]{
 
   lazy val funneledStates = new FunneledStatesStack[Result](evaluator)
 
-  def markPointPeriod : Int = 3
+  def markPointPeriod : Int = 2
 
   var currentCheckPoint : Int = markPointPeriod
 
@@ -82,16 +82,22 @@ trait FunneledSeachEngine[Result] extends SearchEngine[Result]{
 
      this.search(k)
 
+      var i = 0
 
       while (stateStack.nonEmpty) {
-
+        println(s"search iteration $i")
         while (stateStack.nonEmpty) {
-          if (stateStack.head.triedAll)
+          if (stateStack.head.triedAll) {
             stateStack.pop()
-          else {
+            println(s"${stateStack.size} states remainings")
+          }else {
               stateStack.head.executeNextChoice()
           }
         }
+
+        i += 1
+        println(s"preparing iteration $i ...")
+
 
         val freezedStates = funneledStates.produce()
 
@@ -101,6 +107,8 @@ trait FunneledSeachEngine[Result] extends SearchEngine[Result]{
 
         currentCheckPoint += markPointPeriod
       }
+    println("search finished")
+
   }
 }
 
@@ -147,7 +155,7 @@ trait FunneledSeachEngine[Result] extends StackedSearchEngine[Result]{
 
 class FunneledStatesStack[Result](val evaluator : Evaluator[Result]) {
 
-  val sizeMax: Int = 30
+  val sizeMax: Int = 10
 /*  private[this] val content = mutable.Stack[SearchState[Result]]()
 
   def produce(): Seq[SearchState[Result]] = content

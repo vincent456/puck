@@ -118,7 +118,7 @@ class NodeMappingInitialState
 
   override def triedAll = triedAll0
 
-  def printlnNode(graph: DependencyGraph)( nid : NodeId) : Unit = {
+  def writelnNode(graph: DependencyGraph)( nid : NodeId) : Unit = {
     val n = graph.getNode(nid)
     logger.writeln("%d = %s(%s)".format(n.id, n.kind, graph.fullName(n.id)))
   }
@@ -140,9 +140,9 @@ class NodeMappingInitialState
       logger.writeln(s"initialMapping : $initialMapping, ${remainingTransfos1.size} remaining transfo")
 
       logger.writeln("created nodes :")
-      initialMapping.keys foreach printlnNode(graph1)
+      initialMapping.keys foreach writelnNode(graph1)
       logger.writeln("neuter nodes : ")
-      neuterNodes foreach printlnNode(graph1)
+      neuterNodes foreach writelnNode(graph1)
 
       logger.writeln("*******************************************************")
       logger.writeln("")
@@ -151,9 +151,9 @@ class NodeMappingInitialState
       logger.writeln("nodes to map : %s, %d remaining transfo".format(nodesToMap, remainingTransfos2.size))
 
       logger.writeln("created nodes :")
-      nodesToMap foreach {case (_, s) => s foreach printlnNode(graph2)}
+      nodesToMap foreach {case (_, s) => s foreach writelnNode(graph2)}
       logger.writeln("neuter nodes : ")
-      otherNeuterNodes foreach printlnNode(graph2)
+      otherNeuterNodes foreach writelnNode(graph2)
 
       logger.writeln("recording1")
       graph1.recording() foreach { t => logger.writeln(t.toString)}
@@ -173,9 +173,9 @@ class NodeMappingInitialState
       logger.writeln(s"initialMapping : $initialMapping, ${remainingTransfos1.size} remaining transfo")
 
       logger.writeln("created nodes :")
-      initialMapping.keys foreach printlnNode(graph1)
+      initialMapping.keys foreach writelnNode(graph1)
       logger.writeln("neuter nodes : ")
-      neuterNodes foreach printlnNode(graph1)
+      neuterNodes foreach writelnNode(graph1)
 
       logger.writeln("")
       logger.writeln("")
@@ -206,9 +206,9 @@ class NodeMappingInitialState
       logger.writeln("nodes to map : %s, %d remaining transfo".format(nodesToMap, remainingTransfos2.size, logger))
 
       logger.writeln("created nodes :")
-      nodesToMap foreach {case (_, s) => s foreach printlnNode(graph2)}
+      nodesToMap foreach {case (_, s) => s foreach writelnNode(graph2)}
       logger.writeln("neuter nodes : ")
-      otherNeuterNodes foreach printlnNode(graph2)
+      otherNeuterNodes foreach writelnNode(graph2)
 
       logger.writeln("")
       logger.writeln("")
