@@ -4,19 +4,30 @@ package puck.graph
  * Created by lorilan on 1/8/15.
  */
 
+sealed trait DGNode{
+  val id : NodeId
+  val name : String
+  val kind : NodeKind
+  val styp : TypeHolder
+  val isMutable : Boolean
+  val status : NodeStatus
+}
+object DGNode {
+  def apply(id : NodeId,
+            name : String,
+            kind : NodeKind,
+            styp : TypeHolder,
+            isMutable : Boolean,
+            status : NodeStatus) = ConcreteNode(id, name, kind, styp, isMutable, status)
+}
 
-
-case class DGNode
+case class ConcreteNode
 ( id : NodeId,
   name : String,
   kind : NodeKind,
   styp : TypeHolder,
   isMutable : Boolean,
-  status : NodeStatus){
-
-  type NIdT = NodeId
-  type GraphT = DependencyGraph
-
+  status : NodeStatus) extends DGNode{
 
   override def toString = id + " - " + kind +" " + name
 

@@ -15,7 +15,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 
    var idSeed = rootId + 1
 
-   val root = (rootId, rootName, JavaRoot, NoType, true)
+   val root = DGNode(rootId, rootName, JavaRoot, NoType, true, Created)
 
    g = new JavaDependencyGraph(PuckNoopLogger, {() => val id = idSeed; idSeed += 1; id},
    NodeIndex() + (rootId -> root), NodeIndex(),
@@ -152,8 +152,6 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 
       val bdNode = bd buildAGNode this
       val strNode = addNode(bd.fullName()+literal, literal, Literal, stringType)
-      //TODO set type of node to string
-
       /*
         this is obviously wrong: TODO FIX
       */

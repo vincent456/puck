@@ -9,7 +9,6 @@ import scalaz.Show
  * Created by lorilan on 31/10/14.
  */
 object ConstraintsMaps{
-  //TODO change key type to range ??
   type FriendConstraintMap = Map[Range, ConstraintSet]
   type HideConstraintMap = Map [Range, ConstraintSet]
 

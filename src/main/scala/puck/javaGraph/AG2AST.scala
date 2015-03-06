@@ -40,7 +40,7 @@ class AG2AST(val program : AST.Program,
       val newMap = id2declMap get id match {
         case Some(_) => id2declMap
         case None =>
-          val node = new DGNode(id, name, kind, styp, mutable, puck.graph.Created)
+          val node = DGNode(id, name, kind, styp, mutable, puck.graph.Created)
           val dh = ASTNodeLink.createDecl(program, resultGraph, id2declMap, node)
 
           id2declMap + (id -> dh)
