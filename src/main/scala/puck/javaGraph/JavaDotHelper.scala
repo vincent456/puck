@@ -10,15 +10,16 @@ import puck.javaGraph.nodeKind._
  */
 
 
-object JavaNode extends DotHelper{
+object JavaDotHelper extends DotHelper{
 
-  override def isDotSubgraph(k: NodeKind): Boolean = k == Package
+  override def isDotSubgraph(n: DGNode): Boolean =
+    n.kind == Package
 
-  override def namePrefix(k: NodeKind): String =  k match {
-    case Package => "&lt;&lt;package&gt;&gt; "
-    case Interface => "&lt;&lt;interface&gt;&gt; "
-    case _ => ""
-  }
+  override def namePrefix(n: DGNode): String =  n.kind match {
+      case Package => "&lt;&lt;package&gt;&gt; "
+      case Interface => "&lt;&lt;interface&gt;&gt; "
+      case _ => ""
+    }
 
   override def splitDotClassContent(graph : DependencyGraph, n: NodeId, visibility : VisibilitySet) = {
     graph.content(n).foldLeft( (Seq[NodeId](), Seq[NodeId](), Seq[NodeId](), Seq[NodeId]()) ){
@@ -26,7 +27,7 @@ object JavaNode extends DotHelper{
         if(visibility.isHidden(n)) lists
         else {
           val (fds, cts, mts, cls) = lists
-          val kind = graph.getNode(n).kind
+          val kind = graph.getConcreteNode(n).kind
           kind match {
             case Interface | Class => (fds, cts, mts, n +: cls)
             case Field => (n +: fds, cts, mts, cls)
@@ -41,14 +42,20 @@ object JavaNode extends DotHelper{
     }
   }
 
-  override def isDotClass(k: NodeKind): Boolean = k match { case Class | Interface => true; case _ => false}
+  override def isDotClass(n : DGNode): Boolean = n.kind match {
+      case Class | Interface => true;
+      case _ => false
+    }
 
-  override def fillColor(k: NodeKind): String = k match {
-    case Package => "#FF9933" //Orange
-    case Interface => "#FFFF99" // Light yellow
-    case Class | Constructor => "#FFFF33" //Yellow
-    case Method | Field => "#FFFFFF" //White
-    case Literal => "#CCFFCC" //Very Light green
-    case _ => throw new Error("Unknown JavaNodeKind")
+  override def fillColor(n: DGNode): String = {
+    def aux(cn : ConcreteNode) : String = cn.kind match {
+        case Package => "#FF9933" //Orange
+        case Interface => "#FFFF99" // Light yellow
+        case Class | Constructor => "#FFFF33" //Yellow
+        case Method | Field => "#FFFFFF" //White
+        case Literal => "#CCFFCC" //Very Light green
+        case _ => throw new Error("Unknown JavaNodeKind")
+      }
+    n mapConcrete(aux, "#00FF00")
   }
 }

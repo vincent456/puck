@@ -5,7 +5,7 @@ import javax.swing.JTree
 import javax.swing.tree.TreePath
 
 import puck.graph.io.VisibilitySet
-import puck.graph.{DGNode, DependencyGraph, NodeId}
+import puck.graph.{NodeKind, DGNode, DependencyGraph, NodeId}
 
 import scala.swing.event.Event
 import scala.swing.{Component, Publisher, ScrollPane}
@@ -16,7 +16,7 @@ import scala.swing.{Component, Publisher, ScrollPane}
 
 case class PuckTreeNodeClicked(graph : DependencyGraph, node : NodeId) extends Event
 case class AccessGraphModified(graph : DependencyGraph) extends Event
-case class PackageOnlyVisible() extends Event
+case class SetVisible(ks : Seq[NodeKind]) extends Event
 
 class GraphExplorer
 (val hiddens :VisibilitySet,
@@ -34,7 +34,7 @@ class GraphExplorer
   def addChildren(graph : DependencyGraph,
                   ptn: PuckTreeNode): Unit = {
     import puck.graph.ShowDG._
-    val nodeList = graph.content(ptn.nodeId).map(graph.getNode).toList
+    val nodeList = graph.content(ptn.nodeId).map(graph.getConcreteNode).toList
     nodeList.sortBy(_.name) foreach {
       (n: DGNode) =>
         val child = new PuckTreeNode(n.id, hiddens,
@@ -75,8 +75,8 @@ class GraphExplorer
       })
       contents = Component.wrap(tree)
       this.repaint()
-    case PackageOnlyVisible() =>
-      root.packageOnlyVisible(graph)
+    case SetVisible(ks) =>
+      root.kindVisible(graph, ks)
       this.repaint()
   }
 

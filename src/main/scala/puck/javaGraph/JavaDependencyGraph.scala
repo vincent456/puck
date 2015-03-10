@@ -23,6 +23,7 @@ class JavaDependencyGraph
  removedNodes : ConcreteNodeIndex,
  vNodesIndex : VirtualNodeIndex,
  vRemovedNodes : VirtualNodeIndex,
+ nodes2vNodes : Nodes2VnodeMap,
  usersMap : EdgeMap,
  usesMap  : EdgeMap,
  contentsMap  : EdgeMap,
@@ -35,7 +36,7 @@ class JavaDependencyGraph
  constraints : ConstraintsMaps,
  recording : Recording)
   extends DependencyGraph(logger, idSeed, nodesSet, removedNodes,
-    vNodesIndex, vRemovedNodes,
+    vNodesIndex, vRemovedNodes, nodes2vNodes,
   usersMap, usesMap, contentsMap, containerMap, superTypesMap, subTypesMap,
   dominantUsesMap, dominatedUsesMap, abstractionsMap, constraints, recording){
 
@@ -45,6 +46,7 @@ class JavaDependencyGraph
                nRemovedNodes : ConcreteNodeIndex = removedNodes,
                nVNodesIndex: VirtualNodeIndex = vNodesIndex,
                nVRemovedNodes :VirtualNodeIndex = vRemovedNodes,
+               nNodes2vNodes : Nodes2VnodeMap = nodes2vNodes,
                nUsersMap : EdgeMap = usersMap,
                nUsesMap  : EdgeMap = usesMap,
                nContentMap  : EdgeMap = contentsMap,
@@ -57,7 +59,8 @@ class JavaDependencyGraph
                nConstraints : ConstraintsMaps = constraints,
                nRecording : Recording = recording) : JavaDependencyGraph =
     new JavaDependencyGraph(nLogger, nIdSeed,
-      nNodesSet, nRemovedNodes, nVNodesIndex, nVRemovedNodes, nUsersMap, nUsesMap,
+      nNodesSet, nRemovedNodes, nVNodesIndex, nVRemovedNodes, nNodes2vNodes,
+      nUsersMap, nUsesMap,
       nContentMap, nContainerMap, nSuperTypesMap, nSubTypesMap,
       nDominantUsesMap, nDominatedUsesMap,
       nAbstractionsMap, nConstraints, nRecording)
@@ -68,15 +71,13 @@ class JavaDependencyGraph
   override def nodeKinds : Seq[NodeKind] = JavaNodeKind.list
   //def rootKind : JavaNodeKind = JavaRoot
 
-  //TODO !!!!!
-  override def coupling = 0.toDouble
-    /*nodes.foldLeft(0 : Double){ (acc, n) => n.kind match {
+  override def coupling = concreteNodes.foldLeft(0 : Double){ (acc, n) => n.kind match {
     case Package =>
       val c = Metrics.coupling(n.id, this)
       if(c.isNaN) acc
       else acc + c
     case _ => acc
-  }}*/
+  }}
 
   def packageNode(id : NodeId) : NodeId =
     getConcreteNode(id).kind match {
@@ -85,12 +86,8 @@ class JavaDependencyGraph
 
     }
 
-  def concreteNodeTestPred(nid : NodeId)(pred: ConcreteNode => Boolean): Boolean = {
-    getNode(nid) match {
-      case c : ConcreteNode => pred(c)
-      case _ => false
-    }
-  }
+  def concreteNodeTestPred(nid : NodeId)(pred: ConcreteNode => Boolean): Boolean =
+    getNode(nid) mapConcrete (pred, false)
 
   override def canContain(n : ConcreteNode, other : ConcreteNode) : Boolean = {
     val id = n.id
@@ -104,24 +101,21 @@ class JavaDependencyGraph
         }
       }
 
+    def implementMethod(absMethodName : String, absMethodType : Arrow[Tuple[NamedType], NamedType])(id : NodeId) : Boolean =
+      content(id).exists(concreteNodeTestPred(_) { c =>
+        (c.kind, c.styp) match {
+          case (Method, MethodTypeHolder(typ)) => absMethodName == c.name && absMethodType == typ
+          case (Method, _) => throw new DGError()
+          case _ => false
+        }
+      })
 
-    val sc = super.canContain(n, other)
-     sc &&
+    super.canContain(n, other) &&
       ( (other.kind, other.styp) match {
-        case (AbstractMethod, MethodTypeHolder(absTyp)) =>
-          /*
-            All subtypes must implement the method
-           */
-          content(id).forall(noNameClash(absTyp.input.length)) &&
-            directSubTypes(id).forall { id =>
-              content(id).exists(concreteNodeTestPred(_) { c =>
-                  (c.kind, c.styp) match {
-                    case (Method, MethodTypeHolder(typ)) => other.name == c.name && absTyp == typ
-                    case (Method, _) => throw new DGError()
-                    case _ => false
-                  }
-                })
-            }
+        case (AbstractMethod, MethodTypeHolder(absMethodType)) =>
+          content(id).forall(noNameClash(absMethodType.input.length)) &&
+            directSubTypes(id).forall {implementMethod(other.name, absMethodType)}
+
         case (AbstractMethod, _) => throw new DGError(other + " does not have a MethodTypeHolder")
         /* cannot have two methods with same name and same type */
         case (Method, MethodTypeHolder(typ)) =>
@@ -139,9 +133,11 @@ class JavaDependencyGraph
 
   override def isTypeMemberUse : DGEdge => Boolean = {
     case DGEdge(Uses, _, id) =>
-      concreteNodeTestPred(id){ cn =>
-        cn.kind == Method || cn.kind == Field || cn.kind == Constructor || cn.kind == ConstructorMethod
+      concreteNodeTestPred(id){ cn => cn.kind match {
+        case _: MethodKind | Field | Constructor => true
+        case _ => false
       }
+    }
     case _ => false
   }
 }

@@ -6,6 +6,8 @@ import puck.graph.constraints.{Move, RedirectionPolicy, SupertypeAbstraction, Ab
 import puck.graph.transformations.TransformationRules
 import puck.javaGraph.nodeKind._
 
+import ShowDG._
+
 import scalaz._
 import scalaz.Validation.FlatMap._
 
@@ -85,9 +87,9 @@ object JavaTransformationRules extends TransformationRules {
 
        (interface, g1) = itcGraph
        g2 <- traverse(classMembers, g1){ (g0, memberId) =>
-           val member = g.getConcreteNode(memberId)
+           val member = g0.getConcreteNode(memberId)
            member.kind match {
-              case ck : MethodKind => createAbstractMethod(g, member, clazz, interface)
+              case ck : MethodKind => createAbstractMethod(g0, member, clazz, interface)
               case _ => Success(g0)
            }
        }
@@ -101,7 +103,16 @@ object JavaTransformationRules extends TransformationRules {
               case _ => Success(g0)
            }
        }
-    } yield {(interface, g3)}
+    } yield {
+      logInterfaceCreation(g3, interface)
+      (interface, g3)
+    }
+  }
+
+  def logInterfaceCreation(g : GraphT, itc : ConcreteNode) : Unit = {
+    g.logger.writeln(s"interface $itc created, contains : {")
+    g.logger.writeln(g.content(itc.id).map(showDG[NodeId](g).show).mkString("\n"))
+    g.logger.writeln("}")
   }
 
   override def createAbstraction(g : GraphT,
@@ -130,7 +141,7 @@ object JavaTransformationRules extends TransformationRules {
                                                 implId : NIdT,
                                                 absId : NIdT,
                                                 policy : AbstractionPolicy) : GraphT = {
-    val abstraction = g.getConcreteNode(absId)
+    val abstraction = g.getNode(absId)
     (abstraction.kind, policy) match {
       case (AbstractMethod, SupertypeAbstraction) =>
         val implContainer = g.container(implId).get
@@ -211,7 +222,10 @@ object JavaTransformationRules extends TransformationRules {
         val absm = g.getConcreteNode(absmId)
         absm.kind match {
           case AbstractMethod => findMergingCandidateIn(g, absm, g.getConcreteNode(interface2)).isDefined
-          case _ => throw new DGError("Interface should contain only abstract method !!")
+          case _ =>
+            g.logger.writeln("searching for merging candidate "+
+              s"interface ${showDG[NodeId](g).shows(interface1)} contains ${showDG[NodeId](g).shows(absmId)}\n")
+            true
         }
       }
 

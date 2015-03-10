@@ -35,6 +35,10 @@ object DependencyGraph {
   type Node2NodeMap = Map[NodeId, NodeId]
   val Node2NodeMap = Map
 
+  type Nodes2VnodeMap = Map[Seq[NodeId], NodeId]
+  val Nodes2VNodeMap = Map
+
+
   //type NodeT = (NodeId, String, NodeKind, TypeHolder, Mutability)
   type NodeT = DGNode
   type ConcreteNodeIndex = Map[NodeId, ConcreteNode]
@@ -65,6 +69,7 @@ class DependencyGraph
   private [this] val removedNodes : ConcreteNodeIndex,
   private [this] val vNodesIndex : VirtualNodeIndex,
   private [this] val vRemovedNodes : VirtualNodeIndex,
+  private [this] val nodes2vNodes : Nodes2VnodeMap,
   private [this] val usersMap : EdgeMap,
   private [this] val usesMap  : EdgeMap,
   private [this] val contentsMap  : EdgeMap,
@@ -90,6 +95,7 @@ class DependencyGraph
                nRemovedNodes : ConcreteNodeIndex = removedNodes,
                nVNodesIndex : VirtualNodeIndex = vNodesIndex,
                nVRemovedNodes : VirtualNodeIndex = vRemovedNodes,
+               nNodes2vNodes : Nodes2VnodeMap = nodes2vNodes,
                nUsersMap : EdgeMap = usersMap,
                nUsesMap  : EdgeMap = usesMap,
                nContentMap  : EdgeMap = contentsMap,
@@ -102,7 +108,7 @@ class DependencyGraph
                nConstraints : ConstraintsMaps = constraints,
                nRecording : transformations.Recording = recording) : DependencyGraph =
     new DependencyGraph(nLogger, nIdSeed,
-                        nNodesSet, nRemovedNodes, nVNodesIndex, nVRemovedNodes,
+                        nNodesSet, nRemovedNodes, nVNodesIndex, nVRemovedNodes, nNodes2vNodes,
                         nUsersMap, nUsesMap,
                         nContentMap, nContainerMap, nSuperTypesMap, nSubTypesMap,
                         nDominantUsesMap, nDominatedUsesMap,
@@ -148,13 +154,29 @@ class DependencyGraph
        nRemovedNodes = removedNodes - n.id,
        nRecording = recording.addConcreteNode(n))
 
-  def addConcreteNode(localName:String, kind: NodeKind, th : TypeHolder, mutable : Mutability = true, sid : Option[NodeId] = None) : (ConcreteNode, GraphT) = {
+  def addConcreteNode(localName:String, kind: NodeKind, th : TypeHolder,
+                      mutable : Mutability = true, sid : Option[NodeId] = None) : (ConcreteNode, GraphT) = {
     val (id, g) = sid match {
       case None => (idSeed + 1, newGraph(nIdSeed = idSeed + 1))
       case Some(i) => (i, this)
     }
     val n = ConcreteNode(id, localName, kind, th, mutable)
     (n, g.addConcreteNode(n))
+  }
+
+  private def addVirtualNode(n : VirtualNode) : DependencyGraph =
+    newGraph(nVNodesIndex = vNodesIndex + (n.id -> n),
+      nVRemovedNodes = vRemovedNodes - n.id,
+      nNodes2vNodes = nodes2vNodes + (n.potentialMatches -> n.id),
+      nRecording = recording.addVirtualNode(n))
+
+
+  def addVirtualNode(ns : Seq[NodeId], k : NodeKind) : (VirtualNode, GraphT) = {
+    nodes2vNodes get ns match {
+      case Some(vnid) => (vNodesIndex(vnid), this)
+      case None => val n = VirtualNode(idSeed + 1, ns, k)
+        (n, newGraph(nIdSeed = idSeed + 1).addVirtualNode(n))
+    }
   }
 
   def nodes : Iterable[DGNode] = nodesIndex.values ++ vNodesIndex.values
@@ -164,10 +186,9 @@ class DependencyGraph
     case (nid, name, kind, styp, mutable) => ConcreteNode(nid, name, kind, styp, mutable, Created)
   }*/
 
-  private def sortedMap : Seq[(NIdT,  NodeT)] = nodesIndex.toSeq sortBy(_._1)
 
-  def nodesId : Iterable[NodeId] = nodesIndex.keys
-  def numNodes : Int = nodesIndex.size
+  def nodesId : Iterable[NodeId] = nodesIndex.keys ++ vNodesIndex.keys
+  def numNodes : Int = nodesIndex.size + vNodesIndex.size
   
   /*def getNodeTuple(id : NIdT) = nodesIndex get id match {
     case Some((_, name, kind, styp, mutable)) => (id, name, kind, styp, mutable, Created)
@@ -192,20 +213,20 @@ class DependencyGraph
     nodesIndex get id map {(_, Created)} getOrElse{
       removedNodes get id map {(_, Removed)} getOrElse {
         val msg =
-          s"AccessGraph.getNode : no node has id ${id.toString}\n" +
-            s"nodes of graph : ${sortedMap.mkString("\n", "\n\t", "")}"
-        logger.writeln(msg)(PuckLog.Error)
-        throw new DGError(s"illegal node request : no node has id $id")
+          s"AccessGraph.getNode : no concrete node has id ${id.toString}\n" +
+            s"concrete nodes :${nodesIndex.toSeq.sortBy(_._1).map(_._2).mkString("\n\t", "\n\t", "\n")}" +
+            s"virtual nodes :${vNodesIndex.toSeq.sortBy(_._1).map(_._2).mkString("\n\t", "\n\t", "")}"
+        throw new DGError(msg)
       }
     }
 
 
-  def getNode(id : NIdT): DGNode = getConcreteNodeWithStatus(id)._1
-  def getConcreteNode(id : NIdT): ConcreteNode =
-    getConcreteNodeWithStatus(id)._1 match {
-      case cn : ConcreteNode => cn
-      case _ => throw new DGError("Concrete Node expected !")
-    }
+  def getNode(id : NIdT): DGNode = try {
+    getConcreteNodeWithStatus(id)._1
+  } catch {
+    case e : DGError => vNodesIndex(id)
+  }
+  def getConcreteNode(id : NIdT): ConcreteNode = getConcreteNodeWithStatus(id)._1
 
 
   def removeConcreteNode(id : NIdT) = {
@@ -409,7 +430,10 @@ class DependencyGraph
     containerId == contentId || {
       container(contentId) match {
         case None => false
-        case Some(id) => contains_*(containerId, id)
+        case Some(id) =>
+          //import ShowDG._
+          //logger.writeln(ShowDG.showDG[NodeId](this).show(id))(PuckLog.Debug)
+          contains_*(containerId, id)
       }
     }
 

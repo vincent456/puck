@@ -38,8 +38,7 @@ class DotPrinter
 ( writer: BufferedWriter,
   graph : DependencyGraph,
   helper : DotHelper,
-  printingOptions: PrintingOptions,
-  searchRoots : Boolean = false ){
+  printingOptions: PrintingOptions){
 
   import printingOptions._
 
@@ -85,9 +84,9 @@ class DotPrinter
     //println("print arc "+ source.nameTypeString + " -> " + target.nameTypeString)
     def dotId(nid: NIdT) : String = {
       val n = graph.getNode(nid)
-      if (helper isDotSubgraph n.kind) n.id.toString
+      if (helper isDotSubgraph n) n.id.toString
       else {
-        val containerId = if (helper isDotClass n.kind) n.id
+        val containerId = if (helper isDotClass n) n.id
         else graph.container(nid).get
         containerId + ":" + n.id
       }
@@ -95,7 +94,7 @@ class DotPrinter
 
     def subGraphArc(nid: NIdT, pos:String) = {
       val n = graph.getNode(nid)
-      if (helper isDotSubgraph n.kind) pos + "=cluster" + n.id + ", "
+      if (helper isDotSubgraph n) pos + "=cluster" + n.id + ", "
       else ""
     }
 
@@ -134,25 +133,31 @@ class DotPrinter
 
   }
 
+  def name( n : DGNode) : String = n match {
+    case cn : ConcreteNode => html_safe(cn.name)
+    case vn : VirtualNode => html_safe(vn.name(g))
+  }
+
   def decorate_name(n : DGNode):String = {
     val sCter = graph.container(n.id)
 
-    val name = html_safe(n.name)
-
     if (sCter.isDefined && violations.contains(DGEdge.contains(sCter.get, n.id)))
-      "<FONT COLOR=\"" + ColorThickness.violation.color + "\"><U>" + helper.namePrefix(n.kind) + name + idString(n.id) + "</U></FONT>"
-    else helper.namePrefix(n.kind) + name + idString(n.id)
+      "<FONT COLOR=\"" + ColorThickness.violation.color + "\"><U>" + helper.namePrefix(n) + name(n) + idString(n.id) + "</U></FONT>"
+    else helper.namePrefix(n) + name(n) + idString(n.id)
   }
   def printOrphanNode(nid : NodeId): Unit = {
     val n = graph.getNode(nid)
-    writeln(n.id + " [ label = \"" + n.kind + "  " + html_safe(n.name) + idString(n.id) + signatureString(n.styp)+"\" ]")
+    val s = n.mapConcrete(cn => signatureString(cn.styp), "")
+
+    writeln(s"""${n.id} [ label = "${n.kind} ${name(n)} ${idString(n.id)} $s" ]""")
+
   }
 
   def printNode(nid : NodeId): Unit = {
     if(visibility.isVisible(nid)) {
       val n = graph.getNode(nid)
-      if (helper isDotSubgraph n.kind) printSubGraph(n)
-      else if (helper isDotClass n.kind) printClass(n.id)
+      if (helper isDotSubgraph n) printSubGraph(n)
+      else if (helper isDotClass n) printClass(n.id)
       else printOrphanNode(nid)
     }
   }
@@ -177,7 +182,8 @@ class DotPrinter
     val n = graph.getNode(nid)
     def writeTableLine(nid: NodeId): Unit = {
       val n = graph.getNode(nid)
-      val sig = signatureString(n.styp)
+      val sig = n mapConcrete (cn => signatureString(cn.styp), "")
+
 
       writeln("<TR><TD PORT=\"" +n.id + "\" ALIGN=\"LEFT\" BORDER=\"0\">"+
         decorate_name(n) + sig + "</TD></TR>")
@@ -185,7 +191,7 @@ class DotPrinter
 
     val (fields, ctrs, mts, innerClasses) = helper splitDotClassContent (graph, n.id, visibility)
 
-    writeln(n.id + " [ label = <<TABLE BGCOLOR=\"" + helper.fillColor(n.kind)+
+    writeln(n.id + " [ label = <<TABLE BGCOLOR=\"" + helper.fillColor(n)+
       "\"> <TR> <TD PORT=\""+ n.id+"\" BORDER=\"0\"> <B>" +
       decorate_name(n) +" </B></TD></TR>")
 

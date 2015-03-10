@@ -23,7 +23,7 @@ class NodeInfosPanel(val graph : DependencyGraph,
 
   resizeWeight = 0.75
 
-  val node = graph.getNode(nodeId)
+  val node = graph.getConcreteNode(nodeId)
 
   def mkStringWithNames(nodes : Iterable[NodeId]): String ={
     nodes.map{ nid =>

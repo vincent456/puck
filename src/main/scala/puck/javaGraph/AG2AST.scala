@@ -20,7 +20,7 @@ class AG2AST(val program : AST.Program,
   try id2declMap(id)
   catch {
     case e : NoSuchElementException =>
-      val n = graph.getNode(id)
+      val n = graph.getConcreteNode(id)
       if(n.kind == Package)
         PackageDeclHolder
       else
@@ -33,17 +33,14 @@ class AG2AST(val program : AST.Program,
             reenactor: JavaDependencyGraph,
             id2declMap: Map[NodeId, ASTNodeLink],
             t: Transformation) : Map[NodeId, ASTNodeLink] = t match {
-    case Transformation(Add, TTNode(id, name, kind, styp, mutable)) =>
+    case Transformation(Add, TTCNode(n)) =>
       //redo t before createDecl
-      val n = resultGraph.getNode(id)
-      
-      val newMap = id2declMap get id match {
+      val newMap = id2declMap get n.id match {
         case Some(_) => id2declMap
         case None =>
-          val node = DGNode(id, name, kind, styp, mutable, puck.graph.Created)
-          val dh = ASTNodeLink.createDecl(program, resultGraph, id2declMap, node)
+          val dh = ASTNodeLink.createDecl(program, resultGraph, id2declMap, n)
 
-          id2declMap + (id -> dh)
+          id2declMap + (n.id -> dh)
       }
 
       newMap
@@ -81,7 +78,7 @@ class AG2AST(val program : AST.Program,
 
       // TODO see if can be performed in add node instead
       case Transformation(_, TTAbstraction(impl, abs, SupertypeAbstraction)) =>
-        (id2declMap get impl, reenactor.getNode(abs).kind) match {
+        (id2declMap get impl, reenactor.getConcreteNode(abs).kind) match {
           case (Some(ConcreteMethodDeclHolder(decl)), AbstractMethod) =>
             decl.setVisibility(AST.ASTNode.VIS_PUBLIC)
           case _ => ()
@@ -89,9 +86,9 @@ class AG2AST(val program : AST.Program,
 
       case Transformation(_, TTAbstraction(_, _, _)) => ()
 
-      case Transformation(Remove, TTNode(id, name, kind, styp, mutable)) =>
+      case Transformation(Remove, TTCNode(n)) =>
         //val
-        id2declMap get id map {
+        id2declMap get n.id map {
           case  dh: TypedKindDeclHolder => dh.decl.puckDelete()
           case _ => //println(s"$t not applied on program")
             logger.writeln("%s not applied on program".format(t))
@@ -107,7 +104,7 @@ class AG2AST(val program : AST.Program,
 
   def getPath(graph: DependencyGraph, typeDeclId : NodeId) = {
     val cpath = graph.containerPath(typeDeclId)
-    val names = cpath.tail.map(graph.getNode(_).name)
+    val names = cpath.tail.map(graph.getConcreteNode(_).name)
     program.getRootPath + names.mkString(java.io.File.separator) +".java"
   }
 
@@ -133,8 +130,8 @@ class AG2AST(val program : AST.Program,
 
 
 
-    val source = graph.getNode(e.source)
-    val target = graph.getNode(e.target)
+    val source = graph.getConcreteNode(e.source)
+    val target = graph.getConcreteNode(e.target)
 
     e.kind match {
 

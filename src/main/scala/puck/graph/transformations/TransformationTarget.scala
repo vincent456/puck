@@ -13,13 +13,18 @@ sealed trait TransformationTarget{
   def productPrefix : String
 }
 
-case class TTNode(n : ConcreteNode) extends TransformationTarget {
+case class TTCNode(n : ConcreteNode) extends TransformationTarget {
 
   def execute(g: GraphT, op : Operation) = op match {
     case Add => g.addConcreteNode(n)
     case Remove => g.removeConcreteNode(n.id)
   }
 }
+
+case class TTVNode(n : VirtualNode) extends TransformationTarget {
+  def execute(g: GraphT, op : Operation) = ???
+}
+
 case class TTEdge(edge : DGEdge)
   extends TransformationTarget {
 

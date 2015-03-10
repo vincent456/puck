@@ -20,8 +20,16 @@ object ShowDG {
 
   import Cord.stringToCord
 
+  def name(g : DependencyGraph, n : DGNode) : String = {
+    n match {
+      case cn : ConcreteNode => cn.name
+      case vn : VirtualNode =>
+        vn.name(g)
+    }
+  }
+
   implicit def typeCord : CordBuilder[Type[_]] = (dg, th) => th match {
-    case NamedType(nid) => dg.getNode(nid).name
+    case NamedType(nid) => name(dg, dg.getNode(nid))
     case Tuple(types) =>
       types.map(t => typeCord(dg,t.asInstanceOf[Type[_]]).toString).mkString("(", ", ", ")")
       //types.map(typeCord(dg,_)).fold
@@ -34,13 +42,21 @@ object ShowDG {
     case MethodTypeHolder(t) => Cord(" : ", typeCord(dg, t))
   }
 
-  implicit def nodeIdCord : CordBuilder[NodeId] = { (dg, nid) =>
-    val n = dg.getNode(nid)
-    Cord(s"${n.id} - ${n.kind} ${n.name}", typeHolderCord(dg, n.styp))
-  }
+  implicit def nodeIdCord : CordBuilder[NodeId] =
+    (dg, nid) => nodeCord(dg, dg.getNode(nid))
 
-  implicit def nodeCord : CordBuilder[DGNode] = (dg, n) => Cord(s"${n.id} - ${n.kind} ${n.name}" , typeHolderCord(dg, n.styp))
-  def nodeNameTypCord : CordBuilder[DGNode] = (dg, n) => Cord(n.name , typeHolderCord(dg, n.styp))
+  implicit def nodeCord : CordBuilder[DGNode] = (dg, n) =>
+    n match {
+      case n : ConcreteNode => Cord(s"${n.id} - ${n.kind} ${n.name}", typeHolderCord(dg, n.styp))
+      case vn : VirtualNode => Cord(s"${vn.id} - ${vn.name(dg)}")
+    }
+
+  def nodeNameTypCord : CordBuilder[DGNode] =
+    (dg, n) => n match {
+      case cn : ConcreteNode => Cord(cn.name , typeHolderCord(dg, cn.styp))
+      case _ => name(dg, n)
+    }
+
   implicit def edgeCord : CordBuilder[DGEdge] =  (dg, e) =>
     Cord(e.kind.toString, "( " + nodeIdCord(dg, e.source), ", ", nodeIdCord(dg, e.target), ")")
 
@@ -66,7 +82,7 @@ object ShowDG {
 
   implicit def transformationtCord : CordBuilder[Transformation] = (dg, tf) =>
     tf.target match {
-      case TTNode(_, _ ,_ ,_ ,_) | TTEdge(_) =>
+      case TTCNode(_) | TTEdge(_) =>
         Cord(tf.operation.productPrefix, "(", transfoTargetCord(dg, tf.target),")")
       case _ =>  transfoTargetCord(dg, tf.target)
     }

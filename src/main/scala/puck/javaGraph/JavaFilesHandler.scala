@@ -77,7 +77,7 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
     g
   }
 
-  val dotHelper = JavaNode
+  val dotHelper = JavaDotHelper
 
   /*def decisionMaker() = new JavaDefaultDecisionMaker(graph)
 

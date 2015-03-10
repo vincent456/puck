@@ -7,7 +7,7 @@ import puck.javaGraph.nodeKind._
 
 object ASTNodeLink{
 
-  type NodeT = DGNode
+  type NodeT = ConcreteNode
 
 
   def addTypeDeclToProgram(decl : AST.TypeDecl,
@@ -26,7 +26,7 @@ object ASTNodeLink{
                                   id2Decl : Map[NodeId, ASTNodeLink],
                                   node : NodeT) : ConstructorMethodDeclHolder = {
     val someKtor = graph.container(node.id).flatMap( graph.content(_).find{ n0 =>
-      val n1 = graph.getNode(n0)
+      val n1 = graph.getConcreteNode(n0)
       n1.kind == Constructor &&
         graph.abstractions(n0).exists {
           case (n2 , DelegationAbstraction) => n2 == node.id

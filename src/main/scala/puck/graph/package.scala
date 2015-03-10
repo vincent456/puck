@@ -17,7 +17,7 @@ package object graph {
 
   type JavaNodeKind = javaGraph.nodeKind.JavaNodeKind
   val JavaFilesHandler = javaGraph.JavaFilesHandler
-  val JavaNode = javaGraph.JavaNode
+  val JavaNode = javaGraph.JavaDotHelper
   val JavaSolver = javaGraph.JavaSolver
 
   type Recording = graph.transformations.Recording

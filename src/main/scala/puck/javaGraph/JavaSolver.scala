@@ -1,6 +1,6 @@
 package puck.javaGraph
 
-import puck.graph.{NodeKind, DependencyGraph}
+import puck.graph.{DGNode, NodeKind, DependencyGraph}
 import puck.graph.constraints.{AbstractionPolicy, DecisionMaker, Solver, SupertypeAbstraction}
 import puck.javaGraph.nodeKind._
 
@@ -28,14 +28,14 @@ class JavaSolver(val graph : DependencyGraph,
   val rules = JavaTransformationRules
 
   override def absIntroPredicate( graph : GraphT,
-                                  implId : NIdT,
+                                  impl : DGNode,
                                   absPolicy : AbstractionPolicy,
                                   absKind : NodeKind) : PredicateT = {
-    (graph.getNode(implId).kind, absPolicy) match {
+    (impl.kind, absPolicy) match {
       case (Method, SupertypeAbstraction)
            | (AbstractMethod, SupertypeAbstraction) =>
-        (graph, potentialHost) => !graph.interloperOf(graph.container(implId).get, potentialHost)
-      case _ => super.absIntroPredicate(graph, implId, absPolicy, absKind)
+        (graph, potentialHost) => !graph.interloperOf(graph.container(impl.id).get, potentialHost.id)
+      case _ => super.absIntroPredicate(graph, impl, absPolicy, absKind)
     }
   }
 }

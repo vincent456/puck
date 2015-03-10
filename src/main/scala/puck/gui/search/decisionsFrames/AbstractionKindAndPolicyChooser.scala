@@ -1,3 +1,4 @@
+/*
 package puck.gui.search.decisionsFrames
 
 import puck.graph.{NodeKind, DGNode}
@@ -77,3 +78,4 @@ class AbstractionKindAndPolicyChooser private (val impl : DGNode)
     }
   }
 }
+*/

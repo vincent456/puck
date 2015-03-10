@@ -89,7 +89,7 @@ class MethodType(i: MethodType.InputType,
   def createASTParamList(graph : DependencyGraph,
                          id2Decl : Map[NodeId, ASTNodeLink]) : Seq[AST.ParameterDeclaration] = {
     input.types.map { ty =>
-      val node = graph.getNode(ty.id)
+      val node = graph.getConcreteNode(ty.id)
       id2Decl(ty.id) match {
         case tk : TypedKindDeclHolder =>
 

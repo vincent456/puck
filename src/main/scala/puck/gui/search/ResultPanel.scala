@@ -29,14 +29,21 @@ class ResultPanel
 
   logger.write("comparing final states : ")
 
-  val sortedRes: Map[Int, Seq[ST]] =
+  val allStates = res.initialState.iterator.foldLeft(Map[Int, Seq[SearchState[ResultT]]]()){
+    (m, state) => val seq = m.getOrElse(state.depth, Seq())
+      m + (state.depth -> (state +: seq))
+  }
+
+
+  /*val sortedRes: Map[Int, Seq[ST]] =
     puck.util.Time.time(logger, defaultVerbosity){
-      //evaluator.filterDifferentStates(evaluator.sort(res.initialState.iterator.toSeq))
       evaluator.filterDifferentStates(evaluator.sort(res.finalStates))
     }
-  //val sortedRes  =  CSSearchStateComboBox.sort(res.finalStates)
-
   val total = sortedRes.foldLeft(0) { case (acc, (_, l)) => acc + l.size}
+*/
+
+  val sortedRes = Map(-1 -> res.finalStates)
+  val total = res.finalStates.size
 
   logger.writeln("%d states explored".format(res.exploredStates))
   logger.writeln("%d final states".format(res.finalStates.size))
@@ -50,6 +57,12 @@ class ResultPanel
 
   if(sortedRes.nonEmpty) {
     //val comp : Component = new StateComparator(initialRecord, sortedRes, printId, printSig, visibility)
+    val comp0 : Component = new StateSelector(allStates, printId, printSig, visibility)
+    contents += comp0
+
+    this listenTo comp0
+
+
     val comp : Component = new StateSelector(sortedRes, printId, printSig, visibility)
     contents += comp
 

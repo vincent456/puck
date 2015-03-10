@@ -6,11 +6,12 @@ package puck.graph
 
 sealed trait DGNode{
   val id : NodeId
-  val name : String
-  //val kind : NodeKind
+  //val name : String
+  val kind : NodeKind
   //val styp : TypeHolder
   val isMutable : Boolean
 
+  def mapConcrete[A](f : ConcreteNode => A, default : => A) : A
 }
 
 object DGNode {
@@ -19,20 +20,25 @@ object DGNode {
             kind : NodeKind,
             styp : TypeHolder,
             isMutable : Boolean) : DGNode = ConcreteNode(id, name, kind, styp, isMutable)
+
+
 }
 
 case class VirtualNode
 (id : NodeId,
- name : String,
- /*kind : NodeKind,
- styp : TypeHolder,*/
- potentialMatches : Set[ConcreteNode]) extends DGNode {
+ potentialMatches : Seq[NodeId],
+  kind : NodeKind) extends DGNode {
   override val isMutable = true
 
-  def kinds : Set[NodeKind]=
+  def mapConcrete[A](f : ConcreteNode => A, default : => A) : A = default
+
+  def name(g : DependencyGraph) : String =
+    potentialMatches map { g.getConcreteNode(_).name } mkString ("Virtual(", " \\/ ", ")")
+
+  /*def kinds : Set[NodeKind]=
     potentialMatches.foldLeft(Set[NodeKind]()){(s,n) =>
       s + n.kind
-    }
+    }*/
 }
 
 case class ConcreteNode
@@ -42,8 +48,9 @@ case class ConcreteNode
   styp : TypeHolder,
   isMutable : Boolean)  extends DGNode {
 
-  override def toString = id + " - " + kind +" " + name
+  override def toString = s"ConcreteNode($id - $kind $name)"
 
+  def mapConcrete[A](f : ConcreteNode => A, default : => A) : A = f(this)
 
   /*def distance(other : AGNode[Kind]) = {
     if(this == other) 0

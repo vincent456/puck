@@ -2,12 +2,11 @@ package puck.gui.explorer
 
 import javax.swing.tree.DefaultMutableTreeNode
 
-import puck.graph.NodeId
+import puck.graph.{NodeKind, NodeId, DependencyGraph}
 import puck.graph.io.{Visible, Hidden, Visibility, VisibilitySet}
 
 import scala.swing.CheckBox
-import puck.graph.DependencyGraph
-import puck.javaGraph.nodeKind.Package
+import puck.javaGraph.nodeKind.{Package, Class}
 
 /**
  * Created by lorilan on 10/07/14.
@@ -54,18 +53,21 @@ class PuckTreeNode(val nodeId : NodeId,
  }
 
 
- def packageOnlyVisible(graph : DependencyGraph): Unit = {
-   val visibility = graph.getNode(nodeId).kind match {
-     case Package => Visible
-     case _ => Hidden
-   }
+  def kindVisible(graph : DependencyGraph, ks : Seq[NodeKind]): Unit = {
+    val visibility =
+      if(ks.contains(graph.getConcreteNode(nodeId).kind)) Visible
+      else Hidden
 
-   setVisible(visibility, propagate = false)
+    setVisible(visibility, propagate = false)
 
-   for(i <- 0 until this.getChildCount){
-     this.getChildAt(i).asInstanceOf[PuckTreeNode].packageOnlyVisible(graph)
-   }
- }
+    for(i <- 0 until this.getChildCount){
+      this.getChildAt(i).asInstanceOf[PuckTreeNode].kindVisible(graph, ks)
+    }
+  }
+
+/* def packageOnlyVisible(graph : DependencyGraph): Unit =
+   kindVisible(graph, Seq(Package))*/
+
 
  def toggleFilter() : Unit = {
    setVisible(hiddens.visibility(nodeId).opposite, propagate = true)

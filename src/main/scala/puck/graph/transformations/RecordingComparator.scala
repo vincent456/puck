@@ -54,7 +54,7 @@ class RecordingComparator
                  nodesToMap : NodesToMap)
                 (k : Kargs => Unit) : Unit = {
 
-    map.getOrElse(node, (graph1.getNode(node).kind, Some(node))) match {
+    map.getOrElse(node, (graph1.getConcreteNode(node).kind, Some(node))) match {
       case (_, Some(n)) =>
         newCurrentState(map, new StackSaver(k, n, nodesToMap))
 
@@ -156,7 +156,8 @@ class RecordingComparator
         // removed in NodeMappingInitialState.normalizeNodeTransfos
         case TTTypeRedirection(_, _, _, _) // TODO see if need to be compared
              | TTAbstraction(_, _, _)
-             | TTNode(_, _, _, _, _) => throw new Error("should not happen !!")
+             | TTVNode(_)
+             | TTCNode(_) => throw new Error("should not happen !!")
 
       }
     }

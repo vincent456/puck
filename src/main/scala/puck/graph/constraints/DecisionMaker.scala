@@ -12,7 +12,7 @@ case class NoAbstractionKindFound(implKind : NodeKind) extends Throwable
 trait DecisionMaker{
   type NIdT = NodeId
   type GraphT = DependencyGraph
-  type PredicateT = (GraphT, NIdT) => Boolean
+  type PredicateT = (GraphT, ConcreteNode) => Boolean
   type ResT = ResultT
 
   def violationTarget(graph : GraphT)
@@ -22,7 +22,7 @@ trait DecisionMaker{
                               (k : Option[(NodeKind, AbstractionPolicy)] => Unit) : Unit
 
   def chooseNode(graph : GraphT, predicate : PredicateT)
-                (k : Option[NIdT] => Unit) : Unit
+                (k : GraphT => Option[NIdT] => Unit) : Unit
 
 /*  def modifyConstraints(graph : GraphT,
                         sources : NodeSet[Kind],

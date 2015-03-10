@@ -34,7 +34,7 @@ object FilesHandler{
   def makeDot(graph : DependencyGraph, dotHelper: DotHelper,
               printingOptions: PrintingOptions,
               writer : OutputStreamWriter) : Unit = {
-    val printer = new DotPrinter(new BufferedWriter(writer), graph, dotHelper, printingOptions, searchRoots = false)
+    val printer = new DotPrinter(new BufferedWriter(writer), graph, dotHelper, printingOptions)
     printer()
   }
 
@@ -119,9 +119,11 @@ abstract class FilesHandler(workingDirectory : File){
 /*    case (PuckLog.Search,_) | (PuckLog.Solver, _) => true
     case (PuckLog.InGraph,_) | (PuckLog.InJavaGraph, _ ) => true
     case (PuckLog.GraphTransfoRules, _) => true*/
-    case (PuckLog.NoSpecialContext, _) => true
+    /*case (PuckLog.NoSpecialContext, _)
+         | (PuckLog.Solver, PuckLog.Debug)
+         | (PuckLog.InGraph, PuckLog.Debug) => true*/
     /*case (PuckLog.GraphComparisonSearch, _) => true*/
-    case _ => false
+    case _ => true
   }
 
   def logger : PuckLogger = logger0

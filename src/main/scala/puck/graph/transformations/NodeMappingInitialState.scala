@@ -33,10 +33,10 @@ object NodeMappingInitialState{
   def normalizeNodeTransfos(l : Seq[Transformation],
                             init : Seq[Transformation] = Seq()) : (Map[NodeId, (Int, NodeKind)], Seq[Transformation])= {
     val (map, rl) = l.foldLeft( (Map[NodeId, (Int, NodeKind)](), init) ){
-      case ((m,l1), Transformation(Add, TTNode(n))) =>
+      case ((m,l1), Transformation(Add, TTCNode(n))) =>
         val (i, _) = m.getOrElse(n.id, (0, JavaRoot) )
         (m + (n.id -> ((i + 1, n.kind))), l1)
-      case ((m,l1), Transformation(Remove, TTNode(n))) =>
+      case ((m,l1), Transformation(Remove, TTCNode(n))) =>
         val (i, _) = m.getOrElse(n.id, (0, JavaRoot))
         (m + (n.id -> ((i - 1, n.kind))), l1)
 

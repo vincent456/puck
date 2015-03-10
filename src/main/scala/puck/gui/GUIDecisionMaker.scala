@@ -1,3 +1,4 @@
+/*
 package puck.gui
 
 import puck.graph.NodeKind
@@ -43,3 +44,4 @@ class GUIDecisionMaker(val filesHandler : FilesHandler)
   def abstractionKindAndPolicy(impl : NodeType) =
     AbstractionKindAndPolicyChooser(impl)*/
 }
+*/

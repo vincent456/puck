@@ -5,9 +5,11 @@ import java.io.File
 
 import puck.graph.DependencyGraph
 import puck.graph.io.{FilesHandler, Hidden, VisibilitySet}
-import puck.gui.explorer.{PackageOnlyVisible, NodeInfosPanel, PuckTreeNodeClicked, GraphExplorer}
+import puck.gui.explorer.{SetVisible, NodeInfosPanel, PuckTreeNodeClicked, GraphExplorer}
 import puck.gui.search.ResultPanel
 import puck.util.PuckLog
+
+import puck.javaGraph.nodeKind.{Package, Class}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.swing._
@@ -151,12 +153,22 @@ class PuckInterfacePanel (filesHandler : FilesHandler) extends SplitPane(Orienta
     addDelayedComponent(showConstraints)
 
     addDelayedComponent(new BoxPanel(Orientation.Horizontal){
-      contents+= new Button() {
-        tooltip = "Make packages only visible"
-        action = new Action("Package Visibility") {
-          def apply() : Unit = { control.publish(PackageOnlyVisible()) }
+      contents += new BoxPanel(Orientation.Vertical){
+        contents+= new Button() {
+          tooltip = "Make packages only visible"
+          action = new Action("Package Visibility") {
+            def apply() : Unit = { control.publish(SetVisible(Seq(Package))) }
+          }
+        }
+
+        contents+= new Button() {
+          tooltip = "Make only packages classes visible"
+          action = new Action("Package+Class Visibility") {
+            def apply() : Unit = { control.publish(SetVisible(Seq(Package, Class))) }
+          }
         }
       }
+
 
       contents+= new BoxPanel(Orientation.Vertical){
         contents += printIdsBox

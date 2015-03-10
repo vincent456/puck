@@ -59,8 +59,8 @@ object Metrics {
     }
   }
 
-  private def connection(node : DGNode, f : DGNode => Boolean, graph : DependencyGraph) = {
-    graph.nodes.foldLeft(Set[NodeId]()){ (acc, n) =>
+  private def connection(node : ConcreteNode, f : DGNode => Boolean, graph : DependencyGraph) = {
+    graph.concreteNodes.foldLeft(Set[NodeId]()){ (acc, n) =>
       if(n.id == node.id || n.kind != node.kind) acc
       else if(f(n)) acc + n.id
       else acc
@@ -68,10 +68,10 @@ object Metrics {
   }
 
   def providers(id :NodeId, graph : DependencyGraph) : Set[NodeId] =
-    connection(graph.getNode(id), n => provides(n.id, id, graph), graph)
+    connection(graph.getConcreteNode(id), n => provides(n.id, id, graph), graph)
 
   def clients(id :NodeId, graph : DependencyGraph) : Set[NodeId] =
-    connection(graph.getNode(id), n => provides(id, n.id, graph), graph)
+    connection(graph.getConcreteNode(id), n => provides(id, n.id, graph), graph)
 
 
   def cohesion(root : NodeId, graph : DependencyGraph) : Double = {

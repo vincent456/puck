@@ -1,6 +1,6 @@
 package puck.graph.constraints.search
 
-import puck.graph.{ConcreteNode, ResultT, NodeKind}
+import puck.graph.{DGNode, ConcreteNode, ResultT, NodeKind}
 import puck.graph.constraints.{AbstractionPolicy, DecisionMaker}
 import puck.search.SearchEngine
 import puck.util.PuckLogger
@@ -117,14 +117,35 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker
 
   }
 
+
+  def partition(graph : GraphT) : (List[DGNode], List[List[DGNode]]) => List[List[DGNode]] = {
+    case (Seq(), acc) => acc
+    case (hd :: tl, acc) =>
+      val (same, diff) = tl.partition(n => n.kind == hd.kind)
+      partition(graph)(diff, (hd :: same) +: acc)
+  }
+
+
   def chooseNode(graph : GraphT, predicate : PredicateT)
-                (k : Option[NIdT] => Unit) : Unit = {
-    val choices = graph.nodesId.filter(predicate(graph,_)).toSeq
-    if(choices.nonEmpty)
-      newCurrentState((graph, graph.recording),
-        ConstraintSolvingNodesChoice.includeNoneChoice(k, choices))
-    else
-      k(None)
+                (k : GraphT => Option[NIdT] => Unit) : Unit = {
+    val choices = graph.concreteNodes.filter(predicate(graph,_)).toList
+
+
+    choices match {
+      case List() => k(graph)(None)
+      case List(n) => k(graph)(Some(n.id))
+      case s =>
+        val l = partition(graph)(s, List())
+
+        val (g, cs) = l.foldLeft( (graph, Seq[NIdT]()) ){case ((g, s0), ns) =>
+            val (vn, g2) = g.addVirtualNode(ns.map(_.id).toSeq,  ns.head.kind)
+          (g2, vn.id +: s0)
+        }
+
+        newCurrentState((g, g.recording),
+          ConstraintSolvingNodesChoice.includeNoneChoice(k(g), cs))
+
+    }
   }
 
 /*  def modifyConstraints(sources : NodeSet[Kind], target : NodeType){}*/

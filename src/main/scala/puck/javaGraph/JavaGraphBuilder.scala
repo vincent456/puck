@@ -13,13 +13,13 @@ import scala.collection.JavaConversions.collectionAsScalaIterable
  */
 class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 
-   var idSeed = rootId + 1
+   var idSeed = rootId
 
    val root = ConcreteNode(rootId, rootName, JavaRoot, NoType, true)
 
    g = new JavaDependencyGraph(PuckNoopLogger, idSeed,
    ConcreteNodeIndex() + (rootId -> root), ConcreteNodeIndex(),
-     VirtualNodeINdex(), VirtualNodeINdex(),
+     VirtualNodeINdex(), VirtualNodeINdex(), Nodes2VNodeMap(),
     EdgeMap(), EdgeMap(), EdgeMap(),
     Node2NodeMap(), EdgeMap(), EdgeMap(),
     UseDependencyMap(), UseDependencyMap(),

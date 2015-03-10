@@ -34,10 +34,14 @@ class Recording
     Transformation(Remove, TTNode(id, name, kind, styp, mutable)) +: this*/
 
   def addConcreteNode(n : ConcreteNode) : RecT =
-    Transformation(Add, TTNode(n)) +: this
+    Transformation(Add, TTCNode(n)) +: this
+
+  def addVirtualNode(n : VirtualNode) : RecT =
+    Transformation(Add, TTVNode(n)) +: this
+
 
   def removeConcreteNode(n : ConcreteNode) : RecT =
-    Transformation(Remove, TTNode(n)) +: this
+    Transformation(Remove, TTCNode(n)) +: this
 
   def addEdge(edge : EdgeT) : RecT =
     Transformation(Add, TTEdge(edge)) +: this
