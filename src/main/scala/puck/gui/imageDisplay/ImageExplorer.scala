@@ -6,7 +6,7 @@ import javax.imageio.ImageIO
 import javax.swing.ImageIcon
 
 import puck.graph._
-import puck.graph.io.VisibilitySet
+import puck.graph.io.{Png, PrintingOptions, VisibilitySet}
 import puck.gui.PuckMainPanel
 import puck.search.SearchState
 import puck.util.PuckLog
@@ -56,12 +56,9 @@ class ImageExplorer(val filesHandler : FilesHandler,
         filesHandler.logger.writeln("printing image failure")((PuckLog.NoSpecialContext, PuckLog.Error))
     }
 
-    filesHandler.makePng(graphOfResult(state.result),
-      visibility,
-      printId,
-      printSignature,
-      None,
-      sOutput = Some(pipedOutput)){x =>()}
+    val opts = PrintingOptions(visibility, printId, printSignature)
+
+    filesHandler.makeImage(graphOfResult(state.result), opts, Some(pipedOutput), Png){x =>()}
 
   }
   setImage()

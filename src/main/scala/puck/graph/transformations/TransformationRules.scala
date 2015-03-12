@@ -198,9 +198,7 @@ trait TransformationRules {
                   g.logger.writeln(n + " found as primary usee")
                   n
                 case None =>
-                  val msg = "no correct primary abstraction found !"
-                  g.logger.writeln(msg)(PuckLog.Error)
-                  throw new RedirectionError(msg)
+                  throw new RedirectionError("no correct primary abstraction found !")
               }
           }
       }

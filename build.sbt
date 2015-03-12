@@ -42,6 +42,12 @@ libraryDependencies ++= Seq(
 	"org.scalaz" %% "scalaz-core" % "7.1.0",
   "org.scalatest" % "scalatest_2.11" % "2.2.1")
 
+
+libraryDependencies ++= Seq(
+  "org.apache.xmlgraphics" % "batik-util" % "1.7",
+  "org.apache.xmlgraphics" % "batik-svg-dom" % "1.7",
+  "org.apache.xmlgraphics" % "batik-swing" % "1.7")
+
 //libraryDependencies += "org.scala-lang" % "scala-library-all" % "2.11.4" //before the modularize them
 
 //(libraryDependencies in Test) += "org.scalatest" % "scalatest_2.11" % "2.2.1"

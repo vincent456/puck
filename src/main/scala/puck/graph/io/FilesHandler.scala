@@ -38,13 +38,12 @@ object FilesHandler{
     printer()
   }
 
-  def makeImageFile(graphvizDot : Option[File],
-              graph : DependencyGraph, dotHelper: DotHelper,
-              printingOptions: PrintingOptions,
-              pathWithoutSuffix : String,
-              sOutput : Option[OutputStream] = None,
-              outputFormat : DotOutputFormat = Png)
-             (finish : Try[Int] => Unit = {case _ => ()}) : Unit = {
+  def makeImage(graphvizDot : Option[File], dotHelper: DotHelper, pathWithoutSuffix : String)
+                   (graph : DependencyGraph,
+                    printingOptions: PrintingOptions,
+                    sOutput : Option[OutputStream] = None,
+                    outputFormat : DotOutputFormat = Png)
+                   (finish : Try[Int] => Unit = {case _ => ()}) : Unit = {
 
     //TODO fix bug when chaining the two function with a pipe
     // and calling it in "do everything"
@@ -313,27 +312,11 @@ abstract class FilesHandler(workingDirectory : File){
       val graph = graphOfResult(s.result)
       val f = new File("%s%c%s.png".format(dir.getAbsolutePath, File.separatorChar, printer(s)))
       val options = PrintingOptions(visibility, printId, printSignature, None)
-      makePng(graph, options, sOutput = Some(new FileOutputStream(f)))()
+      makeImage(graph, options, Some(new FileOutputStream(f)), Png){_ => ()}
     }
   }
 
-  def makePng(graph : DependencyGraph,
-      printingOptions: PrintingOptions,
-      sOutput : Option[OutputStream] = None,
-      outputFormat : DotOutputFormat = Png)
-      (finish : Try[Int] => Unit = {case _ => ()}) =
-    FilesHandler.makeImageFile(graphvizDot,
-      graph, dotHelper, printingOptions, graphFilePath, sOutput, outputFormat)(finish)
-
-  def makePng(graph : DependencyGraph,
-              visibility: VisibilitySet,
-              printId : Boolean,
-              printSignature : Boolean,
-              someUse : Option[DGEdge],
-              sOutput : Option[OutputStream])
-             (finish : Try[Int] => Unit) =
-    FilesHandler.makeImageFile(graphvizDot,
-      graph, dotHelper, PrintingOptions(visibility, printId, printSignature, someUse), graphFilePath, sOutput, Png)(finish)
+  def makeImage = FilesHandler.makeImage(graphvizDot, dotHelper, graphFilePath) _
 
   def printCode() : Unit
 

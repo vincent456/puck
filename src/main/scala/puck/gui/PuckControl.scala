@@ -3,17 +3,15 @@ package puck.gui
 import java.io.{File, PipedInputStream, PipedOutputStream}
 
 import AST.LoadingListener
-import puck.graph.io.{VisibilitySet, ConstraintSolvingSearchEngineBuilder}
-import puck.gui.explorer.AccessGraphModified
-import puck.gui.imageDisplay.{ImageFrame, ImageExplorer}
-import puck.search.{SearchState, Search}
+import puck.graph.FilesHandler
 
-/*
-import puck.graph.mutable.backTrack.Recording
-import puck.graph.mutable.constraints.DecisionMaker
-*/
 import puck.graph._
+import puck.graph.io._
+import puck.gui.explorer.AccessGraphModified
+import puck.gui.imageDisplay.{SVGFrame, ImageFrame, ImageExplorer}
+import puck.search.{SearchState, Search}
 import puck.util.PuckLog
+
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -36,7 +34,8 @@ case class GraphDisplayRequest
  printId : Boolean,
  printSignature : Boolean,
  visibility : VisibilitySet,
- sUse : Option[DGEdge] = None)
+ sUse : Option[DGEdge] = None,
+ format : DotOutputFormat = Svg)
  extends ControlRequest
 
 case class ConstraintDisplayRequest(graph : DependencyGraph) extends ControlRequest
@@ -111,26 +110,33 @@ class PuckControl(val filesHandler : FilesHandler,
 
   def displayGraph(title : String,
                    graph : GraphT,
-                   someUse : Option[DGEdge],
-                   printId : Boolean,
-                   printSignature : Boolean,
-                   visibility : VisibilitySet) : Unit = {
+                   opts : PrintingOptions) : DotOutputFormat => Unit = {
+    case Png =>
+      logger.writeln("Printing graph ...")
 
-    logger.writeln("Printing graph ...")
+      val pipedOutput = new PipedOutputStream()
+      val pipedInput = new PipedInputStream(pipedOutput)
 
-    val pipedOutput = new PipedOutputStream()
-    val pipedInput = new PipedInputStream(pipedOutput)
+      Future {
+        val imgframe = ImageFrame(pipedInput)
+        imgframe.title = title
+      }
 
-    Future {
-      val imgframe = ImageFrame(pipedInput)
-      imgframe.title = title
-    }
+      filesHandler.makeImage(graph, opts, Some(pipedOutput), Png){
+        case Success(i) if i == 0 => logger.writeln("success")
+        case _ => logger.writeln("fail")
+      }
 
-    filesHandler.makePng(graph, visibility, printId, printSignature,
-                         someUse, sOutput = Some(pipedOutput)){
-      case Success(i) if i == 0 => logger.writeln("success")
-      case _ => logger.writeln("fail")
-    }
+    case Svg =>
+      filesHandler.makeImage(graph, opts, None, Png){
+        case Success(i) if i == 0 => logger.writeln("success")
+        case _ => logger.writeln("fail")
+      }
+      Future {
+        val imgframe = new SVGFrame("file://"+filesHandler.graphFile(".svg").getAbsolutePath)
+        imgframe.title = title
+      }
+      ()
   }
 
   def applyOnCode(record : ResultT) : Unit = {
@@ -172,8 +178,9 @@ class PuckControl(val filesHandler : FilesHandler,
 
     case LoadConstraintRequest() => loadConstraints()
 
-    case GraphDisplayRequest(title, graph, printId, printSignature, visibility, sUse) =>
-      displayGraph(title, graph, sUse, printId, printSignature, visibility)
+    case GraphDisplayRequest(title, graph, printId, printSignature, visibility, sUse, format) =>
+      displayGraph(title, graph,
+        PrintingOptions(visibility, printId, printSignature, sUse))(format)
 
     case ConstraintDisplayRequest(graph) =>
       graph.printConstraints(filesHandler.logger, defaultVerbosity)
