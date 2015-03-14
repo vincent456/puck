@@ -110,33 +110,31 @@ class PuckControl(val filesHandler : FilesHandler,
 
   def displayGraph(title : String,
                    graph : GraphT,
-                   opts : PrintingOptions) : DotOutputFormat => Unit = {
-    case Png =>
-      logger.writeln("Printing graph ...")
+                   opts : PrintingOptions) : DotOutputFormat => Unit = { format =>
+    logger.writeln("Printing graph ...")
 
-      val pipedOutput = new PipedOutputStream()
-      val pipedInput = new PipedInputStream(pipedOutput)
+    val pipedOutput = new PipedOutputStream()
+    val pipedInput = new PipedInputStream(pipedOutput)
 
-      Future {
-        val imgframe = ImageFrame(pipedInput)
-        imgframe.title = title
-      }
 
-      filesHandler.makeImage(graph, opts, Some(pipedOutput), Png){
-        case Success(i) if i == 0 => logger.writeln("success")
-        case _ => logger.writeln("fail")
-      }
+    format match {
+      case Png =>
+        Future {
+          val imgframe = ImageFrame(pipedInput)
+          imgframe.title = title
+        }
 
-    case Svg =>
-      filesHandler.makeImage(graph, opts, None, Png){
-        case Success(i) if i == 0 => logger.writeln("success")
-        case _ => logger.writeln("fail")
-      }
-      Future {
-        val imgframe = new SVGFrame("file://"+filesHandler.graphFile(".svg").getAbsolutePath)
-        imgframe.title = title
-      }
-      ()
+      case Svg =>
+        Future {
+          val imgframe = new SVGFrame(pipedInput)
+          imgframe.setTitle(title)
+        }
+     }
+
+    filesHandler.makeImage(graph, opts, Some(pipedOutput), format) {
+      case Success(i) if i == 0 => logger.writeln("success")
+      case _ => logger.writeln("fail")
+    }
   }
 
   def applyOnCode(record : ResultT) : Unit = {
