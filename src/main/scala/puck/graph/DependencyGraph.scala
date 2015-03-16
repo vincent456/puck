@@ -181,7 +181,7 @@ class DependencyGraph
 
   def nodes : Iterable[DGNode] = nodesIndex.values ++ vNodesIndex.values
   def concreteNodes : Iterable[ConcreteNode] = nodesIndex.values
-
+  def virtualNodes : Iterable[VirtualNode] = vNodesIndex.values
   /*map {
     case (nid, name, kind, styp, mutable) => ConcreteNode(nid, name, kind, styp, mutable, Created)
   }*/
@@ -246,6 +246,15 @@ class DependencyGraph
     }*/
   }
 
+  def removeVirtualNode(id : NIdT) = {
+    val n = vNodesIndex(id)
+    if(n.id != id)
+      throw new DGError("incoherent index left and right id are different")
+    newGraph(nVNodesIndex = vNodesIndex + (n.id -> n),
+      nVRemovedNodes = vRemovedNodes - n.id,
+      nNodes2vNodes = nodes2vNodes + (n.potentialMatches -> n.id),
+      nRecording = recording.addVirtualNode(n))
+  }
 
 
   private def setNode(n : DGNode, s : NodeStatus) : GraphT = (n, s) match {
@@ -418,7 +427,7 @@ class DependencyGraph
 
 
 
-  def content(containerId: NIdT) : Iterable[NIdT] = contentsMap.getFlat(containerId)
+  def content(containerId: NIdT) : Set[NIdT] = contentsMap.getFlat(containerId)
 
   def contains(containerId : NIdT, contentId : NIdT) : Boolean =
     container(contentId) match {
@@ -437,7 +446,7 @@ class DependencyGraph
       }
     }
 
-  def canContain(n : ConcreteNode, other : ConcreteNode): Boolean = {
+  def canContain(n : DGNode, other : ConcreteNode): Boolean = {
     !contains_*(other.id, n.id) && // no cycle !
       (n.kind canContain other.kind) &&
       n.isMutable

@@ -30,6 +30,8 @@ case class VirtualNode
   kind : NodeKind) extends DGNode {
   override val isMutable = true
 
+  //def name : String =  potentialMatches mkString ("Virtual(", " \\/ ", ")")
+
   def mapConcrete[A](f : ConcreteNode => A, default : => A) : A = default
 
   def name(g : DependencyGraph) : String =

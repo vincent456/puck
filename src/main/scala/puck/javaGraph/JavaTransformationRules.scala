@@ -28,12 +28,7 @@ object JavaTransformationRules extends TransformationRules {
       }
   }
 
-  //TODO see if it can be rewritten using scalaz !
-  def traverse[A, B, E](a: Iterable[A], b: B)(f: (B, A) => Validation[E, B]): Validation[E,B] =
-    a.foldLeft[Validation[E,B]](Success(b)){case (b0, a0) =>
-      if(b0.isSuccess) b0 flatMap (f(_, a0))
-      else b0
-    }
+
 
   def insertInTypeHierarchy(g : GraphT, classId : NIdT, interfaceId : NIdT) : GraphT =
     g.directSuperTypes(classId).foldLeft(g){ (g0, superType) =>

@@ -7,30 +7,32 @@ object Metrics {
 
 
   def outgoingDependencies(root : NodeId, graph : DependencyGraph) : Set[DGEdge] ={
-    def outgoingDependencies(root : NodeId, id : NodeId, acc0 : Set[DGEdge]) : Set[DGEdge]= {
+
+    def aux(id : NodeId, acc0 : Set[DGEdge]) : Set[DGEdge]= {
       val acc1 = graph.usedBy(id).foldLeft(acc0){
         (acc, usee) =>
           if(graph.contains_*(root,usee)) acc
           else acc + DGEdge.uses(id, usee)
       }
-      graph.content(id).foldLeft(acc1){(acc, child) => outgoingDependencies(root, child, acc)}
+      graph.content(id).foldLeft(acc1){(acc, child) => aux(child, acc)}
     }
 
-    outgoingDependencies(root, root, Set[DGEdge]())
+    aux(root, Set[DGEdge]())
   }
 
 
+
   def incomingDependencies(root : NodeId, graph : DependencyGraph) : Set[DGEdge] = {
-    def aux(root : NodeId, id: NodeId, acc0 : Set[DGEdge]) : Set[DGEdge]= {
+    def aux(id: NodeId, acc0 : Set[DGEdge]) : Set[DGEdge]= {
       val acc1 = graph.users(id).foldLeft(acc0){
         (acc, user) =>
           if(graph.contains_*(root, user)) acc
           else acc + DGEdge.uses(user, id)
       }
-      graph.content(id).foldLeft(acc1){(acc, child) => aux(root, child, acc)}
+      graph.content(id).foldLeft(acc1){(acc, child) => aux(child, acc)}
     }
 
-    aux(root, root,  Set[DGEdge]())
+    aux(root,  Set[DGEdge]())
   }
 
 
@@ -59,20 +61,29 @@ object Metrics {
     }
   }
 
-  private def connection(node : ConcreteNode, f : DGNode => Boolean, graph : DependencyGraph) = {
-    graph.concreteNodes.foldLeft(Set[NodeId]()){ (acc, n) =>
+  private def connection(node : DGNode, p : DGNode => Boolean, graph : DependencyGraph) = {
+    graph.nodes.foldLeft(Set[NodeId]()){ (acc, n) =>
       if(n.id == node.id || n.kind != node.kind) acc
-      else if(f(n)) acc + n.id
+      else if(p(n)) acc + n.id
       else acc
     }
   }
 
   def providers(id :NodeId, graph : DependencyGraph) : Set[NodeId] =
-    connection(graph.getConcreteNode(id), n => provides(n.id, id, graph), graph)
+    connection(graph.getNode(id), n => provides(n.id, id, graph), graph)
 
   def clients(id :NodeId, graph : DependencyGraph) : Set[NodeId] =
-    connection(graph.getConcreteNode(id), n => provides(id, n.id, graph), graph)
+    connection(graph.getNode(id), n => provides(id, n.id, graph), graph)
 
+  def relativeCohesion(userTree : NodeId, candidate : NodeId, graph : DependencyGraph) : Double = {
+    val usedElts =outgoingDependencies(userTree, graph).map(_.used)
+    relativeCohesion(usedElts, candidate, graph)
+  }
+
+  def relativeCohesion(usedElts : Set[NodeId], candidate : NodeId, graph : DependencyGraph) : Double = {
+    val subTree = graph.subTree(candidate).toSet
+    usedElts.intersect(subTree).size.toDouble/usedElts.union(subTree).size
+  }
 
   def cohesion(root : NodeId, graph : DependencyGraph) : Double = {
     val intd = internalDependencies(root, graph).size

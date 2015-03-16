@@ -12,7 +12,7 @@ class SetValueMap[K,V](val content : Map[K, Set[V]]){
 
   def get(key : K) = content get key
 
-  def getFlat(key : K) : Iterable[V]= content.getOrElse(key, Iterable.empty)
+  def getFlat(key : K) : Set[V]= content.getOrElse(key, Set.empty)
 
   def + (key :K , v : V) : SetValueMap[K,V] = {
     val values = content getOrElse (key, Set[V]())

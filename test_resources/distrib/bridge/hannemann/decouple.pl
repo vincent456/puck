@@ -15,8 +15,8 @@ declareSet(refinedAbstractions, ['StarInformationScreen',
 
 declareSetUnion(abstractions, [plainAbstractions,  refinedAbstractions]).
 
-hideScopeSetFrom(concreteImplementations, abstractions).
-hideScopeSetFrom(refinedAbstractions, implementations).
+hideSetFrom(concreteImplementations, abstractions).
+hideSetFrom(refinedAbstractions, implementations).
 
 
 

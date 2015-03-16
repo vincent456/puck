@@ -43,6 +43,9 @@ class Recording
   def removeConcreteNode(n : ConcreteNode) : RecT =
     Transformation(Remove, TTCNode(n)) +: this
 
+  def removeVirtualNode(n : VirtualNode) : RecT =
+    Transformation(Remove, TTVNode(n)) +: this
+
   def addEdge(edge : EdgeT) : RecT =
     Transformation(Add, TTEdge(edge)) +: this
 

@@ -6,7 +6,7 @@ public class Screen {
 }
 
 class WelcomeScreenText extends Screen{
-	
+
 	void welcome(){
 		printText();
 	}
@@ -16,7 +16,7 @@ class WelcomeScreenText extends Screen{
 }
 
 class WelcomeScreenGraphic extends Screen{
-	
+
 	void welcome(){
 		printGraphic();
 	}
@@ -27,7 +27,7 @@ class WelcomeScreenGraphic extends Screen{
 
 
 class InfoScreenText extends Screen{
-	
+
 	void info(){
 		printText();
 	}
@@ -37,7 +37,7 @@ class InfoScreenText extends Screen{
 }
 
 class InfoScreenGraphic extends Screen{
-	
+
 	void info(){
 		printGraphic();
 	}
@@ -55,7 +55,7 @@ class InfoScreenGraphic extends Screen{
 // 			new InfoScreenText()};
 
 // 		for(Screen s: screens){
-			
+
 // 		}
 
 // 	}

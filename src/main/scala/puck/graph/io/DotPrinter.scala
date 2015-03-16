@@ -166,8 +166,8 @@ class DotPrinter
 
   def printSubGraph(n : DGNode): Unit = {
     List("subgraph cluster" + n.id + " {",
-      //s"""label=<<TABLE BORDER="0"><TR><TD BORDER="0" HREF="${n.id}" > ${decorate_name(n)} </TD></TR></TABLE>>;""",
-      s"""label=<<TABLE BORDER="0"><TR><TD BORDER="0" ID="${n.id}" > ${decorate_name(n)} </TD></TR></TABLE>>;""",
+      s"""label=<<TABLE BORDER="0"><TR><TD BORDER="0" HREF="${n.id}" > ${decorate_name(n)} </TD></TR></TABLE>>;""",
+      //s"""label=<<TABLE BORDER="0"><TR><TD BORDER="0" ID="${n.id}" > ${decorate_name(n)} </TD></TR></TABLE>>;""",
       "color=black;") foreach writeln
 
     if(graph.content(n.id).isEmpty) writeln(n.id + "[label=\"\" shape=none ]")
@@ -186,15 +186,15 @@ class DotPrinter
       val sig = n mapConcrete (cn => signatureString(cn.styp), "")
 
 
-      //writeln(s"""<TR><TD PORT="${n.id}" HREF="${n.id}" ALIGN="LEFT" BORDER="0">"""+
-      writeln(s"""<TR><TD PORT="${n.id}" ID="${n.id}" ALIGN="LEFT" BORDER="0">"""+
+      writeln(s"""<TR><TD PORT="${n.id}" HREF="${n.id}" ALIGN="LEFT" BORDER="0">"""+
+      //writeln(s"""<TR><TD PORT="${n.id}" ID="${n.id}" ALIGN="LEFT" BORDER="0">"""+
         decorate_name(n) + sig + "</TD></TR>")
     }
 
     val (fields, ctrs, mts, innerClasses) = helper splitDotClassContent (graph, n.id, visibility)
 
-    //writeln(s""" ${n.id} [ label = <<TABLE BGCOLOR="${helper.fillColor(n)}"> <TR> <TD PORT="${n.id}" HREF="${n.id}" BORDER="0"> <B>""" +
-    writeln(s""" ${n.id} [ label = <<TABLE BGCOLOR="${helper.fillColor(n)}"> <TR> <TD PORT="${n.id}" BORDER="0"> <B>""" +
+    writeln(s""" ${n.id} [ label = <<TABLE BGCOLOR="${helper.fillColor(n)}"> <TR> <TD PORT="${n.id}" HREF="${n.id}" BORDER="0"> <B>""" +
+    //writeln(s""" ${n.id} [ label = <<TABLE BGCOLOR="${helper.fillColor(n)}"> <TR> <TD PORT="${n.id}" BORDER="0"> <B>""" +
       decorate_name(n) +" </B></TD></TR>")
 
     if(fields.nonEmpty || ctrs.nonEmpty || mts.nonEmpty) writeln("<HR/>")

@@ -89,8 +89,9 @@ class JavaDependencyGraph
   def concreteNodeTestPred(nid : NodeId)(pred: ConcreteNode => Boolean): Boolean =
     getNode(nid) mapConcrete (pred, false)
 
-  override def canContain(n : ConcreteNode, other : ConcreteNode) : Boolean = {
+  override def canContain(n : DGNode, other : ConcreteNode) : Boolean = {
     val id = n.id
+
     def noNameClash( l : Int )( cId : NIdT ) : Boolean =
       concreteNodeTestPred(cId){ c =>
         (c.kind, c.styp) match {

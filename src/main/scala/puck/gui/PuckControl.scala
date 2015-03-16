@@ -126,7 +126,7 @@ class PuckControl(val filesHandler : FilesHandler,
 
       case Svg =>
         Future {
-          val imgframe = new SVGFrame(pipedInput)
+          val imgframe = new SVGFrame(pipedInput, graph)
           imgframe.setTitle(title)
         }
      }

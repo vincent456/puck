@@ -28,6 +28,12 @@ trait TransformationRules {
     (PuckLog.GraphTransfoRules, lvl)
 
 
+  //TODO see if it can be rewritten using scalaz !
+  def traverse[A, B, E](a: Iterable[A], b: B)(f: (B, A) => Validation[E, B]): Validation[E,B] =
+    a.foldLeft[Validation[E,B]](Success(b)){case (b0, a0) =>
+      if(b0.isSuccess) b0 flatMap (f(_, a0))
+      else b0
+    }
 
   def abstractionName(g: GraphT, impl: ConcreteNode, abskind : NodeKind, policy : AbstractionPolicy) : String =
     impl.name + "_" + policy
