@@ -13,6 +13,12 @@ class SVGController {
 
   val graphStack = mutable.Stack[DependencyGraph]()
 
+  var nodeSelected : Option[NodeId] = None
+
+  def setNodeSelected(id : NodeId) = Some(id)
+  def resetNodeSelected = nodeSelected = None
+
+
   def pushGraph(graph : DependencyGraph) =
     graphStack.push(graph)
 

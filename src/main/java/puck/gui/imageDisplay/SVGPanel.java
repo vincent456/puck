@@ -2,23 +2,26 @@ package puck.gui.imageDisplay;
 
 import org.apache.batik.dom.events.NodeEventTarget;
 import org.apache.batik.dom.svg.*;
+import org.apache.batik.svggen.SVGGraphics2DIOException;
 import org.apache.batik.swing.JSVGCanvas;
+import org.apache.batik.swing.gvt.GVTTreeRendererAdapter;
+import org.apache.batik.swing.gvt.GVTTreeRendererEvent;
+import org.apache.batik.swing.svg.SVGLoadEventDispatcherEvent;
 import org.apache.batik.util.SVGConstants;
 import org.apache.batik.util.XMLConstants;
 import org.apache.batik.util.XMLResourceDescriptor;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.w3c.dom.events.Event;
 import org.w3c.dom.events.EventListener;
 import org.w3c.dom.events.MouseEvent;
 import org.w3c.dom.svg.*;
 import puck.graph.ConcreteNode;
 import puck.graph.DependencyGraph;
+import org.apache.batik.svggen.SVGGraphics2D;
 
 import javax.swing.*;
-import javax.swing.event.AncestorListener;
-import javax.swing.text.AbstractDocument;
-import java.awt.event.ComponentListener;
-import java.awt.event.MouseListener;
 import java.io.*;
 import java.awt.BorderLayout;
 import java.util.List;
@@ -31,6 +34,24 @@ import java.util.List;
 
 public class SVGPanel extends JPanel{
 
+
+    /*private void printDoc(){
+        System.out.println(canvas.getSVGDocument().toString());
+        SVGGraphics2D svgGenerator = new SVGGraphics2D(canvas.getSVGDocument());
+
+        // Finally, stream out SVG to the standard output using UTF-8
+        // character to byte encoding
+        boolean useCSS = true; // we want to use CSS style attribute
+        Writer out = null;
+        try {
+            out = new OutputStreamWriter(System.out, "UTF-8");
+            svgGenerator.stream(out, useCSS);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        } catch (SVGGraphics2DIOException e) {
+            e.printStackTrace();
+        }
+    }*/
 
     private SVGController controller;
 
@@ -110,57 +131,55 @@ public class SVGPanel extends JPanel{
         private short LEFTBUTTON = 0;
         private short RIGHTBUTTON = 2;
 
-        private SVGPolygonElement createBackgroundRectangle(SVGOMTextElement txtElt){
-            SVGOMPolygonElement fill = new SVGOMPolygonElement(null,
-                    (org.apache.batik.dom.AbstractDocument) canvas.getSVGDocument());
+       /* private Element createRectangle(float x, float y, float width, float height){
 
-            SVGRect rect = txtElt.getBBox();
+            Element fill = canvas.getSVGDocument()
+                    .createElementNS(SVGDOMImplementation.SVG_NAMESPACE_URI, "rect");
 
-            fill.setAttribute("fill", "blue");
-            fill.setAttribute("stroke", "none");
-            StringBuilder points = new StringBuilder();
+            fill.setAttributeNS(null, "x", x+"");
+            fill.setAttributeNS(null, "y", y+"");
+            fill.setAttributeNS(null, "width", width+"");
+            fill.setAttributeNS(null, "height", height+"");
 
-            points.append(rect.getX());
-            points.append(',');
-            points.append(rect.getY());
-            points.append(' ');
-
-            points.append(rect.getX());
-            points.append(',');
-            points.append(rect.getY()+rect.getWidth());
-            points.append(' ');
-
-            points.append(rect.getX()+rect.getHeight());
-            points.append(',');
-            points.append(rect.getY()+rect.getWidth());
-            points.append(' ');
-
-            points.append(rect.getX()+rect.getHeight());
-            points.append(',');
-            points.append(rect.getY());
-
-            fill.setAttribute("points", points.toString());
-            //fill.setAttribute();
             return fill;
         }
 
+        private Element createBackgroundRectangle(SVGOMTextElement txtElt){
+            SVGRect rect = txtElt.getBBox();
+            Element fill = createRectangle(rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight());
+
+            fill.setAttributeNS(null, "fill", "green");
+            fill.setAttributeNS(null, "stroke", "none");
+
+            return fill;
+        }*/
+
         private void handleLeftClick(MouseEvent evt){
             System.out.println("handling left");
-            if(evt.getTarget() instanceof SVGOMTextElement){
+            if(evt.getTarget() instanceof SVGTextElement){
 
-                SVGOMTextElement txtElt = (SVGOMTextElement) evt.getTarget();
-                Integer nodeId = checkIfNodeAndGetId(txtElt);
-                SVGPolygonElement p = createBackgroundRectangle(txtElt);
-                SVGGElement g = getGroupingNodeParent(txtElt);
-                System.out.println(g.getId());
-                System.out.println(p.getAttribute("points"));
-                g.insertBefore(p, g.getFirstChild());
+                final SVGTextElement txtElt = (SVGTextElement) evt.getTarget();
+                System.out.println(canvas.getUpdateManager().getClass());
+                System.out.println(canvas.getUpdateManager().getUpdateRunnableQueue().getClass());
+
+                canvas.modify(new Runnable() {
+                    public void run() {
+                        txtElt.setAttribute("fill", "blue"); //font color
+
+                    }
+                });
             }
 
-            if(evt.getTarget() instanceof SVGOMPathElement){
-                SVGOMPathElement line = (SVGOMPathElement) evt.getTarget();
+            /*if(evt.getTarget() instanceof SVGPathElement){
+                final SVGPathElement line = (SVGPathElement) evt.getTarget();
                 System.out.println(line.getParentNode().getNodeName());
-            }
+                canvas.modify(new Runnable() {
+                    public void run() {
+                        line.setAttribute("stroke", "blue"); //font color
+
+                    }
+                });
+            }*/
         }
 
         private void handleRightClick(MouseEvent evt){
@@ -180,10 +199,31 @@ public class SVGPanel extends JPanel{
 
         @Override
         public void handleEvent(Event evt) {
-            System.out.println(evt.getType() + " happen on "+ evt.getTarget());
             MouseEvent mevt = (MouseEvent) evt;
-
+            System.out.println("plop");
             if(mevt.getButton() == RIGHTBUTTON){
+
+                System.out.println("!!!!!!!!!!!!!!!!!");
+                Element elt = canvas.getElementById("clust1");
+
+                final NodeList children = elt.getChildNodes();
+                canvas.modify(new Runnable() {
+                    @Override
+                    public void run() {
+                        for(int i=0; i< children.getLength(); i++){
+                            if(children.item(i) instanceof Element) {
+                                Element child = (Element) children.item(i);
+                                System.out.println(child.getTagName());
+                                if (child.getTagName().equals("polygon")) {
+                                    child.setAttributeNS(null, "fill", "red");
+
+                                }
+                            }
+                        }
+                    }
+                });
+
+
                 handleRightClick(mevt);
             }
             if(mevt.getButton() == LEFTBUTTON){
@@ -194,51 +234,53 @@ public class SVGPanel extends JPanel{
     }
 
 
-    class DeadLinkCanvas extends JSVGCanvas {
-        DeadLinkCanvas(){
+    class PUCKSVGCanvas extends JSVGCanvas {
+        PUCKSVGCanvas(){
             super();
+            setDocumentState(JSVGCanvas.ALWAYS_DYNAMIC);//before loading the document
             userAgent = new BridgeUserAgent(){
                 @Override
                 public void openLink(SVGAElement elt) {
                     //do nothing
                 }
             };
+
+            addGVTTreeRendererListener(new GVTTreeRendererAdapter() {
+                @Override
+                public void gvtRenderingCompleted(GVTTreeRendererEvent e) {
+                    System.out.println("ready !");
+                    getRoot().addEventListenerNS(XMLConstants.XML_EVENTS_NAMESPACE_URI,
+                            SVGConstants.SVG_EVENT_CLICK,
+                            new SVGPanelListener(),
+                            false, null);
+                }
+            });
         }
 
+        Element getElementById(String id){
+            return getSVGDocument().getElementById(id);
+        }
+
+        void modify(Runnable r){
+            getUpdateManager().getUpdateRunnableQueue().invokeLater(r);
+        }
     }
-    private JSVGCanvas canvas;
+
+    private PUCKSVGCanvas canvas;
 
     private NodeEventTarget getRoot(){
         return (NodeEventTarget)canvas.getSVGDocument().getRootElement();
     }
 
     public SVGPanel(SVGDocument doc, SVGController controller){
-        canvas = new DeadLinkCanvas();
-        this.controller = controller;
-
-        this.setLayout(new BorderLayout());
+        canvas = new PUCKSVGCanvas();
         canvas.setSVGDocument(doc);
+
+        this.controller = controller;
+        this.setLayout(new BorderLayout());
         this.add("Center", canvas);
 
 
-
-        System.out.println("Ancestor listener");
-        for(AncestorListener l :canvas.getAncestorListeners()){
-            System.out.println(l.getClass());
-        }
-        System.out.println("Component listener");
-        for(ComponentListener l: canvas.getComponentListeners()){
-            System.out.println(l.getClass());
-        }
-        System.out.println("Mouse listener");
-        for(MouseListener l: canvas.getMouseListeners()){
-        System.out.println(l.getClass());
-        }
-
-            getRoot().addEventListenerNS(XMLConstants.XML_EVENTS_NAMESPACE_URI,
-                    SVGConstants.SVG_EVENT_CLICK,
-                    new SVGPanelListener(),
-                    false, null);
     }
 
     public static SVGPanel fromStream(InputStream stream, SVGController g) throws IOException {

@@ -46,7 +46,8 @@ libraryDependencies ++= Seq(
 libraryDependencies ++= Seq(
   "org.apache.xmlgraphics" % "batik-util" % "1.7",
   "org.apache.xmlgraphics" % "batik-svg-dom" % "1.7",
-  "org.apache.xmlgraphics" % "batik-swing" % "1.7")
+  "org.apache.xmlgraphics" % "batik-swing" % "1.7",
+  "org.apache.xmlgraphics" % "batik-svggen" % "1.7")//for beguggin purposes
 
 //libraryDependencies += "org.scala-lang" % "scala-library-all" % "2.11.4" //before the modularize them
 

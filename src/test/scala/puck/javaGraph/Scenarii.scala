@@ -18,34 +18,34 @@ object Scenarii {
 
   type GraphT = DependencyGraph
 
-  def introInterface(g : GraphT, classId : NodeId, pcontainer : NodeId) : Try[(GraphT, NodeId)]= {
-    TR.createAbstraction(g, classId, Interface, SupertypeAbstraction)
-      .map {case (classBAbsId, g) =>
-      (g.addContains(pcontainer, classBAbsId), classBAbsId)}
+  def introInterface(g : GraphT, clazz : ConcreteNode, pcontainer : NodeId) : Try[(GraphT, ConcreteNode)]= {
+    TR.createAbstraction(g, clazz, Interface, SupertypeAbstraction)
+      .map {case (classAbs, g) =>
+      (g.addContains(pcontainer, classAbs.id), classAbs)}
 
   }
 
-  def introPackage(g : GraphT, pname : String, pcontainer : NodeId) : (GraphT, NodeId) = {
-    val (pid, g2) = g.addConcreteNode(pname, Package, NoType)
-    (g2.addContains(pcontainer, pid), pid)
+  def introPackage(g : GraphT, pname : String, pcontainer : NodeId) : (GraphT, ConcreteNode) = {
+    val (p, g2) = g.addConcreteNode(pname, Package, NoType)
+    (g2.addContains(pcontainer, p.id), p)
   }
 
-  def introItcPackageAndMove(graph : GraphT, classId : NodeId, pname : String, pcontainer : NodeId) =
-    graph.container(classId) match {
+  def introItcPackageAndMove(graph : GraphT, clazz : ConcreteNode, pname : String, pcontainer : NodeId) =
+    graph.container(clazz.id) match {
       case None => throw new PuckError()
       case Some(classContainer) =>
-        introInterface(graph, classId, classContainer)
+        introInterface(graph, clazz, classContainer)
 
-          .map { case (g, itcId) => (introPackage(g, pname, pcontainer), itcId)}
+          .map { case (g, itc) => (introPackage(g, pname, pcontainer), itc)}
 
-          .flatMap { case ((g, pid), itcId) => TR.moveTo(g, itcId, pid) map ((_, pid, itcId))}
+          .flatMap { case ((g, p), itc) => TR.moveTo(g, itc.id, p.id) map ((_, p.id, itc.id))}
     }
 
   val methodUsesViaThisField = new ExampleSample(puck.testExamplesPath + "/methodUsesViaThisField/A.java"){
     val rootPackage = fullName2id("examples.methodUsesViaThisField")
 
     val classA = fullName2id("examples.methodUsesViaThisField.A")
-    val classB = fullName2id("examples.methodUsesViaThisField.B")
+    val classB = graph.getConcreteNode(fullName2id("examples.methodUsesViaThisField.B"))
 
   }
 

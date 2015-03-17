@@ -37,7 +37,7 @@ class RecordingComparatorSpec extends AcceptanceSpec {
     scenario("Same transformations, intro Interface"){
 
       def seq() = TR.createAbstraction(ex1.graph, ex1.classB, Interface, SupertypeAbstraction)
-        .map {case (classBAbsId, g) => g.addContains(ex1.rootPackage, classBAbsId)}
+        .map {case (classBAbs, g) => g.addContains(ex1.rootPackage, classBAbs.id)}
 
       val t1 = seq()
 
