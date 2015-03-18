@@ -8,6 +8,7 @@ import javax.swing.ImageIcon
 import puck.graph._
 import puck.graph.io.{Png, PrintingOptions, VisibilitySet}
 import puck.gui.PuckMainPanel
+import puck.gui.svg.ScrollablePicture
 import puck.search.SearchState
 import puck.util.PuckLog
 

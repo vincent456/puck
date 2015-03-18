@@ -1,19 +1,20 @@
-package puck.javaGraph
+package puck.javaGraph.transformations
 
 import puck.PuckError
+import puck.graph.ShowDG._
 import puck.graph._
-import puck.graph.constraints.{Move, RedirectionPolicy, SupertypeAbstraction, AbstractionPolicy}
-import puck.graph.transformations.TransformationRules
+import puck.graph.constraints.{AbstractionPolicy, Move, RedirectionPolicy, SupertypeAbstraction}
+import puck.graph.transformations.{MergeMatcher, TransformationRules}
+import puck.javaGraph.JavaNamedType
 import puck.javaGraph.nodeKind._
 
-import ShowDG._
-
-import scalaz._
 import scalaz.Validation.FlatMap._
+import scalaz._
 
 /**
  * Created by lorilan on 25/01/15.
  */
+
 object JavaTransformationRules extends TransformationRules {
 
   override def abstractionName( g: GraphT, impl: ConcreteNode, abskind : NodeKind, policy : AbstractionPolicy) : String = {
@@ -30,12 +31,12 @@ object JavaTransformationRules extends TransformationRules {
 
 
 
-  def insertInTypeHierarchy(g : GraphT, classId : NIdT, interfaceId : NIdT) : GraphT =
+  def insertInTypeHierarchy(g : GraphT, classId : NodeId, interfaceId : NodeId) : GraphT =
     g.directSuperTypes(classId).foldLeft(g){ (g0, superType) =>
       g0.changeSource(DGEdge.isa(classId, superType), interfaceId)
     }
 
-  def addTypesUses(g : GraphT, nodeId : NIdT) : GraphT = {
+  def addTypesUses(g : GraphT, nodeId : NodeId) : GraphT = {
     val typesUsed = g.getConcreteNode(nodeId).styp.getTypeNodeIds
     typesUsed.foldLeft(g){(g0, tid) => g0.addUses(nodeId, tid)}
   }
@@ -133,8 +134,8 @@ object JavaTransformationRules extends TransformationRules {
   }
 
   override def abstractionCreationPostTreatment(g: GraphT,
-                                                implId : NIdT,
-                                                absId : NIdT,
+                                                implId : NodeId,
+                                                absId : NodeId,
                                                 policy : AbstractionPolicy) : GraphT = {
     val abstraction = g.getNode(absId)
     (abstraction.kind, policy) match {
@@ -159,7 +160,7 @@ object JavaTransformationRules extends TransformationRules {
     }
   }
 
-  def redirectThisTypeUse(g : GraphT, thisType : NIdT, movedId : NIdT): Try[(EdgeT, GraphT)] = {
+  def redirectThisTypeUse(g : GraphT, thisType : NodeId, movedId : NodeId): Try[(EdgeT, GraphT)] = {
     val typeNode = g.getConcreteNode(thisType)
     val movedNode = g.getConcreteNode(movedId)
     typeNode.kind match {
@@ -177,7 +178,7 @@ object JavaTransformationRules extends TransformationRules {
 
 
   override def redirectUsesOf(g : GraphT,
-                            oldEdge : EdgeT, newUsee : NIdT,
+                            oldEdge : EdgeT, newUsee : NodeId,
                             policy : RedirectionPolicy,
                             propagateRedirection : Boolean = true,
                             keepOldUse : Boolean = false ) : Try[(EdgeT, GraphT)] = {
@@ -208,69 +209,27 @@ object JavaTransformationRules extends TransformationRules {
   //either a subtype of this
   //hence if we do the merge getNode(nid) will disappear
   // and all its user redirected to the candidate
+
+
+  override implicit def mergeMatcher(n : ConcreteNode): MergeMatcher =
+    InterfaceMergeMatcher.mergeMatcher(n)
+
   override def findMergingCandidate(g : GraphT, node : ConcreteNode) : Option[ConcreteNode] = {
-
-
-    def areMergingCandidates(interface1 : NodeId, interface2: NodeId): Boolean = {
-
-      def hasMatchingMethod(absmId : NIdT) = {
-        val absm = g.getConcreteNode(absmId)
-        absm.kind match {
-          case AbstractMethod => findMergingCandidateIn(g, absm, g.getConcreteNode(interface2)).isDefined
-          case _ =>
-            g.logger.writeln("searching for merging candidate "+
-              s"interface ${showDG[NodeId](g).shows(interface1)} contains ${showDG[NodeId](g).shows(absmId)}\n")
-            true
-        }
-      }
-
-
-      //the two interface are structurally compatible to merge
-      g.content(interface2).size >= g.content(interface1).size &&
-        (g.content(interface1) forall hasMatchingMethod) &&
-        (g.content(interface2).size == g.content(interface1).size ||
-          { g.directSubTypes(interface1).forall(g.isSuperTypeOf(interface2,_))
-            //TODO structual type check
-            /*val missingMethodsInThis =
-              otherItc.content.filterNot{hasMatchingMethodIn(this)}*/
-          }) ||
-        //the two interfaces introduced an uneeded level of indirection
-        g.isa(interface1, interface2) &&
-          g.directSubTypes(interface1).forall(g.isSuperTypeOf(interface2,_))
-
-    }
-
 
     val nid = node.id
     node.kind match {
       case Interface if g.content(nid).nonEmpty =>
         g.concreteNodes.find { other =>
-          other.kind == Interface && other.id != nid &&
-            areMergingCandidates(nid, other.id) &&
+          node.canBeMergedInto(other, g) &&
             g.users(nid).forall(!g.interloperOf(_,other.id)) &&
-            g.usedBy(nid).forall(!g.interloperOf(other.id, _))
+            g.usedBy(nid).forall(!g.interloperOf(other.id, _)
+          )
         }
       case _ => None
     }
 
   }
+  def findMergingCandidateIn(g : GraphT, method : ConcreteNode, interface : ConcreteNode) : Option[NodeId] =
+    InterfaceMergeMatcher.findMergingCandidateIn(g, method, interface)
 
-  override def findMergingCandidateIn(g : GraphT, methodId : NIdT,  interfaceId : NIdT): Option[NIdT] =
-    findMergingCandidateIn(g, g.getConcreteNode(methodId), g.getConcreteNode(interfaceId))
-
-
-  def findMergingCandidateIn(g : GraphT, method : ConcreteNode, interface : ConcreteNode) : Option[NIdT] = {
-    //node.graph.logger.writeln("searching merging candidate for %s".format(node), 8)
-    if(method.styp.isEmpty)
-      throw new DGError("Method must have a type")
-
-    val mType = method.styp.redirectUses(g.container(method.id).get, interface)
-    g.content(interface.id).find { ncId =>
-      val nc = g.getConcreteNode(ncId)
-      nc.kind match {
-        case AbstractMethod => nc.name == method.name && nc.styp == mType
-        case _ => false
-      }
-    }
-  }
 }

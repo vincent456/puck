@@ -1,15 +1,13 @@
-package puck.gui.imageDisplay;
+package puck.gui.svg;
 
+import org.apache.batik.dom.GenericText;
 import org.apache.batik.dom.events.NodeEventTarget;
 import org.apache.batik.dom.svg.*;
-import org.apache.batik.svggen.SVGGraphics2DIOException;
 import org.apache.batik.swing.JSVGCanvas;
 import org.apache.batik.swing.gvt.GVTTreeRendererAdapter;
 import org.apache.batik.swing.gvt.GVTTreeRendererEvent;
-import org.apache.batik.swing.svg.SVGLoadEventDispatcherEvent;
 import org.apache.batik.util.SVGConstants;
 import org.apache.batik.util.XMLConstants;
-import org.apache.batik.util.XMLResourceDescriptor;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -17,41 +15,22 @@ import org.w3c.dom.events.Event;
 import org.w3c.dom.events.EventListener;
 import org.w3c.dom.events.MouseEvent;
 import org.w3c.dom.svg.*;
-import puck.graph.ConcreteNode;
+import puck.graph.DGEdge;
 import puck.graph.DependencyGraph;
-import org.apache.batik.svggen.SVGGraphics2D;
+import puck.graph.EdgeKind;
+import puck.graph.Uses$;
 
 import javax.swing.*;
-import java.io.*;
 import java.awt.BorderLayout;
-import java.util.List;
+import java.awt.event.KeyEvent;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by lorilan on 3/13/15.
  */
-
-
-
 public class SVGPanel extends JPanel{
 
-
-    /*private void printDoc(){
-        System.out.println(canvas.getSVGDocument().toString());
-        SVGGraphics2D svgGenerator = new SVGGraphics2D(canvas.getSVGDocument());
-
-        // Finally, stream out SVG to the standard output using UTF-8
-        // character to byte encoding
-        boolean useCSS = true; // we want to use CSS style attribute
-        Writer out = null;
-        try {
-            out = new OutputStreamWriter(System.out, "UTF-8");
-            svgGenerator.stream(out, useCSS);
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        } catch (SVGGraphics2DIOException e) {
-            e.printStackTrace();
-        }
-    }*/
 
     private SVGController controller;
 
@@ -60,46 +39,11 @@ public class SVGPanel extends JPanel{
     }
 
 
-    class NodeRightClickMenu extends JPopupMenu {
-
-        //Visual actions
-        JMenuItem collapse;
-        JMenuItem hide;
-        //Transfo actions
-        JMenuItem move;
-
-        public NodeRightClickMenu(int nodeId){
-            ConcreteNode node = getGraph().getConcreteNode(nodeId);
-            List<SVGController.AbstractionChoice> choices = controller.abstractionChoices(node);
-            //List<JMenuItem> menuChoices = new ArrayList<>();
-
-            JMenuItem it = new JMenuItem("Abstract " + node.name() + " as");
-            it.setEnabled(false);
-            this.add(it);
-
-            for(SVGController.AbstractionChoice c : choices){
-                it = new JMenuItem(c.kind() + "(" + c.policy()+ ")");
-                //menuChoices.add(it);
-                this.add(it);
-            }
-
-            this.addSeparator();
-            hide = new JMenuItem("Hide");
-            this.add(hide);
-            if(getGraph().content(nodeId).nonEmpty()){
-                collapse = new JMenuItem("Collapse");
-                this.add(collapse);
-            }
-
-        }
-
-    }
-
     class SVGPanelListener implements EventListener {
 
-        private Integer checkIfNodeAndGetId(SVGOMTextElement txtElt){
+        private Integer checkIfNodeAndGetId(Element txtElt){
             if(txtElt.getParentNode().getNodeName().equals("a")){
-                SVGOMAElement a = (SVGOMAElement) txtElt.getParentNode();
+                SVGAElement a = (SVGAElement) txtElt.getParentNode();
                 try{
                     return Integer.valueOf(a.getHref().getBaseVal());
                 }catch(NumberFormatException e ){
@@ -154,39 +98,116 @@ public class SVGPanel extends JPanel{
             return fill;
         }*/
 
+        private SVGGElement checkIfEdgeAndGetGElement(Element path){
+            if(path.getParentNode().getNodeName().equals("g")){
+                SVGGElement gelt = (SVGGElement) path.getParentNode();
+                if(gelt.getId().startsWith("edge")){
+                    return gelt;
+                }
+                return null;
+            }
+            return null;
+        }
+
+        private EdgeKind  edgeKindFromGElement(SVGGElement gelt){
+            NodeList l = gelt.getChildNodes();
+            for(int i = 0; i < l.getLength(); i++){
+                Node n = l.item(i);
+                if(n.getNodeName().equals("path")){
+                    if(((Element)n).hasAttribute("stroke-dasharray"))
+                        return controller.isaKind();
+                    else
+                        return controller.usesKind();
+                }
+            }
+            return controller.usesKind();
+        }
+
+        private Pattern arrowPattern =
+                Pattern.compile("\\d+:(\\d+).{2}\\d+:(\\d+)");
+
+        private DGEdge edgeFromGElement(SVGGElement gelt){
+            SVGTitleElement t = (SVGTitleElement)gelt.getFirstChild();
+            String edgeLabel = t.getNodeValue();
+            GenericText title = (GenericText)t.getFirstChild();
+
+            controller.console().appendText("edgeLabel "+ title.getData()+ " ");
+            controller.console().appendText(edgeLabel);
+            EdgeKind k = edgeKindFromGElement(gelt);
+            controller.console().appendText("bloub ");
+
+            Matcher m = arrowPattern.matcher(title.getData());
+            controller.console().appendText("plop ");
+
+            if(m.find()){
+                int source = Integer.valueOf(m.group(1));
+                int target = Integer.valueOf(m.group(2));
+                return DGEdge.apply(k, source, target);
+            }
+
+            return null;
+        }
+
+        private void changeEdgeColor(SVGGElement edge, String color){
+            NodeList l = edge.getChildNodes();
+            for(int i = 0; i < l.getLength(); i++){
+                Node n = l.item(i);
+                if(n.getNodeName().equals("path")){
+                    ((Element)n).setAttribute("stroke", color);
+                }
+                if(n.getNodeName().equals("polygon")){
+                    ((Element)n).setAttribute("stroke", color);
+                    ((Element)n).setAttribute("fill", color);
+                }
+            }
+        }
+
         private void handleLeftClick(MouseEvent evt){
             System.out.println("handling left");
             if(evt.getTarget() instanceof SVGTextElement){
 
-                final SVGTextElement txtElt = (SVGTextElement) evt.getTarget();
-                System.out.println(canvas.getUpdateManager().getClass());
-                System.out.println(canvas.getUpdateManager().getUpdateRunnableQueue().getClass());
+                final Element txtElt = (SVGTextElement) evt.getTarget();
 
+                final Integer nodeId = checkIfNodeAndGetId(txtElt);
+                if(nodeId != null)
+                    canvas.modify(new Runnable() {
+                        public void run() {
+
+                            if(controller.nodeIsSelected()){
+                                controller.getDomElement().setAttribute("fill", controller.nodeColor());
+                            }
+
+                            if(controller.nodeIsSelected() && controller.getNodeSelected() == nodeId){
+                                controller.resetNodeSelected();
+                            } else {
+                                controller.setNodeSelected(nodeId, txtElt);
+                                txtElt.setAttribute("fill", "blue");
+                            }
+
+                        }
+                    });
+            }
+
+            if(evt.getTarget() instanceof SVGPathElement){
+                final SVGPathElement line = (SVGPathElement) evt.getTarget();
                 canvas.modify(new Runnable() {
                     public void run() {
-                        txtElt.setAttribute("fill", "blue"); //font color
+                        controller.console().setText("edge clicked ! ");
+                        SVGGElement gedge = checkIfEdgeAndGetGElement(line);
+                        DGEdge e = edgeFromGElement(gedge);
+                        controller.console().appendText(e+"");
+                        //line.setAttribute("stroke", "blue"); //font color
 
                     }
                 });
             }
-
-            /*if(evt.getTarget() instanceof SVGPathElement){
-                final SVGPathElement line = (SVGPathElement) evt.getTarget();
-                System.out.println(line.getParentNode().getNodeName());
-                canvas.modify(new Runnable() {
-                    public void run() {
-                        line.setAttribute("stroke", "blue"); //font color
-
-                    }
-                });
-            }*/
         }
 
         private void handleRightClick(MouseEvent evt){
             if(evt.getTarget() instanceof SVGOMTextElement){
                 Integer nodeId = checkIfNodeAndGetId((SVGOMTextElement) evt.getTarget());
                 if(nodeId != null){
-                    NodeRightClickMenu menu = new NodeRightClickMenu(nodeId);
+                    NodeRightClickMenu menu = new NodeRightClickMenu(controller, nodeId);
                     menu.show(SVGPanel.this, evt.getClientX(), evt.getClientY());
                 }
             }
@@ -200,29 +221,7 @@ public class SVGPanel extends JPanel{
         @Override
         public void handleEvent(Event evt) {
             MouseEvent mevt = (MouseEvent) evt;
-            System.out.println("plop");
             if(mevt.getButton() == RIGHTBUTTON){
-
-                System.out.println("!!!!!!!!!!!!!!!!!");
-                Element elt = canvas.getElementById("clust1");
-
-                final NodeList children = elt.getChildNodes();
-                canvas.modify(new Runnable() {
-                    @Override
-                    public void run() {
-                        for(int i=0; i< children.getLength(); i++){
-                            if(children.item(i) instanceof Element) {
-                                Element child = (Element) children.item(i);
-                                System.out.println(child.getTagName());
-                                if (child.getTagName().equals("polygon")) {
-                                    child.setAttributeNS(null, "fill", "red");
-
-                                }
-                            }
-                        }
-                    }
-                });
-
 
                 handleRightClick(mevt);
             }
@@ -245,6 +244,17 @@ public class SVGPanel extends JPanel{
                 }
             };
 
+            KeyStroke key = KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS,
+                    KeyEvent.CTRL_DOWN_MASK | KeyEvent.SHIFT_DOWN_MASK);
+            getInputMap().put(key, ZOOM_IN_ACTION);
+            key = KeyStroke.getKeyStroke(KeyEvent.VK_ADD, KeyEvent.CTRL_DOWN_MASK);
+            getInputMap().put(key, ZOOM_IN_ACTION);
+
+            key = KeyStroke.getKeyStroke(KeyEvent.VK_MINUS, KeyEvent.CTRL_MASK);
+            getInputMap().put(key, ZOOM_OUT_ACTION);
+            key = KeyStroke.getKeyStroke(KeyEvent.VK_SUBTRACT, KeyEvent.CTRL_MASK);
+            getInputMap().put(key, ZOOM_OUT_ACTION);
+
             addGVTTreeRendererListener(new GVTTreeRendererAdapter() {
                 @Override
                 public void gvtRenderingCompleted(GVTTreeRendererEvent e) {
@@ -266,29 +276,28 @@ public class SVGPanel extends JPanel{
         }
     }
 
-    private PUCKSVGCanvas canvas;
+    PUCKSVGCanvas canvas;
+
 
     private NodeEventTarget getRoot(){
         return (NodeEventTarget)canvas.getSVGDocument().getRootElement();
     }
 
-    public SVGPanel(SVGDocument doc, SVGController controller){
+    public void setController(SVGController controller){
+        this.controller = controller;
+    }
+
+    public SVGPanel(SVGDocument doc){
         canvas = new PUCKSVGCanvas();
         canvas.setSVGDocument(doc);
 
-        this.controller = controller;
         this.setLayout(new BorderLayout());
         this.add("Center", canvas);
 
 
     }
 
-    public static SVGPanel fromStream(InputStream stream, SVGController g) throws IOException {
-        String parser = XMLResourceDescriptor.getXMLParserClassName();
-        SAXSVGDocumentFactory factory = new SAXSVGDocumentFactory(parser);
-        SVGDocument doc = factory.createSVGDocument("", stream);
-        return new SVGPanel(doc, g);
-    }
+
 
    /* public static SVGPanel fromFilePath(String filePath ) throws IOException {
         return fromStream(new FileReader(filePath));

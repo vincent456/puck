@@ -29,7 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */ 
 
-package puck.gui.imageDisplay;
+package puck.gui.svg;
 
 import java.awt.*;
 import java.awt.event.*;

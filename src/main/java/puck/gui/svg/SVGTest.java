@@ -1,4 +1,4 @@
-package puck.gui.imageDisplay;
+package puck.gui.svg;
 
 
 
@@ -10,13 +10,13 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.swing.*;
 
 import org.apache.batik.dom.events.NodeEventTarget;
 import org.apache.batik.dom.svg.SVGDOMImplementation;
 import org.apache.batik.dom.svg.SVGOMDocument;
-import org.apache.batik.dom.svg.SVGOMElement;
-import org.apache.batik.dom.svg.SVGOMTextElement;
 import org.apache.batik.swing.JSVGCanvas;
 import org.apache.batik.swing.gvt.GVTTreeRendererAdapter;
 import org.apache.batik.swing.gvt.GVTTreeRendererEvent;
@@ -28,16 +28,14 @@ import org.apache.batik.util.SVGConstants;
 import org.apache.batik.util.XMLConstants;
 import org.w3c.dom.Element;
 import org.w3c.dom.svg.SVGAElement;
-import org.w3c.dom.svg.SVGElement;
 import org.w3c.dom.events.EventListener;
 import org.w3c.dom.events.Event;
 import org.w3c.dom.events.MouseEvent;
-import org.w3c.dom.svg.SVGRect;
 
 public class SVGTest {
 
     public static void main(String[] args) {
-        JFrame f = new JFrame("Batik");
+       /* JFrame f = new JFrame("Batik");
         SVGTest app = new SVGTest(f);
         f.getContentPane().add(app.createComponents());
 
@@ -47,7 +45,20 @@ public class SVGTest {
             }
         });
         f.setSize(400, 400);
-        f.setVisible(true);
+        f.setVisible(true);*/
+
+        Pattern arrowPattern =
+                Pattern.compile("\\d+:(\\d+)->\\d+:(\\d+)");
+
+        Matcher m = arrowPattern.matcher("5:7->35:48");
+
+        if(m.find()){
+            System.out.println(m.group(1));
+            System.out.println(m.group(2));
+        }
+        else{
+            System.out.println("nothing");
+        }
     }
 
     JFrame frame;

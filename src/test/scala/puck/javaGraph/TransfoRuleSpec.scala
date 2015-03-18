@@ -3,7 +3,6 @@ package javaGraph
 
 import puck.graph.{DGEdge, NoType}
 import puck.javaGraph.nodeKind._
-import puck.javaGraph.{JavaTransformationRules => TR}
 import puck.util.PuckFileLogger
 
 import scalaz.{Success, Failure}

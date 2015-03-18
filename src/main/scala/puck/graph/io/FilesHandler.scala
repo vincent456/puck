@@ -4,12 +4,12 @@ package io
 import java.io._
 
 import puck.graph.constraints.ConstraintsParser
-import puck.graph.transformations.Recording
+import puck.graph.transformations.{TransformationRules, Recording}
 import puck.search.{Search, SearchState, SearchEngine}
 import puck.util._
 
 import scala.sys.process.Process
-import scala.util.{Success, Try}
+import scalaz.Success
 
 trait ConstraintSolvingSearchEngineBuilder {
   def apply(initialRecord : Recording, graph : DependencyGraph,
@@ -264,6 +264,9 @@ abstract class FilesHandler(workingDirectory : File){
 
   def searchingStrategies : Seq[ConstraintSolvingSearchEngineBuilder]
 
+
+  //TODO see if it can be placed somewhere else
+  val transformationRules : TransformationRules
 
   type ST = SearchState[ResultT]
 

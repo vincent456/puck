@@ -8,7 +8,8 @@ import puck.graph.FilesHandler
 import puck.graph._
 import puck.graph.io._
 import puck.gui.explorer.AccessGraphModified
-import puck.gui.imageDisplay.{SVGFrame, ImageFrame, ImageExplorer}
+import puck.gui.imageDisplay.{ImageFrame, ImageExplorer}
+import puck.gui.svg.SVGFrame
 import puck.search.{SearchState, Search}
 import puck.util.PuckLog
 
@@ -18,6 +19,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.swing.event.Event
 import scala.swing.{Component, ProgressBar, Publisher}
 import scala.util.{Failure, Success}
+import scalaz.{Success => Succezz}
 
 
 /**
@@ -126,13 +128,13 @@ class PuckControl(val filesHandler : FilesHandler,
 
       case Svg =>
         Future {
-          val imgframe = new SVGFrame(pipedInput, graph)
+          val imgframe = new SVGFrame(pipedInput, graph, opts, this)
           imgframe.setTitle(title)
         }
      }
 
     filesHandler.makeImage(graph, opts, Some(pipedOutput), format) {
-      case Success(i) if i == 0 => logger.writeln("success")
+      case Succezz(i) if i == 0 => logger.writeln("success")
       case _ => logger.writeln("fail")
     }
   }

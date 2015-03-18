@@ -4,6 +4,7 @@ package puck.graph
  * Created by lorilan on 1/8/15.
  */
 
+
 sealed abstract class EdgeKind {
   def apply(source : NodeId, target: NodeId) : DGEdge
 }

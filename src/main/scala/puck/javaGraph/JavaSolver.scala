@@ -3,6 +3,7 @@ package puck.javaGraph
 import puck.graph.{DGNode, NodeKind, DependencyGraph}
 import puck.graph.constraints.{AbstractionPolicy, DecisionMaker, Solver, SupertypeAbstraction}
 import puck.javaGraph.nodeKind._
+import puck.javaGraph.transformations.JavaTransformationRules
 
 
 /**

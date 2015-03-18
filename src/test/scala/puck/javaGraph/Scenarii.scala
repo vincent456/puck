@@ -3,7 +3,6 @@ package puck.javaGraph
 import puck.PuckError
 import puck.graph._
 import puck.graph.constraints.SupertypeAbstraction
-import puck.javaGraph.{JavaTransformationRules => TR}
 import puck.javaGraph.nodeKind.{Package, Interface}
 
 import scalaz.Validation.FlatMap._

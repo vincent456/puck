@@ -2,7 +2,6 @@ package puck.javaGraph
 
 import puck.graph.constraints.SupertypeAbstraction
 import puck.javaGraph.nodeKind._
-import puck.javaGraph.{JavaTransformationRules => TR}
 import puck.AcceptanceSpec
 
 import scalaz._

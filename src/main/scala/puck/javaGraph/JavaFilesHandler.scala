@@ -7,6 +7,7 @@ import puck.graph.constraints.search.SolverBuilder
 import puck.graph._
 import puck.graph.io.{ConstraintSolvingSearchEngineBuilder, FilesHandler}
 import puck.graph.transformations.NodeMappingInitialState
+import puck.javaGraph.transformations.JavaTransformationRules
 import puck.util.PuckLog._
 
 
@@ -127,6 +128,8 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
       JavaFunneledCSSEBuilder,
       //JavaGradedCSSEBuilder,
       JavaFindFirstCSSEBuilder)
+
+  val transformationRules = JavaTransformationRules
 }
 
 

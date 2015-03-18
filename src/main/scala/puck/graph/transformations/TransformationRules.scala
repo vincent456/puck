@@ -13,9 +13,16 @@ import scalaz.Validation.FlatMap._
 /**
  * Created by lorilan on 25/01/15.
  */
+
+trait MergeMatcher {
+  val node : ConcreteNode
+  def canBeMergedInto(other : ConcreteNode, graph : DependencyGraph): Boolean = {
+    other.kind == node.kind && other.id != node.id
+  }
+}
+
 trait TransformationRules {
 
-  type NIdT = NodeId
   //type NT = NodeT
   type EdgeT = DGEdge
   type GraphT = DependencyGraph
@@ -59,13 +66,13 @@ trait TransformationRules {
   }
 
   def abstractionCreationPostTreatment(g : GraphT,
-                                       implId : NIdT,
-                                       absId : NIdT,
+                                       implId : NodeId,
+                                       absId : NodeId,
                                        policy : AbstractionPolicy) : GraphT = g
 
 
   def redirectUsesOf(g : GraphT,
-                   oldEdge : EdgeT, newUsed : NIdT,
+                   oldEdge : EdgeT, newUsed : NodeId,
                    policy : RedirectionPolicy,
                    propagateRedirection : Boolean = true,
                    keepOldUse : Boolean = false ) : Try[(EdgeT, GraphT)] = {
@@ -73,7 +80,7 @@ trait TransformationRules {
     if(oldEdge.used == newUsed) Success((oldEdge, g))
     else if(oldEdge.exists(g)){
       g.logger.writeln(s"redirecting ${showDG[EdgeT](g).show(oldEdge)} target " +
-        s"to ${showDG[NIdT](g).show(newUsed)} ($policy)")
+        s"to ${showDG[NodeId](g).show(newUsed)} ($policy)")
 
       val newUse : EdgeT = DGEdge.uses(oldEdge.user, newUsed)
 
@@ -120,11 +127,11 @@ trait TransformationRules {
 
   }
 
-  def redirectThisTypeUse(g : GraphT, thisType : NIdT, movedId : NIdT): Try[(EdgeT, GraphT)]
+  def redirectThisTypeUse(g : GraphT, thisType : NodeId, movedId : NodeId): Try[(EdgeT, GraphT)]
 
   def redirectTypeUsesOf(g : GraphT,
                           currentTypeMemberUse : EdgeT,
-                          newTypeMemberUsed : NIdT,
+                          newTypeMemberUsed : NodeId,
                           policy : RedirectionPolicy,
                           propagateRedirection : Boolean = true) : Try[GraphT] = {
 
@@ -133,7 +140,7 @@ trait TransformationRules {
 
 
     g.logger.writeln(s"redirecting Type uses of typeMember use ${showDG[EdgeT](g).shows(currentTypeMemberUse)}" +
-      s" (new typeMember used is ${showDG[NIdT](g).shows(newTypeMemberUsed)}) ")
+      s" (new typeMember used is ${showDG[NodeId](g).shows(newTypeMemberUsed)}) ")
 
     val primaryUses = g.typeUsesOf(currentTypeMemberUse)
     if(primaryUses.isEmpty) {
@@ -173,12 +180,12 @@ trait TransformationRules {
   }
 
   def findNewTypeUsed(g : GraphT,
-                         currentTypeUsed : NIdT,
-                         newTypeMemberUsed : NIdT,
-                         policy : RedirectionPolicy) : NIdT = {
+                         currentTypeUsed : NodeId,
+                         newTypeMemberUsed : NodeId,
+                         policy : RedirectionPolicy) : NodeId = {
 
     g.logger.writeln(s"searching new Type used ($policy) : current type used is " +
-       s"${showDG[NIdT](g).shows(currentTypeUsed)}, new typeMember used : ${showDG[NIdT](g).shows(newTypeMemberUsed)}" )
+       s"${showDG[NodeId](g).shows(currentTypeUsed)}, new typeMember used : ${showDG[NodeId](g).shows(newTypeMemberUsed)}" )
 
     val newPrimaryUsed =
       policy match {
@@ -208,17 +215,17 @@ trait TransformationRules {
               }
           }
       }
-    g.logger.writeln(s"new type to use found : ${showDG[NIdT](g).shows(newPrimaryUsed)}")
+    g.logger.writeln(s"new type to use found : ${showDG[NodeId](g).shows(newPrimaryUsed)}")
     newPrimaryUsed
   }
 
 
   def redirectTypeMemberUse(g : GraphT,
                        currentTypeUse: EdgeT,
-                       newTypeUsed : NIdT,
+                       newTypeUsed : NodeId,
                        policy : RedirectionPolicy) : Try[GraphT] = {
     g.logger.writeln(s"redirecting typeMember uses of type use ${showDG[EdgeT](g).shows(currentTypeUse)} " +
-      s"(new type used is  ${showDG[NIdT](g).shows(newTypeUsed)}) ")
+      s"(new type used is  ${showDG[NodeId](g).shows(newTypeUsed)}) ")
 
     val sideUses = g.typeMemberUsesOf(currentTypeUse)
     if(sideUses.isEmpty){
@@ -238,7 +245,7 @@ trait TransformationRules {
             case None =>
 
               val msg = s"While redirecting type use ${showDG[EdgeT](g).shows(currentTypeUse)} " +
-                s"target to ${showDG[NIdT](g).shows(newTypeUsed)}\n" +
+                s"target to ${showDG[NodeId](g).shows(newTypeUsed)}\n" +
                 s"no satisfying abstraction to redirect typeMember use ${showDG[EdgeT](g).shows(side)}"
 
               g.logger.writeln(msg)(PuckLog.Error)
@@ -269,13 +276,13 @@ trait TransformationRules {
   }
 
 
-  def moveTo(g : GraphT, movedId : NIdT, newContainer : NIdT): Try[GraphT] = {
+  def moveTo(g : GraphT, movedId : NodeId, newContainer : NodeId): Try[GraphT] = {
     g.container(movedId) match {
       case None => Failure(new RedirectionError("moved node has no container !!!")).toValidationNel
       case Some(oldContainer) =>
-        g.logger.writeln(s"moving ${showDG[NIdT](g).shows(movedId)} " +
-          s"from ${showDG[NIdT](g).shows(oldContainer)} " +
-          s"to ${showDG[NIdT](g).shows(newContainer)}")
+        g.logger.writeln(s"moving ${showDG[NodeId](g).shows(movedId)} " +
+          s"from ${showDG[NodeId](g).shows(oldContainer)} " +
+          s"to ${showDG[NodeId](g).shows(newContainer)}")
 
         val g2 = g.changeSource(DGEdge.contains(oldContainer, movedId), newContainer)
         g.users(movedId).foldLeft[Try[GraphT]](Success(g2)){
@@ -287,7 +294,7 @@ trait TransformationRules {
 
   }
 
-  def addHideFromRootException(g : GraphT, node : NIdT, friend : NIdT): GraphT =
+  def addHideFromRootException(g : GraphT, node : NodeId, friend : NodeId): GraphT =
     g.newGraph(nConstraints = g.constraints.addHideFromRootException(g, node, friend))
   /*def addHideFromRootException(node : NIdT, friend : NIdT): GraphT = {
     constraints.printConstraints(g, logger, (PuckLog.InGraph, PuckLog.Debug))
@@ -296,16 +303,19 @@ trait TransformationRules {
     ng
   }*/
 
+  implicit def mergeMatcher(n : ConcreteNode): MergeMatcher
+
   def findMergingCandidate(g : GraphT, nid : ConcreteNode) : Option[ConcreteNode] = None
 
-  def findMergingCandidateIn(g : GraphT, id : NIdT, root : NIdT) : Option[NIdT] = None
+  def findMergingCandidateIn(g : GraphT, methodId : NodeId,  interfaceId : NodeId): Option[NodeId] =
+    findMergingCandidateIn(g, g.getConcreteNode(methodId), g.getConcreteNode(interfaceId))
 
-  def merge(g : GraphT, consumerId : NIdT, consumedId : NIdT) : Try[GraphT] = {
+  def findMergingCandidateIn(g : GraphT, method : ConcreteNode, interface : ConcreteNode) : Option[NodeId]
+
+  def merge(g : GraphT, consumerId : NodeId, consumedId : NodeId) : Try[GraphT] = {
     g.logger.writeln(s"merging ${g.getNode(consumedId)} into ${g.getNode(consumerId)}" )
 
-    val consumed = g.getNode(consumedId)
-    val consumer = g.getNode(consumerId)
-    val g1 = g.users(consumedId).foldLeft(g) {
+     val g1 = g.users(consumedId).foldLeft(g) {
      (g0, userId) =>
         g0.changeTarget(DGEdge.uses(userId, consumedId), consumerId)
           .changeType(userId, g.getConcreteNode(userId).styp, consumedId, consumerId)

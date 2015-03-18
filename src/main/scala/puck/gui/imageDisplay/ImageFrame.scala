@@ -6,6 +6,7 @@ import javax.imageio.ImageIO
 import javax.swing.ImageIcon
 
 import puck.gui.PuckMainPanel
+import puck.gui.svg.ScrollablePicture
 
 import scala.swing.{Component, Frame, ScrollPane}
 
