@@ -18,7 +18,7 @@ object DotPrinter {
   class ColorThickness(val color: String, val thickness: Int)
 
   object ColorThickness {
-    val regular = new ColorThickness("black", 1)
+    val regular = new ColorThickness("black", 2)
     val violation = new ColorThickness("red", 5)
 
     val dominant = new ColorThickness("blue", 2)

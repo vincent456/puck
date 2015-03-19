@@ -96,16 +96,29 @@ trait TransformationRules {
         case sTyp => g2.changeType(oldEdge.user, sTyp, oldEdge.used, newUsed)
       }
 
-      val tryG4 : Try[GraphT] = if(propagateRedirection) {
-        if(g3.isTypeUse(oldEdge))
-          redirectTypeUsesOf(g3, oldEdge, newUsed, policy)
-        else if(g3.isTypeMemberUse(oldEdge))
-          redirectTypeMemberUse(g3, oldEdge, newUsed, policy)
-        else
+
+      val tryG4 : Try[GraphT] = if(!propagateRedirection) Success(g3)
+        else {
+
+        val isTypeUse = g3.isTypeUse(oldEdge)
+        val isTypeMemberUse = g3.isTypeMemberUse(oldEdge)
+
+        if(!isTypeUse && !isTypeMemberUse)
           throw new DGError(s"uses ${showDG[EdgeT](g).show(oldEdge)} is not a type use nor a typeMember use !")
 
+        { if(isTypeUse)
+            redirectTypeUsesOf(g3, oldEdge, newUsed, policy)
+          else
+            Success(g3)
+        }.flatMap{ g3b =>
+          if(isTypeMemberUse)
+            redirectTypeMemberUse(g3b, oldEdge, newUsed, policy)
+          else
+            Success(g3b)
+        }
+
       }
-      else Success(g3)
+
 
       tryG4 map {(newUse, _)}
     }
@@ -114,8 +127,8 @@ trait TransformationRules {
       //if both are identified as violations and are in a wrongusers list
       //redirecting the one will redirect the other
       // when iterating on the wrongusers, the next call to redirectuses will arrive here
-      g.logger.writeln("redirecting uses %s target to %s (%s) : FAILURE !! %s is not used".
-        format(oldEdge, newUsed, policy, oldEdge.used))
+      g.logger.writeln(s"redirecting uses $oldEdge target to $newUsed ($policy) : " +
+        s"FAILURE !! ${oldEdge.used}} is not used")
       Success((DGEdge.uses(oldEdge.user, newUsed), g))
     }
     else if(g.users(oldEdge.used).exists(_ == oldEdge.user) ||

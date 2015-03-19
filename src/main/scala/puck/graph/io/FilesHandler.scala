@@ -8,8 +8,10 @@ import puck.graph.transformations.{TransformationRules, Recording}
 import puck.search.{Search, SearchState, SearchEngine}
 import puck.util._
 
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.sys.process.Process
-import scalaz.Success
+import scala.util.Try
 
 trait ConstraintSolvingSearchEngineBuilder {
   def apply(initialRecord : Recording, graph : DependencyGraph,
@@ -47,24 +49,18 @@ object FilesHandler{
 
     //TODO fix bug when chaining the two function with a pipe
     // and calling it in "do everything"
-    FilesHandler.makeDot(graph, dotHelper, printingOptions, new FileWriter(pathWithoutSuffix + ".dot"))
+/*    FilesHandler.makeDot(graph, dotHelper, printingOptions, new FileWriter(pathWithoutSuffix + ".dot"))
 
-    finish(Success(convertDot(graphvizDot, pathWithoutSuffix, sInput = None, sOutput, outputFormat)))
-    /*
-        val pipedOutput = new PipedOutputStream()
-        val pipedInput = new PipedInputStream(pipedOutput)
+    finish(Success(convertDot(graphvizDot, pathWithoutSuffix, sInput = None, sOutput, outputFormat)))*/
 
-        println("launchig convert dot future")
-        Future {
-          convertDot(Some(pipedInput), sOutput, outputFormat)
-        } onComplete finish
-        println("post launching")
+    val pipedOutput = new PipedOutputStream()
+    val pipedInput = new PipedInputStream(pipedOutput)
 
+    Future {
+      convertDot(graphvizDot, pathWithoutSuffix, sInput = Some(pipedInput), sOutput, outputFormat)
+    } onComplete finish
 
-        makeDot(printId, printSignatures, selectedUse,
-          writer = new OutputStreamWriter(pipedOutput))
-        println("post make dot")
-    */
+    makeDot(graph, dotHelper, printingOptions, writer = new OutputStreamWriter(pipedOutput))
   }
 
   def convertDot( graphvizDot : Option[File],

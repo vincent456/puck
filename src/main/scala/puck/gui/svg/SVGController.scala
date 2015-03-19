@@ -10,6 +10,7 @@ import org.apache.batik.util.XMLResourceDescriptor
 import org.w3c.dom.Element
 import org.w3c.dom.svg.{SVGGElement, SVGDocument}
 import puck.graph._
+import puck.graph.constraints.{RedirectionPolicy, SupertypeAbstraction, DelegationAbstraction}
 import puck.graph.io.{PrintingOptions, Svg, VisibilitySet}
 import puck.gui.PuckControl
 import puck.gui.svg.SVGFrame.SVGConsole
@@ -34,48 +35,60 @@ class SVGController private
 
   val graphStack = mutable.Stack[DependencyGraph]()
 
-  var nodeSelected: Option[NodeId] = None
-  var nodeColor: String = ""
-  var domElement: Element = _
+  type Color = String
+
+  var nodeSelected: Option[(NodeId, Color, Element)] = None
 
   /*
    Code mostly accessed from java code thus this "java-like" design with getters
    */
   def nodeIsSelected: Boolean = nodeSelected.nonEmpty
 
-  def getNodeSelected: Int = nodeSelected.get
+  def getNodeSelected: Int = nodeSelected.get._1
 
-  def getDomElement: Element = domElement
+  def getNodeDomElement: Element = nodeSelected.get._3
 
-  def getColor: String = nodeColor
+  def getNodeColor: String = nodeSelected.get._2
 
   def setNodeSelected(id: NodeId, elt: Element): Unit = {
-    nodeSelected = Some(id)
-    domElement = elt
-    nodeColor = elt.getAttribute("fill")
-    console.selectedNode(getGraph.getNode(id)+"")
+    nodeSelected = Some((id, elt.getAttribute("fill"), elt))
+    console.displaySelection(getGraph.getNode(id)+"")
   }
 
   def resetNodeSelected(): Unit = {
     nodeSelected = None
-    domElement = null
-    console.selectedNode("")
+    console.displaySelection("")
   }
 
-  var edgeSelected : Option[(NodeId, NodeId)] = None
-  var edgeColor : String = ""
-  var edgeDomElement : SVGGElement = _
+  var edgeSelected : Option[(DGEdge, Color, SVGGElement)] = None
 
   def edgeIsSelected : Boolean = edgeSelected.nonEmpty
+
+  def getEdgeSelected : DGEdge = edgeSelected.get._1
+  def getEdgeDomElement : SVGGElement = edgeSelected.get._3
+  def getEdgeColor : Color = edgeSelected.get._2
+
+  def setEdgeSelected(dgEdge: DGEdge, elt : SVGGElement, c : Color) = {
+    edgeSelected = Some((dgEdge, c, elt))
+
+    import ShowDG._
+    console.displaySelection(showDG[DGEdge](getGraph).shows(dgEdge))
+  }
+
+  def resetEdgeSelected(): Unit = {
+    edgeSelected = None
+    console.displaySelection("")
+  }
 
   //Java accessor
   def usesKind = Uses
   def isaKind = Isa
-  
+
+  def delegatePolicy : RedirectionPolicy = DelegationAbstraction
+  def supertypePolicy : RedirectionPolicy  = SupertypeAbstraction
   
 
-  def pushGraph(graph: DependencyGraph) = {
-    graphStack.push(graph)
+  def displayGraph(graph: DependencyGraph) = {
     val pipedOutput = new PipedOutputStream()
     val pipedInput = new PipedInputStream(pipedOutput)
     val fdoc = Future {
@@ -90,8 +103,18 @@ class SVGController private
     fdoc.onSuccess { case doc => svgCanvas.setDocument(doc) }
   }
 
+  def pushGraph(graph: DependencyGraph) = {
+    graphStack.push(graph)
+    displayGraph(graph)
+  }
 
-  def popGraph() = graphStack.pop()
+
+  def safePopGraph() = {
+    if(graphStack.nonEmpty) {
+      graphStack.pop()
+      displayGraph(getGraph)
+    }
+  }
 
   def getGraph = graphStack.head
 

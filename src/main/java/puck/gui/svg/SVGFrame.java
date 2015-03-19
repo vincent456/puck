@@ -7,6 +7,7 @@ import puck.gui.svg.SVGController;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -23,11 +24,11 @@ public class SVGFrame extends JFrame{
         {
             console.setEditable(false);
         }
-        void selectedNode(String node){
+        void displaySelection(String node){
             if(node.length()>0)
-                console.setText("Node selected : " + node);
+                console.setText("Selection : " + node);
             else
-                console.setText("No node selected");
+                console.setText("No selection");
         }
         void setText(String txt) {
             console.setText(txt);
@@ -47,11 +48,23 @@ public class SVGFrame extends JFrame{
 
         SVGConsole console = new SVGConsole();
 
-        SVGController controller = SVGController.apply(control, g, opts, panel.canvas, console);
+        final SVGController controller = SVGController.apply(control, g, opts, panel.canvas, console);
         panel.setController(controller);
 
+        JPanel menu = new JPanel();
+        menu.add(new JButton(new AbstractAction("Undo"){
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                controller.safePopGraph();
+            }
+        }));
+        menu.add(console.console);
+
+
         this.add(panel, BorderLayout.CENTER);
-        this.add(console.console, BorderLayout.SOUTH);
+        this.add(menu, BorderLayout.SOUTH);
+
 
         this.setVisible(true);
         this.setMinimumSize(new Dimension(640, 480));

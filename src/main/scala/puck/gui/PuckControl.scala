@@ -134,7 +134,7 @@ class PuckControl(val filesHandler : FilesHandler,
      }
 
     filesHandler.makeImage(graph, opts, Some(pipedOutput), format) {
-      case Succezz(i) if i == 0 => logger.writeln("success")
+      case Success(i) if i == 0 => logger.writeln("success")
       case _ => logger.writeln("fail")
     }
   }

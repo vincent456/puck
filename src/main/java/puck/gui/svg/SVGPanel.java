@@ -18,7 +18,6 @@ import org.w3c.dom.svg.*;
 import puck.graph.DGEdge;
 import puck.graph.DependencyGraph;
 import puck.graph.EdgeKind;
-import puck.graph.Uses$;
 
 import javax.swing.*;
 import java.awt.BorderLayout;
@@ -131,13 +130,10 @@ public class SVGPanel extends JPanel{
             String edgeLabel = t.getNodeValue();
             GenericText title = (GenericText)t.getFirstChild();
 
-            controller.console().appendText("edgeLabel "+ title.getData()+ " ");
             controller.console().appendText(edgeLabel);
             EdgeKind k = edgeKindFromGElement(gelt);
-            controller.console().appendText("bloub ");
 
             Matcher m = arrowPattern.matcher(title.getData());
-            controller.console().appendText("plop ");
 
             if(m.find()){
                 int source = Integer.valueOf(m.group(1));
@@ -162,42 +158,75 @@ public class SVGPanel extends JPanel{
             }
         }
 
+        private DGEdge conditionalEdgeReset(){
+            if(controller.edgeIsSelected()){
+                changeEdgeColor(controller.getEdgeDomElement(),
+                        controller.getEdgeColor());
+                DGEdge e = controller.getEdgeSelected();
+                controller.resetEdgeSelected();
+                return e;
+            }
+            return null;
+        }
+
+        private Integer conditionalNodeReset(){
+            if(controller.nodeIsSelected()){
+                controller.getNodeDomElement()
+                        .setAttribute("fill", controller.getNodeColor());
+                int i = controller.getNodeSelected();
+                controller.resetNodeSelected();
+                return i;
+            }
+            return null;
+        }
+
+        private String selectColor = "blue";
+
         private void handleLeftClick(MouseEvent evt){
             System.out.println("handling left");
             if(evt.getTarget() instanceof SVGTextElement){
 
                 final Element txtElt = (SVGTextElement) evt.getTarget();
-
                 final Integer nodeId = checkIfNodeAndGetId(txtElt);
                 if(nodeId != null)
                     canvas.modify(new Runnable() {
                         public void run() {
 
-                            if(controller.nodeIsSelected()){
-                                controller.getDomElement().setAttribute("fill", controller.nodeColor());
-                            }
-
-                            if(controller.nodeIsSelected() && controller.getNodeSelected() == nodeId){
-                                controller.resetNodeSelected();
-                            } else {
+                            conditionalEdgeReset();
+                            Integer nid = conditionalNodeReset();
+                            if(!nodeId.equals(nid)) {
                                 controller.setNodeSelected(nodeId, txtElt);
-                                txtElt.setAttribute("fill", "blue");
+                                txtElt.setAttribute("fill", selectColor);
                             }
 
                         }
                     });
             }
 
-            if(evt.getTarget() instanceof SVGPathElement){
+            else if(evt.getTarget() instanceof SVGPathElement){
                 final SVGPathElement line = (SVGPathElement) evt.getTarget();
+                final SVGGElement gedge = checkIfEdgeAndGetGElement(line);
+                if(gedge != null) {
+                    canvas.modify(new Runnable() {
+                        public void run() {
+                            conditionalNodeReset();
+                            DGEdge prevEdge = conditionalEdgeReset();
+                            DGEdge e = edgeFromGElement(gedge);
+                            if(!e.equals(prevEdge)){
+                                String color = line.getAttribute("stroke");
+                                controller.setEdgeSelected(e, gedge, color);
+                                changeEdgeColor(gedge, selectColor);
+                            }
+                        }
+                    });
+                }
+            }
+
+            else {
                 canvas.modify(new Runnable() {
                     public void run() {
-                        controller.console().setText("edge clicked ! ");
-                        SVGGElement gedge = checkIfEdgeAndGetGElement(line);
-                        DGEdge e = edgeFromGElement(gedge);
-                        controller.console().appendText(e+"");
-                        //line.setAttribute("stroke", "blue"); //font color
-
+                        conditionalNodeReset();
+                        conditionalEdgeReset();
                     }
                 });
             }

@@ -1,6 +1,7 @@
 package puck.gui.svg;
 
 import puck.graph.ConcreteNode;
+import puck.graph.DGEdge;
 import puck.graph.DependencyGraph;
 import puck.graph.transformations.MergeMatcher;
 
@@ -48,7 +49,7 @@ class NodeRightClickMenu extends JPopupMenu {
             ConcreteNode selected = getGraph().getConcreteNode(id);
             Action action;
             if(getGraph().canContain(node, selected)){
-                action = new MoveAction(node,selected,getGraph(), controller);
+                action = new MoveAction(node, selected, getGraph(), controller);
                 this.add(new JMenuItem(action));
             }
 
@@ -57,6 +58,14 @@ class NodeRightClickMenu extends JPopupMenu {
                 action = new MergeAction(selected, node, getGraph(), controller);
                 this.add(new JMenuItem(action));
             }
+        }
+
+        if(controller.edgeIsSelected()){
+            DGEdge edge = controller.getEdgeSelected();
+            Action action = new RedirectAction(node, edge, controller.supertypePolicy(), controller);
+            this.add(new JMenuItem(action));
+            action = new RedirectAction(node, edge, controller.delegatePolicy(), controller);
+            this.add(new JMenuItem(action));
         }
 
     }

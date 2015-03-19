@@ -12,6 +12,7 @@ package object graph {
 
 
   type Try[T] = ValidationNel[PuckError, T]
+  type PuckFailure = NonEmptyList[PuckError]
 
   type NodeId = DependencyGraph.NodeId
 

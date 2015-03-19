@@ -1,7 +1,8 @@
 package puck
 package javaGraph
 
-import puck.graph.{DGEdge, NoType}
+import puck.graph.constraints.{AbstractionPolicy, SupertypeAbstraction, DelegationAbstraction}
+import puck.graph.{DependencyGraph, NodeId, DGEdge, NoType}
 import puck.javaGraph.nodeKind._
 import puck.util.PuckFileLogger
 
@@ -70,4 +71,65 @@ class TransfoRuleSpec extends AcceptanceSpec {
     }
   }
 
+  feature("Redirection"){
+
+    def classToAbsScenario
+    ( graph : DependencyGraph,
+      //typeUser : NodeId,
+      typeMemberUser : NodeId,
+      typeUsed : NodeId,
+      typeMemberUsed : NodeId,
+      newTypeUsed : NodeId,
+      newTypeMemberUsed : NodeId,
+      policy : AbstractionPolicy
+      ) : Unit = {
+      val typeUse = DGEdge.uses(typeMemberUser, typeUsed)
+      assert(typeUse.exists(graph))
+      assert(DGEdge.uses(typeMemberUser, typeMemberUsed).exists(graph))
+      TR.redirectUsesOf(graph, typeUse, newTypeUsed, policy) match {
+        case Failure(_) => assert(false)
+        case Success((newTypeUse, g2)) =>
+          assert(DGEdge.uses(typeMemberUser, newTypeUsed) == newTypeUse)
+          assert(newTypeUse.exists(g2))
+          assert(DGEdge.uses(typeMemberUser, newTypeMemberUsed).exists(g2))
+      }
+    }
+
+    ignore("From class to delegator class"){
+      val ex = redirection.classToClassDelegate
+
+      classToAbsScenario(ex.graph, ex.mUser,
+        ex.delegatee, ex.mDelegatee,
+        ex.delegator, ex.mDelegator,
+        DelegationAbstraction)
+
+      /*val use = DGEdge.uses(ex.mUser, ex.delegatee)
+      assert(use.exists(ex.graph))
+      assert(DGEdge.uses(ex.mUser, ex.mDelegatee).exists(ex.graph))
+      TR.redirectUsesOf(ex.graph, use, ex.delegator, DelegationAbstraction) match {
+        case Failure(_) => assert(false)
+        case Success((newUse, g2)) =>
+          assert(DGEdge.uses(ex.mUser, ex.delegator) == newUse)
+          assert(newUse.exists(g2))
+          assert(DGEdge.uses(ex.mUser, ex.mDelegator).exists(g2))
+      }*/
+    }
+
+    scenario("From class to superType interface"){
+      val ex = redirection.classToInterfaceSuperType
+
+      val use = DGEdge.uses(ex.mUser, ex.classUsed)
+      assert(use.exists(ex.graph))
+      assert(DGEdge.uses(ex.mUser, ex.mUsed).exists(ex.graph))
+      TR.redirectUsesOf(ex.graph, use, ex.superType, SupertypeAbstraction) match {
+        case Failure(_) => assert(false)
+        case Success((newUse, g2)) =>
+          quickFrame(g2)
+          assert(DGEdge.uses(ex.mUser, ex.superType) == newUse)
+          assert(newUse.exists(g2))
+          assert(DGEdge.uses(ex.mUser, ex.absmUsed).exists(g2))
+      }
+    }
+
+  }
 }
