@@ -2,7 +2,7 @@ package puck
 package javaGraph
 
 import puck.graph.constraints.{AbstractionPolicy, SupertypeAbstraction, DelegationAbstraction}
-import puck.graph.{DependencyGraph, NodeId, DGEdge, NoType}
+import puck.graph._
 import puck.javaGraph.nodeKind._
 import puck.util.{PuckSystemLogger, PuckFileLogger}
 
@@ -28,42 +28,46 @@ class TransfoRuleSpec extends AcceptanceSpec {
 
   import Scenarii._
 
+  implicit class TestValidation[G]( t : Try[G]){
+    def assertSuccess(f : G => Unit) : Unit = {
+      t match {
+        case Failure(_) => assert(false)
+        case Success(g) => f(g)
+      }
+    }  
+  }
+
+  implicit class TestOption[G]( t : Option[G]){
+    def assertSome(f : G => Unit) : Unit = {
+      t match {
+        case None => assert(false)
+        case Some(g) => f(g)
+      }
+    }
+  }
+  
   feature("Move"){
     val case1 = methodUsesViaThisField
     scenario("Move class"){
-      val (g, p) = introPackage(case1.graph, "p1", case1.rootPackage)
-      val tryG = TR.moveTo(g, case1.classB.id, p.id)
-
-      tryG match{
-        case Failure(_) => assert(false)
-        case Success(g2) =>
-          g2.container(case1.classB.id) match {
-            case None => assert(false)
-            case Some(pid0) => assert(pid0 == p.id)
-          }
+      val (g, package1) = introPackage(case1.graph, "p1", case1.rootPackage)
+      TR.moveTo(g, case1.classB.id, package1.id).assertSuccess {
+        g2 => g2.container(case1.classB.id).assertSome {
+          pid0 => assert(pid0 == package1.id)
+        }
       }
     }
 
     scenario("Move method used by this"){
       import usesThisMethod.{graph => initialGraph, _}
 
-      val logger = new PuckFileLogger({ case _ => true}, new java.io.File( puck.testExamplesPath + "/log"))
-
-      val (classB, g2) = initialGraph.newGraph(nLogger = logger).addConcreteNode("B", Class, NoType)
+      val (classB, g2) = initialGraph.addConcreteNode("B", Class, NoType)
       g2.addContains(rootPackage, classB.id)
 
-      println("initialGraph.uses(classA, classA) = " + initialGraph.uses(classA, classA))
-      println("initialGraph.typeUsesOf(DGEdge.uses(methMa1, methMa2)) = " + initialGraph.typeUsesOf(DGEdge.uses(methMa1, methMa2)))
-
-      TR.moveTo(g2, methMa2, classB.id) match{
-        case Failure(errs) => assert(false)
-        case Success(g3) =>
-          g3.container(methMa2) match {
-            case None => assert(false)
-            case Some(cid) => assert(cid == classB.id)
-          }
-
-          assert(g3.uses(methMa1, methMa2))
+      TR.moveTo(g2, methMa2, classB.id).assertSuccess { g3 =>
+        g3.container(methMa2).assertSome { cid =>
+          assert(cid == classB.id)
+        }
+        assert(g3.uses(methMa1, methMa2))
       }
     }
   }
@@ -83,9 +87,8 @@ class TransfoRuleSpec extends AcceptanceSpec {
       val typeUse = DGEdge.uses(typeMemberUser, typeUsed)
       assert(typeUse.exists(graph))
       assert(DGEdge.uses(typeMemberUser, typeMemberUsed).exists(graph))
-      TR.redirectUsesOf(graph, typeUse, newTypeUsed, policy) match {
-        case Failure(_) => assert(false)
-        case Success((newTypeUse, g2)) =>
+      TR.redirectUsesOf(graph, typeUse, newTypeUsed, policy).assertSuccess {
+        case (newTypeUse, g2) =>
           assert(DGEdge.uses(typeMemberUser, newTypeUsed) == newTypeUse)
           assert(newTypeUse.exists(g2))
           assert(DGEdge.uses(typeMemberUser, newTypeMemberUsed).exists(g2))
@@ -112,7 +115,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
       }*/
     }
 
-    ignore("From class to superType interface"){
+    scenario("From class to superType interface"){
       val ex = redirection.classToInterfaceSuperType
 
       val superTypeRegisteredAsClassUsedAbstraction =

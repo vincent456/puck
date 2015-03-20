@@ -38,7 +38,6 @@ object DependencyGraph {
   type Nodes2VnodeMap = Map[Seq[NodeId], NodeId]
   val Nodes2VNodeMap = Map
 
-
   //type NodeT = (NodeId, String, NodeKind, TypeHolder, Mutability)
   type NodeT = DGNode
   type ConcreteNodeIndex = Map[NodeId, ConcreteNode]
@@ -78,8 +77,8 @@ class DependencyGraph
   private [this] val superTypesMap : EdgeMap,
   private [this] val subTypesMap : EdgeMap,
   //TODO remake private [this]
-  /*private [this]*/ val memberUses2typeUsesMap : UseDependencyMap,
-  /*private [this]*/ val typeUses2memberUsesMap : UseDependencyMap,
+  /*private [this]*/ val typeMemberUses2typeUsesMap : UseDependencyMap,
+  /*private [this]*/ val typeUses2typeMemberUsesMap : UseDependencyMap,
   private [this] val abstractionsMap : AbstractionMap,
   val constraints : ConstraintsMaps,
   val recording : transformations.Recording) {
@@ -103,8 +102,8 @@ class DependencyGraph
                nContainerMap : Node2NodeMap = containerMap,
                nSuperTypesMap : EdgeMap = superTypesMap,
                nSubTypesMap : EdgeMap = subTypesMap,
-               nDominantUsesMap : UseDependencyMap = memberUses2typeUsesMap,
-               nDominatedUsesMap : UseDependencyMap = typeUses2memberUsesMap,
+               nDominantUsesMap : UseDependencyMap = typeMemberUses2typeUsesMap,
+               nDominatedUsesMap : UseDependencyMap = typeUses2typeMemberUsesMap,
                nAbstractionsMap : AbstractionMap = abstractionsMap,
                nConstraints : ConstraintsMaps = constraints,
                nRecording : transformations.Recording = recording) : DependencyGraph =
@@ -346,8 +345,8 @@ class DependencyGraph
 
   def addUsesDependency(dominantEdge : (NIdT, NIdT),
                         dominatedEdge : (NIdT, NIdT)) : GraphT =
-    newGraph(nDominantUsesMap = memberUses2typeUsesMap + (dominatedEdge, dominantEdge),
-      nDominatedUsesMap = typeUses2memberUsesMap + (dominantEdge, dominatedEdge))
+    newGraph(nDominantUsesMap = typeMemberUses2typeUsesMap + (dominatedEdge, dominantEdge),
+      nDominatedUsesMap = typeUses2typeMemberUsesMap + (dominantEdge, dominatedEdge))
 
   def removeUsesDependency(dominantEdge : EdgeT,
                            dominatedEdge :EdgeT) : GraphT =
@@ -356,8 +355,8 @@ class DependencyGraph
 
   def removeUsesDependency(dominantEdge : (NIdT, NIdT),
                            dominatedEdge : (NIdT, NIdT)) : GraphT =
-    newGraph(nDominantUsesMap = memberUses2typeUsesMap - (dominatedEdge, dominantEdge),
-      nDominatedUsesMap = typeUses2memberUsesMap - (dominantEdge, dominatedEdge))
+    newGraph(nDominantUsesMap = typeMemberUses2typeUsesMap - (dominatedEdge, dominantEdge),
+      nDominatedUsesMap = typeUses2typeMemberUsesMap - (dominantEdge, dominatedEdge))
 
   def addAbstraction(id : NIdT, abs : (NIdT, AbstractionPolicy)) : GraphT =
     newGraph(nAbstractionsMap = abstractionsMap + (id, abs),
@@ -494,10 +493,10 @@ class DependencyGraph
   def users(useeId: NIdT) : Iterable[NIdT] = usersMap getFlat useeId
 
   def typeUsesOf(typeMemberUse : (NIdT, NIdT)) : Iterable[(NIdT, NIdT)] =
-    memberUses2typeUsesMap getFlat typeMemberUse
+    typeMemberUses2typeUsesMap getFlat typeMemberUse
 
   def typeMemberUsesOf(typeUse : (NIdT, NIdT)) : Iterable[(NIdT, NIdT)] =
-    typeUses2memberUsesMap  getFlat typeUse
+    typeUses2typeMemberUsesMap  getFlat typeUse
 
   def dominates(dominantEdge : (NIdT, NIdT),
                 dominatedEdge : (NIdT, NIdT)) : Boolean =
@@ -507,7 +506,7 @@ class DependencyGraph
     abstractionsMap getFlat id
 
   def violations() : Seq[EdgeT] =
-    concreteNodesId.flatMap {n =>
+    concreteNodesId.flatMap { n =>
       val wu = constraints.wrongUsers(this, n).map(DGEdge.uses(_,n))
       if(constraints.isWronglyContained(this, n))
          DGEdge.contains(container(n).get, n) +: wu

@@ -83,18 +83,13 @@ trait TransformationRules {
 
       val newUse : EdgeT = DGEdge.uses(oldEdge.user, newUsed)
 
-      val g2 =
-        if(keepOldUse)
-          newUse.create(g)
-        else
-          oldEdge.changeTarget(g, newUsed)
-
+      val g2 = if(keepOldUse) newUse.create(g)
+        else oldEdge.changeTarget(g, newUsed)
 
       val g3 = g.getConcreteNode(oldEdge.user).styp match {
         case NoType => g2
         case sTyp => g2.changeType(oldEdge.user, sTyp, oldEdge.used, newUsed)
       }
-
 
       val tryG4 : Try[GraphT] = if(!propagateRedirection) Success(g3)
         else {
@@ -105,15 +100,11 @@ trait TransformationRules {
         if(!isTypeUse && !isTypeMemberUse)
           throw new DGError(s"uses ${showDG[EdgeT](g).show(oldEdge)} is not a type use nor a typeMember use !")
 
-        { if(isTypeUse)
-            redirectTypeUsesOf(g3, oldEdge, newUsed, policy)
-          else
-            Success(g3)
+        { if(isTypeMemberUse) propagateTypeMemberUseRedirection(g3, oldEdge, newUsed, policy)
+          else Success(g3)
         }.flatMap{ g3b =>
-          if(isTypeMemberUse)
-            redirectTypeMemberUse(g3b, oldEdge, newUsed, policy)
-          else
-            Success(g3b)
+          if(isTypeUse) propagateTypeUseRedirection(g3b, oldEdge, newUsed, policy)
+          else Success(g3b)
         }
 
       }
@@ -141,7 +132,7 @@ trait TransformationRules {
 
   def redirectThisTypeUse(g : GraphT, thisType : NodeId, movedId : NodeId): Try[(EdgeT, GraphT)]
 
-  def redirectTypeUsesOf(g : GraphT,
+  def propagateTypeMemberUseRedirection(g : GraphT,
                           currentTypeMemberUse : EdgeT,
                           newTypeMemberUsed : NodeId,
                           policy : RedirectionPolicy,
@@ -154,15 +145,15 @@ trait TransformationRules {
     g.logger.writeln(s"redirecting Type uses of typeMember use ${showDG[EdgeT](g).shows(currentTypeMemberUse)}" +
       s" (new typeMember used is ${showDG[NodeId](g).shows(newTypeMemberUsed)}) ")
 
-    val primaryUses = g.typeUsesOf(currentTypeMemberUse)
-    if(primaryUses.isEmpty) {
+    val typeUses = g.typeUsesOf(currentTypeMemberUse)
+    if(typeUses.isEmpty) {
       g.logger.writeln("no primary uses to redirect")
       Success(g)
     }
     else{
-      g.logger.writeln("uses to redirect:%s".format(primaryUses.mkString("\n\t", "\n\t","\n")))
+      g.logger.writeln("uses to redirect:%s".format(typeUses.mkString("\n\t", "\n\t","\n")))
 
-      traverse(primaryUses, g){(g0, primary0) =>
+      traverse(typeUses, g){(g0, primary0) =>
           val primary = DGEdge.uses(primary0)
 
           val keepOldUse = g.typeMemberUsesOf(primary0).nonEmpty //is empty if primary had only one side use
@@ -229,7 +220,7 @@ trait TransformationRules {
   }
 
 
-  def redirectTypeMemberUse(g : GraphT,
+  def propagateTypeUseRedirection(g : GraphT,
                        currentTypeUse: EdgeT,
                        newTypeUsed : NodeId,
                        policy : RedirectionPolicy) : Try[GraphT] = {
@@ -297,7 +288,7 @@ trait TransformationRules {
         val g2 = g.changeSource(DGEdge.contains(oldContainer, movedId), newContainer)
         g.users(movedId).foldLeft[Try[GraphT]](Success(g2)){
           case (tg0, userId) =>
-            tg0 flatMap (redirectTypeUsesOf(_, DGEdge.uses(userId, movedId), movedId,
+            tg0 flatMap (propagateTypeMemberUseRedirection(_, DGEdge.uses(userId, movedId), movedId,
               Move, propagateRedirection = false))
         }
     }
@@ -354,7 +345,7 @@ trait TransformationRules {
     //val primaryUses = new UsesDependencyMap(consumerId, Dominated())
 
 
-    val dominated_dominant_seq = g.memberUses2typeUsesMap.toSeq
+    val dominated_dominant_seq = g.typeMemberUses2typeUsesMap.toSeq
 
 
     val g5 : GraphT = dominated_dominant_seq.foldLeft(g4) {
@@ -367,7 +358,7 @@ trait TransformationRules {
     }
 
 
-    val g6 = g.typeUses2memberUsesMap.toSeq.foldLeft(g5) {
+    val g6 = g.typeUses2typeMemberUsesMap.toSeq.foldLeft(g5) {
       case (g0, (( `consumedId`, primeUseeId), sidUses)) =>
         sidUses.foldLeft(g0) { case (g00, sUse) =>
           g00.addUsesDependency((consumerId, primeUseeId), sUse)
