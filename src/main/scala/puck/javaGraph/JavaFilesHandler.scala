@@ -98,7 +98,7 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
         /*import ShowDG._
         println(showTransformation(resultGraph).shows(r))*/
 
-        val jreenactor = reenactor.asInstanceOf[JavaDependencyGraph]
+        val jreenactor = reenactor.asInstanceOf[DependencyGraph]
         val res = applyer(resultGraph, jreenactor, graph2ASTMap, r)
 
         //println(program)

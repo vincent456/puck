@@ -12,6 +12,20 @@ import puck.util.{PuckLog, PuckLogger}
 /**
  * Created by lorilan on 23/07/14.
  */
+
+object AG2AST {
+  def packageNode(graph : DependencyGraph, id : NodeId) : NodeId ={
+    def aux(id : NodeId) : NodeId =
+      graph.getConcreteNode(id).kind match {
+        case Package => id
+        case _ => aux(graph.container(id).
+          getOrElse(throw new DGError( graph.fullName(id) + "has no package")))
+
+      }
+    aux(id)
+  }
+}
+import AG2AST._
 class AG2AST(val program : AST.Program,
              val logger : PuckLogger) {
   implicit val defaultVerbosity = (PuckLog.AG2AST, PuckLog.Info)
@@ -30,7 +44,7 @@ class AG2AST(val program : AST.Program,
   def verbosity : PuckLog.Level => PuckLog.Verbosity = l => (PuckLog.AG2AST, l)
 
   def apply(resultGraph : DependencyGraph,
-            reenactor: JavaDependencyGraph,
+            reenactor: DependencyGraph,
             id2declMap: Map[NodeId, ASTNodeLink],
             t: Transformation) : Map[NodeId, ASTNodeLink] = t match {
     case Transformation(Add, TTCNode(n)) =>
@@ -258,12 +272,12 @@ class AG2AST(val program : AST.Program,
 
 
   def redirectSource(resultGraph: DependencyGraph,
-                     reenactor : JavaDependencyGraph,
+                     reenactor : DependencyGraph,
                      id2declMap: NodeId => ASTNodeLink,
                      e: DGEdge, newSourceId: NodeId) : Unit =  {
     import AST.ASTNode.VIS_PUBLIC
 
-    def moveMethod( reenactor : JavaDependencyGraph,
+    def moveMethod( reenactor : DependencyGraph,
                     tDeclFrom : AST.TypeDecl,
                     tDeclDest : AST.TypeDecl,
                     mDecl : AST.MethodDecl) : Unit ={
@@ -276,7 +290,7 @@ class AG2AST(val program : AST.Program,
 
       if (tDeclFrom.getVisibility != VIS_PUBLIC) {
         reenactor.users(e.target).find { uerId =>
-          reenactor.packageNode(uerId) != reenactor.packageNode(newSourceId)
+          packageNode(reenactor, uerId) != packageNode(reenactor, newSourceId)
         } match {
           case Some(_) => mDecl.setVisibility(VIS_PUBLIC)
           case None => ()
@@ -306,7 +320,7 @@ class AG2AST(val program : AST.Program,
 
       if (tDecl.getVisibility != VIS_PUBLIC) {
         reenactor.users(e.target).find { userId =>
-          reenactor.packageNode(userId) != newSourceId
+          packageNode(reenactor, userId) != newSourceId
         } match {
           case Some(_) => tDecl.setVisibility(VIS_PUBLIC)
           case None => ()

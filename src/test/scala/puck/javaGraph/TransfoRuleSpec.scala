@@ -118,6 +118,13 @@ class TransfoRuleSpec extends AcceptanceSpec {
     scenario("From class to superType interface"){
       val ex = redirection.classToInterfaceSuperType
 
+      val superTypeRegisteredAsClassUsedAbstraction =
+        ex.graph.abstractions(ex.classUsed).exists{
+          case ((absId, policy)) =>
+            absId == ex.superType && policy == SupertypeAbstraction
+        }
+      assert(superTypeRegisteredAsClassUsedAbstraction)
+
       val use = DGEdge.uses(ex.mUser, ex.classUsed)
       assert(use.exists(ex.graph))
       assert(DGEdge.uses(ex.mUser, ex.mUsed).exists(ex.graph))

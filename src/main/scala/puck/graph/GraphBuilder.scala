@@ -92,4 +92,11 @@ class GraphBuilder {
 
   }
 
+  type ImplId = NodeId
+  type AbsId = NodeId
+
+  def registerAbstraction : DependencyGraph => (ImplId, AbsId, AbstractionPolicy) => DependencyGraph =
+    graph => (implId , absId, pol) => graph.addAbstraction(implId, (absId, pol))
+
+
 }

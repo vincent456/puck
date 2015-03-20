@@ -2,7 +2,7 @@ package puck.javaGraph
 
 import puck.graph._
 import puck.graph.DependencyGraph._
-import puck.graph.constraints.ConstraintsMaps
+import puck.graph.constraints.{SupertypeAbstraction, AbstractionPolicy, ConstraintsMaps}
 import puck.graph.transformations.Recording
 import puck.javaGraph.nodeKind._
 import puck.util.PuckNoopLogger
@@ -17,7 +17,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 
    val root = ConcreteNode(rootId, rootName, JavaRoot, NoType, true)
 
-   g = new JavaDependencyGraph(PuckNoopLogger, idSeed,
+   g = new DependencyGraph(PuckNoopLogger, JavaNodeKind, idSeed,
    ConcreteNodeIndex() + (rootId -> root), ConcreteNodeIndex(),
      VirtualNodeINdex(), VirtualNodeINdex(), Nodes2VNodeMap(),
     EdgeMap(), EdgeMap(), EdgeMap(),
@@ -219,5 +219,21 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 
   def registerDecl(n : NodeIdT, decl : AST.FieldDeclaration) =
     register(n, Field, FieldDeclHolder(decl), "FieldDeclaration")
+
+
+  override def registerAbstraction : DependencyGraph => (ImplId, AbsId, AbstractionPolicy) => DependencyGraph =
+    graph => (implId , absId, pol) =>
+    if(pol != SupertypeAbstraction) super.registerAbstraction(graph)(implId , absId, pol)
+    else {
+      val impl = graph.getConcreteNode(implId)
+      val abs = graph.getConcreteNode(absId)
+      (impl.kind, abs.kind) match {
+        case (Class, Class)
+          | (Class, Interface)
+          | (Interface, Interface) =>
+            graph.addAbstraction(implId, (absId, pol))
+      }
+
+    }
 
 }

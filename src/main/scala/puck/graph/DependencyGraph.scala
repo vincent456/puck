@@ -64,6 +64,7 @@ object DependencyGraph {
 
 class DependencyGraph
 ( val logger : PuckLogger = PuckNoopLogger,
+  val nodeKindKnowledge: NodeKindKnowledge,
   private [this] val idSeed : Int,
   private [this] val nodesIndex : ConcreteNodeIndex,
   private [this] val removedNodes : ConcreteNodeIndex,
@@ -107,7 +108,7 @@ class DependencyGraph
                nAbstractionsMap : AbstractionMap = abstractionsMap,
                nConstraints : ConstraintsMaps = constraints,
                nRecording : transformations.Recording = recording) : DependencyGraph =
-    new DependencyGraph(nLogger, nIdSeed,
+    new DependencyGraph(nLogger, nodeKindKnowledge, nIdSeed,
                         nNodesSet, nRemovedNodes, nVNodesIndex, nVRemovedNodes, nNodes2vNodes,
                         nUsersMap, nUsesMap,
                         nContentMap, nContainerMap, nSuperTypesMap, nSubTypesMap,
@@ -188,6 +189,7 @@ class DependencyGraph
 
 
   def nodesId : Iterable[NodeId] = nodesIndex.keys ++ vNodesIndex.keys
+  def concreteNodesId : Iterable[NodeId] = nodesIndex.keys
   def numNodes : Int = nodesIndex.size + vNodesIndex.size
   
   /*def getNodeTuple(id : NIdT) = nodesIndex get id match {
@@ -410,7 +412,7 @@ class DependencyGraph
    * Read-only queries
    */
 
-  def nodeKinds : Seq[NodeKind] = Seq()
+  def nodeKinds : Seq[NodeKind] = nodeKindKnowledge.nodeKinds
 
   def container(contentId : NIdT) : Option[NIdT] = containerMap.get(contentId)
     /*containerMap.get(contentId) match {
@@ -424,8 +426,6 @@ class DependencyGraph
         throw new AGError(msg)*/
       case Some(id) => id
     }*/
-
-
 
   def content(containerId: NIdT) : Set[NIdT] = contentsMap.getFlat(containerId)
 
@@ -446,11 +446,8 @@ class DependencyGraph
       }
     }
 
-  def canContain(n : DGNode, other : ConcreteNode): Boolean = {
-    !contains_*(other.id, n.id) && // no cycle !
-      (n.kind canContain other.kind) &&
-      n.isMutable
-  }
+  def canContain(n : DGNode, cn : ConcreteNode) : Boolean =
+      nodeKindKnowledge.canContain(this)(n,cn)
 
   def containerPath(id : NIdT)  : Seq[NIdT] = {
     def aux(current : NIdT, acc : Seq[NIdT]) : Seq[NIdT] = {
@@ -510,7 +507,7 @@ class DependencyGraph
     abstractionsMap getFlat id
 
   def violations() : Seq[EdgeT] =
-    nodesIndex.keys.flatMap {n =>
+    concreteNodesId.flatMap {n =>
       val wu = constraints.wrongUsers(this, n).map(DGEdge.uses(_,n))
       if(constraints.isWronglyContained(this, n))
          DGEdge.contains(container(n).get, n) +: wu
@@ -524,9 +521,7 @@ class DependencyGraph
   def printConstraints[V](logger : Logger[V], v : V) : Unit =
     constraints.printConstraints(this, logger, v)
 
- def coupling = nodesIndex.keys.foldLeft(0 : Double){
-   (acc, id) => acc + Metrics.coupling(id, this)
- }
+ def coupling = nodeKindKnowledge.coupling(this)
 
   def subTree(root : NIdT) : Seq[NIdT] = {
     def aux(roots : Seq[NIdT], acc : Seq[NIdT]): Seq[NIdT] = roots match {
@@ -541,4 +536,5 @@ class DependencyGraph
 
   def isTypeUse : DGEdge => Boolean = _ => false
   def isTypeMemberUse : DGEdge => Boolean = _ => false
+
 }

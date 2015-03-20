@@ -2,6 +2,7 @@ package puck.javaGraph
 package nodeKind
 
 
+import puck.graph.ShowDG._
 import puck.graph._
 import puck.graph.constraints.AbstractionPolicy
 
@@ -27,7 +28,7 @@ case object WildCardType extends JavaNodeKind{
   def abstractKinds(p : AbstractionPolicy) = Seq()
 }
 
-object JavaNodeKind {
+object JavaNodeKind extends NodeKindKnowledge {
 
   //import AccessGraph.dummyId
   /*def packageKind = Package(dummyId)
@@ -47,9 +48,75 @@ object JavaNodeKind {
 
   def noType = NoType
 
-  val list = Seq[NodeKind](Package, Interface,
+  val nodeKinds = Seq[NodeKind](Package, Interface,
     Class, Constructor, Method, /*ConstructorMethod,*/
     Field, AbstractMethod, Literal, Primitive)
+
+  def concreteNodeTestPred(graph : DependencyGraph, nid : NodeId)
+                          (pred: ConcreteNode => Boolean): Boolean =
+    graph.getNode(nid) mapConcrete (pred, false)
+
+  override def canContain(graph : DependencyGraph)
+                         (n : DGNode, other : ConcreteNode) : Boolean = {
+    val id = n.id
+
+    def noNameClash( l : Int )( cId : NodeId ) : Boolean =
+      concreteNodeTestPred(graph, cId){ c =>
+        (c.kind, c.styp) match {
+          case (ck: MethodKind, MethodTypeHolder(typ))=>
+            c.name != other.name || typ.input.length != l
+          case (ck: MethodKind, _)=> throw new DGError()
+          case _ => true
+        }
+      }
+
+    def implementMethod(absMethodName : String, absMethodType : Arrow[Tuple[NamedType], NamedType])(id : NodeId) : Boolean =
+      graph.content(id).exists(concreteNodeTestPred(graph, _) { c =>
+        (c.kind, c.styp) match {
+          case (Method, MethodTypeHolder(typ)) => absMethodName == c.name && absMethodType == typ
+          case (Method, _) => throw new DGError()
+          case _ => false
+        }
+      })
+
+    super.canContain(graph)(n, other) &&
+      ( (other.kind, other.styp) match {
+        case (AbstractMethod, MethodTypeHolder(absMethodType)) =>
+          graph.content(id).forall(noNameClash(absMethodType.input.length)) &&
+            graph.directSubTypes(id).forall {implementMethod(other.name, absMethodType)}
+
+        case (AbstractMethod, _) => throw new DGError(other + " does not have a MethodTypeHolder")
+        /* cannot have two methods with same name and same type */
+        case (Method, MethodTypeHolder(typ)) =>
+          graph.content(id).forall(noNameClash(typ.input.length))
+        case (Method, _) => throw new DGError(s"canContain(${showDG[NodeId](graph).shows(id)}, ${showDG[NodeId](graph).shows(other.id)})")
+        case _ => true
+      })
+  }
+
+  def isTypeUse : DependencyGraph => DGEdge => Boolean = graph => {
+    case DGEdge(Uses, _, id) =>
+      concreteNodeTestPred(graph, id){ cn => cn.kind == Interface || cn.kind == Class}
+    case _ => false
+  }
+  def isTypeMemberUse : DependencyGraph => DGEdge => Boolean = graph => {
+    case DGEdge(Uses, _, id) =>
+      concreteNodeTestPred(graph, id){ cn => cn.kind match {
+        case _: MethodKind | Field | Constructor => true
+        case _ => false
+      }
+      }
+    case _ => false
+  }
+
+  override def coupling(graph : DependencyGraph) =
+    graph.concreteNodes.foldLeft(0 : Double){ (acc, n) => n.kind match {
+    case Package =>
+      val c = Metrics.coupling(n.id, graph)
+      if(c.isNaN) acc
+      else acc + c
+    case _ => acc
+  }}
 }
 
 case class NamedTypeHolder(typ : NamedType) extends TypeHolder{
