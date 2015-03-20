@@ -4,7 +4,7 @@ package javaGraph
 import puck.graph.constraints.{AbstractionPolicy, SupertypeAbstraction, DelegationAbstraction}
 import puck.graph.{DependencyGraph, NodeId, DGEdge, NoType}
 import puck.javaGraph.nodeKind._
-import puck.util.PuckFileLogger
+import puck.util.{PuckSystemLogger, PuckFileLogger}
 
 import scalaz.{Success, Failure}
 
@@ -55,12 +55,9 @@ class TransfoRuleSpec extends AcceptanceSpec {
       println("initialGraph.uses(classA, classA) = " + initialGraph.uses(classA, classA))
       println("initialGraph.typeUsesOf(DGEdge.uses(methMa1, methMa2)) = " + initialGraph.typeUsesOf(DGEdge.uses(methMa1, methMa2)))
 
-      val tryG = TR.moveTo(g2, methMa2, classB.id)
-
-      tryG match{
-        case Failure(_) => assert(false)
+      TR.moveTo(g2, methMa2, classB.id) match{
+        case Failure(errs) => assert(false)
         case Success(g3) =>
-
           g3.container(methMa2) match {
             case None => assert(false)
             case Some(cid) => assert(cid == classB.id)
@@ -115,7 +112,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
       }*/
     }
 
-    scenario("From class to superType interface"){
+    ignore("From class to superType interface"){
       val ex = redirection.classToInterfaceSuperType
 
       val superTypeRegisteredAsClassUsedAbstraction =

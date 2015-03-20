@@ -38,8 +38,7 @@ trait TransformationRules {
   //TODO see if it can be rewritten using scalaz !
   def traverse[A, B, E](a: Iterable[A], b: B)(f: (B, A) => Validation[E, B]): Validation[E,B] =
     a.foldLeft[Validation[E,B]](Success(b)){case (b0, a0) =>
-      if(b0.isSuccess) b0 flatMap (f(_, a0))
-      else b0
+      b0 flatMap (f(_, a0))
     }
 
   def abstractionName(g: GraphT, impl: ConcreteNode, abskind : NodeKind, policy : AbstractionPolicy) : String =
@@ -161,12 +160,9 @@ trait TransformationRules {
       Success(g)
     }
     else{
-
-
       g.logger.writeln("uses to redirect:%s".format(primaryUses.mkString("\n\t", "\n\t","\n")))
 
-      primaryUses.foldLeft[Try[GraphT]](Success(g)){
-        case (tryG0, primary0) =>
+      traverse(primaryUses, g){(g0, primary0) =>
           val primary = DGEdge.uses(primary0)
 
           val keepOldUse = g.typeMemberUsesOf(primary0).nonEmpty //is empty if primary had only one side use
@@ -180,9 +176,9 @@ trait TransformationRules {
                 findNewTypeUsed(g, primary.used, newTypeMemberUsed, policy),
                 policy, propagateRedirection, keepOldUse)
 
+          val g1 = g0.removeUsesDependency(primary, currentTypeMemberUse)
 
           for(
-            g1 <- tryG0.map { _.removeUsesDependency(primary, currentTypeMemberUse)};
             eg <- redirect(g1);
             (newPrimary, g2) = eg
           ) yield
@@ -291,7 +287,8 @@ trait TransformationRules {
 
   def moveTo(g : GraphT, movedId : NodeId, newContainer : NodeId): Try[GraphT] = {
     g.container(movedId) match {
-      case None => Failure(new RedirectionError("moved node has no container !!!")).toValidationNel
+      case None =>
+        Failure(new RedirectionError("moved node has no container !!!")).toValidationNel
       case Some(oldContainer) =>
         g.logger.writeln(s"moving ${showDG[NodeId](g).shows(movedId)} " +
           s"from ${showDG[NodeId](g).shows(oldContainer)} " +

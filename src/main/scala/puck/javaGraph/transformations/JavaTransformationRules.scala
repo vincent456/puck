@@ -161,6 +161,8 @@ object JavaTransformationRules extends TransformationRules {
   }
 
   def redirectThisTypeUse(g : GraphT, thisType : NodeId, movedId : NodeId): Try[(EdgeT, GraphT)] = {
+    g.logger.writeln(s"redirecting This.Type use (${showDG[NodeId](g).shows(thisType)})")
+
     val typeNode = g.getConcreteNode(thisType)
     val movedNode = g.getConcreteNode(movedId)
     typeNode.kind match {
