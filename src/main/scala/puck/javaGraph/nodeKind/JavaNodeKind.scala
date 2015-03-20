@@ -70,7 +70,7 @@ object JavaNodeKind extends NodeKindKnowledge {
         }
       }
 
-    def implementMethod(absMethodName : String, absMethodType : Arrow[Tuple[NamedType], NamedType])(id : NodeId) : Boolean =
+    def implementMethod(absMethodName : String, absMethodType : Arrow)(id : NodeId) : Boolean =
       graph.content(id).exists(concreteNodeTestPred(graph, _) { c =>
         (c.kind, c.styp) match {
           case (Method, MethodTypeHolder(typ)) => absMethodName == c.name && absMethodType == typ
@@ -133,11 +133,9 @@ case class NamedTypeHolder(typ : NamedType) extends TypeHolder{
 
 }
 
-case class MethodTypeHolder(typ : Arrow[Tuple[NamedType], NamedType]) extends TypeHolder{
+case class MethodTypeHolder(typ : MethodType) extends TypeHolder{
 
-  def getTypeNodeIds : List[NodeId] = {
-    typ.input.types.foldLeft(List[NodeId](typ.output.id)){(acc, nt) => nt.id :: acc}
-  }
+  def getTypeNodeIds : List[NodeId] = typ.ids
 
   def redirectUses(oldUsee : NodeId,
                    newUsee: DGNode) : TypeHolder=

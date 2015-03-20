@@ -28,12 +28,12 @@ object ShowDG {
     }
   }
 
-  implicit def typeCord : CordBuilder[Type[_]] = (dg, th) => th match {
+  implicit def typeCord : CordBuilder[Type] = (dg, th) => th match {
     case NamedType(nid) => name(dg, dg.getNode(nid))
     case Tuple(types) =>
-      types.map(t => typeCord(dg,t.asInstanceOf[Type[_]]).toString).mkString("(", ", ", ")")
+      types.map(t => typeCord(dg,t.asInstanceOf[Type]).toString).mkString("(", ", ", ")")
       //types.map(typeCord(dg,_)).fold
-    case Arrow(in, out) =>Cord( typeCord(dg, in.asInstanceOf[Type[_]]), " -> ", typeCord(dg, out.asInstanceOf[Type[_]]))
+    case Arrow(in, out) =>Cord( typeCord(dg, in.asInstanceOf[Type]), " -> ", typeCord(dg, out.asInstanceOf[Type]))
   }
 
   implicit def typeHolderCord : CordBuilder[TypeHolder] = (dg, th) => th match {

@@ -3,95 +3,108 @@ package puck.graph
 /**
  * Created by lorilan on 28/10/14.
  */
-abstract class Type[T <: Type[T]] {
+abstract class Type {
 
   type NIdT = NodeId
 
-  def copy() : T
-  def subtypeOf(other : Type[_]) : Boolean = this == other
+  def copy() : Type
+  def subtypeOf(graph : DependencyGraph,
+                other : Type) : Boolean = this == other
 
-  def redirectUses(oldUsee : NIdT, newUsee: DGNode) : T
+  def ids : List[NodeId]
 
-  def canOverride(other : Type[_]) : Boolean = this subtypeOf other
+  def redirectUses(oldUsee : NIdT, newUsee: DGNode) : Type
+
+  def canOverride(graph : DependencyGraph,
+                  other : Type) : Boolean = this.subtypeOf(graph, other)
 }
 
 case class NamedType(id : NodeId)
-  extends Type[NamedType]{
+  extends Type{
 
   override def equals(other : Any) = other match {
     case that : NamedType => that.id == this.id
     case _ => false
   }
 
+  def ids = List(id)
   def create(n : NodeId) = NamedType(n)
 
   def copy() = create(id)
 
-  def redirectUses(oldUsee : NIdT, newUsee: DGNode) =
+  def redirectUses(oldUsee : NIdT, newUsee: DGNode) : NamedType =
     if(id == oldUsee) create(newUsee.id)
     else copy()
 
-  override def subtypeOf(other : Type[_]) : Boolean = ??? /*super.subtypeOf(other) ||
+  override def subtypeOf(graph : DependencyGraph,
+                         other : Type) : Boolean =
+    super.subtypeOf(graph, other) ||
     (other match {
-      //TODO fix cast
-      case NamedType(othern) => othern.asInstanceOf[NodeId[Kind]] isSuperTypeOf node
+      case NamedType(otherId) =>
+        graph.isSuperTypeOf(otherId, id)
       case _ => false
-    })*/
+    })
 
 }
 
-case class Tuple[T <: Type[T]](types: Seq[T])
-  extends Type[Tuple[T]] {
+case class Tuple(types: List[Type])
+  extends Type {
 
   override def equals(other : Any) = other match {
     case Tuple(ts) => types.length == ts.length &&
       ((types, ts).zipped forall {
-        case (s : Type[_], t: Type[_]) => s == t
+        case (s : Type, t: Type) => s == t
       })
     case _ => false
   }
 
-  def create(ts: Seq[T]) = Tuple[T](ts)
+  def ids = types.foldLeft(List[NodeId]()){(acc, t) => t.ids ::: acc }
+
+  def create(ts: List[Type]) = Tuple(ts)
   def copy() = create(types)
 
-  def redirectUses(oldUsee : NIdT, newUsee: DGNode) : Tuple[T] =
+  def redirectUses(oldUsee : NIdT, newUsee: DGNode) : Tuple =
     create(types.map(_.redirectUses(oldUsee, newUsee)))
 
-  override def subtypeOf(other : Type[_]) : Boolean = super.subtypeOf(other) ||
+  override def subtypeOf(graph : DependencyGraph,
+                         other : Type) : Boolean =
+    super.subtypeOf(graph, other) ||
     (other match {
       case Tuple(ts) => types.length == ts.length &&
-        ((types, ts).zipped forall {
-          case (s : Type[_], t: Type[_]) => s.subtypeOf(t)
-        })
+        ((types, ts).zipped forall {(s , t) => s.subtypeOf(graph, t)})
       case _ => false
     })
 
   def length = types.length
 }
 
-case class Arrow[T <: Type[T],
-                 S <: Type[S]](input : T, output : S)
-  extends Type[Arrow[T, S]]{
+case class Arrow(input : Type, output : Type)
+  extends Type {
+
+  def ids = output.ids ::: input.ids
 
   override def equals(other : Any) : Boolean = other match {
-    case Arrow(i : Type[_], o : Type[_]) => i == input  && output == o
+    case Arrow(i : Type, o : Type) => i == input  && output == o
     case _ => false
   }
 
-  def create(i : T, o : S) = Arrow[T, S](i, o)
+  def create(i : Type, o : Type) = Arrow(i, o)
   def copy() = create(input.copy(), output.copy())
 
-  def redirectUses(oldUsee : NIdT, newUsee: DGNode) : Arrow[T, S]=
+  def redirectUses(oldUsee : NIdT, newUsee: DGNode) : Arrow =
     create(input.redirectUses(oldUsee, newUsee),
       output.redirectUses(oldUsee, newUsee))
 
   def redirectContravariantUses(oldUsee : NIdT, newUsee: DGNode) =
     create(input.redirectUses(oldUsee, newUsee), output)
 
-  override def subtypeOf(other : Type[_]) : Boolean = ??? /*super.subtypeOf(other) ||
+  override def subtypeOf(graph : DependencyGraph,
+                         other : Type) : Boolean =
+    super.subtypeOf(graph, other) ||
     ( other match{
-      case Arrow(i : Type[Kind, _], o : Type[Kind, _]) => i.subtypeOf(input) && output.subtypeOf(o)
-      case _ => false })*/
+      case Arrow(i : Type, o : Type) =>
+        i.subtypeOf(graph, input) && output.subtypeOf(graph, o)
+      case _ => false })
 
 }
 
