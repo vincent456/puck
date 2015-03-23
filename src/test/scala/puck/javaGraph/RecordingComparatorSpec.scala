@@ -1,3 +1,4 @@
+
 package puck.javaGraph
 
 import puck.graph.constraints.SupertypeAbstraction
@@ -21,10 +22,7 @@ class RecordingComparatorSpec extends AcceptanceSpec {
 
   feature("Comparison"){
 
-    val ex1 = methodUsesViaThisField
-
-    def liftAssert(ex : ExampleSample, tg1 : TryG, tg2 : TryG, expected : Boolean): Unit = {
-
+    def liftAssert(ex: ExampleSample, tg1: TryG, tg2: TryG, expected: Boolean): Unit = {
       val app = Applicative[puck.graph.Try]
       val res = app.apply2(tg1, tg2)(ex.compare)
       res match {
@@ -33,67 +31,72 @@ class RecordingComparatorSpec extends AcceptanceSpec {
       }
     }
 
-    scenario("Same transformations, intro Interface"){
+    scenario("Same transformations, intro Interface") {
+      import methodUsesViaThisField._
 
-      def seq() = TR.createAbstraction(ex1.graph, ex1.classB, Interface, SupertypeAbstraction)
-        .map {case (classBAbs, g) => g.addContains(ex1.rootPackage, classBAbs.id)}
+      def seq() = TR.createAbstraction(graph, classBNode, Interface, SupertypeAbstraction)
+        .map { case (classBAbs, g) => g.addContains(rootPackage, classBAbs.id) }
 
       val t1 = seq()
 
       val t2 = seq()
 
-      liftAssert(ex1, t1, t2, expected = true)
+      liftAssert(methodUsesViaThisField, t1, t2, expected = true)
     }
 
-    scenario("Same transformations, intro Interface, intro package, move interface in new package "){
-      def seq(pname : String) =
-        introItcPackageAndMove(ex1.graph, ex1.classB, pname, ex1.rootPackage) map (_._1)
+    scenario("Same transformations, intro Interface, intro package, move interface in new package ") {
+      import methodUsesViaThisField._
+
+      def seq(pname: String) =
+        introItcPackageAndMove(graph, classBNode, pname, rootPackage) map (_._1)
 
       val t1 = seq("p1")
       val t2 = seq("p2")
 
-      liftAssert(ex1, t1, t2, expected = true)
+      liftAssert(methodUsesViaThisField, t1, t2, expected = true)
     }
 
-    scenario("Different transformations, intro Interface, intro (different) package, move interface in new package "){
-      val t1 = introItcPackageAndMove(ex1.graph, ex1.classB, "p1", ex1.rootPackage) map (_._1)
-      val t2 = introItcPackageAndMove(ex1.graph, ex1.classB, "p2", ex1.graph.rootId) map (_._1)
+    scenario("Different transformations, intro Interface, intro (different) package, move interface in new package ") {
+      import methodUsesViaThisField._
 
-      liftAssert(ex1, t1, t2, expected = false)
+      val t1 = introItcPackageAndMove(graph, classBNode, "p1", rootPackage) map (_._1)
+      val t2 = introItcPackageAndMove(graph, classBNode, "p2", graph.rootId) map (_._1)
+
+      liftAssert(methodUsesViaThisField, t1, t2, expected = false)
     }
 
-    val ex2 = needToMergeInterfaces
+    scenario("Same merge, same result ") {
+      import needToMergeInterfaces._
 
-    scenario("Same merge, same result "){
-      val t1 = TR.merge(ex2.graph, ex2.itcB, ex2.itcC)
+      val t1 = TR.merge(graph, itcB, itcC)
+      val t2 = TR.merge(graph, itcB, itcC)
 
-
-      val t2 = TR.merge(ex2.graph, ex2.itcB, ex2.itcC)
-
-      liftAssert(ex2, t1, t2, expected = true)
+      liftAssert(needToMergeInterfaces, t1, t2, expected = true)
     }
 
     scenario("Different path, merge, same result "){
-
+      import methodUsesViaThisField._
 
       val t1 =
-        introItcPackageAndMove(ex1.graph, ex1.classB, "p1", ex1.rootPackage)
-        .flatMap{ case (g, pid, itcId) =>
-          introItcPackageAndMove(g, ex1.classB, "p2", ex1.graph.rootId)
+        introItcPackageAndMove(graph, classBNode, "p1", rootPackage)
+          .flatMap{ case (g, pid, itcId) =>
+          introItcPackageAndMove(g, classBNode, "p2", graph.rootId)
             .flatMap {case (g2, pid2, itcId2) =>
             TR.merge(g2, itcId, itcId2)}
         }
       val t2 =
-        introItcPackageAndMove(ex1.graph, ex1.classB, "p3", ex1.graph.rootId)
+        introItcPackageAndMove(graph, classBNode, "p3", graph.rootId)
           .flatMap{ case (g, pid, itcId) =>
-          introItcPackageAndMove(g, ex1.classB, "p4", ex1.rootPackage)
+          introItcPackageAndMove(g, classBNode, "p4", rootPackage)
             .flatMap {case (g2, pid2, itcId2) =>
             TR.merge(g2, itcId2, itcId)}
         }
 
-      liftAssert(ex1, t1, t2, expected = true)
+      liftAssert(methodUsesViaThisField, t1, t2, expected = true)
     }
+
 
   }
 
 }
+

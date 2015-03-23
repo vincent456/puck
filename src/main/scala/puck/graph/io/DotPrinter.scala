@@ -51,11 +51,11 @@ class DotPrinter
 
   def html_safe(str : String) : String = str.replaceAllLiterally(">", "&gt;").replaceAllLiterally("<", "&lt;")
 
-  val signatureString : TypeHolder => String =
+  val signatureString : Option[Type] => String =
     if (printSignatures)
       styp => {
         import ShowDG._
-        showDG[TypeHolder](graph).shows(styp).replaceAllLiterally(">", "&gt;") + " "
+        showDG[Option[Type]](graph).shows(styp).replaceAllLiterally(">", "&gt;") + " "
       }
     else _ => ""
 

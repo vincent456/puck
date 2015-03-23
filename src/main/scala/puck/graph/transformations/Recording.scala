@@ -64,7 +64,7 @@ class Recording
     Transformation(Add, red) +: this
   }
   def addTypeChange( typed : NIdT,
-                     typ: TypeHolder,
+                     typ: Option[Type],
                      oldUsee: NIdT,
                      newUsee : NIdT) : RecT =
     Transformation(Add, TTTypeRedirection(typed, typ, oldUsee, newUsee)) +: this

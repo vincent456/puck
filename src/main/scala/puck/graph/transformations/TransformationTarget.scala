@@ -8,7 +8,6 @@ import puck.graph.constraints.AbstractionPolicy
  */
 sealed trait TransformationTarget{
   type GraphT= DependencyGraph
-  type STyp = TypeHolder
   def execute(g: GraphT, op : Operation) : GraphT
   def productPrefix : String
 }
@@ -77,7 +76,7 @@ class RedirectionWithMerge(edge : DGEdge, extremity : Extremity)
 
 case class TTTypeRedirection
 (typed : NodeId,
- typ : TypeHolder,
+ typ : Option[Type],
  oldUsee: NodeId,
  newUsee : NodeId)
   extends TransformationTarget{

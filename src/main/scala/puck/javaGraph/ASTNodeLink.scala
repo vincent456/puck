@@ -63,10 +63,7 @@ object ASTNodeLink{
         createConstructorMethodDecl(prog, graph, id2decl, node)
       case AbstractMethod =>
         node.styp match {
-          case MethodTypeHolder(arrow) =>
-            //TODO remove asInstanceOf
-            val mt = arrow.asInstanceOf[MethodType]
-
+          case Some(mt @ MethodType(_,_)) =>
             AbstractMethodDeclHolder(AST.MethodDecl.createAbstractMethod(mt.createReturnAccess(graph, id2decl),
               node.name, mt.createASTParamList(graph, id2decl).toArray))
 

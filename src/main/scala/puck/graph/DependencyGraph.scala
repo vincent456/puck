@@ -87,7 +87,6 @@ class DependencyGraph
   type NIdT = NodeId
   type EdgeT = DGEdge
   type GraphT = DependencyGraph
-  type STyp = TypeHolder
 
   def newGraph(nLogger : PuckLogger = logger,
                nIdSeed : Int = idSeed,
@@ -122,29 +121,6 @@ class DependencyGraph
     (PuckLog.InGraph, lvl)
 
 
-
-
-  /*private [graph] def addNode(id : NIdT,
-                              localName:String,
-                              kind: NodeKind,
-                              styp: STyp,
-                              mutable : Mutability) : DependencyGraph =
-    newGraph(nNodesSet = nodesIndex + (id -> DGNode(id, localName, kind, styp, mutable)),
-             nRemovedNodes = removedNodes - id,
-             nRecording = recording.addNode(id, localName, kind, styp, mutable))*/
-
-/*  private [graph] def addNode(n : DGNode) : DependencyGraph =
-    n match {
-      case cn : ConcreteNode => newGraph(nNodesSet = nodesIndex + (n.id -> cn),
-        nRemovedNodes = removedNodes - n.id,
-        nRecording = recording.addNode(n))
-      case vn : VirtualNode => newGraph(nVNodesIndex = vNodesIndex + (n.id -> vn),
-        nVRemovedNodes = vRemovedNodes - n.id,
-        nRecording = recording.addNode(n))
-    }*/
-
-
-
   val rootId : NIdT = 0
   def root = getNode(rootId)
   def isRoot(id : NIdT) = id == rootId
@@ -154,7 +130,7 @@ class DependencyGraph
        nRemovedNodes = removedNodes - n.id,
        nRecording = recording.addConcreteNode(n))
 
-  def addConcreteNode(localName:String, kind: NodeKind, th : TypeHolder,
+  def addConcreteNode(localName:String, kind: NodeKind, th : Option[Type],
                       mutable : Mutability = true, sid : Option[NodeId] = None) : (ConcreteNode, GraphT) = {
     val (id, g) = sid match {
       case None => (idSeed + 1, newGraph(nIdSeed = idSeed + 1))
@@ -190,7 +166,12 @@ class DependencyGraph
   def nodesId : Iterable[NodeId] = nodesIndex.keys ++ vNodesIndex.keys
   def concreteNodesId : Iterable[NodeId] = nodesIndex.keys
   def numNodes : Int = nodesIndex.size + vNodesIndex.size
-  
+
+  def isaEdges : List[DGEdge] = superTypesMap.content.foldLeft(List[DGEdge]()){
+    case (acc, (sub, sups)) =>
+      sups.toList.map(sup => DGEdge.isa(sub, sup)) ::: acc
+  }
+
   /*def getNodeTuple(id : NIdT) = nodesIndex get id match {
     case Some((_, name, kind, styp, mutable)) => (id, name, kind, styp, mutable, Created)
     case None => removedNodes get id match {
@@ -269,32 +250,7 @@ class DependencyGraph
         newGraph(nVRemovedNodes = vRemovedNodes + (n.id -> vn) )
   }
 
-  //def setNode(n : DGNode) : GraphT = setNode(n.id, n.name, n.kind, n.styp, n.isMutable, n.status)
-  //def setNode(n : NodeT, status : NodeStatus) : GraphT = setNode(n._1, n._2, n._3, n._4, n._5, status)
-  /*def setNode(id : NIdT, name : String, k : NodeKind, styp : STyp, mutable : Boolean, t : NodeStatus) : GraphT = {
-    val assoc = id -> DGNode(id, name, k, styp, mutable, t)
-    t match {
-      case Created => newGraph(nNodesSet = nodesIndex + assoc )
-      case Removed => newGraph(nRemovedNodes = removedNodes + assoc )
-    }
-  }*/
-
-/*  def setKind(id : NIdT, k : NodeKind) = getNodeTuple(id) match {
-    case (_, name, _, styp, mutability, status) => setNode(id, name, k, styp, mutability, status)
-  }
-
-  def setType(id : NIdT, st : STyp) =
-    getNodeTuple(id) match {
-      case (_, name, k, _, mutability, t) =>  setNode(id, name, k, st, mutability, t)
-    }
-
- def setMutability(id : NIdT, mutable : Boolean) =
-   getNodeTuple(id) match {
-     case (_, name, k, st, _, t) =>  setNode(id, name, k, st, mutable, t)
-   }*/
-
-
-  def setType(id : NIdT, st : STyp) : GraphT = {
+  def setType(id : NIdT, st : Option[Type]) : GraphT = {
     val (n, s) = getConcreteNodeWithStatus(id)
     setNode(n.copy(styp = st), s)
   }
@@ -366,18 +322,6 @@ class DependencyGraph
     newGraph(nAbstractionsMap = abstractionsMap - (id, abs),
              nRecording = recording.removeAbstraction(id, abs._1, abs._2))
 
-  /*def addEdge(edge : EdgeType, register : Boolean = true) : AccessGraph = edge.kind match {
-    case Uses() => addUses(edge.user, edge.usee, register)
-    case Contains() => addContains(edge.source, edge.target, register)
-    case Isa() => addIsa(edge.source, edge.target, register)
-  }
-
-  def removeEdge(edge : EdgeType, register : Boolean = true) : AccessGraph = edge.kind match {
-    case Uses() => removeUses(edge.user, edge.usee, register)
-    case Contains() => removeContains(edge.source, edge.target, register)
-    case Isa() => removeIsa(edge.source, edge.target, register)
-  }*/
-
   def changeTarget(edge : EdgeT, newTarget : NIdT) : GraphT = {
     val g1 = edge.delete(this, register = false)
     val newEdge : EdgeT = new DGEdge(edge.kind, edge.source, newTarget)
@@ -392,21 +336,22 @@ class DependencyGraph
     newEdge.create(g1, register = false).newGraph(nRecording = newRecording)
   }
 
-  def changeType(id : NIdT, typ : STyp, oldUsee: NIdT, newUsee : NIdT) : GraphT = {
-    val newTyp= typ.redirectUses(oldUsee, getNode(newUsee))
+  def changeType(id : NIdT, styp : Option[Type], oldUsee: NIdT, newUsee : NIdT) : GraphT =
+    styp match {
+      case None => this
+      case Some(t) => val newTyp= Some(t.redirectUses(oldUsee, getNode(newUsee)))
+        setType(id, newTyp).
+          newGraph(nRecording = recording.addTypeChange(id, styp, oldUsee, newUsee))
+    }
 
-    setType(id, newTyp).
-      newGraph(nRecording = recording.addTypeChange(id, typ, oldUsee, newUsee))
-
+  def changeContravariantType(id : NIdT, styp : Option[Type], oldUsee: NIdT, newUsee : NIdT) : GraphT =
+  styp match {
+    case None => this
+    case Some(t) => val newTyp= Some(t.redirectContravariantUses(oldUsee, getNode(newUsee)))
+      setType(id, newTyp).
+        newGraph(nRecording = recording.addTypeChange(id, styp, oldUsee, newUsee))
   }
 
-  def changeContravariantType(id : NIdT, typ : STyp, oldUsee: NIdT, newUsee : NIdT) : GraphT = {
-    val newTyp= typ.redirectContravariantUses(oldUsee, getNode(newUsee))
-
-    setType(id, newTyp).
-      newGraph(nRecording = recording.addTypeChange(id, typ, oldUsee, newUsee))
-
-  }
   /*
    * Read-only queries
    */

@@ -18,7 +18,7 @@ object DGNode {
   def apply(id : NodeId,
             name : String,
             kind : NodeKind,
-            styp : TypeHolder,
+            styp : Option[Type],
             isMutable : Boolean) : DGNode = ConcreteNode(id, name, kind, styp, isMutable)
 
 
@@ -47,7 +47,7 @@ case class ConcreteNode
 ( id : NodeId,
   name : String,
   kind : NodeKind,
-  styp : TypeHolder,
+  styp : Option[Type],
   isMutable : Boolean)  extends DGNode {
 
   override def toString = s"ConcreteNode($id - $kind $name)"

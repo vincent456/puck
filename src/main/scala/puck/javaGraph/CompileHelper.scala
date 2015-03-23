@@ -6,6 +6,8 @@ import puck.graph._
 import puck.graph.transformations.{NodeMappingInitialState, Recording}
 import puck.util.FileHelper
 
+import scala.concurrent.Future
+
 
 /**
  * Created by lorilan on 22/02/15.
@@ -45,6 +47,7 @@ object CompileHelper {
 
         val builder = p.buildAccessGraph(map, null)
         builder.attachOrphanNodes()
+        builder.registerSuperTypes()
 
         val (_, transfos) = NodeMappingInitialState.normalizeNodeTransfos(builder.g.recording(), Seq())
         (p, builder.g.newGraph(nRecording = Recording()),

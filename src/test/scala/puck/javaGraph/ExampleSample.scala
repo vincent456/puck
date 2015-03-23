@@ -22,7 +22,8 @@ case class ExampleSample
                 Map[NodeId, ASTNodeLink])) =
         this(t._1, t._2, t._3, t._4, t._5)
 
-  def this(filePath : String) = this(CompileHelper.buildGraph(List(filePath), List()))
+  def this(filePath : String) =
+    this(CompileHelper.buildGraph(List(filePath), List()))
 
   var logger : PuckLogger = PuckNoopLogger
   def compare: (DependencyGraph, DependencyGraph) => Boolean =

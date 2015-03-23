@@ -92,7 +92,7 @@ trait Solver {
         case Some(hostKind) =>
           newCterNumGen += 1
           val hostName = s"${toBeContained.name}_container$newCterNumGen"
-          val (host, graph2) = graph.addConcreteNode(hostName, hostKind, NoType)
+          val (host, graph2) = graph.addConcreteNode(hostName, hostKind, None)
           logger.writeln(s"creating $hostName host intro, rec call to find host " +
             s"($parentsThatCanBeCreated parents can be created) " )
           findHost(graph2, host, allwaysTrue, parentsThatCanBeCreated - 1){

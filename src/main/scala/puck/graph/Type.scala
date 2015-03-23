@@ -15,6 +15,9 @@ abstract class Type {
 
   def redirectUses(oldUsee : NIdT, newUsee: DGNode) : Type
 
+  def redirectContravariantUses(oldUsee : NodeId, newUsee: DGNode) =
+    redirectUses(oldUsee, newUsee)
+
   def canOverride(graph : DependencyGraph,
                   other : Type) : Boolean = this.subtypeOf(graph, other)
 }
@@ -95,7 +98,7 @@ case class Arrow(input : Type, output : Type)
     create(input.redirectUses(oldUsee, newUsee),
       output.redirectUses(oldUsee, newUsee))
 
-  def redirectContravariantUses(oldUsee : NIdT, newUsee: DGNode) =
+  override def redirectContravariantUses(oldUsee : NIdT, newUsee: DGNode) =
     create(input.redirectUses(oldUsee, newUsee), output)
 
   override def subtypeOf(graph : DependencyGraph,

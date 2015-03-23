@@ -6,7 +6,7 @@ interface I {
 }
 
 class Impl implements I {
-    void mUsed(){}
+    public void mUsed(){}
 }
 
 class Delegator {

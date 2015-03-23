@@ -68,6 +68,6 @@ public class SVGFrame extends JFrame{
 
         this.setVisible(true);
         this.setMinimumSize(new Dimension(640, 480));
-        this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        this.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
     }
 }

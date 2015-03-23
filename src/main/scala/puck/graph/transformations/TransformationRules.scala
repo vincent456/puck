@@ -26,7 +26,6 @@ trait TransformationRules {
   //type NT = NodeT
   type EdgeT = DGEdge
   type GraphT = DependencyGraph
-  type STyp = TypeHolder
 
   implicit val defaulVerbosity : PuckLog.Verbosity =
     (PuckLog.GraphTransfoRules, PuckLog.Debug)
@@ -86,10 +85,8 @@ trait TransformationRules {
       val g2 = if(keepOldUse) newUse.create(g)
         else oldEdge.changeTarget(g, newUsed)
 
-      val g3 = g.getConcreteNode(oldEdge.user).styp match {
-        case NoType => g2
-        case sTyp => g2.changeType(oldEdge.user, sTyp, oldEdge.used, newUsed)
-      }
+      val g3 =  g2.changeType(oldEdge.user, g.getConcreteNode(oldEdge.user).styp,
+                              oldEdge.used, newUsed)
 
       val tryG4 : Try[GraphT] = if(!propagateRedirection) Success(g3)
         else {

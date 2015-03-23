@@ -1,5 +1,6 @@
 package puck.javaGraph
 
+import puck.PuckError
 import puck.graph._
 import puck.graph.DependencyGraph._
 import puck.graph.constraints.{SupertypeAbstraction, AbstractionPolicy, ConstraintsMaps}
@@ -7,6 +8,7 @@ import puck.graph.transformations.Recording
 import puck.javaGraph.nodeKind._
 import puck.util.PuckNoopLogger
 import scala.collection.JavaConversions.collectionAsScalaIterable
+import scalaz._, Scalaz._
 
 /**
  * Created by lorilan on 29/10/14.
@@ -15,7 +17,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 
    var idSeed = rootId
 
-   val root = ConcreteNode(rootId, rootName, JavaRoot, NoType, true)
+   val root = ConcreteNode(rootId, rootName, JavaRoot, None, true)
 
    g = new DependencyGraph(PuckNoopLogger, JavaNodeKind, idSeed,
    ConcreteNodeIndex() + (rootId -> root), ConcreteNodeIndex(),
@@ -33,7 +35,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
   Predefined.list foreach addPredefined*/
 
   def addPackageNode(fullName: String, localName:String) : NodeIdT =
-    super.addNode(fullName, localName, Package, NoType)
+    super.addNode(fullName, localName, Package, None)
 
 
   def addPackage(p : String, mutable : Boolean): NodeIdT =
@@ -70,7 +72,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
   def addApiTypeNode(td: AST.TypeDecl): NodeIdT = {
     //println("adding api td " + td.fullName() + " with packagedecl " + td.packageName())
     val packageNode = addPackage(td.packageName(), mutable = false)
-    val tdNode = addNode(td.fullName(), td.name(), td.getAGNodeKind, NoType)
+    val tdNode = addNode(td.fullName(), td.name(), td.getAGNodeKind, None)
     setMutability(tdNode, mutable = false)
 
     /*if(doAddUses)
@@ -141,10 +143,8 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
     def stringType = {
       val td = findTypeDecl("java.lang.string")
       val nid = addApiTypeNode(td)
-      NamedTypeHolder(new JavaNamedType(nid))
+      Some(new JavaNamedType(nid))
     }
-
-
 
     println("string "+literal + " "+ occurrences.size()+" occurences" )
 
@@ -221,6 +221,38 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
     register(n, Field, FieldDeclHolder(decl), "FieldDeclaration")
 
 
+  def findOverridedMethod(g : DependencyGraph,
+                          absName : String, absSig : MethodType,
+                          candidates : List[ConcreteNode]) : Option[(ConcreteNode, List[ConcreteNode])] = {
+    type Discarded = List[ConcreteNode]
+    type Remainings = List[ConcreteNode]
+
+    def aux : (Discarded, Remainings) => Option[(ConcreteNode, List[ConcreteNode])] = {
+      case (_, List()) => None
+      case (ds, c :: tl) =>
+        if(c.styp.nonEmpty && c.styp.exists(absSig.canOverride(g, _)))
+          Some((c, ds ::: tl ))
+        else aux(c :: ds, tl)
+    }
+
+    aux(List(), candidates)
+  }
+
+  def findAndRegisterOverridedMethods(g : DependencyGraph,
+                                      absMeths : List[ConcreteNode],
+                                      candidates : List[ConcreteNode]): Option[DependencyGraph] =
+    Foldable[List].foldLeftM[Option, ConcreteNode, (DependencyGraph, List[ConcreteNode])](absMeths, (g, candidates.toList)){
+      case ((g0, cs), absM) =>
+        absM.styp match {
+          case Some(mt @ MethodType(_,_)) =>
+            findOverridedMethod(g0, absM.name, mt, cs).map {
+              case ((node, newCs)) =>
+                (g0.addAbstraction(node.id, (absM.id, SupertypeAbstraction)), newCs)
+            }
+          case _ => None
+        }
+    } map(_._1)
+
   override def registerAbstraction : DependencyGraph => (ImplId, AbsId, AbstractionPolicy) => DependencyGraph =
     graph => (implId , absId, pol) =>
     if(pol != SupertypeAbstraction) super.registerAbstraction(graph)(implId , absId, pol)
@@ -231,7 +263,13 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
         case (Class, Class)
           | (Class, Interface)
           | (Interface, Interface) =>
-            graph.addAbstraction(implId, (absId, pol))
+            val absMeths = graph.content(abs.id).map(graph.getConcreteNode)
+            val candidates = graph.content(impl.id).map(graph.getConcreteNode)
+            findAndRegisterOverridedMethods(graph, absMeths.toList, candidates.toList)
+              match {
+              case None => throw new PuckError("all overrided methods not found")
+              case Some(g1) => g1.addAbstraction(implId, (absId, pol))
+            }
       }
 
     }

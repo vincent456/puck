@@ -54,6 +54,8 @@ class JavaFilesHandler (workingDirectory : File) extends FilesHandler(workingDir
 
           jgraphBuilder.attachOrphanNodes()
 
+          jgraphBuilder.registerSuperTypes()
+
           graphBuilder = jgraphBuilder
 
           graph = (graphBuilder.g withLogger this.logger).newGraph(nRecording = Recording())

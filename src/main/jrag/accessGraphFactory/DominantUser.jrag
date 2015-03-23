@@ -1,9 +1,6 @@
 
 aspect DominantUser {
 
-
-
-
 	public int Expr.buildDominantUserAGNode(JavaGraphBuilder builder){
 		throw new AGBuildingError("Cannot get a primary user from the qualifier : " + this +
                 " ("+this.getClass()+")");
@@ -32,8 +29,20 @@ aspect DominantUser {
       if(lexpr == null)
         throw new NoDominantUser();
       else
-          return lexpr.type().buildAGNode(builder);
+          return lexpr.typeUserFromLeftExpr(builder);
         //return lexpr.buildDominantUserAGNodeOfRightExpr(builder);
+  }
+
+  int Expr.typeUserFromLeftExpr(JavaGraphBuilder builder){
+    throw new AGBuildingError("typeUser not found");
+  }
+
+  int MethodAccess.typeUserFromLeftExpr(JavaGraphBuilder builder){
+      return decl().buildAGNode(builder);
+  }
+
+  int VarAccess.typeUserFromLeftExpr(JavaGraphBuilder builder){
+      return decl().buildAGNode(builder);
   }
 
   // public int ASTNode.buildDominantUserAGNodeOfRightExpr(JavaGraphBuilder builder){

@@ -46,7 +46,7 @@ object JavaNodeKind extends NodeKindKnowledge {
   def typeVariable = TypeVariable
   def wildcardType = WildCardType
 
-  def noType = NoType
+  def noType : Option[Type] = None
 
   val nodeKinds = Seq[NodeKind](Package, Interface,
     Class, Constructor, Method, /*ConstructorMethod,*/
@@ -63,17 +63,18 @@ object JavaNodeKind extends NodeKindKnowledge {
     def noNameClash( l : Int )( cId : NodeId ) : Boolean =
       concreteNodeTestPred(graph, cId){ c =>
         (c.kind, c.styp) match {
-          case (ck: MethodKind, MethodTypeHolder(typ))=>
-            c.name != other.name || typ.input.length != l
+          case (ck: MethodKind, Some(MethodType(input, _)))=>
+            c.name != other.name || input.length != l
           case (ck: MethodKind, _)=> throw new DGError()
           case _ => true
         }
       }
 
-    def implementMethod(absMethodName : String, absMethodType : Arrow)(id : NodeId) : Boolean =
+    def implementMethod(absMethodName : String, absMethodType : MethodType)(id : NodeId) : Boolean =
       graph.content(id).exists(concreteNodeTestPred(graph, _) { c =>
         (c.kind, c.styp) match {
-          case (Method, MethodTypeHolder(typ)) => absMethodName == c.name && absMethodType == typ
+          case (Method, Some(mt @ MethodType(_, _))) =>
+            absMethodName == c.name && absMethodType == mt
           case (Method, _) => throw new DGError()
           case _ => false
         }
@@ -81,14 +82,14 @@ object JavaNodeKind extends NodeKindKnowledge {
 
     super.canContain(graph)(n, other) &&
       ( (other.kind, other.styp) match {
-        case (AbstractMethod, MethodTypeHolder(absMethodType)) =>
-          graph.content(id).forall(noNameClash(absMethodType.input.length)) &&
+        case (AbstractMethod, Some(absMethodType @ MethodType(input, _))) =>
+          graph.content(id).forall(noNameClash(input.length)) &&
             graph.directSubTypes(id).forall {implementMethod(other.name, absMethodType)}
 
         case (AbstractMethod, _) => throw new DGError(other + " does not have a MethodTypeHolder")
         /* cannot have two methods with same name and same type */
-        case (Method, MethodTypeHolder(typ)) =>
-          graph.content(id).forall(noNameClash(typ.input.length))
+        case (Method, Some(MethodType(input, _))) =>
+          graph.content(id).forall(noNameClash(input.length))
         case (Method, _) => throw new DGError(s"canContain(${showDG[NodeId](graph).shows(id)}, ${showDG[NodeId](graph).shows(other.id)})")
         case _ => true
       })
@@ -117,30 +118,4 @@ object JavaNodeKind extends NodeKindKnowledge {
       else acc + c
     case _ => acc
   }}
-}
-
-case class NamedTypeHolder(typ : NamedType) extends TypeHolder{
-
-  def getTypeNodeIds : List[NodeId] = List(typ.id)
-
-
-  def redirectUses(oldUsee : NodeId,
-                   newUsee: DGNode) : TypeHolder=
-  NamedTypeHolder(typ.redirectUses(oldUsee, newUsee))
-
-  def redirectContravariantUses(oldUsee : NodeId, newUsee: DGNode) =
-    redirectUses(oldUsee, newUsee)
-
-}
-
-case class MethodTypeHolder(typ : MethodType) extends TypeHolder{
-
-  def getTypeNodeIds : List[NodeId] = typ.ids
-
-  def redirectUses(oldUsee : NodeId,
-                   newUsee: DGNode) : TypeHolder=
-    MethodTypeHolder(typ.redirectUses(oldUsee, newUsee))
-  def redirectContravariantUses(oldUsee : NodeId, newUsee: DGNode) =
-    MethodTypeHolder(typ.redirectContravariantUses(oldUsee, newUsee))
-
 }

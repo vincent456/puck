@@ -4,7 +4,7 @@ package javaGraph
 import puck.graph.constraints.{AbstractionPolicy, SupertypeAbstraction, DelegationAbstraction}
 import puck.graph._
 import puck.javaGraph.nodeKind._
-import puck.util.{PuckSystemLogger, PuckFileLogger}
+import puck.util.{DefaultSystemLogger, PuckSystemLogger, PuckFileLogger}
 
 import scalaz.{Success, Failure}
 
@@ -23,10 +23,75 @@ class TransfoRuleSpec extends AcceptanceSpec {
         options, puck.testExamplesPath + "/" + name)()
     }*/
 
-
-  info("Transformation Rules TestSuite")
-
   import Scenarii._
+
+  implicit class Contains[G]( t : Iterable[G]){
+    def contains(elem : G ) : Boolean = {
+      t.exists( _ == elem )
+    }
+  }
+
+  info("GraphBuilding Tests")// if moved in a specific Spec, errors due to parrallelism and
+  // the compilation ensue ... TOFIX ?
+
+  feature("typeUse typeMemberUse relation registration"){
+    import typeRelationship._
+    scenario("call on field") {
+      import callOnField._
+
+      val typeUse = DGEdge.uses(fieldTypeUser, typeUsed)
+      val typeMemberUse = DGEdge.uses(methUser, typeMemberUsed)
+
+      /*println("typeMemberUses2typeUsesMap")
+      println(graph.typeMemberUses2typeUsesMap.content.mkString("\n"))
+      println("typeUses2typeMemberUsesMap")
+      println(graph.typeUses2typeMemberUsesMap.content.mkString("\n"))
+
+      quickFrame(graph)*/
+      assert( graph.typeMemberUsesOf(typeUse) contains typeMemberUse )
+    }
+
+    scenario("call on method's parameter"){
+      import callOnParameter._
+
+      val typeUse = DGEdge.uses(mUser, classUsed)
+      val typeMemberUse = DGEdge.uses(mUser, mUsed)
+
+      assert( graph.typeMemberUsesOf(typeUse) contains typeMemberUse )
+
+    }
+    scenario("call from local variable"){
+      import callOnLocalVariable._
+      val typeUse = DGEdge.uses(mUser, classUsed)
+      val typeMemberUse = DGEdge.uses(mUser, mUsed)
+
+      assert( graph.typeMemberUsesOf(typeUse) contains typeMemberUse )
+    }
+    scenario("chained call"){
+      import chainedCall._
+
+      val typeUse = DGEdge.uses(mIntermediate, classUsed)
+      val typeMemberUse = DGEdge.uses(mUser, mUsed)
+
+      assert( graph.typeMemberUsesOf(typeUse) contains typeMemberUse )
+    }
+  }
+
+  feature("Abstraction registration"){
+    import abstractionRegistration._
+    scenario("one class one interface"){
+      import interfaceSupertype._
+
+      assert( graph.abstractions(classUsed) contains ((superType, SupertypeAbstraction)) )
+      assert( graph.abstractions(mUsed) contains ((absmUsed, SupertypeAbstraction)) )
+    }
+  }
+
+
+
+  info("Transformation Rules Tests")
+
+
 
   implicit class TestValidation[G]( t : Try[G]){
     def assertSuccess(f : G => Unit) : Unit = {
@@ -50,8 +115,8 @@ class TransfoRuleSpec extends AcceptanceSpec {
     val case1 = methodUsesViaThisField
     scenario("Move class"){
       val (g, package1) = introPackage(case1.graph, "p1", case1.rootPackage)
-      TR.moveTo(g, case1.classB.id, package1.id).assertSuccess {
-        g2 => g2.container(case1.classB.id).assertSome {
+      TR.moveTo(g, case1.classBNode.id, package1.id).assertSuccess {
+        g2 => g2.container(case1.classBNode.id).assertSome {
           pid0 => assert(pid0 == package1.id)
         }
       }
@@ -60,7 +125,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
     scenario("Move method used by this"){
       import usesThisMethod.{graph => initialGraph, _}
 
-      val (classB, g2) = initialGraph.addConcreteNode("B", Class, NoType)
+      val (classB, g2) = initialGraph.addConcreteNode("B", Class, None)
       g2.addContains(rootPackage, classB.id)
 
       TR.moveTo(g2, methMa2, classB.id).assertSuccess { g3 =>
@@ -96,11 +161,11 @@ class TransfoRuleSpec extends AcceptanceSpec {
     }
 
     ignore("From class to delegator class"){
-      val ex = redirection.classToClassDelegate
+      import redirection.classToClassDelegate._
 
-      classToAbsScenario(ex.graph, ex.mUser,
-        ex.delegatee, ex.mDelegatee,
-        ex.delegator, ex.mDelegator,
+      classToAbsScenario(graph, mUser,
+        delegatee, mDelegatee,
+        delegator, mDelegator,
         DelegationAbstraction)
 
       /*val use = DGEdge.uses(ex.mUser, ex.delegatee)
@@ -116,27 +181,16 @@ class TransfoRuleSpec extends AcceptanceSpec {
     }
 
     scenario("From class to superType interface"){
-      val ex = redirection.classToInterfaceSuperType
+      import redirection.classToInterfaceSuperType._
 
-      val superTypeRegisteredAsClassUsedAbstraction =
-        ex.graph.abstractions(ex.classUsed).exists{
-          case ((absId, policy)) =>
-            absId == ex.superType && policy == SupertypeAbstraction
-        }
-      assert(superTypeRegisteredAsClassUsedAbstraction)
+      val use = DGEdge.uses(mUser, classUsed)
+      assert(use.exists(graph))
+      assert(DGEdge.uses(mUser, mUsed).exists(graph))
 
-      val use = DGEdge.uses(ex.mUser, ex.classUsed)
-      assert(use.exists(ex.graph))
-      assert(DGEdge.uses(ex.mUser, ex.mUsed).exists(ex.graph))
-      TR.redirectUsesOf(ex.graph, use, ex.superType, SupertypeAbstraction) match {
-        case Failure(_) => assert(false)
-        case Success((newUse, g2)) =>
-          quickFrame(g2)
-          assert(DGEdge.uses(ex.mUser, ex.superType) == newUse)
-          assert(newUse.exists(g2))
-          assert(DGEdge.uses(ex.mUser, ex.absmUsed).exists(g2))
-      }
+      classToAbsScenario(graph, mUser,
+        classUsed, mUsed,
+        superType, absmUsed,
+        DelegationAbstraction)
     }
-
   }
 }

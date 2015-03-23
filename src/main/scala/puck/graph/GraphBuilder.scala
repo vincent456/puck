@@ -13,12 +13,12 @@ class GraphBuilder {
   def getNodeByName( k : String) : NodeIdT = nodesByName(k) //java accessor
 
   def addPredefined(id : NodeIdT, fullName : String, name : String, kind : NodeKind): Unit = {
-    g = g.addConcreteNode(name, kind, NoType, mutable = false, Some(id))._2
+    g = g.addConcreteNode(name, kind, None, mutable = false, Some(id))._2
     nodesByName += (fullName -> id)
     ()
   }
 
-  def addNode(unambiguousFullName: String, localName:String, kind: NodeKind, th : TypeHolder): NodeIdT = {
+  def addNode(unambiguousFullName: String, localName:String, kind: NodeKind, th : Option[Type]): NodeIdT = {
     nodesByName get unambiguousFullName match {
       case None =>
         val (n, g2) = g.addConcreteNode(localName, kind, th)
@@ -33,7 +33,7 @@ class GraphBuilder {
     g = g.setMutability(id, mutable)
   }
 
-  def setType(id : NodeIdT, typ : TypeHolder): Unit ={
+  def setType(id : NodeIdT, typ : Option[Type]): Unit ={
     g = g.setType(id, typ)
   }
 
@@ -48,10 +48,10 @@ class GraphBuilder {
     g = g.addIsa(subTypeId, superTypeId)
   }
 
-  def addUsesDependency(dominantUser: NodeIdT, dominantUsee: NodeIdT,
-                         dominatedUser: NodeIdT, dominatedUsee:NodeIdT): Unit ={
-    g = g.addUsesDependency( (dominantUser, dominantUsee),
-                              (dominatedUser, dominatedUsee))
+  def addTypeRelationship(typeUser: NodeIdT, typeUsed: NodeIdT,
+                         typeMemberUser: NodeIdT, typeMemberUsed:NodeIdT): Unit ={
+    g = g.addUsesDependency( (typeUser, typeUsed),
+                              (typeMemberUser, typeMemberUsed))
   }
 
   var constraintsMap = ConstraintsMaps()
@@ -98,5 +98,10 @@ class GraphBuilder {
   def registerAbstraction : DependencyGraph => (ImplId, AbsId, AbstractionPolicy) => DependencyGraph =
     graph => (implId , absId, pol) => graph.addAbstraction(implId, (absId, pol))
 
+
+  def registerSuperTypes() =
+    g = g.isaEdges.foldLeft(g){ (g, e) =>
+      registerAbstraction(g)(e.source, e.target, SupertypeAbstraction)
+    }
 
 }

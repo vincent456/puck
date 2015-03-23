@@ -1,7 +1,6 @@
 package puck.graph
 
 import puck.graph.transformations._
-import puck.javaGraph.nodeKind.{MethodTypeHolder, NamedTypeHolder}
 
 import scalaz._
 
@@ -30,16 +29,14 @@ object ShowDG {
 
   implicit def typeCord : CordBuilder[Type] = (dg, th) => th match {
     case NamedType(nid) => name(dg, dg.getNode(nid))
-    case Tuple(types) =>
-      types.map(t => typeCord(dg,t.asInstanceOf[Type]).toString).mkString("(", ", ", ")")
+    case Tuple(types) => types.map(t => typeCord(dg,t).toString()).mkString("(", ", ", ")")
       //types.map(typeCord(dg,_)).fold
     case Arrow(in, out) =>Cord( typeCord(dg, in.asInstanceOf[Type]), " -> ", typeCord(dg, out.asInstanceOf[Type]))
   }
 
-  implicit def typeHolderCord : CordBuilder[TypeHolder] = (dg, th) => th match {
-    case NoType => ""
-    case NamedTypeHolder(t) => Cord(" : ", typeCord(dg, t))
-    case MethodTypeHolder(t) => Cord(" : ", typeCord(dg, t))
+  implicit def typeHolderCord : CordBuilder[Option[Type]] = (dg, th) => th match {
+    case None => ""
+    case Some(t) => Cord(" : ", typeCord(dg, t))
   }
 
   implicit def nodeIdCord : CordBuilder[NodeId] =
@@ -72,9 +69,9 @@ object ShowDG {
         Cord(tgt.productPrefix, "(", ecord ,",", xcord ,")")
 
       case TTTypeRedirection(typed, typ, oldUsed, newUsed) =>
-        val ntyped = dg.getNode(typed).toString()
-        val nold = dg.getNode(oldUsed).toString()
-        val nnew = dg.getNode(newUsed).toString()
+        val ntyped = dg.getNode(typed).toString
+        val nold = dg.getNode(oldUsed).toString
+        val nnew = dg.getNode(newUsed).toString
         Cord(tgt.productPrefix, "(", ntyped ,",", typ.toString ,
           ",", nold , ",", nnew ,")")
       case _ => tgt.toString

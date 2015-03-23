@@ -148,11 +148,11 @@ aspect AccessGraphFactory {
 		
 		builder.addUses(containerId, nodeId);
 
-		int dominantUserId = buildDominantUserAGNode(builder);
-		int dominantUsedId = decl().hostType().buildAGNode(builder);
+        int typeUserId = buildDominantUserAGNode(builder);
+        int typeUsedId = decl().hostType().buildAGNode(builder);
 
-		builder.addUsesDependency(dominantUserId, dominantUsedId, 
-            					  containerId, nodeId);
+        builder.addTypeRelationship(typeUserId, typeUsedId,
+                                    containerId, nodeId);
 
 		for(Expr e : getArgList()){
 			e.buildAG(builder, containerId);
@@ -172,7 +172,7 @@ aspect AccessGraphFactory {
 	      builder.addUses(containerId, classNodeId);
 	      builder.addUses(ctorNodeId, classNodeId);
 
-	      builder.addUsesDependency(containerId, classNodeId,
+	      builder.addTypeRelationship(containerId, classNodeId,
 	              containerId, ctorNodeId);
 
 	    }
@@ -189,8 +189,8 @@ aspect AccessGraphFactory {
 		builder.addUses(containerId, classNodeId);
         builder.addUses(containerId, ctorNodeId);
 				
-		builder.addUsesDependency(containerId, classNodeId,
-                    			 containerId, ctorNodeId);
+		builder.addTypeRelationship(containerId, classNodeId,
+                    			    containerId, ctorNodeId);
 		
 	}
 

@@ -45,8 +45,14 @@ class JavaNamedType(n : NodeId) extends NamedType(n){
 }
 
 object MethodType{
-/*  def unapply( m : MethodType) : Option[(MethodType.InputType, MethodType.OutputType)] =
-  Some(m.input, m.output)*/
+ def unapply( mt : MethodType) : Option[(Tuple, NamedType)] =
+   Some((mt.input, mt.output))
+
+  /*def unapply( t : Type) : Option[(Tuple, NamedType)] =
+    t match {
+      case mt : MethodType => Some((mt.input, mt.output))
+      case _ => None
+    }*/
 }
 
 class MethodType(override val input : Tuple,

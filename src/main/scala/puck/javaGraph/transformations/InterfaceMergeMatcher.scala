@@ -20,19 +20,15 @@ object InterfaceMergeMatcher {
     }
   }
 
-  def findMergingCandidateIn(g : DependencyGraph, method : ConcreteNode, interface : ConcreteNode) : Option[NodeId] = {
-    //node.graph.logger.writeln("searching merging candidate for %s".format(node), 8)
-    if(method.styp.isEmpty)
-      throw new DGError("Method must have a type")
-
-    val mType = method.styp.redirectUses(g.container(method.id).get, interface)
-
-    g.content(interface.id).find { ncId =>
-      method.canBeMergedInto(g.getConcreteNode(ncId), g)
+  def findMergingCandidateIn(g : DependencyGraph, method : ConcreteNode, interface : ConcreteNode) : Option[NodeId] =
+    method.styp match {
+      case None => throw new DGError("Method must have a type")
+      case Some(t) =>
+        val m = method.copy(styp = Some(t.redirectUses(g.container(method.id).get, interface)))
+        g.content(interface.id).find { ncId =>
+          m.canBeMergedInto(g.getConcreteNode(ncId), g)
+        }
     }
-  }
-
-
 }
 
 import InterfaceMergeMatcher._

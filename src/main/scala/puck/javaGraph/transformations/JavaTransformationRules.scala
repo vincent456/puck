@@ -5,7 +5,7 @@ import puck.graph.ShowDG._
 import puck.graph._
 import puck.graph.constraints.{AbstractionPolicy, Move, RedirectionPolicy, SupertypeAbstraction}
 import puck.graph.transformations.{MergeMatcher, TransformationRules}
-import puck.javaGraph.JavaNamedType
+import puck.javaGraph.{MethodType, JavaNamedType}
 import puck.javaGraph.nodeKind._
 
 import scalaz.Validation.FlatMap._
@@ -29,17 +29,17 @@ object JavaTransformationRules extends TransformationRules {
       }
   }
 
-
-
   def insertInTypeHierarchy(g : GraphT, classId : NodeId, interfaceId : NodeId) : GraphT =
     g.directSuperTypes(classId).foldLeft(g){ (g0, superType) =>
       g0.changeSource(DGEdge.isa(classId, superType), interfaceId)
     }
 
-  def addTypesUses(g : GraphT, nodeId : NodeId) : GraphT = {
-    val typesUsed = g.getConcreteNode(nodeId).styp.getTypeNodeIds
-    typesUsed.foldLeft(g){(g0, tid) => g0.addUses(nodeId, tid)}
-  }
+  def addTypesUses(g : GraphT, node : ConcreteNode) : GraphT =
+    node.styp.map(_.ids) match {
+      case None => g
+      case Some(typesUsed) =>
+        typesUsed.foldLeft(g){(g0, tid) => g0.addUses(node.id, tid)}
+    }
 
   def createAbstractMethod(g : GraphT, meth : ConcreteNode,
                            clazz : ConcreteNode, interface : ConcreteNode) : Try[GraphT] ={
@@ -94,7 +94,7 @@ object JavaTransformationRules extends TransformationRules {
            (node.kind, node.styp) match {
               // even fields can need to be promoted if they are written
               //case Field() =>
-              case (ck : MethodKind, MethodTypeHolder(typ))  =>
+              case (ck : MethodKind, Some(MethodType(_, _)))  =>
                 changeSelfTypeBySuperInMethodSignature(g0, node, clazz, interface)
               case _ => Success(g0)
            }
@@ -126,7 +126,7 @@ object JavaTransformationRules extends TransformationRules {
 
       case (ConstructorMethod, _) =>
         super.createAbstraction(g, impl, abskind, policy) map { case (abs, g0) =>
-          (abs, addTypesUses(g0, abs.id))
+          (abs, addTypesUses(g0, abs))
         }
 
       case _ => super.createAbstraction(g, impl, abskind, policy)
@@ -168,7 +168,7 @@ object JavaTransformationRules extends TransformationRules {
     typeNode.kind match {
       case Class =>
         val newTypeUsed = findNewTypeUsed(g, thisType, movedId, Move)
-        val (field, g2) = g.addConcreteNode(movedNode.name + "_delegate", Field, NamedTypeHolder(new JavaNamedType(newTypeUsed)))
+        val (field, g2) = g.addConcreteNode(movedNode.name + "_delegate", Field, Some(new JavaNamedType(newTypeUsed)))
         val g3 = g2.addContains(thisType, field.id)
               .addUses(field.id, newTypeUsed)
               .addUses(movedId, field.id)

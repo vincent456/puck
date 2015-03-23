@@ -3,8 +3,7 @@ import puck.graph.Tuple;
 import puck.graph.Type;
 import puck.javaGraph.JavaNamedType;
 import puck.javaGraph.MethodType;
-import puck.javaGraph.nodeKind.NamedTypeHolder;
-import puck.javaGraph.nodeKind.MethodTypeHolder;
+import scala.Some;
 
 aspect AccessGraphTypeFactory {
 	
@@ -30,34 +29,25 @@ aspect AccessGraphTypeFactory {
 	}
 		
 	public void MethodDecl.buildAGType(JavaGraphBuilder builder){
-
-		JavaNamedType retType = 
+		JavaNamedType retType =
 			new JavaNamedType(getTypeAccess().buildAGNode(builder));
 		MethodType mt = new MethodType(ASTNode.astParamsToAGType(builder,this), retType);
-
-	    MethodTypeHolder typeHolder = new MethodTypeHolder( mt );
+	    Some<Type> typeHolder = new Some<Type>(mt);
 	    builder.setType(builder.getNodeByName(fullName()), typeHolder);
-
 	}
 
 	public void ConstructorDecl.buildAGType(JavaGraphBuilder builder){
 		JavaNamedType retType = 
 		           new JavaNamedType(hostType().buildAGNode(builder));
-
 		MethodType ct = new MethodType(ASTNode.astParamsToAGType(builder,this), retType);
-
-		MethodTypeHolder typeHolder = new MethodTypeHolder( ct );
-		
-		builder.setType(builder.getNodeByName(fullName()), typeHolder);
-
+		Some<Type> typeHolder = new Some<Type>(ct);
+        builder.setType(builder.getNodeByName(fullName()), typeHolder);
 	}
 
 	public void FieldDeclaration.buildAGType(JavaGraphBuilder builder){
-		
 		JavaNamedType type = new JavaNamedType(type().buildAGNode(builder));
-	    NamedTypeHolder typeHolder = new NamedTypeHolder(type);
+	    Some<Type> typeHolder = new Some<Type>(type);
 		builder.setType(builder.getNodeByName(fullName()), typeHolder);
-	        
 	}
 
 
