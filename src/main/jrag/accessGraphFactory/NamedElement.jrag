@@ -37,9 +37,9 @@ aspect NamedElement {
 
 	// }
 
-	//duplication needed for overload static resolution
+	//duplication needed for overloaded static resolution
 	public void TypeDecl.registerDecl(JavaGraphBuilder builder, int thisId){
-      System.err.println(this.fullName() + " - " + this.getClass() + " registered as primitive");
+      //System.err.println(this.fullName() + " - " + this.getClass() + " registered as primitive");
       builder.registerDecl(thisId, this);
   	}
 

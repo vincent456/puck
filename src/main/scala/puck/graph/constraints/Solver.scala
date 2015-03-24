@@ -51,8 +51,8 @@ trait Solver {
 
               //val breakPoint = g.startSequence()
 
-              rules.redirectUsesOf(g, DGEdge.uses(wu, used.id), abs, absPolicy) match {
-                  case Success((_, g2)) => (g2, unsolved)
+              rules.redirectUsesAndPropagate(g, DGEdge.uses(wu, used.id), abs, absPolicy) match {
+                  case Success(g2) => (g2, unsolved)
                   case Failure(e) =>
                     logger.writeln("redirection error catched !!")(PuckLog.Debug)
                     (g/*.undo(breakPoint)*/, wu +: unsolved)
@@ -206,7 +206,7 @@ trait Solver {
         logger.writeln("redirecting wrong users !!")
         wrongUsers.foldLeft(Success(g) : Try[GraphT]){
           (tryG, wuId) =>
-            tryG.flatMap(rules.redirectUsesOf(_, DGEdge.uses(wuId, impl.id), abs.id, absPolicy)).map(_._2)
+            tryG.flatMap(rules.redirectUsesAndPropagate(_, DGEdge.uses(wuId, impl.id), abs.id, absPolicy))
         }})
 
     aux (graph, 1, impl) (redirectWrongUsers)

@@ -36,9 +36,7 @@ trait TransformationRules {
 
   //TODO see if it can be rewritten using scalaz !
   def traverse[A, B, E](a: Iterable[A], b: B)(f: (B, A) => Validation[E, B]): Validation[E,B] =
-    a.foldLeft[Validation[E,B]](Success(b)){case (b0, a0) =>
-      b0 flatMap (f(_, a0))
-    }
+    a.foldLeft[Validation[E,B]](Success(b)){case (b0, a0) => b0 flatMap (f(_, a0))}
 
   def abstractionName(g: GraphT, impl: ConcreteNode, abskind : NodeKind, policy : AbstractionPolicy) : String =
     impl.name + "_" + policy
@@ -69,45 +67,46 @@ trait TransformationRules {
                                        policy : AbstractionPolicy) : GraphT = g
 
 
-  def redirectUsesOf(g : GraphT,
+  def redirectUses(g : GraphT,
+                   oldEdge : EdgeT, newUsed : NodeId,
+                   keepOldUse : Boolean) : GraphT = {
+
+    val g3 = if(keepOldUse) g.addUses(oldEdge.user, newUsed)
+    else oldEdge.changeTarget(g, newUsed)
+
+    g3.changeType(oldEdge.user, g.getConcreteNode(oldEdge.user).styp,
+      oldEdge.used, newUsed)
+  }
+  
+  def redirectUsesAndPropagate(g : GraphT,
                    oldEdge : EdgeT, newUsed : NodeId,
                    policy : RedirectionPolicy,
                    propagateRedirection : Boolean = true,
-                   keepOldUse : Boolean = false ) : Try[(EdgeT, GraphT)] = {
+                   keepOldUse : Boolean = false ) : Try[GraphT] = {
 
-    if(oldEdge.used == newUsed) Success((oldEdge, g))
-    else if(oldEdge.exists(g)){
+    if(oldEdge.used == newUsed) Success( g)
+    else if(oldEdge.existsIn(g)){
       g.logger.writeln(s"redirecting ${showDG[EdgeT](g).show(oldEdge)} target " +
         s"to ${showDG[NodeId](g).show(newUsed)} ($policy)")
 
-      val newUse : EdgeT = DGEdge.uses(oldEdge.user, newUsed)
-
-      val g2 = if(keepOldUse) newUse.create(g)
-        else oldEdge.changeTarget(g, newUsed)
-
-      val g3 =  g2.changeType(oldEdge.user, g.getConcreteNode(oldEdge.user).styp,
-                              oldEdge.used, newUsed)
-
-      val tryG4 : Try[GraphT] = if(!propagateRedirection) Success(g3)
+        if (!propagateRedirection)
+          Success(redirectUses(g, oldEdge, newUsed, keepOldUse))
         else {
 
-        val isTypeUse = g3.isTypeUse(oldEdge)
-        val isTypeMemberUse = g3.isTypeMemberUse(oldEdge)
+          val oldUsedKind = g.getNode(oldEdge.used).kind
 
-        if(!isTypeUse && !isTypeMemberUse)
-          throw new DGError(s"uses ${showDG[EdgeT](g).show(oldEdge)} is not a type use nor a typeMember use !")
-
-        { if(isTypeMemberUse) propagateTypeMemberUseRedirection(g3, oldEdge, newUsed, policy)
-          else Success(g3)
-        }.flatMap{ g3b =>
-          if(isTypeUse) propagateTypeUseRedirection(g3b, oldEdge, newUsed, policy)
-          else Success(g3b)
+          (if (oldUsedKind.isTypeConstructor || oldUsedKind.isTypeMember)
+              propagateTypeMemberUseRedirection(g, oldEdge, newUsed, policy)
+            else Success(g)).flatMap { g2 =>
+            if (oldUsedKind.isTypeDecl){
+              redirectTypeMemberAndConstructorUses(g2, oldEdge, newUsed, policy).map{
+                case ((keepTypeUse, g3)) =>
+                  redirectUses(g3, oldEdge, newUsed, keepOldUse || keepTypeUse)
+              }
+            }
+            else Success(redirectUses(g2, oldEdge, newUsed, keepOldUse))
+          }
         }
-
-      }
-
-
-      tryG4 map {(newUse, _)}
     }
     else if (g.uses(oldEdge.user, newUsed)) {
       //if m uses  both A and A.mi, the first uses dominate the second
@@ -116,7 +115,7 @@ trait TransformationRules {
       // when iterating on the wrongusers, the next call to redirectuses will arrive here
       g.logger.writeln(s"redirecting uses $oldEdge target to $newUsed ($policy) : " +
         s"FAILURE !! ${oldEdge.used}} is not used")
-      Success((DGEdge.uses(oldEdge.user, newUsed), g))
+      Success(g)
     }
     else if(g.users(oldEdge.used).exists(_ == oldEdge.user) ||
       g.users(newUsed).exists(_==oldEdge.user))
@@ -135,10 +134,6 @@ trait TransformationRules {
                           policy : RedirectionPolicy,
                           propagateRedirection : Boolean = true) : Try[GraphT] = {
 
-
-
-
-
     g.logger.writeln(s"redirecting Type uses of typeMember use ${showDG[EdgeT](g).shows(currentTypeMemberUse)}" +
       s" (new typeMember used is ${showDG[NodeId](g).shows(newTypeMemberUsed)}) ")
 
@@ -150,20 +145,22 @@ trait TransformationRules {
     else{
       g.logger.writeln("uses to redirect:%s".format(typeUses.mkString("\n\t", "\n\t","\n")))
 
-      traverse(typeUses, g){(g0, primary0) =>
-          val primary = DGEdge.uses(primary0)
+      traverse(typeUses, g){(g0, typeUse) =>
+        val primary = DGEdge.uses(typeUse)
 
-          val keepOldUse = g.typeMemberUsesOf(primary0).nonEmpty //is empty if primary had only one side use
-          val isThisTypeUse = primary.source == primary.target && g.isTypeUse(primary)
+        val keepOldUse = g.typeMemberUsesOf(typeUse).tail.nonEmpty //is empty if primary had only one side use
+
+        val isThisTypeUse = primary.source == primary.target && g.isTypeUse(primary)
 
           val redirect : GraphT => Try[(EdgeT, GraphT)] =
             if(isThisTypeUse)
               g => redirectThisTypeUse(g, primary.used, newTypeMemberUsed)
-            else
-              g => redirectUsesOf(g, primary,
-                findNewTypeUsed(g, primary.used, newTypeMemberUsed, policy),
-                policy, propagateRedirection, keepOldUse)
-
+            else {
+              g =>
+                val newTypeUsed = findNewTypeUsed(g, primary.used, newTypeMemberUsed, policy)
+                redirectUsesAndPropagate(g, primary,newTypeUsed,
+                  policy, propagateRedirection, keepOldUse).map{(DGEdge.uses(primary.user, newTypeUsed),_)}
+            }
           val g1 = g0.removeUsesDependency(primary, currentTypeMemberUse)
 
           for(
@@ -217,61 +214,64 @@ trait TransformationRules {
   }
 
 
-  def propagateTypeUseRedirection(g : GraphT,
-                       currentTypeUse: EdgeT,
-                       newTypeUsed : NodeId,
-                       policy : RedirectionPolicy) : Try[GraphT] = {
+
+  type TypeMemberUses = List[(NodeId, NodeId)]
+  def redirectTypeMemberUses(g : GraphT,
+                             currentTypeUse: EdgeT,
+                             newTypeUsed : NodeId,
+                             policy : RedirectionPolicy,
+                             tmu : TypeMemberUses) : Try[GraphT] = {
     g.logger.writeln(s"redirecting typeMember uses of type use ${showDG[EdgeT](g).shows(currentTypeUse)} " +
       s"(new type used is  ${showDG[NodeId](g).shows(newTypeUsed)}) ")
 
-    val sideUses = g.typeMemberUsesOf(currentTypeUse)
-    if(sideUses.isEmpty){
-      g.logger.writeln("no typeMember uses to redirect")
-      Success(g)
-    }
-    else{
-      g.logger.writeln("uses to redirect:%s".format(sideUses.mkString("\n\t", "\n\t","\n")))
+    if (tmu.isEmpty) g.logger.writeln("no typeMember uses to redirect")
+    else g.logger.writeln("uses to redirect:%s".format(tmu.mkString("\n\t", "\n\t", "\n")))
 
-      sideUses.foldLeft(Success(g) : Try[GraphT]){
-        case (tryG, side0) =>
+    traverse(tmu, g) {
+        case (g0, side0) =>
           val side = DGEdge.uses(side0)
-          g.abstractions(side.used).find {
-            case (abs, _) => g.contains(newTypeUsed, abs)
-            case _ => false
-          } match {
-            case None =>
+          val typeMember = side.used
+          val someTypeMemberAbs =
+            g.abstractions(typeMember).find { case (abs, _) => g.contains(newTypeUsed, abs) }
 
+          someTypeMemberAbs match {
+            case None =>
               val msg = s"While redirecting type use ${showDG[EdgeT](g).shows(currentTypeUse)} " +
                 s"target to ${showDG[NodeId](g).shows(newTypeUsed)}\n" +
                 s"no satisfying abstraction to redirect typeMember use ${showDG[EdgeT](g).shows(side)}"
 
               g.logger.writeln(msg)(PuckLog.Error)
               Failure(new RedirectionError(msg)).toValidationNel
-            case Some( (new_side_usee, _) ) =>
 
-              for(
-                g <- tryG.map(_.removeUsesDependency(currentTypeUse, side));
-                eg <- redirectUsesOf(g, side, new_side_usee, policy);
-                (newSide, g2) = eg
-              ) yield
-                g2.addUsesDependency((currentTypeUse.user, newTypeUsed), newSide)
-
-
-              /*val tryG1 : Try[GraphT] =
-                tryG.map(_.removeUsesDependency(currentPrimaryUse, side))
-
-              val tryG2 : Try[(EdgeT, GraphT)] =
-                tryG1.flatMap(redirectUsesOf(_, side, new_side_usee, policy))
-
-              tryG2.map {
-                case (newSide, g2) =>
-                  g2.addUsesDependency((currentPrimaryUse.user, newPrimaryUsed), newSide)
-              }*/
+            case Some((typeMemberAbs, _)) =>
+              redirectUsesAndPropagate(g0.removeUsesDependency(currentTypeUse, side),
+                side, typeMemberAbs, policy).map {
+                g2 =>
+                  val newSide = DGEdge.uses(side.user, typeMemberAbs)
+                  g2.addUsesDependency((currentTypeUse.user, newTypeUsed), newSide)
+              }
           }
-      }
     }
+
   }
 
+
+
+  type KeepOldTypeUse = Boolean
+  def redirectTypeMemberAndConstructorUses(g : GraphT,
+                                           currentTypeUse: EdgeT,
+                                           newTypeUsed : NodeId,
+                                           policy : RedirectionPolicy): Try[(KeepOldTypeUse, GraphT)] = {
+    val typeMemberAndTypeCtorUses = g.typeMemberUsesOf(currentTypeUse).toList
+    import puck.util.Collections.SelectList
+    typeMemberAndTypeCtorUses.select{case (_, target) => g.getNode(target).kind.isTypeConstructor} match {
+      case Some((typeCtorUse, typeMemberUses))
+        if ! g.abstractions(typeCtorUse._2).exists {case (abs, _) => g.contains(newTypeUsed, abs)} =>
+        redirectTypeMemberUses(g, currentTypeUse, newTypeUsed, policy, typeMemberUses).map((true, _))
+      case _ =>
+        redirectTypeMemberUses(g, currentTypeUse, newTypeUsed, policy, typeMemberAndTypeCtorUses).map((false,_))
+    }
+  }
 
   def moveTo(g : GraphT, movedId : NodeId, newContainer : NodeId): Try[GraphT] = {
     g.container(movedId) match {

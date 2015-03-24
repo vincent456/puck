@@ -8,6 +8,7 @@ import puck.graph.NodeKind
  */
 trait MethodKind extends JavaNodeKind {
   def canContain(k : NodeKind) = false
+  override def isTypeMember : Boolean = true
 }
 
 case object Method extends MethodKind {

@@ -1,12 +1,11 @@
 package puck.javaGraph
 
-import java.io.File
+import java.io.{File, InputStream}
 
 import puck.graph._
 import puck.graph.transformations.{NodeMappingInitialState, Recording}
 import puck.util.FileHelper
 
-import scala.concurrent.Future
 
 
 /**
@@ -15,17 +14,18 @@ import scala.concurrent.Future
 object CompileHelper {
 
   def apply(sources: List[String], jars: List[String]): Option[AST.Program] = {
-    val arglist = createArglist(sources, jars, List())
-    val f = new AST.Frontend {
-      protected override def processWarnings(errors: java.util.Collection[_], unit: AST.CompilationUnit) : Unit =  {
+      val arglist = createArglist(sources, jars, List())
+
+      val f = new AST.Frontend {
+        protected override def processWarnings(errors: java.util.Collection[_], unit: AST.CompilationUnit): Unit = {
+        }
       }
-    }
-    val br = new AST.BytecodeParser
-    val jp = new AST.JavaParser {
-      def parse(is: java.io.InputStream, fileName: String) : AST.CompilationUnit = {
-        (new parser.JavaParser).parse(is, fileName)
+      val br = new AST.BytecodeParser
+      val jp = new AST.JavaParser {
+        def parse(is: InputStream, fileName: String): AST.CompilationUnit = {
+          (new parser.JavaParser).parse(is, fileName)
+        }
       }
-    }
 
     if (f.process(arglist, br, jp)){
       Some(f.getProgram)}

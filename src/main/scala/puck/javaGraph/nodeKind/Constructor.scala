@@ -14,6 +14,8 @@ case object Constructor extends JavaNodeKind {
 
   def canContain(k : NodeKind) = false
 
+  override def isTypeConstructor : Boolean = true
+
   override def abstractionPolicies = Seq(DelegationAbstraction)
 
   def abstractKinds(p : AbstractionPolicy) = p match {

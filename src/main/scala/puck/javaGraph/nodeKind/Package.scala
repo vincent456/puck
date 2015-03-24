@@ -1,7 +1,7 @@
 package puck.javaGraph.nodeKind
 
-import puck.graph.constraints.{AbstractionPolicy, DelegationAbstraction}
 import puck.graph.NodeKind
+import puck.graph.constraints.AbstractionPolicy
 
 /**
  * Created by lorilan on 31/07/14.
@@ -18,7 +18,7 @@ case object Package extends JavaNodeKind {
     }
   }
 
-  override def abstractionPolicies = Seq(DelegationAbstraction)
-  def abstractKinds(p : AbstractionPolicy) = Seq(Package)
+  override def abstractionPolicies = Seq()
+  def abstractKinds(p : AbstractionPolicy) = Seq()
 
 }

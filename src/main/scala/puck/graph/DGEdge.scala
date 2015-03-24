@@ -67,7 +67,7 @@ case class DGEdge
     kind + "( " + source + ", " + target + ")"
   }
 
-  def exists(graph : DependencyGraph) = kind match {
+  def existsIn(graph : DependencyGraph) = kind match {
     case Uses => graph.uses(source, target)
     case Contains => graph.contains(source, target)
     case Isa => graph.isa(source, target)

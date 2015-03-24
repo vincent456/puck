@@ -21,10 +21,10 @@ case class RedirectAction
   //TODO check keepOldUse and propagate redirection value
   override def actionPerformed(e: ActionEvent): Unit =
     controller.transfoRules.
-      redirectUsesOf(controller.getGraph, edge, newTarget.id, policy) match {
+      redirectUsesAndPropagate(controller.getGraph, edge, newTarget.id, policy) match {
       case Failure(errs) =>
         controller.console.appendText("Abstraction creation failure\n" )
         errs.foreach(e => controller.console.appendText(e.getMessage + "\n"))
-      case Success((_, g)) => controller.pushGraph(g)
+      case Success(g) => controller.pushGraph(g)
     }
 }

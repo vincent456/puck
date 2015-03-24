@@ -10,6 +10,11 @@ trait NodeKind {
   def abstractionPolicies : Seq[AbstractionPolicy] =
     Seq(SupertypeAbstraction, DelegationAbstraction)
   def abstractKinds(p : AbstractionPolicy) : Seq[NodeKind]
+
+  def isTypeDecl : Boolean = false
+  def isTypeMember : Boolean = false
+  def isTypeConstructor : Boolean = false
+
 }
 trait AGRoot extends NodeKind {
   def canContain(k: NodeKind) = false

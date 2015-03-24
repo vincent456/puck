@@ -128,43 +128,4 @@ object Scenarii {
     }
   }
 
-  object redirection {
-    val examplesPath = puck.testExamplesPath + "/redirection/"
-    val typeDeclPath = examplesPath + "typeDecl/"
-
-    val classToClassDelegate = new ExampleSample(typeDeclPath + "classToClassDelegate/A.java"){
-      val rootPackage = fullName2id("classToClassDelegate")
-      val mUser = fullName2id("classToClassDelegate.A.mUser__Delegatee")
-      val delegatee = fullName2id("classToClassDelegate.Delegatee")
-      val mDelegatee = fullName2id("classToClassDelegate.Delegatee.mUsed__void")
-
-      val delegator = fullName2id("classToClassDelegate.Delegator")
-      val mDelegator = fullName2id("classToClassDelegate.Delegator.mUsed__void")
-
-    }
-
-    //val classToClassSupertype
-
-    val classToInterfaceSuperType = new ExampleSample(typeDeclPath + "classToInterfaceSuperType/A.java"){
-      val rootPackage = fullName2id("classToInterfaceSuperType")
-      val mUser = fullName2id("classToInterfaceSuperType.A.mUser__ClassUsed")
-
-      val classUsed = fullName2id("classToInterfaceSuperType.ClassUsed")
-      val mUsed = fullName2id("classToInterfaceSuperType.ClassUsed.mUsed__void")
-      val superType = fullName2id("classToInterfaceSuperType.SuperType")
-      val absmUsed = fullName2id("classToInterfaceSuperType.SuperType.mUsed__void")
-
-    }
-
-    val interfaceToClassDelegate = new ExampleSample(typeDeclPath + "interfaceToClassDelegate/A.java"){
-      val rootPackage = fullName2id("interfaceToClassDelegate")
-      val mUser = fullName2id("interfaceToClassDelegate.A.mUser__I")
-      val interface = fullName2id("interfaceToClassDelegate.I")
-      val delegator = fullName2id("interfaceToClassDelegate.Delegator")
-    }
-
-    //val interfaceToInterfaceSuperType
-
-  }
-
 }

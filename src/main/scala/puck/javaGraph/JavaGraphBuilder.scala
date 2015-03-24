@@ -224,18 +224,8 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
   def findOverridedMethod(g : DependencyGraph,
                           absName : String, absSig : MethodType,
                           candidates : List[ConcreteNode]) : Option[(ConcreteNode, List[ConcreteNode])] = {
-    type Discarded = List[ConcreteNode]
-    type Remainings = List[ConcreteNode]
-
-    def aux : (Discarded, Remainings) => Option[(ConcreteNode, List[ConcreteNode])] = {
-      case (_, List()) => None
-      case (ds, c :: tl) =>
-        if(c.styp.nonEmpty && c.styp.exists(absSig.canOverride(g, _)))
-          Some((c, ds ::: tl ))
-        else aux(c :: ds, tl)
-    }
-
-    aux(List(), candidates)
+    import puck.util.Collections.SelectList
+    candidates.select( c => c.styp.nonEmpty && c.styp.exists(absSig.canOverride(g, _)))
   }
 
   def findAndRegisterOverridedMethods(g : DependencyGraph,

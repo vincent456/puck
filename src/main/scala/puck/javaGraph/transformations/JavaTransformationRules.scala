@@ -66,9 +66,7 @@ object JavaTransformationRules extends TransformationRules {
 
     if(g1.uses(meth.id, clazz.id)) {
       g.logger.writeln(s"interface creation : redirecting ${DGEdge.uses(meth.id, clazz.id)} target to $interface")
-      redirectUsesOf(g1, DGEdge.uses(meth.id, clazz.id), interface.id, SupertypeAbstraction) map {
-        case (_, g22) => g22
-      }
+      redirectUsesAndPropagate(g1, DGEdge.uses(meth.id, clazz.id), interface.id, SupertypeAbstraction)
     }
     else Success(g1)
   }
@@ -178,23 +176,27 @@ object JavaTransformationRules extends TransformationRules {
     }
   }
 
-
-  override def redirectUsesOf(g : GraphT,
+  override def redirectUsesAndPropagate(g : GraphT,
                             oldEdge : EdgeT, newUsee : NodeId,
                             policy : RedirectionPolicy,
                             propagateRedirection : Boolean = true,
-                            keepOldUse : Boolean = false ) : Try[(EdgeT, GraphT)] = {
+                            keepOldUse : Boolean = false ) : Try[GraphT] = {
 
     val tryEdgeGraph =
-      super.redirectUsesOf(g, oldEdge, newUsee, policy,
+      super.redirectUsesAndPropagate(g, oldEdge, newUsee, policy,
         propagateRedirection, keepOldUse)
 
     g.getConcreteNode(oldEdge.used).kind match {
       case Constructor =>
-        tryEdgeGraph map {case (e, g0) =>
-          (e, g.users(oldEdge.user).foldLeft(g0){ case (g1, userId) =>
-            g1.addUses(userId, oldEdge.used)})
+        val ctorId = oldEdge.used
+        g.container(ctorId) match {
+          case None => throw new PuckError("constructor should have a container")
+          case Some(classId) => tryEdgeGraph map { g0 =>
+             g.users(oldEdge.user).foldLeft(g0){ case (g1, userId) =>
+              g1.addUses(userId, ctorId).addUses(userId, classId)}
+          }
         }
+
       case _ => tryEdgeGraph
     }
   }

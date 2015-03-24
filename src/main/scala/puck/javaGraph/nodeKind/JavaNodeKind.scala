@@ -21,6 +21,8 @@ case object TypeVariable extends JavaNodeKind{
   def canContain(k : NodeKind) = false
   override def abstractionPolicies = Seq()
   def abstractKinds(p : AbstractionPolicy) = Seq()
+
+  override def isTypeDecl = true
 }
 case object WildCardType extends JavaNodeKind{
   def canContain(k : NodeKind) = false
