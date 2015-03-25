@@ -6,9 +6,7 @@ import puck.graph.NodeKind
 /**
  * Created by lorilan on 31/07/14.
  */
-abstract class TypeKind extends JavaNodeKind {
-  override def isTypeDecl = true
-}
+abstract class TypeKind extends JavaNodeKind
 
 case object Interface extends TypeKind {
 

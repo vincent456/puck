@@ -1,4 +1,4 @@
-package examples.usesThisMethod;
+package methodUsedByThis;
 
 class A {
 
@@ -7,4 +7,8 @@ class A {
     }
 
     public void ma2(){}
+}
+
+class B{
+
 }

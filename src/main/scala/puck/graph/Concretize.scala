@@ -24,8 +24,11 @@ object Concretize {
         }
 
         val best = pcWithCohesion.sortBy(_._1).head._2
+        g.kindType(c) match {
+          case TypeDecl => rules.moveTypeDecl(g, cid, best)
+          case _ => ???
+        }
 
-        rules.moveTo(g, cid, best)
       }
 
       //tg.flatMap{g => apply(g.removeVirtualNode(vn.id), rules)}

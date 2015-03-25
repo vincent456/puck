@@ -78,7 +78,7 @@ case class Tuple(types: List[Type])
       case _ => false
     })
 
-  def length = types.length
+  def length : Int = types.length
 }
 
 case class Arrow(input : Type, output : Type)

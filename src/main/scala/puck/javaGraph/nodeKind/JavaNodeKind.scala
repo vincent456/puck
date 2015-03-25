@@ -21,8 +21,6 @@ case object TypeVariable extends JavaNodeKind{
   def canContain(k : NodeKind) = false
   override def abstractionPolicies = Seq()
   def abstractKinds(p : AbstractionPolicy) = Seq()
-
-  override def isTypeDecl = true
 }
 case object WildCardType extends JavaNodeKind{
   def canContain(k : NodeKind) = false
@@ -97,20 +95,20 @@ object JavaNodeKind extends NodeKindKnowledge {
       })
   }
 
-  def isTypeUse : DependencyGraph => DGEdge => Boolean = graph => {
-    case DGEdge(Uses, _, id) =>
-      concreteNodeTestPred(graph, id){ cn => cn.kind == Interface || cn.kind == Class}
-    case _ => false
-  }
-  def isTypeMemberUse : DependencyGraph => DGEdge => Boolean = graph => {
-    case DGEdge(Uses, _, id) =>
-      concreteNodeTestPred(graph, id){ cn => cn.kind match {
-        case _: MethodKind | Field | Constructor => true
-        case _ => false
-      }
-      }
-    case _ => false
-  }
+  override def kindType : (DependencyGraph, DGNode) => KindType =
+    (graph, n) => n.kind match {
+      case Package => NameSpace
+      case Constructor => TypeConstructor
+      case _ : MethodKind => TypeMember
+      case _ : TypeKind =>
+        val container = graph.getNode(graph.container(n.id).get)
+        kindType(graph, container) match {
+          case NameSpace => TypeDecl
+          case TypeDecl => TypeDeclMember
+          case _ => Unknown
+        }
+      case _ => super.kindType(graph, n)
+    }
 
   override def coupling(graph : DependencyGraph) =
     graph.concreteNodes.foldLeft(0 : Double){ (acc, n) => n.kind match {

@@ -158,23 +158,7 @@ object JavaTransformationRules extends TransformationRules {
     }
   }
 
-  def redirectThisTypeUse(g : GraphT, thisType : NodeId, movedId : NodeId): Try[(EdgeT, GraphT)] = {
-    g.logger.writeln(s"redirecting This.Type use (${showDG[NodeId](g).shows(thisType)})")
 
-    val typeNode = g.getConcreteNode(thisType)
-    val movedNode = g.getConcreteNode(movedId)
-    typeNode.kind match {
-      case Class =>
-        val newTypeUsed = findNewTypeUsed(g, thisType, movedId, Move)
-        val (field, g2) = g.addConcreteNode(movedNode.name + "_delegate", Field, Some(new JavaNamedType(newTypeUsed)))
-        val g3 = g2.addContains(thisType, field.id)
-              .addUses(field.id, newTypeUsed)
-              .addUses(movedId, field.id)
-        Success( (DGEdge.uses(field.id, newTypeUsed),g3))
-      case _=>
-        Failure(new PuckError(s"redirect type uses, expected class got ${typeNode.kind}")).toValidationNel
-    }
-  }
 
   override def redirectUsesAndPropagate(g : GraphT,
                             oldEdge : EdgeT, newUsee : NodeId,

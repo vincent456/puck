@@ -7,21 +7,21 @@ aspect DominantUser {
 	}
 
 	public int MethodAccess.buildDominantUserAGNode(JavaGraphBuilder builder){
-  		if(isCalledFromTheHostingClass())
-      		return decl().hostType().buildAGNode(builder);
-      	else 
+        if(getQualifier() == null
+            || getQualifier().isThisAccess()){
+            int selfTypeNode = decl().hostType().buildAGNode(builder);
+            builder.addUses(selfTypeNode, selfTypeNode);
+            return selfTypeNode;
+        }
+        else if(getQualifier().isSuperAccess())
+            return decl().hostType().buildAGNode(builder);
+        else
       		return buildDominantUserAGNodeFromLeftExpr(builder);
   		
 
   	}
   	
-  	public boolean Access.isCalledFromTheHostingClass(){
-		return getQualifier()==null
-            || getQualifier().isThisAccess()
-            || getQualifier().isSuperAccess();
-	}
-	
-	class NoDominantUser extends Error {}
+  	class NoDominantUser extends Error {}
 	
   public int Access.buildDominantUserAGNodeFromLeftExpr(JavaGraphBuilder builder){
   	Expr lexpr = getLeftExpr();

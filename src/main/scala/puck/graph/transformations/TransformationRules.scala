@@ -6,6 +6,9 @@ package transformations
 
 import ShowDG._
 import graph.constraints._
+import puck.javaGraph.JavaNamedType
+import puck.javaGraph.nodeKind.{Field, Class}
+import puck.javaGraph.transformations.JavaTransformationRules._
 import util.PuckLog
 
 import scalaz._
@@ -93,18 +96,24 @@ trait TransformationRules {
           Success(redirectUses(g, oldEdge, newUsed, keepOldUse))
         else {
 
-          val oldUsedKind = g.getNode(oldEdge.used).kind
+          val oldUsedKind = g.kindType(oldEdge.used)
+          g.logger.writeln(s"use target is a $oldUsedKind")
+          val propagateTypeMember : GraphT => Try[GraphT] =
+            redirectTypeUsesOfTypeMemberUse(_, oldEdge, newUsed, policy)
+          
+          val propagateType : GraphT => Try[(KeepOldTypeUse, GraphT)] =
+            redirectTypeMemberAndConstructorUsesOfTypeUse(_, oldEdge, newUsed, policy)
 
-          (if (oldUsedKind.isTypeConstructor || oldUsedKind.isTypeMember)
-              propagateTypeMemberUseRedirection(g, oldEdge, newUsed, policy)
-            else Success(g)).flatMap { g2 =>
-            if (oldUsedKind.isTypeDecl){
-              redirectTypeMemberAndConstructorUses(g2, oldEdge, newUsed, policy).map{
-                case ((keepTypeUse, g3)) =>
-                  redirectUses(g3, oldEdge, newUsed, keepOldUse || keepTypeUse)
-              }
-            }
-            else Success(redirectUses(g2, oldEdge, newUsed, keepOldUse))
+          (oldUsedKind match {
+            case TypeConstructor | TypeMember =>
+              propagateTypeMember(g).map((false,_))
+            case TypeDecl => propagateType(g)
+            case TypeDeclMember =>
+              propagateTypeMember(g).flatMap(propagateType)
+            case _ => Success((false, g))
+
+           }) map { case (keep, g2) =>
+            redirectUses(g2, oldEdge, newUsed, keep || keepOldUse)
           }
         }
     }
@@ -126,9 +135,56 @@ trait TransformationRules {
 
   }
 
-  def redirectThisTypeUse(g : GraphT, thisType : NodeId, movedId : NodeId): Try[(EdgeT, GraphT)]
+  sealed trait CreateVarStrategy
+  case object CreateParameter extends CreateVarStrategy
+  case class CreateTypeMember(k : NodeKind) extends CreateVarStrategy
 
-  def propagateTypeMemberUseRedirection(g : GraphT,
+  def propagateMoveOfTypeMemberUsedBySelf(g : GraphT,
+                          thisType : NodeId,
+                          movedId : NodeId,
+                          strategy: CreateVarStrategy): Try[(EdgeT, GraphT)] = {
+
+    g.logger.writeln(s"redirecting This.Type use (${showDG[NodeId](g).shows(thisType)})")
+
+    val typeNode = g.getConcreteNode(thisType)
+    val movedNode = g.getConcreteNode(movedId)
+    val newTypeUsed = g.container(movedId).get
+
+    strategy match {
+      case CreateTypeMember(k) =>
+        val (field, g2) = g.addConcreteNode(movedNode.name + "_delegate", k, Some(new JavaNamedType(newTypeUsed)))
+        val g3 = g2.addContains(thisType, field.id)
+          .addUses(field.id, newTypeUsed)
+          .addUses(movedId, field.id)
+        Success( (DGEdge.uses(field.id, newTypeUsed),g3))
+      case CreateParameter =>
+
+
+      case _=>
+        Failure(new PuckError(s"redirect type uses, expected class got ${typeNode.kind}")).toValidationNel
+    }
+  }
+
+  /*TODELETE
+  def redirectThisTypeUse(g : GraphT, thisType : NodeId, movedId : NodeId): Try[(EdgeT, GraphT)] = {
+    g.logger.writeln(s"redirecting This.Type use (${showDG[NodeId](g).shows(thisType)})")
+
+    val typeNode = g.getConcreteNode(thisType)
+    val movedNode = g.getConcreteNode(movedId)
+    typeNode.kind match {
+      case Class =>
+        val newTypeUsed = findNewTypeUsed(g, thisType, movedId, Move)
+        val (field, g2) = g.addConcreteNode(movedNode.name + "_delegate", Field, Some(new JavaNamedType(newTypeUsed)))
+        val g3 = g2.addContains(thisType, field.id)
+          .addUses(field.id, newTypeUsed)
+          .addUses(movedId, field.id)
+        Success( (DGEdge.uses(field.id, newTypeUsed),g3))
+      case _=>
+        Failure(new PuckError(s"redirect type uses, expected class got ${typeNode.kind}")).toValidationNel
+    }
+  }
+  */
+  def redirectTypeUsesOfTypeMemberUse(g : GraphT,
                           currentTypeMemberUse : EdgeT,
                           newTypeMemberUsed : NodeId,
                           policy : RedirectionPolicy,
@@ -145,23 +201,23 @@ trait TransformationRules {
     else{
       g.logger.writeln("uses to redirect:%s".format(typeUses.mkString("\n\t", "\n\t","\n")))
 
-      traverse(typeUses, g){(g0, typeUse) =>
-        val primary = DGEdge.uses(typeUse)
+      traverse(typeUses, g){(g0, typeUse0) =>
+        val typeUses = DGEdge.uses(typeUse0)
 
-        val keepOldUse = g.typeMemberUsesOf(typeUse).tail.nonEmpty //is empty if primary had only one side use
+        val keepOldUse = g.typeMemberUsesOf(typeUse0).tail.nonEmpty //is empty if typeUses had only one side use
 
-        val isThisTypeUse = primary.source == primary.target && g.isTypeUse(primary)
+        val isThisTypeUse = typeUses.source == typeUses.target
 
           val redirect : GraphT => Try[(EdgeT, GraphT)] =
             if(isThisTypeUse)
-              g => redirectThisTypeUse(g, primary.used, newTypeMemberUsed)
+              g => ??? //redirectThisTypeUse(g, typeUses.used, newTypeMemberUsed)
             else {
               g =>
-                val newTypeUsed = findNewTypeUsed(g, primary.used, newTypeMemberUsed, policy)
-                redirectUsesAndPropagate(g, primary,newTypeUsed,
-                  policy, propagateRedirection, keepOldUse).map{(DGEdge.uses(primary.user, newTypeUsed),_)}
+                val newTypeUsed = findNewTypeUsed(g, typeUses.used, newTypeMemberUsed, policy)
+                redirectUsesAndPropagate(g, typeUses,newTypeUsed,
+                  policy, propagateRedirection, keepOldUse).map{(DGEdge.uses(typeUses.user, newTypeUsed),_)}
             }
-          val g1 = g0.removeUsesDependency(primary, currentTypeMemberUse)
+          val g1 = g0.removeUsesDependency(typeUses, currentTypeMemberUse)
 
           for(
             eg <- redirect(g1);
@@ -173,10 +229,11 @@ trait TransformationRules {
     }
   }
 
+
   def findNewTypeUsed(g : GraphT,
-                         currentTypeUsed : NodeId,
-                         newTypeMemberUsed : NodeId,
-                         policy : RedirectionPolicy) : NodeId = {
+                      currentTypeUsed : NodeId,
+                      newTypeMemberUsed : NodeId,
+                      policy : RedirectionPolicy) : NodeId = {
 
     g.logger.writeln(s"searching new Type used ($policy) : current type used is " +
        s"${showDG[NodeId](g).shows(currentTypeUsed)}, new typeMember used : ${showDG[NodeId](g).shows(newTypeMemberUsed)}" )
@@ -195,7 +252,7 @@ trait TransformationRules {
                 g.getNode(currentTypeUsed).kind.
                   abstractKinds(absPolicy)
 
-              g.nodesId.find{node =>
+              g.nodesId.find{ node =>
                 g.contains_*(node, newTypeMemberUsed) && {
                   abstractKinds.contains(g.getNode(node).kind)
                 }
@@ -216,7 +273,7 @@ trait TransformationRules {
 
 
   type TypeMemberUses = List[(NodeId, NodeId)]
-  def redirectTypeMemberUses(g : GraphT,
+  def redirectTypeMemberUsesOfTypeUse(g : GraphT,
                              currentTypeUse: EdgeT,
                              newTypeUsed : NodeId,
                              policy : RedirectionPolicy,
@@ -258,35 +315,82 @@ trait TransformationRules {
 
 
   type KeepOldTypeUse = Boolean
-  def redirectTypeMemberAndConstructorUses(g : GraphT,
+  def redirectTypeMemberAndConstructorUsesOfTypeUse(g : GraphT,
                                            currentTypeUse: EdgeT,
                                            newTypeUsed : NodeId,
                                            policy : RedirectionPolicy): Try[(KeepOldTypeUse, GraphT)] = {
     val typeMemberAndTypeCtorUses = g.typeMemberUsesOf(currentTypeUse).toList
     import puck.util.Collections.SelectList
-    typeMemberAndTypeCtorUses.select{case (_, target) => g.getNode(target).kind.isTypeConstructor} match {
+    typeMemberAndTypeCtorUses.select { case (_, target) => g.kindType(g.getNode(target)) == TypeConstructor} match {
       case Some((typeCtorUse, typeMemberUses))
         if ! g.abstractions(typeCtorUse._2).exists {case (abs, _) => g.contains(newTypeUsed, abs)} =>
-        redirectTypeMemberUses(g, currentTypeUse, newTypeUsed, policy, typeMemberUses).map((true, _))
+        redirectTypeMemberUsesOfTypeUse(g, currentTypeUse, newTypeUsed, policy, typeMemberUses).map((true, _))
       case _ =>
-        redirectTypeMemberUses(g, currentTypeUse, newTypeUsed, policy, typeMemberAndTypeCtorUses).map((false,_))
+        redirectTypeMemberUsesOfTypeUse(g, currentTypeUse, newTypeUsed, policy, typeMemberAndTypeCtorUses).map((false,_))
     }
   }
 
-  def moveTo(g : GraphT, movedId : NodeId, newContainer : NodeId): Try[GraphT] = {
-    g.container(movedId) match {
+  def withContainer[T](g : GraphT, nid : NodeId)( f : NodeId => Try[T]) : Try[T] =
+    g.container(nid) match {
       case None =>
-        Failure(new RedirectionError("moved node has no container !!!")).toValidationNel
-      case Some(oldContainer) =>
-        g.logger.writeln(s"moving ${showDG[NodeId](g).shows(movedId)} " +
+        import ShowDG._
+        Failure(new RedirectionError(s"${showDG[NodeId](g).shows(nid)} has no container !!!")).toValidationNel
+      case Some(containerId) => f(containerId)
+    }
+
+  def moveTypeDecl(g : GraphT, movedId : NodeId, newContainer : NodeId): Try[GraphT] =
+     withContainer(g, movedId){
+        oldContainer =>
+          g.logger.writeln(s"moving type decl ${showDG[NodeId](g).shows(movedId)} " +
+            s"from ${showDG[NodeId](g).shows(oldContainer)} " +
+            s"to ${showDG[NodeId](g).shows(newContainer)}")
+         Success(g.changeSource(DGEdge.contains(oldContainer, movedId), newContainer))
+      }
+
+
+  def moveTypeMember(g : GraphT, movedId : NodeId, newContainer : NodeId): Try[GraphT] = {
+    withContainer(g, movedId){
+      oldContainer =>
+        g.logger.writeln(s"moving type member ${showDG[NodeId](g).shows(movedId)} " +
           s"from ${showDG[NodeId](g).shows(oldContainer)} " +
           s"to ${showDG[NodeId](g).shows(newContainer)}")
 
         val g2 = g.changeSource(DGEdge.contains(oldContainer, movedId), newContainer)
-        g.users(movedId).foldLeft[Try[GraphT]](Success(g2)){
-          case (tg0, userId) =>
-            tg0 flatMap (propagateTypeMemberUseRedirection(_, DGEdge.uses(userId, movedId), movedId,
-              Move, propagateRedirection = false))
+        traverse(g.users(movedId), g2){
+            case (g0, userId) =>
+
+              val typeMemberUses = DGEdge.uses(userId, movedId)
+              //inlining of propagateTypeMemberUseRedirection(g, typeMemberUses, movedId,
+              // Move, propagateRedirection = false)
+              traverse(g0.typeUsesOf(typeMemberUses), g0){(g0, typeUse0) =>
+                val typeUse = DGEdge.uses(typeUse0)
+
+                val keepOldUse = g0.typeMemberUsesOf(typeUse0).tail.nonEmpty
+                val isThisTypeUse = typeUse.source == typeUse.target
+
+                val redirect : GraphT => Try[(EdgeT, GraphT)] =
+                  if(isThisTypeUse) { g00 =>
+                    propagateMoveOfTypeMemberUsedBySelf(g00, typeUse.used, movedId, ???)
+                    /*val thisType = typeUse.used
+                    val movedNode = g00.getConcreteNode(movedId)
+                    val (field, g2) = g00.addConcreteNode(movedNode.name + "_delegate", Field, Some(new JavaNamedType(newContainer)))
+                    val g3 = g2.addContains(thisType, field.id)
+                          .addUses(field.id, newContainer)
+                          .addUses(movedId, field.id)
+                        Success((DGEdge.uses(field.id, newContainer), g3))*/
+                  }
+                  else {
+                    g00=>
+                      Success((DGEdge.uses(typeUse.user, newContainer),
+                        redirectUses(g00, typeUse, newContainer, keepOldUse)))
+                  }
+                
+                redirect(g0.removeUsesDependency(typeUse, typeMemberUses)).map{
+                  case ((newTypeUse, g00)) =>
+                    g00.addUsesDependency(newTypeUse, (userId, movedId))
+                }
+
+              }
         }
     }
 
@@ -371,9 +475,15 @@ trait TransformationRules {
         tg0 flatMap { g0 =>
           findMergingCandidateIn(g0, consumedChildId, consumerId) match {
             case Some(consumerChildId) => merge(g0, consumerChildId, consumedChildId)
-            case None => moveTo(g0, consumedChildId, consumerId) map {
-              _.changeType(consumedChildId, g0.getConcreteNode(consumedChildId).styp, consumedId, consumerId)
-            }
+            case None =>
+              g0.kindType(consumedChildId) match {
+                case TypeDecl =>  moveTypeDecl(g0, consumedChildId, consumerId)
+                case TypeMember =>
+                  moveTypeMember(g0, consumedChildId, consumerId) map {
+                    _.changeType(consumedChildId, g0.getConcreteNode(consumedChildId).styp, consumedId, consumerId)
+                  }
+                case _ => ???
+              }
           }
         }
     }

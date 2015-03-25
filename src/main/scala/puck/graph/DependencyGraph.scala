@@ -478,7 +478,9 @@ class DependencyGraph
     aux(Seq(root), Seq(root))
   }
 
-  def isTypeUse : DGEdge => Boolean = nodeKindKnowledge.isTypeUse(this)
-  def isTypeMemberUse : DGEdge => Boolean = nodeKindKnowledge.isTypeMemberUse(this)
+  def kindType(nid : NodeId) : KindType =
+    kindType(getNode(nid))
 
+  def kindType(n : DGNode) : KindType =
+    nodeKindKnowledge.kindType(this, n)
 }

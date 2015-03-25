@@ -18,7 +18,5 @@ case object Field extends JavaNodeKind {
   // fielwrite abstraction type = t -> () (think of t -> t case of jrrt ... )
   def abstractKinds(p : AbstractionPolicy) = Seq(Method)
 
-  override def isTypeMember : Boolean = true
-
   override def abstractionPolicies = Seq(DelegationAbstraction)
 }

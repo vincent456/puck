@@ -10,12 +10,17 @@ trait NodeKind {
   def abstractionPolicies : Seq[AbstractionPolicy] =
     Seq(SupertypeAbstraction, DelegationAbstraction)
   def abstractKinds(p : AbstractionPolicy) : Seq[NodeKind]
-
-  def isTypeDecl : Boolean = false
-  def isTypeMember : Boolean = false
-  def isTypeConstructor : Boolean = false
-
 }
+
+sealed trait KindType
+case object Unknown extends KindType
+case object NameSpace extends KindType
+case object TypeDecl extends KindType
+case object TypeMember extends KindType
+case object TypeConstructor extends KindType
+
+case object TypeDeclMember extends KindType
+
 trait AGRoot extends NodeKind {
   def canContain(k: NodeKind) = false
   override def abstractionPolicies = Seq()
@@ -24,6 +29,7 @@ trait AGRoot extends NodeKind {
 }
 
 trait NodeKindKnowledge {
+
   def nodeKinds : Seq[NodeKind]
   def canContain(graph : DependencyGraph)
                 (n : DGNode, other : ConcreteNode) : Boolean = {
@@ -31,8 +37,8 @@ trait NodeKindKnowledge {
       (n.kind canContain other.kind) &&
       n.isMutable
   }
-  def isTypeUse : DependencyGraph => DGEdge => Boolean
-  def isTypeMemberUse : DependencyGraph => DGEdge => Boolean
+
+  def kindType : (DependencyGraph, DGNode) => KindType = (_,_) => Unknown
 
   //TODO?? move elsewhere ?
   def coupling(graph : DependencyGraph) =

@@ -250,9 +250,11 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
       val impl = graph.getConcreteNode(implId)
       val abs = graph.getConcreteNode(absId)
       (impl.kind, abs.kind) match {
-        case (Class, Class)
+        /*case (Class, Class)
           | (Class, Interface)
           | (Interface, Interface) =>
+        */
+        case (Class, Interface) =>
             val absMeths = graph.content(abs.id).map(graph.getConcreteNode)
             val candidates = graph.content(impl.id).map(graph.getConcreteNode)
             findAndRegisterOverridedMethods(graph, absMeths.toList, candidates.toList)
@@ -260,6 +262,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
               case None => throw new PuckError("all overrided methods not found")
               case Some(g1) => g1.addAbstraction(implId, (absId, pol))
             }
+        case _ => graph
       }
 
     }

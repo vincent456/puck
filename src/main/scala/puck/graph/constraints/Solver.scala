@@ -262,20 +262,24 @@ trait Solver {
 
 
          //re-attach before moving
-         val tryGraph3 = rules.moveTo(graph2.addContains(oldCter, wronglyContained.id, register = false),
-                        wronglyContained.id, newCter)
+         val g3 = graph2.addContains(oldCter, wronglyContained.id, register = false)
 
-          val tryGraph4 = tryGraph3.flatMap {graph3 =>
-
-          (graph3.isWronglyContained(wronglyContained.id), automaticConstraintLoosening) match {
-            case (false, _) => Success(graph3)
-            case (true, true) => Success(rules.addHideFromRootException (graph3, wronglyContained.id, newCter))
-            case (true, false) => Failure(new PuckError("constraint unsolvable")).toValidationNel
-          }
-        }
+         val tryG =
+           for {
+             g3 <- graph.kindType(wronglyContained) match {
+               case TypeMember => rules.moveTypeMember (g3, wronglyContained.id, newCter)
+               case TypeDecl => rules.moveTypeDecl (g3, wronglyContained.id, newCter)
+               case _ => ???
+             }
+             g4 <- (g3.isWronglyContained(wronglyContained.id), automaticConstraintLoosening) match {
+               case (false, _) => Success(g3)
+               case (true, true) => Success(rules.addHideFromRootException (g3, wronglyContained.id, newCter))
+               case (true, false) => Failure(new PuckError("constraint unsolvable")).toValidationNel
+             }
+           } yield g4
 
         logger.writeln("solveContains : calling k()")
-        k(tryGraph4)
+        k(tryG)
        case FindHostError => k(Failure(new DGError("FindHostError caught")).toValidationNel)
     }
   }

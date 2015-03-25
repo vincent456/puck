@@ -41,7 +41,7 @@ object Scenarii {
 
           .map { case (g, itc) => (introPackage(g, pname, pcontainer), itc)}
 
-          .flatMap { case ((g, p), itc) => TR.moveTo(g, itc.id, p.id) map ((_, p.id, itc.id))}
+          .flatMap { case ((g, p), itc) => TR.moveTypeDecl(g, itc.id, p.id) map ((_, p.id, itc.id))}
     }
 
   val methodUsesViaThisField = new ExampleSample(puck.testExamplesPath + "/methodUsesViaThisField/A.java"){
@@ -64,17 +64,6 @@ object Scenarii {
     val itcB = fullName2id("examples.needToMergeInterfaces.IB")
 
   }
-
-  val usesThisMethod = new ExampleSample(puck.testExamplesPath + "/usesThisMethod/A.java"){
-
-    val rootPackage = fullName2id("examples.usesThisMethod")
-
-    val classA = fullName2id("examples.usesThisMethod.A")
-    val methMa1 = fullName2id("examples.usesThisMethod.A.ma1__void")
-    val methMa2 = fullName2id("examples.usesThisMethod.A.ma2__void")
-
-  }
-
 
   val graphBuildingExamplesPath = puck.testExamplesPath + "/graphBuilding/"
 

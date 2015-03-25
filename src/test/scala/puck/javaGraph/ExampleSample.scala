@@ -24,6 +24,8 @@ case class ExampleSample
 
   def this(filePath : String) =
     this(CompileHelper.buildGraph(List(filePath), List()))
+  def this(filesPath : String*) =
+    this(CompileHelper.buildGraph(filesPath.toList, List()))
 
   var logger : PuckLogger = PuckNoopLogger
   def compare: (DependencyGraph, DependencyGraph) => Boolean =
