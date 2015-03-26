@@ -267,7 +267,7 @@ trait Solver {
          val tryG =
            for {
              g3 <- graph.kindType(wronglyContained) match {
-               case TypeMember => rules.moveTypeMember (g3, wronglyContained.id, newCter)
+               case TypeMember => rules.moveTypeMember (g3, wronglyContained.id, newCter, ???)
                case TypeDecl => rules.moveTypeDecl (g3, wronglyContained.id, newCter)
                case _ => ???
              }

@@ -22,7 +22,7 @@ extends AbstractAction(s"Move $moved here"){
       case TypeDecl =>
         controller.transfoRules.moveTypeDecl(graph, moved.id, host.id)
       case TypeMember =>
-        controller.transfoRules.moveTypeMember(graph, moved.id, host.id)
+        controller.transfoRules.moveTypeMember(graph, moved.id, host.id, ???)
       case _ => ???
     }) match {
       case Failure(errs) =>

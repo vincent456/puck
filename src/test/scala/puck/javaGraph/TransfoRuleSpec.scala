@@ -4,6 +4,7 @@ package javaGraph
 import org.scalatest.OptionValues
 import puck.graph.constraints.{AbstractionPolicy, SupertypeAbstraction, DelegationAbstraction}
 import puck.graph._
+import puck.graph.transformations.CreateParameter
 import puck.util.PuckSystemLogger
 import scalaz.{Success, Failure}
 
@@ -140,7 +141,8 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues {
         assert(graph.container(methMa).value == classA)
         assert(graph.uses(methUser, methMa))
 
-        assertSuccess(TR.moveTypeMember(graph.withLogger(new PuckSystemLogger(_ => true)), methMa, classB)){
+        assertSuccess(TR.moveTypeMember(graph.withLogger(new PuckSystemLogger(_ => true)),
+          methMa, classB)){
           g2 =>
             quickFrame(g2)
             assert(g2.container(methMa).value == classB)
@@ -163,12 +165,14 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues {
 
         assert(graph.container(methMa2).value == classA)
         assert(graph.uses(methMa1, methMa2))
+        assert(! graph.uses(methMa1, classB))
 
-        assertSuccess(TR.moveTypeMember(graph, methMa2, classB)){
+        assertSuccess(TR.moveTypeMember(graph.withLogger(new PuckSystemLogger(_ => true)), methMa2, classB, CreateParameter)){
           g2 =>
+            quickFrame(g2)
             assert(g2.container(methMa2).value == classB)
             assert(g2.uses(methMa1, methMa2))
-            assert(g2.uses(methMa2, classA))
+            assert(g2.uses(methMa1, classB))
         }
       }
     }

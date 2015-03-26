@@ -24,6 +24,7 @@ trait DecisionMaker{
   def chooseNode(graph : GraphT, predicate : PredicateT)
                 (k : GraphT => Option[NIdT] => Unit) : Unit
 
+
 /*  def modifyConstraints(graph : GraphT,
                         sources : NodeSet[Kind],
                         target : NodeType) : GraphT*/

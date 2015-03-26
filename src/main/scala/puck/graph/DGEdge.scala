@@ -73,7 +73,7 @@ case class DGEdge
     case Isa => graph.isa(source, target)
   }
 
-  def create(graph : DependencyGraph, register : Boolean = true) : DependencyGraph = {
+  def createIn(graph : DependencyGraph, register : Boolean = true) : DependencyGraph = {
     //println("creating "+ this)
     kind match {
       case Uses => graph.addUses(source, target, register)
@@ -82,7 +82,7 @@ case class DGEdge
 
     }
   }
-  def delete(graph : DependencyGraph, register : Boolean = true)  : DependencyGraph = {
+  def deleteIn(graph : DependencyGraph, register : Boolean = true)  : DependencyGraph = {
     //println("deleting "+ this)
     kind match {
       case Uses => graph.removeUses(source, target, register)

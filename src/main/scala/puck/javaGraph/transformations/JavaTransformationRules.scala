@@ -5,7 +5,7 @@ import puck.graph.ShowDG._
 import puck.graph._
 import puck.graph.constraints.{AbstractionPolicy, Move, RedirectionPolicy, SupertypeAbstraction}
 import puck.graph.transformations.{MergeMatcher, TransformationRules}
-import puck.javaGraph.{MethodType, JavaNamedType}
+import puck.javaGraph.MethodType
 import puck.javaGraph.nodeKind._
 
 import scalaz.Validation.FlatMap._

@@ -323,17 +323,17 @@ class DependencyGraph
              nRecording = recording.removeAbstraction(id, abs._1, abs._2))
 
   def changeTarget(edge : EdgeT, newTarget : NIdT) : GraphT = {
-    val g1 = edge.delete(this, register = false)
+    val g1 = edge.deleteIn(this, register = false)
     val newEdge : EdgeT = new DGEdge(edge.kind, edge.source, newTarget)
     val newRecording = recording.changeEdgeTarget(edge, newTarget, withMerge = newEdge.existsIn(this))
-    newEdge.create(g1, register = false).newGraph(nRecording = newRecording)
+    newEdge.createIn(g1, register = false).newGraph(nRecording = newRecording)
   }
 
   def changeSource(edge : EdgeT, newSource : NIdT) : GraphT = {
-    val g1 = edge.delete(this, register = false)
+    val g1 = edge.deleteIn(this, register = false)
     val newEdge: EdgeT = new DGEdge(edge.kind, newSource, edge.target)
     val newRecording = recording.changeEdgeSource(edge, newSource, withMerge = newEdge.existsIn(this))
-    newEdge.create(g1, register = false).newGraph(nRecording = newRecording)
+    newEdge.createIn(g1, register = false).newGraph(nRecording = newRecording)
   }
 
   def changeType(id : NIdT, styp : Option[Type], oldUsee: NIdT, newUsee : NIdT) : GraphT =

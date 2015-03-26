@@ -28,8 +28,8 @@ case class TTEdge(edge : DGEdge)
   extends TransformationTarget {
 
   def execute(g: GraphT, op : Operation) = op match {
-    case Add =>edge.create(g)
-    case Remove => edge.delete(g)
+    case Add =>edge.createIn(g)
+    case Remove => edge.deleteIn(g)
   }
 }
 
@@ -69,7 +69,7 @@ class RedirectionWithMerge(edge : DGEdge, extremity : Extremity)
 
   override def execute(g: GraphT, op : Operation) = (op, extremity) match {
     case (Add, _) => super.execute(g, op)
-    case (Remove, _) => edge.create(g)
+    case (Remove, _) => edge.createIn(g)
   }
 
 }
