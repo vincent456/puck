@@ -16,7 +16,8 @@ import java.io.InputStream;
  */
 
 
-public class SVGFrame extends JFrame{
+public class SVGFrame extends JFrame implements StackListener {
+
 
 
     static class SVGConsole {
@@ -38,6 +39,14 @@ public class SVGFrame extends JFrame{
         }
     }
 
+    @Override
+    public void update(SVGController svgController) {
+        undoButton.setEnabled(svgController.canUndo());
+        redoButton.setEnabled(svgController.canRedo());
+    }
+
+    private JButton undoButton;
+    private JButton redoButton;
 
     public SVGFrame(InputStream stream,
                     DependencyGraph g,
@@ -50,15 +59,29 @@ public class SVGFrame extends JFrame{
 
         final SVGController controller = SVGController.apply(control, g, opts, panel.canvas, console);
         panel.setController(controller);
+        controller.registerAsStackListeners(this);
 
         JPanel menu = new JPanel();
-        menu.add(new JButton(new AbstractAction("Undo"){
 
+        undoButton =new JButton(new AbstractAction("Undo"){
             @Override
             public void actionPerformed(ActionEvent e) {
-                controller.safePopGraph();
+                controller.undo();
             }
-        }));
+        });
+        undoButton.setEnabled(false);
+        menu.add(undoButton);
+
+        redoButton =new JButton(new AbstractAction("Redo"){
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                controller.redo();
+            }
+        });
+        redoButton.setEnabled(false);
+        menu.add(redoButton);
+
+
         menu.add(console.console);
 
 

@@ -191,7 +191,6 @@ public class SVGPanel extends JPanel{
                 if(nodeId != null)
                     canvas.modify(new Runnable() {
                         public void run() {
-
                             conditionalEdgeReset();
                             Integer nid = conditionalNodeReset();
                             if(!nodeId.equals(nid)) {

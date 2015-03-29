@@ -165,12 +165,12 @@ class DotPrinter
 
 
   def printSubGraph(n : DGNode): Unit = {
-    List("subgraph cluster" + n.id + " {",
-      s"""label=<<TABLE BORDER="0"><TR><TD BORDER="0" HREF="${n.id}" > ${decorate_name(n)} </TD></TR></TABLE>>;""",
+    writeln("subgraph cluster" + n.id + " {"+
+      s"""label=<<TABLE BORDER="0"><TR><TD BORDER="0" HREF="${n.id}" > ${decorate_name(n)} </TD></TR></TABLE>>;"""+
       //s"""label=<<TABLE BORDER="0"><TR><TD BORDER="0" ID="${n.id}" > ${decorate_name(n)} </TD></TR></TABLE>>;""",
-      "color=black;") foreach writeln
+      "color=black;")
 
-    if(graph.content(n.id).isEmpty) writeln(n.id + "[label=\"\" shape=none ]")
+    if(graph.content(n.id).isEmpty) writeln(n.id + "[label=\"\" shape=rectangle ]")
     else
       graph.content(n.id).foreach(printNode)
 

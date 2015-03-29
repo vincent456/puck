@@ -467,15 +467,21 @@ class DependencyGraph
 
  def coupling = nodeKindKnowledge.coupling(this)
 
-  def subTree(root : NIdT) : Seq[NIdT] = {
-    def aux(roots : Seq[NIdT], acc : Seq[NIdT]): Seq[NIdT] = roots match {
+  def subTree(root : NIdT, includeRoot : Boolean = true) : Seq[NIdT] = {
+    type Roots = Seq[NIdT]
+    def aux(acc : Seq[NIdT]) : Roots => Seq[NIdT] = {
       case Seq() => acc
       case r +: tail =>
         val children = content(r)
-        aux(children ++: tail, children ++: acc)
+        aux(children ++: acc)(children ++: tail)
 
     }
-    aux(Seq(root), Seq(root))
+
+    val seqInit =
+      if(includeRoot) Seq(root)
+      else Seq()
+
+    aux(seqInit)(Seq(root))
   }
 
   def kindType(nid : NodeId) : KindType =

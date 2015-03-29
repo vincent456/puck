@@ -2,7 +2,7 @@ package puck.gui.svg
 
 import java.io.{InputStream, PipedInputStream, PipedOutputStream}
 import java.util
-import javax.swing.JMenuItem
+import javax.swing.{AbstractAction, JMenuItem}
 
 import org.apache.batik.dom.svg.SAXSVGDocumentFactory
 import org.apache.batik.swing.JSVGCanvas
@@ -11,7 +11,7 @@ import org.w3c.dom.Element
 import org.w3c.dom.svg.{SVGGElement, SVGDocument}
 import puck.graph._
 import puck.graph.constraints.{RedirectionPolicy, SupertypeAbstraction, DelegationAbstraction}
-import puck.graph.io.{PrintingOptions, Svg, VisibilitySet}
+import puck.graph.io._
 import puck.gui.PuckControl
 import puck.gui.svg.SVGFrame.SVGConsole
 
@@ -22,22 +22,53 @@ import scala.concurrent.Future
 
 
 
+trait StackListener{
+  def update(svgController: SVGController) : Unit
+}
+
 
 class SVGController private
 ( val genController : PuckControl,
   val svgCanvas : JSVGCanvas,
   val console : SVGConsole,
-  var visibility : VisibilitySet,
-  var printId : Boolean,
-  var printSignatures : Boolean) {
+  private val visibility : VisibilitySet,
+  private var printId : Boolean,
+  private var printSignatures : Boolean) {
 
   def transfoRules = genController.filesHandler.transformationRules
 
-  val graphStack = mutable.Stack[DependencyGraph]()
+  private val undoStack = mutable.Stack[DependencyGraph]()
+  private val redoStack = mutable.Stack[DependencyGraph]()
+
+  private val stackListeners = mutable.ArrayBuffer[StackListener]()
+
+  def registerAsStackListeners(l : StackListener) =
+    stackListeners.append(l)
+
+  def updateStackListeners() : Unit =
+    stackListeners.foreach(_.update(this))
+
 
   type Color = String
 
   var nodeSelected: Option[(NodeId, Color, Element)] = None
+
+  def hide(id : NodeId): Unit = {
+    visibility.setVisibility(id, Hidden)
+    displayGraph(getGraph)
+  }
+
+  private def setSubTreeVisibility(rootId : NodeId, v : Visibility): Unit ={
+    val nodes = getGraph.subTree(rootId, includeRoot = false)
+    visibility.setVisibility(nodes, v)
+    displayGraph(getGraph)
+  }
+
+  def collapse(root: NodeId) : Unit =
+    setSubTreeVisibility(root, Hidden)
+
+  def expand(root: NodeId) : Unit =
+    setSubTreeVisibility(root, Visible)
 
   /*
    Code mostly accessed from java code thus this "java-like" design with getters
@@ -103,30 +134,39 @@ class SVGController private
     fdoc.onSuccess { case doc => svgCanvas.setDocument(doc) }
   }
 
-  def pushGraph(graph: DependencyGraph) = {
-    graphStack.push(graph)
-    displayGraph(graph)
-  }
-
-
-  def safePopGraph() = {
-    if(graphStack.nonEmpty) {
-      graphStack.pop()
+  def canUndo = undoStack.nonEmpty
+  def undo() = {
+      redoStack.push(undoStack.pop())
       displayGraph(getGraph)
-    }
+      updateStackListeners()
+  }
+  def canRedo = redoStack.nonEmpty
+  def redo()={
+    undoStack.push(redoStack.pop())
+    displayGraph(getGraph)
+    updateStackListeners()
+  }
+  def pushGraph(graph: DependencyGraph) = {
+    undoStack.push(graph)
+    redoStack.clear()
+    displayGraph(getGraph)
+    updateStackListeners()
   }
 
-  def getGraph = graphStack.head
+
+  
+
+  def getGraph = undoStack.head
 
   def abstractionChoices(n: ConcreteNode): java.util.List[JMenuItem] = {
-    val l = for {
+    val seq = for {
       p <- n.kind.abstractionPolicies
       k <- n.kind.abstractKinds(p)
     } yield {
         new JMenuItem(AbstractionAction(n, p, k, this))
       }
 
-    seqAsJavaList(l)
+    seqAsJavaList(seq)
   }
 
   def abstractionChoices(id: NodeId): java.util.List[JMenuItem] =
@@ -134,6 +174,15 @@ class SVGController private
       case n: ConcreteNode => abstractionChoices(n)
       case vn: VirtualNode => new util.ArrayList[JMenuItem]()
     }
+
+  def childChoices(n : ConcreteNode) : java.util.List[JMenuItem] = {
+
+    val ks = getGraph.nodeKinds.filter(n.kind.canContain)
+
+    val seq = ks map {k => new JMenuItem(AddNodeAction(n, this, k))}
+    
+    seqAsJavaList(seq)
+  }
 }
 
 
@@ -146,7 +195,7 @@ object SVGController {
             console : SVGConsole): SVGController ={
     val c = new SVGController(genController, svgCanvas, console,
     opts.visibility, opts.printId, opts.printSignatures)
-    c.graphStack.push(g)
+    c.undoStack.push(g)
     c
   }
 

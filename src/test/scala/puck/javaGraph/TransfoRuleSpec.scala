@@ -2,10 +2,9 @@ package puck
 package javaGraph
 
 import org.scalatest.OptionValues
-import puck.graph.constraints.{AbstractionPolicy, SupertypeAbstraction, DelegationAbstraction}
+import puck.graph.constraints.{SupertypeAbstraction, DelegationAbstraction}
 import puck.graph._
 import puck.graph.transformations.CreateParameter
-import puck.util.PuckSystemLogger
 import scalaz.{Success, Failure}
 
 import Scenarii._
@@ -24,8 +23,6 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues {
         FilesHandler.makeImageFile(None, graph, JavaNode,
         options, puck.testExamplesPath + "/" + name)()
     }*/
-
-
 
   implicit class Contains[G]( t : Iterable[G]){
     def contains(elem : G ) : Boolean = {
@@ -141,10 +138,9 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues {
         assert(graph.container(methMa).value == classA)
         assert(graph.uses(methUser, methMa))
 
-        assertSuccess(TR.moveTypeMember(graph.withLogger(new PuckSystemLogger(_ => true)),
+        assertSuccess(TR.moveTypeMember(graph,
           methMa, classB)){
           g2 =>
-            quickFrame(g2)
             assert(g2.container(methMa).value == classB)
             assert(g2.uses(methUser, methMa))
         }
@@ -167,9 +163,8 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues {
         assert(graph.uses(methMa1, methMa2))
         assert(! graph.uses(methMa1, classB))
 
-        assertSuccess(TR.moveTypeMember(graph.withLogger(new PuckSystemLogger(_ => true)), methMa2, classB, CreateParameter)){
+        assertSuccess(TR.moveTypeMember(graph, methMa2, classB, CreateParameter)){
           g2 =>
-            quickFrame(g2)
             assert(g2.container(methMa2).value == classB)
             assert(g2.uses(methMa1, methMa2))
             assert(g2.uses(methMa1, classB))

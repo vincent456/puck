@@ -6,26 +6,27 @@ import puck.graph.DependencyGraph;
 import puck.graph.transformations.MergeMatcher;
 
 import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.util.List;
 
 /**
 * Created by lorilan on 3/18/15.
 */
 class NodeRightClickMenu extends JPopupMenu {
 
-    private SVGController controller;
+    final private SVGController controller;
 
     private DependencyGraph getGraph(){
         return controller.getGraph();
     }
     //Visual actions
     JMenuItem collapse;
-    JMenuItem hide;
     //Transfo actions
     JMenuItem move;
 
     public NodeRightClickMenu(SVGController controller, int nodeId){
         this.controller = controller;
-        ConcreteNode node = getGraph().getConcreteNode(nodeId);
+        final ConcreteNode node = getGraph().getConcreteNode(nodeId);
         //List<JMenuItem> menuChoices = new ArrayList<>();
 
         JMenuItem item = new JMenuItem("Abstract " + node.name() + " as");
@@ -36,12 +37,38 @@ class NodeRightClickMenu extends JPopupMenu {
             this.add(it);
         }
 
+
+        List<JMenuItem> childChoices = controller.childChoices(node);
+
+        if(! childChoices.isEmpty()) {
+            this.addSeparator();
+            for (JMenuItem it : childChoices) {
+                this.add(it);
+            }
+        }
+
         this.addSeparator();
-        hide = new JMenuItem("Hide");
-        this.add(hide);
+        this.add(new JMenuItem(new AbstractAction("Hide"){
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                NodeRightClickMenu.this.controller.hide(node.id());
+            }
+        }));
+
         if(getGraph().content(nodeId).nonEmpty()){
-            collapse = new JMenuItem("Collapse");
-            this.add(collapse);
+            this.add(new JMenuItem(new AbstractAction("Collapse") {
+                @Override
+                public void actionPerformed(ActionEvent actionEvent) {
+                    NodeRightClickMenu.this.controller.collapse(node.id());
+                }
+            }));
+
+            this.add(new JMenuItem(new AbstractAction("Expand") {
+                @Override
+                public void actionPerformed(ActionEvent actionEvent) {
+                    NodeRightClickMenu.this.controller.expand(node.id());
+                }
+            }));
         }
 
         if(controller.nodeIsSelected()){
