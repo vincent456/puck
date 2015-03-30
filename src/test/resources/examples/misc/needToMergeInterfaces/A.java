@@ -1,5 +1,5 @@
 
-package examples.needToMergeInterfaces;
+package needToMergeInterfaces;
 
 interface IB {
 	public void mb();

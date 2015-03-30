@@ -6,20 +6,44 @@ aspect DominantUser {
                 " ("+this.getClass()+")");
 	}
 
-	public int MethodAccess.buildDominantUserAGNode(JavaGraphBuilder builder){
-        if(getQualifier() == null
-            || getQualifier().isThisAccess()){
-            int selfTypeNode = decl().hostType().buildAGNode(builder);
+    interface TypeMember {
+        public TypeDecl hostType();
+    }
+
+    Variable extends TypeMember;
+    MethodDecl implements TypeMember;
+
+    interface TypeMemberAccess{
+        public int buildAGNode(JavaGraphBuilder builder);
+        public Expr getQualifier();
+        public int buildDominantUserAGNodeFromLeftExpr(JavaGraphBuilder builder);
+        public int buildDominantUserAGNode(JavaGraphBuilder builder);
+        public TypeMember decl();
+
+    }
+    VarAccess implements TypeMemberAccess;
+    MethodAccess implements TypeMemberAccess;
+
+
+    static int Access.buildDominantUserAGNode(TypeMemberAccess access, JavaGraphBuilder builder){
+        if(access.getQualifier() == null
+            || access.getQualifier().isThisAccess()){
+            int selfTypeNode = access.decl().hostType().buildAGNode(builder);
             builder.addUses(selfTypeNode, selfTypeNode);
             return selfTypeNode;
         }
-        else if(getQualifier().isSuperAccess())
-            return decl().hostType().buildAGNode(builder);
+        else if(access.getQualifier().isSuperAccess())
+            return access.decl().hostType().buildAGNode(builder);
         else
-      		return buildDominantUserAGNodeFromLeftExpr(builder);
-  		
+            return access.buildDominantUserAGNodeFromLeftExpr(builder);
+    }
 
-  	}
+    public int VarAccess.buildDominantUserAGNode(JavaGraphBuilder builder){
+        return Access.buildDominantUserAGNode(this, builder);
+    }
+	public int MethodAccess.buildDominantUserAGNode(JavaGraphBuilder builder){
+        return Access.buildDominantUserAGNode(this, builder);
+    }
   	
   	class NoDominantUser extends Error {}
 	

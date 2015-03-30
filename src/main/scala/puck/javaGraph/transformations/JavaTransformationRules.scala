@@ -71,6 +71,50 @@ object JavaTransformationRules extends TransformationRules {
     else Success(g1)
   }
 
+
+  def membersToPutInInterface(g : GraphT, clazz : ConcreteNode) : Seq[ConcreteNode] = {
+
+    def canBeAbstracted(member : ConcreteNode) : Boolean = {
+      g.logger.writeln(s"canBeAbstracted($member)")
+      //the originSibling arg is needed in case of cyclic uses
+      def aux(originSibling : ConcreteNode)(member: ConcreteNode): Boolean =
+        member.kind match {
+          case ck: MethodKind =>
+            val used = g.usedBy(member.id)
+            g.logger.writeln("used : ")
+            used.foreach(g.logger.writeln(_))
+            used.isEmpty || {
+              val usedSiblings = used.filter{sid => g.contains(clazz.id, sid) || sid == originSibling.id}
+              g.logger.writeln("used siblings : ")
+              usedSiblings.foreach(g.logger.writeln(_))
+
+              usedSiblings.map(g.getConcreteNode).forall{used0 => aux(member)(used0) || {
+                  val typeUses = g.typeUsesOf((member.id, used0.id))
+                g.logger.writeln(s"type uses of  (${member.id},${used0.id}): ")
+                typeUses.foreach(g.logger.writeln(_))
+
+                typeUses.forall{case (typeUser, typeUsed) =>
+                    g.logger.writeln(s"($typeUser, $typeUsed) typeUsed of (${member.id},${used0.id})")
+
+                    typeUser == typeUsed
+                  }
+                }
+              }
+            }
+          case _ => false
+        }
+
+      aux(member)(member)
+    }
+
+    g.content(clazz.id).foldLeft(Seq[ConcreteNode]()){
+        (acc, mid) =>
+          val member = g.getConcreteNode(mid)
+          if(canBeAbstracted(member)) member +: acc
+          else acc
+      }
+  }
+
   def createInterfaceAndReplaceBySuperWherePossible(g : GraphT, clazz : ConcreteNode) : Try[(ConcreteNode, GraphT)] = {
     val classMembers = g.content(clazz.id)
 
@@ -80,12 +124,10 @@ object JavaTransformationRules extends TransformationRules {
        }
 
        (interface, g1) = itcGraph
-       g2 <- traverse(classMembers, g1){ (g0, memberId) =>
-           val member = g0.getConcreteNode(memberId)
-           member.kind match {
-              case ck : MethodKind => createAbstractMethod(g0, member, clazz, interface)
-              case _ => Success(g0)
-           }
+       members = membersToPutInInterface(g1, clazz)
+       g2 <- traverse(members, g1){ (g0, member) =>
+         createAbstractMethod(g0, member, clazz, interface)
+
        }
        g3 <- traverse(classMembers, g2.addIsa(clazz.id, interface.id)){ (g0, child) =>
            val node = g0.getConcreteNode(child)

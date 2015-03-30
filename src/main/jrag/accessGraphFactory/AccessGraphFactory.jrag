@@ -143,19 +143,33 @@ aspect AccessGraphFactory {
 	// }
 
 
-	public void MethodAccess.buildAG(JavaGraphBuilder builder, int containerId){
-		int nodeId = buildAGNode(builder);
-		
+	static void Access.buildAG(TypeMemberAccess access, int containerId, JavaGraphBuilder builder){
+		int nodeId = access.buildAGNode(builder);
+
 		builder.addUses(containerId, nodeId);
 
-        int typeUserId = buildDominantUserAGNode(builder);
-        int typeUsedId = decl().hostType().buildAGNode(builder);
+		int typeUserId = access.buildDominantUserAGNode(builder);
+		int typeUsedId = access.decl().hostType().buildAGNode(builder);
 
-        builder.addTypeRelationship(typeUserId, typeUsedId,
-                                    containerId, nodeId);
+		builder.addTypeRelationship(typeUserId, typeUsedId,
+									containerId, nodeId);
+	}
+	public void MethodAccess.buildAG(JavaGraphBuilder builder, int containerId){
+
+		buildAG(this, containerId, builder);
 
 		for(Expr e : getArgList()){
 			e.buildAG(builder, containerId);
+		}
+	}
+
+	public void VarAccess.buildAG(JavaGraphBuilder builder, int containerId){
+		//if(decl().isInstanceVariable() || decl().isClassVariable()){
+		/*if(decl().isLocalVariable() || decl().isMethodParameter()){
+			builder.addUses(containerId, buildAGNode(builder));
+		}
+		else */if(decl().isField()){
+			buildAG(this, containerId, builder);
 		}
 	}
 	
@@ -246,11 +260,7 @@ aspect AccessGraphFactory {
 	}
 
 
-	public void VarAccess.buildAG(JavaGraphBuilder builder, int containerId){
-		if(decl().isInstanceVariable() || decl().isClassVariable()){
-			builder.addUses(containerId, buildAGNode(builder));
-		}
-	}
+
   	
 
 	static void TypeDecl.addImplements(JavaGraphBuilder builder,

@@ -1,4 +1,4 @@
-package examples.methodUsesViaThisField;
+package methodUsesViaThisField;
 
 class B {
     public void mb(){}

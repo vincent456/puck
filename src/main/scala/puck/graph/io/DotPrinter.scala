@@ -4,6 +4,8 @@ package io
 
 import java.io.BufferedWriter
 
+import scala.collection.mutable
+
 /**
  * Created by lorilan on 13/08/14.
  */
@@ -43,11 +45,24 @@ class DotPrinter
   import printingOptions._
 
   implicit val g = graph
-  type NIdT = NodeId
 
   val idString : Int => String =
     if(printId) id => " (" + id + ")"
     else _ => ""
+
+
+  private val emptyMap = mutable.Map[NodeId, Boolean]()
+  private def isEmpty(id : NodeId) : Boolean = {
+    emptyMap get id match {
+      case None =>
+        val children = g.subTree(id, includeRoot = false)
+        val b = children.isEmpty || children.forall(visibility.isHidden)
+        emptyMap.put(id, b)
+        b
+      case Some(b) => b
+    }
+  }
+
 
   def html_safe(str : String) : String = str.replaceAllLiterally(">", "&gt;").replaceAllLiterally("<", "&lt;")
 
@@ -77,12 +92,12 @@ class DotPrinter
  */
   val arcs = scala.collection.mutable.Buffer[String]()
 
-  def printArc(style : Style, source : NIdT, target : NIdT,
+  def printArc(style : Style, source : NodeId, target : NodeId,
                status: ColorThickness): Unit = {
     //val (lineStyle, headStyle) = style
     //val (color, thickness) = status
     //println("print arc "+ source.nameTypeString + " -> " + target.nameTypeString)
-    def dotId(nid: NIdT) : String = {
+    def dotId(nid: NodeId) : String = {
       val n = graph.getNode(nid)
       if (helper isDotSubgraph n) n.id.toString
       else {
@@ -92,7 +107,7 @@ class DotPrinter
       }
     }
 
-    def subGraphArc(nid: NIdT, pos:String) = {
+    def subGraphArc(nid: NodeId, pos:String) = {
       val n = graph.getNode(nid)
       if (helper isDotSubgraph n) pos + "=cluster" + n.id + ", "
       else ""
@@ -110,7 +125,7 @@ class DotPrinter
 
 
 
-  val printUsesViolations = (source : NIdT, target : NIdT) =>
+  val printUsesViolations = (source : NodeId, target : NodeId) =>
     if(!graph.isa(source, target)) //TODO remove test. quickfix to avoid dot crash
       printArc(usesStyle, source, target,
         if(violations.contains(DGEdge.uses(source, target)))
@@ -119,7 +134,7 @@ class DotPrinter
 
   val printUse = selectedUse match {
     case None => printUsesViolations
-    case Some(selected) =>  (source: NIdT, target: NIdT) =>
+    case Some(selected) =>  (source: NodeId, target: NodeId) =>
       val printed = DGEdge.uses(source, target)
       val ct = if (printed == selected) ColorThickness.selected
       else if (graph.dominates(printed, selected))
@@ -165,16 +180,21 @@ class DotPrinter
 
 
   def printSubGraph(n : DGNode): Unit = {
-    writeln("subgraph cluster" + n.id + " {"+
-      s"""label=<<TABLE BORDER="0"><TR><TD BORDER="0" HREF="${n.id}" > ${decorate_name(n)} </TD></TR></TABLE>>;"""+
-      //s"""label=<<TABLE BORDER="0"><TR><TD BORDER="0" ID="${n.id}" > ${decorate_name(n)} </TD></TR></TABLE>>;""",
-      "color=black;")
 
-    if(graph.content(n.id).isEmpty) writeln(n.id + "[label=\"\" shape=rectangle ]")
-    else
+    val label =
+      s"""label=<<TABLE BORDER="0"><TR><TD BORDER="0" HREF="${n.id}" > ${decorate_name(n)}
+         |</TD></TR></TABLE>>;""".stripMargin
+    //s"""label=<<TABLE BORDER="0"><TR><TD BORDER="0" ID="${n.id}" > ${decorate_name(n)}
+    // </TD></TR></TABLE>>;""",
+
+    if(isEmpty(n.id)) writeln(s"${n.id} [ $label shape=rectangle ]")
+    else{
+      writeln(s"subgraph cluster${n.id} { $label color=black;")
       graph.content(n.id).foreach(printNode)
+      writeln("}")
+    }
 
-    writeln("}")
+
 
     graph.users(n.id).foreach(printUse(_, n.id))
   }

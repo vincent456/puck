@@ -10,7 +10,7 @@ version := "1.0"
 
 scalaVersion := "2.11.5"
 
-sbtVersion := "0.13.5"
+sbtVersion := "0.13.8"
 
 mainClass in Compile := Some("puck.Front")
 
@@ -58,6 +58,8 @@ libraryDependencies ++= Seq(
 (sourceGenerators in Test) ++= Seq(parser.taskValue, scanner.taskValue, ast.taskValue)
 
 cleanFiles += jastaddOutDir.value
+
+parallelExecution in test := false  //cannot compile several program in parallel with jastadd
 
 scalacOptions ++=Seq("-deprecation",
   "-encoding", "UTF-8",       // yes, this is 2 args

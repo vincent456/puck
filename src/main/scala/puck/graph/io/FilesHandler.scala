@@ -11,7 +11,7 @@ import puck.util._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.sys.process.Process
-import scala.util.Try
+import scala.util.{Success, Try}
 
 trait ConstraintSolvingSearchEngineBuilder {
   def apply(initialRecord : Recording, graph : DependencyGraph,
@@ -48,19 +48,18 @@ object FilesHandler{
                    (finish : Try[Int] => Unit = {case _ => ()}) : Unit = {
 
     //TODO fix bug when chaining the two function with a pipe
-    // and calling it in "do everything"
-/*    FilesHandler.makeDot(graph, dotHelper, printingOptions, new FileWriter(pathWithoutSuffix + ".dot"))
+    FilesHandler.makeDot(graph, dotHelper, printingOptions, new FileWriter(pathWithoutSuffix + ".dot"))
 
-    finish(Success(convertDot(graphvizDot, pathWithoutSuffix, sInput = None, sOutput, outputFormat)))*/
+    finish(Success(convertDot(graphvizDot, pathWithoutSuffix, sInput = None, sOutput, outputFormat)))
 
-    val pipedOutput = new PipedOutputStream()
+    /*val pipedOutput = new PipedOutputStream()
     val pipedInput = new PipedInputStream(pipedOutput)
 
     Future {
       convertDot(graphvizDot, pathWithoutSuffix, sInput = Some(pipedInput), sOutput, outputFormat)
     } onComplete finish
 
-    makeDot(graph, dotHelper, printingOptions, writer = new OutputStreamWriter(pipedOutput))
+    makeDot(graph, dotHelper, printingOptions, writer = new OutputStreamWriter(pipedOutput))*/
   }
 
   def convertDot( graphvizDot : Option[File],

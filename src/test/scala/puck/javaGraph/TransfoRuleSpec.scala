@@ -1,10 +1,12 @@
 package puck
 package javaGraph
 
-import org.scalatest.OptionValues
+import org.scalatest.{Matchers, OptionValues}
 import puck.graph.constraints.{SupertypeAbstraction, DelegationAbstraction}
 import puck.graph._
 import puck.graph.transformations.CreateParameter
+import puck.javaGraph.nodeKind.Interface
+import puck.util.PuckSystemLogger
 import scalaz.{Success, Failure}
 
 import Scenarii._
@@ -13,80 +15,7 @@ import scala.language.reflectiveCalls
 /**
  * Created by lorilan on 2/25/15.
  */
-class TransfoRuleSpec extends AcceptanceSpec with OptionValues {
-
-  /*    def print(name : String)(graph : DependencyGraph): Unit ={
-      import puck.graph.io._
-
-      val options =
-        PrintingOptions(VisibilitySet.allVisible(graph), printId = true)
-        FilesHandler.makeImageFile(None, graph, JavaNode,
-        options, puck.testExamplesPath + "/" + name)()
-    }*/
-
-  implicit class Contains[G]( t : Iterable[G]){
-    def contains(elem : G ) : Boolean = {
-      t.exists( _ == elem )
-    }
-  }
-
-  info("GraphBuilding Tests")// if moved in a specific Spec, errors due to parrallelism and
-  // the compilation ensue ... TOFIX ?
-
-  feature("typeUse typeMemberUse relation registration"){
-    import typeRelationship._
-    scenario("call on field") {
-      import callOnField._
-
-      val typeUse = DGEdge.uses(fieldTypeUser, typeUsed)
-      val typeMemberUse = DGEdge.uses(methUser, typeMemberUsed)
-
-      /*println("typeMemberUses2typeUsesMap")
-      println(graph.typeMemberUses2typeUsesMap.content.mkString("\n"))
-      println("typeUses2typeMemberUsesMap")
-      println(graph.typeUses2typeMemberUsesMap.content.mkString("\n"))
-
-      quickFrame(graph)*/
-      assert( graph.typeMemberUsesOf(typeUse) contains typeMemberUse )
-    }
-
-    scenario("call on method's parameter"){
-      import callOnParameter._
-
-      val typeUse = DGEdge.uses(mUser, classUsed)
-      val typeMemberUse = DGEdge.uses(mUser, mUsed)
-
-      assert( graph.typeMemberUsesOf(typeUse) contains typeMemberUse )
-
-    }
-    scenario("call from local variable"){
-      import callOnLocalVariable._
-      val typeUse = DGEdge.uses(mUser, classUsed)
-      val typeMemberUse = DGEdge.uses(mUser, mUsed)
-
-      assert( graph.typeMemberUsesOf(typeUse) contains typeMemberUse )
-    }
-    scenario("chained call"){
-      import chainedCall._
-
-      val typeUse = DGEdge.uses(mIntermediate, classUsed)
-      val typeMemberUse = DGEdge.uses(mUser, mUsed)
-
-      assert( graph.typeMemberUsesOf(typeUse) contains typeMemberUse )
-    }
-  }
-
-  feature("Abstraction registration"){
-    import abstractionRegistration._
-    scenario("one class one interface"){
-      import interfaceSupertype._
-
-      assert( graph.abstractions(classUsed) contains ((superType, SupertypeAbstraction)) )
-      assert( graph.abstractions(mUsed) contains ((absmUsed, SupertypeAbstraction)) )
-    }
-  }
-
-  info("Transformation Rules Tests")
+class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
 
   def assertSuccess[G](t : Try[G])(f : G => Unit) : Unit = {
     t match {
@@ -95,13 +24,158 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues {
     }
   }
 
+  feature("Intro"){
+    val examplesPath = puck.testExamplesPath + "/intro"
+    scenario("Intro interface - no existing super type"){
+      val p = "introInterfaceNoExistingSuperType"
+      val _ = new ExampleSample(s"$examplesPath/$p/A.java") {
+        val classA = fullName2id(s"$p.A")
+        val methM = fullName2id(s"$p.A.m__void")
+        val field = fullName2id(s"$p.A.f")
+
+        assert( graph.directSuperTypes(classA).isEmpty )
+
+        assert( graph.abstractions(classA).isEmpty )
+        assert( graph.abstractions(methM).isEmpty )
+        assert( graph.abstractions(field).isEmpty )
+
+
+        assertSuccess(TR.createAbstraction(graph, graph.getConcreteNode(classA),
+          Interface, SupertypeAbstraction)){
+          case (itc, g) =>
+            assert( g.isa(classA, itc.id) )
+
+            g.abstractions(classA).size shouldBe 1
+            g.abstractions(methM).size shouldBe 1
+            assert( g.abstractions(field).isEmpty ,
+              "Field cannot be exposed in an interface")
+
+        }
+      }
+
+    }
+
+    scenario("Intro interface - no existing super type - method self use in class"){
+      val p = "introInterfaceNoExistingSuperTypeWithSelfUse"
+      val _ = new ExampleSample(s"$examplesPath/$p/A.java") {
+        val classA = fullName2id(s"$p.A")
+        val methM = fullName2id(s"$p.A.m__void")
+
+        val methMUser = fullName2id(s"$p.A.methodUser__A")
+
+        assert( graph.directSuperTypes(classA).isEmpty )
+
+        assert( graph.uses(methMUser, classA) )
+        assert( graph.uses(methMUser, methM) )
+
+        assert( graph.abstractions(classA).isEmpty )
+        assert( graph.abstractions(methM).isEmpty )
+        assert( graph.abstractions(methMUser).isEmpty )
+
+
+        assertSuccess(TR.createAbstraction(graph, graph.getConcreteNode(classA),
+          Interface, SupertypeAbstraction)){
+          case (itc, g) =>
+            assert( g.isa(classA, itc.id) )
+
+            g.abstractions(classA).size shouldBe 1
+            g.abstractions(methM).size shouldBe 1
+            g.abstractions(methMUser).size shouldBe 1
+
+
+            val methMAbs = g.abstractions(methM).head._1
+
+            assert( g.uses(methMUser, methMAbs) )
+            assert( g.uses(methMUser, itc.id) )
+        }
+      }
+
+    }
+
+    scenario("Intro interface - no existing super type - field self use in class"){
+      val p = "introInterfaceNoExistingSuperTypeWithSelfUse"
+      val _ = new ExampleSample(s"$examplesPath/$p/B.java") {
+        val classB = fullName2id(s"$p.B")
+        val field = fullName2id(s"$p.B.f")
+
+        val fieldUserThatShouldNotBeInInterface =
+          fullName2id(s"$p.B.fieldUserThatShouldNotBeInInterface__B")
+
+        assert( graph.directSuperTypes(classB).isEmpty )
+
+        assert( graph.uses(fieldUserThatShouldNotBeInInterface, classB) )
+        assert( graph.uses(fieldUserThatShouldNotBeInInterface, field) )
+
+        assert( graph.abstractions(classB).isEmpty )
+        assert( graph.abstractions(field).isEmpty )
+        assert( graph.abstractions(fieldUserThatShouldNotBeInInterface).isEmpty )
+        quickFrame(graph)
+        assertSuccess(TR.createAbstraction(graph.withLogger(new PuckSystemLogger(_ => true)), graph.getConcreteNode(classB),
+          Interface, SupertypeAbstraction)){
+          case (itc, g) =>
+            assert( g.isa(classB, itc.id) )
+
+            g.abstractions(classB).size shouldBe 1
+            assert( g.abstractions(field).isEmpty ,
+              "Field cannot be exposed in an interface")
+            assert( g.abstractions(fieldUserThatShouldNotBeInInterface).isEmpty,
+              "Method use concrete class field, should not be abstracted")
+
+            assert( graph.uses(fieldUserThatShouldNotBeInInterface, classB) )
+            assert( graph.uses(fieldUserThatShouldNotBeInInterface, field) )
+
+        }
+      }
+    }
+
+    scenario("Intro interface - no existing super type - field use of self type parameter in class"){
+      val p = "introInterfaceNoExistingSuperTypeWithSelfUse"
+      val _ = new ExampleSample(s"$examplesPath/$p/C.java") {
+        val classA = fullName2id(s"$p.C")
+        val field = fullName2id(s"$p.C.f")
+
+        val fieldUserThatCanBeInInterface =
+          fullName2id(s"$p.C.fieldUserThatCanBeInInterface__void")
+
+        assert( graph.directSuperTypes(classA).isEmpty )
+
+        //assert( !graph.uses(fieldUserThatCanBeInInterface, classA) )
+        assert( graph.uses(fieldUserThatCanBeInInterface, field) )
+
+
+        assert( graph.abstractions(classA).isEmpty )
+        assert( graph.abstractions(field).isEmpty )
+        assert( graph.abstractions(fieldUserThatCanBeInInterface).isEmpty )
+
+        assertSuccess(TR.createAbstraction(graph, graph.getConcreteNode(classA),
+          Interface, SupertypeAbstraction)){
+          case (itc, g) =>
+            assert( g.isa(classA, itc.id) )
+
+            g.abstractions(classA).size shouldBe 1
+            assert( g.abstractions(field).isEmpty ,
+              "Field cannot be exposed in an interface")
+            g.abstractions(fieldUserThatCanBeInInterface).size shouldBe 1
+
+            //assert( graph.uses(fieldUserThatCanBeInInterface, classA) )
+            assert( graph.uses(fieldUserThatCanBeInInterface, field) )
+        }
+      }
+    }
+
+    ignore("Intro interface - cyclic uses in class (recursion)"){}
+    ignore("Intro interface - super interface existing"){}
+    ignore("Intro interface - super class existing"){}
+
+  }
+
   feature("Move"){
     val examplesPath = puck.testExamplesPath + "/move"
 
     scenario("Move top level class"){
       val p = "topLevelClass"
       val _ = new ExampleSample(s"$examplesPath/$p/A.java",
-        s"$examplesPath/topLevelClass/Empty.java"){
+        s"$examplesPath/$p/Empty.java"){
         val package1 = fullName2id(s"$p.p1")
         val package2 = fullName2id(s"$p.p2")
         val classA = fullName2id(s"$p.p1.A")

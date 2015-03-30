@@ -1,8 +1,8 @@
 package puck
 
-import org.scalatest.{GivenWhenThen, FeatureSpec}
+import org.scalatest.{Matchers, FeatureSpec}
 
 /**
  * Created by lorilan on 22/02/15.
  */
-class AcceptanceSpec extends FeatureSpec with GivenWhenThen
+class AcceptanceSpec extends FeatureSpec with Matchers
