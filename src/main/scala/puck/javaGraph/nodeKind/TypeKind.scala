@@ -10,9 +10,16 @@ abstract class TypeKind extends JavaNodeKind
 
 case object Interface extends TypeKind {
 
-def canContain(k : NodeKind) : Boolean = {
+  def canContain(k : NodeKind) : Boolean = {
     k match {
       case AbstractMethod => true
+      case _ => false
+    }
+  }
+
+  override def canBe(k : NodeKind) : Boolean = {
+    k match {
+      case Interface => true
       case _ => false
     }
   }
@@ -26,7 +33,12 @@ def canContain(k : NodeKind) : Boolean = {
 
 case object Class extends TypeKind {
 
-
+  override def canBe(k : NodeKind) : Boolean = {
+    k match {
+      case Class | Interface => true
+      case _ => false
+    }
+  }
 
   def canContain(k : NodeKind) : Boolean = {
     k match {

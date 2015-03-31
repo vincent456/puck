@@ -85,7 +85,7 @@ case class ConstraintsMaps
      aux(usee0,List())
    }*/
 
-   def potentialInterloperOf(graph : GraphT, user : NIdT, used : NIdT) : Boolean = {
+   def interloperOf(graph : GraphT, user : NIdT, used : NIdT) : Boolean = {
      val uses = DGEdge.uses(user, used)
       forAncestors(graph, used){ used1 =>
        !graph.contains_*(used1.nid, user) &&
@@ -94,17 +94,17 @@ case class ConstraintsMaps
 
    }
 
-   def interloperOf(graph : GraphT, user : NIdT, usee : NIdT) =
-     potentialInterloperOf(graph, user, usee) && !friendOf(graph, user, usee)
+   def violation(graph : GraphT, user : NIdT, used : NIdT) =
+     interloperOf(graph, user, used) && !friendOf(graph, user, used)
 
 
    def isWronglyContained(graph : GraphT, node : NIdT) : Boolean =
-    forContainer(graph, node)(interloperOf(graph, _, node))
+    forContainer(graph, node)(violation(graph, _, node))
 
 
    def wrongUsers(graph : GraphT, node : NIdT) : Seq[NIdT] = {
      graph.users(node).foldLeft(Seq[NIdT]()){ case(acc, user) =>
-       if( interloperOf(graph, user, node) ) user +: acc
+       if( violation(graph, user, node) ) user +: acc
        else acc
      }
    }

@@ -14,6 +14,7 @@ import puck.graph.constraints.{RedirectionPolicy, SupertypeAbstraction, Delegati
 import puck.graph.io._
 import puck.gui.PuckControl
 import puck.gui.svg.SVGFrame.SVGConsole
+import puck.gui.svg.actions.{AddNodeAction, AbstractionAction}
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable
@@ -25,7 +26,6 @@ import scala.concurrent.Future
 trait StackListener{
   def update(svgController: SVGController) : Unit
 }
-
 
 class SVGController private
 ( val genController : PuckControl,
@@ -51,6 +51,20 @@ class SVGController private
 
   type Color = String
 
+  def setSignatureVisible(b : Boolean): Unit = {
+    if( b != printSignatures ){
+      printSignatures = b
+      displayGraph(getGraph)
+    }
+  }
+
+  def setIdVisible(b : Boolean): Unit = {
+    if( b != printId ){
+      printId = b
+      displayGraph(getGraph)
+    }
+  }
+
   var nodeSelected: Option[(NodeId, Color, Element)] = None
 
   def hide(id : NodeId): Unit = {
@@ -75,7 +89,7 @@ class SVGController private
    */
   def nodeIsSelected: Boolean = nodeSelected.nonEmpty
 
-  def getNodeSelected: Int = nodeSelected.get._1
+  def getIdNodeSelected: Int = nodeSelected.get._1
 
   def getNodeDomElement: Element = nodeSelected.get._3
 
@@ -120,6 +134,8 @@ class SVGController private
   
 
   def displayGraph(graph: DependencyGraph) = {
+
+
     val pipedOutput = new PipedOutputStream()
     val pipedInput = new PipedInputStream(pipedOutput)
     val fdoc = Future {
@@ -158,30 +174,24 @@ class SVGController private
 
   def getGraph = undoStack.head
 
-  def abstractionChoices(n: ConcreteNode): java.util.List[JMenuItem] = {
-    val seq = for {
+  def abstractionChoices(n: ConcreteNode): Seq[JMenuItem] =
+    for {
       p <- n.kind.abstractionPolicies
       k <- n.kind.abstractKinds(p)
     } yield {
-        new JMenuItem(AbstractionAction(n, p, k, this))
-      }
+        new JMenuItem(new AbstractionAction(n, p, k, this))
+    }
 
-    seqAsJavaList(seq)
-  }
 
-  def abstractionChoices(id: NodeId): java.util.List[JMenuItem] =
+  def abstractionChoices(id: NodeId): Seq[JMenuItem] =
     getGraph.getNode(id) match {
       case n: ConcreteNode => abstractionChoices(n)
       case vn: VirtualNode => new util.ArrayList[JMenuItem]()
     }
 
-  def childChoices(n : ConcreteNode) : java.util.List[JMenuItem] = {
-
+  def childChoices(n : ConcreteNode) : Seq[JMenuItem] = {
     val ks = getGraph.nodeKinds.filter(n.kind.canContain)
-
-    val seq = ks map {k => new JMenuItem(AddNodeAction(n, this, k))}
-    
-    seqAsJavaList(seq)
+    ks map {k => new JMenuItem(new AddNodeAction(n, this, k))}
   }
 }
 

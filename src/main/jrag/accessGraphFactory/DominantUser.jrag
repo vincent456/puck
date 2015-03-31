@@ -69,6 +69,11 @@ aspect DominantUser {
       return decl().buildAGNode(builder);
   }
 
+  //in case of use of static methods, fields ...
+  int TypeAccess.typeUserFromLeftExpr(JavaGraphBuilder builder){
+        return decl().buildAGNode(builder);
+  }
+
   // public int ASTNode.buildDominantUserAGNodeOfRightExpr(JavaGraphBuilder builder){
   //   return buildAGNode(builder);
   // }

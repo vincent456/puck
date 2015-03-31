@@ -1,22 +1,21 @@
-java_import(['bridge1.candidate']).
-declareSet(concreteImplementations, ['Screen.printText__String',
-			'Screen.printLine__void',
-			'Screen.printDecor__void']).
 
-declareSet(abstractImplementations, []).
-declareSetUnion(implementations, [abstractImplementations, concreteImplementations]).
+java_import(['bridge.candidate',
+	     'bridge.candidate.Screen',
+             'bridge.candidate.CrossCapitalGreetingScreen',
+	     'bridge.candidate.CrossCapitalInformationScreen',
+	     'bridge.candidate.StarGreetingScreen',
+	     'bridge.candidate.StarInformationScreen']).
 
-declareSet(plainAbstractions,['Screen']).
+declareSet(implementations,
+		['printText__String',
+                 'printDecor__void',
+                 'printLine__void']).
 
-declareSet(refinedAbstractions, ['StarInformationScreen',
-			   'StarGreetingScreen',
-			   'CrossCapitalInformationScreen',
-			   'CrossCapitalGreetingScreen']).
+declareSet(abstractions, ['Screen',
+                          'CrossCapitalGreetingScreen',
+			  'CrossCapitalInformationScreen',
+			  'StarGreetingScreen',
+			  'StarInformationScreen']).
 
-declareSetUnion(abstractions, [plainAbstractions,  refinedAbstractions]).
-
-hideSetFrom(concreteImplementations, abstractions).
-hideSetFrom(refinedAbstractions, implementations).
-
-
-
+hideSetFrom(implementations, abstractions).
+%%hideScopeSetFrom(abstractions, ['bridge.candidate']).

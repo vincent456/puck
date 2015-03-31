@@ -2,7 +2,6 @@ package puck.gui.svg;
 
 import org.apache.batik.dom.GenericText;
 import org.apache.batik.dom.events.NodeEventTarget;
-import org.apache.batik.dom.svg.*;
 import org.apache.batik.swing.JSVGCanvas;
 import org.apache.batik.swing.gvt.GVTTreeRendererAdapter;
 import org.apache.batik.swing.gvt.GVTTreeRendererEvent;
@@ -108,7 +107,7 @@ public class SVGPanel extends JPanel{
             return null;
         }
 
-        private EdgeKind  edgeKindFromGElement(SVGGElement gelt){
+        private EdgeKind edgeKindFromGElement(SVGGElement gelt){
             NodeList l = gelt.getChildNodes();
             for(int i = 0; i < l.getLength(); i++){
                 Node n = l.item(i);
@@ -173,7 +172,7 @@ public class SVGPanel extends JPanel{
             if(controller.nodeIsSelected()){
                 controller.getNodeDomElement()
                         .setAttribute("fill", controller.getNodeColor());
-                int i = controller.getNodeSelected();
+                int i = controller.getIdNodeSelected();
                 controller.resetNodeSelected();
                 return i;
             }
@@ -202,8 +201,9 @@ public class SVGPanel extends JPanel{
                     });
             }
 
-            else if(evt.getTarget() instanceof SVGPathElement){
-                final SVGPathElement line = (SVGPathElement) evt.getTarget();
+            else if((evt.getTarget() instanceof SVGPathElement)
+                    || (evt.getTarget() instanceof SVGPolygonElement)){
+                final Element line = (Element) evt.getTarget();
                 final SVGGElement gedge = checkIfEdgeAndGetGElement(line);
                 if(gedge != null) {
                     canvas.modify(new Runnable() {
@@ -211,7 +211,7 @@ public class SVGPanel extends JPanel{
                             conditionalNodeReset();
                             DGEdge prevEdge = conditionalEdgeReset();
                             DGEdge e = edgeFromGElement(gedge);
-                            if(!e.equals(prevEdge)){
+                            if(e != null && !e.equals(prevEdge)){
                                 String color = line.getAttribute("stroke");
                                 controller.setEdgeSelected(e, gedge, color);
                                 changeEdgeColor(gedge, selectColor);
@@ -231,21 +231,26 @@ public class SVGPanel extends JPanel{
             }
         }
 
-        private void handleRightClick(MouseEvent evt){
-            if(evt.getTarget() instanceof SVGOMTextElement){
-                Integer nodeId = checkIfNodeAndGetId((SVGOMTextElement) evt.getTarget());
-                if(nodeId != null){
+        private void handleRightClick(MouseEvent evt) {
+            if (evt.getTarget() instanceof SVGTextElement) {
+                Integer nodeId = checkIfNodeAndGetId((Element) evt.getTarget());
+                if (nodeId != null) {
                     NodeRightClickMenu menu = new NodeRightClickMenu(controller, nodeId);
                     menu.show(SVGPanel.this, evt.getClientX(), evt.getClientY());
                 }
             }
 
-            if(evt.getTarget() instanceof SVGOMPathElement){
-                SVGOMPathElement line = (SVGOMPathElement) evt.getTarget();
-                System.out.println(line.getParentNode().getNodeName());
+            if ((evt.getTarget() instanceof SVGPathElement)
+                    || (evt.getTarget() instanceof SVGPolygonElement)) {
+                final Element line = (Element) evt.getTarget();
+                final SVGGElement gedge = checkIfEdgeAndGetGElement(line);
+                if (gedge != null) {
+                    DGEdge e = edgeFromGElement(gedge);
+                    EdgeRightClickMenu menu = new EdgeRightClickMenu(controller, e);
+                    menu.show(SVGPanel.this, evt.getClientX(), evt.getClientY());
+                }
             }
         }
-
         @Override
         public void handleEvent(Event evt) {
             MouseEvent mevt = (MouseEvent) evt;

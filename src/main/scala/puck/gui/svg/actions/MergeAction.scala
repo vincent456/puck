@@ -1,11 +1,12 @@
-package puck.gui.svg
+package puck.gui.svg.actions
 
 import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
 
-import puck.graph.{DependencyGraph, ConcreteNode}
+import puck.graph.{ConcreteNode, DependencyGraph}
+import puck.gui.svg.SVGController
 
-import scalaz.{Success, Failure}
+import scalaz.{Failure, Success}
 
 /**
  * Created by lorilan on 3/18/15.

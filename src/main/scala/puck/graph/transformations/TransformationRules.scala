@@ -21,6 +21,11 @@ trait MergeMatcher {
   }
 }
 
+object CreateVarStrategyForJava {
+  def createParamater  : CreateVarStrategy = CreateParameter
+  def createTypeMember(k : NodeKind) : CreateVarStrategy= CreateTypeMember(k)
+}
+
 sealed trait CreateVarStrategy
 case object CreateParameter extends CreateVarStrategy
 case class CreateTypeMember(k : NodeKind) extends CreateVarStrategy
@@ -502,4 +507,26 @@ trait TransformationRules {
     }
 
   }
+
+  def removeConcreteNode(graph : DependencyGraph,
+                         n : ConcreteNode) :Try[GraphT] =
+    
+    for{
+      g1 <- traverse(graph.content(n.id).map(graph.getConcreteNode), graph)(removeConcreteNode)
+      g2 <- 
+        if(g1.users(n.id).nonEmpty)
+          Failure(new PuckError("Cannot remove a used node")).toValidationNel
+        else {
+          val g00 = g1.removeContains(g1.container(n.id).get, n.id)
+          val g01 = graph.directSuperTypes(n.id).foldLeft(g00){
+            (g, supId) => g.removeIsa(n.id, supId)
+          }
+          val g02 = graph.usedBy(n.id).foldLeft(g01){
+            (g, usedId) => g.removeUses(n.id, usedId)
+          }
+          Success(g02.removeConcreteNode(n.id))
+        }  
+      
+    } yield g2
+  
 }

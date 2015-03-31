@@ -1,20 +1,21 @@
-package puck.gui.svg
+package puck.gui.svg.actions
 
 import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
 
 import puck.PuckError
-import puck.graph.{NodeId, NodeKind, ConcreteNode}
 import puck.graph.constraints.AbstractionPolicy
+import puck.graph.{ConcreteNode, NodeId, NodeKind}
+import puck.gui.svg.SVGController
 
-import scalaz.{Success, Failure}
+import scalaz.{Failure, Success}
 
 /**
   * Created by lorilan on 3/16/15.
   */
 
 
-case class AbstractionAction(
+class AbstractionAction(
   node : ConcreteNode,
   policy : AbstractionPolicy,
   kind : NodeKind,

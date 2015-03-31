@@ -458,9 +458,19 @@ class DependencyGraph
       else wu
     }.toSeq
 
+  def isViolation(e : DGEdge) : Boolean = {
+    e.kind match {
+      case Contains =>
+        constraints.isWronglyContained(this, e.target)
+      case Uses | Isa =>
+        constraints.violation(this, e.user, e.used)
+
+    }
+  }
+
   def wrongUsers(id : NIdT) : Seq[NIdT] = constraints.wrongUsers(this, id)
   def isWronglyContained(id : NIdT) = constraints.isWronglyContained(this, id)
-  def interloperOf(id1 : NIdT, id2 :NIdT) = constraints.interloperOf(this, id1, id2)
+  def interloperOf(id1 : NIdT, id2 :NIdT) = constraints.violation(this, id1, id2)
 
   def printConstraints[V](logger : Logger[V], v : V) : Unit =
     constraints.printConstraints(this, logger, v)

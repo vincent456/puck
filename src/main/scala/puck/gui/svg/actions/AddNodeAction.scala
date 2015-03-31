@@ -1,15 +1,16 @@
-package puck.gui.svg
+package puck.gui.svg.actions
 
 import java.awt.event.ActionEvent
-import javax.swing.{JOptionPane, AbstractAction}
+import javax.swing.{AbstractAction, JOptionPane}
 
-import puck.graph.{NodeKind, ConcreteNode}
-import puck.javaGraph.nodeKind.{Package, Interface, Class}
+import puck.graph.{ConcreteNode, NodeKind}
+import puck.gui.svg.SVGController
+import puck.javaGraph.nodeKind.{Class, Interface, Package}
 
 /**
  * Created by lorilan on 29/03/15.
  */
-case class AddNodeAction
+class AddNodeAction
 ( host : ConcreteNode,
   controller : SVGController,
   childKind : NodeKind)

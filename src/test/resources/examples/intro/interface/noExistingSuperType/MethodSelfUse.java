@@ -1,4 +1,4 @@
-package introInterfaceNoExistingSuperTypeWithSelfUse;
+package p;
 
 class A {
 

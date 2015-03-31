@@ -1,12 +1,13 @@
-package puck.gui.svg
+package puck.gui.svg.actions
 
 import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
 
 import puck.graph.constraints.RedirectionPolicy
-import puck.graph.{DGEdge, ConcreteNode}
+import puck.graph.{ConcreteNode, DGEdge}
+import puck.gui.svg.SVGController
 
-import scalaz.{Success, Failure}
+import scalaz.{Failure, Success}
 
 /**
  * Created by lorilan on 3/19/15.

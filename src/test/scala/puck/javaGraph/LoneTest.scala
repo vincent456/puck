@@ -1,3 +1,4 @@
+/*
 package puck.javaGraph
 
 import puck._
@@ -58,3 +59,4 @@ class LoneTest extends AcceptanceSpec {
     }
   }
 }
+*/

@@ -26,12 +26,14 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
 
   feature("Intro"){
     val examplesPath = puck.testExamplesPath + "/intro"
-    scenario("Intro interface - no existing super type"){
-      val p = "introInterfaceNoExistingSuperType"
-      val _ = new ExampleSample(s"$examplesPath/$p/A.java") {
-        val classA = fullName2id(s"$p.A")
-        val methM = fullName2id(s"$p.A.m__void")
-        val field = fullName2id(s"$p.A.f")
+
+    info("Intro interface - no existing super type")
+    val noSuperTypePath = examplesPath + "/interface/noExistingSuperType"
+    scenario("simple case"){
+      val _ = new ExampleSample(s"$noSuperTypePath/SimpleCase.java") {
+        val classA = fullName2id("p.A")
+        val methM = fullName2id("p.A.m__void")
+        val field = fullName2id("p.A.f")
 
         assert( graph.directSuperTypes(classA).isEmpty )
 
@@ -55,13 +57,11 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
 
     }
 
-    scenario("Intro interface - no existing super type - method self use in class"){
-      val p = "introInterfaceNoExistingSuperTypeWithSelfUse"
-      val _ = new ExampleSample(s"$examplesPath/$p/A.java") {
-        val classA = fullName2id(s"$p.A")
-        val methM = fullName2id(s"$p.A.m__void")
-
-        val methMUser = fullName2id(s"$p.A.methodUser__A")
+    scenario("method self use in class"){
+      val _ = new ExampleSample(s"$noSuperTypePath/MethodSelfUse.java") {
+        val classA = fullName2id("p.A")
+        val methM = fullName2id("p.A.m__void")
+        val methMUser = fullName2id("p.A.methodUser__A")
 
         assert( graph.directSuperTypes(classA).isEmpty )
 
@@ -92,14 +92,13 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
 
     }
 
-    scenario("Intro interface - no existing super type - field self use in class"){
-      val p = "introInterfaceNoExistingSuperTypeWithSelfUse"
-      val _ = new ExampleSample(s"$examplesPath/$p/B.java") {
-        val classB = fullName2id(s"$p.B")
-        val field = fullName2id(s"$p.B.f")
+    scenario("field self use in class"){
+      val _ = new ExampleSample(s"$noSuperTypePath/FieldSelfUse.java") {
+        val classB = fullName2id("p.B")
+        val field = fullName2id("p.B.f")
 
         val fieldUserThatShouldNotBeInInterface =
-          fullName2id(s"$p.B.fieldUserThatShouldNotBeInInterface__B")
+          fullName2id(s"p.B.fieldUserThatShouldNotBeInInterface__B")
 
         assert( graph.directSuperTypes(classB).isEmpty )
 
@@ -109,8 +108,7 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
         assert( graph.abstractions(classB).isEmpty )
         assert( graph.abstractions(field).isEmpty )
         assert( graph.abstractions(fieldUserThatShouldNotBeInInterface).isEmpty )
-        quickFrame(graph)
-        assertSuccess(TR.createAbstraction(graph.withLogger(new PuckSystemLogger(_ => true)), graph.getConcreteNode(classB),
+        assertSuccess(TR.createAbstraction(graph, graph.getConcreteNode(classB),
           Interface, SupertypeAbstraction)){
           case (itc, g) =>
             assert( g.isa(classB, itc.id) )
@@ -128,37 +126,78 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
       }
     }
 
-    scenario("Intro interface - no existing super type - field use of self type parameter in class"){
-      val p = "introInterfaceNoExistingSuperTypeWithSelfUse"
-      val _ = new ExampleSample(s"$examplesPath/$p/C.java") {
-        val classA = fullName2id(s"$p.C")
-        val field = fullName2id(s"$p.C.f")
+    scenario("field use via parameter of self type"){
+      val _ = new ExampleSample(s"$noSuperTypePath/FieldUseViaParameterSelfType.java") {
+        val classC = fullName2id("p.C")
+        val field = fullName2id("p.C.f")
 
         val fieldUserThatCanBeInInterface =
-          fullName2id(s"$p.C.fieldUserThatCanBeInInterface__void")
+          fullName2id("p.C.fieldUserThatCanBeInInterface__void")
 
-        assert( graph.directSuperTypes(classA).isEmpty )
+        assert( graph.directSuperTypes(classC).isEmpty )
 
-        //assert( !graph.uses(fieldUserThatCanBeInInterface, classA) )
+        //assert( !graph.uses(fieldUserThatCanBeInInterface, classC) )
         assert( graph.uses(fieldUserThatCanBeInInterface, field) )
 
 
-        assert( graph.abstractions(classA).isEmpty )
+        assert( graph.abstractions(classC).isEmpty )
         assert( graph.abstractions(field).isEmpty )
         assert( graph.abstractions(fieldUserThatCanBeInInterface).isEmpty )
 
-        assertSuccess(TR.createAbstraction(graph, graph.getConcreteNode(classA),
+        assertSuccess(TR.createAbstraction(graph, graph.getConcreteNode(classC),
           Interface, SupertypeAbstraction)){
           case (itc, g) =>
-            assert( g.isa(classA, itc.id) )
+            assert( g.isa(classC, itc.id) )
 
-            g.abstractions(classA).size shouldBe 1
+            g.abstractions(classC).size shouldBe 1
             assert( g.abstractions(field).isEmpty ,
               "Field cannot be exposed in an interface")
             g.abstractions(fieldUserThatCanBeInInterface).size shouldBe 1
 
-            //assert( graph.uses(fieldUserThatCanBeInInterface, classA) )
+            //assert( graph.uses(fieldUserThatCanBeInInterface, classC) )
             assert( graph.uses(fieldUserThatCanBeInInterface, field) )
+        }
+      }
+    }
+
+    scenario("use of type member sibling by self and parameter"){
+      val _ = new ExampleSample(s"$noSuperTypePath/SelfTypeMemberUseViaParameterAndSelf.java"){
+        val classA = fullName2id("p.A")
+        val field = fullName2id("p.A.f")
+        val usedMeth = fullName2id("p.A.m__int")
+
+        val methCanBeInInterface = fullName2id("p.A.canBeInInterface__A")
+        val methCannotBeInInterface = fullName2id("p.A.cannotBeInInterface__A")
+
+        assertSuccess(TR.createAbstraction(graph, graph.getConcreteNode(classA),
+          Interface, SupertypeAbstraction)){
+          case (itc, g) =>
+            assert( g.isa(classA, itc.id))
+
+            assert( g.abstractions(methCannotBeInInterface).isEmpty)
+            g.abstractions(methCanBeInInterface).size shouldBe 1
+
+        }
+      }
+    }
+
+    ignore("use of type member sibling by local variable and parameter"){
+      val _ = new ExampleSample(s"$noSuperTypePath/SelfTypeMemberUseViaParameterAndLocalVariable.java"){
+        val classA = fullName2id("p.A")
+        val field = fullName2id("p.A.f")
+        val usedMeth = fullName2id("p.A.m__int")
+
+        val methCanBeInInterface = fullName2id("p.A.canBeInInterface__A")
+        val methCannotBeInInterface = fullName2id("p.A.cannotBeInInterface__A")
+
+        assertSuccess(TR.createAbstraction(graph, graph.getConcreteNode(classA),
+          Interface, SupertypeAbstraction)){
+          case (itc, g) =>
+            assert( g.isa(classA, itc.id))
+
+            assert( g.abstractions(methCannotBeInInterface).isEmpty)
+            g.abstractions(methCanBeInInterface).size shouldBe 1
+
         }
       }
     }

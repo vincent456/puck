@@ -7,6 +7,7 @@ import puck.graph.constraints.{SupertypeAbstraction, DelegationAbstraction, Abst
  */
 trait NodeKind {
   def canContain(k : NodeKind) : Boolean
+  def canBe(k : NodeKind) : Boolean = false
   def abstractionPolicies : Seq[AbstractionPolicy] =
     Seq(SupertypeAbstraction, DelegationAbstraction)
   def abstractKinds(p : AbstractionPolicy) : Seq[NodeKind]

@@ -92,7 +92,6 @@ class ConstraintsParser private
       imports = l.foldLeft(imports) {case (acc, str) => (str +".") +: acc}
     }
 
-
   def declare_set : Parser[Unit] =
     "declareSet(" ~> ident ~ "," ~ rangeList <~ ")." ^^ {
       case ident ~ _ ~ list => defs get ident match {

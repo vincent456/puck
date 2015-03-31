@@ -164,7 +164,7 @@ class DotPrinter
     val n = graph.getNode(nid)
     val s = n.mapConcrete(cn => signatureString(cn.styp), "")
 
-    writeln(s"""${n.id} [ label = "${n.kind} ${name(n)} ${idString(n.id)} $s" ]""")
+    writeln(s"""${n.id} [ label = "${n.kind} ${name(n)} ${idString(n.id)} $s" shape="rectangle" ]""")
 
   }
 

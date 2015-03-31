@@ -5,27 +5,17 @@ package puck.graph
  */
 
 
-sealed abstract class EdgeKind {
-  def apply(source : NodeId, target: NodeId) : DGEdge
-}
+sealed abstract class EdgeKind
 
 case object Uses extends EdgeKind {
   override val toString = "uses"
-  def apply(source : NodeId, target: NodeId) =
-    DGEdge.uses(source, target)
-
 }
 case object Contains extends EdgeKind {
   override val toString = "contains"
-  def apply(source : NodeId, target: NodeId) =
-    DGEdge.contains(source, target)
-
-
 }
+
 case object Isa extends EdgeKind {
   override val toString = "isa"
-  def apply(source : NodeId, target: NodeId) =
-    DGEdge.isa(source, target)
 }
 
 object DGEdge{
@@ -56,6 +46,8 @@ case class DGEdge
 
   def container = source
   def content = target
+
+  def selfUse : Boolean = source == target
 
   /*override def equals(obj:Any) : Boolean = obj match {
     case that : AGEdge[_] => this.kind == that.kind && this.source == that.source && this.target == that.target

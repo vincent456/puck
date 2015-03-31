@@ -1,4 +1,4 @@
-package bridge1.candidate;
+package bridge.candidate;
 
 import java.util.Date;
 

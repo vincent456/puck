@@ -75,35 +75,27 @@ object JavaTransformationRules extends TransformationRules {
   def membersToPutInInterface(g : GraphT, clazz : ConcreteNode) : Seq[ConcreteNode] = {
 
     def canBeAbstracted(member : ConcreteNode) : Boolean = {
-      g.logger.writeln(s"canBeAbstracted($member)")
       //the originSibling arg is needed in case of cyclic uses
-      def aux(originSibling : ConcreteNode)(member: ConcreteNode): Boolean =
+      def aux(originSibling : ConcreteNode)(member: ConcreteNode): Boolean = {
+
+        def sibling: NodeId => Boolean =
+          sid => g.contains(clazz.id, sid) && sid != originSibling.id
+
         member.kind match {
           case ck: MethodKind =>
-            val used = g.usedBy(member.id)
-            g.logger.writeln("used : ")
-            used.foreach(g.logger.writeln(_))
-            used.isEmpty || {
-              val usedSiblings = used.filter{sid => g.contains(clazz.id, sid) || sid == originSibling.id}
-              g.logger.writeln("used siblings : ")
-              usedSiblings.foreach(g.logger.writeln(_))
-
-              usedSiblings.map(g.getConcreteNode).forall{used0 => aux(member)(used0) || {
+            val usedNodes = g.usedBy(member.id)
+            usedNodes.isEmpty || {
+              val usedSiblings = usedNodes filter sibling
+              usedSiblings.map(g.getConcreteNode).forall {
+                used0 => aux(member)(used0) || {
                   val typeUses = g.typeUsesOf((member.id, used0.id))
-                g.logger.writeln(s"type uses of  (${member.id},${used0.id}): ")
-                typeUses.foreach(g.logger.writeln(_))
-
-                typeUses.forall{case (typeUser, typeUsed) =>
-                    g.logger.writeln(s"($typeUser, $typeUsed) typeUsed of (${member.id},${used0.id})")
-
-                    typeUser == typeUsed
-                  }
+                  typeUses.forall { DGEdge.uses(_).selfUse }
                 }
               }
             }
           case _ => false
         }
-
+      }
       aux(member)(member)
     }
 
@@ -127,15 +119,14 @@ object JavaTransformationRules extends TransformationRules {
        members = membersToPutInInterface(g1, clazz)
        g2 <- traverse(members, g1){ (g0, member) =>
          createAbstractMethod(g0, member, clazz, interface)
-
        }
-       g3 <- traverse(classMembers, g2.addIsa(clazz.id, interface.id)){ (g0, child) =>
-           val node = g0.getConcreteNode(child)
-           (node.kind, node.styp) match {
+
+       g3 <- traverse(members, g2.addIsa(clazz.id, interface.id)){ (g0, child) =>
+           (child.kind, child.styp) match {
               // even fields can need to be promoted if they are written
               //case Field() =>
               case (ck : MethodKind, Some(MethodType(_, _)))  =>
-                changeSelfTypeBySuperInMethodSignature(g0, node, clazz, interface)
+                changeSelfTypeBySuperInMethodSignature(g0, child, clazz, interface)
               case _ => Success(g0)
            }
        }
