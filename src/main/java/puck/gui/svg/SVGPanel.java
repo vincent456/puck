@@ -33,7 +33,7 @@ public class SVGPanel extends JPanel{
     private SVGController controller;
 
     private DependencyGraph getGraph(){
-        return controller.getGraph();
+        return controller.graph();
     }
 
 

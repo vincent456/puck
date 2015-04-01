@@ -22,7 +22,7 @@ class AbstractionAction(
   controller : SVGController)
   extends AbstractAction(s"$kind ($policy)"){
 
-     def graph = controller.getGraph
+     def graph = controller.graph
      def getHost(absKind : NodeKind) : NodeId = {
        def aux(id : NodeId) : Option[NodeId] =
          graph.container(id).flatMap{ cterId =>

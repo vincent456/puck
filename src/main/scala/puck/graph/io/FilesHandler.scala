@@ -4,6 +4,7 @@ package io
 import java.io._
 
 import puck.graph.constraints.ConstraintsParser
+import puck.graph.constraints.search.SolverBuilder
 import puck.graph.transformations.{TransformationRules, Recording}
 import puck.search.{Search, SearchState, SearchEngine}
 import puck.util._
@@ -95,7 +96,36 @@ object FilesHandler{
   SearchEngine[Recording[Kind]]
 }*/
 
-abstract class FilesHandler(workingDirectory : File){
+
+trait DG2ASTBuilder{
+  def apply(srcDirectory : File,
+            outDirectory : File,
+            jarListFile : File,
+            logger : PuckLogger,
+            ll : AST.LoadingListener = null) : DG2AST
+}
+
+trait DG2AST {
+  def apply(res : ResultT) : Unit
+  def printCode(dir : File) : Unit
+  def parseConstraints(decouple : File) : DG2AST
+  def initialGraph : DependencyGraph
+  def initialRecord : Recording
+}
+
+class FilesHandler
+(workingDirectory : File,
+ val solverBuilder : SolverBuilder,
+ //TODO ? change to List[String] ?
+ val srcSuffix : String,
+ val dotHelper : DotHelper,
+//TODO see if it can be placed somewhere else
+ val transformationRules : TransformationRules,
+ val dG2ASTBuilder: DG2ASTBuilder,
+ val searchingStrategies : Seq[ConstraintSolvingSearchEngineBuilder]){
+
+
+  var dg2ast: DG2AST = _
 
   private [this] var srcDir0 : Option[File] = None
   private [this] var outDir0 : Option[File] = None
@@ -125,11 +155,11 @@ abstract class FilesHandler(workingDirectory : File){
 
   type GraphT = DependencyGraph
 
-  private [this] var ag : GraphT = _
-  def graph = ag
-  protected def graph_=(g : GraphT): Unit = { ag = g }
+  //private [this] var ag : GraphT = _
+  def graph = dg2ast.initialGraph
+  //protected def graph_=(g : GraphT): Unit = { ag = g }
 
-  def initialRecord : Recording
+  def initialRecord : Recording = dg2ast.initialRecord
 
   var graphBuilder : GraphBuilder = _
 
@@ -230,38 +260,25 @@ abstract class FilesHandler(workingDirectory : File){
 
 
 
-  def loadGraph(ll : AST.LoadingListener) : GraphT
-
-  val dotHelper : DotHelper
+  def loadGraph(ll : AST.LoadingListener) : Unit = {
+    dg2ast = dG2ASTBuilder(srcDirectory.get,
+                           outDirectory.get,
+                           jarListFile.get, logger)
+  }
 
   /*def makeProlog(){
     PrologPrinter.print(new BufferedWriter(new FileWriter(graphFile(".pl"))), ag)
   }*/
 
-  def parseConstraints()  = {
-    if(graphBuilder == null) throw new DGError("WTF !!")
-    val parser = ConstraintsParser(graphBuilder)
-    try {
-      decouple match{
-        case None => throw new DGError("cannot parse : no decouple file given")
-        case Some(f) =>
-          logger.writeln("parsing " + f)
-          parser(new FileReader(f))
-      }
-    } catch {
-      case e : NoSuchElementException =>
-        e.printStackTrace()
-        logger.writeln("parsing failed : " + e.getLocalizedMessage)((PuckLog.NoSpecialContext, PuckLog.Error))
+  def parseConstraints() : Unit = {
+    decouple match{
+      case None => throw new DGError("cannot parse : no decouple file given")
+      case Some(f) =>
+        logger.writeln("parsing " + f)
+        dg2ast = dg2ast.parseConstraints(f)
     }
-    graph = graph.newGraph(nConstraints = graphBuilder.constraintsMap)
+
   }
-
-
-  def searchingStrategies : Seq[ConstraintSolvingSearchEngineBuilder]
-
-
-  //TODO see if it can be placed somewhere else
-  val transformationRules : TransformationRules
 
   type ST = SearchState[ResultT]
 
@@ -316,12 +333,11 @@ abstract class FilesHandler(workingDirectory : File){
 
   def makeImage = FilesHandler.makeImage(graphvizDot, dotHelper, graphFilePath) _
 
-  def printCode() : Unit
+  def printCode() : Unit = dg2ast.printCode(outDirectory.get)
 
-  def applyChangeOnProgram(record : ResultT) : Unit
+  def applyChangeOnProgram(record : ResultT) : Unit =
+    dg2ast(record)
 
-  //TODO ? change to List[String] ?
-  val srcSuffix : String
 
 
   private def openList(files : Seq[String]) : Unit = {

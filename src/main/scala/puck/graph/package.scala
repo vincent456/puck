@@ -1,5 +1,6 @@
 package puck
 
+import puck.graph.transformations.Recording
 import scalaz._
 
 /**
@@ -14,15 +15,15 @@ package object graph {
   type Try[T] = ValidationNel[PuckError, T]
   type PuckFailure = NonEmptyList[PuckError]
 
-  type NodeId = DependencyGraph.NodeId
+  type NodePredicateT = (DependencyGraph, ConcreteNode) => Boolean
+
+
+  type NodeId = Int
 
   type JavaNodeKind = javaGraph.nodeKind.JavaNodeKind
   val JavaFilesHandler = javaGraph.JavaFilesHandler
   val JavaNode = javaGraph.JavaDotHelper
   val JavaSolver = javaGraph.JavaSolver
-
-  type Recording = graph.transformations.Recording
-  val Recording = graph.transformations.Recording
 
   import scala.language.implicitConversions
   implicit def edgeToPair(edge : DGEdge) : (NodeId, NodeId) = (edge.source, edge.target)

@@ -1,6 +1,6 @@
 package puck.graph
 
-import puck.graph.constraints.{SupertypeAbstraction, DelegationAbstraction, AbstractionPolicy}
+import puck.graph.constraints.{AbstractionPolicy, SupertypeAbstraction, DelegationAbstraction}
 
 /**
  * Created by lorilan on 26/10/14.
@@ -11,6 +11,12 @@ trait NodeKind {
   def abstractionPolicies : Seq[AbstractionPolicy] =
     Seq(SupertypeAbstraction, DelegationAbstraction)
   def abstractKinds(p : AbstractionPolicy) : Seq[NodeKind]
+
+  def abstractionChoices : Seq[(NodeKind, AbstractionPolicy)] =
+    for {
+      p <- abstractionPolicies
+      k <- abstractKinds(p)
+    } yield (k, p)
 }
 
 sealed trait KindType

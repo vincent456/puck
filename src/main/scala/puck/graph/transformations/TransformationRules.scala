@@ -43,7 +43,19 @@ trait TransformationRules {
     (PuckLog.GraphTransfoRules, lvl)
 
 
-  //TODO see if it can be rewritten using scalaz !
+  def absIntroPredicate(graph : GraphT,
+                        impl : DGNode,
+                        absPolicy : AbstractionPolicy,
+                        absKind : NodeKind) : NodePredicateT = absPolicy match {
+    case SupertypeAbstraction =>
+      (graph, potentialHost) => !graph.interloperOf(impl.id, potentialHost.id)
+
+    case DelegationAbstraction =>
+      (graph, potentialHost) => !graph.interloperOf(potentialHost.id, impl.id)
+  }
+
+  //see if it can be rewritten using scalaz !
+  //it cannot Validation is not a monad ! if we use either instead ...
   def traverse[A, B, E](a: Iterable[A], b: B)(f: (B, A) => Validation[E, B]): Validation[E,B] =
     a.foldLeft[Validation[E,B]](Success(b)){case (b0, a0) => b0 flatMap (f(_, a0))}
 
@@ -365,6 +377,22 @@ trait TransformationRules {
       }
 
 
+  def needSelfReference(graph : GraphT,
+                        moved : DGNode,
+                        currentHost : DGNode) : Boolean = {
+    def sibling: NodeId => Boolean =
+      sid => graph.contains(currentHost.id, sid) && sid != moved.id
+
+    def selfTypeUse(usedId : NodeId) = {
+      val tuses = graph.typeUsesOf((moved.id, usedId))
+      tuses.isEmpty || tuses.exists(DGEdge.uses(_).selfUse)
+    }
+
+    graph.usedBy(moved.id).filter{
+      used => sibling(used) && selfTypeUse(used)
+    }.nonEmpty
+  }
+
   def moveTypeMember(g : GraphT,
                      movedId : NodeId, newContainer : NodeId,
                      createVarStrategy: CreateVarStrategy = CreateParameter): Try[GraphT] = {
@@ -382,12 +410,10 @@ trait TransformationRules {
               traverse(g0.typeUsesOf(typeMemberUses), g0){(g0, typeUse0) =>
                 val typeUse = DGEdge.uses(typeUse0)
 
-                val isThisTypeUse = typeUse.source == typeUse.target
-
                 val g1 = g0.removeUsesDependency(typeUse, typeMemberUses)
                 val keepOldUse = g1.typeMemberUsesOf(typeUse).nonEmpty
 
-                (if(isThisTypeUse)
+                (if(typeUse.selfUse)
                   propagateMoveOfTypeMemberUsedBySelf(g1,
                     typeUse.used, userId, movedId, createVarStrategy).
                     map { case (e, g00) =>

@@ -1,12 +1,12 @@
 package puck.gui.svg.actions
 
 import java.awt.event.ActionEvent
-import javax.swing.AbstractAction
+import javax.swing.{JOptionPane, AbstractAction}
 
 import puck.PuckError
 import puck.graph._
-import puck.graph.transformations.CreateParameter
-import puck.gui.svg.{ParamOrFieldChoice, SVGController}
+import puck.graph.transformations.{CreateVarStrategyForJava, CreateTypeMember, CreateVarStrategy, CreateParameter}
+import puck.gui.svg.SVGController
 import puck.javaGraph.nodeKind.Field
 
 import scalaz.{Failure, Success}
@@ -14,6 +14,26 @@ import scalaz.{Failure, Success}
 /**
  * Created by lorilan on 3/18/15.
  */
+
+object MoveAction {
+  def getChoice(k : NodeKind): Option[CreateVarStrategy] = {
+    val choicesArray = Array[Object](CreateTypeMember(k),
+                                     CreateParameter)
+
+    val choice = JOptionPane.showInputDialog(null, //Component parentComponent
+      "Parameter or Field ?", //Object message,
+      "How to get self reference",  //String title
+      JOptionPane.PLAIN_MESSAGE, //int messageType
+      null, //Icon icon,
+      choicesArray, //Object[] options,
+      choicesArray(0) //Object initialValue
+    ).asInstanceOf[CreateVarStrategy]
+
+    if(choice == null) None
+    else Some(choice)
+  }
+}
+
 class MoveAction
 ( host : DGNode,
   moved : DGNode,
@@ -21,19 +41,6 @@ class MoveAction
   controller : SVGController)
 extends AbstractAction(s"Move ${moved.name(graph)} here"){
 
-  def needSelfReference : Boolean = {
-    def sibling: NodeId => Boolean =
-      sid => graph.contains(host.id, sid) && sid != moved.id
-
-    def selfTypeUse(usedId : NodeId) = {
-      val tuses = graph.typeUsesOf((moved.id, usedId))
-      tuses.isEmpty || tuses.exists(DGEdge.uses(_).selfUse)
-    }
-
-    graph.usedBy(moved.id).filter{
-      used => sibling(used) && selfTypeUse(used)
-    }.nonEmpty
-  }
 
   override def actionPerformed(e: ActionEvent): Unit = {
     (graph.kindType(moved) match {
@@ -45,8 +52,10 @@ extends AbstractAction(s"Move ${moved.name(graph)} here"){
           setText("/!\\/!\\ Method overriding unchecked (TODO !!!) /!\\/!\\")
 
         val choice =
-          if(needSelfReference) ParamOrFieldChoice.getChoice(Field)
-          else CreateParameter
+          if(controller.transfoRules.needSelfReference(graph, moved, host))
+            MoveAction.getChoice(Field).
+              getOrElse(CreateTypeMember(Field))
+          else CreateTypeMember(Field)
 
         controller.transfoRules.moveTypeMember(graph, moved.id, host.id, choice)
       case _ =>

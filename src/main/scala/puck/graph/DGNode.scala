@@ -26,7 +26,7 @@ object DGNode {
 case class VirtualNode
 (id : NodeId,
  potentialMatches : Seq[NodeId],
-  kind : NodeKind) extends DGNode {
+ kind : NodeKind) extends DGNode {
   override val isMutable = true
 
   //def name : String =  potentialMatches mkString ("Virtual(", " \\/ ", ")")
@@ -36,10 +36,6 @@ case class VirtualNode
   def name(g : DependencyGraph) : String =
     potentialMatches map { g.getConcreteNode(_).name } mkString ("Virtual(", " \\/ ", ")")
 
-  /*def kinds : Set[NodeKind]=
-    potentialMatches.foldLeft(Set[NodeKind]()){(s,n) =>
-      s + n.kind
-    }*/
 }
 
 case class ConcreteNode

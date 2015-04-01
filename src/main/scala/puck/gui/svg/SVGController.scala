@@ -1,8 +1,7 @@
 package puck.gui.svg
 
 import java.io.{InputStream, PipedInputStream, PipedOutputStream}
-import java.util
-import javax.swing.{AbstractAction, JMenuItem}
+import javax.swing.JMenuItem
 
 import org.apache.batik.dom.svg.SAXSVGDocumentFactory
 import org.apache.batik.swing.JSVGCanvas
@@ -10,13 +9,13 @@ import org.apache.batik.util.XMLResourceDescriptor
 import org.w3c.dom.Element
 import org.w3c.dom.svg.{SVGGElement, SVGDocument}
 import puck.graph._
+import puck.graph.constraints.search.SolverBuilder
 import puck.graph.constraints.{RedirectionPolicy, SupertypeAbstraction, DelegationAbstraction}
 import puck.graph.io._
 import puck.gui.PuckControl
 import puck.gui.svg.SVGFrame.SVGConsole
 import puck.gui.svg.actions.{AddNodeAction, AbstractionAction}
 
-import scala.collection.JavaConversions._
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -31,6 +30,7 @@ class SVGController private
 ( val genController : PuckControl,
   val svgCanvas : JSVGCanvas,
   val console : SVGConsole,
+  val solverBuilder : SolverBuilder,
   private val visibility : VisibilitySet,
   private var printId : Boolean,
   private var printSignatures : Boolean) {
@@ -54,14 +54,14 @@ class SVGController private
   def setSignatureVisible(b : Boolean): Unit = {
     if( b != printSignatures ){
       printSignatures = b
-      displayGraph(getGraph)
+      displayGraph(graph)
     }
   }
 
   def setIdVisible(b : Boolean): Unit = {
     if( b != printId ){
       printId = b
-      displayGraph(getGraph)
+      displayGraph(graph)
     }
   }
 
@@ -69,13 +69,13 @@ class SVGController private
 
   def hide(id : NodeId): Unit = {
     visibility.setVisibility(id, Hidden)
-    displayGraph(getGraph)
+    displayGraph(graph)
   }
 
   private def setSubTreeVisibility(rootId : NodeId, v : Visibility): Unit ={
-    val nodes = getGraph.subTree(rootId, includeRoot = false)
+    val nodes = graph.subTree(rootId, includeRoot = false)
     visibility.setVisibility(nodes, v)
-    displayGraph(getGraph)
+    displayGraph(graph)
   }
 
   def collapse(root: NodeId) : Unit =
@@ -97,7 +97,7 @@ class SVGController private
 
   def setNodeSelected(id: NodeId, elt: Element): Unit = {
     nodeSelected = Some((id, elt.getAttribute("fill"), elt))
-    console.displaySelection(getGraph.getNode(id)+"")
+    console.displaySelection(graph.getNode(id)+"")
   }
 
   def resetNodeSelected(): Unit = {
@@ -117,7 +117,7 @@ class SVGController private
     edgeSelected = Some((dgEdge, c, elt))
 
     import ShowDG._
-    console.displaySelection(showDG[DGEdge](getGraph).shows(dgEdge))
+    console.displaySelection(showDG[DGEdge](graph).shows(dgEdge))
   }
 
   def resetEdgeSelected(): Unit = {
@@ -153,44 +153,40 @@ class SVGController private
   def canUndo = undoStack.nonEmpty
   def undo() = {
       redoStack.push(undoStack.pop())
-      displayGraph(getGraph)
+      displayGraph(graph)
       updateStackListeners()
   }
   def canRedo = redoStack.nonEmpty
   def redo()={
     undoStack.push(redoStack.pop())
-    displayGraph(getGraph)
+    displayGraph(graph)
     updateStackListeners()
   }
   def pushGraph(graph: DependencyGraph) = {
     undoStack.push(graph)
     redoStack.clear()
-    displayGraph(getGraph)
+    displayGraph(graph)
     updateStackListeners()
   }
 
 
   
 
-  def getGraph = undoStack.head
+  def graph = undoStack.head
 
   def abstractionChoices(n: ConcreteNode): Seq[JMenuItem] =
-    for {
-      p <- n.kind.abstractionPolicies
-      k <- n.kind.abstractKinds(p)
-    } yield {
-        new JMenuItem(new AbstractionAction(n, p, k, this))
+    n.kind.abstractionChoices.map { case (k, p) =>
+      new JMenuItem(new AbstractionAction(n, p, k, this))
     }
 
-
   def abstractionChoices(id: NodeId): Seq[JMenuItem] =
-    getGraph.getNode(id) match {
+    graph.getNode(id) match {
       case n: ConcreteNode => abstractionChoices(n)
-      case vn: VirtualNode => new util.ArrayList[JMenuItem]()
+      case vn: VirtualNode => Seq.empty
     }
 
   def childChoices(n : ConcreteNode) : Seq[JMenuItem] = {
-    val ks = getGraph.nodeKinds.filter(n.kind.canContain)
+    val ks = graph.nodeKinds.filter(n.kind.canContain)
     ks map {k => new JMenuItem(new AddNodeAction(n, this, k))}
   }
 }
@@ -204,7 +200,9 @@ object SVGController {
             svgCanvas : JSVGCanvas,
             console : SVGConsole): SVGController ={
     val c = new SVGController(genController, svgCanvas, console,
-    opts.visibility, opts.printId, opts.printSignatures)
+                genController.filesHandler.solverBuilder,
+                opts.visibility, opts.printId, opts.printSignatures)
+
     c.undoStack.push(g)
     c
   }

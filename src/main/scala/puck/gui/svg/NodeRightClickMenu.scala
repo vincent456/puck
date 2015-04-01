@@ -30,9 +30,9 @@ class NodeRightClickMenu
 
   def this(controller: SVGController,
            nodeId: Int) =
-    this(controller, controller.getGraph.getConcreteNode(nodeId))
+    this(controller, controller.graph.getConcreteNode(nodeId))
 
-  import controller.getGraph
+  import controller.graph
 
   def addMenuItem(name : String)(action : ActionEvent => Unit) = {
     this.add(new AbstractAction(name) {
@@ -58,7 +58,7 @@ class NodeRightClickMenu
     }
 
     this.addSeparator()
-    this.add(new RemoveNodeAction(node, getGraph, controller))
+    this.add(new RemoveNodeAction(node, graph, controller))
     if (controller.nodeIsSelected) {
       addOtherNodeSelectedOption()
     }
@@ -66,27 +66,27 @@ class NodeRightClickMenu
       addEdgeSelectedOption()
     }
 
-    if(getGraph.isWronglyContained(node.id))
-      this.add("Solve Action !!")
+    if(graph.isWronglyContained(node.id))
+      this.add(new SolveAction(node, controller))
 
     this.addSeparator()
     addShowOptions()
   }
 
   private def addAddIsaOption(sub: ConcreteNode, sup: ConcreteNode) : Unit = {
-    this.add(new AddIsaAction(sub, sup, getGraph, controller));()
+    this.add(new AddIsaAction(sub, sup, graph, controller));()
   }
 
 
   private def addOtherNodeSelectedOption() : Unit = {
     val id: Int = controller.getIdNodeSelected
-    val selected: ConcreteNode = getGraph.getConcreteNode(id)
-    if (getGraph.canContain(node, selected)) {
-      this.add(new MoveAction(node, selected, getGraph, controller))
+    val selected: ConcreteNode = graph.getConcreteNode(id)
+    if (graph.canContain(node, selected)) {
+      this.add(new MoveAction(node, selected, graph, controller))
     }
     val m: MergeMatcher = controller.transfoRules.mergeMatcher(selected)
-    if (m.canBeMergedInto(node, getGraph)) {
-      this.add(new MergeAction(selected, node, getGraph, controller))
+    if (m.canBeMergedInto(node, graph)) {
+      this.add(new MergeAction(selected, node, graph, controller))
     }
     if (selected.kind.canBe(node.kind)) addAddIsaOption(selected, node)
     if (node.kind.canBe(selected.kind)) addAddIsaOption(node, selected)
@@ -102,7 +102,7 @@ class NodeRightClickMenu
     addMenuItem("Hide") { _ =>
       NodeRightClickMenu.this.controller.hide(node.id)
     }
-    if (getGraph.content(node.id).nonEmpty) {
+    if (graph.content(node.id).nonEmpty) {
       addMenuItem("Collapse") { _ =>
         NodeRightClickMenu.this.controller.collapse(node.id)
       }

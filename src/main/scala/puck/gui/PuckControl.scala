@@ -81,12 +81,12 @@ class PuckControl(val filesHandler : FilesHandler,
     progressBar.visible = true
     progressBar.value = 0
 
-    val ag = filesHandler.loadGraph(new LoadingListener {
+    filesHandler.loadGraph(new LoadingListener {
       override def update(loading: Double): Unit =
         progressBar.value = (loading * 100).toInt
     })
     progressBar.visible = false
-    publish(AccessGraphModified(ag))
+    publish(AccessGraphModified(filesHandler.graph))
 
     delayedDisplay.foreach(_.visible = true)
   } onComplete {

@@ -17,6 +17,18 @@ import scalaz._
 
 object JavaTransformationRules extends TransformationRules {
 
+  override def absIntroPredicate( graph : GraphT,
+                                  impl : DGNode,
+                                  absPolicy : AbstractionPolicy,
+                                  absKind : NodeKind) : NodePredicateT = {
+    (impl.kind, absPolicy) match {
+      case (Method, SupertypeAbstraction)
+           | (AbstractMethod, SupertypeAbstraction) =>
+        (graph, potentialHost) => !graph.interloperOf(graph.container(impl.id).get, potentialHost.id)
+      case _ => super.absIntroPredicate(graph, impl, absPolicy, absKind)
+    }
+  }
+
   override def abstractionName( g: GraphT, impl: ConcreteNode, abskind : NodeKind, policy : AbstractionPolicy) : String = {
     if (impl.kind == Constructor)
       "create"

@@ -3,6 +3,7 @@ package puck.javaGraph
 import puck.graph.constraints.search.{TryAllCSSE, FunneledCSSE, FindFirstCSSE}
 import puck.graph._
 import puck.graph.io.ConstraintSolvingSearchEngineBuilder
+import puck.graph.transformations.Recording
 import puck.search.SearchEngine
 
 /**

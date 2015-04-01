@@ -2,6 +2,7 @@ package puck.gui.search
 
 import puck.graph._
 import puck.graph.io.VisibilitySet
+import puck.graph.transformations.Recording
 import puck.search.SearchState
 import puck.util.PuckFileLogger
 

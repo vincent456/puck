@@ -1,8 +1,5 @@
-package puck.graph.constraints
-
-import puck.graph.{DGError, DependencyGraph}
-import puck.graph.DependencyGraph.NodeId
-
+package puck.graph
+package constraints
 
 /**
  * Created by lorilan on 1/8/15.

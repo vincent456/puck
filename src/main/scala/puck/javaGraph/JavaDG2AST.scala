@@ -1,19 +1,21 @@
 package puck.javaGraph
 
+import java.io.{FileReader, File}
 import java.util.NoSuchElementException
-import javax.lang.model.`type`.TypeKind
 
 import puck.graph._
-import puck.graph.constraints.SupertypeAbstraction
+import puck.graph.constraints.{ConstraintsParser, SupertypeAbstraction}
+import puck.graph.io.{DG2ASTBuilder, DG2AST}
 import puck.graph.transformations._
 import puck.javaGraph.nodeKind._
+import puck.util.PuckLog._
 import puck.util.{PuckLog, PuckLogger}
 
 /**
  * Created by lorilan on 23/07/14.
  */
 
-object AG2AST {
+object JavaDG2AST extends DG2ASTBuilder {
   def packageNode(graph : DependencyGraph, id : NodeId) : NodeId ={
     def aux(id : NodeId) : NodeId =
       graph.getConcreteNode(id).kind match {
@@ -24,10 +26,69 @@ object AG2AST {
       }
     aux(id)
   }
+
+  def apply( srcDirectory : File,
+             outDirectory : File,
+             jarListFile : File,
+             logger : PuckLogger,
+             ll : AST.LoadingListener = null ) : DG2AST = {
+    import puck.util.FileHelper.{fileLines, findAllFiles, initStringLiteralsMap}
+
+    val sProg = puck.util.Time.time(logger, defaultVerbosity) {
+      logger.writeln("Compiling sources ...")
+
+      val srcSuffix = ".java"
+
+      val sources = findAllFiles(srcDirectory, srcSuffix, outDirectory.getName)
+      val jars = findAllFiles(srcDirectory, ".jar", outDirectory.getName)
+      CompileHelper(sources, fileLines(jarListFile) ++: jars )
+
+    }
+
+    puck.util.Time.time(logger, defaultVerbosity) {
+      logger.writeln("Building Access Graph ...")
+      sProg match {
+        case None => throw new AGBuildingError("Compilation error, no AST generated")
+        case Some(p) =>
+
+          val jgraphBuilder = p.buildAccessGraph(null, ll)
+
+          jgraphBuilder.attachOrphanNodes()
+
+          jgraphBuilder.registerSuperTypes()
+
+          val graph = (jgraphBuilder.g withLogger logger).
+            newGraph(nRecording = Recording())
+
+          val (_, transfos) =
+            NodeMappingInitialState.normalizeNodeTransfos(jgraphBuilder.g.recording(), Seq())
+          val initialRecord = new Recording(transfos)
+
+          new JavaDG2AST(logger, p, graph, initialRecord, jgraphBuilder)
+      }
+    }
+
+    /*val (numClass, numItc) = g.concreteNodes.foldLeft((0,0)){ case ((numClass0, numItc0), n) =>
+      val numClass1 = if(n.kind == nodeKind.Class) numClass0 + 1
+      else numClass0
+      val numItc1 = if(n.kind == nodeKind.Interface) numItc0 + 1
+      else numItc0
+      (numClass1, numItc1)
+
+    }
+    logger.writeln( numClass + " classes and " + numItc + " interfaces parsed")
+*/
+  }
 }
-import AG2AST._
-class AG2AST(val program : AST.Program,
-             val logger : PuckLogger) {
+import JavaDG2AST._
+class JavaDG2AST
+(val logger : PuckLogger,
+ val program : AST.Program,
+ val initialGraph : DependencyGraph,
+ val initialRecord : Recording,
+ //TODO remove (clean the constraint parser)
+ val jgraphBuilder : JavaGraphBuilder) extends DG2AST{
+
   implicit val defaultVerbosity = (PuckLog.AG2AST, PuckLog.Info)
 
   def safeGet(graph : DependencyGraph, id2declMap : Map[NodeId, ASTNodeLink])(id :NodeId): ASTNodeLink =
@@ -43,7 +104,52 @@ class AG2AST(val program : AST.Program,
 
   def verbosity : PuckLog.Level => PuckLog.Verbosity = l => (PuckLog.AG2AST, l)
 
-  def apply(resultGraph : DependencyGraph,
+  def parseConstraints(decouple : File) : DG2AST  = {
+    val parser = ConstraintsParser(jgraphBuilder)
+    try {
+      parser(new FileReader(decouple))
+    } catch {
+      case e : NoSuchElementException =>
+        e.printStackTrace()
+        logger.writeln("parsing failed : " + e.getLocalizedMessage)((PuckLog.NoSpecialContext, PuckLog.Error))
+    }
+    new JavaDG2AST(logger, program,
+      initialGraph.newGraph(nConstraints = jgraphBuilder.constraintsMap),
+      initialRecord,
+      jgraphBuilder)
+  }
+
+  def apply(result : ResultT) : Unit = {
+
+    logger.writeln("applying change !")
+    val record = recordOfResult(result)
+
+    record.foldRight((graphOfResult(result), initialGraph, jgraphBuilder.graph2ASTMap)) {
+      case (r, (resultGraph, reenactor, graph2ASTMap)) =>
+        /*import ShowDG._
+        println(showTransformation(resultGraph).shows(r))*/
+
+        val jreenactor = reenactor.asInstanceOf[DependencyGraph]
+        val res = applyOneTransformation(resultGraph, jreenactor, graph2ASTMap, r)
+
+        //println(program)
+        (resultGraph, r.redo(reenactor), res)
+    }
+
+    println(program)
+    println(program.getNumCuFromSources + " before flush")
+    program.flushCaches()
+    println(program.getNumCuFromSources + " after flush")
+    program.eliminateLockedNamesInSources()
+    println(program.getNumCuFromSources + " after unlock")
+    println(program)
+
+  }
+
+  def printCode(dir : File) : Unit =
+    program.printCodeInDirectory(dir)
+
+  def applyOneTransformation(resultGraph : DependencyGraph,
             reenactor: DependencyGraph,
             id2declMap: Map[NodeId, ASTNodeLink],
             t: Transformation) : Map[NodeId, ASTNodeLink] = t match {

@@ -3,41 +3,35 @@ package constraints
 
 import puck.PuckError
 import puck.graph.ShowDG._
-import puck.graph.constraints.search.ConstraintSolvingNodesChoice
-import puck.graph.transformations.TransformationRules
+import puck.graph.transformations.{CreateParameter, TransformationRules}
 import puck.util.{PuckLog, PuckLogger}
 
 import scalaz.{Failure, Success}
 
 import scalaz.Validation.FlatMap._
 
-trait Solver {
+class Solver
+( val decisionMaker : DecisionMaker,
+  val rules : TransformationRules,
+  val automaticConstraintLoosening : Boolean){
 
   implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.Solver, PuckLog.Info)
   import scala.language.implicitConversions
-  implicit def logVerbosity(lvl : PuckLog.Level) = (PuckLog.Solver, lvl)
+  implicit def logVerbosity(lvl : PuckLog.Level) : PuckLog.Verbosity= (PuckLog.Solver, lvl)
 
-  val logger : PuckLogger
-  val decisionMaker : DecisionMaker
-  val rules : TransformationRules
 
-  val automaticConstraintLoosening : Boolean
-
-  type GraphT = DependencyGraph
   type ResT = ResultT
-  type NIdT = NodeId
-  type PredicateT = decisionMaker.PredicateT
 
-
-  def redirectTowardExistingAbstractions(graph : GraphT,
+  def redirectTowardExistingAbstractions(graph : DependencyGraph,
                                          used : ConcreteNode,
-                                         wrongUsers : Seq[NIdT])
-                                        (k : (GraphT, Seq[NIdT]) => Unit) : Unit = {
+                                         wrongUsers : Seq[NodeId])
+                                        (k : (DependencyGraph, Seq[NodeId]) => Unit) : Unit = {
+    import graph.logger
     decisionMaker.abstractionKindAndPolicy(graph, used) {
       case Some((absKind, absPolicy)) =>
 
         logger.writeln("redirect toward existing abstractions")
-        val (g3, allUnsolved) = wrongUsers.foldLeft((graph, Seq[NIdT]())) {
+        val (g3, allUnsolved) = wrongUsers.foldLeft((graph, Seq[NodeId]())) {
           case ((g, unsolved), wu) =>
           g.abstractions(used.id) find {
             case (nid, `absPolicy`) =>
@@ -66,26 +60,33 @@ trait Solver {
 
   var newCterNumGen = 0
 
-  private val allwaysTrue : PredicateT = (_,_) => true
+  private val allwaysTrue : NodePredicateT = (_,_) => true
 
   trait FindHostResult
-  case class Host(host : NIdT, graph : GraphT) extends FindHostResult
+  case class Host(host : NodeId, graph : DependencyGraph) extends FindHostResult
   case object FindHostError extends DGError with FindHostResult
 
-  def findHost(graph : GraphT,
+
+  def findHost(graph : DependencyGraph,
                toBeContained : ConcreteNode,
-               specificPredicate : PredicateT = allwaysTrue,
+               specificPredicate : NodePredicateT = allwaysTrue,
                parentsThatCanBeCreated : Int = 1)
               (k : FindHostResult => Unit) : Unit = {
+    import graph.logger
 
-    def predicate(graph : GraphT, n : ConcreteNode) : Boolean =
-      graph.canContain(n, toBeContained) && specificPredicate(graph, n)
+    object FindHostPredicate extends NodePredicate {
+      def apply(graph : DependencyGraph, n : ConcreteNode) : Boolean =
+        graph.canContain(n, toBeContained) && specificPredicate(graph, n)
 
-    def hostIntro(graph : GraphT, toBeContained : ConcreteNode) : Unit = {
+      override def toString : String = s"Searching Host for $toBeContained"
+    }
+
+
+    def hostIntro(graph : DependencyGraph, toBeContained : ConcreteNode) : Unit = {
+
       logger.writeln(s"call hostIntro $toBeContained" )(PuckLog.Debug)
 
-      //TODO filter instead of find !!! [CHOICE POINT]
-      graph.nodeKinds.find(_.canContain(toBeContained.kind)) match {
+      decisionMaker.chooseContainerKind(graph, toBeContained){
         case None =>
           logger.write("do not know how to create a valid host for " + toBeContained.kind)(PuckLog.Debug)
           k(FindHostError)
@@ -109,7 +110,7 @@ trait Solver {
     logger.writeln(s"findHost(_, $toBeContained, _, parentsThatCanBeCreated = $parentsThatCanBeCreated)")(PuckLog.Debug)
     // with the search engine, all solutions will be explored anyway
 
-    decisionMaker.chooseNode(graph, predicate){ graph2 =>
+    decisionMaker.chooseNode(graph, FindHostPredicate){ graph2 =>
       {case None =>
           if(parentsThatCanBeCreated == 0){
             logger.writeln("host intro, ancestor's max limit is not enough")(PuckLog.Warning)
@@ -126,36 +127,28 @@ trait Solver {
     }
   }
 
-  def absIntroPredicate(graph : GraphT,
-                        impl : DGNode,
-                        absPolicy : AbstractionPolicy,
-                        absKind : NodeKind) : PredicateT = absPolicy match {
-    case SupertypeAbstraction =>
-      (graph, potentialHost) => !graph.interloperOf(impl.id, potentialHost.id)
-
-    case DelegationAbstraction =>
-      (graph, potentialHost) => !graph.interloperOf(potentialHost.id, impl.id)
-  }
 
 
 
-  def absIntro(graph : GraphT,
+
+  def absIntro(graph : DependencyGraph,
                impl : ConcreteNode,
-               wrongUsers : Seq[NIdT],
+               wrongUsers : Seq[NodeId],
                degree : Int = 1)
-               (k : Try[GraphT] => Unit) : Unit = {
+               (k : Try[DependencyGraph] => Unit) : Unit = {
+    import graph.logger
 
     logger.writeln(s"abs of $impl intro degree $degree")
 
 
-    def aux(graph : GraphT, deg : Int, currentImpl : ConcreteNode)
-           (k : Try[(GraphT, ConcreteNode, AbstractionPolicy)] => Unit) : Unit = {
+    def aux(graph : DependencyGraph, deg : Int, currentImpl : ConcreteNode)
+           (k : Try[(DependencyGraph, ConcreteNode, AbstractionPolicy)] => Unit) : Unit = {
       logger.writeln(s"*** abs intro degree $deg/$degree ***")
 
       decisionMaker.abstractionKindAndPolicy(graph, currentImpl){
         case Some((absKind, absPolicy)) =>
 
-          def doIntro(k: Try[(GraphT, ConcreteNode, AbstractionPolicy)] => Unit) : Unit = {
+          def doIntro(k: Try[(DependencyGraph, ConcreteNode, AbstractionPolicy)] => Unit) : Unit = {
             logger.writeln(s"trying to create abstraction( $absKind, $absPolicy ) of $currentImpl")
 
             val tryAbs = rules.createAbstraction(graph, currentImpl, absKind, absPolicy)
@@ -169,7 +162,7 @@ trait Solver {
                 logger.writeln(s"Searching host for abstraction( $absKind, $absPolicy ) of $currentImpl")
 
                 findHost(graph2, abs,
-                  absIntroPredicate(graph2, currentImpl, absPolicy, absKind)) {
+                  rules.absIntroPredicate(graph2, currentImpl, absPolicy, absKind)) {
                   case Host(h, graph3) =>
                     logger.writeln(s"absIntro : host of $abs is ${showDG[NodeId](graph3).show(h)}")
 
@@ -201,10 +194,10 @@ trait Solver {
     }
 
 
-    def redirectWrongUsers(t : Try[(GraphT, ConcreteNode, AbstractionPolicy)] ) : Unit =
+    def redirectWrongUsers(t : Try[(DependencyGraph, ConcreteNode, AbstractionPolicy)] ) : Unit =
       k(t.flatMap{ case (g, abs, absPolicy) =>
         logger.writeln("redirecting wrong users !!")
-        wrongUsers.foldLeft(Success(g) : Try[GraphT]){
+        wrongUsers.foldLeft(Success(g) : Try[DependencyGraph]){
           (tryG, wuId) =>
             tryG.flatMap(rules.redirectUsesAndPropagate(_, DGEdge.uses(wuId, impl.id), abs.id, absPolicy))
         }})
@@ -212,7 +205,8 @@ trait Solver {
     aux (graph, 1, impl) (redirectWrongUsers)
   }
 
-  def solveUsesToward(graph : GraphT, impl : ConcreteNode, k : Try[GraphT] => Unit) : Unit = {
+  def solveUsesToward(graph : DependencyGraph, impl : ConcreteNode, k : Try[DependencyGraph] => Unit) : Unit = {
+    import graph.logger
 
     logger.writeln("###################################################")
     logger.writeln(s"##### Solving uses violations toward $impl ######")
@@ -241,9 +235,10 @@ trait Solver {
     }
   }
 
-  def solveContains(graph : GraphT,
+  def solveContains(graph : DependencyGraph,
                     wronglyContained : ConcreteNode,
-                    k : Try[GraphT] => Unit) : Unit = {
+                    k0 : Try[DependencyGraph] => Unit) : Unit = {
+    import graph.logger
 
     logger.writeln("###################################################")
     logger.writeln(s"##### Solving contains violations toward $wronglyContained ######")
@@ -253,8 +248,9 @@ trait Solver {
 
     val graphWithoutContains = graph.removeContains(oldCter, wronglyContained.id, register = false)
 
+    
     findHost(graphWithoutContains, wronglyContained,
-      (graph : GraphT, potentialHost: ConcreteNode) =>
+      (graph : DependencyGraph, potentialHost: ConcreteNode) =>
         !graph.interloperOf(potentialHost.id, wronglyContained.id)) {
        case Host(newCter, graph2) =>
 
@@ -264,31 +260,41 @@ trait Solver {
          //re-attach before moving
          val g3 = graph2.addContains(oldCter, wronglyContained.id, register = false)
 
-         val tryG =
-           for {
-             g3 <- graph.kindType(wronglyContained) match {
-               case TypeMember => rules.moveTypeMember (g3, wronglyContained.id, newCter, ???)
-               case TypeDecl => rules.moveTypeDecl (g3, wronglyContained.id, newCter)
-               case _ => ???
-             }
-             g4 <- (g3.isWronglyContained(wronglyContained.id), automaticConstraintLoosening) match {
-               case (false, _) => Success(g3)
-               case (true, true) => Success(rules.addHideFromRootException (g3, wronglyContained.id, newCter))
-               case (true, false) => Failure(new PuckError("constraint unsolvable")).toValidationNel
-             }
-           } yield g4
+         def checkIfMoveSolveContains( tg : Try[DependencyGraph]) : Try[DependencyGraph] =
+         tg.flatMap(g =>
+           (g.isWronglyContained(wronglyContained.id), automaticConstraintLoosening) match {
+             case (false, _) => Success(g)
+             case (true, true) => Success(rules.addHideFromRootException (g, wronglyContained.id, newCter))
+             case (true, false) => Failure(new PuckError("constraint unsolvable")).toValidationNel
+           })
 
-        logger.writeln("solveContains : calling k()")
-        k(tryG)
-       case FindHostError => k(Failure(new DGError("FindHostError caught")).toValidationNel)
+         def k : Try[DependencyGraph] => Unit =
+          k0 compose checkIfMoveSolveContains
+          //checkIfMoveSolveContains andThen k0
+
+         graph.kindType(wronglyContained) match {
+           case TypeMember =>
+             if(rules.needSelfReference(g3, wronglyContained, g3.getConcreteNode(oldCter)))
+              decisionMaker.createVarStrategy {
+                cvs => k(rules.moveTypeMember(g3, wronglyContained.id, newCter, cvs))
+              }
+             else k(rules.moveTypeMember(g3, wronglyContained.id, newCter, CreateParameter))
+
+           case TypeDecl =>
+             k(rules.moveTypeDecl (g3, wronglyContained.id, newCter))
+
+           case _ => ???
+         }
+
+       case FindHostError => k0(Failure(new DGError("FindHostError caught")).toValidationNel)
     }
   }
 
 
-  def solveViolationsToward(graph : GraphT, target : ConcreteNode) (k: Try[GraphT] => Unit ) = {
-    def end: Try[GraphT] => Unit = {
+  def solveViolationsToward(graph : DependencyGraph, target : ConcreteNode) (k: Try[DependencyGraph] => Unit ) = {
+    def end: Try[DependencyGraph] => Unit = {
       case Success(g) =>
-      logger.writeln(s"solveViolationsToward $target end")
+      graph.logger.writeln(s"solveViolationsToward $target end")
       if (g.wrongUsers(target.id).nonEmpty)
         solveUsesToward(g, target, k)
       else
@@ -302,9 +308,9 @@ trait Solver {
       end(Success(graph))
   }
 
-  def doMerges(graph : GraphT, k : Try[ResT] => Unit) : Unit = {
-    logger.writeln(s"*************** MERGES ****************")
-    def aux(graph : GraphT, it : Iterator[ConcreteNode]) : Try[GraphT] =
+  def doMerges(graph : DependencyGraph, k : Try[ResT] => Unit) : Unit = {
+    graph.logger.writeln(s"*************** MERGES ****************")
+    def aux(graph : DependencyGraph, it : Iterator[ConcreteNode]) : Try[DependencyGraph] =
       if(it.hasNext){
         val n = it.next()
         rules.findMergingCandidate(graph, n) match {
@@ -322,14 +328,14 @@ trait Solver {
 
   }
 
-  def solve(graph : GraphT, k : Try[ResT] => Unit) : Unit = {
+  def solve(graph : DependencyGraph, k : Try[ResT] => Unit) : Unit = {
     /*logger.writeln("solve begins !")
     val sortedId = graph.nodesId.toSeq.sorted
     sortedId.foreach{id => logger.writeln("("+ id + ", " + graph.container(id)+ ")")}
     val nodes = graph.nodes.toSeq.sortBy(_.id)
     nodes foreach {n => logger.writeln(n)}
 */
-    def aux: Try[GraphT] => Unit = {
+    def aux: Try[DependencyGraph] => Unit = {
       case Success(g) =>
       decisionMaker.violationTarget(g) {
         case None => doMerges(g, k)

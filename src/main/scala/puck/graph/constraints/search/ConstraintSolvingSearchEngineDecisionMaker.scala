@@ -1,7 +1,8 @@
 package puck.graph.constraints.search
 
-import puck.graph.{DGNode, ConcreteNode, ResultT, NodeKind}
-import puck.graph.constraints.{AbstractionPolicy, DecisionMaker}
+import puck.graph._
+import puck.graph.constraints.{NodePredicate, AbstractionPolicy, DecisionMaker}
+import puck.graph.transformations.CreateVarStrategy
 import puck.search.SearchEngine
 import puck.util.PuckLogger
 
@@ -56,7 +57,7 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker
     }
   }*/
 
-  def violationTarget(graph : GraphT)
+  def violationTarget(graph : DependencyGraph)
                      (k: Option[ConcreteNode] => Unit) : Unit = {
 
 
@@ -77,7 +78,7 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker
     k(findTargets(violationsKindPriority))
   }
 
-  def abstractionKindAndPolicy(graph : GraphT, impl : ConcreteNode)
+  def abstractionKindAndPolicy(graph : DependencyGraph, impl : ConcreteNode)
                               (k : Option[(NodeKind, AbstractionPolicy)] => Unit) : Unit = {
 
     import impl.kind.{abstractionPolicies, abstractKinds}
@@ -118,16 +119,22 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker
   }
 
 
-  def partition(graph : GraphT) : (List[DGNode], List[List[DGNode]]) => List[List[DGNode]] = {
+  def partition(graph : DependencyGraph) : (List[DGNode], List[List[DGNode]]) => List[List[DGNode]] = {
     case (Seq(), acc) => acc
     case (hd :: tl, acc) =>
       val (same, diff) = tl.partition(n => n.kind == hd.kind)
       partition(graph)(diff, (hd :: same) +: acc)
   }
 
+  def chooseContainerKind(graph : DependencyGraph, toBeContained : DGNode)
+                         (k : Option[NodeKind] => Unit) : Unit = {
+    //TODO filter instead of find !!!
+    k(graph.nodeKinds.find(_.canContain(toBeContained.kind)))
+  }
 
-  def chooseNode(graph : GraphT, predicate : PredicateT)
-                (k : GraphT => Option[NIdT] => Unit) : Unit = {
+
+  def chooseNode(graph : DependencyGraph, predicate : NodePredicate)
+                (k : DependencyGraph => Option[NodeId] => Unit) : Unit = {
     val choices = graph.concreteNodes.filter(predicate(graph,_)).toList
 
 
@@ -137,7 +144,7 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker
       case s =>
         val l = partition(graph)(s, List())
 
-        val (g, cs) = l.foldLeft( (graph, Seq[NIdT]()) ){case ((g, s0), ns) =>
+        val (g, cs) = l.foldLeft( (graph, Seq[NodeId]()) ){case ((g, s0), ns) =>
             val (vn, g2) = g.addVirtualNode(ns.map(_.id).toSeq,  ns.head.kind)
           (g2, vn.id +: s0)
         }
@@ -148,6 +155,7 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker
     }
   }
 
+  override def createVarStrategy(k : CreateVarStrategy => Unit) : Unit = ???
 /*  def modifyConstraints(sources : NodeSet[Kind], target : NodeType){}*/
 
 }

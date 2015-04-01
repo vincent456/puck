@@ -22,7 +22,7 @@ extends AbstractAction(s"Add $childKind")
            | Interface
            | Class =>
         val childName = JOptionPane.showInputDialog(s"New $childKind name:")
-        val (n, g) =  controller.getGraph.addConcreteNode(childName, childKind, None)
+        val (n, g) =  controller.graph.addConcreteNode(childName, childKind, None)
         controller.pushGraph(g.addContains(host.id, n.id))
       case _ =>
         JOptionPane.showMessageDialog(null, s"add of $childKind not implemented",
