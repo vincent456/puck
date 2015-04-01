@@ -17,6 +17,8 @@ object DotPrinter {
   val containsStyle = new Style("dashed", "open")
   val usesStyle = new Style("bold", "normal")
 
+  val virtualUse = new Style("dotted", "dot")
+
   class ColorThickness(val color: String, val thickness: Int)
 
   object ColorThickness {
@@ -62,6 +64,7 @@ class DotPrinter
       case Some(b) => b
     }
   }
+
 
 
   def html_safe(str : String) : String = str.replaceAllLiterally(">", "&gt;").replaceAllLiterally("<", "&lt;")
@@ -125,16 +128,16 @@ class DotPrinter
 
 
 
-  val printUsesViolations = (source : NodeId, target : NodeId) =>
+  val printUsesViolations = (style : Style, source : NodeId, target : NodeId) =>
     if(!graph.isa(source, target)) //TODO remove test. quickfix to avoid dot crash
-      printArc(usesStyle, source, target,
+      printArc(style, source, target,
         if(violations.contains(DGEdge.uses(source, target)))
           ColorThickness.violation
         else ColorThickness.regular )
 
   val printUse = selectedUse match {
     case None => printUsesViolations
-    case Some(selected) =>  (source: NodeId, target: NodeId) =>
+    case Some(selected) =>  (style : Style, source: NodeId, target: NodeId) =>
       val printed = DGEdge.uses(source, target)
       val ct = if (printed == selected) ColorThickness.selected
       else if (graph.dominates(printed, selected))
@@ -143,9 +146,7 @@ class DotPrinter
         ColorThickness.dominated
       else ColorThickness.regular
 
-
-      printArc(usesStyle, source, target, ct)
-
+      printArc(style, source, target, ct)
   }
 
   def name( n : DGNode) : String = n match {
@@ -196,7 +197,7 @@ class DotPrinter
 
 
 
-    graph.users(n.id).foreach(printUse(_, n.id))
+    //graph.users(n.id).foreach(printUse(_, n.id))
   }
 
   def printClass(nid: NodeId): Unit = {
@@ -227,11 +228,29 @@ class DotPrinter
 
     innerClasses foreach printClass
 
-    graph.content(n.id).foreach { nc =>
+    /*graph.content(n.id).foreach { nc =>
       graph.users(nc).foreach(printUse(_, nc))
     }
     graph.users(n.id).foreach(printUse(_, n.id))
-    graph.directSuperTypes(n.id).foreach(printArc(isaStyle, n.id, _, ColorThickness.regular))
+
+    graph.directSuperTypes(n.id).foreach(printArc(isaStyle, n.id, _, ColorThickness.regular))*/
+  }
+
+  def firstVisibleParent(nid : NodeId) : Option[NodeId] = 
+    if(visibility.isVisible(nid)) Some(nid)
+    else graph.container(nid) flatMap firstVisibleParent
+  
+  type EdgeP = (NodeId, NodeId)
+  def filterVisibleEdges(edges : Seq[EdgeP]) : (Seq[EdgeP], Set[EdgeP]) = {
+    val (reg, virt) =  edges.foldLeft((Seq[EdgeP](), Set[EdgeP]())) {
+      case ((regulars, virtuals), (source, target)) =>
+        (firstVisibleParent(source), firstVisibleParent(target)) match {
+          case (Some(s), Some(t)) if source == s && target == t => (regulars :+ ((s, t)), virtuals)
+          case (Some(s), Some(t)) => (regulars, virtuals + ((s, t)))
+          case _ => (regulars, virtuals)
+        }
+    }
+    (reg.filterNot(virt.contains), virt)
   }
 
   def apply(): Unit = {
@@ -241,6 +260,13 @@ class DotPrinter
     graph.content(graph.rootId).foreach(printNode)
     visibility.setVisibility(DependencyGraph.rootId, Hidden)
     graph.nodesId.foreach{nid => if(graph.container(nid).isEmpty) printNode(nid)}
+
+
+    graph.isaSeq.foreach(p => printArc(isaStyle, p._1, p._2, ColorThickness.regular))
+
+    val(reg, virt) = filterVisibleEdges(graph.usesSeq)
+    reg.foreach(p => printUse(usesStyle, p._1, p._2))
+    virt.foreach(p => printUse(virtualUse, p._1, p._2))
 
     arcs.foreach(writeln)
 

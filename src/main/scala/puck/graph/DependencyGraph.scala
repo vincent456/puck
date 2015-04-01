@@ -428,9 +428,13 @@ class DependencyGraph
   }
 
   def isa(subId : NodeId, superId: NodeId): Boolean = superTypesMap.bind(subId, superId)
+  
+  def isaSeq  : Seq[(NodeId, NodeId)] = superTypesMap.flatSeq
+  
+  def uses(userId: NodeId, usedId: NodeId) : Boolean = usersMap.bind(usedId, userId)
 
-  def uses(userId: NodeId, useeId: NodeId) : Boolean = usersMap.bind(useeId, userId)
-
+  def usesSeq : Seq[(NodeId, NodeId)] = usesMap.flatSeq
+  
   def usedBy(userId : NodeId) : Iterable[NodeId] = usesMap getFlat userId
   
   def users(useeId: NodeId) : Iterable[NodeId] = usersMap getFlat useeId

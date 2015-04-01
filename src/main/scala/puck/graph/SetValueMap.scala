@@ -35,5 +35,11 @@ class SetValueMap[K,V](val content : Map[K, Set[V]]){
   }
 
   def toSeq = content.toSeq
+  def flatSeq : Seq[(K,V)]=
+    for{
+      s <- content.toSeq
+      (k, vs) = s
+      v <- vs.toSeq
+    } yield (k, v)
 
 }

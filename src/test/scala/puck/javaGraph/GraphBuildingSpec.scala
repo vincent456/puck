@@ -22,11 +22,11 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val mUserViaThis = fullName2id(s"$p.A.mUserViaThis__void")
         val mUserViaParameter = fullName2id(s"$p.A.mUserViaParameter__A")
 
-        assert( graph.uses(mUserViaThis, methM) )
-        assert( graph.uses(mUserViaThis, clazz) )
+        assert( graph.usesSeq(mUserViaThis, methM) )
+        assert( graph.usesSeq(mUserViaThis, clazz) )
 
-        assert( graph.uses(mUserViaParameter, methM) )
-        assert( graph.uses(mUserViaParameter, clazz) )
+        assert( graph.usesSeq(mUserViaParameter, methM) )
+        assert( graph.usesSeq(mUserViaParameter, clazz) )
 
       }
     }

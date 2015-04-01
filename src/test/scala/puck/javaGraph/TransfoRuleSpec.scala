@@ -65,8 +65,8 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
 
         assert( graph.directSuperTypes(classA).isEmpty )
 
-        assert( graph.uses(methMUser, classA) )
-        assert( graph.uses(methMUser, methM) )
+        assert( graph.usesSeq(methMUser, classA) )
+        assert( graph.usesSeq(methMUser, methM) )
 
         assert( graph.abstractions(classA).isEmpty )
         assert( graph.abstractions(methM).isEmpty )
@@ -85,8 +85,8 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
 
             val methMAbs = g.abstractions(methM).head._1
 
-            assert( g.uses(methMUser, methMAbs) )
-            assert( g.uses(methMUser, itc.id) )
+            assert( g.usesSeq(methMUser, methMAbs) )
+            assert( g.usesSeq(methMUser, itc.id) )
         }
       }
 
@@ -102,8 +102,8 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
 
         assert( graph.directSuperTypes(classB).isEmpty )
 
-        assert( graph.uses(fieldUserThatShouldNotBeInInterface, classB) )
-        assert( graph.uses(fieldUserThatShouldNotBeInInterface, field) )
+        assert( graph.usesSeq(fieldUserThatShouldNotBeInInterface, classB) )
+        assert( graph.usesSeq(fieldUserThatShouldNotBeInInterface, field) )
 
         assert( graph.abstractions(classB).isEmpty )
         assert( graph.abstractions(field).isEmpty )
@@ -119,8 +119,8 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
             assert( g.abstractions(fieldUserThatShouldNotBeInInterface).isEmpty,
               "Method use concrete class field, should not be abstracted")
 
-            assert( graph.uses(fieldUserThatShouldNotBeInInterface, classB) )
-            assert( graph.uses(fieldUserThatShouldNotBeInInterface, field) )
+            assert( graph.usesSeq(fieldUserThatShouldNotBeInInterface, classB) )
+            assert( graph.usesSeq(fieldUserThatShouldNotBeInInterface, field) )
 
         }
       }
@@ -137,7 +137,7 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
         assert( graph.directSuperTypes(classC).isEmpty )
 
         //assert( !graph.uses(fieldUserThatCanBeInInterface, classC) )
-        assert( graph.uses(fieldUserThatCanBeInInterface, field) )
+        assert( graph.usesSeq(fieldUserThatCanBeInInterface, field) )
 
 
         assert( graph.abstractions(classC).isEmpty )
@@ -155,7 +155,7 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
             g.abstractions(fieldUserThatCanBeInInterface).size shouldBe 1
 
             //assert( graph.uses(fieldUserThatCanBeInInterface, classC) )
-            assert( graph.uses(fieldUserThatCanBeInInterface, field) )
+            assert( graph.usesSeq(fieldUserThatCanBeInInterface, field) )
         }
       }
     }
@@ -224,14 +224,14 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
         val methB = fullName2id(s"$p.p1.B.mb__void")
 
         assert(graph.container(classA).value == package1)
-        assert(graph.uses(methB, classA))
-        assert(graph.uses(methB, methA))
+        assert(graph.usesSeq(methB, classA))
+        assert(graph.usesSeq(methB, methA))
 
         assertSuccess(TR.moveTypeDecl(graph, classA, package2)){
           g2 =>
             assert(g2.container(classA).value == package2)
-            assert(graph.uses(methB, classA))
-            assert(graph.uses(methB, methA))
+            assert(graph.usesSeq(methB, classA))
+            assert(graph.usesSeq(methB, methA))
         }
       }
     }
@@ -249,13 +249,13 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
         val classB = fullName2id(s"$p.B")
 
         assert(graph.container(methMa).value == classA)
-        assert(graph.uses(methUser, methMa))
+        assert(graph.usesSeq(methUser, methMa))
 
         assertSuccess(TR.moveTypeMember(graph,
           methMa, classB)){
           g2 =>
             assert(g2.container(methMa).value == classB)
-            assert(g2.uses(methUser, methMa))
+            assert(g2.usesSeq(methUser, methMa))
         }
       }
     }
@@ -273,14 +273,14 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
         val classB = fullName2id(s"$p.B")
 
         assert(graph.container(methMa2).value == classA)
-        assert(graph.uses(methMa1, methMa2))
-        assert(! graph.uses(methMa1, classB))
+        assert(graph.usesSeq(methMa1, methMa2))
+        assert(! graph.usesSeq(methMa1, classB))
 
         assertSuccess(TR.moveTypeMember(graph, methMa2, classB, CreateParameter)){
           g2 =>
             assert(g2.container(methMa2).value == classB)
-            assert(g2.uses(methMa1, methMa2))
-            assert(g2.uses(methMa1, classB))
+            assert(g2.usesSeq(methMa1, methMa2))
+            assert(g2.usesSeq(methMa1, classB))
         }
       }
     }
@@ -305,13 +305,13 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
         }
 
         assert(graph.container(methMa).value == classA)
-        assert(graph.uses(methUser, methMa))
+        assert(graph.usesSeq(methUser, methMa))
 
         assertSuccess(TR.moveTypeMember(graph, methMa, classB)){
           g2 =>
 
             assert(g2.container(methMa).value == classB)
-            assert(g2.uses(methUser, methMa))
+            assert(g2.usesSeq(methUser, methMa))
 
             val methMaNode = g2.getConcreteNode(methMa)
             methMaNode.styp.value match {
@@ -414,9 +414,9 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
             g2 =>
               assert( ctorMethodUse.existsIn(g2))
               assert( ! ctorUse.existsIn(g2) )
-              assert(g2.uses(caller, factoryClass))
+              assert(g2.usesSeq(caller, factoryClass))
               //??
-              assert(g2.uses(caller, factoryCtor))
+              assert(g2.usesSeq(caller, factoryCtor))
           }
         }
     }
@@ -443,8 +443,8 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
             assert( ctorMethodUse existsIn g2)
             assert( !(ctorUse existsIn g2) )
             assert( constructedClassUse existsIn g2)
-            assert( g2.uses(userOfTheCaller, ctor) )
-            assert( g2.uses(userOfTheCaller, constructedClass) )
+            assert( g2.usesSeq(userOfTheCaller, ctor) )
+            assert( g2.usesSeq(userOfTheCaller, constructedClass) )
 
         }
       }
