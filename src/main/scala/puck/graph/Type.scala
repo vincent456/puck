@@ -91,6 +91,20 @@ case class Arrow(input : Type, output : Type)
     case _ => false
   }
 
+  def uncurry : Arrow = {
+      val newOutput = output match {
+        case a : Arrow => a.uncurry
+        case _ => output
+      }
+
+    newOutput match {
+      case Arrow(Tuple(is), o) =>
+        Arrow(Tuple(input :: is), o)
+      case Arrow(i, o) => Arrow(Tuple(List(input, i)), o)
+      case _ => this
+    }
+  }
+
   def create(i : Type, o : Type) = Arrow(i, o)
   def copy() = create(input.copy(), output.copy())
 

@@ -4,7 +4,7 @@ package constraints
 import puck.PuckError
 import puck.graph.ShowDG._
 import puck.graph.transformations.{CreateParameter, TransformationRules}
-import puck.util.{PuckLog, PuckLogger}
+import puck.util.PuckLog
 
 import scalaz.{Failure, Success}
 

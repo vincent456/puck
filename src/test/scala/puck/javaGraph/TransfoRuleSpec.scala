@@ -1,12 +1,10 @@
 package puck
 package javaGraph
 
-import org.scalatest.{Matchers, OptionValues}
+import org.scalatest.OptionValues
 import puck.graph.constraints.{SupertypeAbstraction, DelegationAbstraction}
 import puck.graph._
-import puck.graph.transformations.CreateParameter
 import puck.javaGraph.nodeKind.Interface
-import puck.util.PuckSystemLogger
 import scalaz.{Success, Failure}
 
 import Scenarii._
@@ -15,7 +13,7 @@ import scala.language.reflectiveCalls
 /**
  * Created by lorilan on 2/25/15.
  */
-class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
+class TransfoRuleSpec extends AcceptanceSpec with OptionValues {
 
   def assertSuccess[G](t : Try[G])(f : G => Unit) : Unit = {
     t match {
@@ -65,8 +63,8 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
 
         assert( graph.directSuperTypes(classA).isEmpty )
 
-        assert( graph.usesSeq(methMUser, classA) )
-        assert( graph.usesSeq(methMUser, methM) )
+        assert( graph.uses(methMUser, classA) )
+        assert( graph.uses(methMUser, methM) )
 
         assert( graph.abstractions(classA).isEmpty )
         assert( graph.abstractions(methM).isEmpty )
@@ -85,8 +83,8 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
 
             val methMAbs = g.abstractions(methM).head._1
 
-            assert( g.usesSeq(methMUser, methMAbs) )
-            assert( g.usesSeq(methMUser, itc.id) )
+            assert( g.uses(methMUser, methMAbs) )
+            assert( g.uses(methMUser, itc.id) )
         }
       }
 
@@ -102,8 +100,8 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
 
         assert( graph.directSuperTypes(classB).isEmpty )
 
-        assert( graph.usesSeq(fieldUserThatShouldNotBeInInterface, classB) )
-        assert( graph.usesSeq(fieldUserThatShouldNotBeInInterface, field) )
+        assert( graph.uses(fieldUserThatShouldNotBeInInterface, classB) )
+        assert( graph.uses(fieldUserThatShouldNotBeInInterface, field) )
 
         assert( graph.abstractions(classB).isEmpty )
         assert( graph.abstractions(field).isEmpty )
@@ -119,8 +117,8 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
             assert( g.abstractions(fieldUserThatShouldNotBeInInterface).isEmpty,
               "Method use concrete class field, should not be abstracted")
 
-            assert( graph.usesSeq(fieldUserThatShouldNotBeInInterface, classB) )
-            assert( graph.usesSeq(fieldUserThatShouldNotBeInInterface, field) )
+            assert( graph.uses(fieldUserThatShouldNotBeInInterface, classB) )
+            assert( graph.uses(fieldUserThatShouldNotBeInInterface, field) )
 
         }
       }
@@ -137,7 +135,7 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
         assert( graph.directSuperTypes(classC).isEmpty )
 
         //assert( !graph.uses(fieldUserThatCanBeInInterface, classC) )
-        assert( graph.usesSeq(fieldUserThatCanBeInInterface, field) )
+        assert( graph.uses(fieldUserThatCanBeInInterface, field) )
 
 
         assert( graph.abstractions(classC).isEmpty )
@@ -155,7 +153,7 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
             g.abstractions(fieldUserThatCanBeInInterface).size shouldBe 1
 
             //assert( graph.uses(fieldUserThatCanBeInInterface, classC) )
-            assert( graph.usesSeq(fieldUserThatCanBeInInterface, field) )
+            assert( graph.uses(fieldUserThatCanBeInInterface, field) )
         }
       }
     }
@@ -208,121 +206,7 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
 
   }
 
-  feature("Move"){
-    val examplesPath = puck.testExamplesPath + "/move"
 
-    scenario("Move top level class"){
-      val p = "topLevelClass"
-      val _ = new ExampleSample(s"$examplesPath/$p/A.java",
-        s"$examplesPath/$p/Empty.java"){
-        val package1 = fullName2id(s"$p.p1")
-        val package2 = fullName2id(s"$p.p2")
-        val classA = fullName2id(s"$p.p1.A")
-        val methA = fullName2id(s"$p.p1.A.ma__void")
-
-        val classB = fullName2id(s"$p.p1.B")
-        val methB = fullName2id(s"$p.p1.B.mb__void")
-
-        assert(graph.container(classA).value == package1)
-        assert(graph.usesSeq(methB, classA))
-        assert(graph.usesSeq(methB, methA))
-
-        assertSuccess(TR.moveTypeDecl(graph, classA, package2)){
-          g2 =>
-            assert(g2.container(classA).value == package2)
-            assert(graph.usesSeq(methB, classA))
-            assert(graph.usesSeq(methB, methA))
-        }
-      }
-    }
-
-    scenario("Move method not used by this"){
-      val p = "methodNotUsedByThis"
-      val _ = new ExampleSample(s"$examplesPath/$p/A.java"){
-
-        val rootPackage = fullName2id(s"$p")
-
-        val classA = fullName2id(s"$p.A")
-        val methMa = fullName2id(s"$p.A.ma__void")
-        val methUser = fullName2id(s"$p.C.mc__void")
-
-        val classB = fullName2id(s"$p.B")
-
-        assert(graph.container(methMa).value == classA)
-        assert(graph.usesSeq(methUser, methMa))
-
-        assertSuccess(TR.moveTypeMember(graph,
-          methMa, classB)){
-          g2 =>
-            assert(g2.container(methMa).value == classB)
-            assert(g2.usesSeq(methUser, methMa))
-        }
-      }
-    }
-
-    scenario("Move method used by this"){
-      val p = "methodUsedByThis"
-      val _ = new ExampleSample(s"$examplesPath/$p/A.java"){
-
-        val rootPackage = fullName2id(s"$p")
-
-        val classA = fullName2id(s"$p.A")
-        val methMa1 = fullName2id(s"$p.A.ma1__void")
-        val methMa2 = fullName2id(s"$p.A.ma2__void")
-
-        val classB = fullName2id(s"$p.B")
-
-        assert(graph.container(methMa2).value == classA)
-        assert(graph.usesSeq(methMa1, methMa2))
-        assert(! graph.usesSeq(methMa1, classB))
-
-        assertSuccess(TR.moveTypeMember(graph, methMa2, classB, CreateParameter)){
-          g2 =>
-            assert(g2.container(methMa2).value == classB)
-            assert(g2.usesSeq(methMa1, methMa2))
-            assert(g2.usesSeq(methMa1, classB))
-        }
-      }
-    }
-
-
-    ignore("Move method not used by this to class of a parameter"){
-      val p = "methodNotUsedByThisToParameterClass"
-      val _ = new ExampleSample(s"$examplesPath/$p/A.java"){
-
-        val rootPackage = fullName2id(s"$p")
-
-        val classA = fullName2id(s"$p.A")
-        val methMa = fullName2id(s"$p.A.ma__B")
-        val methUser = fullName2id(s"$p.C.mc__void")
-
-        val classB = fullName2id(s"$p.B")
-
-        val methMaNode = graph.getConcreteNode(methMa)
-        methMaNode.styp.value match {
-          case MethodType(in, _) =>
-            assert(1 == in.length && in.ids.contains(classB))
-        }
-
-        assert(graph.container(methMa).value == classA)
-        assert(graph.usesSeq(methUser, methMa))
-
-        assertSuccess(TR.moveTypeMember(graph, methMa, classB)){
-          g2 =>
-
-            assert(g2.container(methMa).value == classB)
-            assert(g2.usesSeq(methUser, methMa))
-
-            val methMaNode = g2.getConcreteNode(methMa)
-            methMaNode.styp.value match {
-              case MethodType(in, _) => assert(0 == in.length)
-            }
-        }
-      }
-    }
-
-
-  }
 
   feature("Redirection"){
 
@@ -414,9 +298,9 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
             g2 =>
               assert( ctorMethodUse.existsIn(g2))
               assert( ! ctorUse.existsIn(g2) )
-              assert(g2.usesSeq(caller, factoryClass))
+              assert(g2.uses(caller, factoryClass))
               //??
-              assert(g2.usesSeq(caller, factoryCtor))
+              assert(g2.uses(caller, factoryCtor))
           }
         }
     }
@@ -443,8 +327,8 @@ class TransfoRuleSpec extends AcceptanceSpec with OptionValues{
             assert( ctorMethodUse existsIn g2)
             assert( !(ctorUse existsIn g2) )
             assert( constructedClassUse existsIn g2)
-            assert( g2.usesSeq(userOfTheCaller, ctor) )
-            assert( g2.usesSeq(userOfTheCaller, constructedClass) )
+            assert( g2.uses(userOfTheCaller, ctor) )
+            assert( g2.uses(userOfTheCaller, constructedClass) )
 
         }
       }

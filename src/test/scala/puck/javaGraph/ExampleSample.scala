@@ -1,7 +1,6 @@
 package puck.javaGraph
 
-import puck.graph.DependencyGraph
-import puck.graph.DependencyGraph.NodeId
+import puck.graph.{DependencyGraph, NodeId}
 import puck.graph.transformations.Recording
 import puck.util.{PuckNoopLogger, PuckLogger}
 
@@ -23,9 +22,9 @@ case class ExampleSample
         this(t._1, t._2, t._3, t._4, t._5)
 
   def this(filePath : String) =
-    this(CompileHelper.buildGraph(List(filePath), List()))
+    this(CompileHelper.compileSrcsAndbuildGraph(List(filePath), List()))
   def this(filesPath : String*) =
-    this(CompileHelper.buildGraph(filesPath.toList, List()))
+    this(CompileHelper.compileSrcsAndbuildGraph(filesPath.toList, List()))
 
   var logger : PuckLogger = PuckNoopLogger
   def compare: (DependencyGraph, DependencyGraph) => Boolean =

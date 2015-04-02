@@ -108,6 +108,13 @@ public class SVGFrame extends JFrame implements StackListener {
 
         menu.add(console.console);
 
+        menu.add(new JButton(new AbstractAction("Apply") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                controller.applyOnCode();
+            }
+        }));
+
         this.add(panel, BorderLayout.CENTER);
         this.add(menu, BorderLayout.SOUTH);
 

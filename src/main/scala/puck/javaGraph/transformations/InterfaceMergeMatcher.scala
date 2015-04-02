@@ -72,6 +72,12 @@ class InterfaceMergeMatcher(val node : ConcreteNode) extends MergeMatcher {
   }
 }
 
+class FieldMergeMatcher(val node : ConcreteNode)extends MergeMatcher {
+  override def canBeMergedInto(other : ConcreteNode, graph : DependencyGraph) : Boolean = {
+    super.canBeMergedInto(other, graph) && other.styp == node.styp
+  }
+}
+
 class AbstractMethodMergeMatcher(val node : ConcreteNode) extends MergeMatcher {
   override def canBeMergedInto(other : ConcreteNode, graph : DependencyGraph) : Boolean =
     super.canBeMergedInto(other, graph) &&

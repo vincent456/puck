@@ -10,16 +10,7 @@ import util.PuckLog
 
 import scalaz.{Validation, Success, Failure}
 import scalaz.Validation.FlatMap._
-/**
- * Created by lorilan on 25/01/15.
- */
 
-trait MergeMatcher {
-  val node : ConcreteNode
-  def canBeMergedInto(other : ConcreteNode, graph : DependencyGraph): Boolean = {
-    other.kind == node.kind && other.id != node.id
-  }
-}
 
 object CreateVarStrategyForJava {
   def createParamater  : CreateVarStrategy = CreateParameter
@@ -172,7 +163,7 @@ trait TransformationRules {
         val (field, g2) = g.addConcreteNode(movedNode.name + "_delegate", k, Some(NamedType(newTypeUsed)))
         val g3 = g2.addContains(thisType, field.id)
           .addUses(field.id, newTypeUsed)
-          .addUses(movedId, field.id)
+          .addUses(userId, field.id)
         Success( (DGEdge.uses(field.id, newTypeUsed),g3))
       case CreateParameter =>
         val user = g.getConcreteNode(userId)
@@ -444,7 +435,11 @@ trait TransformationRules {
     ng
   }*/
 
-  implicit def mergeMatcher(n : ConcreteNode): MergeMatcher
+
+  def mergeMatcherInstances : MergeMatcherInstances
+
+  implicit def mergeMatcher(n : ConcreteNode): MergeMatcher =
+    mergeMatcherInstances.semanticMergeMatcher(n)
 
   def findMergingCandidate(g : GraphT, nid : ConcreteNode) : Option[ConcreteNode] = None
 

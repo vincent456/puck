@@ -36,11 +36,11 @@ object MoveAction {
 
 class MoveAction
 ( host : DGNode,
-  moved : DGNode,
-  graph : DependencyGraph,
+  moved : ConcreteNode,
   controller : SVGController)
-extends AbstractAction(s"Move ${moved.name(graph)} here"){
+extends AbstractAction(s"Move ${moved.name} here"){
 
+  import controller.graph
 
   override def actionPerformed(e: ActionEvent): Unit = {
     (graph.kindType(moved) match {

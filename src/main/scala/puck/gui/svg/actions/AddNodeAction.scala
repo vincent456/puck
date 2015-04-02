@@ -21,9 +21,11 @@ extends AbstractAction(s"Add $childKind")
       case Package
            | Interface
            | Class =>
-        val childName = JOptionPane.showInputDialog(s"New $childKind name:")
-        val (n, g) =  controller.graph.addConcreteNode(childName, childKind, None)
-        controller.pushGraph(g.addContains(host.id, n.id))
+        showInputDialog(s"New $childKind name:").foreach{
+          childName =>
+            val (n, g) = controller.graph.addConcreteNode(childName, childKind, None)
+            controller.pushGraph(g.addContains(host.id, n.id))
+        }
       case _ =>
         JOptionPane.showMessageDialog(null, s"add of $childKind not implemented",
           "Error", JOptionPane.ERROR_MESSAGE);

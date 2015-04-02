@@ -3,7 +3,7 @@ package puck.gui.svg.actions
 import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
 
-import puck.graph.{ConcreteNode, DependencyGraph}
+import puck.graph.ConcreteNode
 import puck.gui.svg.SVGController
 
 import scalaz.{Failure, Success}
@@ -14,9 +14,10 @@ import scalaz.{Failure, Success}
 case class MergeAction(
   consumed : ConcreteNode,
   consumer : ConcreteNode,
-  graph : DependencyGraph,
   controller : SVGController)
   extends AbstractAction(s"Merge $consumed into this") {
+
+  import controller.graph
 
   override def actionPerformed(e: ActionEvent): Unit = {
     controller.transfoRules.merge(graph, consumer.id, consumed.id) match {

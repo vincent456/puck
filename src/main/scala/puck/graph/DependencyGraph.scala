@@ -248,11 +248,15 @@ class DependencyGraph
         newGraph(nVRemovedNodes = vRemovedNodes + (n.id -> vn) )
   }
 
+  def setName(id : NodeId, newName : String) : GraphT = {
+    val (n, s) = getConcreteNodeWithStatus(id)
+    setNode(n.copy(name = newName), s)
+  }
+  
   def setType(id : NodeId, st : Option[Type]) : GraphT = {
     val (n, s) = getConcreteNodeWithStatus(id)
     setNode(n.copy(styp = st), s)
   }
-
 
   def setMutability(id : NodeId, mutable : Boolean) =  {
     val (n, s) = getConcreteNodeWithStatus(id)

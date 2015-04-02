@@ -32,17 +32,16 @@ object JavaDG2AST extends DG2ASTBuilder {
              jarListFile : File,
              logger : PuckLogger,
              ll : AST.LoadingListener = null ) : DG2AST = {
-    import puck.util.FileHelper.{fileLines, findAllFiles, initStringLiteralsMap}
+    import puck.util.FileHelper.{fileLines, findAllFiles}
 
     val sProg = puck.util.Time.time(logger, defaultVerbosity) {
       logger.writeln("Compiling sources ...")
 
       val srcSuffix = ".java"
-
       val sources = findAllFiles(srcDirectory, srcSuffix, outDirectory.getName)
       val jars = findAllFiles(srcDirectory, ".jar", outDirectory.getName)
-      CompileHelper(sources, fileLines(jarListFile) ++: jars )
 
+      CompileHelper(sources, fileLines(jarListFile) ++: jars )
     }
 
     puck.util.Time.time(logger, defaultVerbosity) {
@@ -50,22 +49,9 @@ object JavaDG2AST extends DG2ASTBuilder {
       sProg match {
         case None => throw new AGBuildingError("Compilation error, no AST generated")
         case Some(p) =>
-
-          val jgraphBuilder = p.buildAccessGraph(null, ll)
-
-          jgraphBuilder.attachOrphanNodes()
-
-          jgraphBuilder.registerSuperTypes()
-
-          val graph = (jgraphBuilder.g withLogger logger).
-            newGraph(nRecording = Recording())
-
-          val (_, transfos) =
-            NodeMappingInitialState.normalizeNodeTransfos(jgraphBuilder.g.recording(), Seq())
-          val initialRecord = new Recording(transfos)
-
-          new JavaDG2AST(logger, p, graph, initialRecord, jgraphBuilder)
-      }
+          val t = CompileHelper.buildGraph(p, logger, ll)
+          new JavaDG2AST(logger, t._1, t._2, t._3, t._4, t._5)
+        }
     }
 
     /*val (numClass, numItc) = g.concreteNodes.foldLeft((0,0)){ case ((numClass0, numItc0), n) =>
@@ -86,8 +72,8 @@ class JavaDG2AST
  val program : AST.Program,
  val initialGraph : DependencyGraph,
  val initialRecord : Recording,
- //TODO remove (clean the constraint parser)
- val jgraphBuilder : JavaGraphBuilder) extends DG2AST{
+ val nodesByName : Map[String, NodeId],
+ val graph2ASTMap : Map[NodeId, ASTNodeLink]) extends DG2AST{
 
   implicit val defaultVerbosity = (PuckLog.AG2AST, PuckLog.Info)
 
@@ -105,7 +91,7 @@ class JavaDG2AST
   def verbosity : PuckLog.Level => PuckLog.Verbosity = l => (PuckLog.AG2AST, l)
 
   def parseConstraints(decouple : File) : DG2AST  = {
-    val parser = ConstraintsParser(jgraphBuilder)
+    val parser = ConstraintsParser(nodesByName)
     try {
       parser(new FileReader(decouple))
     } catch {
@@ -113,10 +99,12 @@ class JavaDG2AST
         e.printStackTrace()
         logger.writeln("parsing failed : " + e.getLocalizedMessage)((PuckLog.NoSpecialContext, PuckLog.Error))
     }
+
     new JavaDG2AST(logger, program,
-      initialGraph.newGraph(nConstraints = jgraphBuilder.constraintsMap),
+      initialGraph.newGraph(nConstraints = parser.builder.constraintsMap),
       initialRecord,
-      jgraphBuilder)
+      nodesByName,
+      graph2ASTMap)
   }
 
   def apply(result : ResultT) : Unit = {
@@ -124,13 +112,13 @@ class JavaDG2AST
     logger.writeln("applying change !")
     val record = recordOfResult(result)
 
-    record.foldRight((graphOfResult(result), initialGraph, jgraphBuilder.graph2ASTMap)) {
-      case (r, (resultGraph, reenactor, graph2ASTMap)) =>
+    record.foldRight((graphOfResult(result), initialGraph, graph2ASTMap)) {
+      case (r, (resultGraph, reenactor, g2AST)) =>
         /*import ShowDG._
         println(showTransformation(resultGraph).shows(r))*/
 
         val jreenactor = reenactor.asInstanceOf[DependencyGraph]
-        val res = applyOneTransformation(resultGraph, jreenactor, graph2ASTMap, r)
+        val res = applyOneTransformation(resultGraph, jreenactor, g2AST, r)
 
         //println(program)
         (resultGraph, r.redo(reenactor), res)

@@ -21,13 +21,14 @@ case class PElement(node:String)extends ParsedId {
  */
 
 object ConstraintsParser{
-  def apply(builder : GraphBuilder) =
-    new ConstraintsParser(builder)
+  def apply(nodesByName : Map[String, NodeId]) =
+    new ConstraintsParser(nodesByName)
 }
 class ConstraintsParser private
-( val builder : GraphBuilder) extends RegexParsers {
+( nodesByName : Map[String, NodeId]) extends RegexParsers {
 
-  builder.discardConstraints()
+  val builder = new ConstraintsMapBuilder()
+
   protected override val whiteSpace = """(\s|%.*|#.*)+""".r  //to skip comments
 
 
@@ -43,7 +44,7 @@ class ConstraintsParser private
         case Seq() if acc.isEmpty => throw new NoSuchElementException("named element " + k + " not found")
         case Seq() => acc
         case _ =>
-          builder.nodesByName get (imports.head + k.node) match {
+          nodesByName get (imports.head + k.node) match {
             case None => aux(imports.tail, acc)
             case Some(n) => aux(imports.tail, k.range(n) +: acc)
           }

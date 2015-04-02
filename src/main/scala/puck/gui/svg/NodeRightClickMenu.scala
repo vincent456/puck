@@ -9,6 +9,7 @@ import puck.graph.DGEdge
 import puck.graph.DGEdge
 import puck.graph.DependencyGraph
 import puck.graph.DependencyGraph
+import puck.graph.constraints.{SupertypeAbstraction, DelegationAbstraction}
 import puck.graph.transformations.MergeMatcher
 import puck.graph.transformations.MergeMatcher
 import puck.gui.svg.actions.AddIsaAction
@@ -28,11 +29,15 @@ class NodeRightClickMenu
 ( private val controller: SVGController,
   node : ConcreteNode) extends JPopupMenu {
 
+  init()
+
+
   def this(controller: SVGController,
            nodeId: Int) =
     this(controller, controller.graph.getConcreteNode(nodeId))
 
   import controller.graph
+
 
   def addMenuItem(name : String)(action : ActionEvent => Unit) = {
     this.add(new AbstractAction(name) {
@@ -41,11 +46,13 @@ class NodeRightClickMenu
     })
   }
 
-  /**
-   * object initialization
-   */
-  {
-    val item = new JMenuItem("Abstract " + node.name + " as")
+
+  def init() : Unit = {
+
+    this.add(new RenameNodeAction(node, controller))
+    this.addSeparator()
+
+    val item = new JMenuItem(s"Abstract ${node.name} as")
     item.setEnabled(false)
     this.add(item)
 
@@ -58,13 +65,14 @@ class NodeRightClickMenu
     }
 
     this.addSeparator()
-    this.add(new RemoveNodeAction(node, graph, controller))
+    this.add(new RemoveNodeAction(node, controller))
     if (controller.nodeIsSelected) {
       addOtherNodeSelectedOption()
     }
     if (controller.edgeIsSelected) {
       addEdgeSelectedOption()
     }
+
 
     if(graph.isWronglyContained(node.id))
       this.add(new SolveAction(node, controller))
@@ -73,8 +81,9 @@ class NodeRightClickMenu
     addShowOptions()
   }
 
+
   private def addAddIsaOption(sub: ConcreteNode, sup: ConcreteNode) : Unit = {
-    this.add(new AddIsaAction(sub, sup, graph, controller));()
+    this.add(new AddIsaAction(sub, sup, controller));()
   }
 
 
@@ -82,20 +91,26 @@ class NodeRightClickMenu
     val id: Int = controller.getIdNodeSelected
     val selected: ConcreteNode = graph.getConcreteNode(id)
     if (graph.canContain(node, selected)) {
-      this.add(new MoveAction(node, selected, graph, controller))
+      this.add(new MoveAction(node, selected, controller))
     }
-    val m: MergeMatcher = controller.transfoRules.mergeMatcher(selected)
+
+    //TODO refactor, law of demeter broken
+    val m: MergeMatcher = controller.transfoRules.
+        mergeMatcherInstances.syntaxicMergeMatcher(selected)
+
     if (m.canBeMergedInto(node, graph)) {
-      this.add(new MergeAction(selected, node, graph, controller))
+      this.add(new MergeAction(selected, node, controller))
     }
-    if (selected.kind.canBe(node.kind)) addAddIsaOption(selected, node)
-    if (node.kind.canBe(selected.kind)) addAddIsaOption(node, selected)
+    if(selected.id != node.id) {
+      if (selected.kind.canBe(node.kind)) addAddIsaOption(selected, node)
+      if (node.kind.canBe(selected.kind)) addAddIsaOption(node, selected)
+    }
   }
 
   private def addEdgeSelectedOption() : Unit = {
     val edge: DGEdge = controller.getEdgeSelected
-    this.add(new RedirectAction(node, edge, controller.supertypePolicy, controller))
-    this.add(new RedirectAction(node, edge, controller.delegatePolicy, controller));()
+    this.add(new RedirectAction(node, edge, SupertypeAbstraction, controller))
+    this.add(new RedirectAction(node, edge, DelegationAbstraction, controller));()
   }
 
   private def addShowOptions() : Unit = {

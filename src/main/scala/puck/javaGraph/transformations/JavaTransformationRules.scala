@@ -3,9 +3,9 @@ package puck.javaGraph.transformations
 import puck.PuckError
 import puck.graph.ShowDG._
 import puck.graph._
-import puck.graph.constraints.{AbstractionPolicy, Move, RedirectionPolicy, SupertypeAbstraction}
-import puck.graph.transformations.{MergeMatcher, TransformationRules}
-import puck.javaGraph.MethodType
+import puck.graph.constraints.{AbstractionPolicy, RedirectionPolicy, SupertypeAbstraction}
+import puck.graph.transformations.{MergeMatcherInstances, TransformationRules}
+import puck.javaGraph.{JavaMergeMatcherInstances, MethodType}
 import puck.javaGraph.nodeKind._
 
 import scalaz.Validation.FlatMap._
@@ -237,15 +237,8 @@ object JavaTransformationRules extends TransformationRules {
   //!\ becarefull with AGNode use only to read values
   type AGNodeT = DGNode
 
-  //findMergingCandidate find only candidates for interfaces
-  //A merging candidate is either structurally equal
-  //either a subtype of this
-  //hence if we do the merge getNode(nid) will disappear
-  // and all its user redirected to the candidate
-
-
-  override implicit def mergeMatcher(n : ConcreteNode): MergeMatcher =
-    InterfaceMergeMatcher.mergeMatcher(n)
+  def mergeMatcherInstances : MergeMatcherInstances =
+    JavaMergeMatcherInstances
 
   override def findMergingCandidate(g : GraphT, node : ConcreteNode) : Option[ConcreteNode] = {
 

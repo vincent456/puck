@@ -1,4 +1,4 @@
-package methodNotUsedByThisToParameterClass;
+package p;
 
 class A {
     public void ma(B b){b.mb();}

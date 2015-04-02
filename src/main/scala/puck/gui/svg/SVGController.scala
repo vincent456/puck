@@ -10,7 +10,6 @@ import org.w3c.dom.Element
 import org.w3c.dom.svg.{SVGGElement, SVGDocument}
 import puck.graph._
 import puck.graph.constraints.search.SolverBuilder
-import puck.graph.constraints.{RedirectionPolicy, SupertypeAbstraction, DelegationAbstraction}
 import puck.graph.io._
 import puck.gui.PuckControl
 import puck.gui.svg.SVGFrame.SVGConsole
@@ -69,7 +68,7 @@ class SVGController private
 
   def hide(id : NodeId): Unit = {
     visibility.setVisibility(id, Hidden)
-    displayGraph(graph)
+    setSubTreeVisibility(id, Hidden)
   }
 
   private def setSubTreeVisibility(rootId : NodeId, v : Visibility): Unit ={
@@ -129,9 +128,6 @@ class SVGController private
   def usesKind = Uses
   def isaKind = Isa
 
-  def delegatePolicy : RedirectionPolicy = DelegationAbstraction
-  def supertypePolicy : RedirectionPolicy  = SupertypeAbstraction
-  
 
   def displayGraph(graph: DependencyGraph) = {
 
@@ -169,10 +165,11 @@ class SVGController private
     updateStackListeners()
   }
 
-
-  
-
   def graph = undoStack.head
+
+  def applyOnCode() : Unit = {
+    genController.applyOnCode((graph, graph.recording))
+  }
 
   def abstractionChoices(n: ConcreteNode): Seq[JMenuItem] =
     n.kind.abstractionChoices.map { case (k, p) =>

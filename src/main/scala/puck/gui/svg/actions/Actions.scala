@@ -3,7 +3,7 @@ package puck.gui.svg.actions
 import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
 
-import puck.graph.{DependencyGraph, ConcreteNode}
+import puck.graph.ConcreteNode
 import puck.gui.svg.SVGController
 import puck.javaGraph.transformations.JavaTransformationRules
 
@@ -15,9 +15,10 @@ import scalaz.{Success, Failure}
 class AddIsaAction
 ( sub : ConcreteNode,
   sup : ConcreteNode,
-  graph : DependencyGraph,
   controller : SVGController)
 extends AbstractAction(s"Add ${sub.name} isa ${sup.name}") {
+
+  import controller.graph
 
   def actionPerformed(e: ActionEvent) : Unit =
     controller.pushGraph(graph.addIsa(sub.id, sup.id))
@@ -26,9 +27,10 @@ extends AbstractAction(s"Add ${sub.name} isa ${sup.name}") {
 
 class RemoveNodeAction
 ( node : ConcreteNode,
-  graph : DependencyGraph,
   controller : SVGController)
 extends AbstractAction(s"Delete node and children") {
+
+  import controller.graph
 
   def actionPerformed(e: ActionEvent) : Unit = {
     JavaTransformationRules.removeConcreteNode(graph, node) match {
@@ -37,6 +39,24 @@ extends AbstractAction(s"Delete node and children") {
       case Success(g) => controller.pushGraph(g)
     }
   }
+}
 
+class RenameNodeAction
+( node : ConcreteNode,
+  controller : SVGController )
+  extends AbstractAction("Rename") {
+
+  import controller.graph
+  override def actionPerformed(e: ActionEvent): Unit = {
+    showInputDialog("New name:").foreach {
+      newName =>
+          controller.pushGraph(graph.setName(node.id, newName))
+        /*graph.kindType(node.id) match {
+          case TypeMember =>
+          case _ =>
+        }*/
+
+    }
+  }
 
 }

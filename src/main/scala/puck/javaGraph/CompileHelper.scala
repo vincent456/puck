@@ -4,7 +4,7 @@ import java.io.{File, InputStream}
 
 import puck.graph._
 import puck.graph.transformations.{NodeMappingInitialState, Recording}
-import puck.util.FileHelper
+import puck.util.{PuckNoopLogger, PuckLogger, FileHelper}
 
 
 
@@ -33,26 +33,34 @@ object CompileHelper {
       None
   }
 
-  def buildGraph(sources: List[String],
+  def buildGraph(p : AST.Program,
+                 logger : PuckLogger = PuckNoopLogger,
+                 ll : AST.LoadingListener = null )  :
+  (AST.Program, DependencyGraph, Recording, Map[String, NodeId], Map[NodeId, ASTNodeLink]) = {
+
+    val builder = p.buildAccessGraph(null, ll)
+    builder.attachOrphanNodes()
+    builder.registerSuperTypes()
+
+    val (_, transfos) = NodeMappingInitialState.normalizeNodeTransfos(builder.g.recording(), Seq())
+    val initialRecord = new Recording(transfos)
+
+    val g = builder.g.newGraph(nRecording = Recording())
+              .withLogger(logger)
+
+    (p, g,
+      initialRecord,
+      builder.nodesByName,
+      builder.graph2ASTMap)
+  }
+
+  def compileSrcsAndbuildGraph(sources: List[String],
                  jars: List[String],
                  decouple : Option[java.io.File] = None) :
     (AST.Program, DependencyGraph, Recording, Map[String, NodeId], Map[NodeId, ASTNodeLink]) =
     this.apply(sources, jars) match {
       case None => throw new AGBuildingError("Compilation error, no AST generated")
-      case Some(p) =>
-        val map = decouple match {
-          case Some(f) => FileHelper.initStringLiteralsMap(decouple.get)
-          case None => new java.util.HashMap[String, java.util.Collection[AST.BodyDecl]]()
-        }
-
-        val builder = p.buildAccessGraph(map, null)
-        builder.attachOrphanNodes()
-        builder.registerSuperTypes()
-
-        val (_, transfos) = NodeMappingInitialState.normalizeNodeTransfos(builder.g.recording(), Seq())
-        (p, builder.g.newGraph(nRecording = Recording()),
-          new Recording(transfos), builder.nodesByName,
-          builder.graph2ASTMap)
+      case Some(p) => buildGraph(p)
     }
 
 
