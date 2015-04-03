@@ -43,7 +43,7 @@ object JavaDotHelper extends DotHelper{
   }
 
   override def isDotClass(n : DGNode): Boolean = n.kind match {
-      case Class | Interface => true;
+      case Class | Interface | Primitive => true
       case _ => false
     }
 
@@ -54,6 +54,7 @@ object JavaDotHelper extends DotHelper{
         case Class | Constructor => "#FFFF33" //Yellow
         case Method | Field => "#FFFFFF" //White
         case Literal => "#CCFFCC" //Very Light green
+        case Primitive => "#FFFFFF"
         case _ => throw new Error("Unknown JavaNodeKind")
       }
     n mapConcrete(aux, "#00FF00")

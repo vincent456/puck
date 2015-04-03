@@ -3,12 +3,12 @@ package constraints
 
 import puck.PuckError
 import puck.graph.ShowDG._
-import puck.graph.transformations.{CreateParameter, TransformationRules}
+import puck.graph.transformations.TransformationRules
+import puck.graph.transformations.rules.Move
+import Move.CreateParameter
 import puck.util.PuckLog
 
-import scalaz.{Failure, Success}
-
-import scalaz.Validation.FlatMap._
+import scalaz.{-\/, \/-}
 
 class Solver
 ( val decisionMaker : DecisionMaker,
@@ -46,8 +46,8 @@ class Solver
               //val breakPoint = g.startSequence()
 
               rules.redirectUsesAndPropagate(g, DGEdge.uses(wu, used.id), abs, absPolicy) match {
-                  case Success(g2) => (g2, unsolved)
-                  case Failure(e) =>
+                  case \/-(g2) => (g2, unsolved)
+                  case -\/(e) =>
                     logger.writeln("redirection error catched !!")(PuckLog.Debug)
                     (g/*.undo(breakPoint)*/, wu +: unsolved)
               }
@@ -153,7 +153,7 @@ class Solver
 
             val tryAbs = rules.createAbstraction(graph, currentImpl, absKind, absPolicy)
 
-            if(tryAbs.isFailure)
+            if(tryAbs.isLeft)
               logger.writeln("failure !!")
 
             tryAbs map {
@@ -171,10 +171,10 @@ class Solver
                     //TODO check if can find another way more generic
                     val graph5 = rules.abstractionCreationPostTreatment(graph4, currentImpl.id, abs.id, absPolicy)
 
-                    k(Success((graph5, abs, absPolicy)))
+                    k(\/-((graph5, abs, absPolicy)))
                   case FindHostError =>
                     logger.writeln("error while searching host for abstraction")
-                    k(Failure(FindHostError).toValidationNel)
+                    k(-\/(FindHostError))
                 }
             }
             ()
@@ -184,12 +184,12 @@ class Solver
             doIntro(k)
           else
             doIntro({
-              case Failure(_) =>
-                k(Failure(new DGError(s"Single abs intro degree $deg/$degree error (currentImpl = $currentImpl)")).toValidationNel)
-              case Success((g, abs, _)) => aux(g, deg + 1, abs)(k)
+              case -\/(_) =>
+                k(-\/(new DGError(s"Single abs intro degree $deg/$degree error (currentImpl = $currentImpl)")))
+              case \/-((g, abs, _)) => aux(g, deg + 1, abs)(k)
             })
 
-        case None => k(Failure(new DGError(s"no abstraction for impl of kind $currentImpl")).toValidationNel)
+        case None => k(-\/(new DGError(s"no abstraction for impl of kind $currentImpl")))
       }
     }
 
@@ -197,7 +197,7 @@ class Solver
     def redirectWrongUsers(t : Try[(DependencyGraph, ConcreteNode, AbstractionPolicy)] ) : Unit =
       k(t.flatMap{ case (g, abs, absPolicy) =>
         logger.writeln("redirecting wrong users !!")
-        wrongUsers.foldLeft(Success(g) : Try[DependencyGraph]){
+        wrongUsers.foldLeft(\/-(g) : Try[DependencyGraph]){
           (tryG, wuId) =>
             tryG.flatMap(rules.redirectUsesAndPropagate(_, DGEdge.uses(wuId, impl.id), abs.id, absPolicy))
         }})
@@ -231,7 +231,7 @@ class Solver
           case sg => k (sg)
         }*/
       }
-      else k(Success(graph2))
+      else k(\/-(graph2))
     }
   }
 
@@ -263,9 +263,9 @@ class Solver
          def checkIfMoveSolveContains( tg : Try[DependencyGraph]) : Try[DependencyGraph] =
          tg.flatMap(g =>
            (g.isWronglyContained(wronglyContained.id), automaticConstraintLoosening) match {
-             case (false, _) => Success(g)
-             case (true, true) => Success(rules.addHideFromRootException (g, wronglyContained.id, newCter))
-             case (true, false) => Failure(new PuckError("constraint unsolvable")).toValidationNel
+             case (false, _) => \/-(g)
+             case (true, true) => \/-(rules.addHideFromRootException (g, wronglyContained.id, newCter))
+             case (true, false) => -\/(new PuckError("constraint unsolvable"))
            })
 
          def k : Try[DependencyGraph] => Unit =
@@ -274,7 +274,7 @@ class Solver
 
          graph.kindType(wronglyContained) match {
            case TypeMember =>
-             if(rules.needSelfReference(g3, wronglyContained, g3.getConcreteNode(oldCter)))
+             if(Move.isUsedBySiblingsViaSelf(g3, wronglyContained, g3.getConcreteNode(oldCter)))
               decisionMaker.createVarStrategy {
                 cvs => k(rules.moveTypeMember(g3, wronglyContained.id, newCter, cvs))
               }
@@ -286,26 +286,26 @@ class Solver
            case _ => ???
          }
 
-       case FindHostError => k0(Failure(new DGError("FindHostError caught")).toValidationNel)
+       case FindHostError => k0(-\/(new DGError("FindHostError caught")))
     }
   }
 
 
   def solveViolationsToward(graph : DependencyGraph, target : ConcreteNode) (k: Try[DependencyGraph] => Unit ) = {
     def end: Try[DependencyGraph] => Unit = {
-      case Success(g) =>
+      case \/-(g) =>
       graph.logger.writeln(s"solveViolationsToward $target end")
       if (g.wrongUsers(target.id).nonEmpty)
         solveUsesToward(g, target, k)
       else
-        k(Success(g))
+        k(\/-(g))
       case noRes =>k(noRes)
     }
 
     if(graph.isWronglyContained(target.id))
       solveContains(graph, target, end)
     else
-      end(Success(graph))
+      end(\/-(graph))
   }
 
   def doMerges(graph : DependencyGraph, k : Try[ResT] => Unit) : Unit = {
@@ -322,7 +322,7 @@ class Solver
           case None => aux(graph, it)
         }
       }
-      else Success(graph)
+      else \/-(graph)
 
     k(aux(graph, graph.concreteNodes.iterator) map (g => (g, g.recording)))
 
@@ -336,16 +336,16 @@ class Solver
     nodes foreach {n => logger.writeln(n)}
 */
     def aux: Try[DependencyGraph] => Unit = {
-      case Success(g) =>
+      case \/-(g) =>
       decisionMaker.violationTarget(g) {
         case None => doMerges(g, k)
         case Some(target) =>
           solveViolationsToward(g, target)(aux)
       }
-      case Failure(e) => k(Failure(e))
+      case -\/(e) => k(-\/(e))
     }
 
-    aux(Success(graph))
+    aux(\/-(graph))
   }
 
 

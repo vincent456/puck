@@ -8,16 +8,17 @@ import puck.graph.transformations.{MergeMatcherInstances, TransformationRules}
 import puck.javaGraph.{JavaMergeMatcherInstances, MethodType}
 import puck.javaGraph.nodeKind._
 
-import scalaz.Validation.FlatMap._
 import scalaz._
 
 /**
  * Created by lorilan on 25/01/15.
  */
 
+import TransformationRules._
+
 object JavaTransformationRules extends TransformationRules {
 
-  override def absIntroPredicate( graph : GraphT,
+  override def absIntroPredicate( graph : DependencyGraph,
                                   impl : DGNode,
                                   absPolicy : AbstractionPolicy,
                                   absKind : NodeKind) : NodePredicateT = {
@@ -29,7 +30,7 @@ object JavaTransformationRules extends TransformationRules {
     }
   }
 
-  override def abstractionName( g: GraphT, impl: ConcreteNode, abskind : NodeKind, policy : AbstractionPolicy) : String = {
+  override def abstractionName( g: DependencyGraph, impl: ConcreteNode, abskind : NodeKind, policy : AbstractionPolicy) : String = {
     if (impl.kind == Constructor)
       "create"
     else
@@ -41,25 +42,25 @@ object JavaTransformationRules extends TransformationRules {
       }
   }
 
-  def insertInTypeHierarchy(g : GraphT, classId : NodeId, interfaceId : NodeId) : GraphT =
+  def insertInTypeHierarchy(g : DependencyGraph, classId : NodeId, interfaceId : NodeId) : DependencyGraph =
     g.directSuperTypes(classId).foldLeft(g){ (g0, superType) =>
       g0.changeSource(DGEdge.isa(classId, superType), interfaceId)
     }
 
-  def addTypesUses(g : GraphT, node : ConcreteNode) : GraphT =
+  def addTypesUses(g : DependencyGraph, node : ConcreteNode) : DependencyGraph =
     node.styp.map(_.ids) match {
       case None => g
       case Some(typesUsed) =>
         typesUsed.foldLeft(g){(g0, tid) => g0.addUses(node.id, tid)}
     }
 
-  def createAbstractMethod(g : GraphT, meth : ConcreteNode,
-                           clazz : ConcreteNode, interface : ConcreteNode) : Try[GraphT] ={
+  def createAbstractMethod(g : DependencyGraph, meth : ConcreteNode,
+                           clazz : ConcreteNode, interface : ConcreteNode) : Try[DependencyGraph] ={
     def addContainsAndRedirectSelfType
-    (g: GraphT, methodNode: ConcreteNode): Try[GraphT] = {
+    (g: DependencyGraph, methodNode: ConcreteNode): Try[DependencyGraph] = {
       if(methodNode.kind != AbstractMethod)
-        Failure(new DGError(s"$methodNode should be an abstract method !")).toValidationNel
-      else Success {
+        -\/(new DGError(s"$methodNode should be an abstract method !"))
+      else \/- {
         g.addContains(interface.id, methodNode.id)
           //TODO check why it is not needed
           //addTypesUses(g4, absChild)
@@ -71,8 +72,8 @@ object JavaTransformationRules extends TransformationRules {
     }
   }
 
-  def changeSelfTypeBySuperInMethodSignature(g : GraphT, meth : ConcreteNode,
-                                             clazz : ConcreteNode, interface : ConcreteNode): Try[GraphT] ={
+  def changeSelfTypeBySuperInMethodSignature(g : DependencyGraph, meth : ConcreteNode,
+                                             clazz : ConcreteNode, interface : ConcreteNode): Try[DependencyGraph] ={
 
     val g1 = g.changeContravariantType(meth.id, meth.styp, clazz.id, interface.id)
 
@@ -80,11 +81,11 @@ object JavaTransformationRules extends TransformationRules {
       g.logger.writeln(s"interface creation : redirecting ${DGEdge.uses(meth.id, clazz.id)} target to $interface")
       redirectUsesAndPropagate(g1, DGEdge.uses(meth.id, clazz.id), interface.id, SupertypeAbstraction)
     }
-    else Success(g1)
+    else \/-(g1)
   }
 
 
-  def membersToPutInInterface(g : GraphT, clazz : ConcreteNode) : Seq[ConcreteNode] = {
+  def membersToPutInInterface(g : DependencyGraph, clazz : ConcreteNode) : Seq[ConcreteNode] = {
 
     def canBeAbstracted(member : ConcreteNode) : Boolean = {
       //the originSibling arg is needed in case of cyclic uses
@@ -119,7 +120,7 @@ object JavaTransformationRules extends TransformationRules {
       }
   }
 
-  def createInterfaceAndReplaceBySuperWherePossible(g : GraphT, clazz : ConcreteNode) : Try[(ConcreteNode, GraphT)] = {
+  def createInterfaceAndReplaceBySuperWherePossible(g : DependencyGraph, clazz : ConcreteNode) : Try[(ConcreteNode, DependencyGraph)] = {
     val classMembers = g.content(clazz.id)
 
     for{
@@ -139,7 +140,7 @@ object JavaTransformationRules extends TransformationRules {
               //case Field() =>
               case (ck : MethodKind, Some(MethodType(_, _)))  =>
                 changeSelfTypeBySuperInMethodSignature(g0, child, clazz, interface)
-              case _ => Success(g0)
+              case _ => \/-(g0)
            }
        }
     } yield {
@@ -148,16 +149,16 @@ object JavaTransformationRules extends TransformationRules {
     }
   }
 
-  def logInterfaceCreation(g : GraphT, itc : ConcreteNode) : Unit = {
+  def logInterfaceCreation(g : DependencyGraph, itc : ConcreteNode) : Unit = {
     g.logger.writeln(s"interface $itc created, contains : {")
     g.logger.writeln(g.content(itc.id).map(showDG[NodeId](g).show).mkString("\n"))
     g.logger.writeln("}")
   }
 
-  override def createAbstraction(g : GraphT,
+  override def createAbstraction(g : DependencyGraph,
                                  impl: ConcreteNode,
                                  abskind : NodeKind ,
-                                 policy : AbstractionPolicy) : Try[(ConcreteNode, GraphT)] = {
+                                 policy : AbstractionPolicy) : Try[(ConcreteNode, DependencyGraph)] = {
 
     (abskind, policy) match {
       case (Interface, SupertypeAbstraction) =>
@@ -165,7 +166,7 @@ object JavaTransformationRules extends TransformationRules {
 
       case (AbstractMethod, SupertypeAbstraction) =>
         //no (abs, impl) or (impl, abs) uses
-        Success(createAbsNode(g, impl, abskind, policy))
+        \/-(createAbsNode(g, impl, abskind, policy))
 
       case (ConstructorMethod, _) =>
         super.createAbstraction(g, impl, abskind, policy) map { case (abs, g0) =>
@@ -176,10 +177,10 @@ object JavaTransformationRules extends TransformationRules {
     }
   }
 
-  override def abstractionCreationPostTreatment(g: GraphT,
+  override def abstractionCreationPostTreatment(g: DependencyGraph,
                                                 implId : NodeId,
                                                 absId : NodeId,
-                                                policy : AbstractionPolicy) : GraphT = {
+                                                policy : AbstractionPolicy) : DependencyGraph = {
     val abstraction = g.getNode(absId)
     (abstraction.kind, policy) match {
       case (AbstractMethod, SupertypeAbstraction) =>
@@ -205,11 +206,11 @@ object JavaTransformationRules extends TransformationRules {
 
 
 
-  override def redirectUsesAndPropagate(g : GraphT,
-                            oldEdge : EdgeT, newUsee : NodeId,
+  override def redirectUsesAndPropagate(g : DependencyGraph,
+                            oldEdge : DGEdge, newUsee : NodeId,
                             policy : RedirectionPolicy,
                             propagateRedirection : Boolean = true,
-                            keepOldUse : Boolean = false ) : Try[GraphT] = {
+                            keepOldUse : Boolean = false ) : Try[DependencyGraph] = {
 
     val tryEdgeGraph =
       super.redirectUsesAndPropagate(g, oldEdge, newUsee, policy,
@@ -240,7 +241,7 @@ object JavaTransformationRules extends TransformationRules {
   def mergeMatcherInstances : MergeMatcherInstances =
     JavaMergeMatcherInstances
 
-  override def findMergingCandidate(g : GraphT, node : ConcreteNode) : Option[ConcreteNode] = {
+  override def findMergingCandidate(g : DependencyGraph, node : ConcreteNode) : Option[ConcreteNode] = {
 
     val nid = node.id
     node.kind match {
@@ -255,7 +256,7 @@ object JavaTransformationRules extends TransformationRules {
     }
 
   }
-  def findMergingCandidateIn(g : GraphT, method : ConcreteNode, interface : ConcreteNode) : Option[NodeId] =
+  def findMergingCandidateIn(g : DependencyGraph, method : ConcreteNode, interface : ConcreteNode) : Option[NodeId] =
     InterfaceMergeMatcher.findMergingCandidateIn(g, method, interface)
 
 }

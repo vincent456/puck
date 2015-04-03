@@ -2,7 +2,7 @@ package puck.graph.constraints.search
 
 import puck.graph._
 import puck.graph.constraints.{NodePredicate, AbstractionPolicy, DecisionMaker}
-import puck.graph.transformations.CreateVarStrategy
+import puck.graph.transformations.rules.Move.CreateVarStrategy
 import puck.search.SearchEngine
 import puck.util.PuckLogger
 

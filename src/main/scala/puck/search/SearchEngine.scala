@@ -1,7 +1,7 @@
 package puck.search
 
 import scala.collection.mutable
-import scalaz.{Failure, Success}
+import scalaz.{-\/, \/-}
 
 /**
  * Created by lorilan on 07/07/14.
@@ -53,8 +53,8 @@ trait SearchEngine[T] extends Search[T]{
 
   def explore() : Unit ={
     doExplore {
-      case Success(result) => storeResult(Some(currentState), result)
-      case Failure(e) => e.foreach(e0 => println(e0.getMessage))
+      case \/-(result) => storeResult(Some(currentState), result)
+      case -\/(e) => println(e.getMessage)
     }
   }
 }

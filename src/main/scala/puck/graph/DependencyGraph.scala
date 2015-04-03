@@ -431,6 +431,8 @@ class DependencyGraph
       directSuperTypes(subCandidate).exists(isSuperTypeOf(superCandidate, _))
   }
 
+
+
   def isa(subId : NodeId, superId: NodeId): Boolean = superTypesMap.bind(subId, superId)
   
   def isaSeq  : Seq[(NodeId, NodeId)] = superTypesMap.flatSeq
@@ -439,19 +441,19 @@ class DependencyGraph
 
   def usesSeq : Seq[(NodeId, NodeId)] = usesMap.flatSeq
   
-  def usedBy(userId : NodeId) : Iterable[NodeId] = usesMap getFlat userId
+  def usedBy(userId : NodeId) : Set[NodeId] = usesMap getFlat userId
   
-  def users(useeId: NodeId) : Iterable[NodeId] = usersMap getFlat useeId
+  def users(useeId: NodeId) : Set[NodeId] = usersMap getFlat useeId
 
-  def typeUsesOf(typeMemberUse : (NodeId, NodeId)) : Iterable[(NodeId, NodeId)] =
+  def typeUsesOf(typeMemberUse : (NodeId, NodeId)) : Set[(NodeId, NodeId)] =
     typeMemberUses2typeUsesMap getFlat typeMemberUse
 
-  def typeMemberUsesOf(typeUse : (NodeId, NodeId)) : Iterable[(NodeId, NodeId)] =
+  def typeMemberUsesOf(typeUse : (NodeId, NodeId)) : Set[(NodeId, NodeId)] =
     typeUses2typeMemberUsesMap  getFlat typeUse
 
   def dominates(dominantEdge : (NodeId, NodeId),
                 dominatedEdge : (NodeId, NodeId)) : Boolean =
-    typeMemberUsesOf( dominantEdge ).exists(_ == dominatedEdge)
+    typeMemberUsesOf( dominantEdge ) contains dominatedEdge
 
   def abstractions(id : NodeId) : Iterable[(NodeId, AbstractionPolicy)] =
     abstractionsMap getFlat id

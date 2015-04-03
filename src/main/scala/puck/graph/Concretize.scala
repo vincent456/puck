@@ -11,11 +11,11 @@ object Concretize {
 
   @tailrec
   def apply(g : DependencyGraph, rules : TransformationRules) : Try[DependencyGraph] = {
-    if(g.virtualNodes.isEmpty) Success(g)
+    if(g.virtualNodes.isEmpty) \/-(g)
     else {
       val vn = g.virtualNodes.head
 
-      val tg = rules.traverse(g.content(vn.id), g){ (g0, cid) =>
+      val tg = TransformationRules.traverse(g.content(vn.id), g){ (g0, cid) =>
         val usedElts : Set[NodeId] = Metrics.outgoingDependencies(cid, g0).map(_.used)
         val c = g0.getConcreteNode(cid)
         val potentialContainers = g0.concreteNodes.filter(g0.canContain(_, c))
@@ -33,8 +33,8 @@ object Concretize {
 
       //tg.flatMap{g => apply(g.removeVirtualNode(vn.id), rules)}
       tg match {
-        case f @ Failure(_) => f
-        case Success(gfinal) => apply(gfinal.removeVirtualNode(vn.id), rules)
+        case f @ -\/(_) => f
+        case \/-(gfinal) => apply(gfinal.removeVirtualNode(vn.id), rules)
       }
 
 

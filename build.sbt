@@ -68,12 +68,13 @@ scalacOptions ++=Seq("-deprecation",
   "-language:higherKinds",
   "-language:implicitConversions",
   "-unchecked",
-  "-Xfatal-warnings",
+  //"-Xfatal-warnings",
   "-Xlint",
   "-Yno-adapted-args",
-  //"-Ywarn-dead-code",        // N.B. doesn't work well with the ??? hole
+  "-Ywarn-numeric-widen",
+  "-Ywarn-dead-code",        // N.B. doesn't work well with the ??? hole
   "-Ywarn-value-discard",
   "-Xfuture",
   "-Ywarn-unused-import")     // 2.11 only
 
-(scalacOptions in Compile) += "-Ywarn-numeric-widen"
+//(scalacOptions in Compile) += "-Ywarn-numeric-widen"

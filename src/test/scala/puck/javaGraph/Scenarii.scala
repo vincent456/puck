@@ -6,7 +6,6 @@ import puck.graph.constraints.SupertypeAbstraction
 import puck.javaGraph.nodeKind.{Package, Interface}
 import puck.javaGraph.transformations.JavaTransformationRules
 
-import scalaz.Validation.FlatMap._
 /**
  * Created by lorilan on 2/25/15.
  */

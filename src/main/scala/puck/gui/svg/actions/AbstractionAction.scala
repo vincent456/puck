@@ -8,8 +8,6 @@ import puck.graph.constraints.AbstractionPolicy
 import puck.graph.{ConcreteNode, NodeId, NodeKind}
 import puck.gui.svg.SVGController
 
-import scalaz.{Failure, Success}
-
 /**
   * Created by lorilan on 3/16/15.
   */
@@ -44,16 +42,12 @@ class AbstractionAction(
      }
 
      override def actionPerformed(e: ActionEvent): Unit =
-         controller.transfoRules.createAbstraction(graph, node, kind, policy) match {
-           case Failure(errs) =>
-             controller.console.appendText("Abstraction creation failure\n" )
-             errs.foreach(e => controller.console.appendText(e.getMessage + "\n"))
-           case Success((abs, g)) =>
-
+       printErrOrPushGraph(controller,"Abstraction action failure") {
+         controller.transfoRules.createAbstraction(graph, node, kind, policy).
+           map { case (abs, g) =>
              val h = getHost(abs.kind)
-             val g2 = g.addContains(h, abs.id)
+             g.addContains(h, abs.id)
+           }
+       }
 
-             controller.pushGraph(g2)
-         }
-
-   }
+}

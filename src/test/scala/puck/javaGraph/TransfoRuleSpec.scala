@@ -1,24 +1,22 @@
 package puck
 package javaGraph
 
-import org.scalatest.OptionValues
 import puck.graph.constraints.{SupertypeAbstraction, DelegationAbstraction}
 import puck.graph._
 import puck.javaGraph.nodeKind.Interface
-import scalaz.{Success, Failure}
+import scalaz.{\/-, -\/}
 
 import Scenarii._
 
-import scala.language.reflectiveCalls
 /**
  * Created by lorilan on 2/25/15.
  */
-class TransfoRuleSpec extends AcceptanceSpec with OptionValues {
+class TransfoRuleSpec extends AcceptanceSpec {
 
   def assertSuccess[G](t : Try[G])(f : G => Unit) : Unit = {
     t match {
-      case Failure(_) => assert(false)
-      case Success(g) => f(g)
+      case -\/(_) => assert(false)
+      case \/-(g) => f(g)
     }
   }
 

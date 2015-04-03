@@ -1,17 +1,15 @@
 package puck.gui.svg.actions
 
 import java.awt.event.ActionEvent
-import javax.swing.{JOptionPane, AbstractAction}
+import javax.swing.AbstractAction
 
 import puck.PuckError
 import puck.graph.constraints.{NodePredicate, AbstractionPolicy, DecisionMaker}
 import puck.graph._
-import puck.graph.transformations.{CreateTypeMember, CreateVarStrategy}
 import puck.gui.svg.SVGController
 import puck.javaGraph.nodeKind.Field
 
 import scala.swing.Swing.EmptyIcon
-import scalaz.{Failure, Success}
 import scala.swing.Dialog
 
 /**
@@ -19,25 +17,6 @@ import scala.swing.Dialog
  */
 
 object SolveAction {
-
- /* //TODO make difference between cancel and choose nothing
-  def choiceDialog[T]( title : String,
-                       msg : String,
-                       choicesArray : Seq[T]) : Option[Option[T]] = {
-
-
-    if(choicesArray.isEmpty) Some(None)
-    else {
-      val choice = JOptionPane.showInputDialog(null, //Component parentComponent
-        JOptionPane.PLAIN_MESSAGE, //int messageType
-        null, //Icon icon,
-        choicesArray.asInstanceOf[Array[Object]], //Object[] options,
-        choicesArray(0) //Object initialValue
-      ).asInstanceOf[T]
-      if (choice == null) None
-      else Some(Some(choice))
-    }
-  }*/
 
   def forChoice[T](title : String,
                    msg : Any,
@@ -69,13 +48,10 @@ class SolveAction
   val solver = controller.solverBuilder(this,
     automaticConstraintLoosening = false)
 
-  override def actionPerformed(e: ActionEvent): Unit = {
+  override def actionPerformed(e: ActionEvent): Unit =
     solver.solveViolationsToward(controller.graph, violationTarget){
-      case Success(g) => controller.pushGraph(g)
-      case Failure(errs) =>
-        errs.foreach(err => controller.console.appendText(err.getMessage))
+      printErrOrPushGraph(controller, "Solve Action Error")
     }
-  }
 
   override def violationTarget(graph: DependencyGraph)(k: (Option[ConcreteNode]) => Unit): Unit =
     throw new PuckError("should not happen")

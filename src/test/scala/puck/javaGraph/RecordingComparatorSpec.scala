@@ -9,8 +9,6 @@ import scalaz._
 /**
  * Created by lorilan on 22/02/15.
  */
-import scalaz.Validation.FlatMap._
-
 
 import scala.language.reflectiveCalls
 
@@ -26,8 +24,8 @@ class RecordingComparatorSpec extends AcceptanceSpec {
       val app = Applicative[puck.graph.Try]
       val res = app.apply2(tg1, tg2)(ex.compare)
       res match {
-        case Success(b) => assert(b === expected)
-        case Failure(_) => assert(false)
+        case \/-(b) => assert(b === expected)
+        case -\/(_) => assert(false)
       }
     }
 

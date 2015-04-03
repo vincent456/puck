@@ -8,7 +8,7 @@ import puck.search.SearchState
 import puck.util.{PuckLog, PuckLogger}
 
 import scala.collection.immutable.HashSet
-import scalaz.Failure
+import scalaz.{-\/, Failure}
 
 object NodeTransfoStatus {
   def apply( i : Int) = i match {
@@ -164,7 +164,7 @@ class NodeMappingInitialState
       logger.writeln("recording2")
       graph2.recording() foreach { t => logger.writeln(t.toString)}
 
-      k(Failure(NoSolution).toValidationNel)
+      k(-\/(NoSolution))
     }
     else {
 
@@ -227,7 +227,7 @@ class NodeMappingInitialState
       filteredTransfos2 foreach { t => logger.writeln(t.toString)}
 
       if(filteredTransfos1.length != filteredTransfos2.length)
-        k(Failure(NoSolution).toValidationNel)
+        k(-\/(NoSolution))
       else
         engine.compare(filteredTransfos1, filteredTransfos2, initialMapping, nodesToMap, k)
       /*eng.compare(filteredTransfos1, filteredTransfos2,

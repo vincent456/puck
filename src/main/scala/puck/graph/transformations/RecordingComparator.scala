@@ -6,7 +6,7 @@ import puck.search.{FindFirstSearchEngine, SearchState}
 import puck.util.{PuckLogger, PuckNoopLogger}
 
 import scala.collection.mutable
-import scalaz.{Failure, Success}
+import scalaz.{\/-, -\/}
 
 /**
  * Created by lorilan on 07/07/14.
@@ -60,7 +60,7 @@ class RecordingComparator
 
       case (kind, None) =>
         nodesToMap.getOrElse(kind, Seq()) match {
-          case Seq() => k((node, Failure(NoSolution).toValidationNel, nodesToMap))
+          case Seq() => k((node, -\/(NoSolution), nodesToMap))
           case l =>
             val choices =
               new MappingChoices(k, node, kind, nodesToMap,
@@ -85,13 +85,13 @@ class RecordingComparator
             case (Seq(), _) =>
               val l = (node +: nodes1).reverse.tail // we do not forget the last node and we drop the first dummy value
               k(l, map0, nodesToMap0)
-            case (_, Success(m)) =>
+            case (_, \/-(m)) =>
                 attribNode(nodes0.head, m, nodesToMap0){aux(nodes0.tail, node +: nodes1)}
-            case (_, Failure(_)) => k(nodes, map0, nodesToMap)
+            case (_, -\/(_)) => k(nodes, map0, nodesToMap)
           }
       }
     }
-    aux(nodes, Seq[NodeId]())((DependencyGraph.dummyId, Success(map), nodesToMap)) //null will be dropped in aux
+    aux(nodes, Seq[NodeId]())((DependencyGraph.dummyId, \/-(map), nodesToMap)) //null will be dropped in aux
   }
 
 
@@ -115,15 +115,15 @@ class RecordingComparator
               map : ResMap, nodesToMap : NodesToMap,
               k : Try[ResMap] => Unit) : Unit = {
     if (ts1.isEmpty && ts2.isEmpty)
-      k(Success(map))
+      k(\/-(map))
     else {
       def removeFirstAndCompareNext(tgt : TransformationTarget,
                                     tryMap : Try[ResMap], nodesToMap : NodesToMap) =
         tryMap match {
-          case Failure(_) => k(tryMap)
-          case Success(m) =>
+          case -\/(_) => k(tryMap)
+          case \/-(m) =>
             removeFirst(ts2, ts1.head.operation, tgt) match {
-            case None => k(Failure(WrongMapping).toValidationNel)
+            case None => k(-\/(WrongMapping))
              /* println("Failure on mapping : ")
               println(map.mkString("\t", "\n\t", "\n"))
               println(ts1.head + " mapped as ")

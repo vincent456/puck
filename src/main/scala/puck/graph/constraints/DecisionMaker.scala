@@ -1,7 +1,7 @@
 package puck.graph.constraints
 
 import puck.graph._
-import puck.graph.transformations.CreateVarStrategy
+import puck.graph.transformations.rules.Move.CreateVarStrategy
 
 
 /**

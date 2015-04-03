@@ -12,4 +12,4 @@ case object DelegationAbstraction extends AbstractionPolicy /*{
 case object SupertypeAbstraction extends AbstractionPolicy/*{
  // override val toString = "SuperTypeAbstraction"
 }*/
-case object Move extends RedirectionPolicy
+//case object Move extends RedirectionPolicy

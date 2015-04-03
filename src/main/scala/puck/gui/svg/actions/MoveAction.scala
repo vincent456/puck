@@ -1,15 +1,18 @@
 package puck.gui.svg.actions
 
 import java.awt.event.ActionEvent
-import javax.swing.{JOptionPane, AbstractAction}
+import javax.swing.AbstractAction
 
 import puck.PuckError
 import puck.graph._
-import puck.graph.transformations.{CreateVarStrategyForJava, CreateTypeMember, CreateVarStrategy, CreateParameter}
+import puck.graph.transformations.rules._
 import puck.gui.svg.SVGController
 import puck.javaGraph.nodeKind.Field
 
-import scalaz.{Failure, Success}
+
+import scala.swing.Dialog
+import scala.swing.Swing.EmptyIcon
+import scalaz.{\/-, -\/}
 
 /**
  * Created by lorilan on 3/18/15.
@@ -17,25 +20,18 @@ import scalaz.{Failure, Success}
 
 object MoveAction {
   def getChoice(k : NodeKind): Option[CreateVarStrategy] = {
-    val choicesArray = Array[Object](CreateTypeMember(k),
-                                     CreateParameter)
+    val choices = Seq(CreateTypeMember(k),
+                      CreateParameter)
 
-    val choice = JOptionPane.showInputDialog(null, //Component parentComponent
-      "Parameter or Field ?", //Object message,
-      "How to get self reference",  //String title
-      JOptionPane.PLAIN_MESSAGE, //int messageType
-      null, //Icon icon,
-      choicesArray, //Object[] options,
-      choicesArray(0) //Object initialValue
-    ).asInstanceOf[CreateVarStrategy]
+    Dialog.showInput(null, "Parameter or Field ?", "How to get self reference",
+      Dialog.Message.Plain,
+      icon = EmptyIcon, choices, choices.head)
 
-    if(choice == null) None
-    else Some(choice)
   }
 }
 
 class MoveAction
-( host : DGNode,
+( newHost : DGNode,
   moved : ConcreteNode,
   controller : SVGController)
 extends AbstractAction(s"Move ${moved.name} here"){
@@ -45,26 +41,27 @@ extends AbstractAction(s"Move ${moved.name} here"){
   override def actionPerformed(e: ActionEvent): Unit = {
     (graph.kindType(moved) match {
       case TypeDecl =>
-        controller.transfoRules.moveTypeDecl(graph, moved.id, host.id)
+        Move.moveTypeDecl(graph, moved.id, newHost.id)
 
       case TypeMember =>
         controller.console.
           setText("/!\\/!\\ Method overriding unchecked (TODO !!!) /!\\/!\\")
 
+        val host = graph.getConcreteNode(graph.container(moved.id).get)
         val choice =
-          if(controller.transfoRules.needSelfReference(graph, moved, host))
+          if(Move.isUsedBySiblingsViaSelf(graph, moved, host)) {
             MoveAction.getChoice(Field).
               getOrElse(CreateTypeMember(Field))
+          }
           else CreateTypeMember(Field)
 
-        controller.transfoRules.moveTypeMember(graph, moved.id, host.id, choice)
+        Move.moveTypeMember(graph, moved.id, newHost.id, choice)
       case _ =>
-        Failure(new PuckError(s"move of ${moved.kind} not implemented")).toValidationNel
+        -\/(new PuckError(s"move of ${moved.kind} not implemented"))
     }) match {
-      case Failure(errs) =>
-        controller.console.appendText("Abstraction creation failure\n" )
-        errs.foreach(e => controller.console.appendText(e.getMessage + "\n"))
-      case Success(g) => controller.pushGraph(g)
+      case -\/(err)  =>
+        controller.console.appendText(s"Abstraction creation failure\n${err.getMessage}\n")
+      case \/-(g) => controller.pushGraph(g)
     }
   }
 }

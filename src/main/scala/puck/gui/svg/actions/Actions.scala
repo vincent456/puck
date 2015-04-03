@@ -7,8 +7,6 @@ import puck.graph.ConcreteNode
 import puck.gui.svg.SVGController
 import puck.javaGraph.transformations.JavaTransformationRules
 
-import scalaz.{Success, Failure}
-
 /**
  * Created by lorilan on 3/31/15.
  */
@@ -32,13 +30,10 @@ extends AbstractAction(s"Delete node and children") {
 
   import controller.graph
 
-  def actionPerformed(e: ActionEvent) : Unit = {
-    JavaTransformationRules.removeConcreteNode(graph, node) match {
-      case Failure(errs) =>
-        errs.foreach(err => controller.console.appendText(err.getMessage))
-      case Success(g) => controller.pushGraph(g)
+  def actionPerformed(e: ActionEvent) : Unit =
+    printErrOrPushGraph(controller, "Remove Node Action failure"){
+      JavaTransformationRules.removeConcreteNode(graph, node)
     }
-  }
 }
 
 class RenameNodeAction

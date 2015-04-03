@@ -4,7 +4,7 @@ package transformations
 import puck.search.{SearchEngine, SearchState, StateCreator}
 
 import scala.collection.mutable
-import scalaz.Success
+import scalaz.{\/-, Success}
 
 /**
  * Created by lorilan on 30/09/14.
@@ -62,7 +62,7 @@ class NodeMappingState
 
          triedChoices.push(c)
 
-         k((c, Success(result + (node -> ((kind, Some(c))))), remainingNodesToMap))
+         k((c, \/-(result + (node -> ((kind, Some(c))))), remainingNodesToMap))
        }
      }
 
@@ -100,7 +100,7 @@ class StackSaverState
 
   def executeNextChoice() : Unit = {
     executed = true
-    k((mappedNode, Success(result), nodesToMap))
+    k((mappedNode, \/-(result), nodesToMap))
   }
 
 }
