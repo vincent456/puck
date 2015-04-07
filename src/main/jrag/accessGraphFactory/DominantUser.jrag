@@ -58,7 +58,8 @@ aspect DominantUser {
   }
 
   int Expr.typeUserFromLeftExpr(JavaGraphBuilder builder){
-    throw new AGBuildingError("typeUser not found");
+        throw new AGBuildingError(this + " in " + this.compilationUnit().pathName() +" " +
+        this.location() + " typeUser not found");
   }
 
   int MethodAccess.typeUserFromLeftExpr(JavaGraphBuilder builder){
@@ -74,30 +75,35 @@ aspect DominantUser {
         return decl().buildAGNode(builder);
   }
 
-  // public int ASTNode.buildDominantUserAGNodeOfRightExpr(JavaGraphBuilder builder){
+  public int ClassInstanceExpr.typeUserFromLeftExpr(JavaGraphBuilder builder){
+       return getAccess().buildAGNode(builder);
+  }
+
+
+  public int ArrayAccess.typeUserFromLeftExpr(JavaGraphBuilder builder){
+        //type() it's that simple !
+       return type().buildAGNode(builder);
+  }
+
+   public int ParExpr.typeUserFromLeftExpr(JavaGraphBuilder builder){
+     return getExpr().typeUserFromLeftExpr(builder);
+   }
+
+  // public int ASTNode.typeUserFromLeftExpr(JavaGraphBuilder builder){
   //   return buildAGNode(builder);
   // }
 
-  // public int ParExpr.buildDominantUserAGNodeOfRightExpr(JavaGraphBuilder builder){
-  //   return getExpr().buildDominantUserAGNodeOfRightExpr(builder);
-  // }
+   public int CastExpr.typeUserFromLeftExpr(JavaGraphBuilder builder){
+     return getTypeAccess().buildAGNode(builder);
+   }
 
-  // public int CastExpr.buildDominantUserAGNodeOfRightExpr(JavaGraphBuilder builder){
-  //   return getTypeAccess().buildAGNode(builder);
-  // }
-
-  // public int Literal.buildDominantUserAGNodeOfRightExpr(JavaGraphBuilder builder){
-  //   return type().buildAGNode(builder);
-  // }
+   public int Literal.typeUserFromLeftExpr(JavaGraphBuilder builder){
+     return type().buildAGNode(builder);
+   }
 
 
-  // public int ClassInstanceExpr.buildDominantUserAGNodeOfRightExpr(JavaGraphBuilder builder){
-  //     return getAccess().buildAGNode(builder);
-  // }
 
-  // public int ArrayAccess.buildDominantUserAGNode(JavaGraphBuilder builder){
-  //   //System.out.println("ArrayAccess.buildDominantUserAGNode " +this.toString());
-  //   return varDecl().buildAGNode(builder);
-  // }
+
+
 
 }

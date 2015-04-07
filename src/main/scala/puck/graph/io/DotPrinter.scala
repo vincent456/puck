@@ -102,7 +102,8 @@ class DotPrinter
     //println("print arc "+ source.nameTypeString + " -> " + target.nameTypeString)
     def dotId(nid: NodeId) : String = {
       val n = graph.getNode(nid)
-      if (helper isDotSubgraph n) n.id.toString
+      if (helper isDotSubgraph n)
+        nodeSubGraphId(n.id.toString)
       else {
         val containerId = if (helper isDotClass n) n.id
         else graph.container(nid).get
@@ -135,18 +136,23 @@ class DotPrinter
           ColorThickness.violation
         else ColorThickness.regular )
 
+  def printUsesSelected
+      ( selected : DGEdge )
+      ( style : Style, source: NodeId, target: NodeId ) : Unit = {
+    val printed = DGEdge.uses(source, target)
+    val ct = if (printed == selected) ColorThickness.selected
+    else if (graph.dominates(printed, selected))
+      ColorThickness.dominant
+    else if (graph.dominates(selected, printed))
+      ColorThickness.dominated
+    else ColorThickness.regular
+
+    printArc(style, source, target, ct)
+  }
+
   val printUse = selectedUse match {
     case None => printUsesViolations
-    case Some(selected) =>  (style : Style, source: NodeId, target: NodeId) =>
-      val printed = DGEdge.uses(source, target)
-      val ct = if (printed == selected) ColorThickness.selected
-      else if (graph.dominates(printed, selected))
-        ColorThickness.dominant
-      else if (graph.dominates(selected, printed))
-        ColorThickness.dominated
-      else ColorThickness.regular
-
-      printArc(style, source, target, ct)
+    case Some(selected) =>  printUsesSelected(selected) _
   }
 
   def name( n : DGNode) : String = n match {
@@ -179,6 +185,11 @@ class DotPrinter
   }
 
 
+  def nodeSubGraphId(id : String) : String =
+    "nodeCluster" + id
+  def invisibleNode(id : String) : String =
+    id + """ [ shape=none, label="" ];"""
+
 
   def printSubGraph(n : DGNode): Unit = {
 
@@ -191,6 +202,7 @@ class DotPrinter
     if(isEmpty(n.id)) writeln(s"${n.id} [ $label shape=rectangle ]")
     else{
       writeln(s"subgraph cluster${n.id} { $label color=black;")
+      writeln(invisibleNode( nodeSubGraphId(n.id.toString)) )
       graph.content(n.id).foreach(printNode)
       writeln("}")
     }
@@ -239,14 +251,20 @@ class DotPrinter
   def firstVisibleParent(nid : NodeId) : Option[NodeId] = 
     if(visibility.isVisible(nid)) Some(nid)
     else graph.container(nid) flatMap firstVisibleParent
-  
+
+
+  def recusivePackage(s : NodeId, t: NodeId) : Boolean =
+    s == t && (helper isDotSubgraph graph.getNode(s))
+
   type EdgeP = (NodeId, NodeId)
   def filterVisibleEdges(edges : Seq[EdgeP]) : (Seq[EdgeP], Set[EdgeP]) = {
     val (reg, virt) =  edges.foldLeft((Seq[EdgeP](), Set[EdgeP]())) {
       case ((regulars, virtuals), (source, target)) =>
         (firstVisibleParent(source), firstVisibleParent(target)) match {
           case (Some(s), Some(t)) if source == s && target == t => (regulars :+ ((s, t)), virtuals)
-          case (Some(s), Some(t)) => (regulars, virtuals + ((s, t)))
+          case (Some(s), Some(t)) if ! recusivePackage(s,t)=>
+            (regulars, virtuals + ((s, t)))
+
           case _ => (regulars, virtuals)
         }
     }

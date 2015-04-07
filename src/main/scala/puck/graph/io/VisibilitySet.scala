@@ -56,11 +56,11 @@ class VisibilitySet private (private [this] var hiddens: Set[NodeId])/*(val grap
     setVisibility(id, visibility(id).opposite)
 
 
-  def isVisible(id:NodeId) : Boolean = !isHidden(id)
+  def isVisible : NodeId => Boolean = id => !isHidden(id)
   def isHidden : NodeId => Boolean = hiddens.contains
 
-  def visibility(id : NodeId): Visibility = {
+  def visibility(id : NodeId) : Visibility =
      if(isHidden(id)) Hidden
      else Visible
-  }
+
 }
