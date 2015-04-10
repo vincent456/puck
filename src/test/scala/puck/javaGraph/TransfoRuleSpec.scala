@@ -1,17 +1,20 @@
 package puck
 package javaGraph
 
-import puck.graph.constraints.{SupertypeAbstraction, DelegationAbstraction}
-import puck.graph._
-import puck.javaGraph.nodeKind.Interface
-import scalaz.{\/-, -\/}
 
-import Scenarii._
+import puck.graph.{DGEdge, Try}
+import puck.graph.constraints.{SupertypeAbstraction, DelegationAbstraction}
+import puck.javaGraph.nodeKind._
+import puck.javaGraph.transformations.{JavaTransformationRules => TR}
+import puck.graph.transformations.rules.Redirection
+
+import scalaz.{\/-, -\/}
 
 /**
  * Created by lorilan on 2/25/15.
  */
 class TransfoRuleSpec extends AcceptanceSpec {
+
 
   def assertSuccess[G](t : Try[G])(f : G => Unit) : Unit = {
     t match {
@@ -21,7 +24,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
   }
 
   feature("Intro"){
-    val examplesPath = puck.testExamplesPath + "/intro"
+    val examplesPath = Settings.testExamplesPath + "/intro"
 
     info("Intro interface - no existing super type")
     val noSuperTypePath = examplesPath + "/interface/noExistingSuperType"
@@ -208,7 +211,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
 
   feature("Redirection"){
 
-    val examplesPath = puck.testExamplesPath + "/redirection/"
+    val examplesPath = Settings.testExamplesPath + "/redirection/"
     val typeDeclPath = examplesPath + "typeDecl/"
 
     info("TypeDecl uses redirection")
@@ -226,7 +229,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
         val typeUse = DGEdge.uses(mUser, classUsed)
         assert(typeUse.existsIn(graph))
         assert(DGEdge.uses(mUser, mUsed).existsIn(graph))
-        assertSuccess(TR.redirectUsesAndPropagate(graph, typeUse, superType,
+        assertSuccess(Redirection.redirectUsesAndPropagate(graph, typeUse, superType,
           SupertypeAbstraction)) {
           case g2 =>
             assert(DGEdge.uses(mUser, superType).existsIn(g2))
@@ -255,7 +258,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
         val typeUse = DGEdge.uses(mUser, delegatee)
         assert(typeUse.existsIn(graph))
         assert(DGEdge.uses(mUser, mDelegatee).existsIn(graph))
-        assertSuccess(TR.redirectUsesAndPropagate(graph, typeUse, delegator, DelegationAbstraction)) {
+        assertSuccess(Redirection.redirectUsesAndPropagate(graph, typeUse, delegator, DelegationAbstraction)) {
           case g2 =>
             assert(DGEdge.uses(mUser, delegator).existsIn(g2))
             assert(DGEdge.uses(mUser, mDelegator).existsIn(g2))
@@ -292,7 +295,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
           assert( ! ctorMethodUse.existsIn(graph))
 
           val g = graph.addAbstraction(ctor, (ctorMethod, DelegationAbstraction))
-          assertSuccess(TR.redirectUsesAndPropagate(g, ctorUse, ctorMethod, DelegationAbstraction)){
+          assertSuccess(Redirection.redirectUsesAndPropagate(g, ctorUse, ctorMethod, DelegationAbstraction)){
             g2 =>
               assert( ctorMethodUse.existsIn(g2))
               assert( ! ctorUse.existsIn(g2) )
@@ -320,7 +323,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
         assert( ! (ctorMethodUse existsIn graph))
 
         val g = graph.addAbstraction(ctor, (ctorMethod, DelegationAbstraction))
-        assertSuccess(TR.redirectUsesAndPropagate(g, ctorUse, ctorMethod, DelegationAbstraction)){
+        assertSuccess(Redirection.redirectUsesAndPropagate(g, ctorUse, ctorMethod, DelegationAbstraction)){
           g2 =>
             assert( ctorMethodUse existsIn g2)
             assert( !(ctorUse existsIn g2) )
@@ -368,7 +371,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
         assert(! (useOfmethAbs existsIn graph))
         assert(! (useOfOtherMethAbs existsIn graph))
 
-        assertSuccess(TR.redirectUsesAndPropagate(graph, useOfmeth, mAbs, SupertypeAbstraction)){
+        assertSuccess(Redirection.redirectUsesAndPropagate(graph, useOfmeth, mAbs, SupertypeAbstraction)){
           g =>
             assert(useOfImplClass existsIn g)
             assert(useOfctor existsIn g)

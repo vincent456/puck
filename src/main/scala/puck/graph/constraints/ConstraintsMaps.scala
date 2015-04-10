@@ -103,7 +103,7 @@ case class ConstraintsMaps
 
 
    def wrongUsers(graph : GraphT, node : NIdT) : Seq[NIdT] = {
-     graph.users(node).foldLeft(Seq[NIdT]()){ case(acc, user) =>
+     graph.usersOf(node).foldLeft(Seq[NIdT]()){ case(acc, user) =>
        if( violation(graph, user, node) ) user +: acc
        else acc
      }

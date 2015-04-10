@@ -2,7 +2,7 @@ package puck.graph.constraints.search
 
 import puck.graph._
 import puck.graph.constraints.{NodePredicate, AbstractionPolicy, DecisionMaker}
-import puck.graph.transformations.rules.Move.CreateVarStrategy
+import puck.graph.transformations.rules.CreateVarStrategy
 import puck.search.SearchEngine
 import puck.util.PuckLogger
 
@@ -11,9 +11,6 @@ object ConstraintSolving {
   type AbsChoice = ConstraintSolvingAbstractionChoice
 }
 
-/**
- * Created by lorilan on 25/09/14.
- */
 abstract class ConstraintSolvingSearchEngineDecisionMaker
   extends SearchEngine[ResultT]
   with DecisionMaker {

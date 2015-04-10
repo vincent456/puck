@@ -1,22 +1,21 @@
-import java.io.{PipedOutputStream, PipedInputStream}
+package puck
+
+import java.io.{PipedInputStream, PipedOutputStream}
 import javax.swing.{WindowConstants, JFrame}
 
 import org.apache.batik.swing.JSVGCanvas
 import puck.graph.DependencyGraph
-import puck.graph.io.{Svg, VisibilitySet, PrintingOptions, FilesHandler}
+import puck.graph.io.{Svg, FilesHandler, VisibilitySet, PrintingOptions}
 import puck.gui.svg.SVGController
 import puck.javaGraph.JavaDotHelper
-import scala.concurrent.ExecutionContext.Implicits.global
+
 import scala.concurrent.Future
-
+import scala.concurrent.ExecutionContext.Implicits.global
 /**
- * Created by lorilan on 22/02/15.
+ * Created by lorilan on 4/8/15.
  */
-package object puck {
-  val testPath = "/home/lorilan/projects/constraintsSolver/src/test"
-  val testExamplesPath = testPath + "/resources/examples"
-
-  def quickFrame(graph : DependencyGraph) = {
+object QuickFrame {
+  def apply(graph : DependencyGraph, title : String = "QuickFrame") = {
     val pipedOutput = new PipedOutputStream()
     val pipedInput = new PipedInputStream(pipedOutput)
 
@@ -25,7 +24,7 @@ package object puck {
     Future {
       val canvas = new JSVGCanvas()
       canvas.setDocument(SVGController.documentFromStream(pipedInput))
-      val imgframe = new JFrame("Test !")
+      val imgframe = new JFrame(title)
       imgframe.add(canvas)
       imgframe.setVisible(true)
       imgframe.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
@@ -33,4 +32,5 @@ package object puck {
     }
     FilesHandler.makeImage(None, JavaDotHelper, "")(graph, opts, Some(pipedOutput), Svg)()
 
-  }}
+  }
+}

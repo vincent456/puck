@@ -10,10 +10,15 @@ import puck.graph.constraints.SupertypeAbstraction
 
 class GraphBuildingSpec extends AcceptanceSpec {
 
-  val graphBuildingExamplesPath = puck.testExamplesPath + "/graphBuilding/"
+  val graphBuildingExamplesPath = Settings.testExamplesPath + "/graphBuilding/"
 
   feature("use registration"){
     val examplesPath = graphBuildingExamplesPath +  "useRegistration/"
+
+    //3 cas de typeUse vers thisClass
+    // sig uses : param type
+    // body uses : local var or static access
+    // thisClass uses : call a sibling method or field
     scenario("this use explicit") {
       val p = "thisUseExplicit"
       val _ = new ExampleSample(s"$examplesPath/$p/A.java") {
@@ -22,8 +27,11 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val mUserViaThis = fullName2id(s"$p.A.mUserViaThis__void")
         val mUserViaParameter = fullName2id(s"$p.A.mUserViaParameter__A")
 
+        //methodUse
         assert( graph.uses(mUserViaThis, methM) )
-        assert( graph.uses(mUserViaThis, clazz) )
+        //typeUse
+        assert( graph.uses(clazz, clazz) )
+
 
         assert( graph.uses(mUserViaParameter, methM) )
         assert( graph.uses(mUserViaParameter, clazz) )

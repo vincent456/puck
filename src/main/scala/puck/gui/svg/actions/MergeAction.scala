@@ -19,7 +19,7 @@ case class MergeAction(
 
   override def actionPerformed(e: ActionEvent): Unit =
     printErrOrPushGraph(controller,"Merge action failure") {
-      controller.transfoRules.merge(graph, consumer.id, consumed.id)
+      controller.transfoRules.mergeInto(graph, consumed.id, consumer.id)
     }
 
 }

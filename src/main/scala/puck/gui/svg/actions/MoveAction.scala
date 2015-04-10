@@ -5,7 +5,6 @@ import javax.swing.AbstractAction
 
 import puck.PuckError
 import puck.graph._
-import puck.graph.transformations.rules._
 import puck.gui.svg.SVGController
 import puck.javaGraph.nodeKind.Field
 
@@ -13,10 +12,6 @@ import puck.javaGraph.nodeKind.Field
 import scala.swing.Dialog
 import scala.swing.Swing.EmptyIcon
 import scalaz.{\/-, -\/}
-
-/**
- * Created by lorilan on 3/18/15.
- */
 
 object MoveAction {
   def getChoice(k : NodeKind): Option[CreateVarStrategy] = {
@@ -38,10 +33,12 @@ extends AbstractAction(s"Move ${moved.name} here"){
 
   import controller.graph
 
+  val move = controller.transfoRules.move
+
   override def actionPerformed(e: ActionEvent): Unit = {
     (graph.kindType(moved) match {
       case TypeDecl =>
-        Move.moveTypeDecl(graph, moved.id, newHost.id)
+        move.typeDecl(graph, moved.id, newHost.id)
 
       case TypeMember =>
         controller.console.
@@ -49,13 +46,13 @@ extends AbstractAction(s"Move ${moved.name} here"){
 
         val host = graph.getConcreteNode(graph.container(moved.id).get)
         val choice =
-          if(Move.isUsedBySiblingsViaSelf(graph, moved, host)) {
+          if(move.isUsedBySiblingsViaSelf(graph, moved, host)) {
             MoveAction.getChoice(Field).
               getOrElse(CreateTypeMember(Field))
           }
           else CreateTypeMember(Field)
 
-        Move.moveTypeMember(graph, moved.id, newHost.id, choice)
+        move.typeMember(graph, moved.id, newHost.id, choice)
       case _ =>
         -\/(new PuckError(s"move of ${moved.kind} not implemented"))
     }) match {

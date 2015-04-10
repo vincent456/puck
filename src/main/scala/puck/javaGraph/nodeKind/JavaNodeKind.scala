@@ -99,7 +99,8 @@ object JavaNodeKind extends NodeKindKnowledge {
     (graph, n) => n.kind match {
       case Package => NameSpace
       case Constructor => TypeConstructor
-      case _ : MethodKind => TypeMember
+      case _ : MethodKind | Field => TypeMember
+      case Primitive => TypeDecl
       case _ : TypeKind =>
         val container = graph.getNode(graph.container(n.id).get)
         kindType(graph, container) match {

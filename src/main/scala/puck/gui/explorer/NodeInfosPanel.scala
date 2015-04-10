@@ -78,7 +78,7 @@ class NodeInfosPanel(val graph : DependencyGraph,
 
     contents += new BoxPanel(Orientation.Vertical) {
 
-      graph.users(node.id).foreach { userId =>
+      graph.usersOf(node.id).foreach { userId =>
 
         val sideUses = graph.typeMemberUsesOf((userId, nodeId))
         val primaryUses = graph.typeUsesOf((userId, nodeId))

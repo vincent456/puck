@@ -2,15 +2,14 @@ package puck.javaGraph
 
 import puck._
 import puck.graph.transformations.rules.Move
+import puck.javaGraph.transformations.JavaIntro
 
-/**
- * Created by lorilan on 4/3/15.
- */
 class MoveUnitSpec extends UnitSpec {
-  val examplesPath = puck.testExamplesPath + "/move"
+  val examplesPath = Settings.testExamplesPath + "/move"
   val moveMethodNotUsedByThis = examplesPath + "/method/notUsedByThis"
   val moveMethodUsedByThis = examplesPath + "/method/usedByThis"
 
+  val Move = new Move(JavaIntro)
 
   "Move" should "know that a typeMember is NOT used by self type" in {
     val _ = new ExampleSample(s"$moveMethodNotUsedByThis/MovedMethodHasNoParameter.java"){

@@ -1,9 +1,8 @@
-package puck.javaGraph
+package puck.javaGraph.transformations
 
 import puck.graph.ConcreteNode
-import puck.graph.transformations.{MergeMatcherInstances, MergeMatcher}
-import puck.javaGraph.transformations.{FieldMergeMatcher, InterfaceMergeMatcher}
-import nodeKind.Field
+import puck.graph.transformations.{MergeMatcher, MergeMatcherInstances}
+import puck.javaGraph.nodeKind.Field
 /**
  * Created by lorilan on 4/2/15.
  */

@@ -4,16 +4,136 @@ import puck.PuckError
 import puck.graph.ShowDG._
 import puck.graph._
 
+import puck.util.Collections.traverse
+import puck.graph.transformations.rules.Redirection.redirectUses
+
 import scalaz.{\/-, -\/}
 
-import puck.graph.transformations.TransformationRules._
 
-/**
- * Created by lorilan on 4/3/15.
- */
-object Move {
+sealed trait CreateVarStrategy {
 
-  def moveTypeDecl(g : DependencyGraph, movedId : NodeId, newContainer : NodeId): Try[DependencyGraph] =
+  def moveTypeMemberUsedBySelf
+  (g: DependencyGraph,
+   typeMemberMoved: ConcreteNode,
+   currentContainer: NodeId,
+   newContainer: NodeId,
+   siblingsUserViaSelf: Set[NodeId],
+   intro : Intro): Try[DependencyGraph]
+
+
+  protected def removeUsesDependencyTowardSelfUse
+  ( g : DependencyGraph,
+    selfTypeUse: DGEdge,
+    typeMemberUse : DGEdge ) : DependencyGraph = {
+    val g1 = g.removeUsesDependency(selfTypeUse, typeMemberUse)
+    val keepOldUse = g1.typeMemberUsesOf(selfTypeUse).nonEmpty
+
+    if (!keepOldUse) selfTypeUse deleteIn g1
+    else g1
+  }
+}
+
+case object CreateParameter extends CreateVarStrategy {
+
+  def moveTypeMemberUsedBySelf
+  (g: DependencyGraph,
+   typeMemberMoved: ConcreteNode,
+   currentContainer: NodeId,
+   newContainer: NodeId,
+   siblingsUserViaSelf: Set[NodeId],
+   intro : Intro): Try[DependencyGraph] ={
+
+    traverse(siblingsUserViaSelf, g) {
+      case (g0, userId) =>
+
+        traverse(g.typeUsesOf((userId, typeMemberMoved.id)), g0){ (g0, tuse) =>
+          val typeUse = DGEdge.uses(tuse)
+          val typeMemberUse = DGEdge.uses(userId, typeMemberMoved.id)
+          val g2 = removeUsesDependencyTowardSelfUse(g0, typeUse, typeMemberUse)
+
+          val user = g2.getConcreteNode(userId)
+          (g2.kindType(user), user.styp) match {
+            case (TypeMember, Some(NamedType(_))) => ???
+
+            case (TypeMember, Some(ar @ Arrow(_, _))) =>
+              g2.logger.writeln(s"${showDG[NodeId](g2).shows(userId)}, user of moved method" +
+                s" will now use ${showDG[NodeId](g2).shows(newContainer)}")
+
+              val g3 = g2.setType(userId, Some(Arrow(NamedType(newContainer) , ar)))
+                .addUses(userId, newContainer)
+                .addUsesDependency((userId, newContainer), typeMemberUse)
+              \/-(g3)
+
+            case (_, _) => -\/(new PuckError(s"a type member was expected"))
+          }
+
+        }
+
+    }
+  }
+
+}
+
+case class CreateTypeMember(k : NodeKind) extends CreateVarStrategy {
+
+  def moveTypeMemberUsedBySelf
+  (g: DependencyGraph,
+   typeMemberMoved: ConcreteNode,
+   currentContainer: NodeId,
+   newContainer: NodeId,
+   siblingsUserViaSelf: Set[NodeId],
+   intro : Intro): Try[DependencyGraph] ={
+
+    val sibling = siblingsUserViaSelf.head
+
+    type GenDelegate = DependencyGraph => (NodeId, DependencyGraph)
+
+    def genDelegate : GenDelegate = {
+      g =>
+        val (field, g2) =
+          intro.createNode(g, s"${typeMemberMoved.name}_delegate", k, Some(NamedType(newContainer)))
+        (field.id, g2.addContains(currentContainer, field.id))
+    }
+
+
+    def createDelegateUses(getDelegate : DependencyGraph => (NodeId, DependencyGraph) )
+                          (g : DependencyGraph,
+                           userId : NodeId,
+                           typeUse : DGEdge) : (NodeId, DependencyGraph) = {
+
+      val typeMemberUse = DGEdge.uses(userId, typeMemberMoved.id)
+      val g2 = removeUsesDependencyTowardSelfUse(g, typeUse, typeMemberUse)
+
+      val (delegate, g3) = getDelegate(g2)
+      val g4 = g3.addUses(delegate, newContainer)
+        .addUses(userId, delegate)
+        .addUsesDependency((delegate, newContainer), typeMemberUse)
+      (delegate, g4)
+    }
+
+    val selfTypeUses = DGEdge.uses(currentContainer, currentContainer)
+    val (delegate, g2) = createDelegateUses(genDelegate)(g, sibling, selfTypeUses)
+
+    def getDelegate : GenDelegate = g => (delegate, g)
+
+    traverse(siblingsUserViaSelf.tail, g2) {
+      case (g0, userId) =>
+        traverse(g0.typeUsesOf((userId, typeMemberMoved.id)), g0){
+          (g0, tuse) =>
+            \/-(createDelegateUses(getDelegate)(g0, userId, DGEdge.uses(tuse))._2)
+        }
+    }
+
+  }
+}
+
+class Move(intro : Intro) {
+
+  def typeDecl
+  ( g : DependencyGraph,
+    movedId : NodeId,
+    newContainer : NodeId
+    ) : Try[DependencyGraph] =
     withContainer(g, movedId){
       oldContainer =>
         g.logger.writeln(s"moving type decl ${showDG[NodeId](g).shows(movedId)} " +
@@ -22,7 +142,10 @@ object Move {
         \/-(g.changeSource(DGEdge.contains(oldContainer, movedId), newContainer))
     }
 
-  private def withContainer[T](g : DependencyGraph, nid : NodeId)( f : NodeId => Try[T]) : Try[T] =
+  private def withContainer[T]
+  (g : DependencyGraph, nid : NodeId)
+  ( f : NodeId => Try[T]
+    ) : Try[T] =
     g.container(nid) match {
       case None =>
         import ShowDG._
@@ -47,7 +170,7 @@ object Move {
         tuses.exists(DGEdge.uses(_).selfUse)
       }
 
-    f(graph.users(toBeMoved.id), siblingUserViaSelf)
+    f(graph.usersOf(toBeMoved.id), siblingUserViaSelf)
 
   }
 
@@ -102,7 +225,7 @@ object Move {
       (g0, tuse) =>f(g0, DGEdge.uses(tuse))
     }
 
-  def moveTypeMember(g : DependencyGraph,
+  def typeMember(g : DependencyGraph,
                      typeMemberMovedId : NodeId, newContainer : NodeId,
                      createVarStrategy: CreateVarStrategy = CreateParameter): Try[DependencyGraph] = {
     val oldContainer = g.getConcreteNode(g.container(typeMemberMovedId).get)
@@ -115,125 +238,14 @@ object Move {
       siblingTest(_.partition(_))(g2, typeMemberMoved, oldContainer)
 
     createVarStrategy.
-      moveTypeMemberUsedBySelf(g2, typeMemberMoved, oldContainer.id, newContainer, siblingsUserViaSelf).
+      moveTypeMemberUsedBySelf(g2, typeMemberMoved, oldContainer.id, newContainer, siblingsUserViaSelf, intro).
       map(redirectTypeUsesOfMovedTypeMemberUsers(_, typeMemberMoved.id, newContainer, otherUsers))
   }
 
 
 
-  sealed trait CreateVarStrategy {
-
-    def moveTypeMemberUsedBySelf
-    (g: DependencyGraph,
-     typeMemberMoved: ConcreteNode,
-     currentContainer: NodeId,
-     newContainer: NodeId,
-     siblingsUserViaSelf: Set[NodeId]): Try[DependencyGraph]
 
 
-    private [Move] def removeUsesDependencyTowardSelfUse
-    ( g : DependencyGraph,
-      selfTypeUse: DGEdge,
-      typeMemberUse : DGEdge ) : DependencyGraph = {
-      val g1 = g.removeUsesDependency(selfTypeUse, typeMemberUse)
-      val keepOldUse = g1.typeMemberUsesOf(selfTypeUse).nonEmpty
 
-      if (!keepOldUse) selfTypeUse deleteIn g1
-      else g1
-    }
-}
-
-  case object CreateParameter extends CreateVarStrategy {
-
-    def moveTypeMemberUsedBySelf
-    (g: DependencyGraph,
-     typeMemberMoved: ConcreteNode,
-     currentContainer: NodeId,
-     newContainer: NodeId,
-     siblingsUserViaSelf: Set[NodeId]): Try[DependencyGraph] ={
-
-      traverse(siblingsUserViaSelf, g) {
-        case (g0, userId) =>
-
-          traverse(g.typeUsesOf((userId, typeMemberMoved.id)), g0){ (g0, tuse) =>
-            val typeUse = DGEdge.uses(tuse)
-            val typeMemberUse = DGEdge.uses(userId, typeMemberMoved.id)
-            val g2 = removeUsesDependencyTowardSelfUse(g0, typeUse, typeMemberUse)
-
-            val user = g2.getConcreteNode(userId)
-              (g2.kindType(user), user.styp) match {
-                case (TypeMember, Some(NamedType(_))) => ???
-
-                case (TypeMember, Some(ar @ Arrow(_, _))) =>
-                  g2.logger.writeln(s"${showDG[NodeId](g2).shows(userId)}, user of moved method" +
-                    s" will now use ${showDG[NodeId](g2).shows(newContainer)}")
-
-                  val g3 = g2.setType(userId, Some(Arrow(NamedType(newContainer) , ar)))
-                    .addUses(userId, newContainer)
-                    .addUsesDependency((userId, newContainer), typeMemberUse)
-                  \/-(g3)
-
-                case (_, _) => -\/(new PuckError(s"a type member was expected"))
-              }
-
-          }
-
-      }
-    }
-
-  }
-
-  case class CreateTypeMember(k : NodeKind) extends CreateVarStrategy {
-
-    def moveTypeMemberUsedBySelf
-    (g: DependencyGraph,
-     typeMemberMoved: ConcreteNode,
-     currentContainer: NodeId,
-     newContainer: NodeId,
-     siblingsUserViaSelf: Set[NodeId]): Try[DependencyGraph] ={
-
-      val sibling = siblingsUserViaSelf.head
-
-      type GenDelegate = DependencyGraph => (NodeId, DependencyGraph)
-
-      def genDelegate : GenDelegate = {
-        g =>
-        val (field, g2) =
-          g.addConcreteNode(s"${typeMemberMoved.name}_delegate", k, Some(NamedType(newContainer)))
-        (field.id, g2.addContains(currentContainer, field.id))
-      }
-
-
-      def createDelegateUses(getDelegate : DependencyGraph => (NodeId, DependencyGraph) )
-              (g : DependencyGraph,
-               userId : NodeId,
-               typeUse : DGEdge) : (NodeId, DependencyGraph) = {
-
-        val typeMemberUse = DGEdge.uses(userId, typeMemberMoved.id)
-        val g2 = removeUsesDependencyTowardSelfUse(g, typeUse, typeMemberUse)
-
-        val (delegate, g3) = getDelegate(g2)
-        val g4 = g3.addUses(delegate, newContainer)
-          .addUses(userId, delegate)
-          .addUsesDependency((delegate, newContainer), typeMemberUse)
-        (delegate, g4)
-      }
-
-      val selfTypeUses = DGEdge.uses(currentContainer, currentContainer)
-      val (delegate, g2) = createDelegateUses(genDelegate)(g, sibling, selfTypeUses)
-
-      def getDelegate : GenDelegate = g => (delegate, g)
-
-      traverse(siblingsUserViaSelf.tail, g2) {
-        case (g0, userId) =>
-          traverse(g0.typeUsesOf((userId, typeMemberMoved.id)), g0){
-            (g0, tuse) =>
-              \/-(createDelegateUses(getDelegate)(g0, userId, DGEdge.uses(tuse))._2)
-          }
-      }
-    }
-    
-
-  }
 
 }

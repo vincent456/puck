@@ -78,7 +78,7 @@ class DependencyGraph
   //TODO remake private [this]
   /*private [this]*/ val typeMemberUses2typeUsesMap : UseDependencyMap,
   /*private [this]*/ val typeUses2typeMemberUsesMap : UseDependencyMap,
-  private [this] val abstractionsMap : AbstractionMap,
+  /*private [this]*/ val abstractionsMap : AbstractionMap,
   val constraints : ConstraintsMaps,
   val recording : transformations.Recording) {
 
@@ -301,20 +301,20 @@ class DependencyGraph
                           else recording)
 
 
-  def addUsesDependency(dominantEdge : (NodeId, NodeId),
-                        dominatedEdge : (NodeId, NodeId)) : GraphT =
-    newGraph(nDominantUsesMap = typeMemberUses2typeUsesMap + (dominatedEdge, dominantEdge),
-      nDominatedUsesMap = typeUses2typeMemberUsesMap + (dominantEdge, dominatedEdge))
+  def addUsesDependency(typeUse : (NodeId, NodeId),
+                        typeMemberUse : (NodeId, NodeId)) : GraphT =
+    newGraph(nDominantUsesMap = typeMemberUses2typeUsesMap + (typeMemberUse, typeUse),
+      nDominatedUsesMap = typeUses2typeMemberUsesMap + (typeUse, typeMemberUse))
 
   def removeUsesDependency(dominantEdge : EdgeT,
                            dominatedEdge :EdgeT) : GraphT =
     removeUsesDependency((dominantEdge.source, dominantEdge.target),
       (dominatedEdge.source, dominatedEdge.target))
 
-  def removeUsesDependency(dominantEdge : (NodeId, NodeId),
-                           dominatedEdge : (NodeId, NodeId)) : GraphT =
-    newGraph(nDominantUsesMap = typeMemberUses2typeUsesMap - (dominatedEdge, dominantEdge),
-      nDominatedUsesMap = typeUses2typeMemberUsesMap - (dominantEdge, dominatedEdge))
+  def removeUsesDependency(typeUse : (NodeId, NodeId),
+                           typeMemberUse : (NodeId, NodeId)) : GraphT =
+    newGraph(nDominantUsesMap = typeMemberUses2typeUsesMap - (typeMemberUse, typeUse),
+      nDominatedUsesMap = typeUses2typeMemberUsesMap - (typeUse, typeMemberUse))
 
   def addAbstraction(id : NodeId, abs : (NodeId, AbstractionPolicy)) : GraphT =
     newGraph(nAbstractionsMap = abstractionsMap + (id, abs),
@@ -443,7 +443,7 @@ class DependencyGraph
   
   def usedBy(userId : NodeId) : Set[NodeId] = usesMap getFlat userId
   
-  def users(useeId: NodeId) : Set[NodeId] = usersMap getFlat useeId
+  def usersOf(usedId: NodeId) : Set[NodeId] = usersMap getFlat usedId
 
   def typeUsesOf(typeMemberUse : (NodeId, NodeId)) : Set[(NodeId, NodeId)] =
     typeMemberUses2typeUsesMap getFlat typeMemberUse

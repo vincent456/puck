@@ -12,10 +12,6 @@ import puck.javaGraph.nodeKind.Field
 import scala.swing.Swing.EmptyIcon
 import scala.swing.Dialog
 
-/**
- * Created by lorilan on 4/1/15.
- */
-
 object SolveAction {
 
   def forChoice[T](title : String,

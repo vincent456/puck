@@ -19,20 +19,27 @@ class SetValueMap[K,V](val content : Map[K, Set[V]]){
     new SetValueMap(content + (key -> (values + v)))
   }
 
+  def - (key : K) : SetValueMap[K,V] =
+    new SetValueMap(content - key)
+
   def - (key : K,  v: V) : SetValueMap[K,V] = {
     val values = content getOrElse (key, Set[V]())
     val newValues = values - v
 
     if(newValues.isEmpty)
-      new SetValueMap(content - key)
+       this - key
     else
       new SetValueMap(content + (key -> newValues))
 
   }
 
-  def bind( key : K, v: V) : Boolean = {
+  def mapValues[W](f : V => W) =
+    new SetValueMap( content mapValues ( s => s map f ) )
+
+
+  def bind( key : K, v: V) : Boolean =
     (content get key) exists { _ contains v}
-  }
+
 
   def toSeq = content.toSeq
   def flatSeq : Seq[(K,V)]=

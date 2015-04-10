@@ -4,8 +4,7 @@ package constraints
 import puck.PuckError
 import puck.graph.ShowDG._
 import puck.graph.transformations.TransformationRules
-import puck.graph.transformations.rules.Move
-import Move.CreateParameter
+import puck.graph.transformations.rules.CreateParameter
 import puck.util.PuckLog
 
 import scalaz.{-\/, \/-}
@@ -45,7 +44,7 @@ class Solver
 
               //val breakPoint = g.startSequence()
 
-              rules.redirectUsesAndPropagate(g, DGEdge.uses(wu, used.id), abs, absPolicy) match {
+              rules.redirection.redirectUsesAndPropagate(g, DGEdge.uses(wu, used.id), abs, absPolicy) match {
                   case \/-(g2) => (g2, unsolved)
                   case -\/(e) =>
                     logger.writeln("redirection error catched !!")(PuckLog.Debug)
@@ -93,7 +92,7 @@ class Solver
         case Some(hostKind) =>
           newCterNumGen += 1
           val hostName = s"${toBeContained.name}_container$newCterNumGen"
-          val (host, graph2) = graph.addConcreteNode(hostName, hostKind, None)
+          val (host, graph2) = rules.intro.createNode(graph, hostName, hostKind, None)
           logger.writeln(s"creating $hostName host intro, rec call to find host " +
             s"($parentsThatCanBeCreated parents can be created) " )
           findHost(graph2, host, allwaysTrue, parentsThatCanBeCreated - 1){
@@ -199,7 +198,7 @@ class Solver
         logger.writeln("redirecting wrong users !!")
         wrongUsers.foldLeft(\/-(g) : Try[DependencyGraph]){
           (tryG, wuId) =>
-            tryG.flatMap(rules.redirectUsesAndPropagate(_, DGEdge.uses(wuId, impl.id), abs.id, absPolicy))
+            tryG.flatMap(rules.redirection.redirectUsesAndPropagate(_, DGEdge.uses(wuId, impl.id), abs.id, absPolicy))
         }})
 
     aux (graph, 1, impl) (redirectWrongUsers)
@@ -274,14 +273,14 @@ class Solver
 
          graph.kindType(wronglyContained) match {
            case TypeMember =>
-             if(Move.isUsedBySiblingsViaSelf(g3, wronglyContained, g3.getConcreteNode(oldCter)))
+             if(rules.move.isUsedBySiblingsViaSelf(g3, wronglyContained, g3.getConcreteNode(oldCter)))
               decisionMaker.createVarStrategy {
-                cvs => k(rules.moveTypeMember(g3, wronglyContained.id, newCter, cvs))
+                cvs => k(rules.move.typeMember(g3, wronglyContained.id, newCter, cvs))
               }
-             else k(rules.moveTypeMember(g3, wronglyContained.id, newCter, CreateParameter))
+             else k(rules.move.typeMember(g3, wronglyContained.id, newCter, CreateParameter))
 
            case TypeDecl =>
-             k(rules.moveTypeDecl (g3, wronglyContained.id, newCter))
+             k(rules.move.typeDecl (g3, wronglyContained.id, newCter))
 
            case _ => ???
          }
@@ -315,7 +314,7 @@ class Solver
         val n = it.next()
         rules.findMergingCandidate(graph, n) match {
           case Some(other) =>
-            rules.merge(graph, other.id, n.id) flatMap {
+            rules.mergeInto(graph, n.id, other.id) flatMap {
               g1 => aux(g1, g1.concreteNodes.iterator)
             }
 

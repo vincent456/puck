@@ -383,7 +383,7 @@ class JavaDG2AST
       tDeclFrom.replaceMethodCall(mDecl, mDecl)
 
       if (tDeclFrom.getVisibility != VIS_PUBLIC) {
-        reenactor.users(e.target).find { uerId =>
+        reenactor.usersOf(e.target).find { uerId =>
           packageNode(reenactor, uerId) != packageNode(reenactor, newSourceId)
         } match {
           case Some(_) => mDecl.setVisibility(VIS_PUBLIC)
@@ -413,7 +413,7 @@ class JavaDG2AST
       }
 
       if (tDecl.getVisibility != VIS_PUBLIC) {
-        reenactor.users(e.target).find { userId =>
+        reenactor.usersOf(e.target).find { userId =>
           packageNode(reenactor, userId) != newSourceId
         } match {
           case Some(_) => tDecl.setVisibility(VIS_PUBLIC)
@@ -423,7 +423,7 @@ class JavaDG2AST
 
       println("tDecl.packageName() = " + tDecl.packageName())
 
-      reenactor.users(e.target).foldLeft(Set[String]()){ (cus, userId) =>
+      reenactor.usersOf(e.target).foldLeft(Set[String]()){ (cus, userId) =>
         val scu = id2declMap(userId) match {
           case dh : HasBodyDecl =>
             if(dh.decl.hostType() != tDecl){

@@ -1,22 +1,74 @@
 
 package puck.javaGraph
 
+import puck.graph.{Try, NodeId, ConcreteNode, DependencyGraph}
 import puck.graph.constraints.SupertypeAbstraction
 import puck.javaGraph.nodeKind._
-import puck.AcceptanceSpec
+import puck.{Settings, PuckError, AcceptanceSpec}
+import puck.javaGraph.transformations.JavaTransformationRules
 
 import scalaz._
-/**
- * Created by lorilan on 22/02/15.
- */
 
-import scala.language.reflectiveCalls
 
 class RecordingComparatorSpec extends AcceptanceSpec {
 
   info("A recording comparator should be able to tell if two refactoring plan are equal or not")
 
-  import Scenarii._
+  type TryG = puck.graph.Try[DependencyGraph]
+
+  type GraphT = DependencyGraph
+
+  val TR = JavaTransformationRules
+
+
+  def introInterface(g : GraphT, clazz : ConcreteNode, pcontainer : NodeId) : Try[(GraphT, ConcreteNode)]= {
+    TR.createAbstraction(g, clazz, Interface, SupertypeAbstraction)
+      .map {case (classAbs, g) =>
+      (g.addContains(pcontainer, classAbs.id), classAbs)}
+
+  }
+
+  def introPackage(g : GraphT, pname : String, pcontainer : NodeId) : (GraphT, ConcreteNode) = {
+    val (p, g2) = TR.intro.createNode(g, pname, Package, None)
+    (g2.addContains(pcontainer, p.id), p)
+  }
+
+  def introItcPackageAndMove(graph : GraphT, clazz : ConcreteNode, pname : String, pcontainer : NodeId) =
+    graph.container(clazz.id) match {
+      case None => throw new PuckError()
+      case Some(classContainer) =>
+        introInterface(graph, clazz, classContainer)
+
+          .map { case (g, itc) => (introPackage(g, pname, pcontainer), itc)}
+
+          .flatMap { case ((g, p), itc) => TR.move.typeDecl(g, itc.id, p.id) map ((_, p.id, itc.id))}
+    }
+
+  val methodUsesViaThisField = {
+    val p = "methodUsesViaThisField"
+    new ExampleSample(s"${Settings.testExamplesPath}/misc/$p/A.java") {
+      val rootPackage = fullName2id(p)
+
+      val classA = fullName2id(s"$p.A")
+      val fieldA = fullName2id(s"$p.A.b")
+      val methA = fullName2id(s"$p.A.ma__void")
+
+      val classB = fullName2id(s"$p.B")
+      val classBNode = graph.getConcreteNode(classB)
+      val methB = fullName2id(s"$p.B.mb__void")
+
+    }
+  }
+  val needToMergeInterfaces = {
+    val p = "needToMergeInterfaces"
+    new ExampleSample(s"${Settings.testExamplesPath}/misc/$p/A.java") {
+      //val packageNeedToMergeInterfaces = fullName2id("examples.misc.needToMergeInterfaces")
+
+      val itcC = fullName2id(s"$p.IC")
+      val itcB = fullName2id(s"$p.IB")
+
+    }
+  }
 
   feature("Comparison"){
 
@@ -66,8 +118,8 @@ class RecordingComparatorSpec extends AcceptanceSpec {
     scenario("Same merge, same result ") {
       import needToMergeInterfaces._
 
-      val t1 = TR.merge(graph, itcB, itcC)
-      val t2 = TR.merge(graph, itcB, itcC)
+      val t1 = TR.mergeInto(graph, itcC, itcB)
+      val t2 = TR.mergeInto(graph, itcC, itcB)
 
       liftAssert(needToMergeInterfaces, t1, t2, expected = true)
     }
@@ -80,14 +132,14 @@ class RecordingComparatorSpec extends AcceptanceSpec {
           .flatMap{ case (g, pid, itcId) =>
           introItcPackageAndMove(g, classBNode, "p2", graph.rootId)
             .flatMap {case (g2, pid2, itcId2) =>
-            TR.merge(g2, itcId, itcId2)}
+            TR.mergeInto(g2, itcId2, itcId)}
         }
       val t2 =
         introItcPackageAndMove(graph, classBNode, "p3", graph.rootId)
           .flatMap{ case (g, pid, itcId) =>
           introItcPackageAndMove(g, classBNode, "p4", rootPackage)
             .flatMap {case (g2, pid2, itcId2) =>
-            TR.merge(g2, itcId2, itcId)}
+            TR.mergeInto(g2, itcId, itcId2)}
         }
 
       liftAssert(methodUsesViaThisField, t1, t2, expected = true)

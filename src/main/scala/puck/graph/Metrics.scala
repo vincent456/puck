@@ -24,7 +24,7 @@ object Metrics {
 
   def incomingDependencies(root : NodeId, graph : DependencyGraph) : Set[DGEdge] = {
     def aux(id: NodeId, acc0 : Set[DGEdge]) : Set[DGEdge]= {
-      val acc1 = graph.users(id).foldLeft(acc0){
+      val acc1 = graph.usersOf(id).foldLeft(acc0){
         (acc, user) =>
           if(graph.contains_*(root, user)) acc
           else acc + DGEdge.uses(user, id)

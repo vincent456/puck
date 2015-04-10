@@ -4,7 +4,7 @@ import java.io.{File, InputStream}
 
 import puck.graph._
 import puck.graph.transformations.{NodeMappingInitialState, Recording}
-import puck.util.{PuckNoopLogger, PuckLogger, FileHelper}
+import puck.util.{PuckNoopLogger, PuckLogger}
 
 
 
