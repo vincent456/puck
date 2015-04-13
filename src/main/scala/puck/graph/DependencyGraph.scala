@@ -341,7 +341,7 @@ class DependencyGraph
   def changeType(id : NodeId, styp : Option[Type], oldUsee: NodeId, newUsee : NodeId) : GraphT =
     styp match {
       case None => this
-      case Some(t) => val newTyp= Some(t.redirectUses(oldUsee, getNode(newUsee)))
+      case Some(t) => val newTyp= Some(t.changeNamedType(oldUsee, newUsee))
         setType(id, newTyp).
           newGraph(nRecording = recording.addTypeChange(id, styp, oldUsee, newUsee))
     }
@@ -349,7 +349,7 @@ class DependencyGraph
   def changeContravariantType(id : NodeId, styp : Option[Type], oldUsee: NodeId, newUsee : NodeId) : GraphT =
   styp match {
     case None => this
-    case Some(t) => val newTyp= Some(t.redirectContravariantUses(oldUsee, getNode(newUsee)))
+    case Some(t) => val newTyp= Some(t.changeNamedTypeContravariant(oldUsee, newUsee))
       setType(id, newTyp).
         newGraph(nRecording = recording.addTypeChange(id, styp, oldUsee, newUsee))
   }

@@ -4,11 +4,11 @@ package javaGraph
 import nodeKind._
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph._
+import puck.graph.transformations.Recording
 import puck.graph.transformations.rules.{CreateTypeMember, Move}
 import javaGraph.transformations.{JavaTransformationRules => TR}
 import puck.util.{Debug, PuckSystemLogger}
 
-import scalaz.{\/-, -\/, Success}
 
 class BridgeManualRefactoringSpec extends AcceptanceSpec {
 
@@ -42,6 +42,9 @@ class BridgeManualRefactoringSpec extends AcceptanceSpec {
 
     val capitalPrint1 = fullName2id(s"$p.WelcomeCapital.printCapital__String")
     val capitalPrint2 = fullName2id(s"$p.InfoCapital.printCapital__String")
+
+
+
 
     def introClassMoveMethod
     (g : DependencyGraph, className : String, method : NodeId) = {
@@ -110,7 +113,11 @@ class BridgeManualRefactoringSpec extends AcceptanceSpec {
       infoCapitalMeth, infoStarMeth).right.value
     val g18 = TR.mergeInto(g17, infoCapital, infoStar).right.value
 
-    QuickFrame(g18)
+    Recording.write(path + "/serialized_record", fullName2id, g18.recording)
+    val (m, r) = Recording.read(path + "/serialized_record")
+    println(r)
+
+    //QuickFrame(g18)
 
   }
 }

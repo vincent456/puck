@@ -24,7 +24,7 @@ object InterfaceMergeMatcher {
     method.styp match {
       case None => throw new DGError("Method must have a type")
       case Some(t) =>
-        val m = method.copy(styp = Some(t.redirectUses(g.container(method.id).get, interface)))
+        val m = method.copy(styp = Some(t.changeNamedType(g.container(method.id).get, interface.id)))
         g.content(interface.id).find { ncId =>
           m.canBeMergedInto(g.getConcreteNode(ncId), g)
         }

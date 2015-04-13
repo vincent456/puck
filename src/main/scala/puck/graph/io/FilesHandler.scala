@@ -111,6 +111,7 @@ trait DG2AST {
   def parseConstraints(decouple : File) : DG2AST
   def initialGraph : DependencyGraph
   def initialRecord : Recording
+  def nodesByName : Map[String, NodeId]
 }
 
 class FilesHandler

@@ -10,7 +10,7 @@ import puck.graph._
 
 class JavaNamedType(n : NodeId) extends NamedType(n){
 
- override def create(n : NodeId) = new JavaNamedType(n)
+ override def copy(n : NodeId = n) = new JavaNamedType(n)
 
  /*def hasMethodThatCanOverride(name : String, sig : MethodType) : Boolean =
     n.content.exists{ (childThis : AGNode[JavaNodeKind]) =>
@@ -70,9 +70,6 @@ class MethodType(override val input : Tuple,
   override def hashCode = 41 * input.hashCode + output.hashCode() + 41*/
   override def toString = "MethodType(" + input +" -> " + output +")"
 
-  def create(i : Tuple, o : NamedType) = new MethodType(i, o)
-  override def copy() = create(input.copy(), output.copy())
-
   override def canOverride(graph : DependencyGraph, other : Type) : Boolean =
     other match {
       case om : MethodType => om.input == input &&
@@ -80,16 +77,18 @@ class MethodType(override val input : Tuple,
       case _ => false
     }
 
-  override def redirectUses(oldUsee : NIdT, newUsee: DGNode) : MethodType =
-    create(input.redirectUses(oldUsee, newUsee),
-      output.redirectUses(oldUsee, newUsee))
+  override def changeNamedType(oldUsee : NodeId, newUsee: NodeId) : MethodType =
+    copy(input.changeNamedType(oldUsee, newUsee),
+      output.changeNamedType(oldUsee, newUsee))
 
-  override def redirectContravariantUses(oldUsee : NIdT, newUsee: DGNode) =
-    create(input.redirectUses(oldUsee, newUsee), output)
+  override def changeNamedTypeContravariant(oldUsee : NodeId, newUsee: NodeId) =
+    copy(input.changeNamedType(oldUsee, newUsee), output)
 
-  override def create(i : Type, o : Type) =
+  def copy(i : Tuple, o : NamedType) : MethodType = new MethodType(i, o)
+
+  override def copy(i : Type = input, o : Type = output) : MethodType =
     (i,o) match {
-      case (t @ Tuple(_), nt @ NamedType(_)) => new MethodType(t, nt)
+      case (t @ Tuple(_), nt @ NamedType(_)) => copy(t, nt)
       case _ => throw new PuckError("Trying to create ad malformed method type")
     }
 

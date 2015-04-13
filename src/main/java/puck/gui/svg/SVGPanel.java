@@ -24,9 +24,6 @@ import java.awt.event.KeyEvent;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Created by lorilan on 3/13/15.
- */
 public class SVGPanel extends JPanel{
 
 

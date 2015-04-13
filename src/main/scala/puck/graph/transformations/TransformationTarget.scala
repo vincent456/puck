@@ -3,9 +3,6 @@ package puck.graph.transformations
 import puck.graph._
 import puck.graph.constraints.AbstractionPolicy
 
-/**
- * Created by lorilan on 05/11/14.
- */
 sealed trait TransformationTarget{
   type GraphT= DependencyGraph
   def execute(g: GraphT, op : Operation) : GraphT
@@ -65,6 +62,9 @@ class RedirectionWithMerge(edge : DGEdge, extremity : Extremity)
   extends TTRedirection(edge, extremity){
   override val productPrefix = "RedirectionWithMerge"
 
+  override def copy(edge : DGEdge = edge, extremity: Extremity = extremity) =
+    new RedirectionWithMerge(edge, extremity)
+
   override val withMerge = true
 
   override def execute(g: GraphT, op : Operation) = (op, extremity) match {
@@ -76,14 +76,14 @@ class RedirectionWithMerge(edge : DGEdge, extremity : Extremity)
 
 case class TTTypeRedirection
 (typed : NodeId,
- typ : Option[Type],
+ styp : Option[Type],
  oldUsee: NodeId,
  newUsee : NodeId)
   extends TransformationTarget{
 
   override def execute(g: DependencyGraph, op: Operation) = op match {
-    case Add => g.changeType(typed, typ, oldUsee, newUsee)
-    case Remove => g.changeType(typed, typ, newUsee, oldUsee)
+    case Add => g.changeType(typed, styp, oldUsee, newUsee)
+    case Remove => g.changeType(typed, styp, newUsee, oldUsee)
   }
 }
 

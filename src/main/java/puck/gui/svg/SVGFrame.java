@@ -7,16 +7,16 @@ import puck.gui.PuckControl;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
-/**
- * Created by lorilan on 3/13/15.
- */
 public class SVGFrame extends JFrame implements StackListener {
 
     static public class SVGConsole {
-        private JTextArea console = new JTextArea();
+        int lines = 10;
+        int charPerLine = 50;
+        private JTextArea console = new JTextArea(lines, charPerLine);
         {
             console.setEditable(false);
         }
@@ -68,6 +68,43 @@ public class SVGFrame extends JFrame implements StackListener {
 
     }
 
+    private File chooseFile(){
+        JFileChooser chooser = new JFileChooser();
+                /*FileNameExtensionFilter filter = new FileNameExtensionFilter(
+                        "JPG & GIF Images", "jpg", "gif");
+                chooser.setFileFilter(filter);*/
+        int returnVal = chooser.showOpenDialog(SVGFrame.this);
+        if(returnVal == JFileChooser.APPROVE_OPTION) {
+           return chooser.getSelectedFile();
+        }
+        return null;
+    }
+
+    private void addLoadSaveButton(){
+        menu.add(new JButton(new AbstractAction("Save"){
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                File f= chooseFile();
+                if(f == null) {
+                    console.appendText("no file selected");
+                }
+                controller.saveRecordOnFile(f);
+            }
+        }));
+
+        menu.add(new JButton(new AbstractAction("Load"){
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                File f= chooseFile();
+                if(f == null) {
+                    console.appendText("no file selected");
+                }
+                controller.loadRecord(f);
+            }
+        }));
+
+    }
+
     private void addVisibilityCheckBoxesToMenu(){
         final JCheckBox sigCheckBox = new JCheckBox();
         sigCheckBox.setAction(new AbstractAction("Show signatures") {
@@ -88,6 +125,7 @@ public class SVGFrame extends JFrame implements StackListener {
         menu.add(idCheckBox);
     }
 
+    private final SVGConsole console;
 
     public SVGFrame(InputStream stream,
                     DependencyGraph g,
@@ -96,7 +134,7 @@ public class SVGFrame extends JFrame implements StackListener {
         this.setLayout(new BorderLayout());
         SVGPanel panel = new SVGPanel(SVGController.documentFromStream(stream));
 
-        SVGConsole console = new SVGConsole();
+        console = new SVGConsole();
 
         controller = SVGController.apply(control, g, opts, panel.canvas, console);
         panel.setController(controller);
@@ -105,6 +143,8 @@ public class SVGFrame extends JFrame implements StackListener {
         addVisibilityCheckBoxesToMenu();
 
         addUndoRedoButtonToMenu();
+
+        addLoadSaveButton();
 
         menu.add(console.console);
 

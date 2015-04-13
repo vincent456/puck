@@ -1,6 +1,6 @@
 package puck.gui.svg
 
-import java.io.{InputStream, PipedInputStream, PipedOutputStream}
+import java.io.{File, InputStream, PipedInputStream, PipedOutputStream}
 import javax.swing.JMenuItem
 
 import org.apache.batik.dom.svg.SAXSVGDocumentFactory
@@ -11,6 +11,7 @@ import org.w3c.dom.svg.{SVGGElement, SVGDocument}
 import puck.graph._
 import puck.graph.constraints.search.SolverBuilder
 import puck.graph.io._
+import puck.graph.transformations.Recording
 import puck.gui.PuckControl
 import puck.gui.svg.SVGFrame.SVGConsole
 import puck.gui.svg.actions.{AddNodeAction, AbstractionAction}
@@ -35,6 +36,10 @@ class SVGController private
   private var printSignatures : Boolean) {
 
   def transfoRules = genController.filesHandler.transformationRules
+
+  def nodesByName : Map[String, NodeId] =
+    genController.filesHandler.dg2ast.nodesByName
+
 
   private val undoStack = mutable.Stack[DependencyGraph]()
   private val redoStack = mutable.Stack[DependencyGraph]()
@@ -62,6 +67,15 @@ class SVGController private
       printId = b
       displayGraph(graph)
     }
+  }
+
+  def saveRecordOnFile(file : File) : Unit = {
+    Recording.write(file.getAbsolutePath, nodesByName, graph.recording)
+  }
+
+  def loadRecord(file : File) : Unit = {
+    val r = Recording.load(file.getAbsolutePath, nodesByName)
+    pushGraph(r.foldLeft(graph)((g, t) => t.redo(g)))
   }
 
   var nodeSelected: Option[(NodeId, Color, Element)] = None

@@ -5,12 +5,11 @@ import puck.util.{PuckLogger, PuckLog}
 
 import scala.swing._
 
-/**
- * Created by lorilan on 22/02/15.
- */
 class PuckConsolePanel(val filesHandler: FilesHandler)
   extends BoxPanel(Orientation.Vertical)  {
 
+/*  val lines = 10
+  val charPerLine = 50*/
   val console = new TextArea()
   console.editable = false
 

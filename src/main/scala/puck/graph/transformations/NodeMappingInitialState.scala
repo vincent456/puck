@@ -29,7 +29,6 @@ case object Neuter extends NodeTransfoStatus
  */
 
 object NodeMappingInitialState{
-
   def normalizeNodeTransfos(l : Seq[Transformation],
                             init : Seq[Transformation] = Seq()) : (Map[NodeId, (Int, NodeKind)], Seq[Transformation])= {
     val (map, rl) = l.foldLeft( (Map[NodeId, (Int, NodeKind)](), init) ){

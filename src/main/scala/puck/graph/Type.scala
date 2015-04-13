@@ -1,22 +1,18 @@
 package puck.graph
 
-/**
- * Created by lorilan on 28/10/14.
- */
-abstract class Type {
 
-  type NIdT = NodeId
+sealed abstract class Type {
 
-  def copy() : Type
+  def makeClone() : Type
   def subtypeOf(graph : DependencyGraph,
                 other : Type) : Boolean = this == other
 
   def ids : List[NodeId]
 
-  def redirectUses(oldUsee : NIdT, newUsee: DGNode) : Type
+  def changeNamedType(oldUsee : NodeId, newUsee: NodeId) : Type
 
-  def redirectContravariantUses(oldUsee : NodeId, newUsee: DGNode) =
-    redirectUses(oldUsee, newUsee)
+  def changeNamedTypeContravariant(oldUsee : NodeId, newUsee: NodeId) =
+    changeNamedType(oldUsee, newUsee)
 
   def canOverride(graph : DependencyGraph,
                   other : Type) : Boolean = this.subtypeOf(graph, other)
@@ -31,13 +27,12 @@ case class NamedType(id : NodeId)
   }
 
   def ids = List(id)
-  def create(n : NodeId) = NamedType(n)
 
-  def copy() = create(id)
+  override def makeClone() = copy(id)
 
-  def redirectUses(oldUsee : NIdT, newUsee: DGNode) : NamedType =
-    if(id == oldUsee) create(newUsee.id)
-    else copy()
+  def changeNamedType(oldUsee : NodeId, newUsee: NodeId) : NamedType =
+    if(id == oldUsee) copy(newUsee)
+    else makeClone()
 
   override def subtypeOf(graph : DependencyGraph,
                          other : Type) : Boolean =
@@ -63,11 +58,10 @@ case class Tuple(types: List[Type])
 
   def ids = types.foldLeft(List[NodeId]()){(acc, t) => t.ids ::: acc }
 
-  def create(ts: List[Type]) = Tuple(ts)
-  def copy() = create(types)
+  override def makeClone() : Tuple = copy(types)
 
-  def redirectUses(oldUsee : NIdT, newUsee: DGNode) : Tuple =
-    create(types.map(_.redirectUses(oldUsee, newUsee)))
+  def changeNamedType(oldUsee : NodeId, newUsee: NodeId) : Tuple =
+    copy(types.map(_.changeNamedType(oldUsee, newUsee)))
 
   override def subtypeOf(graph : DependencyGraph,
                          other : Type) : Boolean =
@@ -105,15 +99,15 @@ case class Arrow(input : Type, output : Type)
     }
   }
 
-  def create(i : Type, o : Type) = Arrow(i, o)
-  def copy() = create(input.copy(), output.copy())
+  override def makeClone() : Arrow =
+    copy(input.makeClone(), output.makeClone())
 
-  def redirectUses(oldUsee : NIdT, newUsee: DGNode) : Arrow =
-    create(input.redirectUses(oldUsee, newUsee),
-      output.redirectUses(oldUsee, newUsee))
+  def changeNamedType(oldUsee : NodeId, newUsee: NodeId) : Arrow =
+    copy(input.changeNamedType(oldUsee, newUsee),
+      output.changeNamedType(oldUsee, newUsee))
 
-  override def redirectContravariantUses(oldUsee : NIdT, newUsee: DGNode) =
-    create(input.redirectUses(oldUsee, newUsee), output)
+  override def changeNamedTypeContravariant(oldUsee : NodeId, newUsee: NodeId) =
+    copy(input.changeNamedType(oldUsee, newUsee), output)
 
   override def subtypeOf(graph : DependencyGraph,
                          other : Type) : Boolean =
