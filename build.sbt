@@ -1,9 +1,4 @@
 
-import com.github.retronym.SbtOneJar._
-
-//https://github.com/retronym/sbt-onejar
-oneJarSettings
-
 name := "PuckConstraintSolver"
 
 version := "1.0"
@@ -13,6 +8,16 @@ scalaVersion := "2.11.6"
 sbtVersion := "0.13.8"
 
 mainClass in Compile := Some("puck.Front")
+
+import com.github.retronym.SbtOneJar._
+
+//https://github.com/retronym/sbt-onejar
+oneJarSettings
+
+import com.typesafe.sbt.SbtStartScript
+
+Seq(SbtStartScript.startScriptForClassesSettings: _*)
+
 
 //scalaSource -= baseDirectory.value / "test" / "resources"
 

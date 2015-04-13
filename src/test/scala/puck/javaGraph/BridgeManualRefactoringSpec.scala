@@ -113,10 +113,6 @@ class BridgeManualRefactoringSpec extends AcceptanceSpec {
       infoCapitalMeth, infoStarMeth).right.value
     val g18 = TR.mergeInto(g17, infoCapital, infoStar).right.value
 
-    Recording.write(path + "/serialized_record", fullName2id, g18.recording)
-    val (m, r) = Recording.read(path + "/serialized_record")
-    println(r)
-
     //QuickFrame(g18)
 
   }

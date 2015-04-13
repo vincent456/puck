@@ -5,11 +5,6 @@ import java.io.{FileInputStream, ObjectInputStream, FileOutputStream, ObjectOutp
 import puck.graph._
 import puck.graph.constraints.AbstractionPolicy
 
-/**
- * Created by lorilan on 27/10/14.
- */
-
-
 object Recording {
   def apply() = new Recording(Seq())
   def write(fileName : String, map : Map[String, NodeId], r : Recording): Unit = {
@@ -95,6 +90,11 @@ object Recording {
 class Recording
 (private [this] val record : Seq[Transformation]) extends Iterable[Transformation] {
 
+  override def equals(obj : Any) : Boolean = obj match {
+    case r : Recording => r() == record
+    case _ => false
+  }
+
   type NIdT = NodeId
   type EdgeT = DGEdge
   type RecT = Recording
@@ -107,7 +107,7 @@ class Recording
   def +:(r : Transformation) : Recording =
     new Recording(r +: record)
 
-  override def iterator: Iterator[Transformation] = record.iterator
+  override def iterator: Iterator[Transformation] = record.reverseIterator
  /* def nonEmpty = record.nonEmpty
   def size = record.size*/
 

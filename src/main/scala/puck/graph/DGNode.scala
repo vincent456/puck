@@ -1,15 +1,11 @@
 package puck.graph
 
-/**
- * Created by lorilan on 1/8/15.
- */
-
 sealed trait DGNode{
   val id : NodeId
   //val name : String
   val kind : NodeKind
   //val styp : TypeHolder
-  val isMutable : Boolean
+  val mutable : Boolean
 
   def mapConcrete[A](f : ConcreteNode => A, default : => A) : A
   def name(g : DependencyGraph) : String
@@ -27,7 +23,7 @@ case class VirtualNode
 (id : NodeId,
  potentialMatches : Seq[NodeId],
  kind : NodeKind) extends DGNode {
-  override val isMutable = true
+  override val mutable = true
 
   //def name : String =  potentialMatches mkString ("Virtual(", " \\/ ", ")")
 
@@ -43,7 +39,7 @@ case class ConcreteNode
   name : String,
   kind : NodeKind,
   styp : Option[Type],
-  isMutable : Boolean)  extends DGNode {
+  mutable : Boolean)  extends DGNode {
 
   def name(g : DependencyGraph) : String = name
 

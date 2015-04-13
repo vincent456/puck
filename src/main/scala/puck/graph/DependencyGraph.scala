@@ -260,7 +260,7 @@ class DependencyGraph
 
   def setMutability(id : NodeId, mutable : Boolean) =  {
     val (n, s) = getConcreteNodeWithStatus(id)
-    setNode(n.copy(isMutable = mutable), s)
+    setNode(n.copy(mutable = mutable), s)
   }
 
 

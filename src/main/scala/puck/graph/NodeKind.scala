@@ -42,7 +42,7 @@ trait NodeKindKnowledge {
                 (n : DGNode, other : ConcreteNode) : Boolean = {
     !graph.contains_*(other.id, n.id) && // no cycle !
       (n.kind canContain other.kind) &&
-      n.isMutable
+      n.mutable
   }
 
   def kindType : (DependencyGraph, DGNode) => KindType = (_,_) => Unknown
