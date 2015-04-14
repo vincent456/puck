@@ -226,8 +226,8 @@ class Move(intro : Intro) {
     }
 
   def typeMember(g : DependencyGraph,
-                     typeMemberMovedId : NodeId, newContainer : NodeId,
-                     createVarStrategy: CreateVarStrategy = CreateParameter): Try[DependencyGraph] = {
+                 typeMemberMovedId : NodeId, newContainer : NodeId,
+                 createVarStrategy: Option[CreateVarStrategy] = None): Try[DependencyGraph] = {
     val oldContainer = g.getConcreteNode(g.container(typeMemberMovedId).get)
     val typeMemberMoved = g.getConcreteNode(typeMemberMovedId)
 
@@ -237,9 +237,14 @@ class Move(intro : Intro) {
     val (siblingsUserViaSelf, otherUsers) =
       siblingTest(_.partition(_))(g2, typeMemberMoved, oldContainer)
 
-    createVarStrategy.
-      moveTypeMemberUsedBySelf(g2, typeMemberMoved, oldContainer.id, newContainer, siblingsUserViaSelf, intro).
-      map(redirectTypeUsesOfMovedTypeMemberUsers(_, typeMemberMoved.id, newContainer, otherUsers))
+    val tg : Try[DependencyGraph] = (siblingsUserViaSelf.nonEmpty, createVarStrategy) match {
+      case (true, Some(strategy)) =>
+        strategy.moveTypeMemberUsedBySelf(g2, typeMemberMoved,
+          oldContainer.id, newContainer, siblingsUserViaSelf, intro)
+      case (false, None) => \/-(g2)
+      case _ => -\/(new PuckError("incoherent call to Move.typMember"))
+    }
+    tg.map(redirectTypeUsesOfMovedTypeMemberUsers(_, typeMemberMoved.id, newContainer, otherUsers))
   }
 
 

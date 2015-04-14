@@ -1,17 +1,8 @@
 package puck.gui.svg
 
-/**
- * Created by lorilan on 3/31/15.
- */
-import puck.graph.ConcreteNode
 import puck.graph.ConcreteNode
 import puck.graph.DGEdge
-import puck.graph.DGEdge
-import puck.graph.DependencyGraph
-import puck.graph.DependencyGraph
 import puck.graph.constraints.{SupertypeAbstraction, DelegationAbstraction}
-import puck.graph.transformations.MergeMatcher
-import puck.graph.transformations.MergeMatcher
 import puck.gui.svg.actions.AddIsaAction
 import puck.gui.svg.actions.MergeAction
 import puck.gui.svg.actions.MoveAction
@@ -20,11 +11,8 @@ import puck.gui.svg.actions.RemoveNodeAction
 import puck.gui.svg.actions._
 import javax.swing._
 import java.awt.event.ActionEvent
-import java.util.List
 
-/**
- * Created by lorilan on 3/18/15.
- */
+
 class NodeRightClickMenu
 ( private val controller: SVGController,
   node : ConcreteNode) extends JPopupMenu {
@@ -94,13 +82,13 @@ class NodeRightClickMenu
       this.add(new MoveAction(node, selected, controller))
     }
 
-    //TODO refactor, law of demeter broken
-    val m: MergeMatcher = controller.transfoRules.
-        mergeMatcherInstances.syntaxicMergeMatcher(selected)
-
-    if (m.canBeMergedInto(node, graph)) {
+//    val m: MergeMatcher = controller.transfoRules.
+//        mergeMatcherInstances.syntaxicMergeMatcher(selected)
+//
+//    if (m.canBeMergedInto(node, graph))
       this.add(new MergeAction(selected, node, controller))
-    }
+
+
     if(selected.id != node.id) {
       if (selected.kind.canBe(node.kind)) addAddIsaOption(selected, node)
       if (node.kind.canBe(selected.kind)) addAddIsaOption(node, selected)

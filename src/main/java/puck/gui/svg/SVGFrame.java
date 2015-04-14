@@ -16,21 +16,30 @@ public class SVGFrame extends JFrame implements StackListener {
     static public class SVGConsole {
         int lines = 10;
         int charPerLine = 50;
-        private JTextArea console = new JTextArea(lines, charPerLine);
-        {
-            console.setEditable(false);
+
+        public SVGConsole(){
+            panel = new JPanel();
+            panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+            panel.add(selection);
+            panel.add(textArea);
+            textArea.setEditable(false);
         }
+
+        private JPanel panel;
+        private JLabel selection = new JLabel();
+        private JTextArea textArea = new JTextArea(lines, charPerLine);
+
         void displaySelection(String node){
             if(node.length()>0)
-                console.setText("Selection : " + node);
+                selection.setText("Selection : " + node);
             else
-                console.setText("No selection");
+                selection.setText("No selection");
         }
-        public void setText(String txt) {
-            console.setText(txt);
-        }
+//        public void setText(String txt) {
+//            textArea.setText(txt);
+//        }
         public void appendText(String txt) {
-            console.append(txt);
+            textArea.append(txt+"\n");
         }
     }
 
@@ -146,7 +155,7 @@ public class SVGFrame extends JFrame implements StackListener {
 
         addLoadSaveButton();
 
-        menu.add(console.console);
+        menu.add(console.panel);
 
         menu.add(new JButton(new AbstractAction("Apply") {
             @Override

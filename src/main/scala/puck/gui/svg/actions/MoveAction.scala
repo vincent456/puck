@@ -42,15 +42,15 @@ extends AbstractAction(s"Move ${moved.name} here"){
 
       case TypeMember =>
         controller.console.
-          setText("/!\\/!\\ Method overriding unchecked (TODO !!!) /!\\/!\\")
+          appendText("/!\\/!\\ Method overriding unchecked (TODO !!!) /!\\/!\\")
 
         val host = graph.getConcreteNode(graph.container(moved.id).get)
         val choice =
           if(move.isUsedBySiblingsViaSelf(graph, moved, host)) {
-            MoveAction.getChoice(Field).
-              getOrElse(CreateTypeMember(Field))
+            Some(MoveAction.getChoice(Field).
+              getOrElse(CreateTypeMember(Field)))
           }
-          else CreateTypeMember(Field)
+          else None
 
         move.typeMember(graph, moved.id, newHost.id, choice)
       case _ =>

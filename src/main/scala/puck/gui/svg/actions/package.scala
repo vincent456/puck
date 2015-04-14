@@ -6,9 +6,6 @@ import puck.graph.{DependencyGraph, Try}
 import scalaz.{\/-, -\/}
 import puck.graph.transformations.rules
 
-/**
- * Created by lorilan on 4/2/15.
- */
 package object actions {
 
   def showInputDialog(msg : String) : Option[String] = {

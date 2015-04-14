@@ -275,9 +275,9 @@ class Solver
            case TypeMember =>
              if(rules.move.isUsedBySiblingsViaSelf(g3, wronglyContained, g3.getConcreteNode(oldCter)))
               decisionMaker.createVarStrategy {
-                cvs => k(rules.move.typeMember(g3, wronglyContained.id, newCter, cvs))
+                cvs => k(rules.move.typeMember(g3, wronglyContained.id, newCter, Some(cvs)))
               }
-             else k(rules.move.typeMember(g3, wronglyContained.id, newCter, CreateParameter))
+             else k(rules.move.typeMember(g3, wronglyContained.id, newCter, None))
 
            case TypeDecl =>
              k(rules.move.typeDecl (g3, wronglyContained.id, newCter))
