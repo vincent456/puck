@@ -70,7 +70,7 @@ class SVGController private
   }
 
   def saveRecordOnFile(file : File) : Unit = {
-    Recording.write(file.getAbsolutePath, nodesByName, graph.recording)
+    Recording.write(file.getAbsolutePath, nodesByName, graph)
   }
 
   def loadRecord(file : File) : Unit = {

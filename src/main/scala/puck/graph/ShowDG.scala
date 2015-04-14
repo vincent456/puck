@@ -60,15 +60,15 @@ object ShowDG {
   implicit def extremityCord : CordBuilder[Extremity] =
     (dg, e) => Cord(e.productPrefix, "(", nodeCord(dg, dg.getNode(e.node)), ")")
 
-  implicit def transfoTargetCord : CordBuilder[TransformationTarget] = (dg, tgt) =>
+  implicit def transfoTargetCord : CordBuilder[Operation] = (dg, tgt) =>
     tgt match {
-      case TTEdge(edge) => edgeCord(dg, edge)
-      case TTRedirection(edge, exty) =>
+      case AddEdge(edge) => edgeCord(dg, edge)
+      case RedirectionOp(edge, exty) =>
         val ecord = edgeCord(dg, edge)
         val xcord = extremityCord(dg, exty)
         Cord(tgt.productPrefix, "(", ecord ,",", xcord ,")")
 
-      case TTTypeRedirection(typed, typ, oldUsed, newUsed) =>
+      case TypeRedirection(typed, typ, oldUsed, newUsed) =>
         val ntyped = dg.getNode(typed).toString
         val nold = dg.getNode(oldUsed).toString
         val nnew = dg.getNode(newUsed).toString
@@ -79,7 +79,7 @@ object ShowDG {
 
   implicit def transformationtCord : CordBuilder[Transformation] = (dg, tf) =>
     tf.target match {
-      case TTCNode(_) | TTEdge(_) =>
+      case AddCNode(_) | AddEdge(_) =>
         Cord(tf.operation.productPrefix, "(", transfoTargetCord(dg, tf.target),")")
       case _ =>  transfoTargetCord(dg, tf.target)
     }

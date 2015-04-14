@@ -7,40 +7,74 @@ import puck.graph.constraints.AbstractionPolicy
 
 object Recording {
   def apply() = new Recording(Seq())
-  def write(fileName : String, map : Map[String, NodeId], r : Recording): Unit = {
-    val oos = new ObjectOutputStream(new FileOutputStream(fileName))
-    oos.writeObject(map)
 
+  def write(oos : ObjectOutputStream,
+            r: Recording): Unit = {
     val i : Int = r.size
     oos.writeInt(i)
     r foreach oos.writeObject
   }
 
-  def read(fileName : String) : (Map[String, NodeId], Recording) = {
-    val ois = new ObjectInputStream(new FileInputStream(fileName))
-    val map = ois.readObject().asInstanceOf[Map[String, NodeId]]
+  def read(ois : ObjectInputStream) : Recording = {
     val recSize = ois.readInt()
     var rec = Recording()
     for(i <- Range(0, recSize)){
       rec =  ois.readObject().asInstanceOf[Transformation] +: rec
     }
-    (map, rec)
+    rec
+  }
+
+  def write(fileName : String,
+            map : Map[String, NodeId],
+            g: DependencyGraph): Unit = {
+    val oos = new ObjectOutputStream(new FileOutputStream(fileName))
+    oos.writeObject(map)
+
+    val numIds = g.numNodes + g.numRemovedNodes
+    oos.writeInt(numIds)
+
+    write(oos, g.recording)
+  }
+
+  type NumIds = Int
+  def read(fileName : String) : (Map[String, NodeId], NumIds, Recording) = {
+    val ois = new ObjectInputStream(new FileInputStream(fileName))
+    val map = ois.readObject().asInstanceOf[Map[String, NodeId]]
+    val numIds = ois.readInt()
+    val rec = read(ois)
+    (map, numIds, rec)
   }
 
   def load(fileName : String, map :  Map[String, NodeId]) : Recording = {
-    val (m, r) = read(fileName)
-    mapNodes(r, m, map)
+    val (m, numIds, r) = read(fileName)
+    mapNodes(r, m, map, numIds)
   }
 
   private def swap[A,B]( m : Map[A, B]) : Map[B, A] =
     m.toList.map {case (a,b) => (b,a)}.toMap
 
+  def createMapping(currentIds : Map[String, NodeId],
+                    newIds : Map[String, NodeId],
+                    totalIds : Int ) : NodeId => NodeId = {
+    assert(currentIds.size == newIds.size, "Map should be of same size")
+    assert(totalIds >= currentIds.size)
+
+    if(currentIds == newIds) identity
+    else {
+      val m1 = swap(currentIds).mapValues(newIds.apply)
+
+      Range(currentIds.size, totalIds).foldLeft(m1) { case (m, id) =>
+        m + (id -> id)
+      }.apply
+    }
+  }
+
   def mapNodes
   (rec : Recording,
    currentIds : Map[String, NodeId],
-   newIds : Map[String, NodeId]) : Recording = {
+   newIds : Map[String, NodeId], totalIds : Int) : Recording = {
     val mappin : NodeId => NodeId =
-      swap(currentIds).mapValues(newIds.apply).apply
+      createMapping(currentIds, newIds, totalIds)
 
 
     def mappingOnType: Type => Type = {
@@ -53,35 +87,37 @@ object Recording {
     }
 
 
-    def mappingOnTransfoTgt : TransformationTarget => TransformationTarget = {
-      case TTCNode(n) =>
+    def mappingOnOperation : Operation => Operation = {
+      case AddCNode(n) =>
         val n2 = n.copy(id = mappin(n.id))
-        TTCNode(n2.copy(styp = n.styp.map(mappingOnType)))
-      case TTVNode(n) =>
+        AddCNode(n2.copy(styp = n.styp.map(mappingOnType)))
+      case AddVNode(n) =>
         val newId = mappin(n.id)
-        TTVNode(n.copy(id = newId))
+        AddVNode(n.copy(id = newId))
 
-      case TTEdge(e) =>
-        TTEdge(e.copy(source = mappin(e.source), target = mappin(e.target)))
+      case AddEdge(e) =>
+        AddEdge(e.copy(source = mappin(e.source), target = mappin(e.target)))
 
-      case tgt : TTRedirection =>
+      case tgt : RedirectionOp =>
         val newEdge =
-          mappingOnTransfoTgt(TTEdge(tgt.edge)).asInstanceOf[TTEdge].edge
+          mappingOnOperation(AddEdge(tgt.edge)).asInstanceOf[AddEdge].edge
         val extyId = tgt.extremity.node
         val newExty = tgt.extremity.create(mappin(extyId))
         tgt.copy(edge = newEdge, extremity = newExty)
-      case TTAbstraction(impl, abs, p) =>
-        TTAbstraction(mappin(impl), mappin(abs), p)
+      case AddAbstraction(impl, abs, p) =>
+        AddAbstraction(mappin(impl), mappin(abs), p)
 
-      case TTTypeRedirection(typed, styp, oldUsed, newUsed) =>
-        TTTypeRedirection(mappin(typed), styp map mappingOnType,
+      case TypeRedirection(typed, styp, oldUsed, newUsed) =>
+        TypeRedirection(mappin(typed), styp map mappingOnType,
           mappin(oldUsed), mappin(newUsed))
 
+      case cnn @ ChangeNodeName(nid, _, _) =>
+        cnn.copy(nid = mappin(nid))
     }
 
     rec.mapTransformation {
-        case Transformation(op, target) =>
-          Transformation(op, mappingOnTransfoTgt(target))
+        case Transformation(direction, op) =>
+          Transformation(direction, mappingOnOperation(op))
       }
   }
 
@@ -118,63 +154,66 @@ class Recording
     Transformation(Remove, TTNode(id, name, kind, styp, mutable)) +: this*/
 
   def addConcreteNode(n : ConcreteNode) : RecT =
-    Transformation(Add, TTCNode(n)) +: this
+    Transformation(Regular, AddCNode(n)) +: this
 
   def addVirtualNode(n : VirtualNode) : RecT =
-    Transformation(Add, TTVNode(n)) +: this
+    Transformation(Regular, AddVNode(n)) +: this
 
+
+  def changeNodeName(nid : NodeId, oldName : String, newName : String) : RecT =
+    Transformation(Regular, ChangeNodeName(nid, oldName, newName)) +: this
 
   def removeConcreteNode(n : ConcreteNode) : RecT =
-    Transformation(Remove, TTCNode(n)) +: this
+    Transformation(Reverse, AddCNode(n)) +: this
 
   def removeVirtualNode(n : VirtualNode) : RecT =
-    Transformation(Remove, TTVNode(n)) +: this
+    Transformation(Reverse, AddVNode(n)) +: this
 
   def addEdge(edge : EdgeT) : RecT =
-    Transformation(Add, TTEdge(edge)) +: this
+    Transformation(Regular, AddEdge(edge)) +: this
 
   def removeEdge(edge : EdgeT) : RecT=
-    Transformation(Remove, TTEdge(edge)) +: this
+    Transformation(Reverse, AddEdge(edge)) +: this
 
   def changeEdgeTarget(edge : EdgeT, newTarget : NIdT, withMerge : Boolean) : RecT = {
     val red = if(withMerge) new RedirectionWithMerge(edge, Target(newTarget))
-              else TTRedirection(edge, Target(newTarget))
-    Transformation(Add, red) +: this
+              else RedirectionOp(edge, Target(newTarget))
+    Transformation(Regular, red) +: this
   }
 
   def changeEdgeSource(edge : EdgeT, newTarget : NIdT, withMerge : Boolean) : RecT = {
     val red = if(withMerge) new RedirectionWithMerge(edge, Source(newTarget))
-    else TTRedirection(edge, Source(newTarget))
-    Transformation(Add, red) +: this
+    else RedirectionOp(edge, Source(newTarget))
+    Transformation(Regular, red) +: this
   }
   def addTypeChange( typed : NIdT,
                      typ: Option[Type],
                      oldUsee: NIdT,
                      newUsee : NIdT) : RecT =
-    Transformation(Add, TTTypeRedirection(typed, typ, oldUsee, newUsee)) +: this
+    Transformation(Regular, TypeRedirection(typed, typ, oldUsee, newUsee)) +: this
 
   def addAbstraction(impl : NIdT, abs : NIdT, absPolicy : AbstractionPolicy) : RecT =
-    Transformation(Add, TTAbstraction(impl, abs, absPolicy)) +: this
+    Transformation(Regular, AddAbstraction(impl, abs, absPolicy)) +: this
 
   def removeAbstraction(impl : NIdT, abs : NIdT, absPolicy : AbstractionPolicy) : RecT =
-    Transformation(Remove, TTAbstraction(impl, abs, absPolicy)) +: this
+    Transformation(Reverse, AddAbstraction(impl, abs, absPolicy)) +: this
 
 }
 
-sealed abstract class Operation {
-  def reverse : Operation
+sealed abstract class Direction {
+  def reverse : Direction
   def productPrefix : String
 }
-case object Add extends Operation {
-  def reverse = Remove
+case object Regular extends Direction {
+  def reverse = Reverse
 }
-case object Remove extends Operation{
-  def reverse = Add
+case object Reverse extends Direction{
+  def reverse = Regular
 }
 
 case class Transformation
-(operation : Operation,
- target : TransformationTarget){
+(operation : Direction,
+ target : Operation){
   type GraphT = DependencyGraph
 
   def redo(g: GraphT) = target.execute(g, operation)

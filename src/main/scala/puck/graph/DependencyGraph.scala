@@ -165,6 +165,8 @@ class DependencyGraph
   def concreteNodesId : Iterable[NodeId] = nodesIndex.keys
   def numNodes : Int = nodesIndex.size + vNodesIndex.size
 
+  def numRemovedNodes : Int = removedNodes .size + vRemovedNodes.size
+
   def isaEdges : List[DGEdge] = superTypesMap.content.foldLeft(List[DGEdge]()){
     case (acc, (sub, sups)) =>
       sups.toList.map(sup => DGEdge.isa(sub, sup)) ::: acc
@@ -250,7 +252,8 @@ class DependencyGraph
 
   def setName(id : NodeId, newName : String) : GraphT = {
     val (n, s) = getConcreteNodeWithStatus(id)
-    setNode(n.copy(name = newName), s)
+    val g1 = setNode(n.copy(name = newName), s)
+    g1.newGraph(nRecording = recording.changeNodeName(id, n.name, newName))
   }
   
   def setType(id : NodeId, st : Option[Type]) : GraphT = {
@@ -381,6 +384,8 @@ class DependencyGraph
       case Some(id) => id == containerId
     }
 
+  def containsSeq : Seq[(NodeId, NodeId)] = contentsMap.flatSeq
+
   def contains_*(containerId : NodeId, contentId : NodeId) : Boolean =
     containerId == contentId || {
       container(contentId) match {
@@ -430,8 +435,6 @@ class DependencyGraph
     directSuperTypes(subCandidate).exists(_ == superCandidate) ||
       directSuperTypes(subCandidate).exists(isSuperTypeOf(superCandidate, _))
   }
-
-
 
   def isa(subId : NodeId, superId: NodeId): Boolean = superTypesMap.bind(subId, superId)
   

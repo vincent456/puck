@@ -141,7 +141,7 @@ class JavaDG2AST
             reenactor: DependencyGraph,
             id2declMap: Map[NodeId, ASTNodeLink],
             t: Transformation) : Map[NodeId, ASTNodeLink] = t match {
-    case Transformation(Add, TTCNode(n)) =>
+    case Transformation(Regular, AddCNode(n)) =>
       //redo t before createDecl
       val newMap = id2declMap get n.id match {
         case Some(_) => id2declMap
@@ -155,18 +155,18 @@ class JavaDG2AST
 
         //redo t after applying on code other transformations
     case `t` => t match {
-      case Transformation(Add, TTEdge(e)) =>
+      case Transformation(Regular, AddEdge(e)) =>
         //println("creating edge " + e)
         add(resultGraph, safeGet(resultGraph, id2declMap), e)
 
-      case Transformation(_, TTRedirection(e, Target(newTarget))) =>
+      case Transformation(_, RedirectionOp(e, Target(newTarget))) =>
         redirectTarget(resultGraph, safeGet(resultGraph, id2declMap), e, newTarget)
 
-      case Transformation(_, TTTypeRedirection(typed, typ, oldUsed, newUsed)) =>
+      case Transformation(_, TypeRedirection(typed, typ, oldUsed, newUsed)) =>
         redirectTarget(resultGraph: DependencyGraph, safeGet(resultGraph, id2declMap),
           DGEdge.uses(typed, oldUsed), newUsed)
 
-      case Transformation(_, TTRedirection(e, Source(newSource))) =>
+      case Transformation(_, RedirectionOp(e, Source(newSource))) =>
         redirectSource(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newSource)
       /*case Transformation(Remove(), TTEdge(e@AGEdge(Contains(), source, target))) =>
     println("removing edge " + e)
@@ -185,16 +185,16 @@ class JavaDG2AST
     }*/
 
       // TODO see if can be performed in add node instead
-      case Transformation(_, TTAbstraction(impl, abs, SupertypeAbstraction)) =>
+      case Transformation(_, AddAbstraction(impl, abs, SupertypeAbstraction)) =>
         (id2declMap get impl, reenactor.getConcreteNode(abs).kind) match {
           case (Some(ConcreteMethodDeclHolder(decl)), AbstractMethod) =>
             decl.setVisibility(AST.ASTNode.VIS_PUBLIC)
           case _ => ()
         }
 
-      case Transformation(_, TTAbstraction(_, _, _)) => ()
+      case Transformation(_, AddAbstraction(_, _, _)) => ()
 
-      case Transformation(Remove, TTCNode(n)) =>
+      case Transformation(Reverse, AddCNode(n)) =>
         //val
         id2declMap get n.id map {
           case  dh: TypedKindDeclHolder => dh.decl.puckDelete()

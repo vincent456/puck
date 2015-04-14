@@ -97,8 +97,8 @@ class RecordingComparator
 
 
   def removeFirst(l : Seq[Transformation],
-                  op : Operation,
-                  tgt : TransformationTarget) :  Option[Seq[Transformation]] = {
+                  op : Direction,
+                  tgt : Operation) :  Option[Seq[Transformation]] = {
 
     RecordingComparator.removeFirst(l, {(t : Transformation) => t.operation == op && t.target == tgt})
   }
@@ -117,7 +117,7 @@ class RecordingComparator
     if (ts1.isEmpty && ts2.isEmpty)
       k(\/-(map))
     else {
-      def removeFirstAndCompareNext(tgt : TransformationTarget,
+      def removeFirstAndCompareNext(tgt : Operation,
                                     tryMap : Try[ResMap], nodesToMap : NodesToMap) =
         tryMap match {
           case -\/(_) => k(tryMap)
@@ -137,15 +137,15 @@ class RecordingComparator
       }
 
       ts1.head.target match {
-        case TTEdge(e) => attribNode(Seq(e.source, e.target), map, nodesToMap) {
+        case AddEdge(e) => attribNode(Seq(e.source, e.target), map, nodesToMap) {
           case (Seq(src, tgt), map1, nodesToMap1) =>
-            removeFirstAndCompareNext(TTEdge(DGEdge(e.kind, src, tgt)), map1, nodesToMap1 )
+            removeFirstAndCompareNext(AddEdge(DGEdge(e.kind, src, tgt)), map1, nodesToMap1 )
         }
 
-        case TTRedirection(e, extremity) =>
+        case RedirectionOp(e, extremity) =>
           attribNode(Seq(e.source, e.target, extremity.node), map, nodesToMap){
             case (Seq(src, tgt, newExtyNode), map1, nodesToMap1) =>
-              removeFirstAndCompareNext(TTRedirection(
+              removeFirstAndCompareNext(RedirectionOp(
                 DGEdge(e.kind, src, tgt), extremity.create(newExtyNode)), map1, nodesToMap1)
           }
 
@@ -154,10 +154,11 @@ class RecordingComparator
         //removing the dependendency and abstraction of the comparison
         // they are used to compute the change on the graph, its the change themselves we want to compare
         // removed in NodeMappingInitialState.normalizeNodeTransfos
-        case TTTypeRedirection(_, _, _, _) // TODO see if need to be compared
-             | TTAbstraction(_, _, _)
-             | TTVNode(_)
-             | TTCNode(_) => throw new Error("should not happen !!")
+        case TypeRedirection(_, _, _, _) // TODO see if need to be compared
+             | AddAbstraction(_, _, _)
+             | AddVNode(_)
+             | AddCNode(_)
+             | ChangeNodeName(_, _, _)=> throw new Error("should not happen !!")
 
       }
     }

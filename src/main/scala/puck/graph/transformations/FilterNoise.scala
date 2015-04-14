@@ -35,7 +35,7 @@ object FilterNoise {
       if(l.isEmpty) acc.reverse
       else
         l.head match {
-          case Transformation(_, TTRedirection(`stoppingEdge`, _)) =>
+          case Transformation(_, RedirectionOp(`stoppingEdge`, _)) =>
             RecordingComparator.revAppend(acc, l)
           case _ => rule(l.head) match {
             case None => aux(acc, l.tail)
@@ -46,28 +46,28 @@ object FilterNoise {
     aux(List(), transfos)
   }
 
-  def xRedRule(logger : PuckLogger, red: TTRedirection) : Transformation => Option[Transformation] = {
+  def xRedRule(logger : PuckLogger, red: RedirectionOp) : Transformation => Option[Transformation] = {
     val DGEdge(kind, n1, n2) = red.edge
     red.extremity match {
       case Target(n3) => {
-        case op2@Transformation(Add, TTRedirection(DGEdge(`kind`, `n1`, n0), Target(`n2`))) =>
-          val res = Transformation(Add, TTRedirection(DGEdge(kind, n1, n0), Target(n3)))
+        case op2@Transformation(Regular, RedirectionOp(DGEdge(`kind`, `n1`, n0), Target(`n2`))) =>
+          val res = Transformation(Regular, RedirectionOp(DGEdge(kind, n1, n0), Target(n3)))
           writeRule(logger)("RedRed_tgt", op2.toString, redTransfo(red).toString, res.toString)
           Some(res)
-        case op2@Transformation(Add, TTEdge(DGEdge(`kind`, `n1`, `n2`))) =>
+        case op2@Transformation(Regular, AddEdge(DGEdge(`kind`, `n1`, `n2`))) =>
           val res = if(red.withMerge) None
-          else Some(Transformation(Add, TTEdge(DGEdge(kind, n1, n3))))
+          else Some(Transformation(Regular, AddEdge(DGEdge(kind, n1, n3))))
           writeRule(logger)("AddRed_tgt", op2.toString, redTransfo(red).toString, res.toString)
           res
         case t => Some(t)
       }
       case Source(n3) => {
-        case op2@Transformation(Add, TTRedirection(DGEdge(`kind`, n0, `n2`), Source(`n1`))) =>
-          val res = Transformation(Add, TTRedirection(DGEdge(kind, n0, n2), Source(n3)))
+        case op2@Transformation(Regular, RedirectionOp(DGEdge(`kind`, n0, `n2`), Source(`n1`))) =>
+          val res = Transformation(Regular, RedirectionOp(DGEdge(kind, n0, n2), Source(n3)))
           writeRule(logger)("RedRed_src", op2.toString, redTransfo(red).toString, res.toString)
           Some(res)
-        case op2@Transformation(Add, TTEdge(DGEdge(`kind`, `n1`, `n2`))) =>
-          val res = Transformation(Add, TTEdge(DGEdge(kind, n3, n2)))
+        case op2@Transformation(Regular, AddEdge(DGEdge(`kind`, `n1`, `n2`))) =>
+          val res = Transformation(Regular, AddEdge(DGEdge(kind, n3, n2)))
           writeRule(logger)("AddRed_src", op2.toString, redTransfo(red).toString, res.toString)
           Some(res)
         case t => Some(t)
@@ -75,7 +75,7 @@ object FilterNoise {
     }
   }
 
-  def redTransfo : TTRedirection => Transformation = Transformation(Add, _)
+  def redTransfo : RedirectionOp => Transformation = Transformation(Regular, _)
 
 /*
   def apply(transfos : Seq[Transformation], logger : PuckLogger): Seq[Transformation] = {
@@ -104,13 +104,13 @@ object FilterNoise {
             case (None, _) => aux(l.head +: filteredTransfos, l.tail, removedEdges)
           }*/
 
-        case (op1 @ Transformation(Add, red @ TTRedirection(stopingEdge, _))) :: tl =>
+        case (op1 @ Transformation(Regular, red @ RedirectionOp(stopingEdge, _))) :: tl =>
           val transfos = mapUntil(stopingEdge, tl, xRedRule(logger, red))
           aux(filteredTransfos, transfos, removedEdges)
 
 
-        case (t @ Transformation(Add, TTEdge(_))):: tl => aux(t +: filteredTransfos, tl, removedEdges)
-        case (Transformation(Remove, TTEdge(e))):: tl => aux(filteredTransfos, tl, e +: removedEdges)
+        case (t @ Transformation(Regular, AddEdge(_))):: tl => aux(t +: filteredTransfos, tl, removedEdges)
+        case (Transformation(Reverse, AddEdge(e))):: tl => aux(filteredTransfos, tl, e +: removedEdges)
 
         case hd :: _ => sys.error(hd  + " should not be in list")
       }
@@ -121,7 +121,7 @@ object FilterNoise {
     removedEdges.foldLeft(normalTransfos){(normalTransfos0, e) =>
       logger.writeln(s"$e was removed filtering:")
       normalTransfos0 filter {
-        case Transformation(Add, TTEdge(`e`)) =>
+        case Transformation(Regular, AddEdge(`e`)) =>
           logger.writeln(s"add found")
           false
         case _ => true

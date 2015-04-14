@@ -6,10 +6,6 @@ import scala.swing._
 import java.awt.Dimension
 
 
-/**
- * Created by lorilan on 08/05/14.
- */
-
 object PuckMainPanel{
   val width = 1024
   val height = 768

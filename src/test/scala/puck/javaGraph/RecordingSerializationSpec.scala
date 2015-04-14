@@ -1,46 +1,107 @@
 package puck.javaGraph
 
+import java.io.{FileInputStream, ObjectInputStream, FileOutputStream, ObjectOutputStream}
+
 import puck.{Settings, AcceptanceSpec}
-import puck.graph.ConcreteNode
-import puck.graph.transformations.{Recording, Add, TTCNode, Transformation}
+import puck.graph._
+import puck.graph.transformations.{Recording, Regular, AddCNode, Transformation}
 import nodeKind._
 
 class RecordingSerializationSpec extends AcceptanceSpec {
 
   val tmpFile = Settings.tmpDir + "tmpFile"
+
+  def readAndClose[T](fileName : String)(f : ObjectInputStream => T) : T = {
+    val ois = new ObjectInputStream(new FileInputStream(fileName))
+    val t = f(ois)
+    ois.close()
+    t
+  }
+
+  def writeAndClose(fileName : String)(f : ObjectOutputStream => Unit) = {
+    val ois = new ObjectOutputStream(new FileOutputStream(fileName))
+    f(ois)
+    ois.close()
+  }
+
+
+
   feature("Serialization"){
 
 
     scenario("one transformation"){
 
-      val t = Transformation(Add, TTCNode(ConcreteNode(1, "one", Class, styp = None, mutable = true)))
+      val t = Transformation(Regular, AddCNode(ConcreteNode(1, "one", Class, styp = None, mutable = true)))
+      val r1 = t +: Recording()
+      writeAndClose(tmpFile){
+        Recording.write(_, r1)
+      }
+      val r2 = readAndClose(tmpFile)(Recording.read)
 
-      val map = Map("one" -> 1)
-
-      Recording.write(tmpFile, map, t +: Recording())
-
-      val r = Recording.load(tmpFile, map)
-
-      assert(r.head == t)
+      assert(r1 == r2)
 
     }
 
-    scenario("two transformation"){
+    scenario("two transformations"){
 
-      val t = Transformation(Add, TTCNode(ConcreteNode(1, "one", Class, styp = None, mutable = true)))
-      val t2 = Transformation(Add, TTCNode(ConcreteNode(2, "two", Class, styp = None, mutable = true)))
+      val t = Transformation(Regular, AddCNode(ConcreteNode(1, "one", Class, styp = None, mutable = true)))
+      val t2 = Transformation(Regular, AddCNode(ConcreteNode(2, "two", Class, styp = None, mutable = true)))
 
       val r = t +: t2 +: Recording()
+      writeAndClose(tmpFile){
+        Recording.write(_, r)
+      }
 
-      val map = Map("one" -> 1,
-                    "two" -> 2)
-
-      Recording.write(tmpFile, map, r)
-
-      val r2 = Recording.load(tmpFile, map)
+      val r2 = readAndClose(tmpFile)(Recording.read)
 
       assert(r == r2)
 
+    }
+
+    val bridgeScenario = BridgeScenario()
+
+    scenario("numerous transformations"){
+      import bridgeScenario._
+
+      writeAndClose(tmpFile){
+        Recording.write(_, gFinal.recording)
+      }
+      val r2 = readAndClose(tmpFile)(Recording.read)
+
+      assert(gFinal.recording == r2)
+
+    }
+
+    scenario("repeat on same graph (no rebuilding)"){
+      import bridgeScenario._
+
+      writeAndClose(tmpFile){
+        Recording.write(_, gFinal.recording)
+      }
+      val r2 = readAndClose(tmpFile)(Recording.read)
+
+      val gFinalCopy = r2.foldLeft(g0)((g, t) => t.redo(g))
+
+      gFinal.nodes.toSet should be (gFinalCopy.nodes.toSet)
+      gFinal.containsSeq.toSet should be (gFinalCopy.containsSeq.toSet)
+      gFinal.usesSeq.toSet should be (gFinalCopy.usesSeq.toSet)
+      gFinal.isaSeq.toSet should be (gFinalCopy.isaSeq.toSet)
+    }
+
+    scenario("repeat on a rebuilded version of the graph"){
+      import bridgeScenario._
+      Recording.write(tmpFile, fullName2id, gFinal)
+
+      val bridge2 = BridgeScenario()
+
+      val r2 = Recording.load(tmpFile, bridge2.fullName2id)
+
+      val gFinalCopy = r2.foldLeft(bridge2.g0)((g, t) => t.redo(g))
+
+      bridge2.gFinal.nodes.toSet should be (gFinalCopy.nodes.toSet)
+      bridge2.gFinal.containsSeq.toSet should be (gFinalCopy.containsSeq.toSet)
+      bridge2.gFinal.usesSeq.toSet should be (gFinalCopy.usesSeq.toSet)
+      bridge2.gFinal.isaSeq.toSet should be (gFinalCopy.isaSeq.toSet)
     }
   }
 }

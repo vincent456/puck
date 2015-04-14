@@ -8,9 +8,6 @@ import puck.util.PuckLog
 import puck.util.Collections.traverse
 import scalaz._
 
-/**
- * Created by lorilan on 4/9/15.
- */
 object Redirection {
 
   def redirectUses(g : DependencyGraph,
