@@ -5,37 +5,23 @@ import scala.util.parsing.combinator.RegexParsers
 import scala.util.parsing.input.{Reader, StreamReader}
 
 
-sealed trait ParsedId {
-  val node : String
-  def range : NodeId => Range
-}
-case class SetIdOrScope(node:String) extends ParsedId {
-  def range = id => Scope(id)
-}
-case class PElement(node:String)extends ParsedId {
-  def range = id => Element(id)
-}
+case class ConstraintMapBuilder
+(nodesByName : Map[String, NodeId],
+ imports : Seq[String] = Seq(""),
+ defs : Map[String, NamedRangeSet] = Map(),
+ friendCtsMap : Map [Range, ConstraintSet] = Map(),
+ hideConstraintsMap : Map[Range, ConstraintSet] = Map()){
+  def addImport(iprt : String) : ConstraintMapBuilder =
+    copy(imports = (iprt + ".") +: imports)
+  //appended dot needed for import resolution
 
-/**
- * Created by lorilan on 12/05/14.
- */
+  def addDef(nrs : NamedRangeSet) : ConstraintMapBuilder =
+      defs get nrs.id match {
+        case Some(_) =>
+          throw new scala.Error(s"Set ${nrs.id} already defined")
+        case None => copy(defs =  defs + (nrs.id -> nrs))
+      }
 
-object ConstraintsParser{
-  def apply(nodesByName : Map[String, NodeId]) =
-    new ConstraintsParser(nodesByName)
-}
-class ConstraintsParser private
-( nodesByName : Map[String, NodeId]) extends RegexParsers {
-
-  val builder = new ConstraintsMapBuilder()
-
-  protected override val whiteSpace = """(\s|%.*|#.*)+""".r  //to skip comments
-
-
-  var defs : Map[String, NamedRangeSet] = Map()
-
-
-  var imports : Seq[String] = Seq("")
 
   def findNode(k : ParsedId) : Seq[Range] ={
 
@@ -53,179 +39,181 @@ class ConstraintsParser private
     aux(imports, Seq())
   }
 
-  def toDef (request : Either[ParsedId, Seq[ParsedId]]) : RangeSet = {
-    request match {
-      case Left(key) => defs get key.node match {
-        case Some(l) => l
-        case None => LiteralRangeSet(findNode(key))
-      }
-      case Right(l) => LiteralRangeSet(l flatMap findNode)
+  def getDef : Either[ParsedId, Seq[ParsedId]] => RangeSet = {
+    case Left(key) => defs get key.node match {
+      case Some(l) => l
+      case None => LiteralRangeSet(findNode(key))
     }
+    case Right(l) => LiteralRangeSet(l flatMap findNode)
   }
 
+
+  def addHideConstraint
+  ( owners : RangeSet,
+    facades : RangeSet,
+    interlopers : RangeSet,
+    friends : RangeSet
+    ) : ConstraintMapBuilder = {
+      val ct = new Constraint(owners, facades, interlopers, friends)
+
+    copy(hideConstraintsMap = owners.foldLeft(hideConstraintsMap){
+      case (map, owner) =>
+        val s = map.getOrElse(owner, new ConstraintSet())
+        map + (owner -> (s + ct) )
+    })
+  }
+
+  def addFriendConstraint
+  ( friends : RangeSet,
+    befriended : RangeSet
+    ) : ConstraintMapBuilder = {
+
+      val ct =
+        new Constraint(befriended, RangeSet.empty(), RangeSet.empty(), friends)
+
+      copy(friendCtsMap = befriended.foldLeft(friendCtsMap){
+        case (map, owner) =>
+          val s = map.getOrElse(owner, new ConstraintSet())
+          map + (owner -> (s + ct) )
+      })
+  }
+}
+
+
+object ConstraintsParser
+  extends RegexParsers {
+
+  protected override val whiteSpace = """(\s|%.*|#.*)+""".r  //to skip comments
+
+  //val eol = ";"
+
   def ident : Parser[String] = (
-    """[^\[\]\s',().]+""".r
+    """[^\[\]\s',().=;]+""".r
       | "'" ~> """[^\s']+""".r <~ "'"
     )
 
   def range : Parser[ParsedId] =(
-     "r:" ~> ident ^^ (PElement(_))
-    | ident ^^ (SetIdOrScope(_))
-  )
+    "r:" ~> ident ^^ (PElement(_))
+      | ident ^^ (SetIdOrScope(_))
+    )
   def rangeList : Parser[List[ParsedId]] = (
     "[" ~> repsep(range, ",") <~ "]"     //rep1sep ??
       | "r:[" ~> repsep(range, ",") <~ "]" ^^ { _.map(e => PElement(e.node))}
     )
   def rangeListOrRange : Parser[Either[ParsedId, List[ParsedId]]] = (
-      rangeList  ^^ (Right(_))
+    rangeList  ^^ (Right(_))
       | range  ^^ (Left(_))
     )
 
   def list : Parser[List[String]] = "[" ~> repsep(ident, ",") <~ "]"     //rep1sep ??
 
-  /*def listOrIdent : Parser[Either[String, List[String]]] = (
-      list  ^^ (Right(_))
-      | ident  ^^ (Left(_))
-    )
-*/
-  def java_import : Parser[Unit] =
-    "java_import(" ~> list <~ ")." ^^ { l : List[String] =>
-      imports = l.foldLeft(imports) {case (acc, str) => (str +".") +: acc}
+  def importClause(cm : ConstraintMapBuilder) : Parser[ConstraintMapBuilder] =
+    "import" ~> list ^^ { l : List[String] =>
+      l.foldLeft(cm) {case (acc, str) => acc.addImport(str)}
     }
 
-  def declare_set : Parser[Unit] =
-    "declareSet(" ~> ident ~ "," ~ rangeList <~ ")." ^^ {
-      case ident ~ _ ~ list => defs get ident match {
-        case Some(_) => throw new scala.Error("Set " + ident + " already defined")
-        case None => defs += (ident -> new NamedRangeSet(ident,
-          LiteralRangeSet(list flatMap findNode)))
-      }
+  def declaration(cm : ConstraintMapBuilder) : Parser[ConstraintMapBuilder] =
+    ident <~ "=" >> declarationEnd(cm)
+
+  private def normalize(list : Seq[RangeSet]) = {
+    val (namedSets, lit) = list.foldLeft(( Seq[RangeSet](),LiteralRangeSet())){
+      case ((nsAcc, litAcc), l : LiteralRangeSet) => (nsAcc, litAcc ++ l)
+      case ((nsAcc, litAcc), ns) => (ns +: nsAcc, litAcc)
     }
-
-  def declare_set_union : Parser[Unit] = {
-
-    def normal(list : Seq[RangeSet]) = {
-
-      val (namedSets, lit) = list.foldLeft(( Seq[RangeSet](),LiteralRangeSet())){
-        case ((nsAcc, litAcc), l : LiteralRangeSet) => (nsAcc, litAcc ++ l)
-        case ((nsAcc, litAcc), ns) => (ns +: nsAcc, litAcc)
-      }
-
-      new RangeSetUnion(namedSets, lit)
-    }
-
-    "declareSetUnion(" ~> ident ~ "," ~ list <~ ")." ^^ {
-      case ident ~ _ ~ list => defs get ident match {
-        case Some(_) => throw new scala.Error("Set " + ident + " already defined")
-        case None =>
-          defs += (ident -> new NamedRangeSetUnion(ident, normal(list map defs)))
-      }
-    }
+    new RangeSetUnion(namedSets, lit)
   }
+  
+  def declarationEnd
+  ( cm : ConstraintMapBuilder)
+  ( ident : String ) : Parser[ConstraintMapBuilder] =
+    ( "union(" ~> list <~ ")"
+      ^^
+      {
+        list =>
+          cm.addDef( new NamedRangeSetUnion(ident, normalize(list map cm.defs)))
+      }
+      | rangeList ^^ {
+       list => cm.addDef(new NamedRangeSet(ident,
+        LiteralRangeSet(list flatMap cm.findNode)))
+    })
 
 
+  def hide(cm : ConstraintMapBuilder) : Parser[RangeSet] =
+    "hide" ~> rangeListOrRange ^^ cm.getDef
 
-  def hideEnd(rs : RangeSet) : Parser[Unit] = ("," ~>
-    rangeListOrRange ~ "," ~
-    rangeListOrRange ~ "," ~
-    rangeListOrRange <~ ")." ^^ {
-    case facades ~ _ ~ interlopers ~ _ ~ friends =>
-      builder.addHideConstraint(rs, toDef(facades), toDef(interlopers), toDef(friends))
-  }
-    | ")." ^^ { case s =>
-    builder.addHideConstraint(rs, LiteralRangeSet(),
-      LiteralRangeSet(Scope(DependencyGraph.rootId)), LiteralRangeSet())})
+  def except(cm : ConstraintMapBuilder) : Parser[RangeSet] =
+    "except" ~> rangeListOrRange ^^ cm.getDef
 
+  def from(cm : ConstraintMapBuilder) : Parser[RangeSet] =
+    "from" ~> rangeListOrRange ^^ cm.getDef
 
-  def hide : Parser[Unit] =
-    "hide(" ~> range >> { r => hideEnd(LiteralRangeSet(findNode(r)))}
+  def butNotFrom(cm : ConstraintMapBuilder) : Parser[RangeSet] =
+    "but-not-from" ~> rangeListOrRange ^^ cm.getDef
 
-  def hideSet : Parser[Unit] =
-    "hideSet(" ~> rangeListOrRange >> { s => hideEnd(toDef(s))}
+  def hideCt
+  ( cm : ConstraintMapBuilder ) : Parser[ConstraintMapBuilder] =
+    hide(cm) >> exceptEnd(cm)
 
+  def exceptEnd
+  ( cm : ConstraintMapBuilder )
+  ( ctOwner : RangeSet ) : Parser[ConstraintMapBuilder] =
+    (except(cm) | success(LiteralRangeSet())) >>
+      fromEnd(cm, ctOwner)
 
-  type Add2ArgsHideConstraint = (RangeSet, RangeSet) => Unit
+  def fromEverything : Parser[RangeSet] =
+    success(LiteralRangeSet(Scope(DependencyGraph.rootId)))
 
-  def addHideFromConstraint : Add2ArgsHideConstraint =
-    (owner, interlopers) =>
-      builder.addHideConstraint(owner,
-        LiteralRangeSet(), interlopers, LiteralRangeSet())
+  def fromEnd
+  ( cm : ConstraintMapBuilder,
+    ctOwner : RangeSet)
+  ( facades : RangeSet) : Parser[ConstraintMapBuilder] =
+    (from(cm) | fromEverything ) >>
+      butNotFromEnd(cm, ctOwner, facades)
 
-  def addHideButFromConstraint : Add2ArgsHideConstraint =
-    (owner, friends) =>
-      builder.addHideConstraint(owner, LiteralRangeSet(),
-        LiteralRangeSet(Scope(DependencyGraph.rootId)), friends)
-
-
-  def hide2ArgsEnd(add : Add2ArgsHideConstraint)(rs : RangeSet) : Parser[Unit] =
-    "," ~> rangeListOrRange <~ ")." ^^ { rl => add(rs, toDef(rl))}
-
-  def hideFrom : Parser[Unit] =
-    "hideFrom(" ~> range >> {r =>
-      hide2ArgsEnd(addHideFromConstraint)(LiteralRangeSet(findNode(r)))
+  def butNotFromEnd
+  ( cm : ConstraintMapBuilder,
+    ctOwner : RangeSet,
+    facades : RangeSet)
+  ( interlopers : RangeSet) : Parser[ConstraintMapBuilder] =
+    ( butNotFrom(cm)
+      | success(LiteralRangeSet())) ^^ {
+      friends =>
+      cm.addHideConstraint(ctOwner,
+        facades,
+        interlopers,
+        friends)
     }
 
-  def hideSetFrom : Parser[Unit] =
-    "hideSetFrom(" ~> rangeListOrRange >> {s =>
-      hide2ArgsEnd(addHideFromConstraint)(toDef(s))
-    }
-
-  def hideButFrom : Parser[Unit] =
-    "hideButFrom(" ~> range >> { r =>
-      hide2ArgsEnd(addHideButFromConstraint)(LiteralRangeSet(findNode(r)))
-    }
-
-  def hideSetButFrom : Parser[Unit] =
-    "hideSetButFrom(" ~> rangeListOrRange >> {s =>
-      hide2ArgsEnd(addHideButFromConstraint)(toDef(s))
-    }
-
-  def hideFromEachOther : Parser[Unit] = {
-    "hideFromEachOther(" ~> rangeListOrRange <~ ")." ^^ {
-      case s =>
-        val owners = toDef(s)
-        builder.addHideConstraint(owners, LiteralRangeSet(),
-          owners, LiteralRangeSet())
-    }
-  }
-
-  def friend : Parser[Unit] =
-    "friendOf(" ~> rangeListOrRange ~ "," ~ rangeListOrRange <~ ")." ^^ {
+  def friend(cm : ConstraintMapBuilder) : Parser[ConstraintMapBuilder] =
+    rangeListOrRange ~ "friendOf" ~ rangeListOrRange ^^ {
       case friends ~ _ ~ befriended =>
-        builder.addFriendConstraint(toDef(friends), toDef(befriended))
+        cm.addFriendConstraint(cm getDef friends, cm getDef befriended)
     }
 
-  def constraints : Parser[Unit] = {
-    ( java_import
-      | declare_set
-      | declare_set_union
-      | hide
-      | hideFrom
-      | hideButFrom
-      | hideSet
-      | hideSetFrom
-      | hideSetButFrom
-      | hideFromEachOther
-      | friend
+  def constraints(cm : ConstraintMapBuilder) : Parser[ConstraintMapBuilder] = {
+    ( importClause(cm)
+      | hideCt(cm)
+      | declaration(cm)
+      | friend(cm)
       )}
 
-  /*def apply(input : java.io.Reader) = parseAll(constraints, input) match{
-    case Success(result, _ ) => result
-    case failure : NoSuccess => throw new scala.Error(failure.msg)
-  }*/
-
-  def apply(input : java.io.Reader) = {
-    def aux(input : Reader[Char]) : Unit = {
-      parse(constraints, input) match {
-        case Success(_, i) => aux(i)
+  def apply
+  ( nodesByName : Map[String, NodeId],
+    input : java.io.Reader
+    ) : ConstraintsMaps = {
+    def aux( cmIn : ConstraintMapBuilder, input : Reader[Char]) : ConstraintMapBuilder = {
+      parse(constraints(cmIn), input) match {
+        case Success(cmOut, i) => aux(cmOut, i)
         case Error(msg, next) =>
           throw new scala.Error("!!! Error !!! at position " + next.pos + " " + msg)
         case Failure(msg, next) =>
-          if (next.atEnd) ()
+          if (next.atEnd) cmIn
           else throw new scala.Error("Failure at position " + next.pos + " " + msg)
       }
     }
-    aux(StreamReader(input))
-    builder.setDefs(defs)
+    val builder = aux(ConstraintMapBuilder(nodesByName), StreamReader(input))
+    ConstraintsMaps(builder.defs,
+      builder.friendCtsMap,
+      builder.hideConstraintsMap)
   }
 }

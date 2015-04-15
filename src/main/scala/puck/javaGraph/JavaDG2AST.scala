@@ -3,17 +3,16 @@ package puck.javaGraph
 import java.io.{FileReader, File}
 import java.util.NoSuchElementException
 
+import puck.PuckError
 import puck.graph._
-import puck.graph.constraints.{ConstraintsParser, SupertypeAbstraction}
+import puck.graph.constraints.{ConstraintsParser, ConstraintsPlParser, SupertypeAbstraction}
 import puck.graph.io.{DG2ASTBuilder, DG2AST}
 import puck.graph.transformations._
 import puck.javaGraph.nodeKind._
 import puck.util.PuckLog._
 import puck.util.{PuckLog, PuckLogger}
 
-/**
- * Created by lorilan on 23/07/14.
- */
+import scalaz.{-\/, \/-}
 
 object JavaDG2AST extends DG2ASTBuilder {
   def packageNode(graph : DependencyGraph, id : NodeId) : NodeId ={
@@ -90,22 +89,22 @@ class JavaDG2AST
 
   def verbosity : PuckLog.Level => PuckLog.Verbosity = l => (PuckLog.AG2AST, l)
 
-  def parseConstraints(decouple : File) : DG2AST  = {
-    val parser = ConstraintsParser(nodesByName)
+  def parseConstraints(decouple : File) : DG2AST  =
     try {
-      parser(new FileReader(decouple))
+      //val parser = ConstraintsPlParser(nodesByName)
+      val cm = ConstraintsParser(nodesByName, new FileReader(decouple))
+      new JavaDG2AST(logger, program,
+        initialGraph.newGraph(nConstraints = cm),
+        initialRecord,
+        nodesByName,
+        graph2ASTMap)
     } catch {
-      case e : NoSuchElementException =>
-        e.printStackTrace()
-        logger.writeln("parsing failed : " + e.getLocalizedMessage)((PuckLog.NoSpecialContext, PuckLog.Error))
+      case e : Error =>
+      //e.printStackTrace()
+        logger.writeln("parsing failed : " + e.getMessage)((PuckLog.NoSpecialContext, PuckLog.Error))
+        this
     }
 
-    new JavaDG2AST(logger, program,
-      initialGraph.newGraph(nConstraints = parser.builder.constraintsMap),
-      initialRecord,
-      nodesByName,
-      graph2ASTMap)
-  }
 
   def apply(result : ResultT) : Unit = {
 

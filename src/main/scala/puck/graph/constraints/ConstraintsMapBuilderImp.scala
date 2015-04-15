@@ -1,9 +1,6 @@
 package puck.graph.constraints
 
-/**
- * Created by lorilan on 4/2/15.
- */
-class ConstraintsMapBuilder {
+class ConstraintsMapBuilderImp {
 
   var constraintsMap = ConstraintsMaps()
 

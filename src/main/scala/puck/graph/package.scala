@@ -14,7 +14,6 @@ package object graph {
 
   type NodePredicateT = (DependencyGraph, ConcreteNode) => Boolean
 
-
   type NodeId = Int
 
   type JavaNodeKind = javaGraph.nodeKind.JavaNodeKind

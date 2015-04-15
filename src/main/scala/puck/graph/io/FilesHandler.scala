@@ -3,7 +3,6 @@ package io
 
 import java.io._
 
-import puck.graph.constraints.ConstraintsParser
 import puck.graph.constraints.search.SolverBuilder
 import puck.graph.transformations.{TransformationRules, Recording}
 import puck.search.{Search, SearchState, SearchEngine}
@@ -20,9 +19,6 @@ trait ConstraintSolvingSearchEngineBuilder {
   SearchEngine[ResultT]
 }
 
-/**
- * Created by lorilan on 13/08/14.
- */
 object FilesHandler{
   object Default{
     final val srcDirName : String = "src"

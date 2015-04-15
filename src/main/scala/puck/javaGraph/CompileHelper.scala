@@ -6,11 +6,6 @@ import puck.graph._
 import puck.graph.transformations.{NodeMappingInitialState, Recording}
 import puck.util.{PuckNoopLogger, PuckLogger}
 
-
-
-/**
- * Created by lorilan on 22/02/15.
- */
 object CompileHelper {
 
   def apply(sources: List[String], jars: List[String]): Option[AST.Program] = {
@@ -77,4 +72,6 @@ object CompileHelper {
       args.toArray
     }
   }
+
+
 }

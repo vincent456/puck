@@ -1,15 +1,14 @@
 
-java_import(['screen']).
+import ['screen']
 
-declareSet(implementations, 
-		['WelcomeCapital.printCapital__String', 
+implementations = ['WelcomeCapital.printCapital__String', 
 		 'WelcomeStar.printStar__String',
 		 'InfoCapital.printCapital__String', 
-		 'InfoStar.printStar__String']).
+		 'InfoStar.printStar__String']
 
-declareSet(abstractions, ['screen', 'Screen', 
-						'WelcomeCapital', 'WelcomeStar',
-						'InfoCapital', 'InfoStar']).
+abstractions = ['screen', 'Screen', 
+		'WelcomeCapital', 'WelcomeStar',
+		'InfoCapital', 'InfoStar']
 
-hideSetFrom(implementations, abstractions).
+hide implementations from abstractions
 

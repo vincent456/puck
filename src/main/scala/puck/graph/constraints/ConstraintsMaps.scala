@@ -5,9 +5,6 @@ import puck.util.Logger
 
 import scalaz.Show
 
-/**
- * Created by lorilan on 31/10/14.
- */
 object ConstraintsMaps{
   type FriendConstraintMap = Map[Range, ConstraintSet]
   type HideConstraintMap = Map [Range, ConstraintSet]
