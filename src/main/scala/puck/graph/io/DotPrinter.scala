@@ -35,7 +35,8 @@ object DotPrinter {
 case class PrintingOptions(visibility : VisibilitySet,
                            printId : Boolean = false,
                            printSignatures : Boolean = false,
-                           selectedUse : Option[DGEdge] = None)
+                           selectedUse : Option[DGEdge] = None,
+                           printVirtualEdges : Boolean = false)
 
 import DotPrinter._
 class DotPrinter
@@ -262,7 +263,7 @@ class DotPrinter
       case ((regulars, virtuals), (source, target)) =>
         (firstVisibleParent(source), firstVisibleParent(target)) match {
           case (Some(s), Some(t)) if source == s && target == t => (regulars :+ ((s, t)), virtuals)
-          case (Some(s), Some(t)) if ! recusivePackage(s,t)=>
+          case (Some(s), Some(t)) if ! recusivePackage(s,t) && printVirtualEdges =>
             (regulars, virtuals + ((s, t)))
 
           case _ => (regulars, virtuals)

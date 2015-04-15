@@ -33,7 +33,8 @@ class SVGController private
   val solverBuilder : SolverBuilder,
   private val visibility : VisibilitySet,
   private var printId : Boolean,
-  private var printSignatures : Boolean) {
+  private var printSignatures : Boolean,
+  private var printVirtualEdges : Boolean = false) {
 
   def transfoRules = genController.filesHandler.transformationRules
 
@@ -65,6 +66,13 @@ class SVGController private
   def setIdVisible(b : Boolean): Unit = {
     if( b != printId ){
       printId = b
+      displayGraph(graph)
+    }
+  }
+
+  def setVirtualEdgesVisible(b : Boolean): Unit = {
+    if( b != printVirtualEdges ){
+      printVirtualEdges = b
       displayGraph(graph)
     }
   }
@@ -145,14 +153,13 @@ class SVGController private
 
   def displayGraph(graph: DependencyGraph) = {
 
-
     val pipedOutput = new PipedOutputStream()
     val pipedInput = new PipedInputStream(pipedOutput)
     val fdoc = Future {
       SVGController.documentFromStream(pipedInput)
     }
 
-    val opts = PrintingOptions(visibility, printId, printSignatures)
+    val opts = PrintingOptions(visibility, printId, printSignatures, None, printVirtualEdges)
     genController.filesHandler.makeImage(graph, opts, Some(pipedOutput), Svg){
       case _ => ()
     }
