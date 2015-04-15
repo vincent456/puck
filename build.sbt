@@ -1,4 +1,8 @@
 
+import com.github.retronym.SbtOneJar._
+
+import com.typesafe.sbt.SbtStartScript
+
 name := "PuckConstraintSolver"
 
 version := "1.0"
@@ -9,12 +13,9 @@ sbtVersion := "0.13.8"
 
 mainClass in Compile := Some("puck.Front")
 
-import com.github.retronym.SbtOneJar._
-
 //https://github.com/retronym/sbt-onejar
 oneJarSettings
 
-import com.typesafe.sbt.SbtStartScript
 
 Seq(SbtStartScript.startScriptForClassesSettings: _*)
 

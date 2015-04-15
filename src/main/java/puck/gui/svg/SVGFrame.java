@@ -132,6 +132,14 @@ public class SVGFrame extends JFrame implements StackListener {
             }
         });
         menu.add(idCheckBox);
+        final JCheckBox vEdgesCheckBox = new JCheckBox();
+        vEdgesCheckBox.setAction(new AbstractAction("Show Virtual Edges") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                controller.setVirtualEdgesVisible(vEdgesCheckBox.isSelected());
+            }
+        });
+        menu.add(vEdgesCheckBox);
     }
 
     private final SVGConsole console;
