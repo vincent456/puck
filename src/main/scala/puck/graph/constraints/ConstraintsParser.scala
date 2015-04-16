@@ -185,7 +185,7 @@ object ConstraintsParser
     }
 
   def friend(cm : ConstraintMapBuilder) : Parser[ConstraintMapBuilder] =
-    rangeListOrRange ~ "friendOf" ~ rangeListOrRange ^^ {
+    rangeListOrRange ~ "friend-of" ~ rangeListOrRange ^^ {
       case friends ~ _ ~ befriended =>
         cm.addFriendConstraint(cm getDef friends, cm getDef befriended)
     }

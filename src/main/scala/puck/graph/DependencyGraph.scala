@@ -83,7 +83,6 @@ class DependencyGraph
   val recording : transformations.Recording) {
 
 
-  type EdgeT = DGEdge
   type GraphT = DependencyGraph
 
   def newGraph(nLogger : PuckLogger = logger,
@@ -309,8 +308,8 @@ class DependencyGraph
     newGraph(nDominantUsesMap = typeMemberUses2typeUsesMap + (typeMemberUse, typeUse),
       nDominatedUsesMap = typeUses2typeMemberUsesMap + (typeUse, typeMemberUse))
 
-  def removeUsesDependency(dominantEdge : EdgeT,
-                           dominatedEdge :EdgeT) : GraphT =
+  def removeUsesDependency(dominantEdge : DGEdge,
+                           dominatedEdge :DGEdge) : GraphT =
     removeUsesDependency((dominantEdge.source, dominantEdge.target),
       (dominatedEdge.source, dominatedEdge.target))
 
@@ -327,16 +326,16 @@ class DependencyGraph
     newGraph(nAbstractionsMap = abstractionsMap - (id, abs),
              nRecording = recording.removeAbstraction(id, abs._1, abs._2))
 
-  def changeTarget(edge : EdgeT, newTarget : NodeId) : GraphT = {
+  def changeTarget(edge : DGEdge, newTarget : NodeId) : GraphT = {
     val g1 = edge.deleteIn(this, register = false)
-    val newEdge : EdgeT = new DGEdge(edge.kind, edge.source, newTarget)
+    val newEdge : DGEdge = new DGEdge(edge.kind, edge.source, newTarget)
     val newRecording = recording.changeEdgeTarget(edge, newTarget, withMerge = newEdge.existsIn(this))
     newEdge.createIn(g1, register = false).newGraph(nRecording = newRecording)
   }
 
-  def changeSource(edge : EdgeT, newSource : NodeId) : GraphT = {
+  def changeSource(edge : DGEdge, newSource : NodeId) : GraphT = {
     val g1 = edge.deleteIn(this, register = false)
-    val newEdge: EdgeT = new DGEdge(edge.kind, newSource, edge.target)
+    val newEdge: DGEdge = new DGEdge(edge.kind, newSource, edge.target)
     val newRecording = recording.changeEdgeSource(edge, newSource, withMerge = newEdge.existsIn(this))
     newEdge.createIn(g1, register = false).newGraph(nRecording = newRecording)
   }
@@ -461,7 +460,7 @@ class DependencyGraph
   def abstractions(id : NodeId) : Iterable[(NodeId, AbstractionPolicy)] =
     abstractionsMap getFlat id
 
-  def violations() : Seq[EdgeT] =
+  def violations() : Seq[DGEdge] =
     concreteNodesId.flatMap { n =>
       val wu = constraints.wrongUsers(this, n).map(DGEdge.uses(_,n))
       if(constraints.isWronglyContained(this, n))

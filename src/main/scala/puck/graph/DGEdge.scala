@@ -28,6 +28,9 @@ object DGEdge{
   def contains(source : NodeId, target: NodeId) =
     DGEdge(Contains, source, target)
 
+  def isa(pair : (NodeId, NodeId)) =
+    DGEdge(Isa, pair._1, pair._2)
+
   def isa(source : NodeId, target : NodeId) =
     DGEdge(Isa, source, target)
 }

@@ -84,7 +84,7 @@ class DotPrinter
     writer newLine()
   }
 
-  private val violations = selectedUse match{
+  private val concreteViolations : Seq[DGEdge] = selectedUse match{
     case None => graph.violations()
     case Some(_) => Seq()
   }
@@ -96,11 +96,12 @@ class DotPrinter
  */
   val arcs = scala.collection.mutable.Buffer[String]()
 
-  def printArc(style : Style, source : NodeId, target : NodeId,
-               status: ColorThickness): Unit = {
-    //val (lineStyle, headStyle) = style
-    //val (color, thickness) = status
-    //println("print arc "+ source.nameTypeString + " -> " + target.nameTypeString)
+  type EdgeP = (NodeId, NodeId)
+
+  def printArc
+  (statusDisplay : EdgeP => ColorThickness )
+  (style : Style): EdgeP => Unit = {
+    case edge @ (source, target) =>
     def dotId(nid: NodeId) : String = {
       val n = graph.getNode(nid)
       if (helper isDotSubgraph n)
@@ -118,6 +119,9 @@ class DotPrinter
       else ""
     }
 
+    val status = statusDisplay(edge)
+
+
     if(visibility.isVisible(source) && visibility.isVisible(target))
     arcs += (dotId(source) + " -> " + dotId(target) + "[ " +
       subGraphArc(source, "ltail") +
@@ -130,31 +134,25 @@ class DotPrinter
 
 
 
-  val printUsesViolations = (style : Style, source : NodeId, target : NodeId) =>
-    if(!graph.isa(source, target)) //TODO remove test. quickfix to avoid dot crash
-      printArc(style, source, target,
-        if(violations.contains(DGEdge.uses(source, target)))
-          ColorThickness.violation
-        else ColorThickness.regular )
+  def violationStyle
+  ( isViolation : EdgeP => Boolean
+    ) : EdgeP => ColorThickness =
+        isViolation andThen {
+        if(_) ColorThickness.violation
+        else ColorThickness.regular}
 
-  def printUsesSelected
-      ( selected : DGEdge )
-      ( style : Style, source: NodeId, target: NodeId ) : Unit = {
-    val printed = DGEdge.uses(source, target)
-    val ct = if (printed == selected) ColorThickness.selected
-    else if (graph.dominates(printed, selected))
-      ColorThickness.dominant
-    else if (graph.dominates(selected, printed))
-      ColorThickness.dominated
-    else ColorThickness.regular
+  def selectedStyle
+  ( selected : DGEdge
+    ):  EdgeP => ColorThickness =
+      printed =>
+      if (DGEdge.uses(printed) == selected) ColorThickness.selected
+      else if (graph.dominates(printed, selected))
+        ColorThickness.dominant
+      else if (graph.dominates(selected, printed))
+        ColorThickness.dominated
+      else ColorThickness.regular
 
-    printArc(style, source, target, ct)
-  }
 
-  val printUse = selectedUse match {
-    case None => printUsesViolations
-    case Some(selected) =>  printUsesSelected(selected) _
-  }
 
   def name( n : DGNode) : String = n match {
     case cn : ConcreteNode => html_safe(cn.name)
@@ -164,7 +162,7 @@ class DotPrinter
   def decorate_name(n : DGNode):String = {
     val sCter = graph.container(n.id)
 
-    if (sCter.isDefined && violations.contains(DGEdge.contains(sCter.get, n.id)))
+    if (sCter.isDefined && concreteViolations.contains(DGEdge.contains(sCter.get, n.id)))
       "<FONT COLOR=\"" + ColorThickness.violation.color + "\"><U>" + helper.namePrefix(n) + name(n) + idString(n.id) + "</U></FONT>"
     else helper.namePrefix(n) + name(n) + idString(n.id)
   }
@@ -257,19 +255,33 @@ class DotPrinter
   def recusivePackage(s : NodeId, t: NodeId) : Boolean =
     s == t && (helper isDotSubgraph graph.getNode(s))
 
-  type EdgeP = (NodeId, NodeId)
-  def filterVisibleEdges(edges : Seq[EdgeP]) : (Seq[EdgeP], Set[EdgeP]) = {
-    val (reg, virt) =  edges.foldLeft((Seq[EdgeP](), Set[EdgeP]())) {
-      case ((regulars, virtuals), (source, target)) =>
-        (firstVisibleParent(source), firstVisibleParent(target)) match {
-          case (Some(s), Some(t)) if source == s && target == t => (regulars :+ ((s, t)), virtuals)
-          case (Some(s), Some(t)) if ! recusivePackage(s,t) && printVirtualEdges =>
-            (regulars, virtuals + ((s, t)))
 
-          case _ => (regulars, virtuals)
+  type ContainsViolationMap = Set[EdgeP]
+
+  def filterVisibleEdges
+  ( edges : Seq[EdgeP]
+    ) : (Seq[EdgeP], Set[EdgeP], ContainsViolationMap) = {
+    val (reg, virt, virtualViolations) =
+      edges.foldLeft((Seq[EdgeP](), Set[EdgeP](), Set[EdgeP]())) {
+      case ((regulars, virtuals, m), (source, target)) =>
+        (firstVisibleParent(source), firstVisibleParent(target)) match {
+          case (Some(s), Some(t))
+            if source == s && target == t =>
+            (regulars :+ ((s, t)), virtuals, m)
+
+          case (Some(s), Some(t)) if printVirtualEdges =>
+
+            if(concreteViolations.contains(DGEdge.uses(source, target)))
+                (regulars, virtuals + ((s, t)), m + ((s, t)))
+              else if(!recusivePackage(s,t))
+                (regulars, virtuals + ((s, t)), m)
+              else
+                (regulars, virtuals, m)
+
+          case _ => (regulars, virtuals, m)
         }
     }
-    (reg.filterNot(virt.contains), virt)
+    (reg.filterNot(virt.contains), virt, virtualViolations)
   }
 
   def apply(): Unit = {
@@ -281,11 +293,21 @@ class DotPrinter
     graph.nodesId.foreach{nid => if(graph.container(nid).isEmpty) printNode(nid)}
 
 
-    graph.isaSeq.foreach(p => printArc(isaStyle, p._1, p._2, ColorThickness.regular))
+    graph.isaSeq.foreach {
+      printArc(violationStyle(e => concreteViolations.contains(DGEdge.isa(e))))(isaStyle)
+    }
 
-    val(reg, virt) = filterVisibleEdges(graph.usesSeq)
-    reg.foreach(p => printUse(usesStyle, p._1, p._2))
-    virt.foreach(p => printUse(virtualUse, p._1, p._2))
+    val(reg, virt, virtualViolations) = filterVisibleEdges(graph.usesSeq)
+
+    val vStyle : EdgeP => ColorThickness = selectedUse match {
+      case None => violationStyle(e => concreteViolations.contains(DGEdge.uses(e)))
+      case Some(selected) =>  selectedStyle(selected)
+    }
+
+    println(reg)
+    reg.foreach(printArc(vStyle)(usesStyle))
+
+    virt.foreach(printArc(violationStyle(virtualViolations.contains))(virtualUse))
 
     arcs.foreach(writeln)
 
