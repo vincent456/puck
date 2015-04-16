@@ -195,20 +195,12 @@ class DotPrinter
     val label =
       s"""label=<<TABLE BORDER="0"><TR><TD BORDER="0" HREF="${n.id}" > ${decorate_name(n)}
          |</TD></TR></TABLE>>;""".stripMargin
-    //s"""label=<<TABLE BORDER="0"><TR><TD BORDER="0" ID="${n.id}" > ${decorate_name(n)}
-    // </TD></TR></TABLE>>;""",
 
-    if(isEmpty(n.id)) writeln(s"${n.id} [ $label shape=rectangle ]")
-    else{
       writeln(s"subgraph cluster${n.id} { $label color=black;")
       writeln(invisibleNode( nodeSubGraphId(n.id.toString)) )
       graph.content(n.id).foreach(printNode)
       writeln("}")
-    }
 
-
-
-    //graph.users(n.id).foreach(printUse(_, n.id))
   }
 
   def printClass(nid: NodeId): Unit = {
