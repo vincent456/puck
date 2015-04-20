@@ -1,9 +1,6 @@
 package puck.graph
 
 import puck.graph.constraints._
-/**
- * Created by lorilan on 27/10/14.
- */
 
 class GraphBuilder {
   var g : DependencyGraph = _
@@ -17,6 +14,8 @@ class GraphBuilder {
     nodesByName += (fullName -> id)
     ()
   }
+
+  def getFullName( id : NodeIdT) : String = g.fullName(id)
 
   def addNode(unambiguousFullName: String, localName:String, kind: NodeKind, th : Option[Type]): NodeIdT = {
     nodesByName get unambiguousFullName match {

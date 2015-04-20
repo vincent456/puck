@@ -89,7 +89,7 @@ class MoveSpec extends AcceptanceSpec {
         assert(graph.uses(methUser, methToMove))
         assert(! graph.uses(methUser, newHostClass))
 
-        assertSuccess(Move.typeMember(graph, methToMove, newHostClass, CreateParameter)){
+        assertSuccess(Move.typeMember(graph, methToMove, newHostClass, Some(CreateParameter))){
           g2 =>
             g2.content(classA).size shouldBe (graph.content(classA).size - 1)
             assert(g2.container(methToMove).value == newHostClass)
@@ -112,7 +112,7 @@ class MoveSpec extends AcceptanceSpec {
         assert(graph.uses(methUser, methToMove))
         assert(! graph.uses(methUser, newHostClass))
 
-        assertSuccess(Move.typeMember(graph, methToMove, newHostClass, CreateTypeMember(Field))){
+        assertSuccess(Move.typeMember(graph, methToMove, newHostClass, Some(CreateTypeMember(Field)))){
           g2 =>
             //quickFrame(g2)
             val ma2Delegate =
@@ -165,7 +165,7 @@ class MoveSpec extends AcceptanceSpec {
         val numArgs1 = getNumArgs(graph.getConcreteNode(methUser1))
         val numArgs2 = getNumArgs(graph.getConcreteNode(methUser2))
 
-        assertSuccess(Move.typeMember(graph, methToMove, newHostClass, CreateParameter)){
+        assertSuccess(Move.typeMember(graph, methToMove, newHostClass, Some(CreateParameter))){
           g2 =>
             //quickFrame(g2)
 
@@ -197,7 +197,7 @@ class MoveSpec extends AcceptanceSpec {
         assert(graph.uses(methUser1, methToMove))
         assert(graph.uses(methUser2, methToMove))
 
-        assertSuccess(Move.typeMember(graph, methToMove, newHostClass, CreateTypeMember(Field))){
+        assertSuccess(Move.typeMember(graph, methToMove, newHostClass, Some(CreateTypeMember(Field)))){
           g2 =>
             val methToMoveDelegateList =
               g2.content(classA).filter{

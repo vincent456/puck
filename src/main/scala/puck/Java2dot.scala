@@ -2,11 +2,28 @@ package puck
 
 import java.io.{FileReader, File, FileWriter}
 
+import puck.graph.{NodeId, DependencyGraph}
 import puck.graph.constraints.ConstraintsParser
 import puck.graph.io.{Hidden, VisibilitySet, PrintingOptions, FilesHandler}
 import puck.javaGraph.{JavaDotHelper, CompileHelper}
 
 object Java2dot {
+
+  def quickDot
+  ( outFileName : String,
+    dg : DependencyGraph,
+    fullName2id : Map[String, NodeId]) : Unit = {
+    val fos = new FileWriter(outFileName)
+
+    val vis = VisibilitySet.allVisible(dg)
+    vis.setVisibility(dg.subTree(fullName2id("java")), Hidden)
+    vis.setVisibility(dg.subTree(fullName2id("@primitive")), Hidden)
+
+    val options = PrintingOptions(vis, printId = true, printSignatures = false, selectedUse = None)
+    FilesHandler.makeDot(dg, JavaDotHelper, options, fos)
+    fos.close()
+  }
+
   def main (args: Array[String]) : Unit = {
 
     val outFileName = args.head
@@ -18,13 +35,6 @@ object Java2dot {
 
     val cm = ConstraintsParser(fullName2id, new FileReader(decouple))
 
-    val fos = new FileWriter(outFileName)
-
-    val vis = VisibilitySet.allVisible(dg)
-    vis.setVisibility(dg.subTree(fullName2id("java")), Hidden)
-    vis.setVisibility(dg.subTree(fullName2id("@primitive")), Hidden)
-
-    val options = PrintingOptions(vis, printId = false, printSignatures = false, selectedUse = None)
-    FilesHandler.makeDot(dg.newGraph(nConstraints = cm), JavaDotHelper, options, fos)
+    quickDot(outFileName, dg.newGraph(nConstraints = cm), fullName2id)
   }
 }

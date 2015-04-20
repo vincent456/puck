@@ -12,7 +12,7 @@ import puck.search.SearchEngine
 //CSSE : Constraint Solving Search Engine
 trait JavaCSSEBuilder
   extends ConstraintSolvingSearchEngineBuilder{
-  val violationsKindPriority = JavaSolver.violationPrioritySeq
+  val violationsKindPriority = JavaViolationPrioritySeq
 }
 
 object JavaFindFirstCSSEBuilder

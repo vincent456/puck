@@ -5,14 +5,11 @@ package javaGraph
 import puck.graph.{DGEdge, Try}
 import puck.graph.constraints.{SupertypeAbstraction, DelegationAbstraction}
 import puck.javaGraph.nodeKind._
-import puck.javaGraph.transformations.{JavaTransformationRules => TR}
+import puck.javaGraph.{JavaTransformationRules => TR}
 import puck.graph.transformations.rules.Redirection
 
 import scalaz.{\/-, -\/}
 
-/**
- * Created by lorilan on 2/25/15.
- */
 class TransfoRuleSpec extends AcceptanceSpec {
 
 

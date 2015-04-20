@@ -4,7 +4,7 @@ import java.io.{FileReader, File}
 import java.util.NoSuchElementException
 
 import puck.PuckError
-import puck.graph._
+import puck.graph._, ShowDG._
 import puck.graph.constraints.{ConstraintsParser, ConstraintsPlParser, SupertypeAbstraction}
 import puck.graph.io.{DG2ASTBuilder, DG2AST}
 import puck.graph.transformations._
@@ -111,10 +111,10 @@ class JavaDG2AST
     logger.writeln("applying change !")
     val record = recordOfResult(result)
 
-    record.foldRight((graphOfResult(result), initialGraph, graph2ASTMap)) {
-      case (r, (resultGraph, reenactor, g2AST)) =>
-        /*import ShowDG._
-        println(showTransformation(resultGraph).shows(r))*/
+    record.foldLeft((graphOfResult(result), initialGraph, graph2ASTMap)) {
+      case ((resultGraph, reenactor, g2AST), r) =>
+
+        println(showDG[Transformation](reenactor).shows(r))
 
         val jreenactor = reenactor.asInstanceOf[DependencyGraph]
         val res = applyOneTransformation(resultGraph, jreenactor, g2AST, r)
@@ -122,24 +122,25 @@ class JavaDG2AST
         //println(program)
         (resultGraph, r.redo(reenactor), res)
     }
-
-    println(program)
-    println(program.getNumCuFromSources + " before flush")
+    println("change applied")
+//    println(program)
+//    println(program.getNumCuFromSources + " before flush")
     program.flushCaches()
-    println(program.getNumCuFromSources + " after flush")
+    //println(program.getNumCuFromSources + " after flush")
     program.eliminateLockedNamesInSources()
-    println(program.getNumCuFromSources + " after unlock")
-    println(program)
+//    println(program.getNumCuFromSources + " after unlock")
+//    println(program)
 
   }
 
   def printCode(dir : File) : Unit =
     program.printCodeInDirectory(dir)
 
-  def applyOneTransformation(resultGraph : DependencyGraph,
-            reenactor: DependencyGraph,
-            id2declMap: Map[NodeId, ASTNodeLink],
-            t: Transformation) : Map[NodeId, ASTNodeLink] = t match {
+  def applyOneTransformation
+  ( resultGraph : DependencyGraph,
+    reenactor: DependencyGraph,
+    id2declMap: Map[NodeId, ASTNodeLink],
+    t: Transformation) : Map[NodeId, ASTNodeLink] = t match {
     case Transformation(Regular, AddCNode(n)) =>
       //redo t before createDecl
       val newMap = id2declMap get n.id match {
@@ -156,7 +157,7 @@ class JavaDG2AST
     case `t` => t match {
       case Transformation(Regular, AddEdge(e)) =>
         //println("creating edge " + e)
-        add(resultGraph, safeGet(resultGraph, id2declMap), e)
+        addEdge(resultGraph, safeGet(resultGraph, id2declMap), e)
 
       case Transformation(_, RedirectionOp(e, Target(newTarget))) =>
         redirectTarget(resultGraph, safeGet(resultGraph, id2declMap), e, newTarget)
@@ -195,7 +196,7 @@ class JavaDG2AST
 
       case Transformation(Reverse, AddCNode(n)) =>
         //val
-        id2declMap get n.id map {
+        id2declMap get n.id foreach {
           case  dh: TypedKindDeclHolder => dh.decl.puckDelete()
           case _ => //println(s"$t not applied on program")
             logger.writeln("%s not applied on program".format(t))
@@ -231,11 +232,24 @@ class JavaDG2AST
     cu.flushCaches()
   }
 
-  def add(graph: DependencyGraph,
-          id2declMap: NodeId => ASTNodeLink,
-          e: DGEdge) = {
+  val removeIsa : (ASTNodeLink, ASTNodeLink) => Unit = {
+    case (sub : TypedKindDeclHolder, sup: TypedKindDeclHolder) =>
+      sub.decl.removeSuperType(sup.decl.createLockedAccess())
 
+    case e => logger.writeln(s"isa($e) not created")
+  }
 
+  val addIsa : (ASTNodeLink, ASTNodeLink) => Unit = {
+    case (ClassDeclHolder(sDecl), idh: InterfaceDeclHolder) =>
+      sDecl.addImplements(idh.decl.createLockedAccess())
+
+    case e => logger.writeln(s"isa($e) not created")
+  }
+
+  def addEdge
+    ( graph: DependencyGraph,
+      id2declMap: NodeId => ASTNodeLink,
+      e: DGEdge) = {
 
     val source = graph.getConcreteNode(e.source)
     val target = graph.getConcreteNode(e.target)
@@ -259,16 +273,9 @@ class JavaDG2AST
 
         }
 
-      case Isa =>
-        (id2declMap(source.id), id2declMap(target.id)) match {
-          case (ClassDeclHolder(sDecl), idh: InterfaceDeclHolder) =>
-            sDecl.addImplements(idh.decl.createLockedAccess())
-
-          case _ => logger.writeln("%s not created".format(e))
-        }
+      case Isa => addIsa(id2declMap(source.id), id2declMap(target.id))
 
       case Uses =>
-
         (source.kind, target.kind) match {
           case (ConstructorMethod, Constructor) =>
             () //already generated when creating ConstructorMethod decl
@@ -340,7 +347,13 @@ class JavaDG2AST
               throw new JavaAGError(k + " as user of Method, redirection unhandled !")
           }
 
-
+        case (ConstructorDeclHolder(oldc), ConstructorDeclHolder(newc)) =>
+          sourceDecl match {
+            case mdh: MethodDeclHolder =>
+              mdh.decl.replaceConstructorCall(oldc, newc)
+            case _ =>
+              throw new JavaAGError("constructor change, kind of uses source unhandled")
+          }
 
         case (ConstructorDeclHolder(_), ConstructorMethodDeclHolder(newDecl, _)) =>
           sourceDecl match {
@@ -370,10 +383,13 @@ class JavaDG2AST
                      e: DGEdge, newSourceId: NodeId) : Unit =  {
     import AST.ASTNode.VIS_PUBLIC
 
+    puck.util.QuickFrame(reenactor)
+
     def moveMethod( reenactor : DependencyGraph,
                     tDeclFrom : AST.TypeDecl,
                     tDeclDest : AST.TypeDecl,
-                    mDecl : AST.MethodDecl) : Unit ={
+                    mDecl : AST.MethodDecl) : Unit = {
+
       tDeclFrom.removeBodyDecl(mDecl)
       tDeclDest.addBodyDecl(mDecl)
       //TODO fix : following call create a qualifier if it is null
@@ -452,13 +468,7 @@ class JavaDG2AST
       ()
     }
 
-    if (e.source != newSourceId) {
-      //else do nothing*
-      val source = resultGraph.getNode(e.source)
-
-      val target = resultGraph.getNode(e.target)
-      val newSource = resultGraph.getNode(newSourceId)
-
+    def move(source : DGNode, newSource : DGNode, target : DGNode) : Unit = {
       (id2declMap(source.id), id2declMap(newSource.id), id2declMap(target.id)) match {
         case (ClassDeclHolder(c1Decl),
         ClassDeclHolder(c2Decl),
@@ -474,27 +484,51 @@ class JavaDG2AST
           moveTypeKind(newSource, i.decl)
 
         case (ClassDeclHolder(classDecl),
-                InterfaceDeclHolder(absDecl),
-                idh @ InterfaceDeclHolder(superDecl)) =>
+        InterfaceDeclHolder(absDecl),
+        idh@InterfaceDeclHolder(superDecl)) =>
           classDecl.removeImplements(superDecl)
           absDecl.addSuperInterfaceId(idh.decl.createLockedAccess())
 
         case (InterfaceDeclHolder(subDecl),
-                InterfaceDeclHolder(absDecl),
-                idh @ InterfaceDeclHolder(superDecl)) =>
+        InterfaceDeclHolder(absDecl),
+        idh@InterfaceDeclHolder(superDecl)) =>
           subDecl.removeSuperInterface(superDecl)
           absDecl.addSuperInterfaceId(idh.decl.createLockedAccess())
 
         case (AbstractMethodDeclHolder(oldMdecl),
-              AbstractMethodDeclHolder(newMdecl),
-               t : TypedKindDeclHolder) =>
-                println("source redirection not applied")
+        AbstractMethodDeclHolder(newMdecl),
+        t: TypedKindDeclHolder) =>
+          println("source redirection not applied")
         case _ =>
           import ShowDG._
           val eStr = showDG[DGEdge](reenactor).shows(e)
           val nsrcStr = showDG[DGNode](reenactor).shows(newSource)
           throw new JavaAGError(s"redirecting SOURCE of ${eStr} to ${nsrcStr} : application failure !")
       }
+    }
+
+
+
+
+    if (e.source != newSourceId) {
+      //else do nothing*
+
+      val source = resultGraph.getNode(e.source)
+      val target = resultGraph.getNode(e.target)
+      val newSource = resultGraph.getNode(newSourceId)
+
+      e.kind match {
+        case Contains => move(source, newSource, target)
+        case Isa =>
+          removeIsa(id2declMap(source.id),id2declMap(target.id))
+          addIsa(id2declMap(newSource.id), id2declMap(target.id))
+
+        case Uses =>
+          throw new PuckError(s"redirect ${showDG[DGEdge](resultGraph).shows(e)} " +
+            s"new source = ${showDG[NodeId](resultGraph).shows(newSourceId)}")
+      }
+
+
     }
   }
 }

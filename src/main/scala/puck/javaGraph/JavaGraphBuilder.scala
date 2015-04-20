@@ -229,19 +229,26 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
   }
 
   def findAndRegisterOverridedMethods(g : DependencyGraph,
+                                      className : String,
                                       absMeths : List[ConcreteNode],
-                                      candidates : List[ConcreteNode]): Option[DependencyGraph] =
-    Foldable[List].foldLeftM[Option, ConcreteNode, (DependencyGraph, List[ConcreteNode])](absMeths, (g, candidates.toList)){
-      case ((g0, cs), absM) =>
+                                      candidates : List[ConcreteNode]): DependencyGraph =
+//    Foldable[List].foldLeftM[Option, ConcreteNode, (DependencyGraph, List[ConcreteNode])](absMeths, (g, candidates.toList)){
+    absMeths.foldLeft((g, candidates.toList)){
+        case ((g0, cs), absM) =>
         absM.styp match {
           case Some(mt @ MethodType(_,_)) =>
-            findOverridedMethod(g0, absM.name, mt, cs).map {
-              case ((node, newCs)) =>
+            findOverridedMethod(g0, absM.name, mt, cs) match {
+              case Some((node, newCs)) =>
                 (g0.addAbstraction(node.id, (absM.id, SupertypeAbstraction)), newCs)
+              case None =>
+                println(s"${g0.fullName(absM.id)} not implemented in className")
+                //happens with abstract classes
+                (g0, cs)
             }
-          case _ => None
+          case _ => // static field or else
+            (g0, cs)
         }
-    } map(_._1)
+    }._1
 
   override def registerAbstraction : DependencyGraph => (ImplId, AbsId, AbstractionPolicy) => DependencyGraph =
     graph => (implId , absId, pol) =>
@@ -257,11 +264,8 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
         case (Class, Interface) =>
             val absMeths = graph.content(abs.id).map(graph.getConcreteNode)
             val candidates = graph.content(impl.id).map(graph.getConcreteNode)
-            findAndRegisterOverridedMethods(graph, absMeths.toList, candidates.toList)
-              match {
-              case None => throw new PuckError("all overrided methods not found")
-              case Some(g1) => g1.addAbstraction(implId, (absId, pol))
-            }
+            findAndRegisterOverridedMethods(graph, graph.fullName(impl.id), absMeths.toList, candidates.toList)
+              .addAbstraction(implId, (absId, pol))
         case _ => graph
       }
 

@@ -5,7 +5,7 @@ import puck.graph.{Try, NodeId, ConcreteNode, DependencyGraph}
 import puck.graph.constraints.SupertypeAbstraction
 import puck.javaGraph.nodeKind._
 import puck.{Settings, PuckError, AcceptanceSpec}
-import puck.javaGraph.transformations.JavaTransformationRules
+import puck.javaGraph.{JavaTransformationRules => TR}
 
 import scalaz._
 
@@ -17,9 +17,6 @@ class RecordingComparatorSpec extends AcceptanceSpec {
   type TryG = puck.graph.Try[DependencyGraph]
 
   type GraphT = DependencyGraph
-
-  val TR = JavaTransformationRules
-
 
   def introInterface(g : GraphT, clazz : ConcreteNode, pcontainer : NodeId) : Try[(GraphT, ConcreteNode)]= {
     TR.createAbstraction(g, clazz, Interface, SupertypeAbstraction)

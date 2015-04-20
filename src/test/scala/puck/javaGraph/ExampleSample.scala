@@ -4,15 +4,12 @@ import puck.graph.{DependencyGraph, NodeId}
 import puck.graph.transformations.Recording
 import puck.util.{PuckNoopLogger, PuckLogger}
 
-/**
- * Created by lorilan on 2/25/15.
- */
 case class ExampleSample
 ( program : AST.Program,
   graph : DependencyGraph,
   initialRecord : Recording,
   fullName2id : Map[String, NodeId],
-  dg2ast : Map[NodeId, ASTNodeLink]){
+  dg2astMap : Map[NodeId, ASTNodeLink]){
 
   def this(t : (AST.Program,
                 DependencyGraph,

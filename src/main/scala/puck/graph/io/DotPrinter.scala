@@ -296,7 +296,6 @@ class DotPrinter
       case Some(selected) =>  selectedStyle(selected)
     }
 
-    println(reg)
     reg.foreach(printArc(vStyle)(usesStyle))
 
     virt.foreach(printArc(violationStyle(virtualViolations.contains))(virtualUse))

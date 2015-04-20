@@ -1,19 +1,17 @@
-package puck
+package puck.util
 
 import java.io.{PipedInputStream, PipedOutputStream}
-import javax.swing.{WindowConstants, JFrame}
+import javax.swing.{JFrame, WindowConstants}
 
 import org.apache.batik.swing.JSVGCanvas
 import puck.graph.DependencyGraph
-import puck.graph.io.{Svg, FilesHandler, VisibilitySet, PrintingOptions}
+import puck.graph.io.{FilesHandler, PrintingOptions, Svg, VisibilitySet}
 import puck.gui.svg.SVGController
 import puck.javaGraph.JavaDotHelper
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-/**
- * Created by lorilan on 4/8/15.
- */
+import scala.concurrent.Future
+
 object QuickFrame {
   def apply(graph : DependencyGraph, title : String = "QuickFrame") = {
     val pipedOutput = new PipedOutputStream()

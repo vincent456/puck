@@ -1,6 +1,56 @@
+import puck.PuckError;
 
 aspect TransformationApplying {
 
+  public void ASTNode.replaceConstructorCall(ConstructorDecl oldUsed, ConstructorDecl newUsed){
+      for(int i = 0; i < getNumChild(); i++)
+        getChild(i).replaceConstructorCall(oldUsed, newUsed);
+  }
+
+  public void ConstructorAccess.replaceConstructorCall(ConstructorDecl oldUsed, ConstructorDecl newUsed){
+      if(this.decl() == oldUsed){
+
+        ConstructorAccess ca = newUsed.getConstructorAccess();
+
+        replace(this).with(ca);
+      }
+  }
+
+  public static ConstructorDecl ConstructorDecl.createConstructor(Access hostType,  String name, ParameterDeclaration[] params){
+        List<ParameterDeclaration> paramList = new List<ParameterDeclaration>();
+        for(ParameterDeclaration p : params){
+            paramList.add(p);
+        }
+
+        /*String name = "";
+
+        if(hostType instanceof ParTypeAccess){
+            name = ((ParTypeAccess)hostType).name();
+        }
+        if(hostType instanceof TypeAccess){
+            name = ((TypeAccess)hostType).name();
+        }*/
+
+        return new ConstructorDecl(new Modifiers("public"), name, paramList, new List<Access>(), new Opt(), new Block());
+  }
+
+  public void TypeDecl.removeSuperType(Access superTypeAccess){
+        throw new PuckError("removeSuperType in " + this.getClass() +"not implemented");
+  }
+
+  public void ClassDecl.removeSuperType(Access superTypeAccess){
+        if(getSuperClassAccess().equals(superTypeAccess)){
+        setSuperClassAccessOpt(new Opt<Access>());
+        return;
+        }
+        List<Access> implementsList =  getImplementsList();
+
+        for(int i = 0; i< implementsList.getNumChild(); i++)
+        if(implementsList.getChild(i).equals(superTypeAccess)){
+        implementsList.removeChild(i);
+        break;
+        }
+    }
       public String CompilationUnit.getRootPath(){
         String packagePath = packageName().replaceAll("\\.", File.separator);
 //        System.out.println("packagePath : " + packagePath);

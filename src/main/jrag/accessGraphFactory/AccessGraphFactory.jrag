@@ -148,7 +148,10 @@ aspect AccessGraphFactory {
 
 		builder.addUses(containerId, nodeId);
 
-		int typeUserId = access.buildDominantUserAGNode(builder);
+
+		//System.out.println("Searching type user for uses" + builder.getFullName(containerId) + " -> " + builder.getFullName(nodeId));
+
+		int typeUserId = access.buildTypeUserAGNode(builder);
 		int typeUsedId = access.decl().hostType().buildAGNode(builder);
 
 		builder.addTypeRelationship(typeUserId, typeUsedId,
@@ -236,7 +239,9 @@ aspect AccessGraphFactory {
 	}
 
 	public void Access.buildAG(JavaGraphBuilder builder, int containerId){
-		System.err.println("TODO !! "+this.getClass()+".buildAG : " + this);
+		if(this.getClass() != ThisAccess.class
+			&& this.getClass() != ClassAccess.class)
+			System.err.println("TODO !! "+this.getClass()+".buildAG : " + this);
 		super.buildAG(builder, containerId);
 	}
 
@@ -246,8 +251,6 @@ aspect AccessGraphFactory {
 		buildAGInChildren(builder, containerId);
 	}
 	
-
-
 	public void TypeAccess.buildAG(JavaGraphBuilder builder, int containerId){
 		int nodeId = buildAGNode(builder);
 		builder.addUses(containerId, nodeId);
@@ -259,9 +262,6 @@ aspect AccessGraphFactory {
 		buildAGInChildren(builder, containerId);
 	}
 
-
-
-  	
 
 	static void TypeDecl.addImplements(JavaGraphBuilder builder,
     	int sub, AST.List<Access> implementList){
@@ -281,7 +281,7 @@ aspect AccessGraphFactory {
 
 	void TypeAccess.addExtendsAndImplementsUses(JavaGraphBuilder builder, int sub){
 		int sn = buildAGNode(builder);
-		builder.addUses(sub, sn);
+		builder.addIsa(sub, sn);
 	}
 
 	void ParTypeAccess.addExtendsAndImplementsUses(JavaGraphBuilder builder, int sub){

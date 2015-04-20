@@ -9,8 +9,8 @@ aspect NodeFactory  {
 				return builder.getNodeByName(namedElement.fullName());
 			}
 			catch(NoSuchElementException e){
-				
-				int node = builder.addNode(namedElement.fullName(), namedElement.name(), 
+
+				int node = builder.addNode(namedElement.fullName(), namedElement.name(),
 					namedElement.getAGNodeKind(), JavaNodeKind.noType());
 
 			    namedElement.registerDecl(builder, node);
@@ -23,6 +23,15 @@ aspect NodeFactory  {
 			" does not know how to create an AG Node");
 	}
 
+//	public int ClassAccess.buildAGNode(JavaGraphBuilder builder){
+//		this.lock();
+//
+//		int node = builder.addNode("java.lang.Class", "Class",
+//		JavaNodeKind.classKind(), JavaNodeKind.noType());
+//
+//		registerDecl(builder, node);
+//		return node;
+//	}
 
 	public int SuperConstructorAccess.buildAGNode(JavaGraphBuilder builder){
 		this.lock();

@@ -1,7 +1,7 @@
 
-aspect DominantUser {
+aspect TypeUser {
 
-	public int Expr.buildDominantUserAGNode(JavaGraphBuilder builder){
+	public int Expr.buildTypeUserAGNode(JavaGraphBuilder builder){
 		throw new AGBuildingError("Cannot get a primary user from the qualifier : " + this +
                 " ("+this.getClass()+")");
 	}
@@ -16,8 +16,8 @@ aspect DominantUser {
     interface TypeMemberAccess{
         public int buildAGNode(JavaGraphBuilder builder);
         public Expr getQualifier();
-        public int buildDominantUserAGNodeFromLeftExpr(JavaGraphBuilder builder);
-        public int buildDominantUserAGNode(JavaGraphBuilder builder);
+        public int buildTypeUserAGNodeFromLeftExpr(JavaGraphBuilder builder);
+        public int buildTypeUserAGNode(JavaGraphBuilder builder);
         public TypeMember decl();
 
     }
@@ -25,7 +25,7 @@ aspect DominantUser {
     MethodAccess implements TypeMemberAccess;
 
 
-    static int Access.buildDominantUserAGNode(TypeMemberAccess access, JavaGraphBuilder builder){
+    static int Access.buildTypeUserAGNode(TypeMemberAccess access, JavaGraphBuilder builder){
         if(access.getQualifier() == null
             || access.getQualifier().isThisAccess()){
             int selfTypeNode = access.decl().hostType().buildAGNode(builder);
@@ -35,32 +35,48 @@ aspect DominantUser {
         else if(access.getQualifier().isSuperAccess())
             return access.decl().hostType().buildAGNode(builder);
         else
-            return access.buildDominantUserAGNodeFromLeftExpr(builder);
+            return access.buildTypeUserAGNodeFromLeftExpr(builder);
     }
 
-    public int VarAccess.buildDominantUserAGNode(JavaGraphBuilder builder){
-        return Access.buildDominantUserAGNode(this, builder);
+    public int VarAccess.buildTypeUserAGNode(JavaGraphBuilder builder){
+        return Access.buildTypeUserAGNode(this, builder);
     }
-	public int MethodAccess.buildDominantUserAGNode(JavaGraphBuilder builder){
-        return Access.buildDominantUserAGNode(this, builder);
+	public int MethodAccess.buildTypeUserAGNode(JavaGraphBuilder builder){
+        return Access.buildTypeUserAGNode(this, builder);
     }
   	
-  	class NoDominantUser extends Error {}
+  	class NoTypeUser extends Error {}
 	
-  public int Access.buildDominantUserAGNodeFromLeftExpr(JavaGraphBuilder builder){
+  public int Access.buildTypeUserAGNodeFromLeftExpr(JavaGraphBuilder builder){
   	Expr lexpr = getLeftExpr();
         
       if(lexpr == null)
-        throw new NoDominantUser();
+        throw new NoTypeUser();
       else
           return lexpr.typeUserFromLeftExpr(builder);
-        //return lexpr.buildDominantUserAGNodeOfRightExpr(builder);
+        //return lexpr.buildTypeUserAGNodeOfRightExpr(builder);
   }
 
   int Expr.typeUserFromLeftExpr(JavaGraphBuilder builder){
-        throw new AGBuildingError(this + " in " + this.compilationUnit().pathName() +" " +
+        throw new AGBuildingError(this + "(" +this.getClass() + ") in " +
+        this.compilationUnit().pathName() +" line " +
         this.location() + " typeUser not found");
   }
+
+  int AddExpr.typeUserFromLeftExpr(JavaGraphBuilder builder){
+        System.out.println("AddExpr.typeUserFromLeftExpr(builder)");
+        System.out.println("=this.hostBodyDecl().buildAGNode(builder)");
+        System.out.println("to check");
+        return this.hostBodyDecl().buildAGNode(builder);
+  }
+
+
+  int ClassAccess.typeUserFromLeftExpr(JavaGraphBuilder builder){
+        //In SomeRandomClass.class the class keyword is a classAccess
+        return this.hostBodyDecl().buildAGNode(builder);
+  }
+
+
 
   int MethodAccess.typeUserFromLeftExpr(JavaGraphBuilder builder){
       return decl().buildAGNode(builder);
@@ -85,9 +101,15 @@ aspect DominantUser {
        return type().buildAGNode(builder);
   }
 
-   public int ParExpr.typeUserFromLeftExpr(JavaGraphBuilder builder){
+  public int ParExpr.typeUserFromLeftExpr(JavaGraphBuilder builder){
      return getExpr().typeUserFromLeftExpr(builder);
-   }
+  }
+
+  public int Dot.typeUserFromLeftExpr(JavaGraphBuilder builder){
+     if(isRightRotated())
+        rotateLeft();
+     return getRight().typeUserFromLeftExpr(builder);
+  }
 
   // public int ASTNode.typeUserFromLeftExpr(JavaGraphBuilder builder){
   //   return buildAGNode(builder);

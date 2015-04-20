@@ -6,9 +6,6 @@ import puck.graph.transformations.MergeMatcherInstances
 import puck.graph.transformations.rules.MergingCandidatesFinder
 import nodeKind.Interface
 
-/**
- * Created by lorilan on 4/9/15.
- */
 object JavaTransformationHelper extends MergingCandidatesFinder {
 
   def mergeMatcherInstances : MergeMatcherInstances =

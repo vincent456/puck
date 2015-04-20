@@ -17,9 +17,7 @@ package object graph {
   type NodeId = Int
 
   type JavaNodeKind = javaGraph.nodeKind.JavaNodeKind
-  val JavaFilesHandler = javaGraph.JavaFilesHandler
   val JavaNode = javaGraph.JavaDotHelper
-  val JavaSolver = javaGraph.JavaSolver
 
   import scala.language.implicitConversions
   implicit def edgeToPair(edge : DGEdge) : (NodeId, NodeId) = (edge.source, edge.target)

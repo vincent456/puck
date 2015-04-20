@@ -6,7 +6,7 @@ import javax.swing.AbstractAction
 import puck.PuckError
 import puck.graph.{Isa, DGEdge, ConcreteNode}
 import puck.gui.svg.SVGController
-import puck.javaGraph.transformations.JavaTransformationRules
+import puck.javaGraph.JavaTransformationRules
 
 import scalaz._
 

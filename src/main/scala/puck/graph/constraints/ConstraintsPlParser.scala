@@ -19,11 +19,48 @@ case class PElement(node:String)extends ParsedId {
 object ConstraintsPlParser{
   def apply(nodesByName : Map[String, NodeId]) =
     new ConstraintsPlParser(nodesByName)
+
+  class ConstraintsMapBuilderImp {
+
+    var constraintsMap = ConstraintsMaps()
+
+    def setDefs(defs : Map[String, NamedRangeSet]): Unit = {
+      constraintsMap = constraintsMap.copy(namedSets =  defs)
+    }
+
+    def addHideConstraint(owners : RangeSet,
+                          facades : RangeSet,
+                          interlopers : RangeSet,
+                          friends : RangeSet) = {
+      val ct = new Constraint(owners, facades, interlopers, friends)
+
+      val hideConstraintsMap = owners.foldLeft(constraintsMap.hideConstraints){
+        case (map, owner) =>
+          val s = map.getOrElse(owner, new ConstraintSet())
+          map + (owner -> (s + ct) )
+      }
+      constraintsMap = constraintsMap.copy(hideConstraints = hideConstraintsMap)
+    }
+
+    def addFriendConstraint( friends : RangeSet,
+                             befriended : RangeSet) = {
+      val ct = new Constraint(befriended, RangeSet.empty(), RangeSet.empty(), friends)
+
+      val friendCtsMap = befriended.foldLeft(constraintsMap.friendConstraints){
+        case (map, owner) =>
+          val s = map.getOrElse(owner, new ConstraintSet())
+          map + (owner -> (s + ct) )
+      }
+
+      constraintsMap = constraintsMap.copy(friendConstraints = friendCtsMap)
+    }
+  }
+
 }
 class ConstraintsPlParser private
 ( nodesByName : Map[String, NodeId]) extends RegexParsers {
 
-  val builder = new ConstraintsMapBuilderImp()
+  val builder = new ConstraintsPlParser.ConstraintsMapBuilderImp()
 
   protected override val whiteSpace = """(\s|%.*|#.*)+""".r  //to skip comments
 
