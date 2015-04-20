@@ -11,6 +11,7 @@ import scala.collection.mutable
  */
 object DotPrinter {
 
+  val redColor = "red"
   class Style(val line: String, val arrowHead: String)
 
   val isaStyle = new Style("dashed", "empty")
@@ -23,7 +24,7 @@ object DotPrinter {
 
   object ColorThickness {
     val regular = new ColorThickness("black", 2)
-    val violation = new ColorThickness("red", 5)
+    val violation = new ColorThickness(redColor, 5)
 
     val dominant = new ColorThickness("blue", 2)
     val dominated = new ColorThickness("green", 2)
@@ -32,11 +33,13 @@ object DotPrinter {
 
 }
 
-case class PrintingOptions(visibility : VisibilitySet,
-                           printId : Boolean = false,
-                           printSignatures : Boolean = false,
-                           selectedUse : Option[DGEdge] = None,
-                           printVirtualEdges : Boolean = false)
+case class PrintingOptions
+( visibility : VisibilitySet,
+  printId : Boolean = false,
+  printSignatures : Boolean = false,
+  selectedUse : Option[DGEdge] = None,
+  printVirtualEdges : Boolean = false,
+  redOnly: Boolean = false)
 
 import DotPrinter._
 class DotPrinter
@@ -53,7 +56,6 @@ class DotPrinter
     if(printId) id => " (" + id + ")"
     else _ => ""
 
-
   private val emptyMap = mutable.Map[NodeId, Boolean]()
   private def isEmpty(id : NodeId) : Boolean = {
     emptyMap get id match {
@@ -65,8 +67,6 @@ class DotPrinter
       case Some(b) => b
     }
   }
-
-
 
   def html_safe(str : String) : String = str.replaceAllLiterally(">", "&gt;").replaceAllLiterally("<", "&lt;")
 
@@ -99,7 +99,7 @@ class DotPrinter
   type EdgeP = (NodeId, NodeId)
 
   def printArc
-  (statusDisplay : EdgeP => ColorThickness )
+  (status : ColorThickness )
   (style : Style): EdgeP => Unit = {
     case edge @ (source, target) =>
     def dotId(nid: NodeId) : String = {
@@ -119,27 +119,24 @@ class DotPrinter
       else ""
     }
 
-    val status = statusDisplay(edge)
+    if(!redOnly || status.color == redColor )
+      arcs += (dotId(source) + " -> " + dotId(target) + "[ " +
+        subGraphArc(source, "ltail") +
+        subGraphArc(target, "lhead") +
+        "style = " + style.line + ", arrowhead = " + style.arrowHead +
+        ", color = " + status.color + ", penwidth = " + status.thickness+ "];");()
 
 
-    if(visibility.isVisible(source) && visibility.isVisible(target))
-    arcs += (dotId(source) + " -> " + dotId(target) + "[ " +
-      subGraphArc(source, "ltail") +
-      subGraphArc(target, "lhead") +
-      "style = " + style.line + ", arrowhead = " + style.arrowHead +
-      ", color = " + status.color + ", penwidth = " + status.thickness+ "];")
-
-    ()
   }
 
 
-
   def violationStyle
-  ( isViolation : EdgeP => Boolean
-    ) : EdgeP => ColorThickness =
-        isViolation andThen {
-        if(_) ColorThickness.violation
-        else ColorThickness.regular}
+  ( isViolation : Boolean
+    ) :  ColorThickness = {
+      if(isViolation) ColorThickness.violation
+      else ColorThickness.regular
+  }
+
 
   def selectedStyle
   ( selected : DGEdge
@@ -151,8 +148,6 @@ class DotPrinter
       else if (graph.dominates(selected, printed))
         ColorThickness.dominated
       else ColorThickness.regular
-
-
 
   def name( n : DGNode) : String = n match {
     case cn : ConcreteNode => html_safe(cn.name)
@@ -249,21 +244,25 @@ class DotPrinter
 
 
   type ContainsViolationMap = Set[EdgeP]
-
-  def filterVisibleEdges
-  ( edges : Seq[EdgeP]
-    ) : (Seq[EdgeP], Set[EdgeP], ContainsViolationMap) = {
+  type IsViolation = Boolean
+  def filterEdgeBasedOnVisibleNodes
+  ( edges : Seq[EdgeP],
+    edgeKind : EdgeKind,
+    virtInit : Set[EdgeP] = Set(),
+    virtViolationInit : ContainsViolationMap = Set()
+    ) : (Seq[(EdgeP, IsViolation)], Set[EdgeP], ContainsViolationMap) = {
     val (reg, virt, virtualViolations) =
-      edges.foldLeft((Seq[EdgeP](), Set[EdgeP](), Set[EdgeP]())) {
+      edges.foldLeft((Seq[(EdgeP, IsViolation)](), virtInit, virtViolationInit)) {
       case ((regulars, virtuals, m), (source, target)) =>
         (firstVisibleParent(source), firstVisibleParent(target)) match {
           case (Some(s), Some(t))
             if source == s && target == t =>
-            (regulars :+ ((s, t)), virtuals, m)
+            val isViolation = concreteViolations.contains(DGEdge(edgeKind, source, target))
+            (regulars :+ (((s, t), isViolation)), virtuals, m)
 
           case (Some(s), Some(t)) if printVirtualEdges =>
 
-            if(concreteViolations.contains(DGEdge.uses(source, target)))
+            if(concreteViolations.contains(DGEdge(edgeKind, source, target)))
                 (regulars, virtuals + ((s, t)), m + ((s, t)))
               else if(!recusivePackage(s,t))
                 (regulars, virtuals + ((s, t)), m)
@@ -273,7 +272,21 @@ class DotPrinter
           case _ => (regulars, virtuals, m)
         }
     }
-    (reg.filterNot(virt.contains), virt, virtualViolations)
+
+    def filterConflict(reg : Seq[(EdgeP, IsViolation)], virtualViolations : ContainsViolationMap) = {
+      reg.foldLeft((Seq[(EdgeP, IsViolation)](), virtViolationInit)){
+        case ((regulars, m), (e,iv)) =>
+            (virt.contains(e), iv) match {
+              case (false,_) =>  ((e,iv) +: regulars, m)
+              case (true, false) => (regulars,  m)
+              case (true, true) => (regulars,  m + e)
+            }
+      }
+    }
+
+    //reg.fol
+    val (reg1, virtualViolations1) = filterConflict(reg, virtualViolations)
+    (reg1, virt, virtualViolations1)
   }
 
   def apply(): Unit = {
@@ -285,20 +298,21 @@ class DotPrinter
     graph.nodesId.foreach{nid => if(graph.container(nid).isEmpty) printNode(nid)}
 
 
-    graph.isaSeq.foreach {
-      printArc(violationStyle(e => concreteViolations.contains(DGEdge.isa(e))))(isaStyle)
+    val (regularsIsa, virt0, virtualViolations0) = filterEdgeBasedOnVisibleNodes(graph.isaSeq, Isa)
+    regularsIsa.foreach {
+      case (e, v) => printArc(violationStyle(v))(isaStyle)(e)
     }
 
-    val(reg, virt, virtualViolations) = filterVisibleEdges(graph.usesSeq)
+    val(reg, virt, virtualViolations) = filterEdgeBasedOnVisibleNodes(graph.usesSeq, Uses, virt0, virtualViolations0)
 
-    val vStyle : EdgeP => ColorThickness = selectedUse match {
-      case None => violationStyle(e => concreteViolations.contains(DGEdge.uses(e)))
-      case Some(selected) =>  selectedStyle(selected)
+    val vtionStyle : (EdgeP, Boolean) => ColorThickness = selectedUse match {
+      case None => (e, v) => violationStyle(v)
+      case Some(selected) => (e, _) => selectedStyle(selected)(e)
     }
 
-    reg.foreach(printArc(vStyle)(usesStyle))
+    reg.foreach{ case (e, v) =>  printArc(vtionStyle(e,v))(usesStyle)(e) }
 
-    virt.foreach(printArc(violationStyle(virtualViolations.contains))(virtualUse))
+    virt.foreach(e => printArc(violationStyle(virtualViolations contains e))(virtualUse)(e))
 
     arcs.foreach(writeln)
 

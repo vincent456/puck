@@ -3,9 +3,6 @@ package puck.javaGraph.nodeKind
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
 import puck.graph.NodeKind
 
-/**
- * Created by lorilan on 31/07/14.
- */
 trait MethodKind extends JavaNodeKind {
   def canContain(k : NodeKind) = false
 }

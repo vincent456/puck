@@ -111,6 +111,9 @@ class NodeRightClickMenu
       }
       addMenuItem("Expand") { _ =>
         NodeRightClickMenu.this.controller.expand(node.id)
+      }
+      addMenuItem("Expand all") { _ =>
+        NodeRightClickMenu.this.controller.expandAll(node.id)
       };()
     }
   }

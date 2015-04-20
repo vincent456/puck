@@ -13,7 +13,6 @@ import puck.graph.constraints.search.SolverBuilder
 import puck.graph.io._
 import puck.graph.transformations.Recording
 import puck.gui.PuckControl
-import puck.gui.svg.SVGFrame.SVGConsole
 import puck.gui.svg.actions.{AddNodeAction, AbstractionAction}
 
 import scala.collection.mutable
@@ -34,7 +33,8 @@ class SVGController private
   private val visibility : VisibilitySet,
   private var printId : Boolean,
   private var printSignatures : Boolean,
-  private var printVirtualEdges : Boolean = false) {
+  private var printVirtualEdges : Boolean = false,
+  private var printRedOnly : Boolean = false) {
 
   def transfoRules = genController.filesHandler.transformationRules
 
@@ -77,6 +77,13 @@ class SVGController private
     }
   }
 
+  def setRedEdgesOnly(b : Boolean): Unit = {
+    if( b != printRedOnly ){
+      printRedOnly = b
+      displayGraph(graph)
+    }
+  }
+
   def saveRecordOnFile(file : File) : Unit = {
     Recording.write(file.getAbsolutePath, nodesByName, graph)
   }
@@ -102,7 +109,12 @@ class SVGController private
   def collapse(root: NodeId) : Unit =
     setSubTreeVisibility(root, Hidden)
 
-  def expand(root: NodeId) : Unit =
+  def expand(root: NodeId) : Unit = {
+      graph.content(root).foreach(visibility.setVisibility(_, Visible))
+      displayGraph(graph)
+  }
+
+  def expandAll(root: NodeId) : Unit =
     setSubTreeVisibility(root, Visible)
 
   /*
@@ -159,7 +171,7 @@ class SVGController private
       SVGController.documentFromStream(pipedInput)
     }
 
-    val opts = PrintingOptions(visibility, printId, printSignatures, None, printVirtualEdges)
+    val opts = PrintingOptions(visibility, printId, printSignatures, None, printVirtualEdges, printRedOnly)
     genController.filesHandler.makeImage(graph, opts, Some(pipedOutput), Svg){
       case _ => ()
     }
