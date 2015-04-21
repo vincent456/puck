@@ -274,7 +274,7 @@ class DotPrinter
     }
 
     def filterConflict(reg : Seq[(EdgeP, IsViolation)], virtualViolations : ContainsViolationMap) = {
-      reg.foldLeft((Seq[(EdgeP, IsViolation)](), virtViolationInit)){
+      reg.foldLeft((Seq[(EdgeP, IsViolation)](), virtualViolations)){
         case ((regulars, m), (e,iv)) =>
             (virt.contains(e), iv) match {
               case (false,_) =>  ((e,iv) +: regulars, m)
@@ -283,6 +283,7 @@ class DotPrinter
             }
       }
     }
+//    def filterConflict(reg : Seq[(EdgeP, IsViolation)], virtualViolations : ContainsViolationMap) = (reg, virtualViolations)
 
     //reg.fol
     val (reg1, virtualViolations1) = filterConflict(reg, virtualViolations)

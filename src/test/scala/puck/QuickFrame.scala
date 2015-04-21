@@ -1,4 +1,4 @@
-package puck.util
+package puck
 
 import java.io.{PipedInputStream, PipedOutputStream}
 import javax.swing.{JFrame, WindowConstants}
