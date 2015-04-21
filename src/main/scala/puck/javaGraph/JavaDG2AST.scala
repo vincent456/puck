@@ -114,7 +114,7 @@ class JavaDG2AST
     record.foldLeft((graphOfResult(result), initialGraph, graph2ASTMap)) {
       case ((resultGraph, reenactor, g2AST), r) =>
 
-        println(showDG[Transformation](reenactor).shows(r))
+        logger.writeln(showDG[Transformation](reenactor).shows(r))
 
         val jreenactor = reenactor.asInstanceOf[DependencyGraph]
         val res = applyOneTransformation(resultGraph, jreenactor, g2AST, r)
@@ -122,14 +122,15 @@ class JavaDG2AST
         //println(program)
         (resultGraph, r.redo(reenactor), res)
     }
-    println("change applied")
-//    println(program)
+    logger.writeln("change applied : ")
+    logger.writeln(program)
 //    println(program.getNumCuFromSources + " before flush")
     program.flushCaches()
     //println(program.getNumCuFromSources + " after flush")
     program.eliminateLockedNamesInSources()
 //    println(program.getNumCuFromSources + " after unlock")
-//    println(program)
+    logger.writeln("Program after unlock : ")
+    logger.writeln(program)
 
   }
 
@@ -141,7 +142,7 @@ class JavaDG2AST
     reenactor: DependencyGraph,
     id2declMap: Map[NodeId, ASTNodeLink],
     t: Transformation) : Map[NodeId, ASTNodeLink] = t match {
-    case Transformation(Regular, AddCNode(n)) =>
+    case Transformation(Regular, CNode(n)) =>
       //redo t before createDecl
       val newMap = id2declMap get n.id match {
         case Some(_) => id2declMap
@@ -155,19 +156,23 @@ class JavaDG2AST
 
         //redo t after applying on code other transformations
     case `t` => t match {
-      case Transformation(Regular, AddEdge(e)) =>
+      case Transformation(Regular, Edge(e)) =>
         //println("creating edge " + e)
         addEdge(resultGraph, safeGet(resultGraph, id2declMap), e)
 
-      case Transformation(_, RedirectionOp(e, Target(newTarget))) =>
+      case Transformation(_, _ : RedirectionWithMerge) =>
+        logger.writeln("RedirectionWithMerge not applied")
+
+      case Transformation(_, Redirection(e, Source(newSource))) =>
+        redirectSource(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newSource)
+
+      case Transformation(_, Redirection(e, Target(newTarget))) =>
         redirectTarget(resultGraph, safeGet(resultGraph, id2declMap), e, newTarget)
 
       case Transformation(_, TypeRedirection(typed, typ, oldUsed, newUsed)) =>
         redirectTarget(resultGraph: DependencyGraph, safeGet(resultGraph, id2declMap),
           DGEdge.uses(typed, oldUsed), newUsed)
 
-      case Transformation(_, RedirectionOp(e, Source(newSource))) =>
-        redirectSource(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newSource)
       /*case Transformation(Remove(), TTEdge(e@AGEdge(Contains(), source, target))) =>
     println("removing edge " + e)
     (source.kind, target.kind) match {
@@ -185,16 +190,16 @@ class JavaDG2AST
     }*/
 
       // TODO see if can be performed in add node instead
-      case Transformation(_, AddAbstraction(impl, abs, SupertypeAbstraction)) =>
+      case Transformation(_, Abstraction(impl, abs, SupertypeAbstraction)) =>
         (id2declMap get impl, reenactor.getConcreteNode(abs).kind) match {
           case (Some(ConcreteMethodDeclHolder(decl)), AbstractMethod) =>
             decl.setVisibility(AST.ASTNode.VIS_PUBLIC)
           case _ => ()
         }
 
-      case Transformation(_, AddAbstraction(_, _, _)) => ()
+      case Transformation(_, Abstraction(_, _, _)) => ()
 
-      case Transformation(Reverse, AddCNode(n)) =>
+      case Transformation(Reverse, CNode(n)) =>
         //val
         id2declMap get n.id foreach {
           case  dh: TypedKindDeclHolder => dh.decl.puckDelete()
@@ -202,6 +207,7 @@ class JavaDG2AST
             logger.writeln("%s not applied on program".format(t))
         }
 
+      case Transformation(_, Comment(_)) => ()
       case _ => //println(s"$t not applied on program")
         logger.writeln(s"$t not applied on program")
     }
@@ -269,7 +275,10 @@ class JavaDG2AST
 
           case (Package, _, PackageDeclHolder) => () // can be ignored
 
-          case _ => logger.writeln("%s not created".format(e))
+          case (Class, ClassDeclHolder(clsdecl), bdHolder : HasBodyDecl) =>
+            clsdecl.addBodyDecl(bdHolder.decl)
+
+          case _ => logger.writeln(" =========> %s not created".format(e))
 
         }
 
@@ -338,6 +347,7 @@ class JavaDG2AST
 
 
         case (oldk: MethodDeclHolder, newk: MethodDeclHolder) =>
+          logger.write("replace method call !")
           sourceDecl match {
             case ConstructorDeclHolder(cdecl) =>
               cdecl.replaceMethodCall(oldk.decl, newk.decl)
@@ -383,8 +393,6 @@ class JavaDG2AST
                      e: DGEdge, newSourceId: NodeId) : Unit =  {
     import AST.ASTNode.VIS_PUBLIC
 
-    puck.util.QuickFrame(reenactor)
-
     def moveMethod( reenactor : DependencyGraph,
                     tDeclFrom : AST.TypeDecl,
                     tDeclDest : AST.TypeDecl,
@@ -395,7 +403,7 @@ class JavaDG2AST
       //TODO fix : following call create a qualifier if it is null
       //the qualifier is a parameter for which a new instance is created
       //in some case it changes the meaning of the program !!
-      tDeclFrom.replaceMethodCall(mDecl, mDecl)
+      //tDeclFrom.replaceMethodCall(mDecl, mDecl)
 
       if (tDeclFrom.getVisibility != VIS_PUBLIC) {
         reenactor.usersOf(e.target).find { uerId =>
@@ -503,7 +511,7 @@ class JavaDG2AST
           import ShowDG._
           val eStr = showDG[DGEdge](reenactor).shows(e)
           val nsrcStr = showDG[DGNode](reenactor).shows(newSource)
-          throw new JavaAGError(s"redirecting SOURCE of ${eStr} to ${nsrcStr} : application failure !")
+          throw new JavaAGError(s"redirecting SOURCE of $eStr to $nsrcStr : application failure !")
       }
     }
 

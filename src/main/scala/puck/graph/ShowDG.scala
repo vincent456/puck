@@ -62,8 +62,8 @@ object ShowDG {
 
   implicit def transfoTargetCord : CordBuilder[Operation] = (dg, tgt) =>
     tgt match {
-      case AddEdge(edge) => edgeCord(dg, edge)
-      case RedirectionOp(edge, exty) =>
+      case Edge(edge) => edgeCord(dg, edge)
+      case Redirection(edge, exty) =>
         val ecord = edgeCord(dg, edge)
         val xcord = extremityCord(dg, exty)
         Cord(tgt.productPrefix, "(", ecord ,",", xcord ,")")
@@ -74,15 +74,26 @@ object ShowDG {
         val nnew = dg.getNode(newUsed).toString
         Cord(tgt.productPrefix, "(", ntyped ,",", typ.toString ,
           ",", nold , ",", nnew ,")")
+      case Comment(msg) => msg
       case _ => tgt.toString
     }
 
+  val directAddRm : Direction => String = {
+    case Regular => "Add"
+    case Reverse => "Remove"
+  }
+  val addRmOperation : Operation => Boolean = {
+    case _ : VNode
+      | _ : CNode
+      | _ : Edge
+      | _ : Abstraction => true
+    case _ => false
+  }
+
   implicit def transformationtCord : CordBuilder[Transformation] = (dg, tf) =>
-    tf.target match {
-      case AddCNode(_) | AddEdge(_) =>
-        Cord(tf.operation.productPrefix, "(", transfoTargetCord(dg, tf.target),")")
-      case _ =>  transfoTargetCord(dg, tf.target)
-    }
+    if(addRmOperation(tf.operation))
+      Cord(directAddRm(tf.direction), "(", transfoTargetCord(dg, tf.operation),")")
+    else transfoTargetCord(dg, tf.operation)
 
   def showDG[A](sg : Option[DependencyGraph] = None)
                             (implicit s : CordBuilder[A]): Show[A] = sg match {

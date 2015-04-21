@@ -48,6 +48,20 @@ class SVGFrame
     redoButton.setEnabled(svgController.canRedo)
   }
 
+  def abstractAction(name:String)
+                    (action : ActionEvent => Unit) : AbstractAction =
+    new AbstractAction(name){
+      def actionPerformed(e: ActionEvent) : Unit = action(e)
+
+    }
+  def addButtonToMenu(name:String)
+                     (action : ActionEvent => Unit) : Unit = {
+      val _ = menu.add(new JButton(abstractAction(name) {
+        _ => controller.applyOnCode()
+
+      }))
+    }
+
   private val console: SVGConsole = new SVGConsole()
   setLayout(new BorderLayout)
   val panel : SVGPanel = new SVGPanel(SVGController.documentFromStream(stream))
@@ -59,6 +73,7 @@ class SVGFrame
   controller.registerAsStackListeners(this)
 
   addVisibilityCheckBoxesToMenu()
+
 
   private val undoButton = new JButton(abstractAction("Undo") {
     _ => controller.undo()
@@ -74,19 +89,6 @@ class SVGFrame
   addLoadSaveButton()
 
   menu.add(console.panel)
-
-  def abstractAction(name:String)
-                    (action : ActionEvent => Unit) : AbstractAction =
-    new AbstractAction(name){
-      def actionPerformed(e: ActionEvent) : Unit = action(e)
-
-  }
-  def addButtonToMenu(name:String)
-            (action : ActionEvent => Unit) : Unit =
-    menu.add( new JButton(abstractAction(name) {
-      _ => controller.applyOnCode()
-
-    }))
 
   addButtonToMenu("Apply") {
    _ => controller.applyOnCode()
@@ -128,31 +130,36 @@ class SVGFrame
   }
 
   private def addVisibilityCheckBoxesToMenu() : Unit = {
+    val hbox = new JPanel()
+    hbox.setLayout(new BoxLayout(hbox, BoxLayout.Y_AXIS))
+    menu add hbox
+
     val sigCheckBox: JCheckBox = new JCheckBox
     sigCheckBox.setAction(new AbstractAction("Show signatures") {
       def actionPerformed(e: ActionEvent) : Unit = {
         controller.setSignatureVisible(sigCheckBox.isSelected)
       }
     })
-    menu.add(sigCheckBox)
+    hbox add sigCheckBox
     val idCheckBox: JCheckBox = new JCheckBox
     idCheckBox.setAction(abstractAction("Show ids"){
      _ => controller.setIdVisible(idCheckBox.isSelected)
       })
 
-    menu.add(idCheckBox)
+    hbox add idCheckBox
     val vEdgesCheckBox: JCheckBox = new JCheckBox
     vEdgesCheckBox.setAction(abstractAction("Show Virtual Edges"){
       _ =>
       controller.setVirtualEdgesVisible(vEdgesCheckBox.isSelected)
       })
-    menu.add(vEdgesCheckBox)
+    hbox add vEdgesCheckBox
     val redOnlyCheckBox: JCheckBox = new JCheckBox
     redOnlyCheckBox.setAction(abstractAction("Show RedOnly"){
       _ =>
       controller.setRedEdgesOnly(redOnlyCheckBox.isSelected)
       })
-    menu.add(redOnlyCheckBox);()
+    hbox add redOnlyCheckBox
+    ()
   }
 
 

@@ -24,18 +24,14 @@ case object Created extends NodeTransfoStatus
 case object Deleted extends NodeTransfoStatus
 case object Neuter extends NodeTransfoStatus
 
-/**
- * Created by lorilan on 30/09/14.
- */
-
 object NodeMappingInitialState{
   def normalizeNodeTransfos(l : Seq[Transformation],
                             init : Seq[Transformation] = Seq()) : (Map[NodeId, (Int, NodeKind)], Seq[Transformation])= {
     val (map, rl) = l.foldLeft( (Map[NodeId, (Int, NodeKind)](), init) ){
-      case ((m,l1), Transformation(Regular, AddCNode(n))) =>
+      case ((m,l1), Transformation(Regular, CNode(n))) =>
         val (i, _) = m.getOrElse(n.id, (0, JavaRoot) )
         (m + (n.id -> ((i + 1, n.kind))), l1)
-      case ((m,l1), Transformation(Reverse, AddCNode(n))) =>
+      case ((m,l1), Transformation(Reverse, CNode(n))) =>
         val (i, _) = m.getOrElse(n.id, (0, JavaRoot))
         (m + (n.id -> ((i - 1, n.kind))), l1)
 
@@ -44,9 +40,10 @@ object NodeMappingInitialState{
       //if added back think to uncommment comparison in RecordingComparator.compare
       /*case ((m,l1), Transformation(_, TTDependency(_, _))) => (m, l1)
       case ((m,l1), Transformation(_, TTConstraint(_,_))) => (m, l1)*/
-      case ((m,l1), Transformation(_, AddAbstraction(_, _, _))) => (m, l1)
+      case ((m,l1), Transformation(_, Abstraction(_, _, _))) => (m, l1)
       case ((m,l1), Transformation(_, TypeRedirection(_,_,_, _))) => (m, l1)
       case ((m,l1), Transformation(_, ChangeNodeName(_,_,_))) => (m, l1)
+      case ((m,l1), Transformation(_, Comment(_))) => (m, l1)
       case ((m,l1), t : Transformation) => (m, t +: l1)
     }
 

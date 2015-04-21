@@ -3,9 +3,6 @@ package constraints
 
 import scalaz.Cord
 
-/**
- * Created by lorilan on 2/18/15.
- */
 object ShowConstraints {
   import ShowDG.CordBuilder
 

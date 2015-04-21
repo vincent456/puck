@@ -118,6 +118,8 @@ class DependencyGraph
     (PuckLog.InGraph, lvl)
 
 
+  def comment(msg : String) = newGraph(nRecording = recording.comment(msg))
+
   val rootId : NodeId = 0
   def root = getNode(rootId)
   def isRoot(id : NodeId) = id == rootId

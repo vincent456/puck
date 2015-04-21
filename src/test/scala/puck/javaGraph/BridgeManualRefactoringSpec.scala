@@ -13,14 +13,14 @@ class BridgeManualRefactoringSpec extends AcceptanceSpec {
   scenario("bridge simplified ``manual'' refactoring"){
     val bs =  BridgeScenario()
 
-    import bs._
+    //import bs._
 
-    val graphToApply = g1
-
-
-    val jdg2ast = new JavaDG2AST(graphToApply.logger, program, g0, initialRecord, fullName2id, dg2astMap)
-
-    jdg2ast((graphToApply, graphToApply.recording))
+//    val graphToApply = g1
+//
+//
+//    val jdg2ast = new JavaDG2AST(graphToApply.logger, program, g0, initialRecord, fullName2id, dg2astMap)
+//
+//    jdg2ast((graphToApply, graphToApply.recording))
 
 //    val fw = new FileWriter(Settings.projectPath + "record.txt")
 //    fw.write(bs.fullName2id.toString())

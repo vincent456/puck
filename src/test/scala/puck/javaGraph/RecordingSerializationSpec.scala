@@ -4,7 +4,7 @@ import java.io.{FileInputStream, ObjectInputStream, FileOutputStream, ObjectOutp
 
 import puck.{Settings, AcceptanceSpec}
 import puck.graph._
-import puck.graph.transformations.{Recording, Regular, AddCNode, Transformation}
+import puck.graph.transformations.{Recording, Regular, CNode, Transformation}
 import nodeKind._
 
 class RecordingSerializationSpec extends AcceptanceSpec {
@@ -31,7 +31,7 @@ class RecordingSerializationSpec extends AcceptanceSpec {
 
     scenario("one transformation"){
 
-      val t = Transformation(Regular, AddCNode(ConcreteNode(1, "one", Class, styp = None, mutable = true)))
+      val t = Transformation(Regular, CNode(ConcreteNode(1, "one", Class, styp = None, mutable = true)))
       val r1 = t +: Recording()
       writeAndClose(tmpFile){
         Recording.write(_, r1)
@@ -44,8 +44,8 @@ class RecordingSerializationSpec extends AcceptanceSpec {
 
     scenario("two transformations"){
 
-      val t = Transformation(Regular, AddCNode(ConcreteNode(1, "one", Class, styp = None, mutable = true)))
-      val t2 = Transformation(Regular, AddCNode(ConcreteNode(2, "two", Class, styp = None, mutable = true)))
+      val t = Transformation(Regular, CNode(ConcreteNode(1, "one", Class, styp = None, mutable = true)))
+      val t2 = Transformation(Regular, CNode(ConcreteNode(2, "two", Class, styp = None, mutable = true)))
 
       val r = t +: t2 +: Recording()
       writeAndClose(tmpFile){

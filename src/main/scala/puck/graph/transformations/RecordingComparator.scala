@@ -8,10 +8,6 @@ import puck.util.{PuckLogger, PuckNoopLogger}
 import scala.collection.mutable
 import scalaz.{\/-, -\/}
 
-/**
- * Created by lorilan on 07/07/14.
- */
-
 object RecordingComparator{
 
   def revAppend[T] (heads : Seq[T], tails : Seq[T]) : Seq[T] = {
@@ -100,7 +96,7 @@ class RecordingComparator
                   op : Direction,
                   tgt : Operation) :  Option[Seq[Transformation]] = {
 
-    RecordingComparator.removeFirst(l, {(t : Transformation) => t.operation == op && t.target == tgt})
+    RecordingComparator.removeFirst(l, {(t : Transformation) => t.direction == op && t.operation == tgt})
   }
 
   /*def printAssociatedChoices(map : ResMap) = {
@@ -122,7 +118,7 @@ class RecordingComparator
         tryMap match {
           case -\/(_) => k(tryMap)
           case \/-(m) =>
-            removeFirst(ts2, ts1.head.operation, tgt) match {
+            removeFirst(ts2, ts1.head.direction, tgt) match {
             case None => k(-\/(WrongMapping))
              /* println("Failure on mapping : ")
               println(map.mkString("\t", "\n\t", "\n"))
@@ -136,16 +132,16 @@ class RecordingComparator
           }
       }
 
-      ts1.head.target match {
-        case AddEdge(e) => attribNode(Seq(e.source, e.target), map, nodesToMap) {
+      ts1.head.operation match {
+        case Edge(e) => attribNode(Seq(e.source, e.target), map, nodesToMap) {
           case (Seq(src, tgt), map1, nodesToMap1) =>
-            removeFirstAndCompareNext(AddEdge(DGEdge(e.kind, src, tgt)), map1, nodesToMap1 )
+            removeFirstAndCompareNext(Edge(DGEdge(e.kind, src, tgt)), map1, nodesToMap1 )
         }
 
-        case RedirectionOp(e, extremity) =>
+        case Redirection(e, extremity) =>
           attribNode(Seq(e.source, e.target, extremity.node), map, nodesToMap){
             case (Seq(src, tgt, newExtyNode), map1, nodesToMap1) =>
-              removeFirstAndCompareNext(RedirectionOp(
+              removeFirstAndCompareNext(Redirection(
                 DGEdge(e.kind, src, tgt), extremity.create(newExtyNode)), map1, nodesToMap1)
           }
 
@@ -155,10 +151,11 @@ class RecordingComparator
         // they are used to compute the change on the graph, its the change themselves we want to compare
         // removed in NodeMappingInitialState.normalizeNodeTransfos
         case TypeRedirection(_, _, _, _) // TODO see if need to be compared
-             | AddAbstraction(_, _, _)
-             | AddVNode(_)
-             | AddCNode(_)
-             | ChangeNodeName(_, _, _)=> throw new Error("should not happen !!")
+             | Abstraction(_, _, _)
+             | VNode(_)
+             | CNode(_)
+             | ChangeNodeName(_, _, _)
+             | Comment(_) => throw new Error("should not happen !!")
 
       }
     }

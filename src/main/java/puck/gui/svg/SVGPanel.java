@@ -327,9 +327,4 @@ public class SVGPanel extends JPanel{
 
     }
 
-
-
-   /* public static SVGPanel fromFilePath(String filePath ) throws IOException {
-        return fromStream(new FileReader(filePath));
-    }*/
 }

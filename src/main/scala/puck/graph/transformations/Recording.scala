@@ -88,24 +88,24 @@ object Recording {
 
 
     def mappingOnOperation : Operation => Operation = {
-      case AddCNode(n) =>
+      case CNode(n) =>
         val n2 = n.copy(id = mappin(n.id))
-        AddCNode(n2.copy(styp = n.styp.map(mappingOnType)))
-      case AddVNode(n) =>
+        CNode(n2.copy(styp = n.styp.map(mappingOnType)))
+      case VNode(n) =>
         val newId = mappin(n.id)
-        AddVNode(n.copy(id = newId))
+        VNode(n.copy(id = newId))
 
-      case AddEdge(e) =>
-        AddEdge(e.copy(source = mappin(e.source), target = mappin(e.target)))
+      case Edge(e) =>
+        Edge(e.copy(source = mappin(e.source), target = mappin(e.target)))
 
-      case tgt : RedirectionOp =>
+      case tgt : Redirection =>
         val newEdge =
-          mappingOnOperation(AddEdge(tgt.edge)).asInstanceOf[AddEdge].edge
+          mappingOnOperation(Edge(tgt.edge)).asInstanceOf[Edge].edge
         val extyId = tgt.extremity.node
         val newExty = tgt.extremity.create(mappin(extyId))
         tgt.copy(edge = newEdge, extremity = newExty)
-      case AddAbstraction(impl, abs, p) =>
-        AddAbstraction(mappin(impl), mappin(abs), p)
+      case Abstraction(impl, abs, p) =>
+        Abstraction(mappin(impl), mappin(abs), p)
 
       case TypeRedirection(typed, styp, oldUsed, newUsed) =>
         TypeRedirection(mappin(typed), styp map mappingOnType,
@@ -113,6 +113,7 @@ object Recording {
 
       case cnn @ ChangeNodeName(nid, _, _) =>
         cnn.copy(nid = mappin(nid))
+      case op : Comment => op
     }
 
     rec.mapTransformation {
@@ -153,37 +154,40 @@ class Recording
   def removeNode(id : NIdT, name : String, kind : NodeKind, styp: TypeHolder, mutable : Boolean) : RecT =
     Transformation(Remove, TTNode(id, name, kind, styp, mutable)) +: this*/
 
+  def comment(msg : String) : RecT =
+    Transformation(Regular, Comment(msg)) +: this
+
   def addConcreteNode(n : ConcreteNode) : RecT =
-    Transformation(Regular, AddCNode(n)) +: this
+    Transformation(Regular, CNode(n)) +: this
 
   def addVirtualNode(n : VirtualNode) : RecT =
-    Transformation(Regular, AddVNode(n)) +: this
+    Transformation(Regular, VNode(n)) +: this
 
 
   def changeNodeName(nid : NodeId, oldName : String, newName : String) : RecT =
     Transformation(Regular, ChangeNodeName(nid, oldName, newName)) +: this
 
   def removeConcreteNode(n : ConcreteNode) : RecT =
-    Transformation(Reverse, AddCNode(n)) +: this
+    Transformation(Reverse, CNode(n)) +: this
 
   def removeVirtualNode(n : VirtualNode) : RecT =
-    Transformation(Reverse, AddVNode(n)) +: this
+    Transformation(Reverse, VNode(n)) +: this
 
   def addEdge(edge : EdgeT) : RecT =
-    Transformation(Regular, AddEdge(edge)) +: this
+    Transformation(Regular, Edge(edge)) +: this
 
   def removeEdge(edge : EdgeT) : RecT=
-    Transformation(Reverse, AddEdge(edge)) +: this
+    Transformation(Reverse, Edge(edge)) +: this
 
   def changeEdgeTarget(edge : EdgeT, newTarget : NIdT, withMerge : Boolean) : RecT = {
     val red = if(withMerge) new RedirectionWithMerge(edge, Target(newTarget))
-              else RedirectionOp(edge, Target(newTarget))
+              else Redirection(edge, Target(newTarget))
     Transformation(Regular, red) +: this
   }
 
   def changeEdgeSource(edge : EdgeT, newTarget : NIdT, withMerge : Boolean) : RecT = {
     val red = if(withMerge) new RedirectionWithMerge(edge, Source(newTarget))
-    else RedirectionOp(edge, Source(newTarget))
+    else Redirection(edge, Source(newTarget))
     Transformation(Regular, red) +: this
   }
   def addTypeChange( typed : NIdT,
@@ -193,10 +197,10 @@ class Recording
     Transformation(Regular, TypeRedirection(typed, typ, oldUsee, newUsee)) +: this
 
   def addAbstraction(impl : NIdT, abs : NIdT, absPolicy : AbstractionPolicy) : RecT =
-    Transformation(Regular, AddAbstraction(impl, abs, absPolicy)) +: this
+    Transformation(Regular, Abstraction(impl, abs, absPolicy)) +: this
 
   def removeAbstraction(impl : NIdT, abs : NIdT, absPolicy : AbstractionPolicy) : RecT =
-    Transformation(Reverse, AddAbstraction(impl, abs, absPolicy)) +: this
+    Transformation(Reverse, Abstraction(impl, abs, absPolicy)) +: this
 
 }
 
@@ -212,12 +216,12 @@ case object Reverse extends Direction{
 }
 
 case class Transformation
-(operation : Direction,
- target : Operation){
+(direction : Direction,
+ operation : Operation){
   type GraphT = DependencyGraph
 
-  def redo(g: GraphT) = target.execute(g, operation)
-  def undo(g: GraphT) = target.execute(g, operation.reverse)
+  def redo(g: GraphT) = operation.execute(g, direction)
+  def undo(g: GraphT) = operation.execute(g, direction.reverse)
 
 }
 

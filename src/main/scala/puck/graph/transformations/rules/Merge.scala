@@ -121,7 +121,9 @@ class Merge
     }
 
     val g2 = g.usedBy(consumedId).foldLeft(g1) {
-      (g0, usedId) => g0.changeSource(DGEdge.uses(consumedId, usedId), consumerId)
+      (g0, usedId) =>
+          g0.changeSource(DGEdge.uses(consumedId, usedId), consumerId)
+
     }
 
     val g3 = g.directSuperTypes(consumedId).foldLeft(g2) {

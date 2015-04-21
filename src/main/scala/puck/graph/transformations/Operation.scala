@@ -9,7 +9,11 @@ sealed trait Operation{
   def productPrefix : String
 }
 
-case class AddCNode(n : ConcreteNode) extends Operation {
+case class Comment(msg : String) extends Operation {
+  def execute(g: DependencyGraph , op : Direction) : DependencyGraph = g
+}
+
+case class CNode(n : ConcreteNode) extends Operation {
 
   def execute(g: DependencyGraph , op : Direction) = op match {
     case Regular => g.addConcreteNode(n)
@@ -18,11 +22,11 @@ case class AddCNode(n : ConcreteNode) extends Operation {
 }
 
 
-case class AddVNode(n : VirtualNode) extends Operation {
+case class VNode(n : VirtualNode) extends Operation {
   def execute(g: DependencyGraph , op : Direction) = ???
 }
 
-case class AddEdge(edge : DGEdge)
+case class Edge(edge : DGEdge)
   extends Operation {
 
   def execute(g: DependencyGraph , op : Direction) = op match {
@@ -47,7 +51,7 @@ case class Target(node : NodeId) extends Extremity  {
   def create(n : NodeId) : Extremity = Target(n)
 }
 
-case class RedirectionOp(edge : DGEdge, extremity : Extremity)
+case class Redirection(edge : DGEdge, extremity : Extremity)
   extends Operation{
 
   val withMerge = false
@@ -59,8 +63,13 @@ case class RedirectionOp(edge : DGEdge, extremity : Extremity)
   }
 }
 
+object RedirectionWithMerge {
+  def unapply( t : RedirectionWithMerge) : Some[( DGEdge, Extremity)] =
+    Some((t.edge, t.extremity))
+}
+
 class RedirectionWithMerge(edge : DGEdge, extremity : Extremity)
-  extends RedirectionOp(edge, extremity){
+  extends Redirection(edge, extremity){
   override val productPrefix = "RedirectionWithMerge"
 
   override def copy(edge : DGEdge = edge, extremity: Extremity = extremity) =
@@ -101,7 +110,7 @@ case class TypeRedirection
   }
 }
 
-case class AddAbstraction
+case class Abstraction
 (impl: NodeId,
  abs: NodeId,
  policy: AbstractionPolicy)

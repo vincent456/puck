@@ -3,6 +3,7 @@ package puck.javaGraph
 import java.io.{File, FileReader}
 
 import org.scalatest.{OptionValues, EitherValues}
+import puck.util.PuckFileLogger
 import puck.{Java2dot, PuckError, Settings}
 import puck.graph._
 import puck.graph.constraints.{ConstraintsParser, SupertypeAbstraction}
@@ -65,25 +66,27 @@ class BridgeScenario private()
 
   def introClassMoveMethod
   (g : DependencyGraph, className : String, method : NodeId) = {
-    val (c, g1) = TR.intro.createNode(g, className, Class, None)
+    val g0 = g.comment("-- introClassMoveMethod (begin) --")
+    val (c, g1) = TR.intro.createNode(g0, className, Class, None)
     val g2 = g1.addContains(screen, c.id)
     (c, TR.move.typeMember(g2, method, c.id,
-      Some(CreateTypeMember(Field))).right.value)
+      Some(CreateTypeMember(Field))).right.value.
+      comment("-- introClassMoveMethod (end) --"))
   }
 
   def intro2classMerge
   ( g : DependencyGraph, className : String,
     meth1 : NodeId, meth2 : NodeId) = {
-    val (c1, g1) = introClassMoveMethod(g, className, meth1)
-    printDot(g1)
+    val g0 = g.comment("-- intro2classMerge (begin) --")
 
-    printCode(g1)
+    val (c1, g1) = introClassMoveMethod(g0, className, meth1)
 
     val (c2, g2) = introClassMoveMethod(g1, className+"Tmp", meth2)
-    printDot(g2)
+
     val g3 = TR.mergeInto(g2, meth2, meth1).right.value
 
-    (c1, TR.mergeInto(g3, c2.id, c1.id).right.value)
+    (c1, TR.mergeInto(g3, c2.id, c1.id).right.value
+      .comment("-- intro2classMerge (end) --"))
   }
 
   def useInterfaceInstead
@@ -106,11 +109,13 @@ class BridgeScenario private()
 
 
   val g0 = graph.newGraph(nConstraints = cm)
-  val jdg2ast = new JavaDG2AST(g0.logger, program, g0, initialRecord, fullName2id, dg2astMap)
+  logger = new PuckFileLogger(_ => true, new File(BridgeScenario.path + "log"))
+  val jdg2ast = new JavaDG2AST(logger, program, g0, initialRecord, fullName2id, dg2astMap)
 
   printDot(g0)
   val (c1, g1) = intro2classMerge(g0, "CellPhoneStyle", cssCellPhone1, cssCellPhone2)
   printDot(g1)
+  printCode(g1)
   val (c2, g2) = intro2classMerge(g1, "ComputerStyle", cssComputer1, cssComputer2)
   val g3 = g2.setName(cssCellPhone1, "printCss").setName(cssComputer1, "printCss")
 
