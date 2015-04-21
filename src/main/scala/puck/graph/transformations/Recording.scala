@@ -98,7 +98,7 @@ object Recording {
       case Edge(e) =>
         Edge(e.copy(source = mappin(e.source), target = mappin(e.target)))
 
-      case tgt : Redirection =>
+      case tgt : RedirectionOp =>
         val newEdge =
           mappingOnOperation(Edge(tgt.edge)).asInstanceOf[Edge].edge
         val extyId = tgt.extremity.node
@@ -181,13 +181,13 @@ class Recording
 
   def changeEdgeTarget(edge : EdgeT, newTarget : NIdT, withMerge : Boolean) : RecT = {
     val red = if(withMerge) new RedirectionWithMerge(edge, Target(newTarget))
-              else Redirection(edge, Target(newTarget))
+              else RedirectionOp(edge, Target(newTarget))
     Transformation(Regular, red) +: this
   }
 
   def changeEdgeSource(edge : EdgeT, newTarget : NIdT, withMerge : Boolean) : RecT = {
     val red = if(withMerge) new RedirectionWithMerge(edge, Source(newTarget))
-    else Redirection(edge, Source(newTarget))
+    else RedirectionOp(edge, Source(newTarget))
     Transformation(Regular, red) +: this
   }
   def addTypeChange( typed : NIdT,

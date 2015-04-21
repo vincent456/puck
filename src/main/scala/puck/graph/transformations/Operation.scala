@@ -51,7 +51,7 @@ case class Target(node : NodeId) extends Extremity  {
   def create(n : NodeId) : Extremity = Target(n)
 }
 
-case class Redirection(edge : DGEdge, extremity : Extremity)
+case class RedirectionOp(edge : DGEdge, extremity : Extremity)
   extends Operation{
 
   val withMerge = false
@@ -69,7 +69,7 @@ object RedirectionWithMerge {
 }
 
 class RedirectionWithMerge(edge : DGEdge, extremity : Extremity)
-  extends Redirection(edge, extremity){
+  extends RedirectionOp(edge, extremity){
   override val productPrefix = "RedirectionWithMerge"
 
   override def copy(edge : DGEdge = edge, extremity: Extremity = extremity) =

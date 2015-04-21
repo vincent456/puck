@@ -63,7 +63,7 @@ object ShowDG {
   implicit def transfoTargetCord : CordBuilder[Operation] = (dg, tgt) =>
     tgt match {
       case Edge(edge) => edgeCord(dg, edge)
-      case Redirection(edge, exty) =>
+      case RedirectionOp(edge, exty) =>
         val ecord = edgeCord(dg, edge)
         val xcord = extremityCord(dg, exty)
         Cord(tgt.productPrefix, "(", ecord ,",", xcord ,")")

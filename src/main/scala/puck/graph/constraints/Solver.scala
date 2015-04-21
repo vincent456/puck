@@ -4,7 +4,6 @@ package constraints
 import puck.PuckError
 import puck.graph.ShowDG._
 import puck.graph.transformations.TransformationRules
-import puck.graph.transformations.rules.CreateParameter
 import puck.util.PuckLog
 
 import scalaz.{-\/, \/-}

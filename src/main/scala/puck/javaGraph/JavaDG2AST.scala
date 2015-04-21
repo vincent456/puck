@@ -163,10 +163,10 @@ class JavaDG2AST
       case Transformation(_, _ : RedirectionWithMerge) =>
         logger.writeln("RedirectionWithMerge not applied")
 
-      case Transformation(_, Redirection(e, Source(newSource))) =>
+      case Transformation(_, RedirectionOp(e, Source(newSource))) =>
         redirectSource(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newSource)
 
-      case Transformation(_, Redirection(e, Target(newTarget))) =>
+      case Transformation(_, RedirectionOp(e, Target(newTarget))) =>
         redirectTarget(resultGraph, safeGet(resultGraph, id2declMap), e, newTarget)
 
       case Transformation(_, TypeRedirection(typed, typ, oldUsed, newUsed)) =>

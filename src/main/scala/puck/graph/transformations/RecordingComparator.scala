@@ -138,10 +138,10 @@ class RecordingComparator
             removeFirstAndCompareNext(Edge(DGEdge(e.kind, src, tgt)), map1, nodesToMap1 )
         }
 
-        case Redirection(e, extremity) =>
+        case RedirectionOp(e, extremity) =>
           attribNode(Seq(e.source, e.target, extremity.node), map, nodesToMap){
             case (Seq(src, tgt, newExtyNode), map1, nodesToMap1) =>
-              removeFirstAndCompareNext(Redirection(
+              removeFirstAndCompareNext(RedirectionOp(
                 DGEdge(e.kind, src, tgt), extremity.create(newExtyNode)), map1, nodesToMap1)
           }
 
