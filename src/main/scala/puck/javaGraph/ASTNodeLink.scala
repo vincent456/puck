@@ -1,5 +1,6 @@
 package puck.javaGraph
 
+import puck.PuckError
 import puck.graph._, ShowDG._
 import puck.graph.constraints.DelegationAbstraction
 import puck.javaGraph.nodeKind._
@@ -148,6 +149,13 @@ object ASTNodeLink{
 
     }
   }
+
+  val setName : String => ASTNodeLink => Unit = name => {
+    case FieldDeclHolder(decl) => decl.setID(name)
+    case dh : MethodDeclHolder => dh.decl.setID(name)
+    case th : TypedKindDeclHolder => th.decl.setID(name)
+    case h => throw new PuckError(h.getClass + " setName unhandled")
+  }
 }
 
 sealed trait ASTNodeLink
@@ -159,12 +167,18 @@ sealed trait HasBodyDecl extends ASTNodeLink{
   val decl : AST.BodyDecl
 }
 
+sealed trait HasMemberDecl extends HasBodyDecl{
+  override val decl : AST.MemberDecl
+}
+
+
 class DeclarationCreationError(msg : String) extends DGError(msg)
 
 case class ConstructorDeclHolder(decl : AST.ConstructorDecl) extends HasBodyDecl
-case class FieldDeclHolder(decl : AST.FieldDeclaration) extends HasBodyDecl
 
-trait MethodDeclHolder extends HasBodyDecl {
+case class FieldDeclHolder(decl : AST.FieldDeclaration) extends HasMemberDecl
+
+trait MethodDeclHolder extends HasMemberDecl {
   val decl : AST.MethodDecl
 }
 

@@ -82,9 +82,7 @@ class BridgeScenario private()
     val (c1, g1) = introClassMoveMethod(g0, className, meth1)
 
     val (c2, g2) = introClassMoveMethod(g1, className+"Tmp", meth2)
-    //QuickFrame(g2)
-    printDot(g2)
-    //printCode(g2)
+
     val g3 = TR.mergeInto(g2.comment("-- Merging methods (begin) --"), meth2, meth1).right.value
     (c1, TR.mergeInto(g3.comment("-- Merging methods (end) --"), c2.id, c1.id).right.value
       .comment("-- intro2classMerge (end) --"))
@@ -113,44 +111,39 @@ class BridgeScenario private()
   logger = new PuckFileLogger(_ => true, new File(BridgeScenario.path + "log"))
   val jdg2ast = new JavaDG2AST(logger, program, g0, initialRecord, fullName2id, dg2astMap)
 
-  printDot(g0)
   val (c1, g1) = intro2classMerge(g0, "CellPhoneStyle", cssCellPhone1, cssCellPhone2)
-  printDot(g1)
-  printCode(g1)
-//  val (c2, g2) = intro2classMerge(g1, "ComputerStyle", cssComputer1, cssComputer2)
-//  val g3 = g2.setName(cssCellPhone1, "printCss").setName(cssComputer1, "printCss")
-//
-//  val (i1, g4) = TR.createAbstraction(g3, c1, Interface, SupertypeAbstraction).right.value
-//  val g5 = g4.addContains(screen, i1.id)
-//  val (i2, g6) = TR.createAbstraction(g5, c2, Interface, SupertypeAbstraction).right.value
-//  val g7 = g6.addContains(screen, i2.id)
-//
-//  val g8 = TR.mergeInto(g7, i2.id, i1.id).right.value.setName(i1.id, "StyleProvider")
-//
-//  printDot(g8)
-//
-//  val g9 = useInterfaceInstead(g8, c1.id, i1.id)
-//
-//  val g10 = useInterfaceInstead(g9, c2.id, i1.id)
-//
-//  val delegate = getDelegate(g10, welcomeCellPhone)
-//
-//  val g11 = TR.move.typeMember(g10.setName(delegate, "styleProvider"), delegate, screenClass).right.value
-//  val g12 = TR.mergeInto(g11, getDelegate(g11, infoCellPhone), delegate).right.value
-//  val g13 = TR.mergeInto(g12, getDelegate(g12, welcomeComputer), delegate).right.value
-//  val g14 = TR.mergeInto(g13, getDelegate(g13, infoComputer), delegate).right.value
-//
-//  printDot(g14)
-//
-//  val g15 = TR.mergeInto(g14.setName(welcomeCellPhone, "WelcomeScreen"),
-//    welcomeComputerMeth, welcomeCellPhoneMeth).right.value
-//  val g16 = TR.mergeInto(g15, welcomeComputer, welcomeCellPhone).right.value
-//
-//  val g17 = TR.mergeInto(g16.setName(infoCellPhone, "DetailArticleScreen"),
-//    infoComputerMeth, infoCellPhoneMeth).right.value
-//  val g18 = TR.mergeInto(g17, infoComputer, infoCellPhone).right.value
-//
-  def gFinal = g1
-//
-//  printDot(g18)
+  val (c2, g2) = intro2classMerge(g1, "ComputerStyle", cssComputer1, cssComputer2)
+  val g3 = g2.setName(cssCellPhone1, "printCss").setName(cssComputer1, "printCss")
+
+  val (i1, g4) = TR.createAbstraction(g3, c1, Interface, SupertypeAbstraction).right.value
+  val g5 = g4.addContains(screen, i1.id)
+  val (i2, g6) = TR.createAbstraction(g5, c2, Interface, SupertypeAbstraction).right.value
+  val g7 = g6.addContains(screen, i2.id)
+
+  val g8 = TR.mergeInto(g7, i2.id, i1.id).right.value.setName(i1.id, "StyleProvider")
+
+  val g9 = useInterfaceInstead(g8, c1.id, i1.id)
+
+  val g10 = useInterfaceInstead(g9, c2.id, i1.id)
+
+
+  val delegate = getDelegate(g10, welcomeCellPhone)
+
+  val g11 = TR.move.typeMember(g10.setName(delegate, "styleProvider"), delegate, screenClass).right.value
+  val g12 = TR.mergeInto(g11, getDelegate(g11, infoCellPhone), delegate).right.value
+  val g13 = TR.mergeInto(g12, getDelegate(g12, welcomeComputer), delegate).right.value
+  val g14 = TR.mergeInto(g13, getDelegate(g13, infoComputer), delegate).right.value
+
+
+  val g15 = TR.mergeInto(g14.setName(welcomeCellPhone, "WelcomeScreen"),
+    welcomeComputerMeth, welcomeCellPhoneMeth).right.value
+  val g16 = TR.mergeInto(g15, welcomeComputer, welcomeCellPhone).right.value
+
+
+  val g17 = TR.mergeInto(g16.setName(infoCellPhone, "DetailArticleScreen"),
+    infoComputerMeth, infoCellPhoneMeth).right.value
+  val g18 = TR.mergeInto(g17, infoComputer, infoCellPhone).right.value
+
+  def gFinal = g2
+
 }

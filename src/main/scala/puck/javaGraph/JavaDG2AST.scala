@@ -120,17 +120,13 @@ class JavaDG2AST
 
         val res = applyOneTransformation(resultGraph, reenactor, g2AST, r)
 
-        //println(program)
         (resultGraph, r.redo(reenactor), res)
     }
 
     logger.writeln("change applied : ")
     logger.writeln(program)
-//    println(program.getNumCuFromSources + " before flush")
     program.flushCaches()
-    //println(program.getNumCuFromSources + " after flush")
     program.eliminateLockedNamesInSources()
-//    println(program.getNumCuFromSources + " after unlock")
     logger.writeln("Program after unlock : ")
     logger.writeln(program)
 
@@ -169,8 +165,11 @@ class JavaDG2AST
         //println("creating edge " + e)
         addEdge(resultGraph, safeGet(resultGraph, id2declMap), e)
 
-      case Transformation(_, _ : RedirectionWithMerge) =>
+      case Transformation(_, RedirectionWithMerge(_, Source(_))) =>
         logger.writeln("RedirectionWithMerge not applied")
+
+//      case Transformation(_, _ : RedirectionWithMerge) =>
+//        logger.writeln("RedirectionWithMerge not applied")
 
       case Transformation(_, RedirectionOp(e, Source(newSource))) =>
         redirectSource(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newSource)
@@ -193,12 +192,16 @@ class JavaDG2AST
       case Transformation(_, Abstraction(_, _, _)) => ()
 
       case Transformation(Reverse, CNode(n)) =>
-        //val
         id2declMap get n.id foreach {
-          case  dh: TypedKindDeclHolder => dh.decl.puckDelete()
-          case _ => //println(s"$t not applied on program")
-            logger.writeln("%s not applied on program".format(t))
+          case dh: TypedKindDeclHolder => dh.decl.puckDelete()
+          case bdh : HasBodyDecl => bdh.decl.puckDelete()
+          case PackageDeclHolder => ()
+          case NoDecl => throw new PuckError(s"Remove $n not applied")
         }
+
+      case Transformation(_, ChangeNodeName(nid, _, newName)) =>
+        ASTNodeLink.setName(newName)(safeGet(reenactor,id2declMap)(nid))
+
 
       case Transformation(_, op) =>
         if( discardedOp(op) ) ()
@@ -321,8 +324,6 @@ class JavaDG2AST
             case _ => throw new JavaAGError("isa arc should only be between TypeKinds")
           }
 
-
-
         case (oldk: TypedKindDeclHolder, newk: TypedKindDeclHolder) =>
           sourceDecl match {
 
@@ -338,6 +339,7 @@ class JavaDG2AST
             case k =>
               throw new JavaAGError(k + " as user of TypeKind, redirection unhandled !")
           }
+
 
 
         case (oldk: ClassDeclHolder, newk: FieldDeclHolder) =>
@@ -375,13 +377,20 @@ class JavaDG2AST
           }
 
 
+        case (FieldDeclHolder(oldDecl), FieldDeclHolder(newDecl)) =>
+          sourceDecl match {
+            case bdh : HasBodyDecl =>
+              bdh.decl.replaceFieldAccess(oldDecl, newDecl.createLockedAccess())
+            case k =>
+              throw new JavaAGError(k + " as user of Field, redirection unhandled !")
+          }
+
+
         case (oldk: MethodDeclHolder, newk: MethodDeclHolder) =>
           logger.writeln("replace method call !")
           sourceDecl match {
-            case ConstructorDeclHolder(cdecl) =>
-              cdecl.replaceMethodCall(oldk.decl, newk.decl)
-            case mdh: MethodDeclHolder =>
-              mdh.decl.replaceMethodCall(oldk.decl, newk.decl)
+            case bdh : HasBodyDecl =>
+              bdh.decl.replaceMethodCall(oldk.decl, newk.decl)
             case k =>
               throw new JavaAGError(k + " as user of Method, redirection unhandled !")
           }
@@ -422,10 +431,12 @@ class JavaDG2AST
                      e: DGEdge, newSourceId: NodeId) : Unit =  {
     import AST.ASTNode.VIS_PUBLIC
 
-    def moveMethod( reenactor : DependencyGraph,
+
+
+    def moveMemberDecl(reenactor : DependencyGraph,
                     tDeclFrom : AST.TypeDecl,
                     tDeclDest : AST.TypeDecl,
-                    mDecl : AST.MethodDecl) : Unit = {
+                    mDecl : AST.BodyDecl) : Unit = {
 
       tDeclFrom.removeBodyDecl(mDecl)
       tDeclDest.addBodyDecl(mDecl)
@@ -434,14 +445,22 @@ class JavaDG2AST
       //in some case it changes the meaning of the program !!
       //tDeclFrom.replaceMethodCall(mDecl, mDecl)
 
-      if (tDeclFrom.getVisibility != VIS_PUBLIC) {
-        reenactor.usersOf(e.target).find { uerId =>
-          packageNode(reenactor, uerId) != packageNode(reenactor, newSourceId)
-        } match {
-          case Some(_) => mDecl.setVisibility(VIS_PUBLIC)
-          case None => ()
-        }
+      //TODO ameliorate this !!!
+      mDecl match {
+        case decl: AST.MethodDecl => decl.setVisibility(VIS_PUBLIC)
+        case decl: AST.FieldDeclaration => decl.setVisibility(VIS_PUBLIC)
+        case _ => ()
       }
+//      if (tDeclFrom.getVisibility != VIS_PUBLIC) {
+//        (reenactor.usersOf(e.target).find { uerId =>
+//          packageNode(reenactor, uerId) != packageNode(reenactor, newSourceId)
+//        }, mDecl) match {
+//          case (Some(_), decl : AST.MethodDecl) => decl.setVisibility(VIS_PUBLIC)
+//          case (Some(_), decl : AST.FieldDeclaration) => decl.setVisibility(VIS_PUBLIC)
+//          case (Some(_), decl) => assert(false, "MethodDecl or FieldDeclaration expected got " + decl.getClass)
+//          case (None, _) => ()
+//        }
+//      }
     }
 
     def moveTypeKind(newPackage: DGNode,  tDecl : AST.TypeDecl): Unit ={
@@ -509,13 +528,13 @@ class JavaDG2AST
       (id2declMap(source.id), id2declMap(newSource.id), id2declMap(target.id)) match {
         case (ClassDeclHolder(c1Decl),
         ClassDeclHolder(c2Decl),
-        ConcreteMethodDeclHolder(mdecl)) =>
-          moveMethod(reenactor, c1Decl, c2Decl, mdecl)
+        bdh : HasMemberDecl) =>
+          moveMemberDecl(reenactor, c1Decl, c2Decl, bdh.decl)
 
         case (InterfaceDeclHolder(oldItcDecl),
         InterfaceDeclHolder(newItcDecl),
         AbstractMethodDeclHolder(mDecl)) =>
-          moveMethod(reenactor, oldItcDecl, newItcDecl, mDecl)
+          moveMemberDecl(reenactor, oldItcDecl, newItcDecl, mDecl)
 
         case (PackageDeclHolder, PackageDeclHolder, i: TypedKindDeclHolder) =>
           moveTypeKind(newSource, i.decl)

@@ -2,6 +2,16 @@ import puck.PuckError;
 
 aspect TransformationApplying {
 
+    public void ASTNode.replaceFieldAccess(FieldDeclaration oldUsed, Access newUsed) {
+        for(int i = 0; i < getNumChild(); i++)
+            getChild(i).replaceFieldAccess(oldUsed, newUsed);
+    }
+    public void VarAccess.replaceFieldAccess(FieldDeclaration oldUsed, Access newUsed) {
+        if(decl().equals(oldUsed)){
+            replace(this).with(newUsed);
+        }
+    }
+
     public void ASTNode.replaceThisQualifierFor(MethodDecl method, Access byAccess){
         for(int i = 0; i < getNumChild(); i++)
             getChild(i).replaceThisQualifierFor(method, byAccess);
@@ -22,13 +32,11 @@ aspect TransformationApplying {
         getChild(i).replaceConstructorCall(oldUsed, newUsed);
   }
 
-  public void ConstructorAccess.replaceConstructorCall(ConstructorDecl oldUsed, ConstructorDecl newUsed){
-      if(this.decl() == oldUsed){
-
-        ConstructorAccess ca = newUsed.getConstructorAccess();
-
-        replace(this).with(ca);
-      }
+  public void ClassInstanceExpr.replaceConstructorCall(ConstructorDecl oldUsed, ConstructorDecl newUsed){
+        if(this.decl() == oldUsed){
+            setAccess(newUsed.hostType().createLockedAccess());
+            setTarget(newUsed);
+        }
   }
 
   public static ConstructorDecl ConstructorDecl.createConstructor(Access hostType,  String name, ParameterDeclaration[] params){
