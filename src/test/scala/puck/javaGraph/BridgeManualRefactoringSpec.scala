@@ -11,7 +11,14 @@ class BridgeManualRefactoringSpec extends AcceptanceSpec {
   implicit def tryToEither[T]( g : Try[T]) : Either[PuckError, T] = g.toEither
 
   scenario("bridge simplified ``manual'' refactoring"){
-    val bs =  BridgeScenario()
+      try {
+        BridgeScenario()
+      } catch {
+        case e : Throwable =>
+          e.printStackTrace()
+          assert(false)
+      }
+//    val bs =  BridgeScenario()
 
     //import bs._
 

@@ -41,10 +41,9 @@ object JavaIntro extends Intro {
     localName : String,
     kind : NodeKind,
     th : Option[Type],
-    mutable : Mutability = true,
-    sid : Option[NodeId] = None
+    mutable : Mutability = true
     ) : (ConcreteNode, DependencyGraph) = {
-    val (n, g) = super.createNode(graph, localName, kind, th, mutable, sid)
+    val (n, g) = super.createNode(graph, localName, kind, th, mutable)
     kind match {
       case Class =>
         val (ctor, g1) = createNode(g, localName, Constructor,

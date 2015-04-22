@@ -150,12 +150,13 @@ class RecordingComparator
         //removing the dependendency and abstraction of the comparison
         // they are used to compute the change on the graph, its the change themselves we want to compare
         // removed in NodeMappingInitialState.normalizeNodeTransfos
-        case TypeRedirection(_, _, _, _) // TODO see if need to be compared
-             | Abstraction(_, _, _)
-             | VNode(_)
-             | CNode(_)
-             | ChangeNodeName(_, _, _)
-             | Comment(_) => throw new Error("should not happen !!")
+        case _ : TypeRedirection // TODO see if need to be compared
+             | _ : TypeDependency
+             | _ : Abstraction
+             | _ : VNode
+             | _ : CNode
+             | _ : ChangeNodeName
+             | _ : Comment => throw new Error("should not happen !!")
 
       }
     }

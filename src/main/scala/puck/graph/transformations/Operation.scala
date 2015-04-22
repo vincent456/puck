@@ -122,17 +122,20 @@ case class Abstraction
   }
 }
 
-/*
-case class TTDependency(dominant : AGEdge,
-                                                   dominated : AGEdge)
-  extends TransformationTarget[Kind,T]{
 
-  def execute(g: GraphT, op : Operation) = ???
+case class TypeDependency
+( typeUse : (NodeId, NodeId),
+  typeMemberUse :  (NodeId, NodeId))
+  extends Operation {
+  def execute(g: DependencyGraph , op : Direction) = op match {
+    case Regular => g.addUsesDependency(typeUse, typeMemberUse)
+    case Reverse => g.removeUsesDependency(typeUse, typeMemberUse)
+  }
 }
 
 
 
-
+/*
 case class TTConstraint(ct : Constraint,
                                                 friend : AGNode)
   extends TransformationTarget{

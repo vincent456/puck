@@ -7,7 +7,7 @@ import java.io.{FileWriter, BufferedWriter, File}
  */
 
 trait Logger[V] {
-  def writeln(msg : => Any)(implicit v : V) : Unit
+  def writeln(msg : => Any = "")(implicit v : V) : Unit
   def write(msg : => Any)(implicit v : V) : Unit
 }
 

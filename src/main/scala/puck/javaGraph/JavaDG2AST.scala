@@ -5,14 +5,12 @@ import java.util.NoSuchElementException
 
 import puck.PuckError
 import puck.graph._, ShowDG._
-import puck.graph.constraints.{ConstraintsParser, ConstraintsPlParser, SupertypeAbstraction}
+import puck.graph.constraints.{ConstraintsParser, SupertypeAbstraction}
 import puck.graph.io.{DG2ASTBuilder, DG2AST}
 import puck.graph.transformations._
 import puck.javaGraph.nodeKind._
 import puck.util.PuckLog._
-import puck.util.{PuckLog, PuckLogger}
-
-import scalaz.{-\/, \/-}
+import puck.util.{PuckFileLogger, PuckLog, PuckLogger}
 
 object JavaDG2AST extends DG2ASTBuilder {
   def packageNode(graph : DependencyGraph, id : NodeId) : NodeId ={
@@ -26,11 +24,13 @@ object JavaDG2AST extends DG2ASTBuilder {
     aux(id)
   }
 
-  def apply( srcDirectory : File,
-             outDirectory : File,
-             jarListFile : File,
-             logger : PuckLogger,
-             ll : AST.LoadingListener = null ) : DG2AST = {
+  def apply
+  ( srcDirectory : File,
+    outDirectory : File,
+    jarListFile : File,
+    logger : PuckLogger,
+    ll : AST.LoadingListener = null
+    ) : DG2AST = {
     import puck.util.FileHelper.{fileLines, findAllFiles}
 
     val sProg = puck.util.Time.time(logger, defaultVerbosity) {
@@ -111,17 +111,19 @@ class JavaDG2AST
     logger.writeln("applying change !")
     val record = recordOfResult(result)
 
+
+
     record.foldLeft((graphOfResult(result), initialGraph, graph2ASTMap)) {
       case ((resultGraph, reenactor, g2AST), r) =>
 
         logger.writeln(showDG[Transformation](reenactor).shows(r))
 
-        val jreenactor = reenactor.asInstanceOf[DependencyGraph]
-        val res = applyOneTransformation(resultGraph, jreenactor, g2AST, r)
+        val res = applyOneTransformation(resultGraph, reenactor, g2AST, r)
 
         //println(program)
         (resultGraph, r.redo(reenactor), res)
     }
+
     logger.writeln("change applied : ")
     logger.writeln(program)
 //    println(program.getNumCuFromSources + " before flush")
@@ -136,6 +138,13 @@ class JavaDG2AST
 
   def printCode(dir : File) : Unit =
     program.printCodeInDirectory(dir)
+
+  val discardedOp : Operation => Boolean = {
+    case _ : Comment
+    | _ : TypeDependency => true
+    case _ => false
+
+  }
 
   def applyOneTransformation
   ( resultGraph : DependencyGraph,
@@ -167,27 +176,11 @@ class JavaDG2AST
         redirectSource(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newSource)
 
       case Transformation(_, RedirectionOp(e, Target(newTarget))) =>
-        redirectTarget(resultGraph, safeGet(resultGraph, id2declMap), e, newTarget)
+        redirectTarget(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newTarget)
 
-      case Transformation(_, TypeRedirection(typed, typ, oldUsed, newUsed)) =>
-        redirectTarget(resultGraph: DependencyGraph, safeGet(resultGraph, id2declMap),
-          DGEdge.uses(typed, oldUsed), newUsed)
-
-      /*case Transformation(Remove(), TTEdge(e@AGEdge(Contains(), source, target))) =>
-    println("removing edge " + e)
-    (source.kind, target.kind) match {
-    case (p@Package(), i: TypeKind) =>
-      i.decl.compilationUnit().setPackageDecl("unkown")
-
-    case (i@Interface(), m@AbstractMethod()) =>
-      i.decl.removeBodyDecl(m.decl)
-
-    case (c@Class(), m@Method()) =>
-      c.decl.removeBodyDecl(m.decl)
-
-    case _ => println("%s not removed".format(e))
-
-    }*/
+//      case Transformation(_, TypeRedirection(typed, typ, oldUsed, newUsed)) =>
+//        redirectTarget(resultGraph, reenactor, safeGet(resultGraph, id2declMap),
+//          DGEdge.uses(typed, oldUsed), newUsed)
 
       // TODO see if can be performed in add node instead
       case Transformation(_, Abstraction(impl, abs, SupertypeAbstraction)) =>
@@ -207,9 +200,9 @@ class JavaDG2AST
             logger.writeln("%s not applied on program".format(t))
         }
 
-      case Transformation(_, Comment(_)) => ()
-      case _ => //println(s"$t not applied on program")
-        logger.writeln(s"$t not applied on program")
+      case Transformation(_, op) =>
+        if( discardedOp(op) ) ()
+        else logger.writeln(s"$t not applied on program")
     }
     id2declMap
   }
@@ -307,13 +300,14 @@ class JavaDG2AST
 
 
   def redirectTarget(graph: DependencyGraph,
+                     reenactor : DependencyGraph,
                      id2declMap: NodeId => ASTNodeLink,
                      e: DGEdge, newTargetId: NodeId) : Unit =  {
     logger.writeln("redirecting %s target to %s".format(e, newTargetId))
     if(e.target != newTargetId) {
-      val target = graph.getNode(e.target)
-      val source = graph.getNode(e.source)
-      val newTarget = graph.getNode(newTargetId)
+      val target = reenactor.getConcreteNode(e.target)
+      val source = reenactor.getConcreteNode(e.source)
+      val newTarget = reenactor.getConcreteNode(newTargetId)
 
 
       val sourceDecl = id2declMap(source.id)
@@ -346,8 +340,43 @@ class JavaDG2AST
           }
 
 
+        case (oldk: ClassDeclHolder, newk: FieldDeclHolder) =>
+          // assume this a case replace this.m by delegate.m
+          logger.writeln()
+          logger.writeln()
+          logger.writeln("*** REPLACE THIS QUALIFIER")
+          val t = Transformation(Regular, RedirectionOp(e, Target(newTargetId)))
+          logger.writeln(showDG[Transformation](reenactor).shows(t))
+          //TODO refine
+          (sourceDecl, newTarget.styp) match {
+            case (bdh : HasBodyDecl, Some(NamedType(fieldType))) =>
+              logger.write("*** typeUse ")
+              logger.writeln(showDG[DGEdge](reenactor).shows(DGEdge.uses(newTargetId, fieldType)))
+              logger.writeln("type member uses " + reenactor.typeMemberUsesOf((newTargetId, fieldType)))
+              logger.writeln()
+              logger.writeln()
+
+              val plogger = logger.asInstanceOf[PuckFileLogger]
+
+              reenactor.typeMemberUsesOf((newTargetId, fieldType)).foreach{
+                case (_, methodUsed) =>
+                  id2declMap(methodUsed) match {
+                    case ConcreteMethodDeclHolder(mdecl)=>
+                    val fieldAccess = newk.decl.createLockedAccess()
+                          bdh.decl.replaceThisQualifierFor(mdecl, fieldAccess)
+                    case _ => throw  new JavaAGError("unhandled case !")
+                  }
+
+              }
+
+            case _ =>
+              val t = Transformation(Regular, RedirectionOp(e, Target(newTargetId)))
+              throw new JavaAGError(showDG[Transformation](reenactor).shows(t) + " unhandled")
+          }
+
+
         case (oldk: MethodDeclHolder, newk: MethodDeclHolder) =>
-          logger.write("replace method call !")
+          logger.writeln("replace method call !")
           sourceDecl match {
             case ConstructorDeclHolder(cdecl) =>
               cdecl.replaceMethodCall(oldk.decl, newk.decl)

@@ -36,10 +36,9 @@ trait Intro {
     localName : String,
     kind : NodeKind,
     th : Option[Type],
-    mutable : Mutability = true,
-    sid : Option[NodeId] = None
+    mutable : Mutability = true
     ) : (ConcreteNode, DependencyGraph) =
-  graph.addConcreteNode(localName, kind, th, mutable, sid)
+  graph.addConcreteNode(localName, kind, th, mutable)
 
 
   def createAbstraction(g : DependencyGraph,

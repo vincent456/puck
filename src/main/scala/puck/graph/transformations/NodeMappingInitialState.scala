@@ -25,6 +25,16 @@ case object Deleted extends NodeTransfoStatus
 case object Neuter extends NodeTransfoStatus
 
 object NodeMappingInitialState{
+
+  val discardedOp : Operation => Boolean = {
+    case _: Abstraction => true
+    case _: TypeRedirection => true
+    case _: ChangeNodeName => true
+    case _: Comment => true
+    case _: TypeDependency => true
+    case _ => false
+  }
+
   def normalizeNodeTransfos(l : Seq[Transformation],
                             init : Seq[Transformation] = Seq()) : (Map[NodeId, (Int, NodeKind)], Seq[Transformation])= {
     val (map, rl) = l.foldLeft( (Map[NodeId, (Int, NodeKind)](), init) ){
@@ -40,11 +50,10 @@ object NodeMappingInitialState{
       //if added back think to uncommment comparison in RecordingComparator.compare
       /*case ((m,l1), Transformation(_, TTDependency(_, _))) => (m, l1)
       case ((m,l1), Transformation(_, TTConstraint(_,_))) => (m, l1)*/
-      case ((m,l1), Transformation(_, Abstraction(_, _, _))) => (m, l1)
-      case ((m,l1), Transformation(_, TypeRedirection(_,_,_, _))) => (m, l1)
-      case ((m,l1), Transformation(_, ChangeNodeName(_,_,_))) => (m, l1)
-      case ((m,l1), Transformation(_, Comment(_))) => (m, l1)
-      case ((m,l1), t : Transformation) => (m, t +: l1)
+      case ((m,l1), Transformation(_, op))
+        if discardedOp(op) => (m, l1)
+
+      case ((m, l1), t : Transformation) => (m, t +: l1)
     }
 
     (map, rl.reverse)

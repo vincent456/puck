@@ -2,6 +2,21 @@ import puck.PuckError;
 
 aspect TransformationApplying {
 
+    public void ASTNode.replaceThisQualifierFor(MethodDecl method, Access byAccess){
+        for(int i = 0; i < getNumChild(); i++)
+            getChild(i).replaceThisQualifierFor(method, byAccess);
+    }
+
+    public void MethodAccess.replaceThisQualifierFor(MethodDecl method, Access byAccess){
+        if(this.decl() == method){
+            if(getQualifier() == null || getQualifier().isThisAccess())
+                replace(this).with(new Dot(byAccess, this));
+            else
+                replace(getQualifier()).with(byAccess);
+        }
+    }
+
+
   public void ASTNode.replaceConstructorCall(ConstructorDecl oldUsed, ConstructorDecl newUsed){
       for(int i = 0; i < getNumChild(); i++)
         getChild(i).replaceConstructorCall(oldUsed, newUsed);
@@ -257,31 +272,15 @@ aspect TransformationApplying {
     }
 
 
-  public void ASTNode.replaceMethodCall(MethodDecl oldUsee, MethodDecl newUsee){
+  public void ASTNode.replaceMethodCall(MethodDecl oldUsed, MethodDecl newUsed){
       for(int i = 0; i < getNumChild(); i++)
-          getChild(i).replaceMethodCall(oldUsee, newUsee);
+          getChild(i).replaceMethodCall(oldUsed, newUsed);
   } 
 
-  public void MethodAccess.replaceMethodCall(MethodDecl oldUsee, MethodDecl newUsee){                                                                  
-        if(this.decl() == oldUsee){                                                                                                         
-                                                                                                                                            
-            MethodAccessInfo mai = newUsee.hostType().accessMemberMethod(newUsee);                                                          
-            //MethodAccessInfo mai = this.accessMethod(newUsee);                                                                            
-                                                                                                                                            
-            if(mai == null)                                                                                                                 
-                System.out.println("mai is null !!");                                                                                       
-                                                                                                                                            
-            MethodAccess ma = mai.constructAccess(this, this.getArgList());                                                                 
-                                                                                                                                            
-            if(ma.getQualifier() == null) {                                                                                                 
-                ParameterDeclaration p =                                                                                                    
-                        ((MethodDecl) this.hostBodyDecl()).introduceParameter(newUsee.hostType(), "");                                      
-                replace(this).with(new Dot(p.createLockedAccess(), ma));                                                                    
-            }                                                                                                                               
-            else                                                                                                                            
-                replace(this).with(ma);                                                                                                     
-        }                                                                                                                                   
-    } 
+  public void MethodAccess.replaceMethodCall(MethodDecl oldUsed, MethodDecl newUsed){
+      if(this.decl() == oldUsed)
+        replace(this).with(new MethodAccess(newUsed.name(), this.getArgList()));
+  }
 
 
   public void ASTNode.replaceByConstructorMethodCall(MethodDecl cm){

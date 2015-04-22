@@ -113,6 +113,9 @@ object Recording {
 
       case cnn @ ChangeNodeName(nid, _, _) =>
         cnn.copy(nid = mappin(nid))
+      case TypeDependency((tUser, tUsed),(tmUser, tmUsed)) =>
+        TypeDependency((mappin(tUser), mappin(tUsed)),
+            (mappin(tmUser), mappin(tmUsed)))
       case op : Comment => op
     }
 
@@ -201,6 +204,15 @@ class Recording
 
   def removeAbstraction(impl : NIdT, abs : NIdT, absPolicy : AbstractionPolicy) : RecT =
     Transformation(Reverse, Abstraction(impl, abs, absPolicy)) +: this
+
+  def addTypeDependency( typeUse : (NodeId, NodeId),
+                         typeMemberUse :  (NodeId, NodeId)) : RecT =
+    Transformation(Regular, TypeDependency(typeUse, typeMemberUse)) +: this
+
+
+  def removeTypeDependency( typeUse : (NodeId, NodeId),
+                         typeMemberUse :  (NodeId, NodeId)) : RecT =
+    Transformation(Reverse, TypeDependency(typeUse, typeMemberUse)) +: this
 
 }
 

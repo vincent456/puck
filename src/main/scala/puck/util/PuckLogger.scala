@@ -2,9 +2,6 @@ package puck.util
 
 import puck.util.PuckLog.{NoSpecialContext, Level, Kind, Info}
 
-/**
- * Created by lorilan on 23/10/14.
- */
 object PuckLog{
 
   type Verbosity = (Kind, Level)

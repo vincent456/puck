@@ -129,17 +129,19 @@ class DependencyGraph
        nRemovedNodes = removedNodes - n.id,
        nRecording = recording.addConcreteNode(n))
 
-  def addConcreteNode(localName:String, kind: NodeKind, th : Option[Type],
-                      mutable : Mutability = true, sid : Option[NodeId] = None) : (ConcreteNode, GraphT) = {
-    val (id, g) = sid match {
-      case None => (idSeed + 1, newGraph(nIdSeed = idSeed + 1))
-      case Some(i) => (i, this)
-    }
-    val n = ConcreteNode(id, localName, kind, th, mutable)
-    (n, g.addConcreteNode(n))
+  def addConcreteNode
+  ( localName : String,
+    kind : NodeKind,
+    th : Option[Type],
+    mutable : Mutability = true
+    ) : (ConcreteNode, GraphT) = {
+    val nid = idSeed + 1
+    val n = ConcreteNode(nid, localName, kind, th, mutable)
+    (n, newGraph(nIdSeed = nid).addConcreteNode(n))
   }
 
-  private def addVirtualNode(n : VirtualNode) : DependencyGraph =
+  private def addVirtualNode
+  ( n : VirtualNode ) : DependencyGraph =
     newGraph(nVNodesIndex = vNodesIndex + (n.id -> n),
       nVRemovedNodes = vRemovedNodes - n.id,
       nNodes2vNodes = nodes2vNodes + (n.potentialMatches -> n.id),
@@ -308,7 +310,8 @@ class DependencyGraph
   def addUsesDependency(typeUse : (NodeId, NodeId),
                         typeMemberUse : (NodeId, NodeId)) : GraphT =
     newGraph(nDominantUsesMap = typeMemberUses2typeUsesMap + (typeMemberUse, typeUse),
-      nDominatedUsesMap = typeUses2typeMemberUsesMap + (typeUse, typeMemberUse))
+      nDominatedUsesMap = typeUses2typeMemberUsesMap + (typeUse, typeMemberUse),
+    nRecording = recording.addTypeDependency(typeUse, typeMemberUse))
 
   def removeUsesDependency(dominantEdge : DGEdge,
                            dominatedEdge :DGEdge) : GraphT =
@@ -318,7 +321,8 @@ class DependencyGraph
   def removeUsesDependency(typeUse : (NodeId, NodeId),
                            typeMemberUse : (NodeId, NodeId)) : GraphT =
     newGraph(nDominantUsesMap = typeMemberUses2typeUsesMap - (typeMemberUse, typeUse),
-      nDominatedUsesMap = typeUses2typeMemberUsesMap - (typeUse, typeMemberUse))
+      nDominatedUsesMap = typeUses2typeMemberUsesMap - (typeUse, typeMemberUse),
+      nRecording = recording.removeTypeDependency(typeUse, typeMemberUse))
 
   def addAbstraction(id : NodeId, abs : (NodeId, AbstractionPolicy)) : GraphT =
     newGraph(nAbstractionsMap = abstractionsMap + (id, abs),

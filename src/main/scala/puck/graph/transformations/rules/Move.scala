@@ -105,10 +105,16 @@ case class CreateTypeMember(k : NodeKind) extends CreateVarStrategy {
       val g2 = removeUsesDependencyTowardSelfUse(g, typeUse, typeMemberUse)
 
       val (delegate, g3) = getDelegate(g2)
-      val g4 = g3.addUses(delegate, newContainer)
-        .addUses(userId, delegate)
-        .addUsesDependency((delegate, newContainer), typeMemberUse)
-      (delegate, g4)
+
+      val thisUse = DGEdge.uses(userId, currentContainer)
+
+      //addUsesDependency done before addUse to have some context when applying
+      val g4 = g3.addUsesDependency((delegate, newContainer), typeMemberUse)
+        .addUses(delegate, newContainer) //type field
+
+      val g5 = thisUse.changeTarget(g4, delegate) // replace this.m by delegate.m
+
+      (delegate, g5)
     }
 
     val selfTypeUses = DGEdge.uses(currentContainer, currentContainer)

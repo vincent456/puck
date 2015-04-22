@@ -9,12 +9,6 @@ class GraphBuilder {
 
   def getNodeByName( k : String) : NodeIdT = nodesByName(k) //java accessor
 
-  def addPredefined(id : NodeIdT, fullName : String, name : String, kind : NodeKind): Unit = {
-    g = g.addConcreteNode(name, kind, None, mutable = false, Some(id))._2
-    nodesByName += (fullName -> id)
-    ()
-  }
-
   def getFullName( id : NodeIdT) : String = g.fullName(id)
 
   def addNode(unambiguousFullName: String, localName:String, kind: NodeKind, th : Option[Type]): NodeIdT = {
