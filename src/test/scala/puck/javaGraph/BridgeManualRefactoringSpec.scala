@@ -4,6 +4,8 @@ package javaGraph
 import java.io.{FileWriter, File}
 
 import puck.graph._
+import puck.util.PuckLog.{Info, NoSpecialContext}
+import puck.util.PuckSystemLogger
 
 
 class BridgeManualRefactoringSpec extends AcceptanceSpec {
@@ -15,6 +17,8 @@ class BridgeManualRefactoringSpec extends AcceptanceSpec {
         val bs = BridgeScenario()
         bs.printDot(bs.gFinal)
         bs.printCode(bs.gFinal)
+        bs.gFinal.constraints.printConstraints(bs.gFinal, new PuckSystemLogger(_ => true), (NoSpecialContext, Info))
+
       } catch {
         case e : Throwable =>
           e.printStackTrace()

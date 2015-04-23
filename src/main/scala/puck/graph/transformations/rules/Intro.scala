@@ -55,10 +55,12 @@ trait Intro {
   }
 
   //SO SO UGLY !!!
-  def abstractionCreationPostTreatment(g : DependencyGraph,
-                                       implId : NodeId,
-                                       absId : NodeId,
-                                       policy : AbstractionPolicy) : DependencyGraph = g
+  def abstractionCreationPostTreatment
+  ( g : DependencyGraph,
+    implId : NodeId,
+    absId : NodeId,
+    policy : AbstractionPolicy
+    ) : DependencyGraph = g
 
 
 

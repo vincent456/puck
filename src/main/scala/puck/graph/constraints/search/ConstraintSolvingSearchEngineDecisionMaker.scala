@@ -129,6 +129,11 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker
     k(graph.nodeKinds.find(_.canContain(toBeContained.kind)))
   }
 
+  def selectExistingAbstraction
+  ( graph : DependencyGraph, choices : Set[(NodeId, AbstractionPolicy)])
+  ( k : Option[(NodeId, AbstractionPolicy)] => Unit) : Unit =
+    if( choices.isEmpty ) k(None)
+    else k(Some(choices.head))
 
   def chooseNode(graph : DependencyGraph, predicate : NodePredicate)
                 (k : DependencyGraph => Option[NodeId] => Unit) : Unit = {

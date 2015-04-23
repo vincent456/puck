@@ -45,7 +45,7 @@ case class NamedRangeSet private[constraints]
 
   override def toString() = id
 
-  val declare : String = "declareSet"
+  val declare : String = ""
 
   def iterator : Iterator[Range] = setDef.iterator
   def +(n : Range) = new NamedRangeSet(id, setDef + n)

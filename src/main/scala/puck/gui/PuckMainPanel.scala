@@ -26,6 +26,11 @@ class PuckMainPanel(filesHandler: FilesHandler)
 
   leftComponent = new PuckInterfacePanel(filesHandler)
 
-  rightComponent = new PuckConsolePanel(filesHandler)
+
+  rightComponent = {
+    val panel = new PuckConsolePanel()
+    filesHandler.logger = new TextAreaLogger(panel.console, filesHandler.logPolicy)
+    panel
+  }
 }
 

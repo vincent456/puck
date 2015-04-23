@@ -4,10 +4,6 @@ import puck.graph._
 import puck.graph.transformations.rules.CreateVarStrategy
 
 
-/**
- * Created by lorilan on 28/05/14.
- */
-
 trait NodePredicate {
   def apply(dg : DependencyGraph, cn : ConcreteNode) : Boolean
   override def toString : String = "NodePredicate"
@@ -26,6 +22,11 @@ trait DecisionMaker{
 
   def chooseContainerKind(graph : DependencyGraph, toBeContained : DGNode)
                          (k : Option[NodeKind] => Unit) : Unit
+
+  def selectExistingAbstraction
+  ( graph : DependencyGraph, choices : Set[(NodeId, AbstractionPolicy)])
+  ( k : Option[(NodeId, AbstractionPolicy)] => Unit) : Unit
+
 
   def createVarStrategy(k : CreateVarStrategy => Unit) : Unit
 

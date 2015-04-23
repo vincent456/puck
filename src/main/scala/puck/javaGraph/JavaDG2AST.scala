@@ -358,8 +358,6 @@ class JavaDG2AST
               logger.writeln()
               logger.writeln()
 
-              val plogger = logger.asInstanceOf[PuckFileLogger]
-
               reenactor.typeMemberUsesOf((newTargetId, fieldType)).foreach{
                 case (_, methodUsed) =>
                   id2declMap(methodUsed) match {

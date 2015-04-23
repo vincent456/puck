@@ -8,9 +8,6 @@ import puck.graph.transformations.rules.Redirection
 import puck.graph.{ConcreteNode, DGEdge}
 import puck.gui.svg.SVGController
 
-/**
- * Created by lorilan on 3/19/15.
- */
 case class RedirectAction
 ( newTarget : ConcreteNode,
   edge : DGEdge,

@@ -7,28 +7,32 @@ import javax.swing._
 
 import puck.graph.DependencyGraph
 import puck.graph.io.PrintingOptions
-import puck.gui.PuckControl
+import puck.gui.{PuckConsolePanel, TextAreaLogger, PuckControl}
+
+import scala.swing.Label
 
 class SVGConsole
 ( val lines: Int = 10,
   val charPerLine: Int = 50) {
 
+  private val selection: Label = new Label
 
+  val panel0 = new PuckConsolePanel(){
+    selection +=: contents
+    console.rows = lines
+    console.columns = charPerLine
+  }
 
+  def panel = panel0.peer
+  def console = panel0.console
 
+  val textArea: JTextArea = new JTextArea(lines, charPerLine)
 
-  val panel: JPanel  = new JPanel
-  private val selection: JLabel = new JLabel
-  private val textArea: JTextArea = new JTextArea(lines, charPerLine)
-
-  panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS))
-  panel.add(selection)
-  panel.add(textArea)
   textArea.setEditable(false)
 
   private[svg] def displaySelection(node: String) : Unit = {
-    if (node.length > 0) selection.setText("Selection : " + node)
-    else selection.setText("No selection")
+    if (node.length > 0) selection.text = "Selection : " + node
+    else selection.text = "No selection"
   }
 
   def appendText(txt: String) : Unit = {
@@ -62,12 +66,13 @@ class SVGFrame
       }))
     }
 
-  private val console: SVGConsole = new SVGConsole()
+  private val consolePanel: SVGConsole = new SVGConsole()
   setLayout(new BorderLayout)
   val panel : SVGPanel = new SVGPanel(SVGController.documentFromStream(stream))
   setVisible(true)
 
-  private val controller: SVGController = SVGController(control, g, opts, panel.canvas, console)
+  val consoleLogger = new TextAreaLogger(consolePanel.console, g.logger.askPrint)
+  private val controller: SVGController = SVGController(control, g.withLogger(consoleLogger), opts, panel.canvas, consolePanel)
   panel.setController(controller)
   private val menu: JPanel = new JPanel()
   controller.registerAsStackListeners(this)
@@ -88,7 +93,7 @@ class SVGFrame
 
   addLoadSaveButton()
 
-  menu.add(console.panel)
+  menu.add(consolePanel.panel)
 
   addButtonToMenu("Apply") {
    _ => controller.applyOnCode()
@@ -116,14 +121,14 @@ class SVGFrame
     addButtonToMenu("Save") {
       _ =>
         chooseFile() match {
-          case None => console.appendText("no file selected")
+          case None => consolePanel.appendText("no file selected")
           case Some(f) =>  controller.saveRecordOnFile(f)
         }
       }
     addButtonToMenu("Load") {
       _ =>
         chooseFile() match {
-          case None => console.appendText("no file selected")
+          case None => consolePanel.appendText("no file selected")
           case Some(f) => controller.loadRecord(f)
         }
     }

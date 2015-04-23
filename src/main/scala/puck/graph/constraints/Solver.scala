@@ -7,6 +7,7 @@ import puck.graph.transformations.TransformationRules
 import puck.util.PuckLog
 
 import scalaz.{-\/, \/-}
+import puck.util.Collections.traverse
 
 class Solver
 ( val decisionMaker : DecisionMaker,
@@ -23,38 +24,31 @@ class Solver
   def redirectTowardExistingAbstractions(graph : DependencyGraph,
                                          used : ConcreteNode,
                                          wrongUsers : Seq[NodeId])
-                                        (k : (DependencyGraph, Seq[NodeId]) => Unit) : Unit = {
+                                        (k : Try[(DependencyGraph, Seq[NodeId])] => Unit) : Unit = {
     import graph.logger
-    decisionMaker.abstractionKindAndPolicy(graph, used) {
-      case Some((absKind, absPolicy)) =>
+    logger.writeln("redirect toward existing abstractions")
+    def aux(g : DependencyGraph, wrongUsers : Seq[NodeId], choices : Set[(NodeId, AbstractionPolicy)]) : Unit = {
+      decisionMaker.selectExistingAbstraction(g, choices){
+          case None => k(\/-((g, wrongUsers)))
+          case Some((absId, absPol)) =>
+            val (remainingWus, wuToRedirect) = wrongUsers.partition(g.interloperOf(_, absId))
 
-        logger.writeln("redirect toward existing abstractions")
-        val (g3, allUnsolved) = wrongUsers.foldLeft((graph, Seq[NodeId]())) {
-          case ((g, unsolved), wu) =>
-          g.abstractions(used.id) find {
-            case (nid, `absPolicy`) =>
-              val cn = g.getConcreteNode(nid)
-              cn.kind == absKind && !graph.interloperOf(wu, nid)
-            case _ => false
-          } match {
-            case None => (g, wu +: unsolved)
-            case Some((abs, _)) =>
-              logger.writeln(s"$wu will use abstraction $abs")
+            logger.writeln(s"$wuToRedirect will use abstraction $absId")
 
-              //val breakPoint = g.startSequence()
-
-              rules.redirection.redirectUsesAndPropagate(g, DGEdge.uses(wu, used.id), abs, absPolicy) match {
-                  case \/-(g2) => (g2, unsolved)
-                  case -\/(e) =>
-                    logger.writeln("redirection error catched !!")(PuckLog.Debug)
-                    (g/*.undo(breakPoint)*/, wu +: unsolved)
-              }
-          }
-        }
-        k(g3, allUnsolved)
-      case None =>k(graph, wrongUsers)
+            val tg = traverse(wuToRedirect, g) { (g, wu) =>
+              rules.redirection.redirectUsesAndPropagate(g, DGEdge.uses(wu, used.id), absId, absPol)
+            } match {
+              case \/-(g2) => aux(g2, remainingWus, choices - ((absId, absPol)))
+              case -\/(err) => k(-\/(err))
+            }
+      }
     }
+
+    aux(graph, wrongUsers, graph.abstractions(used.id))
+
   }
+
+
 
   var newCterNumGen = 0
 
@@ -210,26 +204,11 @@ class Solver
     logger.writeln(s"##### Solving uses violations toward $impl ######")
 
     redirectTowardExistingAbstractions(graph, impl, graph.wrongUsers(impl.id)){
-      (graph2, wrongUsers) =>
-      if (wrongUsers.nonEmpty){
-        absIntro(graph2, impl, wrongUsers)(k)
-        /*{
-          case Failure(_) =>
-            //dead code : en acceptant qu'une abstraction nouvellement introduite
-            //soit la cible de violation, on a jamais besoin d'utiliser le degré 2
-            absIntro(graph2, impl, wrongUsers, 2){
-              case Failure(e) => k(Failure(e))
+      case \/-((graph2, wrongUsers)) =>
+        if (wrongUsers.nonEmpty) absIntro(graph2, impl, wrongUsers)(k)
+        else k(\/-(graph2))
+      case -\/(err) => k(-\/(err))
 
-                /*decisionMaker.modifyConstraints(LiteralNodeSet(wrongUsers), impl)
-                if(impl.wrongUsers.nonEmpty)
-                throw new AGError ("cannot solve uses toward " + impl)
-                k ()*/
-              case sg => k (sg)
-            }
-          case sg => k (sg)
-        }*/
-      }
-      else k(\/-(graph2))
     }
   }
 

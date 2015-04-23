@@ -14,9 +14,6 @@ import puck.javaGraph.nodeKind.{Package, Class}
 import scala.collection.mutable.ArrayBuffer
 import scala.swing._
 
-/**
- * Created by lorilan on 22/02/15.
- */
 class PuckInterfacePanel (filesHandler : FilesHandler) extends SplitPane(Orientation.Vertical) {
 
   val leftWidth = PuckMainPanel.width * 3/8

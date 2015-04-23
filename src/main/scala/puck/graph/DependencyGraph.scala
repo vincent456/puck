@@ -463,7 +463,7 @@ class DependencyGraph
                 dominatedEdge : (NodeId, NodeId)) : Boolean =
     typeMemberUsesOf( dominantEdge ) contains dominatedEdge
 
-  def abstractions(id : NodeId) : Iterable[(NodeId, AbstractionPolicy)] =
+  def abstractions(id : NodeId) : Set[(NodeId, AbstractionPolicy)] =
     abstractionsMap getFlat id
 
   def violations() : Seq[DGEdge] =

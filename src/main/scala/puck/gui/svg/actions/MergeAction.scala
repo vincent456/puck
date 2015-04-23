@@ -6,9 +6,6 @@ import javax.swing.AbstractAction
 import puck.graph.ConcreteNode
 import puck.gui.svg.SVGController
 
-/**
- * Created by lorilan on 3/18/15.
- */
 case class MergeAction(
   consumed : ConcreteNode,
   consumer : ConcreteNode,
@@ -19,6 +16,11 @@ case class MergeAction(
 
   override def actionPerformed(e: ActionEvent): Unit =
     printErrOrPushGraph(controller,"Merge action failure") {
+
+      val sConsumerHost= graph.container(consumer.id)
+      if(graph.container(consumed.id) != sConsumerHost)
+        new MoveAction(graph.getConcreteNode(sConsumerHost.get), consumed, controller).actionPerformed(null)
+
       controller.transfoRules.mergeInto(graph, consumed.id, consumer.id)
     }
 

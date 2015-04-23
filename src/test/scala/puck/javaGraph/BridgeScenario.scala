@@ -144,6 +144,6 @@ class BridgeScenario private()
     infoComputerMeth, infoCellPhoneMeth).right.value
   val g18 = TR.mergeInto(g17, infoComputer, infoCellPhone).right.value
 
-  def gFinal = g2
+  def gFinal = g18
 
 }

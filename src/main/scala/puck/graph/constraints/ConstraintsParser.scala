@@ -1,6 +1,8 @@
 package puck.graph
 package constraints
 
+
+import puck.graph.constraints.{Keywords => KW}
 import scala.util.parsing.combinator.RegexParsers
 import scala.util.parsing.input.{Reader, StreamReader}
 
@@ -139,16 +141,16 @@ object ConstraintsParser
 
 
   def hide(cm : ConstraintMapBuilder) : Parser[RangeSet] =
-    "hide" ~> rangeListOrRange ^^ cm.getDef
+    KW.hide ~> rangeListOrRange ^^ cm.getDef
 
   def except(cm : ConstraintMapBuilder) : Parser[RangeSet] =
-    "except" ~> rangeListOrRange ^^ cm.getDef
+    KW.except ~> rangeListOrRange ^^ cm.getDef
 
   def from(cm : ConstraintMapBuilder) : Parser[RangeSet] =
-    "from" ~> rangeListOrRange ^^ cm.getDef
+    KW.from ~> rangeListOrRange ^^ cm.getDef
 
   def butNotFrom(cm : ConstraintMapBuilder) : Parser[RangeSet] =
-    "but-not-from" ~> rangeListOrRange ^^ cm.getDef
+    KW.butNotFrom ~> rangeListOrRange ^^ cm.getDef
 
   def hideCt
   ( cm : ConstraintMapBuilder ) : Parser[ConstraintMapBuilder] =
@@ -185,7 +187,7 @@ object ConstraintsParser
     }
 
   def friend(cm : ConstraintMapBuilder) : Parser[ConstraintMapBuilder] =
-    rangeListOrRange ~ "friend-of" ~ rangeListOrRange ^^ {
+    rangeListOrRange ~ KW.friendOf ~ rangeListOrRange ^^ {
       case friends ~ _ ~ befriended =>
         cm.addFriendConstraint(cm getDef friends, cm getDef befriended)
     }

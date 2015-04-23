@@ -6,7 +6,7 @@ implementations = ['WelcomeCellPhone.cssCellPhone__String',
 		   'DetailArticleCellPhone.cssCellPhone__String',
 	 	   'DetailArticleComputer.cssComputer__String']
 
-abstractions = ['webMarket', 'Screen',
+abstractions = [r:'webMarket', 'Screen',
 		'WelcomeCellPhone', 'WelcomeComputer',
 		'DetailArticleCellPhone', 'DetailArticleComputer']
 

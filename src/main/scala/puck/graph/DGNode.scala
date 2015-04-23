@@ -43,7 +43,7 @@ case class ConcreteNode
 
   def name(g : DependencyGraph) : String = name
 
-  override def toString = s"ConcreteNode($id - $kind $name)"
+  override def toString = s"($id - $kind $name)"
 
   def mapConcrete[A](f : ConcreteNode => A, default : => A) : A = f(this)
 

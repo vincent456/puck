@@ -1,11 +1,6 @@
 package puck.graph
 package constraints
 
-/**
- * Created by lorilan on 03/06/14.
- */
-
-
 class Constraint(
   val owners : RangeSet,
   val facades : RangeSet,
