@@ -1,14 +1,12 @@
+import ['screen']
 
-import ['webMarket']
+implementations =
+		['WelcomeCapital.printCapital__String', 
+		 'WelcomeStar.printStar__String',
+		 'InfoCapital.printCapital__String', 
+		 'InfoStar.printStar__String']
 
-implementations = ['WelcomeCellPhone.cssCellPhone__String',
-		   'WelcomeComputer.cssComputer__String',
-		   'DetailArticleCellPhone.cssCellPhone__String',
-	 	   'DetailArticleComputer.cssComputer__String']
-
-abstractions = [r:'webMarket', 'Screen',
-		'WelcomeCellPhone', 'WelcomeComputer',
-		'DetailArticleCellPhone', 'DetailArticleComputer']
+abstractions = ['Screen', 'WelcomeCapital', 'WelcomeStar',
+			  'InfoCapital', 'InfoStar']
 
 hide implementations from abstractions
-

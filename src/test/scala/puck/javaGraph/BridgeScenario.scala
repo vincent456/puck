@@ -22,33 +22,33 @@ object BridgeScenario {
 
 class BridgeScenario private()
   extends ExampleSample(
-    BridgeScenario.path + "webMarket/Front.java",
-    BridgeScenario.path + "webMarket/Screen.java")
+    BridgeScenario.path + "screen/BridgeDemo.java",
+    BridgeScenario.path + "screen/Screen.java")
   with EitherValues
   with OptionValues {
 
   import BridgeScenario.tryToEither
 
-  val p = "webMarket"
+  val p = "screen"
   val screen = fullName2id(p)
   val screenClass = fullName2id(s"$p.Screen")
 
-  val welcomeCellPhone = fullName2id(s"$p.WelcomeCellPhone")
-  val infoCellPhone = fullName2id(s"$p.DetailArticleCellPhone")
-  val welcomeCellPhoneMeth = fullName2id(s"$p.WelcomeCellPhone.printPage__void")
-  val infoCellPhoneMeth = fullName2id(s"$p.DetailArticleCellPhone.printPage__void")
+  val welcomeStar = fullName2id(s"$p.WelcomeStar")
+  val infoStar = fullName2id(s"$p.InfoStar")
+  val welcomeStarMeth = fullName2id(s"$p.WelcomeStar.draw__void")
+  val infoStarMeth = fullName2id(s"$p.InfoStar.draw__void")
 
-  val welcomeComputer = fullName2id(s"$p.WelcomeComputer")
-  val infoComputer = fullName2id(s"$p.DetailArticleComputer")
-  val welcomeComputerMeth = fullName2id(s"$p.WelcomeComputer.printPage__void")
-  val infoComputerMeth = fullName2id(s"$p.DetailArticleComputer.printPage__void")
+  val welcomeCapital = fullName2id(s"$p.WelcomeCapital")
+  val infoCapital = fullName2id(s"$p.InfoCapital")
+  val welcomeCapitalMeth = fullName2id(s"$p.WelcomeCapital.draw__void")
+  val infoCapitalMeth = fullName2id(s"$p.InfoCapital.draw__void")
 
 
-  val cssCellPhone1 = fullName2id(s"$p.WelcomeCellPhone.cssCellPhone__String")
-  val cssCellPhone2 = fullName2id(s"$p.DetailArticleCellPhone.cssCellPhone__String")
+  val printStar1 = fullName2id(s"$p.WelcomeStar.printStar__String")
+  val printStar2 = fullName2id(s"$p.InfoStar.printStar__String")
 
-  val cssComputer1 = fullName2id(s"$p.WelcomeComputer.cssComputer__String")
-  val cssComputer2 = fullName2id(s"$p.DetailArticleComputer.cssComputer__String")
+  val printCapital1 = fullName2id(s"$p.WelcomeCapital.printCapital__String")
+  val printCapital2 = fullName2id(s"$p.InfoCapital.printCapital__String")
 
 
   var printId = 0
@@ -111,9 +111,10 @@ class BridgeScenario private()
   logger = new PuckFileLogger(_ => true, new File(BridgeScenario.path + "log"))
   val jdg2ast = new JavaDG2AST(logger, program, g0, initialRecord, fullName2id, dg2astMap)
 
-  val (c1, g1) = intro2classMerge(g0, "CellPhoneStyle", cssCellPhone1, cssCellPhone2)
-  val (c2, g2) = intro2classMerge(g1, "ComputerStyle", cssComputer1, cssComputer2)
-  val g3 = g2.setName(cssCellPhone1, "printCss").setName(cssComputer1, "printCss")
+  val (c1, g1) = intro2classMerge(g0, "StarStyle", printStar1, printStar2)
+  //QuickFrame(g1)
+  val (c2, g2) = intro2classMerge(g1, "CapitalStyle", printCapital1, printCapital2)
+  val g3 = g2.setName(printStar1, "printStyle").setName(printCapital1, "printStyle")
 
   val (i1, g4) = TR.createAbstraction(g3, c1, Interface, SupertypeAbstraction).right.value
   val g5 = g4.addContains(screen, i1.id)
@@ -127,22 +128,26 @@ class BridgeScenario private()
   val g10 = useInterfaceInstead(g9, c2.id, i1.id)
 
 
-  val delegate = getDelegate(g10, welcomeCellPhone)
+  val delegate = getDelegate(g10, welcomeStar)
 
   val g11 = TR.move.typeMember(g10.setName(delegate, "styleProvider"), delegate, screenClass).right.value
-  val g12 = TR.mergeInto(g11, getDelegate(g11, infoCellPhone), delegate).right.value
-  val g13 = TR.mergeInto(g12, getDelegate(g12, welcomeComputer), delegate).right.value
-  val g14 = TR.mergeInto(g13, getDelegate(g13, infoComputer), delegate).right.value
+  val g12 = TR.mergeInto(g11, getDelegate(g11, infoStar), delegate).right.value
+  val g13 = TR.mergeInto(g12, getDelegate(g12, welcomeCapital), delegate).right.value
+  val g14 = TR.mergeInto(g13, getDelegate(g13, infoCapital), delegate).right.value
 
 
-  val g15 = TR.mergeInto(g14.setName(welcomeCellPhone, "WelcomeScreen"),
-    welcomeComputerMeth, welcomeCellPhoneMeth).right.value
-  val g16 = TR.mergeInto(g15, welcomeComputer, welcomeCellPhone).right.value
+  val g15 = TR.mergeInto(g14.setName(welcomeStar, "WelcomeScreen"),
+    welcomeCapitalMeth, welcomeStarMeth).right.value
+  val g16 = TR.mergeInto(g15, welcomeCapital, welcomeStar).right.value
 
 
-  val g17 = TR.mergeInto(g16.setName(infoCellPhone, "DetailArticleScreen"),
-    infoComputerMeth, infoCellPhoneMeth).right.value
-  val g18 = TR.mergeInto(g17, infoComputer, infoCellPhone).right.value
+  //QuickFrame(g16)
+
+  val g17 = TR.mergeInto(g16.setName(infoStar, "InfoScreen"),
+    infoCapitalMeth, infoStarMeth).right.value
+  val g18 = TR.mergeInto(g17, infoCapital, infoStar).right.value
+
+  QuickFrame(g18)
 
   def gFinal = g18
 
