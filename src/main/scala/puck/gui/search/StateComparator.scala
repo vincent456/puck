@@ -2,17 +2,14 @@ package puck.gui.search
 
 import puck.graph._
 import puck.graph.io.VisibilitySet
-import puck.graph.transformations.Recording
+import puck.graph.transformations.Transformation
 import puck.search.SearchState
 import puck.util.PuckFileLogger
 
 import scala.swing.{BoxPanel, Button, Label, Orientation}
 
-/**
- * Created by lorilan on 22/10/14.
- */
 class StateComparator
-( initialRecord : Recording,
+( initialRecord :  Seq[Transformation],
   sortedRes: Map[Int, Seq[SearchState[ResultT]]],
   printId : () => Boolean,
   printSig : () => Boolean,

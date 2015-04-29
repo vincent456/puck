@@ -60,7 +60,7 @@ class SolveAction
     automaticConstraintLoosening = false)
 
   override def actionPerformed(e: ActionEvent): Unit =
-    solver.solveViolationsToward(controller.graph, violationTarget){
+    solver.solveViolationsToward(controller.graph.mileStone, violationTarget){
       printErrOrPushGraph(controller, "Solve Action Error")
     }
 

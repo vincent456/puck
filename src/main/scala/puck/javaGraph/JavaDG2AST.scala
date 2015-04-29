@@ -10,7 +10,7 @@ import puck.graph.io.{DG2ASTBuilder, DG2AST}
 import puck.graph.transformations._
 import puck.javaGraph.nodeKind._
 import puck.util.PuckLog._
-import puck.util.{PuckFileLogger, PuckLog, PuckLogger}
+import puck.util.{PuckLog, PuckLogger}
 
 object JavaDG2AST extends DG2ASTBuilder {
   def packageNode(graph : DependencyGraph, id : NodeId) : NodeId ={
@@ -70,7 +70,7 @@ class JavaDG2AST
 (val logger : PuckLogger,
  val program : AST.Program,
  val initialGraph : DependencyGraph,
- val initialRecord : Recording,
+ val initialRecord : Seq[Transformation],
  val nodesByName : Map[String, NodeId],
  val graph2ASTMap : Map[NodeId, ASTNodeLink]) extends DG2AST{
 
@@ -113,14 +113,16 @@ class JavaDG2AST
 
 
 
-    record.foldLeft((graphOfResult(result), initialGraph, graph2ASTMap)) {
-      case ((resultGraph, reenactor, g2AST), r) =>
+    record.reverse.foldLeft((graphOfResult(result), initialGraph, graph2ASTMap)) {
+      case ((resultGraph, reenactor, g2AST), t : Transformation) =>
 
-        logger.writeln(showDG[Transformation](reenactor).shows(r))
+        logger.writeln(showDG[Transformation](reenactor).shows(t))
 
-        val res = applyOneTransformation(resultGraph, reenactor, g2AST, r)
+        val res = applyOneTransformation(resultGraph, reenactor, g2AST, t)
 
-        (resultGraph, r.redo(reenactor), res)
+        (resultGraph, t.redo(reenactor), res)
+
+      case (acc, _) => acc
     }
 
     logger.writeln("change applied : ")
@@ -265,10 +267,6 @@ class JavaDG2AST
           case (Interface, th: TypedKindDeclHolder, AbstractMethodDeclHolder(mdecl)) =>
             th.decl.addBodyDecl(mdecl)
 
-          case (Class, th: TypedKindDeclHolder, mdh : MethodDeclHolder) =>
-            th.decl.addBodyDecl(mdh.decl)
-
-
           case (Package, _, PackageDeclHolder) => () // can be ignored
 
           case (Class, ClassDeclHolder(clsdecl), bdHolder : HasBodyDecl) =>
@@ -327,13 +325,10 @@ class JavaDG2AST
         case (oldk: TypedKindDeclHolder, newk: TypedKindDeclHolder) =>
           sourceDecl match {
 
-            case FieldDeclHolder(fdecl) =>
-              fdecl.replaceTypeAccess(oldk.decl.createLockedAccess(), newk.decl.createLockedAccess())
-
-            case mdh : MethodDeclHolder =>
+            case mdh : HasMemberDecl =>
               mdh.decl.replaceTypeAccess(oldk.decl.createLockedAccess(), newk.decl.createLockedAccess())
 
-            case  ClassDeclHolder(_) =>
+            case ClassDeclHolder(_) =>
               logger.writeln("Class user of TypeKind, assume this is the \"doublon\" of " +
                 "an isa arc, redirection ignored")
             case k =>
@@ -549,10 +544,6 @@ class JavaDG2AST
           subDecl.removeSuperInterface(superDecl)
           absDecl.addSuperInterfaceId(idh.decl.createLockedAccess())
 
-        case (AbstractMethodDeclHolder(oldMdecl),
-        AbstractMethodDeclHolder(newMdecl),
-        t: TypedKindDeclHolder) =>
-          println("source redirection not applied")
         case _ =>
           import ShowDG._
           val eStr = showDG[DGEdge](reenactor).shows(e)

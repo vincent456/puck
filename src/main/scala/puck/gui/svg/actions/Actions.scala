@@ -19,7 +19,7 @@ extends AbstractAction(s"Add ${sub.name} isa ${sup.name}") {
   import controller.graph
 
   def actionPerformed(e: ActionEvent) : Unit =
-    controller.pushGraph(graph.addIsa(sub.id, sup.id))
+    controller.pushGraph(graph.mileStone.addIsa(sub.id, sup.id))
 
 }
 class RemoveEdgeAction
@@ -30,7 +30,7 @@ class RemoveEdgeAction
   def actionPerformed(e: ActionEvent) : Unit =
     printErrOrPushGraph(controller, "Remove Node Action failure"){
       edge.kind match {
-        case Isa => \/-(edge.deleteIn(controller.graph))
+        case Isa => \/-(edge.deleteIn(controller.graph.mileStone))
         case _ => -\/(new PuckError(s"cannot remove remove ${edge.kind} edge"))
       }
 
@@ -47,7 +47,7 @@ extends AbstractAction(s"Delete node and children") {
 
   def actionPerformed(e: ActionEvent) : Unit =
     printErrOrPushGraph(controller, "Remove Node Action failure"){
-      JavaTransformationRules.removeConcreteNode(graph, node)
+      JavaTransformationRules.removeConcreteNode(graph.mileStone, node)
     }
 }
 
@@ -62,7 +62,7 @@ class RenameNodeAction
   override def actionPerformed(e: ActionEvent): Unit = {
     showInputDialog("New name:").foreach {
       newName =>
-          controller.pushGraph(graph.setName(node.id, newName))
+          controller.pushGraph(graph.mileStone.setName(node.id, newName))
         /*graph.kindType(node.id) match {
           case TypeMember =>
           case _ =>

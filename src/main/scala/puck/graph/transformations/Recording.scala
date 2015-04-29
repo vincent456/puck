@@ -1,25 +1,26 @@
-package puck.graph.transformations
+package puck.graph
+package transformations
 
 import java.io.{FileInputStream, ObjectInputStream, FileOutputStream, ObjectOutputStream}
 
-import puck.graph._
-import puck.graph.constraints.AbstractionPolicy
+
+
 
 object Recording {
-  def apply() = new Recording(Seq())
+  def apply() = Seq[Recordable]()
 
   def write(oos : ObjectOutputStream,
             r: Recording): Unit = {
     val i : Int = r.size
     oos.writeInt(i)
-    r foreach oos.writeObject
+    r.reverse foreach oos.writeObject
   }
 
   def read(ois : ObjectInputStream) : Recording = {
     val recSize = ois.readInt()
     var rec = Recording()
     for(i <- Range(0, recSize)){
-      rec =  ois.readObject().asInstanceOf[Transformation] +: rec
+      rec =  ois.readObject().asInstanceOf[Recordable] +: rec
     }
     rec
   }
@@ -119,6 +120,8 @@ object Recording {
       case op : Comment => op
     }
 
+
+
     rec.mapTransformation {
         case Transformation(direction, op) =>
           Transformation(direction, mappingOnOperation(op))
@@ -127,115 +130,9 @@ object Recording {
 
 }
 
-class Recording
-(private [this] val record : Seq[Transformation]) extends Iterable[Transformation] {
-
-  override def equals(obj : Any) : Boolean = obj match {
-    case r : Recording => r() == record
-    case _ => false
-  }
-
-  type NIdT = NodeId
-  type EdgeT = DGEdge
-  type RecT = Recording
-  def apply() = record
-
-  private def mapTransformation(f : Transformation => Transformation) : Recording =
-    new Recording (record map f)
 
 
-  def +:(r : Transformation) : Recording =
-    new Recording(r +: record)
 
-  override def iterator: Iterator[Transformation] = record.reverseIterator
- /* def nonEmpty = record.nonEmpty
-  def size = record.size*/
-
-/*  def addNode(id : NIdT, name : String, kind : NodeKind, styp: TypeHolder, mutable : Boolean) : RecT =
-    Transformation(Add, TTNode(id, name, kind, styp, mutable)) +: this
-
-  def removeNode(id : NIdT, name : String, kind : NodeKind, styp: TypeHolder, mutable : Boolean) : RecT =
-    Transformation(Remove, TTNode(id, name, kind, styp, mutable)) +: this*/
-
-  def comment(msg : String) : RecT =
-    Transformation(Regular, Comment(msg)) +: this
-
-  def addConcreteNode(n : ConcreteNode) : RecT =
-    Transformation(Regular, CNode(n)) +: this
-
-  def addVirtualNode(n : VirtualNode) : RecT =
-    Transformation(Regular, VNode(n)) +: this
-
-
-  def changeNodeName(nid : NodeId, oldName : String, newName : String) : RecT =
-    Transformation(Regular, ChangeNodeName(nid, oldName, newName)) +: this
-
-  def removeConcreteNode(n : ConcreteNode) : RecT =
-    Transformation(Reverse, CNode(n)) +: this
-
-  def removeVirtualNode(n : VirtualNode) : RecT =
-    Transformation(Reverse, VNode(n)) +: this
-
-  def addEdge(edge : EdgeT) : RecT =
-    Transformation(Regular, Edge(edge)) +: this
-
-  def removeEdge(edge : EdgeT) : RecT=
-    Transformation(Reverse, Edge(edge)) +: this
-
-  def changeEdgeTarget(edge : EdgeT, newTarget : NIdT, withMerge : Boolean) : RecT = {
-    val red = if(withMerge) new RedirectionWithMerge(edge, Target(newTarget))
-              else RedirectionOp(edge, Target(newTarget))
-    Transformation(Regular, red) +: this
-  }
-
-  def changeEdgeSource(edge : EdgeT, newTarget : NIdT, withMerge : Boolean) : RecT = {
-    val red = if(withMerge) new RedirectionWithMerge(edge, Source(newTarget))
-    else RedirectionOp(edge, Source(newTarget))
-    Transformation(Regular, red) +: this
-  }
-  def addTypeChange( typed : NIdT,
-                     typ: Option[Type],
-                     oldUsee: NIdT,
-                     newUsee : NIdT) : RecT =
-    Transformation(Regular, TypeRedirection(typed, typ, oldUsee, newUsee)) +: this
-
-  def addAbstraction(impl : NIdT, abs : NIdT, absPolicy : AbstractionPolicy) : RecT =
-    Transformation(Regular, Abstraction(impl, abs, absPolicy)) +: this
-
-  def removeAbstraction(impl : NIdT, abs : NIdT, absPolicy : AbstractionPolicy) : RecT =
-    Transformation(Reverse, Abstraction(impl, abs, absPolicy)) +: this
-
-  def addTypeDependency( typeUse : (NodeId, NodeId),
-                         typeMemberUse :  (NodeId, NodeId)) : RecT =
-    Transformation(Regular, TypeDependency(typeUse, typeMemberUse)) +: this
-
-
-  def removeTypeDependency( typeUse : (NodeId, NodeId),
-                         typeMemberUse :  (NodeId, NodeId)) : RecT =
-    Transformation(Reverse, TypeDependency(typeUse, typeMemberUse)) +: this
-
-}
-
-sealed abstract class Direction {
-  def reverse : Direction
-  def productPrefix : String
-}
-case object Regular extends Direction {
-  def reverse = Reverse
-}
-case object Reverse extends Direction{
-  def reverse = Regular
-}
-
-case class Transformation
-(direction : Direction,
- operation : Operation){
-  type GraphT = DependencyGraph
-
-  def redo(g: GraphT) = operation.execute(g, direction)
-  def undo(g: GraphT) = operation.execute(g, direction.reverse)
-
-}
 
 
 

@@ -7,9 +7,6 @@ import puck.graph.{ConcreteNode, NodeKind}
 import puck.gui.svg.SVGController
 import puck.javaGraph.nodeKind.{Class, Interface, Package}
 
-/**
- * Created by lorilan on 29/03/15.
- */
 class AddNodeAction
 ( host : ConcreteNode,
   controller : SVGController,
@@ -17,6 +14,7 @@ class AddNodeAction
 extends AbstractAction(s"Add $childKind")
 {
 
+  import controller._
   override def actionPerformed(actionEvent: ActionEvent): Unit = {
     childKind match {
       case Package
@@ -24,8 +22,8 @@ extends AbstractAction(s"Add $childKind")
            | Class =>
         showInputDialog(s"New $childKind name:").foreach{
           childName =>
-            val (n, g) = controller.transfoRules.intro.createNode(controller.graph, childName, childKind, None)
-            controller.pushGraph(g.addContains(host.id, n.id))
+            val (n, g) = transfoRules.intro.createNode(graph.mileStone, childName, childKind, None)
+            pushGraph(g.addContains(host.id, n.id))
         }
       case _ =>
         JOptionPane.showMessageDialog(null, s"add of $childKind not implemented",

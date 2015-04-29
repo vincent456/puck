@@ -28,7 +28,6 @@ class RecordingSerializationSpec extends AcceptanceSpec {
 
   feature("Serialization"){
 
-
     scenario("one transformation"){
 
       val t = Transformation(Regular, CNode(ConcreteNode(1, "one", Class, styp = None, mutable = true)))
@@ -80,7 +79,7 @@ class RecordingSerializationSpec extends AcceptanceSpec {
       }
       val r2 = readAndClose(tmpFile)(Recording.read)
 
-      val gFinalCopy = r2.foldLeft(g0)((g, t) => t.redo(g))
+      val gFinalCopy = r2.redo(g0)
 
       gFinal.nodes.toSet should be (gFinalCopy.nodes.toSet)
       gFinal.containsSeq.toSet should be (gFinalCopy.containsSeq.toSet)
@@ -96,7 +95,7 @@ class RecordingSerializationSpec extends AcceptanceSpec {
 
       val r2 = Recording.load(tmpFile, bridge2.fullName2id)
 
-      val gFinalCopy = r2.foldLeft(bridge2.g0)((g, t) => t.redo(g))
+      val gFinalCopy = r2.redo(g0)
 
       bridge2.gFinal.nodes.toSet should be (gFinalCopy.nodes.toSet)
       bridge2.gFinal.containsSeq.toSet should be (gFinalCopy.containsSeq.toSet)

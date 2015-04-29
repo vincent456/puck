@@ -31,11 +31,11 @@ class MoveAction
   controller : SVGController)
 extends AbstractAction(s"Move ${moved.name} here"){
 
-  import controller.graph
 
   val move = controller.transfoRules.move
 
   override def actionPerformed(e: ActionEvent): Unit = {
+    val graph = controller.graph.mileStone
     (graph.kindType(moved) match {
       case TypeDecl =>
         move.typeDecl(graph, moved.id, newHost.id)

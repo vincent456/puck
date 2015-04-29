@@ -74,7 +74,6 @@ object ShowDG {
         val nnew = dg.getNode(newUsed).toString
         Cord(tgt.productPrefix, "(", ntyped ,",", typ.toString ,
           ",", nold , ",", nnew ,")")
-      case Comment(msg) => msg
       case _ => tgt.toString
     }
 

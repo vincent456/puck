@@ -9,10 +9,6 @@ sealed trait Operation{
   def productPrefix : String
 }
 
-case class Comment(msg : String) extends Operation {
-  def execute(g: DependencyGraph , op : Direction) : DependencyGraph = g
-}
-
 case class CNode(n : ConcreteNode) extends Operation {
 
   def execute(g: DependencyGraph , op : Direction) = op match {

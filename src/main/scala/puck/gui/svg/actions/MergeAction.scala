@@ -17,7 +17,7 @@ case class MergeAction(
   override def actionPerformed(e: ActionEvent): Unit =
     printErrOrPushGraph(controller,"Merge action failure") {
 
-      val sConsumerHost= graph.container(consumer.id)
+      val sConsumerHost= graph.mileStone.container(consumer.id)
       if(graph.container(consumed.id) != sConsumerHost)
         new MoveAction(graph.getConcreteNode(sConsumerHost.get), consumed, controller).actionPerformed(null)
 

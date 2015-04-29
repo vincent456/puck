@@ -4,7 +4,7 @@ package io
 import java.io._
 
 import puck.graph.constraints.search.SolverBuilder
-import puck.graph.transformations.{TransformationRules, Recording}
+import puck.graph.transformations.{Transformation, TransformationRules, Recording}
 import puck.search.{Search, SearchState, SearchEngine}
 import puck.util._
 
@@ -14,7 +14,7 @@ import scala.sys.process.Process
 import scala.util.{Success, Try}
 
 trait ConstraintSolvingSearchEngineBuilder {
-  def apply(initialRecord : Recording, graph : DependencyGraph,
+  def apply(initialRecord : Seq[Transformation], graph : DependencyGraph,
   automaticConstraintLoosening : Boolean) :
   SearchEngine[ResultT]
 }
@@ -106,7 +106,7 @@ trait DG2AST {
   def printCode(dir : File) : Unit
   def parseConstraints(decouple : File) : DG2AST
   def initialGraph : DependencyGraph
-  def initialRecord : Recording
+  def initialRecord : Seq[Transformation]
   def nodesByName : Map[String, NodeId]
 }
 
@@ -156,7 +156,7 @@ class FilesHandler
   def graph = dg2ast.initialGraph
   //protected def graph_=(g : GraphT): Unit = { ag = g }
 
-  def initialRecord : Recording = dg2ast.initialRecord
+  def initialRecord : Seq[Transformation] = dg2ast.initialRecord
 
   var graphBuilder : GraphBuilder = _
 

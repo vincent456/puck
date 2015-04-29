@@ -1,13 +1,11 @@
 package puck.graph
 package constraints.search
 
+import puck.graph.transformations.Transformation
 import puck.search.{SearchState, Evaluator}
 
-/**
- * Created by lorilan on 07/11/14.
- */
 class ConstraintSolvingStateEvaluator
-(val initialRecord : transformations.Recording)
+(val initialRecord : Seq[Transformation])
   extends Evaluator[ResultT]{
 
   def evaluate(s : SearchState[ResultT]): Double ={

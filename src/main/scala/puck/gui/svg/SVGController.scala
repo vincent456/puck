@@ -11,7 +11,7 @@ import org.w3c.dom.svg.{SVGGElement, SVGDocument}
 import puck.graph._
 import puck.graph.constraints.search.SolverBuilder
 import puck.graph.io._
-import puck.graph.transformations.Recording
+import puck.graph.transformations.{MileStone, Recording}
 import puck.gui.PuckControl
 import puck.gui.svg.actions.{AddNodeAction, AbstractionAction}
 
@@ -82,15 +82,6 @@ class SVGController private
       printRedOnly = b
       displayGraph(graph)
     }
-  }
-
-  def saveRecordOnFile(file : File) : Unit = {
-    Recording.write(file.getAbsolutePath, nodesByName, graph)
-  }
-
-  def loadRecord(file : File) : Unit = {
-    val r = Recording.load(file.getAbsolutePath, nodesByName)
-    pushGraph(r.foldLeft(graph)((g, t) => t.redo(g)))
   }
 
   var nodeSelected: Option[(NodeId, Color, Element)] = None
@@ -199,6 +190,22 @@ class SVGController private
   }
 
   def graph = undoStack.head
+
+  def saveRecordOnFile(file : File) : Unit = {
+    Recording.write(file.getAbsolutePath, nodesByName, graph)
+  }
+
+  def loadRecord(file : File) : Unit = {
+    val r = Recording.load(file.getAbsolutePath, nodesByName)
+
+    pushGraph(r.reverse.foldLeft(graph){
+      case (g, MileStone) =>
+        undoStack.push(g)
+        MileStone.redo(g)
+      case (g, t) => t.redo(g)
+    })
+  }
+
 
   def applyOnCode() : Unit = {
     genController.applyOnCode((graph, graph.recording))

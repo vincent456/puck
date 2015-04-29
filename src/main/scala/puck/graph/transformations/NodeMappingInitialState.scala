@@ -35,7 +35,7 @@ object NodeMappingInitialState{
     case _ => false
   }
 
-  def normalizeNodeTransfos(l : Seq[Transformation],
+  def normalizeNodeTransfos(l : Recording,
                             init : Seq[Transformation] = Seq()) : (Map[NodeId, (Int, NodeKind)], Seq[Transformation])= {
     val (map, rl) = l.foldLeft( (Map[NodeId, (Int, NodeKind)](), init) ){
       case ((m,l1), Transformation(Regular, CNode(n))) =>
@@ -45,15 +45,12 @@ object NodeMappingInitialState{
         val (i, _) = m.getOrElse(n.id, (0, JavaRoot))
         (m + (n.id -> ((i - 1, n.kind))), l1)
 
-      //removing the dependendency and abstraction of the comparison
-      // they are used to compute the change on the graph, its the change themselves we want to compare
-      //if added back think to uncommment comparison in RecordingComparator.compare
-      /*case ((m,l1), Transformation(_, TTDependency(_, _))) => (m, l1)
-      case ((m,l1), Transformation(_, TTConstraint(_,_))) => (m, l1)*/
       case ((m,l1), Transformation(_, op))
         if discardedOp(op) => (m, l1)
 
       case ((m, l1), t : Transformation) => (m, t +: l1)
+      case ((m,l1), _) => (m, l1)
+
     }
 
     (map, rl.reverse)
@@ -93,18 +90,18 @@ class NodeMappingInitialState
   logger.writeln("*********************************** ")
   logger.writeln("*********************************** ")
   logger.writeln("untouched recording 1 : ")
-  graph1.recording() foreach  { t => logger.writeln(t.toString)}
+  graph1.recording foreach  { t => logger.writeln(t.toString)}
   logger.writeln("*********************************** ")
   logger.writeln("*********************************** ")
 
   logger.writeln("untouched recording 2 : ")
-  graph2.recording() foreach  { t => logger.writeln(t.toString)}
+  graph2.recording foreach  { t => logger.writeln(t.toString)}
   logger.writeln("*********************************** ")
   logger.writeln("*********************************** ")
 
-  val (nodeStatuses, remainingTransfos1) = normalizeNodeTransfos(graph1.recording(), initialTransfos)
+  val (nodeStatuses, remainingTransfos1) = normalizeNodeTransfos(graph1.recording, initialTransfos)
 
-  val (nodeStatuses2, remainingTransfos2) = normalizeNodeTransfos(graph2.recording(), initialTransfos)
+  val (nodeStatuses2, remainingTransfos2) = normalizeNodeTransfos(graph2.recording, initialTransfos)
 
   val (numCreatedNodes, initialMapping, removedNode, neuterNodes) =
     switchNodes(nodeStatuses, ResMap()){
@@ -161,14 +158,14 @@ class NodeMappingInitialState
       otherNeuterNodes foreach writelnNode(graph2)
 
       logger.writeln("recording1")
-      graph1.recording() foreach { t => logger.writeln(t.toString)}
+      graph1.recording foreach { t => logger.writeln(t.toString)}
 
       logger.writeln("*******************************************************")
       logger.writeln("")
       logger.writeln("")
 
       logger.writeln("recording2")
-      graph2.recording() foreach { t => logger.writeln(t.toString)}
+      graph2.recording foreach { t => logger.writeln(t.toString)}
 
       k(-\/(NoSolution))
     }

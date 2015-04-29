@@ -147,8 +147,6 @@ class BridgeScenario private()
     infoCapitalMeth, infoStarMeth).right.value
   val g18 = TR.mergeInto(g17, infoCapital, infoStar).right.value
 
-  QuickFrame(g18)
-
   def gFinal = g18
 
 }

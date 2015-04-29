@@ -2,16 +2,14 @@ package puck.graph
 
 import puck.graph.DependencyGraph._
 import puck.graph.constraints._
-import puck.graph.transformations.RecordingComparator
+import puck.graph.transformations.{Transformation, RecordingComparator}
 import puck.util.{Logger, PuckNoopLogger, PuckLogger, PuckLog}
-
-/**
- * Created by lorilan on 1/8/15.
- */
 
 sealed trait NodeStatus
 case object Removed extends NodeStatus
 case object Created extends NodeStatus
+
+import transformations.RecordingOps
 
 object DependencyGraph {
 
@@ -49,11 +47,11 @@ object DependencyGraph {
 
   type Mutability = Boolean
 
-  def areEquivalent[Kind <: NodeKind, T](initialRecord : transformations.Recording,
+  def areEquivalent[Kind <: NodeKind, T](initialRecord : Seq[Transformation],
                       graph1 : DependencyGraph,
                       graph2 : DependencyGraph,
                       logger : PuckLogger = PuckNoopLogger) : Boolean = {
-    val engine = new RecordingComparator(initialRecord(),graph1,graph2, logger)
+    val engine = new RecordingComparator(initialRecord, graph1, graph2, logger)
     engine.explore()
     engine.finalStates.nonEmpty
   }
@@ -80,7 +78,7 @@ class DependencyGraph
   /*private [this]*/ val typeUses2typeMemberUsesMap : UseDependencyMap,
   /*private [this]*/ val abstractionsMap : AbstractionMap,
   val constraints : ConstraintsMaps,
-  val recording : transformations.Recording) {
+  val recording : Recording) {
 
 
   type GraphT = DependencyGraph
@@ -102,7 +100,7 @@ class DependencyGraph
                nDominatedUsesMap : UseDependencyMap = typeUses2typeMemberUsesMap,
                nAbstractionsMap : AbstractionMap = abstractionsMap,
                nConstraints : ConstraintsMaps = constraints,
-               nRecording : transformations.Recording = recording) : DependencyGraph =
+               nRecording : Recording = recording) : DependencyGraph =
     new DependencyGraph(nLogger, nodeKindKnowledge, nIdSeed,
                         nNodesSet, nRemovedNodes, nVNodesIndex, nVRemovedNodes, nNodes2vNodes,
                         nUsersMap, nUsesMap,
@@ -119,6 +117,7 @@ class DependencyGraph
 
 
   def comment(msg : String) = newGraph(nRecording = recording.comment(msg))
+  def mileStone = newGraph(nRecording = recording.mileStone)
 
   val rootId : NodeId = 0
   def root = getNode(rootId)

@@ -2,18 +2,15 @@ package puck.gui.search
 
 import puck.graph.constraints.search.ConstraintSolvingStateEvaluator
 import puck.graph.io.VisibilitySet
-import puck.graph.transformations.Recording
+import puck.graph.transformations.{Transformation, Recording}
 import puck.graph.ResultT
 import puck.search.{Search, SearchState}
 import puck.util.{PuckLog, PuckLogger}
 
 import scala.swing._
 
-/**
- * Created by lorilan on 22/10/14.
- */
 class ResultPanel
-( initialRecord : Recording,
+( initialRecord : Seq[Transformation],
   res : Search[ResultT],
   logger : PuckLogger,
   printId : () => Boolean,

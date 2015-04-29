@@ -1,19 +1,19 @@
 package puck.javaGraph
 
 import puck.graph.{DependencyGraph, NodeId}
-import puck.graph.transformations.Recording
+import puck.graph.transformations.Transformation
 import puck.util.{PuckNoopLogger, PuckLogger}
 
 case class ExampleSample
 ( program : AST.Program,
   graph : DependencyGraph,
-  initialRecord : Recording,
+  initialRecord : Seq[Transformation],
   fullName2id : Map[String, NodeId],
   dg2astMap : Map[NodeId, ASTNodeLink]){
 
   def this(t : (AST.Program,
                 DependencyGraph,
-                Recording,
+                Seq[Transformation],
                 Map[String, NodeId],
                 Map[NodeId, ASTNodeLink])) =
         this(t._1, t._2, t._3, t._4, t._5)

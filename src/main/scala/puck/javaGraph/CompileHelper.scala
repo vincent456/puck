@@ -3,7 +3,7 @@ package puck.javaGraph
 import java.io.{File, InputStream}
 
 import puck.graph._
-import puck.graph.transformations.{NodeMappingInitialState, Recording}
+import puck.graph.transformations.{Transformation, NodeMappingInitialState, Recording}
 import puck.util.{PuckNoopLogger, PuckLogger}
 
 object CompileHelper {
@@ -31,14 +31,13 @@ object CompileHelper {
   def buildGraph(p : AST.Program,
                  logger : PuckLogger = PuckNoopLogger,
                  ll : AST.LoadingListener = null )  :
-  (AST.Program, DependencyGraph, Recording, Map[String, NodeId], Map[NodeId, ASTNodeLink]) = {
+  (AST.Program, DependencyGraph, Seq[Transformation], Map[String, NodeId], Map[NodeId, ASTNodeLink]) = {
 
     val builder = p.buildAccessGraph(null, ll)
     builder.attachOrphanNodes()
     builder.registerSuperTypes()
 
-    val (_, transfos) = NodeMappingInitialState.normalizeNodeTransfos(builder.g.recording(), Seq())
-    val initialRecord = new Recording(transfos)
+    val (_, initialRecord) = NodeMappingInitialState.normalizeNodeTransfos(builder.g.recording, Seq())
 
     val g = builder.g.newGraph(nRecording = Recording())
               .withLogger(logger)
@@ -52,7 +51,7 @@ object CompileHelper {
   def compileSrcsAndbuildGraph(sources: List[String],
                  jars: List[String],
                  decouple : Option[java.io.File] = None) :
-    (AST.Program, DependencyGraph, Recording, Map[String, NodeId], Map[NodeId, ASTNodeLink]) =
+    (AST.Program, DependencyGraph, Seq[Transformation], Map[String, NodeId], Map[NodeId, ASTNodeLink]) =
     this.apply(sources, jars) match {
       case None => throw new AGBuildingError("Compilation error, no AST generated")
       case Some(p) => buildGraph(p)
