@@ -1,14 +1,11 @@
 package puck.javaGraph.nodeKind
 
-import puck.graph.AGRoot
+import puck.graph.{NodeKind, AGRoot}
 
-/**
- * Created by lorilan on 31/07/14.
- */
 case object JavaRoot extends JavaNodeKind with AGRoot{
   override val toString = "JavaRoot"
-  /*override def canContain(k: JavaNodeKind) = k match {
-    case Package(_) => true
+  override def canContain(k: NodeKind) = k match {
+    case Package => true
     case _ => false
-  }*/
+  }
 }

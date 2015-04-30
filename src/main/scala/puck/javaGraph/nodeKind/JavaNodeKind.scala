@@ -48,7 +48,7 @@ object JavaNodeKind extends NodeKindKnowledge {
 
   def noType : Option[Type] = None
 
-  val nodeKinds = Seq[NodeKind](Package, Interface,
+  val nodeKinds = Seq[NodeKind](JavaRoot, Package, Interface,
     Class, Constructor, Method, /*ConstructorMethod,*/
     Field, AbstractMethod, Literal, Primitive)
 
