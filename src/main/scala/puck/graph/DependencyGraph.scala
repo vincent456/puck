@@ -120,7 +120,7 @@ class DependencyGraph
   def mileStone = newGraph(nRecording = recording.mileStone)
 
   val rootId : NodeId = 0
-  def root = getNode(rootId)
+  def root : ConcreteNode = getConcreteNode(rootId)
   def isRoot(id : NodeId) = id == rootId
 
    private [graph] def addConcreteNode(n : ConcreteNode) : DependencyGraph =

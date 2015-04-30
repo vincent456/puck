@@ -7,7 +7,9 @@ import javax.swing._
 
 import puck.graph.DependencyGraph
 import puck.graph.io.PrintingOptions
+import puck.gui.svg.actions.AddNodeAction
 import puck.gui.{PuckConsolePanel, TextAreaLogger, PuckControl}
+import puck.javaGraph.nodeKind.Package
 
 import scala.swing.Label
 
@@ -58,13 +60,16 @@ class SVGFrame
       def actionPerformed(e: ActionEvent) : Unit = action(e)
 
     }
-  def addButtonToMenu(name:String)
-                     (action : ActionEvent => Unit) : Unit = {
-      val _ = menu.add(new JButton(abstractAction(name) {
-        _ => controller.applyOnCode()
 
-      }))
-    }
+  def addButtonToMenu(action : AbstractAction) : Unit = {
+    val _ = menu.add(new JButton(action))
+  }
+
+  def addButtonToMenu(name:String)
+                     (action : ActionEvent => Unit) : Unit =
+    addButtonToMenu(abstractAction(name)(action))
+
+
 
   private val consolePanel: SVGConsole = new SVGConsole()
   setLayout(new BorderLayout)
@@ -99,6 +104,14 @@ class SVGFrame
    _ => controller.applyOnCode()
   }
 
+  addButtonToMenu{
+    new AddNodeAction(controller.graph.root, controller, Package)
+  }
+
+  addButtonToMenu("Show top level packages") {
+    _ => controller.expand(controller.graph.rootId)
+  }
+
   this.add(panel, BorderLayout.CENTER)
   this.add(menu, BorderLayout.SOUTH)
 
@@ -108,26 +121,34 @@ class SVGFrame
   this.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE)
 
 
-  private def chooseFile() : Option[File] = {
+
+  private def chooseFile(chooserMode : (JFileChooser, java.awt.Component) => Int) : Option[File] = {
     val chooser = new JFileChooser()
-    val returnVal: Int = chooser.showOpenDialog(SVGFrame.this)
+    val returnVal: Int = chooserMode(chooser, SVGFrame.this)
     if (returnVal == JFileChooser.APPROVE_OPTION) {
       Some(chooser.getSelectedFile)
     }
     else None
   }
 
+  private def openFile() : Option[File] =
+    chooseFile( (chooser, component) => chooser.showOpenDialog(component) )
+  private def saveFile() : Option[File] =
+    chooseFile( (chooser, component) => chooser.showSaveDialog(component) )
+
+
+
   private def addLoadSaveButton() : Unit = {
     addButtonToMenu("Save") {
       _ =>
-        chooseFile() match {
+        saveFile() match {
           case None => consolePanel.appendText("no file selected")
           case Some(f) =>  controller.saveRecordOnFile(f)
         }
       }
     addButtonToMenu("Load") {
       _ =>
-        chooseFile() match {
+        openFile() match {
           case None => consolePanel.appendText("no file selected")
           case Some(f) => controller.loadRecord(f)
         }
