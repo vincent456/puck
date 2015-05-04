@@ -418,7 +418,7 @@ class DependencyGraph
     /*if (isRoot) nameTypeString
       else {*/
     import ShowDG._
-    val path = containerPath(id).map{n => showDG[DGNode](this)(nodeNameTypCord).shows(getNode(n))}
+    val path = containerPath(id).map{n => showDG[DGNode](this)(nodeNameCord).shows(getNode(n))}
 
     (if (path.head == DependencyGraph.rootName)
       path.tail
@@ -458,9 +458,9 @@ class DependencyGraph
   def typeMemberUsesOf(typeUse : (NodeId, NodeId)) : Set[(NodeId, NodeId)] =
     typeUses2typeMemberUsesMap  getFlat typeUse
 
-  def dominates(dominantEdge : (NodeId, NodeId),
-                dominatedEdge : (NodeId, NodeId)) : Boolean =
-    typeMemberUsesOf( dominantEdge ) contains dominatedEdge
+  def bind(typeUse : (NodeId, NodeId),
+           typeMemberUse : (NodeId, NodeId)) : Boolean =
+    typeMemberUsesOf( typeUse ) contains typeMemberUse
 
   def abstractions(id : NodeId) : Set[(NodeId, AbstractionPolicy)] =
     abstractionsMap getFlat id

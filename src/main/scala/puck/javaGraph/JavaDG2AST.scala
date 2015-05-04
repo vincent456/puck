@@ -46,7 +46,7 @@ object JavaDG2AST extends DG2ASTBuilder {
     puck.util.Time.time(logger, defaultVerbosity) {
       logger.writeln("Building Access Graph ...")
       sProg match {
-        case None => throw new AGBuildingError("Compilation error, no AST generated")
+        case None => throw new DGBuildingError("Compilation error, no AST generated")
         case Some(p) =>
           val t = CompileHelper.buildGraph(p, logger, ll)
           new JavaDG2AST(logger, t._1, t._2, t._3, t._4, t._5)

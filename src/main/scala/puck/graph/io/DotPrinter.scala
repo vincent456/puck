@@ -84,13 +84,10 @@ class DotPrinter
     writer newLine()
   }
 
-  private val concreteViolations : Seq[DGEdge] = selectedUse match{
-    case None => graph.violations()
-    case Some(_) => Seq()
-  }
+  private val concreteViolations : Seq[DGEdge] = graph.violations()
 
 
-  /*
+/*
  * dot -Tpng give a wrong drawing of the graph when mixing nodes and arcs
  * in the dot file. We stock the arcs and print them separately at the end
  */
@@ -121,6 +118,7 @@ class DotPrinter
 
     if(!redOnly || status.color == redColor )
       arcs += (dotId(source) + " -> " + dotId(target) + "[ " +
+        typeRelationShipLabel(edge) +
         subGraphArc(source, "ltail") +
         subGraphArc(target, "lhead") +
         "style = " + style.line + ", arrowhead = " + style.arrowHead +
@@ -131,23 +129,41 @@ class DotPrinter
 
 
   def violationStyle
-  ( isViolation : Boolean
-    ) :  ColorThickness = {
+  ( isViolation : Boolean ) :  ColorThickness = {
       if(isViolation) ColorThickness.violation
       else ColorThickness.regular
   }
 
 
-  def selectedStyle
-  ( selected : DGEdge
-    ):  EdgeP => ColorThickness =
-      printed =>
-      if (DGEdge.uses(printed) == selected) ColorThickness.selected
-      else if (graph.dominates(printed, selected))
-        ColorThickness.dominant
-      else if (graph.dominates(selected, printed))
-        ColorThickness.dominated
-      else ColorThickness.regular
+  val typeRelationShipLabel : EdgeP => String =
+    selectedUse match {
+      case None => _ => ""
+      case Some(selected) =>
+        val labelMap : Map[EdgeP, String]= graph.kindType(selected.target) match {
+          case TypeDecl =>
+            val init = Map(selected.toPair -> "TDecl")
+            graph.typeMemberUsesOf(selected).foldLeft(init){
+              (map, tm) => map. + (tm -> "TMember")
+            }
+          case TypeMember
+               | TypeConstructor =>
+            val init = Map(selected.toPair -> "TMember")
+            graph.typeUsesOf(selected).foldLeft(init){
+              (map, tm) => map. + (tm -> "TDecl")
+            }
+          case TypeDeclAndTypeMember =>
+            sys.error("selection kind unhandle [TODO] - DotPrinter.typeRelationShipLabel")
+          case _ =>
+            sys.error("this uses target kind should not happen")
+
+        }
+        e => labelMap get e match {
+          case Some(l) => s"""label = "$l", """
+          case None => ""
+        }
+    }
+
+
 
   def name( n : DGNode) : String = n match {
     case cn : ConcreteNode => html_safe(cn.name)
@@ -169,14 +185,14 @@ class DotPrinter
 
   }
 
-  def printNode(nid : NodeId): Unit = {
+  def printNode(nid : NodeId): Unit =
     if(visibility.isVisible(nid)) {
       val n = graph.getNode(nid)
       if (helper isDotSubgraph n) printSubGraph(n)
       else if (helper isDotClass n) printClass(n.id)
       else printOrphanNode(nid)
     }
-  }
+
 
 
   def nodeSubGraphId(id : String) : String =
@@ -306,12 +322,7 @@ class DotPrinter
 
     val(reg, virt, virtualViolations) = filterEdgeBasedOnVisibleNodes(graph.usesSeq, Uses, virt0, virtualViolations0)
 
-    val vtionStyle : (EdgeP, Boolean) => ColorThickness = selectedUse match {
-      case None => (e, v) => violationStyle(v)
-      case Some(selected) => (e, _) => selectedStyle(selected)(e)
-    }
-
-    reg.foreach{ case (e, v) =>  printArc(vtionStyle(e,v))(usesStyle)(e) }
+    reg.foreach{ case (e, v) =>  printArc(violationStyle(v))(usesStyle)(e) }
 
     virt.foreach(e => printArc(violationStyle(virtualViolations contains e))(virtualUse)(e))
 

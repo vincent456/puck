@@ -1,10 +1,5 @@
 package puck.graph
 
-/**
- * Created by lorilan on 1/8/15.
- */
-
-
 sealed abstract class EdgeKind
 
 case object Uses extends EdgeKind {
@@ -61,6 +56,8 @@ case class DGEdge
   override def toString : String = {
     kind + "( " + source + ", " + target + ")"
   }
+
+  def toPair : (NodeId, NodeId) = (source, target)
 
   def existsIn(graph : DependencyGraph) = kind match {
     case Uses => graph.uses(source, target)

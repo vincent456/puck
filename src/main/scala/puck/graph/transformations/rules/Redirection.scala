@@ -53,7 +53,7 @@ object Redirection {
           case TypeConstructor | TypeMember =>
             propagateTypeMember(g).map((false,_))
           case TypeDecl => propagateType(g)
-          case TypeDeclMember =>
+          case TypeDeclAndTypeMember =>
             propagateTypeMember(g).flatMap(propagateType)
           case _ => \/-((false, g))
 

@@ -23,7 +23,7 @@ case object TypeDecl extends KindType
 case object TypeMember extends KindType
 case object TypeConstructor extends KindType
 
-case object TypeDeclMember extends KindType
+case object TypeDeclAndTypeMember extends KindType
 
 trait AGRoot extends NodeKind {
   def canContain(k: NodeKind) = false

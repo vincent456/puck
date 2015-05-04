@@ -33,7 +33,7 @@ object CompileHelper {
                  ll : AST.LoadingListener = null )  :
   (AST.Program, DependencyGraph, Seq[Transformation], Map[String, NodeId], Map[NodeId, ASTNodeLink]) = {
 
-    val builder = p.buildAccessGraph(null, ll)
+    val builder = p.buildDependencyGraph(null, ll)
     builder.attachOrphanNodes()
     builder.registerSuperTypes()
 
@@ -53,7 +53,7 @@ object CompileHelper {
                  decouple : Option[java.io.File] = None) :
     (AST.Program, DependencyGraph, Seq[Transformation], Map[String, NodeId], Map[NodeId, ASTNodeLink]) =
     this.apply(sources, jars) match {
-      case None => throw new AGBuildingError("Compilation error, no AST generated")
+      case None => throw new DGBuildingError("Compilation error, no AST generated")
       case Some(p) => buildGraph(p)
     }
 

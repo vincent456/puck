@@ -1,0 +1,136 @@
+aspect NodeFactory  {
+
+
+	public int ASTNode.buildDGNode(JavaGraphBuilder builder){
+
+        if(isNamedElement()){
+			DGNamedElement namedElement;
+			if(isSubstitute())
+				namedElement = (DGNamedElement) ((Substitute) this).getOriginal();
+			else
+				namedElement = (DGNamedElement) this;
+			try {
+				return builder.getNodeByName(namedElement.fullName());
+			}
+			catch(NoSuchElementException e){
+
+				int node = builder.addNode(namedElement.fullName(), namedElement.name(),
+					namedElement.getDGNodeKind(), JavaNodeKind.noType());
+
+			    namedElement.registerDecl(builder, node);
+	      		return node;
+  			}
+		}
+
+		throw new DGBuildingError(this + " (" + this.getClass()+ ") in "+ this.hostBodyDecl() +
+			" in " + this.compilationUnit().pathName() +
+			" does not know how to create an DG Node");
+	}
+
+    public int ParClassDecl.buildDGNode(JavaGraphBuilder builder){
+        return genericDecl().buildDGNode(builder);
+    }
+
+    public int ParInterfaceDecl.buildDGNode(JavaGraphBuilder builder){
+        return genericDecl().buildDGNode(builder);
+    }
+
+
+    public int Access.buildDGNode(JavaGraphBuilder builder){
+        this.lock();
+        return accessed().buildDGNode(builder);
+    }
+
+    private ASTNode Access.undefinedAccessed(){
+        throw new Error(this.getClass() + " : accessed not implemented");
+    }
+
+    syn ASTNode Access.accessed();
+    eq Access.accessed() = undefinedAccessed();
+    eq ClassAccess.accessed() = type();
+    eq ArrayAccess.accessed() = type();
+    eq SuperConstructorAccess.accessed() = decl();
+    eq ClassInstanceExpr.accessed() = decl();
+    eq TypeAccess.accessed() = decl();
+    //eq ParTypeAccess.accessed() = ((TypeAccess)getTypeAccess()).decl();
+    eq ParTypeAccess.accessed() = genericDecl();
+    eq MethodAccess.accessed() = decl();
+
+
+    public int VarAccess.buildDGNode(JavaGraphBuilder builder){
+        this.lock();
+        return decl().buildDGNode(builder);
+    }
+
+
+//	public int ParTypeAccess.buildDGNode(JavDGraphBuilder builder){
+//		return ((TypeAccess)getTypeAccess()).buildDGNode(builder);
+//	}
+
+
+//	interface TypeDeclared{
+//		TypeDecl getTypeDecl();
+//	}
+//
+//	TypeAccess implements TypeDeclared;
+//
+//	public TypeDecl TypeAccess.getTypeDecl(){
+//		return decl();
+//	}
+//	ParTypeAccess implements TypeDeclared;
+//
+//	public TypeDecl ParTypeAccess.getTypeDecl(){
+//		return ((TypeAccess)getTypeAccess()).getTypeDecl();
+//	}
+
+
+
+
+	public int Variable.buildDGNode(JavaGraphBuilder builder);
+
+		
+	public int VariableDeclaration.buildDGNode(JavaGraphBuilder builder){
+		return hostBodyDecl().buildDGNode(builder);
+	}
+
+	public int ParameterDeclaration.buildDGNode(JavaGraphBuilder builder){
+		return hostBodyDecl().buildDGNode(builder);
+	}
+
+	//needed because otherwise JastAdd create and empty decl
+	public int FieldDeclaration.buildDGNode(JavaGraphBuilder builder){
+		return super.buildDGNode(builder);
+	}
+
+
+	/*public DGNode FieldDecl.buildDGNode(JavaGraphBuilder builder){
+		DGNode dgTypeNode = getTypeAccess().buildDGNode(builder);
+
+		return builder.addNode(fullName(), name(), 
+				JavaNodeKind.field(new JavaNamedType(dgTypeNode)));
+	}*/
+
+	
+
+	public int InstanceInitializer.buildDGNode(JavaGraphBuilder builder){
+		return hostType().buildDGNode(builder);
+	}
+
+	public int StaticInitializer.buildDGNode(JavaGraphBuilder builder){
+		return hostType().buildDGNode(builder);
+	}
+
+	public int ParExpr.buildDGNode(JavaGraphBuilder builder){
+		return getExpr().buildDGNode(builder);
+	}
+
+	public int Dot.buildDGNode(JavaGraphBuilder builder){
+		if(isRightRotated())
+			rotateLeft();
+
+		return getRight().buildDGNode(builder);
+	}
+
+	
+
+}

@@ -21,10 +21,11 @@ aspect Desambiguation{
   	}
 
 	public String ParTypeAccess.name(){
-		return ((TypeAccess)getTypeAccess()).name() + typeArgumentListString();
+	//	return ((TypeAccess)getTypeAccess()).name() + typeArgumentListString();
+		return genericDecl().name();
 	}
 
-	
+
 	public class FullNameException extends Error {
 		private ASTNode<?> node;
 		
@@ -61,7 +62,8 @@ aspect Desambiguation{
     }
 	
 	public String ParTypeAccess.fullName(){
-		return ((TypeAccess)getTypeAccess()).fullName() + typeArgumentListString();
+		//return ((TypeAccess)getTypeAccess()).fullName() + typeArgumentListString();
+		return genericDecl().fullName();
     }
 
 	public String ConstructorDecl.fullName(){
@@ -101,8 +103,6 @@ aspect Desambiguation{
 		return fullName().contains(scope);
 	}
 	
-	
-	
     interface Desambiguable{
     	
     	String getParametersAsString();
@@ -141,6 +141,7 @@ aspect Desambiguation{
     }
 
     public static String BodyDecl.getDesambiguateFullName(Desambiguable d){
+
     	return d.hostType().fullName()+"."+d.name()
     		    + d.getParametersAsString();
     }

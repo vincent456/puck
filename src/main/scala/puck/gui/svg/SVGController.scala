@@ -34,7 +34,8 @@ class SVGController private
   private var printId : Boolean,
   private var printSignatures : Boolean,
   private var printVirtualEdges : Boolean = false,
-  private var printRedOnly : Boolean = false) {
+  private var printRedOnly : Boolean = false,
+  private var selectedEdgeForTypePrinting : Option[DGEdge] = None) {
 
   def transfoRules = genController.filesHandler.transformationRules
 
@@ -59,6 +60,12 @@ class SVGController private
   def setSignatureVisible(b : Boolean): Unit = {
     if( b != printSignatures ){
       printSignatures = b
+      displayGraph(graph)
+    }
+  }
+  def setSelectedEdgeForTypePrinting(se: Option[DGEdge]) : Unit = {
+    if( se != selectedEdgeForTypePrinting ){
+      selectedEdgeForTypePrinting = se
       displayGraph(graph)
     }
   }
@@ -162,7 +169,7 @@ class SVGController private
       SVGController.documentFromStream(pipedInput)
     }
 
-    val opts = PrintingOptions(visibility, printId, printSignatures, None, printVirtualEdges, printRedOnly)
+    val opts = PrintingOptions(visibility, printId, printSignatures, selectedEdgeForTypePrinting, printVirtualEdges, printRedOnly)
     genController.filesHandler.makeImage(graph, opts, Some(pipedOutput), Svg){
       case _ => ()
     }
@@ -171,6 +178,14 @@ class SVGController private
   }
 
   def canUndo = undoStack.nonEmpty
+
+  def undoAll() = {
+    while(undoStack.nonEmpty)
+      redoStack.push(undoStack.pop())
+    displayGraph(graph)
+    updateStackListeners()
+  }
+
   def undo() = {
       redoStack.push(undoStack.pop())
       displayGraph(graph)

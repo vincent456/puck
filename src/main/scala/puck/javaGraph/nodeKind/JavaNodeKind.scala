@@ -105,7 +105,7 @@ object JavaNodeKind extends NodeKindKnowledge {
         val container = graph.getNode(graph.container(n.id).get)
         kindType(graph, container) match {
           case NameSpace => TypeDecl
-          case TypeDecl => TypeDeclMember
+          case TypeDecl => TypeDeclAndTypeMember
           case _ => Unknown
         }
       case _ => super.kindType(graph, n)

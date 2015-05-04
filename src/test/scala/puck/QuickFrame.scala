@@ -13,6 +13,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 object QuickFrame {
+
   def apply(graph : DependencyGraph, title : String = "QuickFrame") = {
     val pipedOutput = new PipedOutputStream()
     val pipedInput = new PipedInputStream(pipedOutput)

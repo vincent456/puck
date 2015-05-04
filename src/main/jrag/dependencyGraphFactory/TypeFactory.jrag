@@ -1,0 +1,55 @@
+import puck.graph.DGBuildingError;
+import puck.graph.Tuple;
+import puck.graph.Type;
+import puck.javaGraph.JavaNamedType;
+import puck.javaGraph.MethodType;
+import scala.Some;
+
+aspect TypeFactory {
+	
+
+	public abstract void BodyDecl.buildDGType(JavaGraphBuilder builder);
+	
+	public void MemberTypeDecl.buildDGType(JavaGraphBuilder builder){}
+	public void StaticInitializer.buildDGType(JavaGraphBuilder builder){}
+	public void InstanceInitializer.buildDGType(JavaGraphBuilder builder){}
+
+
+	static Tuple ASTNode.astParamsToDGType(JavaGraphBuilder builder, Callable c){
+		ArrayList<Type> tparams = new ArrayList<Type>();
+		for(ParameterDeclaration pdecl: c.getParameterList()){
+			int agTypeNode = pdecl.getTypeAccess().buildDGNode(builder);
+			tparams.add(new JavaNamedType(agTypeNode));
+		}
+		return new Tuple(scala.collection.JavaConversions.asScalaBuffer(tparams).toList());
+	}
+
+	public void FieldDecl.buildDGType(JavaGraphBuilder builder){
+		throw new DGBuildingError("missing type for FieldDecl");
+	}
+		
+	public void MethodDecl.buildDGType(JavaGraphBuilder builder){
+		JavaNamedType retType =
+			new JavaNamedType(getTypeAccess().buildDGNode(builder));
+		MethodType mt = new MethodType(ASTNode.astParamsToDGType(builder,this), retType);
+	    Some<Type> typeHolder = new Some<Type>(mt);
+	    builder.setType(builder.getNodeByName(fullName()), typeHolder);
+	}
+
+	public void ConstructorDecl.buildDGType(JavaGraphBuilder builder){
+		JavaNamedType retType = 
+		           new JavaNamedType(hostType().buildDGNode(builder));
+		MethodType ct = new MethodType(ASTNode.astParamsToDGType(builder,this), retType);
+		Some<Type> typeHolder = new Some<Type>(ct);
+        builder.setType(builder.getNodeByName(fullName()), typeHolder);
+	}
+
+	public void FieldDeclaration.buildDGType(JavaGraphBuilder builder){
+		JavaNamedType type = new JavaNamedType(type().buildDGNode(builder));
+	    Some<Type> typeHolder = new Some<Type>(type);
+		builder.setType(builder.getNodeByName(fullName()), typeHolder);
+	}
+
+
+
+}

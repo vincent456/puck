@@ -22,6 +22,16 @@ extends AbstractAction(s"Add ${sub.name} isa ${sup.name}") {
     controller.pushGraph(graph.mileStone.addIsa(sub.id, sup.id))
 
 }
+
+class ShowTypeRelationshipAction
+( edge : Option[DGEdge],
+  controller : SVGController)
+  extends AbstractAction(s"Show type relationship")
+{
+  def actionPerformed(e: ActionEvent) : Unit =
+    controller.setSelectedEdgeForTypePrinting(edge)
+}
+
 class RemoveEdgeAction
 ( edge : DGEdge,
   controller : SVGController)

@@ -50,6 +50,7 @@ class SVGFrame
   ) extends JFrame with StackListener {
 
   def update(svgController: SVGController) : Unit = {
+    undoAllButton.setEnabled(svgController.canUndo)
     undoButton.setEnabled(svgController.canUndo)
     redoButton.setEnabled(svgController.canRedo)
   }
@@ -60,6 +61,10 @@ class SVGFrame
       def actionPerformed(e: ActionEvent) : Unit = action(e)
 
     }
+  def jbutton(name:String)
+              (action : ActionEvent => Unit) : JButton =
+   new JButton(abstractAction(name)(action))
+
 
   def addButtonToMenu(action : AbstractAction) : Unit = {
     val _ = menu.add(new JButton(action))
@@ -85,6 +90,12 @@ class SVGFrame
   addVisibilityCheckBoxesToMenu()
 
 
+  private val undoAllButton = new JButton(abstractAction("Undo all") {
+    _ => controller.undoAll()
+  })
+  undoAllButton.setEnabled(false)
+  menu.add(undoAllButton)
+
   private val undoButton = new JButton(abstractAction("Undo") {
     _ => controller.undo()
   })
@@ -100,17 +111,29 @@ class SVGFrame
 
   menu.add(consolePanel.panel)
 
-  addButtonToMenu("Apply") {
-   _ => controller.applyOnCode()
+  private def addHboxButtons() : Unit = {
+    val hbox = new JPanel()
+    hbox.setLayout(new BoxLayout(hbox, BoxLayout.Y_AXIS))
+    menu add hbox
+
+    hbox add jbutton("Apply") {
+      _ => controller.applyOnCode()
+    }
+
+    hbox add new JButton(
+      new AddNodeAction(controller.graph.root, controller, Package))
+
+
+    hbox add jbutton("Show top level packages") {
+        _ => controller.expand(controller.graph.rootId)
+    }
+
+    val _ = hbox add jbutton("Hide type relationship") {
+      _ => controller.setSelectedEdgeForTypePrinting(None)
+    }
   }
 
-  addButtonToMenu{
-    new AddNodeAction(controller.graph.root, controller, Package)
-  }
-
-  addButtonToMenu("Show top level packages") {
-    _ => controller.expand(controller.graph.rootId)
-  }
+  addHboxButtons()
 
   this.add(panel, BorderLayout.CENTER)
   this.add(menu, BorderLayout.SOUTH)

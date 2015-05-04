@@ -16,7 +16,7 @@ class RedirectionError(msg : String) extends DGError(msg){
 class IllegalAGOperation(msg : String) extends DGError(msg){
   def this() = this("")
 }
-class AGBuildingError(msg:String) extends DGError(msg){
+class DGBuildingError(msg:String) extends DGError(msg){
   def this()=this("")
 }
 

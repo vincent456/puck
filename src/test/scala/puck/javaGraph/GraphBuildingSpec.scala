@@ -1,12 +1,9 @@
 package puck
 package javaGraph
 
-import puck.graph.DGEdge
+//import nodeKind._
+import puck.graph.{DependencyGraph, DGEdge}
 import puck.graph.constraints.SupertypeAbstraction
-
-/**
- * Created by lorilan on 3/23/15.
- */
 
 class GraphBuildingSpec extends AcceptanceSpec {
 
@@ -135,5 +132,88 @@ class GraphBuildingSpec extends AcceptanceSpec {
   }
 
 
+  feature("Isa registration"){
+    val examplesPath = graphBuildingExamplesPath +  "subTyping/"
+
+    scenario("simple case"){
+      val p = "regularSuperType"
+      val _ = new ExampleSample(s"$examplesPath/$p/A.java") {
+        val superClass = fullName2id(s"$p.A")
+        val subClass = fullName2id(s"$p.B")
+
+        assert( graph.isa(subClass, superClass) )
+
+      }
+    }
+
+    scenario("generic super type"){
+      val p = "genericSuperType"
+      val _ = new ExampleSample(s"$examplesPath/$p/A.java") {
+        val superClass = fullName2id(s"$p.Gen")
+        val subClass = fullName2id(s"$p.C")
+        val paramType = fullName2id(s"$p.A")
+
+        assert( graph.isa(subClass, superClass) )
+        assert( ! graph.isa(subClass, paramType) )
+        assert( graph.uses(subClass, paramType) )
+
+      }
+    }
+  }
+
+  feature("Generic types uses"){
+    val examplesPath = graphBuildingExamplesPath +  "genericTypes/"
+
+    scenario("generic type declaration"){
+      val p = "genericTypeDecl"
+      val _ = new ExampleSample(s"$examplesPath/$p/A.java") {
+        val actualParam = fullName2id(s"$p.A")
+        val genTypeDeclarant = fullName2id(s"$p.GenTypeDeclarant")
+        val user = fullName2id(s"$p.GenTypeDeclarant.user")
+        val genType = fullName2id("java.util.List")
+
+        assert( graph.uses(user, genType) )
+
+        assert( graph.uses(user, actualParam) )
+
+        assert( ! graph.uses(genType, actualParam) )
+      }
+    }
+
+    def numNodesWithFullname(g : DependencyGraph, fullName : String) : Int =
+      g.concreteNodesId.count(g.fullName(_) == fullName)
+
+
+    scenario("generic method declaration"){
+      val p = "methodOfGenericType"
+      val _ = new ExampleSample(s"$examplesPath/$p/GenColl.java") {
+
+        val actualTypeParam = fullName2id(s"$p.A")
+        val formalTypeParam = fullName2id(s"$p.GenColl@T")
+        val genType = fullName2id(s"$p.GenColl")
+        val genMethod = fullName2id(s"$p.GenColl.put__GenColl@T")
+        val userClass = fullName2id(s"$p.User")
+        val userMethod = fullName2id(s"$p.User.m__void")
+
+        val genCollNum = numNodesWithFullname(graph, s"$p.GenColl")
+        genCollNum shouldBe 1
+        val genCollPutNum = numNodesWithFullname(graph, s"$p.GenColl.put")
+        genCollPutNum shouldBe 1
+
+        assert( ! graph.uses(genMethod, actualTypeParam) )
+
+        assert( graph.uses(genMethod, formalTypeParam) )
+
+        assert( graph.uses(userMethod, genType) )
+
+        assert( graph.uses(userMethod, actualTypeParam) )
+
+        assert( graph.uses(userMethod, genMethod) )
+
+
+      }
+    }
+
+  }
 
 }

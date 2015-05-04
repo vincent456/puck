@@ -4,7 +4,7 @@ import java.awt.event.ActionEvent
 import javax.swing.{AbstractAction, JMenuItem, JPopupMenu}
 
 import puck.graph.{Isa, DGEdge}
-import puck.gui.svg.actions.{RemoveEdgeAction, SolveAction}
+import puck.gui.svg.actions.{ShowTypeRelationshipAction, RemoveEdgeAction, SolveAction}
 
 /**
  * Created by lorilan on 3/31/15.
@@ -24,4 +24,5 @@ class EdgeRightClickMenu
   if(edge.kind == Isa)
     add(new RemoveEdgeAction(edge, controller))
 
+  add(new ShowTypeRelationshipAction(Some(edge), controller))
 }

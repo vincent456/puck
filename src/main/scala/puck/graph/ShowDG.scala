@@ -48,6 +48,10 @@ object ShowDG {
       case vn : VirtualNode => Cord(s"${vn.id} - ${vn.name(dg)}")
     }
 
+
+  def nodeNameCord : CordBuilder[DGNode] =
+    (dg, n) => name(dg, n)
+
   def nodeNameTypCord : CordBuilder[DGNode] =
     (dg, n) => n match {
       case cn : ConcreteNode => Cord(cn.name , typeHolderCord(dg, cn.styp))
