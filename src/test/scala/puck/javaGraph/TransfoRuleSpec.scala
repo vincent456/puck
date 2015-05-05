@@ -223,14 +223,14 @@ class TransfoRuleSpec extends AcceptanceSpec {
         val superType = fullName2id(s"$p.SuperType")
         val absmUsed = fullName2id(s"$p.SuperType.mUsed__void")
 
-        val typeUse = DGEdge.uses(mUser, classUsed)
+        val typeUse = DGEdge.UsesK(mUser, classUsed)
         assert(typeUse.existsIn(graph))
-        assert(DGEdge.uses(mUser, mUsed).existsIn(graph))
+        assert(DGEdge.UsesK(mUser, mUsed).existsIn(graph))
         assertSuccess(Redirection.redirectUsesAndPropagate(graph, typeUse, superType,
           SupertypeAbstraction)) {
           case g2 =>
-            assert(DGEdge.uses(mUser, superType).existsIn(g2))
-            assert(DGEdge.uses(mUser, absmUsed).existsIn(g2))
+            assert(DGEdge.UsesK(mUser, superType).existsIn(g2))
+            assert(DGEdge.UsesK(mUser, absmUsed).existsIn(g2))
         }
       }
     }
@@ -252,13 +252,13 @@ class TransfoRuleSpec extends AcceptanceSpec {
         val g = graph.addAbstraction(delegatee, (delegator, DelegationAbstraction))
                      .addAbstraction(mDelegatee, (mDelegator, DelegationAbstraction))
 
-        val typeUse = DGEdge.uses(mUser, delegatee)
+        val typeUse = DGEdge.UsesK(mUser, delegatee)
         assert(typeUse.existsIn(graph))
-        assert(DGEdge.uses(mUser, mDelegatee).existsIn(graph))
+        assert(DGEdge.UsesK(mUser, mDelegatee).existsIn(graph))
         assertSuccess(Redirection.redirectUsesAndPropagate(graph, typeUse, delegator, DelegationAbstraction)) {
           case g2 =>
-            assert(DGEdge.uses(mUser, delegator).existsIn(g2))
-            assert(DGEdge.uses(mUser, mDelegator).existsIn(g2))
+            assert(DGEdge.UsesK(mUser, delegator).existsIn(g2))
+            assert(DGEdge.UsesK(mUser, mDelegator).existsIn(g2))
         }
       };()
 
@@ -285,10 +285,10 @@ class TransfoRuleSpec extends AcceptanceSpec {
 
           val caller = fullName2id(s"$p.A.m__void")
 
-          val ctorUse = DGEdge.uses(caller, ctor)
+          val ctorUse = DGEdge.UsesK(caller, ctor)
           assert( ctorUse.existsIn(graph) )
 
-          val ctorMethodUse =DGEdge.uses(caller, ctorMethod)
+          val ctorMethodUse =DGEdge.UsesK(caller, ctorMethod)
           assert( ! ctorMethodUse.existsIn(graph))
 
           val g = graph.addAbstraction(ctor, (ctorMethod, DelegationAbstraction))
@@ -312,11 +312,11 @@ class TransfoRuleSpec extends AcceptanceSpec {
         val caller = fullName2id(s"$p.A.m__void")
         val userOfTheCaller = fullName2id(s"$p.C.mc__void")
 
-        val constructedClassUse = DGEdge.uses(caller, constructedClass)
-        val ctorUse = DGEdge.uses(caller, ctor)
+        val constructedClassUse = DGEdge.UsesK(caller, constructedClass)
+        val ctorUse = DGEdge.UsesK(caller, ctor)
         assert( ctorUse existsIn graph )
 
-        val ctorMethodUse = DGEdge.uses(caller, ctorMethod)
+        val ctorMethodUse = DGEdge.UsesK(caller, ctorMethod)
         assert( ! (ctorMethodUse existsIn graph))
 
         val g = graph.addAbstraction(ctor, (ctorMethod, DelegationAbstraction))
@@ -350,14 +350,14 @@ class TransfoRuleSpec extends AcceptanceSpec {
 
         val user =  fullName2id(s"$p.A.m__void")
 
-        val useOfImplClass = DGEdge.uses(user, cUsed)
-        val useOfctor = DGEdge.uses(user, cUsedCtor)
-        val useOfmeth = DGEdge.uses(user, mUsed)
-        val useOfOtherMeth = DGEdge.uses(user, otherMused)
+        val useOfImplClass = DGEdge.UsesK(user, cUsed)
+        val useOfctor = DGEdge.UsesK(user, cUsedCtor)
+        val useOfmeth = DGEdge.UsesK(user, mUsed)
+        val useOfOtherMeth = DGEdge.UsesK(user, otherMused)
 
-        val useOfAbsClass = DGEdge.uses(user, cAbs)
-        val useOfmethAbs = DGEdge.uses(user, mAbs)
-        val useOfOtherMethAbs = DGEdge.uses(user, otherMabs)
+        val useOfAbsClass = DGEdge.UsesK(user, cAbs)
+        val useOfmethAbs = DGEdge.UsesK(user, mAbs)
+        val useOfOtherMethAbs = DGEdge.UsesK(user, otherMabs)
 
         assert(useOfImplClass existsIn graph)
         assert(useOfctor existsIn graph)

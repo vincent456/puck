@@ -173,7 +173,7 @@ class DotPrinter
   def decorate_name(n : DGNode):String = {
     val sCter = graph.container(n.id)
 
-    if (sCter.isDefined && concreteViolations.contains(DGEdge.contains(sCter.get, n.id)))
+    if (sCter.isDefined && concreteViolations.contains(DGEdge.ContainsK(sCter.get, n.id)))
       "<FONT COLOR=\"" + ColorThickness.violation.color + "\"><U>" + helper.namePrefix(n) + name(n) + idString(n.id) + "</U></FONT>"
     else helper.namePrefix(n) + name(n) + idString(n.id)
   }
@@ -263,7 +263,7 @@ class DotPrinter
   type IsViolation = Boolean
   def filterEdgeBasedOnVisibleNodes
   ( edges : Seq[EdgeP],
-    edgeKind : EdgeKind,
+    edgeKind : DGEdge.EKind,
     virtInit : Set[EdgeP] = Set(),
     virtViolationInit : ContainsViolationMap = Set()
     ) : (Seq[(EdgeP, IsViolation)], Set[EdgeP], ContainsViolationMap) = {
@@ -273,12 +273,12 @@ class DotPrinter
         (firstVisibleParent(source), firstVisibleParent(target)) match {
           case (Some(s), Some(t))
             if source == s && target == t =>
-            val isViolation = concreteViolations.contains(DGEdge(edgeKind, source, target))
+            val isViolation = concreteViolations.contains(edgeKind(source, target))
             (regulars :+ (((s, t), isViolation)), virtuals, m)
 
           case (Some(s), Some(t)) if printVirtualEdges =>
 
-            if(concreteViolations.contains(DGEdge(edgeKind, source, target)))
+            if(concreteViolations.contains(edgeKind(source, target)))
                 (regulars, virtuals + ((s, t)), m + ((s, t)))
               else if(!recusivePackage(s,t))
                 (regulars, virtuals + ((s, t)), m)
@@ -315,12 +315,12 @@ class DotPrinter
     graph.nodesId.foreach{nid => if(graph.container(nid).isEmpty) printNode(nid)}
 
 
-    val (regularsIsa, virt0, virtualViolations0) = filterEdgeBasedOnVisibleNodes(graph.isaSeq, Isa)
+    val (regularsIsa, virt0, virtualViolations0) = filterEdgeBasedOnVisibleNodes(graph.isaSeq, DGEdge.IsaK)
     regularsIsa.foreach {
       case (e, v) => printArc(violationStyle(v))(isaStyle)(e)
     }
 
-    val(reg, virt, virtualViolations) = filterEdgeBasedOnVisibleNodes(graph.usesSeq, Uses, virt0, virtualViolations0)
+    val(reg, virt, virtualViolations) = filterEdgeBasedOnVisibleNodes(graph.usesSeq, DGEdge.UsesK, virt0, virtualViolations0)
 
     reg.foreach{ case (e, v) =>  printArc(violationStyle(v))(usesStyle)(e) }
 

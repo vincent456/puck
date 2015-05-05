@@ -135,14 +135,14 @@ class RecordingComparator
       ts1.head.operation match {
         case Edge(e) => attribNode(Seq(e.source, e.target), map, nodesToMap) {
           case (Seq(src, tgt), map1, nodesToMap1) =>
-            removeFirstAndCompareNext(Edge(DGEdge(e.kind, src, tgt)), map1, nodesToMap1 )
+            removeFirstAndCompareNext(Edge(e.kind(src, tgt)), map1, nodesToMap1 )
         }
 
         case RedirectionOp(e, extremity) =>
           attribNode(Seq(e.source, e.target, extremity.node), map, nodesToMap){
             case (Seq(src, tgt, newExtyNode), map1, nodesToMap1) =>
               removeFirstAndCompareNext(RedirectionOp(
-                DGEdge(e.kind, src, tgt), extremity.create(newExtyNode)), map1, nodesToMap1)
+                e.kind(src, tgt), extremity.create(newExtyNode)), map1, nodesToMap1)
           }
 
 

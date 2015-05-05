@@ -95,12 +95,12 @@ class Merge
                       traverse(g0 usersOf consumedChildId, g0){
                         (g00, userId) =>
                           Redirection.redirectUsesAndPropagate(g00,
-                            DGEdge.uses(userId, consumedChildId),
+                            DGEdge.UsesK(userId, consumedChildId),
                             newTypeConstructor, NotAnAbstraction)
                       }.map(_.removeConcreteNode(consumedChildId))
                   }
                 case _ =>
-                  \/-(g0.changeSource(DGEdge.contains(consumedId, consumedChildId), consumerId)
+                  \/-(g0.changeSource(DGEdge.ContainsK(consumedId, consumedChildId), consumerId)
                     .changeType(consumedChildId, g0.getConcreteNode(consumedChildId).styp, consumedId, consumerId))
               }
           }
@@ -116,25 +116,25 @@ class Merge
     val g1 = g.usersOf(consumedId).foldLeft(g) {
       (g0, userId) =>
         g.logger.writeln(s"redirecting ($userId, $consumedId) toward $consumerId")
-        g0.changeTarget(DGEdge.uses(userId, consumedId), consumerId)
+        g0.changeTarget(DGEdge.UsesK(userId, consumedId), consumerId)
           .changeType(userId, g.getConcreteNode(userId).styp, consumedId, consumerId)
     }
 
     val g2 = g.usedBy(consumedId).foldLeft(g1) {
       (g0, usedId) =>
-          g0.changeSource(DGEdge.uses(consumedId, usedId), consumerId)
+          g0.changeSource(DGEdge.UsesK(consumedId, usedId), consumerId)
 
     }
 
     val g3 = g.directSuperTypes(consumedId).foldLeft(g2) {
       (g0, stId) =>
-        if(stId != consumerId) g0.changeSource(DGEdge.isa(consumedId, stId), consumerId)
+        if(stId != consumerId) g0.changeSource(DGEdge.IsaK(consumedId, stId), consumerId)
         else g0.removeIsa(consumedId, stId)
     }
 
     val g4 = g.directSubTypes(consumedId).foldLeft(g3) {
       (g0, stId) =>
-        if(stId != consumerId) g0.changeTarget(DGEdge.isa(stId, consumedId), consumerId)
+        if(stId != consumerId) g0.changeTarget(DGEdge.IsaK(stId, consumedId), consumerId)
         else g0.removeIsa(stId, consumedId)
     }
 

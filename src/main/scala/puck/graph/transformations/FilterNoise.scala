@@ -47,27 +47,29 @@ object FilterNoise {
   }
 
   def xRedRule(logger : PuckLogger, red: RedirectionOp) : Transformation => Option[Transformation] = {
-    val DGEdge(kind, n1, n2) = red.edge
+    val kind = red.edge.kind
+    val n1 = red.edge.source
+    val n2 = red.edge.target
     red.extremity match {
       case Target(n3) => {
-        case op2@Transformation(Regular, RedirectionOp(DGEdge(`kind`, `n1`, n0), Target(`n2`))) =>
-          val res = Transformation(Regular, RedirectionOp(DGEdge(kind, n1, n0), Target(n3)))
+        case op2@Transformation(Regular, RedirectionOp(e @ DGEdge(`n1`, n0), Target(`n2`))) if e.kind == kind =>
+          val res = Transformation(Regular, RedirectionOp(kind(n1, n0), Target(n3)))
           writeRule(logger)("RedRed_tgt", op2.toString, redTransfo(red).toString, res.toString)
           Some(res)
-        case op2@Transformation(Regular, Edge(DGEdge(`kind`, `n1`, `n2`))) =>
+        case op2@Transformation(Regular, Edge(e @ DGEdge(`n1`, `n2`))) if e.kind == kind =>
           val res = if(red.withMerge) None
-          else Some(Transformation(Regular, Edge(DGEdge(kind, n1, n3))))
+          else Some(Transformation(Regular, Edge(kind(n1, n3))))
           writeRule(logger)("AddRed_tgt", op2.toString, redTransfo(red).toString, res.toString)
           res
         case t => Some(t)
       }
       case Source(n3) => {
-        case op2@Transformation(Regular, RedirectionOp(DGEdge(`kind`, n0, `n2`), Source(`n1`))) =>
-          val res = Transformation(Regular, RedirectionOp(DGEdge(kind, n0, n2), Source(n3)))
+        case op2@Transformation(Regular, RedirectionOp(e @ DGEdge(n0, `n2`), Source(`n1`))) if e.kind == kind =>
+          val res = Transformation(Regular, RedirectionOp(kind(n0, n2), Source(n3)))
           writeRule(logger)("RedRed_src", op2.toString, redTransfo(red).toString, res.toString)
           Some(res)
-        case op2@Transformation(Regular, Edge(DGEdge(`kind`, `n1`, `n2`))) =>
-          val res = Transformation(Regular, Edge(DGEdge(kind, n3, n2)))
+        case op2@Transformation(Regular, Edge(e @ DGEdge(`n1`, `n2`))) if e.kind == kind =>
+          val res = Transformation(Regular, Edge(kind(n3, n2)))
           writeRule(logger)("AddRed_src", op2.toString, redTransfo(red).toString, res.toString)
           Some(res)
         case t => Some(t)

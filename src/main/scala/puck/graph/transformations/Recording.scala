@@ -97,7 +97,7 @@ object Recording {
         VNode(n.copy(id = newId))
 
       case Edge(e) =>
-        Edge(e.copy(source = mappin(e.source), target = mappin(e.target)))
+        Edge(e.kind(source = mappin(e.source), target = mappin(e.target)))
 
       case tgt : RedirectionOp =>
         val newEdge =

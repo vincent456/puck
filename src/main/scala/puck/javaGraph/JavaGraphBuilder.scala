@@ -10,9 +10,6 @@ import puck.util.PuckNoopLogger
 import scala.collection.JavaConversions.collectionAsScalaIterable
 import scalaz._, Scalaz._
 
-/**
- * Created by lorilan on 29/10/14.
- */
 class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 
    var idSeed = rootId
@@ -22,9 +19,8 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
    g = new DependencyGraph(PuckNoopLogger, JavaNodeKind, idSeed,
    ConcreteNodeIndex() + (rootId -> root), ConcreteNodeIndex(),
      VirtualNodeINdex(), VirtualNodeINdex(), Nodes2VNodeMap(),
-    EdgeMap(), EdgeMap(), EdgeMap(),
-    Node2NodeMap(), EdgeMap(), EdgeMap(),
-    UseDependencyMap(), UseDependencyMap(),
+    EdgeMap(),
+     UseDependencyMap(), UseDependencyMap(),
     AbstractionMap(), ConstraintsMaps(), Recording())
 
    var graph2ASTMap = Map[Int, ASTNodeLink]()

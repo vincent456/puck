@@ -1,5 +1,6 @@
 package puck.graph
 
+import puck.graph.DGEdge.{ContainsK, IsaK, ParameterizedUsesK, UsesK}
 import puck.graph.DependencyGraph._
 import puck.graph.constraints._
 import puck.graph.transformations.{Transformation, RecordingComparator}
@@ -23,8 +24,8 @@ object DependencyGraph {
 
   //phantom type of NodeId used to ease Mutable/Immutable transition
   //in mutable NodeId[K] =:= AGNode[K]
-  type EdgeMap = SetValueMap[NodeId, NodeId]
-  val EdgeMap = SetValueMap
+  type EdgeMapT = SetValueMap[NodeId, NodeId]
+  val EdgeMapT = SetValueMap
   type UseDependencyMap = SetValueMap[(NodeId,NodeId), (NodeId,NodeId)]
   val UseDependencyMap = SetValueMap
   type AbstractionMap = SetValueMap[NodeId, (NodeId, AbstractionPolicy)]
@@ -58,6 +59,109 @@ object DependencyGraph {
 
 }
 
+object EdgeMap {
+  def apply() =
+    new EdgeMap(EdgeMapT(), EdgeMapT(),
+                EdgeMapT(), EdgeMapT(),
+                EdgeMapT(),Nodes2VNodeMap(),
+                EdgeMapT(),EdgeMapT())
+}
+
+case class EdgeMap
+(users : EdgeMapT,
+ used  : EdgeMapT, //formely usesMap
+ parameterizedUsers : EdgeMapT,
+ parameterizedUsed : EdgeMapT,
+ contents  : EdgeMapT,
+ containers : Node2NodeMap,
+ superTypes : EdgeMapT,
+ subTypes : EdgeMapT){
+
+  override def toString : String = {
+    val builder = new StringBuilder(150)
+
+    builder.append("used -> user\n")
+    builder.append(users.toString)
+    builder.append("user -> used\n")
+    builder.append(used.toString)
+
+    builder.append("par used -> par user\n")
+    builder.append(parameterizedUsers.toString)
+    builder.append("par user -> par used\n")
+    builder.append(parameterizedUsed.toString)
+
+    builder.append("container -> content\n")
+    builder.append(contents.toString)
+    builder.append("content -> container\n")
+    builder.append(containers.toString())
+
+    builder.append("sub -> super\n")
+    builder.append(superTypes.toString)
+    builder.append("super -> sub\n")
+    builder.append(subTypes.toString)
+
+    builder.toString()
+  }
+
+  def add(edge : DGEdge) : EdgeMap =
+    edge.kind match {
+      case UsesK =>
+        copy(users = users + (edge.used, edge.user),
+            used = used + (edge.user, edge.used))
+      case ParameterizedUsesK =>
+        copy(parameterizedUsers = parameterizedUsers + (edge.used, edge.user),
+          parameterizedUsed = parameterizedUsed + (edge.user, edge.used))
+      case IsaK =>
+        copy(subTypes = subTypes + (edge.superType, edge.subType),
+          superTypes = superTypes + (edge.subType, edge.superType))
+      case ContainsK =>
+        copy(contents = contents + (edge.container, edge.content),
+          containers = containers + (edge.content -> edge.container))
+    }
+
+  def add(kind : DGEdge.EKind, source : NodeId, target : NodeId) : EdgeMap =
+    add(kind(source, target))
+
+
+  def remove(edge : DGEdge) : EdgeMap =
+    edge.kind match {
+      case UsesK =>
+        copy(users = users - (edge.used, edge.user),
+          used = used - (edge.user, edge.used))
+      case ParameterizedUsesK =>
+        copy(parameterizedUsers = parameterizedUsers - (edge.used, edge.user),
+          parameterizedUsed = parameterizedUsed - (edge.user, edge.used))
+      case IsaK =>
+        copy(subTypes = subTypes - (edge.superType, edge.subType),
+          superTypes = superTypes - (edge.subType, edge.superType))
+      case ContainsK =>
+        copy(contents = contents - (edge.container, edge.content),
+          containers = containers - edge.content)
+    }
+
+  def remove(kind : DGEdge.EKind, source : NodeId, target : NodeId) : EdgeMap =
+    remove(kind(source, target))
+
+  def contains(containerId : NodeId, contentId : NodeId) : Boolean =
+    containers get contentId match {
+      case None => false
+      case Some(id) => id == containerId
+    }
+
+  def isa(subId : NodeId, superId: NodeId): Boolean = superTypes.bind(subId, superId)
+
+  def uses(userId: NodeId, usedId: NodeId) : Boolean = users.bind(usedId, userId)
+
+  def exists(e : DGEdge) : Boolean = e.kind  match {
+    case ContainsK => contains(e.source, e.target)
+    case IsaK => isa(e.source, e.target)
+    case UsesK => uses(e.source, e.target)
+    case ParameterizedUsesK => parameterizedUsers.bind(e.source, e.target)
+  }
+
+}
+
+
 class DependencyGraph
 ( val logger : PuckLogger = PuckNoopLogger,
   val nodeKindKnowledge: NodeKindKnowledge,
@@ -67,12 +171,7 @@ class DependencyGraph
   private [this] val vNodesIndex : VirtualNodeIndex,
   private [this] val vRemovedNodes : VirtualNodeIndex,
   private [this] val nodes2vNodes : Nodes2VnodeMap,
-  private [this] val usersMap : EdgeMap,
-  private [this] val usesMap  : EdgeMap,
-  private [this] val contentsMap  : EdgeMap,
-  private [this] val containerMap : Node2NodeMap,
-  private [this] val superTypesMap : EdgeMap,
-  private [this] val subTypesMap : EdgeMap,
+  /*private [this]*/ val edges : EdgeMap,
   //TODO remake private [this]
   /*private [this]*/ val typeMemberUses2typeUsesMap : UseDependencyMap,
   /*private [this]*/ val typeUses2typeMemberUsesMap : UseDependencyMap,
@@ -90,21 +189,17 @@ class DependencyGraph
                nVNodesIndex : VirtualNodeIndex = vNodesIndex,
                nVRemovedNodes : VirtualNodeIndex = vRemovedNodes,
                nNodes2vNodes : Nodes2VnodeMap = nodes2vNodes,
-               nUsersMap : EdgeMap = usersMap,
-               nUsesMap  : EdgeMap = usesMap,
-               nContentMap  : EdgeMap = contentsMap,
-               nContainerMap : Node2NodeMap = containerMap,
-               nSuperTypesMap : EdgeMap = superTypesMap,
-               nSubTypesMap : EdgeMap = subTypesMap,
+               nEdges : EdgeMap = edges,
                nDominantUsesMap : UseDependencyMap = typeMemberUses2typeUsesMap,
                nDominatedUsesMap : UseDependencyMap = typeUses2typeMemberUsesMap,
                nAbstractionsMap : AbstractionMap = abstractionsMap,
                nConstraints : ConstraintsMaps = constraints,
                nRecording : Recording = recording) : DependencyGraph =
     new DependencyGraph(nLogger, nodeKindKnowledge, nIdSeed,
-                        nNodesSet, nRemovedNodes, nVNodesIndex, nVRemovedNodes, nNodes2vNodes,
-                        nUsersMap, nUsesMap,
-                        nContentMap, nContainerMap, nSuperTypesMap, nSubTypesMap,
+                        nNodesSet, nRemovedNodes,
+                        nVNodesIndex, nVRemovedNodes,
+                        nNodes2vNodes,
+                        nEdges,
                         nDominantUsesMap, nDominatedUsesMap,
                         nAbstractionsMap, nConstraints, nRecording)
 
@@ -169,9 +264,9 @@ class DependencyGraph
 
   def numRemovedNodes : Int = removedNodes .size + vRemovedNodes.size
 
-  def isaEdges : List[DGEdge] = superTypesMap.content.foldLeft(List[DGEdge]()){
+  def isaEdges : List[DGEdge] = edges.superTypes.content.foldLeft(List[DGEdge]()){
     case (acc, (sub, sups)) =>
-      sups.toList.map(sup => DGEdge.isa(sub, sup)) ::: acc
+      sups.toList.map(sup => DGEdge.IsaK(sub, sup)) ::: acc
   }
 
   /*def getNodeTuple(id : NIdT) = nodesIndex get id match {
@@ -269,44 +364,40 @@ class DependencyGraph
   }
 
 
+  def exists(e : DGEdge) : Boolean =
+    edges.exists(e)
+
+  def addEdge(e : DGEdge, register : Boolean = true): GraphT =
+    newGraph( nEdges = edges.add(e),
+              nRecording =
+                  if(register) recording.addEdge(e)
+                  else recording)
+  def removeEdge(e : DGEdge, register : Boolean = true): GraphT =
+    newGraph( nEdges = edges.remove(e),
+              nRecording =
+                  if(register) recording.removeEdge(e)
+                  else recording)
+
  def addContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): GraphT =
-     newGraph(nContentMap = contentsMap + (containerId, contentId),
-              nContainerMap = containerMap + (contentId -> containerId),
-              nRecording = if(register) recording.addEdge(DGEdge.contains(containerId, contentId))
-                           else recording)
+    addEdge(DGEdge.ContainsK(containerId, contentId), register)
 
-  def removeContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): GraphT =
-      newGraph( nContentMap = contentsMap - (containerId, contentId),
-                nContainerMap = containerMap - contentId,
-                nRecording = if(register) recording.removeEdge(DGEdge.contains(containerId, contentId))
-                             else recording )
+ def removeContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): GraphT =
+    removeEdge(DGEdge.ContainsK(containerId, contentId), register)
 
-  def addUses(userId: NodeId, useeId: NodeId, register : Boolean = true): GraphT =
-    newGraph(nUsersMap = usersMap + (useeId , userId),
-             nUsesMap = usesMap + (userId, useeId),
-             nRecording = if(register) recording.addEdge(DGEdge.uses(userId, useeId))
-                          else recording)
+ def addUses(userId: NodeId, useeId: NodeId, register : Boolean = true): GraphT =
+    addEdge(DGEdge.UsesK(userId, useeId))
 
-  def removeUses(userId: NodeId, useeId: NodeId, register : Boolean = true): GraphT =
-    newGraph(nUsersMap = usersMap - (useeId , userId),
-             nUsesMap = usesMap - (userId, useeId),
-             nRecording = if(register) recording.removeEdge(DGEdge.uses(userId, useeId))
-                          else recording)
+ def removeUses(userId: NodeId, useeId: NodeId, register : Boolean = true): GraphT =
+    removeEdge(DGEdge.UsesK(userId, useeId))
 
-  def addIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : GraphT=
-    newGraph(nSubTypesMap = subTypesMap + (superTypeId, subTypeId),
-             nSuperTypesMap = superTypesMap + (subTypeId, superTypeId),
-            nRecording = if(register) recording.addEdge(DGEdge.isa(subTypeId,superTypeId))
-                         else recording)
+ def addIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : GraphT=
+    addEdge(DGEdge.IsaK(subTypeId, superTypeId))
 
-  def removeIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : GraphT=
-    newGraph(nSubTypesMap = subTypesMap - (superTypeId, subTypeId),
-             nSuperTypesMap = superTypesMap - (subTypeId, superTypeId),
-             nRecording = if(register) recording.removeEdge(DGEdge.isa(subTypeId,superTypeId))
-                          else recording)
+ def removeIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : GraphT=
+    removeEdge(DGEdge.IsaK(subTypeId, superTypeId))
 
 
-  def addUsesDependency(typeUse : (NodeId, NodeId),
+ def addUsesDependency(typeUse : (NodeId, NodeId),
                         typeMemberUse : (NodeId, NodeId)) : GraphT =
     newGraph(nDominantUsesMap = typeMemberUses2typeUsesMap + (typeMemberUse, typeUse),
       nDominatedUsesMap = typeUses2typeMemberUsesMap + (typeUse, typeMemberUse),
@@ -333,14 +424,14 @@ class DependencyGraph
 
   def changeTarget(edge : DGEdge, newTarget : NodeId) : GraphT = {
     val g1 = edge.deleteIn(this, register = false)
-    val newEdge : DGEdge = new DGEdge(edge.kind, edge.source, newTarget)
+    val newEdge : DGEdge = edge.kind(edge.source, newTarget)
     val newRecording = recording.changeEdgeTarget(edge, newTarget, withMerge = newEdge.existsIn(this))
     newEdge.createIn(g1, register = false).newGraph(nRecording = newRecording)
   }
 
   def changeSource(edge : DGEdge, newSource : NodeId) : GraphT = {
     val g1 = edge.deleteIn(this, register = false)
-    val newEdge: DGEdge = new DGEdge(edge.kind, newSource, edge.target)
+    val newEdge: DGEdge = edge.kind(newSource, edge.target)
     val newRecording = recording.changeEdgeSource(edge, newSource, withMerge = newEdge.existsIn(this))
     newEdge.createIn(g1, register = false).newGraph(nRecording = newRecording)
   }
@@ -367,28 +458,14 @@ class DependencyGraph
 
   def nodeKinds : Seq[NodeKind] = nodeKindKnowledge.nodeKinds
 
-  def container(contentId : NodeId) : Option[NodeId] = containerMap.get(contentId)
-    /*containerMap.get(contentId) match {
-      case None => contentId
-        /*val msg = "AccessGraph.container : no container for " + getNode(contentId)
-        logger.writeln(msg)(PuckLog.Error)
-        logger.writeln("nodes of graph : ")(PuckLog.Error)
-        logger.writeln(sortedMap.mkString("\n", "\n\t", ""))(PuckLog.Error)
-        logger.writeln("container map of graph : ")(PuckLog.Error)
-        logger.writeln(containerMap.toSeq.sortBy(_._1).mkString("\n", "\n\t", ""))
-        throw new AGError(msg)*/
-      case Some(id) => id
-    }*/
+  def container(contentId : NodeId) : Option[NodeId] = edges.containers.get(contentId)
 
-  def content(containerId: NodeId) : Set[NodeId] = contentsMap.getFlat(containerId)
+  def content(containerId: NodeId) : Set[NodeId] = edges.contents.getFlat(containerId)
 
   def contains(containerId : NodeId, contentId : NodeId) : Boolean =
-    container(contentId) match {
-      case None => false
-      case Some(id) => id == containerId
-    }
+    edges.contains(containerId, contentId)
 
-  def containsSeq : Seq[(NodeId, NodeId)] = contentsMap.flatSeq
+  def containsSeq : Seq[(NodeId, NodeId)] = edges.contents.flatSeq
 
   def contains_*(containerId : NodeId, contentId : NodeId) : Boolean =
     containerId == contentId || {
@@ -427,8 +504,8 @@ class DependencyGraph
   }
 
 
-  def directSuperTypes(sub: NodeId) : Iterable[NodeId] = superTypesMap getFlat sub
-  def directSubTypes(sup: NodeId) : Iterable[NodeId] = subTypesMap getFlat sup
+  def directSuperTypes(sub: NodeId) : Iterable[NodeId] = edges.superTypes getFlat sub
+  def directSubTypes(sup: NodeId) : Iterable[NodeId] = edges.subTypes getFlat sup
 
   def subTypes(sup : NodeId) : Iterable[NodeId]= {
     val dst = directSubTypes(sup).toSeq
@@ -440,17 +517,19 @@ class DependencyGraph
       directSuperTypes(subCandidate).exists(isSuperTypeOf(superCandidate, _))
   }
 
-  def isa(subId : NodeId, superId: NodeId): Boolean = superTypesMap.bind(subId, superId)
+  def isa(subId : NodeId, superId: NodeId): Boolean =
+    edges.isa(subId, superId)
   
-  def isaSeq  : Seq[(NodeId, NodeId)] = superTypesMap.flatSeq
+  def isaSeq  : Seq[(NodeId, NodeId)] = edges.superTypes.flatSeq
   
-  def uses(userId: NodeId, usedId: NodeId) : Boolean = usersMap.bind(usedId, userId)
+  def uses(userId: NodeId, usedId: NodeId) : Boolean =
+    edges.uses(userId, usedId)
 
-  def usesSeq : Seq[(NodeId, NodeId)] = usesMap.flatSeq
+  def usesSeq : Seq[(NodeId, NodeId)] = edges.used.flatSeq
   
-  def usedBy(userId : NodeId) : Set[NodeId] = usesMap getFlat userId
+  def usedBy(userId : NodeId) : Set[NodeId] = edges.used getFlat userId
   
-  def usersOf(usedId: NodeId) : Set[NodeId] = usersMap getFlat usedId
+  def usersOf(usedId: NodeId) : Set[NodeId] = edges.users getFlat usedId
 
   def typeUsesOf(typeMemberUse : (NodeId, NodeId)) : Set[(NodeId, NodeId)] =
     typeMemberUses2typeUsesMap getFlat typeMemberUse
@@ -467,19 +546,20 @@ class DependencyGraph
 
   def violations() : Seq[DGEdge] =
     concreteNodesId.flatMap { n =>
-      val wu = constraints.wrongUsers(this, n).map(DGEdge.uses(_,n))
+      val wu = constraints.wrongUsers(this, n).map(DGEdge.UsesK(_,n))
       if(constraints.isWronglyContained(this, n))
-         DGEdge.contains(container(n).get, n) +: wu
+         DGEdge.ContainsK(container(n).get, n) +: wu
       else wu
     }.toSeq
 
   def isViolation(e : DGEdge) : Boolean = {
     e.kind match {
-      case Contains =>
+      case DGEdge.ContainsK =>
         constraints.isWronglyContained(this, e.target)
-      case Uses | Isa =>
+      case DGEdge.UsesK | DGEdge.IsaK =>
         constraints.violation(this, e.user, e.used)
 
+      case DGEdge.ParameterizedUsesK => false
     }
   }
 

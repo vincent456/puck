@@ -4,7 +4,7 @@ import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
 
 import puck.PuckError
-import puck.graph.{Isa, DGEdge, ConcreteNode}
+import puck.graph.{DGEdge, ConcreteNode}
 import puck.gui.svg.SVGController
 import puck.javaGraph.JavaTransformationRules
 
@@ -40,7 +40,7 @@ class RemoveEdgeAction
   def actionPerformed(e: ActionEvent) : Unit =
     printErrOrPushGraph(controller, "Remove Node Action failure"){
       edge.kind match {
-        case Isa => \/-(edge.deleteIn(controller.graph.mileStone))
+        case DGEdge.IsaK => \/-(edge.deleteIn(controller.graph.mileStone))
         case _ => -\/(new PuckError(s"cannot remove remove ${edge.kind} edge"))
       }
 

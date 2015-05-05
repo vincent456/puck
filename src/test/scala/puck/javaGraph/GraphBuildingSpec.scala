@@ -50,7 +50,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val typeUsed = fullName2id(s"$p.B")
         val typeMemberUsed = fullName2id(s"$p.B.mb__void")
 
-        val typeUse = DGEdge.uses(fieldTypeUser, typeUsed)
+        val typeUse = DGEdge.UsesK(fieldTypeUser, typeUsed)
         val typeMemberUse = (methUser, typeMemberUsed)
 
         /*println("typeMemberUses2typeUsesMap")
@@ -74,7 +74,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val classUsed = fullName2id(s"$p.B")
         val mUsed = fullName2id(s"$p.B.mb__void")
 
-        val typeUse = DGEdge.uses(mUser, classUsed)
+        val typeUse = DGEdge.UsesK(mUser, classUsed)
         val typeMemberUse = (mUser, mUsed)
 
         graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
@@ -91,7 +91,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
         val classUsed = fullName2id(s"$p.B")
 
-        val typeUse = DGEdge.uses(mUser, classUsed)
+        val typeUse = DGEdge.UsesK(mUser, classUsed)
         val typeMemberUse = (mUser, mUsed)
 
         graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
@@ -106,7 +106,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val mIntermediate = fullName2id(s"$p.B.mb__void")
         val classUsed = fullName2id(s"$p.C")
 
-        val typeUse = DGEdge.uses(mIntermediate, classUsed)
+        val typeUse = DGEdge.UsesK(mIntermediate, classUsed)
         val typeMemberUse = (mUser, mUsed)
 
         graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
@@ -210,6 +210,35 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
         assert( graph.uses(userMethod, genMethod) )
 
+
+      }
+    }
+
+    scenario("generic - type relationship"){
+      val p = "typeRelationship"
+      val _ = new ExampleSample(s"$examplesPath/$p/A.java") {
+
+        val actualTypeParam = fullName2id(s"$p.A")
+        val actualTypeParamMethod = fullName2id(s"$p.A.m__void")
+
+        val fieldDeclarant = fullName2id(s"$p.B.la")
+
+        val userClass = fullName2id(s"$p.B")
+        val userMethod = fullName2id(s"$p.B.mUser__void")
+
+
+        val typeUse = DGEdge.UsesK(fieldDeclarant, actualTypeParam)
+        val typeMemberUse = DGEdge.UsesK(userMethod, actualTypeParamMethod)
+
+
+        assert( typeUse existsIn graph )
+
+        assert( typeMemberUse existsIn graph )
+
+        println(graph.typeMemberUsesOf(typeUse))
+        println(graph.typeUsesOf(typeMemberUse))
+        //QuickFrame(graph)
+        graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse.toPair)
 
       }
     }

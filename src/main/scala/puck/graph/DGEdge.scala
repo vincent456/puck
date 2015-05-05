@@ -1,39 +1,54 @@
 package puck.graph
 
-sealed abstract class EdgeKind
+import puck.graph.DGEdge._
 
-case object Uses extends EdgeKind {
-  override val toString = "uses"
-}
-case object Contains extends EdgeKind {
-  override val toString = "contains"
-}
-
-case object Isa extends EdgeKind {
-  override val toString = "isa"
-}
 
 object DGEdge{
-  def uses(pair : (NodeId, NodeId)) =
-    DGEdge(Uses, pair._1, pair._2)
 
-  def uses(source : NodeId, target: NodeId) =
-    DGEdge(Uses, source, target)
+  sealed abstract class EKind {
+    def apply(pair : (NodeId, NodeId)) : DGEdge =
+      this.apply(pair._1, pair._2)
 
-  def contains(source : NodeId, target: NodeId) =
-    DGEdge(Contains, source, target)
+    def apply(source : NodeId, target: NodeId): DGEdge
+  }
 
-  def isa(pair : (NodeId, NodeId)) =
-    DGEdge(Isa, pair._1, pair._2)
+  case object UsesK extends EKind {
+    override val toString = "uses"
 
-  def isa(source : NodeId, target : NodeId) =
-    DGEdge(Isa, source, target)
+    def apply(source : NodeId, target: NodeId) =
+      Uses(source, target)
+  }
+
+  case object ParameterizedUsesK extends EKind {
+    override val toString = "uses"
+
+    def apply(source : NodeId, target: NodeId) =
+      ParameterizedUses(source, target)
+  }
+
+  case object ContainsK extends EKind {
+    override val toString = "contains"
+    def apply(source : NodeId, target: NodeId) =
+      Contains(source, target)
+  }
+
+  case object IsaK extends EKind {
+    override val toString = "isa"
+
+    def apply(source : NodeId, target : NodeId) =
+      Isa(source, target)
+  }
+
+  def unapply(e : DGEdge) : Some[(NodeId, NodeId)] =
+    Some((e.source, e.target))
+
 }
 
-case class DGEdge
-( kind : EdgeKind,
-  source : NodeId,
-  target: NodeId) {
+sealed abstract class DGEdge {
+
+  val kind : DGEdge.EKind
+  val source : NodeId
+  val target: NodeId
 
   type NIdT = NodeId
   /*
@@ -44,6 +59,9 @@ case class DGEdge
 
   def container = source
   def content = target
+
+  def subType = source
+  def superType = target
 
   def selfUse : Boolean = source == target
 
@@ -59,34 +77,46 @@ case class DGEdge
 
   def toPair : (NodeId, NodeId) = (source, target)
 
-  def existsIn(graph : DependencyGraph) = kind match {
-    case Uses => graph.uses(source, target)
-    case Contains => graph.contains(source, target)
-    case Isa => graph.isa(source, target)
-  }
+  def existsIn(graph : DependencyGraph) =
+    graph.exists(this)
 
-  def createIn(graph : DependencyGraph, register : Boolean = true) : DependencyGraph = {
-    //println("creating "+ this)
-    kind match {
-      case Uses => graph.addUses(source, target, register)
-      case Contains => graph.addContains(source, target, register)
-      case Isa => graph.addIsa(source, target, register)
+  def createIn(graph : DependencyGraph, register : Boolean = true) : DependencyGraph =
+    graph.addEdge(this, register)
 
-    }
-  }
-  def deleteIn(graph : DependencyGraph, register : Boolean = true)  : DependencyGraph = {
-    //println("deleting "+ this)
-    kind match {
-      case Uses => graph.removeUses(source, target, register)
-      case Contains => graph.removeContains(source, target, register)
-      case Isa => graph.removeIsa(source, target, register)
-    }
-  }
+  def deleteIn(graph : DependencyGraph, register : Boolean = true) : DependencyGraph =
+    graph.removeEdge(this, register)
 
   def changeTarget(graph : DependencyGraph, newTarget : NIdT) : DependencyGraph = graph.changeTarget(this, newTarget)
-
   def changeSource(graph : DependencyGraph, newSource : NIdT) : DependencyGraph = graph.changeSource(this, newSource)
 
   def isDominant(graph : DependencyGraph) : Boolean = graph.typeMemberUsesOf((this.source, this.target)).nonEmpty
   def isDominated(graph : DependencyGraph) : Boolean = graph.typeUsesOf((this.source, this.target)).nonEmpty
+}
+
+case class Uses
+( source : NodeId,
+  target: NodeId)
+  extends DGEdge {
+  val kind: EKind = UsesK
+}
+
+case class ParameterizedUses
+( source : NodeId,
+  target: NodeId)
+  extends DGEdge {
+  val kind: EKind = ParameterizedUsesK
+}
+
+case class Isa
+( source : NodeId,
+  target: NodeId)
+  extends DGEdge {
+  val kind: EKind = IsaK
+}
+
+case class Contains
+( source : NodeId,
+  target: NodeId)
+  extends DGEdge {
+  val kind: EKind = ContainsK
 }

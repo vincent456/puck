@@ -36,7 +36,7 @@ class Solver
             logger.writeln(s"$wuToRedirect will use abstraction $absId")
 
             val tg = traverse(wuToRedirect, g) { (g, wu) =>
-              rules.redirection.redirectUsesAndPropagate(g, DGEdge.uses(wu, used.id), absId, absPol)
+              rules.redirection.redirectUsesAndPropagate(g, DGEdge.UsesK(wu, used.id), absId, absPol)
             } match {
               case \/-(g2) => aux(g2, remainingWus, choices - ((absId, absPol)))
               case -\/(err) => k(-\/(err))
@@ -191,7 +191,7 @@ class Solver
         logger.writeln("redirecting wrong users !!")
         wrongUsers.foldLeft(\/-(g) : Try[DependencyGraph]){
           (tryG, wuId) =>
-            tryG.flatMap(rules.redirection.redirectUsesAndPropagate(_, DGEdge.uses(wuId, impl.id), abs.id, absPolicy))
+            tryG.flatMap(rules.redirection.redirectUsesAndPropagate(_, DGEdge.UsesK(wuId, impl.id), abs.id, absPolicy))
         }})
 
     aux (graph, 1, impl) (redirectWrongUsers)

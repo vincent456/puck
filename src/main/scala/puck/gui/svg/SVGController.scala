@@ -157,8 +157,8 @@ class SVGController private
   }
 
   //Java accessor
-  def usesKind = Uses
-  def isaKind = Isa
+  def usesKind = DGEdge.UsesK
+  def isaKind = DGEdge.IsaK
 
 
   def displayGraph(graph: DependencyGraph) = {

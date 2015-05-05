@@ -1,8 +1,5 @@
 package puck.graph
 
-/**
- * Created by lorilan on 3/6/15.
- */
 object Metrics {
 
 
@@ -12,7 +9,7 @@ object Metrics {
       val acc1 = graph.usedBy(id).foldLeft(acc0){
         (acc, usee) =>
           if(graph.contains_*(root,usee)) acc
-          else acc + DGEdge.uses(id, usee)
+          else acc + DGEdge.UsesK(id, usee)
       }
       graph.content(id).foldLeft(acc1){(acc, child) => aux(child, acc)}
     }
@@ -27,7 +24,7 @@ object Metrics {
       val acc1 = graph.usersOf(id).foldLeft(acc0){
         (acc, user) =>
           if(graph.contains_*(root, user)) acc
-          else acc + DGEdge.uses(user, id)
+          else acc + DGEdge.UsesK(user, id)
       }
       graph.content(id).foldLeft(acc1){(acc, child) => aux(child, acc)}
     }
@@ -41,7 +38,7 @@ object Metrics {
       val acc1 = graph.usedBy(id).foldLeft(acc0) {
         (acc, usee) =>
           if (graph.contains_*(root,usee))
-            acc + DGEdge.uses(id, usee)
+            acc + DGEdge.UsesK(id, usee)
           else acc
       }
       graph.content(id).foldLeft(acc1){(acc, child) => aux(root,child, acc)}

@@ -260,7 +260,7 @@ class JavaDG2AST
 
     e.kind match {
 
-      case Contains =>
+      case DGEdge.ContainsK =>
         (source.kind, id2declMap(source.id), id2declMap(target.id)) match {
           case (Package, _, i: TypedKindDeclHolder) => setPackageDecl(graph, source.id, target.id, i.decl)
 
@@ -276,9 +276,9 @@ class JavaDG2AST
 
         }
 
-      case Isa => addIsa(id2declMap(source.id), id2declMap(target.id))
+      case DGEdge.IsaK => addIsa(id2declMap(source.id), id2declMap(target.id))
 
-      case Uses =>
+      case DGEdge.UsesK =>
         (source.kind, target.kind) match {
           case (ConstructorMethod, Constructor) =>
             () //already generated when creating ConstructorMethod decl
@@ -295,6 +295,9 @@ class JavaDG2AST
           }*/
           case _ => logger.writeln(" =========> need to create " + e)
         }
+      case DGEdge.ParameterizedUsesK =>
+        logger.writeln("Creation of parameterized uses ignored")
+
 
     }
   }
@@ -348,7 +351,7 @@ class JavaDG2AST
           (sourceDecl, newTarget.styp) match {
             case (bdh : HasBodyDecl, Some(NamedType(fieldType))) =>
               logger.write("*** typeUse ")
-              logger.writeln(showDG[DGEdge](reenactor).shows(DGEdge.uses(newTargetId, fieldType)))
+              logger.writeln(showDG[DGEdge](reenactor).shows(DGEdge.UsesK(newTargetId, fieldType)))
               logger.writeln("type member uses " + reenactor.typeMemberUsesOf((newTargetId, fieldType)))
               logger.writeln()
               logger.writeln()
@@ -563,14 +566,18 @@ class JavaDG2AST
       val newSource = resultGraph.getNode(newSourceId)
 
       e.kind match {
-        case Contains => move(source, newSource, target)
-        case Isa =>
+        case DGEdge.ContainsK => move(source, newSource, target)
+        case DGEdge.IsaK =>
           removeIsa(id2declMap(source.id),id2declMap(target.id))
           addIsa(id2declMap(newSource.id), id2declMap(target.id))
 
-        case Uses =>
+        case DGEdge.UsesK =>
           throw new PuckError(s"redirect ${showDG[DGEdge](resultGraph).shows(e)} " +
             s"new source = ${showDG[NodeId](resultGraph).shows(newSourceId)}")
+
+        case DGEdge.ParameterizedUsesK =>
+          logger.writeln("Redirect source of parameterized uses ignored")
+
       }
 
 

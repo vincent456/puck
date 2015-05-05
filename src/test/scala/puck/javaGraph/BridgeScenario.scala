@@ -92,7 +92,7 @@ class BridgeScenario private()
   (g : DependencyGraph, clazz : NodeId, interface : NodeId) : DependencyGraph =
     g.usersOf(clazz).foldLeft(g){ (g0, userId) =>
       TR.redirection.redirectUsesAndPropagate(g0,
-        DGEdge.uses(userId, clazz),
+        DGEdge.UsesK(userId, clazz),
         interface,
         SupertypeAbstraction).right.value
     }

@@ -166,9 +166,6 @@ aspect DependencyGraphFactory {
 
 		builder.addUses(containerId, nodeId);
 
-
-		//System.out.println("Searching type user for uses" + builder.getFullName(containerId) + " -> " + builder.getFullName(nodeId));
-
 		int typeUserId = access.buildTypeUserDGNode(builder);
 		int typeUsedId = access.decl().hostType().buildDGNode(builder);
 

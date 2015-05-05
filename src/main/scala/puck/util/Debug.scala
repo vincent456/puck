@@ -12,7 +12,7 @@ object Debug {
   type EdgeT = (NodeId, NodeId)
 
   def printEdgeSet(g : DependencyGraph, s : Set[EdgeT])=
-    s.foreach(e => g.logger.writeln(s"\t\t*${showDG[DGEdge](g).shows(DGEdge.uses(e))}"))
+    s.foreach(e => g.logger.writeln(s"\t\t*${showDG[DGEdge](g).shows(DGEdge.UsesK(e))}"))
 
   def logUsersOf(g : DependencyGraph, n : NodeId) = {
     import g.logger

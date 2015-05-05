@@ -98,7 +98,7 @@ class NodeInfosPanel(val graph : DependencyGraph,
               GraphDisplayRequest("Graph with uses selected",
               graph, printId(), printSig(),
               visibility,
-              sUse = Some(DGEdge.uses(userId, nodeId)))
+              sUse = Some(DGEdge.UsesK(userId, nodeId)))
           }
 
           contents += new Label(graph.fullName(userId) + " " + tag) {
@@ -111,18 +111,18 @@ class NodeInfosPanel(val graph : DependencyGraph,
 
                 useDetails.contents.clear()
                 useDetails.contents +=
-                  new Label(showDG[DGEdge](graph).shows(DGEdge.uses(userId, nodeId)))
+                  new Label(showDG[DGEdge](graph).shows(DGEdge.UsesK(userId, nodeId)))
 
                 if (primaryUses.nonEmpty){
                     useDetails.contents += new Label("Dominant Uses :")
                     primaryUses.foreach(e =>
-                      useDetails.contents += new Label(showDG[DGEdge](graph).shows(DGEdge.uses(e))))
+                      useDetails.contents += new Label(showDG[DGEdge](graph).shows(DGEdge.UsesK(e))))
                 }
 
                 if(sideUses.nonEmpty) {
                     useDetails.contents += new Label("Dominated Uses :")
                     sideUses.foreach(e =>
-                      useDetails.contents += new Label(showDG[DGEdge](graph).shows(DGEdge.uses(e))))
+                      useDetails.contents += new Label(showDG[DGEdge](graph).shows(DGEdge.UsesK(e))))
                 }
 
                 useDetails.revalidate()

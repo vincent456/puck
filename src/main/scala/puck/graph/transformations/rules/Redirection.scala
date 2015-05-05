@@ -132,7 +132,7 @@ object Redirection {
       g.logger.writeln("uses to redirect:%s".format(typeUses.mkString("\n\t", "\n\t","\n")))
 
       traverse(typeUses, g){(g0, typeUse0) =>
-        val typeUses = DGEdge.uses(typeUse0)
+        val typeUses = DGEdge.UsesK(typeUse0)
 
         val keepOldUse = g.typeMemberUsesOf(typeUse0).tail.nonEmpty //is empty if typeUses had only one side use
 
@@ -145,7 +145,7 @@ object Redirection {
             g =>
               val newTypeUsed = findNewTypeUsed(g, typeUses.used, newTypeMemberUsed, policy)
               redirectUsesAndPropagate(g, typeUses,newTypeUsed,
-                policy, propagateRedirection, keepOldUse).map{(DGEdge.uses(typeUses.user, newTypeUsed),_)}
+                policy, propagateRedirection, keepOldUse).map{(DGEdge.UsesK(typeUses.user, newTypeUsed),_)}
           }
         val g1 = g0.removeUsesDependency(typeUses, currentTypeMemberUse)
 
@@ -216,7 +216,7 @@ object Redirection {
 
     traverse(tmu, g) {
       case (g0, side0) =>
-        val side = DGEdge.uses(side0)
+        val side = DGEdge.UsesK(side0)
         val typeMember = side.used
         val someTypeMemberAbs =
           g.abstractions(typeMember).find { case (abs, _) => g.contains(newTypeUsed, abs) }
@@ -234,7 +234,7 @@ object Redirection {
             redirectUsesAndPropagate(g0.removeUsesDependency(currentTypeUse, side),
               side, typeMemberAbs, policy).map {
               g2 =>
-                val newSide = DGEdge.uses(side.user, typeMemberAbs)
+                val newSide = DGEdge.UsesK(side.user, typeMemberAbs)
                 g2.addUsesDependency((currentTypeUse.user, newTypeUsed), newSide)
             }
         }

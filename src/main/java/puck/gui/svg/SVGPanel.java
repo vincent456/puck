@@ -16,7 +16,6 @@ import org.w3c.dom.events.MouseEvent;
 import org.w3c.dom.svg.*;
 import puck.graph.DGEdge;
 import puck.graph.DependencyGraph;
-import puck.graph.EdgeKind;
 
 import javax.swing.*;
 import java.awt.BorderLayout;
@@ -104,7 +103,7 @@ public class SVGPanel extends JPanel{
             return null;
         }
 
-        private EdgeKind edgeKindFromGElement(SVGGElement gelt){
+        private DGEdge.EKind edgeKindFromGElement(SVGGElement gelt){
             NodeList l = gelt.getChildNodes();
             for(int i = 0; i < l.getLength(); i++){
                 Node n = l.item(i);
@@ -127,14 +126,14 @@ public class SVGPanel extends JPanel{
             GenericText title = (GenericText)t.getFirstChild();
 
             controller.console().appendText(edgeLabel);
-            EdgeKind k = edgeKindFromGElement(gelt);
+            DGEdge.EKind k = edgeKindFromGElement(gelt);
 
             Matcher m = arrowPattern.matcher(title.getData());
 
             if(m.find()){
                 int source = Integer.valueOf(m.group(1));
                 int target = Integer.valueOf(m.group(2));
-                return DGEdge.apply(k, source, target);
+                return k.apply(source, target);
             }
 
             return null;

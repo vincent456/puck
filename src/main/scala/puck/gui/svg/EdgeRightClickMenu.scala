@@ -6,9 +6,6 @@ import javax.swing.{AbstractAction, JMenuItem, JPopupMenu}
 import puck.graph.{Isa, DGEdge}
 import puck.gui.svg.actions.{ShowTypeRelationshipAction, RemoveEdgeAction, SolveAction}
 
-/**
- * Created by lorilan on 3/31/15.
- */
 class EdgeRightClickMenu
 ( private val controller : SVGController,
   edge : DGEdge)
@@ -21,7 +18,7 @@ class EdgeRightClickMenu
     add(new SolveAction(target, controller))
   }
 
-  if(edge.kind == Isa)
+  if(edge.kind == DGEdge.IsaK)
     add(new RemoveEdgeAction(edge, controller))
 
   add(new ShowTypeRelationshipAction(Some(edge), controller))

@@ -57,7 +57,7 @@ object JavaIntro extends Intro {
 
   def insertInTypeHierarchy(g : DependencyGraph, classId : NodeId, interfaceId : NodeId) : DependencyGraph =
     g.directSuperTypes(classId).foldLeft(g){ (g0, superType) =>
-      g0.changeSource(DGEdge.isa(classId, superType), interfaceId)
+      g0.changeSource(DGEdge.IsaK(classId, superType), interfaceId)
     }
 
   def addTypesUses(g : DependencyGraph, node : ConcreteNode) : DependencyGraph =
@@ -91,8 +91,8 @@ object JavaIntro extends Intro {
     val g1 = g.changeContravariantType(meth.id, meth.styp, clazz.id, interface.id)
 
     if(g1.uses(meth.id, clazz.id)) {
-      g.logger.writeln(s"interface creation : redirecting ${DGEdge.uses(meth.id, clazz.id)} target to $interface")
-      Redirection.redirectUsesAndPropagate(g1, DGEdge.uses(meth.id, clazz.id), interface.id, SupertypeAbstraction)
+      g.logger.writeln(s"interface creation : redirecting ${DGEdge.UsesK(meth.id, clazz.id)} target to $interface")
+      Redirection.redirectUsesAndPropagate(g1, DGEdge.UsesK(meth.id, clazz.id), interface.id, SupertypeAbstraction)
     }
     else \/-(g1)
   }
@@ -115,7 +115,7 @@ object JavaIntro extends Intro {
               usedSiblings.map(g.getConcreteNode).forall {
                 used0 => aux(member)(used0) || {
                   val typeUses = g.typeUsesOf((member.id, used0.id))
-                  typeUses.forall { DGEdge.uses(_).selfUse }
+                  typeUses.forall { DGEdge.UsesK(_).selfUse }
                 }
               }
             }
