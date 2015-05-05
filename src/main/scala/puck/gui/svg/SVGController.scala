@@ -27,6 +27,7 @@ trait StackListener{
 
 class SVGController private
 ( val genController : PuckControl,
+  val initGraph : DependencyGraph,
   val svgCanvas : JSVGCanvas,
   val console : SVGConsole,
   val solverBuilder : SolverBuilder,
@@ -35,7 +36,7 @@ class SVGController private
   private var printSignatures : Boolean,
   private var printVirtualEdges : Boolean = false,
   private var printRedOnly : Boolean = false,
-  private var selectedEdgeForTypePrinting : Option[DGEdge] = None) {
+  private var selectedEdgeForTypePrinting : Option[DGUses] = None) {
 
   def transfoRules = genController.filesHandler.transformationRules
 
@@ -63,7 +64,7 @@ class SVGController private
       displayGraph(graph)
     }
   }
-  def setSelectedEdgeForTypePrinting(se: Option[DGEdge]) : Unit = {
+  def setSelectedEdgeForTypePrinting(se: Option[DGUses]) : Unit = {
     if( se != selectedEdgeForTypePrinting ){
       selectedEdgeForTypePrinting = se
       displayGraph(graph)
@@ -180,8 +181,10 @@ class SVGController private
   def canUndo = undoStack.nonEmpty
 
   def undoAll() = {
+
     while(undoStack.nonEmpty)
       redoStack.push(undoStack.pop())
+
     displayGraph(graph)
     updateStackListeners()
   }
@@ -204,7 +207,9 @@ class SVGController private
     updateStackListeners()
   }
 
-  def graph = undoStack.head
+  def graph =
+    if(undoStack.nonEmpty) undoStack.head
+    else initGraph
 
   def saveRecordOnFile(file : File) : Unit = {
     Recording.write(file.getAbsolutePath, nodesByName, graph)
@@ -251,11 +256,11 @@ object SVGController {
             opts : PrintingOptions,
             svgCanvas : JSVGCanvas,
             console : SVGConsole): SVGController ={
-    val c = new SVGController(genController, svgCanvas, console,
+    val c = new SVGController(genController, g, svgCanvas, console,
                 genController.filesHandler.solverBuilder,
                 opts.visibility, opts.printId, opts.printSignatures)
 
-    c.undoStack.push(g)
+    c.displayGraph(g)
     c
   }
 

@@ -20,7 +20,6 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
    ConcreteNodeIndex() + (rootId -> root), ConcreteNodeIndex(),
      VirtualNodeINdex(), VirtualNodeINdex(), Nodes2VNodeMap(),
     EdgeMap(),
-     UseDependencyMap(), UseDependencyMap(),
     AbstractionMap(), ConstraintsMaps(), Recording())
 
    var graph2ASTMap = Map[Int, ASTNodeLink]()

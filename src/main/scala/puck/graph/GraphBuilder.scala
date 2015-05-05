@@ -37,14 +37,17 @@ class GraphBuilder {
     g = g.addUses(userId, useeId)
   }
 
+  def addEdge(e : DGEdge): Unit ={
+    g = g.addEdge(e)
+  }
+
   def addIsa(subTypeId: NodeIdT, superTypeId: NodeIdT): Unit = {
     g = g.addIsa(subTypeId, superTypeId)
   }
 
-  def addTypeRelationship(typeUser: NodeIdT, typeUsed: NodeIdT,
-                         typeMemberUser: NodeIdT, typeMemberUsed:NodeIdT): Unit ={
-    g = g.addUsesDependency( (typeUser, typeUsed),
-                              (typeMemberUser, typeMemberUsed))
+   def addTypeRelationship(typeUse : DGUses,
+                           typeMemberUse : DGUses): Unit ={
+    g = g.addUsesDependency(typeUse, typeMemberUse)
   }
 
   type ImplId = NodeId

@@ -1,4 +1,6 @@
 import puck.javaGraph.JavaGraphBuilder;
+import puck.graph.Uses;
+import puck.graph.ParameterizedUses;
 
 aspect DependencyGraphFactory {
 
@@ -164,13 +166,13 @@ aspect DependencyGraphFactory {
 	static void Access.buildDG(TypeMemberAccess access, int containerId, JavaGraphBuilder builder){
 		int nodeId = access.buildDGNode(builder);
 
+		Uses typeMemberUses = new Uses(containerId, nodeId);
 		builder.addUses(containerId, nodeId);
 
-		int typeUserId = access.buildTypeUserDGNode(builder);
+		int typeUserId = access.buildTypeUserDGNode(builder, typeMemberUses);
 		int typeUsedId = access.decl().hostType().buildDGNode(builder);
 
-		builder.addTypeRelationship(typeUserId, typeUsedId,
-									containerId, nodeId);
+		builder.addTypeRelationship(new Uses(typeUserId, typeUsedId), typeMemberUses);
 	}
 	public void MethodAccess.buildDG(JavaGraphBuilder builder, int containerId){
 
@@ -204,8 +206,8 @@ aspect DependencyGraphFactory {
 	      builder.addUses(containerId, classNodeId);
 	      builder.addUses(ctorNodeId, classNodeId);
 
-	      builder.addTypeRelationship(containerId, classNodeId,
-	              containerId, ctorNodeId);
+	      builder.addTypeRelationship(new Uses(containerId, classNodeId),
+							new Uses(containerId, ctorNodeId));
 
 	    }
   	}
@@ -221,8 +223,8 @@ aspect DependencyGraphFactory {
 		builder.addUses(containerId, classNodeId);
         builder.addUses(containerId, ctorNodeId);
 
-		builder.addTypeRelationship(containerId, classNodeId,
-                    			    containerId, ctorNodeId);
+		builder.addTypeRelationship(new Uses(containerId, classNodeId),
+		new Uses(containerId, ctorNodeId));
 
 	}
 

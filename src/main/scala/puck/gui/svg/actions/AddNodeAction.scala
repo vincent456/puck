@@ -20,7 +20,7 @@ extends AbstractAction(s"Add $childKind")
       case Package
            | Interface
            | Class =>
-        showInputDialog(s"New $childKind name:").foreach{
+        showInputDialog(s"New $childKind name:").foreach {
           childName =>
             val (n, g) = transfoRules.intro.createNode(graph.mileStone, childName, childKind, None)
             pushGraph(g.addContains(host.id, n.id))

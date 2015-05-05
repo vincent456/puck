@@ -23,8 +23,8 @@ sealed trait CreateVarStrategy {
 
   protected def removeUsesDependencyTowardSelfUse
   ( g : DependencyGraph,
-    selfTypeUse: DGEdge,
-    typeMemberUse : DGEdge ) : DependencyGraph = {
+    selfTypeUse: DGUses,
+    typeMemberUse : DGUses ) : DependencyGraph = {
     val g1 = g.removeUsesDependency(selfTypeUse, typeMemberUse)
     val keepOldUse = g1.typeMemberUsesOf(selfTypeUse).nonEmpty
 
@@ -46,7 +46,7 @@ case object CreateParameter extends CreateVarStrategy {
     traverse(siblingsUserViaSelf, g) {
       case (g0, userId) =>
 
-        traverse(g.typeUsesOf((userId, typeMemberMoved.id)), g0){ (g0, tuse) =>
+        traverse(g.typeUsesOf(userId, typeMemberMoved.id), g0){ (g0, tuse) =>
           val typeUse = DGEdge.UsesK(tuse)
           val typeMemberUse = DGEdge.UsesK(userId, typeMemberMoved.id)
           val g2 = removeUsesDependencyTowardSelfUse(g0, typeUse, typeMemberUse)
@@ -61,7 +61,7 @@ case object CreateParameter extends CreateVarStrategy {
 
               val g3 = g2.setType(userId, Some(Arrow(NamedType(newContainer) , ar)))
                 .addUses(userId, newContainer)
-                .addUsesDependency((userId, newContainer), typeMemberUse)
+                .addUsesDependency(Uses(userId, newContainer), typeMemberUse)
               \/-(g3)
 
             case (_, _) => -\/(new PuckError(s"a type member was expected"))
@@ -99,7 +99,7 @@ case class CreateTypeMember(k : NodeKind) extends CreateVarStrategy {
     def createDelegateUses(getDelegate : DependencyGraph => (NodeId, DependencyGraph) )
                           (g : DependencyGraph,
                            userId : NodeId,
-                           typeUse : DGEdge) : (NodeId, DependencyGraph) = {
+                           typeUse : DGUses) : (NodeId, DependencyGraph) = {
 
       val typeMemberUse = DGEdge.UsesK(userId, typeMemberMoved.id)
       val g2 = removeUsesDependencyTowardSelfUse(g, typeUse, typeMemberUse)
@@ -109,7 +109,7 @@ case class CreateTypeMember(k : NodeKind) extends CreateVarStrategy {
       val thisUse = DGEdge.UsesK(userId, currentContainer)
 
       //addUsesDependency done before addUse to have some context when applying
-      val g4 = g3.addUsesDependency((delegate, newContainer), typeMemberUse)
+      val g4 = g3.addUsesDependency(Uses(delegate, newContainer), typeMemberUse)
         .addUses(delegate, newContainer) //type field
 
       val g5 = thisUse.changeTarget(g4, delegate) // replace this.m by delegate.m
@@ -124,7 +124,7 @@ case class CreateTypeMember(k : NodeKind) extends CreateVarStrategy {
 
     traverse(siblingsUserViaSelf.tail, g2) {
       case (g0, userId) =>
-        traverse(g0.typeUsesOf((userId, typeMemberMoved.id)), g0){
+        traverse(g0.typeUsesOf(userId, typeMemberMoved.id), g0){
           (g0, tuse) =>
             \/-(createDelegateUses(getDelegate)(g0, userId, DGEdge.UsesK(tuse))._2)
         }
@@ -172,7 +172,7 @@ class Move(intro : Intro) {
     def siblingUserViaSelf: NodeId => Boolean =
       user =>
       sibling(user) && {
-        val tuses = graph.typeUsesOf((user, toBeMoved.id))
+        val tuses = graph.typeUsesOf(user, toBeMoved.id)
         tuses.exists(DGEdge.UsesK(_).selfUse)
       }
 
@@ -204,7 +204,7 @@ class Move(intro : Intro) {
                 val newTypeUse = DGEdge.UsesK(typeUse.user, newTypeUsed)
 
                 redirectUses(g1, typeUse, newTypeUsed, keepOldUse)
-                  .addUsesDependency(newTypeUse, (userId, typeMemberMoved))
+                  .addUsesDependency(newTypeUse, Uses(userId, typeMemberMoved))
               }
           }
 
@@ -223,7 +223,7 @@ class Move(intro : Intro) {
 
 
   private def foldTypeUsesOf
-  ( typeMemberUse : (NodeId, NodeId),
+  ( typeMemberUse : DGUses,
     g : DependencyGraph )
   ( f : (DependencyGraph, DGEdge) => Try[DependencyGraph]
     ) : Try[DependencyGraph] =

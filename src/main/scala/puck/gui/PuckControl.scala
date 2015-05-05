@@ -36,7 +36,7 @@ case class GraphDisplayRequest
  printId : Boolean,
  printSignature : Boolean,
  visibility : VisibilitySet,
- sUse : Option[DGEdge] = None,
+ sUse : Option[DGUses] = None,
  format : DotOutputFormat = Svg)
  extends ControlRequest
 

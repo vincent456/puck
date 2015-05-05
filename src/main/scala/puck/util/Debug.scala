@@ -9,9 +9,8 @@ import puck.javaGraph.nodeKind.Primitive
  */
 object Debug {
 
-  type EdgeT = (NodeId, NodeId)
 
-  def printEdgeSet(g : DependencyGraph, s : Set[EdgeT])=
+  def printEdgeSet(g : DependencyGraph, s : Set[DGUses])=
     s.foreach(e => g.logger.writeln(s"\t\t*${showDG[DGEdge](g).shows(DGEdge.UsesK(e))}"))
 
   def logUsersOf(g : DependencyGraph, n : NodeId) = {
@@ -23,11 +22,11 @@ object Debug {
       case TypeMember =>
         (userId : NodeId) =>
           logger.writeln("\tType Uses are:")
-          printEdgeSet(g, g.typeUsesOf((userId,n)))
+          printEdgeSet(g, g.typeUsesOf(userId,n))
       case TypeDecl =>
         (userId : NodeId) =>
           logger.writeln("\tTypeMember Uses are:")
-          printEdgeSet(g, g.typeMemberUsesOf((userId,n)))
+          printEdgeSet(g, g.typeMemberUsesOf(userId,n))
       case kt =>
         logger.writeln(s"$kt (${g.getNode(n).kind}) unhandled")
         (userId : NodeId) => ()
@@ -51,11 +50,11 @@ object Debug {
           case TypeMember =>
             logger.writeln(s"\t- used type member ${showDG[NodeId](g).shows(usedId)}")
             logger.writeln("\tType Uses are:")
-            printEdgeSet(g, g.typeUsesOf((n, usedId)))
+            printEdgeSet(g, g.typeUsesOf(n, usedId))
           case TypeDecl =>
             logger.writeln(s"\t- used type ${showDG[NodeId](g).shows(usedId)}")
             logger.writeln("\tTypeMember Uses are:")
-            printEdgeSet(g, g.typeMemberUsesOf((n, usedId)))
+            printEdgeSet(g, g.typeMemberUsesOf(n, usedId))
           case kt => logger.writeln(s"$kt (${g.getNode(usedId).kind}) unhandled")
 
         }

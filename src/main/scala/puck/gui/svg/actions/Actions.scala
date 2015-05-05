@@ -4,7 +4,7 @@ import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
 
 import puck.PuckError
-import puck.graph.{DGEdge, ConcreteNode}
+import puck.graph.{DGUses, DGEdge, ConcreteNode}
 import puck.gui.svg.SVGController
 import puck.javaGraph.JavaTransformationRules
 
@@ -24,7 +24,7 @@ extends AbstractAction(s"Add ${sub.name} isa ${sup.name}") {
 }
 
 class ShowTypeRelationshipAction
-( edge : Option[DGEdge],
+( edge : Option[DGUses],
   controller : SVGController)
   extends AbstractAction(s"Show type relationship")
 {

@@ -3,7 +3,7 @@ package puck.gui.svg
 import java.awt.event.ActionEvent
 import javax.swing.{AbstractAction, JMenuItem, JPopupMenu}
 
-import puck.graph.{Isa, DGEdge}
+import puck.graph.{Uses, Isa, DGEdge}
 import puck.gui.svg.actions.{ShowTypeRelationshipAction, RemoveEdgeAction, SolveAction}
 
 class EdgeRightClickMenu
@@ -21,5 +21,10 @@ class EdgeRightClickMenu
   if(edge.kind == DGEdge.IsaK)
     add(new RemoveEdgeAction(edge, controller))
 
-  add(new ShowTypeRelationshipAction(Some(edge), controller))
+  edge match {
+    case uses : Uses =>
+      add(new ShowTypeRelationshipAction(Some(uses), controller))
+    case _ => ()
+  }
+
 }

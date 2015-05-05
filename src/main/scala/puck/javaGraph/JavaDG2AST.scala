@@ -352,13 +352,13 @@ class JavaDG2AST
             case (bdh : HasBodyDecl, Some(NamedType(fieldType))) =>
               logger.write("*** typeUse ")
               logger.writeln(showDG[DGEdge](reenactor).shows(DGEdge.UsesK(newTargetId, fieldType)))
-              logger.writeln("type member uses " + reenactor.typeMemberUsesOf((newTargetId, fieldType)))
+              logger.writeln("type member uses " + reenactor.typeMemberUsesOf(newTargetId, fieldType))
               logger.writeln()
               logger.writeln()
 
-              reenactor.typeMemberUsesOf((newTargetId, fieldType)).foreach{
-                case (_, methodUsed) =>
-                  id2declMap(methodUsed) match {
+              reenactor.typeMemberUsesOf(newTargetId, fieldType).foreach{
+                methodUse =>
+                  id2declMap(methodUse.used) match {
                     case ConcreteMethodDeclHolder(mdecl)=>
                     val fieldAccess = newk.decl.createLockedAccess()
                           bdh.decl.replaceThisQualifierFor(mdecl, fieldAccess)

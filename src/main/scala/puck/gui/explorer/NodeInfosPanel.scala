@@ -80,8 +80,8 @@ class NodeInfosPanel(val graph : DependencyGraph,
 
       graph.usersOf(node.id).foreach { userId =>
 
-        val sideUses = graph.typeMemberUsesOf((userId, nodeId))
-        val primaryUses = graph.typeUsesOf((userId, nodeId))
+        val sideUses = graph.typeMemberUsesOf(userId, nodeId)
+        val primaryUses = graph.typeUsesOf(userId, nodeId)
 
         def tag = (sideUses.isEmpty, primaryUses.isEmpty) match {
           case (true, true) => ""

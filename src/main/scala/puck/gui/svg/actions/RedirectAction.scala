@@ -5,12 +5,12 @@ import javax.swing.AbstractAction
 
 import puck.graph.constraints.RedirectionPolicy
 import puck.graph.transformations.rules.Redirection
-import puck.graph.{ConcreteNode, DGEdge}
+import puck.graph.{DGUses, ConcreteNode}
 import puck.gui.svg.SVGController
 
 case class RedirectAction
 ( newTarget : ConcreteNode,
-  edge : DGEdge,
+  edge : DGUses,
   policy : RedirectionPolicy,
   controller: SVGController)
   extends AbstractAction(s"Redirect selected edge toward this ($policy)"){

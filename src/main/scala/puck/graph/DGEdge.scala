@@ -12,14 +12,21 @@ object DGEdge{
     def apply(source : NodeId, target: NodeId): DGEdge
   }
 
-  case object UsesK extends EKind {
+  sealed abstract class UsesKind extends EKind {
+    override def apply(pair : (NodeId, NodeId)) : DGUses =
+      this.apply(pair._1, pair._2)
+
+    override def apply(source : NodeId, target: NodeId): DGUses
+  }
+
+  case object UsesK extends UsesKind {
     override val toString = "uses"
 
     def apply(source : NodeId, target: NodeId) =
       Uses(source, target)
   }
 
-  case object ParameterizedUsesK extends EKind {
+  case object ParameterizedUsesK extends UsesKind {
     override val toString = "uses"
 
     def apply(source : NodeId, target: NodeId) =
@@ -46,7 +53,7 @@ object DGEdge{
 
 sealed abstract class DGEdge {
 
-  val kind : DGEdge.EKind
+  val kind : EKind
   val source : NodeId
   val target: NodeId
 
@@ -89,22 +96,27 @@ sealed abstract class DGEdge {
   def changeTarget(graph : DependencyGraph, newTarget : NIdT) : DependencyGraph = graph.changeTarget(this, newTarget)
   def changeSource(graph : DependencyGraph, newSource : NIdT) : DependencyGraph = graph.changeSource(this, newSource)
 
-  def isDominant(graph : DependencyGraph) : Boolean = graph.typeMemberUsesOf((this.source, this.target)).nonEmpty
-  def isDominated(graph : DependencyGraph) : Boolean = graph.typeUsesOf((this.source, this.target)).nonEmpty
+
+}
+
+sealed abstract class DGUses extends DGEdge{
+  override val kind : UsesKind
+  def isDominant(graph : DependencyGraph) : Boolean = graph.typeMemberUsesOf(this).nonEmpty
+  def isDominated(graph : DependencyGraph) : Boolean = graph.typeUsesOf(this).nonEmpty
 }
 
 case class Uses
 ( source : NodeId,
   target: NodeId)
-  extends DGEdge {
-  val kind: EKind = UsesK
+  extends DGUses {
+  val kind: UsesKind = UsesK
 }
 
 case class ParameterizedUses
 ( source : NodeId,
   target: NodeId)
-  extends DGEdge {
-  val kind: EKind = ParameterizedUsesK
+  extends DGUses {
+  val kind: UsesKind = ParameterizedUsesK
 }
 
 case class Isa

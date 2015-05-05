@@ -1,7 +1,6 @@
 package puck.gui.svg
 
-import puck.graph.ConcreteNode
-import puck.graph.DGEdge
+import puck.graph.{Uses, ConcreteNode, DGEdge}
 import puck.graph.constraints.{SupertypeAbstraction, DelegationAbstraction}
 import puck.gui.svg.actions.AddIsaAction
 import puck.gui.svg.actions.MergeAction
@@ -95,11 +94,14 @@ class NodeRightClickMenu
     }
   }
 
-  private def addEdgeSelectedOption() : Unit = {
-    val edge: DGEdge = controller.getEdgeSelected
-    this.add(new RedirectAction(node, edge, SupertypeAbstraction, controller))
-    this.add(new RedirectAction(node, edge, DelegationAbstraction, controller));()
-  }
+  private def addEdgeSelectedOption() : Unit =
+    controller.getEdgeSelected match {
+      case uses : Uses =>
+        this.add(new RedirectAction(node, uses, SupertypeAbstraction, controller))
+        this.add(new RedirectAction(node, uses, DelegationAbstraction, controller));()
+      case _ => ()
+    }
+
 
   private def addShowOptions() : Unit = {
     addMenuItem("Hide") { _ =>

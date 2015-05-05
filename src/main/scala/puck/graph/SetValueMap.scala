@@ -34,10 +34,8 @@ class SetValueMap[K,V](val content : Map[K, Set[V]]){
   def mapValues[W](f : V => W) =
     new SetValueMap( content mapValues ( s => s map f ) )
 
-
   def bind( key : K, v: V) : Boolean =
     (content get key) exists { _ contains v}
-
 
   def toSeq = content.toSeq
   def flatSeq : Seq[(K,V)]=

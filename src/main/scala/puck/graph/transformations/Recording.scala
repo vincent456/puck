@@ -114,10 +114,10 @@ object Recording {
 
       case cnn @ ChangeNodeName(nid, _, _) =>
         cnn.copy(nid = mappin(nid))
-      case TypeDependency((tUser, tUsed),(tmUser, tmUsed)) =>
-        TypeDependency((mappin(tUser), mappin(tUsed)),
-            (mappin(tmUser), mappin(tmUsed)))
-      case op : Comment => op
+      case TypeDependency(tUses, tmUses) =>
+        TypeDependency(tUses.kind(mappin(tUses.user), mappin(tUses.used)),
+          tmUses.kind(mappin(tmUses.user), mappin(tmUses.used)))
+
     }
 
 

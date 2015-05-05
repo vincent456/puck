@@ -37,7 +37,7 @@ case class PrintingOptions
 ( visibility : VisibilitySet,
   printId : Boolean = false,
   printSignatures : Boolean = false,
-  selectedUse : Option[DGEdge] = None,
+  selectedUse : Option[DGUses] = None,
   printVirtualEdges : Boolean = false,
   redOnly: Boolean = false)
 
@@ -116,6 +116,7 @@ class DotPrinter
       else ""
     }
 
+      println("printing " + edge + "label = >" + typeRelationShipLabel(edge) +"<")
     if(!redOnly || status.color == redColor )
       arcs += (dotId(source) + " -> " + dotId(target) + "[ " +
         typeRelationShipLabel(edge) +
@@ -126,7 +127,6 @@ class DotPrinter
 
 
   }
-
 
   def violationStyle
   ( isViolation : Boolean ) :  ColorThickness = {
@@ -143,13 +143,13 @@ class DotPrinter
           case TypeDecl =>
             val init = Map(selected.toPair -> "TDecl")
             graph.typeMemberUsesOf(selected).foldLeft(init){
-              (map, tm) => map. + (tm -> "TMember")
+              (map, tm) => map. + (tm.toPair -> "TMember")
             }
           case TypeMember
                | TypeConstructor =>
             val init = Map(selected.toPair -> "TMember")
             graph.typeUsesOf(selected).foldLeft(init){
-              (map, tm) => map. + (tm -> "TDecl")
+              (map, tm) => map. + (tm.toPair -> "TDecl")
             }
           case TypeDeclAndTypeMember =>
             sys.error("selection kind unhandle [TODO] - DotPrinter.typeRelationShipLabel")
@@ -157,6 +157,7 @@ class DotPrinter
             sys.error("this uses target kind should not happen")
 
         }
+        println(labelMap)
         e => labelMap get e match {
           case Some(l) => s"""label = "$l", """
           case None => ""
@@ -173,7 +174,7 @@ class DotPrinter
   def decorate_name(n : DGNode):String = {
     val sCter = graph.container(n.id)
 
-    if (sCter.isDefined && concreteViolations.contains(DGEdge.ContainsK(sCter.get, n.id)))
+    if (sCter.isDefined && concreteViolations.contains(Contains(sCter.get, n.id)))
       "<FONT COLOR=\"" + ColorThickness.violation.color + "\"><U>" + helper.namePrefix(n) + name(n) + idString(n.id) + "</U></FONT>"
     else helper.namePrefix(n) + name(n) + idString(n.id)
   }

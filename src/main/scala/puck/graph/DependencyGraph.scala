@@ -1,6 +1,5 @@
 package puck.graph
 
-import puck.graph.DGEdge.{ContainsK, IsaK, ParameterizedUsesK, UsesK}
 import puck.graph.DependencyGraph._
 import puck.graph.constraints._
 import puck.graph.transformations.{Transformation, RecordingComparator}
@@ -22,22 +21,13 @@ object DependencyGraph {
   val unrootedStringId = "<DETACHED>"
   val scopeSeparator : String = "."
 
-  //phantom type of NodeId used to ease Mutable/Immutable transition
-  //in mutable NodeId[K] =:= AGNode[K]
-  type EdgeMapT = SetValueMap[NodeId, NodeId]
-  val EdgeMapT = SetValueMap
-  type UseDependencyMap = SetValueMap[(NodeId,NodeId), (NodeId,NodeId)]
-  val UseDependencyMap = SetValueMap
+
   type AbstractionMap = SetValueMap[NodeId, (NodeId, AbstractionPolicy)]
   val AbstractionMap = SetValueMap
-  type Node2NodeMap = Map[NodeId, NodeId]
-  val Node2NodeMap = Map
 
   type Nodes2VnodeMap = Map[Seq[NodeId], NodeId]
   val Nodes2VNodeMap = Map
 
-  //type NodeT = (NodeId, String, NodeKind, TypeHolder, Mutability)
-  type NodeT = DGNode
   type ConcreteNodeIndex = Map[NodeId, ConcreteNode]
   val ConcreteNodeIndex = Map
   type VirtualNodeIndex = Map[NodeId, VirtualNode]
@@ -59,107 +49,9 @@ object DependencyGraph {
 
 }
 
-object EdgeMap {
-  def apply() =
-    new EdgeMap(EdgeMapT(), EdgeMapT(),
-                EdgeMapT(), EdgeMapT(),
-                EdgeMapT(),Nodes2VNodeMap(),
-                EdgeMapT(),EdgeMapT())
-}
-
-case class EdgeMap
-(users : EdgeMapT,
- used  : EdgeMapT, //formely usesMap
- parameterizedUsers : EdgeMapT,
- parameterizedUsed : EdgeMapT,
- contents  : EdgeMapT,
- containers : Node2NodeMap,
- superTypes : EdgeMapT,
- subTypes : EdgeMapT){
-
-  override def toString : String = {
-    val builder = new StringBuilder(150)
-
-    builder.append("used -> user\n")
-    builder.append(users.toString)
-    builder.append("user -> used\n")
-    builder.append(used.toString)
-
-    builder.append("par used -> par user\n")
-    builder.append(parameterizedUsers.toString)
-    builder.append("par user -> par used\n")
-    builder.append(parameterizedUsed.toString)
-
-    builder.append("container -> content\n")
-    builder.append(contents.toString)
-    builder.append("content -> container\n")
-    builder.append(containers.toString())
-
-    builder.append("sub -> super\n")
-    builder.append(superTypes.toString)
-    builder.append("super -> sub\n")
-    builder.append(subTypes.toString)
-
-    builder.toString()
-  }
-
-  def add(edge : DGEdge) : EdgeMap =
-    edge.kind match {
-      case UsesK =>
-        copy(users = users + (edge.used, edge.user),
-            used = used + (edge.user, edge.used))
-      case ParameterizedUsesK =>
-        copy(parameterizedUsers = parameterizedUsers + (edge.used, edge.user),
-          parameterizedUsed = parameterizedUsed + (edge.user, edge.used))
-      case IsaK =>
-        copy(subTypes = subTypes + (edge.superType, edge.subType),
-          superTypes = superTypes + (edge.subType, edge.superType))
-      case ContainsK =>
-        copy(contents = contents + (edge.container, edge.content),
-          containers = containers + (edge.content -> edge.container))
-    }
-
-  def add(kind : DGEdge.EKind, source : NodeId, target : NodeId) : EdgeMap =
-    add(kind(source, target))
 
 
-  def remove(edge : DGEdge) : EdgeMap =
-    edge.kind match {
-      case UsesK =>
-        copy(users = users - (edge.used, edge.user),
-          used = used - (edge.user, edge.used))
-      case ParameterizedUsesK =>
-        copy(parameterizedUsers = parameterizedUsers - (edge.used, edge.user),
-          parameterizedUsed = parameterizedUsed - (edge.user, edge.used))
-      case IsaK =>
-        copy(subTypes = subTypes - (edge.superType, edge.subType),
-          superTypes = superTypes - (edge.subType, edge.superType))
-      case ContainsK =>
-        copy(contents = contents - (edge.container, edge.content),
-          containers = containers - edge.content)
-    }
 
-  def remove(kind : DGEdge.EKind, source : NodeId, target : NodeId) : EdgeMap =
-    remove(kind(source, target))
-
-  def contains(containerId : NodeId, contentId : NodeId) : Boolean =
-    containers get contentId match {
-      case None => false
-      case Some(id) => id == containerId
-    }
-
-  def isa(subId : NodeId, superId: NodeId): Boolean = superTypes.bind(subId, superId)
-
-  def uses(userId: NodeId, usedId: NodeId) : Boolean = users.bind(usedId, userId)
-
-  def exists(e : DGEdge) : Boolean = e.kind  match {
-    case ContainsK => contains(e.source, e.target)
-    case IsaK => isa(e.source, e.target)
-    case UsesK => uses(e.source, e.target)
-    case ParameterizedUsesK => parameterizedUsers.bind(e.source, e.target)
-  }
-
-}
 
 
 class DependencyGraph
@@ -172,9 +64,6 @@ class DependencyGraph
   private [this] val vRemovedNodes : VirtualNodeIndex,
   private [this] val nodes2vNodes : Nodes2VnodeMap,
   /*private [this]*/ val edges : EdgeMap,
-  //TODO remake private [this]
-  /*private [this]*/ val typeMemberUses2typeUsesMap : UseDependencyMap,
-  /*private [this]*/ val typeUses2typeMemberUsesMap : UseDependencyMap,
   /*private [this]*/ val abstractionsMap : AbstractionMap,
   val constraints : ConstraintsMaps,
   val recording : Recording) {
@@ -190,8 +79,6 @@ class DependencyGraph
                nVRemovedNodes : VirtualNodeIndex = vRemovedNodes,
                nNodes2vNodes : Nodes2VnodeMap = nodes2vNodes,
                nEdges : EdgeMap = edges,
-               nDominantUsesMap : UseDependencyMap = typeMemberUses2typeUsesMap,
-               nDominatedUsesMap : UseDependencyMap = typeUses2typeMemberUsesMap,
                nAbstractionsMap : AbstractionMap = abstractionsMap,
                nConstraints : ConstraintsMaps = constraints,
                nRecording : Recording = recording) : DependencyGraph =
@@ -200,7 +87,6 @@ class DependencyGraph
                         nVNodesIndex, nVRemovedNodes,
                         nNodes2vNodes,
                         nEdges,
-                        nDominantUsesMap, nDominatedUsesMap,
                         nAbstractionsMap, nConstraints, nRecording)
 
   def withLogger(l : PuckLogger) = newGraph(nLogger = l)
@@ -372,6 +258,7 @@ class DependencyGraph
               nRecording =
                   if(register) recording.addEdge(e)
                   else recording)
+
   def removeEdge(e : DGEdge, register : Boolean = true): GraphT =
     newGraph( nEdges = edges.remove(e),
               nRecording =
@@ -379,40 +266,37 @@ class DependencyGraph
                   else recording)
 
  def addContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): GraphT =
-    addEdge(DGEdge.ContainsK(containerId, contentId), register)
+    addEdge(Contains(containerId, contentId), register)
 
  def removeContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): GraphT =
-    removeEdge(DGEdge.ContainsK(containerId, contentId), register)
+    removeEdge(Contains(containerId, contentId), register)
 
  def addUses(userId: NodeId, useeId: NodeId, register : Boolean = true): GraphT =
-    addEdge(DGEdge.UsesK(userId, useeId))
+    addEdge(Uses(userId, useeId))
 
  def removeUses(userId: NodeId, useeId: NodeId, register : Boolean = true): GraphT =
-    removeEdge(DGEdge.UsesK(userId, useeId))
+    removeEdge(Uses(userId, useeId))
 
  def addIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : GraphT=
-    addEdge(DGEdge.IsaK(subTypeId, superTypeId))
+    addEdge(Isa(subTypeId, superTypeId))
 
  def removeIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : GraphT=
-    removeEdge(DGEdge.IsaK(subTypeId, superTypeId))
+    removeEdge(Isa(subTypeId, superTypeId))
 
 
- def addUsesDependency(typeUse : (NodeId, NodeId),
-                        typeMemberUse : (NodeId, NodeId)) : GraphT =
-    newGraph(nDominantUsesMap = typeMemberUses2typeUsesMap + (typeMemberUse, typeUse),
-      nDominatedUsesMap = typeUses2typeMemberUsesMap + (typeUse, typeMemberUse),
-    nRecording = recording.addTypeDependency(typeUse, typeMemberUse))
+ def addUsesDependency(typeUse : DGUses,
+                        typeMemberUse : DGUses) : GraphT =
+   newGraph(nEdges = edges.addUsesDependency(typeUse, typeMemberUse),
+     nRecording = recording.addTypeDependency(typeUse, typeMemberUse))
 
-  def removeUsesDependency(dominantEdge : DGEdge,
-                           dominatedEdge :DGEdge) : GraphT =
-    removeUsesDependency((dominantEdge.source, dominantEdge.target),
-      (dominatedEdge.source, dominatedEdge.target))
 
-  def removeUsesDependency(typeUse : (NodeId, NodeId),
-                           typeMemberUse : (NodeId, NodeId)) : GraphT =
-    newGraph(nDominantUsesMap = typeMemberUses2typeUsesMap - (typeMemberUse, typeUse),
-      nDominatedUsesMap = typeUses2typeMemberUsesMap - (typeUse, typeMemberUse),
-      nRecording = recording.removeTypeDependency(typeUse, typeMemberUse))
+
+  def removeUsesDependency(typeUse : DGUses,
+                           typeMemberUse : DGUses) : GraphT =
+      newGraph(nEdges = edges.removeUsesDependency(typeUse, typeMemberUse),
+        nRecording = recording.removeTypeDependency(typeUse, typeMemberUse))
+
+
 
   def addAbstraction(id : NodeId, abs : (NodeId, AbstractionPolicy)) : GraphT =
     newGraph(nAbstractionsMap = abstractionsMap + (id, abs),
@@ -531,14 +415,27 @@ class DependencyGraph
   
   def usersOf(usedId: NodeId) : Set[NodeId] = edges.users getFlat usedId
 
-  def typeUsesOf(typeMemberUse : (NodeId, NodeId)) : Set[(NodeId, NodeId)] =
-    typeMemberUses2typeUsesMap getFlat typeMemberUse
 
-  def typeMemberUsesOf(typeUse : (NodeId, NodeId)) : Set[(NodeId, NodeId)] =
-    typeUses2typeMemberUsesMap  getFlat typeUse
+  def typeUsesOf(typeMemberUse : DGUses) : Set[DGUses] =
+    edges typeUsesOf typeMemberUse
 
-  def bind(typeUse : (NodeId, NodeId),
-           typeMemberUse : (NodeId, NodeId)) : Boolean =
+  def typeMemberUsesOf(typeUse : DGUses) : Set[DGUses] =
+    edges typeMemberUsesOf typeUse
+
+  def typeUsesOf(tmUser : NodeId, tmUsed : NodeId) : Set[DGUses] =
+    edges typeUsesOf (tmUser, tmUsed)
+
+  def typeMemberUsesOf(typeUser : NodeId, typeUsed : NodeId) : Set[DGUses] =
+    edges typeMemberUsesOf (typeUser, typeUsed)
+
+  def typeMemberUses2typeUses : Seq[(DGUses, Set[DGUses])] =
+    edges.typeMemberUses2typeUsesMap.toSeq
+
+  def typeUses2typeMemberUses : Seq[(DGUses, Set[DGUses])] =
+    edges.typeUses2typeMemberUsesMap.toSeq
+
+  def bind(typeUse : DGUses,
+           typeMemberUse : DGUses) : Boolean =
     typeMemberUsesOf( typeUse ) contains typeMemberUse
 
   def abstractions(id : NodeId) : Set[(NodeId, AbstractionPolicy)] =

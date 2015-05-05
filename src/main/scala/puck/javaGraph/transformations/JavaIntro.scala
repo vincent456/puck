@@ -114,7 +114,7 @@ object JavaIntro extends Intro {
               val usedSiblings = usedNodes filter sibling
               usedSiblings.map(g.getConcreteNode).forall {
                 used0 => aux(member)(used0) || {
-                  val typeUses = g.typeUsesOf((member.id, used0.id))
+                  val typeUses = g.typeUsesOf(member.id, used0.id)
                   typeUses.forall { DGEdge.UsesK(_).selfUse }
                 }
               }

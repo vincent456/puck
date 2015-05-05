@@ -2,7 +2,7 @@ package puck
 package javaGraph
 
 //import nodeKind._
-import puck.graph.{DependencyGraph, DGEdge}
+import puck.graph.{ParameterizedUses, Uses, DependencyGraph, DGEdge}
 import puck.graph.constraints.SupertypeAbstraction
 
 class GraphBuildingSpec extends AcceptanceSpec {
@@ -50,8 +50,8 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val typeUsed = fullName2id(s"$p.B")
         val typeMemberUsed = fullName2id(s"$p.B.mb__void")
 
-        val typeUse = DGEdge.UsesK(fieldTypeUser, typeUsed)
-        val typeMemberUse = (methUser, typeMemberUsed)
+        val typeUse = Uses(fieldTypeUser, typeUsed)
+        val typeMemberUse = Uses(methUser, typeMemberUsed)
 
         /*println("typeMemberUses2typeUsesMap")
         println(graph.typeMemberUses2typeUsesMap.content.mkString("\n"))
@@ -75,7 +75,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val mUsed = fullName2id(s"$p.B.mb__void")
 
         val typeUse = DGEdge.UsesK(mUser, classUsed)
-        val typeMemberUse = (mUser, mUsed)
+        val typeMemberUse = DGEdge.UsesK(mUser, mUsed)
 
         graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
 
@@ -92,7 +92,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val classUsed = fullName2id(s"$p.B")
 
         val typeUse = DGEdge.UsesK(mUser, classUsed)
-        val typeMemberUse = (mUser, mUsed)
+        val typeMemberUse = DGEdge.UsesK(mUser, mUsed)
 
         graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
       }
@@ -107,7 +107,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val classUsed = fullName2id(s"$p.C")
 
         val typeUse = DGEdge.UsesK(mIntermediate, classUsed)
-        val typeMemberUse = (mUser, mUsed)
+        val typeMemberUse = DGEdge.UsesK(mUser, mUsed)
 
         graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
       }
@@ -226,19 +226,29 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val userClass = fullName2id(s"$p.B")
         val userMethod = fullName2id(s"$p.B.mUser__void")
 
+        val genericMethod = fullName2id("java.util.List.get__int")
 
-        val typeUse = DGEdge.UsesK(fieldDeclarant, actualTypeParam)
-        val typeMemberUse = DGEdge.UsesK(userMethod, actualTypeParamMethod)
+        val fieldTypeUse = Uses(fieldDeclarant, actualTypeParam)
+        val typeMemberUse = Uses(userMethod, actualTypeParamMethod)
+        val parTypeUse = ParameterizedUses(genericMethod, actualTypeParam)
 
+        println(fullName2id.mkString("\n"))
 
-        assert( typeUse existsIn graph )
+        println(graph.edges)
+
+        assert( fieldTypeUse existsIn graph )
 
         assert( typeMemberUse existsIn graph )
 
-        println(graph.typeMemberUsesOf(typeUse))
+        println("fieldTypeUse = " + fieldTypeUse)
+        println("parTypeUse = " + parTypeUse)
+        println("typeMemberUse = " + typeMemberUse)
+
+        println(graph.typeMemberUsesOf(fieldTypeUse))
         println(graph.typeUsesOf(typeMemberUse))
         //QuickFrame(graph)
-        graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse.toPair)
+        graph.typeMemberUsesOf(fieldTypeUse) should contain (typeMemberUse)
+        graph.typeUsesOf(typeMemberUse) should contain (parTypeUse)
 
       }
     }

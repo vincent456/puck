@@ -16,8 +16,8 @@ aspect TypeUser {
     interface TypeMemberAccess{
         public int buildDGNode(JavaGraphBuilder builder);
         public Expr getQualifier();
-        public int buildTypeUserDGNodeFromLeftExpr(JavaGraphBuilder builder);
-        public int buildTypeUserDGNode(JavaGraphBuilder builder);
+        public int buildTypeUserDGNodeFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse);
+        public int buildTypeUserDGNode(JavaGraphBuilder builder, Uses typeMemberUse);
         public TypeMember decl();
 
     }
@@ -25,7 +25,7 @@ aspect TypeUser {
     MethodAccess implements TypeMemberAccess;
 
 
-    static int Access.buildTypeUserDGNode(TypeMemberAccess access, JavaGraphBuilder builder){
+    static int Access.buildTypeUserDGNode(TypeMemberAccess access, JavaGraphBuilder builder, Uses typeMemberUse){
         if(access.getQualifier() == null
             || access.getQualifier().isThisAccess()){
             int selfTypeNode = access.decl().hostType().buildDGNode(builder);
@@ -35,35 +35,34 @@ aspect TypeUser {
         else if(access.getQualifier().isSuperAccess())
             return access.decl().hostType().buildDGNode(builder);
         else
-            return access.buildTypeUserDGNodeFromLeftExpr(builder);
+            return access.buildTypeUserDGNodeFromLeftExpr(builder, typeMemberUse);
     }
 
-    public int VarAccess.buildTypeUserDGNode(JavaGraphBuilder builder){
-        return Access.buildTypeUserDGNode(this, builder);
+    public int VarAccess.buildTypeUserDGNode(JavaGraphBuilder builder, Uses typeMemberUse){
+        return Access.buildTypeUserDGNode(this, builder, typeMemberUse);
     }
-	public int MethodAccess.buildTypeUserDGNode(JavaGraphBuilder builder){
-        return Access.buildTypeUserDGNode(this, builder);
+	public int MethodAccess.buildTypeUserDGNode(JavaGraphBuilder builder, Uses typeMemberUse){
+        return Access.buildTypeUserDGNode(this, builder, typeMemberUse);
     }
   	
   	class NoTypeUser extends Error {}
 	
-  public int Access.buildTypeUserDGNodeFromLeftExpr(JavaGraphBuilder builder){
+  public int Access.buildTypeUserDGNodeFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse){
   	Expr lexpr = getLeftExpr();
         
       if(lexpr == null)
         throw new NoTypeUser();
       else
-          return lexpr.typeUserFromLeftExpr(builder);
-        //return lexpr.buildTypeUserDGNodeOfRightExpr(builder);
+          return lexpr.typeUserFromLeftExpr(builder, typeMemberUse);
   }
 
-  int Expr.typeUserFromLeftExpr(JavaGraphBuilder builder){
+  int Expr.typeUserFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse){
         throw new DGBuildingError(this + "(" +this.getClass() + ") in " +
         this.compilationUnit().pathName() +" line " +
         this.location() + " typeUser not found");
   }
 
-  int AddExpr.typeUserFromLeftExpr(JavaGraphBuilder builder){
+  int AddExpr.typeUserFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse){
         System.out.println("AddExpr.typeUserFromLeftExpr(builder)");
         System.out.println("=this.hostBodyDecl().buildDGNode(builder)");
         System.out.println("to check");
@@ -71,55 +70,81 @@ aspect TypeUser {
   }
 
 
-  int ClassAccess.typeUserFromLeftExpr(JavaGraphBuilder builder){
+  int ClassAccess.typeUserFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse){
         //In SomeRandomClass.class the class keyword is a classAccess
         return this.hostBodyDecl().buildDGNode(builder);
   }
 
 
 
-  int MethodAccess.typeUserFromLeftExpr(JavaGraphBuilder builder){
-      return decl().buildDGNode(builder);
+  int MethodAccess.typeUserFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse){
+     if(isSubstitute()){
+        MethodDeclSubstituted decl = (MethodDeclSubstituted)decl();
+
+        int thisNode = decl.getOriginal().buildDGNode(builder);
+
+        int typeUsed = decl.getTypeAccess().buildDGNode(builder);
+        ParameterizedUses typeUse = new ParameterizedUses(thisNode, typeUsed);
+        builder.addEdge(typeUse);
+        builder.addTypeRelationship(typeUse, typeMemberUse);
+
+        int typeUser = buildTypeUserDGNodeFromLeftExpr(builder, typeMemberUse);
+
+        return typeUser;
+     }
+     else
+        return decl().buildDGNode(builder);
   }
 
-  int VarAccess.typeUserFromLeftExpr(JavaGraphBuilder builder){
+//  int ParMethodAccess.typeUserFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse){
+//     int thisNode = decl().buildDGNode(builder);
+//     for(Access typeArg :  getTypeArgumentList()) {
+//         int typeArgNode = typeArg.buildDGNode(builder);
+//         ParameterizedUses typeUse = new ParameterizedUses(thisNode, typeArgNode);
+//        builder.addEdge(typeUse);
+//        builder.addTypeRelationship(typeUse, typeMemberUse);
+//     }
+//     return thisNode;
+//  }
+
+  int VarAccess.typeUserFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse){
       return decl().buildDGNode(builder);
   }
 
   //in case of use of static methods, fields ...
-  int TypeAccess.typeUserFromLeftExpr(JavaGraphBuilder builder){
+  int TypeAccess.typeUserFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse){
         return decl().buildDGNode(builder);
   }
 
-  public int ClassInstanceExpr.typeUserFromLeftExpr(JavaGraphBuilder builder){
+  public int ClassInstanceExpr.typeUserFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse){
        return getAccess().buildDGNode(builder);
   }
 
 
-  public int ArrayAccess.typeUserFromLeftExpr(JavaGraphBuilder builder){
+  public int ArrayAccess.typeUserFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse){
         //type() it's that simple !
        return type().buildDGNode(builder);
   }
 
-  public int ParExpr.typeUserFromLeftExpr(JavaGraphBuilder builder){
-     return getExpr().typeUserFromLeftExpr(builder);
+  public int ParExpr.typeUserFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse){
+     return getExpr().typeUserFromLeftExpr(builder, typeMemberUse);
   }
 
-  public int Dot.typeUserFromLeftExpr(JavaGraphBuilder builder){
+  public int Dot.typeUserFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse){
      if(isRightRotated())
         rotateLeft();
-     return getRight().typeUserFromLeftExpr(builder);
+     return getRight().typeUserFromLeftExpr(builder, typeMemberUse);
   }
 
   // public int ASTNode.typeUserFromLeftExpr(JavaGraphBuilder builder){
   //   return buildDGNode(builder);
   // }
 
-   public int CastExpr.typeUserFromLeftExpr(JavaGraphBuilder builder){
+   public int CastExpr.typeUserFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse){
      return getTypeAccess().buildDGNode(builder);
    }
 
-   public int Literal.typeUserFromLeftExpr(JavaGraphBuilder builder){
+   public int Literal.typeUserFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse){
      return type().buildDGNode(builder);
    }
 
