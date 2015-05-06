@@ -157,6 +157,12 @@ class SVGController private
     console.displaySelection("")
   }
 
+  def showCode(nodeId: NodeId): Unit = {
+    println("code :")
+    console.appendText("code : ")
+    console.appendText(genController.dg2ast.astNodeOf(graph, nodeId).toString)
+  }
+
   //Java accessor
   def usesKind = DGEdge.UsesK
   def isaKind = DGEdge.IsaK
@@ -175,7 +181,9 @@ class SVGController private
       case _ => ()
     }
 
-    fdoc.onSuccess { case doc => svgCanvas.setDocument(doc) }
+    fdoc.onSuccess { case doc =>
+      svgCanvas.setDocument(doc)
+    }
   }
 
   def canUndo = undoStack.nonEmpty

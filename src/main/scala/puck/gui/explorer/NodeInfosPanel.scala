@@ -116,13 +116,13 @@ class NodeInfosPanel(val graph : DependencyGraph,
                 if (primaryUses.nonEmpty){
                     useDetails.contents += new Label("Dominant Uses :")
                     primaryUses.foreach(e =>
-                      useDetails.contents += new Label(showDG[DGEdge](graph).shows(DGEdge.UsesK(e))))
+                      useDetails.contents += new Label(showDG[DGEdge](graph).shows(e)))
                 }
 
                 if(sideUses.nonEmpty) {
                     useDetails.contents += new Label("Dominated Uses :")
                     sideUses.foreach(e =>
-                      useDetails.contents += new Label(showDG[DGEdge](graph).shows(DGEdge.UsesK(e))))
+                      useDetails.contents += new Label(showDG[DGEdge](graph).shows(e)))
                 }
 
                 useDetails.revalidate()

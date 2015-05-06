@@ -116,7 +116,7 @@ class DotPrinter
       else ""
     }
 
-      println("printing " + edge + "label = >" + typeRelationShipLabel(edge) +"<")
+      //println("printing " + edge + "label = >" + typeRelationShipLabel(edge) +"<")
     if(!redOnly || status.color == redColor )
       arcs += (dotId(source) + " -> " + dotId(target) + "[ " +
         typeRelationShipLabel(edge) +
@@ -317,6 +317,7 @@ class DotPrinter
 
 
     val (regularsIsa, virt0, virtualViolations0) = filterEdgeBasedOnVisibleNodes(graph.isaSeq, DGEdge.IsaK)
+
     regularsIsa.foreach {
       case (e, v) => printArc(violationStyle(v))(isaStyle)(e)
     }

@@ -140,6 +140,8 @@ class PuckControl(val filesHandler : FilesHandler,
     }
   }
 
+  def dg2ast = filesHandler.dg2ast
+
   def applyOnCode(record : ResultT) : Unit = {
     Future {
       filesHandler.logger.write("generating code ...")

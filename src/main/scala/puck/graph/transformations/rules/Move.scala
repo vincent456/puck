@@ -46,8 +46,8 @@ case object CreateParameter extends CreateVarStrategy {
     traverse(siblingsUserViaSelf, g) {
       case (g0, userId) =>
 
-        traverse(g.typeUsesOf(userId, typeMemberMoved.id), g0){ (g0, tuse) =>
-          val typeUse = DGEdge.UsesK(tuse)
+        traverse(g.typeUsesOf(userId, typeMemberMoved.id), g0){ (g0, typeUse) =>
+
           val typeMemberUse = DGEdge.UsesK(userId, typeMemberMoved.id)
           val g2 = removeUsesDependencyTowardSelfUse(g0, typeUse, typeMemberUse)
 
@@ -125,8 +125,8 @@ case class CreateTypeMember(k : NodeKind) extends CreateVarStrategy {
     traverse(siblingsUserViaSelf.tail, g2) {
       case (g0, userId) =>
         traverse(g0.typeUsesOf(userId, typeMemberMoved.id), g0){
-          (g0, tuse) =>
-            \/-(createDelegateUses(getDelegate)(g0, userId, DGEdge.UsesK(tuse))._2)
+          (g0, typeUse) =>
+            \/-(createDelegateUses(getDelegate)(g0, userId, typeUse)._2)
         }
     }
 
@@ -173,7 +173,7 @@ class Move(intro : Intro) {
       user =>
       sibling(user) && {
         val tuses = graph.typeUsesOf(user, toBeMoved.id)
-        tuses.exists(DGEdge.UsesK(_).selfUse)
+        tuses.exists(_.selfUse)
       }
 
     f(graph.usersOf(toBeMoved.id), siblingUserViaSelf)
@@ -195,8 +195,7 @@ class Move(intro : Intro) {
 
               val typeMemberUse = DGEdge.UsesK(userId, typeMemberMoved)
               
-              g.typeUsesOf(typeMemberUse).foldLeft(g0) { (g0, typeUse0) =>
-                val typeUse = DGEdge.UsesK(typeUse0)
+              g.typeUsesOf(typeMemberUse).foldLeft(g0) { (g0, typeUse) =>
 
                 val g1 = g0.removeUsesDependency(typeUse, typeMemberUse)
                 val keepOldUse = g1.typeMemberUsesOf(typeUse).nonEmpty
@@ -227,9 +226,7 @@ class Move(intro : Intro) {
     g : DependencyGraph )
   ( f : (DependencyGraph, DGEdge) => Try[DependencyGraph]
     ) : Try[DependencyGraph] =
-    traverse(g.typeUsesOf(typeMemberUse), g){
-      (g0, tuse) =>f(g0, DGEdge.UsesK(tuse))
-    }
+    traverse(g.typeUsesOf(typeMemberUse), g)(f)
 
   def typeMember(g : DependencyGraph,
                  typeMemberMovedId : NodeId, newContainer : NodeId,

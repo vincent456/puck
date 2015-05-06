@@ -32,6 +32,9 @@ object Redirection {
                                propagateRedirection : Boolean = true,
                                keepOldUse : Boolean = false ) : Try[DependencyGraph] = {
 
+    g.logger.writeln(s"redirectUsesAndPropagate(_, oldUse = $oldUse, newUsed = $newUsed, $policy, " +
+      s"propagate = $propagateRedirection, keepOldUse = $keepOldUse)")
+    g.logger.writeln(s"$oldUse.exists = ${oldUse.existsIn(g)}")
     if(oldUse.used == newUsed) \/-( g)
     else if(oldUse.existsIn(g)){
       g.logger.writeln(s"redirecting ${showDG[DGEdge](g).show(oldUse)} target " +
@@ -131,29 +134,26 @@ object Redirection {
     else{
       g.logger.writeln("uses to redirect:%s".format(typeUses.mkString("\n\t", "\n\t","\n")))
 
-      traverse(typeUses, g){(g0, typeUse0) =>
-        val typeUses = DGEdge.UsesK(typeUse0)
+      traverse(typeUses, g){(g0, typeUse) =>
 
-        val keepOldUse = g.typeMemberUsesOf(typeUse0).tail.nonEmpty //is empty if typeUses had only one side use
-
-        val isThisTypeUse = typeUses.source == typeUses.target
+        val keepOldUse = g.typeMemberUsesOf(typeUse).tail.nonEmpty //is empty if typeUses had only one side use
 
         val redirect : DependencyGraph => Try[(DGUses, DependencyGraph)] =
-          if(isThisTypeUse)
+          if(typeUse.selfUse)
             g => ??? //redirectThisTypeUse(g, typeUses.used, newTypeMemberUsed)
           else {
             g =>
-              val newTypeUsed = findNewTypeUsed(g, typeUses.used, newTypeMemberUsed, policy)
-              redirectUsesAndPropagate(g, typeUses,newTypeUsed,
-                policy, propagateRedirection, keepOldUse).map{(DGEdge.UsesK(typeUses.user, newTypeUsed),_)}
+              val newTypeUsed = findNewTypeUsed(g, typeUse.used, newTypeMemberUsed, policy)
+              redirectUsesAndPropagate(g, typeUse, newTypeUsed,
+                policy, propagateRedirection, keepOldUse).map{(Uses(typeUse.user, newTypeUsed),_)}
           }
-        val g1 = g0.removeUsesDependency(typeUses, currentTypeMemberUse)
+        val g1 = g0.removeUsesDependency(typeUse, currentTypeMemberUse)
 
         for(
           eg <- redirect(g1);
-          (newPrimary, g2) = eg
+          (newTypeUse, g2) = eg
         ) yield
-        g2.addUsesDependency(newPrimary, Uses(currentTypeMemberUse.user, newTypeMemberUsed))
+          g2.addUsesDependency(newTypeUse, Uses(currentTypeMemberUse.user, newTypeMemberUsed))
 
       }
     }
@@ -189,7 +189,7 @@ object Redirection {
 
               } match {
                 case Some(n) =>
-                  g.logger.writeln(n + " found as primary usee")
+                  g.logger.writeln(n + " found as type used")
                   n
                 case None =>
                   throw new RedirectionError("no correct primary abstraction found !")
@@ -215,9 +215,8 @@ object Redirection {
     else g.logger.writeln("uses to redirect:%s".format(tmu.mkString("\n\t", "\n\t", "\n")))
 
     traverse(tmu, g) {
-      case (g0, side0) =>
-        val side = DGEdge.UsesK(side0)
-        val typeMember = side.used
+      case (g0, typeMemberUse) =>
+        val typeMember = typeMemberUse.used
         val someTypeMemberAbs =
           g.abstractions(typeMember).find { case (abs, _) => g.contains(newTypeUsed, abs) }
 
@@ -225,16 +224,16 @@ object Redirection {
           case None =>
             val msg = s"While redirecting type use ${showDG[DGEdge](g).shows(currentTypeUse)} " +
               s"target to ${showDG[NodeId](g).shows(newTypeUsed)}\n" +
-              s"no satisfying abstraction to redirect typeMember use ${showDG[DGEdge](g).shows(side)}"
+              s"no satisfying abstraction to redirect typeMember use ${showDG[DGEdge](g).shows(typeMemberUse)}"
 
             g.logger.writeln(msg)(PuckLog.Error)
             -\/(new RedirectionError(msg))
 
           case Some((typeMemberAbs, _)) =>
-            redirectUsesAndPropagate(g0.removeUsesDependency(currentTypeUse, side),
-              side, typeMemberAbs, policy).map {
+            redirectUsesAndPropagate(g0.removeUsesDependency(currentTypeUse, typeMemberUse),
+              typeMemberUse, typeMemberAbs, policy).map {
               g2 =>
-                val newSide = DGEdge.UsesK(side.user, typeMemberAbs)
+                val newSide = DGEdge.UsesK(typeMemberUse.user, typeMemberAbs)
                 g2.addUsesDependency(Uses(currentTypeUse.user, newTypeUsed), newSide)
             }
         }

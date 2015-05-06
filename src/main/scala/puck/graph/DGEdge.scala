@@ -27,7 +27,7 @@ object DGEdge{
   }
 
   case object ParameterizedUsesK extends UsesKind {
-    override val toString = "uses"
+    override val toString = "parUses"
 
     def apply(source : NodeId, target: NodeId) =
       ParameterizedUses(source, target)

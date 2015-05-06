@@ -28,17 +28,13 @@ class SVGConsole
   def panel = panel0.peer
   def console = panel0.console
 
-  val textArea: JTextArea = new JTextArea(lines, charPerLine)
-
-  textArea.setEditable(false)
-
   private[svg] def displaySelection(node: String) : Unit = {
     if (node.length > 0) selection.text = "Selection : " + node
     else selection.text = "No selection"
   }
 
   def appendText(txt: String) : Unit = {
-    textArea.append(txt + "\n")
+    console.append(txt + "\n")
   }
 }
 
@@ -147,6 +143,7 @@ class SVGFrame
 
   private def chooseFile(chooserMode : (JFileChooser, java.awt.Component) => Int) : Option[File] = {
     val chooser = new JFileChooser()
+    chooser.setCurrentDirectory(controller.genController.filesHandler.workingDirectory)
     val returnVal: Int = chooserMode(chooser, SVGFrame.this)
     if (returnVal == JFileChooser.APPROVE_OPTION) {
       Some(chooser.getSelectedFile)

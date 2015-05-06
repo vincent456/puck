@@ -107,6 +107,10 @@ class NodeRightClickMenu
     addMenuItem("Hide") { _ =>
       NodeRightClickMenu.this.controller.hide(node.id)
     }
+
+    addMenuItem("Show code") { _ =>
+      NodeRightClickMenu.this.controller.showCode(node.id)
+    }
     if (graph.content(node.id).nonEmpty) {
       addMenuItem("Collapse") { _ =>
         NodeRightClickMenu.this.controller.collapse(node.id)

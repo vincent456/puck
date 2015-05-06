@@ -4,14 +4,11 @@ import puck.graph.ShowDG._
 import puck.graph._
 import puck.javaGraph.nodeKind.Primitive
 
-/**
- * Created by lorilan on 4/9/15.
- */
 object Debug {
 
 
   def printEdgeSet(g : DependencyGraph, s : Set[DGUses])=
-    s.foreach(e => g.logger.writeln(s"\t\t*${showDG[DGEdge](g).shows(DGEdge.UsesK(e))}"))
+    s.foreach(e => g.logger.writeln(s"\t\t*${showDG[DGEdge](g).shows(e)}"))
 
   def logUsersOf(g : DependencyGraph, n : NodeId) = {
     import g.logger

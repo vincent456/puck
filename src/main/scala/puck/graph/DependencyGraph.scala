@@ -63,7 +63,7 @@ class DependencyGraph
   private [this] val vNodesIndex : VirtualNodeIndex,
   private [this] val vRemovedNodes : VirtualNodeIndex,
   private [this] val nodes2vNodes : Nodes2VnodeMap,
-  /*private [this]*/ val edges : EdgeMap,
+  private [this] val edges : EdgeMap,
   /*private [this]*/ val abstractionsMap : AbstractionMap,
   val constraints : ConstraintsMaps,
   val recording : Recording) {
@@ -104,7 +104,9 @@ class DependencyGraph
   def root : ConcreteNode = getConcreteNode(rootId)
   def isRoot(id : NodeId) = id == rootId
 
-   private [graph] def addConcreteNode(n : ConcreteNode) : DependencyGraph =
+  override def toString = edges.toString
+
+  private [graph] def addConcreteNode(n : ConcreteNode) : DependencyGraph =
      newGraph(nNodesSet = nodesIndex + (n.id -> n),
        nRemovedNodes = removedNodes - n.id,
        nRecording = recording.addConcreteNode(n))
@@ -155,25 +157,6 @@ class DependencyGraph
       sups.toList.map(sup => DGEdge.IsaK(sub, sup)) ::: acc
   }
 
-  /*def getNodeTuple(id : NIdT) = nodesIndex get id match {
-    case Some((_, name, kind, styp, mutable)) => (id, name, kind, styp, mutable, Created)
-    case None => removedNodes get id match {
-      case Some((_, name, kind, styp, mutable)) => (id, name, kind, styp, mutable, Removed)
-      case None =>
-        val msg = "AccessGraph.getNode : no node has id " + id.toString
-        logger.writeln(msg)(PuckLog.Error)
-        logger.writeln("nodes of graph : ")(PuckLog.Error)
-        logger.writeln(sortedMap.mkString("\n", "\n\t", ""))(PuckLog.Error)
-        throw new DGError("illegal node request : no node has id " + id.toString)
-    }
-  }
-
-  def getNode(id : NIdT): DGNode = {
-    val t = getNodeTuple(id)
-    DGNode(t._1, t._2, t._3, t._4, t._5, t._6)
-  }*/
-
-
   def getConcreteNodeWithStatus(id : NodeId): (ConcreteNode, NodeStatus) =
     nodesIndex get id map {(_, Created)} getOrElse{
       removedNodes get id map {(_, Removed)} getOrElse {
@@ -201,14 +184,6 @@ class DependencyGraph
     newGraph(nNodesSet = nodesIndex - id,
       nRemovedNodes = removedNodes + (id -> n),
       nRecording = recording removeConcreteNode n)
-   /* match {
-      case node @ (`id`, localName, kind, styp, mutable) =>
-        newGraph(nNodesSet = nodesIndex - id,
-          nRemovedNodes = removedNodes + (id -> node),
-          nRecording = recording.removeNode(id, localName, kind, styp, mutable))
-      case _ => throw new DGError("incoherent index left and right id are different")
-
-    }*/
   }
 
   def removeVirtualNode(id : NodeId) = {

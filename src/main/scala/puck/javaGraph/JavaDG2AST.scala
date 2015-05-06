@@ -4,6 +4,7 @@ import java.io.{FileReader, File}
 import java.util.NoSuchElementException
 
 import puck.PuckError
+import puck.graph.DGEdge.IsaK
 import puck.graph._, ShowDG._
 import puck.graph.constraints.{ConstraintsParser, SupertypeAbstraction}
 import puck.graph.io.{DG2ASTBuilder, DG2AST}
@@ -74,6 +75,8 @@ class JavaDG2AST
  val nodesByName : Map[String, NodeId],
  val graph2ASTMap : Map[NodeId, ASTNodeLink]) extends DG2AST{
 
+
+
   implicit val defaultVerbosity = (PuckLog.AG2AST, PuckLog.Info)
 
   def safeGet(graph : DependencyGraph, id2declMap : Map[NodeId, ASTNodeLink])(id :NodeId): ASTNodeLink =
@@ -84,8 +87,11 @@ class JavaDG2AST
       if(n.kind == Package)
         PackageDeclHolder
       else
-        throw e
+        NoDecl
   }
+
+  def astNodeOf(graph : DependencyGraph, id : NodeId) : ASTNodeLink =
+    safeGet(graph, graph2ASTMap)(id)
 
   def verbosity : PuckLog.Level => PuckLog.Verbosity = l => (PuckLog.AG2AST, l)
 
@@ -318,7 +324,7 @@ class JavaDG2AST
 
       (id2declMap(target.id), id2declMap(newTarget.id)) match {
         case (InterfaceDeclHolder(odlDecl), InterfaceDeclHolder(newDecl))
-          if e.kind == Isa =>
+          if e.kind == IsaK =>
           sourceDecl match {
             case ClassDeclHolder(srcDecl) =>
               srcDecl.replaceImplements(odlDecl.createLockedAccess(), newDecl.createLockedAccess())
@@ -328,7 +334,7 @@ class JavaDG2AST
         case (oldk: TypedKindDeclHolder, newk: TypedKindDeclHolder) =>
           sourceDecl match {
 
-            case mdh : HasMemberDecl =>
+            case mdh : HasBodyDecl =>
               mdh.decl.replaceTypeAccess(oldk.decl.createLockedAccess(), newk.decl.createLockedAccess())
 
             case ClassDeclHolder(_) =>

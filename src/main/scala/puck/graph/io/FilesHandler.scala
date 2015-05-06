@@ -5,6 +5,7 @@ import java.io._
 
 import puck.graph.constraints.search.SolverBuilder
 import puck.graph.transformations.{Transformation, TransformationRules, Recording}
+import puck.javaGraph.ASTNodeLink
 import puck.search.{Search, SearchState, SearchEngine}
 import puck.util._
 
@@ -108,10 +109,11 @@ trait DG2AST {
   def initialGraph : DependencyGraph
   def initialRecord : Seq[Transformation]
   def nodesByName : Map[String, NodeId]
+  def astNodeOf(graph : DependencyGraph, id : NodeId) : ASTNodeLink
 }
 
 class FilesHandler
-(workingDirectory : File,
+(val workingDirectory : File,
  val solverBuilder : SolverBuilder,
  //TODO ? change to List[String] ?
  val srcSuffix : String,

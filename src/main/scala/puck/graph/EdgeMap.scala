@@ -119,11 +119,13 @@ case class EdgeMap
 
   def uses(userId: NodeId, usedId: NodeId) : Boolean = users.bind(usedId, userId)
 
+  def parUses(userId: NodeId, usedId: NodeId) : Boolean = parameterizedUsers.bind(usedId, userId)
+
   def exists(e : DGEdge) : Boolean = e.kind  match {
     case ContainsK => contains(e.source, e.target)
     case IsaK => isa(e.source, e.target)
     case UsesK => uses(e.source, e.target)
-    case ParameterizedUsesK => parameterizedUsers.bind(e.source, e.target)
+    case ParameterizedUsesK => parUses(e.source, e.target)
   }
 
 

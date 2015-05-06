@@ -37,7 +37,9 @@ aspect NodeFactory  {
 
 
     public int Access.buildDGNode(JavaGraphBuilder builder){
-        this.lock();
+        if(!isSubstitute())
+			this.lock();
+
         return accessed().buildDGNode(builder);
     }
 

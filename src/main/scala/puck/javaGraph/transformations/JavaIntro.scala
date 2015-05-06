@@ -115,7 +115,7 @@ object JavaIntro extends Intro {
               usedSiblings.map(g.getConcreteNode).forall {
                 used0 => aux(member)(used0) || {
                   val typeUses = g.typeUsesOf(member.id, used0.id)
-                  typeUses.forall { DGEdge.UsesK(_).selfUse }
+                  typeUses.forall { _.selfUse }
                 }
               }
             }
