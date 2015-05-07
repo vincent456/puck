@@ -158,8 +158,7 @@ class SVGController private
   }
 
   def showCode(nodeId: NodeId): Unit = {
-    println("code :")
-    console.appendText("code : ")
+    console.appendText("Code : ")
     console.appendText(genController.dg2ast.astNodeOf(graph, nodeId).toString)
   }
 

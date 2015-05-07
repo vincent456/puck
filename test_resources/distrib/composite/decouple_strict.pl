@@ -1,4 +1,4 @@
-java_import(['fileSystem']).
-declareSet(file_kinds, ['File', 'Directory']).
+import ['fileSystem']
+file_kinds = ['File', 'Directory']
 
-hideSetButFrom(file_kinds, 'fileSystem.CompositeDemo.main__String[]').
+hide file_kinds but-not-from 'fileSystem.CompositeDemo.main__String[]'

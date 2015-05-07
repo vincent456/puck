@@ -122,10 +122,8 @@ public class SVGPanel extends JPanel{
 
         private DGEdge edgeFromGElement(SVGGElement gelt){
             SVGTitleElement t = (SVGTitleElement)gelt.getFirstChild();
-            String edgeLabel = t.getNodeValue();
             GenericText title = (GenericText)t.getFirstChild();
 
-            controller.console().appendText(edgeLabel);
             DGEdge.EKind k = edgeKindFromGElement(gelt);
 
             Matcher m = arrowPattern.matcher(title.getData());

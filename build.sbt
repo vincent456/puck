@@ -39,6 +39,7 @@ jastaddOutDir := sourceManaged.value / "main"
 
 java15comply := true
 
+classPathFileName := "CLASSPATH"
 
 libraryDependencies ++= Seq(
 	"org.scala-lang" % "scala-swing" % "2.11.0-M7",

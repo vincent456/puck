@@ -128,9 +128,7 @@ object ConstraintsParser
   def declarationEnd
   ( cm : ConstraintMapBuilder)
   ( ident : String ) : Parser[ConstraintMapBuilder] =
-    ( "union(" ~> list <~ ")"
-      ^^
-      {
+    ( "union(" ~> list <~ ")" ^^ {
         list =>
           cm.addDef( new NamedRangeSetUnion(ident, normalize(list map cm.defs)))
       }

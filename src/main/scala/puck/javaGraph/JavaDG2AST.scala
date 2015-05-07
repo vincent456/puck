@@ -122,13 +122,15 @@ class JavaDG2AST
     record.reverse.foldLeft((graphOfResult(result), initialGraph, graph2ASTMap)) {
       case ((resultGraph, reenactor, g2AST), t : Transformation) =>
 
-        logger.writeln(showDG[Transformation](reenactor).shows(t))
+        //logger.writeln(showDG[Transformation](reenactor).shows(t))
 
         val res = applyOneTransformation(resultGraph, reenactor, g2AST, t)
 
         (resultGraph, t.redo(reenactor), res)
 
-      case (acc, _) => acc
+      case (acc, op) =>
+        logger.writeln(showDG[Recordable](acc._1).shows(op))
+        acc
     }
 
     logger.writeln("change applied : ")
@@ -167,27 +169,22 @@ class JavaDG2AST
 
       newMap
 
-        //redo t after applying on code other transformations
-    case `t` => t match {
+    case _ =>
+      lazy val noApplyMsg = s"${showDG[Recordable](resultGraph).shows(t)} not applied"
+
+      t match {
       case Transformation(Regular, Edge(e)) =>
         //println("creating edge " + e)
         addEdge(resultGraph, safeGet(resultGraph, id2declMap), e)
 
       case Transformation(_, RedirectionWithMerge(_, Source(_))) =>
-        logger.writeln("RedirectionWithMerge not applied")
-
-//      case Transformation(_, _ : RedirectionWithMerge) =>
-//        logger.writeln("RedirectionWithMerge not applied")
+        logger.writeln(noApplyMsg)
 
       case Transformation(_, RedirectionOp(e, Source(newSource))) =>
         redirectSource(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newSource)
 
       case Transformation(_, RedirectionOp(e, Target(newTarget))) =>
         redirectTarget(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newTarget)
-
-//      case Transformation(_, TypeRedirection(typed, typ, oldUsed, newUsed)) =>
-//        redirectTarget(resultGraph, reenactor, safeGet(resultGraph, id2declMap),
-//          DGEdge.uses(typed, oldUsed), newUsed)
 
       // TODO see if can be performed in add node instead
       case Transformation(_, Abstraction(impl, abs, SupertypeAbstraction)) =>
@@ -204,7 +201,7 @@ class JavaDG2AST
           case dh: TypedKindDeclHolder => dh.decl.puckDelete()
           case bdh : HasBodyDecl => bdh.decl.puckDelete()
           case PackageDeclHolder => ()
-          case NoDecl => throw new PuckError(s"Remove $n not applied")
+          case NoDecl => throw new PuckError(noApplyMsg)
         }
 
       case Transformation(_, ChangeNodeName(nid, _, newName)) =>
@@ -213,7 +210,7 @@ class JavaDG2AST
 
       case Transformation(_, op) =>
         if( discardedOp(op) ) ()
-        else logger.writeln(s"$t not applied on program")
+        else logger.writeln(noApplyMsg)
     }
     id2declMap
   }

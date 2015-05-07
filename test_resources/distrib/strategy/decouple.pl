@@ -1,8 +1,8 @@
-java_import(['strategy.candidate']).
+import ['strategy.candidate']
 
-declareSet(concreteStrategies, 
+concreteStrategies =  
 	['SortingContext.bubbleSort__int[]', 
-	 'SortingContext.linearSort__int[]']).
-declareSet(context, ['SortingContext']).
+	 'SortingContext.linearSort__int[]']
+context = ['SortingContext']
 
-hideScopeSetFrom(concreteStrategies, context).
+hide concreteStrategies from context

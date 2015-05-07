@@ -1,7 +1,7 @@
-java_import(['hollyrock']).
+import ['hollyrock']
 
-declareSet(actors, ['Tragedian', 'Comedian', 'Extra']).
+actors = ['Tragedian', 'Comedian', 'Extra']
 
-hideSet(actors).
+hide actors
 
-friendOf('MovieMaker.main__String[]', actors).
+'MovieMaker.main__String[]' friend-of actors

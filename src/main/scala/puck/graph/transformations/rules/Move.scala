@@ -136,15 +136,17 @@ case class CreateTypeMember(k : NodeKind) extends CreateVarStrategy {
 class Move(intro : Intro) {
 
   def typeDecl
-  ( g : DependencyGraph,
+  ( g0 : DependencyGraph,
     movedId : NodeId,
     newContainer : NodeId
     ) : Try[DependencyGraph] =
-    withContainer(g, movedId){
+    withContainer(g0, movedId){
       oldContainer =>
-        g.logger.writeln(s"moving type decl ${showDG[NodeId](g).shows(movedId)} " +
-          s"from ${showDG[NodeId](g).shows(oldContainer)} " +
-          s"to ${showDG[NodeId](g).shows(newContainer)}")
+        val log = s"moving type decl ${showDG[NodeId](g0).shows(movedId)} " +
+          s"from ${showDG[NodeId](g0).shows(oldContainer)} " +
+          s"to ${showDG[NodeId](g0).shows(newContainer)}"
+        val g = g0.comment(log)
+        g.logger.writeln(log)
         \/-(g.changeSource(DGEdge.ContainsK(oldContainer, movedId), newContainer))
     }
 
@@ -215,10 +217,13 @@ class Move(intro : Intro) {
     typeMemberMoved : NodeId,
     oldContainer : NodeId,
     newContainer : NodeId
-    ) : Unit =
-    g.logger.writeln(s"moving type member ${showDG[NodeId](g).shows(typeMemberMoved)} " +
+    ) : DependencyGraph = {
+    val log = s"moving type member ${showDG[NodeId](g).shows(typeMemberMoved)} " +
       s"from ${showDG[NodeId](g).shows(oldContainer)} " +
-      s"to ${showDG[NodeId](g).shows(newContainer)}")
+      s"to ${showDG[NodeId](g).shows(newContainer)}"
+    g.logger.writeln(log)
+    g.comment(log)
+  }
 
 
   private def foldTypeUsesOf
@@ -228,13 +233,14 @@ class Move(intro : Intro) {
     ) : Try[DependencyGraph] =
     traverse(g.typeUsesOf(typeMemberUse), g)(f)
 
-  def typeMember(g : DependencyGraph,
+  def typeMember(g0 : DependencyGraph,
                  typeMemberMovedId : NodeId, newContainer : NodeId,
                  createVarStrategy: Option[CreateVarStrategy] = None): Try[DependencyGraph] = {
-    val oldContainer = g.getConcreteNode(g.container(typeMemberMovedId).get)
-    val typeMemberMoved = g.getConcreteNode(typeMemberMovedId)
 
-    logTypeMemberMove(g, typeMemberMoved.id, oldContainer.id, newContainer)
+    val oldContainer = g0.getConcreteNode(g0.container(typeMemberMovedId).get)
+    val typeMemberMoved = g0.getConcreteNode(typeMemberMovedId)
+
+    val g = logTypeMemberMove(g0, typeMemberMoved.id, oldContainer.id, newContainer)
 
     val g2 = g.changeSource(DGEdge.ContainsK(oldContainer.id, typeMemberMoved.id), newContainer)
     val (siblingsUserViaSelf, otherUsers) =

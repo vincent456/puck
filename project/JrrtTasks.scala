@@ -1,4 +1,6 @@
 
+import java.io.FileWriter
+
 import sbt._
 import Keys._
 
@@ -23,6 +25,7 @@ object JrrtTasks extends Build {
 
   val jastaddOutDir = settingKey[File]("Location of puck jrag files")
 
+  val classPathFileName = settingKey[String]("Location of generated classpath script")
   /*
     Tasks
    */
@@ -30,6 +33,8 @@ object JrrtTasks extends Build {
   val ast = taskKey[Seq[File]]("use ast, jrag and jadd files to generates java")
   val parser = taskKey[Seq[File]]("create java parser")
   val scanner = taskKey[Seq[File]]("create java scanner")
+
+  val printClassPathFile = taskKey[File]("create a file containing the fullclass path")
 
 /*
   val gen = taskKey[Unit]("generates parser, scanner and AST files")
@@ -46,7 +51,7 @@ object JrrtTasks extends Build {
   }
 
 //TODO make a beaver plugin that allow to pass arguments !
-def beaverTask(srcFile : File){
+  def beaverTask(srcFile : File){
       import beaver.comp.ParserGenerator
       import beaver.comp.io.SrcReader
       import beaver.comp.run.Options
@@ -226,16 +231,13 @@ def beaverTask(srcFile : File){
                 jrrtDir / "undo" / "NoUndo.jrag",
                 jrrtDir / "AccessibilityConstraints" / "SolverChoco.jrag",
                 jrrtDir / "TypeConstraints" / "TypeConstraintSolving.jrag",
-                jrrtDir / "TypeConstraints" / "CollectTypeConstraints.jrag"/*,
-                jrrtDir / "MakeMethodStatic" / "MakeMethodStatic.jrag",
-                jrrtDir / "ChangeMethodSignature" / "ChangeParameterType.jrag"
-                jrrtDir / "Renaming" / "RenameMethod.jrag"
-                */)
+                jrrtDir / "TypeConstraints" / "CollectTypeConstraints.jrag")
 
           val puckFiles : PathFinder = jastaddSrcDir.value ** ("*.jrag" | "*.jadd")
 
-          val jrrtFiles3 : PathFinder = Seq(jrrtDir / "TypeConstraints" / "TypeConstraintSolving.jrag",
-            jrrtDir / "TypeConstraints" / "CollectTypeConstraints.jrag")
+          val jrrtFiles3 : PathFinder =
+              Seq(jrrtDir / "TypeConstraints" / "TypeConstraintSolving.jrag",
+                  jrrtDir / "TypeConstraints" / "CollectTypeConstraints.jrag")
 
           val java16Files : PathFinder = java16frontend.value / "Override.jrag"
 
@@ -263,30 +265,8 @@ def beaverTask(srcFile : File){
               ++: puckFiles.getPaths
               ++: jrrtFiles3.getPaths)
 
-            // Fork.java(new ForkOptions(),
-            //       "jastadd.JastAdd.main"
-            //         +: "--beaver"
-            //         +: "--package=AST"
-            //         +: ("--o=" + jastaddOutDir.value)
-            //         +: "--rewrite"
-            //         +: "--novisitcheck"
-            //         +: "--noCacheCycle"
-            //         +: "--noComponentCheck"
-            //         +: "--refineLegacy"
-            //         +: orderedPaths )
-
-            // /!\ breakable : main uses System.exit !!
             println("generating ast and weaving aspects")
-           /* jastadd.JastAdd.main(("--beaver"
-              +: "--package=AST"
-              +: ("--o=" + jastaddOutDir.value)
-              +: "--rewrite"
-              +: "--novisitcheck"
-              +: "--noCacheCycle"
-              +: "--noComponentCheck"
-              +: "--refineLegacy"
-              +: orderedPaths).toArray)
-*/
+
             val jastAddParserJar = baseDirectory.value / "project" / "lib" / "JastAddParser.jar"
             val jastAddJar = baseDirectory.value / "project" / "lib" / "jastadd2.jar"
 
@@ -311,7 +291,18 @@ def beaverTask(srcFile : File){
 
           }
         (PathFinder( jastaddOutDir.value / "beaver" ) * "*" +++ PathFinder(jastaddOutDir.value / "AST") * "*").get
-			}
+			},
+      printClassPathFile := {
+
+        val f = baseDirectory.value / "target" / classPathFileName.value
+
+        val writter = new FileWriter(f)
+        val fcp = (fullClasspath in Compile).value.map(_.data.absolutePath)
+        writter.write(fcp.mkString("CLASSPATH=", ":", ""))
+        writter.close()
+        f
+      }
+
 		)
 
 }

@@ -4,6 +4,8 @@ package io
 
 import java.io.BufferedWriter
 
+import puck.graph.DGEdge.{IsaK, UsesK}
+
 import scala.collection.mutable
 
 /**
@@ -116,7 +118,6 @@ class DotPrinter
       else ""
     }
 
-      //println("printing " + edge + "label = >" + typeRelationShipLabel(edge) +"<")
     if(!redOnly || status.color == redColor )
       arcs += (dotId(source) + " -> " + dotId(target) + "[ " +
         typeRelationShipLabel(edge) +
@@ -278,7 +279,7 @@ class DotPrinter
             (regulars :+ (((s, t), isViolation)), virtuals, m)
 
           case (Some(s), Some(t)) if printVirtualEdges =>
-
+            val virtEdge = edgeKind(s, t)
             if(concreteViolations.contains(edgeKind(source, target)))
                 (regulars, virtuals + ((s, t)), m + ((s, t)))
               else if(!recusivePackage(s,t))
@@ -316,17 +317,23 @@ class DotPrinter
     graph.nodesId.foreach{nid => if(graph.container(nid).isEmpty) printNode(nid)}
 
 
-    val (regularsIsa, virt0, virtualViolations0) = filterEdgeBasedOnVisibleNodes(graph.isaSeq, DGEdge.IsaK)
+    val (regularsIsa, virt0, virtualViolations0) = filterEdgeBasedOnVisibleNodes(graph.isaSeq, IsaK)
 
     regularsIsa.foreach {
       case (e, v) => printArc(violationStyle(v))(isaStyle)(e)
     }
 
-    val(reg, virt, virtualViolations) = filterEdgeBasedOnVisibleNodes(graph.usesSeq, DGEdge.UsesK, virt0, virtualViolations0)
+    val(reg, virt, virtualViolations) = filterEdgeBasedOnVisibleNodes(graph.usesSeq, UsesK, virt0, virtualViolations0)
 
     reg.foreach{ case (e, v) =>  printArc(violationStyle(v))(usesStyle)(e) }
 
-    virt.foreach(e => printArc(violationStyle(virtualViolations contains e))(virtualUse)(e))
+//    println("virt = " + virt)
+//    println("virtualViolations = " + virtualViolations)
+
+    virt.foreach { e =>
+//      println("printing" + e)
+      printArc(violationStyle(virtualViolations contains e))(virtualUse)(e)
+    }
 
     arcs.foreach(writeln)
 

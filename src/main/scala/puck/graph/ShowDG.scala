@@ -93,10 +93,17 @@ object ShowDG {
     case _ => false
   }
 
-  implicit def transformationtCord : CordBuilder[Transformation] = (dg, tf) =>
-    if(addRmOperation(tf.operation))
-      Cord(directAddRm(tf.direction), "(", transfoTargetCord(dg, tf.operation),")")
-    else transfoTargetCord(dg, tf.operation)
+  implicit def transformationtCord : CordBuilder[Recordable] = (dg, r) =>
+    r match {
+      case tf : Transformation =>
+        if(addRmOperation(tf.operation))
+          Cord(directAddRm(tf.direction), "(", transfoTargetCord(dg, tf.operation),")")
+        else transfoTargetCord(dg, tf.operation)
+
+      case MileStone => Cord(r.toString)
+      case Comment(msg) => Cord("***", msg, "***")
+    }
+
 
   def showDG[A](sg : Option[DependencyGraph] = None)
                             (implicit s : CordBuilder[A]): Show[A] = sg match {

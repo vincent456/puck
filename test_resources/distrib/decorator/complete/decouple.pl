@@ -1,10 +1,10 @@
 
-java_import(['decorator.candidate']).
+import ['decorator.candidate']
 
-declareSet(concreteComponents, ['A']).
-declareSet(decorators,['AwithX', 'AwithY', 'AwithZ', 
-						'AwithXY', 'AwithXYZ']).
+concreteComponents = ['A']
+decorators = ['AwithX', 'AwithY', 'AwithZ', 
+	      'AwithXY', 'AwithXYZ']).
 
-declareSetUnion(everybody, [concreteComponents, decorators]).
+everybody = union([concreteComponents, decorators])
 
-hideFromEachOther(everybody).
+hideFromEachOther(everybody)

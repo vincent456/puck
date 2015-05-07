@@ -26,14 +26,15 @@ object Redirection {
   implicit def logVerbosity(lvl : PuckLog.Level) : PuckLog.Verbosity =
     (PuckLog.GraphTransfoRules, lvl)
 
-  def redirectUsesAndPropagate(g : DependencyGraph,
+  def redirectUsesAndPropagate(g0 : DependencyGraph,
                                oldUse : DGUses, newUsed : NodeId,
                                policy : RedirectionPolicy,
                                propagateRedirection : Boolean = true,
                                keepOldUse : Boolean = false ) : Try[DependencyGraph] = {
-
-    g.logger.writeln(s"redirectUsesAndPropagate(_, oldUse = $oldUse, newUsed = $newUsed, $policy, " +
-      s"propagate = $propagateRedirection, keepOldUse = $keepOldUse)")
+    val log = s"redirectUsesAndPropagate(_, oldUse = $oldUse, newUsed = $newUsed, $policy, " +
+      s"propagate = $propagateRedirection, keepOldUse = $keepOldUse)"
+    val g = g0.comment(log)
+    g.logger.writeln(log)
     g.logger.writeln(s"$oldUse.exists = ${oldUse.existsIn(g)}")
     if(oldUse.used == newUsed) \/-( g)
     else if(oldUse.existsIn(g)){
@@ -89,8 +90,8 @@ object Redirection {
         s"FAILURE !! ${oldUse.used}} is not used")
       \/-(g)
     }
-    else if(g.usersOf(oldUse.used).exists(_ == oldUse.user) ||
-      g.usersOf(newUsed).exists(_==oldUse.user))
+    else if(g.usersOf(oldUse.used).contains(oldUse.user) ||
+      g.usersOf(newUsed).contains(oldUse.user))
       -\/(new DGError("incoherent state !!!!!!!!!!!!"))
     else
       -\/(new DGError(s"redirecting uses ${showDG[DGEdge](g).show(oldUse)} target to ${showDG[NodeId](g).show(newUsed)} ($policy)\n" +
@@ -98,33 +99,16 @@ object Redirection {
 
   }
 
-  /*TODELETE
-  def redirectThisTypeUse(g : GraphT, thisType : NodeId, movedId : NodeId): Try[(EdgeT, GraphT)] = {
-    g.logger.writeln(s"redirecting This.Type use (${showDG[NodeId](g).shows(thisType)})")
-
-    val typeNode = g.getConcreteNode(thisType)
-    val movedNode = g.getConcreteNode(movedId)
-    typeNode.kind match {
-      case Class =>
-        val newTypeUsed = findNewTypeUsed(g, thisType, movedId, Move)
-        val (field, g2) = g.addConcreteNode(movedNode.name + "_delegate", Field, Some(new JavaNamedType(newTypeUsed)))
-        val g3 = g2.addContains(thisType, field.id)
-          .addUses(field.id, newTypeUsed)
-          .addUses(movedId, field.id)
-        \/-( (DGEdge.uses(field.id, newTypeUsed),g3))
-      case _=>
-        -\/(new PuckError(s"redirect type uses, expected class got ${typeNode.kind}"))
-    }
-  }
-  */
-  def redirectTypeUsesOfTypeMemberUse(g : DependencyGraph,
+  def redirectTypeUsesOfTypeMemberUse(g0 : DependencyGraph,
                                       currentTypeMemberUse : DGUses,
                                       newTypeMemberUsed : NodeId,
                                       policy : RedirectionPolicy,
                                       propagateRedirection : Boolean = true) : Try[DependencyGraph] = {
 
-    g.logger.writeln(s"redirecting Type uses of typeMember use ${showDG[DGEdge](g).shows(currentTypeMemberUse)}" +
-      s" (new typeMember used is ${showDG[NodeId](g).shows(newTypeMemberUsed)}) ")
+    val log = s"redirecting Type uses of typeMember use ${showDG[DGEdge](g0).shows(currentTypeMemberUse)}" +
+      s" (new typeMember used is ${showDG[NodeId](g0).shows(newTypeMemberUsed)}) "
+    val g= g0.comment(log)
+    g.logger.writeln(log)
 
     val typeUses = g.typeUsesOf(currentTypeMemberUse)
     if(typeUses.isEmpty) {
@@ -160,13 +144,15 @@ object Redirection {
   }
 
 
-  def findNewTypeUsed(g : DependencyGraph,
+  def findNewTypeUsed(g0 : DependencyGraph,
                       currentTypeUsed : NodeId,
                       newTypeMemberUsed : NodeId,
                       policy : RedirectionPolicy) : NodeId = {
 
-    g.logger.writeln(s"searching new Type used ($policy) : current type used is " +
-      s"${showDG[NodeId](g).shows(currentTypeUsed)}, new typeMember used : ${showDG[NodeId](g).shows(newTypeMemberUsed)}" )
+    val log = s"searching new Type used ($policy) : current type used is " +
+      s"${showDG[NodeId](g0).shows(currentTypeUsed)}, new typeMember used : ${showDG[NodeId](g0).shows(newTypeMemberUsed)}"
+    val g= g0.comment(log)
+    g.logger.writeln(log)
 
     val newPrimaryUsed =
       policy match {
@@ -203,13 +189,16 @@ object Redirection {
 
 
   type TypeMemberUses = List[DGUses]
-  def redirectTypeMemberUsesOfTypeUse(g : DependencyGraph,
+  def redirectTypeMemberUsesOfTypeUse(g0 : DependencyGraph,
                                       currentTypeUse: DGUses,
                                       newTypeUsed : NodeId,
                                       policy : RedirectionPolicy,
                                       tmu : TypeMemberUses) : Try[DependencyGraph] = {
-    g.logger.writeln(s"redirecting typeMember uses of type use ${showDG[DGEdge](g).shows(currentTypeUse)} " +
-      s"(new type used is  ${showDG[NodeId](g).shows(newTypeUsed)}) ")
+
+    val log = s"redirecting typeMember uses of type use ${showDG[DGEdge](g0).shows(currentTypeUse)} " +
+      s"(new type used is  ${showDG[NodeId](g0).shows(newTypeUsed)}) "
+    val g= g0.comment(log)
+    g.logger.writeln(log)
 
     if (tmu.isEmpty) g.logger.writeln("no typeMember uses to redirect")
     else g.logger.writeln("uses to redirect:%s".format(tmu.mkString("\n\t", "\n\t", "\n")))
@@ -244,10 +233,13 @@ object Redirection {
 
 
   type KeepOldTypeUse = Boolean
-  def redirectTypeMemberAndConstructorUsesOfTypeUse(g : DependencyGraph,
+  def redirectTypeMemberAndConstructorUsesOfTypeUse(g0 : DependencyGraph,
                                                     currentTypeUse: DGUses,
                                                     newTypeUsed : NodeId,
                                                     policy : RedirectionPolicy): Try[(KeepOldTypeUse, DependencyGraph)] = {
+    val log = s"redirecting typeMember AND CONSTRUCTOR uses of type use ${showDG[DGEdge](g0).shows(currentTypeUse)} " +
+      s"(new type used is  ${showDG[NodeId](g0).shows(newTypeUsed)}) "
+    val g= g0.comment(log)
     val typeMemberAndTypeCtorUses = g.typeMemberUsesOf(currentTypeUse).toList
     import puck.util.Collections.SelectList
     typeMemberAndTypeCtorUses.select { e => g.kindType(g.getNode(e.target)) == TypeConstructor} match {

@@ -272,7 +272,7 @@ aspect TransformationApplying {
             if(decl().isSubstitute()) {
                 ConstructorDeclSubstituted parDecl = ((ConstructorDeclSubstituted) decl()).copy();
                 ParClassDecl parClassDecl = (ParClassDecl) parDecl.hostType();
-        
+
                 /*TODO check if several instances/decl of the same parameterized type what happens then ??*/
                 for(Access arg : parClassDecl.getArgumentList())
                     arg.replaceTypeAccess(oldUsee, newUsee);
@@ -295,8 +295,11 @@ aspect TransformationApplying {
   } 
 
   public void MethodAccess.replaceMethodCall(MethodDecl oldUsed, MethodDecl newUsed){
-      if(this.decl() == oldUsed)
-        replace(this).with(new MethodAccess(newUsed.name(), this.getArgList()));
+     if(this.decl() == oldUsed) {
+        MethodAccess ma = new MethodAccess(newUsed.name(), this.getArgList());
+        ma.setTargetMethod(new SavedMethodDecl(newUsed), this.isMonoCall);
+        replace(this).with(ma);
+     }
   }
 
 

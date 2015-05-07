@@ -154,6 +154,7 @@ object ASTNodeLink{
     case FieldDeclHolder(decl) => decl.setID(name)
     case dh : MethodDeclHolder => dh.decl.setID(name)
     case th : TypedKindDeclHolder => th.decl.setID(name)
+    case _ : ConstructorDeclHolder => () //should be handled in the class rename
     case h => throw new PuckError(h.getClass + " setName unhandled")
   }
 }
