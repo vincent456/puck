@@ -143,7 +143,7 @@ class Solver
           def doIntro(k: Try[(DependencyGraph, ConcreteNode, AbstractionPolicy)] => Unit) : Unit = {
             logger.writeln(s"trying to create abstraction( $absKind, $absPolicy ) of $currentImpl")
 
-            val tryAbs = rules.createAbstraction(graph, currentImpl, absKind, absPolicy)
+            val tryAbs = rules.intro.createAbstraction(graph, currentImpl, absKind, absPolicy)
 
             if(tryAbs.isLeft)
               logger.writeln("failure !!")
@@ -154,14 +154,14 @@ class Solver
                 logger.writeln(s"Searching host for abstraction( $absKind, $absPolicy ) of $currentImpl")
 
                 findHost(graph2, abs,
-                  rules.absIntroPredicate(graph2, currentImpl, absPolicy, absKind)) {
+                  rules.intro.absIntroPredicate(graph2, currentImpl, absPolicy, absKind)) {
                   case Host(h, graph3) =>
                     logger.writeln(s"absIntro : host of $abs is ${showDG[NodeId](graph3).show(h)}")
 
                     val graph4 = graph3.addContains(h, abs.id)
 
                     //TODO check if can find another way more generic
-                    val graph5 = rules.abstractionCreationPostTreatment(graph4, currentImpl.id, abs.id, absPolicy)
+                    val graph5 = rules.intro.abstractionCreationPostTreatment(graph4, currentImpl.id, abs.id, absPolicy)
 
                     k(\/-((graph5, abs, absPolicy)))
                   case FindHostError =>

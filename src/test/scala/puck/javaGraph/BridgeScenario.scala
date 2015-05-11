@@ -114,14 +114,14 @@ class BridgeScenario private()
   val (c1, g1) = intro2classMerge(g0, "StarStyle", printStar1, printStar2)
   //QuickFrame(g1)
   val (c2, g2) = intro2classMerge(g1, "CapitalStyle", printCapital1, printCapital2)
-  val g3 = g2.setName(printStar1, "printStyle").setName(printCapital1, "printStyle")
+  val g3 =  TR.rename(TR.rename(g2, printStar1, "printStyle"), printCapital1, "printStyle")
 
-  val (i1, g4) = TR.createAbstraction(g3, c1, Interface, SupertypeAbstraction).right.value
+  val (i1, g4) = TR.intro.createAbstraction(g3, c1, Interface, SupertypeAbstraction).right.value
   val g5 = g4.addContains(screen, i1.id)
-  val (i2, g6) = TR.createAbstraction(g5, c2, Interface, SupertypeAbstraction).right.value
+  val (i2, g6) = TR.intro.createAbstraction(g5, c2, Interface, SupertypeAbstraction).right.value
   val g7 = g6.addContains(screen, i2.id)
 
-  val g8 = TR.mergeInto(g7, i2.id, i1.id).right.value.setName(i1.id, "StyleProvider")
+  val g8 = TR.rename(TR.mergeInto(g7, i2.id, i1.id).right.value, i1.id, "StyleProvider")
 
   val g9 = useInterfaceInstead(g8, c1.id, i1.id)
 
@@ -130,20 +130,20 @@ class BridgeScenario private()
 
   val delegate = getDelegate(g10, welcomeStar)
 
-  val g11 = TR.move.typeMember(g10.setName(delegate, "styleProvider"), delegate, screenClass).right.value
+  val g11 = TR.move.typeMember(TR.rename(g10, delegate, "styleProvider"), delegate, screenClass).right.value
   val g12 = TR.mergeInto(g11, getDelegate(g11, infoStar), delegate).right.value
   val g13 = TR.mergeInto(g12, getDelegate(g12, welcomeCapital), delegate).right.value
   val g14 = TR.mergeInto(g13, getDelegate(g13, infoCapital), delegate).right.value
 
 
-  val g15 = TR.mergeInto(g14.setName(welcomeStar, "WelcomeScreen"),
+  val g15 = TR.mergeInto(TR.rename(g14, welcomeStar, "WelcomeScreen"),
     welcomeCapitalMeth, welcomeStarMeth).right.value
   val g16 = TR.mergeInto(g15, welcomeCapital, welcomeStar).right.value
 
 
   //QuickFrame(g16)
 
-  val g17 = TR.mergeInto(g16.setName(infoStar, "InfoScreen"),
+  val g17 = TR.mergeInto(TR.rename(g16, infoStar, "InfoScreen"),
     infoCapitalMeth, infoStarMeth).right.value
   val g18 = TR.mergeInto(g17, infoCapital, infoStar).right.value
 

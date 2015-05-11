@@ -5,15 +5,15 @@ import javax.swing.AbstractAction
 
 import puck.graph.constraints.RedirectionPolicy
 import puck.graph.transformations.rules.Redirection
-import puck.graph.{DGUses, ConcreteNode}
+import puck.graph.{NodeId, DGUses, ConcreteNode}
 import puck.gui.svg.SVGController
-
+import puck.graph.ShowDG._
 case class RedirectAction
 ( newTarget : ConcreteNode,
   edge : DGUses,
   policy : RedirectionPolicy,
   controller: SVGController)
-  extends AbstractAction(s"Redirect selected edge toward this ($policy)"){
+  extends AbstractAction(s"Use this ($policy) instead of ${showDG[NodeId](controller.graph).shows(edge.target)}"){
 
   //TODO check keepOldUse and propagate redirection value
   override def actionPerformed(e: ActionEvent): Unit =

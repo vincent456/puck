@@ -72,12 +72,8 @@ class RenameNodeAction
   override def actionPerformed(e: ActionEvent): Unit = {
     showInputDialog("New name:").foreach {
       newName =>
-          controller.pushGraph(graph.mileStone.setName(node.id, newName))
-        /*graph.kindType(node.id) match {
-          case TypeMember =>
-          case _ =>
-        }*/
-
+          val g = controller.transfoRules.rename(graph.mileStone, node.id, newName)
+          controller.pushGraph(g)
     }
   }
 

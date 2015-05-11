@@ -232,20 +232,20 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val typeMemberUse = Uses(userMethod, actualTypeParamMethod)
         val parTypeUse = ParameterizedUses(genericMethod, actualTypeParam)
 
-        println(fullName2id.mkString("\n"))
-
-        println(graph.edges)
+//        println(fullName2id.mkString("\n"))
+//
+//        println(graph)
 
         assert( fieldTypeUse existsIn graph )
 
         assert( typeMemberUse existsIn graph )
 
-        println("fieldTypeUse = " + fieldTypeUse)
-        println("parTypeUse = " + parTypeUse)
-        println("typeMemberUse = " + typeMemberUse)
+//        println("fieldTypeUse = " + fieldTypeUse)
+//        println("parTypeUse = " + parTypeUse)
+//        println("typeMemberUse = " + typeMemberUse)
 
-        println(graph.typeMemberUsesOf(fieldTypeUse))
-        println(graph.typeUsesOf(typeMemberUse))
+//        println(graph.typeMemberUsesOf(fieldTypeUse))
+//        println(graph.typeUsesOf(typeMemberUse))
         //QuickFrame(graph)
         graph.typeMemberUsesOf(fieldTypeUse) should contain (typeMemberUse)
         graph.typeUsesOf(typeMemberUse) should contain (parTypeUse)

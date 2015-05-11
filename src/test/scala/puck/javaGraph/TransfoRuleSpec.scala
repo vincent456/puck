@@ -38,7 +38,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
         assert( graph.abstractions(field).isEmpty )
 
 
-        assertSuccess(TR.createAbstraction(graph, graph.getConcreteNode(classA),
+        assertSuccess(TR.intro.createAbstraction(graph, graph.getConcreteNode(classA),
           Interface, SupertypeAbstraction)){
           case (itc, g) =>
             assert( g.isa(classA, itc.id) )
@@ -69,7 +69,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
         assert( graph.abstractions(methMUser).isEmpty )
 
 
-        assertSuccess(TR.createAbstraction(graph, graph.getConcreteNode(classA),
+        assertSuccess(TR.intro.createAbstraction(graph, graph.getConcreteNode(classA),
           Interface, SupertypeAbstraction)){
           case (itc, g) =>
             assert( g.isa(classA, itc.id) )
@@ -104,7 +104,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
         assert( graph.abstractions(classB).isEmpty )
         assert( graph.abstractions(field).isEmpty )
         assert( graph.abstractions(fieldUserThatShouldNotBeInInterface).isEmpty )
-        assertSuccess(TR.createAbstraction(graph, graph.getConcreteNode(classB),
+        assertSuccess(TR.intro.createAbstraction(graph, graph.getConcreteNode(classB),
           Interface, SupertypeAbstraction)){
           case (itc, g) =>
             assert( g.isa(classB, itc.id) )
@@ -140,7 +140,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
         assert( graph.abstractions(field).isEmpty )
         assert( graph.abstractions(fieldUserThatCanBeInInterface).isEmpty )
 
-        assertSuccess(TR.createAbstraction(graph, graph.getConcreteNode(classC),
+        assertSuccess(TR.intro.createAbstraction(graph, graph.getConcreteNode(classC),
           Interface, SupertypeAbstraction)){
           case (itc, g) =>
             assert( g.isa(classC, itc.id) )
@@ -165,7 +165,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
         val methCanBeInInterface = fullName2id("p.A.canBeInInterface__A")
         val methCannotBeInInterface = fullName2id("p.A.cannotBeInInterface__A")
 
-        assertSuccess(TR.createAbstraction(graph, graph.getConcreteNode(classA),
+        assertSuccess(TR.intro.createAbstraction(graph, graph.getConcreteNode(classA),
           Interface, SupertypeAbstraction)){
           case (itc, g) =>
             assert( g.isa(classA, itc.id))
@@ -186,7 +186,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
         val methCanBeInInterface = fullName2id("p.A.canBeInInterface__A")
         val methCannotBeInInterface = fullName2id("p.A.cannotBeInInterface__A")
 
-        assertSuccess(TR.createAbstraction(graph, graph.getConcreteNode(classA),
+        assertSuccess(TR.intro.createAbstraction(graph, graph.getConcreteNode(classA),
           Interface, SupertypeAbstraction)){
           case (itc, g) =>
             assert( g.isa(classA, itc.id))

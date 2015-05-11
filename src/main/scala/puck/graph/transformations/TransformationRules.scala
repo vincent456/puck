@@ -6,7 +6,8 @@ import puck.graph.transformations.rules._
 
 class TransformationRules
 ( mergingCandidatesFinder : MergingCandidatesFinder,
-  val intro : Intro ) {
+  val intro : Intro,
+  val rename : Renamer) {
 
 
   def findMergingCandidate = mergingCandidatesFinder.find _
@@ -15,13 +16,6 @@ class TransformationRules
   lazy val merger = new Merge(mergingCandidatesFinder)
   def mergeInto = merger.mergeInto _
   def removeConcreteNode = merger.removeConcreteNode _
-
-
-
-  def createAbstraction = intro.createAbstraction _
-  def absIntroPredicate = intro.absIntroPredicate _
-  //UGLY !!!
-  def abstractionCreationPostTreatment = intro.abstractionCreationPostTreatment _
 
   val redirection = Redirection
   val move = new Move(intro)

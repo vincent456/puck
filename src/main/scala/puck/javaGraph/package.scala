@@ -7,7 +7,7 @@ import puck.graph.constraints.{Solver, DecisionMaker}
 import puck.graph.io.{FilesHandler, ConstraintSolvingSearchEngineBuilder}
 import puck.graph.transformations.TransformationRules
 import puck.javaGraph.nodeKind._
-import puck.javaGraph.transformations.{JavaIntro, JavaTransformationHelper}
+import puck.javaGraph.transformations.{JavaRenamer, JavaIntro, JavaTransformationHelper}
 
 package object javaGraph {
   val defaultPackageName = "<default package>"
@@ -21,7 +21,7 @@ package object javaGraph {
     Seq[JavaNodeKind]( Field, Constructor, Class, Interface)
 
   val JavaTransformationRules =
-    new TransformationRules( JavaTransformationHelper, JavaIntro )
+    new TransformationRules(JavaTransformationHelper, JavaIntro, JavaRenamer)
 
   object JavaSolverBuilder extends SolverBuilder {
     def apply(decisionMaker : DecisionMaker,
