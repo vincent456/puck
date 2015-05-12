@@ -416,6 +416,19 @@ class DependencyGraph
   def abstractions(id : NodeId) : Set[(NodeId, AbstractionPolicy)] =
     abstractionsMap getFlat id
 
+  def isAbstraction(implId : NodeId, absId : NodeId, pol : AbstractionPolicy) : Boolean =
+    abstractionsMap bind (implId, (absId, pol))
+
+  def isAbstraction(implId : NodeId, absId : NodeId) : Option[AbstractionPolicy] = {
+    if(abstractionsMap bind (implId, (absId, SupertypeAbstraction)))
+      Some(SupertypeAbstraction)
+    else if(abstractionsMap bind (implId, (absId, DelegationAbstraction)))
+      Some(DelegationAbstraction)
+    else
+      None
+  }
+
+
   def violations() : Seq[DGEdge] =
     concreteNodesId.flatMap { n =>
       val wu = constraints.wrongUsers(this, n).map(DGEdge.UsesK(_,n))
