@@ -200,21 +200,21 @@ class PuckInterfacePanel (filesHandler : FilesHandler) extends SplitPane(Orienta
     addDelayedComponent(showViolations)
 
 
-    val searchStrategies = new ComboBox(filesHandler.searchingStrategies){
-      minimumSize = new Dimension(leftWidth, 30)
-      maximumSize = minimumSize
-      preferredSize = minimumSize
-    }
-
-    addDelayedComponent(searchStrategies)
-
-    val explore = makeButton("Solve with search engine",""){
-      () => publish(ExploreRequest(searchStrategies.selection.item))
-    }
-
-    addDelayedComponent(explore)
-
-    addDelayedComponent(resultsWrapper)
+//    val searchStrategies = new ComboBox(filesHandler.searchingStrategies){
+//      minimumSize = new Dimension(leftWidth, 30)
+//      maximumSize = minimumSize
+//      preferredSize = minimumSize
+//    }
+//
+//    addDelayedComponent(searchStrategies)
+//
+//    val explore = makeButton("Solve with search engine",""){
+//      () => publish(ExploreRequest(searchStrategies.selection.item))
+//    }
+//
+//    addDelayedComponent(explore)
+//
+//    addDelayedComponent(resultsWrapper)
 
   }
 

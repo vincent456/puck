@@ -7,9 +7,6 @@ import puck.javaGraph.nodeKind.{MethodKind, TypeKind, Constructor}
 
 object JavaRenamer extends Renamer{
 
-
-
-
   override def apply
   ( g : DependencyGraph,
     id : NodeId,
@@ -18,8 +15,7 @@ object JavaRenamer extends Renamer{
     val n = g.getNode(id)
     val kindType =  g.kindType(n)
 
-    def dual =
-      kindType match {
+    def dual = kindType match {
         case TypeConstructor =>
           Set(g.container(id).get)
         case TypeDecl =>

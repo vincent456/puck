@@ -18,7 +18,7 @@ import puck.gui.svg.actions.{AddNodeAction, AbstractionAction}
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-
+import scala.util.{Failure, Success}
 
 
 trait StackListener{
@@ -127,8 +127,14 @@ class SVGController private
 
   def getNodeColor: String = nodeSelected.get._2
 
+  val defaultColor = "black"
+
   def setNodeSelected(id: NodeId, elt: Element): Unit = {
-    nodeSelected = Some((id, elt.getAttribute("fill"), elt))
+    val color =
+      if(elt.getAttribute("fill").nonEmpty)
+        elt.getAttribute("fill")
+      else defaultColor
+    nodeSelected = Some((id, color, elt))
     console.displaySelection(graph.getNode(id)+"")
   }
 
@@ -177,7 +183,12 @@ class SVGController private
 
     val opts = PrintingOptions(visibility, printId, printSignatures, selectedEdgeForTypePrinting, printVirtualEdges, printRedOnly)
     genController.filesHandler.makeImage(graph, opts, Some(pipedOutput), Svg){
-      case _ => ()
+      case Success(0) => ()
+      case Success(n) =>
+        console.appendText("An error occured during the production of the SVG file, produced dot file can be found in out/graph.dot")
+      case Failure(msg) =>
+        console.appendText("Image creation failure : " + msg)
+
     }
 
     fdoc.onSuccess { case doc =>

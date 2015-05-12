@@ -176,7 +176,6 @@ public class SVGPanel extends JPanel{
         private String selectColor = "blue";
 
         private void handleLeftClick(MouseEvent evt){
-            System.out.println("handling left");
             if(evt.getTarget() instanceof SVGTextElement){
 
                 final Element txtElt = (SVGTextElement) evt.getTarget();
@@ -285,7 +284,6 @@ public class SVGPanel extends JPanel{
             addGVTTreeRendererListener(new GVTTreeRendererAdapter() {
                 @Override
                 public void gvtRenderingCompleted(GVTTreeRendererEvent e) {
-                    System.out.println("ready !");
                     getRoot().addEventListenerNS(XMLConstants.XML_EVENTS_NAMESPACE_URI,
                             SVGConstants.SVG_EVENT_CLICK,
                             new SVGPanelListener(),
