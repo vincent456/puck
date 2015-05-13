@@ -180,31 +180,33 @@ class SVGFrame
     hbox.setLayout(new BoxLayout(hbox, BoxLayout.Y_AXIS))
     menu add hbox
 
-    val sigCheckBox: JCheckBox = new JCheckBox
-    sigCheckBox.setAction(new AbstractAction("Show signatures") {
-      def actionPerformed(e: ActionEvent) : Unit = {
-        controller.setSignatureVisible(sigCheckBox.isSelected)
-      }
-    })
-    hbox add sigCheckBox
-    val idCheckBox: JCheckBox = new JCheckBox
-    idCheckBox.setAction(abstractAction("Show ids"){
-     _ => controller.setIdVisible(idCheckBox.isSelected)
-      })
+    def addCheckBox(name: String)(f: Boolean => Unit) : JCheckBox = {
+      val checkBox: JCheckBox = new JCheckBox
+      checkBox.setAction(new AbstractAction(name) {
+        def actionPerformed(e: ActionEvent) : Unit = f(checkBox.isSelected)
 
-    hbox add idCheckBox
-    val vEdgesCheckBox: JCheckBox = new JCheckBox
-    vEdgesCheckBox.setAction(abstractAction("Show Virtual Edges"){
-      _ =>
-      controller.setVirtualEdgesVisible(vEdgesCheckBox.isSelected)
       })
-    hbox add vEdgesCheckBox
-    val redOnlyCheckBox: JCheckBox = new JCheckBox
-    redOnlyCheckBox.setAction(abstractAction("Show RedOnly"){
-      _ =>
-      controller.setRedEdgesOnly(redOnlyCheckBox.isSelected)
-      })
-    hbox add redOnlyCheckBox
+      hbox add checkBox
+      checkBox
+    }
+
+    addCheckBox("Show signatures") {
+        controller.setSignatureVisible
+    }
+
+    addCheckBox("Show ids") {
+        controller.setIdVisible
+    }
+    addCheckBox("Show Virtual Edges") {
+      controller.setVirtualEdgesVisible
+    }
+    val b = addCheckBox("Conrete Uses/Virtual Edge") {
+      controller.setConcreteUsesPerVirtualEdges
+    }
+    b.setSelected(true)
+    addCheckBox("Show RedOnly") {
+      controller.setRedEdgesOnly
+    }
     ()
   }
 

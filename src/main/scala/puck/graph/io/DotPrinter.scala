@@ -41,6 +41,7 @@ case class PrintingOptions
   printSignatures : Boolean = false,
   selectedUse : Option[DGUses] = None,
   printVirtualEdges : Boolean = false,
+  printConcreteUsesPerVirtualEdges : Boolean = true,
   redOnly: Boolean = false)
 
 import DotPrinter._
@@ -98,8 +99,9 @@ class DotPrinter
   type EdgeP = (NodeId, NodeId)
 
   def printArc
-  (status : ColorThickness )
-  (style : Style): EdgeP => Unit = {
+  ( status : ColorThickness,
+    style : Style,
+    slabel : Option[String] = None): EdgeP => Unit = {
     case edge @ (source, target) =>
     def dotId(nid: NodeId) : String = {
       val n = graph.getNode(nid)
@@ -118,9 +120,18 @@ class DotPrinter
       else ""
     }
 
+    val label = slabel match {
+      case None => typeRelationShipLabel(edge)
+      case Some(lbl) if typeRelationShipLabel(edge).isEmpty =>
+        if(printConcreteUsesPerVirtualEdges)
+          s"""label = "$lbl", """
+        else ""
+      case _ => sys.error("Label conflict")
+    }
+
     if(!redOnly || status.color == redColor )
       arcs += (dotId(source) + " -> " + dotId(target) + "[ " +
-        typeRelationShipLabel(edge) +
+        label +
         subGraphArc(source, "ltail") +
         subGraphArc(target, "lhead") +
         "style = " + style.line + ", arrowhead = " + style.arrowHead +
@@ -158,7 +169,6 @@ class DotPrinter
             sys.error("this uses target kind should not happen")
 
         }
-        println(labelMap)
         e => labelMap get e match {
           case Some(l) => s"""label = "$l", """
           case None => ""
@@ -266,9 +276,9 @@ class DotPrinter
   def filterEdgeBasedOnVisibleNodes
   ( edges : Seq[EdgeP],
     edgeKind : DGEdge.EKind,
-    virtInit : Set[EdgeP] = Set(),
+    virtInit : Map[EdgeP, Int] = Map(),
     virtViolationInit : ContainsViolationMap = Set()
-    ) : (Seq[(EdgeP, IsViolation)], Set[EdgeP], ContainsViolationMap) = {
+    ) : (Seq[(EdgeP, IsViolation)], Map[EdgeP, Int], ContainsViolationMap) = {
     val (reg, virt, virtualViolations) =
       edges.foldLeft((Seq[(EdgeP, IsViolation)](), virtInit, virtViolationInit)) {
       case ((regulars, virtuals, m), (source, target)) =>
@@ -280,11 +290,14 @@ class DotPrinter
 
           case (Some(s), Some(t)) if printVirtualEdges =>
             val virtEdge = edgeKind(s, t)
+
+            val numConcreteUses = (virtuals getOrElse ((s, t), 0)) + 1
+
             if(concreteViolations.contains(edgeKind(source, target)))
-                (regulars, virtuals + ((s, t)), m + ((s, t)))
-              else if(!recusivePackage(s,t))
-                (regulars, virtuals + ((s, t)), m)
-              else
+                (regulars, virtuals + ((s, t) -> numConcreteUses), m + ((s, t)))
+            else if(!recusivePackage(s,t))
+                (regulars, virtuals + ((s, t) -> numConcreteUses), m)
+            else
                 (regulars, virtuals, m)
 
           case _ => (regulars, virtuals, m)
@@ -320,19 +333,18 @@ class DotPrinter
     val (regularsIsa, virt0, virtualViolations0) = filterEdgeBasedOnVisibleNodes(graph.isaSeq, IsaK)
 
     regularsIsa.foreach {
-      case (e, v) => printArc(violationStyle(v))(isaStyle)(e)
+      case (e, v) => printArc(violationStyle(v),isaStyle)(e)
     }
 
     val(reg, virt, virtualViolations) = filterEdgeBasedOnVisibleNodes(graph.usesSeq, UsesK, virt0, virtualViolations0)
 
-    reg.foreach{ case (e, v) =>  printArc(violationStyle(v))(usesStyle)(e) }
+    reg.foreach{ case (e, v) =>  printArc(violationStyle(v),usesStyle)(e) }
 
-//    println("virt = " + virt)
-//    println("virtualViolations = " + virtualViolations)
 
-    virt.foreach { e =>
-//      println("printing" + e)
-      printArc(violationStyle(virtualViolations contains e))(virtualUse)(e)
+    virt.foreach {
+      case (e, numConcretes) =>
+        printArc(violationStyle(virtualViolations contains e),virtualUse,
+          Some(numConcretes.toString))(e)
     }
 
     arcs.foreach(writeln)

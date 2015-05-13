@@ -5,6 +5,8 @@ import puck.graph.constraints._
 import puck.graph.transformations.{Transformation, RecordingComparator}
 import puck.util.{Logger, PuckNoopLogger, PuckLogger, PuckLog}
 
+import scala.annotation.tailrec
+
 sealed trait NodeStatus
 case object Removed extends NodeStatus
 case object Created extends NodeStatus
@@ -458,13 +460,15 @@ class DependencyGraph
  def coupling = nodeKindKnowledge.coupling(this)
 
   def subTree(root : NodeId, includeRoot : Boolean = true) : Seq[NodeId] = {
-    type Roots = Seq[NodeId]
-    def aux(acc : Seq[NodeId]) : Roots => Seq[NodeId] = {
+
+    def aux(acc : Seq[NodeId])( roots : Seq[NodeId]): Seq[NodeId] = roots match {
+//    type Roots = Seq[NodeId]
+//    @tailrec
+//    def aux(acc : Seq[NodeId]) : Roots => Seq[NodeId] = {
       case Seq() => acc
       case r +: tail =>
         val children = content(r)
         aux(children ++: acc)(children ++: tail)
-
     }
 
     val seqInit =

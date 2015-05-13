@@ -35,6 +35,7 @@ class SVGController private
   private var printId : Boolean,
   private var printSignatures : Boolean,
   private var printVirtualEdges : Boolean = false,
+  private var printConcreteUsesPerVirtualEdges : Boolean = true,
   private var printRedOnly : Boolean = false,
   private var selectedEdgeForTypePrinting : Option[DGUses] = None) {
 
@@ -81,6 +82,12 @@ class SVGController private
   def setVirtualEdgesVisible(b : Boolean): Unit = {
     if( b != printVirtualEdges ){
       printVirtualEdges = b
+      displayGraph(graph)
+    }
+  }
+  def setConcreteUsesPerVirtualEdges(b : Boolean): Unit = {
+    if( b != printConcreteUsesPerVirtualEdges ){
+      printConcreteUsesPerVirtualEdges = b
       displayGraph(graph)
     }
   }
@@ -181,7 +188,11 @@ class SVGController private
       SVGController.documentFromStream(pipedInput)
     }
 
-    val opts = PrintingOptions(visibility, printId, printSignatures, selectedEdgeForTypePrinting, printVirtualEdges, printRedOnly)
+    val opts =
+      PrintingOptions(visibility, printId, printSignatures,
+          selectedEdgeForTypePrinting,
+          printVirtualEdges, printConcreteUsesPerVirtualEdges,
+          printRedOnly)
     genController.filesHandler.makeImage(graph, opts, Some(pipedOutput), Svg){
       case Success(0) => ()
       case Success(n) =>
