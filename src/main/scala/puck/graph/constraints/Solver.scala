@@ -251,11 +251,13 @@ class Solver
 
          graph.kindType(wronglyContained) match {
            case TypeMember =>
-             if(rules.move.isUsedBySiblingsViaSelf(g3, wronglyContained, g3.getConcreteNode(oldCter)))
+             val uses = g3.usesOfUsersOf(wronglyContained.id)
+
+             if(rules.move.usedBySiblingsViaSelf(uses, g3, g3.getConcreteNode(oldCter)))
               decisionMaker.createVarStrategy {
-                cvs => k(rules.move.typeMember(g3, wronglyContained.id, newCter, Some(cvs)))
+                cvs => k(rules.move.typeMember(g3, Seq(wronglyContained.id), newCter, Some(cvs))(uses))
               }
-             else k(rules.move.typeMember(g3, wronglyContained.id, newCter, None))
+             else k(rules.move.typeMember(g3, Seq(wronglyContained.id), newCter, None)(uses))
 
            case TypeDecl =>
              k(rules.move.typeDecl (g3, wronglyContained.id, newCter))

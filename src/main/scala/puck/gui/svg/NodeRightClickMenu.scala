@@ -1,6 +1,6 @@
 package puck.gui.svg
 
-import puck.graph.{Uses, ConcreteNode, DGEdge}
+import puck.graph.{NodeId, Uses, ConcreteNode, DGEdge}
 import puck.graph.constraints.{SupertypeAbstraction, DelegationAbstraction}
 import puck.gui.svg.actions.AddIsaAction
 import puck.gui.svg.actions.MergeAction
@@ -53,11 +53,19 @@ class NodeRightClickMenu
 
     this.addSeparator()
     this.add(new RemoveNodeAction(node, controller))
-    if (controller.nodeIsSelected) {
-      addOtherNodeSelectedOption()
+
+    controller.selectedNodes match {
+      case Nil => ()
+      case List((nid,_,_)) =>
+          addOtherNodeSelectedOption(nid)
+      case nodes => ???
     }
-    if (controller.edgeIsSelected) {
-      addEdgeSelectedOption()
+
+
+
+    controller.selectedEdge match {
+      case Some((e, _, _)) => addEdgeSelectedOption(e)
+      case _ => ()
     }
 
 
@@ -74,8 +82,7 @@ class NodeRightClickMenu
   }
 
 
-  private def addOtherNodeSelectedOption() : Unit = {
-    val id: Int = controller.getIdNodeSelected
+  private def addOtherNodeSelectedOption(id : NodeId) : Unit = {
     val selected: ConcreteNode = graph.getConcreteNode(id)
     if (graph.canContain(node, selected)) {
       this.add(new MoveAction(node, selected, controller))
@@ -94,8 +101,8 @@ class NodeRightClickMenu
     }
   }
 
-  private def addEdgeSelectedOption() : Unit =
-    controller.getEdgeSelected match {
+  private def addEdgeSelectedOption(edge : DGEdge) : Unit =
+    edge match {
       case uses : Uses =>
         this.add(new RedirectAction(node, uses, SupertypeAbstraction, controller))
         this.add(new RedirectAction(node, uses, DelegationAbstraction, controller));()

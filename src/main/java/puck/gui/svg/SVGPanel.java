@@ -1,3 +1,4 @@
+/*
 package puck.gui.svg;
 
 import org.apache.batik.dom.GenericText;
@@ -69,7 +70,8 @@ public class SVGPanel extends JPanel{
         private short LEFTBUTTON = 0;
         private short RIGHTBUTTON = 2;
 
-       /* private Element createRectangle(float x, float y, float width, float height){
+       */
+/* private Element createRectangle(float x, float y, float width, float height){
 
             Element fill = canvas.getSVGDocument()
                     .createElementNS(SVGDOMImplementation.SVG_NAMESPACE_URI, "rect");
@@ -90,7 +92,8 @@ public class SVGPanel extends JPanel{
             fill.setAttributeNS(null, "stroke", "none");
 
             return fill;
-        }*/
+        }*//*
+
 
         private SVGGElement checkIfEdgeAndGetGElement(Element path){
             if(path.getParentNode().getNodeName().equals("g")){
@@ -155,7 +158,7 @@ public class SVGPanel extends JPanel{
             if(controller.edgeIsSelected()){
                 changeEdgeColor(controller.getEdgeDomElement(),
                         controller.getEdgeColor());
-                DGEdge e = controller.getEdgeSelected();
+                DGEdge e = controller.getSelectedEdge();
                 controller.resetEdgeSelected();
                 return e;
             }
@@ -323,3 +326,4 @@ public class SVGPanel extends JPanel{
     }
 
 }
+*/

@@ -45,14 +45,15 @@ extends AbstractAction(s"Move ${moved.name} here"){
           appendText("/!\\/!\\ Method overriding unchecked (TODO !!!) /!\\/!\\")
 
         val host = graph.getConcreteNode(graph.container(moved.id).get)
+        val uses = graph.usesOfUsersOf(moved.id)
         val choice =
-          if(move.isUsedBySiblingsViaSelf(graph, moved, host)) {
+          if(move.usedBySiblingsViaSelf(uses, graph, host)) {
             Some(MoveAction.getChoice(Field).
               getOrElse(CreateTypeMember(Field)))
           }
           else None
 
-        move.typeMember(graph, moved.id, newHost.id, choice)
+        move.typeMember(graph, Seq(moved.id), newHost.id, choice)(uses)
       case _ =>
         -\/(new PuckError(s"move of ${moved.kind} not implemented"))
     }) match {

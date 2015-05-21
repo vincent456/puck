@@ -52,10 +52,6 @@ object DependencyGraph {
 }
 
 
-
-
-
-
 class DependencyGraph
 ( val logger : PuckLogger = PuckNoopLogger,
   val nodeKindKnowledge: NodeKindKnowledge,
@@ -386,11 +382,23 @@ class DependencyGraph
   def uses(userId: NodeId, usedId: NodeId) : Boolean =
     edges.uses(userId, usedId)
 
-  def usesSeq : Seq[(NodeId, NodeId)] = edges.used.flatSeq
+  def usesSeq : Seq[(NodeId, NodeId)] =
+    edges.used.flatSeq
   
-  def usedBy(userId : NodeId) : Set[NodeId] = edges.used getFlat userId
+  def usedBy(userId : NodeId) : Set[NodeId] =
+    edges.used getFlat userId
   
-  def usersOf(usedId: NodeId) : Set[NodeId] = edges.users getFlat usedId
+  def usersOf(usedId: NodeId) : Set[NodeId] =
+    edges.users getFlat usedId
+
+  // ugly name
+  def usesOfUsersOf(usedIds: Seq[NodeId]) : Seq[Uses] =
+    usedIds flatMap {
+      tmid =>
+        this.usersOf(tmid) map (user => Uses(user,tmid))
+    }
+
+  def usesOfUsersOf(usedId: NodeId) : Seq[Uses] = usesOfUsersOf(Seq(usedId))
 
 
   def typeUsesOf(typeMemberUse : DGUses) : Set[DGUses] =

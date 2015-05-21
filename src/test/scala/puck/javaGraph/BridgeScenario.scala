@@ -69,8 +69,8 @@ class BridgeScenario private()
     val g0 = g.comment("-- introClassMoveMethod (begin) --")
     val (c, g1) = TR.intro.createNode(g0, className, Class, None)
     val g2 = g1.addContains(screen, c.id)
-    (c, TR.move.typeMember(g2, method, c.id,
-      Some(CreateTypeMember(Field))).right.value.
+    (c, TR.move.typeMember(g2, Seq(method), c.id,
+      Some(CreateTypeMember(Field)))().right.value.
       comment("-- introClassMoveMethod (end) --"))
   }
 
@@ -130,7 +130,7 @@ class BridgeScenario private()
 
   val delegate = getDelegate(g10, welcomeStar)
 
-  val g11 = TR.move.typeMember(TR.rename(g10, delegate, "styleProvider"), delegate, screenClass).right.value
+  val g11 = TR.move.typeMember(TR.rename(g10, delegate, "styleProvider"), Seq(delegate), screenClass)().right.value
   val g12 = TR.mergeInto(g11, getDelegate(g11, infoStar), delegate).right.value
   val g13 = TR.mergeInto(g12, getDelegate(g12, welcomeCapital), delegate).right.value
   val g14 = TR.mergeInto(g13, getDelegate(g13, infoCapital), delegate).right.value

@@ -99,7 +99,17 @@ class SVGController private
     }
   }
 
-  var nodeSelected: Option[(NodeId, Color, Element)] = None
+  var selectedNodes0: List[(NodeId, Color, Element)] = List()
+  def selectedNodes: List[(NodeId, Color, Element)] = selectedNodes0
+
+  def getSelectedNode(nodeId: NodeId) : Option[(NodeId, Color, Element)]=
+    selectedNodes.find( _._1 == nodeId)
+
+  def isSelected(nodeId: NodeId) : Boolean =
+    selectedNodes.exists( _._1 == nodeId)
+
+  def removeSelectedNode(nodeId: NodeId) : Unit =
+    selectedNodes0 = selectedNodes0.filter(_._1 != nodeId)
 
   def hide(id : NodeId): Unit = {
     visibility.setVisibility(id, Hidden)
@@ -123,50 +133,35 @@ class SVGController private
   def expandAll(root: NodeId) : Unit =
     setSubTreeVisibility(root, Visible)
 
-  /*
-   Code mostly accessed from java code thus this "java-like" design with getters
-   */
-  def nodeIsSelected: Boolean = nodeSelected.nonEmpty
-
-  def getIdNodeSelected: Int = nodeSelected.get._1
-
-  def getNodeDomElement: Element = nodeSelected.get._3
-
-  def getNodeColor: String = nodeSelected.get._2
-
   val defaultColor = "black"
 
-  def setNodeSelected(id: NodeId, elt: Element): Unit = {
+  def addNodeToSelection(id: NodeId, elt: Element): Unit = {
+    println("setting selectedNode")
     val color =
       if(elt.getAttribute("fill").nonEmpty)
         elt.getAttribute("fill")
       else defaultColor
-    nodeSelected = Some((id, color, elt))
+    selectedNodes0 :+= ((id, color, elt))
     console.displaySelection(graph.getNode(id)+"")
   }
 
-  def resetNodeSelected(): Unit = {
-    nodeSelected = None
+  def resetSelectedNodes(): Unit = {
+    selectedNodes0 = List()
     console.displaySelection("")
   }
 
-  var edgeSelected : Option[(DGEdge, Color, SVGGElement)] = None
-
-  def edgeIsSelected : Boolean = edgeSelected.nonEmpty
-
-  def getEdgeSelected : DGEdge = edgeSelected.get._1
-  def getEdgeDomElement : SVGGElement = edgeSelected.get._3
-  def getEdgeColor : Color = edgeSelected.get._2
+  var selectedEdge0 : Option[(DGEdge, Color, SVGGElement)] = None
+  def selectedEdge : Option[(DGEdge, Color, SVGGElement)] = selectedEdge0
 
   def setEdgeSelected(dgEdge: DGEdge, elt : SVGGElement, c : Color) = {
-    edgeSelected = Some((dgEdge, c, elt))
-
+    selectedEdge0 = Some((dgEdge, c, elt))
+    println("setting selectedEdge")
     import ShowDG._
     console.displaySelection(showDG[DGEdge](graph).shows(dgEdge))
   }
 
   def resetEdgeSelected(): Unit = {
-    edgeSelected = None
+    selectedEdge0 = None
     console.displaySelection("")
   }
 
@@ -174,11 +169,6 @@ class SVGController private
     console.appendText("Code : ")
     console.appendText(genController.dg2ast.astNodeOf(graph, nodeId).toString)
   }
-
-  //Java accessor
-  def usesKind = DGEdge.UsesK
-  def isaKind = DGEdge.IsaK
-
 
   def displayGraph(graph: DependencyGraph) = {
 

@@ -17,7 +17,8 @@ class MoveUnitSpec extends UnitSpec {
       val classA = graph.getConcreteNode(fullName2id("p.A"))
       val methToMove = graph.getConcreteNode(fullName2id("p.A.methodToMove__void"))
 
-      assert(!Move.isUsedBySiblingsViaSelf(graph, methToMove, classA))
+      val uses = graph.usesOfUsersOf(methToMove.id)
+      assert(!Move.usedBySiblingsViaSelf(uses, graph, classA))
 
     }
   }
@@ -29,7 +30,8 @@ class MoveUnitSpec extends UnitSpec {
       val classA = graph.getConcreteNode(fullName2id("p.A"))
       val methToMove = graph.getConcreteNode(fullName2id("p.A.methodToMove__void"))
 
-      assert(Move.isUsedBySiblingsViaSelf(graph, methToMove, classA))
+      val uses = graph.usesOfUsersOf(methToMove.id)
+      assert(Move.usedBySiblingsViaSelf(uses, graph, classA))
     }
   }
   it should "know that a typeMember is used by self type when used several times" in {
@@ -38,7 +40,8 @@ class MoveUnitSpec extends UnitSpec {
       val classA = graph.getConcreteNode(fullName2id("p.A"))
       val methToMove = graph.getConcreteNode(fullName2id("p.A.methodToMove__void"))
 
-      assert(Move.isUsedBySiblingsViaSelf(graph, methToMove, classA))
+      val uses = graph.usesOfUsersOf(methToMove.id)
+      assert(Move.usedBySiblingsViaSelf(uses, graph, classA))
     }
   }
 

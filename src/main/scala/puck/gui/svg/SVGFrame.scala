@@ -79,7 +79,7 @@ class SVGFrame
 
   val consoleLogger = new TextAreaLogger(consolePanel.console, g.logger.askPrint)
   private val controller: SVGController = SVGController(control, g.withLogger(consoleLogger), opts, panel.canvas, consolePanel)
-  panel.setController(controller)
+  panel.controller = controller
   private val menu: JPanel = new JPanel()
   controller.registerAsStackListeners(this)
 

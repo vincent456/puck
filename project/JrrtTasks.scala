@@ -298,7 +298,7 @@ object JrrtTasks extends Build {
 
         val writter = new FileWriter(f)
         val fcp = (fullClasspath in Compile).value.map(_.data.absolutePath)
-        writter.write(fcp.mkString("CLASSPATH=", ":", ""))
+        writter.write(fcp.mkString("set CLASSPATH ", ":", ""))
         writter.close()
         f
       }
