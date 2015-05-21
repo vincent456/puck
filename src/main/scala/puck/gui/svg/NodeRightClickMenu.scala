@@ -11,7 +11,6 @@ import puck.gui.svg.actions._
 import javax.swing._
 import java.awt.event.ActionEvent
 
-
 class NodeRightClickMenu
 ( private val controller: SVGController,
   node : ConcreteNode) extends JPopupMenu {

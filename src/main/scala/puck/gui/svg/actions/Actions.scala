@@ -6,7 +6,7 @@ import javax.swing.AbstractAction
 import puck.PuckError
 import puck.graph.{DGUses, DGEdge, ConcreteNode}
 import puck.gui.svg.SVGController
-import puck.javaGraph.JavaTransformationRules
+import puck.javaGraph.{JavaTransformationRules => TR}
 
 import scalaz._
 
@@ -19,7 +19,9 @@ extends AbstractAction(s"Add ${sub.name} isa ${sup.name}") {
   import controller.graph
 
   def actionPerformed(e: ActionEvent) : Unit =
-    controller.pushGraph(graph.mileStone.addIsa(sub.id, sup.id))
+    printErrOrPushGraph(controller, "Make SuperType Action failure") {
+      TR.makeSuperType(graph.mileStone, sub.id, sup.id)
+    }
 
 }
 
@@ -57,7 +59,7 @@ extends AbstractAction(s"Delete node and children") {
 
   def actionPerformed(e: ActionEvent) : Unit =
     printErrOrPushGraph(controller, "Remove Node Action failure"){
-      JavaTransformationRules.removeConcreteNode(graph.mileStone, node)
+      TR.removeConcreteNode(graph.mileStone, node)
     }
 }
 

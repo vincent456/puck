@@ -338,6 +338,9 @@ class DependencyGraph
   def canContain(n : DGNode, cn : ConcreteNode) : Boolean =
       nodeKindKnowledge.canContain(this)(n,cn)
 
+  def canBe(n : DGNode, cn : ConcreteNode) : Boolean =
+    nodeKindKnowledge.canBe(this)(n,cn)
+
   def containerPath(id : NodeId)  : Seq[NodeId] = {
     def aux(current : NodeId, acc : Seq[NodeId]) : Seq[NodeId] = {
       val cter = container(current)
@@ -369,14 +372,16 @@ class DependencyGraph
     dst.foldLeft(dst) { case (acc, id) => acc ++ subTypes(id) }
   }
 
-  def isSuperTypeOf(superCandidate: NodeId, subCandidate : NodeId) : Boolean = {
-    directSuperTypes(subCandidate).exists(_ == superCandidate) ||
-      directSuperTypes(subCandidate).exists(isSuperTypeOf(superCandidate, _))
-  }
-
   def isa(subId : NodeId, superId: NodeId): Boolean =
     edges.isa(subId, superId)
-  
+
+  def isa_*(subId : NodeId, superId: NodeId): Boolean =
+    edges.isa_*(subId, superId)
+  //  {
+  //    directSuperTypes(subCandidate).exists(_ == superCandidate) ||
+  //      directSuperTypes(subCandidate).exists(isSuperTypeOf(superCandidate, _))
+  //  }
+
   def isaSeq  : Seq[(NodeId, NodeId)] = edges.superTypes.flatSeq
   
   def uses(userId: NodeId, usedId: NodeId) : Boolean =

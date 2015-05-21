@@ -117,6 +117,11 @@ case class EdgeMap
 
   def isa(subId : NodeId, superId: NodeId): Boolean = superTypes.bind(subId, superId)
 
+  def isa_*(subId : NodeId, superId: NodeId): Boolean =
+    isa(subId, superId) || {
+      superTypes.getFlat(subId) exists (isa_*(_, superId))
+    }
+
   def uses(userId: NodeId, usedId: NodeId) : Boolean = users.bind(usedId, userId)
 
   def parUses(userId: NodeId, usedId: NodeId) : Boolean = parameterizedUsers.bind(usedId, userId)

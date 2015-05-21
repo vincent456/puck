@@ -10,13 +10,6 @@ import scalaz.{\/-, -\/}
 
 class MoveSpec extends AcceptanceSpec {
 
-  def assertSuccess[G](t : Try[G])(f : G => Unit) : Unit = {
-    t match {
-      case -\/(err) => assert(false, "Success was expected got Error : " + err.getMessage)
-      case \/-(g) => f(g)
-    }
-  }
-
   val Move = new Move(JavaIntro)
 
   val examplesPath = Settings.testExamplesPath + "/move"

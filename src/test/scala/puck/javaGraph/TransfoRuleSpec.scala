@@ -2,23 +2,14 @@ package puck
 package javaGraph
 
 
-import puck.graph.{DGEdge, Try}
+import puck.graph.DGEdge
 import puck.graph.constraints.{SupertypeAbstraction, DelegationAbstraction}
 import puck.javaGraph.nodeKind._
 import puck.javaGraph.{JavaTransformationRules => TR}
 import puck.graph.transformations.rules.Redirection
 
-import scalaz.{\/-, -\/}
 
 class TransfoRuleSpec extends AcceptanceSpec {
-
-
-  def assertSuccess[G](t : Try[G])(f : G => Unit) : Unit = {
-    t match {
-      case -\/(_) => assert(false)
-      case \/-(g) => f(g)
-    }
-  }
 
   feature("Intro"){
     val examplesPath = Settings.testExamplesPath + "/intro"
@@ -38,17 +29,15 @@ class TransfoRuleSpec extends AcceptanceSpec {
         assert( graph.abstractions(field).isEmpty )
 
 
-        assertSuccess(TR.intro.createAbstraction(graph, graph.getConcreteNode(classA),
-          Interface, SupertypeAbstraction)){
-          case (itc, g) =>
-            assert( g.isa(classA, itc.id) )
+        val (itc, g) =
+          TR.intro.createAbstraction(graph, graph.getConcreteNode(classA),
+                Interface, SupertypeAbstraction).value
+          assert( g.isa(classA, itc.id) )
 
-            g.abstractions(classA).size shouldBe 1
-            g.abstractions(methM).size shouldBe 1
-            assert( g.abstractions(field).isEmpty ,
+          g.abstractions(classA).size shouldBe 1
+          g.abstractions(methM).size shouldBe 1
+          assert( g.abstractions(field).isEmpty ,
               "Field cannot be exposed in an interface")
-
-        }
       }
 
     }

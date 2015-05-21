@@ -88,8 +88,7 @@ object JrrtTasks extends Build {
 
   lazy val root =
 	    Project(id = "PuckConstraintSolver", base = file("."))
-	      .settings(
-
+        .settings(
         parser := {
 
           println("Parser generation")

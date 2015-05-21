@@ -5,7 +5,7 @@ import scalaz._
 
 package object graph {
 
-  type Try[T] = PuckError \/ T
+  type Try[+T] = PuckError \/ T
   type PuckFailure = NonEmptyList[PuckError]
 
   type NodePredicateT = (DependencyGraph, ConcreteNode) => Boolean

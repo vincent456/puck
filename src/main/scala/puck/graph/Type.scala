@@ -39,7 +39,7 @@ case class NamedType(id : NodeId)
     super.subtypeOf(graph, other) ||
     (other match {
       case NamedType(otherId) =>
-        graph.isSuperTypeOf(otherId, id)
+        graph.isa_*(this.id, otherId)
       case _ => false
     })
 

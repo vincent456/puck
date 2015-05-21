@@ -2,8 +2,13 @@ package puck
 package graph
 package transformations
 
+import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations.rules._
+import puck.javaGraph.{JavaType, MethodType}
+import puck.util.Collections.traverse
 
+import scalaz.{\/-, -\/}
+import ShowDG._
 class TransformationRules
 ( mergingCandidatesFinder : MergingCandidatesFinder,
   val intro : Intro,
@@ -28,5 +33,17 @@ class TransformationRules
     ng.printConstraints(ng, logger, (PuckLog.InGraph, PuckLog.Debug))
     ng
   }*/
+
+  def makeSuperType(g: DependencyGraph, sub : NodeId, sup : NodeId) : Try[DependencyGraph] = {
+    val subNode = g.getConcreteNode(sub)
+    val supNode = g.getConcreteNode(sup)
+    if(!g.canBe(subNode, supNode)) -\/(new PuckError(s"${showDG[NodeId](g).shows(sub)} cannot be ${showDG[NodeId](g).show(sup)}"))
+    else {
+      val subMethods = g.content(sub).toList map g.getConcreteNode
+      val supMethods = g.content(sup).toList map g.getConcreteNode
+      JavaType.findAndRegisterOverridedMethods(g, showDG[NodeId](g).shows(sub),
+        supMethods, subMethods) map (_.addIsa(sub, sup))
+    }
+  }
 
 }

@@ -5,10 +5,6 @@ import puck.graph._
 import puck.graph.transformations.MergeMatcher
 import puck.javaGraph.nodeKind.{Interface, AbstractMethod}
 
-/**
- * Created by lorilan on 3/18/15.
- */
-
 object InterfaceMergeMatcher {
 
   implicit def mergeMatcher(n : ConcreteNode): MergeMatcher = n.kind match {
@@ -60,14 +56,14 @@ class InterfaceMergeMatcher(val node : ConcreteNode) extends MergeMatcher {
     g.content(interface2).size >= g.content(interface1).size &&
       (g.content(interface1) forall hasMatchingMethod) &&
       (g.content(interface2).size == g.content(interface1).size ||
-        { g.directSubTypes(interface1).forall(g.isSuperTypeOf(interface2,_))
+        { g.directSubTypes(interface1).forall(g.isa_*(_, interface2))
           //TODO structual type check
           /*val missingMethodsInThis =
             otherItc.content.filterNot{hasMatchingMethodIn(this)}*/
         }) ||
       //the two interfaces introduced an uneeded level of indirection
       g.isa(interface1, interface2) &&
-        g.directSubTypes(interface1).forall(g.isSuperTypeOf(interface2,_))
+        g.directSubTypes(interface1).forall(g.isa_*(_,interface2))
 
   }
 }

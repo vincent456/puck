@@ -216,34 +216,6 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
     register(n, Field, FieldDeclHolder(decl), "FieldDeclaration")
 
 
-  def findOverridedMethod(g : DependencyGraph,
-                          absName : String, absSig : MethodType,
-                          candidates : List[ConcreteNode]) : Option[(ConcreteNode, List[ConcreteNode])] = {
-    import puck.util.Collections.SelectList
-    candidates.select( c => c.styp.nonEmpty && c.styp.exists(absSig.canOverride(g, _)))
-  }
-
-  def findAndRegisterOverridedMethods(g : DependencyGraph,
-                                      className : String,
-                                      absMeths : List[ConcreteNode],
-                                      candidates : List[ConcreteNode]): DependencyGraph =
-//    Foldable[List].foldLeftM[Option, ConcreteNode, (DependencyGraph, List[ConcreteNode])](absMeths, (g, candidates.toList)){
-    absMeths.foldLeft((g, candidates.toList)){
-        case ((g0, cs), absM) =>
-        absM.styp match {
-          case Some(mt @ MethodType(_,_)) =>
-            findOverridedMethod(g0, absM.name, mt, cs) match {
-              case Some((node, newCs)) =>
-                (g0.addAbstraction(node.id, (absM.id, SupertypeAbstraction)), newCs)
-              case None =>
-                println(s"${g0.fullName(absM.id)} not implemented in className")
-                //happens with abstract classes
-                (g0, cs)
-            }
-          case _ => // static field or else
-            (g0, cs)
-        }
-    }._1
 
   override def registerAbstraction : DependencyGraph => (ImplId, AbsId, AbstractionPolicy) => DependencyGraph =
     graph => (implId , absId, pol) =>
@@ -259,7 +231,8 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
         case (Class, Interface) =>
             val absMeths = graph.content(abs.id).map(graph.getConcreteNode)
             val candidates = graph.content(impl.id).map(graph.getConcreteNode)
-            findAndRegisterOverridedMethods(graph, graph.fullName(impl.id), absMeths.toList, candidates.toList)
+            JavaType.findAndRegisterOverridedMethods(graph, graph.fullName(impl.id), absMeths.toList, candidates.toList)
+              .getOrElse(sys.error("Success expected"))
               .addAbstraction(implId, (absId, pol))
         case _ => graph
       }

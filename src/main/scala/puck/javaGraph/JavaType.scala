@@ -1,12 +1,44 @@
 package puck.javaGraph
 
 import puck.PuckError
+import puck.graph.ShowDG._
 import puck.graph._
+import puck.graph.constraints.SupertypeAbstraction
+import puck.util.Collections._
 
-/**
- * Created by lorilan on 27/05/14.
- */
+import scalaz.{-\/, \/-}
 
+object JavaType{
+  def findOverridedMethodIn(g : DependencyGraph,
+                          absName : String, absSig : MethodType,
+                          candidates : List[ConcreteNode]) : Option[(ConcreteNode, List[ConcreteNode])] = {
+    import puck.util.Collections.SelectList
+    candidates.select( c => c.styp.nonEmpty &&
+        c.name == absName &&
+        c.styp.exists(absSig.canOverride(g, _)))
+  }
+
+
+  def findAndRegisterOverridedMethods
+  ( g : DependencyGraph,
+    className : String,
+    absMeths : List[ConcreteNode],
+    candidates : List[ConcreteNode]): Try[DependencyGraph] =
+  //    Foldable[List].foldLeftM[Option, ConcreteNode, (DependencyGraph, List[ConcreteNode])](absMeths, (g, candidates.toList)){
+    traverse(absMeths, (g, candidates) ){
+      case ((g0, cs), supMeth) =>
+        supMeth.styp match {
+          case Some(mt : MethodType ) =>
+            findOverridedMethodIn(g0, supMeth.name, mt, cs) match {
+              case Some((subMeth, newCandidates)) =>
+                \/-( (g0.addAbstraction(subMeth.id, (supMeth.id, SupertypeAbstraction)), newCandidates) )
+              case None => -\/(new PuckError(s"$className do not have an implementation of ${showDG[ConcreteNode](g).shows(supMeth)}"))
+            }
+          case _ => -\/(new PuckError(s"${showDG[ConcreteNode](g).shows(supMeth)} has not a correct type"))
+        }
+    } map(_._1)
+
+}
 
 class JavaNamedType(n : NodeId) extends NamedType(n){
 

@@ -1,14 +1,5 @@
 
-//import com.github.retronym.SbtOneJar._
-
-//import com.typesafe.sbt.SbtStartScript
-
-//https://github.com/retronym/sbt-onejar
-//oneJarSettings
-
 enablePlugins(JavaAppPackaging)
-
-//Seq(SbtStartScript.startScriptForClassesSettings: _*)
 
 name := "PuckConstraintSolver"
 

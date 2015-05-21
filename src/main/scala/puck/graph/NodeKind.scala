@@ -42,7 +42,15 @@ trait NodeKindKnowledge {
       n.mutable
   }
 
-  def kindType : (DependencyGraph, DGNode) => KindType = (_,_) => Unknown
+  def canBe(graph : DependencyGraph)
+            (n : DGNode, other : ConcreteNode) : Boolean = {
+    !graph.isa_*(other.id, n.id) && // no cycle !
+      (n.kind canBe other.kind) &&
+      n.mutable
+  }
+
+
+    def kindType : (DependencyGraph, DGNode) => KindType = (_,_) => Unknown
 
   //TODO?? move elsewhere ?
   def coupling(graph : DependencyGraph) =
