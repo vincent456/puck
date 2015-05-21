@@ -19,7 +19,7 @@ case class MergeAction(
 
       val sConsumerHost= graph.container(consumer.id)
       if(graph.container(consumed.id) != sConsumerHost)
-        new MoveAction(graph.getConcreteNode(sConsumerHost.get), consumed, controller).actionPerformed(null)
+        new MoveAction(graph.getConcreteNode(sConsumerHost.get), List(consumed.id), controller).actionPerformed(null)
 
       controller.transfoRules.mergeInto(graph.mileStone, consumed.id, consumer.id)
     }

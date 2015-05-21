@@ -7,6 +7,7 @@ import puck.PuckError
 import puck.graph._
 import puck.gui.svg.SVGController
 import puck.javaGraph.nodeKind.Field
+import puck.util.Collections
 
 
 import scala.swing.Dialog
@@ -23,29 +24,42 @@ object MoveAction {
       icon = EmptyIcon, choices, choices.head)
 
   }
+
+  def label(graph : DependencyGraph, ids : List[NodeId]) : String = {
+    val movedStr = ids match {
+      case List(id) => graph.getConcreteNode(id).name
+      case Nil => sys.error("non empty list expected")
+      case _ => "selected nodes"
+    }
+    s"Move $movedStr here"
+  }
+
 }
 
 class MoveAction
 ( newHost : DGNode,
-  moved : ConcreteNode,
+  moved : List[NodeId],
   controller : SVGController)
-extends AbstractAction(s"Move ${moved.name} here"){
+extends AbstractAction(MoveAction.label(controller.graph, moved)){
 
 
   val move = controller.transfoRules.move
 
   override def actionPerformed(e: ActionEvent): Unit = {
     val graph = controller.graph.mileStone
-    (graph.kindType(moved) match {
+    (graph.kindType(moved.head) match {
       case TypeDecl =>
-        move.typeDecl(graph, moved.id, newHost.id)
+        Collections.traverse(moved, graph){
+          (g, id) => move.typeDecl(g, id, newHost.id)
+        }
+
 
       case TypeMember =>
         controller.console.
           appendText("/!\\/!\\ Method overriding unchecked (TODO !!!) /!\\/!\\")
 
-        val host = graph.getConcreteNode(graph.container(moved.id).get)
-        val uses = graph.usesOfUsersOf(moved.id)
+        val host = graph.getConcreteNode(graph.container(moved.head).get)
+        val uses = graph.usesOfUsersOf(moved)
         val choice =
           if(move.usedBySiblingsViaSelf(uses, graph, host)) {
             Some(MoveAction.getChoice(Field).
@@ -53,9 +67,9 @@ extends AbstractAction(s"Move ${moved.name} here"){
           }
           else None
 
-        move.typeMember(graph, Seq(moved.id), newHost.id, choice)(uses)
-      case _ =>
-        -\/(new PuckError(s"move of ${moved.kind} not implemented"))
+        move.typeMember(graph, moved, newHost.id, choice)(uses)
+      case kt =>
+        -\/(new PuckError(s"move of $kt not implemented"))
     }) match {
       case -\/(err)  =>
         controller.console.appendText(s"Abstraction creation failure\n${err.getMessage}\n")

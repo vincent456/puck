@@ -56,9 +56,8 @@ class NodeRightClickMenu
 
     controller.selectedNodes match {
       case Nil => ()
-      case List((nid,_,_)) =>
-          addOtherNodeSelectedOption(nid)
-      case nodes => ???
+      case List((nid,_,_)) => addOtherNodeSelectedOption(nid)
+      case nodes => addOtherNodesSelectedOption(nodes map (_._1))
     }
 
 
@@ -82,10 +81,29 @@ class NodeRightClickMenu
   }
 
 
+  private def addOtherNodesSelectedOption(ids : List[NodeId]) : Unit = {
+    val sContainer = graph.container(ids.head)
+    val sameContainer = ids.tail forall(graph.container(_) == sContainer)
+    val kt = graph.kindType(ids.head)
+    val sameKind = ids.tail forall (graph.kindType(_) == kt)
+    if(!sameContainer)
+      controller.console.appendText("Move multiple only available for nodes with same container")
+    else if(!sameKind)
+      controller.console.appendText("Move multiple only available for nodes with same kind")
+    else {
+      val selected: ConcreteNode = graph.getConcreteNode(ids.head)
+      if (graph.canContain(node, selected)) {
+        this.add(new MoveAction(node, ids, controller))
+        ()
+      }
+    }
+
+  }
+
   private def addOtherNodeSelectedOption(id : NodeId) : Unit = {
     val selected: ConcreteNode = graph.getConcreteNode(id)
     if (graph.canContain(node, selected)) {
-      this.add(new MoveAction(node, selected, controller))
+      this.add(new MoveAction(node, List(id), controller))
     }
 
 //    val m: MergeMatcher = controller.transfoRules.

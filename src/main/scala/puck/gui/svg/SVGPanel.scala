@@ -14,7 +14,7 @@ import org.apache.batik.util.{SVGConstants, XMLConstants}
 import org.w3c.dom.{Node, NodeList, Element}
 import org.w3c.dom.events.{Event, MouseEvent, EventListener}
 import org.w3c.dom.svg._
-import puck.graph.DGEdge
+import puck.graph.{NodeId, DGEdge}
 
 
 class PUCKSVGCanvas
@@ -135,6 +135,16 @@ class SVGPanelListener
     }
   }
 
+  val setNodeColor : ((NodeId, String, Element)) => Unit = {
+    case ((_, color, domElt)) =>
+      domElt.setAttribute("fill", color)
+  }
+  private def resetAllNodes() : Unit = {
+    if(controller.selectedNodes.nonEmpty){
+      controller.selectedNodes foreach setNodeColor
+      controller.resetSelectedNodes()
+    }
+  }
   private def conditionalEdgeReset(): Option[DGEdge] = {
     controller.selectedEdge match {
       case Some((e, color, domElt)) =>
@@ -159,13 +169,8 @@ class SVGPanelListener
                 conditionalEdgeReset()
 
                 if(!shiftPressed) {
-                  controller.selectedNodes.foreach {
-                    case (oldId, color, domElt) =>
-                      if (oldId != nodeClickedId) {
-                        controller.removeSelectedNode(oldId)
-                        domElt.setAttribute("fill", color)
-                      }
-                  }
+                  val removed = controller.keepOnlySelectedNode(nodeClickedId)
+                  removed foreach setNodeColor
                 }
                 controller.getSelectedNode(nodeClickedId) match {
                   case Some((_, color, domElt)) =>
@@ -184,6 +189,7 @@ class SVGPanelListener
           canvas.modify { () =>
             if(controller.selectedNodes.nonEmpty)
               controller.resetSelectedNodes()
+
             val sPrevEdge = conditionalEdgeReset()
             checkIfEdgeAndGetGElement(line) foreach {
               gedge =>

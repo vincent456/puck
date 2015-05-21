@@ -2,9 +2,6 @@ package puck.util
 
 import scalaz.{\/-, \/}
 
-/**
- * Created by lorilan on 3/24/15.
- */
 object Collections {
   implicit class SelectList[+T](l : List[T]){
     def select(pred : T => Boolean): Option[(T, List[T])] ={
@@ -24,5 +21,6 @@ object Collections {
   //see if it can be rewritten using scalaz !
   def traverse[A, B, E](a: Iterable[A], b: B)(f: (B, A) => E \/ B): E \/ B =
     a.foldLeft[E\/B](\/-(b)){case (b0, a0) => b0 flatMap (f(_, a0))}
+
 
 }

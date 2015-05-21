@@ -25,6 +25,7 @@ trait StackListener{
   def update(svgController: SVGController) : Unit
 }
 
+
 class SVGController private
 ( val genController : PuckControl,
   val initGraph : DependencyGraph,
@@ -110,6 +111,13 @@ class SVGController private
 
   def removeSelectedNode(nodeId: NodeId) : Unit =
     selectedNodes0 = selectedNodes0.filter(_._1 != nodeId)
+
+  def keepOnlySelectedNode(nodeId: NodeId) : List[(NodeId, Color, Element)] = {
+    val (keep, others) = selectedNodes partition (_._1 == nodeId)
+    selectedNodes0 = keep
+    others
+  }
+
 
   def hide(id : NodeId): Unit = {
     visibility.setVisibility(id, Hidden)
