@@ -1,8 +1,7 @@
-package puck.graph.transformations.rules
+package puck.graph
+package transformations.rules
 
-import puck.graph.DependencyGraph.Mutability
-import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
-import puck.graph._
+import constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
 
 import scalaz.\/-
 

@@ -22,6 +22,8 @@ package object graph {
 
   type ResultT = (DependencyGraph, Recording)
 
+  type Mutability = Boolean
+
   def graphOfResult(result : ResultT) : DependencyGraph = result._1
   def recordOfResult(result : ResultT) : Recording = result._2
 }

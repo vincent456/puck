@@ -100,7 +100,7 @@ class JavaDG2AST
       //val parser = ConstraintsPlParser(nodesByName)
       val cm = ConstraintsParser(nodesByName, new FileReader(decouple))
       new JavaDG2AST(logger, program,
-        initialGraph.newGraph(nConstraints = cm),
+        initialGraph.newGraph(constraints = cm),
         initialRecord,
         nodesByName,
         graph2ASTMap)

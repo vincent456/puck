@@ -155,7 +155,7 @@ class Merge
       case v => v
     }
 
-    val g7 = g6.newGraph(nAbstractionsMap = newAbsMap)
+    val g7 = g6.newGraph(abstractionsMap = newAbsMap)
 
     val g8 = mergeChildren(g7, consumedId, consumerId)
 

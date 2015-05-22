@@ -5,12 +5,6 @@ import puck.graph.constraints._
 import puck.graph.transformations.{Transformation, RecordingComparator}
 import puck.util.{Logger, PuckNoopLogger, PuckLogger, PuckLog}
 
-import scala.annotation.tailrec
-
-sealed trait NodeStatus
-case object Removed extends NodeStatus
-case object Created extends NodeStatus
-
 import transformations.RecordingOps
 
 object DependencyGraph {
@@ -27,18 +21,12 @@ object DependencyGraph {
   type AbstractionMap = SetValueMap[NodeId, (NodeId, AbstractionPolicy)]
   val AbstractionMap = SetValueMap
 
-  type Nodes2VnodeMap = Map[Seq[NodeId], NodeId]
-  val Nodes2VNodeMap = Map
 
-  type ConcreteNodeIndex = Map[NodeId, ConcreteNode]
-  val ConcreteNodeIndex = Map
-  type VirtualNodeIndex = Map[NodeId, VirtualNode]
-  val VirtualNodeINdex = Map
   
   implicit def idToNode(implicit graph : DependencyGraph, id : NodeId) : DGNode =
                graph.getNode(id)
 
-  type Mutability = Boolean
+
 
   def areEquivalent[Kind <: NodeKind, T](initialRecord : Seq[Transformation],
                       graph1 : DependencyGraph,
@@ -55,12 +43,7 @@ object DependencyGraph {
 class DependencyGraph
 ( val logger : PuckLogger = PuckNoopLogger,
   val nodeKindKnowledge: NodeKindKnowledge,
-  private [this] val idSeed : Int,
-  private [this] val nodesIndex : ConcreteNodeIndex,
-  private [this] val removedNodes : ConcreteNodeIndex,
-  private [this] val vNodesIndex : VirtualNodeIndex,
-  private [this] val vRemovedNodes : VirtualNodeIndex,
-  private [this] val nodes2vNodes : Nodes2VnodeMap,
+  private [this] val nodesIndex : NodeIndex,
   private [this] val edges : EdgeMap,
   /*private [this]*/ val abstractionsMap : AbstractionMap,
   val constraints : ConstraintsMaps,
@@ -70,22 +53,14 @@ class DependencyGraph
   type GraphT = DependencyGraph
 
   def newGraph(nLogger : PuckLogger = logger,
-               nIdSeed : Int = idSeed,
-               nNodesSet : ConcreteNodeIndex = nodesIndex,
-               nRemovedNodes : ConcreteNodeIndex = removedNodes,
-               nVNodesIndex : VirtualNodeIndex = vNodesIndex,
-               nVRemovedNodes : VirtualNodeIndex = vRemovedNodes,
-               nNodes2vNodes : Nodes2VnodeMap = nodes2vNodes,
-               nEdges : EdgeMap = edges,
-               nAbstractionsMap : AbstractionMap = abstractionsMap,
-               nConstraints : ConstraintsMaps = constraints,
-               nRecording : Recording = recording) : DependencyGraph =
-    new DependencyGraph(nLogger, nodeKindKnowledge, nIdSeed,
-                        nNodesSet, nRemovedNodes,
-                        nVNodesIndex, nVRemovedNodes,
-                        nNodes2vNodes,
-                        nEdges,
-                        nAbstractionsMap, nConstraints, nRecording)
+               nodes : NodeIndex = nodesIndex,
+               edges : EdgeMap = edges,
+               abstractionsMap : AbstractionMap = abstractionsMap,
+               constraints : ConstraintsMaps = constraints,
+               recording : Recording = recording) : DependencyGraph =
+    new DependencyGraph(nLogger, nodeKindKnowledge,
+                        nodes, edges,
+                        abstractionsMap, constraints, recording)
 
   def withLogger(l : PuckLogger) = newGraph(nLogger = l)
   implicit val defaulVerbosity : PuckLog.Verbosity =
@@ -95,8 +70,8 @@ class DependencyGraph
     (PuckLog.InGraph, lvl)
 
 
-  def comment(msg : String) = newGraph(nRecording = recording.comment(msg))
-  def mileStone = newGraph(nRecording = recording.mileStone)
+  def comment(msg : String) = newGraph(recording = recording.comment(msg))
+  def mileStone = newGraph(recording = recording.mileStone)
 
   val rootId : NodeId = 0
   def root : ConcreteNode = getConcreteNode(rootId)
@@ -105,9 +80,8 @@ class DependencyGraph
   override def toString = edges.toString
 
   private [graph] def addConcreteNode(n : ConcreteNode) : DependencyGraph =
-     newGraph(nNodesSet = nodesIndex + (n.id -> n),
-       nRemovedNodes = removedNodes - n.id,
-       nRecording = recording.addConcreteNode(n))
+     newGraph(nodes = nodesIndex.addConcreteNode(n),
+              recording = recording.addConcreteNode(n))
 
   def addConcreteNode
   ( localName : String,
@@ -115,126 +89,82 @@ class DependencyGraph
     th : Option[Type],
     mutable : Mutability = true
     ) : (ConcreteNode, GraphT) = {
-    val nid = idSeed + 1
-    val n = ConcreteNode(nid, localName, kind, th, mutable)
-    (n, newGraph(nIdSeed = nid).addConcreteNode(n))
+    val(n, nIndex) = nodesIndex.addConcreteNode(localName, kind, th, mutable)
+    (n, newGraph(nodes = nIndex,
+      recording = recording.addConcreteNode(n)))
   }
 
   private def addVirtualNode
   ( n : VirtualNode ) : DependencyGraph =
-    newGraph(nVNodesIndex = vNodesIndex + (n.id -> n),
-      nVRemovedNodes = vRemovedNodes - n.id,
-      nNodes2vNodes = nodes2vNodes + (n.potentialMatches -> n.id),
-      nRecording = recording.addVirtualNode(n))
+    newGraph(nodes = nodesIndex.addVirtualNode(n),
+      recording = recording.addVirtualNode(n))
 
 
   def addVirtualNode(ns : Seq[NodeId], k : NodeKind) : (VirtualNode, GraphT) = {
-    nodes2vNodes get ns match {
-      case Some(vnid) => (vNodesIndex(vnid), this)
-      case None => val n = VirtualNode(idSeed + 1, ns, k)
-        (n, newGraph(nIdSeed = idSeed + 1).addVirtualNode(n))
-    }
+    val (vn, nIndex) = nodesIndex.addVirtualNode(ns, k)
+    (vn, newGraph(nodes = nIndex))
   }
 
-  def nodes : Iterable[DGNode] = nodesIndex.values ++ vNodesIndex.values
-  def concreteNodes : Iterable[ConcreteNode] = nodesIndex.values
-  def virtualNodes : Iterable[VirtualNode] = vNodesIndex.values
-  /*map {
-    case (nid, name, kind, styp, mutable) => ConcreteNode(nid, name, kind, styp, mutable, Created)
-  }*/
+  def nodes : Iterable[DGNode] = nodesIndex.nodes
+  def concreteNodes : Iterable[ConcreteNode] = nodesIndex.concreteNodes
+  def virtualNodes : Iterable[VirtualNode] = nodesIndex.virtualNodes
 
+  def nodesId : Iterable[NodeId] = nodesIndex.nodesId
+  def concreteNodesId : Iterable[NodeId] = nodesIndex.concreteNodesId
 
-  def nodesId : Iterable[NodeId] = nodesIndex.keys ++ vNodesIndex.keys
-  def concreteNodesId : Iterable[NodeId] = nodesIndex.keys
-  def numNodes : Int = nodesIndex.size + vNodesIndex.size
-
-  def numRemovedNodes : Int = removedNodes .size + vRemovedNodes.size
+  def numNodes : Int = nodesIndex.numNodes
+  def numRemovedNodes : Int = nodesIndex.numRemovedNodes
 
   def isaEdges : List[DGEdge] = edges.superTypes.content.foldLeft(List[DGEdge]()){
     case (acc, (sub, sups)) =>
       sups.toList.map(sup => DGEdge.IsaK(sub, sup)) ::: acc
   }
 
-  def getConcreteNodeWithStatus(id : NodeId): (ConcreteNode, NodeStatus) =
-    nodesIndex get id map {(_, Created)} getOrElse{
-      removedNodes get id map {(_, Removed)} getOrElse {
-        val msg =
-          s"AccessGraph.getNode : no concrete node has id ${id.toString}\n" +
-            s"concrete nodes :${nodesIndex.toSeq.sortBy(_._1).map(_._2).mkString("\n\t", "\n\t", "\n")}" +
-            s"virtual nodes :${vNodesIndex.toSeq.sortBy(_._1).map(_._2).mkString("\n\t", "\n\t", "")}"
-        throw new DGError(msg)
-      }
-    }
 
 
-  def getNode(id : NodeId): DGNode = try {
-    getConcreteNodeWithStatus(id)._1
-  } catch {
-    case e : DGError => vNodesIndex(id)
-  }
-  def getConcreteNode(id : NodeId): ConcreteNode = getConcreteNodeWithStatus(id)._1
+
+  def getNode(id : NodeId): DGNode = nodesIndex.getNode(id)
+
+  def getConcreteNode(id : NodeId): ConcreteNode =
+    nodesIndex.getConcreteNode(id)
 
 
   def removeConcreteNode(id : NodeId) = {
-    val n = nodesIndex(id)
-    if(n.id != id)
-      throw new DGError("incoherent index left and right id are different")
-    newGraph(nNodesSet = nodesIndex - id,
-      nRemovedNodes = removedNodes + (id -> n),
-      nRecording = recording removeConcreteNode n)
+      val (n, index) = nodesIndex.removeConcreteNode(id)
+      newGraph(nodes = index, recording = recording removeConcreteNode n)
   }
 
   def removeVirtualNode(id : NodeId) = {
-    val n = vNodesIndex(id)
-    if(n.id != id)
-      throw new DGError("incoherent index left and right id are different")
-    newGraph(nVNodesIndex = vNodesIndex + (n.id -> n),
-      nVRemovedNodes = vRemovedNodes - n.id,
-      nNodes2vNodes = nodes2vNodes + (n.potentialMatches -> n.id),
-      nRecording = recording.addVirtualNode(n))
+    val (n, index) = nodesIndex.removeVirtualNode(id)
+    newGraph(nodes = index, recording = recording removeVirtualNode n)
   }
 
-
-  private def setNode(n : DGNode, s : NodeStatus) : GraphT = (n, s) match {
-      case (cn: ConcreteNode, Created) =>
-        newGraph(nNodesSet = nodesIndex + (n.id -> cn) )
-      case (cn : ConcreteNode, Removed) =>
-        newGraph(nRemovedNodes = removedNodes + (n.id -> cn) )
-      case (vn: VirtualNode, Created) =>
-        newGraph(nVNodesIndex = vNodesIndex + (n.id -> vn) )
-      case (vn : VirtualNode, Removed) =>
-        newGraph(nVRemovedNodes = vRemovedNodes + (n.id -> vn) )
-  }
 
   def setName(id : NodeId, newName : String) : GraphT = {
-    val (n, s) = getConcreteNodeWithStatus(id)
-    val g1 = setNode(n.copy(name = newName), s)
-    g1.newGraph(nRecording = recording.changeNodeName(id, n.name, newName))
+    val (oldName, index) = nodesIndex.setName(id, newName)
+    newGraph( nodes = index,
+      recording = recording.changeNodeName(id, oldName, newName))
   }
   
-  def setType(id : NodeId, st : Option[Type]) : GraphT = {
-    val (n, s) = getConcreteNodeWithStatus(id)
-    setNode(n.copy(styp = st), s)
-  }
+  def setType(id : NodeId, st : Option[Type]) : GraphT =
+    newGraph(nodes = nodesIndex.setType(id, st))
 
-  def setMutability(id : NodeId, mutable : Boolean) =  {
-    val (n, s) = getConcreteNodeWithStatus(id)
-    setNode(n.copy(mutable = mutable), s)
-  }
+  def setMutability(id : NodeId, mutable : Boolean) =
+    newGraph(nodes = nodesIndex.setMutability(id, mutable))
 
 
   def exists(e : DGEdge) : Boolean =
     edges.exists(e)
 
   def addEdge(e : DGEdge, register : Boolean = true): GraphT =
-    newGraph( nEdges = edges.add(e),
-              nRecording =
+    newGraph( edges = edges.add(e),
+              recording =
                   if(register) recording.addEdge(e)
                   else recording)
 
   def removeEdge(e : DGEdge, register : Boolean = true): GraphT =
-    newGraph( nEdges = edges.remove(e),
-              nRecording =
+    newGraph( edges = edges.remove(e),
+              recording =
                   if(register) recording.removeEdge(e)
                   else recording)
 
@@ -259,38 +189,38 @@ class DependencyGraph
 
  def addUsesDependency(typeUse : DGUses,
                         typeMemberUse : DGUses) : GraphT =
-   newGraph(nEdges = edges.addUsesDependency(typeUse, typeMemberUse),
-     nRecording = recording.addTypeDependency(typeUse, typeMemberUse))
+   newGraph(edges = edges.addUsesDependency(typeUse, typeMemberUse),
+     recording = recording.addTypeDependency(typeUse, typeMemberUse))
 
 
 
   def removeUsesDependency(typeUse : DGUses,
                            typeMemberUse : DGUses) : GraphT =
-      newGraph(nEdges = edges.removeUsesDependency(typeUse, typeMemberUse),
-        nRecording = recording.removeTypeDependency(typeUse, typeMemberUse))
+      newGraph(edges = edges.removeUsesDependency(typeUse, typeMemberUse),
+        recording = recording.removeTypeDependency(typeUse, typeMemberUse))
 
 
 
   def addAbstraction(id : NodeId, abs : (NodeId, AbstractionPolicy)) : GraphT =
-    newGraph(nAbstractionsMap = abstractionsMap + (id, abs),
-             nRecording = recording.addAbstraction(id, abs._1, abs._2))
+    newGraph(abstractionsMap = abstractionsMap + (id, abs),
+             recording = recording.addAbstraction(id, abs._1, abs._2))
 
   def removeAbstraction(id : NodeId, abs : (NodeId, AbstractionPolicy)) : GraphT =
-    newGraph(nAbstractionsMap = abstractionsMap - (id, abs),
-             nRecording = recording.removeAbstraction(id, abs._1, abs._2))
+    newGraph(abstractionsMap = abstractionsMap - (id, abs),
+             recording = recording.removeAbstraction(id, abs._1, abs._2))
 
   def changeTarget(edge : DGEdge, newTarget : NodeId) : GraphT = {
     val g1 = edge.deleteIn(this, register = false)
     val newEdge : DGEdge = edge.kind(edge.source, newTarget)
     val newRecording = recording.changeEdgeTarget(edge, newTarget, withMerge = newEdge.existsIn(this))
-    newEdge.createIn(g1, register = false).newGraph(nRecording = newRecording)
+    newEdge.createIn(g1, register = false).newGraph(recording = newRecording)
   }
 
   def changeSource(edge : DGEdge, newSource : NodeId) : GraphT = {
     val g1 = edge.deleteIn(this, register = false)
     val newEdge: DGEdge = edge.kind(newSource, edge.target)
     val newRecording = recording.changeEdgeSource(edge, newSource, withMerge = newEdge.existsIn(this))
-    newEdge.createIn(g1, register = false).newGraph(nRecording = newRecording)
+    newEdge.createIn(g1, register = false).newGraph(recording = newRecording)
   }
 
   def changeType(id : NodeId, styp : Option[Type], oldUsee: NodeId, newUsee : NodeId) : GraphT =
@@ -298,7 +228,7 @@ class DependencyGraph
       case None => this
       case Some(t) => val newTyp= Some(t.changeNamedType(oldUsee, newUsee))
         setType(id, newTyp).
-          newGraph(nRecording = recording.addTypeChange(id, styp, oldUsee, newUsee))
+          newGraph(recording = recording.addTypeChange(id, styp, oldUsee, newUsee))
     }
 
   def changeContravariantType(id : NodeId, styp : Option[Type], oldUsee: NodeId, newUsee : NodeId) : GraphT =
@@ -306,7 +236,7 @@ class DependencyGraph
     case None => this
     case Some(t) => val newTyp= Some(t.changeNamedTypeContravariant(oldUsee, newUsee))
       setType(id, newTyp).
-        newGraph(nRecording = recording.addTypeChange(id, styp, oldUsee, newUsee))
+        newGraph(recording = recording.addTypeChange(id, styp, oldUsee, newUsee))
   }
 
   /*

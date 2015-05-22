@@ -39,7 +39,7 @@ object CompileHelper {
 
     val (_, initialRecord) = NodeMappingInitialState.normalizeNodeTransfos(builder.g.recording, Seq())
 
-    val g = builder.g.newGraph(nRecording = Recording())
+    val g = builder.g.newGraph(recording = Recording())
               .withLogger(logger)
 
     (p, g,

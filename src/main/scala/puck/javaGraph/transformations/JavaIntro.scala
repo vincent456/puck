@@ -2,7 +2,6 @@ package puck.javaGraph
 package transformations
 
 import nodeKind._
-import puck.graph.DependencyGraph._
 import puck.graph.constraints.{SupertypeAbstraction, AbstractionPolicy}
 import puck.graph._
 import puck.util.Collections.traverse

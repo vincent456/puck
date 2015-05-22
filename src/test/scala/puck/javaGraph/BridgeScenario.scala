@@ -107,7 +107,7 @@ class BridgeScenario private()
   val cm = ConstraintsParser(fullName2id, new FileReader(BridgeScenario.path + "decouple.pl"))
 
 
-  val g0 = graph.newGraph(nConstraints = cm)
+  val g0 = graph.newGraph(constraints = cm)
   logger = new PuckFileLogger(_ => true, new File(BridgeScenario.path + "log"))
   val jdg2ast = new JavaDG2AST(logger, program, g0, initialRecord, fullName2id, dg2astMap)
 

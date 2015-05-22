@@ -1,6 +1,5 @@
 package puck.javaGraph
 
-import puck.PuckError
 import puck.graph._
 import puck.graph.DependencyGraph._
 import puck.graph.constraints.{SupertypeAbstraction, AbstractionPolicy, ConstraintsMaps}
@@ -12,22 +11,13 @@ import scalaz._, Scalaz._
 
 class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 
-   var idSeed = rootId
-
    val root = ConcreteNode(rootId, rootName, JavaRoot, None, true)
 
-   g = new DependencyGraph(PuckNoopLogger, JavaNodeKind, idSeed,
-   ConcreteNodeIndex() + (rootId -> root), ConcreteNodeIndex(),
-     VirtualNodeINdex(), VirtualNodeINdex(), Nodes2VNodeMap(),
-    EdgeMap(),
-    AbstractionMap(), ConstraintsMaps(), Recording())
+   g = new DependencyGraph(PuckNoopLogger, JavaNodeKind,
+     NodeIndex(root), EdgeMap(),
+     AbstractionMap(), ConstraintsMaps(), Recording())
 
-   var graph2ASTMap = Map[Int, ASTNodeLink]()
-  /*def addPredefined( p : Predefined): Unit = {
-    super.addPredefined(p.id, p.fullName, p.name, p.kind, EmptyDeclHolder)
-  }
-
-  Predefined.list foreach addPredefined*/
+  var graph2ASTMap = Map[Int, ASTNodeLink]()
 
   def addPackageNode(fullName: String, localName:String) : NodeIdT =
     super.addNode(fullName, localName, Package, None)

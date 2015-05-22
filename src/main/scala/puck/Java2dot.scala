@@ -35,6 +35,6 @@ object Java2dot {
 
     val cm = ConstraintsParser(fullName2id, new FileReader(decouple))
 
-    quickDot(outFileName, dg.newGraph(nConstraints = cm), fullName2id)
+    quickDot(outFileName, dg.newGraph(constraints = cm), fullName2id)
   }
 }

@@ -5,9 +5,7 @@ import puck.graph.transformations._
 import scalaz._
 
 import scala.language.implicitConversions
-/**
- * Created by lorilan on 2/6/15.
- */
+
 object ShowDG {
 
   //def showKind : Show[NodeKind] = Show.showFromToString
