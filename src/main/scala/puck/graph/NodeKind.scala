@@ -9,6 +9,9 @@ trait NodeKind {
     Seq(SupertypeAbstraction, DelegationAbstraction)
   def abstractKinds(p : AbstractionPolicy) : Seq[NodeKind]
 
+  def canBeAbstractedWith(p: AbstractionPolicy) =
+    abstractKinds(p).nonEmpty
+
   def abstractionChoices : Seq[(NodeKind, AbstractionPolicy)] =
     for {
       p <- abstractionPolicies

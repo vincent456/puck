@@ -1,8 +1,8 @@
 package puck.graph.transformations
 
 import puck.PuckError
-import puck.graph.{Try, NodeId, DependencyGraph, DGEdge}
-import puck.search.{FindFirstSearchEngine, SearchState}
+import puck.graph.{Try, NodeId, DependencyGraph}
+import puck.search.FindFirstSearchEngine
 import puck.util.{PuckLogger, PuckNoopLogger}
 
 import scala.collection.mutable
@@ -38,12 +38,12 @@ class RecordingComparator
 ( initialTransfos : Seq[Transformation],
   graph1 : DependencyGraph,
   graph2 : DependencyGraph,
-  logger : PuckLogger = PuckNoopLogger)
-  extends FindFirstSearchEngine[ResMap] {
+  logger : PuckLogger = PuckNoopLogger) {
 
-  def createInitialState(k: Try[ResMap] => Unit): SearchState[ResMap] =
-    new NodeMappingInitialState(initialTransfos, this, graph1, graph2, k, logger)
-
+  val engine : FindFirstSearchEngine[ResMap] =
+    new FindFirstSearchEngine[ResMap](
+      k => new NodeMappingInitialState(initialTransfos, this, graph1, graph2, k, logger)
+    )
 
   def attribNode(node : NodeId,
                  map : ResMap,
@@ -52,7 +52,7 @@ class RecordingComparator
 
     map.getOrElse(node, (graph1.getConcreteNode(node).kind, Some(node))) match {
       case (_, Some(n)) =>
-        newCurrentState(map, new StackSaver(k, n, nodesToMap))
+        engine.newCurrentState(map, new StackSaver(k, n, nodesToMap))
 
       case (kind, None) =>
         nodesToMap.getOrElse(kind, Seq()) match {
@@ -63,7 +63,7 @@ class RecordingComparator
               mutable.Stack[NodeId]().pushAll(l),
               mutable.Stack[NodeId]())
 
-            newCurrentState(map, choices)
+            engine.newCurrentState(map, choices)
         }
     }
   }
@@ -106,6 +106,18 @@ class RecordingComparator
     }
   }
 */
+
+  private [this] var computed = false
+  private [this] var result = false
+  def compare() : Boolean = {
+    if(! computed) {
+      engine.explore()
+      result = engine.finalStates.nonEmpty
+      computed = true
+    }
+    result
+  }
+
   def compare(ts1 : Seq[Transformation],
               ts2 : Seq[Transformation],
               map : ResMap, nodesToMap : NodesToMap,

@@ -1,11 +1,7 @@
 package puck.graph.constraints.search
 
 import puck.graph.{ResultT, recordOfResult}
-import puck.search.{StateCreator, SearchState}
-
-/**
- * Created by lorilan on 26/09/14.
- */
+import puck.search.{SearchEngine, StateCreator, SearchState}
 
 trait ConstraintSolvingChoice[S, T]
   extends StateCreator[ResultT, T] {
@@ -34,9 +30,9 @@ trait ConstraintSolvingState[ S, T <: ConstraintSolvingChoice[S, T]]
     })
   }
 
-  def executeNextChoice() : Unit = {
+  override def executeNextChoice(engine : SearchEngine[ResultT]) : Unit = {
     if(engine.currentState != this)
-      setAsCurrentState()
+      setAsCurrentState(engine)
 
     if(remainingChoices.nonEmpty){
 

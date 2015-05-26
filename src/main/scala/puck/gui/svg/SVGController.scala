@@ -9,7 +9,7 @@ import org.apache.batik.util.XMLResourceDescriptor
 import org.w3c.dom.Element
 import org.w3c.dom.svg.{SVGGElement, SVGDocument}
 import puck.graph._
-import puck.graph.constraints.search.SolverBuilder
+import puck.graph.io.FilesHandler.SolverBuilder
 import puck.graph.io._
 import puck.graph.transformations.{MileStone, Recording}
 import puck.gui.PuckControl

@@ -4,7 +4,7 @@ package transformations
 import MappingChoices.{ResMap, NodesToMap}
 
 import puck.javaGraph.nodeKind.JavaRoot
-import puck.search.SearchState
+import puck.search.{SearchEngine, SearchState}
 import puck.util.{PuckLog, PuckLogger}
 
 import scala.collection.immutable.HashSet
@@ -126,7 +126,7 @@ class NodeMappingInitialState
   }
 
 
-  override def executeNextChoice() : Unit = {
+  override def executeNextChoice(e : SearchEngine[ResMap]) : Unit = {
     triedAll0 = true
 
     if(numCreatedNodes != numCreatedNodes2 ||

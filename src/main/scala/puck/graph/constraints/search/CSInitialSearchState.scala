@@ -1,26 +1,10 @@
 package puck.graph.constraints.search
 
 import puck.graph._
-import puck.graph.constraints.{DecisionMaker, Solver}
-import puck.search.{SearchState, SearchEngine}
+import puck.graph.constraints.Solver
+import puck.search.{SearchEngine, SearchState}
 
-trait InitialStateCreator {
-  this : SearchEngine[ResultT] with  DecisionMaker =>
-
-  val graph : DependencyGraph
-  val solverBuilder : SolverBuilder
-  val automaticConstraintLoosening : Boolean
-  def logger = graph.logger
-  def createInitialState(k : Try[ResultT] => Unit) =
-    new CSInitialSearchState(this, solverBuilder(this, automaticConstraintLoosening), graph, k)
-
-}
-
-/**
- * Created by lorilan on 25/10/14.
- */
-class CSInitialSearchState(val engine : SearchEngine[ResultT],
-                           solver : Solver,
+class CSInitialSearchState(solver : Solver,
                            graph : DependencyGraph,
                            k : Try[ResultT] => Unit)
   extends SearchState[ResultT]{
@@ -31,7 +15,7 @@ class CSInitialSearchState(val engine : SearchEngine[ResultT],
   var executedOnce = false
   override def triedAll = executedOnce
 
-  override def executeNextChoice() : Unit = {
+  override def executeNextChoice(engine : SearchEngine[ResultT]) : Unit = {
     solver.solve(graph, k)
     executedOnce = true
   }

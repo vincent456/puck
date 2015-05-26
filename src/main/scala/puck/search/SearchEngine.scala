@@ -13,6 +13,10 @@ trait Search[Result]{
   def exploredStates : Int
 }
 
+object SearchEngine {
+  type InitialStateFactory[T] = (Try[T] => Unit) => SearchState[T]
+}
+import SearchEngine._
 trait SearchEngine[T] extends Search[T]{
 
   var currentState : SearchState[T] = _
@@ -29,7 +33,7 @@ trait SearchEngine[T] extends Search[T]{
   var initialState : SearchState[T] = _
   protected var numExploredStates = 0
 
-  def createInitialState(k : Try[T] => Unit) : SearchState[T]
+  val createInitialState : InitialStateFactory[T]
 
   def newCurrentState[S <: StateCreator[T, S]](cr : T, choices : S)  = {
     currentState = currentState.createNextState[S](cr, choices)
@@ -44,7 +48,7 @@ trait SearchEngine[T] extends Search[T]{
 
   def search(k : Try[T] => Unit) : Unit =  {
     init(k)
-    currentState.executeNextChoice()
+    currentState.executeNextChoice(this)
   }
 
   def exploredStates = numExploredStates
@@ -60,7 +64,8 @@ trait SearchEngine[T] extends Search[T]{
 }
 
 
-trait StackedSearchEngine[Result] extends SearchEngine[Result]{
+abstract class StackedSearchEngine[Result]
+  extends SearchEngine[Result]{
 
   val stateStack = mutable.Stack[SearchState[Result]]()
 
@@ -79,7 +84,9 @@ trait StackedSearchEngine[Result] extends SearchEngine[Result]{
   }
 }
 
-trait TryAllSearchEngine[ResT] extends StackedSearchEngine[ResT]{
+class TryAllSearchEngine[ResT]
+( val createInitialState : (Try[ResT] => Unit) => SearchState[ResT]
+) extends StackedSearchEngine[ResT]{
 
   def doExplore( k : Try[ResT] => Unit) : Unit =  {
 
@@ -100,7 +107,7 @@ trait TryAllSearchEngine[ResT] extends StackedSearchEngine[ResT]{
            case Some(s) => println("PREVSTATE    : " + s.uuid("/","_","") )
          }*/
 
-        stateStack.head.executeNextChoice()
+        stateStack.head.executeNextChoice(this)
       }
     }
   }
@@ -161,14 +168,16 @@ trait TryAllSearchEngine[ResT] extends StackedSearchEngine[ResT]{
   }
 }*/
 
-trait FindFirstSearchEngine[T] extends StackedSearchEngine[T] {
+class FindFirstSearchEngine[T]
+( val createInitialState : (Try[T] => Unit) => SearchState[T]
+  ) extends StackedSearchEngine[T] {
 
   def doExplore( k : Try[T] => Unit): Unit = {
 
     this.search(k)
     while(stateStack.nonEmpty && finalStates.isEmpty){
         if(stateStack.head.triedAll) stateStack.pop()
-        else stateStack.head.executeNextChoice()
+        else stateStack.head.executeNextChoice(this)
      }
 
   }

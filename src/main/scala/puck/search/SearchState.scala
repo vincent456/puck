@@ -4,15 +4,11 @@ import puck.util.{HasChildren, BreadthFirstTreeIterator}
 
 import scala.collection.mutable
 
-/**
- * Created by lorilan on 22/07/14.
- */
 class SearchStateIterator[R](val root : SearchState[R])
   extends BreadthFirstTreeIterator[SearchState[R]]
 
 trait StateCreator[Result, Internal]{
   def createState(id : Int,
-                  engine : SearchEngine[Result],
                   prevState : Option[SearchState[Result]],
                   currentResult : Result,
                   choices : Internal) : SearchState[Result]
@@ -22,11 +18,10 @@ trait SearchState[ResT] extends HasChildren[SearchState[ResT]]{
 
   val result : ResT
   val id : Int
-  val engine : SearchEngine[ResT]
   val prevState : Option[SearchState[ResT]]
 
   def createNextState[S <: StateCreator[ResT, S]](cr : ResT, choices : S) : SearchState[ResT] = {
-    val s = choices.createState(this.nextChildId(), this.engine, Some(this), cr, choices)
+    val s = choices.createState(this.nextChildId(), Some(this), cr, choices)
     this.nextStates += s
     s
   }
@@ -95,11 +90,11 @@ trait SearchState[ResT] extends HasChildren[SearchState[ResT]]{
     cid
   }
 
-  def setAsCurrentState(): Unit = { engine.currentState = this }
+  def setAsCurrentState(engine : SearchEngine[ResT]): Unit = { engine.currentState = this }
 
   def triedAll : Boolean
 
-  def executeNextChoice() : Unit
+  def executeNextChoice(engine : SearchEngine[ResT]) : Unit
 
   def ancestors(includeSelf : Boolean) :Seq[SearchState[ResT]] = {
     def aux(sState : Option[SearchState[ResT]],
@@ -122,6 +117,6 @@ class FinalState[T]
  val prevState: Option[SearchState[T]])
   extends SearchState[T]{
 
-  override def executeNextChoice() : Unit = throw new Error("No next choice for a final state")
+  override def executeNextChoice(engine : SearchEngine[T]) : Unit = throw new Error("No next choice for a final state")
   override def triedAll: Boolean = true
 }

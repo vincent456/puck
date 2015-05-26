@@ -2,10 +2,6 @@ package puck.search
 
 import scala.collection.mutable
 
-/**
- * Created by lorilan on 26/10/14.
- */
-
 trait Evaluator[Result]{
   
   type StateT = SearchState[Result]
@@ -28,28 +24,31 @@ trait Evaluator[Result]{
       case (acc, (k, v)) => acc + (k -> filterDifferentStates(v))
     }
 
-  def sort(l : Seq[StateT], pres : Int = 2)={
-    def aux(acc : Map[Int, Seq[StateT]], l : Seq[StateT]) :
-    Map[Int, Seq[StateT]] =
-      if(l.isEmpty) acc
-      else{
-        l.head.setAsCurrentState()
-        val presDix = Math.pow(10, pres.toDouble)
-        val value = (evaluate(l.head) * presDix).toInt
-        val olds = acc.getOrElse(value, Seq())
-        aux(acc + (value -> (l.head +: olds)), l.tail)
-      }
-    aux(Map[Int, Seq[StateT]](), l)
-  }
+//  def sort(l : Seq[StateT], pres : Int = 2)={
+//    def aux(acc : Map[Int, Seq[StateT]], l : Seq[StateT]) :
+//    Map[Int, Seq[StateT]] =
+//      if(l.isEmpty) acc
+//      else{
+//        l.head.setAsCurrentState()
+//        val presDix = Math.pow(10, pres.toDouble)
+//        val value = (evaluate(l.head) * presDix).toInt
+//        val olds = acc.getOrElse(value, Seq())
+//        aux(acc + (value -> (l.head +: olds)), l.tail)
+//      }
+//    aux(Map[Int, Seq[StateT]](), l)
+//  }
 
   def evaluate(r : StateT) : Double
   def equals(r1 : StateT, r2 : StateT) : Boolean
   
 }
 
-trait FunneledSeachEngine[Result] extends SearchEngine[Result]{
+class FunneledSeachEngine[Result]
+( val createInitialState : (Try[Result] => Unit) => SearchState[Result],
+  val evaluator : Evaluator[Result]
+  ) extends SearchEngine[Result]{
 
-  def evaluator : Evaluator[Result]
+
   var stateStack = new mutable.Stack[SearchState[Result]]()
 
   lazy val funneledStates = new FunneledStatesStack[Result](evaluator)
@@ -91,7 +90,7 @@ trait FunneledSeachEngine[Result] extends SearchEngine[Result]{
             stateStack.pop()
             println(s"${stateStack.size} states remainings")
           }else {
-              stateStack.head.executeNextChoice()
+              stateStack.head.executeNextChoice(this)
           }
         }
 

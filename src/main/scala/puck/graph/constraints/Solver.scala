@@ -270,7 +270,8 @@ class Solver
   }
 
 
-  def solveViolationsToward(graph : DependencyGraph, target : ConcreteNode) (k: Try[DependencyGraph] => Unit ) = {
+  def solveViolationsToward(graph : DependencyGraph, target : ConcreteNode)
+                           (k: Try[DependencyGraph] => Unit ) = {
     def end: Try[DependencyGraph] => Unit = {
       case \/-(g) =>
       graph.logger.writeln(s"solveViolationsToward $target end")

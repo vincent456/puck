@@ -56,15 +56,15 @@ class SolveAction
   controller : SVGController)
   extends AbstractAction("Solve") with DecisionMaker {
 
-  val solver = controller.solverBuilder(this,
-    automaticConstraintLoosening = false)
+  val solver = controller.solverBuilder(this, false)
 
   override def actionPerformed(e: ActionEvent): Unit =
     solver.solveViolationsToward(controller.graph.mileStone, violationTarget){
       printErrOrPushGraph(controller, "Solve Action Error")
     }
 
-  override def violationTarget(graph: DependencyGraph)(k: (Option[ConcreteNode]) => Unit): Unit =
+  override def violationTarget(graph: DependencyGraph)
+                              (k: (Option[ConcreteNode]) => Unit): Unit =
     throw new PuckError("should not happen")
 
   override def abstractionKindAndPolicy(graph: DependencyGraph, impl: ConcreteNode)

@@ -6,10 +6,6 @@ import puck.search.{SearchEngine, SearchState, StateCreator}
 import scala.collection.mutable
 import scalaz.{\/-, Success}
 
-/**
- * Created by lorilan on 30/09/14.
- */
-
 object MappingChoices{
   type ResMap = Map[NodeId, (NodeKind, Option[NodeId])]
   def ResMap() = Map[NodeId, (NodeKind, Option[NodeId])]()
@@ -30,17 +26,15 @@ class MappingChoices
   extends StateCreator[ResMap, MappingChoices] {
 
   def createState (id: Int,
-                   engine: SearchEngine[ResMap],
                    prevState: Option[SearchState[ResMap]],
                    currentResult : ResMap,
                    choices: MappingChoices): NodeMappingState = {
-    new NodeMappingState (id, engine, currentResult, choices, prevState)
+    new NodeMappingState (id, currentResult, choices, prevState)
   }
 }
 
 class NodeMappingState
 (val id : Int,
- val engine : SearchEngine[ResMap],
  val result : ResMap,
  val mappingChoices: MappingChoices,
  val prevState : Option[SearchState[ResMap]])
@@ -51,10 +45,10 @@ class NodeMappingState
 
      def triedAll = mappingChoices.remainingChoices.isEmpty
 
-     def executeNextChoice() : Unit = {
+     def executeNextChoice(engine : SearchEngine[ResMap]) : Unit = {
        if(remainingChoices.nonEmpty) {
          if (engine.currentState != this)
-           setAsCurrentState()
+           setAsCurrentState(engine)
 
          val c = remainingChoices.pop()
 
@@ -76,17 +70,15 @@ class StackSaver
   extends StateCreator[ResMap, StackSaver] {
 
   def createState (id: Int,
-                   engine: SearchEngine[ResMap],
                    prevState: Option[SearchState[ResMap]],
                    currentResult : ResMap,
                    choices: StackSaver): StackSaverState = {
-    new StackSaverState (id, engine, currentResult, choices, prevState)
+    new StackSaverState (id, currentResult, choices, prevState)
   }
 }
 
 class StackSaverState
 ( val id : Int,
-  val engine : SearchEngine[ResMap],
   val result : ResMap,
   val stackSaver: StackSaver,
   val prevState : Option[SearchState[ResMap]])
@@ -98,7 +90,7 @@ class StackSaverState
 
   def triedAll = executed
 
-  def executeNextChoice() : Unit = {
+  def executeNextChoice(engine : SearchEngine[ResMap]) : Unit = {
     executed = true
     k((mappedNode, \/-(result), nodesToMap))
   }

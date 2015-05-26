@@ -2,7 +2,6 @@ package puck
 
 import java.io.File
 
-import puck.graph.constraints.search.SolverBuilder
 import puck.graph.constraints.{Solver, DecisionMaker}
 import puck.graph.io.{FilesHandler, ConstraintSolvingSearchEngineBuilder}
 import puck.graph.transformations.TransformationRules
@@ -23,15 +22,13 @@ package object javaGraph {
   val JavaTransformationRules =
     new TransformationRules(JavaTransformationHelper, JavaRenamer, JavaAbstract, JavaIntro)
 
-  object JavaSolverBuilder extends SolverBuilder {
-    def apply(decisionMaker : DecisionMaker,
-              automaticConstraintLoosening : Boolean) : Solver =
+  val javaSolverBuilder : (DecisionMaker, Boolean) => Solver =
+    (decisionMaker, automaticConstraintLoosening) =>
       new Solver(decisionMaker,
         JavaTransformationRules,
         automaticConstraintLoosening)
-  }
 
-    val JavaSearchingStrategies: Seq[ConstraintSolvingSearchEngineBuilder] =
+  val JavaSearchingStrategies: Seq[ConstraintSolvingSearchEngineBuilder] =
       List(JavaTryAllCSSEBuilder,
         JavaFunneledCSSEBuilder,
         //JavaGradedCSSEBuilder,
@@ -40,7 +37,7 @@ package object javaGraph {
     def JavaFilesHandler() : FilesHandler = JavaFilesHandler(new File("."))
     def JavaFilesHandler(workingDirectory : java.io.File) : FilesHandler =
       new graph.FilesHandler(workingDirectory,
-        JavaSolverBuilder,
+        javaSolverBuilder,
         ".java",
         JavaDotHelper,
         JavaTransformationRules,

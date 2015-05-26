@@ -3,14 +3,13 @@ package io
 
 import java.io._
 
-import puck.graph.constraints.search.SolverBuilder
-import puck.graph.transformations.{Transformation, TransformationRules, Recording}
+import puck.graph.constraints.{Solver, DecisionMaker}
+import puck.graph.io.FilesHandler.SolverBuilder
+import puck.graph.transformations.{Transformation, TransformationRules}
 import puck.javaGraph.ASTNodeLink
 import puck.search.{Search, SearchState, SearchEngine}
 import puck.util._
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.sys.process.Process
 import scala.util.{Success, Try}
 
@@ -85,6 +84,8 @@ object FilesHandler{
     }
   }
 
+  type AutoConstraintLoosening = Boolean
+  type SolverBuilder = (DecisionMaker, AutoConstraintLoosening) => Solver
 
 }
 

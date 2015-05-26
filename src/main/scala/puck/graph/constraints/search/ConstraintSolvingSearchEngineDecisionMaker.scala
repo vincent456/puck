@@ -4,22 +4,21 @@ import puck.graph._
 import puck.graph.constraints.{NodePredicate, AbstractionPolicy, DecisionMaker}
 import puck.graph.transformations.rules.CreateVarStrategy
 import puck.search.SearchEngine
-import puck.util.PuckLogger
+import puck.util.{PuckNoopLogger, PuckLogger}
 
 object ConstraintSolving {
   type NodeChoice = ConstraintSolvingNodesChoice
   type AbsChoice = ConstraintSolvingAbstractionChoice
 }
 
-abstract class ConstraintSolvingSearchEngineDecisionMaker
-  extends SearchEngine[ResultT]
-  with DecisionMaker {
+class ConstraintSolvingSearchEngineDecisionMaker
+( val violationsKindPriority : Seq[NodeKind] )
+  extends DecisionMaker {
 
-  def logger : PuckLogger
-
+  var searchEngine : SearchEngine[ResultT] = _
   //def initialState = new CSInitialSearchState(this, solverBuilder(graph, this))
 
-  val violationsKindPriority : Seq[NodeKind]
+
 
   /*def violationTarget(graph : GraphT)
                      (k: Option[NIdT] => Unit) : Unit = {
@@ -151,7 +150,7 @@ abstract class ConstraintSolvingSearchEngineDecisionMaker
           (g2, vn.id +: s0)
         }
 
-        newCurrentState((g, g.recording),
+        searchEngine.newCurrentState((g, g.recording),
           ConstraintSolvingNodesChoice.includeNoneChoice(k(g), cs))
 
     }

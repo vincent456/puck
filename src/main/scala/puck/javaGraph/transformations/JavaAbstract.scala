@@ -4,8 +4,7 @@ package transformations
 import nodeKind._
 import puck.graph.constraints.{SupertypeAbstraction, AbstractionPolicy}
 import puck.graph._
-import puck.util.Collections.traverse
-import puck.graph.transformations.rules.{Redirection, Abstract}
+import puck.graph.transformations.rules.Abstract
 
 import scalaz._
 
@@ -35,121 +34,17 @@ object JavaAbstract extends Abstract {
       }
   }
 
-  def addTypesUses(g : DependencyGraph, node : ConcreteNode) : DependencyGraph =
-    node.styp.map(_.ids) match {
-      case None => g
-      case Some(typesUsed) =>
-        typesUsed.foldLeft(g){(g0, tid) => g0.addUses(node.id, tid)}
-    }
-
-  def createAbstractMethod(g : DependencyGraph, meth : ConcreteNode,
-                           clazz : ConcreteNode, interface : ConcreteNode) : Try[DependencyGraph] ={
-    def addContainsAndRedirectSelfType
-    (g: DependencyGraph, methodNode: ConcreteNode): Try[DependencyGraph] = {
-      if(methodNode.kind != AbstractMethod)
-        -\/(new DGError(s"$methodNode should be an abstract method !"))
-      else \/- {
-        g.addContains(interface.id, methodNode.id)
-          //TODO check why it is not needed
-          //addTypesUses(g4, absChild)
-          .changeType(methodNode.id, methodNode.styp, clazz.id, interface.id)}
-    }
-
-    createAbstraction(g, meth, AbstractMethod,  SupertypeAbstraction) flatMap {
-      case (absMethod, g21) => addContainsAndRedirectSelfType(g21, absMethod)
-    }
-  }
-
-  def changeSelfTypeBySuperInMethodSignature(g : DependencyGraph, meth : ConcreteNode,
-                                             clazz : ConcreteNode, interface : ConcreteNode): Try[DependencyGraph] ={
-
-    val g1 = g.changeContravariantType(meth.id, meth.styp, clazz.id, interface.id)
-
-    if(g1.uses(meth.id, clazz.id)) {
-      g.logger.writeln(s"interface creation : redirecting ${DGEdge.UsesK(meth.id, clazz.id)} target to $interface")
-      Redirection.redirectUsesAndPropagate(g1, DGEdge.UsesK(meth.id, clazz.id), interface.id, SupertypeAbstraction)
-    }
-    else \/-(g1)
-  }
-
-
-  def membersToPutInInterface(g : DependencyGraph, clazz : ConcreteNode) : Seq[ConcreteNode] = {
-
-    def canBeAbstracted(member : ConcreteNode) : Boolean = {
-      //the originSibling arg is needed in case of cyclic uses
-      def aux(originSibling : ConcreteNode)(member: ConcreteNode): Boolean = {
-
-        def sibling: NodeId => Boolean =
-          sid => g.contains(clazz.id, sid) && sid != originSibling.id
-
-        member.kind match {
-          case ck: MethodKind =>
-            val usedNodes = g.usedBy(member.id)
-            usedNodes.isEmpty || {
-              val usedSiblings = usedNodes filter sibling
-              usedSiblings.map(g.getConcreteNode).forall {
-                used0 => aux(member)(used0) || {
-                  val typeUses = g.typeUsesOf(member.id, used0.id)
-                  typeUses.forall { _.selfUse }
-                }
-              }
-            }
-          case _ => false
-        }
-      }
-      aux(member)(member)
-    }
-
-    g.content(clazz.id).foldLeft(Seq[ConcreteNode]()){
-      (acc, mid) =>
-        val member = g.getConcreteNode(mid)
-        if(canBeAbstracted(member)) member +: acc
-        else acc
-    }
-  }
-
-  def createInterfaceAndReplaceBySuperWherePossible(g : DependencyGraph, clazz : ConcreteNode) : Try[(ConcreteNode, DependencyGraph)] = {
-    for{
-      itcGraph <- super.createAbstraction(g, clazz, Interface, SupertypeAbstraction)
-      (interface, g1) = itcGraph
-
-      members = membersToPutInInterface(g1, clazz)
-      g2 <- traverse(members, g1){ (g0, member) =>
-        createAbstractMethod(g0, member, clazz, interface)
-      }
-
-      g3 <- insertInTypeHierarchy(g2, clazz.id, interface.id)
-
-      g4 <- traverse(members, g3.addIsa(clazz.id, interface.id)){ (g0, child) =>
-        (child.kind, child.styp) match {
-          // even fields can need to be promoted if they are written
-          //case Field() =>
-          case (ck : MethodKind, Some(MethodType(_, _)))  =>
-            changeSelfTypeBySuperInMethodSignature(g0, child, clazz, interface)
-          case _ => \/-(g0)
-        }
-      }
-    } yield {
-      logInterfaceCreation(g4, interface)
-      (interface, g4)
-    }
-  }
-
-  def logInterfaceCreation(g : DependencyGraph, itc : ConcreteNode) : Unit = {
-    import ShowDG._
-    g.logger.writeln(s"interface $itc created, contains : {")
-    g.logger.writeln(g.content(itc.id).map(showDG[NodeId](g).show).mkString("\n"))
-    g.logger.writeln("}")
-  }
-
   override def createAbstraction(g : DependencyGraph,
                                  impl: ConcreteNode,
                                  abskind : NodeKind ,
                                  policy : AbstractionPolicy) : Try[(ConcreteNode, DependencyGraph)] = {
-
     (abskind, policy) match {
       case (Interface, SupertypeAbstraction) =>
-        createInterfaceAndReplaceBySuperWherePossible(g, impl)
+        val methods = typeMembersToPutInInterface(g, impl, SupertypeAbstraction)
+        abstractTypeDeclAndReplaceByAbstractionWherePossible(g,
+          impl,
+          Interface, SupertypeAbstraction,
+          methods)
 
       case (AbstractMethod, SupertypeAbstraction) =>
         //no (abs, impl) or (impl, abs) uses

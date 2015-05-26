@@ -54,16 +54,120 @@ abstract class Abstract {
 
     }
 
-  def abstractTypeDecl
-   ( g : DependencyGraph,
-     impl: ConcreteNode,
-     abskind : NodeKind,
-     policy : AbstractionPolicy,
-     typeMembersToAbstract : Seq[ConcreteNode]) = {
+  def changeSelfTypeUseBySuperInTypeMember(g : DependencyGraph, meth : ConcreteNode,
+                                             clazz : ConcreteNode, interface : ConcreteNode): Try[DependencyGraph] ={
 
+    val g1 = g.changeContravariantType(meth.id, meth.styp, clazz.id, interface.id)
+
+    if(g1.uses(meth.id, clazz.id)) {
+      g.logger.writeln(s"interface creation : redirecting ${DGEdge.UsesK(meth.id, clazz.id)} target to $interface")
+      Redirection.redirectUsesAndPropagate(g1, DGEdge.UsesK(meth.id, clazz.id), interface.id, SupertypeAbstraction)
+    }
+    else \/-(g1)
   }
 
-  def createAbstraction(g : DependencyGraph,
+  def typeMembersToPutInInterface
+  ( g : DependencyGraph,
+    clazz : ConcreteNode,
+    policy : AbstractionPolicy) : Seq[ConcreteNode] = {
+
+    def canBeAbstracted(member : ConcreteNode) : Boolean = {
+      //the originSibling arg is needed in case of cyclic uses
+      def aux(originSibling : ConcreteNode)(member: ConcreteNode): Boolean = {
+
+        def sibling: NodeId => Boolean =
+          sid => g.contains(clazz.id, sid) && sid != originSibling.id
+
+          member.kind.canBeAbstractedWith(policy) && {
+
+          val usedNodes = g.usedBy(member.id)
+
+          usedNodes.isEmpty || {
+            val usedSiblings = usedNodes filter sibling
+            usedSiblings.map(g.getConcreteNode).forall {
+              used0 => aux(member)(used0) || {
+                val typeUses = g.typeUsesOf(member.id, used0.id)
+                typeUses.forall { _.selfUse }
+              }
+            }
+          }
+        }
+      }
+      aux(member)(member)
+    }
+
+    g.content(clazz.id).foldLeft(Seq[ConcreteNode]()){
+      (acc, mid) =>
+        val member = g.getConcreteNode(mid)
+        if(canBeAbstracted(member)) member +: acc
+        else acc
+    }
+  }
+
+  def addTypesUses(g : DependencyGraph, node : ConcreteNode) : DependencyGraph =
+    node.styp.map(_.ids) match {
+      case None => g
+      case Some(typesUsed) =>
+        typesUsed.foldLeft(g){(g0, tid) => g0.addUses(node.id, tid)}
+    }
+
+  def createAbstractTypeMember
+  ( g : DependencyGraph,
+    meth : ConcreteNode,
+    clazz : ConcreteNode,
+    interface : ConcreteNode,
+    policy : AbstractionPolicy
+    ) : Try[DependencyGraph] ={
+
+    createAbstraction(g, meth, meth.kind.abstractKinds(policy).head,  policy) map {
+      case (absMethod, g0) =>
+        g0.addContains(interface.id, absMethod.id)
+        //is change type needed in case of delegation policy
+        .changeType(absMethod.id, absMethod.styp, clazz.id, interface.id)
+    }
+  }
+
+
+  def abstractTypeDeclAndReplaceByAbstractionWherePossible
+  ( g : DependencyGraph,
+    clazz : ConcreteNode,
+    abskind : NodeKind,
+    policy : AbstractionPolicy,
+    members : Seq[ConcreteNode]
+    ) : Try[(ConcreteNode, DependencyGraph)] = {
+    for{
+      itcGraph <- createAbsNodeAndUse(g, clazz, abskind, policy)
+      (interface, g1) = itcGraph
+
+      g2 <- traverse(members, g1){ (g0, member) =>
+        createAbstractTypeMember(g0, member, clazz, interface, policy)
+      }
+
+      g3 <- insertInTypeHierarchy(g2, clazz.id, interface.id)
+
+      g4 <- if(policy == SupertypeAbstraction)
+        traverse(members, g3.addIsa(clazz.id, interface.id)){ (g0, child) =>
+          g0.kindType(child) match {
+            case TypeMember =>
+              changeSelfTypeUseBySuperInTypeMember(g0, child, clazz, interface)
+            case _ => \/-(g0)
+          }
+        }
+      else \/-(g3)
+    } yield {
+      logInterfaceCreation(g4, interface)
+      (interface, g4)
+    }
+  }
+
+  def logInterfaceCreation(g : DependencyGraph, itc : ConcreteNode) : Unit = {
+    import ShowDG._
+    g.logger.writeln(s"interface $itc created, contains : {")
+    g.logger.writeln(g.content(itc.id).map(showDG[NodeId](g).show).mkString("\n"))
+    g.logger.writeln("}")
+  }
+
+  private def createAbsNodeAndUse(g : DependencyGraph,
                         impl: ConcreteNode,
                         abskind : NodeKind ,
                         policy : AbstractionPolicy) : Try[(ConcreteNode, DependencyGraph)] = {
@@ -75,6 +179,12 @@ abstract class Abstract {
     }))
 
   }
+
+  def createAbstraction(g : DependencyGraph,
+                        impl: ConcreteNode,
+                        abskind : NodeKind ,
+                        policy : AbstractionPolicy) : Try[(ConcreteNode, DependencyGraph)] =
+    createAbsNodeAndUse(g,impl, abskind, policy)
 
   //SO SO UGLY !!!
   def abstractionCreationPostTreatment

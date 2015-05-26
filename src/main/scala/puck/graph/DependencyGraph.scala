@@ -31,11 +31,9 @@ object DependencyGraph {
   def areEquivalent[Kind <: NodeKind, T](initialRecord : Seq[Transformation],
                       graph1 : DependencyGraph,
                       graph2 : DependencyGraph,
-                      logger : PuckLogger = PuckNoopLogger) : Boolean = {
-    val engine = new RecordingComparator(initialRecord, graph1, graph2, logger)
-    engine.explore()
-    engine.finalStates.nonEmpty
-  }
+                      logger : PuckLogger = PuckNoopLogger) : Boolean =
+     new RecordingComparator(initialRecord, graph1, graph2, logger).compare()
+
 
 }
 
@@ -49,8 +47,6 @@ class DependencyGraph
   val constraints : ConstraintsMaps,
   val recording : Recording) {
 
-
-  type GraphT = DependencyGraph
 
   def newGraph(nLogger : PuckLogger = logger,
                nodes : NodeIndex = nodesIndex,
@@ -88,7 +84,7 @@ class DependencyGraph
     kind : NodeKind,
     th : Option[Type],
     mutable : Mutability = true
-    ) : (ConcreteNode, GraphT) = {
+    ) : (ConcreteNode, DependencyGraph) = {
     val(n, nIndex) = nodesIndex.addConcreteNode(localName, kind, th, mutable)
     (n, newGraph(nodes = nIndex,
       recording = recording.addConcreteNode(n)))
@@ -100,7 +96,7 @@ class DependencyGraph
       recording = recording.addVirtualNode(n))
 
 
-  def addVirtualNode(ns : Seq[NodeId], k : NodeKind) : (VirtualNode, GraphT) = {
+  def addVirtualNode(ns : Seq[NodeId], k : NodeKind) : (VirtualNode, DependencyGraph) = {
     val (vn, nIndex) = nodesIndex.addVirtualNode(ns, k)
     (vn, newGraph(nodes = nIndex))
   }
@@ -140,13 +136,13 @@ class DependencyGraph
   }
 
 
-  def setName(id : NodeId, newName : String) : GraphT = {
+  def setName(id : NodeId, newName : String) : DependencyGraph = {
     val (oldName, index) = nodesIndex.setName(id, newName)
     newGraph( nodes = index,
       recording = recording.changeNodeName(id, oldName, newName))
   }
   
-  def setType(id : NodeId, st : Option[Type]) : GraphT =
+  def setType(id : NodeId, st : Option[Type]) : DependencyGraph =
     newGraph(nodes = nodesIndex.setType(id, st))
 
   def setMutability(id : NodeId, mutable : Boolean) =
@@ -156,74 +152,74 @@ class DependencyGraph
   def exists(e : DGEdge) : Boolean =
     edges.exists(e)
 
-  def addEdge(e : DGEdge, register : Boolean = true): GraphT =
+  def addEdge(e : DGEdge, register : Boolean = true): DependencyGraph =
     newGraph( edges = edges.add(e),
               recording =
                   if(register) recording.addEdge(e)
                   else recording)
 
-  def removeEdge(e : DGEdge, register : Boolean = true): GraphT =
+  def removeEdge(e : DGEdge, register : Boolean = true): DependencyGraph =
     newGraph( edges = edges.remove(e),
               recording =
                   if(register) recording.removeEdge(e)
                   else recording)
 
- def addContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): GraphT =
+ def addContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): DependencyGraph =
     addEdge(Contains(containerId, contentId), register)
 
- def removeContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): GraphT =
+ def removeContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): DependencyGraph =
     removeEdge(Contains(containerId, contentId), register)
 
- def addUses(userId: NodeId, useeId: NodeId, register : Boolean = true): GraphT =
+ def addUses(userId: NodeId, useeId: NodeId, register : Boolean = true): DependencyGraph =
     addEdge(Uses(userId, useeId))
 
- def removeUses(userId: NodeId, useeId: NodeId, register : Boolean = true): GraphT =
+ def removeUses(userId: NodeId, useeId: NodeId, register : Boolean = true): DependencyGraph =
     removeEdge(Uses(userId, useeId))
 
- def addIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : GraphT=
+ def addIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : DependencyGraph=
     addEdge(Isa(subTypeId, superTypeId))
 
- def removeIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : GraphT=
+ def removeIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : DependencyGraph=
     removeEdge(Isa(subTypeId, superTypeId))
 
 
  def addUsesDependency(typeUse : DGUses,
-                        typeMemberUse : DGUses) : GraphT =
+                        typeMemberUse : DGUses) : DependencyGraph =
    newGraph(edges = edges.addUsesDependency(typeUse, typeMemberUse),
      recording = recording.addTypeDependency(typeUse, typeMemberUse))
 
 
 
   def removeUsesDependency(typeUse : DGUses,
-                           typeMemberUse : DGUses) : GraphT =
+                           typeMemberUse : DGUses) : DependencyGraph =
       newGraph(edges = edges.removeUsesDependency(typeUse, typeMemberUse),
         recording = recording.removeTypeDependency(typeUse, typeMemberUse))
 
 
 
-  def addAbstraction(id : NodeId, abs : (NodeId, AbstractionPolicy)) : GraphT =
+  def addAbstraction(id : NodeId, abs : (NodeId, AbstractionPolicy)) : DependencyGraph =
     newGraph(abstractionsMap = abstractionsMap + (id, abs),
              recording = recording.addAbstraction(id, abs._1, abs._2))
 
-  def removeAbstraction(id : NodeId, abs : (NodeId, AbstractionPolicy)) : GraphT =
+  def removeAbstraction(id : NodeId, abs : (NodeId, AbstractionPolicy)) : DependencyGraph =
     newGraph(abstractionsMap = abstractionsMap - (id, abs),
              recording = recording.removeAbstraction(id, abs._1, abs._2))
 
-  def changeTarget(edge : DGEdge, newTarget : NodeId) : GraphT = {
+  def changeTarget(edge : DGEdge, newTarget : NodeId) : DependencyGraph = {
     val g1 = edge.deleteIn(this, register = false)
     val newEdge : DGEdge = edge.kind(edge.source, newTarget)
     val newRecording = recording.changeEdgeTarget(edge, newTarget, withMerge = newEdge.existsIn(this))
     newEdge.createIn(g1, register = false).newGraph(recording = newRecording)
   }
 
-  def changeSource(edge : DGEdge, newSource : NodeId) : GraphT = {
+  def changeSource(edge : DGEdge, newSource : NodeId) : DependencyGraph = {
     val g1 = edge.deleteIn(this, register = false)
     val newEdge: DGEdge = edge.kind(newSource, edge.target)
     val newRecording = recording.changeEdgeSource(edge, newSource, withMerge = newEdge.existsIn(this))
     newEdge.createIn(g1, register = false).newGraph(recording = newRecording)
   }
 
-  def changeType(id : NodeId, styp : Option[Type], oldUsee: NodeId, newUsee : NodeId) : GraphT =
+  def changeType(id : NodeId, styp : Option[Type], oldUsee: NodeId, newUsee : NodeId) : DependencyGraph =
     styp match {
       case None => this
       case Some(t) => val newTyp= Some(t.changeNamedType(oldUsee, newUsee))
@@ -231,7 +227,7 @@ class DependencyGraph
           newGraph(recording = recording.addTypeChange(id, styp, oldUsee, newUsee))
     }
 
-  def changeContravariantType(id : NodeId, styp : Option[Type], oldUsee: NodeId, newUsee : NodeId) : GraphT =
+  def changeContravariantType(id : NodeId, styp : Option[Type], oldUsee: NodeId, newUsee : NodeId) : DependencyGraph =
   styp match {
     case None => this
     case Some(t) => val newTyp= Some(t.changeNamedTypeContravariant(oldUsee, newUsee))

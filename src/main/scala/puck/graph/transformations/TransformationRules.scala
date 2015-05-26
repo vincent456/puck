@@ -2,7 +2,10 @@ package puck
 package graph
 package transformations
 
+import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations.rules._
+import puck.javaGraph._
+import puck.util.Collections._
 
 import scalaz.{\/-, -\/}
 import ShowDG._
@@ -41,7 +44,22 @@ class TransformationRules
       val supMethods = g.content(sup).toList map g.getConcreteNode
       Type.findAndRegisterOverridedInList(g,supMethods, subMethods) {
         Type.errorOnImplemNotFound(showDG[NodeId](g).shows(sub))
-      } map (_.addIsa(sub, sup))
+      } map (_.addIsa(sub, sup)) flatMap {
+        g =>
+          val overloadedMethod =
+            subMethods filter {
+              m => g.abstractions(m.id) exists {
+                case (supMethId, strat) =>
+                  strat == SupertypeAbstraction &&
+                    g.contains(sup, supMethId)
+              }
+            }
+          traverse(overloadedMethod, g){
+            (g0, m) =>
+              abstracter.changeSelfTypeUseBySuperInTypeMember(g0, m, subNode, supNode)
+          }
+      }
+
     }
   }
 

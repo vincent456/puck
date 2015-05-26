@@ -2,7 +2,7 @@ package puck.javaGraph
 package nodeKind
 
 import puck.graph.NodeKind
-import puck.graph.constraints.{AbstractionPolicy, DelegationAbstraction}
+import puck.graph.constraints.{SupertypeAbstraction, AbstractionPolicy, DelegationAbstraction}
 
 
 /**
@@ -16,7 +16,11 @@ case object Field extends JavaNodeKind {
   //TODO check abstraction : FieldRead != FieldWrite
   // fieldread abstraction type = () -> t
   // fielwrite abstraction type = t -> () (think of t -> t case of jrrt ... )
-  def abstractKinds(p : AbstractionPolicy) = Seq(Method)
+  def abstractKinds(p : AbstractionPolicy) = p match {
+      case SupertypeAbstraction => Seq()
+      case DelegationAbstraction => Seq(Method)
+    }
+
 
   override def abstractionPolicies = Seq(DelegationAbstraction)
 }
