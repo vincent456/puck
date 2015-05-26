@@ -19,14 +19,14 @@ class RecordingComparatorSpec extends AcceptanceSpec {
   type GraphT = DependencyGraph
 
   def introInterface(g : GraphT, clazz : ConcreteNode, pcontainer : NodeId) : Try[(GraphT, ConcreteNode)]= {
-    TR.intro.createAbstraction(g, clazz, Interface, SupertypeAbstraction)
+    TR.abstracter.createAbstraction(g, clazz, Interface, SupertypeAbstraction)
       .map {case (classAbs, g) =>
       (g.addContains(pcontainer, classAbs.id), classAbs)}
 
   }
 
   def introPackage(g : GraphT, pname : String, pcontainer : NodeId) : (GraphT, ConcreteNode) = {
-    val (p, g2) = TR.intro.createNode(g, pname, Package, None)
+    val (p, g2) = TR.intro(g, pname, Package, None)
     (g2.addContains(pcontainer, p.id), p)
   }
 
@@ -81,7 +81,7 @@ class RecordingComparatorSpec extends AcceptanceSpec {
     scenario("Same transformations, intro Interface") {
       import methodUsesViaThisField._
 
-      def seq() = TR.intro.createAbstraction(graph, classBNode, Interface, SupertypeAbstraction)
+      def seq() = TR.abstracter.createAbstraction(graph, classBNode, Interface, SupertypeAbstraction)
         .map { case (classBAbs, g) => g.addContains(rootPackage, classBAbs.id) }
 
       val t1 = seq()

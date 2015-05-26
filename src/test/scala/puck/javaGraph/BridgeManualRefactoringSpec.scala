@@ -15,9 +15,9 @@ class BridgeManualRefactoringSpec extends AcceptanceSpec {
   scenario("bridge simplified ``manual'' refactoring"){
       try {
         val bs = BridgeScenario()
-        bs.printDot(bs.gFinal)
-        bs.printCode(bs.gFinal)
-        bs.gFinal.constraints.printConstraints(bs.gFinal, new PuckSystemLogger(_ => true), (NoSpecialContext, Info))
+//        bs.printDot(bs.gFinal)
+//        bs.printCode(bs.gFinal)
+//        bs.gFinal.constraints.printConstraints(bs.gFinal, new PuckSystemLogger(_ => true), (NoSpecialContext, Info))
 
       } catch {
         case e : Throwable =>

@@ -67,7 +67,7 @@ class BridgeScenario private()
   def introClassMoveMethod
   (g : DependencyGraph, className : String, method : NodeId) = {
     val g0 = g.comment("-- introClassMoveMethod (begin) --")
-    val (c, g1) = TR.intro.createNode(g0, className, Class, None)
+    val (c, g1) = TR.intro(g0, className, Class, None)
     val g2 = g1.addContains(screen, c.id)
     (c, TR.move.typeMember(g2, Seq(method), c.id,
       Some(CreateTypeMember(Field)))().right.value.
@@ -116,9 +116,9 @@ class BridgeScenario private()
   val (c2, g2) = intro2classMerge(g1, "CapitalStyle", printCapital1, printCapital2)
   val g3 =  TR.rename(TR.rename(g2, printStar1, "printStyle"), printCapital1, "printStyle")
 
-  val (i1, g4) = TR.intro.createAbstraction(g3, c1, Interface, SupertypeAbstraction).right.value
+  val (i1, g4) = TR.abstracter.createAbstraction(g3, c1, Interface, SupertypeAbstraction).right.value
   val g5 = g4.addContains(screen, i1.id)
-  val (i2, g6) = TR.intro.createAbstraction(g5, c2, Interface, SupertypeAbstraction).right.value
+  val (i2, g6) = TR.abstracter.createAbstraction(g5, c2, Interface, SupertypeAbstraction).right.value
   val g7 = g6.addContains(screen, i2.id)
 
   val g8 = TR.rename(TR.mergeInto(g7, i2.id, i1.id).right.value, i1.id, "StyleProvider")

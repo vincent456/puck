@@ -43,7 +43,7 @@ class AbstractionAction(
 
      override def actionPerformed(e: ActionEvent): Unit =
        printErrOrPushGraph(controller,"Abstraction action failure") {
-         controller.transfoRules.intro.createAbstraction(graph.mileStone, node, kind, policy).
+         controller.transfoRules.abstracter.createAbstraction(graph.mileStone, node, kind, policy).
            map { case (abs, g) =>
              val h = getHost(abs.kind)
              g.addContains(h, abs.id)

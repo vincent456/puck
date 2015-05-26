@@ -2,7 +2,7 @@ package puck.javaGraph
 
 import puck._
 import puck.graph.transformations.rules.Move
-import puck.javaGraph.transformations.JavaIntro
+import puck.javaGraph.transformations.{JavaIntro, JavaAbstract}
 
 class MoveUnitSpec extends UnitSpec {
   val examplesPath = Settings.testExamplesPath + "/move"

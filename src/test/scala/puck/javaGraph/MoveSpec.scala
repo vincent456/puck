@@ -4,7 +4,7 @@ package javaGraph
 import puck.graph._
 import puck.graph.transformations.rules.{CreateTypeMember, CreateParameter, Move}
 import puck.javaGraph.nodeKind.Field
-import puck.javaGraph.transformations.JavaIntro
+import puck.javaGraph.transformations.{JavaIntro, JavaAbstract}
 
 import scalaz.{\/-, -\/}
 

@@ -1,5 +1,55 @@
 package puck.graph
 
+import puck.PuckError
+import puck.graph.ShowDG._
+import puck.graph.constraints.SupertypeAbstraction
+import puck.util.Collections._
+
+import scalaz.{-\/, \/-}
+
+
+object Type {
+  def findOverridedIn
+  ( g : DependencyGraph,
+    absName : String, absSig : Type,
+    candidates : List[ConcreteNode]) : Option[(ConcreteNode, List[ConcreteNode])] = {
+    import puck.util.Collections.SelectList
+    candidates.select( c => c.styp.nonEmpty &&
+      c.name == absName &&
+      c.styp.exists(absSig.canOverride(g, _)))
+  }
+
+  type OnImplemNotFound =
+    (DependencyGraph, ConcreteNode, List[ConcreteNode]) => Try[(DependencyGraph, List[ConcreteNode])]
+
+  def errorOnImplemNotFound(className : String) : OnImplemNotFound = {
+    (g, supMeth, _) =>
+      -\/(new PuckError(s"$className has no implementation of ${showDG[ConcreteNode](g).shows(supMeth)}"))
+  }
+
+  val ignoreOnImplemNotFound : OnImplemNotFound = {
+    (g, _, cs) => \/-((g,cs))
+  }
+
+  def findAndRegisterOverridedInList
+  ( g : DependencyGraph,
+    absMeths : List[ConcreteNode],
+    candidates : List[ConcreteNode])
+  ( onImplemNotFound : OnImplemNotFound ): Try[DependencyGraph] =
+    traverse(absMeths, (g, candidates) ){
+      case ((g0, cs), supMeth) =>
+        (supMeth.styp, g.kindType(supMeth)) match {
+          case (Some(mt), TypeMember) =>
+            findOverridedIn(g0, supMeth.name, mt, cs) match {
+              case Some((subMeth, newCandidates)) =>
+                \/-( (g0.addAbstraction(subMeth.id, (supMeth.id, SupertypeAbstraction)), newCandidates) )
+              case None => onImplemNotFound(g0, supMeth, candidates)
+            }
+          case (Some(mt), TypeConstructor) => \/-((g0,cs))
+          case _ => -\/(new PuckError(s"${showDG[ConcreteNode](g).shows(supMeth)} has not a correct type"))
+        }
+    } map(_._1)
+}
 
 sealed abstract class Type {
 

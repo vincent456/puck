@@ -193,10 +193,8 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
   def registerDecl(n : NodeIdT, decl : AST.MethodDecl) : Unit = {
     g.getConcreteNode(n).kind match {
       case Method =>
-        //g = g.setInternal(n, ConcreteMethodDeclHolder(Some(decl)))
         graph2ASTMap += (n -> ConcreteMethodDeclHolder(decl))
       case AbstractMethod =>
-        //g = g.setInternal(n, AbstractMethodDeclHolder(Some(decl)))
         graph2ASTMap += (n -> AbstractMethodDeclHolder(decl))
       case _ => throwRegisteringError(g.getConcreteNode(n), "MethodDecl")
     }
@@ -221,8 +219,9 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
         case (Class, Interface) =>
             val absMeths = graph.content(abs.id).map(graph.getConcreteNode)
             val candidates = graph.content(impl.id).map(graph.getConcreteNode)
-            JavaType.findAndRegisterOverridedMethods(graph, graph.fullName(impl.id), absMeths.toList, candidates.toList)
-              .getOrElse(sys.error("Success expected"))
+            Type.findAndRegisterOverridedInList(graph, absMeths.toList, candidates.toList) {
+              Type.errorOnImplemNotFound(graph.fullName(impl.id))
+            } .getOrElse(sys.error("Success expected"))
               .addAbstraction(implId, (absId, pol))
         case _ => graph
       }

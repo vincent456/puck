@@ -90,7 +90,7 @@ import scalaz.{-\/, \/-}
         g =>
           val delegateName = s"${g.getConcreteNode(newContainer).name.toLowerCase}_delegate"
           val (field, g2) =
-            intro.createNode(g, delegateName, k, Some(NamedType(newContainer)))
+            intro(g, delegateName, k, Some(NamedType(newContainer)))
           (field.id, g2.addContains(currentContainer, field.id))
       }
 

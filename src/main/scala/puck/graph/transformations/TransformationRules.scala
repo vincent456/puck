@@ -2,17 +2,15 @@ package puck
 package graph
 package transformations
 
-import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations.rules._
-import puck.javaGraph.{JavaType, MethodType}
-import puck.util.Collections.traverse
 
 import scalaz.{\/-, -\/}
 import ShowDG._
 class TransformationRules
 ( mergingCandidatesFinder : MergingCandidatesFinder,
-  val intro : Intro,
-  val rename : Renamer) {
+  val rename : Renamer,
+  val abstracter : Abstract,
+  val intro : Intro) {
 
 
   def findMergingCandidate = mergingCandidatesFinder.find _
@@ -41,8 +39,9 @@ class TransformationRules
     else {
       val subMethods = g.content(sub).toList map g.getConcreteNode
       val supMethods = g.content(sup).toList map g.getConcreteNode
-      JavaType.findAndRegisterOverridedMethods(g, showDG[NodeId](g).shows(sub),
-        supMethods, subMethods) map (_.addIsa(sub, sup))
+      Type.findAndRegisterOverridedInList(g,supMethods, subMethods) {
+        Type.errorOnImplemNotFound(showDG[NodeId](g).shows(sub))
+      } map (_.addIsa(sub, sup))
     }
   }
 

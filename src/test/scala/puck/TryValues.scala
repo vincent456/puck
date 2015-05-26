@@ -13,7 +13,7 @@ trait TryValues {
 
   implicit class TriedValue[G]( t : Try[G]) /*extends AnyVal*/ {
     def value : G = t match {
-      case -\/(_) => assert(false)
+      case -\/(err) => assert(false, "success expected, got error : " + err.getMessage)
         sys.error("false asserted")
       case \/-(g) => g
     }
