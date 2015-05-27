@@ -3,14 +3,17 @@ package puck.search
 import scala.collection.mutable
 import scalaz.{-\/, \/-}
 
-/**
- * Created by lorilan on 07/07/14.
- */
-
 trait Search[Result]{
   def initialState : SearchState[Result]
   def finalStates : Seq[FinalState[Result]]
   def exploredStates : Int
+
+  def allStatesByDepth : Map[Int, Seq[SearchState[Result]]] =
+    initialState.iterator.foldLeft(Map[Int, Seq[SearchState[Result]]]()){
+    (m, state) =>
+      val seq = m.getOrElse(state.depth, Seq())
+      m + (state.depth -> (state +: seq))
+  }
 }
 
 object SearchEngine {
@@ -53,10 +56,10 @@ trait SearchEngine[T] extends Search[T]{
 
   def exploredStates = numExploredStates
 
-  def doExplore(k : Try[T] => Unit) : Unit
+  protected def startExplore(k : Try[T] => Unit) : Unit
 
   def explore() : Unit ={
-    doExplore {
+    startExplore {
       case \/-(result) => storeResult(Some(currentState), result)
       case -\/(e) => println(e.getMessage)
     }
@@ -88,7 +91,7 @@ class TryAllSearchEngine[ResT]
 ( val createInitialState : (Try[ResT] => Unit) => SearchState[ResT]
 ) extends StackedSearchEngine[ResT]{
 
-  def doExplore( k : Try[ResT] => Unit) : Unit =  {
+  protected def startExplore( k : Try[ResT] => Unit) : Unit =  {
 
   this.search(k)
 
@@ -172,7 +175,7 @@ class FindFirstSearchEngine[T]
 ( val createInitialState : (Try[T] => Unit) => SearchState[T]
   ) extends StackedSearchEngine[T] {
 
-  def doExplore( k : Try[T] => Unit): Unit = {
+  protected def startExplore( k : Try[T] => Unit): Unit = {
 
     this.search(k)
     while(stateStack.nonEmpty && finalStates.isEmpty){

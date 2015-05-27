@@ -1,10 +1,9 @@
 package puck.gui.svg
 
-import java.awt.event.ActionEvent
-import javax.swing.{AbstractAction, JMenuItem, JPopupMenu}
+import javax.swing.JPopupMenu
 
-import puck.graph.{Uses, Isa, DGEdge}
-import puck.gui.svg.actions.{ShowTypeRelationshipAction, RemoveEdgeAction, SolveAction}
+import puck.graph.{Uses, DGEdge}
+import puck.gui.svg.actions.{ShowTypeRelationshipAction, RemoveEdgeAction, ManualSolveAction}
 
 class EdgeRightClickMenu
 ( private val controller : SVGController,
@@ -15,7 +14,7 @@ class EdgeRightClickMenu
 
   if(graph.isViolation(edge)){
     val target = graph.getConcreteNode(edge.target)
-    add(new SolveAction(target, controller))
+    add(new ManualSolveAction(target, controller))
   }
 
   if(edge.kind == DGEdge.IsaK)

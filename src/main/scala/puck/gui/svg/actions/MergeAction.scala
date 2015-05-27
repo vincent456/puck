@@ -12,7 +12,7 @@ case class MergeAction(
   controller : SVGController)
   extends AbstractAction(s"Merge $consumed into this") {
 
-  import controller.graph
+  import controller.{graph, graphUtils}, graphUtils.{transformationRules => TR}
 
   override def actionPerformed(e: ActionEvent): Unit =
     printErrOrPushGraph(controller,"Merge action failure") {
@@ -21,7 +21,7 @@ case class MergeAction(
       if(graph.container(consumed.id) != sConsumerHost)
         new MoveAction(graph.getConcreteNode(sConsumerHost.get), List(consumed.id), controller).actionPerformed(null)
 
-      controller.transfoRules.mergeInto(graph.mileStone, consumed.id, consumer.id)
+      TR.mergeInto(graph.mileStone, consumed.id, consumer.id)
     }
 
 }

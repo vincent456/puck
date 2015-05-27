@@ -34,9 +34,9 @@ object DotPrinter {
   }
 
 }
-
+import VisibilitySet._
 case class PrintingOptions
-( visibility : VisibilitySet,
+( visibility : VisibilitySet.T,
   printId : Boolean = false,
   printSignatures : Boolean = false,
   selectedUse : Option[DGUses] = None,
@@ -52,6 +52,9 @@ class DotPrinter
   printingOptions: PrintingOptions){
 
   import printingOptions._
+
+  val visibility = printingOptions.visibility
+    .setVisibility(DependencyGraph.rootId, Hidden)
 
   implicit val g = graph
 
@@ -326,7 +329,6 @@ class DotPrinter
     writeln("rankdir=LR; ranksep=equally; compound=true")
 
     graph.content(graph.rootId).foreach(printNode)
-    visibility.setVisibility(DependencyGraph.rootId, Hidden)
     graph.nodesId.foreach{nid => if(graph.container(nid).isEmpty) printNode(nid)}
 
 

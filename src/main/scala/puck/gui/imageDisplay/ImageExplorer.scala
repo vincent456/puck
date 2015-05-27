@@ -23,7 +23,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
  */
 class ImageExplorer(val filesHandler : FilesHandler,
                     val states : IndexedSeq[SearchState[ResultT]],
-                    visibility : VisibilitySet,
+                    visibility : VisibilitySet.T,
                      printId : Boolean,
                      printSignature : Boolean) extends Frame{
 

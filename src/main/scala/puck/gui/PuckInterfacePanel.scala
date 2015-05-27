@@ -3,7 +3,7 @@ package puck.gui
 import java.awt.Dimension
 import java.io.File
 
-import puck.graph.DependencyGraph
+import puck.graph.{GraphUtils, DependencyGraph}
 import puck.graph.io.{FilesHandler, Hidden, VisibilitySet}
 import puck.gui.explorer.{SetVisible, NodeInfosPanel, PuckTreeNodeClicked, GraphExplorer}
 import puck.gui.search.ResultPanel
@@ -14,15 +14,16 @@ import puck.javaGraph.nodeKind.{Package, Class}
 import scala.collection.mutable.ArrayBuffer
 import scala.swing._
 
-class PuckInterfacePanel (filesHandler : FilesHandler) extends SplitPane(Orientation.Vertical) {
+class PuckInterfacePanel
+( filesHandler : FilesHandler,
+  graphUtils: GraphUtils
+  ) extends SplitPane(Orientation.Vertical) {
 
   val leftWidth = PuckMainPanel.width * 3/8
   val rightWidth = PuckMainPanel.width * 5/8
   val height = PuckMainPanel.height * 2/3
 
-  val visibilitySet = VisibilitySet()
-  visibilitySet.setVisibility(DependencyGraph.rootId /*:: (Predefined.list map (_.id))*/, Hidden)
-  val treeDisplayer = new GraphExplorer(visibilitySet, rightWidth/2, height)
+  val treeDisplayer = new GraphExplorer(rightWidth/2, height)
 
   val treeDisplayerWrapper = new ScrollPane(){
     minimumSize = new Dimension(rightWidth/2, height)
@@ -32,7 +33,7 @@ class PuckInterfacePanel (filesHandler : FilesHandler) extends SplitPane(Orienta
 
   val progressBar  = new ProgressBar()
   val delayedDisplay = ArrayBuffer[Component]()
-  val control = new PuckControl(filesHandler, progressBar, delayedDisplay)
+  val control = new PuckControl(filesHandler, graphUtils, progressBar, delayedDisplay)
 
   val printIdsBox = new CheckBox("Show nodes ID")
   val printSignaturesBox = new CheckBox("Show signagures")
@@ -46,7 +47,7 @@ class PuckInterfacePanel (filesHandler : FilesHandler) extends SplitPane(Orienta
 
     reactions += {
       case PuckTreeNodeClicked(graph, n) =>
-        val nodeInfoPanel = new NodeInfosPanel(graph, n, printIds, printSigs, visibilitySet)
+        val nodeInfoPanel = new NodeInfosPanel(graph, n, printIds, printSigs, treeDisplayer.visibilitySet)
         contents = nodeInfoPanel
         control.listenTo(nodeInfoPanel)
         treeDisplayer.listenTo(nodeInfoPanel)
@@ -80,8 +81,8 @@ class PuckInterfacePanel (filesHandler : FilesHandler) extends SplitPane(Orienta
       case ExplorationFinished(res0) =>
         resultsWrapper.contents.clear()
         val searchResultPanel =
-          new ResultPanel(filesHandler.initialRecord, res0, filesHandler.logger,
-            printIds, printSigs, visibilitySet)
+          new ResultPanel(control.dg2AST.initialRecord, res0, filesHandler.logger,
+            printIds, printSigs, treeDisplayer.visibilitySet)
         resultsWrapper.contents += searchResultPanel
         resultsWrapper.revalidate()
         control listenTo searchResultPanel
@@ -144,7 +145,7 @@ class PuckInterfacePanel (filesHandler : FilesHandler) extends SplitPane(Orienta
 */
     val showConstraints = makeButton("Show constraints",
       "Show the constraints the graph has to satisfy"){
-      () => publish(ConstraintDisplayRequest(filesHandler.graph))
+      () => publish(ConstraintDisplayRequest(control.dg2AST.initialGraph))
     }
 
     addDelayedComponent(showConstraints)
@@ -179,10 +180,10 @@ class PuckInterfacePanel (filesHandler : FilesHandler) extends SplitPane(Orienta
       "Display a visual representation of the graph"){
       () => publish(GraphDisplayRequest(
         "Graph",
-        filesHandler.graph,
+        control.dg2AST.initialGraph,
         printIdsBox.selected,
         printSignaturesBox.selected,
-        visibilitySet))
+        treeDisplayer.visibilitySet))
     }
 
     addDelayedComponent(show)
@@ -191,10 +192,10 @@ class PuckInterfacePanel (filesHandler : FilesHandler) extends SplitPane(Orienta
       "Display a visual representation of the graph"){
       () => publish(GraphDisplayRequest(
         "Graph",
-        filesHandler.graph,
+        control.dg2AST.initialGraph,
         printIdsBox.selected,
         printSignaturesBox.selected,
-        VisibilitySet.violationsOnly(filesHandler.graph)))
+        VisibilitySet.violationsOnly(control.dg2AST.initialGraph)))
     }
 
     addDelayedComponent(showViolations)

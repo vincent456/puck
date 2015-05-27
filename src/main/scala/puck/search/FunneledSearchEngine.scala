@@ -77,7 +77,7 @@ class FunneledSeachEngine[Result]
 
 
 
-  override def doExplore(k : Try[Result] => Unit) = {
+  override def startExplore(k : Try[Result] => Unit) = {
 
      this.search(k)
 

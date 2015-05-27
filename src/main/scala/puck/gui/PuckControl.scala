@@ -6,6 +6,7 @@ import AST.LoadingListener
 import puck.graph.FilesHandler
 
 import puck.graph._
+import puck.graph.constraints.search.ConstraintSolvingSearchEngineBuilder
 import puck.graph.io._
 import puck.gui.explorer.AccessGraphModified
 import puck.gui.imageDisplay.{ImageFrame, ImageExplorer}
@@ -22,10 +23,6 @@ import scala.util.{Failure, Success}
 import scalaz.{Success => Succezz}
 
 
-/**
- * Created by lorilan on 11/08/14.
- */
-
 sealed trait ControlRequest extends Event
 
 case class LoadCodeRequest() extends ControlRequest
@@ -35,7 +32,7 @@ case class GraphDisplayRequest
  graph : DependencyGraph,
  printId : Boolean,
  printSignature : Boolean,
- visibility : VisibilitySet,
+ visibility : VisibilitySet.T,
  sUse : Option[DGUses] = None,
  format : DotOutputFormat = Svg)
  extends ControlRequest
@@ -49,7 +46,7 @@ case class SearchStateMapPrintingRequest
 (stateMap : Map[Int, Seq[SearchState[ResultT]]],
  printId : Boolean,
  printSignature : Boolean,
- visibility : VisibilitySet)
+ visibility : VisibilitySet.T)
   extends ControlRequest
 case class SearchStateSeqPrintingRequest
 (subDir : String,
@@ -57,7 +54,7 @@ case class SearchStateSeqPrintingRequest
  sPrinter : Option[SearchState[ResultT] => String],
  printId : Boolean,
  printSignature : Boolean,
- visibility : VisibilitySet)
+ visibility : VisibilitySet.T)
   extends ControlRequest
 
 case class PrintConstraintRequest() extends ControlRequest
@@ -68,6 +65,7 @@ case class ExplorationFinished(result : Search[ResultT]) extends Answer
 
 
 class PuckControl(val filesHandler : FilesHandler,
+                  val graphUtils: GraphUtils,
                   private val progressBar : ProgressBar,
                   private val delayedDisplay : ArrayBuffer[Component])
   extends Publisher {
@@ -77,16 +75,18 @@ class PuckControl(val filesHandler : FilesHandler,
 
   import filesHandler.logger
 
+  var dg2AST : DG2AST = _
+
   def loadCode( onSuccess : => Unit) = Future {
     progressBar.visible = true
     progressBar.value = 0
 
-    filesHandler.loadGraph(new LoadingListener {
+    dg2AST = filesHandler.loadGraph(graphUtils.dG2ASTBuilder, new LoadingListener {
       override def update(loading: Double): Unit =
         progressBar.value = (loading * 100).toInt
     })
     progressBar.visible = false
-    publish(AccessGraphModified(filesHandler.graph))
+    publish(AccessGraphModified(dg2AST.initialGraph))
 
     delayedDisplay.foreach(_.visible = true)
   } onComplete {
@@ -97,12 +97,25 @@ class PuckControl(val filesHandler : FilesHandler,
   }
 
 
+  def explore (trace : Boolean = false,
+               builder : ConstraintSolvingSearchEngineBuilder,
+               automaticConstraintLoosening: Boolean) : Search[ResultT] = {
+
+    val engine = builder(dg2AST.initialRecord, dg2AST.initialGraph, automaticConstraintLoosening)
+
+    puck.util.Time.time(logger, defaultVerbosity) {
+      engine.explore()
+    }
+
+    engine
+  }
+
   def loadConstraints() : Unit = {
     try {
       logger.writeln("Loading constraints ...")
-      filesHandler.parseConstraints()
+      dg2AST = filesHandler.parseConstraints(dg2AST)
       logger.writeln(" done:")
-      filesHandler.graph.printConstraints(logger, defaultVerbosity)
+      dg2AST.initialGraph.printConstraints(logger, defaultVerbosity)
     }
     catch {
       case _ : java.io.FileNotFoundException => logger writeln "constraint file not found"
@@ -128,7 +141,9 @@ class PuckControl(val filesHandler : FilesHandler,
 
       case Svg =>
         Future {
-          val imgframe = new SVGFrame(pipedInput, graph, opts, this){
+          //TODO create a simpler SVGFrame that displays the graph passed in argument and find another use case for this creation
+          // call SVGControl.displayGraph ??
+          val imgframe = new SVGFrame(pipedInput, opts, filesHandler, graphUtils, dg2AST){
             setTitle(title)
           }
         }
@@ -140,13 +155,11 @@ class PuckControl(val filesHandler : FilesHandler,
     }
   }
 
-  def dg2ast = filesHandler.dg2ast
-
   def applyOnCode(record : ResultT) : Unit = {
     Future {
       filesHandler.logger.write("generating code ...")
-      filesHandler.applyChangeOnProgram(record)
-      filesHandler.printCode()
+      dg2AST(record)
+      filesHandler.printCode(dg2AST)
       filesHandler.logger.writeln(" done")
     } onComplete {
       case Success(_) => ()
@@ -160,7 +173,7 @@ class PuckControl(val filesHandler : FilesHandler,
                      sPrinter : Option[StateT => String],
                      printId : Boolean,
                      printSignature : Boolean,
-                     visibility : VisibilitySet): Unit ={
+                     visibility : VisibilitySet.T): Unit ={
     val d = filesHandler.graphFile("_results")
     d.mkdir()
     val subDir = filesHandler.graphFile("_results%c%s".format(File.separatorChar, subDirStr))
@@ -171,7 +184,7 @@ class PuckControl(val filesHandler : FilesHandler,
   def showStateSeq(states : Seq[StateT],
                    printId : Boolean,
                    printSignature : Boolean,
-                   visibility : VisibilitySet): Unit = {
+                   visibility : VisibilitySet.T): Unit = {
     Future(new ImageExplorer(filesHandler, states.toIndexedSeq, visibility, printId, printSignature))
     ()
   }
@@ -192,9 +205,9 @@ class PuckControl(val filesHandler : FilesHandler,
 
     case ExploreRequest(builder) =>
 
-      val engine = builder(filesHandler.initialRecord,
-                           filesHandler.graph,
-                           automaticConstraintLoosening = true)
+      val engine = builder(dg2AST.initialRecord,
+                          dg2AST.initialGraph,
+                          automaticConstraintLoosening = true)
 
       Future {
         filesHandler.logger.writeln("Solving constraints ...")

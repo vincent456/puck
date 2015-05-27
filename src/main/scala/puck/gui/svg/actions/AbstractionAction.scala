@@ -34,7 +34,7 @@ class AbstractionAction(
   controller : SVGController)
   extends AbstractAction(s"$kind ($policy)"){
 
-     import controller.{graph,transfoRules}
+     import controller.{graph, graphUtils}, graphUtils.{transformationRules => TR}
 
      def getHost(absKind : NodeKind) : NodeId = {
        def aux(id : NodeId) : Option[NodeId] =
@@ -74,21 +74,21 @@ class AbstractionAction(
            case TypeDecl =>
              val typeMembers = graph.content(node.id).toSeq.
                 map(graph.getConcreteNode).
-                filter(graph.kindType(_)==TypeMember)
+                filter(TR.abstracter.canBeAbstracted(graph, _, node, policy))
              val ckBoxes = typeMembers.map(NodeCheckBox(graph, _))
 
             def selectedNodes = ckBoxes.filter(_.isSelected).map(_.node)
 
              methodDialog(ckBoxes) match {
                case Result.Ok =>
-                 transfoRules.abstracter.
+                 TR.abstracter.
                    abstractTypeDeclAndReplaceByAbstractionWherePossible(graph.mileStone, node, kind, policy, selectedNodes)
                case Result.Cancel =>
                  -\/(new PuckError("Operation Canceled"))
              }
 
            case _ =>
-             transfoRules.abstracter.createAbstraction(graph.mileStone, node, kind, policy)
+             TR.abstracter.createAbstraction(graph.mileStone, node, kind, policy)
 
          }
 

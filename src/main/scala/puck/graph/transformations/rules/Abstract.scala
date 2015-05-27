@@ -66,40 +66,46 @@ abstract class Abstract {
     else \/-(g1)
   }
 
+  def canBeAbstracted
+    (g : DependencyGraph,
+     member : ConcreteNode,
+     clazz : ConcreteNode,
+     policy : AbstractionPolicy) : Boolean = {
+    //the originSibling arg is needed in case of cyclic uses
+    def aux(originSibling : ConcreteNode)(member: ConcreteNode): Boolean = {
+
+      def sibling: NodeId => Boolean =
+        sid => g.contains(clazz.id, sid) && sid != originSibling.id
+
+      member.kind.canBeAbstractedWith(policy) && {
+
+        val usedNodes = g.usedBy(member.id)
+
+        usedNodes.isEmpty || {
+          val usedSiblings = usedNodes filter sibling
+          usedSiblings.map(g.getConcreteNode).forall {
+            used0 => aux(member)(used0) || {
+              val typeUses = g.typeUsesOf(member.id, used0.id)
+              typeUses.forall { _.selfUse }
+            }
+          }
+        }
+      }
+    }
+    aux(member)(member)
+  }
+
+
   def typeMembersToPutInInterface
   ( g : DependencyGraph,
     clazz : ConcreteNode,
     policy : AbstractionPolicy) : Seq[ConcreteNode] = {
 
-    def canBeAbstracted(member : ConcreteNode) : Boolean = {
-      //the originSibling arg is needed in case of cyclic uses
-      def aux(originSibling : ConcreteNode)(member: ConcreteNode): Boolean = {
-
-        def sibling: NodeId => Boolean =
-          sid => g.contains(clazz.id, sid) && sid != originSibling.id
-
-          member.kind.canBeAbstractedWith(policy) && {
-
-          val usedNodes = g.usedBy(member.id)
-
-          usedNodes.isEmpty || {
-            val usedSiblings = usedNodes filter sibling
-            usedSiblings.map(g.getConcreteNode).forall {
-              used0 => aux(member)(used0) || {
-                val typeUses = g.typeUsesOf(member.id, used0.id)
-                typeUses.forall { _.selfUse }
-              }
-            }
-          }
-        }
-      }
-      aux(member)(member)
-    }
 
     g.content(clazz.id).foldLeft(Seq[ConcreteNode]()){
       (acc, mid) =>
         val member = g.getConcreteNode(mid)
-        if(canBeAbstracted(member)) member +: acc
+        if(canBeAbstracted(g, member, clazz, policy)) member +: acc
         else acc
     }
   }

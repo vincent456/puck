@@ -3,12 +3,7 @@ package puck.javaGraph
 import puck.graph._
 import puck.graph.io.{VisibilitySet, DotHelper}
 import puck.javaGraph.nodeKind._
-
-
-/**
- * Created by lorilan on 29/10/14.
- */
-
+import VisibilitySet._
 
 object JavaDotHelper extends DotHelper{
 
@@ -21,7 +16,7 @@ object JavaDotHelper extends DotHelper{
       case _ => ""
     }
 
-  override def splitDotClassContent(graph : DependencyGraph, n: NodeId, visibility : VisibilitySet) = {
+  override def splitDotClassContent(graph : DependencyGraph, n: NodeId, visibility : VisibilitySet.T) = {
     graph.content(n).foldLeft( (Seq[NodeId](), Seq[NodeId](), Seq[NodeId](), Seq[NodeId]()) ){
       ( lists : (Seq[NodeId], Seq[NodeId], Seq[NodeId] , Seq[NodeId]), n : NodeId ) =>
         if(visibility.isHidden(n)) lists

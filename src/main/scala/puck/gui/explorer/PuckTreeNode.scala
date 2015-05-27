@@ -8,17 +8,15 @@ import puck.graph.io.{Visible, Hidden, Visibility, VisibilitySet}
 import scala.swing.CheckBox
 import puck.javaGraph.nodeKind.{Package, Class}
 
-/**
- * Created by lorilan on 10/07/14.
- */
 object PuckTreeNode {
   def isSelected : Visibility => Boolean = {
     case Visible => true
     case Hidden => false
   }
 }
+
 class PuckTreeNode(val nodeId : NodeId,
-                   val hiddens : VisibilitySet,
+                   val explorer : GraphExplorer,
                    name : String)
   extends DefaultMutableTreeNode(nodeId){
 
@@ -27,15 +25,15 @@ class PuckTreeNode(val nodeId : NodeId,
 
   override def toString = name
 
-  hiddens.setVisibility(nodeId, Visible)
+  explorer.setVisibility(nodeId, Visible)
 
 
   def setVisible(visibility : Visibility, propagate : Boolean): Unit = {
 
 
-   if(hiddens.visibility(nodeId) != visibility){
+   if(explorer.visibility(nodeId) != visibility){
 
-     hiddens.setVisibility(nodeId, visibility)
+     explorer.setVisibility(nodeId, visibility)
 
      if(visibility == Visible && this.getParent.isInstanceOf[PuckTreeNode]){
        this.getParent.asInstanceOf[PuckTreeNode].setVisible(Visible, propagate =false)
@@ -70,7 +68,7 @@ class PuckTreeNode(val nodeId : NodeId,
 
 
  def toggleFilter() : Unit = {
-   setVisible(hiddens.visibility(nodeId).opposite, propagate = true)
+   setVisible(explorer.visibility(nodeId).opposite, propagate = true)
  }
 
 }

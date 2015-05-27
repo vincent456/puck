@@ -17,7 +17,7 @@ import scala.swing._
   def top = new MainFrame {
     title = "Puck"
 
-    contents  = new PuckMainPanel(JavaFilesHandler())
+    contents  = new PuckMainPanel(JavaFilesHandler(), JGraphUtils)
 
   }
 }

@@ -12,13 +12,16 @@ import org.apache.batik.swing.gvt.{GVTTreeRendererEvent, GVTTreeRendererAdapter}
 import org.apache.batik.swing.svg.AbstractJSVGComponent
 import org.apache.batik.util.{SVGConstants, XMLConstants}
 import org.w3c.dom.{Node, NodeList, Element}
-import org.w3c.dom.events.{Event, MouseEvent, EventListener}
+import org.w3c.dom.events.{EventListener, Event, MouseEvent}
 import org.w3c.dom.svg._
 import puck.graph.{NodeId, DGEdge}
+import puck.gui.svg.SVGPanel._
 
 
 class PUCKSVGCanvas
-(panel : SVGPanel) extends JSVGCanvas {
+( panel : SVGPanel,
+  eventListenerBuilder : EventListenerBuilder
+  ) extends JSVGCanvas {
   setDocumentState(AbstractJSVGComponent.ALWAYS_DYNAMIC)
 
   userAgent = new BridgeUserAgent(){
@@ -45,7 +48,7 @@ class PUCKSVGCanvas
     override def gvtRenderingCompleted (e: GVTTreeRendererEvent) : Unit = {
       root.addEventListenerNS(XMLConstants.XML_EVENTS_NAMESPACE_URI,
         SVGConstants.SVG_EVENT_CLICK,
-        new SVGPanelListener(PUCKSVGCanvas.this, panel), false, null)
+        eventListenerBuilder(PUCKSVGCanvas.this, panel), false, null)
     }
   })
 
@@ -248,18 +251,24 @@ class SVGPanelListener
   }
 }
 
+object SVGPanel {
+  type EventListenerBuilder = (PUCKSVGCanvas, SVGPanel) => EventListener
+  val defaultListener : EventListenerBuilder =
+    (canvas, panel) => new SVGPanelListener(canvas, panel)
+  val deafListener : EventListenerBuilder =
+    (_,_) => new EventListener {
+      override def handleEvent(evt: Event): Unit = ()
+    }
+}
 
 class SVGPanel
-( doc : SVGDocument ) extends JPanel {
-  val canvas = new PUCKSVGCanvas(this)
+( doc : SVGDocument,
+  eventListenerBuilder: EventListenerBuilder = defaultListener) extends JPanel {
+  val canvas = new PUCKSVGCanvas(this, eventListenerBuilder)
   canvas.setSVGDocument(doc)
   setLayout(new BorderLayout())
   add("Center", canvas)
 
   var controller : SVGController = _
-
-  def graph = controller.graph
-
-
 
 }

@@ -4,7 +4,6 @@ package transformations
 
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations.rules._
-import puck.javaGraph._
 import puck.util.Collections._
 
 import scalaz.{\/-, -\/}

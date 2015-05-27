@@ -2,7 +2,7 @@ package puck.gui.search
 
 import puck.graph.constraints.search.ConstraintSolvingStateEvaluator
 import puck.graph.io.VisibilitySet
-import puck.graph.transformations.{Transformation, Recording}
+import puck.graph.transformations.Transformation
 import puck.graph.ResultT
 import puck.search.{Search, SearchState}
 import puck.util.{PuckLog, PuckLogger}
@@ -15,7 +15,7 @@ class ResultPanel
   logger : PuckLogger,
   printId : () => Boolean,
   printSig: () => Boolean,
-  visibility : VisibilitySet)
+  visibility : VisibilitySet.T)
       extends BoxPanel(Orientation.Vertical){
 
   implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.NoSpecialContext, PuckLog.Info)
@@ -27,10 +27,7 @@ class ResultPanel
 
   logger.write("comparing final states : ")
 
-  val allStates = res.initialState.iterator.foldLeft(Map[Int, Seq[SearchState[ResultT]]]()){
-    (m, state) => val seq = m.getOrElse(state.depth, Seq())
-      m + (state.depth -> (state +: seq))
-  }
+  val allStates = res.allStatesByDepth
 
 
   /*val sortedRes: Map[Int, Seq[ST]] =

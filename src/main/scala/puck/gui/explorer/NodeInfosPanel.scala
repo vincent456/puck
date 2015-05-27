@@ -9,14 +9,11 @@ import scala.swing._
 import scala.swing.event.MouseClicked
 
 
-/**
- * Created by lorilan on 10/07/14.
- */
 class NodeInfosPanel(val graph : DependencyGraph,
                      val nodeId : NodeId,
                       printId : () => Boolean,
                       printSig: () => Boolean,
-                      visibility : VisibilitySet)
+                      visibility : VisibilitySet.T)
   extends SplitPane(Orientation.Horizontal) {
   implicit val g = graph
   val useDetails = new BoxPanel(Orientation.Vertical)

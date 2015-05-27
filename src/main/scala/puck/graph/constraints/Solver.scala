@@ -304,7 +304,7 @@ class Solver
       }
       else \/-(graph)
 
-    k(aux(graph, graph.concreteNodes.iterator) map (g => (g, g.recording)))
+    k(aux(graph, graph.concreteNodes.iterator))
 
   }
 

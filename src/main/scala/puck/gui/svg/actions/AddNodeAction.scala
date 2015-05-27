@@ -14,7 +14,8 @@ class AddNodeAction
 extends AbstractAction(s"Add $childKind")
 {
 
-  import controller._
+  import controller._, graphUtils.{transformationRules => TR}
+
   override def actionPerformed(actionEvent: ActionEvent): Unit = {
     childKind match {
       case Package
@@ -22,7 +23,7 @@ extends AbstractAction(s"Add $childKind")
            | Class =>
         showInputDialog(s"New $childKind name:").foreach {
           childName =>
-            val (n, g) = transfoRules.intro(graph.mileStone, childName, childKind, None)
+            val (n, g) = TR.intro(graph.mileStone, childName, childKind, None)
             pushGraph(g.addContains(host.id, n.id))
         }
       case _ =>

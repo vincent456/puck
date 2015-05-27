@@ -13,12 +13,12 @@ object LoadAndApply {
     val recFile = new File(recFileName)
 
     val fh = JavaFilesHandler()
-    fh.loadGraph(null)
-    val r = Recording.load(recFile.getAbsolutePath, fh.dg2ast.nodesByName  )
-    val g = r.redo(fh.dg2ast.initialGraph)
+    val dg2ast = fh.loadGraph(JGraphUtils.dG2ASTBuilder, null)
+    val r = Recording.load(recFile.getAbsolutePath, dg2ast.nodesByName  )
+    val g = r.redo(dg2ast.initialGraph)
 
-    fh.applyChangeOnProgram((g,r))
-    fh.printCode()
+    dg2ast(g)
+    fh.printCode(dg2ast)
   }
 
 }

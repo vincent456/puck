@@ -5,10 +5,10 @@ import java.awt.{Dimension, BorderLayout}
 import java.io.{File, InputStream}
 import javax.swing._
 
-import puck.graph.DependencyGraph
-import puck.graph.io.PrintingOptions
+import puck.graph.GraphUtils
+import puck.graph.io.{DG2AST, FilesHandler, PrintingOptions}
 import puck.gui.svg.actions.AddNodeAction
-import puck.gui.{PuckConsolePanel, TextAreaLogger, PuckControl}
+import puck.gui.{PuckConsolePanel, TextAreaLogger}
 import puck.javaGraph.nodeKind.Package
 
 import scala.swing.Label
@@ -40,9 +40,10 @@ class SVGConsole
 
 class SVGFrame
 ( stream: InputStream,
-  g: DependencyGraph,
   opts: PrintingOptions,
-  control: PuckControl
+  filesHandler : FilesHandler,
+  graphUtils : GraphUtils,
+  dg2ast : DG2AST
   ) extends JFrame with StackListener {
 
   def update(svgController: SVGController) : Unit = {
@@ -74,11 +75,18 @@ class SVGFrame
 
   private val consolePanel: SVGConsole = new SVGConsole()
   setLayout(new BorderLayout)
-  val panel : SVGPanel = new SVGPanel(SVGController.documentFromStream(stream))
+  val panel : SVGPanel =
+    new SVGPanel(SVGController.documentFromStream(stream))
+
   setVisible(true)
 
-  val consoleLogger = new TextAreaLogger(consolePanel.console, g.logger.askPrint)
-  private val controller: SVGController = SVGController(control, g.withLogger(consoleLogger), opts, panel.canvas, consolePanel)
+  val consoleLogger = new TextAreaLogger(consolePanel.console, dg2ast.initialGraph.logger.askPrint)
+
+  private val controller: SVGController =
+    SVGController(filesHandler,
+                  graphUtils,
+                  dg2ast,
+      opts, panel.canvas, consolePanel)
   panel.controller = controller
   private val menu: JPanel = new JPanel()
   controller.registerAsStackListeners(this)
@@ -143,7 +151,7 @@ class SVGFrame
 
   private def chooseFile(chooserMode : (JFileChooser, java.awt.Component) => Int) : Option[File] = {
     val chooser = new JFileChooser()
-    chooser.setCurrentDirectory(controller.genController.filesHandler.workingDirectory)
+    chooser.setCurrentDirectory(filesHandler.workingDirectory)
     val returnVal: Int = chooserMode(chooser, SVGFrame.this)
     if (returnVal == JFileChooser.APPROVE_OPTION) {
       Some(chooser.getSelectedFile)

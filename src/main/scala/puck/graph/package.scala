@@ -20,10 +20,15 @@ package object graph {
 
   type FilesHandler = io.FilesHandler
 
-  type ResultT = (DependencyGraph, Recording)
 
   type Mutability = Boolean
 
-  def graphOfResult(result : ResultT) : DependencyGraph = result._1
-  def recordOfResult(result : ResultT) : Recording = result._2
+//  type ResultT = (DependencyGraph, Recording)
+//  def graphOfResult(result : ResultT) : DependencyGraph = result._1
+//  def recordOfResult(result : ResultT) : Recording = result._2
+
+  type ResultT = DependencyGraph
+
+  def graphOfResult(result : ResultT) : DependencyGraph = result
+  def recordOfResult(result : ResultT) : Recording = result.recording
 }

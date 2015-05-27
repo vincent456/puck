@@ -9,10 +9,8 @@ import org.apache.batik.util.XMLResourceDescriptor
 import org.w3c.dom.Element
 import org.w3c.dom.svg.{SVGGElement, SVGDocument}
 import puck.graph._
-import puck.graph.io.FilesHandler.SolverBuilder
 import puck.graph.io._
 import puck.graph.transformations.{MileStone, Recording}
-import puck.gui.PuckControl
 import puck.gui.svg.actions.{AddNodeAction, AbstractionAction}
 
 import scala.collection.mutable
@@ -20,19 +18,19 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-
+import  VisibilitySet._
 trait StackListener{
   def update(svgController: SVGController) : Unit
 }
 
 
 class SVGController private
-( val genController : PuckControl,
-  val initGraph : DependencyGraph,
+( val filesHandler: FilesHandler,
+  val graphUtils : GraphUtils,
+  val dg2ast: DG2AST,
   val svgCanvas : JSVGCanvas,
   val console : SVGConsole,
-  val solverBuilder : SolverBuilder,
-  private val visibility : VisibilitySet,
+  private var visibility : VisibilitySet.T,
   private var printId : Boolean,
   private var printSignatures : Boolean,
   private var printVirtualEdges : Boolean = false,
@@ -40,10 +38,8 @@ class SVGController private
   private var printRedOnly : Boolean = false,
   private var selectedEdgeForTypePrinting : Option[DGUses] = None) {
 
-  def transfoRules = genController.filesHandler.transformationRules
-
   def nodesByName : Map[String, NodeId] =
-    genController.filesHandler.dg2ast.nodesByName
+      dg2ast.nodesByName
 
 
   private val undoStack = mutable.Stack[DependencyGraph]()
@@ -120,13 +116,13 @@ class SVGController private
 
 
   def hide(id : NodeId): Unit = {
-    visibility.setVisibility(id, Hidden)
+    visibility = visibility.setVisibility(id, Hidden)
     setSubTreeVisibility(id, Hidden)
   }
 
   private def setSubTreeVisibility(rootId : NodeId, v : Visibility): Unit ={
     val nodes = graph.subTree(rootId, includeRoot = false)
-    visibility.setVisibility(nodes, v)
+    visibility = visibility.setVisibility(nodes, v)
     displayGraph(graph)
   }
 
@@ -134,8 +130,10 @@ class SVGController private
     setSubTreeVisibility(root, Hidden)
 
   def expand(root: NodeId) : Unit = {
-      graph.content(root).foreach(visibility.setVisibility(_, Visible))
-      displayGraph(graph)
+    visibility =
+      graph.content(root).foldLeft(visibility)(_.setVisibility(_, Visible))
+
+    displayGraph(graph)
   }
 
   def expandAll(root: NodeId) : Unit =
@@ -175,35 +173,21 @@ class SVGController private
 
   def showCode(nodeId: NodeId): Unit = {
     console.appendText("Code : ")
-    console.appendText(genController.dg2ast.astNodeOf(graph, nodeId).toString)
+    console.appendText(dg2ast.astNodeOf(graph, nodeId).toString)
   }
 
-  def displayGraph(graph: DependencyGraph) = {
+  def printingOptions =
+    PrintingOptions(visibility, printId, printSignatures,
+    selectedEdgeForTypePrinting,
+    printVirtualEdges, printConcreteUsesPerVirtualEdges,
+    printRedOnly)
 
-    val pipedOutput = new PipedOutputStream()
-    val pipedInput = new PipedInputStream(pipedOutput)
-    val fdoc = Future {
-      SVGController.documentFromStream(pipedInput)
-    }
-
-    val opts =
-      PrintingOptions(visibility, printId, printSignatures,
-          selectedEdgeForTypePrinting,
-          printVirtualEdges, printConcreteUsesPerVirtualEdges,
-          printRedOnly)
-    genController.filesHandler.makeImage(graph, opts, Some(pipedOutput), Svg){
-      case Success(0) => ()
-      case Success(n) =>
-        console.appendText("An error occured during the production of the SVG file, produced dot file can be found in out/graph.dot")
-      case Failure(msg) =>
-        console.appendText("Image creation failure : " + msg)
-
-    }
-
-    fdoc.onSuccess { case doc =>
-      svgCanvas.setDocument(doc)
-    }
+  def displayGraph(graph: DependencyGraph) : Unit = {
+    SVGController.documentFromGraph(graph, filesHandler, printingOptions)(console.appendText)
+    {case doc => svgCanvas.setDocument(doc)}
   }
+
+
 
   def canUndo = undoStack.nonEmpty
 
@@ -236,7 +220,7 @@ class SVGController private
 
   def graph =
     if(undoStack.nonEmpty) undoStack.head
-    else initGraph
+    else dg2ast.initialGraph
 
   def saveRecordOnFile(file : File) : Unit = {
     Recording.write(file.getAbsolutePath, nodesByName, graph)
@@ -255,7 +239,7 @@ class SVGController private
 
 
   def applyOnCode() : Unit = {
-    genController.applyOnCode((graph, graph.recording))
+    dg2ast(graph)
   }
 
   def abstractionChoices(n: ConcreteNode): Seq[JMenuItem] =
@@ -278,16 +262,16 @@ class SVGController private
 
 object SVGController {
 
-  def apply(genController : PuckControl,
-            g : DependencyGraph,
+  def apply(filesHandler: FilesHandler,
+            graphUtils : GraphUtils,
+            dg2ast : DG2AST,
             opts : PrintingOptions,
             svgCanvas : JSVGCanvas,
             console : SVGConsole): SVGController ={
-    val c = new SVGController(genController, g, svgCanvas, console,
-                genController.filesHandler.solverBuilder,
+    val c = new SVGController(filesHandler, graphUtils, dg2ast, svgCanvas, console,
                 opts.visibility, opts.printId, opts.printSignatures)
 
-    c.displayGraph(g)
+    c.displayGraph(dg2ast.initialGraph)
     c
   }
 
@@ -297,4 +281,33 @@ object SVGController {
     factory.createSVGDocument("", stream)
   }
 
+  def documentFromGraph
+  (graph: DependencyGraph,
+   filesHandler: FilesHandler,
+   printingOptions: PrintingOptions)
+  (onDotConversionResult: String => Unit)
+  (onDocBuildingSuccess : PartialFunction[SVGDocument, Unit]) = {
+
+    val pipedOutput = new PipedOutputStream()
+    val pipedInput = new PipedInputStream(pipedOutput)
+    val fdoc = Future {
+      SVGController.documentFromStream(pipedInput)
+    }
+
+    filesHandler.makeImage(graph, printingOptions, Some(pipedOutput), Svg){
+      res =>
+      val msg = res match {
+       case Success(0) => ""
+        case Success(n) =>
+          "An error occured during the production of the SVG file, " +
+            "produced dot file can be found in out/graph.dot"
+        case Failure(errMsg) =>
+          "Image creation failure : " + errMsg
+
+      }
+      onDotConversionResult(msg)
+    }
+
+    fdoc.onSuccess(onDocBuildingSuccess)
+  }
 }

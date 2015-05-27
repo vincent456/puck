@@ -1,6 +1,6 @@
 package puck.gui
 
-import puck.graph.FilesHandler
+import puck.graph.{GraphUtils, FilesHandler}
 
 import scala.swing._
 import java.awt.Dimension
@@ -18,13 +18,14 @@ object PuckMainPanel{
   }
 }
 
-class PuckMainPanel(filesHandler: FilesHandler)
+class PuckMainPanel(filesHandler: FilesHandler,
+                     graphUtils: GraphUtils)
   extends SplitPane(Orientation.Horizontal){
   dividerSize = 3
 
   preferredSize = new Dimension(PuckMainPanel.width, PuckMainPanel.height)
 
-  leftComponent = new PuckInterfacePanel(filesHandler)
+  leftComponent = new PuckInterfacePanel(filesHandler, graphUtils)
 
 
   rightComponent = {

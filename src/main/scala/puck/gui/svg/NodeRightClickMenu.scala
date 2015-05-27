@@ -67,8 +67,10 @@ class NodeRightClickMenu
     }
 
 
-    if(graph.isWronglyContained(node.id))
-      this.add(new SolveAction(node, controller))
+    if(graph.isWronglyContained(node.id)){
+      this.add(new ManualSolveAction(node, controller))
+      this.add(new AutoSolveAction(node, controller))
+    }
 
     this.addSeparator()
     addShowOptions()

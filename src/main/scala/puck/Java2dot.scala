@@ -6,6 +6,7 @@ import puck.graph.{NodeId, DependencyGraph}
 import puck.graph.constraints.ConstraintsParser
 import puck.graph.io.{Hidden, VisibilitySet, PrintingOptions, FilesHandler}
 import puck.javaGraph.{JavaDotHelper, CompileHelper}
+import VisibilitySet._
 
 object Java2dot {
 
@@ -15,9 +16,10 @@ object Java2dot {
     fullName2id : Map[String, NodeId]) : Unit = {
     val fos = new FileWriter(outFileName)
 
-    val vis = VisibilitySet.allVisible(dg)
-    vis.setVisibility(dg.subTree(fullName2id("java")), Hidden)
-    vis.setVisibility(dg.subTree(fullName2id("@primitive")), Hidden)
+    val vis =
+      VisibilitySet.allVisible(dg)
+        .setVisibility(dg.subTree(fullName2id("java")), Hidden)
+        .setVisibility(dg.subTree(fullName2id("@primitive")), Hidden)
 
     val options = PrintingOptions(vis, printId = true, printSignatures = false, selectedUse = None)
     FilesHandler.makeDot(dg, JavaDotHelper, options, fos)

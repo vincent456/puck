@@ -4,7 +4,6 @@ import puck.graph._
 import puck.graph.constraints.{NodePredicate, AbstractionPolicy, DecisionMaker}
 import puck.graph.transformations.rules.CreateVarStrategy
 import puck.search.SearchEngine
-import puck.util.{PuckNoopLogger, PuckLogger}
 
 object ConstraintSolving {
   type NodeChoice = ConstraintSolvingNodesChoice
@@ -150,7 +149,7 @@ class ConstraintSolvingSearchEngineDecisionMaker
           (g2, vn.id +: s0)
         }
 
-        searchEngine.newCurrentState((g, g.recording),
+        searchEngine.newCurrentState(g,
           ConstraintSolvingNodesChoice.includeNoneChoice(k(g), cs))
 
     }

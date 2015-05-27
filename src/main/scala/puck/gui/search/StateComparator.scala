@@ -13,7 +13,7 @@ class StateComparator
   sortedRes: Map[Int, Seq[SearchState[ResultT]]],
   printId : () => Boolean,
   printSig : () => Boolean,
-  visibility : VisibilitySet)
+  visibility : VisibilitySet.T)
   extends BoxPanel(Orientation.Vertical) {
   contents += new Label("Compare")
   val cb1 = new StateSelector(sortedRes, printId, printSig, visibility )

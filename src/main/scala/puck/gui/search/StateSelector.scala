@@ -8,31 +8,51 @@ import puck.search.SearchState
 import scala.swing._
 import scala.swing.event.{Event, SelectionChanged}
 
-/**
- * Created by lorilan on 18/09/14.
- */
-case class StateSelected(box : StateSelector) extends Event
 
-class StateSelector
-( map : Map[Int, Seq[SearchState[ResultT]]],
-  printId : () => Boolean,
-  printSig: () => Boolean,
-  visibility : VisibilitySet)
-  extends BoxPanel(Orientation.Vertical){
+case class StateSelected(state : SearchState[ResultT]) extends Event
 
-  type StateT = SearchState[ResultT]
 
+class SimpleStateSelector
+(map : Map[Int, Seq[SearchState[ResultT]]])
+  extends BoxPanel(Orientation.Vertical) {
   val firstLine = new FlowPanel()
   val combobox2wrapper = new FlowPanel()
   val couplingValues = new ComboBox(map.keys.toSeq)
 
-  var searchStateComboBox : ComboBox[StateT] =
+  var searchStateComboBox : ComboBox[SearchState[ResultT]] =
     new ComboBox(map(couplingValues.selection.item))
   combobox2wrapper.contents += searchStateComboBox
 
   firstLine.contents += couplingValues
   firstLine.contents += combobox2wrapper
   contents += firstLine
+
+  this listenTo couplingValues.selection
+
+  reactions += {
+    case SelectionChanged(cb) if cb == couplingValues =>
+      combobox2wrapper.contents.clear()
+      searchStateComboBox = new ComboBox(map(couplingValues.selection.item))
+      combobox2wrapper.contents += searchStateComboBox
+      this.revalidate()
+      this listenTo searchStateComboBox.selection
+      this.publish(StateSelected(selectedState))
+
+    case SelectionChanged(cb) if cb == searchStateComboBox =>
+      this.publish(StateSelected(selectedState))
+  }
+
+  def selectedState = searchStateComboBox.selection.item
+
+}
+
+class StateSelector
+( map : Map[Int, Seq[SearchState[ResultT]]],
+  printId : () => Boolean,
+  printSig: () => Boolean,
+  visibility : VisibilitySet.T)
+  extends  SimpleStateSelector(map) {
+
 
   val secondLine = new FlowPanel()
   /*secondLine.contents += new Button(""){
@@ -78,20 +98,5 @@ class StateSelector
     }
   }
   contents += secondLine
-  this listenTo couplingValues.selection
-
-  reactions += {
-    case SelectionChanged(cb) if cb == couplingValues =>
-      combobox2wrapper.contents.clear()
-      searchStateComboBox = new ComboBox(map(couplingValues.selection.item))
-      combobox2wrapper.contents += searchStateComboBox
-      this.revalidate()
-      this listenTo searchStateComboBox.selection
-
-    case SelectionChanged(cb) if cb == searchStateComboBox =>
-      this.publish(StateSelected(this))
-  }
-
-  def selectedState = searchStateComboBox.selection.item
 
 }

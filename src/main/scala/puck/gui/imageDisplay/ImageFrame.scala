@@ -10,10 +10,6 @@ import puck.gui.svg.ScrollablePicture
 
 import scala.swing.{Component, Frame, ScrollPane}
 
-/**
- * Created by lorilan on 11/05/14.
- */
-
 object ImageFrame{
   def apply(f : File) : ImageFrame = {
     if (f == null || !f.exists()) {

@@ -20,7 +20,6 @@ object JavaDG2AST extends DG2ASTBuilder {
         case Package => id
         case _ => aux(graph.container(id).
           getOrElse(throw new DGError( graph.fullName(id) + "has no package")))
-
       }
     aux(id)
   }

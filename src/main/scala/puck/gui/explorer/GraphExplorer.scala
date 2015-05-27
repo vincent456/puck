@@ -4,32 +4,31 @@ import java.awt.event.{MouseAdapter, MouseEvent}
 import javax.swing.JTree
 import javax.swing.tree.TreePath
 
-import puck.graph.io.VisibilitySet
+import puck.graph.io.{Visibility, VisibilitySet}
 import puck.graph.{NodeKind, DGNode, DependencyGraph, NodeId}
 
 import scala.swing.event.Event
 import scala.swing.{Component, Publisher, ScrollPane}
 
-/**
- * Created by lorilan on 09/05/14.
- */
-
 case class PuckTreeNodeClicked(graph : DependencyGraph, node : NodeId) extends Event
 case class AccessGraphModified(graph : DependencyGraph) extends Event
 case class SetVisible(ks : Seq[NodeKind]) extends Event
 
+import VisibilitySet._
 class GraphExplorer
-(val hiddens :VisibilitySet,
- width : Int,
+(width : Int,
  height : Int)
   extends ScrollPane with Publisher {
 
-/*
-  minimumSize = new Dimension(width, height)
-  preferredSize = minimumSize
-*/
+  private var hiddens0 : VisibilitySet.T = VisibilitySet()
 
+  def setVisibility(id : NodeId, v : Visibility) =
+    hiddens0 = hiddens0.setVisibility(id,v)
 
+  def visibility(id : NodeId) : Visibility = 
+    hiddens0.visibility(id)
+
+  def visibilitySet = hiddens0
 
   def addChildren(graph : DependencyGraph,
                   ptn: PuckTreeNode): Unit = {
@@ -37,7 +36,7 @@ class GraphExplorer
     val nodeList = graph.content(ptn.nodeId).map(graph.getConcreteNode).toList
     nodeList.sortBy(_.name) foreach {
       (n: DGNode) =>
-        val child = new PuckTreeNode(n.id, hiddens,
+        val child = new PuckTreeNode(n.id, this,
           showDG(graph)(nodeNameTypCord).shows(n))
         ptn add child
         addChildren(graph, child)
@@ -50,7 +49,7 @@ class GraphExplorer
   reactions += {
     case AccessGraphModified(g) =>
       graph = g
-      root = new PuckTreeNode(graph.rootId, hiddens, "<>")
+      root = new PuckTreeNode(graph.rootId, this, "<>")
       addChildren(graph, root)
 
 

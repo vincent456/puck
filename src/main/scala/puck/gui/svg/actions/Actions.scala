@@ -6,7 +6,6 @@ import javax.swing.AbstractAction
 import puck.PuckError
 import puck.graph.{DGUses, DGEdge, ConcreteNode}
 import puck.gui.svg.SVGController
-import puck.javaGraph.{JavaTransformationRules => TR}
 
 import scalaz._
 
@@ -16,7 +15,7 @@ class AddIsaAction
   controller : SVGController)
 extends AbstractAction(s"Add ${sub.name} isa ${sup.name}") {
 
-  import controller.graph
+  import controller.{graph, graphUtils}, graphUtils.{transformationRules => TR}
 
   def actionPerformed(e: ActionEvent) : Unit =
     printErrOrPushGraph(controller, "Make SuperType Action failure") {
@@ -55,7 +54,7 @@ class RemoveNodeAction
   controller : SVGController)
 extends AbstractAction(s"Delete node and children") {
 
-  import controller.graph
+  import controller.{graph, graphUtils}, graphUtils.{transformationRules => TR}
 
   def actionPerformed(e: ActionEvent) : Unit =
     printErrOrPushGraph(controller, "Remove Node Action failure"){
@@ -70,11 +69,12 @@ class RenameNodeAction
   controller : SVGController )
   extends AbstractAction("Rename") {
 
-  import controller.graph
+  import controller.{graph, graphUtils}, graphUtils.{transformationRules => TR}
+
   override def actionPerformed(e: ActionEvent): Unit = {
     showInputDialog("New name:").foreach {
       newName =>
-          val g = controller.transfoRules.rename(graph.mileStone, node.id, newName)
+          val g = TR.rename(graph.mileStone, node.id, newName)
           controller.pushGraph(g)
     }
   }

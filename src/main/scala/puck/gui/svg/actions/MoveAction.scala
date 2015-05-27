@@ -42,15 +42,14 @@ class MoveAction
   controller : SVGController)
 extends AbstractAction(MoveAction.label(controller.graph, moved)){
 
-
-  val move = controller.transfoRules.move
+  import controller.{graph, graphUtils}, graphUtils.{transformationRules => TR}
 
   override def actionPerformed(e: ActionEvent): Unit = {
-    val graph = controller.graph.mileStone
-    (graph.kindType(moved.head) match {
+    val g = graph.mileStone
+    (g.kindType(moved.head) match {
       case TypeDecl =>
-        Collections.traverse(moved, graph){
-          (g, id) => move.typeDecl(g, id, newHost.id)
+        Collections.traverse(moved, g){
+          (g, id) => TR.move.typeDecl(g, id, newHost.id)
         }
 
 
@@ -58,16 +57,16 @@ extends AbstractAction(MoveAction.label(controller.graph, moved)){
         controller.console.
           appendText("/!\\/!\\ Method overriding unchecked (TODO !!!) /!\\/!\\")
 
-        val host = graph.getConcreteNode(graph.container(moved.head).get)
-        val uses = graph.usesOfUsersOf(moved)
+        val host = g.getConcreteNode(g.container(moved.head).get)
+        val uses = g.usesOfUsersOf(moved)
         val choice =
-          if(move.usedBySiblingsViaSelf(uses, graph, host)) {
+          if(TR.move.usedBySiblingsViaSelf(uses, g, host)) {
             Some(MoveAction.getChoice(Field).
               getOrElse(CreateTypeMember(Field)))
           }
           else None
 
-        move.typeMember(graph, moved, newHost.id, choice)(uses)
+        TR.move.typeMember(g, moved, newHost.id, choice)(uses)
       case kt =>
         -\/(new PuckError(s"move of $kt not implemented"))
     }) match {

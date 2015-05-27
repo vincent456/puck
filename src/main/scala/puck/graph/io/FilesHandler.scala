@@ -4,20 +4,14 @@ package io
 import java.io._
 
 import puck.graph.constraints.{Solver, DecisionMaker}
-import puck.graph.io.FilesHandler.SolverBuilder
-import puck.graph.transformations.{Transformation, TransformationRules}
+import puck.graph.transformations.Transformation
 import puck.javaGraph.ASTNodeLink
-import puck.search.{Search, SearchState, SearchEngine}
+import puck.search._
 import puck.util._
 
 import scala.sys.process.Process
 import scala.util.{Success, Try}
 
-trait ConstraintSolvingSearchEngineBuilder {
-  def apply(initialRecord : Seq[Transformation], graph : DependencyGraph,
-  automaticConstraintLoosening : Boolean) :
-  SearchEngine[ResultT]
-}
 
 object FilesHandler{
   object Default{
@@ -115,17 +109,10 @@ trait DG2AST {
 
 class FilesHandler
 (val workingDirectory : File,
- val solverBuilder : SolverBuilder,
  //TODO ? change to List[String] ?
  val srcSuffix : String,
- val dotHelper : DotHelper,
-//TODO see if it can be placed somewhere else
- val transformationRules : TransformationRules,
- val dG2ASTBuilder: DG2ASTBuilder,
- val searchingStrategies : Seq[ConstraintSolvingSearchEngineBuilder]){
+ val dotHelper : DotHelper){
 
-
-  var dg2ast: DG2AST = _
 
   private [this] var srcDir0 : Option[File] = None
   private [this] var outDir0 : Option[File] = None
@@ -154,12 +141,6 @@ class FilesHandler
   def logger_=( l : PuckLogger): Unit = {logger0 = l}
 
   type GraphT = DependencyGraph
-
-  //private [this] var ag : GraphT = _
-  def graph = dg2ast.initialGraph
-  //protected def graph_=(g : GraphT): Unit = { ag = g }
-
-  def initialRecord : Seq[Transformation] = dg2ast.initialRecord
 
   var graphBuilder : GraphBuilder = _
 
@@ -260,44 +241,30 @@ class FilesHandler
 
 
 
-  def loadGraph(ll : AST.LoadingListener) : Unit = {
-    dg2ast = dG2ASTBuilder(srcDirectory.get,
-                           outDirectory.get,
-                           jarListFile.get, logger)
+  def loadGraph(dG2ASTBuilder : DG2ASTBuilder, ll : AST.LoadingListener) : DG2AST = {
+     dG2ASTBuilder(
+      srcDirectory.get,
+      outDirectory.get,
+      jarListFile.get,
+      logger, ll)
   }
 
   /*def makeProlog(){
     PrologPrinter.print(new BufferedWriter(new FileWriter(graphFile(".pl"))), ag)
   }*/
 
-  def parseConstraints() : Unit = {
+  def parseConstraints(dg2ast: DG2AST) : DG2AST = {
     decouple match{
       case None => throw new DGError("cannot parse : no decouple file given")
       case Some(f) =>
         logger.writeln("parsing " + f)
-        dg2ast = dg2ast.parseConstraints(f)
+        dg2ast.parseConstraints(f)
     }
 
   }
-
-  type ST = SearchState[ResultT]
-
-  def explore (trace : Boolean = false,
-               builder : ConstraintSolvingSearchEngineBuilder,
-               automaticConstraintLoosening: Boolean) : Search[ResultT] = {
-
-    val engine = builder(initialRecord, graph, automaticConstraintLoosening)
-
-    puck.util.Time.time(logger, defaultVerbosity) {
-      engine.explore()
-    }
-
-    engine
-  }
-
 
   def printCSSearchStatesGraph(states : Map[Int, Seq[SearchState[ResultT]]],
-                               visibility : VisibilitySet,
+                               visibility : VisibilitySet.T,
                                printId : Boolean,
                                printSignature : Boolean) : Unit = {
     val d = graphFile("_results")
@@ -312,7 +279,7 @@ class FilesHandler
 
   def printCSSearchStatesGraph(dir : File,
                                states : Seq[SearchState[ResultT]],
-                               visibility : VisibilitySet,
+                               visibility : VisibilitySet.T,
                                sPrinter : Option[(SearchState[ResultT] => String)],
                                printId : Boolean,
                                printSignature : Boolean) : Unit = {
@@ -333,12 +300,7 @@ class FilesHandler
 
   def makeImage = FilesHandler.makeImage(graphvizDot, dotHelper, graphFilePath) _
 
-  def printCode() : Unit = dg2ast.printCode(outDirectory.get)
-
-  def applyChangeOnProgram(record : ResultT) : Unit =
-    dg2ast(record)
-
-
+  def printCode(dg2ast : DG2AST) : Unit = dg2ast.printCode(outDirectory.get)
 
   private def openList(files : Seq[String]) : Unit = {
     val ed = editor match {

@@ -4,7 +4,7 @@ import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
 
 import puck.PuckError
-import puck.graph.constraints.{NodePredicate, AbstractionPolicy, DecisionMaker}
+import puck.graph.constraints.{Solver, NodePredicate, AbstractionPolicy, DecisionMaker}
 import puck.graph._
 import puck.gui.svg.SVGController
 import puck.javaGraph.nodeKind.Field
@@ -12,7 +12,7 @@ import puck.javaGraph.nodeKind.Field
 import scala.swing.Swing.EmptyIcon
 import scala.swing.Dialog
 
-object SolveAction {
+object ManualSolveAction {
 
 
   sealed abstract class DisplayableChoice[+A]{
@@ -51,15 +51,17 @@ object SolveAction {
 
 }
 
-class SolveAction
+class ManualSolveAction
 ( violationTarget : ConcreteNode,
   controller : SVGController)
-  extends AbstractAction("Solve") with DecisionMaker {
+  extends AbstractAction("Solve (manual choices)") with DecisionMaker {
 
-  val solver = controller.solverBuilder(this, false)
+  import controller.{graphUtils, graph}
+
+  val solver = new Solver(this, graphUtils.transformationRules, false)
 
   override def actionPerformed(e: ActionEvent): Unit =
-    solver.solveViolationsToward(controller.graph.mileStone, violationTarget){
+    solver.solveViolationsToward(graph.mileStone, violationTarget){
       printErrOrPushGraph(controller, "Solve Action Error")
     }
 
@@ -69,7 +71,7 @@ class SolveAction
 
   override def abstractionKindAndPolicy(graph: DependencyGraph, impl: ConcreteNode)
                                        (k: (Option[(NodeKind, AbstractionPolicy)]) => Unit): Unit = {
-    SolveAction.forChoice("Abstraction kind an policy",
+    ManualSolveAction.forChoice("Abstraction kind an policy",
       s"How to abstract ${graph.fullName(impl.id)} ?",
       impl.kind.abstractionChoices, k)
   }
@@ -77,7 +79,7 @@ class SolveAction
   override def chooseNode(graph: DependencyGraph,
                           predicate: NodePredicate)
                          (k: (DependencyGraph) => (Option[NodeId]) => Unit): Unit = {
-    SolveAction.forChoice("Host choice", s"${predicate.toString}\n(None will try tro create a new one)",
+    ManualSolveAction.forChoice("Host choice", s"${predicate.toString}\n(None will try tro create a new one)",
           graph.concreteNodes.filter(predicate(graph,_)).toSeq,
           (sn : Option[ConcreteNode]) => k(graph)(sn.map(_.id)), appendNone = true)
 
@@ -92,7 +94,7 @@ class SolveAction
   override def chooseContainerKind(graph: DependencyGraph, toBeContained: DGNode)
                                   (k: (Option[NodeKind]) => Unit): Unit = {
     val choices = graph.nodeKinds.filter(_.canContain(toBeContained.kind))
-    SolveAction.forChoice("Host Kind", s"Which kind of container for $toBeContained",
+    ManualSolveAction.forChoice("Host Kind", s"Which kind of container for $toBeContained",
       choices, k)
   }
 
@@ -100,7 +102,7 @@ class SolveAction
   ( graph: DependencyGraph,
     choices: Set[(NodeId, AbstractionPolicy)])
   ( k: (Option[(NodeId, AbstractionPolicy)]) => Unit): Unit = {
-    SolveAction.forChoice("Abstraction Choice",
+    ManualSolveAction.forChoice("Abstraction Choice",
       s"Use existing abstraction for\n${graph.fullName(violationTarget.id)}\n(None will try tro create a new one)",
       choices.toSeq, k, appendNone = true)
   }
