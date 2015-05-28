@@ -80,7 +80,8 @@ class Solver
 
       decisionMaker.chooseContainerKind(graph, toBeContained){
         case None =>
-          logger.write("do not know how to create a valid host for " + toBeContained.kind)(PuckLog.Debug)
+          logger.write("do not know how to create a valid host for " +
+            toBeContained.kind)(PuckLog.Debug)
           k(FindHostError)
         case Some(hostKind) =>
           newCterNumGen += 1

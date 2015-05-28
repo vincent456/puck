@@ -4,6 +4,8 @@ package constraints.search
 import puck.graph.transformations.Transformation
 import puck.search.{SearchState, Evaluator}
 
+object ConstraintSolvingStateEvaluator
+
 class ConstraintSolvingStateEvaluator
 (val initialRecord : Seq[Transformation])
   extends Evaluator[ResultT]{

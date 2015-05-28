@@ -30,12 +30,12 @@ class ResultPanel
   val allStates = res.allStatesByDepth
 
 
-  /*val sortedRes: Map[Int, Seq[ST]] =
-    puck.util.Time.time(logger, defaultVerbosity){
-      evaluator.filterDifferentStates(evaluator.sort(res.finalStates))
-    }
-  val total = sortedRes.foldLeft(0) { case (acc, (_, l)) => acc + l.size}
-*/
+//  val sortedRes: Map[Int, Seq[ST]] =
+//    puck.util.Time.time(logger, defaultVerbosity){
+//      evaluator.sortedDifferentStates(res.finalStates)
+//    }
+//  val total = sortedRes.foldLeft(0) { case (acc, (_, l)) => acc + l.size}
+
 
   val sortedRes = Map(-1 -> res.finalStates)
   val total = res.finalStates.size

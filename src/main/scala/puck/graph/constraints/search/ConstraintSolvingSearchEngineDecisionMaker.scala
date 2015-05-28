@@ -137,6 +137,8 @@ class ConstraintSolvingSearchEngineDecisionMaker
                 (k : DependencyGraph => Option[NodeId] => Unit) : Unit = {
     val choices = graph.concreteNodes.filter(predicate(graph,_)).toList
 
+    println("choices = " + choices)
+
 
     choices match {
       case List() => k(graph)(None)

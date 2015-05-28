@@ -11,6 +11,7 @@ import org.w3c.dom.svg.{SVGGElement, SVGDocument}
 import puck.graph._
 import puck.graph.io._
 import puck.graph.transformations.{MileStone, Recording}
+import puck.gui.TextAreaLogger
 import puck.gui.svg.actions.{AddNodeAction, AbstractionAction}
 
 import scala.collection.mutable
@@ -270,7 +271,9 @@ object SVGController {
             console : SVGConsole): SVGController ={
     val c = new SVGController(filesHandler, graphUtils, dg2ast, svgCanvas, console,
                 opts.visibility, opts.printId, opts.printSignatures)
+    val consoleLogger = new TextAreaLogger(console.textArea, dg2ast.initialGraph.logger.askPrint)
 
+    c.pushGraph(dg2ast.initialGraph.withLogger(consoleLogger))
     c.displayGraph(dg2ast.initialGraph)
     c
   }

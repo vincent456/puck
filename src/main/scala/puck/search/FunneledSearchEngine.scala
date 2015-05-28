@@ -24,22 +24,24 @@ trait Evaluator[Result]{
       case (acc, (k, v)) => acc + (k -> filterDifferentStates(v))
     }
 
-//  def sort(l : Seq[StateT], pres : Int = 2)={
-//    def aux(acc : Map[Int, Seq[StateT]], l : Seq[StateT]) :
-//    Map[Int, Seq[StateT]] =
-//      if(l.isEmpty) acc
-//      else{
-//        l.head.setAsCurrentState()
-//        val presDix = Math.pow(10, pres.toDouble)
-//        val value = (evaluate(l.head) * presDix).toInt
-//        val olds = acc.getOrElse(value, Seq())
-//        aux(acc + (value -> (l.head +: olds)), l.tail)
-//      }
-//    aux(Map[Int, Seq[StateT]](), l)
-//  }
+  def sort(l : Seq[StateT], precision : Int = 2)={
+    def aux(acc : Map[Int, Seq[StateT]], l : Seq[StateT]) :
+    Map[Int, Seq[StateT]] =
+      if(l.isEmpty) acc
+      else{
+        val presDix = Math.pow(10, precision.toDouble)
+        val value = (evaluate(l.head) * presDix).toInt
+        val olds = acc.getOrElse(value, Seq())
+        aux(acc + (value -> (l.head +: olds)), l.tail)
+      }
+    aux(Map[Int, Seq[StateT]](), l)
+  }
 
   def evaluate(r : StateT) : Double
   def equals(r1 : StateT, r2 : StateT) : Boolean
+
+  def sortedDifferentStates(l : Seq[StateT]) :  Map[Int, Seq[StateT]] =
+    filterDifferentStates(sort(l))
   
 }
 

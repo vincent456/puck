@@ -26,7 +26,7 @@ class SVGConsole
   }
 
   def panel = panel0.peer
-  def console = panel0.console
+  def textArea = panel0.console
 
   private[svg] def displaySelection(node: String) : Unit = {
     if (node.length > 0) selection.text = "Selection : " + node
@@ -34,7 +34,7 @@ class SVGConsole
   }
 
   def appendText(txt: String) : Unit = {
-    console.append(txt + "\n")
+    textArea.append(txt + "\n")
   }
 }
 
@@ -80,13 +80,10 @@ class SVGFrame
 
   setVisible(true)
 
-  val consoleLogger = new TextAreaLogger(consolePanel.console, dg2ast.initialGraph.logger.askPrint)
-
   private val controller: SVGController =
-    SVGController(filesHandler,
-                  graphUtils,
-                  dg2ast,
-      opts, panel.canvas, consolePanel)
+    SVGController(
+      filesHandler, graphUtils, dg2ast,
+          opts, panel.canvas, consolePanel)
   panel.controller = controller
   private val menu: JPanel = new JPanel()
   controller.registerAsStackListeners(this)

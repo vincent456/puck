@@ -11,38 +11,65 @@ import scala.swing.event.{Event, SelectionChanged}
 
 case class StateSelected(state : SearchState[ResultT]) extends Event
 
-
 class SimpleStateSelector
-(map : Map[Int, Seq[SearchState[ResultT]]])
-  extends BoxPanel(Orientation.Vertical) {
-  val firstLine = new FlowPanel()
-  val combobox2wrapper = new FlowPanel()
-  val couplingValues = new ComboBox(map.keys.toSeq)
+  extends FlowPanel {
+  var searchStateComboBox : ComboBox[SearchState[ResultT]] = _
 
-  var searchStateComboBox : ComboBox[SearchState[ResultT]] =
-    new ComboBox(map(couplingValues.selection.item))
-  combobox2wrapper.contents += searchStateComboBox
-
-  firstLine.contents += couplingValues
-  firstLine.contents += combobox2wrapper
-  contents += firstLine
-
-  this listenTo couplingValues.selection
-
-  reactions += {
-    case SelectionChanged(cb) if cb == couplingValues =>
-      combobox2wrapper.contents.clear()
-      searchStateComboBox = new ComboBox(map(couplingValues.selection.item))
-      combobox2wrapper.contents += searchStateComboBox
-      this.revalidate()
-      this listenTo searchStateComboBox.selection
-      this.publish(StateSelected(selectedState))
-
-    case SelectionChanged(cb) if cb == searchStateComboBox =>
-      this.publish(StateSelected(selectedState))
+  def publish() : Unit = {
+    println("pusblish !")
+    this.publish(StateSelected(searchStateComboBox.selection.item))
   }
 
   def selectedState = searchStateComboBox.selection.item
+
+  def setStatesList(states : Seq[SearchState[ResultT]]): Unit ={
+    if(searchStateComboBox != null) {
+      contents.clear()
+      this deafTo searchStateComboBox
+    }
+    searchStateComboBox = new ComboBox(states)
+    this listenTo searchStateComboBox.selection
+    contents += searchStateComboBox
+    this.revalidate()
+    publish()
+  }
+
+  reactions += {
+    case SelectionChanged(cb) =>
+      println("selec changed")
+      publish()
+  }
+
+
+}
+
+class SortedStateSelector
+(map : Map[Int, Seq[SearchState[ResultT]]])
+  extends BoxPanel(Orientation.Vertical) {
+  val firstLine = new FlowPanel()
+  val simpleStateSelector = new SimpleStateSelector()
+  val couplingValues = new ComboBox(map.keys.toSeq)
+
+  simpleStateSelector.setStatesList(map(couplingValues.selection.item))
+
+  firstLine.contents += couplingValues
+  firstLine.contents += simpleStateSelector
+  contents += firstLine
+
+  this listenTo couplingValues.selection
+  this listenTo simpleStateSelector
+  this deafTo this
+
+  reactions += {
+    case SelectionChanged(cb) =>
+      simpleStateSelector.setStatesList(map(couplingValues.selection.item))
+
+    case ss @ StateSelected(selectedState) =>
+      println("forward !")
+      this.publish(ss)
+  }
+
+  def selectedState = simpleStateSelector.selectedState
 
 }
 
@@ -51,7 +78,7 @@ class StateSelector
   printId : () => Boolean,
   printSig: () => Boolean,
   visibility : VisibilitySet.T)
-  extends  SimpleStateSelector(map) {
+  extends  SortedStateSelector(map) {
 
 
   val secondLine = new FlowPanel()
@@ -70,7 +97,7 @@ class StateSelector
     action = new Action("Show"){
       def apply() : Unit = {
 
-        val state: SearchState[ResultT] = searchStateComboBox.selection.item
+        val state: SearchState[ResultT] = selectedState
         var id = -1
 
         StateSelector.this publish SearchStateSeqPrintingRequest(state.uuid()+"history",
@@ -84,7 +111,7 @@ class StateSelector
   secondLine.contents += new Button(""){
     action = new Action("Constraint"){
       def apply() : Unit =  {
-        val state: SearchState[ResultT] = searchStateComboBox.selection.item
+        val state: SearchState[ResultT] = selectedState
         StateSelector.this publish ConstraintDisplayRequest(graphOfResult(state.result))
       }
     }
@@ -93,7 +120,7 @@ class StateSelector
   secondLine.contents += new Button(""){
     action = new Action("Apply"){
       def apply() : Unit = {
-        StateSelector.this publish ApplyOnCodeRequest(searchStateComboBox.selection.item.result)
+        StateSelector.this publish ApplyOnCodeRequest(selectedState.result)
       }
     }
   }
