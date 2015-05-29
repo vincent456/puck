@@ -19,7 +19,6 @@ class Solver
   implicit def logVerbosity(lvl : PuckLog.Level) : PuckLog.Verbosity= (PuckLog.Solver, lvl)
 
 
-  type ResT = ResultT
 
   def redirectTowardExistingAbstractions(graph : DependencyGraph,
                                          used : ConcreteNode,
@@ -289,7 +288,7 @@ class Solver
       end(\/-(graph))
   }
 
-  def doMerges(graph : DependencyGraph, k : Try[ResT] => Unit) : Unit = {
+  def doMerges(graph : DependencyGraph, k : Try[DependencyGraph] => Unit) : Unit = {
     graph.logger.writeln(s"*************** MERGES ****************")
     def aux(graph : DependencyGraph, it : Iterator[ConcreteNode]) : Try[DependencyGraph] =
       if(it.hasNext){
@@ -309,7 +308,7 @@ class Solver
 
   }
 
-  def solve(graph : DependencyGraph, k : Try[ResT] => Unit) : Unit = {
+  def solve(graph : DependencyGraph, k : Try[DependencyGraph] => Unit) : Unit = {
     /*logger.writeln("solve begins !")
     val sortedId = graph.nodesId.toSeq.sorted
     sortedId.foreach{id => logger.writeln("("+ id + ", " + graph.container(id)+ ")")}

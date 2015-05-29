@@ -5,10 +5,17 @@ import puck.graph.ShowDG._
 import puck.graph._
 import puck.graph.constraints.{NotAnAbstraction, AbstractionPolicy, RedirectionPolicy}
 import puck.util.PuckLog
-import puck.util.Collections.traverse
-import scalaz._
+import puck.util.Collections._
+import scalaz._, Scalaz._
 
 object Redirection {
+
+  implicit class GOps(g : DependencyGraph) extends AnyVal{
+    def logComment(msg : String) : LoggedG =
+      g.comment(msg) set ("\n" + msg)
+  }
+
+
 
   def redirectUses(g : DependencyGraph,
                    oldEdge : DGEdge, newUsed : NodeId,
@@ -26,41 +33,42 @@ object Redirection {
   implicit def logVerbosity(lvl : PuckLog.Level) : PuckLog.Verbosity =
     (PuckLog.GraphTransfoRules, lvl)
 
-  def redirectUsesAndPropagate(g0 : DependencyGraph,
+  def redirectUsesAndPropagate(g  : DependencyGraph,
                                oldUse : DGUses, newUsed : NodeId,
                                policy : RedirectionPolicy,
                                propagateRedirection : Boolean = true,
-                               keepOldUse : Boolean = false ) : Try[DependencyGraph] = {
-    val log = s"redirectUsesAndPropagate(_, oldUse = $oldUse, newUsed = $newUsed, $policy, " +
+                               keepOldUse : Boolean = false ) : LoggedTG = {
+    val log0 = s"redirectUsesAndPropagate(_, oldUse = $oldUse, newUsed = $newUsed, $policy, " +
       s"propagate = $propagateRedirection, keepOldUse = $keepOldUse)"
-    val g = g0.comment(log)
-    g.logger.writeln(log)
-    g.logger.writeln(s"$oldUse.exists = ${oldUse.existsIn(g)}")
-    if(oldUse.used == newUsed) \/-( g)
+    val log1 = s"\n$oldUse.exists = ${oldUse.existsIn(g)}"
+    val lg1 = (g logComment log0) :++> log1
+
+    if(oldUse.used == newUsed) lg1.toLoggedOr
     else if(oldUse.existsIn(g)){
-      g.logger.writeln(s"redirecting ${showDG[DGEdge](g).show(oldUse)} target " +
-        s"to ${showDG[NodeId](g).show(newUsed)} ($policy)")
+      val lg2 = lg1 :++> s"\nredirecting ${showDG[DGEdge](g).show(oldUse)} target " +
+        s"to ${showDG[NodeId](g).show(newUsed)} ($policy)"
 
       if (!propagateRedirection)
-        \/-(redirectUses(g, oldUse, newUsed, keepOldUse))
+        lg2.map(redirectUses(_, oldUse, newUsed, keepOldUse)).toLoggedOr
       else {
 
         val oldUsedKind = g.kindType(oldUse.used)
-        g.logger.writeln(s"use target is a $oldUsedKind")
-        val propagateTypeMember : DependencyGraph => Try[DependencyGraph] =
+        val ltg : LoggedTG = (lg2 :++> s"\nuse target is a $oldUsedKind").toLoggedOr
+
+        val propagateTypeMember : DependencyGraph => LoggedTG =
           redirectTypeUsesOfTypeMemberUse(_, oldUse, newUsed, policy)
 
-        val propagateType : DependencyGraph => Try[(KeepOldTypeUse, DependencyGraph)] =
+        val propagateType : DependencyGraph => LoggedOr[PuckError, (KeepOldTypeUse, DependencyGraph)] =
           redirectTypeMemberAndConstructorUsesOfTypeUse(_, oldUse, newUsed, policy)
 
-        val tg = (oldUsedKind match {
-          case TypeConstructor | TypeMember =>
-            propagateTypeMember(g).map((false,_))
-          case TypeDecl => propagateType(g)
-          case TypeDeclAndTypeMember =>
-            propagateTypeMember(g).flatMap(propagateType)
-          case _ => \/-((false, g))
 
+        val ltg2 : LoggedTG = (oldUsedKind match {
+          case TypeConstructor | TypeMember =>
+            ltg.flatMap(propagateTypeMember(_)).map((false,_))
+          case TypeDecl => ltg.flatMap(propagateType(_))
+          case TypeDeclAndTypeMember =>
+            ltg.flatMap(propagateTypeMember(_)).flatMap(propagateType)
+          case _ => ltg.map((false,_))
         }) map { case (keep, g2) =>
           redirectUses(g2, oldUse, newUsed, keep || keepOldUse)
         }
@@ -70,13 +78,15 @@ object Redirection {
             val ctorId = oldUse.used
             g.container(ctorId) match {
               case None =>
-                -\/(new PuckError("constructor should have a container"))
-              case Some(classId) => tg map { g0 =>
+                ltg2.error(new PuckError("constructor should have a container"))
+
+              case Some(classId) =>
+                ltg2 map { g0 =>
                 g.usersOf(oldUse.user).foldLeft(g0){ case (g1, userId) =>
                   g1.addUses(userId, ctorId).addUses(userId, classId)}
               }
             }
-          case _ => tg
+          case _ => ltg2
         }
 
       }
@@ -86,52 +96,55 @@ object Redirection {
       //if both are identified as violations and are in a wrongusers list
       //redirecting the one will redirect the other
       // when iterating on the wrongusers, the next call to redirectuses will arrive here
-      g.logger.writeln(s"redirecting uses $oldUse target to $newUsed ($policy) : " +
-        s"FAILURE !! ${oldUse.used}} is not used")
-      \/-(g)
+      lg1 :++> s"\nredirecting uses $oldUse target to $newUsed ($policy) : " +
+        s"FAILURE !! ${oldUse.used}} is not used"
+      lg1.toLoggedOr
     }
     else if(g.usersOf(oldUse.used).contains(oldUse.user) ||
       g.usersOf(newUsed).contains(oldUse.user))
-      -\/(new DGError("incoherent state !!!!!!!!!!!!"))
+      lg1.toLoggedOr[PuckError].error(new DGError("incoherent state !!!!!!!!!!!!"))
     else
-      -\/(new DGError(s"redirecting uses ${showDG[DGEdge](g).show(oldUse)} target to ${showDG[NodeId](g).show(newUsed)} ($policy)\n" +
+      lg1.toLoggedOr[PuckError].error(new DGError(s"redirecting uses ${showDG[DGEdge](g).show(oldUse)} target to ${showDG[NodeId](g).show(newUsed)} ($policy)\n" +
         s"!!! nor the oldUsee or the newUsee is really used !!! "))
 
   }
 
-  def redirectTypeUsesOfTypeMemberUse(g0 : DependencyGraph,
+  def redirectTypeUsesOfTypeMemberUse(lg0 : DependencyGraph,
                                       currentTypeMemberUse : DGUses,
                                       newTypeMemberUsed : NodeId,
                                       policy : RedirectionPolicy,
-                                      propagateRedirection : Boolean = true) : Try[DependencyGraph] = {
+                                      propagateRedirection : Boolean = true) : LoggedTG = {
 
-    val log = s"redirecting Type uses of typeMember use ${showDG[DGEdge](g0).shows(currentTypeMemberUse)}" +
-      s" (new typeMember used is ${showDG[NodeId](g0).shows(newTypeMemberUsed)}) "
-    val g= g0.comment(log)
-    g.logger.writeln(log)
+    val g = lg0.value
+    val log = s"redirecting Type uses of typeMember use ${showDG[DGEdge](g).shows(currentTypeMemberUse)}" +
+      s" (new typeMember used is ${showDG[NodeId](g).shows(newTypeMemberUsed)}) "
+    val lg = lg0 comment log
 
     val typeUses = g.typeUsesOf(currentTypeMemberUse)
-    if(typeUses.isEmpty) {
-      g.logger.writeln("no primary uses to redirect")
-      \/-(g)
-    }
+    if(typeUses.isEmpty)
+      (lg :++> "\nno primary uses to redirect") map (_.right)
     else{
-      g.logger.writeln("uses to redirect:%s".format(typeUses.mkString("\n\t", "\n\t","\n")))
+      val lg1 =
+        lg :++> "uses to redirect:%s".format(typeUses.mkString("\n\t", "\n\t","\n"))
 
-      traverse(typeUses, g){(g0, typeUse) =>
+      foldLog(typeUses, lg1){(lg0, typeUse) =>
 
         val keepOldUse = g.typeMemberUsesOf(typeUse).tail.nonEmpty //is empty if typeUses had only one side use
 
-        val redirect : DependencyGraph => Try[(DGUses, DependencyGraph)] =
+        val redirect : LoggedG => Try[(DGUses, DependencyGraph)] =
           if(typeUse.selfUse)
-            g => ??? //redirectThisTypeUse(g, typeUses.used, newTypeMemberUsed)
+            lg => ??? //redirectThisTypeUse(g, typeUses.used, newTypeMemberUsed)
           else {
-            g =>
-              val newTypeUsed = findNewTypeUsed(g, typeUse.used, newTypeMemberUsed, policy)
-              redirectUsesAndPropagate(g, typeUse, newTypeUsed,
-                policy, propagateRedirection, keepOldUse).map{(Uses(typeUse.user, newTypeUsed),_)}
+            lg =>
+              findNewTypeUsed(g, typeUse.used, newTypeMemberUsed, policy).flatMap {
+                case (g, newTypeUsed) =>
+                  redirectUsesAndPropagate(g, typeUse, newTypeUsed,
+                    policy, propagateRedirection, keepOldUse).map{_.map((Uses(typeUse.user, newTypeUsed),_))}
+              }
+
+
           }
-        val g1 = g0.removeUsesDependency(typeUse, currentTypeMemberUse)
+        val g1 = lg0.map(_.removeUsesDependency(typeUse, currentTypeMemberUse))
 
         for(
           eg <- redirect(g1);
@@ -144,15 +157,16 @@ object Redirection {
   }
 
 
-  def findNewTypeUsed(g0 : DependencyGraph,
-                      currentTypeUsed : NodeId,
-                      newTypeMemberUsed : NodeId,
-                      policy : RedirectionPolicy) : NodeId = {
-
+  def findNewTypeUsed
+  ( lg : LoggedG,
+    currentTypeUsed : NodeId,
+    newTypeMemberUsed : NodeId,
+    policy : RedirectionPolicy
+    ) : Logged[(DependencyGraph, NodeId)] = {
+    val g = lg.value
     val log = s"searching new Type used ($policy) : current type used is " +
-      s"${showDG[NodeId](g0).shows(currentTypeUsed)}, new typeMember used : ${showDG[NodeId](g0).shows(newTypeMemberUsed)}"
-    val g= g0.comment(log)
-    g.logger.writeln(log)
+      s"${showDG[NodeId](g).shows(currentTypeUsed)}, new typeMember used : ${showDG[NodeId](g).shows(newTypeMemberUsed)}"
+    val lg1= lg comment log
 
     val newPrimaryUsed =
       policy match {
@@ -182,29 +196,35 @@ object Redirection {
               }
           }
       }
-    g.logger.writeln(s"new type to use found : ${showDG[NodeId](g).shows(newPrimaryUsed)}")
-    newPrimaryUsed
+    (lg1 :++> s"new type to use found : ${showDG[NodeId](g).shows(newPrimaryUsed)}\n").map{
+      (_, newPrimaryUsed)
+    }
+
   }
 
 
 
   type TypeMemberUses = List[DGUses]
-  def redirectTypeMemberUsesOfTypeUse(g0 : DependencyGraph,
-                                      currentTypeUse: DGUses,
-                                      newTypeUsed : NodeId,
-                                      policy : RedirectionPolicy,
-                                      tmu : TypeMemberUses) : Try[DependencyGraph] = {
+  def redirectTypeMemberUsesOfTypeUse
+    (lg : LoggedG,
+     currentTypeUse: DGUses,
+     newTypeUsed : NodeId,
+     policy : RedirectionPolicy,
+     tmu : TypeMemberUses) : LoggedTG = {
 
-    val log = s"redirecting typeMember uses of type use ${showDG[DGEdge](g0).shows(currentTypeUse)} " +
-      s"(new type used is  ${showDG[NodeId](g0).shows(newTypeUsed)}) "
-    val g= g0.comment(log)
-    g.logger.writeln(log)
+    val g = lg.value
+    val log = s"redirecting typeMember uses of type use ${showDG[DGEdge](g).shows(currentTypeUse)} " +
+      s"(new type used is  ${showDG[NodeId](g).shows(newTypeUsed)}) "
 
-    if (tmu.isEmpty) g.logger.writeln("no typeMember uses to redirect")
-    else g.logger.writeln("uses to redirect:%s".format(tmu.mkString("\n\t", "\n\t", "\n")))
+    val log1 = if (tmu.isEmpty) "no typeMember uses to redirect"
+    else "uses to redirect:%s".format(tmu.mkString("\n\t", "\n\t", "\n")
 
-    traverse(tmu, g) {
-      case (g0, typeMemberUse) =>
+    val lg1 = lg.map(_.comment(log)) :++> (log + "\n" + log1)
+
+
+
+    foldLog(tmu, lg1) {
+      case (lg0, typeMemberUse) =>
         val typeMember = typeMemberUse.used
         val someTypeMemberAbs =
           g.abstractions(typeMember).find { case (abs, _) => g.contains(newTypeUsed, abs) }
@@ -215,15 +235,17 @@ object Redirection {
               s"target to ${showDG[NodeId](g).shows(newTypeUsed)}\n" +
               s"no satisfying abstraction to redirect typeMember use ${showDG[DGEdge](g).shows(typeMemberUse)}"
 
-            g.logger.writeln(msg)(PuckLog.Error)
-            -\/(new RedirectionError(msg))
+            (lg0 :++> msg) map ( _ => -\/(new RedirectionError(msg)))
 
           case Some((typeMemberAbs, _)) =>
-            redirectUsesAndPropagate(g0.removeUsesDependency(currentTypeUse, typeMemberUse),
+            redirectUsesAndPropagate(
+              lg0.map(_.removeUsesDependency(currentTypeUse, typeMemberUse)),
               typeMemberUse, typeMemberAbs, policy).map {
-              g2 =>
-                val newSide = DGEdge.UsesK(typeMemberUse.user, typeMemberAbs)
-                g2.addUsesDependency(Uses(currentTypeUse.user, newTypeUsed), newSide)
+              _.map {
+                g2 =>
+                  val newSide = DGEdge.UsesK(typeMemberUse.user, typeMemberAbs)
+                  g2.addUsesDependency(Uses(currentTypeUse.user, newTypeUsed), newSide)
+              }
             }
         }
     }
@@ -233,21 +255,27 @@ object Redirection {
 
 
   type KeepOldTypeUse = Boolean
-  def redirectTypeMemberAndConstructorUsesOfTypeUse(g0 : DependencyGraph,
-                                                    currentTypeUse: DGUses,
-                                                    newTypeUsed : NodeId,
-                                                    policy : RedirectionPolicy): Try[(KeepOldTypeUse, DependencyGraph)] = {
-    val log = s"redirecting typeMember AND CONSTRUCTOR uses of type use ${showDG[DGEdge](g0).shows(currentTypeUse)} " +
-      s"(new type used is  ${showDG[NodeId](g0).shows(newTypeUsed)}) "
-    val g= g0.comment(log)
+  def redirectTypeMemberAndConstructorUsesOfTypeUse
+  ( lg0 : LoggedG,
+    currentTypeUse: DGUses,
+    newTypeUsed : NodeId,
+    policy : RedirectionPolicy
+    ): Logged[Try[(KeepOldTypeUse, DependencyGraph)]] = {
+    val g = lg0.value
+
+    val log = s"redirecting typeMember AND CONSTRUCTOR uses of type use ${showDG[DGEdge](g).shows(currentTypeUse)} " +
+      s"(new type used is  ${showDG[NodeId](g).shows(newTypeUsed)}) "
+    val lg1 = lg0.map(_.comment(log)) :++> log
+
+
     val typeMemberAndTypeCtorUses = g.typeMemberUsesOf(currentTypeUse).toList
     import puck.util.Collections.SelectList
     typeMemberAndTypeCtorUses.select { e => g.kindType(g.getNode(e.target)) == TypeConstructor} match {
       case Some((typeCtorUse, typeMemberUses))
         if ! g.abstractions(typeCtorUse.used).exists {case (abs, _) => g.contains(newTypeUsed, abs)} =>
-        redirectTypeMemberUsesOfTypeUse(g, currentTypeUse, newTypeUsed, policy, typeMemberUses).map((true, _))
+        redirectTypeMemberUsesOfTypeUse(lg1, currentTypeUse, newTypeUsed, policy, typeMemberUses).map(_.map((true, _)))
       case _ =>
-        redirectTypeMemberUsesOfTypeUse(g, currentTypeUse, newTypeUsed, policy, typeMemberAndTypeCtorUses).map((false,_))
+        redirectTypeMemberUsesOfTypeUse(lg1, currentTypeUse, newTypeUsed, policy, typeMemberAndTypeCtorUses).map(_.map((false, _)))
     }
   }
 }

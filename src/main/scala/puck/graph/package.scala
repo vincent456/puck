@@ -1,12 +1,29 @@
 package puck
 
-import puck.graph.transformations.{Recordable}
-import scalaz._
+import puck.graph.transformations.Recordable
+import scalaz._, Scalaz._
 
 package object graph {
 
   type Try[+T] = PuckError \/ T
-  type PuckFailure = NonEmptyList[PuckError]
+
+
+  type Logged[A] = Writer[String, A]
+  type LoggedOr[E, A] = EitherT[Logged, E, A]
+
+  implicit class LoggedOps[A](lg: Logged[A]) extends AnyVal {
+    def toLoggedOr[E] : LoggedOr[E, A] =
+      EitherT.right[Logged, E, A](lg)
+  }
+
+  implicit class LoggedOrOps[E, A](lg: LoggedOr[E, A]) extends AnyVal {
+    def error(e : E) : LoggedOr[E, A] =
+      lg.flatMapF[A](_ => e.left[A].set(""))
+  }
+
+  type LoggedG = Logged[DependencyGraph]
+  type LoggedTG = LoggedOr[PuckError, DependencyGraph]
+
 
   type NodePredicateT = (DependencyGraph, ConcreteNode) => Boolean
 
@@ -31,4 +48,5 @@ package object graph {
 
   def graphOfResult(result : ResultT) : DependencyGraph = result
   def recordOfResult(result : ResultT) : Recording = result.recording
+
 }
