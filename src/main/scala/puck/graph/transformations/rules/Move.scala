@@ -4,26 +4,27 @@ import puck.PuckError
 import puck.graph.ShowDG._
 import puck.graph._
 
-import puck.util.Collections.traverse
+import puck.util.Collections._
 import puck.graph.transformations.rules.Redirection.redirectUses
 
-import scalaz.{\/-, -\/}
+import scalaz._, Scalaz._
 
 class Move(intro : Intro) {
 
   def typeDecl
-  ( g0 : DependencyGraph,
+  ( g : DependencyGraph,
     movedId : NodeId,
     newContainer : NodeId
-    ) : Try[DependencyGraph] =
-    withContainer(g0, movedId){
-      oldContainer =>
-        val log = s"moving type decl ${showDG[NodeId](g0).shows(movedId)} " +
-          s"from ${showDG[NodeId](g0).shows(oldContainer)} " +
-          s"to ${showDG[NodeId](g0).shows(newContainer)}"
-        val g = g0.comment(log)
-        g.logger.writeln(log)
-        \/-(g.changeSource(DGEdge.ContainsK(oldContainer, movedId), newContainer))
+    ) : LoggedTG =
+    g.container(movedId) match {
+      case None =>
+        LoggedError(new RedirectionError(s"${showDG[NodeId](g).shows(movedId)} has no container !!!"))
+      case Some(oldContainer) =>
+        val log = s"moving type decl ${showDG[NodeId](g).shows(movedId)} " +
+          s"from ${showDG[NodeId](g).shows(oldContainer)} " +
+          s"to ${showDG[NodeId](g).shows(newContainer)}"
+
+        (g.changeSource(DGEdge.ContainsK(oldContainer, movedId), newContainer) logComment log).toLoggedOr
     }
 
   private def withContainer[T]
@@ -97,54 +98,57 @@ class Move(intro : Intro) {
     typeMembersMoved : Seq[NodeId],
     oldContainer : NodeId,
     newContainer : NodeId
-    ) : DependencyGraph = {
+    ) : LoggedTG = {
 
     val log = "moving type members  " +  typeMembersMoved.map(showDG[NodeId](g).shows).mkString(", ") +
       s"from ${showDG[NodeId](g).shows(oldContainer)} " +
       s"to ${showDG[NodeId](g).shows(newContainer)}"
-    g.logger.writeln(log)
-    g.comment(log)
+
+    (g logComment log).toLoggedOr
   }
 
 
   private def foldTypeUsesOf
   ( typeMemberUse : DGUses,
     g : DependencyGraph )
-  ( f : (DependencyGraph, DGEdge) => Try[DependencyGraph]
-    ) : Try[DependencyGraph] =
-    traverse(g.typeUsesOf(typeMemberUse), g)(f)
+  ( f : (DependencyGraph, DGEdge) => LoggedTG
+    ) : LoggedTG =
+    foldLoggedOr(g.typeUsesOf(typeMemberUse), g)(f)
 
   def typeMember
   ( g0 : DependencyGraph,
-    typeMembersMovedId : Seq[NodeId],
+    typeMembersMovedId : List[NodeId],
     newContainer : NodeId,
     createVarStrategy: Option[CreateVarStrategy] = None)
-  (typeMembersMovedUses : Seq[Uses] = g0.usesOfUsersOf(typeMembersMovedId))
-    : Try[DependencyGraph] = {
+  (typeMembersMovedUses : List[Uses] = g0.usesOfUsersOf(typeMembersMovedId))
+    : LoggedTG = {
     /** PRECONDITION all typeMembersMoved have same host */
 
 
     val oldContainer = g0.getConcreteNode(g0.container(typeMembersMovedId.head).get)
 
-    val g = logTypeMemberMove(g0, typeMembersMovedId, oldContainer.id, newContainer)
+    for {
+      g <- logTypeMemberMove(g0, typeMembersMovedId, oldContainer.id, newContainer)
 
-    val g2 = typeMembersMovedId.foldLeft(g){
-      (g0, movedId) =>
-        g0.changeSource(DGEdge.ContainsK(oldContainer.id, movedId), newContainer)
+      g2 = typeMembersMovedId.foldLeft(g){
+            (g0, movedId) =>
+              g0.changeSource(DGEdge.ContainsK(oldContainer.id, movedId), newContainer)
+          }
+
+          (siblingsUsesViaSelf, otherUses) =
+            typeMembersMovedUses.partition(isSiblingUsesViaSelf(g2, oldContainer))
+
+      g3 <- (siblingsUsesViaSelf.nonEmpty, createVarStrategy) match {
+            case (true, Some(strategy)) =>
+              strategy.moveTypeMemberUsedBySelf(g2,
+                oldContainer.id, newContainer,
+                siblingsUsesViaSelf, intro)
+            case (false, None) => LoggedSuccess(g2)
+            case _ => LoggedError[DependencyGraph](new PuckError("incoherent call to Move.typMember"))
+         }
+    } yield {
+      redirectTypeUsesOfMovedTypeMemberUsers(g3, otherUses, newContainer)
     }
-
-    val (siblingsUsesViaSelf, otherUses) =
-      typeMembersMovedUses.partition(isSiblingUsesViaSelf(g2, oldContainer))
-
-    val tg : Try[DependencyGraph] = (siblingsUsesViaSelf.nonEmpty, createVarStrategy) match {
-      case (true, Some(strategy)) =>
-        strategy.moveTypeMemberUsedBySelf(g2,
-          oldContainer.id, newContainer,
-          siblingsUsesViaSelf, intro)
-      case (false, None) => \/-(g2)
-      case _ => -\/(new PuckError("incoherent call to Move.typMember"))
-    }
-    tg.map(redirectTypeUsesOfMovedTypeMemberUsers(_, otherUses, newContainer))
   }
 
 }

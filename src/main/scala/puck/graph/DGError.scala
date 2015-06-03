@@ -2,9 +2,6 @@ package puck.graph
 
 import puck.PuckError
 
-/**
- * Created by lorilan on 27/05/14.
- */
 class DGError(msg:String) extends PuckError(msg){
   def this()=this("")
 }

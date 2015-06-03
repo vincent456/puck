@@ -8,7 +8,7 @@ import javax.swing._
 import puck.graph.GraphUtils
 import puck.graph.io.{DG2AST, FilesHandler, PrintingOptions}
 import puck.gui.svg.actions.AddNodeAction
-import puck.gui.{PuckConsolePanel, TextAreaLogger}
+import puck.gui.PuckConsolePanel
 import puck.javaGraph.nodeKind.Package
 
 import scala.swing.Label

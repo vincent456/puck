@@ -5,10 +5,10 @@ import javax.swing.{JLabel, JComponent, AbstractAction}
 
 import puck.PuckError
 import puck.graph.io.{Visible, VisibilitySet}
-import puck.graph.{NodeId, DependencyGraph, ResultT, ConcreteNode}
+import puck.graph._
 import puck.graph.constraints.search.{CSInitialSearchState, ConstraintSolvingSearchEngineBuilder}
 import puck.graph.constraints.search.ConstraintSolvingSearchEngineBuilder.TryAllCSSEBuilder
-import puck.gui.search.{SimpleStateSelector, StateSelected, SortedStateSelector}
+import puck.gui.search.{SimpleStateSelector, StateSelected}
 import puck.gui.svg.{SVGPanel, SVGController}
 import puck.search.Search
 
@@ -17,7 +17,6 @@ import scala.swing._
 import scala.swing.Dialog.{Message, Options, Result}
 import VisibilitySet._
 
-import scalaz.{\/-, -\/}
 
 object GraphScrollPane {
   def apply
@@ -78,33 +77,33 @@ class AutoSolveAction
   val initialVisibleSet = nodeVisibles(graph)
 
 
-  private def dialog(res : Search[ResultT]) : Option[(Result.Value, ResultT)] = {
+  private def dialog(res : Search[ResultT]) : Option[(Result.Value, Logged[ResultT])] = {
     val title = "Auto solve"
 
     val confirm : JComponent => Result.Value =
       c =>
       Dialog.showConfirmation(null, c, title, Options.OkCancel, Message.Plain)
-      if(res.finalStates.isEmpty){
+      if(res.successes.isEmpty){
         val _ = confirm(new JLabel("No solution"))
         None
       }
       else {
         val stateSelector = new SimpleStateSelector
-        stateSelector.setStatesList(res.finalStates)
+        stateSelector.setStatesList(res.successes)
 
         val panel = new SplitPane(Orientation.Vertical) {
           dividerSize = 3
           preferredSize = new Dimension(1024, 780)
 
           leftComponent = GraphScrollPane(controller,
-            res.initialState.result,
+            res.initialState.loggedResult.value,
             initialVisibleSet)
 
           // val stateSelector = new SortedStateSelector(res.allStatesByDepth)
 
           val rightDocWrapper = GraphScrollPane(controller,
-            stateSelector.selectedState.result,
-            nodeVisibles(stateSelector.selectedState.result))
+            stateSelector.selectedState.loggedResult.value,
+            nodeVisibles(stateSelector.selectedState.loggedResult.value))
 
           rightComponent = new BorderPanel {
             add(rightDocWrapper, Position.Center)
@@ -114,13 +113,13 @@ class AutoSolveAction
           this listenTo stateSelector
           reactions += {
             case StateSelected(state) =>
-              rightDocWrapper.setGraph(stateSelector.selectedState.result,
-                nodeVisibles(stateSelector.selectedState.result))
+              rightDocWrapper.setGraph(stateSelector.selectedState.loggedResult.value,
+                nodeVisibles(stateSelector.selectedState.loggedResult.value))
           }
 
         }
         val resVal =confirm(panel.peer)
-        Some((resVal, stateSelector.selectedState.result))
+        Some((resVal, stateSelector.selectedState.loggedResult))
       }
   }
 
@@ -135,9 +134,9 @@ class AutoSolveAction
 
     printErrOrPushGraph(controller, "Auto solve action : ") {
       dialog(engine) match {
-        case None => -\/(new PuckError("no solution"))
-        case Some((Result.Ok, g)) => \/-(g)
-        case _ => -\/(new PuckError("cancelled"))
+        case None => LoggedError(new PuckError("no solution"))
+        case Some((Result.Ok, g)) => g.toLoggedTry
+        case _ => LoggedError(new PuckError("cancelled"))
       }
     }
 

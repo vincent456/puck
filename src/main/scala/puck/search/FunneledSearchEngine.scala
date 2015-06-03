@@ -1,5 +1,8 @@
 package puck.search
 
+import puck.graph._
+import puck.search.SearchEngine.InitialStateFactory
+
 import scala.collection.mutable
 
 trait Evaluator[Result]{
@@ -46,7 +49,7 @@ trait Evaluator[Result]{
 }
 
 class FunneledSeachEngine[Result]
-( val createInitialState : (Try[Result] => Unit) => SearchState[Result],
+( val createInitialState : InitialStateFactory[Result],
   val evaluator : Evaluator[Result]
   ) extends SearchEngine[Result]{
 
@@ -59,14 +62,14 @@ class FunneledSeachEngine[Result]
 
   var currentCheckPoint : Int = markPointPeriod
 
-  override def init(k : Try[Result] => Unit) : Unit = {
+  override def init(k : LoggedTry[Result] => Unit) : Unit = {
     //println("StackedSearchEngine.init")
     super.init(k)
     stateStack.push(initialState)
     numExploredStates = 1
   }
 
-  override def newCurrentState[S <: StateCreator[Result, S]](cr : Result, choices : S) : Unit =  {
+  override def newCurrentState[S <: StateCreator[Result, S]](cr : Logged[Result], choices : S) : Unit =  {
     //println("StackedSearchEngine.newCurrentState")
     super.newCurrentState(cr, choices)
     if ( currentState.markedPointDepth >= currentCheckPoint)
@@ -79,7 +82,7 @@ class FunneledSeachEngine[Result]
 
 
 
-  override def startExplore(k : Try[Result] => Unit) = {
+  override def startExplore(k : LoggedTry[Result] => Unit) = {
 
      this.search(k)
 

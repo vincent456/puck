@@ -291,7 +291,7 @@ class FilesHandler
     }
 
     states.foreach { s =>
-      val graph = graphOfResult(s.result)
+      val graph = graphOfResult(s.loggedResult.value)
       val f = new File("%s%c%s.png".format(dir.getAbsolutePath, File.separatorChar, printer(s)))
       val options = PrintingOptions(visibility, printId, printSignature, None)
       makeImage(graph, options, Some(new FileOutputStream(f)), Png){_ => ()}

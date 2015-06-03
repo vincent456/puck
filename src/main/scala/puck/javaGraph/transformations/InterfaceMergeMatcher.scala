@@ -1,6 +1,5 @@
 package puck.javaGraph.transformations
 
-import puck.graph.ShowDG._
 import puck.graph._
 import puck.graph.transformations.MergeMatcher
 import puck.javaGraph.nodeKind.{Interface, AbstractMethod}
@@ -45,8 +44,8 @@ class InterfaceMergeMatcher(val node : ConcreteNode) extends MergeMatcher {
       absm.kind match {
         case AbstractMethod => findMergingCandidateIn(g, absm, g.getConcreteNode(interface2)).isDefined
         case _ =>
-          g.logger.writeln("searching for merging candidate "+
-            s"interface ${showDG[NodeId](g).shows(interface1)} contains ${showDG[NodeId](g).shows(absmId)}\n")
+//          g.logger.writeln("searching for merging candidate "+
+//            s"interface ${showDG[NodeId](g).shows(interface1)} contains ${showDG[NodeId](g).shows(absmId)}\n")
           true
       }
     }

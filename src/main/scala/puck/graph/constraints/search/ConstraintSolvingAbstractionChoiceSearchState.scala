@@ -1,6 +1,6 @@
 package puck.graph.constraints.search
 
-import puck.graph.{ResultT, NodeKind}
+import puck.graph.{Logged, ResultT, NodeKind}
 import puck.graph.constraints.AbstractionPolicy
 import puck.search.SearchState
 
@@ -11,7 +11,7 @@ class ConstraintSolvingAbstractionChoice
 extends ConstraintSolvingChoice[(NodeKind, AbstractionPolicy), ConstraintSolvingAbstractionChoice] {
   def createState(id: Int,
                   prevState: Option[SearchState[ResultT]],
-                  currentResult : ResultT,
+                  currentResult : Logged[ResultT],
                   choices: ConstraintSolvingAbstractionChoice) =
     new ConstraintSolvingAbstractionChoiceSearchState(id, currentResult, choices, prevState)
 
@@ -20,7 +20,7 @@ extends ConstraintSolvingChoice[(NodeKind, AbstractionPolicy), ConstraintSolving
 
 class ConstraintSolvingAbstractionChoiceSearchState
 (val id : Int,
- val result : ResultT,
+ val loggedResult : Logged[ResultT],
  val internal: ConstraintSolvingAbstractionChoice,
  val prevState : Option[SearchState[ResultT]])
 extends ConstraintSolvingState[(NodeKind, AbstractionPolicy), ConstraintSolvingAbstractionChoice]

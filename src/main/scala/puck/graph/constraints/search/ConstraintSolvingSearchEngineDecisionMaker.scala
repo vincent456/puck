@@ -5,6 +5,8 @@ import puck.graph.constraints.{NodePredicate, AbstractionPolicy, DecisionMaker}
 import puck.graph.transformations.rules.CreateVarStrategy
 import puck.search.SearchEngine
 
+import scalaz._ , Scalaz._
+
 object ConstraintSolving {
   type NodeChoice = ConstraintSolvingNodesChoice
   type AbsChoice = ConstraintSolvingAbstractionChoice
@@ -52,10 +54,11 @@ class ConstraintSolvingSearchEngineDecisionMaker
     }
   }*/
 
-  def violationTarget(graph : DependencyGraph)
-                     (k: Option[ConcreteNode] => Unit) : Unit = {
+  def violationTarget
+  ( lg : LoggedG)
+  ( k: Logged[Option[ConcreteNode]] => Unit) : Unit = {
 
-
+    val graph = lg.value
     def findTargets(l : Seq[NodeKind]) : Option[ConcreteNode] =  l match {
       case topPriority :: tl =>
         graph.concreteNodes.iterator find { n =>
@@ -70,21 +73,21 @@ class ConstraintSolvingSearchEngineDecisionMaker
         graph.isWronglyContained(n.id) }
     }
 
-    k(findTargets(violationsKindPriority))
+    k(findTargets(violationsKindPriority).set(lg.written))
   }
 
-  def abstractionKindAndPolicy(graph : DependencyGraph, impl : ConcreteNode)
-                              (k : Option[(NodeKind, AbstractionPolicy)] => Unit) : Unit = {
+  def abstractionKindAndPolicy
+  ( lg : LoggedG, impl : ConcreteNode)
+  ( k : Logged[Option[(NodeKind, AbstractionPolicy)]] => Unit) : Unit = {
 
     import impl.kind.{abstractionPolicies, abstractKinds}
 
-    if(abstractionPolicies.isEmpty) {
-      k(None)
-    }
-    else{
-        k(Some((abstractKinds(abstractionPolicies.head).head,
-          abstractionPolicies.head)))
-    }
+    k(lg.map(_ =>
+      if(abstractionPolicies.isEmpty)
+        None
+      else
+        Some((abstractKinds(abstractionPolicies.head).head,
+          abstractionPolicies.head))))
 
     /*val (needSearch, karg) =
       if(abstractionPolicies.isEmpty) {
@@ -114,45 +117,55 @@ class ConstraintSolvingSearchEngineDecisionMaker
   }
 
 
-  def partition(graph : DependencyGraph) : (List[DGNode], List[List[DGNode]]) => List[List[DGNode]] = {
-    case (Seq(), acc) => acc
+  def partition(graph : DependencyGraph) : (List[DGNode], List[NonEmptyList[DGNode]]) => List[NonEmptyList[DGNode]] = {
+    case (Nil, acc) => acc
     case (hd :: tl, acc) =>
       val (same, diff) = tl.partition(n => n.kind == hd.kind)
-      partition(graph)(diff, (hd :: same) +: acc)
+      partition(graph)(diff, NonEmptyList[DGNode](hd, same:_*) +: acc)
   }
 
-  def chooseContainerKind(graph : DependencyGraph, toBeContained : DGNode)
-                         (k : Option[NodeKind] => Unit) : Unit = {
+  def chooseContainerKind
+  ( lg : LoggedG, toBeContained : DGNode)
+  ( k : Logged[Option[NodeKind]] => Unit) : Unit = {
     //TODO filter instead of find !!!
-    k(graph.nodeKinds.find(_.canContain(toBeContained.kind)))
+    k(lg.map(_.nodeKinds.find(_.canContain(toBeContained.kind))))
   }
 
   def selectExistingAbstraction
-  ( graph : DependencyGraph, choices : Set[(NodeId, AbstractionPolicy)])
-  ( k : Option[(NodeId, AbstractionPolicy)] => Unit) : Unit =
-    if( choices.isEmpty ) k(None)
-    else k(Some(choices.head))
+  ( lg : LoggedG,
+    choices : Set[(NodeId, AbstractionPolicy)])
+  ( k : Logged[Option[(NodeId, AbstractionPolicy)]] => Unit) : Unit =
+    k(lg.map( _ =>
+      if( choices.isEmpty )
+        none[(NodeId, AbstractionPolicy)]
+      else some(choices.head) ) )
 
-  def chooseNode(graph : DependencyGraph, predicate : NodePredicate)
-                (k : DependencyGraph => Option[NodeId] => Unit) : Unit = {
+
+  def chooseNode
+  ( lg : LoggedG, predicate : NodePredicate)
+  ( k : LoggedG => Option[NodeId] => Unit) : Unit = {
+    val graph = lg.value
     val choices = graph.concreteNodes.filter(predicate(graph,_)).toList
 
-    println("choices = " + choices)
-
-
     choices match {
-      case List() => k(graph)(None)
-      case List(n) => k(graph)(Some(n.id))
+      case Nil => k(lg)(None)
+      case List(n) => k(lg)(Some(n.id))
       case s =>
         val l = partition(graph)(s, List())
 
-        val (g, cs) = l.foldLeft( (graph, Seq[NodeId]()) ){case ((g, s0), ns) =>
-            val (vn, g2) = g.addVirtualNode(ns.map(_.id).toSeq,  ns.head.kind)
-          (g2, vn.id +: s0)
+        val (g, cs) = l.foldLeft( (graph, List[NodeId]()) ){
+          case ((g0, s0), nel)  =>
+            if(nel.tail.isEmpty) (g0, nel.head.id +: s0)
+            else{
+              val (vn, g2) = g0.addVirtualNode(nel.toList.map(_.id).toSeq,  nel.head.kind)
+              (g2, vn.id +: s0)
+            }
+
         }
 
-        searchEngine.newCurrentState(g,
-          ConstraintSolvingNodesChoice.includeNoneChoice(k(g), cs))
+        val lg1 = lg.map(_ => g)
+        searchEngine.newCurrentState(lg1,
+          ConstraintSolvingNodesChoice.includeNoneChoice(k(lg1), cs))
 
     }
   }

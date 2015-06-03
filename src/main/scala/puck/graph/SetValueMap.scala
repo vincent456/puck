@@ -38,11 +38,13 @@ class SetValueMap[K,V](val content : Map[K, Set[V]]){
     (content get key) exists { _ contains v}
 
   def toSeq = content.toSeq
-  def flatSeq : Seq[(K,V)]=
+  def toList = content.toList
+
+  def flatList : List[(K,V)]=
     for{
-      s <- content.toSeq
+      s <- content.toList
       (k, vs) = s
-      v <- vs.toSeq
+      v <- vs.toList
     } yield (k, v)
 
 }

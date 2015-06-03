@@ -13,7 +13,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 
    val root = ConcreteNode(rootId, rootName, JavaRoot, None, true)
 
-   g = new DependencyGraph(PuckNoopLogger, JavaNodeKind,
+   g = new DependencyGraph(JavaNodeKind,
      NodeIndex(root), EdgeMap(),
      AbstractionMap(), ConstraintsMaps(), Recording())
 
@@ -221,7 +221,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
             val candidates = graph.content(impl.id).map(graph.getConcreteNode)
             Type.findAndRegisterOverridedInList(graph, absMeths.toList, candidates.toList) {
               Type.errorOnImplemNotFound(graph.fullName(impl.id))
-            } .getOrElse(sys.error("Success expected"))
+            } .getOrElse(sys.error("Success expected")).value
               .addAbstraction(implId, (absId, pol))
         case _ => graph
       }

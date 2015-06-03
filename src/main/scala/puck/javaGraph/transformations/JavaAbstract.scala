@@ -34,10 +34,12 @@ object JavaAbstract extends Abstract {
       }
   }
 
-  override def createAbstraction(g : DependencyGraph,
-                                 impl: ConcreteNode,
-                                 abskind : NodeKind ,
-                                 policy : AbstractionPolicy) : Try[(ConcreteNode, DependencyGraph)] = {
+  override def createAbstraction
+  ( g : DependencyGraph,
+    impl: ConcreteNode,
+    abskind : NodeKind ,
+    policy : AbstractionPolicy
+    ) : LoggedTry[(ConcreteNode, DependencyGraph)] = {
     (abskind, policy) match {
       case (Interface, SupertypeAbstraction) =>
         val methods = typeMembersToPutInInterface(g, impl, SupertypeAbstraction)
@@ -48,7 +50,7 @@ object JavaAbstract extends Abstract {
 
       case (AbstractMethod, SupertypeAbstraction) =>
         //no (abs, impl) or (impl, abs) uses
-        \/-(createAbsNode(g, impl, abskind, policy))
+        LoggedSuccess(createAbsNode(g, impl, abskind, policy))
 
       case (ConstructorMethod, _) =>
         super.createAbstraction(g, impl, abskind, policy) map { case (abs, g0) =>
@@ -59,10 +61,12 @@ object JavaAbstract extends Abstract {
     }
   }
 
-  override def abstractionCreationPostTreatment(g: DependencyGraph,
-                                                implId : NodeId,
-                                                absId : NodeId,
-                                                policy : AbstractionPolicy) : DependencyGraph = {
+  override def abstractionCreationPostTreatment
+  ( g: DependencyGraph,
+    implId : NodeId,
+    absId : NodeId,
+    policy : AbstractionPolicy
+    ) : DependencyGraph = {
     val abstraction = g.getNode(absId)
     (abstraction.kind, policy) match {
       case (AbstractMethod, SupertypeAbstraction) =>

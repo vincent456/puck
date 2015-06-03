@@ -11,11 +11,13 @@ class ConstraintSolvingStateEvaluator
   extends Evaluator[ResultT]{
 
   def evaluate(s : SearchState[ResultT]): Double ={
-    graphOfResult(s.result).coupling
+    graphOfResult(s.loggedResult.value).coupling
   }
 
   def equals(s1 : SearchState[ResultT], s2 : SearchState[ResultT] ): Boolean =
-    DependencyGraph.areEquivalent(initialRecord, graphOfResult(s1.result), graphOfResult(s2.result))
+    DependencyGraph.areEquivalent(initialRecord,
+      graphOfResult(s1.loggedResult.value),
+      graphOfResult(s2.loggedResult.value))
   
 
 }

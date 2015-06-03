@@ -2,7 +2,7 @@ package puck.gui.search
 
 import puck.graph.io.VisibilitySet
 import puck.graph.{ResultT, graphOfResult}
-import puck.gui.{ConstraintDisplayRequest, ApplyOnCodeRequest, GraphDisplayRequest, SearchStateSeqPrintingRequest}
+import puck.gui.{ConstraintDisplayRequest, ApplyOnCodeRequest, SearchStateSeqPrintingRequest}
 import puck.search.SearchState
 
 import scala.swing._
@@ -16,7 +16,6 @@ class SimpleStateSelector
   var searchStateComboBox : ComboBox[SearchState[ResultT]] = _
 
   def publish() : Unit = {
-    println("pusblish !")
     this.publish(StateSelected(searchStateComboBox.selection.item))
   }
 
@@ -36,7 +35,6 @@ class SimpleStateSelector
 
   reactions += {
     case SelectionChanged(cb) =>
-      println("selec changed")
       publish()
   }
 
@@ -112,7 +110,7 @@ class StateSelector
     action = new Action("Constraint"){
       def apply() : Unit =  {
         val state: SearchState[ResultT] = selectedState
-        StateSelector.this publish ConstraintDisplayRequest(graphOfResult(state.result))
+        StateSelector.this publish ConstraintDisplayRequest(graphOfResult(state.loggedResult.value))
       }
     }
   }
@@ -120,7 +118,7 @@ class StateSelector
   secondLine.contents += new Button(""){
     action = new Action("Apply"){
       def apply() : Unit = {
-        StateSelector.this publish ApplyOnCodeRequest(selectedState.result)
+        StateSelector.this publish ApplyOnCodeRequest(selectedState.loggedResult.value)
       }
     }
   }

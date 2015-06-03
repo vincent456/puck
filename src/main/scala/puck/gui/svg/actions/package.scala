@@ -2,7 +2,7 @@ package puck.gui.svg
 
 import javax.swing.JOptionPane
 
-import puck.graph.{DependencyGraph, Try}
+import puck.graph.{LoggedTry, DependencyGraph}
 import scalaz.{\/-, -\/}
 import puck.graph.transformations.rules
 
@@ -14,9 +14,14 @@ package object actions {
     else Some(childName)
   }
 
-  def printErrOrPushGraph(controller: SVGController, msg : String) : Try[DependencyGraph] => Unit = {
-    case -\/(err) => controller.console.appendText(s"$msg\n${err.getMessage}\n" )
-    case \/-(g) => controller.pushGraph(g)
+  def printErrOrPushGraph
+  ( controller: SVGController, msg : String )
+  ( lgt : LoggedTry[DependencyGraph]) : Unit = {
+    controller.console.appendText(lgt.run.written)
+    lgt.run.value match {
+      case -\/(err) => controller.console.appendText(s"$msg\n${err.getMessage}\n")
+      case \/-(g) => controller.pushGraph(g)
+    }
   }
 
   type CreateVarStrategy = rules.CreateVarStrategy

@@ -25,8 +25,8 @@ trait ConstraintSolvingState[ S, T <: ConstraintSolvingChoice[S, T]]
   def triedAll = remainingChoices.isEmpty
 
   override def isMarkPointState = {
-    recordOfResult(result).nonEmpty && (prevState forall { s =>
-      recordOfResult(s.result).size < recordOfResult(result).size
+    recordOfResult(loggedResult.value).nonEmpty && (prevState forall { s =>
+      recordOfResult(s.loggedResult.value).size < recordOfResult(loggedResult.value).size
     })
   }
 

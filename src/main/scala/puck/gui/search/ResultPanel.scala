@@ -37,11 +37,11 @@ class ResultPanel
 //  val total = sortedRes.foldLeft(0) { case (acc, (_, l)) => acc + l.size}
 
 
-  val sortedRes = Map(-1 -> res.finalStates)
-  val total = res.finalStates.size
+  val sortedRes = Map(-1 -> res.successes)
+  val total = res.successes.size
 
   logger.writeln("%d states explored".format(res.exploredStates))
-  logger.writeln("%d final states".format(res.finalStates.size))
+  logger.writeln("%d final states".format(res.successes.size))
   logger.writeln("%d different final states ".format(total))
 
   this deafTo this

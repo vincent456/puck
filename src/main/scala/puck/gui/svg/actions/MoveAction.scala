@@ -12,7 +12,7 @@ import puck.util.Collections
 
 import scala.swing.Dialog
 import scala.swing.Swing.EmptyIcon
-import scalaz.{\/-, -\/}
+import scalaz._, Scalaz._
 
 object MoveAction {
   def getChoice(k : NodeKind): Option[CreateVarStrategy] = {
@@ -46,33 +46,30 @@ extends AbstractAction(MoveAction.label(controller.graph, moved)){
 
   override def actionPerformed(e: ActionEvent): Unit = {
     val g = graph.mileStone
-    (g.kindType(moved.head) match {
-      case TypeDecl =>
-        Collections.traverse(moved, g){
-          (g, id) => TR.move.typeDecl(g, id, newHost.id)
-        }
-
-
-      case TypeMember =>
-        controller.console.
-          appendText("/!\\/!\\ Method overriding unchecked (TODO !!!) /!\\/!\\")
-
-        val host = g.getConcreteNode(g.container(moved.head).get)
-        val uses = g.usesOfUsersOf(moved)
-        val choice =
-          if(TR.move.usedBySiblingsViaSelf(uses, g, host)) {
-            Some(MoveAction.getChoice(Field).
-              getOrElse(CreateTypeMember(Field)))
+    printErrOrPushGraph(controller, "Abstraction creation failure") {
+      g.kindType(moved.head) match {
+        case TypeDecl =>
+          Collections.foldLoggedOr(moved, g) {
+            (g, id) => TR.move.typeDecl(g, id, newHost.id)
           }
-          else None
 
-        TR.move.typeMember(g, moved, newHost.id, choice)(uses)
-      case kt =>
-        -\/(new PuckError(s"move of $kt not implemented"))
-    }) match {
-      case -\/(err)  =>
-        controller.console.appendText(s"Abstraction creation failure\n${err.getMessage}\n")
-      case \/-(g) => controller.pushGraph(g)
+        case TypeMember =>
+          controller.console.
+            appendText("/!\\/!\\ Method overriding unchecked (TODO !!!) /!\\/!\\")
+
+          val host = g.getConcreteNode(g.container(moved.head).get)
+          val uses = g.usesOfUsersOf(moved)
+          val choice =
+            if (TR.move.usedBySiblingsViaSelf(uses, g, host)) {
+              Some(MoveAction.getChoice(Field).
+                getOrElse(CreateTypeMember(Field)))
+            }
+            else None
+
+          TR.move.typeMember(g, moved, newHost.id, choice)(uses)
+        case kt =>
+          LoggedError(new PuckError(s"move of $kt not implemented"))
+      }
     }
   }
 }

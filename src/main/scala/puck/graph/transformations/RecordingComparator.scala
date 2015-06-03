@@ -1,12 +1,12 @@
-package puck.graph.transformations
+package puck.graph
+package transformations
 
 import puck.PuckError
-import puck.graph.{Try, NodeId, DependencyGraph}
 import puck.search.FindFirstSearchEngine
 import puck.util.{PuckLogger, PuckNoopLogger}
 
 import scala.collection.mutable
-import scalaz.{\/-, -\/}
+import scalaz._, Scalaz._
 
 object RecordingComparator{
 
@@ -52,18 +52,18 @@ class RecordingComparator
 
     map.getOrElse(node, (graph1.getConcreteNode(node).kind, Some(node))) match {
       case (_, Some(n)) =>
-        engine.newCurrentState(map, new StackSaver(k, n, nodesToMap))
+        engine.newCurrentState(map.set(""), new StackSaver(k, n, nodesToMap))
 
       case (kind, None) =>
         nodesToMap.getOrElse(kind, Seq()) match {
-          case Seq() => k((node, -\/(NoSolution), nodesToMap))
+          case Seq() => k((node, LoggedError(NoSolution), nodesToMap))
           case l =>
             val choices =
               new MappingChoices(k, node, kind, nodesToMap,
               mutable.Stack[NodeId]().pushAll(l),
               mutable.Stack[NodeId]())
 
-            engine.newCurrentState(map, choices)
+            engine.newCurrentState(map.set(""), choices)
         }
     }
   }
@@ -71,13 +71,13 @@ class RecordingComparator
   def attribNode(nodes : Seq[NodeId],
                  map : ResMap,
                  nodesToMap : NodesToMap)
-                (k : (Seq[NodeId], Try[ResMap], NodesToMap) => Unit) : Unit = {
+                (k : (Seq[NodeId], LoggedTry[ResMap], NodesToMap) => Unit) : Unit = {
 
 
     def aux(nodes0 : Seq[NodeId], nodes1: Seq[NodeId])(kargs : Kargs) : Unit = {
       kargs match {
         case (node, map0, nodesToMap0) =>
-          (nodes0, map0) match {
+          (nodes0, map0.run.value) match {
             case (Seq(), _) =>
               val l = (node +: nodes1).reverse.tail // we do not forget the last node and we drop the first dummy value
               k(l, map0, nodesToMap0)
@@ -87,7 +87,7 @@ class RecordingComparator
           }
       }
     }
-    aux(nodes, Seq[NodeId]())((DependencyGraph.dummyId, \/-(map), nodesToMap)) //null will be dropped in aux
+    aux(nodes, Seq[NodeId]())((DependencyGraph.dummyId, LoggedSuccess(map), nodesToMap)) //null will be dropped in aux
   }
 
 
@@ -112,7 +112,7 @@ class RecordingComparator
   def compare() : Boolean = {
     if(! computed) {
       engine.explore()
-      result = engine.finalStates.nonEmpty
+      result = engine.successes.nonEmpty
       computed = true
     }
     result
@@ -121,17 +121,17 @@ class RecordingComparator
   def compare(ts1 : Seq[Transformation],
               ts2 : Seq[Transformation],
               map : ResMap, nodesToMap : NodesToMap,
-              k : Try[ResMap] => Unit) : Unit = {
+              k : LoggedTry[ResMap] => Unit) : Unit = {
     if (ts1.isEmpty && ts2.isEmpty)
-      k(\/-(map))
+      k(LoggedSuccess(map))
     else {
       def removeFirstAndCompareNext(tgt : Operation,
-                                    tryMap : Try[ResMap], nodesToMap : NodesToMap) =
-        tryMap match {
+                                    tryMap : LoggedTry[ResMap], nodesToMap : NodesToMap) =
+        tryMap.run.value match {
           case -\/(_) => k(tryMap)
           case \/-(m) =>
             removeFirst(ts2, ts1.head.direction, tgt) match {
-            case None => k(-\/(WrongMapping))
+            case None => k(LoggedError(WrongMapping))
              /* println("Failure on mapping : ")
               println(map.mkString("\t", "\n\t", "\n"))
               println(ts1.head + " mapped as ")

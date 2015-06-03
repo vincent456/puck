@@ -34,8 +34,8 @@ class StateComparator
   contents += cb2
   contents += Button(">>") {
     val equivalent = DependencyGraph.areEquivalent(initialRecord,
-      graphOfResult(cb1.selectedState.result),
-      graphOfResult(cb2.selectedState.result), new PuckFileLogger(_ => true,
+      graphOfResult(cb1.selectedState.loggedResult.value),
+      graphOfResult(cb2.selectedState.loggedResult.value), new PuckFileLogger(_ => true,
         new java.io.File("compare_log")))
       //new PuckSystemLogger(_ => true))
 

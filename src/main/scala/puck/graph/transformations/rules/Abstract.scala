@@ -2,9 +2,10 @@ package puck.graph
 package transformations.rules
 
 import constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
+import puck.PuckError
 import puck.util.Collections._
 
-import scalaz.\/-
+import scalaz._, Scalaz._
 
 abstract class Abstract {
 
@@ -35,8 +36,8 @@ abstract class Abstract {
   ( g : DependencyGraph,
     subTypeId : NodeId,
     newSuperTypeId : NodeId
-    ) : Try[DependencyGraph] =
-    traverse(g.directSuperTypes(subTypeId), g){
+    ) : LoggedTG =
+    foldLoggedOr(g.directSuperTypes(subTypeId), g){
       (g0, oldSuperTypedId) =>
 
         val g1 = g0.changeSource(Isa(subTypeId, oldSuperTypedId), newSuperTypeId)
@@ -54,16 +55,18 @@ abstract class Abstract {
 
     }
 
-  def changeSelfTypeUseBySuperInTypeMember(g : DependencyGraph, meth : ConcreteNode,
-                                             clazz : ConcreteNode, interface : ConcreteNode): Try[DependencyGraph] ={
+  def changeSelfTypeUseBySuperInTypeMember
+  ( g : DependencyGraph, meth : ConcreteNode,
+    clazz : ConcreteNode, interface : ConcreteNode): LoggedTG ={
 
     val g1 = g.changeContravariantType(meth.id, meth.styp, clazz.id, interface.id)
 
-    if(g1.uses(meth.id, clazz.id)) {
-      g.logger.writeln(s"interface creation : redirecting ${DGEdge.UsesK(meth.id, clazz.id)} target to $interface")
-      Redirection.redirectUsesAndPropagate(g1, DGEdge.UsesK(meth.id, clazz.id), interface.id, SupertypeAbstraction)
-    }
-    else \/-(g1)
+    if(g1.uses(meth.id, clazz.id))
+      g1.set(s"interface creation : redirecting ${DGEdge.UsesK(meth.id, clazz.id)} target to $interface")
+        .toLoggedOr.flatMap {
+        Redirection.redirectUsesAndPropagate(_, DGEdge.UsesK(meth.id, clazz.id), interface.id, SupertypeAbstraction)
+      }
+    else LoggedSuccess(g1)
   }
 
   def canBeAbstracted
@@ -99,10 +102,10 @@ abstract class Abstract {
   def typeMembersToPutInInterface
   ( g : DependencyGraph,
     clazz : ConcreteNode,
-    policy : AbstractionPolicy) : Seq[ConcreteNode] = {
+    policy : AbstractionPolicy) : List[ConcreteNode] = {
 
 
-    g.content(clazz.id).foldLeft(Seq[ConcreteNode]()){
+    g.content(clazz.id).foldLeft(List[ConcreteNode]()){
       (acc, mid) =>
         val member = g.getConcreteNode(mid)
         if(canBeAbstracted(g, member, clazz, policy)) member +: acc
@@ -123,7 +126,7 @@ abstract class Abstract {
     clazz : ConcreteNode,
     interface : ConcreteNode,
     policy : AbstractionPolicy
-    ) : Try[DependencyGraph] ={
+    ) : LoggedTG ={
 
     createAbstraction(g, meth, meth.kind.abstractKinds(policy).head,  policy) map {
       case (absMethod, g0) =>
@@ -139,47 +142,50 @@ abstract class Abstract {
     clazz : ConcreteNode,
     abskind : NodeKind,
     policy : AbstractionPolicy,
-    members : Seq[ConcreteNode]
-    ) : Try[(ConcreteNode, DependencyGraph)] = {
+    members : List[ConcreteNode]
+    ) : LoggedTry[(ConcreteNode, DependencyGraph)] = {
     for{
       itcGraph <- createAbsNodeAndUse(g, clazz, abskind, policy)
       (interface, g1) = itcGraph
 
-      g2 <- traverse(members, g1){ (g0, member) =>
+      g2 <- foldLoggedOr(members, g1){ (g0, member) =>
         createAbstractTypeMember(g0, member, clazz, interface, policy)
       }
 
       g3 <- insertInTypeHierarchy(g2, clazz.id, interface.id)
 
       g4 <- if(policy == SupertypeAbstraction)
-        traverse(members, g3.addIsa(clazz.id, interface.id)){ (g0, child) =>
+        foldLoggedOr(members, g3.addIsa(clazz.id, interface.id)){
+          (g0, child) =>
           g0.kindType(child) match {
             case TypeMember =>
               changeSelfTypeUseBySuperInTypeMember(g0, child, clazz, interface)
-            case _ => \/-(g0)
+            case _ => LoggedSuccess(g0)
           }
         }
-      else \/-(g3)
+      else LoggedSuccess[DependencyGraph](g3)
+
+      g5 <- logInterfaceCreation(g4, interface)
     } yield {
-      logInterfaceCreation(g4, interface)
-      (interface, g4)
+      (interface, g5)
     }
   }
 
-  def logInterfaceCreation(g : DependencyGraph, itc : ConcreteNode) : Unit = {
+  def logInterfaceCreation(g : DependencyGraph, itc : ConcreteNode) : LoggedTG = {
     import ShowDG._
-    g.logger.writeln(s"interface $itc created, contains : {")
-    g.logger.writeln(g.content(itc.id).map(showDG[NodeId](g).show).mkString("\n"))
-    g.logger.writeln("}")
+    val log = s"interface $itc created, contains : {" +
+      g.content(itc.id).map(showDG[NodeId](g).show).mkString("\n")+
+      "}"
+    g.set(log).toLoggedOr
   }
 
   private def createAbsNodeAndUse(g : DependencyGraph,
                         impl: ConcreteNode,
                         abskind : NodeKind ,
-                        policy : AbstractionPolicy) : Try[(ConcreteNode, DependencyGraph)] = {
+                        policy : AbstractionPolicy) : LoggedTry[(ConcreteNode, DependencyGraph)] = {
     val (abs, g1) = createAbsNode(g, impl, abskind, policy)
 
-    \/-((abs, policy match {
+    LoggedSuccess((abs, policy match {
       case SupertypeAbstraction => g1.addUses(impl.id, abs.id)
       case DelegationAbstraction => g1.addUses(abs.id, impl.id)
     }))
@@ -189,7 +195,7 @@ abstract class Abstract {
   def createAbstraction(g : DependencyGraph,
                         impl: ConcreteNode,
                         abskind : NodeKind ,
-                        policy : AbstractionPolicy) : Try[(ConcreteNode, DependencyGraph)] =
+                        policy : AbstractionPolicy) : LoggedTry[(ConcreteNode, DependencyGraph)] =
     createAbsNodeAndUse(g,impl, abskind, policy)
 
   //SO SO UGLY !!!

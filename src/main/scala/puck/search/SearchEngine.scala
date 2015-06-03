@@ -1,11 +1,15 @@
 package puck.search
 
+import puck.PuckError
+import puck.graph.{Logged, LoggedTry}
+
 import scala.collection.mutable
-import scalaz.{-\/, \/-}
+import scalaz._, Scalaz._
 
 trait Search[Result]{
   def initialState : SearchState[Result]
-  def finalStates : Seq[FinalState[Result]]
+  def successes : Seq[FinalState[Result]]
+  def failures : Seq[Logged[PuckError]]
   def exploredStates : Int
 
   def allStatesByDepth : Map[Int, Seq[SearchState[Result]]] =
@@ -17,19 +21,28 @@ trait Search[Result]{
 }
 
 object SearchEngine {
-  type InitialStateFactory[T] = (Try[T] => Unit) => SearchState[T]
+  type InitialStateFactory[T] = (LoggedTry[T] => Unit) => SearchState[T]
 }
 import SearchEngine._
 trait SearchEngine[T] extends Search[T]{
 
   var currentState : SearchState[T] = _
-  override val finalStates = mutable.ListBuffer[FinalState[T]]()
+  override val successes = mutable.ListBuffer[FinalState[T]]()
+  override val failures = mutable.ListBuffer[Logged[PuckError]]()
+
 
   private [this] var idSeed : Int = 0
   private def idGen() : Int = {idSeed += 1; idSeed}
 
-  def storeResult(prevState : Option[SearchState[T]], res : T): Unit = {
-    finalStates += new FinalState[T](idGen(), res, this, prevState)
+  def storeResult(prevState : Option[SearchState[T]], res : LoggedTry[T]): Unit = {
+    val log = res.run.written
+    res.run.value match {
+      case -\/(err) =>
+        failures += err.set(log)
+      case \/-(g) =>
+        successes += new FinalState[T](idGen(), g.set(log), this, prevState)
+    }
+
     numExploredStates = numExploredStates + 1
   }
 
@@ -38,30 +51,29 @@ trait SearchEngine[T] extends Search[T]{
 
   val createInitialState : InitialStateFactory[T]
 
-  def newCurrentState[S <: StateCreator[T, S]](cr : T, choices : S)  = {
+  def newCurrentState[S <: StateCreator[T, S]](cr : Logged[T], choices : S)  = {
     currentState = currentState.createNextState[S](cr, choices)
     numExploredStates = numExploredStates + 1
   }
 
-  def init(k : Try[T] => Unit) : Unit = {
+  def init(k : LoggedTry[T] => Unit) : Unit = {
     initialState = createInitialState(k)
     currentState = initialState
     numExploredStates = 1
   }
 
-  def search(k : Try[T] => Unit) : Unit =  {
+  def search(k : LoggedTry[T] => Unit) : Unit =  {
     init(k)
     currentState.executeNextChoice(this)
   }
 
   def exploredStates = numExploredStates
 
-  protected def startExplore(k : Try[T] => Unit) : Unit
+  protected def startExplore(k : LoggedTry[T] => Unit) : Unit
 
   def explore() : Unit ={
     startExplore {
-      case \/-(result) => storeResult(Some(currentState), result)
-      case -\/(e) => println(e.getMessage)
+      storeResult(Some(currentState), _)
     }
   }
 }
@@ -72,14 +84,14 @@ abstract class StackedSearchEngine[Result]
 
   val stateStack = mutable.Stack[SearchState[Result]]()
 
-  override def init(k : Try[Result] => Unit): Unit = {
+  override def init(k : LoggedTry[Result] => Unit): Unit = {
     //println("StackedSearchEngine.init")
     super.init(k)
     stateStack.push(initialState)
     ()
   }
 
-  override def newCurrentState[S <: StateCreator[Result, S]](cr : Result, choices : S) : Unit =  {
+  override def newCurrentState[S <: StateCreator[Result, S]](cr : Logged[Result], choices : S) : Unit =  {
     //println("StackedSearchEngine.newCurrentState")
     super.newCurrentState(cr, choices)
     stateStack.push(currentState)
@@ -88,10 +100,10 @@ abstract class StackedSearchEngine[Result]
 }
 
 class TryAllSearchEngine[ResT]
-( val createInitialState : (Try[ResT] => Unit) => SearchState[ResT]
+( val createInitialState : InitialStateFactory[ResT]
 ) extends StackedSearchEngine[ResT]{
 
-  protected def startExplore( k : Try[ResT] => Unit) : Unit =  {
+  protected def startExplore( k : LoggedTry[ResT] => Unit) : Unit =  {
 
   this.search(k)
 
@@ -172,13 +184,13 @@ class TryAllSearchEngine[ResT]
 }*/
 
 class FindFirstSearchEngine[T]
-( val createInitialState : (Try[T] => Unit) => SearchState[T]
+( val createInitialState : InitialStateFactory[T]
   ) extends StackedSearchEngine[T] {
 
-  protected def startExplore( k : Try[T] => Unit): Unit = {
+  protected def startExplore( k : LoggedTry[T] => Unit): Unit = {
 
     this.search(k)
-    while(stateStack.nonEmpty && finalStates.isEmpty){
+    while(stateStack.nonEmpty && successes.isEmpty){
         if(stateStack.head.triedAll) stateStack.pop()
         else stateStack.head.executeNextChoice(this)
      }

@@ -48,7 +48,7 @@ object JavaDG2AST extends DG2ASTBuilder {
       sProg match {
         case None => throw new DGBuildingError("Compilation error, no AST generated")
         case Some(p) =>
-          val t = CompileHelper.buildGraph(p, logger, ll)
+          val t = CompileHelper.buildGraph(p, ll)
           new JavaDG2AST(logger, t._1, t._2, t._3, t._4, t._5)
         }
     }

@@ -5,7 +5,7 @@ import puck.graph.ShowDG._
 import puck.graph._
 import puck.util.Collections._
 
-import scalaz.{-\/, \/-}
+import scalaz.{Arrow => _, _}, Scalaz._ //hide arrow
 
 
   sealed trait CreateVarStrategy {
@@ -14,8 +14,8 @@ import scalaz.{-\/, \/-}
     (g: DependencyGraph,
      currentContainer: NodeId,
      newContainer: NodeId,
-     siblingsUsesViaSelf: Seq[Uses],
-     intro : Intro): Try[DependencyGraph]
+     siblingsUsesViaSelf: List[Uses],
+     intro : Intro): LoggedTG
 
     protected def removeUsesDependencyTowardSelfUse
     ( g : DependencyGraph,
@@ -37,23 +37,22 @@ import scalaz.{-\/, \/-}
     (g: DependencyGraph,
      currentContainer: NodeId,
      newContainer: NodeId,
-     siblingsUsesViaSelf: Seq[Uses],
-     intro : Intro): Try[DependencyGraph] = {
+     siblingsUsesViaSelf: List[Uses],
+     intro : Intro): LoggedTG = {
 
       val usesByUser = siblingsUsesViaSelf.groupBy(_.user)
       //introduce one parameter by user even with several uses
       //these were all previously this use so it makes sens to keep one reference
-      traverse(usesByUser, g) {
+      foldLoggedOr(usesByUser.toList, g) {
         case (g0, (userId, typeMemberUses)) =>
-
           val user = g0.getConcreteNode(userId)
           val newTypeUse = Uses(userId, newContainer)
           (g0.kindType(user), user.styp) match {
             case (TypeMember, Some(NamedType(_))) => ???
 
             case (TypeMember, Some(ar@Arrow(_, _))) =>
-              g0.logger.writeln(s"${showDG[NodeId](g0).shows(userId)}, user of moved method" +
-                s" will now use ${showDG[NodeId](g0).shows(newContainer)}")
+              val log = s"${showDG[NodeId](g0).shows(userId)}, user of moved method" +
+                s" will now use ${showDG[NodeId](g0).shows(newContainer)}"
 
               val g1 = g0.setType(userId, Some(Arrow(NamedType(newContainer), ar)))
                 .addUses(userId, newContainer)
@@ -67,9 +66,9 @@ import scalaz.{-\/, \/-}
                   }
               }
 
-              \/-(g2)
+              LoggedSuccess(g2, log)
 
-            case (_, _) => -\/(new PuckError(s"a type member was expected"))
+            case (_, _) => LoggedError(new PuckError(s"a type member was expected"))
           }
       }
     }
@@ -81,8 +80,8 @@ import scalaz.{-\/, \/-}
     (g: DependencyGraph,
      currentContainer: NodeId,
      newContainer: NodeId,
-     siblingsUsesViaSelf: Seq[Uses], // used -> users
-     intro : Intro): Try[DependencyGraph] ={
+     siblingsUsesViaSelf: List[Uses], // used -> users
+     intro : Intro): LoggedTG ={
 
       type GenDelegate = DependencyGraph => (NodeId, DependencyGraph)
 
@@ -120,11 +119,11 @@ import scalaz.{-\/, \/-}
 
       def getDelegate : GenDelegate = g => (delegate, g)
 
-      traverse(siblingsUsesViaSelf.tail, g2) {
+      foldLoggedOr(siblingsUsesViaSelf.tail, g2) {
         case (g0, uses) =>
-          traverse(g0.typeUsesOf(uses), g0){
+          foldLoggedOr(g0.typeUsesOf(uses), g0){
             (g0, typeUse) =>
-              \/-(createDelegateUses(getDelegate)(g0, uses, typeUse)._2)
+              LoggedSuccess(createDelegateUses(getDelegate)(g0, uses, typeUse)._2)
           }
       }
 

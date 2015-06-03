@@ -11,7 +11,7 @@ object MappingChoices{
   def ResMap() = Map[NodeId, (NodeKind, Option[NodeId])]()
   type NodesToMap = Map[NodeKind, Seq[NodeId]]
   def NodesToMap() = Map[NodeKind, Seq[NodeId]]()
-  type Kargs = (NodeId, Try[ResMap], NodesToMap)
+  type Kargs = (NodeId, LoggedTry[ResMap], NodesToMap)
 }
 
 import puck.graph.transformations.MappingChoices.{Kargs, NodesToMap, ResMap}
@@ -27,7 +27,7 @@ class MappingChoices
 
   def createState (id: Int,
                    prevState: Option[SearchState[ResMap]],
-                   currentResult : ResMap,
+                   currentResult : Logged[ResMap],
                    choices: MappingChoices): NodeMappingState = {
     new NodeMappingState (id, currentResult, choices, prevState)
   }
@@ -35,7 +35,7 @@ class MappingChoices
 
 class NodeMappingState
 (val id : Int,
- val result : ResMap,
+ val loggedResult : Logged[ResMap],
  val mappingChoices: MappingChoices,
  val prevState : Option[SearchState[ResMap]])
   extends SearchState[ResMap] {
@@ -56,7 +56,7 @@ class NodeMappingState
 
          triedChoices.push(c)
 
-         k((c, \/-(result + (node -> ((kind, Some(c))))), remainingNodesToMap))
+         k((c, loggedResult.map(_ + (node -> ((kind, Some(c))))).toLoggedTry, remainingNodesToMap))
        }
      }
 
@@ -71,7 +71,7 @@ class StackSaver
 
   def createState (id: Int,
                    prevState: Option[SearchState[ResMap]],
-                   currentResult : ResMap,
+                   currentResult : Logged[ResMap],
                    choices: StackSaver): StackSaverState = {
     new StackSaverState (id, currentResult, choices, prevState)
   }
@@ -79,7 +79,7 @@ class StackSaver
 
 class StackSaverState
 ( val id : Int,
-  val result : ResMap,
+  val loggedResult : Logged[ResMap],
   val stackSaver: StackSaver,
   val prevState : Option[SearchState[ResMap]])
   extends SearchState[ResMap] {
@@ -92,7 +92,7 @@ class StackSaverState
 
   def executeNextChoice(engine : SearchEngine[ResMap]) : Unit = {
     executed = true
-    k((mappedNode, \/-(result), nodesToMap))
+    k((mappedNode, loggedResult.toLoggedTry, nodesToMap))
   }
 
 }

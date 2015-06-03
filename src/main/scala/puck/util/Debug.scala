@@ -7,11 +7,10 @@ import puck.javaGraph.nodeKind.Primitive
 object Debug {
 
 
-  def printEdgeSet(g : DependencyGraph, s : Set[DGUses])=
-    s.foreach(e => g.logger.writeln(s"\t\t*${showDG[DGEdge](g).shows(e)}"))
+  def printEdgeSet(g : DependencyGraph, logger : PuckLogger, s : Set[DGUses])=
+    s.foreach(e => logger.writeln(s"\t\t*${showDG[DGEdge](g).shows(e)}"))
 
-  def logUsersOf(g : DependencyGraph, n : NodeId) = {
-    import g.logger
+  def logUsersOf(g : DependencyGraph, logger : PuckLogger, n : NodeId) = {
 
     logger.writeln(s"users of ${showDG[NodeId](g).shows(n)} :")
 
@@ -19,11 +18,11 @@ object Debug {
       case TypeMember =>
         (userId : NodeId) =>
           logger.writeln("\tType Uses are:")
-          printEdgeSet(g, g.typeUsesOf(userId,n))
+          printEdgeSet(g, logger, g.typeUsesOf(userId,n))
       case TypeDecl =>
         (userId : NodeId) =>
           logger.writeln("\tTypeMember Uses are:")
-          printEdgeSet(g, g.typeMemberUsesOf(userId,n))
+          printEdgeSet(g, logger, g.typeMemberUsesOf(userId,n))
       case kt =>
         logger.writeln(s"$kt (${g.getNode(n).kind}) unhandled")
         (userId : NodeId) => ()
@@ -37,8 +36,7 @@ object Debug {
 
   }
 
-  def logUsedBy(g : DependencyGraph, n : NodeId) = {
-    import g.logger
+  def logUsedBy(g : DependencyGraph, logger : PuckLogger, n : NodeId) = {
     logger.writeln(s"used by ${showDG[NodeId](g).shows(n)} :")
 
     g.usedBy(n).foreach{
@@ -47,11 +45,11 @@ object Debug {
           case TypeMember =>
             logger.writeln(s"\t- used type member ${showDG[NodeId](g).shows(usedId)}")
             logger.writeln("\tType Uses are:")
-            printEdgeSet(g, g.typeUsesOf(n, usedId))
+            printEdgeSet(g, logger, g.typeUsesOf(n, usedId))
           case TypeDecl =>
             logger.writeln(s"\t- used type ${showDG[NodeId](g).shows(usedId)}")
             logger.writeln("\tTypeMember Uses are:")
-            printEdgeSet(g, g.typeMemberUsesOf(n, usedId))
+            printEdgeSet(g, logger, g.typeMemberUsesOf(n, usedId))
           case kt => logger.writeln(s"$kt (${g.getNode(usedId).kind}) unhandled")
 
         }
@@ -59,9 +57,9 @@ object Debug {
     }
   }
 
-  def logUsesDependency(g : DependencyGraph, n : NodeId) = {
-    logUsersOf(g, n)
-    logUsedBy(g, n)
+  def logUsesDependency(g : DependencyGraph, logger : PuckLogger, n : NodeId) = {
+    logUsersOf(g, logger, n)
+    logUsedBy(g, logger, n)
 
   }
 

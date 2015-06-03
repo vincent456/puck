@@ -59,7 +59,7 @@ class ImageExplorer(val filesHandler : FilesHandler,
 
     val opts = PrintingOptions(visibility, printId, printSignature)
 
-    filesHandler.makeImage(graphOfResult(state.result), opts, Some(pipedOutput), Png){x =>()}
+    filesHandler.makeImage(graphOfResult(state.loggedResult.value), opts, Some(pipedOutput), Png){x =>()}
 
   }
   setImage()

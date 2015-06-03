@@ -332,13 +332,13 @@ class DotPrinter
     graph.nodesId.foreach{nid => if(graph.container(nid).isEmpty) printNode(nid)}
 
 
-    val (regularsIsa, virt0, virtualViolations0) = filterEdgeBasedOnVisibleNodes(graph.isaSeq, IsaK)
+    val (regularsIsa, virt0, virtualViolations0) = filterEdgeBasedOnVisibleNodes(graph.isaList, IsaK)
 
     regularsIsa.foreach {
       case (e, v) => printArc(violationStyle(v),isaStyle)(e)
     }
 
-    val(reg, virt, virtualViolations) = filterEdgeBasedOnVisibleNodes(graph.usesSeq, UsesK, virt0, virtualViolations0)
+    val(reg, virt, virtualViolations) = filterEdgeBasedOnVisibleNodes(graph.usesList, UsesK, virt0, virtualViolations0)
 
     reg.foreach{ case (e, v) =>  printArc(violationStyle(v),usesStyle)(e) }
 

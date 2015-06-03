@@ -5,7 +5,7 @@ import puck.graph.ShowDG._
 import puck.graph.constraints.SupertypeAbstraction
 import puck.util.Collections._
 
-import scalaz.{-\/, \/-}
+import scalaz._, Scalaz._
 
 
 object Type {
@@ -20,33 +20,33 @@ object Type {
   }
 
   type OnImplemNotFound =
-    (DependencyGraph, ConcreteNode, List[ConcreteNode]) => Try[(DependencyGraph, List[ConcreteNode])]
+    (DependencyGraph, ConcreteNode, List[ConcreteNode]) => LoggedTry[(DependencyGraph, List[ConcreteNode])]
 
   def errorOnImplemNotFound(className : String) : OnImplemNotFound = {
     (g, supMeth, _) =>
-      -\/(new PuckError(s"$className has no implementation of ${showDG[ConcreteNode](g).shows(supMeth)}"))
+      LoggedError(new PuckError(s"$className has no implementation of ${showDG[ConcreteNode](g).shows(supMeth)}"))
   }
 
   val ignoreOnImplemNotFound : OnImplemNotFound = {
-    (g, _, cs) => \/-((g,cs))
+    (g, _, cs) => g.toLoggedTG.map((_,cs))
   }
 
   def findAndRegisterOverridedInList
   ( g : DependencyGraph,
     absMeths : List[ConcreteNode],
     candidates : List[ConcreteNode])
-  ( onImplemNotFound : OnImplemNotFound ): Try[DependencyGraph] =
-    traverse(absMeths, (g, candidates) ){
+  ( onImplemNotFound : OnImplemNotFound ): LoggedTG =
+    foldLoggedOr[List, ConcreteNode, PuckError, (DependencyGraph, List[ConcreteNode])](absMeths, (g, candidates) ){
       case ((g0, cs), supMeth) =>
         (supMeth.styp, g.kindType(supMeth)) match {
           case (Some(mt), TypeMember) =>
             findOverridedIn(g0, supMeth.name, mt, cs) match {
               case Some((subMeth, newCandidates)) =>
-                \/-( (g0.addAbstraction(subMeth.id, (supMeth.id, SupertypeAbstraction)), newCandidates) )
+                LoggedSuccess((g0.addAbstraction(subMeth.id, (supMeth.id, SupertypeAbstraction)), newCandidates))
               case None => onImplemNotFound(g0, supMeth, candidates)
             }
-          case (Some(mt), TypeConstructor) => \/-((g0,cs))
-          case _ => -\/(new PuckError(s"${showDG[ConcreteNode](g).shows(supMeth)} has not a correct type"))
+          case (Some(mt), TypeConstructor) => LoggedSuccess((g0,cs))
+          case _ => LoggedError(new PuckError(s"${showDG[ConcreteNode](g).shows(supMeth)} has not a correct type"))
         }
     } map(_._1)
 }

@@ -6,7 +6,7 @@ import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations.rules._
 import puck.util.Collections._
 
-import scalaz.{\/-, -\/}
+import scalaz._, Scalaz._
 import ShowDG._
 class TransformationRules
 ( mergingCandidatesFinder : MergingCandidatesFinder,
@@ -34,10 +34,11 @@ class TransformationRules
     ng
   }*/
 
-  def makeSuperType(g: DependencyGraph, sub : NodeId, sup : NodeId) : Try[DependencyGraph] = {
+  def makeSuperType(g: DependencyGraph, sub : NodeId, sup : NodeId) : LoggedTG = {
     val subNode = g.getConcreteNode(sub)
     val supNode = g.getConcreteNode(sup)
-    if(!g.canBe(subNode, supNode)) -\/(new PuckError(s"${showDG[NodeId](g).shows(sub)} cannot be ${showDG[NodeId](g).show(sup)}"))
+    if(!g.canBe(subNode, supNode))
+      LoggedError(new PuckError(s"${showDG[NodeId](g).shows(sub)} cannot be ${showDG[NodeId](g).show(sup)}"))
     else {
       val subMethods = g.content(sub).toList map g.getConcreteNode
       val supMethods = g.content(sup).toList map g.getConcreteNode
@@ -53,7 +54,7 @@ class TransformationRules
                     g.contains(sup, supMethId)
               }
             }
-          traverse(overloadedMethod, g){
+          foldLoggedOr(overloadedMethod, g){
             (g0, m) =>
               abstracter.changeSelfTypeUseBySuperInTypeMember(g0, m, subNode, supNode)
           }

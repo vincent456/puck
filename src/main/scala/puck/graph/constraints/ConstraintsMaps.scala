@@ -93,17 +93,17 @@ case class ConstraintsMaps
 
    }
 
-   def violation(graph : GraphT, user : NIdT, used : NIdT) =
+   def isViolation(graph : GraphT, user : NIdT, used : NIdT) =
      interloperOf(graph, user, used) && !friendOf(graph, user, used)
 
 
    def isWronglyContained(graph : GraphT, node : NIdT) : Boolean =
-    forContainer(graph, node)(violation(graph, _, node))
+    forContainer(graph, node)(isViolation(graph, _, node))
 
 
-   def wrongUsers(graph : GraphT, node : NIdT) : Seq[NIdT] = {
-     graph.usersOf(node).foldLeft(Seq[NIdT]()){ case(acc, user) =>
-       if( violation(graph, user, node) ) user +: acc
+   def wrongUsers(graph : GraphT, node : NIdT) : List[NIdT] = {
+     graph.usersOf(node).foldLeft(List[NIdT]()){ case(acc, user) =>
+       if( isViolation(graph, user, node) ) user +: acc
        else acc
      }
    }

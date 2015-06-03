@@ -58,11 +58,11 @@ case class NodeIndex
     }
   }
 
-  def nodes : Iterable[DGNode] = cNodes.values ++ vNodes.values
+  def nodes : Iterable[DGNode] = vNodes.values ++ cNodes.values
   def concreteNodes : Iterable[ConcreteNode] = cNodes.values
   def virtualNodes : Iterable[VirtualNode] = vNodes.values
 
-  def nodesId : Iterable[NodeId] = cNodes.keys ++ vNodes.keys
+  def nodesId : Iterable[NodeId] = vNodes.keys ++ cNodes.keys
   def concreteNodesId : Iterable[NodeId] = cNodes.keys
 
   def numNodes : Int = cNodes.size + vNodes.size

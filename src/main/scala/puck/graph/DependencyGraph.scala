@@ -39,7 +39,7 @@ object DependencyGraph {
 
 
 class DependencyGraph
-( val logger : PuckLogger = PuckNoopLogger,
+( //val logger : PuckLogger = PuckNoopLogger,
   val nodeKindKnowledge: NodeKindKnowledge,
   private [this] val nodesIndex : NodeIndex,
   private [this] val edges : EdgeMap,
@@ -48,17 +48,18 @@ class DependencyGraph
   val recording : Recording) {
 
 
-  def newGraph(nLogger : PuckLogger = logger,
+  def newGraph(//nLogger : PuckLogger = logger,
                nodes : NodeIndex = nodesIndex,
                edges : EdgeMap = edges,
                abstractionsMap : AbstractionMap = abstractionsMap,
                constraints : ConstraintsMaps = constraints,
                recording : Recording = recording) : DependencyGraph =
-    new DependencyGraph(nLogger, nodeKindKnowledge,
+    new DependencyGraph(//nLogger,
+                        nodeKindKnowledge,
                         nodes, edges,
                         abstractionsMap, constraints, recording)
 
-  def withLogger(l : PuckLogger) = newGraph(nLogger = l)
+  //def withLogger(l : PuckLogger) = newGraph(nLogger = l)
   implicit val defaulVerbosity : PuckLog.Verbosity =
     (PuckLog.InGraph, PuckLog.Debug)
   import scala.language.implicitConversions
@@ -248,7 +249,7 @@ class DependencyGraph
   def contains(containerId : NodeId, contentId : NodeId) : Boolean =
     edges.contains(containerId, contentId)
 
-  def containsSeq : Seq[(NodeId, NodeId)] = edges.contents.flatSeq
+  def containsList : List[(NodeId, NodeId)] = edges.contents.flatList
 
   def contains_*(containerId : NodeId, contentId : NodeId) : Boolean =
     containerId == contentId || {
@@ -290,11 +291,11 @@ class DependencyGraph
   }
 
 
-  def directSuperTypes(sub: NodeId) : Iterable[NodeId] = edges.superTypes getFlat sub
-  def directSubTypes(sup: NodeId) : Iterable[NodeId] = edges.subTypes getFlat sup
+  def directSuperTypes(sub: NodeId) : Set[NodeId] = edges.superTypes getFlat sub
+  def directSubTypes(sup: NodeId) : Set[NodeId] = edges.subTypes getFlat sup
 
-  def subTypes(sup : NodeId) : Iterable[NodeId]= {
-    val dst = directSubTypes(sup).toSeq
+  def subTypes(sup : NodeId) : Set[NodeId]= {
+    val dst = directSubTypes(sup)
     dst.foldLeft(dst) { case (acc, id) => acc ++ subTypes(id) }
   }
 
@@ -308,13 +309,13 @@ class DependencyGraph
   //      directSuperTypes(subCandidate).exists(isSuperTypeOf(superCandidate, _))
   //  }
 
-  def isaSeq  : Seq[(NodeId, NodeId)] = edges.superTypes.flatSeq
+  def isaList  : List[(NodeId, NodeId)] = edges.superTypes.flatList
   
   def uses(userId: NodeId, usedId: NodeId) : Boolean =
     edges.uses(userId, usedId)
 
-  def usesSeq : Seq[(NodeId, NodeId)] =
-    edges.used.flatSeq
+  def usesList : List[(NodeId, NodeId)] =
+    edges.used.flatList
   
   def usedBy(userId : NodeId) : Set[NodeId] =
     edges.used getFlat userId
@@ -323,13 +324,13 @@ class DependencyGraph
     edges.users getFlat usedId
 
   // ugly name
-  def usesOfUsersOf(usedIds: Seq[NodeId]) : Seq[Uses] =
+  def usesOfUsersOf(usedIds: List[NodeId]) : List[Uses] =
     usedIds flatMap {
       tmid =>
         this.usersOf(tmid) map (user => Uses(user,tmid))
     }
 
-  def usesOfUsersOf(usedId: NodeId) : Seq[Uses] = usesOfUsersOf(Seq(usedId))
+  def usesOfUsersOf(usedId: NodeId) : List[Uses] = usesOfUsersOf(List(usedId))
 
 
   def typeUsesOf(typeMemberUse : DGUses) : Set[DGUses] =
@@ -383,15 +384,16 @@ class DependencyGraph
       case DGEdge.ContainsK =>
         constraints.isWronglyContained(this, e.target)
       case DGEdge.UsesK | DGEdge.IsaK =>
-        constraints.violation(this, e.user, e.used)
+        constraints.isViolation(this, e.user, e.used)
 
       case DGEdge.ParameterizedUsesK => false
     }
   }
 
-  def wrongUsers(id : NodeId) : Seq[NodeId] = constraints.wrongUsers(this, id)
-  def isWronglyContained(id : NodeId) = constraints.isWronglyContained(this, id)
-  def interloperOf(id1 : NodeId, id2 :NodeId) = constraints.violation(this, id1, id2)
+  def wrongUsers(id : NodeId) : List[NodeId] = constraints.wrongUsers(this, id)
+  def interloperOf(id1 : NodeId, id2 :NodeId) = constraints.isViolation(this, id1, id2)
+  def isWronglyUsed(id : NodeId) = constraints.wrongUsers(this, id).nonEmpty
+  def isWronglyContained(id : NodeId) : Boolean = constraints.isWronglyContained(this, id)
 
   def printConstraints[V](logger : Logger[V], v : V) : Unit =
     constraints.printConstraints(this, logger, v)

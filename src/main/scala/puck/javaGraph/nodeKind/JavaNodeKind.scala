@@ -6,9 +6,6 @@ import puck.graph.ShowDG._
 import puck.graph._
 import puck.graph.constraints.AbstractionPolicy
 
-/**
- * Created by lorilan on 31/07/14.
- */
 abstract class JavaNodeKind extends NodeKind{
   /*def packageNode : AGNode[JavaNodeKind] =
    this match {

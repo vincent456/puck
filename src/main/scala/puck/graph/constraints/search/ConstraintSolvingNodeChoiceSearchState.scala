@@ -28,7 +28,7 @@ class ConstraintSolvingNodesChoice private
  extends ConstraintSolvingChoice[NodeId, ConstraintSolvingNodesChoice] {
   def createState(id : Int,
                   prevState : Option[SearchState[ResultT]],
-                  currentResult: ResultT,
+                  currentResult: Logged[ResultT],
                   choices : ConstraintSolvingNodesChoice) = {
     new ConstraintSolvingNodeChoiceSearchState(id, currentResult, choices, prevState)
   }
@@ -39,7 +39,7 @@ class ConstraintSolvingNodesChoice private
 
 class ConstraintSolvingNodeChoiceSearchState
 (val id : Int,
- val result : ResultT,
+ val loggedResult : Logged[ResultT],
  val internal: ConstraintSolvingNodesChoice,
  val prevState : Option[SearchState[ResultT]])
 extends ConstraintSolvingState[NodeId, ConstraintSolvingNodesChoice]

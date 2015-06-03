@@ -8,7 +8,7 @@ import puck.search.{SearchEngine, SearchState}
 import puck.util.{PuckLog, PuckLogger}
 
 import scala.collection.immutable.HashSet
-import scalaz.{-\/, Failure}
+import scalaz._, Scalaz._
 
 object NodeTransfoStatus {
   def apply( i : Int) = i match {
@@ -77,7 +77,7 @@ class NodeMappingInitialState
   val engine : RecordingComparator,
   graph1 : DependencyGraph,
   graph2 : DependencyGraph,
-  k: Try[ResMap] => Unit,
+  k: LoggedTry[ResMap] => Unit,
   logger : PuckLogger)
   extends SearchState[ResMap]{
   //extends NodeMappingState(0, eng, null, null, None) {
@@ -116,7 +116,7 @@ class NodeMappingInitialState
     }
 
 
-  val result = initialMapping
+  val loggedResult = initialMapping.set("")
   var triedAll0 = false
 
   override def triedAll = triedAll0
@@ -167,7 +167,7 @@ class NodeMappingInitialState
       logger.writeln("recording2")
       graph2.recording foreach { t => logger.writeln(t.toString)}
 
-      k(-\/(NoSolution))
+      k(LoggedError(NoSolution))
     }
     else {
 
@@ -230,7 +230,7 @@ class NodeMappingInitialState
       filteredTransfos2 foreach { t => logger.writeln(t.toString)}
 
       if(filteredTransfos1.length != filteredTransfos2.length)
-        k(-\/(NoSolution))
+        k(LoggedError(NoSolution))
       else
         engine.compare(filteredTransfos1, filteredTransfos2, initialMapping, nodesToMap, k)
       /*eng.compare(filteredTransfos1, filteredTransfos2,

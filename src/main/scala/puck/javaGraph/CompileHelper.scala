@@ -4,7 +4,6 @@ import java.io.{File, InputStream}
 
 import puck.graph._
 import puck.graph.transformations.{Transformation, NodeMappingInitialState, Recording}
-import puck.util.{PuckNoopLogger, PuckLogger}
 
 object CompileHelper {
 
@@ -29,7 +28,6 @@ object CompileHelper {
   }
 
   def buildGraph(p : AST.Program,
-                 logger : PuckLogger = PuckNoopLogger,
                  ll : AST.LoadingListener = null )  :
   (AST.Program, DependencyGraph, Seq[Transformation], Map[String, NodeId], Map[NodeId, ASTNodeLink]) = {
 
@@ -40,7 +38,6 @@ object CompileHelper {
     val (_, initialRecord) = NodeMappingInitialState.normalizeNodeTransfos(builder.g.recording, Seq())
 
     val g = builder.g.newGraph(recording = Recording())
-              .withLogger(logger)
 
     (p, g,
       initialRecord,

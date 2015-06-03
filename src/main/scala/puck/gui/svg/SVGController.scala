@@ -271,9 +271,9 @@ object SVGController {
             console : SVGConsole): SVGController ={
     val c = new SVGController(filesHandler, graphUtils, dg2ast, svgCanvas, console,
                 opts.visibility, opts.printId, opts.printSignatures)
-    val consoleLogger = new TextAreaLogger(console.textArea, dg2ast.initialGraph.logger.askPrint)
+    val consoleLogger = new TextAreaLogger(console.textArea, filesHandler.logger.askPrint)
 
-    c.pushGraph(dg2ast.initialGraph.withLogger(consoleLogger))
+    c.pushGraph(dg2ast.initialGraph)
     c.displayGraph(dg2ast.initialGraph)
     c
   }

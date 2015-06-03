@@ -14,23 +14,26 @@ object ShowDG {
 
   type CordBuilder[A] = (DependencyGraph, A) => Cord
 
-
-  import Cord.stringToCord
-
-  def name(g : DependencyGraph, n : DGNode) : String = {
-    n match {
-      case cn : ConcreteNode => cn.name
-      case vn : VirtualNode =>
-        vn.name(g)
+  def tailRecTypeCord
+  (dg : DependencyGraph, sep : List[String], end : List[String], builder : StringBuilder, lt : List[List[Type]]) : String =
+    if (lt.isEmpty) builder.toString()
+    else lt.head match {
+      case Nil => tailRecTypeCord(dg, sep.tail, end.tail, builder append end.head, lt.tail)
+      case NamedType(nid) :: tl =>
+        tailRecTypeCord(dg, sep, end, builder.append(sep.head + dg.getNode(nid).name(dg)), tl :: lt.tail )
+      case Tuple(types) :: tl =>
+        tailRecTypeCord(dg, ", " +: sep, ")" +: end, builder append "(", types :: tl :: lt.tail )
+      case Arrow(in, out) :: tl =>
+        tailRecTypeCord(dg, " -> " :: sep, "" :: end, builder, List(in, out) :: tl :: lt.tail )
     }
-  }
 
-  implicit def typeCord : CordBuilder[Type] = (dg, th) => th match {
-    case NamedType(nid) => name(dg, dg.getNode(nid))
-    case Tuple(types) => types.map(t => typeCord(dg,t).toString()).mkString("(", ", ", ")")
-      //types.map(typeCord(dg,_)).fold
-    case Arrow(in, out) =>Cord( typeCord(dg, in.asInstanceOf[Type]), " -> ", typeCord(dg, out.asInstanceOf[Type]))
-  }
+  implicit def typeCord : CordBuilder[Type] = (dg, t) => tailRecTypeCord(dg, List(""), List(""), new StringBuilder, List(List(t)))
+//  implicit def typeCord : CordBuilder[Type] = (dg, th) => th match {
+//    case NamedType(nid) => dg.getNode(nid).name(dg)
+//    case Tuple(types) => types.map(t => typeCord(dg,t).toString()).mkString("(", ", ", ")")
+//      //types.map(typeCord(dg,_)).fold
+//    case Arrow(in, out) => Cord( typeCord(dg, in), " -> ", typeCord(dg, out))
+//  }
 
   implicit def typeHolderCord : CordBuilder[Option[Type]] = (dg, th) => th match {
     case None => ""
@@ -48,12 +51,12 @@ object ShowDG {
 
 
   def nodeNameCord : CordBuilder[DGNode] =
-    (dg, n) => name(dg, n)
+    (dg, n) => n.name(dg)
 
   def nodeNameTypCord : CordBuilder[DGNode] =
     (dg, n) => n match {
       case cn : ConcreteNode => Cord(cn.name , typeHolderCord(dg, cn.styp))
-      case _ => name(dg, n)
+      case _ => n.name(dg)
     }
 
   implicit def edgeCord : CordBuilder[DGEdge] =  (dg, e) =>
@@ -106,9 +109,7 @@ object ShowDG {
   def showDG[A](sg : Option[DependencyGraph] = None)
                             (implicit s : CordBuilder[A]): Show[A] = sg match {
     case None => Show.showFromToString
-    case Some(g) => new Show[A] {
-      override def show(a : A) = s(g, a)
-    }
+    case Some(g) => Show.show(s(g, _))
   }
 
   implicit def graphToOptionGraph(g : DependencyGraph) : Option[DependencyGraph] = Some(g)

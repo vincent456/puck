@@ -67,7 +67,8 @@ class NodeRightClickMenu
     }
 
 
-    if(graph.isWronglyContained(node.id)){
+    if(graph.isWronglyContained(node.id)
+        || graph.isWronglyUsed(node.id)){
       this.add(new ManualSolveAction(node, controller))
       this.add(new AutoSolveAction(node, controller))
     }

@@ -4,10 +4,8 @@ import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
 
 import puck.PuckError
-import puck.graph.{DGUses, DGEdge, ConcreteNode}
+import puck.graph._
 import puck.gui.svg.SVGController
-
-import scalaz._
 
 class AddIsaAction
 ( sub : ConcreteNode,
@@ -41,8 +39,8 @@ class RemoveEdgeAction
   def actionPerformed(e: ActionEvent) : Unit =
     printErrOrPushGraph(controller, "Remove Node Action failure"){
       edge.kind match {
-        case DGEdge.IsaK => \/-(edge.deleteIn(controller.graph.mileStone))
-        case _ => -\/(new PuckError(s"cannot remove remove ${edge.kind} edge"))
+        case DGEdge.IsaK => LoggedSuccess(edge.deleteIn(controller.graph.mileStone))
+        case _ => LoggedError(new PuckError(s"cannot remove remove ${edge.kind} edge"))
       }
 
 

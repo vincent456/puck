@@ -70,9 +70,10 @@ class AbstractionAction(
      override def actionPerformed(e: ActionEvent): Unit =
        printErrOrPushGraph(controller,"Abstraction action failure") {
 
-         val tAbsG = graph.kindType(node) match {
+         val tAbsG : LoggedTry[(ConcreteNode, DependencyGraph)] =
+           graph.kindType(node) match {
            case TypeDecl =>
-             val typeMembers = graph.content(node.id).toSeq.
+             val typeMembers = graph.content(node.id).toList.
                 map(graph.getConcreteNode).
                 filter(TR.abstracter.canBeAbstracted(graph, _, node, policy))
              val ckBoxes = typeMembers.map(NodeCheckBox(graph, _))
@@ -84,7 +85,7 @@ class AbstractionAction(
                  TR.abstracter.
                    abstractTypeDeclAndReplaceByAbstractionWherePossible(graph.mileStone, node, kind, policy, selectedNodes)
                case Result.Cancel =>
-                 -\/(new PuckError("Operation Canceled"))
+                 LoggedError(new PuckError("Operation Canceled"))
              }
 
            case _ =>

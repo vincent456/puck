@@ -11,6 +11,7 @@ import puck.javaGraph.nodeKind.Field
 
 import scala.swing.Swing.EmptyIcon
 import scala.swing.Dialog
+import scalaz._, Scalaz._
 
 object ManualSolveAction {
 
@@ -32,21 +33,22 @@ object ManualSolveAction {
   def forChoice[T](title : String,
                    msg : Any,
                    choices : Seq[T],
-                   k : Option[T] => Unit,
+                   k : Logged[Option[T]] => Unit,
                    appendNone : Boolean = false) : Unit = {
 
     choices match {
-      case Seq() => k(None)
-      case Seq(x) if !appendNone => k(Some(x))
+      case Seq() => k(none[T].set(""))
+      case Seq(x) if !appendNone => k(some(x).set(""))
       case _ =>
         val sChoices = choices.map(DisplayableSome(_))
         Dialog.showInput(null, msg, title,
           Dialog.Message.Plain,
           icon = EmptyIcon, if(appendNone) DisplayableNone +: sChoices else sChoices, sChoices.head) match {
           case None => () //Cancel
-          case Some(x) => k(x.toOption)
+          case Some(x) => k(x.toOption.set(""))
         }
     }
+
   }
 
 }
@@ -61,27 +63,30 @@ class ManualSolveAction
   val solver = new Solver(this, graphUtils.transformationRules, false)
 
   override def actionPerformed(e: ActionEvent): Unit =
-    solver.solveViolationsToward(graph.mileStone, violationTarget){
+    solver.solveViolationsToward(graph.mileStone.set(""), violationTarget){
       printErrOrPushGraph(controller, "Solve Action Error")
     }
 
-  override def violationTarget(graph: DependencyGraph)
-                              (k: (Option[ConcreteNode]) => Unit): Unit =
+  override def violationTarget
+  ( lg : LoggedG)
+  ( k: Logged[Option[ConcreteNode]] => Unit) : Unit =
     throw new PuckError("should not happen")
 
-  override def abstractionKindAndPolicy(graph: DependencyGraph, impl: ConcreteNode)
-                                       (k: (Option[(NodeKind, AbstractionPolicy)]) => Unit): Unit = {
+  override def abstractionKindAndPolicy
+  ( lg : LoggedG, impl : ConcreteNode)
+  ( k : Logged[Option[(NodeKind, AbstractionPolicy)]] => Unit) : Unit = {
     ManualSolveAction.forChoice("Abstraction kind an policy",
       s"How to abstract ${graph.fullName(impl.id)} ?",
       impl.kind.abstractionChoices, k)
   }
 
-  override def chooseNode(graph: DependencyGraph,
-                          predicate: NodePredicate)
-                         (k: (DependencyGraph) => (Option[NodeId]) => Unit): Unit = {
+  override def chooseNode
+  ( lg : LoggedG, predicate : NodePredicate)
+  ( k : LoggedG => Option[NodeId] => Unit) : Unit = {
     ManualSolveAction.forChoice("Host choice", s"${predicate.toString}\n(None will try tro create a new one)",
           graph.concreteNodes.filter(predicate(graph,_)).toSeq,
-          (sn : Option[ConcreteNode]) => k(graph)(sn.map(_.id)), appendNone = true)
+          (sn : Logged[Option[ConcreteNode]]) =>
+            k(graph.set(sn.written))(sn.value.map(_.id)), appendNone = true)
 
   }
 
@@ -91,17 +96,17 @@ class ManualSolveAction
   }
 
 
-  override def chooseContainerKind(graph: DependencyGraph, toBeContained: DGNode)
-                                  (k: (Option[NodeKind]) => Unit): Unit = {
+  override def chooseContainerKind
+  ( lg : LoggedG, toBeContained : DGNode)
+  ( k : Logged[Option[NodeKind]] => Unit) : Unit = {
     val choices = graph.nodeKinds.filter(_.canContain(toBeContained.kind))
     ManualSolveAction.forChoice("Host Kind", s"Which kind of container for $toBeContained",
       choices, k)
   }
 
   override def selectExistingAbstraction
-  ( graph: DependencyGraph,
-    choices: Set[(NodeId, AbstractionPolicy)])
-  ( k: (Option[(NodeId, AbstractionPolicy)]) => Unit): Unit = {
+  ( lg : LoggedG, choices : Set[(NodeId, AbstractionPolicy)])
+  ( k : Logged[Option[(NodeId, AbstractionPolicy)]] => Unit) : Unit = {
     ManualSolveAction.forChoice("Abstraction Choice",
       s"Use existing abstraction for\n${graph.fullName(violationTarget.id)}\n(None will try tro create a new one)",
       choices.toSeq, k, appendNone = true)
