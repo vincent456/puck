@@ -1,6 +1,7 @@
 package puck.graph.constraints
 
 import puck.graph._
+import puck.graph.constraints.DecisionMaker.ChooseNodeKArg
 import puck.graph.transformations.rules.CreateVarStrategy
 import puck.util.Logged
 
@@ -10,6 +11,9 @@ trait NodePredicate {
   override def toString : String = "NodePredicate"
 }
 
+object DecisionMaker {
+  type ChooseNodeKArg = Logged[Option[(DependencyGraph,NodeId)]]
+}
 trait DecisionMaker{
 
 //  def violationTarget(graph : DependencyGraph)
@@ -39,7 +43,7 @@ trait DecisionMaker{
 
   def chooseNode
   ( lg : LoggedG, predicate : NodePredicate)
-  ( k : LoggedG => Option[NodeId] => Unit) : Unit
+  ( k : ChooseNodeKArg => Unit) : Unit
 
   def chooseContainerKind
   ( lg : LoggedG, toBeContained : DGNode)

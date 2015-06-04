@@ -16,6 +16,7 @@ object ShowConstraints {
 
   implicit def rangeSetCord : CordBuilder[RangeSet] = { (dg, rs) =>
     rs match {
+      case RootedRangeSet(s) => "r:" +: rangeSetCord(dg, s)
       case NamedRangeSet(id, setDef) => id
       case RangeSetUnion(sets, set) =>
         Cord("[", Cord.mkCord(",\n", sets.map(rangeSetCord(dg,_)).toSeq:_*), ",\n",

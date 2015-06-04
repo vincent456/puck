@@ -18,7 +18,7 @@ import puck.graph.constraints.ConstraintsMaps._
 case class ConstraintsMaps
 ( namedSets : Map[String, NamedRangeSet],
   friendConstraints : FriendConstraintMap,
-  hideConstraints : HideConstraintMap)
+  hideConstraints : HideConstraintMap )
  {
 
    type GraphT = DependencyGraph
@@ -142,7 +142,7 @@ case class ConstraintsMaps
 
 
      this.copy(hideConstraints = aux(Element(node), aux(Scope(node), hideConstraints)))
-
+     ???
    }
 
 }

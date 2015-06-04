@@ -5,7 +5,7 @@ class Constraint(
   val owners : RangeSet,
   val facades : RangeSet,
   val interlopers : RangeSet,
-  val friends : RangeSet){
+  val friends : RangeSet ){
 
   type GraphT = DependencyGraph
   

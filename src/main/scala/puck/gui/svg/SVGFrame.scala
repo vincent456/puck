@@ -21,12 +21,12 @@ class SVGConsole
 
   val panel0 = new PuckConsolePanel(){
     selection +=: contents
-    console.rows = lines
-    console.columns = charPerLine
+    textArea.rows = lines
+    textArea.columns = charPerLine
   }
 
   def panel = panel0.peer
-  def textArea = panel0.console
+  def textArea = panel0.textArea
 
   private[svg] def displaySelection(node: String) : Unit = {
     if (node.length > 0) selection.text = "Selection : " + node

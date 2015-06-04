@@ -1,6 +1,7 @@
 package puck.graph.constraints.search
 
 import puck.graph._
+import puck.graph.constraints.DecisionMaker.ChooseNodeKArg
 import puck.search.SearchState
 import puck.util.Logged
 
@@ -8,25 +9,25 @@ import scala.util.Random
 
 
 object ConstraintSolvingNodesChoice {
-  def apply(k : Option[NodeId] => Unit,
-            ids : Seq[NodeId]) =
-    build(k, Set[Option[NodeId]]() ++ (ids map (Some(_))))
 
-  def includeNoneChoice(k : Option[NodeId] => Unit,
-                        ids : Seq[NodeId])= {
-    val size = ids.size
-    build(k, Set[Option[NodeId]]() ++ (ids map (Some(_))) /*+ None*/)
+  def apply(k : ChooseNodeKArg => Unit,
+            cs : Seq[Option[(DependencyGraph, NodeId)]]) =
+    build(k, cs.toSet)
+
+  def includeNoneChoice(k : ChooseNodeKArg => Unit,
+                        cs : Seq[Option[(DependencyGraph, NodeId)]])= {
+    build(k, cs.toSet + None)
   }
 
-  def build(k : Option[NodeId] => Unit, choices : Set[Option[NodeId]]) =
-    new ConstraintSolvingNodesChoice(k, Random.shuffle(choices), Set[Option[NodeId]]())
+  def build(k : ChooseNodeKArg => Unit, choices : Set[Option[(DependencyGraph, NodeId)]]) =
+    new ConstraintSolvingNodesChoice(k, Random.shuffle(choices), Set[Option[(DependencyGraph, NodeId)]]())
 }
 
 class ConstraintSolvingNodesChoice private
-( val k : Option[NodeId] => Unit,
-  var remainingChoices : Set[Option[NodeId]],
-  var triedChoices : Set[Option[NodeId]])
- extends ConstraintSolvingChoice[NodeId, ConstraintSolvingNodesChoice] {
+( val k : ChooseNodeKArg => Unit,
+  var remainingChoices : Set[Option[(DependencyGraph, NodeId)]],
+  var triedChoices : Set[Option[(DependencyGraph, NodeId)]])
+ extends ConstraintSolvingChoice[(DependencyGraph, NodeId), ConstraintSolvingNodesChoice] {
   def createState(id : Int,
                   prevState : Option[SearchState[ResultT]],
                   currentResult: Logged[ResultT],
@@ -43,7 +44,9 @@ class ConstraintSolvingNodeChoiceSearchState
  val loggedResult : Logged[ResultT],
  val internal: ConstraintSolvingNodesChoice,
  val prevState : Option[SearchState[ResultT]])
-extends ConstraintSolvingState[NodeId, ConstraintSolvingNodesChoice]
+extends ConstraintSolvingState[(DependencyGraph, NodeId), ConstraintSolvingNodesChoice]{
+  def decorate(c : Option[NodeId]) = (loggedResult.value, c)
+}
 
 
 

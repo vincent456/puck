@@ -130,19 +130,21 @@ class Solver
       s"findHost(_, $toBeContained, _, parentsThatCanBeCreated = $parentsThatCanBeCreated)\n"
 
     decisionMaker.chooseNode(lg1, FindHostPredicate){
-      lg2 =>
-      {case None =>
-          if(parentsThatCanBeCreated == 0){
-            k((lg2 :++> "host intro, ancestor's max limit is not enough\n")
-              .map(_ => FindHostError))
-          }
-          else {
-            hostIntro(lg2 :++> "find host, no node given by decision maker : call to host intro\n",
-              toBeContained)
-          }
-        case Some(nid) =>
-          k((lg2 :++> s"find host: decision maker chose ${showDG[NodeId](lg2.value).show(nid)} to contain $toBeContained\n")
-            .map (Host(nid, _)))
+      loggedGraphAndSomeNodeId =>
+        val log = loggedGraphAndSomeNodeId.written
+        loggedGraphAndSomeNodeId.value match {
+          case None =>
+            if(parentsThatCanBeCreated == 0){
+              k(FindHostResult.error.
+                set( log + "host intro, ancestor's max limit is not enough\n"))
+            }
+            else {
+              hostIntro(lg1.value.set( log + "find host, no node given by decision maker : call to host intro\n"),
+                toBeContained)
+            }
+        case (Some((g, nid))) =>
+          k(FindHostResult.host(nid, g).
+            set(log + s"find host: decision maker chose ${showDG[NodeId](g).show(nid)} to contain $toBeContained\n"))
       }
     }
   }
@@ -350,51 +352,53 @@ class Solver
       end(lg.toLoggedEither)
   }
 
-//  def doMerges
-//  ( graph : DependencyGraph,
-//    k : LoggedTry[DependencyGraph] => Unit) : Unit = {
-//    graph.set("\n*************** MERGES ****************")
-//    def aux
-//    ( graph : DependencyGraph,
-//      it : Iterator[ConcreteNode]
-//      ) : LoggedTry[DependencyGraph] =
-//      if(it.hasNext){
-//        val n = it.next()
-//        rules.findMergingCandidate(graph, n) match {
-//          case Some(other) =>
-//            rules.mergeInto(graph, n.id, other.id) flatMap {
-//              g1 => aux(g1, g1.concreteNodes.iterator)
-//            }
-//
-//          case None => aux(graph, it)
-//        }
-//      }
-//      else LoggedSuccess(graph)
-//
-//    k(aux(graph, graph.concreteNodes.iterator))
-//
-//  }
-//
-//  def solve
-//  ( graph : DependencyGraph,
-//    k : LoggedTry[DependencyGraph] => Unit) : Unit = {
-//    def aux: LoggedTry[DependencyGraph] => Unit =
-//      lgt =>
-//        lgt.value match {
-//          case -\/(_) => k(lgt)
-//          case \/-(g) =>
-//            decisionMaker.violationTarget(g.set(lgt.log)) {
-//              loggedSTarget =>
-//                loggedSTarget.value match {
-//                case None => doMerges(g, k)
-//                case Some(target) =>
-//                  solveViolationsToward(g, target)(aux)
-//              }
-//            }
-//        }
-//
-//    aux(LoggedSuccess(graph))
-//  }
+  def doMerges
+  ( lg : LoggedG,
+    k : LoggedTG => Unit) : Unit = {
+    lg.set("\n*************** MERGES ****************")
+    def aux
+    ( lg : LoggedG,
+      it : Iterator[ConcreteNode]
+      ) : LoggedTG =
+      if(it.hasNext){
+        val n = it.next()
+        rules.findMergingCandidate(lg.value, n) match {
+          case Some(other) =>
+            val ltg = rules.mergeInto(lg.value, n.id, other.id)
+            (lg.written <++: ltg) flatMap {
+              g1 => aux(g1.set(""), g1.concreteNodes.iterator)
+            }
+
+          case None => aux(lg, it)
+        }
+      }
+      else lg.toLoggedTry
+
+    k(aux(lg, lg.value.concreteNodes.iterator))
+
+  }
+
+  def solve
+  ( graph : DependencyGraph,
+    k : LoggedTG => Unit) : Unit = {
+    def aux: LoggedTG => Unit =
+      lgt =>
+        lgt.value match {
+          case -\/(_) => k(lgt)
+          case \/-(g) =>
+            decisionMaker.violationTarget(g.set(lgt.log)) {
+              loggedSTarget =>
+                val lg = g.set(loggedSTarget.written)
+                loggedSTarget.value match {
+                case None => doMerges(lg, k)
+                case Some(target) =>
+                  solveViolationsToward(lg, target)(aux)
+              }
+            }
+        }
+
+    aux(LoggedSuccess(graph))
+  }
 
 
 }

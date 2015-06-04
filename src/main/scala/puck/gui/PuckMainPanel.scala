@@ -30,7 +30,7 @@ class PuckMainPanel(filesHandler: FilesHandler,
 
   rightComponent = {
     val panel = new PuckConsolePanel()
-    filesHandler.logger = new TextAreaLogger(panel.console, filesHandler.logPolicy)
+    filesHandler.logger = new TextAreaLogger(panel.textArea, filesHandler.logPolicy)
     panel
   }
 }

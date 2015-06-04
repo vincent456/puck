@@ -8,15 +8,18 @@ import puck.graph.io.{Visible, VisibilitySet}
 import puck.graph._
 import puck.graph.constraints.search.{CSInitialSearchState, ConstraintSolvingSearchEngineBuilder}
 import puck.graph.constraints.search.ConstraintSolvingSearchEngineBuilder.TryAllCSSEBuilder
-import puck.gui.search.{SimpleStateSelector, StateSelected}
+import puck.gui.PuckConsolePanel
+import puck.gui.search.{SortedElementSelector, SimpleElementSelector, StateSelected}
 import puck.gui.svg.{SVGPanel, SVGController}
-import puck.search.Search
+import puck.search.{ErrorState, SearchState, Search}
 import puck.util.Logged
 
 import scala.swing.BorderPanel.Position
 import scala.swing._
 import scala.swing.Dialog.{Message, Options, Result}
 import VisibilitySet._
+
+import scala.swing.event.Event
 
 
 object GraphScrollPane {
@@ -77,51 +80,110 @@ class AutoSolveAction
 
   val initialVisibleSet = nodeVisibles(graph)
 
+  case class ErrorSelected(state : ErrorState[ResultT]) extends Event
+
+  class AutoSolveFailurePanel( res : Search[ResultT]) extends SplitPane(Orientation.Horizontal) {
+
+    val failureSelector =
+      new SortedElementSelector[ErrorState[ResultT]](res.failuresByDepth, ErrorSelected.apply)
+
+
+    def selectedResult = failureSelector.selectedState
+
+    val console = new PuckConsolePanel()
+    val upPane =  new SplitPane(Orientation.Vertical) {
+
+      dividerSize = 3
+      preferredSize = new Dimension(1024, 780)
+
+      leftComponent = GraphScrollPane(controller,
+        res.initialState.loggedResult.value,
+        initialVisibleSet)
+
+      // val stateSelector = new SortedStateSelector(res.allStatesByDepth)
+
+      val rightDocWrapper = GraphScrollPane(controller,
+        selectedResult.prevState.loggedResult.value,
+        nodeVisibles(selectedResult.prevState.loggedResult.value))
+
+      rightComponent = new BorderPanel {
+        add(rightDocWrapper, Position.Center)
+        add(failureSelector, Position.South)
+      }
+
+      this listenTo failureSelector
+      reactions += {
+        case ErrorSelected(state) =>
+          rightDocWrapper.setGraph(selectedResult.prevState.loggedResult.value,
+            nodeVisibles(selectedResult.prevState.loggedResult.value))
+          console.textArea.text =
+            state.result.written +
+            state.result.value.getMessage
+      }
+    }
+
+    leftComponent = upPane
+    rightComponent = console
+
+
+  }
+
+  class AutosolveResultPanel( res : Search[ResultT]) extends SplitPane(Orientation.Vertical) {
+
+    val stateSelector = new SimpleElementSelector[SearchState[ResultT]](StateSelected.apply)
+    stateSelector.setStatesList(res.successes)
+
+    def selectedResult = stateSelector.selectedState.loggedResult
+
+    dividerSize = 3
+    preferredSize = new Dimension(1024, 780)
+
+    leftComponent = GraphScrollPane(controller,
+      res.initialState.loggedResult.value,
+      initialVisibleSet)
+
+    // val stateSelector = new SortedStateSelector(res.allStatesByDepth)
+
+    val rightDocWrapper = GraphScrollPane(controller,
+      selectedResult.value,
+      nodeVisibles(stateSelector.selectedState.loggedResult.value))
+
+    rightComponent = new BorderPanel {
+      add(rightDocWrapper, Position.Center)
+      add(stateSelector, Position.South)
+    }
+
+    this listenTo stateSelector
+    reactions += {
+      case StateSelected(state) =>
+        rightDocWrapper.setGraph(selectedResult.value,
+          nodeVisibles(selectedResult.value))
+    }
+
+  }
+
 
   private def dialog(res : Search[ResultT]) : Option[(Result.Value, Logged[ResultT])] = {
     val title = "Auto solve"
 
     val confirm : JComponent => Result.Value =
       c =>
-      Dialog.showConfirmation(null, c, title, Options.OkCancel, Message.Plain)
-      if(res.successes.isEmpty){
-        val _ = confirm(new JLabel("No solution"))
-        None
+        Dialog.showConfirmation(null, c, title, Options.OkCancel, Message.Plain)
+
+    if(res.successes.isEmpty){
+      confirm(new JLabel("No solution")) match{
+        case Result.Ok =>
+          val panel = new AutoSolveFailurePanel(res)
+          val resVal = confirm(panel.peer)
+          Some((resVal, panel.selectedResult.prevState.loggedResult))
+        case Result.Cancel => None
       }
-      else {
-        val stateSelector = new SimpleStateSelector
-        stateSelector.setStatesList(res.successes)
-
-        val panel = new SplitPane(Orientation.Vertical) {
-          dividerSize = 3
-          preferredSize = new Dimension(1024, 780)
-
-          leftComponent = GraphScrollPane(controller,
-            res.initialState.loggedResult.value,
-            initialVisibleSet)
-
-          // val stateSelector = new SortedStateSelector(res.allStatesByDepth)
-
-          val rightDocWrapper = GraphScrollPane(controller,
-            stateSelector.selectedState.loggedResult.value,
-            nodeVisibles(stateSelector.selectedState.loggedResult.value))
-
-          rightComponent = new BorderPanel {
-            add(rightDocWrapper, Position.Center)
-            add(stateSelector, Position.South)
-          }
-
-          this listenTo stateSelector
-          reactions += {
-            case StateSelected(state) =>
-              rightDocWrapper.setGraph(stateSelector.selectedState.loggedResult.value,
-                nodeVisibles(stateSelector.selectedState.loggedResult.value))
-          }
-
-        }
-        val resVal =confirm(panel.peer)
-        Some((resVal, stateSelector.selectedState.loggedResult))
-      }
+    }
+    else {
+      val panel = new AutosolveResultPanel(res)
+      val resVal = confirm(panel.peer)
+      Some((resVal, panel.selectedResult))
+    }
   }
 
   override def actionPerformed(e: ActionEvent): Unit = {

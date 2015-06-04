@@ -6,7 +6,7 @@ import puck.search.SearchState
 import puck.util.Logged
 
 class ConstraintSolvingAbstractionChoice
-( val k : Option[(NodeKind, AbstractionPolicy)] => Unit,
+( val k : Logged[Option[(NodeKind, AbstractionPolicy)]] => Unit,
   var remainingChoices : Set[Option[(NodeKind, AbstractionPolicy)]],
   var triedChoices : Set[Option[(NodeKind, AbstractionPolicy)]])
 extends ConstraintSolvingChoice[(NodeKind, AbstractionPolicy), ConstraintSolvingAbstractionChoice] {

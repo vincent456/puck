@@ -4,6 +4,7 @@ import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
 
 import puck.PuckError
+import puck.graph.constraints.DecisionMaker.ChooseNodeKArg
 import puck.graph.constraints.{Solver, NodePredicate, AbstractionPolicy, DecisionMaker}
 import puck.graph._
 import puck.gui.svg.SVGController
@@ -83,11 +84,17 @@ class ManualSolveAction
 
   override def chooseNode
   ( lg : LoggedG, predicate : NodePredicate)
-  ( k : LoggedG => Option[NodeId] => Unit) : Unit = {
-    ManualSolveAction.forChoice("Host choice", s"${predicate.toString}\n(None will try tro create a new one)",
+  ( k : ChooseNodeKArg => Unit) : Unit = {
+
+    def k1(sn : Logged[Option[ConcreteNode]]) : Unit ={
+        k(sn.map(_.map(n => (graph, n.id))))
+        //k(Functor[Logged].lift( (sn : Option[ConcreteNode]) => sn.map(n => (graph, n.id))).apply(sn))
+    }
+
+    ManualSolveAction.forChoice("Host choice",
+      s"${predicate.toString}\n(None will try tro create a new one)",
           graph.concreteNodes.filter(predicate(graph,_)).toSeq,
-          (sn : Logged[Option[ConcreteNode]]) =>
-            k(graph.set(sn.written))(sn.value.map(_.id)), appendNone = true)
+          k1, appendNone = true)
 
   }
 

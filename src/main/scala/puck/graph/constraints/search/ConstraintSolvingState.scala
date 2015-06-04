@@ -2,15 +2,18 @@ package puck.graph.constraints.search
 
 import puck.graph.{ResultT, recordOfResult}
 import puck.search.{SearchEngine, StateCreator, SearchState}
+import puck.util.Logged
+
+import scalaz.syntax.writer._
 
 trait ConstraintSolvingChoice[S, T]
   extends StateCreator[ResultT, T] {
-  val k : Option[S] => Unit
+  val k : Logged[Option[S]] => Unit
   var remainingChoices : Set[Option[S]]
   var triedChoices : Set[Option[S]]
 }
 
-trait ConstraintSolvingState[ S, T <: ConstraintSolvingChoice[S, T]]
+trait ConstraintSolvingState[S, T <: ConstraintSolvingChoice[S, T]]
   extends SearchState[ResultT]{
 
   /*println("creating searchState "+ id)
@@ -40,7 +43,7 @@ trait ConstraintSolvingState[ S, T <: ConstraintSolvingChoice[S, T]]
       remainingChoices -= c
       triedChoices += c
 
-      k(c)
+      k(c.set(loggedResult.written))
 
     }
   }

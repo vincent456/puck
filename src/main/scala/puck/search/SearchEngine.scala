@@ -1,6 +1,5 @@
 package puck.search
 
-import puck.PuckError
 import puck.graph.LoggedTry
 import puck.util.Logged
 
@@ -10,38 +9,48 @@ import scalaz._, Scalaz._
 trait Search[Result]{
   def initialState : SearchState[Result]
   def successes : Seq[FinalState[Result]]
-  def failures : Seq[Logged[PuckError]]
+  def failures : Seq[ErrorState[Result]]
   def exploredStates : Int
+
+  def failuresByDepth : Map[Int, Seq[ErrorState[Result]]] =
+    failures.foldLeft(Map[Int, Seq[ErrorState[Result]]]()){
+      (m, state) =>
+        val seq = m.getOrElse(state.depth, Seq())
+        m + (state.depth -> (state +: seq))
+    }
 
   def allStatesByDepth : Map[Int, Seq[SearchState[Result]]] =
     initialState.iterator.foldLeft(Map[Int, Seq[SearchState[Result]]]()){
-    (m, state) =>
-      val seq = m.getOrElse(state.depth, Seq())
-      m + (state.depth -> (state +: seq))
-  }
+      (m, state) =>
+        val seq = m.getOrElse(state.depth, Seq())
+        m + (state.depth -> (state +: seq))
+    }
 }
 
 object SearchEngine {
   type InitialStateFactory[T] = (LoggedTry[T] => Unit) => SearchState[T]
 }
+
 import SearchEngine._
-trait SearchEngine[T] extends Search[T]{
+trait SearchEngine[T] extends Search[T] {
 
   var currentState : SearchState[T] = _
   override val successes = mutable.ListBuffer[FinalState[T]]()
-  override val failures = mutable.ListBuffer[Logged[PuckError]]()
+  override val failures = mutable.ListBuffer[ErrorState[T]]()
 
 
   private [this] var idSeed : Int = 0
   private def idGen() : Int = {idSeed += 1; idSeed}
 
-  def storeResult(prevState : Option[SearchState[T]], res : LoggedTry[T]): Unit = {
+  def storeResult(prevState : SearchState[T], res : LoggedTry[T]): Unit = {
     val log = res.log
     res.value match {
       case -\/(err) =>
-        failures += err.set(log)
+        failures += new ErrorState[T](idGen(), err.set(log), prevState)
       case \/-(g) =>
-        successes += new FinalState[T](idGen(), g.set(log), this, prevState)
+        val fs = new FinalState[T](idGen(), g.set(log), Some(prevState))
+        successes += fs
+        prevState.nextStates += fs
     }
 
     numExploredStates = numExploredStates + 1
@@ -74,7 +83,7 @@ trait SearchEngine[T] extends Search[T]{
 
   def explore() : Unit ={
     startExplore {
-      storeResult(Some(currentState), _)
+      storeResult(currentState, _)
     }
   }
 }

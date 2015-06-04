@@ -43,7 +43,10 @@ case class ConstraintMapBuilder
 
   def getDef : Either[ParsedId, Seq[ParsedId]] => RangeSet = {
     case Left(key) => defs get key.node match {
-      case Some(l) => l
+      case Some(l) => key.range match {
+        case RangeBuilder.Scope => l
+        case RangeBuilder.Element => RootedRangeSet(l)
+      }
       case None => LiteralRangeSet(findNode(key))
     }
     case Right(l) => LiteralRangeSet(l flatMap findNode)

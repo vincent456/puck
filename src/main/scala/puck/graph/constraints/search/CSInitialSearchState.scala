@@ -13,16 +13,16 @@ object CSInitialSearchState {
   type CSInitialStateFactory =
     (Solver, DependencyGraph) => InitialStateFactory[ResultT]
 
-//  val default : Starter =
-//    (solver, graph, k) => solver.solve(graph, k)
+  val default : Starter =
+    (solver, graph, k) => solver.solve(graph, k)
 
   def targeted(n : ConcreteNode) : Starter =
     (solver, graph, k) => solver.solveViolationsToward(graph.set(""),n)(k)
 
 
-//  val defaultInitialState : CSInitialStateFactory =
-//    (solver, graph) =>
-//      k => new CSInitialSearchState(solver, graph, k, default)
+  val defaultInitialState : CSInitialStateFactory =
+    (solver, graph) =>
+      k => new CSInitialSearchState(solver, graph, k, default)
 
   def targetedInitialState(n : ConcreteNode) : CSInitialStateFactory =
     (solver, graph) =>

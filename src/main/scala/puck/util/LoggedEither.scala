@@ -82,22 +82,6 @@ object LoggedEither {
     a.foldLeftM[({ type T[x] = E \/ x })#T, B](b)(f)
   //a.foldLeft[E\/B](\/-(b)){case (b0, a0) => b0 flatMap (f(_, a0))}
 
-/*  implicit class FoldLogOps[A](val a : Iterable[A]) extends AnyVal {
-
-    def foldLoggedEither[E, B]
-    ( b : B)
-    ( f : (B, A) => LoggedEither[E, B]) : LoggedEither[E, B] =
-      foldLoggedEither[E,B](b.set(""))(f)
-
-    def foldLoggedEither[E, B]
-    ( lb : Logged[B])
-    ( f : (B, A) => LoggedEither[E, B]) :  LoggedEither[E, B] =
-      a.foldLeft[LoggedEither[E, B]](LoggedEither(lb.written, lb.value.right[E])) {
-        (b0, a0) => b0 flatMap (f(_, a0))
-      }
-
-  }*/
-
   implicit class FoldLogSyntax[F[_], A](val a : F[A]) extends AnyVal {
 
     def foldLoggedEither[E, B]

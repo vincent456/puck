@@ -11,17 +11,18 @@ import scala.swing.event.{Event, SelectionChanged}
 
 case class StateSelected(state : SearchState[ResultT]) extends Event
 
-class SimpleStateSelector
+class SimpleElementSelector[T]
+ ( evtGen : T => Event)
   extends FlowPanel {
-  var searchStateComboBox : ComboBox[SearchState[ResultT]] = _
+  var searchStateComboBox : ComboBox[T] = _
 
   def publish() : Unit = {
-    this.publish(StateSelected(searchStateComboBox.selection.item))
+    this.publish(evtGen(searchStateComboBox.selection.item))
   }
 
   def selectedState = searchStateComboBox.selection.item
 
-  def setStatesList(states : Seq[SearchState[ResultT]]): Unit ={
+  def setStatesList(states : Seq[T]): Unit ={
     if(searchStateComboBox != null) {
       contents.clear()
       this deafTo searchStateComboBox
@@ -34,18 +35,18 @@ class SimpleStateSelector
   }
 
   reactions += {
-    case SelectionChanged(cb) =>
-      publish()
+    case SelectionChanged(cb) => publish()
   }
 
 
 }
 
-class SortedStateSelector
-(map : Map[Int, Seq[SearchState[ResultT]]])
+class SortedElementSelector[T]
+(map : Map[Int, Seq[T]],
+ evtGen : T => Event)
   extends BoxPanel(Orientation.Vertical) {
   val firstLine = new FlowPanel()
-  val simpleStateSelector = new SimpleStateSelector()
+  val simpleStateSelector = new SimpleElementSelector[T](evtGen)
   val couplingValues = new ComboBox(map.keys.toSeq)
 
   simpleStateSelector.setStatesList(map(couplingValues.selection.item))
@@ -61,10 +62,7 @@ class SortedStateSelector
   reactions += {
     case SelectionChanged(cb) =>
       simpleStateSelector.setStatesList(map(couplingValues.selection.item))
-
-    case ss @ StateSelected(selectedState) =>
-      println("forward !")
-      this.publish(ss)
+    case evt  => publish(evt)
   }
 
   def selectedState = simpleStateSelector.selectedState
@@ -76,7 +74,7 @@ class StateSelector
   printId : () => Boolean,
   printSig: () => Boolean,
   visibility : VisibilitySet.T)
-  extends  SortedStateSelector(map) {
+  extends  SortedElementSelector[SearchState[ResultT]](map, StateSelected.apply) {
 
 
   val secondLine = new FlowPanel()

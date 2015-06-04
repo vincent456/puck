@@ -1,28 +1,41 @@
 package puck.graph
 package constraints
 
-/**
- * Created by lorilan on 1/8/15.
- */
 object RangeSet {
   def empty() = LiteralRangeSet()
 }
 
-/**
- * Created by lorilan on 09/06/14.
- */
+object RangeBuilder {
+ sealed abstract class Builder {
+   def apply(n : NodeId) : Range
+ }
+ case object Scope extends Builder{
+   def apply(n : NodeId) = puck.graph.constraints.Scope(n)
+ }
+ case object Element extends Builder{
+   def apply(n : NodeId) = puck.graph.constraints.Element(n)
+ }
+}
+
 sealed trait Range{
   val nid : NodeId
   //def productPrefix : String
   def contains_*(graph: DependencyGraph, other : NodeId) : Boolean
+
+  def toElement : Range
 }
 case class Scope(nid : NodeId) extends Range {
+
   def contains_*(graph: DependencyGraph, other : NodeId) =
     graph.contains_*(nid, other)
+
+  def toElement : Range = Element(nid)
 }
 case class Element(nid : NodeId) extends Range {
   def contains_*(graph: DependencyGraph, other : NodeId) =
     nid == other
+
+  def toElement : Range = this
 }
 
 sealed trait RangeSet extends Iterable[Range] {
@@ -37,6 +50,15 @@ sealed trait RangeSet extends Iterable[Range] {
     this exists (_.contains_*(graph, elem))
 
   def literalCopy() : LiteralRangeSet
+}
+
+case class RootedRangeSet(rs : RangeSet) extends RangeSet {
+  def +(n : Range) : RangeSet = copy(rs + n)
+  def -(n : Range) : RangeSet = copy(rs - n)
+
+  def iterator : Iterator[Range] = rs.iterator map (_.toElement)
+
+  def literalCopy() : LiteralRangeSet = LiteralRangeSet(this.iterator)
 }
 
 case class NamedRangeSet private[constraints]

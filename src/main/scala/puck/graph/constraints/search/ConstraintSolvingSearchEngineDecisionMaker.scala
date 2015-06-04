@@ -1,6 +1,7 @@
 package puck.graph.constraints.search
 
 import puck.graph._
+import puck.graph.constraints.DecisionMaker.ChooseNodeKArg
 import puck.graph.constraints.{NodePredicate, AbstractionPolicy, DecisionMaker}
 import puck.graph.transformations.rules.CreateVarStrategy
 import puck.search.SearchEngine
@@ -83,14 +84,14 @@ class ConstraintSolvingSearchEngineDecisionMaker
 
     import impl.kind.{abstractionPolicies, abstractKinds}
 
-    k(lg.map(_ =>
-      if(abstractionPolicies.isEmpty)
-        None
-      else
-        Some((abstractKinds(abstractionPolicies.head).head,
-          abstractionPolicies.head))))
+//    k(lg.map(_ =>
+//      if(abstractionPolicies.isEmpty)
+//        None
+//      else
+//        Some((abstractKinds(abstractionPolicies.head).head,
+//          abstractionPolicies.head))))
 
-    /*val (needSearch, karg) =
+    val (needSearch, karg) =
       if(abstractionPolicies.isEmpty) {
         (false, None)
     }
@@ -106,23 +107,23 @@ class ConstraintSolvingSearchEngineDecisionMaker
 
 
     if(needSearch) {
-      val choices = abstractionPolicies.map { p => abstractKinds(p).map { kind => Some((kind, p)) }}.flatten
+      val choices = impl.kind.abstractionChoices.map(Some(_))
 
-      newCurrentState((graph, graph.recording),
+      searchEngine.newCurrentState(lg,
         new ConstraintSolvingAbstractionChoice(k,
           Set[Option[(NodeKind, AbstractionPolicy)]]() ++ choices,
           Set[Option[(NodeKind, AbstractionPolicy)]]()))
     }
-    else k(karg)*/
+    else k(karg.set(lg.written))
 
   }
 
 
-  def partition(graph : DependencyGraph) : (List[DGNode], List[NonEmptyList[DGNode]]) => List[NonEmptyList[DGNode]] = {
+  def partitionByKind(graph : DependencyGraph) : (List[DGNode], List[NonEmptyList[DGNode]]) => List[NonEmptyList[DGNode]] = {
     case (Nil, acc) => acc
     case (hd :: tl, acc) =>
       val (same, diff) = tl.partition(n => n.kind == hd.kind)
-      partition(graph)(diff, NonEmptyList[DGNode](hd, same:_*) +: acc)
+      partitionByKind(graph)(diff, NonEmptyList[DGNode](hd, same:_*) +: acc)
   }
 
   def chooseContainerKind
@@ -144,29 +145,27 @@ class ConstraintSolvingSearchEngineDecisionMaker
 
   def chooseNode
   ( lg : LoggedG, predicate : NodePredicate)
-  ( k : LoggedG => Option[NodeId] => Unit) : Unit = {
+  ( k : ChooseNodeKArg => Unit) : Unit = {
     val graph = lg.value
     val choices = graph.concreteNodes.filter(predicate(graph,_)).toList
 
     choices match {
-      case Nil => k(lg)(None)
-      case List(n) => k(lg)(Some(n.id))
+      case Nil => k(lg.map( _ => None))
+      case List(n) => k(lg.map(g => Some((g, n.id))))
       case s =>
-        val l = partition(graph)(s, List())
+        val l = partitionByKind(graph)(s, List())
 
-        val (g, cs) = l.foldLeft( (graph, List[NodeId]()) ){
-          case ((g0, s0), nel)  =>
-            if(nel.tail.isEmpty) (g0, nel.head.id +: s0)
-            else{
-              val (vn, g2) = g0.addVirtualNode(nel.toList.map(_.id).toSeq,  nel.head.kind)
-              (g2, vn.id +: s0)
-            }
-
+        val cs  = l.map {
+          nel =>
+          if(nel.tail.isEmpty) some((graph, nel.head.id))
+          else{
+            val (vn, g2) = graph.addVirtualNode(nel.toList.map(_.id).toSeq,  nel.head.kind)
+            some((g2, vn.id))
+          }
         }
 
-        val lg1 = lg.map(_ => g)
-        searchEngine.newCurrentState(lg1,
-          ConstraintSolvingNodesChoice.includeNoneChoice(k(lg1), cs))
+        searchEngine.newCurrentState(lg,
+          ConstraintSolvingNodesChoice.includeNoneChoice(k, cs))
 
     }
   }

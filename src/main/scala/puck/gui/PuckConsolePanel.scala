@@ -8,16 +8,16 @@ class PuckConsolePanel
 
 /*  val lines = 10
   val charPerLine = 50*/
-  val console = new TextArea()
-  console.editable = false
+  val textArea = new TextArea()
+  textArea.editable = false
 
-  contents += new ScrollPane(console)
+  contents += new ScrollPane(textArea)
 
   contents += new Button() {
     tooltip = "Clear the console"
 
     action = new Action("Clear"){ def apply() : Unit = {
-      console.text = ""
+      textArea.text = ""
     }
     }
   }

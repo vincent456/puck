@@ -3,17 +3,18 @@ package constraints
 
 import scala.util.parsing.combinator.RegexParsers
 import scala.util.parsing.input.{Reader, StreamReader}
-
+//import RangeBuilder._
 
 sealed trait ParsedId {
   val node : String
-  def range : NodeId => Range
+  def range : RangeBuilder.Builder
+  //def range : NodeId => Range
 }
 case class SetIdOrScope(node:String) extends ParsedId {
-  def range = id => Scope(id)
+  def range = RangeBuilder.Scope
 }
 case class PElement(node:String)extends ParsedId {
-  def range = id => Element(id)
+  def range = RangeBuilder.Element
 }
 
 object ConstraintsPlParser{
