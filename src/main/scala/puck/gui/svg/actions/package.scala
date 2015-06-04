@@ -17,8 +17,8 @@ package object actions {
   def printErrOrPushGraph
   ( controller: SVGController, msg : String )
   ( lgt : LoggedTry[DependencyGraph]) : Unit = {
-    controller.console.appendText(lgt.run.written)
-    lgt.run.value match {
+    controller.console.appendText(lgt.log)
+    lgt.value match {
       case -\/(err) => controller.console.appendText(s"$msg\n${err.getMessage}\n")
       case \/-(g) => controller.pushGraph(g)
     }

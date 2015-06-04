@@ -3,7 +3,7 @@ package puck.graph.transformations.rules
 import puck.PuckError
 import puck.graph.ShowDG._
 import puck.graph._
-import puck.util.Collections._
+import puck.util.LoggedEither._
 
 import scalaz.{Arrow => _, _}, Scalaz._ //hide arrow
 
@@ -43,7 +43,7 @@ import scalaz.{Arrow => _, _}, Scalaz._ //hide arrow
       val usesByUser = siblingsUsesViaSelf.groupBy(_.user)
       //introduce one parameter by user even with several uses
       //these were all previously this use so it makes sens to keep one reference
-      foldLoggedOr(usesByUser.toList, g) {
+      usesByUser.toList.foldLoggedEither(g) {
         case (g0, (userId, typeMemberUses)) =>
           val user = g0.getConcreteNode(userId)
           val newTypeUse = Uses(userId, newContainer)
@@ -76,6 +76,30 @@ import scalaz.{Arrow => _, _}, Scalaz._ //hide arrow
 
   case class CreateTypeMember(k : NodeKind) extends CreateVarStrategy {
 
+    def createDelegateUses
+      ( currentContainer: NodeId,
+        newContainer: NodeId,
+        getDelegate : DependencyGraph => (NodeId, DependencyGraph) )
+      ( g : DependencyGraph,
+        typeMemberUse : Uses,
+        typeUse : DGUses
+        ) : (NodeId, DependencyGraph) = {
+
+      val g2 = removeUsesDependencyTowardSelfUse(g, typeUse, typeMemberUse)
+
+      val (delegate, g3) = getDelegate(g2)
+
+      val thisUse = DGEdge.UsesK(typeMemberUse.user, currentContainer)
+
+      //addUsesDependency done before addUse to have some context when applying
+      val g4 = g3.addUsesDependency(Uses(delegate, newContainer), typeMemberUse)
+        .addUses(delegate, newContainer) //type field
+
+      val g5 = thisUse.changeTarget(g4, delegate) // replace this.m by delegate.m
+
+      (delegate, g5)
+    }
+
     def moveTypeMemberUsedBySelf
     (g: DependencyGraph,
      currentContainer: NodeId,
@@ -93,37 +117,19 @@ import scalaz.{Arrow => _, _}, Scalaz._ //hide arrow
           (field.id, g2.addContains(currentContainer, field.id))
       }
 
-
-      def createDelegateUses(getDelegate : DependencyGraph => (NodeId, DependencyGraph) )
-                            (g : DependencyGraph,
-                             typeMemberUse : Uses,
-                             typeUse : DGUses) : (NodeId, DependencyGraph) = {
-
-        val g2 = removeUsesDependencyTowardSelfUse(g, typeUse, typeMemberUse)
-
-        val (delegate, g3) = getDelegate(g2)
-
-        val thisUse = DGEdge.UsesK(typeMemberUse.user, currentContainer)
-
-        //addUsesDependency done before addUse to have some context when applying
-        val g4 = g3.addUsesDependency(Uses(delegate, newContainer), typeMemberUse)
-          .addUses(delegate, newContainer) //type field
-
-        val g5 = thisUse.changeTarget(g4, delegate) // replace this.m by delegate.m
-
-        (delegate, g5)
-      }
-
       val selfTypeUses = DGEdge.UsesK(currentContainer, currentContainer)
-      val (delegate, g2) = createDelegateUses(genDelegate)(g, siblingsUsesViaSelf.head, selfTypeUses)
+
+      val (delegate, g2) =
+        createDelegateUses(currentContainer, newContainer, genDelegate)(
+          g, siblingsUsesViaSelf.head, selfTypeUses)
 
       def getDelegate : GenDelegate = g => (delegate, g)
 
-      foldLoggedOr(siblingsUsesViaSelf.tail, g2) {
+      siblingsUsesViaSelf.tail.foldLoggedEither(g2) {
         case (g0, uses) =>
-          foldLoggedOr(g0.typeUsesOf(uses), g0){
+          g0.typeUsesOf(uses).foldLoggedEither(g0){
             (g0, typeUse) =>
-              LoggedSuccess(createDelegateUses(getDelegate)(g0, uses, typeUse)._2)
+              LoggedSuccess(createDelegateUses(currentContainer, newContainer,getDelegate)(g0, uses, typeUse)._2)
           }
       }
 

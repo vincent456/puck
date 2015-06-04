@@ -1,6 +1,9 @@
 package puck
 
 import puck.graph.transformations.Recordable
+import puck.util.LoggedEither
+import puck.util.Logged
+
 import scalaz._, Scalaz._
 
 package object graph {
@@ -8,13 +11,10 @@ package object graph {
   type Try[+T] = PuckError \/ T
 
 
-  type Logged[A] = Writer[String, A]
-  type LoggedOr[E, A] = EitherT[Logged, E, A]
-
   type Error = PuckError
   //type Log = Logged[Unit]
   type LoggedG = Logged[DependencyGraph]
-  type LoggedTry[A] = LoggedOr[Error, A]
+  type LoggedTry[A] = LoggedEither[Error, A]
   type LoggedTG = LoggedTry[DependencyGraph]
 
   implicit class GOps(val g : DependencyGraph) extends AnyVal{
@@ -22,34 +22,36 @@ package object graph {
       g.comment(msg) set (msg + "\n")
 
     def toLoggedTG : LoggedTG =
-      g.set("").toLoggedOr
+      g.set("").toLoggedEither
 
   }
 
   implicit class LoggedOps[A](val lg: Logged[A]) extends AnyVal {
-    def toLoggedOr[E] : LoggedOr[E, A] =
-      EitherT.right[Logged, E, A](lg)
-    def toLoggedTry : LoggedTry[A] = toLoggedOr[Error]
+    def toLoggedEither[E] : LoggedEither[E, A] = LoggedEither(lg.written, lg.value.right[E])
+    def toLoggedTry : LoggedTry[A] = toLoggedEither[Error]
   }
 
-  implicit class LoggedOrOps[E, A](val lg: LoggedOr[E, A]) extends AnyVal {
-    def error(e : E) : LoggedOr[E, A] =
-      lg.flatMapF[A](_ => e.left[A].set(""))
+//  implicit class LoggedOrOps[E, A](val lg: EitherT[Logged, E, A]) extends AnyVal {
+//    def error(e : E) : EitherT[Logged, E, A] =
+//      lg.flatMapF[A](_ => e.left[A].set(""))
+//  }
+  implicit class LoggedOrOps[E, A](val lg: LoggedEither[E, A]) extends AnyVal {
+    def error(e : E) : LoggedEither[E, A] = lg.left_>>(e)
   }
-
 
 
   def LoggedError[A]( e: Error): LoggedTry[A] =
     LoggedError(e, "")
 
   def LoggedError[A]( e: PuckError, msg : String): LoggedTry[A] =
-    EitherT.eitherT[Logged, Error,A](e.left[A].set(msg))
+    LoggedEither(msg, -\/(e))
+
 
   def LoggedSuccess[A]( a : A): LoggedTry[A] =
     LoggedSuccess(a, "")
 
   def LoggedSuccess[A]( a : A, msg : String): LoggedTry[A] =
-    EitherT.eitherT[Logged, Error, A](a.right[Error].set(msg))
+    LoggedEither(msg, \/-(a))
 
   type NodePredicateT = (DependencyGraph, ConcreteNode) => Boolean
 

@@ -2,9 +2,9 @@ package puck.graph
 package transformations
 
 import puck.search.{SearchEngine, SearchState, StateCreator}
+import puck.util.Logged
 
 import scala.collection.mutable
-import scalaz.{\/-, Success}
 
 object MappingChoices{
   type ResMap = Map[NodeId, (NodeKind, Option[NodeId])]

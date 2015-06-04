@@ -9,7 +9,7 @@ import puck.graph._
 import puck.graph.constraints.{ConstraintsParser, SupertypeAbstraction}
 import puck.graph.transformations.rules.CreateTypeMember
 import puck.javaGraph.nodeKind.{Interface, Field, Class}
-import puck.javaGraph.{JavaTransformationRules => TR}
+import puck.javaGraph.JGraphUtils.{transformationRules => TR}
 
 
 object BridgeScenario {
@@ -54,7 +54,7 @@ class BridgeScenario private()
   var printId = 0
 
   def printCode(g : DependencyGraph) : Unit = {
-    jdg2ast((g, g.recording))
+    jdg2ast(g)
     jdg2ast.printCode( new File(BridgeScenario.path + "out/" ))
   }
 
@@ -69,8 +69,8 @@ class BridgeScenario private()
     val g0 = g.comment("-- introClassMoveMethod (begin) --")
     val (c, g1) = TR.intro(g0, className, Class, None)
     val g2 = g1.addContains(screen, c.id)
-    (c, TR.move.typeMember(g2, Seq(method), c.id,
-      Some(CreateTypeMember(Field)))().right.value.
+    (c, TR.move.typeMember(g2, List(method), c.id,
+      Some(CreateTypeMember(Field)))().value.right.value.
       comment("-- introClassMoveMethod (end) --"))
   }
 
@@ -83,8 +83,8 @@ class BridgeScenario private()
 
     val (c2, g2) = introClassMoveMethod(g1, className+"Tmp", meth2)
 
-    val g3 = TR.mergeInto(g2.comment("-- Merging methods (begin) --"), meth2, meth1).right.value
-    (c1, TR.mergeInto(g3.comment("-- Merging methods (end) --"), c2.id, c1.id).right.value
+    val g3 = TR.mergeInto(g2.comment("-- Merging methods (begin) --"), meth2, meth1).value.right.value
+    (c1, TR.mergeInto(g3.comment("-- Merging methods (end) --"), c2.id, c1.id).value.right.value
       .comment("-- intro2classMerge (end) --"))
   }
 
@@ -94,7 +94,7 @@ class BridgeScenario private()
       TR.redirection.redirectUsesAndPropagate(g0,
         DGEdge.UsesK(userId, clazz),
         interface,
-        SupertypeAbstraction).right.value
+        SupertypeAbstraction).value.right.value
     }
 
   def getDelegate(g : DependencyGraph, clazz : NodeId) =
@@ -116,12 +116,12 @@ class BridgeScenario private()
   val (c2, g2) = intro2classMerge(g1, "CapitalStyle", printCapital1, printCapital2)
   val g3 =  TR.rename(TR.rename(g2, printStar1, "printStyle"), printCapital1, "printStyle")
 
-  val (i1, g4) = TR.abstracter.createAbstraction(g3, c1, Interface, SupertypeAbstraction).right.value
+  val (i1, g4) = TR.abstracter.createAbstraction(g3, c1, Interface, SupertypeAbstraction).value.right.value
   val g5 = g4.addContains(screen, i1.id)
-  val (i2, g6) = TR.abstracter.createAbstraction(g5, c2, Interface, SupertypeAbstraction).right.value
+  val (i2, g6) = TR.abstracter.createAbstraction(g5, c2, Interface, SupertypeAbstraction).value.right.value
   val g7 = g6.addContains(screen, i2.id)
 
-  val g8 = TR.rename(TR.mergeInto(g7, i2.id, i1.id).right.value, i1.id, "StyleProvider")
+  val g8 = TR.rename(TR.mergeInto(g7, i2.id, i1.id).value.right.value, i1.id, "StyleProvider")
 
   val g9 = useInterfaceInstead(g8, c1.id, i1.id)
 
@@ -130,22 +130,22 @@ class BridgeScenario private()
 
   val delegate = getDelegate(g10, welcomeStar)
 
-  val g11 = TR.move.typeMember(TR.rename(g10, delegate, "styleProvider"), Seq(delegate), screenClass)().right.value
-  val g12 = TR.mergeInto(g11, getDelegate(g11, infoStar), delegate).right.value
-  val g13 = TR.mergeInto(g12, getDelegate(g12, welcomeCapital), delegate).right.value
-  val g14 = TR.mergeInto(g13, getDelegate(g13, infoCapital), delegate).right.value
+  val g11 = TR.move.typeMember(TR.rename(g10, delegate, "styleProvider"), List(delegate), screenClass)().value.right.value
+  val g12 = TR.mergeInto(g11, getDelegate(g11, infoStar), delegate).value.right.value
+  val g13 = TR.mergeInto(g12, getDelegate(g12, welcomeCapital), delegate).value.right.value
+  val g14 = TR.mergeInto(g13, getDelegate(g13, infoCapital), delegate).value.right.value
 
 
   val g15 = TR.mergeInto(TR.rename(g14, welcomeStar, "WelcomeScreen"),
-    welcomeCapitalMeth, welcomeStarMeth).right.value
-  val g16 = TR.mergeInto(g15, welcomeCapital, welcomeStar).right.value
+    welcomeCapitalMeth, welcomeStarMeth).value.right.value
+  val g16 = TR.mergeInto(g15, welcomeCapital, welcomeStar).value.right.value
 
 
   //QuickFrame(g16)
 
   val g17 = TR.mergeInto(TR.rename(g16, infoStar, "InfoScreen"),
-    infoCapitalMeth, infoStarMeth).right.value
-  val g18 = TR.mergeInto(g17, infoCapital, infoStar).right.value
+    infoCapitalMeth, infoStarMeth).value.right.value
+  val g18 = TR.mergeInto(g17, infoCapital, infoStar).value.right.value
 
   def gFinal = g18
 

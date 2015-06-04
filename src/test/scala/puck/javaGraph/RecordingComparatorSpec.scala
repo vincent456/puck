@@ -1,11 +1,11 @@
 
 package puck.javaGraph
 
-import puck.graph.{Try, NodeId, ConcreteNode, DependencyGraph}
+import puck.graph._
 import puck.graph.constraints.SupertypeAbstraction
 import puck.javaGraph.nodeKind._
 import puck.{Settings, PuckError, AcceptanceSpec}
-import puck.javaGraph.{JavaTransformationRules => TR}
+import puck.javaGraph.JGraphUtils.{transformationRules => TR}
 
 import scalaz._
 
@@ -18,7 +18,7 @@ class RecordingComparatorSpec extends AcceptanceSpec {
 
   type GraphT = DependencyGraph
 
-  def introInterface(g : GraphT, clazz : ConcreteNode, pcontainer : NodeId) : Try[(GraphT, ConcreteNode)]= {
+  def introInterface(g : GraphT, clazz : ConcreteNode, pcontainer : NodeId) : LoggedTry[(GraphT, ConcreteNode)]= {
     TR.abstracter.createAbstraction(g, clazz, Interface, SupertypeAbstraction)
       .map {case (classAbs, g) =>
       (g.addContains(pcontainer, classAbs.id), classAbs)}
@@ -69,10 +69,10 @@ class RecordingComparatorSpec extends AcceptanceSpec {
 
   feature("Comparison"){
 
-    def liftAssert(ex: ExampleSample, tg1: TryG, tg2: TryG, expected: Boolean): Unit = {
-      val app = Applicative[puck.graph.Try]
+    def liftAssert(ex: ExampleSample, tg1: LoggedTG, tg2: LoggedTG, expected: Boolean): Unit = {
+      val app = Applicative[LoggedTry]
       val res = app.apply2(tg1, tg2)(ex.compare)
-      res match {
+      res.value match {
         case \/-(b) => assert(b === expected)
         case -\/(_) => assert(false)
       }

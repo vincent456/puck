@@ -5,7 +5,7 @@ package rules
 import puck.PuckError
 import puck.graph.DependencyGraph._
 import puck.graph.constraints.NotAnAbstraction
-import puck.util.Collections._
+import puck.util.LoggedEither._
 import scalaz._, Scalaz._
 
 trait MergingCandidatesFinder {
@@ -82,7 +82,7 @@ class Merge
     consumedId : NodeId,
     consumerId : NodeId
     ) : LoggedTG =
-    foldLoggedOr(g.content(consumedId), g.comment("Merge Children")) {
+    g.content(consumedId).foldLoggedEither(g.comment("Merge Children")) {
       (g0, consumedChildId) =>
           mergingCandidatesFinder.findIn(g0, consumedChildId, consumerId) match {
             case Some(consumerChildId) => mergeInto(g0, consumedChildId, consumerChildId)
@@ -94,7 +94,7 @@ class Merge
                     case None => LoggedError(new PuckError("cannot find new type constructor"))
                     case Some(newTypeConstructor) =>
 
-                      foldLoggedOr(g0 usersOf consumedChildId, g0){
+                      (g0 usersOf consumedChildId).foldLoggedEither(g0){
                         (g00, userId) =>
                           Redirection.redirectUsesAndPropagate(g00,
                             DGEdge.UsesK(userId, consumedChildId),
@@ -118,20 +118,20 @@ class Merge
     val lg = g logComment log
 
     for {
-      g1 <- foldLoggedOr[Set, NodeId, PuckError, DependencyGraph](g.usersOf(consumedId), lg){
+      g1 <- g.usersOf(consumedId).foldLoggedEither[PuckError, DependencyGraph](lg){
         (g0, userId) =>
-          g0.set(s"\nredirecting ($userId, $consumedId) toward $consumerId").map{
-            _.changeTarget(DGEdge.UsesK(userId, consumedId), consumerId)
-              .changeType(userId, g.getConcreteNode(userId).styp, consumedId, consumerId)
-          }.toLoggedOr
+          LoggedSuccess(
+            g0.changeTarget(DGEdge.UsesK(userId, consumedId), consumerId)
+              .changeType(userId, g.getConcreteNode(userId).styp, consumedId, consumerId),
+            s"redirecting ($userId, $consumedId) toward $consumerId\n")
       }
 
-      g2 <- foldLoggedOr(g1.usedBy(consumedId), g1){
+      g2 <- g1.usedBy(consumedId).foldLoggedEither(g1){
         (g0, usedId) =>
         LoggedSuccess(g0.changeSource(DGEdge.UsesK(consumedId, usedId), consumerId))
       }
 
-      g3 <- foldLoggedOr( g2.directSuperTypes(consumedId), g2){
+      g3 <- g2.directSuperTypes(consumedId).foldLoggedEither(g2){
         (g0, stId) =>
           LoggedSuccess {
             if (stId != consumerId) g0.changeSource(DGEdge.IsaK(consumedId, stId), consumerId)
@@ -139,7 +139,7 @@ class Merge
           }
       }
 
-      g4 <- foldLoggedOr(g3.directSubTypes(consumedId), g3) {
+      g4 <- g3.directSubTypes(consumedId).foldLoggedEither(g3) {
         (g0, stId) =>
           LoggedSuccess {
             if (stId != consumerId) g0.changeTarget(DGEdge.IsaK(stId, consumedId), consumerId)
@@ -149,7 +149,7 @@ class Merge
 
       g5 = mergeTypeUsesDependencies(g4, consumedId, consumerId)
 
-      g6 <- foldLoggedOr(g5.abstractions(consumedId), g5){
+      g6 <- g5.abstractions(consumedId).foldLoggedEither(g5){
         (g0, abs) =>
           LoggedSuccess {
             g0.removeAbstraction(consumedId, abs)
@@ -178,7 +178,8 @@ class Merge
     ) : LoggedTG = {
     val graph = g.comment(s"Remove node $n")
     for {
-      g1 <- foldLoggedOr(graph.content(n.id).map(graph.getConcreteNode), graph)(removeConcreteNode)
+      g1 <- graph.content(n.id).map(graph.getConcreteNode).
+          foldLoggedEither(graph)(removeConcreteNode)
       // g1 <- graph.content(n.id).map(graph.getConcreteNode).foldLeftM(graph)(removeConcreteNode)
       g2 <-
       if (g1.usersOf(n.id).nonEmpty)

@@ -2,6 +2,7 @@ package puck.search
 
 import puck.graph._
 import puck.search.SearchEngine.InitialStateFactory
+import puck.util.Logged
 
 import scala.collection.mutable
 

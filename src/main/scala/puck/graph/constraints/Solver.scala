@@ -4,10 +4,10 @@ package constraints
 import puck.PuckError
 import puck.graph.ShowDG._
 import puck.graph.transformations.TransformationRules
-import puck.util.PuckLog
-
+import puck.util.Logged
+import puck.util.LoggedEither._
 import scalaz._, Scalaz._
-import puck.util.Collections._
+
 
 object FindHostResult {
   def host(host : NodeId, graph : DependencyGraph): FindHostResult =
@@ -39,24 +39,24 @@ class Solver
           val log = loggedOption.written
           loggedOption.value match {
             case None =>
-              k((g,wrongUsers).set(log).toLoggedOr[PuckError])
+              k((g,wrongUsers).set(log).toLoggedEither[PuckError])
             case Some((absId, absPol)) =>
 
               val (remainingWus, wuToRedirect) = wrongUsers.partition(g.interloperOf(_, absId))
               val lg1 = lg :++> s"$wuToRedirect will use abstraction $absId\n"
 
               val ltg: LoggedTG =
-                foldLoggedOr[List, NodeId, PuckError, DependencyGraph](wuToRedirect, lg1) {
+                wuToRedirect.foldLoggedEither(lg1) {
                   (g, wu) =>
                     rules.redirection.redirectUsesAndPropagate(g, DGEdge.UsesK(wu, used.id), absId, absPol)
                 }
 
-              ltg.run.value match {
+              ltg.value match {
                 case \/-(g2) =>
                   val lg2 = ltg.valueOr(_ => sys.error("should not happen"))
                   aux(lg2, remainingWus, choices - ((absId, absPol)))
                 case -\/(err) =>
-                  k(LoggedError(err, ltg.run.written))
+                  k(LoggedError(err, ltg.log))
               }
           }
       }
@@ -193,7 +193,7 @@ class Solver
                             val graph5 = rules.abstracter.abstractionCreationPostTreatment(graph4, currentImpl.id, abs.id, absPolicy)
                             (graph5, abs, absPolicy)
                         }
-                        k(lr2.toLoggedOr)
+                        k(lr2.toLoggedEither)
                       case FindHostError =>
                         k(LoggedError(FindHostError,
                           logres.written + "error while searching host for abstraction"))
@@ -207,12 +207,12 @@ class Solver
             else
               doIntro {
                 ltg  =>
-                  ltg.run.value match {
+                  ltg.value match {
                     case -\/(_) =>
                       val err = new DGError(s"Single abs intro degree $deg/$degree error (currentImpl = $currentImpl)")
-                      k(LoggedError(err, ltg.run.written))
+                      k(LoggedError(err, ltg.log))
                     case \/-((g, abs, _)) =>
-                      aux(g.set(ltg.run.written), deg + 1, abs)(k)
+                      aux(g.set(ltg.log), deg + 1, abs)(k)
                   }
               }
 
@@ -228,7 +228,7 @@ class Solver
       k(lgt.flatMap{
         case ((g, abs, absPolicy)) =>
         val lg = g.set("redirecting wrong users !!")
-        foldLoggedOr[List, NodeId, PuckError, DependencyGraph](wrongUsers, lg ){
+          wrongUsers.foldLoggedEither[PuckError, DependencyGraph](lg ){
           (g, wuId) =>
             rules.redirection.redirectUsesAndPropagate(g,
               DGEdge.UsesK(wuId, impl.id), abs.id, absPolicy)
@@ -249,13 +249,13 @@ class Solver
 
     redirectTowardExistingAbstractions(lg1, impl, lg.value.wrongUsers(impl.id)){
       loggedTGraphWusers : LoggedTry[(DependencyGraph, List[NodeId])] =>
-        loggedTGraphWusers.run.value match {
+        loggedTGraphWusers.value match {
           case \/-((graph2, wrongUsers)) =>
             if (wrongUsers.nonEmpty)
-              absIntro(graph2.set(loggedTGraphWusers.run.written), impl, wrongUsers)(k)
-            else k(LoggedSuccess(graph2, loggedTGraphWusers.run.written))
+              absIntro(graph2.set(loggedTGraphWusers.log), impl, wrongUsers)(k)
+            else k(LoggedSuccess(graph2, loggedTGraphWusers.log))
           case -\/(err) =>
-            k(LoggedError(err, loggedTGraphWusers.run.written))
+            k(LoggedError(err, loggedTGraphWusers.log))
         }
 
 
@@ -296,7 +296,7 @@ class Solver
 
             def k : LoggedTG => Unit = {
               ltg =>
-                k0(checkIfMoveSolveContains(EitherT.eitherT[Logged, PuckError, DependencyGraph](log <++: ltg.run)))
+                k0(checkIfMoveSolveContains(log <++: ltg))
               //k0 compose checkIfMoveSolveContains
             }
             //checkIfMoveSolveContains andThen k0
@@ -334,9 +334,9 @@ class Solver
   ( k: LoggedTG => Unit ) = {
     def end: LoggedTG => Unit = {
       ltg =>
-        ltg.run.value match {
+        ltg.value match {
         case \/-(g) =>
-          val log = ltg.run.written + s"solveViolationsToward $target end"
+          val log = ltg.log + s"solveViolationsToward $target end"
           if (g.wrongUsers(target.id).nonEmpty)
             solveUsesToward(g.set(log), target, k)
           else
@@ -347,7 +347,7 @@ class Solver
     if(lg.value.isWronglyContained(target.id))
       solveContains(lg, target, end)
     else
-      end(lg.toLoggedOr)
+      end(lg.toLoggedEither)
   }
 
 //  def doMerges
@@ -380,10 +380,10 @@ class Solver
 //    k : LoggedTry[DependencyGraph] => Unit) : Unit = {
 //    def aux: LoggedTry[DependencyGraph] => Unit =
 //      lgt =>
-//        lgt.run.value match {
+//        lgt.value match {
 //          case -\/(_) => k(lgt)
 //          case \/-(g) =>
-//            decisionMaker.violationTarget(g.set(lgt.run.written)) {
+//            decisionMaker.violationTarget(g.set(lgt.log)) {
 //              loggedSTarget =>
 //                loggedSTarget.value match {
 //                case None => doMerges(g, k)

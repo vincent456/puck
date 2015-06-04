@@ -4,6 +4,7 @@ import puck.graph._
 import puck.graph.constraints.{NodePredicate, AbstractionPolicy, DecisionMaker}
 import puck.graph.transformations.rules.CreateVarStrategy
 import puck.search.SearchEngine
+import puck.util.Logged
 
 import scalaz._ , Scalaz._
 

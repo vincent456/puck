@@ -1,6 +1,7 @@
 package puck.search
 
-import puck.graph.Logged
+
+import puck.util.Logged
 import puck.util.{HasChildren, BreadthFirstTreeIterator}
 
 import scala.collection.mutable

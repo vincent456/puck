@@ -2,6 +2,7 @@ package puck.graph.constraints.search
 
 import puck.graph._
 import puck.search.SearchState
+import puck.util.Logged
 
 import scala.util.Random
 

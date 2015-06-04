@@ -20,9 +20,13 @@ object ShowDG {
     else lt.head match {
       case Nil => tailRecTypeCord(dg, sep.tail, end.tail, builder append end.head, lt.tail)
       case NamedType(nid) :: tl =>
-        tailRecTypeCord(dg, sep, end, builder.append(sep.head + dg.getNode(nid).name(dg)), tl :: lt.tail )
+        val sep0 =
+          if(tl.nonEmpty) sep.head
+          else ""
+
+        tailRecTypeCord(dg, sep, end, builder.append(dg.getNode(nid).name(dg) + sep0), tl :: lt.tail )
       case Tuple(types) :: tl =>
-        tailRecTypeCord(dg, ", " +: sep, ")" +: end, builder append "(", types :: tl :: lt.tail )
+        tailRecTypeCord(dg, ", " :: sep, (")" + sep.head) :: end, builder append "(", types :: tl :: lt.tail )
       case Arrow(in, out) :: tl =>
         tailRecTypeCord(dg, " -> " :: sep, "" :: end, builder, List(in, out) :: tl :: lt.tail )
     }

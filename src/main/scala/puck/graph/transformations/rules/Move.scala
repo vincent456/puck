@@ -4,10 +4,9 @@ import puck.PuckError
 import puck.graph.ShowDG._
 import puck.graph._
 
-import puck.util.Collections._
 import puck.graph.transformations.rules.Redirection.redirectUses
 
-import scalaz._, Scalaz._
+import scalaz.-\/
 
 class Move(intro : Intro) {
 
@@ -24,7 +23,7 @@ class Move(intro : Intro) {
           s"from ${showDG[NodeId](g).shows(oldContainer)} " +
           s"to ${showDG[NodeId](g).shows(newContainer)}"
 
-        (g.changeSource(DGEdge.ContainsK(oldContainer, movedId), newContainer) logComment log).toLoggedOr
+        (g.changeSource(DGEdge.ContainsK(oldContainer, movedId), newContainer) logComment log).toLoggedEither
     }
 
   private def withContainer[T]
@@ -104,16 +103,9 @@ class Move(intro : Intro) {
       s"from ${showDG[NodeId](g).shows(oldContainer)} " +
       s"to ${showDG[NodeId](g).shows(newContainer)}"
 
-    (g logComment log).toLoggedOr
+    (g logComment log).toLoggedEither
   }
 
-
-  private def foldTypeUsesOf
-  ( typeMemberUse : DGUses,
-    g : DependencyGraph )
-  ( f : (DependencyGraph, DGEdge) => LoggedTG
-    ) : LoggedTG =
-    foldLoggedOr(g.typeUsesOf(typeMemberUse), g)(f)
 
   def typeMember
   ( g0 : DependencyGraph,

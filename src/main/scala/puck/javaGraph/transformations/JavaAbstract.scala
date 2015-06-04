@@ -6,8 +6,6 @@ import puck.graph.constraints.{SupertypeAbstraction, AbstractionPolicy}
 import puck.graph._
 import puck.graph.transformations.rules.Abstract
 
-import scalaz._
-
 object JavaAbstract extends Abstract {
 
   override def absIntroPredicate( graph : DependencyGraph,

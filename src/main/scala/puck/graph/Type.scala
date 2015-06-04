@@ -3,9 +3,9 @@ package puck.graph
 import puck.PuckError
 import puck.graph.ShowDG._
 import puck.graph.constraints.SupertypeAbstraction
-import puck.util.Collections._
+import puck.util.LoggedEither._
 
-import scalaz._, Scalaz._
+import scalaz.{Arrow => _, _}, Scalaz._
 
 
 object Type {
@@ -36,7 +36,7 @@ object Type {
     absMeths : List[ConcreteNode],
     candidates : List[ConcreteNode])
   ( onImplemNotFound : OnImplemNotFound ): LoggedTG =
-    foldLoggedOr[List, ConcreteNode, PuckError, (DependencyGraph, List[ConcreteNode])](absMeths, (g, candidates) ){
+    absMeths.foldLoggedEither((g, candidates) ){
       case ((g0, cs), supMeth) =>
         (supMeth.styp, g.kindType(supMeth)) match {
           case (Some(mt), TypeMember) =>

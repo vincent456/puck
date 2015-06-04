@@ -1,7 +1,7 @@
 package puck.graph
 
 import puck.graph.transformations.TransformationRules
-import puck.util.Collections._
+import puck.util.LoggedEither._
 import scalaz._, Scalaz._
 
 object Concretize {
@@ -11,7 +11,7 @@ object Concretize {
     else {
       val vn = g.virtualNodes.head
 
-      foldLoggedOr(g.content(vn.id), g){ (g0, cid) =>
+      g.content(vn.id).foldLoggedEither(g){ (g0, cid) =>
         val usedElts : Set[NodeId] = Metrics.outgoingDependencies(cid, g0).map(_.used)
         val c = g0.getConcreteNode(cid)
         val potentialContainers = g0.concreteNodes.filter(g0.canContain(_, c))

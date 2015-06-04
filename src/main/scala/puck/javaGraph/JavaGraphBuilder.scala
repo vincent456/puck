@@ -221,7 +221,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
             val candidates = graph.content(impl.id).map(graph.getConcreteNode)
             Type.findAndRegisterOverridedInList(graph, absMeths.toList, candidates.toList) {
               Type.errorOnImplemNotFound(graph.fullName(impl.id))
-            } .getOrElse(sys.error("Success expected")).value
+            } .value.getOrElse(sys.error("Success expected"))
               .addAbstraction(implId, (absId, pol))
         case _ => graph
       }

@@ -8,6 +8,7 @@ import puck.graph.constraints.{Solver, NodePredicate, AbstractionPolicy, Decisio
 import puck.graph._
 import puck.gui.svg.SVGController
 import puck.javaGraph.nodeKind.Field
+import puck.util.Logged
 
 import scala.swing.Swing.EmptyIcon
 import scala.swing.Dialog

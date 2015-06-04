@@ -4,10 +4,10 @@ package transformations
 
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations.rules._
-import puck.util.Collections._
-
+import puck.util.LoggedEither._
 import scalaz._, Scalaz._
 import ShowDG._
+
 class TransformationRules
 ( mergingCandidatesFinder : MergingCandidatesFinder,
   val rename : Renamer,
@@ -54,7 +54,7 @@ class TransformationRules
                     g.contains(sup, supMethId)
               }
             }
-          foldLoggedOr(overloadedMethod, g){
+          overloadedMethod.foldLoggedEither(g){
             (g0, m) =>
               abstracter.changeSelfTypeUseBySuperInTypeMember(g0, m, subNode, supNode)
           }

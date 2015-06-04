@@ -1,8 +1,9 @@
 package puck.graph.constraints.search
 
-import puck.graph.{Logged, ResultT, NodeKind}
+import puck.graph.{ResultT, NodeKind}
 import puck.graph.constraints.AbstractionPolicy
 import puck.search.SearchState
+import puck.util.Logged
 
 class ConstraintSolvingAbstractionChoice
 ( val k : Option[(NodeKind, AbstractionPolicy)] => Unit,

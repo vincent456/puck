@@ -1,7 +1,8 @@
 package puck.search
 
 import puck.PuckError
-import puck.graph.{Logged, LoggedTry}
+import puck.graph.LoggedTry
+import puck.util.Logged
 
 import scala.collection.mutable
 import scalaz._, Scalaz._
@@ -35,8 +36,8 @@ trait SearchEngine[T] extends Search[T]{
   private def idGen() : Int = {idSeed += 1; idSeed}
 
   def storeResult(prevState : Option[SearchState[T]], res : LoggedTry[T]): Unit = {
-    val log = res.run.written
-    res.run.value match {
+    val log = res.log
+    res.value match {
       case -\/(err) =>
         failures += err.set(log)
       case \/-(g) =>

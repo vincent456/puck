@@ -2,8 +2,7 @@ package puck.graph
 package transformations.rules
 
 import constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
-import puck.PuckError
-import puck.util.Collections._
+import puck.util.LoggedEither._
 
 import scalaz._, Scalaz._
 
@@ -37,7 +36,7 @@ abstract class Abstract {
     subTypeId : NodeId,
     newSuperTypeId : NodeId
     ) : LoggedTG =
-    foldLoggedOr(g.directSuperTypes(subTypeId), g){
+    g.directSuperTypes(subTypeId).foldLoggedEither(g){
       (g0, oldSuperTypedId) =>
 
         val g1 = g0.changeSource(Isa(subTypeId, oldSuperTypedId), newSuperTypeId)
@@ -63,7 +62,7 @@ abstract class Abstract {
 
     if(g1.uses(meth.id, clazz.id))
       g1.set(s"interface creation : redirecting ${DGEdge.UsesK(meth.id, clazz.id)} target to $interface")
-        .toLoggedOr.flatMap {
+        .toLoggedEither.flatMap {
         Redirection.redirectUsesAndPropagate(_, DGEdge.UsesK(meth.id, clazz.id), interface.id, SupertypeAbstraction)
       }
     else LoggedSuccess(g1)
@@ -148,14 +147,14 @@ abstract class Abstract {
       itcGraph <- createAbsNodeAndUse(g, clazz, abskind, policy)
       (interface, g1) = itcGraph
 
-      g2 <- foldLoggedOr(members, g1){ (g0, member) =>
+      g2 <- members.foldLoggedEither(g1){ (g0, member) =>
         createAbstractTypeMember(g0, member, clazz, interface, policy)
       }
 
       g3 <- insertInTypeHierarchy(g2, clazz.id, interface.id)
 
       g4 <- if(policy == SupertypeAbstraction)
-        foldLoggedOr(members, g3.addIsa(clazz.id, interface.id)){
+        members.foldLoggedEither(g3.addIsa(clazz.id, interface.id)){
           (g0, child) =>
           g0.kindType(child) match {
             case TypeMember =>
@@ -176,7 +175,7 @@ abstract class Abstract {
     val log = s"interface $itc created, contains : {" +
       g.content(itc.id).map(showDG[NodeId](g).show).mkString("\n")+
       "}"
-    g.set(log).toLoggedOr
+    g.set(log).toLoggedEither
   }
 
   private def createAbsNodeAndUse(g : DependencyGraph,

@@ -11,6 +11,7 @@ import puck.graph.constraints.search.ConstraintSolvingSearchEngineBuilder.TryAll
 import puck.gui.search.{SimpleStateSelector, StateSelected}
 import puck.gui.svg.{SVGPanel, SVGController}
 import puck.search.Search
+import puck.util.Logged
 
 import scala.swing.BorderPanel.Position
 import scala.swing._
@@ -132,12 +133,19 @@ class AutoSolveAction
     val engine = builder.apply(dg2ast.initialRecord, graph.mileStone, automaticConstraintLoosening = false)
     engine.explore()
 
-    printErrOrPushGraph(controller, "Auto solve action : ") {
-      dialog(engine) match {
-        case None => LoggedError(new PuckError("no solution"))
-        case Some((Result.Ok, g)) => g.toLoggedTry
-        case _ => LoggedError(new PuckError("cancelled"))
+    try {
+      printErrOrPushGraph(controller, "Auto solve action : ") {
+        dialog(engine) match {
+          case None => LoggedError(new PuckError("no solution"))
+          case Some((Result.Ok, g)) => g.toLoggedTry
+          case _ => LoggedError(new PuckError("cancelled"))
+        }
       }
+    }
+    catch{
+     case t : Throwable =>
+       println("catched "+ t.getMessage)
+       t.printStackTrace()
     }
 
   }

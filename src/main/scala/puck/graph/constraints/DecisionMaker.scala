@@ -2,6 +2,7 @@ package puck.graph.constraints
 
 import puck.graph._
 import puck.graph.transformations.rules.CreateVarStrategy
+import puck.util.Logged
 
 
 trait NodePredicate {

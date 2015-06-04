@@ -7,7 +7,7 @@ import puck.PuckError
 import puck.graph._
 import puck.gui.svg.SVGController
 import puck.javaGraph.nodeKind.Field
-import puck.util.Collections
+import puck.util.LoggedEither._
 
 
 import scala.swing.Dialog
@@ -49,7 +49,7 @@ extends AbstractAction(MoveAction.label(controller.graph, moved)){
     printErrOrPushGraph(controller, "Abstraction creation failure") {
       g.kindType(moved.head) match {
         case TypeDecl =>
-          Collections.foldLoggedOr(moved, g) {
+          moved.foldLoggedEither(g) {
             (g, id) => TR.move.typeDecl(g, id, newHost.id)
           }
 

@@ -77,7 +77,7 @@ class RecordingComparator
     def aux(nodes0 : Seq[NodeId], nodes1: Seq[NodeId])(kargs : Kargs) : Unit = {
       kargs match {
         case (node, map0, nodesToMap0) =>
-          (nodes0, map0.run.value) match {
+          (nodes0, map0.value) match {
             case (Seq(), _) =>
               val l = (node +: nodes1).reverse.tail // we do not forget the last node and we drop the first dummy value
               k(l, map0, nodesToMap0)
@@ -127,7 +127,7 @@ class RecordingComparator
     else {
       def removeFirstAndCompareNext(tgt : Operation,
                                     tryMap : LoggedTry[ResMap], nodesToMap : NodesToMap) =
-        tryMap.run.value match {
+        tryMap.value match {
           case -\/(_) => k(tryMap)
           case \/-(m) =>
             removeFirst(ts2, ts1.head.direction, tgt) match {

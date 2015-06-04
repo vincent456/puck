@@ -4,7 +4,7 @@ import puck.PuckError
 import puck.graph.ShowDG._
 import puck.graph._
 import puck.graph.constraints.{NotAnAbstraction, AbstractionPolicy, RedirectionPolicy}
-import puck.util.Collections.foldLoggedOr
+import puck.util.LoggedEither, LoggedEither._
 import scalaz._, Scalaz._
 
 object Redirection {
@@ -20,6 +20,7 @@ object Redirection {
       oldEdge.used, newUsed)
   }
 
+
   def redirectUsesAndPropagate(g  : DependencyGraph,
                                oldUse : DGUses, newUsed : NodeId,
                                policy : RedirectionPolicy,
@@ -30,22 +31,22 @@ object Redirection {
     val log1 = s"\n$oldUse.exists = ${oldUse.existsIn(g)}"
     val lg1 = (g logComment log0) :++> log1
 
-    if(oldUse.used == newUsed) lg1.toLoggedOr
+    if(oldUse.used == newUsed) lg1.toLoggedEither
     else if(oldUse.existsIn(g)){
       val lg2 = lg1 :++> s"\nredirecting ${showDG[DGEdge](g).show(oldUse)} target " +
         s"to ${showDG[NodeId](g).show(newUsed)} ($policy)"
 
       if (!propagateRedirection)
-        lg2.map(redirectUses(_, oldUse, newUsed, keepOldUse)).toLoggedOr
+        lg2.map(redirectUses(_, oldUse, newUsed, keepOldUse)).toLoggedEither
       else {
 
         val oldUsedKind = g.kindType(oldUse.used)
-        val ltg : LoggedTG = (lg2 :++> s"\nuse target is a $oldUsedKind").toLoggedOr
+        val ltg : LoggedTG = (lg2 :++> s"\nuse target is a $oldUsedKind").toLoggedEither
 
         val propagateTypeMember : DependencyGraph => LoggedTG =
           redirectTypeUsesOfTypeMemberUse(_, oldUse, newUsed, policy)
 
-        val propagateType : DependencyGraph => LoggedOr[PuckError, (KeepOldTypeUse, DependencyGraph)] =
+        val propagateType : DependencyGraph => LoggedEither[PuckError, (KeepOldTypeUse, DependencyGraph)] =
           redirectTypeMemberAndConstructorUsesOfTypeUse(_, oldUse, newUsed, policy)
 
 
@@ -85,13 +86,13 @@ object Redirection {
       // when iterating on the wrongusers, the next call to redirectuses will arrive here
       lg1 :++> s"\nredirecting uses $oldUse target to $newUsed ($policy) : " +
         s"FAILURE !! ${oldUse.used}} is not used"
-      lg1.toLoggedOr
+      lg1.toLoggedEither
     }
     else if(g.usersOf(oldUse.used).contains(oldUse.user) ||
       g.usersOf(newUsed).contains(oldUse.user))
-      lg1.toLoggedOr[PuckError].error(new DGError("incoherent state !!!!!!!!!!!!"))
+      lg1.toLoggedEither[PuckError].error(new DGError("incoherent state !!!!!!!!!!!!"))
     else
-      lg1.toLoggedOr[PuckError].error(new DGError(s"redirecting uses ${showDG[DGEdge](g).show(oldUse)} target to ${showDG[NodeId](g).show(newUsed)} ($policy)\n" +
+      lg1.toLoggedEither[PuckError].error(new DGError(s"redirecting uses ${showDG[DGEdge](g).show(oldUse)} target to ${showDG[NodeId](g).show(newUsed)} ($policy)\n" +
         s"!!! nor the oldUsee or the newUsee is really used !!! "))
 
   }
@@ -108,12 +109,12 @@ object Redirection {
 
     val typeUses = g.typeUsesOf(currentTypeMemberUse)
     if(typeUses.isEmpty)
-      (lg :++> "\nno primary uses to redirect").toLoggedOr
+      (lg :++> "\nno primary uses to redirect").toLoggedEither
     else{
       val lg1 =
         lg :++> "uses to redirect:%s".format(typeUses.mkString("\n\t", "\n\t","\n"))
 
-      foldLoggedOr[Set, DGUses, PuckError, DependencyGraph](typeUses, lg){
+      typeUses.foldLoggedEither[PuckError, DependencyGraph](lg){
         (g0, typeUse) =>
           val keepOldUse = g.typeMemberUsesOf(typeUse).tail.nonEmpty //is empty if typeUses had only one side use
 
@@ -205,7 +206,7 @@ object Redirection {
 
     val lg : LoggedG = (g logComment log) :++> ("\n" + log1)
 
-    foldLoggedOr[List, DGUses, PuckError, DependencyGraph](tmu, lg) {
+    tmu.foldLoggedEither[PuckError, DependencyGraph](lg) {
       case (g0 : DependencyGraph, typeMemberUse) =>
         val typeMember = typeMemberUse.used
         val someTypeMemberAbs =
@@ -217,7 +218,7 @@ object Redirection {
               s"target to ${showDG[NodeId](g).shows(newTypeUsed)}\n" +
               s"no satisfying abstraction to redirect typeMember use ${showDG[DGEdge](g).shows(typeMemberUse)}"
 
-            g0.set(msg).toLoggedOr[PuckError].error(new RedirectionError(msg))
+            g0.set(msg).toLoggedEither[PuckError].error(new RedirectionError(msg))
 
           case Some((typeMemberAbs, _)) =>
             redirectUsesAndPropagate(
@@ -240,7 +241,7 @@ object Redirection {
     currentTypeUse: DGUses,
     newTypeUsed : NodeId,
     policy : RedirectionPolicy
-    ): LoggedOr[PuckError, (KeepOldTypeUse, DependencyGraph)] = {
+    ): LoggedEither[PuckError, (KeepOldTypeUse, DependencyGraph)] = {
 
     val log = s"redirecting typeMember AND CONSTRUCTOR uses of type use ${showDG[DGEdge](g).shows(currentTypeUse)} " +
       s"(new type used is  ${showDG[NodeId](g).shows(newTypeUsed)}) "
@@ -251,7 +252,7 @@ object Redirection {
 
     import puck.util.Collections.SelectList
 
-    val redirect : DependencyGraph => LoggedOr[PuckError, (KeepOldTypeUse, DependencyGraph)] =
+    val redirect : DependencyGraph => LoggedEither[PuckError, (KeepOldTypeUse, DependencyGraph)] =
     typeMemberAndTypeCtorUses.select { e => g.kindType(g.getNode(e.target)) == TypeConstructor} match {
       case Some((typeCtorUse, typeMemberUses))
         if ! g.abstractions(typeCtorUse.used).exists {case (abs, _) => g.contains(newTypeUsed, abs)} =>
@@ -260,6 +261,6 @@ object Redirection {
         redirectTypeMemberUsesOfTypeUse(_, currentTypeUse, newTypeUsed, policy, typeMemberAndTypeCtorUses).map((false, _))
     }
 
-    lg.toLoggedOr[PuckError] flatMap redirect
+    lg.toLoggedEither[PuckError] flatMap redirect
   }
 }

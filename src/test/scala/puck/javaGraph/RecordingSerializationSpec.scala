@@ -82,9 +82,9 @@ class RecordingSerializationSpec extends AcceptanceSpec {
       val gFinalCopy = r2.redo(g0)
 
       gFinal.nodes.toSet should be (gFinalCopy.nodes.toSet)
-      gFinal.containsSeq.toSet should be (gFinalCopy.containsList.toSet)
-      gFinal.usesSeq.toSet should be (gFinalCopy.usesList.toSet)
-      gFinal.isaSeq.toSet should be (gFinalCopy.isaList.toSet)
+      gFinal.containsList.toSet should be (gFinalCopy.containsList.toSet)
+      gFinal.usesList.toSet should be (gFinalCopy.usesList.toSet)
+      gFinal.isaList.toSet should be (gFinalCopy.isaList.toSet)
     }
 
     scenario("repeat on a rebuilded version of the graph"){
@@ -98,9 +98,9 @@ class RecordingSerializationSpec extends AcceptanceSpec {
       val gFinalCopy = r2.redo(g0)
 
       bridge2.gFinal.nodes.toSet should be (gFinalCopy.nodes.toSet)
-      bridge2.gFinal.containsSeq.toSet should be (gFinalCopy.containsList.toSet)
-      bridge2.gFinal.usesSeq.toSet should be (gFinalCopy.usesList.toSet)
-      bridge2.gFinal.isaSeq.toSet should be (gFinalCopy.isaList.toSet)
+      bridge2.gFinal.containsList.toSet should be (gFinalCopy.containsList.toSet)
+      bridge2.gFinal.usesList.toSet should be (gFinalCopy.usesList.toSet)
+      bridge2.gFinal.isaList.toSet should be (gFinalCopy.isaList.toSet)
     }
   }
 }
