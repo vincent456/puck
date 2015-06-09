@@ -30,12 +30,17 @@ class GraphBuilder {
     g = g.setType(id, typ)
   }
 
-  def addContains(containerId: NodeIdT, contentId :NodeIdT): Unit ={
+  def addContains(containerId : NodeIdT, contentId : NodeIdT): Unit ={
     g = g.addContains(containerId, contentId)
   }
-  def addUses(userId: NodeIdT, useeId: NodeIdT): Unit ={
-    g = g.addUses(userId, useeId)
-  }
+
+  //java accessor
+  val noAccessKind : Option[UsesAccessKind] = None
+  val readAccess : Option[UsesAccessKind] = Some(Read)
+  val writeAccess : Option[UsesAccessKind] = Some(Write)
+  //val rwAccess : Option[UsesAccessKind] = Some(RW)
+  // not needed, computed by adding uses
+
 
   def addEdge(e : DGEdge): Unit ={
     g = g.addEdge(e)

@@ -1,4 +1,3 @@
-
 aspect TypeUser {
 
 	public int Expr.buildTypeUserDGNode(JavaGraphBuilder builder){
@@ -29,7 +28,7 @@ aspect TypeUser {
         if(access.getQualifier() == null
             || access.getQualifier().isThisAccess()){
             int selfTypeNode = access.decl().hostType().buildDGNode(builder);
-            builder.addUses(selfTypeNode, selfTypeNode);
+            builder.addEdge(new Uses(selfTypeNode, selfTypeNode, builder.noAccessKind()));
             return selfTypeNode;
         }
         else if(access.getQualifier().isSuperAccess())
@@ -84,7 +83,7 @@ aspect TypeUser {
         int thisNode = decl.getOriginal().buildDGNode(builder);
 
         int typeUsed = decl.getTypeAccess().buildDGNode(builder);
-        ParameterizedUses typeUse = new ParameterizedUses(thisNode, typeUsed);
+        ParameterizedUses typeUse = new ParameterizedUses(thisNode, typeUsed, builder.noAccessKind());
         builder.addEdge(typeUse);
         builder.addTypeRelationship(typeUse, typeMemberUse);
 

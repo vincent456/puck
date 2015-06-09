@@ -117,9 +117,6 @@ class DependencyGraph
       sups.toList.map(sup => DGEdge.IsaK(sub, sup)) ::: acc
   }
 
-
-
-
   def getNode(id : NodeId): DGNode = nodesIndex.getNode(id)
 
   def getConcreteNode(id : NodeId): ConcreteNode =
@@ -156,8 +153,7 @@ class DependencyGraph
     newGraph(nodes = nodesIndex.setMutability(id, mutable))
 
 
-  def exists(e : DGEdge) : Boolean =
-    edges.exists(e)
+  def exists(e : DGEdge) : Boolean = edges.exists(e)
 
   def addEdge(e : DGEdge, register : Boolean = true): DependencyGraph =
     newGraph( edges = edges.add(e),
@@ -316,18 +312,21 @@ class DependencyGraph
   //  }
 
   def isaList  : List[(NodeId, NodeId)] = edges.superTypes.flatList
-  
+
+  def usesAccessKind(userId: NodeId, usedId: NodeId) : Option[UsesAccessKind] =
+    edges.accessKindMap.get((userId, usedId))
+
   def uses(userId: NodeId, usedId: NodeId) : Boolean =
     edges.uses(userId, usedId)
 
   def usesList : List[(NodeId, NodeId)] =
-    edges.used.flatList
+    edges.usedMap.flatList
   
   def usedBy(userId : NodeId) : Set[NodeId] =
-    edges.used getFlat userId
+    edges.usedMap getFlat userId
   
   def usersOf(usedId: NodeId) : Set[NodeId] =
-    edges.users getFlat usedId
+    edges.userMap getFlat usedId
 
   // ugly name
   def usesOfUsersOf(usedIds: List[NodeId]) : List[Uses] =

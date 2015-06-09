@@ -4,6 +4,7 @@ package javaGraph
 //import nodeKind._
 import puck.graph.{ParameterizedUses, Uses, DependencyGraph, DGEdge}
 import puck.graph.constraints.SupertypeAbstraction
+import puck.graph.{Read, Write, RW}
 
 class GraphBuildingSpec extends AcceptanceSpec {
 
@@ -255,4 +256,25 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
   }
 
+  feature("Read/Write uses"){
+    val examplesPath = graphBuildingExamplesPath +  "readWrite/"
+
+    scenario("generic type declaration"){
+      val _ = new ExampleSample(s"$examplesPath/A.java") {
+        val field = fullName2id(s"p.A.f")
+        val getter = fullName2id(s"p.A.getF__void")
+        val setter = fullName2id(s"p.A.setF__int")
+        val inc = fullName2id(s"p.A.incF__void")
+
+        assert( graph.uses(getter, field) )
+
+        assert( graph.uses(setter, field) )
+
+        graph.usesAccessKind(getter, field) shouldBe Some(Read)
+        graph.usesAccessKind(setter, field) shouldBe Some(Write)
+        graph.usesAccessKind(inc, field) shouldBe Some(RW)
+
+      }
+    }
+  }
 }

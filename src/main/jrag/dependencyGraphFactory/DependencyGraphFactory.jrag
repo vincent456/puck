@@ -1,6 +1,8 @@
 import puck.javaGraph.JavaGraphBuilder;
 import puck.graph.Uses;
 import puck.graph.ParameterizedUses;
+import puck.graph.DGUses;
+import puck.graph.UsesAccessKind;
 
 aspect DependencyGraphFactory {
 
@@ -163,20 +165,23 @@ aspect DependencyGraphFactory {
 		
 	}
 
-	static void Access.buildDG(TypeMemberAccess access, int containerId, JavaGraphBuilder builder){
+	static void Access.buildDG(TypeMemberAccess access, int containerId,
+        scala.Option<UsesAccessKind> accK, JavaGraphBuilder builder){
 		int nodeId = access.buildDGNode(builder);
 
-		Uses typeMemberUses = new Uses(containerId, nodeId);
-		builder.addUses(containerId, nodeId);
+		Uses typeMemberUses = new Uses(containerId, nodeId, accK);
+		builder.addEdge(typeMemberUses);
 
 		int typeUserId = access.buildTypeUserDGNode(builder, typeMemberUses);
 		int typeUsedId = access.decl().hostType().buildDGNode(builder);
 
-		builder.addTypeRelationship(new Uses(typeUserId, typeUsedId), typeMemberUses);
+        //the first use is a typeUses : it must have no accesskind
+		builder.addTypeRelationship(new Uses(typeUserId, typeUsedId, builder.noAccessKind()),
+						typeMemberUses);
 	}
 	public void MethodAccess.buildDG(JavaGraphBuilder builder, int containerId){
 
-		buildDG(this, containerId, builder);
+		buildDG(this, containerId, builder.noAccessKind(), builder);
 
 		for(Expr e : getArgList()){
 			e.buildDG(builder, containerId);
@@ -189,7 +194,14 @@ aspect DependencyGraphFactory {
 			builder.addUses(containerId, buildDGNode(builder));
 		}
 		else */if(decl().isField()){
-			buildDG(this, containerId, builder);
+
+            scala.Option<UsesAccessKind> accK;
+            if(isWriteAccess())
+                accK = builder.writeAccess();
+            else
+                accK = builder.readAccess();
+
+			buildDG(this, containerId, accK, builder);
 		}
 	}
 	
@@ -198,16 +210,18 @@ aspect DependencyGraphFactory {
 		if(!decl().type().fullName().equals( "@primitive.Unknown")){
 		//happens when call to constructor of java.lang.Object TODO check if no other cases
 
-		  buildDGInChildren(builder, containerId);
+		  	buildDGInChildren(builder, containerId);
 
-	      int classNodeId = decl().buildDGNode(builder);
-	      int ctorNodeId = buildDGNode(builder);
+	      	int classNodeId = decl().buildDGNode(builder);
+	      	int ctorNodeId = buildDGNode(builder);
 
-	      builder.addUses(containerId, classNodeId);
-	      builder.addUses(ctorNodeId, classNodeId);
+		  	DGUses typeUse = new Uses(containerId, classNodeId, builder.noAccessKind());
+		  	DGUses superConstructorUses = new Uses(containerId, ctorNodeId, builder.noAccessKind());
 
-	      builder.addTypeRelationship(new Uses(containerId, classNodeId),
-							new Uses(containerId, ctorNodeId));
+	      	builder.addEdge(typeUse);
+			builder.addEdge(superConstructorUses);
+
+	      	builder.addTypeRelationship(typeUse, superConstructorUses);
 
 	    }
   	}
@@ -220,11 +234,13 @@ aspect DependencyGraphFactory {
 		int classNodeId = getAccess().buildDGNode(builder);
         int ctorNodeId = buildDGNode(builder);
 
-		builder.addUses(containerId, classNodeId);
-        builder.addUses(containerId, ctorNodeId);
+		DGUses typeUse = new Uses(containerId, classNodeId, builder.noAccessKind());
+		DGUses constructorUses = new Uses(containerId, ctorNodeId, builder.noAccessKind());
 
-		builder.addTypeRelationship(new Uses(containerId, classNodeId),
-		new Uses(containerId, ctorNodeId));
+		builder.addEdge(typeUse);
+		builder.addEdge(constructorUses);
+
+		builder.addTypeRelationship(typeUse, constructorUses);
 
 	}
 
@@ -264,18 +280,18 @@ aspect DependencyGraphFactory {
 
 	public void ArrayAccess.buildDG(JavaGraphBuilder builder, int containerId){
 		int nodeId = buildDGNode(builder);
-		builder.addUses(containerId, nodeId);
+		builder.addEdge(new Uses(containerId, nodeId, builder.noAccessKind()));
 		buildDGInChildren(builder, containerId);
 	}
 	
 	public void TypeAccess.buildDG(JavaGraphBuilder builder, int containerId){
 		int nodeId = buildDGNode(builder);
-		builder.addUses(containerId, nodeId);
+		builder.addEdge(new Uses(containerId, nodeId, builder.noAccessKind()));
 	}
 
 	public void ParTypeAccess.buildDG(JavaGraphBuilder builder, int containerId){
 		int nodeId = buildDGNode(builder);
-		builder.addUses(containerId, nodeId);
+		builder.addEdge(new Uses(containerId, nodeId, builder.noAccessKind()));
 		buildDGInChildren(builder, containerId);
 	}
 
@@ -298,7 +314,7 @@ aspect DependencyGraphFactory {
 
 	void TypeAccess.addImplementsUses(JavaGraphBuilder builder, int sub){
 		int sn = buildDGNode(builder);
-		builder.addUses(sub, sn);
+		builder.addEdge(new Uses(sub, sn, builder.noAccessKind()));
 	}
 
 	void ParTypeAccess.addImplementsUses(JavaGraphBuilder builder, int sub){

@@ -99,28 +99,51 @@ sealed abstract class DGEdge {
 
 }
 
-sealed abstract class UsesAccessKind
-case object Read extends UsesAccessKind
-case object Write extends UsesAccessKind
-case object RW extends UsesAccessKind
+sealed abstract class UsesAccessKind {
+  def && (accK : UsesAccessKind) : UsesAccessKind
+}
+case object Read extends UsesAccessKind {
+  def && (accK : UsesAccessKind) : UsesAccessKind = accK match {
+    case Read => Read
+    case _ => RW
+  }
+}
+case object Write extends UsesAccessKind {
+  def && (accK : UsesAccessKind) : UsesAccessKind = accK match {
+    case Write => Write
+    case _ => RW
+  }
+}
+case object RW extends UsesAccessKind{
+  def && (accK : UsesAccessKind) : UsesAccessKind = this
+}
 
 sealed abstract class DGUses extends DGEdge{
   override val kind : UsesKind
   def isDominant(graph : DependencyGraph) : Boolean = graph.typeMemberUsesOf(this).nonEmpty
   def isDominated(graph : DependencyGraph) : Boolean = graph.typeUsesOf(this).nonEmpty
 
+  //val accessKind : Option[UsesAccessKind]
 }
+
+//object Uses{
+//  def apply(source : NodeId,
+//            target: NodeId) = new Uses(source, target, None)
+//}
 
 case class Uses
 ( source : NodeId,
-  target: NodeId)
-  extends DGUses {
+  target: NodeId,
+  accessKind : Option[UsesAccessKind] = None
+  ) extends DGUses {
   val kind: UsesKind = UsesK
 }
 
 case class ParameterizedUses
 ( source : NodeId,
-  target: NodeId)
+  target: NodeId,
+  accessKind : Option[UsesAccessKind] = None
+  )
   extends DGUses {
   val kind: UsesKind = ParameterizedUsesK
 }

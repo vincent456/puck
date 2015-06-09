@@ -1,0 +1,22 @@
+
+aspect WriteAccess {
+
+    public boolean ASTNode.isWriteAccess(){
+        return false;
+    }
+    public boolean VarAccess.isWriteAccess(){
+        return isWriteAccess_aux(this);
+    }
+
+    public boolean ASTNode.isWriteAccess_aux(ASTNode caller){
+        return getParent().isWriteAccess_aux(this);
+    }
+    public boolean CompilationUnit.isWriteAccess_aux(ASTNode caller){
+        return false;
+    }
+
+    public boolean AssignExpr.isWriteAccess_aux(ASTNode caller){
+        return caller == getDest();
+    }
+
+}

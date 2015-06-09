@@ -142,7 +142,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
         this is obviously wrong: TODO FIX
       */
       addContains(packageNode, strNode)
-      addUses(bdNode, strNode)
+      addEdge(Uses(bdNode, strNode, Some(Read)))
     }
   }
 
