@@ -89,23 +89,15 @@ case class NodeIndex
     getConcreteNodeWithStatus(id)._1
 
 
-  def removeConcreteNode(id : NodeId) : (ConcreteNode, NodeIndex) = {
-    val n = cNodes(id)
-    if(n.id != id)
-      throw new DGError("incoherent index left and right id are different")
-    (n, copy(cNodes = cNodes - id,
-      removedCnodes = removedCnodes + (id -> n)))
-  }
+  def removeConcreteNode(n : ConcreteNode) : NodeIndex =
+    copy(cNodes = cNodes - n.id,
+      removedCnodes = removedCnodes + (n.id -> n))
 
-  def removeVirtualNode(id : NodeId) : (VirtualNode, NodeIndex) = {
-    val n = vNodes(id)
-    if(n.id != id)
-      throw new DGError("incoherent index left and right id are different")
-    (n, copy(vNodes = vNodes - n.id,
+
+  def removeVirtualNode(n : VirtualNode) : NodeIndex =
+     copy(vNodes = vNodes - n.id,
       removedVnodes = removedVnodes + (n.id -> n),
-      cNodes2vNodes = cNodes2vNodes + (n.potentialMatches -> n.id)))
-  }
-
+      cNodes2vNodes = cNodes2vNodes + (n.potentialMatches -> n.id))
 
   private def setNode(n : DGNode, s : NodeStatus) : NodeIndex = (n, s) match {
     case (cn: ConcreteNode, Created) =>

@@ -1,6 +1,6 @@
 package puck.gui.svg
 
-import puck.graph.{NodeId, Uses, ConcreteNode, DGEdge}
+import puck.graph._
 import puck.graph.constraints.{SupertypeAbstraction, DelegationAbstraction}
 import puck.gui.svg.actions.AddIsaAction
 import puck.gui.svg.actions.MergeAction
@@ -11,27 +11,34 @@ import puck.gui.svg.actions._
 import javax.swing._
 import java.awt.event.ActionEvent
 
-class NodeRightClickMenu
+object NodeRightClickMenu{
+
+  def apply(controller : SVGController, nodeId : NodeId) : JPopupMenu =
+    controller.graph.getNode(nodeId) match {
+      case n : ConcreteNode => new ConcreteNodeRightClickMenu(controller, n)
+      case n : VirtualNode => new VirtualNodeRightClickMenu(controller, n)
+    }
+
+  implicit class JPopupSyntax(val menu : JPopupMenu) extends AnyVal {
+    def addMenuItem(name : String)(action : ActionEvent => Unit) : JMenuItem = {
+      menu.add(new AbstractAction(name) {
+        def actionPerformed(actionEvent: ActionEvent) : Unit =
+          action(actionEvent)
+      })
+    }
+  }
+}
+
+import NodeRightClickMenu.JPopupSyntax
+
+class ConcreteNodeRightClickMenu
 ( private val controller: SVGController,
   node : ConcreteNode) extends JPopupMenu {
 
   init()
 
 
-  def this(controller: SVGController,
-           nodeId: Int) =
-    this(controller, controller.graph.getConcreteNode(nodeId))
-
   import controller.graph
-
-
-  def addMenuItem(name : String)(action : ActionEvent => Unit) = {
-    this.add(new AbstractAction(name) {
-      def actionPerformed(actionEvent: ActionEvent) : Unit =
-        action(actionEvent)
-    })
-  }
-
 
   def init() : Unit = {
 
@@ -131,24 +138,42 @@ class NodeRightClickMenu
 
 
   private def addShowOptions() : Unit = {
-    addMenuItem("Hide") { _ =>
-      NodeRightClickMenu.this.controller.hide(node.id)
+    this.addMenuItem("Hide") { _ =>
+      controller.hide(node.id)
     }
 
-    addMenuItem("Show code") { _ =>
-      NodeRightClickMenu.this.controller.showCode(node.id)
+    this.addMenuItem("Show code") { _ =>
+      controller.showCode(node.id)
     }
     if (graph.content(node.id).nonEmpty) {
-      addMenuItem("Collapse") { _ =>
-        NodeRightClickMenu.this.controller.collapse(node.id)
+      this.addMenuItem("Collapse") { _ =>
+        controller.collapse(node.id)
       }
-      addMenuItem("Expand") { _ =>
-        NodeRightClickMenu.this.controller.expand(node.id)
+      this.addMenuItem("Expand") { _ =>
+        controller.expand(node.id)
       }
-      addMenuItem("Expand all") { _ =>
-        NodeRightClickMenu.this.controller.expandAll(node.id)
+      this.addMenuItem("Expand all") { _ =>
+        controller.expandAll(node.id)
       };()
     }
   }
+}
+
+class VirtualNodeRightClickMenu
+ ( controller: SVGController,
+   node : VirtualNode
+   ) extends JPopupMenu {
+
+  node.potentialMatches foreach {
+      id =>
+        val consumer = controller.graph.getConcreteNode(id)
+        import controller.{graph, graphUtils}, graphUtils.{transformationRules => TR}
+        this.addMenuItem(s"Concretize as $consumer") { _ =>
+          printErrOrPushGraph(controller,"Concretize action failure") {
+            TR.mergeInto(graph.mileStone, node.id, consumer.id)
+          }
+        }
+  }
+
 }
 

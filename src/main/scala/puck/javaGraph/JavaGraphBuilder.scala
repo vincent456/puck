@@ -11,7 +11,7 @@ import scalaz._, Scalaz._
 
 class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 
-   val root = ConcreteNode(rootId, rootName, JavaRoot, None, true)
+   val root = ConcreteNode(rootId, rootName, Package, None, true)
 
    g = new DependencyGraph(JavaNodeKind,
      NodeIndex(root), EdgeMap(),

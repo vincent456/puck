@@ -84,14 +84,14 @@ class ConstraintSolvingSearchEngineDecisionMaker
 
     import impl.kind.{abstractionPolicies, abstractKinds}
 
-//    k(lg.map(_ =>
-//      if(abstractionPolicies.isEmpty)
-//        None
-//      else
-//        Some((abstractKinds(abstractionPolicies.head).head,
-//          abstractionPolicies.head))))
+    k(lg.map(_ =>
+      if(abstractionPolicies.isEmpty)
+        None
+      else
+        Some((abstractKinds(abstractionPolicies.head).head,
+          abstractionPolicies.head))))
 
-    val (needSearch, karg) =
+    /*val (needSearch, karg) =
       if(abstractionPolicies.isEmpty) {
         (false, None)
     }
@@ -114,7 +114,7 @@ class ConstraintSolvingSearchEngineDecisionMaker
           Set[Option[(NodeKind, AbstractionPolicy)]]() ++ choices,
           Set[Option[(NodeKind, AbstractionPolicy)]]()))
     }
-    else k(karg.set(lg.written))
+    else k(karg.set(lg.written))*/
 
   }
 
@@ -150,8 +150,10 @@ class ConstraintSolvingSearchEngineDecisionMaker
     val choices = graph.concreteNodes.filter(predicate(graph,_)).toList
 
     choices match {
-      case Nil => k(lg.map( _ => None))
-      case List(n) => k(lg.map(g => Some((g, n.id))))
+      //case Nil => k(lg.map( _ => None))
+//      case List(n) =>
+//
+//        k(lg.map(g => Some((g, n.id))))
       case s =>
         val l = partitionByKind(graph)(s, List())
 

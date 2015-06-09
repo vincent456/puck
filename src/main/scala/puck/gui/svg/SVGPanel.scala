@@ -3,7 +3,7 @@ package puck.gui.svg
 import java.awt.BorderLayout
 import java.awt.event.{InputEvent, KeyEvent}
 import java.util.regex.{Matcher, Pattern}
-import javax.swing.{KeyStroke, JPanel}
+import javax.swing.{JPopupMenu, KeyStroke, JPanel}
 
 import org.apache.batik.dom.GenericText
 import org.apache.batik.dom.events.NodeEventTarget
@@ -225,7 +225,7 @@ class SVGPanelListener
         case txtElt: SVGTextElement =>
           checkIfNodeAndGetId(txtElt) foreach {
             nodeId =>
-              val menu: NodeRightClickMenu = new NodeRightClickMenu(controller, nodeId)
+              val menu: JPopupMenu = NodeRightClickMenu(controller, nodeId)
               menu.show(panel, evt.getClientX, evt.getClientY)
           }
         case _: SVGPathElement

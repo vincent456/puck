@@ -2,11 +2,13 @@ package puck.javaGraph
 package transformations
 
 import nodeKind._
-import puck.graph.constraints.{SupertypeAbstraction, AbstractionPolicy}
+import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
 import puck.graph._
 import puck.graph.transformations.rules.Abstract
 
 object JavaAbstract extends Abstract {
+
+
 
   override def absIntroPredicate( graph : DependencyGraph,
                                   impl : DGNode,
@@ -38,12 +40,30 @@ object JavaAbstract extends Abstract {
     abskind : NodeKind ,
     policy : AbstractionPolicy
     ) : LoggedTry[(ConcreteNode, DependencyGraph)] = {
+
+
     (abskind, policy) match {
-      case (Interface, SupertypeAbstraction) =>
+      case (Interface, SupertypeAbstraction)
+      | (Class, SupertypeAbstraction) =>
         val methods = typeMembersToPutInInterface(g, impl, SupertypeAbstraction)
         abstractTypeDeclAndReplaceByAbstractionWherePossible(g,
           impl,
-          Interface, SupertypeAbstraction,
+          abskind, SupertypeAbstraction,
+          methods)
+
+      case (Class, DelegationAbstraction) =>
+
+        val methods = g.content(impl.id).foldLeft(List[ConcreteNode]()){
+          (acc, mid) =>
+            val member = g.getConcreteNode(mid)
+
+            if(member.kind.canBeAbstractedWith(DelegationAbstraction)) member +: acc
+            else acc
+        }
+
+        abstractTypeDeclAndReplaceByAbstractionWherePossible(g,
+          impl,
+          Class, SupertypeAbstraction,
           methods)
 
       case (AbstractMethod, SupertypeAbstraction) =>

@@ -8,6 +8,7 @@ import scalaz._, Scalaz._
 
 abstract class Abstract {
 
+
   def absIntroPredicate(graph : DependencyGraph,
                         impl : DGNode,
                         absPolicy : AbstractionPolicy,
@@ -79,12 +80,14 @@ abstract class Abstract {
       def sibling: NodeId => Boolean =
         sid => g.contains(clazz.id, sid) && sid != originSibling.id
 
+      //TODO check if the right part of the and is valid for Delegation abstraction
       member.kind.canBeAbstractedWith(policy) && {
 
         val usedNodes = g.usedBy(member.id)
 
         usedNodes.isEmpty || {
           val usedSiblings = usedNodes filter sibling
+          //used siblings uses container type only via this
           usedSiblings.map(g.getConcreteNode).forall {
             used0 => aux(member)(used0) || {
               val typeUses = g.typeUsesOf(member.id, used0.id)
@@ -127,11 +130,22 @@ abstract class Abstract {
     policy : AbstractionPolicy
     ) : LoggedTG ={
 
-    createAbstraction(g, meth, meth.kind.abstractKinds(policy).head,  policy) map {
-      case (absMethod, g0) =>
-        g0.addContains(interface.id, absMethod.id)
-        //is change type needed in case of delegation policy
-        .changeType(absMethod.id, absMethod.styp, clazz.id, interface.id)
+
+    try {
+      createAbstraction(g, meth, meth.kind.abstractKinds(policy).head, policy) map {
+        case (absMethod, g0) =>
+          g0.addContains(interface.id, absMethod.id)
+            //is change type needed in case of delegation policy
+            .changeType(absMethod.id, absMethod.styp, clazz.id, interface.id)
+      }
+    } catch {
+      case t : Throwable=>
+        println("createAbstractTypeMember( g : DependencyGraph,\n"+
+          s"$meth : ConcreteNode,\n"+
+          s"$clazz : ConcreteNode,\n"+
+            s"$interface : ConcreteNode,\n"+
+            s"$policy : AbstractionPolicy)")
+        throw t
     }
   }
 
@@ -151,7 +165,11 @@ abstract class Abstract {
         createAbstractTypeMember(g0, member, clazz, interface, policy)
       }
 
-      g3 <- insertInTypeHierarchy(g2, clazz.id, interface.id)
+      g3 <- policy match {
+        case SupertypeAbstraction => insertInTypeHierarchy(g2, clazz.id, interface.id)
+        case DelegationAbstraction => LoggedSuccess(g2)
+      }
+
 
       g4 <- if(policy == SupertypeAbstraction)
         members.foldLoggedEither(g3.addIsa(clazz.id, interface.id)){
@@ -195,7 +213,7 @@ abstract class Abstract {
                         impl: ConcreteNode,
                         abskind : NodeKind ,
                         policy : AbstractionPolicy) : LoggedTry[(ConcreteNode, DependencyGraph)] =
-    createAbsNodeAndUse(g,impl, abskind, policy)
+    createAbsNodeAndUse(g, impl, abskind, policy)
 
   //SO SO UGLY !!!
   def abstractionCreationPostTreatment

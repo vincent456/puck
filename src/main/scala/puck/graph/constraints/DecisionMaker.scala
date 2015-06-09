@@ -16,23 +16,6 @@ object DecisionMaker {
 }
 trait DecisionMaker{
 
-//  def violationTarget(graph : DependencyGraph)
-//                     (k: Option[ConcreteNode] => Unit) : Unit
-//
-//  def abstractionKindAndPolicy(graph : DependencyGraph, impl : ConcreteNode)
-//                              (k : Option[(NodeKind, AbstractionPolicy)] => Unit) : Unit
-//
-//  def chooseNode(graph : DependencyGraph, predicate : NodePredicate)
-//                (k : DependencyGraph => Option[NodeId] => Unit) : Unit
-//
-//  def chooseContainerKind(graph : DependencyGraph, toBeContained : DGNode)
-//                         (k : Option[NodeKind] => Unit) : Unit
-//
-//  def selectExistingAbstraction
-//  ( graph : DependencyGraph, choices : Set[(NodeId, AbstractionPolicy)])
-//  ( k : Option[(NodeId, AbstractionPolicy)] => Unit) : Unit
-
-
   def violationTarget
   ( lg : LoggedG)
   ( k: Logged[Option[ConcreteNode]] => Unit) : Unit

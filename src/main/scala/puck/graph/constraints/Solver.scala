@@ -73,8 +73,6 @@ class Solver
   private val allwaysTrue : NodePredicateT = (_,_) => true
 
 
-
-
   def findHost(lg : LoggedG,
                toBeContained : ConcreteNode,
                specificPredicate : NodePredicateT = allwaysTrue,
@@ -161,7 +159,7 @@ class Solver
 
     def aux(lg : LoggedG, deg : Int, currentImpl : ConcreteNode)
            (k : LoggedTry[(DependencyGraph, ConcreteNode, AbstractionPolicy)] => Unit) : Unit = {
-      val lg1 = lg :++> s"\n*** abs intro degree $deg/$degree ***"
+      val lg1 = lg :++> s"*** abs intro degree $deg/$degree ***\n"
       decisionMaker.abstractionKindAndPolicy(lg1, currentImpl) {
         loggedSKindPolicy =>
           loggedSKindPolicy.value match {
@@ -170,7 +168,7 @@ class Solver
             def doIntro(k: LoggedTry[(DependencyGraph, ConcreteNode, AbstractionPolicy)] => Unit): Unit = {
               val graph = lg1.value
               val log = loggedSKindPolicy.written +
-                s"\ntrying to create abstraction( $absKind, $absPolicy ) of $currentImpl"
+                s"trying to create abstraction( $absKind, $absPolicy ) of $currentImpl\n"
 
               val tryAbs = rules.abstracter.createAbstraction(graph, currentImpl, absKind, absPolicy)
 
@@ -178,8 +176,8 @@ class Solver
               tryAbs map {
                 case (abs, graph2) =>
                   val log1 =
-                    log + s"\n$abs introduced as $absPolicy for $currentImpl" +
-                      s"Searching host for abstraction( $absKind, $absPolicy ) of $currentImpl"
+                    log + s"$abs introduced as $absPolicy for $currentImpl" +
+                      s"Searching host for abstraction( $absKind, $absPolicy ) of $currentImpl\n"
 
                   findHost(graph2.set(log), abs,
                     rules.abstracter.absIntroPredicate(graph2, currentImpl, absPolicy, absKind)) {
@@ -187,7 +185,7 @@ class Solver
                       logres.value match {
                       case Host(h, graph3) =>
                         val lr2 = (logres :++>
-                          s"\nabsIntro : host of $abs is ${showDG[NodeId](graph3).show(h)}").map{
+                          s"absIntro : host of $abs is ${showDG[NodeId](graph3).show(h)}\n").map{
                           _ =>
                             val graph4 = graph3.addContains(h, abs.id)
 

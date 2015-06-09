@@ -53,6 +53,7 @@ class Merge
             }
           case (g0, _) => g0
         }
+      case NameSpace => g // no type dependencies involved when merging namespaces
       case _ => ???
     }
 
@@ -99,7 +100,7 @@ class Merge
                           Redirection.redirectUsesAndPropagate(g00,
                             DGEdge.UsesK(userId, consumedChildId),
                             newTypeConstructor, NotAnAbstraction)
-                      }.map(_.removeConcreteNode(consumedChildId))
+                      }.map(_.removeNode(consumedChildId)._2)
                   }
                 case _ =>
                   LoggedSuccess(g0.changeSource(DGEdge.ContainsK(consumedId, consumedChildId), consumerId)
@@ -167,8 +168,11 @@ class Merge
       g7 <- mergeChildren(g6.newGraph(abstractionsMap = newAbsMap), consumedId, consumerId)
 
     } yield {
-        g7.removeContains(g7.container(consumedId).get, consumedId)
-            .removeConcreteNode(consumedId)
+      val g8 = g7.container(consumedId) match {
+        case Some(cid) => g7.removeContains(cid, consumedId)
+        case None => g7
+      }
+      (g8 removeNode consumedId)._2
     }
   }
 
@@ -192,7 +196,7 @@ class Merge
         val g02 = graph.usedBy(n.id).foldLeft(g01) {
           (g, usedId) => g.removeUses(n.id, usedId)
         }
-        LoggedSuccess(g02.removeConcreteNode(n.id))
+        LoggedSuccess(g02.removeConcreteNode(n))
       }
 
     } yield g2

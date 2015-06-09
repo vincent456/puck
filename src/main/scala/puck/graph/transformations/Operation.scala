@@ -13,13 +13,16 @@ case class CNode(n : ConcreteNode) extends Operation {
 
   def execute(g: DependencyGraph , op : Direction) = op match {
     case Regular => g.addConcreteNode(n)
-    case Reverse => g.removeConcreteNode(n.id)
+    case Reverse => g.removeConcreteNode(n)
   }
 }
 
 
 case class VNode(n : VirtualNode) extends Operation {
-  def execute(g: DependencyGraph , op : Direction) = ???
+  def execute(g: DependencyGraph , op : Direction) = op match {
+    case Regular => g.addVirtualNode(n)
+    case Reverse => g.removeVirtualNode(n)
+  }
 }
 
 case class Edge(edge : DGEdge)

@@ -27,7 +27,7 @@ object Concretize {
 
       } flatMap {
         g =>
-        apply(g.removeVirtualNode(vn.id), rules)
+        apply(g removeVirtualNode vn, rules)
       }
 
      }

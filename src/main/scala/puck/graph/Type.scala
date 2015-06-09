@@ -66,6 +66,8 @@ sealed abstract class Type {
 
   def canOverride(graph : DependencyGraph,
                   other : Type) : Boolean = this.subtypeOf(graph, other)
+
+  def uses( id : NodeId) : Boolean
 }
 
 case class NamedType(id : NodeId)
@@ -77,6 +79,8 @@ case class NamedType(id : NodeId)
   }
 
   def ids = List(id)
+
+  def uses( id : NodeId) : Boolean = id == this.id
 
   override def makeClone() = copy(id)
 
@@ -106,6 +110,8 @@ case class Tuple(types: List[Type])
     case _ => false
   }
 
+  def uses( id : NodeId) : Boolean = types.exists(_.uses(id))
+
   def ids = types.foldLeft(List[NodeId]()){(acc, t) => t.ids ::: acc }
 
   override def makeClone() : Tuple = copy(types)
@@ -129,6 +135,8 @@ case class Arrow(input : Type, output : Type)
   extends Type {
 
   def ids = output.ids ::: input.ids
+
+  def uses( id : NodeId) : Boolean = input.uses(id) || output.uses(id)
 
   override def equals(other : Any) : Boolean = other match {
     case Arrow(i : Type, o : Type) => i == input  && output == o

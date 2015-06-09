@@ -3,11 +3,11 @@ package puck.gui.svg.actions
 import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
 
-import puck.graph.ConcreteNode
+import puck.graph.{DGNode, ConcreteNode}
 import puck.gui.svg.SVGController
 
 case class MergeAction(
-  consumed : ConcreteNode,
+  consumed : DGNode,
   consumer : ConcreteNode,
   controller : SVGController)
   extends AbstractAction(s"Merge $consumed into this") {

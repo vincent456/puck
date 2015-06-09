@@ -91,7 +91,7 @@ class DependencyGraph
       recording = recording.addConcreteNode(n)))
   }
 
-  private def addVirtualNode
+  private [graph] def addVirtualNode
   ( n : VirtualNode ) : DependencyGraph =
     newGraph(nodes = nodesIndex.addVirtualNode(n),
       recording = recording.addVirtualNode(n))
@@ -126,16 +126,22 @@ class DependencyGraph
     nodesIndex.getConcreteNode(id)
 
 
-  def removeConcreteNode(id : NodeId) = {
-      val (n, index) = nodesIndex.removeConcreteNode(id)
-      newGraph(nodes = index, recording = recording removeConcreteNode n)
-  }
+  def removeConcreteNode(n : ConcreteNode) : DependencyGraph =
+      newGraph(nodes = nodesIndex removeConcreteNode n,
+        recording = recording removeConcreteNode n)
 
-  def removeVirtualNode(id : NodeId) = {
-    val (n, index) = nodesIndex.removeVirtualNode(id)
-    newGraph(nodes = index, recording = recording removeVirtualNode n)
-  }
 
+  def removeVirtualNode(n : VirtualNode) : DependencyGraph =
+    newGraph(nodes = nodesIndex removeVirtualNode n,
+      recording = recording removeVirtualNode n)
+
+
+  def removeNode(id: NodeId) : (DGNode, DependencyGraph) = {
+    getNode(id) match {
+      case vn : VirtualNode => (vn, removeVirtualNode(vn))
+      case cn : ConcreteNode => (cn, removeConcreteNode(cn))
+    }
+  }
 
   def setName(id : NodeId, newName : String) : DependencyGraph = {
     val (oldName, index) = nodesIndex.setName(id, newName)
