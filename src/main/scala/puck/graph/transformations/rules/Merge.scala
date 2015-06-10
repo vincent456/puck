@@ -38,7 +38,7 @@ class Merge
         g.typeMemberUses2typeUses.foldLeft(g) {
           case (g0, (tmUses, typeUses)) if tmUses.used == consumedId =>
             typeUses.foldLeft(g0) { case (g00, tUse) =>
-              g00.addUsesDependency(tUse, tmUses.kind(tmUses.user, consumerId))
+              g00.addUsesDependency(tUse, (tmUses.user, consumerId))
                 .removeUsesDependency(tUse, tmUses)
             }
           case (g0, _) => g0
@@ -48,7 +48,7 @@ class Merge
         g.typeUses2typeMemberUses.foldLeft(g) {
           case (g0, (tUses, typeMemberUses)) if tUses.used == consumedId =>
             typeMemberUses.foldLeft(g0) { case (g00, tmUse) =>
-              g00.addUsesDependency(tUses.kind(tUses.user, consumerId), tmUse)
+              g00.addUsesDependency((tUses.user, consumerId), tmUse)
                 .removeUsesDependency(tUses, tmUse)
             }
           case (g0, _) => g0
@@ -60,7 +60,7 @@ class Merge
     val g2 = g.typeMemberUses2typeUses.foldLeft(g1) {
       case (g0, (tmUses, typeUses)) if tmUses.user == consumedId =>
         typeUses.foldLeft(g0) { case (g00, tUse) =>
-          g00.addUsesDependency(tUse, tmUses.kind(consumerId, tmUses.used))
+          g00.addUsesDependency(tUse, (consumerId, tmUses.used))
             .removeUsesDependency(tUse, tmUses)
         }
       case (g0, _) => g0
@@ -69,7 +69,7 @@ class Merge
     g.typeUses2typeMemberUses.foldLeft(g2) {
       case (g0, (tUses, typeMemberUses)) if tUses.user == consumedId =>
         typeMemberUses.foldLeft(g0) { case (g00, tmUse) =>
-          g00.addUsesDependency(tUses.kind(consumerId, tUses.used), tmUse)
+          g00.addUsesDependency((consumerId, tUses.used), tmUse)
             .removeUsesDependency(tUses, tmUse)
         }
       case (g0, _) => g0

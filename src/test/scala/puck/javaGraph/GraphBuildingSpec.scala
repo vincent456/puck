@@ -51,8 +51,8 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val typeUsed = fullName2id(s"$p.B")
         val typeMemberUsed = fullName2id(s"$p.B.mb__void")
 
-        val typeUse = Uses(fieldTypeUser, typeUsed)
-        val typeMemberUse = Uses(methUser, typeMemberUsed)
+        val typeUse = graph.getUsesEdge(fieldTypeUser, typeUsed).value
+        val typeMemberUse = graph.getUsesEdge(methUser, typeMemberUsed).value
 
         /*println("typeMemberUses2typeUsesMap")
         println(graph.typeMemberUses2typeUsesMap.content.mkString("\n"))
@@ -61,6 +61,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
         quickFrame(graph)*/
         graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
+        graph.typeUsesOf(typeMemberUse) should contain (typeUse)
 
       }
 
@@ -229,9 +230,9 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
         val genericMethod = fullName2id("java.util.List.get__int")
 
-        val fieldTypeUse = Uses(fieldDeclarant, actualTypeParam)
-        val typeMemberUse = Uses(userMethod, actualTypeParamMethod)
-        val parTypeUse = ParameterizedUses(genericMethod, actualTypeParam)
+        val fieldTypeUse = graph.getUsesEdge(fieldDeclarant, actualTypeParam).value
+        val typeMemberUse = graph.getUsesEdge(userMethod, actualTypeParamMethod).value
+        val parTypeUse = graph.getUsesEdge(genericMethod, actualTypeParam).value
 
 
         assert( fieldTypeUse existsIn graph )

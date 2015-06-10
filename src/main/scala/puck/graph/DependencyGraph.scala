@@ -186,15 +186,15 @@ class DependencyGraph
     removeEdge(Isa(subTypeId, superTypeId))
 
 
- def addUsesDependency(typeUse : DGUses,
-                        typeMemberUse : DGUses) : DependencyGraph =
+ def addUsesDependency(typeUse : NodeIdP,
+                        typeMemberUse : NodeIdP) : DependencyGraph =
    newGraph(edges = edges.addUsesDependency(typeUse, typeMemberUse),
      recording = recording.addTypeDependency(typeUse, typeMemberUse))
 
 
 
-  def removeUsesDependency(typeUse : DGUses,
-                           typeMemberUse : DGUses) : DependencyGraph =
+  def removeUsesDependency(typeUse : NodeIdP,
+                           typeMemberUse : NodeIdP) : DependencyGraph =
       newGraph(edges = edges.removeUsesDependency(typeUse, typeMemberUse),
         recording = recording.removeTypeDependency(typeUse, typeMemberUse))
 
@@ -316,6 +316,9 @@ class DependencyGraph
   def usesAccessKind(userId: NodeId, usedId: NodeId) : Option[UsesAccessKind] =
     edges.accessKindMap.get((userId, usedId))
 
+  def getUsesEdge(userId: NodeId, usedId: NodeId) : Option[DGUses] =
+    edges.getUses(userId, usedId)
+
   def uses(userId: NodeId, usedId: NodeId) : Boolean =
     edges.uses(userId, usedId)
 
@@ -350,10 +353,10 @@ class DependencyGraph
   def typeMemberUsesOf(typeUser : NodeId, typeUsed : NodeId) : Set[DGUses] =
     edges typeMemberUsesOf (typeUser, typeUsed)
 
-  def typeMemberUses2typeUses : Seq[(DGUses, Set[DGUses])] =
+  def typeMemberUses2typeUses : Seq[(NodeIdP, Set[NodeIdP])] =
     edges.typeMemberUses2typeUsesMap.toSeq
 
-  def typeUses2typeMemberUses : Seq[(DGUses, Set[DGUses])] =
+  def typeUses2typeMemberUses : Seq[(NodeIdP, Set[NodeIdP])] =
     edges.typeUses2typeMemberUsesMap.toSeq
 
   def bind(typeUse : DGUses,

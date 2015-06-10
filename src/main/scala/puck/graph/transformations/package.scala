@@ -82,13 +82,13 @@ package object transformations {
     def removeAbstraction(impl : NodeId, abs : NodeId, absPolicy : AbstractionPolicy) : Recording =
       Transformation(Reverse, Abstraction(impl, abs, absPolicy)) +: record
 
-    def addTypeDependency( typeUse : DGUses,
-                           typeMemberUse :  DGUses) : Recording =
+    def addTypeDependency( typeUse : NodeIdP,
+                           typeMemberUse :  NodeIdP) : Recording =
       Transformation(Regular, TypeDependency(typeUse, typeMemberUse)) +: record
 
 
-    def removeTypeDependency( typeUse : DGUses,
-                              typeMemberUse :  DGUses) : Recording =
+    def removeTypeDependency( typeUse : NodeIdP,
+                              typeMemberUse :  NodeIdP) : Recording =
       Transformation(Reverse, TypeDependency(typeUse, typeMemberUse)) +: record
 
   }

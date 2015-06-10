@@ -31,10 +31,6 @@ package object graph {
     def toLoggedTry : LoggedTry[A] = toLoggedEither[Error]
   }
 
-//  implicit class LoggedOrOps[E, A](val lg: EitherT[Logged, E, A]) extends AnyVal {
-//    def error(e : E) : EitherT[Logged, E, A] =
-//      lg.flatMapF[A](_ => e.left[A].set(""))
-//  }
   implicit class LoggedOrOps[E, A](val lg: LoggedEither[E, A]) extends AnyVal {
     def error(e : E) : LoggedEither[E, A] = lg.left_>>(e)
   }
@@ -56,6 +52,15 @@ package object graph {
   type NodePredicateT = (DependencyGraph, ConcreteNode) => Boolean
 
   type NodeId = Int
+
+  type NodeIdP = (NodeId, NodeId)
+
+  implicit class NodeIdPOps( val p : NodeIdP) extends AnyVal{
+
+    def user = p._1
+    def used = p._2
+  }
+
 
   type Recording = Seq[Recordable]
   val Recording = transformations.Recording

@@ -16,7 +16,7 @@ object EdgeMap {
   type Node2NodeMap = Map[NodeId, NodeId]
   val Node2NodeMap = Map
 
-  type UseDependencyMap = SetValueMap[DGUses, DGUses]
+  type UseDependencyMap = SetValueMap[NodeIdP, NodeIdP]
   val UseDependencyMap = SetValueMap
 
 
@@ -150,10 +150,13 @@ case class EdgeMap
     }
 
 
-  def getUses(userId: NodeId, usedId: NodeId) : Option[Uses] = {
+  def getUses(userId: NodeId, usedId: NodeId) : Option[DGUses] = {
     if(uses(userId, usedId))
       Some(Uses(userId, usedId, accessKindMap get ((userId, usedId))))
-    else None
+    else if(parameterizedUsers.bind(usedId, userId))
+      Some(ParameterizedUses(userId, usedId, accessKindMap get ((userId, usedId))))
+    else
+      None
   }
 
   def uses(userId: NodeId, usedId: NodeId) : Boolean = userMap.bind(usedId, userId)
@@ -170,29 +173,34 @@ case class EdgeMap
   }
 
 
-  def addUsesDependency(typeUse : DGUses,
-                        typeMemberUse : DGUses) : EdgeMap =
+  def addUsesDependency(typeUse : NodeIdP,
+                        typeMemberUse : NodeIdP) : EdgeMap =
     copy(typeMemberUses2typeUsesMap = typeMemberUses2typeUsesMap + (typeMemberUse, typeUse),
       typeUses2typeMemberUsesMap = typeUses2typeMemberUsesMap + (typeUse, typeMemberUse))
 
-  def removeUsesDependency(typeUse : DGUses,
-                           typeMemberUse : DGUses) : EdgeMap =
+  def removeUsesDependency(typeUse : NodeIdP,
+                           typeMemberUse : NodeIdP) : EdgeMap =
     copy(typeMemberUses2typeUsesMap = typeMemberUses2typeUsesMap - (typeMemberUse, typeUse),
       typeUses2typeMemberUsesMap = typeUses2typeMemberUsesMap - (typeUse, typeMemberUse))
 
 
   def typeUsesOf(typeMemberUse : DGUses) : Set[DGUses] =
-    typeMemberUses2typeUsesMap getFlat typeMemberUse
+    typeUsesOf(typeMemberUse.user, typeMemberUse.used)
+
 
   def typeMemberUsesOf(typeUse : DGUses) : Set[DGUses] =
-    typeUses2typeMemberUsesMap  getFlat typeUse
+    typeMemberUsesOf(typeUse.user, typeUse.used)
 
   def typeUsesOf(tmUser : NodeId, tmUsed : NodeId) : Set[DGUses] =
-    typeMemberUses2typeUsesMap getFlat Uses(tmUser, tmUsed) union
-      (typeMemberUses2typeUsesMap getFlat ParameterizedUses(tmUser, tmUsed))
+    typeMemberUses2typeUsesMap getFlat ((tmUser, tmUsed)) map {
+      case (s,t) => getUses(s,t).get
+    }
+
 
   def typeMemberUsesOf(typeUser : NodeId, typeUsed : NodeId) : Set[DGUses] =
-    typeUses2typeMemberUsesMap getFlat Uses(typeUser, typeUsed) union
-      (typeUses2typeMemberUsesMap getFlat ParameterizedUses(typeUser, typeUsed))
+    typeUses2typeMemberUsesMap getFlat ((typeUser, typeUsed)) map {
+      case (s, t) => getUses(s,t).get
+    }
+
   
 }

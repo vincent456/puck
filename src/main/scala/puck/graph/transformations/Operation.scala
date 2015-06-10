@@ -123,8 +123,8 @@ case class Abstraction
 
 
 case class TypeDependency
-( typeUse : DGUses,
-  typeMemberUse :  DGUses)
+( typeUse : NodeIdP,
+  typeMemberUse :  NodeIdP)
   extends Operation {
   def execute(g: DependencyGraph , op : Direction) = op match {
     case Regular => g.addUsesDependency(typeUse, typeMemberUse)

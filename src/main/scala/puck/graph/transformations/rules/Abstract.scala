@@ -69,6 +69,7 @@ abstract class Abstract {
     else LoggedSuccess(g1)
   }
 
+
   def canBeAbstracted
     (g : DependencyGraph,
      member : ConcreteNode,
@@ -78,9 +79,9 @@ abstract class Abstract {
     def aux(originSibling : ConcreteNode)(member: ConcreteNode): Boolean = {
 
       def sibling: NodeId => Boolean =
-        sid => g.contains(clazz.id, sid) && sid != originSibling.id
+        sid => g.contains(clazz.id, sid) && sid != originSibling.id && sid != member.id
 
-      def usedByOnlyViaSelf(user : NodeId, used : NodeId) : Boolean = {
+      def usedOnlyViaSelf(user : NodeId, used : NodeId) : Boolean = {
         val typeUses = g.typeUsesOf(user, used)
         typeUses.forall { _.selfUse }
       }
@@ -91,14 +92,15 @@ abstract class Abstract {
         val usedNodes = g.usedBy(member.id)
 
         usedNodes.isEmpty || {
-          val usedSiblings = usedNodes filter sibling
-          usedSiblings.map(g.getConcreteNode).forall {
-            used0 => aux(member)(used0) ||
-              usedByOnlyViaSelf(member.id, used0.id)
+          val usedSiblings = usedNodes filter sibling map g.getConcreteNode
+          usedSiblings.forall {
+            used0 =>
+              aux(member)(used0) || usedOnlyViaSelf(member.id, used0.id)
           }
         }
       }
     }
+
     aux(member)(member)
   }
 

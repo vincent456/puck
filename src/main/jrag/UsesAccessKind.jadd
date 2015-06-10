@@ -1,6 +1,4 @@
 
-import puck.graph.UsesAccessKind;
-
 aspect UsesAccessKind {
 
     public scala.Option<UsesAccessKind> ASTNode.usesAccessKind(){
@@ -27,11 +25,9 @@ aspect UsesAccessKind {
     public scala.Option<UsesAccessKind> PostfixExpr.usesAccessKind_aux(ASTNode caller){
         return UsesAccessKind.rw();
     }
-
     public scala.Option<UsesAccessKind> PreDecExpr.usesAccessKind_aux(ASTNode caller){
         return UsesAccessKind.rw();
     }
-
     public scala.Option<UsesAccessKind> PreIncExpr.usesAccessKind_aux(ASTNode caller){
         return UsesAccessKind.rw();
     }

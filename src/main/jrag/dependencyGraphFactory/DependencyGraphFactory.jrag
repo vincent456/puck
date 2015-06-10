@@ -288,7 +288,6 @@ aspect DependencyGraphFactory {
 		buildDGInChildren(builder, containerId);
 	}
 
-
 	static void TypeDecl.addImplements(JavaGraphBuilder builder,
     	int sub, AST.List<Access> implementList){
 
@@ -297,8 +296,6 @@ aspect DependencyGraphFactory {
 			a.addImplementsUses(builder, sub);
     	}
 	}
-
-	
 
 	void Access.addImplementsUses(JavaGraphBuilder builder, int sub){
 		throw new DGBuildingError(this.getClass() + " : expected TypeAccess or ParTypeAccess");

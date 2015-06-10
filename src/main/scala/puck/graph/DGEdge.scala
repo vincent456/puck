@@ -49,6 +49,8 @@ object DGEdge{
   def unapply(e : DGEdge) : Some[(NodeId, NodeId)] =
     Some((e.source, e.target))
 
+
+  implicit def toPair(e : DGEdge) : NodeIdP = (e.user, e.used)
 }
 
 sealed abstract class DGEdge {
@@ -81,8 +83,6 @@ sealed abstract class DGEdge {
   override def toString : String = {
     kind + "( " + source + ", " + target + ")"
   }
-
-  def toPair : (NodeId, NodeId) = (source, target)
 
   def existsIn(graph : DependencyGraph) =
     graph.exists(this)

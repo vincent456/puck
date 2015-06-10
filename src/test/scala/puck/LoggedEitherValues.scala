@@ -9,25 +9,7 @@ import scalaz.{\/-, -\/}
 trait LoggedEitherValues {
   self : Assertions =>
 
-
-
-//  implicit class TriedValue[G]( t : Try[G]) /*extends AnyVal*/ {
-//    def value : G = t match {
-//      case -\/(err) => assert(false, "success expected, got error : " + err.getMessage)
-//        sys.error("false asserted")
-//      case \/-(g) => g
-//    }
-//
-//    def error : PuckError = t match {
-//      case -\/(err) => err
-//      case \/-(_) => assert(false)
-//        sys.error("false asserted")
-//    }
-//  }
-
-//  def assertSuccess[G](t : Try[G])(f : G => Unit) : Unit = f(t.value)
   def assertIsLeft[E,G](t : LoggedEither[E,G]) : Unit = { val _ = t.left }
-
 
   implicit class LoggedEitherValue[E, G]( t : LoggedEither[E, G]) /*extends AnyVal*/ {
     def right : G = t.value match {

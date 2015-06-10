@@ -156,15 +156,15 @@ class DotPrinter
       case Some(selected) =>
         val labelMap : Map[EdgeP, String]= graph.kindType(selected.target) match {
           case TypeDecl =>
-            val init = Map(selected.toPair -> "TDecl")
+            val init = Map(DGEdge.toPair(selected) -> "TDecl")
             graph.typeMemberUsesOf(selected).foldLeft(init){
-              (map, tm) => map. + (tm.toPair -> "TMember")
+              (map, tm) => map. + (DGEdge.toPair(tm) -> "TMember")
             }
           case TypeMember
                | TypeConstructor =>
-            val init = Map(selected.toPair -> "TMember")
+            val init = Map(DGEdge.toPair(selected) -> "TMember")
             graph.typeUsesOf(selected).foldLeft(init){
-              (map, tm) => map. + (tm.toPair -> "TDecl")
+              (map, tm) => map. + (DGEdge.toPair(tm) -> "TDecl")
             }
           case TypeDeclAndTypeMember =>
             sys.error("selection kind unhandle [TODO] - DotPrinter.typeRelationShipLabel")

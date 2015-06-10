@@ -94,7 +94,11 @@ class TransfoRuleSpec extends AcceptanceSpec {
         assert( graph.abstractions(field).isEmpty )
         assert( graph.abstractions(fieldUserThatShouldNotBeInInterface).isEmpty )
 
-        QuickFrame(graph)
+
+        assert( !TR.abstracter.canBeAbstracted(graph,
+          graph.getConcreteNode(fieldUserThatShouldNotBeInInterface),
+          graph.getConcreteNode(classB),
+          SupertypeAbstraction))
 
         val (itc, g) =
             TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classB),
@@ -125,7 +129,6 @@ class TransfoRuleSpec extends AcceptanceSpec {
 
         //assert( !graph.uses(fieldUserThatCanBeInInterface, classC) )
         assert( graph.uses(fieldUserThatCanBeInInterface, field) )
-
 
         assert( graph.abstractions(classC).isEmpty )
         assert( graph.abstractions(field).isEmpty )
