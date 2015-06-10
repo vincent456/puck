@@ -62,7 +62,7 @@ abstract class Abstract {
     val g1 = g.changeContravariantType(meth.id, meth.styp, clazz.id, interface.id)
 
     if(g1.uses(meth.id, clazz.id))
-      g1.set(s"interface creation : redirecting ${DGEdge.UsesK(meth.id, clazz.id)} target to $interface")
+      g1.set(s"changeSelfTypeUseBySuperInTypeMember : redirecting ${DGEdge.UsesK(meth.id, clazz.id)} target to $interface\n")
         .toLoggedEither.flatMap {
         Redirection.redirectUsesAndPropagate(_, DGEdge.UsesK(meth.id, clazz.id), interface.id, SupertypeAbstraction)
       }
@@ -80,6 +80,11 @@ abstract class Abstract {
       def sibling: NodeId => Boolean =
         sid => g.contains(clazz.id, sid) && sid != originSibling.id
 
+      def usedByOnlyViaSelf(user : NodeId, used : NodeId) : Boolean = {
+        val typeUses = g.typeUsesOf(user, used)
+        typeUses.forall { _.selfUse }
+      }
+
       //TODO check if the right part of the and is valid for Delegation abstraction
       member.kind.canBeAbstractedWith(policy) && {
 
@@ -87,12 +92,9 @@ abstract class Abstract {
 
         usedNodes.isEmpty || {
           val usedSiblings = usedNodes filter sibling
-          //used siblings uses container type only via this
           usedSiblings.map(g.getConcreteNode).forall {
-            used0 => aux(member)(used0) || {
-              val typeUses = g.typeUsesOf(member.id, used0.id)
-              typeUses.forall { _.selfUse }
-            }
+            used0 => aux(member)(used0) ||
+              usedByOnlyViaSelf(member.id, used0.id)
           }
         }
       }
@@ -193,7 +195,7 @@ abstract class Abstract {
     val log = s"interface $itc created, contains : {" +
       g.content(itc.id).map(showDG[NodeId](g).show).mkString("\n")+
       "}"
-    g.set(log).toLoggedEither
+    LoggedSuccess(g, log)
   }
 
   private def createAbsNodeAndUse(g : DependencyGraph,

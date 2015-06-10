@@ -1,0 +1,38 @@
+
+import puck.graph.UsesAccessKind;
+
+aspect UsesAccessKind {
+
+    public scala.Option<UsesAccessKind> ASTNode.usesAccessKind(){
+        return UsesAccessKind.none();
+    }
+    public scala.Option<UsesAccessKind> VarAccess.usesAccessKind(){
+        return usesAccessKind_aux(this);
+    }
+
+    public scala.Option<UsesAccessKind> ASTNode.usesAccessKind_aux(ASTNode caller){
+        return getParent().usesAccessKind_aux(this);
+    }
+    public scala.Option<UsesAccessKind> CompilationUnit.usesAccessKind_aux(ASTNode caller){
+        return UsesAccessKind.read();
+    }
+
+    public scala.Option<UsesAccessKind> AssignExpr.usesAccessKind_aux(ASTNode caller){
+        if(caller == getDest())
+            return UsesAccessKind.write();
+        else
+            return UsesAccessKind.read();
+    }
+
+    public scala.Option<UsesAccessKind> PostfixExpr.usesAccessKind_aux(ASTNode caller){
+        return UsesAccessKind.rw();
+    }
+
+    public scala.Option<UsesAccessKind> PreDecExpr.usesAccessKind_aux(ASTNode caller){
+        return UsesAccessKind.rw();
+    }
+
+    public scala.Option<UsesAccessKind> PreIncExpr.usesAccessKind_aux(ASTNode caller){
+        return UsesAccessKind.rw();
+    }
+}

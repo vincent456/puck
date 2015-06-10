@@ -34,13 +34,12 @@ class MoveSpec extends AcceptanceSpec {
         assert(graph.uses(methB, classA))
         assert(graph.uses(methB, methA))
 
-        assertSuccess(Move.typeDecl(graph, classA, package2).value) {
-          g2 =>
-            assert(g2.container(classA).value == package2)
-            assert(graph.uses(methB, classA))
-            assert(graph.uses(methB, methA))
-        }
+        val g2 = Move.typeDecl(graph, classA, package2).right
+        assert(g2.container(classA).value == package2)
+        assert(graph.uses(methB, classA))
+        assert(graph.uses(methB, methA))
       }
+
     }
   }
 
@@ -79,14 +78,13 @@ class MoveSpec extends AcceptanceSpec {
         assert(graph.container(methToMove).value == classA)
         assert(graph.uses(methUser, methToMove))
 
-        assertSuccess(Move.typeMember(graph,
-          List(methToMove), classB)().value){
-          g2 =>
+        val g2 = Move.typeMember(graph,
+          List(methToMove), classB)().right
 
-            assert(g2.container(methToMove).value == classB)
-            assert(g2.uses(methUser, methToMove))
-        }
+        assert(g2.container(methToMove).value == classB)
+        assert(g2.uses(methUser, methToMove))
       }
+
     }
 
     scenario("move method used by this - keep reference with parameter"){
@@ -102,13 +100,11 @@ class MoveSpec extends AcceptanceSpec {
         assert(graph.uses(methUser, methToMove))
         assert(! graph.uses(methUser, newHostClass))
 
-        assertSuccess(Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateParameter))().value){
-          g2 =>
-            g2.content(classA).size shouldBe (graph.content(classA).size - 1)
-            assert(g2.container(methToMove).value == newHostClass)
-            assert(g2.uses(methUser, methToMove))
-            assert(g2.uses(methUser, newHostClass))
-        }
+        val g2 = Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateParameter))().right
+        g2.content(classA).size shouldBe (graph.content(classA).size - 1)
+        assert(g2.container(methToMove).value == newHostClass)
+        assert(g2.uses(methUser, methToMove))
+        assert(g2.uses(methUser, newHostClass))
       }
     }
 
@@ -125,20 +121,18 @@ class MoveSpec extends AcceptanceSpec {
         assert(graph.uses(methUser, methToMove))
         assert(! graph.uses(methUser, newHostClass))
 
-        assertSuccess(Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateTypeMember(Field)))().value){
-          g2 =>
-            //quickFrame(g2)
-            val ma2Delegate =
-              g2.content(classA).find{
-                id => g2.getConcreteNode(id).name == "b_delegate"
-              }.value
+        val g2 = Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateTypeMember(Field)))().right
+        //quickFrame(g2)
+        val ma2Delegate =
+          g2.content(classA).find{
+            id => g2.getConcreteNode(id).name == "b_delegate"
+          }.value
 
-            assert(g2.container(methToMove).value == newHostClass)
+        assert(g2.container(methToMove).value == newHostClass)
 
-            assert(g2.uses(methUser, methToMove))
-            assert(g2.uses(ma2Delegate, newHostClass))
-            assert(g2.uses(methUser, ma2Delegate))
-        }
+        assert(g2.uses(methUser, methToMove))
+        assert(g2.uses(ma2Delegate, newHostClass))
+        assert(g2.uses(methUser, ma2Delegate))
       }
     }
 
@@ -164,21 +158,19 @@ class MoveSpec extends AcceptanceSpec {
         val numArgs1 = getNumArgs(graph.getConcreteNode(methUser1))
         val numArgs2 = getNumArgs(graph.getConcreteNode(methUser2))
 
-        assertSuccess(Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateParameter))().value){
-          g2 =>
-            //quickFrame(g2)
+        val g2 = Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateParameter))().right
 
-            assert(numArgs1 + 1 == getNumArgs(g2.getConcreteNode(methUser1)))
-            assert(numArgs2 + 1 == getNumArgs(g2.getConcreteNode(methUser2)))
+        assert(numArgs1 + 1 == getNumArgs(g2.getConcreteNode(methUser1)))
+        assert(numArgs2 + 1 == getNumArgs(g2.getConcreteNode(methUser2)))
 
-            assert(g2.container(methToMove).value == newHostClass)
+        assert(g2.container(methToMove).value == newHostClass)
 
-            assert(g2.uses(methUser1, methToMove))
-            assert(g2.uses(methUser1, newHostClass))
+        assert(g2.uses(methUser1, methToMove))
+        assert(g2.uses(methUser1, newHostClass))
 
-            assert(g2.uses(methUser2, methToMove))
-            assert(g2.uses(methUser2, newHostClass))
-        }
+        assert(g2.uses(methUser2, methToMove))
+        assert(g2.uses(methUser2, newHostClass))
+
       }
     }
 
@@ -197,15 +189,8 @@ class MoveSpec extends AcceptanceSpec {
         assert(graph.uses(methUser2, methToMove))
 
         val g2 =
-          try {
-            Move.typeMember(graph, List(methToMove), newHostClass,
-              Some(CreateTypeMember(Field)))().value.value
-          }
-          catch{
-            case t: Throwable =>
-              t.printStackTrace( new PrintStream(new FileOutputStream("/tmp/errorTrace")) )
-              graph
-          }
+          Move.typeMember(graph, List(methToMove), newHostClass,
+            Some(CreateTypeMember(Field)))().right
 
         val methToMoveDelegateList =
           g2.content(classA).filter {
@@ -249,16 +234,14 @@ class MoveSpec extends AcceptanceSpec {
         assert(graph.container(methMa).value == classA)
         assert(graph.uses(methUser, methMa))
 
-        assertSuccess(Move.typeMember(graph, List(methMa), classB)().value){
-          g2 =>
+        val g2 = Move.typeMember(graph, List(methMa), classB)().right
 
-            assert(g2.container(methMa).value == classB)
-            assert(g2.uses(methUser, methMa))
+        assert(g2.container(methMa).value == classB)
+        assert(g2.uses(methUser, methMa))
 
-            val methMaNode = g2.getConcreteNode(methMa)
-            methMaNode.styp.value match {
-              case MethodType(in, _) => assert(0 == in.length)
-            }
+        val methMaNodeAfterMove = g2.getConcreteNode(methMa)
+        methMaNodeAfterMove.styp.value match {
+          case MethodType(in, _) => assert(0 == in.length)
         }
       }
     }
@@ -276,17 +259,16 @@ class MoveSpec extends AcceptanceSpec {
 
         val newHostClass = fullName2id("p.B")
 
-        assertSuccess(Move.typeMember(graph, List(methToMove, methUser), newHostClass, None)().value) {
-          g2 =>
-            g2.content(classA).size shouldBe (graph.content(classA).size - 2)
-            assert(g2.container(methToMove).value == newHostClass)
-            assert(g2.container(methUser).value == newHostClass)
-            assert(g2.uses(methUser, methToMove))
-            assert(!g2.uses(methUser, newHostClass))
-        }
-
+        val g2 = Move.typeMember(graph, List(methToMove, methUser), newHostClass, None)().right
+        g2.content(classA).size shouldBe (graph.content(classA).size - 2)
+        assert(g2.container(methToMove).value == newHostClass)
+        assert(g2.container(methUser).value == newHostClass)
+        assert(g2.uses(methUser, methToMove))
+        assert(!g2.uses(methUser, newHostClass))
       }
+
     }
+
 
     scenario("two moved method both used by an unmoved one") {
       val _ = new ExampleSample(s"$moveMethodUsedByThis/TwoMovedMethodUsedBySameUnmovedSibling.java") {
@@ -300,20 +282,17 @@ class MoveSpec extends AcceptanceSpec {
 
         val numArgs = getNumArgs(graph.getConcreteNode(methUser))
 
-        assertSuccess(Move.typeMember(graph, List(methToMove1, methToMove2), newHostClass, Some(CreateParameter))().value) {
-          g2 =>
+        val g2 = Move.typeMember(graph, List(methToMove1, methToMove2), newHostClass, Some(CreateParameter))().right
 
-            g2.content(classA).size shouldBe (graph.content(classA).size - 2)
-            getNumArgs(g2.getConcreteNode(methUser)) shouldBe (numArgs + 1)
-            assert(g2.container(methToMove1).value == newHostClass)
-            assert(g2.container(methToMove2).value == newHostClass)
+        g2.content(classA).size shouldBe (graph.content(classA).size - 2)
+        getNumArgs(g2.getConcreteNode(methUser)) shouldBe (numArgs + 1)
+        assert(g2.container(methToMove1).value == newHostClass)
+        assert(g2.container(methToMove2).value == newHostClass)
 
-            assert(g2.uses(methUser, methToMove1))
-            assert(g2.uses(methUser, methToMove2))
-        }
-
+        assert(g2.uses(methUser, methToMove1))
+        assert(g2.uses(methUser, methToMove2))
       }
+
     }
   }
-
 }

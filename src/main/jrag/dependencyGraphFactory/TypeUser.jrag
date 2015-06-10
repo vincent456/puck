@@ -28,7 +28,7 @@ aspect TypeUser {
         if(access.getQualifier() == null
             || access.getQualifier().isThisAccess()){
             int selfTypeNode = access.decl().hostType().buildDGNode(builder);
-            builder.addEdge(new Uses(selfTypeNode, selfTypeNode, builder.noAccessKind()));
+            builder.addEdge(new Uses(selfTypeNode, selfTypeNode, UsesAccessKind.none()));
             return selfTypeNode;
         }
         else if(access.getQualifier().isSuperAccess())
@@ -83,7 +83,7 @@ aspect TypeUser {
         int thisNode = decl.getOriginal().buildDGNode(builder);
 
         int typeUsed = decl.getTypeAccess().buildDGNode(builder);
-        ParameterizedUses typeUse = new ParameterizedUses(thisNode, typeUsed, builder.noAccessKind());
+        ParameterizedUses typeUse = new ParameterizedUses(thisNode, typeUsed, UsesAccessKind.none());
         builder.addEdge(typeUse);
         builder.addTypeRelationship(typeUse, typeMemberUse);
 

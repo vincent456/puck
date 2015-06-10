@@ -46,11 +46,13 @@ object JavaAbstract extends Abstract {
       case (Interface, SupertypeAbstraction)
       | (Class, SupertypeAbstraction) =>
         val methods = typeMembersToPutInInterface(g, impl, SupertypeAbstraction)
-        abstractTypeDeclAndReplaceByAbstractionWherePossible(g,
-          impl,
-          abskind, SupertypeAbstraction,
-          methods)
-
+        LoggedSuccess(g, s"Creating $abskind with abstractions of" +
+          methods.mkString("\n", "\n", "\n")).flatMap {
+          abstractTypeDeclAndReplaceByAbstractionWherePossible(_,
+            impl,
+            abskind, SupertypeAbstraction,
+            methods)
+        }
       case (Class, DelegationAbstraction) =>
 
         val methods = g.content(impl.id).foldLeft(List[ConcreteNode]()){

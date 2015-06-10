@@ -28,20 +28,20 @@ object Redirection {
                                keepOldUse : Boolean = false ) : LoggedTG = {
     val log0 = s"redirectUsesAndPropagate(_, oldUse = $oldUse, newUsed = $newUsed, $policy, " +
       s"propagate = $propagateRedirection, keepOldUse = $keepOldUse)"
-    val log1 = s"\n$oldUse.exists = ${oldUse.existsIn(g)}"
+    val log1 = s"\n$oldUse.exists = ${oldUse.existsIn(g)}\n"
     val lg1 = (g logComment log0) :++> log1
 
     if(oldUse.used == newUsed) lg1.toLoggedEither
     else if(oldUse.existsIn(g)){
-      val lg2 = lg1 :++> s"\nredirecting ${showDG[DGEdge](g).show(oldUse)} target " +
-        s"to ${showDG[NodeId](g).show(newUsed)} ($policy)"
+      val lg2 = lg1 :++> s"redirecting ${showDG[DGEdge](g).show(oldUse)} target " +
+        s"to ${showDG[NodeId](g).show(newUsed)} ($policy)\n"
 
       if (!propagateRedirection)
         lg2.map(redirectUses(_, oldUse, newUsed, keepOldUse)).toLoggedEither
       else {
 
         val oldUsedKind = g.kindType(oldUse.used)
-        val ltg : LoggedTG = (lg2 :++> s"\nuse target is a $oldUsedKind").toLoggedEither
+        val ltg : LoggedTG = (lg2 :++> s"use target is a $oldUsedKind\n").toLoggedEither
 
         val propagateTypeMember : DependencyGraph => LoggedTG =
           redirectTypeUsesOfTypeMemberUse(_, oldUse, newUsed, policy)
@@ -84,8 +84,8 @@ object Redirection {
       //if both are identified as violations and are in a wrongusers list
       //redirecting the one will redirect the other
       // when iterating on the wrongusers, the next call to redirectuses will arrive here
-      lg1 :++> s"\nredirecting uses $oldUse target to $newUsed ($policy) : " +
-        s"FAILURE !! ${oldUse.used}} is not used"
+      lg1 :++> s"redirecting uses $oldUse target to $newUsed ($policy) : " +
+        s"FAILURE !! ${oldUse.used}} is not used\n"
       lg1.toLoggedEither
     }
     else if(g.usersOf(oldUse.used).contains(oldUse.user) ||
@@ -104,12 +104,12 @@ object Redirection {
                                       propagateRedirection : Boolean = true) : LoggedTG = {
 
     val log = s"redirecting Type uses of typeMember use ${showDG[DGEdge](g).shows(currentTypeMemberUse)}" +
-      s" (new typeMember used is ${showDG[NodeId](g).shows(newTypeMemberUsed)}) "
+      s" (new typeMember used is ${showDG[NodeId](g).shows(newTypeMemberUsed)})\n"
     val lg = g logComment log
 
     val typeUses = g.typeUsesOf(currentTypeMemberUse)
     if(typeUses.isEmpty)
-      (lg :++> "\nno primary uses to redirect").toLoggedEither
+      (lg :++> "no primary uses to redirect\n").toLoggedEither
     else{
       val lg1 =
         lg :++> "uses to redirect:%s".format(typeUses.mkString("\n\t", "\n\t","\n"))
@@ -150,11 +150,11 @@ object Redirection {
     ) : LoggedTry[(DependencyGraph, NodeId)] = {
 
     val log = s"searching new Type used ($policy) : current type used is " +
-      s"${showDG[NodeId](g).shows(currentTypeUsed)}, new typeMember used : ${showDG[NodeId](g).shows(newTypeMemberUsed)}"
+      s"${showDG[NodeId](g).shows(currentTypeUsed)}, new typeMember used : ${showDG[NodeId](g).shows(newTypeMemberUsed)}\n"
     val lg= g logComment log
 
     def logFind(newPrimaryUsed : NodeId) =
-      (lg :++> s"\nnew type to use found : ${showDG[NodeId](g).shows(newPrimaryUsed)}").map{
+      (lg :++> s"new type to use found : ${showDG[NodeId](g).shows(newPrimaryUsed)}\n").map{
         (_, newPrimaryUsed)}.toLoggedTry
 
     policy match {
@@ -199,9 +199,9 @@ object Redirection {
      tmu : TypeMemberUses) : LoggedTG = {
 
     val log = s"redirecting typeMember uses of type use ${showDG[DGEdge](g).shows(currentTypeUse)} " +
-      s"(new type used is  ${showDG[NodeId](g).shows(newTypeUsed)}) "
+      s"(new type used is  ${showDG[NodeId](g).shows(newTypeUsed)})"
 
-    val log1 = if (tmu.isEmpty) "no typeMember uses to redirect"
+    val log1 = if (tmu.isEmpty) "no typeMember uses to redirect\n"
     else "uses to redirect:%s".format(tmu.mkString("\n\t", "\n\t", "\n"))
 
     val lg : LoggedG = (g logComment log) :++> ("\n" + log1)
@@ -218,7 +218,7 @@ object Redirection {
               s"target to ${showDG[NodeId](g).shows(newTypeUsed)}\n" +
               s"no satisfying abstraction to redirect typeMember use ${showDG[DGEdge](g).shows(typeMemberUse)}"
 
-            g0.set(msg).toLoggedEither[PuckError].error(new RedirectionError(msg))
+            g0.set(msg+"\n").toLoggedEither[PuckError].error(new RedirectionError(msg))
 
           case Some((typeMemberAbs, _)) =>
             redirectUsesAndPropagate(
@@ -244,8 +244,8 @@ object Redirection {
     ): LoggedEither[PuckError, (KeepOldTypeUse, DependencyGraph)] = {
 
     val log = s"redirecting typeMember AND CONSTRUCTOR uses of type use ${showDG[DGEdge](g).shows(currentTypeUse)} " +
-      s"(new type used is  ${showDG[NodeId](g).shows(newTypeUsed)}) "
-    val lg = g logComment log
+      s"(new type used is  ${showDG[NodeId](g).shows(newTypeUsed)})"
+    val lg = (g logComment log) :++> "\n"
 
 
     val typeMemberAndTypeCtorUses = g.typeMemberUsesOf(currentTypeUse).toList

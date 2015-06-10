@@ -17,7 +17,7 @@ class MakeSuperTypeSpec extends AcceptanceSpec {
         val methNotInInterface = fullName2id("p.A.mNotInInterface__void")
         val abstractMethInInterface = fullName2id("p.SuperA.mInInterface__void")
 
-        val g2 = TR.makeSuperType(graph, classA, superA).value.value
+        val g2 = TR.makeSuperType(graph, classA, superA).right
 
         assert(g2.isa(classA, superA))
 
@@ -31,7 +31,7 @@ class MakeSuperTypeSpec extends AcceptanceSpec {
         val classA = fullName2id("p.A")
         val superA = fullName2id("p.SuperA")
 
-        assertIsFailure( TR.makeSuperType(graph, classA, superA).value )
+        assertIsLeft( TR.makeSuperType(graph, classA, superA) )
 
       }
     }

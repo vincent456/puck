@@ -7,4 +7,4 @@ class AcceptanceSpec
   with Matchers
   with OptionValues
   with EitherValues
-  with TryValues
+  with LoggedEitherValues

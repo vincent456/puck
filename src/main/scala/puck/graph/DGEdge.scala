@@ -99,24 +99,7 @@ sealed abstract class DGEdge {
 
 }
 
-sealed abstract class UsesAccessKind {
-  def && (accK : UsesAccessKind) : UsesAccessKind
-}
-case object Read extends UsesAccessKind {
-  def && (accK : UsesAccessKind) : UsesAccessKind = accK match {
-    case Read => Read
-    case _ => RW
-  }
-}
-case object Write extends UsesAccessKind {
-  def && (accK : UsesAccessKind) : UsesAccessKind = accK match {
-    case Write => Write
-    case _ => RW
-  }
-}
-case object RW extends UsesAccessKind{
-  def && (accK : UsesAccessKind) : UsesAccessKind = this
-}
+
 
 sealed abstract class DGUses extends DGEdge{
   override val kind : UsesKind

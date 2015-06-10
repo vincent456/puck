@@ -233,21 +233,10 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val typeMemberUse = Uses(userMethod, actualTypeParamMethod)
         val parTypeUse = ParameterizedUses(genericMethod, actualTypeParam)
 
-//        println(fullName2id.mkString("\n"))
-//
-//        println(graph)
 
         assert( fieldTypeUse existsIn graph )
-
         assert( typeMemberUse existsIn graph )
 
-//        println("fieldTypeUse = " + fieldTypeUse)
-//        println("parTypeUse = " + parTypeUse)
-//        println("typeMemberUse = " + typeMemberUse)
-
-//        println(graph.typeMemberUsesOf(fieldTypeUse))
-//        println(graph.typeUsesOf(typeMemberUse))
-        //QuickFrame(graph)
         graph.typeMemberUsesOf(fieldTypeUse) should contain (typeMemberUse)
         graph.typeUsesOf(typeMemberUse) should contain (parTypeUse)
 
@@ -264,15 +253,32 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val field = fullName2id(s"p.A.f")
         val getter = fullName2id(s"p.A.getF__void")
         val setter = fullName2id(s"p.A.setF__int")
-        val inc = fullName2id(s"p.A.incF__void")
+        val inc0 = fullName2id(s"p.A.incF0__void")
+        val inc1 = fullName2id(s"p.A.incF1__void")
+        val inc2 = fullName2id(s"p.A.incF2__void")
+        val dec0 = fullName2id(s"p.A.decF0__void")
+        val dec1 = fullName2id(s"p.A.decF1__void")
 
         assert( graph.uses(getter, field) )
+        graph.usesAccessKind(getter, field) shouldBe Some(Read)
 
         assert( graph.uses(setter, field) )
-
-        graph.usesAccessKind(getter, field) shouldBe Some(Read)
         graph.usesAccessKind(setter, field) shouldBe Some(Write)
-        graph.usesAccessKind(inc, field) shouldBe Some(RW)
+
+        assert( graph.uses(inc0, field) )
+        graph.usesAccessKind(inc0, field) shouldBe Some(RW)
+
+        assert( graph.uses(inc1, field) )
+        graph.usesAccessKind(inc1, field) shouldBe Some(RW)
+
+        assert( graph.uses(inc2, field) )
+        graph.usesAccessKind(inc2, field) shouldBe Some(RW)
+
+        assert( graph.uses(dec0, field) )
+        graph.usesAccessKind(dec0, field) shouldBe Some(RW)
+
+        assert( graph.uses(dec1, field) )
+        graph.usesAccessKind(dec1, field) shouldBe Some(RW)
 
       }
     }

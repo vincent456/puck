@@ -34,14 +34,6 @@ class GraphBuilder {
     g = g.addContains(containerId, contentId)
   }
 
-  //java accessor
-  val noAccessKind : Option[UsesAccessKind] = None
-  val readAccess : Option[UsesAccessKind] = Some(Read)
-  val writeAccess : Option[UsesAccessKind] = Some(Write)
-  //val rwAccess : Option[UsesAccessKind] = Some(RW)
-  // not needed, computed by adding uses
-
-
   def addEdge(e : DGEdge): Unit ={
     g = g.addEdge(e)
   }
