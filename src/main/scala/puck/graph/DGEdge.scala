@@ -103,16 +103,11 @@ sealed abstract class DGEdge {
 
 sealed abstract class DGUses extends DGEdge{
   override val kind : UsesKind
+  def accessKind : Option[UsesAccessKind]
   def isDominant(graph : DependencyGraph) : Boolean = graph.typeMemberUsesOf(this).nonEmpty
   def isDominated(graph : DependencyGraph) : Boolean = graph.typeUsesOf(this).nonEmpty
 
-  //val accessKind : Option[UsesAccessKind]
 }
-
-//object Uses{
-//  def apply(source : NodeId,
-//            target: NodeId) = new Uses(source, target, None)
-//}
 
 case class Uses
 ( source : NodeId,

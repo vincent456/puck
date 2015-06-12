@@ -33,8 +33,8 @@ trait DecisionMaker{
   ( k : Logged[Option[NodeKind]] => Unit) : Unit
 
   def selectExistingAbstraction
-  ( lg : LoggedG, choices : Set[(NodeId, AbstractionPolicy)])
-  ( k : Logged[Option[(NodeId, AbstractionPolicy)]] => Unit) : Unit
+  ( lg : LoggedG, choices : Set[Abstraction])
+  ( k : Logged[Option[Abstraction]] => Unit) : Unit
 
   def createVarStrategy(k : CreateVarStrategy => Unit) : Unit
 

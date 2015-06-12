@@ -97,14 +97,16 @@ class Merge
 
                       (g0 usersOf consumedChildId).foldLoggedEither(g0){
                         (g00, userId) =>
-                          Redirection.redirectUsesAndPropagate(g00,
-                            DGEdge.UsesK(userId, consumedChildId),
-                            newTypeConstructor, NotAnAbstraction)
+                          val uses = g00.getUsesEdge(userId, consumedChildId).get
+                          Redirection.redirectUsesAndPropagate(g00, uses,
+                            newTypeConstructor, NotAnAbstraction,
+                            propagateRedirection = true,
+                            keepOldUse = false)
                       }.map(_.removeNode(consumedChildId)._2)
                   }
                 case _ =>
                   LoggedSuccess(g0.changeSource(DGEdge.ContainsK(consumedId, consumedChildId), consumerId)
-                    .changeType(consumedChildId, g0.getConcreteNode(consumedChildId).styp, consumedId, consumerId))
+                    .changeType(consumedChildId, consumedId, consumerId))
               }
           }
       }
@@ -123,7 +125,7 @@ class Merge
         (g0, userId) =>
           LoggedSuccess(
             g0.changeTarget(DGEdge.UsesK(userId, consumedId), consumerId)
-              .changeType(userId, g.getConcreteNode(userId).styp, consumedId, consumerId),
+              .changeType(userId, consumedId, consumerId),
             s"redirecting ($userId, $consumedId) toward $consumerId\n")
       }
 
@@ -160,8 +162,13 @@ class Merge
 
       absMap : AbstractionMap = g6.abstractionsMap - consumedId
       newAbsMap : AbstractionMap  = absMap.mapValues {
-        case (id , absp) if id == consumedId =>
-          (consumerId, absp)
+        case AccessAbstraction(`consumedId`, absp) =>
+          AccessAbstraction(consumerId, absp)
+        case ReadWriteAbstraction(sRid, sWid) =>
+          val condRep : NodeId => NodeId = id =>
+            if(id == consumedId) consumerId
+            else id
+          ReadWriteAbstraction(sRid map condRep, sWid map condRep)
         case v => v
       }
 
@@ -194,7 +201,9 @@ class Merge
           (g, supId) => g.removeIsa(n.id, supId)
         }
         val g02 = graph.usedBy(n.id).foldLeft(g01) {
-          (g, usedId) => g.removeUses(n.id, usedId)
+          (g, usedId) =>
+            //getUsesEdge needed to recover accessKind
+            g.removeEdge(g.getUsesEdge(n.id, usedId).get)
         }
         LoggedSuccess(g02.removeConcreteNode(n))
       }

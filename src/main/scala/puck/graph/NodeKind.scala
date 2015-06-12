@@ -1,21 +1,24 @@
 package puck.graph
 
-import puck.graph.constraints.{AbstractionPolicy, SupertypeAbstraction, DelegationAbstraction}
+import puck.graph.constraints._
 
 trait NodeKind {
   def canContain(k : NodeKind) : Boolean
   def canBe(k : NodeKind) : Boolean = false
   def abstractionPolicies : Seq[AbstractionPolicy] =
     Seq(SupertypeAbstraction, DelegationAbstraction)
-  def abstractKinds(p : AbstractionPolicy) : Seq[NodeKind]
+
+  def canBeReadOrWrote : Boolean = false
+
+  def abstractionNodeKinds(p : AbstractionPolicy) : Seq[NodeKind]
 
   def canBeAbstractedWith(p: AbstractionPolicy) =
-    abstractKinds(p).nonEmpty
+    abstractionNodeKinds(p).nonEmpty
 
   def abstractionChoices : Seq[(NodeKind, AbstractionPolicy)] =
     for {
       p <- abstractionPolicies
-      k <- abstractKinds(p)
+      k <- abstractionNodeKinds(p)
     } yield (k, p)
 }
 
@@ -31,7 +34,7 @@ case object TypeDeclAndTypeMember extends KindType
 trait AGRoot extends NodeKind {
   def canContain(k: NodeKind) = false
   override def abstractionPolicies = Seq()
-  def abstractKinds(p : AbstractionPolicy) =
+  def abstractionNodeKinds(p : AbstractionPolicy) =
     throw new DGError("Root node cannot be abstracted")
 }
 

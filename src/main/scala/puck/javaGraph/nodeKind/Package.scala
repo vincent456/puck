@@ -19,6 +19,6 @@ case object Package extends JavaNodeKind {
   }
 
   override def abstractionPolicies = Seq()
-  def abstractKinds(p : AbstractionPolicy) = Seq()
+  def abstractionNodeKinds(p : AbstractionPolicy) = Seq()
 
 }

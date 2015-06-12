@@ -164,7 +164,7 @@ class RecordingComparator
         // removed in NodeMappingInitialState.normalizeNodeTransfos
         case _ : TypeRedirection // TODO see if need to be compared
              | _ : TypeDependency
-             | _ : Abstraction
+             | _ : AbstractionOp
              | _ : VNode
              | _ : CNode
              | _ : ChangeNodeName

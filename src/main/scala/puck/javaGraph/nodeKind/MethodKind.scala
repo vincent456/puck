@@ -9,7 +9,7 @@ trait MethodKind extends JavaNodeKind {
 
 case object Method extends MethodKind {
 
-  def abstractKinds(p : AbstractionPolicy) = p match {
+  def abstractionNodeKinds(p : AbstractionPolicy) = p match {
     case SupertypeAbstraction => Seq(AbstractMethod, Method)
     case DelegationAbstraction => Seq(Method)//also abstractMethod ?
   }
@@ -17,7 +17,7 @@ case object Method extends MethodKind {
 
 case object ConstructorMethod extends MethodKind {
 
-  def abstractKinds(p : AbstractionPolicy) = p match {
+  def abstractionNodeKinds(p : AbstractionPolicy) = p match {
     case SupertypeAbstraction => Seq(AbstractMethod, Method)
     case DelegationAbstraction => Seq(Method)//also abstractMethod ?
   }
@@ -26,7 +26,7 @@ case object ConstructorMethod extends MethodKind {
 
 case object AbstractMethod extends MethodKind {
 
- def abstractKinds(p : AbstractionPolicy) = p match {
+ def abstractionNodeKinds(p : AbstractionPolicy) = p match {
     case SupertypeAbstraction => Seq(AbstractMethod)
     case DelegationAbstraction => Seq(Method)//also abstractMethod ?
   }

@@ -27,7 +27,7 @@ case object Neuter extends NodeTransfoStatus
 object NodeMappingInitialState{
 
   val discardedOp : Operation => Boolean = {
-    case _: Abstraction => true
+    case _: AbstractionOp => true
     case _: TypeRedirection => true
     case _: ChangeNodeName => true
     case _: Comment => true

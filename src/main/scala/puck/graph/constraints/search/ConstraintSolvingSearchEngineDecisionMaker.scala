@@ -82,21 +82,21 @@ class ConstraintSolvingSearchEngineDecisionMaker
   ( lg : LoggedG, impl : ConcreteNode)
   ( k : Logged[Option[(NodeKind, AbstractionPolicy)]] => Unit) : Unit = {
 
-    import impl.kind.{abstractionPolicies, abstractKinds}
+    import impl.kind.{abstractionPolicies, abstractionNodeKinds}
 
-    k(lg.map(_ =>
+  /*  k(lg.map(_ =>
       if(abstractionPolicies.isEmpty)
         None
       else
         Some((abstractKinds(abstractionPolicies.head).head,
-          abstractionPolicies.head))))
+          abstractionPolicies.head))))*/
 
-    /*val (needSearch, karg) =
+    val (needSearch, karg) =
       if(abstractionPolicies.isEmpty) {
         (false, None)
     }
     else if(abstractionPolicies.tail.isEmpty){
-      val absk = abstractKinds(abstractionPolicies.head)
+      val absk = abstractionNodeKinds(abstractionPolicies.head)
       if(absk.tail.isEmpty) {
         (false, Some((absk.head, abstractionPolicies.head)))
       }
@@ -114,7 +114,7 @@ class ConstraintSolvingSearchEngineDecisionMaker
           Set[Option[(NodeKind, AbstractionPolicy)]]() ++ choices,
           Set[Option[(NodeKind, AbstractionPolicy)]]()))
     }
-    else k(karg.set(lg.written))*/
+    else k(karg.set(lg.written))
 
   }
 
@@ -135,11 +135,11 @@ class ConstraintSolvingSearchEngineDecisionMaker
 
   def selectExistingAbstraction
   ( lg : LoggedG,
-    choices : Set[(NodeId, AbstractionPolicy)])
-  ( k : Logged[Option[(NodeId, AbstractionPolicy)]] => Unit) : Unit =
+    choices : Set[Abstraction])
+  ( k : Logged[Option[Abstraction]] => Unit) : Unit =
     k(lg.map( _ =>
       if( choices.isEmpty )
-        none[(NodeId, AbstractionPolicy)]
+        none[Abstraction]
       else some(choices.head) ) )
 
 

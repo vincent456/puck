@@ -18,7 +18,7 @@ object DependencyGraph {
   val scopeSeparator : String = "."
 
 
-  type AbstractionMap = SetValueMap[NodeId, (NodeId, AbstractionPolicy)]
+  type AbstractionMap = SetValueMap[NodeId, Abstraction]
   val AbstractionMap = SetValueMap
 
 
@@ -173,11 +173,11 @@ class DependencyGraph
  def removeContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): DependencyGraph =
     removeEdge(Contains(containerId, contentId), register)
 
- def addUses(userId: NodeId, useeId: NodeId, register : Boolean = true): DependencyGraph =
-    addEdge(Uses(userId, useeId))
+ def addUses(userId: NodeId, useeId: NodeId,
+             sAccessKind : Option[UsesAccessKind] = None,
+             register : Boolean = true): DependencyGraph =
+    addEdge(Uses(userId, useeId, sAccessKind))
 
- def removeUses(userId: NodeId, useeId: NodeId, register : Boolean = true): DependencyGraph =
-    removeEdge(Uses(userId, useeId))
 
  def addIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : DependencyGraph=
     addEdge(Isa(subTypeId, superTypeId))
@@ -200,13 +200,13 @@ class DependencyGraph
 
 
 
-  def addAbstraction(id : NodeId, abs : (NodeId, AbstractionPolicy)) : DependencyGraph =
+  def addAbstraction(id : NodeId, abs : Abstraction) : DependencyGraph =
     newGraph(abstractionsMap = abstractionsMap + (id, abs),
-             recording = recording.addAbstraction(id, abs._1, abs._2))
+             recording = recording.addAbstraction(id, abs))
 
-  def removeAbstraction(id : NodeId, abs : (NodeId, AbstractionPolicy)) : DependencyGraph =
+  def removeAbstraction(id : NodeId, abs : Abstraction) : DependencyGraph =
     newGraph(abstractionsMap = abstractionsMap - (id, abs),
-             recording = recording.removeAbstraction(id, abs._1, abs._2))
+             recording = recording.removeAbstraction(id, abs))
 
   def changeTarget(edge : DGEdge, newTarget : NodeId) : DependencyGraph = {
     val g1 = edge.deleteIn(this, register = false)
@@ -222,12 +222,12 @@ class DependencyGraph
     newEdge.createIn(g1, register = false).newGraph(recording = newRecording)
   }
 
-  def changeType(id : NodeId, styp : Option[Type], oldUsee: NodeId, newUsee : NodeId) : DependencyGraph =
-    styp match {
+  def changeType(id : NodeId, oldUsed: NodeId, newUsed : NodeId) : DependencyGraph =
+    getConcreteNode(id).styp match {
       case None => this
-      case Some(t) => val newTyp= Some(t.changeNamedType(oldUsee, newUsee))
+      case Some(t) => val newTyp= Some(t.changeNamedType(oldUsed, newUsed))
         setType(id, newTyp).
-          newGraph(recording = recording.addTypeChange(id, styp, oldUsee, newUsee))
+          newGraph(recording = recording.addTypeChange(id, oldUsed, newUsed))
     }
 
   def changeContravariantType(id : NodeId, styp : Option[Type], oldUsee: NodeId, newUsee : NodeId) : DependencyGraph =
@@ -235,7 +235,7 @@ class DependencyGraph
     case None => this
     case Some(t) => val newTyp= Some(t.changeNamedTypeContravariant(oldUsee, newUsee))
       setType(id, newTyp).
-        newGraph(recording = recording.addTypeChange(id, styp, oldUsee, newUsee))
+        newGraph(recording = recording.addTypeChange(id, oldUsee, newUsee))
   }
 
   /*
@@ -340,7 +340,6 @@ class DependencyGraph
 
   def usesOfUsersOf(usedId: NodeId) : List[Uses] = usesOfUsersOf(List(usedId))
 
-
   def typeUsesOf(typeMemberUse : DGUses) : Set[DGUses] =
     edges typeUsesOf typeMemberUse
 
@@ -363,20 +362,22 @@ class DependencyGraph
            typeMemberUse : DGUses) : Boolean =
     typeMemberUsesOf( typeUse ) contains typeMemberUse
 
-  def abstractions(id : NodeId) : Set[(NodeId, AbstractionPolicy)] =
+  def abstractions(id : NodeId) : Set[Abstraction] =
     abstractionsMap getFlat id
 
   def isAbstraction(implId : NodeId, absId : NodeId, pol : AbstractionPolicy) : Boolean =
-    abstractionsMap bind (implId, (absId, pol))
+    isAbstraction(implId, absId).exists{_.policy == pol}
 
-  def isAbstraction(implId : NodeId, absId : NodeId) : Option[AbstractionPolicy] = {
-    if(abstractionsMap bind (implId, (absId, SupertypeAbstraction)))
-      Some(SupertypeAbstraction)
-    else if(abstractionsMap bind (implId, (absId, DelegationAbstraction)))
-      Some(DelegationAbstraction)
-    else
-      None
-  }
+  def isAbstraction(implId : NodeId, absId : NodeId) : Option[Abstraction] =
+    abstractionsMap get implId flatMap {
+      absSet =>
+        absSet find {
+          case AccessAbstraction(id, _) => id == absId
+          case ReadWriteAbstraction(rId, wId) =>
+            rId.contains(absId) || wId.contains(absId)
+        }
+    }
+
 
 
   def violations() : Seq[DGEdge] =

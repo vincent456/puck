@@ -5,8 +5,7 @@ import puck.graph.ShowDG._
 import puck.graph.constraints.SupertypeAbstraction
 import puck.util.LoggedEither._
 
-import scalaz.{Arrow => _, _}, Scalaz._
-
+import scalaz.std.list._
 
 object Type {
   def findOverridedIn
@@ -42,7 +41,7 @@ object Type {
           case (Some(mt), TypeMember) =>
             findOverridedIn(g0, supMeth.name, mt, cs) match {
               case Some((subMeth, newCandidates)) =>
-                LoggedSuccess((g0.addAbstraction(subMeth.id, (supMeth.id, SupertypeAbstraction)), newCandidates))
+                LoggedSuccess((g0.addAbstraction(subMeth.id, AccessAbstraction(supMeth.id, SupertypeAbstraction)), newCandidates))
               case None => onImplemNotFound(g0, supMeth, candidates)
             }
           case (Some(mt), TypeConstructor) => LoggedSuccess((g0,cs))
@@ -99,7 +98,7 @@ case class NamedType(id : NodeId)
 
 }
 
-case class Tuple(types: List[Type])
+case class Tuple(types: List[Type] = List())
   extends Type {
 
   override def equals(other : Any) = other match {

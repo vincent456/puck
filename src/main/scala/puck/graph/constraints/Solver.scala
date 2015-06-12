@@ -18,6 +18,12 @@ trait FindHostResult
 case class Host(host : NodeId, graph : DependencyGraph) extends FindHostResult
 case object FindHostError extends DGError with FindHostResult
 
+object Solver {
+  type IntroKArgs = LoggedTry[(Abstraction, DependencyGraph)]
+  type IntroK = IntroKArgs => Unit
+}
+
+import Solver._
 class Solver
 ( val decisionMaker : DecisionMaker,
   val rules : TransformationRules,
@@ -31,30 +37,47 @@ class Solver
 
     def aux(lg : LoggedG,
             wrongUsers : List[NodeId],
-            choices : Set[(NodeId, AbstractionPolicy)]
+            choices : Set[Abstraction]
              ) : Unit = {
       val g = lg.value
+
+      val cannotUseAbstraction: Abstraction => NodeId => Boolean = {
+       abs => userId =>
+         val uses = g.getUsesEdge(userId, used.id).get
+         (abs, uses.accessKind) match {
+          case (AccessAbstraction(absId, _), _) => g.interloperOf(userId, absId)
+          case (ReadWriteAbstraction(Some(rid), _), Some(Read)) => g.interloperOf(userId, rid)
+          case (ReadWriteAbstraction(_, Some(wid)), Some(Write)) => g.interloperOf(userId, wid)
+          case (ReadWriteAbstraction(Some(rid), Some(wid)), Some(RW)) =>
+            g.interloperOf(userId, rid) || g.interloperOf(userId, wid)
+        }
+      }
+
       decisionMaker.selectExistingAbstraction(lg, choices) {
         loggedOption =>
           val log = loggedOption.written
           loggedOption.value match {
             case None =>
               k((g,wrongUsers).set(log).toLoggedEither[PuckError])
-            case Some((absId, absPol)) =>
+            case Some(abs) =>
 
-              val (remainingWus, wuToRedirect) = wrongUsers.partition(g.interloperOf(_, absId))
-              val lg1 = lg :++> s"$wuToRedirect will use abstraction $absId\n"
+              val (remainingWus, wuToRedirect) =
+                wrongUsers.partition(cannotUseAbstraction(abs))
+
+              val lg1 = lg :++> s"$wuToRedirect will use abstraction $abs\n"
 
               val ltg: LoggedTG =
                 wuToRedirect.foldLoggedEither(lg1) {
                   (g, wu) =>
-                    rules.redirection.redirectUsesAndPropagate(g, DGEdge.UsesK(wu, used.id), absId, absPol)
+                    rules.redirection.
+                      redirectUsesAndPropagate(g, g.getUsesEdge(wu, used.id).get, abs,
+                        propagateRedirection = true, keepOldUse = false)
                 }
 
               ltg.value match {
                 case \/-(g2) =>
                   val lg2 = ltg.valueOr(_ => sys.error("should not happen"))
-                  aux(lg2, remainingWus, choices - ((absId, absPol)))
+                  aux(lg2, remainingWus, choices - abs)
                 case -\/(err) =>
                   k(LoggedError(err, ltg.log))
               }
@@ -149,6 +172,42 @@ class Solver
 
 
 
+  def introMultipleHostAfterAbsIntro
+  ( currentImplId : NodeId, //TODO look TODO in body to remove this arg
+    k : LoggedTG => Unit,
+    pred : NodePredicateT,
+    abstractionPolicy : AbstractionPolicy,
+    lg : LoggedG,
+    remainingThatNeedHost : List[ConcreteNode] ) : Unit = {
+    remainingThatNeedHost match {
+      case Nil => k(lg.toLoggedTry)
+      case abs :: tl =>
+        import rules.abstracter._
+
+        val lg1 = lg :++> s"Searching host for $abs\n"
+
+        findHost(lg1, abs, pred) {
+          logres =>
+            logres.value match {
+              case Host(h, graph3) =>
+                val lg2 = (logres :++>
+                  s"absIntro : host of $abs is ${showDG[NodeId](graph3).show(h)}\n").map{
+                  _ =>
+                    val graph4 = graph3.addContains(h, abs.id)
+
+                    //TODO check if can find another way more generic
+                    val graph5 = abstractionCreationPostTreatment(graph4, currentImplId, abs.id, abstractionPolicy)
+                    graph5
+                }
+                introMultipleHostAfterAbsIntro(currentImplId, k, pred, abstractionPolicy, lg2, tl)
+              case FindHostError =>
+                k(LoggedError(FindHostError,
+                  logres.written + "error while searching host for abstraction"))
+            }
+        }
+    }
+  }
+
 
 
   def absIntro(lg : LoggedG,
@@ -158,47 +217,26 @@ class Solver
                (k : LoggedTry[DependencyGraph] => Unit) : Unit = {
 
     def aux(lg : LoggedG, deg : Int, currentImpl : ConcreteNode)
-           (k : LoggedTry[(DependencyGraph, ConcreteNode, AbstractionPolicy)] => Unit) : Unit = {
+           (k : IntroK ) : Unit = {
       val lg1 = lg :++> s"*** abs intro degree $deg/$degree ***\n"
-      decisionMaker.abstractionKindAndPolicy(lg1, currentImpl) {
+      decisionMaker.abstractionKindAndPolicy(lg1, currentImpl){
         loggedSKindPolicy =>
           loggedSKindPolicy.value match {
-          case Some((absKind, absPolicy)) =>
+          case Some((absNodeKind, absPolicy)) =>
 
-            def doIntro(k: LoggedTry[(DependencyGraph, ConcreteNode, AbstractionPolicy)] => Unit): Unit = {
+            def doIntro(k: IntroK): Unit = {
               val graph = lg1.value
               val log = loggedSKindPolicy.written +
-                s"trying to create abstraction( $absKind, $absPolicy ) of $currentImpl\n"
-
-              val tryAbs = rules.abstracter.createAbstraction(graph, currentImpl, absKind, absPolicy)
+                s"trying to create abstraction( $absNodeKind, $absPolicy ) of $currentImpl\n"
 
 
-              tryAbs map {
+              rules.abstracter.createAbstraction(graph, currentImpl, absNodeKind, absPolicy) map {
                 case (abs, graph2) =>
-                  val log1 =
-                    log + s"$abs introduced as $absPolicy for $currentImpl" +
-                      s"Searching host for abstraction( $absKind, $absPolicy ) of $currentImpl\n"
+                  val l : List[ConcreteNode] = abs.toList map graph2.getConcreteNode
 
-                  findHost(graph2.set(log), abs,
-                    rules.abstracter.absIntroPredicate(graph2, currentImpl, absPolicy, absKind)) {
-                    logres =>
-                      logres.value match {
-                      case Host(h, graph3) =>
-                        val lr2 = (logres :++>
-                          s"absIntro : host of $abs is ${showDG[NodeId](graph3).show(h)}\n").map{
-                          _ =>
-                            val graph4 = graph3.addContains(h, abs.id)
-
-                            //TODO check if can find another way more generic
-                            val graph5 = rules.abstracter.abstractionCreationPostTreatment(graph4, currentImpl.id, abs.id, absPolicy)
-                            (graph5, abs, absPolicy)
-                        }
-                        k(lr2.toLoggedEither)
-                      case FindHostError =>
-                        k(LoggedError(FindHostError,
-                          logres.written + "error while searching host for abstraction"))
-                    }
-                  }
+                  introMultipleHostAfterAbsIntro(currentImpl.id, ltg => k(ltg.map((abs, _))),
+                    rules.abstracter.absIntroPredicate(currentImpl, absPolicy, absNodeKind),
+                    absPolicy, graph2.set(log), l)
               }
               ()
             }
@@ -211,8 +249,11 @@ class Solver
                     case -\/(_) =>
                       val err = new DGError(s"Single abs intro degree $deg/$degree error (currentImpl = $currentImpl)")
                       k(LoggedError(err, ltg.log))
-                    case \/-((g, abs, _)) =>
-                      aux(g.set(ltg.log), deg + 1, abs)(k)
+                    case \/-((AccessAbstraction(absId, _), g)) =>
+                      aux(g.set(ltg.log), deg + 1, g.getConcreteNode(absId))(k)
+                    case \/-((rwAbs @ ReadWriteAbstraction(_,_), g)) => ???
+//                      rwAbs.toList.map(g.getConcreteNode)
+//                    aux(g.set(ltg.log), deg + 1, g.getConcreteNode(absId))(k)
                   }
               }
 
@@ -224,17 +265,19 @@ class Solver
     }
 
 
-    def redirectWrongUsers(lgt : LoggedTry[(DependencyGraph, ConcreteNode, AbstractionPolicy)] ) : Unit =
-      k(lgt.flatMap{
-        case ((g, abs, absPolicy)) =>
-        val lg = g.set("redirecting wrong users !!")
-          wrongUsers.foldLoggedEither[PuckError, DependencyGraph](lg ){
-          (g, wuId) =>
-            rules.redirection.redirectUsesAndPropagate(g,
-              DGEdge.UsesK(wuId, impl.id), abs.id, absPolicy)
-        }
-      })
+    def redirectWrongUsers(lgt : IntroKArgs ) : Unit = {
 
+      k(lgt.flatMap {
+        case (abs, g) =>
+          val lg = g.set("redirecting wrong users !!")
+          wrongUsers.foldLoggedEither[PuckError, DependencyGraph](lg) {
+            (g, wuId) =>
+              rules.redirection.redirectUsesAndPropagate(g,
+                DGEdge.UsesK(wuId, impl.id), abs,
+                propagateRedirection = true, keepOldUse = false)
+          }
+      })
+    }
     aux (lg :++> s"abs of $impl intro degree $degree", 1, impl) (redirectWrongUsers)
   }
 

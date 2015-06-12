@@ -62,6 +62,7 @@ package object graph {
   }
 
 
+
   type Recording = Seq[Recordable]
   val Recording = transformations.Recording
 
@@ -72,10 +73,6 @@ package object graph {
 
 
   type Mutability = Boolean
-
-//  type ResultT = (DependencyGraph, Recording)
-//  def graphOfResult(result : ResultT) : DependencyGraph = result._1
-//  def recordOfResult(result : ResultT) : Recording = result._2
 
   type ResultT = DependencyGraph
 

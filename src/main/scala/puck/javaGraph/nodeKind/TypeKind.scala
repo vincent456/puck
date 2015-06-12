@@ -24,7 +24,7 @@ case object Interface extends TypeKind {
     }
   }
 
-  def abstractKinds(p : AbstractionPolicy) = p match {
+  def abstractionNodeKinds(p : AbstractionPolicy) = p match {
     case SupertypeAbstraction => Seq(Interface)
     case DelegationAbstraction => Seq(Class)//also interface ?
   }
@@ -51,7 +51,7 @@ case object Class extends TypeKind {
     }
   }
 
-  def abstractKinds(p : AbstractionPolicy) = p match {
+  def abstractionNodeKinds(p : AbstractionPolicy) = p match {
     case SupertypeAbstraction => Seq(Interface, Class)
     case DelegationAbstraction => Seq(Class)//also interface ?
   }

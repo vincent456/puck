@@ -17,12 +17,12 @@ abstract class JavaNodeKind extends NodeKind{
 case object TypeVariable extends JavaNodeKind{
   def canContain(k : NodeKind) = false
   override def abstractionPolicies = Seq()
-  def abstractKinds(p : AbstractionPolicy) = Seq()
+  def abstractionNodeKinds(p : AbstractionPolicy) = Seq()
 }
 case object WildCardType extends JavaNodeKind{
   def canContain(k : NodeKind) = false
   override def abstractionPolicies = Seq()
-  def abstractKinds(p : AbstractionPolicy) = Seq()
+  def abstractionNodeKinds(p : AbstractionPolicy) = Seq()
 }
 
 object JavaNodeKind extends NodeKindKnowledge {

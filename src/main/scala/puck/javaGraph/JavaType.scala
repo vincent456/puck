@@ -44,11 +44,9 @@ object MethodType{
  def unapply( mt : MethodType) : Option[(Tuple, NamedType)] =
    Some((mt.input, mt.output))
 
-  /*def unapply( t : Type) : Option[(Tuple, NamedType)] =
-    t match {
-      case mt : MethodType => Some((mt.input, mt.output))
-      case _ => None
-    }*/
+  def apply(input : Tuple, output : NamedType) =
+   new MethodType(input, output)
+
 }
 
 class MethodType(override val input : Tuple,

@@ -186,14 +186,14 @@ class JavaDG2AST
         redirectTarget(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newTarget)
 
       // TODO see if can be performed in add node instead
-      case Transformation(_, Abstraction(impl, abs, SupertypeAbstraction)) =>
+      case Transformation(_, AbstractionOp(impl, AccessAbstraction(abs, SupertypeAbstraction))) =>
         (id2declMap get impl, reenactor.getConcreteNode(abs).kind) match {
           case (Some(ConcreteMethodDeclHolder(decl)), AbstractMethod) =>
             decl.setVisibility(AST.ASTNode.VIS_PUBLIC)
           case _ => ()
         }
 
-      case Transformation(_, Abstraction(_, _, _)) => ()
+      case Transformation(_, AbstractionOp(_, _)) => ()
 
       case Transformation(Reverse, CNode(n)) =>
         id2declMap get n.id foreach {

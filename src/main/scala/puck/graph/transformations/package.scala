@@ -1,16 +1,9 @@
 package puck.graph
 
-import puck.graph.constraints.AbstractionPolicy
-
 
 package object transformations {
 
   implicit class RecordingOps(val record : Recording) extends AnyVal {
-
-//    override def equals(obj : Any) : Boolean = obj match {
-//      case r : Recording => r() == record
-//      case _ => false
-//    }
 
     def redo(g : DependencyGraph) : DependencyGraph =
       record.reverse.foldLeft(g)((g0, t) => t.redo(g0))
@@ -20,17 +13,6 @@ package object transformations {
         case t : Transformation => f(t)
         case r => r
       }
-
-
-    //override def iterator: Iterator[Transformation] = record.reverseIterator
-    /* def nonEmpty = record.nonEmpty
-     def size = record.size*/
-
-    /*  def addNode(id : NIdT, name : String, kind : NodeKind, styp: TypeHolder, mutable : Boolean) : RecT =
-        Transformation(Add, TTNode(id, name, kind, styp, mutable)) +: this
-
-      def removeNode(id : NIdT, name : String, kind : NodeKind, styp: TypeHolder, mutable : Boolean) : RecT =
-        Transformation(Remove, TTNode(id, name, kind, styp, mutable)) +: this*/
 
     def comment(msg : String) : Recording =
       Comment(msg) +: record
@@ -71,16 +53,15 @@ package object transformations {
       Transformation(Regular, red) +: record
     }
     def addTypeChange( typed : NodeId,
-                       typ: Option[Type],
                        oldUsee: NodeId,
                        newUsee : NodeId) : Recording =
-      Transformation(Regular, TypeRedirection(typed, typ, oldUsee, newUsee)) +: record
+      Transformation(Regular, TypeRedirection(typed, oldUsee, newUsee)) +: record
 
-    def addAbstraction(impl : NodeId, abs : NodeId, absPolicy : AbstractionPolicy) : Recording =
-      Transformation(Regular, Abstraction(impl, abs, absPolicy)) +: record
+    def addAbstraction(impl : NodeId, abs : Abstraction) : Recording =
+      Transformation(Regular, AbstractionOp(impl, abs)) +: record
 
-    def removeAbstraction(impl : NodeId, abs : NodeId, absPolicy : AbstractionPolicy) : Recording =
-      Transformation(Reverse, Abstraction(impl, abs, absPolicy)) +: record
+    def removeAbstraction(impl : NodeId, abs : Abstraction) : Recording =
+      Transformation(Reverse, AbstractionOp(impl, abs)) +: record
 
     def addTypeDependency( typeUse : NodeIdP,
                            typeMemberUse :  NodeIdP) : Recording =

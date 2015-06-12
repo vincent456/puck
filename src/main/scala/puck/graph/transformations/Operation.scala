@@ -1,7 +1,6 @@
 package puck.graph.transformations
 
 import puck.graph._
-import puck.graph.constraints.AbstractionPolicy
 
 sealed trait Operation{
 
@@ -98,26 +97,24 @@ extends Operation {
 
 case class TypeRedirection
 (typed : NodeId,
- styp : Option[Type],
  oldUsee: NodeId,
  newUsee : NodeId)
   extends Operation{
 
   override def execute(g: DependencyGraph, op: Direction) = op match {
-    case Regular => g.changeType(typed, styp, oldUsee, newUsee)
-    case Reverse => g.changeType(typed, styp, newUsee, oldUsee)
+    case Regular => g.changeType(typed, oldUsee, newUsee)
+    case Reverse => g.changeType(typed, newUsee, oldUsee)
   }
 }
 
-case class Abstraction
+case class AbstractionOp
 (impl: NodeId,
- abs: NodeId,
- policy: AbstractionPolicy)
+ abs : Abstraction)
  extends Operation{
 
   def execute(g: DependencyGraph , op : Direction) = op match {
-    case Regular => g.addAbstraction(impl, (abs, policy))
-    case Reverse => g.removeAbstraction(impl, (abs, policy))
+    case Regular => g.addAbstraction(impl, abs)
+    case Reverse => g.removeAbstraction(impl, abs)
   }
 }
 

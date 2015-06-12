@@ -105,12 +105,15 @@ object Recording {
         val extyId = tgt.extremity.node
         val newExty = tgt.extremity.create(mappin(extyId))
         tgt.copy(edge = newEdge, extremity = newExty)
-      case Abstraction(impl, abs, p) =>
-        Abstraction(mappin(impl), mappin(abs), p)
+      case AbstractionOp(impl, AccessAbstraction(abs, p)) =>
+        AbstractionOp(mappin(impl), AccessAbstraction(mappin(abs), p))
 
-      case TypeRedirection(typed, styp, oldUsed, newUsed) =>
-        TypeRedirection(mappin(typed), styp map mappingOnType,
-          mappin(oldUsed), mappin(newUsed))
+      case AbstractionOp(impl, ReadWriteAbstraction(sRabs, sWabs)) =>
+        AbstractionOp(mappin(impl), ReadWriteAbstraction(sRabs map mappin, sWabs map mappin))
+
+
+      case TypeRedirection(typed, oldUsed, newUsed) =>
+        TypeRedirection(mappin(typed), mappin(oldUsed), mappin(newUsed))
 
       case cnn @ ChangeNodeName(nid, _, _) =>
         cnn.copy(nid = mappin(nid))

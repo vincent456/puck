@@ -2,7 +2,7 @@ package puck.javaGraph
 package transformations
 
 import nodeKind._
-import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
+import puck.graph.constraints._
 import puck.graph._
 import puck.graph.transformations.rules.Abstract
 
@@ -10,26 +10,50 @@ object JavaAbstract extends Abstract {
 
 
 
-  override def absIntroPredicate( graph : DependencyGraph,
-                                  impl : DGNode,
+  override def absIntroPredicate( impl : DGNode,
                                   absPolicy : AbstractionPolicy,
                                   absKind : NodeKind) : NodePredicateT = {
     (impl.kind, absPolicy) match {
       case (Method, SupertypeAbstraction)
            | (AbstractMethod, SupertypeAbstraction) =>
         (graph, potentialHost) => !graph.interloperOf(graph.container(impl.id).get, potentialHost.id)
-      case _ => super.absIntroPredicate(graph, impl, absPolicy, absKind)
+      case _ => super.absIntroPredicate(impl, absPolicy, absKind)
     }
   }
 
-  override def abstractionName( g: DependencyGraph, impl: ConcreteNode, abskind : NodeKind, policy : AbstractionPolicy) : String = {
+  override def absType
+  ( g : DependencyGraph,
+    impl : ConcreteNode,
+    sUsesAccessKind: Option[UsesAccessKind]) : Option[Type] = {
+
+    val voidId = {
+      val sNode = g.concreteNodes.find(_.name == "void")
+      if(sNode.isEmpty) sys.error("void not loaded")
+      else sNode.get.id
+    }
+
+    (sUsesAccessKind, impl.styp) match {
+      case (Some(Read), Some(t@NamedType(_))) =>
+        Some(MethodType(Tuple(), t))
+      case (Some(Write), Some(t)) =>
+        Some(MethodType(Tuple(List(t)), NamedType(voidId)))
+      case _ => super.absType(g, impl, sUsesAccessKind)
+    }
+  }
+  override def abstractionName
+  ( g: DependencyGraph,
+    impl: ConcreteNode,
+    abskind : NodeKind,
+    policy : AbstractionPolicy,
+    sUsesAccessKind: Option[UsesAccessKind]
+    ) : String = {
     if (impl.kind == Constructor)
       "create"
     else
       (abskind, policy) match {
         case (Method, SupertypeAbstraction)
              | (AbstractMethod, SupertypeAbstraction) => impl.name
-        case _ => super.abstractionName(g, impl, abskind, policy)
+        case _ => super.abstractionName(g, impl, abskind, policy, sUsesAccessKind)
 
       }
   }
@@ -39,7 +63,7 @@ object JavaAbstract extends Abstract {
     impl: ConcreteNode,
     abskind : NodeKind ,
     policy : AbstractionPolicy
-    ) : LoggedTry[(ConcreteNode, DependencyGraph)] = {
+    ) : LoggedTry[(Abstraction, DependencyGraph)] = {
 
 
     (abskind, policy) match {
@@ -65,7 +89,7 @@ object JavaAbstract extends Abstract {
 
         abstractTypeDeclAndReplaceByAbstractionWherePossible(g,
           impl,
-          Class, SupertypeAbstraction,
+          Class, DelegationAbstraction,
           methods)
 
       case (AbstractMethod, SupertypeAbstraction) =>
@@ -73,8 +97,9 @@ object JavaAbstract extends Abstract {
         LoggedSuccess(createAbsNode(g, impl, abskind, policy))
 
       case (ConstructorMethod, _) =>
-        super.createAbstraction(g, impl, abskind, policy) map { case (abs, g0) =>
-          (abs, addTypesUses(g0, abs))
+        super.createAbstraction(g, impl, abskind, policy) map {
+          case (abs @ AccessAbstraction(absId,_), g0) => (abs, addTypesUses(g0, absId))
+          case _ => sys.error("should not happen")
         }
 
       case _ => super.createAbstraction(g, impl, abskind, policy)
@@ -91,9 +116,12 @@ object JavaAbstract extends Abstract {
     (abstraction.kind, policy) match {
       case (AbstractMethod, SupertypeAbstraction) =>
         val implContainer = g.container(implId).get
-        val thisClassNeedsImplement = !g.abstractions(implContainer).exists
-          {case (abs, absPolicy) => absPolicy == SupertypeAbstraction &&
-            abs == g.container(absId).get}
+        val thisClassNeedsImplement =
+          !g.abstractions(implContainer).exists{
+          case AccessAbstraction(abs, SupertypeAbstraction) =>
+            abs == g.container(absId).get
+           case _ => false
+        }
 
         if(!thisClassNeedsImplement) g
         else {
@@ -102,8 +130,8 @@ object JavaAbstract extends Abstract {
             .addIsa(implContainer, absContainer)
 
           g1.content(absId).foldLeft(g1){
-            case (g0, absMethodId) => val absMeth = g0.getConcreteNode(absMethodId)
-              g0.changeType(absMethodId, absMeth.styp, implId, absId)
+            case (g0, absMethodId) =>
+              g0.changeType(absMethodId, implId, absId)
           }
         }
       case _ => g

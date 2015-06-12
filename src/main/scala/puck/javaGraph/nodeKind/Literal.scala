@@ -13,6 +13,6 @@ case object Literal extends JavaNodeKind {
   def canContain(k : NodeKind) = false
   //TODO in case of method abstraction cf field comment
   override def abstractionPolicies = Seq(DelegationAbstraction)
-  def abstractKinds(p : AbstractionPolicy) = ???
+  def abstractionNodeKinds(p : AbstractionPolicy) = ???
     ///List(Field(puck.graph.dummyId, typ), Method())
 }
