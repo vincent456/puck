@@ -5,7 +5,7 @@ package transformations
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations.rules._
 import puck.util.LoggedEither._
-import scalaz._, Scalaz._
+import scalaz.std.list._
 import ShowDG._
 
 class TransformationRules
@@ -49,9 +49,10 @@ class TransformationRules
           val overloadedMethod =
             subMethods filter {
               m => g.abstractions(m.id) exists {
-                case (supMethId, strat) =>
-                  strat == SupertypeAbstraction &&
-                    g.contains(sup, supMethId)
+                case AccessAbstraction(supMethId, SupertypeAbstraction)
+                  if g.contains(sup, supMethId) => true
+                case _ => false
+
               }
             }
           overloadedMethod.foldLoggedEither(g){

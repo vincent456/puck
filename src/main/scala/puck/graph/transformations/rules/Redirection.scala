@@ -25,19 +25,19 @@ object Redirection {
                                newUsed : Abstraction,
                                propagateRedirection : Boolean/* = true*/,
                                keepOldUse : Boolean /*= false */) : LoggedTG =
-    (newUsed, oldUse.accessKind) match {
+    (newUsed, oldUse.accessKind)  match {
       case (AccessAbstraction(absId, pol), _) =>
-        redirectUsesAndPropagate(g,oldUse, absId, pol, propagateRedirection, keepOldUse)
-      case (ReadWriteAbstraction(Some(rid), _), Some(Read))=>
-        redirectUsesAndPropagate(g,oldUse, rid, DelegationAbstraction, propagateRedirection, keepOldUse)
-      case (ReadWriteAbstraction(_, Some(wid)), Some(Write))=>
-        redirectUsesAndPropagate(g,oldUse, wid, DelegationAbstraction, propagateRedirection, keepOldUse)
-      case (ReadWriteAbstraction(Some(rid), Some(wid)), Some(RW))=>
-        redirectUsesAndPropagate(g, oldUse, rid, DelegationAbstraction, propagateRedirection, keepOldUse = true).flatMap{
+        redirectUsesAndPropagate(g, oldUse, absId, pol, propagateRedirection, keepOldUse)
+      case (ReadWriteAbstraction(Some(rid), _), Some(Read)) =>
+        redirectUsesAndPropagate(g, oldUse, rid, DelegationAbstraction, propagateRedirection, keepOldUse)
+      case (ReadWriteAbstraction(_, Some(wid)), Some(Write)) =>
+        redirectUsesAndPropagate(g, oldUse, wid, DelegationAbstraction, propagateRedirection, keepOldUse)
+      case (ReadWriteAbstraction(Some(rid), Some(wid)), Some(RW)) =>
+        redirectUsesAndPropagate(g, oldUse, rid, DelegationAbstraction, propagateRedirection, keepOldUse = true).flatMap {
           redirectUsesAndPropagate(_, oldUse, wid, DelegationAbstraction, propagateRedirection, keepOldUse)
         }
-
-    }
+      case _ => sys.error("should not happen")
+      }
 
   def redirectUsesAndPropagate(g  : DependencyGraph,
                                oldUse : DGUses,

@@ -2,10 +2,6 @@ package puck.util
 
 import java.io.{FileWriter, BufferedWriter, File}
 
-/**
- * Created by lorilan on 08/05/14.
- */
-
 trait Logger[V] {
   def writeln(msg : => Any = "")(implicit v : V) : Unit
   def write(msg : => Any)(implicit v : V) : Unit

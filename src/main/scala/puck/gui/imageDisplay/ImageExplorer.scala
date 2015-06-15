@@ -10,7 +10,7 @@ import puck.graph.io.{Png, PrintingOptions, VisibilitySet}
 import puck.gui.PuckMainPanel
 import puck.gui.svg.ScrollablePicture
 import puck.search.SearchState
-import puck.util.PuckLog
+import puck.util.{PuckLogger, PuckLog}
 
 import scala.concurrent.Future
 import scala.swing.BorderPanel.Position
@@ -22,6 +22,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
  * Created by lorilan on 16/11/14.
  */
 class ImageExplorer(val filesHandler : FilesHandler,
+                    val logger : PuckLogger,
                     val states : IndexedSeq[SearchState[ResultT]],
                     visibility : VisibilitySet.T,
                      printId : Boolean,
@@ -51,10 +52,10 @@ class ImageExplorer(val filesHandler : FilesHandler,
       ImageIO.read(pipedInput)
     } onComplete {
       case Success(img) =>
-        filesHandler.logger.writeln("printing image success")
+        logger.writeln("printing image success")
         imageWrapper.contents = Component.wrap(new ScrollablePicture(new ImageIcon(img),2))
       case _ =>
-        filesHandler.logger.writeln("printing image failure")((PuckLog.NoSpecialContext, PuckLog.Error))
+        logger.writeln("printing image failure")((PuckLog.NoSpecialContext, PuckLog.Error))
     }
 
     val opts = PrintingOptions(visibility, printId, printSignature)

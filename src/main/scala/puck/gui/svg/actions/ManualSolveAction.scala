@@ -113,8 +113,8 @@ class ManualSolveAction
   }
 
   override def selectExistingAbstraction
-  ( lg : LoggedG, choices : Set[(NodeId, AbstractionPolicy)])
-  ( k : Logged[Option[(NodeId, AbstractionPolicy)]] => Unit) : Unit = {
+  ( lg : LoggedG, choices : Set[Abstraction])
+  ( k : Logged[Option[Abstraction]] => Unit)  : Unit = {
     ManualSolveAction.forChoice("Abstraction Choice",
       s"Use existing abstraction for\n${graph.fullName(violationTarget.id)}\n(None will try tro create a new one)",
       choices.toSeq, k, appendNone = true)

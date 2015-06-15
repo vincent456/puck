@@ -49,7 +49,7 @@ object JavaDG2AST extends DG2ASTBuilder {
         case None => throw new DGBuildingError("Compilation error, no AST generated")
         case Some(p) =>
           val t = CompileHelper.buildGraph(p, ll)
-          new JavaDG2AST(logger, t._1, t._2, t._3, t._4, t._5)
+          new JavaDG2AST(t._1, t._2, t._3, t._4, t._5)
         }
     }
 
@@ -67,8 +67,7 @@ object JavaDG2AST extends DG2ASTBuilder {
 }
 import JavaDG2AST._
 class JavaDG2AST
-(val logger : PuckLogger,
- val program : AST.Program,
+(val program : AST.Program,
  val initialGraph : DependencyGraph,
  val initialRecord : Seq[Transformation],
  val nodesByName : Map[String, NodeId],
@@ -78,27 +77,32 @@ class JavaDG2AST
 
   implicit val defaultVerbosity = (PuckLog.AG2AST, PuckLog.Info)
 
-  def safeGet(graph : DependencyGraph, id2declMap : Map[NodeId, ASTNodeLink])(id :NodeId): ASTNodeLink =
-  try id2declMap(id)
-  catch {
-    case e : NoSuchElementException =>
-      val n = graph.getConcreteNode(id)
-      if(n.kind == Package)
-        PackageDeclHolder
-      else
-        NoDecl
-  }
+  def safeGet
+  ( graph : DependencyGraph,
+    id2declMap : Map[NodeId, ASTNodeLink])
+  ( id :NodeId): ASTNodeLink =
+    try id2declMap(id)
+    catch {
+      case e : NoSuchElementException =>
+        val n = graph.getConcreteNode(id)
+        if(n.kind == Package)
+          PackageDeclHolder
+        else
+          NoDecl
+    }
 
   def astNodeOf(graph : DependencyGraph, id : NodeId) : ASTNodeLink =
     safeGet(graph, graph2ASTMap)(id)
 
   def verbosity : PuckLog.Level => PuckLog.Verbosity = l => (PuckLog.AG2AST, l)
 
-  def parseConstraints(decouple : File) : DG2AST  =
+  def parseConstraints
+  ( decouple : File)
+  ( implicit logger : PuckLogger) : DG2AST  =
     try {
       //val parser = ConstraintsPlParser(nodesByName)
       val cm = ConstraintsParser(nodesByName, new FileReader(decouple))
-      new JavaDG2AST(logger, program,
+      new JavaDG2AST(program,
         initialGraph.newGraph(constraints = cm),
         initialRecord,
         nodesByName,
@@ -111,12 +115,10 @@ class JavaDG2AST
     }
 
 
-  def apply(result : ResultT) : Unit = {
+  def apply(result : ResultT)(implicit logger : PuckLogger) : Unit = {
 
     logger.writeln("applying change !")
     val record = recordOfResult(result)
-
-
 
     record.reverse.foldLeft((graphOfResult(result), initialGraph, graph2ASTMap)) {
       case ((resultGraph, reenactor, g2AST), t : Transformation) =>
@@ -141,7 +143,7 @@ class JavaDG2AST
 
   }
 
-  def printCode(dir : File) : Unit =
+  def printCode(dir : File)(implicit logger : PuckLogger) : Unit =
     program.printCodeInDirectory(dir)
 
   val discardedOp : Operation => Boolean = {
@@ -155,7 +157,8 @@ class JavaDG2AST
   ( resultGraph : DependencyGraph,
     reenactor: DependencyGraph,
     id2declMap: Map[NodeId, ASTNodeLink],
-    t: Transformation) : Map[NodeId, ASTNodeLink] = t match {
+    t: Transformation)
+  ( implicit logger : PuckLogger): Map[NodeId, ASTNodeLink] = t match {
     case Transformation(Regular, CNode(n)) =>
       //redo t before createDecl
       val newMap = id2declMap get n.id match {
@@ -222,9 +225,11 @@ class JavaDG2AST
     program.getRootPath + names.mkString(java.io.File.separator) +".java"
   }
 
-  def setPackageDecl(graph: DependencyGraph,
-                     packageId : NodeId,
-                     typeDeclNodeId : NodeId, itc : AST.TypeDecl) = {
+  def setPackageDecl
+  ( graph: DependencyGraph,
+    packageId : NodeId,
+    typeDeclNodeId : NodeId, itc : AST.TypeDecl)
+  ( implicit logger : PuckLogger) = {
 
     val cu = itc.compilationUnit()
     val pkgDecl = graph.fullName(packageId)
@@ -238,14 +243,18 @@ class JavaDG2AST
     cu.flushCaches()
   }
 
-  val removeIsa : (ASTNodeLink, ASTNodeLink) => Unit = {
+  def removeIsa
+  ( sub : ASTNodeLink, sup : ASTNodeLink)
+  ( implicit logger : PuckLogger) : Unit = (sub,sup) match {
     case (sub : TypedKindDeclHolder, sup: TypedKindDeclHolder) =>
       sub.decl.removeSuperType(sup.decl.createLockedAccess())
 
     case e => logger.writeln(s"isa($e) not created")
   }
 
-  val addIsa : (ASTNodeLink, ASTNodeLink) => Unit = {
+  def addIsa
+  (sub : ASTNodeLink, sup : ASTNodeLink)
+  ( implicit logger : PuckLogger) : Unit = (sub, sup) match {
     case (ClassDeclHolder(sDecl), idh: InterfaceDeclHolder) =>
       sDecl.addImplements(idh.decl.createLockedAccess())
 
@@ -255,7 +264,8 @@ class JavaDG2AST
   def addEdge
     ( graph: DependencyGraph,
       id2declMap: NodeId => ASTNodeLink,
-      e: DGEdge) = {
+      e: DGEdge)
+    ( implicit logger : PuckLogger)= {
 
     val source = graph.getConcreteNode(e.source)
     val target = graph.getConcreteNode(e.target)
@@ -305,10 +315,12 @@ class JavaDG2AST
   }
 
 
-  def redirectTarget(graph: DependencyGraph,
-                     reenactor : DependencyGraph,
-                     id2declMap: NodeId => ASTNodeLink,
-                     e: DGEdge, newTargetId: NodeId) : Unit =  {
+  def redirectTarget
+  ( graph: DependencyGraph,
+    reenactor : DependencyGraph,
+    id2declMap: NodeId => ASTNodeLink,
+    e: DGEdge, newTargetId: NodeId)
+  ( implicit logger : PuckLogger) : Unit =  {
     logger.writeln("redirecting %s target to %s".format(e, newTargetId))
     if(e.target != newTargetId) {
       val target = reenactor.getConcreteNode(e.target)
@@ -423,10 +435,12 @@ class JavaDG2AST
   }
 
 
-  def redirectSource(resultGraph: DependencyGraph,
-                     reenactor : DependencyGraph,
-                     id2declMap: NodeId => ASTNodeLink,
-                     e: DGEdge, newSourceId: NodeId) : Unit =  {
+  def redirectSource
+  ( resultGraph: DependencyGraph,
+    reenactor : DependencyGraph,
+    id2declMap: NodeId => ASTNodeLink,
+    e: DGEdge, newSourceId: NodeId)
+  ( implicit logger : PuckLogger) : Unit =  {
     import AST.ASTNode.VIS_PUBLIC
 
 

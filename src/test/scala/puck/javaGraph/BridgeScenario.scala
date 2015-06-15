@@ -3,7 +3,7 @@ package puck.javaGraph
 import java.io.{File, FileReader}
 
 import org.scalatest.{OptionValues, EitherValues}
-import puck.util.PuckFileLogger
+import puck.util.{PuckNoopLogger, PuckFileLogger}
 import puck.{QuickFrame, Java2dot, PuckError, Settings}
 import puck.graph._
 import puck.graph.constraints.{ConstraintsParser, SupertypeAbstraction}
@@ -50,7 +50,6 @@ class BridgeScenario private()
   val printCapital1 = fullName2id(s"$p.WelcomeCapital.printCapital__String")
   val printCapital2 = fullName2id(s"$p.InfoCapital.printCapital__String")
 
-
   var printId = 0
 
   def printCode(g : DependencyGraph) : Unit = {
@@ -93,8 +92,10 @@ class BridgeScenario private()
     g.usersOf(clazz).foldLeft(g){ (g0, userId) =>
       TR.redirection.redirectUsesAndPropagate(g0,
         DGEdge.UsesK(userId, clazz),
-        interface,
-        SupertypeAbstraction).value.right.value
+        AccessAbstraction(interface,
+        SupertypeAbstraction),
+        propagateRedirection = true,
+        keepOldUse = false).value.right.value
     }
 
   def getDelegate(g : DependencyGraph, clazz : NodeId) =
@@ -109,23 +110,23 @@ class BridgeScenario private()
 
   val g0 = graph.newGraph(constraints = cm)
   logger = new PuckFileLogger(_ => true, new File(BridgeScenario.path + "log"))
-  val jdg2ast = new JavaDG2AST(logger, program, g0, initialRecord, fullName2id, dg2astMap)
+  val jdg2ast = new JavaDG2AST(program, g0, initialRecord, fullName2id, dg2astMap)
 
   val (c1, g1) = intro2classMerge(g0, "StarStyle", printStar1, printStar2)
   //QuickFrame(g1)
   val (c2, g2) = intro2classMerge(g1, "CapitalStyle", printCapital1, printCapital2)
   val g3 =  TR.rename(TR.rename(g2, printStar1, "printStyle"), printCapital1, "printStyle")
 
-  val (i1, g4) = TR.abstracter.createAbstraction(g3, c1, Interface, SupertypeAbstraction).value.right.value
-  val g5 = g4.addContains(screen, i1.id)
-  val (i2, g6) = TR.abstracter.createAbstraction(g5, c2, Interface, SupertypeAbstraction).value.right.value
-  val g7 = g6.addContains(screen, i2.id)
+  val (AccessAbstraction(i1Id, _), g4) = TR.abstracter.createAbstraction(g3, c1, Interface, SupertypeAbstraction).value.right.value
+  val g5 = g4.addContains(screen, i1Id)
+  val (AccessAbstraction(i2Id, _), g6) = TR.abstracter.createAbstraction(g5, c2, Interface, SupertypeAbstraction).value.right.value
+  val g7 = g6.addContains(screen, i2Id)
 
-  val g8 = TR.rename(TR.mergeInto(g7, i2.id, i1.id).value.right.value, i1.id, "StyleProvider")
+  val g8 = TR.rename(TR.mergeInto(g7, i2Id, i1Id).value.right.value, i1Id, "StyleProvider")
 
-  val g9 = useInterfaceInstead(g8, c1.id, i1.id)
+  val g9 = useInterfaceInstead(g8, c1.id, i1Id)
 
-  val g10 = useInterfaceInstead(g9, c2.id, i1.id)
+  val g10 = useInterfaceInstead(g9, c2.id, i1Id)
 
 
   val delegate = getDelegate(g10, welcomeStar)

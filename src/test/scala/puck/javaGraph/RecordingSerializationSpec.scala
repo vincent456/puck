@@ -7,6 +7,14 @@ import puck.graph._
 import puck.graph.transformations.{Recording, Regular, CNode, Transformation}
 import nodeKind._
 
+class Toto extends Serializable
+class Titi extends Toto
+
+
+case class WrapToto(n : Toto)
+class WrapTiti(override val n : Titi) extends WrapToto(n)
+
+
 class RecordingSerializationSpec extends AcceptanceSpec {
 
   val tmpFile = Settings.tmpDir + "tmpFile"
@@ -24,11 +32,54 @@ class RecordingSerializationSpec extends AcceptanceSpec {
     ois.close()
   }
 
-
-
   feature("Serialization"){
 
-    scenario("one transformation"){
+    scenario("Tuple"){
+
+      val t = Tuple()
+      writeAndClose(tmpFile){
+        _.writeObject(t)
+      }
+      val t2 = readAndClose(tmpFile){
+        _.readObject().asInstanceOf[Tuple]
+      }
+
+    }
+
+
+    scenario("case class"){
+
+      try {
+        val t = WrapToto(new Titi())
+        writeAndClose(tmpFile) {
+          _.writeObject(t)
+        }
+        val t2 = readAndClose(tmpFile) {
+          _.readObject().asInstanceOf[WrapToto]
+        }
+      }
+      catch{
+        case t : Throwable =>
+          t.printStackTrace()
+          assert(false)
+      }
+
+    }
+
+    scenario("class extending case class"){
+
+      val t = new WrapTiti(new Titi())
+      writeAndClose(tmpFile){
+        _.writeObject(t)
+      }
+      val t2 = readAndClose(tmpFile){
+        _.readObject().asInstanceOf[WrapTiti]
+      }
+
+    }
+
+
+    scenario("one transformation - add node no type"){
 
       val t = Transformation(Regular, CNode(ConcreteNode(1, "one", Class, styp = None, mutable = true)))
       val r1 = t +: Recording()
@@ -41,7 +92,33 @@ class RecordingSerializationSpec extends AcceptanceSpec {
 
     }
 
-    scenario("two transformations"){
+    scenario("one transformation - add node with arrow type"){
+
+      val t = Transformation(Regular, CNode(ConcreteNode(1, "one", Method, styp = Some(Arrow(NamedType(0), NamedType(1))), mutable = true)))
+      val r1 = t +: Recording()
+      writeAndClose(tmpFile){
+        Recording.write(_, r1)
+      }
+      val r2 = readAndClose(tmpFile)(Recording.read)
+
+      assert(r1 == r2)
+
+    }
+
+    scenario("one transformation - add node with method type"){
+
+      val t = Transformation(Regular, CNode(ConcreteNode(1, "one", Method, styp = Some(MethodType(Tuple(List(NamedType(0))), NamedType(1))), mutable = true)))
+      val r1 = t +: Recording()
+      writeAndClose(tmpFile){
+        Recording.write(_, r1)
+      }
+      val r2 = readAndClose(tmpFile)(Recording.read)
+
+      assert(r1 == r2)
+
+    }
+
+    scenario("two transformations - add node no type x 2"){
 
       val t = Transformation(Regular, CNode(ConcreteNode(1, "one", Class, styp = None, mutable = true)))
       val t2 = Transformation(Regular, CNode(ConcreteNode(2, "two", Class, styp = None, mutable = true)))

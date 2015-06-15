@@ -2,12 +2,10 @@ package puck.javaGraph
 
 import puck.graph._
 import puck.graph.DependencyGraph._
-import puck.graph.constraints.{SupertypeAbstraction, AbstractionPolicy, ConstraintsMaps}
+import puck.graph.constraints.{SupertypeAbstraction, ConstraintsMaps}
 import puck.graph.transformations.Recording
 import puck.javaGraph.nodeKind._
-import puck.util.PuckNoopLogger
 import scala.collection.JavaConversions.collectionAsScalaIterable
-import scalaz._, Scalaz._
 
 class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 
@@ -205,27 +203,27 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 
 
 
-  override def registerAbstraction : DependencyGraph => (ImplId, AbsId, AbstractionPolicy) => DependencyGraph =
-    graph => (implId , absId, pol) =>
-    if(pol != SupertypeAbstraction) super.registerAbstraction(graph)(implId , absId, pol)
-    else {
-      val impl = graph.getConcreteNode(implId)
-      val abs = graph.getConcreteNode(absId)
-      (impl.kind, abs.kind) match {
-        /*case (Class, Class)
-          | (Class, Interface)
-          | (Interface, Interface) =>
-        */
-        case (Class, Interface) =>
-            val absMeths = graph.content(abs.id).map(graph.getConcreteNode)
-            val candidates = graph.content(impl.id).map(graph.getConcreteNode)
-            Type.findAndRegisterOverridedInList(graph, absMeths.toList, candidates.toList) {
-              Type.errorOnImplemNotFound(graph.fullName(impl.id))
-            } .value.getOrElse(sys.error("Success expected"))
-              .addAbstraction(implId, (absId, pol))
-        case _ => graph
+  override def registerAbstraction : DependencyGraph => (ImplId, Abstraction) => DependencyGraph =
+    graph => (implId , abs) =>
+      abs match {
+        case AccessAbstraction(absId, SupertypeAbstraction) =>
+          val impl = graph.getConcreteNode(implId)
+          val absNode = graph.getConcreteNode(absId)
+          (impl.kind, absNode.kind) match {
+            /*case (Class, Class)
+              | (Class, Interface)
+              | (Interface, Interface) =>
+            */
+            case (Class, Interface) =>
+              val absMeths = graph.content(absId).map(graph.getConcreteNode)
+              val candidates = graph.content(impl.id).map(graph.getConcreteNode)
+              Type.findAndRegisterOverridedInList(graph, absMeths.toList, candidates.toList) {
+                Type.errorOnImplemNotFound(graph.fullName(impl.id))
+              } .value.getOrElse(sys.error("Success expected"))
+                .addAbstraction(implId, abs)
+            case _ => graph
+          }
+        case _ => super.registerAbstraction(graph)(implId , abs)
       }
-
-    }
 
 }

@@ -29,9 +29,9 @@ object JavaRenamer extends Renamer{
         else {
           val nid = border.head
           val abs = g.abstractions(nid).filter{
-            case (_, SupertypeAbstraction) => true
+            case AccessAbstraction(_, SupertypeAbstraction) => true
             case _ => false
-          }.map(_._1)
+          }.map(_.asInstanceOf[AccessAbstraction].nodeId)
 
           val subClasses = g.subTypes(g.container(nid).get)
 

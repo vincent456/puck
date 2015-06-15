@@ -34,6 +34,10 @@ java15comply := true
 
 classPathFileName := "CLASSPATH"
 
+//without this option, there is "cannot assign instance of scala.collection.immutable.List$SerializationProxy"
+// Cast exception raised in RecordingSerializationSpec ...
+fork := true
+
 libraryDependencies ++= Seq(
 	"org.scala-lang" % "scala-swing" % "2.11.0-M7",
 	"org.scala-lang" % "scala-parser-combinators" % "2.11.0-M4",

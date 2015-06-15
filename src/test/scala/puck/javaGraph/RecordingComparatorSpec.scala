@@ -20,8 +20,12 @@ class RecordingComparatorSpec extends AcceptanceSpec {
 
   def introInterface(g : GraphT, clazz : ConcreteNode, pcontainer : NodeId) : LoggedTry[(GraphT, ConcreteNode)]= {
     TR.abstracter.createAbstraction(g, clazz, Interface, SupertypeAbstraction)
-      .map {case (classAbs, g) =>
-      (g.addContains(pcontainer, classAbs.id), classAbs)}
+      .map {case (AccessAbstraction(classAbs, _), g) =>
+        (g.addContains(pcontainer, classAbs), g.getConcreteNode(classAbs))
+        case _ =>
+          assert(false)
+          sys.error("should not happen")
+    }
 
   }
 
@@ -82,7 +86,10 @@ class RecordingComparatorSpec extends AcceptanceSpec {
       import methodUsesViaThisField._
 
       def seq() = TR.abstracter.createAbstraction(graph, classBNode, Interface, SupertypeAbstraction)
-        .map { case (classBAbs, g) => g.addContains(rootPackage, classBAbs.id) }
+        .map { case (AccessAbstraction(classBAbs, _), g) => g.addContains(rootPackage, classBAbs)
+              case _ =>
+                assert(false)
+                sys.error("should not happen")}
 
       val t1 = seq()
 

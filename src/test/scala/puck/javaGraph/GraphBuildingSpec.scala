@@ -2,9 +2,8 @@ package puck
 package javaGraph
 
 //import nodeKind._
-import puck.graph.{ParameterizedUses, Uses, DependencyGraph, DGEdge}
+import puck.graph._
 import puck.graph.constraints.SupertypeAbstraction
-import puck.graph.{Read, Write, RW}
 
 class GraphBuildingSpec extends AcceptanceSpec {
 
@@ -127,8 +126,8 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val superType = fullName2id(s"$p.SuperType")
         val absmUsed = fullName2id(s"$p.SuperType.ma__void")
 
-        graph.abstractions(classUsed) should contain ( (superType, SupertypeAbstraction) )
-        graph.abstractions(mUsed) should contain ( (absmUsed, SupertypeAbstraction) )
+        graph.abstractions(classUsed) should contain ( AccessAbstraction(superType, SupertypeAbstraction) )
+        graph.abstractions(mUsed) should contain ( AccessAbstraction(absmUsed, SupertypeAbstraction) )
       }
     }
   }

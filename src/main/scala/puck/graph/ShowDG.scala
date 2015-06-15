@@ -2,7 +2,8 @@ package puck.graph
 
 import puck.graph.transformations._
 
-import scalaz._
+import scalaz.{Cord, Show}
+
 
 import scala.language.implicitConversions
 
@@ -77,12 +78,12 @@ object ShowDG {
         val xcord = extremityCord(dg, exty)
         Cord(tgt.productPrefix, "(", ecord ,",", xcord ,")")
 
-      case TypeRedirection(typed, typ, oldUsed, newUsed) =>
-        val ntyped = dg.getNode(typed).toString
-        val nold = dg.getNode(oldUsed).toString
-        val nnew = dg.getNode(newUsed).toString
-        Cord(tgt.productPrefix, "(", ntyped ,",", typ.toString ,
-          ",", nold , ",", nnew ,")")
+//      case TypeRedirection(typed, oldUsed, newUsed) =>
+//        val ntyped = dg.getNode(typed).toString
+//        val nold = dg.getNode(oldUsed).toString
+//        val nnew = dg.getNode(newUsed).toString
+//        Cord(tgt.productPrefix, "(", ntyped ,",", dg.getConcreteNode(typed).styp.toString ,
+//          ",", nold , ",", nnew ,")")
       case _ => tgt.toString
     }
 
@@ -94,7 +95,7 @@ object ShowDG {
     case _ : VNode
       | _ : CNode
       | _ : Edge
-      | _ : Abstraction => true
+      | _ : AbstractionOp => true
     case _ => false
   }
 

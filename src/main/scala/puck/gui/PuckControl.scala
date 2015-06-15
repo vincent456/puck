@@ -12,7 +12,7 @@ import puck.gui.explorer.AccessGraphModified
 import puck.gui.imageDisplay.{ImageFrame, ImageExplorer}
 import puck.gui.svg.SVGFrame
 import puck.search.{SearchState, Search}
-import puck.util.PuckLog
+import puck.util.{PuckLogger, PuckLog}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
@@ -64,16 +64,17 @@ sealed abstract class Answer extends Event
 case class ExplorationFinished(result : Search[ResultT]) extends Answer
 
 
-class PuckControl(val filesHandler : FilesHandler,
+class PuckControl(logger0 : PuckLogger,
+                  val filesHandler : FilesHandler,
                   val graphUtils: GraphUtils,
                   private val progressBar : ProgressBar,
                   private val delayedDisplay : ArrayBuffer[Component])
   extends Publisher {
 
+  private implicit val logger : PuckLogger = logger0
+
   type GraphT = DependencyGraph
   import PuckLog.defaultVerbosity
-
-  import filesHandler.logger
 
   var dg2AST : DG2AST = _
 
@@ -157,10 +158,10 @@ class PuckControl(val filesHandler : FilesHandler,
 
   def applyOnCode(record : ResultT) : Unit = {
     Future {
-      filesHandler.logger.write("generating code ...")
+      logger.write("generating code ...")
       dg2AST(record)
-      filesHandler.printCode(dg2AST)
-      filesHandler.logger.writeln(" done")
+      dg2AST.printCode(filesHandler.outDirectory.get)
+      logger.writeln(" done")
     } onComplete {
       case Success(_) => ()
       case Failure(exc) => exc.printStackTrace()
@@ -185,7 +186,7 @@ class PuckControl(val filesHandler : FilesHandler,
                    printId : Boolean,
                    printSignature : Boolean,
                    visibility : VisibilitySet.T): Unit = {
-    Future(new ImageExplorer(filesHandler, states.toIndexedSeq, visibility, printId, printSignature))
+    Future(new ImageExplorer(filesHandler, logger, states.toIndexedSeq, visibility, printId, printSignature))
     ()
   }
 
@@ -199,7 +200,7 @@ class PuckControl(val filesHandler : FilesHandler,
         PrintingOptions(visibility, printId, printSignature, sUse))(format)
 
     case ConstraintDisplayRequest(graph) =>
-      graph.printConstraints(filesHandler.logger, defaultVerbosity)
+      graph.printConstraints(logger, defaultVerbosity)
 
     case ApplyOnCodeRequest(searchResult) => applyOnCode(searchResult)
 
@@ -210,17 +211,17 @@ class PuckControl(val filesHandler : FilesHandler,
                           automaticConstraintLoosening = true)
 
       Future {
-        filesHandler.logger.writeln("Solving constraints ...")
-        puck.util.Time.time(filesHandler.logger, defaultVerbosity) {
+        logger.writeln("Solving constraints ...")
+        puck.util.Time.time(logger, defaultVerbosity) {
           engine.explore()
         }
         engine
       } onComplete {
         case Success(res) =>
-          filesHandler.logger.writeln("Solving done")
+          logger.writeln("Solving done")
           publish(ExplorationFinished(res))
         case Failure(exc) =>
-          filesHandler.logger.writeln("Solving failure")
+          logger.writeln("Solving failure")
           exc.printStackTrace()
           publish(ExplorationFinished(engine))
           //filesHandler.logger writeln exc.getStackTrace.mkString("\n")

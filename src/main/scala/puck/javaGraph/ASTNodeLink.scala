@@ -72,7 +72,7 @@ object ASTNodeLink{
       val n1 = graph.getConcreteNode(n0)
       n1.kind == Constructor &&
         graph.abstractions(n0).exists {
-          case (n2 , DelegationAbstraction) => n2 == node.id
+          case AccessAbstraction(n2 , DelegationAbstraction) => n2 == node.id
           case _ => false
         }
     })

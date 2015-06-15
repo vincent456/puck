@@ -23,7 +23,7 @@ case class ExampleSample
   def this(filesPath : String*) =
     this(CompileHelper.compileSrcsAndbuildGraph(filesPath.toList, List()))
 
-  var logger : PuckLogger = PuckNoopLogger
+  implicit var logger : PuckLogger = PuckNoopLogger
   def compare: (DependencyGraph, DependencyGraph) => Boolean =
     (g1, g2) => DependencyGraph.areEquivalent(initialRecord,g1,g2, logger)
 }

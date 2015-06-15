@@ -39,6 +39,8 @@ class SVGController private
   private var printRedOnly : Boolean = false,
   private var selectedEdgeForTypePrinting : Option[DGUses] = None) {
 
+  implicit val consoleLogger = new TextAreaLogger(console.textArea, _ => true )
+
   def nodesByName : Map[String, NodeId] =
       dg2ast.nodesByName
 
@@ -241,6 +243,12 @@ class SVGController private
 
   def applyOnCode() : Unit = {
     dg2ast(graph)
+
+    filesHandler.outDirectory match {
+      case None => console.appendText("no output directory : cannot print code")
+      case Some(d) => dg2ast.printCode(d)
+    }
+
   }
 
   def abstractionChoices(n: ConcreteNode): Seq[JMenuItem] =
@@ -271,8 +279,6 @@ object SVGController {
             console : SVGConsole): SVGController ={
     val c = new SVGController(filesHandler, graphUtils, dg2ast, svgCanvas, console,
                 opts.visibility, opts.printId, opts.printSignatures)
-    val consoleLogger = new TextAreaLogger(console.textArea, filesHandler.logger.askPrint)
-
     c.pushGraph(dg2ast.initialGraph)
     c.displayGraph(dg2ast.initialGraph)
     c

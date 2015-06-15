@@ -12,10 +12,10 @@ sealed abstract class Abstraction {
 }
 
 case class AccessAbstraction
-( node : NodeId,
+( nodeId : NodeId,
   policy: AbstractionPolicy
   ) extends Abstraction {
-  def toList : List[NodeId] = List(node)
+  def toList : List[NodeId] = List(nodeId)
 }
 
 case class ReadWriteAbstraction

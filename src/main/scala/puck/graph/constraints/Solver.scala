@@ -43,14 +43,18 @@ class Solver
 
       val cannotUseAbstraction: Abstraction => NodeId => Boolean = {
        abs => userId =>
+
          val uses = g.getUsesEdge(userId, used.id).get
+
          (abs, uses.accessKind) match {
-          case (AccessAbstraction(absId, _), _) => g.interloperOf(userId, absId)
-          case (ReadWriteAbstraction(Some(rid), _), Some(Read)) => g.interloperOf(userId, rid)
-          case (ReadWriteAbstraction(_, Some(wid)), Some(Write)) => g.interloperOf(userId, wid)
-          case (ReadWriteAbstraction(Some(rid), Some(wid)), Some(RW)) =>
-            g.interloperOf(userId, rid) || g.interloperOf(userId, wid)
-        }
+             case (AccessAbstraction(absId, _), _) => g.interloperOf(userId, absId)
+             case (ReadWriteAbstraction(Some(rid), _), Some(Read)) => g.interloperOf(userId, rid)
+             case (ReadWriteAbstraction(_, Some(wid)), Some(Write)) => g.interloperOf(userId, wid)
+             case (ReadWriteAbstraction(Some(rid), Some(wid)), Some(RW)) =>
+               g.interloperOf(userId, rid) || g.interloperOf(userId, wid)
+             case _ => sys.error("should not happen")
+         }
+
       }
 
       decisionMaker.selectExistingAbstraction(lg, choices) {

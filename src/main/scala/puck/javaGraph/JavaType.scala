@@ -3,7 +3,6 @@ package puck.javaGraph
 import puck.PuckError
 import puck.graph._
 
-
 class JavaNamedType(n : NodeId) extends NamedType(n){
 
  override def copy(n : NodeId = n) = new JavaNamedType(n)
@@ -51,7 +50,7 @@ object MethodType{
 
 class MethodType(override val input : Tuple,
                  override val output : NamedType)
-  extends Arrow(input, output){
+  extends Arrow(input, output) {
 
   /*override def equals(other : Any) = other match {
     case that : MethodType => that.canEqual(this) &&

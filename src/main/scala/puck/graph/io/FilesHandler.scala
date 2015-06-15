@@ -98,9 +98,9 @@ trait DG2ASTBuilder{
 }
 
 trait DG2AST {
-  def apply(res : ResultT) : Unit
-  def printCode(dir : File) : Unit
-  def parseConstraints(decouple : File) : DG2AST
+  def apply(res : ResultT)(implicit logger : PuckLogger) : Unit
+  def printCode(dir : File)(implicit logger : PuckLogger) : Unit
+  def parseConstraints(decouple : File)(implicit logger : PuckLogger) : DG2AST
   def initialGraph : DependencyGraph
   def initialRecord : Seq[Transformation]
   def nodesByName : Map[String, NodeId]
@@ -137,9 +137,6 @@ class FilesHandler
     case _ => true
   }
 
-  def logger : PuckLogger = logger0
-  def logger_=( l : PuckLogger): Unit = {logger0 = l}
-
   type GraphT = DependencyGraph
 
   var graphBuilder : GraphBuilder = _
@@ -151,7 +148,7 @@ class FilesHandler
         if(fc.exists())
           Some(fc)
         else {
-          logger.writeln("%s does not exists.".format(f))
+          //logger.writeln("%s does not exists.".format(f))
           None
         }
     }
@@ -187,7 +184,6 @@ class FilesHandler
     case None => new PuckSystemLogger(logPolicy)
     case Some(f) => new PuckFileLogger (logPolicy, f)
   }*/
-  private [this] var logger0 : PuckLogger = new PuckSystemLogger(logPolicy)
 
 
   def srcDirectory = this.srcDir0
@@ -241,7 +237,10 @@ class FilesHandler
 
 
 
-  def loadGraph(dG2ASTBuilder : DG2ASTBuilder, ll : AST.LoadingListener) : DG2AST = {
+  def loadGraph
+  ( dG2ASTBuilder : DG2ASTBuilder,
+    ll : AST.LoadingListener)
+  ( implicit logger : PuckLogger) : DG2AST = {
      dG2ASTBuilder(
       srcDirectory.get,
       outDirectory.get,
@@ -253,7 +252,9 @@ class FilesHandler
     PrologPrinter.print(new BufferedWriter(new FileWriter(graphFile(".pl"))), ag)
   }*/
 
-  def parseConstraints(dg2ast: DG2AST) : DG2AST = {
+  def parseConstraints
+  ( dg2ast: DG2AST )
+  ( implicit logger : PuckLogger) : DG2AST = {
     decouple match{
       case None => throw new DGError("cannot parse : no decouple file given")
       case Some(f) =>
@@ -299,8 +300,6 @@ class FilesHandler
   }
 
   def makeImage = FilesHandler.makeImage(graphvizDot, dotHelper, graphFilePath) _
-
-  def printCode(dg2ast : DG2AST) : Unit = dg2ast.printCode(outDirectory.get)
 
   private def openList(files : Seq[String]) : Unit = {
     val ed = editor match {

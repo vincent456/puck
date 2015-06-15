@@ -19,9 +19,10 @@ object Recording {
   def read(ois : ObjectInputStream) : Recording = {
     val recSize = ois.readInt()
     var rec = Recording()
-    for(i <- Range(0, recSize)){
-      rec =  ois.readObject().asInstanceOf[Recordable] +: rec
-    }
+      for (i <- Range(0, recSize)) {
+        rec = ois.readObject().asInstanceOf[Recordable] +: rec
+      }
+
     rec
   }
 

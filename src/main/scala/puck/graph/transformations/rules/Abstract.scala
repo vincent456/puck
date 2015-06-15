@@ -1,6 +1,7 @@
 package puck.graph
 package transformations.rules
 
+import puck.PuckError
 import puck.graph.constraints._
 import puck.util.LoggedEither._
 
@@ -174,23 +175,24 @@ abstract class Abstract {
     absKind : AbstractionPolicy
     ) : LoggedTG ={
 
-    try {
-      createAbstraction(g, meth, meth.kind.abstractionNodeKinds(absKind).head, absKind) map {
+//    try {
+      createAbstraction(g, meth, meth.kind.abstractionNodeKinds(absKind).head, absKind) flatMap {
         case (AccessAbstraction(absMethodId, _), g0) =>
 
-          g0.addContains(interface.id, absMethodId)
+          LoggedSuccess(g0.addContains(interface.id, absMethodId)
             //is change type needed in case of delegation policy
-            .changeType(absMethodId, clazz.id, interface.id)
+            .changeType(absMethodId, clazz.id, interface.id))
+        case _ => LoggedError(new PuckError("unexpected type of abstraction"))
       }
-    } catch {
-      case t : Throwable=>
-        println("createAbstractTypeMember( g : DependencyGraph,\n"+
-          s"$meth : ConcreteNode,\n"+
-          s"$clazz : ConcreteNode,\n"+
-            s"$interface : ConcreteNode,\n"+
-            s"$absKind : AbstractionPolicy)")
-        throw t
-    }
+//    } catch {
+//      case t : Throwable=>
+//        println("createAbstractTypeMember( g : DependencyGraph,\n"+
+//          s"$meth : ConcreteNode,\n"+
+//          s"$clazz : ConcreteNode,\n"+
+//            s"$interface : ConcreteNode,\n"+
+//            s"$absKind : AbstractionPolicy)")
+//        throw t
+//    }
   }
 
 

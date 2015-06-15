@@ -2,7 +2,7 @@ package puck
 package javaGraph
 
 
-import puck.graph.{Uses, DGEdge}
+import puck.graph.{AccessAbstraction, Uses, DGEdge}
 import puck.graph.constraints.{SupertypeAbstraction, DelegationAbstraction}
 import puck.javaGraph.nodeKind._
 import puck.javaGraph.JGraphUtils.{transformationRules => TR}
@@ -29,10 +29,10 @@ class TransfoRuleSpec extends AcceptanceSpec {
         assert( graph.abstractions(field).isEmpty )
 
 
-        val (itc, g) =
+        val (AccessAbstraction(itc, _), g) =
           TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
                 Interface, SupertypeAbstraction).right
-          assert( g.isa(classA, itc.id) )
+          assert( g.isa(classA, itc) )
 
           g.abstractions(classA).size shouldBe 1
           g.abstractions(methM).size shouldBe 1
@@ -58,20 +58,20 @@ class TransfoRuleSpec extends AcceptanceSpec {
         assert( graph.abstractions(methMUser).isEmpty )
 
 
-        val (itc, g) =
+        val (AccessAbstraction(itc, _), g) =
           TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
             Interface, SupertypeAbstraction).right
 
-        assert( g.isa(classA, itc.id) )
+        assert( g.isa(classA, itc) )
 
         g.abstractions(classA).size shouldBe 1
         g.abstractions(methM).size shouldBe 1
         g.abstractions(methMUser).size shouldBe 1
 
-        val methMAbs = g.abstractions(methM).head._1
+        val AccessAbstraction(methMAbs, _) = g.abstractions(methM).head
 
         assert( g.uses(methMUser, methMAbs) )
-        assert( g.uses(methMUser, itc.id) )
+        assert( g.uses(methMUser, itc) )
       }
 
 
@@ -100,10 +100,10 @@ class TransfoRuleSpec extends AcceptanceSpec {
           graph.getConcreteNode(classB),
           SupertypeAbstraction))
 
-        val (itc, g) =
+        val (AccessAbstraction(itc, _), g) =
             TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classB),
               Interface, SupertypeAbstraction).right
-        assert( g.isa(classB, itc.id) )
+        assert( g.isa(classB, itc) )
 
         g.abstractions(classB).size shouldBe 1
         assert( g.abstractions(field).isEmpty , "Field cannot be exposed in an interface")
@@ -134,11 +134,11 @@ class TransfoRuleSpec extends AcceptanceSpec {
         assert( graph.abstractions(field).isEmpty )
         assert( graph.abstractions(fieldUserThatCanBeInInterface).isEmpty )
 
-        val (itc, g) =
+        val (AccessAbstraction(itc, _), g) =
           TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classC),
             Interface, SupertypeAbstraction).right
 
-        assert( g.isa(classC, itc.id) )
+        assert( g.isa(classC, itc) )
 
         g.abstractions(classC).size shouldBe 1
         assert( g.abstractions(field).isEmpty ,
@@ -160,11 +160,11 @@ class TransfoRuleSpec extends AcceptanceSpec {
         val methCanBeInInterface = fullName2id("p.A.canBeInInterface__A")
         val methCannotBeInInterface = fullName2id("p.A.cannotBeInInterface__A")
 
-        val (itc, g) =
+        val (AccessAbstraction(itc, _), g) =
           TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
             Interface, SupertypeAbstraction).right
 
-        assert( g.isa(classA, itc.id))
+        assert( g.isa(classA, itc))
 
         assert( g.abstractions(methCannotBeInInterface).isEmpty)
         g.abstractions(methCanBeInInterface).size shouldBe 1
@@ -182,11 +182,11 @@ class TransfoRuleSpec extends AcceptanceSpec {
         val methCanBeInInterface = fullName2id("p.A.canBeInInterface__A")
         val methCannotBeInInterface = fullName2id("p.A.cannotBeInInterface__A")
 
-        val (itc, g) =
+        val (AccessAbstraction(itc, _), g) =
           TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
             Interface, SupertypeAbstraction).right
 
-        assert( g.isa(classA, itc.id))
+        assert( g.isa(classA, itc))
 
         assert( g.abstractions(methCannotBeInInterface).isEmpty)
         g.abstractions(methCanBeInInterface).size shouldBe 1
@@ -214,25 +214,25 @@ class TransfoRuleSpec extends AcceptanceSpec {
 
         assert( graph.isa(classA, superA) )
 
-        val (itc, g) =
+        val (AccessAbstraction(itc, _), g) =
           TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
             Interface, SupertypeAbstraction).right
 
-        assert( g.isa(classA, itc.id) )
-        assert( g.isa(itc.id, superA) )
+        assert( g.isa(classA, itc) )
+        assert( g.isa(itc, superA) )
 
-        assert( g.uses(classA, itc.id) )
-        assert( g.uses(itc.id, superA) )
+        assert( g.uses(classA, itc) )
+        assert( g.uses(itc, superA) )
 
-        val absMeths = g.content(itc.id)
+        val absMeths = g.content(itc)
         val mInBothInterface  =
           absMeths.find(g.getConcreteNode(_).name == "mInInterface").value
         val mInNewInterface =
           absMeths.find(g.getConcreteNode(_).name == "mNotInInterface").value
 
-        g.abstractions(methInInterface)  should contain ((mInBothInterface, SupertypeAbstraction))
-        g.abstractions(mInBothInterface) should contain ((absMethInInterface, SupertypeAbstraction))
-        g.abstractions(methNotInInterface)  should contain ((mInNewInterface, SupertypeAbstraction))
+        g.abstractions(methInInterface)  should contain (AccessAbstraction(mInBothInterface, SupertypeAbstraction))
+        g.abstractions(mInBothInterface) should contain (AccessAbstraction(absMethInInterface, SupertypeAbstraction))
+        g.abstractions(methNotInInterface)  should contain (AccessAbstraction(mInNewInterface, SupertypeAbstraction))
 
       }
     }
@@ -263,7 +263,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
 
         val g2 =
           Redirection.redirectUsesAndPropagate(graph, typeUse, superType,
-            SupertypeAbstraction).right
+            SupertypeAbstraction, propagateRedirection = true, keepOldUse = false).right
 
         assert(DGEdge.UsesK(mUser, superType).existsIn(g2))
         assert(DGEdge.UsesK(mUser, absmUsed).existsIn(g2))
@@ -285,8 +285,8 @@ class TransfoRuleSpec extends AcceptanceSpec {
         val delegator = fullName2id(s"$p.Delegator")
         val mDelegator = fullName2id(s"$p.Delegator.mUsed__void")
 
-        val g = graph.addAbstraction(delegatee, (delegator, DelegationAbstraction))
-                     .addAbstraction(mDelegatee, (mDelegator, DelegationAbstraction))
+        val g = graph.addAbstraction(delegatee, AccessAbstraction(delegator, DelegationAbstraction))
+                     .addAbstraction(mDelegatee, AccessAbstraction(mDelegator, DelegationAbstraction))
 
         val typeUse = DGEdge.UsesK(mUser, delegatee)
         assert(typeUse.existsIn(graph))
@@ -294,7 +294,8 @@ class TransfoRuleSpec extends AcceptanceSpec {
 
 
         val g2 =
-          Redirection.redirectUsesAndPropagate(graph, typeUse, delegator, DelegationAbstraction).right
+          Redirection.redirectUsesAndPropagate(graph, typeUse, delegator, DelegationAbstraction,
+            propagateRedirection = true, keepOldUse = false).right
 
         assert(DGEdge.UsesK(mUser, delegator).existsIn(g2))
         assert(DGEdge.UsesK(mUser, mDelegator).existsIn(g2))
@@ -329,10 +330,11 @@ class TransfoRuleSpec extends AcceptanceSpec {
         val ctorMethodUse =DGEdge.UsesK(caller, ctorMethod)
         assert( ! ctorMethodUse.existsIn(graph))
 
-        val g = graph.addAbstraction(ctor, (ctorMethod, DelegationAbstraction))
+        val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
 
         val g2 =
-          Redirection.redirectUsesAndPropagate(g, ctorUse, ctorMethod, DelegationAbstraction).right
+          Redirection.redirectUsesAndPropagate(g, ctorUse, ctorMethod, DelegationAbstraction,
+            propagateRedirection = true, keepOldUse = false).right
 
         assert( ctorMethodUse.existsIn(g2))
         assert( ! ctorUse.existsIn(g2) )
@@ -359,10 +361,11 @@ class TransfoRuleSpec extends AcceptanceSpec {
         val ctorMethodUse = DGEdge.UsesK(caller, ctorMethod)
         assert( ! (ctorMethodUse existsIn graph))
 
-        val g = graph.addAbstraction(ctor, (ctorMethod, DelegationAbstraction))
+        val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
 
         val g2 =
-          Redirection.redirectUsesAndPropagate(g, ctorUse, ctorMethod, DelegationAbstraction).right
+          Redirection.redirectUsesAndPropagate(g, ctorUse, ctorMethod, DelegationAbstraction,
+            propagateRedirection = true, keepOldUse = false).right
 
         assert( ctorMethodUse existsIn g2)
         assert( !(ctorUse existsIn g2) )
@@ -410,7 +413,8 @@ class TransfoRuleSpec extends AcceptanceSpec {
         assert(! (useOfOtherMethAbs existsIn graph))
 
         val g =
-          Redirection.redirectUsesAndPropagate(graph, useOfmeth, mAbs, SupertypeAbstraction).right
+          Redirection.redirectUsesAndPropagate(graph, useOfmeth, mAbs, SupertypeAbstraction,
+            propagateRedirection = true, keepOldUse = false).right
 
         assert(useOfImplClass existsIn g)
         assert(useOfctor existsIn g)

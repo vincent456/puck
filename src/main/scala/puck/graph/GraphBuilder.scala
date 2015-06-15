@@ -50,13 +50,13 @@ class GraphBuilder {
   type ImplId = NodeId
   type AbsId = NodeId
 
-  def registerAbstraction : DependencyGraph => (ImplId, AbsId, AbstractionPolicy) => DependencyGraph =
-    graph => (implId , absId, pol) => graph.addAbstraction(implId, (absId, pol))
+  def registerAbstraction : DependencyGraph => (ImplId, Abstraction) => DependencyGraph =
+    graph => (implId , abs) => graph.addAbstraction(implId, abs)
 
 
   def registerSuperTypes() =
     g = g.isaEdges.foldLeft(g){ (g, e) =>
-      registerAbstraction(g)(e.source, e.target, SupertypeAbstraction)
+      registerAbstraction(g)(e.source, AccessAbstraction(e.target, SupertypeAbstraction))
     }
 
 }

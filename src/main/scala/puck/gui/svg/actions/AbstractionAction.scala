@@ -70,7 +70,7 @@ class AbstractionAction(
      override def actionPerformed(e: ActionEvent): Unit =
        printErrOrPushGraph(controller,"Abstraction action failure") {
 
-         val tAbsG : LoggedTry[(ConcreteNode, DependencyGraph)] =
+         val tAbsG : LoggedTry[(Abstraction, DependencyGraph)] =
            graph.kindType(node) match {
            case TypeDecl =>
              val typeMembers = graph.content(node.id).toList.
@@ -83,7 +83,8 @@ class AbstractionAction(
              methodDialog(ckBoxes) match {
                case Result.Ok =>
                  TR.abstracter.
-                   abstractTypeDeclAndReplaceByAbstractionWherePossible(graph.mileStone, node, kind, policy, selectedNodes)
+                   abstractTypeDeclAndReplaceByAbstractionWherePossible(graph.mileStone,
+                     node, kind, policy, selectedNodes)
                case Result.Cancel =>
                  LoggedError(new PuckError("Operation Canceled"))
              }
@@ -94,8 +95,12 @@ class AbstractionAction(
          }
 
          tAbsG  map { case (abs, g) =>
-           val h = getHost(abs.kind)
-           g.addContains(h, abs.id)
+            val absNodes = abs.toList.map(g.getConcreteNode)
+            absNodes.foldLeft(g){
+               (g,n) =>
+                 val h = getHost(n.kind)
+                 g.addContains(h, n.id)
+            }
          }
      }
 

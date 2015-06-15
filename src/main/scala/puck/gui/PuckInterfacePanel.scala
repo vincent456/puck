@@ -7,7 +7,7 @@ import puck.graph.{GraphUtils, DependencyGraph}
 import puck.graph.io.{FilesHandler, Hidden, VisibilitySet}
 import puck.gui.explorer.{SetVisible, NodeInfosPanel, PuckTreeNodeClicked, GraphExplorer}
 import puck.gui.search.ResultPanel
-import puck.util.PuckLog
+import puck.util.{PuckLogger, PuckLog}
 
 import puck.javaGraph.nodeKind.{Package, Class}
 
@@ -15,7 +15,8 @@ import scala.collection.mutable.ArrayBuffer
 import scala.swing._
 
 class PuckInterfacePanel
-( filesHandler : FilesHandler,
+( logger : PuckLogger,
+  filesHandler : FilesHandler,
   graphUtils: GraphUtils
   ) extends SplitPane(Orientation.Vertical) {
 
@@ -33,7 +34,7 @@ class PuckInterfacePanel
 
   val progressBar  = new ProgressBar()
   val delayedDisplay = ArrayBuffer[Component]()
-  val control = new PuckControl(filesHandler, graphUtils, progressBar, delayedDisplay)
+  val control = new PuckControl(logger, filesHandler, graphUtils, progressBar, delayedDisplay)
 
   val printIdsBox = new CheckBox("Show nodes ID")
   val printSignaturesBox = new CheckBox("Show signagures")
@@ -81,7 +82,7 @@ class PuckInterfacePanel
       case ExplorationFinished(res0) =>
         resultsWrapper.contents.clear()
         val searchResultPanel =
-          new ResultPanel(control.dg2AST.initialRecord, res0, filesHandler.logger,
+          new ResultPanel(control.dg2AST.initialRecord, res0, logger,
             printIds, printSigs, treeDisplayer.visibilitySet)
         resultsWrapper.contents += searchResultPanel
         resultsWrapper.revalidate()
@@ -107,8 +108,8 @@ class PuckInterfacePanel
           filesHandler.setWorkingDirectory(f)
           publish(LoadCodeRequest())
         }
-        filesHandler.logger.writeln("Application directory : ")
-        filesHandler.logger.writeln(filesHandler.srcDirectory.toString)
+        logger.writeln("Application directory : ")
+        logger.writeln(filesHandler.srcDirectory.toString)
     }
 
     progressBar.min = 0
