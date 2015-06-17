@@ -1,6 +1,7 @@
 package puck.graph
 package transformations
 
+import puck.graph.transformations.MappingChoices.{ResMap, NodesToMap, Kargs}
 import puck.search.{SearchEngine, SearchState, StateCreator}
 import puck.util.Logged
 
@@ -13,8 +14,6 @@ object MappingChoices{
   def NodesToMap() = Map[NodeKind, Seq[NodeId]]()
   type Kargs = (NodeId, LoggedTry[ResMap], NodesToMap)
 }
-
-import puck.graph.transformations.MappingChoices.{Kargs, NodesToMap, ResMap}
 
 class MappingChoices
 (val k: Kargs => Unit,

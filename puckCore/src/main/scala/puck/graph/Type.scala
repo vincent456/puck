@@ -1,11 +1,11 @@
 package puck.graph
 
 import puck.PuckError
-import puck.graph.ShowDG._
 import puck.graph.constraints.SupertypeAbstraction
 import puck.util.LoggedEither._
 
 import scalaz.std.list._
+import ShowDG._
 
 object Type {
   def findOverridedIn

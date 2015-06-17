@@ -1,9 +1,6 @@
 package puck.graph.io
 
-import puck.graph.{DGNode, DependencyGraph, NodeId}
-/**
- * Created by lorilan on 07/05/14.
- */
+import puck.graph.{NodeId, DependencyGraph, DGNode}
 
 trait DotHelper{
   def isDotSubgraph(k : DGNode) : Boolean

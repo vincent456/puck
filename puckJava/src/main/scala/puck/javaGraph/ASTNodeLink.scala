@@ -1,10 +1,11 @@
 package puck.javaGraph
 
 import puck.PuckError
-import puck.graph._, ShowDG._
+import puck.graph._
 import puck.graph.constraints.DelegationAbstraction
 import puck.javaGraph.nodeKind._
 
+import ShowDG._
 
 object ASTNodeLink{
 

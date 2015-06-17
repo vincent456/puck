@@ -4,7 +4,7 @@ import java.awt.Dimension
 import java.io.File
 
 import puck.graph.{TypeDecl, NameSpace, GraphUtils}
-import puck.graph.io.{FilesHandler, VisibilitySet}
+import puck.graph.io.{VisibilitySet, FilesHandler}
 import puck.gui.explorer.{SetVisible, NodeInfosPanel, PuckTreeNodeClicked, GraphExplorer}
 import puck.gui.search.ResultPanel
 import puck.util.{PuckLogger, PuckLog}

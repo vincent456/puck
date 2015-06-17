@@ -3,7 +3,7 @@ package puck.gui.svg.actions
 import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
 
-import puck.graph.{ConcreteNode, NodeKind}
+import puck.graph.{NodeKind, ConcreteNode}
 import puck.gui.svg.SVGController
 
 class AddNodeAction

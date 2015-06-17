@@ -1,10 +1,11 @@
 package puck.javaGraph
 package transformations
 
-import puck.graph._
+import nodeKind.Interface
 import puck.graph.transformations.MergeMatcherInstances
 import puck.graph.transformations.rules.MergingCandidatesFinder
-import nodeKind.Interface
+import puck.graph._
+import puck.javaGraph.transformations
 
 object JavaTransformationHelper extends MergingCandidatesFinder {
 

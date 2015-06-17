@@ -2,9 +2,9 @@ package puck
 
 import java.io.{FileReader, File, FileWriter}
 
-import puck.graph.{NodeId, DependencyGraph}
 import puck.graph.constraints.ConstraintsParser
-import puck.graph.io.{Hidden, VisibilitySet, PrintingOptions, FilesHandler}
+import puck.graph.io.{FilesHandler, PrintingOptions, Hidden, VisibilitySet}
+import puck.graph.{NodeId, DependencyGraph}
 import puck.javaGraph.{JavaDotHelper, CompileHelper}
 import VisibilitySet._
 

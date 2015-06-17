@@ -2,7 +2,7 @@ package puck.javaGraph
 package nodeKind
 
 import puck.graph.NodeKind
-import puck.graph.constraints.{SupertypeAbstraction, AbstractionPolicy, DelegationAbstraction}
+import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
 
 
 case object Field extends JavaNodeKind {

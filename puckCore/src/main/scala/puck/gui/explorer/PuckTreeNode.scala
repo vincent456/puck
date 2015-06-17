@@ -2,8 +2,8 @@ package puck.gui.explorer
 
 import javax.swing.tree.DefaultMutableTreeNode
 
-import puck.graph.{NodeKind, NodeId, DependencyGraph}
-import puck.graph.io.{Visible, Hidden, Visibility}
+import puck.graph.{NodeKind, DependencyGraph, NodeId}
+import puck.graph.io.{Visibility, Visible, Hidden}
 
 import scala.swing.CheckBox
 

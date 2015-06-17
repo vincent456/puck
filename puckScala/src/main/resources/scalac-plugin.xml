@@ -1,0 +1,4 @@
+<plugin>
+    <name>DependencyGraph</name>
+    <classname>puck.PuckPlugin</classname>
+</plugin>

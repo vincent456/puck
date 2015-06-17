@@ -5,13 +5,13 @@ import javax.swing._
 
 import puck.PuckError
 import puck.graph.constraints.AbstractionPolicy
-import puck.graph._, ShowDG._
+import puck.graph._
 import puck.gui.svg.SVGController
 
 import scala.swing.Dialog
 import scala.swing.Dialog.{Result, Message, Options}
 import scalaz.-\/
-
+import ShowDG._
 
 object NodeCheckBox {
   def apply(graph : DependencyGraph,

@@ -1,7 +1,7 @@
 package puck.gui.svg
 
 import puck.graph._
-import puck.graph.constraints.{SupertypeAbstraction, DelegationAbstraction}
+import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 import puck.gui.svg.actions.AddIsaAction
 import puck.gui.svg.actions.MergeAction
 import puck.gui.svg.actions.MoveAction

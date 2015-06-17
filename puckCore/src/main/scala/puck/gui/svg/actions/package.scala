@@ -2,9 +2,9 @@ package puck.gui.svg
 
 import javax.swing.JOptionPane
 
-import puck.graph.{LoggedTry, DependencyGraph}
+import puck.graph.{DependencyGraph, LoggedTry}
+
 import scalaz.{\/-, -\/}
-import puck.graph.transformations.rules
 
 package object actions {
 
@@ -23,9 +23,5 @@ package object actions {
       case \/-(g) => controller.pushGraph(g)
     }
   }
-
-  type CreateVarStrategy = rules.CreateVarStrategy
-  val CreateTypeMember = rules.CreateTypeMember
-  val CreateParameter = rules.CreateParameter
 
 }

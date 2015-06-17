@@ -1,6 +1,6 @@
 package puck.javaGraph
 
-import puck.graph.{DependencyGraph, NodeId}
+import puck.graph.{NodeId, DependencyGraph}
 import puck.graph.transformations.Transformation
 import puck.util.{PuckNoopLogger, PuckLogger}
 

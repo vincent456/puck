@@ -1,9 +1,10 @@
 package puck
 package javaGraph
 
-//import nodeKind._
-import puck.graph._
 import puck.graph.constraints.SupertypeAbstraction
+import puck.graph._
+
+//import nodeKind._
 
 class GraphBuildingSpec extends AcceptanceSpec {
 

@@ -5,8 +5,9 @@ import javax.swing.AbstractAction
 
 import puck.PuckError
 import puck.graph.constraints.DecisionMaker.ChooseNodeKArg
-import puck.graph.constraints.{Solver, NodePredicate, AbstractionPolicy, DecisionMaker}
 import puck.graph._
+import puck.graph.constraints.{NodePredicate, AbstractionPolicy, Solver, DecisionMaker}
+import puck.graph.transformations.rules.{CreateTypeMember, CreateVarStrategy}
 import puck.gui.svg.SVGController
 import puck.util.Logged
 

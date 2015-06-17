@@ -1,8 +1,8 @@
 package puck.graph
 
-import puck.graph.constraints._
+import puck.graph.constraints.SupertypeAbstraction
 
-class GraphBuilder {
+trait GraphBuilder {
   var g : DependencyGraph = _
   type NodeIdT = NodeId
   var nodesByName = Map[String, NodeIdT]()

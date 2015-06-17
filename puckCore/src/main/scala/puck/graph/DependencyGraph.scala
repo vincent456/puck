@@ -1,11 +1,10 @@
 package puck.graph
 
-import puck.graph.DependencyGraph._
-import puck.graph.constraints._
-import puck.graph.transformations.{Transformation, RecordingComparator}
+import puck.graph.DependencyGraph.AbstractionMap
+import puck.graph.constraints.{ConstraintsMaps, AbstractionPolicy}
 import puck.util.{Logger, PuckNoopLogger, PuckLogger, PuckLog}
 
-import transformations.RecordingOps
+import puck.graph.transformations.{RecordingComparator, Transformation, RecordingOps}
 
 object DependencyGraph {
 

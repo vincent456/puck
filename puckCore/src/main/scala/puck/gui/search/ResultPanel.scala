@@ -1,9 +1,9 @@
 package puck.gui.search
 
+import puck.graph.ResultT
 import puck.graph.constraints.search.ConstraintSolvingStateEvaluator
 import puck.graph.io.VisibilitySet
 import puck.graph.transformations.Transformation
-import puck.graph.ResultT
 import puck.search.{Search, SearchState}
 import puck.util.{PuckLog, PuckLogger}
 

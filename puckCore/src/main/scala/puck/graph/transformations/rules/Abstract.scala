@@ -2,7 +2,7 @@ package puck.graph
 package transformations.rules
 
 import puck.PuckError
-import puck.graph.constraints._
+import puck.graph.constraints.{AbstractionPolicy, SupertypeAbstraction, DelegationAbstraction}
 import puck.util.LoggedEither._
 
 import scalaz.std.set._

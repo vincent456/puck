@@ -5,9 +5,11 @@ import javax.swing.AbstractAction
 
 import puck.graph.constraints.RedirectionPolicy
 import puck.graph.transformations.rules.Redirection
-import puck.graph.{NodeId, DGUses, ConcreteNode}
+import puck.graph.{ShowDG, NodeId, DGUses, ConcreteNode}
 import puck.gui.svg.SVGController
-import puck.graph.ShowDG._
+
+import ShowDG._
+
 case class RedirectAction
 ( newTarget : ConcreteNode,
   edge : DGUses,

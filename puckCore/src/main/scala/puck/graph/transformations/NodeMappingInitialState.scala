@@ -71,6 +71,7 @@ object NodeMappingInitialState{
 
   implicit val defaultVerbosity = (PuckLog.NoSpecialContext, PuckLog.Debug)
 }
+import NodeMappingInitialState._
 
 class NodeMappingInitialState
 ( initialTransfos : Seq[Transformation],
@@ -83,8 +84,6 @@ class NodeMappingInitialState
   //extends NodeMappingState(0, eng, null, null, None) {
   val id = 0
   val prevState = None
-
-  import puck.graph.transformations.NodeMappingInitialState._
 
   logger.writeln("*********************************** ")
   logger.writeln("*********************************** ")

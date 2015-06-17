@@ -1,11 +1,11 @@
 package puck.graph.transformations.rules
 
 import puck.PuckError
-import puck.graph.ShowDG._
 import puck.graph._
-import puck.graph.constraints.{DelegationAbstraction, NotAnAbstraction, AbstractionPolicy, RedirectionPolicy}
+import puck.graph.constraints.{AbstractionPolicy, NotAnAbstraction, RedirectionPolicy, DelegationAbstraction}
 import puck.util.LoggedEither, LoggedEither._
 import scalaz._, Scalaz._
+import ShowDG._
 
 object Redirection {
 

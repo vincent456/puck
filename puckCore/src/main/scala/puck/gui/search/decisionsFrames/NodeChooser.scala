@@ -6,9 +6,6 @@ import puck.graph.constraints.RangeSet
 
 import scala.swing._
 
-/**
- * Created by lorilan on 16/06/14.
- */
 object NodeChooser{
 
   def apply(set : RangeSet, context : String) : Option[DGNode] = DecisionFrame {

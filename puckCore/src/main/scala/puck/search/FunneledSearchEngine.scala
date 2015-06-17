@@ -1,6 +1,6 @@
 package puck.search
 
-import puck.graph._
+import puck.graph.LoggedTry
 import puck.search.SearchEngine.InitialStateFactory
 import puck.util.Logged
 

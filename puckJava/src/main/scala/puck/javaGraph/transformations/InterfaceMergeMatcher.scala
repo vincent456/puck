@@ -1,6 +1,6 @@
 package puck.javaGraph.transformations
 
-import puck.graph._
+import puck.graph.{DGError, NodeId, ConcreteNode, DependencyGraph}
 import puck.graph.transformations.MergeMatcher
 import puck.javaGraph.nodeKind.{Interface, AbstractMethod}
 

@@ -98,7 +98,7 @@ trait DG2ASTBuilder{
 }
 
 trait DG2AST {
-  def apply(res : ResultT)(implicit logger : PuckLogger) : Unit
+  def apply(res : DependencyGraph)(implicit logger : PuckLogger) : Unit
   def printCode(dir : File)(implicit logger : PuckLogger) : Unit
   def parseConstraints(decouple : File)(implicit logger : PuckLogger) : DG2AST
   def initialGraph : DependencyGraph

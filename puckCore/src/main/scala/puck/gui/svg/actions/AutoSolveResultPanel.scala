@@ -2,8 +2,9 @@ package puck.gui.svg.actions
 
 import java.awt.Dimension
 
-import puck.graph._
-import puck.graph.io.{Visible, VisibilitySet}, VisibilitySet._
+import puck.graph.{NodeId, ConcreteNode, ResultT, DependencyGraph}
+import puck.graph.io.{Visible, VisibilitySet}
+import VisibilitySet._
 import puck.gui.PuckConsolePanel
 import puck.gui.search.{StateSelected, SimpleElementSelector, SortedElementSelector}
 import puck.gui.svg.{SVGPanel, SVGController}

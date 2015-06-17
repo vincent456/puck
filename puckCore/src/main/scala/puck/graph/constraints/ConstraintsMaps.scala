@@ -2,6 +2,7 @@ package puck.graph
 package constraints
 
 import puck.graph.ShowDG.CordBuilder
+import puck.graph.constraints.ConstraintsMaps.{HideConstraintMap, FriendConstraintMap}
 import puck.util.Logger
 
 import scalaz.Show
@@ -12,8 +13,6 @@ object ConstraintsMaps{
 
   def apply() = new ConstraintsMaps(Map(), Map(), Map())
 }
-
-import puck.graph.constraints.ConstraintsMaps._
 
 case class ConstraintsMaps
 ( namedSets : Map[String, NamedRangeSet],

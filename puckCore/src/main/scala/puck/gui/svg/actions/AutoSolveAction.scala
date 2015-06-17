@@ -4,9 +4,9 @@ import java.awt.event.ActionEvent
 import javax.swing.{JLabel, JComponent, AbstractAction}
 
 import puck.PuckError
-import puck.graph._
 import puck.graph.constraints.search.{CSInitialSearchState, ConstraintSolvingSearchEngineBuilder}
 import puck.graph.constraints.search.ConstraintSolvingSearchEngineBuilder.TryAllCSSEBuilder
+import puck.graph._
 import puck.gui.svg.SVGController
 import puck.search.Search
 import puck.util.Logged

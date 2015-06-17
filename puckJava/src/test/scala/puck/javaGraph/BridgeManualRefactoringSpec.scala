@@ -3,7 +3,7 @@ package javaGraph
 
 import java.io.{FileWriter, File}
 
-import puck.graph._
+import puck.graph.Try
 import puck.util.PuckLog.{Info, NoSpecialContext}
 import puck.util.PuckSystemLogger
 

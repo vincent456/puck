@@ -1,6 +1,6 @@
 package puck.graph
 
-import puck.graph.constraints._
+import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
 
 trait NodeKind {
   def canContain(k : NodeKind) : Boolean

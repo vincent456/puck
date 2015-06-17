@@ -2,9 +2,10 @@ package puck.javaGraph
 package transformations
 
 import nodeKind._
-import puck.graph.constraints._
 import puck.graph._
+import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
 import puck.graph.transformations.rules.Abstract
+import puck.javaGraph.transformations
 
 object JavaAbstract extends Abstract {
 

@@ -1,7 +1,7 @@
 import sbt.Keys._
 import sbt._
 
-object PuckJavaBuild extends Build {
+object PuckJavaBuild {
 
   //TODO make a beaver plugin that allow to pass arguments !
   def beaverTask(srcFile : File){
@@ -278,7 +278,7 @@ object PuckJavaBuild extends Build {
   }
 
 
-  def puckJavaBuildSettings = Seq[Setting[_]](
+  def settings = Seq[Setting[_]](
     jrrtHome := baseDirectory.value / "jrrt",
     jrrtReadOnly := jrrtHome.value / "jrrt-read-only",
     java14frontend := jrrtHome.value / "Java1.4Frontend",

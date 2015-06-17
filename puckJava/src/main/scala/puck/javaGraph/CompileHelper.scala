@@ -2,8 +2,8 @@ package puck.javaGraph
 
 import java.io.{File, InputStream}
 
-import puck.graph._
-import puck.graph.transformations.{Transformation, NodeMappingInitialState, Recording}
+import puck.graph.{DGBuildingError, NodeId, DependencyGraph}
+import puck.graph.transformations.{Recording, NodeMappingInitialState, Transformation}
 import puck.javaGraph.nodeKind.JavaNodeKind
 
 object CompileHelper {

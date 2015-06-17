@@ -1,12 +1,11 @@
 package puck.graph.transformations.rules
 
 import puck.PuckError
-import puck.graph.ShowDG._
 import puck.graph._
 import puck.util.LoggedEither._
 
 import scalaz.{Arrow => _, _}, Scalaz._ //hide arrow
-
+import ShowDG._
 
   sealed trait CreateVarStrategy {
 

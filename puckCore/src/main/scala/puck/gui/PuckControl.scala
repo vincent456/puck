@@ -3,11 +3,10 @@ package puck.gui
 import java.io.{File, PipedInputStream, PipedOutputStream}
 
 import puck.LoadingListener
-import puck.graph.FilesHandler
-
-import puck.graph._
 import puck.graph.constraints.search.ConstraintSolvingSearchEngineBuilder
+import puck.graph.{GraphUtils, ResultT, DGUses, DependencyGraph}
 import puck.graph.io._
+
 import puck.gui.explorer.AccessGraphModified
 import puck.gui.imageDisplay.{ImageFrame, ImageExplorer}
 import puck.gui.svg.SVGFrame

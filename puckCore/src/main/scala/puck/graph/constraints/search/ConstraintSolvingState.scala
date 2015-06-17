@@ -1,6 +1,6 @@
-package puck.graph.constraints.search
+package puck.graph
+package constraints.search
 
-import puck.graph.{ResultT, recordOfResult}
 import puck.search.{SearchEngine, StateCreator, SearchState}
 import puck.util.Logged
 

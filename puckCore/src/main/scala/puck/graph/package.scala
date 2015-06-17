@@ -69,9 +69,6 @@ package object graph {
 //  type JavaNodeKind = javaGraph.nodeKind.JavaNodeKind
 //  val JavaNode = javaGraph.JavaDotHelper
 
-  type FilesHandler = io.FilesHandler
-
-
   type Mutability = Boolean
 
   type ResultT = DependencyGraph

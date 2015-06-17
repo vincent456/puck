@@ -1,10 +1,9 @@
 package puck.gui.explorer
 
+import puck.graph.io.VisibilitySet
 import puck.graph._
-import ShowDG._
-import io.VisibilitySet
 import puck.gui.{GraphDisplayRequest, PuckMainPanel}
-
+import ShowDG._
 import scala.swing._
 import scala.swing.event.MouseClicked
 
@@ -30,7 +29,7 @@ class NodeInfosPanel(val graph : DependencyGraph,
   }
 
   leftComponent = new BoxPanel(Orientation.Vertical) {
-    import ShowDG._
+
     contents += PuckMainPanel.leftGlued(new Label(node.kind + " : " +
       showDG(graph)(nodeNameTypCord).shows(node)))
     val prov = Metrics.providers(node.id, graph)

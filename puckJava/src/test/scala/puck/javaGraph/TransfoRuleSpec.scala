@@ -2,11 +2,11 @@ package puck
 package javaGraph
 
 
-import puck.graph.{AccessAbstraction, Uses, DGEdge}
-import puck.graph.constraints.{SupertypeAbstraction, DelegationAbstraction}
+import puck.graph.transformations.rules.Redirection
+import puck.graph.{Uses, DGEdge, AccessAbstraction}
+import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 import puck.javaGraph.nodeKind._
 import puck.javaGraph.JGraphUtils.{transformationRules => TR}
-import puck.graph.transformations.rules.Redirection
 
 
 class TransfoRuleSpec extends AcceptanceSpec {

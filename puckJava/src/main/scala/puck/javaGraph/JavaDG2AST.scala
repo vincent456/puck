@@ -5,13 +5,14 @@ import java.util.NoSuchElementException
 
 import puck.PuckError
 import puck.graph.DGEdge.IsaK
-import puck.graph._, ShowDG._
-import puck.graph.constraints.{ConstraintsParser, SupertypeAbstraction}
-import puck.graph.io.{DG2ASTBuilder, DG2AST}
+import puck.graph.constraints.{SupertypeAbstraction, ConstraintsParser}
 import puck.graph.transformations._
+import puck.graph._
+import puck.graph.io.{DG2AST, DG2ASTBuilder}
 import puck.javaGraph.nodeKind._
 import puck.util.PuckLog._
 import puck.util.{PuckLog, PuckLogger}
+import ShowDG._
 
 object JavaDG2AST extends DG2ASTBuilder {
   def packageNode(graph : DependencyGraph, id : NodeId) : NodeId ={
@@ -71,7 +72,7 @@ class JavaDG2AST
  val initialGraph : DependencyGraph,
  val initialRecord : Seq[Transformation],
  val nodesByName : Map[String, NodeId],
- val graph2ASTMap : Map[NodeId, ASTNodeLink]) extends DG2AST{
+ val graph2ASTMap : Map[NodeId, ASTNodeLink]) extends DG2AST {
 
 
 
@@ -118,7 +119,7 @@ class JavaDG2AST
     }
 
 
-  def apply(result : ResultT)(implicit logger : PuckLogger) : Unit = {
+  def apply(result : DependencyGraph)(implicit logger : PuckLogger) : Unit = {
 
     logger.writeln("applying change !")
     val record = recordOfResult(result)

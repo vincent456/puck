@@ -7,6 +7,6 @@ object Settings {
     case None => throw new PuckError(s"$envVarName undefined : please define an environment named $envVarName variable with the project path")
   }
   val tmpDir = "/tmp/"
-  val testPath = projectPath + "src/test/"
+  val testPath = projectPath + "puckJava/src/test/"
   val testExamplesPath = testPath + "resources/examples/"
 }

@@ -1,7 +1,7 @@
 package puck.javaGraph.nodeKind
 
 import puck.graph.NodeKind
-import puck.graph.constraints.{AbstractionPolicy, DelegationAbstraction}
+import puck.graph.constraints.{DelegationAbstraction, AbstractionPolicy}
 
 
 /**

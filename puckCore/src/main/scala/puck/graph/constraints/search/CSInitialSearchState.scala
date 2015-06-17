@@ -1,8 +1,8 @@
 package puck.graph.constraints.search
 
-import puck.graph._
-import puck.graph.constraints.Solver
 import puck.graph.constraints.search.CSInitialSearchState.Starter
+import puck.graph.{ConcreteNode, ResultT, LoggedTry, DependencyGraph}
+import puck.graph.constraints.Solver
 import puck.search.{SearchEngine, SearchState}, SearchEngine.InitialStateFactory
 
 import scalaz._, Scalaz._

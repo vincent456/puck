@@ -2,10 +2,9 @@ package puck.graph
 package constraints
 
 
-import puck.graph.constraints.{Keywords => KW}
 import scala.util.parsing.combinator.RegexParsers
 import scala.util.parsing.input.{Reader, StreamReader}
-
+import puck.graph.constraints.{Keywords => KW}
 
 case class ConstraintMapBuilder
 (nodesByName : Map[String, NodeId],

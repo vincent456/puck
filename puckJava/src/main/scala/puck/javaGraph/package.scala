@@ -2,9 +2,9 @@ package puck
 
 import java.io.File
 
-import puck.graph.{NodeKindKnowledge, NodeKind, GraphUtils}
-import puck.graph.io.{DG2ASTBuilder, FilesHandler}
 import puck.graph.transformations.TransformationRules
+import puck.graph._
+import puck.graph.io.{DG2ASTBuilder, FilesHandler}
 import puck.javaGraph.nodeKind._
 import puck.javaGraph.transformations.{JavaIntro, JavaRenamer, JavaAbstract, JavaTransformationHelper}
 
@@ -17,8 +17,9 @@ package object javaGraph {
   }
 
   def JavaFilesHandler() : FilesHandler = JavaFilesHandler(new File("."))
+
   def JavaFilesHandler(workingDirectory : java.io.File) : FilesHandler =
-      new graph.FilesHandler(workingDirectory,
+      new FilesHandler(workingDirectory,
        ".java",
         JavaDotHelper)
   object JGraphUtils extends GraphUtils {

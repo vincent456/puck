@@ -5,9 +5,9 @@ import java.io.{PipedInputStream, PipedOutputStream}
 import javax.imageio.ImageIO
 import javax.swing.ImageIcon
 
-import puck.gui.svg.ScrollablePicture
 import puck.graph._
-import puck.graph.io.{Png, PrintingOptions, VisibilitySet}
+import puck.graph.io.{Png, PrintingOptions, VisibilitySet, FilesHandler}
+import puck.gui.svg.ScrollablePicture
 import puck.gui.PuckMainPanel
 import puck.search.SearchState
 import puck.util.{PuckLogger, PuckLog}

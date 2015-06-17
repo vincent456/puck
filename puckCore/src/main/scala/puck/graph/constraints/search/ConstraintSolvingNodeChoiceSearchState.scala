@@ -1,7 +1,7 @@
 package puck.graph.constraints.search
 
-import puck.graph._
 import puck.graph.constraints.DecisionMaker.ChooseNodeKArg
+import puck.graph.{ResultT, DependencyGraph, NodeId}
 import puck.search.SearchState
 import puck.util.Logged
 

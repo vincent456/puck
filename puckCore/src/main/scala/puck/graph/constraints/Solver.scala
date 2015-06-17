@@ -2,12 +2,11 @@ package puck.graph
 package constraints
 
 import puck.PuckError
-import puck.graph.ShowDG._
 import puck.graph.transformations.TransformationRules
 import puck.util.Logged
 import puck.util.LoggedEither._
 import scalaz._, Scalaz._
-
+import ShowDG._
 
 object FindHostResult {
   def host(host : NodeId, graph : DependencyGraph): FindHostResult =

@@ -1,14 +1,12 @@
 package puck.gui
 
 import java.io.File
-import puck.graph.FilesHandler
+
+import puck.graph.io.FilesHandler
 
 import scala.swing._
 import java.awt.Dimension
 
-/**
- * Created by lorilan on 09/05/14.
- */
 class SettingsFrame(filesHandler : FilesHandler) extends Frame{
 
   title = "Settings"

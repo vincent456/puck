@@ -3,9 +3,6 @@ package puck.javaGraph.nodeKind
 import puck.graph.NodeKind
 import puck.graph.constraints.AbstractionPolicy
 
-/**
- * Created by lorilan on 31/07/14.
- */
 case object Package extends JavaNodeKind {
   override val toString = "Package"
 

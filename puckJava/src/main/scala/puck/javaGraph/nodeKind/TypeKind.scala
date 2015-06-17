@@ -1,7 +1,7 @@
 package puck.javaGraph.nodeKind
 
-import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
 import puck.graph.NodeKind
+import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
 
 
 abstract class TypeKind extends JavaNodeKind

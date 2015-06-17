@@ -2,9 +2,9 @@ package puck.javaGraph
 
 import java.io.{FileInputStream, ObjectInputStream, FileOutputStream, ObjectOutputStream}
 
+import puck.graph.{NamedType, Arrow, ConcreteNode, Tuple}
+import puck.graph.transformations.{Recording, CNode, Regular, Transformation}
 import puck.{Settings, AcceptanceSpec}
-import puck.graph._
-import puck.graph.transformations.{Recording, Regular, CNode, Transformation}
 import nodeKind._
 
 class Toto extends Serializable

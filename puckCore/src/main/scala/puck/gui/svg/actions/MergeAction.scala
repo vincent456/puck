@@ -3,7 +3,7 @@ package puck.gui.svg.actions
 import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
 
-import puck.graph.{DGNode, ConcreteNode}
+import puck.graph.{ConcreteNode, DGNode}
 import puck.gui.svg.SVGController
 
 case class MergeAction(

@@ -12,11 +12,6 @@ object PuckBuild extends Build {
 
   val printClassPathFile = taskKey[File]("create a file containing the fullclass path")
 
-/*
-  val gen = taskKey[Unit]("generates parser, scanner and AST files")
-*/
-
-
   def commonSettings(module: String) = Seq[Setting[_]](
     organization := "fr.lip6",
     name := s"puck-$module",
@@ -104,7 +99,7 @@ object PuckBuild extends Build {
 
   val puckJava = (project
     settings commonSettings("java")
-    settings PuckJavaBuild.puckJavaBuildSettings
+    settings PuckJavaBuild.settings
     enablePlugins JavaAppPackaging
     //dependsOn (puckCore % "test->test;compile->compile")
     dependsOn (puckCore % "compile->compile")
@@ -120,6 +115,10 @@ object PuckBuild extends Build {
         "org.scala-lang" % "scala-reflect" % "2.11.6"
       )
     }
+
+    settings PuckScalaBuild.settings
+
+    dependsOn (puckCore % "compile->compile")
   )
 
 }

@@ -1,12 +1,11 @@
 package puck.javaGraph
 package nodeKind
 
-
-import puck.graph.ShowDG._
 import puck.graph._
 import puck.graph.constraints.AbstractionPolicy
+import ShowDG._
 
-abstract class JavaNodeKind extends NodeKind{
+abstract class JavaNodeKind extends NodeKind {
   /*def packageNode : AGNode[JavaNodeKind] =
    this match {
      case Package(id) => this.node

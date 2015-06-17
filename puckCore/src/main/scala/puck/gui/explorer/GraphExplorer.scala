@@ -4,12 +4,12 @@ import java.awt.event.{MouseAdapter, MouseEvent}
 import javax.swing.JTree
 import javax.swing.tree.TreePath
 
+import puck.graph._
 import puck.graph.io.{Visibility, VisibilitySet}
-import puck.graph.{NodeKind, DGNode, DependencyGraph, NodeId}
 
 import scala.swing.event.Event
 import scala.swing.{Component, Publisher, ScrollPane}
-
+import ShowDG._
 case class PuckTreeNodeClicked(graph : DependencyGraph, node : NodeId) extends Event
 case class AccessGraphModified(graph : DependencyGraph) extends Event
 case class SetVisible(ks : Seq[NodeKind]) extends Event
@@ -32,7 +32,6 @@ class GraphExplorer
 
   def addChildren(graph : DependencyGraph,
                   ptn: PuckTreeNode): Unit = {
-    import puck.graph.ShowDG._
     val nodeList = graph.content(ptn.nodeId).map(graph.getConcreteNode).toList
     nodeList.sortBy(_.name) foreach {
       (n: DGNode) =>

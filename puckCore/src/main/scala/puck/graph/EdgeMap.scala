@@ -1,8 +1,5 @@
 package puck.graph
 
-import puck.graph.DGEdge.{ContainsK, IsaK, ParameterizedUsesK, UsesK}
-
-
 
 object EdgeMap {
 
@@ -30,6 +27,11 @@ object EdgeMap {
                 UseDependencyMap())
 }
 import EdgeMap._
+import puck.graph.DGEdge.ContainsK
+import puck.graph.DGEdge.IsaK
+import puck.graph.DGEdge.ParameterizedUsesK
+import puck.graph.DGEdge.UsesK
+
 case class EdgeMap
 ( userMap : EdgeMapT,
   usedMap  : EdgeMapT, //formely usesMap

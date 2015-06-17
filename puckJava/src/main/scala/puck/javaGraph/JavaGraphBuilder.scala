@@ -1,11 +1,11 @@
 package puck.javaGraph
 
 import puck.graph._
-import puck.graph.DependencyGraph._
 import puck.graph.constraints.{SupertypeAbstraction, ConstraintsMaps}
-import puck.graph.transformations.Recording
 import puck.javaGraph.nodeKind._
 import scala.collection.JavaConversions.collectionAsScalaIterable
+
+import DependencyGraph._
 
 class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 

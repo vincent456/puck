@@ -1,14 +1,13 @@
 
 package puck.javaGraph
 
-import puck.graph._
 import puck.graph.constraints.SupertypeAbstraction
+import puck.graph._
 import puck.javaGraph.nodeKind._
 import puck.{Settings, PuckError, AcceptanceSpec}
 import puck.javaGraph.JGraphUtils.{transformationRules => TR}
 
 import scalaz._
-import scalaz.syntax.applicative._
 
 
 class RecordingComparatorSpec extends AcceptanceSpec {

@@ -3,7 +3,7 @@ package transformations
 package rules
 
 import puck.PuckError
-import puck.graph.DependencyGraph._
+import puck.graph.DependencyGraph.AbstractionMap
 import puck.graph.constraints.NotAnAbstraction
 import puck.util.LoggedEither._
 import scalaz._, Scalaz._

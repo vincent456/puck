@@ -4,7 +4,7 @@ package io
 
 import java.io.BufferedWriter
 
-import puck.graph.DGEdge.{IsaK, UsesK}
+import puck.graph.DGEdge.{UsesK, IsaK}
 
 import scala.collection.mutable
 

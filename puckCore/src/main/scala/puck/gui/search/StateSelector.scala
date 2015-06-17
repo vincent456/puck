@@ -1,7 +1,7 @@
 package puck.gui.search
 
+import puck.graph._
 import puck.graph.io.VisibilitySet
-import puck.graph.{ResultT, graphOfResult}
 import puck.gui.{ConstraintDisplayRequest, ApplyOnCodeRequest, SearchStateSeqPrintingRequest}
 import puck.search.SearchState
 

@@ -10,7 +10,7 @@ import org.w3c.dom.Element
 import org.w3c.dom.svg.{SVGGElement, SVGDocument}
 import puck.graph._
 import puck.graph.io._
-import puck.graph.transformations.{MileStone, Recording}
+import puck.graph.transformations.MileStone
 import puck.gui.TextAreaLogger
 import puck.gui.svg.actions.{AddNodeAction, AbstractionAction}
 

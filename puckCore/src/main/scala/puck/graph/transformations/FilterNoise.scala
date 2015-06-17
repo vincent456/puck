@@ -1,6 +1,6 @@
 package puck.graph.transformations
 
-import puck.graph._
+import puck.graph.DGEdge
 import puck.util.{PuckLog, PuckLogger}
 
 /**

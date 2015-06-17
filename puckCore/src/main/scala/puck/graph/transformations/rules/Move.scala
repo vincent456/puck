@@ -1,13 +1,10 @@
 package puck.graph.transformations.rules
 
 import puck.PuckError
-import puck.graph.ShowDG._
 import puck.graph._
 
-import puck.graph.transformations.rules.Redirection.redirectUses
-
 import scalaz.-\/
-
+import ShowDG._
 class Move(intro : Intro) {
 
   def typeDecl
@@ -84,7 +81,7 @@ class Move(intro : Intro) {
 
             val newTypeUse = DGEdge.UsesK(typeUse.user, newTypeUsed)
 
-            redirectUses(g1, typeUse, newTypeUsed, keepOldUse)
+            Redirection.redirectUses(g1, typeUse, newTypeUsed, keepOldUse)
               .addUsesDependency(newTypeUse, typeMemberUse)
           }
       }

@@ -2,6 +2,7 @@ package puck.graph
 package transformations
 
 import puck.PuckError
+import puck.graph.transformations.MappingChoices.{Kargs, NodesToMap, ResMap}
 import puck.search.FindFirstSearchEngine
 import puck.util.{PuckLogger, PuckNoopLogger}
 
@@ -28,8 +29,6 @@ object RecordingComparator{
     aux(l, Seq[T]())
   }
 }
-
-import puck.graph.transformations.MappingChoices.{Kargs, NodesToMap, ResMap}
 
 object NoSolution extends PuckError("No solution")
 object WrongMapping extends PuckError("Wrong mapping")

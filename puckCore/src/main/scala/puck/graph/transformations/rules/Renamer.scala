@@ -1,6 +1,6 @@
 package puck.graph.transformations.rules
 
-import puck.graph._
+import puck.graph.{NodeId, DependencyGraph}
 
 class Renamer {
   def apply

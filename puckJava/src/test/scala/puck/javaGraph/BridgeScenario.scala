@@ -3,11 +3,11 @@ package puck.javaGraph
 import java.io.{File, FileReader}
 
 import org.scalatest.{OptionValues, EitherValues}
-import puck.util.{PuckNoopLogger, PuckFileLogger}
-import puck.{QuickFrame, Java2dot, PuckError, Settings}
-import puck.graph._
 import puck.graph.constraints.{ConstraintsParser, SupertypeAbstraction}
 import puck.graph.transformations.rules.CreateTypeMember
+import puck.graph._
+import puck.util.{PuckNoopLogger, PuckFileLogger}
+import puck.{QuickFrame, Java2dot, PuckError, Settings}
 import puck.javaGraph.nodeKind.{Interface, Field, Class}
 import puck.javaGraph.JGraphUtils.{transformationRules => TR}
 

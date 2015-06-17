@@ -5,6 +5,7 @@ import javax.swing.AbstractAction
 
 import puck.PuckError
 import puck.graph._
+import puck.graph.transformations.rules.{CreateTypeMember, CreateParameter, CreateVarStrategy}
 import puck.gui.svg.SVGController
 import puck.util.LoggedEither._
 

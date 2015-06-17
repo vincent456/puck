@@ -2,25 +2,8 @@ package puck
 
 import puck.javaGraph._
 
-import scala.swing._
- import javax.swing.UIManager
- import puck.gui.PuckMainPanel
+object Front extends PuckApplication(JavaFilesHandler(), JGraphUtils)
 
- object Front extends SwingApplication{
-
-   def startup(args: Array[String]) : Unit = {
-    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
-    if (top.size == new Dimension(0,0)) top.pack()
-    top.visible = true
-  }
-
-  def top = new MainFrame {
-    title = "Puck"
-
-    contents  = new PuckMainPanel(JavaFilesHandler(), JGraphUtils)
-
-  }
-}
 
 /*
  from http://stackoverflow.com/questions/2315912/scala-best-way-to-parse-command-line-parameters-cli

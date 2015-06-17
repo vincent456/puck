@@ -1,8 +1,7 @@
 package puck.util
 
-import puck.graph.ShowDG._
 import puck.graph._
-
+import ShowDG._
 object Debug {
 
 
