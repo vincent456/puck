@@ -20,8 +20,6 @@ class PuckGlobal(settings: Settings, reporter: Reporter) extends Global(settings
     puckPlugin :: super.loadRoughPluginsList()
 }
 
-trait Probe
-
 class PuckCompiler extends Driver {
 
 
@@ -30,7 +28,7 @@ class PuckCompiler extends Driver {
   //inspired from super.process
   def apply(args: List[String]) : (DependencyGraph, Global) = {
     val ss   = new Settings(scalacError)
-    ss.embeddedDefaults[Probe]
+    //ss.embeddedDefaults(this.getClass.getClassLoader)
     reporter = new ConsoleReporter(ss)
     command  = new CompilerCommand(args, ss)
     settings = command.settings
