@@ -59,6 +59,8 @@ sealed abstract class DGEdge {
   val source : NodeId
   val target: NodeId
 
+  def copy(source : NodeId = source, target : NodeId = target) : DGEdge
+
   type NIdT = NodeId
   /*
    * aliases for readibility
@@ -115,6 +117,16 @@ case class Uses
   accessKind : Option[UsesAccessKind] = None
   ) extends DGUses {
   val kind: UsesKind = UsesK
+
+  override def toString : String =
+  accessKind match {
+    case None => super.toString
+    case Some(ac) =>
+      ac + "-" + kind + "( " + source + ", " + target + ")"
+  }
+
+  override def copy(source : NodeId = source, target : NodeId = target) : DGEdge =
+    Uses(source, target, accessKind)
 }
 
 case class ParameterizedUses
@@ -124,6 +136,9 @@ case class ParameterizedUses
   )
   extends DGUses {
   val kind: UsesKind = ParameterizedUsesK
+
+  override def copy(source : NodeId = source, target : NodeId = target) : DGEdge =
+    ParameterizedUses(source, target, accessKind)
 }
 
 case class Isa
@@ -131,6 +146,10 @@ case class Isa
   target: NodeId)
   extends DGEdge {
   val kind: EKind = IsaK
+
+  override def copy(source : NodeId = source, target : NodeId = target) : DGEdge =
+    Isa(source, target)
+
 }
 
 case class Contains
@@ -138,4 +157,7 @@ case class Contains
   target: NodeId)
   extends DGEdge {
   val kind: EKind = ContainsK
+
+  override def copy(source : NodeId = source, target : NodeId = target) : DGEdge =
+    Contains(source, target)
 }

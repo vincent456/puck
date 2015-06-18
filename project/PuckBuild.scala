@@ -12,7 +12,7 @@ object PuckBuild extends Build {
 
   val printClassPathFile = taskKey[File]("create a file containing the fullclass path")
 
-  def commonSettings(module: String) = Seq[Setting[_]](
+  def commonSettings(module: String) : Seq[Setting[_]] = Seq(
     organization := "fr.lip6",
     name := s"puck-$module",
     version := "1.0-SNAPSHOT",
@@ -73,10 +73,10 @@ object PuckBuild extends Build {
 
 
   lazy val root = (project in file(".")
-    settings commonSettings("root")
-    dependsOn (puckCore % "test->test;compile->compile",
-    puckJava % "test->test;compile->compile",
-    puckScala % "test->test;compile->compile")
+//    settings commonSettings("root")
+//    dependsOn (puckCore % "test->test;compile->compile",
+//    puckJava % "test->test;compile->compile",
+//    puckScala % "test->test;compile->compile")
     aggregate (puckCore, puckJava, puckScala)
     )
 

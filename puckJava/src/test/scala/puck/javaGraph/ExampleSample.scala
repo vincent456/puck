@@ -2,7 +2,7 @@ package puck.javaGraph
 
 import puck.graph.{NodeId, DependencyGraph}
 import puck.graph.transformations.Transformation
-import puck.util.{PuckNoopLogger, PuckLogger}
+import puck.util.{PuckFileLogger, PuckNoopLogger, PuckLogger}
 
 case class ExampleSample
 ( program : AST.Program,
@@ -23,7 +23,7 @@ case class ExampleSample
   def this(filesPath : String*) =
     this(CompileHelper.compileSrcsAndbuildGraph(filesPath.toList, List()))
 
-  implicit var logger : PuckLogger = PuckNoopLogger
+  implicit var logger : PuckLogger = new PuckFileLogger(_ => true, new java.io.File("/tmp/comparisonLog"))
   def compare: (DependencyGraph, DependencyGraph) => Boolean =
     (g1, g2) => DependencyGraph.areEquivalent(initialRecord,g1,g2, logger)
 }

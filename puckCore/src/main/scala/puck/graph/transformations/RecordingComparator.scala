@@ -131,12 +131,12 @@ class RecordingComparator
           case \/-(m) =>
             removeFirst(ts2, ts1.head.direction, tgt) match {
             case None => k(LoggedError(WrongMapping))
-             /* println("Failure on mapping : ")
-              println(map.mkString("\t", "\n\t", "\n"))
-              println(ts1.head + " mapped as ")
-              println(Transformation(ts1.head.operation, tgt) + "cannot be found in :")
-              println(ts2.mkString("\t", "\n\t", "\n"))
-              println("**************************************")*/
+//              println("Failure on mapping : ")
+//              println(map.mkString("\t", "\n\t", "\n"))
+//              println(ts1.head + " mapped as ")
+//              println(Transformation(ts1.head.direction, tgt) + "cannot be found in :")
+//              println(ts2.mkString("\t", "\n\t", "\n"))
+//              println("**************************************")
             case Some(newTs2) =>
               //println("success")
               compare(ts1.tail, newTs2, m, nodesToMap, k)
@@ -146,7 +146,7 @@ class RecordingComparator
       ts1.head.operation match {
         case Edge(e) => attribNode(Seq(e.source, e.target), map, nodesToMap) {
           case (Seq(src, tgt), map1, nodesToMap1) =>
-            removeFirstAndCompareNext(Edge(e.kind(src, tgt)), map1, nodesToMap1 )
+            removeFirstAndCompareNext(Edge(e.copy(src, tgt)), map1, nodesToMap1 )
         }
 
         case RedirectionOp(e, extremity) =>

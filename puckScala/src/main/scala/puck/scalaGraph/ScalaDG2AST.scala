@@ -28,7 +28,7 @@ class PuckCompiler extends Driver {
   //inspired from super.process
   def apply(args: List[String]) : (DependencyGraph, Global) = {
     val ss   = new Settings(scalacError)
-    //ss.embeddedDefaults(this.getClass.getClassLoader)
+    ss processArgumentString "-usejavacp" // use java classpath
     reporter = new ConsoleReporter(ss)
     command  = new CompilerCommand(args, ss)
     settings = command.settings
