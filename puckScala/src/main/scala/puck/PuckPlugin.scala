@@ -11,6 +11,34 @@ import nsc.plugins.Plugin
 import nsc.plugins.PluginComponent
 
 import DependencyGraph._
+
+class DummyPrintingComponent
+(val global: Global,
+ val prevPhase : String) extends PluginComponent  {
+
+  import global._
+
+  override val runsRightAfter: Option[String] = Some(prevPhase)
+  val runsAfter: List[String] = List(prevPhase)
+
+  override val phaseName: String = "DummyPrinting"
+
+  override def newPhase(prev: Phase): Phase = new StdPhase(prev) {
+
+    override def run() = {
+      println(s"Printing after $prevPhase :")
+      currentRun.units foreach { cu =>
+        println(cu.body)
+      }
+
+    }
+    def apply(unit: CompilationUnit) = {
+      assert(false)
+    }
+  }
+
+}
+
 class GenDependencyGraph
 (val global: Global) extends PluginComponent with GraphBuilder {
   import global._
@@ -20,8 +48,6 @@ class GenDependencyGraph
   g = new DependencyGraph(ScalaNodeKind,
     NodeIndex(root), EdgeMap(),
     AbstractionMap(), ConstraintsMaps(), Recording())
-
-  def updateGraph(newG : DependencyGraph) = g = newG
 
   val prevPhase = PuckPluginSettings.prevPhase
 
@@ -39,8 +65,8 @@ class GenDependencyGraph
 
     override def run() = {
       global.currentRun.units.foreach { cu =>
-        addTree(g.rootId)(cu.body)
-//        println(cu.body)
+        addTree(g.rootId, "")(cu.body)
+        println(cu.body)
       }
 
     }
@@ -53,8 +79,9 @@ class GenDependencyGraph
     //        case ValDef(mods, _, _, _) =>
     //      }
 
-    def addDef(container: NodeId, defTree: DefTree): NodeId = {
+    def addDef(container: NodeId, acc : String, defTree: DefTree): (NodeId, String) = {
       import Flags.{TRAIT, MUTABLE}
+
       val (k, styp) =
         defTree match {
           case TypeDef(_, _, _, _) => (TypeKind, None)
@@ -66,28 +93,36 @@ class GenDependencyGraph
           case vd@ValDef(mods, _, _, _) =>
             (if (mods hasFlag MUTABLE) Var else Val, Some(typeOf(vd)))
         }
-      val (cn, g2) = g.addConcreteNode(defTree.name.toString, k, styp, mutable = true)
-      updateGraph(g2.addContains(container, cn.id))
-      cn.id
+      val fullName = acc + "." + defTree.name
+      val nid = addNode(fullName, defTree.name.toString, k, styp)
+      addContains(container, nid)
+
+      (nid, fullName)
     }
 
 
-    def addTree(container: NodeId)(t: Tree) : Unit = {
-      val cid = t match {
-        case dt : DefTree => addDef(container, dt)
-        case _ => container
-        //      t match {
-        //        case pd @ PackageDef(pid, stats) =>
-        //          stats foreach (addTree(_, cn.id))
-        //        case cls @ ClassDef(mods, _, _, _)  =>
-        //        case TypeDef(_, _, _, _)      => "type"
-        //        case DefDef(_, _, _, _, _, _) => "def"
-        //        case ModuleDef(_, _, _)       => "object"
-        //        case ValDef(mods, _, _, _)    =>
-        //        case _ =>
-        //      }
+    def addTree(container: NodeId, acc: String)(t: Tree) : Unit = {
+      println("t.hasExistingSymbol " + t.hasExistingSymbol)
+      println("t.pos.isRange " + t.pos.isRange)
+
+      if(t.hasExistingSymbol && !t.pos.isRange) { //TODO - TOCHECK : inSource <=> !isRange ???
+        val (cid, newAcc) = t match {
+          case dt: DefTree => addDef(container, acc, dt)
+
+          case _ => (container, acc)
+          //      t match {
+          //        case pd @ PackageDef(pid, stats) =>
+          //          stats foreach (addTree(_, cn.id))
+          //        case cls @ ClassDef(mods, _, _, _)  =>
+          //        case TypeDef(_, _, _, _)      => "type"
+          //        case DefDef(_, _, _, _, _, _) => "def"
+          //        case ModuleDef(_, _, _)       => "object"
+          //        case ValDef(mods, _, _, _)    =>
+          //        case _ =>
+          //      }
+        }
+        t.children foreach addTree(cid, newAcc)
       }
-      t.children foreach addTree(cid)
     }
   }
 
@@ -98,6 +133,7 @@ class PuckPlugin(val global: Global) extends Plugin {
   val name: String = "PuckPlugin"
   val description: String = "Dependency Graph Generator for Puck"
   val genGraphComponent = new GenDependencyGraph(global)
-  val components: List[PluginComponent] = List(genGraphComponent)
 
+  val components: List[PluginComponent] = List(genGraphComponent,
+    new DummyPrintingComponent(global, "parser"))
 }
