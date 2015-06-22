@@ -5,7 +5,12 @@ import puck.PuckError
 import puck.graph.transformations.TransformationRules
 import puck.util.Logged
 import puck.util.LoggedEither._
-import scalaz._, Scalaz._
+import scalaz.{\/-, -\/}
+import scalaz.syntax.writer._
+import scalaz.std.string._
+import scalaz.std.list._
+
+
 import ShowDG._
 
 object FindHostResult {
@@ -340,8 +345,8 @@ class Solver
                   case (true, false) => LoggedError(new PuckError("constraint unsolvable"))
                 })
 
-            def k : LoggedTG => Unit = {
-              ltg =>
+            def k : (String, LoggedTG) => Unit = {
+              (log, ltg) =>
                 k0(checkIfMoveSolveContains(log <++: ltg))
               //k0 compose checkIfMoveSolveContains
             }
@@ -350,19 +355,21 @@ class Solver
 
             val g2 = g.addContains(oldCter, wronglyContained.id, register = false)
 
-            val ltg = g2.kindType(wronglyContained) match {
+             g2.kindType(wronglyContained) match {
               case TypeMember =>
                 val uses = g2.usesOfUsersOf(wronglyContained.id)
 
                 if(rules.move.usedBySiblingsViaSelf(uses, g2, g2.getConcreteNode(oldCter)))
-                  decisionMaker.createVarStrategy {
+                  decisionMaker.createVarStrategy(g2.set("")) {
                     cvs =>
-                      k(rules.move.typeMember(g2, List(wronglyContained.id), newCter, Some(cvs))(uses))
+                      val ltg =
+                        rules.move.typeMember(g2, List(wronglyContained.id), newCter, Some(cvs.value))(uses)
+                        k(log + cvs.written, ltg)
                   }
-                else k(rules.move.typeMember(g2, List(wronglyContained.id), newCter, None)(uses))
+                else k(log, rules.move.typeMember(g2, List(wronglyContained.id), newCter, None)(uses))
 
               case TypeDecl =>
-                k(rules.move.typeDecl (g2, wronglyContained.id, newCter))
+                k(log, rules.move.typeDecl (g2, wronglyContained.id, newCter))
 
               case _ => ???
             }

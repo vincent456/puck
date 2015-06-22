@@ -27,7 +27,7 @@ class ConstraintSolvingNodesChoice private
 ( val k : ChooseNodeKArg => Unit,
   var remainingChoices : Set[Option[(DependencyGraph, NodeId)]],
   var triedChoices : Set[Option[(DependencyGraph, NodeId)]])
- extends ConstraintSolvingChoice[(DependencyGraph, NodeId), ConstraintSolvingNodesChoice] {
+ extends ConstraintSolvingChoice[Option[(DependencyGraph, NodeId)], ConstraintSolvingNodesChoice] {
   def createState(id : Int,
                   prevState : Option[SearchState[ResultT]],
                   currentResult: Logged[ResultT],
@@ -44,7 +44,7 @@ class ConstraintSolvingNodeChoiceSearchState
  val loggedResult : Logged[ResultT],
  val internal: ConstraintSolvingNodesChoice,
  val prevState : Option[SearchState[ResultT]])
-extends ConstraintSolvingState[(DependencyGraph, NodeId), ConstraintSolvingNodesChoice]{
+extends ConstraintSolvingState[Option[(DependencyGraph, NodeId)], ConstraintSolvingNodesChoice]{
   def decorate(c : Option[NodeId]) = (loggedResult.value, c)
 }
 

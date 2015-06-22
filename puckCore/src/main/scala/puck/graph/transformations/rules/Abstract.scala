@@ -58,7 +58,7 @@ abstract class Abstract {
         val wName = abstractionName(g, impl, abskind, DelegationAbstraction, Some(Write))
         val wStype = absType(g, impl, Some(Write))
         val (rNode, g1) = g.addConcreteNode(rName, abskind, rStype)
-        val(wNode, g2) = g1.addConcreteNode(wName, abskind, wStype)
+        val (wNode, g2) = g1.addConcreteNode(wName, abskind, wStype)
         val abs = ReadWriteAbstraction(Some(rNode.id), Some(wNode.id))
         (abs, g2.addAbstraction(impl.id, abs))
 
@@ -273,6 +273,8 @@ abstract class Abstract {
     ) : LoggedTry[(Abstraction, DependencyGraph)] = {
     createAbsNodeAndUse(g, impl, abskind, policy)
   }
+
+
 
   //SO SO UGLY !!!
   def abstractionCreationPostTreatment

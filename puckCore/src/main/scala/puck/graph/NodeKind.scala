@@ -60,7 +60,7 @@ trait NodeKindKnowledge {
   }
 
 
-    def kindType : (DependencyGraph, DGNode) => KindType = (_,_) => Unknown
+  def kindType : (DependencyGraph, DGNode) => KindType = (_,_) => Unknown
 
   //TODO?? move elsewhere ?
   def coupling(graph : DependencyGraph) =

@@ -100,9 +100,11 @@ class ManualSolveAction
 
   import graphUtils.nodeKindKnowledge.kindOfKindType
 
-  override def createVarStrategy(k : CreateVarStrategy => Unit) : Unit = {
+  override def createVarStrategy
+  ( lg : LoggedG)
+  (k :Logged[CreateVarStrategy] => Unit) : Unit = {
     k(MoveAction.getChoice(kindOfKindType(TypeMember)).
-       getOrElse(CreateTypeMember(kindOfKindType(TypeMember).head)))
+       getOrElse(CreateTypeMember(kindOfKindType(TypeMember).head)).set(lg.written))
   }
 
 

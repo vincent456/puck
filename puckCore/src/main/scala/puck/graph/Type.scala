@@ -142,6 +142,9 @@ case class Arrow(input : Type, output : Type)
     case _ => false
   }
 
+  def prependParameter(t : Type) : Arrow =
+    Arrow(t, makeClone())
+
   def uncurry : Arrow = {
       val newOutput = output match {
         case a : Arrow => a.uncurry

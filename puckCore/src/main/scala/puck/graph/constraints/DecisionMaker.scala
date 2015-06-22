@@ -36,7 +36,9 @@ trait DecisionMaker{
   ( lg : LoggedG, choices : Set[Abstraction])
   ( k : Logged[Option[Abstraction]] => Unit) : Unit
 
-  def createVarStrategy(k : CreateVarStrategy => Unit) : Unit
+  def createVarStrategy
+  ( g : LoggedG)
+  ( k : Logged[CreateVarStrategy] => Unit) : Unit
 
 /*  def modifyConstraints(graph : GraphT,
                         sources : NodeSet[Kind],

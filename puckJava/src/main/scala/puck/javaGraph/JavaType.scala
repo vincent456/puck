@@ -46,6 +46,11 @@ object MethodType{
   def apply(input : Tuple, output : NamedType) =
    new MethodType(input, output)
 
+  def fromArrow( a : Arrow) = a.uncurry match {
+    case Arrow(t : Tuple, n : NamedType) => MethodType(t,n)
+    case _ => throw PuckError("cannot convert arrow into method")
+  }
+
 }
 
 class MethodType(override val input : Tuple,
@@ -62,6 +67,10 @@ class MethodType(override val input : Tuple,
 
   override def hashCode = 41 * input.hashCode + output.hashCode() + 41*/
   override def toString = "MethodType(" + input +" -> " + output +")"
+
+
+  override def  prependParameter(t : Type) : Arrow =
+    new MethodType(Tuple(t :: input.types), output)
 
   override def canOverride(graph : DependencyGraph, other : Type) : Boolean =
     other match {

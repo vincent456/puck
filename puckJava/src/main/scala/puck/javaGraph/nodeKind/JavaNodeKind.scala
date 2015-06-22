@@ -74,7 +74,8 @@ object JavaNodeKind extends NodeKindKnowledge {
         (c.kind, c.styp) match {
           case (ck: MethodKind, Some(MethodType(input, _)))=>
             c.name != other.name || input.length != l
-          case (ck: MethodKind, _)=> throw new DGError()
+          case (ck: MethodKind, _)=>
+            throw new DGError(showDG[ConcreteNode](graph).shows(c))
           case _ => true
         }
       }

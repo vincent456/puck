@@ -3,7 +3,7 @@ package puck.graph.constraints.search
 import puck.graph._
 import puck.graph.constraints.DecisionMaker.ChooseNodeKArg
 import puck.graph.constraints.{NodePredicate, AbstractionPolicy, DecisionMaker}
-import puck.graph.transformations.rules.CreateVarStrategy
+import puck.graph.transformations.rules.{CreateTypeMember, CreateParameter, CreateVarStrategy}
 import puck.search.SearchEngine
 import puck.util.Logged
 
@@ -172,7 +172,17 @@ class ConstraintSolvingSearchEngineDecisionMaker
     }
   }
 
-  override def createVarStrategy(k : CreateVarStrategy => Unit) : Unit = ???
+  override def createVarStrategy
+  ( lg: LoggedG)
+  ( k : Logged[CreateVarStrategy] => Unit) : Unit = {
+    val g = lg.value
+    val tmKinds = g.nodeKindKnowledge.kindOfKindType(TypeMember)
+    val strategies = CreateParameter +: (tmKinds map CreateTypeMember.apply)
+
+    searchEngine.newCurrentState(lg,
+      new ConstraintSolvingCreateVarChoice(k, strategies.toSet, Set()))
+
+  }
 /*  def modifyConstraints(sources : NodeSet[Kind], target : NodeType){}*/
 
 }
