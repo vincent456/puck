@@ -1,9 +1,11 @@
 package puck.graph
 package constraints
 
+import java.io.FileWriter
+
 import puck.PuckError
 import puck.graph.transformations.TransformationRules
-import puck.util.Logged
+import puck.util.{Debug, Logged}
 import puck.util.LoggedEither._
 import scalaz.{\/-, -\/}
 import scalaz.syntax.writer._
@@ -163,14 +165,12 @@ class Solver
         val log = loggedGraphAndSomeNodeId.written
         loggedGraphAndSomeNodeId.value match {
           case None =>
-            if(parentsThatCanBeCreated == 0){
+            if(parentsThatCanBeCreated == 0)
               k(FindHostResult.error.
                 set( log + "host intro, ancestor's max limit is not enough\n"))
-            }
-            else {
+            else
               hostIntro(lg1.value.set( log + "find host, no node given by decision maker : call to host intro\n"),
                 toBeContained)
-            }
         case (Some((g, nid))) =>
           k(FindHostResult.host(nid, g).
             set(log + s"find host: decision maker chose ${showDG[NodeId](g).show(nid)} to contain $toBeContained\n"))
@@ -324,7 +324,6 @@ class Solver
       // detach for host searching : do not want to consider parent constraints
       .map(_.removeContains(oldCter, wronglyContained.id, register = false))
 
-
     findHost(lg1, wronglyContained,
       (graph : DependencyGraph, potentialHost: ConcreteNode) =>
         !graph.interloperOf(potentialHost.id, wronglyContained.id)) {
@@ -332,10 +331,9 @@ class Solver
         logres.value match {
           case Host(newCter, g) =>
 
-            val log = logres.written +
-              s"solveContains : host of $wronglyContained will now be ${showDG[NodeId](g).show(newCter)}\n"
-
-
+            val log =
+                logres.written +
+                  s"solveContains : host of $wronglyContained will now be ${showDG[NodeId](g).show(newCter)}\n"
 
             def checkIfMoveSolveContains( tg : LoggedTG) : LoggedTG =
               tg.flatMap(g =>

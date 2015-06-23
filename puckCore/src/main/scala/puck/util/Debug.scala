@@ -2,6 +2,9 @@ package puck.util
 
 import puck.graph._
 import ShowDG._
+
+import scalaz.Show
+
 object Debug {
 
 
@@ -58,6 +61,23 @@ object Debug {
   def logUsesDependency(g : DependencyGraph, logger : PuckLogger, n : NodeId) = {
     logUsersOf(g, logger, n)
     logUsedBy(g, logger, n)
+
+  }
+
+  implicit val showNodeIndex = Show.shows[NodeIndex] {
+    case NodeIndex(_, cNodes, removedCnodes,
+    vNodes, removedVnodes,
+    cNodes2vNodes) =>
+      "Concrete Nodes : " +
+        cNodes.mkString("\t[",",\n\t ","]\n") +
+      "Removed Concrete Nodes : " +
+        removedCnodes.mkString("\t[",",\n\t ","]\n") +
+      "Virtual Nodes : " +
+        vNodes.mkString("\t[",",\n\t ","]\n") +
+      "Removed Virtual Nodes : " +
+        removedVnodes.mkString("\t[",",\n\t ","]\n") +
+      "CN -> VN : " +
+        cNodes2vNodes.mkString("\t[",",\n\t ","]\n")
 
   }
 

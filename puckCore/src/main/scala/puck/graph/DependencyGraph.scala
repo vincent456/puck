@@ -40,7 +40,7 @@ object DependencyGraph {
 class DependencyGraph
 ( //val logger : PuckLogger = PuckNoopLogger,
   val nodeKindKnowledge: NodeKindKnowledge,
-  private [this] val nodesIndex : NodeIndex,
+  val nodesIndex : NodeIndex,
   private [this] val edges : EdgeMap,
   /*private [this]*/ val abstractionsMap : AbstractionMap,
   val constraints : ConstraintsMaps,
