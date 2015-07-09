@@ -106,8 +106,7 @@ abstract class Abstract {
       g1.set(s"changeSelfTypeUseBySuperInTypeMember : redirecting ${DGEdge.UsesK(meth.id, clazz.id)} target to $interface\n")
         .toLoggedEither.flatMap {
         Redirection.redirectUsesAndPropagate(_, DGEdge.UsesK(meth.id, clazz.id),
-          AccessAbstraction(interface.id, SupertypeAbstraction),
-          propagateRedirection = true, keepOldUse = false)
+          AccessAbstraction(interface.id, SupertypeAbstraction), keepOldUse = false)
       }
     else LoggedSuccess(g1)
   }

@@ -20,8 +20,8 @@ case class RedirectAction
   //TODO check keepOldUse and propagate redirection value
   override def actionPerformed(e: ActionEvent): Unit =
     printErrOrPushGraph(controller,"Redirection Action failure"){
-      Redirection.redirectUsesAndPropagate(controller.graph.mileStone, edge, newTarget.id, policy,
-        propagateRedirection = true, keepOldUse = false)
+      Redirection.redirectUsesAndPropagate(controller.graph.mileStone,
+        edge, newTarget.id, policy, keepOldUse = false)
     }
 
 

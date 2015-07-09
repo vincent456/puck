@@ -17,7 +17,12 @@ object JavaAbstract extends Abstract {
     (impl.kind, absPolicy) match {
       case (Method, SupertypeAbstraction)
            | (AbstractMethod, SupertypeAbstraction) =>
-        (graph, potentialHost) => !graph.interloperOf(graph.container(impl.id).get, potentialHost.id)
+        (graph, potentialHost) => {
+          val typeDecl = graph.container(impl.id).get
+          val potentialSuperType = potentialHost.id
+          val canExtends = !graph.interloperOf(typeDecl, potentialSuperType)
+          canExtends
+        }
       case _ => super.absIntroPredicate(impl, absPolicy, absKind)
     }
   }

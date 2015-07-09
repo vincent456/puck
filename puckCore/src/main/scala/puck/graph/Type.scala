@@ -142,6 +142,7 @@ case class Arrow(input : Type, output : Type)
     case _ => false
   }
 
+  def removeFirstArgOfType(n : Type) : Arrow = ???
   def prependParameter(t : Type) : Arrow =
     Arrow(t, makeClone())
 
@@ -158,6 +159,8 @@ case class Arrow(input : Type, output : Type)
       case _ => this
     }
   }
+
+
 
   override def makeClone() : Arrow =
     copy(input.makeClone(), output.makeClone())
@@ -176,6 +179,7 @@ case class Arrow(input : Type, output : Type)
       case Arrow(i : Type, o : Type) =>
         i.subtypeOf(graph, input) && output.subtypeOf(graph, o)
       case _ => false })
+
 
 }
 

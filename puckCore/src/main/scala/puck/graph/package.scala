@@ -12,7 +12,6 @@ package object graph {
 
 
   type Error = PuckError
-  //type Log = Logged[Unit]
   type LoggedG = Logged[DependencyGraph]
   type LoggedTry[A] = LoggedEither[Error, A]
   type LoggedTG = LoggedTry[DependencyGraph]
@@ -65,9 +64,6 @@ package object graph {
 
   type Recording = Seq[Recordable]
   val Recording = transformations.Recording
-
-//  type JavaNodeKind = javaGraph.nodeKind.JavaNodeKind
-//  val JavaNode = javaGraph.JavaDotHelper
 
   type Mutability = Boolean
 

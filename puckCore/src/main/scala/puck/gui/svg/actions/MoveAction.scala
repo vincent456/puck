@@ -56,16 +56,24 @@ extends AbstractAction(MoveAction.label(controller.graph, moved)){
           controller.console.
             appendText("/!\\/!\\ Method overriding unchecked (TODO !!!) /!\\/!\\")
 
-          val host = g.getConcreteNode(g.container(moved.head).get)
-          val uses = g.usesOfUsersOf(moved)
+          val needNewReceiver = moved.exists {
+            nid =>
+              g.getConcreteNode(nid).styp match{
+                case Some(typ) => !(typ uses newHost.id)
+                case None => sys.error("should have some type")
+              }
+
+          }
+
+
           val choice =
-            if (TR.move.usedBySiblingsViaSelf(uses, g, host)) {
+            if (needNewReceiver) {
               Some(MoveAction.getChoice(kindOfKindType(TypeMember)).
                 getOrElse(CreateTypeMember(kindOfKindType(TypeMember).head)))
             }
             else None
 
-          TR.move.typeMember(g, moved, newHost.id, choice)(uses)
+          TR.move.typeMember(g, moved, newHost.id, choice)
         case kt =>
           LoggedError(new PuckError(s"move of $kt not implemented"))
       }

@@ -6,6 +6,8 @@ import puck.graph.transformations.rules.CreateVarStrategy
 import puck.util.Logged
 
 
+// La définition d'un classe pour la fonction de prédicat
+// permet de tagger de façon transparente la fonction avec un message de description
 trait NodePredicate {
   def apply(dg : DependencyGraph, cn : ConcreteNode) : Boolean
   override def toString : String = "NodePredicate"

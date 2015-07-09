@@ -262,8 +262,8 @@ class TransfoRuleSpec extends AcceptanceSpec {
         assert(DGEdge.UsesK(mUser, mUsed).existsIn(graph))
 
         val g2 =
-          Redirection.redirectUsesAndPropagate(graph, typeUse, superType,
-            SupertypeAbstraction, propagateRedirection = true, keepOldUse = false).right
+          Redirection.redirectUsesAndPropagate(graph,
+            typeUse, superType, SupertypeAbstraction, keepOldUse = false).right
 
         assert(DGEdge.UsesK(mUser, superType).existsIn(g2))
         assert(DGEdge.UsesK(mUser, absmUsed).existsIn(g2))
@@ -294,8 +294,8 @@ class TransfoRuleSpec extends AcceptanceSpec {
 
 
         val g2 =
-          Redirection.redirectUsesAndPropagate(graph, typeUse, delegator, DelegationAbstraction,
-            propagateRedirection = true, keepOldUse = false).right
+          Redirection.redirectUsesAndPropagate(graph,
+            typeUse, delegator, DelegationAbstraction, keepOldUse = false).right
 
         assert(DGEdge.UsesK(mUser, delegator).existsIn(g2))
         assert(DGEdge.UsesK(mUser, mDelegator).existsIn(g2))
@@ -333,8 +333,8 @@ class TransfoRuleSpec extends AcceptanceSpec {
         val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
 
         val g2 =
-          Redirection.redirectUsesAndPropagate(g, ctorUse, ctorMethod, DelegationAbstraction,
-            propagateRedirection = true, keepOldUse = false).right
+          Redirection.redirectUsesAndPropagate(g,
+            ctorUse, ctorMethod, DelegationAbstraction, keepOldUse = false).right
 
         assert( ctorMethodUse.existsIn(g2))
         assert( ! ctorUse.existsIn(g2) )
@@ -364,8 +364,8 @@ class TransfoRuleSpec extends AcceptanceSpec {
         val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
 
         val g2 =
-          Redirection.redirectUsesAndPropagate(g, ctorUse, ctorMethod, DelegationAbstraction,
-            propagateRedirection = true, keepOldUse = false).right
+          Redirection.redirectUsesAndPropagate(g,
+            ctorUse, ctorMethod, DelegationAbstraction, keepOldUse = false).right
 
         assert( ctorMethodUse existsIn g2)
         assert( !(ctorUse existsIn g2) )
@@ -413,8 +413,8 @@ class TransfoRuleSpec extends AcceptanceSpec {
         assert(! (useOfOtherMethAbs existsIn graph))
 
         val g =
-          Redirection.redirectUsesAndPropagate(graph, useOfmeth, mAbs, SupertypeAbstraction,
-            propagateRedirection = true, keepOldUse = false).right
+          Redirection.redirectUsesAndPropagate(graph,
+            useOfmeth, mAbs, SupertypeAbstraction, keepOldUse = false).right
 
         assert(useOfImplClass existsIn g)
         assert(useOfctor existsIn g)

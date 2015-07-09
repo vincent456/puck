@@ -27,8 +27,8 @@ object QuickFrame {
       imgframe.add(canvas)
       imgframe.setVisible(true)
       imgframe.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
-
     }
+
     FilesHandler.makeImage(None, JavaDotHelper, "")(graph, opts, Some(pipedOutput), Svg)()
 
   }

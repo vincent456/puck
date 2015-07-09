@@ -1,11 +1,10 @@
 package puck.graph
 package constraints
 
-import java.io.FileWriter
 
 import puck.PuckError
 import puck.graph.transformations.TransformationRules
-import puck.util.{Debug, Logged}
+import puck.util.Logged
 import puck.util.LoggedEither._
 import scalaz.{\/-, -\/}
 import scalaz.syntax.writer._
@@ -80,8 +79,9 @@ class Solver
                 wuToRedirect.foldLoggedEither(lg1) {
                   (g, wu) =>
                     rules.redirection.
-                      redirectUsesAndPropagate(g, g.getUsesEdge(wu, used.id).get, abs,
-                        propagateRedirection = true, keepOldUse = false)
+                      redirectUsesAndPropagate(g,
+                        g.getUsesEdge(wu, used.id).get,
+                        abs, keepOldUse = false)
                 }
 
               ltg.value match {
@@ -106,28 +106,16 @@ class Solver
   private val allwaysTrue : NodePredicateT = (_,_) => true
 
 
-  def findHost(lg : LoggedG,
-               toBeContained : ConcreteNode,
-               specificPredicate : NodePredicateT = allwaysTrue,
-               parentsThatCanBeCreated : Int = 1)
-              (k : Logged[FindHostResult] => Unit) : Unit = {
+  def hostIntro
+    (lg : LoggedG,
+     toBeContained : ConcreteNode,
+     parentsThatCanBeCreated : Int,
+     k : Logged[FindHostResult] => Unit) : Unit =
+    decisionMaker.chooseContainerKind(lg :++> s"call hostIntro $toBeContained\n", toBeContained){
+      loggedSkind =>
 
-    object FindHostPredicate extends NodePredicate {
-      def apply(graph : DependencyGraph, n : ConcreteNode) : Boolean =
-        graph.canContain(n, toBeContained) && specificPredicate(graph, n)
-
-      override def toString : String = s"Searching Host for $toBeContained"
-    }
-
-
-    def hostIntro(lg : LoggedG, toBeContained : ConcreteNode) : Unit = {
-
-
-      decisionMaker.chooseContainerKind(lg :++> s"call hostIntro $toBeContained\n", toBeContained){
-        loggedSkind =>
-
-          val log = loggedSkind.written
-          loggedSkind.value match {
+        val log = loggedSkind.written
+        loggedSkind.value match {
           case None =>
             val log1 =
               log + s"do not know how to create a valid host for ${toBeContained.kind}\n"
@@ -135,12 +123,12 @@ class Solver
           case Some(hostKind) =>
             newCterNumGen += 1
             val hostName = s"${toBeContained.name}_container$newCterNumGen"
-            val (host, graph2) = rules.intro(lg.value, hostName, hostKind, None)
+            val (host, g1) = rules.intro(lg.value, hostName, hostKind, None)
             val log1 =
               log + s"creating $hostName host intro, rec call to find host " +
-              s"($parentsThatCanBeCreated parents can be created)\n"
+                s"($parentsThatCanBeCreated parents can be created)\n"
 
-            findHost(graph2.set(log1),
+            findHost(g1.set(log1),
               host, allwaysTrue, parentsThatCanBeCreated - 1) {
               loggedRes =>
                 loggedRes.value match {
@@ -153,8 +141,21 @@ class Solver
 
             }
         }
-      }
+    }
 
+
+
+  def findHost(lg : LoggedG,
+               toBeContained : ConcreteNode,
+               specificPredicate : NodePredicateT = allwaysTrue,
+               parentsThatCanBeCreated : Int = 1)
+              (k : Logged[FindHostResult] => Unit) : Unit = {
+
+    object FindHostPredicate extends NodePredicate {
+      def apply(graph : DependencyGraph, n : ConcreteNode) : Boolean =
+        graph.canContain(n, toBeContained) && specificPredicate(graph, n)
+
+      override def toString : String = s"Searching Host for $toBeContained"
     }
 
     val lg1 = lg :++>
@@ -170,7 +171,7 @@ class Solver
                 set( log + "host intro, ancestor's max limit is not enough\n"))
             else
               hostIntro(lg1.value.set( log + "find host, no node given by decision maker : call to host intro\n"),
-                toBeContained)
+                toBeContained, parentsThatCanBeCreated, k)
         case (Some((g, nid))) =>
           k(FindHostResult.host(nid, g).
             set(log + s"find host: decision maker chose ${showDG[NodeId](g).show(nid)} to contain $toBeContained\n"))
@@ -281,11 +282,11 @@ class Solver
           wrongUsers.foldLoggedEither[PuckError, DependencyGraph](lg) {
             (g, wuId) =>
               rules.redirection.redirectUsesAndPropagate(g,
-                DGEdge.UsesK(wuId, impl.id), abs,
-                propagateRedirection = true, keepOldUse = false)
+                DGEdge.UsesK(wuId, impl.id), abs, keepOldUse = false)
           }
       })
     }
+
     aux (lg :++> s"abs of $impl intro degree $degree", 1, impl) (redirectWrongUsers)
   }
 
@@ -353,20 +354,22 @@ class Solver
 
             val g2 = g.addContains(oldCter, wronglyContained.id, register = false)
 
-             g2.kindType(wronglyContained) match {
-              case TypeMember =>
-                val uses = g2.usesOfUsersOf(wronglyContained.id)
 
-                if(rules.move.usedBySiblingsViaSelf(uses, g2, g2.getConcreteNode(oldCter)))
+            (g2.kindType(wronglyContained), wronglyContained.styp) match {
+              case (TypeMember, Some(typ)) =>
+
+                val needNewReceiver = !(typ uses newCter)
+
+                if(needNewReceiver)
                   decisionMaker.createVarStrategy(g2.set("")) {
                     cvs =>
                       val ltg =
-                        rules.move.typeMember(g2, List(wronglyContained.id), newCter, Some(cvs.value))(uses)
+                        rules.move.typeMember(g2, List(wronglyContained.id), newCter, Some(cvs.value))
                         k(log + cvs.written, ltg)
                   }
-                else k(log, rules.move.typeMember(g2, List(wronglyContained.id), newCter, None)(uses))
+                else k(log, rules.move.typeMember(g2, List(wronglyContained.id), newCter, None))
 
-              case TypeDecl =>
+              case (TypeDecl,_) =>
                 k(log, rules.move.typeDecl (g2, wronglyContained.id, newCter))
 
               case _ => ???

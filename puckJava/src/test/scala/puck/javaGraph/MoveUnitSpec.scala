@@ -17,7 +17,7 @@ class MoveUnitSpec extends UnitSpec {
       val classA = graph.getConcreteNode(fullName2id("p.A"))
       val methToMove = graph.getConcreteNode(fullName2id("p.A.methodToMove__void"))
 
-      val uses = graph.usesOfUsersOf(methToMove.id)
+      val uses = graph.usesFromUsedList(methToMove.id)
       assert(!Move.usedBySiblingsViaSelf(uses, graph, classA))
 
     }
@@ -30,7 +30,7 @@ class MoveUnitSpec extends UnitSpec {
       val classA = graph.getConcreteNode(fullName2id("p.A"))
       val methToMove = graph.getConcreteNode(fullName2id("p.A.methodToMove__void"))
 
-      val uses = graph.usesOfUsersOf(methToMove.id)
+      val uses = graph.usesFromUsedList(methToMove.id)
       assert(Move.usedBySiblingsViaSelf(uses, graph, classA))
     }
   }
@@ -40,7 +40,7 @@ class MoveUnitSpec extends UnitSpec {
       val classA = graph.getConcreteNode(fullName2id("p.A"))
       val methToMove = graph.getConcreteNode(fullName2id("p.A.methodToMove__void"))
 
-      val uses = graph.usesOfUsersOf(methToMove.id)
+      val uses = graph.usesFromUsedList(methToMove.id)
       assert(Move.usedBySiblingsViaSelf(uses, graph, classA))
     }
   }

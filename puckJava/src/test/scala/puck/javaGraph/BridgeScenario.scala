@@ -6,10 +6,12 @@ import org.scalatest.{OptionValues, EitherValues}
 import puck.graph.constraints.{ConstraintsParser, SupertypeAbstraction}
 import puck.graph.transformations.rules.CreateTypeMember
 import puck.graph._
-import puck.util.{PuckNoopLogger, PuckFileLogger}
+import puck.util.{LoggedEither, PuckNoopLogger, PuckFileLogger}
 import puck.{QuickFrame, Java2dot, PuckError, Settings}
 import puck.javaGraph.nodeKind.{Interface, Field, Class}
 import puck.javaGraph.JGraphUtils.{transformationRules => TR}
+
+import scalaz.{-\/, \/-}
 
 
 object BridgeScenario {
@@ -69,7 +71,7 @@ class BridgeScenario private()
     val (c, g1) = TR.intro(g0, className, Class, None)
     val g2 = g1.addContains(screen, c.id)
     (c, TR.move.typeMember(g2, List(method), c.id,
-      Some(CreateTypeMember(Field)))().value.right.value.
+      Some(CreateTypeMember(Field))).value.right.value.
       comment("-- introClassMoveMethod (end) --"))
   }
 
@@ -94,7 +96,6 @@ class BridgeScenario private()
         DGEdge.UsesK(userId, clazz),
         AccessAbstraction(interface,
         SupertypeAbstraction),
-        propagateRedirection = true,
         keepOldUse = false).value.right.value
     }
 
@@ -131,7 +132,16 @@ class BridgeScenario private()
 
   val delegate = getDelegate(g10, welcomeStar)
 
-  val g11 = TR.move.typeMember(TR.rename(g10, delegate, "styleProvider"), List(delegate), screenClass)().value.right.value
+  val g11 =
+//    TR.move.typeMember(TR.rename(g10, delegate, "styleProvider"), List(delegate), screenClass).value.right.value
+    TR.move.typeMember(TR.rename(g10, delegate, "styleProvider"), List(delegate), screenClass) match {
+      case LoggedEither(l, \/-(v)) => v
+      case LoggedEither(l, -\/(e)) =>
+        println(l)
+        throw e
+
+    }
+
   val g12 = TR.mergeInto(g11, getDelegate(g11, infoStar), delegate).value.right.value
   val g13 = TR.mergeInto(g12, getDelegate(g12, welcomeCapital), delegate).value.right.value
   val g14 = TR.mergeInto(g13, getDelegate(g13, infoCapital), delegate).value.right.value

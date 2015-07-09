@@ -40,7 +40,7 @@ object DependencyGraph {
 class DependencyGraph
 ( //val logger : PuckLogger = PuckNoopLogger,
   val nodeKindKnowledge: NodeKindKnowledge,
-  val nodesIndex : NodeIndex,
+  private [this] val nodesIndex : NodeIndex,
   private [this] val edges : EdgeMap,
   /*private [this]*/ val abstractionsMap : AbstractionMap,
   val constraints : ConstraintsMaps,
@@ -332,13 +332,12 @@ class DependencyGraph
     edges.userMap getFlat usedId
 
   // ugly name
-  def usesOfUsersOf(usedIds: List[NodeId]) : List[Uses] =
+  def usesFromUsedList(usedIds: List[NodeId]) : List[DGUses] =
     usedIds flatMap {
-      tmid =>
-        this.usersOf(tmid) map (user => Uses(user,tmid))
+      tmid => this.usersOf(tmid) map (user => this.getUsesEdge(user,tmid).get)
     }
 
-  def usesOfUsersOf(usedId: NodeId) : List[Uses] = usesOfUsersOf(List(usedId))
+  def usesFromUsedList(usedId: NodeId) : List[DGUses] = usesFromUsedList(List(usedId))
 
   def typeUsesOf(typeMemberUse : DGUses) : Set[DGUses] =
     edges typeUsesOf typeMemberUse

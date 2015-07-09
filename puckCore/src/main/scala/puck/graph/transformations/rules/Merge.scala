@@ -100,7 +100,6 @@ class Merge
                           val uses = g00.getUsesEdge(userId, consumedChildId).get
                           Redirection.redirectUsesAndPropagate(g00, uses,
                             newTypeConstructor, NotAnAbstraction,
-                            propagateRedirection = true,
                             keepOldUse = false)
                       }.map(_.removeNode(consumedChildId)._2)
                   }

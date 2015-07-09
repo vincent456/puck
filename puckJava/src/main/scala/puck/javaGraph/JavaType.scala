@@ -68,6 +68,12 @@ class MethodType(override val input : Tuple,
   override def hashCode = 41 * input.hashCode + output.hashCode() + 41*/
   override def toString = "MethodType(" + input +" -> " + output +")"
 
+  import puck.util.Collections.SelectList
+  override def removeFirstArgOfType(n : Type) : MethodType =
+    input.types.select(_ == n) match {
+     case Some((_, ts)) => MethodType(Tuple(ts), output)
+     case None => this
+    }
 
   override def  prependParameter(t : Type) : Arrow =
     new MethodType(Tuple(t :: input.types), output)
