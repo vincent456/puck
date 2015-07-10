@@ -88,13 +88,16 @@ object JavaAbstract extends Abstract {
       case (Interface, SupertypeAbstraction)
       | (Class, SupertypeAbstraction) =>
         val methods = typeMembersToPutInInterface(g, impl, SupertypeAbstraction)
-        LoggedSuccess(g, s"Creating $abskind with abstractions of" +
-          methods.mkString("\n", "\n", "\n")).flatMap {
-          abstractTypeDeclAndReplaceByAbstractionWherePossible(_,
+        val log = s"Creating $abskind with abstractions of" +
+                 methods.mkString("\n", "\n", "\n")
+
+        val ltg = abstractTypeDeclAndReplaceByAbstractionWherePossible(g,
             impl,
             abskind, SupertypeAbstraction,
             methods)
-        }
+
+        log <++: ltg
+
       case (Class, DelegationAbstraction) =>
 
         val methods = g.content(impl.id).foldLeft(List[ConcreteNode]()){
@@ -106,9 +109,8 @@ object JavaAbstract extends Abstract {
         }
 
         abstractTypeDeclAndReplaceByAbstractionWherePossible(g,
-          impl,
-          Class, DelegationAbstraction,
-          methods)
+          impl, Class, DelegationAbstraction, methods)
+
 
       case (AbstractMethod, SupertypeAbstraction) =>
         //no (abs, impl) or (impl, abs) uses

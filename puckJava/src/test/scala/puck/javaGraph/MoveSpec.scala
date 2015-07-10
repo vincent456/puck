@@ -8,8 +8,6 @@ import puck.javaGraph.transformations.JavaIntro
 
 class MoveSpec extends AcceptanceSpec {
 
-  val Move = new Move(JavaIntro)
-
   val examplesPath = Settings.testExamplesPath + "/move"
 
   feature("Move class") {

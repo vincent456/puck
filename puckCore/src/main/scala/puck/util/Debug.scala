@@ -16,7 +16,7 @@ object Debug {
     logger.writeln(s"users of ${showDG[NodeId](g).shows(n)} :")
 
     def printUser = g.kindType(n) match {
-      case TypeMember =>
+      case InstanceValueDecl =>
         (userId : NodeId) =>
           logger.writeln("\tType Uses are:")
           printEdgeSet(g, logger, g.typeUsesOf(userId,n))
@@ -43,7 +43,7 @@ object Debug {
     g.usedBy(n).foreach{
       usedId =>
         g.kindType(usedId) match {
-          case TypeMember =>
+          case InstanceValueDecl =>
             logger.writeln(s"\t- used type member ${showDG[NodeId](g).shows(usedId)}")
             logger.writeln("\tType Uses are:")
             printEdgeSet(g, logger, g.typeUsesOf(n, usedId))

@@ -7,7 +7,7 @@ import scalaz.-\/
 import scalaz.std.list._
 import scalaz.std.set._
 import ShowDG._
-class Move(intro : Intro) {
+object Move {
 
   def typeDecl
   ( g : DependencyGraph,
@@ -165,8 +165,7 @@ class Move(intro : Intro) {
     for {
       g3 <- useArgAsReceiver(g2, oldContainer, newContainer, movedWithArgUsableAsReceiver)
       g4 <- useReceiverAsArg(g3, oldContainer, newContainer, movedUsingSiblingViaThis, siblings)
-      g5 <- createNewReceiver(g4, oldContainer, newContainer,
-        moved -- movedWithArgUsableAsReceiver, createVarStrategy)
+      g5 <- createNewReceiver(g4, newContainer, moved -- movedWithArgUsableAsReceiver, createVarStrategy)
     } yield {
       g5
     }
@@ -226,7 +225,6 @@ class Move(intro : Intro) {
 
   def createNewReceiver
   ( g: DependencyGraph,
-    oldContainer : NodeId,
     newContainer : NodeId,
     nodeSet : Set[NodeId],
     createVarStrategy: Option[CreateVarStrategy] = None
@@ -243,8 +241,10 @@ class Move(intro : Intro) {
         typeUses.foldLoggedEither(g) {
           (g0, tu) =>
             val tmUses = g.typeMemberUsesOf(tu)
-            val tmContainer = if (tu.selfUse) tu.user
-            else g.container(tu.user).get
+            val tmContainer =
+              if (tu.selfUse) tu.user
+              else g.container(tu.user).get
+
             strategy match {
               case CreateParameter =>
                 createParam(g0, tu, newContainer, tmUses)
@@ -274,10 +274,10 @@ class Move(intro : Intro) {
       case (g0, (userId, typeMemberUses)) =>
         val user = g0.getConcreteNode(userId)
         val newTypeUse = Uses(userId, newTypeUsed)
-        (g0.kindType(user), user.styp) match {
-          case (TypeMember, Some(NamedType(_))) => ???
+        (user.kind.kindType, user.styp) match {
+          case (InstanceValueDecl, Some(NamedType(_))) => ???
 
-          case (TypeMember, Some(ar : Arrow )) =>
+          case (InstanceValueDecl, Some( ar : Arrow )) =>
             val log = s"${showDG[NodeId](g0).shows(userId)}, user of moved method" +
               s" will now use ${showDG[NodeId](g0).shows(newTypeUsed)}"
 
@@ -290,7 +290,15 @@ class Move(intro : Intro) {
                   .addUsesDependency(newTypeUse, typeMemberUse)
             }
 
-            LoggedSuccess(g2, log)
+            g.getDefaultConstructorOfType(newTypeUsed) match {
+              case None => LoggedError(new PuckError(s"no default constructor for $newTypeUsed"))
+              case Some(cid) =>
+                val g3 = g.usersOf(user.id).foldLeft(g2){
+                  (g0, userOfUser) => g0.addEdge(Uses(userOfUser, cid))
+                }
+
+                LoggedSuccess(g3, log)
+            }
 
           case (_, _) => LoggedError(new PuckError(s"a type member was expected"))
         }
@@ -305,24 +313,29 @@ class Move(intro : Intro) {
     tmContainer : NodeId,
     tmUses : Set[DGUses],
     kind : NodeKind
-    ): LoggedTG = {
-    val delegateName = s"${g.getConcreteNode(newTypeUsed).name.toLowerCase}_delegate"
+    ): LoggedTG =
+    g.getDefaultConstructorOfType(newTypeUsed) match {
+      case None => LoggedError(new PuckError(s"no default constructor for $newTypeUsed"))
+      case Some(constructorId) =>
 
-    val (delegate, g1) = intro.accessToType(g, delegateName, kind, newTypeUsed)
+        val delegateName = s"${g.getConcreteNode(newTypeUsed).name.toLowerCase}_delegate"
 
-    val newTypeUse = Uses(delegate.id, newTypeUsed)
-    val g2 = g1.addContains(tmContainer, delegate.id)
-      .addEdge(newTypeUse) //type field
+        import g.nodeKindKnowledge.intro
+        val (delegate, g1) = intro.accessToType(g, delegateName, kind, newTypeUsed)
 
-    tmUses.foldLoggedEither(g2) {
-      case (g0, typeMemberUse) =>
+        val newTypeUse = Uses(delegate.id, newTypeUsed)
+        val g2 = g1.addContains(tmContainer, delegate.id)
+          .addEdge(newTypeUse) //type field
+          .addEdge(Uses(delegate.id, constructorId))
 
-        LoggedSuccess(g0.removeUsesDependency(oldTypeUse, typeMemberUse)
-          .addUsesDependency(newTypeUse, typeMemberUse)
-          .addUses(typeMemberUse.user, delegate.id)) // replace this.m by delegate.m
+        tmUses.foldLoggedEither(g2) {
+          case (g0, typeMemberUse) =>
+            LoggedSuccess(g0.removeUsesDependency(oldTypeUse, typeMemberUse)
+              .addUsesDependency(newTypeUse, typeMemberUse)
+              .addUses(typeMemberUse.user, delegate.id)) // replace this.m by delegate.m
+        }
     }
 
-  }
     /*
       def typeMember
       ( g0 : DependencyGraph,

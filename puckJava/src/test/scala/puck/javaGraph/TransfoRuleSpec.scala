@@ -58,9 +58,10 @@ class TransfoRuleSpec extends AcceptanceSpec {
         assert( graph.abstractions(methMUser).isEmpty )
 
 
+
         val (AccessAbstraction(itc, _), g) =
           TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
-            Interface, SupertypeAbstraction).right
+                                          Interface, SupertypeAbstraction).right
 
         assert( g.isa(classA, itc) )
 
@@ -70,6 +71,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
 
         val AccessAbstraction(methMAbs, _) = g.abstractions(methM).head
 
+        assert( g.uses(methMUser, itc) )
         assert( g.uses(methMUser, methMAbs) )
         assert( g.uses(methMUser, itc) )
       }
@@ -263,7 +265,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
 
         val g2 =
           Redirection.redirectUsesAndPropagate(graph,
-            typeUse, superType, SupertypeAbstraction, keepOldUse = false).right
+            typeUse, AccessAbstraction(superType, SupertypeAbstraction)).right
 
         assert(DGEdge.UsesK(mUser, superType).existsIn(g2))
         assert(DGEdge.UsesK(mUser, absmUsed).existsIn(g2))
@@ -275,7 +277,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
 
     //val interfaceToInterfaceSuperType
 
-    ignore("From class to delegator class"){
+    scenario("From class to delegator class"){
       val p = "classToClassDelegate"
       new ExampleSample(s"$typeDeclPath/$p/A.java"){
         val mUser = fullName2id(s"$p.A.mUser__Delegatee")
@@ -294,8 +296,8 @@ class TransfoRuleSpec extends AcceptanceSpec {
 
 
         val g2 =
-          Redirection.redirectUsesAndPropagate(graph,
-            typeUse, delegator, DelegationAbstraction, keepOldUse = false).right
+          Redirection.redirectUsesAndPropagate(g,
+            typeUse, AccessAbstraction(delegator, DelegationAbstraction) ).right
 
         assert(DGEdge.UsesK(mUser, delegator).existsIn(g2))
         assert(DGEdge.UsesK(mUser, mDelegator).existsIn(g2))
@@ -314,15 +316,14 @@ class TransfoRuleSpec extends AcceptanceSpec {
 
     val typeCtorPath = examplesPath + "typeConstructor"
 
-    ignore("From constructor to constructorMethod hosted elsewhere - non static"){
-      val p = "constructorToConstructorMethodHostedElsewhere"
-      val _ = new ExampleSample(s"$typeCtorPath/$p/A.java"){
-        val ctor = fullName2id(s"$p.B.B#_void")
-        val ctorMethod = fullName2id(s"$p.Factory.createB__void")
-        val factoryClass = fullName2id(s"$p.Factory")
-        val factoryCtor = fullName2id(s"$p.Factory.Factory#_void")
+    scenario("From constructor to constructorMethod hosted elsewhere - non static"){
+      val _ = new ExampleSample(s"$typeCtorPath/ConstructorToConstructorMethodHostedElsewhere.java"){
+        val ctor = fullName2id(s"p.B.B#_void")
+        val ctorMethod = fullName2id(s"p.Factory.createB__void")
+        val factoryClass = fullName2id(s"p.Factory")
+        val factoryCtor = fullName2id(s"p.Factory.Factory#_void")
 
-        val caller = fullName2id(s"$p.A.m__void")
+        val caller = fullName2id(s"p.A.m__void")
 
         val ctorUse = DGEdge.UsesK(caller, ctor)
         assert( ctorUse.existsIn(graph) )
@@ -334,44 +335,41 @@ class TransfoRuleSpec extends AcceptanceSpec {
 
         val g2 =
           Redirection.redirectUsesAndPropagate(g,
-            ctorUse, ctorMethod, DelegationAbstraction, keepOldUse = false).right
+            ctorUse, AccessAbstraction(ctorMethod, DelegationAbstraction)).right
 
         assert( ctorMethodUse.existsIn(g2))
         assert( ! ctorUse.existsIn(g2) )
         assert(g2.uses(caller, factoryClass))
-        //??
-        assert(g2.uses(caller, factoryCtor))
-
       }
     }
 
     scenario("From constructor to constructorMethod hosted by self - non static"){
-      val p = "constructorToConstructorMethodHostedBySelf"
-      val _ = new ExampleSample(s"$typeCtorPath/$p/A.java"){
-        val ctor = fullName2id(s"$p.B.B#_void")
-        val ctorMethod = fullName2id(s"$p.B.create__void")
-        val constructedClass = fullName2id(s"$p.B")
-        val caller = fullName2id(s"$p.A.m__void")
-        val userOfTheCaller = fullName2id(s"$p.C.mc__void")
+      val _ = new ExampleSample(s"$typeCtorPath/ConstructorToConstructorMethodHostedBySelf.java"){
+        val ctor = fullName2id(s"p.B.B#_void")
+        val ctorMethod = fullName2id(s"p.B.create__void")
+        val constructedClass = fullName2id(s"p.B")
+        val caller = fullName2id(s"p.A.m__void")
+        val userOfTheCaller = fullName2id(s"p.C.mc__void")
 
-        val constructedClassUse = DGEdge.UsesK(caller, constructedClass)
-        val ctorUse = DGEdge.UsesK(caller, ctor)
+        val constructedClassUse = Uses(caller, constructedClass)
+        val ctorUse = Uses(caller, ctor)
         assert( ctorUse existsIn graph )
 
-        val ctorMethodUse = DGEdge.UsesK(caller, ctorMethod)
+        val ctorMethodUse = Uses(caller, ctorMethod)
         assert( ! (ctorMethodUse existsIn graph))
 
         val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
 
         val g2 =
           Redirection.redirectUsesAndPropagate(g,
-            ctorUse, ctorMethod, DelegationAbstraction, keepOldUse = false).right
+            ctorUse, AccessAbstraction(ctorMethod, DelegationAbstraction)).right
+
 
         assert( ctorMethodUse existsIn g2)
         assert( !(ctorUse existsIn g2) )
         assert( constructedClassUse existsIn g2)
         assert( g2.uses(userOfTheCaller, ctor) )
-        assert( g2.uses(userOfTheCaller, constructedClass) )
+        assert( !g2.uses(userOfTheCaller, constructedClass) )
 
       }
     }
@@ -414,9 +412,9 @@ class TransfoRuleSpec extends AcceptanceSpec {
 
         val g =
           Redirection.redirectUsesAndPropagate(graph,
-            useOfmeth, mAbs, SupertypeAbstraction, keepOldUse = false).right
+            useOfmeth, AccessAbstraction(mAbs, SupertypeAbstraction)).right
 
-        assert(useOfImplClass existsIn g)
+        assert(! (useOfImplClass existsIn g))
         assert(useOfctor existsIn g)
 
         assert(! (useOfmeth existsIn g))

@@ -52,7 +52,7 @@ extends AbstractAction(MoveAction.label(controller.graph, moved)){
             (g, id) => TR.move.typeDecl(g, id, newHost.id)
           }
 
-        case TypeMember =>
+        case InstanceValueDecl =>
           controller.console.
             appendText("/!\\/!\\ Method overriding unchecked (TODO !!!) /!\\/!\\")
 
@@ -68,8 +68,8 @@ extends AbstractAction(MoveAction.label(controller.graph, moved)){
 
           val choice =
             if (needNewReceiver) {
-              Some(MoveAction.getChoice(kindOfKindType(TypeMember)).
-                getOrElse(CreateTypeMember(kindOfKindType(TypeMember).head)))
+              Some(MoveAction.getChoice(kindOfKindType(InstanceValueDecl)).
+                getOrElse(CreateTypeMember(kindOfKindType(InstanceValueDecl).head)))
             }
             else None
 

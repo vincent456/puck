@@ -7,9 +7,6 @@ import puck.LoadingListener;
 
 aspect DependencyGraphFactory {
 
-
-
-
 	public JavaGraphBuilder Program.buildDependencyGraph(Map<String,Collection<BodyDecl>> stringsRequest, LoadingListener ll){
 
 		JavaGraphBuilder builder = new JavaGraphBuilder(this);
@@ -221,18 +218,18 @@ aspect DependencyGraphFactory {
 	public void ClassInstanceExpr.buildDG(JavaGraphBuilder builder, int containerId){
 		//System.err.println("ClassInstanceExpr.buildDG : " + this);
 
-		buildDGInChildren(builder, containerId);
+		getArgList().buildDG(builder, containerId);
+		getTypeDeclOpt().buildDG(builder, containerId);
 
 		int classNodeId = getAccess().buildDGNode(builder);
         int ctorNodeId = buildDGNode(builder);
 
-		DGUses typeUse = new Uses(containerId, classNodeId, UsesAccessKind.none());
 		DGUses constructorUses = new Uses(containerId, ctorNodeId, UsesAccessKind.none());
-
-		builder.addEdge(typeUse);
 		builder.addEdge(constructorUses);
 
-		builder.addTypeRelationship(typeUse, constructorUses);
+//		DGUses typeUse = new Uses(containerId, classNodeId, UsesAccessKind.none());
+//		builder.addEdge(typeUse);
+//		builder.addTypeRelationship(typeUse, constructorUses);
 
 	}
 
@@ -320,8 +317,10 @@ aspect DependencyGraphFactory {
 	}
 
 
+
 	public ConstructorDecl TypeDecl.findConstructorBySignature(String paramsDescr){
 		Collection<ConstructorDecl> ctrs = constructors();
+
 		for(ConstructorDecl c : ctrs){
 			if(c.getParametersAsString().equals(paramsDescr)){
 				return c;

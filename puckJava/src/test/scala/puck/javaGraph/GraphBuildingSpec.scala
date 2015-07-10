@@ -10,6 +10,24 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
   val graphBuildingExamplesPath = Settings.testExamplesPath + "/graphBuilding/"
 
+  feature("constructor registration") {
+    val examplesPath = graphBuildingExamplesPath + "constructor/"
+
+    scenario("use of constructor only") {
+
+      val _ = new ExampleSample(s"$examplesPath/A.java") {
+        val clazz = fullName2id(s"p.A")
+        val ctor = fullName2id(s"p.A.A#_void")
+        val user = fullName2id(s"p.B.m__void")
+
+
+        assert(graph.uses(user, ctor))
+        assert(graph.uses(ctor, clazz))
+
+        assert(!graph.uses(user, clazz))
+      }
+    }
+  }
   feature("use registration"){
     val examplesPath = graphBuildingExamplesPath +  "useRegistration/"
 

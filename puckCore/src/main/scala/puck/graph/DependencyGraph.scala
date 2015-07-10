@@ -210,14 +210,14 @@ class DependencyGraph
 
   def changeTarget(edge : DGEdge, newTarget : NodeId) : DependencyGraph = {
     val g1 = edge.deleteIn(this, register = false)
-    val newEdge : DGEdge = edge.kind(edge.source, newTarget)
+    val newEdge : DGEdge = edge.copy(target = newTarget)
     val newRecording = recording.changeEdgeTarget(edge, newTarget, withMerge = newEdge.existsIn(this))
     newEdge.createIn(g1, register = false).newGraph(recording = newRecording)
   }
 
   def changeSource(edge : DGEdge, newSource : NodeId) : DependencyGraph = {
     val g1 = edge.deleteIn(this, register = false)
-    val newEdge: DGEdge = edge.kind(newSource, edge.target)
+    val newEdge: DGEdge = edge.copy(source = newSource)
     val newRecording = recording.changeEdgeSource(edge, newSource, withMerge = newEdge.existsIn(this))
     newEdge.createIn(g1, register = false).newGraph(recording = newRecording)
   }
@@ -428,8 +428,10 @@ class DependencyGraph
   }
 
   def kindType(nid : NodeId) : KindType =
-    kindType(getNode(nid))
+    getNode(nid).kind.kindType
 
-  def kindType(n : DGNode) : KindType =
-    nodeKindKnowledge.kindType(this, n)
+  def getDefaultConstructorOfType(typeId : NodeId) : Option[NodeId] =
+    nodeKindKnowledge.getConstructorOfType(this, typeId)
+
+
 }

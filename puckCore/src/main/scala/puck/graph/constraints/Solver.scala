@@ -79,9 +79,7 @@ class Solver
                 wuToRedirect.foldLoggedEither(lg1) {
                   (g, wu) =>
                     rules.redirection.
-                      redirectUsesAndPropagate(g,
-                        g.getUsesEdge(wu, used.id).get,
-                        abs, keepOldUse = false)
+                      redirectUsesAndPropagate(g, g.getUsesEdge(wu, used.id).get, abs)
                 }
 
               ltg.value match {
@@ -241,7 +239,7 @@ class Solver
 
               rules.abstracter.createAbstraction(graph, currentImpl, absNodeKind, absPolicy) map {
                 case (abs, graph2) =>
-                  val l : List[ConcreteNode] = abs.toList map graph2.getConcreteNode
+                  val l : List[ConcreteNode] = abs.nodes map graph2.getConcreteNode
 
                   introMultipleHostAfterAbsIntro(currentImpl.id, ltg => k(ltg.map((abs, _))),
                     rules.abstracter.absIntroPredicate(currentImpl, absPolicy, absNodeKind),
@@ -282,7 +280,7 @@ class Solver
           wrongUsers.foldLoggedEither[PuckError, DependencyGraph](lg) {
             (g, wuId) =>
               rules.redirection.redirectUsesAndPropagate(g,
-                DGEdge.UsesK(wuId, impl.id), abs, keepOldUse = false)
+                Uses(wuId, impl.id), abs)
           }
       })
     }
@@ -355,8 +353,8 @@ class Solver
             val g2 = g.addContains(oldCter, wronglyContained.id, register = false)
 
 
-            (g2.kindType(wronglyContained), wronglyContained.styp) match {
-              case (TypeMember, Some(typ)) =>
+            (wronglyContained.kind.kindType, wronglyContained.styp) match {
+              case (InstanceValueDecl, Some(typ)) =>
 
                 val needNewReceiver = !(typ uses newCter)
 

@@ -1,10 +1,13 @@
 package puck.javaGraph.nodeKind
 
-import puck.graph.NodeKind
+
+import puck.graph.{TypeDecl, KindType, NodeKind}
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
 
 
-abstract class TypeKind extends JavaNodeKind
+abstract class TypeKind extends JavaNodeKind {
+  override def kindType: KindType = TypeDecl
+}
 
 case object Interface extends TypeKind {
 
@@ -26,6 +29,7 @@ case object Interface extends TypeKind {
     case SupertypeAbstraction => Seq(Interface)
     case DelegationAbstraction => Seq(Class)//also interface ?
   }
+
 
 }
 

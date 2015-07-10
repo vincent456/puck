@@ -95,8 +95,7 @@ class BridgeScenario private()
       TR.redirection.redirectUsesAndPropagate(g0,
         DGEdge.UsesK(userId, clazz),
         AccessAbstraction(interface,
-        SupertypeAbstraction),
-        keepOldUse = false).value.right.value
+        SupertypeAbstraction)).value.right.value
     }
 
   def getDelegate(g : DependencyGraph, clazz : NodeId) =

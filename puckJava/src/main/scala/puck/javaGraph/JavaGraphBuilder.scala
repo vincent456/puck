@@ -190,7 +190,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 
   def registerDecl(n : NodeIdT, decl : AST.MethodDecl) : Unit = {
     g.getConcreteNode(n).kind match {
-      case Method =>
+      case Method | StaticMethod=>
         graph2ASTMap += (n -> ConcreteMethodDeclHolder(decl))
       case AbstractMethod =>
         graph2ASTMap += (n -> AbstractMethodDeclHolder(decl))
@@ -198,9 +198,13 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
     }
   }
 
-  def registerDecl(n : NodeIdT, decl : AST.FieldDeclaration) =
-    register(n, Field, FieldDeclHolder(decl), "FieldDeclaration")
-
+  def registerDecl(n : NodeIdT, decl : AST.FieldDeclaration) : Unit = {
+    g.getConcreteNode(n).kind match {
+      case Field | StaticField=>
+        graph2ASTMap += (n -> FieldDeclHolder(decl))
+      case _ => throwRegisteringError(g.getConcreteNode(n), "FieldDeclaration")
+    }
+  }
 
 
   override def registerAbstraction : DependencyGraph => (ImplId, Abstraction) => DependencyGraph =

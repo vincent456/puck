@@ -165,13 +165,13 @@ class DotPrinter
             graph.typeMemberUsesOf(selected).foldLeft(init){
               (map, tm) => map. + (DGEdge.toPair(tm) -> "TMember")
             }
-          case TypeMember
+          case InstanceValueDecl
                | TypeConstructor =>
             val init = Map(DGEdge.toPair(selected) -> "TMember")
             graph.typeUsesOf(selected).foldLeft(init){
               (map, tm) => map. + (DGEdge.toPair(tm) -> "TDecl")
             }
-          case TypeDeclAndTypeMember =>
+          case InstanceTypeDecl =>
             sys.error("selection kind unhandle [TODO] - DotPrinter.typeRelationShipLabel")
           case _ =>
             sys.error("this uses target kind should not happen")

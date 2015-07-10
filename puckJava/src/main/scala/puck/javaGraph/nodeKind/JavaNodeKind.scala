@@ -4,6 +4,8 @@ package nodeKind
 import puck.graph._
 import puck.graph.constraints.AbstractionPolicy
 import ShowDG._
+import puck.graph.transformations.rules.Intro
+import puck.javaGraph.transformations.JavaIntro
 
 abstract class JavaNodeKind extends NodeKind {
   /*def packageNode : AGNode[JavaNodeKind] =
@@ -14,11 +16,13 @@ abstract class JavaNodeKind extends NodeKind {
 }
 
 case object TypeVariable extends JavaNodeKind{
+  def kindType : KindType = InstanceTypeDecl
   def canContain(k : NodeKind) = false
   override def abstractionPolicies = Seq()
   def abstractionNodeKinds(p : AbstractionPolicy) = Seq()
 }
 case object WildCardType extends JavaNodeKind{
+  def kindType : KindType = InstanceTypeDecl
   def canContain(k : NodeKind) = false
   override def abstractionPolicies = Seq()
   def abstractionNodeKinds(p : AbstractionPolicy) = Seq()
@@ -33,10 +37,14 @@ object JavaNodeKind extends NodeKindKnowledge {
   //fix for accessing the field in java
   def interfaceKind = Interface
 
+
+
   def field = Field
+  def staticField = StaticField
   def constructor = Constructor
   def abstractMethod = AbstractMethod
   def method = Method
+  def staticMethod = StaticMethod
 
   def primitive = Primitive
   def typeVariable = TypeVariable
@@ -51,9 +59,9 @@ object JavaNodeKind extends NodeKindKnowledge {
       case NameSpace => Seq(Package)
       case TypeConstructor => Seq(Constructor)
       case TypeDecl => Seq(Interface, Class)
-      case TypeMember => Seq(Field, Method)
-      case TypeDeclAndTypeMember => Seq(Interface, Class, Field, Method)
-      case Unknown => sys.error("Unknown kind type")
+      case InstanceValueDecl => Seq(Field, Method)
+      case InstanceTypeDecl => Seq(Interface, Class)
+      case UnknownKindType => sys.error("Unknown kind type")
     }
 
 
@@ -105,22 +113,6 @@ object JavaNodeKind extends NodeKindKnowledge {
       })
   }
 
-  override def kindType : (DependencyGraph, DGNode) => KindType =
-    (graph, n) => n.kind match {
-      case Package => NameSpace
-      case Constructor => TypeConstructor
-      case _ : MethodKind | Field => TypeMember
-      case Primitive => TypeDecl
-      case _ : TypeKind =>
-        val container = graph.getNode(graph.container(n.id).get)
-        kindType(graph, container) match {
-          case NameSpace => TypeDecl
-          case TypeDecl => TypeDeclAndTypeMember
-          case _ => Unknown
-        }
-      case _ => super.kindType(graph, n)
-    }
-
   override def coupling(graph : DependencyGraph) =
     graph.concreteNodes.foldLeft(0 : Double){ (acc, n) => n.kind match {
     case Package =>
@@ -129,4 +121,20 @@ object JavaNodeKind extends NodeKindKnowledge {
       else acc + c
     case _ => acc
   }}
+
+  def defaultKindForNewReceiver : NodeKind = Field
+
+  val intro : Intro = JavaIntro
+
+  def getConstructorOfType(g: DependencyGraph, tid : NodeId) : Option[NodeId] = {
+    g.content(tid).find {
+      cid =>
+        val n = g.getConcreteNode(cid)
+        (n.kind, n.styp) match {
+          case (Constructor, Some(MethodType(input,_))) =>
+            input.length == 0
+          case _ => false
+        }
+    }
+  }
 }

@@ -176,7 +176,7 @@ class ConstraintSolvingSearchEngineDecisionMaker
   ( lg: LoggedG)
   ( k : Logged[CreateVarStrategy] => Unit) : Unit = {
     val g = lg.value
-    val tmKinds = g.nodeKindKnowledge.kindOfKindType(TypeMember)
+    val tmKinds = g.nodeKindKnowledge.kindOfKindType(InstanceValueDecl)
     val strategies = CreateParameter +: (tmKinds map CreateTypeMember.apply)
 
     searchEngine.newCurrentState(lg,

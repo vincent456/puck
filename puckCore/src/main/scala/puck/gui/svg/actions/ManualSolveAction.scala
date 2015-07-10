@@ -103,8 +103,8 @@ class ManualSolveAction
   override def createVarStrategy
   ( lg : LoggedG)
   (k :Logged[CreateVarStrategy] => Unit) : Unit = {
-    k(MoveAction.getChoice(kindOfKindType(TypeMember)).
-       getOrElse(CreateTypeMember(kindOfKindType(TypeMember).head)).set(lg.written))
+    k(MoveAction.getChoice(kindOfKindType(InstanceValueDecl)).
+       getOrElse(CreateTypeMember(kindOfKindType(InstanceValueDecl).head)).set(lg.written))
   }
 
 

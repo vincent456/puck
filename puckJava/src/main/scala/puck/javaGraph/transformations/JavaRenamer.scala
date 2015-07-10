@@ -13,9 +13,8 @@ object JavaRenamer extends Renamer{
     newName : String) : DependencyGraph = {
 
     val n = g.getNode(id)
-    val kindType =  g.kindType(n)
 
-    def dual = kindType match {
+    def dual = n.kind.kindType match {
         case TypeConstructor =>
           Set(g.container(id).get)
         case TypeDecl =>

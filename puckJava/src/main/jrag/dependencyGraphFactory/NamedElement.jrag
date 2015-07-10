@@ -107,12 +107,20 @@ aspect NamedElement {
 	eq VoidType.getDGNodeKind() = JavaNodeKind.primitive();
     eq NullType.getDGNodeKind() = JavaNodeKind.primitive();
 
-    eq FieldDeclaration.getDGNodeKind() = JavaNodeKind.field();
+    eq FieldDeclaration.getDGNodeKind() {
+        if(this.isStatic())
+            return JavaNodeKind.staticField();
+        else
+            return JavaNodeKind.field();
+
+    }
 
     eq MethodDecl.getDGNodeKind(){
     	if(this.isAbstract())
 	        return JavaNodeKind.abstractMethod();
-	    else
+	    else if (this.isStatic())
+            return JavaNodeKind.staticMethod();
+        else
 	        return JavaNodeKind.method();
     }
 

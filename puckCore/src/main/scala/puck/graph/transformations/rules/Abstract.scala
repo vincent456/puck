@@ -102,12 +102,12 @@ abstract class Abstract {
 
     val g1 = g.changeContravariantType(meth.id, meth.styp, clazz.id, interface.id)
 
-    if(g1.uses(meth.id, clazz.id))
-      g1.set(s"changeSelfTypeUseBySuperInTypeMember : redirecting ${DGEdge.UsesK(meth.id, clazz.id)} target to $interface\n")
-        .toLoggedEither.flatMap {
-        Redirection.redirectUsesAndPropagate(_, DGEdge.UsesK(meth.id, clazz.id),
-          AccessAbstraction(interface.id, SupertypeAbstraction), keepOldUse = false)
-      }
+    if(g1.uses(meth.id, clazz.id)) {
+      val log =s"changeSelfTypeUseBySuperInTypeMember : redirecting Uses(${meth.name}, ${clazz.name}) target to $interface\n"
+      val ltg = Redirection.redirectUsesAndPropagate(g1, Uses(meth.id, clazz.id),
+          AccessAbstraction(interface.id, SupertypeAbstraction))
+      log <++: ltg
+    }
     else LoggedSuccess(g1)
   }
 
@@ -223,8 +223,8 @@ abstract class Abstract {
       g4 <- if(policy == SupertypeAbstraction)
         members.foldLoggedEither(g3.addIsa(clazz.id, interface.id)){
           (g0, child) =>
-          g0.kindType(child) match {
-            case TypeMember =>
+            child.kind.kindType match {
+            case InstanceValueDecl =>
               changeSelfTypeUseBySuperInTypeMember(g0, child, clazz, interface)
             case _ => LoggedSuccess(g0)
           }

@@ -1,6 +1,6 @@
 package puck.javaGraph.nodeKind
 
-import puck.graph.NodeKind
+import puck.graph.{NameSpace, NodeKind}
 import puck.graph.constraints.AbstractionPolicy
 
 case object Package extends JavaNodeKind {
@@ -18,4 +18,5 @@ case object Package extends JavaNodeKind {
   override def abstractionPolicies = Seq()
   def abstractionNodeKinds(p : AbstractionPolicy) = Seq()
 
+  def kindType = NameSpace
 }

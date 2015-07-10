@@ -1,4 +1,4 @@
-package constructorToConstructorMethodHostedElsewhere;
+package p;
 
 
 class Factory{
@@ -12,7 +12,6 @@ class B {
 }
 
 class A {
-
     void m() {
        B b = new B();
     }

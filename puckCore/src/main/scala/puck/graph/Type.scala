@@ -37,8 +37,8 @@ object Type {
   ( onImplemNotFound : OnImplemNotFound ): LoggedTG =
     absMeths.foldLoggedEither((g, candidates) ){
       case ((g0, cs), supMeth) =>
-        (supMeth.styp, g.kindType(supMeth)) match {
-          case (Some(mt), TypeMember) =>
+        (supMeth.styp, supMeth.kind.kindType) match {
+          case (Some(mt), InstanceValueDecl) =>
             findOverridedIn(g0, supMeth.name, mt, cs) match {
               case Some((subMeth, newCandidates)) =>
                 LoggedSuccess((g0.addAbstraction(subMeth.id, AccessAbstraction(supMeth.id, SupertypeAbstraction)), newCandidates))

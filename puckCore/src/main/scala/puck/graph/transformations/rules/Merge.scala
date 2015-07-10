@@ -34,7 +34,7 @@ class Merge
     ) : DependencyGraph = {
     val g = g0.comment(" Merge TypeUses Dependencies")
     val g1 = g.kindType(consumedId) match {
-      case TypeMember =>
+      case InstanceValueDecl =>
         g.typeMemberUses2typeUses.foldLeft(g) {
           case (g0, (tmUses, typeUses)) if tmUses.used == consumedId =>
             typeUses.foldLeft(g0) { case (g00, tUse) =>
@@ -98,9 +98,7 @@ class Merge
                       (g0 usersOf consumedChildId).foldLoggedEither(g0){
                         (g00, userId) =>
                           val uses = g00.getUsesEdge(userId, consumedChildId).get
-                          Redirection.redirectUsesAndPropagate(g00, uses,
-                            newTypeConstructor, NotAnAbstraction,
-                            keepOldUse = false)
+                          LoggedSuccess(uses.changeTarget(g00, newTypeConstructor))
                       }.map(_.removeNode(consumedChildId)._2)
                   }
                 case _ =>

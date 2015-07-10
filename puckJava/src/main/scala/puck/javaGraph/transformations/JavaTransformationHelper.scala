@@ -28,8 +28,8 @@ object JavaTransformationHelper extends MergingCandidatesFinder {
 
   }
   def findIn(g : DependencyGraph, method : ConcreteNode, interface : ConcreteNode) : Option[NodeId] =
-    (g.kindType(method), g.kindType(interface)) match {
-      case (TypeMember, TypeDecl) => InterfaceMergeMatcher.findMergingCandidateIn(g, method, interface)
+    (method.kind.kindType, interface.kind.kindType) match {
+      case (InstanceValueDecl, TypeDecl) => InterfaceMergeMatcher.findMergingCandidateIn(g, method, interface)
       case _ => None
     }
 

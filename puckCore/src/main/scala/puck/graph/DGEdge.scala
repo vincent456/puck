@@ -105,6 +105,7 @@ sealed abstract class DGEdge {
 
 sealed abstract class DGUses extends DGEdge{
   override val kind : UsesKind
+  override def copy(source : NodeId = source, target : NodeId = target) : DGUses
   def accessKind : Option[UsesAccessKind]
   def isDominant(graph : DependencyGraph) : Boolean = graph.typeMemberUsesOf(this).nonEmpty
   def isDominated(graph : DependencyGraph) : Boolean = graph.typeUsesOf(this).nonEmpty
@@ -125,7 +126,7 @@ case class Uses
       ac + "-" + kind + "( " + source + ", " + target + ")"
   }
 
-  override def copy(source : NodeId = source, target : NodeId = target) : DGEdge =
+  override def copy(source : NodeId = source, target : NodeId = target) : Uses =
     Uses(source, target, accessKind)
 }
 
@@ -137,7 +138,7 @@ case class ParameterizedUses
   extends DGUses {
   val kind: UsesKind = ParameterizedUsesK
 
-  override def copy(source : NodeId = source, target : NodeId = target) : DGEdge =
+  override def copy(source : NodeId = source, target : NodeId = target) : ParameterizedUses =
     ParameterizedUses(source, target, accessKind)
 }
 

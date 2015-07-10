@@ -46,10 +46,10 @@ case object CreateParameter extends CreateVarStrategy {
       case (g0, (userId, typeMemberUses)) =>
         val user = g0.getConcreteNode(userId)
         val newTypeUse = Uses(userId, newContainer)
-        (g0.kindType(user), user.styp) match {
-          case (TypeMember, Some(NamedType(_))) => ???
+        (user.kind.kindType, user.styp) match {
+          case (InstanceValueDecl, Some(NamedType(_))) => ???
 
-          case (TypeMember, Some(ar : Arrow )) =>
+          case (InstanceValueDecl, Some(ar : Arrow )) =>
             val log = s"${showDG[NodeId](g0).shows(userId)}, user of moved method" +
               s" will now use ${showDG[NodeId](g0).shows(newContainer)}"
 

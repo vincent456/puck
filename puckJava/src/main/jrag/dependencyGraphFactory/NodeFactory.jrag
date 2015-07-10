@@ -27,6 +27,14 @@ aspect NodeFactory  {
 			" does not know how to create an DG Node");
 	}
 
+	public int ConstructorDecl.buildDGNode(JavaGraphBuilder builder){
+		int nodeId = super.buildDGNode(builder);
+		int hostTypeId = hostType().buildDGNode(builder);
+		DGUses typeUse = new Uses(nodeId, hostTypeId, UsesAccessKind.none());
+		builder.addEdge(typeUse);
+		return nodeId;
+	}
+
     public int ParClassDecl.buildDGNode(JavaGraphBuilder builder){
         return genericDecl().buildDGNode(builder);
     }

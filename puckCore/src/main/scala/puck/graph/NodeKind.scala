@@ -1,6 +1,7 @@
 package puck.graph
 
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
+import puck.graph.transformations.rules.Intro
 
 trait NodeKind {
   def canContain(k : NodeKind) : Boolean
@@ -20,22 +21,43 @@ trait NodeKind {
       p <- abstractionPolicies
       k <- abstractionNodeKinds(p)
     } yield (k, p)
+
+  def kindType : KindType
+}
+
+object KindType {
+  val isStatic : KindType => Boolean = {
+    case NameSpace => true
+    case TypeDecl => true
+    case StaticValueDecl => true
+    case InstanceTypeDecl => false
+    case InstanceValueDecl => false
+    case TypeConstructor => true
+    case Parameter => ???
+    case ValueDef => ???
+    case UnknownKindType => ???
+  }
+  def isInstance(kt : KindType) : Boolean = !isStatic(kt)
 }
 
 sealed trait KindType
-case object Unknown extends KindType
+case object UnknownKindType extends KindType
 case object NameSpace extends KindType
 case object TypeDecl extends KindType
-case object TypeMember extends KindType
+case object InstanceValueDecl extends KindType
+case object StaticValueDecl extends KindType
 case object TypeConstructor extends KindType
-
-case object TypeDeclAndTypeMember extends KindType
+case object InstanceTypeDecl extends KindType
+case object Parameter extends KindType
+case object ValueDef extends KindType
 
 trait AGRoot extends NodeKind {
   def canContain(k: NodeKind) = false
   override def abstractionPolicies = Seq()
   def abstractionNodeKinds(p : AbstractionPolicy) =
     throw new DGError("Root node cannot be abstracted")
+
+  def kindType = NameSpace
 }
 
 trait NodeKindKnowledge {
@@ -59,13 +81,16 @@ trait NodeKindKnowledge {
       n.mutable
   }
 
-
-  def kindType : (DependencyGraph, DGNode) => KindType = (_,_) => Unknown
-
   //TODO?? move elsewhere ?
   def coupling(graph : DependencyGraph) =
     graph.concreteNodesId.foldLeft(0 : Double){
     (acc, id) => acc + Metrics.coupling(id, graph)
   }
+
+  def defaultKindForNewReceiver : NodeKind
+
+  def intro : Intro
+
+  def getConstructorOfType(g: DependencyGraph, tid : NodeId) : Option[NodeId]
 
 }

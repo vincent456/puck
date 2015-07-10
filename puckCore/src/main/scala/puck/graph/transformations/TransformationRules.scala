@@ -23,7 +23,7 @@ class TransformationRules
   def removeConcreteNode = merger.removeConcreteNode _
 
   val redirection = Redirection
-  val move = new Move(intro)
+  val move = Move
 
   def addHideFromRootException(g : DependencyGraph, node : NodeId, friend : NodeId): DependencyGraph =
     g.newGraph(constraints = g.constraints.addHideFromRootException(g, node, friend))

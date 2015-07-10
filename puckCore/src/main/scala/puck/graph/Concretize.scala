@@ -20,7 +20,7 @@ object Concretize {
         }
 
         val best = pcWithCohesion.sortBy(_._1).head._2
-        g.kindType(c) match {
+        c.kind.kindType match {
           case TypeDecl => rules.move.typeDecl(g, cid, best)
           case _ => ???
         }

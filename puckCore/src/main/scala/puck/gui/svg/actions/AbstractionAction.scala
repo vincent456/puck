@@ -71,7 +71,7 @@ class AbstractionAction(
        printErrOrPushGraph(controller,"Abstraction action failure") {
 
          val tAbsG : LoggedTry[(Abstraction, DependencyGraph)] =
-           graph.kindType(node) match {
+           node.kind.kindType match {
            case TypeDecl =>
              val typeMembers = graph.content(node.id).toList.
                 map(graph.getConcreteNode).
@@ -95,7 +95,7 @@ class AbstractionAction(
          }
 
          tAbsG  map { case (abs, g) =>
-            val absNodes = abs.toList.map(g.getConcreteNode)
+            val absNodes = abs.nodes.map(g.getConcreteNode)
             absNodes.foldLeft(g){
                (g,n) =>
                  val h = getHost(n.kind)

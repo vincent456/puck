@@ -9,8 +9,6 @@ class MoveUnitSpec extends UnitSpec {
   val moveMethodNotUsedByThis = examplesPath + "/method/notUsedByThis"
   val moveMethodUsedByThis = examplesPath + "/method/usedByThis"
 
-  val Move = new Move(JavaIntro)
-
   "Move" should "know that a typeMember is NOT used by self type" in {
     val _ = new ExampleSample(s"$moveMethodNotUsedByThis/MovedMethodHasNoParameter.java"){
 
