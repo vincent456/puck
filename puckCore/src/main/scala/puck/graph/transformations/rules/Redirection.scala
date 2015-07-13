@@ -37,7 +37,7 @@ object Redirection {
     else LoggedSuccess(absSet.head)
   }
 
-  private def redirect0(g : DependencyGraph,
+  private def redirect(g : DependencyGraph,
                 oldUse : DGUses,
                 newUsed : Abstraction) : LoggedTry[(DependencyGraph, List[DGUses])] =
     try LoggedSuccess {
@@ -67,12 +67,12 @@ object Redirection {
 
     (g.kindType(oldUse.used), newUsed.kindType(g)) match {
       case (InstanceValueDecl, InstanceValueDecl)
-           | (TypeDecl, TypeDecl) => redirectUsesAndPropagate0(g,oldUse, newUsed)
+           | (TypeDecl, TypeDecl) => redirectInstanceUsesAndPropagate(g,oldUse, newUsed)
       case (TypeConstructor, InstanceValueDecl) =>
         redirectTypeConstructorToInstanceValueDecl(g, oldUse, newUsed)
       case (StaticValueDecl, StaticValueDecl)
         | (TypeConstructor, StaticValueDecl) =>
-         redirect0(g, oldUse, newUsed).map(_._1)
+         redirect(g, oldUse, newUsed).map(_._1)
       case (kt1, kt2) => LoggedError(new PuckError(), s"redirection of type $kt1 to $kt2 unhandled")
     }
 
@@ -111,7 +111,7 @@ object Redirection {
 
 
 
-  def redirectUsesAndPropagate0
+  def redirectInstanceUsesAndPropagate
     ( g : DependencyGraph,
       oldUse : DGUses,
       newUsed : Abstraction
@@ -129,9 +129,6 @@ object Redirection {
     val typeMemberTRset = cl(g, oldUse).filter{case (tu, _) => !tu.selfUse }
 
 
-    val getAbstraction : NodeId => LoggedTry[Abstraction] =
-      tmAbstraction(g, newTypeToUse, _)
-
     val ltg = typeMemberTRset.groupBy(_._1).toList.foldLoggedEither(g comment log0) {
       case (g0, (tu, trSet)) =>
         val g1 = tu.changeTarget(g0, newTypeToUse)
@@ -139,8 +136,8 @@ object Redirection {
         trSet.foldLoggedEither( g1 ) {
           case (g00, (_, tmu)) =>
             for{
-              abs <- getAbstraction(tmu.used)
-              gNewTmus <- redirect0(g00, tmu, abs)
+              abs <- tmAbstraction(g, newTypeToUse, tmu.used)
+              gNewTmus <- redirect(g00, tmu, abs)
               (g01, nTmus) = gNewTmus
             } yield {
               nTmus.foldLeft(g01.removeUsesDependency(tu,tmu)){

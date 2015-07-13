@@ -40,7 +40,7 @@ class JavaNamedType(n : NodeId) extends NamedType(n){
 }
 
 object MethodType{
- def unapply( mt : MethodType) : Option[(Tuple, NamedType)] =
+ def unapply( mt : MethodType) : Some[(Tuple, NamedType)] =
    Some((mt.input, mt.output))
 
   def apply(input : Tuple, output : NamedType) =

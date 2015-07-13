@@ -74,6 +74,8 @@ class DependencyGraph
   def root : ConcreteNode = getConcreteNode(rootId)
   def isRoot(id : NodeId) = id == rootId
 
+
+
   override def toString = edges.toString
 
   private [graph] def addConcreteNode(n : ConcreteNode) : DependencyGraph =
@@ -99,7 +101,8 @@ class DependencyGraph
 
   def addVirtualNode(ns : Seq[NodeId], k : NodeKind) : (VirtualNode, DependencyGraph) = {
     val (vn, nIndex) = nodesIndex.addVirtualNode(ns, k)
-    (vn, newGraph(nodes = nIndex))
+    (vn, newGraph(nodes = nIndex,
+      recording = recording.addVirtualNode(vn)))
   }
 
   def nodes : Iterable[DGNode] = nodesIndex.nodes

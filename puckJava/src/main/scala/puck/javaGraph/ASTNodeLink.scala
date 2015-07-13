@@ -180,6 +180,10 @@ case class ConstructorDeclHolder(decl : AST.ConstructorDecl) extends HasBodyDecl
 
 case class FieldDeclHolder(decl : AST.FieldDeclaration) extends HasMemberDecl
 
+object MethodDeclHolder {
+  def unapply(mdh : MethodDeclHolder) : Some[AST.MethodDecl] =
+    Some(mdh.decl)
+}
 trait MethodDeclHolder extends HasMemberDecl {
   val decl : AST.MethodDecl
 }

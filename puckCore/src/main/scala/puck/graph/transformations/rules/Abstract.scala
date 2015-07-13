@@ -7,7 +7,6 @@ import puck.util.LoggedEither._
 
 import scalaz.std.set._
 import scalaz.std.list._
-import scalaz.syntax.writer._
 
 abstract class Abstract {
 

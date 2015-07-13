@@ -37,15 +37,11 @@ sealed abstract class Extremity{
   val node : NodeId
   def create(n : NodeId) : Extremity
   def productPrefix : String
-  /*def apply[K <: NodeKind[K]](e : AGEdge[K]): AGNode[K]*/
 }
 case class Source(node : NodeId) extends Extremity{
-  /*def apply[K <: NodeKind[K]](e : AGEdge[K]) = e.source*/
   def create(n : NodeId) : Extremity = Source(n)
-
 }
 case class Target(node : NodeId) extends Extremity  {
-  /*def apply[K <: NodeKind[K]](e : AGEdge[K]) = e.target*/
   def create(n : NodeId) : Extremity = Target(n)
 }
 

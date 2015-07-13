@@ -247,6 +247,7 @@ class SVGPanelListener
     mevt.getButton match {
       case RIGHTBUTTON => handleRightClick(mevt)
       case LEFTBUTTON => handleLeftClick(mevt)
+      case _ => Console.err.println("mouse button event unknown")
     }
   }
 }

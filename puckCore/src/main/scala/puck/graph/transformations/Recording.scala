@@ -13,16 +13,15 @@ object Recording {
             r: Recording): Unit = {
     val i : Int = r.size
     oos.writeInt(i)
-    r.reverse foreach oos.writeObject
+    r.reverse foreach { oos.writeObject }
   }
 
   def read(ois : ObjectInputStream) : Recording = {
     val recSize = ois.readInt()
     var rec = Recording()
-      for (i <- Range(0, recSize)) {
-        rec = ois.readObject().asInstanceOf[Recordable] +: rec
-      }
-
+    for (i <- Range(0, recSize)) {
+      rec = ois.readObject().asInstanceOf[Recordable] +: rec
+    }
     rec
   }
 

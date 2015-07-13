@@ -4,7 +4,6 @@ package io
 
 import java.io.BufferedWriter
 
-import puck.PuckError
 import puck.graph.DGEdge.{UsesK, IsaK}
 
 import scala.collection.mutable
@@ -110,7 +109,6 @@ class DotPrinter
       if (helper isDotSubgraph n)
         nodeSubGraphId(n.id.toString)
       else {
-        import ShowDG._
         val containerId = if (helper isDotClass n) n.id + ":"
         else graph.container(nid) match {
           case Some(id) => id + ":"

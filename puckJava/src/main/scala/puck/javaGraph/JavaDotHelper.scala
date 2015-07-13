@@ -25,11 +25,10 @@ object JavaDotHelper extends DotHelper{
           val kind = graph.getConcreteNode(n).kind
           kind match {
             case Interface | Class => (fds, cts, mts, n +: cls)
-            case Field => (n +: fds, cts, mts, cls)
             case Constructor => (fds, n +: cts, mts, cls)
-            case AbstractMethod
-                 | Method
-                 | ConstructorMethod => (fds, cts, n +: mts, cls)
+            case Field => (n +: fds, cts, mts, cls)
+            case _ : MethodKind
+            | StaticMethod => (fds, cts, n +: mts, cls)
 
             case _ => throw new Error(kind + " : wrong NodeKind contained by a class")
           }

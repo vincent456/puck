@@ -1,0 +1,19 @@
+aspect AddReceiver {
+
+    public void ASTNode.addNewReceiver(MemberDecl used, Access newReceiver){
+        for(int i=0; i<getNumChild();i++)
+        getChild(i).addNewReceiver(used,newReceiver);
+    }
+    public void MethodAccess.addNewReceiver(MemberDecl used, Access newReceiver){
+        if(decl() == used){
+            if(getParent().isAbstractDot()){
+                System.out.println("addNewReceiver parent is abstract dot");
+            } else {
+                Dot dot = new Dot();
+                dot.setLeft(newReceiver);
+                replace(this).with(dot);
+                dot.setRight(this);
+            }
+        }
+    }
+}

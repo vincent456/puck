@@ -128,37 +128,7 @@ aspect TransformationApplying {
                getSuperInterfaceIdList().removeChild(idx);
        }
 
-  void TypeDecl.replaceTypeAccessInList(Access oldAccess, Access newAccess, List<Access> list){
-    if(!oldAccess.isTypeAccess() || !newAccess.isTypeAccess())
-      throw new Error("Both access should be type access !");
-    TypeDecl oldDecl = ((TypeAccess)oldAccess).decl();
-    TypeDecl newDecl = ((TypeAccess)newAccess).decl();
 
-    boolean containsNewAccess = false;
-    Access oldAccess0 = null;
-
-    for(Access acc : list){
-      if(((TypeAccess)acc).decl().equals(newDecl))
-        containsNewAccess = true;
-
-      if(((TypeAccess)acc).decl().equals(oldDecl))
-        oldAccess0 = acc;
-    }
-
-    if(containsNewAccess)
-      list.removeChild(oldAccess0);
-    else
-      replace(oldAccess0).with(newAccess);
-
-  }
-
- public void ClassDecl.replaceImplements(Access oldAccess, Access newAccess){
-       replaceTypeAccessInList(oldAccess, newAccess, getImplementsList());
-  }
-
- public void InterfaceDecl.replaceSuperInterface(Access oldAccess, Access newAccess){
-    replaceTypeAccessInList(oldAccess, newAccess, getSuperInterfaceIds());
-  }
 
 
   public void Program.printCodeInDirectory(File dir) throws IOException {
@@ -206,87 +176,7 @@ aspect TransformationApplying {
      }
 
 
-    /*
-    syn boolean Access.isPrimitiveTypeAccess();
-    eq Access.isPrimitiveTypeAccess() = false;
-    eq PrimitiveTypeAccess.isPrimitiveTypeAccess() = true;
 
-
-    public void ASTNode.replaceTypeAccess(Access oldUsee, Access newUsee){
-      for(int i = 0; i < getNumChild(); i++)
-          getChild(i).replaceTypeAccess(oldUsee, newUsee);
-  	}
-
-    public boolean TypeAccess.sameDeclAs(Access access){
-        return access.isPrimitiveTypeAccess()
-            && decl().equals(((PrimitiveTypeAccess)access).decl())
-            || access.isTypeAccess()
-            && this.decl().equals(((TypeAccess)access).decl());
-    }
-
-  	public void TypeAccess.replaceTypeAccess(Access oldUsee, Access newUsee){
-        if(sameDeclAs(oldUsee))
-            replace(this).with(newUsee);
-    }
-     */
-
-	public void ASTNode.replaceTypeAccess(Access oldUsee, Access newUsee){
-      for(int i = 0; i < getNumChild(); i++)
-          getChild(i).replaceTypeAccess(oldUsee, newUsee);
-  	}
-
-/*
-    public void PrimitiveTypeAccess.replaceTypeAccess(Access oldUsee, Access newUsee){
-        System.out.println("replaceType for primitive type : TODO !!!");
-    }
-*/
-
-    public void TypeAccess.replaceTypeAccess(Access oldUsee, Access newUsee){
-
-        if( oldUsee.isTypeAccess()
-                && this.decl().equals(((TypeAccess)oldUsee).decl())){
-            replace(this).with(newUsee);
-        }
-    }
-
-
-
-
-  //stop propagation
-  public void ClassInstanceExpr.replaceTypeAccess(Access oldUsee, Access newUsee){
-
-        /*System.out.println("****************************************************");
-        System.out.println("****************************************************");
-        System.out.println("****************************************************");
-        System.out.println();
-
-
-        System.out.println(this + " stop propagation of replaceTypeAccess("+oldUsee+", "+newUsee+")");
-        System.out.println(" getAccess() instanceof ParTypeAccess = " + (getAccess() instanceof ParTypeAccess));
-        for(int i=0; i<getNumChild(); i++){
-            System.out.println("child "+ i + " : " + getChild(i).getClass() + " = " + getChild(i).getClass());
-
-        }*/
-
-        if( getAccess() instanceof ParTypeAccess){
-            if(decl().isSubstitute()) {
-                ConstructorDeclSubstituted parDecl = ((ConstructorDeclSubstituted) decl()).copy();
-                ParClassDecl parClassDecl = (ParClassDecl) parDecl.hostType();
-
-                /*TODO check if several instances/decl of the same parameterized type what happens then ??*/
-                for(Access arg : parClassDecl.getArgumentList())
-                    arg.replaceTypeAccess(oldUsee, newUsee);
-            }
-
-            List<Access> typeArgs =  ((ParTypeAccess) getAccess()).getTypeArguments();
-            for(int i = 0; i<typeArgs.getNumChild(); i++){
-                typeArgs.getChild(i).replaceTypeAccess(oldUsee, newUsee);
-            }
-            //parTypeAccess.getTypeArguments().replaceTypeAccess(oldUsee, newUsee);
-        }
-        getArgList().replaceTypeAccess(oldUsee, newUsee);
-        getTypeDeclOpt().replaceTypeAccess(oldUsee, newUsee);
-    }
 
 
   public void ASTNode.replaceMethodCall(MethodDecl oldUsed, MethodDecl newUsed){

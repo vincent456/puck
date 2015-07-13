@@ -80,12 +80,12 @@ class JavaDG2AST
 
   def safeGet
   ( graph : DependencyGraph,
-    id2declMap : Map[NodeId, ASTNodeLink])
-  ( id :NodeId): ASTNodeLink =
+    id2declMap : Map[NodeId, ASTNodeLink] )
+  ( id : NodeId ) : ASTNodeLink =
     try id2declMap(id)
     catch {
       case e : NoSuchElementException =>
-        val n = graph.getConcreteNode(id)
+        val n = graph.getNode(id)
         if(n.kind == Package)
           PackageDeclHolder
         else
@@ -129,9 +129,9 @@ class JavaDG2AST
 
         //logger.writeln(showDG[Transformation](reenactor).shows(t))
 
-        val res = applyOneTransformation(resultGraph, reenactor, g2AST, t)
+        val newG2AST = applyOneTransformation(resultGraph, reenactor, g2AST, t)
 
-        (resultGraph, t.redo(reenactor), res)
+        (resultGraph, t.redo(reenactor), newG2AST)
 
       case (acc, op) =>
         logger.writeln(showDG[Recordable](acc._1).shows(op))
@@ -169,7 +169,6 @@ class JavaDG2AST
         case Some(_) => id2declMap
         case None =>
           val dh = ASTNodeLink.createDecl(program, resultGraph, id2declMap, n)
-
           id2declMap + (n.id -> dh)
       }
 
@@ -181,7 +180,7 @@ class JavaDG2AST
       t match {
       case Transformation(Regular, Edge(e)) =>
         //println("creating edge " + e)
-        addEdge(resultGraph, safeGet(resultGraph, id2declMap), e)
+        addEdge(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e)
 
       case Transformation(_, RedirectionWithMerge(_, Source(_))) =>
         logger.writeln(noApplyMsg)
@@ -267,55 +266,88 @@ class JavaDG2AST
 
   def addEdge
     ( graph: DependencyGraph,
+      reenactor : DependencyGraph,
       id2declMap: NodeId => ASTNodeLink,
       e: DGEdge)
     ( implicit logger : PuckLogger)= {
 
-    val source = graph.getConcreteNode(e.source)
-    val target = graph.getConcreteNode(e.target)
+    (graph.getNode(e.source), graph.getNode(e.target)) match {
+      case (source : ConcreteNode, target : ConcreteNode) =>
+        e match {
+          case _ : Contains =>
+            (source.kind, id2declMap(source.id), id2declMap(target.id)) match {
+              case (Package, _, i: TypedKindDeclHolder) => setPackageDecl(graph, source.id, target.id, i.decl)
 
-    e.kind match {
+              case (Interface, th: TypedKindDeclHolder, AbstractMethodDeclHolder(mdecl)) =>
+                th.decl.addBodyDecl(mdecl)
 
-      case DGEdge.ContainsK =>
-        (source.kind, id2declMap(source.id), id2declMap(target.id)) match {
-          case (Package, _, i: TypedKindDeclHolder) => setPackageDecl(graph, source.id, target.id, i.decl)
+              case (Package, _, PackageDeclHolder) => () // can be ignored
 
-          case (Interface, th: TypedKindDeclHolder, AbstractMethodDeclHolder(mdecl)) =>
-            th.decl.addBodyDecl(mdecl)
+              case (Class, ClassDeclHolder(clsdecl), bdHolder : HasBodyDecl) =>
+                clsdecl.addBodyDecl(bdHolder.decl)
 
-          case (Package, _, PackageDeclHolder) => () // can be ignored
+              case _ => logger.writeln(" =========> %s not created".format(e))
 
-          case (Class, ClassDeclHolder(clsdecl), bdHolder : HasBodyDecl) =>
-            clsdecl.addBodyDecl(bdHolder.decl)
+            }
 
-          case _ => logger.writeln(" =========> %s not created".format(e))
+          case _ : Isa => addIsa(id2declMap(source.id), id2declMap(target.id))
+
+          case _ : Uses =>
+            (source.kind, target.kind) match {
+              case (ConstructorMethod, Constructor) =>
+                () //already generated when creating ConstructorMethod decl
+              case (Class, Interface) =>
+                logger.writeln("do not create %s : assuming its an isa edge (TOCHECK)".format(e)) // class imple
+
+              /*case (f @ Field(), k : TypeKind) =>
+              f.decl.setTypeAccess(k.lockedAccess())
+
+            case ( m @ Method(), k : TypeKind ) =>
+              m.`type`.input.types.foreach{
+                case NamedType(n) =>
+
+              }*/
+              case (Method, Field) =>
+                val mid = e.user
+                val fid = e.used
+                val typesUsed = reenactor.usedBy(fid).filter{id => reenactor.kindType(id) == TypeDecl}
+
+                if (typesUsed.size != 1)
+                  throw new puck.graph.Error(s"require ONE type use got ${typesUsed.size}")
+
+                val typeUse = Uses(fid, typesUsed.head)
+                val tmUses = reenactor.typeMemberUsesOf(typeUse).filter{_.user == mid}
+
+                (id2declMap(mid), id2declMap(fid)) match {
+                  case (MethodDeclHolder(methUserdecl), FieldDeclHolder(newReceiverDecl)) =>
+                    val receiver = newReceiverDecl.createLockedAccess()
+                    tmUses.map{u => println(s"uses needing new receiver $u")
+                      id2declMap(u.used)}.foreach {
+
+                      case MethodDeclHolder(methUsedDecl) =>
+                        methUserdecl.addNewReceiver(methUsedDecl, receiver)
+                      case FieldDeclHolder(fieldUsedDecl) =>
+                        methUserdecl.addNewReceiver(fieldUsedDecl, receiver)
+                      case used =>
+                        logger.writeln(s"create receiver for $used ignored")
+
+                    }
+
+                  case _ =>throw new puck.graph.Error(s"method decl and field decl expected")
+                }
+
+
+              case _ => logger.writeln(" =========> need to create " + e)
+            }
+          case _ : ParameterizedUses =>
+            logger.writeln("Creation of parameterized uses ignored")
+
 
         }
 
-      case DGEdge.IsaK => addIsa(id2declMap(source.id), id2declMap(target.id))
-
-      case DGEdge.UsesK =>
-        (source.kind, target.kind) match {
-          case (ConstructorMethod, Constructor) =>
-            () //already generated when creating ConstructorMethod decl
-          case (Class, Interface) =>
-            logger.writeln("do not create %s : assuming its an isa edge (TOCHECK)".format(e)) // class imple
-
-          /*case (f @ Field(), k : TypeKind) =>
-          f.decl.setTypeAccess(k.lockedAccess())
-
-        case ( m @ Method(), k : TypeKind ) =>
-          m.`type`.input.types.foreach{
-            case NamedType(n) =>
-
-          }*/
-          case _ => logger.writeln(" =========> need to create " + e)
-        }
-      case DGEdge.ParameterizedUsesK =>
-        logger.writeln("Creation of parameterized uses ignored")
-
-
+      case _ => logger.writeln(s"Creation of $e containing virtual nodes ignored")
     }
+
   }
 
 
@@ -327,9 +359,9 @@ class JavaDG2AST
   ( implicit logger : PuckLogger) : Unit =  {
     logger.writeln("redirecting %s target to %s".format(e, newTargetId))
     if(e.target != newTargetId) {
-      val target = reenactor.getConcreteNode(e.target)
-      val source = reenactor.getConcreteNode(e.source)
-      val newTarget = reenactor.getConcreteNode(newTargetId)
+      val target = reenactor.getNode(e.target)
+      val source = reenactor.getNode(e.source)
+      val newTarget = reenactor.getNode(newTargetId)
 
 
       val sourceDecl = id2declMap(source.id)
@@ -480,7 +512,7 @@ class JavaDG2AST
     }
 
     def moveTypeKind(newPackage: DGNode,  tDecl : AST.TypeDecl): Unit ={
-      println("moving " + tDecl.fullName() +" to package" + newPackage)
+      logger.writeln("moving " + tDecl.fullName() +" to package" + newPackage)
 
       if (tDecl.compilationUnit.getNumTypeDecl > 1) {
         logger.writeln(tDecl.name + " cu with more than one classe")(verbosity(PuckLog.Debug))
@@ -508,7 +540,7 @@ class JavaDG2AST
         }
       }
 
-      println("tDecl.packageName() = " + tDecl.packageName())
+      logger.writeln("tDecl.packageName() = " + tDecl.packageName())
 
       reenactor.usersOf(e.target).foldLeft(Set[String]()){ (cus, userId) =>
         val scu = id2declMap(userId) match {

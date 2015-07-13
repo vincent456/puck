@@ -61,6 +61,8 @@ object JavaNodeKind extends NodeKindKnowledge {
       case TypeDecl => Seq(Interface, Class)
       case InstanceValueDecl => Seq(Field, Method)
       case InstanceTypeDecl => Seq(Interface, Class)
+      case StaticValueDecl => Seq(StaticField, StaticMethod)
+      case Parameter | ValueDef => Seq()
       case UnknownKindType => sys.error("Unknown kind type")
     }
 

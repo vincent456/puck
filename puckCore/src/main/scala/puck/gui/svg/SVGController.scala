@@ -13,6 +13,7 @@ import puck.graph.io._
 import puck.graph.transformations.MileStone
 import puck.gui.TextAreaLogger
 import puck.gui.svg.actions.{AddNodeAction, AbstractionAction}
+import puck.util.PuckFileLogger
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -242,7 +243,7 @@ class SVGController private
 
 
   def applyOnCode() : Unit = {
-    dg2ast(graph)
+    dg2ast(graph)(new PuckFileLogger(_ => true, new File("/tmp/puck_log")))
 
     filesHandler.outDirectory match {
       case None => console.appendText("no output directory : cannot print code")

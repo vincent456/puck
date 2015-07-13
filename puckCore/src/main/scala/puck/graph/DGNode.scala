@@ -4,7 +4,7 @@ sealed trait DGNode{
   val id : NodeId
   //val name : String
   val kind : NodeKind
-  //val styp : TypeHolder
+  val styp : Option[Type]
   val mutable : Boolean
 
   def mapConcrete[A](f : ConcreteNode => A, default : => A) : A
@@ -23,8 +23,8 @@ case class VirtualNode
 (id : NodeId,
  potentialMatches : Seq[NodeId],
  kind : NodeKind) extends DGNode {
-  override val mutable = true
-
+  val mutable = true
+  val styp = None
   //def name : String =  potentialMatches mkString ("Virtual(", " \\/ ", ")")
 
   def mapConcrete[A](f : ConcreteNode => A, default : => A) : A = default
