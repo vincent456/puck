@@ -18,8 +18,11 @@ class SVGConsole
 
   private val selection: Label = new Label
 
+  private val weight : Label = new Label
+
   val panel0 = new PuckConsolePanel(){
     selection +=: contents
+    weight +=: contents
     textArea.rows = lines
     textArea.columns = charPerLine
   }
@@ -30,6 +33,10 @@ class SVGConsole
   private[svg] def displaySelection(node: String) : Unit = {
     if (node.length > 0) selection.text = "Selection : " + node
     else selection.text = "No selection"
+  }
+
+  private[svg] def displayWeight(w: Double) : Unit = {
+    weight.text = "Selection : " + w
   }
 
   def appendText(txt: String) : Unit = {
@@ -116,6 +123,12 @@ class SVGFrame
     hbox.setLayout(new BoxLayout(hbox, BoxLayout.Y_AXIS))
     menu add hbox
 
+    hbox add jbutton("Show recording") {
+      _ => controller.printRecording()
+    }
+    hbox add jbutton("Show abstractions") {
+      _ => controller.printAbstractions()
+    }
     hbox add jbutton("Apply") {
       _ => controller.applyOnCode()
     }

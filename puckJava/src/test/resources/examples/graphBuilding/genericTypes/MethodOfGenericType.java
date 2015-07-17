@@ -1,4 +1,4 @@
-package methodOfGenericType;
+package p;
 
 import java.util.List;
 

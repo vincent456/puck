@@ -8,7 +8,7 @@ case object Constructor extends JavaNodeKind {
 
   override val toString = "Constructor"
 
-  def canContain(k : NodeKind) = false
+  def canContain(k : NodeKind) = k == Definition
 
   override def abstractionPolicies = Seq(DelegationAbstraction)
 

@@ -2,6 +2,7 @@ package puck.graph
 package transformations.rules
 
 import puck.PuckError
+import puck.graph.ShowDG._
 import puck.graph.constraints.{AbstractionPolicy, SupertypeAbstraction, DelegationAbstraction}
 import puck.util.LoggedEither._
 
@@ -99,15 +100,14 @@ abstract class Abstract {
   ( g : DependencyGraph, meth : ConcreteNode,
     clazz : ConcreteNode, interface : ConcreteNode): LoggedTG ={
 
-    val g1 = g.changeContravariantType(meth.id, meth.styp, clazz.id, interface.id)
+      val g1 = g.changeContravariantType(meth.id, meth.styp, clazz.id, interface.id)
+      val log = "changeSelfTypeUseBySuperInTypeMember : " +
+        s"redirecting Uses(${meth.name}, ${clazz.name}) target to $interface\n"
 
-    if(g1.uses(meth.id, clazz.id)) {
-      val log =s"changeSelfTypeUseBySuperInTypeMember : redirecting Uses(${meth.name}, ${clazz.name}) target to $interface\n"
       val ltg = Redirection.redirectUsesAndPropagate(g1, Uses(meth.id, clazz.id),
           AccessAbstraction(interface.id, SupertypeAbstraction))
       log <++: ltg
-    }
-    else LoggedSuccess(g1)
+
   }
 
 
@@ -223,26 +223,24 @@ abstract class Abstract {
         members.foldLoggedEither(g3.addIsa(clazz.id, interface.id)){
           (g0, child) =>
             child.kind.kindType match {
-            case InstanceValueDecl =>
+            case InstanceValueDecl if g0.uses(child.id, clazz.id)=>
               changeSelfTypeUseBySuperInTypeMember(g0, child, clazz, interface)
             case _ => LoggedSuccess(g0)
           }
         }
       else LoggedSuccess[DependencyGraph](g3)
 
-      g5 <- logInterfaceCreation(g4, interface)
+
+      log = s"interface $interface created, contains : {" +
+             g.content(interface.id).map(showDG[NodeId](g).show).mkString("\n")+
+             "}"
+      g5 <- LoggedSuccess(g4, log)
+
     } yield {
       (interfaceAbs, g5)
     }
   }
 
-  def logInterfaceCreation(g : DependencyGraph, itc : ConcreteNode) : LoggedTG = {
-    import ShowDG._
-    val log = s"interface $itc created, contains : {" +
-      g.content(itc.id).map(showDG[NodeId](g).show).mkString("\n")+
-      "}"
-    LoggedSuccess(g, log)
-  }
 
   private def createAbsNodeAndUse
   ( g : DependencyGraph,
@@ -271,17 +269,6 @@ abstract class Abstract {
     ) : LoggedTry[(Abstraction, DependencyGraph)] = {
     createAbsNodeAndUse(g, impl, abskind, policy)
   }
-
-
-
-  //SO SO UGLY !!!
-  def abstractionCreationPostTreatment
-  ( g : DependencyGraph,
-    implId : NodeId,
-    absId : NodeId,
-    policy : AbstractionPolicy
-    ) : DependencyGraph = g
-
 
 
 

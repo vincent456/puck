@@ -78,12 +78,6 @@ object ShowDG {
         val xcord = extremityCord(dg, exty)
         Cord(tgt.productPrefix, "(", ecord ,",", xcord ,")")
 
-//      case TypeRedirection(typed, oldUsed, newUsed) =>
-//        val ntyped = dg.getNode(typed).toString
-//        val nold = dg.getNode(oldUsed).toString
-//        val nnew = dg.getNode(newUsed).toString
-//        Cord(tgt.productPrefix, "(", ntyped ,",", dg.getConcreteNode(typed).styp.toString ,
-//          ",", nold , ",", nnew ,")")
       case _ => tgt.toString
     }
 
@@ -95,7 +89,8 @@ object ShowDG {
     case _ : VNode
       | _ : CNode
       | _ : Edge
-      | _ : AbstractionOp => true
+      | _ : AbstractionOp
+      | _ : TypeDependency => true
     case _ => false
   }
 

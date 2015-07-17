@@ -15,6 +15,38 @@ aspect NamedElement {
 	eq MethodDecl.isNamedElement() = true;
 	eq ConstructorDecl.isNamedElement() = true;
 
+    public boolean Opt.isEmpty() {
+        return getNumChild() == 0 ||
+               getChild(0) == null;
+    }
+
+    syn boolean ASTNode.hasDefinition();
+    eq ASTNode.hasDefinition() = false;
+    eq MethodDecl.hasDefinition() {
+        return !getBlockOpt().isEmpty();
+    }
+    eq FieldDeclaration.hasDefinition() {
+        return !getInitOpt().isEmpty();
+    }
+
+    interface PossiblyDefinedElement {
+        ASTNode getDefinition();
+        int getDefIndex();
+    }
+
+    BodyDecl implements PossiblyDefinedElement;
+    MethodDecl implements PossiblyDefinedElement;
+    FieldDeclaration implements PossiblyDefinedElement;
+
+    public ASTNode BodyDecl.getDefinition(){throw new Error("no def");}
+    public ASTNode MethodDecl.getDefinition(){return getBlock();}
+    public ASTNode FieldDeclaration.getDefinition(){return getInit();}
+
+    public int BodyDecl.getDefIndex(){throw new Error("no def");}
+    public int MethodDecl.getDefIndex(){return 4;}
+    public int FieldDeclaration.getDefIndex(){return 2;}
+
+
     interface DGNamedElement {
 		String fullName();
 		String name();

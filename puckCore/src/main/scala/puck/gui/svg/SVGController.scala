@@ -10,10 +10,10 @@ import org.w3c.dom.Element
 import org.w3c.dom.svg.{SVGGElement, SVGDocument}
 import puck.graph._
 import puck.graph.io._
-import puck.graph.transformations.MileStone
+import puck.graph.transformations.{Recordable, MileStone}
 import puck.gui.TextAreaLogger
 import puck.gui.svg.actions.{AddNodeAction, AbstractionAction}
-import puck.util.PuckFileLogger
+import puck.util.{Debug, PuckFileLogger}
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -152,7 +152,10 @@ class SVGController private
         elt.getAttribute("fill")
       else defaultColor
     selectedNodes0 :+= ((id, color, elt))
-    console.displaySelection(graph.getNode(id)+"")
+    val nodes = selectedNodes0 map {
+      case (nid, _, _) => graph.getNode(nid)
+    }
+    console.displaySelection(nodes.mkString(", ") )
   }
 
   def resetSelectedNodes(): Unit = {
@@ -219,6 +222,7 @@ class SVGController private
     undoStack.push(graph)
     redoStack.clear()
     displayGraph(graph)
+    console.displayWeight(Metrics.weight(graph, graph.nodeKindKnowledge.lightKind))
     updateStackListeners()
   }
 
@@ -240,6 +244,13 @@ class SVGController private
       case (g, t) => t.redo(g)
     })
   }
+
+  import ShowDG._
+  def printRecording() : Unit =
+    graph.recording.reverseIterator.foreach(r => consoleLogger writeln showDG[Recordable](graph).shows(r) )
+
+  def printAbstractions() : Unit =
+    consoleLogger writeln graph.abstractionsMap.content.mkString("\n\t")
 
 
   def applyOnCode() : Unit = {

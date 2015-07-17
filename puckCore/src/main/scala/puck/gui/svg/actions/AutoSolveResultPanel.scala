@@ -2,7 +2,7 @@ package puck.gui.svg.actions
 
 import java.awt.Dimension
 
-import puck.graph.{NodeId, ConcreteNode, ResultT, DependencyGraph}
+import puck.graph._
 import puck.graph.io.{Visible, VisibilitySet}
 import VisibilitySet._
 import puck.gui.PuckConsolePanel
@@ -161,7 +161,8 @@ class FailurePanel
 
   val rightDocWrapper = GraphScrollPane(controller,
     selectedResult.value,
-    nodeVisibles(selectedResult.value))
+    controller.printingOptions.visibility)
+    //nodeVisibles(selectedResult.value))
 
     add(rightDocWrapper, Position.Center)
     add(failureSelector, Position.South)
@@ -184,15 +185,23 @@ class SuccessPanel
   ) extends BorderPanel with ResultPanel {
 
   assert(res.successes.nonEmpty)
+  val lightKind = res.successes.head.loggedResult.value.nodeKindKnowledge.lightKind
+  val stateSelector =
+    new SortedElementSelector(
+      res.successes.groupBy(st => (Metrics.weight(st.loggedResult.value, lightKind) * 100).toInt),
+      StateSelected.apply)
 
-  val stateSelector = new SimpleElementSelector[SearchState[ResultT]](StateSelected.apply)
-  stateSelector.setStatesList(res.successes)
+//  val stateSelector = new SimpleElementSelector[SearchState[ResultT]](StateSelected.apply)
+//  stateSelector.setStatesList(res.successes)
+
+
 
   def selectedResult = stateSelector.selectedState.loggedResult
 
   val graphWrapper = GraphScrollPane(controller,
     selectedResult.value,
-    nodeVisibles(stateSelector.selectedState.loggedResult.value))
+    controller.printingOptions.visibility)
+    //nodeVisibles(stateSelector.selectedState.loggedResult.value))
 
   add(graphWrapper, Position.Center)
   add(stateSelector, Position.South)
@@ -200,7 +209,8 @@ class SuccessPanel
   reactions += {
     case StateSelected(state) =>
       graphWrapper.setGraph(selectedResult.value,
-        nodeVisibles(selectedResult.value))
+        controller.printingOptions.visibility)
+        //nodeVisibles(selectedResult.value))
 
       publish(Log(selectedResult.written))
   }

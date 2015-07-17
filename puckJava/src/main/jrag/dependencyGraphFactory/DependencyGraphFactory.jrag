@@ -147,18 +147,42 @@ aspect DependencyGraphFactory {
 
 
 
-
 	public void BodyDecl.buildDG(JavaGraphBuilder builder, int hostTypeDeclId ){
 		if(isNamedElement()){
-			int nodeId = buildDGNode(builder);
-			builder.addContains(hostTypeDeclId, nodeId);
-			super.buildDG(builder, nodeId);
+			int declId = buildDGNode(builder);
+			builder.addContains(hostTypeDeclId, declId);
 			buildDGType(builder);
+			if(hasDefinition()){
+                ASTNode def = getDefinition();
+
+                for(int i=0; i< getNumChild(); i++)
+                    if(i != getDefIndex())
+                        getChild(i).buildDG(builder, declId);
+
+                int defId = builder.addDefinitionNode();
+                def.registerDef(builder, defId);
+                builder.addContains(declId, defId);
+                def.buildDG(builder, defId);
+        	}
+            else
+                super.buildDG(builder,declId);
 
 		}
 		else
 			System.err.println("TODO !! "+ this.getClass() +".buildDG(JavaGraphBuilder, int)");
 		
+	}
+
+	public void ASTNode.registerDef(JavaGraphBuilder builder, int thisId){
+		throw new Error("registerAsDef not defined for " + this.getClass());
+	}
+
+	public void Block.registerDef(JavaGraphBuilder builder, int thisId){
+		builder.registerDef(thisId, this);
+	}
+
+	public void Expr.registerDef(JavaGraphBuilder builder, int thisId){
+		builder.registerDef(thisId, this);
 	}
 
 	static void Access.buildDG(TypeMemberAccess access, int containerId,

@@ -53,7 +53,9 @@ class Merge
             }
           case (g0, _) => g0
         }
-      case NameSpace => g // no type dependencies involved when merging namespaces
+      case NameSpace
+        | StaticValueDecl
+        | TypeConstructor => g // no type dependencies involved when merging namespaces
       case _ => ???
     }
 
@@ -94,12 +96,14 @@ class Merge
                   g0.content(consumerId).find(g.kindType(_) == TypeConstructor) match {
                     case None => LoggedError(new PuckError("cannot find new type constructor"))
                     case Some(newTypeConstructor) =>
+                      mergeInto(g0, consumedChildId, newTypeConstructor)
 
-                      (g0 usersOf consumedChildId).foldLoggedEither(g0){
-                        (g00, userId) =>
-                          val uses = g00.getUsesEdge(userId, consumedChildId).get
-                          LoggedSuccess(uses.changeTarget(g00, newTypeConstructor))
-                      }.map(_.removeNode(consumedChildId)._2)
+//                      (g0 usersOf consumedChildId).foldLoggedEither(g0){
+//                        (g00, userId) =>
+//                          val uses = g00.getUsesEdge(userId, consumedChildId).get
+//                          LoggedSuccess(uses.changeTarget(g00, newTypeConstructor))
+//                      }.map(_.removeNode(consumedChildId)._2)
+
                   }
                 case _ =>
                   LoggedSuccess(g0.changeSource(DGEdge.ContainsK(consumedId, consumedChildId), consumerId)
@@ -120,21 +124,21 @@ class Merge
     for {
       g1 <- g.usersOf(consumedId).foldLoggedEither[PuckError, DependencyGraph](lg){
         (g0, userId) =>
-          LoggedSuccess(
-            g0.changeTarget(DGEdge.UsesK(userId, consumedId), consumerId)
-              .changeType(userId, consumedId, consumerId),
-            s"redirecting ($userId, $consumedId) toward $consumerId\n")
+            LoggedSuccess(
+              g0.changeTarget(Uses(userId, consumedId), consumerId)
+                .changeType(userId, consumedId, consumerId),
+              s"redirecting ($userId, $consumedId) toward $consumerId\n")
       }
 
       g2 <- g1.usedBy(consumedId).foldLoggedEither(g1){
         (g0, usedId) =>
-        LoggedSuccess(g0.changeSource(DGEdge.UsesK(consumedId, usedId), consumerId))
+        LoggedSuccess(g0.changeSource(Uses(consumedId, usedId), consumerId))
       }
 
       g3 <- g2.directSuperTypes(consumedId).foldLoggedEither(g2){
         (g0, stId) =>
           LoggedSuccess {
-            if (stId != consumerId) g0.changeSource(DGEdge.IsaK(consumedId, stId), consumerId)
+            if (stId != consumerId) g0.changeSource(Isa(consumedId, stId), consumerId)
             else g0.removeIsa(consumedId, stId)
           }
       }
@@ -142,7 +146,7 @@ class Merge
       g4 <- g3.directSubTypes(consumedId).foldLoggedEither(g3) {
         (g0, stId) =>
           LoggedSuccess {
-            if (stId != consumerId) g0.changeTarget(DGEdge.IsaK(stId, consumedId), consumerId)
+            if (stId != consumerId) g0.changeTarget(Isa(stId, consumedId), consumerId)
             else g0.removeIsa(stId, consumedId)
           }
       }

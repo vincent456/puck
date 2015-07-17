@@ -15,6 +15,14 @@ abstract class JavaNodeKind extends NodeKind {
    }*/
 }
 
+case object Definition extends JavaNodeKind {
+  override def canContain(k: NodeKind): Mutability = false
+
+  override def abstractionNodeKinds(p: AbstractionPolicy): Seq[NodeKind] = Seq()
+
+  override def kindType: KindType = ValueDef
+}
+
 case object TypeVariable extends JavaNodeKind{
   def kindType : KindType = InstanceTypeDecl
   def canContain(k : NodeKind) = false
@@ -46,6 +54,8 @@ object JavaNodeKind extends NodeKindKnowledge {
   def method = Method
   def staticMethod = StaticMethod
 
+  def definition = Definition
+
   def primitive = Primitive
   def typeVariable = TypeVariable
   def wildcardType = WildCardType
@@ -53,6 +63,9 @@ object JavaNodeKind extends NodeKindKnowledge {
   def noType : Option[Type] = None
 
   def rootKind : NodeKind = JavaRoot
+
+  def lightKind : NodeKind = Interface
+
 
   def kindOfKindType(kindType: KindType) : Seq[NodeKind] =
     kindType match {
@@ -62,9 +75,10 @@ object JavaNodeKind extends NodeKindKnowledge {
       case InstanceValueDecl => Seq(Field, Method)
       case InstanceTypeDecl => Seq(Interface, Class)
       case StaticValueDecl => Seq(StaticField, StaticMethod)
-      case Parameter | ValueDef => Seq()
+      case /*Parameter |*/ ValueDef => Seq()
       case UnknownKindType => sys.error("Unknown kind type")
     }
+
 
 
   val nodeKinds = Seq[NodeKind](JavaRoot, Package, Interface,
@@ -118,7 +132,7 @@ object JavaNodeKind extends NodeKindKnowledge {
   override def coupling(graph : DependencyGraph) =
     graph.concreteNodes.foldLeft(0 : Double){ (acc, n) => n.kind match {
     case Package =>
-      val c = Metrics.coupling(n.id, graph)
+      val c = Metrics.coupling(graph, n.id)
       if(c.isNaN) acc
       else acc + c
     case _ => acc

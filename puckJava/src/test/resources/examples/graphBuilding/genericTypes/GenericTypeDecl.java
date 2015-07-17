@@ -1,4 +1,4 @@
-package genericTypeDecl;
+package p;
 
 import java.util.List;
 

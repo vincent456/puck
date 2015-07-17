@@ -249,6 +249,9 @@ class DependencyGraph
 
   def container(contentId : NodeId) : Option[NodeId] = edges.containers.get(contentId)
 
+  def container_!(contentId : NodeId) : NodeId = container(contentId).get
+
+
   def content(containerId: NodeId) : Set[NodeId] = edges.contents.getFlat(containerId)
 
   def contains(containerId : NodeId, contentId : NodeId) : Boolean =
@@ -321,6 +324,9 @@ class DependencyGraph
 
   def getUsesEdge(userId: NodeId, usedId: NodeId) : Option[DGUses] =
     edges.getUses(userId, usedId)
+
+  def getUsesEdge_!(userId: NodeId, usedId: NodeId) : DGUses =
+    getUsesEdge(userId, usedId).get
 
   def uses(userId: NodeId, usedId: NodeId) : Boolean =
     edges.uses(userId, usedId)

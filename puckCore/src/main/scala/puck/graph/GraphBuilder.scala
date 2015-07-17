@@ -22,6 +22,7 @@ trait GraphBuilder {
     }
   }
 
+
   def setMutability(id : NodeIdT, mutable : Boolean): Unit ={
     g = g.setMutability(id, mutable)
   }

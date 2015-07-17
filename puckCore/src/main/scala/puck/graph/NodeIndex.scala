@@ -72,7 +72,12 @@ case class NodeIndex
 
   def addVirtualNode(ns : Seq[NodeId], k : NodeKind) : (VirtualNode, NodeIndex) = {
     cNodes2vNodes get ns match {
-      case Some(vnid) => (vNodes(vnid), this)
+      case Some(vnid) =>
+        vNodes get vnid map ((_, this)) getOrElse {
+          val vn = removedVnodes(vnid)
+          (vn, addVirtualNode(vn))
+        }
+
       case None => val n = VirtualNode(idSeed + 1, ns, k)
         (n, addVirtualNode(n))
     }

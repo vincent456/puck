@@ -8,7 +8,7 @@ import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction, Abst
 case object StaticField extends JavaNodeKind{
   override def canBeReadOrWrote = true
 
-  def canContain(k : NodeKind) = false
+  def canContain(k : NodeKind) = k == Definition
 
   def abstractionNodeKinds(p : AbstractionPolicy) = p match {
     case SupertypeAbstraction => Seq()
@@ -24,7 +24,7 @@ case object Field extends JavaNodeKind {
   override def kindType: KindType = InstanceValueDecl
   override def canBeReadOrWrote = true
 
-  def canContain(k : NodeKind) = false
+  def canContain(k : NodeKind) = k == Definition
 
   // fieldread abstraction type = () -> t
   // fielwrite abstraction type = t -> ()

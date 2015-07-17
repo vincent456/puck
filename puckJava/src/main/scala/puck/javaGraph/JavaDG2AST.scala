@@ -206,12 +206,14 @@ class JavaDG2AST
           case dh: TypedKindDeclHolder => dh.decl.puckDelete()
           case bdh : HasBodyDecl => bdh.decl.puckDelete()
           case PackageDeclHolder => ()
-          case NoDecl => throw new PuckError(noApplyMsg)
+
+          case BlockHolder(_)
+           | ExprHolder(_)
+           | NoDecl => throw new PuckError(noApplyMsg)
         }
 
       case Transformation(_, ChangeNodeName(nid, _, newName)) =>
-        ASTNodeLink.setName(newName)(safeGet(reenactor,id2declMap)(nid))
-
+        ASTNodeLink.setName(newName, safeGet(reenactor,id2declMap)(nid))
 
       case Transformation(_, op) =>
         if( discardedOp(op) ) ()

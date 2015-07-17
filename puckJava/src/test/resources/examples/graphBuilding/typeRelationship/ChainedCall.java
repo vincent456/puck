@@ -1,4 +1,4 @@
-package chainedCall;
+package p;
 
 class A {
     public void ma() {
@@ -8,7 +8,7 @@ class A {
 }
 
 class B {
-    public C mb(){ return new C(); }
+    public C mb(){ return new C();}
 }
 
 class C {

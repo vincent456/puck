@@ -127,6 +127,7 @@ object Move {
     g.typeUsesOf(tmu).exists(tu => tu.source == tu.target)
 
 
+
   def typeMember
   ( g0 : DependencyGraph,
     typeMembersMovedId : List[NodeId],
@@ -138,8 +139,10 @@ object Move {
     val moved = typeMembersMovedId.toSet
     val siblings = g0.content(oldContainer) -- moved
 
+    val movedDef = moved map {g0.content(_).head}
+
     val movedUsingSiblingViaThis : Set[NodeId] =
-      usesBetween(g0, moved, siblings).filter(usesViaThis(g0)).map(_.user)
+      usesBetween(g0, movedDef, siblings).filter(usesViaThis(g0)).map(_.user)
 
     val movedWithArgUsableAsReceiver : Set[NodeId] =
       moved.filter{
@@ -157,7 +160,7 @@ object Move {
         g0.changeSource(Contains(oldContainer, movedId), newContainer)
     }
 
-    val g2 = usesBetween(g0, moved, moved).filter(usesViaThis(g0)).foldLeft(g1){
+    val g2 = usesBetween(g0, movedDef, movedDef).filter(usesViaThis(g0)).foldLeft(g1){
       (g,u) => g.removeUsesDependency(oldSelfUse, u)
                 .addUsesDependency(newSelfUse, u)
     }
@@ -191,7 +194,7 @@ object Move {
                   .addUsesDependency(newSelfUse, tmu)
           }
           LoggedSuccess(g2)
-        case _ => LoggedError(new graph.Error("Arrow type was expected"))
+        case st => LoggedError(new graph.Error(s"useArgAsReceiver : Arrow type was expected ${g0.fullName(used)} has $st"))
       }
     }
   }
@@ -206,19 +209,22 @@ object Move {
     ) : LoggedTG = {
     val oldSelfUse = Uses(oldContainer, oldContainer)
     nodeSet.foldLoggedEither(g){
-      (g0, used) => g0.getConcreteNode(used).styp match {
+      (g0, user) =>
+        val decl = g0.container_!(user)
+        g0.getConcreteNode(decl).styp match {
+
         case Some(ar : Arrow)=>
-          val newTypeUses = Uses(used, oldContainer)
-          val g1 = g0.setType(used,  Some(ar.prependParameter(NamedType(oldContainer))))
+          val newTypeUses = Uses(decl, oldContainer)
+          val g1 = g0.setType(decl,  Some(ar.prependParameter(NamedType(oldContainer))))
                       .addEdge(newTypeUses)
 
-          val g2 = usesBetween(g0, Set(used), siblings).foldLeft(g1){
+          val g2 = usesBetween(g0, Set(user), siblings).foldLeft(g1){
             (g00, tmu) =>
               g00.removeUsesDependency(oldSelfUse, tmu)
                 .addUsesDependency(newTypeUses, tmu)
           }
           LoggedSuccess(g2)
-        case _ => LoggedError(new graph.Error("Arrow type was expected"))
+        case st => LoggedError(new graph.Error(s"useReceiverAsArg : Arrow type was expected ${g0.fullName(user)} has $st"))
       }
     }
   }
@@ -249,7 +255,6 @@ object Move {
               case CreateParameter =>
                 createParam(g0, tu, newContainer, tmUses)
               case CreateTypeMember(k) =>
-
                 createTypeMember(g0, tu, newContainer, tmContainer, tmUses, k)
             }
         }
@@ -273,15 +278,21 @@ object Move {
     usesByUser.toList.foldLoggedEither(g) {
       case (g0, (userId, typeMemberUses)) =>
         val user = g0.getConcreteNode(userId)
-        val newTypeUse = Uses(userId, newTypeUsed)
-        (user.kind.kindType, user.styp) match {
-          case (InstanceValueDecl, Some(NamedType(_))) => ???
 
-          case (InstanceValueDecl, Some( ar : Arrow )) =>
+        assert(g0.getConcreteNode(userId).kind.kindType == ValueDef)
+
+        val decl = g0.getConcreteNode(g0.container_!(userId))
+
+        val newTypeUse = Uses(decl.id, newTypeUsed)
+
+        decl.styp match {
+          case  Some(NamedType(_)) => ???
+
+          case  Some( ar : Arrow ) =>
             val log = s"${showDG[NodeId](g0).shows(userId)}, user of moved method" +
               s" will now use ${showDG[NodeId](g0).shows(newTypeUsed)}"
 
-            val g1 = g0.setType(userId, Some(ar.prependParameter(NamedType(newTypeUsed))))
+            val g1 = g0.setType(decl.id, Some(ar.prependParameter(NamedType(newTypeUsed))))
               .addEdge(newTypeUse)
 
             val g2 = typeMemberUses.foldLeft(g1) {
@@ -293,14 +304,14 @@ object Move {
             g.getDefaultConstructorOfType(newTypeUsed) match {
               case None => LoggedError(new PuckError(s"no default constructor for $newTypeUsed"))
               case Some(cid) =>
-                val g3 = g.usersOf(user.id).foldLeft(g2){
+                val g3 = g.usersOf(decl.id).foldLeft(g2){
                   (g0, userOfUser) => g0.addEdge(Uses(userOfUser, cid))
                 }
 
                 LoggedSuccess(g3, log)
             }
 
-          case (_, _) => LoggedError(new PuckError(s"a type member was expected"))
+          case _ => LoggedError(new PuckError(s"a type member was expected"))
         }
     }
 
@@ -335,41 +346,5 @@ object Move {
               .addUses(typeMemberUse.user, delegate.id)) // replace this.m by delegate.m
         }
     }
-
-    /*
-      def typeMember
-      ( g0 : DependencyGraph,
-        typeMembersMovedId : List[NodeId],
-        newContainer : NodeId,
-        createVarStrategy: Option[CreateVarStrategy] = None)
-      (typeMembersMovedUses : List[Uses] = g0.usesFromUsedList(typeMembersMovedId))
-        : LoggedTG = {
-        /** PRECONDITION all typeMembersMoved have same host */
-        val oldContainer = g0.getConcreteNode(g0.container(typeMembersMovedId.head).get)
-        val
-        for {
-          g <- logTypeMemberMove(g0, typeMembersMovedId, oldContainer.id, newContainer)
-
-          g2 = typeMembersMovedId.foldLeft(g){
-                (g0, movedId) =>
-                  g0.changeSource(DGEdge.ContainsK(oldContainer.id, movedId), newContainer)
-              }
-
-          (siblingsUsesViaSelf, otherUses) =
-                typeMembersMovedUses.partition(isSiblingUsesViaSelf(g2, oldContainer))
-
-          g3 <- (siblingsUsesViaSelf.nonEmpty, createVarStrategy) match {
-                case (true, Some(strategy)) =>
-                  strategy.moveTypeMemberUsedBySelf(g2,
-                    oldContainer.id, newContainer,
-                    siblingsUsesViaSelf, intro)
-                case (false, None) => LoggedSuccess(g2)
-                case _ => LoggedError[DependencyGraph](new PuckError("incoherent call to Move.typMember"))
-             }
-        } yield {
-          redirectTypeUsesOfMovedTypeMemberUsers(g3, otherUses, newContainer)
-        }
-      }
-    */
 
 }

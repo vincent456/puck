@@ -28,20 +28,30 @@ class NodeInfosPanel(val graph : DependencyGraph,
     }.mkString("\n", "\n", "\n")
   }
 
+  val typeWeight =
+    node.kind.kindType match {
+      case TypeDecl =>
+        val m = Metrics.typeWeight(graph, nodeId)
+        s"Type Weight = ${m.toString}\n"
+
+      case _ => ""
+    }
+
   leftComponent = new BoxPanel(Orientation.Vertical) {
 
     contents += PuckMainPanel.leftGlued(new Label(node.kind + " : " +
       showDG(graph)(nodeNameTypCord).shows(node)))
-    val prov = Metrics.providers(node.id, graph)
-    val cl = Metrics.clients(node.id, graph)
-    val internals = Metrics.internalDependencies(node.id, graph).size
-    val outgoings = Metrics.outgoingDependencies(node.id, graph).size
-    val incomings = Metrics.incomingDependencies(node.id, graph).size
-    val coupling = Metrics.coupling(node.id, graph)
-    val cohesion = Metrics.cohesion(node.id, graph)
+    val prov = Metrics.providers(graph, node.id)
+    val cl = Metrics.clients(graph, node.id)
+    val internals = Metrics.internalDependencies(graph, node.id).size
+    val outgoings = Metrics.outgoingDependencies(graph, node.id).size
+    val incomings = Metrics.incomingDependencies(graph, node.id).size
+    val coupling = Metrics.coupling(graph, node.id)
+    val cohesion = Metrics.cohesion(graph, node.id)
     contents += new TextArea(s"Internal dependencies : $internals \n" +
       s"Outgoing dependencies : $outgoings \n" +
       s"Incoming dependencies : $incomings \n" +
+      typeWeight +
       "Subtypes : " +
       (if(graph.directSubTypes(node.id).isEmpty) "none\n"
       else mkStringWithNames(graph.directSubTypes(node.id))) +

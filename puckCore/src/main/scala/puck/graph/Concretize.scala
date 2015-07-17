@@ -2,7 +2,8 @@ package puck.graph
 
 import puck.graph.transformations.TransformationRules
 import puck.util.LoggedEither._
-import scalaz._, Scalaz._
+
+import scalaz.std.set._
 
 object Concretize {
 
@@ -12,11 +13,11 @@ object Concretize {
       val vn = g.virtualNodes.head
 
       g.content(vn.id).foldLoggedEither(g){ (g0, cid) =>
-        val usedElts : Set[NodeId] = Metrics.outgoingDependencies(cid, g0).map(_.used)
+        val usedElts : Set[NodeId] = Metrics.outgoingDependencies(g0, cid).map(_._2)
         val c = g0.getConcreteNode(cid)
         val potentialContainers = g0.concreteNodes.filter(g0.canContain(_, c))
         val pcWithCohesion = potentialContainers.foldLeft(List[(Double, NodeId)]()){ (l, pc) =>
-          (Metrics.relativeCohesion(usedElts, pc.id, g0), pc.id) :: l
+          (Metrics.relativeCohesion(g0, usedElts, pc.id), pc.id) :: l
         }
 
         val best = pcWithCohesion.sortBy(_._1).head._2

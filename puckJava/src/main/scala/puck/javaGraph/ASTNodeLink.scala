@@ -151,11 +151,11 @@ object ASTNodeLink{
     }
   }
 
-  val setName : String => ASTNodeLink => Unit = name => {
+  def setName(name : String, nl : ASTNodeLink) : Unit = nl match {
     case FieldDeclHolder(decl) => decl.setID(name)
     case dh : MethodDeclHolder => dh.decl.setID(name)
     case th : TypedKindDeclHolder => th.decl.setID(name)
-    case _ : ConstructorDeclHolder => () //should be handled in the class rename
+    case ch : ConstructorDeclHolder => ch.decl.setID(name)
     case h => throw new PuckError(h.getClass + " setName unhandled")
   }
 }
@@ -164,6 +164,9 @@ sealed trait ASTNodeLink
 
 case object NoDecl extends ASTNodeLink
 case object PackageDeclHolder extends ASTNodeLink
+
+case class ExprHolder(expr : AST.Expr) extends ASTNodeLink
+case class BlockHolder(block : AST.Block) extends ASTNodeLink
 
 sealed trait HasBodyDecl extends ASTNodeLink{
   val decl : AST.BodyDecl

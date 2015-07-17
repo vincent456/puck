@@ -6,7 +6,11 @@ import puck.graph._
 
 //import nodeKind._
 
+
 class GraphBuildingSpec extends AcceptanceSpec {
+
+  def getDefinition(g : DependencyGraph, nid : NodeId) : NodeId =
+    g.getConcreteNode(nid).definition(g).value
 
   val graphBuildingExamplesPath = Settings.testExamplesPath + "/graphBuilding/"
 
@@ -18,8 +22,8 @@ class GraphBuildingSpec extends AcceptanceSpec {
       val _ = new ExampleSample(s"$examplesPath/A.java") {
         val clazz = fullName2id(s"p.A")
         val ctor = fullName2id(s"p.A.A#_void")
-        val user = fullName2id(s"p.B.m__void")
-
+        val userDecl = fullName2id(s"p.B.m__void")
+        val user = getDefinition(graph, userDecl)
 
         assert(graph.uses(user, ctor))
         assert(graph.uses(ctor, clazz))
@@ -43,13 +47,19 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val mUserViaThis = fullName2id(s"$p.A.mUserViaThis__void")
         val mUserViaParameter = fullName2id(s"$p.A.mUserViaParameter__A")
 
+        val mUserViaThisDef = getDefinition(graph, mUserViaThis)
+        val mUserViaParameterDef = getDefinition(graph, mUserViaParameter)
+
         //methodUse
-        assert( graph.uses(mUserViaThis, methM) )
+        assert( graph.uses(mUserViaThisDef, methM) )
+        assert( ! graph.uses(mUserViaThis, methM) )
+
         //typeUse
         assert( graph.uses(clazz, clazz) )
 
+        assert( graph.uses(mUserViaParameterDef, methM) )
+        assert( !graph.uses(mUserViaParameter, methM) )
 
-        assert( graph.uses(mUserViaParameter, methM) )
         assert( graph.uses(mUserViaParameter, clazz) )
 
       }
@@ -60,17 +70,19 @@ class GraphBuildingSpec extends AcceptanceSpec {
   feature("typeUse typeMemberUse relation registration"){
     val examplesPath = graphBuildingExamplesPath +  "typeRelationship/"
     scenario("call on field") {
-      val p = "callOnField"
-      val _ = new ExampleSample(s"$examplesPath/$p/A.java"){
+      val _ = new ExampleSample(s"$examplesPath/CallOnField.java"){
 
-        val fieldTypeUser = fullName2id(s"$p.A.b")
-        val methUser = fullName2id(s"$p.A.ma__void")
+        val fieldTypeUserDecl = fullName2id("p.A.b")
+        val methUserDecl = fullName2id("p.A.ma__void")
+        val methUserDef = getDefinition(graph, methUserDecl)
 
-        val typeUsed = fullName2id(s"$p.B")
-        val typeMemberUsed = fullName2id(s"$p.B.mb__void")
+        val typeUsed = fullName2id("p.B")
+        val typeMemberUsedDecl = fullName2id("p.B.mb__void")
 
-        val typeUse = graph.getUsesEdge(fieldTypeUser, typeUsed).value
-        val typeMemberUse = graph.getUsesEdge(methUser, typeMemberUsed).value
+
+
+        val typeUse = graph.getUsesEdge(fieldTypeUserDecl, typeUsed).value
+        val typeMemberUse = graph.getUsesEdge(methUserDef, typeMemberUsedDecl).value
 
         /*println("typeMemberUses2typeUsesMap")
         println(graph.typeMemberUses2typeUsesMap.content.mkString("\n"))
@@ -87,15 +99,15 @@ class GraphBuildingSpec extends AcceptanceSpec {
     }
 
     scenario("call on method's parameter"){
-      val p = "callOnParameter"
-      val _ = new ExampleSample(s"$examplesPath/$p/A.java"){
+      val _ = new ExampleSample(s"$examplesPath/CallOnParameter.java"){
 
-        val mUser = fullName2id(s"$p.A.ma__B")
-        val classUsed = fullName2id(s"$p.B")
-        val mUsed = fullName2id(s"$p.B.mb__void")
+        val mUserDecl = fullName2id("p.A.ma__B")
+        val mUserDef = getDefinition(graph, mUserDecl)
+        val classUsed = fullName2id("p.B")
+        val mUsed = fullName2id("p.B.mb__void")
 
-        val typeUse = DGEdge.UsesK(mUser, classUsed)
-        val typeMemberUse = DGEdge.UsesK(mUser, mUsed)
+        val typeUse = Uses(mUserDecl, classUsed)
+        val typeMemberUse = Uses(mUserDef, mUsed)
 
         graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
 
@@ -103,31 +115,31 @@ class GraphBuildingSpec extends AcceptanceSpec {
     }
 
     scenario("call from local variable"){
-      val p = "callOnLocalVariable"
-      val _ = new ExampleSample(s"$examplesPath/$p/A.java"){
+      val _ = new ExampleSample(s"$examplesPath/CallOnLocalVariable.java"){
 
-        val mUser = fullName2id(s"$p.A.ma__void")
-        val mUsed = fullName2id(s"$p.B.mb__void")
+        val mUserDecl = fullName2id("p.A.ma__void")
+        val mUserDef = getDefinition(graph, mUserDecl)
+        val mUsed = fullName2id("p.B.mb__void")
 
-        val classUsed = fullName2id(s"$p.B")
+        val classUsed = fullName2id("p.B")
 
-        val typeUse = DGEdge.UsesK(mUser, classUsed)
-        val typeMemberUse = DGEdge.UsesK(mUser, mUsed)
+        val typeUse = Uses(mUserDef, classUsed)
+        val typeMemberUse = Uses(mUserDef, mUsed)
 
         graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
       }
     }
 
     scenario("chained call"){
-      val p = "chainedCall"
-      val _ = new ExampleSample(s"$examplesPath/$p/A.java"){
-        val mUser = fullName2id(s"$p.A.ma__void")
-        val mUsed = fullName2id(s"$p.C.mc__void")
-        val mIntermediate = fullName2id(s"$p.B.mb__void")
-        val classUsed = fullName2id(s"$p.C")
+      val _ = new ExampleSample(s"$examplesPath/ChainedCall.java"){
+        val mUserDecl = fullName2id("p.A.ma__void")
+        val mUserDef = getDefinition(graph, mUserDecl)
+        val mUsed = fullName2id("p.C.mc__void")
+        val mIntermediate = fullName2id("p.B.mb__void")
+        val classUsed = fullName2id("p.C")
 
-        val typeUse = DGEdge.UsesK(mIntermediate, classUsed)
-        val typeMemberUse = DGEdge.UsesK(mUser, mUsed)
+        val typeUse = Uses(mIntermediate, classUsed)
+        val typeMemberUse = Uses(mUserDef, mUsed)
 
         graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
       }
@@ -185,11 +197,10 @@ class GraphBuildingSpec extends AcceptanceSpec {
     val examplesPath = graphBuildingExamplesPath +  "genericTypes/"
 
     scenario("generic type declaration"){
-      val p = "genericTypeDecl"
-      val _ = new ExampleSample(s"$examplesPath/$p/A.java") {
-        val actualParam = fullName2id(s"$p.A")
-        val genTypeDeclarant = fullName2id(s"$p.GenTypeDeclarant")
-        val user = fullName2id(s"$p.GenTypeDeclarant.user")
+      val _ = new ExampleSample(s"$examplesPath/GenericTypeDecl.java") {
+        val actualParam = fullName2id("p.A")
+        val genTypeDeclarant = fullName2id("p.GenTypeDeclarant")
+        val user = fullName2id("p.GenTypeDeclarant.user")
         val genType = fullName2id("java.util.List")
 
         assert( graph.uses(user, genType) )
@@ -205,51 +216,52 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
 
     scenario("generic method declaration"){
-      val p = "methodOfGenericType"
-      val _ = new ExampleSample(s"$examplesPath/$p/GenColl.java") {
+      val _ = new ExampleSample(s"$examplesPath/MethodOfGenericType.java") {
 
-        val actualTypeParam = fullName2id(s"$p.A")
-        val formalTypeParam = fullName2id(s"$p.GenColl@T")
-        val genType = fullName2id(s"$p.GenColl")
-        val genMethod = fullName2id(s"$p.GenColl.put__GenColl@T")
-        val userClass = fullName2id(s"$p.User")
-        val userMethod = fullName2id(s"$p.User.m__void")
+        val actualTypeParam = fullName2id("p.A")
+        val formalTypeParam = fullName2id("p.GenColl@T")
+        val genType = fullName2id("p.GenColl")
+        val genMethod = fullName2id("p.GenColl.put__GenColl@T")
+        val userClass = fullName2id("p.User")
 
-        val genCollNum = numNodesWithFullname(graph, s"$p.GenColl")
+        val userMethodDecl = fullName2id("p.User.m__void")
+        val userMethodDef = getDefinition(graph, userMethodDecl)
+
+        val genCollNum = numNodesWithFullname(graph, "p.GenColl")
         genCollNum shouldBe 1
-        val genCollPutNum = numNodesWithFullname(graph, s"$p.GenColl.put")
+        val genCollPutNum = numNodesWithFullname(graph, "p.GenColl.put")
         genCollPutNum shouldBe 1
 
         assert( ! graph.uses(genMethod, actualTypeParam) )
 
         assert( graph.uses(genMethod, formalTypeParam) )
 
-        assert( graph.uses(userMethod, genType) )
+        assert( graph.uses(userMethodDef, genType) )
 
-        assert( graph.uses(userMethod, actualTypeParam) )
+        assert( graph.uses(userMethodDef, actualTypeParam) )
 
-        assert( graph.uses(userMethod, genMethod) )
+        assert( graph.uses(userMethodDef, genMethod) )
 
 
       }
     }
 
     scenario("generic - type relationship"){
-      val p = "typeRelationship"
-      val _ = new ExampleSample(s"$examplesPath/$p/A.java") {
+      val _ = new ExampleSample(s"$examplesPath/TypeRelationship.java") {
 
-        val actualTypeParam = fullName2id(s"$p.A")
-        val actualTypeParamMethod = fullName2id(s"$p.A.m__void")
+        val actualTypeParam = fullName2id("p.A")
+        val actualTypeParamMethod = fullName2id("p.A.m__void")
 
-        val fieldDeclarant = fullName2id(s"$p.B.la")
+        val fieldDeclarant = fullName2id("p.B.la")
 
-        val userClass = fullName2id(s"$p.B")
-        val userMethod = fullName2id(s"$p.B.mUser__void")
+        val userClass = fullName2id("p.B")
+        val userMethodDecl = fullName2id("p.B.mUser__void")
+        val userMethodDef = getDefinition(graph, userMethodDecl)
 
         val genericMethod = fullName2id("java.util.List.get__int")
 
         val fieldTypeUse = graph.getUsesEdge(fieldDeclarant, actualTypeParam).value
-        val typeMemberUse = graph.getUsesEdge(userMethod, actualTypeParamMethod).value
+        val typeMemberUse = graph.getUsesEdge(userMethodDef, actualTypeParamMethod).value
         val parTypeUse = graph.getUsesEdge(genericMethod, actualTypeParam).value
 
 
@@ -270,13 +282,23 @@ class GraphBuildingSpec extends AcceptanceSpec {
     scenario("generic type declaration"){
       val _ = new ExampleSample(s"$examplesPath/A.java") {
         val field = fullName2id(s"p.A.f")
-        val getter = fullName2id(s"p.A.getF__void")
-        val setter = fullName2id(s"p.A.setF__int")
-        val inc0 = fullName2id(s"p.A.incF0__void")
-        val inc1 = fullName2id(s"p.A.incF1__void")
-        val inc2 = fullName2id(s"p.A.incF2__void")
-        val dec0 = fullName2id(s"p.A.decF0__void")
-        val dec1 = fullName2id(s"p.A.decF1__void")
+        val getterDecl = fullName2id(s"p.A.getF__void")
+        val getter = getDefinition(graph, getterDecl)
+
+        val setterDecl = fullName2id(s"p.A.setF__int")
+        val setter = getDefinition(graph, setterDecl)
+
+        val inc0Decl = fullName2id(s"p.A.incF0__void")
+        val inc1Decl = fullName2id(s"p.A.incF1__void")
+        val inc2Decl = fullName2id(s"p.A.incF2__void")
+        val dec0Decl = fullName2id(s"p.A.decF0__void")
+        val dec1Decl = fullName2id(s"p.A.decF1__void")
+
+        val inc0 = getDefinition(graph, inc0Decl)
+        val inc1 = getDefinition(graph, inc1Decl)
+        val inc2 = getDefinition(graph, inc2Decl)
+        val dec0 = getDefinition(graph, dec0Decl)
+        val dec1 = getDefinition(graph, dec1Decl)
 
         assert( graph.uses(getter, field) )
         graph.usesAccessKind(getter, field) shouldBe Some(Read)

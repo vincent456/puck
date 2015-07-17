@@ -1,4 +1,4 @@
-package callOnField;
+package p;
 
 class B {
     public void mb(){}

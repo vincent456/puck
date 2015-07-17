@@ -47,7 +47,7 @@ class SortedElementSelector[T]
   extends BoxPanel(Orientation.Vertical) {
   val firstLine = new FlowPanel()
   val simpleStateSelector = new SimpleElementSelector[T](evtGen)
-  val couplingValues = new ComboBox(map.keys.toSeq)
+  val couplingValues = new ComboBox(map.keys.toSeq.sorted)
 
   simpleStateSelector.setStatesList(map(couplingValues.selection.item))
 

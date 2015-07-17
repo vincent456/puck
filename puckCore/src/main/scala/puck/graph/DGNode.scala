@@ -9,6 +9,22 @@ sealed trait DGNode{
 
   def mapConcrete[A](f : ConcreteNode => A, default : => A) : A
   def name(g : DependencyGraph) : String
+
+  def definition(g : DependencyGraph) : Option[NodeId] = {
+    kind.kindType match {
+      case InstanceValueDecl
+           | StaticValueDecl =>
+        val children = g.content(id)
+        children.find {
+          nid =>
+            g.getConcreteNode(nid).kind.kindType == ValueDef
+        }
+      case _ => None
+    }
+  }
+
+  def definition_!(g : DependencyGraph) : NodeId =
+    definition(g).get
 }
 
 object DGNode {
@@ -46,6 +62,8 @@ case class ConcreteNode
   override def toString = s"($id - $kind $name)"
 
   def mapConcrete[A](f : ConcreteNode => A, default : => A) : A = f(this)
+
+
 
   /*def distance(other : AGNode[Kind]) = {
     if(this == other) 0

@@ -126,35 +126,4 @@ object JavaAbstract extends Abstract {
     }
   }
 
-  override def abstractionCreationPostTreatment
-  ( g: DependencyGraph,
-    implId : NodeId,
-    absId : NodeId,
-    policy : AbstractionPolicy
-    ) : DependencyGraph = {
-    val abstraction = g.getNode(absId)
-    (abstraction.kind, policy) match {
-      case (AbstractMethod, SupertypeAbstraction) =>
-        val implContainer = g.container(implId).get
-        val thisClassNeedsImplement =
-          !g.abstractions(implContainer).exists{
-          case AccessAbstraction(abs, SupertypeAbstraction) =>
-            abs == g.container(absId).get
-           case _ => false
-        }
-
-        if(!thisClassNeedsImplement) g
-        else {
-          val absContainer = g.container(absId).get
-          val g1 = g.addUses(implContainer, absContainer)
-            .addIsa(implContainer, absContainer)
-
-          g1.content(absId).foldLeft(g1){
-            case (g0, absMethodId) =>
-              g0.changeType(absMethodId, implId, absId)
-          }
-        }
-      case _ => g
-    }
-  }
 }

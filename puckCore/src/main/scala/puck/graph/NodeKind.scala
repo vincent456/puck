@@ -33,7 +33,7 @@ object KindType {
     case InstanceTypeDecl => false
     case InstanceValueDecl => false
     case TypeConstructor => true
-    case Parameter => ???
+//    case Parameter => ???
     case ValueDef => ???
     case UnknownKindType => ???
   }
@@ -43,12 +43,16 @@ object KindType {
 sealed trait KindType
 case object UnknownKindType extends KindType
 case object NameSpace extends KindType
+
 case object TypeDecl extends KindType
+case object InstanceTypeDecl extends KindType
+
+case object TypeConstructor extends KindType
+
 case object InstanceValueDecl extends KindType
 case object StaticValueDecl extends KindType
-case object TypeConstructor extends KindType
-case object InstanceTypeDecl extends KindType
-case object Parameter extends KindType
+
+//case object Parameter extends KindType
 case object ValueDef extends KindType
 
 trait AGRoot extends NodeKind {
@@ -65,6 +69,9 @@ trait NodeKindKnowledge {
   def rootKind : NodeKind
 
   def nodeKinds : Seq[NodeKind]
+
+  def lightKind : NodeKind
+
   def canContain(graph : DependencyGraph)
                 (n : DGNode, other : ConcreteNode) : Boolean = {
     !graph.contains_*(other.id, n.id) && // no cycle !
@@ -84,7 +91,7 @@ trait NodeKindKnowledge {
   //TODO?? move elsewhere ?
   def coupling(graph : DependencyGraph) =
     graph.concreteNodesId.foldLeft(0 : Double){
-    (acc, id) => acc + Metrics.coupling(id, graph)
+    (acc, id) => acc + Metrics.coupling(graph, id)
   }
 
   def defaultKindForNewReceiver : NodeKind

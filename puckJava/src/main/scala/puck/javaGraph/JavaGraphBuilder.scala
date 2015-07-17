@@ -17,8 +17,18 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 
   var graph2ASTMap = Map[Int, ASTNodeLink]()
 
+  private val anonymous = "Anonymous"
+  def addDefinitionNode() : NodeIdT = {
+    val (n, g2) = g.addConcreteNode(anonymous, Definition, None)
+    g = g2
+    n.id
+  }
+
   def addPackageNode(fullName: String, localName:String) : NodeIdT =
     super.addNode(fullName, localName, Package, None)
+
+  def getDefinition(nid : NodeId) =
+    g.getConcreteNode(nid).definition_!(g)
 
 
   def addPackage(p : String, mutable : Boolean): NodeIdT =
@@ -203,6 +213,22 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
       case Field | StaticField=>
         graph2ASTMap += (n -> FieldDeclHolder(decl))
       case _ => throwRegisteringError(g.getConcreteNode(n), "FieldDeclaration")
+    }
+  }
+
+  def registerDef(n : NodeIdT, decl : AST.Expr) : Unit = {
+    g.getConcreteNode(n).kind match {
+      case Definition =>
+        graph2ASTMap += (n -> ExprHolder(decl))
+      case _ => throwRegisteringError(g.getConcreteNode(n), "Expr")
+    }
+  }
+
+  def registerDef(n : NodeIdT, decl : AST.Block) : Unit = {
+    g.getConcreteNode(n).kind match {
+      case Definition =>
+        graph2ASTMap += (n -> BlockHolder(decl))
+      case _ => throwRegisteringError(g.getConcreteNode(n), "Expr")
     }
   }
 

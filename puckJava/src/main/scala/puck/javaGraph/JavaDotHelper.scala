@@ -26,7 +26,8 @@ object JavaDotHelper extends DotHelper{
           kind match {
             case Interface | Class => (fds, cts, mts, n +: cls)
             case Constructor => (fds, n +: cts, mts, cls)
-            case Field => (n +: fds, cts, mts, cls)
+            case Field
+            | StaticField => (n +: fds, cts, mts, cls)
             case _ : MethodKind
             | StaticMethod => (fds, cts, n +: mts, cls)
 

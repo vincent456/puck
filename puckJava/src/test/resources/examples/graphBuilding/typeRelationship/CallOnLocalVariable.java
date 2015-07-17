@@ -1,4 +1,4 @@
-package callOnLocalVariable;
+package p;
 
 class A {
     public void ma() {

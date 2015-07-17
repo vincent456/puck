@@ -112,6 +112,10 @@ sealed abstract class DGUses extends DGEdge{
 
 }
 
+//object Uses extends EKind {
+//  override def apply(source: NodeId, target: NodeId): DGEdge =
+//    new Uses(source, target)
+//}
 case class Uses
 ( source : NodeId,
   target: NodeId,

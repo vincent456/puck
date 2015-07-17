@@ -106,23 +106,22 @@ class DotPrinter
     case edge @ (source, target) =>
     def dotId(nid: NodeId) : String = {
       val n = graph.getNode(nid)
-      if (helper isDotSubgraph n)
-        nodeSubGraphId(n.id.toString)
-      else {
-        val containerId = if (helper isDotClass n) n.id + ":"
-        else graph.container(nid) match {
-          case Some(id) => id + ":"
-          case None => ""
-            //throw new PuckError(showDG[NodeId](g).show(nid) + " has no container !")
-        }
-
-        containerId + n.id
+      n.kind.kindType match {
+        case NameSpace =>  nodeSubGraphId(n.id.toString)
+        case ValueDef => dotId(graph.container_!(nid))
+        case TypeDecl => n.id + ":" + n.id
+        case _ =>
+          graph.container(nid) match {
+            case Some(id) => id + ":" + n.id
+            case None => n.id.toString
+              //throw new PuckError(showDG[NodeId](g).show(nid) + " has no container !")
+          }
       }
     }
 
     def subGraphArc(nid: NodeId, pos:String) = {
       val n = graph.getNode(nid)
-      if (helper isDotSubgraph n) pos + "=cluster" + n.id + ", "
+      if (n.kind.kindType == NameSpace) pos + "=cluster" + n.id + ", "
       else ""
     }
 
@@ -206,9 +205,12 @@ class DotPrinter
   def printNode(nid : NodeId): Unit =
     if(visibility.isVisible(nid)) {
       val n = graph.getNode(nid)
-      if (helper isDotSubgraph n) printSubGraph(n)
-      else if (helper isDotClass n) printClass(n.id)
-      else printOrphanNode(nid)
+      n.kind.kindType match {
+        case NameSpace => printSubGraph(n)
+        case TypeDecl =>  printClass(n.id)
+        case ValueDef => ()
+        case _ => printOrphanNode(nid)
+      }
     }
 
 
@@ -238,10 +240,16 @@ class DotPrinter
       val n = graph.getNode(nid)
       val sig = n mapConcrete (cn => signatureString(cn.styp), "")
 
+      val (itb, ite) = n.kind.kindType match {
+        case InstanceValueDecl
+          | StaticValueDecl if n.definition(g).isEmpty =>
+          ("<I>", "</I>")
+        case _ => ("","")
+      }
 
-      writeln(s"""<TR><TD PORT="${n.id}" HREF="${n.id}" ALIGN="LEFT" BORDER="0">"""+
-      //writeln(s"""<TR><TD PORT="${n.id}" ID="${n.id}" ALIGN="LEFT" BORDER="0">"""+
-        decorate_name(n) + sig + "</TD></TR>")
+      writeln(s"""<TR><TD PORT="${n.id}" HREF="${n.id}" ALIGN="LEFT" BORDER="0">"""+ itb +
+      //writeln(s"""<TR><TD PORT="${n.id}" ID="${n.id}" ALIGN="LEFT" BORDER="0">"""+ itb +
+        decorate_name(n) + sig + ite + "</TD></TR>")
     }
 
     val (fields, ctrs, mts, innerClasses) = helper splitDotClassContent (graph, n.id, visibility)
@@ -274,7 +282,7 @@ class DotPrinter
 
 
   def recusivePackage(s : NodeId, t: NodeId) : Boolean =
-    s == t && (helper isDotSubgraph graph.getNode(s))
+    s == t && (graph.getNode(s).kind.kindType == NameSpace)
 
 
   type ContainsViolationMap = Set[EdgeP]

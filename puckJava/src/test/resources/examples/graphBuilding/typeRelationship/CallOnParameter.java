@@ -1,4 +1,4 @@
-package callOnParameter;
+package p;
 
 class B {
     public void mb(){}

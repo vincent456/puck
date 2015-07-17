@@ -100,7 +100,7 @@ aspect NodeFactory  {
 
 		
 	public int VariableDeclaration.buildDGNode(JavaGraphBuilder builder){
-		return hostBodyDecl().buildDGNode(builder);
+		return builder.getDefinition(hostBodyDecl().buildDGNode(builder));
 	}
 
 	public int ParameterDeclaration.buildDGNode(JavaGraphBuilder builder){

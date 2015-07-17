@@ -3,6 +3,7 @@ package constraints
 
 
 import puck.PuckError
+import puck.graph.Error
 import puck.graph.transformations.TransformationRules
 import puck.util.Logged
 import puck.util.LoggedEither._
@@ -179,40 +180,57 @@ class Solver
 
 
 
-  def introMultipleHostAfterAbsIntro
+  def findHostAfterAbsIntro
   ( currentImplId : NodeId, //TODO look TODO in body to remove this arg
+    abs : Abstraction,
     k : LoggedTG => Unit,
     pred : NodePredicateT,
-    abstractionPolicy : AbstractionPolicy,
-    lg : LoggedG,
-    remainingThatNeedHost : List[ConcreteNode] ) : Unit = {
-    remainingThatNeedHost match {
-      case Nil => k(lg.toLoggedTry)
-      case abs :: tl =>
-        import rules.abstracter._
+    lg : LoggedG) : Unit = {
 
-        val lg1 = lg :++> s"Searching host for $abs\n"
+    val abstractionPolicy : AbstractionPolicy = abs.policy
 
-        findHost(lg1, abs, pred) {
-          logres =>
-            logres.value match {
-              case Host(h, graph3) =>
-                val lg2 = (logres :++>
-                  s"absIntro : host of $abs is ${showDG[NodeId](graph3).show(h)}\n").map{
-                  _ =>
-                    val graph4 = graph3.addContains(h, abs.id)
+    val lg1 = lg :++> s"Searching host for $abs\n"
 
-                    //TODO check if can find another way more generic
-                    val graph5 = abstractionCreationPostTreatment(graph4, currentImplId, abs.id, abstractionPolicy)
-                    graph5
-                }
-                introMultipleHostAfterAbsIntro(currentImplId, k, pred, abstractionPolicy, lg2, tl)
-              case FindHostError =>
-                k(LoggedError(FindHostError,
-                  logres.written + "error while searching host for abstraction"))
+    findHost(lg1, lg.value.getConcreteNode(abs.nodes.head), pred) {
+      logres =>
+        logres.value match {
+          case Host(h, graph3) =>
+            val log = logres.written +
+              s"absIntro : host of $abs is ${showDG[NodeId](graph3).show(h)}\n"
+
+            val graph4 = abs.nodes.foldLeft(graph3){_.addContains(h, _)}
+
+            (graph4.container(currentImplId), graph4.kindType(h)) match {
+              case (None, _) => k(LoggedError(new Error("current impl has no container")))
+              case (Some(c), TypeDecl) =>
+                 val graph5 = graph4.addAbstraction(c, AccessAbstraction(h, abs.policy))
+                 val graph6 =
+                      if(abs.policy == SupertypeAbstraction)
+                        graph5.addIsa(c, h).addUses(c, h)
+                      else graph5
+                k(LoggedSuccess(graph6))
+
+              case _ => k(LoggedSuccess(graph4))
             }
+
+          case FindHostError =>
+            k(LoggedError(FindHostError,
+              logres.written + "error while searching host for abstraction"))
         }
     }
+
+    def aux( remainingThatNeedHost : List[ConcreteNode] ) : Unit = {
+      remainingThatNeedHost match {
+        case Nil => k(lg.toLoggedTry)
+        case absNId :: tl =>
+
+
+
+      }
+    }
+
+    aux(abs.nodes map lg.value.getConcreteNode)
+
   }
 
 
@@ -239,11 +257,8 @@ class Solver
 
               rules.abstracter.createAbstraction(graph, currentImpl, absNodeKind, absPolicy) map {
                 case (abs, graph2) =>
-                  val l : List[ConcreteNode] = abs.nodes map graph2.getConcreteNode
-
-                  introMultipleHostAfterAbsIntro(currentImpl.id, ltg => k(ltg.map((abs, _))),
-                    rules.abstracter.absIntroPredicate(currentImpl, absPolicy, absNodeKind),
-                    absPolicy, graph2.set(log), l)
+                  findHostAfterAbsIntro(currentImpl.id, abs, ltg => k(ltg.map((abs, _))),
+                    rules.abstracter.absIntroPredicate(currentImpl, absPolicy, absNodeKind), graph2.set(log))
               }
               ()
             }
