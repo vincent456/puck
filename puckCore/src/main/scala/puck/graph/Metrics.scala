@@ -142,17 +142,7 @@ object Metrics {
     components(0, content) * s
   }
 
-  def containerOfKindType(kt: KindType, g : DependencyGraph, nid : NodeId) : NodeId =
-    g.getNode(nid).kind.kindType match {
-      case `kt` => nid
-      case _ => containerOfKindType(kt, g, g.container_!(nid))
-    }
 
-  def hostNameSpace(g : DependencyGraph, nid : NodeId) : NodeId =
-    containerOfKindType(NameSpace, g, nid)
-
-  def hostTypeDecl(g : DependencyGraph, nid : NodeId) : NodeId =
-    containerOfKindType(TypeDecl, g, nid)
 
   def numberOfCycles(edges : Set[NodeIdP]) : Int = {
     val nodes = edges.foldLeft(Set[NodeId]()){
@@ -222,7 +212,7 @@ object Metrics {
 
     val types = g.nodes.filter { _.kind.kindType == TypeDecl } map ( _.id)
 
-    val tsByNameSpaces = types.groupBy(hostNameSpace(g, _)).toList
+    val tsByNameSpaces = types.groupBy(g.hostNameSpace).toList
 
     val (w, extraNSdeps) = tsByNameSpaces.foldLeft((0d, Set[NodeIdP]())){
       case ((wAcc, extraNSdepAcc), (hns, ts)) =>
@@ -232,14 +222,14 @@ object Metrics {
             case ((wAcc0, intraNSdepAcc0, extraNSdepAcc0), t) =>
               val outDep = outgoingDependencies(g, t)
               val (intraNSdep, extraNSdep) =
-                outDep.partition(u => hostNameSpace(g, u.used) == hns)
+                outDep.partition(u => g.hostNameSpace(u.used) == hns)
 
               val intraNSdep0 = intraNSdep map {
-                case (user, used) => (hostTypeDecl(g, user), hostTypeDecl(g, used))
+                case (user, used) => (g.hostTypeDecl(user), g.hostTypeDecl(used))
               }
 
               val extraNSdep0 = extraNSdep map {
-                case (user, used) => (hostNameSpace(g, user), hostNameSpace(g, used))
+                case (user, used) => (g.hostNameSpace(user), g.hostNameSpace(used))
               }
               (wAcc0 + typeWeight(g, t),
                 intraNSdepAcc0 ++ intraNSdep0,

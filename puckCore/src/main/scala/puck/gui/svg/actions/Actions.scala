@@ -25,7 +25,7 @@ extends AbstractAction(s"Add ${sub.name} isa ${sup.name}") {
 class ShowTypeRelationshipAction
 ( edge : Option[DGUses],
   controller : SVGController)
-  extends AbstractAction(s"Show type relationship")
+  extends AbstractAction(s"Show type bindings (graphic)")
 {
   def actionPerformed(e: ActionEvent) : Unit =
     controller.setSelectedEdgeForTypePrinting(edge)

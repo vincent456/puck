@@ -5,6 +5,7 @@ import javax.swing.JPopupMenu
 import puck.graph.{Uses, DGEdge}
 import puck.gui.svg.actions.{ShowTypeRelationshipAction, RemoveEdgeAction, ManualSolveAction}
 
+import NodeRightClickMenu.JPopupSyntax
 class EdgeRightClickMenu
 ( private val controller : SVGController,
   edge : DGEdge)
@@ -23,6 +24,14 @@ class EdgeRightClickMenu
   edge match {
     case uses : Uses =>
       add(new ShowTypeRelationshipAction(Some(uses), controller))
+      this.addMenuItem("Show type bindings (console)"){
+        _ =>
+          controller.printUseBindings(uses)
+          graph.definition(uses.user).foreach{
+            userDef =>
+              controller.printUseBindings(graph.getUsesEdge(userDef, uses.used).get)
+          }
+      }
     case _ => ()
   }
 

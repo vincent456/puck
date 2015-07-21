@@ -165,15 +165,18 @@ class JavaDG2AST
   ( implicit logger : PuckLogger): Map[NodeId, ASTNodeLink] = t match {
     case Transformation(Regular, CNode(n)) =>
       //redo t before createDecl
-      val newMap = id2declMap get n.id match {
-        case Some(_) => id2declMap
-        case None =>
-          val dh = ASTNodeLink.createDecl(program, resultGraph, id2declMap, n)
-          id2declMap + (n.id -> dh)
+      if(n.kind == Definition)
+        id2declMap
+      else {
+        val newMap = id2declMap get n.id match {
+          case Some(_) => id2declMap
+          case None =>
+            val dh = ASTNodeLink.createDecl(program, resultGraph, id2declMap, n)
+
+            id2declMap + (n.id -> dh)
+        }
+        newMap
       }
-
-      newMap
-
     case _ =>
       lazy val noApplyMsg = s"${showDG[Recordable](resultGraph).shows(t)} not applied"
 
@@ -208,8 +211,8 @@ class JavaDG2AST
           case PackageDeclHolder => ()
 
           case BlockHolder(_)
-           | ExprHolder(_)
-           | NoDecl => throw new PuckError(noApplyMsg)
+           | ExprHolder(_) => () //removed when containing decl is removed
+          case NoDecl => throw new PuckError(noApplyMsg)
         }
 
       case Transformation(_, ChangeNodeName(nid, _, newName)) =>
@@ -309,7 +312,19 @@ class JavaDG2AST
                 case NamedType(n) =>
 
               }*/
-              case (Method, Field) =>
+              case (Definition, Constructor) =>
+                val sourceDecl =reenactor.container_!(source.id)
+                ( id2declMap(sourceDecl),
+                  id2declMap(target.id)) match {
+                  case (FieldDeclHolder(fdecl), ConstructorDeclHolder(cdecl))
+                    if fdecl.getInitOpt.isEmpty =>
+                      ASTNodeLink.createNewInstanceExpr(fdecl, cdecl)
+                  case (_ : HasBodyDecl , ConstructorDeclHolder(cdecl)) => ???
+                  case _ => ???
+                }
+
+
+              case (Definition, Field) =>
                 val mid = e.user
                 val fid = e.used
                 val typesUsed = reenactor.usedBy(fid).filter{id => reenactor.kindType(id) == TypeDecl}
@@ -321,21 +336,19 @@ class JavaDG2AST
                 val tmUses = reenactor.typeMemberUsesOf(typeUse).filter{_.user == mid}
 
                 (id2declMap(mid), id2declMap(fid)) match {
-                  case (MethodDeclHolder(methUserdecl), FieldDeclHolder(newReceiverDecl)) =>
+                  case (dh: DefHolder, FieldDeclHolder(newReceiverDecl)) =>
                     val receiver = newReceiverDecl.createLockedAccess()
-                    tmUses.map{u => println(s"uses needing new receiver $u")
+                    tmUses.map { u =>
                       id2declMap(u.used)}.foreach {
-
                       case MethodDeclHolder(methUsedDecl) =>
-                        methUserdecl.addNewReceiver(methUsedDecl, receiver)
+                        dh.node.addNewReceiver(methUsedDecl, receiver)
                       case FieldDeclHolder(fieldUsedDecl) =>
-                        methUserdecl.addNewReceiver(fieldUsedDecl, receiver)
+                        dh.node.addNewReceiver(fieldUsedDecl, receiver)
                       case used =>
                         logger.writeln(s"create receiver for $used ignored")
-
                     }
 
-                  case _ =>throw new puck.graph.Error(s"method decl and field decl expected")
+                  case _ => throw new puck.graph.Error(s"method decl and field decl expected")
                 }
 
 
@@ -366,19 +379,19 @@ class JavaDG2AST
       val newTarget = reenactor.getNode(newTargetId)
 
 
-      val sourceDecl = id2declMap(source.id)
+      val sourceInAST = id2declMap(source.id)
 
       (id2declMap(target.id), id2declMap(newTarget.id)) match {
         case (InterfaceDeclHolder(odlDecl), InterfaceDeclHolder(newDecl))
           if e.kind == IsaK =>
-          sourceDecl match {
+          sourceInAST match {
             case ClassDeclHolder(srcDecl) =>
               srcDecl.replaceImplements(odlDecl.createLockedAccess(), newDecl.createLockedAccess())
             case _ => throw new JavaAGError("isa arc should only be between TypeKinds")
           }
 
         case (oldk: TypedKindDeclHolder, newk: TypedKindDeclHolder) =>
-          sourceDecl match {
+          sourceInAST match {
 
             case mdh : HasBodyDecl =>
               mdh.decl.replaceTypeAccess(oldk.decl.createLockedAccess(), newk.decl.createLockedAccess())
@@ -400,7 +413,7 @@ class JavaDG2AST
           val t = Transformation(Regular, RedirectionOp(e, Target(newTargetId)))
           logger.writeln(showDG[Transformation](reenactor).shows(t))
           //TODO refine
-          (sourceDecl, newTarget.styp) match {
+          (sourceInAST, newTarget.styp) match {
             case (bdh : HasBodyDecl, Some(NamedType(fieldType))) =>
               logger.write("*** typeUse ")
               logger.writeln(showDG[DGEdge](reenactor).shows(DGEdge.UsesK(newTargetId, fieldType)))
@@ -426,9 +439,9 @@ class JavaDG2AST
 
 
         case (FieldDeclHolder(oldDecl), FieldDeclHolder(newDecl)) =>
-          sourceDecl match {
-            case bdh : HasBodyDecl =>
-              bdh.decl.replaceFieldAccess(oldDecl, newDecl.createLockedAccess())
+          sourceInAST match {
+            case defHolder : DefHolder =>
+              defHolder.node.replaceFieldAccess(oldDecl, newDecl.createLockedAccess())
             case k =>
               throw new JavaAGError(k + " as user of Field, redirection unhandled !")
           }
@@ -436,23 +449,23 @@ class JavaDG2AST
 
         case (oldk: MethodDeclHolder, newk: MethodDeclHolder) =>
           logger.writeln("replace method call !")
-          sourceDecl match {
-            case bdh : HasBodyDecl =>
-              bdh.decl.replaceMethodCall(oldk.decl, newk.decl)
+          sourceInAST match {
+            case defHolder : DefHolder =>
+              defHolder.node.replaceMethodCall(oldk.decl, newk.decl)
             case k =>
               throw new JavaAGError(k + " as user of Method, redirection unhandled !")
           }
 
         case (ConstructorDeclHolder(oldc), ConstructorDeclHolder(newc)) =>
-          sourceDecl match {
-            case mdh: MethodDeclHolder =>
-              mdh.decl.replaceConstructorCall(oldc, newc)
+          sourceInAST match {
+            case defHolder : DefHolder =>
+              defHolder.node.replaceConstructorCall(oldc, newc)
             case _ =>
               throw new JavaAGError("constructor change, kind of uses source unhandled")
           }
 
         case (ConstructorDeclHolder(_), ConstructorMethodDeclHolder(newDecl, _)) =>
-          sourceDecl match {
+          sourceInAST match {
             case ConstructorDeclHolder(_) =>
               throw new JavaAGError("redirection to constructor method within " +
                 "constructor no implemented (see methodDecl)")

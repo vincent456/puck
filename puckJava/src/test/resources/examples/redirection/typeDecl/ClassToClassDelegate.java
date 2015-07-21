@@ -1,5 +1,5 @@
 
-package classToClassDelegate;
+package p;
 
 
 class Delegatee {

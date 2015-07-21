@@ -1,4 +1,4 @@
-package classToInterfaceSuperType;
+package p;
 
 class ClassUsed implements SuperType{
     public void mUsed(){}

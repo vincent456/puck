@@ -40,7 +40,7 @@ object DependencyGraph {
 class DependencyGraph
 ( //val logger : PuckLogger = PuckNoopLogger,
   val nodeKindKnowledge: NodeKindKnowledge,
-  private [this] val nodesIndex : NodeIndex,
+  /*private [this]*/ val nodesIndex : NodeIndex,
   private [this] val edges : EdgeMap,
   /*private [this]*/ val abstractionsMap : AbstractionMap,
   val constraints : ConstraintsMaps,
@@ -247,9 +247,30 @@ class DependencyGraph
 
   def nodeKinds : Seq[NodeKind] = nodeKindKnowledge.nodeKinds
 
-  def container(contentId : NodeId) : Option[NodeId] = edges.containers.get(contentId)
+  def container(contentId : NodeId) : Option[NodeId] =
+    edges.containers.get(contentId)
 
-  def container_!(contentId : NodeId) : NodeId = container(contentId).get
+  def container_!(contentId : NodeId) : NodeId =
+    container(contentId).get
+
+  def definition(declId : NodeId) : Option[NodeId] =
+  //assert kindType == InstanceValueDecl || StaticValueDecl
+    content(declId).headOption
+
+  def definition_!(declId : NodeId) : NodeId =
+    content(declId).head
+
+  def containerOfKindType(kt: KindType, nid : NodeId) : NodeId =
+    getNode(nid).kind.kindType match {
+      case `kt` => nid
+      case _ => containerOfKindType(kt, container_!(nid))
+    }
+
+  def hostNameSpace(nid : NodeId) : NodeId =
+    containerOfKindType(NameSpace, nid)
+
+  def hostTypeDecl(nid : NodeId) : NodeId =
+    containerOfKindType(TypeDecl, nid)
 
 
   def content(containerId: NodeId) : Set[NodeId] = edges.contents.getFlat(containerId)

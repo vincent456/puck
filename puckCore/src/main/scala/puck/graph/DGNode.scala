@@ -25,6 +25,7 @@ sealed trait DGNode{
 
   def definition_!(g : DependencyGraph) : NodeId =
     definition(g).get
+
 }
 
 object DGNode {

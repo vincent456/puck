@@ -35,7 +35,7 @@ class SVGController private
   private var visibility : VisibilitySet.T,
   private var printId : Boolean,
   private var printSignatures : Boolean,
-  private var printVirtualEdges : Boolean = false,
+  private var printVirtualEdges : Boolean = true,
   private var printConcreteUsesPerVirtualEdges : Boolean = true,
   private var printRedOnly : Boolean = false,
   private var selectedEdgeForTypePrinting : Option[DGUses] = None) {
@@ -178,10 +178,7 @@ class SVGController private
     console.displaySelection("")
   }
 
-  def showCode(nodeId: NodeId): Unit = {
-    console.appendText("Code : ")
-    console.appendText(dg2ast.code(graph, nodeId))
-  }
+  
 
   def printingOptions =
     PrintingOptions(visibility, printId, printSignatures,
@@ -222,7 +219,9 @@ class SVGController private
     undoStack.push(graph)
     redoStack.clear()
     displayGraph(graph)
-    console.displayWeight(Metrics.weight(graph, graph.nodeKindKnowledge.lightKind))
+
+    //console.displayWeight(Metrics.weight(graph, graph.nodeKindKnowledge.lightKind))
+
     updateStackListeners()
   }
 
@@ -249,10 +248,47 @@ class SVGController private
   def printRecording() : Unit =
     graph.recording.reverseIterator.foreach(r => consoleLogger writeln showDG[Recordable](graph).shows(r) )
 
+  def printCode(nodeId: NodeId): Unit = {
+    console.appendText("Code : ")
+    console.appendText(dg2ast.code(graph, nodeId))
+  }
+
   def printAbstractions() : Unit =
     consoleLogger writeln graph.abstractionsMap.content.mkString("\n\t")
 
+  def printAbstractions(nodeId : NodeId) : Unit = {
+    val absSet = graph.abstractions(nodeId)
+    if(absSet.nonEmpty) {
+      console.appendText(s"Abstractions of ${graph.getNode(nodeId)} :")
+      console.appendText(absSet.mkString("\n"))
+    }
+    else
+      console.appendText(s"${graph.getNode(nodeId)} has no abstractions.")
+  }
 
+  def printUseBindings(u : DGUses) : Unit = {
+    graph.getNode(u.used).kind.kindType match {
+      case TypeDecl =>
+        console.appendText(s"Type uses $u selected")
+        val tmu = graph.typeMemberUsesOf(u)
+        if(tmu.isEmpty)
+          console.appendText("No type member uses associated")
+        else
+          console.appendText(tmu.mkString("TM uses are :\n", "\n", "\n"))
+
+      case InstanceValueDecl =>
+        console.appendText(s"Type Member uses $u selected")
+
+        val tu = graph.typeUsesOf(u)
+        if(tu.isEmpty)
+          console.appendText("No type uses associated")
+        else
+          console.appendText(tu.mkString("type uses are :\n", "\n", "\n"))
+
+      case _ => console.appendText("unhandled kind of used node")
+    }
+  }
+  
   def applyOnCode() : Unit = {
     dg2ast(graph)(new PuckFileLogger(_ => true, new File("/tmp/puck_log")))
 

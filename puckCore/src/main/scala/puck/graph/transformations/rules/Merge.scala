@@ -80,15 +80,16 @@ class Merge
   }
 
 
-  def mergeChildren
+  def mergeChildrenOfTypeDecl
   ( g : DependencyGraph,
     consumedId : NodeId,
     consumerId : NodeId
     ) : LoggedTG =
-    g.content(consumedId).foldLoggedEither(g.comment("Merge Children")) {
+    g.content(consumedId).foldLoggedEither(g.comment("Merge Children of TypeDecl")) {
       (g0, consumedChildId) =>
           mergingCandidatesFinder.findIn(g0, consumedChildId, consumerId) match {
-            case Some(consumerChildId) => mergeInto(g0, consumedChildId, consumerChildId)
+            case Some(consumerChildId) =>
+              mergeInto(g0, consumedChildId, consumerChildId)
             case None =>
               g0.kindType(consumedChildId) match {
                 case TypeConstructor =>
@@ -112,11 +113,38 @@ class Merge
           }
       }
 
+  type MergeIntoFun =(DependencyGraph, NodeId, NodeId) => LoggedTG
+
   def mergeInto
   ( g : DependencyGraph,
     consumedId : NodeId,
     consumerId : NodeId
     ) : LoggedTG = {
+    val consumed = g.getConcreteNode(consumedId)
+    consumed.kind.kindType match {
+      case InstanceValueDecl
+      | StaticValueDecl =>
+        mergeInto0(g, consumedId, consumerId){
+          (g, consumedId, _) =>
+            g.content(consumedId).foldLoggedEither(g.comment("Delete consumed def")) {
+              (g, consumedDefId) =>
+              removeConcreteNode(g, g.getConcreteNode(consumedDefId))
+            }
+        }
+
+      case TypeDecl =>
+        mergeInto0(g, consumedId, consumerId)(mergeChildrenOfTypeDecl)
+
+      case kt =>
+        LoggedError(new PuckError(), s"$kt consumed kindType unhandled")
+    }
+  }
+
+    def mergeInto0
+  ( g : DependencyGraph,
+    consumedId : NodeId,
+    consumerId : NodeId)
+  ( mergeChildren : MergeIntoFun ) : LoggedTG = {
     val log = s"Merging ${g.getNode(consumedId)} into ${g.getNode(consumerId)}"
 
     val lg = g logComment log

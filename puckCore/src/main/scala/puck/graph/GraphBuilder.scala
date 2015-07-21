@@ -22,6 +22,14 @@ trait GraphBuilder {
     }
   }
 
+  private val anonymous = "Anonymous"
+  def addAnonymousNode(kind : NodeKind) : NodeIdT = {
+    val (n, g2) = g.addConcreteNode(anonymous, kind, None)
+    g = g2
+    n.id
+  }
+
+
 
   def setMutability(id : NodeIdT, mutable : Boolean): Unit ={
     g = g.setMutability(id, mutable)

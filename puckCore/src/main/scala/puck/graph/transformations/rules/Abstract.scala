@@ -113,14 +113,28 @@ abstract class Abstract {
 
   def canBeAbstracted
     (g : DependencyGraph,
-     member : ConcreteNode,
+     memberDecl : ConcreteNode,
      clazz : ConcreteNode,
      policy : AbstractionPolicy) : Boolean = {
-    //the originSibling arg is needed in case of cyclic uses
-    def aux(originSibling : ConcreteNode)(member: ConcreteNode): Boolean = {
+    //the originSiblingDecl arg is needed in case of cyclic uses
+    def aux(originSiblingDecl : ConcreteNode)(memberDecl: ConcreteNode): Boolean = {
+
 
       def sibling: NodeId => Boolean =
-        sid => g.contains(clazz.id, sid) && sid != originSibling.id && sid != member.id
+        sid => g.contains(clazz.id, sid) &&
+          sid != originSiblingDecl.id &&
+          sid != memberDecl.id
+//          g.hostTypeDecl(sid) == clazz.id && {
+//
+//          val sDecl = sid.kind.kindType match {
+//            case ValueDef => g container_! sid.id
+//            case _ => sid.id
+//          }
+//
+//          sDecl != originSiblingDecl.id &&
+//            sDecl != memberDecl.id
+//        }
+
 
       def usedOnlyViaSelf(user : NodeId, used : NodeId) : Boolean = {
         val typeUses = g.typeUsesOf(user, used)
@@ -128,19 +142,21 @@ abstract class Abstract {
       }
 
       //TODO check if the right part of the and is valid for Delegation abstraction
-      member.kind.canBeAbstractedWith(policy) && {
-        val usedNodes = g.usedBy(member.id)
+      memberDecl.kind.canBeAbstractedWith(policy) && {
+
+        val usedNodes = (memberDecl.definition(g) map g.usedBy).getOrElse(Set())
+
         usedNodes.isEmpty || {
           val usedSiblings = usedNodes filter sibling map g.getConcreteNode
           usedSiblings.forall {
             used0 =>
-              aux(member)(used0) || usedOnlyViaSelf(member.id, used0.id)
+              aux(memberDecl)(used0) || usedOnlyViaSelf(memberDecl.definition_!(g), used0.id)
           }
         }
       }
     }
 
-    aux(member)(member)
+    aux(memberDecl)(memberDecl)
   }
 
 

@@ -4,10 +4,10 @@ import java.io.{File, PipedInputStream, PipedOutputStream}
 
 import puck.LoadingListener
 import puck.graph.constraints.search.ConstraintSolvingSearchEngineBuilder
-import puck.graph.{GraphUtils, ResultT, DGUses, DependencyGraph}
+import puck.graph._
 import puck.graph.io._
 
-import puck.gui.explorer.AccessGraphModified
+import puck.gui.explorer.{SetVisible, AccessGraphModified}
 import puck.gui.imageDisplay.{ImageFrame, ImageExplorer}
 import puck.gui.svg.SVGFrame
 import puck.search.{SearchState, Search}
@@ -77,6 +77,8 @@ class PuckControl(logger0 : PuckLogger,
 
   var dg2AST : DG2AST = _
 
+  var displayNameSpaceOnlyDefaultThreshold = 150
+
   def loadCode( onSuccess : => Unit) = Future {
     progressBar.visible = true
     progressBar.value = 0
@@ -87,6 +89,14 @@ class PuckControl(logger0 : PuckLogger,
     })
     progressBar.visible = false
     publish(AccessGraphModified(dg2AST.initialGraph))
+
+
+    if(dg2AST.initialGraph.nodesId.size > displayNameSpaceOnlyDefaultThreshold) {
+      import graphUtils.nodeKindKnowledge.kindOfKindType
+      publish(SetVisible(kindOfKindType(NameSpace)))
+      logger.writeln(s"Graph have more than $displayNameSpaceOnlyDefaultThreshold, " +
+        s"namespace visibility selected by default.")
+    }
 
     delayedDisplay.foreach(_.visible = true)
   } onComplete {

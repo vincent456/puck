@@ -3,7 +3,7 @@ package puck.javaGraph.transformations
 import puck.graph._
 import puck.graph.transformations.rules.Intro
 import puck.javaGraph.MethodType
-import puck.javaGraph.nodeKind.{Method, Field, Constructor, Class}
+import puck.javaGraph.nodeKind._
 
 object JavaIntro extends Intro {
 
@@ -36,7 +36,10 @@ object JavaIntro extends Intro {
       case Field => NamedType(typeNode)
       case Method => MethodType(Tuple(List()), NamedType(typeNode))
     }
-    this.apply(graph, localName, kind, Some(t))
+
+    val (cn, g) = this.apply(graph, localName, kind, Some(t))
+    val (defNode, g2) = g.addConcreteNode("", Definition, None)
+    (cn, g2.addContains(cn.id, defNode.id))
   }
 
 }

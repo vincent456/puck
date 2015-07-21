@@ -71,6 +71,7 @@ class GraphExplorer
           }
         }
       })
+
       contents = Component.wrap(tree)
       this.repaint()
     case SetVisible(ks) =>

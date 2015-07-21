@@ -7,6 +7,7 @@ import scalaz.-\/
 import scalaz.std.list._
 import scalaz.std.set._
 import ShowDG._
+
 object Move {
 
   def typeDecl
@@ -22,7 +23,7 @@ object Move {
           s"from ${showDG[NodeId](g).shows(oldContainer)} " +
           s"to ${showDG[NodeId](g).shows(newContainer)}"
 
-        (g.changeSource(DGEdge.ContainsK(oldContainer, movedId), newContainer) logComment log).toLoggedEither
+        (g.changeSource(Contains(oldContainer, movedId), newContainer) logComment log).toLoggedEither
     }
 
   private def withContainer[T]
@@ -38,27 +39,27 @@ object Move {
 
 
   def usedBySiblingsViaSelf
-  ( g : DependencyGraph, n : NodeId, h : CurrentHost ) : Boolean = {
+  ( g : DependencyGraph, n : NodeId, h : TypeDeclNode ) : Boolean = {
     val uses = g.usersOf(n) map (user => Uses(user, n))
-    uses.exists(isSiblingUsesViaSelf(g, h))
+    uses.exists(isUsesOfSiblingViaSelf(g, h))
   }
 
-  type CurrentHost = DGNode
+  type TypeDeclNode = DGNode
   def usedBySiblingsViaSelf
-    ( uses : List[DGUses], g : DependencyGraph, h : CurrentHost ) : Boolean =
-    uses.exists(isSiblingUsesViaSelf(g, h))
+    ( uses : List[DGUses], g : DependencyGraph, h : TypeDeclNode ) : Boolean =
+    uses.exists(isUsesOfSiblingViaSelf(g, h))
 
   type SiblingUsers = Set[Uses]
   type OtherUsers = Set[Uses]
   def partitionSiblingUsesAndOtherUses
-  ( uses : Set[Uses], g : DependencyGraph, h : CurrentHost ) :(SiblingUsers, OtherUsers) =
-    uses.partition(isSiblingUsesViaSelf(g, h))
+  ( uses : Set[Uses], g : DependencyGraph, h : TypeDeclNode ) :(SiblingUsers, OtherUsers) =
+    uses.partition(isUsesOfSiblingViaSelf(g, h))
 
-  private def isSiblingUsesViaSelf
-  ( graph : DependencyGraph, currentHost : CurrentHost) : DGUses => Boolean = {
+  private def isUsesOfSiblingViaSelf
+  ( graph : DependencyGraph, containingTypeDecl : TypeDeclNode) : DGUses => Boolean = {
 
     val isSiblingUse: DGUses => Boolean =
-      u => graph.contains(currentHost.id, u.user) && u.user != u.used
+      u => graph.hostTypeDecl(u.user) == containingTypeDecl.id && u.user != u.used
 
     u =>
       isSiblingUse(u) && {
@@ -126,6 +127,9 @@ object Move {
   def usesViaThis(g : DependencyGraph)(tmu : DGUses) : Boolean =
     g.typeUsesOf(tmu).exists(tu => tu.source == tu.target)
 
+  def usesViaParamOrField(g : DependencyGraph)(tmu : DGUses) : Boolean =
+    g.typeUsesOf(tmu).exists(tu => tu.source != tu.target)
+
 
 
   def typeMember
@@ -136,19 +140,22 @@ object Move {
 
     /** PRECONDITION all typeMembersMoved have same host */
     val oldContainer = g0.container(typeMembersMovedId.head).get
-    val moved = typeMembersMovedId.toSet
-    val siblings = g0.content(oldContainer) -- moved
+    val movedDecl = typeMembersMovedId.toSet
+    val siblings = g0.content(oldContainer) -- movedDecl
 
-    val movedDef = moved map {g0.content(_).head}
+    val movedDef : Set[NodeId] =
+      movedDecl map g0.definition filter (_.nonEmpty) map (_.get)
 
-    val movedUsingSiblingViaThis : Set[NodeId] =
+    val movedDefUsingSiblingViaThis : Set[NodeId] =
       usesBetween(g0, movedDef, siblings).filter(usesViaThis(g0)).map(_.user)
 
-    val movedWithArgUsableAsReceiver : Set[NodeId] =
-      moved.filter{
+
+    val movedDeclWithArgUsableAsReceiver : Set[NodeId] =
+      movedDecl.filter {
         nid => g0.getConcreteNode(nid).styp match {
           case None => false
           case Some(t) => t uses newContainer
+
         }
       }
 
@@ -165,10 +172,18 @@ object Move {
                 .addUsesDependency(newSelfUse, u)
     }
 
+    println("moving " + movedDecl)
+    println("siblings are " + siblings)
+    println("moved using sibling via def " +
+      (movedDefUsingSiblingViaThis map g0.container_!))
+    println("moved with arg usable as receiver" + movedDeclWithArgUsableAsReceiver)
+
     for {
-      g3 <- useArgAsReceiver(g2, oldContainer, newContainer, movedWithArgUsableAsReceiver)
-      g4 <- useReceiverAsArg(g3, oldContainer, newContainer, movedUsingSiblingViaThis, siblings)
-      g5 <- createNewReceiver(g4, newContainer, moved -- movedWithArgUsableAsReceiver, createVarStrategy)
+      g3 <- useArgAsReceiver(g2, oldContainer, newContainer, movedDeclWithArgUsableAsReceiver)
+      g4 <- useReceiverAsArg(g3, oldContainer, newContainer, movedDefUsingSiblingViaThis, siblings)
+      g5 <- createNewReceiver(g4, newContainer,
+        movedDecl -- movedDeclWithArgUsableAsReceiver, siblings,
+        createVarStrategy)
     } yield {
       g5
     }
@@ -232,13 +247,15 @@ object Move {
   def createNewReceiver
   ( g: DependencyGraph,
     newContainer : NodeId,
-    nodeSet : Set[NodeId],
-    createVarStrategy: Option[CreateVarStrategy] = None
-    ) : LoggedTG = {
+    declNodeSet : Set[NodeId],
+    tmUsedToKeep : Set[NodeId] = Set(), //when declNodeSet are moved nodes, not used for "simple" redirection
+    createVarStrategy: Option[CreateVarStrategy] = None) : LoggedTG = {
+
+    val defNodeSet = declNodeSet map g.definition filter (_.nonEmpty) map (_.get)
 
     val typeUses : Set[DGUses] =
-      g.usesFromUsedList(nodeSet.toList)
-        .filterNot(u => nodeSet.contains(u.user))
+      g.usesFromUsedList(declNodeSet.toList)
+        .filterNot(u => defNodeSet.contains(u.user))
         .flatMap(g.typeUsesOf).toSet
 
     createVarStrategy match {
@@ -246,7 +263,7 @@ object Move {
 
         typeUses.foldLoggedEither(g) {
           (g0, tu) =>
-            val tmUses = g.typeMemberUsesOf(tu)
+            val tmUses = g.typeMemberUsesOf(tu).filterNot(tmUsedToKeep contains _.used)
             val tmContainer =
               if (tu.selfUse) tu.user
               else g.container(tu.user).get
@@ -335,9 +352,11 @@ object Move {
         val (delegate, g1) = intro.accessToType(g, delegateName, kind, newTypeUsed)
 
         val newTypeUse = Uses(delegate.id, newTypeUsed)
+
         val g2 = g1.addContains(tmContainer, delegate.id)
           .addEdge(newTypeUse) //type field
-          .addEdge(Uses(delegate.id, constructorId))
+          .addEdge(Uses(g1 definition_! delegate.id, constructorId))
+          //.addEdge(Uses(tmContainer, delegate.id, Some(Write)))
 
         tmUses.foldLoggedEither(g2) {
           case (g0, typeMemberUse) =>

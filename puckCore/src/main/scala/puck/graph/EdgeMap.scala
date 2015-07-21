@@ -27,6 +27,7 @@ object EdgeMap {
                 UseDependencyMap())
 }
 import EdgeMap._
+import puck.PuckError
 import puck.graph.DGEdge.ContainsK
 import puck.graph.DGEdge.IsaK
 import puck.graph.DGEdge.ParameterizedUsesK
@@ -161,7 +162,8 @@ case class EdgeMap
       None
   }
 
-  def uses(userId: NodeId, usedId: NodeId) : Boolean = userMap.bind(usedId, userId)
+  def uses(userId: NodeId, usedId: NodeId) : Boolean =
+    userMap.bind(usedId, userId)
 
 
   def parUses(userId: NodeId, usedId: NodeId) : Boolean =
@@ -195,7 +197,13 @@ case class EdgeMap
 
   def typeUsesOf(tmUser : NodeId, tmUsed : NodeId) : Set[DGUses] =
     typeMemberUses2typeUsesMap getFlat ((tmUser, tmUsed)) map {
-      case (s,t) => getUses(s,t).get
+      case (s,t) =>
+        try {
+          getUses(s, t).get
+        }catch {
+          case _ : Throwable =>
+            throw new PuckError(s"Uses($s, $t) does not exist !")
+        }
     }
 
 

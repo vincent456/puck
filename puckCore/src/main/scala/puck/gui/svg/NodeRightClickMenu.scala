@@ -128,13 +128,29 @@ class ConcreteNodeRightClickMenu
     }
   }
 
-  private def addEdgeSelectedOption(edge : DGEdge) : Unit =
+  private def addEdgeSelectedOption(edge : DGEdge) : Unit = {
+    def addRedirectAction(uses : DGUses) =
+      graph.abstractions(edge.target).foreach {
+        abs =>
+          if (abs.nodes.contains(node.id))
+            this.add(new RedirectAction(node, uses, abs, controller))
+
+      }
     edge match {
-      case uses : Uses =>
-        this.add(new RedirectAction(node, uses, SupertypeAbstraction, controller))
-        this.add(new RedirectAction(node, uses, DelegationAbstraction, controller));()
+      case uses: Uses =>
+        if(uses.existsIn(graph))
+          addRedirectAction(uses)
+        graph.definition(uses.user).foreach{
+          userDef =>
+            graph.getUsesEdge(userDef, uses.used).foreach{
+              usesFromDef =>
+                addRedirectAction(usesFromDef)
+            }
+        }
+
       case _ => ()
     }
+  }
 
 
   private def addShowOptions() : Unit = {
@@ -143,8 +159,13 @@ class ConcreteNodeRightClickMenu
     }
 
     this.addMenuItem("Show code") { _ =>
-      controller.showCode(node.id)
+      controller.printCode(node.id)
     }
+
+    this.addMenuItem("Show abstractions") { _ =>
+      controller.printAbstractions(node.id)
+    }
+
     if (graph.content(node.id).nonEmpty) {
       this.addMenuItem("Collapse") { _ =>
         controller.collapse(node.id)

@@ -365,6 +365,5 @@ class DotPrinter
     writeln("}")
 
     writer.close()
-
   }
 }

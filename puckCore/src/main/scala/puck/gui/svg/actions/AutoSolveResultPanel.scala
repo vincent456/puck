@@ -186,13 +186,13 @@ class SuccessPanel
 
   assert(res.successes.nonEmpty)
   val lightKind = res.successes.head.loggedResult.value.nodeKindKnowledge.lightKind
-  val stateSelector =
-    new SortedElementSelector(
-      res.successes.groupBy(st => (Metrics.weight(st.loggedResult.value, lightKind) * 100).toInt),
-      StateSelected.apply)
+//  val stateSelector =
+//    new SortedElementSelector(
+//      res.successes.groupBy(st => (Metrics.weight(st.loggedResult.value, lightKind) * 100).toInt),
+//      StateSelected.apply)
 
-//  val stateSelector = new SimpleElementSelector[SearchState[ResultT]](StateSelected.apply)
-//  stateSelector.setStatesList(res.successes)
+  val stateSelector = new SimpleElementSelector[SearchState[ResultT]](StateSelected.apply)
+  stateSelector.setStatesList(res.successes)
 
 
 

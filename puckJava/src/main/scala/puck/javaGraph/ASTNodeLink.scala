@@ -11,6 +11,16 @@ object ASTNodeLink{
 
   type NodeT = ConcreteNode
 
+  def createNewInstanceExpr
+  ( field : AST.FieldDeclaration,
+    cdecl : AST.ConstructorDecl
+    ) : Unit = {
+    val expr = new AST.ClassInstanceExpr()
+    expr.setAccess(cdecl.hostType().createLockedAccess())
+    field.setInit(expr)
+  }
+
+
   def createInterface
   ( prog : AST.Program,
     graph : DependencyGraph,
@@ -146,6 +156,7 @@ object ASTNodeLink{
         createConstructor(prog, graph, id2decl, node)
       case Field => createField(prog, graph, id2decl, node)
 
+
       case _ => throw new DeclarationCreationError(s"cannot create decl for kind ${node.kind}")
 
     }
@@ -165,8 +176,16 @@ sealed trait ASTNodeLink
 case object NoDecl extends ASTNodeLink
 case object PackageDeclHolder extends ASTNodeLink
 
-case class ExprHolder(expr : AST.Expr) extends ASTNodeLink
-case class BlockHolder(block : AST.Block) extends ASTNodeLink
+sealed abstract class DefHolder extends ASTNodeLink {
+  def node : AST.ASTNode[_]
+}
+case class ExprHolder(expr : AST.Expr) extends DefHolder{
+  def node = expr.asInstanceOf[AST.ASTNode[_]]
+}
+case class BlockHolder(block : AST.Block) extends DefHolder{
+  def node = block.asInstanceOf[AST.ASTNode[_]]
+}
+
 
 sealed trait HasBodyDecl extends ASTNodeLink{
   val decl : AST.BodyDecl

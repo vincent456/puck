@@ -1,4 +1,4 @@
-package methodToMethodSuperType;
+package p;
 
 interface B {
     void m1();

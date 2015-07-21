@@ -29,20 +29,24 @@ aspect NamedElement {
         return !getInitOpt().isEmpty();
     }
 
-    interface PossiblyDefinedElement {
-        ASTNode getDefinition();
-        int getDefIndex();
-    }
+    boolean BodyDecl.isConstructorDecl(){return false;}
+    boolean ConstructorDecl.isConstructorDecl(){return true;}
 
-    BodyDecl implements PossiblyDefinedElement;
-    MethodDecl implements PossiblyDefinedElement;
-    FieldDeclaration implements PossiblyDefinedElement;
+
+//    interface PossiblyDefinedElement {
+//        ASTNode getDefinition();
+//        int getDefIndex();
+//    }
+
+//    BodyDecl implements PossiblyDefinedElement;
+//    MethodDecl implements PossiblyDefinedElement;
+//    FieldDeclaration implements PossiblyDefinedElement;
 
     public ASTNode BodyDecl.getDefinition(){throw new Error("no def");}
     public ASTNode MethodDecl.getDefinition(){return getBlock();}
     public ASTNode FieldDeclaration.getDefinition(){return getInit();}
 
-    public int BodyDecl.getDefIndex(){throw new Error("no def");}
+    public int ASTNode.getDefIndex(){throw new Error("no def index");}
     public int MethodDecl.getDefIndex(){return 4;}
     public int FieldDeclaration.getDefIndex(){return 2;}
 

@@ -9,7 +9,7 @@ import DependencyGraph._
 
 class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 
-   val root = ConcreteNode(rootId, rootName, Package, None, true)
+   val root = ConcreteNode(rootId, rootName, Package, None, mutable = true)
 
    g = new DependencyGraph(JavaNodeKind,
      NodeIndex(root), EdgeMap(),
@@ -17,12 +17,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 
   var graph2ASTMap = Map[Int, ASTNodeLink]()
 
-  private val anonymous = "Anonymous"
-  def addDefinitionNode() : NodeIdT = {
-    val (n, g2) = g.addConcreteNode(anonymous, Definition, None)
-    g = g2
-    n.id
-  }
+  def addDefinitionNode() : NodeIdT = addAnonymousNode(Definition)
 
   def addPackageNode(fullName: String, localName:String) : NodeIdT =
     super.addNode(fullName, localName, Package, None)
@@ -36,14 +31,14 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
       case None =>
         val fp = filterPackageName(p)
         val path = fp split "[.]"
-        if (path.length == 0)
+        if (path.isEmpty)
           addPackageNode(fp, fp)
         else {
           val (_, n):(StringBuilder, NodeIdT) = path.foldLeft(new StringBuilder(), rootId){
             (sb_nodeParent:(StringBuilder, NodeIdT), p:String) => sb_nodeParent match {
               case (sb, nodeParent) =>
                 sb append p
-                val nId = addPackageNode(sb.toString, p)
+                val nId = addPackageNode(sb.toString(), p)
                 addContains(nodeParent, nId)
                 setMutability(nId, mutable)
                 sb append "."

@@ -5,6 +5,7 @@ import puck.graph._
 import puck.graph.transformations.rules.{CreateTypeMember, CreateParameter, Move}
 import puck.javaGraph.nodeKind.Field
 import puck.javaGraph.transformations.JavaIntro
+import puck.util.Debug
 
 class MoveSpec extends AcceptanceSpec {
 
@@ -75,18 +76,18 @@ class MoveSpec extends AcceptanceSpec {
         val classA = fullName2id("p.A")
         val methToMove = fullName2id("p.A.methodToMove__void")
         val methUserDecl = fullName2id("p.C.user__void")
-        val methUser = getDefinition(graph, methUserDecl)
+        val methUserDef = getDefinition(graph, methUserDecl)
 
         val classB = fullName2id("p.B")
 
         assert(graph.container(methToMove).value == classA)
-        assert(graph.uses(methUser, methToMove))
 
+        assert(graph.uses(methUserDef, classA))
+        assert(graph.uses(methUserDef, methToMove))
 
         val g2 = Move.typeMember(graph, List(methToMove), classB, Some(CreateParameter)).right
-
         assert(g2.container(methToMove).value == classB)
-        assert(g2.uses(methUser, methToMove))
+        assert(g2.uses(methUserDef, methToMove))
       }
 
     }
@@ -140,6 +141,45 @@ class MoveSpec extends AcceptanceSpec {
         assert(g2.uses(methUser, methToMove))
         assert(g2.uses(ma2Delegate, newHostClass))
         assert(g2.uses(methUser, ma2Delegate))
+      }
+    }
+
+    scenario("move method used by this - user also via self another method that will not be moved "){
+      val _ = new ExampleSample(s"$moveMethodUsedByThis/UserUseAlsoAnotherSelfMethod.java") {
+
+        val classA = fullName2id("p.A")
+        val methUserDecl = fullName2id("p.A.mUser__void")
+        val methUserDef = getDefinition(graph, methUserDecl)
+
+        val methToMove = fullName2id("p.A.mUsedToMove__void")
+
+        val otherUsedMethod = fullName2id("p.A.mUsedOther__void")
+
+        val newHostClass = fullName2id("p.B")
+
+        assert(graph.uses(methUserDef, methToMove))
+        assert(graph.uses(methUserDef, otherUsedMethod))
+        graph.typeUsesOf(Uses(methUserDef, methToMove)) should contain (Uses(classA, classA))
+        graph.typeUsesOf(Uses(methUserDef, otherUsedMethod)) should contain (Uses(classA, classA))
+
+        val g2 = Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateTypeMember(Field))).right
+
+        val ma2Delegate =
+          g2.content(classA).find{
+            id =>
+              g2.getConcreteNode(id).name == "b_delegate"
+          }.value
+
+
+        assert(g2.uses(methUserDef, methToMove))
+        assert(g2.uses(methUserDef, otherUsedMethod))
+
+        assert(g2.uses(ma2Delegate, newHostClass))
+
+        g2.typeUsesOf(Uses(methUserDef, methToMove)) should contain (Uses(ma2Delegate, newHostClass))
+        println(g2.typeUsesOf(Uses(methUserDef, otherUsedMethod)))
+        g2.typeUsesOf(Uses(methUserDef, otherUsedMethod)) should contain (Uses(classA, classA))
+
       }
     }
 

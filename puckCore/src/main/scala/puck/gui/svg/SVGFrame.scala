@@ -51,7 +51,6 @@ class SVGFrame
   graphUtils : GraphUtils,
   dg2ast : DG2AST
   ) extends JFrame with StackListener {
-
   def update(svgController: SVGController) : Unit = {
     undoAllButton.setEnabled(svgController.canUndo)
     undoButton.setEnabled(svgController.canUndo)
@@ -85,7 +84,6 @@ class SVGFrame
     new SVGPanel(SVGController.documentFromStream(stream))
 
   setVisible(true)
-
   private val controller: SVGController =
     SVGController(
       filesHandler, graphUtils, dg2ast,
@@ -94,7 +92,9 @@ class SVGFrame
   private val menu: JPanel = new JPanel()
   controller.registerAsStackListeners(this)
 
+
   addVisibilityCheckBoxesToMenu()
+
 
 
   private val undoAllButton = new JButton(abstractAction("Undo all") {
@@ -126,9 +126,9 @@ class SVGFrame
     hbox add jbutton("Show recording") {
       _ => controller.printRecording()
     }
-    hbox add jbutton("Show abstractions") {
-      _ => controller.printAbstractions()
-    }
+//    hbox add jbutton("Show abstractions") {
+//      _ => controller.printAbstractions()
+//    }
     hbox add jbutton("Apply") {
       _ => controller.applyOnCode()
     }
@@ -159,8 +159,6 @@ class SVGFrame
   this.setMinimumSize(new Dimension(640, 480))
   this.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE)
 
-
-
   private def chooseFile(chooserMode : (JFileChooser, java.awt.Component) => Int) : Option[File] = {
     val chooser = new JFileChooser()
     chooser.setCurrentDirectory(filesHandler.workingDirectory)
@@ -175,8 +173,6 @@ class SVGFrame
     chooseFile( (chooser, component) => chooser.showOpenDialog(component) )
   private def saveFile() : Option[File] =
     chooseFile( (chooser, component) => chooser.showSaveDialog(component) )
-
-
 
   private def addLoadSaveButton() : Unit = {
     addButtonToMenu("Save") {
