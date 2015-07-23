@@ -4,8 +4,6 @@ package io
 
 import java.io.BufferedWriter
 
-import puck.graph.DGEdge.{UsesK, IsaK}
-
 import scala.collection.mutable
 
 
@@ -108,7 +106,7 @@ class DotPrinter
       val n = graph.getNode(nid)
       n.kind.kindType match {
         case NameSpace =>  nodeSubGraphId(n.id.toString)
-        case ValueDef => dotId(graph.container_!(nid))
+        case ValueDef | Parameter => dotId(graph.container_!(nid))
         case TypeDecl => n.id + ":" + n.id
         case _ =>
           graph.container(nid) match {
@@ -196,7 +194,7 @@ class DotPrinter
   }
   def printOrphanNode(nid : NodeId): Unit = {
     val n = graph.getNode(nid)
-    val s = n.mapConcrete(cn => signatureString(cn.styp), "")
+    val s = n.mapConcrete(cn => signatureString(graph.styp(cn.id)), "")
 
     writeln(s"""${n.id} [ label = "${n.kind} ${name(n)} ${idString(n.id)} $s" shape="rectangle" ]""")
 
@@ -238,7 +236,7 @@ class DotPrinter
     val n = graph.getNode(nid)
     def writeTableLine(nid: NodeId): Unit = {
       val n = graph.getNode(nid)
-      val sig = n mapConcrete (cn => signatureString(cn.styp), "")
+      val sig = n mapConcrete (cn => signatureString(graph.styp(cn.id)), "")
 
       val (itb, ite) = n.kind.kindType match {
         case InstanceValueDecl
@@ -343,13 +341,13 @@ class DotPrinter
     graph.nodesId.foreach{nid => if(graph.container(nid).isEmpty) printNode(nid)}
 
 
-    val (regularsIsa, virt0, virtualViolations0) = filterEdgeBasedOnVisibleNodes(graph.isaList, IsaK)
+    val (regularsIsa, virt0, virtualViolations0) = filterEdgeBasedOnVisibleNodes(graph.isaList, Isa)
 
     regularsIsa.foreach {
       case (e, v) => printArc(violationStyle(v),isaStyle)(e)
     }
 
-    val(reg, virt, virtualViolations) = filterEdgeBasedOnVisibleNodes(graph.usesList, UsesK, virt0, virtualViolations0)
+    val(reg, virt, virtualViolations) = filterEdgeBasedOnVisibleNodes(graph.usesList, Uses, virt0, virtualViolations0)
 
     reg.foreach{ case (e, v) =>  printArc(violationStyle(v),usesStyle)(e) }
 

@@ -53,9 +53,9 @@ package object transformations {
       Transformation(Regular, red) +: record
     }
     def addTypeChange( typed : NodeId,
-                       oldUsee: NodeId,
-                       newUsee : NodeId) : Recording =
-      Transformation(Regular, TypeRedirection(typed, oldUsee, newUsee)) +: record
+                       oldType: Option[Type],
+                       newType : Option[Type]) : Recording =
+      Transformation(Regular, TypeChange(typed, oldType, newType)) +: record
 
     def addAbstraction(impl : NodeId, abs : Abstraction) : Recording =
       Transformation(Regular, AbstractionOp(impl, abs)) +: record

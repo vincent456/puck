@@ -58,7 +58,7 @@ extends AbstractAction(MoveAction.label(controller.graph, moved)){
 
           val needNewReceiver = moved.exists {
             nid =>
-              g.getConcreteNode(nid).styp match{
+              g.styp(nid) match{
                 case Some(typ) => !(typ uses newHost.id)
                 case None => sys.error("should have some type")
               }

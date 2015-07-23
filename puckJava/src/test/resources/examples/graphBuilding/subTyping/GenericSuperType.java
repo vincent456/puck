@@ -1,4 +1,4 @@
-package genericSuperType;
+package p;
 
 class A {}
 

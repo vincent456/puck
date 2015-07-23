@@ -2,6 +2,7 @@ package puck.scalaGraph.nodeKind
 
 import puck.graph._
 import puck.graph.constraints.AbstractionPolicy
+import puck.graph.transformations.rules.Intro
 
 trait ScalaNodeKind extends NodeKind
 object ScalaNodeKind extends NodeKindKnowledge {
@@ -18,6 +19,14 @@ object ScalaNodeKind extends NodeKindKnowledge {
     }
 
   override def nodeKinds: Seq[NodeKind] = Seq(Package, PackageObject, Trait, Type, Object, Var, Val, Def)
+
+  override def lightKind: NodeKind = ???
+
+  override def defaultKindForNewReceiver: NodeKind = ???
+
+  override def intro: Intro = ???
+
+  override def getConstructorOfType(g: ResultT, tid: NodeId): Option[NodeId] = ???
 }
 
 case object ScalaRoot extends ScalaNodeKind with AGRoot {

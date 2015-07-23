@@ -39,7 +39,7 @@ object JavaIntro extends Intro {
 
     val (cn, g) = this.apply(graph, localName, kind, Some(t))
     val (defNode, g2) = g.addConcreteNode("", Definition, None)
-    (cn, g2.addContains(cn.id, defNode.id))
+    (cn, g2.addDef(cn.id, defNode.id))
   }
 
 }

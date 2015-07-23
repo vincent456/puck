@@ -6,14 +6,17 @@ object EdgeMap {
   type AccessKindMap = Map[(NodeId, NodeId), UsesAccessKind]
   val AccessKindMap = Map
 
-  type EdgeMapT = SetValueMap[NodeId, NodeId]
+  type EdgeMapT = SetValueMap.T[NodeId, NodeId]
   val EdgeMapT = SetValueMap
+
+  type ParamMapT = ListValueMap.T[NodeId, NodeId]
+  val ParamMapT = ListValueMap
 
 
   type Node2NodeMap = Map[NodeId, NodeId]
   val Node2NodeMap = Map
 
-  type UseDependencyMap = SetValueMap[NodeIdP, NodeIdP]
+  type UseDependencyMap = SetValueMap.T[NodeIdP, NodeIdP]
   val UseDependencyMap = SetValueMap
 
 
@@ -24,14 +27,11 @@ object EdgeMap {
                 EdgeMapT(), Node2NodeMap(),
                 EdgeMapT(), EdgeMapT(),
                 UseDependencyMap(),
-                UseDependencyMap())
+                UseDependencyMap(),
+                ParamMapT(), Node2NodeMap()/*, Node2NodeMap()*/)
 }
 import EdgeMap._
 import puck.PuckError
-import puck.graph.DGEdge.ContainsK
-import puck.graph.DGEdge.IsaK
-import puck.graph.DGEdge.ParameterizedUsesK
-import puck.graph.DGEdge.UsesK
 
 case class EdgeMap
 ( userMap : EdgeMapT,
@@ -44,7 +44,11 @@ case class EdgeMap
   superTypes : EdgeMapT,
   subTypes : EdgeMapT,
   typeMemberUses2typeUsesMap : UseDependencyMap,
-  typeUses2typeMemberUsesMap : UseDependencyMap ){
+  typeUses2typeMemberUsesMap : UseDependencyMap,
+  //special cases of contains :
+  parameters : ParamMapT,
+  definition : Node2NodeMap/*,
+  declaration : Node2NodeMap*/){
 
   override def toString : String = {
     val builder = new StringBuilder(150)
@@ -98,9 +102,19 @@ case class EdgeMap
       case Isa(subType, superType) =>
         copy(subTypes = subTypes + (superType, subType),
           superTypes = superTypes + (subType, superType))
+
       case Contains(container, content) =>
         copy(contents = contents + (container, content),
           containers = containers + (content -> container))
+
+      case ContainsParam(decl, param) =>
+        copy(parameters = parameters + (decl, param),
+          containers = containers + (param -> decl) )
+          /*declaration = declaration + (param -> decl) )*/
+      case ContainsDef(decl, _def) =>
+        copy(definition = definition + (decl -> _def),
+          containers = containers + (_def -> decl) )
+          /*declaration = declaration + (_def -> decl) )*/
     }
 
   private def newAccessKindMapOnAdd
@@ -121,19 +135,29 @@ case class EdgeMap
 
   def remove(edge : DGEdge) : EdgeMap =
     edge.kind match {
-      case UsesK =>
+      case Uses =>
         copy(userMap = userMap - (edge.used, edge.user),
           usedMap = usedMap - (edge.user, edge.used),
           accessKindMap = accessKindMap - ((edge.user, edge.used)))
-      case ParameterizedUsesK =>
+      case ParameterizedUses =>
         copy(parameterizedUsers = parameterizedUsers - (edge.used, edge.user),
           parameterizedUsed = parameterizedUsed - (edge.user, edge.used))
-      case IsaK =>
+      case Isa =>
         copy(subTypes = subTypes - (edge.superType, edge.subType),
           superTypes = superTypes - (edge.subType, edge.superType))
-      case ContainsK =>
+      case Contains =>
         copy(contents = contents - (edge.container, edge.content),
           containers = containers - edge.content)
+
+      case ContainsParam =>
+        copy(parameters = parameters - (edge.container, edge.content),
+          containers = containers - edge.content)
+          /*declaration = declaration - edge.content )*/
+
+      case ContainsDef =>
+        copy(definition = definition - (edge.container, edge.content),
+          containers = containers - edge.content)
+          /*declaration = declaration - edge.content )*/
     }
 
   def remove(kind : DGEdge.EKind, source : NodeId, target : NodeId) : EdgeMap =
@@ -170,10 +194,10 @@ case class EdgeMap
     parameterizedUsers.bind(usedId, userId)
 
   def exists(e : DGEdge) : Boolean = e.kind  match {
-    case ContainsK => contains(e.source, e.target)
-    case IsaK => isa(e.source, e.target)
-    case UsesK => uses(e.source, e.target)
-    case ParameterizedUsesK => parUses(e.source, e.target)
+    case Contains => contains(e.source, e.target)
+    case Isa => isa(e.source, e.target)
+    case Uses => uses(e.source, e.target)
+    case ParameterizedUses => parUses(e.source, e.target)
   }
 
 

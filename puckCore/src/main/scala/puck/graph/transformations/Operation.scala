@@ -91,15 +91,15 @@ extends Operation {
 }
 
 
-case class TypeRedirection
+case class TypeChange
 (typed : NodeId,
- oldUsee: NodeId,
- newUsee : NodeId)
+ oldType: Option[Type],
+ newType : Option[Type])
   extends Operation{
 
   override def execute(g: DependencyGraph, op: Direction) = op match {
-    case Regular => g.changeType(typed, oldUsee, newUsee)
-    case Reverse => g.changeType(typed, newUsee, oldUsee)
+    case Regular => g.setType(typed, newType)
+    case Reverse => g.setType(typed, oldType)
   }
 }
 

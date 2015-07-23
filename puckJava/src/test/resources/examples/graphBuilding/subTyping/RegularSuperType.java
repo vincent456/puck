@@ -1,4 +1,4 @@
-package regularSuperType;
+package p;
 
 class A {}
 

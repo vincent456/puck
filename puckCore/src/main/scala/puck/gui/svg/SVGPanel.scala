@@ -14,7 +14,7 @@ import org.apache.batik.util.{SVGConstants, XMLConstants}
 import org.w3c.dom.{Node, NodeList, Element}
 import org.w3c.dom.events.{EventListener, Event, MouseEvent}
 import org.w3c.dom.svg._
-import puck.graph.{NodeId, DGEdge}
+import puck.graph.{Isa, Uses, NodeId, DGEdge}
 import puck.gui.svg.SVGPanel._
 
 
@@ -95,15 +95,15 @@ class SVGPanelListener
       val n: Node = l.item(i)
       if (n.getNodeName == "path") {
         if (n.asInstanceOf[Element].hasAttribute("stroke-dasharray"))
-          return DGEdge.IsaK
+          return Isa
         else
-          return DGEdge.UsesK
+          return Uses
       }
       i += 1; i - 1
 
     }
 
-    DGEdge.UsesK
+    Uses
   }
 
   private val arrowPattern  = Pattern.compile("\\d+:(\\d+).{2}\\d+:(\\d+)")

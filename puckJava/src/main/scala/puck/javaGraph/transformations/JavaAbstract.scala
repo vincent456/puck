@@ -32,7 +32,8 @@ object JavaAbstract extends Abstract {
     impl : ConcreteNode,
     sUsesAccessKind: Option[UsesAccessKind]) : Option[Type] = {
 
-    val voidId = {
+    ???
+    /*val voidId = {
       val sNode = g.concreteNodes.find(_.name == "void")
       if(sNode.isEmpty) sys.error("void not loaded")
       else sNode.get.id
@@ -44,7 +45,7 @@ object JavaAbstract extends Abstract {
       case (Some(Write), Some(t)) =>
         Some(MethodType(Tuple(List(t)), NamedType(voidId)))
       case _ => super.absType(g, impl, sUsesAccessKind)
-    }
+    }*/
   }
 
   implicit class MyStringOps(val str : String) extends AnyVal{
@@ -118,7 +119,7 @@ object JavaAbstract extends Abstract {
 
       case (ConstructorMethod, _) =>
         super.createAbstraction(g, impl, abskind, policy) map {
-          case (abs @ AccessAbstraction(absId,_), g0) => (abs, addTypesUses(g0, absId))
+          case (abs @ AccessAbstraction(absId,_), g0) => (abs, ???) //addTypesUses(g0, absId))
           case _ => sys.error("should not happen")
         }
 

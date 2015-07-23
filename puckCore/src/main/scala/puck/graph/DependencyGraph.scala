@@ -1,7 +1,7 @@
 package puck.graph
 
 import puck.graph.DependencyGraph.AbstractionMap
-import puck.graph.constraints.{ConstraintsMaps, AbstractionPolicy}
+import puck.graph.constraints.{SupertypeAbstraction, ConstraintsMaps, AbstractionPolicy}
 import puck.util.{Logger, PuckNoopLogger, PuckLogger, PuckLog}
 
 import puck.graph.transformations.{RecordingComparator, Transformation, RecordingOps}
@@ -17,7 +17,7 @@ object DependencyGraph {
   val scopeSeparator : String = "."
 
 
-  type AbstractionMap = SetValueMap[NodeId, Abstraction]
+  type AbstractionMap = SetValueMap.T[NodeId, Abstraction]
   val AbstractionMap = SetValueMap
 
 
@@ -41,7 +41,7 @@ class DependencyGraph
 ( //val logger : PuckLogger = PuckNoopLogger,
   val nodeKindKnowledge: NodeKindKnowledge,
   /*private [this]*/ val nodesIndex : NodeIndex,
-  private [this] val edges : EdgeMap,
+  /*private [this]*/ val edges : EdgeMap,
   /*private [this]*/ val abstractionsMap : AbstractionMap,
   val constraints : ConstraintsMaps,
   val recording : Recording) {
@@ -90,7 +90,7 @@ class DependencyGraph
     ) : (ConcreteNode, DependencyGraph) = {
     val(n, nIndex) = nodesIndex.addConcreteNode(localName, kind, th, mutable)
     (n, newGraph(nodes = nIndex,
-      recording = recording.addConcreteNode(n)))
+      recording = recording.addConcreteNode(n).addTypeChange(n.id, styp(n.id), th)))
   }
 
   private [graph] def addVirtualNode
@@ -117,7 +117,7 @@ class DependencyGraph
 
   def isaEdges : List[DGEdge] = edges.superTypes.content.foldLeft(List[DGEdge]()){
     case (acc, (sub, sups)) =>
-      sups.toList.map(sup => DGEdge.IsaK(sub, sup)) ::: acc
+      sups.toList.map(sup => Isa(sub, sup)) ::: acc
   }
 
   def getNode(id : NodeId): DGNode = nodesIndex.getNode(id)
@@ -148,9 +148,35 @@ class DependencyGraph
     newGraph( nodes = index,
       recording = recording.changeNodeName(id, oldName, newName))
   }
-  
-  def setType(id : NodeId, st : Option[Type]) : DependencyGraph =
-    newGraph(nodes = nodesIndex.setType(id, st))
+
+  def styp(id : NodeId) : Option[Type] =
+    nodesIndex.types get id
+
+  def setType(id : NodeId, t : Option[Type]) : DependencyGraph =
+        newGraph(nodes = nodesIndex.setType(id, t),
+              recording = recording.addTypeChange(id, styp(id), t))
+
+
+  def changeType
+  ( id : NodeId,
+    oldUsed: NodeId,
+    newUsed : NodeId) : DependencyGraph =
+    styp(id) match {
+      case None => this
+      case Some(t) => setType(id, Some(t.changeNamedType(oldUsed, newUsed)))
+    }
+
+  def changeContravariantType
+  ( id : NodeId,
+    styp : Option[Type],
+    oldUsed: NodeId,
+    newUsed : NodeId ) : DependencyGraph =
+    styp match {
+      case None => this
+      case Some(t) =>
+        setType(id, Some(t.changeNamedTypeContravariant(oldUsed, newUsed)))
+    }
+
 
   def setMutability(id : NodeId, mutable : Boolean) =
     newGraph(nodes = nodesIndex.setMutability(id, mutable))
@@ -163,6 +189,7 @@ class DependencyGraph
               recording =
                   if(register) recording.addEdge(e)
                   else recording)
+
 
   def removeEdge(e : DGEdge, register : Boolean = true): DependencyGraph =
     newGraph( edges = edges.remove(e),
@@ -188,6 +215,11 @@ class DependencyGraph
  def removeIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : DependencyGraph=
     removeEdge(Isa(subTypeId, superTypeId))
 
+ def addDef(decl : NodeId, _def : NodeId) : DependencyGraph =
+    addEdge(ContainsDef(decl, _def))
+
+ def addParam(decl : NodeId, param : NodeId) : DependencyGraph =
+    addEdge(ContainsParam(decl, param))
 
  def addUsesDependency(typeUse : NodeIdP,
                         typeMemberUse : NodeIdP) : DependencyGraph =
@@ -196,7 +228,7 @@ class DependencyGraph
 
 
 
-  def removeUsesDependency(typeUse : NodeIdP,
+ def removeUsesDependency(typeUse : NodeIdP,
                            typeMemberUse : NodeIdP) : DependencyGraph =
       newGraph(edges = edges.removeUsesDependency(typeUse, typeMemberUse),
         recording = recording.removeTypeDependency(typeUse, typeMemberUse))
@@ -225,22 +257,6 @@ class DependencyGraph
     newEdge.createIn(g1, register = false).newGraph(recording = newRecording)
   }
 
-  def changeType(id : NodeId, oldUsed: NodeId, newUsed : NodeId) : DependencyGraph =
-    getConcreteNode(id).styp match {
-      case None => this
-      case Some(t) => val newTyp= Some(t.changeNamedType(oldUsed, newUsed))
-        setType(id, newTyp).
-          newGraph(recording = recording.addTypeChange(id, oldUsed, newUsed))
-    }
-
-  def changeContravariantType(id : NodeId, styp : Option[Type], oldUsee: NodeId, newUsee : NodeId) : DependencyGraph =
-  styp match {
-    case None => this
-    case Some(t) => val newTyp= Some(t.changeNamedTypeContravariant(oldUsee, newUsee))
-      setType(id, newTyp).
-        newGraph(recording = recording.addTypeChange(id, oldUsee, newUsee))
-  }
-
   /*
    * Read-only queries
    */
@@ -252,13 +268,6 @@ class DependencyGraph
 
   def container_!(contentId : NodeId) : NodeId =
     container(contentId).get
-
-  def definition(declId : NodeId) : Option[NodeId] =
-  //assert kindType == InstanceValueDecl || StaticValueDecl
-    content(declId).headOption
-
-  def definition_!(declId : NodeId) : NodeId =
-    content(declId).head
 
   def containerOfKindType(kt: KindType, nid : NodeId) : NodeId =
     getNode(nid).kind.kindType match {
@@ -274,6 +283,17 @@ class DependencyGraph
 
 
   def content(containerId: NodeId) : Set[NodeId] = edges.contents.getFlat(containerId)
+
+  //special cases of content
+  def definition(declId : NodeId) : Option[NodeId] =
+  //assert kindType == InstanceValueDecl || StaticValueDecl || TypeConstructor
+    edges.definition get declId
+
+  def definition_!(declId : NodeId) : NodeId =
+    edges definition declId
+
+  def parameters(declId : NodeId)  : List[NodeId] = edges.parameters.getFlat(declId)
+
 
   def contains(containerId : NodeId, contentId : NodeId) : Boolean =
     edges.contains(containerId, contentId)
@@ -352,6 +372,10 @@ class DependencyGraph
   def uses(userId: NodeId, usedId: NodeId) : Boolean =
     edges.uses(userId, usedId)
 
+//  def uses_*(userId: NodeId, usedId: NodeId) : Boolean =
+//    edges.uses(userId, usedId) ||
+//      content(userId).exists(uses_*(_, usedId))
+
   def usesList : List[(NodeId, NodeId)] =
     edges.usedMap.flatList
   
@@ -411,20 +435,20 @@ class DependencyGraph
 
   def violations() : Seq[DGEdge] =
     concreteNodesId.flatMap { n =>
-      val wu = constraints.wrongUsers(this, n).map(DGEdge.UsesK(_,n))
+      val wu = constraints.wrongUsers(this, n).map(Uses(_,n))
       if(constraints.isWronglyContained(this, n))
-         DGEdge.ContainsK(container(n).get, n) +: wu
+         Contains(container(n).get, n) +: wu
       else wu
     }.toSeq
 
   def isViolation(e : DGEdge) : Boolean = {
     e.kind match {
-      case DGEdge.ContainsK =>
+      case Contains =>
         constraints.isWronglyContained(this, e.target)
-      case DGEdge.UsesK | DGEdge.IsaK =>
+      case Uses | Isa =>
         constraints.isViolation(this, e.user, e.used)
 
-      case DGEdge.ParameterizedUsesK => false
+      case ParameterizedUses => false
     }
   }
 

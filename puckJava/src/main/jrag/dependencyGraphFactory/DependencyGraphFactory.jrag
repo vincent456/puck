@@ -86,8 +86,7 @@ aspect DependencyGraphFactory {
 
         if(isParameterizedType()){
             ParTypeDecl parTypeDecl = (ParTypeDecl) this;
-            System.out.println("[BUILD] parameterized type " + parTypeDecl.nameWithArgs() +
-        " [TODO] difference with  GenericType ??? ");
+            System.out.println("[BUILD] parameterized type " + parTypeDecl.nameWithArgs());
 
             /*for(int i=0; i<parTypeDecl.getNumArgument(); i++){
                 Access ta = parTypeDecl.getArgument(i);
@@ -145,27 +144,40 @@ aspect DependencyGraphFactory {
 		return agNode;
 	}
 
+	public void BodyDecl.buildDG_handleDef(JavaGraphBuilder builder, int thisDeclId){
+		ASTNode def = getDefinition();
+		int defId = builder.addDefinitionNode();
+		def.registerDef(builder, defId);
+		builder.addDef(thisDeclId, defId);
+		def.buildDG(builder, defId);
+	}
 
+
+	public void ParameterDeclaration.buildDG(JavaGraphBuilder builder, int containerId){
+		int thisID = buildDGNode(builder);
+		//builder.addParam(containerId, thisID);
+		buildDGInChildren(builder, thisID);
+	}
 
 	public void BodyDecl.buildDG(JavaGraphBuilder builder, int hostTypeDeclId ){
 		if(isNamedElement()){
 			int declId = buildDGNode(builder);
 			builder.addContains(hostTypeDeclId, declId);
-			buildDGType(builder);
+
+			buildDGType(builder, declId);
+
 			if(hasDefinition()){
-                ASTNode def = getDefinition();
+				for(int i=0; i< getNumChild(); i++)
+					if(i != getDefIndex() && i != getParamIndex() )
+						getChild(i).buildDG(builder, declId);
 
-                for(int i=0; i< getNumChild(); i++)
-                    if(i != getDefIndex())
-                        getChild(i).buildDG(builder, declId);
-
-                int defId = builder.addDefinitionNode();
-                def.registerDef(builder, defId);
-                builder.addContains(declId, defId);
-                def.buildDG(builder, defId);
-        	}
-            else
-                super.buildDG(builder,declId);
+				buildDG_handleDef(builder, declId);
+			}
+            else{
+				for(int i=0; i<getNumChild(); i++)
+					if(i!=getParamIndex())
+						getChild(i).buildDG(builder, declId);
+			}
 
 		}
 		else

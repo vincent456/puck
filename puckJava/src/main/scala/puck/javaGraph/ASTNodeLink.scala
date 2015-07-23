@@ -59,7 +59,7 @@ object ASTNodeLink{
     id2Decl : Map[NodeId, ASTNodeLink],
     node : NodeT
     ) : AbstractMethodDeclHolder = {
-    node.styp match {
+    graph.styp(node.id) match {
       case Some(mt : MethodType) =>
         val m =
           AST.MethodDecl.createAbstractMethod(
@@ -105,7 +105,7 @@ object ASTNodeLink{
     id2Decl : Map[NodeId, ASTNodeLink],
     node : NodeT
     ) : ConstructorDeclHolder = {
-    node.styp match {
+    graph.styp(node.id) match {
       case Some( mt @ MethodType(_,_)) =>
         ConstructorDeclHolder(AST.ConstructorDecl.
           createConstructor(mt.createReturnAccess(graph, id2Decl), node.name,
@@ -121,7 +121,7 @@ object ASTNodeLink{
     node : NodeT
     ) : FieldDeclHolder = {
 
-    node.styp match {
+    graph.styp(node.id) match {
       case Some(NamedType(id)) =>
         id2Decl get id match {
           case Some(tdh : TypedKindDeclHolder) =>
@@ -186,6 +186,7 @@ case class BlockHolder(block : AST.Block) extends DefHolder{
   def node = block.asInstanceOf[AST.ASTNode[_]]
 }
 
+case class ParameterDeclHolder(decl : AST.ParameterDeclaration) extends ASTNodeLink
 
 sealed trait HasBodyDecl extends ASTNodeLink{
   val decl : AST.BodyDecl
@@ -221,49 +222,9 @@ trait TypedKindDeclHolder extends ASTNodeLink {
   def decl : AST.TypeDecl
 }
 
+
 case class InterfaceDeclHolder(decl : AST.InterfaceDecl) extends TypedKindDeclHolder
-
-case class ClassDeclHolder(decl : AST.ClassDecl) extends TypedKindDeclHolder {
-  /*override def promoteToSuperTypeWherePossible(superType : AGNode){
-   val implementor = this.node
-
-   superType.content foreach { absMethod =>
-     absMethod.kind match {
-       case absMethKind @ AbstractMethod() =>
-         implementor.content find { c =>
-           c.kind match {
-             case implKind @ Method() =>
-               absMethKind.`type` == implKind.`type`
-             case _ => false
-           }
-         } match {
-           case None => throw new AGError("Interface has a method not implemented") //what if implementor is an abstract class ?
-           case Some(impl) =>
-
-             absMethKind.`type` = absMethKind.`type` copyWith implementor replacedBy superType
-
-             impl.kind match {
-               case m @ Method() => m.`type` = new MethodType(absMethKind.`type`.copy().input,
-                 m.`type`.output)
-               case _ => assert(false)
-             }
-
-             impl.users.foreach{ user =>
-               val primUses = user.primaryUses.getOrEmpty(impl)
-               //if a method use has no dominant use it must be
-               if(primUses.nonEmpty){
-                 user.redirectUses(implementor, superType, SupertypeAbstraction())
-               }
-             }
-         }
-
-       case othk => throw new AGError("interface should contains only abstract method !!! contains : " + absMethod)
-     }
-   }
-
- }*/
-}
-
+case class ClassDeclHolder(decl : AST.ClassDecl) extends TypedKindDeclHolder
 case class WildCardTypeHolder(decl : AST.WildcardType) extends TypedKindDeclHolder
 case class TypeVariableHolder(decl : AST.TypeVariable) extends TypedKindDeclHolder
 case class PrimitiveDeclHolder(decl : AST.TypeDecl) extends TypedKindDeclHolder

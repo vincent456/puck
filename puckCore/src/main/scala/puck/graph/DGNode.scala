@@ -4,7 +4,7 @@ sealed trait DGNode{
   val id : NodeId
   //val name : String
   val kind : NodeKind
-  val styp : Option[Type]
+  //def styp(g : DependencyGraph) : Option[Type]
   val mutable : Boolean
 
   def mapConcrete[A](f : ConcreteNode => A, default : => A) : A
@@ -14,17 +14,14 @@ sealed trait DGNode{
     kind.kindType match {
       case InstanceValueDecl
            | StaticValueDecl =>
-        val children = g.content(id)
-        children.find {
-          nid =>
-            g.getConcreteNode(nid).kind.kindType == ValueDef
-        }
+        g definition this.id
       case _ => None
     }
   }
 
   def definition_!(g : DependencyGraph) : NodeId =
-    definition(g).get
+    g definition_! this.id
+
 
 }
 
@@ -33,7 +30,7 @@ object DGNode {
             name : String,
             kind : NodeKind,
             styp : Option[Type],
-            isMutable : Boolean) : DGNode = ConcreteNode(id, name, kind, styp, isMutable)
+            isMutable : Boolean) : DGNode = ConcreteNode(id, name, kind, isMutable)
 }
 
 case class VirtualNode
@@ -41,7 +38,7 @@ case class VirtualNode
  potentialMatches : Seq[NodeId],
  kind : NodeKind) extends DGNode {
   val mutable = true
-  val styp = None
+  //def styp(g : DependencyGraph) = None
   //def name : String =  potentialMatches mkString ("Virtual(", " \\/ ", ")")
 
   def mapConcrete[A](f : ConcreteNode => A, default : => A) : A = default
@@ -55,8 +52,9 @@ case class ConcreteNode
 ( id : NodeId,
   name : String,
   kind : NodeKind,
-  styp : Option[Type],
   mutable : Boolean)  extends DGNode {
+
+  //def styp(g : DependencyGraph) = ???/* g styp id*/
 
   def name(g : DependencyGraph) : String = name
 

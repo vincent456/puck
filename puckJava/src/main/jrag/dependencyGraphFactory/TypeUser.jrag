@@ -107,7 +107,7 @@ aspect TypeUser {
 //  }
 
   int VarAccess.typeUserFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse){
-      return decl().buildDGNode(builder);
+      return ((ASTNode)decl()).buildDGNode(builder);
   }
 
   //in case of use of static methods, fields ...

@@ -7,6 +7,9 @@ import puck.graph._
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 import puck.javaGraph.nodeKind._
 import puck.javaGraph.JGraphUtils.{transformationRules => TR}
+import puck.util.{Debug, LoggedEither}
+
+import scalaz.\/-
 
 
 class TransfoRuleSpec extends AcceptanceSpec {
@@ -50,18 +53,18 @@ class TransfoRuleSpec extends AcceptanceSpec {
         val classA = fullName2id("p.A")
         val methM = fullName2id("p.A.m__void")
         val methMUserDecl = fullName2id("p.A.methodUser__A")
+        val theParam = fullName2id("p.A.methodUser__A.a")
         val methMUserDef = getDefinition(graph, methMUserDecl)
 
         assert( graph.directSuperTypes(classA).isEmpty )
 
-        assert( graph.uses(methMUserDecl, classA) )
+        assert( graph.uses(theParam, classA) )
         assert( graph.uses(methMUserDef, methM) )
 
         assert( graph.abstractions(classA).isEmpty )
         assert( graph.abstractions(methM).isEmpty )
         assert( graph.abstractions(methMUserDecl).isEmpty )
         assert( graph.abstractions(methMUserDef).isEmpty )
-
 
 
         val (AccessAbstraction(itc, _), g) =
@@ -78,7 +81,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
 
         val AccessAbstraction(methMAbs, _) = g.abstractions(methM).head
 
-        assert( g.uses(methMUserDecl, itc) )
+        assert( g.uses(theParam, itc) )
         assert( g.uses(methMUserDef, methMAbs) )
       }
 
@@ -92,12 +95,13 @@ class TransfoRuleSpec extends AcceptanceSpec {
 
         val fieldUserThatShouldNotBeInInterfaceDecl =
           fullName2id(s"p.B.fieldUserThatShouldNotBeInInterface__B")
+        val theParam =  fullName2id(s"p.B.fieldUserThatShouldNotBeInInterface__B.b")
         val fieldUserThatShouldNotBeInInterfaceDef =
           getDefinition(graph, fieldUserThatShouldNotBeInInterfaceDecl)
 
         assert( graph.directSuperTypes(classB).isEmpty )
 
-        assert( graph.uses(fieldUserThatShouldNotBeInInterfaceDecl, classB) )
+        assert( graph.uses(theParam, classB) )
         assert( graph.uses(fieldUserThatShouldNotBeInInterfaceDef, field) )
 
         assert( graph.abstractions(classB).isEmpty )
@@ -120,8 +124,8 @@ class TransfoRuleSpec extends AcceptanceSpec {
         assert( g.abstractions(fieldUserThatShouldNotBeInInterfaceDecl).isEmpty,
                 "Method use concrete class field, should not be abstracted")
 
-        assert( graph.uses(fieldUserThatShouldNotBeInInterfaceDecl, classB) )
-        assert( graph.uses(fieldUserThatShouldNotBeInInterfaceDef, field) )
+        assert( g.uses(theParam, classB) )
+        assert( g.uses(fieldUserThatShouldNotBeInInterfaceDef, field) )
 
 
       }
@@ -207,12 +211,12 @@ class TransfoRuleSpec extends AcceptanceSpec {
       }
     }
 
-    ignore("Intro interface - cyclic uses in class (recursion)"){}
-    ignore("Intro interface - super interface existing"){}
-    ignore("Intro interface - super class existing"){}
+    ignore("abstract class into interface - cyclic uses in class (recursion)"){}
+    ignore("abstract class into interface - super interface existing"){}
+    ignore("abstract class into interface - super class existing"){}
 
 
-    info("Intro interface - super type already present")
+    info("abstract class into interface - super type already present")
     val withSuperTypePath = examplesPath + "/interface/existingSuperType"
 
     scenario("existing supertype - simple case"){
@@ -263,6 +267,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
     scenario("From class to superType interface"){
       val _ = new ExampleSample(s"$typeDeclPath/ClassToInterfaceSuperType.java"){
         val mUserDecl = fullName2id("p.A.mUser__ClassUsed")
+        val theParam = fullName2id("p.A.mUser__ClassUsed.cu")
         val mUserDef = getDefinition(graph, mUserDecl)
 
         val classUsed = fullName2id("p.ClassUsed")
@@ -270,7 +275,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
         val superType = fullName2id("p.SuperType")
         val absmUsed = fullName2id("p.SuperType.mUsed__void")
 
-        val typeUse = Uses(mUserDecl, classUsed)
+        val typeUse = Uses(theParam, classUsed)
         assert(typeUse.existsIn(graph))
         assert(Uses(mUserDef, mUsed).existsIn(graph))
 
@@ -278,7 +283,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
           Redirection.redirectUsesAndPropagate(graph,
             typeUse, AccessAbstraction(superType, SupertypeAbstraction)).right
 
-        assert(Uses(mUserDecl, superType).existsIn(g2))
+        assert(Uses(theParam, superType).existsIn(g2))
         assert(Uses(mUserDef, absmUsed).existsIn(g2))
 
       }
@@ -291,6 +296,8 @@ class TransfoRuleSpec extends AcceptanceSpec {
     scenario("From class to delegator class"){
       new ExampleSample(s"$typeDeclPath/ClassToClassDelegate.java"){
         val mUserDecl = fullName2id("p.A.mUser__Delegatee")
+        val theParam = fullName2id("p.A.mUser__Delegatee.d")
+
         val mUserDef = getDefinition(graph, mUserDecl)
 
         val delegatee = fullName2id("p.Delegatee")
@@ -302,7 +309,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
         val g = graph.addAbstraction(delegatee, AccessAbstraction(delegator, DelegationAbstraction))
                      .addAbstraction(mDelegatee, AccessAbstraction(mDelegator, DelegationAbstraction))
 
-        val typeUse = Uses(mUserDecl, delegatee)
+        val typeUse = Uses(theParam, delegatee)
         assert(typeUse.existsIn(graph))
         assert(Uses(mUserDef, mDelegatee).existsIn(graph))
 
@@ -311,7 +318,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
           Redirection.redirectUsesAndPropagate(g,
             typeUse, AccessAbstraction(delegator, DelegationAbstraction) ).right
 
-        assert(Uses(mUserDecl, delegator).existsIn(g2))
+        assert(Uses(theParam, delegator).existsIn(g2))
         assert(Uses(mUserDef, mDelegator).existsIn(g2))
       };()
 

@@ -11,7 +11,8 @@ aspect NamedElement {
 	//eq InterfaceDecl.isNamedElement() = true;
 	//eq ClassDecl.isNamedElement() = true;
 
-	eq FieldDeclaration.isNamedElement() = true;
+    eq ParameterDeclaration.isNamedElement() = true;
+    eq FieldDeclaration.isNamedElement() = true;
 	eq MethodDecl.isNamedElement() = true;
 	eq ConstructorDecl.isNamedElement() = true;
 
@@ -22,6 +23,7 @@ aspect NamedElement {
 
     syn boolean ASTNode.hasDefinition();
     eq ASTNode.hasDefinition() = false;
+    eq ConstructorDecl.hasDefinition() = false;
     eq MethodDecl.hasDefinition() {
         return !getBlockOpt().isEmpty();
     }
@@ -29,26 +31,30 @@ aspect NamedElement {
         return !getInitOpt().isEmpty();
     }
 
-    boolean BodyDecl.isConstructorDecl(){return false;}
-    boolean ConstructorDecl.isConstructorDecl(){return true;}
-
-
-//    interface PossiblyDefinedElement {
-//        ASTNode getDefinition();
-//        int getDefIndex();
-//    }
-
-//    BodyDecl implements PossiblyDefinedElement;
-//    MethodDecl implements PossiblyDefinedElement;
-//    FieldDeclaration implements PossiblyDefinedElement;
-
-    public ASTNode BodyDecl.getDefinition(){throw new Error("no def");}
+    public ASTNode BodyDecl.getDefinition(){throw new Error(this.getClass() + " has no def");}
+    public ASTNode ConstructorDecl.getDefinition(){return getBlock();}
     public ASTNode MethodDecl.getDefinition(){return getBlock();}
     public ASTNode FieldDeclaration.getDefinition(){return getInit();}
 
-    public int ASTNode.getDefIndex(){throw new Error("no def index");}
+    public int ASTNode.getDefIndex(){throw new Error(this.getClass() + " has no def index");}
+    public int ConstructorDecl.getDefIndex(){return 4;}
     public int MethodDecl.getDefIndex(){return 4;}
     public int FieldDeclaration.getDefIndex(){return 2;}
+
+
+//    syn boolean ASTNode.hasParameters();
+//    eq ASTNode.hasParameters() = false;
+//    eq ConstructorDecl.hasParameters() = true;
+//    eq MethodDecl.hasParameters() = true;
+
+    public int ASTNode.getParamIndex(){return -1;}
+    public int ConstructorDecl.getParamIndex(){return 1;}
+    public int MethodDecl.getParamIndex(){return 2;}
+
+
+    public List<ParameterDeclaration> ASTNode.getParameters(){
+        throw new Error(this.getClass() + " has no parameters");
+    }
 
 
     interface DGNamedElement {
@@ -63,6 +69,7 @@ aspect NamedElement {
 	// InterfaceDecl implements DGNamedElement;
 	// ClassDecl implements DGNamedElement;
 
+    ParameterDeclaration implements DGNamedElement;
 	FieldDeclaration implements DGNamedElement;
 	MethodDecl implements DGNamedElement;
 	ConstructorDecl implements DGNamedElement;
@@ -119,6 +126,10 @@ aspect NamedElement {
         builder.registerDecl(thisId, this);
     }
 
+    public void ParameterDeclaration.registerDecl(JavaGraphBuilder builder, int thisId){
+        builder.registerDecl(thisId, this);
+    }
+
     public void FieldDeclaration.registerDecl(JavaGraphBuilder builder, int thisId){
         builder.registerDecl(thisId, this);
     }
@@ -142,6 +153,7 @@ aspect NamedElement {
     eq PrimitiveType.getDGNodeKind() = JavaNodeKind.primitive();
 	eq VoidType.getDGNodeKind() = JavaNodeKind.primitive();
     eq NullType.getDGNodeKind() = JavaNodeKind.primitive();
+    eq ParameterDeclaration.getDGNodeKind() = JavaNodeKind.parameter();
 
     eq FieldDeclaration.getDGNodeKind() {
         if(this.isStatic())

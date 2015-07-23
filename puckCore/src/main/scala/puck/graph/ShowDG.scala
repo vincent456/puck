@@ -50,7 +50,7 @@ object ShowDG {
 
   implicit def nodeCord : CordBuilder[DGNode] = (dg, n) =>
     n match {
-      case n : ConcreteNode => Cord(s"${n.id} - ${n.kind} ${n.name}", typeHolderCord(dg, n.styp))
+      case n : ConcreteNode => Cord(s"${n.id} - ${n.kind} ${n.name}", typeHolderCord(dg, dg.styp(n.id)))
       case vn : VirtualNode => Cord(s"${vn.id} - ${vn.name(dg)}")
     }
 
@@ -60,7 +60,7 @@ object ShowDG {
 
   def nodeNameTypCord : CordBuilder[DGNode] =
     (dg, n) => n match {
-      case cn : ConcreteNode => Cord(cn.name , typeHolderCord(dg, cn.styp))
+      case cn : ConcreteNode => Cord(cn.name , typeHolderCord(dg, dg.styp(cn.id)))
       case _ => n.name(dg)
     }
 

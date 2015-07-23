@@ -1,6 +1,6 @@
 package puck.javaGraph.transformations
 
-import puck.graph.{DGError, NodeId, ConcreteNode, DependencyGraph}
+import puck.graph._
 import puck.graph.transformations.MergeMatcher
 import puck.javaGraph.nodeKind.{Interface, AbstractMethod}
 
@@ -11,17 +11,17 @@ object InterfaceMergeMatcher {
     case AbstractMethod => new AbstractMethodMergeMatcher(n)
     case _ => new MergeMatcher(){
       override val node = n
-      override def canBeMergedInto(other : ConcreteNode, graph : DependencyGraph) = false
+      override def canBeMergedInto(other : ConcreteNode, styp : Option[Type], graph : DependencyGraph) = false
     }
   }
 
   def findMergingCandidateIn(g : DependencyGraph, method : ConcreteNode, interface : ConcreteNode) : Option[NodeId] =
-    method.styp match {
+    g.styp(method.id) match {
       case None => throw new DGError("Method must have a type")
       case Some(t) =>
-        val m = method.copy(styp = Some(t.changeNamedType(g.container(method.id).get, interface.id)))
+        val selfMappedT = Some(t.changeNamedType(g.container(method.id).get, interface.id))
         g.content(interface.id).find { ncId =>
-          m.canBeMergedInto(g.getConcreteNode(ncId), g)
+          method.canBeMergedInto(g.getConcreteNode(ncId), selfMappedT, g)
         }
     }
 }
@@ -33,8 +33,8 @@ class InterfaceMergeMatcher(val node : ConcreteNode) extends MergeMatcher {
 
 
 
-  override def canBeMergedInto(other : ConcreteNode, graph : DependencyGraph): Boolean =
-    super.canBeMergedInto(other, graph) &&
+  override def canBeMergedInto(other : ConcreteNode, styp : Option[Type], graph : DependencyGraph): Boolean =
+    super.canBeMergedInto(other, styp, graph) &&
       areMergingCandidates(node.id, other.id, graph)
 
   def areMergingCandidates(interface1 : NodeId, interface2: NodeId, g : DependencyGraph): Boolean = {
@@ -67,14 +67,9 @@ class InterfaceMergeMatcher(val node : ConcreteNode) extends MergeMatcher {
   }
 }
 
-class FieldMergeMatcher(val node : ConcreteNode)extends MergeMatcher {
-  override def canBeMergedInto(other : ConcreteNode, graph : DependencyGraph) : Boolean = {
-    super.canBeMergedInto(other, graph) && other.styp == node.styp
-  }
-}
+class FieldMergeMatcher(val node : ConcreteNode) extends MergeMatcher
 
 class AbstractMethodMergeMatcher(val node : ConcreteNode) extends MergeMatcher {
-  override def canBeMergedInto(other : ConcreteNode, graph : DependencyGraph) : Boolean =
-    super.canBeMergedInto(other, graph) &&
-      other.name == node.name && other.styp == node.styp
+  override def canBeMergedInto(other : ConcreteNode, styp : Option[Type], graph : DependencyGraph) : Boolean =
+    super.canBeMergedInto(other, styp, graph) && other.name == node.name
 }

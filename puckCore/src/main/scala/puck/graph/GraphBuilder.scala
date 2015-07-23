@@ -35,8 +35,8 @@ trait GraphBuilder {
     g = g.setMutability(id, mutable)
   }
 
-  def setType(id : NodeIdT, typ : Option[Type]): Unit ={
-    g = g.setType(id, typ)
+  def setType(id : NodeIdT, typ : Type): Unit ={
+    g = g.setType(id, Some(typ))
   }
 
   def addContains(containerId : NodeIdT, contentId : NodeIdT): Unit ={
@@ -54,6 +54,16 @@ trait GraphBuilder {
    def addTypeRelationship(typeUse : DGUses,
                            typeMemberUse : DGUses): Unit ={
     g = g.addUsesDependency(typeUse, typeMemberUse)
+  }
+
+  def addDef(decl : NodeId, _def : NodeId) : Unit = {
+    g = g.addDef(decl, _def)
+  }
+  def addParams(decl : NodeId, params : List[Int]) : Unit = {
+    params.reverseIterator.foreach{
+      param =>
+        g = g.addParam(decl, param)
+    }
   }
 
   type ImplId = NodeId

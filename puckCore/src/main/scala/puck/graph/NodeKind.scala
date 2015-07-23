@@ -33,7 +33,7 @@ object KindType {
     case InstanceTypeDecl => false
     case InstanceValueDecl => false
     case TypeConstructor => true
-//    case Parameter => ???
+    case Parameter => ???
     case ValueDef => ???
     case UnknownKindType => ???
   }
@@ -52,7 +52,7 @@ case object TypeConstructor extends KindType
 case object InstanceValueDecl extends KindType
 case object StaticValueDecl extends KindType
 
-//case object Parameter extends KindType
+case object Parameter extends KindType
 case object ValueDef extends KindType
 
 trait AGRoot extends NodeKind {

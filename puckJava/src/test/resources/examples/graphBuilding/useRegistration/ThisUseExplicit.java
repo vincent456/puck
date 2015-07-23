@@ -1,4 +1,4 @@
-package thisUseExplicit;
+package p;
 
 class A {
 

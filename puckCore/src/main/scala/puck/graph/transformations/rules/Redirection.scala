@@ -1,22 +1,12 @@
 package puck.graph.transformations.rules
 
+import puck.graph.constraints.SupertypeAbstraction
 import puck.{graph, PuckError}
 import puck.graph._
 import puck.util.LoggedEither, LoggedEither._
 import scalaz._, Scalaz._
 
 object Redirection {
-
-  def redirectUses(g : DependencyGraph,
-                   oldEdge : DGEdge, newUsed : NodeId,
-                   keepOldUse : Boolean) : DependencyGraph = {
-
-    val g3 = if(keepOldUse) g.addUses(oldEdge.user, newUsed)
-    else oldEdge.changeTarget(g, newUsed)
-
-    g3.changeType(oldEdge.user, oldEdge.used, newUsed)
-  }
-
 
   def cl(g: DependencyGraph, u : DGUses) : Set[(DGUses, DGUses)] =
     for{
@@ -165,5 +155,6 @@ object Redirection {
 
     log <++: ltg
   }
+
 
 }

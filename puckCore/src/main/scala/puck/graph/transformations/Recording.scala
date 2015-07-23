@@ -90,8 +90,7 @@ object Recording {
 
     def mappingOnOperation : Operation => Operation = {
       case CNode(n) =>
-        val n2 = n.copy(id = mappin(n.id))
-        CNode(n2.copy(styp = n.styp.map(mappingOnType)))
+        CNode(n.copy(id = mappin(n.id)))
       case VNode(n) =>
         val newId = mappin(n.id)
         VNode(n.copy(id = newId))
@@ -112,8 +111,8 @@ object Recording {
         AbstractionOp(mappin(impl), ReadWriteAbstraction(sRabs map mappin, sWabs map mappin))
 
 
-      case TypeRedirection(typed, oldUsed, newUsed) =>
-        TypeRedirection(mappin(typed), mappin(oldUsed), mappin(newUsed))
+      case TypeChange(typed, oldType, newType) =>
+        TypeChange(mappin(typed), oldType map mappingOnType, newType map mappingOnType)
 
       case cnn @ ChangeNodeName(nid, _, _) =>
         cnn.copy(nid = mappin(nid))

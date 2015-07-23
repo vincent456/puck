@@ -368,7 +368,7 @@ class Solver
             val g2 = g.addContains(oldCter, wronglyContained.id, register = false)
 
 
-            (wronglyContained.kind.kindType, wronglyContained.styp) match {
+            (wronglyContained.kind.kindType, g.styp(wronglyContained.id)) match {
               case (InstanceValueDecl, Some(typ)) =>
 
                 val needNewReceiver = !(typ uses newCter)

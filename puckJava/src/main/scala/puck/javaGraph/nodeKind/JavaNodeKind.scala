@@ -16,24 +16,31 @@ abstract class JavaNodeKind extends NodeKind {
 }
 
 case object Definition extends JavaNodeKind {
-  override def canContain(k: NodeKind): Mutability = false
+  override def canContain(k: NodeKind): Boolean = false
 
   override def abstractionNodeKinds(p: AbstractionPolicy): Seq[NodeKind] = Seq()
 
   override def kindType: KindType = ValueDef
 }
 
-case object TypeVariable extends JavaNodeKind{
+case object TypeVariable extends JavaNodeKind {
   def kindType : KindType = InstanceTypeDecl
   def canContain(k : NodeKind) = false
   override def abstractionPolicies = Seq()
   def abstractionNodeKinds(p : AbstractionPolicy) = Seq()
 }
-case object WildCardType extends JavaNodeKind{
+case object WildCardType extends JavaNodeKind {
   def kindType : KindType = InstanceTypeDecl
   def canContain(k : NodeKind) = false
   override def abstractionPolicies = Seq()
   def abstractionNodeKinds(p : AbstractionPolicy) = Seq()
+}
+
+case object Param extends JavaNodeKind {
+
+  def canContain(k: NodeKind): Boolean = false
+  def abstractionNodeKinds(p: AbstractionPolicy): Seq[NodeKind] = Seq()
+  def kindType: KindType = Parameter
 }
 
 object JavaNodeKind extends NodeKindKnowledge {
@@ -53,6 +60,8 @@ object JavaNodeKind extends NodeKindKnowledge {
   def abstractMethod = AbstractMethod
   def method = Method
   def staticMethod = StaticMethod
+
+  def parameter = Param
 
   def definition = Definition
 
@@ -95,7 +104,7 @@ object JavaNodeKind extends NodeKindKnowledge {
 
     def noNameClash( l : Int )( cId : NodeId ) : Boolean =
       concreteNodeTestPred(graph, cId){ c =>
-        (c.kind, c.styp) match {
+        (c.kind, graph.styp(c.id)) match {
           case (ck: MethodKind, Some(MethodType(input, _)))=>
             c.name != other.name || input.length != l
           case (ck: MethodKind, _)=>
@@ -106,7 +115,7 @@ object JavaNodeKind extends NodeKindKnowledge {
 
     def implementMethod(absMethodName : String, absMethodType : MethodType)(id : NodeId) : Boolean =
       graph.content(id).exists(concreteNodeTestPred(graph, _) { c =>
-        (c.kind, c.styp) match {
+        (c.kind,graph.styp(c.id)) match {
           case (Method, Some(mt @ MethodType(_, _))) =>
             absMethodName == c.name && absMethodType == mt
           case (Method, _) => throw new DGError()
@@ -115,7 +124,7 @@ object JavaNodeKind extends NodeKindKnowledge {
       })
 
     super.canContain(graph)(n, other) &&
-      ( (other.kind, other.styp) match {
+      ( (other.kind, graph.styp(other.id)) match {
         case (AbstractMethod, Some(absMethodType @ MethodType(input, _))) =>
           graph.content(id).forall(noNameClash(input.length)) &&
             graph.directSubTypes(id).forall {implementMethod(other.name, absMethodType)}
@@ -146,7 +155,7 @@ object JavaNodeKind extends NodeKindKnowledge {
     g.content(tid).find {
       cid =>
         val n = g.getConcreteNode(cid)
-        (n.kind, n.styp) match {
+        (n.kind, g.styp(n.id)) match {
           case (Constructor, Some(MethodType(input,_))) =>
             input.length == 0
           case _ => false

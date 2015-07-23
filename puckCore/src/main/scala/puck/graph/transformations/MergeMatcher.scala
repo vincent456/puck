@@ -1,6 +1,6 @@
 package puck.graph.transformations
 
-import puck.graph.{DependencyGraph, ConcreteNode}
+import puck.graph.{Type, DependencyGraph, ConcreteNode}
 
 trait MergeMatcherInstances {
   def syntaxicMergeMatcher(n : ConcreteNode): MergeMatcher
@@ -9,7 +9,7 @@ trait MergeMatcherInstances {
 
 trait MergeMatcher {
   val node : ConcreteNode
-  def canBeMergedInto(other : ConcreteNode, graph : DependencyGraph): Boolean = {
-    other.kind == node.kind && other.id != node.id
+  def canBeMergedInto(other : ConcreteNode, styp : Option[Type], graph : DependencyGraph): Boolean = {
+    other.kind == node.kind && other.id != node.id && graph.styp(other.id) == styp
   }
 }

@@ -36,13 +36,13 @@ abstract class Abstract {
   def absType
   ( g : DependencyGraph,
     impl : ConcreteNode,
-    sUsesAccessKind: Option[UsesAccessKind]) : Option[Type] =
-    sUsesAccessKind match {
-      case None => impl.styp
-      case Some(Read) => impl.styp map (Arrow(???, _))
-      case Some(Write) => impl.styp map (Arrow(_, ???))
-      case Some(RW) => sys.error("should not happen")
-  }
+    sUsesAccessKind: Option[UsesAccessKind]) : Option[Type] = ???
+//    sUsesAccessKind match {
+//      case None => impl.styp
+//      case Some(Read) => impl.styp map (Arrow(???, _))
+//      case Some(Write) => impl.styp map (Arrow(_, ???))
+//      case Some(RW) => sys.error("should not happen")
+//  }
 
   def createAbsNode
   ( g : DependencyGraph,
@@ -63,8 +63,17 @@ abstract class Abstract {
         (abs, g2.addAbstraction(impl.id, abs))
 
       case _ =>
+
         val name = abstractionName(g, impl, abskind, policy, None)
         val (n, g1) = g.addConcreteNode(name, abskind, absType(g, impl, None))
+        g1.parameters(impl.id).foldLeft(g1){
+          (g0, paramId) =>
+            val param = g0.getConcreteNode(paramId)
+            val (pabs, g01) = g0.addConcreteNode(param.name, param.kind, g0.styp(paramId), mutable = true)
+            g01.usedBy(paramId).foldLeft(g01.addParam(n.id, pabs.id)){
+              (g00, tid) => g01.addUses(pabs.id, tid)
+            }
+        }
         val abs = AccessAbstraction(n.id, policy)
         (abs, g1.addAbstraction(impl.id, abs))
 
@@ -100,12 +109,19 @@ abstract class Abstract {
   ( g : DependencyGraph, meth : ConcreteNode,
     clazz : ConcreteNode, interface : ConcreteNode): LoggedTG ={
 
-      val g1 = g.changeContravariantType(meth.id, meth.styp, clazz.id, interface.id)
+      val g1 = g.changeContravariantType(meth.id, g.styp(meth.id), clazz.id, interface.id)
       val log = "changeSelfTypeUseBySuperInTypeMember : " +
         s"redirecting Uses(${meth.name}, ${clazz.name}) target to $interface\n"
 
-      val ltg = Redirection.redirectUsesAndPropagate(g1, Uses(meth.id, clazz.id),
-          AccessAbstraction(interface.id, SupertypeAbstraction))
+      val ltg = g.parameters(meth.id).foldLoggedEither(g1){
+        (g0, pid) =>
+          if (g0.uses(pid, clazz.id))
+            Redirection.redirectUsesAndPropagate(g0, Uses(pid, clazz.id),
+              AccessAbstraction(interface.id, SupertypeAbstraction))
+          else
+            LoggedSuccess(g0)
+
+      }
       log <++: ltg
 
   }
@@ -174,12 +190,13 @@ abstract class Abstract {
     }
   }
 
-  def addTypesUses(g : DependencyGraph, nodeId : NodeId) : DependencyGraph =
-    g.getConcreteNode(nodeId).styp.map(_.ids) match {
-      case None => g
-      case Some(typesUsed) =>
-        typesUsed.foldLeft(g){(g0, tid) => g0.addUses(nodeId, tid)}
-    }
+//  def addTypesUses(g : DependencyGraph, nodeId : NodeId) : DependencyGraph =
+//    g.getConcreteNode(nodeId).styp.map(_.ids) match {
+//      case None => g
+//      case Some(typesUsed) =>
+//        typesUsed.foldLeft(g){(g0, tid) => g0.addUses(nodeId, tid)}
+//    }
+
 
   def createAbstractTypeMember
   ( g : DependencyGraph,
@@ -239,7 +256,7 @@ abstract class Abstract {
         members.foldLoggedEither(g3.addIsa(clazz.id, interface.id)){
           (g0, child) =>
             child.kind.kindType match {
-            case InstanceValueDecl if g0.uses(child.id, clazz.id)=>
+            case InstanceValueDecl if g0.parameters(child.id).exists(g0.uses(_, clazz.id)) =>
               changeSelfTypeUseBySuperInTypeMember(g0, child, clazz, interface)
             case _ => LoggedSuccess(g0)
           }
@@ -248,7 +265,7 @@ abstract class Abstract {
 
 
       log = s"interface $interface created, contains : {" +
-             g.content(interface.id).map(showDG[NodeId](g).show).mkString("\n")+
+             g4.content(interface.id).map(showDG[NodeId](g4).show).mkString("\n")+
              "}"
       g5 <- LoggedSuccess(g4, log)
 

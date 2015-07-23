@@ -27,6 +27,8 @@ aspect NodeFactory  {
 			" does not know how to create an DG Node");
 	}
 
+	//public int Variable.buildDGNode(JavaGraphBuilder builder);
+
 	public int ConstructorDecl.buildDGNode(JavaGraphBuilder builder){
 		int nodeId = super.buildDGNode(builder);
 		int hostTypeId = hostType().buildDGNode(builder);
@@ -69,7 +71,7 @@ aspect NodeFactory  {
 
     public int VarAccess.buildDGNode(JavaGraphBuilder builder){
         this.lock();
-        return decl().buildDGNode(builder);
+        return ((ASTNode)decl()).buildDGNode(builder);
     }
 
 
@@ -94,27 +96,14 @@ aspect NodeFactory  {
 //	}
 
 
-
-
-	public int Variable.buildDGNode(JavaGraphBuilder builder);
-
-		
 	public int VariableDeclaration.buildDGNode(JavaGraphBuilder builder){
-		BodyDecl hostbd = hostBodyDecl();
-		if(hostbd.isConstructorDecl())
-			return hostbd.buildDGNode(builder);
-		else
-			return builder.getDefinition(hostbd.buildDGNode(builder));
-	}
-
-	public int ParameterDeclaration.buildDGNode(JavaGraphBuilder builder){
-		return hostBodyDecl().buildDGNode(builder);
+		return builder.getDefinition(hostBodyDecl().buildDGNode(builder));
 	}
 
 	//needed because otherwise JastAdd create and empty decl
-	public int FieldDeclaration.buildDGNode(JavaGraphBuilder builder){
-		return super.buildDGNode(builder);
-	}
+//	public int FieldDeclaration.buildDGNode(JavaGraphBuilder builder){
+//		return super.buildDGNode(builder);
+//	}
 
 
 	/*public DGNode FieldDecl.buildDGNode(JavaGraphBuilder builder){

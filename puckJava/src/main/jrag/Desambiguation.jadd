@@ -86,10 +86,17 @@ aspect Desambiguation{
 	public String FieldDeclaration.fullName(){
 		return hostType().fullName()+"."+name();
 	}
-	
+
+
+	public String ParameterDeclaration.fullName(){
+		return hostBodyDecl().fullName()+"."+name();
+
+	}
+
 	public String VariableDecl.fullName(){
 		return hostBodyDecl().fullName()+"."+name();		
 	}
+
 	public String InstanceInitializer.fullName(){
 		return hostType().fullName()+".InstanceInitializer";//add an id number ??
 	}

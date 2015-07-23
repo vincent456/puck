@@ -4,7 +4,6 @@ import java.io.{FileReader, File}
 import java.util.NoSuchElementException
 
 import puck.PuckError
-import puck.graph.DGEdge.IsaK
 import puck.graph.constraints.{SupertypeAbstraction, ConstraintsParser}
 import puck.graph.transformations._
 import puck.graph._
@@ -383,7 +382,7 @@ class JavaDG2AST
 
       (id2declMap(target.id), id2declMap(newTarget.id)) match {
         case (InterfaceDeclHolder(odlDecl), InterfaceDeclHolder(newDecl))
-          if e.kind == IsaK =>
+          if e.kind == Isa =>
           sourceInAST match {
             case ClassDeclHolder(srcDecl) =>
               srcDecl.replaceImplements(odlDecl.createLockedAccess(), newDecl.createLockedAccess())
@@ -413,10 +412,10 @@ class JavaDG2AST
           val t = Transformation(Regular, RedirectionOp(e, Target(newTargetId)))
           logger.writeln(showDG[Transformation](reenactor).shows(t))
           //TODO refine
-          (sourceInAST, newTarget.styp) match {
+          (sourceInAST, reenactor styp newTarget.id) match {
             case (bdh : HasBodyDecl, Some(NamedType(fieldType))) =>
               logger.write("*** typeUse ")
-              logger.writeln(showDG[DGEdge](reenactor).shows(DGEdge.UsesK(newTargetId, fieldType)))
+              logger.writeln(showDG[DGEdge](reenactor).shows(Uses(newTargetId, fieldType)))
               logger.writeln("type member uses " + reenactor.typeMemberUsesOf(newTargetId, fieldType))
               logger.writeln()
               logger.writeln()
@@ -633,16 +632,16 @@ class JavaDG2AST
       val newSource = resultGraph.getNode(newSourceId)
 
       e.kind match {
-        case DGEdge.ContainsK => move(source, newSource, target)
-        case DGEdge.IsaK =>
+        case Contains => move(source, newSource, target)
+        case Isa =>
           removeIsa(id2declMap(source.id),id2declMap(target.id))
           addIsa(id2declMap(newSource.id), id2declMap(target.id))
 
-        case DGEdge.UsesK =>
+        case Uses =>
           throw new PuckError(s"redirect ${showDG[DGEdge](resultGraph).shows(e)} " +
             s"new source = ${showDG[NodeId](resultGraph).shows(newSourceId)}")
 
-        case DGEdge.ParameterizedUsesK =>
+        case ParameterizedUses =>
           logger.writeln("Redirect source of parameterized uses ignored")
 
       }

@@ -268,7 +268,7 @@ object PuckJavaBuild {
     producedFiles
   }
 
-  def concat(target: File, files : Seq[File]): Unit ={
+  def concat(target: File, files : Seq[File]): Unit = {
     IO.delete(target) // delete from previous runs if clean wasn't called
     IO.touch(target)
     for (f <- files) {

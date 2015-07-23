@@ -107,7 +107,7 @@ class Merge
 
                   }
                 case _ =>
-                  LoggedSuccess(g0.changeSource(DGEdge.ContainsK(consumedId, consumedChildId), consumerId)
+                  LoggedSuccess(g0.changeSource(Contains(consumedId, consumedChildId), consumerId)
                     .changeType(consumedChildId, consumedId, consumerId))
               }
           }
@@ -123,7 +123,8 @@ class Merge
     val consumed = g.getConcreteNode(consumedId)
     consumed.kind.kindType match {
       case InstanceValueDecl
-      | StaticValueDecl =>
+      | StaticValueDecl
+      | TypeConstructor =>
         mergeInto0(g, consumedId, consumerId){
           (g, consumedId, _) =>
             g.content(consumedId).foldLoggedEither(g.comment("Delete consumed def")) {

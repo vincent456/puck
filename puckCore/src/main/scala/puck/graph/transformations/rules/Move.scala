@@ -8,6 +8,10 @@ import scalaz.std.list._
 import scalaz.std.set._
 import ShowDG._
 
+sealed trait CreateVarStrategy
+case object CreateParameter extends CreateVarStrategy
+case class CreateTypeMember(kind : NodeKind) extends CreateVarStrategy
+
 object Move {
 
   def typeDecl
@@ -67,29 +71,6 @@ object Move {
         tuses.exists(_.selfUse)
     }
   }
-
-
-  def redirectTypeUsesOfMovedTypeMemberUsers
-  ( g : DependencyGraph,
-    typeMemberUses : Seq[Uses],
-    newTypeUsed : NodeId
-    ) : DependencyGraph =
-      typeMemberUses.foldLeft(g) {
-        case (g0, typeMemberUse) =>
-
-          g.typeUsesOf(typeMemberUse).foldLeft(g0) { (g0, typeUse) =>
-
-            val g1 = g0.removeUsesDependency(typeUse, typeMemberUse)
-            val keepOldUse = g1.typeMemberUsesOf(typeUse).nonEmpty
-
-            val newTypeUse = Uses(typeUse.user, newTypeUsed)
-
-            Redirection.redirectUses(g1, typeUse, newTypeUsed, keepOldUse)
-              .addUsesDependency(newTypeUse, typeMemberUse)
-          }
-      }
-
-
 
 
   private def logTypeMemberMove
@@ -152,7 +133,7 @@ object Move {
 
     val movedDeclWithArgUsableAsReceiver : Set[NodeId] =
       movedDecl.filter {
-        nid => g0.getConcreteNode(nid).styp match {
+        nid => g0.styp(nid) match {
           case None => false
           case Some(t) => t uses newContainer
 
@@ -172,11 +153,11 @@ object Move {
                 .addUsesDependency(newSelfUse, u)
     }
 
-    println("moving " + movedDecl)
-    println("siblings are " + siblings)
-    println("moved using sibling via def " +
-      (movedDefUsingSiblingViaThis map g0.container_!))
-    println("moved with arg usable as receiver" + movedDeclWithArgUsableAsReceiver)
+//    println("moving " + movedDecl)
+//    println("siblings are " + siblings)
+//    println("moved using sibling via def " +
+//      (movedDefUsingSiblingViaThis map g0.container_!))
+//    println("moved with arg usable as receiver" + movedDeclWithArgUsableAsReceiver)
 
     for {
       g3 <- useArgAsReceiver(g2, oldContainer, newContainer, movedDeclWithArgUsableAsReceiver)
@@ -199,7 +180,7 @@ object Move {
     ) : LoggedTG = {
     val newSelfUse = Uses(newContainer, newContainer)
     nodeSet.foldLoggedEither(g){
-      (g0, used) => g0.getConcreteNode(used).styp match {
+      (g0, used) => g0.styp(used) match {
         case Some(ar : Arrow)=>
           val g1 = g0.setType(used,  Some(ar.removeFirstArgOfType(NamedType(newContainer))))
           val oldTypeUses = Uses(used, newContainer)
@@ -226,7 +207,7 @@ object Move {
     nodeSet.foldLoggedEither(g){
       (g0, user) =>
         val decl = g0.container_!(user)
-        g0.getConcreteNode(decl).styp match {
+        g0.styp(decl) match {
 
         case Some(ar : Arrow)=>
           val newTypeUses = Uses(decl, oldContainer)
@@ -300,9 +281,9 @@ object Move {
 
         val decl = g0.getConcreteNode(g0.container_!(userId))
 
-        val newTypeUse = Uses(decl.id, newTypeUsed)
+        val newTypeUse = ??? //Uses(decl.id, newTypeUsed)
 
-        decl.styp match {
+        g0.styp(decl.id) match {
           case  Some(NamedType(_)) => ???
 
           case  Some( ar : Arrow ) =>

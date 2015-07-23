@@ -12,10 +12,14 @@ object Type {
   ( g : DependencyGraph,
     absName : String, absSig : Type,
     candidates : List[ConcreteNode]) : Option[(ConcreteNode, List[ConcreteNode])] = {
+    //println(s"searching for abstraction of $absName $absSig in $candidates")
     import puck.util.Collections.SelectList
-    candidates.select( c => c.styp.nonEmpty &&
-      c.name == absName &&
-      c.styp.exists(absSig.canOverride(g, _)))
+    candidates.select{c =>
+      val styp = g.styp(c.id)
+        styp.nonEmpty &&
+        c.name == absName &&
+        styp.exists(absSig.canOverride(g, _))
+    }
   }
 
   type OnImplemNotFound =
@@ -37,7 +41,7 @@ object Type {
   ( onImplemNotFound : OnImplemNotFound ): LoggedTG =
     absMeths.foldLoggedEither((g, candidates) ){
       case ((g0, cs), supMeth) =>
-        (supMeth.styp, supMeth.kind.kindType) match {
+        (g0.styp(supMeth.id), supMeth.kind.kindType) match {
           case (Some(mt), InstanceValueDecl) =>
             findOverridedIn(g0, supMeth.name, mt, cs) match {
               case Some((subMeth, newCandidates)) =>
@@ -45,7 +49,7 @@ object Type {
               case None => onImplemNotFound(g0, supMeth, candidates)
             }
           case (Some(mt), TypeConstructor) => LoggedSuccess((g0,cs))
-          case _ => LoggedError(new PuckError(s"${showDG[ConcreteNode](g).shows(supMeth)} has not a correct type"))
+          case (st, skt) => LoggedError(new PuckError(s"${showDG[ConcreteNode](g).shows(supMeth)} has not a correct type ($st - $skt)"))
         }
     } map(_._1)
 }

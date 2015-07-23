@@ -18,7 +18,7 @@ object NodeIndex {
     NodeIndex(root.id,
       ConcreteNodeIndex() + (root.id -> root), ConcreteNodeIndex(),
       VirtualNodeINdex(), VirtualNodeINdex(),
-      Nodes2VNodeMap()).addConcreteNode(root)
+      Nodes2VNodeMap(), Map()).addConcreteNode(root)
 
   def getNodeWithStatus[N <: DGNode](id : NodeId,
                                      nodes : Map[NodeId, N],
@@ -41,7 +41,8 @@ case class NodeIndex
   removedCnodes : ConcreteNodeIndex,
   vNodes : VirtualNodeIndex,
   removedVnodes : VirtualNodeIndex,
-  cNodes2vNodes : Nodes2VnodeMap){
+  cNodes2vNodes : Nodes2VnodeMap,
+  types : Map[NodeId, Type]){
 
   private [this] def adjustSeed(nid : NodeId) =
     if(nid <= idSeed) this
@@ -59,8 +60,8 @@ case class NodeIndex
     th : Option[Type],
     mutable : Mutability = true
     ) : (ConcreteNode, NodeIndex) = {
-    val n = ConcreteNode(idSeed + 1, localName, kind, th, mutable)
-    (n, addConcreteNode(n))
+    val n = ConcreteNode(idSeed + 1, localName, kind, mutable)
+    (n, addConcreteNode(n).setType(n.id, th))
   }
 
   private [graph] def addVirtualNode
@@ -146,8 +147,12 @@ case class NodeIndex
   }
 
   def setType(id : NodeId, st : Option[Type]) : NodeIndex = {
-    val (n, s) = getConcreteNodeWithStatus(id)
-    setNode(n.copy(styp = st), s)
+    st match {
+      case None =>
+        if(types contains id) copy(types = types - id)
+        else this
+      case Some(t) => copy(types = types + (id -> t))
+    }
   }
 
   def setMutability(id : NodeId, mutable : Boolean) : NodeIndex =  {

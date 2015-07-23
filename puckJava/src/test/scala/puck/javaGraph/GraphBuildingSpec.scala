@@ -3,6 +3,7 @@ package javaGraph
 
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph._
+import puck.util.Debug
 
 //import nodeKind._
 
@@ -40,12 +41,13 @@ class GraphBuildingSpec extends AcceptanceSpec {
     // body uses : local var or static access
     // thisClass uses : call a sibling method or field
     scenario("this use explicit") {
-      val p = "thisUseExplicit"
-      val _ = new ExampleSample(s"$examplesPath/$p/A.java") {
-        val clazz = fullName2id(s"$p.A")
-        val methM = fullName2id(s"$p.A.m__void")
-        val mUserViaThis = fullName2id(s"$p.A.mUserViaThis__void")
-        val mUserViaParameter = fullName2id(s"$p.A.mUserViaParameter__A")
+      val _ = new ExampleSample(s"$examplesPath/ThisUseExplicit.java") {
+        val clazz = fullName2id("p.A")
+        val methM = fullName2id("p.A.m__void")
+        val mUserViaThis = fullName2id("p.A.mUserViaThis__void")
+        val mUserViaParameter = fullName2id("p.A.mUserViaParameter__A")
+        val theParameter = fullName2id("p.A.mUserViaParameter__A.a")
+
 
         val mUserViaThisDef = getDefinition(graph, mUserViaThis)
         val mUserViaParameterDef = getDefinition(graph, mUserViaParameter)
@@ -60,12 +62,26 @@ class GraphBuildingSpec extends AcceptanceSpec {
         assert( graph.uses(mUserViaParameterDef, methM) )
         assert( !graph.uses(mUserViaParameter, methM) )
 
-        assert( graph.uses(mUserViaParameter, clazz) )
+        assert( graph.uses(theParameter, clazz) )
+
+      }
+    }
+
+    scenario("field type use") {
+      val _ = new ExampleSample(s"$examplesPath/FieldTypeUse.java") {
+        val itc = fullName2id("p.I")
+        val field = fullName2id("p.A.field")
+
+
+        assert( graph.uses(field, itc) )
 
       }
     }
 
   }
+
+
+
 
   feature("typeUse typeMemberUse relation registration"){
     val examplesPath = graphBuildingExamplesPath +  "typeRelationship/"
@@ -102,11 +118,12 @@ class GraphBuildingSpec extends AcceptanceSpec {
       val _ = new ExampleSample(s"$examplesPath/CallOnParameter.java"){
 
         val mUserDecl = fullName2id("p.A.ma__B")
+        val theParameter = fullName2id("p.A.ma__B.b")
         val mUserDef = getDefinition(graph, mUserDecl)
         val classUsed = fullName2id("p.B")
         val mUsed = fullName2id("p.B.mb__void")
 
-        val typeUse = Uses(mUserDecl, classUsed)
+        val typeUse = Uses(theParameter, classUsed)
         val typeMemberUse = Uses(mUserDef, mUsed)
 
         graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
@@ -168,10 +185,9 @@ class GraphBuildingSpec extends AcceptanceSpec {
     val examplesPath = graphBuildingExamplesPath +  "subTyping/"
 
     scenario("simple case"){
-      val p = "regularSuperType"
-      val _ = new ExampleSample(s"$examplesPath/$p/A.java") {
-        val superClass = fullName2id(s"$p.A")
-        val subClass = fullName2id(s"$p.B")
+      val _ = new ExampleSample(s"$examplesPath/RegularSuperType.java") {
+        val superClass = fullName2id("p.A")
+        val subClass = fullName2id("p.B")
 
         assert( graph.isa(subClass, superClass) )
 
@@ -179,11 +195,10 @@ class GraphBuildingSpec extends AcceptanceSpec {
     }
 
     scenario("generic super type"){
-      val p = "genericSuperType"
-      val _ = new ExampleSample(s"$examplesPath/$p/A.java") {
-        val superClass = fullName2id(s"$p.Gen")
-        val subClass = fullName2id(s"$p.C")
-        val paramType = fullName2id(s"$p.A")
+      val _ = new ExampleSample(s"$examplesPath/GenericSuperType.java") {
+        val superClass = fullName2id("p.Gen")
+        val subClass = fullName2id("p.C")
+        val paramType = fullName2id("p.A")
 
         assert( graph.isa(subClass, superClass) )
         assert( ! graph.isa(subClass, paramType) )
@@ -222,6 +237,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val formalTypeParam = fullName2id("p.GenColl@T")
         val genType = fullName2id("p.GenColl")
         val genMethod = fullName2id("p.GenColl.put__GenColl@T")
+        val theParameter = fullName2id("p.GenColl.put__GenColl@T.t")
         val userClass = fullName2id("p.User")
 
         val userMethodDecl = fullName2id("p.User.m__void")
@@ -234,7 +250,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
         assert( ! graph.uses(genMethod, actualTypeParam) )
 
-        assert( graph.uses(genMethod, formalTypeParam) )
+        assert( graph.uses(theParameter, formalTypeParam) )
 
         assert( graph.uses(userMethodDef, genType) )
 

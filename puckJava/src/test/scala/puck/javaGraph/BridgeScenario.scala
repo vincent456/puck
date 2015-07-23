@@ -83,7 +83,6 @@ class BridgeScenario private()
     val (c1, g1) = introClassMoveMethod(g0, className, meth1)
 
     val (c2, g2) = introClassMoveMethod(g1, className+"Tmp", meth2)
-
     val g3 = TR.mergeInto(g2.comment("-- Merging methods (begin) --"), meth2, meth1).value.right.value
     (c1, TR.mergeInto(g3.comment("-- Merging methods (end) --"), c2.id, c1.id).value.right.value
       .comment("-- intro2classMerge (end) --"))
@@ -93,7 +92,7 @@ class BridgeScenario private()
   (g : DependencyGraph, clazz : NodeId, interface : NodeId) : DependencyGraph =
     g.usersOf(clazz).foldLeft(g){ (g0, userId) =>
       TR.redirection.redirectUsesAndPropagate(g0,
-        DGEdge.UsesK(userId, clazz),
+        Uses(userId, clazz),
         AccessAbstraction(interface,
         SupertypeAbstraction)).value.right.value
     }
@@ -111,9 +110,7 @@ class BridgeScenario private()
   val g0 = graph.newGraph(constraints = cm)
   logger = new PuckFileLogger(_ => true, new File(BridgeScenario.path + "log"))
   val jdg2ast = new JavaDG2AST(program, g0, initialRecord, fullName2id, dg2astMap)
-
   val (c1, g1) = intro2classMerge(g0, "StarStyle", printStar1, printStar2)
-  //QuickFrame(g1)
   val (c2, g2) = intro2classMerge(g1, "CapitalStyle", printCapital1, printCapital2)
   val g3 =  TR.rename(TR.rename(g2, printStar1, "printStyle"), printCapital1, "printStyle")
 

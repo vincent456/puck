@@ -2,7 +2,7 @@ package puck.gui.svg
 
 import javax.swing.JPopupMenu
 
-import puck.graph.{Uses, DGEdge}
+import puck.graph.{Isa, Uses, DGEdge}
 import puck.gui.svg.actions.{ShowTypeRelationshipAction, RemoveEdgeAction, ManualSolveAction}
 
 import NodeRightClickMenu.JPopupSyntax
@@ -18,7 +18,7 @@ class EdgeRightClickMenu
     add(new ManualSolveAction(target, controller))
   }
 
-  if(edge.kind == DGEdge.IsaK)
+  if(edge.kind == Isa)
     add(new RemoveEdgeAction(edge, controller))
 
   edge match {

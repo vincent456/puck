@@ -7,9 +7,11 @@ import scala.collection.JavaConversions.collectionAsScalaIterable
 
 import DependencyGraph._
 
+import scalaz.{-\/, \/-}
+
 class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
 
-   val root = ConcreteNode(rootId, rootName, Package, None, mutable = true)
+   val root = ConcreteNode(rootId, rootName, Package, mutable = true)
 
    g = new DependencyGraph(JavaNodeKind,
      NodeIndex(root), EdgeMap(),
@@ -49,6 +51,10 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
         }
       case  Some(pn) => pn
     }
+  import scala.collection.JavaConversions.asScalaBuffer
+  def addParams(decl : NodeId, params : java.util.ArrayList[Integer]) : Unit =
+    addParams(decl, params.toList.map(_.toInt))
+
 
   def findTypeDecl(typ : String): AST.TypeDecl ={
     val td = program findType typ
@@ -211,21 +217,15 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
     }
   }
 
-  def registerDef(n : NodeIdT, decl : AST.Expr) : Unit = {
-    g.getConcreteNode(n).kind match {
-      case Definition =>
-        graph2ASTMap += (n -> ExprHolder(decl))
-      case _ => throwRegisteringError(g.getConcreteNode(n), "Expr")
-    }
-  }
+  def registerDecl(n : NodeIdT, decl : AST.ParameterDeclaration) : Unit =
+    register(n, Param, ParameterDeclHolder(decl), "ParameterDeclaration")
 
-  def registerDef(n : NodeIdT, decl : AST.Block) : Unit = {
-    g.getConcreteNode(n).kind match {
-      case Definition =>
-        graph2ASTMap += (n -> BlockHolder(decl))
-      case _ => throwRegisteringError(g.getConcreteNode(n), "Expr")
-    }
-  }
+  def registerDef(n : NodeIdT, decl : AST.Expr) : Unit =
+    register(n, Definition, ExprHolder(decl), "Expr")
+
+  def registerDef(n : NodeIdT, decl : AST.Block) : Unit =
+    register(n, Definition, BlockHolder(decl), "Block")
+
 
 
   override def registerAbstraction : DependencyGraph => (ImplId, Abstraction) => DependencyGraph =
@@ -244,8 +244,11 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
               val candidates = graph.content(impl.id).map(graph.getConcreteNode)
               Type.findAndRegisterOverridedInList(graph, absMeths.toList, candidates.toList) {
                 Type.errorOnImplemNotFound(graph.fullName(impl.id))
-              } .value.getOrElse(sys.error("Success expected"))
-                .addAbstraction(implId, abs)
+              } .value match {
+                case \/-(g) => g.addAbstraction(implId, abs)
+                case -\/(err) => throw err
+              }
+
             case _ => graph
           }
         case _ => super.registerAbstraction(graph)(implId , abs)

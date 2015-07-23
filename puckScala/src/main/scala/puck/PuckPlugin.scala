@@ -43,7 +43,7 @@ class GenDependencyGraph
 (val global: Global) extends PluginComponent with GraphBuilder {
   import global._
 
-  val root = ConcreteNode(rootId, rootName, ScalaRoot, None, mutable = true)
+  val root = ConcreteNode(rootId, rootName, ScalaRoot, mutable = true)
 
   g = new DependencyGraph(ScalaNodeKind,
     NodeIndex(root), EdgeMap(),
