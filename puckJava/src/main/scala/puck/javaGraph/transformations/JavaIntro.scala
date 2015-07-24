@@ -11,15 +11,14 @@ object JavaIntro extends Intro {
   (graph: DependencyGraph,
    localName: String,
    kind: NodeKind,
-   th: Option[Type],
    mutable: Mutability = true
     ): (ConcreteNode, DependencyGraph) = {
-    val (n, g) = super.apply(graph, localName, kind, th, mutable)
+    val (n, g) = super.apply(graph, localName, kind, mutable)
     kind match {
       case Class =>
-        val (ctor, g1) = apply(g, localName, Constructor,
-          Some(new MethodType(Tuple(List()), NamedType(n.id))))
-        (n, g1.addContains(n.id, ctor.id))
+        val (ctor, g1) = apply(g, localName, Constructor)
+        (n, g1.addContains(n.id, ctor.id)
+              .setType(ctor.id, Some(NamedType(n.id))))
 
       case _ => (n, g)
     }
@@ -32,14 +31,12 @@ object JavaIntro extends Intro {
    typeNode: NodeId,
    mutable: Mutability = true
     ): (ConcreteNode, DependencyGraph) = {
-    val t = kind match {
-      case Field => NamedType(typeNode)
-      case Method => MethodType(Tuple(List()), NamedType(typeNode))
-    }
 
-    val (cn, g) = this.apply(graph, localName, kind, Some(t))
-    val (defNode, g2) = g.addConcreteNode("", Definition, None)
-    (cn, g2.addDef(cn.id, defNode.id))
+    val (cn, g) = this.apply(graph, localName, kind)
+    val (defNode, g2) = g.addConcreteNode("", Definition)
+
+    (cn, g2.setType(cn.id, Some(NamedType(typeNode)))
+      .addDef(cn.id, defNode.id))
   }
 
 }

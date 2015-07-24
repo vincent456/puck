@@ -40,8 +40,11 @@ class TransformationRules
     if(!g.canBe(subNode, supNode))
       LoggedError(new PuckError(s"${showDG[NodeId](g).shows(sub)} cannot be ${showDG[NodeId](g).show(sup)}"))
     else {
-      val subMethods = g.content(sub).toList map g.getConcreteNode
-      val supMethods = g.content(sup).toList map g.getConcreteNode
+
+      val f = (id : NodeId) => (g getConcreteNode id, g styp id get)
+      val subMethods = g.content(sub).toList map f
+      val supMethods = g.content(sup).toList map f
+
       Type.findAndRegisterOverridedInList(g, supMethods, subMethods) {
         Type.errorOnImplemNotFound(showDG[NodeId](g).shows(sub))
       } map ( _.addIsa(sub, sup).
@@ -50,7 +53,7 @@ class TransformationRules
         g =>
           val overloadedMethod =
             subMethods filter {
-              m => g.abstractions(m.id) exists {
+              case ((m, _)) => g.abstractions(m.id) exists {
                 case AccessAbstraction(supMethId, SupertypeAbstraction)
                   if g.contains(sup, supMethId) => true
                 case _ => false
@@ -58,7 +61,7 @@ class TransformationRules
               }
             }
           overloadedMethod.foldLoggedEither(g){
-            (g0, m) =>
+            case (g0, (m, _)) =>
               abstracter.changeSelfTypeUseBySuperInTypeMember(g0, m, subNode, supNode)
           }
       }

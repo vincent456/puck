@@ -27,27 +27,6 @@ object JavaAbstract extends Abstract {
     }
   }
 
-  override def absType
-  ( g : DependencyGraph,
-    impl : ConcreteNode,
-    sUsesAccessKind: Option[UsesAccessKind]) : Option[Type] = {
-
-    ???
-    /*val voidId = {
-      val sNode = g.concreteNodes.find(_.name == "void")
-      if(sNode.isEmpty) sys.error("void not loaded")
-      else sNode.get.id
-    }
-
-    (sUsesAccessKind, impl.styp) match {
-      case (Some(Read), Some(t@NamedType(_))) =>
-        Some(MethodType(Tuple(), t))
-      case (Some(Write), Some(t)) =>
-        Some(MethodType(Tuple(List(t)), NamedType(voidId)))
-      case _ => super.absType(g, impl, sUsesAccessKind)
-    }*/
-  }
-
   implicit class MyStringOps(val str : String) extends AnyVal{
     def upFirst =
       str.length match {

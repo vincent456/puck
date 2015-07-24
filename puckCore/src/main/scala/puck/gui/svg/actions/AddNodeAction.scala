@@ -18,7 +18,7 @@ extends AbstractAction(s"Add $childKind")
   override def actionPerformed(actionEvent: ActionEvent): Unit = {
     showInputDialog(s"New $childKind name:").foreach {
       childName =>
-        val (n, g) = TR.intro(graph.mileStone, childName, childKind, None)
+        val (n, g) = TR.intro(graph.mileStone, childName, childKind)
         pushGraph(g.addContains(host.id, n.id))
     }
 //    childKind match {

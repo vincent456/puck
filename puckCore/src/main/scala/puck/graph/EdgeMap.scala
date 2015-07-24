@@ -28,7 +28,7 @@ object EdgeMap {
                 EdgeMapT(), EdgeMapT(),
                 UseDependencyMap(),
                 UseDependencyMap(),
-                ParamMapT(), Node2NodeMap()/*, Node2NodeMap()*/)
+                ParamMapT(), Node2NodeMap(), Map()/*, Node2NodeMap()*/)
 }
 import EdgeMap._
 import puck.PuckError
@@ -48,7 +48,8 @@ case class EdgeMap
   //special cases of contains :
   parameters : ParamMapT,
   definition : Node2NodeMap/*,
-  declaration : Node2NodeMap*/){
+  declaration : Node2NodeMap*/,
+  types : Map[NodeId, Type]){
 
   override def toString : String = {
     val builder = new StringBuilder(150)
@@ -187,8 +188,12 @@ case class EdgeMap
   }
 
   def uses(userId: NodeId, usedId: NodeId) : Boolean =
-    userMap.bind(usedId, userId)
-
+    userMap.bind(usedId, userId) || {
+      types get userId match {
+        case None => false
+        case Some(t) => t uses usedId
+      }
+    }
 
   def parUses(userId: NodeId, usedId: NodeId) : Boolean =
     parameterizedUsers.bind(usedId, userId)
@@ -211,6 +216,14 @@ case class EdgeMap
     copy(typeMemberUses2typeUsesMap = typeMemberUses2typeUsesMap - (typeMemberUse, typeUse),
       typeUses2typeMemberUsesMap = typeUses2typeMemberUsesMap - (typeUse, typeMemberUse))
 
+  def setType(id : NodeId, st : Option[Type]) : EdgeMap = {
+    st match {
+      case None =>
+        if(types contains id) copy(types = types - id)
+        else this
+      case Some(t) => copy(types = types + (id -> t))
+    }
+  }
 
   def typeUsesOf(typeMemberUse : DGUses) : Set[DGUses] =
     typeUsesOf(typeMemberUse.user, typeMemberUse.used)

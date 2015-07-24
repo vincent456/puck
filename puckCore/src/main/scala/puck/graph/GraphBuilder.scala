@@ -11,10 +11,11 @@ trait GraphBuilder {
 
   def getFullName( id : NodeIdT) : String = g.fullName(id)
 
-  def addNode(unambiguousFullName: String, localName:String, kind: NodeKind, th : Option[Type]): NodeIdT = {
+  def addNode(unambiguousFullName: String, localName:String, kind: NodeKind): NodeIdT = {
     nodesByName get unambiguousFullName match {
       case None =>
-        val (n, g2) = g.addConcreteNode(localName, kind, th)
+        val (n, g2) = g.addConcreteNode(localName, kind)
+        //println(s"adding ${n.id} $unambiguousFullName ")
         this.nodesByName += (unambiguousFullName -> n.id)
         g = g2
         n.id
@@ -24,7 +25,7 @@ trait GraphBuilder {
 
   private val anonymous = "Anonymous"
   def addAnonymousNode(kind : NodeKind) : NodeIdT = {
-    val (n, g2) = g.addConcreteNode(anonymous, kind, None)
+    val (n, g2) = g.addConcreteNode(anonymous, kind)
     g = g2
     n.id
   }

@@ -72,6 +72,8 @@ class DotPrinter
 
   def html_safe(str : String) : String = str.replaceAllLiterally(">", "&gt;").replaceAllLiterally("<", "&lt;")
 
+
+
   val signatureString : Option[Type] => String =
     if (printSignatures)
       styp => {

@@ -84,7 +84,8 @@ object JavaNodeKind extends NodeKindKnowledge {
       case InstanceValueDecl => Seq(Field, Method)
       case InstanceTypeDecl => Seq(Interface, Class)
       case StaticValueDecl => Seq(StaticField, StaticMethod)
-      case /*Parameter |*/ ValueDef => Seq()
+      case Parameter => Seq(Param)
+      case ValueDef => Seq(Definition)
       case UnknownKindType => sys.error("Unknown kind type")
     }
 
@@ -138,15 +139,6 @@ object JavaNodeKind extends NodeKindKnowledge {
       })
   }
 
-  override def coupling(graph : DependencyGraph) =
-    graph.concreteNodes.foldLeft(0 : Double){ (acc, n) => n.kind match {
-    case Package =>
-      val c = Metrics.coupling(graph, n.id)
-      if(c.isNaN) acc
-      else acc + c
-    case _ => acc
-  }}
-
   def defaultKindForNewReceiver : NodeKind = Field
 
   val intro : Intro = JavaIntro
@@ -155,11 +147,16 @@ object JavaNodeKind extends NodeKindKnowledge {
     g.content(tid).find {
       cid =>
         val n = g.getConcreteNode(cid)
-        (n.kind, g.styp(n.id)) match {
-          case (Constructor, Some(MethodType(input,_))) =>
-            input.length == 0
+        n.kind match {
+          case Constructor => g.parameters(cid).isEmpty
           case _ => false
         }
     }
+  }
+
+  override def writeType(graph: DependencyGraph): Type = {
+    val sNode = graph.concreteNodes.find(_.name == "void")
+    if(sNode.isEmpty) sys.error("void not loaded")
+    else NamedType(sNode.get.id)
   }
 }

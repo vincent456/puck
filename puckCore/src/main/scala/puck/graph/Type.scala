@@ -11,19 +11,16 @@ object Type {
   def findOverridedIn
   ( g : DependencyGraph,
     absName : String, absSig : Type,
-    candidates : List[ConcreteNode]) : Option[(ConcreteNode, List[ConcreteNode])] = {
+    candidates : List[TypedNode]) : Option[(TypedNode, List[TypedNode])] = {
     //println(s"searching for abstraction of $absName $absSig in $candidates")
     import puck.util.Collections.SelectList
-    candidates.select{c =>
-      val styp = g.styp(c.id)
-        styp.nonEmpty &&
-        c.name == absName &&
-        styp.exists(absSig.canOverride(g, _))
+    candidates.select{
+      case (c, t) => c.name == absName && absSig.canOverride(g, t)
     }
   }
 
   type OnImplemNotFound =
-    (DependencyGraph, ConcreteNode, List[ConcreteNode]) => LoggedTry[(DependencyGraph, List[ConcreteNode])]
+    (DependencyGraph, ConcreteNode, List[TypedNode]) => LoggedTry[(DependencyGraph, List[TypedNode])]
 
   def errorOnImplemNotFound(className : String) : OnImplemNotFound = {
     (g, supMeth, _) =>
@@ -36,20 +33,20 @@ object Type {
 
   def findAndRegisterOverridedInList
   ( g : DependencyGraph,
-    absMeths : List[ConcreteNode],
-    candidates : List[ConcreteNode])
+    absMeths : List[TypedNode],
+    candidates : List[TypedNode])
   ( onImplemNotFound : OnImplemNotFound ): LoggedTG =
     absMeths.foldLoggedEither((g, candidates) ){
-      case ((g0, cs), supMeth) =>
-        (g0.styp(supMeth.id), supMeth.kind.kindType) match {
-          case (Some(mt), InstanceValueDecl) =>
-            findOverridedIn(g0, supMeth.name, mt, cs) match {
-              case Some((subMeth, newCandidates)) =>
+      case ((g0, cs), (supMeth, supMethT)) =>
+        supMeth.kind.kindType match {
+          case InstanceValueDecl =>
+            findOverridedIn(g0, supMeth.name, supMethT, cs) match {
+              case Some(((subMeth, _), newCandidates)) =>
                 LoggedSuccess((g0.addAbstraction(subMeth.id, AccessAbstraction(supMeth.id, SupertypeAbstraction)), newCandidates))
               case None => onImplemNotFound(g0, supMeth, candidates)
             }
-          case (Some(mt), TypeConstructor) => LoggedSuccess((g0,cs))
-          case (st, skt) => LoggedError(new PuckError(s"${showDG[ConcreteNode](g).shows(supMeth)} has not a correct type ($st - $skt)"))
+          case TypeConstructor => LoggedSuccess((g0,cs))
+          case skt => LoggedError(new PuckError(s"findAndRegisterOverridedInList : ${showDG[ConcreteNode](g).shows(supMeth)} has an unexpected type kind ($skt)"))
         }
     } map(_._1)
 }

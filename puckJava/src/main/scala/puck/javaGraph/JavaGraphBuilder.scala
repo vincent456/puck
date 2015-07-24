@@ -22,7 +22,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
   def addDefinitionNode() : NodeIdT = addAnonymousNode(Definition)
 
   def addPackageNode(fullName: String, localName:String) : NodeIdT =
-    super.addNode(fullName, localName, Package, None)
+    super.addNode(fullName, localName, Package)
 
   def getDefinition(nid : NodeId) =
     g.getConcreteNode(nid).definition_!(g)
@@ -66,7 +66,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
   def addApiTypeNode(td: AST.TypeDecl): NodeIdT = {
     //println("adding api td " + td.fullName() + " with packagedecl " + td.packageName())
     val packageNode = addPackage(td.packageName(), mutable = false)
-    val tdNode = addNode(td.fullName(), td.name(), td.getDGNodeKind, None)
+    val tdNode = addNode(td.fullName(), td.name(), td.getDGNodeKind)
     setMutability(tdNode, mutable = false)
 
     /*if(doAddUses)
@@ -137,7 +137,7 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
     def stringType = {
       val td = findTypeDecl("java.lang.string")
       val nid = addApiTypeNode(td)
-      Some(new JavaNamedType(nid))
+      NamedType(nid)
     }
 
     println("string "+literal + " "+ occurrences.size()+" occurences" )
@@ -146,11 +146,12 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
       val packageNode = nodesByName(bd.hostBodyDecl.compilationUnit.getPackageDecl)
 
       val bdNode = bd buildDGNode this
-      val strNode = addNode(bd.fullName()+literal, literal, Literal, stringType)
+      val strNode = addNode(bd.fullName()+literal, literal, Literal)
       /*
         this is obviously wrong: TODO FIX
       */
       addContains(packageNode, strNode)
+      setType(strNode, stringType)
       addEdge(Uses(bdNode, strNode, Some(Read)))
     }
   }
@@ -240,9 +241,11 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
               | (Interface, Interface) =>
             */
             case (Class, Interface) =>
-              val absMeths = graph.content(absId).map(graph.getConcreteNode)
-              val candidates = graph.content(impl.id).map(graph.getConcreteNode)
-              Type.findAndRegisterOverridedInList(graph, absMeths.toList, candidates.toList) {
+              val f = (id : NodeId) => (g getConcreteNode id, g styp id get)
+
+              val absMeths = (graph content absId).toList map f
+              val candidates = (graph content impl.id).toList map f
+              Type.findAndRegisterOverridedInList(graph, absMeths, candidates) {
                 Type.errorOnImplemNotFound(graph.fullName(impl.id))
               } .value match {
                 case \/-(g) => g.addAbstraction(implId, abs)

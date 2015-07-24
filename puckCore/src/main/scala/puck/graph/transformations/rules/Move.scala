@@ -133,11 +133,8 @@ object Move {
 
     val movedDeclWithArgUsableAsReceiver : Set[NodeId] =
       movedDecl.filter {
-        nid => g0.styp(nid) match {
-          case None => false
-          case Some(t) => t uses newContainer
-
-        }
+        nid =>
+          g0.parameters(nid) exists (g0.styp(_).get uses newContainer)
       }
 
     val oldSelfUse = Uses(oldContainer, oldContainer)
@@ -153,12 +150,12 @@ object Move {
                 .addUsesDependency(newSelfUse, u)
     }
 
-//    println("moving " + movedDecl)
-//    println("siblings are " + siblings)
-//    println("moved using sibling via def " +
-//      (movedDefUsingSiblingViaThis map g0.container_!))
-//    println("moved with arg usable as receiver" + movedDeclWithArgUsableAsReceiver)
-
+   /* println("moving " + movedDecl)
+    println("siblings are " + siblings)
+    println("moved using sibling via def " +
+      (movedDefUsingSiblingViaThis map g0.container_!))
+    println("moved with arg usable as receiver" + movedDeclWithArgUsableAsReceiver)
+*/
     for {
       g3 <- useArgAsReceiver(g2, oldContainer, newContainer, movedDeclWithArgUsableAsReceiver)
       g4 <- useReceiverAsArg(g3, oldContainer, newContainer, movedDefUsingSiblingViaThis, siblings)
@@ -180,21 +177,35 @@ object Move {
     ) : LoggedTG = {
     val newSelfUse = Uses(newContainer, newContainer)
     nodeSet.foldLoggedEither(g){
-      (g0, used) => g0.styp(used) match {
-        case Some(ar : Arrow)=>
-          val g1 = g0.setType(used,  Some(ar.removeFirstArgOfType(NamedType(newContainer))))
-          val oldTypeUses = Uses(used, newContainer)
-          val g2 = g0.typeMemberUsesOf(oldTypeUses).foldLeft(g1){
-            (g00, tmu) =>
-              g00.removeUsesDependency(oldTypeUses, tmu)
+      (g0, used) =>
+        val params = g0 parameters used
+        params find {g0.styp(_) contains NamedType(newContainer)} match {
+          case None =>
+            LoggedError(new PuckError(s"An arg typed ${NamedType(newContainer)} was expected"))
+          case Some(pid) =>
+            val (_, g1) = g0.removeNode(pid)
+            val oldTypeUses = Uses(pid, newContainer)
+            val g2 = g0.typeMemberUsesOf(oldTypeUses).foldLeft(g1){
+              (g00, tmu) =>
+                g00.removeUsesDependency(oldTypeUses, tmu)
                   .addUsesDependency(newSelfUse, tmu)
-          }
-          LoggedSuccess(g2)
-        case st => LoggedError(new graph.Error(s"useArgAsReceiver : Arrow type was expected ${g0.fullName(used)} has $st"))
-      }
+            }
+            LoggedSuccess(g2)
+        }
     }
   }
 
+  def addParamOfType
+  ( g: DependencyGraph,
+    declId : NodeId,
+    pType : NodeId ) :
+  ( ConcreteNode, DependencyGraph ) = {
+    val newTypeUsedNode = g.getConcreteNode(pType)
+    val paramKind = g.nodeKindKnowledge.kindOfKindType(Parameter).head
+    val (pNode, g1) = g.addConcreteNode(newTypeUsedNode.name.toLowerCase, paramKind)
+    (pNode, g1.addParam(declId, pNode.id)
+      .setType(pNode.id, Some(NamedType(pType))))
+  }
 
   def useReceiverAsArg
   ( g: DependencyGraph,
@@ -207,21 +218,17 @@ object Move {
     nodeSet.foldLoggedEither(g){
       (g0, user) =>
         val decl = g0.container_!(user)
-        g0.styp(decl) match {
 
-        case Some(ar : Arrow)=>
-          val newTypeUses = Uses(decl, oldContainer)
-          val g1 = g0.setType(decl,  Some(ar.prependParameter(NamedType(oldContainer))))
-                      .addEdge(newTypeUses)
+        val (pNode, g1) = addParamOfType(g0, decl, oldContainer)
+        val newTypeUses = Uses(pNode.id, oldContainer)
 
-          val g2 = usesBetween(g0, Set(user), siblings).foldLeft(g1){
+        val g2 = usesBetween(g0, Set(user), siblings).foldLeft(g1){
             (g00, tmu) =>
               g00.removeUsesDependency(oldSelfUse, tmu)
                 .addUsesDependency(newTypeUses, tmu)
           }
-          LoggedSuccess(g2)
-        case st => LoggedError(new graph.Error(s"useReceiverAsArg : Arrow type was expected ${g0.fullName(user)} has $st"))
-      }
+        LoggedSuccess(g2)
+
     }
   }
 
@@ -231,6 +238,7 @@ object Move {
     declNodeSet : Set[NodeId],
     tmUsedToKeep : Set[NodeId] = Set(), //when declNodeSet are moved nodes, not used for "simple" redirection
     createVarStrategy: Option[CreateVarStrategy] = None) : LoggedTG = {
+
 
     val defNodeSet = declNodeSet map g.definition filter (_.nonEmpty) map (_.get)
 
@@ -263,6 +271,8 @@ object Move {
   }
 
 
+
+
   def createParam
   ( g : DependencyGraph,
     oldTypeUse : DGUses,
@@ -281,36 +291,27 @@ object Move {
 
         val decl = g0.getConcreteNode(g0.container_!(userId))
 
-        val newTypeUse = ??? //Uses(decl.id, newTypeUsed)
+        val (pNode, g1) = addParamOfType(g0, decl.id, newTypeUsed)
 
-        g0.styp(decl.id) match {
-          case  Some(NamedType(_)) => ???
+        val newTypeUse = Uses(pNode.id, newTypeUsed)
 
-          case  Some( ar : Arrow ) =>
-            val log = s"${showDG[NodeId](g0).shows(userId)}, user of moved method" +
-              s" will now use ${showDG[NodeId](g0).shows(newTypeUsed)}"
-
-            val g1 = g0.setType(decl.id, Some(ar.prependParameter(NamedType(newTypeUsed))))
-              .addEdge(newTypeUse)
-
-            val g2 = typeMemberUses.foldLeft(g1) {
-              (g00, typeMemberUse) =>
+        val g3 = typeMemberUses.foldLeft(g1) {
+           (g00, typeMemberUse) =>
                 g00.removeUsesDependency(oldTypeUse, typeMemberUse)
                   .addUsesDependency(newTypeUse, typeMemberUse)
-            }
+        }
 
-            g.getDefaultConstructorOfType(newTypeUsed) match {
-              case None => LoggedError(new PuckError(s"no default constructor for $newTypeUsed"))
-              case Some(cid) =>
-                val g3 = g.usersOf(decl.id).foldLeft(g2){
+        g.getDefaultConstructorOfType(newTypeUsed) match {
+           case None => LoggedError(new PuckError(s"no default constructor for $newTypeUsed"))
+           case Some(cid) =>
+             LoggedSuccess(
+               g.usersOf(decl.id).foldLeft(g3){
                   (g0, userOfUser) => g0.addEdge(Uses(userOfUser, cid))
                 }
-
-                LoggedSuccess(g3, log)
-            }
-
-          case _ => LoggedError(new PuckError(s"a type member was expected"))
+             )
         }
+
+
     }
 
   }

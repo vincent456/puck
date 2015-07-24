@@ -54,6 +54,8 @@ package object graph {
 
   type NodeIdP = (NodeId, NodeId)
 
+  type TypedNode = (ConcreteNode, Type)
+
   implicit class NodeIdPOps( val p : NodeIdP) extends AnyVal{
 
     def user = p._1

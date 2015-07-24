@@ -298,7 +298,7 @@ object PuckJavaBuild {
 
     //without this option, there is "cannot assign instance of scala.collection.immutable.List$SerializationProxy"
     // Cast exception raised in RecordingSerializationSpec ...
-    fork := true,
+    //fork := true,
     astTask, parserTask, scannerTask
   )
 

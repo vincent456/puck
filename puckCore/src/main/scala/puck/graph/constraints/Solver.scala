@@ -122,7 +122,7 @@ class Solver
           case Some(hostKind) =>
             newCterNumGen += 1
             val hostName = s"${toBeContained.name}_container$newCterNumGen"
-            val (host, g1) = rules.intro(lg.value, hostName, hostKind, None)
+            val (host, g1) = rules.intro(lg.value, hostName, hostKind)
             val log1 =
               log + s"creating $hostName host intro, rec call to find host " +
                 s"($parentsThatCanBeCreated parents can be created)\n"

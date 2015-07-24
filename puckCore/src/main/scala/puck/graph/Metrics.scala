@@ -95,6 +95,17 @@ object Metrics {
     1 - (providers(graph, root) ++ clients(graph, root)).size.toDouble / dependencies.toDouble
   }
 
+  def nameSpaceCoupling(graph : DependencyGraph) =
+    graph.concreteNodes.foldLeft(0 : Double){
+      (acc, n) => n.kind.kindType match {
+        case NameSpace =>
+          val c = Metrics.coupling(graph, n.id)
+          if(c.isNaN) acc
+          else acc + c
+        case _ => acc
+      }}
+
+
 
   def typeWeight(g: DependencyGraph, typeId: NodeId): Int = {
     val t = g.getNode(typeId)

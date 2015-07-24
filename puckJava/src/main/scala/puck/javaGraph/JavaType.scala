@@ -3,9 +3,9 @@ package puck.javaGraph
 import puck.PuckError
 import puck.graph._
 
-class JavaNamedType(n : NodeId) extends NamedType(n){
-
- override def copy(n : NodeId = n) = new JavaNamedType(n)
+//class JavaNamedType(n : NodeId) extends NamedType(n){
+//
+// override def copy(n : NodeId = n) = new JavaNamedType(n)
 
  /*def hasMethodThatCanOverride(name : String, sig : MethodType) : Boolean =
     n.content.exists{ (childThis : AGNode[JavaNodeKind]) =>
@@ -37,7 +37,7 @@ class JavaNamedType(n : NodeId) extends NamedType(n){
         }
       case _ => false
     })*/
-}
+//}
 
 object MethodType{
  def unapply( mt : MethodType) : Some[(Tuple, NamedType)] =

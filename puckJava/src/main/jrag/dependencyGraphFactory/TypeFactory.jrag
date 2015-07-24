@@ -1,7 +1,8 @@
 import puck.graph.DGBuildingError;
 import puck.graph.Tuple;
 import puck.graph.Type;
-import puck.javaGraph.JavaNamedType;
+import puck.graph.NamedType;
+
 import puck.javaGraph.MethodType;
 import scala.Some;
 
@@ -16,20 +17,17 @@ aspect TypeFactory {
 
 
 	static void ASTNode.astParamsToDGType(JavaGraphBuilder builder, int thisId, Callable c){
-//		ArrayList<Type> tparams = new ArrayList<Type>();
+//		System.out.println("building params of "+ c.fullName());
 		ArrayList<Integer> params = new ArrayList<Integer>();
 
 		for(ParameterDeclaration pdecl: c.getParameterList()){
 
 			int agTypeNode = pdecl.getTypeAccess().buildDGNode(builder);
 			int paramId = pdecl.buildDGNode(builder);
-			//DGUses typeUse = new Uses(paramId, agTypeNode, UsesAccessKind.none());
 			params.add(paramId);
-		 	//builder.addEdge(typeUse);
-			builder.setType(paramId, new JavaNamedType(agTypeNode));
+		 	builder.setType(paramId, new NamedType(agTypeNode));
 		}
 		builder.addParams(thisId, params);
-		//return new Tuple(scala.collection.JavaConversions.asScalaBuffer(tparams).toList());
 	}
 
 	public void FieldDecl.buildDGType(JavaGraphBuilder builder, int thisId){
@@ -38,16 +36,16 @@ aspect TypeFactory {
 		
 	public void MethodDecl.buildDGType(JavaGraphBuilder builder, int thisId){
 		ASTNode.astParamsToDGType(builder, thisId, this);
-		builder.setType(thisId, new JavaNamedType(getTypeAccess().buildDGNode(builder)));
+		builder.setType(thisId, new NamedType(getTypeAccess().buildDGNode(builder)));
 	}
 
 	public void ConstructorDecl.buildDGType(JavaGraphBuilder builder, int thisId){
 		ASTNode.astParamsToDGType(builder, thisId, this);
-		builder.setType(thisId, new JavaNamedType(hostType().buildDGNode(builder)));
+		builder.setType(thisId, new NamedType(hostType().buildDGNode(builder)));
 	}
 
 	public void FieldDeclaration.buildDGType(JavaGraphBuilder builder, int thisId){
-		builder.setType(thisId, new JavaNamedType(type().buildDGNode(builder)));
+		builder.setType(thisId, new NamedType(type().buildDGNode(builder)));
 	}
 
 

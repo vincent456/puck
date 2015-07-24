@@ -35,14 +35,14 @@ abstract class Abstract {
 
   def absType
   ( g : DependencyGraph,
-    impl : ConcreteNode,
-    sUsesAccessKind: Option[UsesAccessKind]) : Option[Type] = ???
-//    sUsesAccessKind match {
-//      case None => impl.styp
-//      case Some(Read) => impl.styp map (Arrow(???, _))
-//      case Some(Write) => impl.styp map (Arrow(_, ???))
-//      case Some(RW) => sys.error("should not happen")
-//  }
+    impl : NodeId,
+    sUsesAccessKind: Option[UsesAccessKind] = None
+    ) : Option[Type] =
+    sUsesAccessKind match {
+      case None | Some(Read) => g styp impl
+      case Some(Write) => Some(g.nodeKindKnowledge.writeType(g))
+      case Some(RW) => sys.error("should not happen")
+  }
 
   def createAbsNode
   ( g : DependencyGraph,
@@ -54,23 +54,36 @@ abstract class Abstract {
       case DelegationAbstraction if impl.kind.canBeReadOrWrote =>
 
         val rName = abstractionName(g, impl, abskind, DelegationAbstraction, Some(Read))
-        val rStype = absType(g, impl, Some(Read))
+        val rStype = absType(g, impl.id, Some(Read))
         val wName = abstractionName(g, impl, abskind, DelegationAbstraction, Some(Write))
-        val wStype = absType(g, impl, Some(Write))
-        val (rNode, g1) = g.addConcreteNode(rName, abskind, rStype)
-        val (wNode, g2) = g1.addConcreteNode(wName, abskind, wStype)
+        val wStype = absType(g, impl.id, Some(Write))
+
+        val paramKind = g.nodeKindKnowledge.kindOfKindType(Parameter).head
+
+        val (rNode, g1) = g.addConcreteNode(rName, abskind)
+
+        val (wNode, g2) = g1.addConcreteNode(wName, abskind)
+
+        val (pNode, g3) = g2.addConcreteNode(impl.name, paramKind)
+        val g4 =  g2.setType(pNode.id, g.styp(impl.id))
+            .addParam(wNode.id, pNode.id)
+
         val abs = ReadWriteAbstraction(Some(rNode.id), Some(wNode.id))
-        (abs, g2.addAbstraction(impl.id, abs))
+        (abs, g4.addAbstraction(impl.id, abs))
 
       case _ =>
 
         val name = abstractionName(g, impl, abskind, policy, None)
-        val (n, g1) = g.addConcreteNode(name, abskind, absType(g, impl, None))
-        g1.parameters(impl.id).foldLeft(g1){
+        val (n, g1) = g.addConcreteNode(name, abskind)
+        val g2 = g1.setType(n.id, absType(g, impl.id))
+
+        g2.parameters(impl.id).foldLeft(g2){
           (g0, paramId) =>
             val param = g0.getConcreteNode(paramId)
-            val (pabs, g01) = g0.addConcreteNode(param.name, param.kind, g0.styp(paramId), mutable = true)
-            g01.usedBy(paramId).foldLeft(g01.addParam(n.id, pabs.id)){
+            val (pabs, g01) = g0.addConcreteNode(param.name, param.kind, mutable = true)
+            val g02 = g01.setType(pabs.id, g0.styp(paramId))
+                          .addParam(n.id, pabs.id)
+            g02.usedBy(paramId).foldLeft(g02){
               (g00, tid) => g01.addUses(pabs.id, tid)
             }
         }
@@ -92,9 +105,12 @@ abstract class Abstract {
 
         val g1 = g0.changeSource(Isa(subTypeId, oldSuperTypedId), newSuperTypeId)
           .changeSource(Uses(subTypeId, oldSuperTypedId), newSuperTypeId)
-        val subTypeMeths = g1.content(subTypeId).toList.map(g1.getConcreteNode)
-        val newSupTypeMeths = g1. content(newSuperTypeId).toList.map(g1.getConcreteNode)
-        val oldSupTypeMeths = g1. content(oldSuperTypedId).toList.map(g1.getConcreteNode)
+
+        val f = (id : NodeId) => (g getConcreteNode id, g styp id get)
+
+        val subTypeMeths = g1.content(subTypeId).toList map f
+        val newSupTypeMeths = g1. content(newSuperTypeId).toList map f
+        val oldSupTypeMeths = g1. content(oldSuperTypedId).toList map f
 
         Type.findAndRegisterOverridedInList(g1, newSupTypeMeths, subTypeMeths){
           Type.ignoreOnImplemNotFound
@@ -140,17 +156,6 @@ abstract class Abstract {
         sid => g.contains(clazz.id, sid) &&
           sid != originSiblingDecl.id &&
           sid != memberDecl.id
-//          g.hostTypeDecl(sid) == clazz.id && {
-//
-//          val sDecl = sid.kind.kindType match {
-//            case ValueDef => g container_! sid.id
-//            case _ => sid.id
-//          }
-//
-//          sDecl != originSiblingDecl.id &&
-//            sDecl != memberDecl.id
-//        }
-
 
       def usedOnlyViaSelf(user : NodeId, used : NodeId) : Boolean = {
         val typeUses = g.typeUsesOf(user, used)

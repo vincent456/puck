@@ -8,10 +8,9 @@ abstract class Intro {
   ( graph : DependencyGraph,
     localName : String,
     kind : NodeKind,
-    th : Option[Type],
     mutable : Mutability = true
     ) : (ConcreteNode, DependencyGraph) =
-    graph.addConcreteNode(localName, kind, th, mutable)
+    graph.addConcreteNode(localName, kind, mutable)
 
   def accessToType
   (graph : DependencyGraph,

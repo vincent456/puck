@@ -104,8 +104,8 @@ class GraphBuildingSpec extends AcceptanceSpec {
         println(graph.typeMemberUses2typeUsesMap.content.mkString("\n"))
         println("typeUses2typeMemberUsesMap")
         println(graph.typeUses2typeMemberUsesMap.content.mkString("\n"))
+        */
 
-        quickFrame(graph)*/
         graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
         graph.typeUsesOf(typeMemberUse) should contain (typeUse)
 

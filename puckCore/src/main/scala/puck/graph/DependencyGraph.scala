@@ -85,12 +85,11 @@ class DependencyGraph
   def addConcreteNode
   ( localName : String,
     kind : NodeKind,
-    th : Option[Type],
     mutable : Mutability = true
     ) : (ConcreteNode, DependencyGraph) = {
-    val(n, nIndex) = nodesIndex.addConcreteNode(localName, kind, th, mutable)
+    val(n, nIndex) = nodesIndex.addConcreteNode(localName, kind, mutable)
     (n, newGraph(nodes = nIndex,
-      recording = recording.addConcreteNode(n).addTypeChange(n.id, styp(n.id), th)))
+      recording = recording.addConcreteNode(n)))
   }
 
   private [graph] def addVirtualNode
@@ -149,12 +148,22 @@ class DependencyGraph
       recording = recording.changeNodeName(id, oldName, newName))
   }
 
-  def styp(id : NodeId) : Option[Type] =
-    nodesIndex.types get id
+  def styp(id : NodeId) : Option[Type] = edges.types get id
 
-  def setType(id : NodeId, t : Option[Type]) : DependencyGraph =
-        newGraph(nodes = nodesIndex.setType(id, t),
-              recording = recording.addTypeChange(id, styp(id), t))
+  def structuredType(id : NodeId) : Option[Type] = {
+    //assert node is a typed value
+    val params = parameters(id)
+    //println(s"params of $id = $params")
+    if(params.isEmpty) this styp id
+    else Some(Arrow(Tuple(params map (pid => this styp pid get)), this styp id get))
+  }
+
+  def setType(id : NodeId, t : Option[Type]) : DependencyGraph = {
+    //println(s"setting type of ${getNode(id)}  to $t")
+
+    newGraph(edges = edges.setType(id, t),
+      recording = recording.addTypeChange(id, styp(id), t))
+  }
 
 
   def changeType
@@ -372,10 +381,6 @@ class DependencyGraph
   def uses(userId: NodeId, usedId: NodeId) : Boolean =
     edges.uses(userId, usedId)
 
-//  def uses_*(userId: NodeId, usedId: NodeId) : Boolean =
-//    edges.uses(userId, usedId) ||
-//      content(userId).exists(uses_*(_, usedId))
-
   def usesList : List[(NodeId, NodeId)] =
     edges.usedMap.flatList
   
@@ -460,7 +465,6 @@ class DependencyGraph
   def printConstraints[V](logger : Logger[V], v : V) : Unit =
     constraints.printConstraints(this, logger, v)
 
- def coupling = nodeKindKnowledge.coupling(this)
 
   def subTree(root : NodeId, includeRoot : Boolean = true) : Seq[NodeId] = {
 

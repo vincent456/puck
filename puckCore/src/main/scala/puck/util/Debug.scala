@@ -67,7 +67,7 @@ object Debug {
   implicit val showNodeIndex = Show.shows[NodeIndex] {
     case NodeIndex(_, cNodes, removedCnodes,
     vNodes, removedVnodes,
-    cNodes2vNodes, _) =>
+    cNodes2vNodes) =>
       "Concrete Nodes : " +
         cNodes.mkString("\t[",",\n\t ","]\n") +
       "Removed Concrete Nodes : " +

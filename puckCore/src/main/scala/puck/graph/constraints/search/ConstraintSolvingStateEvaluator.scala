@@ -11,7 +11,8 @@ class ConstraintSolvingStateEvaluator
   extends Evaluator[ResultT]{
 
   def evaluate(s : SearchState[ResultT]): Double ={
-    graphOfResult(s.loggedResult.value).coupling
+    val g = graphOfResult(s.loggedResult.value)
+    Metrics.nameSpaceCoupling(g)
   }
 
   def equals(s1 : SearchState[ResultT], s2 : SearchState[ResultT] ): Boolean =

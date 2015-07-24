@@ -30,7 +30,7 @@ class RecordingComparatorSpec extends AcceptanceSpec {
   }
 
   def introPackage(g : GraphT, pname : String, pcontainer : NodeId) : (GraphT, ConcreteNode) = {
-    val (p, g2) = TR.intro(g, pname, Package, None)
+    val (p, g2) = TR.intro(g, pname, Package)
     (g2.addContains(pcontainer, p.id), p)
   }
 

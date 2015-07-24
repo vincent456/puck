@@ -22,6 +22,8 @@ object ScalaNodeKind extends NodeKindKnowledge {
 
   override def lightKind: NodeKind = ???
 
+  def writeType(graph : DependencyGraph) : Type = ???
+
   override def defaultKindForNewReceiver: NodeKind = ???
 
   override def intro: Intro = ???

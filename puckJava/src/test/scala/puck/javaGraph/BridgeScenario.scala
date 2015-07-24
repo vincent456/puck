@@ -68,7 +68,7 @@ class BridgeScenario private()
   def introClassMoveMethod
   (g : DependencyGraph, className : String, method : NodeId) = {
     val g0 = g.comment("-- introClassMoveMethod (begin) --")
-    val (c, g1) = TR.intro(g0, className, Class, None)
+    val (c, g1) = TR.intro(g0, className, Class)
     val g2 = g1.addContains(screen, c.id)
     (c, TR.move.typeMember(g2, List(method), c.id,
       Some(CreateTypeMember(Field))).value.right.value.

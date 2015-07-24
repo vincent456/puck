@@ -88,11 +88,7 @@ trait NodeKindKnowledge {
       n.mutable
   }
 
-  //TODO?? move elsewhere ?
-  def coupling(graph : DependencyGraph) =
-    graph.concreteNodesId.foldLeft(0 : Double){
-    (acc, id) => acc + Metrics.coupling(graph, id)
-  }
+  def writeType(graph : DependencyGraph) : Type
 
   def defaultKindForNewReceiver : NodeKind
 
