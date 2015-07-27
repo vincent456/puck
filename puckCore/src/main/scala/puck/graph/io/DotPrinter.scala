@@ -78,7 +78,7 @@ class DotPrinter
     if (printSignatures)
       styp => {
         import ShowDG._
-        showDG[Option[Type]](graph).shows(styp).replaceAllLiterally(">", "&gt;") + " "
+        (graph, styp).shows.replaceAllLiterally(">", "&gt;") + " "
       }
     else _ => ""
 

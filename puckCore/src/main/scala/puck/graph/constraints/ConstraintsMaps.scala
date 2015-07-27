@@ -1,11 +1,11 @@
 package puck.graph
 package constraints
 
-import puck.graph.ShowDG.CordBuilder
+import puck.graph.ShowDG._
 import puck.graph.constraints.ConstraintsMaps.{HideConstraintMap, FriendConstraintMap}
 import puck.util.Logger
 
-import scalaz.Show
+
 
 object ConstraintsMaps{
   type FriendConstraintMap = Map[Range, ConstraintSet]
@@ -44,19 +44,17 @@ case class ConstraintsMaps
 
 
    def printConstraints[V](graph : GraphT, logger : Logger[V], v : V) : Unit = {
-     import ShowConstraints._
-     import ShowDG.{showDG, graphToOptionGraph}
      namedSets.foreach{
-       case (_, namedSet) => logger.writeln(showDG(graph)(namedRangeSetDefCord).show(namedSet))(v)
+       case (_, namedSet) => logger.writeln((graph, namedSet).shows(namedRangeSetDefCord))(v)
      }
 
      def printMap( m : Map [Range, ConstraintSet], cb : CordBuilder[Constraint]) =
        m foreach { case (k, s) =>
          s.foreach { c => if(c.owners.head == k )
-           logger.writeln(showDG[Constraint](graph)(cb).shows(c))(v)}
+           logger.writeln((graph, c).shows(cb))(v)}
        }
-     printMap(hideConstraints, ShowConstraints.constraintCord)
-     printMap(friendConstraints, ShowConstraints.friendConstraintCord)
+     printMap(hideConstraints, ShowDG.constraintCord)
+     printMap(friendConstraints, ShowDG.friendConstraintCord)
    }
 
 

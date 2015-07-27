@@ -38,15 +38,14 @@ class TransformationRules
     val subNode = g.getConcreteNode(sub)
     val supNode = g.getConcreteNode(sup)
     if(!g.canBe(subNode, supNode))
-      LoggedError(new PuckError(s"${showDG[NodeId](g).shows(sub)} cannot be ${showDG[NodeId](g).show(sup)}"))
+      LoggedError(new PuckError(s"${(g, sub).shows} cannot be ${(g, sup).shows}"))
     else {
 
-      val f = (id : NodeId) => (g getConcreteNode id, g styp id get)
-      val subMethods = g.content(sub).toList map f
-      val supMethods = g.content(sup).toList map f
+      val subMethods = g.content(sub).toList map g.typedNode
+      val supMethods = g.content(sup).toList map g.typedNode
 
       Type.findAndRegisterOverridedInList(g, supMethods, subMethods) {
-        Type.errorOnImplemNotFound(showDG[NodeId](g).shows(sub))
+        Type.errorOnImplemNotFound((g, sub).shows)
       } map ( _.addIsa(sub, sup).
                 addAbstraction(sub, AccessAbstraction(sup, SupertypeAbstraction))
         ) flatMap {

@@ -24,7 +24,7 @@ class NodeInfosPanel(val graph : DependencyGraph,
   def mkStringWithNames(nodes : Iterable[NodeId]): String ={
     nodes.map{ nid =>
       val node = graph.getNode(nid)
-      showDG(graph)(nodeNameTypCord).shows(node)
+      (graph, node).shows(nodeNameTypCord)
     }.mkString("\n", "\n", "\n")
   }
 
@@ -40,7 +40,7 @@ class NodeInfosPanel(val graph : DependencyGraph,
   leftComponent = new BoxPanel(Orientation.Vertical) {
 
     contents += PuckMainPanel.leftGlued(new Label(node.kind + " : " +
-      showDG(graph)(nodeNameTypCord).shows(node)))
+      (graph, node).shows(nodeNameTypCord)))
     val prov = Metrics.providers(graph, node.id)
     val cl = Metrics.clients(graph, node.id)
     val internals = Metrics.internalDependencies(graph, node.id).size
@@ -117,18 +117,18 @@ class NodeInfosPanel(val graph : DependencyGraph,
 
                 useDetails.contents.clear()
                 useDetails.contents +=
-                  new Label(showDG[DGEdge](graph).shows(Uses(userId, nodeId)))
+                  new Label((graph, Uses(userId, nodeId)).shows)
 
                 if (primaryUses.nonEmpty){
                     useDetails.contents += new Label("Dominant Uses :")
                     primaryUses.foreach(e =>
-                      useDetails.contents += new Label(showDG[DGEdge](graph).shows(e)))
+                      useDetails.contents += new Label((graph, e).shows))
                 }
 
                 if(sideUses.nonEmpty) {
                     useDetails.contents += new Label("Dominated Uses :")
                     sideUses.foreach(e =>
-                      useDetails.contents += new Label(showDG[DGEdge](graph).shows(e)))
+                      useDetails.contents += new Label((graph, e).shows))
                 }
 
                 useDetails.revalidate()

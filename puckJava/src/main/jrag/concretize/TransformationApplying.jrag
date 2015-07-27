@@ -2,16 +2,6 @@ import puck.PuckError;
 
 aspect TransformationApplying {
 
-    public void ASTNode.replaceFieldAccess(FieldDeclaration oldUsed, Access newUsed) {
-        for(int i = 0; i < getNumChild(); i++)
-            getChild(i).replaceFieldAccess(oldUsed, newUsed);
-    }
-    public void VarAccess.replaceFieldAccess(FieldDeclaration oldUsed, Access newUsed) {
-        if(decl().equals(oldUsed)){
-            replace(this).with(newUsed);
-        }
-    }
-
     public void ASTNode.replaceThisQualifierFor(MethodDecl method, Access byAccess){
         for(int i = 0; i < getNumChild(); i++)
             getChild(i).replaceThisQualifierFor(method, byAccess);
@@ -39,41 +29,9 @@ aspect TransformationApplying {
         }
   }
 
-  public static ConstructorDecl ConstructorDecl.createConstructor(Access hostType,  String name, ParameterDeclaration[] params){
-        List<ParameterDeclaration> paramList = new List<ParameterDeclaration>();
-        for(ParameterDeclaration p : params){
-            paramList.add(p);
-        }
 
-        /*String name = "";
 
-        if(hostType instanceof ParTypeAccess){
-            name = ((ParTypeAccess)hostType).name();
-        }
-        if(hostType instanceof TypeAccess){
-            name = ((TypeAccess)hostType).name();
-        }*/
 
-        return new ConstructorDecl(new Modifiers("public"), name, paramList, new List<Access>(), new Opt(), new Block());
-  }
-
-  public void TypeDecl.removeSuperType(Access superTypeAccess){
-        throw new PuckError("removeSuperType in " + this.getClass() +"not implemented");
-  }
-
-  public void ClassDecl.removeSuperType(Access superTypeAccess){
-        if(getSuperClassAccess().equals(superTypeAccess)){
-        setSuperClassAccessOpt(new Opt<Access>());
-        return;
-        }
-        List<Access> implementsList =  getImplementsList();
-
-        for(int i = 0; i< implementsList.getNumChild(); i++)
-        if(implementsList.getChild(i).equals(superTypeAccess)){
-        implementsList.removeChild(i);
-        break;
-        }
-    }
       public String CompilationUnit.getRootPath(){
         String packagePath = packageName().replaceAll("\\.", File.separator);
 //        System.out.println("packagePath : " + packagePath);
@@ -88,45 +46,7 @@ aspect TransformationApplying {
         }
     }
 
-    public void CompilationUnit.removeTypeDecl(TypeDecl td){
-        String name = td.name();
-        int idx =  getTypeDeclList().getIndexOfChild(td);
-        if(idx != -1) {
-            getTypeDeclList().removeChild(idx);
 
-            if (pathName().endsWith(name + ".java")) {
-                for (int i = 0; i < getNumTypeDecl(); i++) {
-                    TypeDecl td2 = getTypeDecl(i);
-                    if (td != td2) { //sanity check
-                        String newPath = pathName.replace(name + ".java", td2.name() + ".java");
-                        this.setPathName(newPath);
-                    }
-                }
-            }
-        }
-    }
-
-    public void ClassDecl.removeImplements(InterfaceDecl decl) {
-          int idx = -1;
-          for(int i = 0; i < getImplementsList().getNumChild(); i++){
-              if(((TypeAccess)getImplements(i)).decl().equals(decl)){
-                  idx = i;
-              }
-          }
-          if(idx!= -1)
-              getImplementsList().removeChild(idx);
-      }
-
-    public void InterfaceDecl.removeSuperInterface(InterfaceDecl decl) {
-           int idx = -1;
-           for(int i = 0; i < getSuperInterfaceIdList().getNumChild(); i++){
-               if(((TypeAccess)getSuperInterfaceId(i)).decl().equals(decl)){
-                   idx = i;
-               }
-           }
-           if(idx!= -1)
-               getSuperInterfaceIdList().removeChild(idx);
-       }
 
 
 
@@ -149,80 +69,12 @@ aspect TransformationApplying {
     }
   }
 
-	//scala compiler does not like ASTNode type parameter bound
-	public CompilationUnit Program.insertUnusedType(String path, String pkg, TypeDecl td) {
-       return insertUnusedType(path, pkg, new List<ImportDecl>(), td);
-    }
-
-    public static MethodDecl MethodDecl.createAbstractMethod(Access returnType, String name, ParameterDeclaration[] params){
-      List<ParameterDeclaration> paramList = new List<ParameterDeclaration>();
-      for(ParameterDeclaration p : params){
-          paramList.add(p);
-      }
-      return new MethodDecl(new Modifiers("public", "abstract"), returnType, name, paramList, new List<Access>(), new Opt());
-  	}
-
-  	public MethodDecl ConstructorDecl.createConstructorMethod(String name){                                                                               
-         List<ParameterDeclaration> params = this.getParameterList().copy();                                                               
-         List<Expr> args = new List<Expr>();                                                                                               
-         for(int i =0; i< params.getNumChild(); i++)                                                                                       
-             args.add(params.getChild(i).createLockedAccess());                                                                            
-                                                                                                                                           
-         return new MethodDecl(new Modifiers("public"),                                                                                    
-                 this.hostType().createLockedAccess(),                                                                                     
-                 name, params, new List<Access>(),                                                                                         
-                 new Opt<Block>(new Block(new ReturnStmt( new ClassInstanceExpr(hostType().createLockedAccess(), args)))));                
-                                                                                                                                           
-     }
-
-
-
-
-
-  public void ASTNode.replaceMethodCall(MethodDecl oldUsed, MethodDecl newUsed){
-      for(int i = 0; i < getNumChild(); i++)
-          getChild(i).replaceMethodCall(oldUsed, newUsed);
-  } 
-
-  public void MethodAccess.replaceMethodCall(MethodDecl oldUsed, MethodDecl newUsed){
-     if(this.decl() == oldUsed) {
-        MethodAccess ma = new MethodAccess(newUsed.name(), this.getArgList());
-        ma.setTargetMethod(new SavedMethodDecl(newUsed), this.isMonoCall);
-        replace(this).with(ma);
-     }
-  }
-
 
   public void ASTNode.replaceByConstructorMethodCall(MethodDecl cm){
         for(int i = 0; i < getNumChild(); i++)
             getChild(i).replaceByConstructorMethodCall(cm);
-    }
+  }
 
-  private int MethodDecl.uidSeed = 0;
-  public ParameterDeclaration MethodDecl.introduceParameter(TypeDecl typeCreated, String suffix){
-        //TODO make code ok for generic type !
-        Collection<ConstructorDecl> ctors = typeCreated.constructors();
-        ConstructorDecl noArgsCtor = null;
-        for(ConstructorDecl ctor : ctors){
-            if(ctor.getParameterList().getNumChild() == 0)
-                noArgsCtor= ctor;
-        }
-        if(noArgsCtor == null)
-            throw new Error("no parameterless constructor for class " + typeCreated.fullName());
-
-        ParameterDeclaration newParameter =
-                new ParameterDeclaration(new Modifiers(),
-                        typeCreated.createLockedAccess(),
-                        typeCreated.name().toLowerCase() + suffix + uidSeed);
-        uidSeed ++;
-
-        addParameter(newParameter);
-
-        for(MethodAccess methodUse : uses())
-            methodUse.addArg(new ClassInstanceExpr(typeCreated.createLockedAccess(),  new List<Expr>()));
-            return newParameter;
-    }
-  
   public void ClassInstanceExpr.replaceByConstructorMethodCall(MethodDecl cm){
         if( !(this.hostBodyDecl() instanceof MethodDecl))
             throw new Error("replaceByConstructorMethodCall, this.hostBodyDecl is " +
@@ -238,19 +90,6 @@ aspect TransformationApplying {
 
     }
 
- 
-
-  public void ASTNode.puckDelete(){
-         getParent().removeChild(this);
-     }
-
-  public void TypeDecl.puckDelete(){                                                                                                           
-         if(compilationUnit().getNumTypeDecl() == 1)                                                                                       
-             compilationUnit().puckDelete();                                                                                             
-         else                                                                                                                              
-             super.puckDelete();                                                                                                         
-     }
-
   public String Program.getRootPath(){
         CompilationUnit rcu = getCompilationUnit(0);
         int i = 0;
@@ -264,12 +103,12 @@ aspect TransformationApplying {
         return rcu.getRootPath();
   }
 
-    public void Program.eliminateLockedNamesInSources(){
+  public void Program.eliminateLockedNamesInSources(){
         //calling eliminateLockedNames from program after calling lockAllNames
         //provoke cause exceptions in the "@primitive package"
         for (CompilationUnit cu : (List<CompilationUnit>)getCompilationUnitList()){
             if(cu.fromSource())
                 cu.eliminateLockedNames();
         }
-    }
+  }
 }

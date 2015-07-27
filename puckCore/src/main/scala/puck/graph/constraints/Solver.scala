@@ -3,7 +3,6 @@ package constraints
 
 
 import puck.PuckError
-import puck.graph.Error
 import puck.graph.transformations.TransformationRules
 import puck.util.Logged
 import puck.util.LoggedEither._
@@ -11,7 +10,6 @@ import scalaz.{\/-, -\/}
 import scalaz.syntax.writer._
 import scalaz.std.string._
 import scalaz.std.list._
-
 
 import ShowDG._
 
@@ -68,7 +66,7 @@ class Solver
           val log = loggedOption.written
           loggedOption.value match {
             case None =>
-              k((g,wrongUsers).set(log).toLoggedEither[PuckError])
+              k((g,wrongUsers).set(log).toLoggedTry)
             case Some(abs) =>
 
               val (remainingWus, wuToRedirect) =
@@ -173,7 +171,7 @@ class Solver
                 toBeContained, parentsThatCanBeCreated, k)
         case (Some((g, nid))) =>
           k(FindHostResult.host(nid, g).
-            set(log + s"find host: decision maker chose ${showDG[NodeId](g).show(nid)} to contain $toBeContained\n"))
+            set(log + s"find host: decision maker chose ${(g, nid).shows} to contain $toBeContained\n"))
       }
     }
   }
@@ -196,7 +194,7 @@ class Solver
         logres.value match {
           case Host(h, graph3) =>
             val log = logres.written +
-              s"absIntro : host of $abs is ${showDG[NodeId](graph3).show(h)}\n"
+              s"absIntro : host of $abs is ${(graph3, h).shows}\n"
 
             val graph4 = abs.nodes.foldLeft(graph3){_.addContains(h, _)}
 
@@ -347,7 +345,7 @@ class Solver
 
             val log =
                 logres.written +
-                  s"solveContains : host of $wronglyContained will now be ${showDG[NodeId](g).show(newCter)}\n"
+                  s"solveContains : host of $wronglyContained will now be ${(g, newCter).shows}\n"
 
             def checkIfMoveSolveContains( tg : LoggedTG) : LoggedTG =
               tg.flatMap(g =>

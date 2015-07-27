@@ -7,9 +7,12 @@ import puck.graph._
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 import puck.javaGraph.nodeKind._
 import puck.javaGraph.JGraphUtils.{transformationRules => TR}
-import puck.util.{Debug, LoggedEither}
 
-import scalaz.\/-
+//import scalaz.syntax.show._
+//import puck.util.Debug.showNodeIndex
+//println(graph.nodesIndex.shows)
+
+
 
 
 class TransfoRuleSpec extends AcceptanceSpec {
@@ -231,6 +234,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
 
         assert( graph.isa(classA, superA) )
 
+
         val (AccessAbstraction(itc, _), g) =
           TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
             Interface, SupertypeAbstraction).right
@@ -347,20 +351,25 @@ class TransfoRuleSpec extends AcceptanceSpec {
 
 
         val ctorUse = Uses(callerDef, ctor)
-        assert( ctorUse.existsIn(graph) )
-
         val ctorMethodUse = Uses(callerDef, ctorMethod)
+
+        assert( ctorUse.existsIn(graph) )
         assert( ! ctorMethodUse.existsIn(graph))
+
+        graph.parameters(callerDecl) shouldBe empty
 
         val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
 
-        val g2 =
-          Redirection.redirectUsesAndPropagate(g,
+        val g2 = Redirection.redirectUsesAndPropagate(g,
             ctorUse, AccessAbstraction(ctorMethod, DelegationAbstraction)).right
 
         assert( ctorMethodUse.existsIn(g2))
         assert( ! ctorUse.existsIn(g2) )
-        assert(g2.uses(callerDecl, factoryClass))
+
+        val parameters = g2.parameters(callerDecl)
+        parameters.size shouldBe 1
+
+        assert(g2.uses(parameters.head, factoryClass))
       }
     }
 
@@ -376,13 +385,13 @@ class TransfoRuleSpec extends AcceptanceSpec {
         val userOfTheCallerDecl = fullName2id(s"p.C.mc__void")
         val userOfTheCallerDef = getDefinition(graph, userOfTheCallerDecl)
 
-        val constructedClassUse = Uses(callerDecl, constructedClass)
         val ctorUse = Uses(callerDef, ctor)
-        assert( !(constructedClassUse existsIn graph))
-        assert( ctorUse existsIn graph )
-
         val ctorMethodUse = Uses(callerDef, ctorMethod)
+
+        assert( ctorUse existsIn graph )
         assert( ! (ctorMethodUse existsIn graph))
+
+        graph.parameters(callerDecl) shouldBe empty
 
         val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
 
@@ -391,9 +400,14 @@ class TransfoRuleSpec extends AcceptanceSpec {
             ctorUse, AccessAbstraction(ctorMethod, DelegationAbstraction)).right
 
 
-        assert( ctorMethodUse existsIn g2)
         assert( !(ctorUse existsIn g2) )
-        assert( constructedClassUse existsIn g2)
+        assert( ctorMethodUse existsIn g2)
+
+        val parameters = g2.parameters(callerDecl)
+        parameters.size shouldBe 1
+
+        assert(g2.uses(parameters.head, constructedClass))
+
         assert( g2.uses(userOfTheCallerDef, ctor) )
         assert( !g2.uses(userOfTheCallerDef, constructedClass) )
 

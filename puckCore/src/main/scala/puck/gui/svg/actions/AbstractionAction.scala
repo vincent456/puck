@@ -21,7 +21,7 @@ object NodeCheckBox {
   def apply(graph : DependencyGraph,
             node : ConcreteNode,
             selected : Boolean) : NodeCheckBox =
-    new NodeCheckBox(node, showDG[DGNode](graph).shows(node), selected)
+    new NodeCheckBox(node, (graph, node).shows, selected)
 }
 
 class NodeCheckBox(val node : ConcreteNode, name : String, selected : Boolean)

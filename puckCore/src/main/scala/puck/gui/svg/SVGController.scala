@@ -10,10 +10,10 @@ import org.w3c.dom.Element
 import org.w3c.dom.svg.{SVGGElement, SVGDocument}
 import puck.graph._
 import puck.graph.io._
-import puck.graph.transformations.{Recordable, MileStone}
+import puck.graph.transformations.MileStone
 import puck.gui.TextAreaLogger
 import puck.gui.svg.actions.{AddNodeAction, AbstractionAction}
-import puck.util.{Debug, PuckFileLogger}
+import puck.util.PuckFileLogger
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -170,7 +170,7 @@ class SVGController private
     selectedEdge0 = Some((dgEdge, c, elt))
     println("setting selectedEdge")
     import ShowDG._
-    console.displaySelection(showDG[DGEdge](graph).shows(dgEdge))
+    console.displaySelection((graph, dgEdge).shows)
   }
 
   def resetEdgeSelected(): Unit = {
@@ -246,7 +246,7 @@ class SVGController private
 
   import ShowDG._
   def printRecording() : Unit =
-    graph.recording.reverseIterator.foreach(r => consoleLogger writeln showDG[Recordable](graph).shows(r) )
+    graph.recording.reverseIterator.foreach(r => consoleLogger writeln (graph, r).shows )
 
   def printCode(nodeId: NodeId): Unit = {
     console.appendText("Code : ")

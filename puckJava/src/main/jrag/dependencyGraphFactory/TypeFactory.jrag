@@ -1,10 +1,6 @@
 import puck.graph.DGBuildingError;
-import puck.graph.Tuple;
-import puck.graph.Type;
 import puck.graph.NamedType;
 
-import puck.javaGraph.MethodType;
-import scala.Some;
 
 aspect TypeFactory {
 	

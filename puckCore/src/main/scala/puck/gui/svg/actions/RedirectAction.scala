@@ -3,9 +3,7 @@ package puck.gui.svg.actions
 import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
 
-import puck.PuckError
 import puck.graph._
-import puck.graph.constraints.RedirectionPolicy
 import puck.graph.transformations.rules.Redirection
 import puck.gui.svg.SVGController
 
@@ -16,7 +14,7 @@ case class RedirectAction
   edge : DGUses,
   abs : Abstraction,
   controller: SVGController)
-  extends AbstractAction(s"Use $abs instead of ${showDG[NodeId](controller.graph).shows(edge.target)}"){
+  extends AbstractAction(s"Use $abs instead of ${(controller.graph, edge.target).shows}"){
 
   //TODO check keepOldUse and propagate redirection value
   override def actionPerformed(e: ActionEvent): Unit =

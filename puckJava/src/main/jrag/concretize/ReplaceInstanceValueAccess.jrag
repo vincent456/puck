@@ -1,0 +1,27 @@
+
+aspect ReplaceInstanceValueAccess {
+
+    public void ASTNode.replaceFieldAccess(FieldDeclaration oldUsed, Access newUsed) {
+        for(int i = 0; i < getNumChild(); i++)
+            getChild(i).replaceFieldAccess(oldUsed, newUsed);
+    }
+    public void VarAccess.replaceFieldAccess(FieldDeclaration oldUsed, Access newUsed) {
+        if(decl().equals(oldUsed)){
+            replace(this).with(newUsed);
+        }
+    }
+
+    public void ASTNode.replaceMethodCall(MethodDecl oldUsed, MethodDecl newUsed){
+        for(int i = 0; i < getNumChild(); i++)
+            getChild(i).replaceMethodCall(oldUsed, newUsed);
+    }
+
+    public void MethodAccess.replaceMethodCall(MethodDecl oldUsed, MethodDecl newUsed){
+        if(this.decl() == oldUsed) {
+            MethodAccess ma = new MethodAccess(newUsed.name(), this.getArgList());
+            ma.setTargetMethod(new SavedMethodDecl(newUsed), this.isMonoCall);
+            replace(this).with(ma);
+        }
+    }
+
+}

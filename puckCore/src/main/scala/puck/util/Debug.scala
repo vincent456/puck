@@ -3,17 +3,16 @@ package puck.util
 import puck.graph._
 import ShowDG._
 
-import scalaz.Show
 
 object Debug {
 
 
   def printEdgeSet(g : DependencyGraph, logger : PuckLogger, s : Set[DGUses])=
-    s.foreach(e => logger.writeln(s"\t\t*${showDG[DGEdge](g).shows(e)}"))
+    s.foreach(e => logger.writeln(s"\t\t*${(g, e).shows}"))
 
   def logUsersOf(g : DependencyGraph, logger : PuckLogger, n : NodeId) = {
 
-    logger.writeln(s"users of ${showDG[NodeId](g).shows(n)} :")
+    logger.writeln(s"users of ${(g, n).shows} :")
 
     def printUser = g.kindType(n) match {
       case InstanceValueDecl =>
@@ -31,24 +30,24 @@ object Debug {
 
     g.usersOf(n).foreach {
       userId =>
-        logger.writeln(s"\t- user ${showDG[NodeId](g).shows(userId)}")
+        logger.writeln(s"\t- user ${(g, userId).shows}")
         printUser(userId)
     }
 
   }
 
   def logUsedBy(g : DependencyGraph, logger : PuckLogger, n : NodeId) = {
-    logger.writeln(s"used by ${showDG[NodeId](g).shows(n)} :")
+    logger.writeln(s"used by ${(g, n).shows} :")
 
     g.usedBy(n).foreach{
       usedId =>
         g.kindType(usedId) match {
           case InstanceValueDecl =>
-            logger.writeln(s"\t- used type member ${showDG[NodeId](g).shows(usedId)}")
+            logger.writeln(s"\t- used type member ${(g, usedId).shows}")
             logger.writeln("\tType Uses are:")
             printEdgeSet(g, logger, g.typeUsesOf(n, usedId))
           case TypeDecl =>
-            logger.writeln(s"\t- used type ${showDG[NodeId](g).shows(usedId)}")
+            logger.writeln(s"\t- used type ${(g, usedId).shows}")
             logger.writeln("\tTypeMember Uses are:")
             printEdgeSet(g, logger, g.typeMemberUsesOf(n, usedId))
           case kt => logger.writeln(s"$kt (${g.getNode(usedId).kind}) unhandled")
@@ -64,7 +63,7 @@ object Debug {
 
   }
 
-  implicit val showNodeIndex = Show.shows[NodeIndex] {
+  implicit val showNodeIndex = scalaz.Show.shows[NodeIndex] {
     case NodeIndex(_, cNodes, removedCnodes,
     vNodes, removedVnodes,
     cNodes2vNodes) =>

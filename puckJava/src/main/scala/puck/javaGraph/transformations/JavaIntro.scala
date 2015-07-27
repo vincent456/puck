@@ -2,7 +2,6 @@ package puck.javaGraph.transformations
 
 import puck.graph._
 import puck.graph.transformations.rules.Intro
-import puck.javaGraph.MethodType
 import puck.javaGraph.nodeKind._
 
 object JavaIntro extends Intro {

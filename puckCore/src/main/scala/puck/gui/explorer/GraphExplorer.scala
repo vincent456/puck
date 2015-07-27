@@ -36,7 +36,7 @@ class GraphExplorer
     nodeList.sortBy(_.name) foreach {
       (n: DGNode) =>
         val child = new PuckTreeNode(n.id, this,
-          showDG(graph)(nodeNameTypCord).shows(n))
+          (graph, n).shows(nodeNameTypCord))
         ptn add child
         addChildren(graph, child)
     }

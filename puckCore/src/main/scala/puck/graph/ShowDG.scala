@@ -1,5 +1,6 @@
 package puck.graph
 
+import puck.graph.constraints.ShowConstraints
 import puck.graph.transformations._
 
 import scalaz.{Cord, Show}
@@ -7,13 +8,11 @@ import scalaz.{Cord, Show}
 
 import scala.language.implicitConversions
 
-object ShowDG {
+object ShowDG extends ShowConstraints{
 
-  //def showKind : Show[NodeKind] = Show.showFromToString
-  //def showOperation : Show[Operation] = Show.showFromToString
   implicit def showFromToString[A] : Show[A] = Show.showFromToString[A]
 
-  type CordBuilder[A] = (DependencyGraph, A) => Cord
+
 
   def tailRecTypeCord
   (dg : DependencyGraph, sep : List[String], end : List[String], builder : StringBuilder, lt : List[List[Type]]) : String =
@@ -106,12 +105,16 @@ object ShowDG {
     }
 
 
-  def showDG[A](sg : Option[DependencyGraph] = None)
-                            (implicit s : CordBuilder[A]): Show[A] = sg match {
-    case None => Show.showFromToString
-    case Some(g) => Show.show(s(g, _))
+//  def showDG[A](sg : Option[DependencyGraph] = None)
+//                            (implicit s : CordBuilder[A]): Show[A] = sg match {
+//    case None => Show.showFromToString
+//    case Some(g) => Show.show(s(g, _))
+//  }
+//
+//  implicit def graphToOptionGraph(g : DependencyGraph) : Option[DependencyGraph] = Some(g)
+
+  implicit class DGShowOp[A](val p : (DependencyGraph, A)) extends AnyVal {
+    def shows(implicit cb : CordBuilder[A]) : String =
+      cb(p._1, p._2).toString()
   }
-
-  implicit def graphToOptionGraph(g : DependencyGraph) : Option[DependencyGraph] = Some(g)
-
 }

@@ -1,7 +1,7 @@
 package puck.graph
 
 import puck.graph.DependencyGraph.AbstractionMap
-import puck.graph.constraints.{SupertypeAbstraction, ConstraintsMaps, AbstractionPolicy}
+import puck.graph.constraints.{ConstraintsMaps, AbstractionPolicy}
 import puck.util.{Logger, PuckNoopLogger, PuckLogger, PuckLog}
 
 import puck.graph.transformations.{RecordingComparator, Transformation, RecordingOps}
@@ -157,6 +157,15 @@ class DependencyGraph
     if(params.isEmpty) this styp id
     else Some(Arrow(Tuple(params map (pid => this styp pid get)), this styp id get))
   }
+
+  def typedNode(id : NodeId ) : TypedNode = {
+    val cn = getConcreteNode(id)
+        styp(id) match {
+          case None => error(s"$cn has no type")
+          case Some(t) => (cn, t)
+      }
+  }
+
 
   def setType(id : NodeId, t : Option[Type]) : DependencyGraph = {
     //println(s"setting type of ${getNode(id)}  to $t")
@@ -340,7 +349,7 @@ class DependencyGraph
     /*if (isRoot) nameTypeString
       else {*/
     import ShowDG._
-    val path = containerPath(id).map{n => showDG[DGNode](this)(nodeNameCord).shows(getNode(n))}
+    val path = containerPath(id).map{n => (this, getNode(n)).shows(nodeNameCord)}
 
     (if (path.head == DependencyGraph.rootName)
       path.tail
@@ -448,7 +457,7 @@ class DependencyGraph
 
   def isViolation(e : DGEdge) : Boolean = {
     e.kind match {
-      case Contains =>
+      case Contains | ContainsDef | ContainsParam =>
         constraints.isWronglyContained(this, e.target)
       case Uses | Isa =>
         constraints.isViolation(this, e.user, e.used)

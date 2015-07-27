@@ -173,7 +173,6 @@ class MoveSpec extends AcceptanceSpec {
         assert(g2.uses(ma2Delegate, newHostClass))
 
         g2.typeUsesOf(Uses(methUserDef, methToMove)) should contain (Uses(ma2Delegate, newHostClass))
-        println(g2.typeUsesOf(Uses(methUserDef, otherUsedMethod)))
         g2.typeUsesOf(Uses(methUserDef, otherUsedMethod)) should contain (Uses(classA, classA))
 
       }

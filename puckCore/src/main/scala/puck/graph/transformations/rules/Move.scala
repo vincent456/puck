@@ -21,11 +21,11 @@ object Move {
     ) : LoggedTG =
     g.container(movedId) match {
       case None =>
-        LoggedError(new RedirectionError(s"${showDG[NodeId](g).shows(movedId)} has no container !!!"))
+        LoggedError(new RedirectionError(s"${(g, movedId).shows} has no container !!!"))
       case Some(oldContainer) =>
-        val log = s"moving type decl ${showDG[NodeId](g).shows(movedId)} " +
-          s"from ${showDG[NodeId](g).shows(oldContainer)} " +
-          s"to ${showDG[NodeId](g).shows(newContainer)}"
+        val log = s"moving type decl ${(g, movedId).shows} " +
+          s"from ${(g, oldContainer).shows} " +
+          s"to ${(g, newContainer).shows}"
 
         (g.changeSource(Contains(oldContainer, movedId), newContainer) logComment log).toLoggedEither
     }
@@ -37,7 +37,7 @@ object Move {
     g.container(nid) match {
       case None =>
         import ShowDG._
-        -\/(new RedirectionError(s"${showDG[NodeId](g).shows(nid)} has no container !!!"))
+        -\/(new RedirectionError(s"${(g, nid).shows} has no container !!!"))
       case Some(containerId) => f(containerId)
     }
 
@@ -80,9 +80,10 @@ object Move {
     newContainer : NodeId
     ) : LoggedTG = {
 
-    val log = "moving type members  " +  typeMembersMoved.map(showDG[NodeId](g).shows).mkString(", ") +
-      s"from ${showDG[NodeId](g).shows(oldContainer)} " +
-      s"to ${showDG[NodeId](g).shows(newContainer)}"
+    val log = "moving type members  " +
+      typeMembersMoved.map(n => (g, n).shows).mkString(", ") +
+      s"from ${(g, oldContainer).shows} " +
+      s"to ${(g, newContainer).shows}"
 
     (g logComment log).toLoggedEither
   }

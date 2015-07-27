@@ -12,6 +12,9 @@ package object graph {
 
 
   type Error = PuckError
+
+  def error(str : String) = throw new PuckError(str)
+
   type LoggedG = Logged[DependencyGraph]
   type LoggedTry[A] = LoggedEither[Error, A]
   type LoggedTG = LoggedTry[DependencyGraph]

@@ -105,19 +105,21 @@ object JavaNodeKind extends NodeKindKnowledge {
 
     def noNameClash( l : Int )( cId : NodeId ) : Boolean =
       concreteNodeTestPred(graph, cId){ c =>
-        (c.kind, graph.styp(c.id)) match {
-          case (ck: MethodKind, Some(MethodType(input, _)))=>
+        (c.kind, graph.structuredType(c.id)) match {
+          case (ck: MethodKind, Some(Arrow(Tuple(input), _)))=>
             c.name != other.name || input.length != l
           case (ck: MethodKind, _)=>
-            throw new DGError(showDG[ConcreteNode](graph).shows(c))
+            throw new DGError((graph, c).shows)
           case _ => true
         }
       }
 
-    def implementMethod(absMethodName : String, absMethodType : MethodType)(id : NodeId) : Boolean =
+    def implementMethod
+    ( absMethodName : String,
+      absMethodType : Arrow)(id : NodeId) : Boolean =
       graph.content(id).exists(concreteNodeTestPred(graph, _) { c =>
-        (c.kind,graph.styp(c.id)) match {
-          case (Method, Some(mt @ MethodType(_, _))) =>
+        (c.kind, graph.structuredType(c.id)) match {
+          case (Method, Some(mt @ Arrow(_, _))) =>
             absMethodName == c.name && absMethodType == mt
           case (Method, _) => throw new DGError()
           case _ => false
@@ -125,16 +127,16 @@ object JavaNodeKind extends NodeKindKnowledge {
       })
 
     super.canContain(graph)(n, other) &&
-      ( (other.kind, graph.styp(other.id)) match {
-        case (AbstractMethod, Some(absMethodType @ MethodType(input, _))) =>
+      ( (other.kind, graph.structuredType(other.id)) match {
+        case (AbstractMethod, Some(absMethodType @ Arrow(Tuple(input), _))) =>
           graph.content(id).forall(noNameClash(input.length)) &&
             graph.directSubTypes(id).forall {implementMethod(other.name, absMethodType)}
 
         case (AbstractMethod, _) => throw new DGError(other + " does not have a MethodTypeHolder")
         /* cannot have two methods with same name and same type */
-        case (Method, Some(MethodType(input, _))) =>
+        case (Method, Some(Arrow(Tuple(input), _))) =>
           graph.content(id).forall(noNameClash(input.length))
-        case (Method, _) => throw new DGError(s"canContain(${showDG[NodeId](graph).shows(id)}, ${showDG[NodeId](graph).shows(other.id)})")
+        case (Method, _) => throw new DGError(s"canContain(${(graph, id).shows}, ${(graph, other.id).shows})")
         case _ => true
       })
   }

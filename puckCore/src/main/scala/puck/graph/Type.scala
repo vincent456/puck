@@ -24,7 +24,7 @@ object Type {
 
   def errorOnImplemNotFound(className : String) : OnImplemNotFound = {
     (g, supMeth, _) =>
-      LoggedError(new PuckError(s"$className has no implementation of ${showDG[ConcreteNode](g).shows(supMeth)}"))
+      LoggedError(new PuckError(s"$className has no implementation of ${(g, supMeth).shows}"))
   }
 
   val ignoreOnImplemNotFound : OnImplemNotFound = {
@@ -46,7 +46,7 @@ object Type {
               case None => onImplemNotFound(g0, supMeth, candidates)
             }
           case TypeConstructor => LoggedSuccess((g0,cs))
-          case skt => LoggedError(new PuckError(s"findAndRegisterOverridedInList : ${showDG[ConcreteNode](g).shows(supMeth)} has an unexpected type kind ($skt)"))
+          case skt => LoggedError(new PuckError(s"findAndRegisterOverridedInList : ${(g, supMeth).shows} has an unexpected type kind ($skt)"))
         }
     } map(_._1)
 }

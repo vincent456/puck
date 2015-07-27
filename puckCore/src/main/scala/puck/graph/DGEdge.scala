@@ -5,50 +5,15 @@ import puck.graph.DGEdge._
 
 object DGEdge{
 
-  sealed trait EKind {
+  sealed abstract class EKind {
     def apply(pair : (NodeId, NodeId)) : DGEdge =
       this.apply(pair._1, pair._2)
 
     def apply(source : NodeId, target: NodeId): DGEdge
   }
 
-//  sealed abstract class UsesKind extends EKind {
-//    override def apply(pair : (NodeId, NodeId)) : DGUses =
-//      this.apply(pair._1, pair._2)
-//
-//    override def apply(source : NodeId, target: NodeId): DGUses
-//  }
-//
-//  case object UsesK extends UsesKind {
-//    override val toString = "uses"
-//
-//    def apply(source : NodeId, target: NodeId) =
-//      Uses(source, target)
-//  }
-//
-//  case object ParameterizedUsesK extends UsesKind {
-//    override val toString = "parUses"
-//
-//    def apply(source : NodeId, target: NodeId) =
-//      ParameterizedUses(source, target)
-//  }
-//
-//  case object ContainsK extends EKind {
-//    override val toString = "contains"
-//    def apply(source : NodeId, target: NodeId) =
-//      Contains(source, target)
-//  }
-//
-//  case object IsaK extends EKind {
-//    override val toString = "isa"
-//
-//    def apply(source : NodeId, target : NodeId) =
-//      Isa(source, target)
-//  }
-
   def unapply(e : DGEdge) : Some[(NodeId, NodeId)] =
     Some((e.source, e.target))
-
 
   implicit def toPair(e : DGEdge) : NodeIdP = (e.user, e.used)
 }
@@ -103,7 +68,7 @@ sealed abstract class DGEdge {
 
 
 
-sealed trait UsesKind extends EKind
+sealed abstract class UsesKind extends EKind
 
 sealed abstract class DGUses extends DGEdge{
   override val kind : UsesKind
@@ -168,7 +133,9 @@ case class Isa
 
 }
 
-case object Contains extends EKind
+sealed abstract class ContainsKind extends EKind
+
+case object Contains extends ContainsKind
 case class Contains
 ( source : NodeId,
   target: NodeId)
@@ -180,7 +147,7 @@ case class Contains
 }
 
 //Special cases of contains for handling in EdgeMap should not appear in the formalization :
-case object ContainsParam extends EKind
+case object ContainsParam extends ContainsKind
 case class ContainsParam
 ( source : NodeId,
   target: NodeId)
@@ -191,7 +158,7 @@ case class ContainsParam
     ContainsParam(source, target)
 }
 
-case object ContainsDef extends EKind
+case object ContainsDef extends ContainsKind
 case class ContainsDef
 ( source : NodeId,
   target: NodeId)

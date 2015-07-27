@@ -241,10 +241,9 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
               | (Interface, Interface) =>
             */
             case (Class, Interface) =>
-              val f = (id : NodeId) => (g getConcreteNode id, g styp id get)
 
-              val absMeths = (graph content absId).toList map f
-              val candidates = (graph content impl.id).toList map f
+              val absMeths = (graph content absId).toList map graph.typedNode
+              val candidates = (graph content impl.id).toList map graph.typedNode
               Type.findAndRegisterOverridedInList(graph, absMeths, candidates) {
                 Type.errorOnImplemNotFound(graph.fullName(impl.id))
               } .value match {

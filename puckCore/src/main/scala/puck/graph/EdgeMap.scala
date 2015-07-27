@@ -200,6 +200,14 @@ case class EdgeMap
 
   def exists(e : DGEdge) : Boolean = e.kind  match {
     case Contains => contains(e.source, e.target)
+    case ContainsParam => parameters get e.source match {
+      case Some(ps) => ps contains e.target
+      case None => false
+    }
+    case ContainsDef => definition get e.source match {
+      case Some(d) => d == e.target
+      case None => false
+    }
     case Isa => isa(e.source, e.target)
     case Uses => uses(e.source, e.target)
     case ParameterizedUses => parUses(e.source, e.target)
