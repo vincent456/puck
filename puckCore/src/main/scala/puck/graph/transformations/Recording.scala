@@ -77,6 +77,9 @@ object Recording {
     val mappin : NodeId => NodeId =
       createMapping(currentIds, newIds, totalIds)
 
+    val mappinNodeIdP : NodeIdP => NodeIdP = {
+      case (n1, n2) => (mappin(n1), mappin(n2))
+    }
 
     def mappingOnType: Type => Type = {
       case nt : NamedType => nt.copy(mappin(nt.id))
@@ -116,9 +119,11 @@ object Recording {
 
       case cnn @ ChangeNodeName(nid, _, _) =>
         cnn.copy(nid = mappin(nid))
-      case TypeDependency((tUser, tUsed), (tmUser, tmUsed)) =>
-        TypeDependency((mappin(tUser), mappin(tUsed)),
-          (mappin(tmUser), mappin(tmUsed)))
+      case ChangeTypeBinding((e1,e2), binding) =>
+        ChangeTypeBinding((mappinNodeIdP(e1),mappinNodeIdP(e2)),
+          binding.create(mappinNodeIdP(binding.edge)))
+      case TypeDependency(tUse, tmUse) =>
+        TypeDependency(mappinNodeIdP(tUse),mappinNodeIdP(tmUse))
 
     }
 

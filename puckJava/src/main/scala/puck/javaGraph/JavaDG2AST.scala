@@ -209,6 +209,10 @@ class JavaDG2AST
       case Transformation(_, ChangeNodeName(nid, _, newName)) =>
         ASTNodeLink.setName(newName, safeGet(reenactor,id2declMap)(nid))
 
+      case Transformation(_, ChangeTypeBinding(((tUser, tUsed), tmUse), TypeUse(newTuse)))
+        if tUser == tUsed =>
+        replaceSelfRefByVarAccess(reenactor, safeGet(reenactor,id2declMap), tmUse, newTuse)
+
       case Transformation(_, op) =>
         if( discardedOp(op) ) ()
         else logger.writeln(noApplyMsg)
@@ -219,7 +223,38 @@ class JavaDG2AST
 
 
 
+  def replaceSelfRefByVarAccess
+  ( reenactor : DependencyGraph,
+    id2declMap: NodeId => ASTNodeLink,
+    typeMemberUse : NodeIdP,
+    newTypeUse : NodeIdP) : Unit = {
+    val v : AST.Variable = id2declMap(newTypeUse.user) match {
+      case ParameterDeclHolder(pdecl) => pdecl
+      case FieldDeclHolder(fdecl) => fdecl
+      case _ => ???
+    }
 
+    val newAccess = v.createLockedAccess()
+
+    val user : AST.ASTNode[_] = id2declMap(typeMemberUse.user) match {
+      case defh : DefHolder => defh.node
+      case _ => ???
+    }
+    val used : AST.Visible =
+      id2declMap(typeMemberUse.used) match {
+      case FieldDeclHolder(fdecl) =>
+        user.replaceThisQualifierFor(fdecl, newAccess)
+        fdecl
+      case mdh : MethodDeclHolder =>
+        user.replaceThisQualifierFor(mdh.decl, newAccess)
+        mdh.decl
+      case _ => ???
+    }
+    ASTNodeLink.enlargeVisibility(
+      reenactor, used,
+      typeMemberUse.used)
+
+  }
 
 
 }

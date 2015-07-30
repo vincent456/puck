@@ -19,6 +19,25 @@ object ASTNodeLink{
     val names = cpath.tail.map(graph.getConcreteNode(_).name)
     program.getRootPath + names.mkString(java.io.File.separator) +".java"
   }
+
+  def enlargeVisibility
+  ( g : DependencyGraph,
+    astNode : AST.Visible,
+    nid : NodeId) : Unit = {
+    val needMoreVisibility : NodeId => Boolean =
+      g.getConcreteNode(nid).kind.kindType match {
+      case TypeDecl => g.hostNameSpace(_) != g.hostNameSpace(nid)
+      case InstanceValueDecl => g.hostTypeDecl(_) != g.hostTypeDecl(nid)
+      case _ => ???
+    }
+    import AST.ASTNode.VIS_PUBLIC
+    if (astNode.getVisibility != VIS_PUBLIC) {
+      if (g .usersOf(nid) exists needMoreVisibility)
+        astNode.setVisibility(VIS_PUBLIC)
+
+    }
+
+  }
 }
 
 sealed trait ASTNodeLink

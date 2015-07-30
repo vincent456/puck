@@ -239,19 +239,37 @@ class DependencyGraph
  def addParam(decl : NodeId, param : NodeId) : DependencyGraph =
     addEdge(ContainsParam(decl, param))
 
- def addUsesDependency(typeUse : NodeIdP,
-                        typeMemberUse : NodeIdP) : DependencyGraph =
-   newGraph(edges = edges.addUsesDependency(typeUse, typeMemberUse),
-     recording = recording.addTypeDependency(typeUse, typeMemberUse))
+ def addUsesDependency
+ ( typeUse : NodeIdP,
+   typeMemberUse : NodeIdP) : DependencyGraph =
+      newGraph(edges = edges.addUsesDependency(typeUse, typeMemberUse),
+          recording = recording.addTypeDependency(typeUse, typeMemberUse))
 
-
-
- def removeUsesDependency(typeUse : NodeIdP,
-                           typeMemberUse : NodeIdP) : DependencyGraph =
+ def removeUsesDependency
+ ( typeUse : NodeIdP,
+   typeMemberUse : NodeIdP) : DependencyGraph =
       newGraph(edges = edges.removeUsesDependency(typeUse, typeMemberUse),
         recording = recording.removeTypeDependency(typeUse, typeMemberUse))
 
+ def changeTypeUseOfTypeMemberUse
+ ( oldTypeUse : NodeIdP,
+   newTypeUse : NodeIdP,
+   tmUse : NodeIdP) : DependencyGraph = {
+   newGraph(edges =
+      edges.removeUsesDependency(oldTypeUse, tmUse).
+            addUsesDependency(newTypeUse, tmUse),
+     recording = recording.changeTypeUseOfTypeMemberUse(oldTypeUse, newTypeUse, tmUse))
+ }
 
+  def changeTypeMemberUseOfTypeUse
+  ( oldTmUse : NodeIdP,
+    newTmUse : NodeIdP,
+    typeUse : NodeIdP) : DependencyGraph = {
+    newGraph(edges =
+      edges.removeUsesDependency(typeUse, oldTmUse).
+        addUsesDependency(typeUse, newTmUse),
+      recording = recording.changeTypeMemberUseOfTypeUse(oldTmUse, newTmUse, typeUse))
+  }
 
   def addAbstraction(id : NodeId, abs : Abstraction) : DependencyGraph =
     newGraph(abstractionsMap = abstractionsMap + (id, abs),

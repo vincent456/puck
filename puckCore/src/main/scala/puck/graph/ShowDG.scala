@@ -71,12 +71,16 @@ object ShowDG extends ShowConstraints{
 
   implicit def transfoTargetCord : CordBuilder[Operation] = (dg, tgt) =>
     tgt match {
+      case CNode(n) => nodeCord(dg, n)
+      case VNode(n) =>nodeCord(dg, n)
       case Edge(edge) => edgeCord(dg, edge)
       case RedirectionOp(edge, exty) =>
         val ecord = edgeCord(dg, edge)
         val xcord = extremityCord(dg, exty)
         Cord(tgt.productPrefix, "(", ecord ,",", xcord ,")")
-
+      case TypeDependency((n1,n2), (n3,n4)) =>
+        Cord(tgt.productPrefix, "(Uses(",  nodeIdCord(dg, n1), ", ", nodeIdCord(dg,n2),
+          "),Uses(", nodeIdCord(dg, n3), ", ", nodeIdCord(dg,n4) ,"))")
       case _ => tgt.toString
     }
 

@@ -16,8 +16,6 @@ object RedirectSource {
     id2declMap: NodeId => ASTNodeLink,
     e: DGEdge, newSourceId: NodeId)
   ( implicit program : AST.Program, logger : PuckLogger) : Unit =  {
-    import AST.ASTNode.VIS_PUBLIC
-
 
 
     def moveMemberDecl(reenactor : DependencyGraph,
@@ -27,27 +25,10 @@ object RedirectSource {
 
       tDeclFrom.removeBodyDecl(mDecl)
       tDeclDest.addBodyDecl(mDecl)
-      //TODO fix : following call create a qualifier if it is null
-      //the qualifier is a parameter for which a new instance is created
-      //in some case it changes the meaning of the program !!
-      //tDeclFrom.replaceMethodCall(mDecl, mDecl)
 
-      //TODO ameliorate this !!!
-      mDecl match {
-        case decl: AST.MethodDecl => decl.setVisibility(VIS_PUBLIC)
-        case decl: AST.FieldDeclaration => decl.setVisibility(VIS_PUBLIC)
-        case _ => ()
-      }
-      //      if (tDeclFrom.getVisibility != VIS_PUBLIC) {
-      //        (reenactor.usersOf(e.target).find { uerId =>
-      //          packageNode(reenactor, uerId) != packageNode(reenactor, newSourceId)
-      //        }, mDecl) match {
-      //          case (Some(_), decl : AST.MethodDecl) => decl.setVisibility(VIS_PUBLIC)
-      //          case (Some(_), decl : AST.FieldDeclaration) => decl.setVisibility(VIS_PUBLIC)
-      //          case (Some(_), decl) => assert(false, "MethodDecl or FieldDeclaration expected got " + decl.getClass)
-      //          case (None, _) => ()
-      //        }
-      //      }
+      ASTNodeLink.enlargeVisibility(
+        reenactor, mDecl.asInstanceOf[AST.Visible],
+        e.target)
     }
 
     def moveTypeKind(newPackage: DGNode,  tDecl : AST.TypeDecl): Unit ={
@@ -69,15 +50,7 @@ object RedirectSource {
         logger.writeln("after " + program.getNumCompilationUnit + " cus in prog")(verbosity(PuckLog.Debug))
 
       }
-
-      if (tDecl.getVisibility != VIS_PUBLIC) {
-        reenactor.usersOf(e.target).find { userId =>
-          reenactor.hostNameSpace(userId) != newSourceId
-        } match {
-          case Some(_) => tDecl.setVisibility(VIS_PUBLIC)
-          case None => ()
-        }
-      }
+      ASTNodeLink.enlargeVisibility(reenactor, tDecl, e.target)
 
       logger.writeln("tDecl.packageName() = " + tDecl.packageName())
 

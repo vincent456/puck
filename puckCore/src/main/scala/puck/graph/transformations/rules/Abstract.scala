@@ -195,7 +195,6 @@ abstract class Abstract {
     clazz : ConcreteNode,
     policy : AbstractionPolicy) : List[ConcreteNode] = {
 
-
     g.content(clazz.id).foldLeft(List[ConcreteNode]()){
       (acc, mid) =>
         val member = g.getConcreteNode(mid)
@@ -203,16 +202,6 @@ abstract class Abstract {
         else acc
     }
   }
-
-//  def addTypesUses(g : DependencyGraph, nodeId : NodeId) : DependencyGraph =
-//    g.getConcreteNode(nodeId).styp.map(_.ids) match {
-//      case None => g
-//      case Some(typesUsed) =>
-//        typesUsed.foldLeft(g){(g0, tid) => g0.addUses(nodeId, tid)}
-//    }
-
-
-
 
 
   def abstractTypeDeclAndReplaceByAbstractionWherePossible
@@ -252,7 +241,6 @@ abstract class Abstract {
 
       g2 <- members.foldLoggedEither(g1)(createAbstractTypeMemberWithSuperSelfType(_, _, interface))
 
-
       g3 <- policy match {
         case SupertypeAbstraction => insertInTypeHierarchy(g2, clazz.id, interface.id)
         case DelegationAbstraction => LoggedSuccess(g2)
@@ -290,8 +278,10 @@ abstract class Abstract {
     val (abs, g1) = createAbsNode(g, impl, abskind, policy)
 
     LoggedSuccess((abs, abs match {
-      case AccessAbstraction(absId, SupertypeAbstraction) => g1.addUses(impl.id, absId)
-      case AccessAbstraction(absId, DelegationAbstraction) => g1.addUses(absId, impl.id)
+      case AccessAbstraction(absId, SupertypeAbstraction) => g1
+        //optional isa arc is added after insertion in type hierarchy
+      case AccessAbstraction(absId, DelegationAbstraction) =>
+        g1.addUses(absId, impl.id)
       case rwAbs @ ReadWriteAbstraction(someRid, someWid) =>
         val g2 = someRid.map(g1.addUses(_, impl.id, Some(Read))).getOrElse(g1)
           someWid.map(g2.addUses(_, impl.id, Some(Write))).getOrElse(g2)
@@ -334,11 +324,6 @@ abstract class Abstract {
       case (InstanceValueDecl, SupertypeAbstraction) =>
         LoggedSuccess(createAbsNode(g, impl, abskind, policy))
 
-//      case (TypeConstructor, _) =>
-//        createAbsNodeAndUse(g, impl, abskind, policy) map {
-//          case (abs @ AccessAbstraction(absId,_), g0) => (abs, ???) //addTypesUses(g0, absId))
-//          case _ => sys.error("should not happen")
-//        }
       case _ => createAbsNodeAndUse(g, impl, abskind, policy)
   }
 

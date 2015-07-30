@@ -147,8 +147,7 @@ object Move {
     }
 
     val g2 = usesBetween(g0, movedDef, movedDef).filter(usesViaThis(g0)).foldLeft(g1){
-      (g,u) => g.removeUsesDependency(oldSelfUse, u)
-                .addUsesDependency(newSelfUse, u)
+          _.changeTypeUseOfTypeMemberUse(oldSelfUse, newSelfUse, _)
     }
 
    /* println("moving " + movedDecl)
@@ -187,25 +186,33 @@ object Move {
             val (_, g1) = g0.removeNode(pid)
             val oldTypeUses = Uses(pid, newContainer)
             val g2 = g0.typeMemberUsesOf(oldTypeUses).foldLeft(g1){
-              (g00, tmu) =>
-                g00.removeUsesDependency(oldTypeUses, tmu)
-                  .addUsesDependency(newSelfUse, tmu)
+                _.changeTypeUseOfTypeMemberUse(oldTypeUses, newSelfUse, _)
             }
             LoggedSuccess(g2)
         }
     }
   }
 
-  def addParamOfType
+  def addParamOfTypeAndSetTypeDependency
   ( g: DependencyGraph,
     declId : NodeId,
-    pType : NodeId ) :
-  ( ConcreteNode, DependencyGraph ) = {
+    pType : NodeId,
+    oldTypeUse : DGUses,
+    tmUses : Set[DGUses]
+    ) : DependencyGraph  = {
+
     val newTypeUsedNode = g.getConcreteNode(pType)
     val paramKind = g.nodeKindKnowledge.kindOfKindType(Parameter).head
     val (pNode, g1) = g.addConcreteNode(newTypeUsedNode.name.toLowerCase, paramKind)
-    (pNode, g1.addParam(declId, pNode.id)
-      .setType(pNode.id, Some(NamedType(pType))))
+
+    val newTypeUse = Uses(pNode.id, pType)
+
+    val g2 = g1.addParam(declId, pNode.id)
+      .setType(pNode.id, Some(NamedType(pType)))
+
+    tmUses.foldLeft(g2) {
+        _.changeTypeUseOfTypeMemberUse(oldTypeUse, newTypeUse, _)
+    }
   }
 
   def useReceiverAsArg
@@ -220,15 +227,10 @@ object Move {
       (g0, user) =>
         val decl = g0.container_!(user)
 
-        val (pNode, g1) = addParamOfType(g0, decl, oldContainer)
-        val newTypeUses = Uses(pNode.id, oldContainer)
-
-        val g2 = usesBetween(g0, Set(user), siblings).foldLeft(g1){
-            (g00, tmu) =>
-              g00.removeUsesDependency(oldSelfUse, tmu)
-                .addUsesDependency(newTypeUses, tmu)
-          }
-        LoggedSuccess(g2)
+        LoggedSuccess (
+          addParamOfTypeAndSetTypeDependency(g0, decl,
+            oldContainer, oldSelfUse, usesBetween(g0, Set(user), siblings))
+        )
 
     }
   }
@@ -292,21 +294,14 @@ object Move {
 
         val decl = g0.getConcreteNode(g0.container_!(userId))
 
-        val (pNode, g1) = addParamOfType(g0, decl.id, newTypeUsed)
-
-        val newTypeUse = Uses(pNode.id, newTypeUsed)
-
-        val g3 = typeMemberUses.foldLeft(g1) {
-           (g00, typeMemberUse) =>
-                g00.removeUsesDependency(oldTypeUse, typeMemberUse)
-                  .addUsesDependency(newTypeUse, typeMemberUse)
-        }
+        val g1 = addParamOfTypeAndSetTypeDependency(g0, decl.id,
+          newTypeUsed, oldTypeUse, typeMemberUses)
 
         g.getDefaultConstructorOfType(newTypeUsed) match {
            case None => LoggedError(new PuckError(s"no default constructor for $newTypeUsed"))
            case Some(cid) =>
              LoggedSuccess(
-               g.usersOf(decl.id).foldLeft(g3){
+               g.usersOf(decl.id).foldLeft(g1){
                   (g0, userOfUser) => g0.addEdge(Uses(userOfUser, cid))
                 }
              )
@@ -343,8 +338,8 @@ object Move {
 
         tmUses.foldLoggedEither(g2) {
           case (g0, typeMemberUse) =>
-            LoggedSuccess(g0.removeUsesDependency(oldTypeUse, typeMemberUse)
-              .addUsesDependency(newTypeUse, typeMemberUse)
+            LoggedSuccess(
+              g0.changeTypeUseOfTypeMemberUse(oldTypeUse, newTypeUse,typeMemberUse)
               .addUses(typeMemberUse.user, delegate.id)) // replace this.m by delegate.m
         }
     }

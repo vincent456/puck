@@ -138,19 +138,9 @@ object CreateNode {
     id2Decl : Map[NodeId, ASTNodeLink],
     node : ConcreteNode
     ) : ConstructorDeclHolder = ConstructorDeclHolder {
-//      val decl = new AST.ConstructorDecl()
-//      decl.setModifiers(new AST.Modifiers("public"))
-//      decl.setID(node.name) // ?? why ? check
-//      decl
-    new AST.ConstructorDecl(
-      new AST.Modifiers("public"),
-      node.name,
-      new AST.List[AST.ParameterDeclaration](),
-      new AST.List[AST.Access](),
-      new AST.Opt[AST.Stmt](),
-      new AST.Block()
-    )
-  }
+      AST.ConstructorDecl.createConstructor(
+        new AST.Modifiers("public"), node.name)
+    }
 
   def createField
   ( prog : AST.Program,

@@ -13,7 +13,8 @@ object RedirectTarget {
     id2declMap: NodeId => ASTNodeLink,
     e: DGEdge, newTargetId: NodeId)
   ( implicit logger : PuckLogger) : Unit =  {
-    logger.writeln("redirecting %s target to %s".format(e, newTargetId))
+    logger.writeln(s"redirecting ${(reenactor, e).shows} " +
+      s"target to ${(reenactor, newTargetId).shows}")
     if(e.target != newTargetId) {
       val target = reenactor.getNode(e.target)
       val source = reenactor.getNode(e.source)
@@ -32,17 +33,13 @@ object RedirectTarget {
           }
 
         case (oldk: TypedKindDeclHolder, newk: TypedKindDeclHolder) =>
-          sourceInAST match {
-
-            case mdh : HasBodyDecl =>
-              mdh.decl.replaceTypeAccess(oldk.decl.createLockedAccess(), newk.decl.createLockedAccess())
-
-            case ClassDeclHolder(_) =>
-              logger.writeln("Class user of TypeKind, assume this is the \"doublon\" of " +
-                "an isa arc, redirection ignored")
-            case k =>
-              throw new JavaAGError(k + " as user of TypeKind, redirection unhandled !")
+          val user : AST.ASTNode[_] = sourceInAST match {
+            case FieldDeclHolder(fdecl) => fdecl
+            case ParameterDeclHolder(pdecl) => pdecl
+            case defh : DefHolder => defh.node
+            case k => throw new JavaAGError(k + " as user of TypeKind, redirection unhandled !")
           }
+          user.replaceTypeAccess(oldk.decl.createLockedAccess(), newk.decl.createLockedAccess())
 
 
 

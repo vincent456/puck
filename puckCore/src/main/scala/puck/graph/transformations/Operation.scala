@@ -115,6 +115,34 @@ case class AbstractionOp
 }
 
 
+
+sealed abstract class BoundPart{
+  val edge : NodeIdP
+  def create(n : NodeIdP) : BoundPart
+  def productPrefix : String
+}
+case class TypeUse(edge : NodeIdP) extends BoundPart{
+  def create(e : NodeIdP) : BoundPart = TypeUse(e)
+}
+case class InstanceValueUse(edge : NodeIdP) extends BoundPart  {
+  def create(e : NodeIdP) : BoundPart = InstanceValueUse(e)
+}
+
+case class ChangeTypeBinding(oldBinding : (NodeIdP,NodeIdP), extremity : BoundPart) extends Operation {
+
+   def execute(g: DependencyGraph , op : Direction) = (op, extremity) match {
+    case (Regular, TypeUse(tu)) =>
+      g.changeTypeUseOfTypeMemberUse(oldBinding._1, tu, oldBinding._2)
+    case (Reverse, TypeUse(tu)) =>
+      g.changeTypeUseOfTypeMemberUse(tu, oldBinding._1, oldBinding._2)
+    case (Regular, InstanceValueUse(tmu)) =>
+      g.changeTypeMemberUseOfTypeUse(oldBinding._2, tmu, oldBinding._1)
+    case (Reverse,InstanceValueUse(tmu)) =>
+      g.changeTypeMemberUseOfTypeUse(tmu, oldBinding._2, oldBinding._1)
+  }
+}
+
+
 case class TypeDependency
 ( typeUse : NodeIdP,
   typeMemberUse :  NodeIdP)

@@ -2,37 +2,24 @@ import puck.PuckError;
 
 aspect TransformationApplying {
 
-    public void ASTNode.replaceThisQualifierFor(MethodDecl method, Access byAccess){
+
+
+    public void ASTNode.replaceConstructorCall(ConstructorDecl oldUsed, ConstructorDecl newUsed){
         for(int i = 0; i < getNumChild(); i++)
-            getChild(i).replaceThisQualifierFor(method, byAccess);
+            getChild(i).replaceConstructorCall(oldUsed, newUsed);
     }
 
-    public void MethodAccess.replaceThisQualifierFor(MethodDecl method, Access byAccess){
-        if(this.decl() == method){
-            if(getQualifier() == null || getQualifier().isThisAccess())
-                replace(this).with(new Dot(byAccess, this));
-            else
-                replace(getQualifier()).with(byAccess);
-        }
-    }
-
-
-  public void ASTNode.replaceConstructorCall(ConstructorDecl oldUsed, ConstructorDecl newUsed){
-      for(int i = 0; i < getNumChild(); i++)
-        getChild(i).replaceConstructorCall(oldUsed, newUsed);
-  }
-
-  public void ClassInstanceExpr.replaceConstructorCall(ConstructorDecl oldUsed, ConstructorDecl newUsed){
+    public void ClassInstanceExpr.replaceConstructorCall(ConstructorDecl oldUsed, ConstructorDecl newUsed){
         if(this.decl() == oldUsed){
             setAccess(newUsed.hostType().createLockedAccess());
             setTarget(newUsed);
         }
-  }
+    }
 
 
 
 
-      public String CompilationUnit.getRootPath(){
+    public String CompilationUnit.getRootPath(){
         String packagePath = packageName().replaceAll("\\.", File.separator);
 //        System.out.println("packagePath : " + packagePath);
         int idx = pathName().indexOf(packagePath);
@@ -51,31 +38,31 @@ aspect TransformationApplying {
 
 
 
-  public void Program.printCodeInDirectory(File dir) throws IOException {
+    public void Program.printCodeInDirectory(File dir) throws IOException {
 
-    for(CompilationUnit cu : getCompilationUnits()){
+        for(CompilationUnit cu : getCompilationUnits()){
 
-      if(cu.fromSource()) {
-        String relativePath = cu.getPackageDecl().replace('.', File.separatorChar);
+            if(cu.fromSource()) {
+                String relativePath = cu.getPackageDecl().replace('.', File.separatorChar);
 
-        File f = new File(dir + File.separator +
-          relativePath + File.separator + cu.getID() + ".java");
+                File f = new File(dir + File.separator +
+                        relativePath + File.separator + cu.getID() + ".java");
 
-        f.getParentFile().mkdirs();
-        BufferedWriter writer = new BufferedWriter(new FileWriter(f));
-        writer.write(cu.toString());
-        writer.close();
-      }
+                f.getParentFile().mkdirs();
+                BufferedWriter writer = new BufferedWriter(new FileWriter(f));
+                writer.write(cu.toString());
+                writer.close();
+            }
+        }
     }
-  }
 
 
-  public void ASTNode.replaceByConstructorMethodCall(MethodDecl cm){
+    public void ASTNode.replaceByConstructorMethodCall(MethodDecl cm){
         for(int i = 0; i < getNumChild(); i++)
             getChild(i).replaceByConstructorMethodCall(cm);
-  }
+    }
 
-  public void ClassInstanceExpr.replaceByConstructorMethodCall(MethodDecl cm){
+    public void ClassInstanceExpr.replaceByConstructorMethodCall(MethodDecl cm){
         if( !(this.hostBodyDecl() instanceof MethodDecl))
             throw new Error("replaceByConstructorMethodCall, this.hostBodyDecl is " +
                     this.hostBodyDecl().getClass() + "does not know what to do !!");
@@ -90,7 +77,7 @@ aspect TransformationApplying {
 
     }
 
-  public String Program.getRootPath(){
+    public String Program.getRootPath(){
         CompilationUnit rcu = getCompilationUnit(0);
         int i = 0;
         while(rcu == null && i < getNumCompilationUnit()){
@@ -101,14 +88,14 @@ aspect TransformationApplying {
         if(rcu == null) throw new Error("cannot found rootPath");
 
         return rcu.getRootPath();
-  }
+    }
 
-  public void Program.eliminateLockedNamesInSources(){
+    public void Program.eliminateLockedNamesInSources(){
         //calling eliminateLockedNames from program after calling lockAllNames
         //provoke cause exceptions in the "@primitive package"
         for (CompilationUnit cu : (List<CompilationUnit>)getCompilationUnitList()){
             if(cu.fromSource())
                 cu.eliminateLockedNames();
         }
-  }
+    }
 }

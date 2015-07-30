@@ -1,21 +1,8 @@
 aspect CreateNode {
-//    public static ConstructorDecl ConstructorDecl.createConstructor(Access hostType,  String name, ParameterDeclaration[] params){
-//        List<ParameterDeclaration> paramList = new List<ParameterDeclaration>();
-//        for(ParameterDeclaration p : params){
-//            paramList.add(p);
-//        }
-//
-//        /*String name = "";
-//
-//        if(hostType instanceof ParTypeAccess){
-//            name = ((ParTypeAccess)hostType).name();
-//        }
-//        if(hostType instanceof TypeAccess){
-//            name = ((TypeAccess)hostType).name();
-//        }*/
-//
-//        return new ConstructorDecl(new Modifiers("public"), name, paramList, new List<Access>(), new Opt(), new Block());
-//    }
+    public static ConstructorDecl ConstructorDecl.createConstructor(AST.Modifiers mods, String name){
+        return new ConstructorDecl(mods, name,
+            new List<ParameterDeclaration>(), new List<Access>(), new Opt(), new Block());
+    }
 
     //scala compiler does not like ASTNode type parameter bound
     public CompilationUnit Program.insertUnusedType(String path, String pkg, TypeDecl td) {

@@ -27,8 +27,6 @@ aspect NodeFactory  {
 			" does not know how to create an DG Node");
 	}
 
-	//public int Variable.buildDGNode(JavaGraphBuilder builder);
-
 	public int ConstructorDecl.buildDGNode(JavaGraphBuilder builder){
 		int nodeId = super.buildDGNode(builder);
 		int hostTypeId = hostType().buildDGNode(builder);
@@ -44,7 +42,6 @@ aspect NodeFactory  {
     public int ParInterfaceDecl.buildDGNode(JavaGraphBuilder builder){
         return genericDecl().buildDGNode(builder);
     }
-
 
     public int Access.buildDGNode(JavaGraphBuilder builder){
         if(!isSubstitute())

@@ -1,6 +1,34 @@
 
 aspect ReplaceInstanceValueAccess {
 
+    public void ASTNode.replaceThisQualifierFor(MethodDecl method, Access byAccess){
+        for(int i = 0; i < getNumChild(); i++)
+            getChild(i).replaceThisQualifierFor(method, byAccess);
+    }
+
+    public void MethodAccess.replaceThisQualifierFor(MethodDecl method, Access byAccess){
+        if(this.decl() == method){
+            if(getQualifier() == null || getQualifier().isThisAccess())
+                replace(this).with(new Dot(byAccess, this));
+            else
+                replace(getQualifier()).with(byAccess);
+        }
+    }
+
+    public void ASTNode.replaceThisQualifierFor(FieldDeclaration field, Access byAccess){
+        for(int i = 0; i < getNumChild(); i++)
+            getChild(i).replaceThisQualifierFor(field, byAccess);
+    }
+
+    public void VarAccess.replaceThisQualifierFor(FieldDeclaration field, Access byAccess){
+        if(this.decl() == field){
+            if(getQualifier() == null || getQualifier().isThisAccess())
+                replace(this).with(new Dot(byAccess, this));
+            else
+                replace(getQualifier()).with(byAccess);
+        }
+    }
+
     public void ASTNode.replaceFieldAccess(FieldDeclaration oldUsed, Access newUsed) {
         for(int i = 0; i < getNumChild(); i++)
             getChild(i).replaceFieldAccess(oldUsed, newUsed);

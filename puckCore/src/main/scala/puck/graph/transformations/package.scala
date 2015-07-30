@@ -67,6 +67,19 @@ package object transformations {
                            typeMemberUse :  NodeIdP) : Recording =
       Transformation(Regular, TypeDependency(typeUse, typeMemberUse)) +: record
 
+    def changeTypeUseOfTypeMemberUse
+    ( oldTypeUse : NodeIdP,
+      newTypeUse : NodeIdP,
+      typeMemberUse :  NodeIdP) : Recording =
+      Transformation(Regular, ChangeTypeBinding((oldTypeUse, typeMemberUse),
+        TypeUse(newTypeUse))) +: record
+
+    def changeTypeMemberUseOfTypeUse
+    ( oldTypeMemberUse : NodeIdP,
+      newTypeMemberUse : NodeIdP,
+      typeUse :  NodeIdP) : Recording =
+      Transformation(Regular, ChangeTypeBinding((typeUse, oldTypeMemberUse),
+        InstanceValueUse(newTypeMemberUse))) +: record
 
     def removeTypeDependency( typeUse : NodeIdP,
                               typeMemberUse :  NodeIdP) : Recording =
