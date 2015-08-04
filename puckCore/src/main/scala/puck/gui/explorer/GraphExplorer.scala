@@ -72,6 +72,9 @@ class GraphExplorer
         }
       })
 
+      root.hideWithName(graph, Seq("root", "@primitive"))
+      root.hideWithName(graph, Seq("root", "java"))
+
       contents = Component.wrap(tree)
       this.repaint()
     case SetVisible(ks) =>

@@ -62,6 +62,20 @@ class PuckTreeNode(val nodeId : NodeId,
     }
   }
 
+  def hideWithName(graph : DependencyGraph, name : Seq[String]) : Unit =
+    name match {
+      case Seq(n) =>
+        if(graph.getConcreteNode(nodeId).name == n)
+          setVisible(Hidden, propagate = true)
+      case hd +: tl =>
+        if(graph.getConcreteNode(nodeId).name == hd)
+          List.range(0, this.getChildCount).foreach{
+            i =>
+              this.getChildAt(i).asInstanceOf[PuckTreeNode].hideWithName(graph, tl)
+          }
+      case _ => ()
+    }
+
 /* def packageOnlyVisible(graph : DependencyGraph): Unit =
    kindVisible(graph, Seq(Package))*/
 

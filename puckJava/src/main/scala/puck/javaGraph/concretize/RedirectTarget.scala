@@ -34,8 +34,9 @@ object RedirectTarget {
 
         case (oldk: TypedKindDeclHolder, newk: TypedKindDeclHolder) =>
           val user : AST.ASTNode[_] = sourceInAST match {
-            case FieldDeclHolder(fdecl) => fdecl
-            case ParameterDeclHolder(pdecl) => pdecl
+              //explicit upcast shouldn't be needed, why the compiling error ?
+            case FieldDeclHolder(fdecl) => fdecl.asInstanceOf[AST.ASTNode[_]]
+            case ParameterDeclHolder(pdecl) => pdecl.asInstanceOf[AST.ASTNode[_]]
             case defh : DefHolder => defh.node
             case k => throw new JavaAGError(k + " as user of TypeKind, redirection unhandled !")
           }
@@ -67,7 +68,6 @@ object RedirectTarget {
                       bdh.decl.replaceThisQualifierFor(mdecl, fieldAccess)
                     case _ => throw  new JavaAGError("unhandled case !")
                   }
-
               }
 
             case _ =>

@@ -60,11 +60,11 @@ object JavaDG2AST extends DG2ASTBuilder {
 }
 
 class JavaDG2AST
-(val program : AST.Program,
- val initialGraph : DependencyGraph,
- val initialRecord : Seq[Transformation],
- val nodesByName : Map[String, NodeId],
- val graph2ASTMap : Map[NodeId, ASTNodeLink]) extends DG2AST {
+( val program : AST.Program,
+  val initialGraph : DependencyGraph,
+  val initialRecord : Seq[Transformation],
+  val nodesByName : Map[String, NodeId],
+  val graph2ASTMap : Map[NodeId, ASTNodeLink]) extends DG2AST {
 
   implicit val p = program
 
@@ -113,12 +113,28 @@ class JavaDG2AST
 
   def apply(result : DependencyGraph)(implicit logger : PuckLogger) : Unit = {
 
+    def printCUs() = {
+      println(program.getNumCompilationUnit.toString + "c us")
+      List.range(0, program.getNumCompilationUnit).foreach {
+        i =>
+          val cu = program.getCompilationUnit(i)
+          if(cu.fromSource()) {
+            println(cu.pathName() + " " + cu.getPackageDecl)
+            List.range(0, cu.getNumTypeDecl).foreach{
+              j =>
+                println(cu.getTypeDecl(j).fullName())
+            }
+          }
+      }
+    }
+
     logger.writeln("applying change !")
     val record = recordOfResult(result)
 
     record.reverse.foldLeft((graphOfResult(result), initialGraph, graph2ASTMap)) {
       case ((resultGraph, reenactor, g2AST), t : Transformation) =>
 
+        logger.writeln("applying " + (reenactor, t).shows)
         val newG2AST = applyOneTransformation(resultGraph, reenactor, g2AST, t)
 
         (resultGraph, t.redo(reenactor), newG2AST)
@@ -131,6 +147,7 @@ class JavaDG2AST
     logger.writeln("change applied : ")
     logger.writeln(program)
     program.flushCaches()
+
     program.eliminateLockedNamesInSources()
     logger.writeln("Program after unlock : ")
     logger.writeln(program)

@@ -4,7 +4,7 @@ import java.io.File
 
 import puck.graph.transformations.Recording
 import puck.javaGraph._
-import puck.util.PuckNoopLogger
+import puck.util.{PuckSystemLogger, PuckNoopLogger}
 
 object LoadAndApply {
 
@@ -14,7 +14,7 @@ object LoadAndApply {
     val recFile = new File(recFileName)
 
     val fh = JavaFilesHandler()
-    implicit val logger = PuckNoopLogger
+    implicit val logger = new PuckSystemLogger(_ => true)
 
     val dg2ast = fh.loadGraph(JGraphUtils.dG2ASTBuilder, null)
     val r = Recording.load(recFile.getAbsolutePath, dg2ast.nodesByName  )

@@ -60,11 +60,11 @@ object CreateEdge {
   ( implicit program : AST.Program, logger : PuckLogger) : Unit =
     (id2declMap(e.container), id2declMap(e.content)) match {
       case (PackageDeclHolder, i: TypedKindDeclHolder) =>
-
+        setPackageDecl(reenactor, e.container, e.content, i.decl)
       case (th: TypedKindDeclHolder, AbstractMethodDeclHolder(mdecl)) =>
         th.decl.addBodyDecl(mdecl)
 
-      case (container, PackageDeclHolder) => () // can be ignored
+      case (_, PackageDeclHolder) => () // can be ignored
 
       case (ClassDeclHolder(clsdecl), bdHolder : HasBodyDecl) =>
         clsdecl.addBodyDecl(bdHolder.decl)
@@ -140,7 +140,8 @@ object CreateEdge {
   def setPackageDecl
   ( graph: DependencyGraph,
     packageId : NodeId,
-    typeDeclNodeId : NodeId, itc : AST.TypeDecl)
+    typeDeclNodeId : NodeId,
+    itc : AST.TypeDecl)
   ( implicit program : AST.Program, logger : PuckLogger) = {
 
     val cu = itc.compilationUnit()
@@ -151,6 +152,8 @@ object CreateEdge {
     cu.setPathName(path)
     cu.setRelativeName(path)
 
+    println("on setPackageDecl cu.packageName = " + cu.packageName())
+    println("tdecl.fullName() = " + itc.fullName())
     //!\ very important !!
     cu.flushCaches()
   }
