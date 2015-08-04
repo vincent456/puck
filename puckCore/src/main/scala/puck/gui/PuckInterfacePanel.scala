@@ -98,7 +98,7 @@ class PuckInterfacePanel
 
     contents += makeButton("Work space",
       "Select the root directory containing the java (up to 1.5) source code you want to analyse"){
-      () => val fc = new FileChooser(filesHandler.srcDirectory.get)
+      () => val fc = new FileChooser(filesHandler.srcDirectory !)
         fc.title = "What directory contains your application ?"
         fc.fileSelectionMode = FileChooser.SelectionMode.DirectoriesOnly
         fc showDialog(null, "Select")

@@ -2,7 +2,7 @@ package puck.gui
 
 import java.io.File
 
-import puck.graph.io.FilesHandler
+import puck.graph.io.{FileOption, FilesHandler}
 
 import scala.swing._
 import java.awt.Dimension
@@ -16,9 +16,8 @@ class SettingsFrame(filesHandler : FilesHandler) extends Frame{
 
     def makeFileSelectionLine(title : String,
                               tip : String,
-                              initValue : Option[File])
-                             (setter : File => Unit) = {
-      val path : Label = new Label(initValue match {
+                              fo : FileOption) = {
+      val path : Label = new Label(fo.get match {
         case None => "None"
         case Some(f) => f.toString
       })
@@ -29,13 +28,13 @@ class SettingsFrame(filesHandler : FilesHandler) extends Frame{
 
         action = new Action(title){
           def apply() : Unit = {
-            val fc = new FileChooser(filesHandler.srcDirectory.get)
+            val fc = new FileChooser(filesHandler.srcDirectory !)
             fc.title = title
             fc.fileSelectionMode = FileChooser.SelectionMode.FilesOnly
             fc showDialog(null, "Select")
             val f = fc.selectedFile
             if(f != null) {
-              setter(f)
+              fo set Some(f)
               path.text = f.getPath
             }
           }
@@ -46,24 +45,17 @@ class SettingsFrame(filesHandler : FilesHandler) extends Frame{
     }
 
     contents += makeFileSelectionLine("Dot", "",
-      filesHandler.graphvizDot){ f =>
-      filesHandler.graphvizDot = Some(f)
-    }
+      filesHandler.graphvizDot)
+
     contents += makeFileSelectionLine("Editor", "",
-      filesHandler.editor){ f =>
-      filesHandler.editor = Some(f)
-    }
+      filesHandler.editor)
 
     contents += makeFileSelectionLine("Decouple",
       "Select the file containing the decoupling constraints",
-      filesHandler.decouple){ f =>
-      filesHandler.decouple = Some(f)
-    }
+      filesHandler.decouple)
 
     contents += makeFileSelectionLine("Jar list file",
       "Select a file containing a list of the jar libraries required by the analysed program",
-      filesHandler.jarListFile){ f =>
-      filesHandler.jarListFile = Some(f)
-    }
+      filesHandler.jarListFile)
   }
 }

@@ -141,19 +141,19 @@ object CreateEdge {
   ( graph: DependencyGraph,
     packageId : NodeId,
     typeDeclNodeId : NodeId,
-    itc : AST.TypeDecl)
+    td : AST.TypeDecl)
   ( implicit program : AST.Program, logger : PuckLogger) = {
 
-    val cu = itc.compilationUnit()
+    val cu = td.compilationUnit()
     val pkgDecl = graph.fullName(packageId)
     val path = ASTNodeLink.getPath(graph, typeDeclNodeId)
 
     cu.setPackageDecl(pkgDecl)
     cu.setPathName(path)
     cu.setRelativeName(path)
-
+    cu.setID(td.name())
     println("on setPackageDecl cu.packageName = " + cu.packageName())
-    println("tdecl.fullName() = " + itc.fullName())
+    println("tdecl.fullName() = " + td.fullName())
     //!\ very important !!
     cu.flushCaches()
   }

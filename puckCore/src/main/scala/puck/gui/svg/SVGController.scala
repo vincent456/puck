@@ -9,6 +9,7 @@ import org.apache.batik.util.XMLResourceDescriptor
 import org.w3c.dom.Element
 import org.w3c.dom.svg.{SVGGElement, SVGDocument}
 import puck.graph._
+import puck.graph.comparison.Mapping
 import puck.graph.io._
 import puck.graph.transformations.MileStone
 import puck.gui.TextAreaLogger
@@ -290,14 +291,30 @@ class SVGController private
   }
   
   def applyOnCode() : Unit = {
-    dg2ast(graph)(new PuckFileLogger(_ => true, new File("/tmp/puck_log")))
+    console.appendText("Aplying recording on AST")
+    dg2ast(graph)
 
-    filesHandler.outDirectory match {
+    filesHandler.outDirectory.get match {
       case None => console.appendText("no output directory : cannot print code")
-      case Some(d) => dg2ast.printCode(d)
+      case Some(d) =>
+        console.appendText("Printing code")
+        dg2ast.printCode(d)
     }
 
   }
+
+  def compareOutputGraph() : Unit = {
+     val outfh = filesHandler.fromOutDir
+     console.appendText("Loading output graph from code")
+     val outdg2ast = outfh.loadGraph(graphUtils.dG2ASTBuilder, null)
+     console.appendText("Comparing graphs ...")
+
+     val res = if(Mapping.equals(graph, outdg2ast.initialGraph)) "EQUALS"
+     else "NOT equals"
+
+     console.appendText(s"they are $res")
+  }
+
 
   def abstractionChoices(n: ConcreteNode): Seq[JMenuItem] =
     n.kind.abstractionChoices.map { case (k, p) =>

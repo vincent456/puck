@@ -4,9 +4,6 @@ import java.io.{FileReader, BufferedReader, File}
 import java.util.regex.{Matcher, Pattern}
 import scala.language.implicitConversions
 
-/**
- * Created by lorilan on 11/08/14.
- */
 object FileHelper {
 
   implicit def string2file(filePath : String) : File = new File(filePath)

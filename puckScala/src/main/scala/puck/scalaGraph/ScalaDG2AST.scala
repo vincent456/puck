@@ -58,7 +58,7 @@ object ScalaDG2AST extends DG2ASTBuilder {
   override def apply
   ( srcDirectory: File,
     outDirectory: File,
-    jarListFile: File,
+    jarListFile: Option[File],
     logger: PuckLogger,
     ll: LoadingListener): DG2AST = {
 

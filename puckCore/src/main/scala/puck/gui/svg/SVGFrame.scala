@@ -131,6 +131,7 @@ class SVGFrame
 //    }
     hbox add jbutton("Apply") {
       _ => controller.applyOnCode()
+        controller.compareOutputGraph()
     }
 
     import graphUtils.nodeKindKnowledge.kindOfKindType

@@ -169,7 +169,7 @@ class PuckControl(logger0 : PuckLogger,
     Future {
       logger.write("generating code ...")
       dg2AST(record)
-      dg2AST.printCode(filesHandler.outDirectory.get)
+      dg2AST.printCode(filesHandler.outDirectory !)
       logger.writeln(" done")
     } onComplete {
       case Success(_) => ()

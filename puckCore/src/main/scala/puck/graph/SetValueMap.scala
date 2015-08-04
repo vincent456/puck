@@ -46,9 +46,10 @@ object CollectionValueMap {
   }
 
 }
+
 class CollectionValueMap[K, C[_], V]
 (val content : Map[K, C[V]],
- handler : CollectionHandler[C]){
+ val handler : CollectionHandler[C]){
 
   override def toString = "CollectionValueMap" + content.mkString("(", ",\n", ")")
 
@@ -91,6 +92,9 @@ class CollectionValueMap[K, C[_], V]
       (k, vs) = s
       v <- handler.toList(vs)
     } yield (k, v)
+
+  
+  
 
 }
 

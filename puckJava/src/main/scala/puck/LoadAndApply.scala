@@ -21,7 +21,7 @@ object LoadAndApply {
     val g = r.redo(dg2ast.initialGraph)
 
     dg2ast(g)
-    dg2ast.printCode(fh.outDirectory.get)
+    dg2ast.printCode(fh.outDirectory !)
   }
 
 }

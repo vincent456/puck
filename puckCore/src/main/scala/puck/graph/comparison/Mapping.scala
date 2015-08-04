@@ -1,0 +1,123 @@
+package puck.graph.comparison
+
+import puck.graph._
+
+
+
+object Mapping {
+
+  def create
+  ( g1 : DependencyGraph,
+    g2 : DependencyGraph
+  ) : Map[NodeId, NodeId] =
+    create(nameIndex(g1), nameIndex(g1))
+
+  def nameIndex(g : DependencyGraph) : Map[String, NodeId] =
+    g.nodesId.toList map {id => (g.fullName(id), id)} toMap
+
+ def create
+  ( m1 : Map[String, NodeId],
+    m2 : Map[String, NodeId]
+    ) : Map[NodeId, NodeId] =
+    swap(m1).mapValues(m2.apply)
+
+  def swap[A,B]( m : Map[A, B]) : Map[B, A] =
+    m.toList.map {case (a,b) => (b,a)}.toMap
+
+
+  def mapType(mappin : NodeId => NodeId): Type => Type = {
+    case nt : NamedType => nt.copy(mappin(nt.id))
+    case nt : Tuple => nt.copy(nt.types.map(mapType(mappin)))
+    case nt : Arrow =>
+      val i = nt.input
+      val o = nt.output
+      nt.copy(input = mapType(mappin)(i), output = mapType(mappin)(o))
+  }
+
+  def equalsCVM[C[_], V]
+  ( mappin : V => V)
+  ( cvm1 : CollectionValueMap[V, C, V],
+    cvm2 : CollectionValueMap[V, C, V]) : Boolean =
+    cvm1.content.size == cvm2.content.size &&
+      cvm1.content.forall {
+        case ((k1, vs1)) =>
+          val vs2 = cvm2.content(mappin(k1))
+          cvm1.handler.map(vs1, mappin) == vs2
+      }
+    
+
+  def equalsMap[V]
+  ( mappin : V => V)
+  ( cvm1 : Map[V, V],
+    cvm2 : Map[V, V]) : Boolean =
+    cvm1.size == cvm2.size &&
+      cvm1.forall {
+        case ((k1, v1)) =>
+          val v2 = cvm2(mappin(k1))
+          mappin(v1) == v2
+      }
+
+
+  def equals
+  ( g1 : DependencyGraph,
+    g2 : DependencyGraph
+  ) : Boolean = {
+
+    assert(g1.virtualNodes.isEmpty)
+    assert(g2.virtualNodes.isEmpty)
+
+    g1.nodesId.size == g2.nodesId.size && {
+      val mappinG1toG2 = create(g1,g2).apply _
+
+      val mappinNodeIdP : NodeIdP => NodeIdP = {
+        case (n1, n2) => (mappinG1toG2(n1), mappinG1toG2(n2))
+      }
+
+      val equalsNodes = g1.concreteNodes.forall{
+        g1n =>
+          val g2Id = mappinG1toG2(g1n.id)
+          val g2n = g2.getConcreteNode(g2Id).copy(id = g1n.id)
+          g1n == g2n
+      }
+
+      lazy val equalsUses1 =
+        equalsCVM(mappinG1toG2)(g1.edges.userMap, g2.edges.userMap)
+      lazy val equalsUses2 : Boolean =
+        g1.edges.types.forall {
+          case ((id1, t1)) =>
+            val t2 = g2.edges.types(mappinG1toG2(id1))
+            mapType(mappinG1toG2)(t1) == t2
+        }
+      lazy val equalsUses3 = g1.edges.accessKindMap.forall{
+        case (k, v) =>
+          g2.edges.accessKindMap(mappinNodeIdP(k)) == v
+      }
+
+      lazy val equalsContains1 =
+        equalsCVM(mappinG1toG2)(g1.edges.contents, g2.edges.contents)
+      lazy val equalsContains2 =
+        equalsCVM(mappinG1toG2)(g1.edges.parameters, g2.edges.parameters)
+      lazy val equalsContains3 =
+        equalsMap(mappinG1toG2)(g1.edges.definition, g2.edges.definition)
+
+      lazy val equalsIsa =
+        equalsCVM(mappinG1toG2)(g1.edges.superTypes, g2.edges.superTypes)
+
+      lazy val equalsTD1 =
+        equalsCVM(mappinNodeIdP)(g1.edges.typeMemberUses2typeUsesMap,
+          g2.edges.typeMemberUses2typeUsesMap)
+      lazy val equalsTD2 =
+        equalsCVM(mappinNodeIdP)(g1.edges.typeUses2typeMemberUsesMap,
+          g2.edges.typeUses2typeMemberUsesMap)
+
+      equalsNodes && equalsUses1 && equalsUses2 && equalsUses3 &&
+        equalsContains1 && equalsContains2 && equalsContains3 &&
+        equalsIsa && equalsTD1 && equalsTD2
+
+    }
+
+
+  }
+
+
+}

@@ -22,6 +22,7 @@ package object javaGraph {
       new FilesHandler(workingDirectory,
        ".java",
         JavaDotHelper)
+
   object JGraphUtils extends GraphUtils {
 
     val nodeKindKnowledge : NodeKindKnowledge = JavaNodeKind

@@ -3,7 +3,7 @@ package transformations
 
 import java.io.{FileInputStream, ObjectInputStream, FileOutputStream, ObjectOutputStream}
 
-
+import puck.graph.comparison.Mapping
 
 
 object Recording {
@@ -51,8 +51,7 @@ object Recording {
     mapNodes(r, m, map, numIds)
   }
 
-  private def swap[A,B]( m : Map[A, B]) : Map[B, A] =
-    m.toList.map {case (a,b) => (b,a)}.toMap
+
 
   def createMapping(currentIds : Map[String, NodeId],
                     newIds : Map[String, NodeId],
@@ -62,7 +61,7 @@ object Recording {
 
     if(currentIds == newIds) identity
     else {
-      val m1 = swap(currentIds).mapValues(newIds.apply)
+      val m1 = Mapping.create(currentIds, newIds)
 
       Range(currentIds.size, totalIds).foldLeft(m1) { case (m, id) =>
         m + (id -> id)
@@ -81,15 +80,8 @@ object Recording {
       case (n1, n2) => (mappin(n1), mappin(n2))
     }
 
-    def mappingOnType: Type => Type = {
-      case nt : NamedType => nt.copy(mappin(nt.id))
-      case nt : Tuple => nt.copy(nt.types.map(mappingOnType))
-      case nt : Arrow =>
-        val i = nt.input
-        val o = nt.output
-        nt.copy(input = mappingOnType(i), output = mappingOnType(o))
-    }
 
+    val mappingOnType = Mapping.mapType(mappin)
 
     def mappingOnOperation : Operation => Operation = {
       case CNode(n) =>

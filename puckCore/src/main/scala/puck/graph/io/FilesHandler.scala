@@ -92,7 +92,7 @@ object FilesHandler{
 trait DG2ASTBuilder{
   def apply(srcDirectory : File,
             outDirectory : File,
-            jarListFile : File,
+            jarListFile : Option[File],
             logger : PuckLogger,
             ll : LoadingListener = null) : DG2AST
 }
@@ -107,19 +107,35 @@ trait DG2AST {
   def code(graph : DependencyGraph, id : NodeId) : String
 }
 
+object FileOption {
+  implicit def fileOptionToOptionFile(fo : FileOption) : Option[File] =
+    fo.get
+}
+
+class FileOption(private [this] var sf : Option[File] = None) {
+  def get = sf
+  def ! = sf.get
+  def set(sf : Option[File]) =
+    sf match {
+      case None => ()
+      case Some(f) => val fc = f.getCanonicalFile
+        this.sf =
+          if(fc.exists()) Some(fc)
+          else None
+    }
+}
+
 class FilesHandler
 (val workingDirectory : File,
  //TODO ? change to List[String] ?
  val srcSuffix : String,
  val dotHelper : DotHelper){
 
+  def fromOutDir : FilesHandler =
+    new FilesHandler(outDirectory !, srcSuffix, dotHelper)
 
-  private [this] var srcDir0 : Option[File] = None
-  private [this] var outDir0 : Option[File] = None
-  private [this] var jarListFile0 : Option[File] = None
-  private [this] var apiNodesFile0 : Option[File] = None
-  private [this] var decouple0 : Option[File] = None
-  private [this] var logFile0 : Option[File] = None
+
+
 
 
   var graphStubFileName : String = FilesHandler.Default.graphFileName
@@ -127,13 +143,6 @@ class FilesHandler
   import PuckLog.defaultVerbosity
 
   val logPolicy : PuckLog.Verbosity => Boolean = {
-/*    case (PuckLog.Search,_) | (PuckLog.Solver, _) => true
-    case (PuckLog.InGraph,_) | (PuckLog.InJavaGraph, _ ) => true
-    case (PuckLog.GraphTransfoRules, _) => true*/
-    /*case (PuckLog.NoSpecialContext, _)
-         | (PuckLog.Solver, PuckLog.Debug)
-         | (PuckLog.InGraph, PuckLog.Debug) => true*/
-    /*case (PuckLog.GraphComparisonSearch, _) => true*/
     case _ => true
   }
 
@@ -141,23 +150,9 @@ class FilesHandler
 
   var graphBuilder : GraphBuilder = _
 
-  def setCanonicalOptionFile(prev : Option[File], sf : Option[File]) = {
-    sf match {
-      case None => prev
-      case Some(f) => val fc = f.getCanonicalFile
-        if(fc.exists())
-          Some(fc)
-        else {
-          //logger.writeln("%s does not exists.".format(f))
-          None
-        }
-    }
-  }
-
-
   def setWorkingDirectory(dir : File) : Unit = {
-    this.srcDir0 = setCanonicalOptionFile(this.srcDir0, Some(dir))
-    this.srcDir0 match {
+    srcDirectory set Some(dir)
+    srcDirectory.get match {
       case None => throw new DGError("Invalid working directory !!!")
       case Some(d) =>
 
@@ -170,15 +165,15 @@ class FilesHandler
         if(!od.exists()){
           od.mkdir()
         }
-        outDir0 = Some(od)
-        jarListFile0 = defaultFile(Default.jarListFileName)
-        apiNodesFile0 = defaultFile(Default.apiNodesFileName)
-        decouple0 = defaultFile(Default.decoupleFileName)
-        logFile0 = defaultFile(Default.logFileName)
+        outDirectory set Some(od)
+        jarListFile set defaultFile(Default.jarListFileName)
+        apiNodesFile set defaultFile(Default.apiNodesFileName)
+        decouple set defaultFile(Default.decoupleFileName)
+        logFile set defaultFile(Default.logFileName)
     }
   }
 
-  setWorkingDirectory(workingDirectory)
+
 
   /*private [this] var logger0 : PuckLogger = logFile match {
     case None => new PuckSystemLogger(logPolicy)
@@ -186,49 +181,26 @@ class FilesHandler
   }*/
 
 
-  def srcDirectory = this.srcDir0
-  def srcDirectory_=(sdir : Option[File]) : Unit = {
-    this.srcDir0 = setCanonicalOptionFile(this.srcDir0, sdir)
-  }
 
-  def outDirectory = this.outDir0
-  def outDirectory_=(sdir : Option[File]) : Unit = {
-    this.outDir0 = setCanonicalOptionFile(this.outDir0, sdir)
-  }
+  val srcDirectory = new FileOption()
 
-  def jarListFile = this.jarListFile0
-  def jarListFile_=(sf : Option[File]) : Unit = {
-    this.jarListFile0 = setCanonicalOptionFile(this.jarListFile0, sf)
-  }
+  val outDirectory = new FileOption()
 
-  def apiNodesFile = this.apiNodesFile0
-  def apiNodesFile_=(sf : Option[File]) : Unit = {
-    this.apiNodesFile0 = setCanonicalOptionFile(this.apiNodesFile0, sf)
-  }
+  val jarListFile = new FileOption()
 
-  def decouple = this.decouple0
-  def decouple_=(sf: Option[File]) : Unit = {
-    this.decouple0 = setCanonicalOptionFile(this.decouple0, sf)
-  }
+  val apiNodesFile = new FileOption()
 
+  val decouple = new FileOption()
 
-  private [this] var gdot : Option[File] = None
+  val graphvizDot = new FileOption()
 
-  def graphvizDot = this.gdot
-  def graphvizDot_=(sf: Option[File]) : Unit = {
-    this.gdot = setCanonicalOptionFile(this.gdot, sf)
-  }
+  val editor = new FileOption()
 
-  private [this] var editor0 : Option[File] = None
+  val logFile = new FileOption()
 
-  def editor = editor0
-  def editor_=(sf: Option[File]): Unit = {
-    this.editor0 = setCanonicalOptionFile(this.editor0, sf)
-  }
+  setWorkingDirectory(workingDirectory)
 
-  def logFile = logFile0
-
-  def graphFilePath : String = outDirectory match {
+  def graphFilePath : String = outDirectory.get match {
     case None => throw new DGError("no output directory !!")
     case Some(d) => d + File.separator + graphStubFileName
   }
@@ -242,9 +214,9 @@ class FilesHandler
     ll : LoadingListener)
   ( implicit logger : PuckLogger) : DG2AST = {
      dG2ASTBuilder(
-      srcDirectory.get,
-      outDirectory.get,
-      jarListFile.get,
+      srcDirectory !,
+      outDirectory !,
+      jarListFile,
       logger, ll)
   }
 
@@ -255,7 +227,7 @@ class FilesHandler
   def parseConstraints
   ( dg2ast: DG2AST )
   ( implicit logger : PuckLogger) : DG2AST = {
-    decouple match{
+    decouple.get match{
       case None => throw new DGError("cannot parse : no decouple file given")
       case Some(f) =>
         logger.writeln("parsing " + f)
@@ -299,10 +271,10 @@ class FilesHandler
     }
   }
 
-  def makeImage = FilesHandler.makeImage(graphvizDot, dotHelper, graphFilePath) _
+  def makeImage = FilesHandler.makeImage(graphvizDot.get, dotHelper, graphFilePath) _
 
   private def openList(files : Seq[String]) : Unit = {
-    val ed = editor match {
+    val ed = editor.get match {
       case None => sys.env("EDITOR")
       case Some(f) => f.getCanonicalPath
     }
@@ -311,9 +283,9 @@ class FilesHandler
 
   import puck.util.FileHelper.findAllFiles
 
-  def openSources() = openList(findAllFiles(srcDirectory.get, srcSuffix,
-    outDirectory.get.getName))
-  def openProduction() = openList(findAllFiles(outDirectory.get, srcSuffix,
-    outDirectory.get.getName))
+  def openSources() = openList(findAllFiles(srcDirectory !, srcSuffix,
+    outDirectory.!.getName))
+  def openProduction() = openList(findAllFiles(outDirectory !, srcSuffix,
+    outDirectory.!.getName))
 
 }

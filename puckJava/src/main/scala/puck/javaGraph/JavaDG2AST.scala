@@ -19,7 +19,7 @@ object JavaDG2AST extends DG2ASTBuilder {
   def apply
   ( srcDirectory : File,
     outDirectory : File,
-    jarListFile : File,
+    jarListFile : Option[File],
     logger : PuckLogger,
     ll : puck.LoadingListener = null
     ) : DG2AST = {
@@ -31,8 +31,9 @@ object JavaDG2AST extends DG2ASTBuilder {
       val srcSuffix = ".java"
       val sources = findAllFiles(srcDirectory, srcSuffix, outDirectory.getName)
       val jars = findAllFiles(srcDirectory, ".jar", outDirectory.getName)
-
-      CompileHelper(sources, fileLines(jarListFile) ++: jars )
+      val jarsFromList =
+        jarListFile map (fileLines(_, keepEmptyLines = false)) getOrElse List()
+      CompileHelper(sources, jarsFromList ++: jars )
     }
 
     puck.util.Time.time(logger, defaultVerbosity) {

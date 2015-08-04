@@ -40,7 +40,8 @@ object RedirectSource {
         val path = ASTNodeLink.getPath(resultGraph, e.target)
         val oldcu = tDecl.compilationUnit()
         oldcu.removeTypeDecl(tDecl)
-        oldcu.programRoot().insertUnusedType(path, resultGraph.fullName(newPackage.id), tDecl)
+        val newCu = oldcu.programRoot().insertUnusedType(path, resultGraph.fullName(newPackage.id), tDecl)
+        newCu.setID(tDecl.name())
 
       }
       else {
