@@ -242,9 +242,6 @@ class TransfoRuleSpec extends AcceptanceSpec {
         assert( g.isa(classA, itc) )
         assert( g.isa(itc, superA) )
 
-        assert( g.uses(classA, itc) )
-        assert( g.uses(itc, superA) )
-
         val absMeths = g.content(itc)
         val mInBothInterface  =
           absMeths.find(g.getConcreteNode(_).name == "mInInterface").value
@@ -453,6 +450,7 @@ class TransfoRuleSpec extends AcceptanceSpec {
         val g =
           Redirection.redirectUsesAndPropagate(graph,
             useOfmeth, AccessAbstraction(mAbs, SupertypeAbstraction)).right
+
 
         assert(! (useOfImplClass existsIn g))
         assert(useOfctor existsIn g)

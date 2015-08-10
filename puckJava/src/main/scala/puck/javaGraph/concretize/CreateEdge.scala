@@ -152,8 +152,6 @@ object CreateEdge {
     cu.setPathName(path)
     cu.setRelativeName(path)
     cu.setID(td.name())
-    println("on setPackageDecl cu.packageName = " + cu.packageName())
-    println("tdecl.fullName() = " + td.fullName())
     //!\ very important !!
     cu.flushCaches()
   }

@@ -1,6 +1,5 @@
 package puck.graph.transformations.rules
 
-import puck.graph.constraints.SupertypeAbstraction
 import puck.{graph, PuckError}
 import puck.graph._
 import puck.util.LoggedEither, LoggedEither._
@@ -27,9 +26,10 @@ object Redirection {
     else LoggedSuccess(absSet.head)
   }
 
-  private def redirect(g : DependencyGraph,
-                oldUse : DGUses,
-                newUsed : Abstraction) : LoggedTry[(DependencyGraph, List[DGUses])] =
+  private def redirect
+  ( g : DependencyGraph,
+    oldUse : DGUses,
+    newUsed : Abstraction) : LoggedTry[(DependencyGraph, List[DGUses])] =
     try LoggedSuccess {
       (newUsed, oldUse.accessKind) match {
         case (AccessAbstraction(absId, pol), None) =>

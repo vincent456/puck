@@ -10,10 +10,11 @@ object Mapping {
   ( g1 : DependencyGraph,
     g2 : DependencyGraph
   ) : Map[NodeId, NodeId] =
-    create(nameIndex(g1), nameIndex(g1))
+    create(nameIndex(g1), nameIndex(g2))
 
   def nameIndex(g : DependencyGraph) : Map[String, NodeId] =
-    g.nodesId.toList map {id => (g.fullName(id), id)} toMap
+     g.nodesId.toList map { id => (g.fullName(id), id) } toMap
+
 
  def create
   ( m1 : Map[String, NodeId],
@@ -38,12 +39,13 @@ object Mapping {
   ( mappin : V => V)
   ( cvm1 : CollectionValueMap[V, C, V],
     cvm2 : CollectionValueMap[V, C, V]) : Boolean =
-    cvm1.content.size == cvm2.content.size &&
-      cvm1.content.forall {
-        case ((k1, vs1)) =>
-          val vs2 = cvm2.content(mappin(k1))
-          cvm1.handler.map(vs1, mappin) == vs2
-      }
+      cvm1.content.size == cvm2.content.size &&
+        cvm1.content.forall {
+          case ((k1, vs1)) =>
+            val vs2 = cvm2.content(mappin(k1))
+            cvm1.handler.map(vs1, mappin) == vs2
+        }
+
     
 
   def equalsMap[V]

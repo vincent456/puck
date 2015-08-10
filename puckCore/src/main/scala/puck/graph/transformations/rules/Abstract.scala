@@ -130,15 +130,14 @@ abstract class Abstract {
 
     }
 
-  def changeSelfTypeUseBySuperInTypeMember
+  def redirectTypeUseInParameters
   ( g : DependencyGraph, meth : ConcreteNode,
-    clazz : ConcreteNode, interface : ConcreteNode): LoggedTG ={
+    clazz : ConcreteNode, interface : ConcreteNode): LoggedTG = {
 
-      val g1 = g.changeContravariantType(meth.id, g.styp(meth.id), clazz.id, interface.id)
       val log = "changeSelfTypeUseBySuperInTypeMember : " +
         s"redirecting Uses(${meth.name}, ${clazz.name}) target to $interface\n"
 
-      val ltg = g.parameters(meth.id).foldLoggedEither(g1){
+      val ltg = g.parameters(meth.id).foldLoggedEither(g){
         (g0, pid) =>
           if (g0.uses(pid, clazz.id))
             Redirection.redirectUsesAndPropagate(g0, Uses(pid, clazz.id),
@@ -148,8 +147,19 @@ abstract class Abstract {
 
       }
       log <++: ltg
-
   }
+
+  def redirectTypeUseInParameters
+  ( g : DependencyGraph, members : List[ConcreteNode],
+    clazz : ConcreteNode, interface : ConcreteNode): LoggedTG =
+    members.foldLoggedEither(g){
+      (g0, child) =>
+        child.kind.kindType match {
+          case InstanceValueDecl if g0.parameters(child.id).exists(g0.uses(_, clazz.id)) =>
+            redirectTypeUseInParameters(g0, child, clazz, interface)
+          case _ => LoggedSuccess(g0)
+        }
+    }
 
 
   def canBeAbstracted
@@ -221,9 +231,12 @@ abstract class Abstract {
       createAbstraction(g, meth, meth.kind.abstractionNodeKinds(policy).head, policy) flatMap {
         case (AccessAbstraction(absMethodId, _), g0) =>
 
-          LoggedSuccess(g0.addContains(interface.id, absMethodId)
+          val g1 = g0.addContains(interface.id, absMethodId)
             //is change type needed in case of delegation policy
-            .changeType(absMethodId, clazz.id, interface.id))
+            .changeType(absMethodId, clazz.id, interface.id) //change return type
+          redirectTypeUseInParameters(g1, g1.getConcreteNode(absMethodId),
+            clazz, interface)
+
         case _ => LoggedError(new PuckError("unexpected type of abstraction"))
       }
 
@@ -247,14 +260,8 @@ abstract class Abstract {
       }
 
       g4 <- if(policy == SupertypeAbstraction)
-        members.foldLoggedEither(g3.addIsa(clazz.id, interface.id)){
-          (g0, child) =>
-            child.kind.kindType match {
-            case InstanceValueDecl if g0.parameters(child.id).exists(g0.uses(_, clazz.id)) =>
-              changeSelfTypeUseBySuperInTypeMember(g0, child, clazz, interface)
-            case _ => LoggedSuccess(g0)
-          }
-        }
+        redirectTypeUseInParameters(g3.addIsa(clazz.id, interface.id), members,
+          clazz, interface)
       else LoggedSuccess[DependencyGraph](g3)
 
 

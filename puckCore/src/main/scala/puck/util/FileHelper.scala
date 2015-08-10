@@ -57,19 +57,26 @@ object FileHelper {
 
   def findAllFiles(root : File,
                    suffix : String,
-                   ignore: String) : List[String] =
-    findAllFiles(suffix, ignore, List(), root)
+                   ignoredSubDir : Option[String]) : List[String] =
+    findAllFiles(suffix, ignoredSubDir, List(), root)
 
   def findAllFiles(suffix : String,
-                   ignore: String,
+                   ignoredSubDir : Option[String],
                    res: List[String],
                     f: File) : List[String] = {
+    
+    val ignore : String => Boolean =
+    ignoredSubDir match {
+      case None => _ => false
+      case Some(subDir) => _ == subDir
+    }
+    
     def aux(res: List[String],
             f: File) : List[String] = {
       if (f.isDirectory)
         f.listFiles().foldLeft(res){
           case (l, f0) =>
-            if(f0.getName == ignore) l
+            if(ignore(f0.getName)) l
             else aux(l, f0)
         }
       else {

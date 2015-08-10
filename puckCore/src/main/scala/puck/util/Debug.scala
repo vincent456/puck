@@ -3,6 +3,8 @@ package puck.util
 import puck.graph._
 import ShowDG._
 
+import scala.math.Ordering
+
 
 object Debug {
 
@@ -63,18 +65,23 @@ object Debug {
 
   }
 
+  def mkMapStringSortedByKey[A,B](m : Map[A,B])(implicit ord: Ordering[A]) : String = {
+    m.toList.sortBy(_._1).mkString("\t[",",\n\t ","]\n")
+
+  }
+
   implicit val showNodeIndex = scalaz.Show.shows[NodeIndex] {
     case NodeIndex(_, cNodes, removedCnodes,
     vNodes, removedVnodes,
     cNodes2vNodes) =>
       "Concrete Nodes : " +
-        cNodes.mkString("\t[",",\n\t ","]\n") +
+        mkMapStringSortedByKey(cNodes) +
       "Removed Concrete Nodes : " +
-        removedCnodes.mkString("\t[",",\n\t ","]\n") +
+        mkMapStringSortedByKey(removedCnodes) +
       "Virtual Nodes : " +
-        vNodes.mkString("\t[",",\n\t ","]\n") +
+        mkMapStringSortedByKey(vNodes) +
       "Removed Virtual Nodes : " +
-        removedVnodes.mkString("\t[",",\n\t ","]\n") +
+        mkMapStringSortedByKey(removedVnodes) +
       "CN -> VN : " +
         cNodes2vNodes.mkString("\t[",",\n\t ","]\n")
 

@@ -196,7 +196,7 @@ class DotPrinter
   }
   def printOrphanNode(nid : NodeId): Unit = {
     val n = graph.getNode(nid)
-    val s = n.mapConcrete(cn => signatureString(graph.styp(cn.id)), "")
+    val s = n.mapConcrete(cn => signatureString(graph.structuredType(cn.id)), "")
 
     writeln(s"""${n.id} [ label = "${n.kind} ${name(n)} ${idString(n.id)} $s" shape="rectangle" ]""")
 
@@ -238,7 +238,7 @@ class DotPrinter
     val n = graph.getNode(nid)
     def writeTableLine(nid: NodeId): Unit = {
       val n = graph.getNode(nid)
-      val sig = n mapConcrete (cn => signatureString(graph.styp(cn.id)), "")
+      val sig = n mapConcrete (cn => signatureString(graph.structuredType(cn.id)), "")
 
       val (itb, ite) = n.kind.kindType match {
         case InstanceValueDecl

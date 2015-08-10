@@ -57,12 +57,12 @@ class PuckCompiler extends Driver {
 object ScalaDG2AST extends DG2ASTBuilder {
   override def apply
   ( srcDirectory: File,
-    outDirectory: File,
+    outDirectory: Option[File],
     jarListFile: Option[File],
     logger: PuckLogger,
     ll: LoadingListener): DG2AST = {
 
-    val srcs = findAllFiles(srcDirectory, ".scala", outDirectory.getName)
+    val srcs = findAllFiles(srcDirectory, ".scala", outDirectory map (_.getName))
     val args = ("-Ystop-after:"+PuckPluginSettings.phaseName) :: srcs
 
     val (g, global) = new PuckCompiler()(args)

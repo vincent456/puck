@@ -18,7 +18,7 @@ object JavaDG2AST extends DG2ASTBuilder {
 
   def apply
   ( srcDirectory : File,
-    outDirectory : File,
+    outDirectory : Option[File],
     jarListFile : Option[File],
     logger : PuckLogger,
     ll : puck.LoadingListener = null
@@ -29,8 +29,8 @@ object JavaDG2AST extends DG2ASTBuilder {
       logger.writeln("Compiling sources ...")
 
       val srcSuffix = ".java"
-      val sources = findAllFiles(srcDirectory, srcSuffix, outDirectory.getName)
-      val jars = findAllFiles(srcDirectory, ".jar", outDirectory.getName)
+      val sources = findAllFiles(srcDirectory, srcSuffix, outDirectory map (_.getName))
+      val jars = findAllFiles(srcDirectory, ".jar", outDirectory map (_.getName))
       val jarsFromList =
         jarListFile map (fileLines(_, keepEmptyLines = false)) getOrElse List()
       CompileHelper(sources, jarsFromList ++: jars )
@@ -199,8 +199,13 @@ class JavaDG2AST
       case Transformation(_, RedirectionOp(e, Source(newSource))) =>
         RedirectSource(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newSource)
 
+
       case Transformation(_, RedirectionOp(e, Target(newTarget))) =>
         RedirectTarget(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newTarget)
+
+      case Transformation(_, TypeChange(user, Some(NamedType(oldType)), Some(NamedType(newType)))) =>
+        val e = Uses(user, oldType)
+        RedirectTarget(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newType)
 
       // TODO see if can be performed in add node instead
       case Transformation(_, AbstractionOp(impl, AccessAbstraction(abs, SupertypeAbstraction))) =>

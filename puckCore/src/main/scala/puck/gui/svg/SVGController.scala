@@ -14,7 +14,6 @@ import puck.graph.io._
 import puck.graph.transformations.MileStone
 import puck.gui.TextAreaLogger
 import puck.gui.svg.actions.{AddNodeAction, AbstractionAction}
-import puck.util.PuckFileLogger
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global

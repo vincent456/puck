@@ -16,7 +16,7 @@ object PuckBuild extends Build {
     organization := "fr.lip6",
     name := s"puck-$module",
     version := "1.0-SNAPSHOT",
-    scalaVersion := "2.11.6",
+    scalaVersion := "2.11.7",
     sbtVersion := "0.13.8",
     classPathFileName := "CLASSPATH",
 
@@ -32,9 +32,14 @@ object PuckBuild extends Build {
       writter.close()
       f
     },
+
+    resolvers += Resolver.url("Typesafe Releases",
+          url("https://repo.typesafe.com/typesafe/releases/"))(Resolver.ivyStylePatterns),
+
     libraryDependencies ++= Seq(
       "org.scalaz" %% "scalaz-core" % "7.1.2",
-      "org.scalatest" %% "scalatest" % "2.2.1"
+      "org.scalatest" %% "scalatest" % "2.2.1",
+      "org.scala-sbt" %% "io" % "0.13.8"
     ),
 
     scalacOptions ++= Seq(

@@ -1,8 +1,11 @@
 package puck.javaGraph
 
+import java.io.File
+
 import puck.graph.{NodeId, DependencyGraph}
 import puck.graph.transformations.Transformation
-import puck.util.{PuckFileLogger, PuckNoopLogger, PuckLogger}
+import puck.util.{FileHelper, PuckFileLogger, PuckNoopLogger, PuckLogger}
+import sbt.IO
 
 case class ExampleSample
 ( program : AST.Program,
@@ -26,4 +29,17 @@ case class ExampleSample
   implicit var logger : PuckLogger = new PuckFileLogger(_ => true, new java.io.File("/tmp/comparisonLog"))
   def compare: (DependencyGraph, DependencyGraph) => Boolean =
     (g1, g2) => DependencyGraph.areEquivalent(initialRecord,g1,g2, logger)
+
+
+  def applyChangeAndMakeExample
+  ( g: DependencyGraph,
+    outDir : File) : ExampleSample = {
+    val dg2ast = new JavaDG2AST(program, graph, initialRecord, fullName2id, dg2astMap)
+
+    dg2ast.apply(g)(new PuckFileLogger(_ => true, new File("/tmp/pucklog")))
+    IO.delete(outDir)
+    dg2ast.printCode(outDir)
+    val genSrc = FileHelper.findAllFiles(outDir, ".java", None)
+    new ExampleSample(genSrc:_*)
+  }
 }

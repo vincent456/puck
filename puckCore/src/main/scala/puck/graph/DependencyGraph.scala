@@ -153,7 +153,7 @@ class DependencyGraph
   def structuredType(id : NodeId) : Option[Type] = {
     //assert node is a typed value
     val params = parameters(id)
-    //println(s"params of $id = $params")
+
     if(params.isEmpty) this styp id
     else Some(Arrow(Tuple(params map (pid => this styp pid get)), this styp id get))
   }
@@ -182,17 +182,6 @@ class DependencyGraph
     styp(id) match {
       case None => this
       case Some(t) => setType(id, Some(t.changeNamedType(oldUsed, newUsed)))
-    }
-
-  def changeContravariantType
-  ( id : NodeId,
-    styp : Option[Type],
-    oldUsed: NodeId,
-    newUsed : NodeId ) : DependencyGraph =
-    styp match {
-      case None => this
-      case Some(t) =>
-        setType(id, Some(t.changeNamedTypeContravariant(oldUsed, newUsed)))
     }
 
 
@@ -279,12 +268,29 @@ class DependencyGraph
     newGraph(abstractionsMap = abstractionsMap - (id, abs),
              recording = recording.removeAbstraction(id, abs))
 
-  def changeTarget(edge : DGEdge, newTarget : NodeId) : DependencyGraph = {
-    val g1 = edge.deleteIn(this, register = false)
-    val newEdge : DGEdge = edge.copy(target = newTarget)
-    val newRecording = recording.changeEdgeTarget(edge, newTarget, withMerge = newEdge.existsIn(this))
-    newEdge.createIn(g1, register = false).newGraph(recording = newRecording)
+
+  private def isChangeType(edge : DGEdge, newTarget : NodeId) : Boolean = {
+    edge.kind == Uses && (getNode(edge.user).kind.kindType match {
+      case InstanceTypeDecl
+        | StaticValueDecl
+        | Parameter =>
+        val oldUsedKind = getNode(edge.used).kind.kindType
+        val newUsedKind = getNode(newTarget).kind.kindType
+
+        oldUsedKind == TypeDecl && newUsedKind == TypeDecl
+      case _ => false
+    })
+
   }
+  def changeTarget(edge : DGEdge, newTarget : NodeId) : DependencyGraph =
+    if(isChangeType(edge, newTarget))
+       changeType(edge.user, edge.used, newTarget)
+    else {
+      val g1 = edge.deleteIn(this, register = false)
+      val newEdge : DGEdge = edge.copy(target = newTarget)
+      val newRecording = recording.changeEdgeTarget(edge, newTarget, withMerge = newEdge.existsIn(this))
+      newEdge.createIn(g1, register = false).newGraph(recording = newRecording)
+    }
 
   def changeSource(edge : DGEdge, newSource : NodeId) : DependencyGraph = {
     val g1 = edge.deleteIn(this, register = false)

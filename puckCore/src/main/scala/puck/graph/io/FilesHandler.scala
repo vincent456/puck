@@ -91,7 +91,7 @@ object FilesHandler{
 
 trait DG2ASTBuilder{
   def apply(srcDirectory : File,
-            outDirectory : File,
+            outDirectory : Option[File],
             jarListFile : Option[File],
             logger : PuckLogger,
             ll : LoadingListener = null) : DG2AST
@@ -123,6 +123,8 @@ class FileOption(private [this] var sf : Option[File] = None) {
           if(fc.exists()) Some(fc)
           else None
     }
+
+  def toOption = sf
 }
 
 class FilesHandler
@@ -215,7 +217,7 @@ class FilesHandler
   ( implicit logger : PuckLogger) : DG2AST = {
      dG2ASTBuilder(
       srcDirectory !,
-      outDirectory !,
+      outDirectory.toOption,
       jarListFile,
       logger, ll)
   }
@@ -284,8 +286,8 @@ class FilesHandler
   import puck.util.FileHelper.findAllFiles
 
   def openSources() = openList(findAllFiles(srcDirectory !, srcSuffix,
-    outDirectory.!.getName))
+    outDirectory.toOption map (_.getName)))
   def openProduction() = openList(findAllFiles(outDirectory !, srcSuffix,
-    outDirectory.!.getName))
+    outDirectory.toOption map (_.getName)))
 
 }

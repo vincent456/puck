@@ -176,7 +176,7 @@ object CreateNode {
     ) : ParameterDeclHolder = ParameterDeclHolder {
     val ta = createTypeAccess(node.id, graph, id2Decl)
     new AST.ParameterDeclaration(new AST.Modifiers, ta,
-      ta.name().toLowerCase)
+      node.name)
   }
 
 

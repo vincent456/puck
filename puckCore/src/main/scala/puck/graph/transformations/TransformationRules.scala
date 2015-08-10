@@ -61,7 +61,7 @@ class TransformationRules
             }
           overloadedMethod.foldLoggedEither(g){
             case (g0, (m, _)) =>
-              abstracter.changeSelfTypeUseBySuperInTypeMember(g0, m, subNode, supNode)
+              abstracter.redirectTypeUseInParameters(g0, m, subNode, supNode)
           }
       }
 
