@@ -113,9 +113,6 @@ abstract class Abstract {
       (g0, oldSuperTypedId) =>
 
         val g1 = g0.changeSource(Isa(subTypeId, oldSuperTypedId), newSuperTypeId)
-          .changeSource(Uses(subTypeId, oldSuperTypedId), newSuperTypeId)
-
-
 
         val subTypeMeths = g1.content(subTypeId).toList map g1.typedNode
         val newSupTypeMeths = g1. content(newSuperTypeId).toList map g1.typedNode

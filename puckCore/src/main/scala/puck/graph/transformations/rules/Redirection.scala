@@ -89,19 +89,30 @@ object Redirection {
 
         val g1 = oldUse.changeTarget(g, absNode)
 
+        import g.nodeKindKnowledge.intro
+        import DGEdge.toPair
+
         val typeOfNewReveiver = g.container(absNode).get
+        val userOfCtor = oldUse.user
         createVarStrategy match {
           case CreateParameter =>
-            Move.createParam(g1, Uses(-1,-1), typeOfNewReveiver, Set(oldUse))
+            val decl = g1.getConcreteNode(g1.container_!(userOfCtor))
+
+            intro.parameter(g1, typeOfNewReveiver, decl.id) map {
+              case (pNode, g2) =>
+                g2.addUsesDependency((pNode.id, typeOfNewReveiver), (userOfCtor, absNode))
+            }
 
           case CreateTypeMember(kind) =>
-            val user = oldUse.user
 
-            Move.createTypeMember(g1,  Uses(-1,-1),
+            intro.typeMember(g1,
               typeOfNewReveiver,
-              g.container(user).get,
-              Set(oldUse),
-              kind)
+              g.container(userOfCtor).get,
+              kind) map {
+              case (newTypeUse, g2) =>
+                g2.addUsesDependency(newTypeUse, (userOfCtor, absNode))
+                  .addUses(userOfCtor, newTypeUse.user)
+            }
         }
 
       case _ => LoggedError(new PuckError(), "constructor should have one abs node")
@@ -141,7 +152,7 @@ object Redirection {
                 (g01, nTmus) = gNewTmus
               } yield {
                 nTmus.foldLeft(g01.removeUsesDependency(tu,tmu)){
-                  _.addUsesDependency(newTypeUse,_)
+                  _.changeTypeUseOfTypeMemberUse(tu, newTypeUse,_)
                 }
               }
           }

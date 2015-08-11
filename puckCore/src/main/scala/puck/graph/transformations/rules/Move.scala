@@ -199,19 +199,15 @@ object Move {
     pType : NodeId,
     oldTypeUse : DGUses,
     tmUses : Set[DGUses]
-    ) : DependencyGraph  = {
+    ) : LoggedTG  = {
+    import g.nodeKindKnowledge.intro
+    intro.parameter(g, pType, declId) map {
+      case (pNode, g2) =>
+        val newTypeUse = Uses(pNode.id, pType)
 
-    val newTypeUsedNode = g.getConcreteNode(pType)
-    val paramKind = g.nodeKindKnowledge.kindOfKindType(Parameter).head
-    val (pNode, g1) = g.addConcreteNode(newTypeUsedNode.name.toLowerCase, paramKind)
-
-    val newTypeUse = Uses(pNode.id, pType)
-
-    val g2 = g1.addParam(declId, pNode.id)
-      .setType(pNode.id, Some(NamedType(pType)))
-
-    tmUses.foldLeft(g2) {
-        _.changeTypeUseOfTypeMemberUse(oldTypeUse, newTypeUse, _)
+        tmUses.foldLeft(g2) {
+          _.changeTypeUseOfTypeMemberUse(oldTypeUse, newTypeUse, _)
+        }
     }
   }
 
@@ -227,11 +223,8 @@ object Move {
       (g0, user) =>
         val decl = g0.container_!(user)
 
-        LoggedSuccess (
-          addParamOfTypeAndSetTypeDependency(g0, decl,
+        addParamOfTypeAndSetTypeDependency(g0, decl,
             oldContainer, oldSelfUse, usesBetween(g0, Set(user), siblings))
-        )
-
     }
   }
 
@@ -278,7 +271,7 @@ object Move {
 
   def createParam
   ( g : DependencyGraph,
-    oldTypeUse : DGUses,
+    someOldTypeUse : DGUses,
     newTypeUsed : NodeId,
     tmUses : Set[DGUses]
     ): LoggedTG ={
@@ -287,29 +280,17 @@ object Move {
     //introduce one parameter by user even with several uses
     //these were all previously this use so it makes sens to keep one reference
     usesByUser.toList.foldLoggedEither(g) {
-      case (g0, (userId, typeMemberUses)) =>
-        val user = g0.getConcreteNode(userId)
+      case (g0, (impl, typeMemberUses)) =>
+        val user = g0.getConcreteNode(impl)
 
-        assert(g0.getConcreteNode(userId).kind.kindType == ValueDef)
+        assert(g0.getConcreteNode(impl).kind.kindType == ValueDef)
 
-        val decl = g0.getConcreteNode(g0.container_!(userId))
+        val decl = g0.getConcreteNode(g0.container_!(impl))
 
-        val g1 = addParamOfTypeAndSetTypeDependency(g0, decl.id,
-          newTypeUsed, oldTypeUse, typeMemberUses)
-
-        g.getDefaultConstructorOfType(newTypeUsed) match {
-           case None => LoggedError(new PuckError(s"no default constructor for $newTypeUsed"))
-           case Some(cid) =>
-             LoggedSuccess(
-               g.usersOf(decl.id).foldLeft(g1){
-                  (g0, userOfUser) => g0.addEdge(Uses(userOfUser, cid))
-                }
-             )
-        }
-
+        addParamOfTypeAndSetTypeDependency(g0, decl.id,
+          newTypeUsed, someOldTypeUse, typeMemberUses)
 
     }
-
   }
 
   def createTypeMember
@@ -319,29 +300,26 @@ object Move {
     tmContainer : NodeId,
     tmUses : Set[DGUses],
     kind : NodeKind
-    ): LoggedTG =
-    g.getDefaultConstructorOfType(newTypeUsed) match {
-      case None => LoggedError(new PuckError(s"no default constructor for $newTypeUsed"))
-      case Some(constructorId) =>
+    ): LoggedTG ={
+    import g.nodeKindKnowledge.intro
+    for {
+      ug <- intro.typeMember(g, newTypeUsed, tmContainer, kind)
+    } yield {
+      val (newTypeUse, g2) = ug
+      val delegateId = newTypeUse.user
 
-        val delegateName = s"${g.getConcreteNode(newTypeUsed).name.toLowerCase}_delegate"
-
-        import g.nodeKindKnowledge.intro
-        val (delegate, g1) = intro.accessToType(g, delegateName, kind, newTypeUsed)
-
-        val newTypeUse = Uses(delegate.id, newTypeUsed)
-
-        val g2 = g1.addContains(tmContainer, delegate.id)
-          .addEdge(newTypeUse) //type field
-          .addEdge(Uses(g1 definition_! delegate.id, constructorId))
-          //.addEdge(Uses(tmContainer, delegate.id, Some(Write)))
-
-        tmUses.foldLoggedEither(g2) {
-          case (g0, typeMemberUse) =>
-            LoggedSuccess(
-              g0.changeTypeUseOfTypeMemberUse(oldTypeUse, newTypeUse,typeMemberUse)
-              .addUses(typeMemberUse.user, delegate.id)) // replace this.m by delegate.m
-        }
+      tmUses.foldLeft(g2) {
+        case (g0, typeMemberUse) =>
+            g0.changeTypeUseOfTypeMemberUse(oldTypeUse, newTypeUse, typeMemberUse)
+              .addUses(typeMemberUse.user, delegateId) // replace this.m by delegate.m
+      }
     }
+
+
+
+
+  }
+
+
 
 }

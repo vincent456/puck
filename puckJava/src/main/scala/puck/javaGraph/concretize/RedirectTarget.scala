@@ -7,7 +7,8 @@ import puck.util.PuckLogger
 import ShowDG._
 
 object RedirectTarget {
-  def apply
+
+    def apply
   ( graph: DependencyGraph,
     reenactor : DependencyGraph,
     id2declMap: NodeId => ASTNodeLink,
@@ -102,12 +103,12 @@ object RedirectTarget {
               throw new JavaAGError("constructor change, kind of uses source unhandled")
           }
 
-        case (ConstructorDeclHolder(_), ConstructorMethodDeclHolder(newDecl, _)) =>
+        case (ConstructorDeclHolder(_), methCtor: MethodDeclHolder) =>
           sourceInAST match {
             case ConstructorDeclHolder(_) =>
               throw new JavaAGError("redirection to constructor method within " +
                 "constructor no implemented (see methodDecl)")
-            case mdh: MethodDeclHolder => mdh.decl.replaceByConstructorMethodCall(newDecl)
+            case dh: DefHolder => dh.node.replaceByConstructorMethodCall(methCtor.decl)
 
             case k =>
               throw new JavaAGError(k + " as user of MethodKind, redirection unhandled !")

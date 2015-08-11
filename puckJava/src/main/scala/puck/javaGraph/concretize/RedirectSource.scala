@@ -100,17 +100,17 @@ object RedirectSource {
         case (PackageDeclHolder, PackageDeclHolder, i: TypedKindDeclHolder) =>
           moveTypeKind(newSource, i.decl)
 
-        case (ClassDeclHolder(classDecl),
-        InterfaceDeclHolder(absDecl),
-        idh@InterfaceDeclHolder(superDecl)) =>
-          classDecl.removeImplements(superDecl)
-          absDecl.addSuperInterfaceId(idh.decl.createLockedAccess())
-
-        case (InterfaceDeclHolder(subDecl),
-        InterfaceDeclHolder(absDecl),
-        idh@InterfaceDeclHolder(superDecl)) =>
-          subDecl.removeSuperInterface(superDecl)
-          absDecl.addSuperInterfaceId(idh.decl.createLockedAccess())
+//        case (ClassDeclHolder(classDecl),
+//        InterfaceDeclHolder(absDecl),
+//        idh@InterfaceDeclHolder(superDecl)) =>
+//          classDecl.removeImplements(superDecl)
+//          absDecl.addSuperInterfaceId(idh.decl.createLockedAccess())
+//
+//        case (InterfaceDeclHolder(subDecl),
+//        InterfaceDeclHolder(absDecl),
+//        idh@InterfaceDeclHolder(superDecl)) =>
+//          subDecl.removeSuperInterface(superDecl)
+//          absDecl.addSuperInterfaceId(idh.decl.createLockedAccess())
 
         case _ =>
           val eStr = (reenactor, e).shows
@@ -132,7 +132,7 @@ object RedirectSource {
       e.kind match {
         case Contains => move(source, newSource, target)
         case Isa =>
-          removeIsa(id2declMap(source.id),id2declMap(target.id))
+          removeIsa(id2declMap(source.id), id2declMap(target.id))
           CreateEdge.createIsa(id2declMap(newSource.id), id2declMap(target.id))
 
         case Uses =>
@@ -150,9 +150,9 @@ object RedirectSource {
   ( sub : ASTNodeLink, sup : ASTNodeLink)
   ( implicit logger : PuckLogger) : Unit = (sub,sup) match {
     case (sub : TypedKindDeclHolder, sup: TypedKindDeclHolder) =>
-      sub.decl.removeSuperType(sup.decl.createLockedAccess())
+      sub.decl.removeSuperType(sup.decl)
 
-    case e => logger.writeln(s"isa($e) not created")
+    case e => logger.writeln(s"isa($e) not deleted")
   }
 
 }

@@ -1,0 +1,61 @@
+
+
+aspect ReplaceClassInstanceExpr {
+
+    public void ASTNode.replaceByConstructorMethodCall(MethodDecl cm) {
+        for (int i = 0; i < getNumChild(); i++)
+            getChild(i).replaceByConstructorMethodCall(cm);
+    }
+
+    class EmptyReceiver extends Expr{
+
+        private EmptyReceiver(){}
+
+        public static final EmptyReceiver instance = new EmptyReceiver();
+
+        public void toString(StringBuffer s){
+            s.append("/* EmptyReceiver */");
+        }
+
+        @Override
+        public TypeDecl type() {
+            throw new Error("EmptyReceiver has no type");
+        }
+
+        @Override
+        public int precedence() {
+            throw new Error("EmptyReceiver has no precedence");
+        }
+
+    }
+
+    public void ClassInstanceExpr.replaceByConstructorMethodCall(MethodDecl cm) {
+        if (!(this.hostBodyDecl() instanceof MethodDecl))
+            throw new Error("replaceByConstructorMethodCall, this.hostBodyDecl is " +
+                    this.hostBodyDecl().getClass() + "does not know what to do !!");
+
+        replace(this).with(new Dot(EmptyReceiver.instance,
+                cm.createBoundAccess(this.getArgs())));
+
+    }
+
+
+    public void ASTNode.introduceVarAccess(MemberDecl field, Access byAccess){
+        for(int i = 0; i < getNumChild(); i++)
+            getChild(i).introduceVarAccess(field, byAccess);
+    }
+
+    public void VarAccess.introduceVarAccess(MemberDecl field, Access byAccess){
+        if(this.decl() == field){
+            if(getQualifier() == EmptyReceiver.instance)
+                replace(getQualifier()).with(byAccess);
+        }
+    }
+
+    public void MethodAccess.introduceVarAccess(MemberDecl method, Access byAccess){
+        if(this.decl() == method){
+            if(getQualifier() == EmptyReceiver.instance)
+                replace(getQualifier()).with(byAccess);
+        }
+    }
+}

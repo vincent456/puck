@@ -250,6 +250,18 @@ class DependencyGraph
      recording = recording.changeTypeUseOfTypeMemberUse(oldTypeUse, newTypeUse, tmUse))
  }
 
+//  def changeTypeUseOfTypeMemberUseList
+//  ( oldTypeUse : NodeIdP,
+//    newTypeUse : NodeIdP,
+//    tmUses : List[DGUses]
+//    ) : DependencyGraph = {
+//    tmUses
+//    newGraph(edges =
+//      edges.removeUsesDependency(oldTypeUse, tmUse).
+//        addUsesDependency(newTypeUse, tmUse),
+//      recording = recording.changeTypeUseOfTypeMemberUse(oldTypeUse, newTypeUse, tmUse))
+//  }
+
   def changeTypeMemberUseOfTypeUse
   ( oldTmUse : NodeIdP,
     newTmUse : NodeIdP,
@@ -323,7 +335,6 @@ class DependencyGraph
   def hostTypeDecl(nid : NodeId) : NodeId =
     containerOfKindType(TypeDecl, nid)
 
-
   def content(containerId: NodeId) : Set[NodeId] = edges.contents.getFlat(containerId)
 
   //special cases of content
@@ -395,10 +406,6 @@ class DependencyGraph
 
   def isa_*(subId : NodeId, superId: NodeId): Boolean =
     edges.isa_*(subId, superId)
-  //  {
-  //    directSuperTypes(subCandidate).exists(_ == superCandidate) ||
-  //      directSuperTypes(subCandidate).exists(isSuperTypeOf(superCandidate, _))
-  //  }
 
   def isaList  : List[(NodeId, NodeId)] = edges.superTypes.flatList
 

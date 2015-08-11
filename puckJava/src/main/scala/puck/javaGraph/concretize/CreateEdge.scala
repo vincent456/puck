@@ -76,8 +76,11 @@ object CreateEdge {
   def createIsa
   (sub : ASTNodeLink, sup : ASTNodeLink)
   ( implicit logger : PuckLogger) : Unit = (sub, sup) match {
-    case (ClassDeclHolder(sDecl), idh: InterfaceDeclHolder) =>
-      sDecl.addImplements(idh.decl.createLockedAccess())
+    case (ClassDeclHolder(sDecl), InterfaceDeclHolder(idecl)) =>
+      sDecl.addImplements(idecl.createLockedAccess())
+
+    case (InterfaceDeclHolder(ideclSub), InterfaceDeclHolder(ideclSup)) =>
+      ideclSub.addSuperInterfaceId(ideclSup.createLockedAccess())
 
     case e => logger.writeln(s"isa($e) not created")
   }

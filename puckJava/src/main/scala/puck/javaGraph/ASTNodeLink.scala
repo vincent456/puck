@@ -47,11 +47,12 @@ object ASTNodeLink{
 sealed trait ASTNodeLink
 
 case object NoDecl extends ASTNodeLink
-case object PackageDeclHolder extends ASTNodeLink
-
-sealed abstract class DefHolder extends ASTNodeLink {
+sealed abstract class HasNode extends ASTNodeLink {
   def node : AST.ASTNode[_]
 }
+case object PackageDeclHolder extends ASTNodeLink
+
+sealed abstract class DefHolder extends HasNode
 case class ExprHolder(expr : AST.Expr) extends DefHolder{
   def node = expr.asInstanceOf[AST.ASTNode[_]]
 }
@@ -61,8 +62,9 @@ case class BlockHolder(block : AST.Block) extends DefHolder{
 
 case class ParameterDeclHolder(decl : AST.ParameterDeclaration) extends ASTNodeLink
 
-sealed trait HasBodyDecl extends ASTNodeLink{
+sealed trait HasBodyDecl extends HasNode{
   val decl : AST.BodyDecl
+  def node = decl.asInstanceOf[AST.ASTNode[_]]
 }
 
 sealed trait HasMemberDecl extends HasBodyDecl{
@@ -91,8 +93,9 @@ case class AbstractMethodDeclHolder(decl : AST.MethodDecl) extends MethodDeclHol
 case class ConstructorMethodDeclHolder( decl : AST.MethodDecl,
                                         ctorDecl : AST.ConstructorDecl) extends MethodDeclHolder
 
-trait TypedKindDeclHolder extends ASTNodeLink {
+trait TypedKindDeclHolder extends HasNode {
   def decl : AST.TypeDecl
+  def node = decl.asInstanceOf[AST.ASTNode[_]]
 }
 
 

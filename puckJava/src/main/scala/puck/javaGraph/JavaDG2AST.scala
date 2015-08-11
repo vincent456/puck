@@ -3,7 +3,7 @@ package puck.javaGraph
 import java.io.{FileReader, File}
 import java.util.NoSuchElementException
 
-import puck.PuckError
+import puck.{graph, PuckError}
 import puck.graph.constraints.{SupertypeAbstraction, ConstraintsParser}
 import puck.graph.transformations._
 import puck.graph._
@@ -234,7 +234,12 @@ class JavaDG2AST
 
       case Transformation(_, ChangeTypeBinding(((tUser, tUsed), tmUse), TypeUse(newTuse)))
         if tUser == tUsed =>
-        replaceSelfRefByVarAccess(reenactor, safeGet(reenactor,id2declMap), tmUse, newTuse)
+        createVarAccess(reenactor, safeGet(reenactor,id2declMap), tmUse, newTuse,
+          replaceSelfRefByVarAccess)
+
+      case Transformation(Regular, TypeDependency(typeUse, tmUse)) =>
+        createVarAccess(reenactor, safeGet(reenactor,id2declMap), tmUse, typeUse,
+          introVarAccess)
 
       case Transformation(_, op) =>
         if( discardedOp(op) ) ()
@@ -243,18 +248,24 @@ class JavaDG2AST
     id2declMap
   }
 
+  val introVarAccess : (AST.ASTNode[_], AST.MemberDecl, AST.Access) => Unit =
+    (user, decl, access) => user.introduceVarAccess(decl, access)
+
+  val replaceSelfRefByVarAccess : (AST.ASTNode[_], AST.MemberDecl, AST.Access) => Unit =
+    (user, decl, access) => user.replaceThisQualifierFor(decl, access)
 
 
-
-  def replaceSelfRefByVarAccess
+  def createVarAccess
   ( reenactor : DependencyGraph,
     id2declMap: NodeId => ASTNodeLink,
     typeMemberUse : NodeIdP,
-    newTypeUse : NodeIdP) : Unit = {
-    val v : AST.Variable = id2declMap(newTypeUse.user) match {
+    typeUse : NodeIdP,
+    f : (AST.ASTNode[_], AST.MemberDecl, AST.Access) => Unit)
+  : Unit = {
+    val v : AST.Variable = id2declMap(typeUse.user) match {
       case ParameterDeclHolder(pdecl) => pdecl
       case FieldDeclHolder(fdecl) => fdecl
-      case _ => ???
+      case dh => error(s"expect parameter or field, $dh not handled")
     }
 
     val newAccess = v.createLockedAccess()
@@ -263,21 +274,26 @@ class JavaDG2AST
       case defh : DefHolder => defh.node
       case _ => ???
     }
-    val used : AST.Visible =
+
+    val (usedAsVisible : AST.Visible, usedAsMemberDecl : AST.MemberDecl) =
       id2declMap(typeMemberUse.used) match {
-      case FieldDeclHolder(fdecl) =>
-        user.replaceThisQualifierFor(fdecl, newAccess)
-        fdecl
-      case mdh : MethodDeclHolder =>
-        user.replaceThisQualifierFor(mdh.decl, newAccess)
-        mdh.decl
-      case _ => ???
-    }
+        case FieldDeclHolder(fdecl) => (fdecl, fdecl)
+        case mdh : MethodDeclHolder => (mdh.decl, mdh.decl)
+        case h => error(s"self use of $h by $user case unhandled")
+      }
+
+    f(user, usedAsMemberDecl, newAccess)
+
+
     ASTNodeLink.enlargeVisibility(
-      reenactor, used,
+      reenactor, usedAsVisible,
       typeMemberUse.used)
 
   }
+
+
+
+
 
 
 }
