@@ -136,7 +136,9 @@ object JavaNodeKind extends NodeKindKnowledge {
         /* cannot have two methods with same name and same type */
         case (Method, Some(Arrow(Tuple(input), _))) =>
           graph.content(id).forall(noNameClash(input.length))
-        case (Method, _) => throw new DGError(s"canContain(${(graph, id).shows}, ${(graph, other.id).shows})")
+
+        case (Method, st) =>
+          throw new DGError(s"canContain(${(graph, id).shows}, ${(graph, other.id).shows}) $st")
         case _ => true
       })
   }
@@ -160,5 +162,14 @@ object JavaNodeKind extends NodeKindKnowledge {
     val sNode = graph.concreteNodes.find(_.name == "void")
     if(sNode.isEmpty) sys.error("void not loaded")
     else NamedType(sNode.get.id)
+  }
+
+  override def structuredType(graph : DependencyGraph, id : NodeId, params : List[NodeId]) : Option[Type] = {
+    //assert node is a typed value
+    if(params.nonEmpty) super.structuredType(graph, id, params)
+    else graph.getNode(id).kind match {
+      case Method => Some(Arrow(Tuple(), graph styp id get))
+      case _ => Some(graph styp id get)
+    }
   }
 }

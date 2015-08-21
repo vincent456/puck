@@ -96,4 +96,10 @@ trait NodeKindKnowledge {
 
   def getConstructorOfType(g: DependencyGraph, tid : NodeId) : Option[NodeId]
 
+  def structuredType(graph : DependencyGraph, id : NodeId, params : List[NodeId]) : Option[Type] = {
+    //assert node is a typed value
+    if(params.isEmpty) graph styp id
+    else Some(Arrow(Tuple(params map (pid => graph styp pid get)), graph styp id get))
+  }
+
 }

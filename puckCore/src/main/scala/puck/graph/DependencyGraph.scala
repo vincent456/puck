@@ -154,10 +154,7 @@ class DependencyGraph
 
   def structuredType(id : NodeId) : Option[Type] = {
     //assert node is a typed value
-    val params = parameters(id)
-
-    if(params.isEmpty) this styp id
-    else Some(Arrow(Tuple(params map (pid => this styp pid get)), this styp id get))
+    nodeKindKnowledge.structuredType(this, id, parameters(id))
   }
 
   def typedNode(id : NodeId ) : TypedNode = {
@@ -345,12 +342,8 @@ class DependencyGraph
     edges.definition get declId
 
   def definition_!(declId : NodeId) : NodeId =
-  try {
     edges definition declId
-  } catch {
-    case nse : NoSuchElementException =>
-      error(s"definition ${fullName(declId)} not found !")
-  }
+
 
 
   def parameters(declId : NodeId)  : List[NodeId] = edges.parameters.getFlat(declId)

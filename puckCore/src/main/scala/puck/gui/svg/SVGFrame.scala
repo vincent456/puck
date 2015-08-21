@@ -201,15 +201,15 @@ class SVGFrame
     hbox.setLayout(new BoxLayout(hbox, BoxLayout.Y_AXIS))
     menu add hbox
 
-    val inputNode = new JTextField()
-    inputNode.setMinimumSize(new Dimension(50, 35))
-    val getNodeName = new JButton(abstractAction("See node Name") {
-      _ =>
-        val id = inputNode.getText.toInt
-        println(s"$id - ${controller.graph.fullName(id)}")
-    })
-    hbox.add(inputNode)
-    hbox.add(getNodeName)
+//    val inputNode = new JTextField()
+//    inputNode.setMinimumSize(new Dimension(50, 35))
+//    val getNodeName = new JButton(abstractAction("See node Name") {
+//      _ =>
+//        val id = inputNode.getText.toInt
+//        println(s"$id - ${controller.graph.fullName(id)}")
+//    })
+//    hbox.add(inputNode)
+//    hbox.add(getNodeName)
 
     def addCheckBox(name: String, initiallySelected : Boolean)(f: Boolean => Unit) : JCheckBox = {
       val checkBox: JCheckBox = new JCheckBox
