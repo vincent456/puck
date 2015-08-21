@@ -45,7 +45,7 @@ object Type {
                 LoggedSuccess((g0.addAbstraction(subMeth.id, AccessAbstraction(supMeth.id, SupertypeAbstraction)), newCandidates))
               case None => onImplemNotFound(g0, supMeth, candidates)
             }
-          case TypeConstructor => LoggedSuccess((g0,cs))
+          case TypeConstructor | StaticValueDecl => LoggedSuccess((g0,cs))
           case skt => LoggedError(new PuckError(s"findAndRegisterOverridedInList : ${(g, supMeth).shows} has an unexpected type kind ($skt)"))
         }
     } map(_._1)

@@ -7,7 +7,7 @@ import puck.graph.constraints.search.ConstraintSolvingSearchEngineBuilder
 import puck.graph._
 import puck.graph.io._
 
-import puck.gui.explorer.{SetVisible, AccessGraphModified}
+import puck.gui.explorer.{SetTopLevelVisible, SetVisibleFromKind, AccessGraphModified}
 import puck.gui.imageDisplay.{ImageFrame, ImageExplorer}
 import puck.gui.svg.SVGFrame
 import puck.search.{SearchState, Search}
@@ -92,10 +92,13 @@ class PuckControl(logger0 : PuckLogger,
 
 
     if(dg2AST.initialGraph.nodesId.size > displayNameSpaceOnlyDefaultThreshold) {
-      import graphUtils.nodeKindKnowledge.kindOfKindType
-      publish(SetVisible(kindOfKindType(NameSpace)))
+//      import graphUtils.nodeKindKnowledge.kindOfKindType
+//      dg2AST.initialGraph.content(dg2AST.initialGraph.rootId)
+//      publish(SetVisibleFromKind(kindOfKindType(NameSpace)))
+      publish(SetTopLevelVisible)
       logger.writeln(s"Graph have more than $displayNameSpaceOnlyDefaultThreshold, " +
-        s"namespace visibility selected by default.")
+        s"top level visibility selected by default.")
+        //s"namespace visibility selected by default.")
     }
 
     delayedDisplay.foreach(_.visible = true)

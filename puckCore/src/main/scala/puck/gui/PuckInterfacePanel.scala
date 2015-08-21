@@ -5,7 +5,7 @@ import java.io.File
 
 import puck.graph.{TypeDecl, NameSpace, GraphUtils}
 import puck.graph.io.{VisibilitySet, FilesHandler}
-import puck.gui.explorer.{SetVisible, NodeInfosPanel, PuckTreeNodeClicked, GraphExplorer}
+import puck.gui.explorer.{SetVisibleFromKind, NodeInfosPanel, PuckTreeNodeClicked, GraphExplorer}
 import puck.gui.search.ResultPanel
 import puck.util.{PuckLogger, PuckLog}
 
@@ -156,14 +156,14 @@ class PuckInterfacePanel
         contents+= new Button() {
           tooltip = "Make packages only visible"
           action = new Action("Package Visibility") {
-            def apply() : Unit = { control.publish(SetVisible(kindOfKindType(NameSpace))) }
+            def apply() : Unit = { control.publish(SetVisibleFromKind(kindOfKindType(NameSpace))) }
           }
         }
 
         contents+= new Button() {
           tooltip = "Make only packages classes visible"
           action = new Action("Package+Class Visibility") {
-            def apply() : Unit = { control.publish(SetVisible(kindOfKindType(TypeDecl))) }
+            def apply() : Unit = { control.publish(SetVisibleFromKind(kindOfKindType(TypeDecl))) }
           }
         }
       }

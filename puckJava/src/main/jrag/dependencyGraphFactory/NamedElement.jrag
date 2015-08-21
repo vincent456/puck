@@ -23,7 +23,7 @@ aspect NamedElement {
 
     syn boolean ASTNode.hasDefinition();
     eq ASTNode.hasDefinition() = false;
-    eq ConstructorDecl.hasDefinition() = false;
+    eq ConstructorDecl.hasDefinition() = true;
     eq MethodDecl.hasDefinition() {
         return !getBlockOpt().isEmpty();
     }

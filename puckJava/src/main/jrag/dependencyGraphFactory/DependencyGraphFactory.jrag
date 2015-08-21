@@ -156,7 +156,6 @@ aspect DependencyGraphFactory {
 
 	public void ParameterDeclaration.buildDG(JavaGraphBuilder builder, int containerId){
 		int thisID = buildDGNode(builder);
-		//builder.addParam(containerId, thisID);
 		buildDGInChildren(builder, thisID);
 	}
 

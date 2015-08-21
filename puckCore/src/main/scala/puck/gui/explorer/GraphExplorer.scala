@@ -5,14 +5,15 @@ import javax.swing.JTree
 import javax.swing.tree.TreePath
 
 import puck.graph._
-import puck.graph.io.{Visibility, VisibilitySet}
+import puck.graph.io.{Visible, Visibility, VisibilitySet}
 
 import scala.swing.event.Event
 import scala.swing.{Component, Publisher, ScrollPane}
 import ShowDG._
 case class PuckTreeNodeClicked(graph : DependencyGraph, node : NodeId) extends Event
 case class AccessGraphModified(graph : DependencyGraph) extends Event
-case class SetVisible(ks : Seq[NodeKind]) extends Event
+case class SetVisibleFromKind(ks : Seq[NodeKind]) extends Event
+case object SetTopLevelVisible extends Event
 
 import VisibilitySet._
 class GraphExplorer
@@ -20,7 +21,7 @@ class GraphExplorer
  height : Int)
   extends ScrollPane with Publisher {
 
-  private var hiddens0 : VisibilitySet.T = VisibilitySet()
+  private var hiddens0 : VisibilitySet.T = VisibilitySet.allVisible(graph)
 
   def setVisibility(id : NodeId, v : Visibility) =
     hiddens0 = hiddens0.setVisibility(id,v)
@@ -77,9 +78,17 @@ class GraphExplorer
 
       contents = Component.wrap(tree)
       this.repaint()
-    case SetVisible(ks) =>
+    case SetVisibleFromKind(ks) =>
       root.kindVisible(graph, ks)
       this.repaint()
+    case SetTopLevelVisible =>
+      hiddens0  = VisibilitySet.allHidden(graph)
+
+      for(i <- 0 until root.getChildCount){
+        root.getChildAt(i).setVisible(Visible, propagate = false)
+      }
+      this.repaint()
+
   }
 
 

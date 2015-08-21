@@ -136,7 +136,7 @@ object Redirection {
       case _ => newUsed.containerIn(g).get
     }
 
-    val typeMemberTRset = cl(g, oldUse).filter{ case (tu, _) => !tu.selfUse }
+    val typeMemberTRset = cl(g, oldUse) //.filter{ case (tu, _) => !tu.selfUse }
 
     val ltg : LoggedTG =
       if(typeMemberTRset.nonEmpty)

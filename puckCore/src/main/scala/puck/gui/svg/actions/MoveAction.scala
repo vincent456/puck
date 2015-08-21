@@ -24,13 +24,13 @@ object MoveAction {
 
   }
 
-  def label(graph : DependencyGraph, ids : List[NodeId]) : String = {
+  def label(graph : DependencyGraph, ids : List[NodeId], newHost : DGNode) : String = {
     val movedStr = ids match {
       case List(id) => graph.getConcreteNode(id).name
       case Nil => sys.error("non empty list expected")
       case _ => "selected nodes"
     }
-    s"Move $movedStr here"
+    s"Move $movedStr into ${newHost.name(graph)}"
   }
 
 }
@@ -39,7 +39,7 @@ class MoveAction
 ( newHost : DGNode,
   moved : List[NodeId],
   controller : SVGController)
-extends AbstractAction(MoveAction.label(controller.graph, moved)){
+extends AbstractAction(MoveAction.label(controller.graph, moved, newHost)){
 
   import controller.{graph, graphUtils}, graphUtils.{transformationRules => TR}
   import graphUtils.nodeKindKnowledge.kindOfKindType

@@ -16,12 +16,12 @@ object VisibilitySet{
 
   type T = Set[NodeId]
 
-  def apply() : T = Set[NodeId]()
+  //def apply() : T =
 
-  def allVisible(graph : DependencyGraph) : T = apply()
+  def allVisible(graph : DependencyGraph) : T = Set[NodeId]()
 
   def allHidden(graph : DependencyGraph) : T =
-   apply().setVisibility(graph.nodesId.toSeq, Hidden)
+    allVisible(graph).setVisibility(graph.nodesId.toSeq, Hidden)
 
 
   def violationsOnly(graph : DependencyGraph) : T =

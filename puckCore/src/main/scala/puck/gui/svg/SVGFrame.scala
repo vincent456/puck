@@ -116,6 +116,8 @@ class SVGFrame
 
   addLoadSaveButton()
 
+
+
   menu.add(consolePanel.panel)
 
   private def addHboxButtons() : Unit = {
@@ -192,13 +194,26 @@ class SVGFrame
     }
   }
 
+
+
   private def addVisibilityCheckBoxesToMenu() : Unit = {
     val hbox = new JPanel()
     hbox.setLayout(new BoxLayout(hbox, BoxLayout.Y_AXIS))
     menu add hbox
 
-    def addCheckBox(name: String)(f: Boolean => Unit) : JCheckBox = {
+    val inputNode = new JTextField()
+    inputNode.setMinimumSize(new Dimension(50, 35))
+    val getNodeName = new JButton(abstractAction("See node Name") {
+      _ =>
+        val id = inputNode.getText.toInt
+        println(s"$id - ${controller.graph.fullName(id)}")
+    })
+    hbox.add(inputNode)
+    hbox.add(getNodeName)
+
+    def addCheckBox(name: String, initiallySelected : Boolean)(f: Boolean => Unit) : JCheckBox = {
       val checkBox: JCheckBox = new JCheckBox
+      checkBox.setSelected(initiallySelected)
       checkBox.setAction(new AbstractAction(name) {
         def actionPerformed(e: ActionEvent) : Unit = f(checkBox.isSelected)
 
@@ -207,21 +222,25 @@ class SVGFrame
       checkBox
     }
 
-    addCheckBox("Show signatures") {
+    addCheckBox("Show signatures",
+      controller.printingOptions.printSignatures) {
         controller.setSignatureVisible
     }
 
-    addCheckBox("Show ids") {
+    addCheckBox("Show ids",
+      controller.printingOptions.printId) {
         controller.setIdVisible
     }
-    addCheckBox("Show Virtual Edges") {
+    addCheckBox("Show Virtual Edges",
+      controller.printingOptions.printVirtualEdges) {
       controller.setVirtualEdgesVisible
     }
-    val b = addCheckBox("Conrete Uses/Virtual Edge") {
+    addCheckBox("Concrete Uses/Virtual Edge",
+     controller.printingOptions.printConcreteUsesPerVirtualEdges) {
       controller.setConcreteUsesPerVirtualEdges
     }
-    b.setSelected(true)
-    addCheckBox("Show RedOnly") {
+    addCheckBox("Show RedOnly",
+      controller.printingOptions.redOnly) {
       controller.setRedEdgesOnly
     }
     ()

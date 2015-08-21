@@ -26,6 +26,9 @@ class PuckTreeNode(val nodeId : NodeId,
 
   explorer.setVisibility(nodeId, Visible)
 
+  override def getChildAt(i : Int) : PuckTreeNode =
+    super.getChildAt(i).asInstanceOf[PuckTreeNode]
+
 
   def setVisible(visibility : Visibility, propagate : Boolean): Unit = {
 
@@ -44,7 +47,7 @@ class PuckTreeNode(val nodeId : NodeId,
 
    if(propagate){
      for( i <- 0 until this.getChildCount){
-       this.getChildAt(i).asInstanceOf[PuckTreeNode].setVisible(visibility, propagate =true)
+       this.getChildAt(i).setVisible(visibility, propagate =true)
      }
    }
  }
@@ -58,7 +61,7 @@ class PuckTreeNode(val nodeId : NodeId,
     setVisible(visibility, propagate = false)
 
     for(i <- 0 until this.getChildCount){
-      this.getChildAt(i).asInstanceOf[PuckTreeNode].kindVisible(graph, ks)
+      this.getChildAt(i).kindVisible(graph, ks)
     }
   }
 

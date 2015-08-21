@@ -1,5 +1,7 @@
 package puck.graph
 
+import java.util.NoSuchElementException
+
 import puck.graph.DependencyGraph.AbstractionMap
 import puck.graph.constraints.{ConstraintsMaps, AbstractionPolicy}
 import puck.util.{Logger, PuckNoopLogger, PuckLogger, PuckLog}
@@ -343,7 +345,13 @@ class DependencyGraph
     edges.definition get declId
 
   def definition_!(declId : NodeId) : NodeId =
+  try {
     edges definition declId
+  } catch {
+    case nse : NoSuchElementException =>
+      error(s"definition ${fullName(declId)} not found !")
+  }
+
 
   def parameters(declId : NodeId)  : List[NodeId] = edges.parameters.getFlat(declId)
 

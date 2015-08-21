@@ -4,6 +4,12 @@ aspect NodeFactory  {
 	public int ASTNode.buildDGNode(JavaGraphBuilder builder){
 
         if(isNamedElement()){
+			if(this instanceof ParameterDeclaration &&
+				this.getParent() instanceof CatchClause){
+				//not a parameter but a var decl in a catch clause
+				return hostBodyDecl().buildDGNode(builder);
+			}
+
 			DGNamedElement namedElement;
 			if(isSubstitute())
 				namedElement = (DGNamedElement) ((Substitute) this).getOriginal();

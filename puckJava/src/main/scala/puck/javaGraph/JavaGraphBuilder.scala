@@ -245,7 +245,8 @@ class JavaGraphBuilder(val program : AST.Program) extends GraphBuilder{
               val absMeths = (graph content absId).toList map graph.typedNode
               val candidates = (graph content impl.id).toList map graph.typedNode
               Type.findAndRegisterOverridedInList(graph, absMeths, candidates) {
-                Type.errorOnImplemNotFound(graph.fullName(impl.id))
+                Type.ignoreOnImplemNotFound
+                  //errorOnImplemNotFound(graph.fullName(impl.id))
               } .value match {
                 case \/-(g) => g.addAbstraction(implId, abs)
                 case -\/(err) => throw err

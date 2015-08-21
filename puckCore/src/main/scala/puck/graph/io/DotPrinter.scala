@@ -88,7 +88,17 @@ class DotPrinter
     writer newLine()
   }
 
-  private val concreteViolations : Seq[DGEdge] = graph.violations()
+  def printableEdges(edges : Seq[EdgeP]) : Seq[EdgeP] =
+    edges map {
+      case (s,t) =>
+        val vs=  graph.kindType(s) match {
+          case Parameter | ValueDef => graph.container_!(s)
+          case _ => s
+        }
+        (vs, t)
+    }
+
+  private val concreteViolations : Seq[EdgeP] = printableEdges(graph.violations() map DGEdge.toPair)
 
 
 /*
@@ -104,6 +114,7 @@ class DotPrinter
     style : Style,
     slabel : Option[String] = None): EdgeP => Unit = {
     case edge @ (source, target) =>
+
     def dotId(nid: NodeId) : String = {
       val n = graph.getNode(nid)
       n.kind.kindType match {
@@ -190,7 +201,7 @@ class DotPrinter
   def decorate_name(n : DGNode):String = {
     val sCter = graph.container(n.id)
 
-    if (sCter.isDefined && concreteViolations.contains(Contains(sCter.get, n.id)))
+    if (sCter.isDefined && concreteViolations.contains((sCter.get, n.id)))
       "<FONT COLOR=\"" + ColorThickness.violation.color + "\"><U>" + helper.namePrefix(n) + name(n) + idString(n.id) + "</U></FONT>"
     else helper.namePrefix(n) + name(n) + idString(n.id)
   }
@@ -285,6 +296,7 @@ class DotPrinter
     s == t && (graph.getNode(s).kind.kindType == NameSpace)
 
 
+
   type ContainsViolationMap = Set[EdgeP]
   type IsViolation = Boolean
   def filterEdgeBasedOnVisibleNodes
@@ -293,13 +305,14 @@ class DotPrinter
     virtInit : Map[EdgeP, Int] = Map(),
     virtViolationInit : ContainsViolationMap = Set()
     ) : (Seq[(EdgeP, IsViolation)], Map[EdgeP, Int], ContainsViolationMap) = {
+
     val (reg, virt, virtualViolations) =
-      edges.foldLeft((Seq[(EdgeP, IsViolation)](), virtInit, virtViolationInit)) {
+      printableEdges(edges).foldLeft((Seq[(EdgeP, IsViolation)](), virtInit, virtViolationInit)) {
       case ((regulars, virtuals, m), (source, target)) =>
         (firstVisibleParent(source), firstVisibleParent(target)) match {
           case (Some(s), Some(t))
             if source == s && target == t =>
-            val isViolation = concreteViolations.contains(edgeKind(source, target))
+            val isViolation = concreteViolations.contains((source, target))
             (regulars :+ (((s, t), isViolation)), virtuals, m)
 
           case (Some(s), Some(t)) if printVirtualEdges =>
@@ -307,7 +320,7 @@ class DotPrinter
 
             val numConcreteUses = (virtuals getOrElse ((s, t), 0)) + 1
 
-            if(concreteViolations.contains(edgeKind(source, target)))
+            if(concreteViolations.contains((source, target)))
                 (regulars, virtuals + ((s, t) -> numConcreteUses), m + ((s, t)))
             else if(!recusivePackage(s,t))
                 (regulars, virtuals + ((s, t) -> numConcreteUses), m)
