@@ -1,17 +1,16 @@
-package puck
-package javaGraph
+package puck.javaGraph.transfoRules
 
 import puck.graph._
-import puck.graph.transformations.rules.{CreateTypeMember, CreateParameter, Move}
+import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, Move}
+import puck.javaGraph.ExampleSample
 import puck.javaGraph.nodeKind.Field
+import puck.{GetDefinitionValue, AcceptanceSpec, Settings}
 
-class MoveSpec extends AcceptanceSpec {
+class MoveSpec
+  extends AcceptanceSpec
+  with GetDefinitionValue {
 
   val examplesPath = Settings.testExamplesPath + "/move"
-
-  def getDefinition(g : DependencyGraph, nid : NodeId) : NodeId =
-    g.getConcreteNode(nid).definition(g).value
-
 
   feature("Move class") {
 
@@ -19,14 +18,14 @@ class MoveSpec extends AcceptanceSpec {
       val p = "topLevelClass"
       val _ = new ExampleSample(s"$examplesPath/$p/A.java",
         s"$examplesPath/$p/Empty.java") {
-        val package1 = fullName2id(s"$p.p1")
-        val package2 = fullName2id(s"$p.p2")
-        val classA = fullName2id(s"$p.p1.A")
-        val methADecl = fullName2id(s"$p.p1.A.ma__void")
+        val package1 = fullName2id(s"p1")
+        val package2 = fullName2id(s"p2")
+        val classA = fullName2id(s"p1.A")
+        val methADecl = fullName2id(s"p1.A.ma__void")
         val methADef = getDefinition(graph, methADecl)
 
-        val classB = fullName2id(s"$p.p1.B")
-        val methBDecl = fullName2id(s"$p.p1.B.mb__void")
+        val classB = fullName2id(s"p1.B")
+        val methBDecl = fullName2id(s"p1.B.mb__void")
         val methBDef = getDefinition(graph, methBDecl)
 
 
@@ -45,8 +44,8 @@ class MoveSpec extends AcceptanceSpec {
   }
 
   val moveMethod_movedMethodUsesThis = examplesPath + "/method/movedMethodUsesThis"
-  val moveMethodNotUsedByThis = examplesPath + "/method/notUsedByThis"
   val moveMethodUsedByThis = examplesPath + "/method/usedByThis"
+  val movedMethodNOTusedByThis = examplesPath + "/method/NOTusedByThis"
 
   def assertIsArrowAndUncurry(t : Type) : Arrow = {
     t match {
@@ -64,7 +63,7 @@ class MoveSpec extends AcceptanceSpec {
   feature("Move method"){
 
     scenario("moved method not used by this"){
-      val _ = new ExampleSample(s"$moveMethodNotUsedByThis/MovedMethodHasNoParameter.java"){
+      val _ = new ExampleSample(s"$movedMethodNOTusedByThis/MovedMethodHasNoParameter.java"){
 
         val classA = fullName2id("p.A")
         val methToMove = fullName2id("p.A.methodToMove__void")
@@ -84,6 +83,7 @@ class MoveSpec extends AcceptanceSpec {
       }
 
     }
+
 
     scenario("move method used by this - keep reference with parameter"){
       val _ = new ExampleSample(s"$moveMethodUsedByThis/MovedMethodHasNoParameter.java"){
@@ -141,7 +141,7 @@ class MoveSpec extends AcceptanceSpec {
     }
 
     scenario("move method used by this - user also via self another method that will not be moved "){
-      val _ = new ExampleSample(s"$moveMethodUsedByThis/UserUseAlsoAnotherSelfMethod.java") {
+      val _ = new ExampleSample(s"$moveMethodUsedByThis/MovedMethodUsedAlongASiblingMethodThatIsNotMoved.java") {
 
         val classA = fullName2id("p.A")
         val methUserDecl = fullName2id("p.A.mUser__void")
@@ -182,7 +182,7 @@ class MoveSpec extends AcceptanceSpec {
     scenario("move method used by this several times - keep reference with Parameter"){
 
 
-      val _ = new ExampleSample(s"$moveMethodUsedByThis/UsedBySelfSeveralTimes.java"){
+      val _ = new ExampleSample(s"$moveMethodUsedByThis/MovedMethodUsedByThisSeveralTimes.java"){
 
         val classA = fullName2id("p.A")
         val methUser1Decl = fullName2id("p.A.mUser1__void")
@@ -221,7 +221,7 @@ class MoveSpec extends AcceptanceSpec {
     }
 
     scenario("move method used by this several times - keep reference with Field"){
-      val _ = new ExampleSample(s"$moveMethodUsedByThis/UsedBySelfSeveralTimes.java"){
+      val _ = new ExampleSample(s"$moveMethodUsedByThis/MovedMethodUsedByThisSeveralTimes.java"){
 
         val classA = fullName2id("p.A")
         val methUser1Decl = fullName2id("p.A.mUser1__void")
@@ -265,7 +265,7 @@ class MoveSpec extends AcceptanceSpec {
     }
 
     ignore("Move method not used by this to class of a parameter"){
-      val _ = new ExampleSample(s"$moveMethodNotUsedByThis/MovedMethodHasOneParameterNotTypedAsSelf.java"){
+      val _ = new ExampleSample(s"$movedMethodNOTusedByThis/MovedMethodHasNoParameter.java"){
 
         val rootPackage = fullName2id("p")
 

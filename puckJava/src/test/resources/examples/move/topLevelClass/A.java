@@ -1,6 +1,7 @@
-package topLevelClass.p1;
+package p1;
 
-class A {
+public class A {
+    public A(){}
     public void ma(){}
 }
 

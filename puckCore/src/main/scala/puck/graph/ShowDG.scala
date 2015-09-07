@@ -47,6 +47,9 @@ object ShowDG extends ShowConstraints{
   implicit def nodeIdCord : CordBuilder[NodeId] =
     (dg, nid) => nodeCord(dg, dg.getNode(nid))
 
+  def nodeIdPCord : CordBuilder[NodeIdP] =
+    {case (dg, (nid1, nid2)) => Cord("(", nodeIdCord(dg,nid1), ", ", nodeIdCord(dg,nid2), ")")}
+
   implicit def nodeCord : CordBuilder[DGNode] = (dg, n) =>
     n match {
       case n : ConcreteNode => Cord(s"${n.id} - ${n.kind} ${n.name}", typeHolderCord(dg, dg.styp(n.id)))
@@ -81,6 +84,18 @@ object ShowDG extends ShowConstraints{
       case TypeDependency((n1,n2), (n3,n4)) =>
         Cord(tgt.productPrefix, "(Uses(",  nodeIdCord(dg, n1), ", ", nodeIdCord(dg,n2),
           "),Uses(", nodeIdCord(dg, n3), ", ", nodeIdCord(dg,n4) ,"))")
+
+      case TypeChange(typed, soldT, snewT) =>
+        val typedCord = nodeIdCord(dg, typed)
+        val soldTcord : Cord = soldT map (typeCord(dg,_)) getOrElse "NoType"
+        val snewTcord : Cord = snewT map (typeCord(dg,_)) getOrElse "NoType"
+        Cord("TypeChange(", typedCord, ", ", soldTcord, ", " ,snewTcord ,")")
+
+      case ChangeTypeBinding((tUse, tmUse), exty) =>
+        val tUseCord = nodeIdPCord(dg, tUse)
+        val tmUseCord = nodeIdPCord(dg, tmUse)
+        Cord("ChangeTypeBinding((", tUseCord, ", ", tmUseCord,"),", exty.productPrefix,
+          "(", nodeIdPCord(dg, exty.edge) ,")")
       case _ => tgt.toString
     }
 

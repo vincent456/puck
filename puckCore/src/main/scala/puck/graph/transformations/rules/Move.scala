@@ -131,7 +131,6 @@ object Move {
     val movedDefUsingSiblingViaThis : Set[NodeId] =
       usesBetween(g0, movedDef, siblings).filter(usesViaThis(g0)).map(_.user)
 
-
     val movedDeclWithArgUsableAsReceiver : Set[NodeId] =
       movedDecl.filter {
         nid =>
@@ -146,9 +145,16 @@ object Move {
         g0.changeSource(Contains(oldContainer, movedId), newContainer)
     }
 
-    val g2 = usesBetween(g0, movedDef, movedDef).filter(usesViaThis(g0)).foldLeft(g1){
+
+    val usesBetweenMovedDefsViaThis =
+      usesBetween(g0, movedDef, movedDecl).filter(usesViaThis(g0))
+    val g1Prim =
+      if(usesBetweenMovedDefsViaThis.nonEmpty && !(newSelfUse existsIn g1))
+        newSelfUse createIn g1
+      else g1
+    val g2 = usesBetweenMovedDefsViaThis.foldLeft(g1Prim){
           _.changeTypeUseOfTypeMemberUse(oldSelfUse, newSelfUse, _)
-    }
+      }
 
    /* println("moving " + movedDecl)
     println("siblings are " + siblings)
@@ -163,7 +169,10 @@ object Move {
         movedDecl -- movedDeclWithArgUsableAsReceiver, siblings,
         createVarStrategy)
     } yield {
-      g5
+      if( (oldSelfUse existsIn g5) &&
+        g5.typeMemberUsesOf(oldSelfUse).isEmpty)
+        g5.removeEdge(oldSelfUse)
+      else g5
     }
 
   }
@@ -301,6 +310,7 @@ object Move {
     tmUses : Set[DGUses],
     kind : NodeKind
     ): LoggedTG ={
+    // assert forall user in tmUses, container(user) = tmContainer
     import g.nodeKindKnowledge.intro
     for {
       ug <- intro.typeMember(g, newTypeUsed, tmContainer, kind)
@@ -311,7 +321,8 @@ object Move {
       tmUses.foldLeft(g2) {
         case (g0, typeMemberUse) =>
             g0.changeTypeUseOfTypeMemberUse(oldTypeUse, newTypeUse, typeMemberUse)
-              .addUses(typeMemberUse.user, delegateId) // replace this.m by delegate.m
+              .addUses(typeMemberUse.user, delegateId) // replace this.m by this.delegate.m
+              .addUsesDependency((tmContainer, tmContainer), (typeMemberUse.user, delegateId)) // add
       }
     }
 

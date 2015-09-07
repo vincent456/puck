@@ -2,6 +2,7 @@ package puck.javaGraph
 
 import java.io.File
 
+import AST.CompilationUnit
 import puck.graph.{NodeId, DependencyGraph}
 import puck.graph.transformations.Transformation
 import puck.util.{FileHelper, PuckFileLogger, PuckNoopLogger, PuckLogger}
@@ -42,4 +43,13 @@ case class ExampleSample
     val genSrc = FileHelper.findAllFiles(outDir, ".java", None)
     new ExampleSample(genSrc:_*)
   }
+
+//  val it = program.compilationUnitIterator()
+//  while(it.hasNext){
+//    val i : CompilationUnit = it.next().asInstanceOf[CompilationUnit]
+//    if(i.relativeName() != null) {
+//      println(i.getPackageDecl + " - " + i.relativeName())
+//      //println(i.getID + " has null relativeName")
+//    }
+//  }
 }

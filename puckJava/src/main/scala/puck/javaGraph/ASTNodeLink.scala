@@ -71,6 +71,14 @@ sealed trait HasMemberDecl extends HasBodyDecl{
   override val decl : AST.MemberDecl
 }
 
+object VariableDeclHolder {
+  def unapply(nl : ASTNodeLink) : Option[AST.Variable] = nl match {
+    case FieldDeclHolder(decl) => Some(decl)
+    case ParameterDeclHolder(decl) => Some(decl)
+    case _ => None
+  }
+
+}
 
 class DeclarationCreationError(msg : String) extends DGError(msg)
 
@@ -82,6 +90,7 @@ object MethodDeclHolder {
   def unapply(mdh : MethodDeclHolder) : Some[AST.MethodDecl] =
     Some(mdh.decl)
 }
+
 trait MethodDeclHolder extends HasMemberDecl {
   val decl : AST.MethodDecl
 }

@@ -23,9 +23,9 @@ trait GraphBuilder {
     }
   }
 
-  private val anonymous = "Anonymous"
+
   def addAnonymousNode(kind : NodeKind) : NodeIdT = {
-    val (n, g2) = g.addConcreteNode(anonymous, kind)
+    val (n, g2) = g.addConcreteNode(DependencyGraph.anonymousName, kind)
     g = g2
     n.id
   }

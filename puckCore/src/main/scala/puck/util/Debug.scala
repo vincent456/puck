@@ -70,7 +70,7 @@ object Debug {
 
   }
 
-  implicit val showNodeIndex = scalaz.Show.shows[NodeIndex] {
+  implicit val showNodeIndex : scalaz.Show[NodeIndex] = scalaz.Show.shows[NodeIndex] {
     case NodeIndex(_, cNodes, removedCnodes,
     vNodes, removedVnodes,
     cNodes2vNodes) =>

@@ -1,6 +1,6 @@
 package puck.graph.transformations.rules
 
-import puck.PuckError
+import puck.{graph, PuckError}
 import puck.graph._
 
 abstract class Intro {
@@ -67,13 +67,18 @@ abstract class Intro {
 
         val newTypeUse = Uses(delegate.id, typeNode)
 
-        LoggedSuccess(
-          (newTypeUse,
-            g1.addContains(tmContainer, delegate.id)
-              .addEdge(newTypeUse) //type field
-              .addEdge(Uses(g1 definition_! delegate.id, constructorId))))
+        val tmContainerKind = g.getConcreteNode(tmContainer).kind
+        if(tmContainerKind canContain kind)
+          LoggedSuccess(
+            (newTypeUse,
+              g1.addContains(tmContainer, delegate.id)
+                .addEdge(newTypeUse) //type field
+                .addEdge(Uses(g1 definition_! delegate.id, constructorId))))
         //.addEdge(Uses(tmContainer, delegate.id, Some(Write)))
-
+        else {
+          val msg =s"$tmContainerKind cannot contain $kind"
+          LoggedError(new PuckError(msg), msg)
+        }
 
     }
   }

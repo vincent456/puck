@@ -3,7 +3,7 @@ package puck.javaGraph
 import java.io.{FileReader, File}
 import java.util.NoSuchElementException
 
-import puck.{graph, PuckError}
+import puck.PuckError
 import puck.graph.constraints.{SupertypeAbstraction, ConstraintsParser}
 import puck.graph.transformations._
 import puck.graph._
@@ -149,7 +149,13 @@ class JavaDG2AST
     logger.writeln(program)
     program.flushCaches()
 
-    program.eliminateLockedNamesInSources()
+    try {
+      program.eliminateLockedNamesInSources()
+    }
+    catch {
+      case e : Exception =>
+        e.printStackTrace()
+    }
     logger.writeln("Program after unlock : ")
     logger.writeln(program)
 
@@ -232,14 +238,19 @@ class JavaDG2AST
       case Transformation(_, ChangeNodeName(nid, _, newName)) =>
         ASTNodeLink.setName(newName, safeGet(reenactor,id2declMap)(nid))
 
-      case Transformation(_, ChangeTypeBinding(((tUser, tUsed), tmUse), TypeUse(newTuse)))
+      case Transformation(_, ChangeTypeBinding(((tUser, tUsed), tmUse), TypeUse(newTuse @ (ntUser, ntUsed))))
         if tUser == tUsed =>
-        createVarAccess(reenactor, safeGet(reenactor,id2declMap), tmUse, newTuse,
-          replaceSelfRefByVarAccess)
+        if (ntUser != ntUsed)
+          createVarAccess(reenactor, safeGet(reenactor,id2declMap), tmUse, newTuse,
+            replaceSelfRefByVarAccess)
 
-      case Transformation(Regular, TypeDependency(typeUse, tmUse)) =>
+      case Transformation(Regular, TypeDependency(typeUse @(tUser, tUsed), tmUse)) =>
+        if (tUser != tUsed)
         createVarAccess(reenactor, safeGet(reenactor,id2declMap), tmUse, typeUse,
           introVarAccess)
+
+      case Transformation(_, ChangeTypeBinding(((oldTypeUser, _),(tmUser, tmUsed)), TypeUse((newTypeUser, newTypeUsed)))) =>
+         replaceMessageReceiver(reenactor, safeGet(reenactor,id2declMap), tmUser, tmUsed, oldTypeUser, newTypeUser)
 
       case Transformation(_, op) =>
         if( discardedOp(op) ) ()
@@ -263,8 +274,7 @@ class JavaDG2AST
     f : (AST.ASTNode[_], AST.MemberDecl, AST.Access) => Unit)
   : Unit = {
     val v : AST.Variable = id2declMap(typeUse.user) match {
-      case ParameterDeclHolder(pdecl) => pdecl
-      case FieldDeclHolder(fdecl) => fdecl
+      case VariableDeclHolder(decl) => decl
       case dh => error(s"expect parameter or field, $dh not handled")
     }
 
@@ -272,7 +282,8 @@ class JavaDG2AST
 
     val user : AST.ASTNode[_] = id2declMap(typeMemberUse.user) match {
       case defh : DefHolder => defh.node
-      case _ => ???
+      case nodeHolder => error("create var access, expect a def " +
+        s"(expr or block) as user but found  $nodeHolder")
     }
 
     val (usedAsVisible : AST.Visible, usedAsMemberDecl : AST.MemberDecl) =
@@ -292,8 +303,45 @@ class JavaDG2AST
   }
 
 
+  def replaceMessageReceiver
+  ( reenactor : DependencyGraph,
+    id2declMap: NodeId => ASTNodeLink,
+    methodUser : NodeId,
+    methodUsed : NodeId,
+    oldMessageReceiver : NodeId,
+    newMessageReceiver : NodeId
+    ) : Unit = {
 
+    val mUser = id2declMap(methodUser) match {
+      case dh : DefHolder => dh.node
+      case nodeHolder => error("replace message receiver, expect a def " +
+        s"(expr or block) as user but found $nodeHolder")
+    }
 
+    val newReceiver : AST.Variable = id2declMap(newMessageReceiver) match {
+      case VariableDeclHolder(decl) => decl
+      case nodeHolder => error("replace message receiver, expect" +
+        s" a field or a parameter as new receiver but found $nodeHolder")
+    }
+
+    val mUsed : AST.MemberDecl = id2declMap(methodUsed) match {
+      case FieldDeclHolder(decl) => decl
+      case MethodDeclHolder(decl) => decl
+      case nodeHolder => error("replace message receiver, expect" +
+        s" a field or a method as used but found $nodeHolder")
+    }
+
+    id2declMap(oldMessageReceiver) match {
+      case VariableDeclHolder(oldReceiver) =>
+        mUser.replaceMessageReceiver(mUsed, oldReceiver, newReceiver)
+      case MethodDeclHolder(oldReceiver) => ???
+      case dh : DefHolder =>
+        mUser.replaceAllMessageReceiver(mUsed, newReceiver)
+      case nodeHolder => error("replace message receiver, expect a def " +
+        s"(expr or block), a field or a parameter as old receiver but found $nodeHolder")
+    }
+
+  }
 
 
 }

@@ -64,7 +64,7 @@ object Redirection {
         redirectInstanceUsesAndPropagate(g, oldUse, newUsed)
 
       case (TypeConstructor, InstanceValueDecl) =>
-        redirectTypeConstructorToInstanceValueDecl(g, oldUse, newUsed)
+        redirectTypeConstructorToInstanceValueDecl(g, oldUse, newUsed)()
 
       case (StaticValueDecl, StaticValueDecl)
         | (TypeConstructor, StaticValueDecl) =>
@@ -81,8 +81,8 @@ object Redirection {
   def redirectTypeConstructorToInstanceValueDecl
   ( g : DependencyGraph,
     oldUse : DGUses,
-    newUsed : Abstraction,
-    createVarStrategy: CreateVarStrategy = CreateParameter
+    newUsed : Abstraction )
+  ( createVarStrategy: CreateVarStrategy = CreateTypeMember(g.nodeKindKnowledge.defaultKindForNewReceiver)
     ) : LoggedTG = {
     newUsed.nodes match {
       case List(absNode) =>
@@ -94,6 +94,7 @@ object Redirection {
 
         val typeOfNewReveiver = g.container(absNode).get
         val userOfCtor = oldUse.user
+
         createVarStrategy match {
           case CreateParameter =>
             val decl = g1.getConcreteNode(g1.container_!(userOfCtor))
@@ -107,7 +108,7 @@ object Redirection {
 
             intro.typeMember(g1,
               typeOfNewReveiver,
-              g.container(userOfCtor).get,
+              g.containerOfKindType(TypeDecl, userOfCtor),
               kind) map {
               case (newTypeUse, g2) =>
                 g2.addUsesDependency(newTypeUse, (userOfCtor, absNode))

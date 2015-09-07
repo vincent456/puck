@@ -4,7 +4,7 @@ import java.io.{File, FileReader}
 
 import org.scalatest.{OptionValues, EitherValues}
 import puck.graph.constraints.{ConstraintsParser, SupertypeAbstraction}
-import puck.graph.transformations.rules.CreateTypeMember
+import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember}
 import puck.graph._
 import puck.util.{LoggedEither, PuckNoopLogger, PuckFileLogger}
 import puck.{QuickFrame, Java2dot, PuckError, Settings}
@@ -130,7 +130,7 @@ class BridgeScenario private()
 
   val g11 =
 //    TR.move.typeMember(TR.rename(g10, delegate, "styleProvider"), List(delegate), screenClass).value.right.value
-    TR.move.typeMember(TR.rename(g10, delegate, "styleProvider"), List(delegate), screenClass) match {
+    TR.move.typeMember(TR.rename(g10, delegate, "styleProvider"), List(delegate), screenClass, Some(CreateParameter)) match {
       case LoggedEither(l, \/-(v)) => v
       case LoggedEither(l, -\/(e)) =>
         println(l)

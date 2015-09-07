@@ -26,6 +26,16 @@ object Mapping {
     m.toList.map {case (a,b) => (b,a)}.toMap
 
 
+  def mapCVM[C[_], V]
+  ( mappin : V => V, cvm : CollectionValueMap[V, C, V]) ={
+    val l : List[(V, C[V])]= cvm.toList map {
+      case (k, v) =>
+        (mappin(k), cvm.handler.map(v, mappin))
+    }
+
+    new CollectionValueMap(l.toMap, cvm.handler)
+  }
+
   def mapType(mappin : NodeId => NodeId): Type => Type = {
     case nt : NamedType => nt.copy(mappin(nt.id))
     case nt : Tuple => nt.copy(nt.types.map(mapType(mappin)))
@@ -35,6 +45,8 @@ object Mapping {
       nt.copy(input = mapType(mappin)(i), output = mapType(mappin)(o))
   }
 
+
+
   def equalsCVM[C[_], V]
   ( mappin : V => V)
   ( cvm1 : CollectionValueMap[V, C, V],
@@ -43,7 +55,10 @@ object Mapping {
         cvm1.content.forall {
           case ((k1, vs1)) =>
             val vs2 = cvm2.content(mappin(k1))
+            if(cvm1.handler.map(vs1, mappin) != vs2)
+              error(s"($k1, $vs1) (${mappin(k1)}, $vs2))")
             cvm1.handler.map(vs1, mappin) == vs2
+
         }
 
     
@@ -111,6 +126,18 @@ object Mapping {
       lazy val equalsTD2 =
         equalsCVM(mappinNodeIdP)(g1.edges.typeUses2typeMemberUsesMap,
           g2.edges.typeUses2typeMemberUsesMap)
+
+
+//      println("equalsNodes = " + equalsNodes)
+//      println("equalsUses1 = " + equalsUses1)
+//      println("equalsUses2 = " + equalsUses2)
+//      println("equalsUses3 = " + equalsUses3)
+//      println("equalsContains1 = " + equalsContains1)
+//      println("equalsContains2 = " + equalsContains2)
+//      println("equalsContains3 = " + equalsContains3)
+//      println("equalsIsa = " + equalsIsa)
+//      println("equalsTD1 = " + equalsTD1)
+//      println("equalsTD2 = " + equalsTD2)
 
       equalsNodes && equalsUses1 && equalsUses2 && equalsUses3 &&
         equalsContains1 && equalsContains2 && equalsContains3 &&

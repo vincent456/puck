@@ -1,1 +1,1 @@
-package topLevelClass.p2;
+package p2;

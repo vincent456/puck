@@ -9,13 +9,13 @@ import puck.graph.transformations._
 import puck.{Settings, AcceptanceSpec}
 import nodeKind._
 
-class Toto extends Serializable
-class Titi extends Toto
-
-
-case class WrapToto(n : Toto)
-class WrapTiti(override val n : Titi) extends WrapToto(n)
-
+//class Toto extends Serializable
+//class Titi extends Toto
+//
+//
+//case class WrapToto(n : Toto)
+//class WrapTiti(override val n : Titi) extends WrapToto(n)
+//
 
 class RecordingSerializationSpec extends AcceptanceSpec {
 
@@ -36,49 +36,49 @@ class RecordingSerializationSpec extends AcceptanceSpec {
 
   feature("Serialization"){
 
-    scenario("Tuple"){
+//    scenario("Tuple"){
+//
+//      val t = Tuple()
+//      writeAndClose(tmpFile){
+//        _.writeObject(t)
+//      }
+//      val t2 = readAndClose(tmpFile){
+//        _.readObject().asInstanceOf[Tuple]
+//      }
+//
+//    }
 
-      val t = Tuple()
-      writeAndClose(tmpFile){
-        _.writeObject(t)
-      }
-      val t2 = readAndClose(tmpFile){
-        _.readObject().asInstanceOf[Tuple]
-      }
 
-    }
-
-
-    scenario("case class"){
-
-      try {
-        val t = WrapToto(new Titi())
-        writeAndClose(tmpFile) {
-          _.writeObject(t)
-        }
-        val t2 = readAndClose(tmpFile) {
-          _.readObject().asInstanceOf[WrapToto]
-        }
-      }
-      catch{
-        case t : Throwable =>
-          t.printStackTrace()
-          assert(false)
-      }
-
-    }
-
-    scenario("class extending case class"){
-
-      val t = new WrapTiti(new Titi())
-      writeAndClose(tmpFile){
-        _.writeObject(t)
-      }
-      val t2 = readAndClose(tmpFile){
-        _.readObject().asInstanceOf[WrapTiti]
-      }
-
-    }
+//    scenario("case class"){
+//
+//      try {
+//        val t = WrapToto(new Titi())
+//        writeAndClose(tmpFile) {
+//          _.writeObject(t)
+//        }
+//        val t2 = readAndClose(tmpFile) {
+//          _.readObject().asInstanceOf[WrapToto]
+//        }
+//      }
+//      catch{
+//        case t : Throwable =>
+//          t.printStackTrace()
+//          assert(false)
+//      }
+//
+//    }
+//
+//    scenario("class extending case class"){
+//
+//      val t = new WrapTiti(new Titi())
+//      writeAndClose(tmpFile){
+//        _.writeObject(t)
+//      }
+//      val t2 = readAndClose(tmpFile){
+//        _.readObject().asInstanceOf[WrapTiti]
+//      }
+//
+//    }
 
 
     scenario("one transformation - add node no type"){

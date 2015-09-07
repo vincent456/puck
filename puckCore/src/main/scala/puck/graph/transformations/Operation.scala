@@ -16,7 +16,6 @@ case class CNode(n : ConcreteNode) extends Operation {
   }
 }
 
-
 case class VNode(n : VirtualNode) extends Operation {
   def execute(g: DependencyGraph , op : Direction) = op match {
     case Regular => g.addVirtualNode(n)
@@ -153,6 +152,7 @@ case class TypeDependency
   }
 }
 
+//case class AddFactoryMethod(constructor : NodeId, factory : ConcreteNode) extends Operation
 
 
 /*

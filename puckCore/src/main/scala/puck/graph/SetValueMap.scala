@@ -87,7 +87,7 @@ class CollectionValueMap[K, C[_], V]
   def toList = content.toList
 
   def flatList : List[(K,V)]=
-    for{
+    for {
       s <- content.toList
       (k, vs) = s
       v <- handler.toList(vs)
