@@ -116,7 +116,11 @@ class CommutativityRedirect
 
 
         val recompiledEx = applyChangeAndMakeExample(g2, outDir)
+
+//        QuickFrame(g2, "g2")
+//        QuickFrame(recompiledEx.graph, "recompiledEx.graph")
         assert(Mapping.equals(g2, recompiledEx.graph))
+
       }
     }
 

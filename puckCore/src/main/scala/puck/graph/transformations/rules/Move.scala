@@ -320,9 +320,9 @@ object Move {
 
       tmUses.foldLeft(g2) {
         case (g0, typeMemberUse) =>
-            g0.changeTypeUseOfTypeMemberUse(oldTypeUse, newTypeUse, typeMemberUse)
-              .addUses(typeMemberUse.user, delegateId) // replace this.m by this.delegate.m
-              .addUsesDependency((tmContainer, tmContainer), (typeMemberUse.user, delegateId)) // add
+          intro.addUsesAndSelfDependency(
+            g0.changeTypeUseOfTypeMemberUse(oldTypeUse, newTypeUse, typeMemberUse),
+            typeMemberUse.user, delegateId) // replace this.m by this.delegate.m
       }
     }
 

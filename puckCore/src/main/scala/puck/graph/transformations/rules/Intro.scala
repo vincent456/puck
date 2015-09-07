@@ -82,4 +82,22 @@ abstract class Intro {
 
     }
   }
+
+  def addUsesAndSelfDependency
+  (g : DependencyGraph,
+    user : NodeId,
+    used : NodeId) : DependencyGraph =
+    (g.kindType(g.container_!(user)), g.kindType(used)) match {
+      case (InstanceValueDecl, InstanceValueDecl)
+      if g.containerOfKindType(TypeDecl, user) == g.containerOfKindType(TypeDecl, used) =>
+        val cter = g.containerOfKindType(TypeDecl, user)
+        val g1 =
+          if (Uses(cter, cter) existsIn g) g
+          else g.addUses(cter, cter)
+
+        g1.addUses(user, used)
+          .addUsesDependency((cter, cter), (user,used))
+      case _ => g.addUses(user, used)
+
+  }
 }

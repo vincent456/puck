@@ -208,8 +208,6 @@ class CommutativityMove extends AcceptanceSpec {
         assert( Mapping.equals(g, recompiledEx.graph) )
 
       }
-
     }
-
   }
 }

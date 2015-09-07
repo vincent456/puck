@@ -105,14 +105,14 @@ object Redirection {
             }
 
           case CreateTypeMember(kind) =>
-
             intro.typeMember(g1,
               typeOfNewReveiver,
               g.containerOfKindType(TypeDecl, userOfCtor),
               kind) map {
               case (newTypeUse, g2) =>
-                g2.addUsesDependency(newTypeUse, (userOfCtor, absNode))
-                  .addUses(userOfCtor, newTypeUse.user)
+                intro.addUsesAndSelfDependency(
+                  g2.addUsesDependency(newTypeUse, (userOfCtor, absNode)),
+                  userOfCtor, newTypeUse.user)
             }
         }
 

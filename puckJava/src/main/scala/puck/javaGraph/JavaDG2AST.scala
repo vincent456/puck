@@ -249,8 +249,9 @@ class JavaDG2AST
         createVarAccess(reenactor, safeGet(reenactor,id2declMap), tmUse, typeUse,
           introVarAccess)
 
-      case Transformation(_, ChangeTypeBinding(((oldTypeUser, _),(tmUser, tmUsed)), TypeUse((newTypeUser, newTypeUsed)))) =>
-         replaceMessageReceiver(reenactor, safeGet(reenactor,id2declMap), tmUser, tmUsed, oldTypeUser, newTypeUser)
+      case Transformation(_, ChangeTypeBinding(((oldTypeUser, _),(tmUser, tmUsed)), TypeUse((newTypeUser, newTypeUsed))))
+        if oldTypeUser != newTypeUser => //case needed in simulation computation but that do not need to be concretized
+          replaceMessageReceiver(reenactor, safeGet(reenactor, id2declMap), tmUser, tmUsed, oldTypeUser, newTypeUser)
 
       case Transformation(_, op) =>
         if( discardedOp(op) ) ()
