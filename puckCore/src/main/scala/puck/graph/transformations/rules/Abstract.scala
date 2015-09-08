@@ -60,7 +60,7 @@ abstract class Abstract {
     policy : AbstractionPolicy
     ) : (Abstraction, DependencyGraph) =
     policy match {
-      case DelegationAbstraction if impl.kind.canBeReadOrWrote =>
+      case DelegationAbstraction if impl.kind.isWritable =>
 
         val rName = abstractionName(g, impl, abskind, DelegationAbstraction, Some(Read))
         val rStype = absType(g, impl.id, Some(Read))

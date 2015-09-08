@@ -3,21 +3,20 @@ package puck.javaGraph.commutativity
 
 import puck.graph._
 import puck.graph.comparison.Mapping
-import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
-import puck.graph.transformations.rules.Redirection
+import puck.graph.constraints.SupertypeAbstraction
 import puck.javaGraph.ExampleSample
 import puck.javaGraph.JGraphUtils.{transformationRules => Rules}
 import puck.javaGraph.nodeKind.Interface
-import puck.{AcceptanceSpec, QuickFrame, Settings}
+import puck.{QuickFrame, AcceptanceSpec, Settings}
 import puck.Settings.outDir
 class CommutativityAbstract extends AcceptanceSpec {
 
-  val examplesPath = Settings.testExamplesPath + "/intro"
+  val examplesPath = Settings.testExamplesPath + "/abstract"
 
   feature("Abstract class into interface") {
 
     info("no pre-existing super type")
-    val noSuperTypePath = examplesPath + "/interface/noExistingSuperType/"
+    val noSuperTypePath = examplesPath + "/classIntoInterface/noExistingSuperType/"
 
     scenario("simple case") {
 
@@ -30,6 +29,7 @@ class CommutativityAbstract extends AcceptanceSpec {
           Rules.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
             Interface, SupertypeAbstraction).right
         val g = g0.addContains(packageP, itc)
+
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
 
@@ -110,7 +110,7 @@ class CommutativityAbstract extends AcceptanceSpec {
     }
 
     info("super type already present")
-    val withSuperTypePath = examplesPath + "/interface/existingSuperType"
+    val withSuperTypePath = examplesPath + "/classIntoInterface/existingSuperType"
 
     scenario("existing supertype - simple case"){
       val _ = new ExampleSample(s"$withSuperTypePath/SimpleCase.java") {
@@ -131,6 +131,20 @@ class CommutativityAbstract extends AcceptanceSpec {
     }
   }
 
+  val ctorIntoFactoryPath = examplesPath + "/constructorIntoFactoryMethod"
+  feature("Intro initializer"){
+    scenario("one constructor one initialized field"){
+      val _ = new ExampleSample(ctorIntoFactoryPath + "/OneConstructorOneInitializedField.java") {
+        val classA = fullName2id("p.A")
+
+        val (initializer, g) = Rules.intro.initializer(graph, classA)
+
+        val recompiledEx = applyChangeAndMakeExample(g, outDir)
+
+        assert( Mapping.equals(g, recompiledEx.graph) )
+      }
+    }
+  }
 
 
 }

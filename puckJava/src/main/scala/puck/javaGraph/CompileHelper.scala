@@ -28,11 +28,18 @@ object CompileHelper {
       None
   }
 
+  def addVoid(p : AST.Program, builder : JavaGraphBuilder) : Unit = {
+    val voidASTNode = p.findType("void")
+    val voidDGNode = builder.addApiTypeNode(voidASTNode)
+    builder.registerDecl(voidDGNode, voidASTNode)
+  }
+
   def buildGraph(p : AST.Program,
                  ll : puck.LoadingListener = null )  :
   (AST.Program, DependencyGraph, Seq[Transformation], Map[String, NodeId], Map[NodeId, ASTNodeLink]) = {
 
     val builder = p.buildDependencyGraph(null, ll)
+    addVoid(p, builder)
     builder.attachOrphanNodes()
     builder.registerSuperTypes()
 

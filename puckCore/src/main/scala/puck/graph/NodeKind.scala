@@ -9,7 +9,7 @@ trait NodeKind {
   def abstractionPolicies : Seq[AbstractionPolicy] =
     Seq(SupertypeAbstraction, DelegationAbstraction)
 
-  def canBeReadOrWrote : Boolean = false
+  def isWritable : Boolean = false
 
   def abstractionNodeKinds(p : AbstractionPolicy) : Seq[NodeKind]
 
@@ -55,6 +55,13 @@ case object StaticValueDecl extends KindType
 case object Parameter extends KindType
 case object ValueDef extends KindType
 
+sealed abstract class Role
+case class Initializer(typeDecl : NodeId) extends Role
+case class Factory(constructor: NodeId) extends Role
+//case class Getter(field : NodeId) extends Role
+//case class Setter(field : NodeId) extends Role
+
+
 trait AGRoot extends NodeKind {
   def canContain(k: NodeKind) = false
   override def abstractionPolicies = Seq()
@@ -79,6 +86,7 @@ trait NodeKindKnowledge {
       n.mutable
   }
 
+
   def kindOfKindType(kindType: KindType) : Seq[NodeKind]
 
   def canBe(graph : DependencyGraph)
@@ -92,6 +100,8 @@ trait NodeKindKnowledge {
 
   def defaultKindForNewReceiver : NodeKind
 
+  def initializerKind : NodeKind
+
   def intro : Intro
 
   def getConstructorOfType(g: DependencyGraph, tid : NodeId) : Option[NodeId]
@@ -101,5 +111,7 @@ trait NodeKindKnowledge {
     if(params.isEmpty) graph styp id
     else Some(Arrow(Tuple(params map (pid => graph styp pid get)), graph styp id get))
   }
+  
+  
 
 }

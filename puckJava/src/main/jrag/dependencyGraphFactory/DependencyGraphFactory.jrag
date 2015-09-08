@@ -38,6 +38,9 @@ aspect DependencyGraphFactory {
 	private void Program.build(JavaGraphBuilder builder, LoadingListener ll){
 		double nchild = getNumCuFromSources();
 		double d = 0.0;
+
+		builder.addApiTypeNode(this.findType("void"));
+
         for (CompilationUnit cu : (List<CompilationUnit>)getCompilationUnitList()){
             if(cu.fromSource()){
                 if(!cu.buildDependencyGraph_CU(builder))

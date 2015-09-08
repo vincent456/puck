@@ -14,13 +14,16 @@ sealed trait DGNode{
     kind.kindType match {
       case InstanceValueDecl
            | StaticValueDecl =>
-        g definition this.id
+        g definitionOf this.id
       case _ => None
     }
   }
 
+  def hasDefinitionIn(g : DependencyGraph) : Boolean =
+    (g definitionOf this.id).nonEmpty
+
   def definition_!(g : DependencyGraph) : NodeId =
-    g definition_! this.id
+    g definitionOf_! this.id
 
 
 }

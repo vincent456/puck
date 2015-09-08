@@ -140,7 +140,7 @@ class ConcreteNodeRightClickMenu
       case uses: Uses =>
         if(uses.existsIn(graph))
           addRedirectAction(uses)
-        graph.definition(uses.user).foreach{
+        graph.definitionOf(uses.user).foreach{
           userDef =>
             graph.getUsesEdge(userDef, uses.used).foreach{
               usesFromDef =>

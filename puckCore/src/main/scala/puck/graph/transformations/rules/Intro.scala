@@ -4,8 +4,51 @@ import puck.{graph, PuckError}
 import puck.graph._
 
 abstract class Intro {
+  intro =>
 
-  def apply // real intro, other methods are implementation of the abstract rule
+  def initializer
+  ( graph : DependencyGraph,
+    typeInitialized : NodeId
+    ) : (NodeId, DependencyGraph) = {
+    val initializedContent =
+      graph content typeInitialized filter {
+        nid =>
+          val n = graph getNode nid
+          n.kind.isWritable && n.hasDefinitionIn(graph)
+      }
+
+    import graph.nodeKindKnowledge.{writeType, initializerKind}
+    val returnType = writeType(graph)
+
+    val (cn, g) = intro.typedNodeWithDef(graph, "init", initializerKind, returnType, mutable)
+    val defNode = g definitionOf_! cn.id
+
+    val g2 =
+      if(initializedContent.nonEmpty &&
+        ! g.uses(typeInitialized,typeInitialized) )
+        g.addUses(typeInitialized,typeInitialized)
+      else g
+
+    (cn.id,
+      initializedContent.foldLeft(g2.addContains(typeInitialized, cn.id)){
+        (g, ic) =>
+          val g1 = g.addUses(defNode, ic, Some(Write))
+                    .addUsesDependency((typeInitialized,typeInitialized), (defNode, ic))
+
+          val icDef = g definitionOf_! ic
+
+          val g2 = g.usedBy(icDef).foldLeft(g1){
+            (g0, usedByIcDef) =>
+              g0.getUsesEdge_!(icDef, usedByIcDef).changeSource(g0, defNode)
+          }
+          val (_, g3) = g2.removeEdge(ContainsDef(ic, icDef)).removeNode(icDef)
+
+          g3
+      })
+
+  }
+
+  def apply
   ( graph : DependencyGraph,
     localName : String,
     kind : NodeKind,
@@ -13,14 +56,22 @@ abstract class Intro {
     ) : (ConcreteNode, DependencyGraph) =
     graph.addConcreteNode(localName, kind, mutable)
 
-  def accessToType
+  def typedNodeWithDef
   (graph : DependencyGraph,
    localName: String,
    kind : NodeKind,
    typeNode : NodeId,
    mutable : Mutability = true
-    )  : (ConcreteNode, DependencyGraph)
+    )  : (ConcreteNode, DependencyGraph) =
+    typedNodeWithDef(graph, localName, kind, NamedType(typeNode), mutable)
 
+  def typedNodeWithDef
+  (graph : DependencyGraph,
+   localName: String,
+   kind : NodeKind,
+   typ : Type,
+   mutable : Mutability
+    )  : (ConcreteNode, DependencyGraph)
 
   def parameter
   ( g : DependencyGraph,
@@ -63,7 +114,7 @@ abstract class Intro {
 
         val delegateName = s"${g.getConcreteNode(typeNode).name.toLowerCase}_delegate"
 
-        val (delegate, g1) = accessToType(g, delegateName, kind, typeNode)
+        val (delegate, g1) = typedNodeWithDef(g, delegateName, kind, typeNode)
 
         val newTypeUse = Uses(delegate.id, typeNode)
 
@@ -73,7 +124,7 @@ abstract class Intro {
             (newTypeUse,
               g1.addContains(tmContainer, delegate.id)
                 .addEdge(newTypeUse) //type field
-                .addEdge(Uses(g1 definition_! delegate.id, constructorId))))
+                .addEdge(Uses(g1 definitionOf_! delegate.id, constructorId))))
         //.addEdge(Uses(tmContainer, delegate.id, Some(Write)))
         else {
           val msg =s"$tmContainerKind cannot contain $kind"

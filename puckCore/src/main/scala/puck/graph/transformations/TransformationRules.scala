@@ -15,6 +15,7 @@ class TransformationRules
   val intro : Intro) {
 
 
+
   def findMergingCandidate = mergingCandidatesFinder.find _
   def mergeMatcherInstances = mergingCandidatesFinder.mergeMatcherInstances
 

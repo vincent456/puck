@@ -26,7 +26,7 @@ case object Method extends MethodKind {
     case DelegationAbstraction => Seq(Method)//also abstractMethod ?
   }
 }
-
+//role ! Initializer Factory (Getter Setter ?)
 case object ConstructorMethod extends MethodKind {
 
   def canContain(k : NodeKind) = k == Definition

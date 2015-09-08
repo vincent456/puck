@@ -338,11 +338,11 @@ class DependencyGraph
   def content(containerId: NodeId) : Set[NodeId] = edges.contents.getFlat(containerId)
 
   //special cases of content
-  def definition(declId : NodeId) : Option[NodeId] =
+  def definitionOf(declId : NodeId) : Option[NodeId] =
   //assert kindType == InstanceValueDecl || StaticValueDecl || TypeConstructor
     edges.definition get declId
 
-  def definition_!(declId : NodeId) : NodeId =
+  def definitionOf_!(declId : NodeId) : NodeId =
     edges definition declId
 
 

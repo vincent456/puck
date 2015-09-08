@@ -39,8 +39,8 @@ object CreateEdge {
                 () //already generated when creating ConstructorMethod decl
               case (Definition, Constructor) =>
                 createUsesofConstructor(graph, reenactor, id2declMap, u)
-              case (Definition, Field) =>
-                createUsesofField(graph, reenactor, id2declMap, u)
+//              case (Definition, Field) => ()
+//                createUsesofField(graph, reenactor, id2declMap, u)
 
               case _ => logger.writeln(" =========> need to create " + e)
             }
@@ -102,42 +102,39 @@ object CreateEdge {
     }
   }
 
-  def createUsesofField
-  ( graph: DependencyGraph,
-    reenactor : DependencyGraph,
-    id2declMap : NodeId => ASTNodeLink,
-    e : Uses)
-  ( implicit logger : PuckLogger) : Unit = {
-
-    val typesUsed = reenactor.usedBy(e.used).filter{
-      id => reenactor.kindType(id) == TypeDecl
-    }
-
-    if (typesUsed.size != 1)
-      throw new puck.graph.Error(s"require ONE type use got ${typesUsed.size}")
-
-    val typeUse = Uses(e.used, typesUsed.head)
-    val tmUses = reenactor.typeMemberUsesOf(typeUse).filter{_.user == e.user}
-
-    (id2declMap(e.user), id2declMap(e.used)) match {
-      case (dh: DefHolder, FieldDeclHolder(newReceiverDecl)) =>
-        val receiver = newReceiverDecl.createLockedAccess()
-        tmUses.map { u =>
-          id2declMap(u.used)}.foreach {
-          case MethodDeclHolder(methUsedDecl) =>
-            dh.node.addNewReceiver(methUsedDecl, receiver)
-          case FieldDeclHolder(fieldUsedDecl) =>
-            dh.node.addNewReceiver(fieldUsedDecl, receiver)
-          case used =>
-            logger.writeln(s"create receiver for $used ignored")
-        }
-
-      case _ => throw new puck.graph.Error(s"method decl and field decl expected")
-    }
-
-
-
-  }
+//  def createUsesofField
+//  ( graph: DependencyGraph,
+//    reenactor : DependencyGraph,
+//    id2declMap : NodeId => ASTNodeLink,
+//    e : Uses)
+//  ( implicit logger : PuckLogger) : Unit = {
+//
+//    val typesUsed = reenactor.usedBy(e.used).filter{
+//      id => reenactor.kindType(id) == TypeDecl
+//    }
+//
+//    if (typesUsed.size != 1)
+//      throw new puck.graph.Error(s"require ONE type use got ${typesUsed.size}")
+//
+//    val typeUse = Uses(e.used, typesUsed.head)
+//    val tmUses = reenactor.typeMemberUsesOf(typeUse).filter{_.user == e.user}
+//
+//    (id2declMap(e.user), id2declMap(e.used)) match {
+//      case (dh: DefHolder, FieldDeclHolder(newReceiverDecl)) =>
+//        val receiver = newReceiverDecl.createLockedAccess()
+//        tmUses.map { u =>
+//          id2declMap(u.used)}.foreach {
+//          case MethodDeclHolder(methUsedDecl) =>
+//            dh.node.addNewReceiver(methUsedDecl, receiver)
+//          case FieldDeclHolder(fieldUsedDecl) =>
+//            dh.node.addNewReceiver(fieldUsedDecl, receiver)
+//          case used =>
+//            logger.writeln(s"create receiver for $used ignored")
+//        }
+//
+//      case h => throw new puck.graph.Error(s"method decl and field decl expected, got $h")
+//    }
+//  }
 
 
   def setPackageDecl

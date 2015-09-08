@@ -26,6 +26,8 @@ object ScalaNodeKind extends NodeKindKnowledge {
 
   override def defaultKindForNewReceiver: NodeKind = ???
 
+  def initializerKind : NodeKind = ???
+
   override def intro: Intro = ???
 
   override def getConstructorOfType(g: ResultT, tid: NodeId): Option[NodeId] = ???

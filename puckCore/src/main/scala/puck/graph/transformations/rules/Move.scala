@@ -126,7 +126,7 @@ object Move {
     val siblings = g0.content(oldContainer) -- movedDecl
 
     val movedDef : Set[NodeId] =
-      movedDecl map g0.definition filter (_.nonEmpty) map (_.get)
+      movedDecl map g0.definitionOf filter (_.nonEmpty) map (_.get)
 
     val movedDefUsingSiblingViaThis : Set[NodeId] =
       usesBetween(g0, movedDef, siblings).filter(usesViaThis(g0)).map(_.user)
@@ -231,7 +231,6 @@ object Move {
     nodeSet.foldLoggedEither(g){
       (g0, user) =>
         val decl = g0.container_!(user)
-
         addParamOfTypeAndSetTypeDependency(g0, decl,
             oldContainer, oldSelfUse, usesBetween(g0, Set(user), siblings))
     }
@@ -245,7 +244,7 @@ object Move {
     createVarStrategy: Option[CreateVarStrategy] = None) : LoggedTG = {
 
 
-    val defNodeSet = declNodeSet map g.definition filter (_.nonEmpty) map (_.get)
+    val defNodeSet = declNodeSet map g.definitionOf filter (_.nonEmpty) map (_.get)
 
     val typeUses : Set[DGUses] =
       g.usesFromUsedList(declNodeSet.toList)

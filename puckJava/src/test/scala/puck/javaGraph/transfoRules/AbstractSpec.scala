@@ -1,18 +1,19 @@
-package puck.javaGraph.transfoRules
+ package puck.javaGraph.transfoRules
 
-import puck.graph.AccessAbstraction
+import puck.graph.{DGError, Write, Uses, AccessAbstraction}
 import puck.graph.constraints.SupertypeAbstraction
 import puck.javaGraph.ExampleSample
 import puck.javaGraph.JGraphUtils.{transformationRules => TR}
 import puck.javaGraph.nodeKind.Interface
-import puck.{AcceptanceSpec, GetDefinitionValue, Settings}
+import puck.{QuickFrame, AcceptanceSpec, GetDefinitionValue, Settings}
 
 class AbstractSpec extends AcceptanceSpec with GetDefinitionValue {
+  val examplesPath = Settings.testExamplesPath + "/abstract"
+
   feature("Abstract class into interface"){
-    val examplesPath = Settings.testExamplesPath + "/intro"
 
     info("no pre-existing super type")
-    val noSuperTypePath = examplesPath + "/interface/noExistingSuperType"
+    val noSuperTypePath = examplesPath + "/classIntoInterface/noExistingSuperType"
     scenario("simple case"){
       val _ = new ExampleSample(s"$noSuperTypePath/SimpleCase.java") {
         val classA = fullName2id("p.A")
@@ -208,7 +209,7 @@ class AbstractSpec extends AcceptanceSpec with GetDefinitionValue {
 
 
     info("super type already present")
-    val withSuperTypePath = examplesPath + "/interface/existingSuperType"
+    val withSuperTypePath = examplesPath + "/classIntoInterface/existingSuperType"
 
     scenario("existing supertype - simple case"){
       val _ = new ExampleSample(s"$withSuperTypePath/SimpleCase.java") {
@@ -243,4 +244,45 @@ class AbstractSpec extends AcceptanceSpec with GetDefinitionValue {
       }
     }
   }
+
+  val ctorIntoFactoryPath = examplesPath + "/constructorIntoFactoryMethod"
+  feature("Intro initializer"){
+    scenario("one constructor one initialized field"){
+      val _ = new ExampleSample(ctorIntoFactoryPath + "/OneConstructorOneInitializedField.java") {
+        val classA = fullName2id("p.A")
+        val initializedField = fullName2id("p.A.f")
+        val fieldDef = getDefinition(graph, initializedField)
+        val fieldType = fullName2id("p.F")
+        val fieldTypeCtor = fullName2id("p.F.F#_void")
+
+        assert(graph.uses(initializedField, fieldType))
+        assert(graph.uses(fieldDef, fieldTypeCtor))
+
+        val (initializer, g) = TR.intro.initializer(graph, classA)
+        val initializerDef = getDefinition(g, initializer)
+
+        assert(g.uses(initializedField, fieldType))
+        assert(g definitionOf initializedField isEmpty)
+
+        assert( Uses(initializerDef, initializedField, Some(Write)) existsIn g)
+        assert( Uses(initializerDef, fieldTypeCtor) existsIn g)
+
+      }
+    }
+  }
+
+//  feature("Abstract constructor into factory method"){
+//    scenario("one constructor no initialized field"){
+//
+//    }
+//
+//    scenario("one constructor one initialized field"){
+//
+//    }
+//
+//    scenario("two constructors one initialized field"){
+//
+//    }
+//
+//  }
 }

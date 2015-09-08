@@ -3,6 +3,7 @@ package puck.javaGraph.concretize
 import puck.PuckError
 import puck.graph._
 import puck.javaGraph._
+import puck.javaGraph.nodeKind.{Method, Field}
 import puck.util.{PuckLog, PuckLogger}
 
 import ShowDG._
@@ -72,11 +73,11 @@ object RedirectSource {
   ( resultGraph: DependencyGraph,
     reenactor : DependencyGraph,
     id2declMap: NodeId => ASTNodeLink,
-    newPackage: DGNode,
+    newPackage: NodeId,
     tDecl : AST.TypeDecl,
     tDeclId : NodeId)
   ( implicit program : AST.Program, logger : PuckLogger) : Unit ={
-    logger.writeln("moving " + tDecl.fullName() +" to package" + newPackage)
+    logger.writeln("moving " + tDecl.fullName() +" to package" + resultGraph.fullName(newPackage))
 
     if (tDecl.compilationUnit.getNumTypeDecl > 1) {
       logger.writeln(tDecl.name + " cu with more than one classe")(verbosity(PuckLog.Debug))
@@ -84,7 +85,7 @@ object RedirectSource {
       val path = ASTNodeLink.getPath(resultGraph, tDeclId)
       val oldcu = tDecl.compilationUnit()
       oldcu.removeTypeDecl(tDecl)
-      val newCu = oldcu.programRoot().insertUnusedType(path, resultGraph.fullName(newPackage.id), tDecl)
+      val newCu = oldcu.programRoot().insertUnusedType(path, resultGraph.fullName(newPackage), tDecl)
 
       if(newCu.relativeName() == null){
         newCu.setRelativeName(tDecl.fullName().replaceAllLiterally(".","/") +".java")
@@ -95,7 +96,7 @@ object RedirectSource {
     else {
       logger.writeln(tDecl.name + " cu with one classe")(verbosity(PuckLog.Debug))
       logger.writeln("before " + program.getNumCompilationUnit + " cus in prog")(verbosity(PuckLog.Debug))
-      CreateEdge.setPackageDecl(resultGraph, newPackage.id, tDeclId, tDecl)
+      CreateEdge.setPackageDecl(resultGraph, newPackage, tDeclId, tDecl)
       logger.writeln("after " + program.getNumCompilationUnit + " cus in prog")(verbosity(PuckLog.Debug))
 
     }
@@ -114,20 +115,20 @@ object RedirectSource {
   ( implicit program : AST.Program, logger : PuckLogger) : Unit =  {
 
 
-    def move(source : DGNode, newSource : DGNode, target : DGNode) : Unit = {
-      (id2declMap(source.id), id2declMap(newSource.id), id2declMap(target.id)) match {
+    def move(source : NodeId, newSource : NodeId, target : NodeId) : Unit = {
+      (id2declMap(source), id2declMap(newSource), id2declMap(target)) match {
         case (ClassDeclHolder(c1Decl),
         ClassDeclHolder(c2Decl),
         bdh : HasMemberDecl) =>
-          moveMemberDecl(reenactor, c1Decl, c2Decl, bdh.decl, target.id)
+          moveMemberDecl(reenactor, c1Decl, c2Decl, bdh.decl, target)
 
         case (InterfaceDeclHolder(oldItcDecl),
         InterfaceDeclHolder(newItcDecl),
         AbstractMethodDeclHolder(mDecl)) =>
-          moveMemberDecl(reenactor, oldItcDecl, newItcDecl, mDecl, target.id)
+          moveMemberDecl(reenactor, oldItcDecl, newItcDecl, mDecl, target)
 
         case (PackageDeclHolder, PackageDeclHolder, i: TypedKindDeclHolder) =>
-          moveTypeKind(resultGraph, reenactor, id2declMap, newSource, i.decl, target.id)
+          moveTypeKind(resultGraph, reenactor, id2declMap, newSource, i.decl, target)
 
         //        case (ClassDeclHolder(classDecl),
         //        InterfaceDeclHolder(absDecl),
@@ -151,19 +152,15 @@ object RedirectSource {
     if (e.source != newSourceId) {
       //else do nothing*
 
-      val source = resultGraph.getNode(e.source)
-      val target = resultGraph.getNode(e.target)
-      val newSource = resultGraph.getNode(newSourceId)
-
       e.kind match {
-        case Contains => move(source, newSource, target)
+        case Contains => move(e.source, newSourceId, e.target)
         case Isa =>
-          removeIsa(id2declMap(source.id), id2declMap(target.id))
-          CreateEdge.createIsa(id2declMap(newSource.id), id2declMap(target.id))
+          removeIsa(id2declMap(e.source), id2declMap(e.target))
+          CreateEdge.createIsa(id2declMap(newSourceId), id2declMap(e.target))
 
-        case Uses =>
-          throw new PuckError(s"redirect ${(resultGraph, e).shows} " +
-            s"new source = ${(resultGraph, newSourceId).shows}")
+        case Uses => //in case of initializer
+          moveFieldInitialization(reenactor, id2declMap,
+            e.source, newSourceId)
 
         case _ =>
           logger.writeln(s"Redirect source of ${e.kind} ignored")
@@ -179,6 +176,34 @@ object RedirectSource {
       sub.decl.removeSuperType(sup.decl)
 
     case e => logger.writeln(s"isa($e) not deleted")
+  }
+
+
+  def moveFieldInitialization
+  (reenactor : DependencyGraph,
+   id2declMap: NodeId => ASTNodeLink,
+   oldSource : NodeId,
+   newSource : NodeId) : Unit = {
+    (id2declMap(reenactor container_! oldSource),
+      id2declMap(reenactor container_! newSource)) match {
+      case (FieldDeclHolder(fdecl), ConcreteMethodDeclHolder(mdecl)) =>
+        if(! fdecl.getInitOpt.isEmpty ) {
+
+          //fdecl.getInitOpt.isEmpty means field is declared with a complex expression that
+          //uses several things. The whole expr is moved with the first use, after that
+          //the redirect source can be ignored
+
+          val initStmt =
+            new AST.ExprStmt(
+              new AST.AssignSimpleExpr(fdecl.createLockedAccess(), fdecl.getInit))
+
+          fdecl.setInitOpt(new AST.Opt[AST.Expr]())
+
+          mdecl.getBlock.addStmt(initStmt)
+        }
+      case hs =>
+        error(s"Redirect source of use handled in case of initializer creation, $hs not expected")
+    }
   }
 
 }

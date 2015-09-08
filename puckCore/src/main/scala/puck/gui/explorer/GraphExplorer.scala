@@ -21,7 +21,8 @@ class GraphExplorer
  height : Int)
   extends ScrollPane with Publisher {
 
-  private var hiddens0 : VisibilitySet.T = VisibilitySet.allVisible(graph)
+  private var hiddens0 : VisibilitySet.T = _
+
 
   def setVisibility(id : NodeId, v : Visibility) =
     hiddens0 = hiddens0.setVisibility(id,v)
@@ -49,6 +50,7 @@ class GraphExplorer
   reactions += {
     case AccessGraphModified(g) =>
       graph = g
+      hiddens0 = VisibilitySet.allVisible(graph)
       root = new PuckTreeNode(graph.rootId, this, "<>")
       addChildren(graph, root)
 

@@ -23,18 +23,18 @@ object JavaIntro extends Intro {
     }
   }
 
-  def accessToType
+  def typedNodeWithDef
   (graph: DependencyGraph,
    localName: String,
    kind: NodeKind,
-   typeNode: NodeId,
-   mutable: Mutability = true
+   typ: Type,
+   mutable: Mutability
     ): (ConcreteNode, DependencyGraph) = {
 
     val (cn, g) = this.apply(graph, localName, kind)
     val (defNode, g2) = g.addConcreteNode(DependencyGraph.anonymousName, Definition)
 
-    (cn, g2.setType(cn.id, Some(NamedType(typeNode)))
+    (cn, g2.setType(cn.id, Some(typ))
       .addDef(cn.id, defNode.id))
   }
 

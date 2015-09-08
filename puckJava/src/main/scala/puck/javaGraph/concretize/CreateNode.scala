@@ -14,22 +14,41 @@ object CreateNode {
     graph : DependencyGraph,
     id2decl : Map[NodeId, ASTNodeLink],
     node : ConcreteNode
-    ) : ASTNodeLink = {
-    node.kind match {
-      case Package => PackageDeclHolder
-      case Interface => createInterface(prog, graph, node)
-      case Class => createClass(prog, graph, node)
-      case ConstructorMethod =>
-        createConstructorMethod(prog, graph, id2decl, node)
-      case AbstractMethod =>
-        createAbstractMethod(prog, graph, id2decl, node)
-      case Constructor =>
-        createConstructor(prog, graph, id2decl, node)
-      case Field => createField(prog, graph, id2decl, node)
-      case Param => createParameter(prog, graph, id2decl, node)
+    ) : Map[NodeId, ASTNodeLink] = {
 
-      case _ => throw new DeclarationCreationError(s"cannot create decl for kind ${node.kind}")
+    if(node.kind == Method){
+      val decl = createMethod(prog, graph, id2decl, node)
+      decl.setModifiers(new AST.Modifiers("public"))
 
+      val block = new AST.Block()
+      decl.setBlock(block)
+      val defId = graph definitionOf_! node.id
+
+      id2decl +
+        (node.id -> ConcreteMethodDeclHolder(decl)) +
+        (defId -> BlockHolder(block))
+    }
+    else {
+      val dh =
+        node.kind match {
+        case Package => PackageDeclHolder
+        case Interface => createInterface(prog, graph, node)
+        case Class => createClass(prog, graph, node)
+        case ConstructorMethod =>
+          createConstructorMethod(prog, graph, id2decl, node)
+        case AbstractMethod =>
+          val decl = createMethod(prog, graph, id2decl, node)
+          decl.setModifiers(new AST.Modifiers("public", "abstract"))
+          AbstractMethodDeclHolder(decl)
+        case Constructor =>
+          createConstructor(prog, graph, id2decl, node)
+        case Field => createField(prog, graph, id2decl, node)
+        case Param => createParameter(prog, graph, id2decl, node)
+
+        case _ => throw new DeclarationCreationError(s"cannot create decl for kind ${node.kind}")
+
+      }
+      id2decl + (node.id -> dh)
     }
   }
 
@@ -75,15 +94,13 @@ object CreateNode {
     ()
   }
 
-  def createAbstractMethod
+  def createMethod
   ( prog : AST.Program,
     graph : DependencyGraph,
     id2Decl : Map[NodeId, ASTNodeLink],
     node : ConcreteNode
-    ) : AbstractMethodDeclHolder =
-    AbstractMethodDeclHolder {
+    ) : AST.MethodDecl = {
       val decl = new AST.MethodDecl()
-      decl.setModifiers(new AST.Modifiers("public", "abstract"))
       decl.setID(node.name)
       decl.setTypeAccess(createTypeAccess(node.id, graph, id2Decl))
       decl

@@ -145,6 +145,8 @@ object JavaNodeKind extends NodeKindKnowledge {
 
   def defaultKindForNewReceiver : NodeKind = Field
 
+  val initializerKind : NodeKind = Method
+
   val intro : Intro = JavaIntro
 
   def getConstructorOfType(g: DependencyGraph, tid : NodeId) : Option[NodeId] = {
@@ -160,7 +162,7 @@ object JavaNodeKind extends NodeKindKnowledge {
 
   override def writeType(graph: DependencyGraph): Type = {
     val sNode = graph.concreteNodes.find(_.name == "void")
-    if(sNode.isEmpty) sys.error("void not loaded")
+    if(sNode.isEmpty) error("void not loaded")
     else NamedType(sNode.get.id)
   }
 

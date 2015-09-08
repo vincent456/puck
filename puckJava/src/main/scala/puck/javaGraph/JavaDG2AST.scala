@@ -114,20 +114,20 @@ class JavaDG2AST
 
   def apply(result : DependencyGraph)(implicit logger : PuckLogger) : Unit = {
 
-    def printCUs() = {
-      println(program.getNumCompilationUnit.toString + "c us")
-      List.range(0, program.getNumCompilationUnit).foreach {
-        i =>
-          val cu = program.getCompilationUnit(i)
-          if(cu.fromSource()) {
-            println(cu.pathName() + " " + cu.getPackageDecl)
-            List.range(0, cu.getNumTypeDecl).foreach{
-              j =>
-                println(cu.getTypeDecl(j).fullName())
-            }
-          }
-      }
-    }
+//    def printCUs() = {
+//      println(program.getNumCompilationUnit.toString + "c us")
+//      List.range(0, program.getNumCompilationUnit).foreach {
+//        i =>
+//          val cu = program.getCompilationUnit(i)
+//          if(cu.fromSource()) {
+//            println(cu.pathName() + " " + cu.getPackageDecl)
+//            List.range(0, cu.getNumTypeDecl).foreach{
+//              j =>
+//                println(cu.getTypeDecl(j).fullName())
+//            }
+//          }
+//      }
+//    }
 
     logger.writeln("applying change !")
     val record = recordOfResult(result)
@@ -149,9 +149,8 @@ class JavaDG2AST
     logger.writeln(program)
     program.flushCaches()
 
-    try {
+    try
       program.eliminateLockedNamesInSources()
-    }
     catch {
       case e : Exception =>
         e.printStackTrace()
@@ -184,10 +183,7 @@ class JavaDG2AST
       else {
         val newMap = id2declMap get n.id match {
           case Some(_) => id2declMap
-          case None =>
-            val dh = CreateNode(program, resultGraph, id2declMap, n)
-
-            id2declMap + (n.id -> dh)
+          case None =>CreateNode(program, resultGraph, id2declMap, n)
         }
         newMap
       }
@@ -204,7 +200,6 @@ class JavaDG2AST
 
       case Transformation(_, RedirectionOp(e, Source(newSource))) =>
         RedirectSource(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newSource)
-
 
       case Transformation(_, RedirectionOp(e, Target(newTarget))) =>
         RedirectTarget(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newTarget)

@@ -27,7 +27,7 @@ class EdgeRightClickMenu
       this.addMenuItem("Show type bindings (console)"){
         _ =>
           controller.printUseBindings(uses)
-          graph.definition(uses.user).foreach{
+          graph.definitionOf(uses.user).foreach{
             userDef =>
               controller.printUseBindings(graph.getUsesEdge(userDef, uses.used).get)
           }
