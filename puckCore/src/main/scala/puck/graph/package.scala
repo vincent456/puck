@@ -71,7 +71,7 @@ package object graph {
   val Recording = transformations.Recording
 
   type Mutability = Boolean
-  val mutable = true
+  val isMutable = true
   val notMutable = false
 
   type ResultT = DependencyGraph

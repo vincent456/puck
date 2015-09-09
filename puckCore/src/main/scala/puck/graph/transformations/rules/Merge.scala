@@ -26,7 +26,7 @@ trait MergingCandidatesFinder {
 
 class Merge
 ( mergingCandidatesFinder: MergingCandidatesFinder){
-
+  
   def mergeTypeUsesDependencies
   ( g0 : DependencyGraph,
     consumedId : NodeId,
@@ -123,9 +123,13 @@ class Merge
       | TypeConstructor =>
         mergeInto0(g, consumedId, consumerId){
           (g, consumedId, _) =>
-            g.content(consumedId).foldLoggedEither(g.comment("Delete consumed def")) {
-              (g, consumedDefId) =>
-              removeConcreteNode(g, g.getConcreteNode(consumedDefId))
+            val content = g.definitionOf(consumedId) match {
+              case None => g.parameters(consumedId)
+              case Some(d) => d :: g.parameters(consumedId)
+            }
+//            val content = g.content(consumedId)
+            content.foldLoggedEither(g.comment("Delete consumed def")) {
+              (g, cid) => removeConcreteNode(g, g.getConcreteNode(cid))
             }
         }
 

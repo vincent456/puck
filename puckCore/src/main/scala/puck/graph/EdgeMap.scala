@@ -224,14 +224,14 @@ case class EdgeMap
     copy(typeMemberUses2typeUsesMap = typeMemberUses2typeUsesMap - (typeMemberUse, typeUse),
       typeUses2typeMemberUsesMap = typeUses2typeMemberUsesMap - (typeUse, typeMemberUse))
 
-  def setType(id : NodeId, st : Option[Type]) : EdgeMap = {
+  def setType(id : NodeId, st : Option[Type]) : EdgeMap =
     st match {
       case None =>
         if(types contains id) copy(types = types - id)
         else this
       case Some(t) => copy(types = types + (id -> t))
     }
-  }
+
 
   def typeUsesOf(typeMemberUse : DGUses) : Set[DGUses] =
     typeUsesOf(typeMemberUse.user, typeMemberUse.used)

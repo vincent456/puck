@@ -123,8 +123,8 @@ class RecordingComparatorSpec extends AcceptanceSpec {
     scenario("Same merge, same result ") {
       import needToMergeInterfaces._
 
-      val t1 = TR.mergeInto(graph, itcC, itcB)
-      val t2 = TR.mergeInto(graph, itcC, itcB)
+      val t1 = TR.merge.mergeInto(graph, itcC, itcB)
+      val t2 = TR.merge.mergeInto(graph, itcC, itcB)
 
       liftAssert(needToMergeInterfaces, t1, t2, expected = true)
     }
@@ -137,14 +137,14 @@ class RecordingComparatorSpec extends AcceptanceSpec {
           .flatMap{ case (g, pid, itcId) =>
           introItcPackageAndMove(g, classBNode, "p2", graph.rootId)
             .flatMap {case (g2, pid2, itcId2) =>
-            TR.mergeInto(g2, itcId2, itcId)}
+            TR.merge.mergeInto(g2, itcId2, itcId)}
         }
       val t2 =
         introItcPackageAndMove(graph, classBNode, "p3", graph.rootId)
           .flatMap{ case (g, pid, itcId) =>
           introItcPackageAndMove(g, classBNode, "p4", rootPackage)
             .flatMap {case (g2, pid2, itcId2) =>
-            TR.mergeInto(g2, itcId, itcId2)}
+            TR.merge.mergeInto(g2, itcId, itcId2)}
         }
 
       liftAssert(methodUsesViaThisField, t1, t2, expected = true)

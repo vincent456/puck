@@ -20,7 +20,7 @@ abstract class Intro {
     import graph.nodeKindKnowledge.{writeType, initializerKind}
     val returnType = writeType(graph)
 
-    val (cn, g) = intro.typedNodeWithDef(graph, "init", initializerKind, returnType, mutable)
+    val (cn, g) = intro.typedNodeWithDef(graph, "init", initializerKind, returnType, isMutable)
     val defNode = g definitionOf_! cn.id
 
     val g2 =
@@ -29,8 +29,17 @@ abstract class Intro {
         g.addUses(typeInitialized,typeInitialized)
       else g
 
+    val ctors = graph content typeInitialized filter (graph.kindType(_) == TypeConstructor)
+
+    val g3 = ctors.foldLeft(g2.setRole(cn.id, Some(Initializer(typeInitialized)))){
+      case (g0, ctor) =>
+        val ctorDef = g definitionOf_! ctor
+        g0.addUses(ctorDef, cn.id)
+          .addUsesDependency((typeInitialized,typeInitialized), (ctorDef, cn.id))
+
+    }
     (cn.id,
-      initializedContent.foldLeft(g2.addContains(typeInitialized, cn.id)){
+      initializedContent.foldLeft(g3.addContains(typeInitialized, cn.id)){
         (g, ic) =>
           val g1 = g.addUses(defNode, ic, Some(Write))
                     .addUsesDependency((typeInitialized,typeInitialized), (defNode, ic))
@@ -47,6 +56,8 @@ abstract class Intro {
       })
 
   }
+
+
 
   def apply
   ( graph : DependencyGraph,
@@ -140,8 +151,8 @@ abstract class Intro {
     used : NodeId) : DependencyGraph =
     (g.kindType(g.container_!(user)), g.kindType(used)) match {
       case (InstanceValueDecl, InstanceValueDecl)
-      if g.containerOfKindType(TypeDecl, user) == g.containerOfKindType(TypeDecl, used) =>
-        val cter = g.containerOfKindType(TypeDecl, user)
+      if g.hostTypeDecl(user) == g.hostTypeDecl(used) =>
+        val cter = g.hostTypeDecl(user)
         val g1 =
           if (Uses(cter, cter) existsIn g) g
           else g.addUses(cter, cter)

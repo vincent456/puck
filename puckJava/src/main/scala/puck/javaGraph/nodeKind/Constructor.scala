@@ -13,7 +13,7 @@ case object Constructor extends JavaNodeKind {
   override def abstractionPolicies = Seq(DelegationAbstraction)
 
   def abstractionNodeKinds(p : AbstractionPolicy) = p match {
-    case DelegationAbstraction => Seq(ConstructorMethod, StaticMethod)
+    case DelegationAbstraction => Seq(Method, StaticMethod)
     case SupertypeAbstraction => Seq()
       //throw new DGError("Constructor cannot be abstracted by SuperType strategy")
   }

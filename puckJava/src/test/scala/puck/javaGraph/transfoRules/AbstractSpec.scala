@@ -250,7 +250,9 @@ class AbstractSpec extends AcceptanceSpec with GetDefinitionValue {
     scenario("one constructor one initialized field"){
       val _ = new ExampleSample(ctorIntoFactoryPath + "/OneConstructorOneInitializedField.java") {
         val classA = fullName2id("p.A")
+        val classActor = fullName2id("p.A.A#_void")
         val initializedField = fullName2id("p.A.f")
+
         val fieldDef = getDefinition(graph, initializedField)
         val fieldType = fullName2id("p.F")
         val fieldTypeCtor = fullName2id("p.F.F#_void")
@@ -266,6 +268,7 @@ class AbstractSpec extends AcceptanceSpec with GetDefinitionValue {
 
         assert( Uses(initializerDef, initializedField, Some(Write)) existsIn g)
         assert( Uses(initializerDef, fieldTypeCtor) existsIn g)
+        assert( Uses(g definitionOf_! classActor, initializer) existsIn g)
 
       }
     }

@@ -17,16 +17,26 @@ object CreateNode {
     ) : Map[NodeId, ASTNodeLink] = {
 
     if(node.kind == Method){
-      val decl = createMethod(prog, graph, id2decl, node)
-      decl.setModifiers(new AST.Modifiers("public"))
+      graph.getRole(node.id) match {
+        case Some(Initializer(_)) =>
+          val decl = createMethod(prog, graph, id2decl, node)
+          decl.setModifiers(new AST.Modifiers("public"))
 
-      val block = new AST.Block()
-      decl.setBlock(block)
-      val defId = graph definitionOf_! node.id
+          val block = new AST.Block()
+          decl.setBlock(block)
+          val defId = graph definitionOf_! node.id
 
-      id2decl +
-        (node.id -> ConcreteMethodDeclHolder(decl)) +
-        (defId -> BlockHolder(block))
+          id2decl +
+            (node.id -> ConcreteMethodDeclHolder(decl)) +
+            (defId -> BlockHolder(block))
+        case Some(Factory(_)) =>
+          id2decl +
+            (node.id ->
+            createConstructorMethod(prog, graph, id2decl, node))
+        case None =>
+          throw new DeclarationCreationError("cannot create method with no role")
+      }
+
     }
     else {
       val dh =
@@ -34,8 +44,6 @@ object CreateNode {
         case Package => PackageDeclHolder
         case Interface => createInterface(prog, graph, node)
         case Class => createClass(prog, graph, node)
-        case ConstructorMethod =>
-          createConstructorMethod(prog, graph, id2decl, node)
         case AbstractMethod =>
           val decl = createMethod(prog, graph, id2decl, node)
           decl.setModifiers(new AST.Modifiers("public", "abstract"))

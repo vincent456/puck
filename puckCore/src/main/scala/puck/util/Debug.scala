@@ -73,7 +73,8 @@ object Debug {
   implicit val showNodeIndex : scalaz.Show[NodeIndex] = scalaz.Show.shows[NodeIndex] {
     case NodeIndex(_, cNodes, removedCnodes,
     vNodes, removedVnodes,
-    cNodes2vNodes) =>
+    cNodes2vNodes,
+    roles) =>
       "Concrete Nodes : " +
         mkMapStringSortedByKey(cNodes) +
       "Removed Concrete Nodes : " +
@@ -83,7 +84,10 @@ object Debug {
       "Removed Virtual Nodes : " +
         mkMapStringSortedByKey(removedVnodes) +
       "CN -> VN : " +
-        cNodes2vNodes.mkString("\t[",",\n\t ","]\n")
+        cNodes2vNodes.mkString("\t[",",\n\t ","]\n") +
+      "Roles : "
+        roles.mkString("\t[",",\n\t ","]\n")
+
 
   }
 

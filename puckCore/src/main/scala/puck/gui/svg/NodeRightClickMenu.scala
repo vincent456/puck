@@ -1,7 +1,6 @@
 package puck.gui.svg
 
 import puck.graph._
-import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 import puck.gui.svg.actions.AddIsaAction
 import puck.gui.svg.actions.MergeAction
 import puck.gui.svg.actions.MoveAction
@@ -37,7 +36,6 @@ class ConcreteNodeRightClickMenu
 
   init()
 
-
   import controller.graph
 
   def init() : Unit = {
@@ -57,6 +55,10 @@ class ConcreteNodeRightClickMenu
       childChoices.foreach(this.add)
     }
 
+    if(node.kind.isWritable){
+      this.add(new CreateInitalizerAction(graph.getConcreteNode(graph.hostTypeDecl(node.id)), controller))
+    }
+
     this.addSeparator()
     this.add(new RemoveNodeAction(node, controller))
 
@@ -65,8 +67,6 @@ class ConcreteNodeRightClickMenu
       case List((nid,_,_)) => addOtherNodeSelectedOption(nid)
       case nodes => addOtherNodesSelectedOption(nodes map (_._1))
     }
-
-
 
     controller.selectedEdge match {
       case Some((e, _, _)) => addEdgeSelectedOption(e)
@@ -83,6 +83,7 @@ class ConcreteNodeRightClickMenu
     this.addSeparator()
     addShowOptions()
   }
+
 
 
   private def addAddIsaOption(sub: ConcreteNode, sup: ConcreteNode) : Unit = {
@@ -191,7 +192,7 @@ class VirtualNodeRightClickMenu
         import controller.{graph, graphUtils}, graphUtils.{transformationRules => TR}
         this.addMenuItem(s"Concretize as $consumer") { _ =>
           printErrOrPushGraph(controller,"Concretize action failure") {
-            TR.mergeInto(graph.mileStone, node.id, consumer.id)
+            TR.merge.mergeInto(graph.mileStone, node.id, consumer.id)
           }
         }
   }

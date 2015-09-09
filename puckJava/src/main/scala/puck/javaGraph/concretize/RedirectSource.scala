@@ -184,23 +184,16 @@ object RedirectSource {
    id2declMap: NodeId => ASTNodeLink,
    oldSource : NodeId,
    newSource : NodeId) : Unit = {
+    val newSrcDecl = reenactor container_! newSource
+    reenactor getRole newSrcDecl match {
+      case Some(Initializer(_)) => ()
+      case sr => error(s"Redirect source of use, expecting new user to be some initializer, found " + sr)
+    }
+
     (id2declMap(reenactor container_! oldSource),
-      id2declMap(reenactor container_! newSource)) match {
+      id2declMap(newSrcDecl)) match {
       case (FieldDeclHolder(fdecl), ConcreteMethodDeclHolder(mdecl)) =>
-        if(! fdecl.getInitOpt.isEmpty ) {
-
-          //fdecl.getInitOpt.isEmpty means field is declared with a complex expression that
-          //uses several things. The whole expr is moved with the first use, after that
-          //the redirect source can be ignored
-
-          val initStmt =
-            new AST.ExprStmt(
-              new AST.AssignSimpleExpr(fdecl.createLockedAccess(), fdecl.getInit))
-
-          fdecl.setInitOpt(new AST.Opt[AST.Expr]())
-
-          mdecl.getBlock.addStmt(initStmt)
-        }
+       fdecl.moveInitIntoInitializzer(mdecl)
       case hs =>
         error(s"Redirect source of use handled in case of initializer creation, $hs not expected")
     }

@@ -427,7 +427,7 @@ class Solver
         val n = it.next()
         rules.findMergingCandidate(lg.value, n) match {
           case Some(other) =>
-            val ltg = rules.mergeInto(lg.value, n.id, other.id)
+            val ltg = rules.merge.mergeInto(lg.value, n.id, other.id)
             (lg.written <++: ltg) flatMap {
               g1 => aux(g1.set(""), g1.concreteNodes.iterator)
             }

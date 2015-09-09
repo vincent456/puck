@@ -78,3 +78,16 @@ class RenameNodeAction
   }
 
 }
+
+class CreateInitalizerAction
+( node : ConcreteNode,
+  controller : SVGController)
+  extends AbstractAction(s"Create initializer of $node") {
+
+  import controller.{graph, graphUtils}, graphUtils.{transformationRules => TR}
+
+  def actionPerformed(e: ActionEvent) : Unit =
+    printErrOrPushGraph(controller, "Remove Node Action failure"){
+      LoggedSuccess(TR.intro.initializer(graph.mileStone, node.id)._2)
+    }
+}

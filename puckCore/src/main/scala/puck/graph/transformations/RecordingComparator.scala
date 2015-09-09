@@ -168,6 +168,7 @@ class RecordingComparator
              | _ : VNode
              | _ : CNode
              | _ : ChangeNodeName
+             | _ : RoleChange
              | _ : Comment => throw new Error("should not happen !!")
 
       }

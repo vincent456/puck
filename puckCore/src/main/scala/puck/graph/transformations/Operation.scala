@@ -152,6 +152,16 @@ case class TypeDependency
   }
 }
 
+case class RoleChange
+( id : NodeId,
+  oldRole : Option[Role],
+  newRole : Option[Role])
+extends Operation {
+  def execute(g: DependencyGraph , op : Direction) = op match {
+    case Regular => g.setRole(id, newRole)
+    case Reverse => g.setRole(id, oldRole)
+  }
+}
 //case class AddFactoryMethod(constructor : NodeId, factory : ConcreteNode) extends Operation
 
 

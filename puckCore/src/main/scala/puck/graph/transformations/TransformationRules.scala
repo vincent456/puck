@@ -19,9 +19,8 @@ class TransformationRules
   def findMergingCandidate = mergingCandidatesFinder.find _
   def mergeMatcherInstances = mergingCandidatesFinder.mergeMatcherInstances
 
-  lazy val merger = new Merge(mergingCandidatesFinder)
-  def mergeInto = merger.mergeInto _
-  def removeConcreteNode = merger.removeConcreteNode _
+  lazy val merge = new Merge(mergingCandidatesFinder)
+  def removeConcreteNode = merge.removeConcreteNode _
 
   val redirection = Redirection
   val move = Move

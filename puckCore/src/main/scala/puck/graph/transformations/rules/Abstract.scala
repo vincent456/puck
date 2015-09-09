@@ -272,7 +272,6 @@ abstract class Abstract {
     }
   }
 
-
   private def createAbsNodeAndUse
   ( g : DependencyGraph,
     impl: ConcreteNode,
@@ -285,7 +284,13 @@ abstract class Abstract {
       case AccessAbstraction(absId, SupertypeAbstraction) => g1
         //optional isa arc is added after insertion in type hierarchy
       case AccessAbstraction(absId, DelegationAbstraction) =>
-        g1.addUses(absId, impl.id)
+        val g2 = g1.addUses(absId, impl.id)
+        if(impl.kind.kindType == TypeConstructor){
+          g2.setRole(absId,
+            Some(Factory(g2.nodeKindKnowledge.typeConstructed(g2,impl.id))))
+        }
+        else g2
+
       case rwAbs @ ReadWriteAbstraction(someRid, someWid) =>
         val g2 = someRid.map(g1.addUses(_, impl.id, Some(Read))).getOrElse(g1)
           someWid.map(g2.addUses(_, impl.id, Some(Write))).getOrElse(g2)

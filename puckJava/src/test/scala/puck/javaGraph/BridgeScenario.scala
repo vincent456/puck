@@ -54,16 +54,6 @@ class BridgeScenario private()
 
   var printId = 0
 
-  def printCode(g : DependencyGraph) : Unit = {
-    jdg2ast(g)
-    jdg2ast.printCode( new File(BridgeScenario.path + "out/" ))
-  }
-
-  def printDot(g : DependencyGraph) : Unit = {
-    val n = BridgeScenario.path + printId.toString + ".dot"
-    printId += 1
-    Java2dot.quickDot(n, g, fullName2id)
-  }
 
   def introClassMoveMethod
   (g : DependencyGraph, className : String, method : NodeId) = {
@@ -83,8 +73,8 @@ class BridgeScenario private()
     val (c1, g1) = introClassMoveMethod(g0, className, meth1)
 
     val (c2, g2) = introClassMoveMethod(g1, className+"Tmp", meth2)
-    val g3 = TR.mergeInto(g2.comment("-- Merging methods (begin) --"), meth2, meth1).value.right.value
-    (c1, TR.mergeInto(g3.comment("-- Merging methods (end) --"), c2.id, c1.id).value.right.value
+    val g3 = TR.merge.mergeInto(g2.comment("-- Merging methods (begin) --"), meth2, meth1).value.right.value
+    (c1, TR.merge.mergeInto(g3.comment("-- Merging methods (end) --"), c2.id, c1.id).value.right.value
       .comment("-- intro2classMerge (end) --"))
   }
 
@@ -108,8 +98,7 @@ class BridgeScenario private()
 
 
   val g0 = graph.newGraph(constraints = cm)
-  logger = new PuckFileLogger(_ => true, new File(BridgeScenario.path + "log"))
-  val jdg2ast = new JavaDG2AST(program, g0, initialRecord, fullName2id, dg2astMap)
+
   val (c1, g1) = intro2classMerge(g0, "StarStyle", printStar1, printStar2)
   val (c2, g2) = intro2classMerge(g1, "CapitalStyle", printCapital1, printCapital2)
   val g3 =  TR.rename(TR.rename(g2, printStar1, "printStyle"), printCapital1, "printStyle")
@@ -119,7 +108,7 @@ class BridgeScenario private()
   val (AccessAbstraction(i2Id, _), g6) = TR.abstracter.createAbstraction(g5, c2, Interface, SupertypeAbstraction).value.right.value
   val g7 = g6.addContains(screen, i2Id)
 
-  val g8 = TR.rename(TR.mergeInto(g7, i2Id, i1Id).value.right.value, i1Id, "StyleProvider")
+  val g8 = TR.rename(TR.merge.mergeInto(g7, i2Id, i1Id).value.right.value, i1Id, "StyleProvider")
 
   val g9 = useInterfaceInstead(g8, c1.id, i1Id)
 
@@ -138,21 +127,21 @@ class BridgeScenario private()
 
     }
 
-  val g12 = TR.mergeInto(g11, getDelegate(g11, infoStar), delegate).value.right.value
-  val g13 = TR.mergeInto(g12, getDelegate(g12, welcomeCapital), delegate).value.right.value
-  val g14 = TR.mergeInto(g13, getDelegate(g13, infoCapital), delegate).value.right.value
+  val g12 = TR.merge.mergeInto(g11, getDelegate(g11, infoStar), delegate).value.right.value
+  val g13 = TR.merge.mergeInto(g12, getDelegate(g12, welcomeCapital), delegate).value.right.value
+  val g14 = TR.merge.mergeInto(g13, getDelegate(g13, infoCapital), delegate).value.right.value
 
 
-  val g15 = TR.mergeInto(TR.rename(g14, welcomeStar, "WelcomeScreen"),
+  val g15 = TR.merge.mergeInto(TR.rename(g14, welcomeStar, "WelcomeScreen"),
     welcomeCapitalMeth, welcomeStarMeth).value.right.value
-  val g16 = TR.mergeInto(g15, welcomeCapital, welcomeStar).value.right.value
+  val g16 = TR.merge.mergeInto(g15, welcomeCapital, welcomeStar).value.right.value
 
 
   //QuickFrame(g16)
 
-  val g17 = TR.mergeInto(TR.rename(g16, infoStar, "InfoScreen"),
+  val g17 = TR.merge.mergeInto(TR.rename(g16, infoStar, "InfoScreen"),
     infoCapitalMeth, infoStarMeth).value.right.value
-  val g18 = TR.mergeInto(g17, infoCapital, infoStar).value.right.value
+  val g18 = TR.merge.mergeInto(g17, infoCapital, infoStar).value.right.value
 
   def gFinal = g18
 

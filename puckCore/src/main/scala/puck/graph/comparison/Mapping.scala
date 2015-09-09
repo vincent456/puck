@@ -79,10 +79,8 @@ object Mapping {
   ( g1 : DependencyGraph,
     g2 : DependencyGraph
   ) : Boolean = {
-
     assert(g1.virtualNodes.isEmpty)
     assert(g2.virtualNodes.isEmpty)
-
     g1.nodesId.size == g2.nodesId.size && {
       val mappinG1toG2 = create(g1,g2).apply _
 

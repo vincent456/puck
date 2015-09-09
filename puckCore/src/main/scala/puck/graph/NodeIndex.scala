@@ -18,7 +18,7 @@ object NodeIndex {
     NodeIndex(root.id,
       ConcreteNodeIndex() + (root.id -> root), ConcreteNodeIndex(),
       VirtualNodeINdex(), VirtualNodeINdex(),
-      Nodes2VNodeMap()).addConcreteNode(root)
+      Nodes2VNodeMap(), Map()).addConcreteNode(root)
 
   def getNodeWithStatus[N <: DGNode](id : NodeId,
                                      nodes : Map[NodeId, N],
@@ -41,7 +41,8 @@ case class NodeIndex
   removedCnodes : ConcreteNodeIndex,
   vNodes : VirtualNodeIndex,
   removedVnodes : VirtualNodeIndex,
-  cNodes2vNodes : Nodes2VnodeMap){
+  cNodes2vNodes : Nodes2VnodeMap,
+  roles : Map[NodeId, Role]){
 
   private [this] def adjustSeed(nid : NodeId) =
     if(nid <= idSeed) this
@@ -143,6 +144,22 @@ case class NodeIndex
     val (n, s) = getConcreteNodeWithStatus(id)
     (n.name, setNode(n.copy(name = newName), s))
   }
+
+  def getRole(id : NodeId) : Option[Role] =
+    roles get id
+
+  def setRole(id : NodeId, srole : Option[Role]) : NodeIndex =
+    srole match {
+      case None =>
+        if(roles contains id) copy(roles = roles - id)
+        else this
+      case Some(role) => copy(roles = roles + (id -> role))
+    }
+
+
+  def removeRole(id : NodeId) : NodeIndex =
+    copy(roles = roles - id)
+
 
   def setMutability(id : NodeId, mutable : Boolean) : NodeIndex =  {
     val (n, s) = getConcreteNodeWithStatus(id)

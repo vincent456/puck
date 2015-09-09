@@ -99,8 +99,8 @@ object RedirectTarget {
           sourceInAST match {
             case defHolder : DefHolder =>
               defHolder.node.replaceConstructorCall(oldc, newc)
-            case _ =>
-              throw new JavaAGError("constructor change, kind of uses source unhandled")
+            case src =>
+              throw new JavaAGError(s"constructor change, ${src.getClass} as uses source unhandled")
           }
 
         case (ConstructorDeclHolder(_), methCtor: MethodDeclHolder) =>

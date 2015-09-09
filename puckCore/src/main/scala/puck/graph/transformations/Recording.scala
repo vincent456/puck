@@ -80,8 +80,12 @@ object Recording {
       case (n1, n2) => (mappin(n1), mappin(n2))
     }
 
-
     val mappingOnType = Mapping.mapType(mappin)
+
+    val mappingOnRole : Role => Role = {
+      case Initializer(id) => Initializer(mappin(id))
+      case Factory(id) => Factory(mappin(id))
+    }
 
     def mappingOnOperation : Operation => Operation = {
       case CNode(n) =>
@@ -116,6 +120,8 @@ object Recording {
           binding.create(mappinNodeIdP(binding.edge)))
       case TypeDependency(tUse, tmUse) =>
         TypeDependency(mappinNodeIdP(tUse),mappinNodeIdP(tmUse))
+      case RoleChange(id, sor, snr) =>
+        RoleChange(mappin(id), sor map mappingOnRole, snr map mappingOnRole)
 
     }
 

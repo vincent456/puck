@@ -52,14 +52,14 @@ class DependencyGraph
   def rootKind = nodeKindKnowledge.rootKind
 
   def newGraph(//nLogger : PuckLogger = logger,
-               nodes : NodeIndex = nodesIndex,
+               nodesIndex : NodeIndex = nodesIndex,
                edges : EdgeMap = edges,
                abstractionsMap : AbstractionMap = abstractionsMap,
                constraints : ConstraintsMaps = constraints,
                recording : Recording = recording) : DependencyGraph =
     new DependencyGraph(//nLogger,
                         nodeKindKnowledge,
-                        nodes, edges,
+                        nodesIndex, edges,
                         abstractionsMap, constraints, recording)
 
   //def withLogger(l : PuckLogger) = newGraph(nLogger = l)
@@ -82,7 +82,7 @@ class DependencyGraph
   override def toString = edges.toString
 
   private [graph] def addConcreteNode(n : ConcreteNode) : DependencyGraph =
-     newGraph(nodes = nodesIndex.addConcreteNode(n),
+     newGraph(nodesIndex = nodesIndex.addConcreteNode(n),
               recording = recording.addConcreteNode(n))
 
   def addConcreteNode
@@ -91,19 +91,19 @@ class DependencyGraph
     mutable : Mutability = true
     ) : (ConcreteNode, DependencyGraph) = {
     val(n, nIndex) = nodesIndex.addConcreteNode(localName, kind, mutable)
-    (n, newGraph(nodes = nIndex,
+    (n, newGraph(nodesIndex = nIndex,
       recording = recording.addConcreteNode(n)))
   }
 
   private [graph] def addVirtualNode
   ( n : VirtualNode ) : DependencyGraph =
-    newGraph(nodes = nodesIndex.addVirtualNode(n),
+    newGraph(nodesIndex = nodesIndex.addVirtualNode(n),
       recording = recording.addVirtualNode(n))
 
 
   def addVirtualNode(ns : Seq[NodeId], k : NodeKind) : (VirtualNode, DependencyGraph) = {
     val (vn, nIndex) = nodesIndex.addVirtualNode(ns, k)
-    (vn, newGraph(nodes = nIndex,
+    (vn, newGraph(nodesIndex = nIndex,
       recording = recording.addVirtualNode(vn)))
   }
 
@@ -129,12 +129,12 @@ class DependencyGraph
 
 
   def removeConcreteNode(n : ConcreteNode) : DependencyGraph =
-      newGraph(nodes = nodesIndex removeConcreteNode n,
+      newGraph(nodesIndex = nodesIndex removeConcreteNode n,
         recording = recording removeConcreteNode n)
 
 
   def removeVirtualNode(n : VirtualNode) : DependencyGraph =
-    newGraph(nodes = nodesIndex removeVirtualNode n,
+    newGraph(nodesIndex = nodesIndex removeVirtualNode n,
       recording = recording removeVirtualNode n)
 
 
@@ -147,9 +147,15 @@ class DependencyGraph
 
   def setName(id : NodeId, newName : String) : DependencyGraph = {
     val (oldName, index) = nodesIndex.setName(id, newName)
-    newGraph( nodes = index,
+    newGraph( nodesIndex = index,
       recording = recording.changeNodeName(id, oldName, newName))
   }
+
+  def setRole(id : NodeId, srole : Option[Role]) : DependencyGraph = {
+      newGraph(nodesIndex = nodesIndex.setRole(id, srole),
+        recording = recording.addRoleChange(id, getRole(id), srole))
+  }
+  def getRole(id: NodeId) : Option[Role] = nodesIndex.getRole(id)
 
   def styp(id : NodeId) : Option[Type] = edges.types get id
 
@@ -186,7 +192,7 @@ class DependencyGraph
 
 
   def setMutability(id : NodeId, mutable : Boolean) =
-    newGraph(nodes = nodesIndex.setMutability(id, mutable))
+    newGraph(nodesIndex = nodesIndex.setMutability(id, mutable))
 
 
   def exists(e : DGEdge) : Boolean = edges.exists(e)
@@ -335,7 +341,16 @@ class DependencyGraph
   def hostTypeDecl(nid : NodeId) : NodeId =
     containerOfKindType(TypeDecl, nid)
 
-  def content(containerId: NodeId) : Set[NodeId] = edges.contents.getFlat(containerId)
+  def content(containerId: NodeId) : Set[NodeId] =
+    edges.contents.getFlat(containerId) /*++
+      (definitionOf(containerId) map (Set(_))).getOrElse(Set()) ++
+      edges.parameters.getFlat(containerId)*/
+
+
+
+  //special case alias for readibility
+  def declarationOf(defId : NodeId) : NodeId =
+    container_!(defId)
 
   //special cases of content
   def definitionOf(declId : NodeId) : Option[NodeId] =

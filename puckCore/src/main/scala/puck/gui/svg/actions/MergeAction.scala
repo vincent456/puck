@@ -21,7 +21,11 @@ case class MergeAction(
       if(graph.container(consumed.id) != sConsumerHost)
         new MoveAction(graph.getConcreteNode(sConsumerHost.get), List(consumed.id), controller).actionPerformed(null)
 
-      TR.mergeInto(graph.mileStone, consumed.id, consumer.id)
+      TR.merge.mergeInto(graph.mileStone, consumed.id, consumer.id).map{
+        g =>
+          println(g.recording.mkString("\n"))
+          g
+      }
     }
 
 }

@@ -5,7 +5,7 @@ import puck.graph.transformations.rules.Intro
 import puck.javaGraph.nodeKind._
 
 object JavaIntro extends Intro {
-
+  intro =>
   override def apply
   (graph: DependencyGraph,
    localName: String,
@@ -15,9 +15,10 @@ object JavaIntro extends Intro {
     val (n, g) = super.apply(graph, localName, kind, mutable)
     kind match {
       case Class =>
-        val (ctor, g1) = apply(g, localName, Constructor)
-        (n, g1.addContains(n.id, ctor.id)
-              .setType(ctor.id, Some(NamedType(n.id))))
+        val (ctor, g1) =
+          intro.typedNodeWithDef(g,localName, Constructor, n.id)
+
+        (n, g1.addContains(n.id, ctor.id))
 
       case _ => (n, g)
     }

@@ -1,0 +1,29 @@
+
+aspect Initializer {
+    public static MethodAccess MethodAccess.createInitializerAccess(MethodDecl initializer){
+        MethodAccess ma = new MethodAccess(initializer.name(), new List<Expr>());
+        ma.setTargetMethod(new SavedMethodDecl(initializer), true);
+        ma.lock(initializer);
+        return ma;
+    }
+
+    public void ConstructorDecl.addInitializerCall(MethodDecl initializer){
+        this.getBlock().insertStmt(0,
+                new ExprStmt(MethodAccess.createInitializerAccess(initializer)));
+    }
+
+    public void FieldDeclaration.moveInitIntoInitializzer(MethodDecl initializer){
+        if(! getInitOpt().isEmpty() ) {
+            //getInitOpt.isEmpty() means field is declared with a complex expression that
+            //uses several things. The whole expr is moved with the first use, after that
+            //the redirect source can be ignored
+
+            ExprStmt initStmt =
+                new ExprStmt(new AssignSimpleExpr(createLockedAccess(), getInit()));
+
+            setInitOpt(new Opt<Expr>());
+
+            initializer.getBlock().addStmt(initStmt);
+        }
+    }
+}

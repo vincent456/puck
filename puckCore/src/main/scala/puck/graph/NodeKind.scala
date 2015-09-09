@@ -104,6 +104,8 @@ trait NodeKindKnowledge {
 
   def intro : Intro
 
+  def typeConstructed(g: DependencyGraph, typeConstructor: NodeId) : NodeId
+
   def getConstructorOfType(g: DependencyGraph, tid : NodeId) : Option[NodeId]
 
   def structuredType(graph : DependencyGraph, id : NodeId, params : List[NodeId]) : Option[Type] = {

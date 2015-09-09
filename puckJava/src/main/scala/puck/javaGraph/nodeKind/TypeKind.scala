@@ -47,7 +47,6 @@ case object Class extends TypeKind {
       case Constructor
          | Field
          | Method
-         | ConstructorMethod
          | AbstractMethod=> true
       case _ => false
     }

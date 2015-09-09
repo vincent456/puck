@@ -7,6 +7,8 @@ import puck.util.PuckLogger
 
 object CreateEdge {
 
+
+
   def apply
   ( graph: DependencyGraph,
     reenactor : DependencyGraph,
@@ -35,12 +37,12 @@ object CreateEdge {
             (source.kind, target.kind) match {
               case (Class, Interface) =>
                 logger.writeln("do not create %s : assuming its an isa edge (TOCHECK)".format(e)) // class imple
-              case (ConstructorMethod, Constructor) =>
-                () //already generated when creating ConstructorMethod decl
               case (Definition, Constructor) =>
                 createUsesofConstructor(graph, reenactor, id2declMap, u)
 //              case (Definition, Field) => ()
 //                createUsesofField(graph, reenactor, id2declMap, u)
+              case (Definition, Method) if ensureIsInitalizerUseByCtor(graph, u)=>
+                createInitializerCall(reenactor, id2declMap, u)
 
               case _ => logger.writeln(" =========> need to create " + e)
             }
@@ -49,6 +51,22 @@ object CreateEdge {
 
         }
 
+  }
+
+  def ensureIsInitalizerUseByCtor(graph: DependencyGraph, u : Uses) : Boolean =
+    graph.kindType(graph.container_!(u.user)) == TypeConstructor &&
+      (graph.getRole(u.used) contains Initializer(graph.hostTypeDecl(u.user)))
+  def createInitializerCall
+    ( reenactor : DependencyGraph,
+      id2declMap : NodeId => ASTNodeLink,
+      e : Uses)
+    ( implicit program : AST.Program, logger : PuckLogger) : Unit = {
+    val sourceDecl = reenactor.container_!(e.user)
+    (id2declMap(sourceDecl), id2declMap(e.used)) match {
+      case (ConstructorDeclHolder(cdecl), MethodDeclHolder(mdecl)) =>
+        cdecl.addInitializerCall(mdecl)
+      case hs => error("createInitializerCall : expected constructor using method got " + hs)
+    }
   }
 
 
