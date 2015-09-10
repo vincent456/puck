@@ -15,28 +15,29 @@ object JavaIntro extends Intro {
     val (n, g) = super.apply(graph, localName, kind, mutable)
     kind match {
       case Class =>
-        val (ctor, g1) =
+        val (ctorDecl, _, g1) =
           intro.typedNodeWithDef(g,localName, Constructor, n.id)
 
-        (n, g1.addContains(n.id, ctor.id))
+        (n, g1.addContains(n.id, ctorDecl.id))
 
       case _ => (n, g)
     }
   }
 
-  def typedNodeWithDef
+  def nodeWithDef
   (graph: DependencyGraph,
    localName: String,
    kind: NodeKind,
-   typ: Type,
+   typ: Option[Type],
    mutable: Mutability
-    ): (ConcreteNode, DependencyGraph) = {
+    ): (ConcreteNode, ConcreteNode, DependencyGraph) = {
 
     val (cn, g) = this.apply(graph, localName, kind)
     val (defNode, g2) = g.addConcreteNode(DependencyGraph.anonymousName, Definition)
 
-    (cn, g2.setType(cn.id, Some(typ))
-      .addDef(cn.id, defNode.id))
+    (cn, defNode,
+      g2.setType(cn.id, typ)
+      .addEdge(ContainsDef(cn.id, defNode.id)))
   }
 
 }

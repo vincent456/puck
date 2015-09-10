@@ -51,42 +51,6 @@ case class EdgeMap
   declaration : Node2NodeMap*/,
   types : Map[NodeId, Type]){
 
-  override def toString : String = {
-    val builder = new StringBuilder(150)
-
-    builder.append("used -> user\n\t")
-    builder.append(userMap.toString)
-    builder.append("\nuser -> used\n\t")
-    builder.append(usedMap.toString)
-
-    builder.append("\npar used -> par user\n\t")
-    builder.append(parameterizedUsers.toString)
-    builder.append("\npar user -> par used\n\t")
-    builder.append(parameterizedUsed.toString)
-
-    builder.append("\ncontainer -> content\n\t")
-    builder.append(contents.toString)
-    builder.append("\ncontent -> container\n\t")
-    builder.append(containers.toString())
-
-    builder.append("\nsub -> super\n\t")
-    builder.append(superTypes.toString)
-    builder.append("\nsuper -> sub\n\t")
-    builder.append(subTypes.toString)
-
-
-    builder.append("\ntmUse -> tUse\n\t")
-    builder.append(typeMemberUses2typeUsesMap.toString)
-    builder.append("\ntUse -> tmUse\n\t")
-    builder.append(typeUses2typeMemberUsesMap.toString)
-
-
-    builder.toString()
-  }
-
-
-
-
   def add(edge : DGEdge) : EdgeMap =
     edge match {
       case Uses(user, used, accK) =>

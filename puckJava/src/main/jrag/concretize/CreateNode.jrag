@@ -1,7 +1,7 @@
 aspect CreateNode {
     public static ConstructorDecl ConstructorDecl.createConstructor(AST.Modifiers mods, String name){
         return new ConstructorDecl(mods, name,
-            new List<ParameterDeclaration>(), new List<Access>(), new Opt(), new Block());
+                new List<ParameterDeclaration>(), new List<Access>(), new Opt(), new Block());
     }
 
     //scala compiler does not like ASTNode type parameter bound
@@ -9,25 +9,15 @@ aspect CreateNode {
         return insertUnusedType(path, pkg, new List<ImportDecl>(), td);
     }
 
-//    public static MethodDecl MethodDecl.createAbstractMethod(Access returnType, String name, ParameterDeclaration[] params){
-//        List<ParameterDeclaration> paramList = new List<ParameterDeclaration>();
-//        for(ParameterDeclaration p : params){
-//            paramList.add(p);
-//        }
-//        return new MethodDecl(new Modifiers("public", "abstract"), returnType, name, paramList, new List<Access>(), new Opt());
-//    }
 
-    public MethodDecl ConstructorDecl.createConstructorMethod(String name){
-        List<ParameterDeclaration> params = this.getParameterList().copy();
+    public void MethodDecl.makeFactoryOf(ConstructorDecl cdecl){
+        List<ParameterDeclaration> params = cdecl.getParameterList().copy();
         List<Expr> args = new List<Expr>();
         for(int i =0; i< params.getNumChild(); i++)
             args.add(params.getChild(i).createLockedAccess());
 
-        return new MethodDecl(new Modifiers("public"),
-                this.hostType().createLockedAccess(),
-                name, params, new List<Access>(),
-                new Opt<Block>(new Block(new ReturnStmt( new ClassInstanceExpr(hostType().createLockedAccess(), args)))));
-
+        this.setParameterList(params);
+        this.setBlock(new Block(new ReturnStmt( new ClassInstanceExpr(cdecl.hostType().createLockedAccess(), args))));
     }
 
     class DummyConstructorCall extends Expr{
@@ -62,40 +52,10 @@ aspect CreateNode {
 
     public void MethodDecl.prependParameter(ParameterDeclaration pdecl) {
         getParameterList().insertChild(pdecl, 0);
-//        for(MethodAccess methodUse : uses())
-//            methodUse.prependArg(new DummyConstructorCall(pdecl.type()));
-
     }
     public void ConstructorDecl.prependParameter(ParameterDeclaration pdecl) {
         getParameterList().insertChild(pdecl, 0);
-//        for(Access ctorUse : uses())
-//            ((ConstructorAccess) ctorUse).
-//                prependArg(new DummyConstructorCall(pdecl.type()));
-
     }
 
-//    private int MethodDecl.uidSeed = 0;
-//    public ParameterDeclaration MethodDecl.introduceParameter(TypeDecl typeCreated, String suffix){
-//        //TODO make code ok for generic type !
-//        Collection<ConstructorDecl> ctors = typeCreated.constructors();
-//        ConstructorDecl noArgsCtor = null;
-//        for(ConstructorDecl ctor : ctors){
-//            if(ctor.getParameterList().getNumChild() == 0)
-//                noArgsCtor= ctor;
-//        }
-//        if(noArgsCtor == null)
-//            throw new Error("no parameterless constructor for class " + typeCreated.fullName());
-//
-//        ParameterDeclaration newParameter =
-//                new ParameterDeclaration(new Modifiers(),
-//                        typeCreated.createLockedAccess(),
-//                        typeCreated.name().toLowerCase() + suffix + uidSeed);
-//        uidSeed ++;
-//
-//        addParameter(newParameter);
-//
-//        for(MethodAccess methodUse : uses())
-//            methodUse.addArg(new ClassInstanceExpr(typeCreated.createLockedAccess(),  new List<Expr>()));
-//        return newParameter;
-//    }
+
 }

@@ -26,4 +26,8 @@ aspect Initializer {
             initializer.getBlock().addStmt(initStmt);
         }
     }
+
+    public void ConstructorDecl.unsetDefaultConstructor() {
+        isDefaultConstructor = false;
+    }
 }

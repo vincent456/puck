@@ -4,6 +4,7 @@ package rules
 
 import puck.PuckError
 import puck.graph.DependencyGraph.AbstractionMap
+import puck.graph.{TypeConstructor, StaticValueDecl}
 import puck.graph.constraints.NotAnAbstraction
 import puck.util.LoggedEither._
 import scalaz._, Scalaz._
@@ -26,7 +27,10 @@ trait MergingCandidatesFinder {
 
 class Merge
 ( mergingCandidatesFinder: MergingCandidatesFinder){
-  
+
+
+
+
   def mergeTypeUsesDependencies
   ( g0 : DependencyGraph,
     consumedId : NodeId,
@@ -34,7 +38,8 @@ class Merge
     ) : DependencyGraph = {
     val g = g0.comment(" Merge TypeUses Dependencies")
     val g1 = g.kindType(consumedId) match {
-      case InstanceValueDecl =>
+      case InstanceValueDecl
+         | StaticValueDecl =>
         g.typeMemberUses2typeUses.foldLeft(g) {
           case (g0, (tmUses, typeUses)) if tmUses.used == consumedId =>
             typeUses.foldLeft(g0) { case (g00, tUse) =>
@@ -51,9 +56,8 @@ class Merge
             }
           case (g0, _) => g0
         }
-      case NameSpace
-        | StaticValueDecl
-        | TypeConstructor => g // no type dependencies involved when merging namespaces
+      case NameSpace // no type dependencies involved when merging namespaces
+        | TypeConstructor => g
       case _ => ???
     }
 
@@ -74,7 +78,6 @@ class Merge
     }
 
   }
-
 
   def mergeChildrenOfTypeDecl
   ( g : DependencyGraph,
@@ -209,8 +212,53 @@ class Merge
         case Some(cid) => g7.removeContains(cid, consumedId)
         case None => g7
       }
-      (g8 removeNode consumedId)._2
+      (g8 removeNode consumedId)._2.setType(consumedId, None)
     }
+  }
+
+  def removeTypeDependenciesInvolving(g : DependencyGraph, n : ConcreteNode) : DependencyGraph = {
+//    println("removeTypeDependenciesInvolving " + n)
+//    println("typeUses2typeMemberUses " + g.typeUses2typeMemberUses)
+//    println("typeMemberUses2typeUses " + g.typeMemberUses2typeUses)
+    val g1 = n.kind.kindType match {
+      case TypeDecl
+        | InstanceTypeDecl =>
+        g.typeUses2typeMemberUses.foldLeft(g) {
+          case (g0, (tUses, typeMemberUses)) if tUses.used == n.id =>
+            typeMemberUses.foldLeft(g0) { _.removeUsesDependency(tUses, _)}
+          case (g0, _) => g0
+        }
+
+      case NameSpace  => g // no type dependencies involved when removing namespaces
+      case InstanceValueDecl
+           | StaticValueDecl
+           | TypeConstructor
+           | Parameter
+           | ValueDef =>
+        g.typeUses2typeMemberUses.foldLeft(g) {
+          case (g0, (tUses, typeMemberUses)) if tUses.user == n.id =>
+            typeMemberUses.foldLeft(g0) { _.removeUsesDependency(tUses, _)}
+          case (g0, _) => g0
+        }
+      case UnknownKindType => error("removeTypeDependenciesInvolving UnknownKindType")
+
+    }
+   /* val g2 =*/ n.kind.kindType match {
+      case ValueDef =>
+          g1.typeMemberUses2typeUses.foldLeft(g1) {
+            case (g0, (tmUses, typeUses)) if tmUses.user == n.id =>
+              typeUses.foldLeft(g0) {
+                _.removeUsesDependency(_, tmUses)
+              }
+            case (g0, _) => g0
+          }
+      case _ => g1
+    }
+//    println("typeUses2typeMemberUses " + g2.typeUses2typeMemberUses)
+//    println("typeMemberUses2typeUses " + g2.typeMemberUses2typeUses)
+//    g2
+
+
   }
 
   def removeConcreteNode
@@ -226,7 +274,15 @@ class Merge
       if (g1.usersOf(n.id).nonEmpty)
         LoggedError(new PuckError("Cannot remove a used node"))
       else {
-        val g00 = g1.removeContains(g1.container(n.id).get, n.id)
+        val g00 =
+          n.kind.kindType match {
+            case Parameter =>
+              g1.removeEdge(ContainsParam(g1.container(n.id).get, n.id))
+            case ValueDef =>
+              g1.removeEdge(ContainsDef(g1.container(n.id).get, n.id))
+            case _ => g1.removeEdge(Contains(g1.container(n.id).get, n.id))
+          }
+
         val g01 = graph.directSuperTypes(n.id).foldLeft(g00) {
           (g, supId) => g.removeIsa(n.id, supId)
         }
@@ -235,7 +291,8 @@ class Merge
             //getUsesEdge needed to recover accessKind
             g.removeEdge(g.getUsesEdge(n.id, usedId).get)
         }
-        LoggedSuccess(g02.removeConcreteNode(n))
+        val g03 = removeTypeDependenciesInvolving(g02.setType(n.id, None), n)
+        LoggedSuccess(g03.removeConcreteNode(n))
       }
 
     } yield g2

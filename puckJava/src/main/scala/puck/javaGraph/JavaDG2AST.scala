@@ -183,7 +183,7 @@ class JavaDG2AST
       else {
         val newMap = id2declMap get n.id match {
           case Some(_) => id2declMap
-          case None =>CreateNode(program, resultGraph, id2declMap, n)
+          case None => CreateNode(program, resultGraph, id2declMap, n)
         }
         newMap
       }

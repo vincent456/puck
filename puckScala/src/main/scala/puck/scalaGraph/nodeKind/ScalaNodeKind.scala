@@ -30,8 +30,6 @@ object ScalaNodeKind extends NodeKindKnowledge {
 
   override def intro: Intro = ???
 
-  def typeConstructed(g: DependencyGraph, typeConstructor: NodeId) : NodeId = ???
-
   override def getConstructorOfType(g: ResultT, tid: NodeId): Option[NodeId] = ???
 }
 

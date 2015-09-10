@@ -13,7 +13,8 @@ case object Interface extends TypeKind {
 
   def canContain(k : NodeKind) : Boolean = {
     k match {
-      case AbstractMethod => true
+      case AbstractMethod
+         | StaticMethod => true
       case _ => false
     }
   }
@@ -47,6 +48,7 @@ case object Class extends TypeKind {
       case Constructor
          | Field
          | Method
+         | StaticMethod
          | AbstractMethod=> true
       case _ => false
     }

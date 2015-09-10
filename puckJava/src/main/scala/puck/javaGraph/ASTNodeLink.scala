@@ -99,8 +99,8 @@ case class ConcreteMethodDeclHolder(decl : AST.MethodDecl) extends MethodDeclHol
 
 case class AbstractMethodDeclHolder(decl : AST.MethodDecl) extends MethodDeclHolder
 
-case class ConstructorMethodDeclHolder( decl : AST.MethodDecl,
-                                        ctorDecl : AST.ConstructorDecl) extends MethodDeclHolder
+//case class ConstructorMethodDeclHolder( decl : AST.MethodDecl,
+//                                        ctorDecl : AST.ConstructorDecl) extends MethodDeclHolder
 
 trait TypedKindDeclHolder extends HasNode {
   def decl : AST.TypeDecl

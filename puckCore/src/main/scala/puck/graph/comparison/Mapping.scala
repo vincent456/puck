@@ -2,6 +2,7 @@ package puck.graph.comparison
 
 import puck.graph._
 
+import scala.math.Ordering
 
 
 object Mapping {
@@ -13,7 +14,8 @@ object Mapping {
     create(nameIndex(g1), nameIndex(g2))
 
   def nameIndex(g : DependencyGraph) : Map[String, NodeId] =
-     g.nodesId.toList map { id => (g.fullName(id), id) } toMap
+   g.nodesId.toList map { id => (g.fullName(id), id) } toMap
+
 
 
  def create
@@ -45,7 +47,32 @@ object Mapping {
       nt.copy(input = mapType(mappin)(i), output = mapType(mappin)(o))
   }
 
-
+//  import puck.util.Debug.mkMapStringSortedByKey
+//
+//  def equalsCVM[C[_], V]
+//  ( mappin : V => V)
+//  ( cvm1 : CollectionValueMap[V, C, V],
+//    cvm2 : CollectionValueMap[V, C, V])
+//  (implicit ord: Ordering[V]): Boolean =
+//    if(cvm1.content.size != cvm2.content.size){
+//      val mappedCvm1 = cvm1.toList map {
+//        case (k, vs) => (mappin(k), cvm1.handler.map(vs, mappin))
+//      }
+//      val diff1 = mappedCvm1 diff cvm2.toList
+//      val diff2 = cvm2.toList diff mappedCvm1
+//      //error(mkMapStringSortedByKey(cvm1.content) + "<>" + mkMapStringSortedByKey(cvm2.content) +
+//      println("diff1 = " + diff1 + "diff2 = " + diff2)
+//      false
+//    }
+//    else
+//      cvm1.content.forall {
+//        case ((k1, vs1)) =>
+//          val vs2 = cvm2.content(mappin(k1))
+//          if(cvm1.handler.map(vs1, mappin) != vs2)
+//            error(s"($k1, $vs1) (${mappin(k1)}, $vs2))")
+//          true
+//
+//      }
 
   def equalsCVM[C[_], V]
   ( mappin : V => V)
@@ -55,10 +82,7 @@ object Mapping {
         cvm1.content.forall {
           case ((k1, vs1)) =>
             val vs2 = cvm2.content(mappin(k1))
-            if(cvm1.handler.map(vs1, mappin) != vs2)
-              error(s"($k1, $vs1) (${mappin(k1)}, $vs2))")
             cvm1.handler.map(vs1, mappin) == vs2
-
         }
 
     

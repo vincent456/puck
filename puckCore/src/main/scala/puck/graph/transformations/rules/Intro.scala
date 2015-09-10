@@ -20,8 +20,8 @@ abstract class Intro {
     import graph.nodeKindKnowledge.{writeType, initializerKind}
     val returnType = writeType(graph)
 
-    val (cn, g) = intro.typedNodeWithDef(graph, "init", initializerKind, returnType, isMutable)
-    val defNode = g definitionOf_! cn.id
+    val (cnDecl, defNode, g) =
+      intro.nodeWithDef(graph, "init", initializerKind, Some(returnType), isMutable)
 
     val g2 =
       if(initializedContent.nonEmpty &&
@@ -31,24 +31,24 @@ abstract class Intro {
 
     val ctors = graph content typeInitialized filter (graph.kindType(_) == TypeConstructor)
 
-    val g3 = ctors.foldLeft(g2.setRole(cn.id, Some(Initializer(typeInitialized)))){
+    val g3 = ctors.foldLeft(g2.setRole(cnDecl.id, Some(Initializer(typeInitialized)))){
       case (g0, ctor) =>
         val ctorDef = g definitionOf_! ctor
-        g0.addUses(ctorDef, cn.id)
-          .addUsesDependency((typeInitialized,typeInitialized), (ctorDef, cn.id))
+        g0.addUses(ctorDef, cnDecl.id)
+          .addUsesDependency((typeInitialized,typeInitialized), (ctorDef, cnDecl.id))
 
     }
-    (cn.id,
-      initializedContent.foldLeft(g3.addContains(typeInitialized, cn.id)){
+    (cnDecl.id,
+      initializedContent.foldLeft(g3.addContains(typeInitialized, cnDecl.id)){
         (g, ic) =>
-          val g1 = g.addUses(defNode, ic, Some(Write))
-                    .addUsesDependency((typeInitialized,typeInitialized), (defNode, ic))
+          val g1 = g.addUses(defNode.id, ic, Some(Write))
+                    .addUsesDependency((typeInitialized,typeInitialized), (defNode.id, ic))
 
           val icDef = g definitionOf_! ic
 
           val g2 = g.usedBy(icDef).foldLeft(g1){
             (g0, usedByIcDef) =>
-              g0.getUsesEdge_!(icDef, usedByIcDef).changeSource(g0, defNode)
+              g0.getUsesEdge_!(icDef, usedByIcDef).changeSource(g0, defNode.id)
           }
           val (_, g3) = g2.removeEdge(ContainsDef(ic, icDef)).removeNode(icDef)
 
@@ -73,16 +73,16 @@ abstract class Intro {
    kind : NodeKind,
    typeNode : NodeId,
    mutable : Mutability = true
-    )  : (ConcreteNode, DependencyGraph) =
-    typedNodeWithDef(graph, localName, kind, NamedType(typeNode), mutable)
+    )  : (ConcreteNode, ConcreteNode, DependencyGraph) =
+    nodeWithDef(graph, localName, kind, Some(NamedType(typeNode)), mutable)
 
-  def typedNodeWithDef
+  def nodeWithDef
   (graph : DependencyGraph,
    localName: String,
    kind : NodeKind,
-   typ : Type,
+   typ : Option[Type],
    mutable : Mutability
-    )  : (ConcreteNode, DependencyGraph)
+    )  : (ConcreteNode, ConcreteNode, DependencyGraph)
 
   def parameter
   ( g : DependencyGraph,
@@ -125,18 +125,19 @@ abstract class Intro {
 
         val delegateName = s"${g.getConcreteNode(typeNode).name.toLowerCase}_delegate"
 
-        val (delegate, g1) = typedNodeWithDef(g, delegateName, kind, typeNode)
+        val (delegateDecl, delegateDef, g1) =
+          typedNodeWithDef(g, delegateName, kind, typeNode)
 
-        val newTypeUse = Uses(delegate.id, typeNode)
+        val newTypeUse = Uses(delegateDecl.id, typeNode)
 
         val tmContainerKind = g.getConcreteNode(tmContainer).kind
         if(tmContainerKind canContain kind)
           LoggedSuccess(
             (newTypeUse,
-              g1.addContains(tmContainer, delegate.id)
+              g1.addContains(tmContainer, delegateDecl.id)
                 .addEdge(newTypeUse) //type field
-                .addEdge(Uses(g1 definitionOf_! delegate.id, constructorId))))
-        //.addEdge(Uses(tmContainer, delegate.id, Some(Write)))
+                .addEdge(Uses(delegateDef.id, constructorId))))
+        //.addEdge(Uses(tmContainer, delegateDecl.id, Some(Write)))
         else {
           val msg =s"$tmContainerKind cannot contain $kind"
           LoggedError(new PuckError(msg), msg)

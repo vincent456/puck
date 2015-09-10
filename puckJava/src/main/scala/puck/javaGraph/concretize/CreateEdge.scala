@@ -38,7 +38,7 @@ object CreateEdge {
               case (Class, Interface) =>
                 logger.writeln("do not create %s : assuming its an isa edge (TOCHECK)".format(e)) // class imple
               case (Definition, Constructor) =>
-                createUsesofConstructor(graph, reenactor, id2declMap, u)
+                createUsesOfConstructor(graph, reenactor, id2declMap, u)
 //              case (Definition, Field) => ()
 //                createUsesofField(graph, reenactor, id2declMap, u)
               case (Definition, Method) if ensureIsInitalizerUseByCtor(graph, u)=>
@@ -56,6 +56,7 @@ object CreateEdge {
   def ensureIsInitalizerUseByCtor(graph: DependencyGraph, u : Uses) : Boolean =
     graph.kindType(graph.container_!(u.user)) == TypeConstructor &&
       (graph.getRole(u.used) contains Initializer(graph.hostTypeDecl(u.user)))
+
   def createInitializerCall
     ( reenactor : DependencyGraph,
       id2declMap : NodeId => ASTNodeLink,
@@ -64,6 +65,7 @@ object CreateEdge {
     val sourceDecl = reenactor.container_!(e.user)
     (id2declMap(sourceDecl), id2declMap(e.used)) match {
       case (ConstructorDeclHolder(cdecl), MethodDeclHolder(mdecl)) =>
+        cdecl.unsetDefaultConstructor()
         cdecl.addInitializerCall(mdecl)
       case hs => error("createInitializerCall : expected constructor using method got " + hs)
     }
@@ -103,19 +105,23 @@ object CreateEdge {
     case e => logger.writeln(s"isa($e) not created")
   }
 
-  def createUsesofConstructor
+  def createUsesOfConstructor
   ( graph: DependencyGraph,
     reenactor : DependencyGraph,
     id2declMap : NodeId => ASTNodeLink,
     e : Uses)
   ( implicit logger : PuckLogger) : Unit = {
-    val sourceDecl = reenactor.container_!(e.user)
-    (id2declMap(sourceDecl), id2declMap(e.used)) match {
-      case (FieldDeclHolder(fdecl), ConstructorDeclHolder(cdecl))
+    val sourceDecl = reenactor declarationOf e.user
+    val ConstructorDeclHolder(cdecl) = id2declMap(e.used)
+    id2declMap(sourceDecl) match {
+      case FieldDeclHolder(fdecl)
         if fdecl.getInitOpt.isEmpty =>
         CreateNode.createNewInstanceExpr(fdecl, cdecl)
-      case (_: HasBodyDecl, ConstructorDeclHolder(cdecl)) => ???
-      case _ => ???
+      case MethodDeclHolder(mdecl)
+        if reenactor getRole sourceDecl contains Factory(e.used) =>
+        mdecl.makeFactoryOf(cdecl)
+      case dh => error(s"createUsesOfConstructor ${dh.getClass} " +
+        s"with role ${reenactor getRole sourceDecl} as user unhandled")
 
     }
   }

@@ -112,6 +112,7 @@ class DependencyGraph
   def virtualNodes : Iterable[VirtualNode] = nodesIndex.virtualNodes
 
   def nodesId : Iterable[NodeId] = nodesIndex.nodesId
+  //def removedNodesId : Iterable[NodeId] = nodesIndex.removedNodesId
   def concreteNodesId : Iterable[NodeId] = nodesIndex.concreteNodesId
 
   def numNodes : Int = nodesIndex.numNodes
@@ -227,9 +228,6 @@ class DependencyGraph
 
  def removeIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : DependencyGraph=
     removeEdge(Isa(subTypeId, superTypeId))
-
- def addDef(decl : NodeId, _def : NodeId) : DependencyGraph =
-    addEdge(ContainsDef(decl, _def))
 
  def addParam(decl : NodeId, param : NodeId) : DependencyGraph =
     addEdge(ContainsParam(decl, param))

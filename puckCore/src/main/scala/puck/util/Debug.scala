@@ -85,10 +85,48 @@ object Debug {
         mkMapStringSortedByKey(removedVnodes) +
       "CN -> VN : " +
         cNodes2vNodes.mkString("\t[",",\n\t ","]\n") +
-      "Roles : "
+      "Roles : " +
         roles.mkString("\t[",",\n\t ","]\n")
 
+  }
 
+  implicit val showEdgesMap : scalaz.Show[EdgeMap] = scalaz.Show.shows[EdgeMap] {
+    case EdgeMap ( userMap, usedMap, accessKindMap,
+    parameterizedUsers, parameterizedUsed,
+      contents, containers, superTypes, subTypes,
+      typeMemberUses2typeUsesMap,
+      typeUses2typeMemberUsesMap,
+      parameters, definition, types) =>
+    val builder = new StringBuilder(150)
+
+    builder.append("used -> user\n\t")
+    builder.append(userMap.toString)
+    builder.append("\nuser -> used\n\t")
+    builder.append(usedMap.toString)
+
+    builder.append("\npar used -> par user\n\t")
+    builder.append(parameterizedUsers.toString)
+    builder.append("\npar user -> par used\n\t")
+    builder.append(parameterizedUsed.toString)
+
+    builder.append("\ncontainer -> content\n\t")
+    builder.append(contents.toString)
+    builder.append("\ncontent -> container\n\t")
+    builder.append(containers.toString())
+
+    builder.append("\nsub -> super\n\t")
+    builder.append(superTypes.toString)
+    builder.append("\nsuper -> sub\n\t")
+    builder.append(subTypes.toString)
+
+    builder.append("\ntmUse -> tUse\n\t")
+    builder.append(typeMemberUses2typeUsesMap.toString)
+    builder.append("\ntUse -> tmUse\n\t")
+    builder.append(typeUses2typeMemberUsesMap.toString)
+    builder.append("\ntypes\n\t")
+    builder.append( mkMapStringSortedByKey(types))
+
+    builder.toString()
   }
 
 }

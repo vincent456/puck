@@ -15,39 +15,18 @@ object CreateNode {
     id2decl : Map[NodeId, ASTNodeLink],
     node : ConcreteNode
     ) : Map[NodeId, ASTNodeLink] = {
-
-    if(node.kind == Method){
-      graph.getRole(node.id) match {
-        case Some(Initializer(_)) =>
-          val decl = createMethod(prog, graph, id2decl, node)
-          decl.setModifiers(new AST.Modifiers("public"))
-
-          val block = new AST.Block()
-          decl.setBlock(block)
-          val defId = graph definitionOf_! node.id
-
-          id2decl +
-            (node.id -> ConcreteMethodDeclHolder(decl)) +
-            (defId -> BlockHolder(block))
-        case Some(Factory(_)) =>
-          id2decl +
-            (node.id ->
-            createConstructorMethod(prog, graph, id2decl, node))
-        case None =>
-          throw new DeclarationCreationError("cannot create method with no role")
-      }
-
-    }
-    else {
-      val dh =
-        node.kind match {
+    val dh : ASTNodeLink =
+      node.kind match {
         case Package => PackageDeclHolder
         case Interface => createInterface(prog, graph, node)
         case Class => createClass(prog, graph, node)
         case AbstractMethod =>
-          val decl = createMethod(prog, graph, id2decl, node)
-          decl.setModifiers(new AST.Modifiers("public", "abstract"))
+          val decl = createMethod(prog, graph, id2decl, node, isAbstract = true)
           AbstractMethodDeclHolder(decl)
+        case StaticMethod =>
+          ConcreteMethodDeclHolder(createMethod(prog, graph, id2decl, node, isStatic = true))
+        case Method =>
+          ConcreteMethodDeclHolder(createMethod(prog, graph, id2decl, node))
         case Constructor =>
           createConstructor(prog, graph, id2decl, node)
         case Field => createField(prog, graph, id2decl, node)
@@ -56,9 +35,28 @@ object CreateNode {
         case _ => throw new DeclarationCreationError(s"cannot create decl for kind ${node.kind}")
 
       }
-      id2decl + (node.id -> dh)
+    dh match {
+      case MethodDeclHolder(mdecl) =>
+        graph.getRole(node.id) match {
+          case Some(Initializer(_)) =>
+            val decl = createMethod(prog, graph, id2decl, node)
+
+            val block = new AST.Block()
+            decl.setBlock(block)
+            val defId = graph definitionOf_! node.id
+
+            id2decl +
+              (node.id -> ConcreteMethodDeclHolder(decl)) +
+              (defId -> BlockHolder(block))
+
+          case _ =>
+            id2decl + (node.id -> dh)
+        }
+      case _ =>
+        id2decl + (node.id -> dh)
     }
   }
+
 
   def createNewInstanceExpr
   ( field : AST.FieldDeclaration,
@@ -106,13 +104,23 @@ object CreateNode {
   ( prog : AST.Program,
     graph : DependencyGraph,
     id2Decl : Map[NodeId, ASTNodeLink],
-    node : ConcreteNode
+    node : ConcreteNode,
+    isAbstract : Boolean = false,
+    isStatic : Boolean = false
     ) : AST.MethodDecl = {
-      val decl = new AST.MethodDecl()
-      decl.setID(node.name)
-      decl.setTypeAccess(createTypeAccess(node.id, graph, id2Decl))
-      decl
-    }
+    val decl = new AST.MethodDecl()
+    decl.setID(node.name)
+    decl.setTypeAccess(createTypeAccess(node.id, graph, id2Decl))
+    val mods = new AST.Modifiers("public")
+    if(isAbstract)
+      mods.addModifier("abstract")
+    if(isStatic)
+      mods.addModifier("static")
+    decl.setModifiers(mods)
+    decl
+  }
+
+
 
   def createTypeAccess
   ( typedNode : NodeId,
@@ -131,41 +139,15 @@ object CreateNode {
   }
 
 
-  def createConstructorMethod
-  ( prog : AST.Program,
-    graph : DependencyGraph,
-    id2Decl : Map[NodeId, ASTNodeLink],
-    node : ConcreteNode
-    ) : ConstructorMethodDeclHolder = {
-    val someKtor = graph.container(node.id).flatMap( graph.content(_).find{ n0 =>
-      val n1 = graph.getConcreteNode(n0)
-      n1.kind == Constructor &&
-        graph.abstractions(n0).exists {
-          case AccessAbstraction(n2 , DelegationAbstraction) => n2 == node.id
-          case _ => false
-        }
-    })
-
-    someKtor match {
-      case None => throw new DeclarationCreationError("no constructor found")
-      case Some(c) =>
-        val ktor = id2Decl(c).asInstanceOf[ConstructorDeclHolder]
-        val decl = ktor.decl.createConstructorMethod(node.name)
-        ConstructorMethodDeclHolder(decl, ktor.decl)
-
-    }
-
-  }
-
   def createConstructor
   ( prog : AST.Program,
     graph : DependencyGraph,
     id2Decl : Map[NodeId, ASTNodeLink],
     node : ConcreteNode
     ) : ConstructorDeclHolder = ConstructorDeclHolder {
-      AST.ConstructorDecl.createConstructor(
-        new AST.Modifiers("public"), node.name)
-    }
+    AST.ConstructorDecl.createConstructor(
+      new AST.Modifiers("public"), node.name)
+  }
 
   def createField
   ( prog : AST.Program,

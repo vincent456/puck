@@ -58,7 +58,7 @@ trait GraphBuilder {
   }
 
   def addDef(decl : NodeId, _def : NodeId) : Unit = {
-    g = g.addDef(decl, _def)
+    g = g.addEdge(ContainsDef(decl, _def))
   }
   def addParams(decl : NodeId, params : List[Int]) : Unit = {
     params.reverseIterator.foreach{

@@ -99,6 +99,7 @@ case class NodeIndex
   def virtualNodes : Iterable[VirtualNode] = vNodes.values
 
   def nodesId : Iterable[NodeId] = vNodes.keys ++ cNodes.keys
+  //def removedNodesId : Iterable[NodeId] = removedCnodes.keys ++ removedVnodes.keys
   def concreteNodesId : Iterable[NodeId] = cNodes.keys
 
   def highestId : Int =

@@ -21,12 +21,24 @@ class BridgeManualRefactoringSpec extends AcceptanceSpec {
 
 //      val ns1 = bs.gFinal.nodesId.map(bs.gFinal.fullName).toSet
 //      val ns2 = recompiledEx.graph.nodesId.map(recompiledEx.graph.fullName).toSet
-//      println(ns1 -- ns2)
+//      println("ns1 -- ns2" + (ns1 -- ns2))
+//      println("ns2 -- ns1" + (ns2 -- ns1))
+//
+//    import scalaz.syntax.show._
+//    import puck.util.Debug.{showNodeIndex, showEdgesMap}
+//
+//    bs.gFinal.nodesIndex.println
+//    recompiledEx.graph.nodesIndex.println
+//    bs.gFinal.edges.println
+//    recompiledEx.graph.edges.println
+
+
 
 //        println(bs.gFinal.recording.mkString("\n"))
 //        QuickFrame(bs.graph)
-//        QuickFrame(bs.gFinal)
+//        QuickFrame(bs.gFinal, "g final")
 //        QuickFrame(recompiledEx.graph, "recompiled")
+
 
         assert( Mapping.equals(bs.gFinal, recompiledEx.graph) )
 

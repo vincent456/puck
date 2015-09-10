@@ -51,7 +51,8 @@ class AbstractionAction(
          case None =>
            graph.nodes.find(_.kind.canContain(absKind)) match {
              case Some(n) => n.id
-             case None => throw new PuckError(s"no available container for $node")
+             case None =>
+               error(s"no available container for an abstraction of kind $absKind")
            }
        }
      }

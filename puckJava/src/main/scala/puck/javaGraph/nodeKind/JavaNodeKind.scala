@@ -149,9 +149,6 @@ object JavaNodeKind extends NodeKindKnowledge {
 
   val intro : Intro = JavaIntro
 
-  def typeConstructed(g: DependencyGraph, typeConstructor: NodeId) : NodeId =
-    g container_! typeConstructor
-
   def getConstructorOfType(g: DependencyGraph, tid : NodeId) : Option[NodeId] = {
     g.content(tid).find {
       cid =>

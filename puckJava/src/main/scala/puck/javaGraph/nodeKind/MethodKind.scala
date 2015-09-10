@@ -4,7 +4,13 @@ import puck.graph._
 import puck.graph.constraints.{AbstractionPolicy, DelegationAbstraction, SupertypeAbstraction}
 
 
-case object StaticMethod extends JavaNodeKind {
+
+
+trait MethodKind extends JavaNodeKind {
+  def kindType : KindType = InstanceValueDecl
+}
+
+case object StaticMethod extends MethodKind {
   def canContain(k : NodeKind) = k == Definition
   override def kindType : KindType = StaticValueDecl
   def abstractionNodeKinds(p : AbstractionPolicy) = p match {
@@ -12,11 +18,6 @@ case object StaticMethod extends JavaNodeKind {
     case DelegationAbstraction => Seq(StaticMethod)
   }
 }
-
-trait MethodKind extends JavaNodeKind {
-  def kindType : KindType = InstanceValueDecl
-}
-
 case object Method extends MethodKind {
 
   def canContain(k : NodeKind) = k == Definition

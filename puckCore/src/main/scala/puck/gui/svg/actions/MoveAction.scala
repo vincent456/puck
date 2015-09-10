@@ -56,9 +56,10 @@ extends AbstractAction(MoveAction.label(controller.graph, moved, newHost)){
           controller.console.
             appendText("/!\\/!\\ Method overriding unchecked (TODO !!!) /!\\/!\\")
 
-          val needNewReceiver = moved.exists {
+          val needNewReceiver =
+            /*!g.isa_*(g.hostTypeDecl(moved.head), newHost.id) ||*/ moved.exists {
             nid =>
-              g.styp(nid) match{
+              g.structuredType(nid) match{
                 case Some(typ) => !(typ uses newHost.id)
                 case None => sys.error("should have some type")
               }

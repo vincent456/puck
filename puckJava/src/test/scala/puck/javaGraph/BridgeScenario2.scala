@@ -12,23 +12,18 @@ import puck.graph.AccessAbstraction
 import puck.graph.DependencyGraph
 import puck.graph.Uses
 import puck.graph._
-import puck.graph.constraints.ConstraintsParser
-import puck.graph.constraints.SupertypeAbstraction
-import puck.graph.constraints.{ConstraintsParser, SupertypeAbstraction}
+import puck.graph.constraints._
 import puck.graph.transformations.rules.CreateParameter
 import puck.graph.transformations.rules.CreateTypeMember
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember}
 import puck.graph._
 import puck.javaGraph.JGraphUtils._
-import puck.javaGraph.nodeKind.Class
-import puck.javaGraph.nodeKind.Field
-import puck.javaGraph.nodeKind.Interface
+import puck.javaGraph.nodeKind._
 import puck.util.LoggedEither
 import puck.util.PuckFileLogger
 import puck.util.PuckNoopLogger
 import puck.util.{LoggedEither, PuckNoopLogger, PuckFileLogger}
 import puck.{QuickFrame, Java2dot, PuckError, Settings}
-import puck.javaGraph.nodeKind.{Interface, Field, Class}
 import puck.javaGraph.JGraphUtils.{transformationRules => TR}
 
 import scalaz.{-\/, \/-}
@@ -56,6 +51,8 @@ class BridgeScenario2 private()
   val screenClass = fullName2id(s"$p.Screen")
 
   val welcomeStar = fullName2id(s"$p.WelcomeStar")
+  val welcomeStarCtor = fullName2id(s"$p.WelcomeStar.WelcomeStar#_void")
+
   val infoStar = fullName2id(s"$p.InfoStar")
   val welcomeStarMeth = fullName2id(s"$p.WelcomeStar.draw__void")
   val infoStarMeth = fullName2id(s"$p.InfoStar.draw__void")
@@ -105,7 +102,14 @@ class BridgeScenario2 private()
     val (_, g1) = introClassMoveBothMethodAndMerge(g0, "StarPrinter", printStar1, printStar2)
 
 
-    def gFinal = g1
+    val (_, g2) = TR.intro.initializer(g1,welcomeStar)
+    val (AccessAbstraction(welcomeStarFactory, _), g3) =
+      TR.abstracter.createAbstraction(g2, g2.getConcreteNode(welcomeStarCtor),
+        StaticMethod, DelegationAbstraction).value.right.value
+
+    val g4 = g3.addContains(welcomeStar, welcomeStarFactory)
+
+    def gFinal = g4
 
   //  def intro2classMerge
 //  ( g : DependencyGraph, className : String,
