@@ -130,6 +130,10 @@ aspect DependencyGraphFactory {
 		}
 	}
 
+	int TypeVariable.buildDG_TypeDecl(JavaGraphBuilder builder){
+		return buildDGNode(builder);
+	}
+
 	int ClassDecl.buildDG_TypeDecl(JavaGraphBuilder builder){
 		int nodeId = buildDGNode(builder);
 
@@ -335,7 +339,16 @@ aspect DependencyGraphFactory {
 	}
 
 	void Access.addImplementsEdges(JavaGraphBuilder builder, int sub){
-		throw new DGBuildingError(this.getClass() + " : expected TypeAccess or ParTypeAccess");
+		throw new DGBuildingError(
+		this.compilationUnit().pathName() + " line " + this.getLocation() +
+		this.getClass() + " : expected TypeAccess or ParTypeAccess");
+	}
+
+	void Dot.addImplementsEdges(JavaGraphBuilder builder, int sub){
+		if(!isRightRotated())
+			rotateRight();
+
+		getRight().addImplementsEdges(builder, sub);
 	}
 
 	void TypeAccess.addImplementsEdges(JavaGraphBuilder builder, int sub) {

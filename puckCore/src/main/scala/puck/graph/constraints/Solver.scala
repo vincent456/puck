@@ -199,7 +199,7 @@ class Solver
             val graph4 = abs.nodes.foldLeft(graph3){_.addContains(h, _)}
 
             (graph4.container(currentImplId), graph4.kindType(h)) match {
-              case (None, _) => k(LoggedError(new Error("current impl has no container")))
+              case (None, _) => k(LoggedError("current impl has no container"))
               case (Some(c), TypeDecl) =>
                  val graph5 = graph4.addAbstraction(c, AccessAbstraction(h, abs.policy))
                  val graph6 =
@@ -352,7 +352,7 @@ class Solver
                 (g.isWronglyContained(wronglyContained.id), automaticConstraintLoosening) match {
                   case (false, _) => LoggedSuccess(g)
                   case (true, true) => LoggedSuccess(rules.addHideFromRootException (g, wronglyContained.id, newCter))
-                  case (true, false) => LoggedError(new PuckError("constraint unsolvable"))
+                  case (true, false) => LoggedError("constraint unsolvable")
                 })
 
             def k : (String, LoggedTG) => Unit = {

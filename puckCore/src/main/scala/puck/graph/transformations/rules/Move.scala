@@ -113,6 +113,49 @@ object Move {
     g.typeUsesOf(tmu).exists(tu => tu.source != tu.target)
 
 
+  def typeMemberInTypeHierarchy
+  ( g : DependencyGraph,
+    typeMembersMovedId : List[NodeId],
+    newContainer : NodeId) : LoggedTG = {
+    /** PRECONDITION
+      * - all typeMembersMoved have same host
+      * - oldContainer isa* newContainer || newContainer isa* oldContainer
+      * */
+    val oldContainer = g.container(typeMembersMovedId.head).get
+
+    if(g.isa_*(oldContainer, newContainer))
+      pullUp(g, typeMembersMovedId, oldContainer, newContainer)
+    else
+      pushDown(g, typeMembersMovedId, oldContainer, newContainer)
+
+  }
+
+  def pullUp
+  ( g : DependencyGraph,
+    typeMembersMovedId : List[NodeId],
+    oldContainer : NodeId,
+    newContainer : NodeId) : LoggedTG = {
+    ???
+
+//    val movedDecl = typeMembersMovedId.toSet
+//    val movedDef : Set[NodeId] =
+//      movedDecl map g.definitionOf flatten
+//
+//    val siblings = g.content(oldContainer) -- movedDecl
+//
+//    val usesOfSiblingViaThis : Set[DGUses] =
+//      usesBetween(g, movedDef, siblings).filter(usesViaThis(g))
+//
+//    if(usesOfSiblingViaThis.nonEmpty)
+//
+
+  }
+
+  def pushDown
+  ( g : DependencyGraph,
+    typeMembersMovedId : List[NodeId],
+    oldContainer : NodeId,
+    newContainer : NodeId) : LoggedTG = ???
 
   def typeMember
   ( g0 : DependencyGraph,
@@ -126,7 +169,7 @@ object Move {
     val siblings = g0.content(oldContainer) -- movedDecl
 
     val movedDef : Set[NodeId] =
-      movedDecl map g0.definitionOf filter (_.nonEmpty) map (_.get)
+      movedDecl map g0.definitionOf flatten
 
     val movedDefUsingSiblingViaThis : Set[NodeId] =
       usesBetween(g0, movedDef, siblings).filter(usesViaThis(g0)).map(_.user)

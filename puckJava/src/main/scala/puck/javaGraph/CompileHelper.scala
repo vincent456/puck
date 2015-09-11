@@ -1,6 +1,7 @@
 package puck.javaGraph
 
 import java.io.{File, InputStream}
+import java.util.Iterator
 
 import puck.graph.{DGBuildingError, NodeId, DependencyGraph}
 import puck.graph.transformations.{Recording, NodeMappingInitialState, Transformation}
@@ -12,6 +13,17 @@ object CompileHelper {
       val arglist = createArglist(sources, jars, List())
 
       val f = new AST.Frontend {
+        protected override def processErrors(errors: java.util.Collection[_], unit: AST.CompilationUnit): Unit =  {
+          System.err.println("Errors:")
+
+            val it: Iterator[_] = errors.iterator
+            while (it.hasNext) {
+              val i = it.next()
+              System.err.println(i.getClass)
+              System.err.println(i)
+            }
+
+        }
         protected override def processWarnings(errors: java.util.Collection[_], unit: AST.CompilationUnit): Unit = {
         }
       }

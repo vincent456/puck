@@ -44,13 +44,18 @@ aspect TypeUser {
         return Access.buildTypeUserDGNode(this, builder, typeMemberUse);
     }
   	
-  	class NoTypeUser extends Error {}
+  	class NoTypeUser extends Error {
+        public NoTypeUser(){}
+        public NoTypeUser(String msg){
+            super(msg);
+        }
+    }
 	
   public int Access.buildTypeUserDGNodeFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse){
   	Expr lexpr = getLeftExpr();
         
       if(lexpr == null)
-        throw new NoTypeUser();
+        throw new NoTypeUser(this+"("+this.getClass()+") in "+this.compilationUnit().pathName()+" "+this.location());
       else
           return lexpr.typeUserFromLeftExpr(builder, typeMemberUse);
   }
@@ -59,6 +64,10 @@ aspect TypeUser {
         throw new DGBuildingError(this + "(" +this.getClass() + ") in " +
         this.compilationUnit().pathName() +" line " +
         this.location() + " typeUser not found");
+  }
+
+  int AssignExpr.typeUserFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse){
+        return getDest().typeUserFromLeftExpr(builder, typeMemberUse);
   }
 
   int AddExpr.typeUserFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse){
@@ -87,7 +96,8 @@ aspect TypeUser {
         builder.addEdge(typeUse);
         builder.addTypeRelationship(typeUse, typeMemberUse);
 
-        int typeUser = buildTypeUserDGNodeFromLeftExpr(builder, typeMemberUse);
+        int typeUser = buildTypeUserDGNode(builder, typeMemberUse);
+        //int typeUser = buildTypeUserDGNodeFromLeftExpr(builder, typeMemberUse);
 
         return typeUser;
      }

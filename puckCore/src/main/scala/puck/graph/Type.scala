@@ -46,9 +46,11 @@ object Type {
               case None => onImplemNotFound(g0, supMeth, candidates)
             }
           case TypeConstructor | StaticValueDecl => LoggedSuccess((g0,cs))
-          case skt => LoggedError(new PuckError(s"findAndRegisterOverridedInList : ${(g, supMeth).shows} has an unexpected type kind ($skt)"))
+          case skt => LoggedError(s"findAndRegisterOverridedInList : ${(g, supMeth).shows} has an unexpected type kind ($skt)")
         }
     } map(_._1)
+
+
 }
 
 sealed abstract class Type {

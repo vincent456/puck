@@ -270,7 +270,9 @@ aspect DA {
         if(b instanceof FieldDeclaration) {
           FieldDeclaration f = (FieldDeclaration)b;
           if((v.isClassVariable() && f.isStatic()) || (v.isInstanceVariable() && !f.isStatic())) {
-            boolean c = f.isDAafter(v);
+
+            //boolean c = f.isDAafter(v);
+            boolean c = f.isDAbefore(v);
             //System.err.println("DefiniteAssignment: is " + v.name() + " DA after index " + i + ", " + f + ": " + c);
             return c;
             //return f.isDAafter(v);

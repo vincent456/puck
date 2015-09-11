@@ -38,6 +38,9 @@ package object graph {
   }
 
 
+  def LoggedError[A]( e: String): LoggedTry[A] =
+    LoggedError(new PuckError(e), e)
+
   def LoggedError[A]( e: Error): LoggedTry[A] =
     LoggedError(e, "")
 
