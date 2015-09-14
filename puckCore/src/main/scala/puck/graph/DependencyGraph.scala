@@ -501,6 +501,16 @@ class DependencyGraph
       else wu
     }.toSeq
 
+
+
+  def isViolation(e : NodeIdP) : Boolean = {
+    val (source, target) = e
+
+    constraints.isWronglyContained(this, target) ||
+      constraints.isViolation(this, source, target)
+
+  }
+
   def isViolation(e : DGEdge) : Boolean = {
     e.kind match {
       case Contains | ContainsDef | ContainsParam =>

@@ -2,27 +2,34 @@ package puck.gui.svg
 
 import javax.swing.JPopupMenu
 
-import puck.graph.{Isa, Uses, DGEdge}
+import puck.graph.{Isa, Uses, NodeIdP}
 import puck.gui.svg.actions.{ShowTypeRelationshipAction, RemoveEdgeAction, ManualSolveAction}
 
 import NodeRightClickMenu.JPopupSyntax
 class EdgeRightClickMenu
 ( private val controller : SVGController,
-  edge : DGEdge)
+  edge : NodeIdP)
   extends JPopupMenu {
 
+  val (source, target) = edge
   import controller.graph
 
   if(graph.isViolation(edge)){
-    val target = graph.getConcreteNode(edge.target)
-    add(new ManualSolveAction(target, controller))
+    val targetNode = graph.getConcreteNode(target)
+    add(new ManualSolveAction(targetNode, controller))
   }
 
-  if(edge.kind == Isa)
-    add(new RemoveEdgeAction(edge, controller))
+  var isIsaEdge = false
+  var isUseEdge = false
 
-  edge match {
-    case uses : Uses =>
+  if(graph.isa(source, target)) {
+    isIsaEdge = true
+    add(new RemoveEdgeAction(Isa(source, target), controller))
+  }
+
+  graph.getUsesEdge(source, target) match {
+    case Some(uses)=>
+      isUseEdge = true
       add(new ShowTypeRelationshipAction(Some(uses), controller))
       this.addMenuItem("Show type bindings (console)"){
         _ =>
@@ -32,7 +39,15 @@ class EdgeRightClickMenu
               controller.printUseBindings(graph.getUsesEdge(userDef, uses.used).get)
           }
       }
-    case _ => ()
+    case None => ()
   }
+
+  val isConcreteEdge = isIsaEdge || isUseEdge
+
+  if(!isConcreteEdge)
+      this.addMenuItem("Focus"){
+        _ =>
+        controller.focus(edge)
+      }
 
 }

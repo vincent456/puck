@@ -129,16 +129,17 @@ class ConcreteNodeRightClickMenu
     }
   }
 
-  private def addEdgeSelectedOption(edge : DGEdge) : Unit = {
+  private def addEdgeSelectedOption(edge : NodeIdP) : Unit = {
+    val (source, target) = edge
     def addRedirectAction(uses : DGUses) =
-      graph.abstractions(edge.target).foreach {
+      graph.abstractions(target).foreach {
         abs =>
           if (abs.nodes.contains(node.id))
             this.add(new RedirectAction(node, uses, abs, controller))
 
       }
-    edge match {
-      case uses: Uses =>
+    graph.getUsesEdge(source, target) match {
+      case Some(uses) =>
         if(uses.existsIn(graph))
           addRedirectAction(uses)
         graph.definitionOf(uses.user).foreach{
@@ -149,7 +150,7 @@ class ConcreteNodeRightClickMenu
             }
         }
 
-      case _ => ()
+      case None => ()
     }
   }
 
@@ -158,7 +159,9 @@ class ConcreteNodeRightClickMenu
     this.addMenuItem("Hide") { _ =>
       controller.hide(node.id)
     }
-
+    this.addMenuItem("Focus") { _ =>
+      controller.focus(node.id)
+    }
     this.addMenuItem("Show code") { _ =>
       controller.printCode(node.id)
     }

@@ -88,17 +88,13 @@ class DotPrinter
     writer newLine()
   }
 
-  def printableEdges(edges : Seq[EdgeP]) : Seq[EdgeP] =
-    edges map {
-      case (s,t) =>
-        val vs=  graph.kindType(s) match {
-          case Parameter | ValueDef => graph.container_!(s)
-          case _ => s
-        }
-        (vs, t)
-    }
+  def transformParamOrDefToDecl(e : DGEdge) : DGEdge =
+      graph.kindType(e.source) match {
+          case Parameter | ValueDef => e.copy(source = graph.container_!(e.source))
+          case _ => e
+      }
 
-  private val concreteViolations : Seq[EdgeP] = printableEdges(graph.violations() map DGEdge.toPair)
+  private val concreteViolations : Seq[DGEdge] = graph.violations map transformParamOrDefToDecl distinct
 
 
 /*
@@ -107,12 +103,11 @@ class DotPrinter
  */
   val arcs = scala.collection.mutable.Buffer[String]()
 
-  type EdgeP = (NodeId, NodeId)
 
   def printArc
   ( status : ColorThickness,
     style : Style,
-    slabel : Option[String] = None): EdgeP => Unit = {
+    slabel : Option[String] = None): NodeIdP => Unit = {
     case edge @ (source, target) =>
 
     def dotId(nid: NodeId) : String = {
@@ -145,15 +140,12 @@ class DotPrinter
       case _ => sys.error("Label conflict")
     }
 
-    if(!redOnly || status.color == redColor )
       arcs += (dotId(source) + " -> " + dotId(target) + "[ " +
         label +
         subGraphArc(source, "ltail") +
         subGraphArc(target, "lhead") +
         "style = " + style.line + ", arrowhead = " + style.arrowHead +
         ", color = " + status.color + ", penwidth = " + status.thickness+ "];");()
-
-
   }
 
   def violationStyle
@@ -163,11 +155,11 @@ class DotPrinter
   }
 
 
-  val typeRelationShipLabel : EdgeP => String =
+  val typeRelationShipLabel : NodeIdP => String =
     selectedUse match {
       case None => _ => ""
       case Some(selected) =>
-        val labelMap : Map[EdgeP, String]= graph.kindType(selected.target) match {
+        val labelMap : Map[NodeIdP, String]= graph.kindType(selected.target) match {
           case TypeDecl =>
             val init = Map(DGEdge.toPair(selected) -> "TDecl")
             graph.typeMemberUsesOf(selected).foldLeft(init){
@@ -279,12 +271,6 @@ class DotPrinter
 
     innerClasses foreach printClass
 
-    /*graph.content(n.id).foreach { nc =>
-      graph.users(nc).foreach(printUse(_, nc))
-    }
-    graph.users(n.id).foreach(printUse(_, n.id))
-
-    graph.directSuperTypes(n.id).foreach(printArc(isaStyle, n.id, _, ColorThickness.regular))*/
   }
 
   def firstVisibleParent(nid : NodeId) : Option[NodeId] = 
@@ -296,34 +282,32 @@ class DotPrinter
     s == t && (graph.getNode(s).kind.kindType == NameSpace)
 
 
-
-  type ContainsViolationMap = Set[EdgeP]
+  type ContainsViolationMap = Set[NodeIdP]
   type IsViolation = Boolean
-  def filterEdgeBasedOnVisibleNodes
-  ( edges : Seq[EdgeP],
-    edgeKind : DGEdge.EKind,
-    virtInit : Map[EdgeP, Int] = Map(),
+  def filterAllEdgeBasedOnVisibleNodesAndFlagViolations
+  ( edges : Seq[DGEdge],
+    virtInit : Map[DGEdge, Int] = Map(),
     virtViolationInit : ContainsViolationMap = Set()
-    ) : (Seq[(EdgeP, IsViolation)], Map[EdgeP, Int], ContainsViolationMap) = {
+    ) : (Seq[(DGEdge, IsViolation)], Map[DGEdge, Int], ContainsViolationMap) = {
 
     val (reg, virt, virtualViolations) =
-      printableEdges(edges).foldLeft((Seq[(EdgeP, IsViolation)](), virtInit, virtViolationInit)) {
-      case ((regulars, virtuals, m), (source, target)) =>
+      (edges map transformParamOrDefToDecl).foldLeft((Seq[(DGEdge, IsViolation)](), virtInit, virtViolationInit)) {
+      case ((regulars, virtuals, m), e @ DGEdge(k, source, target)) =>
         (firstVisibleParent(source), firstVisibleParent(target)) match {
           case (Some(s), Some(t))
             if source == s && target == t =>
-            val isViolation = concreteViolations.contains((source, target))
-            (regulars :+ (((s, t), isViolation)), virtuals, m)
+            val isViolation = concreteViolations.contains(e)
+            (regulars :+ ((k(s, t), isViolation)), virtuals, m)
 
           case (Some(s), Some(t)) if printVirtualEdges =>
-            val virtEdge = edgeKind(s, t)
+            val virtEdge = k(s, t)
 
-            val numConcreteUses = (virtuals getOrElse ((s, t), 0)) + 1
+            val numConcreteUses = (virtuals getOrElse (k(s, t), 0)) + 1
 
-            if(concreteViolations.contains((source, target)))
-                (regulars, virtuals + ((s, t) -> numConcreteUses), m + ((s, t)))
+            if(concreteViolations.contains(e))
+                (regulars, virtuals + (k(s, t) -> numConcreteUses), m + k(s, t))
             else if(!recusivePackage(s,t))
-                (regulars, virtuals + ((s, t) -> numConcreteUses), m)
+                (regulars, virtuals + (k(s, t) -> numConcreteUses), m)
             else
                 (regulars, virtuals, m)
 
@@ -331,8 +315,8 @@ class DotPrinter
         }
     }
 
-    def filterConflict(reg : Seq[(EdgeP, IsViolation)], virtualViolations : ContainsViolationMap) = {
-      reg.foldLeft((Seq[(EdgeP, IsViolation)](), virtualViolations)){
+    def filterDuplication(reg : Seq[(DGEdge, IsViolation)], virtualViolations : ContainsViolationMap) = {
+      reg.foldLeft((Seq[(DGEdge, IsViolation)](), virtualViolations)){
         case ((regulars, m), (e,iv)) =>
             (virt.contains(e), iv) match {
               case (false,_) =>  ((e,iv) +: regulars, m)
@@ -341,36 +325,82 @@ class DotPrinter
             }
       }
     }
-//    def filterConflict(reg : Seq[(EdgeP, IsViolation)], virtualViolations : ContainsViolationMap) = (reg, virtualViolations)
+//    def filterDuplication(reg : Seq[(EdgeP, IsViolation)], virtualViolations : ContainsViolationMap) = (reg, virtualViolations)
 
     //reg.fol
-    val (reg1, virtualViolations1) = filterConflict(reg, virtualViolations)
+    val (reg1, virtualViolations1) = filterDuplication(reg, virtualViolations)
     (reg1, virt, virtualViolations1)
   }
+
+  def filterEdgeBasedOnVisibleNodes
+  ( edges : Seq[DGEdge],
+    virtInit : Map[NodeIdP, Int] = Map()
+    ) : (Seq[DGEdge], Map[NodeIdP, Int]) = {
+
+    //val (reg, virt) =
+      (edges map transformParamOrDefToDecl).foldLeft((Seq[DGEdge](), virtInit)) {
+        case ((regulars, virtuals), DGEdge(k, source, target)) =>
+          (firstVisibleParent(source), firstVisibleParent(target)) match {
+            case (Some(s), Some(t))
+              if source == s && target == t =>
+              (regulars :+ k(s, t), virtuals)
+
+            case (Some(s), Some(t)) if printVirtualEdges =>
+
+              val numConcreteUses = (virtuals getOrElse ((s, t), 0)) + 1
+
+              (regulars, virtuals + ((s, t) -> numConcreteUses))
+
+            case _ => (regulars, virtuals)
+          }
+      }
+
+
+    //(reg filterNot virt.contains, virt)
+  }
+
 
   def apply(): Unit = {
     writeln("digraph G{")
     writeln("rankdir=LR; ranksep=equally; compound=true")
 
     graph.content(graph.rootId).foreach(printNode)
-    graph.nodesId.foreach{nid => if(graph.container(nid).isEmpty) printNode(nid)}
+    graph.nodesId.foreach{ nid => if(graph.container(nid).isEmpty) printNode(nid) }
 
+    if(redOnly){
+      val (reg, virt) = filterEdgeBasedOnVisibleNodes(concreteViolations)
 
-    val (regularsIsa, virt0, virtualViolations0) = filterEdgeBasedOnVisibleNodes(graph.isaList, Isa)
+      reg.foreach {
+        case Isa(s, t) => printArc(ColorThickness.violation,isaStyle)((s, t))
+        case Uses(s, t, _) => printArc(ColorThickness.violation,usesStyle)((s, t))
+        case ParameterizedUses(s, t, _) => printArc(ColorThickness.violation,usesStyle)((s, t))
+        case _ => ()
+      }
 
-    regularsIsa.foreach {
-      case (e, v) => printArc(violationStyle(v),isaStyle)(e)
+      virt.foreach {
+        case (e, numConcretes) =>
+          printArc(ColorThickness.violation, virtualUse,
+            Some(numConcretes.toString))(e)
+      }
     }
+    else {
+      val (regularsIsa, virt0, virtualViolations0) =
+        filterAllEdgeBasedOnVisibleNodesAndFlagViolations(graph.isaList map Isa.apply)
 
-    val(reg, virt, virtualViolations) = filterEdgeBasedOnVisibleNodes(graph.usesList, Uses, virt0, virtualViolations0)
+      regularsIsa.foreach {
+        case (e, v) => printArc(violationStyle(v), isaStyle)(e)
+      }
 
-    reg.foreach{ case (e, v) =>  printArc(violationStyle(v),usesStyle)(e) }
+      val (reg, virt, virtualViolations) =
+        filterAllEdgeBasedOnVisibleNodesAndFlagViolations(graph.usesList map Uses.apply, virt0, virtualViolations0)
 
+      reg.foreach { case (e, v) => printArc(violationStyle(v), usesStyle)(e) }
 
-    virt.foreach {
-      case (e, numConcretes) =>
-        printArc(violationStyle(virtualViolations contains e),virtualUse,
-          Some(numConcretes.toString))(e)
+      virt.foreach {
+        case (e, numConcretes) =>
+          printArc(violationStyle(virtualViolations contains e), virtualUse,
+            Some(numConcretes.toString))(e)
+      }
     }
 
     arcs.foreach(writeln)

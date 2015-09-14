@@ -47,8 +47,8 @@ object ShowDG extends ShowConstraints{
   implicit def nodeIdCord : CordBuilder[NodeId] =
     (dg, nid) => nodeCord(dg, dg.getNode(nid))
 
-  def nodeIdPCord : CordBuilder[NodeIdP] =
-    {case (dg, (nid1, nid2)) => Cord("(", nodeIdCord(dg,nid1), ", ", nodeIdCord(dg,nid2), ")")}
+  implicit def nodeIdPCord : CordBuilder[NodeIdP] =
+    {case (dg, (nid1, nid2)) => Cord("Edge(", nodeIdCord(dg,nid1), ", ", nodeIdCord(dg,nid2), ")")}
 
   implicit def nodeCord : CordBuilder[DGNode] = (dg, n) =>
     n match {
@@ -123,14 +123,6 @@ object ShowDG extends ShowConstraints{
       case Comment(msg) => Cord("***", msg, "***")
     }
 
-
-//  def showDG[A](sg : Option[DependencyGraph] = None)
-//                            (implicit s : CordBuilder[A]): Show[A] = sg match {
-//    case None => Show.showFromToString
-//    case Some(g) => Show.show(s(g, _))
-//  }
-//
-//  implicit def graphToOptionGraph(g : DependencyGraph) : Option[DependencyGraph] = Some(g)
 
   implicit class DGShowOp[A](val p : (DependencyGraph, A)) extends AnyVal {
     def shows(implicit cb : CordBuilder[A]) : String =

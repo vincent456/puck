@@ -14,7 +14,7 @@ import org.apache.batik.util.{SVGConstants, XMLConstants}
 import org.w3c.dom.{Node, NodeList, Element}
 import org.w3c.dom.events.{EventListener, Event, MouseEvent}
 import org.w3c.dom.svg._
-import puck.graph.{Isa, Uses, NodeId, DGEdge}
+import puck.graph.{Isa, Uses, NodeId, NodeIdP, DGEdge}
 import puck.gui.svg.SVGPanel._
 
 
@@ -88,37 +88,54 @@ class SVGPanelListener
     } else None
   }
 
-  private def edgeKindFromGElement(gelt: SVGGElement): DGEdge.EKind = {
-    val l: NodeList = gelt.getChildNodes
-    var i: Int = 0
-    while (i < l.getLength) {
-      val n: Node = l.item(i)
-      if (n.getNodeName == "path") {
-        if (n.asInstanceOf[Element].hasAttribute("stroke-dasharray"))
-          return Isa
-        else
-          return Uses
-      }
-      i += 1; i - 1
+//  private def edgeKindFromGElement(gelt: SVGGElement): DGEdge.EKind = {
+//    val l: NodeList = gelt.getChildNodes
+//    var i: Int = 0
+//    while (i < l.getLength) {
+//      val n: Node = l.item(i)
+//      if (n.getNodeName == "path") {
+//        if (n.asInstanceOf[Element].hasAttribute("stroke-dasharray"))
+//          return Isa
+//        else
+//          return Uses
+//      }
+//      i += 1; i - 1
+//
+//    }
+//
+//    Uses
+//  }
 
-    }
+  //private val arrowPattern  = Pattern.compile("\\d+:(\\d+).{2}\\d+:(\\d+)")
 
-    Uses
-  }
+  private val idPattern = Pattern.compile("(\\d+:\\d+)|(nodeCluster\\d+)")
+//  private val arrowPattern  = Pattern.compile("(\\d+:(\\d+)|nodeCluster(\\d+)).{2}(\\d+:(\\d+)|nodeCluster(\\d+))")
 
-  private val arrowPattern  = Pattern.compile("\\d+:(\\d+).{2}\\d+:(\\d+)")
 
-  private def edgeFromGElement(gelt: SVGGElement): Option[DGEdge] = {
+  private def edgeFromGElement(gelt: SVGGElement): Option[NodeIdP] = {
     val t = gelt.getFirstChild.asInstanceOf[SVGTitleElement]
     val title = t.getFirstChild.asInstanceOf[GenericText]
-    val k: DGEdge.EKind = edgeKindFromGElement(gelt)
-    val m: Matcher = arrowPattern.matcher(title.getData)
-    if (m.find) {
-      val source: Int = m.group(1).toInt
-      val target: Int = m.group(2).toInt
-      Some(k(source, target))
+    //val k: DGEdge.EKind = edgeKindFromGElement(gelt)
+
+    val m: Matcher = idPattern.matcher(title.getData)
+
+    def nextId() : Option[Int] = {
+      if(m.find()) {
+        val strId = m.group()
+        println(strId)
+        if(strId.startsWith("nodeCluster")){
+          Some(strId.substring("nodeCluster".length).toInt)
+        } else {
+          Some(strId.substring(strId.indexOf(":") + 1).toInt)
+        }
+      } else None
     }
-    else None
+    val ssrc = nextId()
+    val stgt = nextId()
+    (ssrc, stgt) match {
+      case (Some(source), Some(target)) => Some((source, target))
+      case _ => None
+    }
   }
 
   private def changeEdgeColor(edge: SVGGElement, color: String) : Unit = {
@@ -148,7 +165,7 @@ class SVGPanelListener
       controller.resetSelectedNodes()
     }
   }
-  private def conditionalEdgeReset(): Option[DGEdge] = {
+  private def conditionalEdgeReset(): Option[NodeIdP] = {
     controller.selectedEdge match {
       case Some((e, color, domElt)) =>
         changeEdgeColor(domElt, color)

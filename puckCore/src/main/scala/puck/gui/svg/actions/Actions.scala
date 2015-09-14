@@ -34,7 +34,7 @@ class ShowTypeRelationshipAction
 class RemoveEdgeAction
 ( edge : DGEdge,
   controller : SVGController)
-  extends AbstractAction(s"Delete node and children") {
+  extends AbstractAction(s"Delete $edge") {
 
   def actionPerformed(e: ActionEvent) : Unit =
     printErrOrPushGraph(controller, "Remove Node Action failure"){
@@ -42,8 +42,6 @@ class RemoveEdgeAction
         case Isa => LoggedSuccess(edge.deleteIn(controller.graph.mileStone))
         case _ => LoggedError(new PuckError(s"cannot remove remove ${edge.kind} edge"))
       }
-
-
     }
 }
 
@@ -59,7 +57,6 @@ extends AbstractAction(s"Delete node and children") {
       TR.removeConcreteNode(graph.mileStone, node)
     }
 }
-
 
 
 class RenameNodeAction

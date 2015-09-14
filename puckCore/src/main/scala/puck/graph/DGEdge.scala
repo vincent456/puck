@@ -12,10 +12,25 @@ object DGEdge{
     def apply(source : NodeId, target: NodeId): DGEdge
   }
 
-  def unapply(e : DGEdge) : Some[(NodeId, NodeId)] =
-    Some((e.source, e.target))
+  def unapply(e : DGEdge) : Some[(EKind, NodeId, NodeId)] =
+    Some((e.kind, e.source, e.target))
 
   implicit def toPair(e : DGEdge) : NodeIdP = (e.user, e.used)
+
+  def concreteEdgesFrom(graph : DependencyGraph, virtual : NodeIdP) : List[DGEdge] = {
+   val (source, target) = virtual
+    val includedInVirtual : NodeIdP => Boolean = {
+      case (user, used) => graph.contains_*(source, user) && graph.contains_*(target, used)
+    }
+    val concreteUses = graph.usesList filter includedInVirtual map {
+      case (user, used) => graph.getUsesEdge_!(user, used)
+    }
+
+    (graph.isaList filter includedInVirtual map Isa.apply) ++ concreteUses
+
+  }
+
+
 }
 
 sealed abstract class DGEdge {

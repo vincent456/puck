@@ -37,7 +37,7 @@ class SVGController private
   private var printSignatures : Boolean,
   private var printVirtualEdges : Boolean = true,
   private var printConcreteUsesPerVirtualEdges : Boolean = true,
-  private var printRedOnly : Boolean = false,
+  private var printRedOnly : Boolean = true,
   private var selectedEdgeForTypePrinting : Option[DGUses] = None) {
 
   implicit val consoleLogger = new TextAreaLogger(console.textArea, _ => true )
@@ -124,6 +124,22 @@ class SVGController private
     setSubTreeVisibility(id, Hidden)
   }
 
+  def focus(id : NodeId): Unit = {
+    visibility = VisibilitySet.allHidden(graph).
+      setVisibility(graph.containerPath(id), Visible)
+    displayGraph(graph)
+  }
+
+  def focus(e : NodeIdP) : Unit = {
+    val concretes = DGEdge.concreteEdgesFrom(graph, e)
+    visibility = concretes.foldLeft(VisibilitySet.allHidden(graph)){
+      case (set, DGEdge(_, source, target)) =>
+        val s2 = set.setVisibility(graph.containerPath(source), Visible)
+        s2.setVisibility(graph.containerPath(target), Visible)
+    }
+    displayGraph(graph)
+  }
+
   private def setSubTreeVisibility(rootId : NodeId, v : Visibility): Unit ={
     val nodes = graph.subTree(rootId, includeRoot = false)
     visibility = visibility.setVisibility(nodes, v)
@@ -163,10 +179,10 @@ class SVGController private
     console.displaySelection("")
   }
 
-  var selectedEdge0 : Option[(DGEdge, Color, SVGGElement)] = None
-  def selectedEdge : Option[(DGEdge, Color, SVGGElement)] = selectedEdge0
+  var selectedEdge0 : Option[(NodeIdP, Color, SVGGElement)] = None
+  def selectedEdge : Option[(NodeIdP, Color, SVGGElement)] = selectedEdge0
 
-  def setEdgeSelected(dgEdge: DGEdge, elt : SVGGElement, c : Color) = {
+  def setEdgeSelected(dgEdge: NodeIdP, elt : SVGGElement, c : Color) = {
     selectedEdge0 = Some((dgEdge, c, elt))
     println("setting selectedEdge")
     import ShowDG._
