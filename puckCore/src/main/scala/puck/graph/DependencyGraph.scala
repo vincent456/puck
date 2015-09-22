@@ -285,22 +285,21 @@ class DependencyGraph
              recording = recording.removeAbstraction(id, abs))
 
 
-  private def isChangeType(edge : DGEdge, newTarget : NodeId) : Boolean = {
+  private def isChangeType(edge : DGEdge, newTarget : NodeId) : Boolean =
     edge.kind == Uses && (getNode(edge.user).kind.kindType match {
-      case InstanceTypeDecl
+      case InstanceValueDecl
         | StaticValueDecl
         | Parameter =>
         val oldUsedKind = getNode(edge.used).kind.kindType
         val newUsedKind = getNode(newTarget).kind.kindType
 
         oldUsedKind == TypeDecl && newUsedKind == TypeDecl
-      case _ => false
+      case kt => false
     })
 
-  }
   def changeTarget(edge : DGEdge, newTarget : NodeId) : DependencyGraph =
     if(isChangeType(edge, newTarget))
-       changeType(edge.user, edge.used, newTarget)
+      changeType(edge.user, edge.used, newTarget)
     else {
       val g1 = edge.deleteIn(this, register = false)
       val newEdge : DGEdge = edge.copy(target = newTarget)
@@ -348,7 +347,11 @@ class DependencyGraph
 
   //special case alias for readibility
   def declarationOf(defId : NodeId) : NodeId =
-    container_!(defId)
+    getNode(defId).kind.kindType match {
+      case ValueDef => container_!(defId)
+      case _ => defId
+    }
+
 
   //special cases of content
   def definitionOf(declId : NodeId) : Option[NodeId] =

@@ -38,7 +38,7 @@ class TransformationRules
     val subNode = g.getConcreteNode(sub)
     val supNode = g.getConcreteNode(sup)
     if(!g.canBe(subNode, supNode))
-      LoggedError(new PuckError(s"${(g, sub).shows} cannot be ${(g, sup).shows}"))
+      LoggedError(s"${(g, sub).shows} cannot be ${(g, sup).shows}")
     else {
 
       val subMethods = g.content(sub).toList map g.typedNode

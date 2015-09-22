@@ -3,9 +3,8 @@ package puck.gui.svg
 import javax.swing.JPopupMenu
 
 import puck.graph.{Isa, Uses, NodeIdP}
-import puck.gui.svg.actions.{ShowTypeRelationshipAction, RemoveEdgeAction, ManualSolveAction}
+import puck.gui.svg.actions.{AutoSolveAction, ShowTypeRelationshipAction, RemoveEdgeAction, ManualSolveAction}
 
-import NodeRightClickMenu.JPopupSyntax
 class EdgeRightClickMenu
 ( private val controller : SVGController,
   edge : NodeIdP)
@@ -17,6 +16,7 @@ class EdgeRightClickMenu
   if(graph.isViolation(edge)){
     val targetNode = graph.getConcreteNode(target)
     add(new ManualSolveAction(targetNode, controller))
+    add(new AutoSolveAction(targetNode, controller))
   }
 
   var isIsaEdge = false

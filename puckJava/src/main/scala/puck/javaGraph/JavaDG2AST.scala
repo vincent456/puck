@@ -204,6 +204,11 @@ class JavaDG2AST
       case Transformation(_, RedirectionOp(e, Target(newTarget))) =>
         RedirectTarget(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newTarget)
 
+
+      case Transformation(_, TypeChange(user, None, Some(NamedType(newType)))) =>
+        CreateEdge.createTypeUse(safeGet(resultGraph, id2declMap), user, newType)
+
+
       case Transformation(_, TypeChange(user, Some(NamedType(oldType)), Some(NamedType(newType)))) =>
         val e = Uses(user, oldType)
         RedirectTarget(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newType)

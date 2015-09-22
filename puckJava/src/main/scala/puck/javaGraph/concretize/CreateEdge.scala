@@ -7,6 +7,30 @@ import puck.util.PuckLogger
 
 object CreateEdge {
 
+  def createTypeUse
+  (id2declMap: NodeId => ASTNodeLink,
+    typed : NodeId,
+    typ : NodeId) : Unit = {
+    id2declMap(typed)  match {
+      //explicit upcast shouldn't be needed, why the compiling error ?
+      case dh @ (FieldDeclHolder(_)
+        | ParameterDeclHolder(_)
+        | MethodDeclHolder(_)) =>
+
+        val taccess : AST.Access = id2declMap(typ) match {
+          case tdh : TypedKindDeclHolder => tdh.decl.createLockedAccess()
+          case dh => throw new JavaAGError(s"CreateEdge.createTypeUse: $dh where expected a typeDecl")
+        }
+
+        dh.asInstanceOf[HasNode].node.setTypeAccess(taccess)
+
+      case ConstructorDeclHolder(_) => ()
+
+      case k => throw new JavaAGError(s"CreateEdge.createTypeUse: $k as user of TypeKind, set type unhandled !")
+    }
+
+
+  }
 
 
   def apply

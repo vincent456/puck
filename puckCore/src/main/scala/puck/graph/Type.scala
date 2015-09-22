@@ -24,7 +24,7 @@ object Type {
 
   def errorOnImplemNotFound(className : String) : OnImplemNotFound = {
     (g, supMeth, _) =>
-      LoggedError(new PuckError(s"$className has no implementation of ${(g, supMeth).shows}"))
+      LoggedError(s"$className has no implementation of ${(g, supMeth).shows}")
   }
 
   val ignoreOnImplemNotFound : OnImplemNotFound = {

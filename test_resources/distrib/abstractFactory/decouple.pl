@@ -1,10 +1,13 @@
-java_import(['abstractFactory.candidate']).
+import ['abstractFactory.candidate']
 
-declareSet(motifProducts, ['MotifButton', 'MotifMenu']).
+motifProducts = ['MotifButton.MotifButton#_void', 'MotifMenu.MotifMenu#_void']
 
-declareSet(windowsProducts,['WindowsButton','WindowsMenu']).
+windowsProducts = ['WindowsButton.WindowsButton#_void','WindowsMenu.WindowsMenu#_void']
 
-declareSetUnion(products, [motifProducts, windowsProducts]).
+products = union([motifProducts, windowsProducts])
 
-hideScopeSet(products).
+hide products
+
+#hide motifProducts
+#hide windowsProducts
 

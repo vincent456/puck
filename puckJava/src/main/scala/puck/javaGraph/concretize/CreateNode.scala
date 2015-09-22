@@ -110,7 +110,7 @@ object CreateNode {
     ) : AST.MethodDecl = {
     val decl = new AST.MethodDecl()
     decl.setID(node.name)
-    decl.setTypeAccess(createTypeAccess(node.id, graph, id2Decl))
+    //decl.setTypeAccess(createTypeAccess(node.id, graph, id2Decl))
     val mods = new AST.Modifiers("public")
     if(isAbstract)
       mods.addModifier("abstract")
@@ -122,21 +122,21 @@ object CreateNode {
 
 
 
-  def createTypeAccess
-  ( typedNode : NodeId,
-    graph : DependencyGraph,
-    id2Decl : Map[NodeId, ASTNodeLink]
-    ) : AST.TypeAccess = {
-    graph.styp(typedNode) match {
-      case Some(NamedType(tid)) =>
-        id2Decl(tid) match {
-          case tk: TypedKindDeclHolder =>
-            tk.decl.createLockedAccess().asInstanceOf[AST.TypeAccess]
-          case decl => throw new JavaAGError(s"TypedKindDeclHolder expected but got $decl")
-        }
-      case st => throw new JavaAGError(s"Some named type expected not but got $st")
-    }
-  }
+//  def createTypeAccess
+//  ( typedNode : NodeId,
+//    graph : DependencyGraph,
+//    id2Decl : Map[NodeId, ASTNodeLink]
+//    ) : AST.TypeAccess = {
+//    graph.styp(typedNode) match {
+//      case Some(NamedType(tid)) =>
+//        id2Decl(tid) match {
+//          case tk: TypedKindDeclHolder =>
+//            tk.decl.createLockedAccess().asInstanceOf[AST.TypeAccess]
+//          case decl => throw new JavaAGError(s"TypedKindDeclHolder expected but got $decl")
+//        }
+//      case st => throw new JavaAGError(s"Some named type expected not but got $st")
+//    }
+//  }
 
 
   def createConstructor
@@ -155,24 +155,20 @@ object CreateNode {
     id2Decl : Map[NodeId, ASTNodeLink],
     node : ConcreteNode
     ) : FieldDeclHolder = {
-
-    graph.styp(node.id) match {
-      case Some(NamedType(id)) =>
-        id2Decl get id match {
-          case Some(tdh : TypedKindDeclHolder) =>
-            import AST._
-            val f =
-              new FieldDeclaration(
-                new Modifiers(ASTNode.VIS_PRIVATE),
-                tdh.decl.createLockedAccess(),
-                node.name)
-
-            FieldDeclHolder(f)
-          case declHolder =>
-            throw new DeclarationCreationError(s"${(graph, id).shows} is not a type !! (styp = $declHolder})")
-        }
-      case _ => throw new DeclarationCreationError(" not a field type !!")
-    }
+    import AST._
+    FieldDeclHolder(new FieldDeclaration(
+      new Modifiers("protected"), null, node.name))
+//    graph.styp(node.id) match {
+//      case Some(NamedType(id)) =>
+//        id2Decl get id match {
+//          case Some(tdh : TypedKindDeclHolder) =>
+//
+//
+//          case declHolder =>
+//            throw new DeclarationCreationError(s"${(graph, id).shows} is not a type !! (styp = $declHolder})")
+//        }
+//      case st => throw new DeclarationCreationError("CreateField needs some named type got " + st)
+//    }
   }
 
   def createParameter
@@ -181,9 +177,8 @@ object CreateNode {
     id2Decl : Map[NodeId, ASTNodeLink],
     node : ConcreteNode
     ) : ParameterDeclHolder = ParameterDeclHolder {
-    val ta = createTypeAccess(node.id, graph, id2Decl)
-    new AST.ParameterDeclaration(new AST.Modifiers, ta,
-      node.name)
+    //val ta = createTypeAccess(node.id, graph, id2Decl)
+    new AST.ParameterDeclaration(new AST.Modifiers, null, node.name)
   }
 
 

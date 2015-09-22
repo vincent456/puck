@@ -4,7 +4,7 @@ package constraints
 
 import puck.PuckError
 import puck.graph.transformations.TransformationRules
-import puck.util.Logged
+import puck.util.{LoggedEither, Logged}
 import puck.util.LoggedEither._
 import scalaz.{\/-, -\/}
 import scalaz.syntax.writer._
@@ -86,7 +86,7 @@ class Solver
                   val lg2 = ltg.valueOr(_ => sys.error("should not happen"))
                   aux(lg2, remainingWus, choices - abs)
                 case -\/(err) =>
-                  k(LoggedError(err, ltg.log))
+                  k(LoggedError(ltg.log, err))
               }
           }
       }
@@ -212,8 +212,8 @@ class Solver
             }
 
           case FindHostError =>
-            k(LoggedError(FindHostError,
-              logres.written + "error while searching host for abstraction"))
+            k(LoggedError(logres.written + "error while searching host for abstraction",
+            FindHostError))
         }
     }
 
@@ -267,8 +267,7 @@ class Solver
                 ltg  =>
                   ltg.value match {
                     case -\/(_) =>
-                      val err = new DGError(s"Single abs intro degree $deg/$degree error (currentImpl = $currentImpl)")
-                      k(LoggedError(err, ltg.log))
+                      k(ltg :++> s"Single abs intro degree $deg/$degree error (currentImpl = $currentImpl)")
                     case \/-((AccessAbstraction(absId, _), g)) =>
                       aux(g.set(ltg.log), deg + 1, g.getConcreteNode(absId))(k)
                     case \/-((rwAbs @ ReadWriteAbstraction(_,_), g)) => ???
@@ -278,8 +277,8 @@ class Solver
               }
 
           case None =>
-            k(LoggedError(new DGError(s"no abstraction for impl of kind $currentImpl"),
-              loggedSKindPolicy.written))
+            k(LoggedError(loggedSKindPolicy.written,
+              new DGError(s"no abstraction for impl of kind $currentImpl")))
         }
       }
     }
@@ -312,13 +311,14 @@ class Solver
 
     redirectTowardExistingAbstractions(lg1, impl, lg.value.wrongUsers(impl.id)){
       loggedTGraphWusers : LoggedTry[(DependencyGraph, List[NodeId])] =>
+
         loggedTGraphWusers.value match {
           case \/-((graph2, wrongUsers)) =>
             if (wrongUsers.nonEmpty)
               absIntro(graph2.set(loggedTGraphWusers.log), impl, wrongUsers)(k)
-            else k(LoggedSuccess(graph2, loggedTGraphWusers.log))
+            else k(loggedTGraphWusers map (_._1))
           case -\/(err) =>
-            k(LoggedError(err, loggedTGraphWusers.log))
+            k(LoggedError(loggedTGraphWusers.log, err))
         }
 
 
@@ -371,14 +371,27 @@ class Solver
 
                 val needNewReceiver = !(typ uses newCter)
 
-                if(needNewReceiver)
-                  decisionMaker.createVarStrategy(g2.set("")) {
-                    cvs =>
-                      val ltg =
-                        rules.move.typeMember(g2, List(wronglyContained.id), newCter, Some(cvs.value))
+                val isPullUp = g.isa_*(oldCter, newCter)
+                val isPushDown = g.isa_*(newCter, oldCter)
+
+                (isPullUp, isPushDown) match {
+                  case (true, true) =>
+                    assert(oldCter == newCter)
+                    k(log, LoggedSuccess(g2))
+                  case (true, _) =>
+                    k(log, rules.move.pullUp(g2, List(wronglyContained.id), oldCter, newCter))
+                  case (_, true) =>
+                    k(log, rules.move.pushDown(g2, List(wronglyContained.id), oldCter, newCter))
+                  case _ if needNewReceiver =>
+                    decisionMaker.createVarStrategy(g2.set("")) {
+                      cvs =>
+                        val ltg =
+                          rules.move.typeMemberBetweenUnrelatedTypeDecl(g2, List(wronglyContained.id), oldCter, newCter, Some(cvs.value))
                         k(log + cvs.written, ltg)
-                  }
-                else k(log, rules.move.typeMember(g2, List(wronglyContained.id), newCter, None))
+                    }
+                  case _ =>
+                    k(log, rules.move.typeMemberBetweenUnrelatedTypeDecl(g2, List(wronglyContained.id), oldCter, newCter, None))
+                }
 
               case (TypeDecl,_) =>
                 k(log, rules.move.typeDecl (g2, wronglyContained.id, newCter))
@@ -387,7 +400,7 @@ class Solver
             }
 
           case FindHostError =>
-            k0(LoggedError(new DGError("FindHostError caught"), logres.written))
+            k0(LoggedError(logres.written, new DGError("FindHostError caught")))
         }
     }
   }

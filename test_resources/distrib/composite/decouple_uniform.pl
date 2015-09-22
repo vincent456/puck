@@ -1,7 +1,5 @@
-java_import(['fileSystem', 
-	'fileSystem.Directory', 'fileSystem.File']).
+import ['fileSystem',
+	    'fileSystem.Directory', 'fileSystem.File']
 
-declareSet(uniformMethods, 
-	['ls__void', 'display__String']).
-hideScopeSetFrom(uniformMethods,
-	['CompositeDemo','display__String']).
+uniformMethods = ['ls__void', 'display__String']
+hide uniformMethods from ['CompositeDemo','display__String']

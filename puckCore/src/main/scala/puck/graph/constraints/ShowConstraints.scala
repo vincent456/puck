@@ -12,7 +12,9 @@ trait ShowConstraints {
   }
 
   def namedRangeSetDefCord : CordBuilder[NamedRangeSet] = (dg, nrs) =>
-    Cord(nrs.declare, nrs.id, " = ", rangeSetCord(dg, nrs.setDef))
+      Cord(nrs.id, " = ", nrs.declare_pre, rangeSetCord(dg, nrs.setDef), nrs.declare_post)
+
+
 
   implicit def rangeSetCord : CordBuilder[RangeSet] = { (dg, rs) =>
     rs match {

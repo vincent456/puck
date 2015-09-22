@@ -56,8 +56,17 @@ extends AbstractAction(MoveAction.label(controller.graph, moved, newHost)){
           controller.console.
             appendText("/!\\/!\\ Method overriding unchecked (TODO !!!) /!\\/!\\")
 
-          val needNewReceiver =
-            /*!g.isa_*(g.hostTypeDecl(moved.head), newHost.id) ||*/ moved.exists {
+          val oldContainer = g.container_!(moved.head)
+
+          val isPullUp = g.isa_*(oldContainer, newHost.id)
+          val isPushDown = g.isa_*(newHost.id, oldContainer)
+
+          controller.console.
+            appendText("isPullUp = " + isPullUp)
+          controller.console.
+            appendText("isPushDown = " + isPushDown)
+
+          lazy val needNewReceiver = moved.exists {
             nid =>
               g.structuredType(nid) match{
                 case Some(typ) => !(typ uses newHost.id)
@@ -66,17 +75,26 @@ extends AbstractAction(MoveAction.label(controller.graph, moved, newHost)){
 
           }
 
+          if(isPullUp && isPushDown){
+            error("new host and old host should be different")
+          }
+          else if(isPullUp)
+            TR.move.pullUp(g,moved, oldContainer, newHost.id)
+          else if(isPushDown)
+            TR.move.pushDown(g,moved, oldContainer, newHost.id)
+          else {
 
-          val choice =
-            if (needNewReceiver) {
-              Some(MoveAction.getChoice(kindOfKindType(InstanceValueDecl)).
-                getOrElse(CreateTypeMember(kindOfKindType(InstanceValueDecl).head)))
-            }
-            else None
+            val choice =
+              if (!isPullUp && !isPushDown && needNewReceiver) {
+                Some(MoveAction.getChoice(kindOfKindType(InstanceValueDecl)).
+                  getOrElse(CreateTypeMember(kindOfKindType(InstanceValueDecl).head)))
+              }
+              else None
 
-          TR.move.typeMember(g, moved, newHost.id, choice)
+            TR.move.typeMemberBetweenUnrelatedTypeDecl(g, moved, oldContainer, newHost.id, choice)
+          }
         case kt =>
-          LoggedError(new PuckError(s"move of $kt not implemented"))
+          LoggedError(s"move of $kt not implemented")
       }
     }
   }

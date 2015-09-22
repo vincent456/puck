@@ -1,7 +1,7 @@
 package puck.gui.svg
 
 import java.io.{File, InputStream, PipedInputStream, PipedOutputStream}
-import javax.swing.JMenuItem
+import javax.swing.{JPanel, JMenuItem}
 
 import org.apache.batik.dom.svg.SAXSVGDocumentFactory
 import org.apache.batik.swing.JSVGCanvas
@@ -13,11 +13,13 @@ import puck.graph.comparison.Mapping
 import puck.graph.io._
 import puck.graph.transformations.MileStone
 import puck.gui.TextAreaLogger
+import puck.gui.explorer.NodeInfosPanel
 import puck.gui.svg.actions.{AddNodeAction, AbstractionAction}
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.swing.{FlowPanel, Panel}
 import scala.util.{Failure, Success}
 
 import  VisibilitySet._
@@ -30,8 +32,7 @@ class SVGController private
 ( val filesHandler: FilesHandler,
   val graphUtils : GraphUtils,
   val dg2ast: DG2AST,
-  val svgCanvas : JSVGCanvas,
-  val console : SVGConsole,
+  val frame : SVGFrame,
   private var visibility : VisibilitySet.T,
   private var printId : Boolean,
   private var printSignatures : Boolean,
@@ -39,6 +40,9 @@ class SVGController private
   private var printConcreteUsesPerVirtualEdges : Boolean = true,
   private var printRedOnly : Boolean = true,
   private var selectedEdgeForTypePrinting : Option[DGUses] = None) {
+
+  val console = frame.console
+  import frame.panel.{canvas => svgCanvas}
 
   implicit val consoleLogger = new TextAreaLogger(console.textArea, _ => true )
 
@@ -118,15 +122,28 @@ class SVGController private
     others
   }
 
+  def showNodeInfos(nodeId: NodeId): Unit = {
+    frame.centerPane.setRightComponent(
+    new NodeInfosPanel(graph, nodeId){
+      def onEdgeButtonClick( source : NodeId, target : NodeId) : Unit = ()
+    }.peer)
+    frame.centerPane.revalidate()
+  }
 
   def hide(id : NodeId): Unit = {
     visibility = visibility.setVisibility(id, Hidden)
     setSubTreeVisibility(id, Hidden)
   }
 
-  def focus(id : NodeId): Unit = {
-    visibility = VisibilitySet.allHidden(graph).
-      setVisibility(graph.containerPath(id), Visible)
+  def focusExpand(id : NodeId, focus : Boolean, expand : Boolean) : Unit = {
+    if(focus)
+      visibility = VisibilitySet.allHidden(graph).
+        setVisibility(graph.containerPath(id), Visible)
+
+    if(expand)
+      visibility =
+        graph.content(id).foldLeft(visibility)(_.setVisibility(_, Visible))
+
     displayGraph(graph)
   }
 
@@ -149,12 +166,7 @@ class SVGController private
   def collapse(root: NodeId) : Unit =
     setSubTreeVisibility(root, Hidden)
 
-  def expand(root: NodeId) : Unit = {
-    visibility =
-      graph.content(root).foldLeft(visibility)(_.setVisibility(_, Visible))
 
-    displayGraph(graph)
-  }
 
   def expandAll(root: NodeId) : Unit =
     setSubTreeVisibility(root, Visible)
@@ -162,7 +174,6 @@ class SVGController private
   val defaultColor = "black"
 
   def addNodeToSelection(id: NodeId, elt: Element): Unit = {
-    println("setting selectedNode")
     val color =
       if(elt.getAttribute("fill").nonEmpty)
         elt.getAttribute("fill")
@@ -184,7 +195,6 @@ class SVGController private
 
   def setEdgeSelected(dgEdge: NodeIdP, elt : SVGGElement, c : Color) = {
     selectedEdge0 = Some((dgEdge, c, elt))
-    println("setting selectedEdge")
     import ShowDG._
     console.displaySelection((graph, dgEdge).shows)
   }
@@ -355,9 +365,8 @@ object SVGController {
             graphUtils : GraphUtils,
             dg2ast : DG2AST,
             opts : PrintingOptions,
-            svgCanvas : JSVGCanvas,
-            console : SVGConsole): SVGController ={
-    val c = new SVGController(filesHandler, graphUtils, dg2ast, svgCanvas, console,
+            frame : SVGFrame): SVGController ={
+    val c = new SVGController(filesHandler, graphUtils, dg2ast, frame,
                 opts.visibility, opts.printId, opts.printSignatures)
     c.pushGraph(dg2ast.initialGraph)
     c.displayGraph(dg2ast.initialGraph)

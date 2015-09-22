@@ -84,7 +84,7 @@ case class ConstraintsMaps
    def interloperOf(graph : GraphT, user : NIdT, used : NIdT) : Boolean = {
      val uses = Uses(user, used)
       forAncestors(graph, used){ used1 =>
-       //!graph.contains_*(used1.nid, user) &&
+       !graph.contains_*(used1.nid, user) &&
         used1.nid != user &&
          hideConstraints.getOrElse(used1, Iterable.empty).exists(_.violated(graph, uses))
      }

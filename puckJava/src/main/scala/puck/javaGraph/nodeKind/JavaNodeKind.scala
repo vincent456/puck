@@ -127,20 +127,25 @@ object JavaNodeKind extends NodeKindKnowledge {
       })
 
     super.canContain(graph)(n, other) &&
-      ( (other.kind, graph.structuredType(other.id)) match {
+      (!other.kind.isInstanceOf[MethodKind] || {
+      (other.kind, graph.structuredType(other.id)) match {
         case (AbstractMethod, Some(absMethodType @ Arrow(Tuple(input), _))) =>
           graph.content(id).forall(noNameClash(input.length)) &&
             graph.directSubTypes(id).forall {implementMethod(other.name, absMethodType)}
 
-        case (AbstractMethod, _) => throw new DGError(other + " does not have a MethodTypeHolder")
         /* cannot have two methods with same name and same type */
-        case (Method, Some(Arrow(Tuple(input), _))) =>
+        case (Method | StaticMethod, Some(Arrow(Tuple(input), _))) =>
           graph.content(id).forall(noNameClash(input.length))
 
-        case (Method, st) =>
+
+        case (_ : MethodKind, st) =>
           throw new DGError(s"canContain(${(graph, id).shows}, ${(graph, other.id).shows}) $st")
-        case _ => true
-      })
+
+        case d => error(d + " should not happen")
+      }
+    })
+
+
   }
 
   def defaultKindForNewReceiver : NodeKind = Field
@@ -170,7 +175,7 @@ object JavaNodeKind extends NodeKindKnowledge {
     //assert node is a typed value
     if(params.nonEmpty) super.structuredType(graph, id, params)
     else graph.getNode(id).kind match {
-      case Method => Some(Arrow(Tuple(), graph styp id get))
+      case _ : MethodKind => Some(Arrow(Tuple(), graph styp id get))
       case _ => Some(graph styp id get)
     }
   }

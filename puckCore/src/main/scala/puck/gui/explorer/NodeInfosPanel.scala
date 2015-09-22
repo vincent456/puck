@@ -8,14 +8,16 @@ import scala.swing._
 import scala.swing.event.MouseClicked
 
 
-class NodeInfosPanel(val graph : DependencyGraph,
-                     val nodeId : NodeId,
-                      printId : () => Boolean,
-                      printSig: () => Boolean,
-                      visibility : VisibilitySet.T)
+abstract class NodeInfosPanel(val graph : DependencyGraph,
+                     val nodeId : NodeId)
   extends SplitPane(Orientation.Horizontal) {
+
+  def onEdgeButtonClick( source : NodeId, target : NodeId) : Unit
+
   implicit val g = graph
-  val useDetails = new BoxPanel(Orientation.Vertical)
+  val useDetails = new BoxPanel(Orientation.Vertical){
+    minimumSize = new Dimension(100, 50)
+  }
 
   resizeWeight = 0.75
 
@@ -41,6 +43,7 @@ class NodeInfosPanel(val graph : DependencyGraph,
 
     contents += PuckMainPanel.leftGlued(new Label(node.kind + " : " +
       (graph, node).shows(nodeNameTypCord)))
+
     val prov = Metrics.providers(graph, node.id)
     val cl = Metrics.clients(graph, node.id)
     val internals = Metrics.internalDependencies(graph, node.id).size
@@ -79,66 +82,77 @@ class NodeInfosPanel(val graph : DependencyGraph,
 
     }*/
 
+    def usesLabelBox(userId : NodeId, usedId : NodeId) : Component = {
+      val sideUses = graph.typeMemberUsesOf(userId, usedId)
+      val primaryUses = graph.typeUsesOf(userId, usedId)
+
+      def tag = (sideUses.isEmpty, primaryUses.isEmpty) match {
+        case (true, true) => ""
+        case (false, true) => "(dominant use)"
+        case (true, false) => "(dominated use)"
+        case _ => "(both dominant and dominated)"
+      }
+
+
+      new BoxPanel(Orientation.Horizontal){
+
+        contents += Button("<o>") {
+          onEdgeButtonClick(userId, usedId)
+        }
+
+        contents += new Label(graph.fullName(userId) + " " + tag) {
+
+          minimumSize = new Dimension(this.size.width, 30)
+
+          listenTo(mouse.clicks)
+          reactions += {
+            case MouseClicked(_, _, _, _, _) =>
+
+              useDetails.contents.clear()
+              useDetails.contents +=
+                new Label((graph, Uses(userId, usedId)).shows)
+
+              if (primaryUses.nonEmpty){
+                useDetails.contents += new Label("Dominant Uses :")
+                primaryUses.foreach(e =>
+                  useDetails.contents += new Label((graph, e).shows))
+              }
+
+              if(sideUses.nonEmpty) {
+                useDetails.contents += new Label("Dominated Uses :")
+                sideUses.foreach(e =>
+                  useDetails.contents += new Label((graph, e).shows))
+              }
+
+              useDetails.revalidate()
+          }
+        }
+
+        contents += Swing.HGlue
+      }
+    }
+
     contents +=  PuckMainPanel.leftGlued(new Label("used by:"))
 
 
     contents += new BoxPanel(Orientation.Vertical) {
 
-      graph.usersOf(node.id).foreach { userId =>
-
-        val sideUses = graph.typeMemberUsesOf(userId, nodeId)
-        val primaryUses = graph.typeUsesOf(userId, nodeId)
-
-        def tag = (sideUses.isEmpty, primaryUses.isEmpty) match {
-          case (true, true) => ""
-          case (false, true) => "(dominant use)"
-          case (true, false) => "(dominated use)"
-          case _ => "(both dominant and dominated)"
-        }
-
-
-        contents += new BoxPanel(Orientation.Horizontal){
-
-          contents += Button("<o>") {
-            NodeInfosPanel.this publish
-              GraphDisplayRequest("Graph with uses selected",
-              graph, printId(), printSig(),
-              visibility,
-              sUse = Some(Uses(userId, nodeId)))
-          }
-
-          contents += new Label(graph.fullName(userId) + " " + tag) {
-
-            minimumSize = new Dimension(this.size.width, 30)
-
-            listenTo(mouse.clicks)
-            reactions += {
-              case MouseClicked(_, _, _, _, _) =>
-
-                useDetails.contents.clear()
-                useDetails.contents +=
-                  new Label((graph, Uses(userId, nodeId)).shows)
-
-                if (primaryUses.nonEmpty){
-                    useDetails.contents += new Label("Dominant Uses :")
-                    primaryUses.foreach(e =>
-                      useDetails.contents += new Label((graph, e).shows))
-                }
-
-                if(sideUses.nonEmpty) {
-                    useDetails.contents += new Label("Dominated Uses :")
-                    sideUses.foreach(e =>
-                      useDetails.contents += new Label((graph, e).shows))
-                }
-
-                useDetails.revalidate()
-            }
-          }
-
-          contents += Swing.HGlue
-        }
+      graph.usersOf(node.id).foreach {
+        userId =>
+        contents += usesLabelBox(graph.declarationOf(userId), node.id)
       }
+
     }
+    graph.definitionOf(node.id) foreach {
+      defId =>
+        contents +=  PuckMainPanel.leftGlued(new Label("uses :"))
+        contents += new BoxPanel(Orientation.Vertical) {
+          graph.usedBy(defId).foreach {
+            contents += usesLabelBox(_, defId)
+          }
+        }
+    }
+
   }
 
   rightComponent = useDetails

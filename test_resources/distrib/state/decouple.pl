@@ -1,10 +1,10 @@
-java_import(['state.candidate']).
+import ['state.candidate']
 
-declareSet(context, ['Chain']).
-declareSet(state_related_behavior, 
-					['Chain.pullLow__void', 
-					 'Chain.pullMedium__void', 
-					 'Chain.pullHigh__void', 
-					 'Chain.pullOff__void']).
+context = ['Chain']
+state_related_behavior =
+					['Chain.pullLow__void',
+					 'Chain.pullMedium__void',
+					 'Chain.pullHigh__void',
+					 'Chain.pullOff__void']
 
-hideScopeSetFrom(state_related_behavior, context).
+hide state_related_behavior from context

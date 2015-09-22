@@ -3,7 +3,7 @@ package puck.gui
 import java.awt.Dimension
 import java.io.File
 
-import puck.graph.{TypeDecl, NameSpace, GraphUtils}
+import puck.graph._
 import puck.graph.io.{VisibilitySet, FilesHandler}
 import puck.gui.explorer.{SetVisibleFromKind, NodeInfosPanel, PuckTreeNodeClicked, GraphExplorer}
 import puck.gui.search.ResultPanel
@@ -47,7 +47,15 @@ class PuckInterfacePanel
 
     reactions += {
       case PuckTreeNodeClicked(graph, n) =>
-        val nodeInfoPanel = new NodeInfosPanel(graph, n, printIds, printSigs, treeDisplayer.visibilitySet)
+        val nodeInfoPanel = new NodeInfosPanel(graph, n){
+          def onEdgeButtonClick( source : NodeId, target : NodeId) : Unit = {
+            this publish
+              GraphDisplayRequest("Graph with uses selected",
+                graph, printIds(), printSigs(),
+                treeDisplayer.visibilitySet,
+                sUse = Some(Uses(source, target)))
+          }
+        }
         contents = nodeInfoPanel
         control.listenTo(nodeInfoPanel)
         treeDisplayer.listenTo(nodeInfoPanel)

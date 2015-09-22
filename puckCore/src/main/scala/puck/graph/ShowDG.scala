@@ -50,6 +50,8 @@ object ShowDG extends ShowConstraints{
   implicit def nodeIdPCord : CordBuilder[NodeIdP] =
     {case (dg, (nid1, nid2)) => Cord("Edge(", nodeIdCord(dg,nid1), ", ", nodeIdCord(dg,nid2), ")")}
 
+
+
   implicit def nodeCord : CordBuilder[DGNode] = (dg, n) =>
     n match {
       case n : ConcreteNode => Cord(s"${n.id} - ${n.kind} ${n.name}", typeHolderCord(dg, dg.styp(n.id)))
@@ -68,6 +70,9 @@ object ShowDG extends ShowConstraints{
 
   implicit def edgeCord : CordBuilder[DGEdge] =  (dg, e) =>
     Cord(e.kind.toString, "( " + nodeIdCord(dg, e.source), ", ", nodeIdCord(dg, e.target), ")")
+  implicit def brCord : CordBuilder[(DGEdge,DGEdge)] =
+  {case (dg, (u1, u2)) => Cord("Edge(", edgeCord(dg,u1), ", ", edgeCord(dg,u2), ")")}
+
 
   implicit def extremityCord : CordBuilder[Extremity] =
     (dg, e) => Cord(e.productPrefix, "(", nodeCord(dg, dg.getNode(e.node)), ")")

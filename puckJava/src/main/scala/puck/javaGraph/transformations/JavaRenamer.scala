@@ -8,10 +8,12 @@ import puck.javaGraph.nodeKind.{MethodKind, TypeKind, Constructor}
 object JavaRenamer extends Renamer{
 
   override def apply
-  ( g : DependencyGraph,
+  ( graph : DependencyGraph,
     id : NodeId,
     newName : String) : DependencyGraph = {
 
+    import puck.graph.ShowDG._
+    val g = graph.comment(s"Rename(g, ${(graph, id).shows}, $newName)")
     val n = g.getNode(id)
 
     def dual = n.kind.kindType match {

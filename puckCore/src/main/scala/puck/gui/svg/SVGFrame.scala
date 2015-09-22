@@ -44,172 +44,57 @@ class SVGConsole
   }
 }
 
-class SVGFrame
-( stream: InputStream,
-  opts: PrintingOptions,
-  filesHandler : FilesHandler,
-  graphUtils : GraphUtils,
-  dg2ast : DG2AST
-  ) extends JFrame with StackListener {
-  def update(svgController: SVGController) : Unit = {
-    undoAllButton.setEnabled(svgController.canUndo)
-    undoButton.setEnabled(svgController.canUndo)
-    redoButton.setEnabled(svgController.canRedo)
-  }
 
-  def abstractAction(name:String)
-                    (action : ActionEvent => Unit) : AbstractAction =
-    new AbstractAction(name){
-      def actionPerformed(e: ActionEvent) : Unit = action(e)
-
-    }
-  def jbutton(name:String)
-              (action : ActionEvent => Unit) : JButton =
-   new JButton(abstractAction(name)(action))
-
-
-  def addButtonToMenu(action : AbstractAction) : Unit = {
-    val _ = menu.add(new JButton(action))
-  }
-
-  def addButtonToMenu(name:String)
-                     (action : ActionEvent => Unit) : Unit =
-    addButtonToMenu(abstractAction(name)(action))
-
-
-
-  private val consolePanel: SVGConsole = new SVGConsole()
-  setLayout(new BorderLayout)
-  val panel : SVGPanel =
-    new SVGPanel(SVGController.documentFromStream(stream))
-
-  setVisible(true)
-  private val controller: SVGController =
-    SVGController(
-      filesHandler, graphUtils, dg2ast,
-          opts, panel.canvas, consolePanel)
-  panel.controller = controller
-  private val menu: JPanel = new JPanel()
-  controller.registerAsStackListeners(this)
-
+class SVGFrameMenu
+( private val controller: SVGController
+  ) extends JPanel {
 
   addVisibilityCheckBoxesToMenu()
 
-
-
-  private val undoAllButton = new JButton(abstractAction("Undo all") {
-    _ => controller.undoAll()
-  })
-  undoAllButton.setEnabled(false)
-  menu.add(undoAllButton)
-
-  private val undoButton = new JButton(abstractAction("Undo") {
-    _ => controller.undo()
-  })
-  undoButton.setEnabled(false)
-  menu.add(undoButton)
-  private val redoButton = new JButton(abstractAction("Redo"){
-    _ => controller.redo()
-  })
-  redoButton.setEnabled(false)
-  menu.add(redoButton)
+  val (undoAllButton, undoButton, redoButton) = addUndoRedoButton()
 
   addLoadSaveButton()
 
-
-
-  menu.add(consolePanel.panel)
-
-  private def addHboxButtons() : Unit = {
-    val hbox = new JPanel()
-    hbox.setLayout(new BoxLayout(hbox, BoxLayout.Y_AXIS))
-    menu add hbox
-
-    hbox add jbutton("Show recording") {
-      _ => controller.printRecording()
-    }
-//    hbox add jbutton("Show abstractions") {
-//      _ => controller.printAbstractions()
-//    }
-    hbox add jbutton("Apply") {
-      _ => controller.applyOnCode()
-        controller.compareOutputGraph()
-    }
-
-    import graphUtils.nodeKindKnowledge.kindOfKindType
-    assert(kindOfKindType(NameSpace).size == 1)
-
-    hbox add new JButton(
-      new AddNodeAction(controller.graph.root, controller, kindOfKindType(NameSpace).head))
-
-
-    hbox add jbutton("Show top level packages") {
-        _ => controller.expand(controller.graph.rootId)
-    }
-
-    val _ = hbox add jbutton("Hide type relationship") {
-      _ => controller.setSelectedEdgeForTypePrinting(None)
-    }
-  }
+  add(controller.console.panel)
 
   addHboxButtons()
 
-  this.add(panel, BorderLayout.CENTER)
-  this.add(menu, BorderLayout.SOUTH)
 
-
-  this.setVisible(true)
-  this.setMinimumSize(new Dimension(640, 480))
-  this.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE)
-
-  private def chooseFile(chooserMode : (JFileChooser, java.awt.Component) => Int) : Option[File] = {
-    val chooser = new JFileChooser()
-    chooser.setCurrentDirectory(filesHandler.workingDirectory)
-    val returnVal: Int = chooserMode(chooser, SVGFrame.this)
-    if (returnVal == JFileChooser.APPROVE_OPTION) {
-      Some(chooser.getSelectedFile)
+  def addUndoRedoButton() : (JButton, JButton, JButton) = {
+    val undoAllButton = jbutton("Undo all") {
+      _ => controller.undoAll()
     }
-    else None
-  }
+    undoAllButton.setEnabled(false)
+    add(undoAllButton)
 
-  private def openFile() : Option[File] =
-    chooseFile( (chooser, component) => chooser.showOpenDialog(component) )
-  private def saveFile() : Option[File] =
-    chooseFile( (chooser, component) => chooser.showSaveDialog(component) )
-
-  private def addLoadSaveButton() : Unit = {
-    addButtonToMenu("Save") {
-      _ =>
-        saveFile() match {
-          case None => consolePanel.appendText("no file selected")
-          case Some(f) =>  controller.saveRecordOnFile(f)
-        }
-      }
-    addButtonToMenu("Load") {
-      _ =>
-        openFile() match {
-          case None => consolePanel.appendText("no file selected")
-          case Some(f) => controller.loadRecord(f)
-        }
+    val undoButton = jbutton("Undo") {
+      _ => controller.undo()
     }
+    undoButton.setEnabled(false)
+    add(undoButton)
+    val redoButton = jbutton("Redo") {
+      _ => controller.redo()
+    }
+    redoButton.setEnabled(false)
+    add(redoButton)
+
+    (undoAllButton, undoButton, redoButton)
   }
-
-
 
   private def addVisibilityCheckBoxesToMenu() : Unit = {
     val hbox = new JPanel()
     hbox.setLayout(new BoxLayout(hbox, BoxLayout.Y_AXIS))
-    menu add hbox
+    add(hbox)
 
-//    val inputNode = new JTextField()
-//    inputNode.setMinimumSize(new Dimension(50, 35))
-//    val getNodeName = new JButton(abstractAction("See node Name") {
-//      _ =>
-//        val id = inputNode.getText.toInt
-//        println(s"$id - ${controller.graph.fullName(id)}")
-//    })
-//    hbox.add(inputNode)
-//    hbox.add(getNodeName)
+    //    val inputNode = new JTextField()
+    //    inputNode.setMinimumSize(new Dimension(50, 35))
+    //    val getNodeName = new JButton(abstractAction("See node Name") {
+    //      _ =>
+    //        val id = inputNode.getText.toInt
+    //        println(s"$id - ${controller.graph.fullName(id)}")
+    //    })
+    //    hbox.add(inputNode)
+    //    hbox.add(getNodeName)
 
     def addCheckBox(name: String, initiallySelected : Boolean)(f: Boolean => Unit) : JCheckBox = {
       val checkBox: JCheckBox = new JCheckBox
@@ -224,19 +109,19 @@ class SVGFrame
 
     addCheckBox("Show signatures",
       controller.printingOptions.printSignatures) {
-        controller.setSignatureVisible
+      controller.setSignatureVisible
     }
 
     addCheckBox("Show ids",
       controller.printingOptions.printId) {
-        controller.setIdVisible
+      controller.setIdVisible
     }
     addCheckBox("Show Virtual Edges",
       controller.printingOptions.printVirtualEdges) {
       controller.setVirtualEdgesVisible
     }
     addCheckBox("Concrete Uses/Virtual Edge",
-     controller.printingOptions.printConcreteUsesPerVirtualEdges) {
+      controller.printingOptions.printConcreteUsesPerVirtualEdges) {
       controller.setConcreteUsesPerVirtualEdges
     }
     addCheckBox("Show RedOnly",
@@ -245,6 +130,108 @@ class SVGFrame
     }
     ()
   }
+
+  private def addLoadSaveButton() : Unit = {
+    import controller.filesHandler.workingDirectory
+    add(jbutton("Save") {
+      _ =>
+        saveFile(workingDirectory, this) match {
+          case None => controller.console.appendText("no file selected")
+          case Some(f) =>  controller.saveRecordOnFile(f)
+        }
+    }) ; add(jbutton("Load") {
+      _ =>
+        openFile(workingDirectory, this) match {
+          case None => controller.console.appendText("no file selected")
+          case Some(f) => controller.loadRecord(f)
+        }
+    }) ; ()
+  }
+
+  private def addHboxButtons() : Unit = {
+    val hbox = new JPanel()
+    hbox.setLayout(new BoxLayout(hbox, BoxLayout.Y_AXIS))
+    add(hbox)
+
+    hbox add jbutton("Show recording") {
+      _ => controller.printRecording()
+    }
+    //    hbox add jbutton("Show abstractions") {
+    //      _ => controller.printAbstractions()
+    //    }
+    hbox add jbutton("Apply") {
+      _ => controller.applyOnCode()
+        controller.compareOutputGraph()
+    }
+
+    import controller.graphUtils.nodeKindKnowledge.kindOfKindType
+    assert(kindOfKindType(NameSpace).size == 1)
+
+    hbox add new JButton(
+      new AddNodeAction(controller.graph.root, controller, kindOfKindType(NameSpace).head))
+
+
+    hbox add jbutton("Show top level packages") {
+      _ => controller.focusExpand(controller.graph.rootId, focus= false, expand = true)
+    }
+
+    val _ = hbox add jbutton("Hide type relationship") {
+      _ => controller.setSelectedEdgeForTypePrinting(None)
+    }
+  }
+
+
+
+}
+
+
+class SVGFrame
+( stream: InputStream,
+  opts: PrintingOptions,
+  filesHandler : FilesHandler,
+  graphUtils : GraphUtils,
+  dg2ast : DG2AST
+  ) extends JFrame with StackListener {
+
+  def update(svgController: SVGController) : Unit = {
+    menu.undoAllButton.setEnabled(svgController.canUndo)
+    menu.undoButton.setEnabled(svgController.canUndo)
+    menu.redoButton.setEnabled(svgController.canRedo)
+  }
+
+  val console: SVGConsole = new SVGConsole()
+  setLayout(new BorderLayout)
+  val panel : SVGPanel =
+    new SVGPanel(SVGController.documentFromStream(stream))
+
+  setVisible(true)
+  private val controller: SVGController =
+    SVGController(
+      filesHandler, graphUtils, dg2ast,
+          opts, this)
+  panel.controller = controller
+  private val menu: SVGFrameMenu = new SVGFrameMenu(controller)
+  controller.registerAsStackListeners(this)
+
+
+  val centerPane = new JSplitPane()
+  centerPane.setLeftComponent(panel)
+  centerPane.setRightComponent(new JPanel())
+  centerPane.setResizeWeight(0.75)
+
+  this.add(centerPane, BorderLayout.CENTER)
+  this.add(menu, BorderLayout.SOUTH)
+
+
+
+  this.setVisible(true)
+  this.setMinimumSize(new Dimension(640, 480))
+  this.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE)
+
+
+
+
+
 
 
 }

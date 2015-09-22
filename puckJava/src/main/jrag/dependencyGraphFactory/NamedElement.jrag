@@ -53,7 +53,7 @@ aspect NamedElement {
 
     public int ASTNode.getReturnTypeIndex(){return -1;}
     public int MethodDecl.getReturnTypeIndex(){return 1;}
-
+    public int FieldDeclaration.getReturnTypeIndex(){return 1;}
 
     public List<ParameterDeclaration> ASTNode.getParameters(){
         throw new Error(this.getClass() + " has no parameters");

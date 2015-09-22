@@ -67,7 +67,8 @@ case class NamedRangeSet private[constraints]
 
   override def toString() = id
 
-  val declare : String = ""
+  val declare_pre : String = ""
+  val declare_post : String = ""
 
   def iterator : Iterator[Range] = setDef.iterator
   def +(n : Range) = new NamedRangeSet(id, setDef + n)
@@ -78,7 +79,8 @@ case class NamedRangeSet private[constraints]
 class NamedRangeSetUnion(id0 : String,
                         override val setDef : RangeSetUnion)
   extends NamedRangeSet(id0, setDef){
-  override val declare = "declareUnionSet"
+  override val declare_pre = "union("
+  override val declare_post = ")"
 }
 
 
@@ -93,8 +95,8 @@ case class RangeSetUnion private[constraints]
 
   def iterator : Iterator[Range] = {
     val s = Seq[Range]() ++ set
-    sets.foldLeft(s){case (s0, set0) =>  s0 ++ set0 }
-    s.iterator
+    val s1 = sets.foldLeft(s){case (s0, set0) =>  s0 ++ set0 }
+    s1.iterator
   }
 
   def +(n : Range) = new RangeSetUnion(sets, set + n)

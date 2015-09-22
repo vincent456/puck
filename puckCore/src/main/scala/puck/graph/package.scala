@@ -1,8 +1,7 @@
 package puck
 
 import puck.graph.transformations.Recordable
-import puck.util.LoggedEither
-import puck.util.Logged
+import puck.util.{LoggedEither, Logged}
 
 import scalaz._, Scalaz._
 
@@ -35,23 +34,25 @@ package object graph {
 
   implicit class LoggedOrOps[E, A](val lg: LoggedEither[E, A]) extends AnyVal {
     def error(e : E) : LoggedEither[E, A] = lg.left_>>(e)
+
+
   }
 
 
   def LoggedError[A]( e: String): LoggedTry[A] =
-    LoggedError(new PuckError(e), e)
+    LoggedEither(e, -\/(new PuckError(e)))
 
   def LoggedError[A]( e: Error): LoggedTry[A] =
-    LoggedError(e, "")
+    LoggedEither("", -\/(e))
 
-  def LoggedError[A]( e: PuckError, msg : String): LoggedTry[A] =
+ def LoggedError[A](msg : String, e: PuckError): LoggedTry[A] =
     LoggedEither(msg, -\/(e))
 
 
   def LoggedSuccess[A]( a : A): LoggedTry[A] =
-    LoggedSuccess(a, "")
+    LoggedSuccess("", a)
 
-  def LoggedSuccess[A]( a : A, msg : String): LoggedTry[A] =
+  def LoggedSuccess[A](msg : String, a : A): LoggedTry[A] =
     LoggedEither(msg, \/-(a))
 
   type NodePredicateT = (DependencyGraph, ConcreteNode) => Boolean

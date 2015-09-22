@@ -50,9 +50,9 @@ case class RedirectionOp(edge : DGEdge, extremity : Extremity)
   val withMerge = false
   def execute(g: DependencyGraph , op : Direction) = (op, extremity) match {
     case (Regular, Target(newTarget)) => edge.changeTarget(g, newTarget)
-    case (Reverse, Target(newTarget)) => edge.kind(edge.source, newTarget).changeTarget(g, edge.target)
+    case (Reverse, Target(newTarget)) => edge.copy(target = newTarget).changeTarget(g, edge.target)
     case (Regular, Source(newSource)) => edge.changeSource(g, newSource)
-    case (Reverse,Source(newSource)) => edge.kind(newSource, edge.target).changeSource(g, edge.source)
+    case (Reverse,Source(newSource)) => edge.copy(source = newSource).changeSource(g, edge.source)
   }
 }
 

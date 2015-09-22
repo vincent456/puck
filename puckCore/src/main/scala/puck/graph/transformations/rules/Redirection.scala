@@ -3,15 +3,25 @@ package puck.graph.transformations.rules
 import puck.{graph, PuckError}
 import puck.graph._
 import puck.util.LoggedEither, LoggedEither._
-import scalaz._, Scalaz._
+import puck.graph.ShowDG._
+import scalaz.std.list._
+import scalaz.std.set._
 
 object Redirection {
 
-  def cl(g: DependencyGraph, u : DGUses) : Set[(DGUses, DGUses)] =
-    for{
+  def cl(g: DependencyGraph, u : DGUses) : Set[(DGUses, DGUses)] = {
+    val cl0 =  for {
       tu <- g.typeUsesOf(u) + u
       tmu <- g.typeMemberUsesOf(tu)
     } yield (tu, tmu)
+
+    val cl1 = for  {
+      tmu <- g.typeMemberUsesOf(u) + u
+      tu <- g.typeUsesOf(tmu)
+    } yield (tu, tmu)
+
+    cl0 ++ cl1
+  }
 
 
   def tmAbstraction
@@ -22,11 +32,11 @@ object Redirection {
     val absSet = g.abstractions(tmImpl).filter { abs =>
       abs.nodes.forall(g.contains(typeAbs,_))
     }
-    if(absSet.size != 1) LoggedError(new PuckError(), s"one abstraction required ${absSet.size} found")
+    if(absSet.size != 1) LoggedError(s"one abstraction required ${absSet.size} found")
     else LoggedSuccess(absSet.head)
   }
 
-  private def redirect
+  private [rules] def redirect
   ( g : DependencyGraph,
     oldUse : DGUses,
     newUsed : Abstraction) : LoggedTry[(DependencyGraph, List[DGUses])] =
@@ -45,15 +55,17 @@ object Redirection {
         case _ => throw new PuckError(s"error while redirecting $oldUse toward $newUsed")
       }
     } catch {
-      case e : PuckError => LoggedError(e, e.getMessage)
+      case e : PuckError => LoggedError(e.getMessage)
     }
 
 
   def redirectUsesAndPropagate
-    ( g : DependencyGraph,
+    ( graph : DependencyGraph,
       oldUse : DGUses,
       newUsed : Abstraction
       ): LoggedTG = {
+
+    val g = graph.comment(s"Redirection.redirectUsesAndPropagate(g, ${(graph,oldUse).shows}, $newUsed)")
 
     val oldKindType = g.kindType(oldUse.used)
     val newKindType = newUsed.kindType(g)
@@ -71,7 +83,7 @@ object Redirection {
          redirect(g, oldUse, newUsed).map(_._1)
 
       case (kt1, kt2) =>
-        LoggedError(new PuckError(), s"redirection of type $kt1 to $kt2 unhandled")
+        LoggedError(s"redirection of type $kt1 to $kt2 unhandled")
     }
 
     val log = s"redirect uses and propagate from $oldKindType to $newKindType\n"
@@ -116,12 +128,9 @@ object Redirection {
             }
         }
 
-      case _ => LoggedError(new PuckError(), "constructor should have one abs node")
+      case _ => LoggedError("constructor should have one abs node")
     }
   }
-
-
-
 
   def redirectInstanceUsesAndPropagate
     ( g : DependencyGraph,
@@ -162,7 +171,7 @@ object Redirection {
         if(newUsed.kindType(g) == TypeDecl)
           redirect(g, oldUse, newUsed).map(_._1)
         else
-          LoggedError(new graph.Error(), "empty binding relationship and not redirecting a type decl")
+          LoggedError("empty binding relationship and not redirecting a type decl")
       }
 
     log <++: ltg

@@ -1,5 +1,10 @@
 
 aspect ReplaceTypeAccess {
+
+    public void ASTNode.setTypeAccess(Access tAccess){
+        throw new PuckError(this.getClass() + ".setTypeAccess not implemented");
+    }
+
     void TypeDecl.replaceTypeAccessInList(Access oldAccess, Access newAccess, List<Access> list){
         if(!oldAccess.isTypeAccess() || !newAccess.isTypeAccess())
             throw new Error("Both access should be type access !");

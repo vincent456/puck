@@ -1,7 +1,7 @@
-java_import(['prototype.candidate']).
+import ['prototype.candidate']
 
-declareSet(concretePrototypes, ['Curly', 'Moe', 'Larry']).
+concretePrototypes =  ['Curly', 'Moe', 'Larry']
 
-declareSet(initial_creator,['PrototypeDemo.main__String[]']).
+initial_creator = ['PrototypeDemo.main__String[]']
 
-hideScopeSetButFrom(concretePrototypes, initial_creator).
+hide concretePrototypes but-not-from initial_creator

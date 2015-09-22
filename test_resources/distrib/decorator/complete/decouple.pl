@@ -3,8 +3,8 @@ import ['decorator.candidate']
 
 concreteComponents = ['A']
 decorators = ['AwithX', 'AwithY', 'AwithZ', 
-	      'AwithXY', 'AwithXYZ']).
+	      'AwithXY', 'AwithXYZ']
 
 everybody = union([concreteComponents, decorators])
 
-hideFromEachOther(everybody)
+hide everybody from everybody

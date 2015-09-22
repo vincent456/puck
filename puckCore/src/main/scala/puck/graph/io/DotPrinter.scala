@@ -96,6 +96,10 @@ class DotPrinter
 
   private val concreteViolations : Seq[DGEdge] = graph.violations map transformParamOrDefToDecl distinct
 
+//  import scalaz.syntax.show._
+//  import ShowDG._
+//
+//  println(concreteViolations map (e => (g,e).shows) mkString("[",",\n","]"))
 
 /*
  * dot -Tpng give a wrong drawing of the graph when mixing nodes and arcs
@@ -193,7 +197,7 @@ class DotPrinter
   def decorate_name(n : DGNode):String = {
     val sCter = graph.container(n.id)
 
-    if (sCter.isDefined && concreteViolations.contains((sCter.get, n.id)))
+    if (sCter.isDefined && concreteViolations.contains(Contains(sCter.get, n.id)))
       "<FONT COLOR=\"" + ColorThickness.violation.color + "\"><U>" + helper.namePrefix(n) + name(n) + idString(n.id) + "</U></FONT>"
     else helper.namePrefix(n) + name(n) + idString(n.id)
   }
@@ -225,7 +229,6 @@ class DotPrinter
 
 
   def printSubGraph(n : DGNode): Unit = {
-
     val label =
       s"""label=<<TABLE BORDER="0"><TR><TD BORDER="0" HREF="${n.id}" > ${decorate_name(n)}
          |</TD></TR></TABLE>>;""".stripMargin
@@ -244,9 +247,10 @@ class DotPrinter
       val sig = n mapConcrete (cn => signatureString(graph.structuredType(cn.id)), "")
 
       val (itb, ite) = n.kind.kindType match {
-        case InstanceValueDecl
-          | StaticValueDecl if n.definition(g).isEmpty =>
+        case InstanceValueDecl if n.definition(g).isEmpty =>
           ("<I>", "</I>")
+        case StaticValueDecl  =>
+          ("<I>&lt;&lt;static&gt;&gt;</I>", "")
         case _ => ("","")
       }
 

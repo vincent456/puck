@@ -1,13 +1,13 @@
-java_import(['templateMethod.candidate']).
+import ['templateMethod.candidate']
 
-declareSet(concreteImplem,['DecoratedStringGenerator.prepareFancy__String',
+concreteImplem = ['DecoratedStringGenerator.prepareFancy__String',
 			    'DecoratedStringGenerator.filterFancy__String',
 			    'DecoratedStringGenerator.finalizeFancy__String',
 			    'DecoratedStringGenerator.prepareSimple__String',
 			    'DecoratedStringGenerator.filterSimple__String',
-			    'DecoratedStringGenerator.finalizeSimple__String']).
-			    
-%declareSet(template_method,['DecoratedStringGenerator.generate__String']).
-declareSet(template_method,['DecoratedStringGenerator']).
+			    'DecoratedStringGenerator.finalizeSimple__String']
 
-hideScopeSetFrom(concreteImplem, template_method).
+%declareSet(template_method,['DecoratedStringGenerator.generate__String']).
+template_method = ['DecoratedStringGenerator']
+
+hide concreteImplem from template_method

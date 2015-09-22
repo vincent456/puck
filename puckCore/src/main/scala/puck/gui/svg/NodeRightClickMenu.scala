@@ -18,17 +18,8 @@ object NodeRightClickMenu{
       case n : VirtualNode => new VirtualNodeRightClickMenu(controller, n)
     }
 
-  implicit class JPopupSyntax(val menu : JPopupMenu) extends AnyVal {
-    def addMenuItem(name : String)(action : ActionEvent => Unit) : JMenuItem = {
-      menu.add(new AbstractAction(name) {
-        def actionPerformed(actionEvent: ActionEvent) : Unit =
-          action(actionEvent)
-      })
-    }
-  }
-}
 
-import NodeRightClickMenu.JPopupSyntax
+}
 
 class ConcreteNodeRightClickMenu
 ( private val controller: SVGController,
@@ -120,6 +111,7 @@ class ConcreteNodeRightClickMenu
 //        mergeMatcherInstances.syntaxicMergeMatcher(selected)
 //
 //    if (m.canBeMergedInto(node, graph))
+      if(selected.kind.kindType == node.kind.kindType)
       this.add(new MergeAction(selected, node, controller))
 
 
@@ -138,29 +130,36 @@ class ConcreteNodeRightClickMenu
             this.add(new RedirectAction(node, uses, abs, controller))
 
       }
-    graph.getUsesEdge(source, target) match {
-      case Some(uses) =>
-        if(uses.existsIn(graph))
-          addRedirectAction(uses)
-        graph.definitionOf(uses.user).foreach{
-          userDef =>
-            graph.getUsesEdge(userDef, uses.used).foreach{
-              usesFromDef =>
-                addRedirectAction(usesFromDef)
-            }
-        }
 
-      case None => ()
+    graph.getUsesEdge(source, target).foreach{
+      uses => addRedirectAction(uses)
     }
+
+    graph.definitionOf(source).foreach{
+      userDef =>
+        graph.getUsesEdge(userDef, target).foreach{
+          usesFromDef =>
+            addRedirectAction(usesFromDef)
+        }
+    }
+
   }
 
 
   private def addShowOptions() : Unit = {
+
+    this.addMenuItem("Infos"){ _ =>
+      controller.showNodeInfos(node.id)
+    }
+
     this.addMenuItem("Hide") { _ =>
       controller.hide(node.id)
     }
     this.addMenuItem("Focus") { _ =>
-      controller.focus(node.id)
+      controller.focusExpand(node.id, focus = true, expand = false)
+    }
+    this.addMenuItem("Focus & Expand") { _ =>
+      controller.focusExpand(node.id, focus = true, expand = true)
     }
     this.addMenuItem("Show code") { _ =>
       controller.printCode(node.id)
@@ -175,7 +174,7 @@ class ConcreteNodeRightClickMenu
         controller.collapse(node.id)
       }
       this.addMenuItem("Expand") { _ =>
-        controller.expand(node.id)
+        controller.focusExpand(node.id, focus = false, expand = true)
       }
       this.addMenuItem("Expand all") { _ =>
         controller.expandAll(node.id)

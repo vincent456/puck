@@ -2,6 +2,7 @@ package puck.graph.transformations.rules
 
 import puck.{graph, PuckError}
 import puck.graph._
+import ShowDG._
 
 abstract class Intro {
   intro =>
@@ -65,7 +66,7 @@ abstract class Intro {
     kind : NodeKind,
     mutable : Mutability = true
     ) : (ConcreteNode, DependencyGraph) =
-    graph.addConcreteNode(localName, kind, mutable)
+    graph.comment(s"Intro(g, $localName, $kind)").addConcreteNode(localName, kind, mutable)
 
   def typedNodeWithDef
   (graph : DependencyGraph,
@@ -96,7 +97,7 @@ abstract class Intro {
 
 
     g1.getDefaultConstructorOfType(typeNode) match {
-      case None => LoggedError(new PuckError(s"no default constructor for $typeNode"))
+      case None => LoggedError(s"no default constructor for $typeNode")
       case Some(cid) =>
         LoggedSuccess {
           val g2 = g1.addParam(typeMemberDecl, pNode.id)
@@ -114,13 +115,14 @@ abstract class Intro {
   }
 
   def typeMember
-  (g : DependencyGraph,
+  (graph : DependencyGraph,
    typeNode : NodeId,
    tmContainer : NodeId,
    kind : NodeKind
     ) : LoggedTry[(DGUses, DependencyGraph)] = {
+    val g = graph.comment(s"Intro.typeMember(g, ${(graph, typeNode).shows}, ${(graph,tmContainer).shows}, $kind)")
     g.getDefaultConstructorOfType(typeNode) match {
-      case None => LoggedError(new PuckError(s"no default constructor for $typeNode"))
+      case None => LoggedError(s"no default constructor for $typeNode")
       case Some(constructorId) =>
 
         val delegateName = s"${g.getConcreteNode(typeNode).name.toLowerCase}_delegate"
@@ -135,13 +137,9 @@ abstract class Intro {
           LoggedSuccess(
             (newTypeUse,
               g1.addContains(tmContainer, delegateDecl.id)
-                .addEdge(newTypeUse) //type field
                 .addEdge(Uses(delegateDef.id, constructorId))))
-        //.addEdge(Uses(tmContainer, delegateDecl.id, Some(Write)))
-        else {
-          val msg =s"$tmContainerKind cannot contain $kind"
-          LoggedError(new PuckError(msg), msg)
-        }
+        else
+          LoggedError(s"$tmContainerKind cannot contain $kind")
 
     }
   }

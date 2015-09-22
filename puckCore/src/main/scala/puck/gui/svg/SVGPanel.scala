@@ -56,9 +56,7 @@ class PUCKSVGCanvas
 
   def modify (f : () => Unit ) : Unit =
     getUpdateManager.getUpdateRunnableQueue.invokeLater(new Runnable {
-      def run(): Unit = {
-        println("modifying")
-        f()}
+      def run(): Unit = f()
     })
 
 }
@@ -88,41 +86,17 @@ class SVGPanelListener
     } else None
   }
 
-//  private def edgeKindFromGElement(gelt: SVGGElement): DGEdge.EKind = {
-//    val l: NodeList = gelt.getChildNodes
-//    var i: Int = 0
-//    while (i < l.getLength) {
-//      val n: Node = l.item(i)
-//      if (n.getNodeName == "path") {
-//        if (n.asInstanceOf[Element].hasAttribute("stroke-dasharray"))
-//          return Isa
-//        else
-//          return Uses
-//      }
-//      i += 1; i - 1
-//
-//    }
-//
-//    Uses
-//  }
-
-  //private val arrowPattern  = Pattern.compile("\\d+:(\\d+).{2}\\d+:(\\d+)")
-
   private val idPattern = Pattern.compile("(\\d+:\\d+)|(nodeCluster\\d+)")
-//  private val arrowPattern  = Pattern.compile("(\\d+:(\\d+)|nodeCluster(\\d+)).{2}(\\d+:(\\d+)|nodeCluster(\\d+))")
-
 
   private def edgeFromGElement(gelt: SVGGElement): Option[NodeIdP] = {
     val t = gelt.getFirstChild.asInstanceOf[SVGTitleElement]
     val title = t.getFirstChild.asInstanceOf[GenericText]
-    //val k: DGEdge.EKind = edgeKindFromGElement(gelt)
 
     val m: Matcher = idPattern.matcher(title.getData)
 
     def nextId() : Option[Int] = {
       if(m.find()) {
         val strId = m.group()
-        println(strId)
         if(strId.startsWith("nodeCluster")){
           Some(strId.substring("nodeCluster".length).toInt)
         } else {

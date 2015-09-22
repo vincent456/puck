@@ -149,17 +149,17 @@ object Mapping {
         equalsCVM(mappinNodeIdP)(g1.edges.typeUses2typeMemberUsesMap,
           g2.edges.typeUses2typeMemberUsesMap)
 
-
-//      println("equalsNodes = " + equalsNodes)
-//      println("equalsUses1 = " + equalsUses1)
-//      println("equalsUses2 = " + equalsUses2)
-//      println("equalsUses3 = " + equalsUses3)
-//      println("equalsContains1 = " + equalsContains1)
-//      println("equalsContains2 = " + equalsContains2)
-//      println("equalsContains3 = " + equalsContains3)
-//      println("equalsIsa = " + equalsIsa)
-//      println("equalsTD1 = " + equalsTD1)
-//      println("equalsTD2 = " + equalsTD2)
+      println("###############################")
+      println("equalsNodes = " + equalsNodes)
+      println("equalsUses1 = " + equalsUses1)
+      println("equalsUses2 = " + equalsUses2)
+      println("equalsUses3 = " + equalsUses3)
+      println("equalsContains1 = " + equalsContains1)
+      println("equalsContains2 = " + equalsContains2)
+      println("equalsContains3 = " + equalsContains3)
+      println("equalsIsa = " + equalsIsa)
+      println("equalsTD1 = " + equalsTD1)
+      println("equalsTD2 = " + equalsTD2)
 
       equalsNodes && equalsUses1 && equalsUses2 && equalsUses3 &&
         equalsContains1 && equalsContains2 && equalsContains3 &&

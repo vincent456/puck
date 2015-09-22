@@ -1,4 +1,4 @@
-java_import(['proxy.candidate']).
+import ['proxy.candidate']
 
-declareSet(hiddenObject, ['Image']).
-hideScopeSet(hiddenObject).
+hiddenObject = ['Image']
+hide hiddenObject

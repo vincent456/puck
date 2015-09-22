@@ -7,7 +7,9 @@ import puck.graph.DependencyGraph.AbstractionMap
 import puck.graph.{TypeConstructor, StaticValueDecl}
 import puck.graph.constraints.NotAnAbstraction
 import puck.util.LoggedEither._
-import scalaz._, Scalaz._
+import ShowDG._
+import scalaz.std.list._
+import scalaz.std.set._
 
 trait MergingCandidatesFinder {
 
@@ -94,7 +96,7 @@ class Merge
                 case TypeConstructor =>
                   //TODO search for one with compatible arguments
                   g0.content(consumerId).find(g.kindType(_) == TypeConstructor) match {
-                    case None => LoggedError(new PuckError("cannot find new type constructor"))
+                    case None => LoggedError("cannot find new type constructor")
                     case Some(newTypeConstructor) =>
                       mergeInto(g0, consumedChildId, newTypeConstructor)
 
@@ -115,10 +117,11 @@ class Merge
   type MergeIntoFun =(DependencyGraph, NodeId, NodeId) => LoggedTG
 
   def mergeInto
-  ( g : DependencyGraph,
+  ( graph : DependencyGraph,
     consumedId : NodeId,
     consumerId : NodeId
     ) : LoggedTG = {
+    val g = graph.comment(s"Merge.mergeInto(g, ${(graph, consumedId).shows}, ${(graph, consumerId).shows})")
     val consumed = g.getConcreteNode(consumedId)
     consumed.kind.kindType match {
       case InstanceValueDecl
@@ -140,7 +143,7 @@ class Merge
         mergeInto0(g, consumedId, consumerId)(mergeChildrenOfTypeDecl)
 
       case kt =>
-        LoggedError(new PuckError(), s"$kt consumed kindType unhandled")
+        LoggedError(s"$kt consumed kindType unhandled")
     }
   }
 
@@ -156,10 +159,9 @@ class Merge
     for {
       g1 <- g.usersOf(consumedId).foldLoggedEither[PuckError, DependencyGraph](lg){
         (g0, userId) =>
-            LoggedSuccess(
+            LoggedSuccess(s"redirecting ($userId, $consumedId) toward $consumerId\n",
               g0.changeTarget(Uses(userId, consumedId), consumerId)
-                .changeType(userId, consumedId, consumerId),
-              s"redirecting ($userId, $consumedId) toward $consumerId\n")
+                .changeType(userId, consumedId, consumerId))
       }
 
       g2 <- g1.usedBy(consumedId).foldLoggedEither(g1){
@@ -217,9 +219,6 @@ class Merge
   }
 
   def removeTypeDependenciesInvolving(g : DependencyGraph, n : ConcreteNode) : DependencyGraph = {
-//    println("removeTypeDependenciesInvolving " + n)
-//    println("typeUses2typeMemberUses " + g.typeUses2typeMemberUses)
-//    println("typeMemberUses2typeUses " + g.typeMemberUses2typeUses)
     val g1 = n.kind.kindType match {
       case TypeDecl
         | InstanceTypeDecl =>
@@ -265,14 +264,14 @@ class Merge
   ( g : DependencyGraph,
     n : ConcreteNode
     ) : LoggedTG = {
-    val graph = g.comment(s"Remove node $n")
+    val graph = g.comment(s"Remove($n)")
     for {
       g1 <- graph.content(n.id).map(graph.getConcreteNode).
           foldLoggedEither(graph)(removeConcreteNode)
       // g1 <- graph.content(n.id).map(graph.getConcreteNode).foldLeftM(graph)(removeConcreteNode)
       g2 <-
       if (g1.usersOf(n.id).nonEmpty)
-        LoggedError(new PuckError("Cannot remove a used node"))
+        LoggedError("Cannot remove a used node")
       else {
         val g00 =
           n.kind.kindType match {

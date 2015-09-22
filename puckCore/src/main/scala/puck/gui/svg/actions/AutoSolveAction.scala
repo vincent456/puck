@@ -61,7 +61,7 @@ class AutoSolveAction
       printErrOrPushGraph(controller, "Auto solve action : ") {
         dialog(engine) match {
           case Some(g) => g.toLoggedTry
-          case None => LoggedError(new PuckError("cancelled"))
+          case None => LoggedError("cancelled")
         }
       }
     }

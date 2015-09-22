@@ -58,7 +58,8 @@ case class ConstraintMapBuilder
     interlopers : RangeSet,
     friends : RangeSet
     ) : ConstraintMapBuilder = {
-      val ct = new Constraint(owners, facades, interlopers, friends)
+
+    val ct = new Constraint(owners, facades, interlopers, friends)
 
     copy(hideConstraintsMap = owners.foldLeft(hideConstraintsMap){
       case (map, owner) =>
@@ -132,7 +133,7 @@ object ConstraintsParser
   ( ident : String ) : Parser[ConstraintMapBuilder] =
     ( "union(" ~> list <~ ")" ^^ {
         list =>
-          cm.addDef( new NamedRangeSetUnion(ident, normalize(list map cm.defs)))
+         cm.addDef( new NamedRangeSetUnion(ident, normalize(list map cm.defs)))
       }
       | rangeList ^^ {
        list => cm.addDef(new NamedRangeSet(ident,

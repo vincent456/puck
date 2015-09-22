@@ -3,11 +3,11 @@ package transformations.rules
 
 import puck.PuckError
 import puck.graph.ShowDG._
-import puck.graph.constraints.{AbstractionPolicy, SupertypeAbstraction, DelegationAbstraction}
+import puck.graph.constraints.{AbstractionPolicy, DelegationAbstraction, SupertypeAbstraction}
 import puck.util.LoggedEither._
 
-import scalaz.std.set._
 import scalaz.std.list._
+import scalaz.std.set._
 
 abstract class Abstract {
 
@@ -168,7 +168,7 @@ abstract class Abstract {
   ( g : DependencyGraph, meth : ConcreteNode,
     clazz : ConcreteNode, interface : ConcreteNode): LoggedTG = {
 
-      val log = "changeSelfTypeUseBySuperInTypeMember : " +
+      val log = "Abstract.redirectTypeUseInParameters : " +
         s"redirecting Uses(${meth.name}, ${clazz.name}) target to $interface\n"
 
       val ltg = g.parameters(meth.id).foldLoggedEither(g){
@@ -186,7 +186,8 @@ abstract class Abstract {
   def redirectTypeUseInParameters
   ( g : DependencyGraph, members : List[ConcreteNode],
     clazz : ConcreteNode, interface : ConcreteNode): LoggedTG =
-    members.foldLoggedEither(g){
+    members.foldLoggedEither(
+      g.comment(s"redirectTypeUseInParameters(g, $members, $clazz, $interface)")){
       (g0, child) =>
         child.kind.kindType match {
           case InstanceValueDecl if g0.parameters(child.id).exists(g0.uses(_, clazz.id)) =>
@@ -271,7 +272,7 @@ abstract class Abstract {
           redirectTypeUseInParameters(g1, g1.getConcreteNode(absMethodId),
             clazz, interface)
 
-        case _ => LoggedError(new PuckError("unexpected type of abstraction"))
+        case _ => LoggedError("unexpected type of abstraction")
       }
 
     }
@@ -301,7 +302,7 @@ abstract class Abstract {
       log = s"interface $interface created, contains : {" +
              g4.content(interface.id).map(nid => (g4, nid).shows).mkString("\n")+
              "}"
-      g5 <- LoggedSuccess(g4, log)
+      g5 <- LoggedSuccess(log, g4)
 
     } yield {
       (interfaceAbs, g5)
@@ -333,11 +334,12 @@ abstract class Abstract {
 //  }
 
   def createAbstraction
-  ( g : DependencyGraph,
+  ( graph : DependencyGraph,
     impl: ConcreteNode,
     abskind : NodeKind ,
     policy : AbstractionPolicy
-    ) : LoggedTry[(Abstraction, DependencyGraph)] =
+    ) : LoggedTry[(Abstraction, DependencyGraph)] ={
+    val g = graph.comment(s"Abstract.createAbstraction(g, ${(graph,impl).shows}, $abskind, $policy)")
     (abskind.kindType, policy) match {
       case (TypeDecl, SupertypeAbstraction) =>
         val methods = typeMembersToPutInInterface(g, impl, SupertypeAbstraction)
@@ -364,6 +366,7 @@ abstract class Abstract {
           impl, abskind, DelegationAbstraction, methods)
 
       case _ => LoggedSuccess(createAbsNodeAndUse(g, impl, abskind, policy))
+  }
   }
 
 

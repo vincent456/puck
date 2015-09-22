@@ -87,7 +87,7 @@ class AbstractionAction(
                    abstractTypeDeclAndReplaceByAbstractionWherePossible(graph.mileStone,
                      node, kind, policy, selectedNodes)
                case Result.Cancel =>
-                 LoggedError(new PuckError("Operation Canceled"))
+                 LoggedError("Operation Canceled")
              }
 
            case _ =>

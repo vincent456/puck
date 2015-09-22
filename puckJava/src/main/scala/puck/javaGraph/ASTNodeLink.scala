@@ -60,7 +60,9 @@ case class BlockHolder(block : AST.Block) extends DefHolder{
   def node = block.asInstanceOf[AST.ASTNode[_]]
 }
 
-case class ParameterDeclHolder(decl : AST.ParameterDeclaration) extends ASTNodeLink
+case class ParameterDeclHolder(decl : AST.ParameterDeclaration) extends HasNode {
+  def node = decl.asInstanceOf[AST.ASTNode[_]]
+}
 
 sealed trait HasBodyDecl extends HasNode{
   val decl : AST.BodyDecl

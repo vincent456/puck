@@ -1,6 +1,6 @@
-java_import(['observer.candidate']).
+import ['observer.candidate']
 
-declareSet(concreteObservers, ['DivObs', 'ModObs']).
-declareSet(subject, ['Subject']).
+concreteObservers = ['DivObs', 'ModObs']
+subject = ['Subject']
 
-hideScopeSetFrom(concreteObservers, subject).
+hide concreteObservers from subject
