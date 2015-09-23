@@ -11,52 +11,48 @@ object CreateNode {
 
   def apply
   ( prog : AST.Program,
-    graph : DependencyGraph,
+    resultGraph : DependencyGraph,
     id2decl : Map[NodeId, ASTNodeLink],
     node : ConcreteNode
     ) : Map[NodeId, ASTNodeLink] = {
     val dh : ASTNodeLink =
       node.kind match {
         case Package => PackageDeclHolder
-        case Interface => createInterface(prog, graph, node)
-        case Class => createClass(prog, graph, node)
+        case Interface => createInterface(prog, resultGraph, node)
+        case Class => createClass(prog, resultGraph, node)
         case AbstractMethod =>
-          val decl = createMethod(prog, graph, id2decl, node, isAbstract = true)
+          val decl = createMethod(prog, resultGraph, id2decl, node, isAbstract = true)
           AbstractMethodDeclHolder(decl)
         case StaticMethod =>
-          ConcreteMethodDeclHolder(createMethod(prog, graph, id2decl, node, isStatic = true))
+          ConcreteMethodDeclHolder(createMethod(prog, resultGraph, id2decl, node, isStatic = true))
         case Method =>
-          ConcreteMethodDeclHolder(createMethod(prog, graph, id2decl, node))
+          ConcreteMethodDeclHolder(createMethod(prog, resultGraph, id2decl, node))
         case Constructor =>
-          createConstructor(prog, graph, id2decl, node)
-        case Field => createField(prog, graph, id2decl, node)
-        case Param => createParameter(prog, graph, id2decl, node)
+          createConstructor(prog, resultGraph, id2decl, node)
+        case Field => createField(prog, resultGraph, id2decl, node)
+        case Param => createParameter(prog, resultGraph, id2decl, node)
 
         case _ => throw new DeclarationCreationError(s"cannot create decl for kind ${node.kind}")
 
       }
-    dh match {
-      case MethodDeclHolder(mdecl) =>
-        graph.getRole(node.id) match {
-          case Some(Initializer(_)) =>
-            val decl = createMethod(prog, graph, id2decl, node)
+    id2decl + (node.id -> dh)
 
-            val block = new AST.Block()
-            decl.setBlock(block)
-            val defId = graph definitionOf_! node.id
-
-            id2decl +
-              (node.id -> ConcreteMethodDeclHolder(decl)) +
-              (defId -> BlockHolder(block))
-
-          case _ =>
-            id2decl + (node.id -> dh)
-        }
-      case _ =>
-        id2decl + (node.id -> dh)
-    }
   }
 
+  def addDef
+  ( prog : AST.Program,
+    resultGraph : DependencyGraph,
+    id2decl : Map[NodeId, ASTNodeLink],
+    container: NodeId,
+    definition : NodeId) : Map[NodeId, ASTNodeLink] = {
+    id2decl(container) match {
+      case ConcreteMethodDeclHolder(mdecl) =>
+        val block = new AST.Block()
+        mdecl.setBlock(block)
+        id2decl + (definition -> BlockHolder(block))
+      case _ => id2decl
+    }
+  }
 
   def createNewInstanceExpr
   ( field : AST.FieldDeclaration,
@@ -122,23 +118,6 @@ object CreateNode {
 
 
 
-//  def createTypeAccess
-//  ( typedNode : NodeId,
-//    graph : DependencyGraph,
-//    id2Decl : Map[NodeId, ASTNodeLink]
-//    ) : AST.TypeAccess = {
-//    graph.styp(typedNode) match {
-//      case Some(NamedType(tid)) =>
-//        id2Decl(tid) match {
-//          case tk: TypedKindDeclHolder =>
-//            tk.decl.createLockedAccess().asInstanceOf[AST.TypeAccess]
-//          case decl => throw new JavaAGError(s"TypedKindDeclHolder expected but got $decl")
-//        }
-//      case st => throw new JavaAGError(s"Some named type expected not but got $st")
-//    }
-//  }
-
-
   def createConstructor
   ( prog : AST.Program,
     graph : DependencyGraph,
@@ -152,29 +131,18 @@ object CreateNode {
   def createField
   ( prog : AST.Program,
     graph : DependencyGraph,
-    id2Decl : Map[NodeId, ASTNodeLink],
+    id2decl : Map[NodeId, ASTNodeLink],
     node : ConcreteNode
     ) : FieldDeclHolder = {
     import AST._
     FieldDeclHolder(new FieldDeclaration(
       new Modifiers("protected"), null, node.name))
-//    graph.styp(node.id) match {
-//      case Some(NamedType(id)) =>
-//        id2Decl get id match {
-//          case Some(tdh : TypedKindDeclHolder) =>
-//
-//
-//          case declHolder =>
-//            throw new DeclarationCreationError(s"${(graph, id).shows} is not a type !! (styp = $declHolder})")
-//        }
-//      case st => throw new DeclarationCreationError("CreateField needs some named type got " + st)
-//    }
   }
 
   def createParameter
   ( prog : AST.Program,
     graph : DependencyGraph,
-    id2Decl : Map[NodeId, ASTNodeLink],
+    id2decl : Map[NodeId, ASTNodeLink],
     node : ConcreteNode
     ) : ParameterDeclHolder = ParameterDeclHolder {
     //val ta = createTypeAccess(node.id, graph, id2Decl)

@@ -18,6 +18,7 @@ aspect TypeUser {
         public int buildTypeUserDGNodeFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse);
         public int buildTypeUserDGNode(JavaGraphBuilder builder, Uses typeMemberUse);
         public TypeMember decl();
+        public BodyDecl hostBodyDecl();
 
     }
     VarAccess implements TypeMemberAccess;
@@ -27,7 +28,7 @@ aspect TypeUser {
     static int Access.buildTypeUserDGNode(TypeMemberAccess access, JavaGraphBuilder builder, Uses typeMemberUse){
         if(access.getQualifier() == null
             || access.getQualifier().isThisAccess()){
-            int selfTypeNode = access.decl().hostType().buildDGNode(builder);
+            int selfTypeNode = access.hostBodyDecl().hostType().buildDGNode(builder);
             builder.addEdge(new Uses(selfTypeNode, selfTypeNode, UsesAccessKind.none()));
             return selfTypeNode;
         }

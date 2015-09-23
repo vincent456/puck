@@ -155,6 +155,8 @@ class JavaDG2AST
       case e : Exception =>
         e.printStackTrace()
     }
+//    program.eliminateFreshVariables()
+
     logger.writeln("Program after unlock : ")
     logger.writeln(program)
 
@@ -178,8 +180,7 @@ class JavaDG2AST
   ( implicit logger : PuckLogger): Map[NodeId, ASTNodeLink] = t match {
     case Transformation(Regular, CNode(n)) =>
       //redo t before createDecl
-      if(n.kind == Definition)
-        id2declMap
+      if(n.kind == Definition) id2declMap
       else {
         val newMap = id2declMap get n.id match {
           case Some(_) => id2declMap
@@ -187,6 +188,9 @@ class JavaDG2AST
         }
         newMap
       }
+    case Transformation(Regular, Edge(ContainsDef(source, target))) =>
+      CreateNode.addDef(program,resultGraph,id2declMap, source, target)
+
     case _ =>
       lazy val noApplyMsg = s"${(resultGraph, t).shows} not applied"
 
@@ -204,14 +208,11 @@ class JavaDG2AST
       case Transformation(_, RedirectionOp(e, Target(newTarget))) =>
         RedirectTarget(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newTarget)
 
-
       case Transformation(_, TypeChange(user, None, Some(NamedType(newType)))) =>
         CreateEdge.createTypeUse(safeGet(resultGraph, id2declMap), user, newType)
 
-
       case Transformation(_, TypeChange(user, Some(NamedType(oldType)), Some(NamedType(newType)))) =>
-        val e = Uses(user, oldType)
-        RedirectTarget(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newType)
+        RedirectTarget.setType(resultGraph, reenactor, safeGet(resultGraph, id2declMap), user, newType)
 
       // TODO see if can be performed in add node instead
       case Transformation(_, AbstractionOp(impl, AccessAbstraction(abs, SupertypeAbstraction))) =>
@@ -240,17 +241,17 @@ class JavaDG2AST
 
       case Transformation(_, ChangeTypeBinding(((tUser, tUsed), tmUse), TypeUse(newTuse @ (ntUser, ntUsed))))
         if tUser == tUsed =>
-        if (ntUser != ntUsed)
+        if (ntUser != ntUsed && !reenactor.isa_*(ntUsed, ntUser) && !reenactor.isa_*(ntUser, ntUsed))
           createVarAccess(reenactor, safeGet(reenactor,id2declMap), tmUse, newTuse,
             replaceSelfRefByVarAccess)
 
       case Transformation(Regular, TypeDependency(typeUse @(tUser, tUsed), tmUse)) =>
-        if (tUser != tUsed)
+        if (tUser != tUsed && tUser != tmUse.user)
         createVarAccess(reenactor, safeGet(reenactor,id2declMap), tmUse, typeUse,
           introVarAccess)
 
       case Transformation(_, ChangeTypeBinding(((oldTypeUser, _),(tmUser, tmUsed)), TypeUse((newTypeUser, newTypeUsed))))
-        if oldTypeUser != newTypeUser => //case needed in simulation computation but that do not need to be concretized
+        if oldTypeUser != newTypeUser =>
           replaceMessageReceiver(reenactor, safeGet(reenactor, id2declMap), tmUser, tmUsed, oldTypeUser, newTypeUser)
 
       case Transformation(_, op) =>
@@ -311,7 +312,8 @@ class JavaDG2AST
     methodUsed : NodeId,
     oldMessageReceiver : NodeId,
     newMessageReceiver : NodeId
-    ) : Unit = {
+    )
+  ( implicit logger : PuckLogger): Unit = {
 
     val mUser = id2declMap(methodUser) match {
       case dh : DefHolder => dh.node
@@ -319,28 +321,34 @@ class JavaDG2AST
         s"(expr or block) as user but found $nodeHolder")
     }
 
-    val newReceiver : AST.Variable = id2declMap(newMessageReceiver) match {
-      case VariableDeclHolder(decl) => decl
-      case nodeHolder => error("replace message receiver, expect" +
-        s" a field or a parameter as new receiver but found $nodeHolder")
-    }
-
     val mUsed : AST.MemberDecl = id2declMap(methodUsed) match {
-      case FieldDeclHolder(decl) => decl
-      case MethodDeclHolder(decl) => decl
+      case dh : HasMemberDecl => dh.decl
       case nodeHolder => error("replace message receiver, expect" +
         s" a field or a method as used but found $nodeHolder")
     }
 
-    id2declMap(oldMessageReceiver) match {
-      case VariableDeclHolder(oldReceiver) =>
-        mUser.replaceMessageReceiver(mUsed, oldReceiver, newReceiver)
-      case MethodDeclHolder(oldReceiver) => ???
-      case dh : DefHolder =>
-        mUser.replaceAllMessageReceiver(mUsed, newReceiver)
-      case nodeHolder => error("replace message receiver, expect a def " +
-        s"(expr or block), a field or a parameter as old receiver but found $nodeHolder")
+   id2declMap(newMessageReceiver) match {
+      case VariableDeclHolder(newReceiver) =>
+        id2declMap(oldMessageReceiver) match {
+          case VariableDeclHolder(oldReceiver) =>
+            mUser.replaceMessageReceiver(mUsed, oldReceiver, newReceiver)
+          case MethodDeclHolder(oldReceiver) => ???
+          case dh : DefHolder =>
+            mUser.replaceAllMessageReceiver(mUsed, newReceiver)
+          //case ClassDeclHolder(_)=>
+          //  logger.writeln("ignore replaceMessageReceiver with old receiver beeing a class. Suppose merge is ongoing ")
+          case nodeHolder => error("replace message receiver, expect a def " +
+            s"(expr or block), a field or a parameter as old receiver but found $nodeHolder")
+        }
+      case ClassDeclHolder(_)=>
+         logger.writeln("ignore replaceMessageReceiver as new receiver beeing a class. " +
+           "Suppose merge is ongoing ")
+
+      case nodeHolder => error("replace message receiver, expect" +
+        s" a field or a parameter as new receiver but found $nodeHolder")
     }
+
+
 
   }
 

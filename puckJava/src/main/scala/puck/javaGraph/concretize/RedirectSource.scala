@@ -159,8 +159,20 @@ object RedirectSource {
           CreateEdge.createIsa(id2declMap(newSourceId), id2declMap(e.target))
 
         case Uses => //in case of initializer
-          moveFieldInitialization(reenactor, id2declMap,
-            e.source, newSourceId)
+          val newSrcDecl = reenactor container_! newSourceId
+          reenactor getRole newSrcDecl match {
+            case Some(Initializer(_)) =>
+              moveFieldInitialization(reenactor, id2declMap, e.source, newSrcDecl)
+            case Some(Factory(_)) =>
+              assert( reenactor getRole e.target match {
+                case Some(Initializer(_)) => true
+                case _ => false
+              })
+              moveInitFromCtorToFactory(reenactor, id2declMap, e.target, e.source, newSrcDecl)
+            case sr => error(s"Redirect source of use, expecting new user to be some initializer," +
+              s" ${reenactor getConcreteNode newSrcDecl} is $sr ")
+          }
+
 
         case _ =>
           logger.writeln(s"Redirect source of ${e.kind} ignored")
@@ -183,20 +195,34 @@ object RedirectSource {
   (reenactor : DependencyGraph,
    id2declMap: NodeId => ASTNodeLink,
    oldSource : NodeId,
-   newSource : NodeId) : Unit = {
-    val newSrcDecl = reenactor container_! newSource
-    reenactor getRole newSrcDecl match {
-      case Some(Initializer(_)) => ()
-      case sr => error(s"Redirect source of use, expecting new user to be some initializer, found " + sr)
-    }
+   newSourceDecl : NodeId) : Unit = {
 
     (id2declMap(reenactor container_! oldSource),
-      id2declMap(newSrcDecl)) match {
+      id2declMap(newSourceDecl)) match {
       case (FieldDeclHolder(fdecl), ConcreteMethodDeclHolder(mdecl)) =>
        fdecl.moveInitIntoInitializzer(mdecl)
       case hs =>
         error(s"Redirect source of use handled in case of initializer creation, $hs not expected")
     }
   }
+  def moveInitFromCtorToFactory
+  ( reenactor : DependencyGraph,
+    id2declMap: NodeId => ASTNodeLink,
+    initializerDeclId : NodeId,
+    ctorDefId : NodeId,
+    factoryDeclId : NodeId) : Unit = {
 
+    (id2declMap(reenactor container_! ctorDefId),
+      id2declMap(factoryDeclId),
+      id2declMap(initializerDeclId)) match {
+      case (ConstructorDeclHolder(cdecl),
+      ConcreteMethodDeclHolder(mdecl),
+      ConcreteMethodDeclHolder(init)) =>
+        cdecl.removeInitCall(init)
+        mdecl.createInitializerCall(init)
+      case hs =>
+        error(s"Redirect source of use handled in case of initializer creation, $hs not expected")
+    }
+
+  }
 }

@@ -31,8 +31,8 @@ object ASTNodeLink{
     val needMoreVisibility : NodeId => Boolean =
       g.getConcreteNode(nid).kind.kindType match {
       case TypeDecl => g.hostNameSpace(_) != g.hostNameSpace(nid)
-      case InstanceValueDecl => g.hostTypeDecl(_) != g.hostTypeDecl(nid)
-      case _ => ???
+      case InstanceValueDecl
+           | StaticValueDecl => g.hostTypeDecl(_) != g.hostTypeDecl(nid)
     }
     import AST.ASTNode.VIS_PUBLIC
     if (astNode.getVisibility != VIS_PUBLIC) {
@@ -100,9 +100,6 @@ trait MethodDeclHolder extends HasMemberDecl {
 case class ConcreteMethodDeclHolder(decl : AST.MethodDecl) extends MethodDeclHolder
 
 case class AbstractMethodDeclHolder(decl : AST.MethodDecl) extends MethodDeclHolder
-
-//case class ConstructorMethodDeclHolder( decl : AST.MethodDecl,
-//                                        ctorDecl : AST.ConstructorDecl) extends MethodDeclHolder
 
 trait TypedKindDeclHolder extends HasNode {
   def decl : AST.TypeDecl

@@ -1,6 +1,7 @@
 package puck.gui.svg
 
 import puck.graph._
+import puck.graph.transformations.rules.Redirection
 import puck.gui.svg.actions.AddIsaAction
 import puck.gui.svg.actions.MergeAction
 import puck.gui.svg.actions.MoveAction
@@ -128,7 +129,20 @@ class ConcreteNodeRightClickMenu
         abs =>
           if (abs.nodes.contains(node.id))
             this.add(new RedirectAction(node, uses, abs, controller))
+      }
 
+    def addChangeInitUsesAction(ctorDef : NodeId) =
+      (graph.getRole(node.id), graph.getRole(target)) match {
+        case (Some(Factory(ctorId)), Some(Initializer(_)))
+          if ctorId == source =>
+          this.add(abstractAction("Call to initialization in factory"){
+            _ =>
+              val g =  Redirection.redirectSourceOfInitUseInFactory(controller.graph.mileStone,
+                  ctorId, ctorDef, target, node.id)
+
+              controller pushGraph g
+          })
+        case _ => ()
       }
 
     graph.getUsesEdge(source, target).foreach{
@@ -140,8 +154,12 @@ class ConcreteNodeRightClickMenu
         graph.getUsesEdge(userDef, target).foreach{
           usesFromDef =>
             addRedirectAction(usesFromDef)
+            addChangeInitUsesAction(userDef)
         }
+
+
     }
+
 
   }
 

@@ -52,9 +52,9 @@ trait GraphBuilder {
     g = g.addIsa(subTypeId, superTypeId)
   }
 
-   def addTypeRelationship(typeUse : DGUses,
+   def addTypeRelationship(typeUse : DGEdge,
                            typeMemberUse : DGUses): Unit ={
-    g = g.addUsesDependency(typeUse, typeMemberUse)
+     g = g.addUsesDependency(typeUse, typeMemberUse)
   }
 
   def addDef(decl : NodeId, _def : NodeId) : Unit = {

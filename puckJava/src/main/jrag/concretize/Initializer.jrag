@@ -30,4 +30,46 @@ aspect Initializer {
     public void ConstructorDecl.unsetDefaultConstructor() {
         isDefaultConstructor = false;
     }
+
+    public void MethodDecl.createInitializerCall(MethodDecl initializer){
+        int lastStmt = getBlock().getNumStmt() - 1;
+        if(!(getBlock().getStmt(lastStmt) instanceof ReturnStmt))
+            throw new PuckError("expect return stmt for createInitializerCall");
+
+        ReturnStmt ret = (ReturnStmt)getBlock().getStmt(lastStmt);
+
+        FreshLocalVariable flv =
+            new FreshLocalVariable(ret.getResult().type().createLockedAccess(), "ret");
+        flv.setInit(ret.getResult());
+        ret.setResult(flv.createLockedAccess());
+        getBlock().insertStmt(lastStmt, flv);
+        lastStmt++;
+        ExprStmt initCall = new ExprStmt(new Dot(flv.createLockedAccess(), initializer.createLockedAccess(new List())));
+        getBlock().insertStmt(lastStmt, initCall);
+    }
+
+    public boolean ASTNode.containsAccess(MethodDecl initializer){
+        boolean contains = false;
+        int i=0;
+        while(!contains && i<getNumChild()){
+            contains = getChild(i).containsAccess(initializer);
+            i++;
+        }
+        return contains;
+    }
+
+    public boolean MethodAccess.containsAccess(MethodDecl initializer){
+        return decl() == initializer;
+    }
+
+    public void ConstructorDecl.removeInitCall(MethodDecl initializer){
+        int i = 0;
+        for(Stmt stmt : getBlock().getStmtList()){
+            if(stmt.containsAccess(initializer)){
+                break;
+            }
+            i++;
+        }
+        getBlock().removeStmt(i);
+    }
 }

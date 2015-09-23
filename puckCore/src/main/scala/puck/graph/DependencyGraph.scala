@@ -211,6 +211,8 @@ class DependencyGraph
                   if(register) recording.removeEdge(e)
                   else recording)
 
+  def typedBy(tid : NodeId) : List[NodeId] = edges.typedBy(tid)
+
  def addContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): DependencyGraph =
     addEdge(Contains(containerId, contentId), register)
 

@@ -394,7 +394,7 @@ class Solver
                 }
 
               case (TypeDecl,_) =>
-                k(log, rules.move.typeDecl (g2, wronglyContained.id, newCter))
+                k(log, rules.move.staticDecl (g2, wronglyContained.id, newCter))
 
               case _ => ???
             }

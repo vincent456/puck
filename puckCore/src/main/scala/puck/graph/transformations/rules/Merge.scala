@@ -108,8 +108,7 @@ class Merge
 
                   }
                 case _ =>
-                  LoggedSuccess(g0.changeSource(Contains(consumedId, consumedChildId), consumerId)
-                    .changeType(consumedChildId, consumedId, consumerId))
+                  LoggedSuccess(g0.changeSource(Contains(consumedId, consumedChildId), consumerId))
               }
           }
       }
@@ -140,7 +139,15 @@ class Merge
         }
 
       case TypeDecl =>
-        mergeInto0(g, consumedId, consumerId)(mergeChildrenOfTypeDecl)
+        val g1 = g.typedBy(consumedId).foldLeft(g){
+          (g0, t) =>
+            g0.getConcreteNode(t).kind.kindType match {
+              case TypeConstructor => g0.setType(t, None)
+              case _ => g0.changeType(t, consumedId, consumerId)
+            }
+
+        }
+        mergeInto0(g1, consumedId, consumerId)(mergeChildrenOfTypeDecl)
 
       case kt =>
         LoggedError(s"$kt consumed kindType unhandled")
@@ -159,14 +166,17 @@ class Merge
     for {
       g1 <- g.usersOf(consumedId).foldLoggedEither[PuckError, DependencyGraph](lg){
         (g0, userId) =>
+          if(userId == consumedId) LoggedSuccess(g0.removeEdge(Uses(userId, userId)))
+          else
             LoggedSuccess(s"redirecting ($userId, $consumedId) toward $consumerId\n",
-              g0.changeTarget(Uses(userId, consumedId), consumerId)
-                .changeType(userId, consumedId, consumerId))
+              g0.changeTarget(Uses(userId, consumedId), consumerId))
       }
+
+
 
       g2 <- g1.usedBy(consumedId).foldLoggedEither(g1){
         (g0, usedId) =>
-        LoggedSuccess(g0.changeSource(Uses(consumedId, usedId), consumerId))
+          LoggedSuccess(g0.changeSource(Uses(consumedId, usedId), consumerId))
       }
 
       g3 <- g2.directSuperTypes(consumedId).foldLoggedEither(g2){

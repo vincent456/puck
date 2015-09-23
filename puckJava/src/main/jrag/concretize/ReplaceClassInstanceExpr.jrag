@@ -2,9 +2,9 @@
 
 aspect ReplaceClassInstanceExpr {
 
-    public void ASTNode.replaceByConstructorMethodCall(MethodDecl cm) {
+    public void ASTNode.replaceByConstructorMethodCall(ConstructorDecl cdecl, MethodDecl cm) {
         for (int i = 0; i < getNumChild(); i++)
-            getChild(i).replaceByConstructorMethodCall(cm);
+            getChild(i).replaceByConstructorMethodCall(cdecl, cm);
     }
 
     class EmptyReceiver extends Expr{
@@ -29,14 +29,19 @@ aspect ReplaceClassInstanceExpr {
 
     }
 
-    public void ClassInstanceExpr.replaceByConstructorMethodCall(MethodDecl cm) {
+    public void ClassInstanceExpr.replaceByConstructorMethodCall(ConstructorDecl cdecl, MethodDecl cm) {
+        if(decl() != cdecl)
+            return;
+
         if (!(this.hostBodyDecl() instanceof MethodDecl))
             throw new Error("replaceByConstructorMethodCall, this.hostBodyDecl is " +
                     this.hostBodyDecl().getClass() + "does not know what to do !!");
 
-        replace(this).with(new Dot(EmptyReceiver.instance,
-                cm.createBoundAccess(this.getArgs())));
-
+        if(cm.isStatic())
+            replace(this).with(cm.createBoundAccess(this.getArgs()));
+        else
+            replace(this).with(new Dot(EmptyReceiver.instance,
+                    cm.createBoundAccess(this.getArgs())));
     }
 
 

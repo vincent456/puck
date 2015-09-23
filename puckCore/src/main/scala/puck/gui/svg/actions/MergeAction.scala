@@ -18,10 +18,14 @@ case class MergeAction(
     printErrOrPushGraph(controller,"Merge action failure") {
 
       val sConsumerHost= graph.container(consumer.id)
-      if(graph.container(consumed.id) != sConsumerHost)
-        new MoveAction(graph.getConcreteNode(sConsumerHost.get), List(consumed.id), controller).actionPerformed(null)
+      val tg =
+        if(graph.container(consumed.id) != sConsumerHost) {
+          val ma = new MoveAction(graph.getConcreteNode(sConsumerHost.get), List(consumed.id), controller)
+          ma.doMove
+        }
+        else puck.graph.LoggedSuccess(graph.mileStone)
 
-      TR.merge.mergeInto(graph.mileStone, consumed.id, consumer.id)
+      tg flatMap (TR.merge.mergeInto(_, consumed.id, consumer.id))
     }
 
 }

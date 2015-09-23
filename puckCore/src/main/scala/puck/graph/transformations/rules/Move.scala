@@ -1,7 +1,6 @@
 package puck.graph.transformations.rules
 
 import puck.util.LoggedEither._
-import puck.PuckError
 import puck.graph._
 
 import scalaz.-\/
@@ -14,7 +13,7 @@ case class CreateTypeMember(kind : NodeKind) extends CreateVarStrategy
 
 object Move {
 
-  def typeDecl
+  def staticDecl
   ( g : DependencyGraph,
     movedId : NodeId,
     newContainer : NodeId
@@ -23,11 +22,11 @@ object Move {
       case None =>
         LoggedError(s"${(g, movedId).shows} has no container !!!")
       case Some(oldContainer) =>
-        val log = s"moving type decl ${(g, movedId).shows} " +
+        val log = s"moving static decl ${(g, movedId).shows} " +
           s"from ${(g, oldContainer).shows} " +
           s"to ${(g, newContainer).shows}"
 
-        (g.comment(s"Move.typeDecl(g, ${(g, movedId).shows}, ${(g, newContainer).shows})").
+        (g.comment(s"Move.staticDecl(g, ${(g, movedId).shows}, ${(g, newContainer).shows})").
           changeSource(Contains(oldContainer, movedId), newContainer) logComment log).toLoggedEither
     }
 
@@ -143,9 +142,7 @@ object Move {
         newSelfUse createIn g1
       else g1
 
-
-
-    usesOfSiblingViaThis.foldLoggedEither(g1){
+    val tg = usesOfSiblingViaThis.foldLoggedEither(g1){
       (g0, e) =>
           g.abstractions(e.target) find (abs => abs.nodes.forall(g.contains(newContainer,_))) match {
             case Some(abs) =>
@@ -157,7 +154,14 @@ object Move {
           }
     }
 
+    val usesOfMovedViaThis : Set[DGUses] =
+      usesBetween(g, siblings map (g.definitionOf(_)) flatten, movedDecl).filter(usesViaThis(g))
 
+    usesOfMovedViaThis.foldLeft(tg){
+      (tg0, u) =>
+        for { g <- tg0 }
+        yield g.changeTypeUseOfTypeMemberUse(oldSelfUse, (oldContainer, newContainer), u)
+    }
   }
 
   def pushDown
@@ -378,7 +382,7 @@ object Move {
     //introduce one parameter by user even with several uses
     //these were all previously this use so it makes sens to keep one reference
     val tmUsesStr = tmUses.map(u => (g,u).shows).mkString("[",", ","]")
-    usesByUser.toList.foldLoggedEither(g.comment(s"createParam(g,${(g,someOldTypeUse).shows}, ${(g,newTypeUsed).shows}, $tmUsesStr)")) {
+    usesByUser.toList.foldLoggedEither(g.comment(s"createParam(g,${(g, someOldTypeUse).shows}, ${(g,newTypeUsed).shows}, $tmUsesStr)")) {
       case (g0, (impl, typeMemberUses)) =>
         val user = g0.getConcreteNode(impl)
 

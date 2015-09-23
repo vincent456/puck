@@ -65,7 +65,7 @@ object CreateEdge {
                 createUsesOfConstructor(graph, reenactor, id2declMap, u)
 //              case (Definition, Field) => ()
 //                createUsesofField(graph, reenactor, id2declMap, u)
-              case (Definition, Method) if ensureIsInitalizerUseByCtor(graph, u)=>
+              case (Definition, Method) if ensureIsInitalizerUseByCtor(reenactor, u)=>
                 createInitializerCall(reenactor, id2declMap, u)
 
               case _ => logger.writeln(" =========> need to create " + e)
@@ -125,6 +125,9 @@ object CreateEdge {
 
     case (InterfaceDeclHolder(ideclSub), InterfaceDeclHolder(ideclSup)) =>
       ideclSub.addSuperInterfaceId(ideclSup.createLockedAccess())
+
+    case (ClassDeclHolder(subDecl), ClassDeclHolder(superDecl)) =>
+      subDecl.setSuperClassAccess(superDecl.createLockedAccess())
 
     case e => logger.writeln(s"isa($e) not created")
   }

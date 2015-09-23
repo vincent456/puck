@@ -122,7 +122,8 @@ abstract class Intro {
     ) : LoggedTry[(DGUses, DependencyGraph)] = {
     val g = graph.comment(s"Intro.typeMember(g, ${(graph, typeNode).shows}, ${(graph,tmContainer).shows}, $kind)")
     g.getDefaultConstructorOfType(typeNode) match {
-      case None => LoggedError(s"no default constructor for $typeNode")
+      case None =>
+        LoggedError(s"no default constructor for $typeNode")
       case Some(constructorId) =>
 
         val delegateName = s"${g.getConcreteNode(typeNode).name.toLowerCase}_delegate"

@@ -9,6 +9,21 @@ import scalaz.std.set._
 
 object Redirection {
 
+  def redirectSourceOfInitUseInFactory
+  ( g: DependencyGraph,
+    ctorDecl: NodeId,
+    ctorDef : NodeId,
+    initializer : NodeId,
+    factory : NodeId) : DependencyGraph = {
+
+    val clazz = g.container_!(ctorDecl)
+    val factoryDef = g.definitionOf_!(factory)
+    g.changeSource(g.getUsesEdge_!(ctorDef, initializer), factoryDef)
+      .addUses(factoryDef, clazz)
+      .removeUsesDependency((clazz,clazz), (ctorDef, initializer))
+      .addUsesDependency((factoryDef, clazz), (factoryDef, initializer))
+  }
+
   def cl(g: DependencyGraph, u : DGUses) : Set[(DGUses, DGUses)] = {
     val cl0 =  for {
       tu <- g.typeUsesOf(u) + u

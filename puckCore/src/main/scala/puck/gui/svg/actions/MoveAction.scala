@@ -43,59 +43,64 @@ extends AbstractAction(MoveAction.label(controller.graph, moved, newHost)){
 
   import controller.{graph, graphUtils}, graphUtils.{transformationRules => TR}
   import graphUtils.nodeKindKnowledge.kindOfKindType
-  override def actionPerformed(e: ActionEvent): Unit = {
+
+  def doMove : LoggedTG = {
     val g = graph.mileStone
-    printErrOrPushGraph(controller, "Abstraction creation failure") {
-      g.kindType(moved.head) match {
-        case TypeDecl =>
-          moved.foldLoggedEither(g) {
-            (g, id) => TR.move.typeDecl(g, id, newHost.id)
-          }
+    g.kindType(moved.head) match {
+      case TypeDecl
+           | StaticValueDecl =>
+        moved.foldLoggedEither(g) {
+          (g, id) => TR.move.staticDecl(g, id, newHost.id)
+        }
 
-        case InstanceValueDecl =>
-          controller.console.
-            appendText("/!\\/!\\ Method overriding unchecked (TODO !!!) /!\\/!\\")
+      case InstanceValueDecl =>
+        controller.console.
+          appendText("/!\\/!\\ Method overriding unchecked (TODO !!!) /!\\/!\\")
 
-          val oldContainer = g.container_!(moved.head)
+        val oldContainer = g.container_!(moved.head)
 
-          val isPullUp = g.isa_*(oldContainer, newHost.id)
-          val isPushDown = g.isa_*(newHost.id, oldContainer)
+        val isPullUp = g.isa_*(oldContainer, newHost.id)
+        val isPushDown = g.isa_*(newHost.id, oldContainer)
 
-          controller.console.
-            appendText("isPullUp = " + isPullUp)
-          controller.console.
-            appendText("isPushDown = " + isPushDown)
+        controller.console.
+          appendText("isPullUp = " + isPullUp)
+        controller.console.
+          appendText("isPushDown = " + isPushDown)
 
-          lazy val needNewReceiver = moved.exists {
-            nid =>
-              g.structuredType(nid) match{
-                case Some(typ) => !(typ uses newHost.id)
-                case None => sys.error("should have some type")
-              }
+        lazy val needNewReceiver = moved.exists {
+          nid =>
+            g.structuredType(nid) match{
+              case Some(typ) => !(typ uses newHost.id)
+              case None => sys.error("should have some type")
+            }
 
-          }
+        }
 
-          if(isPullUp && isPushDown){
-            error("new host and old host should be different")
-          }
-          else if(isPullUp)
-            TR.move.pullUp(g,moved, oldContainer, newHost.id)
-          else if(isPushDown)
-            TR.move.pushDown(g,moved, oldContainer, newHost.id)
-          else {
+        if(isPullUp && isPushDown){
+          error("new host and old host should be different")
+        }
+        else if(isPullUp)
+          TR.move.pullUp(g,moved, oldContainer, newHost.id)
+        else if(isPushDown)
+          TR.move.pushDown(g,moved, oldContainer, newHost.id)
+        else {
 
-            val choice =
-              if (!isPullUp && !isPushDown && needNewReceiver) {
-                Some(MoveAction.getChoice(kindOfKindType(InstanceValueDecl)).
-                  getOrElse(CreateTypeMember(kindOfKindType(InstanceValueDecl).head)))
-              }
-              else None
+          val choice =
+            if (!isPullUp && !isPushDown && needNewReceiver) {
+              Some(MoveAction.getChoice(kindOfKindType(InstanceValueDecl)).
+                getOrElse(CreateTypeMember(kindOfKindType(InstanceValueDecl).head)))
+            }
+            else None
 
-            TR.move.typeMemberBetweenUnrelatedTypeDecl(g, moved, oldContainer, newHost.id, choice)
-          }
-        case kt =>
-          LoggedError(s"move of $kt not implemented")
-      }
+          TR.move.typeMemberBetweenUnrelatedTypeDecl(g, moved, oldContainer, newHost.id, choice)
+        }
+      case kt =>
+        LoggedError(s"move of $kt not implemented")
     }
   }
+
+  override def actionPerformed(e: ActionEvent): Unit =
+    printErrOrPushGraph(controller, "Abstraction creation failure" )( doMove )
+
+
 }

@@ -94,6 +94,11 @@ case class EdgeMap
 
 
 
+  def typedBy(nid : NodeId) = types.foldLeft(List[NodeId]()){
+    case (l, (typed, NamedType(`nid`))) => typed :: l
+    case (l, _) => l
+  }
+
   def add(kind : DGEdge.EKind, source : NodeId, target : NodeId) : EdgeMap =
     add(kind(source, target))
 

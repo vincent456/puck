@@ -33,7 +33,7 @@ class MoveSpec
         assert(graph.uses(methBDef, classA))
         assert(graph.uses(methBDef, methADecl))
 
-        val g2 = Move.typeDecl(graph, classA, package2).right
+        val g2 = Move.staticDecl(graph, classA, package2).right
         assert(g2.container(classA).value == package2)
         assert(g2.uses(methBDef, classA))
         assert(g2.uses(methBDef, methADecl))

@@ -42,7 +42,7 @@ class RecordingComparatorSpec extends AcceptanceSpec {
 
           .map { case (g, itc) => (introPackage(g, pname, pcontainer), itc)}
 
-          .flatMap { case ((g, p), itc) => TR.move.typeDecl(g, itc.id, p.id) map ((_, p.id, itc.id))}
+          .flatMap { case ((g, p), itc) => TR.move.staticDecl(g, itc.id, p.id) map ((_, p.id, itc.id))}
     }
 
   val methodUsesViaThisField = {

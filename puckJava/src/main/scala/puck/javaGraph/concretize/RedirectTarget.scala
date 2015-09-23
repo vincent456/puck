@@ -8,6 +8,23 @@ import ShowDG._
 
 object RedirectTarget {
 
+  def setType
+  ( graph: DependencyGraph,
+    reenactor : DependencyGraph,
+    id2declMap: NodeId => ASTNodeLink,
+    typeUser : NodeId, typeId: NodeId)
+  (implicit logger : PuckLogger) : Unit = {
+    logger.writeln(s"setting type of ${(reenactor, typeUser).shows} " +
+      s"to ${(reenactor, typeId).shows}")
+    (id2declMap(typeUser), id2declMap(typeId)) match {
+      case (MethodDeclHolder(mdecl), tk: TypedKindDeclHolder) =>
+        mdecl.setTypeAccess(tk.decl.createLockedAccess())
+      case (ParameterDeclHolder(fdecl), tk: TypedKindDeclHolder) =>
+        fdecl.setTypeAccess(tk.decl.createLockedAccess())
+      case (FieldDeclHolder(fdecl), tk: TypedKindDeclHolder) =>
+        fdecl.setTypeAccess(tk.decl.createLockedAccess())
+    }
+  }
     def apply
   ( graph: DependencyGraph,
     reenactor : DependencyGraph,
@@ -34,14 +51,21 @@ object RedirectTarget {
           }
 
         case (oldk: TypedKindDeclHolder, newk: TypedKindDeclHolder) =>
-          val user : AST.ASTNode[_] = sourceInAST match {
-              //explicit upcast shouldn't be needed, why the compiling error ?
-            case FieldDeclHolder(fdecl) => fdecl.asInstanceOf[AST.ASTNode[_]]
-            case ParameterDeclHolder(pdecl) => pdecl.asInstanceOf[AST.ASTNode[_]]
-            case defh : DefHolder => defh.node
-            case k => throw new JavaAGError(k + " as user of TypeKind, redirection unhandled !")
+           sourceInAST match {
+             case BlockHolder(block) =>
+               val MethodDeclHolder(mdecl) = id2declMap(reenactor.container_!(e.source))
+
+               //TODO find why !(block eq mdecl.getBlock)
+               //logger.writeln(block eq mdecl.getBlock)
+
+               mdecl.getBlock.replaceTypeAccess(oldk.decl.createLockedAccess(), newk.decl.createLockedAccess())
+
+             case holder : HasNode =>
+               holder.node.replaceTypeAccess(oldk.decl.createLockedAccess(), newk.decl.createLockedAccess())
+
+             case k => throw new JavaAGError(k + " as user of TypeKind, redirection unhandled !")
           }
-          user.replaceTypeAccess(oldk.decl.createLockedAccess(), newk.decl.createLockedAccess())
+
 
 
 
@@ -87,7 +111,6 @@ object RedirectTarget {
 
 
         case (oldk: MethodDeclHolder, newk: MethodDeclHolder) =>
-          logger.writeln("replace method call !")
           sourceInAST match {
             case defHolder : DefHolder =>
               defHolder.node.replaceMethodCall(oldk.decl, newk.decl)
@@ -97,18 +120,26 @@ object RedirectTarget {
 
         case (ConstructorDeclHolder(oldc), ConstructorDeclHolder(newc)) =>
           sourceInAST match {
+            case BlockHolder(block) =>
+              val MethodDeclHolder(mdecl) = id2declMap(reenactor.container_!(e.source))
+
+              //TODO find why !(block eq mdecl.getBlock)
+              logger.writeln(block eq mdecl.getBlock)
+
+              mdecl.getBlock.replaceConstructorCall(oldc, newc)
+
             case defHolder : DefHolder =>
               defHolder.node.replaceConstructorCall(oldc, newc)
             case src =>
               throw new JavaAGError(s"constructor change, ${src.getClass} as uses source unhandled")
           }
 
-        case (ConstructorDeclHolder(_), methCtor: MethodDeclHolder) =>
+        case (ConstructorDeclHolder(cdecl), methCtor: MethodDeclHolder) =>
           sourceInAST match {
             case ConstructorDeclHolder(_) =>
               throw new JavaAGError("redirection to constructor method within " +
                 "constructor no implemented (see methodDecl)")
-            case dh: DefHolder => dh.node.replaceByConstructorMethodCall(methCtor.decl)
+            case dh: DefHolder => dh.node.replaceByConstructorMethodCall(cdecl, methCtor.decl)
 
             case k =>
               throw new JavaAGError(k + " as user of MethodKind, redirection unhandled !")

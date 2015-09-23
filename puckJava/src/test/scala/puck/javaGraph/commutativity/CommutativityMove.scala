@@ -20,7 +20,7 @@ class CommutativityMove extends AcceptanceSpec {
         val package2 = fullName2id(s"p2")
         val classA = fullName2id(s"p1.A")
 
-        val g = Move.typeDecl(graph, classA, package2).right
+        val g = Move.staticDecl(graph, classA, package2).right
 
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)

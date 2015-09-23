@@ -47,13 +47,13 @@ object Mapping {
       nt.copy(input = mapType(mappin)(i), output = mapType(mappin)(o))
   }
 
-//  import puck.util.Debug.mkMapStringSortedByKey
+//  import ShowDG._
 //
 //  def equalsCVM[C[_], V]
 //  ( mappin : V => V)
 //  ( cvm1 : CollectionValueMap[V, C, V],
 //    cvm2 : CollectionValueMap[V, C, V])
-//  (implicit ord: Ordering[V]): Boolean =
+//  (implicit ord: Ordering[V], dgp : (DependencyGraph, DependencyGraph), cb : CordBuilder[V]): Boolean =
 //    if(cvm1.content.size != cvm2.content.size){
 //      val mappedCvm1 = cvm1.toList map {
 //        case (k, vs) => (mappin(k), cvm1.handler.map(vs, mappin))
@@ -68,8 +68,15 @@ object Mapping {
 //      cvm1.content.forall {
 //        case ((k1, vs1)) =>
 //          val vs2 = cvm2.content(mappin(k1))
-//          if(cvm1.handler.map(vs1, mappin) != vs2)
-//            error(s"($k1, $vs1) (${mappin(k1)}, $vs2))")
+//          if(cvm1.handler.map(vs1, mappin) != vs2) {
+//            val(g1,g2) = dgp
+//
+//
+//            def msg(g : DependencyGraph, k : V, vs : C[V]) : String = {
+//              s"(${(g, k).shows}, ${cvm1.handler.toList(vs) map (v => (g, v).shows) mkString("[",",","]")})"
+//            }
+//            error(msg(g1, k1, vs1) + " "+ msg(g2, mappin(k1), vs2))
+//          }
 //          true
 //
 //      }
@@ -105,6 +112,9 @@ object Mapping {
   ) : Boolean = {
     assert(g1.virtualNodes.isEmpty)
     assert(g2.virtualNodes.isEmpty)
+
+    //implicit val gp = (g1, g2)
+
     g1.nodesId.size == g2.nodesId.size && {
       val mappinG1toG2 = create(g1,g2).apply _
 
@@ -149,17 +159,17 @@ object Mapping {
         equalsCVM(mappinNodeIdP)(g1.edges.typeUses2typeMemberUsesMap,
           g2.edges.typeUses2typeMemberUsesMap)
 
-      println("###############################")
-      println("equalsNodes = " + equalsNodes)
-      println("equalsUses1 = " + equalsUses1)
-      println("equalsUses2 = " + equalsUses2)
-      println("equalsUses3 = " + equalsUses3)
-      println("equalsContains1 = " + equalsContains1)
-      println("equalsContains2 = " + equalsContains2)
-      println("equalsContains3 = " + equalsContains3)
-      println("equalsIsa = " + equalsIsa)
-      println("equalsTD1 = " + equalsTD1)
-      println("equalsTD2 = " + equalsTD2)
+//      println("###############################")
+//      println("equalsNodes = " + equalsNodes)
+//      println("equalsUses1 = " + equalsUses1)
+//      println("equalsUses2 = " + equalsUses2)
+//      println("equalsUses3 = " + equalsUses3)
+//      println("equalsContains1 = " + equalsContains1)
+//      println("equalsContains2 = " + equalsContains2)
+//      println("equalsContains3 = " + equalsContains3)
+//      println("equalsIsa = " + equalsIsa)
+//      println("equalsTD1 = " + equalsTD1)
+//      println("equalsTD2 = " + equalsTD2)
 
       equalsNodes && equalsUses1 && equalsUses2 && equalsUses3 &&
         equalsContains1 && equalsContains2 && equalsContains3 &&

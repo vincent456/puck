@@ -54,7 +54,14 @@ object ShowDG extends ShowConstraints{
 
   implicit def nodeCord : CordBuilder[DGNode] = (dg, n) =>
     n match {
-      case n : ConcreteNode => Cord(s"${n.id} - ${n.kind} ${n.name}", typeHolderCord(dg, dg.styp(n.id)))
+      case n : ConcreteNode =>
+        val name =
+          if(n.kind.kindType == ValueDef)
+            dg.container(n.id) map {
+              dg.getConcreteNode(_).name + ".Definition"
+            } getOrElse "OrphanDefinition"
+          else n.name
+        Cord(s"${n.id} - ${n.kind} $name", typeHolderCord(dg, dg.styp(n.id)))
       case vn : VirtualNode => Cord(s"${vn.id} - ${vn.name(dg)}")
     }
 
