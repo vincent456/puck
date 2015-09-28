@@ -13,27 +13,69 @@ aspect TypeUser {
     MethodDecl implements TypeMember;
 
     interface TypeMemberAccess{
-        public int buildDGNode(JavaGraphBuilder builder);
-        public Expr getQualifier();
-        public int buildTypeUserDGNodeFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse);
-        public int buildTypeUserDGNode(JavaGraphBuilder builder, Uses typeMemberUse);
-        public TypeMember decl();
-        public BodyDecl hostBodyDecl();
-
+        int buildDGNode(JavaGraphBuilder builder);
+        Expr getQualifier();
+        int buildTypeUserDGNodeFromLeftExpr(JavaGraphBuilder builder, Uses typeMemberUse);
+        int buildTypeUserDGNode(JavaGraphBuilder builder, Uses typeMemberUse);
+        TypeMember decl();
+        BodyDecl hostBodyDecl();
+        TypeDecl declaredTypeOfQualifier();
+        TypeDecl hostType();
     }
     VarAccess implements TypeMemberAccess;
     MethodAccess implements TypeMemberAccess;
 
 
-    static int Access.buildTypeUserDGNode(TypeMemberAccess access, JavaGraphBuilder builder, Uses typeMemberUse){
-        if(access.getQualifier() == null
-            || access.getQualifier().isThisAccess()){
-            int selfTypeNode = access.hostBodyDecl().hostType().buildDGNode(builder);
-            builder.addEdge(new Uses(selfTypeNode, selfTypeNode, UsesAccessKind.none()));
-            return selfTypeNode;
+    static TypeDecl Access.declaredTypeOfQualifier(TypeMemberAccess access) {
+        if(access.getQualifier() == null){
+            if(access.decl().hostType() == access.hostType())
+                return access.hostType();
+            else
+                return ((ClassDecl)access.hostType()).superclass();
         }
+
+        if(access.getQualifier().isThisAccess())
+            return access.hostType();
         else if(access.getQualifier().isSuperAccess())
-            return access.decl().hostType().buildDGNode(builder);
+            return ((ClassDecl)access.hostType()).superclass();
+
+        return access.getQualifier().type();
+    }
+
+    public TypeDecl VarAccess.declaredTypeOfQualifier(){
+        return Access.declaredTypeOfQualifier(this);
+    }
+    public TypeDecl MethodAccess.declaredTypeOfQualifier(){
+        return Access.declaredTypeOfQualifier(this);
+    }
+
+    static int Access.buildTypeUserDGNode_thisQualifier(TypeMemberAccess access, JavaGraphBuilder builder, Uses typeMemberUse){
+        int selfTypeNode = access.hostType().buildDGNode(builder);
+        builder.addEdge(new Uses(selfTypeNode, selfTypeNode, UsesAccessKind.none()));
+        return selfTypeNode;
+    }
+
+    static int Access.buildTypeUserDGNode_superQualifier(TypeMemberAccess access, JavaGraphBuilder builder, Uses typeMemberUse){
+        ClassDecl thisClass = (ClassDecl)access.hostType();
+        int selfTypeNode = thisClass.buildDGNode(builder);
+        int superTypeNode = thisClass.superclass().buildDGNode(builder);
+        builder.addEdge(new Uses(selfTypeNode, superTypeNode, UsesAccessKind.none()));
+        return selfTypeNode;
+    }
+
+    static int Access.buildTypeUserDGNode(TypeMemberAccess access, JavaGraphBuilder builder, Uses typeMemberUse){
+        if(access.getQualifier() == null){
+             if(access.decl().hostType() == access.hostBodyDecl().hostType())
+                return buildTypeUserDGNode_thisQualifier(access, builder, typeMemberUse);
+            else
+                return buildTypeUserDGNode_superQualifier(access, builder, typeMemberUse);
+        }
+
+        if(access.getQualifier().isThisAccess())
+            return buildTypeUserDGNode_thisQualifier(access, builder, typeMemberUse);
+        else if(access.getQualifier().isSuperAccess())
+            return buildTypeUserDGNode_superQualifier(access, builder, typeMemberUse);
+            //return access.decl().hostType().buildDGNode(builder);
         else
             return access.buildTypeUserDGNodeFromLeftExpr(builder, typeMemberUse);
     }

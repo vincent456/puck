@@ -156,8 +156,6 @@ class ConcreteNodeRightClickMenu
             addRedirectAction(usesFromDef)
             addChangeInitUsesAction(userDef)
         }
-
-
     }
 
 

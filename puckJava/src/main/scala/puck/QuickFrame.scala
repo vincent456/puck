@@ -5,7 +5,7 @@ import javax.swing.{JFrame, WindowConstants}
 
 import org.apache.batik.swing.JSVGCanvas
 import puck.graph.DependencyGraph
-import puck.graph.io.{Svg, FilesHandler, VisibilitySet, PrintingOptions}
+import puck.graph.io.{FilesHandler, PrintingOptions, Svg, VisibilitySet}
 import puck.gui.svg.SVGController
 import puck.javaGraph.JavaDotHelper
 

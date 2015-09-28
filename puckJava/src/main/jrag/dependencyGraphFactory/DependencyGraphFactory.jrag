@@ -214,12 +214,15 @@ aspect DependencyGraphFactory {
 		Uses typeMemberUses = new Uses(containerId, nodeId, accK);
 		builder.addEdge(typeMemberUses);
 
-		int typeUserId = access.buildTypeUserDGNode(builder, typeMemberUses);
-		int typeUsedId = access.decl().hostType().buildDGNode(builder);
+		if(!(access instanceof StaticDeclAccess && ((StaticDeclAccess)access).isDeclStatic())) {
+			int typeUserId = access.buildTypeUserDGNode(builder, typeMemberUses);
+			//int typeUsedId = access.decl().hostType().buildDGNode(builder);
+			int typeUsedId = access.declaredTypeOfQualifier().buildDGNode(builder);
 
-        //the first use is a typeUses : it must have no accesskind
-		builder.addTypeRelationship(new Uses(typeUserId, typeUsedId, UsesAccessKind.none()),
-						typeMemberUses);
+			//the first use is a typeUses : it must have no accesskind
+			builder.addTypeRelationship(new Uses(typeUserId, typeUsedId, UsesAccessKind.none()),
+			typeMemberUses);
+		}
 	}
 	public void MethodAccess.buildDG(JavaGraphBuilder builder, int containerId){
 
@@ -303,7 +306,11 @@ aspect DependencyGraphFactory {
 		if(isRightRotated())
 			rotateLeft();
 
-		buildDGInChildren(builder, containerId);
+		if( (getRight() instanceof StaticDeclAccess)
+		&& ((StaticDeclAccess) getRight()).isDeclStatic())
+			getRight().buildDG(builder, containerId);
+		else
+			buildDGInChildren(builder, containerId);
 	}
 
 	public void Access.buildDG(JavaGraphBuilder builder, int containerId){

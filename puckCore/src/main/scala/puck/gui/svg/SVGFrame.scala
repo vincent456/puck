@@ -96,16 +96,17 @@ class SVGFrameMenu
     //    hbox.add(inputNode)
     //    hbox.add(getNodeName)
 
-    def addCheckBox(name: String, initiallySelected : Boolean)(f: Boolean => Unit) : JCheckBox = {
-      val checkBox: JCheckBox = new JCheckBox
-      checkBox.setSelected(initiallySelected)
-      checkBox.setAction(new AbstractAction(name) {
-        def actionPerformed(e: ActionEvent) : Unit = f(checkBox.isSelected)
-
-      })
-      hbox add checkBox
-      checkBox
-    }
+    def addCheckBox(name: String, initiallySelected : Boolean)(f: Boolean => Unit) =
+      hbox add checkBox(name,initiallySelected)(f)
+//    def addCheckBox(name: String, initiallySelected : Boolean)(f: Boolean => Unit) : JCheckBox = {
+//      val checkBox: JCheckBox = new JCheckBox
+//      checkBox.setSelected(initiallySelected)
+//      checkBox.setAction(new AbstractAction(name) {
+//        def actionPerformed(e: ActionEvent) : Unit = f(checkBox.isSelected)
+//      })
+//      hbox add checkBox
+//      checkBox
+//    }
 
     addCheckBox("Show signatures",
       controller.printingOptions.printSignatures) {
@@ -159,9 +160,17 @@ class SVGFrameMenu
     //    hbox add jbutton("Show abstractions") {
     //      _ => controller.printAbstractions()
     //    }
-    hbox add jbutton("Apply") {
-      _ => controller.applyOnCode()
-        controller.compareOutputGraph()
+    val testCommutativityCB = puck.gui.svg.checkBox("Test commutativity",
+      initiallySelected = false) {
+      _ => ()
+      }
+
+    hbox add testCommutativityCB
+
+    hbox add   jbutton("Apply") {
+      _ => controller.deleteOutDirAndapplyOnCode()
+        if(testCommutativityCB.isSelected)
+          controller.compareOutputGraph()
     }
 
     import controller.graphUtils.nodeKindKnowledge.kindOfKindType

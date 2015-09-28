@@ -53,33 +53,33 @@ object Mapping {
 //  ( mappin : V => V)
 //  ( cvm1 : CollectionValueMap[V, C, V],
 //    cvm2 : CollectionValueMap[V, C, V])
-//  (implicit ord: Ordering[V], dgp : (DependencyGraph, DependencyGraph), cb : CordBuilder[V]): Boolean =
-//    if(cvm1.content.size != cvm2.content.size){
+//  (implicit ord: Ordering[V], dgp : (DependencyGraph, DependencyGraph), cb : CordBuilder[V]): Boolean = {
+//    val (g1, g2) = dgp
+//    def msg(g: DependencyGraph)(k: V, vs: C[V]): String = {
+//      s"(${(g, k).shows}, ${cvm1.handler.toList(vs) map (v => (g, v).shows) mkString("[", ",", "]")})"
+//    }
+//
+//    if (cvm1.content.size != cvm2.content.size) {
 //      val mappedCvm1 = cvm1.toList map {
 //        case (k, vs) => (mappin(k), cvm1.handler.map(vs, mappin))
 //      }
 //      val diff1 = mappedCvm1 diff cvm2.toList
 //      val diff2 = cvm2.toList diff mappedCvm1
 //      //error(mkMapStringSortedByKey(cvm1.content) + "<>" + mkMapStringSortedByKey(cvm2.content) +
-//      println("diff1 = " + diff1 + "diff2 = " + diff2)
+//      println("diff1 = " + (diff1 map (msg(g1) _).tupled) + "diff2 = " + (diff2 map (msg(g2) _).tupled))
 //      false
 //    }
 //    else
 //      cvm1.content.forall {
 //        case ((k1, vs1)) =>
 //          val vs2 = cvm2.content(mappin(k1))
-//          if(cvm1.handler.map(vs1, mappin) != vs2) {
-//            val(g1,g2) = dgp
-//
-//
-//            def msg(g : DependencyGraph, k : V, vs : C[V]) : String = {
-//              s"(${(g, k).shows}, ${cvm1.handler.toList(vs) map (v => (g, v).shows) mkString("[",",","]")})"
-//            }
-//            error(msg(g1, k1, vs1) + " "+ msg(g2, mappin(k1), vs2))
+//          if (cvm1.handler.map(vs1, mappin) != vs2) {
+//            error(msg(g1)(k1, vs1) + " " + msg(g2)(mappin(k1), vs2))
 //          }
 //          true
 //
 //      }
+//  }
 
   def equalsCVM[C[_], V]
   ( mappin : V => V)
@@ -113,9 +113,19 @@ object Mapping {
     assert(g1.virtualNodes.isEmpty)
     assert(g2.virtualNodes.isEmpty)
 
-    //implicit val gp = (g1, g2)
+//    implicit val gp = (g1, g2)
 
     g1.nodesId.size == g2.nodesId.size && {
+//    if(g1.nodesId.size != g2.nodesId.size){
+//      val fulln1Set = (g1.nodesIndex.concreteNodesId map g1.fullName).toSet
+//      val fulln2Set = (g2.nodesIndex.concreteNodesId map g2.fullName).toSet
+//      val diff1 = fulln1Set -- fulln2Set
+//      val diff2 = fulln2Set -- fulln1Set
+//      if(diff1.nonEmpty || diff2.nonEmpty)
+//        error("fullName diff1 = " + diff1 + " fullName diff2 = " + diff2)
+//      false
+//    }
+//    else {
       val mappinG1toG2 = create(g1,g2).apply _
 
       val mappinNodeIdP : NodeIdP => NodeIdP = {

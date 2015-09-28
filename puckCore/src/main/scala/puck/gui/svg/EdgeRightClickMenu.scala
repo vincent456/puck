@@ -2,8 +2,8 @@ package puck.gui.svg
 
 import javax.swing.JPopupMenu
 
-import puck.graph.{Isa, Uses, NodeIdP}
-import puck.gui.svg.actions.{AutoSolveAction, ShowTypeRelationshipAction, RemoveEdgeAction, ManualSolveAction}
+import puck.graph.{NodeId, Isa, Uses, NodeIdP}
+import puck.gui.svg.actions._
 
 class EdgeRightClickMenu
 ( private val controller : SVGController,
@@ -27,19 +27,18 @@ class EdgeRightClickMenu
     add(new RemoveEdgeAction(Isa(source, target), controller))
   }
 
-  graph.getUsesEdge(source, target) match {
-    case Some(uses)=>
-      isUseEdge = true
-      add(new ShowTypeRelationshipAction(Some(uses), controller))
-      this.addMenuItem("Show type bindings (console)"){
-        _ =>
-          controller.printUseBindings(uses)
-          graph.definitionOf(uses.user).foreach{
-            userDef =>
-              controller.printUseBindings(graph.getUsesEdge(userDef, uses.used).get)
-          }
-      }
-    case None => ()
+  def addShowBRActions(src : NodeId, tgt : NodeId) : Unit =
+    graph.getUsesEdge(src, tgt) foreach {
+      uses =>
+        isUseEdge = true
+        add(new ShowTypeRelationshipGraphicAction(Some(uses), controller))
+        add(new ShowTypeRelationshipTextualAction(Some(uses), controller))
+    }
+
+  addShowBRActions(source, target)
+
+  graph.definitionOf(source).foreach{
+    userDef => addShowBRActions(userDef, target)
   }
 
   val isConcreteEdge = isIsaEdge || isUseEdge

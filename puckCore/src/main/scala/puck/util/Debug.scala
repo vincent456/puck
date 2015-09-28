@@ -70,6 +70,9 @@ object Debug {
 
   }
 
+
+
+
   implicit val showNodeIndex : scalaz.Show[NodeIndex] = scalaz.Show.shows[NodeIndex] {
     case NodeIndex(_, cNodes, removedCnodes,
     vNodes, removedVnodes,
@@ -129,4 +132,29 @@ object Debug {
     builder.toString()
   }
 
+
+  def mkMapStringSortedByFullName(g : DependencyGraph, m : Map[NodeId,DGNode]) : String = {
+    m.toList.map{case (id, _) => (g.fullName(id), id)}.
+      sortBy(_._1).mkString("\t[",",\n\t ","]\n")
+
+  }
+
+  implicit val nodeIndexCordBuilder : CordBuilder[NodeIndex] = {
+    case (g, NodeIndex(_, cNodes, removedCnodes,
+    vNodes, removedVnodes,
+    cNodes2vNodes,
+    roles)) =>
+      "Concrete Nodes : " +
+        mkMapStringSortedByFullName(g, cNodes) +
+        "Removed Concrete Nodes : " +
+        mkMapStringSortedByFullName(g, removedCnodes) +
+        "Virtual Nodes : " +
+        mkMapStringSortedByFullName(g, vNodes) +
+        "Removed Virtual Nodes : " +
+        mkMapStringSortedByFullName(g, removedVnodes) +
+        "CN -> VN : " +
+        cNodes2vNodes.mkString("\t[",",\n\t ","]\n") +
+        "Roles : " +
+        roles.mkString("\t[",",\n\t ","]\n")
+  }
 }

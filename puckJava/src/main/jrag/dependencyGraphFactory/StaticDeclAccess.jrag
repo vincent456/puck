@@ -1,0 +1,15 @@
+
+aspect StaticDeclAccess {
+
+    public interface StaticDeclAccess{ }
+
+    VarAccess implements StaticDeclAccess;
+    MethodAccess implements StaticDeclAccess;
+    ConstructorAccess implements StaticDeclAccess;
+
+    syn boolean StaticDeclAccess.isDeclStatic();
+    eq ConstructorAccess.isDeclStatic() = true;
+    eq VarAccess.isDeclStatic() =  decl().isStatic();
+    eq MethodAccess.isDeclStatic() =  decl().isStatic();
+
+}

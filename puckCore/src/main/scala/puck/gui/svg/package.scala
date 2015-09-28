@@ -11,6 +11,15 @@ package object svg {
     }
   }
 
+  def checkBox(name: String, initiallySelected : Boolean)(f: Boolean => Unit) : JCheckBox = {
+    val checkBox: JCheckBox = new JCheckBox
+    checkBox.setSelected(initiallySelected)
+    checkBox.setAction(new AbstractAction(name) {
+      def actionPerformed(e: ActionEvent) : Unit = f(checkBox.isSelected)
+    })
+    checkBox
+  }
+
   def abstractAction(name:String)
                     (action : ActionEvent => Unit) : AbstractAction =
     new AbstractAction(name){

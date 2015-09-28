@@ -68,7 +68,6 @@ object RedirectTarget {
 
 
 
-
         case (oldk: ClassDeclHolder, newk: FieldDeclHolder) =>
           // assume this a case replace this.m by delegate.m
           logger.writeln()
@@ -113,7 +112,13 @@ object RedirectTarget {
         case (oldk: MethodDeclHolder, newk: MethodDeclHolder) =>
           sourceInAST match {
             case defHolder : DefHolder =>
-              defHolder.node.replaceMethodCall(oldk.decl, newk.decl)
+              val MethodDeclHolder(mdecl) = id2declMap(reenactor.container_!(e.source))
+              mdecl.replaceMethodCall(oldk.decl, newk.decl)
+
+            //TODO find why !(block eq mdecl.getBlock)
+            //logger.writeln(block eq mdecl.getBlock)
+
+
             case k =>
               throw new JavaAGError(k + " as user of Method, redirection unhandled !")
           }

@@ -18,10 +18,15 @@ object Redirection {
 
     val clazz = g.container_!(ctorDecl)
     val factoryDef = g.definitionOf_!(factory)
-    g.changeSource(g.getUsesEdge_!(ctorDef, initializer), factoryDef)
+    val selfUse = Uses(clazz,clazz)
+    val g1 = g.changeSource(g.getUsesEdge_!(ctorDef, initializer), factoryDef)
       .addUses(factoryDef, clazz)
-      .removeUsesDependency((clazz,clazz), (ctorDef, initializer))
+      .removeUsesDependency(selfUse, (ctorDef, initializer))
       .addUsesDependency((factoryDef, clazz), (factoryDef, initializer))
+
+    if(g1.typeMemberUsesOf(selfUse).isEmpty)
+      g1.removeEdge(selfUse)
+    else g1
   }
 
   def cl(g: DependencyGraph, u : DGUses) : Set[(DGUses, DGUses)] = {

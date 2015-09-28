@@ -16,6 +16,7 @@ import puck.gui.TextAreaLogger
 import puck.gui.explorer.NodeInfosPanel
 import puck.gui.svg.actions.{AddNodeAction, AbstractionAction}
 import puck.util.PuckFileLogger
+import sbt.IO
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -294,36 +295,38 @@ class SVGController private
   }
 
   def printUseBindings(u : DGUses) : Unit = {
+    val ustr = (graph, u).shows
     graph.getNode(u.used).kind.kindType match {
       case TypeDecl =>
-        console.appendText(s"Type uses $u selected")
-        val tmu = graph.typeMemberUsesOf(u)
-        if(tmu.isEmpty)
+        console.appendText(s"Type uses $ustr selected")
+        val tmus = graph.typeMemberUsesOf(u)
+        if(tmus.isEmpty)
           console.appendText("No type member uses associated")
         else
-          console.appendText(tmu.mkString("TM uses are :\n", "\n", "\n"))
+          console.appendText(tmus.map{tmu => (graph, tmu).shows}.mkString("TM uses are :\n", "\n", "\n"))
 
       case InstanceValueDecl =>
-        console.appendText(s"Type Member uses $u selected")
+        console.appendText(s"Type Member uses $ustr selected")
 
-        val tu = graph.typeUsesOf(u)
-        if(tu.isEmpty)
+        val tus = graph.typeUsesOf(u)
+        if(tus.isEmpty)
           console.appendText("No type uses associated")
         else
-          console.appendText(tu.mkString("type uses are :\n", "\n", "\n"))
+          console.appendText(tus.map{tu => (graph, tu).shows}.mkString("type uses are :\n", "\n", "\n"))
 
       case _ => console.appendText("unhandled kind of used node")
     }
   }
   
-  def applyOnCode() : Unit = {
+  def deleteOutDirAndapplyOnCode() : Unit = {
     console.appendText("Aplying recording on AST")
-    dg2ast(graph)(new PuckFileLogger(_ => true, new File("/tmp/pucklog")))
+    dg2ast(graph)/*(new PuckFileLogger(_ => true, new File("/tmp/pucklog")))*/
 
     filesHandler.outDirectory.get match {
       case None => console.appendText("no output directory : cannot print code")
       case Some(d) =>
         console.appendText("Printing code")
+        IO.delete(d)
         dg2ast.printCode(d)
     }
 

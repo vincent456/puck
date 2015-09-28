@@ -38,8 +38,10 @@ aspect Initializer {
 
         ReturnStmt ret = (ReturnStmt)getBlock().getStmt(lastStmt);
 
-        FreshLocalVariable flv =
-            new FreshLocalVariable(ret.getResult().type().createLockedAccess(), "ret");
+        VariableDeclaration flv =
+            new VariableDeclaration(ret.getResult().type().createLockedAccess(), "ret");
+//        FreshLocalVariable flv =
+//            new FreshLocalVariable(ret.getResult().type().createLockedAccess(), "ret");
         flv.setInit(ret.getResult());
         ret.setResult(flv.createLockedAccess());
         getBlock().insertStmt(lastStmt, flv);

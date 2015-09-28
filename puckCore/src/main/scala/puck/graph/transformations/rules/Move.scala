@@ -118,31 +118,76 @@ object Move {
     oldContainer : NodeId,
     newContainer : NodeId) : LoggedTG = {
 
-    val movedDecl = typeMembersMovedId.toSet
-    val movedDef : Set[NodeId] =
-      movedDecl map g.definitionOf flatten
+    val movedDeclSet = typeMembersMovedId.toSet
+    val movedDefSet : Set[NodeId] =
+      movedDeclSet map g.definitionOf flatten
 
-    val siblings = g.content(oldContainer) -- movedDecl
+    val siblings = g.content(oldContainer) -- movedDeclSet
 
     val oldSelfUse = Uses(oldContainer, oldContainer)
     val newSelfUse = Uses(newContainer, newContainer)
+
 
     val g0 = typeMembersMovedId.foldLeft(g){
       (g0, movedId) =>
         g0.changeSource(Contains(oldContainer, movedId), newContainer)
     }
 
-    val g1 = adjustSelfUsesBR(g0, movedDecl, movedDef, oldSelfUse, newSelfUse)
+    val g1 = adjustSelfUsesBR(g0, movedDeclSet, movedDefSet, oldSelfUse, newSelfUse)
 
-    val usesOfSiblingViaThis : Set[DGUses] =
-      usesBetween(g, movedDef, siblings).filter(usesViaThis(g))
 
+
+    val usesOfMovedViaThis : Set[DGUses] =
+      usesBetween(g, siblings map (g.definitionOf(_)) flatten, movedDeclSet).filter(usesViaThis(g))
+
+    val newTypeUse = Uses(oldContainer, newContainer)
     val g2 =
-      if(usesOfSiblingViaThis.nonEmpty && !(newSelfUse existsIn g1))
-        newSelfUse createIn g1
+      if(usesOfMovedViaThis.nonEmpty && ! (newTypeUse existsIn g1) )
+        g1.addUses(oldContainer, newContainer)
       else g1
 
-    val tg = usesOfSiblingViaThis.foldLoggedEither(g1){
+    val g3 = usesOfMovedViaThis.foldLeft(g2){
+      (g00, u) =>
+        g00.changeTypeUseOfTypeMemberUse(oldSelfUse, newTypeUse, u)
+    }
+
+    val brWithOldContainerAsTypeUser = for {
+      movedDef <- movedDefSet
+      used <-  g.usedBy(movedDef)
+      tuse <- g.typeUsesOf(movedDef, used)
+      if tuse.user == oldContainer
+    } yield {
+      (tuse, (movedDef, used))
+    }
+
+    val g4 = brWithOldContainerAsTypeUser.foldLeft(g3){
+      case (g00, (tuse, tmUse)) =>
+        val newSuperUse = Uses(newContainer, tuse.used)
+
+        val g01 =
+          if(!(newSuperUse existsIn g00))
+            g00.addEdge(newSuperUse)
+        else g00
+
+        val g02 = g01.changeTypeUseOfTypeMemberUse(tuse, newSuperUse, tmUse)
+
+        if(g02.typeMemberUsesOf(tuse).isEmpty)
+          g02.removeEdge(tuse)
+        else g02
+
+    }
+
+    val usesOfSiblingViaThis : Set[DGUses] =
+      usesBetween(g, movedDefSet, siblings).filter(usesViaThis(g))
+
+
+
+    val g5 =
+      if(usesOfSiblingViaThis.nonEmpty && !(newSelfUse existsIn g4))
+        newSelfUse createIn g4
+      else g4
+
+    usesOfSiblingViaThis.foldLoggedEither(g5){
       (g0, e) =>
           g.abstractions(e.target) find (abs => abs.nodes.forall(g.contains(newContainer,_))) match {
             case Some(abs) =>
@@ -154,14 +199,7 @@ object Move {
           }
     }
 
-    val usesOfMovedViaThis : Set[DGUses] =
-      usesBetween(g, siblings map (g.definitionOf(_)) flatten, movedDecl).filter(usesViaThis(g))
 
-    usesOfMovedViaThis.foldLeft(tg){
-      (tg0, u) =>
-        for { g <- tg0 }
-        yield g.changeTypeUseOfTypeMemberUse(oldSelfUse, (oldContainer, newContainer), u)
-    }
   }
 
   def pushDown

@@ -13,6 +13,7 @@ import puck.javaGraph.nodeKind._
 import puck.util.PuckLog._
 import puck.util.{PuckLog, PuckLogger}
 import ShowDG._
+import sbt.IO
 
 object JavaDG2AST extends DG2ASTBuilder {
 
@@ -164,6 +165,8 @@ class JavaDG2AST
 
   def printCode(dir : File)(implicit logger : PuckLogger) : Unit =
     program.printCodeInDirectory(dir)
+
+
 
   val discardedOp : Operation => Boolean = {
     case _ : Comment

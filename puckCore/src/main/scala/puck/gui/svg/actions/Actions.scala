@@ -21,13 +21,31 @@ extends AbstractAction(s"Add ${sub.name} isa ${sup.name}") {
 
 }
 
-class ShowTypeRelationshipAction
+class ShowTypeRelationshipGraphicAction
 ( edge : Option[DGUses],
   controller : SVGController)
   extends AbstractAction(s"Show type bindings (graphic)")
 {
   def actionPerformed(e: ActionEvent) : Unit =
     controller.setSelectedEdgeForTypePrinting(edge)
+}
+
+class ShowTypeRelationshipTextualAction
+( edge : Option[DGUses],
+  controller : SVGController)
+  extends AbstractAction(s"Show type bindings (text)")
+{
+  import controller.graph
+  def actionPerformed(e: ActionEvent) : Unit =
+    edge.foreach {
+      uses =>
+      controller.printUseBindings(uses)
+      graph.definitionOf(uses.user).foreach{
+        userDef =>
+          controller.printUseBindings(graph.getUsesEdge(userDef, uses.used).get)
+      }
+  }
+
 }
 
 class RemoveEdgeAction
