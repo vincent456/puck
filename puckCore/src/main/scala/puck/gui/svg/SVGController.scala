@@ -15,7 +15,7 @@ import puck.graph.transformations.MileStone
 import puck.gui.TextAreaLogger
 import puck.gui.explorer.NodeInfosPanel
 import puck.gui.svg.actions.{AddNodeAction, AbstractionAction}
-import puck.util.PuckFileLogger
+import puck.util.{PuckLog, PuckFileLogger}
 import sbt.IO
 
 import scala.collection.mutable
@@ -233,16 +233,22 @@ class SVGController private
   }
 
   def undo() = {
+      val comments = graph.recording.commentsSinceLastMileStone
       redoStack.push(undoStack.pop())
       displayGraph(graph)
+      ("Undo " +: comments).foreach(consoleLogger.writeln(_))
       updateStackListeners()
   }
   def canRedo = redoStack.nonEmpty
+
   def redo()={
     undoStack.push(redoStack.pop())
     displayGraph(graph)
+    val comments = graph.recording.commentsSinceLastMileStone
+    ("Redo " +: comments).foreach(consoleLogger.writeln(_))
     updateStackListeners()
   }
+
   def pushGraph(graph: DependencyGraph) = {
     undoStack.push(graph)
     redoStack.clear()
@@ -262,14 +268,23 @@ class SVGController private
   }
 
   def loadRecord(file : File) : Unit = {
-    val r = Recording.load(file.getAbsolutePath, nodesByName)
+    try {
+      val r = Recording.load(file.getAbsolutePath, nodesByName)
+      pushGraph(r.reverse.foldLeft(graph){
+        case (g, MileStone) =>
+          undoStack.push(g)
+          MileStone.redo(g)
+        case (g, t) => t.redo(g)
+      })
+    }
+    catch {
+      case Recording.LoadError(msg, m) =>
+        implicit val verbosity = (PuckLog.NoSpecialContext, PuckLog.Error)
+        consoleLogger writeln ("Record loading error " + msg)
+        consoleLogger writeln ("cannot bind loaded map " + m.toList.sortBy(_._1).mkString("\n"))
+        consoleLogger writeln ("with " + nodesByName.toList.sortBy(_._1).mkString("\n"))
+    }
 
-    pushGraph(r.reverse.foldLeft(graph){
-      case (g, MileStone) =>
-        undoStack.push(g)
-        MileStone.redo(g)
-      case (g, t) => t.redo(g)
-    })
   }
 
   import ShowDG._

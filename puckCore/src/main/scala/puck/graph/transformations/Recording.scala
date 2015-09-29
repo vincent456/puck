@@ -6,6 +6,8 @@ import java.io.{FileInputStream, ObjectInputStream, FileOutputStream, ObjectOutp
 import puck.graph.comparison.Mapping
 
 
+
+
 object Recording {
   def apply() = Seq[Recordable]()
 
@@ -46,9 +48,17 @@ object Recording {
     (map, numIds, rec)
   }
 
+  case class LoadError(msg: String, map : Map[String, NodeId]) extends Throwable
   def load(fileName : String, map :  Map[String, NodeId]) : Recording = {
     val (m, numIds, r) = read(fileName)
-    mapNodes(r, m, map, numIds)
+    try {
+      mapNodes(r, m, map, numIds)
+    } catch {
+      case e : Error =>
+        throw LoadError(e.getMessage, m)
+      case e : Exception =>
+        throw LoadError(e.getMessage, m)
+    }
   }
 
 

@@ -19,6 +19,17 @@ package object transformations {
 
     def mileStone : Recording = MileStone +: record
 
+    def commentsSinceLastMileStone : Seq[String] = {
+      def aux(r : Recording, acc : Seq[String] = Seq()) : Seq[String] =
+        r.head match {
+          case MileStone => acc
+          case Comment(msg) => aux(r.tail, msg +: acc)
+          case _ => aux(r.tail, acc)
+        }
+
+      aux(record)
+    }
+
     def addConcreteNode(n : ConcreteNode) : Recording =
       Transformation(Regular, CNode(n)) +: record
 

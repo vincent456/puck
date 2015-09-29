@@ -1,7 +1,5 @@
 package puck.graph
 
-import java.util.NoSuchElementException
-
 import puck.graph.DependencyGraph.AbstractionMap
 import puck.graph.constraints.{ConstraintsMaps, AbstractionPolicy}
 import puck.util.{Logger, PuckNoopLogger, PuckLogger, PuckLog}
@@ -12,13 +10,12 @@ object DependencyGraph {
 
   val rootId : NodeId = 0
   val dummyId = Int.MinValue
-  /*val dummyNamedType = NamedType(0, "DummyType")
-  val dummyArrowType = Arrow(dummyNamedType, dummyNamedType)*/
+
   val rootName = "root"
   val unrootedStringId = "<DETACHED>"
   val scopeSeparator : String = "."
 
-  val anonymousName : String = "Anonymous"
+  val anonymousName : String = "Definition"
 
   type AbstractionMap = SetValueMap.T[NodeId, Abstraction]
   val AbstractionMap = SetValueMap

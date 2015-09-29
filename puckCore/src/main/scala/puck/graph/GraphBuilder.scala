@@ -59,6 +59,8 @@ trait GraphBuilder {
 
   def addDef(decl : NodeId, _def : NodeId) : Unit = {
     g = g.addEdge(ContainsDef(decl, _def))
+    nodesByName +=
+      ((getFullName(decl) + DependencyGraph.scopeSeparator + DependencyGraph.anonymousName) -> _def)
   }
   def addParams(decl : NodeId, params : List[Int]) : Unit = {
     params.reverseIterator.foreach{
