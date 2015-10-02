@@ -82,36 +82,44 @@ object PuckBuild extends Build {
 //    dependsOn (puckCore % "test->test;compile->compile",
 //    puckJava % "test->test;compile->compile",
 //    puckScala % "test->test;compile->compile")
-    aggregate (puckCore, puckJava, puckScala)
+    aggregate (puckCore, puckGui, puckJava, puckScala)
     )
 
-  val puckCore = (project
+  val puckCore : Project = (project
     settings commonSettings("core")
 
     settings Seq[Setting[_]] {
-        libraryDependencies ++= Seq(
-          "org.scala-lang" % "scala-swing" % "2.11.0-M7",
-          "org.scala-lang" % "scala-parser-combinators" % "2.11.0-M4",
-          //      "org.scala-lang" % "scala-compiler" % "2.11.6",
-          //      "org.scala-lang" % "scala-reflect" % "2.11.6",
-          "org.apache.xmlgraphics" % "batik-util" % "1.7",
-          "org.apache.xmlgraphics" % "batik-svg-dom" % "1.7",
-          "org.apache.xmlgraphics" % "batik-swing" % "1.7",
-          "org.apache.xmlgraphics" % "batik-svggen" % "1.7" //for begugging purposes
-        )
+        libraryDependencies +=
+          "org.scala-lang" % "scala-parser-combinators" % "2.11.0-M4"
+
     }
   )
 
-  val puckJava = (project
+  val puckGui = ( project
+    settings commonSettings("gui")
+
+    settings Seq[Setting[_]] {
+      libraryDependencies ++= Seq(
+        "org.scala-lang" % "scala-swing" % "2.11.0-M7",
+        "org.apache.xmlgraphics" % "batik-util" % "1.7",
+        "org.apache.xmlgraphics" % "batik-svg-dom" % "1.7",
+        "org.apache.xmlgraphics" % "batik-swing" % "1.7",
+        "org.apache.xmlgraphics" % "batik-svggen" % "1.7" //for begugging purposes
+      )
+    }
+    dependsOn (puckCore % "compile->compile")
+  )
+
+  val puckJava : Project = (project
     settings commonSettings("java")
     settings PuckJavaBuild.settings
     enablePlugins JavaAppPackaging
     //dependsOn (puckCore % "test->test;compile->compile")
-    dependsOn (puckCore % "compile->compile")
+    dependsOn (puckGui % "compile->compile")
 
     )
 
-  val puckScala = (project
+  val puckScala : Project = (project
     settings commonSettings("scala")
 
     settings Seq[Setting[_]] {
@@ -124,7 +132,7 @@ object PuckBuild extends Build {
 
     settings PuckScalaBuild.settings
 
-    dependsOn (puckCore % "compile->compile")
+    dependsOn (puckGui % "compile->compile")
   )
 
 }

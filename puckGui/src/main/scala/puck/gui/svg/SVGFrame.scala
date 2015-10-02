@@ -1,7 +1,7 @@
 package puck.gui.svg
 
 import java.awt.event.ActionEvent
-import java.awt.{Dimension, BorderLayout}
+import java.awt.{Container, Dimension, BorderLayout}
 import java.io.{File, InputStream}
 import javax.swing._
 
@@ -51,34 +51,59 @@ class SVGFrameMenu
 
   addVisibilityCheckBoxesToMenu()
 
-  val (undoAllButton, undoButton, redoButton) = addUndoRedoButton()
+  val buttonsWrapper = new JPanel()
+  val (undoAllButton, undoButton, redoButton) = addUndoRedoButton(buttonsWrapper)
 
-  addLoadSaveButton()
+  addLoadSaveButton(buttonsWrapper)
 
-  add(controller.console.panel)
+  val hbox = new JPanel()
+  hbox.setLayout(new BoxLayout(hbox, BoxLayout.Y_AXIS))
+  hbox add buttonsWrapper
+  hbox add controller.console.panel
+
+  this add hbox
+
 
   addHboxButtons()
 
 
-  def addUndoRedoButton() : (JButton, JButton, JButton) = {
+  def addUndoRedoButton(c : Container) : (JButton, JButton, JButton) = {
     val undoAllButton = jbutton("Undo all") {
       _ => controller.undoAll()
     }
     undoAllButton.setEnabled(false)
-    add(undoAllButton)
+    c add undoAllButton
 
     val undoButton = jbutton("Undo") {
       _ => controller.undo()
     }
     undoButton.setEnabled(false)
-    add(undoButton)
+    c add undoButton
     val redoButton = jbutton("Redo") {
       _ => controller.redo()
     }
     redoButton.setEnabled(false)
-    add(redoButton)
+    c add redoButton
 
     (undoAllButton, undoButton, redoButton)
+  }
+
+  private def addLoadSaveButton(c : Container) : Unit = {
+    import controller.filesHandler.workingDirectory
+    c add jbutton("Save") {
+      _ =>
+        saveFile(workingDirectory, this) match {
+          case None => controller.console.appendText("no file selected")
+          case Some(f) =>  controller.saveRecordOnFile(f)
+        }
+    }
+    c add jbutton("Load") {
+      _ =>
+        openFile(workingDirectory, this) match {
+          case None => controller.console.appendText("no file selected")
+          case Some(f) => controller.loadRecord(f)
+        }
+    } ; ()
   }
 
   private def addVisibilityCheckBoxesToMenu() : Unit = {
@@ -132,22 +157,7 @@ class SVGFrameMenu
     ()
   }
 
-  private def addLoadSaveButton() : Unit = {
-    import controller.filesHandler.workingDirectory
-    add(jbutton("Save") {
-      _ =>
-        saveFile(workingDirectory, this) match {
-          case None => controller.console.appendText("no file selected")
-          case Some(f) =>  controller.saveRecordOnFile(f)
-        }
-    }) ; add(jbutton("Load") {
-      _ =>
-        openFile(workingDirectory, this) match {
-          case None => controller.console.appendText("no file selected")
-          case Some(f) => controller.loadRecord(f)
-        }
-    }) ; ()
-  }
+
 
   private def addHboxButtons() : Unit = {
     val hbox = new JPanel()
@@ -229,7 +239,7 @@ class SVGFrame
   centerPane.setResizeWeight(0.75)
 
   this.add(centerPane, BorderLayout.CENTER)
-  this.add(menu, BorderLayout.SOUTH)
+  this.add(new JScrollPane(menu), BorderLayout.SOUTH)
 
 
 
