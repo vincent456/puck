@@ -438,9 +438,19 @@ class DependencyGraph
   def uses(userId: NodeId, usedId: NodeId) : Boolean =
     edges.uses(userId, usedId)
 
-  def usesList : List[(NodeId, NodeId)] =
+  def usesList : List[NodeIdP] =
     edges.usedMap.flatList
-  
+
+  def typeUsesList : List[NodeIdP] = {
+    for{
+      nt <- edges.types.toList
+      (n , t) = nt
+      i <- t.ids
+    } yield (n,i)
+  }
+
+
+
   def usedBy(userId : NodeId) : Set[NodeId] =
     edges.usedMap getFlat userId
   

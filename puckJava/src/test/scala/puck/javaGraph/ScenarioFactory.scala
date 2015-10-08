@@ -2,13 +2,19 @@ package puck.javaGraph
 
 import java.io.File
 
-import AST.CompilationUnit
-import puck.graph.{NodeId, DependencyGraph}
 import puck.graph.transformations.Transformation
-import puck.util.{FileHelper, PuckFileLogger, PuckNoopLogger, PuckLogger}
+import puck.graph.{DependencyGraph, NodeId}
+import puck.util.{FileHelper, PuckFileLogger, PuckLogger}
 import sbt.IO
 
-case class ExampleSample
+object ScenarioFactory {
+  def fromDirectory(path: String): ScenarioFactory = {
+     new ScenarioFactory(FileHelper.findAllFiles(new File(path), ".java", Some("out")):_*)
+  }
+}
+
+
+case class ScenarioFactory
 ( program : AST.Program,
   graph : DependencyGraph,
   initialRecord : Seq[Transformation],
@@ -34,14 +40,14 @@ case class ExampleSample
 
   def applyChangeAndMakeExample
   ( g: DependencyGraph,
-    outDir : File) : ExampleSample = {
+    outDir : File) : ScenarioFactory = {
     val dg2ast = new JavaDG2AST(program, graph, initialRecord, fullName2id, dg2astMap)
 
     dg2ast.apply(g)(new PuckFileLogger(_ => true, new File("/tmp/pucklog")))
     IO.delete(outDir)
     dg2ast.printCode(outDir)
     val genSrc = FileHelper.findAllFiles(outDir, ".java", None)
-    new ExampleSample(genSrc:_*)
+    new ScenarioFactory(genSrc:_*)
   }
 
 //  val it = program.compilationUnitIterator()

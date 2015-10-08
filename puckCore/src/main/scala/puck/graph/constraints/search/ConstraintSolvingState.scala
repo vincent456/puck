@@ -6,11 +6,13 @@ import puck.util.Logged
 
 import scalaz.syntax.writer._
 
-trait ConstraintSolvingChoice[S, T]
-  extends StateCreator[ResultT, T] {
+trait ConstraintSolvingChoice[S, ChoiceT]
+  extends StateCreator[ResultT, ChoiceT] {
   val k : Logged[S] => Unit
   var remainingChoices : Set[S]
   var triedChoices : Set[S]
+
+  
 }
 
 trait ConstraintSolvingState[S, T <: ConstraintSolvingChoice[S, T]]

@@ -109,11 +109,11 @@ abstract class StackedSearchEngine[Result]
   }
 }
 
-class TryAllSearchEngine[ResT]
-( val createInitialState : InitialStateFactory[ResT]
-) extends StackedSearchEngine[ResT]{
+class TryAllSearchEngine[T]
+( val createInitialState : InitialStateFactory[T]
+) extends StackedSearchEngine[T]{
 
-  protected def startExplore( k : LoggedTry[ResT] => Unit) : Unit =  {
+  protected def startExplore( k : LoggedTry[T] => Unit) : Unit =  {
 
   this.search(k)
 
@@ -121,77 +121,66 @@ class TryAllSearchEngine[ResT]
       if(stateStack.head.triedAll)
         stateStack.pop()
       else {
-/*
-        println("#########################################################################################")
-        println("#########################################################################################")
-        println("#########################################################################################")
-        println("EXPLORING FROM " + stateStack.head.uuid("/","_",""))*/
-
-        /* stateStack.head.prevState match {
-           case None => ()
-           case Some(s) => println("PREVSTATE    : " + s.uuid("/","_","") )
-         }*/
-
         stateStack.head.executeNextChoice(this)
       }
     }
   }
 }
 
-/*trait GradedSearchEngine[S] extends SearchEngine[S]{
-
-  def grade(state : SearchState[S, U]) : Int
-
-  override def search() : Option[SearchState[S, U]] = {
-    val states = mutable.Buffer[(SearchState[S, U], Int)]()
-
-    def selectBest() = {
-      val (choosedState, _) = states.tail.foldLeft[(SearchState[S, U], Int)](states.head){
-        case ((bestState, bestGrade), (state, grade)) =>
-          if(grade > bestGrade) (state, grade)
-          else (bestState, bestGrade)
-      }
-      choosedState
-    }
-
-
-    init()
-    var prev = currentState
-
-
-    while(finalStates.isEmpty && !currentState.triedAll) {
-      states.clear()
-      while (!prev.triedAll) {
-        prev.setAsCurrentState()
-        prev.executeNextChoice()
-        states.append((currentState, grade(currentState)))
-      }
-
-      println("choosing between %d solutions".format(states.length))
-      states.foreach{case (_, grade) => println(grade)}
-
-      prev = selectBest()
-    }
-
-    states.clear()
-
-    states ++= finalStates.map{
-      st =>
-        st.setAsCurrentState()
-        (st, grade(st))
-    }
-
-    println("final states ! choosing between %d solutions".format(states.length))
-    states.foreach{
-      case (_, grade) => println(grade)
-    }
-
-    if(finalStates.nonEmpty)
-      Some(selectBest())
-    else
-      None
-  }
-}*/
+//trait GradedSearchEngine[S] extends SearchEngine[S]{
+//
+//  def grade(state : SearchState[S, U]) : Int
+//
+//  override def search() : Option[SearchState[S, U]] = {
+//    val states = mutable.Buffer[(SearchState[S, U], Int)]()
+//
+//    def selectBest() = {
+//      val (choosedState, _) = states.tail.foldLeft[(SearchState[S, U], Int)](states.head){
+//        case ((bestState, bestGrade), (state, grade)) =>
+//          if(grade > bestGrade) (state, grade)
+//          else (bestState, bestGrade)
+//      }
+//      choosedState
+//    }
+//
+//
+//    init()
+//    var prev = currentState
+//
+//
+//    while(finalStates.isEmpty && !currentState.triedAll) {
+//      states.clear()
+//      while (!prev.triedAll) {
+//        prev.setAsCurrentState()
+//        prev.executeNextChoice()
+//        states.append((currentState, grade(currentState)))
+//      }
+//
+//      println("choosing between %d solutions".format(states.length))
+//      states.foreach{case (_, grade) => println(grade)}
+//
+//      prev = selectBest()
+//    }
+//
+//    states.clear()
+//
+//    states ++= finalStates.map{
+//      st =>
+//        st.setAsCurrentState()
+//        (st, grade(st))
+//    }
+//
+//    println("final states ! choosing between %d solutions".format(states.length))
+//    states.foreach{
+//      case (_, grade) => println(grade)
+//    }
+//
+//    if(finalStates.nonEmpty)
+//      Some(selectBest())
+//    else
+//      None
+//  }
+//}
 
 class FindFirstSearchEngine[T]
 ( val createInitialState : InitialStateFactory[T]

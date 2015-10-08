@@ -3,7 +3,7 @@ package puck.javaGraph.transfoRules
 import puck.graph._
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, Redirection}
-import puck.javaGraph.ExampleSample
+import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.JGraphUtils.{transformationRules => TR}
 import puck.javaGraph.nodeKind._
 import puck.{AcceptanceSpec, GetDefinitionValue, Settings}
@@ -27,7 +27,7 @@ class RedirectSpec
     val typeDeclPath = examplesPath + "typeDecl/"
 
     scenario("From class to superType interface") {
-      val _ = new ExampleSample(s"$typeDeclPath/ClassToInterfaceSuperType.java") {
+      val _ = new ScenarioFactory(s"$typeDeclPath/ClassToInterfaceSuperType.java") {
         val mUserDecl = fullName2id("p.A.mUser__ClassUsed")
         val theParam = fullName2id("p.A.mUser__ClassUsed.cu")
         val mUserDef = getDefinition(graph, mUserDecl)
@@ -56,7 +56,7 @@ class RedirectSpec
     //val interfaceToInterfaceSuperType
 
     scenario("From class to delegator class") {
-      new ExampleSample(s"$typeDeclPath/ClassToClassDelegate.java") {
+      new ScenarioFactory(s"$typeDeclPath/ClassToClassDelegate.java") {
         val mUserDecl = fullName2id("p.A.mUser__Delegatee")
         val theParam = fullName2id("p.A.mUser__Delegatee.d")
 
@@ -100,7 +100,7 @@ class RedirectSpec
     val typeCtorPath = examplesPath + "typeConstructor"
 
     scenario("From constructor to constructorMethod hosted elsewhere - non static, parameter") {
-      val _ = new ExampleSample(s"$typeCtorPath/ConstructorToConstructorMethodHostedElsewhere.java") {
+      val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedElsewhere.java") {
         val ctor = fullName2id(s"p.B.B#_void")
         val ctorMethod = fullName2id(s"p.Factory.createB__void")
         val factoryClass = fullName2id(s"p.Factory")
@@ -134,7 +134,7 @@ class RedirectSpec
     }
 
     scenario("From constructor to constructorMethod hosted elsewhere - non static, field") {
-      val _ = new ExampleSample(s"$typeCtorPath/ConstructorToConstructorMethodHostedElsewhere.java") {
+      val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedElsewhere.java") {
         val ctor = fullName2id(s"p.B.B#_void")
         val ctorMethod = fullName2id(s"p.Factory.createB__void")
         val factoryClass = fullName2id(s"p.Factory")
@@ -168,7 +168,7 @@ class RedirectSpec
 
 
     scenario("From constructor to constructorMethod hosted by self - non static, parameter") {
-      val _ = new ExampleSample(s"$typeCtorPath/ConstructorToConstructorMethodHostedBySelf.java") {
+      val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedBySelf.java") {
         val ctor = fullName2id(s"p.B.B#_void")
         val ctorMethod = fullName2id(s"p.B.create__void")
         val constructedClass = fullName2id(s"p.B")
@@ -209,7 +209,7 @@ class RedirectSpec
     }
 
     scenario("From constructor to constructorMethod hosted by self - non static, field") {
-      val _ = new ExampleSample(s"$typeCtorPath/ConstructorToConstructorMethodHostedBySelf.java") {
+      val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedBySelf.java") {
         val ctor = fullName2id(s"p.B.B#_void")
         val ctorMethod = fullName2id(s"p.B.create__void")
         val constructedClass = fullName2id(s"p.B")
@@ -255,7 +255,7 @@ class RedirectSpec
     val typeMemberPath = examplesPath + "typeMember"
 
     scenario("From method to method superType"){
-      val _ = new ExampleSample(s"$typeMemberPath/MethodToMethodSuperType.java") {
+      val _ = new ScenarioFactory(s"$typeMemberPath/MethodToMethodSuperType.java") {
         val mUsed = fullName2id("p.Bimpl.m1__void")
         val mAbs = fullName2id("p.B.m1__void")
         val cUsed = fullName2id("p.Bimpl")

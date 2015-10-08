@@ -39,16 +39,19 @@ case class EdgeMap
   accessKindMap: AccessKindMap,
   parameterizedUsers : EdgeMapT,
   parameterizedUsed : EdgeMapT,
+  //contains
   contents  : EdgeMapT,
   containers : Node2NodeMap,
+  //isa
   superTypes : EdgeMapT,
   subTypes : EdgeMapT,
+  //BR
   typeMemberUses2typeUsesMap : UseDependencyMap,
   typeUses2typeMemberUsesMap : UseDependencyMap,
   //special cases of contains :
   parameters : ParamMapT,
-  definition : Node2NodeMap/*,
-  declaration : Node2NodeMap*/,
+  definition : Node2NodeMap,
+  //special case of use
   types : Map[NodeId, Type]){
 
   def add(edge : DGEdge) : EdgeMap =

@@ -47,7 +47,7 @@ class RecordingComparatorSpec extends AcceptanceSpec {
 
   val methodUsesViaThisField = {
     val p = "methodUsesViaThisField"
-    new ExampleSample(s"${Settings.testExamplesPath}/misc/$p/A.java") {
+    new ScenarioFactory(s"${Settings.testExamplesPath}/misc/$p/A.java") {
       val rootPackage = fullName2id(p)
 
       val classA = fullName2id(s"$p.A")
@@ -62,7 +62,7 @@ class RecordingComparatorSpec extends AcceptanceSpec {
   }
   val needToMergeInterfaces = {
     val p = "needToMergeInterfaces"
-    new ExampleSample(s"${Settings.testExamplesPath}/misc/$p/A.java") {
+    new ScenarioFactory(s"${Settings.testExamplesPath}/misc/$p/A.java") {
       //val packageNeedToMergeInterfaces = fullName2id("examples.misc.needToMergeInterfaces")
 
       val itcC = fullName2id(s"$p.IC")
@@ -73,7 +73,7 @@ class RecordingComparatorSpec extends AcceptanceSpec {
 
   feature("Comparison"){
 
-    def liftAssert(ex: ExampleSample, tg1: LoggedTG, tg2: LoggedTG, expected: Boolean): Unit = {
+    def liftAssert(ex: ScenarioFactory, tg1: LoggedTG, tg2: LoggedTG, expected: Boolean): Unit = {
       val app = Applicative[LoggedTry].lift2(ex.compare)
       val res = app(tg1, tg2)
 

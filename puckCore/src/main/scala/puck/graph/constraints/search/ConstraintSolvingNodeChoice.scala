@@ -28,25 +28,19 @@ class ConstraintSolvingNodesChoice private
   var remainingChoices : Set[Option[(DependencyGraph, NodeId)]],
   var triedChoices : Set[Option[(DependencyGraph, NodeId)]])
  extends ConstraintSolvingChoice[Option[(DependencyGraph, NodeId)], ConstraintSolvingNodesChoice] {
-  def createState(id : Int,
-                  prevState : Option[SearchState[ResultT]],
+  def createState(givenId : Int,
+                  previousState : Option[SearchState[ResultT]],
                   currentResult: Logged[ResultT],
-                  choices : ConstraintSolvingNodesChoice) = {
-    new ConstraintSolvingNodeChoiceSearchState(id, currentResult, choices, prevState)
-  }
+                  choices : ConstraintSolvingNodesChoice) =
+    new ConstraintSolvingState[Option[(DependencyGraph, NodeId)], ConstraintSolvingNodesChoice]{
+      val id  = givenId
+      val loggedResult  = currentResult
+      val internal = choices
+      val prevState  = previousState
+    }
+
 }
 
-
-
-
-class ConstraintSolvingNodeChoiceSearchState
-(val id : Int,
- val loggedResult : Logged[ResultT],
- val internal: ConstraintSolvingNodesChoice,
- val prevState : Option[SearchState[ResultT]])
-extends ConstraintSolvingState[Option[(DependencyGraph, NodeId)], ConstraintSolvingNodesChoice]{
-  def decorate(c : Option[NodeId]) = (loggedResult.value, c)
-}
 
 
 

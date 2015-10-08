@@ -6,7 +6,7 @@ import puck.graph.comparison.Mapping
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 import puck.graph.{AccessAbstraction, Uses}
 import puck.graph.transformations.rules.{CreateTypeMember, CreateParameter, Redirection}
-import puck.javaGraph.ExampleSample
+import puck.javaGraph.ScenarioFactory
 import puck.Settings.outDir
 
 class CommutativityRedirect
@@ -20,7 +20,7 @@ class CommutativityRedirect
     val typeDeclPath = examplesPath + "typeDecl/"
 
     scenario("From class to superType interface") {
-      val _ = new ExampleSample(s"$typeDeclPath/ClassToInterfaceSuperType.java") {
+      val _ = new ScenarioFactory(s"$typeDeclPath/ClassToInterfaceSuperType.java") {
         val theParam = fullName2id("p.A.mUser__ClassUsed.cu")
 
         val classUsed = fullName2id("p.ClassUsed")
@@ -43,7 +43,7 @@ class CommutativityRedirect
     //val interfaceToInterfaceSuperType
 
     ignore("From class to delegator class") {
-      new ExampleSample(s"$typeDeclPath/ClassToClassDelegate.java") {
+      new ScenarioFactory(s"$typeDeclPath/ClassToClassDelegate.java") {
         val theParam = fullName2id("p.A.mUser__Delegatee.d")
 
         val delegatee = fullName2id("p.Delegatee")
@@ -84,7 +84,7 @@ class CommutativityRedirect
     val typeCtorPath = examplesPath + "typeConstructor"
 
     scenario("From constructor to constructorMethod hosted elsewhere - non static, parameter") {
-      val _ = new ExampleSample(s"$typeCtorPath/ConstructorToConstructorMethodHostedElsewhere.java") {
+      val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedElsewhere.java") {
         val ctor = fullName2id(s"p.B.B#_void")
         val ctorMethod = fullName2id(s"p.Factory.createB__void")
 
@@ -102,7 +102,7 @@ class CommutativityRedirect
     }
 
     scenario("From constructor to constructorMethod hosted elsewhere - non static, field") {
-      val _ = new ExampleSample(s"$typeCtorPath/ConstructorToConstructorMethodHostedElsewhere.java") {
+      val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedElsewhere.java") {
         val ctor = fullName2id(s"p.B.B#_void")
         val ctorMethod = fullName2id(s"p.Factory.createB__void")
 
@@ -124,7 +124,7 @@ class CommutativityRedirect
     }
 
     scenario("From constructor to constructorMethod hosted by self - non static, parameter") {
-      val _ = new ExampleSample(s"$typeCtorPath/ConstructorToConstructorMethodHostedBySelf.java") {
+      val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedBySelf.java") {
         val ctor = fullName2id(s"p.B.B#_void")
         val ctorMethod = fullName2id(s"p.B.create__void")
 
@@ -144,7 +144,7 @@ class CommutativityRedirect
     }
 
     scenario("From constructor to constructorMethod hosted by self - non static, field") {
-      val _ = new ExampleSample(s"$typeCtorPath/ConstructorToConstructorMethodHostedBySelf.java") {
+      val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedBySelf.java") {
         val ctor = fullName2id(s"p.B.B#_void")
         val ctorMethod = fullName2id(s"p.B.create__void")
 
@@ -168,7 +168,7 @@ class CommutativityRedirect
         val typeMemberPath = examplesPath + "typeMember"
 
         scenario("From method to method superType"){
-          val _ = new ExampleSample(s"$typeMemberPath/MethodToMethodSuperType.java") {
+          val _ = new ScenarioFactory(s"$typeMemberPath/MethodToMethodSuperType.java") {
             val mUsed = fullName2id("p.Bimpl.m1__void")
             val mAbs = fullName2id("p.B.m1__void")
 

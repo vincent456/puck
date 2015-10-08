@@ -4,7 +4,7 @@ package puck.javaGraph.commutativity
 import puck.graph._
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.SupertypeAbstraction
-import puck.javaGraph.ExampleSample
+import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.JGraphUtils.{transformationRules => Rules}
 import puck.javaGraph.nodeKind.Interface
 import puck.{QuickFrame, AcceptanceSpec, Settings}
@@ -20,7 +20,7 @@ class CommutativityAbstract extends AcceptanceSpec {
 
     scenario("simple case") {
 
-      val _ = new ExampleSample(s"${noSuperTypePath}SimpleCase.java") {
+      val _ = new ScenarioFactory(s"${noSuperTypePath}SimpleCase.java") {
 
         val packageP = fullName2id("p")
         val classA = fullName2id("p.A")
@@ -39,7 +39,7 @@ class CommutativityAbstract extends AcceptanceSpec {
     }
 
     scenario("method self use in class"){
-      val _ = new ExampleSample(s"$noSuperTypePath/MethodSelfUse.java") {
+      val _ = new ScenarioFactory(s"$noSuperTypePath/MethodSelfUse.java") {
 
         val packageP = fullName2id("p")
         val classA = fullName2id("p.A")
@@ -60,7 +60,7 @@ class CommutativityAbstract extends AcceptanceSpec {
     }
 
     scenario("field self use in class"){
-      val _ = new ExampleSample(s"$noSuperTypePath/FieldSelfUse.java") {
+      val _ = new ScenarioFactory(s"$noSuperTypePath/FieldSelfUse.java") {
         val packageP = fullName2id("p")
         val classB = fullName2id("p.B")
 
@@ -77,7 +77,7 @@ class CommutativityAbstract extends AcceptanceSpec {
     }
 
     scenario("field use via parameter of self type"){
-      val _ = new ExampleSample(s"$noSuperTypePath/FieldUseViaParameterSelfType.java") {
+      val _ = new ScenarioFactory(s"$noSuperTypePath/FieldUseViaParameterSelfType.java") {
         val packageP = fullName2id("p")
         val classC = fullName2id("p.C")
 
@@ -94,7 +94,7 @@ class CommutativityAbstract extends AcceptanceSpec {
     }
 
     scenario("use of type member sibling by self and parameter"){
-      val _ = new ExampleSample(s"$noSuperTypePath/SelfTypeMemberUseViaParameterAndSelf.java"){
+      val _ = new ScenarioFactory(s"$noSuperTypePath/SelfTypeMemberUseViaParameterAndSelf.java"){
         val packageP = fullName2id("p")
         val classA = fullName2id("p.A")
 
@@ -113,7 +113,7 @@ class CommutativityAbstract extends AcceptanceSpec {
     val withSuperTypePath = examplesPath + "/classIntoInterface/existingSuperType"
 
     scenario("existing supertype - simple case"){
-      val _ = new ExampleSample(s"$withSuperTypePath/SimpleCase.java") {
+      val _ = new ScenarioFactory(s"$withSuperTypePath/SimpleCase.java") {
         val packageP = fullName2id("p")
         val classA = fullName2id("p.A")
 
@@ -134,7 +134,7 @@ class CommutativityAbstract extends AcceptanceSpec {
   val ctorIntoFactoryPath = examplesPath + "/constructorIntoFactoryMethod"
   feature("Intro initializer"){
     scenario("one constructor one initialized field"){
-      val _ = new ExampleSample(ctorIntoFactoryPath + "/OneConstructorOneInitializedField.java") {
+      val _ = new ScenarioFactory(ctorIntoFactoryPath + "/OneConstructorOneInitializedField.java") {
         val classA = fullName2id("p.A")
 
         val (initializer, g) = Rules.intro.initializer(graph, classA)

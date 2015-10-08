@@ -23,7 +23,7 @@ object BridgeScenario {
 }
 
 class BridgeScenario private()
-  extends ExampleSample(
+  extends ScenarioFactory(
     BridgeScenario.path + "screen/BridgeDemo.java",
     BridgeScenario.path + "screen/Screen.java")
   with EitherValues

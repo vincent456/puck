@@ -101,6 +101,7 @@ object PuckBuild extends Build {
     settings Seq[Setting[_]] {
       libraryDependencies ++= Seq(
         "org.scala-lang" % "scala-swing" % "2.11.0-M7",
+        "org.scala-lang" % "scala-parser-combinators" % "2.11.0-M4",
         "org.apache.xmlgraphics" % "batik-util" % "1.7",
         "org.apache.xmlgraphics" % "batik-svg-dom" % "1.7",
         "org.apache.xmlgraphics" % "batik-swing" % "1.7",

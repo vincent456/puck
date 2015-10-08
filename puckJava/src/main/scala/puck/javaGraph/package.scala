@@ -16,6 +16,7 @@ package object javaGraph {
     case _ => name
   }
 
+  def JavaFilesHandler(root : String) : FilesHandler = JavaFilesHandler(new File(root))
   def JavaFilesHandler() : FilesHandler = JavaFilesHandler(new File("."))
 
   def JavaFilesHandler(workingDirectory : java.io.File) : FilesHandler =

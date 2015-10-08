@@ -139,5 +139,7 @@ object ShowDG extends ShowConstraints{
   implicit class DGShowOp[A](val p : (DependencyGraph, A)) extends AnyVal {
     def shows(implicit cb : CordBuilder[A]) : String =
       cb(p._1, p._2).toString()
+
+    def println()(implicit cb : CordBuilder[A]) : Unit = System.out.println(shows)
   }
 }

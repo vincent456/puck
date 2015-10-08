@@ -10,7 +10,7 @@ class MoveUnitSpec extends UnitSpec {
   val moveMethodUsedByThis = examplesPath + "/method/usedByThis"
 
   "Move" should "know that a typeMember is NOT used by self type" in {
-    val _ = new ExampleSample(s"$moveMethodNotUsedByThis/MovedMethodHasNoParameter.java"){
+    val _ = new ScenarioFactory(s"$moveMethodNotUsedByThis/MovedMethodHasNoParameter.java"){
 
       val classA = graph.getConcreteNode(fullName2id("p.A"))
       val methToMove = graph.getConcreteNode(fullName2id("p.A.methodToMove__void"))
@@ -23,7 +23,7 @@ class MoveUnitSpec extends UnitSpec {
 
   it should "know that a typeMember is used by self type" in {
 
-    val _ = new ExampleSample(s"$moveMethodUsedByThis/MovedMethodHasNoParameter.java") {
+    val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodHasNoParameter.java") {
 
       val classA = graph.getConcreteNode(fullName2id("p.A"))
       val methToMove = graph.getConcreteNode(fullName2id("p.A.methodToMove__void"))
@@ -33,7 +33,7 @@ class MoveUnitSpec extends UnitSpec {
     }
   }
   it should "know that a typeMember is used by self type when used several times" in {
-    val _ = new ExampleSample(s"$moveMethodUsedByThis/MovedMethodUsedByThisSeveralTimes.java") {
+    val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodUsedByThisSeveralTimes.java") {
 
       val classA = graph.getConcreteNode(fullName2id("p.A"))
       val methToMove = graph.getConcreteNode(fullName2id("p.A.methodToMove__void"))

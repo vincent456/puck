@@ -2,7 +2,7 @@
 
 import puck.graph.{DGError, Write, Uses, AccessAbstraction}
 import puck.graph.constraints.SupertypeAbstraction
-import puck.javaGraph.ExampleSample
+import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.JGraphUtils.{transformationRules => TR}
 import puck.javaGraph.nodeKind.Interface
 import puck.{QuickFrame, AcceptanceSpec, GetDefinitionValue, Settings}
@@ -15,7 +15,7 @@ class AbstractSpec extends AcceptanceSpec with GetDefinitionValue {
     info("no pre-existing super type")
     val noSuperTypePath = examplesPath + "/classIntoInterface/noExistingSuperType"
     scenario("simple case"){
-      val _ = new ExampleSample(s"$noSuperTypePath/SimpleCase.java") {
+      val _ = new ScenarioFactory(s"$noSuperTypePath/SimpleCase.java") {
         val classA = fullName2id("p.A")
         val methM = fullName2id("p.A.m__void")
         val field = fullName2id("p.A.f")
@@ -41,7 +41,7 @@ class AbstractSpec extends AcceptanceSpec with GetDefinitionValue {
     }
 
     scenario("method self use in class"){
-      val _ = new ExampleSample(s"$noSuperTypePath/MethodSelfUse.java") {
+      val _ = new ScenarioFactory(s"$noSuperTypePath/MethodSelfUse.java") {
         val classA = fullName2id("p.A")
         val methM = fullName2id("p.A.m__void")
         val methMUserDecl = fullName2id("p.A.methodUser__A")

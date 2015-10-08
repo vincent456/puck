@@ -12,16 +12,16 @@ class ConstraintSolvingCreateVarChoice
  var triedChoices : Set[CreateVarStrategy])
 extends ConstraintSolvingChoice [CreateVarStrategy, ConstraintSolvingCreateVarChoice]{
 
-  override def createState(id: Int,
-                           prevState: Option[SearchState[ResultT]],
+  override def createState(givenId: Int,
+                           previousState: Option[SearchState[ResultT]],
                            currentResult: Logged[ResultT],
                            choices: ConstraintSolvingCreateVarChoice): SearchState[ResultT] =
-  new ConstraintSolvingCreateVarSearchState(id, currentResult, choices, prevState)
+    new ConstraintSolvingState[CreateVarStrategy, ConstraintSolvingCreateVarChoice]{
+      val id  = givenId
+      val loggedResult = currentResult
+      val internal = choices
+      val prevState = previousState
+    }
 }
 
-class ConstraintSolvingCreateVarSearchState
-(val id : Int,
- val loggedResult : Logged[ResultT],
- val internal: ConstraintSolvingCreateVarChoice,
- val prevState : Option[SearchState[ResultT]])
-  extends ConstraintSolvingState[CreateVarStrategy, ConstraintSolvingCreateVarChoice]
+

@@ -20,7 +20,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
     scenario("use of constructor only") {
 
-      val _ = new ExampleSample(s"$examplesPath/A.java") {
+      val _ = new ScenarioFactory(s"$examplesPath/A.java") {
         val clazz = fullName2id(s"p.A")
         val ctor = fullName2id(s"p.A.A#_void")
         val userDecl = fullName2id(s"p.B.m__void")
@@ -41,7 +41,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
     // body uses : local var or static access
     // thisClass uses : call a sibling method or field
     scenario("this use explicit") {
-      val _ = new ExampleSample(s"$examplesPath/ThisUseExplicit.java") {
+      val _ = new ScenarioFactory(s"$examplesPath/ThisUseExplicit.java") {
         val clazz = fullName2id("p.A")
         val methM = fullName2id("p.A.m__void")
         val mUserViaThis = fullName2id("p.A.mUserViaThis__void")
@@ -68,7 +68,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
     }
 
     scenario("field type use") {
-      val _ = new ExampleSample(s"$examplesPath/FieldTypeUse.java") {
+      val _ = new ScenarioFactory(s"$examplesPath/FieldTypeUse.java") {
         val itc = fullName2id("p.I")
         val field = fullName2id("p.A.field")
 
@@ -86,7 +86,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
   feature("typeUse typeMemberUse relation registration"){
     val examplesPath = graphBuildingExamplesPath +  "typeRelationship/"
     scenario("call on field") {
-      val _ = new ExampleSample(s"$examplesPath/CallOnField.java"){
+      val _ = new ScenarioFactory(s"$examplesPath/CallOnField.java"){
 
         val fieldTypeUserDecl = fullName2id("p.A.b")
         val methUserDecl = fullName2id("p.A.ma__void")
@@ -115,7 +115,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
     }
 
     scenario("call on method's parameter"){
-      val _ = new ExampleSample(s"$examplesPath/CallOnParameter.java"){
+      val _ = new ScenarioFactory(s"$examplesPath/CallOnParameter.java"){
 
         val mUserDecl = fullName2id("p.A.ma__B")
         val theParameter = fullName2id("p.A.ma__B.b")
@@ -132,7 +132,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
     }
 
     scenario("call from local variable"){
-      val _ = new ExampleSample(s"$examplesPath/CallOnLocalVariable.java"){
+      val _ = new ScenarioFactory(s"$examplesPath/CallOnLocalVariable.java"){
 
         val mUserDecl = fullName2id("p.A.ma__void")
         val mUserDef = getDefinition(graph, mUserDecl)
@@ -148,7 +148,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
     }
 
     scenario("chained call"){
-      val _ = new ExampleSample(s"$examplesPath/ChainedCall.java"){
+      val _ = new ScenarioFactory(s"$examplesPath/ChainedCall.java"){
         val mUserDecl = fullName2id("p.A.ma__void")
         val mUserDef = getDefinition(graph, mUserDecl)
         val mUsed = fullName2id("p.C.mc__void")
@@ -167,7 +167,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
     val examplesPath = graphBuildingExamplesPath +  "abstractionRegistration/"
     scenario("one class one interface"){
       val p = "interfaceSupertype"
-      val _ = new ExampleSample(s"$examplesPath/$p/A.java"){
+      val _ = new ScenarioFactory(s"$examplesPath/$p/A.java"){
 
         val classUsed = fullName2id(s"$p.A")
         val mUsed = fullName2id(s"$p.A.ma__void")
@@ -185,7 +185,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
     val examplesPath = graphBuildingExamplesPath +  "subTyping/"
 
     scenario("simple case"){
-      val _ = new ExampleSample(s"$examplesPath/RegularSuperType.java") {
+      val _ = new ScenarioFactory(s"$examplesPath/RegularSuperType.java") {
         val superClass = fullName2id("p.A")
         val subClass = fullName2id("p.B")
 
@@ -195,7 +195,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
     }
 
     scenario("generic super type"){
-      val _ = new ExampleSample(s"$examplesPath/GenericSuperType.java") {
+      val _ = new ScenarioFactory(s"$examplesPath/GenericSuperType.java") {
         val superClass = fullName2id("p.Gen")
         val subClass = fullName2id("p.C")
         val paramType = fullName2id("p.A")
@@ -212,7 +212,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
     val examplesPath = graphBuildingExamplesPath +  "genericTypes/"
 
     scenario("generic type declaration"){
-      val _ = new ExampleSample(s"$examplesPath/GenericTypeDecl.java") {
+      val _ = new ScenarioFactory(s"$examplesPath/GenericTypeDecl.java") {
         val actualParam = fullName2id("p.A")
         val genTypeDeclarant = fullName2id("p.GenTypeDeclarant")
         val user = fullName2id("p.GenTypeDeclarant.user")
@@ -231,7 +231,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
 
     scenario("generic method declaration"){
-      val _ = new ExampleSample(s"$examplesPath/MethodOfGenericType.java") {
+      val _ = new ScenarioFactory(s"$examplesPath/MethodOfGenericType.java") {
 
         val actualTypeParam = fullName2id("p.A")
         val formalTypeParam = fullName2id("p.GenColl@T")
@@ -263,7 +263,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
     }
 
     scenario("generic - type relationship"){
-      val _ = new ExampleSample(s"$examplesPath/TypeRelationship.java") {
+      val _ = new ScenarioFactory(s"$examplesPath/TypeRelationship.java") {
 
         val actualTypeParam = fullName2id("p.A")
         val actualTypeParamMethod = fullName2id("p.A.m__void")
@@ -296,7 +296,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
     val examplesPath = graphBuildingExamplesPath +  "readWrite/"
 
     scenario("generic type declaration"){
-      val _ = new ExampleSample(s"$examplesPath/A.java") {
+      val _ = new ScenarioFactory(s"$examplesPath/A.java") {
         val field = fullName2id(s"p.A.f")
         val getterDecl = fullName2id(s"p.A.getF__void")
         val getter = getDefinition(graph, getterDecl)

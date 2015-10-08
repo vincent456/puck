@@ -9,7 +9,7 @@ class MakeSuperTypeSpec extends AcceptanceSpec {
     val examplesPath = Settings.testExamplesPath + "/makeSuperType"
     val superInterfacePath = examplesPath + "/superInterface/"
     scenario("Compatible super interface") {
-      val _ = new ExampleSample(s"$superInterfacePath/Compatible.java") {
+      val _ = new ScenarioFactory(s"$superInterfacePath/Compatible.java") {
         val classA = fullName2id("p.A")
         val superA = fullName2id("p.SuperA")
 
@@ -27,7 +27,7 @@ class MakeSuperTypeSpec extends AcceptanceSpec {
     }
 
     scenario("Incompatible super interface") {
-      val _ = new ExampleSample(s"$superInterfacePath/Incompatible.java") {
+      val _ = new ScenarioFactory(s"$superInterfacePath/Incompatible.java") {
         val classA = fullName2id("p.A")
         val superA = fullName2id("p.SuperA")
 

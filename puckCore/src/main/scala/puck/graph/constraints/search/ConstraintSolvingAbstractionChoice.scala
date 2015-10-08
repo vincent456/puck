@@ -10,18 +10,16 @@ class ConstraintSolvingAbstractionChoice
   var remainingChoices : Set[Option[(NodeKind, AbstractionPolicy)]],
   var triedChoices : Set[Option[(NodeKind, AbstractionPolicy)]])
 extends ConstraintSolvingChoice[Option[(NodeKind, AbstractionPolicy)], ConstraintSolvingAbstractionChoice] {
-  def createState(id: Int,
-                  prevState: Option[SearchState[ResultT]],
+  def createState(givenId: Int,
+                  previousState: Option[SearchState[ResultT]],
                   currentResult : Logged[ResultT],
                   choices: ConstraintSolvingAbstractionChoice) =
-    new ConstraintSolvingAbstractionChoiceSearchState(id, currentResult, choices, prevState)
+    new ConstraintSolvingState[Option[(NodeKind, AbstractionPolicy)], ConstraintSolvingAbstractionChoice]{
+      val id = givenId
+      val loggedResult = currentResult
+      val internal = choices
+      val prevState = previousState
+    }
+
 
 }
-
-
-class ConstraintSolvingAbstractionChoiceSearchState
-(val id : Int,
- val loggedResult : Logged[ResultT],
- val internal: ConstraintSolvingAbstractionChoice,
- val prevState : Option[SearchState[ResultT]])
-extends ConstraintSolvingState[Option[(NodeKind, AbstractionPolicy)], ConstraintSolvingAbstractionChoice]
