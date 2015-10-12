@@ -51,7 +51,6 @@ object ShowDG extends ShowConstraints{
     {case (dg, (nid1, nid2)) => Cord("Edge(", nodeIdCord(dg,nid1), ", ", nodeIdCord(dg,nid2), ")")}
 
 
-
   implicit def nodeCord : CordBuilder[DGNode] = (dg, n) =>
     n match {
       case n : ConcreteNode =>
@@ -66,14 +65,15 @@ object ShowDG extends ShowConstraints{
     }
 
 
-  def nodeNameCord : CordBuilder[DGNode] =
-    (dg, n) => n.name(dg)
-
   def nodeNameTypCord : CordBuilder[DGNode] =
     (dg, n) => n match {
       case cn : ConcreteNode => Cord(cn.name , typeHolderCord(dg, dg.styp(cn.id)))
       case _ => n.name(dg)
     }
+
+  def fullNameEdgeCord : CordBuilder[DGEdge] =  (g, e) =>
+    Cord(s"${e.kind}(${e.source} - ${g.fullName(e.source)}, ${e.target} - ${g.fullName(e.target)})")
+
 
   implicit def edgeCord : CordBuilder[DGEdge] =  (dg, e) =>
     Cord(e.kind.toString, "( " + nodeIdCord(dg, e.source), ", ", nodeIdCord(dg, e.target), ")")
@@ -140,6 +140,6 @@ object ShowDG extends ShowConstraints{
     def shows(implicit cb : CordBuilder[A]) : String =
       cb(p._1, p._2).toString()
 
-    def println()(implicit cb : CordBuilder[A]) : Unit = System.out.println(shows)
+    def println(implicit cb : CordBuilder[A]) : Unit = System.out.println(shows)
   }
 }

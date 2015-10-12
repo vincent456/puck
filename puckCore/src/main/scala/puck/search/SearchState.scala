@@ -108,8 +108,6 @@ trait SearchState[T]
     cid
   }
 
-  def setAsCurrentState(engine : SearchEngine[T]): Unit = { engine.currentState = this }
-
   def triedAll : Boolean
 
   def executeNextChoice(engine : SearchEngine[T]) : Unit

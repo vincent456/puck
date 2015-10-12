@@ -9,18 +9,11 @@ import puck.util.Logged
 
 import scalaz._ , Scalaz._
 
-object ConstraintSolving {
-  type NodeChoice = ConstraintSolvingNodesChoice
-  type AbsChoice = ConstraintSolvingAbstractionChoice
-}
-
 class ConstraintSolvingSearchEngineDecisionMaker
 ( val violationsKindPriority : Seq[NodeKind] )
   extends DecisionMaker {
 
   var searchEngine : SearchEngine[ResultT] = _
-  //def initialState = new CSInitialSearchState(this, solverBuilder(graph, this))
-
 
 
   /*def violationTarget(graph : GraphT)
@@ -84,33 +77,24 @@ class ConstraintSolvingSearchEngineDecisionMaker
 
     import impl.kind.{abstractionPolicies, abstractionNodeKinds}
 
-  /*  k(lg.map(_ =>
-      if(abstractionPolicies.isEmpty)
-        None
-      else
-        Some((abstractKinds(abstractionPolicies.head).head,
-          abstractionPolicies.head))))*/
-
     val (needSearch, karg) =
-      if(abstractionPolicies.isEmpty) {
+      if(abstractionPolicies.isEmpty)
         (false, None)
-    }
-    else if(abstractionPolicies.tail.isEmpty){
-      val absk = abstractionNodeKinds(abstractionPolicies.head)
-      if(absk.tail.isEmpty) {
-        (false, Some((absk.head, abstractionPolicies.head)))
+      else if(abstractionPolicies.tail.isEmpty){
+        val absk = abstractionNodeKinds(abstractionPolicies.head)
+        if(absk.tail.isEmpty)
+          (false, Some((absk.head, abstractionPolicies.head)))
+        else (true, None)
+
       }
       else (true, None)
-
-    }
-    else (true, None)
 
 
     if(needSearch) {
       val choices = impl.kind.abstractionChoices.map(Some(_))
 
-      searchEngine.newCurrentState(lg,
-        new ConstraintSolvingAbstractionChoice(k,
+      searchEngine.addState(lg,
+        new ConstraintSolvingChoice[Option[(NodeKind, AbstractionPolicy)]](k,
           Set[Option[(NodeKind, AbstractionPolicy)]]() ++ choices,
           Set[Option[(NodeKind, AbstractionPolicy)]]()))
     }
@@ -149,7 +133,7 @@ class ConstraintSolvingSearchEngineDecisionMaker
     val graph = lg.value
     val choices = graph.concreteNodes.filter(predicate(graph,_)).toList
 
-    searchEngine.newCurrentState(lg,
+    searchEngine.addState(lg,
       ConstraintSolvingNodesChoice.includeNoneChoice(k, choices map (n => Some((graph, n.id)))))
 //    choices match {
 //      case s =>
@@ -177,10 +161,9 @@ class ConstraintSolvingSearchEngineDecisionMaker
     val tmKinds = g.nodeKindKnowledge.kindOfKindType(InstanceValueDecl)
     val strategies = CreateParameter +: (tmKinds map CreateTypeMember.apply)
 
-    searchEngine.newCurrentState(lg,
-      new ConstraintSolvingCreateVarChoice(k, strategies.toSet, Set()))
+    searchEngine.addState(lg,
+      new ConstraintSolvingChoice[CreateVarStrategy](k, strategies.toSet, Set()))
 
   }
-/*  def modifyConstraints(sources : NodeSet[Kind], target : NodeType){}*/
 
 }

@@ -2,6 +2,8 @@
 import java.io.FileWriter
 
 import com.typesafe.sbt.packager.archetypes.JavaAppPackaging
+import com.typesafe.sbt.SbtNativePackager.Universal
+import org.apache.commons.io.FileUtils
 import sbt._
 import Keys._
 
@@ -11,6 +13,8 @@ object PuckBuild extends Build {
   val classPathFileName = settingKey[String]("Location of generated classpath script")
 
   val printClassPathFile = taskKey[File]("create a file containing the fullclass path")
+  val jarSources = taskKey[File]("create a jar containing source files")
+  val srcJarFileName = settingKey[String]("name of the jar containing source files")
 
   def commonSettings(module: String) : Seq[Setting[_]] = Seq(
     organization := "fr.lip6",
@@ -19,7 +23,7 @@ object PuckBuild extends Build {
     scalaVersion := "2.11.7",
     sbtVersion := "0.13.8",
     classPathFileName := "CLASSPATH",
-
+    srcJarFileName := s"${organization.value}.${name.value}-${version.value}-src.jar",
     printClassPathFile := {
 
       val f = baseDirectory.value / "target" / classPathFileName.value
@@ -61,15 +65,35 @@ object PuckBuild extends Build {
       "-Ywarn-unused-import"  // 2.11 only
     ),
 
+
     printClassPathFile := {
 
       val f = baseDirectory.value / "target" / classPathFileName.value
-
       val writter = new FileWriter(f)
       val fcp = (fullClasspath in Compile).value.map(_.data.absolutePath)
       writter.write(fcp.mkString("set CLASSPATH ", ":", ""))
       writter.close()
       f
+    },
+    jarSources := {
+
+      def listFileWithRelativePaths(roots : Seq[File]) : Seq[(File, String)] =
+          roots.foldLeft (Seq[(File,String)]()) {
+            (acc, dir) =>
+              val fs = FileUtils.listFiles(dir, Array("scala","java"), true)
+              import scala.collection.JavaConversions._
+              fs.toSeq.foldLeft(acc){
+                (acc0, f) =>
+                  acc0 :+ (f, f.relativeTo(dir).get.toString)
+              }
+          }
+
+      val unmanagedDirs = (unmanagedSourceDirectories in Compile).value
+      val managedDirs = (managedSourceDirectories in Compile).value
+
+      val jarFile = baseDirectory.value / "target" / srcJarFileName.value
+      IO.jar(listFileWithRelativePaths(unmanagedDirs ++ managedDirs), jarFile, new java.util.jar.Manifest())
+      jarFile
     }
   )
 
@@ -117,6 +141,13 @@ object PuckBuild extends Build {
     enablePlugins JavaAppPackaging
     //dependsOn (puckCore % "test->test;compile->compile")
     dependsOn (puckGui % "compile->compile")
+
+    settings (mappings in Universal ++=
+      Seq((jarSources in puckCore).value -> ("lib/" + (srcJarFileName in puckCore).value),
+        (jarSources in puckGui).value -> ("lib/" + (srcJarFileName in puckGui).value),
+        jarSources.value -> ("lib/" + srcJarFileName.value)
+
+      ))
 
     )
 

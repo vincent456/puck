@@ -398,10 +398,7 @@ class DependencyGraph
   }
 
   def fullName(id : NodeId) : String = {
-    /*if (isRoot) nameTypeString
-      else {*/
-    import ShowDG._
-    val path = containerPath(id).map{n => (this, getNode(n)).shows(nodeNameCord)}
+    val path = containerPath(id).map{n => getNode(n).name(this)}
 
     (if (path.head == DependencyGraph.rootName)
       path.tail

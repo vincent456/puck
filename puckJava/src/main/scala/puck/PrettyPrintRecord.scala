@@ -35,7 +35,7 @@ object PrettyPrintRecord {
 
     import ShowDG._
     r.reverse.foldLeft(dg2ast.initialGraph){(g0, t) =>
-      (g0, t).println()
+      (g0, t).println
       t.redo(g0)
     }
 

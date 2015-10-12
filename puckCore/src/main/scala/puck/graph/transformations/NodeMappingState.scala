@@ -46,8 +46,6 @@ class NodeMappingState
 
      def executeNextChoice(engine : SearchEngine[ResMap]) : Unit = {
        if(remainingChoices.nonEmpty) {
-         if (engine.currentState != this)
-           setAsCurrentState(engine)
 
          val c = remainingChoices.pop()
 

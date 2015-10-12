@@ -2,9 +2,6 @@ package puck.util
 
 import scala.collection.mutable
 
-/**
- * Created by lorilan on 07/07/14.
- */
 trait HasChildren[T] {
   def children : Iterable[T]
 }

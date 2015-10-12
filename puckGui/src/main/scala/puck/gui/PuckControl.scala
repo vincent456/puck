@@ -7,7 +7,7 @@ import puck.graph.constraints.search.ConstraintSolvingSearchEngineBuilder
 import puck.graph._
 import puck.graph.io._
 
-import puck.gui.explorer.{SetTopLevelVisible, SetVisibleFromKind, AccessGraphModified}
+import puck.gui.explorer.{SetTopLevelVisible, AccessGraphModified}
 import puck.gui.imageDisplay.{ImageFrame, ImageExplorer}
 import puck.gui.svg.SVGFrame
 import puck.search.{SearchState, Search}
@@ -19,7 +19,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.swing.event.Event
 import scala.swing.{Component, ProgressBar, Publisher}
 import scala.util.{Failure, Success}
-import scalaz.{Success => Succezz}
 
 
 sealed trait ControlRequest extends Event

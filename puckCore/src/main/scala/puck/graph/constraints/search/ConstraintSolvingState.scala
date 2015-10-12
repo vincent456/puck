@@ -6,16 +6,25 @@ import puck.util.Logged
 
 import scalaz.syntax.writer._
 
-trait ConstraintSolvingChoice[S, ChoiceT]
-  extends StateCreator[ResultT, ChoiceT] {
-  val k : Logged[S] => Unit
-  var remainingChoices : Set[S]
+class ConstraintSolvingChoice[S]
+( val k : Logged[S] => Unit,
+  var remainingChoices : Set[S],
   var triedChoices : Set[S]
+  ) extends StateCreator[ResultT, ConstraintSolvingChoice[S]]{
 
-  
+  def createState(givenId : Int,
+                  previousState : Option[SearchState[ResultT]],
+                  currentResult : Logged[ResultT],
+                  choices : ConstraintSolvingChoice[S]) : SearchState[ResultT] =
+    new ConstraintSolvingState[S]{
+      val id = givenId
+      val loggedResult = currentResult
+      val internal = choices
+      val prevState = previousState
+    }
 }
 
-trait ConstraintSolvingState[S, T <: ConstraintSolvingChoice[S, T]]
+trait ConstraintSolvingState[S]
   extends SearchState[ResultT]{
 
   /*println("creating searchState "+ id)
@@ -24,7 +33,7 @@ trait ConstraintSolvingState[S, T <: ConstraintSolvingChoice[S, T]]
     case Some(p) =>  println("parent is " + p.uuid())
   }*/
 
-  val internal : ConstraintSolvingChoice[S, T]
+  val internal : ConstraintSolvingChoice[S]
   import internal._
 
   def triedAll = remainingChoices.isEmpty
@@ -36,9 +45,6 @@ trait ConstraintSolvingState[S, T <: ConstraintSolvingChoice[S, T]]
   }
 
   override def executeNextChoice(engine : SearchEngine[ResultT]) : Unit = {
-    if(engine.currentState != this)
-      setAsCurrentState(engine)
-
     if(remainingChoices.nonEmpty){
 
       val c = remainingChoices.head

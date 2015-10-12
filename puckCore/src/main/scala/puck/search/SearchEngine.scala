@@ -31,12 +31,37 @@ object SearchEngine {
   type InitialStateFactory[T] = (LoggedTry[T] => Unit) => SearchState[T]
 }
 
-import SearchEngine._
-trait SearchEngine[T] extends Search[T] {
+class SearchStateSet[T]{
+  val stateStack = mutable.Stack[SearchState[T]]()
 
-  var currentState : SearchState[T] = _
-  override val successes = mutable.ListBuffer[FinalState[T]]()
-  override val failures = mutable.ListBuffer[ErrorState[T]]()
+  def head : SearchState[T] = stateStack.head
+
+  def removeHead() : Unit ={
+    val _ = stateStack.pop()
+  }
+  def removeAll() : Unit = stateStack.clear()
+
+  def add( ss : SearchState[T]) : Unit ={
+    val _ = stateStack.push(ss)
+  }
+  def addAll(sss : TraversableOnce[SearchState[T]]) : Unit = {
+    val _ = stateStack pushAll sss
+  }
+
+  def isEmpty : Boolean = stateStack.isEmpty
+  def nonEmpty : Boolean = !isEmpty
+}
+
+
+import SearchEngine._
+class SearchEngine[T]
+( val createInitialState : InitialStateFactory[T],
+  val searchStrategy: SearchStrategy[T]
+  ) extends Search[T] {
+
+  def currentState : SearchState[T] = searchStrategy.remainingStates.head
+  val successes = mutable.ListBuffer[FinalState[T]]()
+  val failures = mutable.ListBuffer[ErrorState[T]]()
 
 
   private [this] var idSeed : Int = 0
@@ -59,141 +84,56 @@ trait SearchEngine[T] extends Search[T] {
   var initialState : SearchState[T] = _
   protected var numExploredStates = 0
 
-  val createInitialState : InitialStateFactory[T]
-
-  def newCurrentState[S <: StateCreator[T, S]](cr : Logged[T], choices : S)  = {
-    currentState = currentState.createNextState[S](cr, choices)
+  def addState[S <: StateCreator[T, S]](cr : Logged[T], choices : S)  = {
     numExploredStates = numExploredStates + 1
+    searchStrategy.addState(cr, choices)
   }
 
   def init(k : LoggedTry[T] => Unit) : Unit = {
     initialState = createInitialState(k)
-    currentState = initialState
+    searchStrategy.remainingStates.add(initialState)
     numExploredStates = 1
-  }
-
-  def search(k : LoggedTry[T] => Unit) : Unit =  {
-    init(k)
-    currentState.executeNextChoice(this)
   }
 
   def exploredStates = numExploredStates
 
-  protected def startExplore(k : LoggedTry[T] => Unit) : Unit
+  //def startExplore(k : LoggedTry[T] => Unit) : Unit
 
   def explore() : Unit ={
-    startExplore {
-      storeResult(currentState, _)
-    }
+    init(storeResult(currentState, _))
+    do searchStrategy.oneStep(this)
+    while(searchStrategy.continue(this))
   }
 }
 
+abstract class SearchStrategy[T] {
+  val remainingStates = new SearchStateSet[T]()
 
-abstract class StackedSearchEngine[Result]
-  extends SearchEngine[Result]{
+  def addState(s : SearchState[T]) : Unit =
+    remainingStates add s
 
-  val stateStack = mutable.Stack[SearchState[Result]]()
 
-  override def init(k : LoggedTry[Result] => Unit): Unit = {
-    //println("StackedSearchEngine.init")
-    super.init(k)
-    stateStack.push(initialState)
-    ()
+  def addState[S <: StateCreator[T, S]](cr : Logged[T], choices : S): Unit =
+    remainingStates add remainingStates.head.createNextState[S](cr, choices)
+
+
+  def continue(se : SearchEngine[T]) : Boolean
+
+  def oneStep(se : SearchEngine[T]) : Unit = {
+    if (remainingStates.head.triedAll) remainingStates.removeHead()
+    else remainingStates.head.executeNextChoice(se)
   }
 
-  override def newCurrentState[S <: StateCreator[Result, S]](cr : Logged[Result], choices : S) : Unit =  {
-    //println("StackedSearchEngine.newCurrentState")
-    super.newCurrentState(cr, choices)
-    stateStack.push(currentState)
-    ()
-  }
+  def onNewCurrentState(se : SearchEngine[T]) : Unit = ()
 }
 
-class TryAllSearchEngine[T]
-( val createInitialState : InitialStateFactory[T]
-) extends StackedSearchEngine[T]{
-
-  protected def startExplore( k : LoggedTry[T] => Unit) : Unit =  {
-
-  this.search(k)
-
-  while(stateStack.nonEmpty){
-      if(stateStack.head.triedAll)
-        stateStack.pop()
-      else {
-        stateStack.head.executeNextChoice(this)
-      }
-    }
-  }
+class TryAllSearchStrategy[T] extends SearchStrategy[T] {
+  def continue(se : SearchEngine[T]) : Boolean =
+    remainingStates.nonEmpty
 }
 
-//trait GradedSearchEngine[S] extends SearchEngine[S]{
-//
-//  def grade(state : SearchState[S, U]) : Int
-//
-//  override def search() : Option[SearchState[S, U]] = {
-//    val states = mutable.Buffer[(SearchState[S, U], Int)]()
-//
-//    def selectBest() = {
-//      val (choosedState, _) = states.tail.foldLeft[(SearchState[S, U], Int)](states.head){
-//        case ((bestState, bestGrade), (state, grade)) =>
-//          if(grade > bestGrade) (state, grade)
-//          else (bestState, bestGrade)
-//      }
-//      choosedState
-//    }
-//
-//
-//    init()
-//    var prev = currentState
-//
-//
-//    while(finalStates.isEmpty && !currentState.triedAll) {
-//      states.clear()
-//      while (!prev.triedAll) {
-//        prev.setAsCurrentState()
-//        prev.executeNextChoice()
-//        states.append((currentState, grade(currentState)))
-//      }
-//
-//      println("choosing between %d solutions".format(states.length))
-//      states.foreach{case (_, grade) => println(grade)}
-//
-//      prev = selectBest()
-//    }
-//
-//    states.clear()
-//
-//    states ++= finalStates.map{
-//      st =>
-//        st.setAsCurrentState()
-//        (st, grade(st))
-//    }
-//
-//    println("final states ! choosing between %d solutions".format(states.length))
-//    states.foreach{
-//      case (_, grade) => println(grade)
-//    }
-//
-//    if(finalStates.nonEmpty)
-//      Some(selectBest())
-//    else
-//      None
-//  }
-//}
-
-class FindFirstSearchEngine[T]
-( val createInitialState : InitialStateFactory[T]
-  ) extends StackedSearchEngine[T] {
-
-  protected def startExplore( k : LoggedTry[T] => Unit): Unit = {
-
-    this.search(k)
-    while(stateStack.nonEmpty && successes.isEmpty){
-        if(stateStack.head.triedAll) stateStack.pop()
-        else stateStack.head.executeNextChoice(this)
-     }
-
-  }
+class FindFirstSearchStrategy[T] extends SearchStrategy[T] {
+  def continue(se : SearchEngine[T]) : Boolean =
+    remainingStates.nonEmpty && se.successes.isEmpty
 }
 

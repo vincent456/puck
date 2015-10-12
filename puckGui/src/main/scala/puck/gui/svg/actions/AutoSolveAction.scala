@@ -1,14 +1,12 @@
 package puck.gui.svg.actions
 
 import java.awt.event.ActionEvent
-import javax.swing.{JLabel, JComponent, AbstractAction}
+import javax.swing.{JComponent, AbstractAction}
 
-import puck.PuckError
 import puck.graph.constraints.search.{CSInitialSearchState, ConstraintSolvingSearchEngineBuilder}
-import puck.graph.constraints.search.ConstraintSolvingSearchEngineBuilder.TryAllCSSEBuilder
 import puck.graph._
 import puck.gui.svg.SVGController
-import puck.search.Search
+import puck.search.{TryAllSearchStrategy, Search}
 import puck.util.Logged
 
 import scala.swing._
@@ -48,11 +46,12 @@ class AutoSolveAction
   }
 
   import controller.{graph, graphUtils, dg2ast}, graphUtils._
+
   override def actionPerformed(e: ActionEvent): Unit = {
     val builder = new ConstraintSolvingSearchEngineBuilder(
         violationsKindPriority,
         transformationRules,
-        TryAllCSSEBuilder,
+        new TryAllSearchStrategy,
         CSInitialSearchState.targetedInitialState(violationTarget))
     val engine = builder.apply(dg2ast.initialRecord, graph.mileStone, automaticConstraintLoosening = false)
     engine.explore()

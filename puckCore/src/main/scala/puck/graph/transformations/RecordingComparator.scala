@@ -3,7 +3,7 @@ package transformations
 
 import puck.PuckError
 import puck.graph.transformations.MappingChoices.{Kargs, NodesToMap, ResMap}
-import puck.search.FindFirstSearchEngine
+import puck.search.{FindFirstSearchStrategy, SearchEngine}
 import puck.util.{PuckLogger, PuckNoopLogger}
 
 import scala.collection.mutable
@@ -39,10 +39,10 @@ class RecordingComparator
   graph2 : DependencyGraph,
   logger : PuckLogger = PuckNoopLogger) {
 
-  val engine : FindFirstSearchEngine[ResMap] =
-    new FindFirstSearchEngine[ResMap](
-      k => new NodeMappingInitialState(initialTransfos, this, graph1, graph2, k, logger)
-    )
+  val engine =
+    new SearchEngine[ResMap](
+      k => new NodeMappingInitialState(initialTransfos, this, graph1, graph2, k, logger),
+      new FindFirstSearchStrategy[ResMap]())
 
   def attribNode(node : NodeId,
                  map : ResMap,
@@ -51,7 +51,7 @@ class RecordingComparator
 
     map.getOrElse(node, (graph1.getConcreteNode(node).kind, Some(node))) match {
       case (_, Some(n)) =>
-        engine.newCurrentState(map.set(""), new StackSaver(k, n, nodesToMap))
+        engine.addState(map.set(""), new StackSaver(k, n, nodesToMap))
 
       case (kind, None) =>
         nodesToMap.getOrElse(kind, Seq()) match {
@@ -62,7 +62,7 @@ class RecordingComparator
               mutable.Stack[NodeId]().pushAll(l),
               mutable.Stack[NodeId]())
 
-            engine.newCurrentState(map.set(""), choices)
+            engine.addState(map.set(""), choices)
         }
     }
   }
