@@ -353,8 +353,8 @@ class SVGController private
      val outdg2ast = outfh.loadGraph(graphUtils.dG2ASTBuilder, null)
      console.appendText("Comparing graphs ...")
 
-     val res = if(Mapping.equals(graph, outdg2ast.initialGraph)) "EQUALS"
-     else "NOT equals"
+     val res = if(Mapping.equals(graph, outdg2ast.initialGraph)) "EQUAL"
+     else "NOT equal"
 
      console.appendText(s"they are $res")
   }

@@ -133,25 +133,25 @@ class ConstraintSolvingSearchEngineDecisionMaker
     val graph = lg.value
     val choices = graph.concreteNodes.filter(predicate(graph,_)).toList
 
-    searchEngine.addState(lg,
-      ConstraintSolvingNodesChoice.includeNoneChoice(k, choices map (n => Some((graph, n.id)))))
-//    choices match {
-//      case s =>
-//        val l = partitionByKind(graph)(s, List())
-//
-//        val cs  = l.map {
-//          nel =>
-//          if(nel.tail.isEmpty) some((graph, nel.head.id))
-//          else{
-//            val (vn, g2) = graph.addVirtualNode(nel.toList.map(_.id).toSeq,  nel.head.kind)
-//            some((g2, vn.id))
-//          }
-//        }
-//
-//        searchEngine.newCurrentState(lg,
-//          ConstraintSolvingNodesChoice.includeNoneChoice(k, cs))
-//
-//    }
+//    searchEngine.addState(lg,
+//      ConstraintSolvingNodesChoice.includeNoneChoice(k, choices map (n => Some((graph, n.id)))))
+    choices match {
+      case s =>
+        val l = partitionByKind(graph)(s, List())
+
+        val cs  = l.map {
+          nel =>
+          if(nel.tail.isEmpty) some((graph, nel.head.id))
+          else{
+            val (vn, g2) = graph.addVirtualNode(nel.toList.map(_.id).toSeq,  nel.head.kind)
+            some((g2, vn.id))
+          }
+        }
+
+        searchEngine.addState(lg,
+          ConstraintSolvingNodesChoice.includeNoneChoice(k, cs))
+
+    }
   }
 
   override def createVarStrategy
