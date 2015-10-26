@@ -4,7 +4,8 @@ import java.io.File
 
 import puck.graph.transformations.TransformationRules
 import puck.graph._
-import puck.graph.io.{DG2ASTBuilder, FilesHandler}
+import puck.graph.io.{DotHelper, DG2ASTBuilder, FilesHandler}
+import puck.jastadd.JavaDG2AST
 import puck.javaGraph.nodeKind._
 import puck.javaGraph.transformations.{JavaIntro, JavaRenamer, JavaAbstract, JavaTransformationHelper}
 
@@ -20,9 +21,7 @@ package object javaGraph {
   def JavaFilesHandler() : FilesHandler = JavaFilesHandler(new File("."))
 
   def JavaFilesHandler(workingDirectory : java.io.File) : FilesHandler =
-      new FilesHandler(workingDirectory,
-       ".java",
-        JavaDotHelper)
+      new FilesHandler(workingDirectory, ".java")
 
   object JGraphUtils extends GraphUtils {
 
@@ -35,6 +34,8 @@ package object javaGraph {
 
     val violationsKindPriority: Seq[NodeKind] =
       Seq[JavaNodeKind]( Field, Constructor, Class, Interface)
+
+    val dotHelper : DotHelper = JavaDotHelper
   }
 
 }

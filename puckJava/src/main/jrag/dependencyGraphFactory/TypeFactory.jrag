@@ -5,14 +5,14 @@ import puck.graph.NamedType;
 aspect TypeFactory {
 	
 
-	public abstract void BodyDecl.buildDGType(JavaGraphBuilder builder, int thisId);
+	public abstract void BodyDecl.buildDGType(JastaddGraphBuilder builder, int thisId);
 	
-	public void MemberTypeDecl.buildDGType(JavaGraphBuilder builder, int thisId){}
-	public void StaticInitializer.buildDGType(JavaGraphBuilder builder, int thisId){}
-	public void InstanceInitializer.buildDGType(JavaGraphBuilder builder, int thisId){}
+	public void MemberTypeDecl.buildDGType(JastaddGraphBuilder builder, int thisId){}
+	public void StaticInitializer.buildDGType(JastaddGraphBuilder builder, int thisId){}
+	public void InstanceInitializer.buildDGType(JastaddGraphBuilder builder, int thisId){}
 
 
-	static void ASTNode.astParamsToDGType(JavaGraphBuilder builder, int thisId, Callable c){
+	static void ASTNode.astParamsToDGType(JastaddGraphBuilder builder, int thisId, Callable c){
 //		System.out.println("building params of "+ c.fullName());
 		ArrayList<Integer> params = new ArrayList<Integer>();
 
@@ -26,21 +26,21 @@ aspect TypeFactory {
 		builder.addParams(thisId, params);
 	}
 
-	public void FieldDecl.buildDGType(JavaGraphBuilder builder, int thisId){
+	public void FieldDecl.buildDGType(JastaddGraphBuilder builder, int thisId){
 		throw new DGBuildingError("missing type for FieldDecl");
 	}
 		
-	public void MethodDecl.buildDGType(JavaGraphBuilder builder, int thisId){
+	public void MethodDecl.buildDGType(JastaddGraphBuilder builder, int thisId){
 		ASTNode.astParamsToDGType(builder, thisId, this);
 		builder.setType(thisId, new NamedType(getTypeAccess().buildDGNode(builder)));
 	}
 
-	public void ConstructorDecl.buildDGType(JavaGraphBuilder builder, int thisId){
+	public void ConstructorDecl.buildDGType(JastaddGraphBuilder builder, int thisId){
 		ASTNode.astParamsToDGType(builder, thisId, this);
 		builder.setType(thisId, new NamedType(hostType().buildDGNode(builder)));
 	}
 
-	public void FieldDeclaration.buildDGType(JavaGraphBuilder builder, int thisId){
+	public void FieldDeclaration.buildDGType(JastaddGraphBuilder builder, int thisId){
 		builder.setType(thisId, new NamedType(type().buildDGNode(builder)));
 	}
 

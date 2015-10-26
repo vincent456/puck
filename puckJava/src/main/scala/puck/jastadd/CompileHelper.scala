@@ -1,10 +1,10 @@
-package puck.javaGraph
+package puck.jastadd
 
 import java.io.{File, InputStream}
 import java.util.Iterator
 
-import puck.graph.{DGBuildingError, NodeId, DependencyGraph}
-import puck.graph.transformations.{Recording, NodeMappingInitialState, Transformation}
+import puck.graph.transformations.{NodeMappingInitialState, Recording, Transformation}
+import puck.graph.{DGBuildingError, DependencyGraph, NodeId}
 import puck.javaGraph.nodeKind.JavaNodeKind
 
 object CompileHelper {
@@ -40,7 +40,7 @@ object CompileHelper {
       None
   }
 
-  def addVoid(p : AST.Program, builder : JavaGraphBuilder) : Unit = {
+  def addVoid(p : AST.Program, builder : JastaddGraphBuilder) : Unit = {
     val voidASTNode = p.findType("void")
     val voidDGNode = builder.addApiTypeNode(voidASTNode)
     builder.registerDecl(voidDGNode, voidASTNode)

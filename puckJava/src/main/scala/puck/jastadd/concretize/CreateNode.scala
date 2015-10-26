@@ -1,9 +1,7 @@
-package puck.javaGraph.concretize
+package puck.jastadd
+package concretize
 
-import puck.graph.ShowDG._
 import puck.graph._
-import puck.graph.constraints.DelegationAbstraction
-import puck.javaGraph._
 import puck.javaGraph.nodeKind._
 
 

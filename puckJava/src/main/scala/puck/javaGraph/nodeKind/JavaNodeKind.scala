@@ -171,12 +171,16 @@ object JavaNodeKind extends NodeKindKnowledge {
     else NamedType(sNode.get.id)
   }
 
-  override def structuredType(graph : DependencyGraph, id : NodeId, params : List[NodeId]) : Option[Type] = {
+  override def structuredType(graph : DependencyGraph, id : NodeId, params : List[NodeId]) : Option[Type] =
     //assert node is a typed value
     if(params.nonEmpty) super.structuredType(graph, id, params)
-    else graph.getNode(id).kind match {
-      case _ : MethodKind => Some(Arrow(Tuple(), graph styp id get))
-      case _ => Some(graph styp id get)
+    else {
+      val n = graph.getNode(id)
+      (n.kind, graph styp id) match {
+      case (_ : MethodKind, Some(t)) =>Some(Arrow(Tuple(), t))
+      case (_, Some(t))=> Some(t)
+      case (_, None) => error(s"missing type for $n")
+
     }
   }
 }

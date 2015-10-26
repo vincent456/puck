@@ -2,9 +2,14 @@ package puck.graph
 package io
 
 
-import java.io.BufferedWriter
+import java.io._
 
 import scala.collection.mutable
+import scala.concurrent.Future
+import scala.sys.process.Process
+import scala.util.Try
+
+import scala.concurrent.ExecutionContext.Implicits.global
 
 
 object DotPrinter {
@@ -27,6 +32,76 @@ object DotPrinter {
     val dominant = new ColorThickness("blue", 2)
     val dominated = new ColorThickness("green", 2)
     val selected = new ColorThickness("black", 5)
+  }
+
+
+
+//  def makeImage(graph : DependencyGraph,
+//                graphUtils: GraphUtils,
+//                printingOptions: PrintingOptions,
+//                sOutput : Option[OutputStream] = None,
+//                outputFormat : DotOutputFormat = Png)
+//               (finish : Try[Int] => Unit = {case _ => ()}) : Unit = {
+//    //TODO fix bug when chaining the two function with a pipe
+////    makeDot(graph, graphUtils.dotHelper, printingOptions, new FileWriter(pathWithoutSuffix + ".dot"))
+////
+////    finish(Success(convertDot(graphvizDot, pathWithoutSuffix, sInput = None, sOutput, outputFormat)))
+//
+//    val pipedOutput = new PipedOutputStream()
+//    val pipedInput = new PipedInputStream(pipedOutput)
+//
+//    Future {
+//      convertDot(graphvizDot, pathWithoutSuffix, sInput = Some(pipedInput), sOutput, outputFormat)
+//    } onComplete finish
+//
+//    genDot(graph, graphUtils.dotHelper, printingOptions, writer = new OutputStreamWriter(pipedOutput))
+//  }
+
+  type DotProcessBuilder = scala.sys.process.ProcessBuilder
+  // relies on dot directory being in the PATH variable
+  def dotProcessBuilderFromFile(pathWithoutSuffix : String, outputFormat: DotOutputFormat) : DotProcessBuilder =
+    Process(List("dot", "-T" + outputFormat, pathWithoutSuffix + ".dot"))
+
+  def dotProcessBuilderFromFileToFile(pathWithoutSuffix : String, outputFormat: DotOutputFormat) : DotProcessBuilder =
+    Process(List("dot", "-O", "-T" + outputFormat, pathWithoutSuffix + ".dot"))
+  // processBuilder #> new File( pathWithoutSuffix + "." + outputFormat)).!
+
+  def dotProcessBuilderFromInputStream(input : InputStream, outputFormat: DotOutputFormat) : DotProcessBuilder=
+    Process(List("dot", "-T" + outputFormat)) #< input
+
+
+  def genDot
+  ( graph : DependencyGraph,
+    dotHelper: DotHelper,
+    printingOptions: PrintingOptions,
+    writer : OutputStreamWriter) : Unit = {
+    val printer = new DotPrinter(new BufferedWriter(writer), graph, dotHelper, printingOptions)
+    printer.print()
+  }
+  def genDotFile
+  ( graph : DependencyGraph,
+    dotHelper: DotHelper,
+    printingOptions: PrintingOptions,
+    pathWithoutSuffix : String) : Unit =
+    genDot(graph, dotHelper, printingOptions, new FileWriter(pathWithoutSuffix + ".dot"))
+
+
+  def genImage
+  (graph : DependencyGraph,
+   dotHelper: DotHelper,
+   printingOptions: PrintingOptions,
+   outputFormat: DotOutputFormat,
+   output : OutputStream)
+  (finish : Try[Int] => Unit = {case _ => ()}) = {
+
+    val pipedOutput = new PipedOutputStream()
+    val pipedInput = new PipedInputStream(pipedOutput)
+
+    Future {
+      (dotProcessBuilderFromInputStream(pipedInput, outputFormat) #> output).!
+    } onComplete finish
+
+    genDot(graph, dotHelper, printingOptions, writer = new OutputStreamWriter(pipedOutput))
   }
 
 }
@@ -364,7 +439,7 @@ class DotPrinter
   }
 
 
-  def apply(): Unit = {
+  def print(): Unit = {
     writeln("digraph G{")
     writeln("rankdir=LR; ranksep=equally; compound=true")
 

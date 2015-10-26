@@ -1,6 +1,6 @@
 package puck
 
-import puck.javaGraph.CompileHelper
+import puck.jastadd.CompileHelper
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global

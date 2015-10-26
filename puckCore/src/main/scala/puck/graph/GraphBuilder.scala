@@ -11,10 +11,10 @@ trait GraphBuilder {
 
   def getFullName( id : NodeIdT) : String = g.fullName(id)
 
-  def addNode(unambiguousFullName: String, localName:String, kind: NodeKind): NodeIdT = {
+  def addNode(unambiguousFullName: String, localName:String, kind: NodeKind, mutable : Boolean): NodeIdT = {
     nodesByName get unambiguousFullName match {
       case None =>
-        val (n, g2) = g.addConcreteNode(localName, kind)
+        val (n, g2) = g.addConcreteNode(localName, kind, mutable)
         //println(s"adding ${n.id} $unambiguousFullName ")
         this.nodesByName += (unambiguousFullName -> n.id)
         g = g2

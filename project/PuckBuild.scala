@@ -80,19 +80,28 @@ object PuckBuild extends Build {
       def listFileWithRelativePaths(roots : Seq[File]) : Seq[(File, String)] =
           roots.foldLeft (Seq[(File,String)]()) {
             (acc, dir) =>
+              try {
               val fs = FileUtils.listFiles(dir, Array("scala","java"), true)
               import scala.collection.JavaConversions._
-              fs.toSeq.foldLeft(acc){
+              fs.toSeq.foldLeft(acc) {
                 (acc0, f) =>
-                  acc0 :+ (f, f.relativeTo(dir).get.toString)
+                  acc0 :+(f, f.relativeTo(dir).get.toString)
+
+              }
+              }
+              catch {
+                case _ : IllegalArgumentException => sys.error(dir + " is not a valid directory")
               }
           }
+
 
       val unmanagedDirs = (unmanagedSourceDirectories in Compile).value
       val managedDirs = (managedSourceDirectories in Compile).value
 
       val jarFile = baseDirectory.value / "target" / srcJarFileName.value
-      IO.jar(listFileWithRelativePaths(unmanagedDirs ++ managedDirs), jarFile, new java.util.jar.Manifest())
+      val dirs = unmanagedDirs ++ managedDirs filter (_.isDirectory)
+
+      IO.jar(listFileWithRelativePaths(dirs), jarFile, new java.util.jar.Manifest())
       jarFile
     }
   )

@@ -113,7 +113,7 @@ class PuckControl(logger0 : PuckLogger,
                builder : ConstraintSolvingSearchEngineBuilder,
                automaticConstraintLoosening: Boolean) : Search[ResultT] = {
 
-    val engine = builder(dg2AST.initialRecord, dg2AST.initialGraph, automaticConstraintLoosening)
+    val engine = builder(dg2AST.initialGraph, automaticConstraintLoosening)
 
     puck.util.Time.time(logger, defaultVerbosity) {
       engine.explore()
@@ -153,15 +153,13 @@ class PuckControl(logger0 : PuckLogger,
 
       case Svg =>
         Future {
-          //TODO create a simpler SVGFrame that displays the graph passed in argument and find another use case for this creation
-          // call SVGControl.displayGraph ??
-          val imgframe = new SVGFrame(pipedInput, opts, filesHandler, graphUtils, dg2AST){
-            setTitle(title)
-          }
+          val imgframe = SVGFrame(pipedInput, opts, filesHandler, graphUtils, dg2AST)
+          imgframe.setTitle(title)
+
         }
      }
 
-    filesHandler.makeImage(graph, opts, Some(pipedOutput), format) {
+    DotPrinter.genImage(graph, graphUtils.dotHelper, opts, format, pipedOutput) {
       case Success(i) if i == 0 => logger.writeln("success")
       case _ => logger.writeln("fail")
     }
@@ -190,14 +188,14 @@ class PuckControl(logger0 : PuckLogger,
     d.mkdir()
     val subDir = filesHandler.graphFile("_results%c%s".format(File.separatorChar, subDirStr))
     subDir.mkdir()
-    filesHandler.printCSSearchStatesGraph(subDir, states, visibility, sPrinter, printId, printSignature)
+    filesHandler.printCSSearchStatesGraph(subDir, states, graphUtils, visibility, sPrinter, printId, printSignature)
   }
 
   def showStateSeq(states : Seq[StateT],
                    printId : Boolean,
                    printSignature : Boolean,
                    visibility : VisibilitySet.T): Unit = {
-    Future(new ImageExplorer(filesHandler, logger, states.toIndexedSeq, visibility, printId, printSignature))
+    Future(new ImageExplorer(filesHandler, graphUtils, logger, states.toIndexedSeq, visibility, printId, printSignature))
     ()
   }
 
@@ -217,8 +215,7 @@ class PuckControl(logger0 : PuckLogger,
 
     case ExploreRequest(builder) =>
 
-      val engine = builder(dg2AST.initialRecord,
-                          dg2AST.initialGraph,
+      val engine = builder(dg2AST.initialGraph,
                           automaticConstraintLoosening = true)
 
       Future {
@@ -239,7 +236,7 @@ class PuckControl(logger0 : PuckLogger,
       }
 
     case SearchStateMapPrintingRequest(stateMap, printId, printSignature, visibility) =>
-      filesHandler.printCSSearchStatesGraph(stateMap, visibility, printId, printSignature)
+      filesHandler.printCSSearchStatesGraph(stateMap, graphUtils, visibility, printId, printSignature)
 
     case SearchStateSeqPrintingRequest(subDir, states, sPrinter, printId, printSignature, visibility) =>
      // printStateSeq(subDir, states, sPrinter, printId, printSignature)

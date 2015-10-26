@@ -22,7 +22,7 @@ object GraphScrollPane {
   def apply
   ( controller : SVGController,
     graph: DependencyGraph,
-    visibilitySet: VisibilitySet.T) : GraphScrollPane ={
+    visibilitySet: VisibilitySet.T) : GraphScrollPane = {
     val gsp = new GraphScrollPane(controller)
     gsp.setGraph(graph, visibilitySet)
     gsp
@@ -33,7 +33,7 @@ class GraphScrollPane(controller : SVGController) extends ScrollPane(){
     //println("setGraph, visibilitySet :" + visibilitySet.toSeq.sorted)
     val doc =
       SVGController.documentFromGraph(graph,
-        controller.filesHandler,
+        controller.graphUtils,
         controller.printingOptions.
           copy(visibility =visibilitySet))(
           controller.console.appendText){

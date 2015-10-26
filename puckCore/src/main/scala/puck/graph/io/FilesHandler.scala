@@ -10,7 +10,6 @@ import puck.search._
 import puck.util._
 
 import scala.sys.process.Process
-import scala.util.{Success, Try}
 
 
 object FilesHandler{
@@ -24,59 +23,8 @@ object FilesHandler{
     final val logFileName: String = outDirName + File.separator + "graph_solving.log"
   }
 
-  def makeDot(graph : DependencyGraph, dotHelper: DotHelper,
-              printingOptions: PrintingOptions,
-              writer : OutputStreamWriter) : Unit = {
-    val printer = new DotPrinter(new BufferedWriter(writer), graph, dotHelper, printingOptions)
-    printer()
-  }
 
-  def makeImage(graphvizDot : Option[File], dotHelper: DotHelper, pathWithoutSuffix : String)
-                   (graph : DependencyGraph,
-                    printingOptions: PrintingOptions,
-                    sOutput : Option[OutputStream] = None,
-                    outputFormat : DotOutputFormat = Png)
-                   (finish : Try[Int] => Unit = {case _ => ()}) : Unit = {
 
-    //TODO fix bug when chaining the two function with a pipe
-    FilesHandler.makeDot(graph, dotHelper, printingOptions, new FileWriter(pathWithoutSuffix + ".dot"))
-
-    finish(Success(convertDot(graphvizDot, pathWithoutSuffix, sInput = None, sOutput, outputFormat)))
-
-    /*val pipedOutput = new PipedOutputStream()
-    val pipedInput = new PipedInputStream(pipedOutput)
-
-    Future {
-      convertDot(graphvizDot, pathWithoutSuffix, sInput = Some(pipedInput), sOutput, outputFormat)
-    } onComplete finish
-
-    makeDot(graph, dotHelper, printingOptions, writer = new OutputStreamWriter(pipedOutput))*/
-  }
-
-  def convertDot( graphvizDot : Option[File],
-                  pathWithoutSuffix : String,
-                  sInput : Option[InputStream] = None,
-                  sOutput : Option[OutputStream] = None,
-                  outputFormat : DotOutputFormat) : Int = {
-
-    val dot = graphvizDot match {
-      case None => "dot" // relies on dot directory being in the PATH variable
-      case Some(f) => f.getCanonicalPath
-    }
-
-    val processBuilder =
-      sInput match {
-        case None => Process(List(dot,
-          "-T" + outputFormat, pathWithoutSuffix + ".dot"))
-        case Some(input) => Process(List(dot,
-          "-T" + outputFormat)) #< input
-      }
-
-    sOutput match {
-      case None =>(processBuilder #> new File( pathWithoutSuffix + "." + outputFormat)).!
-      case Some(output) =>(processBuilder #> output).!
-    }
-  }
 
   type AutoConstraintLoosening = Boolean
   type SolverBuilder = (DecisionMaker, AutoConstraintLoosening) => Solver
@@ -130,11 +78,10 @@ class FileOption(private [this] var sf : Option[File] = None) {
 class FilesHandler
 (val workingDirectory : File,
  //TODO ? change to List[String] ?
- val srcSuffix : String,
- val dotHelper : DotHelper){
+ val srcSuffix : String){
 
   def fromOutDir : FilesHandler =
-    new FilesHandler(outDirectory !, srcSuffix, dotHelper)
+    new FilesHandler(outDirectory !, srcSuffix)
 
 
 
@@ -238,26 +185,30 @@ class FilesHandler
 
   }
 
-  def printCSSearchStatesGraph(states : Map[Int, Seq[SearchState[ResultT]]],
-                               visibility : VisibilitySet.T,
-                               printId : Boolean,
-                               printSignature : Boolean) : Unit = {
+  def printCSSearchStatesGraph
+  ( states : Map[Int, Seq[SearchState[ResultT]]],
+    graphUtils: GraphUtils,
+    visibility : VisibilitySet.T,
+    printId : Boolean,
+    printSignature : Boolean) : Unit = {
     val d = graphFile("_results")
     d.mkdir()
     states.foreach{
       case (cVal, l) =>
         val subDir = graphFile("_results%c%d".format(File.separatorChar, cVal))
         subDir.mkdir()
-        printCSSearchStatesGraph(subDir, l, visibility, None, printId, printSignature)
+        printCSSearchStatesGraph(subDir, l, graphUtils, visibility, None, printId, printSignature)
     }
   }
 
-  def printCSSearchStatesGraph(dir : File,
-                               states : Seq[SearchState[ResultT]],
-                               visibility : VisibilitySet.T,
-                               sPrinter : Option[(SearchState[ResultT] => String)],
-                               printId : Boolean,
-                               printSignature : Boolean) : Unit = {
+  def printCSSearchStatesGraph
+  ( dir : File,
+    states : Seq[SearchState[ResultT]],
+    graphUtils: GraphUtils,
+    visibility : VisibilitySet.T,
+    sPrinter : Option[(SearchState[ResultT] => String)],
+    printId : Boolean,
+    printSignature : Boolean) : Unit = {
 
     val printer = sPrinter match {
       case Some(p) => p
@@ -269,11 +220,9 @@ class FilesHandler
       val graph = graphOfResult(s.loggedResult.value)
       val f = new File("%s%c%s.png".format(dir.getAbsolutePath, File.separatorChar, printer(s)))
       val options = PrintingOptions(visibility, printId, printSignature, None)
-      makeImage(graph, options, Some(new FileOutputStream(f)), Png){_ => ()}
+      DotPrinter.genImage(graph, graphUtils.dotHelper, options, Png, new FileOutputStream(f)){_ => ()}
     }
   }
-
-  def makeImage = FilesHandler.makeImage(graphvizDot.get, dotHelper, graphFilePath) _
 
   private def openList(files : Seq[String]) : Unit = {
     val ed = editor.get match {

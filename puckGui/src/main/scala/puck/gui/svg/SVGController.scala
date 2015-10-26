@@ -29,12 +29,12 @@ trait StackListener{
   def update(svgController: SVGController) : Unit
 }
 
+trait ProjectManager
 
-class SVGController private
-( val filesHandler: FilesHandler,
-  val graphUtils : GraphUtils,
+abstract class SVGController private
+( val graphUtils : GraphUtils,
   val dg2ast: DG2AST,
-  val frame : SVGFrame,
+  val frame : SVGMainPanel,
   private var visibility : VisibilitySet.T,
   private var printId : Boolean,
   private var printSignatures : Boolean,
@@ -44,8 +44,6 @@ class SVGController private
   private var selectedEdgeForTypePrinting : Option[DGUses] = None) {
 
   val console = frame.console
-  import frame.panel.{canvas => svgCanvas}
-
   implicit val consoleLogger = new TextAreaLogger(console.textArea, _ => true )
 
   def nodesByName : Map[String, NodeId] =
@@ -214,12 +212,12 @@ class SVGController private
     printVirtualEdges, printConcreteUsesPerVirtualEdges,
     printRedOnly)
 
+  import frame.panel.{canvas => svgCanvas}
+
   def displayGraph(graph: DependencyGraph) : Unit = {
-    SVGController.documentFromGraph(graph, filesHandler, printingOptions)(console.appendText)
+    SVGController.documentFromGraph(graph, graphUtils, printingOptions)(console.appendText)
     {case doc => svgCanvas.setDocument(doc)}
   }
-
-
 
   def canUndo = undoStack.nonEmpty
 
@@ -333,31 +331,7 @@ class SVGController private
     }
   }
   
-  def deleteOutDirAndapplyOnCode() : Unit = {
-    console.appendText("Aplying recording on AST")
-    dg2ast(graph)/*(new PuckFileLogger(_ => true, new File("/tmp/pucklog")))*/
 
-    filesHandler.outDirectory.get match {
-      case None => console.appendText("no output directory : cannot print code")
-      case Some(d) =>
-        console.appendText("Printing code")
-        IO.delete(d)
-        dg2ast.printCode(d)
-    }
-
-  }
-
-  def compareOutputGraph() : Unit = {
-     val outfh = filesHandler.fromOutDir
-     console.appendText("Loading output graph from code")
-     val outdg2ast = outfh.loadGraph(graphUtils.dG2ASTBuilder, null)
-     console.appendText("Comparing graphs ...")
-
-     val res = if(Mapping.equals(graph, outdg2ast.initialGraph)) "EQUAL"
-     else "NOT equal"
-
-     console.appendText(s"they are $res")
-  }
 
 
   def abstractionChoices(n: ConcreteNode): Seq[JMenuItem] =
@@ -375,6 +349,10 @@ class SVGController private
     val ks = graph.nodeKinds.filter(n.kind.canContain)
     ks map {k => new JMenuItem(new AddNodeAction(n, this, k))}
   }
+
+  def workingDirectory : File
+  def deleteOutDirAndapplyOnCode() : Unit
+  def compareOutputGraph() : Unit
 }
 
 
@@ -384,9 +362,41 @@ object SVGController {
             graphUtils : GraphUtils,
             dg2ast : DG2AST,
             opts : PrintingOptions,
-            frame : SVGFrame): SVGController ={
-    val c = new SVGController(filesHandler, graphUtils, dg2ast, frame,
-                opts.visibility, opts.printId, opts.printSignatures)
+            frame : SVGMainPanel): SVGController ={
+    val c = new SVGController(graphUtils, dg2ast, frame,
+                opts.visibility, opts.printId, opts.printSignatures){
+      //val filesHandler: FilesHandler = filesHandler0
+
+      def deleteOutDirAndapplyOnCode() : Unit = {
+        console.appendText("Aplying recording on AST")
+        dg2ast(graph)/*(new PuckFileLogger(_ => true, new File("/tmp/pucklog")))*/
+
+        filesHandler.outDirectory.get match {
+          case None => console.appendText("no output directory : cannot print code")
+          case Some(d) =>
+            console.appendText("Printing code")
+            IO.delete(d)
+            dg2ast.printCode(d)
+        }
+
+      }
+
+      def compareOutputGraph() : Unit = {
+        val outfh = filesHandler.fromOutDir
+        console.appendText("Loading output graph from code")
+        val outdg2ast = outfh.loadGraph(graphUtils.dG2ASTBuilder, null)
+        console.appendText("Comparing graphs ...")
+
+        val res = if(Mapping.equals(graph, outdg2ast.initialGraph)) "EQUAL"
+        else "NOT equal"
+
+        console.appendText(s"they are $res")
+      }
+
+      def workingDirectory : File = filesHandler.workingDirectory
+
+    }
+
     c.pushGraph(dg2ast.initialGraph)
     c.displayGraph(dg2ast.initialGraph)
     c
@@ -399,11 +409,11 @@ object SVGController {
   }
 
   def documentFromGraph
-  (graph: DependencyGraph,
-   filesHandler: FilesHandler,
-   printingOptions: PrintingOptions)
-  (onDotConversionResult: String => Unit)
-  (onDocBuildingSuccess : PartialFunction[SVGDocument, Unit]) = {
+  ( graph: DependencyGraph,
+    graphUtils : GraphUtils,
+    printingOptions: PrintingOptions)
+  ( onDotConversionResult: String => Unit)
+  ( onDocBuildingSuccess : PartialFunction[SVGDocument, Unit]) = {
 
     val pipedOutput = new PipedOutputStream()
     val pipedInput = new PipedInputStream(pipedOutput)
@@ -411,7 +421,7 @@ object SVGController {
       SVGController.documentFromStream(pipedInput)
     }
 
-    filesHandler.makeImage(graph, printingOptions, Some(pipedOutput), Svg){
+    DotPrinter.genImage(graph, graphUtils.dotHelper, printingOptions, Svg, pipedOutput){
       res =>
       val msg = res match {
        case Success(0) => ""

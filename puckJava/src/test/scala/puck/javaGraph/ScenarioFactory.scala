@@ -4,6 +4,7 @@ import java.io.File
 
 import puck.graph.transformations.Transformation
 import puck.graph.{DependencyGraph, NodeId}
+import puck.jastadd.{JavaDG2AST, CompileHelper}
 import puck.util.{FileHelper, PuckFileLogger, PuckLogger}
 import sbt.IO
 

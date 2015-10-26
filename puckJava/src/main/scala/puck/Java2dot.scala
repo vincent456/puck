@@ -3,9 +3,10 @@ package puck
 import java.io.{FileReader, File, FileWriter}
 
 import puck.graph.constraints.ConstraintsParser
-import puck.graph.io.{FilesHandler, PrintingOptions, Hidden, VisibilitySet}
+import puck.graph.io._
 import puck.graph.{NodeId, DependencyGraph}
-import puck.javaGraph.{JavaDotHelper, CompileHelper}
+import puck.jastadd.CompileHelper
+import puck.javaGraph.JavaDotHelper
 import VisibilitySet._
 
 object Java2dot {
@@ -14,7 +15,6 @@ object Java2dot {
   ( outFileName : String,
     dg : DependencyGraph,
     fullName2id : Map[String, NodeId]) : Unit = {
-    val fos = new FileWriter(outFileName)
 
     val vis =
       VisibilitySet.allVisible(dg)
@@ -22,8 +22,7 @@ object Java2dot {
         .setVisibility(dg.subTree(fullName2id("@primitive")), Hidden)
 
     val options = PrintingOptions(vis, printId = true, printSignatures = false, selectedUse = None)
-    FilesHandler.makeDot(dg, JavaDotHelper, options, fos)
-    fos.close()
+    DotPrinter.genDotFile(dg, JavaDotHelper, options, outFileName)
   }
 
   def main (args: Array[String]) : Unit = {

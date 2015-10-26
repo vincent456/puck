@@ -6,7 +6,7 @@ import javax.imageio.ImageIO
 import javax.swing.ImageIcon
 
 import puck.graph._
-import puck.graph.io.{Png, PrintingOptions, VisibilitySet, FilesHandler}
+import puck.graph.io._
 import puck.gui.svg.ScrollablePicture
 import puck.gui.PuckMainPanel
 import puck.search.SearchState
@@ -18,12 +18,14 @@ import scala.swing._
 import scala.util.{Success, Try}
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class ImageExplorer(val filesHandler : FilesHandler,
-                    val logger : PuckLogger,
-                    val states : IndexedSeq[SearchState[ResultT]],
-                    visibility : VisibilitySet.T,
-                     printId : Boolean,
-                     printSignature : Boolean) extends Frame{
+class ImageExplorer
+( val filesHandler : FilesHandler,
+  graphUtils: GraphUtils,
+  val logger : PuckLogger,
+  val states : IndexedSeq[SearchState[ResultT]],
+  visibility : VisibilitySet.T,
+  printId : Boolean,
+  printSignature : Boolean) extends Frame{
 
   visible = true
 
@@ -57,7 +59,8 @@ class ImageExplorer(val filesHandler : FilesHandler,
 
     val opts = PrintingOptions(visibility, printId, printSignature)
 
-    filesHandler.makeImage(graphOfResult(state.loggedResult.value), opts, Some(pipedOutput), Png){x =>()}
+    val g = state.loggedResult.value
+    DotPrinter.genImage(g, graphUtils.dotHelper, opts, Png, pipedOutput){x =>()}
 
   }
   setImage()

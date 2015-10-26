@@ -34,7 +34,7 @@ object PrettyPrintRecord {
     val r = Recording.load(recFile.getAbsolutePath, dg2ast.nodesByName)
 
     import ShowDG._
-    r.reverse.foldLeft(dg2ast.initialGraph){(g0, t) =>
+    val _ = r.reverse.foldLeft(dg2ast.initialGraph){(g0, t) =>
       (g0, t).println
       t.redo(g0)
     }

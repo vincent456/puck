@@ -89,17 +89,16 @@ class SVGFrameMenu
   }
 
   private def addLoadSaveButton(c : Container) : Unit = {
-    import controller.filesHandler.workingDirectory
     c add jbutton("Save") {
       _ =>
-        saveFile(workingDirectory, this) match {
+        saveFile(controller.workingDirectory, this) match {
           case None => controller.console.appendText("no file selected")
           case Some(f) =>  controller.saveRecordOnFile(f)
         }
     }
     c add jbutton("Load") {
       _ =>
-        openFile(workingDirectory, this) match {
+        openFile(controller.workingDirectory, this) match {
           case None => controller.console.appendText("no file selected")
           case Some(f) => controller.loadRecord(f)
         }
@@ -177,7 +176,7 @@ class SVGFrameMenu
 
     hbox add testCommutativityCB
 
-    hbox add   jbutton("Apply") {
+    hbox add jbutton("Apply") {
       _ => controller.deleteOutDirAndapplyOnCode()
         if(testCommutativityCB.isSelected)
           controller.compareOutputGraph()
@@ -203,14 +202,30 @@ class SVGFrameMenu
 
 }
 
+object SVGFrame {
 
-class SVGFrame
+  def apply( stream: InputStream,
+             opts: PrintingOptions,
+             filesHandler : FilesHandler,
+             graphUtils : GraphUtils,
+             dg2ast : DG2AST
+             ) : JFrame =
+    new JFrame(){
+      this.add(new SVGMainPanel(stream, opts, filesHandler, graphUtils, dg2ast))
+      this.setVisible(true)
+      this.setMinimumSize(new Dimension(640, 480))
+      this.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE)
+    }
+}
+
+
+class SVGMainPanel
 ( stream: InputStream,
   opts: PrintingOptions,
   filesHandler : FilesHandler,
   graphUtils : GraphUtils,
   dg2ast : DG2AST
-  ) extends JFrame with StackListener {
+  ) extends JPanel with StackListener {
 
   def update(svgController: SVGController) : Unit = {
     menu.undoAllButton.setEnabled(svgController.canUndo)
@@ -240,17 +255,5 @@ class SVGFrame
 
   this.add(centerPane, BorderLayout.CENTER)
   this.add(new JScrollPane(menu), BorderLayout.SOUTH)
-
-
-
-  this.setVisible(true)
-  this.setMinimumSize(new Dimension(640, 480))
-  this.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE)
-
-
-
-
-
-
 
 }

@@ -45,15 +45,14 @@ class AutoSolveAction
     }
   }
 
-  import controller.{graph, graphUtils, dg2ast}, graphUtils._
+  import controller.graph
 
   override def actionPerformed(e: ActionEvent): Unit = {
     val builder = new ConstraintSolvingSearchEngineBuilder(
-        violationsKindPriority,
-        transformationRules,
+        controller.graphUtils,
         new TryAllSearchStrategy,
         CSInitialSearchState.targetedInitialState(violationTarget))
-    val engine = builder.apply(dg2ast.initialRecord, graph.mileStone, automaticConstraintLoosening = false)
+    val engine = builder.apply(graph.mileStone, automaticConstraintLoosening = false)
     engine.explore()
 
     try {

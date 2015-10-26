@@ -1,4 +1,5 @@
-package puck.javaGraph.concretize
+package puck.jastadd
+package concretize
 
 import puck.graph._
 import puck.javaGraph._

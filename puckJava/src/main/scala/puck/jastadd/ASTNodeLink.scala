@@ -1,4 +1,4 @@
-package puck.javaGraph
+package puck.jastadd
 
 import puck.PuckError
 import puck.graph._

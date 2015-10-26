@@ -1,4 +1,4 @@
-import puck.javaGraph.JavaGraphBuilder;
+import puck.jastadd.JastaddGraphBuilder;
 import puck.graph.Uses;
 import puck.graph.Isa;
 import puck.graph.ParameterizedUses;
@@ -8,9 +8,9 @@ import puck.LoadingListener;
 
 aspect DependencyGraphFactory {
 
-	public JavaGraphBuilder Program.buildDependencyGraph(Map<String,Collection<BodyDecl>> stringsRequest, LoadingListener ll){
+	public JastaddGraphBuilder Program.buildDependencyGraph(Map<String,Collection<BodyDecl>> stringsRequest, LoadingListener ll){
 
-		JavaGraphBuilder builder = new JavaGraphBuilder(this);
+		JastaddGraphBuilder builder = new JastaddGraphBuilder(this);
 
 		if(stringsRequest != null){
 			for (java.util.Map.Entry<String, Collection<BodyDecl>>  entry : allStringUses(stringsRequest).entrySet()) {
@@ -35,7 +35,7 @@ aspect DependencyGraphFactory {
         return i;
     }
 
-	private void Program.build(JavaGraphBuilder builder, LoadingListener ll){
+	private void Program.build(JastaddGraphBuilder builder, LoadingListener ll){
 		double nchild = getNumCuFromSources();
 		double d = 0.0;
 
@@ -53,18 +53,18 @@ aspect DependencyGraphFactory {
 	}
 
 
-	void ASTNode.buildDGInChildren(JavaGraphBuilder builder, int containerId){
+	void ASTNode.buildDGInChildren(JastaddGraphBuilder builder, int containerId){
 		for(int i=0; i< getNumChild(); i++){
 			getChild(i).buildDG(builder, containerId);
 		}
 	}
 
-	public void ASTNode.buildDG(JavaGraphBuilder builder, int containerId){
+	public void ASTNode.buildDG(JastaddGraphBuilder builder, int containerId){
 		//System.err.println(this.getClass() + ".buildDG() : " + getNumChild() +" children");
 		buildDGInChildren(builder, containerId);
 	}	
 
-	public boolean CompilationUnit.buildDependencyGraph_CU(JavaGraphBuilder builder){
+	public boolean CompilationUnit.buildDependencyGraph_CU(JastaddGraphBuilder builder){
 		if(pathName() != null){
 			int packageNode = builder.addPackage(getPackageDecl(), true);
 
@@ -80,7 +80,7 @@ aspect DependencyGraphFactory {
 		}
 	}
 
-	public void TypeDecl.buildDG(JavaGraphBuilder builder, int containerId){
+	public void TypeDecl.buildDG(JastaddGraphBuilder builder, int containerId){
 		
 		int tdNode = buildDG_TypeDecl(builder);
 		builder.addContains(containerId, tdNode);
@@ -116,12 +116,12 @@ aspect DependencyGraphFactory {
 	}
 
 
-	int TypeDecl.buildDG_TypeDecl(JavaGraphBuilder builder){
+	int TypeDecl.buildDG_TypeDecl(JastaddGraphBuilder builder){
 		throw new DGBuildingError(this.getClass() + " : expected ClassDecl or InterfaceDecl");
 	}
 
 
-	void ClassDecl.addExtends(JavaGraphBuilder builder, int thisId){
+	void ClassDecl.addExtends(JastaddGraphBuilder builder, int thisId){
 		if (hasSuperclass() && !"java.lang.Object".equals(superclass().fullName())){
 			
 			builder.addIsa(thisId, getSuperClassAccess().buildDGNode(builder));
@@ -130,11 +130,11 @@ aspect DependencyGraphFactory {
 		}
 	}
 
-	int TypeVariable.buildDG_TypeDecl(JavaGraphBuilder builder){
+	int TypeVariable.buildDG_TypeDecl(JastaddGraphBuilder builder){
 		return buildDGNode(builder);
 	}
 
-	int ClassDecl.buildDG_TypeDecl(JavaGraphBuilder builder){
+	int ClassDecl.buildDG_TypeDecl(JastaddGraphBuilder builder){
 		int nodeId = buildDGNode(builder);
 
 		addExtends(builder, nodeId);
@@ -144,7 +144,7 @@ aspect DependencyGraphFactory {
 		return nodeId;
 	}
 
-	int InterfaceDecl.buildDG_TypeDecl(JavaGraphBuilder builder){
+	int InterfaceDecl.buildDG_TypeDecl(JastaddGraphBuilder builder){
 		int agNode = buildDGNode(builder);
 
 		TypeDecl.addImplements(builder, agNode, getSuperInterfaceIdList());
@@ -152,7 +152,7 @@ aspect DependencyGraphFactory {
 		return agNode;
 	}
 
-	public void BodyDecl.buildDG_handleDef(JavaGraphBuilder builder, int thisDeclId){
+	public void BodyDecl.buildDG_handleDef(JastaddGraphBuilder builder, int thisDeclId){
 		ASTNode def = getDefinition();
 		int defId = builder.addDefinitionNode();
 		def.registerDef(builder, defId);
@@ -161,12 +161,12 @@ aspect DependencyGraphFactory {
 	}
 
 
-	public void ParameterDeclaration.buildDG(JavaGraphBuilder builder, int containerId){
+	public void ParameterDeclaration.buildDG(JastaddGraphBuilder builder, int containerId){
 		int thisID = buildDGNode(builder);
 		buildDGInChildren(builder, thisID);
 	}
 
-	public void BodyDecl.buildDG(JavaGraphBuilder builder, int hostTypeDeclId ){
+	public void BodyDecl.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId ){
 		if(isNamedElement()){
 			int declId = buildDGNode(builder);
 			builder.addContains(hostTypeDeclId, declId);
@@ -191,24 +191,24 @@ aspect DependencyGraphFactory {
 
 		}
 		else
-			System.err.println("TODO !! "+ this.getClass() +".buildDG(JavaGraphBuilder, int)");
+			System.err.println("TODO !! "+ this.getClass() +".buildDG(JastaddGraphBuilder, int)");
 		
 	}
 
-	public void ASTNode.registerDef(JavaGraphBuilder builder, int thisId){
+	public void ASTNode.registerDef(JastaddGraphBuilder builder, int thisId){
 		throw new Error("registerAsDef not defined for " + this.getClass());
 	}
 
-	public void Block.registerDef(JavaGraphBuilder builder, int thisId){
+	public void Block.registerDef(JastaddGraphBuilder builder, int thisId){
 		builder.registerDef(thisId, this);
 	}
 
-	public void Expr.registerDef(JavaGraphBuilder builder, int thisId){
+	public void Expr.registerDef(JastaddGraphBuilder builder, int thisId){
 		builder.registerDef(thisId, this);
 	}
 
 	static void Access.buildDG(TypeMemberAccess access, int containerId,
-        scala.Option<UsesAccessKind> accK, JavaGraphBuilder builder){
+        scala.Option<UsesAccessKind> accK, JastaddGraphBuilder builder){
 		int nodeId = access.buildDGNode(builder);
 
 		Uses typeMemberUses = new Uses(containerId, nodeId, accK);
@@ -224,7 +224,7 @@ aspect DependencyGraphFactory {
 			typeMemberUses);
 		}
 	}
-	public void MethodAccess.buildDG(JavaGraphBuilder builder, int containerId){
+	public void MethodAccess.buildDG(JastaddGraphBuilder builder, int containerId){
 
 		buildDG(this, containerId, UsesAccessKind.none(), builder);
 
@@ -233,7 +233,7 @@ aspect DependencyGraphFactory {
 		}
 	}
 
-	public void VarAccess.buildDG(JavaGraphBuilder builder, int containerId){
+	public void VarAccess.buildDG(JastaddGraphBuilder builder, int containerId){
 		//if(decl().isInstanceVariable() || decl().isClassVariable()){
 		/*if(decl().isLocalVariable() || decl().isMethodParameter()){
 			builder.addUses(containerId, buildDGNode(builder));
@@ -243,7 +243,7 @@ aspect DependencyGraphFactory {
 		}
 	}
 	
-	public void SuperConstructorAccess.buildDG(JavaGraphBuilder builder, int containerId){
+	public void SuperConstructorAccess.buildDG(JastaddGraphBuilder builder, int containerId){
 		//if(!decl().type().fullName().equals( "java.lang.Object")){
 		if(!decl().type().fullName().equals( "@primitive.Unknown")){
 		//happens when call to constructor of java.lang.Object TODO check if no other cases
@@ -264,7 +264,7 @@ aspect DependencyGraphFactory {
 	    }
   	}
 
-	public void ClassInstanceExpr.buildDG(JavaGraphBuilder builder, int containerId){
+	public void ClassInstanceExpr.buildDG(JastaddGraphBuilder builder, int containerId){
 		//System.err.println("ClassInstanceExpr.buildDG : " + this);
 
 		getArgList().buildDG(builder, containerId);
@@ -302,7 +302,7 @@ aspect DependencyGraphFactory {
 		return lsibling;
 	}
 
-	public void AbstractDot.buildDG(JavaGraphBuilder builder, int containerId){
+	public void AbstractDot.buildDG(JastaddGraphBuilder builder, int containerId){
 		if(isRightRotated())
 			rotateLeft();
 
@@ -313,31 +313,31 @@ aspect DependencyGraphFactory {
 			buildDGInChildren(builder, containerId);
 	}
 
-	public void Access.buildDG(JavaGraphBuilder builder, int containerId){
+	public void Access.buildDG(JastaddGraphBuilder builder, int containerId){
 		if(this.getClass() != ThisAccess.class
 			&& this.getClass() != ClassAccess.class)
 			System.err.println("TODO !! "+this.getClass()+".buildDG : " + this);
 		super.buildDG(builder, containerId);
 	}
 
-	public void ArrayAccess.buildDG(JavaGraphBuilder builder, int containerId){
+	public void ArrayAccess.buildDG(JastaddGraphBuilder builder, int containerId){
 		int nodeId = buildDGNode(builder);
 		builder.addEdge(new Uses(containerId, nodeId, UsesAccessKind.none()));
 		buildDGInChildren(builder, containerId);
 	}
 	
-	public void TypeAccess.buildDG(JavaGraphBuilder builder, int containerId){
+	public void TypeAccess.buildDG(JastaddGraphBuilder builder, int containerId){
 		int nodeId = buildDGNode(builder);
 		builder.addEdge(new Uses(containerId, nodeId, UsesAccessKind.none()));
 	}
 
-	public void ParTypeAccess.buildDG(JavaGraphBuilder builder, int containerId){
+	public void ParTypeAccess.buildDG(JastaddGraphBuilder builder, int containerId){
 		int nodeId = buildDGNode(builder);
 		builder.addEdge(new Uses(containerId, nodeId, UsesAccessKind.none()));
 		buildDGInChildren(builder, containerId);
 	}
 
-	static void TypeDecl.addImplements(JavaGraphBuilder builder,
+	static void TypeDecl.addImplements(JastaddGraphBuilder builder,
     	int sub, AST.List<Access> implementList){
 
     	for(Access a : implementList){
@@ -345,41 +345,41 @@ aspect DependencyGraphFactory {
     	}
 	}
 
-	void Access.addImplementsEdges(JavaGraphBuilder builder, int sub){
+	void Access.addImplementsEdges(JastaddGraphBuilder builder, int sub){
 		throw new DGBuildingError(
 		this.compilationUnit().pathName() + " line " + this.getLocation() +
 		this.getClass() + " : expected TypeAccess or ParTypeAccess");
 	}
 
-	void Dot.addImplementsEdges(JavaGraphBuilder builder, int sub){
+	void Dot.addImplementsEdges(JastaddGraphBuilder builder, int sub){
 		if(!isRightRotated())
 			rotateRight();
 
 		getRight().addImplementsEdges(builder, sub);
 	}
 
-	void TypeAccess.addImplementsEdges(JavaGraphBuilder builder, int sub) {
+	void TypeAccess.addImplementsEdges(JastaddGraphBuilder builder, int sub) {
 		builder.addEdge(new Isa(sub, buildDGNode(builder)));
 //		int sn = buildDGNode(builder);
 //		builder.addEdge(new Uses(sub, sn, UsesAccessKind.none()));
 	}
 
-	void ParTypeAccess.addImplementsEdges(JavaGraphBuilder builder, int sub){
+	void ParTypeAccess.addImplementsEdges(JastaddGraphBuilder builder, int sub){
 		getTypeAccess().addImplementsEdges(builder, sub);
 		for(Access typeArg : getTypeArguments()){
 			typeArg.addImplementsUses(builder, sub);
 		}
 	}
 
-	void Access.addImplementsUses(JavaGraphBuilder builder, int sub) {
+	void Access.addImplementsUses(JastaddGraphBuilder builder, int sub) {
 		throw new DGBuildingError(this.getClass() + " : expected TypeAccess or ParTypeAccess");
 	}
-	void TypeAccess.addImplementsUses(JavaGraphBuilder builder, int sub){
+	void TypeAccess.addImplementsUses(JastaddGraphBuilder builder, int sub){
 		int sn = buildDGNode(builder);
 		builder.addEdge(new Uses(sub, sn, UsesAccessKind.none()));
 	}
 
-	void ParTypeAccess.addImplementsUses(JavaGraphBuilder builder, int sub){
+	void ParTypeAccess.addImplementsUses(JastaddGraphBuilder builder, int sub){
 		getTypeAccess().addImplementsUses(builder, sub);
 		for(Access typeArg : getTypeArguments()){
 			typeArg.addImplementsUses(builder, sub);
