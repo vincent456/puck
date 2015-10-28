@@ -4,7 +4,7 @@ import java.io.{PipedInputStream, PipedOutputStream}
 import javax.swing.{JFrame, WindowConstants}
 
 import org.apache.batik.swing.JSVGCanvas
-import puck.graph.{GraphUtils, DependencyGraph}
+import puck.graph.DependencyGraph
 import puck.graph.io._
 import puck.gui.svg.SVGController
 
@@ -13,7 +13,7 @@ import scala.concurrent.Future
 
 object QuickFrame {
 
-  def apply(graph : DependencyGraph, title : String = "QuickFrame", graphUtils: GraphUtils) = {
+  def apply(graph : DependencyGraph, title : String = "QuickFrame", dotHelper : DotHelper) = {
     val pipedOutput = new PipedOutputStream()
     val pipedInput = new PipedInputStream(pipedOutput)
 
@@ -28,7 +28,7 @@ object QuickFrame {
       imgframe.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
     }
 
-    DotPrinter.genImage(graph, graphUtils.dotHelper, opts, Svg, pipedOutput)()
+    DotPrinter.genImage(graph, dotHelper, opts, Svg, pipedOutput)()
 
   }
 }

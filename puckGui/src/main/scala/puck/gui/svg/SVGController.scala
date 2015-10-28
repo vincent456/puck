@@ -1,10 +1,9 @@
 package puck.gui.svg
 
 import java.io.{File, InputStream, PipedInputStream, PipedOutputStream}
-import javax.swing.{JPanel, JMenuItem}
+import javax.swing.{SwingUtilities, JMenuItem}
 
-import org.apache.batik.dom.svg.SAXSVGDocumentFactory
-import org.apache.batik.swing.JSVGCanvas
+import org.apache.batik.anim.dom.SAXSVGDocumentFactory
 import org.apache.batik.util.XMLResourceDescriptor
 import org.w3c.dom.Element
 import org.w3c.dom.svg.{SVGGElement, SVGDocument}
@@ -15,13 +14,11 @@ import puck.graph.transformations.MileStone
 import puck.gui.TextAreaLogger
 import puck.gui.explorer.NodeInfosPanel
 import puck.gui.svg.actions.{AddNodeAction, AbstractionAction}
-import puck.util.{PuckLog, PuckFileLogger}
+import puck.util.PuckLog
 import sbt.IO
 
 import scala.collection.mutable
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.swing.{FlowPanel, Panel}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 import  VisibilitySet._
@@ -31,10 +28,10 @@ trait StackListener{
 
 trait ProjectManager
 
-abstract class SVGController private
+abstract class SVGController
 ( val graphUtils : GraphUtils,
   val dg2ast: DG2AST,
-  val frame : SVGMainPanel,
+  val frame : SVGPanel,
   private var visibility : VisibilitySet.T,
   private var printId : Boolean,
   private var printSignatures : Boolean,
@@ -42,6 +39,8 @@ abstract class SVGController private
   private var printConcreteUsesPerVirtualEdges : Boolean = true,
   private var printRedOnly : Boolean = true,
   private var selectedEdgeForTypePrinting : Option[DGUses] = None) {
+
+  implicit val executor : ExecutionContext
 
   val console = frame.console
   implicit val consoleLogger = new TextAreaLogger(console.textArea, _ => true )
@@ -212,12 +211,16 @@ abstract class SVGController private
     printVirtualEdges, printConcreteUsesPerVirtualEdges,
     printRedOnly)
 
-  import frame.panel.{canvas => svgCanvas}
 
-  def displayGraph(graph: DependencyGraph) : Unit = {
-    SVGController.documentFromGraph(graph, graphUtils, printingOptions)(console.appendText)
-    {case doc => svgCanvas.setDocument(doc)}
-  }
+  def displayGraph
+  (graph: DependencyGraph): Unit =
+    SVGController.documentFromGraph(graph, graphUtils.dotHelper, printingOptions)(
+      msg => swingInvokeLater(() => console appendText msg)){
+      case doc =>
+         frame.canvas.setDocument(doc)
+
+    }
+
 
   def canUndo = undoStack.nonEmpty
 
@@ -353,19 +356,29 @@ abstract class SVGController private
   def workingDirectory : File
   def deleteOutDirAndapplyOnCode() : Unit
   def compareOutputGraph() : Unit
+  def swingInvokeLater (f : () => Unit ) : Unit
+
+  pushGraph(dg2ast.initialGraph)
 }
+
+
 
 
 object SVGController {
 
-  def apply(filesHandler: FilesHandler,
-            graphUtils : GraphUtils,
-            dg2ast : DG2AST,
-            opts : PrintingOptions,
-            frame : SVGMainPanel): SVGController ={
-    val c = new SVGController(graphUtils, dg2ast, frame,
+  type  Builder  = SVGPanel => SVGController
+
+  def builderFromFilesHander
+  ( filesHandler: FilesHandler,
+    opts : PrintingOptions,
+    graphUtils : GraphUtils,
+    dg2ast : DG2AST ) : Builder =
+  ( frame : SVGPanel) =>  new SVGController(graphUtils, dg2ast, frame,
                 opts.visibility, opts.printId, opts.printSignatures){
       //val filesHandler: FilesHandler = filesHandler0
+
+
+      implicit val executor = scala.concurrent.ExecutionContext.Implicits.global
 
       def deleteOutDirAndapplyOnCode() : Unit = {
         console.appendText("Aplying recording on AST")
@@ -395,12 +408,12 @@ object SVGController {
 
       def workingDirectory : File = filesHandler.workingDirectory
 
+      def swingInvokeLater (f : () => Unit ) : Unit =
+        SwingUtilities.invokeLater(new Runnable {
+          def run(): Unit = f()
+        })
     }
 
-    c.pushGraph(dg2ast.initialGraph)
-    c.displayGraph(dg2ast.initialGraph)
-    c
-  }
 
   def documentFromStream(stream: InputStream): SVGDocument = {
     val parser: String = XMLResourceDescriptor.getXMLParserClassName
@@ -410,10 +423,11 @@ object SVGController {
 
   def documentFromGraph
   ( graph: DependencyGraph,
-    graphUtils : GraphUtils,
+    dotHelper : DotHelper,
     printingOptions: PrintingOptions)
   ( onDotConversionResult: String => Unit)
-  ( onDocBuildingSuccess : PartialFunction[SVGDocument, Unit]) = {
+  ( onDocBuildingSuccess : PartialFunction[SVGDocument, Unit])
+  ( implicit executor: ExecutionContext )= {
 
     val pipedOutput = new PipedOutputStream()
     val pipedInput = new PipedInputStream(pipedOutput)
@@ -421,10 +435,10 @@ object SVGController {
       SVGController.documentFromStream(pipedInput)
     }
 
-    DotPrinter.genImage(graph, graphUtils.dotHelper, printingOptions, Svg, pipedOutput){
+    DotPrinter.genImage(graph, dotHelper, printingOptions, Svg, pipedOutput){
       res =>
       val msg = res match {
-       case Success(0) => ""
+       case Success(0) => "Success"
         case Success(n) =>
           "An error occured during the production of the SVG file, " +
             "produced dot file can be found in out/graph.dot"

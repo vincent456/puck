@@ -20,7 +20,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class ImageExplorer
 ( val filesHandler : FilesHandler,
-  graphUtils: GraphUtils,
+  dotHelper : DotHelper,
   val logger : PuckLogger,
   val states : IndexedSeq[SearchState[ResultT]],
   visibility : VisibilitySet.T,
@@ -60,7 +60,7 @@ class ImageExplorer
     val opts = PrintingOptions(visibility, printId, printSignature)
 
     val g = state.loggedResult.value
-    DotPrinter.genImage(g, graphUtils.dotHelper, opts, Png, pipedOutput){x =>()}
+    DotPrinter.genImage(g, dotHelper, opts, Png, pipedOutput)()
 
   }
   setImage()

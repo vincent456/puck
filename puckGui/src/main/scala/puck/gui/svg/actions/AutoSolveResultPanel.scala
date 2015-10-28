@@ -7,7 +7,7 @@ import puck.graph.io.{Visible, VisibilitySet}
 import VisibilitySet._
 import puck.gui.PuckConsolePanel
 import puck.gui.search.{StateSelected, SimpleElementSelector, SortedElementSelector}
-import puck.gui.svg.{SVGPanel, SVGController}
+import puck.gui.svg.{PUCKSVGCanvas, SVGPanel, SVGController}
 import puck.search.{SearchState, ErrorState, Search}
 import puck.util._
 
@@ -29,15 +29,21 @@ object GraphScrollPane {
   }
 }
 class GraphScrollPane(controller : SVGController) extends ScrollPane(){
+
+  import controller.executor
+
   def setGraph(graph: DependencyGraph, visibilitySet: VisibilitySet.T): Unit ={
     //println("setGraph, visibilitySet :" + visibilitySet.toSeq.sorted)
     val doc =
       SVGController.documentFromGraph(graph,
-        controller.graphUtils,
+        controller.graphUtils.dotHelper,
         controller.printingOptions.
           copy(visibility =visibilitySet))(
           controller.console.appendText){
-        case d => viewportView = Component.wrap(new SVGPanel(d, SVGPanel.deafListener))
+        case d =>
+          val c = new PUCKSVGCanvas(PUCKSVGCanvas.deafListener)
+          c.setDocument(d)
+          viewportView = Component.wrap(c)
       }
   }
 }

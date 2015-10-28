@@ -1,28 +1,31 @@
 package puck.gui.svg
 
-import java.awt.BorderLayout
+import java.awt.Component
 import java.awt.event.{InputEvent, KeyEvent}
 import java.util.regex.{Matcher, Pattern}
-import javax.swing.{JPopupMenu, KeyStroke, JPanel}
+import javax.swing.{SwingUtilities, JPopupMenu, KeyStroke}
 
 import org.apache.batik.dom.GenericText
 import org.apache.batik.dom.events.NodeEventTarget
 import org.apache.batik.swing.JSVGCanvas
 import org.apache.batik.swing.gvt.{GVTTreeRendererEvent, GVTTreeRendererAdapter}
-import org.apache.batik.swing.svg.AbstractJSVGComponent
+import org.apache.batik.swing.svg.JSVGComponent
 import org.apache.batik.util.{SVGConstants, XMLConstants}
 import org.w3c.dom.{Node, NodeList, Element}
 import org.w3c.dom.events.{EventListener, Event, MouseEvent}
 import org.w3c.dom.svg._
-import puck.graph.{Isa, Uses, NodeId, NodeIdP, DGEdge}
-import puck.gui.svg.SVGPanel._
+import puck.graph.{NodeId, NodeIdP}
 
+object PUCKSVGCanvas {
+  val deafListener = new EventListener {
+    override def handleEvent(evt: Event): Unit = ()
+  }
+}
 
 class PUCKSVGCanvas
-( panel : SVGPanel,
-  eventListenerBuilder : EventListenerBuilder
+( listener : EventListener
   ) extends JSVGCanvas {
-  setDocumentState(AbstractJSVGComponent.ALWAYS_DYNAMIC)
+  setDocumentState(JSVGComponent.ALWAYS_DYNAMIC)
 
   userAgent = new BridgeUserAgent(){
     override def openLink(elt: SVGAElement) : Unit = ()
@@ -48,25 +51,22 @@ class PUCKSVGCanvas
     override def gvtRenderingCompleted (e: GVTTreeRendererEvent) : Unit = {
       root.addEventListenerNS(XMLConstants.XML_EVENTS_NAMESPACE_URI,
         SVGConstants.SVG_EVENT_CLICK,
-        eventListenerBuilder(PUCKSVGCanvas.this, panel), false, null)
+        listener, false, null)
     }
   })
 
   def getElementById (id: String): Element =  getSVGDocument getElementById id
 
-  def modify (f : () => Unit ) : Unit =
-    getUpdateManager.getUpdateRunnableQueue.invokeLater(new Runnable {
-      def run(): Unit = f()
-    })
+
 
 }
 
-class SVGPanelListener
-( canvas : PUCKSVGCanvas,
-  panel : SVGPanel)
+class SVGCanvasListener
+( menuInvoker : Component,
+  controller : SVGController)
   extends EventListener {
 
-  def controller = panel.controller
+  import controller.swingInvokeLater
 
   private def checkIfNodeAndGetId(txtElt: Element): Option[Int] = {
     if (txtElt.getParentNode.getNodeName == "a") {
@@ -159,7 +159,7 @@ class SVGPanelListener
         case txtElt: SVGTextElement =>
           checkIfNodeAndGetId(txtElt).foreach {
             nodeClickedId =>
-              canvas.modify { () =>
+              swingInvokeLater { () =>
                 conditionalEdgeReset()
 
                 if(!shiftPressed) {
@@ -180,7 +180,7 @@ class SVGPanelListener
              | _: SVGPolygonElement =>
           val line: Element = evt.getTarget.asInstanceOf[Element]
 
-          canvas.modify { () =>
+          swingInvokeLater { () =>
             if(controller.selectedNodes.nonEmpty)
               controller.resetSelectedNodes()
 
@@ -202,7 +202,7 @@ class SVGPanelListener
           }
         case _ =>
           println("reset both")
-          canvas.modify { () =>
+          swingInvokeLater { () =>
             if(controller.selectedNodes.nonEmpty)
               controller.resetSelectedNodes()
             conditionalEdgeReset()
@@ -217,7 +217,7 @@ class SVGPanelListener
           checkIfNodeAndGetId(txtElt) foreach {
             nodeId =>
               val menu: JPopupMenu = NodeRightClickMenu(controller, nodeId)
-              menu.show(panel, evt.getClientX, evt.getClientY)
+              menu.show(menuInvoker, evt.getClientX, evt.getClientY)
           }
         case _: SVGPathElement
              | _: SVGPolygonElement =>
@@ -227,7 +227,7 @@ class SVGPanelListener
               edgeFromGElement(gedge) foreach {
                 e =>
                   val menu: EdgeRightClickMenu = new EdgeRightClickMenu(controller, e)
-                  menu.show(panel, evt.getClientX, evt.getClientY)
+                  menu.show(menuInvoker, evt.getClientX, evt.getClientY)
               }
           }
       }
@@ -235,32 +235,24 @@ class SVGPanelListener
 
   def handleEvent(evt: Event) : Unit = {
     val mevt: MouseEvent = evt.asInstanceOf[MouseEvent]
+    controller.swingInvokeLater( () =>
     mevt.getButton match {
       case RIGHTBUTTON => handleRightClick(mevt)
       case LEFTBUTTON => handleLeftClick(mevt)
       case _ => Console.err.println("mouse button event unknown")
-    }
+    })
   }
 }
 
-object SVGPanel {
-  type EventListenerBuilder = (PUCKSVGCanvas, SVGPanel) => EventListener
-  val defaultListener : EventListenerBuilder =
-    (canvas, panel) => new SVGPanelListener(canvas, panel)
-  val deafListener : EventListenerBuilder =
-    (_,_) => new EventListener {
-      override def handleEvent(evt: Event): Unit = ()
-    }
-}
 
-class SVGPanel
-( doc : SVGDocument,
-  eventListenerBuilder: EventListenerBuilder = defaultListener) extends JPanel {
-  val canvas = new PUCKSVGCanvas(this, eventListenerBuilder)
-  canvas.setSVGDocument(doc)
-  setLayout(new BorderLayout())
-  add("Center", canvas)
 
-  var controller : SVGController = _
-
-}
+//class SVGPanel
+//( doc : SVGDocument,
+//  eventListenerBuilder: EventListenerBuilder = defaultListener) extends JPanel {
+//
+//  setLayout(new BorderLayout())
+//  add("Center", canvas)
+//
+//  var controller : SVGController = _
+//
+//}

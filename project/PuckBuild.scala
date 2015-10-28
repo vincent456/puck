@@ -115,7 +115,7 @@ object PuckBuild extends Build {
 //    dependsOn (puckCore % "test->test;compile->compile",
 //    puckJava % "test->test;compile->compile",
 //    puckScala % "test->test;compile->compile")
-    aggregate (puckCore, puckGui, puckJava, puckScala)
+    aggregate (puckCore, puckGui, puckJava/*, puckScala*/)
     )
 
   val puckCore : Project = (project
@@ -135,10 +135,11 @@ object PuckBuild extends Build {
       libraryDependencies ++= Seq(
         "org.scala-lang" % "scala-swing" % "2.11.0-M7",
         "org.scala-lang" % "scala-parser-combinators" % "2.11.0-M4",
-        "org.apache.xmlgraphics" % "batik-util" % "1.7",
-        "org.apache.xmlgraphics" % "batik-svg-dom" % "1.7",
-        "org.apache.xmlgraphics" % "batik-swing" % "1.7",
-        "org.apache.xmlgraphics" % "batik-svggen" % "1.7" //for begugging purposes
+        "org.apache.xmlgraphics" % "xmlgraphics-commons" % "2.0.1",
+        "org.apache.xmlgraphics" % "batik-util" % "1.8",
+        "org.apache.xmlgraphics" % "batik-svg-dom" % "1.8",
+        "org.apache.xmlgraphics" % "batik-swing" % "1.8",
+        "org.apache.xmlgraphics" % "batik-svggen" % "1.8" //for begugging purposes
       )
     }
     dependsOn (puckCore % "compile->compile")

@@ -5,12 +5,9 @@ package io
 import java.io._
 
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.sys.process.Process
 import scala.util.Try
-
-import scala.concurrent.ExecutionContext.Implicits.global
-
 
 object DotPrinter {
 
@@ -92,7 +89,8 @@ object DotPrinter {
    printingOptions: PrintingOptions,
    outputFormat: DotOutputFormat,
    output : OutputStream)
-  (finish : Try[Int] => Unit = {case _ => ()}) = {
+  (finish : Try[Int] => Unit = {case _ => ()})
+  (implicit executor: ExecutionContext) = {
 
     val pipedOutput = new PipedOutputStream()
     val pipedInput = new PipedInputStream(pipedOutput)

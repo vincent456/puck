@@ -11,6 +11,7 @@ import puck.util._
 
 import scala.sys.process.Process
 
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object FilesHandler{
   object Default{
@@ -187,7 +188,7 @@ class FilesHandler
 
   def printCSSearchStatesGraph
   ( states : Map[Int, Seq[SearchState[ResultT]]],
-    graphUtils: GraphUtils,
+    dotHelper : DotHelper,
     visibility : VisibilitySet.T,
     printId : Boolean,
     printSignature : Boolean) : Unit = {
@@ -197,14 +198,14 @@ class FilesHandler
       case (cVal, l) =>
         val subDir = graphFile("_results%c%d".format(File.separatorChar, cVal))
         subDir.mkdir()
-        printCSSearchStatesGraph(subDir, l, graphUtils, visibility, None, printId, printSignature)
+        printCSSearchStatesGraph(subDir, l, dotHelper, visibility, None, printId, printSignature)
     }
   }
 
   def printCSSearchStatesGraph
   ( dir : File,
     states : Seq[SearchState[ResultT]],
-    graphUtils: GraphUtils,
+    dotHelper : DotHelper,
     visibility : VisibilitySet.T,
     sPrinter : Option[(SearchState[ResultT] => String)],
     printId : Boolean,
@@ -220,7 +221,7 @@ class FilesHandler
       val graph = graphOfResult(s.loggedResult.value)
       val f = new File("%s%c%s.png".format(dir.getAbsolutePath, File.separatorChar, printer(s)))
       val options = PrintingOptions(visibility, printId, printSignature, None)
-      DotPrinter.genImage(graph, graphUtils.dotHelper, options, Png, new FileOutputStream(f)){_ => ()}
+      DotPrinter.genImage(graph, dotHelper, options, Png, new FileOutputStream(f)){_ => ()}
     }
   }
 

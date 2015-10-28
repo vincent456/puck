@@ -1,10 +1,11 @@
 package puck.gui.svg
 
-import java.awt.event.ActionEvent
 import java.awt.{Container, Dimension, BorderLayout}
-import java.io.{File, InputStream}
+import java.io.InputStream
 import javax.swing._
 
+import org.w3c.dom.events.{Event, EventListener}
+import org.w3c.dom.svg.SVGDocument
 import puck.graph.{NameSpace, GraphUtils}
 import puck.graph.io.{DG2AST, FilesHandler, PrintingOptions}
 import puck.gui.svg.actions.AddNodeAction
@@ -40,7 +41,7 @@ class SVGConsole
   }
 
   def appendText(txt: String) : Unit = {
-    textArea.append(txt + "\n")
+    textArea.peer.append(txt + "\n")
   }
 }
 
@@ -197,9 +198,6 @@ class SVGFrameMenu
       _ => controller.setSelectedEdgeForTypePrinting(None)
     }
   }
-
-
-
 }
 
 object SVGFrame {
@@ -211,21 +209,14 @@ object SVGFrame {
              dg2ast : DG2AST
              ) : JFrame =
     new JFrame(){
-      this.add(new SVGMainPanel(stream, opts, filesHandler, graphUtils, dg2ast))
+      this.add(new SVGPanel(SVGController.builderFromFilesHander(filesHandler, opts, graphUtils, dg2ast)))
       this.setVisible(true)
       this.setMinimumSize(new Dimension(640, 480))
       this.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE)
     }
 }
 
-
-class SVGMainPanel
-( stream: InputStream,
-  opts: PrintingOptions,
-  filesHandler : FilesHandler,
-  graphUtils : GraphUtils,
-  dg2ast : DG2AST
-  ) extends JPanel with StackListener {
+class SVGPanel( builder : SVGController.Builder) extends JPanel with StackListener {
 
   def update(svgController: SVGController) : Unit = {
     menu.undoAllButton.setEnabled(svgController.canUndo)
@@ -235,23 +226,22 @@ class SVGMainPanel
 
   val console: SVGConsole = new SVGConsole()
   setLayout(new BorderLayout)
-  val panel : SVGPanel =
-    new SVGPanel(SVGController.documentFromStream(stream))
 
-  setVisible(true)
-  private val controller: SVGController =
-    SVGController(
-      filesHandler, graphUtils, dg2ast,
-          opts, this)
-  panel.controller = controller
+  private val controller: SVGController = builder(this)
+
+  val canvas = new PUCKSVGCanvas(new SVGCanvasListener(this, controller))
+
   private val menu: SVGFrameMenu = new SVGFrameMenu(controller)
   controller.registerAsStackListeners(this)
 
 
   val centerPane = new JSplitPane()
-  centerPane.setLeftComponent(panel)
+  centerPane.setLeftComponent(canvas)
   centerPane.setRightComponent(new JPanel())
   centerPane.setResizeWeight(0.75)
+
+  controller.displayGraph(controller.graph)
+
 
   this.add(centerPane, BorderLayout.CENTER)
   this.add(new JScrollPane(menu), BorderLayout.SOUTH)

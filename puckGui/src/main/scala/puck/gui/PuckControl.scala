@@ -155,7 +155,6 @@ class PuckControl(logger0 : PuckLogger,
         Future {
           val imgframe = SVGFrame(pipedInput, opts, filesHandler, graphUtils, dg2AST)
           imgframe.setTitle(title)
-
         }
      }
 
@@ -188,14 +187,14 @@ class PuckControl(logger0 : PuckLogger,
     d.mkdir()
     val subDir = filesHandler.graphFile("_results%c%s".format(File.separatorChar, subDirStr))
     subDir.mkdir()
-    filesHandler.printCSSearchStatesGraph(subDir, states, graphUtils, visibility, sPrinter, printId, printSignature)
+    filesHandler.printCSSearchStatesGraph(subDir, states, graphUtils.dotHelper, visibility, sPrinter, printId, printSignature)
   }
 
   def showStateSeq(states : Seq[StateT],
                    printId : Boolean,
                    printSignature : Boolean,
                    visibility : VisibilitySet.T): Unit = {
-    Future(new ImageExplorer(filesHandler, graphUtils, logger, states.toIndexedSeq, visibility, printId, printSignature))
+    Future(new ImageExplorer(filesHandler, graphUtils.dotHelper, logger, states.toIndexedSeq, visibility, printId, printSignature))
     ()
   }
 
@@ -236,7 +235,7 @@ class PuckControl(logger0 : PuckLogger,
       }
 
     case SearchStateMapPrintingRequest(stateMap, printId, printSignature, visibility) =>
-      filesHandler.printCSSearchStatesGraph(stateMap, graphUtils, visibility, printId, printSignature)
+      filesHandler.printCSSearchStatesGraph(stateMap, graphUtils.dotHelper, visibility, printId, printSignature)
 
     case SearchStateSeqPrintingRequest(subDir, states, sPrinter, printId, printSignature, visibility) =>
      // printStateSeq(subDir, states, sPrinter, printId, printSignature)
