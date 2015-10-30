@@ -1,0 +1,58 @@
+<idea-plugin version="2">
+  <id>fr.lip6.puck</id>
+  <name>Plugin display name here</name>
+  <version>1.0</version>
+  <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
+
+  <description><![CDATA[
+      Enter short description for your plugin here.<br>
+      <em>most HTML tags may be used</em>
+    ]]></description>
+
+  <change-notes><![CDATA[
+      Add change notes here.<br>
+      <em>most HTML tags may be used</em>
+    ]]>
+  </change-notes>
+
+  <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Build+Number+Ranges for description -->
+  <idea-version since-build="131"/>
+
+  <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Plugin+Compatibility+with+IntelliJ+Platform+Products
+       on how to target different products -->
+  <!-- uncomment to enable plugin in all products
+  <depends>com.intellij.modules.lang</depends>
+  -->
+
+  <extensions defaultExtensionNs="com.intellij">
+      <toolWindow anchor="bottom" id="PuckToolWindow"
+                  factoryClass="puck.intellij.PuckToolWindowFactory"/>
+  </extensions>
+
+  <application-components>
+    <!-- Add your application components here -->
+  </application-components>
+
+  <project-components>
+    <!-- Add your project components here -->
+  </project-components>
+
+
+
+  <actions>
+      <action class="puck.intellij.actions.ViewGraphAction" description="View Dependency Graph for whole module" id="View DG" text="Show DG of module">
+          <keyboard-shortcut first-keystroke="control shift Q" keymap="$default"/>
+      </action>
+      <action class="puck.intellij.actions.ParseConstraintsAction" description="Parse coupling constraint" id="Parse CC" text="Parse Coupling Constraint">
+          <keyboard-shortcut first-keystroke="control shift Q" keymap="$default"/>
+      </action>
+
+      <group id="PuckProjectMenu" popup="true" text="Puck" >
+          <reference ref="View DG"/>
+          <reference ref="Parse CC"/>
+          <add-to-group group-id="ProjectViewPopupMenu" anchor="last" />
+      </group>
+
+  </actions>
+
+</idea-plugin>

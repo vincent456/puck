@@ -111,7 +111,7 @@ class PuckInterfacePanel
         fc.fileSelectionMode = FileChooser.SelectionMode.DirectoriesOnly
         fc showDialog(null, "Select")
         val f: File = fc.selectedFile
-        if( f != null && !(f == filesHandler.srcDirectory.get)) {
+        if( f != null && !(f == filesHandler.srcDirectory.!)) {
           filesHandler.setWorkingDirectory(f)
           publish(LoadCodeRequest())
         }

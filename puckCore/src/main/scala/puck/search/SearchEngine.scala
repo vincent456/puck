@@ -30,36 +30,12 @@ trait Search[Result]{
 object SearchEngine {
   type InitialStateFactory[T] = (LoggedTry[T] => Unit) => SearchState[T]
 }
-
-class SearchStateSet[T]{
-  val stateStack = mutable.Stack[SearchState[T]]()
-
-  def head : SearchState[T] = stateStack.head
-
-  def removeHead() : Unit ={
-    val _ = stateStack.pop()
-  }
-  def removeAll() : Unit = stateStack.clear()
-
-  def add( ss : SearchState[T]) : Unit ={
-    val _ = stateStack.push(ss)
-  }
-  def addAll(sss : TraversableOnce[SearchState[T]]) : Unit = {
-    val _ = stateStack pushAll sss
-  }
-
-  def isEmpty : Boolean = stateStack.isEmpty
-  def nonEmpty : Boolean = !isEmpty
-}
-
-
 import SearchEngine._
 class SearchEngine[T]
 ( val createInitialState : InitialStateFactory[T],
   val searchStrategy: SearchStrategy[T]
   ) extends Search[T] {
 
-  def currentState : SearchState[T] = searchStrategy.remainingStates.head
   val successes = mutable.ListBuffer[FinalState[T]]()
   val failures = mutable.ListBuffer[ErrorState[T]]()
 
@@ -86,54 +62,34 @@ class SearchEngine[T]
 
   def addState[S <: StateCreator[T, S]](cr : Logged[T], choices : S)  = {
     numExploredStates = numExploredStates + 1
-    searchStrategy.addState(cr, choices)
+    searchStrategy.createState(cr, choices)
   }
 
   def init(k : LoggedTry[T] => Unit) : Unit = {
     initialState = createInitialState(k)
-    searchStrategy.remainingStates.add(initialState)
+    searchStrategy.addState(initialState)
     numExploredStates = 1
   }
 
   def exploredStates = numExploredStates
 
-  //def startExplore(k : LoggedTry[T] => Unit) : Unit
-
   def explore() : Unit ={
-    init(storeResult(currentState, _))
+    init(storeResult(searchStrategy.currentState, _))
     do searchStrategy.oneStep(this)
     while(searchStrategy.continue(this))
   }
+
+
 }
 
-abstract class SearchStrategy[T] {
-  val remainingStates = new SearchStateSet[T]()
-
-  def addState(s : SearchState[T]) : Unit =
-    remainingStates add s
-
-
-  def addState[S <: StateCreator[T, S]](cr : Logged[T], choices : S): Unit =
-    remainingStates add remainingStates.head.createNextState[S](cr, choices)
-
-
+trait SearchStrategy[T] {
+  def currentState : SearchState[T]
+  def addState(s : SearchState[T]) : Unit
+  def createState[S <: StateCreator[T, S]](currentResult : Logged[T], choices : S) : Unit
   def continue(se : SearchEngine[T]) : Boolean
-
-  def oneStep(se : SearchEngine[T]) : Unit = {
-    if (remainingStates.head.triedAll) remainingStates.removeHead()
-    else remainingStates.head.executeNextChoice(se)
-  }
-
-  def onNewCurrentState(se : SearchEngine[T]) : Unit = ()
+  def oneStep(se : SearchEngine[T]) : Unit
 }
 
-class TryAllSearchStrategy[T] extends SearchStrategy[T] {
-  def continue(se : SearchEngine[T]) : Boolean =
-    remainingStates.nonEmpty
-}
 
-class FindFirstSearchStrategy[T] extends SearchStrategy[T] {
-  def continue(se : SearchEngine[T]) : Boolean =
-    remainingStates.nonEmpty && se.successes.isEmpty
-}
+
 

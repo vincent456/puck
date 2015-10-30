@@ -227,7 +227,7 @@ class SVGPanel( builder : SVGController.Builder) extends JPanel with StackListen
   val console: SVGConsole = new SVGConsole()
   setLayout(new BorderLayout)
 
-  private val controller: SVGController = builder(this)
+  val controller: SVGController = builder(this)
 
   val canvas = new PUCKSVGCanvas(new SVGCanvasListener(this, controller))
 

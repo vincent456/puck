@@ -7,7 +7,7 @@ import puck.graph.io.{Visible, VisibilitySet}
 import VisibilitySet._
 import puck.gui.PuckConsolePanel
 import puck.gui.search.{StateSelected, SimpleElementSelector, SortedElementSelector}
-import puck.gui.svg.{PUCKSVGCanvas, SVGPanel, SVGController}
+import puck.gui.svg.{PUCKSVGCanvas, SVGController}
 import puck.search.{SearchState, ErrorState, Search}
 import puck.util._
 

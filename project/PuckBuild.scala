@@ -161,6 +161,11 @@ object PuckBuild extends Build {
 
     )
 
+//  val puckIdea : Project = (project
+//    settings commonSettings("idea")
+//    dependsOn (puckJava % "test->test;compile->compile")
+//    )
+
   val puckScala : Project = (project
     settings commonSettings("scala")
 

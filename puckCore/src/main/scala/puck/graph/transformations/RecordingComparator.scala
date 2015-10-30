@@ -3,7 +3,7 @@ package transformations
 
 import puck.PuckError
 import puck.graph.transformations.MappingChoices.{Kargs, NodesToMap, ResMap}
-import puck.search.{FindFirstSearchStrategy, SearchEngine}
+import puck.search.{BreadthFirstSearchStrategy, SearchEngine}
 import puck.util.{PuckLogger, PuckNoopLogger}
 
 import scala.collection.mutable
@@ -42,7 +42,7 @@ class RecordingComparator
   val engine =
     new SearchEngine[ResMap](
       k => new NodeMappingInitialState(initialTransfos, this, graph1, graph2, k, logger),
-      new FindFirstSearchStrategy[ResMap]())
+      new BreadthFirstSearchStrategy[ResMap]())
 
   def attribNode(node : NodeId,
                  map : ResMap,

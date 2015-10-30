@@ -1,6 +1,6 @@
 package puck.gui.svg
 
-import java.io.{File, InputStream, PipedInputStream, PipedOutputStream}
+import java.io._
 import javax.swing.{SwingUtilities, JMenuItem}
 
 import org.apache.batik.anim.dom.SAXSVGDocumentFactory
@@ -9,6 +9,7 @@ import org.w3c.dom.Element
 import org.w3c.dom.svg.{SVGGElement, SVGDocument}
 import puck.graph._
 import puck.graph.comparison.Mapping
+import puck.graph.constraints.ConstraintsParser
 import puck.graph.io._
 import puck.graph.transformations.MileStone
 import puck.gui.TextAreaLogger
@@ -25,8 +26,6 @@ import  VisibilitySet._
 trait StackListener{
   def update(svgController: SVGController) : Unit
 }
-
-trait ProjectManager
 
 abstract class SVGController
 ( val graphUtils : GraphUtils,
@@ -59,6 +58,14 @@ abstract class SVGController
 
   def updateStackListeners() : Unit =
     stackListeners.foreach(_.update(this))
+
+
+  def parseConstraints(decouple : File) : Unit = try {
+    val cm = ConstraintsParser(dg2ast.nodesByName, new FileReader(decouple))
+    pushGraph(graph.newGraph(constraints = cm))
+  } catch {
+    case e : Exception => consoleLogger.writeln(e.getMessage)
+  }
 
 
   type Color = String
@@ -217,8 +224,7 @@ abstract class SVGController
     SVGController.documentFromGraph(graph, graphUtils.dotHelper, printingOptions)(
       msg => swingInvokeLater(() => console appendText msg)){
       case doc =>
-         frame.canvas.setDocument(doc)
-
+        swingInvokeLater(() => frame.canvas.setDocument(doc))
     }
 
 

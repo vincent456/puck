@@ -6,7 +6,7 @@ import puck.graph.comparison.Mapping
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 import puck.graph.{AccessAbstraction, Uses}
 import puck.graph.transformations.rules.{CreateTypeMember, CreateParameter, Redirection}
-import puck.javaGraph.ScenarioFactory
+import puck.javaGraph.{JavaDotHelper, ScenarioFactory}
 import puck.Settings.outDir
 
 class CommutativityRedirect
@@ -52,7 +52,7 @@ class CommutativityRedirect
         val delegator = fullName2id("p.Delegator")
         val mDelegator = fullName2id("p.Delegator.mUsed__void")
 
-        QuickFrame(graph, "g")
+        QuickFrame(graph, "g", JavaDotHelper)
 
         val g = graph.addAbstraction(delegatee, AccessAbstraction(delegator, DelegationAbstraction))
           .addAbstraction(mDelegatee, AccessAbstraction(mDelegator, DelegationAbstraction))
