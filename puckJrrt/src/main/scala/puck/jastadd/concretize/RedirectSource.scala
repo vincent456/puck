@@ -3,13 +3,13 @@ package concretize
 
 import puck.PuckError
 import puck.graph._
-import puck.jastadd.JavaDG2AST
+import puck.jastadd.JavaJastAddDG2AST
 import puck.javaGraph._
 import puck.javaGraph.nodeKind.{Method, Field}
 import puck.util.{PuckLog, PuckLogger}
 
 import ShowDG._
-import JavaDG2AST.verbosity
+import JavaJastAddDG2AST.verbosity
 
 object RedirectSource {
 

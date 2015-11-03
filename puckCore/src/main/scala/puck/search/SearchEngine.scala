@@ -33,12 +33,18 @@ object SearchEngine {
 import SearchEngine._
 class SearchEngine[T]
 ( val createInitialState : InitialStateFactory[T],
-  val searchStrategy: SearchStrategy[T]
+  val searchStrategy: SearchStrategy[T],
+  val maxResult : Option[Int] = None // default = all result
   ) extends Search[T] {
 
   val successes = mutable.ListBuffer[FinalState[T]]()
   val failures = mutable.ListBuffer[ErrorState[T]]()
 
+  val enoughSuccess : () => Boolean =
+    maxResult match {
+      case None => () => false
+      case Some(i) => () => successes.length >= i
+    }
 
   private [this] var idSeed : Int = 0
   private def idGen() : Int = {idSeed += 1; idSeed}
@@ -76,7 +82,7 @@ class SearchEngine[T]
   def explore() : Unit ={
     init(storeResult(searchStrategy.currentState, _))
     do searchStrategy.oneStep(this)
-    while(searchStrategy.continue(this))
+    while(searchStrategy.canContinue && !enoughSuccess())
   }
 
 
@@ -86,7 +92,7 @@ trait SearchStrategy[T] {
   def currentState : SearchState[T]
   def addState(s : SearchState[T]) : Unit
   def createState[S <: StateCreator[T, S]](currentResult : Logged[T], choices : S) : Unit
-  def continue(se : SearchEngine[T]) : Boolean
+  def canContinue : Boolean
   def oneStep(se : SearchEngine[T]) : Unit
 }
 

@@ -1,49 +1,20 @@
-package puck.intellij.graphBuilding
-
-import java.io.{FileReader, File}
+package puck.intellij
+package graphBuilding
 
 import com.intellij.ide.highlighter.JavaFileType
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.module.Module
-import com.intellij.openapi.project.Project
 import com.intellij.psi._
-import com.intellij.psi.search.{FileTypeIndex, FilenameIndex}
-import puck.graph.constraints.ConstraintsParser
+import com.intellij.psi.search.FileTypeIndex
 import puck.graph.io.DG2AST
-import puck.graph.transformations.{NodeMappingInitialState, Transformation}
+import puck.graph.transformations.NodeMappingInitialState
 import puck.graph._
-import puck.intellij._
 import puck.javaGraph.JavaGraphBuilder
 import puck.javaGraph.nodeKind.JavaNodeKind
-import puck.util.{PuckLog, PuckLogger}
-
 import scala.collection.JavaConversions._
 
 
 
-class IntellijDG2AST
-( val initialGraph : DependencyGraph,
-  val initialRecord : Seq[Transformation],
-  val nodesByName : Map[String, NodeId]) extends DG2AST {
-  def apply(res : DependencyGraph)(implicit logger : PuckLogger) : Unit = ???
-  def printCode(dir : File)(implicit logger : PuckLogger) : Unit = ???
-  def parseConstraints(decouple : File)(implicit logger : PuckLogger) : DG2AST =
-    try {
-      //val parser = ConstraintsPlParser(nodesByName)
-      val cm = ConstraintsParser(nodesByName, new FileReader(decouple))
-      new IntellijDG2AST(
-        initialGraph.newGraph(constraints = cm),
-        initialRecord,
-        nodesByName)
-    } catch {
-      case e : Error =>
-        //e.printStackTrace()
-        logger.writeln("parsing failed : " + e.getMessage)((PuckLog.NoSpecialContext, PuckLog.Error))
-        this
-    }
-
-  def code(graph : DependencyGraph, id : NodeId) : String = ???
-}
 
 object Utils {
   def psiMemberAncestor(elt : PsiElement) : Option[PsiMember] =
@@ -110,7 +81,8 @@ class IntellijGraphBuilder (val module : Module)
     new  IntellijDG2AST(g.newGraph(recording = Seq()),
       NodeMappingInitialState.normalizeNodeTransfos(JavaNodeKind.rootKind,
         g.recording, Seq())._2,
-        IntellijGraphBuilder.this.nodesByName)
+        IntellijGraphBuilder.this.nodesByName,
+        graph2ASTMap)
   }
 
   def getPrimitivePackage : NodeIdT =

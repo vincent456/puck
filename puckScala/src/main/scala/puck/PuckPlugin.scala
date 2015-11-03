@@ -94,7 +94,7 @@ class GenDependencyGraph
             (if (mods hasFlag MUTABLE) Var else Val, Some(typeOf(vd)))
         }
       val fullName = acc + "." + defTree.name
-      val nid = addNode(fullName, defTree.name.toString, k)
+      val nid = addNode(fullName, defTree.name.toString, k, mutable = true)
       addContains(container, nid)
       styp foreach (setType(nid,_))
 

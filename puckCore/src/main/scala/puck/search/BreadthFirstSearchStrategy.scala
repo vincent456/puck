@@ -22,8 +22,7 @@ class BreadthFirstSearchStrategy[T] extends SearchStrategy[T] {
   def createState[S <: StateCreator[T, S]](currentResult : Logged[T], choices : S) : Unit =
     this push remainingStates.head.createNextState[S](currentResult, choices)
 
-  def continue(se : SearchEngine[T]) : Boolean =
-    (remainingStates.nonEmpty || depthPlusOneStates.nonEmpty) && se.successes.isEmpty
+  def canContinue : Boolean = remainingStates.nonEmpty || depthPlusOneStates.nonEmpty
 
   def oneStep(se : SearchEngine[T]) : Unit = {
 

@@ -1,8 +1,6 @@
 package puck.intellij
 
 import com.intellij.psi._
-import puck.graph.{TypeDecl, NodeKind, KindType}
-import puck.graph.constraints.AbstractionPolicy
 import puck.javaGraph.nodeKind._
 
 

@@ -4,7 +4,7 @@ import java.io.File
 
 import puck.graph.transformations.Transformation
 import puck.graph.{DependencyGraph, NodeId}
-import puck.jastadd.{ASTNodeLink, JavaDG2AST, CompileHelper}
+import puck.jastadd.{ASTNodeLink, JavaJastAddDG2AST, CompileHelper}
 import puck.util.{FileHelper, PuckFileLogger, PuckLogger}
 import sbt.IO
 
@@ -42,7 +42,7 @@ case class ScenarioFactory
   def applyChangeAndMakeExample
   ( g: DependencyGraph,
     outDir : File) : ScenarioFactory = {
-    val dg2ast = new JavaDG2AST(program, graph, initialRecord, fullName2id, dg2astMap)
+    val dg2ast = new JavaJastAddDG2AST(program, graph, initialRecord, fullName2id, dg2astMap)
 
     dg2ast.apply(g)(new PuckFileLogger(_ => true, new File("/tmp/pucklog")))
     IO.delete(outDir)

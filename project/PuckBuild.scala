@@ -124,7 +124,6 @@ object PuckBuild extends Build {
     settings Seq[Setting[_]] {
         libraryDependencies +=
           "org.scala-lang" % "scala-parser-combinators" % "2.11.0-M4"
-
     }
   )
 
@@ -147,9 +146,16 @@ object PuckBuild extends Build {
 
   val puckJava : Project = (project
     settings commonSettings("java")
-    settings PuckJavaBuild.settings
+    dependsOn (puckCore % "test->test;compile->compile")
+    //dependsOn (puckGui % "compile->compile")
+   )
+
+
+  val puckJrrt : Project = (project
+    settings commonSettings("jrrt")
+    settings PuckJrrtBuild.settings
     enablePlugins JavaAppPackaging
-    //dependsOn (puckCore % "test->test;compile->compile")
+    dependsOn (puckJava % "test->test;compile->compile")
     dependsOn (puckGui % "compile->compile")
 
     settings (mappings in Universal ++=
@@ -160,11 +166,6 @@ object PuckBuild extends Build {
       ))
 
     )
-
-//  val puckIdea : Project = (project
-//    settings commonSettings("idea")
-//    dependsOn (puckJava % "test->test;compile->compile")
-//    )
 
   val puckScala : Project = (project
     settings commonSettings("scala")

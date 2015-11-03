@@ -6,7 +6,7 @@ import javax.swing.{JComponent, AbstractAction}
 import puck.graph.constraints.search.{CSInitialSearchState, ConstraintSolvingSearchEngineBuilder}
 import puck.graph._
 import puck.gui.svg.SVGController
-import puck.search.{TryAllSearchStrategy, Search}
+import puck.search.{DepthFirstSearchStrategy, Search}
 import puck.util.Logged
 
 import scala.swing._
@@ -50,7 +50,7 @@ class AutoSolveAction
   override def actionPerformed(e: ActionEvent): Unit = {
     val builder = new ConstraintSolvingSearchEngineBuilder(
         controller.graphUtils,
-        new TryAllSearchStrategy,
+        new DepthFirstSearchStrategy[ResultT],
         CSInitialSearchState.targetedInitialState(violationTarget))
     val engine = builder.apply(graph.mileStone, automaticConstraintLoosening = false)
     engine.explore()

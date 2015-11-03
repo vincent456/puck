@@ -14,8 +14,7 @@ class ReducedBreadthStrategy[T]
 
   val remainingStates = mutable.Stack[SearchState[T]]()
 
-  def continue(se : SearchEngine[T]) : Boolean =
-    remainingStates.nonEmpty
+  def canContinue : Boolean = remainingStates.nonEmpty || frozenStates.nonEmpty
 
   val frozenStates = mutable.Stack[SearchState[T]]()
 
@@ -38,18 +37,21 @@ class ReducedBreadthStrategy[T]
   var i = 0
   override def oneStep(se : SearchEngine[T]) : Unit = {
 
-    while (remainingStates.nonEmpty) {
+    if (remainingStates.nonEmpty) {
+
       if (remainingStates.head.triedAll) remainingStates.pop()
       else remainingStates.head.executeNextChoice(se)
+
     }
+    else if(frozenStates.nonEmpty) {
 
-    i += 1
-    println(s"preparing iteration $i ...")
+      i += 1
+      remainingStates pushAll evaluator.bests(frozenStates.toSeq, numNewRoot)
+      frozenStates.clear()
+      currentCheckPoint += reductionPeriod
+      this.oneStep(se)
 
-
-    remainingStates pushAll evaluator.bests(frozenStates.toSeq, numNewRoot)
-    frozenStates.clear()
-    currentCheckPoint += reductionPeriod
+    }
   }
 
 }

@@ -25,7 +25,7 @@
   -->
 
   <extensions defaultExtensionNs="com.intellij">
-      <toolWindow anchor="bottom" id="PuckToolWindow"
+      <toolWindow anchor="bottom" id="Puck"
                   factoryClass="puck.intellij.PuckToolWindowFactory"/>
   </extensions>
 

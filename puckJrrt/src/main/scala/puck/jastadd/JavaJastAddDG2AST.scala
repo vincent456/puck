@@ -14,7 +14,7 @@ import puck.javaGraph.nodeKind._
 import puck.util.PuckLog._
 import puck.util.{PuckLog, PuckLogger}
 
-object JavaDG2AST extends DG2ASTBuilder {
+object JavaJastAddDG2AST extends DG2ASTBuilder {
 
   def apply
   ( srcDirectory : File,
@@ -42,7 +42,7 @@ object JavaDG2AST extends DG2ASTBuilder {
         case None => throw new DGBuildingError("Compilation error, no AST generated")
         case Some(p) =>
           val t = CompileHelper.buildGraph(p, ll)
-          new JavaDG2AST(t._1, t._2, t._3, t._4, t._5)
+          new JavaJastAddDG2AST(t._1, t._2, t._3, t._4, t._5)
         }
     }
 
@@ -60,7 +60,7 @@ object JavaDG2AST extends DG2ASTBuilder {
   def verbosity : PuckLog.Level => PuckLog.Verbosity = l => (PuckLog.AG2AST, l)
 }
 
-class JavaDG2AST
+class JavaJastAddDG2AST
 ( val program : AST.Program,
   val initialGraph : DependencyGraph,
   val initialRecord : Seq[Transformation],
@@ -99,7 +99,7 @@ class JavaDG2AST
     try {
       //val parser = ConstraintsPlParser(nodesByName)
       val cm = ConstraintsParser(nodesByName, new FileReader(decouple))
-      new JavaDG2AST(program,
+      new JavaJastAddDG2AST(program,
         initialGraph.newGraph(constraints = cm),
         initialRecord,
         nodesByName,
@@ -112,7 +112,7 @@ class JavaDG2AST
     }
 
 
-  def apply(result : DependencyGraph)(implicit logger : PuckLogger) : Unit = {
+  def apply(graph : DependencyGraph)(implicit logger : PuckLogger) : Unit = {
 
 //    def printCUs() = {
 //      println(program.getNumCompilationUnit.toString + "c us")
@@ -130,9 +130,9 @@ class JavaDG2AST
 //    }
 
     logger.writeln("applying change !")
-    val record = recordOfResult(result)
+    val record = graph.recording
 
-    record.reverse.foldLeft((graphOfResult(result), initialGraph, graph2ASTMap)) {
+    record.reverse.foldLeft((graph, initialGraph, graph2ASTMap)) {
       case ((resultGraph, reenactor, g2AST), t : Transformation) =>
 
         logger.writeln("applying " + (reenactor, t).shows)
