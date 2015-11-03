@@ -82,10 +82,10 @@ class PuckControl(logger0 : PuckLogger,
     progressBar.visible = true
     progressBar.value = 0
 
-    dg2AST = filesHandler.loadGraph(graphUtils.dG2ASTBuilder, new LoadingListener {
+    dg2AST = filesHandler.loadGraph(Some(new LoadingListener {
       override def update(loading: Double): Unit =
         progressBar.value = (loading * 100).toInt
-    })
+    }))
     progressBar.visible = false
     publish(AccessGraphModified(dg2AST.initialGraph))
 

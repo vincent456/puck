@@ -78,7 +78,8 @@ class IntellijGraphBuilder (val module : Module)
     AttachOrphanNodes()
     registerSuperTypes()
 
-    new  IntellijDG2AST(g.newGraph(recording = Seq()),
+    new  IntellijDG2AST(module,
+      g.newGraph(recording = Seq()),
       NodeMappingInitialState.normalizeNodeTransfos(JavaNodeKind.rootKind,
         g.recording, Seq())._2,
         IntellijGraphBuilder.this.nodesByName,

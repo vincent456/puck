@@ -3,14 +3,10 @@ package puck.intellij
 import java.io.{FileReader, File}
 
 import com.intellij.openapi.module.Module
-import puck.PuckError
 import puck.graph._
-import puck.graph.constraints.{SupertypeAbstraction, ConstraintsParser}
+import puck.graph.constraints.ConstraintsParser
 import puck.graph.io.DG2AST
 import puck.graph.transformations._
-import puck.jastadd._
-import puck.jastadd.concretize.{RedirectTarget, RedirectSource, CreateEdge, CreateNode}
-import puck.javaGraph.nodeKind.{Definition, AbstractMethod}
 import puck.util.{PuckLog, PuckLogger}
 import puck.graph.ShowDG._
 

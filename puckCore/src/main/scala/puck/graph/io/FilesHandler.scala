@@ -79,10 +79,11 @@ class FileOption(private [this] var sf : Option[File] = None) {
 class FilesHandler
 (val workingDirectory : File,
  //TODO ? change to List[String] ?
- val srcSuffix : String){
+ val srcSuffix : String,
+ val dG2ASTBuilder: DG2ASTBuilder){
 
   def fromOutDir : FilesHandler =
-    new FilesHandler(outDirectory !, srcSuffix)
+    new FilesHandler(outDirectory !, srcSuffix, dG2ASTBuilder)
 
 
 
@@ -160,14 +161,13 @@ class FilesHandler
 
 
   def loadGraph
-  ( dG2ASTBuilder : DG2ASTBuilder,
-    ll : LoadingListener)
+  ( ll : Option[LoadingListener] = None)
   ( implicit logger : PuckLogger) : DG2AST = {
      dG2ASTBuilder(
       srcDirectory !,
       outDirectory.toOption,
       jarListFile,
-      logger, ll)
+      logger, ll.orNull)
   }
 
   /*def makeProlog(){

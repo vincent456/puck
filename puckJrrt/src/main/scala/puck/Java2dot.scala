@@ -1,13 +1,13 @@
 package puck
 
-import java.io.{FileReader, File, FileWriter}
+import java.io.{File, FileReader}
 
 import puck.graph.constraints.ConstraintsParser
+import puck.graph.io.VisibilitySet._
 import puck.graph.io._
-import puck.graph.{NodeId, DependencyGraph}
+import puck.graph.{DependencyGraph, NodeId}
 import puck.jastadd.CompileHelper
 import puck.javaGraph.JavaDotHelper
-import VisibilitySet._
 
 object Java2dot {
 

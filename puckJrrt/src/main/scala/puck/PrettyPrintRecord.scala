@@ -1,7 +1,7 @@
 package puck
 
 import java.io.File
-import javaGraph.JavaFilesHandler
+import jastadd.JavaFilesHandler
 import puck.graph.ShowDG
 import puck.graph.transformations.Recording
 import puck.javaGraph.JGraphUtils
@@ -29,7 +29,7 @@ object PrettyPrintRecord {
     val fh = JavaFilesHandler()
     implicit val logger = new PuckSystemLogger(_ => true)
 
-    val dg2ast = fh.loadGraph(JGraphUtils.dG2ASTBuilder, null)
+    val dg2ast = fh.loadGraph()
 
     val r = Recording.load(recFile.getAbsolutePath, dg2ast.nodesByName)
 

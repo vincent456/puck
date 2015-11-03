@@ -403,7 +403,7 @@ object SVGController {
       def compareOutputGraph() : Unit = {
         val outfh = filesHandler.fromOutDir
         console.appendText("Loading output graph from code")
-        val outdg2ast = outfh.loadGraph(graphUtils.dG2ASTBuilder, null)
+        val outdg2ast = outfh.loadGraph()
         console.appendText("Comparing graphs ...")
 
         val res = if(Mapping.equals(graph, outdg2ast.initialGraph)) "EQUAL"

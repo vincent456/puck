@@ -1,6 +1,7 @@
 package puck
 
-import puck.javaGraph._
+import javaGraph.JGraphUtils
+import jastadd.JavaFilesHandler
 
 object Front extends PuckApplication(JavaFilesHandler(), JGraphUtils)
 
