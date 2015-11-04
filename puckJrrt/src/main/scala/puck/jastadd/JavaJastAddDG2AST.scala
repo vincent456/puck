@@ -81,8 +81,7 @@ class JavaJastAddDG2AST
         val n = graph.getNode(id)
         if(n.kind == Package)
           PackageDeclHolder
-        else
-          NoDecl
+        else NoDecl
     }
 
   def astNodeOf(graph : DependencyGraph, id : NodeId) : ASTNodeLink =

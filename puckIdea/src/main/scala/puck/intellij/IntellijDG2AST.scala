@@ -1,12 +1,16 @@
-package puck.intellij
+package puck
+package intellij
 
 import java.io.{FileReader, File}
 
 import com.intellij.openapi.module.Module
+import com.intellij.psi.JavaPsiFacade
 import puck.graph._
 import puck.graph.constraints.ConstraintsParser
 import puck.graph.io.DG2AST
 import puck.graph.transformations._
+import puck.intellij.concretize.{CreateEdge, CreateNode}
+import puck.javaGraph.nodeKind.Definition
 import puck.util.{PuckLog, PuckLogger}
 import puck.graph.ShowDG._
 
@@ -17,22 +21,37 @@ class IntellijDG2AST
   val nodesByName : Map[String, NodeId],
   val graph2ASTMap : Map[Int, PsiNodeWrapper]) extends DG2AST {
 
+  implicit lazy val factory = JavaPsiFacade.getElementFactory(module.getProject)
+
   def apply(graph : DependencyGraph)(implicit logger : PuckLogger) : Unit = {
     logger.writeln("applying change !")
     val record = graph.recording
 
-    record.reverse.foldLeft((graph, initialGraph, graph2ASTMap)) {
-      case ((resultGraph, reenactor, g2AST), t : Transformation) =>
+    ignore(record.reverse.foldLeft((graph, initialGraph, graph2ASTMap)) {
+      case ((resultGraph, reenactor, id2declMap), t : Transformation) =>
 
         //logger.writeln("applying " + (reenactor, t).shows)
-        val newG2AST = applyOneTransformation(resultGraph, reenactor, g2AST, t)
 
-        (resultGraph, t.redo(reenactor), newG2AST)
+      val newId2declMap =
+          t match {
+            case CreateNode(n) =>
+              /*if(n.kind == Definition) id2declMap
+              else*/ id2declMap get n.id match {
+                case Some(_) => id2declMap
+                case None => CreateNode(resultGraph, id2declMap, n)
+              }
+            case _ =>
+              applyOneTransformation(resultGraph, reenactor, id2declMap, t)
+              id2declMap
+
+          }
+
+        (resultGraph, t.redo(reenactor), newId2declMap)
 
       case (acc, op) =>
         logger.writeln((acc._1, op).shows)
         acc
-    }
+    })
 
   }
 
@@ -59,8 +78,10 @@ class IntellijDG2AST
 
   def code(graph : DependencyGraph, id : NodeId) : String = graph2ASTMap get id  match {
     case None => "no code"
-    case Some(PackageDeclHolder) => "package " + graph.fullName(id)
+    case Some(PackageDummyWrapper) => "package " + graph.fullName(id)
     case Some(hn : HasNode) => hn.node.toString
+    case Some(PrimitiveDeclHolder(t)) => t.toString
+    case Some(ArrayTypeWrapper) => "ArrayTypeWrapper"
   }
 
   def applyOneTransformation
@@ -68,90 +89,78 @@ class IntellijDG2AST
     reenactor: DependencyGraph,
     id2declMap: Map[NodeId, PsiNodeWrapper],
     t: Transformation)
-  ( implicit logger : PuckLogger): Map[NodeId, PsiNodeWrapper] = ???/*t match {
-    case Transformation(Regular, CNode(n)) =>
-      //redo t before createDecl
-      if(n.kind == Definition) id2declMap
-      else {
-        val newMap = id2declMap get n.id match {
-          case Some(_) => id2declMap
-          case None => CreateNode(program, resultGraph, id2declMap, n)
+  ( implicit logger : PuckLogger): Unit = {
+    lazy val noApplyMsg = s"${(resultGraph, t).shows} not applied"
+    t match {
+      case CreateNode(n) =>
+        sys.error("should be filtered before")
+      case CreateEdge(e) =>
+        CreateEdge(reenactor, id2declMap, e)
+
+      case t1 => logger.writeln(noApplyMsg)
+
+
+      /*case Transformation(_, RedirectionWithMerge(_, Source(_))) =>
+        logger.writeln(noApplyMsg)
+
+      case Transformation(_, RedirectionOp(e, Source(newSource))) =>
+        RedirectSource(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newSource)
+
+      case Transformation(_, RedirectionOp(e, Target(newTarget))) =>
+        RedirectTarget(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newTarget)
+
+      case Transformation(_, TypeChange(user, None, Some(NamedType(newType)))) =>
+        CreateEdge.createTypeUse(safeGet(resultGraph, id2declMap), user, newType)
+
+      case Transformation(_, TypeChange(user, Some(NamedType(oldType)), Some(NamedType(newType)))) =>
+        RedirectTarget.setType(resultGraph, reenactor, safeGet(resultGraph, id2declMap), user, newType)
+
+      // TODO see if can be performed in add node instead
+      case Transformation(_, AbstractionOp(impl, AccessAbstraction(abs, SupertypeAbstraction))) =>
+        (id2declMap get impl, reenactor.getConcreteNode(abs).kind) match {
+          case (Some(ConcreteMethodDeclHolder(decl)), AbstractMethod) =>
+            decl.setVisibility(AST.ASTNode.VIS_PUBLIC)
+          case _ => ()
         }
-        newMap
-      }
-    case Transformation(Regular, Edge(ContainsDef(source, target))) => ???
-      //CreateNode.addDef(program,resultGraph,id2declMap, source, target)
 
-    case _ =>
-      lazy val noApplyMsg = s"${(resultGraph, t).shows} not applied"
+      case Transformation(_, AbstractionOp(_, _)) => ()
 
-      t match {
-        case Transformation(Regular, Edge(e)) =>
-          //println("creating edge " + e)
-          CreateEdge(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e)
+      case Transformation(Reverse, CNode(n)) =>
+        id2declMap get n.id foreach {
+          case dh: TypedKindDeclHolder => dh.decl.puckDelete()
+          case bdh: HasBodyDecl => bdh.decl.puckDelete()
+          case PackageDeclHolder => ()
 
-        case Transformation(_, RedirectionWithMerge(_, Source(_))) =>
-          logger.writeln(noApplyMsg)
+          case BlockHolder(_)
+               | ParameterDeclHolder(_)
+               | ExprHolder(_) => () //removed when containing decl is removed
+          case NoDecl => throw new PuckError(noApplyMsg)
+        }
 
-        case Transformation(_, RedirectionOp(e, Source(newSource))) =>
-          RedirectSource(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newSource)
+      case Transformation(_, ChangeNodeName(nid, _, newName)) =>
+        ASTNodeLink.setName(newName, safeGet(reenactor, id2declMap)(nid))
 
-        case Transformation(_, RedirectionOp(e, Target(newTarget))) =>
-          RedirectTarget(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newTarget)
+      case Transformation(_, ChangeTypeBinding(((tUser, tUsed), tmUse), TypeUse(newTuse@(ntUser, ntUsed))))
+        if tUser == tUsed =>
+        if (ntUser != ntUsed && !reenactor.isa_*(ntUsed, ntUser) && !reenactor.isa_*(ntUser, ntUsed))
+          createVarAccess(reenactor, safeGet(reenactor, id2declMap), tmUse, newTuse,
+            replaceSelfRefByVarAccess)
 
-        case Transformation(_, TypeChange(user, None, Some(NamedType(newType)))) =>
-          CreateEdge.createTypeUse(safeGet(resultGraph, id2declMap), user, newType)
+      case Transformation(Regular, TypeDependency(typeUse@(tUser, tUsed), tmUse)) =>
+        if (tUser != tUsed && tUser != tmUse.user)
+          createVarAccess(reenactor, safeGet(reenactor, id2declMap), tmUse, typeUse,
+            introVarAccess)
 
-        case Transformation(_, TypeChange(user, Some(NamedType(oldType)), Some(NamedType(newType)))) =>
-          RedirectTarget.setType(resultGraph, reenactor, safeGet(resultGraph, id2declMap), user, newType)
+      case Transformation(_, ChangeTypeBinding(((oldTypeUser, _), (tmUser, tmUsed)), TypeUse((newTypeUser, newTypeUsed))))
+        if oldTypeUser != newTypeUser =>
+        replaceMessageReceiver(reenactor, safeGet(reenactor, id2declMap), tmUser, tmUsed, oldTypeUser, newTypeUser)
 
-        // TODO see if can be performed in add node instead
-        case Transformation(_, AbstractionOp(impl, AccessAbstraction(abs, SupertypeAbstraction))) =>
-          (id2declMap get impl, reenactor.getConcreteNode(abs).kind) match {
-            case (Some(ConcreteMethodDeclHolder(decl)), AbstractMethod) =>
-              decl.setVisibility(AST.ASTNode.VIS_PUBLIC)
-            case _ => ()
-          }
+      case Transformation(_, op) =>
+        if (discardedOp(op)) ()
+        else logger.writeln(noApplyMsg)*/
 
-        case Transformation(_, AbstractionOp(_, _)) => ()
-
-        case Transformation(Reverse, CNode(n)) =>
-          id2declMap get n.id foreach {
-            case dh: TypedKindDeclHolder => dh.decl.puckDelete()
-            case bdh : HasBodyDecl => bdh.decl.puckDelete()
-            case PackageDeclHolder => ()
-
-            case BlockHolder(_)
-                 | ParameterDeclHolder(_)
-                 | ExprHolder(_) => () //removed when containing decl is removed
-            case NoDecl => throw new PuckError(noApplyMsg)
-          }
-
-        case Transformation(_, ChangeNodeName(nid, _, newName)) =>
-          ASTNodeLink.setName(newName, safeGet(reenactor,id2declMap)(nid))
-
-        case Transformation(_, ChangeTypeBinding(((tUser, tUsed), tmUse), TypeUse(newTuse @ (ntUser, ntUsed))))
-          if tUser == tUsed =>
-          if (ntUser != ntUsed && !reenactor.isa_*(ntUsed, ntUser) && !reenactor.isa_*(ntUser, ntUsed))
-            createVarAccess(reenactor, safeGet(reenactor,id2declMap), tmUse, newTuse,
-              replaceSelfRefByVarAccess)
-
-        case Transformation(Regular, TypeDependency(typeUse @(tUser, tUsed), tmUse)) =>
-          if (tUser != tUsed && tUser != tmUse.user)
-            createVarAccess(reenactor, safeGet(reenactor,id2declMap), tmUse, typeUse,
-              introVarAccess)
-
-        case Transformation(_, ChangeTypeBinding(((oldTypeUser, _),(tmUser, tmUsed)), TypeUse((newTypeUser, newTypeUsed))))
-          if oldTypeUser != newTypeUser =>
-          replaceMessageReceiver(reenactor, safeGet(reenactor, id2declMap), tmUser, tmUsed, oldTypeUser, newTypeUser)
-
-        case Transformation(_, op) =>
-          if( discardedOp(op) ) ()
-          else logger.writeln(noApplyMsg)
-      }
-      id2declMap
-  }*/
-
+    }
+  }
 //  val introVarAccess : (AST.ASTNode[_], AST.MemberDecl, AST.Access) => Unit =
 //    (user, decl, access) => user.introduceVarAccess(decl, access)
 //

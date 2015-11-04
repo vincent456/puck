@@ -12,7 +12,7 @@ sealed trait PsiNodeWrapper{
 sealed abstract class HasNode extends PsiNodeWrapper {
   def node : PsiElement
 }
-case object PackageDeclHolder extends PsiNodeWrapper {
+case object PackageDummyWrapper extends PsiNodeWrapper {
   def kind  = Package
 }
 

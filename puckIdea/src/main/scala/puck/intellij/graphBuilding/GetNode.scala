@@ -98,6 +98,8 @@ object GetNode {
       anonymous(QualifiedName(m), BlockHolder(m.getBody))
     case Some(f : PsiField) =>
       anonymous(QualifiedName(f), ExprHolder(f.getInitializer))
+    case Some(m : PsiMember) =>
+          sys.error("member kind not handled")
   }
 
   def apply

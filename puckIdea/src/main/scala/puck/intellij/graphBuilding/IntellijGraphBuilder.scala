@@ -87,7 +87,7 @@ class IntellijGraphBuilder (val module : Module)
   }
 
   def getPrimitivePackage : NodeIdT =
-    GetNode(primitivePackage, primitivePackage, PackageDeclHolder, mutable = false)
+    GetNode(primitivePackage, primitivePackage, PackageDummyWrapper, mutable = false)
 
 
 
