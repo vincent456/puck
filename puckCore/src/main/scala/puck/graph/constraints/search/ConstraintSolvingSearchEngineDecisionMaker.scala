@@ -13,7 +13,7 @@ class ConstraintSolvingSearchEngineDecisionMaker
 ( val violationsKindPriority : Seq[NodeKind] )
   extends DecisionMaker {
 
-  var searchEngine : SearchEngine[ResultT] = _
+  var searchEngine : SearchEngine[DependencyGraph] = _
 
 
   /*def violationTarget(graph : GraphT)
@@ -103,11 +103,16 @@ class ConstraintSolvingSearchEngineDecisionMaker
   }
 
 
-  def partitionByKind(graph : DependencyGraph) : (List[DGNode], List[NonEmptyList[DGNode]]) => List[NonEmptyList[DGNode]] = {
+  def partitionByKind
+  ( graph : DependencyGraph,
+    l : List[DGNode],
+    acc0 : List[NonEmptyList[DGNode]] = List()
+    ) : List[NonEmptyList[DGNode]] =
+    (l, acc0) match {
     case (Nil, acc) => acc
     case (hd :: tl, acc) =>
       val (same, diff) = tl.partition(n => n.kind == hd.kind)
-      partitionByKind(graph)(diff, NonEmptyList[DGNode](hd, same:_*) +: acc)
+      partitionByKind(graph, diff, NonEmptyList[DGNode](hd, same:_*) +: acc)
   }
 
   def chooseContainerKind
@@ -133,11 +138,9 @@ class ConstraintSolvingSearchEngineDecisionMaker
     val graph = lg.value
     val choices = graph.concreteNodes.filter(predicate(graph,_)).toList
 
-//    searchEngine.addState(lg,
-//      ConstraintSolvingNodesChoice.includeNoneChoice(k, choices map (n => Some((graph, n.id)))))
     choices match {
       case s =>
-        val l = partitionByKind(graph)(s, List())
+        val l = partitionByKind(graph, s)
 
         val cs  = l.map {
           nel =>

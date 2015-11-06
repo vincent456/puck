@@ -256,7 +256,8 @@ class Solver
               rules.abstracter.createAbstraction(graph, currentImpl, absNodeKind, absPolicy) map {
                 case (abs, graph2) =>
                   findHostAfterAbsIntro(currentImpl.id, abs, ltg => k(ltg.map((abs, _))),
-                    rules.abstracter.absIntroPredicate(currentImpl, absPolicy, absNodeKind), graph2.set(log))
+                    rules.abstracter.absIntroPredicate(currentImpl, absPolicy, absNodeKind.kindType),
+                    graph2.set(log))
               }
               ()
             }

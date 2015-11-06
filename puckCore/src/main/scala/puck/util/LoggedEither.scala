@@ -2,7 +2,6 @@ package puck.util
 
 import scalaz._, Scalaz._
 
-
 case class LoggedEither[L, R](log : String, value : L\/R){
 
   def :++>(lg : String) : LoggedEither[L, R] = copy(log = log + lg)
@@ -73,6 +72,17 @@ case class Suspend[L, LL>:L, R, S]
 
 object LoggedEither {
 
+  def flatten[A](le : LoggedEither[Error, LoggedEither[Error, A]]): LoggedEither[Error, A] = le.value match {
+    case \/-(LoggedEither(log, v)) => LoggedEither(le.log + log, v)
+    case -\/(e) => LoggedEither(le.log, -\/(e))
+  }
+
+  //  def leLift[A,B](f : A => LoggedEither[Error, B]) : LoggedEither[Error, A => B] =
+  //  LoggedEither("",
+  //    \/-((a :A) =>
+  //      f(a))
+  //  )
+
 //  def apply[L, R](msg : String, v : L \/ R):LoggedEither[L,R] =
 //    Return(msg, v)
   def apply[L, R]( v : L \/ R):LoggedEither[L,R] =
@@ -121,7 +131,7 @@ object LoggedEither {
       case Right(a) => f(a, z)
     }*/
 
-    def cozip[A, B](a: LoggedEither[L, A \/ B]) =
+    def cozip[A, B](a: LoggedEither[L, A \/ B]) : LoggedEither[L, A ] \/ LoggedEither[L, B] =
       a match {
 
         case LoggedEither(log, -\/(l)) => -\/(LoggedEither(log, -\/(l)))

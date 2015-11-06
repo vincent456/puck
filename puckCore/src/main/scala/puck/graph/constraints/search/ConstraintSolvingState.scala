@@ -10,12 +10,12 @@ class ConstraintSolvingChoice[S]
 ( val k : Logged[S] => Unit,
   var remainingChoices : Set[S],
   var triedChoices : Set[S]
-  ) extends StateCreator[ResultT, ConstraintSolvingChoice[S]]{
+  ) extends StateCreator[DependencyGraph, ConstraintSolvingChoice[S]]{
 
   def createState(givenId : Int,
-                  previousState : Option[SearchState[ResultT]],
-                  currentResult : Logged[ResultT],
-                  choices : ConstraintSolvingChoice[S]) : SearchState[ResultT] =
+                  previousState : Option[SearchState[DependencyGraph]],
+                  currentResult : Logged[DependencyGraph],
+                  choices : ConstraintSolvingChoice[S]) : SearchState[DependencyGraph] =
     new ConstraintSolvingState[S]{
       val id = givenId
       val loggedResult = currentResult
@@ -25,7 +25,7 @@ class ConstraintSolvingChoice[S]
 }
 
 trait ConstraintSolvingState[S]
-  extends SearchState[ResultT]{
+  extends SearchState[DependencyGraph]{
 
   /*println("creating searchState "+ id)
   prevState match {
@@ -44,7 +44,7 @@ trait ConstraintSolvingState[S]
     })
   }
 
-  override def executeNextChoice(engine : SearchEngine[ResultT]) : Unit = {
+  override def executeNextChoice(engine : SearchEngine[DependencyGraph]) : Unit = {
     if(remainingChoices.nonEmpty){
 
       val c = remainingChoices.head

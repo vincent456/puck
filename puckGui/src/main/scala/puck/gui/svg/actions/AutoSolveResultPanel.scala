@@ -49,14 +49,14 @@ class GraphScrollPane(controller : SVGController) extends ScrollPane(){
 }
 
 
-case class ErrorSelected(state : ErrorState[ResultT]) extends Event
+case class ErrorSelected(state : ErrorState[DependencyGraph]) extends Event
 case class Log(msg : String) extends Event
 
 
 class AutosolveResultPanel
 ( violationTarget : ConcreteNode,
   controller : SVGController,
-  res : Search[ResultT]) extends SplitPane(Orientation.Horizontal) {
+  res : Search[DependencyGraph]) extends SplitPane(Orientation.Horizontal) {
 
   import controller.graph
 
@@ -88,7 +88,7 @@ class AutosolveResultPanel
 
   val initialVisibleSet = nodeVisibles(graph)
 
-  def selectedResult : Logged[ResultT] = activePanel.selectedResult
+  def selectedResult : Logged[DependencyGraph] = activePanel.selectedResult
 
   val successesTab = 0
   val failuresTab = 1
@@ -144,7 +144,7 @@ class AutosolveResultPanel
 
 
 trait ResultPanel {
-   def selectedResult : Logged[ResultT]
+   def selectedResult : Logged[DependencyGraph]
 }
 
 class DummyResultPanel(g : DependencyGraph) extends FlowPanel with ResultPanel {
@@ -153,14 +153,14 @@ class DummyResultPanel(g : DependencyGraph) extends FlowPanel with ResultPanel {
 
 class FailurePanel
 ( controller : SVGController,
-  res : Search[ResultT],
+  res : Search[DependencyGraph],
   nodeVisibles : DependencyGraph => VisibilitySet.T
   ) extends BorderPanel with ResultPanel {
 
   assert(res.failures.nonEmpty)
 
   val failureSelector =
-    new SortedElementSelector[ErrorState[ResultT]](res.failuresByDepth, ErrorSelected.apply)
+    new SortedElementSelector[ErrorState[DependencyGraph]](res.failuresByDepth, ErrorSelected.apply)
 
   def selectedResult = failureSelector.selectedState.prevState.loggedResult
 
@@ -186,7 +186,7 @@ class FailurePanel
 
 class SuccessPanel
 ( controller : SVGController,
-  res : Search[ResultT],
+  res : Search[DependencyGraph],
   nodeVisibles : DependencyGraph => VisibilitySet.T
   ) extends BorderPanel with ResultPanel {
 
@@ -197,7 +197,7 @@ class SuccessPanel
 //      res.successes.groupBy(st => (Metrics.weight(st.loggedResult.value, lightKind) * 100).toInt),
 //      StateSelected.apply)
 
-  val stateSelector = new SimpleElementSelector[SearchState[ResultT]](StateSelected.apply)
+  val stateSelector = new SimpleElementSelector[SearchState[DependencyGraph]](StateSelected.apply)
   stateSelector.setStatesList(res.successes)
 
 

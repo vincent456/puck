@@ -10,7 +10,7 @@ import scala.swing.{BoxPanel, Button, Label, Orientation}
 
 class StateComparator
 ( initialRecord :  Seq[Transformation],
-  sortedRes: Map[Int, Seq[SearchState[ResultT]]],
+  sortedRes: Map[Int, Seq[SearchState[DependencyGraph]]],
   printId : () => Boolean,
   printSig : () => Boolean,
   visibility : VisibilitySet.T)

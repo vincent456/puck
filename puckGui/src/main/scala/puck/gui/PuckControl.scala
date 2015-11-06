@@ -41,25 +41,25 @@ case class ExploreRequest
   extends ControlRequest
 
 case class SearchStateMapPrintingRequest
-(stateMap : Map[Int, Seq[SearchState[ResultT]]],
+(stateMap : Map[Int, Seq[SearchState[DependencyGraph]]],
  printId : Boolean,
  printSignature : Boolean,
  visibility : VisibilitySet.T)
   extends ControlRequest
 case class SearchStateSeqPrintingRequest
 (subDir : String,
- states : Seq[SearchState[ResultT]],
- sPrinter : Option[SearchState[ResultT] => String],
+ states : Seq[SearchState[DependencyGraph]],
+ sPrinter : Option[SearchState[DependencyGraph] => String],
  printId : Boolean,
  printSignature : Boolean,
  visibility : VisibilitySet.T)
   extends ControlRequest
 
 case class PrintConstraintRequest() extends ControlRequest
-case class ApplyOnCodeRequest(searchResult : ResultT) extends ControlRequest
+case class ApplyOnCodeRequest(searchResult : DependencyGraph) extends ControlRequest
 
 sealed abstract class Answer extends Event
-case class ExplorationFinished(result : Search[ResultT]) extends Answer
+case class ExplorationFinished(result : Search[DependencyGraph]) extends Answer
 
 
 class PuckControl(logger0 : PuckLogger,
@@ -111,7 +111,7 @@ class PuckControl(logger0 : PuckLogger,
 
   def explore (trace : Boolean = false,
                builder : ConstraintSolvingSearchEngineBuilder,
-               automaticConstraintLoosening: Boolean) : Search[ResultT] = {
+               automaticConstraintLoosening: Boolean) : Search[DependencyGraph] = {
 
     val engine = builder(dg2AST.initialGraph, automaticConstraintLoosening)
 
@@ -164,7 +164,7 @@ class PuckControl(logger0 : PuckLogger,
     }
   }
 
-  def applyOnCode(record : ResultT) : Unit = {
+  def applyOnCode(record : DependencyGraph) : Unit = {
     Future {
       logger.write("generating code ...")
       dg2AST(record)
@@ -176,7 +176,7 @@ class PuckControl(logger0 : PuckLogger,
     }
   }
 
-  type StateT = SearchState[ResultT]
+  type StateT = SearchState[DependencyGraph]
   def printStateSeq( subDirStr : String,
                      states : Seq[StateT],
                      sPrinter : Option[StateT => String],

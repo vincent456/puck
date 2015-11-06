@@ -7,34 +7,21 @@ import scala.collection.mutable
 class BreadthFirstSearchStrategy[T] extends SearchStrategy[T] {
 
 
-  val remainingStates = mutable.Stack[SearchState[T]]()
-
-  val depthPlusOneStates = mutable.Stack[SearchState[T]]()
+  val remainingStates = mutable.Queue[SearchState[T]]()
 
   def currentState = remainingStates.head
 
-  private def push(s : SearchState[T]) : Unit = {
-    val _ = depthPlusOneStates push s
-  }
-
-  def addState(s : SearchState[T]) : Unit = push(s)
+  def addState(s : SearchState[T]) : Unit =  remainingStates enqueue s
 
   def createState[S <: StateCreator[T, S]](currentResult : Logged[T], choices : S) : Unit =
-    this push remainingStates.head.createNextState[S](currentResult, choices)
+    remainingStates enqueue remainingStates.head.createNextState[S](currentResult, choices)
 
-  def canContinue : Boolean = remainingStates.nonEmpty || depthPlusOneStates.nonEmpty
+  def canContinue : Boolean = remainingStates.nonEmpty
 
-  def oneStep(se : SearchEngine[T]) : Unit = {
-
-    if(remainingStates.isEmpty) {
-      remainingStates pushAll depthPlusOneStates
-      depthPlusOneStates.clear()
-    }
-
-    if (remainingStates.head.triedAll) remainingStates.pop()
+  def oneStep(se : SearchEngine[T]) : Unit =
+    if (remainingStates.head.triedAll) remainingStates.dequeue()
     else remainingStates.head.executeNextChoice(se)
 
-  }
 
 }
 

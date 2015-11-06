@@ -1,6 +1,6 @@
 package puck.gui.search
 
-import puck.graph.ResultT
+import puck.graph.DependencyGraph
 import puck.graph.constraints.search.ConstraintSolvingStateEvaluator
 import puck.graph.io.VisibilitySet
 import puck.graph.transformations.Transformation
@@ -11,7 +11,7 @@ import scala.swing._
 
 class ResultPanel
 ( initialRecord : Seq[Transformation],
-  res : Search[ResultT],
+  res : Search[DependencyGraph],
   logger : PuckLogger,
   printId : () => Boolean,
   printSig: () => Boolean,
@@ -20,7 +20,7 @@ class ResultPanel
 
   implicit val defaultVerbosity : PuckLog.Verbosity = (PuckLog.NoSpecialContext, PuckLog.Info)
 
-  type ST = SearchState[ResultT]
+  type ST = SearchState[DependencyGraph]
 
   val evaluator = new ConstraintSolvingStateEvaluator(initialRecord)
 

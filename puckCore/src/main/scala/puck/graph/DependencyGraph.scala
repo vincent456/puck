@@ -317,7 +317,7 @@ class DependencyGraph
    * Read-only queries
    */
 
-  def nodeKinds : Seq[NodeKind] = nodeKindKnowledge.nodeKinds
+  def nodeKinds : List[NodeKind] = nodeKindKnowledge.nodeKinds
 
   def container(contentId : NodeId) : Option[NodeId] =
     edges.containers.get(contentId)
@@ -538,7 +538,6 @@ class DependencyGraph
 
   def printConstraints[V](logger : Logger[V], v : V) : Unit =
     constraints.printConstraints(this, logger, v)
-
 
   def subTree(root : NodeId, includeRoot : Boolean = true) : Seq[NodeId] = {
 

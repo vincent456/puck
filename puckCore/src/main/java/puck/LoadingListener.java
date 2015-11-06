@@ -1,5 +1,5 @@
 package puck;
 
 public interface LoadingListener {
-    public void update(double loading);
+    void update(double loading);
 }

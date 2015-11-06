@@ -187,7 +187,7 @@ class FilesHandler
   }
 
   def printCSSearchStatesGraph
-  ( states : Map[Int, Seq[SearchState[ResultT]]],
+  ( states : Map[Int, Seq[SearchState[DependencyGraph]]],
     dotHelper : DotHelper,
     visibility : VisibilitySet.T,
     printId : Boolean,
@@ -204,17 +204,17 @@ class FilesHandler
 
   def printCSSearchStatesGraph
   ( dir : File,
-    states : Seq[SearchState[ResultT]],
+    states : Seq[SearchState[DependencyGraph]],
     dotHelper : DotHelper,
     visibility : VisibilitySet.T,
-    sPrinter : Option[(SearchState[ResultT] => String)],
+    sPrinter : Option[(SearchState[DependencyGraph] => String)],
     printId : Boolean,
     printSignature : Boolean) : Unit = {
 
     val printer = sPrinter match {
       case Some(p) => p
       case None =>
-        s : SearchState[ResultT] => s.uuid()
+        s : SearchState[DependencyGraph] => s.uuid()
     }
 
     states.foreach { s =>

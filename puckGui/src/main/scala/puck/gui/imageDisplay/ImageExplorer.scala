@@ -22,7 +22,7 @@ class ImageExplorer
 ( val filesHandler : FilesHandler,
   dotHelper : DotHelper,
   val logger : PuckLogger,
-  val states : IndexedSeq[SearchState[ResultT]],
+  val states : IndexedSeq[SearchState[DependencyGraph]],
   visibility : VisibilitySet.T,
   printId : Boolean,
   printSignature : Boolean) extends Frame{

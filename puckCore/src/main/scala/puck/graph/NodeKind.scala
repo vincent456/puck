@@ -75,7 +75,7 @@ trait NodeKindKnowledge {
 
   def rootKind : NodeKind
 
-  def nodeKinds : Seq[NodeKind]
+  def nodeKinds : List[NodeKind]
 
   def lightKind : NodeKind
 

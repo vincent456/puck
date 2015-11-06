@@ -1,17 +1,17 @@
 package puck.graph.constraints.search
 
 import puck.graph.constraints.search.CSInitialSearchState.Starter
-import puck.graph.{ConcreteNode, ResultT, LoggedTry, DependencyGraph}
+import puck.graph.{ConcreteNode, DependencyGraph, LoggedTry, DependencyGraph}
 import puck.graph.constraints.Solver
 import puck.search.{SearchEngine, SearchState}, SearchEngine.InitialStateFactory
 
 import scalaz._, Scalaz._
 
 object CSInitialSearchState {
-  type Starter = (Solver, DependencyGraph, LoggedTry[ResultT] => Unit) => Unit
+  type Starter = (Solver, DependencyGraph, LoggedTry[DependencyGraph] => Unit) => Unit
 
   type CSInitialStateFactory =
-    (Solver, DependencyGraph) => InitialStateFactory[ResultT]
+    (Solver, DependencyGraph) => InitialStateFactory[DependencyGraph]
 
   val default : Starter =
     (solver, graph, k) => solver.solve(graph, k)
@@ -32,17 +32,17 @@ object CSInitialSearchState {
 
 class CSInitialSearchState(solver : Solver,
                            graph : DependencyGraph,
-                           k : LoggedTry[ResultT] => Unit,
+                           k : LoggedTry[DependencyGraph] => Unit,
                            starter : Starter)
-  extends SearchState[ResultT]{
+  extends SearchState[DependencyGraph]{
 
   val id: Int = 0
-  val prevState: Option[SearchState[ResultT]] = None
+  val prevState: Option[SearchState[DependencyGraph]] = None
   val loggedResult = graph.set("")
   var executedOnce = false
   override def triedAll = executedOnce
 
-  override def executeNextChoice(engine : SearchEngine[ResultT]) : Unit = {
+  override def executeNextChoice(engine : SearchEngine[DependencyGraph]) : Unit = {
     starter(solver, graph, k)
     executedOnce = true
   }

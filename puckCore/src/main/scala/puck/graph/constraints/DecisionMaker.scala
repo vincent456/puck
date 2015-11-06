@@ -42,8 +42,4 @@ trait DecisionMaker{
   ( g : LoggedG)
   ( k : Logged[CreateVarStrategy] => Unit) : Unit
 
-/*  def modifyConstraints(graph : GraphT,
-                        sources : NodeSet[Kind],
-                        target : NodeType) : GraphT*/
-
 }

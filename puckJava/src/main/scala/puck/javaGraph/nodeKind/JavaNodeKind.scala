@@ -91,7 +91,7 @@ object JavaNodeKind extends NodeKindKnowledge {
 
 
 
-  val nodeKinds = Seq[NodeKind](JavaRoot, Package, Interface,
+  val nodeKinds = List[NodeKind](JavaRoot, Package, Interface,
     Class, Constructor, Method, /*ConstructorMethod,*/
     Field, AbstractMethod, Literal, Primitive)
 

@@ -20,7 +20,7 @@ class AutoSolveAction
   controller : SVGController)
   extends AbstractAction("Solve (auto choices, choose result)") {
 
-  private def dialog(res : Search[ResultT]) : Option[Logged[ResultT]] = {
+  private def dialog(res : Search[DependencyGraph]) : Option[Logged[DependencyGraph]] = {
     val title = "Auto solve"
 
     val confirm : JComponent => Result.Value =
@@ -50,7 +50,7 @@ class AutoSolveAction
   override def actionPerformed(e: ActionEvent): Unit = {
     val builder = new ConstraintSolvingSearchEngineBuilder(
         controller.graphUtils,
-        new DepthFirstSearchStrategy[ResultT],
+        new DepthFirstSearchStrategy[DependencyGraph],
         CSInitialSearchState.targetedInitialState(violationTarget))
     val engine = builder.apply(graph.mileStone, automaticConstraintLoosening = false)
     engine.explore()

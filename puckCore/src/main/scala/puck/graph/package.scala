@@ -78,10 +78,4 @@ package object graph {
   val isMutable = true
   val notMutable = false
 
-  type ResultT = DependencyGraph
-
-  def graphOfResult(result : ResultT) : DependencyGraph = result
-
-  def recordOfResult(result : ResultT) : Recording = graphOfResult(result).recording
-
 }

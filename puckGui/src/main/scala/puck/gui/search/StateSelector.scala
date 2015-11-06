@@ -9,7 +9,7 @@ import scala.swing._
 import scala.swing.event.{Event, SelectionChanged}
 
 
-case class StateSelected(state : SearchState[ResultT]) extends Event
+case class StateSelected(state : SearchState[DependencyGraph]) extends Event
 
 class SimpleElementSelector[T]
  ( evtGen : T => Event)
@@ -70,11 +70,11 @@ class SortedElementSelector[T]
 }
 
 class StateSelector
-( map : Map[Int, Seq[SearchState[ResultT]]],
+( map : Map[Int, Seq[SearchState[DependencyGraph]]],
   printId : () => Boolean,
   printSig: () => Boolean,
   visibility : VisibilitySet.T)
-  extends  SortedElementSelector[SearchState[ResultT]](map, StateSelected.apply) {
+  extends  SortedElementSelector[SearchState[DependencyGraph]](map, StateSelected.apply) {
 
 
   val secondLine = new FlowPanel()
@@ -93,7 +93,7 @@ class StateSelector
     action = new Action("Show"){
       def apply() : Unit = {
 
-        val state: SearchState[ResultT] = selectedState
+        val state: SearchState[DependencyGraph] = selectedState
         var id = -1
 
         StateSelector.this publish SearchStateSeqPrintingRequest(state.uuid()+"history",
@@ -107,7 +107,7 @@ class StateSelector
   secondLine.contents += new Button(""){
     action = new Action("Constraint"){
       def apply() : Unit =  {
-        val state: SearchState[ResultT] = selectedState
+        val state: SearchState[DependencyGraph] = selectedState
         StateSelector.this publish ConstraintDisplayRequest(graphOfResult(state.loggedResult.value))
       }
     }

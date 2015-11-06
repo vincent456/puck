@@ -14,9 +14,9 @@ abstract class Abstract {
 
   def absIntroPredicate(impl : DGNode,
                         absPolicy : AbstractionPolicy,
-                        absKind : NodeKind) : NodePredicateT =
+                        absKindType : KindType) : NodePredicateT =
 
-    (absKind.kindType, absPolicy) match {
+    (absKindType, absPolicy) match {
       case (InstanceValueDecl, SupertypeAbstraction) =>
         (graph, potentialHost) => {
           val typeDecl = graph.container(impl.id).get
