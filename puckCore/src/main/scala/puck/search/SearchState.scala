@@ -1,40 +1,54 @@
-/*
 package puck.search
 
-
-import puck.PuckError
-import puck.util.Logged
-import puck.util.{HasChildren, BreadthFirstTreeIterator}
+import puck.graph.{Error, LoggedTry, error}
+import puck.util.{BreadthFirstTreeIterator, HasChildren, Logged}
 
 import scala.collection.mutable
+import scalaz.{-\/, \/-}
 
 class SearchStateIterator[R]
 ( val root : SearchState[R]
   ) extends BreadthFirstTreeIterator[SearchState[R]]
 
-trait StateCreator[Result, Internal]{
-  def createState(id : Int,
-                  prevState : Option[SearchState[Result]],
-                  currentResult : Logged[Result],
-                  choices : Internal) : SearchState[Result]
-}
+class SearchState[T]
+( val id : Int,
+  val prevState : Option[SearchState[T]],
+  val loggedResult : LoggedTry[T],
+  val choices : Seq[LoggedTry[T]]
+ )extends HasChildren[SearchState[T]]{
 
 
+  import scalaz.syntax.writer._
 
-trait SearchState[T]
-  extends HasChildren[SearchState[T]]{
+  def success : Logged[T] = loggedResult.value match {
+      case \/-(res) => res set loggedResult.log
+      case -\/(err) => error("state contains a failed result : " + err.getMessage)
+  }
 
-  val loggedResult : Logged[T]
+  def fail : Logged[Error] = loggedResult.value match {
+    case -\/(err) => err set loggedResult.log
+    case _ => error("state contains a success")
+  }
 
-  def createNextState[S <: StateCreator[T, S]](cr : Logged[T], choices : S) : SearchState[T] = {
-    val s = choices.createState(this.nextChildId(), Some(this), cr, choices)
+
+  def createNextState(cr : LoggedTry[T], choices : Seq[LoggedTry[T]]) : SearchState[T] = {
+    val s = new SearchState(this.nextChildId(), Some(this), cr, choices)
     this.nextStates += s
     s
   }
 
 
-  val id : Int
-  val prevState : Option[SearchState[T]]
+  private [this] var _nextChoice : Seq[LoggedTry[T]] = choices
+
+  def nextChoice : Option[LoggedTry[T]] =
+    if(triedAll) None
+    else {
+      val n = _nextChoice.head
+      _nextChoice = _nextChoice.tail
+      Some(n)
+    }
+
+  def triedAll : Boolean = _nextChoice.isEmpty
 
   private def uuid0 : Seq[Int] = {
     prevState match{
@@ -109,24 +123,5 @@ trait SearchState[T]
     cid
   }
 
-  def triedAll : Boolean
-
-  def executeNextChoice(engine : SearchEngine[T]) : Unit
 
 }
-
-class ErrorState[T]
-( val id: Int,
-  val result : Logged[PuckError],
-  val prevState: SearchState[T]){
-  def depth = prevState.depth + 1
-}
-
-class FinalState[T]
-(val id: Int,
- val loggedResult : Logged[T],
- val prevState: Option[SearchState[T]])
-  extends SearchState[T]{
-  override def triedAll: Boolean = true
-  override def executeNextChoice(engine: SearchEngine[T]): Unit = ()
-}*/

@@ -1,9 +1,10 @@
 package puck.gui.search
 
+import puck.graph.constraints.search.ConstraintSolvingStateEvaluator
 import puck.graph.{SResult, DependencyGraph}
 import puck.graph.io.VisibilitySet
 import puck.graph.transformations.Transformation
-import puck.searchNew.{Search, SearchState,ConstraintSolvingStateEvaluator}
+import puck.search.{SearchState, Search}
 import puck.util.{PuckLog, PuckLogger}
 
 import scala.swing._

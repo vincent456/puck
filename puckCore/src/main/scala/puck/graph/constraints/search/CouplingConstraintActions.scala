@@ -1,15 +1,16 @@
-package puck
-package searchNew
+package puck.graph.constraints.search
 
+import puck.graph.ShowDG._
 import puck.graph._
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations.TransformationRules
-import puck.graph.transformations.rules.{CreateTypeMember, CreateParameter, CreateVarStrategy}
+import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, CreateVarStrategy}
+import puck.search.{SearchState, SearchStrategy}
 import puck.util.LoggedEither._
-import scalaz.{-\/, \/-, \/, NonEmptyList}
-import scalaz.syntax.foldable._
+
 import scalaz.std.list._
-import ShowDG._
+import scalaz.syntax.foldable._
+import scalaz.{-\/, NonEmptyList, \/, \/-}
 
 class SearchStrategyDecorator[T]
 (val strategy : SearchStrategy[T])
@@ -26,6 +27,7 @@ class SearchStrategyDecorator[T]
   override def canContinue: Mutability = strategy.canContinue
 
   override def currentState: SearchState[T] = strategy.currentState
+
   override def oneStep: Option[(LoggedTry[T], Seq[LoggedTry[T]])] = strategy.oneStep
 }
 
@@ -45,15 +47,17 @@ class CouplingConstraintSolvingControl
      s._1 map ( _ map ((_, s._2)))
 
 
+
+
   def nextStates(g : DependencyGraph, state : Int) : Seq[LoggedTry[(DependencyGraph, Int)]] =
     state match {
-      case 0 => (moveAction(g) ++ hostIntroAction(g), 1)
+      case 0 => (epsilon(g) ++ hostIntroAction(g), 1)
 
-//      case 1 => (moveAction(g), 2)
-//
-//      case 2 => (absIntro(g) ++ redirectTowardAbstractions(g), 3)
-//
-//      case 3 => (redirectTowardAbstractions(g), 4)
+      case 1 => (moveAction(g), 2)
+
+      case 2 => (epsilon(g) ++ absIntro(g), 3)
+
+      case 3 => (redirectTowardAbstractions(g), 4)
 
       case _ => Seq()
 
@@ -72,6 +76,9 @@ class CouplingConstraintSolvingControl
   val actionsGenerator = new SolvingActions(rules)
 
   def extractGraph[A](ng : (A, DependencyGraph)): DependencyGraph = ng._2
+
+  val epsilon : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
+        g => Seq(LoggedSuccess("Epsilon transition", g))
 
   val hostIntroAction : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
        actionsGenerator.hostIntro(violationTarget) andThen (_ map ( ng => LoggedSuccess(ng._2) ) )

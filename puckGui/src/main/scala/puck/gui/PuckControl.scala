@@ -9,7 +9,7 @@ import puck.graph.io._
 import puck.gui.explorer.{SetTopLevelVisible, AccessGraphModified}
 import puck.gui.imageDisplay.ImageFrame
 import puck.gui.svg.SVGFrame
-import puck.searchNew.Search
+import puck.search.Search
 import puck.util.{PuckLogger, PuckLog}
 
 import scala.collection.mutable.ArrayBuffer

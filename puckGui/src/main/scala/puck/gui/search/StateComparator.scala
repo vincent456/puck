@@ -3,7 +3,7 @@ package puck.gui.search
 import puck.graph._
 import puck.graph.io.VisibilitySet
 import puck.graph.transformations.Transformation
-import puck.searchNew.SearchState
+import puck.search.SearchState
 import puck.util.PuckFileLogger
 
 import scala.swing.{BoxPanel, Button, Label, Orientation}

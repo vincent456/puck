@@ -3,7 +3,7 @@ package puck.gui.search
 import puck.graph._
 import puck.graph.io.VisibilitySet
 import puck.gui.{ConstraintDisplayRequest, ApplyOnCodeRequest}
-import puck.searchNew.SearchState
+import puck.search.SearchState
 
 import scala.swing._
 import scala.swing.event.{Event, SelectionChanged}

@@ -4,8 +4,9 @@ import java.awt.event.ActionEvent
 import javax.swing.{JComponent, AbstractAction}
 
 import puck.graph._
+import puck.graph.constraints.search.CouplingConstraintSolvingControl
 import puck.gui.svg.SVGController
-import puck.searchNew.{SearchEngine, CouplingConstraintSolvingControl, DepthFirstSearchStrategy, Search}
+import puck.search.{Search, SearchEngine, DepthFirstSearchStrategy}
 import puck.util.Logged
 
 import scala.swing._

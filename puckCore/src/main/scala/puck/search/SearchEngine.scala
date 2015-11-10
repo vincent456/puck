@@ -1,20 +1,19 @@
-/*
 package puck.search
 
+import puck._
 import puck.graph.LoggedTry
-import puck.util.Logged
 
 import scala.collection.mutable
-import scalaz._, Scalaz._
+import scalaz.{-\/, \/-}
 
 trait Search[Result]{
   def initialState : SearchState[Result]
-  def successes : Seq[FinalState[Result]]
-  def failures : Seq[ErrorState[Result]]
+  def successes : Seq[SearchState[Result]]
+  def failures : Seq[SearchState[Result]]
   def exploredStates : Int
 
-  def failuresByDepth : Map[Int, Seq[ErrorState[Result]]] =
-    failures.foldLeft(Map[Int, Seq[ErrorState[Result]]]()){
+  def failuresByDepth : Map[Int, Seq[SearchState[Result]]] =
+    failures.foldLeft(Map[Int, Seq[SearchState[Result]]]()){
       (m, state) =>
         val seq = m.getOrElse(state.depth, Seq())
         m + (state.depth -> (state +: seq))
@@ -28,18 +27,15 @@ trait Search[Result]{
     }
 }
 
-object SearchEngine {
-  type InitialStateFactory[T] = (LoggedTry[T] => Unit) => SearchState[T]
-}
-import SearchEngine._
+
 class SearchEngine[T]
-( val createInitialState : InitialStateFactory[T],
+( val initialState : SearchState[T],
   val searchStrategy: SearchStrategy[T],
   val maxResult : Option[Int] = None // default = all result
   ) extends Search[T] {
 
-  val successes = mutable.ListBuffer[FinalState[T]]()
-  val failures = mutable.ListBuffer[ErrorState[T]]()
+  val successes = mutable.ListBuffer[SearchState[T]]()
+  val failures = mutable.ListBuffer[SearchState[T]]()
 
   val enoughSuccess : () => Boolean =
     maxResult match {
@@ -50,39 +46,39 @@ class SearchEngine[T]
   private [this] var idSeed : Int = 0
   private def idGen() : Int = {idSeed += 1; idSeed}
 
-  def storeResult(prevState : SearchState[T], res : LoggedTry[T]): Unit = {
-    val log = res.log
-    res.value match {
+  def storeResult(res : LoggedTry[T]): Unit = {
+    val prevState = searchStrategy.currentState
+    ignore(res.value match {
       case -\/(err) =>
-        failures += new ErrorState[T](idGen(), err.set(log), prevState)
-      case \/-(g) =>
-        val fs = new FinalState[T](idGen(), g.set(log), Some(prevState))
-        successes += fs
-        prevState.nextStates += fs
-    }
+        failures += prevState.createNextState(res, Seq())
 
-    numExploredStates = numExploredStates + 1
+      case \/-(g) =>
+        successes += prevState.createNextState(res, Seq())
+    })
+
   }
 
-  var initialState : SearchState[T] = _
   protected var numExploredStates = 0
 
-  def addState[S <: StateCreator[T, S]](cr : Logged[T], choices : S)  = {
-    numExploredStates = numExploredStates + 1
-    searchStrategy.createState(cr, choices)
-  }
+  def addState(cr : LoggedTry[T], choices : Seq[LoggedTry[T]]) :Unit =
+    if(choices.isEmpty) storeResult(cr)
+    else{
+      numExploredStates = numExploredStates + 1
+      searchStrategy.addState(cr, choices)
+    }
 
-  def init(k : LoggedTry[T] => Unit) : Unit = {
-    initialState = createInitialState(k)
-    searchStrategy.addState(initialState)
-    numExploredStates = 1
-  }
+  def init() : Unit = ()
 
   def exploredStates = numExploredStates
 
   def explore() : Unit = {
-    init(storeResult(searchStrategy.currentState, _))
-    do searchStrategy.oneStep(this)
+
+    searchStrategy.addState(initialState)
+    numExploredStates = 1
+
+    do searchStrategy.oneStep foreach {
+      case (res, choices) => addState(res, choices)
+    }
     while(searchStrategy.canContinue && !enoughSuccess())
   }
 
@@ -90,14 +86,14 @@ class SearchEngine[T]
 }
 
 trait SearchStrategy[T] {
-  def currentState : SearchState[T]
   def addState(s : SearchState[T]) : Unit
-  def createState[S <: StateCreator[T, S]](currentResult : Logged[T], choices : S) : Unit
+  def addState(currentResult : LoggedTry[T], choices : Seq[LoggedTry[T]]) : Unit
   def canContinue : Boolean
-  def oneStep(se : SearchEngine[T]) : Unit
+  def currentState : SearchState[T]
+  def nextState: SearchState[T]
+  def oneStep : Option[(LoggedTry[T], Seq[LoggedTry[T]])]
 }
 
 
 
 
-*/

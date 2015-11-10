@@ -8,7 +8,7 @@ import VisibilitySet._
 import puck.gui.PuckConsolePanel
 import puck.gui.search.{StateSelected, SimpleElementSelector, SortedElementSelector}
 import puck.gui.svg.{PUCKSVGCanvas, SVGController}
-import puck.searchNew.{SearchState, Search}
+import puck.search.{SearchState, Search}
 import puck.util._
 
 import scala.swing.BorderPanel.Position
