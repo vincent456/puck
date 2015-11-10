@@ -1,9 +1,7 @@
-/*
 package puck
 package search
 
-import puck.util._
-
+import puck.graph.LoggedTry
 import scala.collection.mutable
 
 class BreadthFirstSearchStrategy[T] extends SearchStrategy[T] {
@@ -15,33 +13,19 @@ class BreadthFirstSearchStrategy[T] extends SearchStrategy[T] {
 
   def addState(s : SearchState[T]) : Unit =  remainingStates enqueue s
 
-  def createState[S <: StateCreator[T, S]](currentResult : Logged[T], choices : S) : Unit =
-    remainingStates enqueue remainingStates.head.createNextState[S](currentResult, choices)
+  def addState(currentResult : LoggedTry[T], choices : Seq[LoggedTry[T]]) : Unit =
+    remainingStates enqueue currentState.createNextState(currentResult, choices)
 
-  def canContinue : Boolean = remainingStates.nonEmpty
+  def canContinue : Boolean =
+    !remainingStates.head.triedAll || remainingStates.tail.nonEmpty
 
-  def oneStep(se : SearchEngine[T]) : Unit =
-    if (remainingStates.head.triedAll) ignore(remainingStates.dequeue())
-    else remainingStates.head.executeNextChoice(se)
+  def nextState : SearchState[T] = {
+    if (remainingStates.head.triedAll) remainingStates.dequeue()
+    remainingStates.head
+  }
+
+  def oneStep : Option[( LoggedTry[T], Seq[LoggedTry[T]])] =
+    nextState.nextChoice map ((_, Seq()))
 
 
 }
-
-//val stateStack =
-//
-//def head : SearchState[T] = stateStack.head
-//
-//def removeHead() : Unit ={
-//val _ = stateStack.pop()
-//}
-//def removeAll() : Unit = stateStack.clear()
-//
-//def add( ss : SearchState[T]) : Unit ={
-//val _ = stateStack.push(ss)
-//}
-//def addAll(sss : TraversableOnce[SearchState[T]]) : Unit = {
-//val _ = stateStack pushAll sss
-//}
-//
-//def isEmpty : Boolean = stateStack.isEmpty
-//def nonEmpty : Boolean = !isEmpty*/

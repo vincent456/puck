@@ -1,7 +1,6 @@
 package puck.search
 
 import puck.graph.LoggedTry
-
 import scala.collection.mutable
 
 class DepthFirstSearchStrategy[T] extends SearchStrategy[T] {

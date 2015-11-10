@@ -5,31 +5,14 @@ import puck.graph._
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations.TransformationRules
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, CreateVarStrategy}
-import puck.search.{SearchState, SearchStrategy}
+import puck.search.{SearchStrategyDecorator, SearchState, SearchStrategy}
 import puck.util.LoggedEither._
 
 import scalaz.std.list._
 import scalaz.syntax.foldable._
 import scalaz.{-\/, NonEmptyList, \/, \/-}
 
-class SearchStrategyDecorator[T]
-(val strategy : SearchStrategy[T])
-  extends SearchStrategy[T] {
-  override def addState(s: SearchState[T]): Unit =
-    strategy.addState(s)
 
-  override def addState(currentResult: LoggedTry[T],
-                        choices: Seq[LoggedTry[T]]): Unit =
-    strategy.addState(currentResult, choices)
-
-  override def nextState: SearchState[T] = strategy.nextState
-
-  override def canContinue: Mutability = strategy.canContinue
-
-  override def currentState: SearchState[T] = strategy.currentState
-
-  override def oneStep: Option[(LoggedTry[T], Seq[LoggedTry[T]])] = strategy.oneStep
-}
 
 
 class CouplingConstraintSolvingControl
@@ -41,7 +24,7 @@ class CouplingConstraintSolvingControl
 
 
   def initialState : SearchState[(DependencyGraph, Int)] =
-    new SearchState(0, None, LoggedSuccess((initialGraph,0)), nextStates(initialGraph,0))
+    new SearchState(0, None, LoggedSuccess((initialGraph, 0)), nextStates(initialGraph,0))
 
   implicit def setState( s : (Seq[LoggedTry[DependencyGraph]], Int) ) : Seq[LoggedTry[(DependencyGraph, Int)]] =
      s._1 map ( _ map ((_, s._2)))
