@@ -1,3 +1,4 @@
+/*
 package puck.search
 
 
@@ -128,4 +129,4 @@ class FinalState[T]
   extends SearchState[T]{
   override def triedAll: Boolean = true
   override def executeNextChoice(engine: SearchEngine[T]): Unit = ()
-}
+}*/

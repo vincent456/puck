@@ -1,17 +1,16 @@
 package puck.gui.search
 
-import puck.graph.DependencyGraph
-import puck.graph.constraints.search.ConstraintSolvingStateEvaluator
+import puck.graph.{SResult, DependencyGraph}
 import puck.graph.io.VisibilitySet
 import puck.graph.transformations.Transformation
-import puck.search.{Search, SearchState}
+import puck.searchNew.{Search, SearchState,ConstraintSolvingStateEvaluator}
 import puck.util.{PuckLog, PuckLogger}
 
 import scala.swing._
 
 class ResultPanel
 ( initialRecord : Seq[Transformation],
-  res : Search[DependencyGraph],
+  res : Search[SResult],
   logger : PuckLogger,
   printId : () => Boolean,
   printSig: () => Boolean,

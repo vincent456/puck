@@ -7,8 +7,8 @@ import com.intellij.openapi.module.Module
 import com.intellij.psi._
 import com.intellij.psi.search.FileTypeIndex
 import puck.graph.io.DG2AST
-import puck.graph.transformations.NodeMappingInitialState
 import puck.graph._
+import puck.graph.transformations.NodeMappingInitialState
 import puck.javaGraph.JavaGraphBuilder
 import puck.javaGraph.nodeKind.JavaNodeKind
 import scala.collection.JavaConversions._

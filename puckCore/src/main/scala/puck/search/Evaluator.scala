@@ -1,5 +1,7 @@
 package puck.search
 
+import puck.searchNew.SearchState
+
 /**
  * Created by lorilan on 30/10/15.
  */

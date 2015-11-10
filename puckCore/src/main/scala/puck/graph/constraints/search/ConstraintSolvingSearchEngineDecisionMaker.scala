@@ -1,3 +1,4 @@
+/*
 package puck.graph.constraints.search
 
 import puck.graph._
@@ -13,7 +14,7 @@ class ConstraintSolvingSearchEngineDecisionMaker
 ( val violationsKindPriority : Seq[NodeKind] )
   extends DecisionMaker {
 
-  var searchEngine : SearchEngine[DependencyGraph] = _
+  var searchEngine : SearchEngine[SResult] = _
 
 
   /*def violationTarget(graph : GraphT)
@@ -170,3 +171,4 @@ class ConstraintSolvingSearchEngineDecisionMaker
   }
 
 }
+*/

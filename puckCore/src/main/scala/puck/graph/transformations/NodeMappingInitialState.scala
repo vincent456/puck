@@ -1,10 +1,11 @@
 package puck.graph
 package transformations
 
-import MappingChoices.{ResMap, NodesToMap}
+import puck.util.{PuckLog, PuckLogger}
+/*import MappingChoices.{ResMap, NodesToMap}
 
 import puck.search.{SearchEngine, SearchState}
-import puck.util.{PuckLog, PuckLogger}
+
 
 import scala.collection.immutable.HashSet
 import scalaz._, Scalaz._
@@ -21,7 +22,7 @@ object NodeTransfoStatus {
 sealed abstract class NodeTransfoStatus
 case object Created extends NodeTransfoStatus
 case object Deleted extends NodeTransfoStatus
-case object Neuter extends NodeTransfoStatus
+case object Neuter extends NodeTransfoStatus*/
 
 object NodeMappingInitialState{
 
@@ -56,7 +57,7 @@ object NodeMappingInitialState{
     (map, rl.reverse)
   }
 
-  def switchNodes[Kind <: NodeKind, T]
+/*  def switchNodes[Kind <: NodeKind, T]
           (nodeStatusesMap : Map[NodeId, (Int, Kind)], init : T)
           (add : (T, (NodeId, NodeKind)) => T) : (Int, T, Seq[NodeId], Set[NodeId]) = {
     nodeStatusesMap.foldLeft[(Int, T, Seq[NodeId], Set[NodeId])](0, init, List(), HashSet()) {
@@ -67,10 +68,12 @@ object NodeMappingInitialState{
           case Neuter => (cpt, addAcc, rmAcc, neuterAcc + node)
         }
     }
-  }
+  }*/
 
   implicit val defaultVerbosity = (PuckLog.NoSpecialContext, PuckLog.Debug)
 }
+/*
+
 import NodeMappingInitialState._
 
 class NodeMappingInitialState
@@ -232,9 +235,9 @@ class NodeMappingInitialState
         k(LoggedError(NoSolution))
       else
         engine.compare(filteredTransfos1, filteredTransfos2, initialMapping, nodesToMap, k)
-      /*eng.compare(filteredTransfos1, filteredTransfos2,
-        neuterNodes.foldLeft(initialMapping){ (m, n) => m + (n -> None) },
-        nodesToMap ++ otherNeuterNodes)*/
+      //eng.compare(filteredTransfos1, filteredTransfos2,
+      //neuterNodes.foldLeft(initialMapping){ (m, n) => m + (n -> None) },
+      //nodesToMap ++ otherNeuterNodes)
       //eng.compare(remainingTransfos1, remainingTransfos2, initialMapping, nodesToMap)
 
     }
@@ -242,6 +245,5 @@ class NodeMappingInitialState
 
   }
 }
-
-
+*/
 

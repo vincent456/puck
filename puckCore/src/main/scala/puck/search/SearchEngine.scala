@@ -1,3 +1,4 @@
+/*
 package puck.search
 
 import puck.graph.LoggedTry
@@ -99,3 +100,4 @@ trait SearchStrategy[T] {
 
 
 
+*/

@@ -1,4 +1,6 @@
-package puck.search
+/*
+package puck
+package search
 
 import puck.util._
 
@@ -19,7 +21,7 @@ class BreadthFirstSearchStrategy[T] extends SearchStrategy[T] {
   def canContinue : Boolean = remainingStates.nonEmpty
 
   def oneStep(se : SearchEngine[T]) : Unit =
-    if (remainingStates.head.triedAll) remainingStates.dequeue()
+    if (remainingStates.head.triedAll) ignore(remainingStates.dequeue())
     else remainingStates.head.executeNextChoice(se)
 
 
@@ -42,4 +44,4 @@ class BreadthFirstSearchStrategy[T] extends SearchStrategy[T] {
 //}
 //
 //def isEmpty : Boolean = stateStack.isEmpty
-//def nonEmpty : Boolean = !isEmpty
+//def nonEmpty : Boolean = !isEmpty*/

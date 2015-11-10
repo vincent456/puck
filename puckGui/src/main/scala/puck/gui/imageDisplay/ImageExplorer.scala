@@ -1,3 +1,4 @@
+/*
 package puck.gui.imageDisplay
 
 import java.awt.Toolkit
@@ -104,3 +105,4 @@ class ImageExplorer
   }
 
 }
+*/

@@ -3,14 +3,13 @@ package puck.gui
 import java.io.{File, PipedInputStream, PipedOutputStream}
 
 import puck.LoadingListener
-import puck.graph.constraints.search.ConstraintSolvingSearchEngineBuilder
 import puck.graph._
 import puck.graph.io._
 
 import puck.gui.explorer.{SetTopLevelVisible, AccessGraphModified}
-import puck.gui.imageDisplay.{ImageFrame, ImageExplorer}
+import puck.gui.imageDisplay.ImageFrame
 import puck.gui.svg.SVGFrame
-import puck.search.{SearchState, Search}
+import puck.searchNew.Search
 import puck.util.{PuckLogger, PuckLog}
 
 import scala.collection.mutable.ArrayBuffer
@@ -36,30 +35,31 @@ case class GraphDisplayRequest
  extends ControlRequest
 
 case class ConstraintDisplayRequest(graph : DependencyGraph) extends ControlRequest
-case class ExploreRequest
-(builder : ConstraintSolvingSearchEngineBuilder)
-  extends ControlRequest
+//case class ExploreRequest
+//(builder : ConstraintSolvingSearchEngineBuilder)
+//  extends ControlRequest
 
-case class SearchStateMapPrintingRequest
-(stateMap : Map[Int, Seq[SearchState[DependencyGraph]]],
- printId : Boolean,
- printSignature : Boolean,
- visibility : VisibilitySet.T)
-  extends ControlRequest
-case class SearchStateSeqPrintingRequest
-(subDir : String,
- states : Seq[SearchState[DependencyGraph]],
- sPrinter : Option[SearchState[DependencyGraph] => String],
- printId : Boolean,
- printSignature : Boolean,
- visibility : VisibilitySet.T)
-  extends ControlRequest
+//case class SearchStateMapPrintingRequest
+//(stateMap : Map[Int, Seq[SearchState[SResult]]],
+// printId : Boolean,
+// printSignature : Boolean,
+// visibility : VisibilitySet.T)
+//  extends ControlRequest
+
+//case class SearchStateSeqPrintingRequest
+//(subDir : String,
+// states : Seq[SearchState[SResult]],
+// sPrinter : Option[SearchState[SResult] => String],
+// printId : Boolean,
+// printSignature : Boolean,
+// visibility : VisibilitySet.T)
+//  extends ControlRequest
 
 case class PrintConstraintRequest() extends ControlRequest
 case class ApplyOnCodeRequest(searchResult : DependencyGraph) extends ControlRequest
 
 sealed abstract class Answer extends Event
-case class ExplorationFinished(result : Search[DependencyGraph]) extends Answer
+case class ExplorationFinished(result : Search[SResult]) extends Answer
 
 
 class PuckControl(logger0 : PuckLogger,
@@ -109,18 +109,18 @@ class PuckControl(logger0 : PuckLogger,
   }
 
 
-  def explore (trace : Boolean = false,
-               builder : ConstraintSolvingSearchEngineBuilder,
-               automaticConstraintLoosening: Boolean) : Search[DependencyGraph] = {
-
-    val engine = builder(dg2AST.initialGraph, automaticConstraintLoosening)
-
-    puck.util.Time.time(logger, defaultVerbosity) {
-      engine.explore()
-    }
-
-    engine
-  }
+//  def explore (trace : Boolean = false,
+//               builder : ConstraintSolvingSearchEngineBuilder,
+//               automaticConstraintLoosening: Boolean) : Search[DependencyGraph] = {
+//
+//    val engine = builder(dg2AST.initialGraph, automaticConstraintLoosening)
+//
+//    puck.util.Time.time(logger, defaultVerbosity) {
+//      engine.explore()
+//    }
+//
+//    engine
+//  }
 
   def loadConstraints() : Unit = {
     try {
@@ -176,27 +176,27 @@ class PuckControl(logger0 : PuckLogger,
     }
   }
 
-  type StateT = SearchState[DependencyGraph]
-  def printStateSeq( subDirStr : String,
-                     states : Seq[StateT],
-                     sPrinter : Option[StateT => String],
-                     printId : Boolean,
-                     printSignature : Boolean,
-                     visibility : VisibilitySet.T): Unit ={
-    val d = filesHandler.graphFile("_results")
-    d.mkdir()
-    val subDir = filesHandler.graphFile("_results%c%s".format(File.separatorChar, subDirStr))
-    subDir.mkdir()
-    filesHandler.printCSSearchStatesGraph(subDir, states, graphUtils.dotHelper, visibility, sPrinter, printId, printSignature)
-  }
-
-  def showStateSeq(states : Seq[StateT],
-                   printId : Boolean,
-                   printSignature : Boolean,
-                   visibility : VisibilitySet.T): Unit = {
-    Future(new ImageExplorer(filesHandler, graphUtils.dotHelper, logger, states.toIndexedSeq, visibility, printId, printSignature))
-    ()
-  }
+//  type StateT = SearchState[DependencyGraph]
+//  def printStateSeq( subDirStr : String,
+//                     states : Seq[StateT],
+//                     sPrinter : Option[StateT => String],
+//                     printId : Boolean,
+//                     printSignature : Boolean,
+//                     visibility : VisibilitySet.T): Unit ={
+//    val d = filesHandler.graphFile("_results")
+//    d.mkdir()
+//    val subDir = filesHandler.graphFile("_results%c%s".format(File.separatorChar, subDirStr))
+//    subDir.mkdir()
+//    filesHandler.printCSSearchStatesGraph(subDir, states, graphUtils.dotHelper, visibility, sPrinter, printId, printSignature)
+//  }
+//
+//  def showStateSeq(states : Seq[StateT],
+//                   printId : Boolean,
+//                   printSignature : Boolean,
+//                   visibility : VisibilitySet.T): Unit = {
+//    Future(new ImageExplorer(filesHandler, graphUtils.dotHelper, logger, states.toIndexedSeq, visibility, printId, printSignature))
+//    ()
+//  }
 
   reactions += {
     case LoadCodeRequest() => loadCode(loadConstraints())
@@ -212,35 +212,35 @@ class PuckControl(logger0 : PuckLogger,
 
     case ApplyOnCodeRequest(searchResult) => applyOnCode(searchResult)
 
-    case ExploreRequest(builder) =>
+//    case ExploreRequest(builder) =>
+//
+//      val engine = builder(dg2AST.initialGraph,
+//                          automaticConstraintLoosening = true)
+//
+//      Future {
+//        logger.writeln("Solving constraints ...")
+//        puck.util.Time.time(logger, defaultVerbosity) {
+//          engine.explore()
+//        }
+//        engine
+//      } onComplete {
+//        case Success(res) =>
+//          logger.writeln("Solving done")
+//          publish(ExplorationFinished(res))
+//        case Failure(exc) =>
+//          logger.writeln("Solving failure")
+//          exc.printStackTrace()
+//          publish(ExplorationFinished(engine))
+//          //filesHandler.logger writeln exc.getStackTrace.mkString("\n")
+//      }
 
-      val engine = builder(dg2AST.initialGraph,
-                          automaticConstraintLoosening = true)
-
-      Future {
-        logger.writeln("Solving constraints ...")
-        puck.util.Time.time(logger, defaultVerbosity) {
-          engine.explore()
-        }
-        engine
-      } onComplete {
-        case Success(res) =>
-          logger.writeln("Solving done")
-          publish(ExplorationFinished(res))
-        case Failure(exc) =>
-          logger.writeln("Solving failure")
-          exc.printStackTrace()
-          publish(ExplorationFinished(engine))
-          //filesHandler.logger writeln exc.getStackTrace.mkString("\n")
-      }
-
-    case SearchStateMapPrintingRequest(stateMap, printId, printSignature, visibility) =>
-      filesHandler.printCSSearchStatesGraph(stateMap, graphUtils.dotHelper, visibility, printId, printSignature)
-
-    case SearchStateSeqPrintingRequest(subDir, states, sPrinter, printId, printSignature, visibility) =>
-     // printStateSeq(subDir, states, sPrinter, printId, printSignature)
-      logger.writeln("history request")
-      showStateSeq(states, printId, printSignature, visibility)
+//    case SearchStateMapPrintingRequest(stateMap, printId, printSignature, visibility) =>
+//      filesHandler.printCSSearchStatesGraph(stateMap, graphUtils.dotHelper, visibility, printId, printSignature)
+//
+//    case SearchStateSeqPrintingRequest(subDir, states, sPrinter, printId, printSignature, visibility) =>
+//     // printStateSeq(subDir, states, sPrinter, printId, printSignature)
+//      logger.writeln("history request")
+//      showStateSeq(states, printId, printSignature, visibility)
   }
 
 }

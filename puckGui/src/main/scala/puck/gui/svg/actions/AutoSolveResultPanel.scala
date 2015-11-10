@@ -8,7 +8,7 @@ import VisibilitySet._
 import puck.gui.PuckConsolePanel
 import puck.gui.search.{StateSelected, SimpleElementSelector, SortedElementSelector}
 import puck.gui.svg.{PUCKSVGCanvas, SVGController}
-import puck.search.{SearchState, ErrorState, Search}
+import puck.searchNew.{SearchState, Search}
 import puck.util._
 
 import scala.swing.BorderPanel.Position
@@ -49,14 +49,14 @@ class GraphScrollPane(controller : SVGController) extends ScrollPane(){
 }
 
 
-case class ErrorSelected(state : ErrorState[DependencyGraph]) extends Event
+case class ErrorSelected(state : SearchState[SResult]) extends Event
 case class Log(msg : String) extends Event
 
 
 class AutosolveResultPanel
 ( violationTarget : ConcreteNode,
   controller : SVGController,
-  res : Search[DependencyGraph]) extends SplitPane(Orientation.Horizontal) {
+  res : Search[SResult]) extends SplitPane(Orientation.Horizontal) {
 
   import controller.graph
 
@@ -153,16 +153,17 @@ class DummyResultPanel(g : DependencyGraph) extends FlowPanel with ResultPanel {
 
 class FailurePanel
 ( controller : SVGController,
-  res : Search[DependencyGraph],
+  res : Search[SResult],
   nodeVisibles : DependencyGraph => VisibilitySet.T
   ) extends BorderPanel with ResultPanel {
 
   assert(res.failures.nonEmpty)
 
   val failureSelector =
-    new SortedElementSelector[ErrorState[DependencyGraph]](res.failuresByDepth, ErrorSelected.apply)
+    new SortedElementSelector[SearchState[SResult]](res.failuresByDepth, ErrorSelected.apply)
 
-  def selectedResult = failureSelector.selectedState.prevState.loggedResult
+  def selectedResult = failureSelector.selectedState.prevState.get.success map graphOfResult
+
 
 
   val rightDocWrapper = GraphScrollPane(controller,
@@ -178,31 +179,31 @@ class FailurePanel
     case ErrorSelected(state) =>
       rightDocWrapper.setGraph(selectedResult.value,
         nodeVisibles(selectedResult.value))
-      publish(Log(state.result.written +
-        state.result.value.getMessage))
+      publish(Log(state.fail.written +
+        state.fail.value.getMessage))
 
   }
 }
 
 class SuccessPanel
 ( controller : SVGController,
-  res : Search[DependencyGraph],
+  res : Search[SResult],
   nodeVisibles : DependencyGraph => VisibilitySet.T
   ) extends BorderPanel with ResultPanel {
 
   assert(res.successes.nonEmpty)
-  val lightKind = res.successes.head.loggedResult.value.nodeKindKnowledge.lightKind
+  val lightKind = graphOfResult(res.successes.head.loggedResult.value).nodeKindKnowledge.lightKind
 //  val stateSelector =
 //    new SortedElementSelector(
 //      res.successes.groupBy(st => (Metrics.weight(st.loggedResult.value, lightKind) * 100).toInt),
 //      StateSelected.apply)
 
-  val stateSelector = new SimpleElementSelector[SearchState[DependencyGraph]](StateSelected.apply)
+  val stateSelector = new SimpleElementSelector[SearchState[SResult]](StateSelected.apply)
   stateSelector.setStatesList(res.successes)
 
 
 
-  def selectedResult = stateSelector.selectedState.loggedResult
+  def selectedResult = stateSelector.selectedState.success map graphOfResult
 
   val graphWrapper = GraphScrollPane(controller,
     selectedResult.value,

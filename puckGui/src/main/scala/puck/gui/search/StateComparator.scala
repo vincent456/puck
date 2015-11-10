@@ -3,14 +3,14 @@ package puck.gui.search
 import puck.graph._
 import puck.graph.io.VisibilitySet
 import puck.graph.transformations.Transformation
-import puck.search.SearchState
+import puck.searchNew.SearchState
 import puck.util.PuckFileLogger
 
 import scala.swing.{BoxPanel, Button, Label, Orientation}
 
 class StateComparator
 ( initialRecord :  Seq[Transformation],
-  sortedRes: Map[Int, Seq[SearchState[DependencyGraph]]],
+  sortedRes: Map[Int, Seq[SearchState[SResult]]],
   printId : () => Boolean,
   printSig : () => Boolean,
   visibility : VisibilitySet.T)

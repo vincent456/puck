@@ -6,7 +6,6 @@ import java.io._
 
 import puck.graph.constraints.{Solver, DecisionMaker}
 import puck.graph.transformations.Transformation
-import puck.search._
 import puck.util._
 
 import scala.sys.process.Process
@@ -186,8 +185,8 @@ class FilesHandler
 
   }
 
-  def printCSSearchStatesGraph
-  ( states : Map[Int, Seq[SearchState[DependencyGraph]]],
+  /*def printCSSearchStatesGraph
+  ( states : Map[Int, Seq[SearchState[SResult]]],
     dotHelper : DotHelper,
     visibility : VisibilitySet.T,
     printId : Boolean,
@@ -204,17 +203,17 @@ class FilesHandler
 
   def printCSSearchStatesGraph
   ( dir : File,
-    states : Seq[SearchState[DependencyGraph]],
+    states : Seq[SearchState[SResult]],
     dotHelper : DotHelper,
     visibility : VisibilitySet.T,
-    sPrinter : Option[(SearchState[DependencyGraph] => String)],
+    sPrinter : Option[(SearchState[SResult] => String)],
     printId : Boolean,
     printSignature : Boolean) : Unit = {
 
     val printer = sPrinter match {
       case Some(p) => p
       case None =>
-        s : SearchState[DependencyGraph] => s.uuid()
+        s : SearchState[_] => s.uuid()
     }
 
     states.foreach { s =>
@@ -223,7 +222,7 @@ class FilesHandler
       val options = PrintingOptions(visibility, printId, printSignature, None)
       DotPrinter.genImage(graph, dotHelper, options, Png, new FileOutputStream(f)){_ => ()}
     }
-  }
+  }*/
 
   private def openList(files : Seq[String]) : Unit = {
     val ed = editor.get match {

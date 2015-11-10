@@ -1,4 +1,5 @@
-package puck.searchNew
+package puck
+package searchNew
 
 import puck.graph.LoggedTry
 
@@ -45,25 +46,28 @@ class SearchEngine[T]
   private [this] var idSeed : Int = 0
   private def idGen() : Int = {idSeed += 1; idSeed}
 
-  def storeResult(prevState : SearchState[T], res : LoggedTry[T]): Unit = {
-    res.value match {
+  def storeResult(res : LoggedTry[T]): Unit = {
+    val prevState = searchStrategy.currentState
+    ignore(res.value match {
       case -\/(err) =>
         failures += prevState.createNextState(res, Seq())
+
       case \/-(g) =>
         successes += prevState.createNextState(res, Seq())
-    }
-    numExploredStates = numExploredStates + 1
+    })
+
   }
 
   protected var numExploredStates = 0
 
-  def addState(cr : LoggedTry[T], choices : Seq[LoggedTry[T]]) :Unit = {
-    numExploredStates = numExploredStates + 1
-    searchStrategy.addState(cr, choices)
-  }
+  def addState(cr : LoggedTry[T], choices : Seq[LoggedTry[T]]) :Unit =
+    if(choices.isEmpty) storeResult(cr)
+    else{
+      numExploredStates = numExploredStates + 1
+      searchStrategy.addState(cr, choices)
+    }
 
-  def init() : Unit = {
-  }
+  def init() : Unit = ()
 
   def exploredStates = numExploredStates
 

@@ -20,7 +20,8 @@ class DepthFirstSearchStrategy[T] extends SearchStrategy[T] {
   def addState(currentResult : LoggedTry[T], choices : Seq[LoggedTry[T]]) : Unit =
     this push currentState.createNextState(currentResult, choices)
 
-  def canContinue : Boolean = remainingStates.nonEmpty
+  def canContinue : Boolean =
+  !remainingStates.head.triedAll || remainingStates.tail.nonEmpty
 
   def nextState : SearchState[T] = {
     if (remainingStates.head.triedAll) remainingStates.pop()

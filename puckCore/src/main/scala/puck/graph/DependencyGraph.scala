@@ -4,7 +4,7 @@ import puck.graph.DependencyGraph.AbstractionMap
 import puck.graph.constraints.{ConstraintsMaps, AbstractionPolicy}
 import puck.util.{Logger, PuckNoopLogger, PuckLogger, PuckLog}
 
-import puck.graph.transformations.{RecordingComparator, Transformation, RecordingOps}
+import puck.graph.transformations.{Transformation, RecordingOps}
 
 object DependencyGraph {
 
@@ -30,8 +30,8 @@ object DependencyGraph {
   def areEquivalent[Kind <: NodeKind, T](initialRecord : Seq[Transformation],
                       graph1 : DependencyGraph,
                       graph2 : DependencyGraph,
-                      logger : PuckLogger = PuckNoopLogger) : Boolean =
-     new RecordingComparator(initialRecord, graph1, graph2, logger).compare()
+                      logger : PuckLogger = PuckNoopLogger) : Boolean = ???
+     //new RecordingComparator(initialRecord, graph1, graph2, logger).compare()
 
 
 }

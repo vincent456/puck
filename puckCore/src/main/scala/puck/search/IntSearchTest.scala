@@ -1,3 +1,4 @@
+/*
 package puck.search
 
 import puck.graph.{LoggedSuccess, LoggedTry}
@@ -67,3 +68,4 @@ object IntSearchTest extends App {
   println("Explored States : " + IntSolver.se.exploredStates)
   println("Success depth : " + IntSolver.se.successes.head.depth)
 }
+*/

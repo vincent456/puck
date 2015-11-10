@@ -22,6 +22,7 @@ class IntellijDG2AST
   val graph2ASTMap : Map[Int, PsiNodeWrapper]) extends DG2AST {
 
   implicit lazy val factory = JavaPsiFacade.getElementFactory(module.getProject)
+  implicit val m = module
 
   def apply(graph : DependencyGraph)(implicit logger : PuckLogger) : Unit = {
     logger.writeln("applying change !")

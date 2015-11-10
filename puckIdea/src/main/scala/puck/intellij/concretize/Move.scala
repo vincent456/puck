@@ -4,7 +4,6 @@ import com.intellij.psi.PsiJavaFile
 import puck.graph.{DependencyGraph, NodeId, DGEdge}
 import puck.graph.transformations._
 import puck.intellij.{TypedKindDeclHolder, PackageDummyWrapper, PsiNodeWrapper}
-import puck.javaGraph.nodeKind._
 
 /**
  * Created by lorilan on 04/11/15.

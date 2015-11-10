@@ -3,10 +3,9 @@ package puck.gui.svg.actions
 import java.awt.event.ActionEvent
 import javax.swing.{JComponent, AbstractAction}
 
-import puck.graph.constraints.search.{CSInitialSearchState, ConstraintSolvingSearchEngineBuilder}
 import puck.graph._
 import puck.gui.svg.SVGController
-import puck.search.{DepthFirstSearchStrategy, Search}
+import puck.searchNew.{SearchEngine, CouplingConstraintSolvingControl, DepthFirstSearchStrategy, Search}
 import puck.util.Logged
 
 import scala.swing._
@@ -20,7 +19,7 @@ class AutoSolveAction
   controller : SVGController)
   extends AbstractAction("Solve (auto choices, choose result)") {
 
-  private def dialog(res : Search[DependencyGraph]) : Option[Logged[DependencyGraph]] = {
+  private def dialog(res : Search[SResult]) : Option[Logged[DependencyGraph]] = {
     val title = "Auto solve"
 
     val confirm : JComponent => Result.Value =
@@ -39,20 +38,32 @@ class AutoSolveAction
 //    else {
     val panel = new AutosolveResultPanel(violationTarget, controller, res)
     confirm(panel.peer) match {
-        case Result.Ok =>  Some( panel.selectedResult)
+        case Result.Ok => Some( panel.selectedResult)
         case Result.Cancel
-          | Result.Closed => None
+           | Result.Closed => None
     }
   }
 
   import controller.graph
 
   override def actionPerformed(e: ActionEvent): Unit = {
-    val builder = new ConstraintSolvingSearchEngineBuilder(
-        controller.graphUtils,
-        new DepthFirstSearchStrategy[DependencyGraph],
-        CSInitialSearchState.targetedInitialState(violationTarget))
-    val engine = builder.apply(graph.mileStone, automaticConstraintLoosening = false)
+    val searchControlStrategy =
+      new CouplingConstraintSolvingControl(
+        new DepthFirstSearchStrategy[(DependencyGraph, Int)],
+        controller.graphUtils.transformationRules,
+        graph.mileStone, violationTarget)
+
+    val engine =
+      new SearchEngine(searchControlStrategy.initialState,
+        searchControlStrategy)
+
+//    val builder =
+//      new ConstraintSolvingSearchEngineBuilder(
+//        controller.graphUtils,
+//        new DepthFirstSearchStrategy[DependencyGraph],
+//        CSInitialSearchState.targetedInitialState(violationTarget))
+//    val engine = builder.apply(graph.mileStone, automaticConstraintLoosening = false)
+
     engine.explore()
 
     try {

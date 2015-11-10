@@ -1,14 +1,14 @@
 package puck.searchNew
 
-import puck.graph.LoggedTry
-import puck.util.{HasChildren, BreadthFirstTreeIterator}
+import puck.graph.{LoggedTry, error, Error}
+import puck.util.{Logged, HasChildren, BreadthFirstTreeIterator}
 
 import scala.collection.mutable
+import scalaz.{-\/, \/-}
 
 class SearchStateIterator[R]
 ( val root : SearchState[R]
   ) extends BreadthFirstTreeIterator[SearchState[R]]
-
 
 class SearchState[T]
 ( val id : Int,
@@ -16,6 +16,19 @@ class SearchState[T]
   val loggedResult : LoggedTry[T],
   val choices : Seq[LoggedTry[T]]
  )extends HasChildren[SearchState[T]]{
+
+
+  import scalaz.syntax.writer._
+
+  def success : Logged[T] = loggedResult.value match {
+      case \/-(res) => res set loggedResult.log
+      case -\/(err) => error("state contains a failed result : " + err.getMessage)
+  }
+
+  def fail : Logged[Error] = loggedResult.value match {
+    case -\/(err) => err set loggedResult.log
+    case _ => error("state contains a success")
+  }
 
 
   def createNextState(cr : LoggedTry[T], choices : Seq[LoggedTry[T]]) : SearchState[T] = {
@@ -26,17 +39,16 @@ class SearchState[T]
 
 
   private [this] var _nextChoice : Seq[LoggedTry[T]] = choices
+
   def nextChoice : Option[LoggedTry[T]] =
     if(triedAll) None
     else {
-    val n = _nextChoice.head
-    _nextChoice = _nextChoice.tail
-    Some(n)
-  }
+      val n = _nextChoice.head
+      _nextChoice = _nextChoice.tail
+      Some(n)
+    }
+
   def triedAll : Boolean = _nextChoice.isEmpty
-
-  
-
 
   private def uuid0 : Seq[Int] = {
     prevState match{

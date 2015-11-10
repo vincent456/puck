@@ -2,14 +2,14 @@ package puck.gui.search
 
 import puck.graph._
 import puck.graph.io.VisibilitySet
-import puck.gui.{ConstraintDisplayRequest, ApplyOnCodeRequest, SearchStateSeqPrintingRequest}
-import puck.search.SearchState
+import puck.gui.{ConstraintDisplayRequest, ApplyOnCodeRequest}
+import puck.searchNew.SearchState
 
 import scala.swing._
 import scala.swing.event.{Event, SelectionChanged}
 
 
-case class StateSelected(state : SearchState[DependencyGraph]) extends Event
+case class StateSelected(state : SearchState[SResult]) extends Event
 
 class SimpleElementSelector[T]
  ( evtGen : T => Event)
@@ -70,11 +70,11 @@ class SortedElementSelector[T]
 }
 
 class StateSelector
-( map : Map[Int, Seq[SearchState[DependencyGraph]]],
+( map : Map[Int, Seq[SearchState[SResult]]],
   printId : () => Boolean,
   printSig: () => Boolean,
   visibility : VisibilitySet.T)
-  extends  SortedElementSelector[SearchState[DependencyGraph]](map, StateSelected.apply) {
+  extends  SortedElementSelector[SearchState[SResult]](map, StateSelected.apply) {
 
 
   val secondLine = new FlowPanel()
@@ -89,25 +89,25 @@ class StateSelector
     }
   */
 
-  secondLine.contents += new Button(""){
-    action = new Action("Show"){
-      def apply() : Unit = {
-
-        val state: SearchState[DependencyGraph] = selectedState
-        var id = -1
-
-        StateSelector.this publish SearchStateSeqPrintingRequest(state.uuid()+"history",
-          state.ancestors(includeSelf = true), Some({s => id +=1
-            id.toString}), printId(), printSig(), visibility)
-
-      }
-    }
-  }
+//  secondLine.contents += new Button(""){
+//    action = new Action("Show"){
+//      def apply() : Unit = {
+//
+//        val state: SearchState[SResult] = selectedState
+//        var id = -1
+//
+//        StateSelector.this publish SearchStateSeqPrintingRequest(state.uuid()+"history",
+//          state.ancestors(includeSelf = true), Some({s => id +=1
+//            id.toString}), printId(), printSig(), visibility)
+//
+//      }
+//    }
+//  }
 
   secondLine.contents += new Button(""){
     action = new Action("Constraint"){
       def apply() : Unit =  {
-        val state: SearchState[DependencyGraph] = selectedState
+        val state: SearchState[SResult] = selectedState
         StateSelector.this publish ConstraintDisplayRequest(graphOfResult(state.loggedResult.value))
       }
     }
@@ -116,7 +116,7 @@ class StateSelector
   secondLine.contents += new Button(""){
     action = new Action("Apply"){
       def apply() : Unit = {
-        StateSelector.this publish ApplyOnCodeRequest(selectedState.loggedResult.value)
+        StateSelector.this publish ApplyOnCodeRequest(graphOfResult(selectedState.loggedResult.value))
       }
     }
   }

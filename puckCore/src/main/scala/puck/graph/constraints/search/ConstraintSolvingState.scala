@@ -1,3 +1,4 @@
+/*
 package puck.graph
 package constraints.search
 
@@ -10,12 +11,12 @@ class ConstraintSolvingChoice[S]
 ( val k : Logged[S] => Unit,
   var remainingChoices : Set[S],
   var triedChoices : Set[S]
-  ) extends StateCreator[DependencyGraph, ConstraintSolvingChoice[S]]{
+  ) extends StateCreator[SResult, ConstraintSolvingChoice[S]]{
 
   def createState(givenId : Int,
-                  previousState : Option[SearchState[DependencyGraph]],
-                  currentResult : Logged[DependencyGraph],
-                  choices : ConstraintSolvingChoice[S]) : SearchState[DependencyGraph] =
+                  previousState : Option[SearchState[SResult]],
+                  currentResult : Logged[SResult],
+                  choices : ConstraintSolvingChoice[S]) : SearchState[SResult] =
     new ConstraintSolvingState[S]{
       val id = givenId
       val loggedResult = currentResult
@@ -25,7 +26,7 @@ class ConstraintSolvingChoice[S]
 }
 
 trait ConstraintSolvingState[S]
-  extends SearchState[DependencyGraph]{
+  extends SearchState[SResult]{
 
   /*println("creating searchState "+ id)
   prevState match {
@@ -44,7 +45,7 @@ trait ConstraintSolvingState[S]
     })
   }
 
-  override def executeNextChoice(engine : SearchEngine[DependencyGraph]) : Unit = {
+  override def executeNextChoice(engine : SearchEngine[SResult]) : Unit = {
     if(remainingChoices.nonEmpty){
 
       val c = remainingChoices.head
@@ -58,3 +59,4 @@ trait ConstraintSolvingState[S]
 
 
 }
+*/

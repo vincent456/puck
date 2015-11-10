@@ -1,8 +1,11 @@
-package puck.search
+/*
+package puck
+package search
 
 import puck.util._
 
 import scala.collection.mutable
+
 
 class DepthFirstSearchStrategy[T] extends SearchStrategy[T] {
 
@@ -23,7 +26,7 @@ class DepthFirstSearchStrategy[T] extends SearchStrategy[T] {
   def canContinue : Boolean = remainingStates.nonEmpty
 
   def oneStep(se : SearchEngine[T]) : Unit = {
-    if (remainingStates.head.triedAll) remainingStates.pop()
+    if (remainingStates.head.triedAll) ignore(remainingStates.pop())
     else remainingStates.head.executeNextChoice(se)
   }
 
@@ -46,4 +49,4 @@ class DepthFirstSearchStrategy[T] extends SearchStrategy[T] {
 //}
 //
 //def isEmpty : Boolean = stateStack.isEmpty
-//def nonEmpty : Boolean = !isEmpty
+//def nonEmpty : Boolean = !isEmpty*/
