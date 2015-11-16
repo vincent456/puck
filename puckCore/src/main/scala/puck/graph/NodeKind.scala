@@ -79,12 +79,21 @@ trait NodeKindKnowledge {
 
   def lightKind : NodeKind
 
-  def canContain(graph : DependencyGraph)
-                (n : DGNode, other : ConcreteNode) : Boolean = {
+  def canContain
+  ( graph : DependencyGraph,
+    n : DGNode,
+    other : ConcreteNode) : Boolean =
     !graph.contains_*(other.id, n.id) && // no cycle !
-      (n.kind canContain other.kind) &&
+      canContain(graph, n, other.kind)
+
+
+  def canContain
+  ( graph : DependencyGraph,
+    n : DGNode,
+    otherKind : NodeKind) : Boolean =
+    (n.kind canContain otherKind) &&
       n.mutable
-  }
+
 
 
   def kindOfKindType(kindType: KindType) : Seq[NodeKind]

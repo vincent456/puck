@@ -6,12 +6,10 @@ import puck.search.{Evaluator, SearchState}
 
 import scalaz.{-\/, \/-}
 
-/**
- * Created by lorilan on 10/11/15.
- */
 class ConstraintSolvingStateEvaluator
 (val initialRecord : Seq[Transformation])
   extends Evaluator[SResult]{
+
 
   def evaluate(s : SearchState[SResult]): Double =
     s.loggedResult.value match {

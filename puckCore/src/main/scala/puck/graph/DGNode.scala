@@ -61,7 +61,12 @@ case class ConcreteNode
 
   def name(g : DependencyGraph) : String = name
 
-  override def toString = s"($id - $kind $name)"
+  override def toString = {
+    val non = if(mutable) ""
+    else "non-"
+    s"($id - $kind $name ${non}mutable)"
+  }
+
 
   def mapConcrete[A](f : ConcreteNode => A, default : => A) : A = f(this)
 

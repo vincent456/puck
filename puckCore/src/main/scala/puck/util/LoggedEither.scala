@@ -2,7 +2,7 @@ package puck.util
 
 import scalaz._, Scalaz._
 
-case class LoggedEither[L, R](log : String, value : L\/R){
+case class LoggedEither[+L, +R](log : String, value : L\/R){
 
   def :++>(lg : String) : LoggedEither[L, R] = copy(log = log + lg)
   def <++:(lg : String) : LoggedEither[L, R] = copy(log = lg + log)
@@ -18,9 +18,6 @@ case class LoggedEither[L, R](log : String, value : L\/R){
       case a @ -\/(_) => this.copy(value = a)
       case \/-(b) =>  this.log <++: g(b)
     }
-
-  def valueOr(x: L => R): Logged[R] =
-    Writer(log, value valueOr x)
 }
 
 /*sealed abstract class LoggedEither[L, R]{

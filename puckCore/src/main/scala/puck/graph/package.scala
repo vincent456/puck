@@ -15,10 +15,10 @@ package object graph {
   def error(str : String) = throw new PuckError(str)
 
   type LoggedG = Logged[DependencyGraph]
-  type LoggedTry[A] = LoggedEither[Error, A]
+  type LoggedTry[+A] = LoggedEither[Error, A]
   type LoggedTG = LoggedTry[DependencyGraph]
 
-  type NodePredicateT = (DependencyGraph, ConcreteNode) => Boolean
+  type NodePredicate = (DependencyGraph, ConcreteNode) => Boolean
 
   type NodeId = Int
 

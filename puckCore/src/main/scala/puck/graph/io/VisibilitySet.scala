@@ -1,6 +1,6 @@
 package puck.graph.io
 
-import puck.graph.{DependencyGraph, NodeId}
+import puck.graph.{NodeKind, DependencyGraph, NodeId}
 
 trait Visibility{
   def opposite : Visibility
@@ -18,10 +18,10 @@ object VisibilitySet{
 
   //def apply() : T =
 
-  def allVisible(graph : DependencyGraph) : T = Set[NodeId]()
+  def allVisible(graph : DependencyGraph) : T =
+    Set[NodeId]().setVisibility(graph.nodesId, Visible)
 
-  def allHidden(graph : DependencyGraph) : T =
-    allVisible(graph).setVisibility(graph.nodesId.toSeq, Hidden)
+  def allHidden(graph : DependencyGraph) : T = Set[NodeId]()
 
 
   def violationsOnly(graph : DependencyGraph) : T =
@@ -33,29 +33,39 @@ object VisibilitySet{
       s.setVisibility(path1, Visible)
         .setVisibility(path2, Visible)
     }
+  
+  def visibleKinds(graph : DependencyGraph, kinds : Set[NodeKind]) = {
+    val visibleNodes = graph.nodes filter (kinds contains _.kind) map (_.id)
+    allHidden(graph).setVisibility(visibleNodes, Visible)
+  }
 
-  implicit class VisibilitySetOps(val hiddens: T) extends AnyVal {
+
+  def topLevelVisible(graph : DependencyGraph) =
+    allHidden(graph).setVisibility(graph.content(DependencyGraph.rootId), Visible)
+
+  
+  implicit class VisibilitySetOps(val visibles: T) extends AnyVal {
 
     def setVisibility(id : NodeId, v : Visibility) : T = v match {
-      case Visible => hiddens - id
-      case Hidden => hiddens + id
+      case Visible => visibles + id
+      case Hidden => visibles - id
     }
 
-    def setVisibility(ids : Seq[NodeId], v : Visibility) : T = v match {
-      case Visible => hiddens -- ids
-      case Hidden => hiddens ++ ids
+    def setVisibility(ids : Iterable[NodeId], v : Visibility) : T = v match {
+      case Visible => visibles ++ ids
+      case Hidden => visibles -- ids
     }
 
     def toggle(id : NodeId): T =
       setVisibility(id, visibility(id).opposite)
 
 
-    def isVisible : NodeId => Boolean = id => !isHidden(id)
-    def isHidden : NodeId => Boolean = hiddens.contains
+    def isVisible : NodeId => Boolean = visibles.contains
+    def isHidden : NodeId => Boolean = id => !isVisible(id)
 
     def visibility(id : NodeId) : Visibility =
-      if(isHidden(id)) Hidden
-      else Visible
+      if(isVisible(id)) Visible
+      else Hidden
 
   }
 

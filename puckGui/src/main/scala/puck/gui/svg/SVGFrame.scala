@@ -200,20 +200,20 @@ class SVGFrameMenu
   }
 }
 
-object SVGFrame {
+class SVGFrame
+( stream: InputStream,
+  opts: PrintingOptions,
+  filesHandler : FilesHandler,
+  graphUtils : GraphUtils,
+  dg2ast : DG2AST) extends JFrame {
+    val builder = SVGController.builderFromFilesHander(filesHandler, opts, graphUtils, dg2ast)
+    val pan = new SVGPanel(builder)
+    this.setContentPane(pan)
 
-  def apply( stream: InputStream,
-             opts: PrintingOptions,
-             filesHandler : FilesHandler,
-             graphUtils : GraphUtils,
-             dg2ast : DG2AST
-             ) : JFrame =
-    new JFrame(){
-      this.add(new SVGPanel(SVGController.builderFromFilesHander(filesHandler, opts, graphUtils, dg2ast)))
-      this.setVisible(true)
+    this.setVisible(true)
       this.setMinimumSize(new Dimension(640, 480))
       this.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE)
-    }
+      this.revalidate()
 }
 
 class SVGPanel( builder : SVGController.Builder) extends JPanel with StackListener {

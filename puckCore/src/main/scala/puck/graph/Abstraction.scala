@@ -9,6 +9,7 @@ import scalaz.syntax.traverse._
 sealed abstract class Abstraction {
   def policy: AbstractionPolicy
   def nodes : List[NodeId]
+  def kind(g : DependencyGraph) : NodeKind
   def kindType(g : DependencyGraph) : KindType
   def containerIn(g : DependencyGraph) :  Option[NodeId]
 }
@@ -19,6 +20,7 @@ case class AccessAbstraction
   ) extends Abstraction {
   def nodes : List[NodeId] = List(nodeId)
   def kindType(g : DependencyGraph) : KindType = g.kindType(nodeId)
+  def kind(g : DependencyGraph) : NodeKind = g.getNode(nodeId).kind
   def containerIn(g : DependencyGraph) : Option[NodeId] = g.container(nodeId)
 }
 
@@ -45,6 +47,10 @@ case class ReadWriteAbstraction
 
   def kindType(g : DependencyGraph) : KindType =
     bothSameValueOrElse(g.kindType, UnknownKindType)
+
+  def kind(g : DependencyGraph) : NodeKind =
+    bothSameValueOrElse(g.getNode(_).kind, error("should have same kind"))
+
 
   def containerIn(g : DependencyGraph) =
     bothSameValueOrElse(g.container, None)

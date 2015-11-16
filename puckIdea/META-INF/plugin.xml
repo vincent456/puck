@@ -24,32 +24,30 @@
   <depends>com.intellij.modules.lang</depends>
   -->
 
-  <extensions defaultExtensionNs="com.intellij">
-      <toolWindow anchor="bottom" id="Puck"
-                  factoryClass="puck.intellij.PuckToolWindowFactory"/>
-  </extensions>
-
   <application-components>
     <!-- Add your application components here -->
   </application-components>
 
   <project-components>
     <!-- Add your project components here -->
+      <component>
+          <implementation-class>puck.intellij.PuckProjectComponent</implementation-class>
+      </component>
   </project-components>
 
 
 
   <actions>
-      <action class="puck.intellij.actions.ViewGraphAction" description="View Dependency Graph for whole module" id="View DG" text="Show DG of module">
-          <keyboard-shortcut first-keystroke="control shift Q" keymap="$default"/>
+      <action class="puck.intellij.actions.ViewGraphAction" description="View Dependency Graph for whole module" id="View Puck DG" text="Show DG of module">
+          <keyboard-shortcut first-keystroke="control shift G" keymap="$default"/>
       </action>
-      <action class="puck.intellij.actions.ParseConstraintsAction" description="Parse coupling constraint" id="Parse CC" text="Parse Coupling Constraint">
-          <keyboard-shortcut first-keystroke="control shift Q" keymap="$default"/>
+      <action class="puck.intellij.actions.ParseConstraintsAction" description="Parse coupling constraint" id="Parse Puck CC" text="Parse Coupling Constraint">
+          <keyboard-shortcut first-keystroke="control shift P" keymap="$default"/>
       </action>
 
       <group id="PuckProjectMenu" popup="true" text="Puck" >
-          <reference ref="View DG"/>
-          <reference ref="Parse CC"/>
+          <reference ref="View Puck DG"/>
+          <reference ref="Parse Puck CC"/>
           <add-to-group group-id="ProjectViewPopupMenu" anchor="last" />
       </group>
 

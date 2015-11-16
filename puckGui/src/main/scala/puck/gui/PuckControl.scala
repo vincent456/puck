@@ -153,8 +153,13 @@ class PuckControl(logger0 : PuckLogger,
 
       case Svg =>
         Future {
-          val imgframe = SVGFrame(pipedInput, opts, filesHandler, graphUtils, dg2AST)
-          imgframe.setTitle(title)
+          logger.writeln("requesting svg frame")
+          new SVGFrame(pipedInput, opts, filesHandler, graphUtils, dg2AST){
+            this.setTitle(title)
+            logger.writeln("sploosh")
+          }
+
+          logger.writeln("bloop")
         }
      }
 

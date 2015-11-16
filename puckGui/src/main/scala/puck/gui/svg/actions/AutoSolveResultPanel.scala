@@ -34,16 +34,20 @@ class GraphScrollPane(controller : SVGController) extends ScrollPane(){
 
   def setGraph(graph: DependencyGraph, visibilitySet: VisibilitySet.T): Unit ={
     //println("setGraph, visibilitySet :" + visibilitySet.toSeq.sorted)
+    import controller.swingInvokeLater
     val doc =
       SVGController.documentFromGraph(graph,
-        controller.graphUtils.dotHelper,
+        controller.graphUtils,
         controller.printingOptions.
           copy(visibility =visibilitySet))(
-          controller.console.appendText){
+          SVGController.documentFromGraphErrorMsgGen(msg =>
+            swingInvokeLater( () => controller.console.appendText(msg)))){
         case d =>
           val c = new PUCKSVGCanvas(PUCKSVGCanvas.deafListener)
-          c.setDocument(d)
-          viewportView = Component.wrap(c)
+          swingInvokeLater { () =>
+            c.setDocument(d)
+            viewportView = Component.wrap(c)
+          }
       }
   }
 }
@@ -96,11 +100,11 @@ class AutosolveResultPanel
 
   val successesPanel =
     if(res.successes.nonEmpty) new SuccessPanel(controller,res, nodeVisibles)
-    else new DummyResultPanel(controller.graph)
+    else new DummyResultPanel(controller)
 
   val failurePanel =
     if(res.failures.nonEmpty) new FailurePanel(controller,res, nodeVisibles)
-    else new DummyResultPanel(controller.graph)
+    else new DummyResultPanel(controller)
 
   this listenTo successesPanel
   this listenTo failurePanel
@@ -144,15 +148,22 @@ class AutosolveResultPanel
 
 
 trait ResultPanel {
-   def selectedResult : Logged[DependencyGraph]
+  val controller : SVGController
+  def selectedResult : Logged[DependencyGraph]
+
+  def selectedResultVisibility = {
+    val newNodes = Range(controller.graph.numNodes, selectedResult.value.numNodes)
+    controller.printingOptions.visibility.setVisibility(newNodes, Visible)
+  }
+
 }
 
-class DummyResultPanel(g : DependencyGraph) extends FlowPanel with ResultPanel {
-  def selectedResult : Logged[DependencyGraph] = g.set("")
+class DummyResultPanel(val controller : SVGController) extends FlowPanel with ResultPanel {
+  def selectedResult : Logged[DependencyGraph] = controller.graph.set("")
 }
 
 class FailurePanel
-( controller : SVGController,
+( val controller : SVGController,
   res : Search[SResult],
   nodeVisibles : DependencyGraph => VisibilitySet.T
   ) extends BorderPanel with ResultPanel {
@@ -168,7 +179,7 @@ class FailurePanel
 
   val rightDocWrapper = GraphScrollPane(controller,
     selectedResult.value,
-    controller.printingOptions.visibility)
+    selectedResultVisibility)
     //nodeVisibles(selectedResult.value))
 
     add(rightDocWrapper, Position.Center)
@@ -178,7 +189,7 @@ class FailurePanel
   reactions += {
     case ErrorSelected(state) =>
       rightDocWrapper.setGraph(selectedResult.value,
-        nodeVisibles(selectedResult.value))
+        selectedResultVisibility)
       publish(Log(state.fail.written +
         state.fail.value.getMessage))
 
@@ -186,7 +197,7 @@ class FailurePanel
 }
 
 class SuccessPanel
-( controller : SVGController,
+( val controller : SVGController,
   res : Search[SResult],
   nodeVisibles : DependencyGraph => VisibilitySet.T
   ) extends BorderPanel with ResultPanel {
@@ -201,13 +212,11 @@ class SuccessPanel
   val stateSelector = new SimpleElementSelector[SearchState[SResult]](StateSelected.apply)
   stateSelector.setStatesList(res.successes)
 
-
-
   def selectedResult = stateSelector.selectedState.success map graphOfResult
 
   val graphWrapper = GraphScrollPane(controller,
     selectedResult.value,
-    controller.printingOptions.visibility)
+    selectedResultVisibility)
     //nodeVisibles(stateSelector.selectedState.loggedResult.value))
 
   add(graphWrapper, Position.Center)
@@ -216,7 +225,7 @@ class SuccessPanel
   reactions += {
     case StateSelected(state) =>
       graphWrapper.setGraph(selectedResult.value,
-        controller.printingOptions.visibility)
+        selectedResultVisibility)
         //nodeVisibles(selectedResult.value))
 
       publish(Log(selectedResult.written))

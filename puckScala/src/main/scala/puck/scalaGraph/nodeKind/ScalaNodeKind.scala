@@ -18,7 +18,7 @@ object ScalaNodeKind extends NodeKindKnowledge {
       case UnknownKindType => sys.error("Unknown kind type")
     }
 
-  override def nodeKinds: Seq[NodeKind] = Seq(Package, PackageObject, Trait, Type, Object, Var, Val, Def)
+  override def nodeKinds: List[NodeKind] = List(Package, PackageObject, Trait, Type, Object, Var, Val, Def)
 
   override def lightKind: NodeKind = ???
 

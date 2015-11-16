@@ -14,21 +14,24 @@ abstract class Abstract {
 
   def absIntroPredicate(impl : DGNode,
                         absPolicy : AbstractionPolicy,
-                        absKindType : KindType) : NodePredicateT =
+                        absKind : NodeKind) : NodePredicate =
 
-    (absKindType, absPolicy) match {
+
+    (absKind.kindType, absPolicy) match {
       case (InstanceValueDecl, SupertypeAbstraction) =>
         (graph, potentialHost) => {
           val typeDecl = graph.container(impl.id).get
           val potentialSuperType = potentialHost.id
           val canExtends = !graph.interloperOf(typeDecl, potentialSuperType)
-          canExtends
+          canExtends && graph.nodeKindKnowledge.canContain(graph, potentialHost, absKind)
         }
       case (_, SupertypeAbstraction) =>
-        (graph, potentialHost) => !graph.interloperOf(impl.id, potentialHost.id)
+        (graph, potentialHost) => !graph.interloperOf(impl.id, potentialHost.id) &&
+          graph.nodeKindKnowledge.canContain(graph, potentialHost, absKind)
 
       case (_, DelegationAbstraction) =>
-        (graph, potentialHost) => !graph.interloperOf(potentialHost.id, impl.id)
+        (graph, potentialHost) => !graph.interloperOf(potentialHost.id, impl.id) &&
+          graph.nodeKindKnowledge.canContain(graph, potentialHost, absKind)
     }
 
 

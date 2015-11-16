@@ -15,8 +15,9 @@ object GetNode {
   ( qualifiedName : String,
     name : String,
     wrapper : PsiNodeWrapper,
-    mutable : Boolean = true)
+    mutable : Boolean)
   ( implicit builder: IntellijGraphBuilder ) : NodeId = {
+
     val node = builder.addNode(qualifiedName, name, wrapper.kind, mutable)
     builder.graph2ASTMap get node match {
       case None => builder.graph2ASTMap += (node -> wrapper)
@@ -26,86 +27,89 @@ object GetNode {
   }
 
   def anonymous
-  ( qualif : String, wrapper : PsiNodeWrapper)
+  ( qualif : String, wrapper : PsiNodeWrapper, mutable : Boolean)
   ( implicit builder: IntellijGraphBuilder )=
     apply(qualif + "." + DependencyGraph.anonymousName,
-      DependencyGraph.anonymousName, wrapper)
+      DependencyGraph.anonymousName, wrapper, mutable)
 
   def parameter
-  ( qualif : String, param: PsiParameter)
+  ( qualif : String, param: PsiParameter, mutable : Boolean)
   ( implicit builder: IntellijGraphBuilder ) : NodeId =
-  apply(qualif+"."+ param.getName, param.getName, ParameterDeclHolder(param))
+  apply(qualif+"."+ param.getName, param.getName, ParameterDeclHolder(param), mutable)
 
   def apply
   ( psiElement: PsiElement)
-  ( implicit builder: IntellijGraphBuilder ) : NodeId = psiElement match {
-    case c : PsiClass => apply(c)
-    case f : PsiField => apply(f)
-    case m : PsiMethod => apply(m)
-    case p : PsiParameter => apply(p)
-    case v : PsiLocalVariable => apply(v)
-    case p : PsiPackage => apply(p)
-//    case e : PsiExpression => apply(e)
-//    case b : PsiCodeBlock => apply(b)
-    case _ =>
-      sys.error(s"GetNode(t : $psiElement) unhandled case")
+  ( implicit builder: IntellijGraphBuilder ) : NodeId = {
+    val mutable = builder.fromSource(psiElement)
+    psiElement match {
+      case c: PsiClass => apply(c, mutable)
+      case f: PsiField => apply(f, mutable)
+      case m: PsiMethod => apply(m, mutable)
+      case p: PsiParameter => apply(p, mutable)
+      case v: PsiLocalVariable => apply(v, mutable)
+      case p: PsiPackage => apply(p, mutable)
+      //    case e : PsiExpression => apply(e, mutable)
+      //    case b : PsiCodeBlock => apply(b, mutable)
+      case _ =>
+        sys.error(s"GetNode(t : $psiElement) unhandled case")
+    }
   }
 
   def apply
-  ( c : PsiClass)
+  ( c : PsiClass, mutable : Boolean)
   ( implicit builder: IntellijGraphBuilder ) : NodeId =
-    apply(c.getQualifiedName, c.getName, wrapClass(c))
+    apply(c.getQualifiedName, c.getName, wrapClass(c), mutable)
 
   def wrapClass(aClass: PsiClass) : PsiNodeWrapper =
     if(aClass.isInterface) InterfaceDeclHolder(aClass)
     else ClassDeclHolder(aClass)
 
   def apply
-  ( method: PsiMethod )
+  ( method: PsiMethod, mutable : Boolean)
   ( implicit builder: IntellijGraphBuilder ) : NodeId =
-    apply(QualifiedName(method), method.getName, MethodDeclHolder(method))
+    apply(QualifiedName(method), method.getName, MethodDeclHolder(method), mutable)
 
   def apply
-  ( field: PsiField)
+  ( field: PsiField, mutable : Boolean)
   ( implicit builder: IntellijGraphBuilder ) : NodeId =
-    apply(QualifiedName(field), field.getName, FieldDeclHolder(field))
+    apply(QualifiedName(field), field.getName, FieldDeclHolder(field), mutable)
 
 
 
   def apply
-  ( param: PsiParameter)
+  ( param: PsiParameter, mutable : Boolean)
   ( implicit builder: IntellijGraphBuilder ) : NodeId = {
     param.getDeclarationScope match {
-      case m : PsiMember => parameter(QualifiedName.memberQN(m), param)
-      case s : PsiForeachStatement => psiMemberDefAncestorNode(s)
-      case c : PsiCatchSection => psiMemberDefAncestorNode(c)
+      case m : PsiMember => parameter(QualifiedName.memberQN(m), param, mutable)
+      case s : PsiForeachStatement => psiMemberDefAncestorNode(s, mutable)
+      case c : PsiCatchSection => psiMemberDefAncestorNode(c, mutable)
       case p => sys.error(s"$p unexpected parameter parent in " + p.getContainingFile +" - "+ p.getContext)
     }
   }
 
   def apply
-  ( p : PsiPackage)
+  ( p : PsiPackage, mutable : Boolean)
   ( implicit builder: IntellijGraphBuilder ) : NodeId =
     builder.addPackage(p.getQualifiedName, mutable = true)
 
 
   def psiMemberDefAncestorNode
-  (elt : PsiElement)
+  (elt : PsiElement, mutable : Boolean)
   ( implicit builder: IntellijGraphBuilder ): NodeId =
     Utils.psiMemberAncestor(elt.getParent) match {
     case None => sys.error(elt + "memberAncestor not found")
     case Some(m : PsiMethod) =>
-      anonymous(QualifiedName(m), BlockHolder(m.getBody))
+      anonymous(QualifiedName(m), BlockHolder(m.getBody), mutable)
     case Some(f : PsiField) =>
-      anonymous(QualifiedName(f), ExprHolder(f.getInitializer))
+      anonymous(QualifiedName(f), ExprHolder(f.getInitializer), mutable)
     case Some(m : PsiMember) =>
           sys.error("member kind not handled")
   }
 
   def apply
-  ( lvar: PsiLocalVariable)
+  ( lvar: PsiLocalVariable, mutable : Boolean)
   ( implicit builder: IntellijGraphBuilder ) : NodeId =
-    psiMemberDefAncestorNode(lvar)
+    psiMemberDefAncestorNode(lvar, mutable)
 
 //  def apply
 //  ( e: PsiExpression)
@@ -118,13 +122,13 @@ object GetNode {
   def apply
   ( t : PsiType)
   ( implicit builder: IntellijGraphBuilder ) : NodeId = t match {
-    case pct : PsiClassType => GetNode(pct.resolve())
+    case pct : PsiClassType => GetNode(pct.resolve(), builder.fromSource(pct.resolve()))
     case ppt : PsiPrimitiveType =>
       val name = ppt.getCanonicalText(false)
-      apply(s"$primitivePackage.$name", name, PrimitiveDeclHolder(ppt))
+      apply(s"$primitivePackage.$name", name, PrimitiveDeclHolder(ppt), mutable = false)
     case pat : PsiArrayType =>
       val name = Name(t)
-      apply(s"$primitivePackage.$name", name, ArrayTypeWrapper)
+      apply(s"$primitivePackage.$name", name, ArrayTypeWrapper, mutable = false)
     case _ =>
       sys.error(s"IntellijGraphBuilder.getTypeNode(t : ${t.getClass}) unhandled case")
   }

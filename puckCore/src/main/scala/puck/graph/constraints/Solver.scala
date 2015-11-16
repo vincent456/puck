@@ -83,8 +83,7 @@ class Solver
 
               ltg.value match {
                 case \/-(g2) =>
-                  val lg2 = ltg.valueOr(_ => sys.error("should not happen"))
-                  aux(lg2, remainingWus, choices - abs)
+                  aux(g2.set(ltg.log), remainingWus, choices - abs)
                 case -\/(err) =>
                   k(LoggedError(ltg.log, err))
               }
@@ -100,7 +99,7 @@ class Solver
 
   var newCterNumGen = 0
 
-  private val allwaysTrue : NodePredicateT = (_,_) => true
+  private val allwaysTrue : NodePredicate = (_,_) => true
 
 
   def hostIntro
@@ -144,7 +143,7 @@ class Solver
 
   def findHost(lg : LoggedG,
                toBeContained : ConcreteNode,
-               specificPredicate : NodePredicateT = allwaysTrue,
+               specificPredicate : NodePredicate = allwaysTrue,
                parentsThatCanBeCreated : Int = 1)
               (k : Logged[FindHostResult] => Unit) : Unit = {
 
@@ -182,7 +181,7 @@ class Solver
   ( currentImplId : NodeId, //TODO look TODO in body to remove this arg
     abs : Abstraction,
     k : LoggedTG => Unit,
-    pred : NodePredicateT,
+    pred : NodePredicate,
     lg : LoggedG) : Unit = {
 
     val abstractionPolicy : AbstractionPolicy = abs.policy
@@ -256,7 +255,7 @@ class Solver
               rules.abstracter.createAbstraction(graph, currentImpl, absNodeKind, absPolicy) map {
                 case (abs, graph2) =>
                   findHostAfterAbsIntro(currentImpl.id, abs, ltg => k(ltg.map((abs, _))),
-                    rules.abstracter.absIntroPredicate(currentImpl, absPolicy, absNodeKind.kindType),
+                    rules.abstracter.absIntroPredicate(currentImpl, absPolicy, absNodeKind),
                     graph2.set(log))
               }
               ()

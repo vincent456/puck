@@ -382,7 +382,7 @@ class DependencyGraph
     }
 
   def canContain(n : DGNode, cn : ConcreteNode) : Boolean =
-      nodeKindKnowledge.canContain(this)(n,cn)
+      nodeKindKnowledge.canContain(this, n,cn)
 
   def canBe(n : DGNode, cn : ConcreteNode) : Boolean =
     nodeKindKnowledge.canBe(this)(n,cn)

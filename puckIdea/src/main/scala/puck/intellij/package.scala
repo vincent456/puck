@@ -5,4 +5,5 @@ package puck
  */
 package object intellij {
   val primitivePackage = "@primitive"
+  val puckToolWindowId = "Puck"
 }

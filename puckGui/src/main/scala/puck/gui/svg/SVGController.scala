@@ -41,7 +41,8 @@ abstract class SVGController
 
   implicit val executor : ExecutionContext
 
-  val console = frame.console
+
+  lazy val console = frame.console
   implicit val consoleLogger = new TextAreaLogger(console.textArea, _ => true )
 
   def nodesByName : Map[String, NodeId] =
@@ -173,7 +174,6 @@ abstract class SVGController
     setSubTreeVisibility(root, Hidden)
 
 
-
   def expandAll(root: NodeId) : Unit =
     setSubTreeVisibility(root, Visible)
 
@@ -210,7 +210,7 @@ abstract class SVGController
     console.displaySelection("")
   }
 
-  
+
 
   def printingOptions =
     PrintingOptions(visibility, printId, printSignatures,
@@ -220,9 +220,35 @@ abstract class SVGController
 
 
   def displayGraph
-  (graph: DependencyGraph): Unit =
-    SVGController.documentFromGraph(graph, graphUtils.dotHelper, printingOptions)(
-      msg => swingInvokeLater(() => console appendText msg)){
+  (graph: DependencyGraph, fail : Boolean = false): Unit =
+    SVGController.documentFromGraph(graph, graphUtils, printingOptions) {
+      res =>
+        val msg = res match {
+          case Success(0) => "Success"
+          case Success(n) =>
+            println("not really a success")
+            if (fail)
+              "An error that cannot be recovered occured during the production of the SVG file by Graphviz"
+            else {
+              val tmpDir = System.getProperty("java.io.tmpdir")
+              val f = new File(tmpDir + File.separator + "graph.dot")
+              DotPrinter.genDot(graph, graphUtils.dotHelper, printingOptions, new FileWriter(f))
+              SVGController.this.visibility = VisibilitySet.topLevelVisible(graph)
+
+              displayGraph(graph, fail = true)
+
+              "error during SVG production dot can be found at " + f.getAbsolutePath +
+                "\nretry with top level package visibility only"
+
+
+            }
+
+          case Failure(errMsg) =>
+            "Image creation failure : " + errMsg
+
+        }
+        swingInvokeLater(() => console appendText msg)
+    }{
       case doc =>
         swingInvokeLater(() => frame.canvas.setDocument(doc))
     }
@@ -277,12 +303,24 @@ abstract class SVGController
   def loadRecord(file : File) : Unit = {
     try {
       val r = Recording.load(file.getAbsolutePath, nodesByName)
+
+//      val fw = new FileWriter("/tmp/prettyRecord")
+//      import ShowDG._
+//      graph.recording.reverseIterator.foreach{ t =>
+//        fw.write((graph, t).shows + "\n")
+//      }
+
+
       pushGraph(r.reverse.foldLeft(graph){
         case (g, MileStone) =>
           undoStack.push(g)
+//          fw.write((g, MileStone).shows + "\n")
           MileStone.redo(g)
-        case (g, t) => t.redo(g)
+        case (g, t) =>
+//          fw.write((g, t).shows + "\n")
+          t.redo(g)
       })
+//      fw.close()
     }
     catch {
       case Recording.LoadError(msg, m) =>
@@ -364,7 +402,7 @@ abstract class SVGController
   def compareOutputGraph() : Unit
   def swingInvokeLater (f : () => Unit ) : Unit
 
-  pushGraph(dg2ast.initialGraph)
+
 }
 
 
@@ -383,8 +421,9 @@ object SVGController {
                 opts.visibility, opts.printId, opts.printSignatures){
       //val filesHandler: FilesHandler = filesHandler0
 
-
       implicit val executor = scala.concurrent.ExecutionContext.Implicits.global
+
+      pushGraph(dg2ast.initialGraph)
 
       def deleteOutDirAndapplyOnCode() : Unit = {
         console.appendText("Aplying recording on AST")
@@ -427,13 +466,31 @@ object SVGController {
     factory.createSVGDocument("", stream)
   }
 
+
+  def documentFromGraphErrorMsgGen(consumer : String => Unit) : scala.util.Try[Int] => Unit =
+    tr => {
+
+      val msg = tr match {
+        case Success(0) => "Success"
+        case Success(n) =>
+          "An error that cannot be recovered occured during the production of the SVG file by Graphviz"
+        case Failure(errMsg) =>
+          "Image creation failure : " + errMsg
+
+      }
+      consumer(msg)
+    }
+
+
+
   def documentFromGraph
   ( graph: DependencyGraph,
-    dotHelper : DotHelper,
-    printingOptions: PrintingOptions)
-  ( onDotConversionResult: String => Unit)
+    graphUtils : GraphUtils,
+    printingOptions: PrintingOptions,
+    fail : Boolean = false)
+  ( onDotConversionResult: scala.util.Try[Int] => Unit)
   ( onDocBuildingSuccess : PartialFunction[SVGDocument, Unit])
-  ( implicit executor: ExecutionContext )= {
+  ( implicit executor: ExecutionContext ) : Unit = {
 
     val pipedOutput = new PipedOutputStream()
     val pipedInput = new PipedInputStream(pipedOutput)
@@ -441,19 +498,9 @@ object SVGController {
       SVGController.documentFromStream(pipedInput)
     }
 
-    DotPrinter.genImage(graph, dotHelper, printingOptions, Svg, pipedOutput){
-      res =>
-      val msg = res match {
-       case Success(0) => "Success"
-        case Success(n) =>
-          "An error occured during the production of the SVG file, " +
-            "produced dot file can be found in out/graph.dot"
-        case Failure(errMsg) =>
-          "Image creation failure : " + errMsg
+    DotPrinter.genImage(graph, graphUtils.dotHelper, printingOptions, Svg,
+      pipedOutput)(onDotConversionResult)
 
-      }
-      onDotConversionResult(msg)
-    }
 
     fdoc.onSuccess(onDocBuildingSuccess)
   }

@@ -9,6 +9,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.{ProjectRootManager, JavaProjectRootsUtil}
 import com.intellij.openapi.roots.ui.configuration.ModulesConfigurator
 import com.intellij.openapi.wm.{ToolWindowManager, ToolWindow, ToolWindowFactory}
+import com.intellij.psi.search.FilenameIndex
 import com.intellij.ui.content.{Content, ContentManager}
 import org.jetbrains.annotations.NotNull
 import puck.graph.{NodeId, GraphUtils}
@@ -49,7 +50,7 @@ object IntellijSVGController {
 
         lazy implicit val executor  = IntellijExecutionContext
 
-
+        pushGraph(dg2ast.initialGraph)
 
         def deleteOutDirAndapplyOnCode() : Unit = {
 
@@ -90,10 +91,18 @@ object PuckToolWindow {
     val controlBuilder =
       IntellijSVGController.builderFromModule(m, printingOptions, JGraphUtils, dg2ast)
 
+
     val p = new SVGPanel(controlBuilder) with Runnable {
       def run() : Unit = this.revalidate()
     }
     sSvgController = Some(p.controller)
+
+    val farray = FilenameIndex.getVirtualFilesByName(m.getProject, "decouple.pl", m.getModuleScope)
+    if (farray.size()>0){
+      val f = farray.iterator().next()
+      parseConstraint( new File(f.getCanonicalPath))
+    }
+
     p
   }
 

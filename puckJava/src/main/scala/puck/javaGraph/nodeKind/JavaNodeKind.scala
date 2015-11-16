@@ -99,8 +99,10 @@ object JavaNodeKind extends NodeKindKnowledge {
                           (pred: ConcreteNode => Boolean): Boolean =
     graph.getNode(nid) mapConcrete (pred, false)
 
-  override def canContain(graph : DependencyGraph)
-                         (n : DGNode, other : ConcreteNode) : Boolean = {
+  override def canContain
+  ( graph : DependencyGraph,
+    n : DGNode,
+    other : ConcreteNode) : Boolean = {
     val id = n.id
 
     def noNameClash( l : Int )( cId : NodeId ) : Boolean =
@@ -126,7 +128,7 @@ object JavaNodeKind extends NodeKindKnowledge {
         }
       })
 
-    super.canContain(graph)(n, other) &&
+    super.canContain(graph, n, other) &&
       (!other.kind.isInstanceOf[MethodKind] || {
       (other.kind, graph.structuredType(other.id)) match {
         case (AbstractMethod, Some(absMethodType @ Arrow(Tuple(input), _))) =>

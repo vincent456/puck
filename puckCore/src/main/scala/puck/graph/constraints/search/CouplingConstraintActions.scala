@@ -6,6 +6,7 @@ import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations.TransformationRules
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, CreateVarStrategy}
 import puck.search.{SearchStrategyDecorator, SearchState, SearchStrategy}
+import puck.util.LoggedEither
 import puck.util.LoggedEither._
 
 import scalaz.std.list._
@@ -28,8 +29,6 @@ class CouplingConstraintSolvingControl
 
   implicit def setState( s : (Seq[LoggedTry[DependencyGraph]], Int) ) : Seq[LoggedTry[(DependencyGraph, Int)]] =
      s._1 map ( _ map ((_, s._2)))
-
-
 
 
   def nextStates(g : DependencyGraph, state : Int) : Seq[LoggedTry[(DependencyGraph, Int)]] =
@@ -64,7 +63,7 @@ class CouplingConstraintSolvingControl
         g => Seq(LoggedSuccess("Epsilon transition", g))
 
   val hostIntroAction : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-       actionsGenerator.hostIntro(violationTarget) andThen (_ map ( ng => LoggedSuccess(ng._2) ) )
+       actionsGenerator.hostIntro(violationTarget) andThen (_ map ( _ map extractGraph ) )
 
   val moveAction : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
        actionsGenerator.move(violationTarget) andThen (_ map ( _ map extractGraph))
@@ -76,7 +75,6 @@ class CouplingConstraintSolvingControl
       actionsGenerator.absIntro(violationTarget) andThen (_ map ( _ map extractGraph))
 
 
-  
 
 }
 
@@ -86,29 +84,30 @@ class SolvingActions
   var newCterNumGen = 0
 
   def containerKind
-  ( g : DependencyGraph, toBeContained : DGNode
+  ( g : DependencyGraph, toBeContainedKind : NodeKind
     ) : Stream[NodeKind] = {
-    g.nodeKinds.toStream.filter(_.canContain(toBeContained.kind))
+    g.nodeKinds.toStream.filter(_.canContain(toBeContainedKind))
   }
 
   def hostIntro
   (toBeContained : ConcreteNode
-    ) : DependencyGraph => Stream[(NodeId, DependencyGraph)] =
+    ) : DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] =
     g =>
-      containerKind(g, toBeContained) map {
+      containerKind(g, toBeContained.kind) map {
         hostKind =>
           newCterNumGen += 1
           val hostName = s"${toBeContained.name}_container$newCterNumGen"
           rules.intro(g, hostName, hostKind)
       } flatMap {
         case (n, g1) =>
-          findHost(n)(g1)
+          findHost(n)(g1) map (ltg => s"Searching host for $n\n" <++: ltg map {
+            case (hid, g2) => (n.id, g2.addContains(hid, n.id))
+          })
       }
 
   def findHost
-  ( toBeContained : ConcreteNode
-    ) : DependencyGraph => Stream[(NodeId, DependencyGraph)] =
-    chooseNode(_.canContain(_, toBeContained))
+  ( toBeContained : ConcreteNode ) : DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] =
+    chooseNode((dg, cn) => dg.canContain(cn, toBeContained))
 
   type NodePredicate = (DependencyGraph, ConcreteNode) => Boolean
 
@@ -117,27 +116,36 @@ class SolvingActions
     case _ => false
   }
 
+  def logNodeChosen(n : DGNode, graph : DependencyGraph) : LoggedTry[(NodeId, DependencyGraph)] =
+    LoggedSuccess(s"node chosen is $n\n", (n.id, graph))
+
+
   def chooseNode
   ( predicate : NodePredicate)
-  : DependencyGraph => Stream[(NodeId, DependencyGraph)] = {
+  : DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] = {
     graph =>
 
       val choices = graph.concreteNodes.filter(predicate(graph,_)).toList
 
-      val s = partitionByKind(graph)(choices, List()).toStream
+      if(choices.isEmpty) Stream(LoggedError("choose node, no choice"))
+      else {
 
-      s flatMap {
-        nel =>
-          if(nel.tail.isEmpty) Stream( (nel.head.id, graph) )
-          else if (canBeVirtualized (nel.head.kind.kindType)){
-            val (vn, g2) = graph.addVirtualNode(nel.toList.map(_.id).toSeq,  nel.head.kind)
-            Stream( (vn.id, g2) )
-          }
-          else {
-            nel.toStream map (n => (n.id, graph))
-          }
+        val s = partitionByKind(graph)(choices, List()).toStream
+
+
+        s flatMap {
+          nel =>
+            if (nel.tail.isEmpty) Stream(logNodeChosen(nel.head, graph))
+            else if (canBeVirtualized(nel.head.kind.kindType)) {
+              val (vn, g2) = graph.addVirtualNode(nel.toList.map(_.id).toSeq, nel.head.kind)
+              Stream(logNodeChosen(vn, g2))
+            }
+            else {
+              nel.toStream map (logNodeChosen(_, graph))
+            }
+        }
       }
-  }
+ }
 
   def partitionByKind
   ( graph : DependencyGraph
@@ -159,15 +167,15 @@ class SolvingActions
 
   def move
   ( wronglyContained : ConcreteNode
-    ) : DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] =
+    ) : DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] = {
     g0 =>
       findHost(wronglyContained)(g0) flatMap {
-        case (newCter, g) =>
-          val oldCter = g.container_!(wronglyContained.id)
-
-          doMove(g, wronglyContained, oldCter, newCter) map ( ltg => ltg.map((newCter,_)))
+        case LoggedEither(log, -\/(err)) => Stream(LoggedEither(log, -\/(err)))
+        case LoggedEither(log, \/-((newCter, g))) =>
+              val oldCter = g.container_!(wronglyContained.id)
+              doMove(g, wronglyContained, oldCter, newCter) map (ltg => ltg.map((newCter, _)))
       }
-
+  }
 
 
   def doMove
@@ -212,24 +220,49 @@ class SolvingActions
       s"from ${(g, oldCter).shows} to ${(g, newCter).shows}" <++: ltg }
   }
 
-  
-  
   def absIntro
+  (impl : ConcreteNode
+  ) : DependencyGraph => Stream[LoggedTry[(Abstraction, DependencyGraph)]] =
+    g =>
+      impl.kind.abstractionChoices.toStream map {
+        case (absNodeKind, absPolicy) =>
+          rules.abstracter.createAbstraction(g, impl, absNodeKind, absPolicy)
+      } flatMap {
+        case LoggedEither(log, -\/(err)) => Stream(LoggedEither(log, -\/(err)))
+        case LoggedEither(log, \/-((abs, g2))) =>
+          val absNodeKind = abs.kind(g2)
+
+          (hostIntro(g2.getConcreteNode(abs.nodes.head))(g2) ++
+            chooseNode(rules.abstracter.absIntroPredicate(impl,
+              abs.policy, absNodeKind))(g2)).map {
+                lt => lt.flatMap {
+                  case (host, g3) =>
+                    s"Searching host for $abs\n" <++: introAbsContainsAndIsa(abs, impl, g3, host)
+                }
+          }
+      }
+
+
+
+/*  def absIntro
   (impl : ConcreteNode
     ) : DependencyGraph => Stream[LoggedTry[(Abstraction, DependencyGraph)]] =
     g =>
     impl.kind.abstractionChoices.toStream flatMap {
       case (absNodeKind, absPolicy) =>
+
         chooseNode(rules.abstracter.absIntroPredicate(impl,
-          absPolicy, absNodeKind.kindType))(g).map {
-          case (host, g2) =>
-            rules.abstracter.createAbstraction(g2, impl, absNodeKind, absPolicy).flatMap {
-              case (abs, g3) => introAbsContainsAndIsa(abs, impl, g3, host)
-                
-            }
+          absPolicy, absNodeKind))(g) .map { lt =>
+           lt.flatMap {
+            case (host, g2) =>
+              rules.abstracter.createAbstraction(g2, impl, absNodeKind, absPolicy).flatMap {
+                case (abs, g3) =>
+                  s"Searching host for $abs\n" <++: introAbsContainsAndIsa(abs, impl, g3, host)
+              }
+          }
         }
 
-    }
+    }*/
 
   def introAbsContainsAndIsa
    ( abs : Abstraction,
@@ -314,7 +347,7 @@ class SolvingActions
 
 
 
-  implicit val LTM = puck.util.LoggedEither.loggedEitherMonad[Error]
+ /* implicit val LTM = puck.util.LoggedEither.loggedEitherMonad[Error]
 
   type FindHost = (DependencyGraph, ConcreteNode) => LoggedTry[(NodeId, DependencyGraph)]
   type DoMove = (DependencyGraph, ConcreteNode, NodeId, NodeId) => (LoggedTG \/ (CreateVarStrategy => LoggedTG))
@@ -348,7 +381,7 @@ class SolvingActions
 
       LTM.cozip(findHost(g0, wronglyContained) map moveThenCheck.tupled).bimap(LTM.join,identity)
 
-  }
+  }*/
 
 
 }

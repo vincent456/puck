@@ -45,10 +45,12 @@ class IntellijGraphBuilder (val module : Module)
     //FilenameIndex.getAllFilesByExt(project, "java")
     FileTypeIndex.getFiles(JavaFileType.INSTANCE, module.getModuleScope)
   }
+
   val psiManager = PsiDocumentManager.getInstance(module.getProject)
+
   val psiFiles = (getJavaSources filterNot (_.isDirectory) map {
     vf =>
-      println(vf.getName)
+      //println(vf.getName)
       val doc = FileDocumentManager.getInstance().getDocument(vf)
       psiManager getPsiFile doc
   }).toList
@@ -71,6 +73,8 @@ class IntellijGraphBuilder (val module : Module)
       case Nil => sys.error("expecting a container")
     }
 
+
+
   def build() : DG2AST = {
     psiFiles.foreach ( _ accept this )
     val pid = getPrimitivePackage
@@ -78,6 +82,8 @@ class IntellijGraphBuilder (val module : Module)
     AttachOrphanNodes()
     registerSuperTypes()
 
+    //println(g.nodes mkString "\n")
+    //println(nodesByName.keys mkString "\n")
     new  IntellijDG2AST(module,
       g.newGraph(recording = Seq()),
       NodeMappingInitialState.normalizeNodeTransfos(JavaNodeKind.rootKind,
@@ -88,6 +94,9 @@ class IntellijGraphBuilder (val module : Module)
 
   def getPrimitivePackage : NodeIdT =
     GetNode(primitivePackage, primitivePackage, PackageDummyWrapper, mutable = false)
+
+  def fromSource(e : PsiElement) : Boolean =
+    psiFiles contains e.getContainingFile
 
 
 
@@ -113,14 +122,22 @@ class IntellijGraphBuilder (val module : Module)
     }
   }
 
-  def addIsas(cid : NodeId, superList : PsiReferenceList) : Unit = {
-    superList.getReferencedTypes map (_.resolve()) filter (_.getName != "Object") foreach { c =>
-      val superId = GetNode(c)
-      addIsa(cid, superId)
+  def addIsas(cid : NodeId, superList : PsiReferenceList) : Unit =
+    if (superList != null) {
+      superList.getReferencedTypes map (_.resolve()) filter {
+        case c: PsiAnonymousClass =>
+          println("name is null" + c.getName == null)
+          true
+        case c => c.getName != "Object"
+      } foreach { c =>
+        val superId = GetNode(c)
+        addIsa(cid, superId)
+      }
     }
-  }
+
 
   override def visitClass(aClass: PsiClass) : Unit = {
+
     val cid = GetNode(aClass)
     addContains(directContainer, cid)
 
@@ -145,7 +162,7 @@ class IntellijGraphBuilder (val module : Module)
     field.getInitializer match {
       case null =>
       case init =>
-        val iid = GetNode.anonymous(QualifiedName(field), ExprHolder(init))
+        val iid = GetNode.anonymous(QualifiedName(field), ExprHolder(init), fromSource(init))
         addDef(fid, iid)
         visitElement(iid, init)
     }
@@ -161,7 +178,7 @@ class IntellijGraphBuilder (val module : Module)
     val params = method.getParameterList.getParameters.toList
     val param_prefix = QualifiedName.memberQN(method)
     val paramIds = params map { p =>
-      val pid = GetNode.parameter(param_prefix, p)
+      val pid = GetNode.parameter(param_prefix, p, fromSource(p))
       val tid = GetNode(p.getType)
       setType(pid, NamedType(tid))
       pid
@@ -190,7 +207,7 @@ class IntellijGraphBuilder (val module : Module)
     method.getBody match {
       case null => ()
       case body =>
-        val bid = GetNode.anonymous(mqname, BlockHolder(body))
+        val bid = GetNode.anonymous(mqname, BlockHolder(body), fromSource(body))
         addDef(mid, bid)
         visitElement(bid, body)
     }
