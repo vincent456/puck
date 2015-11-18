@@ -122,6 +122,17 @@ class IntellijGraphBuilder (val module : Module)
     }
   }
 
+  override def addPackage(p : String, mutable : Boolean): NodeIdT = {
+    val pid = super.addPackage(p, mutable)
+    graph2ASTMap get pid match {
+      case None => graph2ASTMap += (pid -> PackageDummyWrapper)
+      case Some(_) => ()
+    }
+    pid
+  }
+
+
+
   def addIsas(cid : NodeId, superList : PsiReferenceList) : Unit =
     if (superList != null) {
       superList.getReferencedTypes map (_.resolve()) filter {

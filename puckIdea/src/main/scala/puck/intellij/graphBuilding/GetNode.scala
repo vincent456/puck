@@ -90,7 +90,8 @@ object GetNode {
   def apply
   ( p : PsiPackage, mutable : Boolean)
   ( implicit builder: IntellijGraphBuilder ) : NodeId =
-    builder.addPackage(p.getQualifiedName, mutable = true)
+   builder.addPackage(p.getQualifiedName, mutable = true)
+
 
 
   def psiMemberDefAncestorNode

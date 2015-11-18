@@ -15,6 +15,9 @@ sealed abstract class HasNode extends PsiNodeWrapper {
 case object PackageDummyWrapper extends PsiNodeWrapper {
   def kind  = Package
 }
+case object EmptyDef extends PsiNodeWrapper {
+  def kind = Definition
+}
 
 sealed abstract class DefHolder extends HasNode {
   def kind = Definition

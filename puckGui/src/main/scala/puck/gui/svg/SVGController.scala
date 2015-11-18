@@ -137,10 +137,7 @@ abstract class SVGController
     frame.centerPane.revalidate()
   }
 
-  def hide(id : NodeId): Unit = {
-    visibility = visibility.setVisibility(id, Hidden)
-    setSubTreeVisibility(id, Hidden)
-  }
+
 
   def focusExpand(id : NodeId, focus : Boolean, expand : Boolean) : Unit = {
     if(focus)
@@ -164,18 +161,20 @@ abstract class SVGController
     displayGraph(graph)
   }
 
-  private def setSubTreeVisibility(rootId : NodeId, v : Visibility): Unit ={
-    val nodes = graph.subTree(rootId, includeRoot = false)
+  private def setSubTreeVisibility(rootId : NodeId, v : Visibility, includeRoot : Boolean): Unit ={
+    val nodes = graph.subTree(rootId, includeRoot)
     visibility = visibility.setVisibility(nodes, v)
     displayGraph(graph)
   }
 
-  def collapse(root: NodeId) : Unit =
-    setSubTreeVisibility(root, Hidden)
+  def hide(root : NodeId): Unit =
+    setSubTreeVisibility(root, Hidden, includeRoot = true)
 
+  def collapse(root: NodeId) : Unit =
+    setSubTreeVisibility(root, Hidden, includeRoot = false)
 
   def expandAll(root: NodeId) : Unit =
-    setSubTreeVisibility(root, Visible)
+    setSubTreeVisibility(root, Visible, includeRoot = true)
 
   val defaultColor = "black"
 
@@ -282,10 +281,11 @@ abstract class SVGController
     updateStackListeners()
   }
 
-  def pushGraph(graph: DependencyGraph) = {
+  def pushGraph(graph: DependencyGraph, display: Boolean = true) = {
     undoStack.push(graph)
     redoStack.clear()
-    displayGraph(graph)
+    if(display)
+      displayGraph(graph)
 
     //console.displayWeight(Metrics.weight(graph, graph.nodeKindKnowledge.lightKind))
 
