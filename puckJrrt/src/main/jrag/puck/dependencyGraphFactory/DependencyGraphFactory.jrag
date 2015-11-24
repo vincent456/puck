@@ -1,0 +1,424 @@
+import puck.jastadd.JastaddGraphBuilder;
+import puck.graph.Uses;
+import puck.graph.Isa;
+import puck.graph.ParameterizedUses;
+import puck.graph.DGUses;
+import puck.graph.UsesAccessKind;
+import puck.LoadingListener;
+
+aspect DependencyGraphFactory {
+
+	public JastaddGraphBuilder Program.buildDependencyGraph(Map<String,Collection<BodyDecl>> stringsRequest, LoadingListener ll){
+
+		JastaddGraphBuilder builder = new JastaddGraphBuilder(this);
+
+		if(stringsRequest != null){
+			for (java.util.Map.Entry<String, Collection<BodyDecl>>  entry : allStringUses(stringsRequest).entrySet()) {
+				builder.addStringLiteral(entry.getKey(), entry.getValue());
+			}
+		}
+
+		if(ll == null)
+            ll = new LoadingListener(){ public void update(double loading){}};
+
+		build(builder, ll);
+
+		return builder;
+	}
+
+	void PrimitiveCompilationUnit.addPrimitiveTypes(JastaddGraphBuilder builder){
+		builder.addApiTypeNodeAndRegister(typeBoolean());
+		builder.addApiTypeNodeAndRegister(typeByte());
+		builder.addApiTypeNodeAndRegister(typeShort());
+		builder.addApiTypeNodeAndRegister(typeChar());
+		builder.addApiTypeNodeAndRegister(typeInt());
+		builder.addApiTypeNodeAndRegister(typeLong());
+		builder.addApiTypeNodeAndRegister(typeFloat());
+		builder.addApiTypeNodeAndRegister(typeDouble());
+		builder.addApiTypeNodeAndRegister(typeVoid());
+		builder.addApiTypeNodeAndRegister(typeNull());
+	}
+
+    public int Program.getNumCuFromSources(){
+        int i =0;
+        for (CompilationUnit cu : (List<CompilationUnit>)getCompilationUnitList()){
+            if(cu.fromSource())
+            i++;
+        }
+        return i;
+    }
+
+	private void Program.build(JastaddGraphBuilder builder, LoadingListener ll){
+		double nchild = getNumCuFromSources();
+		double d = 0.0;
+		getPrimitiveCompilationUnit().addPrimitiveTypes(builder);
+
+        for (CompilationUnit cu : (List<CompilationUnit>)getCompilationUnitList()){
+            if(cu.fromSource()){
+                if(!cu.buildDependencyGraph_CU(builder))
+                break;
+                d++;
+                ll.update(d/nchild);
+            }
+        }
+		ll.update(1);
+	}
+
+
+	void ASTNode.buildDGInChildren(JastaddGraphBuilder builder, int containerId){
+		for(int i=0; i< getNumChild(); i++){
+			getChild(i).buildDG(builder, containerId);
+		}
+	}
+
+	public void ASTNode.buildDG(JastaddGraphBuilder builder, int containerId){
+		//System.err.println(this.getClass() + ".buildDG() : " + getNumChild() +" children");
+		buildDGInChildren(builder, containerId);
+	}	
+
+	public boolean CompilationUnit.buildDependencyGraph_CU(JastaddGraphBuilder builder){
+		if(pathName() != null){
+			int packageNode = builder.addPackage(getPackageDecl(), true);
+
+			for (TypeDecl td : getTypeDecls()){
+				td.buildDG(builder, packageNode);
+			}
+			return true;
+		}
+		else{
+			if(!getPackageDecl().equals("@primitive"))
+				System.err.println(getPackageDecl()+" : pathName = null");
+			return false;
+		}
+	}
+
+	public void TypeDecl.buildDG(JastaddGraphBuilder builder, int containerId){
+		
+		int tdNode = buildDG_TypeDecl(builder);
+		builder.addContains(containerId, tdNode);
+
+//        System.out.println("[BUILD] TypeDecl.buildDG " + this.fullName());
+//        System.out.println("[BUILD] "+this.getClass()+".isParameterized = "+ isParameterizedType());
+
+        if(isParameterizedType()){
+            ParTypeDecl parTypeDecl = (ParTypeDecl) this;
+            System.out.println("[BUILD] parameterized type " + parTypeDecl.nameWithArgs());
+
+            /*for(int i=0; i<parTypeDecl.getNumArgument(); i++){
+                Access ta = parTypeDecl.getArgument(i);
+                int typeArgNode = ta.buildDGNode(builder);
+
+                builder.addContains(tdNode, typeArgNode);
+            }*/
+        }
+
+//        if(isGenericType()){
+//            GenericTypeDecl genericTypeDecl = (GenericTypeDecl) this;
+//            List<TypeVariable>  types = genericTypeDecl.getTypeParameterList();
+//            for(TypeVariable tv : types){
+//                int typeArgNode = tv.buildDGNode(builder);
+//                builder.addContains(tdNode, typeArgNode);
+//            }
+//        }
+
+
+        for (BodyDecl bd : getBodyDeclList()) {
+			bd.buildDG(builder, tdNode);
+		}
+	}
+
+
+	int TypeDecl.buildDG_TypeDecl(JastaddGraphBuilder builder){
+		throw new DGBuildingError(this.getClass() + " : expected ClassDecl or InterfaceDecl");
+	}
+
+
+	void ClassDecl.addExtends(JastaddGraphBuilder builder, int thisId){
+		if (hasSuperclass() && !"java.lang.Object".equals(superclass().fullName())){
+			
+			builder.addIsa(thisId, getSuperClass().buildDGNode(builder));
+
+			getSuperClass().addImplementsEdges(builder, thisId);
+		}
+	}
+
+	int TypeVariable.buildDG_TypeDecl(JastaddGraphBuilder builder){
+		return buildDGNode(builder);
+	}
+
+	int ClassDecl.buildDG_TypeDecl(JastaddGraphBuilder builder){
+		int nodeId = buildDGNode(builder);
+
+		addExtends(builder, nodeId);
+
+		TypeDecl.addImplements(builder, nodeId, getImplementss());
+
+		return nodeId;
+	}
+
+	int InterfaceDecl.buildDG_TypeDecl(JastaddGraphBuilder builder){
+		int agNode = buildDGNode(builder);
+
+		TypeDecl.addImplements(builder, agNode, getSuperInterfaceList());
+
+		return agNode;
+	}
+
+	public void BodyDecl.buildDG_handleDef(JastaddGraphBuilder builder, int thisDeclId){
+		ASTNode def = getDefinition();
+		int defId = builder.addDefinitionNode();
+		def.registerDef(builder, defId);
+		builder.addDef(thisDeclId, defId);
+		def.buildDG(builder, defId);
+	}
+
+
+	public void ParameterDeclaration.buildDG(JastaddGraphBuilder builder, int containerId){
+		int thisID = buildDGNode(builder);
+		buildDGInChildren(builder, thisID);
+	}
+
+	public void BodyDecl.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId ){
+		if(isNamedElement()){
+			int declId = buildDGNode(builder);
+			builder.addContains(hostTypeDeclId, declId);
+
+			buildDGType(builder, declId);
+
+			if(hasDefinition()){
+				for(int i=0; i< getNumChild(); i++)
+					if( i != getDefIndex()
+						&& i != getParamIndex()
+						&& i != getReturnTypeIndex() )
+						getChild(i).buildDG(builder, declId);
+
+				buildDG_handleDef(builder, declId);
+			}
+            else{
+				for(int i=0; i<getNumChild(); i++)
+					if( i !=getParamIndex()
+						&& i != getReturnTypeIndex() )
+						getChild(i).buildDG(builder, declId);
+			}
+
+		}
+		else
+			System.err.println("TODO !! "+ this.getClass() +".buildDG(JastaddGraphBuilder, int)");
+		
+	}
+
+	public void ASTNode.registerDef(JastaddGraphBuilder builder, int thisId){
+		throw new Error("registerAsDef not defined for " + this.getClass());
+	}
+
+	public void Block.registerDef(JastaddGraphBuilder builder, int thisId){
+		builder.registerDef(thisId, this);
+	}
+
+	public void Expr.registerDef(JastaddGraphBuilder builder, int thisId){
+		builder.registerDef(thisId, this);
+	}
+
+	static void Access.buildDG(TypeMemberAccess access, int containerId,
+        scala.Option<UsesAccessKind> accK, JastaddGraphBuilder builder){
+		int nodeId = access.buildDGNode(builder);
+
+		Uses typeMemberUses = new Uses(containerId, nodeId, accK);
+		builder.addEdge(typeMemberUses);
+
+		if(!(access instanceof StaticDeclAccess && ((StaticDeclAccess)access).isDeclStatic())) {
+			int typeUserId = access.buildTypeUserDGNode(builder, typeMemberUses);
+			//int typeUsedId = access.decl().hostType().buildDGNode(builder);
+			int typeUsedId = access.declaredTypeOfQualifier().buildDGNode(builder);
+
+			//the first use is a typeUses : it must have no accesskind
+			builder.addTypeRelationship(new Uses(typeUserId, typeUsedId, UsesAccessKind.none()),
+			typeMemberUses);
+		}
+	}
+	public void MethodAccess.buildDG(JastaddGraphBuilder builder, int containerId){
+
+		buildDG(this, containerId, UsesAccessKind.none(), builder);
+
+		for(Expr e : getArgList()){
+			e.buildDG(builder, containerId);
+		}
+	}
+
+	public void VarAccess.buildDG(JastaddGraphBuilder builder, int containerId){
+		//if(decl().isInstanceVariable() || decl().isClassVariable()){
+		/*if(decl().isLocalVariable() || decl().isMethodParameter()){
+			builder.addUses(containerId, buildDGNode(builder));
+		}
+		else */if(decl().isField()){
+            buildDG(this, containerId, usesAccessKind(), builder);
+		}
+	}
+	
+	public void SuperConstructorAccess.buildDG(JastaddGraphBuilder builder, int containerId){
+		//if(!decl().type().fullName().equals( "java.lang.Object")){
+		if(!decl().type().fullName().equals( "@primitive.Unknown")){
+		//happens when call to constructor of java.lang.Object TODO check if no other cases
+
+		  	buildDGInChildren(builder, containerId);
+
+	      	int classNodeId = decl().buildDGNode(builder);
+	      	int ctorNodeId = buildDGNode(builder);
+
+		  	DGUses typeUse = new Uses(containerId, classNodeId, UsesAccessKind.none());
+		  	DGUses superConstructorUses = new Uses(containerId, ctorNodeId, UsesAccessKind.none());
+
+	      	builder.addEdge(typeUse);
+			builder.addEdge(superConstructorUses);
+
+	      	builder.addTypeRelationship(typeUse, superConstructorUses);
+
+	    }
+  	}
+
+	public void ClassInstanceExpr.buildDG(JastaddGraphBuilder builder, int containerId){
+		//System.err.println("ClassInstanceExpr.buildDG : " + this);
+
+		getArgList().buildDG(builder, containerId);
+		getTypeDeclOpt().buildDG(builder, containerId);
+
+		int classNodeId = getAccess().buildDGNode(builder);
+        int ctorNodeId = buildDGNode(builder);
+
+		DGUses constructorUses = new Uses(containerId, ctorNodeId, UsesAccessKind.none());
+		builder.addEdge(constructorUses);
+
+//		DGUses typeUse = new Uses(containerId, classNodeId, UsesAccessKind.none());
+//		builder.addEdge(typeUse);
+//		builder.addTypeRelationship(typeUse, constructorUses);
+
+	}
+
+	syn boolean ASTNode.isAbstractDot();
+	eq ASTNode.isAbstractDot() = false;
+	eq AbstractDot.isAbstractDot() = true;
+
+	public Expr Access.getLeftExpr(){
+		if(!getParent().isAbstractDot())
+			return null;
+		
+		AbstractDot parent = (AbstractDot) getParent();
+		Expr lsibling = parent.getLeft();
+		
+		if(lsibling == this) //already leftmost child
+			return null;
+		
+		if(lsibling.isAbstractDot())
+			return ((AbstractDot)lsibling).getRight();
+		
+		return lsibling;
+	}
+
+	public void AbstractDot.buildDG(JastaddGraphBuilder builder, int containerId){
+		if(isRightRotated())
+			rotateLeft();
+
+		if( (getRight() instanceof StaticDeclAccess)
+		&& ((StaticDeclAccess) getRight()).isDeclStatic())
+			getRight().buildDG(builder, containerId);
+		else
+			buildDGInChildren(builder, containerId);
+	}
+
+	public void Access.buildDG(JastaddGraphBuilder builder, int containerId){
+		if(this.getClass() != ThisAccess.class
+			&& this.getClass() != ClassAccess.class)
+			System.err.println("TODO !! "+this.getClass()+".buildDG : " + this);
+		super.buildDG(builder, containerId);
+	}
+
+	public void ArrayAccess.buildDG(JastaddGraphBuilder builder, int containerId){
+		int nodeId = buildDGNode(builder);
+		builder.addEdge(new Uses(containerId, nodeId, UsesAccessKind.none()));
+		buildDGInChildren(builder, containerId);
+	}
+	
+	public void TypeAccess.buildDG(JastaddGraphBuilder builder, int containerId){
+		int nodeId = buildDGNode(builder);
+		builder.addEdge(new Uses(containerId, nodeId, UsesAccessKind.none()));
+	}
+
+	public void ParTypeAccess.buildDG(JastaddGraphBuilder builder, int containerId){
+		int nodeId = buildDGNode(builder);
+		builder.addEdge(new Uses(containerId, nodeId, UsesAccessKind.none()));
+		buildDGInChildren(builder, containerId);
+	}
+
+	static void TypeDecl.addImplements(JastaddGraphBuilder builder,
+    	int sub, List<Access> implementList){
+
+    	for(Access a : implementList){
+			a.addImplementsEdges(builder, sub);
+    	}
+	}
+
+	void Access.addImplementsEdges(JastaddGraphBuilder builder, int sub){
+		throw new DGBuildingError(
+		this.compilationUnit().pathName() /*+ " line " + this.getLocation()*/ +
+		this.getClass() + " : expected TypeAccess or ParTypeAccess");
+	}
+
+	void Dot.addImplementsEdges(JastaddGraphBuilder builder, int sub){
+		if(!isRightRotated())
+			rotateRight();
+
+		getRight().addImplementsEdges(builder, sub);
+	}
+
+	void TypeAccess.addImplementsEdges(JastaddGraphBuilder builder, int sub) {
+		builder.addEdge(new Isa(sub, buildDGNode(builder)));
+//		int sn = buildDGNode(builder);
+//		builder.addEdge(new Uses(sub, sn, UsesAccessKind.none()));
+	}
+
+	void ParTypeAccess.addImplementsEdges(JastaddGraphBuilder builder, int sub){
+		getTypeAccess().addImplementsEdges(builder, sub);
+		for(Access typeArg : getTypeArguments()){
+			typeArg.addImplementsUses(builder, sub);
+		}
+	}
+
+	void Access.addImplementsUses(JastaddGraphBuilder builder, int sub) {
+		throw new DGBuildingError(this.getClass() + " : expected TypeAccess or ParTypeAccess");
+	}
+	void TypeAccess.addImplementsUses(JastaddGraphBuilder builder, int sub){
+		int sn = buildDGNode(builder);
+		builder.addEdge(new Uses(sub, sn, UsesAccessKind.none()));
+	}
+
+	void ParTypeAccess.addImplementsUses(JastaddGraphBuilder builder, int sub){
+		getTypeAccess().addImplementsUses(builder, sub);
+		for(Access typeArg : getTypeArguments()){
+			typeArg.addImplementsUses(builder, sub);
+		}
+	}
+
+	boolean TypeDecl.isFromStdLib(){
+			return compilationUnit().packageName() == PRIMITIVE_PACKAGE_NAME ||
+              compilationUnit().pathName().startsWith(System.getProperty("java.home"));
+	}
+
+
+
+	public ConstructorDecl TypeDecl.findConstructorBySignature(String paramsDescr){
+		Collection<ConstructorDecl> ctrs = constructors();
+
+		for(ConstructorDecl c : ctrs){
+			if(c.getParametersAsString().equals(paramsDescr)){
+				return c;
+			}
+		}
+		return null;
+	}
+	
+
+	//also present in jrrt-read-only/test/Testing.jrag
+	public Program Frontend.getProgram() {
+		return program;
+	}
+}

@@ -2,6 +2,7 @@ package puck.jastadd
 
 import puck.PuckError
 import puck.graph._
+import org.extendj.{ast => AST}
 
 object ASTNodeLink{
 

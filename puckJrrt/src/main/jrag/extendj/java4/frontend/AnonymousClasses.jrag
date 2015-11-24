@@ -1,0 +1,145 @@
+/* Copyright (c) 2005-2008, Torbjorn Ekman
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ * contributors may be used to endorse or promote products derived from this
+ * software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+aspect AnonymousClasses {
+
+  inh TypeDecl AnonymousDecl.superType();
+  eq ClassInstanceExpr.getTypeDecl().superType() = getAccess().type();
+  eq Program.getChild().superType() = null;
+
+  inh ConstructorDecl AnonymousDecl.constructorDecl();
+
+  eq ClassInstanceExpr.getTypeDecl().constructorDecl() {
+    Collection<ConstructorDecl> c = getAccess().type().constructors();
+    SimpleSet maxSpecific = mostSpecificConstructor(c);
+    if (maxSpecific.size() == 1) {
+      return (ConstructorDecl) maxSpecific.iterator().next();
+    }
+    return unknownConstructor();
+  }
+
+  eq Program.getChild().constructorDecl() = unknownConstructor();
+
+  public int TypeDecl.anonymousIndex = 0;
+
+  eq AnonymousDecl.isCircular() = false;
+
+  syn lazy Opt AnonymousDecl.getSuperClassOpt() {
+    if (superType().isInterfaceDecl()) {
+      return new Opt(typeObject().createQualifiedAccess());
+    } else {
+      return new Opt(superType().createBoundAccess());
+    }
+  }
+
+  syn lazy List AnonymousDecl.getImplementsList() {
+    if (superType().isInterfaceDecl()) {
+      return new List().add(superType().createBoundAccess());
+    } else {
+      return new List();
+    }
+  }
+
+  public int TypeDecl.nextAnonymousIndex() {
+    if (isNestedType()) {
+      return enclosingType().nextAnonymousIndex();
+    }
+    return anonymousIndex++;
+  }
+
+  /**
+   * Create the list of parameters for the anonymous class constructor.
+   */
+  protected List AnonymousDecl.constructorParameterList(ConstructorDecl decl) {
+    List parameterList = new List();
+    for (int i = 0; i < decl.getNumParameter(); i++) {
+      ParameterDeclaration param = decl.getParameter(i);
+      parameterList.add(
+          new ParameterDeclaration(
+            param.type().createBoundAccess(),
+            param.name()
+            )
+          );
+    }
+
+    return parameterList;
+  }
+
+  inh TypeDecl AnonymousDecl.typeNullPointerException();
+
+  syn lazy Collection FieldDeclaration.exceptions() {
+    HashSet set = new HashSet();
+    if (isInstanceVariable() && hasInit()) {
+      collectExceptions(set, this);
+      for (Iterator iter = set.iterator(); iter.hasNext(); ) {
+        TypeDecl typeDecl = (TypeDecl) iter.next();
+        if (!getInit().reachedException(typeDecl)) {
+          iter.remove();
+        }
+      }
+    }
+    return set;
+  }
+
+  syn lazy Collection InstanceInitializer.exceptions() {
+    HashSet set = new HashSet();
+    collectExceptions(set, this);
+    for (Iterator iter = set.iterator(); iter.hasNext(); ) {
+      TypeDecl typeDecl = (TypeDecl) iter.next();
+      if (!getBlock().reachedException(typeDecl)) {
+        iter.remove();
+      }
+    }
+    return set;
+  }
+
+  protected void ASTNode.collectExceptions(Collection c, ASTNode target) {
+    for (int i = 0; i < getNumChild(); i++) {
+      getChild(i).collectExceptions(c, target);
+    }
+  }
+
+  protected void ThrowStmt.collectExceptions(Collection c, ASTNode target) {
+    super.collectExceptions(c, target);
+    TypeDecl exceptionType = getExpr().type();
+    if (exceptionType == typeNull()) {
+      exceptionType = typeNullPointerException();
+    }
+    c.add(exceptionType);
+  }
+
+  protected void MethodAccess.collectExceptions(Collection c, ASTNode target) {
+    super.collectExceptions(c, target);
+    for (int i = 0; i < decl().getNumException(); i++) {
+      c.add(decl().getException(i).type());
+    }
+  }
+
+}

@@ -95,6 +95,7 @@ object PuckToolWindow {
       dir =>
         val decouple = new File(dir + File.separator +"decouple.pl")
 
+        println(decouple.getPath + " exists = " + decouple.exists())
         if(decouple.exists())
           parseConstraint(decouple)
     }

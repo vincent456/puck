@@ -1,0 +1,77 @@
+aspect RemoveNode {
+
+    public void ASTNode.puckDelete(){
+        getParent().removeChild(this);
+    }
+
+    public void TypeDecl.puckDelete(){
+        if(compilationUnit().getNumTypeDecl() == 1)
+            compilationUnit().puckDelete();
+        else
+            super.puckDelete();
+    }
+
+    public void TypeDecl.removeSuperType(TypeDecl typeDecl){
+        throw new PuckError("removeSuperType in " + this.getClass() +"not implemented");
+    }
+
+    public void ClassDecl.removeSuperType(TypeDecl typeDecl){
+        if( !getSuperClassOpt().isEmpty() &&
+                getSuperClass().accessTo(typeDecl)){
+            setSuperClassOpt(new Opt<Access>());
+            return;
+        }
+        List<Access> implementsList =  getImplementsList();
+
+        for(int i = 0; i< implementsList.getNumChild(); i++)
+            if(implementsList.getChild(i).accessTo(typeDecl)) {
+                implementsList.removeChild(i);
+                break;
+            }
+    }
+
+    public boolean Access.accessTo(TypeDecl typeDecl){
+        return false;
+    }
+    public boolean TypeAccess.accessTo(TypeDecl typeDecl){
+        return decl().equals(typeDecl);
+    }
+
+    public void CompilationUnit.removeTypeDecl(TypeDecl td){
+        String name = td.name();
+        int idx =  getTypeDeclList().getIndexOfChild(td);
+        if(idx != -1) {
+            getTypeDeclList().removeChild(idx);
+
+            if (pathName().endsWith(name + ".java")) {
+                for (int i = 0; i < getNumTypeDecl(); i++) {
+                    TypeDecl td2 = getTypeDecl(i);
+                    if (td != td2) { //sanity check
+                        String newPath = pathName().replace(name + ".java", td2.name() + ".java");
+                        this.setPathName(newPath);
+                    }
+                }
+            }
+        }
+    }
+
+//    public void ClassDecl.removeImplements(InterfaceDecl decl) {
+//        int idx = -1;
+//        for(int i = 0; i < getImplementsList().getNumChild(); i++){
+//            if(((TypeAccess)getImplements(i)).decl().equals(decl))
+//                idx = i;
+//        }
+//        if(idx!= -1)
+//            getImplementsList().removeChild(idx);
+//    }
+//
+//    public void InterfaceDecl.removeSuperInterface(InterfaceDecl decl) {
+//        int idx = -1;
+//        for(int i = 0; i < getSuperInterfaceIdList().getNumChild(); i++){
+//            if(((TypeAccess)getSuperInterfaceId(i)).decl().equals(decl))
+//                idx = i;
+//        }
+//        if(idx!= -1)
+//            getSuperInterfaceIdList().removeChild(idx);
+//    }
+}

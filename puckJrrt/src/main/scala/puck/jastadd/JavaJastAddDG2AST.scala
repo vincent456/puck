@@ -13,6 +13,7 @@ import puck.jastadd.concretize._
 import puck.javaGraph.nodeKind._
 import puck.util.PuckLog._
 import puck.util.{PuckLog, PuckLogger}
+import org.extendj.{ast => AST}
 
 object JavaJastAddDG2AST extends DG2ASTBuilder {
 

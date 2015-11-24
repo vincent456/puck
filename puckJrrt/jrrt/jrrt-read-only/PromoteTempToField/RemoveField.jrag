@@ -1,6 +1,0 @@
-aspect RemoveField {
-	public void FieldDeclaration.removeUnused() {
-		if(!isUsed() && (!hasInit() || getInit().isPure()))
-			getParent().removeChild(getChildIndex());
-	}
-}

@@ -4,7 +4,6 @@ import java.io.File
 
 import puck.graph.comparison.Mapping
 import puck.graph.transformations.Recording
-import puck.javaGraph._
 import puck.util.PuckSystemLogger
 import puck.jastadd.JavaFilesHandler
 import sbt.IO

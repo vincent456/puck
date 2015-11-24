@@ -1,0 +1,137 @@
+/* Copyright (c) 2005-2008, Torbjorn Ekman
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ * contributors may be used to endorse or promote products derived from this
+ * software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+aspect GenericTypeVariables {
+
+  // The bounds of a type variable should be resolved to type names
+  eq TypeVariable.getTypeBound().nameType() = NameType.TYPE_NAME;
+
+  rewrite TypeVariable {
+    when (getNumTypeBound() == 0)
+    to TypeVariable {
+      addTypeBound(
+        new TypeAccess(
+          "java.lang",
+          "Object"
+        )
+      );
+      return this;
+    }
+  }
+
+  public void TypeVariable.nameCheck() {
+    if (extractSingleType(lookupType(name())) != this) {
+      errorf("*** Semantic Error: type variable %s is multiply declared", name());
+    }
+  }
+
+  syn TypeDecl TypeVariable.lowerBound() = getTypeBound(0).type();
+
+}
+
+aspect GenericTypeVariablesMembers {
+  eq TypeVariable.memberMethods(String name) {
+    Collection list = new HashSet();
+    for (int i = 0; i < getNumTypeBound(); i++) {
+      for (Iterator iter = getTypeBound(i).type().memberMethods(name).iterator(); iter.hasNext(); ) {
+        MethodDecl decl = (MethodDecl) iter.next();
+        list.add(decl);
+      }
+    }
+    return list;
+  }
+
+  eq TypeVariable.memberFields(String name) {
+    SimpleSet set = SimpleSet.emptySet;
+    for (int i = 0; i < getNumTypeBound(); i++) {
+      for (Iterator iter = getTypeBound(i).type().memberFields(name).iterator(); iter.hasNext(); ) {
+        FieldDeclaration decl = (FieldDeclaration) iter.next();
+        set = set.add(decl);
+      }
+    }
+    return set;
+  }
+
+}
+
+aspect GenricTypeVariablesTypeAnalysis {
+
+  public void TypeVariable.typeCheck() {
+    if (!getTypeBound(0).type().isTypeVariable() && !getTypeBound(0).type().isClassDecl()
+        && !getTypeBound(0).type().isInterfaceDecl()) {
+      errorf("the first type bound must be either a type variable,"
+          + " or a class or interface type which %s is not",
+          getTypeBound(0).type().fullName());
+    }
+    for (int i = 1; i < getNumTypeBound(); i++) {
+      if (!getTypeBound(i).type().isInterfaceDecl()) {
+        errorf("type bound %s must be an interface type which %s is not",
+            i, getTypeBound(i).type().fullName());
+      }
+    }
+    HashSet typeSet = new HashSet();
+    for (int i = 0; i < getNumTypeBound(); i++) {
+      TypeDecl type = getTypeBound(i).type();
+      TypeDecl erasure = type.erasure();
+      if (typeSet.contains(erasure)) {
+        if (type != erasure) {
+          errorf("the erasure %s of typebound %s is multiply declared in %s",
+              erasure.fullName(), getTypeBound(i).prettyPrint(), this);
+        } else {
+          errorf("%s is multiply declared", type.fullName());
+        }
+      }
+      typeSet.add(erasure);
+    }
+
+    for (int i = 0; i < getNumTypeBound(); i++) {
+      TypeDecl type = getTypeBound(i).type();
+      for (Iterator iter = type.methodsIterator(); iter.hasNext(); ) {
+        MethodDecl m = (MethodDecl) iter.next();
+        for (int j = i+1; j < getNumTypeBound(); j++) {
+          TypeDecl destType = getTypeBound(j).type();
+          for (Iterator destIter = destType.memberMethods(m.name()).iterator(); destIter.hasNext(); ) {
+            MethodDecl n = (MethodDecl) destIter.next();
+            if (m.sameSignature(n) && m.type() != n.type()) {
+              errorf("the two bounds, %s and %s, in type variable %s have"
+                  + " a method %s with conflicting return types %s and %s",
+                  type.name(), destType.name(), name(), m.signature(),
+                  m.type().name(), n.type().name());
+            }
+          }
+        }
+      }
+    }
+
+
+  }
+
+
+}

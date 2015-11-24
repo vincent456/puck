@@ -5,6 +5,7 @@ import puck.graph._
 import puck.javaGraph._
 import puck.javaGraph.nodeKind._
 import puck.util.PuckLogger
+import org.extendj.{ast => AST}
 
 object CreateEdge {
 
@@ -90,7 +91,7 @@ object CreateEdge {
     val sourceDecl = reenactor.container_!(e.user)
     (id2declMap(sourceDecl), id2declMap(e.used)) match {
       case (ConstructorDeclHolder(cdecl), MethodDeclHolder(mdecl)) =>
-        cdecl.unsetDefaultConstructor()
+        cdecl.unsetImplicitConstructor()
         cdecl.addInitializerCall(mdecl)
       case hs => error("createInitializerCall : expected constructor using method got " + hs)
     }
@@ -125,10 +126,10 @@ object CreateEdge {
       sDecl.addImplements(idecl.createLockedAccess())
 
     case (InterfaceDeclHolder(ideclSub), InterfaceDeclHolder(ideclSup)) =>
-      ideclSub.addSuperInterfaceId(ideclSup.createLockedAccess())
+      ideclSub.addSuperInterface(ideclSup.createLockedAccess())
 
     case (ClassDeclHolder(subDecl), ClassDeclHolder(superDecl)) =>
-      subDecl.setSuperClassAccess(superDecl.createLockedAccess())
+      subDecl.setSuperClass(superDecl.createLockedAccess())
 
     case e => logger.writeln(s"isa($e) not created")
   }
@@ -202,7 +203,6 @@ object CreateEdge {
 
     cu.setPackageDecl(pkgDecl)
     cu.setPathName(path)
-    cu.setRelativeName(path)
     cu.setID(td.name())
     //!\ very important !!
     cu.flushCaches()

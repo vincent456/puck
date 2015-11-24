@@ -1,0 +1,264 @@
+/* Copyright (c) 2005-2008, Torbjorn Ekman
+ *                    2015, Jesper Öqvist <jesper.oqvist@cs.lth.se>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ * contributors may be used to endorse or promote products derived from this
+ * software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+import java.util.*;
+
+aspect AccessTypes {
+  syn boolean Expr.isTypeAccess() = false;
+  eq TypeAccess.isTypeAccess() = true;
+  eq AbstractDot.isTypeAccess() = getRight().isTypeAccess();
+
+  syn boolean Expr.isMethodAccess() = false;
+  eq AbstractDot.isMethodAccess() = getRight().isMethodAccess();
+  eq MethodAccess.isMethodAccess() = true;
+
+  syn boolean Expr.isFieldAccess() = false;
+  eq AbstractDot.isFieldAccess() = getRight().isFieldAccess();
+  syn lazy boolean VarAccess.isFieldAccess() = decl().isClassVariable() || decl().isInstanceVariable();
+
+  syn boolean Expr.isSuperAccess() = false;
+  eq AbstractDot.isSuperAccess() = getRight().isSuperAccess();
+  eq SuperAccess.isSuperAccess() = true;
+  eq ParExpr.isSuperAccess() = getExpr().isSuperAccess();
+  eq CastExpr.isSuperAccess() = getExpr().isSuperAccess();
+
+  syn boolean Expr.isThisAccess() = false;
+  eq AbstractDot.isThisAccess() = getRight().isThisAccess();
+  eq ThisAccess.isThisAccess() = true;
+  eq ParExpr.isThisAccess() = getExpr().isThisAccess();
+  eq CastExpr.isThisAccess() = getExpr().isThisAccess();
+
+  syn boolean Expr.isPackageAccess() = false;
+  eq AbstractDot.isPackageAccess() = getRight().isPackageAccess();
+  eq PackageAccess.isPackageAccess() = true;
+
+  syn boolean Expr.isArrayAccess() = false;
+  eq AbstractDot.isArrayAccess() = getRight().isArrayAccess();
+  eq ArrayAccess.isArrayAccess() = true;
+
+  syn boolean Expr.isClassAccess() = false;
+  eq AbstractDot.isClassAccess() = getRight().isClassAccess();
+  eq ClassAccess.isClassAccess() = true;
+
+  syn boolean Expr.isSuperConstructorAccess() = false;
+  eq AbstractDot.isSuperConstructorAccess() = getRight().isSuperConstructorAccess();
+  eq SuperConstructorAccess.isSuperConstructorAccess() = true;
+}
+
+aspect QualifiedNames {
+  syn boolean Expr.isLeftChildOfDot() = hasParentDot() && parentDot().getLeft() == this;
+  syn boolean Expr.isRightChildOfDot() = hasParentDot() && parentDot().getRight() == this;
+
+  syn boolean Access.isQualified() = hasPrevExpr();
+  eq AbstractDot.isQualified() = hasParentDot();
+
+  syn Expr Access.qualifier() = prevExpr();
+
+  syn Expr AbstractDot.leftSide() = getLeft();
+  syn Access AbstractDot.rightSide() = getRight() instanceof AbstractDot ?
+    (Access)((AbstractDot) getRight()).getLeft() : (Access) getRight();
+
+  syn Access Access.lastAccess() = this;
+  eq AbstractDot.lastAccess() = getRight().lastAccess();
+
+  syn AbstractDot Expr.parentDot() = getParent() instanceof AbstractDot ?
+    (AbstractDot) getParent() : null;
+  syn boolean Expr.hasParentDot() = parentDot() != null;
+
+  syn Access Expr.nextAccess() = parentDot().nextAccess();
+  syn boolean Expr.hasNextAccess() = isLeftChildOfDot();
+
+  syn Access AbstractDot.nextAccess() = rightSide();
+
+  syn Expr AbstractDot.prevExpr() = leftSide();
+  syn lazy Expr Access.prevExpr() {
+    if (isLeftChildOfDot()) {
+      if (parentDot().isRightChildOfDot()) {
+        return parentDot().parentDot().leftSide();
+      }
+    } else if (isRightChildOfDot()) {
+      return parentDot().leftSide();
+    }
+    throw new Error(this + " does not have a previous expression");
+  }
+
+  syn boolean AbstractDot.hasPrevExpr() = true;
+  syn lazy boolean Access.hasPrevExpr() {
+    if (isLeftChildOfDot()) {
+      if (parentDot().isRightChildOfDot()) {
+        return true;
+      }
+    } else if (isRightChildOfDot()) {
+      return true;
+    }
+    return false;
+  }
+
+  public Dot Dot.lastDot() {
+    Dot node = this;
+    while (node.getRightNoTransform() instanceof Dot) {
+      node = (Dot) node.getRightNoTransform();
+    }
+    return node;
+  }
+
+  /**
+   * Creates a qualified expression. This will not be subject to rewriting.
+   */
+  public Dot Expr.qualifiesAccess(Access access) {
+    Dot dot = new Dot(this, access);
+    dot.setStart(this.getStart());
+    dot.setEnd(access.getEnd());
+    return dot;
+  }
+
+  public Dot Dot.qualifiesAccess(Access access) {
+    Dot lastDot = lastDot();
+    Expr l = lastDot.getRightNoTransform();
+    Dot dot = new Dot(lastDot.getRightNoTransform(), access);
+    dot.setStart(l.getStart());
+    dot.setEnd(access.getEnd());
+    lastDot.setRight(dot);
+    return this;
+  }
+
+  // Used when replacing pairs from a list to concatenate the result to the tail of the current location.
+  private Access Dot.qualifyTailWith(Access expr) {
+    if (getRight/*NoTransform*/() instanceof AbstractDot) {
+      AbstractDot dot = (AbstractDot) getRight/*NoTransform*/();
+      return expr.qualifiesAccess(dot.getRight/*NoTransform*/());
+    }
+    return expr;
+  }
+
+
+  // These are used by the parser to extract the last name which
+  // will be replaced by a method name
+  public Access AbstractDot.extractLast() {
+    return getRightNoTransform();
+  }
+
+  public void AbstractDot.replaceLast(Access access) {
+    setRight(access);
+  }
+
+  public Access Dot.extractLast() {
+    return lastDot().getRightNoTransform();
+  }
+
+  public void Dot.replaceLast(Access access) {
+    lastDot().setRight(access);
+  }
+
+  public Access Access.addArrayDims(List list) {
+    Access a = this;
+    for (int i = 0; i < list.getNumChildNoTransform(); i++) {
+      Dims dims = (Dims) list.getChildNoTransform(i);
+      Opt opt = dims.getExprOpt();
+      if (opt.getNumChildNoTransform() == 1) {
+        a = new ArrayTypeWithSizeAccess(a, (Expr) opt.getChildNoTransform(0));
+      } else {
+        a = new ArrayTypeAccess(a);
+      }
+      a.setStart(dims.start());
+      a.setEnd(dims.end());
+    }
+    return a;
+  }
+
+}
+
+aspect NameResolution {
+
+  // Replace the parsed name with a name reclassified according to context
+  // This is done upon first access to a name node
+
+  rewrite ParseName {
+    to Access {
+      switch (nameType()) {
+        case PACKAGE_NAME:
+          return new PackageAccess(name(), start, end);
+        case TYPE_NAME:
+          return new TypeAccess(name(), start, end);
+        case PACKAGE_OR_TYPE_NAME:
+          if (lookupType(name()).isEmpty()) {
+            return new PackageAccess(name(), start, end);
+          } else {
+            return new TypeAccess(name(), start, end);
+          }
+        case AMBIGUOUS_NAME:
+          if (!lookupVariable(name()).isEmpty()) {
+            return new VarAccess(name(), start(), end());
+          } else {
+            if (lookupType(name()).isEmpty()) {
+              return new PackageAccess(name(), start(), end());
+            } else {
+              return new TypeAccess(name(), start(), end());
+            }
+          }
+        case EXPRESSION_NAME:
+          return new VarAccess(name(), start, end);
+        case NOT_CLASSIFIED:
+        default:
+          throw new Error("Failure in name classification: unknown name type encountered");
+      }
+    }
+  }
+
+  rewrite Dot {
+    // NB: leftSide() and rightSide() are allowed to trigger rewrites, and in
+    // fact it is necessary in order to trigger rewrites on parse name leafs of
+    // this qualified expression.
+    // - Jesper 2015
+
+    // collapse package accesses
+    when (leftSide().isPackageAccess() && rightSide().isPackageAccess())
+    to Access {
+      PackageAccess left = (PackageAccess) leftSide();
+      PackageAccess right = (PackageAccess) rightSide();
+      left.setPackage(left.getPackage() + "." + right.getPackage());
+      left.setEnd(right.end());
+      return qualifyTailWith(left);
+    }
+
+    // collapse package with type access
+    when (leftSide().isPackageAccess() && !((Access) leftSide()).hasPrevExpr() && rightSide() instanceof TypeAccess)
+    to Access {
+      PackageAccess left = (PackageAccess) leftSide();
+      TypeAccess right = (TypeAccess) rightSide();
+      right.setPackage(left.getPackage());
+      right.setStart(left.start());
+      return qualifyTailWith(right);
+    }
+  }
+
+}
+

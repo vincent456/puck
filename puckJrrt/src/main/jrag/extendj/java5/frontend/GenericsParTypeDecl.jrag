@@ -1,0 +1,128 @@
+/* Copyright (c) 2005-2008, Torbjorn Ekman
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ * contributors may be used to endorse or promote products derived from this
+ * software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+aspect GenericsParTypeDecl {
+
+  eq ParTypeDecl.fullName() {
+    if (isNestedType()) {
+      return enclosingType().fullName() + "." + nameWithArgs();
+    }
+    String packageName = packageName();
+    if (packageName.equals("")) {
+      return nameWithArgs();
+    }
+    return packageName + "." + nameWithArgs();
+  }
+
+  eq ParTypeDecl.typeName() {
+    if (isNestedType()) {
+      return enclosingType().typeName() + "." + nameWithArgs();
+    }
+    String packageName = packageName();
+    if (packageName.equals("") || packageName.equals(PRIMITIVE_PACKAGE_NAME)) {
+      return nameWithArgs();
+    }
+    return packageName + "." + nameWithArgs();
+  }
+
+  syn String ParTypeDecl.nameWithArgs() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(name());
+    sb.append("<");
+    for (int i = 0; i < getNumArgument(); i++) {
+      if (i != 0) {
+        sb.append(", ");
+      }
+      sb.append(getArgument(i).type().fullName());
+    }
+    sb.append(">");
+    return sb.toString();
+  }
+  eq RawClassDecl.nameWithArgs() = name();
+  eq RawInterfaceDecl.nameWithArgs() = name();
+
+  inh lazy TypeDecl ParTypeDecl.genericDecl();
+  eq Program.getChild().genericDecl() = null;
+  eq GenericClassDecl.getChild().genericDecl() = this;
+  eq GenericInterfaceDecl.getChild().genericDecl() = this;
+  eq ParClassDecl.getBodyDecl(int index).genericDecl() {
+    if (getBodyDecl(index) instanceof MemberTypeDecl) {
+      MemberTypeDecl m = (MemberTypeDecl) getBodyDecl(index);
+      return extractSingleType(genericDecl().memberTypes(m.typeDecl().name()));
+    }
+    return genericDecl();
+  }
+  eq ParInterfaceDecl.getBodyDecl(int index).genericDecl() {
+    if (getBodyDecl(index) instanceof MemberTypeDecl) {
+      MemberTypeDecl m = (MemberTypeDecl) getBodyDecl(index);
+      return extractSingleType(genericDecl().memberTypes(m.typeDecl().name()));
+    }
+    return genericDecl();
+  }
+
+  syn boolean BodyDecl.visibleTypeParameters() = true;
+  eq MethodDecl.visibleTypeParameters() = !isStatic();
+  eq FieldDeclaration.visibleTypeParameters() = !isStatic();
+  eq StaticInitializer.visibleTypeParameters() = false;
+  eq MemberTypeDecl.visibleTypeParameters() = !isStatic();
+
+  syn boolean TypeDecl.isTypeVariable() = false;
+  eq TypeVariable.isTypeVariable() = true;
+
+  public Access ParTypeDecl.createQualifiedAccess() {
+    List typeArgumentList = new List();
+    for (int i = 0; i < getNumArgument(); i++) {
+      Access a = (Access) getArgument(i);
+      if (a instanceof TypeAccess) {
+        typeArgumentList.add(a.type().createQualifiedAccess());
+      } else {
+        typeArgumentList.add(a.treeCopyNoTransform());
+      }
+    }
+    if (!isTopLevelType()) {
+      if (isRawType()) {
+        return enclosingType().createQualifiedAccess().qualifiesAccess(
+          new TypeAccess("", getID())
+        );
+      } else {
+        return enclosingType().createQualifiedAccess().qualifiesAccess(
+          new ParTypeAccess(new TypeAccess("", getID()), typeArgumentList)
+        );
+      }
+    } else {
+      if (isRawType()) {
+        return new TypeAccess(packageName(), getID());
+      } else {
+        return new ParTypeAccess(new TypeAccess(packageName(), getID()), typeArgumentList);
+      }
+    }
+  }
+}
+

@@ -40,4 +40,13 @@ object JavaIntro extends Intro {
       .addEdge(ContainsDef(cn.id, defNode.id)))
   }
 
+
+  def defaultConstructor
+  ( g : DependencyGraph,
+    typeNode : NodeId) : LoggedTry[(ConcreteNode, DependencyGraph)] = {
+
+    val (cn, _, g2)=
+      intro.nodeWithDef(g, g.getConcreteNode(typeNode).name, Constructor, Some(NamedType(typeNode)), mutable = true)
+    LoggedSuccess((cn, g2.addContains(typeNode, cn.id)))
+  }
 }

@@ -6,14 +6,17 @@ import java.util.Iterator
 import puck.graph.transformations.{NodeMappingInitialState, Recording, Transformation}
 import puck.graph.{DGBuildingError, DependencyGraph, NodeId}
 import puck.javaGraph.nodeKind.JavaNodeKind
+import org.extendj.ast.{List => ASTList, _}
+import org.extendj.parser
+
 
 object CompileHelper {
 
-  def apply(sources: List[String], jars: List[String]): Option[AST.Program] = {
+  def apply(sources: List[String], jars: List[String]): Option[Program] = {
       val arglist = createArglist(sources, jars, List())
 
-      val f = new AST.Frontend {
-        protected override def processErrors(errors: java.util.Collection[_], unit: AST.CompilationUnit): Unit =  {
+      val f = new Frontend {
+        protected override def processErrors(errors: java.util.Collection[Problem], unit: CompilationUnit): Unit =  {
           System.err.println("Errors:")
 
             val it: Iterator[_] = errors.iterator
@@ -24,34 +27,32 @@ object CompileHelper {
             }
 
         }
-        protected override def processWarnings(errors: java.util.Collection[_], unit: AST.CompilationUnit): Unit = {
+        protected override def processWarnings(errors: java.util.Collection[Problem], unit: CompilationUnit): Unit = {
         }
       }
-      val br = new AST.BytecodeParser
-      val jp = new AST.JavaParser {
-        def parse(is: InputStream, fileName: String): AST.CompilationUnit = {
-          (new parser.JavaParser).parse(is, fileName)
+      val br = new BytecodeReader() {
+        def read(is: InputStream, fullName: String, p: Program) : CompilationUnit = {
+          new BytecodeParser(is, fullName).parse(null, null, p)
         }
       }
 
-    if (f.process(arglist, br, jp)){
+      val jp = new JavaParser() {
+        override def parse(is: InputStream, fileName: String) : CompilationUnit = {
+          new parser.JavaParser().parse(is, fileName)
+        }
+      }
+
+    if (f.run(arglist, br, jp) == 0){
       Some(f.getProgram)}
     else
       None
   }
 
-  def addVoid(p : AST.Program, builder : JastaddGraphBuilder) : Unit = {
-    val voidASTNode = p.findType("void")
-    val voidDGNode = builder.addApiTypeNode(voidASTNode)
-    builder.registerDecl(voidDGNode, voidASTNode)
-  }
-
-  def buildGraph(p : AST.Program,
+  def buildGraph(p : Program,
                  ll : puck.LoadingListener = null )  :
-  (AST.Program, DependencyGraph, Seq[Transformation], Map[String, NodeId], Map[NodeId, ASTNodeLink]) = {
+  (Program, DependencyGraph, Seq[Transformation], Map[String, NodeId], Map[NodeId, ASTNodeLink]) = {
 
     val builder = p.buildDependencyGraph(null, ll)
-    addVoid(p, builder)
     builder.attachOrphanNodes()
     builder.registerSuperTypes()
 
@@ -69,7 +70,7 @@ object CompileHelper {
   def compileSrcsAndbuildGraph(sources: List[String],
                  jars: List[String],
                  decouple : Option[java.io.File] = None) :
-    (AST.Program, DependencyGraph, Seq[Transformation], Map[String, NodeId], Map[NodeId, ASTNodeLink]) =
+    (Program, DependencyGraph, Seq[Transformation], Map[String, NodeId], Map[NodeId, ASTNodeLink]) =
     this.apply(sources, jars) match {
       case None => throw new DGBuildingError("Compilation error, no AST generated")
       case Some(p) => buildGraph(p)

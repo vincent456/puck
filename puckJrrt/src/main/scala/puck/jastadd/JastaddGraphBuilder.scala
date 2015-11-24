@@ -3,6 +3,7 @@ package puck.jastadd
 import puck.graph._
 import puck.javaGraph.JavaGraphBuilder
 import puck.javaGraph.nodeKind._
+import org.extendj.{ast => AST}
 
 import scala.collection.JavaConversions.collectionAsScalaIterable
 
@@ -93,19 +94,15 @@ class JastaddGraphBuilder(val program : AST.Program) extends JavaGraphBuilder {
   }
 
   def addApiTypeNode(td: AST.TypeDecl): NodeIdT = {
-    //println("adding api td " + td.fullName() + " with packagedecl " + td.packageName())
     val packageNode = addPackage(td.packageName(), mutable = false)
     val tdNode = addNode(td.fullName(), td.name(), td.getDGNodeKind, mutable = false)
-
-    /*if(doAddUses)
-      for (use <- td.uses()) {
-        addUses(use.buildAGNode(this), tdNode)
-      }
-  */
     addContains(packageNode, tdNode)
-
     tdNode
   }
+
+  def addApiTypeNodeAndRegister(td: AST.TypeDecl): Unit =
+    registerDecl(addApiTypeNode(td), td)
+
 
   def addBodyDecl(bd : AST.BodyDecl) : Unit = {
     val typeNodeId = addApiTypeNode(bd.hostType())

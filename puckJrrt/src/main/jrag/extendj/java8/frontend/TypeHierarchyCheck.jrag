@@ -1,0 +1,171 @@
+/* Copyright (c) 2014, Erik Hogeman <Erik.Hogemn@gmail.com>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *     * Redistributions of source code must retain the above copyright notice,
+ *       this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name of the Lund University nor the names of its
+ *       contributors may be used to endorse or promote products derived from
+ *       this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+aspect Java8TypeHierarchyCheck {
+  refine GenericsTypeCheck
+  public void TypeDecl.typeCheck() {
+  // 8.4.6.4 & 9.4.1
+    for (Iterator iter1 = localMethodsIterator(); iter1.hasNext(); ) {
+      MethodDecl m = (MethodDecl)iter1.next();
+      ASTNode target = m.hostType() == this ? (ASTNode)m : (ASTNode)this;
+
+      for (Iterator i2 = ancestorMethods(m.signature()).iterator(); i2.hasNext(); ) {
+        MethodDecl decl = (MethodDecl)i2.next();
+        if (m.overrides(decl)) {
+          // 8.4.6.1
+          if (!decl.hostType().isInterfaceDecl() && !m.isStatic() && decl.isStatic()) {
+            target.error("an instance method may not override a static method");
+          }
+
+          // regardless of overriding
+          // 8.4.6.3
+          if (!m.mayOverride(decl)) {
+            // 9.4.3
+            if (m.isDefault() && decl.hostType() == m.type().typeObject() && !decl.isPrivate()) {
+              target.error("default methods may not override methods in Object");
+            } else {
+              target.errorf("the return type of method %s in %s does not match the return type of"
+                  + " method %s in %s and may thus not be overridden",
+                  m.fullSignature(), m.hostType().typeName(), decl.fullSignature(),
+                  decl.hostType().typeName());
+            }
+          }
+
+          // regardless of overriding
+          // 8.4.4
+          for (Access e: m.getExceptionList()) {
+            if (e.type().isCheckedException()) {
+              boolean found = false;
+              for (Access declException: decl.getExceptionList()) {
+                if (e.type().instanceOf(declException.type())) {
+                  found = true;
+                  break;
+                }
+              }
+              if (!found) {
+                target.errorf("%s in %s may not throw more checked exceptions than"
+                    + " overridden method %s in %s",
+                    m.fullSignature(), m.hostType().typeName(), decl.fullSignature(),
+                    decl.hostType().typeName());
+              }
+            }
+          }
+
+          // 8.4.6.3
+          if (decl.isPublic() && !m.isPublic()) {
+            target.error("overriding access modifier error");
+          }
+          // 8.4.6.3
+          if (decl.isProtected() && !(m.isPublic() || m.isProtected())) {
+            target.error("overriding access modifier error");
+          }
+          // 8.4.6.3
+          if ((!decl.isPrivate() && !decl.isProtected() && !decl.isPublic()) && m.isPrivate()) {
+            target.error("overriding access modifier error");
+          }
+          // regardless of overriding
+          if (decl.isFinal()) {
+            target.errorf("method %s in %s can not override final method %s in %s",
+                m.fullSignature(), hostType().typeName(), decl.fullSignature(),
+                decl.hostType().typeName());
+          }
+        }
+        if (m.hides(decl)) {
+          // 8.4.6.2
+          if (m.isStatic() && !decl.isStatic()) {
+            target.error("a static method may not hide an instance method");
+          }
+          // 8.4.6.3
+          if (!m.mayOverride(decl)) {
+            target.error("can not hide a method with a different return type");
+          }
+          // 8.4.4
+          for (int i = 0; i < m.getNumException(); i++) {
+            Access e = m.getException(i);
+            boolean found = false;
+            for (int j = 0; !found && j < decl.getNumException(); j++) {
+              if (e.type().instanceOf(decl.getException(j).type())) {
+                found = true;
+              }
+            }
+            if (!found) {
+              target.error("may not throw more checked exceptions than hidden method");
+            }
+          }
+          // 8.4.6.3
+          if (decl.isPublic() && !m.isPublic()) {
+            target.errorf("hiding access modifier: public method %s in %s is hidden by"
+                + " non public method %s in %s",
+                decl.fullSignature(), decl.hostType().typeName(), m.fullSignature(),
+                m.hostType().typeName());
+          }
+          // 8.4.6.3
+          if (decl.isProtected() && !(m.isPublic() || m.isProtected())) {
+            target.errorf("hiding access modifier: protected method %s in %s is hidden by"
+                + " non (public|protected) method %s in %s",
+                decl.fullSignature(), decl.hostType().typeName(), m.fullSignature(),
+                m.hostType().typeName());
+          }
+          // 8.4.6.3
+          if ((!decl.isPrivate() && !decl.isProtected() && !decl.isPublic()) && m.isPrivate()) {
+            target.errorf("hiding access modifier: default method %s in %s is hidden by"
+                + " private method %s in %s",
+                decl.fullSignature(), decl.hostType().typeName(), m.fullSignature(),
+                m.hostType().typeName());
+          }
+          if (decl.isFinal()) {
+            target.errorf("method %s in %s can not hide final method %s in %s",
+                m.fullSignature(), hostType().typeName(), decl.fullSignature(),
+                decl.hostType().typeName());
+          }
+        }
+      }
+    }
+
+
+    // different parameterizations of the same generic interface may not be implemented
+    ArrayList list = new ArrayList();
+    list.addAll(implementedInterfaces());
+    for (int i = 0; i < list.size(); i++) {
+      InterfaceDecl decl = (InterfaceDecl)list.get(i);
+      if (decl instanceof ParInterfaceDecl) {
+        ParInterfaceDecl p = (ParInterfaceDecl)decl;
+        for (Iterator i2 = list.listIterator(i); i2.hasNext(); ) {
+          InterfaceDecl decl2 = (InterfaceDecl)i2.next();
+          if (decl2 instanceof ParInterfaceDecl) {
+            ParInterfaceDecl q = (ParInterfaceDecl)decl2;
+            if (p != q && p.genericDecl() == q.genericDecl() && !p.sameArgument(q)) {
+              errorf("%s cannot be inherited with different type arguments: %s and %s",
+                  p.genericDecl().name(), p.typeName(), q.typeName());
+            }
+          }
+        }
+      }
+    }
+  }
+}

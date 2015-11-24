@@ -7,6 +7,7 @@ import puck.graph.{DependencyGraph, NodeId}
 import puck.jastadd.{ASTNodeLink, JavaJastAddDG2AST, CompileHelper}
 import puck.util.{FileHelper, PuckFileLogger, PuckLogger}
 import sbt.IO
+import org.extendj.ast.Program
 
 object ScenarioFactory {
   def fromDirectory(path: String): ScenarioFactory = {
@@ -16,13 +17,13 @@ object ScenarioFactory {
 
 
 case class ScenarioFactory
-( program : AST.Program,
+( program : Program,
   graph : DependencyGraph,
   initialRecord : Seq[Transformation],
   fullName2id : Map[String, NodeId],
   dg2astMap : Map[NodeId, ASTNodeLink]){
 
-  def this(t : (AST.Program,
+  def this(t : (Program,
                 DependencyGraph,
                 Seq[Transformation],
                 Map[String, NodeId],

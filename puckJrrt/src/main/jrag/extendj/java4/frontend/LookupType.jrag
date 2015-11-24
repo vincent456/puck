@@ -1,0 +1,664 @@
+/* Copyright (c) 2005-2008, Torbjorn Ekman
+ *               2014-2015, Jesper Öqvist <jesper.oqvist@cs.lth.se>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ * contributors may be used to endorse or promote products derived from this
+ * software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+import java.util.*;
+import java.util.zip.*;
+import java.io.*;
+
+aspect SpecialClasses {
+  syn lazy TypeDecl Program.typeObject() = lookupType("java.lang", "Object");
+  syn lazy TypeDecl Program.typeCloneable() = lookupType("java.lang", "Cloneable");
+  syn lazy TypeDecl Program.typeSerializable() = lookupType("java.io", "Serializable");
+
+  eq Program.getChild().typeObject() = typeObject();
+  eq Program.getChild().typeCloneable() = typeCloneable();
+  eq Program.getChild().typeSerializable() = typeSerializable();
+
+  syn lazy TypeDecl Program.typeBoolean() = getPrimitiveCompilationUnit().typeBoolean();
+  syn lazy TypeDecl Program.typeByte() = getPrimitiveCompilationUnit().typeByte();
+  syn lazy TypeDecl Program.typeShort() = getPrimitiveCompilationUnit().typeShort();
+  syn lazy TypeDecl Program.typeChar() = getPrimitiveCompilationUnit().typeChar();
+  syn lazy TypeDecl Program.typeInt() = getPrimitiveCompilationUnit().typeInt();
+  syn lazy TypeDecl Program.typeLong() = getPrimitiveCompilationUnit().typeLong();
+  syn lazy TypeDecl Program.typeFloat() = getPrimitiveCompilationUnit().typeFloat();
+  syn lazy TypeDecl Program.typeDouble() = getPrimitiveCompilationUnit().typeDouble();
+  syn lazy TypeDecl Program.typeString() = lookupType("java.lang", "String");
+
+  eq Program.getChild().typeBoolean() = typeBoolean();
+  eq Program.getChild().typeByte() = typeByte();
+  eq Program.getChild().typeShort() = typeShort();
+  eq Program.getChild().typeChar() = typeChar();
+  eq Program.getChild().typeInt() = typeInt();
+  eq Program.getChild().typeLong() = typeLong();
+  eq Program.getChild().typeFloat() = typeFloat();
+  eq Program.getChild().typeDouble() = typeDouble();
+  eq Program.getChild().typeString() = typeString();
+
+  syn lazy TypeDecl Program.typeVoid() = getPrimitiveCompilationUnit().typeVoid();
+  eq Program.getChild().typeVoid() = typeVoid();
+
+  syn lazy TypeDecl Program.typeNull() = getPrimitiveCompilationUnit().typeNull();
+  eq Program.getChild().typeNull() = typeNull();
+
+  syn lazy TypeDecl Program.unknownType() = getPrimitiveCompilationUnit().unknownType();
+  eq Program.getChild().unknownType() = unknownType();
+
+  inh TypeDecl Expr.typeBoolean();
+  inh TypeDecl Expr.typeByte();
+  inh TypeDecl Expr.typeShort();
+  inh TypeDecl Expr.typeChar();
+  inh TypeDecl Expr.typeInt();
+  inh TypeDecl Expr.typeLong();
+  inh TypeDecl Expr.typeFloat();
+  inh TypeDecl Expr.typeDouble();
+  inh TypeDecl Expr.typeString();
+  inh TypeDecl Expr.typeVoid();
+  inh TypeDecl Expr.typeNull();
+
+  inh lazy TypeDecl SwitchStmt.typeInt();
+  inh TypeDecl TypeDecl.typeInt();
+  inh lazy TypeDecl SwitchStmt.typeLong();
+
+  inh lazy TypeDecl TypeDecl.typeObject();
+
+  inh lazy TypeDecl ThrowStmt.typeThrowable();
+  inh lazy TypeDecl CatchClause.typeThrowable();
+
+  inh lazy TypeDecl ThrowStmt.typeNull();
+
+  inh TypeDecl Expr.unknownType();
+
+}
+
+aspect LookupFullyQualifiedTypes {
+  syn lazy boolean Program.hasPackage(String packageName) =
+      isPackage(packageName);
+
+  /**
+   * The scope of a declaration of an observable top level package is all
+   * observable compilation units
+   */
+  eq Program.getChild().hasPackage(String packageName) = hasPackage(packageName);
+  eq AbstractDot.getRight().hasPackage(String packageName) =
+      getLeft().hasQualifiedPackage(packageName);
+  syn boolean Expr.hasQualifiedPackage(String packageName) = false;
+  eq PackageAccess.hasQualifiedPackage(String packageName) =
+      hasPackage(packageName() + "." + packageName);
+  inh boolean Expr.hasPackage(String packageName);
+  eq MethodAccess.getArg().hasPackage(String packageName) =
+      unqualifiedScope().hasPackage(packageName);
+  eq ConstructorAccess.getArg().hasPackage(String packageName) =
+      unqualifiedScope().hasPackage(packageName);
+  eq SuperConstructorAccess.getArg().hasPackage(String packageName) =
+      unqualifiedScope().hasPackage(packageName);
+  eq ArrayAccess.getExpr().hasPackage(String packageName) =
+      unqualifiedScope().hasPackage(packageName);
+  eq ArrayTypeWithSizeAccess.getExpr().hasPackage(String packageName) =
+      unqualifiedScope().hasPackage(packageName);
+  eq ClassInstanceExpr.getArg().hasPackage(String packageName) =
+      unqualifiedScope().hasPackage(packageName);
+
+  inh TypeDecl Expr.lookupType(String packageName, String typeName);
+  inh TypeDecl Stmt.lookupType(String packageName, String typeName);
+  inh TypeDecl BodyDecl.lookupType(String packageName, String typeName);
+  inh TypeDecl TypeDecl.lookupType(String packageName, String typeName);
+  inh TypeDecl CompilationUnit.lookupType(String packageName, String typeName);
+
+  public int Program.classFileReadTime;
+
+  /**
+   * Defers the lookup to the synthesized attribute.
+   */
+  eq Program.getChild().lookupType(String packageName, String typeName) =
+      lookupType(packageName, typeName);
+
+  /**
+   * Checks from-source compilation units for the given type.
+   * If no matching compilation unit is found the library compliation units
+   * will be searched.
+   */
+  syn lazy TypeDecl Program.lookupType(String packageName, String typeName) {
+    // Look for a matching source type.
+    TypeDecl sourceType = lookupSourceType(packageName, typeName);
+    if (!sourceType.isUnknown()) {
+      return sourceType;
+    }
+
+    // Look for a matching library type.
+    return lookupLibraryType(packageName, typeName);
+  }
+
+  /**
+   * Extra cache for source type lookups. This cache is important in order to
+   * make all source types shadow library types with matching names, even when
+   * the source type lives in a compilation unit with a different simple name.
+   */
+  private final Map<String, TypeDecl> Program.sourceTypeMap = new HashMap<String, TypeDecl>();
+  private boolean Program.sourceTypeMapInitialized = false;
+
+  /**
+   * Lookup a type among source classes.
+   * <p>
+   * Invoking this method may cause more than just the specified type to be loaded, for
+   * example if there exists other types in the same source file, the additional
+   * types are also loaded and cached for the next lookup.
+   * <p>
+   * This method is not an attribute due to the necessary side-effects caused
+   * by loading and caching of extra types.
+   */
+  protected TypeDecl Program.lookupSourceType(String packageName, String typeName) {
+    String fullName = packageName.equals("") ? typeName : packageName + "." + typeName;
+
+    if (!sourceTypeMapInitialized) {
+      initializeSourceTypeMap();
+      sourceTypeMapInitialized = true;
+    }
+
+    if (sourceTypeMap.containsKey(fullName)) {
+      return sourceTypeMap.get(fullName);
+    } else {
+      sourceTypeMap.put(fullName, unknownType());
+    }
+
+    // Look for a matching library type.
+    return unknownType();
+  }
+
+  /**
+   * Initialize source types in the source type map.  This puts all the types provided by
+   * Program.addSourceFile() in a map for lookup by Program.lookupSourceType.
+   */
+  private void Program.initializeSourceTypeMap() {
+    // Initialize source type map with the compilation units supplied by Program.addSourceFile.
+    for (int i = 0; i < getNumCompilationUnit(); i++) {
+      CompilationUnit unit = getCompilationUnit(i);
+      for (int j = 0; j < unit.getNumTypeDecl(); j++) {
+        TypeDecl type = unit.getTypeDecl(j);
+        sourceTypeMap.put(type.fullName(), type);
+      }
+    }
+  }
+
+  /**
+   * Extra cache for library type lookups. This cache does not have a big
+   * effect on performance due to the caching of the parameterized
+   * lookupLibraryType attribute. The cache is needed to be able to track library types
+   * that are declared in compilation units with a different simple name than the type itself.
+   */
+  private final Map<String, TypeDecl> Program.libraryTypeMap = new HashMap<String, TypeDecl>();
+  private boolean Program.libraryTypeMapInitialized = false;
+
+  /**
+   * Lookup a type among library classes. The lookup includes Jar and source files.
+   * <p>
+   * Invoking this method may cause more than just the specified type to be loaded, for
+   * example if there exists other types in the same source file, the additional
+   * types are also loaded and cached for the next lookup.
+   * <p>
+   * This method is not an attribute due to the necessary side-effects caused
+   * by loading and caching of extra types.
+   */
+  protected TypeDecl Program.lookupLibraryType(String packageName, String typeName) {
+    String fullName = packageName.equals("") ? typeName : packageName + "." + typeName;
+
+    if (!libraryTypeMapInitialized) {
+      initializeLibraryTypeMap();
+      libraryTypeMapInitialized = true;
+    }
+
+    if (libraryTypeMap.containsKey(fullName)) {
+      return libraryTypeMap.get(fullName);
+    }
+
+    // Lookup the type in the library class path.
+    CompilationUnit libraryUnit = getLibCompilationUnit(fullName);
+
+    // Add all types from the compilation unit in the library type map so that we can find them on
+    // the next type lookup. If we don't do this lookup might incorrectly miss a type that is not
+    // declared in a Java source file with a matching name.
+    for (int j = 0; j < libraryUnit.getNumTypeDecl(); j++) {
+      TypeDecl type = libraryUnit.getTypeDecl(j);
+      if (!libraryTypeMap.containsKey(type.fullName())) {
+        libraryTypeMap.put(type.fullName(), type);
+      }
+    }
+
+    if (libraryTypeMap.containsKey(fullName)) {
+      return libraryTypeMap.get(fullName);
+    } else {
+      libraryTypeMap.put(fullName, unknownType());
+      return unknownType();
+    }
+  }
+
+  /** Initialize primitive types in the library type map.  */
+  private void Program.initializeLibraryTypeMap() {
+      PrimitiveCompilationUnit unit = getPrimitiveCompilationUnit();
+      libraryTypeMap.put(PRIMITIVE_PACKAGE_NAME + ".boolean", unit.typeBoolean());
+      libraryTypeMap.put(PRIMITIVE_PACKAGE_NAME + ".byte", unit.typeByte());
+      libraryTypeMap.put(PRIMITIVE_PACKAGE_NAME + ".short", unit.typeShort());
+      libraryTypeMap.put(PRIMITIVE_PACKAGE_NAME + ".char", unit.typeChar());
+      libraryTypeMap.put(PRIMITIVE_PACKAGE_NAME + ".int", unit.typeInt());
+      libraryTypeMap.put(PRIMITIVE_PACKAGE_NAME + ".long", unit.typeLong());
+      libraryTypeMap.put(PRIMITIVE_PACKAGE_NAME + ".float", unit.typeFloat());
+      libraryTypeMap.put(PRIMITIVE_PACKAGE_NAME + ".double", unit.typeDouble());
+      libraryTypeMap.put(PRIMITIVE_PACKAGE_NAME + ".null", unit.typeNull());
+      libraryTypeMap.put(PRIMITIVE_PACKAGE_NAME + ".void", unit.typeVoid());
+      libraryTypeMap.put(PRIMITIVE_PACKAGE_NAME + ".Unknown", unit.unknownType());
+  }
+
+  /**
+   * This attribute is used to cache library compilation units, by storing the compilation units in
+   * a parameterized NTA.
+   */
+  syn nta CompilationUnit Program.getLibCompilationUnit(String typeName) =
+      getCompilationUnit(typeName);
+
+  syn nta CompilationUnit Program.emptyCompilationUnit() = new CompilationUnit();
+}
+
+aspect TypeScopePropagation {
+  inh TypeDecl Access.unknownType();
+
+  syn lazy SimpleSet TypeAccess.decls() =
+      packageName().equals("")
+      ? lookupType(name())
+      : lookupType(packageName(), name()).asSet();
+
+  /**
+   * @return a set containing this type, unless this is the unknown type in
+   * which case an empty set is returned
+   */
+  syn SimpleSet TypeDecl.asSet() = this;
+  eq UnknownType.asSet() = SimpleSet.emptySet;
+
+  syn lazy SimpleSet PrimitiveTypeAccess.decls() = lookupType(PRIMITIVE_PACKAGE_NAME, name());
+  syn lazy String PrimitiveTypeAccess.getPackage() = PRIMITIVE_PACKAGE_NAME;
+  syn lazy String PrimitiveTypeAccess.getID() = getName();
+
+  syn lazy TypeDecl TypeAccess.decl() {
+    SimpleSet decls = decls();
+    if (decls.size() == 1) {
+      return (TypeDecl) decls.iterator().next();
+    }
+    return unknownType();
+  }
+
+  syn lazy TypeDecl ArrayTypeAccess.decl() = getAccess().type().arrayType();
+
+  syn SimpleSet ThisAccess.decls() = SimpleSet.emptySet;
+  syn SimpleSet SuperAccess.decls() = SimpleSet.emptySet;
+
+  /**
+   * @return the type which this access references
+   */
+  syn lazy TypeDecl ThisAccess.decl() = isQualified() ? qualifier().type() : hostType();
+
+  /**
+   * @return the type whose supertype this super access references
+   */
+  syn lazy TypeDecl SuperAccess.decl() = isQualified() ? qualifier().type() : hostType();
+
+  eq MethodAccess.getArg().lookupType(String name) = unqualifiedScope().lookupType(name);
+  eq ConstructorAccess.getArg().lookupType(String name) = unqualifiedScope().lookupType(name);
+  eq ArrayAccess.getExpr().lookupType(String name) = unqualifiedScope().lookupType(name);
+  eq ArrayTypeWithSizeAccess.getExpr().lookupType(String name) = unqualifiedScope().lookupType(name);
+  eq ClassInstanceExpr.getArg().lookupType(String name) = unqualifiedScope().lookupType(name);
+
+  inh lazy SimpleSet CompilationUnit.lookupType(String name);
+  inh lazy SimpleSet TypeDecl.lookupType(String name);
+  inh SimpleSet BodyDecl.lookupType(String name);
+  inh SimpleSet Stmt.lookupType(String name);
+  inh lazy SimpleSet Block.lookupType(String name);
+  inh SimpleSet Expr.lookupType(String name);
+
+  eq Program.getChild().lookupType(String name) = SimpleSet.emptySet;
+
+  // The scope of a type import declaration is all the class and interface type declarations in
+  // the compilation unit in which the import declaration appears.
+  eq CompilationUnit.getChild().lookupType(String name) {
+    // Locally declared types in the compilation unit.
+    SimpleSet set = localLookupType(name);
+    if (!set.isEmpty()) {
+      return set;
+    }
+
+    // Imported types.
+    set = importedTypes(name);
+    if (!set.isEmpty()) {
+      return set;
+    }
+
+    // Types in the same package.
+    TypeDecl result = lookupType(packageName(), name);
+    if (result.accessibleFromPackage(packageName())) {
+      return result;
+    }
+
+    // Types imported on demand.
+    set = importedTypesOnDemand(name);
+    if (!set.isEmpty()) {
+      return set;
+    }
+
+    // Include primitive types.
+    result = lookupType(PRIMITIVE_PACKAGE_NAME, name);
+    if (!result.isUnknown()) {
+      return result;
+    }
+
+    // 7.5.5 Automatic Imports
+    result = lookupType("java.lang", name);
+    if (result.accessibleFromPackage(packageName())) {
+      return result;
+    }
+    return lookupType(name);
+  }
+
+  /** Searches for a type with the given simple name in this compilation unit. */
+  syn SimpleSet CompilationUnit.localLookupType(String name) {
+    for (int i = 0; i < getNumTypeDecl(); i++) {
+      if (getTypeDecl(i).name().equals(name)) {
+        return SimpleSet.emptySet.add(getTypeDecl(i));
+      }
+    }
+    return SimpleSet.emptySet;
+  }
+
+  syn SimpleSet CompilationUnit.importedTypes(String name) {
+    SimpleSet set = SimpleSet.emptySet;
+    for (int i = 0; i < getNumImportDecl(); i++) {
+      if (!getImportDecl(i).isOnDemand()) {
+        for (Iterator iter = getImportDecl(i).importedTypes(name).iterator(); iter.hasNext(); ) {
+          set = set.add(iter.next());
+        }
+      }
+    }
+    return set;
+  }
+
+  syn SimpleSet CompilationUnit.importedTypesOnDemand(String name) {
+    SimpleSet set = SimpleSet.emptySet;
+    for (int i = 0; i < getNumImportDecl(); i++) {
+      if (getImportDecl(i).isOnDemand()) {
+        for (Iterator iter = getImportDecl(i).importedTypes(name).iterator(); iter.hasNext(); ) {
+          set = set.add(iter.next());
+        }
+      }
+    }
+    return set;
+  }
+
+  syn lazy SimpleSet ImportDecl.importedTypes(String name) = SimpleSet.emptySet;
+
+  eq SingleTypeImportDecl.importedTypes(String name) {
+    SimpleSet set = SimpleSet.emptySet;
+    TypeDecl type = getAccess().type();
+    if (type.name().equals(name)) {
+      set = set.add(type);
+    }
+    return set;
+  }
+
+  /**
+   * For a single-import declaration this will return a SimpleSet
+   * containing the TypeDecl for the imported type. For dynamic
+   * import declarations this returns the empty set.
+   * @return TypeDecl of imported type wrapped in SimpleSet
+   */
+  syn lazy SimpleSet ImportDecl.importedTypes() = SimpleSet.emptySet;
+
+  eq SingleTypeImportDecl.importedTypes() = SimpleSet.emptySet.add(getAccess().type());
+
+  eq TypeImportOnDemandDecl.importedTypes(String name) {
+    SimpleSet set = SimpleSet.emptySet;
+    if (getAccess() instanceof PackageAccess) {
+      String packageName = ((PackageAccess) getAccess()).getPackage();
+      TypeDecl typeDecl = lookupType(packageName, name);
+      if (typeDecl.accessibleFromPackage(packageName()) &&
+         typeDecl.typeName().equals(packageName + "." + name)) {
+        // Canonical names match.
+        set = set.add(typeDecl);
+      }
+    } else {
+      for (Iterator iter = getAccess().type().memberTypes(name).iterator(); iter.hasNext(); ) {
+        TypeDecl decl = (TypeDecl) iter.next();
+        if (decl.accessibleFromPackage(packageName()) &&
+           decl.typeName().equals(getAccess().typeName() + "." + name)) {
+          // Canonical names match.
+          set = set.add(decl);
+        }
+      }
+    }
+    return set;
+  }
+  inh TypeDecl TypeImportOnDemandDecl.lookupType(String packageName, String typeName);
+  inh String ImportDecl.packageName();
+
+  syn boolean ImportDecl.isOnDemand() = false;
+  eq TypeImportOnDemandDecl.isOnDemand() = true;
+
+  // Imports are not themselves affected by imports.
+  eq CompilationUnit.getImportDecl().lookupType(String name) = lookupType(name);
+
+  eq TypeDecl.getBodyDecl(int index).lookupType(String name) = localLookupType(name);
+
+  eq ClassDecl.getImplicitConstructor().lookupType(String name) = localLookupType(name);
+
+  syn SimpleSet TypeDecl.localLookupType(String name) {
+    SimpleSet c = memberTypes(name);
+    if (!c.isEmpty()) {
+      return c;
+    }
+    if (name().equals(name)) {
+      return SimpleSet.emptySet.add(this);
+    }
+
+    c = lookupType(name);
+    // 8.5.2
+    if (isClassDecl() && isStatic() && !isTopLevelType()) {
+      SimpleSet newSet = SimpleSet.emptySet;
+      for (Iterator iter = c.iterator(); iter.hasNext(); ) {
+        TypeDecl d = (TypeDecl) iter.next();
+        //if (d.isStatic() || d.isTopLevelType() || this.instanceOf(d.enclosingType())) {
+          newSet = newSet.add(d);
+        //}
+      }
+      c = newSet;
+    }
+    return c;
+  }
+
+  eq Block.getStmt(int index).lookupType(String name) {
+    SimpleSet c = SimpleSet.emptySet;
+    for (int i = index; i >= 0 && !(getStmt(i) instanceof Case); i--) {
+      if (getStmt(i) instanceof LocalClassDeclStmt) {
+        TypeDecl t = ((LocalClassDeclStmt) getStmt(i)).getClassDecl();
+        if (t.name().equals(name)) {
+          c = c.add(t);
+        }
+      }
+    }
+    if (!c.isEmpty()) {
+      return c;
+    }
+    return lookupType(name);
+  }
+
+  eq ClassInstanceExpr.getAccess().lookupType(String name) {
+    SimpleSet c = lookupType(name);
+    if (c.size() == 1) {
+      if (isQualified()) {
+        c = keepInnerClasses(c);
+      }
+    }
+    return c;
+  }
+
+  eq ClassInstanceExpr.getTypeDecl().lookupType(String name) {
+    SimpleSet c = localLookupType(name);
+    if (!c.isEmpty()) {
+      return c;
+    }
+    c = lookupType(name);
+    if (!c.isEmpty()) {
+      return c;
+    }
+    return unqualifiedScope().lookupType(name);
+  }
+
+  public SimpleSet ClassInstanceExpr.keepInnerClasses(SimpleSet c) {
+    SimpleSet newSet = SimpleSet.emptySet;
+    for (Iterator iter = c.iterator(); iter.hasNext(); ) {
+      TypeDecl t = (TypeDecl) iter.next();
+      if (t.isInnerType() && t.isClassDecl()) {
+        newSet = newSet.add(c);
+      }
+    }
+    return newSet;
+  }
+
+  eq ParseName.qualifiedLookupType(String name) = SimpleSet.emptySet;
+
+  eq AbstractDot.getRight().lookupType(String name) = getLeft().qualifiedLookupType(name);
+
+  syn SimpleSet Expr.qualifiedLookupType(String name) =
+      keepAccessibleTypes(type().memberTypes(name));
+
+  eq ClassInstanceExpr.qualifiedLookupType(String name) {
+    SimpleSet c = keepAccessibleTypes(type().memberTypes(name));
+    if (!c.isEmpty()) {
+      return c;
+    }
+    if (type().name().equals(name)) {
+      return SimpleSet.emptySet.add(type());
+    }
+    return SimpleSet.emptySet;
+  }
+
+  eq PackageAccess.qualifiedLookupType(String name) {
+    SimpleSet c = SimpleSet.emptySet;
+    TypeDecl typeDecl = lookupType(packageName(), name);
+    if (!typeDecl.isUnknown()) {
+      if (hostType() != null && typeDecl.accessibleFrom(hostType())) {
+        c = c.add(typeDecl);
+      } else if (hostType() == null && typeDecl.accessibleFromPackage(hostPackage())) {
+        c = c.add(typeDecl);
+      }
+    }
+    return c;
+  }
+
+  public SimpleSet Expr.keepAccessibleTypes(SimpleSet oldSet) {
+    SimpleSet newSet = SimpleSet.emptySet;
+    TypeDecl hostType = hostType();
+    for (Iterator iter = oldSet.iterator(); iter.hasNext(); ) {
+      TypeDecl t = (TypeDecl) iter.next();
+      if ((hostType != null && t.accessibleFrom(hostType))
+          || (hostType == null && t.accessibleFromPackage(hostPackage()))) {
+        newSet = newSet.add(t);
+      }
+    }
+    return newSet;
+  }
+
+  syn lazy SimpleSet ClassInstanceExpr.localLookupType(String name) =
+      hasTypeDecl() && getTypeDecl().name().equals(name)
+      ? SimpleSet.emptySet.add(getTypeDecl())
+      : SimpleSet.emptySet;
+
+  syn boolean TypeDecl.hasType(String name) = !memberTypes(name).isEmpty();
+  syn boolean BodyDecl.declaresType(String name) = false;
+  eq MemberTypeDecl.declaresType(String name) = typeDecl().name().equals(name);
+  syn TypeDecl BodyDecl.type(String name) = null;
+  eq MemberTypeDecl.type(String name) = declaresType(name) ? typeDecl() : null;
+
+  syn TypeDecl MemberTypeDecl.typeDecl();
+  eq MemberClassDecl.typeDecl() = getClassDecl();
+  eq MemberInterfaceDecl.typeDecl() = getInterfaceDecl();
+
+
+  syn lazy SimpleSet TypeDecl.localTypeDecls(String name) {
+    SimpleSet set = SimpleSet.emptySet;
+    for (int i = 0; i < getNumBodyDecl(); i++) {
+      if (getBodyDecl(i).declaresType(name)) {
+        set = set.add(getBodyDecl(i).type(name));
+      }
+    }
+    return set;
+  }
+
+  syn lazy SimpleSet TypeDecl.memberTypes(String name) = SimpleSet.emptySet;
+
+  eq UnknownType.memberTypes(String name) = SimpleSet.emptySet;
+
+  eq ClassDecl.memberTypes(String name) {
+    SimpleSet set = localTypeDecls(name);
+    if (!set.isEmpty()) {
+      return set;
+    }
+    for (Iterator<TypeDecl> outerIter = interfacesIterator(); outerIter.hasNext(); ) {
+      TypeDecl type = outerIter.next();
+      for (Iterator iter = type.memberTypes(name).iterator(); iter.hasNext(); ) {
+        TypeDecl decl = (TypeDecl) iter.next();
+        if (!decl.isPrivate() && decl.accessibleFrom(this)) {
+          set = set.add(decl);
+        }
+      }
+    }
+    if (hasSuperclass()) {
+      for (Iterator iter = superclass().memberTypes(name).iterator(); iter.hasNext(); ) {
+        TypeDecl decl = (TypeDecl) iter.next();
+        if (!decl.isPrivate() && decl.accessibleFrom(this)) {
+          set = set.add(decl);
+        }
+      }
+    }
+    return set;
+  }
+
+  eq InterfaceDecl.memberTypes(String name) {
+    SimpleSet set = localTypeDecls(name);
+    if (!set.isEmpty()) {
+      return set;
+    }
+    for (Iterator<TypeDecl> outerIter = interfacesIterator(); outerIter.hasNext(); ) {
+      TypeDecl typeDecl = outerIter.next();
+      for (Iterator iter = typeDecl.memberTypes(name).iterator(); iter.hasNext(); ) {
+        TypeDecl decl = (TypeDecl) iter.next();
+        if (!decl.isPrivate()) {
+          set = set.add(decl);
+        }
+      }
+    }
+    return set;
+  }
+}

@@ -1,0 +1,182 @@
+import puck.javaGraph.nodeKind.JavaNodeKind;
+
+aspect NamedElement {
+
+	syn boolean ASTNode.isNamedElement();
+	eq ASTNode.isNamedElement() = false;
+
+	eq TypeDecl.isNamedElement() = true;
+	eq AbstractWildcardType.isNamedElement() = false;
+    eq WildcardType.isNamedElement() = true;
+	//eq InterfaceDecl.isNamedElement() = true;
+	//eq ClassDecl.isNamedElement() = true;
+
+    eq ParameterDeclaration.isNamedElement() = true;
+    eq FieldDeclaration.isNamedElement() = true;
+	eq MethodDecl.isNamedElement() = true;
+	eq ConstructorDecl.isNamedElement() = true;
+
+    public boolean Opt.isEmpty() {
+        return getNumChild() == 0 ||
+               getChild(0) == null;
+    }
+
+    syn boolean ASTNode.hasDefinition();
+    eq ASTNode.hasDefinition() = false;
+    eq ConstructorDecl.hasDefinition() = true;
+    eq MethodDecl.hasDefinition() {
+        return !getBlockOpt().isEmpty();
+    }
+    eq FieldDeclaration.hasDefinition() {
+        return !getInitOpt().isEmpty();
+    }
+
+    public ASTNode BodyDecl.getDefinition(){throw new Error(this.getClass() + " has no def");}
+    public ASTNode ConstructorDecl.getDefinition(){return getBlock();}
+    public ASTNode MethodDecl.getDefinition(){return getBlock();}
+    public ASTNode FieldDeclaration.getDefinition(){return getInit();}
+
+    public int ASTNode.getDefIndex(){throw new Error(this.getClass() + " has no def index");}
+    public int ConstructorDecl.getDefIndex(){return 4;}
+    public int MethodDecl.getDefIndex(){return 4;}
+    public int FieldDeclaration.getDefIndex(){return 2;}
+
+
+//    syn boolean ASTNode.hasParameters();
+//    eq ASTNode.hasParameters() = false;
+//    eq ConstructorDecl.hasParameters() = true;
+//    eq MethodDecl.hasParameters() = true;
+
+    public int ASTNode.getParamIndex(){return -1;}
+    public int ConstructorDecl.getParamIndex(){return 1;}
+    public int MethodDecl.getParamIndex(){return 2;}
+
+    public int ASTNode.getReturnTypeIndex(){return -1;}
+    public int MethodDecl.getReturnTypeIndex(){return 1;}
+    public int FieldDeclaration.getReturnTypeIndex(){return 1;}
+
+//    public List<ParameterDeclaration> ASTNode.getParameters(){
+//        throw new Error(this.getClass() + " has no parameters");
+//    }
+
+
+    interface DGNamedElement {
+		String fullName();
+		String name();
+
+		void registerDecl(JastaddGraphBuilder builder, int thisId);
+
+	}
+
+	TypeDecl implements DGNamedElement;
+	// InterfaceDecl implements DGNamedElement;
+	// ClassDecl implements DGNamedElement;
+
+    ParameterDeclaration implements DGNamedElement;
+	FieldDeclaration implements DGNamedElement;
+	MethodDecl implements DGNamedElement;
+	ConstructorDecl implements DGNamedElement;
+
+
+    syn boolean ASTNode.isSubstitute();
+    eq ASTNode.isSubstitute() = false;
+    eq ClassDeclSubstituted.isSubstitute() = true;
+    eq ConstructorDeclSubstituted.isSubstitute() = true;
+    eq FieldDeclarationSubstituted.isSubstitute() = true;
+    eq GenericClassDeclSubstituted.isSubstitute() = true;
+    eq GenericInterfaceDeclSubstituted.isSubstitute() = true;
+    eq InterfaceDeclSubstituted.isSubstitute() = true;
+    eq MethodDeclSubstituted.isSubstitute() = true;
+    eq ParameterDeclarationSubstituted.isSubstitute() = true;
+    eq VariableArityParameterDeclarationSubstituted.isSubstitute() = true;
+
+    eq MethodAccess.isSubstitute() = decl().isSubstitute();
+
+    interface Substitute {
+        ASTNode getOriginal();
+    }
+
+    ClassDeclSubstituted implements Substitute;
+    ConstructorDeclSubstituted implements Substitute;
+    FieldDeclarationSubstituted implements Substitute;
+    GenericClassDeclSubstituted implements Substitute;
+    GenericInterfaceDeclSubstituted implements Substitute;
+    InterfaceDeclSubstituted implements Substitute;
+    MethodDeclSubstituted implements Substitute;
+    ParameterDeclarationSubstituted implements Substitute;
+    VariableArityParameterDeclarationSubstituted implements Substitute;
+
+	//duplication needed for overloaded static resolution
+	public void TypeDecl.registerDecl(JastaddGraphBuilder builder, int thisId){
+      //System.err.println(this.fullName() + " - " + this.getClass() + " registered as primitive");
+      builder.registerDecl(thisId, this);
+  	}
+
+	public void InterfaceDecl.registerDecl(JastaddGraphBuilder builder, int thisId){
+		builder.registerDecl(thisId, this);
+	}
+
+	public void ClassDecl.registerDecl(JastaddGraphBuilder builder, int thisId){
+        builder.registerDecl(thisId, this);
+    }
+
+    public void WildcardType.registerDecl(JastaddGraphBuilder builder, int thisId){
+        builder.registerDecl(thisId, this);
+    }
+
+    
+    public void ConstructorDecl.registerDecl(JastaddGraphBuilder builder, int thisId){
+        builder.registerDecl(thisId, this);
+    }
+
+    public void ParameterDeclaration.registerDecl(JastaddGraphBuilder builder, int thisId){
+        builder.registerDecl(thisId, this);
+    }
+
+    public void FieldDeclaration.registerDecl(JastaddGraphBuilder builder, int thisId){
+        builder.registerDecl(thisId, this);
+    }
+
+    public void MethodDecl.registerDecl(JastaddGraphBuilder builder, int thisId){
+        builder.registerDecl(thisId, this);
+    }
+    public void TypeVariable.registerDecl(JastaddGraphBuilder builder, int thisId){
+        builder.registerDecl(thisId, this);
+    }
+
+    syn JavaNodeKind DGNamedElement.getDGNodeKind();
+
+    eq TypeDecl.getDGNodeKind(){
+    	throw new DGBuildingError(this.fullName() + " - " + this.getClass()+" : Unkown nodekind");
+    }
+    eq TypeVariable.getDGNodeKind() = JavaNodeKind.typeVariable();
+    eq ClassDecl.getDGNodeKind() = JavaNodeKind.classKind();
+    eq InterfaceDecl.getDGNodeKind() = JavaNodeKind.interfaceKind();
+    eq WildcardType.getDGNodeKind() = JavaNodeKind.wildcardType();
+    eq PrimitiveType.getDGNodeKind() = JavaNodeKind.primitive();
+	eq VoidType.getDGNodeKind() = JavaNodeKind.primitive();
+    eq NullType.getDGNodeKind() = JavaNodeKind.primitive();
+    eq ParameterDeclaration.getDGNodeKind() = JavaNodeKind.parameter();
+
+    eq FieldDeclaration.getDGNodeKind() {
+        if(this.isStatic())
+            return JavaNodeKind.staticField();
+        else
+            return JavaNodeKind.field();
+
+    }
+
+    eq MethodDecl.getDGNodeKind(){
+    	if(this.isAbstract())
+	        return JavaNodeKind.abstractMethod();
+	    else if (this.isStatic())
+            return JavaNodeKind.staticMethod();
+        else
+	        return JavaNodeKind.method();
+    }
+
+    eq ConstructorDecl.getDGNodeKind() = JavaNodeKind.constructor();
+
+
+
+}

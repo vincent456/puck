@@ -85,6 +85,10 @@ abstract class Intro {
    mutable : Mutability
     )  : (ConcreteNode, ConcreteNode, DependencyGraph)
 
+  def defaultConstructor
+  ( g : DependencyGraph,
+    typeNode : NodeId) : LoggedTry[(ConcreteNode, DependencyGraph)]
+
   def parameter
   ( g : DependencyGraph,
     typeNode : NodeId,
@@ -96,19 +100,25 @@ abstract class Intro {
     val (pNode, g1) = g.addConcreteNode(newTypeUsedNode.name.toLowerCase, paramKind)
 
 
-    g1.getDefaultConstructorOfType(typeNode) match {
-      case None => LoggedError(s"no default constructor for $typeNode")
-      case Some(cid) =>
-        LoggedSuccess {
-          val g2 = g1.addParam(typeMemberDecl, pNode.id)
-            .setType(pNode.id, Some(NamedType(typeNode)))
+    def onSuccess(cid : NodeId, g : DependencyGraph) : (ConcreteNode, DependencyGraph) = {
+      val g2 = g.addParam(typeMemberDecl, pNode.id)
+        .setType(pNode.id, Some(NamedType(typeNode)))
 
-          (pNode,
-            g1.usersOf(typeMemberDecl).foldLeft(g2) {
-              (g0, userOfUser) =>
-                g0.addEdge(Uses(userOfUser, cid))
-            })
+      (pNode,
+        g.usersOf(typeMemberDecl).foldLeft(g2) {
+          (g0, userOfUser) =>
+            g0.addEdge(Uses(userOfUser, cid))
+        })
+    }
+
+    g1.getDefaultConstructorOfType(typeNode) match {
+      case None =>
+        intro.defaultConstructor(g1, typeNode) map {
+          case (cn, g2) => onSuccess(cn.id, g2)
         }
+//        LoggedError(s"no default constructor for $typeNode")
+      case Some(cid) =>
+        LoggedSuccess(onSuccess(cid, g1))
     }
 
 
@@ -121,19 +131,26 @@ abstract class Intro {
    kind : NodeKind
     ) : LoggedTry[(DGUses, DependencyGraph)] = {
     val g = graph.comment(s"Intro.typeMember(g, ${(graph, typeNode).shows}, ${(graph,tmContainer).shows}, $kind)")
-    g.getDefaultConstructorOfType(typeNode) match {
-      case None =>
-        LoggedError(s"no default constructor for $typeNode")
-      case Some(constructorId) =>
 
-        val delegateName = s"${g.getConcreteNode(typeNode).name.toLowerCase}_delegate"
+    val ltCid : LoggedTry[(NodeId, DependencyGraph)] =
+    g.getDefaultConstructorOfType(typeNode) match {
+      case None => intro.defaultConstructor(g, typeNode) map {
+        case (cn, g) => (cn.id, g)
+      }
+        //LoggedError(s"no default constructor for $typeNode")
+      case Some(constructorId) => LoggedSuccess((constructorId, g))
+    }
+
+    ltCid flatMap {
+      case (constructorId, g0) =>
+        val delegateName = s"${g0.getConcreteNode(typeNode).name.toLowerCase}_delegate"
 
         val (delegateDecl, delegateDef, g1) =
-          typedNodeWithDef(g, delegateName, kind, typeNode)
+          typedNodeWithDef(g0, delegateName, kind, typeNode)
 
         val newTypeUse = Uses(delegateDecl.id, typeNode)
 
-        val tmContainerKind = g.getConcreteNode(tmContainer).kind
+        val tmContainerKind = g0.getConcreteNode(tmContainer).kind
         if(tmContainerKind canContain kind)
           LoggedSuccess(
             (newTypeUse,

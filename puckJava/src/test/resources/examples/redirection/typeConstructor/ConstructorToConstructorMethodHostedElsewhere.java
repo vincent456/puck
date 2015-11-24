@@ -2,6 +2,7 @@ package p;
 
 
 class Factory{
+    Factory(){}
     B createB(){
         return new B();
     }

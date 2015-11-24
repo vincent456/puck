@@ -1,1 +1,0 @@
-WithStmt : Stmt ::= Qualifier:Access* Stmt;

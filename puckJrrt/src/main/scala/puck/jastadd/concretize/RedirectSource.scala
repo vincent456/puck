@@ -7,7 +7,7 @@ import puck.jastadd.JavaJastAddDG2AST
 import puck.javaGraph._
 import puck.javaGraph.nodeKind.{Method, Field}
 import puck.util.{PuckLog, PuckLogger}
-
+import org.extendj.{ast => AST}
 import ShowDG._
 import JavaJastAddDG2AST.verbosity
 
@@ -90,7 +90,8 @@ object RedirectSource {
       val newCu = oldcu.programRoot().insertUnusedType(path, resultGraph.fullName(newPackage), tDecl)
 
       if(newCu.relativeName() == null){
-        newCu.setRelativeName(tDecl.fullName().replaceAllLiterally(".","/") +".java")
+        ???
+        //newCu.setRelativeName(tDecl.fullName().replaceAllLiterally(".","/") +".java")
       }
       newCu.setID(tDecl.name())
 

@@ -1,0 +1,147 @@
+/* Copyright (c) 2005-2008, Torbjorn Ekman
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ * contributors may be used to endorse or promote products derived from this
+ * software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+aspect BoundNames {
+  public Access FieldDeclaration.createQualifiedBoundAccess() {
+    if (isStatic()) {
+      return hostType().createQualifiedAccess().qualifiesAccess(new BoundFieldAccess(this));
+    } else
+      return new ThisAccess("this").qualifiesAccess(
+        new BoundFieldAccess(this));
+  }
+
+  // The memberMethods(String name) attribute is used to lookup member methods.
+  // It uses the methodsNameMap() map where a name is mapped to a list of member
+  // methods. We extend the map with the declaration m by either appending
+  // it to an existing list of declarations or adding a new list. That list
+  // will be used to name bind a new qualified name access.
+  public MethodDecl TypeDecl.addMemberMethod(MethodDecl m) {
+    addBodyDecl(m);
+    return (MethodDecl) getBodyDecl(getNumBodyDecl()-1);
+    /*
+    HashMap map = methodsNameMap();
+    ArrayList list = (ArrayList) map.get(m.name());
+    if (list == null) {
+      list = new ArrayList(4);
+      map.put(m.name(), list);
+    }
+    list.add(m);
+    if (!memberMethods(m.name()).contains(m)) {
+      throw new Error("The method " + m.signature() + " added to " + typeName() + " can not be found using lookupMemberMethod");
+    }
+    */
+  }
+
+  public ConstructorDecl TypeDecl.addConstructor(ConstructorDecl c) {
+    addBodyDecl(c);
+    return (ConstructorDecl) getBodyDecl(getNumBodyDecl()-1);
+  }
+
+  public ClassDecl TypeDecl.addMemberClass(ClassDecl c) {
+    addBodyDecl(new MemberClassDecl(c));
+    return ((MemberClassDecl) getBodyDecl(getNumBodyDecl()-1)).getClassDecl();
+  }
+
+
+  // the new field must be unique otherwise an error occurs
+  public FieldDeclaration TypeDecl.addMemberField(FieldDeclaration f) {
+    addBodyDecl(f);
+    return (FieldDeclaration) getBodyDecl(getNumBodyDecl()-1);
+  }
+
+  // A BoundMethodAccess is a MethodAccess where the name analysis is bypassed by explicitly setting the desired binding
+  // this is useful when name binding is cached and recomputation is undesired
+  public BoundMethodAccess.BoundMethodAccess(String name, List args, MethodDecl methodDecl) {
+    this(name, args);
+    this.methodDecl = methodDecl;
+  }
+  private MethodDecl BoundMethodAccess.methodDecl;
+  eq BoundMethodAccess.decl() = methodDecl;
+
+  public BoundFieldAccess.BoundFieldAccess(FieldDeclaration f) {
+    this(f.name(), f);
+  }
+
+  eq BoundFieldAccess.decl() = getFieldDeclaration();
+  public boolean BoundFieldAccess.isExactVarAccess() {
+    return false;
+  }
+
+  public Access MethodDecl.createBoundAccess(List args) {
+    if (isStatic()) {
+      return hostType().createQualifiedAccess().qualifiesAccess(
+        new BoundMethodAccess(name(), args, this)
+      );
+    }
+    return new BoundMethodAccess(name(), args, this);
+  }
+
+  public Access FieldDeclaration.createBoundFieldAccess() {
+    return createQualifiedBoundAccess();
+  }
+
+  public TypeAccess TypeDecl.createBoundAccess() {
+    return new BoundTypeAccess("", name(), this);
+  }
+  eq BoundTypeAccess.decls() = SimpleSet.emptySet.add(getTypeDecl());
+
+  rewrite BytecodeTypeAccess {
+    to Access {
+      if (name().indexOf("$") == -1) {
+        return new TypeAccess(packageName(), name());
+      } else {
+        String[] names = name().split("\\$");
+        Access a = null; // the resulting access
+        String newName = null; // the subname to try
+        TypeDecl type = null; // qualifying type if one
+        for (int i = 0; i < names.length; i++) {
+          newName = newName == null ? names[i] : (newName + "$" + names[i]);
+          SimpleSet set;
+          if (type != null) {
+            set = type.memberTypes(newName);
+          } else if (packageName().equals("")) {
+            set = lookupType(newName);
+          } else {
+            set = lookupType(packageName(), newName).asSet();
+          }
+          if (!set.isEmpty()) {
+            a = a == null ? (Access) new TypeAccess(packageName(), newName) : (Access) a.qualifiesAccess(new TypeAccess(newName));
+            type = (TypeDecl) set.iterator().next();
+            newName = null; // reset subname
+          }
+        }
+        if (a == null) {
+          a = new TypeAccess(packageName(), name());
+        }
+        return a;
+      }
+    }
+  }
+}

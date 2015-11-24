@@ -1,0 +1,168 @@
+/* Copyright (c) 2014, Erik Hogeman <Erik.Hogemn@gmail.com>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *     * Redistributions of source code must retain the above copyright notice,
+ *       this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name of the Lund University nor the names of its
+ *       contributors may be used to endorse or promote products derived from
+ *       this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+aspect ConstructorReference {
+  inh ConstructorDecl ConstructorReference.unknownConstructor();
+
+  syn lazy ConstructorDecl ClassReference.targetConstructor(FunctionDescriptor f) =
+      syntheticInstanceExpr(f).decl();
+
+  syn nta lazy ClassInstanceExpr ClassReference.syntheticInstanceExpr(FunctionDescriptor f) {
+    List<Expr> arguments = new List<Expr>();
+    for (int i = 0; i < f.method.getNumParameter(); i++) {
+      TypeDecl argumentType = f.method.getParameter(i).type();
+      arguments.add(new SyntheticTypeAccess(argumentType));
+    }
+
+    ClassInstanceExpr instanceExpr = null;
+    if (hasTypeArgument()) {
+      instanceExpr = new ParConstructorReferenceAccess(
+          (Access) getTypeAccess().treeCopyNoTransform(), arguments,
+          new Opt(), (List<Access>)getTypeArgumentList().treeCopyNoTransform(), f);
+    } else {
+      // Must check for raw reference type, and in that case infer using diamond (JLS 15.13.1)
+      boolean checkDiamond = true;
+      if (getTypeAccess().type().hostType() != null && !getTypeAccess().type().isStatic()
+          && getTypeAccess().type().hostType().isRawType()) {
+        checkDiamond = false;
+      }
+      if (getTypeAccess().type().isRawType() && checkDiamond) {
+        DiamondAccess diamond = new DiamondAccess((Access)getTypeAccess().treeCopyNoTransform());
+        instanceExpr = new ConstructorReferenceAccess(diamond, arguments, f);
+      } else {
+        instanceExpr = new ConstructorReferenceAccess(
+            (Access) getTypeAccess().treeCopyNoTransform(), arguments, f);
+      }
+    }
+    return instanceExpr;
+  }
+
+  // Both array and class references always refer to types
+  eq ClassReference.getTypeArgument().nameType() = NameType.TYPE_NAME;
+  eq ConstructorReference.getTypeAccess().nameType() = NameType.TYPE_NAME;
+
+  syn lazy boolean ConstructorReference.congruentTo(FunctionDescriptor f);
+
+  eq ClassReference.congruentTo(FunctionDescriptor f) {
+    ConstructorDecl decl = targetConstructor(f);
+    if (unknownConstructor() == decl) {
+      return false;
+    }
+    if (!f.method.type().isVoid()) {
+      TypeDecl returnType = syntheticInstanceExpr(f).type();
+      if (!returnType.assignConversionTo(f.method.type(), null)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  eq ArrayReference.congruentTo(FunctionDescriptor f) {
+    if (f.method.getNumParameter() != 1) {
+      return false;
+    }
+    if (!f.method.getParameter(0).type().assignConversionTo(f.fromInterface().typeInt(), null)) {
+      return false;
+    }
+    if (!f.method.type().isVoid()) {
+      if (!getTypeAccess().type().assignConversionTo(f.method.type(), null)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+
+  syn lazy ArrayList<ConstructorDecl> ClassReference.potentiallyApplicableConstructors(
+      FunctionDescriptor f) {
+    TypeDecl classType = syntheticInstanceExpr(f).type();
+    Collection<ConstructorDecl> col = classType.constructors();
+    ArrayList<ConstructorDecl> applicable = new ArrayList<ConstructorDecl>();
+    for (ConstructorDecl decl : col) {
+      if (!decl.accessibleFrom(hostType())) {
+        continue;
+      }
+      if (!(decl.arity() == f.method.arity())) {
+        continue;
+      }
+      if (hasTypeArgument()) {
+        if (!decl.isGeneric()) {
+          continue;
+        }
+        GenericConstructorDecl genDecl = decl.genericDecl();
+        if (!(getNumTypeArgument() == genDecl.getNumTypeParameter())) {
+          continue;
+        }
+      }
+      applicable.add(decl);
+    }
+    return applicable;
+  }
+
+  // 15.13.1
+  syn lazy boolean ConstructorReference.isExact();
+
+  syn lazy ConstructorDecl ClassReference.exactCompileTimeDeclaration() {
+    if (getTypeAccess().type().isRawType()) {
+      if (getTypeAccess().type().hostType() == null || getTypeAccess().type().isStatic()
+          || getTypeAccess().type().hostType().isRawType()) {
+        return unknownConstructor();
+      }
+    }
+    TypeDecl classType = getTypeAccess().type();
+    Collection<ConstructorDecl> col = classType.constructors();
+    ArrayList<ConstructorDecl> applicable = new ArrayList<ConstructorDecl>();
+    int foundCompatible = 0;
+    ConstructorDecl latestDecl = null;
+
+    for (ConstructorDecl decl : col) {
+      if (decl.accessibleFrom(hostType())) {
+        foundCompatible++;
+        latestDecl = decl;
+      }
+    }
+    if (foundCompatible != 1) {
+      return unknownConstructor();
+    }
+    if (latestDecl.isVariableArity()) {
+      return unknownConstructor();
+    }
+    if (latestDecl.isGeneric()) {
+      GenericConstructorDecl genericDecl = latestDecl.genericDecl();
+      if (getNumTypeArgument() == genericDecl.getNumTypeParameter()) {
+        return latestDecl;
+      } else {
+        return unknownConstructor();
+      }
+    }
+    return latestDecl;
+  }
+
+  eq ClassReference.isExact() = exactCompileTimeDeclaration() != unknownConstructor();
+
+  eq ArrayReference.isExact() = true;
+}

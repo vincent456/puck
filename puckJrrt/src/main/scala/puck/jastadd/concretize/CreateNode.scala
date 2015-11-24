@@ -3,7 +3,7 @@ package concretize
 
 import puck.graph._
 import puck.javaGraph.nodeKind._
-
+import org.extendj.{ast => AST}
 
 object CreateNode {
 

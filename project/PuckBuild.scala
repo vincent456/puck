@@ -115,7 +115,7 @@ object PuckBuild extends Build {
 //    dependsOn (puckCore % "test->test;compile->compile",
 //    puckJava % "test->test;compile->compile",
 //    puckScala % "test->test;compile->compile")
-    aggregate (puckCore, puckGui, puckJava/*, puckScala*/)
+    aggregate (puckCore, puckGui, puckJava, puckJrrt/*, puckScala*/)
     )
 
   val puckCore : Project = (project
