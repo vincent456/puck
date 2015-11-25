@@ -1,10 +1,11 @@
-package puck.graph
-package transformations
+package puck.graph.comparison
 
-import puck.util.{PuckLog, PuckLogger}
-/*import MappingChoices.{ResMap, NodesToMap}
+import puck.graph._
+import puck.graph.comparison.RecordingComparator._
+import puck.graph.transformations._
+import puck.util.{PuckLogger, PuckLog}
 
-import puck.search.{SearchEngine, SearchState}
+import puck.search.SearchState
 
 
 import scala.collection.immutable.HashSet
@@ -22,7 +23,7 @@ object NodeTransfoStatus {
 sealed abstract class NodeTransfoStatus
 case object Created extends NodeTransfoStatus
 case object Deleted extends NodeTransfoStatus
-case object Neuter extends NodeTransfoStatus*/
+case object Neuter extends NodeTransfoStatus
 
 object NodeMappingInitialState{
 
@@ -57,7 +58,7 @@ object NodeMappingInitialState{
     (map, rl.reverse)
   }
 
-/*  def switchNodes[Kind <: NodeKind, T]
+  def switchNodes[Kind <: NodeKind, T]
           (nodeStatusesMap : Map[NodeId, (Int, Kind)], init : T)
           (add : (T, (NodeId, NodeKind)) => T) : (Int, T, Seq[NodeId], Set[NodeId]) = {
     nodeStatusesMap.foldLeft[(Int, T, Seq[NodeId], Set[NodeId])](0, init, List(), HashSet()) {
@@ -68,70 +69,62 @@ object NodeMappingInitialState{
           case Neuter => (cpt, addAcc, rmAcc, neuterAcc + node)
         }
     }
-  }*/
+  }
 
   implicit val defaultVerbosity = (PuckLog.NoSpecialContext, PuckLog.Debug)
 }
-/*
+
 
 import NodeMappingInitialState._
 
-class NodeMappingInitialState
-( initialTransfos : Seq[Transformation],
-  val engine : RecordingComparator,
-  graph1 : DependencyGraph,
-  graph2 : DependencyGraph,
-  k: LoggedTry[ResMap] => Unit,
-  logger : PuckLogger)
-  extends SearchState[ResMap]{
-  //extends NodeMappingState(0, eng, null, null, None) {
-  val id = 0
-  val prevState = None
+object RecordingComparatorInitialState {
 
-  logger.writeln("*********************************** ")
-  logger.writeln("*********************************** ")
-  logger.writeln("*********************************** ")
-  logger.writeln("untouched recording 1 : ")
-  graph1.recording foreach  { t => logger.writeln(t.toString)}
-  logger.writeln("*********************************** ")
-  logger.writeln("*********************************** ")
+  def apply(initialTransfos: Seq[Transformation],
+            graph1: DependencyGraph,
+            graph2: DependencyGraph,
+            logger: PuckLogger): SearchState[Compared] = {
 
-  logger.writeln("untouched recording 2 : ")
-  graph2.recording foreach  { t => logger.writeln(t.toString)}
-  logger.writeln("*********************************** ")
-  logger.writeln("*********************************** ")
+    logger.writeln("*********************************** ")
+    logger.writeln("*********************************** ")
+    logger.writeln("*********************************** ")
+    logger.writeln("untouched recording 1 : ")
+    graph1.recording foreach { t => logger.writeln(t.toString) }
+    logger.writeln("*********************************** ")
+    logger.writeln("*********************************** ")
 
-  val (nodeStatuses, remainingTransfos1) = normalizeNodeTransfos(graph1.rootKind, graph1.recording, initialTransfos)
+    logger.writeln("untouched recording 2 : ")
+    graph2.recording foreach { t => logger.writeln(t.toString) }
+    logger.writeln("*********************************** ")
+    logger.writeln("*********************************** ")
 
-  val (nodeStatuses2, remainingTransfos2) = normalizeNodeTransfos(graph2.rootKind, graph2.recording, initialTransfos)
+    val (nodeStatuses, remainingTransfos1) = normalizeNodeTransfos(graph1.rootKind, graph1.recording, initialTransfos)
 
-  val (numCreatedNodes, initialMapping, removedNode, neuterNodes) =
-    switchNodes(nodeStatuses, ResMap()){
-      case (m, (n, k0)) => m + (n -> ((k0, None)))
+    val (nodeStatuses2, remainingTransfos2) = normalizeNodeTransfos(graph2.rootKind, graph2.recording, initialTransfos)
+
+    val (numCreatedNodes, initialMapping, removedNode, neuterNodes) =
+      switchNodes(nodeStatuses, ResMap()) {
+        case (m, (n, k0)) => m + (n -> Left(k0))
+      }
+
+    val (numCreatedNodes2, nodesToMap, otherRemovedNodes, otherNeuterNodes) =
+      switchNodes(nodeStatuses2, NodesToMap()) {
+        case (m, (n, k0)) =>
+          val s = m getOrElse(k0, Seq[NodeId]())
+          m + (k0 -> (n +: s))
+      }
+
+
+    val loggedResult = initialMapping.set("")
+    var triedAll0 = false
+
+    def writelnNode(graph: DependencyGraph)(nid: NodeId): Unit = {
+      logger.writeln(s"$nid = ${graph.getNode(nid)}")
     }
 
-  val (numCreatedNodes2, nodesToMap, otherRemovedNodes, otherNeuterNodes) =
-    switchNodes(nodeStatuses2, NodesToMap()){
-      case (m, (n, k0)) =>
-        val s = m getOrElse (k0, Seq[NodeId]())
-        m + (k0 -> (n +: s))
-    }
 
 
-  val loggedResult = initialMapping.set("")
-  var triedAll0 = false
 
-  override def triedAll = triedAll0
-
-  def writelnNode(graph: DependencyGraph)( nid : NodeId) : Unit = {
-    logger.writeln(s"$nid = ${graph.getNode(nid)}")
-  }
-
-
-  override def executeNextChoice(e : SearchEngine[ResMap]) : Unit = {
-    triedAll0 = true
-
-    if(numCreatedNodes != numCreatedNodes2 ||
+    if (numCreatedNodes != numCreatedNodes2 ||
       !(removedNode forall otherRemovedNodes.contains)) {
       val sameNumberOfNodesToMap = numCreatedNodes == numCreatedNodes2
       val sameRemovedNodes = removedNode forall otherRemovedNodes.contains
@@ -155,21 +148,21 @@ class NodeMappingInitialState
       logger.writeln("nodes to map : %s, %d remaining transfo".format(nodesToMap, remainingTransfos2.size))
 
       logger.writeln("created nodes :")
-      nodesToMap foreach {case (_, s) => s foreach writelnNode(graph2)}
+      nodesToMap foreach { case (_, s) => s foreach writelnNode(graph2) }
       logger.writeln("neuter nodes : ")
       otherNeuterNodes foreach writelnNode(graph2)
 
       logger.writeln("recording1")
-      graph1.recording foreach { t => logger.writeln(t.toString)}
+      graph1.recording foreach { t => logger.writeln(t.toString) }
 
       logger.writeln("*******************************************************")
       logger.writeln("")
       logger.writeln("")
 
       logger.writeln("recording2")
-      graph2.recording foreach { t => logger.writeln(t.toString)}
+      graph2.recording foreach { t => logger.writeln(t.toString) }
 
-      k(LoggedError(NoSolution))
+      new SearchState(0, None, LoggedError(NoSolution), Seq())
     }
     else {
 
@@ -183,19 +176,19 @@ class NodeMappingInitialState
 
       logger.writeln("")
       logger.writeln("")
-      remainingTransfos1 foreach { t => logger.writeln(t.toString)}
+      remainingTransfos1 foreach { t => logger.writeln(t.toString) }
 
       logger.writeln("*******************************************************")
       logger.writeln("***************** filtering 1 *************************")
       logger.writeln("*******************************************************")
 
-      val filteredTransfos1 = if(neuterNodes.nonEmpty) FilterNoise(remainingTransfos1, logger)
+      val filteredTransfos1 = if (neuterNodes.nonEmpty) FilterNoise(remainingTransfos1, logger)
       else remainingTransfos1
 
       logger.writeln("*******************************************************")
       logger.writeln("*******************************************************")
 
-      filteredTransfos1 foreach { t => logger.writeln(t.toString)}
+      filteredTransfos1 foreach { t => logger.writeln(t.toString) }
 
       logger.writeln("")
       logger.writeln("")
@@ -210,40 +203,36 @@ class NodeMappingInitialState
       logger.writeln("nodes to map : %s, %d remaining transfo".format(nodesToMap, remainingTransfos2.size, logger))
 
       logger.writeln("created nodes :")
-      nodesToMap foreach {case (_, s) => s foreach writelnNode(graph2)}
+      nodesToMap foreach { case (_, s) => s foreach writelnNode(graph2) }
       logger.writeln("neuter nodes : ")
       otherNeuterNodes foreach writelnNode(graph2)
 
       logger.writeln("")
       logger.writeln("")
-      remainingTransfos2 foreach { t => logger.writeln(t.toString)}
+      remainingTransfos2 foreach { t => logger.writeln(t.toString) }
 
 
       logger.writeln("*******************************************************")
       logger.writeln("***************** filtering 2 *************************")
       logger.writeln("*******************************************************")
 
-      val filteredTransfos2 = if(otherNeuterNodes.nonEmpty) FilterNoise(remainingTransfos2, logger)
+      val filteredTransfos2 = if (otherNeuterNodes.nonEmpty) FilterNoise(remainingTransfos2, logger)
       else remainingTransfos2
 
       logger.writeln("*******************************************************")
       logger.writeln("*******************************************************")
 
-      filteredTransfos2 foreach { t => logger.writeln(t.toString)}
+      filteredTransfos2 foreach { t => logger.writeln(t.toString) }
 
-      if(filteredTransfos1.length != filteredTransfos2.length)
-        k(LoggedError(NoSolution))
-      else
-        engine.compare(filteredTransfos1, filteredTransfos2, initialMapping, nodesToMap, k)
-      //eng.compare(filteredTransfos1, filteredTransfos2,
-      //neuterNodes.foldLeft(initialMapping){ (m, n) => m + (n -> None) },
-      //nodesToMap ++ otherNeuterNodes)
-      //eng.compare(remainingTransfos1, remainingTransfos2, initialMapping, nodesToMap)
-
+      if (filteredTransfos1.length != filteredTransfos2.length)
+        new SearchState(0, None, LoggedError(NoSolution), Seq())
+      else{
+        val res = (initialMapping, nodesToMap, filteredTransfos1, filteredTransfos2)
+        new SearchState(0, None, LoggedSuccess(res), RecordingComparator.nextStates(res))
+      }
     }
 
 
   }
-}
-*/
 
+}

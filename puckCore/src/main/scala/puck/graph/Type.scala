@@ -1,6 +1,5 @@
 package puck.graph
 
-import puck.PuckError
 import puck.graph.constraints.SupertypeAbstraction
 import puck.util.LoggedEither._
 

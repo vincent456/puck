@@ -1,0 +1,182 @@
+package puck.graph.comparison
+
+import puck.PuckError
+import puck.graph._
+
+import puck.graph.comparison.RecordingComparator._
+import puck.graph.transformations._
+import puck.search.{SearchStrategyDecorator, SearchStrategy}
+
+import scalaz.Scalaz._
+import scalaz._
+
+object RecordingComparator{
+
+  type ResMap = Map[NodeId, Either[NodeKind, NodeId]]
+  def ResMap() = Map[NodeId, Either[NodeKind, NodeId]]()
+  type NodesToMap = Map[NodeKind, Seq[NodeId]]
+  def NodesToMap() = Map[NodeKind, Seq[NodeId]]()
+  type AttribT = (NodeId, ResMap, NodesToMap)
+
+  type Compared = (ResMap, NodesToMap, Seq[Transformation], Seq[Transformation])
+
+  def revAppend[T] (heads : Seq[T], tails : Seq[T]) : Seq[T] = {
+     def aux(hds: Seq[T], tls : Seq[T]) : Seq[T] =
+      if(hds.isEmpty) tls
+      else aux(hds.tail, hds.head +: tls)
+
+     aux(heads, tails)
+  }
+
+  def removeFirst[T](l : Seq[T], pred : T => Boolean) : Option[Seq[T]] = {
+    def aux(l1 : Seq[T], acc : Seq[T]) : Option[Seq[T]] =
+      if(l1.isEmpty) None
+      else if(pred(l1.head)) Some(revAppend(acc, l1.tail))
+      else aux(l1.tail, l1.head +: acc)
+
+    aux(l, Seq[T]())
+  }
+
+  def removeFirst(l : Seq[Transformation],
+                  op : Direction,
+                  tgt : Operation) :  Option[Seq[Transformation]] =
+    removeFirst(l, {(t : Transformation) => t.direction == op && t.operation == tgt})
+
+  def attribNode
+  (node : NodeId,
+   currentResMap : ResMap,
+   nodesToMap : NodesToMap) :
+  Seq[LoggedTry[(ResMap, NodesToMap)]] = {
+
+    currentResMap/*(node)*/ .getOrElse(node, Right(node)) match {
+      case Right(n) => //already attributed
+        Seq(LoggedSuccess((currentResMap, nodesToMap)))
+
+      case Left(kind) =>
+        nodesToMap.getOrElse(kind, Seq()) match {
+          case Seq() => Seq(LoggedError(NoSolution))
+          case l =>
+            l.toStream  map {
+              mapped =>
+                val newResMap : ResMap = currentResMap + (node -> Right(mapped))
+                val newNodesToMap = nodesToMap + (kind -> l.filter(_ == mapped))
+                LoggedSuccess((newResMap, newNodesToMap))
+            }
+
+        }
+    }
+  }
+
+  def attribNodes
+  (nodes : Seq[NodeId],
+   currentResMap : ResMap,
+   nodesToMap : NodesToMap) :
+  Seq[LoggedTry[(ResMap, NodesToMap)]] = {
+
+    def aux
+    (nodes : Seq[NodeId],
+     acc : Seq[LoggedTry[(ResMap, NodesToMap)]]) :
+    Seq[LoggedTry[(ResMap, NodesToMap)]] = nodes match {
+      case Seq() => acc
+      case n +: tl =>
+        aux(tl,
+          acc.flatMap {
+            lt =>
+              lt.value match {
+                case \/-((currResMap, nodesToMap0)) =>
+                  attribNode(n, currResMap, nodesToMap0)
+                case -\/(e) => Seq(LoggedError(lt.log, e))
+              }
+          })
+    }
+    aux(nodes, Seq(LoggedSuccess((currentResMap, nodesToMap))))
+  }
+
+
+  def getMapping(nodes : Seq[NodeId],
+                 currentResMap : ResMap) : Option[Seq[NodeId]] =
+    nodes.reverse.foldLeft(Seq[NodeId]().some){
+      case (None, _) => none
+      case (Some(acc),n) => currentResMap.getOrElse(n, Right(n)) match {
+        case Left(_) => None
+        case Right(mapped) => Some(mapped +: acc)
+      }
+    }
+
+  val nextStates : Compared => Seq[LoggedTry[Compared]] = {
+    case (_, _, Seq(), Seq()) => Seq()
+    case (resMap, nodesToMap, t1 +: ts1, ts2) =>
+      def removeFirstAndCompareNext(tgt : Operation) : Seq[LoggedTry[Compared]]  =
+        removeFirst(ts2, t1.direction, tgt) match {
+          case None => Seq(LoggedError(WrongMapping))
+          //              println("Failure on mapping : ")
+          //              println(map.mkString("\t", "\n\t", "\n"))
+          //              println(ts1.head + " mapped as ")
+          //              println(Transformation(ts1.head.direction, tgt) + "cannot be found in :")
+          //              println(ts2.mkString("\t", "\n\t", "\n"))
+          //              println("**************************************")
+          case Some(newTs2) =>
+            nextStates((resMap, nodesToMap, ts1, newTs2))
+        }
+
+      t1.operation match {
+        case Edge(e) =>
+          getMapping(Seq(e.source, e.target), resMap) match {
+            case Some(Seq(src, tgt)) =>
+              removeFirstAndCompareNext(Edge(e.copy(src, tgt)))
+            case None =>
+              attribNodes(Seq(e.source, e.target), resMap, nodesToMap) map ( _ map {
+                case (rm, ntm) => (rm, ntm, t1 +: ts1, ts2)
+              })
+
+          }
+
+        case RedirectionOp(e, extremity) =>
+          getMapping(Seq(e.source, e.target, extremity.node), resMap) match {
+            case Some(Seq(src, tgt, newExtyNode)) =>
+              removeFirstAndCompareNext(
+                RedirectionOp(e.kind(src, tgt),
+                  extremity.create(newExtyNode)))
+            case None =>
+              attribNodes(Seq(e.source, e.target, extremity.node), resMap, nodesToMap) map ( _ map {
+                case (rm, ntm) => (rm, ntm, t1 +: ts1, ts2)
+              })
+          }
+
+
+        //case TTNode(_) => throw new Error("should not happen !!")
+        //removing the dependendency and abstraction of the comparison
+        // they are used to compute the change on the graph, its the change themselves we want to compare
+        // removed in NodeMappingInitialState.normalizeNodeTransfos
+        case _ : TypeChange // TODO see if need to be compared
+             | _ : TypeDependency
+             | _ : ChangeTypeBinding
+             | _ : AbstractionOp
+             | _ : VNode
+             | _ : CNode
+             | _ : ChangeNodeName
+             | _ : RoleChange
+             | _ : Comment => throw new Error("should not happen !!")
+
+      }
+  }
+}
+
+object NoSolution extends PuckError("No solution")
+object WrongMapping extends PuckError("Wrong mapping")
+
+class RecordingComparatorControl
+( strategy : SearchStrategy[Compared]
+) extends SearchStrategyDecorator[Compared](strategy){
+
+  override def oneStep: Option[(LoggedTry[Compared], Seq[LoggedTry[Compared]])] = {
+    strategy.nextState.nextChoice flatMap( lt =>
+      lt.value match{
+        case \/-(cc) => Some((lt, nextStates(cc)))
+        case -\/(_) => None
+      })
+  }
+}
+
+
+

@@ -1,0 +1,12 @@
+
+aspect LookupTypeExt {
+    public void Program.changeTypeMap(String oldfullName, String newfullName, TypeDecl td){
+        if(sourceTypeMap.remove(oldfullName) != td)
+            throw new RefactoringException("wrong type changed");
+        registerType(newfullName, td);
+    }
+
+    public void Program.registerType(String fullName, TypeDecl td){
+        sourceTypeMap.put(fullName, td);
+    }
+}

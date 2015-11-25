@@ -1,7 +1,9 @@
 package puck.graph
 
 import puck.graph.DependencyGraph.AbstractionMap
+import puck.graph.comparison.RecordingComparatorControl
 import puck.graph.constraints.{ConstraintsMaps, AbstractionPolicy}
+import puck.search.{SearchEngine, DepthFirstSearchStrategy}
 import puck.util.{Logger, PuckNoopLogger, PuckLogger, PuckLog}
 
 import puck.graph.transformations.{Transformation, RecordingOps}
@@ -30,10 +32,15 @@ object DependencyGraph {
   def areEquivalent[Kind <: NodeKind, T](initialRecord : Seq[Transformation],
                       graph1 : DependencyGraph,
                       graph2 : DependencyGraph,
-                      logger : PuckLogger = PuckNoopLogger) : Boolean = ???
-     //new RecordingComparator(initialRecord, graph1, graph2, logger).compare()
-
-
+                      logger : PuckLogger = PuckNoopLogger) : Boolean = {
+    val recordingComparatorControl = new RecordingComparatorControl(new DepthFirstSearchStrategy)
+    import puck.graph.comparison.RecordingComparatorInitialState
+    val engine =
+      new SearchEngine(RecordingComparatorInitialState(initialRecord, graph1, graph2, logger),
+      recordingComparatorControl, maxResult = Some(1))
+    engine.explore()
+    engine.successes.nonEmpty
+  }
 }
 
 

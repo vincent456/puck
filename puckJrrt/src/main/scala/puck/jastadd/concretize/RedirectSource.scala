@@ -75,25 +75,24 @@ object RedirectSource {
   ( resultGraph: DependencyGraph,
     reenactor : DependencyGraph,
     id2declMap: NodeId => ASTNodeLink,
+    oldPackage : NodeId,
     newPackage: NodeId,
     tDecl : AST.TypeDecl,
     tDeclId : NodeId)
   ( implicit program : AST.Program, logger : PuckLogger) : Unit ={
-    logger.writeln("moving " + tDecl.fullName() +" to package" + resultGraph.fullName(newPackage))
+    logger.writeln("moving " + tDecl.fullName() +" to package " + resultGraph.fullName(newPackage))
 
     if (tDecl.compilationUnit.getNumTypeDecl > 1) {
       logger.writeln(tDecl.name + " cu with more than one classe")(verbosity(PuckLog.Debug))
 
+      logger.writeln(tDecl.programRoot().prettyPrint())
       val path = ASTNodeLink.getPath(resultGraph, tDeclId)
       val oldcu = tDecl.compilationUnit()
-      oldcu.removeTypeDecl(tDecl)
-      val newCu = oldcu.programRoot().insertUnusedType(path, resultGraph.fullName(newPackage), tDecl)
 
-      if(newCu.relativeName() == null){
-        ???
-        //newCu.setRelativeName(tDecl.fullName().replaceAllLiterally(".","/") +".java")
-      }
-      newCu.setID(tDecl.name())
+      oldcu.removeTypeDecl(tDecl)
+      val newCu = program.insertUnusedType(path, resultGraph.fullName(newPackage), tDecl)
+
+      newCu.setPathName(tDecl.fullName().replaceAllLiterally(".","/") +".java")
 
     }
     else {
@@ -105,8 +104,8 @@ object RedirectSource {
     }
     ASTNodeLink.enlargeVisibility(reenactor, tDecl, tDeclId)
     tDecl.flushCache()
-    logger.writeln("tDecl.packageName() = " + tDecl.packageName())
-
+    val oldFullName = resultGraph.fullName(oldPackage) + "." + tDecl.name()
+    program.changeTypeMap(oldFullName, resultGraph.fullName(tDeclId), tDecl)
     addImportDeclIfNeeded(reenactor, id2declMap, tDecl, tDeclId)
   }
 
@@ -131,7 +130,7 @@ object RedirectSource {
           moveMemberDecl(reenactor, oldItcDecl, newItcDecl, mDecl, target)
 
         case (PackageDeclHolder, PackageDeclHolder, i: TypedKindDeclHolder) =>
-          moveTypeKind(resultGraph, reenactor, id2declMap, newSource, i.decl, target)
+          moveTypeKind(resultGraph, reenactor, id2declMap, source, newSource, i.decl, target)
 
         //        case (ClassDeclHolder(classDecl),
         //        InterfaceDeclHolder(absDecl),

@@ -9,7 +9,7 @@ import scalaz.{\/-, -\/}
 trait LoggedEitherValues {
   self : Assertions =>
 
-  def assertIsLeft[E,G](t : LoggedEither[E,G]) : Unit = { val _ = t.left }
+  def assertIsLeft[E,G](t : LoggedEither[E,G]) : Unit = ignore(t.left)
 
   implicit class LoggedEitherValue[E, G]( t : LoggedEither[E, G]) /*extends AnyVal*/ {
     def right : G = t.value match {

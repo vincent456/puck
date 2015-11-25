@@ -2,6 +2,7 @@ package puck
 package graph
 package transformations
 
+import puck.graph.Type.OnImplemNotFound
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations.rules._
 import puck.util.LoggedEither._
@@ -34,7 +35,8 @@ class TransformationRules
     ng
   }*/
 
-  def makeSuperType(g: DependencyGraph, sub : NodeId, sup : NodeId) : LoggedTG = {
+  def makeSuperType(g: DependencyGraph, sub : NodeId, sup : NodeId)
+                   ( onImplemNotFound : OnImplemNotFound = Type.ignoreOnImplemNotFound): LoggedTG = {
     val subNode = g.getConcreteNode(sub)
     val supNode = g.getConcreteNode(sup)
     if(!g.canBe(subNode, supNode))
@@ -44,10 +46,8 @@ class TransformationRules
       val subMethods = g.content(sub).toList map g.typedNode
       val supMethods = g.content(sup).toList map g.typedNode
 
-      Type.findAndRegisterOverridedInList(g, supMethods, subMethods) {
-        //Type.errorOnImplemNotFound((g, sub).shows)
-        Type.ignoreOnImplemNotFound
-      } map ( _.addIsa(sub, sup).
+      Type.findAndRegisterOverridedInList(g, supMethods, subMethods)(
+        onImplemNotFound) map ( _.addIsa(sub, sup).
                 addAbstraction(sub, AccessAbstraction(sup, SupertypeAbstraction))
         ) flatMap {
         g =>

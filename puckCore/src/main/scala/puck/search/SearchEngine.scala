@@ -46,33 +46,36 @@ class SearchEngine[T]
   private [this] var idSeed : Int = 0
   private def idGen() : Int = {idSeed += 1; idSeed}
 
-  def storeResult(res : LoggedTry[T]): Unit = {
-    val prevState = searchStrategy.currentState
-    ignore(res.value match {
+  def storeResult(resState : SearchState[T]) : Unit = {
+    ignore(resState.loggedResult.value match {
       case -\/(err) =>
-        failures += prevState.createNextState(res, Seq())
+        failures += resState
 
       case \/-(g) =>
-        successes += prevState.createNextState(res, Seq())
+        successes += resState
     })
 
   }
 
   protected var numExploredStates = 0
 
-  def addState(cr : LoggedTry[T], choices : Seq[LoggedTry[T]]) :Unit =
-    if(choices.isEmpty) storeResult(cr)
-    else{
-      numExploredStates = numExploredStates + 1
+  def addState(cr : LoggedTry[T], choices : Seq[LoggedTry[T]]) : Unit = {
+    numExploredStates = numExploredStates + 1
+
+    if(choices.isEmpty)
+      storeResult(searchStrategy.currentState.createNextState(cr, Seq()))
+    else
       searchStrategy.addState(cr, choices)
-    }
+  }
 
   def init() : Unit = ()
 
   def exploredStates = numExploredStates
 
-  def explore() : Unit = {
-
+  def explore() : Unit =
+  if(initialState.choices.isEmpty)
+    storeResult(initialState)
+  else {
     searchStrategy.addState(initialState)
     numExploredStates = 1
 

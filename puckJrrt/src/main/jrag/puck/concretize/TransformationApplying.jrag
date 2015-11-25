@@ -33,6 +33,11 @@ aspect TransformationApplying {
         }
     }
 
+    public void	CompilationUnit.setPathName(String path){
+        SourceFilePath sfp = new SourceFilePath(path);
+        setClassSource(new FileClassSource(sfp, sfp.getPath()));
+    }
+
     public void Program.printCodeInDirectory(File dir) throws IOException {
 
         for(CompilationUnit cu : getCompilationUnits()){
@@ -41,11 +46,11 @@ aspect TransformationApplying {
                 String relativePath = cu.getPackageDecl().replace('.', File.separatorChar);
 
                 File f = new File(dir + File.separator +
-                        relativePath + File.separator + cu.getID() + ".java");
+                        relativePath + File.separator + cu.pathName());
 
                 f.getParentFile().mkdirs();
                 BufferedWriter writer = new BufferedWriter(new FileWriter(f));
-                writer.write(cu.toString());
+                writer.write(cu.prettyPrint());
                 writer.close();
             }
         }

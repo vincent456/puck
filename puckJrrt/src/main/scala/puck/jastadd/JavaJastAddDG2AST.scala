@@ -146,7 +146,7 @@ class JavaJastAddDG2AST
     }
 
     logger.writeln("change applied : ")
-    logger.writeln(program)
+    logger.writeln(program.prettyPrint())
     program.flushCaches()
 
     try
@@ -158,7 +158,7 @@ class JavaJastAddDG2AST
 //    program.eliminateFreshVariables()
 
     logger.writeln("Program after unlock : ")
-    logger.writeln(program)
+    logger.writeln(program.prettyPrint())
 
   }
 

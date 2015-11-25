@@ -16,7 +16,7 @@ extends AbstractAction(s"Add ${sub.name} isa ${sup.name}") {
 
   def actionPerformed(e: ActionEvent) : Unit =
     printErrOrPushGraph(controller, "Make SuperType Action failure") {
-      TR.makeSuperType(graph.mileStone, sub.id, sup.id)
+      TR.makeSuperType(graph.mileStone, sub.id, sup.id)()
     }
 
 }

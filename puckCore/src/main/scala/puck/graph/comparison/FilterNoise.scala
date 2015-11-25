@@ -1,7 +1,7 @@
-/*
-package puck.graph.transformations
+package puck.graph.comparison
 
 import puck.graph.DGEdge
+import puck.graph.transformations._
 import puck.util.{PuckLog, PuckLogger}
 
 object FilterNoise {
@@ -130,4 +130,4 @@ object FilterNoise {
 
   }
 }
-*/
+

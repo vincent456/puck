@@ -3,7 +3,8 @@ package puck.jastadd
 import java.io.{File, InputStream}
 import java.util.Iterator
 
-import puck.graph.transformations.{NodeMappingInitialState, Recording, Transformation}
+import puck.graph.comparison.NodeMappingInitialState
+import puck.graph.transformations.{Recording, Transformation}
 import puck.graph.{DGBuildingError, DependencyGraph, NodeId}
 import puck.javaGraph.nodeKind.JavaNodeKind
 import org.extendj.ast.{List => ASTList, _}

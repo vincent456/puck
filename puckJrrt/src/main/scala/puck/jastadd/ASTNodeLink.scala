@@ -9,11 +9,7 @@ object ASTNodeLink{
   def setName(name : String, nl : ASTNodeLink) : Unit = nl match {
     case FieldDeclHolder(decl) => decl.setID(name)
     case dh : MethodDeclHolder => dh.decl.setID(name)
-    case th : TypedKindDeclHolder =>
-      val cu = th.decl.compilationUnit()
-      if(cu.getID == th.decl.getID)
-        cu.setID(name)
-      th.decl.setID(name)
+    case th : TypedKindDeclHolder => th.decl.setID(name)
     case ch : ConstructorDeclHolder => ch.decl.setID(name)
     case h => throw new PuckError(h.getClass + " setName unhandled")
   }

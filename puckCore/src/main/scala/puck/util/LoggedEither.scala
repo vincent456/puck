@@ -18,6 +18,8 @@ case class LoggedEither[+L, +R](log : String, value : L\/R){
       case a @ -\/(_) => this.copy(value = a)
       case \/-(b) =>  this.log <++: g(b)
     }
+
+
 }
 
 /*sealed abstract class LoggedEither[L, R]{
@@ -74,20 +76,11 @@ object LoggedEither {
     case -\/(e) => LoggedEither(le.log, -\/(e))
   }
 
-  //  def leLift[A,B](f : A => LoggedEither[Error, B]) : LoggedEither[Error, A => B] =
-  //  LoggedEither("",
-  //    \/-((a :A) =>
-  //      f(a))
-  //  )
-
-//  def apply[L, R](msg : String, v : L \/ R):LoggedEither[L,R] =
-//    Return(msg, v)
   def apply[L, R]( v : L \/ R):LoggedEither[L,R] =
     LoggedEither("", v)
 
   def foldEither[A, B, E](a: Set[A], b: B)(f: (B, A) => E \/ B): E \/ B =
     a.foldLeftM[({ type T[x] = E \/ x })#T, B](b)(f)
-  //a.foldLeft[E\/B](\/-(b)){case (b0, a0) => b0 flatMap (f(_, a0))}
 
   implicit class FoldLogSyntax[F[_], A](val a : F[A]) extends AnyVal {
 
@@ -96,9 +89,6 @@ object LoggedEither {
     ( f : (B, A) => LoggedEither[E, B])
     ( implicit F: Foldable[F]): LoggedEither[E, B] =
       foldLoggedEither[E,B](b.set(""))(f)
-//      a.foldLeftM[({ type L[x] = LoggedEither[E, x] })#L, B](b)(f)(
-//        loggedEitherMonad[E]
-//      )
 
     def foldLoggedEither[E, B]
     ( lb : Logged[B])
@@ -107,7 +97,6 @@ object LoggedEither {
       a.foldLeft[LoggedEither[E, B]](LoggedEither(lb.written, lb.value.right[E])) {
         (b0, a0) => b0 flatMap (f(_, a0))
       }
-      //lb.written <++: a.foldLoggedEither(lb.value)(f)
   }
 
   implicit def loggedEitherMonad[L] =
@@ -116,17 +105,6 @@ object LoggedEither {
     def bind[A, B](fa: LoggedEither[L, A])(f: A => LoggedEither[L, B]) = fa flatMap f
 
     def point[A](a: => A) = LoggedEither("", \/-(a))
-
-/*  /*Traverse[({type l[a] = LoggedTry[L, a]})#l] with*/
-    def traverseImpl[G[_] : Applicative, A, B](fa: Either[L, A])(f: A => G[B]) = fa match {
-      case Left(x)  => Applicative[G].point(Left(x))
-      case Right(x) => Applicative[G].map(f(x))(Right(_))
-    }
-
-    override def foldRight[A, B](fa: LoggedTry[L, A], z: => B)(f: (A, => B) => B) = fa match {
-      case LoggedTry(log, -\/(_))  => z
-      case Right(a) => f(a, z)
-    }*/
 
     def cozip[A, B](a: LoggedEither[L, A \/ B]) : LoggedEither[L, A ] \/ LoggedEither[L, B] =
       a match {

@@ -163,6 +163,7 @@ class CommutativityRedirect
       }
     }
   }
+
   feature("TypeMember uses redirection"){
 
         val typeMemberPath = examplesPath + "typeMember"

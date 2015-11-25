@@ -107,6 +107,7 @@ object CreateEdge {
     (id2declMap(e.container), id2declMap(e.content)) match {
       case (PackageDeclHolder, i: TypedKindDeclHolder) =>
         setPackageDecl(reenactor, e.container, e.content, i.decl)
+        program.registerType(graph.fullName(e.content), i.decl)
       case (th: TypedKindDeclHolder, AbstractMethodDeclHolder(mdecl)) =>
         th.decl.addBodyDecl(mdecl)
 
@@ -202,8 +203,7 @@ object CreateEdge {
     val path = ASTNodeLink.getPath(graph, typeDeclNodeId)
 
     cu.setPackageDecl(pkgDecl)
-    cu.setPathName(path)
-    cu.setID(td.name())
+    cu.setPathName(path + ".java")
     //!\ very important !!
     cu.flushCaches()
   }
