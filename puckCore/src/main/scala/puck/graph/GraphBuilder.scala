@@ -23,7 +23,6 @@ trait GraphBuilder {
     }
   }
 
-
   def addAnonymousNode(kind : NodeKind) : NodeIdT = {
     val (n, g2) = g.addConcreteNode(DependencyGraph.anonymousName, kind)
     g = g2

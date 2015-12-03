@@ -21,8 +21,7 @@ extends AbstractAction(s"Add $childKind")
     showInputDialog(s"New $childKind name:").foreach {
       childName =>
         val (n, g) = TR.intro(graph.mileStone, childName, childKind)
-        pushGraph(g.addContains(host.id, n.id), display = false)
-        controller.expandAll(n.id)
+        pushGraph(g.addContains(host.id, n.id))
     }
 //    childKind match {
 //      case Package

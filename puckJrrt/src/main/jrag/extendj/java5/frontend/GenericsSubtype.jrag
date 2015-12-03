@@ -322,10 +322,11 @@ aspect GenericsSubtype {
     if (type == this) {
       return true;
     }
-    for (int i = 0; i < type.getNumTypeBound(); i++)
-      if (type.getTypeBound(i).type().subtype(this)) {
-        return true;
-      }
+    for (int i = 0; i < type.getNumTypeBound(); i++){
+        if(type.getTypeBound(i).type().subtype(this)){
+            return true;
+        }
+    }
     return false;
   }
 

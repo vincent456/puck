@@ -19,12 +19,11 @@ object CreateNode {
         case Interface => createInterface(prog, resultGraph, node)
         case Class => createClass(prog, resultGraph, node)
         case AbstractMethod =>
-          val decl = createMethod(prog, resultGraph, id2decl, node, isAbstract = true)
-          AbstractMethodDeclHolder(decl)
+          MethodDeclHolder(createMethod(prog, resultGraph, id2decl, node, isAbstract = true))
         case StaticMethod =>
-          ConcreteMethodDeclHolder(createMethod(prog, resultGraph, id2decl, node, isStatic = true))
+          MethodDeclHolder(createMethod(prog, resultGraph, id2decl, node, isStatic = true))
         case Method =>
-          ConcreteMethodDeclHolder(createMethod(prog, resultGraph, id2decl, node))
+          MethodDeclHolder(createMethod(prog, resultGraph, id2decl, node))
         case Constructor =>
           createConstructor(prog, resultGraph, id2decl, node)
         case Field => createField(prog, resultGraph, id2decl, node)
@@ -44,7 +43,7 @@ object CreateNode {
     container: NodeId,
     definition : NodeId) : Map[NodeId, ASTNodeLink] = {
     id2decl(container) match {
-      case ConcreteMethodDeclHolder(mdecl) =>
+      case MethodDeclHolder(mdecl) =>
         val block = new AST.Block()
         mdecl.setBlock(block)
         id2decl + (definition -> BlockHolder(block))

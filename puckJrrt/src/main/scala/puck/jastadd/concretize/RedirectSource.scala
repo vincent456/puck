@@ -86,7 +86,7 @@ object RedirectSource {
       logger.writeln(tDecl.name + " cu with more than one classe")(verbosity(PuckLog.Debug))
 
       logger.writeln(tDecl.programRoot().prettyPrint())
-      val path = ASTNodeLink.getPath(resultGraph, tDeclId)
+      val path = ASTNodeLink.getPath(reenactor, newPackage)
       val oldcu = tDecl.compilationUnit()
 
       oldcu.removeTypeDecl(tDecl)
@@ -126,7 +126,7 @@ object RedirectSource {
 
         case (InterfaceDeclHolder(oldItcDecl),
         InterfaceDeclHolder(newItcDecl),
-        AbstractMethodDeclHolder(mDecl)) =>
+        MethodDeclHolder(mDecl)) =>
           moveMemberDecl(reenactor, oldItcDecl, newItcDecl, mDecl, target)
 
         case (PackageDeclHolder, PackageDeclHolder, i: TypedKindDeclHolder) =>
@@ -201,7 +201,7 @@ object RedirectSource {
 
     (id2declMap(reenactor container_! oldSource),
       id2declMap(newSourceDecl)) match {
-      case (FieldDeclHolder(fdecl), ConcreteMethodDeclHolder(mdecl)) =>
+      case (FieldDeclHolder(fdecl), MethodDeclHolder(mdecl)) =>
        fdecl.moveInitIntoInitializzer(mdecl)
       case hs =>
         error(s"Redirect source of use handled in case of initializer creation, $hs not expected")
@@ -218,8 +218,8 @@ object RedirectSource {
       id2declMap(factoryDeclId),
       id2declMap(initializerDeclId)) match {
       case (ConstructorDeclHolder(cdecl),
-      ConcreteMethodDeclHolder(mdecl),
-      ConcreteMethodDeclHolder(init)) =>
+      MethodDeclHolder(mdecl),
+      MethodDeclHolder(init)) =>
         cdecl.removeInitCall(init)
         mdecl.createInitializerCall(init)
       case hs =>

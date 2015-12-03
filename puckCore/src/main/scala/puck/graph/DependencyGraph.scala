@@ -407,8 +407,7 @@ class DependencyGraph
   def fullName(id : NodeId) : String = {
     val path = containerPath(id).map{n => getNode(n).name(this)}
 
-    (if (path.head == DependencyGraph.rootName)
-      path.tail
+    (if (path.head == DependencyGraph.rootName) path.tail
     else
       DependencyGraph.unrootedStringId +: path ).mkString(DependencyGraph.scopeSeparator)
   }

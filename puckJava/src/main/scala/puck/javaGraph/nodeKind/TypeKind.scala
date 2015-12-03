@@ -59,6 +59,4 @@ case object Class extends TypeKind {
     case DelegationAbstraction => Seq[NodeKind]()//Class)//also interface ?
   }
 
-
-
 }

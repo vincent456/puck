@@ -88,13 +88,6 @@ abstract class Abstract {
         val abs = ReadWriteAbstraction(Some(rNode.id), Some(wNode.id))
         (abs, g4.addAbstraction(impl.id, abs))
 
-//      case DelegationAbstraction
-//        if impl.kind.kindType == TypeDecl =>
-//          val name = abstractionName(g, impl, abskind, policy, None)
-//          val (n, g1) = g.addConcreteNode(name, abskind)
-//        val abs = AccessAbstraction(n.id, DelegationAbstraction)
-//        (abs, g1.addAbstraction(impl.id, abs))
-
       case DelegationAbstraction =>
         val name = abstractionName(g, impl, abskind, policy, None)
 

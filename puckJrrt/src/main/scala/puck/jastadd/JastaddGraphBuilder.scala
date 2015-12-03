@@ -154,10 +154,8 @@ class JastaddGraphBuilder(val program : AST.Program) extends JavaGraphBuilder {
 
   def registerDecl(n : NodeIdT, decl : AST.MethodDecl) : Unit = {
     g.getConcreteNode(n).kind match {
-      case Method | StaticMethod=>
-        graph2ASTMap += (n -> ConcreteMethodDeclHolder(decl))
-      case AbstractMethod =>
-        graph2ASTMap += (n -> AbstractMethodDeclHolder(decl))
+      case Method | StaticMethod | AbstractMethod =>
+        graph2ASTMap += (n -> MethodDeclHolder(decl))
       case _ => throwRegisteringError(g.getConcreteNode(n), "MethodDecl")
     }
   }

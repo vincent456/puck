@@ -17,17 +17,16 @@ object CompileHelper {
       val arglist = createArglist(sources, jars, List())
 
       val f = new Frontend {
-        protected override def processErrors(errors: java.util.Collection[Problem], unit: CompilationUnit): Unit =  {
-          System.err.println("Errors:")
-
-            val it: Iterator[_] = errors.iterator
-            while (it.hasNext) {
-              val i = it.next()
-              System.err.println(i.getClass)
-              System.err.println(i)
-            }
-
-        }
+//        protected override def processErrors(errors: java.util.Collection[Problem], unit: CompilationUnit): Unit =  {
+//          System.err.println("Errors:")
+//
+//            val it: Iterator[_] = errors.iterator
+//            while (it.hasNext) {
+//              val i = it.next()
+//              System.err.println(i)
+//            }
+//
+//        }
         protected override def processWarnings(errors: java.util.Collection[Problem], unit: CompilationUnit): Unit = {
         }
       }

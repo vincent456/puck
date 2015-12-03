@@ -7,4 +7,5 @@ package object puck {
   def ignore[A](a : => A) : Unit ={
     val _ = a
   }
+
 }

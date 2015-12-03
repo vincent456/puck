@@ -16,25 +16,28 @@ object JavaDotHelper extends DotHelper{
       case _ => ""
     }
 
-  override def splitDotClassContent(graph : DependencyGraph, n: NodeId, visibility : VisibilitySet.T) = {
-    graph.content(n).foldLeft( (Seq[NodeId](), Seq[NodeId](), Seq[NodeId](), Seq[NodeId]()) ){
-      ( lists : (Seq[NodeId], Seq[NodeId], Seq[NodeId] , Seq[NodeId]), n : NodeId ) =>
-        if(visibility.isHidden(n)) lists
-        else {
-          val (fds, cts, mts, cls) = lists
+  override def splitDotClassContent(graph : DependencyGraph, n: NodeId) = {
+    val init : Seq[Seq[NodeId]] = Seq(Seq(), Seq(), Seq(), Seq(), Seq())
+    graph.content(n).foldLeft( init ){
+      case (Seq(fds, cts, mts, cls, tvs), n) =>
           val kind = graph.getConcreteNode(n).kind
           kind match {
-            case Interface | Class => (fds, cts, mts, n +: cls)
-            case Constructor => (fds, n +: cts, mts, cls)
+            case Interface | Class => Seq(fds, cts, mts, n +: cls, tvs)
+
+            case Constructor => Seq(fds, n +: cts, mts, cls, tvs)
+
             case Field
-            | StaticField => (n +: fds, cts, mts, cls)
+            | StaticField => Seq(n +: fds, cts, mts, cls, tvs)
+
             case _ : MethodKind
-            | StaticMethod => (fds, cts, n +: mts, cls)
+            | StaticMethod => Seq(fds, cts, n +: mts, cls, tvs)
+
+            case TypeVariable => Seq(fds, cts, mts, cls, n +: tvs)
 
             case _ => throw new Error(kind + " : wrong NodeKind contained by a class")
           }
         }
-    }
+
   }
 
   override def isDotClass(n : DGNode): Boolean = n.kind match {

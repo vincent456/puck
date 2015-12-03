@@ -7,7 +7,6 @@ trait DotHelper{
   def isDotClass(k: DGNode) : Boolean
   def fillColor(k: DGNode) : String
   def namePrefix(k: DGNode) : String
-  def splitDotClassContent(graph : DependencyGraph, n: NodeId, visibility : VisibilitySet.T) :
-  (Iterable[NodeId], Iterable[NodeId], Iterable[NodeId] , Iterable[NodeId])
+  def splitDotClassContent(graph : DependencyGraph, n: NodeId) : Seq[Seq[NodeId]]
   //with java ((fields, Constructors, Methods), inner classes)
 }

@@ -267,12 +267,18 @@ class DotPrinter
     case vn : VirtualNode => html_safe(vn.name(g))
   }
 
-  def decorate_name(n : DGNode):String = {
+  def decorate_name(n : DGNode, typeVariables : Seq[DGNode] = Seq()):String = {
     val sCter = graph.container(n.id)
 
+    val tvsString =
+      if(typeVariables.nonEmpty) typeVariables map (_.name) mkString("&lt;", ",","&gt;")
+      else ""
+
+    val name0 = helper.namePrefix(n) + name(n) + tvsString + idString(n.id)
+
     if (sCter.isDefined && concreteViolations.contains(Contains(sCter.get, n.id)))
-      "<FONT COLOR=\"" + ColorThickness.violation.color + "\"><U>" + helper.namePrefix(n) + name(n) + idString(n.id) + "</U></FONT>"
-    else helper.namePrefix(n) + name(n) + idString(n.id)
+      "<FONT COLOR=\"" + ColorThickness.violation.color + "\"><U>" + name0 + "</U></FONT>"
+    else name0
   }
   def printOrphanNode(nid : NodeId): Unit = {
     val n = graph.getNode(nid)
@@ -332,21 +338,22 @@ class DotPrinter
         decorate_name(n) + sig + ite + "</TD></TR>")
     }
 
-    val (fields, ctrs, mts, innerClasses) = helper splitDotClassContent (graph, n.id, visibility)
+    val Seq(fields, ctrs, mts, innerClasses, typeVariables) = helper splitDotClassContent (graph, n.id)
+
 
     writeln(s""" ${n.id} [ label = <<TABLE BGCOLOR="${helper.fillColor(n)}"> <TR> <TD PORT="${n.id}" HREF="${n.id}" BORDER="0"> <B>""" +
     //writeln(s""" ${n.id} [ label = <<TABLE BGCOLOR="${helper.fillColor(n)}"> <TR> <TD PORT="${n.id}" BORDER="0"> <B>""" +
-      decorate_name(n) +" </B></TD></TR>")
+      decorate_name(n, typeVariables map graph.getNode) +" </B></TD></TR>")
 
     if(fields.nonEmpty || ctrs.nonEmpty || mts.nonEmpty) writeln("<HR/>")
-    fields foreach writeTableLine
+    fields filter visibility.isVisible foreach writeTableLine
     if(fields.nonEmpty && ctrs.nonEmpty && mts.nonEmpty) writeln("<HR/>")
-    ctrs foreach writeTableLine
-    mts foreach writeTableLine
+    ctrs filter visibility.isVisible foreach writeTableLine
+    mts filter visibility.isVisible foreach writeTableLine
 
     writeln("</TABLE>>, shape = \"none\" ];")
 
-    innerClasses foreach printClass
+    innerClasses filter visibility.isVisible foreach printClass
 
   }
 

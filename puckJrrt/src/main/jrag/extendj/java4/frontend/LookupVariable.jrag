@@ -212,6 +212,7 @@ aspect VariableScope {
     }
     return null;
   }
+  eq VariableDeclaration.variableDeclaration(String name) = declaresVariable(name) ? this : null ;
 
   syn boolean VariableDeclaration.declaresVariable(String name) = getID().equals(name);
 

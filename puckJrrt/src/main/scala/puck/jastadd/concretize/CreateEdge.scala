@@ -65,6 +65,8 @@ object CreateEdge {
                 logger.writeln("do not create %s : assuming its an isa edge (TOCHECK)".format(e)) // class imple
               case (Definition, Constructor) =>
                 createUsesOfConstructor(graph, reenactor, id2declMap, u)
+
+
 //              case (Definition, Field) => ()
 //                createUsesofField(graph, reenactor, id2declMap, u)
               case (Definition, Method) if ensureIsInitalizerUseByCtor(reenactor, u)=>
@@ -108,7 +110,7 @@ object CreateEdge {
       case (PackageDeclHolder, i: TypedKindDeclHolder) =>
         setPackageDecl(reenactor, e.container, e.content, i.decl)
         program.registerType(graph.fullName(e.content), i.decl)
-      case (th: TypedKindDeclHolder, AbstractMethodDeclHolder(mdecl)) =>
+      case (th: TypedKindDeclHolder, MethodDeclHolder(mdecl)) =>
         th.decl.addBodyDecl(mdecl)
 
       case (_, PackageDeclHolder) => () // can be ignored
@@ -149,7 +151,7 @@ object CreateEdge {
         CreateNode.createNewInstanceExpr(fdecl, cdecl)
       case MethodDeclHolder(mdecl)
         if reenactor getRole sourceDecl contains Factory(e.used) =>
-        mdecl.makeFactoryOf(cdecl)
+          mdecl.makeFactoryOf(cdecl)
       case dh => error(s"createUsesOfConstructor ${dh.getClass} " +
         s"with role ${reenactor getRole sourceDecl} as user unhandled")
 
@@ -200,10 +202,9 @@ object CreateEdge {
 
     val cu = td.compilationUnit()
     val pkgDecl = graph.fullName(packageId)
-    val path = ASTNodeLink.getPath(graph, typeDeclNodeId)
-
+    val path = ASTNodeLink.getPath(graph, packageId, typeDeclNodeId)
     cu.setPackageDecl(pkgDecl)
-    cu.setPathName(path + ".java")
+    cu.setPathName(path)
     //!\ very important !!
     cu.flushCaches()
   }

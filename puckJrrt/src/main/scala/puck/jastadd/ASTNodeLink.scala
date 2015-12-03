@@ -14,12 +14,17 @@ object ASTNodeLink{
     case h => throw new PuckError(h.getClass + " setName unhandled")
   }
 
-  def getPath(graph: DependencyGraph, typeDeclId : NodeId)
-             ( implicit program : AST.Program ) = {
-    val cpath = graph.containerPath(typeDeclId)
+  def getPath(graph: DependencyGraph, packagedId : NodeId)
+             ( implicit program : AST.Program ) : String = {
+    val cpath = graph.containerPath(packagedId)
     val names = cpath.tail.map(graph.getConcreteNode(_).name)
-    program.getRootPath + names.mkString(java.io.File.separator) +".java"
+    program.getRootPath + names.mkString(java.io.File.separator)
   }
+  def getPath(graph: DependencyGraph, packagedId : NodeId, typeDeclId : NodeId)
+             ( implicit program : AST.Program ) : String  =
+    getPath(graph, packagedId) + java.io.File.separator +
+      graph.getConcreteNode(typeDeclId).name + ".java"
+
 
   def enlargeVisibility
   ( g : DependencyGraph,
@@ -82,21 +87,18 @@ object VariableDeclHolder {
 class DeclarationCreationError(msg : String) extends DGError(msg)
 
 case class ConstructorDeclHolder(decl : AST.ConstructorDecl) extends HasBodyDecl
+case class MethodDeclHolder(decl : AST.MethodDecl) extends HasMemberDecl
+
+object CallableDeclHolder {
+  def unapply(nl : ASTNodeLink) : Option[AST.Callable] = nl match {
+    case ConstructorDeclHolder(cdecl) => Some(cdecl)
+    case MethodDeclHolder(mdecl) => Some(mdecl)
+    case _ => None
+  }
+}
 
 case class FieldDeclHolder(decl : AST.FieldDeclaration) extends HasMemberDecl
 
-object MethodDeclHolder {
-  def unapply(mdh : MethodDeclHolder) : Some[AST.MethodDecl] =
-    Some(mdh.decl)
-}
-
-trait MethodDeclHolder extends HasMemberDecl {
-  val decl : AST.MethodDecl
-}
-
-case class ConcreteMethodDeclHolder(decl : AST.MethodDecl) extends MethodDeclHolder
-
-case class AbstractMethodDeclHolder(decl : AST.MethodDecl) extends MethodDeclHolder
 
 trait TypedKindDeclHolder extends HasNode {
   def decl : AST.TypeDecl

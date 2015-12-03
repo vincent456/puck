@@ -219,7 +219,7 @@ class JavaJastAddDG2AST
       // TODO see if can be performed in add node instead
       case Transformation(_, AbstractionOp(impl, AccessAbstraction(abs, SupertypeAbstraction))) =>
         (id2declMap get impl, reenactor.getConcreteNode(abs).kind) match {
-          case (Some(ConcreteMethodDeclHolder(decl)), AbstractMethod) =>
+          case (Some(MethodDeclHolder(decl)), AbstractMethod) =>
             decl.setVisibility(AST.ASTNode.VIS_PUBLIC)
           case _ => ()
         }

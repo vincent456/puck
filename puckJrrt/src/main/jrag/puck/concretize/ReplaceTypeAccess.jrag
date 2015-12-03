@@ -60,9 +60,9 @@ aspect ReplaceTypeAccess {
     }
      */
 
-    public void ASTNode.replaceTypeAccess(Access oldUsee, Access newUsee){
+    public void ASTNode.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
         for(int i = 0; i < getNumChild(); i++)
-            getChild(i).replaceTypeAccess(oldUsee, newUsee);
+            getChild(i).replaceTypeAccess(oldUsed, newUsed);
     }
 
 /*
@@ -71,32 +71,20 @@ aspect ReplaceTypeAccess {
     }
 */
 
-    public void TypeAccess.replaceTypeAccess(Access oldUsee, Access newUsee){
+    public void TypeAccess.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
 
-        if( oldUsee.isTypeAccess()
-            && this.decl().equals(((TypeAccess)oldUsee).decl()))
-                replace(this).with(newUsee);
+        if( this.decl().equals(oldUsed) ){
+            this.setID(newUsed.name());
+            this.setTargetType(newUsed);
+            this.flushCaches();
+        }
 
     }
 
 
 
 
-//stop propagation
-    public void ClassInstanceExpr.replaceTypeAccess(Access oldUsee, Access newUsee){
-
-        /*System.out.println("****************************************************");
-        System.out.println("****************************************************");
-        System.out.println("****************************************************");
-        System.out.println();
-
-
-        System.out.println(this + " stop propagation of replaceTypeAccess("+oldUsee+", "+newUsee+")");
-        System.out.println(" getAccess() instanceof ParTypeAccess = " + (getAccess() instanceof ParTypeAccess));
-        for(int i=0; i<getNumChild(); i++){
-            System.out.println("child "+ i + " : " + getChild(i).getClass() + " = " + getChild(i).getClass());
-
-        }*/
+    public void ClassInstanceExpr.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
 
         if( getAccess() instanceof ParTypeAccess){
             if(decl().isSubstitute()) {
@@ -105,16 +93,15 @@ aspect ReplaceTypeAccess {
 
                 /*TODO check if several instances/decl of the same parameterized type what happens then ??*/
                 for(Access arg : parClassDecl.getArgumentList())
-                    arg.replaceTypeAccess(oldUsee, newUsee);
+                    arg.replaceTypeAccess(oldUsed, newUsed);
             }
 
             List<Access> typeArgs =  ((ParTypeAccess) getAccess()).getTypeArguments();
             for(int i = 0; i<typeArgs.getNumChild(); i++)
-                typeArgs.getChild(i).replaceTypeAccess(oldUsee, newUsee);
+                typeArgs.getChild(i).replaceTypeAccess(oldUsed, newUsed);
 
-            //parTypeAccess.getTypeArguments().replaceTypeAccess(oldUsee, newUsee);
         }
-        getArgList().replaceTypeAccess(oldUsee, newUsee);
-        getTypeDeclOpt().replaceTypeAccess(oldUsee, newUsee);
+        getArgList().replaceTypeAccess(oldUsed, newUsed);
+        getTypeDeclOpt().replaceTypeAccess(oldUsed, newUsed);
     }
 }

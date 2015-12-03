@@ -131,7 +131,7 @@ aspect DefiniteAssignment {
       } else if (decl() instanceof FieldDeclaration && !isQualified()) {
         FieldDeclaration f = (FieldDeclaration) decl();
         if (f.isFinal() && !f.hasInit() && !isDAbefore(f)) {
-          errorf("Final field %s is not assigned before used", f);
+          errorf("Final field %s is not assigned before used", f.name());
         }
       }
 
@@ -250,6 +250,8 @@ aspect DefiniteAssignment {
 }
 
 aspect DA {
+
+
   syn lazy boolean ConditionalExpr.booleanOperator() = getTrueExpr().type().isBoolean() && getFalseExpr().type().isBoolean();
 
   inh boolean Stmt.isDAbefore(Variable v);
@@ -296,6 +298,13 @@ aspect DA {
 
       boolean search = true;
       if (b instanceof ConstructorDecl) {
+        if(v.isInstanceVariable())
+          for (BodyDecl bdecl : getBodyDeclList()){
+            if (bdecl instanceof InstanceInitializer
+                && ((InstanceInitializer)bdecl).assign(v))
+              return true;
+
+          }
         search = false;
       }
 

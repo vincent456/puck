@@ -14,7 +14,7 @@ aspect Call {
 	ConstructorAccess implements Call;
 	ClassInstanceExpr implements Call;
 	
-	interface Callable { 
+	public interface Callable {
 		public void setParameter(ParameterDeclaration pd, int i);
 		public List<ParameterDeclaration> getParameterList();
 		public List<Access> getExceptionList();

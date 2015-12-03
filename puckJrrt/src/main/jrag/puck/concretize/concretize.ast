@@ -1,2 +1,3 @@
-DummyConstructorCall : Expr ::= TypeDecl;
-EmptyReceiver : Expr;
+ExprPlaceHolder : Expr ::= TypeDecl;
+DummyConstructorCall : ExprPlaceHolder;
+EmptyReceiver : ExprPlaceHolder;

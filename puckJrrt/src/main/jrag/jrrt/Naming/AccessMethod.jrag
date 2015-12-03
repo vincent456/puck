@@ -33,6 +33,10 @@ aspect AccessMethod {
 		
 		public TypeDecl getSource() { return source; }
 		public TypeDecl getBend() { return bend; }
+
+		public String toString(){
+			return "MethodAccessInfo(target = "+target.fullName()+", source = "+ source.fullName()+")";
+		}
 	}
 	
 	public boolean MethodDecl.applicableTo(List<Expr> args) {

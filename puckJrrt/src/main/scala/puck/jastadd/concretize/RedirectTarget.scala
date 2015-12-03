@@ -59,11 +59,11 @@ object RedirectTarget {
 
                //TODO find why !(block eq mdecl.getBlock)
                //logger.writeln(block eq mdecl.getBlock)
-
-               mdecl.getBlock.replaceTypeAccess(oldk.decl.createLockedAccess(), newk.decl.createLockedAccess())
+               println(s"replacing access from ${oldk.decl.fullName()} to ${newk.decl.fullName()}")
+               mdecl.getBlock.replaceTypeAccess(oldk.decl, newk.decl)
 
              case holder : HasNode =>
-               holder.node.replaceTypeAccess(oldk.decl.createLockedAccess(), newk.decl.createLockedAccess())
+               holder.node.replaceTypeAccess(oldk.decl, newk.decl)
 
              case k => throw new JavaAGError(k + " as user of TypeKind, redirection unhandled !")
           }
@@ -89,7 +89,7 @@ object RedirectTarget {
               reenactor.typeMemberUsesOf(newTargetId, fieldType).foreach{
                 methodUse =>
                   id2declMap(methodUse.used) match {
-                    case ConcreteMethodDeclHolder(mdecl)=>
+                    case MethodDeclHolder(mdecl)=>
                       val fieldAccess = newk.decl.createLockedAccess()
                       bdh.decl.replaceThisQualifierFor(mdecl, fieldAccess)
                     case _ => throw  new JavaAGError("unhandled case !")
@@ -114,12 +114,11 @@ object RedirectTarget {
         case (oldk: MethodDeclHolder, newk: MethodDeclHolder) =>
           sourceInAST match {
             case defHolder : DefHolder =>
-              val MethodDeclHolder(mdecl) = id2declMap(reenactor.container_!(e.source))
-              mdecl.replaceMethodCall(oldk.decl, newk.decl)
+              //TODO find why !(block eq mdecl.getBlock)
+              //logger.writeln(block eq mdecl.getBlock)
 
-            //TODO find why !(block eq mdecl.getBlock)
-            //logger.writeln(block eq mdecl.getBlock)
-
+              val CallableDeclHolder(cdecl) = id2declMap(reenactor.container_!(e.source))
+              cdecl.replaceMethodCall(oldk.decl, newk.decl)
 
             case k =>
               throw new JavaAGError(k + " as user of Method, redirection unhandled !")

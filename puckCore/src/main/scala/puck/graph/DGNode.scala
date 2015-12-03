@@ -2,7 +2,7 @@ package puck.graph
 
 sealed trait DGNode{
   val id : NodeId
-  //val name : String
+  val name : String
   val kind : NodeKind
   //def styp(g : DependencyGraph) : Option[Type]
   val mutable : Boolean
@@ -46,8 +46,12 @@ case class VirtualNode
 
   def mapConcrete[A](f : ConcreteNode => A, default : => A) : A = default
 
-  def name(g : DependencyGraph) : String =
-    potentialMatches map { g.getConcreteNode(_).name } mkString ("Virtual(", " \\/ ", ")")
+  private def mkNameString(stringify : NodeId => String) =
+    potentialMatches map stringify mkString ("Virtual(", " \\/ ", ")")
+
+  val name : String = mkNameString(_.toString)
+  def name(g : DependencyGraph) : String =mkNameString(g.getConcreteNode(_).name)
+
 
 }
 

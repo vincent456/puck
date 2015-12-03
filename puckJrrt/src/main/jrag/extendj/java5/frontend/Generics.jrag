@@ -1110,14 +1110,13 @@ aspect LookupParTypeDecl {
       //return lubType().createBoundAccess();
       //return typeObject().createBoundAccess();
     } else if (typeDecl instanceof WildcardExtendsType) {
-      if (typeDecl.instanceOf(this)) {
-        return ((WildcardExtendsType) typeDecl).extendsType().createBoundAccess();
-      } else {
-        return createBoundAccess();
-      }
 
-      // the bound of this type variable of the bound of the wild card if it is more specific
-      //return ((WildcardExtendsType) typeDecl).extendsType().createBoundAccess();
+//       if (typeDecl.instanceOf(this)) {
+        return ((WildcardExtendsType) typeDecl).extendsType().createBoundAccess();
+//      } else {
+//        return createBoundAccess();
+//      }
+
     } else if (typeDecl instanceof WildcardSuperType) {
       // the bound of this type variable
       return createBoundAccess();
@@ -1363,7 +1362,7 @@ aspect LookupParTypeDecl {
   }
 
   public BodyDecl MethodDecl.substitutedBodyDecl(Parameterization parTypeDecl) {
-    MethodDecl m = new MethodDeclSubstituted(
+      MethodDecl m = new MethodDeclSubstituted(
       (Modifiers) getModifiers().treeCopyNoTransform(),
       getTypeAccess().type().substituteReturnType(parTypeDecl),
       getID(),
@@ -1374,6 +1373,8 @@ aspect LookupParTypeDecl {
     );
     return m;
   }
+
+
 
   public Opt MethodDecl.substituteBody(Parameterization parTypeDecl) {
     return new Opt();

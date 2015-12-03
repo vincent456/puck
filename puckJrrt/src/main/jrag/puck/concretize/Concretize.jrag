@@ -1,7 +1,24 @@
 import puck.PuckError;
 
-aspect TransformationApplying {
+aspect Concretize {
 
+
+    eq ExprPlaceHolder.type() = getTypeDecl();
+
+    syn boolean Expr.isEmptyReceiver();
+    eq Expr.isEmptyReceiver() = false;
+    eq EmptyReceiver.isEmptyReceiver() = true;
+
+    syn boolean Expr.isDummyConstructorCall();
+    eq Expr.isDummyConstructorCall() = false;
+    eq DummyConstructorCall.isDummyConstructorCall() = true;
+
+    public void DummyConstructorCall.prettyPrint(PrettyPrinter out){
+        out.print("/* DummyConstructorCall */");
+    }
+    public void EmptyReceiver.prettyPrint(PrettyPrinter out){
+        out.print("/* EmptyReceiver */");
+    }
 
 
     public void ASTNode.replaceConstructorCall(ConstructorDecl oldUsed, ConstructorDecl newUsed){

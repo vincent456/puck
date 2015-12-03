@@ -42,8 +42,10 @@ aspect TypeCheck {
   // 5.2
   public void VariableDeclaration.typeCheck() {
     if (hasInit()) {
+
       TypeDecl source = getInit().type();
       TypeDecl dest = type();
+
       if (!source.assignConversionTo(dest, getInit())) {
         errorf("can not assign variable %s of type %s a value of type %s",
             name(), dest.typeName(), source.typeName());

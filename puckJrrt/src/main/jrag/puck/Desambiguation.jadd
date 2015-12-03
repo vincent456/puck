@@ -43,7 +43,7 @@ aspect Desambiguation{
 			super(node);
 		}
 	}
-	
+
 	public String ASTNode.fullName(){
 		throw new FullNameException(this);
 	}
@@ -57,7 +57,7 @@ aspect Desambiguation{
     	return decl().fullName();
     }
 
-    public String ArrayTypeAccess.fullName(){
+	public String ArrayTypeAccess.fullName(){
     	return getAccess().fullName()+"[]";
     }
 	

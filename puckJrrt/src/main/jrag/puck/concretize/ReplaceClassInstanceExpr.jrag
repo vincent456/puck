@@ -7,43 +7,6 @@ aspect ReplaceClassInstanceExpr {
             getChild(i).replaceByConstructorMethodCall(cdecl, cm);
     }
 
-    public static final EmptyReceiver EmptyReceiver.instance = new EmptyReceiver();
-    eq EmptyReceiver.type() = unknownType();
-
-    public void EmptyReceiver.prettyPrint(PrettyPrinter out){
-        out.print("/* EmptyReceiver */");
-    }
-//    class EmptyReceiver extends Expr{
-//
-//        private EmptyReceiver(){}
-//
-//        public static final EmptyReceiver instance = new EmptyReceiver();
-//
-//        public void toString(StringBuffer s){
-//            s.append("/* EmptyReceiver */");
-//        }
-//
-//        @Override
-//        public TypeDecl type() {
-//            throw new Error("EmptyReceiver has no type");
-//        }
-//
-//        @Override
-//        public int precedence() {
-//            throw new Error("EmptyReceiver has no precedence");
-//        }
-//
-//        public EmptyReceiver treeCopy(){
-//            return treeCopyNoTransform();
-//        }
-//        public EmptyReceiver treeCopyNoTransform(){
-//            return new EmptyReceiver();
-//        }
-//        public EmptyReceiver fullCopy(){
-//            return treeCopyNoTransform();
-//        }
-//
-//    }
 
     public void ClassInstanceExpr.replaceByConstructorMethodCall(ConstructorDecl cdecl, MethodDecl cm) {
         if(decl() != cdecl)
@@ -56,7 +19,7 @@ aspect ReplaceClassInstanceExpr {
         if(cm.isStatic())
             replace(this).with(cm.createBoundAccess(this.getArgs()));
         else
-            replace(this).with(new Dot(EmptyReceiver.instance,
+            replace(this).with(new Dot(new EmptyReceiver(cm.hostType()),
                     cm.createBoundAccess(this.getArgs())));
     }
 
@@ -68,14 +31,14 @@ aspect ReplaceClassInstanceExpr {
 
     public void VarAccess.introduceVarAccess(MemberDecl field, Access byAccess){
         if(this.decl() == field){
-            if(getQualifier() == EmptyReceiver.instance)
+            if(getQualifier().isEmptyReceiver())
                 replace(getQualifier()).with(byAccess);
         }
     }
 
     public void MethodAccess.introduceVarAccess(MemberDecl method, Access byAccess){
         if(this.decl() == method){
-            if(getQualifier() == EmptyReceiver.instance)
+            if(getQualifier().isEmptyReceiver())
                 replace(getQualifier()).with(byAccess);
         }
     }

@@ -18,10 +18,11 @@ object VisibilitySet{
 
   //def apply() : T =
 
-  def allVisible(graph : DependencyGraph) : T =
-    Set[NodeId]().setVisibility(graph.nodesId, Visible)
+  def allVisible(graph : DependencyGraph) : T = Set[NodeId]()
 
-  def allHidden(graph : DependencyGraph) : T = Set[NodeId]()
+
+  def allHidden(graph : DependencyGraph) : T =
+    Set[NodeId]().setVisibility(graph.nodesId, Visible)
 
 
   def violationsOnly(graph : DependencyGraph) : T =
@@ -47,21 +48,21 @@ object VisibilitySet{
   implicit class VisibilitySetOps(val visibles: T) extends AnyVal {
 
     def setVisibility(id : NodeId, v : Visibility) : T = v match {
-      case Visible => visibles + id
-      case Hidden => visibles - id
+      case Visible => visibles - id
+      case Hidden => visibles + id
     }
 
     def setVisibility(ids : Iterable[NodeId], v : Visibility) : T = v match {
-      case Visible => visibles ++ ids
-      case Hidden => visibles -- ids
+      case Visible => visibles -- ids
+      case Hidden => visibles ++ ids
     }
 
     def toggle(id : NodeId): T =
       setVisibility(id, visibility(id).opposite)
 
 
-    def isVisible : NodeId => Boolean = visibles.contains
-    def isHidden : NodeId => Boolean = id => !isVisible(id)
+    def isVisible : NodeId => Boolean = id => !isHidden(id)
+    def isHidden : NodeId => Boolean = visibles.contains
 
     def visibility(id : NodeId) : Visibility =
       if(isVisible(id)) Visible

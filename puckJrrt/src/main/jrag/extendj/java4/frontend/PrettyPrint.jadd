@@ -55,6 +55,17 @@ aspect Java4PrettyPrint {
     }
     out.print(";");
   }
+  public void VariableDeclaration.prettyPrint(PrettyPrinter out) {
+    getModifiers().prettyPrint(out);
+    getTypeAccess().prettyPrint(out);
+    out.print(" ");
+    out.print(getID());
+    if (hasInit()) {
+      out.print(" = ");
+      out.print(getInit());
+    }
+    out.print(";");
+  }
   public void VariableDecl.prettyPrint(PrettyPrinter out) {
     out.print(getID());
     out.print(getDimsList());

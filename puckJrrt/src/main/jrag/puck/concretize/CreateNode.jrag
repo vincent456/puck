@@ -20,62 +20,21 @@ aspect CreateNode {
         this.setBlock(new Block(new ReturnStmt( new ClassInstanceExpr(cdecl.hostType().createLockedAccess(), args))));
     }
 
-    eq DummyConstructorCall.type() = getTypeDecl();
-    public void DummyConstructorCall.prettyPrint(PrettyPrinter out){
-        out.print("/* DummyConstructorCall */");
-    }
-//    private TypeDecl DummyConstructorCall.typeDecl;
-       //        public DummyConstructorCall(TypeDecl typeDecl){
-//            this.typeDecl = typeDecl;
-//        }
-//        DummyConstructorCall
-//    class DummyConstructorCall extends Expr{
-//
-//        private TypeDecl typeDecl;
-//        public DummyConstructorCall(TypeDecl typeDecl){
-//            this.typeDecl = typeDecl;
-//        }
-//
-//        public void toString(StringBuffer s){
-//            s.append("/* DummyConstructorCall */");
-//        }
-//
-//        @Override
-//        public TypeDecl type() {
-//            return typeDecl;
-//        }
-//
-//        @Override
-//        public int precedence() {
-//            throw new Error("DummyConstructorCall has no precedence");
-//        }
-//
-//        public DummyConstructorCall treeCopy(){
-//            return treeCopyNoTransform();
-//        }
-//
-//        public DummyConstructorCall treeCopyNoTransform(){
-//            TypeDecl td = typeDecl.treeCopy();
-//            return new DummyConstructorCall(td);
-//        }
-//
-//        public DummyConstructorCall fullCopy(){
-//            return treeCopyNoTransform();
-//        }
-//
-//    }
+    interface AccessWithParamaterList {}
 
-    public void MethodAccess.prependArg(Expr e){
-        getArgList().insertChild(e, 0);
-    }
-    public void ConstructorAccess.prependArg(Expr e){
+    MethodAccess implements AccessWithParamaterList;
+    ConstructorAccess implements AccessWithParamaterList;
+
+    public void AccessWithParamaterList.prependArg(Expr e){
         getArgList().insertChild(e, 0);
     }
 
-    public void MethodDecl.prependParameter(ParameterDeclaration pdecl) {
-        getParameterList().insertChild(pdecl, 0);
-    }
-    public void ConstructorDecl.prependParameter(ParameterDeclaration pdecl) {
+    interface DeclWithParamaterList {}
+
+    MethodDecl implements DeclWithParamaterList;
+    ConstructorDecl implements DeclWithParamaterList;
+
+    public void DeclWithParamaterList.prependParameter(ParameterDeclaration pdecl) {
         getParameterList().insertChild(pdecl, 0);
     }
 
