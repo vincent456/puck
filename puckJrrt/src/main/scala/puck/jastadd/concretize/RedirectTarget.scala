@@ -136,6 +136,7 @@ object RedirectTarget {
 
             case defHolder : DefHolder =>
               defHolder.node.replaceConstructorCall(oldc, newc)
+
             case src =>
               throw new JavaAGError(s"constructor change, ${src.getClass} as uses source unhandled")
           }

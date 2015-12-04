@@ -8,6 +8,18 @@ aspect ReplaceClassInstanceExpr {
     }
 
 
+public Access MethodDecl.createLockedBoundAccess(List args) {
+        BoundMethodAccess bma = new BoundMethodAccess(name(), args, this);
+        bma.lock();
+
+        if (isStatic()) {
+        Access ta = hostType().createQualifiedAccess();
+        ta.lock();
+        return ta.qualifiesAccess(bma);
+        }
+        return bma;
+        }
+
     public void ClassInstanceExpr.replaceByConstructorMethodCall(ConstructorDecl cdecl, MethodDecl cm) {
         if(decl() != cdecl)
             return;
@@ -16,11 +28,12 @@ aspect ReplaceClassInstanceExpr {
             throw new Error("replaceByConstructorMethodCall, this.hostBodyDecl is " +
                     this.hostBodyDecl().getClass() + "does not know what to do !!");
 
-        if(cm.isStatic())
-            replace(this).with(cm.createBoundAccess(this.getArgs()));
+        Access acc = cm.createLockedBoundAccess(this.getArgs());
+        acc.lock();
+
+        if(cm.isStatic()) replace(this).with(acc);
         else
-            replace(this).with(new Dot(new EmptyReceiver(cm.hostType()),
-                    cm.createBoundAccess(this.getArgs())));
+            replace(this).with(new Dot(new EmptyReceiver(cm.hostType()), acc));
     }
 
 

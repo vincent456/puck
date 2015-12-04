@@ -51,23 +51,23 @@ class BridgeScenario2 private()
   val screenClass = fullName2id(s"$p.Screen")
 
   val welcomeStar = fullName2id(s"$p.WelcomeStar")
-  val welcomeStarCtor = fullName2id(s"$p.WelcomeStar.WelcomeStar#_void")
+  val welcomeStarCtor = fullName2id(s"$p.WelcomeStar.WelcomeStar()")
 
   val infoStar = fullName2id(s"$p.InfoStar")
-  val welcomeStarMeth = fullName2id(s"$p.WelcomeStar.draw__void")
-  val infoStarMeth = fullName2id(s"$p.InfoStar.draw__void")
+  val welcomeStarMeth = fullName2id(s"$p.WelcomeStar.draw()")
+  val infoStarMeth = fullName2id(s"$p.InfoStar.draw()")
 
   val welcomeCapital = fullName2id(s"$p.WelcomeCapital")
   val infoCapital = fullName2id(s"$p.InfoCapital")
-  val welcomeCapitalMeth = fullName2id(s"$p.WelcomeCapital.draw__void")
-  val infoCapitalMeth = fullName2id(s"$p.InfoCapital.draw__void")
+  val welcomeCapitalMeth = fullName2id(s"$p.WelcomeCapital.draw()")
+  val infoCapitalMeth = fullName2id(s"$p.InfoCapital.draw()")
 
 
-  val printStar1 = fullName2id(s"$p.WelcomeStar.printStar__String")
-  val printStar2 = fullName2id(s"$p.InfoStar.printStar__String")
+  val printStar1 = fullName2id(s"$p.WelcomeStar.printStar(String)")
+  val printStar2 = fullName2id(s"$p.InfoStar.printStar(String)")
 
-  val printCapital1 = fullName2id(s"$p.WelcomeCapital.printCapital__String")
-  val printCapital2 = fullName2id(s"$p.InfoCapital.printCapital__String")
+  val printCapital1 = fullName2id(s"$p.WelcomeCapital.printCapital(String)")
+  val printCapital2 = fullName2id(s"$p.InfoCapital.printCapital(String)")
 
   var printId = 0
 

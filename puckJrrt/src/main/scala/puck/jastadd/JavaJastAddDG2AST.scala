@@ -132,6 +132,9 @@ class JavaJastAddDG2AST
     logger.writeln("applying change !")
     val record = graph.recording
 
+    logger.writeln("before applying change : ")
+    logger.writeln(program.prettyPrint())
+
     record.reverse.foldLeft((graph, initialGraph, graph2ASTMap)) {
       case ((resultGraph, reenactor, g2AST), t : Transformation) =>
 

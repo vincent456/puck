@@ -17,7 +17,7 @@ class AbstractSpec extends AcceptanceSpec with GetDefinitionValue {
     scenario("simple case"){
       val _ = new ScenarioFactory(s"$noSuperTypePath/SimpleCase.java") {
         val classA = fullName2id("p.A")
-        val methM = fullName2id("p.A.m__void")
+        val methM = fullName2id("p.A.m()")
         val field = fullName2id("p.A.f")
 
         assert( graph.directSuperTypes(classA).isEmpty )
@@ -43,9 +43,9 @@ class AbstractSpec extends AcceptanceSpec with GetDefinitionValue {
     scenario("method self use in class"){
       val _ = new ScenarioFactory(s"$noSuperTypePath/MethodSelfUse.java") {
         val classA = fullName2id("p.A")
-        val methM = fullName2id("p.A.m__void")
-        val methMUserDecl = fullName2id("p.A.methodUser__A")
-        val theParam = fullName2id("p.A.methodUser__A.a")
+        val methM = fullName2id("p.A.m()")
+        val methMUserDecl = fullName2id("p.A.methodUser(A)")
+        val theParam = fullName2id("p.A.methodUser(A).a")
         val methMUserDef = getDefinition(graph, methMUserDecl)
 
         assert( graph.directSuperTypes(classA).isEmpty )

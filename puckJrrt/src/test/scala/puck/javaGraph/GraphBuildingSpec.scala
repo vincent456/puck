@@ -22,8 +22,8 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
       val _ = new ScenarioFactory(s"$examplesPath/A.java") {
         val clazz = fullName2id(s"p.A")
-        val ctor = fullName2id(s"p.A.A#_void")
-        val userDecl = fullName2id(s"p.B.m__void")
+        val ctor = fullName2id(s"p.A.A()")
+        val userDecl = fullName2id(s"p.B.m()")
         val user = getDefinition(graph, userDecl)
 
         assert(graph.uses(user, ctor))
@@ -43,10 +43,10 @@ class GraphBuildingSpec extends AcceptanceSpec {
     scenario("this use explicit") {
       val _ = new ScenarioFactory(s"$examplesPath/ThisUseExplicit.java") {
         val clazz = fullName2id("p.A")
-        val methM = fullName2id("p.A.m__void")
-        val mUserViaThis = fullName2id("p.A.mUserViaThis__void")
-        val mUserViaParameter = fullName2id("p.A.mUserViaParameter__A")
-        val theParameter = fullName2id("p.A.mUserViaParameter__A.a")
+        val methM = fullName2id("p.A.m()")
+        val mUserViaThis = fullName2id("p.A.mUserViaThis()")
+        val mUserViaParameter = fullName2id("p.A.mUserViaParameter(A)")
+        val theParameter = fullName2id("p.A.mUserViaParameter(A).a")
 
 
         val mUserViaThisDef = getDefinition(graph, mUserViaThis)
@@ -89,11 +89,11 @@ class GraphBuildingSpec extends AcceptanceSpec {
       val _ = new ScenarioFactory(s"$examplesPath/CallOnField.java"){
 
         val fieldTypeUserDecl = fullName2id("p.A.b")
-        val methUserDecl = fullName2id("p.A.ma__void")
+        val methUserDecl = fullName2id("p.A.ma()")
         val methUserDef = getDefinition(graph, methUserDecl)
 
         val typeUsed = fullName2id("p.B")
-        val typeMemberUsedDecl = fullName2id("p.B.mb__void")
+        val typeMemberUsedDecl = fullName2id("p.B.mb()")
 
 
 
@@ -117,11 +117,11 @@ class GraphBuildingSpec extends AcceptanceSpec {
     scenario("call on method's parameter"){
       val _ = new ScenarioFactory(s"$examplesPath/CallOnParameter.java"){
 
-        val mUserDecl = fullName2id("p.A.ma__B")
-        val theParameter = fullName2id("p.A.ma__B.b")
+        val mUserDecl = fullName2id("p.A.ma(B)")
+        val theParameter = fullName2id("p.A.ma(B).b")
         val mUserDef = getDefinition(graph, mUserDecl)
         val classUsed = fullName2id("p.B")
-        val mUsed = fullName2id("p.B.mb__void")
+        val mUsed = fullName2id("p.B.mb()")
 
         val typeUse = Uses(theParameter, classUsed)
         val typeMemberUse = Uses(mUserDef, mUsed)
@@ -134,9 +134,9 @@ class GraphBuildingSpec extends AcceptanceSpec {
     scenario("call from local variable"){
       val _ = new ScenarioFactory(s"$examplesPath/CallOnLocalVariable.java"){
 
-        val mUserDecl = fullName2id("p.A.ma__void")
+        val mUserDecl = fullName2id("p.A.ma()")
         val mUserDef = getDefinition(graph, mUserDecl)
-        val mUsed = fullName2id("p.B.mb__void")
+        val mUsed = fullName2id("p.B.mb()")
 
         val classUsed = fullName2id("p.B")
 
@@ -149,10 +149,10 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
     scenario("chained call"){
       val _ = new ScenarioFactory(s"$examplesPath/ChainedCall.java"){
-        val mUserDecl = fullName2id("p.A.ma__void")
+        val mUserDecl = fullName2id("p.A.ma()")
         val mUserDef = getDefinition(graph, mUserDecl)
-        val mUsed = fullName2id("p.C.mc__void")
-        val mIntermediate = fullName2id("p.B.mb__void")
+        val mUsed = fullName2id("p.C.mc()")
+        val mIntermediate = fullName2id("p.B.mb()")
         val classUsed = fullName2id("p.C")
 
         val typeUse = Uses(mIntermediate, classUsed)
@@ -170,9 +170,9 @@ class GraphBuildingSpec extends AcceptanceSpec {
       val _ = new ScenarioFactory(s"$examplesPath/$p/A.java"){
 
         val classUsed = fullName2id(s"$p.A")
-        val mUsed = fullName2id(s"$p.A.ma__void")
+        val mUsed = fullName2id(s"$p.A.ma()")
         val superType = fullName2id(s"$p.SuperType")
-        val absmUsed = fullName2id(s"$p.SuperType.ma__void")
+        val absmUsed = fullName2id(s"$p.SuperType.ma()")
 
         graph.abstractions(classUsed) should contain ( AccessAbstraction(superType, SupertypeAbstraction) )
         graph.abstractions(mUsed) should contain ( AccessAbstraction(absmUsed, SupertypeAbstraction) )
@@ -236,11 +236,11 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val actualTypeParam = fullName2id("p.A")
         val formalTypeParam = fullName2id("p.GenColl@T")
         val genType = fullName2id("p.GenColl")
-        val genMethod = fullName2id("p.GenColl.put__GenColl@T")
-        val theParameter = fullName2id("p.GenColl.put__GenColl@T.t")
+        val genMethod = fullName2id("p.GenColl.put(T)")
+        val theParameter = fullName2id("p.GenColl.put(T).t")
         val userClass = fullName2id("p.User")
 
-        val userMethodDecl = fullName2id("p.User.m__void")
+        val userMethodDecl = fullName2id("p.User.m()")
         val userMethodDef = getDefinition(graph, userMethodDecl)
 
         val genCollNum = numNodesWithFullname(graph, "p.GenColl")
@@ -266,15 +266,15 @@ class GraphBuildingSpec extends AcceptanceSpec {
       val _ = new ScenarioFactory(s"$examplesPath/TypeRelationship.java") {
 
         val actualTypeParam = fullName2id("p.A")
-        val actualTypeParamMethod = fullName2id("p.A.m__void")
+        val actualTypeParamMethod = fullName2id("p.A.m()")
 
         val fieldDeclarant = fullName2id("p.B.la")
 
         val userClass = fullName2id("p.B")
-        val userMethodDecl = fullName2id("p.B.mUser__void")
+        val userMethodDecl = fullName2id("p.B.mUser()")
         val userMethodDef = getDefinition(graph, userMethodDecl)
 
-        val genericMethod = fullName2id("java.util.List.get__int")
+        val genericMethod = fullName2id("java.util.List.get(int)")
 
         val fieldTypeUse = graph.getUsesEdge(fieldDeclarant, actualTypeParam).value
         val typeMemberUse = graph.getUsesEdge(userMethodDef, actualTypeParamMethod).value
@@ -298,17 +298,17 @@ class GraphBuildingSpec extends AcceptanceSpec {
     scenario("generic type declaration"){
       val _ = new ScenarioFactory(s"$examplesPath/A.java") {
         val field = fullName2id(s"p.A.f")
-        val getterDecl = fullName2id(s"p.A.getF__void")
+        val getterDecl = fullName2id(s"p.A.getF()")
         val getter = getDefinition(graph, getterDecl)
 
-        val setterDecl = fullName2id(s"p.A.setF__int")
+        val setterDecl = fullName2id(s"p.A.setF(int)")
         val setter = getDefinition(graph, setterDecl)
 
-        val inc0Decl = fullName2id(s"p.A.incF0__void")
-        val inc1Decl = fullName2id(s"p.A.incF1__void")
-        val inc2Decl = fullName2id(s"p.A.incF2__void")
-        val dec0Decl = fullName2id(s"p.A.decF0__void")
-        val dec1Decl = fullName2id(s"p.A.decF1__void")
+        val inc0Decl = fullName2id(s"p.A.incF0()")
+        val inc1Decl = fullName2id(s"p.A.incF1()")
+        val inc2Decl = fullName2id(s"p.A.incF2()")
+        val dec0Decl = fullName2id(s"p.A.decF0()")
+        val dec1Decl = fullName2id(s"p.A.decF1()")
 
         val inc0 = getDefinition(graph, inc0Decl)
         val inc1 = getDefinition(graph, inc1Decl)

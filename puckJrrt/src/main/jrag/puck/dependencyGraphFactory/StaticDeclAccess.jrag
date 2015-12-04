@@ -1,7 +1,9 @@
 
 aspect StaticDeclAccess {
 
-    public interface StaticDeclAccess{ }
+    public interface StaticDeclAccess{
+        ASTNode lock();
+    }
 
     VarAccess implements StaticDeclAccess;
     MethodAccess implements StaticDeclAccess;

@@ -9,7 +9,15 @@ object ASTNodeLink{
   def setName(name : String, nl : ASTNodeLink) : Unit = nl match {
     case FieldDeclHolder(decl) => decl.setID(name)
     case dh : MethodDeclHolder => dh.decl.setID(name)
-    case th : TypedKindDeclHolder => th.decl.setID(name)
+    case th : TypedKindDeclHolder =>
+      val oldName = th.decl.getID
+      th.decl.setID(name)
+      val cu = th.decl.compilationUnit()
+      //TODO if printed in place oldName.java should be deleted
+      if(cu.pathName().endsWith(s"$oldName.java"))
+        cu.setPathName(cu.pathName().replaceAllLiterally(s"$oldName.java", s"$name.java"))
+
+
     case ch : ConstructorDeclHolder => ch.decl.setID(name)
     case h => throw new PuckError(h.getClass + " setName unhandled")
   }

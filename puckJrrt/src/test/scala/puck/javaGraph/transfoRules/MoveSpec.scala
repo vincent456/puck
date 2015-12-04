@@ -21,11 +21,11 @@ class MoveSpec
         val package1 = fullName2id(s"p1")
         val package2 = fullName2id(s"p2")
         val classA = fullName2id(s"p1.A")
-        val methADecl = fullName2id(s"p1.A.ma__void")
+        val methADecl = fullName2id(s"p1.A.ma()")
         val methADef = getDefinition(graph, methADecl)
 
         val classB = fullName2id(s"p1.B")
-        val methBDecl = fullName2id(s"p1.B.mb__void")
+        val methBDecl = fullName2id(s"p1.B.mb()")
         val methBDef = getDefinition(graph, methBDecl)
 
 
@@ -66,8 +66,8 @@ class MoveSpec
       val _ = new ScenarioFactory(s"$movedMethodNOTusedByThis/MovedMethodHasNoParameter.java"){
 
         val classA = fullName2id("p.A")
-        val methToMove = fullName2id("p.A.methodToMove__void")
-        val methUserDecl = fullName2id("p.C.user__void")
+        val methToMove = fullName2id("p.A.methodToMove()")
+        val methUserDecl = fullName2id("p.C.user()")
         val methUserDef = getDefinition(graph, methUserDecl)
 
         val classB = fullName2id("p.B")
@@ -89,9 +89,9 @@ class MoveSpec
       val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodHasNoParameter.java"){
 
         val classA = fullName2id("p.A")
-        val methUserDecl = fullName2id("p.A.mUser__void")
+        val methUserDecl = fullName2id("p.A.mUser()")
         val methUser = getDefinition(graph, methUserDecl)
-        val methToMove = fullName2id("p.A.methodToMove__void")
+        val methToMove = fullName2id("p.A.methodToMove()")
 
         val newHostClass = fullName2id("p.B")
 
@@ -114,9 +114,9 @@ class MoveSpec
       val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodHasNoParameter.java"){
 
         val classA = fullName2id("p.A")
-        val methUserDecl = fullName2id("p.A.mUser__void")
+        val methUserDecl = fullName2id("p.A.mUser()")
         val methUser = getDefinition(graph, methUserDecl)
-        val methToMove = fullName2id("p.A.methodToMove__void")
+        val methToMove = fullName2id("p.A.methodToMove()")
 
         val newHostClass = fullName2id("p.B")
 
@@ -144,12 +144,12 @@ class MoveSpec
       val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodUsedAlongASiblingMethodThatIsNotMoved.java") {
 
         val classA = fullName2id("p.A")
-        val methUserDecl = fullName2id("p.A.mUser__void")
+        val methUserDecl = fullName2id("p.A.mUser()")
         val methUserDef = getDefinition(graph, methUserDecl)
 
-        val methToMove = fullName2id("p.A.mUsedToMove__void")
+        val methToMove = fullName2id("p.A.mUsedToMove()")
 
-        val otherUsedMethod = fullName2id("p.A.mUsedOther__void")
+        val otherUsedMethod = fullName2id("p.A.mUsedOther()")
 
         val newHostClass = fullName2id("p.B")
 
@@ -185,13 +185,13 @@ class MoveSpec
       val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodUsedByThisSeveralTimes.java"){
 
         val classA = fullName2id("p.A")
-        val methUser1Decl = fullName2id("p.A.mUser1__void")
-        val methUser2Decl = fullName2id("p.A.mUser2__void")
+        val methUser1Decl = fullName2id("p.A.mUser1()")
+        val methUser2Decl = fullName2id("p.A.mUser2()")
 
         val methUser1 = getDefinition(graph, methUser1Decl)
         val methUser2 = getDefinition(graph, methUser2Decl)
 
-        val methToMove = fullName2id("p.A.methodToMove__void")
+        val methToMove = fullName2id("p.A.methodToMove()")
         val newHostClass = fullName2id("p.B")
 
         assert(graph.container(methToMove).value == classA)
@@ -224,13 +224,13 @@ class MoveSpec
       val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodUsedByThisSeveralTimes.java"){
 
         val classA = fullName2id("p.A")
-        val methUser1Decl = fullName2id("p.A.mUser1__void")
-        val methUser2Decl = fullName2id("p.A.mUser2__void")
+        val methUser1Decl = fullName2id("p.A.mUser1()")
+        val methUser2Decl = fullName2id("p.A.mUser2()")
 
         val methUser1 = getDefinition(graph, methUser1Decl)
         val methUser2 = getDefinition(graph, methUser2Decl)
 
-        val methToMove = fullName2id("p.A.methodToMove__void")
+        val methToMove = fullName2id("p.A.methodToMove()")
 
         val newHostClass = fullName2id("p.B")
 
@@ -270,8 +270,8 @@ class MoveSpec
         val rootPackage = fullName2id("p")
 
         val classA = fullName2id("p.A")
-        val methMa = fullName2id("p.A.ma__B")
-        val methUser = fullName2id("p.C.mc__void")
+        val methMa = fullName2id("p.A.ma(B)")
+        val methUser = fullName2id("p.C.mc()")
 
         val classB = fullName2id("p.B")
 
@@ -300,9 +300,9 @@ class MoveSpec
       val _ = new ScenarioFactory(s"$moveMethod_movedMethodUsesThis/MovedMethodHasNoParameter.java"){
 
         val currentHost = fullName2id("p.A")
-        val methToMoveDecl = fullName2id("p.A.methodToMove__void")
+        val methToMoveDecl = fullName2id("p.A.methodToMove()")
         val methToMoveDef = getDefinition(graph, methToMoveDecl)
-        val methUsed = fullName2id("p.A.mUsed__void")
+        val methUsed = fullName2id("p.A.mUsed()")
 
         val newHostClass = fullName2id("p.B")
 
@@ -330,10 +330,10 @@ class MoveSpec
       val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodHasNoParameter.java") {
 
         val classA = fullName2id("p.A")
-        val methUserDecl = fullName2id("p.A.mUser__void")
+        val methUserDecl = fullName2id("p.A.mUser()")
         val methUser = getDefinition(graph, methUserDecl)
 
-        val methToMoveDecl = fullName2id("p.A.methodToMove__void")
+        val methToMoveDecl = fullName2id("p.A.methodToMove()")
 
         val newHostClass = fullName2id("p.B")
 
@@ -355,10 +355,10 @@ class MoveSpec
       val _ = new ScenarioFactory(s"$moveMethodUsedByThis/TwoMovedMethodUsedBySameUnmovedSibling.java") {
 
         val classA = fullName2id("p.A")
-        val methUserDecl = fullName2id("p.A.mUser__void")
+        val methUserDecl = fullName2id("p.A.mUser()")
         val methUser = getDefinition(graph, methUserDecl)
-        val methToMove1 = fullName2id("p.A.methodToMove1__void")
-        val methToMove2 = fullName2id("p.A.methodToMove2__void")
+        val methToMove1 = fullName2id("p.A.methodToMove1()")
+        val methToMove2 = fullName2id("p.A.methodToMove2()")
 
         val newHostClass = fullName2id("p.B")
 
@@ -376,8 +376,6 @@ class MoveSpec
       }
 
     }
-
-
 
   }
 }

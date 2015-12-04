@@ -13,7 +13,7 @@ class MoveUnitSpec extends UnitSpec {
     val _ = new ScenarioFactory(s"$moveMethodNotUsedByThis/MovedMethodHasNoParameter.java"){
 
       val classA = graph.getConcreteNode(fullName2id("p.A"))
-      val methToMove = graph.getConcreteNode(fullName2id("p.A.methodToMove__void"))
+      val methToMove = graph.getConcreteNode(fullName2id("p.A.methodToMove()"))
 
       val uses = graph.usesFromUsedList(methToMove.id)
       assert(!Move.usedBySiblingsViaSelf(uses, graph, classA))
@@ -26,7 +26,7 @@ class MoveUnitSpec extends UnitSpec {
     val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodHasNoParameter.java") {
 
       val classA = graph.getConcreteNode(fullName2id("p.A"))
-      val methToMove = graph.getConcreteNode(fullName2id("p.A.methodToMove__void"))
+      val methToMove = graph.getConcreteNode(fullName2id("p.A.methodToMove()"))
 
       val uses = graph.usesFromUsedList(methToMove.id)
       assert(Move.usedBySiblingsViaSelf(uses, graph, classA))
@@ -36,7 +36,7 @@ class MoveUnitSpec extends UnitSpec {
     val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodUsedByThisSeveralTimes.java") {
 
       val classA = graph.getConcreteNode(fullName2id("p.A"))
-      val methToMove = graph.getConcreteNode(fullName2id("p.A.methodToMove__void"))
+      val methToMove = graph.getConcreteNode(fullName2id("p.A.methodToMove()"))
 
       val uses = graph.usesFromUsedList(methToMove.id)
       assert(Move.usedBySiblingsViaSelf(uses, graph, classA))

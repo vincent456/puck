@@ -28,14 +28,14 @@ class RedirectSpec
 
     scenario("From class to superType interface") {
       val _ = new ScenarioFactory(s"$typeDeclPath/ClassToInterfaceSuperType.java") {
-        val mUserDecl = fullName2id("p.A.mUser__ClassUsed")
-        val theParam = fullName2id("p.A.mUser__ClassUsed.cu")
+        val mUserDecl = fullName2id("p.A.mUser(ClassUsed)")
+        val theParam = fullName2id("p.A.mUser(ClassUsed).cu")
         val mUserDef = getDefinition(graph, mUserDecl)
 
         val classUsed = fullName2id("p.ClassUsed")
-        val mUsed = fullName2id("p.ClassUsed.mUsed__void")
+        val mUsed = fullName2id("p.ClassUsed.mUsed()")
         val superType = fullName2id("p.SuperType")
-        val absmUsed = fullName2id("p.SuperType.mUsed__void")
+        val absmUsed = fullName2id("p.SuperType.mUsed()")
 
         val typeUse = Uses(theParam, classUsed)
         assert(typeUse.existsIn(graph))
@@ -57,16 +57,16 @@ class RedirectSpec
 
     scenario("From class to delegator class") {
       new ScenarioFactory(s"$typeDeclPath/ClassToClassDelegate.java") {
-        val mUserDecl = fullName2id("p.A.mUser__Delegatee")
-        val theParam = fullName2id("p.A.mUser__Delegatee.d")
+        val mUserDecl = fullName2id("p.A.mUser(Delegatee)")
+        val theParam = fullName2id("p.A.mUser(Delegatee).d")
 
         val mUserDef = getDefinition(graph, mUserDecl)
 
         val delegatee = fullName2id("p.Delegatee")
-        val mDelegatee = fullName2id("p.Delegatee.mUsed__void")
+        val mDelegatee = fullName2id("p.Delegatee.mUsed()")
 
         val delegator = fullName2id("p.Delegator")
-        val mDelegator = fullName2id("p.Delegator.mUsed__void")
+        val mDelegator = fullName2id("p.Delegator.mUsed()")
 
         val g = graph.addAbstraction(delegatee, AccessAbstraction(delegator, DelegationAbstraction))
           .addAbstraction(mDelegatee, AccessAbstraction(mDelegator, DelegationAbstraction))
@@ -101,12 +101,12 @@ class RedirectSpec
 
     scenario("From constructor to constructorMethod hosted elsewhere - non static, parameter") {
       val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedElsewhere.java") {
-        val ctor = fullName2id(s"p.B.B#_void")
-        val ctorMethod = fullName2id(s"p.Factory.createB__void")
+        val ctor = fullName2id(s"p.B.B()")
+        val ctorMethod = fullName2id(s"p.Factory.createB()")
         val factoryClass = fullName2id(s"p.Factory")
-        val factoryCtor = fullName2id(s"p.Factory.Factory#_void")
+        val factoryCtor = fullName2id(s"p.Factory.Factory()")
 
-        val callerDecl = fullName2id(s"p.A.m__void")
+        val callerDecl = fullName2id(s"p.A.m()")
         val callerDef = getDefinition(graph, callerDecl)
 
 
@@ -135,12 +135,12 @@ class RedirectSpec
 
     scenario("From constructor to constructorMethod hosted elsewhere - non static, field") {
       val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedElsewhere.java") {
-        val ctor = fullName2id(s"p.B.B#_void")
-        val ctorMethod = fullName2id(s"p.Factory.createB__void")
+        val ctor = fullName2id(s"p.B.B()")
+        val ctorMethod = fullName2id(s"p.Factory.createB()")
         val factoryClass = fullName2id(s"p.Factory")
-        val factoryCtor = fullName2id(s"p.Factory.Factory#_void")
+        val factoryCtor = fullName2id(s"p.Factory.Factory()")
 
-        val callerDecl = fullName2id(s"p.A.m__void")
+        val callerDecl = fullName2id(s"p.A.m()")
         val callerDef = getDefinition(graph, callerDecl)
 
         val callerHostClass = fullName2id(s"p.A")
@@ -169,14 +169,14 @@ class RedirectSpec
 
     scenario("From constructor to constructorMethod hosted by self - non static, parameter") {
       val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedBySelf.java") {
-        val ctor = fullName2id(s"p.B.B#_void")
-        val ctorMethod = fullName2id(s"p.B.create__void")
+        val ctor = fullName2id(s"p.B.B()")
+        val ctorMethod = fullName2id(s"p.B.create()")
         val constructedClass = fullName2id(s"p.B")
 
-        val callerDecl = fullName2id(s"p.A.m__void")
+        val callerDecl = fullName2id(s"p.A.m()")
         val callerDef = getDefinition(graph, callerDecl)
 
-        val userOfTheCallerDecl = fullName2id(s"p.C.mc__void")
+        val userOfTheCallerDecl = fullName2id(s"p.C.mc()")
         val userOfTheCallerDef = getDefinition(graph, userOfTheCallerDecl)
 
         val ctorUse = Uses(callerDef, ctor)
@@ -210,14 +210,14 @@ class RedirectSpec
 
     scenario("From constructor to constructorMethod hosted by self - non static, field") {
       val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedBySelf.java") {
-        val ctor = fullName2id(s"p.B.B#_void")
-        val ctorMethod = fullName2id(s"p.B.create__void")
+        val ctor = fullName2id(s"p.B.B()")
+        val ctorMethod = fullName2id(s"p.B.create()")
         val constructedClass = fullName2id(s"p.B")
 
-        val callerDecl = fullName2id(s"p.A.m__void")
+        val callerDecl = fullName2id(s"p.A.m()")
         val callerDef = getDefinition(graph, callerDecl)
 
-        val userOfTheCallerDecl = fullName2id(s"p.C.mc__void")
+        val userOfTheCallerDecl = fullName2id(s"p.C.mc()")
         val userOfTheCallerDef = getDefinition(graph, userOfTheCallerDecl)
 
         val ctorUse = Uses(callerDef, ctor)
@@ -256,16 +256,16 @@ class RedirectSpec
 
     scenario("From method to method superType"){
       val _ = new ScenarioFactory(s"$typeMemberPath/MethodToMethodSuperType.java") {
-        val mUsed = fullName2id("p.Bimpl.m1__void")
-        val mAbs = fullName2id("p.B.m1__void")
+        val mUsed = fullName2id("p.Bimpl.m1()")
+        val mAbs = fullName2id("p.B.m1()")
         val cUsed = fullName2id("p.Bimpl")
-        val cUsedCtor = fullName2id("p.Bimpl.Bimpl#_void")
+        val cUsedCtor = fullName2id("p.Bimpl.Bimpl()")
 
-        val otherMused = fullName2id("p.Bimpl.m2__void")
-        val otherMabs = fullName2id("p.B.m2__void")
+        val otherMused = fullName2id("p.Bimpl.m2()")
+        val otherMabs = fullName2id("p.B.m2()")
         val cAbs = fullName2id("p.B")
 
-        val userDecl = fullName2id("p.A.m__void")
+        val userDecl = fullName2id("p.A.m()")
         val userDef = getDefinition(graph, userDecl)
 
         val useOfImplClass = Uses(userDef, cUsed)

@@ -62,8 +62,9 @@ aspect Concretize {
             if(cu.fromSource()) {
                 String relativePath = cu.getPackageDecl().replace('.', File.separatorChar);
 
+                File originalPath = new File(cu.pathName());
                 File f = new File(dir + File.separator +
-                        relativePath + File.separator + cu.pathName());
+                    relativePath + File.separator + originalPath.getName());
 
                 f.getParentFile().mkdirs();
                 BufferedWriter writer = new BufferedWriter(new FileWriter(f));
@@ -92,7 +93,7 @@ aspect Concretize {
         //provoke cause exceptions in the "@primitive package"
         for (CompilationUnit cu : (List<CompilationUnit>)getCompilationUnitList()){
             if(cu.fromSource())
-                cu.eliminateLockedNames();
+                cu.eliminateLockedNamesInSubtree();
         }
     }
 }

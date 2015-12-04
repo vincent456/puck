@@ -71,7 +71,7 @@ aspect NodeFactory  {
     eq MethodAccess.accessed() = decl();
 
 
-    public int VarAccess.buildDGNode(JastaddGraphBuilder builder){
+	public int VarAccess.buildDGNode(JastaddGraphBuilder builder){
         this.lock();
         return ((ASTNode)decl()).buildDGNode(builder);
     }

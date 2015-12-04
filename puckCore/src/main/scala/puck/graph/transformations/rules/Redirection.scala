@@ -56,7 +56,7 @@ object Redirection {
     else LoggedSuccess(absSet.head)
   }
 
-  private [rules] def redirect
+ def redirect
   ( g : DependencyGraph,
     oldUse : DGUses,
     newUsed : Abstraction) : LoggedTry[(DependencyGraph, List[DGUses])] =

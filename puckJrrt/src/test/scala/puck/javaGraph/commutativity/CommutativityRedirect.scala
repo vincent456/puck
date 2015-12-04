@@ -21,7 +21,7 @@ class CommutativityRedirect
 
     scenario("From class to superType interface") {
       val _ = new ScenarioFactory(s"$typeDeclPath/ClassToInterfaceSuperType.java") {
-        val theParam = fullName2id("p.A.mUser__ClassUsed.cu")
+        val theParam = fullName2id("p.A.mUser(ClassUsed).cu")
 
         val classUsed = fullName2id("p.ClassUsed")
         val superType = fullName2id("p.SuperType")
@@ -44,13 +44,13 @@ class CommutativityRedirect
 
     ignore("From class to delegator class") {
       new ScenarioFactory(s"$typeDeclPath/ClassToClassDelegate.java") {
-        val theParam = fullName2id("p.A.mUser__Delegatee.d")
+        val theParam = fullName2id("p.A.mUser(Delegatee).d")
 
         val delegatee = fullName2id("p.Delegatee")
-        val mDelegatee = fullName2id("p.Delegatee.mUsed__void")
+        val mDelegatee = fullName2id("p.Delegatee.mUsed()")
 
         val delegator = fullName2id("p.Delegator")
-        val mDelegator = fullName2id("p.Delegator.mUsed__void")
+        val mDelegator = fullName2id("p.Delegator.mUsed()")
 
         QuickFrame(graph, "g", JavaDotHelper)
 
@@ -85,10 +85,10 @@ class CommutativityRedirect
 
     scenario("From constructor to constructorMethod hosted elsewhere - non static, parameter") {
       val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedElsewhere.java") {
-        val ctor = fullName2id(s"p.B.B#_void")
-        val ctorMethod = fullName2id(s"p.Factory.createB__void")
+        val ctor = fullName2id(s"p.B.B()")
+        val ctorMethod = fullName2id(s"p.Factory.createB()")
 
-        val callerDecl = fullName2id(s"p.A.m__void")
+        val callerDecl = fullName2id(s"p.A.m()")
         val callerDef = getDefinition(graph, callerDecl)
 
         val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
@@ -103,13 +103,14 @@ class CommutativityRedirect
 
     scenario("From constructor to constructorMethod hosted elsewhere - non static, field") {
       val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedElsewhere.java") {
-        val ctor = fullName2id(s"p.B.B#_void")
-        val ctorMethod = fullName2id(s"p.Factory.createB__void")
+        val ctor = fullName2id(s"p.B.B()")
+        val ctorMethod = fullName2id(s"p.Factory.createB()")
 
-        val callerDecl = fullName2id(s"p.A.m__void")
+        val callerDecl = fullName2id(s"p.A.m()")
         val callerDef = getDefinition(graph, callerDecl)
 
         val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
+                      .setRole(ctorMethod, Some(Factory(ctor)))
 
         val g2 = Redirection.redirectTypeConstructorToInstanceValueDecl(g,
           Uses(callerDef, ctor), AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateTypeMember(Field)).right
@@ -123,10 +124,10 @@ class CommutativityRedirect
 
     scenario("From constructor to constructorMethod hosted by self - non static, parameter") {
       val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedBySelf.java") {
-        val ctor = fullName2id(s"p.B.B#_void")
-        val ctorMethod = fullName2id(s"p.B.create__void")
+        val ctor = fullName2id(s"p.B.B()")
+        val ctorMethod = fullName2id(s"p.B.create()")
 
-        val callerDecl = fullName2id(s"p.A.m__void")
+        val callerDecl = fullName2id(s"p.A.m()")
         val callerDef = getDefinition(graph, callerDecl)
 
         val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
@@ -142,60 +143,60 @@ class CommutativityRedirect
       }
     }
 
-//    scenario("From constructor to constructorMethod hosted by self - non static, field") {
-//      val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedBySelf.java") {
-//        val ctor = fullName2id(s"p.B.B#_void")
-//        val ctorMethod = fullName2id(s"p.B.create__void")
-//
-//        val callerDecl = fullName2id(s"p.A.m__void")
-//        val callerDef = getDefinition(graph, callerDecl)
-//
-//        val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
-//
-//        val g2 =
-//          Redirection.redirectTypeConstructorToInstanceValueDecl(g,
-//            Uses(callerDef, ctor), AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateTypeMember(Field)).right
-//
-//        val recompiledEx = applyChangeAndMakeExample(g2, outDir)
-//        assert(Mapping.equals(g2, recompiledEx.graph))
-//
-//      }
-//    }
+    scenario("From constructor to constructorMethod hosted by self - non static, field") {
+      val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedBySelf.java") {
+        val ctor = fullName2id(s"p.B.B()")
+        val ctorMethod = fullName2id(s"p.B.create()")
+
+        val callerDecl = fullName2id(s"p.A.m()")
+        val callerDef = getDefinition(graph, callerDecl)
+
+        val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
+
+        val g2 =
+          Redirection.redirectTypeConstructorToInstanceValueDecl(g,
+            Uses(callerDef, ctor), AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateTypeMember(Field)).right
+
+        val recompiledEx = applyChangeAndMakeExample(g2, outDir)
+        assert(Mapping.equals(g2, recompiledEx.graph))
+
+      }
+    }
   }
 
-//  feature("TypeMember uses redirection"){
-//
-//        val typeMemberPath = examplesPath + "typeMember"
-//
-//        scenario("From method to method superType"){
-//          val _ = new ScenarioFactory(s"$typeMemberPath/MethodToMethodSuperType.java") {
-//            val mUsed = fullName2id("p.Bimpl.m1__void")
-//            val mAbs = fullName2id("p.B.m1__void")
-//
-//            val userDecl = fullName2id("p.A.m__void")
-//            val userDef = getDefinition(graph, userDecl)
-//
-//
-//            val g =
-//              Redirection.redirectUsesAndPropagate(graph,
-//                Uses(userDef, mUsed), AccessAbstraction(mAbs, SupertypeAbstraction)).right
-//
-//
-//            val recompiledEx = applyChangeAndMakeExample(g, outDir)
-//            assert( Mapping.equals(g, recompiledEx.graph) )
-//
-//
-//          }
-//        }
-//
-//        ignore("From method to method delegate"){
-//
-//        }
-//
-//        ignore("From field to ??? delegate"){
-//          //what should we do ?
-//        }
-//
-//
-//  }
+  feature("TypeMember uses redirection"){
+
+        val typeMemberPath = examplesPath + "typeMember"
+
+        scenario("From method to method superType"){
+          val _ = new ScenarioFactory(s"$typeMemberPath/MethodToMethodSuperType.java") {
+            val mUsed = fullName2id("p.Bimpl.m1()")
+            val mAbs = fullName2id("p.B.m1()")
+
+            val userDecl = fullName2id("p.A.m()")
+            val userDef = getDefinition(graph, userDecl)
+
+
+            val g =
+              Redirection.redirectUsesAndPropagate(graph,
+                Uses(userDef, mUsed), AccessAbstraction(mAbs, SupertypeAbstraction)).right
+
+
+            val recompiledEx = applyChangeAndMakeExample(g, outDir)
+            assert( Mapping.equals(g, recompiledEx.graph) )
+
+
+          }
+        }
+
+        ignore("From method to method delegate"){
+
+        }
+
+        ignore("From field to ??? delegate"){
+          //what should we do ?
+        }
+
+
+  }
 }

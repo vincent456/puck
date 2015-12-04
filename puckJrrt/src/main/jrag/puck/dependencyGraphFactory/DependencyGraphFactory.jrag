@@ -331,8 +331,8 @@ aspect DependencyGraphFactory {
 			rotateLeft();
 
 		if( (getRight() instanceof StaticDeclAccess)
-		&& ((StaticDeclAccess) getRight()).isDeclStatic())
-			getRight().buildDG(builder, containerId);
+			&& ((StaticDeclAccess) getRight()).isDeclStatic())
+			getRight().buildDG(builder,containerId);
 		else
 			buildDGInChildren(builder, containerId);
 	}

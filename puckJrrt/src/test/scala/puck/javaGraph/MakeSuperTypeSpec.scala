@@ -14,9 +14,9 @@ class MakeSuperTypeSpec extends AcceptanceSpec {
         val classA = fullName2id("p.A")
         val superA = fullName2id("p.SuperA")
 
-        val methInInterface = fullName2id("p.A.mInInterface__void")
-        val methNotInInterface = fullName2id("p.A.mNotInInterface__void")
-        val abstractMethInInterface = fullName2id("p.SuperA.mInInterface__void")
+        val methInInterface = fullName2id("p.A.mInInterface()")
+        val methNotInInterface = fullName2id("p.A.mNotInInterface()")
+        val abstractMethInInterface = fullName2id("p.SuperA.mInInterface()")
 
         val g2 = TR.makeSuperType(graph, classA, superA)().right
 
