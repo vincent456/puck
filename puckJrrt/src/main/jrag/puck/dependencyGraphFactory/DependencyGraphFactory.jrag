@@ -294,15 +294,13 @@ aspect DependencyGraphFactory {
 		getArgList().buildDG(builder, containerId);
 		getTypeDeclOpt().buildDG(builder, containerId);
 
-		int classNodeId = getAccess().buildDGNode(builder);
-        int ctorNodeId = buildDGNode(builder);
+		//getAccess().accessed().buildDGNode avoid lock
+		int classNodeId = getAccess().accessed().buildDGNode(builder);
+		int ctorNodeId = buildDGNode(builder);
 
 		DGUses constructorUses = new Uses(containerId, ctorNodeId, UsesAccessKind.none());
 		builder.addEdge(constructorUses);
-
-//		DGUses typeUse = new Uses(containerId, classNodeId, UsesAccessKind.none());
-//		builder.addEdge(typeUse);
-//		builder.addTypeRelationship(typeUse, constructorUses);
+		this.lock();
 
 	}
 

@@ -6,7 +6,8 @@ import org.extendj.{ast => AST}
 
 object ASTNodeLink{
 
-  def setName(name : String, nl : ASTNodeLink) : Unit = nl match {
+  def setName(name : String, nl : ASTNodeLink,
+              reenactor : DependencyGraph, renamed : NodeId) : Unit = nl match {
     case FieldDeclHolder(decl) => decl.setID(name)
     case dh : MethodDeclHolder => dh.decl.setID(name)
     case th : TypedKindDeclHolder =>
@@ -16,7 +17,14 @@ object ASTNodeLink{
       //TODO if printed in place oldName.java should be deleted
       if(cu.pathName().endsWith(s"$oldName.java"))
         cu.setPathName(cu.pathName().replaceAllLiterally(s"$oldName.java", s"$name.java"))
-
+      import scala.collection.JavaConversions._
+      th.decl.constructors().foreach{cdecl =>
+        cdecl.flushAttrCache()
+        cdecl.setID(name)
+      }
+      val oldFullName = reenactor.fullName(renamed)
+      val newFullName = reenactor.fullName(reenactor.container_!(renamed)) + "." + name
+      th.decl.program().changeTypeMap(oldFullName, newFullName, th.decl)
 
     case ch : ConstructorDeclHolder => ch.decl.setID(name)
     case h => throw new PuckError(h.getClass + " setName unhandled")

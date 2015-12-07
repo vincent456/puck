@@ -52,11 +52,11 @@ class RecordingComparatorSpec extends AcceptanceSpec {
 
       val classA = fullName2id(s"$p.A")
       val fieldA = fullName2id(s"$p.A.b")
-      val methA = fullName2id(s"$p.A.ma__void")
+      val methA = fullName2id(s"$p.A.ma()")
 
       val classB = fullName2id(s"$p.B")
       val classBNode = graph.getConcreteNode(classB)
-      val methB = fullName2id(s"$p.B.mb__void")
+      val methB = fullName2id(s"$p.B.mb()")
 
     }
   }

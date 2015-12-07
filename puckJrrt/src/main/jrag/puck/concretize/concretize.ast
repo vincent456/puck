@@ -1,3 +1,4 @@
 ExprPlaceHolder : Expr ::= TypeDecl;
 DummyConstructorCall : ExprPlaceHolder;
 EmptyReceiver : ExprPlaceHolder;
+EmptyAccess : Access;

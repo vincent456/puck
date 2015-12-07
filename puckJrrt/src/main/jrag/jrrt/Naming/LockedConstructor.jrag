@@ -126,6 +126,9 @@ aspect LockedConstructor {
 		super.eliminateLockedNames();
 	}
 	public ClassInstanceExpr ClassInstanceExpr.unlock() {
+		if(getAccess().isEmptyAccess()) {
+			this.setAccess(this.targetConstructor.hostType().createQualifiedAccess());
+		}
 		ConstructorDecl targetConstructor = this.targetConstructor.refresh();
 		setTarget(null);
 		if(fromSource() && getAccess().type() != targetConstructor.hostType())

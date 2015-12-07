@@ -8,18 +8,6 @@ aspect ReplaceClassInstanceExpr {
     }
 
 
-public Access MethodDecl.createLockedBoundAccess(List args) {
-        BoundMethodAccess bma = new BoundMethodAccess(name(), args, this);
-        bma.lock();
-
-        if (isStatic()) {
-        Access ta = hostType().createQualifiedAccess();
-        ta.lock();
-        return ta.qualifiesAccess(bma);
-        }
-        return bma;
-        }
-
     public void ClassInstanceExpr.replaceByConstructorMethodCall(ConstructorDecl cdecl, MethodDecl cm) {
         if(decl() != cdecl)
             return;
@@ -28,12 +16,28 @@ public Access MethodDecl.createLockedBoundAccess(List args) {
             throw new Error("replaceByConstructorMethodCall, this.hostBodyDecl is " +
                     this.hostBodyDecl().getClass() + "does not know what to do !!");
 
-        Access acc = cm.createLockedBoundAccess(this.getArgs());
+        Access acc = cm.createLockedAccess(this.getArgs(), true);
+        //Access acc = cm.createBoundAccess(this.getArgs());
         acc.lock();
 
         if(cm.isStatic()) replace(this).with(acc);
         else
             replace(this).with(new Dot(new EmptyReceiver(cm.hostType()), acc));
+    }
+
+
+    syn boolean Access.isEmptyAccess() = false;
+    eq EmptyAccess.isEmptyAccess() = true;
+
+    public void EmptyAccess.prettyPrint(PrettyPrinter out) {
+        out.print("/* Empty Access */");
+    }
+
+    //create a locked ClassInstanceExpr
+    public static ClassInstanceExpr ClassInstanceExpr.createLockedCtorAccess(ConstructorDecl target, List args) {
+        ClassInstanceExpr cie = new ClassInstanceExpr(new EmptyAccess(), args, new Opt());
+        cie.setTarget(target);
+        return cie;
     }
 
 
@@ -53,6 +57,20 @@ public Access MethodDecl.createLockedBoundAccess(List args) {
         if(this.decl() == method){
             if(getQualifier().isEmptyReceiver())
                 replace(getQualifier()).with(byAccess);
+        }
+    }
+
+
+    public void ASTNode.replaceConstructorCall(ConstructorDecl oldUsed, ConstructorDecl newUsed){
+        for(int i = 0; i < getNumChild(); i++)
+            getChild(i).replaceConstructorCall(oldUsed, newUsed);
+    }
+
+    public void ClassInstanceExpr.replaceConstructorCall(ConstructorDecl oldUsed, ConstructorDecl newUsed){
+        if(this.decl() == oldUsed){
+              replaceWith(ClassInstanceExpr.createLockedCtorAccess(newUsed, getArgs()));
+//            setAccess(newUsed.hostType().createLockedAccess());
+//            setTarget(newUsed);
         }
     }
 }

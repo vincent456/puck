@@ -21,21 +21,6 @@ aspect Concretize {
     }
 
 
-    public void ASTNode.replaceConstructorCall(ConstructorDecl oldUsed, ConstructorDecl newUsed){
-        for(int i = 0; i < getNumChild(); i++)
-            getChild(i).replaceConstructorCall(oldUsed, newUsed);
-    }
-
-    public void ClassInstanceExpr.replaceConstructorCall(ConstructorDecl oldUsed, ConstructorDecl newUsed){
-        if(this.decl() == oldUsed){
-            setAccess(newUsed.hostType().createLockedAccess());
-            setTarget(newUsed);
-        }
-    }
-
-
-
-
     public String CompilationUnit.getRootPath(){
         String packagePath = packageName().replaceAll("\\.", File.separator);
 //        System.out.println("packagePath : " + packagePath);

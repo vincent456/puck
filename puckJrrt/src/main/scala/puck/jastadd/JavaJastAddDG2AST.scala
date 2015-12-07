@@ -242,7 +242,7 @@ class JavaJastAddDG2AST
         }
 
       case Transformation(_, ChangeNodeName(nid, _, newName)) =>
-        ASTNodeLink.setName(newName, safeGet(reenactor,id2declMap)(nid))
+        ASTNodeLink.setName(newName, safeGet(reenactor,id2declMap)(nid), reenactor, nid)
 
       case Transformation(_, ChangeTypeBinding(((tUser, tUsed), tmUse), TypeUse(newTuse @ (ntUser, ntUsed))))
         if tUser == tUsed =>

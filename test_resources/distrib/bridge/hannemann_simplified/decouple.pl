@@ -1,10 +1,10 @@
 import ['screen']
 
 implementations =
-		['WelcomeCapital.printCapital__String', 
-		 'WelcomeStar.printStar__String',
-		 'InfoCapital.printCapital__String', 
-		 'InfoStar.printStar__String']
+		['WelcomeCapital.printCapital(String)',
+		 'WelcomeStar.printStar(String)',
+		 'InfoCapital.printCapital(String)',
+		 'InfoStar.printStar(String)']
 
 abstractions = ['Screen', 'WelcomeCapital', 'WelcomeStar',
 			  'InfoCapital', 'InfoStar']

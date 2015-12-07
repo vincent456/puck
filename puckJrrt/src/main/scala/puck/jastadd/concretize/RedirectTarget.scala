@@ -59,7 +59,6 @@ object RedirectTarget {
 
                //TODO find why !(block eq mdecl.getBlock)
                //logger.writeln(block eq mdecl.getBlock)
-               println(s"replacing access from ${oldk.decl.fullName()} to ${newk.decl.fullName()}")
                mdecl.getBlock.replaceTypeAccess(oldk.decl, newk.decl)
 
              case holder : HasNode =>
@@ -130,8 +129,6 @@ object RedirectTarget {
               val MethodDeclHolder(mdecl) = id2declMap(reenactor.container_!(e.source))
 
               //TODO find why !(block eq mdecl.getBlock)
-              logger.writeln(block eq mdecl.getBlock)
-
               mdecl.getBlock.replaceConstructorCall(oldc, newc)
 
             case defHolder : DefHolder =>
