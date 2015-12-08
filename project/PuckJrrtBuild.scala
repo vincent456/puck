@@ -131,7 +131,7 @@ object PuckJrrtBuild {
     val puckFiles : PathFinder = puckJragJaddSrc.value ** ("*.jrag" | "*.jadd" | "*.ast")
 
 
-    val generated = jastaddOutDir.value / "AST" / "ASTNode.java"
+    val generated = jastaddOutDir.value / "org" / "extendj"/ "ast" / "ASTNode.java"
     val mustUpdate =
       (!generated.exists()) || {
         val allFiles : PathFinder = java4grammar +++ j8variable +++ j7constant +++

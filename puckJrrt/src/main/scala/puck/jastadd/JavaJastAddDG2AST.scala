@@ -47,16 +47,13 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
         }
     }
 
-    /*val (numClass, numItc) = g.concreteNodes.foldLeft((0,0)){ case ((numClass0, numItc0), n) =>
-      val numClass1 = if(n.kind == nodeKind.Class) numClass0 + 1
-      else numClass0
-      val numItc1 = if(n.kind == nodeKind.Interface) numItc0 + 1
-      else numItc0
-      (numClass1, numItc1)
+//    import ShowDG._
+//    import puck.util.Debug._
+//    import scalaz.syntax.show._
+//    (dg2ast.initialGraph, dg2ast.initialGraph.nodesIndex).println
+//    dg2ast.initialGraph.edges.println
 
-    }
-    logger.writeln( numClass + " classes and " + numItc + " interfaces parsed")
-*/
+
   }
   def verbosity : PuckLog.Level => PuckLog.Verbosity = l => (PuckLog.AG2AST, l)
 }

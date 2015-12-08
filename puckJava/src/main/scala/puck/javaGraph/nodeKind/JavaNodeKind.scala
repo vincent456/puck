@@ -181,7 +181,7 @@ object JavaNodeKind extends NodeKindKnowledge {
       (n.kind, graph styp id) match {
       case (_ : MethodKind, Some(t)) =>Some(Arrow(Tuple(), t))
       case (_, Some(t))=> Some(t)
-      case (_, None) => error(s"missing type for $n")
+      case (_, None) => None /*error(s"missing type for $n")*/
 
     }
   }

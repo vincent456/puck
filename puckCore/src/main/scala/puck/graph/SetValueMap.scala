@@ -4,6 +4,7 @@ package puck.graph
 abstract class CollectionHandler[C[_]] {
   def isEmpty(c : C[_]) : Boolean
   def empty[V] : C[V]
+  def iterator[V](c : C[V]) : Iterator[V]
   def add[V](c : C[V], elt : V) : C[V]
   def remove[V](c : C[V], elt : V) : C[V]
   def contains[V](c : C[V], elt : V) : Boolean
@@ -17,6 +18,8 @@ object CollectionValueMap {
     def isEmpty(c : List[_]) : Boolean = c.isEmpty
 
     def empty[V]: List[V] = List.empty
+
+    def iterator[V](c : List[V]) : Iterator[V] = c.iterator
 
     def toList[V](c: List[V]): List[V] = c
 
@@ -33,6 +36,8 @@ object CollectionValueMap {
     def isEmpty(c : Set[_]) : Boolean = c.isEmpty
 
     def empty[V]: Set[V] = Set.empty
+
+    def iterator[V](c : Set[V]) : Iterator[V] = c.iterator
 
     def toList[V](c: Set[V]): List[V] = c.toList
 
@@ -83,15 +88,17 @@ class CollectionValueMap[K, C[_], V]
   def bind( key : K, v: V) : Boolean =
     (content get key) exists { handler.contains(_, v)}
 
-  def toSeq = content.toSeq
-  def toList = content.toList
+  def toSeq :Seq[(K, C[V])]= content.toSeq
+  def toList : List[(K, C[V])] = content.toList
 
-  def flatList : List[(K,V)]=
+  def iterator : Iterator[(K,V)] =
     for {
-      s <- content.toList
+      s <- content.iterator
       (k, vs) = s
-      v <- handler.toList(vs)
+      v <- handler.iterator(vs)
     } yield (k, v)
+
+  def flatList : List[(K,V)] = iterator.toList
 
   
   

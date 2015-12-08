@@ -9,6 +9,9 @@ import Keys._
 
 object PuckBuild extends Build {
 
+  implicit class ProjectSettingsOp(p : Project){
+    def settingsSeq(ss : Seq[Setting[_]]) : Project = p.settings(ss:_*)
+  }
 
   val classPathFileName = settingKey[String]("Location of generated classpath script")
 
@@ -119,18 +122,18 @@ object PuckBuild extends Build {
     )
 
   val puckCore : Project = (project
-    settings commonSettings("core")
+    settingsSeq commonSettings("core")
 
-    settings Seq[Setting[_]] {
+    settingsSeq Seq[Setting[_]] {
         libraryDependencies +=
           "org.scala-lang" % "scala-parser-combinators" % "2.11.0-M4"
     }
   )
 
   val puckGui = ( project
-    settings commonSettings("gui")
+    settingsSeq commonSettings("gui")
 
-    settings Seq[Setting[_]] {
+    settingsSeq Seq[Setting[_]] {
       libraryDependencies ++= Seq(
         "org.scala-lang" % "scala-swing" % "2.11.0-M7",
         "org.scala-lang" % "scala-parser-combinators" % "2.11.0-M4",
@@ -145,15 +148,15 @@ object PuckBuild extends Build {
   )
 
   val puckJava : Project = (project
-    settings commonSettings("java")
+    settingsSeq commonSettings("java")
     dependsOn (puckCore % "test->test;compile->compile")
     //dependsOn (puckGui % "compile->compile")
    )
 
 
   val puckJrrt : Project = (project
-    settings commonSettings("jrrt")
-    settings PuckJrrtBuild.settings
+    settingsSeq commonSettings("jrrt")
+    settingsSeq PuckJrrtBuild.settings
     enablePlugins JavaAppPackaging
     dependsOn (puckJava % "test->test;compile->compile")
     dependsOn (puckGui % "compile->compile")
@@ -168,9 +171,9 @@ object PuckBuild extends Build {
     )
 
   val puckScala : Project = (project
-    settings commonSettings("scala")
+    settingsSeq commonSettings("scala")
 
-    settings Seq[Setting[_]] {
+    settingsSeq Seq[Setting[_]] {
       libraryDependencies ++= Seq(
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         //"org.scala-lang" % "scala-library" % scalaVersion.value,
@@ -178,7 +181,7 @@ object PuckBuild extends Build {
       )
     }
 
-    settings PuckScalaBuild.settings
+    settingsSeq PuckScalaBuild.settings
 
     dependsOn (puckGui % "compile->compile")
   )
