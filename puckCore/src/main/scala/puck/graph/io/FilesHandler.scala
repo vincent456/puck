@@ -85,9 +85,6 @@ class FilesHandler
     new FilesHandler(outDirectory !, srcSuffix, dG2ASTBuilder)
 
 
-
-
-
   var graphStubFileName : String = FilesHandler.Default.graphFileName
 
   import PuckLog.defaultVerbosity

@@ -33,12 +33,12 @@ case class ReadWriteAbstraction
     List(readAbsNode, writeAbsNode).filter(_.nonEmpty).sequence.getOrElse(List())
 
 
-  def bothSameValueOrElse[T](f: NodeId => T, default: T) : T =
+  def bothSameValueOrElse[T](f: NodeId => T, default: => T) : T =
     (readAbsNode, writeAbsNode) match {
       case (None,None) => default
       case (Some(nodeId), None) =>  f(nodeId)
       case (None, Some(nodeId)) =>  f(nodeId)
-      case (Some(nodeId0),Some(nodeId)) =>
+      case (Some(nodeId0), Some(nodeId)) =>
         val v = f(nodeId)
         assert(f(nodeId0) == v)
         v

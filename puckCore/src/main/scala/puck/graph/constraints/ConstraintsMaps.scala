@@ -2,7 +2,7 @@ package puck.graph
 package constraints
 
 import puck.graph.ShowDG._
-import puck.graph.constraints.ConstraintsMaps.{HideConstraintMap, FriendConstraintMap}
+import puck.graph.constraints.ConstraintsMaps._
 import puck.util.Logger
 
 
@@ -12,6 +12,14 @@ object ConstraintsMaps{
   type HideConstraintMap = Map [Range, ConstraintSet]
 
   def apply() = new ConstraintsMaps(Map(), Map(), Map())
+
+  def addConstraintToMap(map : Map [Range, ConstraintSet], ct : Constraint) = {
+    ct.owners.foldLeft(map){
+      case (m, owner) =>
+        val s = m.getOrElse(owner, new ConstraintSet())
+        m + (owner -> (s + ct) )
+    }
+  }
 }
 
 case class ConstraintsMaps
@@ -33,7 +41,11 @@ case class ConstraintsMaps
      f(Element(nid)) || aux(nid)
    }
 
+   def addHideConstraint(ct : Constraint) =
+     copy(hideConstraints = addConstraintToMap(hideConstraints, ct))
 
+   def addFriendConstraint(ct : Constraint) =
+     copy(friendConstraints = addConstraintToMap(friendConstraints, ct))
 
 
    def forContainer(graph : GraphT, nid : NodeId)(f : NodeId => Boolean): Boolean =

@@ -190,6 +190,7 @@ aspect DependencyGraphFactory {
 		buildDGInChildren(builder, thisID);
 	}
 
+
 	public void BodyDecl.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId ){
 		if(isNamedElement()){
 			int declId = buildDGNode(builder);
@@ -213,6 +214,10 @@ aspect DependencyGraphFactory {
 						getChild(i).buildDG(builder, declId);
 			}
 
+		}
+		else if(this.getClass() == InstanceInitializer.class
+			|| this.getClass() == StaticInitializer.class ) {
+			super.buildDG(builder, hostTypeDeclId);
 		}
 		else
 			System.err.println("TODO !! "+ this.getClass() +".buildDG(JastaddGraphBuilder, int)");
@@ -336,8 +341,9 @@ aspect DependencyGraphFactory {
 	}
 
 	public void Access.buildDG(JastaddGraphBuilder builder, int containerId){
-		if(this.getClass() != ThisAccess.class
-			&& this.getClass() != ClassAccess.class)
+		if( this.getClass() != ThisAccess.class
+			&& this.getClass() != ClassAccess.class
+			&& this.getClass() != Wildcard.class )
 			System.err.println("TODO !! "+this.getClass()+".buildDG : " + this);
 		super.buildDG(builder, containerId);
 	}

@@ -1,11 +1,12 @@
-package puck.graph.constraints.search
+package puck.graph
+package constraints.search
 
 import puck.graph.ShowDG._
 import puck.graph._
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations.TransformationRules
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, CreateVarStrategy}
-import puck.search.{SearchStrategyDecorator, SearchState, SearchStrategy}
+import puck.search._
 import puck.util.LoggedEither
 import puck.util.LoggedEither._
 
@@ -15,6 +16,64 @@ import scalaz.{-\/, NonEmptyList, \/, \/-}
 
 
 
+
+class CouplingConstraintSolvingAllViolationsControl
+(strategy : SearchStrategy[DependencyGraph],
+ val rules : TransformationRules,
+ val initialGraph : DependencyGraph,
+ val violationsKindPriority : Seq[NodeKind]
+) extends SearchStrategyDecorator[DependencyGraph](strategy){
+
+  def findTargets(graph : DependencyGraph,
+                  l : Seq[NodeKind] = violationsKindPriority.toStream) : Seq[DGNode] =  l match {
+    case topPriority +: tl =>
+      val tgts = graph.nodes.toStream filter { n =>
+        n.kind == topPriority && (graph.wrongUsers(n.id).nonEmpty ||
+          graph.isWronglyContained(n.id))
+      }
+      if(tgts.nonEmpty) tgts
+      else findTargets(graph, tl)
+
+    case Seq() => graph.nodes.toStream filter { n => graph.wrongUsers(n.id).nonEmpty ||
+      graph.isWronglyContained(n.id) }
+  }
+
+  def nextStates(g : DependencyGraph) : Seq[LoggedTry[DependencyGraph]] = {
+    val targets = findTargets(g)
+
+    targets flatMap {
+      case vn : VirtualNode =>
+        Seq(LoggedError[DependencyGraph](s"cannot solve violations toward virtual node $vn"))
+
+      case cn : ConcreteNode =>
+        val searchControlStrategy =
+          new CouplingConstraintSolvingControl(
+            new DepthFirstSearchStrategy[(DependencyGraph, Int)],
+            rules, g, cn)
+
+        val engine =
+          new SearchEngine(searchControlStrategy.initialState,
+            searchControlStrategy,
+            Some(1))
+
+        engine.explore()
+        engine.successes map (ss => ss.loggedResult map (_._1))
+    }
+  }
+
+  def initialState : SearchState[DependencyGraph] =
+    new SearchState(0, None, LoggedSuccess(initialGraph), nextStates(initialGraph))
+
+  override def oneStep: Option[(LoggedTry[DependencyGraph],
+    Seq[LoggedTry[DependencyGraph]])] = {
+    strategy.nextState.nextChoice flatMap( lt =>
+      lt.value match{
+        case \/-(g) => Some((lt, nextStates(g)))
+        case -\/(_) => None
+      })
+  }
+
+}
 
 class CouplingConstraintSolvingControl
 (strategy : SearchStrategy[(DependencyGraph, Int)],

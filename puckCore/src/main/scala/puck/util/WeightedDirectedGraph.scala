@@ -42,7 +42,7 @@ object WeightedDirectedGraph {
           (t.ids map relevantNode).foldLeft(wdg0){
               case (wdg1, id) =>
                 if(id == rn) wdg1
-                else wdg1.addEdge(rn, id)
+                else wdg1.addEdge((rn, id))
           }
       }
     }

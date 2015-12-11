@@ -17,26 +17,14 @@ import org.extendj.{ast => AST}
 
 object JavaJastAddDG2AST extends DG2ASTBuilder {
 
-  def apply
-  ( srcDirectory : File,
-    outDirectory : Option[File],
-    jarListFile : Option[File],
-    logger : PuckLogger,
-    ll : puck.LoadingListener = null
-    ) : DG2AST = {
-    import puck.util.FileHelper.{fileLines, findAllFiles}
-
+  def fromFiles(sources: List[String],
+                jars: List[String],
+                logger : PuckLogger,
+                ll : puck.LoadingListener): JavaJastAddDG2AST = {
     val sProg = puck.util.Time.time(logger, defaultVerbosity) {
       logger.writeln("Compiling sources ...")
-
-      val srcSuffix = ".java"
-      val sources = findAllFiles(srcDirectory, srcSuffix, outDirectory map (_.getName))
-      val jars = findAllFiles(srcDirectory, ".jar", outDirectory map (_.getName))
-      val jarsFromList =
-        jarListFile map (fileLines(_, keepEmptyLines = false)) getOrElse List()
-      CompileHelper(sources, jarsFromList ++: jars )
+      CompileHelper(sources, jars)
     }
-
     puck.util.Time.time(logger, defaultVerbosity) {
       logger.writeln("Building Access Graph ...")
       sProg match {
@@ -44,15 +32,32 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
         case Some(p) =>
           val t = CompileHelper.buildGraph(p, ll)
           new JavaJastAddDG2AST(t._1, t._2, t._3, t._4, t._5)
-        }
+      }
     }
 
-//    import ShowDG._
-//    import puck.util.Debug._
-//    import scalaz.syntax.show._
-//    (dg2ast.initialGraph, dg2ast.initialGraph.nodesIndex).println
-//    dg2ast.initialGraph.edges.println
+    //    import ShowDG._
+    //    import puck.util.Debug._
+    //    import scalaz.syntax.show._
+    //    (dg2ast.initialGraph, dg2ast.initialGraph.nodesIndex).println
+    //    dg2ast.initialGraph.edges.println
+  }
 
+  def apply
+  ( srcDirectory : File,
+    outDirectory : Option[File],
+    jarListFile : Option[File],
+    logger : PuckLogger,
+    ll : puck.LoadingListener = null
+    ) : JavaJastAddDG2AST = {
+    import puck.util.FileHelper.{fileLines, findAllFiles}
+
+      val srcSuffix = ".java"
+      val sources = findAllFiles(srcDirectory, srcSuffix, outDirectory map (_.getName))
+      val jars = findAllFiles(srcDirectory, ".jar", outDirectory map (_.getName))
+      val jarsFromList =
+        jarListFile map (fileLines(_, keepEmptyLines = false)) getOrElse List()
+
+      fromFiles(sources, jarsFromList ++: jars, logger, ll)
 
   }
   def verbosity : PuckLog.Level => PuckLog.Verbosity = l => (PuckLog.AG2AST, l)

@@ -303,6 +303,22 @@ class DependencyGraph
       case kt => false
     })
 
+  def changeTarget
+    (edge : DGUses,
+     readTarget : NodeId,
+     writeTarget : NodeId
+    ) : (DependencyGraph, List[DGUses]) = {
+    val g1 = edge.deleteIn(this, register = false)
+    val readEdge : DGUses = edge.copy(target = readTarget).withAccessKind(Some(Read))
+    val writeEdge : DGUses = edge.copy(target = writeTarget).withAccessKind(Some(Write))
+
+    val newRecording =
+        recording.changeEdgeTarget(edge, readTarget, withMerge = readEdge.existsIn(this))
+                 .changeEdgeTarget(edge, readTarget, withMerge = readEdge.existsIn(this))
+    (readEdge.createIn(g1, register = false).newGraph(recording = newRecording),
+      List(readEdge, writeEdge))
+  }
+
   def changeTarget(edge : DGEdge, newTarget : NodeId) : DependencyGraph =
     if(isChangeType(edge, newTarget))
       changeType(edge.user, edge.used, newTarget)

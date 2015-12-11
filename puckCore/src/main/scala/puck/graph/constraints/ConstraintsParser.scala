@@ -51,6 +51,7 @@ case class ConstraintMapBuilder
     case Right(l) => LiteralRangeSet(l flatMap findNode)
   }
 
+  import ConstraintsMaps.addConstraintToMap
 
   def addHideConstraint
   ( owners : RangeSet,
@@ -61,11 +62,8 @@ case class ConstraintMapBuilder
 
     val ct = new Constraint(owners, facades, interlopers, friends)
 
-    copy(hideConstraintsMap = owners.foldLeft(hideConstraintsMap){
-      case (map, owner) =>
-        val s = map.getOrElse(owner, new ConstraintSet())
-        map + (owner -> (s + ct) )
-    })
+    copy(hideConstraintsMap = addConstraintToMap(hideConstraintsMap, ct))
+
   }
 
   def addFriendConstraint
@@ -76,11 +74,8 @@ case class ConstraintMapBuilder
       val ct =
         new Constraint(befriended, RangeSet.empty(), RangeSet.empty(), friends)
 
-      copy(friendCtsMap = befriended.foldLeft(friendCtsMap){
-        case (map, owner) =>
-          val s = map.getOrElse(owner, new ConstraintSet())
-          map + (owner -> (s + ct) )
-      })
+      copy(friendCtsMap = addConstraintToMap(friendCtsMap, ct))
+
   }
 }
 

@@ -222,12 +222,12 @@ abstract class SVGController
   (graph: DependencyGraph, fail : Boolean = false): Unit =
     SVGController.documentFromGraph(graph, graphUtils, printingOptions) {
       res =>
-        val msg = res match {
-          case Success(0) => "Success"
+        val smsg : Option[String] = res match {
+          case Success(0) => None
           case Success(n) =>
-            println("not really a success")
+
             if (fail)
-              "An error that cannot be recovered occured during the production of the SVG file by Graphviz"
+              Some("An error that cannot be recovered occured during the production of the SVG file by Graphviz")
             else {
               val tmpDir = System.getProperty("java.io.tmpdir")
               val f = new File(tmpDir + File.separator + "graph.dot")
@@ -236,17 +236,16 @@ abstract class SVGController
 
               displayGraph(graph, fail = true)
 
-              "error during SVG production dot can be found at " + f.getAbsolutePath +
-                "\nretry with top level package visibility only"
+              Some("error during SVG production dot can be found at " + f.getAbsolutePath +
+                "\nretry with top level package visibility only")
 
-
-            }
+          }
 
           case Failure(errMsg) =>
-            "Image creation failure : " + errMsg
+            Some("Image creation failure : " + errMsg)
 
         }
-        swingInvokeLater(() => console appendText msg)
+        smsg foreach (msg => swingInvokeLater(() => console appendText msg))
     }{
       case doc =>
         swingInvokeLater(() => frame.canvas.setDocument(doc))

@@ -68,10 +68,8 @@ object Redirection {
           (oldUse.changeTarget(g, rid), List(oldUse.copy(target = rid)))
         case (ReadWriteAbstraction(_, Some(wid)), Some(Write)) =>
           (oldUse.changeTarget(g, wid), List(oldUse.copy(target = wid)))
-        case (ReadWriteAbstraction(Some(rid), Some(wid)), Some(RW)) => ???
-          //cannot "just" redirect, need to replace the accessKind
-//          val g1 = oldUse.changeTarget(g, rid)
-//          oldUse.changeTarget(g1, wid)
+        case (ReadWriteAbstraction(Some(rid), Some(wid)), Some(RW)) =>
+            g.changeTarget(oldUse, rid, wid)
         case _ => throw new PuckError(s"error while redirecting $oldUse toward $newUsed")
       }
     } catch {
