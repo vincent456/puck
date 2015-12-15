@@ -105,13 +105,13 @@ object DotPrinter {
 }
 import VisibilitySet._
 case class PrintingOptions
-( visibility : VisibilitySet.T,
-  printId : Boolean = false,
-  printSignatures : Boolean = false,
-  selectedUse : Option[DGUses] = None,
-  printVirtualEdges : Boolean = false,
-  printConcreteUsesPerVirtualEdges : Boolean = true,
-  redOnly: Boolean = false)
+(visibility : VisibilitySet.T,
+ printId : Boolean = false,
+ printSignatures : Boolean = false,
+ selectedUse : Option[Uses] = None,
+ printVirtualEdges : Boolean = false,
+ printConcreteUsesPerVirtualEdges : Boolean = true,
+ redOnly: Boolean = false)
 
 import DotPrinter._
 class DotPrinter

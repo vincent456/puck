@@ -1,7 +1,6 @@
 import puck.jastadd.JastaddGraphBuilder;
-import puck.graph.Uses;
 import puck.graph.Isa;
-import puck.graph.DGUses;
+import puck.graph.Uses;
 import puck.graph.UsesAccessKind;
 import puck.LoadingListener;
 
@@ -281,8 +280,8 @@ aspect DependencyGraphFactory {
 	      	int classNodeId = decl().buildDGNode(builder);
 	      	int ctorNodeId = buildDGNode(builder);
 
-		  	DGUses typeUse = new Uses(containerId, classNodeId, UsesAccessKind.none());
-		  	DGUses superConstructorUses = new Uses(containerId, ctorNodeId, UsesAccessKind.none());
+		  	Uses typeUse = new Uses(containerId, classNodeId, UsesAccessKind.none());
+		  	Uses superConstructorUses = new Uses(containerId, ctorNodeId, UsesAccessKind.none());
 
 	      	builder.addEdge(typeUse);
 			builder.addEdge(superConstructorUses);
@@ -302,7 +301,7 @@ aspect DependencyGraphFactory {
 		int classNodeId = getAccess().accessed().buildDGNode(builder);
 		int ctorNodeId = buildDGNode(builder);
 
-		DGUses constructorUses = new Uses(containerId, ctorNodeId, UsesAccessKind.none());
+		Uses constructorUses = new Uses(containerId, ctorNodeId, UsesAccessKind.none());
 		builder.addEdge(constructorUses);
 		this.lock();
 
@@ -386,7 +385,7 @@ aspect DependencyGraphFactory {
 	}
 
 	void TypeAccess.addImplementsEdges(JastaddGraphBuilder builder, int sub) {
-		builder.addEdge(new Isa(sub, buildDGNode(builder)));
+		builder.addEdge(JastaddGraphBuilder.isa(sub, buildDGNode(builder)));
 //		int sn = buildDGNode(builder);
 //		builder.addEdge(new Uses(sub, sn, UsesAccessKind.none()));
 	}

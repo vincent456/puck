@@ -10,10 +10,10 @@ import puck.gui.svg.SVGController
 import ShowDG._
 
 case class RedirectAction
-( newTarget : ConcreteNode,
-  edge : DGUses,
-  abs : Abstraction,
-  controller: SVGController)
+(newTarget : ConcreteNode,
+ edge : Uses,
+ abs : Abstraction,
+ controller: SVGController)
   extends AbstractAction(s"Use $abs instead of ${(controller.graph, edge.target).shows}"){
 
   //TODO check keepOldUse and propagate redirection value

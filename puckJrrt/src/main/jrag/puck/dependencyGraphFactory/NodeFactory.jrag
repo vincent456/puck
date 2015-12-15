@@ -35,7 +35,7 @@ aspect NodeFactory  {
 //	public int ConstructorDecl.buildDGNode(JastaddGraphBuilder builder){
 //		int nodeId = super.buildDGNode(builder);
 //		int hostTypeId = hostType().buildDGNode(builder);
-//		DGUses typeUse = new Uses(nodeId, hostTypeId, UsesAccessKind.none());
+//		Uses typeUse = new Uses(nodeId, hostTypeId, UsesAccessKind.none());
 //		builder.addEdge(typeUse);
 //		return nodeId;
 //	}

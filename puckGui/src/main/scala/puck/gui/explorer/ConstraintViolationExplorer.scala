@@ -1,16 +1,32 @@
 package puck
 package gui.explorer
 
-import javax.swing.{JScrollPane, JTree}
+import java.awt.{Component, BorderLayout}
+import javax.swing.{JLabel, JPanel, JTree}
 
 import puck.graph._
-import javax.swing.tree.DefaultMutableTreeNode
-
-import puck.gui.{CCUpdate, DGUpdate}
-
-import scala.swing.{FlowPanel, ScrollPane}
+import javax.swing.tree.{TreeNode, TreePath, TreeCellRenderer, DefaultMutableTreeNode}
 
 
+import scala.swing.ScrollPane
+
+
+class CCTree(g : DependencyGraph, root : TreeNode)
+  extends JTree(root, false){
+  override def convertValueToText
+  (value: AnyRef, selected: Boolean,
+   expanded: Boolean, leaf: Boolean,
+   row: Int, hasFocus: Boolean) : String =
+    value match {
+      case null => ""
+      case node : DefaultMutableTreeNode if node.getUserObject != null =>
+
+        val violation = node.getUserObject.asInstanceOf[DGEdge]
+        import ShowDG._
+        (g, violation).shows
+      case _ => ""
+  }
+}
 
 class ConstraintViolationExplorer
 ( graph : DependencyGraph,
@@ -18,22 +34,18 @@ class ConstraintViolationExplorer
 extends ScrollPane {
 
 
-    println(s"${violations.size} violations")
     val kindSeq = Seq(TypeDecl, NameSpace)
 
     val sortedViolations = violations.foldLeft(Map[DGEdge, Option[DGEdge]]())(createHierarchy(kindSeq))
-
-    println(s"${sortedViolations.size} sorted violations")
 
     val roots = buildTree(Seq(), Map(), sortedViolations.toSeq)
 
     val root = new DefaultMutableTreeNode()
 
-    println(s"${roots.size} roots")
     roots foreach root.add
 
-    val tree = new JTree(root)
-
+    val tree = new CCTree(graph, root)
+    //tree.setCellRenderer(new CCTreeCellRenderer(graph))
     contents = swing.Component.wrap(tree)
 
 
@@ -57,7 +69,7 @@ extends ScrollPane {
 
         case (Some(psource), Some(ptarget)) =>
 
-          val pe = Uses(psource, ptarget)
+          val pe = new DGEdge(AbstractEdgeKind, psource, ptarget)
           val m1 = m getOrElse (e, None) match {
                case None => m + ( e -> Some(pe))
                case Some(storedParent) =>
@@ -81,14 +93,11 @@ extends ScrollPane {
 
       tnpe add tne
 
-      println(s"$e in $pe")
-
       buildTree(roots, m + (e -> tne) + (pe -> tnpe), tl)
 
     case (e, None) +: tl =>
       val tne = m getOrElse (e, new DefaultMutableTreeNode(e))
 
-      println(s"root : $e")
       buildTree(tne +: roots, m + (e -> tne), tl)
   }
 

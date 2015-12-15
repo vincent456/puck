@@ -7,6 +7,32 @@ import org.extendj.{ast => AST}
 
 import scala.collection.JavaConversions.collectionAsScalaIterable
 
+object JastaddGraphBuilder {
+
+  //JavaAccessor
+
+  def isa(n1 : NodeId, n2 : NodeId) =
+      new DGEdge(Isa, n1, n2)
+
+  def classKind = Class
+  def interfaceKind = Interface
+
+  def field = Field
+  def staticField = StaticField
+  def constructor = Constructor
+  def abstractMethod = AbstractMethod
+  def method = Method
+  def staticMethod = StaticMethod
+
+  def parameter = Param
+
+  def definition = Definition
+
+  def primitive = Primitive
+  def typeVariable = TypeVariable
+  def wildcardType = WildCardType
+}
+
 class JastaddGraphBuilder(val program : AST.Program) extends JavaGraphBuilder {
   var graph2ASTMap = Map[Int, ASTNodeLink]()
 

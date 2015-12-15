@@ -37,7 +37,7 @@ abstract class SVGController
   private var printVirtualEdges : Boolean = true,
   private var printConcreteUsesPerVirtualEdges : Boolean = true,
   private var printRedOnly : Boolean = true,
-  private var selectedEdgeForTypePrinting : Option[DGUses] = None) {
+  private var selectedEdgeForTypePrinting : Option[Uses] = None) {
 
   implicit val executor : ExecutionContext
 
@@ -77,7 +77,7 @@ abstract class SVGController
       displayGraph(graph)
     }
   }
-  def setSelectedEdgeForTypePrinting(se: Option[DGUses]) : Unit = {
+  def setSelectedEdgeForTypePrinting(se: Option[Uses]) : Unit = {
     if( se != selectedEdgeForTypePrinting ){
       selectedEdgeForTypePrinting = se
       displayGraph(graph)
@@ -355,7 +355,7 @@ abstract class SVGController
       console.appendText(s"${graph.getNode(nodeId)} has no abstractions.")
   }
 
-  def printUseBindings(u : DGUses) : Unit = {
+  def printUseBindings(u : Uses) : Unit = {
     val ustr = (graph, u).shows
     graph.getNode(u.used).kind.kindType match {
       case TypeDecl =>

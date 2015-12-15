@@ -22,8 +22,8 @@ extends AbstractAction(s"Add ${sub.name} isa ${sup.name}") {
 }
 
 class ShowTypeRelationshipGraphicAction
-( edge : Option[DGUses],
-  controller : SVGController)
+(edge : Option[Uses],
+ controller : SVGController)
   extends AbstractAction(s"Show type bindings (graphic)")
 {
   def actionPerformed(e: ActionEvent) : Unit =
@@ -31,8 +31,8 @@ class ShowTypeRelationshipGraphicAction
 }
 
 class ShowTypeRelationshipTextualAction
-( edge : Option[DGUses],
-  controller : SVGController)
+(edge : Option[Uses],
+ controller : SVGController)
   extends AbstractAction(s"Show type bindings (text)")
 {
   import controller.graph

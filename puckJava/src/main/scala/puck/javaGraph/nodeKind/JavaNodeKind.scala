@@ -45,32 +45,6 @@ case object Param extends JavaNodeKind {
 
 object JavaNodeKind extends NodeKindKnowledge {
 
-  //import AccessGraph.dummyId
-  /*def packageKind = Package(dummyId)
-  def interface = Interface(dummyId, None)*/
-  def classKind = Class
-  //fix for accessing the field in java
-  def interfaceKind = Interface
-
-
-
-  def field = Field
-  def staticField = StaticField
-  def constructor = Constructor
-  def abstractMethod = AbstractMethod
-  def method = Method
-  def staticMethod = StaticMethod
-
-  def parameter = Param
-
-  def definition = Definition
-
-  def primitive = Primitive
-  def typeVariable = TypeVariable
-  def wildcardType = WildCardType
-
-  def noType : Option[Type] = None
-
   def rootKind : NodeKind = JavaRoot
 
   def lightKind : NodeKind = Interface

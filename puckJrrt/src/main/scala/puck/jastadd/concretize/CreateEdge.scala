@@ -59,7 +59,7 @@ object CreateEdge {
             createIsa(id2declMap(e.subType), id2declMap(e.superType))
 
           case Uses =>
-            val u = e.asInstanceOf[DGUses]
+            val u = e.asInstanceOf[Uses]
             val (source, target ) = (graph.getNode(e.source), graph.getNode(e.target))
             (source.kind, target.kind) match {
               case (Class, Interface) =>
@@ -82,14 +82,14 @@ object CreateEdge {
 
   }
 
-  def ensureIsInitalizerUseByCtor(graph: DependencyGraph, u : DGUses) : Boolean =
+  def ensureIsInitalizerUseByCtor(graph: DependencyGraph, u : Uses) : Boolean =
     graph.kindType(graph.container_!(u.user)) == TypeConstructor &&
       (graph.getRole(u.used) contains Initializer(graph.hostTypeDecl(u.user)))
 
   def createInitializerCall
     ( reenactor : DependencyGraph,
       id2declMap : NodeId => ASTNodeLink,
-      e : DGUses)
+      e : Uses)
     ( implicit program : AST.Program, logger : PuckLogger) : Unit = {
     val sourceDecl = reenactor.container_!(e.user)
     (id2declMap(sourceDecl), id2declMap(e.used)) match {
@@ -142,7 +142,7 @@ object CreateEdge {
   ( graph: DependencyGraph,
     reenactor : DependencyGraph,
     id2declMap : NodeId => ASTNodeLink,
-    e : DGUses)
+    e : Uses)
   ( implicit logger : PuckLogger) : Unit = {
     val sourceDecl = reenactor declarationOf e.user
     val ConstructorDeclHolder(cdecl) = id2declMap(e.used)

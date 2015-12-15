@@ -54,7 +54,7 @@ class GraphExplorer
 
 
       val tree: JTree = new JTree(root)
-      tree.setCellRenderer(new PuckTreeCellRenderer(tree.getCellRenderer))
+      tree.setCellRenderer(new GraphExplorerTreeCellRenderer(tree.getCellRenderer))
 
       tree.addMouseListener( new MouseAdapter {
 

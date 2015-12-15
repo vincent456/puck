@@ -9,7 +9,7 @@ import scala.math.Ordering
 object Debug {
 
 
-  def printEdgeSet(g : DependencyGraph, logger : PuckLogger, s : Set[DGUses])=
+  def printEdgeSet(g : DependencyGraph, logger : PuckLogger, s : Set[Uses])=
     s.foreach(e => logger.writeln(s"\t\t*${(g, e).shows}"))
 
   def logUsersOf(g : DependencyGraph, logger : PuckLogger, n : NodeId) = {

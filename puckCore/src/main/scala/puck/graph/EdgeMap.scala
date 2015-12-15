@@ -75,6 +75,7 @@ case class EdgeMap
         copy(definition = definition + (decl -> _def),
           containers = containers + (_def -> decl) )
           /*declaration = declaration + (_def -> decl) )*/
+      case _ => error()
     }
 
   private def newAccessKindMapOnAdd
@@ -116,6 +117,7 @@ case class EdgeMap
         copy(definition = definition - (edge.container, edge.content),
           containers = containers - edge.content)
           /*declaration = declaration - edge.content )*/
+      case AbstractEdgeKind => this
     }
 
   def contains(containerId : NodeId, contentId : NodeId) : Boolean =
@@ -132,7 +134,7 @@ case class EdgeMap
     }
 
 
-  def getUses(userId: NodeId, usedId: NodeId) : Option[DGUses] = {
+  def getUses(userId: NodeId, usedId: NodeId) : Option[Uses] = {
     if(uses(userId, usedId))
       Some(Uses(userId, usedId, accessKindMap get ((userId, usedId))))
     else
@@ -159,6 +161,7 @@ case class EdgeMap
     }
     case Isa => isa(e.source, e.target)
     case Uses => uses(e.source, e.target)
+    case AbstractEdgeKind => false
   }
 
 
@@ -181,14 +184,14 @@ case class EdgeMap
     }
 
 
-  def typeUsesOf(typeMemberUse : DGUses) : Set[DGUses] =
+  def typeUsesOf(typeMemberUse : Uses) : Set[Uses] =
     typeUsesOf(typeMemberUse.user, typeMemberUse.used)
 
 
-  def typeMemberUsesOf(typeUse : DGUses) : Set[DGUses] =
+  def typeMemberUsesOf(typeUse : Uses) : Set[Uses] =
     typeMemberUsesOf(typeUse.user, typeUse.used)
 
-  def typeUsesOf(tmUser : NodeId, tmUsed : NodeId) : Set[DGUses] =
+  def typeUsesOf(tmUser : NodeId, tmUsed : NodeId) : Set[Uses] =
     typeMemberUses2typeUsesMap getFlat ((tmUser, tmUsed)) map {
       case (s,t) =>
         try {
@@ -200,7 +203,7 @@ case class EdgeMap
     }
 
 
-  def typeMemberUsesOf(typeUser : NodeId, typeUsed : NodeId) : Set[DGUses] =
+  def typeMemberUsesOf(typeUser : NodeId, typeUsed : NodeId) : Set[Uses] =
     typeUses2typeMemberUsesMap getFlat ((typeUser, typeUsed)) map {
       case (s, t) => getUses(s,t).get
     }

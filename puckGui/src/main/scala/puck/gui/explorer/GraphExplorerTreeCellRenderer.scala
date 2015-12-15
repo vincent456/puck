@@ -8,7 +8,7 @@ import javax.swing.{JPanel, JTree}
 /**
  * Created by lorilan on 10/07/14.
  */
-class PuckTreeCellRenderer(delegate : TreeCellRenderer)
+class GraphExplorerTreeCellRenderer(delegate : TreeCellRenderer)
   extends JPanel with TreeCellRenderer {
 
   setLayout(new BorderLayout())

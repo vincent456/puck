@@ -149,33 +149,33 @@ aspect NamedElement {
     eq TypeDecl.getDGNodeKind(){
     	throw new DGBuildingError(this.fullName() + " - " + this.getClass()+" : Unkown nodekind");
     }
-    eq TypeVariable.getDGNodeKind() = JavaNodeKind.typeVariable();
-    eq ClassDecl.getDGNodeKind() = JavaNodeKind.classKind();
-    eq InterfaceDecl.getDGNodeKind() = JavaNodeKind.interfaceKind();
-    eq WildcardType.getDGNodeKind() = JavaNodeKind.wildcardType();
-    eq PrimitiveType.getDGNodeKind() = JavaNodeKind.primitive();
-	eq VoidType.getDGNodeKind() = JavaNodeKind.primitive();
-    eq NullType.getDGNodeKind() = JavaNodeKind.primitive();
-    eq ParameterDeclaration.getDGNodeKind() = JavaNodeKind.parameter();
+    eq TypeVariable.getDGNodeKind() = JastaddGraphBuilder.typeVariable();
+    eq ClassDecl.getDGNodeKind() = JastaddGraphBuilder.classKind();
+    eq InterfaceDecl.getDGNodeKind() = JastaddGraphBuilder.interfaceKind();
+    eq WildcardType.getDGNodeKind() = JastaddGraphBuilder.wildcardType();
+    eq PrimitiveType.getDGNodeKind() = JastaddGraphBuilder.primitive();
+	eq VoidType.getDGNodeKind() = JastaddGraphBuilder.primitive();
+    eq NullType.getDGNodeKind() = JastaddGraphBuilder.primitive();
+    eq ParameterDeclaration.getDGNodeKind() = JastaddGraphBuilder.parameter();
 
     eq FieldDeclaration.getDGNodeKind() {
         if(this.isStatic())
-            return JavaNodeKind.staticField();
+            return JastaddGraphBuilder.staticField();
         else
-            return JavaNodeKind.field();
+            return JastaddGraphBuilder.field();
 
     }
 
     eq MethodDecl.getDGNodeKind(){
     	if(this.isAbstract())
-	        return JavaNodeKind.abstractMethod();
+	        return JastaddGraphBuilder.abstractMethod();
 	    else if (this.isStatic())
-            return JavaNodeKind.staticMethod();
+            return JastaddGraphBuilder.staticMethod();
         else
-	        return JavaNodeKind.method();
+	        return JastaddGraphBuilder.method();
     }
 
-    eq ConstructorDecl.getDGNodeKind() = JavaNodeKind.constructor();
+    eq ConstructorDecl.getDGNodeKind() = JastaddGraphBuilder.constructor();
 
 
 

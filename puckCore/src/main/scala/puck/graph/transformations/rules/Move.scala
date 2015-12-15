@@ -49,19 +49,19 @@ object Move {
 
   type TypeDeclNode = DGNode
   def usedBySiblingsViaSelf
-    ( uses : List[DGUses], g : DependencyGraph, h : TypeDeclNode ) : Boolean =
+    (uses : List[Uses], g : DependencyGraph, h : TypeDeclNode ) : Boolean =
     uses.exists(isUsesOfSiblingViaSelf(g, h))
 
-  type SiblingUsers = Set[DGUses]
-  type OtherUsers = Set[DGUses]
+  type SiblingUsers = Set[Uses]
+  type OtherUsers = Set[Uses]
   def partitionSiblingUsesAndOtherUses
-  ( uses : Set[DGUses], g : DependencyGraph, h : TypeDeclNode ) :(SiblingUsers, OtherUsers) =
+  (uses : Set[Uses], g : DependencyGraph, h : TypeDeclNode ) :(SiblingUsers, OtherUsers) =
     uses.partition(isUsesOfSiblingViaSelf(g, h))
 
   private def isUsesOfSiblingViaSelf
-  ( graph : DependencyGraph, containingTypeDecl : TypeDeclNode) : DGUses => Boolean = {
+  ( graph : DependencyGraph, containingTypeDecl : TypeDeclNode) : Uses => Boolean = {
 
-    val isSiblingUse: DGUses => Boolean =
+    val isSiblingUse: Uses => Boolean =
       u => graph.hostTypeDecl(u.user) == containingTypeDecl.id && u.user != u.used
 
     u =>
@@ -88,7 +88,7 @@ object Move {
   }
 
   private def isUsesOfOtherMovedNodeViaSelf
-  ( graph : DependencyGraph, movedNodes : List[NodeId]) : DGUses => Boolean = {
+  ( graph : DependencyGraph, movedNodes : List[NodeId]) : Uses => Boolean = {
     u =>
       movedNodes.contains(u.user) && {
         val tuses = graph.typeUsesOf(u)
@@ -96,7 +96,7 @@ object Move {
       }
   }
 
-  def usesBetween(g : DependencyGraph, sources :  Set[NodeId], targets : Set[NodeId]): Set[DGUses] =
+  def usesBetween(g : DependencyGraph, sources :  Set[NodeId], targets : Set[NodeId]): Set[Uses] =
     for{
       s <- sources
       t <- targets
@@ -105,10 +105,10 @@ object Move {
       g.getUsesEdge(s,t).get
     }
 
-  def usesViaThis(g : DependencyGraph)(tmu : DGUses) : Boolean =
+  def usesViaThis(g : DependencyGraph)(tmu : Uses) : Boolean =
     g.typeUsesOf(tmu).exists(tu => tu.source == tu.target)
 
-  def usesViaParamOrField(g : DependencyGraph)(tmu : DGUses) : Boolean =
+  def usesViaParamOrField(g : DependencyGraph)(tmu : Uses) : Boolean =
     g.typeUsesOf(tmu).exists(tu => tu.source != tu.target)
 
 
@@ -137,7 +137,7 @@ object Move {
 
 
 
-    val usesOfMovedViaThis : Set[DGUses] =
+    val usesOfMovedViaThis : Set[Uses] =
       usesBetween(g, siblings map (g.definitionOf(_)) flatten, movedDeclSet).filter(usesViaThis(g))
 
     val newTypeUse = Uses(oldContainer, newContainer)
@@ -177,7 +177,7 @@ object Move {
 
     }
 
-    val usesOfSiblingViaThis : Set[DGUses] =
+    val usesOfSiblingViaThis : Set[Uses] =
       usesBetween(g, movedDefSet, siblings).filter(usesViaThis(g))
 
 
@@ -206,7 +206,7 @@ object Move {
   ( g : DependencyGraph,
     typeMembersMovedId : List[NodeId],
     oldContainer : NodeId,
-    newContainer : NodeId) : LoggedTG = ???
+    newContainer : NodeId) : LoggedTG = LoggedError("TODO : Push down not implemented")
 
   def typeMember
   ( graph : DependencyGraph,
@@ -236,11 +236,11 @@ object Move {
   }
 
   private def adjustSelfUsesBR
-  ( g : DependencyGraph,
-    movedDecl : Set[NodeId],
-    movedDef : Set[NodeId],
-    oldSelfUse : DGUses,
-    newSelfUse : DGUses) = {
+  (g : DependencyGraph,
+   movedDecl : Set[NodeId],
+   movedDef : Set[NodeId],
+   oldSelfUse : Uses,
+   newSelfUse : Uses) = {
     val usesBetweenMovedDefsViaThis =
       usesBetween(g, movedDef, movedDecl).filter(usesViaThis(g))
 
@@ -335,11 +335,11 @@ object Move {
   }
 
   def addParamOfTypeAndSetTypeDependency
-  ( g: DependencyGraph,
-    declId : NodeId,
-    pType : NodeId,
-    oldTypeUse : DGUses,
-    tmUses : Set[DGUses]
+  (g: DependencyGraph,
+   declId : NodeId,
+   pType : NodeId,
+   oldTypeUse : Uses,
+   tmUses : Set[Uses]
     ) : LoggedTG  = {
     import g.nodeKindKnowledge.intro
     intro.parameter(g, pType, declId) map {
@@ -378,7 +378,7 @@ object Move {
 
     val defNodeSet = declNodeSet map g.definitionOf filter (_.nonEmpty) map (_.get)
 
-    val typeUses : Set[DGUses] =
+    val typeUses : Set[Uses] =
       g.usesFromUsedList(declNodeSet.toList)
         .filterNot(u => defNodeSet.contains(u.user))
         .flatMap(g.typeUsesOf).toSet
@@ -410,10 +410,10 @@ object Move {
 
 
   def createParam
-  ( g : DependencyGraph,
-    someOldTypeUse : DGUses,
-    newTypeUsed : NodeId,
-    tmUses : Set[DGUses]
+  (g : DependencyGraph,
+   someOldTypeUse : Uses,
+   newTypeUsed : NodeId,
+   tmUses : Set[Uses]
     ): LoggedTG ={
 
     val usesByUser = tmUses.groupBy(_.user)
@@ -435,12 +435,12 @@ object Move {
   }
 
   def createTypeMember
-  ( g : DependencyGraph,
-    oldTypeUse : DGUses,
-    newTypeUsed : NodeId,
-    tmContainer : NodeId,
-    tmUses : Set[DGUses],
-    kind : NodeKind
+  (g : DependencyGraph,
+   oldTypeUse : Uses,
+   newTypeUsed : NodeId,
+   tmContainer : NodeId,
+   tmUses : Set[Uses],
+   kind : NodeKind
     ): LoggedTG ={
     // assert forall user in tmUses, container(user) = tmContainer
     import g.nodeKindKnowledge.intro

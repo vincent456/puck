@@ -1,16 +1,15 @@
 package puck.graph
-
 import puck.graph.DGEdge._
 
 
+sealed abstract class EKind {
+  def apply(pair : (NodeId, NodeId)) : DGEdge = this.apply(pair._1, pair._2)
+  def apply(source : NodeId, target: NodeId): DGEdge
+}
+
 object DGEdge{
 
-  sealed abstract class EKind {
-    def apply(pair : (NodeId, NodeId)) : DGEdge =
-      this.apply(pair._1, pair._2)
 
-    def apply(source : NodeId, target: NodeId): DGEdge
-  }
 
   implicit def toPair(e : DGEdge) : NodeIdP = (e.user, e.used)
 
@@ -33,9 +32,12 @@ object DGEdge{
 
 }
 
+case object AbstractEdgeKind extends EKind {
+  def apply(source: NodeId, target: NodeId): DGEdge = new DGEdge(AbstractEdgeKind, source, target)
+  override def toString = "Edge"
+}
+
 case class DGEdge(kind : EKind, source : NodeId, target: NodeId) {
-
-
 
   def copy(source : NodeId = source, target : NodeId = target) : DGEdge =
     new DGEdge(kind, source, target)
@@ -82,7 +84,7 @@ case class DGEdge(kind : EKind, source : NodeId, target: NodeId) {
 
 
 
-class DGUses(source : NodeId, target: NodeId, val accessKind : Option[UsesAccessKind])
+class Uses(source : NodeId, target: NodeId, val accessKind : Option[UsesAccessKind])
   extends DGEdge(Uses, source, target){
 
   override def toString : String =
@@ -92,23 +94,23 @@ class DGUses(source : NodeId, target: NodeId, val accessKind : Option[UsesAccess
         ac + "-" + kind + "( " + source + ", " + target + ")"
     }
 
-  override def copy(source : NodeId = source, target : NodeId = target) : DGUses =
-    new DGUses(source, target, accessKind)
+  override def copy(source : NodeId = source, target : NodeId = target) : Uses =
+    new Uses(source, target, accessKind)
 
-  def withAccessKind(accessKind: Option[UsesAccessKind]) : DGUses =
-    new DGUses(source, target, accessKind)
+  def withAccessKind(accessKind: Option[UsesAccessKind]) : Uses =
+    new Uses(source, target, accessKind)
 
   def isDominant(graph : DependencyGraph) : Boolean = graph.typeMemberUsesOf(this).nonEmpty
   def isDominated(graph : DependencyGraph) : Boolean = graph.typeUsesOf(this).nonEmpty
 }
 
 case object Uses extends EKind {
-  override def apply(source: NodeId, target: NodeId) : DGUses = apply(source, target, None)
-  def apply(source: NodeId, target: NodeId, accessKind : Option[UsesAccessKind]): DGUses = new DGUses(source, target, accessKind)
+  override def apply(source: NodeId, target: NodeId) : Uses = apply(source, target, None)
+  def apply(source: NodeId, target: NodeId, accessKind : Option[UsesAccessKind]): Uses = new Uses(source, target, accessKind)
 
   def unapply(e: DGEdge) : Option[(NodeId, NodeId, Option[UsesAccessKind])] =
     e match {
-      case u : DGUses => Some((e.source, e.target, u.accessKind))
+      case u : Uses => Some((e.source, e.target, u.accessKind))
       case _ => None
     }
 }

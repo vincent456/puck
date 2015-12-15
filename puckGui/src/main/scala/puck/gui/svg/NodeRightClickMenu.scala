@@ -124,7 +124,7 @@ class ConcreteNodeRightClickMenu
 
   private def addEdgeSelectedOption(edge : NodeIdP) : Unit = {
     val (source, target) = edge
-    def addRedirectAction(uses : DGUses) =
+    def addRedirectAction(uses : Uses) =
       graph.abstractions(target).foreach {
         abs =>
           if (abs.nodes.contains(node.id))

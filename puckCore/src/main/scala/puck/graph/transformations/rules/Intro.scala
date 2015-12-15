@@ -129,7 +129,7 @@ abstract class Intro {
    typeNode : NodeId,
    tmContainer : NodeId,
    kind : NodeKind
-    ) : LoggedTry[(DGUses, DependencyGraph)] = {
+    ) : LoggedTry[(Uses, DependencyGraph)] = {
     val g = graph.comment(s"Intro.typeMember(g, ${(graph, typeNode).shows}, ${(graph,tmContainer).shows}, $kind)")
 
     val ltCid : LoggedTry[(NodeId, DependencyGraph)] =

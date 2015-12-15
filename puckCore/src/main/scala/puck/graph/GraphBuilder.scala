@@ -52,7 +52,7 @@ trait GraphBuilder {
   }
 
    def addTypeRelationship(typeUse : DGEdge,
-                           typeMemberUse : DGUses): Unit ={
+                           typeMemberUse : Uses): Unit ={
      g = g.addUsesDependency(typeUse, typeMemberUse)
   }
 

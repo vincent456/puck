@@ -29,7 +29,7 @@ object Redirection {
     else g1
   }
 
-  def cl(g: DependencyGraph, u : DGUses) : Set[(DGUses, DGUses)] = {
+  def cl(g: DependencyGraph, u : Uses) : Set[(Uses, Uses)] = {
     val cl0 =  for {
       tu <- g.typeUsesOf(u) + u
       tmu <- g.typeMemberUsesOf(tu)
@@ -59,9 +59,9 @@ object Redirection {
   }
 
  def redirect
-  ( g : DependencyGraph,
-    oldUse : DGUses,
-    newUsed : Abstraction) : LoggedTry[(DependencyGraph, List[DGUses])] =
+  (g : DependencyGraph,
+   oldUse : Uses,
+   newUsed : Abstraction) : LoggedTry[(DependencyGraph, List[Uses])] =
     try LoggedSuccess {
       (newUsed, oldUse.accessKind) match {
         case (AccessAbstraction(absId, pol), None) =>
@@ -80,9 +80,9 @@ object Redirection {
 
 
   def redirectUsesAndPropagate
-    ( graph : DependencyGraph,
-      oldUse : DGUses,
-      newUsed : Abstraction
+    (graph : DependencyGraph,
+     oldUse : Uses,
+     newUsed : Abstraction
       ): LoggedTG = {
 
     val g = graph.comment(s"Redirection.redirectUsesAndPropagate(g, ${(graph,oldUse).shows}, ${(graph, newUsed).shows})")
@@ -111,9 +111,9 @@ object Redirection {
   }
 
   def redirectTypeConstructorToInstanceValueDecl
-  ( g : DependencyGraph,
-    oldUse : DGUses,
-    newUsed : Abstraction )
+  (g : DependencyGraph,
+   oldUse : Uses,
+   newUsed : Abstraction )
   ( createVarStrategy: CreateVarStrategy = CreateTypeMember(g.nodeKindKnowledge.defaultKindForNewReceiver)
     ) : LoggedTG = {
     newUsed.nodes match {
@@ -153,9 +153,9 @@ object Redirection {
   }
 
   def redirectInstanceUsesAndPropagate
-    ( g : DependencyGraph,
-      oldUse : DGUses,
-      newUsed : Abstraction
+    (g : DependencyGraph,
+     oldUse : Uses,
+     newUsed : Abstraction
       ) : LoggedTG = {
     val log = s"redirectUsesAndPropagate(g, oldUse = ${(g, oldUse).shows},  " +
               s"newUsed = ${(g, newUsed).shows})\n"
