@@ -1,15 +1,10 @@
 package puck.gui.svg
 
+import puck.actions._
 import puck.graph._
 import puck.graph.transformations.rules.Redirection
-import puck.gui.svg.actions.AddIsaAction
-import puck.gui.svg.actions.MergeAction
-import puck.gui.svg.actions.MoveAction
-import puck.gui.svg.actions.RedirectAction
-import puck.gui.svg.actions.RemoveNodeAction
 import puck.gui.svg.actions._
 import javax.swing._
-import java.awt.event.ActionEvent
 
 object NodeRightClickMenu{
 
@@ -18,7 +13,6 @@ object NodeRightClickMenu{
       case n : ConcreteNode => new ConcreteNodeRightClickMenu(controller, n)
       case n : VirtualNode => new VirtualNodeRightClickMenu(controller, n)
     }
-
 
 }
 
@@ -32,7 +26,7 @@ class ConcreteNodeRightClickMenu
 
   def init() : Unit = {
 
-    this.add(new RenameNodeAction(node, controller))
+    this.add(new RenameNodeAction(controller, node))
     this.addSeparator()
 
     val item = new JMenuItem(s"Abstract ${node.name} as")
@@ -48,11 +42,12 @@ class ConcreteNodeRightClickMenu
     }
 
     if(node.kind.isWritable){
-      this.add(new CreateInitalizerAction(graph.getConcreteNode(graph.hostTypeDecl(node.id)), controller))
+      this.add(new CreateInitalizerAction(controller,
+        graph.getConcreteNode(graph.hostTypeDecl(node.id))))
     }
 
     this.addSeparator()
-    this.add(new RemoveNodeAction(node, controller))
+    this.add(new RemoveNodeAction(controller, node))
 
     controller.selectedNodes match {
       case Nil => ()
@@ -79,7 +74,7 @@ class ConcreteNodeRightClickMenu
 
 
   private def addAddIsaOption(sub: ConcreteNode, sup: ConcreteNode) : Unit = {
-    this.add(new AddIsaAction(sub, sup, controller));()
+    this.add(new AddIsaAction(controller, sub, sup));()
   }
 
 
@@ -95,7 +90,7 @@ class ConcreteNodeRightClickMenu
     else {
       val selected: ConcreteNode = graph.getConcreteNode(ids.head)
       if (graph.canContain(node, selected)) {
-        this.add(new MoveAction(node, ids, controller))
+        this.add(new MoveAction(controller, node, ids))
         ()
       }
     }
@@ -105,7 +100,7 @@ class ConcreteNodeRightClickMenu
   private def addOtherNodeSelectedOption(id : NodeId) : Unit = {
     val selected: ConcreteNode = graph.getConcreteNode(id)
     if (graph.canContain(node, selected)) {
-      this.add(new MoveAction(node, List(id), controller))
+      this.add(new MoveAction(controller, node, List(id)))
     }
 
 //    val m: MergeMatcher = controller.transfoRules.
@@ -113,7 +108,7 @@ class ConcreteNodeRightClickMenu
 //
 //    if (m.canBeMergedInto(node, graph))
       if(selected.kind.kindType == node.kind.kindType)
-      this.add(new MergeAction(selected, node, controller))
+      this.add(new MergeAction(controller, selected, node))
 
 
     if(selected.id != node.id) {
@@ -128,7 +123,7 @@ class ConcreteNodeRightClickMenu
       graph.abstractions(target).foreach {
         abs =>
           if (abs.nodes.contains(node.id))
-            this.add(new RedirectAction(node, uses, abs, controller))
+            this.add(new RedirectAction(controller, node, uses, abs))
       }
 
     def addChangeInitUsesAction(ctorDef : NodeId) =

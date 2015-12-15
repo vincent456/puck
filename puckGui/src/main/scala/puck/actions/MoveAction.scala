@@ -1,18 +1,16 @@
-package puck.gui.svg.actions
+package puck.actions
 
 import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
 
-import puck.PuckError
 import puck.graph._
-import puck.graph.transformations.rules.{CreateTypeMember, CreateParameter, CreateVarStrategy}
+import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, CreateVarStrategy}
 import puck.gui.svg.SVGController
 import puck.util.LoggedEither._
 
-
 import scala.swing.Dialog
 import scala.swing.Swing.EmptyIcon
-import scalaz._, Scalaz._
+import scalaz.Scalaz._
 
 object MoveAction {
   def getChoice(k : Seq[NodeKind]): Option[CreateVarStrategy] = {
@@ -36,13 +34,14 @@ object MoveAction {
 }
 
 class MoveAction
-( newHost : DGNode,
-  moved : List[NodeId],
-  controller : SVGController)
+( controller : UtilGraphStack,
+  newHost : DGNode,
+  moved : List[NodeId])
 extends AbstractAction(MoveAction.label(controller.graph, moved, newHost)){
 
-  import controller.{graph, graphUtils}, graphUtils.{transformationRules => TR}
+  import controller.{graph, graphUtils}
   import graphUtils.nodeKindKnowledge.kindOfKindType
+  import graphUtils.{transformationRules => TR}
 
   def doMove : LoggedTG = {
     val g = graph.mileStone
@@ -55,18 +54,18 @@ extends AbstractAction(MoveAction.label(controller.graph, moved, newHost)){
         }
 
       case InstanceValueDecl =>
-        controller.console.
-          appendText("/!\\/!\\ Method overriding unchecked (TODO !!!) /!\\/!\\")
+        controller.logger.
+          writeln("/!\\/!\\ Method overriding unchecked (TODO !!!) /!\\/!\\")
 
         val oldContainer = g.container_!(moved.head)
 
         val isPullUp = g.isa_*(oldContainer, newHost.id)
         val isPushDown = g.isa_*(newHost.id, oldContainer)
 
-        controller.console.
-          appendText("isPullUp = " + isPullUp)
-        controller.console.
-          appendText("isPushDown = " + isPushDown)
+        controller.logger.
+          writeln("isPullUp = " + isPullUp)
+        controller.logger.
+          writeln("isPushDown = " + isPushDown)
 
         lazy val needNewReceiver = moved.exists {
           nid =>

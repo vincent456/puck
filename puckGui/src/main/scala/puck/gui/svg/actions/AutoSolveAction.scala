@@ -68,7 +68,7 @@ class AutoSolveAction
     engine.explore()
 
     try {
-      printErrOrPushGraph(controller, "Auto solve action : ") {
+      puck.actions.printErrOrPushGraph(controller, "Auto solve action : ") {
         dialog(engine) match {
           case Some(g) => g.toLoggedTry
           case None => LoggedError("cancelled")

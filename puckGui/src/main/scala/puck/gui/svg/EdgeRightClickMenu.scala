@@ -2,6 +2,8 @@ package puck.gui.svg
 
 import javax.swing.JPopupMenu
 
+import puck.actions.RemoveEdgeAction
+import puck.gui.svg.actions.ShowTypeRelationshipGraphicAction
 import puck.graph.{NodeId, Isa, Uses, NodeIdP}
 import puck.gui.svg.actions._
 
@@ -24,7 +26,7 @@ class EdgeRightClickMenu
 
   if(graph.isa(source, target)) {
     isIsaEdge = true
-    add(new RemoveEdgeAction(Isa(source, target), controller))
+    add(new RemoveEdgeAction(controller, Isa(source, target)))
   }
 
   def addShowBRActions(src : NodeId, tgt : NodeId) : Unit =

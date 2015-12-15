@@ -1,28 +1,36 @@
 package puck.gui.svg
+package actions
 
-import javax.swing.JOptionPane
+import java.awt.event.ActionEvent
+import javax.swing.AbstractAction
 
-import puck.graph.{DependencyGraph, LoggedTry}
+import puck.graph.Uses
 
-import scalaz.{\/-, -\/}
 
-package object actions {
 
-  def showInputDialog(msg : String) : Option[String] = {
-    val childName = JOptionPane.showInputDialog(msg)
-    if (childName == null || childName.isEmpty) None
-    else Some(childName)
+  class ShowTypeRelationshipTextualAction
+  (edge : Option[Uses],
+   controller : SVGController)
+    extends AbstractAction(s"Show type bindings (text)")
+  {
+    import controller.graph
+    def actionPerformed(e: ActionEvent) : Unit =
+      edge.foreach {
+        uses =>
+          controller.printUseBindings(uses)
+          graph.definitionOf(uses.user).foreach{
+            userDef =>
+              controller.printUseBindings(graph.getUsesEdge(userDef, uses.used).get)
+          }
+      }
+
   }
 
-  def printErrOrPushGraph
-  ( controller: SVGController, msg : String )
-  ( lgt : LoggedTry[DependencyGraph]) : Unit = {
-    controller.console.appendText(lgt.log)
-    lgt.value match {
-      case -\/(err) =>
-        controller.console.appendText(s"$msg\n${err.getMessage}\nLog : ${lgt.log}")
-      case \/-(g) => controller.pushGraph(g)
-    }
+  class ShowTypeRelationshipGraphicAction
+  (edge : Option[Uses],
+   controller : SVGController)
+    extends AbstractAction(s"Show type bindings (graphic)")
+  {
+    def actionPerformed(e: ActionEvent) : Unit =
+      controller.setSelectedEdgeForTypePrinting(edge)
   }
-
-}

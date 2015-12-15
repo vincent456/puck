@@ -7,6 +7,8 @@ import org.apache.batik.anim.dom.SAXSVGDocumentFactory
 import org.apache.batik.util.XMLResourceDescriptor
 import org.w3c.dom.Element
 import org.w3c.dom.svg.{SVGGElement, SVGDocument}
+import puck.actions.{AbstractionAction, UtilGraphStack, AddNodeAction}
+import puck.{StackListener, GraphStack}
 import puck.graph._
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.ConstraintsParser
@@ -14,18 +16,13 @@ import puck.graph.io._
 import puck.graph.transformations.MileStone
 import puck.gui.TextAreaLogger
 import puck.gui.explorer.NodeInfosPanel
-import puck.gui.svg.actions.{AddNodeAction, AbstractionAction}
 import puck.util.PuckLog
 import sbt.IO
 
-import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 import  VisibilitySet._
-trait StackListener{
-  def update(svgController: SVGController) : Unit
-}
 
 abstract class SVGController
 ( val graphUtils : GraphUtils,
@@ -37,35 +34,31 @@ abstract class SVGController
   private var printVirtualEdges : Boolean = true,
   private var printConcreteUsesPerVirtualEdges : Boolean = true,
   private var printRedOnly : Boolean = true,
-  private var selectedEdgeForTypePrinting : Option[Uses] = None) {
+  private var selectedEdgeForTypePrinting : Option[Uses] = None)
+  extends UtilGraphStack with StackListener {
+
+  def update(graphStack: GraphStack) : Unit  =
+    displayGraph(graphStack.graph)
+
 
   implicit val executor : ExecutionContext
 
 
   lazy val console = frame.console
-  implicit val consoleLogger = new TextAreaLogger(console.textArea, _ => true )
+  implicit val logger = new TextAreaLogger(console.textArea, _ => true )
+
+  val initialGraph : DependencyGraph = dg2ast.initialGraph
+
 
   def nodesByName : Map[String, NodeId] =
       dg2ast.nodesByName
-
-
-  private val undoStack = mutable.Stack[DependencyGraph]()
-  private val redoStack = mutable.Stack[DependencyGraph]()
-
-  private val stackListeners = mutable.ArrayBuffer[StackListener]()
-
-  def registerAsStackListeners(l : StackListener) =
-    stackListeners.append(l)
-
-  def updateStackListeners() : Unit =
-    stackListeners.foreach(_.update(this))
 
 
   def parseConstraints(decouple : File) : Unit = try {
     val cm = ConstraintsParser(dg2ast.nodesByName, new FileReader(decouple))
     pushGraph(graph.newGraph(constraints = cm))
   } catch {
-    case e : Exception => consoleLogger.writeln(e.getMessage)
+    case e : Exception => logger.writeln(e.getMessage)
   }
 
 
@@ -254,48 +247,7 @@ abstract class SVGController
     }
 
 
-  def canUndo = undoStack.nonEmpty
 
-  def undoAll() = {
-
-    while(undoStack.nonEmpty)
-      redoStack.push(undoStack.pop())
-
-    displayGraph(graph)
-    updateStackListeners()
-  }
-
-  def undo() = {
-      val comments = graph.recording.commentsSinceLastMileStone
-      redoStack.push(undoStack.pop())
-      displayGraph(graph)
-      ("Undo " +: comments).foreach(consoleLogger.writeln(_))
-      updateStackListeners()
-  }
-  def canRedo = redoStack.nonEmpty
-
-  def redo()={
-    undoStack.push(redoStack.pop())
-    displayGraph(graph)
-    val comments = graph.recording.commentsSinceLastMileStone
-    ("Redo " +: comments).foreach(consoleLogger.writeln(_))
-    updateStackListeners()
-  }
-
-  def pushGraph(graph: DependencyGraph, display: Boolean = true) = {
-    undoStack.push(graph)
-    redoStack.clear()
-    if(display)
-      displayGraph(graph)
-
-    //console.displayWeight(Metrics.weight(graph, graph.nodeKindKnowledge.lightKind))
-
-    updateStackListeners()
-  }
-
-  def graph =
-    if(undoStack.nonEmpty) undoStack.head
-    else dg2ast.initialGraph
 
   def saveRecordOnFile(file : File) : Unit = {
     Recording.write(file.getAbsolutePath, nodesByName, graph)
@@ -326,16 +278,16 @@ abstract class SVGController
     catch {
       case Recording.LoadError(msg, m) =>
         implicit val verbosity = (PuckLog.NoSpecialContext, PuckLog.Error)
-        consoleLogger writeln ("Record loading error " + msg)
-        consoleLogger writeln ("cannot bind loaded map " + m.toList.sortBy(_._1).mkString("\n"))
-        consoleLogger writeln ("with " + nodesByName.toList.sortBy(_._1).mkString("\n"))
+        logger writeln ("Record loading error " + msg)
+        logger writeln ("cannot bind loaded map " + m.toList.sortBy(_._1).mkString("\n"))
+        logger writeln ("with " + nodesByName.toList.sortBy(_._1).mkString("\n"))
     }
 
   }
 
   import ShowDG._
   def printRecording() : Unit =
-    graph.recording.reverseIterator.foreach(r => consoleLogger writeln (graph, r).shows )
+    graph.recording.reverseIterator.foreach(r => logger writeln (graph, r).shows )
 
   def printCode(nodeId: NodeId): Unit = {
     console.appendText("Code : ")
@@ -343,7 +295,7 @@ abstract class SVGController
   }
 
   def printAbstractions() : Unit =
-    consoleLogger writeln graph.abstractionsMap.content.mkString("\n\t")
+    logger writeln graph.abstractionsMap.content.mkString("\n\t")
 
   def printAbstractions(nodeId : NodeId) : Unit = {
     val absSet = graph.abstractions(nodeId)
@@ -384,7 +336,7 @@ abstract class SVGController
 
   def abstractionChoices(n: ConcreteNode): Seq[JMenuItem] =
     n.kind.abstractionChoices.map { case (k, p) =>
-      new JMenuItem(new AbstractionAction(n, p, k, this))
+      new JMenuItem(new AbstractionAction(this, n, p, k))
     }
 
   def abstractionChoices(id: NodeId): Seq[JMenuItem] =
@@ -395,7 +347,7 @@ abstract class SVGController
 
   def childChoices(n : ConcreteNode) : Seq[JMenuItem] = {
     val ks = graph.nodeKinds.filter(n.kind.canContain)
-    ks map {k => new JMenuItem(new AddNodeAction(n, this, k))}
+    ks map {k => new JMenuItem(new AddNodeAction(this, n, k))}
   }
 
   def workingDirectory : File

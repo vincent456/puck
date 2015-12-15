@@ -4,6 +4,7 @@ import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
 
 import puck.PuckError
+import puck.actions.MoveAction
 import puck.graph.constraints.DecisionMaker.ChooseNodeKArg
 import puck.graph._
 import puck.graph.constraints.{AbstractionPolicy, Solver, DecisionMaker}
@@ -66,7 +67,7 @@ class ManualSolveAction
 
   override def actionPerformed(e: ActionEvent): Unit =
     solver.solveViolationsToward(controller.graph.mileStone.set(""), violationTarget){
-      printErrOrPushGraph(controller, "Solve Action Error")
+      puck.actions.printErrOrPushGraph(controller, "Solve Action Error")
     }
 
   override def violationTarget

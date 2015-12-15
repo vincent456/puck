@@ -1,56 +1,30 @@
-package puck.gui.svg.actions
+package puck.actions
 
 import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
 
 import puck.graph._
-import puck.gui.svg.SVGController
 
 class AddIsaAction
-( sub : ConcreteNode,
-  sup : ConcreteNode,
-  controller : SVGController)
+( controller : UtilGraphStack,
+  sub : ConcreteNode,
+  sup : ConcreteNode)
 extends AbstractAction(s"Add ${sub.name} isa ${sup.name}") {
 
-  import controller.{graph, graphUtils}, graphUtils.{transformationRules => TR}
+  import controller.{graph, graphUtils}
+  import graphUtils.{transformationRules => TR}
 
   def actionPerformed(e: ActionEvent) : Unit =
     printErrOrPushGraph(controller, "Make SuperType Action failure") {
       TR.makeSuperType(graph.mileStone, sub.id, sup.id)()
     }
-
 }
 
-class ShowTypeRelationshipGraphicAction
-(edge : Option[Uses],
- controller : SVGController)
-  extends AbstractAction(s"Show type bindings (graphic)")
-{
-  def actionPerformed(e: ActionEvent) : Unit =
-    controller.setSelectedEdgeForTypePrinting(edge)
-}
 
-class ShowTypeRelationshipTextualAction
-(edge : Option[Uses],
- controller : SVGController)
-  extends AbstractAction(s"Show type bindings (text)")
-{
-  import controller.graph
-  def actionPerformed(e: ActionEvent) : Unit =
-    edge.foreach {
-      uses =>
-      controller.printUseBindings(uses)
-      graph.definitionOf(uses.user).foreach{
-        userDef =>
-          controller.printUseBindings(graph.getUsesEdge(userDef, uses.used).get)
-      }
-  }
-
-}
 
 class RemoveEdgeAction
-( edge : DGEdge,
-  controller : SVGController)
+( controller : UtilGraphStack,
+  edge : DGEdge)
   extends AbstractAction(s"Delete $edge") {
 
   def actionPerformed(e: ActionEvent) : Unit =
@@ -63,11 +37,12 @@ class RemoveEdgeAction
 }
 
 class RemoveNodeAction
-( node : ConcreteNode,
-  controller : SVGController)
+( controller : UtilGraphStack,
+  node : ConcreteNode)
 extends AbstractAction(s"Delete node and children") {
 
-  import controller.{graph, graphUtils}, graphUtils.{transformationRules => TR}
+  import controller.{graph, graphUtils}
+  import graphUtils.{transformationRules => TR}
 
   def actionPerformed(e: ActionEvent) : Unit =
     printErrOrPushGraph(controller, "Remove Node Action failure"){
@@ -77,11 +52,12 @@ extends AbstractAction(s"Delete node and children") {
 
 
 class RenameNodeAction
-( node : ConcreteNode,
-  controller : SVGController )
+( controller : UtilGraphStack,
+  node : ConcreteNode )
   extends AbstractAction("Rename") {
 
-  import controller.{graph, graphUtils}, graphUtils.{transformationRules => TR}
+  import controller.{graph, graphUtils}
+  import graphUtils.{transformationRules => TR}
 
   override def actionPerformed(e: ActionEvent): Unit = {
     showInputDialog("New name:").foreach {
@@ -94,11 +70,12 @@ class RenameNodeAction
 }
 
 class CreateInitalizerAction
-( node : ConcreteNode,
-  controller : SVGController)
+( controller : UtilGraphStack,
+  node : ConcreteNode)
   extends AbstractAction(s"Create initializer of $node") {
 
-  import controller.{graph, graphUtils}, graphUtils.{transformationRules => TR}
+  import controller.{graph, graphUtils}
+  import graphUtils.{transformationRules => TR}
 
   def actionPerformed(e: ActionEvent) : Unit =
     printErrOrPushGraph(controller, "Remove Node Action failure"){

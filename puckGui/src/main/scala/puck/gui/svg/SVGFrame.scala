@@ -4,11 +4,10 @@ import java.awt.{Container, Dimension, BorderLayout}
 import java.io.InputStream
 import javax.swing._
 
-import org.w3c.dom.events.{Event, EventListener}
-import org.w3c.dom.svg.SVGDocument
+import puck.{StackListener, GraphStack}
+import puck.actions.AddNodeAction
 import puck.graph.{NameSpace, GraphUtils}
 import puck.graph.io.{DG2AST, FilesHandler, PrintingOptions}
-import puck.gui.svg.actions.AddNodeAction
 import puck.gui.PuckConsolePanel
 
 import scala.swing.Label
@@ -187,7 +186,7 @@ class SVGFrameMenu
     assert(kindOfKindType(NameSpace).size == 1)
 
     hbox add new JButton(
-      new AddNodeAction(controller.graph.root, controller, kindOfKindType(NameSpace).head))
+      new AddNodeAction(controller, controller.graph.root, kindOfKindType(NameSpace).head))
 
 
     hbox add jbutton("Show top level packages") {
@@ -218,7 +217,7 @@ class SVGFrame
 
 class SVGPanel( builder : SVGController.Builder) extends JPanel with StackListener {
 
-  def update(svgController: SVGController) : Unit = {
+  def update(svgController: GraphStack) : Unit = {
     menu.undoAllButton.setEnabled(svgController.canUndo)
     menu.undoButton.setEnabled(svgController.canUndo)
     menu.redoButton.setEnabled(svgController.canRedo)

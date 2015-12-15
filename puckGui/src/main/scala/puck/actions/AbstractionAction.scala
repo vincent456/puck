@@ -1,17 +1,15 @@
-package puck.gui.svg.actions
+package puck.actions
 
 import java.awt.event.ActionEvent
 import javax.swing._
 
-import puck.PuckError
-import puck.graph.constraints.AbstractionPolicy
+import puck.graph.ShowDG._
 import puck.graph._
+import puck.graph.constraints.AbstractionPolicy
 import puck.gui.svg.SVGController
 
 import scala.swing.Dialog
-import scala.swing.Dialog.{Result, Message, Options}
-import scalaz.-\/
-import ShowDG._
+import scala.swing.Dialog.{Message, Options, Result}
 
 object NodeCheckBox {
   def apply(graph : DependencyGraph,
@@ -27,14 +25,15 @@ object NodeCheckBox {
 class NodeCheckBox(val node : ConcreteNode, name : String, selected : Boolean)
   extends JCheckBox(name, selected)
 
-class AbstractionAction(
+class AbstractionAction
+( controller : UtilGraphStack,
   node : ConcreteNode,
   policy : AbstractionPolicy,
-  kind : NodeKind,
-  controller : SVGController)
+  kind : NodeKind)
   extends AbstractAction(s"$kind ($policy)"){
 
-     import controller.{graph, graphUtils}, graphUtils.{transformationRules => TR}
+     import controller.{graph, graphUtils}
+     import graphUtils.{transformationRules => TR}
 
      def getHost(absKind : NodeKind) : NodeId = {
        def aux(id : NodeId) : Option[NodeId] =

@@ -1,19 +1,18 @@
-package puck.gui.svg.actions
+package puck.actions
 
 import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
 
+import puck.graph.ShowDG._
 import puck.graph._
 import puck.graph.transformations.rules.Redirection
 import puck.gui.svg.SVGController
 
-import ShowDG._
-
 case class RedirectAction
-(newTarget : ConcreteNode,
- edge : Uses,
- abs : Abstraction,
- controller: SVGController)
+( controller : UtilGraphStack,
+  newTarget : ConcreteNode,
+  edge : Uses,
+  abs : Abstraction)
   extends AbstractAction(s"Use $abs instead of ${(controller.graph, edge.target).shows}"){
 
   //TODO check keepOldUse and propagate redirection value

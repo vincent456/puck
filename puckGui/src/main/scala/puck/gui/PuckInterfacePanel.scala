@@ -146,11 +146,6 @@ class PuckInterfacePanel
 
     addDelayedComponent(loadConstraintsButton)
 
-    /*val printPl = makeButton("Print prolog",
-      "Print a prolog version of the graph"){() => filesHandler.makeProlog()}
-
-    addDelayedComponent(printPl)
-*/
     val showConstraints = makeButton("Show constraints",
       "Show the constraints the graph has to satisfy"){
       () => publish(ConstraintDisplayRequest(control.dg2AST.initialGraph))
