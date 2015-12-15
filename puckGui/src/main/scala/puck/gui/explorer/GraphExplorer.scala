@@ -6,14 +6,12 @@ import javax.swing.tree.TreePath
 
 import puck.graph._
 import puck.graph.io.{Visible, Visibility, VisibilitySet}
+import puck.gui.{SetTopLevelVisible, SetVisibleFromKind, PuckTreeNodeClicked, DGUpdate}
 
-import scala.swing.event.Event
+
 import scala.swing.{Component, Publisher, ScrollPane}
 import ShowDG._
-case class PuckTreeNodeClicked(graph : DependencyGraph, node : NodeId) extends Event
-case class AccessGraphModified(graph : DependencyGraph) extends Event
-case class SetVisibleFromKind(ks : Seq[NodeKind]) extends Event
-case object SetTopLevelVisible extends Event
+
 
 import VisibilitySet._
 class GraphExplorer
@@ -48,7 +46,7 @@ class GraphExplorer
   var graph : DependencyGraph = _
 
   reactions += {
-    case AccessGraphModified(g) =>
+    case DGUpdate(g) =>
       graph = g
       hiddens0 = VisibilitySet.allVisible(graph)
       root = new PuckTreeNode(graph.rootId, this, "<>")

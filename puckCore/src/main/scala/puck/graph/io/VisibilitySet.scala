@@ -22,7 +22,7 @@ object VisibilitySet{
 
 
   def allHidden(graph : DependencyGraph) : T =
-    Set[NodeId]().setVisibility(graph.nodesId, Visible)
+    Set[NodeId]().setVisibility(graph.nodesId, Hidden)
 
 
   def violationsOnly(graph : DependencyGraph) : T =

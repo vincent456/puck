@@ -5,7 +5,7 @@ import java.io.File
 
 import puck.graph._
 import puck.graph.io.{VisibilitySet, FilesHandler}
-import puck.gui.explorer.{SetVisibleFromKind, NodeInfosPanel, PuckTreeNodeClicked, GraphExplorer}
+import puck.gui.explorer.{NodeInfosPanel, GraphExplorer}
 import puck.gui.search.ResultPanel
 import puck.util.{PuckLogger, PuckLog}
 
@@ -113,7 +113,7 @@ class PuckInterfacePanel
         val f: File = fc.selectedFile
         if( f != null && !(f == filesHandler.srcDirectory.!)) {
           filesHandler.setWorkingDirectory(f)
-          publish(LoadCodeRequest())
+          publish(LoadCodeRequest)
         }
         logger.writeln("Application directory : ")
         logger.writeln(filesHandler.srcDirectory.toString)
@@ -128,13 +128,13 @@ class PuckInterfacePanel
 
     contents += makeButton("(Re)load code & constraints",
       "Load the selected source code and build the access graph"){
-      () => publish(LoadCodeRequest())
+      () => publish(LoadCodeRequest)
     }
     contents += progressBar
 
     val loadConstraintsButton = makeButton("(Re)load constraints",
       "Decorate the graph with the constraints of the selected decouple file"){
-      () => publish(LoadConstraintRequest())
+      () => publish(LoadConstraintRequest)
     }
 
     def addDelayedComponent(c : Component) : Unit = {
@@ -171,7 +171,7 @@ class PuckInterfacePanel
         contents+= new Button() {
           tooltip = "Make only packages classes visible"
           action = new Action("Package+Class Visibility") {
-            def apply() : Unit = { control.publish(SetVisibleFromKind(kindOfKindType(TypeDecl))) }
+            def apply() : Unit = { control.publish(SetVisibleFromKind(kindOfKindType(NameSpace) ++ kindOfKindType(TypeDecl))) }
           }
         }
       }
@@ -208,6 +208,8 @@ class PuckInterfacePanel
     }
 
     addDelayedComponent(showViolations)
+
+
 
 
 //    val searchStrategies = new ComboBox(filesHandler.searchingStrategies){

@@ -93,7 +93,6 @@ object Debug {
 
   implicit val showEdgesMap : scalaz.Show[EdgeMap] = scalaz.Show.shows[EdgeMap] {
     case EdgeMap ( userMap, usedMap, accessKindMap,
-    parameterizedUsers, parameterizedUsed,
       contents, containers, superTypes, subTypes,
       typeMemberUses2typeUsesMap,
       typeUses2typeMemberUsesMap,
@@ -104,11 +103,6 @@ object Debug {
     builder.append(userMap.toString)
     builder.append("\nuser -> used\n\t")
     builder.append(usedMap.toString)
-
-    builder.append("\npar used -> par user\n\t")
-    builder.append(parameterizedUsers.toString)
-    builder.append("\npar user -> par used\n\t")
-    builder.append(parameterizedUsed.toString)
 
     builder.append("\ncontainer -> content\n\t")
     builder.append(contents.toString)

@@ -1,7 +1,8 @@
 package puck.gui
 
-import puck.graph.GraphUtils
+import puck.graph.{DependencyGraph, GraphUtils}
 import puck.graph.io.FilesHandler
+import puck.gui.explorer.ConstraintViolationExplorer
 
 import scala.swing._
 import java.awt.Dimension
@@ -29,9 +30,29 @@ class PuckMainPanel(filesHandler: FilesHandler,
   val consolePanel = new PuckConsolePanel()
   val logger = new TextAreaLogger(consolePanel.textArea, filesHandler.logPolicy)
 
-  leftComponent = new PuckInterfacePanel(logger, filesHandler, graphUtils)
-
-
+  val interface = new PuckInterfacePanel(logger, filesHandler, graphUtils)
+  leftComponent = interface
   rightComponent = consolePanel
+
+  def updateRightComponent(g : DependencyGraph) : Unit = {
+    val violations = g.violations()
+    if(violations.isEmpty) rightComponent = consolePanel
+    else {
+      rightComponent = new SplitPane(Orientation.Vertical){
+        resizeWeight = 0.5
+        leftComponent = new ConstraintViolationExplorer(g, violations)
+        rightComponent = consolePanel
+      }
+    }
+    this.repaint()
+  }
+
+  this listenTo interface.control
+  reactions += {
+    case ge : GraphEvent => updateRightComponent(ge.graph)
+  }
+
+
+
 }
 

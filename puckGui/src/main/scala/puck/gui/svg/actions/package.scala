@@ -19,7 +19,8 @@ package object actions {
   ( lgt : LoggedTry[DependencyGraph]) : Unit = {
     controller.console.appendText(lgt.log)
     lgt.value match {
-      case -\/(err) => controller.console.appendText(s"$msg\n${err.getMessage}\n")
+      case -\/(err) =>
+        controller.console.appendText(s"$msg\n${err.getMessage}\nLog : ${lgt.log}")
       case \/-(g) => controller.pushGraph(g)
     }
   }

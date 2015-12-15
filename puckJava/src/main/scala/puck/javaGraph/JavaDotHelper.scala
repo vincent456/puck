@@ -16,9 +16,9 @@ object JavaDotHelper extends DotHelper{
       case _ => ""
     }
 
-  override def splitDotClassContent(graph : DependencyGraph, n: NodeId) = {
+  override def splitByKind(graph : DependencyGraph, ns: Seq[NodeId]) = {
     val init : Seq[Seq[NodeId]] = Seq(Seq(), Seq(), Seq(), Seq(), Seq())
-    graph.content(n).foldLeft( init ){
+    ns.foldLeft( init ){
       case (Seq(fds, cts, mts, cls, tvs), n) =>
           val kind = graph.getConcreteNode(n).kind
           kind match {

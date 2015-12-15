@@ -1,7 +1,6 @@
 import puck.jastadd.JastaddGraphBuilder;
 import puck.graph.Uses;
 import puck.graph.Isa;
-import puck.graph.ParameterizedUses;
 import puck.graph.DGUses;
 import puck.graph.UsesAccessKind;
 import puck.LoadingListener;

@@ -345,20 +345,26 @@ class DependencyGraph
   def container(contentId : NodeId) : Option[NodeId] =
     edges.containers.get(contentId)
 
+  def containerOfKindType(kt: KindType, nid : NodeId) : Option[NodeId] =
+    getNode(nid).kind.kindType match {
+      case `kt` => Some(nid)
+      case _ => container(nid) flatMap (containerOfKindType(kt, _))
+    }
+
   def container_!(contentId : NodeId) : NodeId =
     container(contentId).get
 
-  def containerOfKindType(kt: KindType, nid : NodeId) : NodeId =
+  def containerOfKindType_!(kt: KindType, nid : NodeId) : NodeId =
     getNode(nid).kind.kindType match {
       case `kt` => nid
-      case _ => containerOfKindType(kt, container_!(nid))
+      case _ => containerOfKindType_!(kt, container_!(nid))
     }
 
   def hostNameSpace(nid : NodeId) : NodeId =
-    containerOfKindType(NameSpace, nid)
+    containerOfKindType_!(NameSpace, nid)
 
   def hostTypeDecl(nid : NodeId) : NodeId =
-    containerOfKindType(TypeDecl, nid)
+    containerOfKindType_!(TypeDecl, nid)
 
   def content(containerId: NodeId) : Set[NodeId] =
     edges.contents.getFlat(containerId) /*++
@@ -548,8 +554,6 @@ class DependencyGraph
         constraints.isWronglyContained(this, e.target)
       case Uses | Isa =>
         constraints.isViolation(this, e.user, e.used)
-
-      case ParameterizedUses => false
     }
   }
 
@@ -564,9 +568,6 @@ class DependencyGraph
   def subTree(root : NodeId, includeRoot : Boolean = true) : Seq[NodeId] = {
 
     def aux(acc : Seq[NodeId])( roots : Seq[NodeId]): Seq[NodeId] = roots match {
-//    type Roots = Seq[NodeId]
-//    @tailrec
-//    def aux(acc : Seq[NodeId]) : Roots => Seq[NodeId] = {
       case Seq() => acc
       case r +: tail =>
         val children = content(r)

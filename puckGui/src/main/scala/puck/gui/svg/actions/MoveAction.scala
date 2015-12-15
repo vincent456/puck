@@ -48,7 +48,8 @@ extends AbstractAction(MoveAction.label(controller.graph, moved, newHost)){
     val g = graph.mileStone
     g.kindType(moved.head) match {
       case TypeDecl
-           | StaticValueDecl =>
+           | StaticValueDecl
+           | NameSpace =>
         moved.foldLoggedEither(g) {
           (g, id) => TR.move.staticDecl(g, id, newHost.id)
         }

@@ -23,7 +23,6 @@ object EdgeMap {
   def apply() =
     new EdgeMap(EdgeMapT(), EdgeMapT(),
                 AccessKindMap(),
-                EdgeMapT(), EdgeMapT(),
                 EdgeMapT(), Node2NodeMap(),
                 EdgeMapT(), EdgeMapT(),
                 UseDependencyMap(),
@@ -37,8 +36,6 @@ case class EdgeMap
 ( userMap : EdgeMapT,
   usedMap  : EdgeMapT, //formely usesMap
   accessKindMap: AccessKindMap,
-  parameterizedUsers : EdgeMapT,
-  parameterizedUsed : EdgeMapT,
   //contains
   contents  : EdgeMapT,
   containers : Node2NodeMap,
@@ -60,11 +57,6 @@ case class EdgeMap
 
         copy(userMap = userMap + (used, user),
           usedMap = usedMap + (user, used),
-          accessKindMap = newAccessKindMapOnAdd(user, used, accK))
-
-      case ParameterizedUses(user, used, accK) =>
-        copy(parameterizedUsers = parameterizedUsers + (used, user),
-          parameterizedUsed = parameterizedUsed + (user, used),
           accessKindMap = newAccessKindMapOnAdd(user, used, accK))
 
       case Isa(subType, superType) =>
@@ -102,19 +94,12 @@ case class EdgeMap
     case (l, _) => l
   }
 
-  def add(kind : DGEdge.EKind, source : NodeId, target : NodeId) : EdgeMap =
-    add(kind(source, target))
-
-
   def remove(edge : DGEdge) : EdgeMap =
     edge.kind match {
       case Uses =>
         copy(userMap = userMap - (edge.used, edge.user),
           usedMap = usedMap - (edge.user, edge.used),
           accessKindMap = accessKindMap - ((edge.user, edge.used)))
-      case ParameterizedUses =>
-        copy(parameterizedUsers = parameterizedUsers - (edge.used, edge.user),
-          parameterizedUsed = parameterizedUsed - (edge.user, edge.used))
       case Isa =>
         copy(subTypes = subTypes - (edge.superType, edge.subType),
           superTypes = superTypes - (edge.subType, edge.superType))
@@ -133,9 +118,6 @@ case class EdgeMap
           /*declaration = declaration - edge.content )*/
     }
 
-  def remove(kind : DGEdge.EKind, source : NodeId, target : NodeId) : EdgeMap =
-    remove(kind(source, target))
-
   def contains(containerId : NodeId, contentId : NodeId) : Boolean =
     containers get contentId match {
       case None => false
@@ -153,8 +135,6 @@ case class EdgeMap
   def getUses(userId: NodeId, usedId: NodeId) : Option[DGUses] = {
     if(uses(userId, usedId))
       Some(Uses(userId, usedId, accessKindMap get ((userId, usedId))))
-    else if(parameterizedUsers.bind(usedId, userId))
-      Some(ParameterizedUses(userId, usedId, accessKindMap get ((userId, usedId))))
     else
       None
   }
@@ -166,9 +146,6 @@ case class EdgeMap
         case Some(t) => t uses usedId
       }
     }
-
-  def parUses(userId: NodeId, usedId: NodeId) : Boolean =
-    parameterizedUsers.bind(usedId, userId)
 
   def exists(e : DGEdge) : Boolean = e.kind  match {
     case Contains => contains(e.source, e.target)
@@ -182,7 +159,6 @@ case class EdgeMap
     }
     case Isa => isa(e.source, e.target)
     case Uses => uses(e.source, e.target)
-    case ParameterizedUses => parUses(e.source, e.target)
   }
 
 

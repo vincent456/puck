@@ -338,7 +338,8 @@ class DotPrinter
         decorate_name(n) + sig + ite + "</TD></TR>")
     }
 
-    val Seq(fields, ctrs, mts, innerClasses, typeVariables) = helper splitDotClassContent (graph, n.id)
+    val Seq(fields, ctrs, mts, innerClasses, typeVariables) =
+      helper splitByKind (graph, graph.content(nid).toSeq filter visibility.isVisible)
 
 
     writeln(s""" ${n.id} [ label = <<TABLE BGCOLOR="${helper.fillColor(n)}"> <TR> <TD PORT="${n.id}" HREF="${n.id}" BORDER="0"> <B>""" +
@@ -346,14 +347,14 @@ class DotPrinter
       decorate_name(n, typeVariables map graph.getNode) +" </B></TD></TR>")
 
     if(fields.nonEmpty || ctrs.nonEmpty || mts.nonEmpty) writeln("<HR/>")
-    fields filter visibility.isVisible foreach writeTableLine
+    fields foreach writeTableLine
     if(fields.nonEmpty && ctrs.nonEmpty && mts.nonEmpty) writeln("<HR/>")
-    ctrs filter visibility.isVisible foreach writeTableLine
-    mts filter visibility.isVisible foreach writeTableLine
+    ctrs foreach writeTableLine
+    mts foreach writeTableLine
 
     writeln("</TABLE>>, shape = \"none\" ];")
 
-    innerClasses filter visibility.isVisible foreach printClass
+    innerClasses foreach printClass
 
   }
 
@@ -457,7 +458,6 @@ class DotPrinter
       reg.foreach {
         case Isa(s, t) => printArc(ColorThickness.violation,isaStyle)((s, t))
         case Uses(s, t, _) => printArc(ColorThickness.violation,usesStyle)((s, t))
-        case ParameterizedUses(s, t, _) => printArc(ColorThickness.violation,usesStyle)((s, t))
         case _ => ()
       }
 

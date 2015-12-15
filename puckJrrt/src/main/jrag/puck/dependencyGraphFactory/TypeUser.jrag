@@ -137,7 +137,8 @@ aspect TypeUser {
         int thisNode = decl.getOriginal().buildDGNode(builder);
 
         int typeUsed = decl.getTypeAccess().buildDGNode(builder);
-        ParameterizedUses typeUse = new ParameterizedUses(thisNode, typeUsed, UsesAccessKind.none());
+        DGUses typeUse = new DGUses(thisNode, typeUsed, UsesAccessKind.none());
+//      ParameterizedUses typeUse = new ParameterizedUses(thisNode, typeUsed, UsesAccessKind.none());
         builder.addEdge(typeUse);
         builder.addTypeRelationship(typeUse, typeMemberUse);
 

@@ -41,10 +41,10 @@ object CreateEdge {
     id2declMap: NodeId => ASTNodeLink,
     e: DGEdge)
   ( implicit program : AST.Program, logger : PuckLogger) = {
-        e match {
-          case c : Contains =>
-            createContains(graph,reenactor, id2declMap, c)
-          case _ : ContainsParam =>
+        e.kind match {
+          case Contains =>
+            createContains(graph,reenactor, id2declMap, e)
+          case ContainsParam =>
             (id2declMap(e.container), id2declMap(e.content)) match {
               case (MethodDeclHolder(mdecl), ParameterDeclHolder(pdecl)) =>
                 mdecl.prependParameter(pdecl)
@@ -55,10 +55,11 @@ object CreateEdge {
                   "should be between a decl and a param")
             }
 
-          case _ : Isa =>
+          case Isa =>
             createIsa(id2declMap(e.subType), id2declMap(e.superType))
 
-          case u : Uses =>
+          case Uses =>
+            val u = e.asInstanceOf[DGUses]
             val (source, target ) = (graph.getNode(e.source), graph.getNode(e.target))
             (source.kind, target.kind) match {
               case (Class, Interface) =>
@@ -81,14 +82,14 @@ object CreateEdge {
 
   }
 
-  def ensureIsInitalizerUseByCtor(graph: DependencyGraph, u : Uses) : Boolean =
+  def ensureIsInitalizerUseByCtor(graph: DependencyGraph, u : DGUses) : Boolean =
     graph.kindType(graph.container_!(u.user)) == TypeConstructor &&
       (graph.getRole(u.used) contains Initializer(graph.hostTypeDecl(u.user)))
 
   def createInitializerCall
     ( reenactor : DependencyGraph,
       id2declMap : NodeId => ASTNodeLink,
-      e : Uses)
+      e : DGUses)
     ( implicit program : AST.Program, logger : PuckLogger) : Unit = {
     val sourceDecl = reenactor.container_!(e.user)
     (id2declMap(sourceDecl), id2declMap(e.used)) match {
@@ -104,7 +105,7 @@ object CreateEdge {
   ( graph: DependencyGraph,
     reenactor : DependencyGraph,
     id2declMap : NodeId => ASTNodeLink,
-    e : Contains)
+    e : DGEdge)
   ( implicit program : AST.Program, logger : PuckLogger) : Unit =
     (id2declMap(e.container), id2declMap(e.content)) match {
       case (PackageDeclHolder, i: TypedKindDeclHolder) =>
@@ -141,7 +142,7 @@ object CreateEdge {
   ( graph: DependencyGraph,
     reenactor : DependencyGraph,
     id2declMap : NodeId => ASTNodeLink,
-    e : Uses)
+    e : DGUses)
   ( implicit logger : PuckLogger) : Unit = {
     val sourceDecl = reenactor declarationOf e.user
     val ConstructorDeclHolder(cdecl) = id2declMap(e.used)

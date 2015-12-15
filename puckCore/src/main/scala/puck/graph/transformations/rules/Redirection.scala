@@ -49,11 +49,13 @@ object Redirection {
     typeAbs : NodeId,
     tmImpl : NodeId
     ) : LoggedTry[Abstraction] = {
+    val log = s"tmAbstraction(g, ${(g, typeAbs).shows}, ${(g, tmImpl).shows})"
     val absSet = g.abstractions(tmImpl).filter { abs =>
       abs.nodes.forall(g.contains(typeAbs,_))
     }
-    if(absSet.size != 1) LoggedError(s"one abstraction required ${absSet.size} found")
-    else LoggedSuccess(absSet.head)
+    if(absSet.size != 1)
+      LoggedError(log + s"one abstraction required ${absSet.size} found")
+    else LoggedSuccess(log, absSet.head)
   }
 
  def redirect
@@ -70,7 +72,7 @@ object Redirection {
           (oldUse.changeTarget(g, wid), List(oldUse.copy(target = wid)))
         case (ReadWriteAbstraction(Some(rid), Some(wid)), Some(RW)) =>
             g.changeTarget(oldUse, rid, wid)
-        case _ => throw new PuckError(s"error while redirecting $oldUse toward $newUsed")
+        case _ => throw new PuckError(s"error while redirecting ${(g,oldUse).shows} toward ${(g, newUsed).shows}")
       }
     } catch {
       case e : PuckError => LoggedError(e.getMessage)
@@ -83,7 +85,7 @@ object Redirection {
       newUsed : Abstraction
       ): LoggedTG = {
 
-    val g = graph.comment(s"Redirection.redirectUsesAndPropagate(g, ${(graph,oldUse).shows}, $newUsed)")
+    val g = graph.comment(s"Redirection.redirectUsesAndPropagate(g, ${(graph,oldUse).shows}, ${(graph, newUsed).shows})")
 
     val oldKindType = g.kindType(oldUse.used)
     val newKindType = newUsed.kindType(g)
@@ -155,7 +157,8 @@ object Redirection {
       oldUse : DGUses,
       newUsed : Abstraction
       ) : LoggedTG = {
-    val log = s"redirectUsesAndPropagate(_, oldUse = $oldUse, " + s"newUsed = $newUsed)\n"
+    val log = s"redirectUsesAndPropagate(g, oldUse = ${(g, oldUse).shows},  " +
+              s"newUsed = ${(g, newUsed).shows})\n"
 
     val newTypeToUse = newUsed.kindType(g) match {
       case TypeDecl =>

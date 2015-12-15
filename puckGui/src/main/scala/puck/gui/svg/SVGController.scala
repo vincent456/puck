@@ -231,13 +231,15 @@ abstract class SVGController
             else {
               val tmpDir = System.getProperty("java.io.tmpdir")
               val f = new File(tmpDir + File.separator + "graph.dot")
+
               DotPrinter.genDot(graph, graphUtils.dotHelper, printingOptions, new FileWriter(f))
-              SVGController.this.visibility = VisibilitySet.topLevelVisible(graph)
 
-              displayGraph(graph, fail = true)
+//              SVGController.this.visibility = VisibilitySet.topLevelVisible(graph)
+//
+//              displayGraph(graph, fail = true)
 
-              Some("error during SVG production dot can be found at " + f.getAbsolutePath +
-                "\nretry with top level package visibility only")
+              Some("error during SVG production dot can be found at " + f.getAbsolutePath /*+
+                "\nretry with top level package visibility only"*/)
 
           }
 

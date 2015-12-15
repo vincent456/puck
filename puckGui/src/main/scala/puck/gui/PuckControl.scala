@@ -1,65 +1,20 @@
 package puck.gui
 
-import java.io.{File, PipedInputStream, PipedOutputStream}
+import java.io.{PipedInputStream, PipedOutputStream}
 
 import puck.LoadingListener
 import puck.graph._
 import puck.graph.io._
 
-import puck.gui.explorer.{SetTopLevelVisible, AccessGraphModified}
 import puck.gui.imageDisplay.ImageFrame
 import puck.gui.svg.SVGFrame
-import puck.search.Search
 import puck.util.{PuckLogger, PuckLog}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.swing.event.Event
 import scala.swing.{Component, ProgressBar, Publisher}
 import scala.util.{Failure, Success}
-
-
-sealed trait ControlRequest extends Event
-
-case class LoadCodeRequest() extends ControlRequest
-case class LoadConstraintRequest() extends ControlRequest
-case class GraphDisplayRequest
-(title : String,
- graph : DependencyGraph,
- printId : Boolean,
- printSignature : Boolean,
- visibility : VisibilitySet.T,
- sUse : Option[DGUses] = None,
- format : DotOutputFormat = Svg)
- extends ControlRequest
-
-case class ConstraintDisplayRequest(graph : DependencyGraph) extends ControlRequest
-//case class ExploreRequest
-//(builder : ConstraintSolvingSearchEngineBuilder)
-//  extends ControlRequest
-
-//case class SearchStateMapPrintingRequest
-//(stateMap : Map[Int, Seq[SearchState[SResult]]],
-// printId : Boolean,
-// printSignature : Boolean,
-// visibility : VisibilitySet.T)
-//  extends ControlRequest
-
-//case class SearchStateSeqPrintingRequest
-//(subDir : String,
-// states : Seq[SearchState[SResult]],
-// sPrinter : Option[SearchState[SResult] => String],
-// printId : Boolean,
-// printSignature : Boolean,
-// visibility : VisibilitySet.T)
-//  extends ControlRequest
-
-case class PrintConstraintRequest() extends ControlRequest
-case class ApplyOnCodeRequest(searchResult : DependencyGraph) extends ControlRequest
-
-sealed abstract class Answer extends Event
-case class ExplorationFinished(result : Search[SResult]) extends Answer
 
 
 class PuckControl(logger0 : PuckLogger,
@@ -87,7 +42,7 @@ class PuckControl(logger0 : PuckLogger,
         progressBar.value = (loading * 100).toInt
     }))
     progressBar.visible = false
-    publish(AccessGraphModified(dg2AST.initialGraph))
+    publish(DGUpdate(dg2AST.initialGraph))
 
 
     if(dg2AST.initialGraph.nodesId.size > displayNameSpaceOnlyDefaultThreshold) {
@@ -126,6 +81,7 @@ class PuckControl(logger0 : PuckLogger,
     try {
       logger.writeln("Loading constraints ...")
       dg2AST = filesHandler.parseConstraints(dg2AST)
+      publish(CCUpdate(dg2AST.initialGraph))
       logger.writeln(" done:")
       dg2AST.initialGraph.printConstraints(logger, defaultVerbosity)
     }
@@ -156,10 +112,7 @@ class PuckControl(logger0 : PuckLogger,
           logger.writeln("requesting svg frame")
           new SVGFrame(pipedInput, opts, filesHandler, graphUtils, dg2AST){
             this.setTitle(title)
-            logger.writeln("sploosh")
           }
-
-          logger.writeln("bloop")
         }
      }
 
@@ -204,9 +157,9 @@ class PuckControl(logger0 : PuckLogger,
 //  }
 
   reactions += {
-    case LoadCodeRequest() => loadCode(loadConstraints())
+    case LoadCodeRequest => loadCode(loadConstraints())
 
-    case LoadConstraintRequest() => loadConstraints()
+    case LoadConstraintRequest => loadConstraints()
 
     case GraphDisplayRequest(title, graph, printId, printSignature, visibility, sUse, format) =>
       displayGraph(title, graph,

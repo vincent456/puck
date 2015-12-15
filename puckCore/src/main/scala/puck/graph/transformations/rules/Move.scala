@@ -52,10 +52,10 @@ object Move {
     ( uses : List[DGUses], g : DependencyGraph, h : TypeDeclNode ) : Boolean =
     uses.exists(isUsesOfSiblingViaSelf(g, h))
 
-  type SiblingUsers = Set[Uses]
-  type OtherUsers = Set[Uses]
+  type SiblingUsers = Set[DGUses]
+  type OtherUsers = Set[DGUses]
   def partitionSiblingUsesAndOtherUses
-  ( uses : Set[Uses], g : DependencyGraph, h : TypeDeclNode ) :(SiblingUsers, OtherUsers) =
+  ( uses : Set[DGUses], g : DependencyGraph, h : TypeDeclNode ) :(SiblingUsers, OtherUsers) =
     uses.partition(isUsesOfSiblingViaSelf(g, h))
 
   private def isUsesOfSiblingViaSelf

@@ -124,6 +124,16 @@ object ShowDG extends ShowConstraints{
     case _ => false
   }
 
+  implicit def abstractionCordBuilder : CordBuilder[Abstraction] = (dg, a) =>
+    a match {
+      case AccessAbstraction(nid, policy) =>
+        Cord("AccessAbstraction(", dg.getNode(nid).name , ", ", policy.toString,")")
+      case ReadWriteAbstraction(rid, wid) =>
+        val n1 = rid map (dg.getNode(_).name) toString ()
+        val n2 = wid map (dg.getNode(_).name) toString ()
+        Cord("ReadWriteAbstraction(", n1 , ", ", n2,")")
+    }
+
   implicit def transformationtCord : CordBuilder[Recordable] = (dg, r) =>
     r match {
       case tf : Transformation =>
