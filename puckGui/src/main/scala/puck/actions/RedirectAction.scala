@@ -9,10 +9,10 @@ import puck.graph.transformations.rules.Redirection
 import puck.gui.svg.SVGController
 
 case class RedirectAction
-( controller : UtilGraphStack,
-  newTarget : ConcreteNode,
-  edge : Uses,
-  abs : Abstraction)
+(controller : GraphController,
+ newTarget : ConcreteNode,
+ edge : Uses,
+ abs : Abstraction)
   extends AbstractAction(s"Use $abs instead of ${(controller.graph, edge.target).shows}"){
 
   //TODO check keepOldUse and propagate redirection value

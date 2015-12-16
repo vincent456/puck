@@ -10,12 +10,12 @@ import scala.collection.mutable
   */
 
 trait StackListener{
-  def update(svgController: GraphStack) : Unit
+  def update(controller: GraphStack) : Unit
 }
 trait GraphStack {
 
-  val initialGraph : DependencyGraph
-  val logger : PuckLogger
+  def initialGraph : DependencyGraph
+  def logger : PuckLogger
 
   def graph =
     if(undoStack.nonEmpty) undoStack.head

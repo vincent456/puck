@@ -6,9 +6,9 @@ import javax.swing.AbstractAction
 import puck.graph._
 
 class AddIsaAction
-( controller : UtilGraphStack,
-  sub : ConcreteNode,
-  sup : ConcreteNode)
+(controller : GraphController,
+ sub : ConcreteNode,
+ sup : ConcreteNode)
 extends AbstractAction(s"Add ${sub.name} isa ${sup.name}") {
 
   import controller.{graph, graphUtils}
@@ -23,8 +23,8 @@ extends AbstractAction(s"Add ${sub.name} isa ${sup.name}") {
 
 
 class RemoveEdgeAction
-( controller : UtilGraphStack,
-  edge : DGEdge)
+(controller : GraphController,
+ edge : DGEdge)
   extends AbstractAction(s"Delete $edge") {
 
   def actionPerformed(e: ActionEvent) : Unit =
@@ -37,8 +37,8 @@ class RemoveEdgeAction
 }
 
 class RemoveNodeAction
-( controller : UtilGraphStack,
-  node : ConcreteNode)
+(controller : GraphController,
+ node : ConcreteNode)
 extends AbstractAction(s"Delete node and children") {
 
   import controller.{graph, graphUtils}
@@ -52,8 +52,8 @@ extends AbstractAction(s"Delete node and children") {
 
 
 class RenameNodeAction
-( controller : UtilGraphStack,
-  node : ConcreteNode )
+(controller : GraphController,
+ node : ConcreteNode )
   extends AbstractAction("Rename") {
 
   import controller.{graph, graphUtils}
@@ -70,8 +70,8 @@ class RenameNodeAction
 }
 
 class CreateInitalizerAction
-( controller : UtilGraphStack,
-  node : ConcreteNode)
+(controller : GraphController,
+ node : ConcreteNode)
   extends AbstractAction(s"Create initializer of $node") {
 
   import controller.{graph, graphUtils}

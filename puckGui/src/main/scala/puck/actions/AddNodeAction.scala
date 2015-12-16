@@ -6,9 +6,9 @@ import javax.swing.AbstractAction
 import puck.graph.{ConcreteNode, NodeKind}
 
 class AddNodeAction
-( controller : UtilGraphStack,
-  host : ConcreteNode,
-  childKind : NodeKind)
+(controller : GraphController,
+ host : ConcreteNode,
+ childKind : NodeKind)
 extends AbstractAction(s"Add $childKind")
 {
 

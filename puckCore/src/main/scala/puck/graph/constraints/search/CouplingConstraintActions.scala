@@ -166,7 +166,9 @@ class SolvingActions
 
   def findHost
   ( toBeContained : ConcreteNode ) : DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] =
-    chooseNode((dg, cn) => dg.canContain(cn, toBeContained))
+    chooseNode((dg, cn) => dg.canContain(cn, toBeContained) &&
+      (Role.isFactory(dg,cn) || //exception for factory to allow prototype
+      !dg.isViolation(Contains(cn.id, toBeContained.id))))
 
   type NodePredicate = (DependencyGraph, ConcreteNode) => Boolean
 

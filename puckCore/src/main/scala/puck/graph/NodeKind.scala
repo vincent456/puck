@@ -55,6 +55,20 @@ case object StaticValueDecl extends KindType
 case object Parameter extends KindType
 case object ValueDef extends KindType
 
+object Role{
+  def isFactory(dg : DependencyGraph, cn : ConcreteNode) : Boolean =
+    dg.getRole(cn.id) match {
+      case Some(Factory(_)) => true
+      case _ => false
+    }
+
+  def isInitializer(dg : DependencyGraph, cn : ConcreteNode) : Boolean =
+    dg.getRole(cn.id) match {
+      case Some(Initializer(_)) => true
+      case _ => false
+    }
+}
+
 sealed abstract class Role
 case class Initializer(typeDecl : NodeId) extends Role
 case class Factory(constructor: NodeId) extends Role

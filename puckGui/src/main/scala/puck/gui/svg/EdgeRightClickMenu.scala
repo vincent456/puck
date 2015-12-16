@@ -4,7 +4,7 @@ import javax.swing.JPopupMenu
 
 import puck.actions.RemoveEdgeAction
 import puck.gui.svg.actions.ShowTypeRelationshipGraphicAction
-import puck.graph.{NodeId, Isa, Uses, NodeIdP}
+import puck.graph.{NodeId, Isa, NodeIdP}
 import puck.gui.svg.actions._
 
 class EdgeRightClickMenu

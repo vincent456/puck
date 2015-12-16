@@ -26,10 +26,10 @@ class NodeCheckBox(val node : ConcreteNode, name : String, selected : Boolean)
   extends JCheckBox(name, selected)
 
 class AbstractionAction
-( controller : UtilGraphStack,
-  node : ConcreteNode,
-  policy : AbstractionPolicy,
-  kind : NodeKind)
+(controller : GraphController,
+ node : ConcreteNode,
+ policy : AbstractionPolicy,
+ kind : NodeKind)
   extends AbstractAction(s"$kind ($policy)"){
 
      import controller.{graph, graphUtils}

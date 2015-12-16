@@ -3,7 +3,7 @@ package puck.gui.svg
 import java.awt.Component
 import java.awt.event.{InputEvent, KeyEvent}
 import java.util.regex.{Matcher, Pattern}
-import javax.swing.{SwingUtilities, JPopupMenu, KeyStroke}
+import javax.swing.{JPopupMenu, KeyStroke}
 
 import org.apache.batik.dom.GenericText
 import org.apache.batik.dom.events.NodeEventTarget
@@ -134,13 +134,13 @@ class SVGCanvasListener
       domElt.setAttribute("fill", color)
   }
   private def resetAllNodes() : Unit = {
-    if(controller.selectedNodes.nonEmpty){
-      controller.selectedNodes foreach setNodeColor
+    if(controller.selectedSVGNodes.nonEmpty){
+      controller.selectedSVGNodes foreach setNodeColor
       controller.resetSelectedNodes()
     }
   }
   private def conditionalEdgeReset(): Option[NodeIdP] = {
-    controller.selectedEdge match {
+    controller.selectedSVGEdge match {
       case Some((e, color, domElt)) =>
         changeEdgeColor(domElt, color)
         controller.resetEdgeSelected()
@@ -181,7 +181,7 @@ class SVGCanvasListener
           val line: Element = evt.getTarget.asInstanceOf[Element]
 
           swingInvokeLater { () =>
-            if(controller.selectedNodes.nonEmpty)
+            if(controller.selectedSVGNodes.nonEmpty)
               controller.resetSelectedNodes()
 
             val sPrevEdge = conditionalEdgeReset()
@@ -203,7 +203,7 @@ class SVGCanvasListener
         case _ =>
           println("reset both")
           swingInvokeLater { () =>
-            if(controller.selectedNodes.nonEmpty)
+            if(controller.selectedSVGNodes.nonEmpty)
               controller.resetSelectedNodes()
             conditionalEdgeReset()
             ()
@@ -216,7 +216,7 @@ class SVGCanvasListener
         case txtElt: SVGTextElement =>
           checkIfNodeAndGetId(txtElt) foreach {
             nodeId =>
-              val menu: JPopupMenu = NodeRightClickMenu(controller, nodeId)
+              val menu: JPopupMenu = SVGNodeMenu(controller, nodeId)
               menu.show(menuInvoker, evt.getClientX, evt.getClientY)
           }
         case _: SVGPathElement

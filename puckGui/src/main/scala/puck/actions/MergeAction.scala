@@ -6,9 +6,9 @@ import javax.swing.AbstractAction
 import puck.graph.{ConcreteNode, DGNode}
 
 case class MergeAction
-( controller : UtilGraphStack,
-  consumed : DGNode,
-  consumer : ConcreteNode)
+(controller : GraphController,
+ consumed : DGNode,
+ consumer : ConcreteNode)
   extends AbstractAction(s"Merge $consumed into this") {
 
   import controller.{graph, graphUtils}

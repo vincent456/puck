@@ -1,127 +1,101 @@
 package puck.gui.explorer
 
-import java.awt.event.{MouseAdapter, MouseEvent}
-import javax.swing.JTree
-import javax.swing.tree.TreePath
+import java.awt
+import java.awt.{MouseInfo, Color}
+import java.awt.event.{MouseEvent, MouseAdapter}
+import javax.swing.{JPopupMenu, JTree}
+import javax.swing.tree.{TreePath, DefaultTreeCellRenderer}
 
+import puck.actions.GraphController
+import puck.gui.{NodeMenu, NodeClicked}
+import puck.{StackListener, GraphStack}
 import puck.graph._
-import puck.graph.io.{Visible, Visibility, VisibilitySet}
-import puck.gui.{SetTopLevelVisible, SetVisibleFromKind, PuckTreeNodeClicked, DGUpdate}
 
 
-import scala.swing.{Component, Publisher, ScrollPane}
-import ShowDG._
+import scala.swing.{Swing, Component, ScrollPane}
 
 
-import VisibilitySet._
-class GraphExplorer
-(width : Int,
- height : Int)
-  extends ScrollPane with Publisher {
+class DGTree(val graph : DependencyGraph)
+  extends JTree( new DGTreeModel(graph) ) {
 
-  private var hiddens0 : VisibilitySet.T = _
+  override def convertValueToText
+  (value: AnyRef, selected: Boolean,
+   expanded: Boolean, leaf: Boolean,
+   row: Int, hasFocus: Boolean) : String =
+    value match {
+      case null => ""
+      case node : DGNode  => node.name
+      case _ => ""
+    }
+
+  this setCellRenderer DGNodeWithViolationTreeCellRenderer
+
+}
 
 
-  def setVisibility(id : NodeId, v : Visibility) =
-    hiddens0 = hiddens0.setVisibility(id,v)
 
-  def visibility(id : NodeId) : Visibility = 
-    hiddens0.visibility(id)
 
-  def visibilitySet = hiddens0
+object DGNodeWithViolationTreeCellRenderer
+ extends DefaultTreeCellRenderer {
 
-  def addChildren(graph : DependencyGraph,
-                  ptn: PuckTreeNode): Unit = {
-    val nodeList = graph.content(ptn.nodeId).map(graph.getConcreteNode).toList
-    nodeList.sortBy(_.name) foreach {
-      (n: DGNode) =>
-        val child = new PuckTreeNode(n.id, this,
-          (graph, n).shows(nodeNameTypCord))
-        ptn add child
-        addChildren(graph, child)
+  def sourceOfViolation(graph : DependencyGraph, nodeId : NodeId) : Boolean =
+    (graph usedBy nodeId) exists (used => graph isViolation ((nodeId, used)))
+
+  def targetOfViolation(graph : DependencyGraph, nodeId : NodeId) : Boolean =
+    (graph usersOf nodeId) exists (user => graph isViolation ((user, nodeId)))
+
+  override def getTreeCellRendererComponent(tree: JTree, value: scala.Any, selected: Mutability,
+                                            expanded: Mutability, leaf: Mutability, row: NodeId,
+                                            hasFocus: Mutability): awt.Component = {
+    val c = super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus)
+    tree match {
+      case dgTree : DGTree =>
+        val node = value.asInstanceOf[DGNode]
+        if(sourceOfViolation(dgTree.graph, node.id) ||
+            targetOfViolation(dgTree.graph, node.id))
+          c.setForeground(Color.RED)
+        c
+      case _ => c
     }
   }
+}
 
-  var root : PuckTreeNode = _
-  var graph : DependencyGraph = _
-
-  reactions += {
-    case DGUpdate(g) =>
-      graph = g
-      hiddens0 = VisibilitySet.allVisible(graph)
-      root = new PuckTreeNode(graph.rootId, this, "<>")
-      addChildren(graph, root)
+class GraphExplorer
+( width : Int,
+  height : Int)
+  extends ScrollPane
+  with StackListener {
 
 
-      val tree: JTree = new JTree(root)
-      tree.setCellRenderer(new GraphExplorerTreeCellRenderer(tree.getCellRenderer))
+  def isRightClick(e : MouseEvent) : Boolean = {
+    MouseInfo.getNumberOfButtons > 2 && e.getButton == MouseEvent.BUTTON3 ||
+      MouseInfo.getNumberOfButtons == 2 && e.getButton == MouseEvent.BUTTON2
 
-      tree.addMouseListener( new MouseAdapter {
+  }
 
-        override def mouseClicked(e : MouseEvent) : Unit =  {
-          val path : TreePath = tree.getPathForLocation(e.getX, e.getY)
+  def update(controller: GraphStack): Unit = {
+    val tree: JTree = new DGTree(controller.graph)
 
-          if(path!= null){
-            path.getLastPathComponent match {
-              case node : PuckTreeNode =>
-                publish(PuckTreeNodeClicked(graph, node.nodeId))
-                node.toggleFilter()
-                tree.repaint()
-              case _ => ()
-            }
+    tree.addMouseListener( new MouseAdapter {
+
+      override def mouseClicked(e : MouseEvent) : Unit =  {
+        val path : TreePath = tree.getPathForLocation(e.getX, e.getY)
+
+        if(path!= null){
+          path.getLastPathComponent match {
+            case node : DGNode =>
+              if(isRightClick(e)){
+                val menu : JPopupMenu = NodeMenu(controller.asInstanceOf[GraphController], node.id)
+                Swing.onEDT(menu.show(GraphExplorer.this.peer, e.getX, e.getY))
+              }
+              else GraphExplorer.this.publish(NodeClicked(node))
+            case _ => ()
           }
         }
-      })
-
-      root.hideWithName(graph, Seq("root", "@primitive"))
-      root.hideWithName(graph, Seq("root", "java"))
-
-      contents = Component.wrap(tree)
-      this.repaint()
-    case SetVisibleFromKind(ks) =>
-      root.kindVisible(graph, ks)
-      this.repaint()
-    case SetTopLevelVisible =>
-      hiddens0  = VisibilitySet.allHidden(graph)
-
-      for(i <- 0 until root.getChildCount){
-        root.getChildAt(i).setVisible(Visible, propagate = false)
       }
-      this.repaint()
-
+    })
+    contents = Component.wrap(tree)
+    this.repaint()
   }
 
-
-
-
-  /*tree.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				TreePath path = tree.getPathForLocation(e.getX(), e.getY());
-
-				if(path!= null){
-					Object object = path.getLastPathComponent();
-					if(object != null && object instanceof PuckTreeNode){
-						((PuckTreeNode)object).toggleFilter();
-						tree.repaint();
-					}
-				}
-			}
-		});*/
-
-  /*void setVisibilityAll(boolean b){
-    int cc = root.getChildCount();
-    for(int i =0; i<cc; i++){
-      ((PuckTreeNode) root.getChildAt(i)).setVisible(b, true);
-    }
-    tree.repaint();
-  }
-
-  void setVisiblePackagesOnly(){
-    int cc = root.getChildCount();
-    for(int i =0; i<cc; i++){
-      ((PuckTreeNode) root.getChildAt(i)).packageVisible();
-    }
-    tree.repaint();
-  }*/
 }

@@ -107,6 +107,10 @@ public int VarAccess.buildDGNode(JastaddGraphBuilder builder){
 
 
 	public int VariableDeclaration.buildDGNode(JastaddGraphBuilder builder){
+		if(hostBodyDecl() instanceof StaticInitializer ||
+			hostBodyDecl()instanceof InstanceInitializer)
+			return hostBodyDecl().buildDGNode(builder);
+
 		return builder.getDefinition(hostBodyDecl().buildDGNode(builder));
 	}
 

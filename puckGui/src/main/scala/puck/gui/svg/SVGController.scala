@@ -1,13 +1,13 @@
 package puck.gui.svg
 
 import java.io._
-import javax.swing.{SwingUtilities, JMenuItem}
+import javax.swing.SwingUtilities
 
 import org.apache.batik.anim.dom.SAXSVGDocumentFactory
 import org.apache.batik.util.XMLResourceDescriptor
 import org.w3c.dom.Element
 import org.w3c.dom.svg.{SVGGElement, SVGDocument}
-import puck.actions.{AbstractionAction, UtilGraphStack, AddNodeAction}
+import puck.actions.GraphController
 import puck.{StackListener, GraphStack}
 import puck.graph._
 import puck.graph.comparison.Mapping
@@ -35,7 +35,7 @@ abstract class SVGController
   private var printConcreteUsesPerVirtualEdges : Boolean = true,
   private var printRedOnly : Boolean = true,
   private var selectedEdgeForTypePrinting : Option[Uses] = None)
-  extends UtilGraphStack with StackListener {
+  extends GraphController with StackListener {
 
   def update(graphStack: GraphStack) : Unit  =
     displayGraph(graphStack.graph)
@@ -104,20 +104,24 @@ abstract class SVGController
     }
   }
 
+  def selectedNodes: List[NodeId] = selectedSVGNodes map (_._1)
+
+  def selectedEdge : Option[NodeIdP] = selectedSVGEdge map (_._1)
+
   var selectedNodes0: List[(NodeId, Color, Element)] = List()
-  def selectedNodes: List[(NodeId, Color, Element)] = selectedNodes0
+  def selectedSVGNodes: List[(NodeId, Color, Element)] = selectedNodes0
 
   def getSelectedNode(nodeId: NodeId) : Option[(NodeId, Color, Element)]=
-    selectedNodes.find( _._1 == nodeId)
+    selectedSVGNodes.find( _._1 == nodeId)
 
   def isSelected(nodeId: NodeId) : Boolean =
-    selectedNodes.exists( _._1 == nodeId)
+    selectedSVGNodes.exists( _._1 == nodeId)
 
   def removeSelectedNode(nodeId: NodeId) : Unit =
     selectedNodes0 = selectedNodes0.filter(_._1 != nodeId)
 
   def keepOnlySelectedNode(nodeId: NodeId) : List[(NodeId, Color, Element)] = {
-    val (keep, others) = selectedNodes partition (_._1 == nodeId)
+    val (keep, others) = selectedSVGNodes partition (_._1 == nodeId)
     selectedNodes0 = keep
     others
   }
@@ -189,7 +193,8 @@ abstract class SVGController
   }
 
   var selectedEdge0 : Option[(NodeIdP, Color, SVGGElement)] = None
-  def selectedEdge : Option[(NodeIdP, Color, SVGGElement)] = selectedEdge0
+  def selectedSVGEdge : Option[(NodeIdP, Color, SVGGElement)] = selectedEdge0
+
 
   def setEdgeSelected(dgEdge: NodeIdP, elt : SVGGElement, c : Color) = {
     selectedEdge0 = Some((dgEdge, c, elt))
@@ -334,21 +339,13 @@ abstract class SVGController
 
 
 
-  def abstractionChoices(n: ConcreteNode): Seq[JMenuItem] =
-    n.kind.abstractionChoices.map { case (k, p) =>
-      new JMenuItem(new AbstractionAction(this, n, p, k))
-    }
 
-  def abstractionChoices(id: NodeId): Seq[JMenuItem] =
-    graph.getNode(id) match {
-      case n: ConcreteNode => abstractionChoices(n)
-      case vn: VirtualNode => Seq.empty
-    }
 
-  def childChoices(n : ConcreteNode) : Seq[JMenuItem] = {
-    val ks = graph.nodeKinds.filter(n.kind.canContain)
-    ks map {k => new JMenuItem(new AddNodeAction(this, n, k))}
-  }
+//  def abstractionChoices(id: NodeId): Seq[JMenuItem] =
+//    graph.getNode(id) match {
+//      case n: ConcreteNode => abstractionChoices(n)
+//      case vn: VirtualNode => Seq.empty
+//    }
 
   def workingDirectory : File
   def deleteOutDirAndapplyOnCode() : Unit

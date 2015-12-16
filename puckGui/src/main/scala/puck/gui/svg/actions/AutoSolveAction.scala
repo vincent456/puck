@@ -58,13 +58,6 @@ class AutoSolveAction
       new SearchEngine(searchControlStrategy.initialState,
         searchControlStrategy)
 
-//    val builder =
-//      new ConstraintSolvingSearchEngineBuilder(
-//        controller.graphUtils,
-//        new DepthFirstSearchStrategy[DependencyGraph],
-//        CSInitialSearchState.targetedInitialState(violationTarget))
-//    val engine = builder.apply(graph.mileStone, automaticConstraintLoosening = false)
-
     engine.explore()
 
     try {

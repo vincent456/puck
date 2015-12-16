@@ -12,6 +12,7 @@ import puck.util.{PuckLogger, PuckLog}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.swing._
+import VisibilitySet.VisibilitySetOps
 
 class PuckInterfacePanel
 ( logger : PuckLogger,
@@ -23,17 +24,17 @@ class PuckInterfacePanel
   val rightWidth = PuckMainPanel.width * 5/8
   val height = PuckMainPanel.height * 2/3
 
-  val treeDisplayer = new GraphExplorer(rightWidth/2, height)
-
-  val treeDisplayerWrapper = new ScrollPane(){
+  val treeDisplayer = new GraphExplorer(rightWidth/2, height) {
     minimumSize = new Dimension(rightWidth/2, height)
     preferredSize = minimumSize
-    contents = treeDisplayer
   }
 
   val progressBar  = new ProgressBar()
   val delayedDisplay = ArrayBuffer[Component]()
-  val control = new PuckControl(logger, filesHandler, graphUtils, progressBar, delayedDisplay)
+  val control = new PuckControl(logger, filesHandler,
+    graphUtils, progressBar, delayedDisplay)
+
+  control registerAsStackListeners treeDisplayer
 
   val printIdsBox = new CheckBox("Show nodes ID")
   val printSignaturesBox = new CheckBox("Show signagures")
@@ -46,13 +47,15 @@ class PuckInterfacePanel
     preferredSize = minimumSize
 
     reactions += {
-      case PuckTreeNodeClicked(graph, n) =>
-        val nodeInfoPanel = new NodeInfosPanel(graph, n){
+      case NodeClicked(n) =>
+        val nodeInfoPanel = new NodeInfosPanel(control.graph, n.id){
           def onEdgeButtonClick( source : NodeId, target : NodeId) : Unit = {
             this publish
               GraphDisplayRequest("Graph with uses selected",
                 graph, printIds(), printSigs(),
-                treeDisplayer.visibilitySet,
+                VisibilitySet.topLevelVisible(g).
+                  hideWithName(g, Seq("@primitive")).
+                  hideWithName(g, Seq("java")),
                 sUse = Some(Uses(source, target)))
           }
         }
@@ -83,19 +86,19 @@ class PuckInterfacePanel
 
     control listenTo this
     this listenTo control
-    treeDisplayer listenTo control
 
-    reactions += {
-      case ExplorationFinished(res0) =>
-        resultsWrapper.contents.clear()
-        val searchResultPanel =
-          new ResultPanel(control.dg2AST.initialRecord, res0, logger,
-            printIds, printSigs, treeDisplayer.visibilitySet)
-        resultsWrapper.contents += searchResultPanel
-        resultsWrapper.revalidate()
-        control listenTo searchResultPanel
 
-    }
+//    reactions += {
+//      case ExplorationFinished(res0) =>
+//        resultsWrapper.contents.clear()
+//        val searchResultPanel =
+//          new ResultPanel(control.dg2AST.initialRecord, res0, logger,
+//            printIds, printSigs, treeDisplayer.visibilitySet)
+//        resultsWrapper.contents += searchResultPanel
+//        resultsWrapper.revalidate()
+//        control listenTo searchResultPanel
+//
+//    }
 
     contents += makeButton("Settings", "To set graphviz dot path"){
       () => val frame = new SettingsFrame(filesHandler)
@@ -153,46 +156,22 @@ class PuckInterfacePanel
 
     addDelayedComponent(showConstraints)
 
-    import graphUtils.nodeKindKnowledge.kindOfKindType
-    addDelayedComponent(new BoxPanel(Orientation.Horizontal){
-      contents += new BoxPanel(Orientation.Vertical){
-        contents+= new Button() {
-          tooltip = "Make packages only visible"
-          action = new Action("Package Visibility") {
-            def apply() : Unit = { control.publish(SetVisibleFromKind(kindOfKindType(NameSpace))) }
-          }
-        }
-
-        contents+= new Button() {
-          tooltip = "Make only packages classes visible"
-          action = new Action("Package+Class Visibility") {
-            def apply() : Unit = { control.publish(SetVisibleFromKind(kindOfKindType(NameSpace) ++ kindOfKindType(TypeDecl))) }
-          }
-        }
-      }
-
-
-      contents+= new BoxPanel(Orientation.Vertical){
-        contents += printIdsBox
-        contents += printSignaturesBox
-      }
-    })
-
-
-
     val show = makeButton("Show graph",
       "Display a visual representation of the graph"){
-      () => publish(GraphDisplayRequest(
-        "Graph",
-        control.dg2AST.initialGraph,
-        printIdsBox.selected,
-        printSignaturesBox.selected,
-        treeDisplayer.visibilitySet))
+      () =>
+        val g = control.dg2AST.initialGraph
+        publish(GraphDisplayRequest(
+          "Graph",
+          g, printIdsBox.selected,
+             printSignaturesBox.selected,
+          VisibilitySet.topLevelVisible(g).
+            hideWithName(g, Seq("@primitive")).
+            hideWithName(g, Seq("java"))))
     }
 
     addDelayedComponent(show)
 
-    val showViolations = makeButton("Focus on violations",
+    val showViolations = makeButton("Show graph (Focus on violations)",
       "Display a visual representation of the graph"){
       () => publish(GraphDisplayRequest(
         "Graph",
@@ -226,7 +205,7 @@ class PuckInterfacePanel
   }
 
   rightComponent = new SplitPane(Orientation.Vertical) {
-    leftComponent = treeDisplayerWrapper
+    leftComponent = treeDisplayer
     rightComponent = nodeInfos
   }
 }

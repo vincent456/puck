@@ -3,10 +3,10 @@ package puck.gui
 import java.io.{PipedInputStream, PipedOutputStream}
 
 import puck.LoadingListener
+import puck.actions.GraphController
 import puck.graph._
 import puck.graph.io._
 
-import puck.gui.imageDisplay.ImageFrame
 import puck.gui.svg.SVGFrame
 import puck.util.{PuckLogger, PuckLog}
 
@@ -22,14 +22,19 @@ class PuckControl(logger0 : PuckLogger,
                   val graphUtils: GraphUtils,
                   private val progressBar : ProgressBar,
                   private val delayedDisplay : ArrayBuffer[Component])
-  extends Publisher {
+  extends GraphController with Publisher {
 
-  private implicit val logger : PuckLogger = logger0
+  implicit val logger : PuckLogger = logger0
+  var dg2AST : DG2AST = _
 
-  type GraphT = DependencyGraph
+  def selectedNodes: List[NodeId] = List()
+
+  def selectedEdge: Option[(NodeId, NodeId)] = None
+
+  def initialGraph: DependencyGraph = dg2AST.initialGraph
+
   import PuckLog.defaultVerbosity
 
-  var dg2AST : DG2AST = _
 
   var displayNameSpaceOnlyDefaultThreshold = 150
 
@@ -42,18 +47,14 @@ class PuckControl(logger0 : PuckLogger,
         progressBar.value = (loading * 100).toInt
     }))
     progressBar.visible = false
-    publish(DGUpdate(dg2AST.initialGraph))
+    updateStackListeners()
 
-
-    if(dg2AST.initialGraph.nodesId.size > displayNameSpaceOnlyDefaultThreshold) {
-//      import graphUtils.nodeKindKnowledge.kindOfKindType
-//      dg2AST.initialGraph.content(dg2AST.initialGraph.rootId)
-//      publish(SetVisibleFromKind(kindOfKindType(NameSpace)))
-      publish(SetTopLevelVisible)
-      logger.writeln(s"Graph have more than $displayNameSpaceOnlyDefaultThreshold, " +
-        s"top level visibility selected by default.")
-        //s"namespace visibility selected by default.")
-    }
+//    if(dg2AST.initialGraph.nodesId.size > displayNameSpaceOnlyDefaultThreshold) {
+//      publish(SetTopLevelVisible)
+//      logger.writeln(s"Graph have more than $displayNameSpaceOnlyDefaultThreshold, " +
+//        s"top level visibility selected by default.")
+//        //s"namespace visibility selected by default.")
+//    }
 
     delayedDisplay.foreach(_.visible = true)
   } onComplete {
@@ -81,7 +82,7 @@ class PuckControl(logger0 : PuckLogger,
     try {
       logger.writeln("Loading constraints ...")
       dg2AST = filesHandler.parseConstraints(dg2AST)
-      publish(CCUpdate(dg2AST.initialGraph))
+      updateStackListeners()
       logger.writeln(" done:")
       dg2AST.initialGraph.printConstraints(logger, defaultVerbosity)
     }
@@ -92,7 +93,7 @@ class PuckControl(logger0 : PuckLogger,
   }
 
   def displayGraph(title : String,
-                   graph : GraphT,
+                   graph : DependencyGraph,
                    opts : PrintingOptions) : DotOutputFormat => Unit = { format =>
     logger.writeln("Printing graph ...")
 
@@ -100,21 +101,12 @@ class PuckControl(logger0 : PuckLogger,
     val pipedInput = new PipedInputStream(pipedOutput)
 
 
-    format match {
-      case Png =>
-        Future {
-          val imgframe = ImageFrame(pipedInput)
-          imgframe.title = title
-        }
-
-      case Svg =>
-        Future {
-          logger.writeln("requesting svg frame")
-          new SVGFrame(pipedInput, opts, filesHandler, graphUtils, dg2AST){
-            this.setTitle(title)
-          }
-        }
-     }
+    Future {
+      logger.writeln("requesting svg frame")
+      new SVGFrame(pipedInput, opts, filesHandler, graphUtils, dg2AST){
+        this.setTitle(title)
+      }
+    }
 
     DotPrinter.genImage(graph, graphUtils.dotHelper, opts, format, pipedOutput) {
       case Success(i) if i == 0 => logger.writeln("success")
@@ -200,5 +192,6 @@ class PuckControl(logger0 : PuckLogger,
 //      logger.writeln("history request")
 //      showStateSeq(states, printId, printSignature, visibility)
   }
+
 
 }

@@ -34,9 +34,9 @@ object MoveAction {
 }
 
 class MoveAction
-( controller : UtilGraphStack,
-  newHost : DGNode,
-  moved : List[NodeId])
+(controller : GraphController,
+ newHost : DGNode,
+ moved : List[NodeId])
 extends AbstractAction(MoveAction.label(controller.graph, moved, newHost)){
 
   import controller.{graph, graphUtils}

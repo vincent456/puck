@@ -1,6 +1,7 @@
 package puck.gui
 
-import puck.graph.{DependencyGraph, GraphUtils}
+import puck.{GraphStack, StackListener}
+import puck.graph.GraphUtils
 import puck.graph.io.FilesHandler
 import puck.gui.explorer.ConstraintViolationExplorer
 
@@ -22,7 +23,7 @@ object PuckMainPanel{
 
 class PuckMainPanel(filesHandler: FilesHandler,
                      graphUtils: GraphUtils)
-  extends SplitPane(Orientation.Horizontal){
+  extends SplitPane(Orientation.Horizontal) with StackListener{
   dividerSize = 3
 
   preferredSize = new Dimension(PuckMainPanel.width, PuckMainPanel.height)
@@ -34,25 +35,21 @@ class PuckMainPanel(filesHandler: FilesHandler,
   leftComponent = interface
   rightComponent = consolePanel
 
-  def updateRightComponent(g : DependencyGraph) : Unit = {
-    val violations = g.violations()
+  def update(svgController: GraphStack) : Unit= {
+
+    val violations = svgController.graph.violations()
     if(violations.isEmpty) rightComponent = consolePanel
     else {
       rightComponent = new SplitPane(Orientation.Vertical){
         resizeWeight = 0.5
-        leftComponent = new ConstraintViolationExplorer(g, violations)
+        leftComponent = new ConstraintViolationExplorer(svgController.graph, violations)
         rightComponent = consolePanel
       }
     }
     this.repaint()
   }
 
-  this listenTo interface.control
-  reactions += {
-    case ge : GraphEvent => updateRightComponent(ge.graph)
-  }
-
-
+  interface.control.registerAsStackListeners(this)
 
 }
 

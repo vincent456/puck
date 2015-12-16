@@ -6,14 +6,12 @@ import puck.search.Search
 
 import scala.swing.event.Event
 
-case class PuckTreeNodeClicked(graph : DependencyGraph, node : NodeId) extends Event
+case class NodeClicked(node : DGNode) extends Event
 
-trait GraphEvent extends Event {
-  val graph : DependencyGraph
-}
+//trait GraphEvent extends Event {
+//  val graph : DependencyGraph
+//}
 
-case class DGUpdate(graph : DependencyGraph) extends GraphEvent
-case class CCUpdate(graph : DependencyGraph) extends GraphEvent
 case class SetVisibleFromKind(ks : Seq[NodeKind]) extends Event
 case object SetTopLevelVisible extends Event
 

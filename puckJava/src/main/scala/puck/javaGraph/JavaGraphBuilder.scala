@@ -1,5 +1,7 @@
 package puck.javaGraph
 
+import java.util.NoSuchElementException
+
 import puck.graph._
 import puck.graph.constraints.{SupertypeAbstraction, ConstraintsMaps}
 import puck.javaGraph.nodeKind._
@@ -23,7 +25,12 @@ trait JavaGraphBuilder extends GraphBuilder{
     addNode(fullName, localName, Package, mutable)
 
   def getDefinition(nid : NodeId) =
-    g.getConcreteNode(nid).definition_!(g)
+     g.getConcreteNode(nid).definition_!(g)
+//    catch {
+//      case e :  NoSuchElementException =>
+//        error(s"missing def for ${g.getNode(nid)}")
+//    }
+
 
   def addPackage(p : String, mutable : Boolean): NodeIdT =
     nodesByName get p match {
