@@ -1,7 +1,7 @@
 package puck.graph
 
 import puck.graph.DependencyGraph.AbstractionMap
-import puck.graph.comparison.RecordingComparatorControl
+import puck.graph.comparison.{Mapping, RecordingComparatorControl}
 import puck.graph.constraints.{ConstraintsMaps, AbstractionPolicy}
 import puck.search.{SearchEngine, DepthFirstSearchStrategy}
 import puck.util.{Logger, PuckNoopLogger, PuckLogger, PuckLog}

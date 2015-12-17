@@ -1,4 +1,5 @@
-package puck.gui.explorer
+package puck.gui
+package explorer
 
 import java.awt
 import java.awt.{MouseInfo, Color}
@@ -66,12 +67,6 @@ class GraphExplorer
   extends ScrollPane
   with StackListener {
 
-
-  def isRightClick(e : MouseEvent) : Boolean = {
-    MouseInfo.getNumberOfButtons > 2 && e.getButton == MouseEvent.BUTTON3 ||
-      MouseInfo.getNumberOfButtons == 2 && e.getButton == MouseEvent.BUTTON2
-
-  }
 
   def update(controller: GraphStack): Unit = {
     val tree: JTree = new DGTree(controller.graph)

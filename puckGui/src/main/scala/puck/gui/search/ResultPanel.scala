@@ -1,6 +1,6 @@
 package puck.gui.search
 
-import puck.graph.constraints.search.ConstraintSolvingStateEvaluator
+import puck.graph.constraints.search.RecordConstraintSolvingStateEvaluator
 import puck.graph.{SResult, DependencyGraph}
 import puck.graph.io.VisibilitySet
 import puck.graph.transformations.Transformation
@@ -22,7 +22,7 @@ class ResultPanel
 
   type ST = SearchState[DependencyGraph]
 
-  val evaluator = new ConstraintSolvingStateEvaluator(initialRecord)
+  val evaluator = new RecordConstraintSolvingStateEvaluator(initialRecord)
 
 
   logger.write("comparing final states : ")

@@ -31,7 +31,8 @@ trait Search[Result]{
 class SearchEngine[T]
 ( val initialState : SearchState[T],
   val searchStrategy: SearchStrategy[T],
-  val maxResult : Option[Int] = None // default = all result
+  val maxResult : Option[Int] = None,// default = all result
+  val evaluator : Option[Evaluator[T]] = None
   ) extends Search[T] {
 
   val successes = mutable.ListBuffer[SearchState[T]]()
@@ -46,13 +47,22 @@ class SearchEngine[T]
   private [this] var idSeed : Int = 0
   private def idGen() : Int = {idSeed += 1; idSeed}
 
+  val storeSuccess : SearchState[T] => Unit =
+    evaluator match {
+      case None => resState =>
+        ignore(successes += resState)
+      case Some(ev) =>
+        resState =>
+          if(successes.forall(!ev.equals(_, resState)))
+            ignore(successes += resState)
+    }
+
   def storeResult(resState : SearchState[T]) : Unit = {
     ignore(resState.loggedResult.value match {
       case -\/(err) =>
         failures += resState
+      case \/-(g) => storeSuccess(resState)
 
-      case \/-(g) =>
-        successes += resState
     })
 
   }

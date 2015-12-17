@@ -7,7 +7,7 @@ import puck.gui.svg.actions.ShowTypeRelationshipGraphicAction
 import puck.graph.{NodeId, Isa, NodeIdP}
 import puck.gui.svg.actions._
 
-class EdgeRightClickMenu
+class SVGEdgeMenu
 ( private val controller : SVGController,
   edge : NodeIdP)
   extends JPopupMenu {
@@ -18,7 +18,8 @@ class EdgeRightClickMenu
   if(graph.isViolation(edge)){
     val targetNode = graph.getConcreteNode(target)
     add(new ManualSolveAction(targetNode, controller))
-    add(new AutoSolveAction(targetNode, controller))
+    add(new AutoSolveAction(targetNode, controller,
+      controller.printingOptions))
   }
 
   var isIsaEdge = false

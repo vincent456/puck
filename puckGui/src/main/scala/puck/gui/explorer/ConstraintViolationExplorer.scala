@@ -1,15 +1,18 @@
 package puck
-package gui.explorer
+package gui
+package explorer
 
-import java.awt.{Component, BorderLayout}
+import java.awt.event.{MouseEvent, MouseAdapter}
 import javax.swing.event.TreeModelListener
-import javax.swing.{JLabel, JPanel, JTree}
+import javax.swing.{JPopupMenu, JTree}
 
 import puck.graph._
 import javax.swing.tree._
 
 
-import scala.swing.ScrollPane
+import puck.gui.svg.actions.SwingGraphController
+
+import scala.swing.{Swing, ScrollPane}
 
 
 class CCTree(g : DependencyGraph, parentToChildMap : Map[DGEdge, List[DGEdge]])
@@ -24,7 +27,8 @@ class CCTree(g : DependencyGraph, parentToChildMap : Map[DGEdge, List[DGEdge]])
     value match {
       case CCTreeModel.root => ""
       case violation : DGEdge =>
-        (g, violation).shows
+        if(violation.source == violation.target) g.getNode(violation.source).name
+        else (g, violation).shows
       case _ => ""
   }
 }
@@ -69,10 +73,11 @@ class CCTreeModel
 
 
 class ConstraintViolationExplorer
-( graph : DependencyGraph,
+( controller : SwingGraphController,
   violations : Seq[DGEdge])
   extends ScrollPane {
 
+  import controller.graph
 
     val kindSeq = Seq(TypeDecl, NameSpace)
 
@@ -81,6 +86,24 @@ class ConstraintViolationExplorer
     val tree = new CCTree(graph, createParentToChildMap(childToParentMap))
     //tree.setCellRenderer(new CCTreeCellRenderer(graph))
     contents = swing.Component.wrap(tree)
+
+  tree.addMouseListener( new MouseAdapter {
+
+    override def mouseClicked(e : MouseEvent) : Unit =  {
+      val path : TreePath = tree.getPathForLocation(e.getX, e.getY)
+
+      if(path!= null){
+        path.getLastPathComponent match {
+          case edge : DGEdge =>
+            if(isRightClick(e)){
+              val menu : JPopupMenu = new ViolationMenu(controller, edge)
+              Swing.onEDT(menu.show(ConstraintViolationExplorer.this.peer, e.getX, e.getY))
+            }
+          case _ => ()
+        }
+      }
+    }
+  })
 
 
   def mapWithE(m : Map[DGEdge, Option[DGEdge]], e : DGEdge) =

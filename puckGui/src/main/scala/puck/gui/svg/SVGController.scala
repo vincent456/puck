@@ -1,13 +1,12 @@
 package puck.gui.svg
 
 import java.io._
-import javax.swing.SwingUtilities
 
 import org.apache.batik.anim.dom.SAXSVGDocumentFactory
 import org.apache.batik.util.XMLResourceDescriptor
 import org.w3c.dom.Element
 import org.w3c.dom.svg.{SVGGElement, SVGDocument}
-import puck.actions.GraphController
+import puck.gui.svg.actions.SwingGraphController
 import puck.{StackListener, GraphStack}
 import puck.graph._
 import puck.graph.comparison.Mapping
@@ -35,14 +34,12 @@ abstract class SVGController
   private var printConcreteUsesPerVirtualEdges : Boolean = true,
   private var printRedOnly : Boolean = true,
   private var selectedEdgeForTypePrinting : Option[Uses] = None)
-  extends GraphController with StackListener {
+  extends SwingGraphController with StackListener {
+
+  this registerAsStackListeners this
 
   def update(graphStack: GraphStack) : Unit  =
     displayGraph(graphStack.graph)
-
-
-  implicit val executor : ExecutionContext
-
 
   lazy val console = frame.console
   implicit val logger = new TextAreaLogger(console.textArea, _ => true )
@@ -350,7 +347,7 @@ abstract class SVGController
   def workingDirectory : File
   def deleteOutDirAndapplyOnCode() : Unit
   def compareOutputGraph() : Unit
-  def swingInvokeLater (f : () => Unit ) : Unit
+
 
 
 }
@@ -370,8 +367,6 @@ object SVGController {
   ( frame : SVGPanel) =>  new SVGController(graphUtils, dg2ast, frame,
                 opts.visibility, opts.printId, opts.printSignatures){
       //val filesHandler: FilesHandler = filesHandler0
-
-      implicit val executor = scala.concurrent.ExecutionContext.Implicits.global
 
       pushGraph(dg2ast.initialGraph)
 
@@ -403,10 +398,6 @@ object SVGController {
 
       def workingDirectory : File = filesHandler.workingDirectory
 
-      def swingInvokeLater (f : () => Unit ) : Unit =
-        SwingUtilities.invokeLater(new Runnable {
-          def run(): Unit = f()
-        })
     }
 
 
@@ -417,19 +408,13 @@ object SVGController {
   }
 
 
-  def documentFromGraphErrorMsgGen(consumer : String => Unit) : scala.util.Try[Int] => Unit =
-    tr => {
-
-      val msg = tr match {
-        case Success(0) => "Success"
+  def documentFromGraphErrorMsgGen(consumer : String => Unit) : scala.util.Try[Int] => Unit ={
+        case Success(0) => ()
         case Success(n) =>
-          "An error that cannot be recovered occured during the production of the SVG file by Graphviz"
+          consumer("An error that cannot be recovered occured during the production of the SVG file by Graphviz")
         case Failure(errMsg) =>
-          "Image creation failure : " + errMsg
-
-      }
-      consumer(msg)
-    }
+          consumer("Image creation failure : " + errMsg)
+  }
 
 
 

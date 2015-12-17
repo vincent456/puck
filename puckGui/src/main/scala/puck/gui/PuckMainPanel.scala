@@ -42,7 +42,7 @@ class PuckMainPanel(filesHandler: FilesHandler,
     else {
       rightComponent = new SplitPane(Orientation.Vertical){
         resizeWeight = 0.5
-        leftComponent = new ConstraintViolationExplorer(svgController.graph, violations)
+        leftComponent = new ConstraintViolationExplorer(interface.control, violations)
         rightComponent = consolePanel
       }
     }

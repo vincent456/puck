@@ -28,7 +28,8 @@ class SVGConcreteNodeMenu
     if (graph.isWronglyContained(node.id)
       || graph.isWronglyUsed(node.id)) {
       this.add(new ManualSolveAction(node, controller))
-      this.add(new AutoSolveAction(node, controller))
+      this.add(new AutoSolveAction(node, controller,
+        controller.printingOptions))
     }
 
     this.addSeparator()

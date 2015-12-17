@@ -143,6 +143,25 @@ object Recording {
       }
   }
 
+
+  implicit class RecordOps(val r : Recording ) extends AnyVal {
+    def subRecordFromLastMilestone : Recording = {
+      def f(r0 : Recording, acc : Recording) : Recording = r0 match {
+        case Nil => acc
+        case MileStone +: tl => acc
+        case hd +: tl => f(tl, hd +: acc)
+      }
+
+      f(r, Seq()).reverse
+    }
+
+    def involveNodes : Seq[NodeId] = r.foldLeft(Seq[NodeId]()){
+      case (acc, Transformation(_, op)) =>
+        Operation.involvedNodes(op) ++: acc
+      case (acc, _) => acc
+
+    }
+  }
 }
 
 

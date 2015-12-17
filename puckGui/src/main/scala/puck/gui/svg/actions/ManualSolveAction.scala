@@ -58,7 +58,7 @@ object ManualSolveAction {
 
 class ManualSolveAction
 ( violationTarget : ConcreteNode,
-  controller : SVGController)
+  controller : SwingGraphController)
   extends AbstractAction("Solve (manual choices)") with DecisionMaker {
 
   import controller.graphUtils

@@ -31,9 +31,6 @@ case class GraphDisplayRequest
   extends ControlRequest
 
 case class ConstraintDisplayRequest(graph : DependencyGraph) extends ControlRequest
-//case class ExploreRequest
-//(builder : ConstraintSolvingSearchEngineBuilder)
-//  extends ControlRequest
 
 //case class SearchStateMapPrintingRequest
 //(stateMap : Map[Int, Seq[SearchState[SResult]]],

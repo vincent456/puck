@@ -226,7 +226,7 @@ class SVGCanvasListener
             gedge =>
               edgeFromGElement(gedge) foreach {
                 e =>
-                  val menu: EdgeRightClickMenu = new EdgeRightClickMenu(controller, e)
+                  val menu: SVGEdgeMenu = new SVGEdgeMenu(controller, e)
                   menu.show(menuInvoker, evt.getClientX, evt.getClientY)
               }
           }

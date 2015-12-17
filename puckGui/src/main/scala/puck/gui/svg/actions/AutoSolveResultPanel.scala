@@ -1,9 +1,11 @@
 package puck.gui.svg.actions
 
 import java.awt.Dimension
+import javax.swing.SwingUtilities
 
+import puck.actions.GraphController
 import puck.graph._
-import puck.graph.io.{Visible, VisibilitySet}
+import puck.graph.io.{PrintingOptions, Visible, VisibilitySet}
 import VisibilitySet._
 import puck.gui.PuckConsolePanel
 import puck.gui.search.{StateSelected, SimpleElementSelector, SortedElementSelector}
@@ -11,6 +13,7 @@ import puck.gui.svg.{PUCKSVGCanvas, SVGController}
 import puck.search.{SearchState, Search}
 import puck.util._
 
+import scala.concurrent.ExecutionContext
 import scala.swing.BorderPanel.Position
 import scala.swing.TabbedPane.Page
 import scala.swing.event.Event
@@ -18,30 +21,34 @@ import scala.swing._
 
 import scalaz.syntax.writer._
 
-object GraphScrollPane {
-  def apply
-  ( controller : SVGController,
-    graph: DependencyGraph,
-    visibilitySet: VisibilitySet.T) : GraphScrollPane = {
-    val gsp = new GraphScrollPane(controller)
-    gsp.setGraph(graph, visibilitySet)
-    gsp
-  }
+trait SwingGraphController extends GraphController {
+  implicit val executor : ExecutionContext =
+    scala.concurrent.ExecutionContext.Implicits.global
+
+  def swingInvokeLater (f : () => Unit ) : Unit =
+    SwingUtilities.invokeLater(new Runnable {
+      def run(): Unit = f()
+    })
 }
-class GraphScrollPane(controller : SVGController) extends ScrollPane(){
 
-  import controller.executor
 
-  def setGraph(graph: DependencyGraph, visibilitySet: VisibilitySet.T): Unit ={
-    //println("setGraph, visibilitySet :" + visibilitySet.toSeq.sorted)
-    import controller.swingInvokeLater
-    val doc =
+case class Log(msg : String) extends Event
+
+
+trait ResultPanel {
+  val controller : SwingGraphController
+  def printingOptions : PrintingOptions
+  def selectedResult : Logged[DependencyGraph]
+
+
+  import controller.{executor, swingInvokeLater}
+
+  def graphPanel(graph : DependencyGraph, visibilitySet: VisibilitySet.T) : Component =
+    new ScrollPane() {
       SVGController.documentFromGraph(graph,
         controller.graphUtils,
-        controller.printingOptions.
-          copy(visibility =visibilitySet))(
-          SVGController.documentFromGraphErrorMsgGen(msg =>
-            swingInvokeLater( () => controller.console.appendText(msg)))){
+        printingOptions.copy(visibility = visibilitySet))(
+        SVGController.documentFromGraphErrorMsgGen(msg => controller.logger.writeln(msg))){
         case d =>
           val c = new PUCKSVGCanvas(PUCKSVGCanvas.deafListener)
           swingInvokeLater { () =>
@@ -49,65 +56,76 @@ class GraphScrollPane(controller : SVGController) extends ScrollPane(){
             viewportView = Component.wrap(c)
           }
       }
+    }
+
+
+
+
+  def selectedResultGraphPanel = {
+
+    import Recording.RecordOps
+    val g = selectedResult.value
+
+    val nodeVisibles  = {
+      val v = printingOptions.visibility
+      val involveNodes = g.recording.subRecordFromLastMilestone.involveNodes
+      val nns = involveNodes flatMap g.containerPath
+      v.setVisibility(nns, Visible)
+    }
+
+    graphPanel(g, nodeVisibles)
   }
 }
 
 
-case class ErrorSelected(state : SearchState[SResult]) extends Event
-case class Log(msg : String) extends Event
-
-
 class AutosolveResultPanel
 ( violationTarget : ConcreteNode,
-  controller : SVGController,
-  res : Search[SResult]) extends SplitPane(Orientation.Horizontal) {
-
-  import controller.graph
-
-  def ancestorsUsersAndUsersAncestorsOf(graph : DependencyGraph, id : NodeId) = {
-    val users = graph.usersOf(id)
-    val targetAndAncestors =
-      graph.containerPath(id).toSet + violationTarget.id
-
-    users.foldLeft(targetAndAncestors){
-      (s,id) => (graph.containerPath(id).toSet + id) union s
-    }
-
-  }
-  val initialNumNodes = graph.numNodes
-  def nodeVisibles(graph : DependencyGraph) : VisibilitySet.T = {
-    val idSet = ancestorsUsersAndUsersAncestorsOf(graph, violationTarget.id)
-
-    val initialVisibleSet =
-      idSet.foldLeft(VisibilitySet.allHidden(graph))(_.setVisibility(_, Visible))
-
-    Seq.range(initialNumNodes, graph.numNodes).foldLeft(initialVisibleSet){
-      (s,id) =>
-        ancestorsUsersAndUsersAncestorsOf(graph, id)
-          .foldLeft(s)(_.setVisibility(_, Visible))
-    }
-
-  }
+  val controller : SwingGraphController,
+  printingOptions0: PrintingOptions,
+  res : Search[SResult])
+  extends SplitPane(Orientation.Horizontal)
+  with ResultPanel{
 
 
-  val initialVisibleSet = nodeVisibles(graph)
+  val printingOptions: PrintingOptions = printingOptions0.copy(visibility = {
+      import controller.graph
+      val users = graph.usersOf(violationTarget.id)
+      val targetAndAncestors =
+        graph.containerPath(violationTarget.id)
+
+      val vs = users.foldLeft(targetAndAncestors){
+        (s,id) => (graph.containerPath(id).toSet + id) ++: s
+      }
+
+    VisibilitySet.allHidden(graph).setVisibility(vs, Visible)
+
+  })
 
   def selectedResult : Logged[DependencyGraph] = activePanel.selectedResult
 
   val successesTab = 0
   val failuresTab = 1
 
+  println(res.successes.length + " successes")
+  println(res.failures.length + " failures")
+
+
+  def selectorPanelOrDummy
+  ( withSelector : Boolean,
+    selector : => Component with Selector )  =
+    if(withSelector) {
+      val p = new SelectorResultPanel(controller, selector, printingOptions)
+      this listenTo p.selector
+      p
+    }
+    else new DummyResultPanel(controller)
 
   val successesPanel =
-    if(res.successes.nonEmpty) new SuccessPanel(controller,res, nodeVisibles)
-    else new DummyResultPanel(controller)
+    selectorPanelOrDummy(res.successes.nonEmpty, new SuccessSelector(res))
 
   val failurePanel =
-    if(res.failures.nonEmpty) new FailurePanel(controller,res, nodeVisibles)
-    else new DummyResultPanel(controller)
+    selectorPanelOrDummy(res.failures.nonEmpty, new FailureSelector(res))
 
-  this listenTo successesPanel
-  this listenTo failurePanel
 
   val tabs = new TabbedPane() {
     pages += new Page("Success", successesPanel) {
@@ -130,7 +148,7 @@ class AutosolveResultPanel
     dividerSize = 3
     preferredSize = new Dimension(1024, 780)
 
-    leftComponent = GraphScrollPane(controller, graph, initialVisibleSet)
+    leftComponent = graphPanel(controller.graph, printingOptions.visibility)
 
     // val stateSelector = new SortedStateSelector(res.allStatesByDepth)
     rightComponent = tabs
@@ -147,88 +165,51 @@ class AutosolveResultPanel
 }
 
 
-trait ResultPanel {
-  val controller : SVGController
-  def selectedResult : Logged[DependencyGraph]
 
-  def selectedResultVisibility = {
-    val newNodes = Range(controller.graph.numNodes, selectedResult.value.numNodes)
-    controller.printingOptions.visibility.setVisibility(newNodes, Visible)
-  }
 
-}
-
-class DummyResultPanel(val controller : SVGController) extends FlowPanel with ResultPanel {
+class DummyResultPanel(val controller : SwingGraphController) extends FlowPanel with ResultPanel {
+  def printingOptions : PrintingOptions = PrintingOptions(Set())
   def selectedResult : Logged[DependencyGraph] = controller.graph.set("")
 }
 
-class FailurePanel
-( val controller : SVGController,
-  res : Search[SResult],
-  nodeVisibles : DependencyGraph => VisibilitySet.T
-  ) extends BorderPanel with ResultPanel {
-
-  assert(res.failures.nonEmpty)
-
-  val failureSelector =
-    new SortedElementSelector[SearchState[SResult]](res.failuresByDepth, ErrorSelected.apply)
-
-  def selectedResult = failureSelector.selectedState.prevState.get.success map graphOfResult
-
-
-
-  val rightDocWrapper = GraphScrollPane(controller,
-    selectedResult.value,
-    selectedResultVisibility)
-    //nodeVisibles(selectedResult.value))
-
-    add(rightDocWrapper, Position.Center)
-    add(failureSelector, Position.South)
-
-  this listenTo failureSelector
-  reactions += {
-    case ErrorSelected(state) =>
-      rightDocWrapper.setGraph(selectedResult.value,
-        selectedResultVisibility)
-      publish(Log(state.fail.written +
-        state.fail.value.getMessage))
-
-  }
+trait Selector extends Publisher{
+  def selectedState : SearchState[SResult]
+  def selectedResult: Logged[DependencyGraph]
 }
 
-class SuccessPanel
-( val controller : SVGController,
-  res : Search[SResult],
-  nodeVisibles : DependencyGraph => VisibilitySet.T
-  ) extends BorderPanel with ResultPanel {
+class FailureSelector(res : Search[SResult])
+  extends SortedElementSelector[SearchState[SResult]](
+    res.failuresByDepth, StateSelected.apply) with Selector{
 
+  assert(res.failures.nonEmpty)
+  def selectedResult = selectedState.prevState.get.success map graphOfResult
+}
+
+class SuccessSelector(res : Search[SResult])
+  extends SimpleElementSelector[SearchState[SResult]](StateSelected.apply) with Selector{
   assert(res.successes.nonEmpty)
-  val lightKind = graphOfResult(res.successes.head.loggedResult.value).nodeKindKnowledge.lightKind
-//  val stateSelector =
-//    new SortedElementSelector(
-//      res.successes.groupBy(st => (Metrics.weight(st.loggedResult.value, lightKind) * 100).toInt),
-//      StateSelected.apply)
 
-  val stateSelector = new SimpleElementSelector[SearchState[SResult]](StateSelected.apply)
-  stateSelector.setStatesList(res.successes)
+  setStatesList(res.successes)
+  def selectedResult = selectedState.success map graphOfResult
+}
 
-  def selectedResult = stateSelector.selectedState.success map graphOfResult
 
-  val graphWrapper = GraphScrollPane(controller,
-    selectedResult.value,
-    selectedResultVisibility)
-    //nodeVisibles(stateSelector.selectedState.loggedResult.value))
+class SelectorResultPanel
+( val controller : SwingGraphController,
+  val selector : Component with Selector,
+  val printingOptions: PrintingOptions
+) extends BorderPanel with ResultPanel {
 
-  add(graphWrapper, Position.Center)
-  add(stateSelector, Position.South)
-  this listenTo stateSelector
+  add(selectedResultGraphPanel, Position.Center)
+  add(selector, Position.South)
+
+  def selectedResult = selector.selectedResult
+
+  this listenTo selector
   reactions += {
     case StateSelected(state) =>
-      graphWrapper.setGraph(selectedResult.value,
-        selectedResultVisibility)
-        //nodeVisibles(selectedResult.value))
-
+      add(selectedResultGraphPanel, Position.Center)
       publish(Log(selectedResult.written))
-  }
 
+  }
 }

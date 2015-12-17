@@ -2,6 +2,26 @@ package puck.graph.transformations
 
 import puck.graph._
 
+object Operation {
+  def involvedNodes(o : Operation) : Seq[NodeId] = o match {
+    case VNode(n) => Seq(n.id)//n.id +: n.potentialMatches
+    case CNode(cn) => Seq(cn.id)
+    case Edge(e) => Seq(e.source, e.target)
+    case RedirectionOp(e, exty) => Seq(e.source, e.target, exty.node)
+    case ChangeNodeName(id, _, _) => Seq(id)
+    case TypeChange(id, oldt, newt) =>
+      val ot = oldt.map(_.ids).getOrElse(Seq())
+      val nt = newt.map(_.ids).getOrElse(Seq())
+      id +:ot ++: nt
+    case AbstractionOp(id, abs) => id :: abs.nodes
+    case ChangeTypeBinding(((n1, n2), (n3, n4)), ext) =>
+      Seq(ext.edge._1, ext.edge._2, n1, n2, n3, n4)
+    case TypeDependency((n1, n2), (n3, n4)) =>
+      Seq(n1, n2, n3, n4)
+    case RoleChange(id, _, _) => Seq(id)
+  }
+}
+
 sealed trait Operation{
 
   def execute(g: DependencyGraph , op : Direction) : DependencyGraph

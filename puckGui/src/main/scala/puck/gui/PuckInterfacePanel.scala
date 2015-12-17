@@ -151,7 +151,7 @@ class PuckInterfacePanel
 
     val showConstraints = makeButton("Show constraints",
       "Show the constraints the graph has to satisfy"){
-      () => publish(ConstraintDisplayRequest(control.dg2AST.initialGraph))
+      () => publish(ConstraintDisplayRequest(control.dg2ast.initialGraph))
     }
 
     addDelayedComponent(showConstraints)
@@ -159,7 +159,7 @@ class PuckInterfacePanel
     val show = makeButton("Show graph",
       "Display a visual representation of the graph"){
       () =>
-        val g = control.dg2AST.initialGraph
+        val g = control.dg2ast.initialGraph
         publish(GraphDisplayRequest(
           "Graph",
           g, printIdsBox.selected,
@@ -175,10 +175,10 @@ class PuckInterfacePanel
       "Display a visual representation of the graph"){
       () => publish(GraphDisplayRequest(
         "Graph",
-        control.dg2AST.initialGraph,
+        control.dg2ast.initialGraph,
         printIdsBox.selected,
         printSignaturesBox.selected,
-        VisibilitySet.violationsOnly(control.dg2AST.initialGraph)))
+        VisibilitySet.violationsOnly(control.dg2ast.initialGraph)))
     }
 
     addDelayedComponent(showViolations)

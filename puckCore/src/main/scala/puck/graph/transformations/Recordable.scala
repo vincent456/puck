@@ -26,7 +26,7 @@ case class Transformation
 
 }
 
-case object MileStone extends Recordable{
+case object MileStone extends Recordable {
   def redo(g: DependencyGraph) = g.mileStone
 }
 case class Comment(msg : String) extends Recordable {

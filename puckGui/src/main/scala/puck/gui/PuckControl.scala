@@ -3,35 +3,33 @@ package puck.gui
 import java.io.{PipedInputStream, PipedOutputStream}
 
 import puck.LoadingListener
-import puck.actions.GraphController
 import puck.graph._
 import puck.graph.io._
 
 import puck.gui.svg.SVGFrame
+import puck.gui.svg.actions.SwingGraphController
 import puck.util.{PuckLogger, PuckLog}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.swing.{Component, ProgressBar, Publisher}
 import scala.util.{Failure, Success}
-
 
 class PuckControl(logger0 : PuckLogger,
                   val filesHandler : FilesHandler,
                   val graphUtils: GraphUtils,
                   private val progressBar : ProgressBar,
                   private val delayedDisplay : ArrayBuffer[Component])
-  extends GraphController with Publisher {
+  extends SwingGraphController with Publisher {
 
   implicit val logger : PuckLogger = logger0
-  var dg2AST : DG2AST = _
+  var dg2ast : DG2AST = _
 
   def selectedNodes: List[NodeId] = List()
 
   def selectedEdge: Option[(NodeId, NodeId)] = None
 
-  def initialGraph: DependencyGraph = dg2AST.initialGraph
+  def initialGraph: DependencyGraph = dg2ast.initialGraph
 
   import PuckLog.defaultVerbosity
 
@@ -42,7 +40,7 @@ class PuckControl(logger0 : PuckLogger,
     progressBar.visible = true
     progressBar.value = 0
 
-    dg2AST = filesHandler.loadGraph(Some(new LoadingListener {
+    dg2ast = filesHandler.loadGraph(Some(new LoadingListener {
       override def update(loading: Double): Unit =
         progressBar.value = (loading * 100).toInt
     }))
@@ -81,10 +79,10 @@ class PuckControl(logger0 : PuckLogger,
   def loadConstraints() : Unit = {
     try {
       logger.writeln("Loading constraints ...")
-      dg2AST = filesHandler.parseConstraints(dg2AST)
+      dg2ast = filesHandler.parseConstraints(dg2ast)
       updateStackListeners()
       logger.writeln(" done:")
-      dg2AST.initialGraph.printConstraints(logger, defaultVerbosity)
+      dg2ast.initialGraph.printConstraints(logger, defaultVerbosity)
     }
     catch {
       case _ : java.io.FileNotFoundException => logger writeln "constraint file not found"
@@ -103,7 +101,7 @@ class PuckControl(logger0 : PuckLogger,
 
     Future {
       logger.writeln("requesting svg frame")
-      new SVGFrame(pipedInput, opts, filesHandler, graphUtils, dg2AST){
+      new SVGFrame(pipedInput, opts, filesHandler, graphUtils, dg2ast){
         this.setTitle(title)
       }
     }
@@ -114,17 +112,18 @@ class PuckControl(logger0 : PuckLogger,
     }
   }
 
-  def applyOnCode(record : DependencyGraph) : Unit = {
+  def applyOnCode(record : DependencyGraph) : Unit =
     Future {
       logger.write("generating code ...")
-      dg2AST(record)
-      dg2AST.printCode(filesHandler.outDirectory !)
+      dg2ast(record)
+      dg2ast.printCode(filesHandler.outDirectory !)
       logger.writeln(" done")
     } onComplete {
       case Success(_) => ()
       case Failure(exc) => exc.printStackTrace()
     }
-  }
+
+
 
 //  type StateT = SearchState[DependencyGraph]
 //  def printStateSeq( subDirStr : String,
@@ -162,7 +161,6 @@ class PuckControl(logger0 : PuckLogger,
 
     case ApplyOnCodeRequest(searchResult) => applyOnCode(searchResult)
 
-//    case ExploreRequest(builder) =>
 //
 //      val engine = builder(dg2AST.initialGraph,
 //                          automaticConstraintLoosening = true)
