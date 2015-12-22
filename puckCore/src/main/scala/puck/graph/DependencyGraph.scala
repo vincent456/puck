@@ -33,10 +33,11 @@ object DependencyGraph {
                       graph1 : DependencyGraph,
                       graph2 : DependencyGraph,
                       logger : PuckLogger = PuckNoopLogger) : Boolean = {
-    val recordingComparatorControl = new RecordingComparatorControl(new DepthFirstSearchStrategy)
-    import puck.graph.comparison.RecordingComparatorInitialState
+    val recordingComparatorControl =
+      new RecordingComparatorControl(initialRecord, graph1, graph2, logger)
+
     val engine =
-      new SearchEngine(RecordingComparatorInitialState(initialRecord, graph1, graph2, logger),
+      new SearchEngine(new DepthFirstSearchStrategy,
       recordingComparatorControl, maxResult = Some(1))
     engine.explore()
     engine.successes.nonEmpty
@@ -105,7 +106,7 @@ class DependencyGraph
       recording = recording.addVirtualNode(n))
 
 
-  def addVirtualNode(ns : Seq[NodeId], k : NodeKind) : (VirtualNode, DependencyGraph) = {
+  def addVirtualNode(ns : Set[NodeId], k : NodeKind) : (VirtualNode, DependencyGraph) = {
     val (vn, nIndex) = nodesIndex.addVirtualNode(ns, k)
     (vn, newGraph(nodesIndex = nIndex,
       recording = recording.addVirtualNode(vn)))
@@ -550,11 +551,10 @@ class DependencyGraph
 
   def isViolation(e : DGEdge) : Boolean = {
     e.kind match {
-      case Contains | ContainsDef | ContainsParam =>
-        constraints.isWronglyContained(this, e.target)
-      case Uses | Isa =>
-        constraints.isViolation(this, e.user, e.used)
       case AbstractEdgeKind => false
+      case _ => /*Contains | ContainsDef | ContainsParam | Uses | Isa => */
+        constraints.isViolation(this, e.source, e.target)
+
     }
   }
 

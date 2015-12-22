@@ -82,3 +82,16 @@ class CreateInitalizerAction
       LoggedSuccess(TR.intro.initializer(graph.mileStone, node.id)._2)
     }
 }
+
+class SetMutabilityAction
+(controller : GraphController,
+ node : ConcreteNode,
+ mutable : Boolean)
+  extends AbstractAction(s"Set $node " + (if(mutable) "mutable" else "immutable")) {
+
+  def actionPerformed(e: ActionEvent) : Unit =
+    printErrOrPushGraph(controller, "Mutability Action failure"){
+      LoggedSuccess( controller.graph.setMutability(node.id, mutable))
+    }
+}
+

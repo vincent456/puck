@@ -48,13 +48,6 @@ case class ConstraintsMaps
      copy(friendConstraints = addConstraintToMap(friendConstraints, ct))
 
 
-   def forContainer(graph : GraphT, nid : NodeId)(f : NodeId => Boolean): Boolean =
-     graph.container(nid) match {
-     case None => false
-     case Some(id) => f(id)
-   }
-
-
    def printConstraints[V](graph : GraphT, logger : Logger[V], v : V) : Unit = {
      namedSets.foreach{
        case (_, namedSet) => logger.writeln((graph, namedSet).shows(namedRangeSetDefCord))(v)
@@ -100,7 +93,6 @@ case class ConstraintsMaps
         used1.nid != user &&
          hideConstraints.getOrElse(used1, Iterable.empty).exists(_.violated(graph, uses))
      }
-
    }
 
    def isViolation(graph : GraphT, user : NIdT, used : NIdT) =
@@ -108,7 +100,7 @@ case class ConstraintsMaps
 
 
    def isWronglyContained(graph : GraphT, node : NIdT) : Boolean =
-    forContainer(graph, node)(isViolation(graph, _, node))
+    graph container node map (isViolation(graph, _, node)) getOrElse false
 
 
    def wrongUsers(graph : GraphT, node : NIdT) : List[NIdT] = {

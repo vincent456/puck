@@ -18,11 +18,10 @@ import scalaz.{-\/, NonEmptyList, \/, \/-}
 
 
 class CouplingConstraintSolvingAllViolationsControl
-(strategy : SearchStrategy[DependencyGraph],
- val rules : TransformationRules,
+(val rules : TransformationRules,
  val initialGraph : DependencyGraph,
  val violationsKindPriority : Seq[NodeKind]
-) extends SearchStrategyDecorator[DependencyGraph](strategy){
+) extends SearchControl[DependencyGraph] {
 
   def findTargets(graph : DependencyGraph,
                   l : Seq[NodeKind] = violationsKindPriority.toStream) : Seq[DGNode] =  l match {
@@ -46,14 +45,11 @@ class CouplingConstraintSolvingAllViolationsControl
         Seq(LoggedError[DependencyGraph](s"cannot solve violations toward virtual node $vn"))
 
       case cn : ConcreteNode =>
-        val searchControlStrategy =
-          new CouplingConstraintSolvingControl(
-            new DepthFirstSearchStrategy[(DependencyGraph, Int)],
-            rules, g, cn)
+
 
         val engine =
-          new SearchEngine(searchControlStrategy.initialState,
-            searchControlStrategy,
+          new SearchEngine(new DepthFirstSearchStrategy(),
+            new CouplingConstraintSolvingControl(rules, g, cn),
             Some(1))
 
         engine.explore()
@@ -64,53 +60,44 @@ class CouplingConstraintSolvingAllViolationsControl
   def initialState : SearchState[DependencyGraph] =
     new SearchState(0, None, LoggedSuccess(initialGraph), nextStates(initialGraph))
 
-  override def oneStep: Option[(LoggedTry[DependencyGraph],
-    Seq[LoggedTry[DependencyGraph]])] = {
-    strategy.nextState.nextChoice flatMap( lt =>
-      lt.value match{
-        case \/-(g) => Some((lt, nextStates(g)))
-        case -\/(_) => None
-      })
-  }
-
 }
 
 class CouplingConstraintSolvingControl
-(strategy : SearchStrategy[(DependencyGraph, Int)],
- val rules : TransformationRules,
+(val rules : TransformationRules,
  val initialGraph : DependencyGraph,
  val violationTarget : ConcreteNode
-  ) extends SearchStrategyDecorator[(DependencyGraph, Int)](strategy){
+  ) extends SearchControl[(DependencyGraph, Int)]{
 
 
   def initialState : SearchState[(DependencyGraph, Int)] =
-    new SearchState(0, None, LoggedSuccess((initialGraph, 0)), nextStates(initialGraph,0))
+    new SearchState(0, None, LoggedSuccess((initialGraph, 0)), nextStates((initialGraph,0)))
+
+
 
   implicit def setState( s : (Seq[LoggedTry[DependencyGraph]], Int) ) : Seq[LoggedTry[(DependencyGraph, Int)]] =
      s._1 map ( _ map ((_, s._2)))
+//  implicit def setState2[T]( s : (Seq[LoggedTry[(T, DependencyGraph)]], Int) ) : Seq[LoggedTry[(DependencyGraph, Int)]] =
+//    s._1 map ( _ map {case (t,g) =>  (g, s._2)})
 
 
-  def nextStates(g : DependencyGraph, state : Int) : Seq[LoggedTry[(DependencyGraph, Int)]] =
-    state match {
-      case 0 => (epsilon(g) ++ hostIntroAction(g), 1)
+  def nextStates(state : (DependencyGraph, Int)) : Seq[LoggedTry[(DependencyGraph, Int)]] = {
+    val  (g, automataState) = state
+    automataState match {
+      case 0 =>val s =  (epsilon(g) ++ hostIntroAction(g), 1)
+        assert(s.nonEmpty)
+        s
 
-      case 1 => (moveAction(g), 2)
-
-      case 2 => (epsilon(g) ++ absIntro(g), 3)
-
-      case 3 => (redirectTowardAbstractions(g), 4)
-
+      case 1 => val s = (moveAction(g), 2)
+        assert(s.nonEmpty)
+        s
+      case 2 => val s = (epsilon(g) ++ absIntro(g), 3)
+        assert(s.nonEmpty)
+        s
+      case 3 => val s = (redirectTowardAbstractions(g), 4)
+        assert(s.nonEmpty)
+        s
       case _ => Seq()
-
     }
-
-  override def oneStep: Option[(LoggedTry[(DependencyGraph, Int)],
-                                Seq[LoggedTry[(DependencyGraph, Int)]])] = {
-     strategy.nextState.nextChoice flatMap( lt =>
-       lt.value match{
-         case \/-((g, state)) => Some((lt, nextStates(g,state)))
-         case -\/(_) => None
-    })
   }
 
 
@@ -118,60 +105,123 @@ class CouplingConstraintSolvingControl
 
   def extractGraph[A](ng : (A, DependencyGraph)): DependencyGraph = ng._2
 
+  def toSeqLTG[T]( s : Seq[LoggedTry[(T, DependencyGraph)]] ) :  Seq[LoggedTry[DependencyGraph]] =
+    s map ( _ map (_._2))
+
   val epsilon : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-        g => Seq(LoggedSuccess("Epsilon transition", g))
+        g => Seq(LoggedSuccess("Epsilon transition\n", g))
+
+//  val nameSpaceIntro: DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
+//    g => toSeqLTG(actionsGenerator.introNodes(g.nodeKindKnowledge.kindOfKindType(NameSpace), g))
+//
+//  val typeDeclIntro: DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
+//    g => toSeqLTG(actionsGenerator.introNodes(g.nodeKindKnowledge.kindOfKindType(TypeDecl), g))
 
   val hostIntroAction : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-       actionsGenerator.hostIntro(violationTarget) andThen (_ map ( _ map extractGraph ) )
+       actionsGenerator.hostIntro(violationTarget) andThen toSeqLTG
 
   val moveAction : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-       actionsGenerator.move(violationTarget) andThen (_ map ( _ map extractGraph))
+       actionsGenerator.move(violationTarget) andThen toSeqLTG
 
   val redirectTowardAbstractions : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
     actionsGenerator.redirectTowardExistingAbstractions(violationTarget)
 
   val absIntro : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-      actionsGenerator.absIntro(violationTarget) andThen (_ map ( _ map extractGraph))
+      actionsGenerator.absIntro(violationTarget) andThen toSeqLTG
 
-
+  def checkSuccess(g : DependencyGraph ) : LoggedTry[DependencyGraph] =
+    if(g.isWronglyUsed(violationTarget.id)) LoggedError("Remaining violations")
+    else LoggedSuccess(g)
 
 }
 
 class SolvingActions
-(val rules : TransformationRules){
+(val rules : TransformationRules) {
 
   var newCterNumGen = 0
 
   def containerKind
-  ( g : DependencyGraph, toBeContainedKind : NodeKind
-    ) : Stream[NodeKind] = {
+  (g : DependencyGraph,
+   toBeContainedKind: NodeKind
+  ): Stream[NodeKind] =
     g.nodeKinds.toStream.filter(_.canContain(toBeContainedKind))
-  }
+
+
+
+  /*  def hostIntro
+  (toBeContained : ConcreteNode
+  ) : DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] =
+    g => hostIntro(containerKind(g, toBeContained.kind))(g)
+
 
   def hostIntro
-  (toBeContained : ConcreteNode
-    ) : DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] =
-    g =>
-      containerKind(g, toBeContained.kind) map {
-        hostKind =>
-          newCterNumGen += 1
-          val hostName = s"${toBeContained.name}_container$newCterNumGen"
-          rules.intro(g, hostName, hostKind)
-      } flatMap {
-        case (n, g1) =>
-          findHost(n)(g1) map (ltg => s"Searching host for $n\n" <++: ltg map {
-            case (hid, g2) => (n.id, g2.addContains(hid, n.id))
-          })
-      }
+  (containerKinds : Seq[NodeKind]
+  ) : DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] = { g =>
+    println("host intro")
+    containerKinds map {
+      hostKind =>
+        newCterNumGen += 1
+        val hostName = s"${toBeContained.name}_container$newCterNumGen"
+        rules.intro(g, hostName, hostKind)
+    } flatMap {
+      case (n, g1) =>
+        findHost(n)(g1) map (ltg => s"Searching host for $n\n" <++: ltg map {
+          case (hid, g2) => (n.id, g2.addContains(hid, n.id))
+        })
+    }
+  }*/
+
+
+  def introNodes(nodeKinds: Seq[NodeKind], g: DependencyGraph): Stream[LoggedTry[(NodeId, DependencyGraph)]] =
+    nodeKinds.toStream map {
+      hostKind =>
+        newCterNumGen += 1
+        val hostName = s"extra${hostKind}Container$newCterNumGen"
+        rules.intro(g, hostName, hostKind)
+    } flatMap attribHost
+
+
+  def hostIntro
+  (toBeContained: ConcreteNode
+  ): DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] =
+    g => containerKind(g, toBeContained.kind) map {
+      hostKind =>
+        newCterNumGen += 1
+        val hostName = s"${toBeContained.name}_container$newCterNumGen"
+        rules.intro(g, hostName, hostKind)
+    } flatMap attribHost
+
 
   def findHost
+  (toBeContained: ConcreteNode): DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] =
+   chooseNode((dg, cn) => dg.canContain(cn, toBeContained) &&
+      !dg.isViolation(Contains(cn.id, toBeContained.id)))
+  /*def findHostRecIntro
   ( toBeContained : ConcreteNode ) : DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] =
-    chooseNode((dg, cn) => dg.canContain(cn, toBeContained) /*&&
-      (!dg.isViolation(Contains(cn.id, toBeContained.id)) ||
-        Role.isFactory(dg, toBeContained))*/ )  //exception for factory to allow prototype
+  { g =>
+    val s = findHost(toBeContained)(g)  //exception for factory to allow prototype
 
+    if(s.nonEmpty) s
+    else {
+      println("findhost rec case")
+      val ccks = containerKind(g, toBeContained.kind) flatMap (containerKind(g, _))
+      if(ccks.isEmpty) Stream()
+      else introNodes(ccks, g) flatMap {
+        case LoggedEither(log, \/-((_, g1))) => findHostRecIntro(toBeContained)(g1) map (lt => log <++: lt)
+        case ltg => Stream(ltg)
+      }
+    }
 
-  type NodePredicate = (DependencyGraph, ConcreteNode) => Boolean
+  }*/
+
+  val attribHost : ((ConcreteNode, DependencyGraph)) => Stream[LoggedTry[(NodeId, DependencyGraph)]] = {
+    case (n, g) =>
+      val hostStream = findHost(n)(g)
+      hostStream  map (ltg => s"Searching host for $n\n" <++: ltg map {
+      case (hid, g1) => (n.id, g1.addContains(hid, n.id))
+    })
+  }
+
 
   def canBeVirtualized : KindType => Boolean = {
     case NameSpace => true
@@ -189,7 +239,7 @@ class SolvingActions
 
       val choices = graph.concreteNodes.filter(predicate(graph,_)).toList
 
-      if(choices.isEmpty) Stream(LoggedError("choose node, no choice"))
+      if(choices.isEmpty) Stream(LoggedError(s"choose node, no choice"))
       else {
 
         val s = partitionByKind(graph)(choices, List()).toStream
@@ -199,7 +249,7 @@ class SolvingActions
           nel =>
             if (nel.tail.isEmpty) Stream(logNodeChosen(nel.head, graph))
             else if (canBeVirtualized(nel.head.kind.kindType)) {
-              val (vn, g2) = graph.addVirtualNode(nel.toList.map(_.id).toSeq, nel.head.kind)
+              val (vn, g2) = graph.addVirtualNode(nel.map(_.id).toSet, nel.head.kind)
               Stream(logNodeChosen(vn, g2))
             }
             else {
@@ -231,11 +281,12 @@ class SolvingActions
   ( wronglyContained : ConcreteNode
     ) : DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] = {
     g0 =>
+      val lg = s"trying to move $wronglyContained, searching host\n"
       findHost(wronglyContained)(g0) flatMap {
-        case LoggedEither(log, -\/(err)) => Stream(LoggedEither(log, -\/(err)))
+        case LoggedEither(log, -\/(err)) => Stream(LoggedEither(lg + log, -\/(err)))
         case LoggedEither(log, \/-((newCter, g))) =>
               val oldCter = g.container_!(wronglyContained.id)
-              doMove(g, wronglyContained, oldCter, newCter) map (ltg => ltg.map((newCter, _)))
+              doMove(g, wronglyContained, oldCter, newCter) map (ltg => (lg + log) <++: ltg.map((newCter, _)))
       }
   }
 
@@ -352,11 +403,12 @@ class SolvingActions
   def redirectTowardExistingAbstractions
   ( used : ConcreteNode) :
     DependencyGraph => Stream[LoggedTG] =
-    g => {
-      redirectTowardExistingAbstractions(used,
-        g wrongUsers used.id,
-        g abstractions used.id)(g)
-    }
+    g =>
+        redirectTowardExistingAbstractions(used,
+          g wrongUsers used.id,
+          g abstractions used.id)(g)
+
+
 
 
 
@@ -364,45 +416,47 @@ class SolvingActions
   ( used : ConcreteNode,
     wrongUsers : List[NodeId],
     choices : Set[Abstraction]) :
-    DependencyGraph => Stream[LoggedTG] =
+  DependencyGraph => Stream[LoggedTG] =
     g =>
       if(wrongUsers.isEmpty) Stream(LoggedSuccess(g))
+      else if(choices.isEmpty) Stream(LoggedError("No abstractions"))
       else {
 
-      val cannotUseAbstraction: Abstraction => NodeId => Boolean = {
-        abs => userId =>
+        val cannotUseAbstraction: Abstraction => NodeId => Boolean = {
+          abs => userId =>
 
-          val uses = g.getUsesEdge(userId, used.id).get
+            val uses = g.getUsesEdge(userId, used.id).get
 
-          (abs, uses.accessKind) match {
-            case (AccessAbstraction(absId, _), _) => g.interloperOf(userId, absId)
-            case (ReadWriteAbstraction(Some(rid), _), Some(Read)) => g.interloperOf(userId, rid)
-            case (ReadWriteAbstraction(_, Some(wid)), Some(Write)) => g.interloperOf(userId, wid)
-            case (ReadWriteAbstraction(Some(rid), Some(wid)), Some(RW)) =>
-              g.interloperOf(userId, rid) || g.interloperOf(userId, wid)
-            case _ => sys.error("should not happen")
-          }
+            (abs, uses.accessKind) match {
+              case (AccessAbstraction(absId, _), _) => g.interloperOf(userId, absId)
+              case (ReadWriteAbstraction(Some(rid), _), Some(Read)) => g.interloperOf(userId, rid)
+              case (ReadWriteAbstraction(_, Some(wid)), Some(Write)) => g.interloperOf(userId, wid)
+              case (ReadWriteAbstraction(Some(rid), Some(wid)), Some(RW)) =>
+                g.interloperOf(userId, rid) || g.interloperOf(userId, wid)
+              case _ => sys.error("should not happen")
+            }
 
-      }
+        }
 
-      choices.toStream flatMap {
+
+        choices.toStream flatMap {
           abs =>
-             val (remainingWus, wuToRedirect) =
-                wrongUsers.partition(cannotUseAbstraction(abs))
+            val (remainingWus, wuToRedirect) =
+              wrongUsers.partition(cannotUseAbstraction(abs))
 
-              val ltg: LoggedTG =
-                wuToRedirect.foldLoggedEither(g) {
-                  (g, wu) =>
-                    rules.redirection.
-                      redirectUsesAndPropagate(g, g.getUsesEdge(wu, used.id).get, abs)
-                }
+            val ltg: LoggedTG =
+              wuToRedirect.foldLoggedEither(g) {
+                (g, wu) =>
+                  rules.redirection.
+                    redirectUsesAndPropagate(g, g.getUsesEdge(wu, used.id).get, abs)
+              }
 
             ltg.value match {
               case \/-(g2) =>
-                redirectTowardExistingAbstractions(used,remainingWus, choices - abs)(g2)
+                redirectTowardExistingAbstractions(used, remainingWus, choices - abs)(g2) map ( ltg.log <++: _)
               case -\/(_) => Stream(ltg)
             }
-          }
+        }
       }
 
 

@@ -6,7 +6,6 @@ import java.io.File
 import puck.graph._
 import puck.graph.io.{VisibilitySet, FilesHandler}
 import puck.gui.explorer.{NodeInfosPanel, GraphExplorer}
-import puck.gui.search.ResultPanel
 import puck.util.{PuckLogger, PuckLog}
 
 

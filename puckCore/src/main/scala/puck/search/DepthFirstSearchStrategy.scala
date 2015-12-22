@@ -27,8 +27,4 @@ class DepthFirstSearchStrategy[T] extends SearchStrategy[T] {
     remainingStates.head
   }
 
-  def oneStep : Option[( LoggedTry[T], Seq[LoggedTry[T]])] =
-    nextState.nextChoice map ((_, Seq()))
-
-
 }

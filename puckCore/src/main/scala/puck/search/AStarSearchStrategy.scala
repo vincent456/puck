@@ -1,4 +1,5 @@
-package puck.search
+package puck
+package search
 
 import puck.graph.LoggedTry
 
@@ -24,23 +25,20 @@ class AStarSearchStrategy[T]
 
   val remainingStates = new mutable.PriorityQueue[SearchState[T]]()
 
-  override def addState(s: SearchState[T]): Unit =
-    remainingStates += s
+  def addState(s: SearchState[T]): Unit =
+    ignore(remainingStates += s)
 
-  override def currentState: SearchState[T] =
+  def currentState: SearchState[T] =
     remainingStates.head
 
-  override def addState(currentResult: LoggedTry[T], choices: Seq[LoggedTry[T]]): Unit =
-    remainingStates += currentState.createNextState(currentResult, choices)
+  def addState(currentResult: LoggedTry[T], choices: Seq[LoggedTry[T]]): Unit =
+    ignore(remainingStates += currentState.createNextState(currentResult, choices))
 
-  override def oneStep: Option[(LoggedTry[T], Seq[LoggedTry[T]])] =
-    nextState.nextChoice map ((_, Seq()))
-
-  override def nextState: SearchState[T] = {
+  def nextState: SearchState[T] = {
     if (remainingStates.head.triedAll) remainingStates.dequeue()
     remainingStates.head
   }
 
-  override def canContinue: Boolean =
+  def canContinue: Boolean =
     !remainingStates.head.triedAll || remainingStates.tail.nonEmpty
 }

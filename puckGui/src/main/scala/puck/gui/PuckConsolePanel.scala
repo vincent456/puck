@@ -3,7 +3,6 @@ package puck.gui
 import scala.swing._
 
 class PuckConsolePanel
-
   extends BoxPanel(Orientation.Vertical)  {
 
 /*  val lines = 10

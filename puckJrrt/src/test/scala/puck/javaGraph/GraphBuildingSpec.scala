@@ -340,4 +340,36 @@ class GraphBuildingSpec extends AcceptanceSpec {
       }
     }
   }
+
+  feature("anonymous class"){
+    val examplesPath = graphBuildingExamplesPath +  "anonymousClass/"
+
+    scenario("this use explicit") {
+      val _ = new ScenarioFactory(s"$examplesPath/AnonymousClass.java") {
+//        val clazz = fullName2id("p.A")
+//        val methM = fullName2id("p.A.m()")
+//        val mUserViaThis = fullName2id("p.A.mUserViaThis()")
+//        val mUserViaParameter = fullName2id("p.A.mUserViaParameter(A)")
+//        val theParameter = fullName2id("p.A.mUserViaParameter(A).a")
+//
+//
+//        val mUserViaThisDef = getDefinition(graph, mUserViaThis)
+//        val mUserViaParameterDef = getDefinition(graph, mUserViaParameter)
+//
+//        //methodUse
+//        assert( graph.uses(mUserViaThisDef, methM) )
+//        assert( ! graph.uses(mUserViaThis, methM) )
+//
+//        //typeUse
+//        assert( graph.uses(clazz, clazz) )
+//
+//        assert( graph.uses(mUserViaParameterDef, methM) )
+//        assert( !graph.uses(mUserViaParameter, methM) )
+//
+//        assert( graph.uses(theParameter, clazz) )
+
+        QuickFrame(graph, "JayJay",JavaDotHelper)
+      }
+    }
+  }
 }

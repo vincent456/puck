@@ -51,6 +51,7 @@ class ConcreteNodeMenu
     }
 
     this.addSeparator()
+    this.add(new SetMutabilityAction(controller, node, !node.mutable))
     this.add(new RemoveNodeAction(controller, node))
 
     controller.selectedNodes match {

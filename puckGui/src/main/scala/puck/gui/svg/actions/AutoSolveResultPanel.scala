@@ -106,15 +106,12 @@ class AutosolveResultPanel
   val successesTab = 0
   val failuresTab = 1
 
-  println(res.successes.length + " successes")
-  println(res.failures.length + " failures")
-
-
   def selectorPanelOrDummy
   ( withSelector : Boolean,
     selector : => Component with Selector )  =
     if(withSelector) {
       val p = new SelectorResultPanel(controller, selector, printingOptions)
+      this listenTo p
       this listenTo p.selector
       p
     }
@@ -173,8 +170,8 @@ class DummyResultPanel(val controller : SwingGraphController) extends FlowPanel 
 }
 
 trait Selector extends Publisher{
-  def selectedState : SearchState[SResult]
   def selectedResult: Logged[DependencyGraph]
+  def selectedLog : String = selectedResult.written
 }
 
 class FailureSelector(res : Search[SResult])
@@ -183,6 +180,7 @@ class FailureSelector(res : Search[SResult])
 
   assert(res.failures.nonEmpty)
   def selectedResult = selectedState.prevState.get.success map graphOfResult
+  override def selectedLog = selectedState.loggedResult.log
 }
 
 class SuccessSelector(res : Search[SResult])
@@ -209,7 +207,7 @@ class SelectorResultPanel
   reactions += {
     case StateSelected(state) =>
       add(selectedResultGraphPanel, Position.Center)
-      publish(Log(selectedResult.written))
+      publish(Log(selector.selectedLog))
 
   }
 }

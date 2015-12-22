@@ -4,13 +4,10 @@ package io
 
 import java.io._
 
-import puck.graph.constraints.{Solver, DecisionMaker}
 import puck.graph.transformations.Transformation
 import puck.util._
 
 import scala.sys.process.Process
-
-import scala.concurrent.ExecutionContext.Implicits.global
 
 object FilesHandler{
   object Default{
@@ -22,20 +19,7 @@ object FilesHandler{
     final val apiNodesFileName: String = "api_nodes"
     final val logFileName: String = outDirName + File.separator + "graph_solving.log"
   }
-
-
-
-
-  type AutoConstraintLoosening = Boolean
-  type SolverBuilder = (DecisionMaker, AutoConstraintLoosening) => Solver
-
 }
-
-/*trait ConstraintSolvingSearchEngineBuilder[Kind <: NodeKind[Kind]] {
-  def apply(graph : AccessGraph[Kind]) :
-  SearchEngine[Recording[Kind]]
-}*/
-
 
 trait DG2ASTBuilder{
   def apply(srcDirectory : File,

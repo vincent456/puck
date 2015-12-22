@@ -29,14 +29,17 @@ trait Search[Result]{
 
 
 class SearchEngine[T]
-( val initialState : SearchState[T],
-  val searchStrategy: SearchStrategy[T],
+( val searchStrategy: SearchStrategy[T],
+  val control : SearchControl[T],
   val maxResult : Option[Int] = None,// default = all result
   val evaluator : Option[Evaluator[T]] = None
   ) extends Search[T] {
 
   val successes = mutable.ListBuffer[SearchState[T]]()
   val failures = mutable.ListBuffer[SearchState[T]]()
+
+  val initialState : SearchState[T] = control.initialState
+
 
   val enoughSuccess : () => Boolean =
     maxResult match {
@@ -59,8 +62,7 @@ class SearchEngine[T]
 
   def storeResult(resState : SearchState[T]) : Unit = {
     ignore(resState.loggedResult.value match {
-      case -\/(err) =>
-        failures += resState
+      case -\/(err) => failures += resState
       case \/-(g) => storeSuccess(resState)
 
     })
@@ -74,28 +76,39 @@ class SearchEngine[T]
 
     if(choices.isEmpty)
       storeResult(searchStrategy.currentState.createNextState(cr, Seq()))
-    else
-      searchStrategy.addState(cr, choices)
+    else searchStrategy.addState(cr, choices)
   }
 
   def init() : Unit = ()
 
   def exploredStates = numExploredStates
 
-  def explore() : Unit =
-  if(initialState.choices.isEmpty)
-    storeResult(initialState)
-  else {
-    searchStrategy.addState(initialState)
-    numExploredStates = 1
-
-    do searchStrategy.oneStep foreach {
-      case (res, choices) => addState(res, choices)
-    }
-    while(searchStrategy.canContinue && !enoughSuccess())
+  def oneStep() : Unit= {
+    searchStrategy.nextState.nextChoice foreach (lt =>
+      lt.value match {
+        case \/-(cc) => addState(lt, control.nextStates(cc) map (ltnext => lt.log <++: ltnext))
+        case _ =>  addState(lt, Seq())
+      })
   }
 
+  def explore() : Unit =
+    if(initialState.choices.isEmpty)
+      storeResult(initialState)
+    else {
+      searchStrategy.addState(initialState)
+      numExploredStates = 1
 
+      do oneStep()
+      while(searchStrategy.canContinue && !enoughSuccess())
+    }
+
+
+}
+
+trait SearchControl[T]{
+  //def produce(t : T) : Seq[LoggedTry[T]]
+  def initialState : SearchState[T]
+  def nextStates(t : T) : Seq[LoggedTry[T]]
 }
 
 trait SearchStrategy[T] {
@@ -104,7 +117,6 @@ trait SearchStrategy[T] {
   def canContinue : Boolean
   def currentState : SearchState[T]
   def nextState: SearchState[T]
-  def oneStep : Option[(LoggedTry[T], Seq[LoggedTry[T]])]
 }
 
 

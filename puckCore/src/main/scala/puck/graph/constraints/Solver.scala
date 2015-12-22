@@ -148,7 +148,7 @@ class Solver
               (k : Logged[FindHostResult] => Unit) : Unit = {
 
     object FindHostPredicate extends NodePredicate {
-      def apply(graph : DependencyGraph, n : ConcreteNode) : Boolean =
+      def apply(graph : DependencyGraph, n : DGNode) : Boolean =
         graph.canContain(n, toBeContained) && specificPredicate(graph, n)
 
       override def toString : String = s"Searching Host for $toBeContained"
@@ -337,7 +337,7 @@ class Solver
       .map(_.removeContains(oldCter, wronglyContained.id, register = false))
 
     findHost(lg1, wronglyContained,
-      (graph : DependencyGraph, potentialHost: ConcreteNode) =>
+      (graph : DependencyGraph, potentialHost: DGNode) =>
         !graph.interloperOf(potentialHost.id, wronglyContained.id)) {
       logres =>
         logres.value match {

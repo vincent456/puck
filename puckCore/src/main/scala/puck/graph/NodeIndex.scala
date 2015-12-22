@@ -11,7 +11,7 @@ object NodeIndex {
   val ConcreteNodeIndex = Map
   type VirtualNodeIndex = Map[NodeId, VirtualNode]
   val VirtualNodeINdex = Map
-  type Nodes2VnodeMap = Map[Seq[NodeId], NodeId]
+  type Nodes2VnodeMap = Map[Set[NodeId], NodeId]
   val Nodes2VNodeMap = Map
 
   def apply(root : ConcreteNode) : NodeIndex =
@@ -70,7 +70,7 @@ case class NodeIndex
       removedVnodes = removedVnodes - n.id,
       cNodes2vNodes = cNodes2vNodes + (n.potentialMatches -> n.id))
 
-  def addVirtualNode(ns : Seq[NodeId], k : NodeKind) : (VirtualNode, NodeIndex) = {
+  def addVirtualNode(ns : Set[NodeId], k : NodeKind) : (VirtualNode, NodeIndex) = {
     cNodes2vNodes get ns match {
       case Some(vnid) =>
         vNodes get vnid map ((_, this)) getOrElse {

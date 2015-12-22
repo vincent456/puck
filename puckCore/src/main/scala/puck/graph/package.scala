@@ -19,7 +19,7 @@ package object graph {
   type LoggedTry[+A] = LoggedEither[Error, A]
   type LoggedTG = LoggedTry[DependencyGraph]
 
-  type NodePredicate = (DependencyGraph, ConcreteNode) => Boolean
+  type NodePredicate = (DependencyGraph, DGNode) => Boolean
 
   type NodeId = Int
 

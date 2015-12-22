@@ -91,7 +91,10 @@ class JavaJastAddDG2AST
     safeGet(graph, graph2ASTMap)(id)
 
   def code(graph : DependencyGraph, id : NodeId) : String =
-    astNodeOf(graph,id).toString
+    astNodeOf(graph,id) match {
+      case hn : HasNode => hn.node.prettyPrint()
+      case n => n.toString
+    }
 
 
 

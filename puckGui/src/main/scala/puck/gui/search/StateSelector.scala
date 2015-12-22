@@ -74,7 +74,7 @@ class StateSelector
   printId : () => Boolean,
   printSig: () => Boolean,
   visibility : VisibilitySet.T)
-  extends  SortedElementSelector[SearchState[SResult]](map, StateSelected.apply) {
+  extends SortedElementSelector[SearchState[SResult]](map, StateSelected.apply) {
 
 
   val secondLine = new FlowPanel()

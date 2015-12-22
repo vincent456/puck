@@ -38,7 +38,7 @@ object DGNode {
 
 case class VirtualNode
 (id : NodeId,
- potentialMatches : Seq[NodeId],
+ potentialMatches : Set[NodeId],
  kind : NodeKind) extends DGNode {
   val mutable = true
   //def styp(g : DependencyGraph) = None
@@ -50,7 +50,7 @@ case class VirtualNode
     potentialMatches map stringify mkString ("Virtual(", " \\/ ", ")")
 
   val name : String = mkNameString(_.toString)
-  def name(g : DependencyGraph) : String =mkNameString(g.getConcreteNode(_).name)
+  def name(g : DependencyGraph) : String =mkNameString(g.getNode(_).name)
 
 
 }

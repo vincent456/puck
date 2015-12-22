@@ -1,12 +1,10 @@
-package puck.graph.comparison
+package puck.graph
+package comparison
 
 import puck.PuckError
-import puck.graph._
-
-import puck.graph.comparison.RecordingComparator._
 import puck.graph.transformations._
-import puck.search.{SearchStrategyDecorator, SearchStrategy}
-
+import puck.search.SearchControl
+import puck.util.PuckLogger
 import scalaz.Scalaz._
 import scalaz._
 
@@ -165,17 +163,18 @@ object RecordingComparator{
 object NoSolution extends PuckError("No solution")
 object WrongMapping extends PuckError("Wrong mapping")
 
-class RecordingComparatorControl
-( strategy : SearchStrategy[Compared]
-) extends SearchStrategyDecorator[Compared](strategy){
+import RecordingComparator._
 
-  override def oneStep: Option[(LoggedTry[Compared], Seq[LoggedTry[Compared]])] = {
-    strategy.nextState.nextChoice flatMap( lt =>
-      lt.value match{
-        case \/-(cc) => Some((lt, nextStates(cc)))
-        case -\/(_) => None
-      })
-  }
+class RecordingComparatorControl
+( initialRecord : Seq[Transformation],
+  graph1 : DependencyGraph,
+  graph2 : DependencyGraph,
+  logger : PuckLogger )
+  extends SearchControl[Compared]{
+
+  def initialState = RecordingComparatorInitialState(initialRecord, graph1, graph2, logger)
+  def nextStates(t: Compared): Seq[LoggedTry[Compared]] =
+    RecordingComparator.nextStates(t)
 }
 
 
