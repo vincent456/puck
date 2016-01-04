@@ -3,47 +3,34 @@ package puck.graph
 object Metrics {
 
 
-  def outgoingDependencies(graph: DependencyGraph, root: NodeId): Set[NodeIdP] = {
-
-    def aux(id: NodeId, acc0: Set[NodeIdP]): Set[NodeIdP] = {
-      val acc1 = graph.usedBy(id).foldLeft(acc0) {
-        (acc, usee) =>
-          if (graph.contains_*(root, usee)) acc
-          else acc + ((id, usee))
+  def outgoingDependencies(graph: DependencyGraph, root: NodeId): Set[NodeIdP] =
+    graph.subTree(root, includeRoot = true).foldLeft(Set[NodeIdP]()) {
+      (acc0, id) => graph.usedBy(id).foldLeft(acc0) {
+        (acc, user) =>
+          if (graph.contains_*(root, user)) acc
+          else acc + ((id, user))
       }
-      graph.content(id).foldLeft(acc1) { (acc, child) => aux(child, acc) }
     }
 
-    aux(root, Set[NodeIdP]())
-  }
-
-
-  def incomingDependencies(graph: DependencyGraph, root: NodeId): Set[NodeIdP] = {
-    def aux(id: NodeId, acc0: Set[NodeIdP]): Set[NodeIdP] = {
-      val acc1 = graph.usersOf(id).foldLeft(acc0) {
+  def incomingDependencies(graph: DependencyGraph, root: NodeId): Set[NodeIdP] =
+    graph.subTree(root, includeRoot = true).foldLeft(Set[NodeIdP]()) {
+      (acc0, id) => graph.usersOf(id).foldLeft(acc0) {
         (acc, user) =>
           if (graph.contains_*(root, user)) acc
           else acc + ((user, id))
       }
-      graph.content(id).foldLeft(acc1) { (acc, child) => aux(child, acc) }
     }
 
-    aux(root, Set[NodeIdP]())
-  }
-
-
-  def internalDependencies(graph: DependencyGraph, root: NodeId): Set[NodeIdP] = {
-    def aux(root: NodeId, id: NodeId, acc0: Set[NodeIdP]): Set[NodeIdP] = {
-      val acc1 = graph.usedBy(id).foldLeft(acc0) {
-        (acc, usee) =>
-          if (graph.contains_*(root, usee))
-            acc + ((id, usee))
+  def internalDependencies(graph: DependencyGraph, root: NodeId): Set[NodeIdP] =
+    graph.subTree(root, includeRoot = true).foldLeft(Set[NodeIdP]()){
+      (acc0, id) => graph.usedBy(id).foldLeft(acc0) {
+        (acc, used) =>
+          if (graph.contains_*(root, used))
+            acc + ((id, used))
           else acc
       }
-      graph.content(id).foldLeft(acc1) { (acc, child) => aux(root, child, acc) }
     }
-    aux(root, root, Set[NodeIdP]())
-  }
+
 
   def provides(graph: DependencyGraph, provider: NodeId, other: NodeId) = {
     val these = graph.subTree(provider)
@@ -107,7 +94,7 @@ object Metrics {
 
 
 
-  def typeWeight(g: DependencyGraph, typeId: NodeId): Int = {
+  def typeWeight(g: DependencyGraph, typeId: NodeId): Double = {
     val t = g.getNode(typeId)
 
 
@@ -144,13 +131,9 @@ object Metrics {
     //    println("######################################################")
     //    println("######################################################")
 
-    // 1 class + 1 method + 1 ctor  = weight 1
-    // + w1 per method or ctor
-    // * nb of component
-
     val content = g.content(typeId)
-    val s = Math.max(1, content.size - 1)
-    components(0, content) * s
+    val s = Math.max(1, content.size)
+    components(0, content).toDouble / s.toDouble
   }
 
 
@@ -216,52 +199,52 @@ object Metrics {
   }
 
 
-  def weight
-  ( g: DependencyGraph,
-    lightKind : NodeKind,
-    cyclePenalty: Double = 5): Double = {
-
-    val types = g.nodes.filter { _.kind.kindType == TypeDecl } map ( _.id)
-
-    val tsByNameSpaces = types.groupBy(g.hostNameSpace).toList
-
-    val (w, extraNSdeps) = tsByNameSpaces.foldLeft((0d, Set[NodeIdP]())){
-      case ((wAcc, extraNSdepAcc), (hns, ts)) =>
-
-        val (newWacc, intraNSdep, newExtraNSdep) =
-          ts.foldLeft((wAcc, Set[NodeIdP](), extraNSdepAcc)) {
-            case ((wAcc0, intraNSdepAcc0, extraNSdepAcc0), t) =>
-              val outDep = outgoingDependencies(g, t)
-              val (intraNSdep, extraNSdep) =
-                outDep.partition(u => g.hostNameSpace(u.used) == hns)
-
-              val intraNSdep0 = intraNSdep map {
-                case (user, used) => (g.hostTypeDecl(user), g.hostTypeDecl(used))
-              }
-
-              val extraNSdep0 = extraNSdep map {
-                case (user, used) => (g.hostNameSpace(user), g.hostNameSpace(used))
-              }
-              (wAcc0 + typeWeight(g, t),
-                intraNSdepAcc0 ++ intraNSdep0,
-                extraNSdepAcc0 ++ extraNSdep0)
-          }
-
-
-        val (lightUses, regularUses) =
-          intraNSdep partition (u => g.getNode(u.used).kind == lightKind)
-
-        val intraUsesWeight =
-          lightUses.size.toDouble / 2 + regularUses.size
-
-
-        val cycleWeight = numberOfCycles(intraNSdep).toDouble * (cyclePenalty /2)
-
-        (newWacc + intraUsesWeight + cycleWeight, newExtraNSdep)
-    }
-
-
-    w + numberOfCycles(extraNSdeps) * cyclePenalty
-  }
+//  def weight
+//  ( g: DependencyGraph,
+//    lightKind : NodeKind,
+//    cyclePenalty: Double = 5): Double = {
+//
+//    val types = g.nodes.filter { _.kind.kindType == TypeDecl } map ( _.id)
+//
+//    val tsByNameSpaces = types.groupBy(g.hostNameSpace).toList
+//
+//    val (w, extraNSdeps) = tsByNameSpaces.foldLeft((0d, Set[NodeIdP]())){
+//      case ((wAcc, extraNSdepAcc), (hns, ts)) =>
+//
+//        val (newWacc, intraNSdep, newExtraNSdep) =
+//          ts.foldLeft((wAcc, Set[NodeIdP](), extraNSdepAcc)) {
+//            case ((wAcc0, intraNSdepAcc0, extraNSdepAcc0), t) =>
+//              val outDep = outgoingDependencies(g, t)
+//              val (intraNSdep, extraNSdep) =
+//                outDep.partition(u => g.hostNameSpace(u.used) == hns)
+//
+//              val intraNSdep0 = intraNSdep map {
+//                case (user, used) => (g.hostTypeDecl(user), g.hostTypeDecl(used))
+//              }
+//
+//              val extraNSdep0 = extraNSdep map {
+//                case (user, used) => (g.hostNameSpace(user), g.hostNameSpace(used))
+//              }
+//              (wAcc0 + typeWeight(g, t),
+//                intraNSdepAcc0 ++ intraNSdep0,
+//                extraNSdepAcc0 ++ extraNSdep0)
+//          }
+//
+//
+//        val (lightUses, regularUses) =
+//          intraNSdep partition (u => g.getNode(u.used).kind == lightKind)
+//
+//        val intraUsesWeight =
+//          lightUses.size.toDouble / 2 + regularUses.size
+//
+//
+//        val cycleWeight = numberOfCycles(intraNSdep).toDouble * (cyclePenalty /2)
+//
+//        (newWacc + intraUsesWeight + cycleWeight, newExtraNSdep)
+//    }
+//
+//
+//    w + numberOfCycles(extraNSdeps) * cyclePenalty
+//  }
 }
 

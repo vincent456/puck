@@ -529,6 +529,15 @@ class DependencyGraph
         }
     }
 
+  def concretize(virtualNodeId : NodeId, concreteNodeId : NodeId) : DependencyGraph = {
+    //hypothesis : virtualNodeId is of namespace kindtype
+
+    val g1 = content(virtualNodeId).foldLeft(this) {
+      (g, id) => changeSource(Contains(virtualNodeId, id), concreteNodeId)
+    }
+    g1.removeNode(virtualNodeId)._2
+
+  }
 
 
   def violations() : Seq[DGEdge] =
@@ -543,10 +552,7 @@ class DependencyGraph
 
   def isViolation(e : NodeIdP) : Boolean = {
     val (source, target) = e
-
-    constraints.isWronglyContained(this, target) ||
-      constraints.isViolation(this, source, target)
-
+    constraints.isViolation(this, source, target)
   }
 
   def isViolation(e : DGEdge) : Boolean = {

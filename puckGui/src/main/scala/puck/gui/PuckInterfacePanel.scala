@@ -23,10 +23,9 @@ class PuckInterfacePanel
   val rightWidth = PuckMainPanel.width * 5/8
   val height = PuckMainPanel.height * 2/3
 
-  val treeDisplayer = new GraphExplorer(rightWidth/2, height) {
-    minimumSize = new Dimension(rightWidth/2, height)
-    preferredSize = minimumSize
-  }
+  val treeDisplayer = new GraphExplorer()
+
+
 
   val progressBar  = new ProgressBar()
   val delayedDisplay = ArrayBuffer[Component]()
@@ -34,6 +33,12 @@ class PuckInterfacePanel
     graphUtils, progressBar, delayedDisplay)
 
   control registerAsStackListeners treeDisplayer
+
+  reactions += {
+    case GraphExplorerFocus(e) =>
+      treeDisplayer.filter = Some(e)
+      treeDisplayer.update(control)
+  }
 
   val printIdsBox = new CheckBox("Show nodes ID")
   val printSignaturesBox = new CheckBox("Show signagures")
@@ -46,21 +51,23 @@ class PuckInterfacePanel
     preferredSize = minimumSize
 
     reactions += {
-      case NodeClicked(n) =>
-        val nodeInfoPanel = new NodeInfosPanel(control.graph, n.id){
-          def onEdgeButtonClick( source : NodeId, target : NodeId) : Unit = {
-            this publish
-              GraphDisplayRequest("Graph with uses selected",
-                graph, printIds(), printSigs(),
-                VisibilitySet.topLevelVisible(g).
-                  hideWithName(g, Seq("@primitive")).
-                  hideWithName(g, Seq("java")),
-                sUse = Some(Uses(source, target)))
+      case NodeClicked(n) if n.id != DependencyGraph.rootId =>
+        Swing.onEDT {
+          val nodeInfoPanel = new NodeInfosPanel(control.graph, n.id) {
+            def onEdgeButtonClick(source: NodeId, target: NodeId): Unit = {
+              this publish
+                GraphDisplayRequest("Graph with uses selected",
+                  graph, printIds(), printSigs(),
+                  VisibilitySet.topLevelVisible(g).
+                    hideWithName(g, Seq("@primitive")).
+                    hideWithName(g, Seq("java")),
+                  sUse = Some(Uses(source, target)))
+            }
           }
+          contents = nodeInfoPanel
+          control.listenTo(nodeInfoPanel)
+          treeDisplayer.listenTo(nodeInfoPanel)
         }
-        contents = nodeInfoPanel
-        control.listenTo(nodeInfoPanel)
-        treeDisplayer.listenTo(nodeInfoPanel)
 
     }
   }
@@ -204,7 +211,10 @@ class PuckInterfacePanel
   }
 
   rightComponent = new SplitPane(Orientation.Vertical) {
-    leftComponent = treeDisplayer
+    leftComponent = new BoxPanel(Orientation.Vertical) {
+      contents += new Label("Dependency Graph")
+      contents += treeDisplayer
+    }
     rightComponent = nodeInfos
   }
 }

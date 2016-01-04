@@ -2,9 +2,9 @@ package puck
 package gui
 package explorer
 
-import java.awt.event.{MouseEvent, MouseAdapter}
+import java.awt.event.{ActionEvent, MouseEvent, MouseAdapter}
 import javax.swing.event.TreeModelListener
-import javax.swing.{JPopupMenu, JTree}
+import javax.swing.{AbstractAction, JPopupMenu, JTree}
 
 import puck.graph._
 import javax.swing.tree._
@@ -13,23 +13,82 @@ import javax.swing.tree._
 import puck.gui.svg.actions.SwingGraphController
 
 import scala.swing.{Swing, ScrollPane}
+import scalaz.Cord
 
 
 class CCTree(g : DependencyGraph, parentToChildMap : Map[DGEdge, List[DGEdge]])
   extends JTree(new CCTreeModel(parentToChildMap)){
 
-  import ShowDG._
+
+  lazy val topLevelEdges = parentToChildMap(CCTreeModel.root)
+
+  implicit def idToNameString(dg : DependencyGraph, nid : NodeId) : String =
+    dg.getNode(nid) match {
+      case n : ConcreteNode =>
+        val name =
+          if(n.kind.kindType == ValueDef)
+            dg.container(n.id) map {
+              idToNameString(dg, _)
+            } getOrElse "OrphanDefinition"
+          else n.name
+
+        name + ShowDG.typeHolderCord(dg, dg.styp(n.id))
+      case vn : VirtualNode => vn.name(dg)
+    }
+
+  def edgeToString(nodeName : NodeId => String, e:  DGEdge ) : String =
+    if(e.source == e.target) s"${g.getNode(e.source).kind} - ${nodeName(e.source)}"
+    else {
+      val (ksrc, ktgt) = (g.getNode(e.source).kind, g.getNode(e.target).kind)
+      e.kind match {
+        case AbstractEdgeKind =>
+          val s = if(ksrc.toString endsWith "s") "es"
+          else "s"
+          if (ksrc == ktgt) s"$ksrc$s : ${nodeName(e.source)} -> ${nodeName(e.target)}"
+          else s"$ksrc : ${nodeName(e.source)} -> $ktgt : ${nodeName(e.target)}"
+
+        case _ =>
+          s"${nodeName(e.source)} ($ksrc) - ${e.kind} -> ${nodeName(e.target)} ($ktgt)"
+      }
+    }
+
+  def numViolations(acc : Map[DGEdge, Int], e : DGEdge) : Map[DGEdge, Int] = {
+    val children = parentToChildMap get e
+
+    if( children.isEmpty) acc + (e -> 1)
+    else {
+      val acc1 = children.get.foldLeft(acc)(numViolations)
+      val childrenViolations : List[Int] = children.get map acc1.apply
+      acc1 + (e -> childrenViolations.sum)
+    }
+
+  }
+
+  lazy val numViolationsMap = numViolations(Map(), CCTreeModel.root)
 
   override def convertValueToText
   (value: AnyRef, selected: Boolean,
    expanded: Boolean, leaf: Boolean,
-   row: Int, hasFocus: Boolean) : String =
+   row: Int, hasFocus: Boolean) : String = {
+
     value match {
-      case CCTreeModel.root => ""
-      case violation : DGEdge =>
-        if(violation.source == violation.target) g.getNode(violation.source).name
-        else (g, violation).shows
+      case violation: DGEdge =>
+
+      val txt =
+        if(violation == CCTreeModel.root) ""
+        else {
+          val f: NodeId => String =
+            if (topLevelEdges contains violation) g.fullName
+            else idToNameString(g, _)
+          edgeToString(f, violation)
+        }
+
+        val numVs = numViolationsMap(violation)
+        if(leaf) txt
+        else txt + s" ($numVs violation(s))"
       case _ => ""
+    }
+
   }
 }
 
@@ -96,7 +155,12 @@ class ConstraintViolationExplorer
         path.getLastPathComponent match {
           case edge : DGEdge =>
             if(isRightClick(e)){
-              val menu : JPopupMenu = new ViolationMenu(controller, edge)
+              val menu : JPopupMenu = new ViolationMenu(controller, edge){
+                add( new AbstractAction("Focus in graph explorer") {
+                  def actionPerformed(e: ActionEvent): Unit =
+                    ConstraintViolationExplorer.this.publish(GraphExplorerFocus(edge))
+                })
+              }
               Swing.onEDT(menu.show(ConstraintViolationExplorer.this.peer, e.getX, e.getY))
             }
           case _ => ()
@@ -156,7 +220,6 @@ class ConstraintViolationExplorer
       val l = m.getOrElse(pe, List())
       m + (pe -> ( e :: l))
     }
-
 
     childToParentMap.foldLeft(Map[DGEdge, List[DGEdge]]()){
       case (m, (e, None)) => add(m, CCTreeModel.root, e)

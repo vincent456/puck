@@ -3,11 +3,12 @@ package explorer
 
 import java.awt
 import java.awt.{MouseInfo, Color}
-import java.awt.event.{MouseEvent, MouseAdapter}
-import javax.swing.{JPopupMenu, JTree}
+import java.awt.event.{ActionEvent, MouseEvent, MouseAdapter}
+import javax.swing.{AbstractAction, JPopupMenu, JTree}
 import javax.swing.tree.{TreePath, DefaultTreeCellRenderer}
 
 import puck.actions.GraphController
+import puck.gui.svg.actions.ManualSolveAction
 import puck.gui.{NodeMenu, NodeClicked}
 import puck.{StackListener, GraphStack}
 import puck.graph._
@@ -16,8 +17,10 @@ import puck.graph._
 import scala.swing.{Swing, Component, ScrollPane}
 
 
-class DGTree(val graph : DependencyGraph)
-  extends JTree( new DGTreeModel(graph) ) {
+trait DGTree {
+  self : JTree =>
+
+  def graph : DependencyGraph = getModel.asInstanceOf[DGTreeModel].graph
 
   override def convertValueToText
   (value: AnyRef, selected: Boolean,
@@ -30,17 +33,25 @@ class DGTree(val graph : DependencyGraph)
     }
 
   this setCellRenderer DGNodeWithViolationTreeCellRenderer
-
 }
-
-
 
 
 object DGNodeWithViolationTreeCellRenderer
  extends DefaultTreeCellRenderer {
 
-  def sourceOfViolation(graph : DependencyGraph, nodeId : NodeId) : Boolean =
-    (graph usedBy nodeId) exists (used => graph isViolation ((nodeId, used)))
+  def sourceOfViolation(graph : DependencyGraph, nodeId : NodeId) : Boolean = {
+
+    val usedByDef =
+      graph.kindType(nodeId) match {
+        case TypeConstructor
+          | InstanceValueDecl
+          | StaticValueDecl =>
+          graph.definitionOf(nodeId) map graph.usedBy getOrElse Set[NodeId]()
+        case _ => Set[NodeId]()
+      }
+    (graph usedBy nodeId) ++ usedByDef exists (used => graph isViolation ((nodeId, used)))
+  }
+
 
   def targetOfViolation(graph : DependencyGraph, nodeId : NodeId) : Boolean =
     (graph usersOf nodeId) exists (user => graph isViolation ((user, nodeId)))
@@ -61,36 +72,67 @@ object DGNodeWithViolationTreeCellRenderer
   }
 }
 
-class GraphExplorer
-( width : Int,
-  height : Int)
+class GraphExplorer( var filter : Option[DGEdge] = None)
   extends ScrollPane
   with StackListener {
 
 
+
   def update(controller: GraphStack): Unit = {
-    val tree: JTree = new DGTree(controller.graph)
 
-    tree.addMouseListener( new MouseAdapter {
+    if (controller.graph.virtualNodes.nonEmpty) {
+      import controller.graph
+      val vn = graph.virtualNodes.head
 
-      override def mouseClicked(e : MouseEvent) : Unit =  {
-        val path : TreePath = tree.getPathForLocation(e.getX, e.getY)
+      ManualSolveAction.forChoice[ConcreteNode]("Concretize node",
+        "Select a concrete value for the virtual node :",
+        vn.potentialMatches.toSeq map graph.getConcreteNode,
+        { loggedChoice =>
+          loggedChoice.value match {
+            case None => ()
+            case Some(cn) =>
+              controller.pushGraph(graph.concretize(vn.id, cn.id))
+          }
 
-        if(path!= null){
-          path.getLastPathComponent match {
-            case node : DGNode =>
-              if(isRightClick(e)){
-                val menu : JPopupMenu = NodeMenu(controller.asInstanceOf[GraphController], node.id)
-                Swing.onEDT(menu.show(GraphExplorer.this.peer, e.getX, e.getY))
-              }
-              else GraphExplorer.this.publish(NodeClicked(node))
-            case _ => ()
+        }
+      )
+    }
+    else {
+
+      val model: DGTreeModel = filter match {
+        case None => new FullDGTreeModel(controller.graph)
+        case Some(e) => new FocusedDGTreeModel(controller.graph, e)
+      }
+
+      val tree: JTree = new JTree(model) with DGTree
+
+      tree.addMouseListener(new MouseAdapter {
+
+        override def mouseClicked(e: MouseEvent): Unit = {
+          val path: TreePath = tree.getPathForLocation(e.getX, e.getY)
+
+          if (path != null) {
+            path.getLastPathComponent match {
+              case node: DGNode =>
+                if (isRightClick(e)) {
+                  val menu: JPopupMenu = NodeMenu(controller.asInstanceOf[GraphController], node.id)
+                  if (filter.nonEmpty)
+                    menu.add(new AbstractAction("Show full graph") {
+                      def actionPerformed(e: ActionEvent): Unit = {
+                        filter = None
+                        GraphExplorer.this.update(controller)
+                      }
+                    })
+                  Swing.onEDT(menu.show(GraphExplorer.this.peer, e.getX, e.getY))
+                }
+                else GraphExplorer.this.publish(NodeClicked(node))
+              case _ => ()
+            }
           }
         }
-      }
-    })
-    contents = Component.wrap(tree)
-    this.repaint()
+      })
+      contents = Component.wrap(tree)
+      this.repaint()
+    }
   }
-
 }

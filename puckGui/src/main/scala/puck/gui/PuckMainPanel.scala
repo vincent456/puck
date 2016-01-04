@@ -3,7 +3,7 @@ package puck.gui
 import puck.{GraphStack, StackListener}
 import puck.graph.GraphUtils
 import puck.graph.io.FilesHandler
-import puck.gui.explorer.ConstraintViolationExplorer
+import puck.gui.explorer.{GraphExplorer, ConstraintViolationExplorer}
 
 import scala.swing._
 import java.awt.Dimension
@@ -18,6 +18,10 @@ object PuckMainPanel{
       contents += c
       contents += Swing.HGlue
     }
+  }
+
+  implicit class LeftGlued(val c : Component) extends AnyVal {
+    def leftGlued : BoxPanel = PuckMainPanel.leftGlued(c)
   }
 }
 
@@ -42,7 +46,12 @@ class PuckMainPanel(filesHandler: FilesHandler,
     else {
       rightComponent = new SplitPane(Orientation.Vertical){
         resizeWeight = 0.5
-        leftComponent = new ConstraintViolationExplorer(interface.control, violations)
+        leftComponent = new BoxPanel(Orientation.Vertical) {
+          contents += new Label("Constraints Violations")
+          val vExplorer = new ConstraintViolationExplorer(interface.control, violations)
+          contents += vExplorer
+          interface listenTo vExplorer
+        }
         rightComponent = consolePanel
       }
     }

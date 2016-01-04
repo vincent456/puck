@@ -1,15 +1,16 @@
 package puck.gui.explorer
 
-import puck.graph.io.VisibilitySet
 import puck.graph._
-import puck.gui.{GraphDisplayRequest, PuckMainPanel}
+import puck.gui.PuckMainPanel.LeftGlued
 import ShowDG._
 import scala.swing._
+import Swing.VGlue
 import scala.swing.event.MouseClicked
 
 
-abstract class NodeInfosPanel(val graph : DependencyGraph,
-                     val nodeId : NodeId)
+abstract class NodeInfosPanel
+( val graph : DependencyGraph,
+  val nodeId : NodeId )
   extends SplitPane(Orientation.Horizontal) {
 
   def onEdgeButtonClick( source : NodeId, target : NodeId) : Unit
@@ -17,6 +18,12 @@ abstract class NodeInfosPanel(val graph : DependencyGraph,
   implicit val g = graph
   val useDetails = new BoxPanel(Orientation.Vertical){
     minimumSize = new Dimension(100, 50)
+  }
+
+  def addUsesSet(title : String, usesSet : Set[Uses]) : Unit =
+    if(usesSet.nonEmpty) {
+      useDetails.contents += new Label(title)
+      usesSet.foreach(e => useDetails.contents += new Label((graph, e).shows))
   }
 
   resizeWeight = 0.75
@@ -41,9 +48,8 @@ abstract class NodeInfosPanel(val graph : DependencyGraph,
 
   leftComponent = new BoxPanel(Orientation.Vertical) {
 
-    contents += PuckMainPanel.leftGlued(new Label(node.kind + " : " +
-      (graph, node).shows(nodeNameTypCord)))
-
+    contents += new Label(node.kind + " : " +
+      (graph, node).shows(nodeNameTypCord))
     val prov = Metrics.providers(graph, node.id)
     val cl = Metrics.clients(graph, node.id)
     val internals = Metrics.internalDependencies(graph, node.id).size
@@ -51,36 +57,62 @@ abstract class NodeInfosPanel(val graph : DependencyGraph,
     val incomings = Metrics.incomingDependencies(graph, node.id).size
     val coupling = Metrics.coupling(graph, node.id)
     val cohesion = Metrics.cohesion(graph, node.id)
-    contents += new TextArea(s"Internal dependencies : $internals \n" +
-      s"Outgoing dependencies : $outgoings \n" +
-      s"Incoming dependencies : $incomings \n" +
-      typeWeight +
-      "Subtypes : " +
-      (if(graph.directSubTypes(node.id).isEmpty) "none\n"
-      else mkStringWithNames(graph.directSubTypes(node.id))) +
-      "SuperTypes :" +
-      (if(graph.directSuperTypes(node.id).isEmpty) "none\n"
-      else mkStringWithNames(graph.directSuperTypes(node.id))) +
-      "Providers : " +
-      (if (prov.isEmpty) "none\n"
-      else mkStringWithNames(prov)) +
-      "Clients : " +
-      (if (cl.isEmpty) "none\n"
-      else mkStringWithNames(cl) +
-      f"Coupling = $coupling%.2f  Cohesion :  $cohesion%.2f"))
 
-  /*  contents += new BoxPanel(Orientation.Horizontal) {
-      contents += new Label("Move into :")
-      val cb = new ComboBox((graph.nodes filter {n : AGNode => n canContain nodeId}).toSeq)
-      contents += cb
-      contents += Button(">>") {
-        throw new AGError("node.moveTo(cb.selection.item) not implemented")
-        //node.moveTo(cb.selection.item)
-        NodeInfosPanel.this.publish(AccessGraphModified(node.graph))
+    contents +=
+      new Label(s"Internal dependencies : $internals \n") {
+        tooltip = "Number of uses edges with both extremities contained by this node"
+      }.leftGlued
+
+    contents += new Label(s"Outgoing dependencies : $outgoings \n"){
+      tooltip = "Number of uses edges for which this node contains the user but not the used"
+    }.leftGlued
+
+    contents += new Label(s"Incoming dependencies : $incomings \n"){
+      tooltip = "Number of uses edges for which this node contains the used but not the user"
+    }.leftGlued
+
+    contents += new Label(typeWeight){
+      tooltip = "Number of strongly connected component divided by the number of children of this type node"
+    }.leftGlued
+
+    contents += new TextArea("Subtypes : " +
+      (if(graph.directSubTypes(node.id).isEmpty) "none\n"
+      else mkStringWithNames(graph.directSubTypes(node.id)))){
+      tooltip = "Number of direct subtype"
+      editable = false
+    }.leftGlued
+
+    contents += new TextArea( "Super types :" +
+      (if(graph.directSuperTypes(node.id).isEmpty) "none\n"
+      else mkStringWithNames(graph.directSuperTypes(node.id)))){
+      tooltip = "Number of direct super types"
+      editable = false
+    }.leftGlued
+
+    contents += new TextArea(  "Providers : " +
+      (if (prov.isEmpty) "none\n"
+      else mkStringWithNames(prov))){
+      tooltip = "Nodes of the same kinds which contain a node used by a node contained by this one"
+      editable = false
+    }.leftGlued
+
+    contents += new TextArea(  "Clients : " +
+      (if (cl.isEmpty) "none\n"
+      else mkStringWithNames(cl)) ){
+        tooltip = "Nodes of the same kinds which contain a node using a node contained by this one"
+      editable = false
+      }.leftGlued
+
+    contents += new BoxPanel(Orientation.Horizontal){
+      contents += new Label(f"Coupling = $coupling%.2f"){
+        tooltip = "1 - |Clients U Providers| / |Internal + Outgoing + Incoming dependencies |"
       }
       contents += Swing.HGlue
+      contents += new Label(f"Cohesion :  $cohesion%.2f"){
+        tooltip = "|Internal dependencies| / |Internal + Outgoing + Incoming dependencies|"
+      }
+    }
 
-    }*/
 
     def usesLabelBox(userId : NodeId, usedId : NodeId) : Component = {
       val sideUses = graph.typeMemberUsesOf(userId, usedId)
@@ -112,17 +144,8 @@ abstract class NodeInfosPanel(val graph : DependencyGraph,
               useDetails.contents +=
                 new Label((graph, Uses(userId, usedId)).shows)
 
-              if (primaryUses.nonEmpty){
-                useDetails.contents += new Label("Dominant Uses :")
-                primaryUses.foreach(e =>
-                  useDetails.contents += new Label((graph, e).shows))
-              }
-
-              if(sideUses.nonEmpty) {
-                useDetails.contents += new Label("Dominated Uses :")
-                sideUses.foreach(e =>
-                  useDetails.contents += new Label((graph, e).shows))
-              }
+              addUsesSet("Dominant Uses :", primaryUses)
+              addUsesSet("Dominated Uses :", sideUses)
 
               useDetails.revalidate()
           }
@@ -132,7 +155,7 @@ abstract class NodeInfosPanel(val graph : DependencyGraph,
       }
     }
 
-    contents +=  PuckMainPanel.leftGlued(new Label("used by:"))
+    contents +=  new Label("used by:").leftGlued
 
 
     contents += new BoxPanel(Orientation.Vertical) {
@@ -145,7 +168,7 @@ abstract class NodeInfosPanel(val graph : DependencyGraph,
     }
     graph.definitionOf(node.id) foreach {
       defId =>
-        contents +=  PuckMainPanel.leftGlued(new Label("uses :"))
+        contents +=  new Label("uses :").leftGlued
         contents += new BoxPanel(Orientation.Vertical) {
           graph.usedBy(defId).foreach {
             contents += usesLabelBox(_, defId)

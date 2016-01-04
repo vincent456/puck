@@ -31,7 +31,7 @@ case class GraphDisplayRequest
   extends ControlRequest
 
 case class ConstraintDisplayRequest(graph : DependencyGraph) extends ControlRequest
-
+case class GraphExplorerFocus(e : DGEdge) extends Event
 //case class SearchStateMapPrintingRequest
 //(stateMap : Map[Int, Seq[SearchState[SResult]]],
 // printId : Boolean,

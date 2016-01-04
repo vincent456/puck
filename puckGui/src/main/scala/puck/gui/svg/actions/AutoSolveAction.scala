@@ -50,13 +50,13 @@ class AutoSolveAction
   import controller.graph
 
   override def actionPerformed(e: ActionEvent): Unit = {
-    val g = graph.mileStone
-//    val g = graph.nodes.foldLeft(graph.mileStone){
-//    case (g, n) => n.kind.kindType match {
-//      case TypeDecl => g.setMutability(n.id, false)
-//      case _ => g
-//    }
-//  }
+    //val g = graph.mileStone
+    val g = graph.nodes.foldLeft(graph.mileStone){
+      case (g, n) => n.kind.kindType match {
+        case TypeDecl => g.setMutability(n.id, false)
+        case _ => g
+      }
+    }
 
     val searchControlStrategy =
       new CouplingConstraintSolvingControl(
