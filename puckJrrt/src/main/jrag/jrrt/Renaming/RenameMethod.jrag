@@ -9,13 +9,13 @@ aspect RenameMethod {
 			return;
 		if(!isValidName(new_name))
 			throw new RefactoringException("not a valid name: "+new_name);
-		programRoot().lockMethodNames(name(), new_name);
-		programRoot().lockOverridingDependencies(name(), new_name);
+		program().lockMethodNames(name(), new_name);
+		program().lockOverridingDependencies(name(), new_name);
 		for(MethodDecl md : relatives()) {
 			md.checkRenamingPreconds(new_name);
 			md.setID(new_name);
 		}
-		programRoot().eliminate(LOCKED_NAMES, LOCKED_OVERRIDING);
+		program().eliminate(LOCKED_NAMES, LOCKED_OVERRIDING);
 	}
 	
 	private void MethodDecl.checkRenamingPreconds(String new_name) {

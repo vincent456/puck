@@ -31,8 +31,8 @@ aspect MakeMethodStatic {
 //		Expr delegationCall = new MethodAccess(newMethod.name(), delegationArgs);
 //		delegator.setBlock(new Block(new List<Stmt>().add(new ReturnStmt(delegationCall))));
 //		// plug in delegating method
-//		delegator.programRoot().flushCaches();
-//		newMethod.programRoot().eliminate(RETURN_VOID, FRESH_VARIABLES, WITH_STMT, LOCKED_NAMES, DEMAND_FINAL_MODIFIER);
+//		delegator.program().flushCaches();
+//		newMethod.program().eliminate(RETURN_VOID, FRESH_VARIABLES, WITH_STMT, LOCKED_NAMES, DEMAND_FINAL_MODIFIER);
 //	}
 	
 	MethodDecl MethodDecl.closeOverTypeVariables(MethodDecl newMethod) {

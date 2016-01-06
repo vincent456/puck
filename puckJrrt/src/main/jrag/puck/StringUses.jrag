@@ -3,7 +3,7 @@ aspect StringUses {
 	// bind all uses of a string literal to its LSA
 
 	syn Map<String,Collection<BodyDecl>> Program.allStringUses(Map<String,Collection<BodyDecl>> smap) {
-		programRoot().collectAllStringUses(smap);
+		program().collectAllStringUses(smap);
 		return smap;
 	}
 	protected void ASTNode.collectAllStringUses(Map<String,Collection<BodyDecl>> smap) {
@@ -22,7 +22,7 @@ aspect StringUses {
 
 /*	syn lazy Collection<BodyDecl> Program.StringUses() {
 		Collection<BodyDecl> col = new LinkedList<BodyDecl>();
-		programRoot().collectStringUses(this.anLSA("hello").getLITERAL(), col);
+		program().collectStringUses(this.anLSA("hello").getLITERAL(), col);
 		return col;
 	}
 	protected void ASTNode.collectStringUses(String lsa_value, Collection<BodyDecl> col) {
@@ -37,7 +37,7 @@ aspect StringUses {
 */
 /*	// collect the number of uses of a string literal to its LSA 
 	syn lazy int Program.StringUses() {
-		return programRoot().collectStringUses(this.anLSA().getLITERAL(), 0);
+		return program().collectStringUses(this.anLSA().getLITERAL(), 0);
 	}
 	protected int ASTNode.collectStringUses(String lsa_value, int cpt) {
 		for(int i = 0; i < getNumChild(); i++)

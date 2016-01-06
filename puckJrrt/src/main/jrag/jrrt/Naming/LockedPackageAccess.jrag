@@ -17,7 +17,7 @@ aspect LockedPackageAccess {
 	
 	public ASTNode CompilationUnit.lockAllPackageAccesses() {
 		// make sure the package of this compilation unit is registered with the program root
-		programRoot().getPackageDecl(getPackageDecl());
+		program().getPackageDecl(getPackageDecl());
 		return super.lockAllPackageAccesses();
 	}
 	

@@ -76,9 +76,56 @@ aspect Concretize {
     public void Program.eliminateLockedNamesInSources(){
         //calling eliminateLockedNames from program after calling lockAllNames
         //provoke cause exceptions in the "@primitive package"
-        for (CompilationUnit cu : (List<CompilationUnit>)getCompilationUnitList()){
+        for (CompilationUnit cu : getCompilationUnitList()){
             if(cu.fromSource())
                 cu.eliminateLockedNamesInSubtree();
         }
+    }
+    public void Program.resetPrimitiveTypes() {
+        //initializeLibraryTypeMap();
+        PrimitiveCompilationUnit unit = getPrimitiveCompilationUnit();
+        TypeDecl t = libraryTypeMap.get(PRIMITIVE_PACKAGE_NAME + ".boolean");
+        unit.typeBoolean_computed = true;
+        unit.typeBoolean_value = t;
+
+        t = libraryTypeMap.get(PRIMITIVE_PACKAGE_NAME + ".byte");
+        unit.typeByte_computed = true;
+        unit.typeByte_value = t;
+
+        t = libraryTypeMap.get(PRIMITIVE_PACKAGE_NAME + ".short");
+        unit.typeShort_computed = true;
+        unit.typeShort_value = t;
+
+        t = libraryTypeMap.get(PRIMITIVE_PACKAGE_NAME + ".char");
+        unit.typeChar_computed = true;
+        unit.typeChar_value = t;
+
+        t = libraryTypeMap.get(PRIMITIVE_PACKAGE_NAME + ".int");
+        unit.typeInt_computed = true;
+        unit.typeInt_value = t;
+
+        t = libraryTypeMap.get(PRIMITIVE_PACKAGE_NAME + ".long");
+        unit.typeLong_computed = true;
+        unit.typeLong_value = t;
+
+        t = libraryTypeMap.get(PRIMITIVE_PACKAGE_NAME + ".float");
+        unit.typeFloat_computed = true;
+        unit.typeFloat_value = t;
+
+        t = libraryTypeMap.get(PRIMITIVE_PACKAGE_NAME + ".double");
+        unit.typeDouble_computed = true;
+        unit.typeDouble_value = t;
+
+        t = libraryTypeMap.get(PRIMITIVE_PACKAGE_NAME + ".null");
+        unit.typeNull_computed = true;
+        unit.typeNull_value = t;
+
+        t = libraryTypeMap.get(PRIMITIVE_PACKAGE_NAME + ".void");
+        unit.typeVoid_computed = true;
+        unit.typeVoid_value = t;
+
+        t = libraryTypeMap.get(PRIMITIVE_PACKAGE_NAME + ".Unknown");
+        unit.unknownType_computed = true;
+        unit.unknownType_value = t;
     }
 }

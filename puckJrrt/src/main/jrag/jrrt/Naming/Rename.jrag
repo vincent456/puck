@@ -6,7 +6,7 @@ aspect Rename {
 	};
 	
 	public void ASTNode.eliminateLockedNamesInSubtree() {
-		Program root = programRoot();
+		Program root = program();
 		eliminateLockedNames();
 		while(root != null && !root.affectedByUnlock.isEmpty()) {
 			if(root != null)
@@ -32,7 +32,7 @@ aspect Rename {
 	}
 	
 	protected void ASTNode.affectedByUnlock(Access... accs) {
-		Program root = programRoot();
+		Program root = program();
 		if(root != null) {
 			for(Access acc : accs)
 				root.affectedByUnlock.add(acc);

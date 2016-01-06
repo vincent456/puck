@@ -7,7 +7,7 @@ aspect Uses {
 	
 	syn lazy Collection<VarAccess> FieldDeclaration.uses() {
 		Collection<VarAccess> col = new LinkedList<VarAccess>();
-		programRoot().collectFieldUses(this, name(), col);
+		program().collectFieldUses(this, name(), col);
 		return col;
 	}
 	protected void ASTNode.collectFieldUses(FieldDeclaration decl, String name, Collection<VarAccess> col) {
@@ -51,7 +51,7 @@ aspect Uses {
 				(hostType() instanceof InterfaceDecl &&
 				!((InterfaceDecl)hostType()).interfacesIterator().hasNext()))
 			&&
-				programRoot().typeObject().methodsSignature(signature()).isEmpty())
+				program().typeObject().methodsSignature(signature()).isEmpty())
 				return uses();
 		return polyUses_();
 	}
@@ -62,7 +62,7 @@ aspect Uses {
 //	MethodAccess contributes this to MethodDecl.uses() for decl();
 	syn lazy Collection<MethodAccess> MethodDecl.uses() {
 		Collection<MethodAccess> col = new LinkedList<MethodAccess>();
-		programRoot().collect__MethodDecl_Uses(this, name(), col);
+		program().collect__MethodDecl_Uses(this, name(), col);
 		return col;
 	}
 	protected void ASTNode.collect__MethodDecl_Uses(MethodDecl decl, String name, Collection<MethodAccess> col) {

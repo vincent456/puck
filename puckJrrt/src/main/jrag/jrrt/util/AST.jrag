@@ -33,20 +33,7 @@ aspect AST {
 		return node;
 	}
 	
-	public Program ASTNode.programRoot() {
-		ASTNode n=this;
-		while(n!=null && !(n instanceof Program))
-			n=n.getParent();
-		return (Program)n;
-	}
-	
-//	public CompilationUnit ASTNode.compilationUnit() {
-//		ASTNode n=this;
-//		while(n!=null && !(n instanceof CompilationUnit))
-//			n=n.getParent();
-//		return (CompilationUnit)n;
-//	}
-	
+
 	public BodyDecl ASTNode.hostBodyDecl() {
 		ASTNode n=this;
 		while(n!=null && !(n instanceof BodyDecl))

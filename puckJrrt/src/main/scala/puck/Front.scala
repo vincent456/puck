@@ -1,11 +1,9 @@
 package puck
 
-import javax.swing.Icon
-
 import puck.javaGraph.JGraphUtils
 import jastadd.JavaFilesHandler
-
-object Front extends PuckApplication(JavaFilesHandler("/home/lorilan/test/trim"), JGraphUtils, JavaIcons)
+//"/home/lorilan/puck_svn/examples/QualitasCorpus-20130901r/Systems/freecs/freecs-1.3.20100406/puck_test"
+object Front extends PuckApplication(JavaFilesHandler("/home/lorilan/test/parCtor"), JGraphUtils, JavaIcons)
 
 
 /*

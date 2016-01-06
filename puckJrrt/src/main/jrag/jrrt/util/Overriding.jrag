@@ -148,7 +148,7 @@ aspect Overriding {
 			supertypestransitive.add(supertype);
 		} 
 		if(supertypes().size() == 0 && isInterfaceDecl())
-			supertypestransitive.add(programRoot().findType("java.lang.Object"));
+			supertypestransitive.add(program().findType("java.lang.Object"));
 		return supertypestransitive;
 	}
 	

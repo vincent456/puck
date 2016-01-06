@@ -180,6 +180,7 @@ aspect LockedMethodAccess {
 	
 	// eliminating locked method accesses
 	public Access MethodAccessInfo.eliminate(MethodAccess original, Expr qualifier, TypeDecl enclosing, boolean isMonoCall, boolean inStaticCtxt, List<Expr> args) {
+		args.setParent(original);
 		if(qualifier == null)
 			return eliminate(original, enclosing, isMonoCall, inStaticCtxt, args);
 		else
@@ -270,10 +271,7 @@ aspect LockedMethodAccess {
 
 	public Access MethodAccessInfo.eliminateQualified(MethodAccess original, Expr qualifier, TypeDecl enclosing,
 			boolean isMonoCall, boolean inStaticCtxt, List<Expr> args) {
-		System.out.println(target.fullName());
 		MethodAccess ma = constructAccess(original, args);
-		System.out.println("directlyVisible = " +directlyVisible );
-		System.out.println("target.isStatic() = " +target.isStatic());
 		if(!directlyVisible) {
 			if(!target.isStatic())
 				throw new RefactoringException("cannot access method");

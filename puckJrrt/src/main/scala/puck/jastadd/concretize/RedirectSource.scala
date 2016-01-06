@@ -85,7 +85,7 @@ object RedirectSource {
     if (tDecl.compilationUnit.getNumTypeDecl > 1) {
       logger.writeln(tDecl.name + " cu with more than one classe")(verbosity(PuckLog.Debug))
 
-      logger.writeln(tDecl.programRoot().prettyPrint())
+      logger.writeln(tDecl.program().prettyPrint())
       val path = ASTNodeLink.getPath(reenactor, newPackage)
       val oldcu = tDecl.compilationUnit()
 

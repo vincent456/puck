@@ -8,9 +8,9 @@ aspect InsertUnusedMethod {
 	}
 	
 	public void ClassDecl.insertUnusedMethod(MethodDecl m, int idx) {
-		programRoot().lockMethodNames(m.name());
+		program().lockMethodNames(m.name());
 		getBodyDeclList().insertChild(m, idx);
-		programRoot().flushCaches();
+		program().flushCaches();
 		if(!canIntroduceMethod(m))
 			throw new RefactoringException("cannot insert method here");
 		if(m.isDynamicallyCallable())

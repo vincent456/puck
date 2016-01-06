@@ -24,7 +24,7 @@ aspect InsertUnusedType {
 		if(td.isStatic() && host.isInnerClass())
 			throw new RefactoringException("cannot insert static type into inner class");
 		member.checkEnclosingTypeNames(host);
-		Program root = host.programRoot();
+		Program root = host.program();
 		root.lockNames(td.name());
 		root.flushCaches();
 		return member;
@@ -41,8 +41,8 @@ aspect InsertUnusedType {
 	
 	// insert an unused toplevel type into a given compilation unit
 	public void CompilationUnit.insertUnusedType(TypeDecl td) {
-		TypeDecl res = programRoot().lookupType(getPackageDecl(), td.name());
-		if(res != null && res != td && !res.isUnknown() || programRoot().hasPackage(getPackageDecl()+td.name()))
+		TypeDecl res = program().lookupType(getPackageDecl(), td.name());
+		if(res != null && res != td && !res.isUnknown() || program().hasPackage(getPackageDecl()+td.name()))
 			throw new RefactoringException("different toplevel type of same name exists");
 		addTypeDecl(td);
 	}

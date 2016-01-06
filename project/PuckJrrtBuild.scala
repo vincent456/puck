@@ -151,14 +151,14 @@ object PuckJrrtBuild {
         ++: j7constant.getPaths
         ++: java4others.getPaths.sorted
         ++: java5grammar.getPaths
-        ++: java5others.getPaths
+        ++: java5others.getPaths.sorted
         ++: java6files.getPaths
         ++: java8grammar.getPaths
         ++: java7grammar.getPaths
         ++: java7others.getPaths.sorted
         ++: java8others.getPaths
         ++: cfgFiles.getPaths.sorted
-        ++: jrrtUtil.getPaths
+        ++: jrrtUtil.getPaths.sorted
         ++: jrrtOthers.getPaths
         ++: puckFiles.getPaths)
 

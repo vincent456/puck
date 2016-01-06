@@ -34,7 +34,7 @@ aspect GenericsExt {
 	
 	syn lazy ArrayList<VarAccess> FieldDeclaration.usesOfAllCopies() {
 		ArrayList<VarAccess> col = new ArrayList<VarAccess>();
-		programRoot().collectFieldUsesWithCopies(this, name(), col);
+		program().collectFieldUsesWithCopies(this, name(), col);
 		return col;
 	}
 	protected void ASTNode.collectFieldUsesWithCopies(FieldDeclaration decl, String name, ArrayList<VarAccess> col) {
