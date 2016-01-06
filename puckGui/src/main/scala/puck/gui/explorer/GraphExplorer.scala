@@ -4,7 +4,7 @@ package explorer
 import java.awt
 import java.awt.{MouseInfo, Color}
 import java.awt.event.{ActionEvent, MouseEvent, MouseAdapter}
-import javax.swing.{AbstractAction, JPopupMenu, JTree}
+import javax.swing.{Icon, AbstractAction, JPopupMenu, JTree}
 import javax.swing.tree.{TreePath, DefaultTreeCellRenderer}
 
 import puck.actions.GraphController
@@ -16,11 +16,15 @@ import puck.graph._
 
 import scala.swing.{Swing, Component, ScrollPane}
 
+trait DGTreeIcons {
+  def iconOfKind(k: NodeKind ) : Icon
+}
 
 trait DGTree {
   self : JTree =>
 
   def graph : DependencyGraph = getModel.asInstanceOf[DGTreeModel].graph
+  def icons : DGTreeIcons
 
   override def convertValueToText
   (value: AnyRef, selected: Boolean,
@@ -66,13 +70,16 @@ object DGNodeWithViolationTreeCellRenderer
         if(sourceOfViolation(dgTree.graph, node.id) ||
             targetOfViolation(dgTree.graph, node.id))
           c.setForeground(Color.RED)
+
+        setIcon(dgTree.icons.iconOfKind(node.kind))
+
         c
       case _ => c
     }
   }
 }
 
-class GraphExplorer( var filter : Option[DGEdge] = None)
+class GraphExplorer(treeIcons : DGTreeIcons, var filter : Option[DGEdge] = None)
   extends ScrollPane
   with StackListener {
 
@@ -104,7 +111,9 @@ class GraphExplorer( var filter : Option[DGEdge] = None)
         case Some(e) => new FocusedDGTreeModel(controller.graph, e)
       }
 
-      val tree: JTree = new JTree(model) with DGTree
+      val tree: JTree = new JTree(model) with DGTree {
+        def icons : DGTreeIcons = treeIcons
+      }
 
       tree.addMouseListener(new MouseAdapter {
 

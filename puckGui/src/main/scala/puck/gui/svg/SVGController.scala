@@ -7,7 +7,7 @@ import org.apache.batik.util.XMLResourceDescriptor
 import org.w3c.dom.Element
 import org.w3c.dom.svg.{SVGGElement, SVGDocument}
 import puck.gui.svg.actions.SwingGraphController
-import puck.{StackListener, GraphStack}
+import puck.{FilesHandlerDG2ASTControllerOps, StackListener, GraphStack}
 import puck.graph._
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.ConstraintsParser
@@ -360,44 +360,16 @@ object SVGController {
   type  Builder  = SVGPanel => SVGController
 
   def builderFromFilesHander
-  ( filesHandler: FilesHandler,
+  ( fh: FilesHandler,
     opts : PrintingOptions,
     graphUtils : GraphUtils,
     dg2ast : DG2AST ) : Builder =
   ( frame : SVGPanel) =>  new SVGController(graphUtils, dg2ast, frame,
-                opts.visibility, opts.printId, opts.printSignatures){
+                opts.visibility, opts.printId, opts.printSignatures)
+    with FilesHandlerDG2ASTControllerOps {
+      val filesHandler = fh
       //val filesHandler: FilesHandler = filesHandler0
-
       pushGraph(dg2ast.initialGraph)
-
-      def deleteOutDirAndapplyOnCode() : Unit = {
-        console.appendText("Aplying recording on AST")
-        dg2ast(graph)/*(new PuckFileLogger(_ => true, new File("/tmp/pucklog")))*/
-
-        filesHandler.outDirectory.get match {
-          case None => console.appendText("no output directory : cannot print code")
-          case Some(d) =>
-            console.appendText("Printing code")
-            IO.delete(d)
-            dg2ast.printCode(d)
-        }
-
-      }
-
-      def compareOutputGraph() : Unit = {
-        val outfh = filesHandler.fromOutDir
-        console.appendText("Loading output graph from code")
-        val outdg2ast = outfh.loadGraph()
-        console.appendText("Comparing graphs ...")
-
-        val res = if(Mapping.equals(graph, outdg2ast.initialGraph)) "EQUAL"
-        else "NOT equal"
-
-        console.appendText(s"they are $res")
-      }
-
-      def workingDirectory : File = filesHandler.workingDirectory
-
     }
 
 

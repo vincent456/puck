@@ -3,9 +3,10 @@ package puck.gui
 import java.awt.Dimension
 import java.io.File
 
+import puck.FilesHandlerDG2ASTControllerOps
 import puck.graph._
 import puck.graph.io.{VisibilitySet, FilesHandler}
-import puck.gui.explorer.{NodeInfosPanel, GraphExplorer}
+import puck.gui.explorer.{DGTreeIcons, NodeInfosPanel, GraphExplorer}
 import puck.util.{PuckLogger, PuckLog}
 
 
@@ -16,21 +17,22 @@ import VisibilitySet.VisibilitySetOps
 class PuckInterfacePanel
 ( logger : PuckLogger,
   filesHandler : FilesHandler,
-  graphUtils: GraphUtils
+  graphUtils: GraphUtils,
+  treeIcons : DGTreeIcons
   ) extends SplitPane(Orientation.Vertical) {
 
   val leftWidth = PuckMainPanel.width * 3/8
   val rightWidth = PuckMainPanel.width * 5/8
   val height = PuckMainPanel.height * 2/3
 
-  val treeDisplayer = new GraphExplorer()
+  val treeDisplayer = new GraphExplorer(treeIcons)
 
 
 
   val progressBar  = new ProgressBar()
   val delayedDisplay = ArrayBuffer[Component]()
   val control = new PuckControl(logger, filesHandler,
-    graphUtils, progressBar, delayedDisplay)
+    graphUtils, progressBar, delayedDisplay) with FilesHandlerDG2ASTControllerOps
 
   control registerAsStackListeners treeDisplayer
 
@@ -189,6 +191,11 @@ class PuckInterfacePanel
 
     addDelayedComponent(showViolations)
 
+    addDelayedComponent {
+      makeButton("Generate Code",
+        "Apply transformations on the code")(
+        control.deleteOutDirAndapplyOnCode)
+    }
 
 
 

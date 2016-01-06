@@ -3,7 +3,7 @@ package puck.gui
 import puck.{GraphStack, StackListener}
 import puck.graph.GraphUtils
 import puck.graph.io.FilesHandler
-import puck.gui.explorer.{GraphExplorer, ConstraintViolationExplorer}
+import puck.gui.explorer.{DGTreeIcons, GraphExplorer, ConstraintViolationExplorer}
 
 import scala.swing._
 import java.awt.Dimension
@@ -26,7 +26,8 @@ object PuckMainPanel{
 }
 
 class PuckMainPanel(filesHandler: FilesHandler,
-                     graphUtils: GraphUtils)
+                     graphUtils: GraphUtils,
+                    treeIcons : DGTreeIcons)
   extends SplitPane(Orientation.Horizontal) with StackListener{
   dividerSize = 3
 
@@ -35,7 +36,7 @@ class PuckMainPanel(filesHandler: FilesHandler,
   val consolePanel = new PuckConsolePanel()
   val logger = new TextAreaLogger(consolePanel.textArea, filesHandler.logPolicy)
 
-  val interface = new PuckInterfacePanel(logger, filesHandler, graphUtils)
+  val interface = new PuckInterfacePanel(logger, filesHandler, graphUtils,treeIcons)
   leftComponent = interface
   rightComponent = consolePanel
 

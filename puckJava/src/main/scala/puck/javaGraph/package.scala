@@ -26,6 +26,7 @@ package object javaGraph {
       Seq[JavaNodeKind]( Field, Constructor, Class, Interface)
 
     val dotHelper : DotHelper = JavaDotHelper
+
   }
 
 }

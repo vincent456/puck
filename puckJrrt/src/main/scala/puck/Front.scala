@@ -1,9 +1,11 @@
 package puck
 
-import javaGraph.JGraphUtils
+import javax.swing.Icon
+
+import puck.javaGraph.JGraphUtils
 import jastadd.JavaFilesHandler
 
-object Front extends PuckApplication(JavaFilesHandler(), JGraphUtils)
+object Front extends PuckApplication(JavaFilesHandler("/home/lorilan/test/trim"), JGraphUtils, JavaIcons)
 
 
 /*

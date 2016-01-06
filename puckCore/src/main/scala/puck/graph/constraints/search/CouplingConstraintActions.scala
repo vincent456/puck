@@ -82,22 +82,24 @@ class CouplingConstraintSolvingControl
 
   def nextStates(state : (DependencyGraph, Int)) : Seq[LoggedTry[(DependencyGraph, Int)]] = {
     val  (g, automataState) = state
-    automataState match {
-      case 0 =>val s =  (epsilon(g) ++ hostIntroAction(g), 1)
-        assert(s.nonEmpty)
-        s
+    if(g.isWronglyUsed(violationTarget.id) || g.isWronglyContained(violationTarget.id))
+      automataState match {
+        case 0 =>val s =  (epsilon(g) ++ hostIntroAction(g), 1)
+          assert(s.nonEmpty)
+          s
 
-      case 1 => val s = (moveAction(g), 2)
-        assert(s.nonEmpty)
-        s
-      case 2 => val s = (epsilon(g) ++ absIntro(g), 3)
-        assert(s.nonEmpty)
-        s
-      case 3 => val s = (redirectTowardAbstractions(g), 4)
-        assert(s.nonEmpty)
-        s
-      case _ => Seq()
-    }
+        case 1 => val s = (moveAction(g), 2)
+          assert(s.nonEmpty)
+          s
+        case 2 => val s = (epsilon(g) ++ absIntro(g), 3)
+          assert(s.nonEmpty)
+          s
+        case 3 => val s = (redirectTowardAbstractions(g), 4)
+          assert(s.nonEmpty)
+          s
+        case _ => Seq()
+      }
+    else Seq()
   }
 
 
@@ -189,7 +191,19 @@ class SolvingActions
         newCterNumGen += 1
         val hostName = s"${toBeContained.name}_container$newCterNumGen"
         rules.intro(g, hostName, hostKind)
-    } flatMap attribHost
+    } flatMap {
+      case (toBeCtedHost, g) =>
+        val hostStream =
+        chooseNode((dg, hostHost) => dg.canContain(hostHost, toBeCtedHost) &&
+            !dg.isViolation(Contains(hostHost.id, toBeCtedHost.id)) && {
+            val dg2 = dg.addContains(hostHost.id, toBeCtedHost.id)
+                        .addContains(toBeCtedHost.id, toBeContained.id)
+            !dg2.isWronglyUsed(toBeContained.id)})(g)
+
+        hostStream  map (ltg => s"Searching host for $toBeCtedHost\n" <++: ltg map {
+          case (hid, g1) => (toBeCtedHost.id, g1.addContains(hid, toBeCtedHost.id))
+        })
+    }
 
 
   def findHost

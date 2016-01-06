@@ -15,7 +15,7 @@ trait StackListener{
 trait GraphStack {
 
   def initialGraph : DependencyGraph
-  def logger : PuckLogger
+  implicit def logger : PuckLogger
 
   def graph =
     if(undoStack.nonEmpty) undoStack.head

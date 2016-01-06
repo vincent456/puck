@@ -6,12 +6,14 @@ import javax.swing.UIManager
 import puck.graph.GraphUtils
 import puck.graph.io.FilesHandler
 import puck.gui.PuckMainPanel
+import puck.gui.explorer.DGTreeIcons
 
 import scala.swing.{MainFrame, SwingApplication}
 
 class PuckApplication
   ( fh : FilesHandler,
-    gu : GraphUtils)
+    gu : GraphUtils,
+    treeIcons : DGTreeIcons)
   extends SwingApplication{
 
   def startup(args: Array[String]) : Unit = {
@@ -23,7 +25,7 @@ class PuckApplication
   def top = new MainFrame {
     title = "Puck"
 
-    contents  = new PuckMainPanel(fh, gu)
+    contents  = new PuckMainPanel(fh, gu, treeIcons)
 
   }
 }
