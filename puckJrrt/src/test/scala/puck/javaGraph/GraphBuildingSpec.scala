@@ -368,7 +368,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
 //
 //        assert( graph.uses(theParameter, clazz) )
 
-        QuickFrame(graph, "JayJay",JavaDotHelper)
+        //QuickFrame(graph, "JayJay",JavaDotHelper)
       }
     }
   }

@@ -299,11 +299,13 @@ aspect DependencyGraphFactory {
 
 		//getAccess().accessed().buildDGNode avoid lock
 		int classNodeId = getAccess().accessed().buildDGNode(builder);
-		int ctorNodeId = buildDGNode(builder);
+		int ctorNodeId = buildDGNode(builder);//does lock
+		if(hasTypeDecl())
+			setTarget(null);//unlock anonymous decl
 
 		Uses constructorUses = new Uses(containerId, ctorNodeId, UsesAccessKind.none());
 		builder.addEdge(constructorUses);
-		this.lock();
+
 
 	}
 

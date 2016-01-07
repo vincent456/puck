@@ -37,7 +37,7 @@ class CycleRemovalTest
 //      val edgesToRemove = remover.edgesToRemove((nodes, edges))
 
       val rg = GenericGraphAlgorithms.reduceGraphG(graph, isRelevantNode)
-      QuickFrame(rg, "RG",JavaDotHelper)
+      //QuickFrame(rg, "RG",JavaDotHelper)
 //      val edgesToRemove = greedyCycleRemoval(rg)
 
       val wdg = WeightedDirectedGraph.fromDG(graph, isRelevantNode)

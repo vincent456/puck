@@ -52,7 +52,7 @@ class CommutativityRedirect
         val delegator = fullName2id("p.Delegator")
         val mDelegator = fullName2id("p.Delegator.mUsed()")
 
-        QuickFrame(graph, "g", JavaDotHelper)
+        //QuickFrame(graph, "g", JavaDotHelper)
 
         val g = graph.addAbstraction(delegatee, AccessAbstraction(delegator, DelegationAbstraction))
           .addAbstraction(mDelegatee, AccessAbstraction(mDelegator, DelegationAbstraction))

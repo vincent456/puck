@@ -51,6 +51,7 @@ object ASTNodeLink{
       case TypeDecl => g.hostNameSpace(_) != g.hostNameSpace(nid)
       case InstanceValueDecl
            | StaticValueDecl => g.hostTypeDecl(_) != g.hostTypeDecl(nid)
+      case kt => error(s"$kt not expected")
     }
     import AST.ASTNode.VIS_PUBLIC
     if (astNode.getVisibility != VIS_PUBLIC) {

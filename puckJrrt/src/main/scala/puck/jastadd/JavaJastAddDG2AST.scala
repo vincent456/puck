@@ -137,13 +137,13 @@ class JavaJastAddDG2AST
     logger.writeln("applying change !")
     val record = graph.recording
 
-//    logger.writeln("before applying change : ")
-//    logger.writeln(program.prettyPrint())
+    logger.writeln("before applying change : ")
+    logger.writeln(program.prettyPrint())
 
     record.reverse.foldLeft((graph, initialGraph, graph2ASTMap)) {
       case ((resultGraph, reenactor, g2AST), t : Transformation) =>
 
-//        logger.writeln("applying " + (reenactor, t).shows)
+        logger.writeln("applying " + (reenactor, t).shows)
         val newG2AST = applyOneTransformation(resultGraph, reenactor, g2AST, t)
 
         (resultGraph, t.redo(reenactor), newG2AST)
@@ -156,8 +156,11 @@ class JavaJastAddDG2AST
 //    logger.writeln("change applied : ")
 //    logger.writeln(program.prettyPrint())
     logger.writeln("emptying caches")
+    //program.saveParClassDecls()
     program.flushTreeCache()
     program.resetPrimitiveTypes()
+
+   // program.resetParClassDecls()
     logger.writeln("unlocking")
     try
       program.eliminateLockedNamesInSources()

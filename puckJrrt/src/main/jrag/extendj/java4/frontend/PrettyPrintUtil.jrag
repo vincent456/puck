@@ -100,7 +100,7 @@ aspect PrettyPrintUtil {
 
         // Print type.
         out.print(var.getModifiers());
-        out.print(var.type().elementType().typeName());
+        var.getTypeAccess().prettyPrint(out);
         for (int i = minDimension; i > 0; i--) {
           out.print("[]");
         }

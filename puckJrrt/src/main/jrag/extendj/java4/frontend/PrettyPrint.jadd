@@ -211,9 +211,9 @@ aspect Java4PrettyPrint {
     out.print(";");
   }
   public void SynchronizedStmt.prettyPrint(PrettyPrinter out) {
-    out.print("synchronized ");
+    out.print("synchronized (");
     out.print(getExpr());
-    out.print(" ");
+    out.print(") ");
     out.print(getBlock());
     if (!out.isNewLine()) {
       out.println();
