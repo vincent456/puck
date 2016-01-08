@@ -2,16 +2,19 @@ package puck
 
 import java.io.File
 
+import puck.graph.DependencyGraph
 import puck.graph.comparison.Mapping
 import puck.graph.io.{FilesHandler, DG2AST}
+import puck.util.PuckLogger
 import sbt.IO
 
 /**
   * Created by lorilan on 05/01/16.
   */
 trait FilesHandlerDG2ASTControllerOps {
-  self : GraphStack =>
 
+  implicit val logger : PuckLogger
+  def graph : DependencyGraph
   def dg2ast : DG2AST
   val filesHandler : FilesHandler
 

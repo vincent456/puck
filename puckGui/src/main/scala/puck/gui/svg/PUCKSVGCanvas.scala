@@ -235,7 +235,7 @@ class SVGCanvasListener
 
   def handleEvent(evt: Event) : Unit = {
     val mevt: MouseEvent = evt.asInstanceOf[MouseEvent]
-    controller.swingInvokeLater( () =>
+    swingInvokeLater( () =>
     mevt.getButton match {
       case RIGHTBUTTON => handleRightClick(mevt)
       case LEFTBUTTON => handleLeftClick(mevt)

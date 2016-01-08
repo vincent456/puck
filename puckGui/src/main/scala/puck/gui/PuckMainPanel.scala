@@ -1,7 +1,8 @@
 package puck.gui
 
+import puck.gui.svg.actions.SwingGraphController
 import puck.{GraphStack, StackListener}
-import puck.graph.GraphUtils
+import puck.graph.{NodeId, GraphUtils}
 import puck.graph.io.FilesHandler
 import puck.gui.explorer.{DGTreeIcons, GraphExplorer, ConstraintViolationExplorer}
 
@@ -28,7 +29,7 @@ object PuckMainPanel{
 class PuckMainPanel(filesHandler: FilesHandler,
                      graphUtils: GraphUtils,
                     treeIcons : DGTreeIcons)
-  extends SplitPane(Orientation.Horizontal) with StackListener{
+  extends SplitPane(Orientation.Horizontal) {
   dividerSize = 3
 
   preferredSize = new Dimension(PuckMainPanel.width, PuckMainPanel.height)
@@ -40,16 +41,23 @@ class PuckMainPanel(filesHandler: FilesHandler,
   leftComponent = interface
   rightComponent = consolePanel
 
-  def update(svgController: GraphStack) : Unit= {
-
-    val violations = svgController.graph.violations()
+  reactions += {
+  case GraphUpdate(graph) =>
+    println("updating main panel")
+    val violations = graph.violations()
     if(violations.isEmpty) rightComponent = consolePanel
     else {
       rightComponent = new SplitPane(Orientation.Vertical){
         resizeWeight = 0.5
         leftComponent = new BoxPanel(Orientation.Vertical) {
           contents += new Label("Constraints Violations")
-          val vExplorer = new ConstraintViolationExplorer(interface.control, violations)
+          val vExplorer = new ConstraintViolationExplorer(
+            new SwingGraphController{
+              val graphUtils: GraphUtils = PuckMainPanel.this.graphUtils
+              def selectedNodes: List[NodeId] = List()
+              def selectedEdge: Option[(NodeId, NodeId)] = None
+              val graphStack: GraphStack = interface.control.graphStack
+            }, violations)
           contents += vExplorer
           interface listenTo vExplorer
         }
@@ -59,7 +67,8 @@ class PuckMainPanel(filesHandler: FilesHandler,
     this.repaint()
   }
 
-  interface.control.registerAsStackListeners(this)
+  this listenTo interface.control
+
 
 }
 

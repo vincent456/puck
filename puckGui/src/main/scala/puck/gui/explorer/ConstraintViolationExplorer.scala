@@ -131,45 +131,7 @@ class CCTreeModel
 }
 
 
-class ConstraintViolationExplorer
-( controller : SwingGraphController,
-  violations : Seq[DGEdge])
-  extends ScrollPane {
-
-  import controller.graph
-
-    val kindSeq = Seq(TypeDecl, NameSpace)
-
-    val childToParentMap = violations.foldLeft(Map[DGEdge, Option[DGEdge]]())(createChildToParentMap(kindSeq))
-
-    val tree = new CCTree(graph, createParentToChildMap(childToParentMap))
-    //tree.setCellRenderer(new CCTreeCellRenderer(graph))
-    contents = swing.Component.wrap(tree)
-
-  tree.addMouseListener( new MouseAdapter {
-
-    override def mouseClicked(e : MouseEvent) : Unit =  {
-      val path : TreePath = tree.getPathForLocation(e.getX, e.getY)
-
-      if(path!= null){
-        path.getLastPathComponent match {
-          case edge : DGEdge =>
-            if(isRightClick(e)){
-              val menu : JPopupMenu = new ViolationMenu(controller, edge){
-                add( new AbstractAction("Focus in graph explorer") {
-                  def actionPerformed(e: ActionEvent): Unit =
-                    ConstraintViolationExplorer.this.publish(GraphExplorerFocus(edge))
-                })
-              }
-              Swing.onEDT(menu.show(ConstraintViolationExplorer.this.peer, e.getX, e.getY))
-            }
-          case _ => ()
-        }
-      }
-    }
-  })
-
-
+object ConstraintViolationExplorer {
   def mapWithE(m : Map[DGEdge, Option[DGEdge]], e : DGEdge) =
     if(m contains e) m
     else m + (e -> None)
@@ -186,9 +148,10 @@ class ConstraintViolationExplorer
   }
 
   def createChildToParentMap
-    (ks : Seq[KindType])
-    (m : Map[DGEdge, Option[DGEdge]], e : DGEdge
-     ) : Map[DGEdge, Option[DGEdge]] = {
+  (graph : DependencyGraph,
+   ks : Seq[KindType])
+  (m : Map[DGEdge, Option[DGEdge]], e : DGEdge
+  ) : Map[DGEdge, Option[DGEdge]] = {
     ks match {
       case Nil => mapWithE(m, e)
       case k +: remainings =>
@@ -202,14 +165,14 @@ class ConstraintViolationExplorer
 
           case (Some(psource), Some(ptarget)) =>
             val pe = new DGEdge(AbstractEdgeKind, psource, ptarget)
-            createChildToParentMap(remainings)(addChildToParentLink(m, e, pe), pe)
+            createChildToParentMap(graph, remainings)(addChildToParentLink(m, e, pe), pe)
 
           case (None, Some(ptarget)) =>
             val pe = new DGEdge(AbstractEdgeKind, src, ptarget)
-            createChildToParentMap(remainings)(addChildToParentLink(m, e, pe), pe)
+            createChildToParentMap(graph, remainings)(addChildToParentLink(m, e, pe), pe)
           case (Some(psource), None) =>
             val pe = new DGEdge(AbstractEdgeKind, psource, tgt)
-            createChildToParentMap(remainings)(addChildToParentLink(m, e, pe), pe)
+            createChildToParentMap(graph, remainings)(addChildToParentLink(m, e, pe), pe)
         }
     }
   }
@@ -226,6 +189,47 @@ class ConstraintViolationExplorer
       case (m, (e, Some(pe))) => add(m, pe, e)
     }
   }
+
+
+}
+
+import ConstraintViolationExplorer._
+class ConstraintViolationExplorer
+( controller : SwingGraphController,
+  violations : Seq[DGEdge])
+  extends ScrollPane {
+
+    val kindSeq = Seq(TypeDecl, NameSpace)
+
+    val childToParentMap = violations.foldLeft(Map[DGEdge, Option[DGEdge]]())(createChildToParentMap(controller.graph, kindSeq))
+
+    val tree = new CCTree(controller.graph, createParentToChildMap(childToParentMap))
+    //tree.setCellRenderer(new CCTreeCellRenderer(graph))
+    contents = swing.Component.wrap(tree)
+
+    tree.addMouseListener( new MouseAdapter {
+
+      override def mouseClicked(e : MouseEvent) : Unit =  {
+        val path : TreePath = tree.getPathForLocation(e.getX, e.getY)
+
+        if(path!= null){
+          path.getLastPathComponent match {
+            case edge : DGEdge =>
+              if(isRightClick(e)){
+                val menu : JPopupMenu = new ViolationMenu(controller, edge){
+                  add( new AbstractAction("Focus in graph explorer") {
+                    def actionPerformed(e: ActionEvent): Unit =
+                      ConstraintViolationExplorer.this.publish(GraphExplorerFocus(edge))
+                  })
+                }
+                Swing.onEDT(menu.show(ConstraintViolationExplorer.this.peer, e.getX, e.getY))
+              }
+            case _ => ()
+          }
+        }
+      }
+    })
+
 
 
 }

@@ -34,12 +34,13 @@ class PuckInterfacePanel
   val control = new PuckControl(logger, filesHandler,
     graphUtils, progressBar, delayedDisplay) with FilesHandlerDG2ASTControllerOps
 
-  control registerAsStackListeners treeDisplayer
+  treeDisplayer listenTo control
+
 
   reactions += {
     case GraphExplorerFocus(e) =>
       treeDisplayer.filter = Some(e)
-      treeDisplayer.update(control)
+      treeDisplayer.update(control.graphStack)
   }
 
   val printIdsBox = new CheckBox("Show nodes ID")
@@ -196,24 +197,6 @@ class PuckInterfacePanel
         "Apply transformations on the code")(
         control.deleteOutDirAndapplyOnCode)
     }
-
-
-
-//    val searchStrategies = new ComboBox(filesHandler.searchingStrategies){
-//      minimumSize = new Dimension(leftWidth, 30)
-//      maximumSize = minimumSize
-//      preferredSize = minimumSize
-//    }
-//
-//    addDelayedComponent(searchStrategies)
-//
-//    val explore = makeButton("Solve with search engine",""){
-//      () => publish(ExploreRequest(searchStrategies.selection.item))
-//    }
-//
-//    addDelayedComponent(explore)
-//
-//    addDelayedComponent(resultsWrapper)
 
   }
 

@@ -19,13 +19,13 @@ package object actions {
   }
 
   def printErrOrPushGraph
-  ( controller: GraphStack, msg : String )
+  ( controller: GraphController, msg : String )
   ( lgt : LoggedTry[DependencyGraph]) : Unit = {
     controller.logger.writeln(lgt.log)
     lgt.value match {
       case -\/(err) =>
         controller.logger.writeln(s"$msg\n${err.getMessage}\nLog : ${lgt.log}")
-      case \/-(g) => controller.pushGraph(g)
+      case \/-(g) => controller.graphStack.pushGraph(g)
     }
   }
 }

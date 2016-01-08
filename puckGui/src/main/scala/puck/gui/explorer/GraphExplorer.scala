@@ -79,9 +79,23 @@ object DGNodeWithViolationTreeCellRenderer
   }
 }
 
+object GraphExplorer {
+  def expandAll(tree : JTree, startingIndex : Int=0, rowCount : Int = 0): Unit ={
+    var i = startingIndex
+    while(i< rowCount){
+      tree expandRow i
+      i += 1
+    }
+    if(tree.getRowCount != rowCount)
+      expandAll(tree, rowCount, tree.getRowCount)
+  }
+
+}
+
 class GraphExplorer(treeIcons : DGTreeIcons, var filter : Option[DGEdge] = None)
   extends ScrollPane
   with StackListener {
+
 
 
 
@@ -114,6 +128,9 @@ class GraphExplorer(treeIcons : DGTreeIcons, var filter : Option[DGEdge] = None)
       val tree: JTree = new JTree(model) with DGTree {
         def icons : DGTreeIcons = treeIcons
       }
+
+      if(filter.nonEmpty)
+        GraphExplorer.expandAll(tree)
 
       tree.addMouseListener(new MouseAdapter {
 

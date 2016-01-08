@@ -137,7 +137,7 @@ class ConcreteNodeMenu
               val g = Redirection.redirectSourceOfInitUseInFactory(controller.graph.mileStone,
                 ctorId, ctorDef, target, node.id)
 
-              controller pushGraph g
+              controller.graphStack pushGraph g
           })
         case _ => ()
       }

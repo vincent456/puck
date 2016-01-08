@@ -24,25 +24,28 @@ import scala.util.{Failure, Success}
 import  VisibilitySet._
 
 abstract class SVGController
-( val graphUtils : GraphUtils,
-  val dg2ast: DG2AST,
-  val frame : SVGPanel,
-  private var visibility : VisibilitySet.T,
-  private var printId : Boolean,
-  private var printSignatures : Boolean,
-  private var printVirtualEdges : Boolean = true,
-  private var printConcreteUsesPerVirtualEdges : Boolean = true,
-  private var printRedOnly : Boolean = true,
-  private var selectedEdgeForTypePrinting : Option[Uses] = None)
+(val graphUtils : GraphUtils,
+ val dg2ast: DG2AST,
+ val frame : SVGPanel,
+ val graphStack : GraphStack,
+ private var visibility : VisibilitySet.T,
+ private var printId : Boolean,
+ private var printSignatures : Boolean,
+ private var printVirtualEdges : Boolean = true,
+ private var printConcreteUsesPerVirtualEdges : Boolean = true,
+ private var printRedOnly : Boolean = true,
+ private var selectedEdgeForTypePrinting : Option[Uses] = None)
   extends SwingGraphController with StackListener {
 
-  this registerAsStackListeners this
+
+  graphStack registerAsStackListeners this
+  import graphStack._
 
   def update(graphStack: GraphStack) : Unit  =
     displayGraph(graphStack.graph)
 
   lazy val console = frame.console
-  implicit val logger = new TextAreaLogger(console.textArea, _ => true )
+  override implicit val logger = new TextAreaLogger(console.textArea, _ => true )
 
   val initialGraph : DependencyGraph = dg2ast.initialGraph
 
@@ -256,27 +259,7 @@ abstract class SVGController
   }
 
   def loadRecord(file : File) : Unit = {
-    try {
-      val r = Recording.load(file.getAbsolutePath, nodesByName)
-
-//      val fw = new FileWriter("/tmp/prettyRecord")
-//      import ShowDG._
-//      graph.recording.reverseIterator.foreach{ t =>
-//        fw.write((graph, t).shows + "\n")
-//      }
-
-
-      pushGraph(r.reverse.foldLeft(graph){
-        case (g, MileStone) =>
-          undoStack.push(g)
-//          fw.write((g, MileStone).shows + "\n")
-          MileStone.redo(g)
-        case (g, t) =>
-//          fw.write((g, t).shows + "\n")
-          t.redo(g)
-      })
-//      fw.close()
-    }
+    try load(Recording.load(file.getAbsolutePath, nodesByName))
     catch {
       case Recording.LoadError(msg, m) =>
         implicit val verbosity = (PuckLog.NoSpecialContext, PuckLog.Error)
@@ -363,13 +346,17 @@ object SVGController {
   ( fh: FilesHandler,
     opts : PrintingOptions,
     graphUtils : GraphUtils,
-    dg2ast : DG2AST ) : Builder =
-  ( frame : SVGPanel) =>  new SVGController(graphUtils, dg2ast, frame,
+    dg2ast : DG2AST,
+    graphStack: GraphStack) : Builder =
+  ( frame : SVGPanel) =>
+    new SVGController(graphUtils, dg2ast, frame, graphStack,
                 opts.visibility, opts.printId, opts.printSignatures)
     with FilesHandlerDG2ASTControllerOps {
+
       val filesHandler = fh
-      //val filesHandler: FilesHandler = filesHandler0
-      pushGraph(dg2ast.initialGraph)
+
+      displayGraph(graph)
+
     }
 
 

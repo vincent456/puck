@@ -1,6 +1,7 @@
 package puck
 
-import puck.graph.DependencyGraph
+import puck.graph.transformations.MileStone
+import puck.graph.{Recording, DependencyGraph}
 import puck.util.PuckLogger
 
 import scala.collection.mutable
@@ -12,6 +13,7 @@ import scala.collection.mutable
 trait StackListener{
   def update(controller: GraphStack) : Unit
 }
+
 trait GraphStack {
 
   def initialGraph : DependencyGraph
@@ -24,7 +26,7 @@ trait GraphStack {
   protected val undoStack = mutable.Stack[DependencyGraph]()
   protected val redoStack = mutable.Stack[DependencyGraph]()
 
-  private val stackListeners = mutable.ArrayBuffer[StackListener]()
+  protected val stackListeners = mutable.ArrayBuffer[StackListener]()
 
   def registerAsStackListeners(l : StackListener) =
     stackListeners.append(l)
@@ -67,5 +69,12 @@ trait GraphStack {
     updateStackListeners()
   }
 
+  def load(rec : Recording): Unit =
+    pushGraph(rec.reverse.foldLeft(graph){
+    case (g, MileStone) =>
+      undoStack.push(g)
+      MileStone.redo(g)
+    case (g, t) => t.redo(g)
+  })
 
 }

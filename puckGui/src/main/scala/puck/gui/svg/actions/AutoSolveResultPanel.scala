@@ -21,7 +21,9 @@ import scala.swing._
 
 import scalaz.syntax.writer._
 
-trait SwingGraphController extends GraphController {
+//this trait is needed to dispatch graphical computation on the rerserved thread in Intellij Idea plugin
+trait SwingGraphController extends GraphController{
+
   implicit val executor : ExecutionContext =
     scala.concurrent.ExecutionContext.Implicits.global
 

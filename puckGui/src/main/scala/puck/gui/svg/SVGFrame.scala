@@ -4,9 +4,10 @@ import java.awt.{Container, Dimension, BorderLayout}
 import java.io.InputStream
 import javax.swing._
 
+import puck.util.{PuckSystemLogger, PuckNoopLogger, PuckLogger}
 import puck.{StackListener, GraphStack}
 import puck.actions.AddNodeAction
-import puck.graph.{NameSpace, GraphUtils}
+import puck.graph.{DependencyGraph, NameSpace, GraphUtils}
 import puck.graph.io.{DG2AST, FilesHandler, PrintingOptions}
 import puck.gui.PuckConsolePanel
 
@@ -51,6 +52,7 @@ class SVGFrameMenu
 
   addVisibilityCheckBoxesToMenu()
 
+  import controller.graphStack
   val buttonsWrapper = new JPanel()
   val (undoAllButton, undoButton, redoButton) = addUndoRedoButton(buttonsWrapper)
 
@@ -69,18 +71,18 @@ class SVGFrameMenu
 
   def addUndoRedoButton(c : Container) : (JButton, JButton, JButton) = {
     val undoAllButton = jbutton("Undo all") {
-      _ => controller.undoAll()
+      _ => graphStack.undoAll()
     }
     undoAllButton.setEnabled(false)
     c add undoAllButton
 
     val undoButton = jbutton("Undo") {
-      _ => controller.undo()
+      _ => graphStack.undo()
     }
     undoButton.setEnabled(false)
     c add undoButton
     val redoButton = jbutton("Redo") {
-      _ => controller.redo()
+      _ => graphStack.redo()
     }
     redoButton.setEnabled(false)
     c add redoButton
@@ -204,8 +206,10 @@ class SVGFrame
   opts: PrintingOptions,
   filesHandler : FilesHandler,
   graphUtils : GraphUtils,
-  dg2ast : DG2AST) extends JFrame {
-    val builder = SVGController.builderFromFilesHander(filesHandler, opts, graphUtils, dg2ast)
+  dg2ast : DG2AST,
+  graphStack: GraphStack) extends JFrame {
+    val builder =
+      SVGController.builderFromFilesHander(filesHandler, opts, graphUtils, dg2ast, graphStack)
     val pan = new SVGPanel(builder)
     this.setContentPane(pan)
 
@@ -231,7 +235,7 @@ class SVGPanel( builder : SVGController.Builder) extends JPanel with StackListen
   val canvas = new PUCKSVGCanvas(new SVGCanvasListener(this, controller))
 
   private val menu: SVGFrameMenu = new SVGFrameMenu(controller)
-  controller.registerAsStackListeners(this)
+  controller.graphStack.registerAsStackListeners(this)
 
 
   val centerPane = new JSplitPane()

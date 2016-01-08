@@ -8,18 +8,10 @@ import scala.swing.event.Event
 
 case class NodeClicked(node : DGNode) extends Event
 
-//trait GraphEvent extends Event {
-//  val graph : DependencyGraph
-//}
+case class GraphUpdate(graph : DependencyGraph) extends Event
 
-case class SetVisibleFromKind(ks : Seq[NodeKind]) extends Event
-case object SetTopLevelVisible extends Event
-
-
-sealed trait ControlRequest extends Event
-
-case object LoadCodeRequest extends ControlRequest
-case object LoadConstraintRequest extends ControlRequest
+case object LoadCodeRequest extends Event
+case object LoadConstraintRequest extends Event
 case class GraphDisplayRequest
 (title : String,
  graph : DependencyGraph,
@@ -28,27 +20,9 @@ case class GraphDisplayRequest
  visibility : VisibilitySet.T,
  sUse : Option[Uses] = None,
  format : DotOutputFormat = Svg)
-  extends ControlRequest
+  extends Event
 
-case class ConstraintDisplayRequest(graph : DependencyGraph) extends ControlRequest
+case class ConstraintDisplayRequest(graph : DependencyGraph) extends Event
 case class GraphExplorerFocus(e : DGEdge) extends Event
-//case class SearchStateMapPrintingRequest
-//(stateMap : Map[Int, Seq[SearchState[SResult]]],
-// printId : Boolean,
-// printSignature : Boolean,
-// visibility : VisibilitySet.T)
-//  extends ControlRequest
 
-//case class SearchStateSeqPrintingRequest
-//(subDir : String,
-// states : Seq[SearchState[SResult]],
-// sPrinter : Option[SearchState[SResult] => String],
-// printId : Boolean,
-// printSignature : Boolean,
-// visibility : VisibilitySet.T)
-//  extends ControlRequest
-
-case class ApplyOnCodeRequest(searchResult : DependencyGraph) extends ControlRequest
-
-sealed abstract class Answer extends Event
-case class ExplorationFinished(result : Search[SResult]) extends Answer
+case class ApplyOnCodeRequest(searchResult : DependencyGraph) extends Event

@@ -63,7 +63,7 @@ class RenameNodeAction
     showInputDialog("New name:").foreach {
       newName =>
           val g = TR.rename(graph.mileStone, node.id, newName)
-          controller.pushGraph(g)
+          controller.graphStack.pushGraph(g)
     }
   }
 
