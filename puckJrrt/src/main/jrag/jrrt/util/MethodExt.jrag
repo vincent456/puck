@@ -9,7 +9,7 @@ aspect MethodExt {
 		hostType().makeAbstract();
 		for(TypeDecl td : inheritingTypes())
 			td.makeAbstract();
-		this.flushCaches();
+		this.flushTreeCache();
 	}
 	
 	syn boolean MethodDecl.canBeAbstract() = 

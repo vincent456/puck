@@ -207,7 +207,7 @@ object CreateEdge {
     cu.setPackageDecl(pkgDecl)
     cu.setPathName(path)
     //!\ very important !!
-    cu.flushCaches()
+    cu.flushTreeCache()
   }
 
 }

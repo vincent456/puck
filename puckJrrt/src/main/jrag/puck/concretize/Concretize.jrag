@@ -73,12 +73,19 @@ aspect Concretize {
         return rcu.getRootPath();
     }
 
-    public void Program.eliminateLockedNamesInSources(){
-        //calling eliminateLockedNames from program after calling lockAllNames
-        //provoke cause exceptions in the "@primitive package"
-        for (CompilationUnit cu : getCompilationUnitList()){
-            if(cu.fromSource())
-                cu.eliminateLockedNamesInSubtree();
+    public Program Program.program() { return this;}
+//    public void Program.eliminateLockedNamesInSources(){
+//        //calling eliminateLockedNames from program after calling lockAllNames
+//        //provoke cause exceptions in the "@primitive package"
+//        for (CompilationUnit cu : getCompilationUnitList()){
+//            if(cu.fromSource())
+//                cu.eliminateLockedNamesInSubtree();
+//        }
+//    }
+
+    public void Program.flushLibraryTypesTreeCache(){
+        for(TypeDecl td : libraryTypeMap.values()){
+        td.flushTreeCache();
         }
     }
     public void Program.resetPrimitiveTypes() {

@@ -153,7 +153,7 @@ aspect LockedMethodAccess {
 					host = ((GenericTypeDecl)host).rawType();
 				if(host.accessibleFrom(hostType()) && target.accessibleFrom(hostType()))
 					if (qual == null || (qual!=null && qual.type() != host)) {
-						this.flushCaches();
+						this.flushTreeCache();
 						Access hostAccess = host.createLockedAccess();
 						affectedByUnlock(hostAccess, this);
 						return (Access) replace(qual!=null ? parentDot() : this).with(hostAccess.qualifiesAccess(this));
@@ -164,14 +164,14 @@ aspect LockedMethodAccess {
 				AbstractDot parent = parentDot();
 				acc = parent.accessMethod(target);
 				if(acc != null) {
-					this.flushCaches();
+					this.flushTreeCache();
 					Access newAcc = acc.eliminate(this, null, enclosingType(), isMonoCall, inStaticContext(), (List<Expr>) getArgs().fullCopyAndDetach());
 					return (Access) replace(parent).with(newAcc);
 				}
 			}
 			throw new RefactoringException("cannot access method "+target.name());
 		}
-		this.flushCaches();
+		this.flushTreeCache();
 		Access res = acc.eliminate(this, qual, enclosingType(), isMonoCall, inStaticContext(), (List<Expr>) getArgs().fullCopyAndDetach());
 		if(res == null)
 			throw new RefactoringException("cannot access method "+target.name());
@@ -195,7 +195,7 @@ aspect LockedMethodAccess {
 			if(inStaticCtxt)
 				throw new RefactoringException("cannot access non-static method in static context");
 			MethodAccess ma = constructAccess(original, args);
-			ma.flushCaches();
+			ma.flushTreeCache();
 			if(isMonoCall && !target.isPrivate()) {
 				// need to construct a super call
 				if(bend instanceof ClassDecl && source == ((ClassDecl)bend).superclass()) {
@@ -283,7 +283,7 @@ aspect LockedMethodAccess {
 			if(source == bend && source.equals(qualifier.type()))
 				return ma.parentDot();
 			else if(!qualifier.isTypeAccess() && qualifier.type().equals(bend)) {
-				ma.parentDot().flushCaches();
+				ma.parentDot().flushTreeCache();
 				Access sourceAccess = source.createLockedAccess();
 				ma.affectedByUnlock(sourceAccess, ma);
 				return (Access) ma.parentDot().replace(ma.parentDot()).with(

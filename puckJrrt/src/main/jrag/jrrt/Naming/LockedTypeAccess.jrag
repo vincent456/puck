@@ -151,7 +151,7 @@ aspect LockedTypeAccess {
 		assert qual == null || qual.isPure();
 		TypeDecl target = targetType.refresh();
 		setTargetType(null);
-		flushCaches();
+		flushTreeCache();
 		if(!target.hasName())
 			throw new RefactoringException("cannot unlock access to nameless type");
 		try {

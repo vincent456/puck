@@ -23,7 +23,7 @@ aspect MakeMethodStatic {
 //		Access newParmAcc = newParm.createLockedAccess();
 //		WithStmt withStmt = new WithStmt(new List<Access>().add(newParmAcc), newMethod.getBlock());
 //		newMethod.setBlock(new Block(new List<Stmt>().add(withStmt)));
-//		newMethod.flushCaches();
+//		newMethod.flushTreeCache();
 //		// prepare delegating method
 //		List<Expr> delegationArgs = new List<Expr>().add(new ThisAccess("this"));
 //		for(int i=1;i<newMethod.getNumParameter();++i)
@@ -31,7 +31,7 @@ aspect MakeMethodStatic {
 //		Expr delegationCall = new MethodAccess(newMethod.name(), delegationArgs);
 //		delegator.setBlock(new Block(new List<Stmt>().add(new ReturnStmt(delegationCall))));
 //		// plug in delegating method
-//		delegator.program().flushCaches();
+//		delegator.program().flushTreeCache();
 //		newMethod.program().eliminate(RETURN_VOID, FRESH_VARIABLES, WITH_STMT, LOCKED_NAMES, DEMAND_FINAL_MODIFIER);
 //	}
 	

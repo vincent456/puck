@@ -26,7 +26,7 @@ aspect InsertUnusedType {
 		member.checkEnclosingTypeNames(host);
 		Program root = host.program();
 		root.lockNames(td.name());
-		root.flushCaches();
+		root.flushTreeCache();
 		return member;
 	}
 	
@@ -35,7 +35,7 @@ aspect InsertUnusedType {
 		LocalClassDeclStmt lcd = new LocalClassDeclStmt(cd);
 		insertStmtBefore(lcd);
 		cd.checkEnclosingTypeNames(hostType());
-		hostBodyDecl().flushCaches();
+		hostBodyDecl().flushTreeCache();
 		return lcd;
 	}
 	

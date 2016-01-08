@@ -185,7 +185,7 @@ aspect LockedVariableAccess {
 		}
 		access.flushCache();
 		if (qualifier != null) {
-			qualifier.flushCaches();
+			qualifier.flushTreeCache();
 		}
 		if (to_replace.equals(access))
 			return access;

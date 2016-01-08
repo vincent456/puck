@@ -14,7 +14,7 @@ aspect LanguageExtensions {
 	}
 
 	public void ASTNode.eliminate(LanguageExtension... les) {
-		flushCaches();
+		flushTreeCache();
 		for(LanguageExtension le : les) {
 			le.eliminateOn(this);
 		}

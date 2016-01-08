@@ -76,7 +76,7 @@ aspect ReplaceTypeAccess {
         if( this.decl().equals(oldUsed) ){
             this.setID(newUsed.name());
             this.setTargetType(newUsed);
-            this.flushCaches();
+            this.flushTreeCache();
         }
 
     }

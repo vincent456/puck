@@ -70,7 +70,7 @@ aspect LockedOverriding {
 	public static LanguageExtension ASTNode.LOCKED_OVERRIDING = new LanguageExtension("locked overriding") {
 		public void eliminateOn(ASTNode n) {
 			n.unlockOverriding();
-			n.flushCaches();
+			n.flushTreeCache();
 		}
 	};
 	
@@ -85,7 +85,7 @@ aspect LockedOverriding {
 		if(lockedOverridingDependencies != null) {
 			HashSet<MethodDecl> old_overridden = overriddenMethods();
 			clearOverridingDependencies();
-			this.flushCaches();
+			this.flushTreeCache();
 			if(!old_overridden.equals(overriddenMethods()))
 				throw new RefactoringException("overriding has changed");
 		}

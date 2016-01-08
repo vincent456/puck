@@ -11,10 +11,10 @@ aspect Rename {
 		while(root != null && !root.affectedByUnlock.isEmpty()) {
 			if(root != null)
 				root.affectedByUnlock.clear();
-			flushCaches();
+			flushTreeCache();
 			eliminateLockedNames();
 		}
-		flushCaches();
+		flushTreeCache();
 	}
 	
 	public void ASTNode.eliminateLockedNames() {
@@ -26,9 +26,9 @@ aspect Rename {
 	 * and all names that have been re-qualified in the program node, if it is accessible. */
 	protected final Collection<Access> Program.affectedByUnlock = new LinkedList<Access>();
 	
-	public void Program.flushCaches() {
+	public void Program.flushTreeCache() {
 		affectedByUnlock.clear();
-		super.flushCaches();
+		super.flushTreeCache();
 	}
 	
 	protected void ASTNode.affectedByUnlock(Access... accs) {

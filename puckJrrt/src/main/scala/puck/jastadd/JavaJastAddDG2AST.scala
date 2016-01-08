@@ -119,31 +119,16 @@ class JavaJastAddDG2AST
 
   def apply(graph : DependencyGraph)(implicit logger : PuckLogger) : Unit = {
 
-//    def printCUs() = {
-//      println(program.getNumCompilationUnit.toString + "c us")
-//      List.range(0, program.getNumCompilationUnit).foreach {
-//        i =>
-//          val cu = program.getCompilationUnit(i)
-//          if(cu.fromSource()) {
-//            println(cu.pathName() + " " + cu.getPackageDecl)
-//            List.range(0, cu.getNumTypeDecl).foreach{
-//              j =>
-//                println(cu.getTypeDecl(j).fullName())
-//            }
-//          }
-//      }
-//    }
-
     logger.writeln("applying change !")
     val record = graph.recording
 
-    logger.writeln("before applying change : ")
-    logger.writeln(program.prettyPrint())
+//    logger.writeln("before applying change : ")
+//    logger.writeln(program.prettyPrint())
 
     record.reverse.foldLeft((graph, initialGraph, graph2ASTMap)) {
       case ((resultGraph, reenactor, g2AST), t : Transformation) =>
 
-        logger.writeln("applying " + (reenactor, t).shows)
+//        logger.writeln("applying " + (reenactor, t).shows)
         val newG2AST = applyOneTransformation(resultGraph, reenactor, g2AST, t)
 
         (resultGraph, t.redo(reenactor), newG2AST)
@@ -156,14 +141,13 @@ class JavaJastAddDG2AST
 //    logger.writeln("change applied : ")
 //    logger.writeln(program.prettyPrint())
     logger.writeln("emptying caches")
-    //program.saveParClassDecls()
     program.flushTreeCache()
+    program.flushLibraryTypesTreeCache();
     program.resetPrimitiveTypes()
 
-   // program.resetParClassDecls()
     logger.writeln("unlocking")
     try
-      program.eliminateLockedNamesInSources()
+      program.eliminateLockedNamesInSubtree()
     catch {
       case e : Exception =>
         e.printStackTrace()

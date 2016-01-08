@@ -58,19 +58,10 @@ aspect AST {
 		getBodyDeclList().removeChild(getBodyDeclList().getIndexOfChild(bd));
 	}
 
-	public void ASTNode.flushCaches() {
-		this.flushCache();
-		for(int i=0;i<getNumChild();++i) {
-			ASTNode child = getChild(i);
-			if(child != null)
-				child.flushCaches();
-		}
-	}
-	
-	public void BodyDecl.flushCaches() {
-		entry.flushCaches();
-		exit.flushCaches();
-		super.flushCaches();
+	public void BodyDecl.flushTreeCache() {
+		entry.flushTreeCache();
+		exit.flushTreeCache();
+		super.flushTreeCache();
 	}
 	
 	protected ASTNode ASTNode.replaceWith(ASTNode newnode) {

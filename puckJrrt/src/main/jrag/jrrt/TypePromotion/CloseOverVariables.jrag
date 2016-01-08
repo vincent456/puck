@@ -73,7 +73,7 @@ aspect CloseOverVariables {
 					parent.setChild(new ParTypeAccess(tacc, parms), idx);
 				}
 			}
-			enclosingBodyDecl().flushCaches();
+			enclosingBodyDecl().flushTreeCache();
 		}
 		return cd;
 	}	

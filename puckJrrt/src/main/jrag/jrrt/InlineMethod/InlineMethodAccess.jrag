@@ -45,7 +45,7 @@ aspect InlineMethodAccess {
 //		target.replaceWith(target_cp);
 //		anon.setArgList(getArgList());
 //		anon.removeSyntheticThis();
-//		target_cp.hostType().flushCaches();
+//		target_cp.hostType().flushTreeCache();
 //		return anon;
 //	}
 //
@@ -61,7 +61,7 @@ aspect InlineMethodAccess {
 //			assert(acc != null && acc instanceof SymbolicFieldAccess);
 //			Expr qual = ((SymbolicFieldAccess)acc).getBend().createLockedAccess().qualifiesAccess(new ThisAccess(true));
 //			replace(this).with(qual.qualifiesAccess(this));
-//			flushCaches();
+//			flushTreeCache();
 //		}
 //		super.expatiateQualifiers();
 //	}
@@ -72,7 +72,7 @@ aspect InlineMethodAccess {
 //			assert(acc != null);
 //			Expr qual = acc.getBend().createLockedAccess().qualifiesAccess(new ThisAccess(true));
 //			replace(this).with(qual.qualifiesAccess(this));
-//			flushCaches();
+//			flushTreeCache();
 //		}
 //		super.expatiateQualifiers();
 //	}
