@@ -8,30 +8,41 @@ import puck.graph._
 import puck.graph.transformations.rules.Redirection
 import puck.gui.svg._
 
+import scala.swing.Publisher
+
 /**
   * Created by lorilan on 16/12/15.
   */
 
 object NodeMenu{
 
-  def apply(controller : GraphController, nodeId : NodeId) : JPopupMenu =
-    controller.graph.getNode(nodeId) match {
-      case n : ConcreteNode => new ConcreteNodeMenu(controller, n)
-      case n : VirtualNode => new VirtualNodeMenu(controller, n)
+  def apply(controller : Publisher,
+            graph : DependencyGraph,
+            graphUtils: GraphUtils,
+            selectedNodes: List[NodeId],
+            selectedEdge : Option[NodeIdP],
+            nodeId : NodeId) : JPopupMenu =
+    graph.getNode(nodeId) match {
+      case n : ConcreteNode =>
+        new ConcreteNodeMenu(controller, graph, graphUtils, selectedNodes, selectedEdge, n)
+      case n : VirtualNode =>
+        new VirtualNodeMenu(controller, graph, graphUtils, n)
     }
 }
 
 class ConcreteNodeMenu
-( controller: GraphController,
-  node : ConcreteNode) extends JPopupMenu {
+(publisher: Publisher,
+ implicit val graph : DependencyGraph,
+ implicit val graphUtils : GraphUtils,
+ val selectedNodes: List[NodeId],
+ val selectedEdge : Option[NodeIdP],
+ node : ConcreteNode) extends JPopupMenu {
 
   init()
 
-  import controller.graph
-
   def init(): Unit = {
 
-    this.add(new RenameNodeAction(controller, node))
+    this.add(new RenameNodeAction(publisher, node))
     this.addSeparator()
 
     val item = new JMenuItem(s"Abstract ${node.name} as")
@@ -46,36 +57,36 @@ class ConcreteNodeMenu
     }
 
     if (node.kind.isWritable) {
-      this.add(new CreateInitalizerAction(controller,
+      this.add(new CreateInitalizerAction(publisher,
         graph.getConcreteNode(graph.hostTypeDecl(node.id))))
     }
 
     this.addSeparator()
-    this.add(new SetMutabilityAction(controller, node, !node.mutable))
-    this.add(new RemoveNodeAction(controller, node))
+    this.add(new SetMutabilityAction(publisher, node, !node.mutable))
+    this.add(new RemoveNodeAction(publisher, node))
 
-    controller.selectedNodes match {
+    selectedNodes match {
       case Nil => ()
       case List(nid) => addOtherNodeSelectedOption(nid)
       case nodes => addOtherNodesSelectedOption(nodes)
     }
 
-    controller.selectedEdge foreach addEdgeSelectedOption
+    selectedEdge foreach addEdgeSelectedOption
 
   }
 
   def abstractionChoices : Seq[JMenuItem] =
     node.kind.abstractionChoices.map { case (k, p) =>
-      new JMenuItem(new AbstractionAction(controller, node, p, k))
+      new JMenuItem(new AbstractionAction(publisher, node, p, k))
     }
 
   def childChoices : Seq[JMenuItem] = {
     val ks = graph.nodeKinds.filter(node.kind.canContain)
-    ks map {k => new JMenuItem(new AddNodeAction(controller, node, k))}
+    ks map {k => new JMenuItem(new AddNodeAction(publisher, node, k))}
   }
 
   private def addAddIsaOption(sub: ConcreteNode, sup: ConcreteNode): Unit = {
-    ignore( this add new AddIsaAction(controller, sub, sup) )
+    ignore( this add new AddIsaAction(publisher, sub, sup) )
 
   }
 
@@ -86,13 +97,13 @@ class ConcreteNodeMenu
     val kt = graph.kindType(ids.head)
     val sameKind = ids.tail forall (graph.kindType(_) == kt)
     if (!sameContainer)
-      controller.logger.writeln("Move multiple only available for nodes with same container")
+      publisher.publish(Log("Move multiple only available for nodes with same container"))
     else if (!sameKind)
-      controller.logger.writeln("Move multiple only available for nodes with same kind")
+      publisher.publish(Log("Move multiple only available for nodes with same kind"))
     else {
       val selected: ConcreteNode = graph.getConcreteNode(ids.head)
       if (graph.canContain(node, selected))
-        ignore( this add new MoveAction(controller, node, ids) )
+        ignore( this add new MoveAction(publisher, node, ids) )
 
 
     }
@@ -102,7 +113,7 @@ class ConcreteNodeMenu
   private def addOtherNodeSelectedOption(id: NodeId): Unit = {
     val selected: ConcreteNode = graph.getConcreteNode(id)
     if (graph.canContain(node, selected)) {
-      this.add(new MoveAction(controller, node, List(id)))
+      this.add(new MoveAction(publisher, node, List(id)))
     }
 
     //    val m: MergeMatcher = controller.transfoRules.
@@ -110,7 +121,7 @@ class ConcreteNodeMenu
     //
     //    if (m.canBeMergedInto(node, graph))
     if (selected.kind.kindType == node.kind.kindType)
-      this.add(new MergeAction(controller, selected, node))
+      this.add(new MergeAction(publisher, selected, node))
 
 
     if (selected.id != node.id) {
@@ -125,7 +136,7 @@ class ConcreteNodeMenu
       graph.abstractions(target).foreach {
         abs =>
           if (abs.nodes.contains(node.id))
-            this.add(new RedirectAction(controller, node, uses, abs))
+            this.add(new RedirectAction(publisher, node, uses, abs))
       }
 
     def addChangeInitUsesAction(ctorDef: NodeId) =
@@ -134,10 +145,10 @@ class ConcreteNodeMenu
           if ctorId == source =>
           this.add(abstractAction("Call to initialization in factory") {
             _ =>
-              val g = Redirection.redirectSourceOfInitUseInFactory(controller.graph.mileStone,
+              val g = Redirection.redirectSourceOfInitUseInFactory(graph.mileStone,
                 ctorId, ctorDef, target, node.id)
 
-              controller.graphStack pushGraph g
+              publisher.publish(PushGraph(g))
           })
         case _ => ()
       }
@@ -160,14 +171,16 @@ class ConcreteNodeMenu
 }
 
 class VirtualNodeMenu
-(controller: GraphController,
+(controller: Publisher,
+ graph : DependencyGraph,
+ graphUtils : GraphUtils,
  node : VirtualNode
 ) extends JPopupMenu {
 
   node.potentialMatches foreach {
     id =>
-      val consumer = controller.graph.getConcreteNode(id)
-      import controller.{graph, graphUtils}, graphUtils.{transformationRules => TR}
+      val consumer = graph.getConcreteNode(id)
+      import graphUtils.{transformationRules => TR}
       this.addMenuItem(s"Concretize as $consumer") { _ =>
         printErrOrPushGraph(controller,"Concretize action failure") {
           TR.merge.mergeInto(graph.mileStone, node.id, consumer.id)

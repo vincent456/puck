@@ -1,25 +1,30 @@
 package puck.gui.svg
 
+import java.awt.Component
 import javax.swing.JPopupMenu
 
 import puck.actions.RemoveEdgeAction
+import puck.graph.io.PrintingOptions
 import puck.gui.svg.actions.ShowTypeRelationshipGraphicAction
-import puck.graph.{NodeId, Isa, NodeIdP}
+import puck.graph._
 import puck.gui.svg.actions._
 
+
 class SVGEdgeMenu
-( private val controller : SVGController,
+( publisher : SVGController,
   edge : NodeIdP)
   extends JPopupMenu {
 
+  implicit val graph: DependencyGraph = publisher.graphStack.graph
+  implicit val graphUtils: GraphUtils = publisher.graphUtils
+
   val (source, target) = edge
-  import controller.graph
 
   if(graph.isViolation(edge)){
     val targetNode = graph.getConcreteNode(target)
-    add(new ManualSolveAction(targetNode, controller))
-    add(new AutoSolveAction(targetNode, controller,
-      controller.printingOptions))
+    add(new ManualSolveAction(publisher, targetNode))
+    add(new AutoSolveAction(publisher, targetNode,
+      publisher.printingOptionsControl.printingOptions))
   }
 
   var isIsaEdge = false
@@ -27,15 +32,15 @@ class SVGEdgeMenu
 
   if(graph.isa(source, target)) {
     isIsaEdge = true
-    add(new RemoveEdgeAction(controller, Isa(source, target)))
+    add(new RemoveEdgeAction(publisher, Isa(source, target)))
   }
 
   def addShowBRActions(src : NodeId, tgt : NodeId) : Unit =
     graph.getUsesEdge(src, tgt) foreach {
       uses =>
         isUseEdge = true
-        add(new ShowTypeRelationshipGraphicAction(Some(uses), controller))
-        add(new ShowTypeRelationshipTextualAction(Some(uses), controller))
+        add(new ShowTypeRelationshipGraphicAction(Some(uses), publisher))
+        add(new ShowTypeRelationshipTextualAction(Some(uses), publisher))
     }
 
   addShowBRActions(source, target)
@@ -49,7 +54,7 @@ class SVGEdgeMenu
   if(!isConcreteEdge)
       this.addMenuItem("Focus"){
         _ =>
-        controller.focus(edge)
+          publisher.printingOptionsControl.focus(edge)
       }
 
 }

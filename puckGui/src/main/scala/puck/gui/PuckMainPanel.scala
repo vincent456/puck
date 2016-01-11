@@ -1,10 +1,8 @@
 package puck.gui
 
-import puck.gui.svg.actions.SwingGraphController
-import puck.{GraphStack, StackListener}
-import puck.graph.{NodeId, GraphUtils}
+import puck.graph.GraphUtils
 import puck.graph.io.FilesHandler
-import puck.gui.explorer.{DGTreeIcons, GraphExplorer, ConstraintViolationExplorer}
+import puck.gui.explorer.{DGTreeIcons, ConstraintViolationExplorer}
 
 import scala.swing._
 import java.awt.Dimension
@@ -14,16 +12,7 @@ object PuckMainPanel{
   val width = 1024
   val height = 768
 
-  def leftGlued(c : Component) : BoxPanel = {
-    new BoxPanel(Orientation.Horizontal) {
-      contents += c
-      contents += Swing.HGlue
-    }
-  }
 
-  implicit class LeftGlued(val c : Component) extends AnyVal {
-    def leftGlued : BoxPanel = PuckMainPanel.leftGlued(c)
-  }
 }
 
 class PuckMainPanel(filesHandler: FilesHandler,
@@ -51,13 +40,7 @@ class PuckMainPanel(filesHandler: FilesHandler,
         resizeWeight = 0.5
         leftComponent = new BoxPanel(Orientation.Vertical) {
           contents += new Label("Constraints Violations")
-          val vExplorer = new ConstraintViolationExplorer(
-            new SwingGraphController{
-              val graphUtils: GraphUtils = PuckMainPanel.this.graphUtils
-              def selectedNodes: List[NodeId] = List()
-              def selectedEdge: Option[(NodeId, NodeId)] = None
-              val graphStack: GraphStack = interface.control.graphStack
-            }, violations)
+          val vExplorer = new ConstraintViolationExplorer(interface, violations)(graph, graphUtils)
           contents += vExplorer
           interface listenTo vExplorer
         }

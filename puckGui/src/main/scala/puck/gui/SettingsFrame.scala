@@ -22,7 +22,7 @@ class SettingsFrame(filesHandler : FilesHandler) extends Frame{
         case Some(f) => f.toString
       })
 
-      val hbox = PuckMainPanel.leftGlued(new Button(title){
+      val hbox = new Button(title){
 
         tooltip = tip
 
@@ -39,7 +39,7 @@ class SettingsFrame(filesHandler : FilesHandler) extends Frame{
             }
           }
         }
-      })
+      }.leftGlued
       hbox.contents += path
       hbox
     }

@@ -6,37 +6,32 @@ import org.apache.batik.anim.dom.SAXSVGDocumentFactory
 import org.apache.batik.util.XMLResourceDescriptor
 import org.w3c.dom.Element
 import org.w3c.dom.svg.{SVGGElement, SVGDocument}
-import puck.gui.svg.actions.SwingGraphController
+import puck.gui.svg.actions.{DefaultSwingService, SwingService}
 import puck.{FilesHandlerDG2ASTControllerOps, StackListener, GraphStack}
 import puck.graph._
-import puck.graph.comparison.Mapping
 import puck.graph.constraints.ConstraintsParser
 import puck.graph.io._
-import puck.graph.transformations.MileStone
-import puck.gui.TextAreaLogger
+import puck.gui.{PrintingOptionsControl, TextAreaLogger}
 import puck.gui.explorer.NodeInfosPanel
 import puck.util.PuckLog
-import sbt.IO
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.swing.Publisher
 import scala.util.{Failure, Success}
 
-import  VisibilitySet._
+
 
 abstract class SVGController
 (val graphUtils : GraphUtils,
  val dg2ast: DG2AST,
  val frame : SVGPanel,
  val graphStack : GraphStack,
- private var visibility : VisibilitySet.T,
- private var printId : Boolean,
- private var printSignatures : Boolean,
- private var printVirtualEdges : Boolean = true,
- private var printConcreteUsesPerVirtualEdges : Boolean = true,
- private var printRedOnly : Boolean = true,
- private var selectedEdgeForTypePrinting : Option[Uses] = None)
-  extends SwingGraphController with StackListener {
+ val printingOptionsControl: PrintingOptionsControl
+)
+  extends StackListener with Publisher {
 
+  val swingService : SwingService = DefaultSwingService
+  import swingService._
 
   graphStack registerAsStackListeners this
   import graphStack._
@@ -45,7 +40,7 @@ abstract class SVGController
     displayGraph(graphStack.graph)
 
   lazy val console = frame.console
-  override implicit val logger = new TextAreaLogger(console.textArea, _ => true )
+  implicit val logger = new TextAreaLogger(console.textArea, _ => true )
 
   val initialGraph : DependencyGraph = dg2ast.initialGraph
 
@@ -63,46 +58,6 @@ abstract class SVGController
 
 
   type Color = String
-
-  def setSignatureVisible(b : Boolean): Unit = {
-    if( b != printSignatures ){
-      printSignatures = b
-      displayGraph(graph)
-    }
-  }
-  def setSelectedEdgeForTypePrinting(se: Option[Uses]) : Unit = {
-    if( se != selectedEdgeForTypePrinting ){
-      selectedEdgeForTypePrinting = se
-      displayGraph(graph)
-    }
-  }
-
-  def setIdVisible(b : Boolean): Unit = {
-    if( b != printId ){
-      printId = b
-      displayGraph(graph)
-    }
-  }
-
-  def setVirtualEdgesVisible(b : Boolean): Unit = {
-    if( b != printVirtualEdges ){
-      printVirtualEdges = b
-      displayGraph(graph)
-    }
-  }
-  def setConcreteUsesPerVirtualEdges(b : Boolean): Unit = {
-    if( b != printConcreteUsesPerVirtualEdges ){
-      printConcreteUsesPerVirtualEdges = b
-      displayGraph(graph)
-    }
-  }
-
-  def setRedEdgesOnly(b : Boolean): Unit = {
-    if( b != printRedOnly ){
-      printRedOnly = b
-      displayGraph(graph)
-    }
-  }
 
   def selectedNodes: List[NodeId] = selectedSVGNodes map (_._1)
 
@@ -128,50 +83,9 @@ abstract class SVGController
 
   def showNodeInfos(nodeId: NodeId): Unit = {
     frame.centerPane.setRightComponent(
-    new NodeInfosPanel(graph, nodeId){
-      def onEdgeButtonClick( source : NodeId, target : NodeId) : Unit = ()
-    }.peer)
+    new NodeInfosPanel(this, graph, nodeId).peer)
     frame.centerPane.revalidate()
   }
-
-
-
-  def focusExpand(id : NodeId, focus : Boolean, expand : Boolean) : Unit = {
-    if(focus)
-      visibility = VisibilitySet.allHidden(graph).
-        setVisibility(graph.containerPath(id), Visible)
-
-    if(expand)
-      visibility =
-        graph.content(id).foldLeft(visibility)(_.setVisibility(_, Visible))
-
-    displayGraph(graph)
-  }
-
-  def focus(e : NodeIdP) : Unit = {
-    val concretes = DGEdge.concreteEdgesFrom(graph, e)
-    visibility = concretes.foldLeft(VisibilitySet.allHidden(graph)){
-      case (set, DGEdge(_, source, target)) =>
-        val s2 = set.setVisibility(graph.containerPath(source), Visible)
-        s2.setVisibility(graph.containerPath(target), Visible)
-    }
-    displayGraph(graph)
-  }
-
-  private def setSubTreeVisibility(rootId : NodeId, v : Visibility, includeRoot : Boolean): Unit ={
-    val nodes = graph.subTree(rootId, includeRoot)
-    visibility = visibility.setVisibility(nodes, v)
-    displayGraph(graph)
-  }
-
-  def hide(root : NodeId): Unit =
-    setSubTreeVisibility(root, Hidden, includeRoot = true)
-
-  def collapse(root: NodeId) : Unit =
-    setSubTreeVisibility(root, Hidden, includeRoot = false)
-
-  def expandAll(root: NodeId) : Unit =
-    setSubTreeVisibility(root, Visible, includeRoot = true)
 
   val defaultColor = "black"
 
@@ -209,16 +123,13 @@ abstract class SVGController
 
 
 
-  def printingOptions =
-    PrintingOptions(visibility, printId, printSignatures,
-    selectedEdgeForTypePrinting,
-    printVirtualEdges, printConcreteUsesPerVirtualEdges,
-    printRedOnly)
+
 
 
   def displayGraph
   (graph: DependencyGraph, fail : Boolean = false): Unit =
-    SVGController.documentFromGraph(graph, graphUtils, printingOptions) {
+    SVGController.documentFromGraph(graph, graphUtils,
+      printingOptionsControl.printingOptions) {
       res =>
         val smsg : Option[String] = res match {
           case Success(0) => None
@@ -230,7 +141,9 @@ abstract class SVGController
               val tmpDir = System.getProperty("java.io.tmpdir")
               val f = new File(tmpDir + File.separator + "graph.dot")
 
-              DotPrinter.genDot(graph, graphUtils.dotHelper, printingOptions, new FileWriter(f))
+              DotPrinter.genDot(graph, graphUtils.dotHelper,
+                printingOptionsControl.printingOptions,
+                new FileWriter(f))
 
 //              SVGController.this.visibility = VisibilitySet.topLevelVisible(graph)
 //
@@ -344,15 +257,16 @@ object SVGController {
 
   def builderFromFilesHander
   ( fh: FilesHandler,
-    opts : PrintingOptions,
     graphUtils : GraphUtils,
     dg2ast : DG2AST,
-    graphStack: GraphStack) : Builder =
+    graphStack: GraphStack,
+    printingOptionsControl: PrintingOptionsControl) : Builder =
   ( frame : SVGPanel) =>
-    new SVGController(graphUtils, dg2ast, frame, graphStack,
-                opts.visibility, opts.printId, opts.printSignatures)
+    new SVGController(graphUtils, dg2ast, frame,
+      graphStack, printingOptionsControl)
     with FilesHandlerDG2ASTControllerOps {
 
+      def graph = graphStack.graph
       val filesHandler = fh
 
       displayGraph(graph)

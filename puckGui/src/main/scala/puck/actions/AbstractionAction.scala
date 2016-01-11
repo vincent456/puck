@@ -6,9 +6,8 @@ import javax.swing._
 import puck.graph.ShowDG._
 import puck.graph._
 import puck.graph.constraints.AbstractionPolicy
-import puck.gui.svg.SVGController
 
-import scala.swing.Dialog
+import scala.swing.{Publisher, Dialog}
 import scala.swing.Dialog.{Message, Options, Result}
 
 object NodeCheckBox {
@@ -26,13 +25,14 @@ class NodeCheckBox(val node : ConcreteNode, name : String, selected : Boolean)
   extends JCheckBox(name, selected)
 
 class AbstractionAction
-(controller : GraphController,
+(publisher : Publisher,
  node : ConcreteNode,
  policy : AbstractionPolicy,
  kind : NodeKind)
+(implicit graph : DependencyGraph,
+ graphUtils: GraphUtils)
   extends AbstractAction(s"$kind ($policy)"){
 
-     import controller.{graph, graphUtils}
      import graphUtils.{transformationRules => TR}
 
      def getHost(absKind : NodeKind) : NodeId = {
@@ -68,7 +68,7 @@ class AbstractionAction
     }
 
      override def actionPerformed(e: ActionEvent): Unit =
-       printErrOrPushGraph(controller,"Abstraction action failure") {
+       printErrOrPushGraph(publisher,"Abstraction action failure") {
 
          val tAbsG : LoggedTry[(Abstraction, DependencyGraph)] =
            node.kind.kindType match {

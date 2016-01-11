@@ -2,15 +2,13 @@ package puck.gui
 package explorer
 
 import java.awt
-import java.awt.{MouseInfo, Color}
+import java.awt.Color
 import java.awt.event.{ActionEvent, MouseEvent, MouseAdapter}
+import javax.swing.event.{TreeSelectionEvent, TreeSelectionListener}
 import javax.swing.{Icon, AbstractAction, JPopupMenu, JTree}
 import javax.swing.tree.{TreePath, DefaultTreeCellRenderer}
 
-import puck.actions.GraphController
 import puck.gui.svg.actions.ManualSolveAction
-import puck.gui.{NodeMenu, NodeClicked}
-import puck.{StackListener, GraphStack}
 import puck.graph._
 
 
@@ -92,17 +90,22 @@ object GraphExplorer {
 
 }
 
-class GraphExplorer(treeIcons : DGTreeIcons, var filter : Option[DGEdge] = None)
-  extends ScrollPane
-  with StackListener {
+class GraphExplorer(treeIcons : DGTreeIcons,
+                    graphUtils : GraphUtils)
+  extends ScrollPane {
 
+  reactions += {
+    case GraphUpdate(graph) => display(graph, None)
+    case GraphFocus(graph, edge) =>
+      println("GraphExplorer receive GraphFocus")
+      display(graph, Some(edge))
+  }
 
+  private var selectedNodes = List[NodeId]()
 
+  def display(graph: DependencyGraph, filter : Option[DGEdge] = None): Unit = {
 
-  def update(controller: GraphStack): Unit = {
-
-    if (controller.graph.virtualNodes.nonEmpty) {
-      import controller.graph
+    if (graph.virtualNodes.nonEmpty) {
       val vn = graph.virtualNodes.head
 
       ManualSolveAction.forChoice[ConcreteNode]("Concretize node",
@@ -112,7 +115,8 @@ class GraphExplorer(treeIcons : DGTreeIcons, var filter : Option[DGEdge] = None)
           loggedChoice.value match {
             case None => ()
             case Some(cn) =>
-              controller.pushGraph(graph.concretize(vn.id, cn.id))
+              publish(PushGraph(graph.concretize(vn.id, cn.id)))
+
           }
 
         }
@@ -121,8 +125,8 @@ class GraphExplorer(treeIcons : DGTreeIcons, var filter : Option[DGEdge] = None)
     else {
 
       val model: DGTreeModel = filter match {
-        case None => new FullDGTreeModel(controller.graph)
-        case Some(e) => new FocusedDGTreeModel(controller.graph, e)
+        case None => new FullDGTreeModel(graph)
+        case Some(e) => new FocusedDGTreeModel(graph, e)
       }
 
       val tree: JTree = new JTree(model) with DGTree {
@@ -141,12 +145,13 @@ class GraphExplorer(treeIcons : DGTreeIcons, var filter : Option[DGEdge] = None)
             path.getLastPathComponent match {
               case node: DGNode =>
                 if (isRightClick(e)) {
-                  val menu: JPopupMenu = NodeMenu(controller.asInstanceOf[GraphController], node.id)
+                  val menu: JPopupMenu =
+                    NodeMenu(GraphExplorer.this, graph, graphUtils,
+                      selectedNodes, None, node.id)
                   if (filter.nonEmpty)
                     menu.add(new AbstractAction("Show full graph") {
                       def actionPerformed(e: ActionEvent): Unit = {
-                        filter = None
-                        GraphExplorer.this.update(controller)
+                        GraphExplorer.this.display(graph, None)
                       }
                     })
                   Swing.onEDT(menu.show(GraphExplorer.this.peer, e.getX, e.getY))
@@ -154,6 +159,16 @@ class GraphExplorer(treeIcons : DGTreeIcons, var filter : Option[DGEdge] = None)
                 else GraphExplorer.this.publish(NodeClicked(node))
               case _ => ()
             }
+          }
+        }
+      })
+
+      tree.addTreeSelectionListener(new TreeSelectionListener {
+        def valueChanged(e: TreeSelectionEvent): Unit = {
+          selectedNodes = e.getPaths.foldLeft(List[NodeId]()) {
+            (l, tp) =>
+              val n = tp.getLastPathComponent.asInstanceOf[DGNode]
+              n.id :: l
           }
         }
       })

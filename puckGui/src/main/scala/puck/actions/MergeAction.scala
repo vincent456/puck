@@ -3,15 +3,18 @@ package puck.actions
 import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
 
-import puck.graph.{ConcreteNode, DGNode}
+import puck.graph.{GraphUtils, DependencyGraph, ConcreteNode, DGNode}
+
+import scala.swing.Publisher
 
 case class MergeAction
-(controller : GraphController,
+(controller : Publisher,
  consumed : DGNode,
  consumer : ConcreteNode)
+(implicit graph : DependencyGraph,
+ graphUtils: GraphUtils)
   extends AbstractAction(s"Merge $consumed into this") {
 
-  import controller.{graph, graphUtils}
   import graphUtils.{transformationRules => TR}
 
   override def actionPerformed(e: ActionEvent): Unit =

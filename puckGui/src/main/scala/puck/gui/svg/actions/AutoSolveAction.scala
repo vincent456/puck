@@ -17,9 +17,11 @@ import scala.swing.Dialog.{Message, Options, Result}
 
 
 class AutoSolveAction
-( violationTarget : ConcreteNode,
-  controller : SwingGraphController,
+( publisher : Publisher,
+  violationTarget : ConcreteNode,
   printingOptions: PrintingOptions)
+(implicit graph : DependencyGraph,
+  graphUtils: GraphUtils)
   extends AbstractAction("Solve (auto choices, choose result)") {
 
   private def dialog(res : Search[SResult]) : Option[Logged[DependencyGraph]] = {
@@ -39,7 +41,7 @@ class AutoSolveAction
 //      }
 //    }
 //    else {
-    val panel = new AutosolveResultPanel(violationTarget, controller, printingOptions, res)
+    val panel = new AutosolveResultPanel(publisher, violationTarget, printingOptions, res)
     confirm(panel.peer) match {
         case Result.Ok => Some( panel.selectedResult)
         case Result.Cancel
@@ -47,7 +49,6 @@ class AutoSolveAction
     }
   }
 
-  import controller.graph
 
   override def actionPerformed(e: ActionEvent): Unit = {
     //val g = graph.mileStone
@@ -60,7 +61,7 @@ class AutoSolveAction
 
     val searchControlStrategy =
       new CouplingConstraintSolvingControl(
-        controller.graphUtils.transformationRules,
+        graphUtils.transformationRules,
         g, violationTarget)
 
     val engine =
@@ -72,7 +73,7 @@ class AutoSolveAction
     engine.explore()
 
     try {
-      puck.actions.printErrOrPushGraph(controller, "Auto solve action : ") {
+      puck.actions.printErrOrPushGraph(publisher, "Auto solve action : ") {
         dialog(engine) match {
           case Some(g) => g.toLoggedTry
           case None => LoggedError("cancelled")

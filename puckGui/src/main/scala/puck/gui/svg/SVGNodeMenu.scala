@@ -9,27 +9,33 @@ object SVGNodeMenu{
 
   def apply(controller : SVGController,
             nodeId : NodeId) : JPopupMenu =
-    controller.graph.getNode(nodeId) match {
+    controller.graphStack.graph.getNode(nodeId) match {
       case n : ConcreteNode => new SVGConcreteNodeMenu(controller, n)
-      case n : VirtualNode => new VirtualNodeMenu(controller, n)
+      case n : VirtualNode => new VirtualNodeMenu(controller,
+        controller.graphStack.graph,
+        controller.graphUtils, n)
     }
 }
 
 class SVGConcreteNodeMenu
 (controller: SVGController,
  node : ConcreteNode)
-  extends ConcreteNodeMenu(controller, node) {
+  extends ConcreteNodeMenu(controller,
+    controller.graphStack.graph,
+    controller.graphUtils,
+    controller.selectedNodes,
+    controller.selectedEdge, node) {
 
-  import controller.graph
+  import controller.printingOptionsControl
 
   override def init() = {
     super.init()
 
     if (graph.isWronglyContained(node.id)
       || graph.isWronglyUsed(node.id)) {
-      this.add(new ManualSolveAction(node, controller))
-      this.add(new AutoSolveAction(node, controller,
-        controller.printingOptions))
+      this.add(new ManualSolveAction(controller, node))
+      this.add(new AutoSolveAction(controller, node,
+        printingOptionsControl.printingOptions))
     }
 
     this.addSeparator()
@@ -43,13 +49,13 @@ class SVGConcreteNodeMenu
     }
 
     this.addMenuItem("Hide") { _ =>
-      controller.hide(node.id)
+      printingOptionsControl.hide(node.id)
     }
     this.addMenuItem("Focus") { _ =>
-      controller.focusExpand(node.id, focus = true, expand = false)
+      printingOptionsControl.focusExpand(node.id, focus = true, expand = false)
     }
     this.addMenuItem("Focus & Expand") { _ =>
-      controller.focusExpand(node.id, focus = true, expand = true)
+      printingOptionsControl.focusExpand(node.id, focus = true, expand = true)
     }
     this.addMenuItem("Show code") { _ =>
       controller.printCode(node.id)
@@ -61,13 +67,13 @@ class SVGConcreteNodeMenu
 
     if (graph.content(node.id).nonEmpty) {
       this.addMenuItem("Collapse") { _ =>
-        controller.collapse(node.id)
+        printingOptionsControl.collapse(node.id)
       }
       this.addMenuItem("Expand") { _ =>
-        controller.focusExpand(node.id, focus = false, expand = true)
+        printingOptionsControl.focusExpand(node.id, focus = false, expand = true)
       }
       this.addMenuItem("Expand all") { _ =>
-        controller.expandAll(node.id)
+        printingOptionsControl.expandAll(node.id)
       };()
     }
   }

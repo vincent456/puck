@@ -3,7 +3,6 @@ package puck.gui.svg.actions
 import java.awt.Dimension
 import javax.swing.SwingUtilities
 
-import puck.actions.GraphController
 import puck.graph._
 import puck.graph.io.{PrintingOptions, Visible, VisibilitySet}
 import VisibilitySet._
@@ -22,7 +21,14 @@ import scala.swing._
 import scalaz.syntax.writer._
 
 //this trait is needed to dispatch graphical computation on the rerserved thread in Intellij Idea plugin
-trait SwingGraphController extends GraphController{
+trait SwingService {
+
+  implicit val executor : ExecutionContext
+
+  def swingInvokeLater (f : () => Unit ) : Unit
+}
+
+object DefaultSwingService extends SwingService {
 
   implicit val executor : ExecutionContext =
     scala.concurrent.ExecutionContext.Implicits.global
@@ -38,19 +44,23 @@ case class Log(msg : String) extends Event
 
 
 trait ResultPanel {
-  val controller : SwingGraphController
+  val swingService : SwingService = DefaultSwingService
   def printingOptions : PrintingOptions
   def selectedResult : Logged[DependencyGraph]
+  val graphUtils : GraphUtils
+  val publisher : Publisher
 
+  import swingService.{executor, swingInvokeLater}
 
-  import controller.{executor, swingInvokeLater}
-
-  def graphPanel(graph : DependencyGraph, visibilitySet: VisibilitySet.T) : Component =
+  def graphPanel
+  ( graph : DependencyGraph,
+    visibilitySet: VisibilitySet.T) : Component =
     new ScrollPane() {
       SVGController.documentFromGraph(graph,
-        controller.graphUtils,
+        graphUtils,
         printingOptions.copy(visibility = visibilitySet))(
-        SVGController.documentFromGraphErrorMsgGen(msg => controller.logger.writeln(msg))){
+        SVGController.documentFromGraphErrorMsgGen(
+          msg => publisher.publish(Log(msg)))){
         case d =>
           val c = new PUCKSVGCanvas(PUCKSVGCanvas.deafListener)
           swingInvokeLater { () =>
@@ -81,25 +91,28 @@ trait ResultPanel {
 
 
 class AutosolveResultPanel
-( violationTarget : ConcreteNode,
-  val controller : SwingGraphController,
+( val publisher : Publisher,
+  violationTarget : ConcreteNode,
   printingOptions0: PrintingOptions,
   res : Search[SResult])
+( implicit val beforeGraph : DependencyGraph,
+  val graphUtils : GraphUtils )
   extends SplitPane(Orientation.Horizontal)
   with ResultPanel{
 
 
   val printingOptions: PrintingOptions = printingOptions0.copy(visibility = {
-      import controller.graph
-      val users = graph.usersOf(violationTarget.id)
+
+      val users = beforeGraph.usersOf(violationTarget.id)
+
       val targetAndAncestors =
-        graph.containerPath(violationTarget.id)
+        beforeGraph.containerPath(violationTarget.id)
 
       val vs = users.foldLeft(targetAndAncestors){
-        (s,id) => (graph.containerPath(id).toSet + id) ++: s
+        (s,id) => (beforeGraph.containerPath(id).toSet + id) ++: s
       }
 
-    VisibilitySet.allHidden(graph).setVisibility(vs, Visible)
+    VisibilitySet.allHidden(beforeGraph).setVisibility(vs, Visible)
 
   })
 
@@ -112,12 +125,13 @@ class AutosolveResultPanel
   ( withSelector : Boolean,
     selector : => Component with Selector )  =
     if(withSelector) {
-      val p = new SelectorResultPanel(controller, selector, printingOptions)
+      val p = new SelectorResultPanel(selector,
+        printingOptions, graphUtils, publisher)
       this listenTo p
       this listenTo p.selector
       p
     }
-    else new DummyResultPanel(controller)
+    else new DummyResultPanel(beforeGraph)
 
   val successesPanel =
     selectorPanelOrDummy(res.successes.nonEmpty, new SuccessSelector(res))
@@ -147,7 +161,7 @@ class AutosolveResultPanel
     dividerSize = 3
     preferredSize = new Dimension(1024, 780)
 
-    leftComponent = graphPanel(controller.graph, printingOptions.visibility)
+    leftComponent = graphPanel(beforeGraph, printingOptions.visibility)
 
     // val stateSelector = new SortedStateSelector(res.allStatesByDepth)
     rightComponent = tabs
@@ -166,9 +180,13 @@ class AutosolveResultPanel
 
 
 
-class DummyResultPanel(val controller : SwingGraphController) extends FlowPanel with ResultPanel {
+class DummyResultPanel(val beforeGraph : DependencyGraph
+                      ) extends FlowPanel with ResultPanel {
   def printingOptions : PrintingOptions = PrintingOptions(Set())
-  def selectedResult : Logged[DependencyGraph] = controller.graph.set("")
+  def selectedResult : Logged[DependencyGraph] = beforeGraph.set("")
+
+  lazy val graphUtils: GraphUtils = error("DummyResultPanel should not need graphUtils")
+  lazy val publisher: Publisher = error("DummyResultPanel should not need publisher")
 }
 
 trait Selector extends Publisher{
@@ -195,9 +213,10 @@ class SuccessSelector(res : Search[SResult])
 
 
 class SelectorResultPanel
-( val controller : SwingGraphController,
-  val selector : Component with Selector,
-  val printingOptions: PrintingOptions
+(val selector : Component with Selector,
+ val printingOptions: PrintingOptions,
+  val graphUtils: GraphUtils,
+  val publisher: Publisher
 ) extends BorderPanel with ResultPanel {
 
   add(selectedResultGraphPanel, Position.Center)
@@ -212,4 +231,5 @@ class SelectorResultPanel
       publish(Log(selector.selectedLog))
 
   }
+
 }

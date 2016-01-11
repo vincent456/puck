@@ -13,7 +13,7 @@ import puck.gui.svg.SVGController
 import puck.util.Logged
 
 import scala.swing.Swing.EmptyIcon
-import scala.swing.Dialog
+import scala.swing.{Publisher, Dialog}
 import scalaz._, Scalaz._
 
 object ManualSolveAction {
@@ -57,17 +57,17 @@ object ManualSolveAction {
 }
 
 class ManualSolveAction
-( violationTarget : ConcreteNode,
-  controller : SwingGraphController)
+( publisher : Publisher,
+  violationTarget : ConcreteNode)
+(implicit graph : DependencyGraph,
+ graphUtils: GraphUtils)
   extends AbstractAction("Solve (manual choices)") with DecisionMaker {
-
-  import controller.graphUtils
 
   val solver = new Solver(this, graphUtils.transformationRules, false)
 
   override def actionPerformed(e: ActionEvent): Unit =
-    solver.solveViolationsToward(controller.graph.mileStone.set(""), violationTarget){
-      puck.actions.printErrOrPushGraph(controller, "Solve Action Error")
+    solver.solveViolationsToward(graph.mileStone.set(""), violationTarget){
+      puck.actions.printErrOrPushGraph(publisher, "Solve Action Error")
     }
 
   override def violationTarget

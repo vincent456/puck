@@ -16,6 +16,8 @@ import org.w3c.dom.events.{EventListener, Event, MouseEvent}
 import org.w3c.dom.svg._
 import puck.graph.{NodeId, NodeIdP}
 
+import scala.swing.Publisher
+
 object PUCKSVGCanvas {
   val deafListener = new EventListener {
     override def handleEvent(evt: Event): Unit = ()
@@ -25,6 +27,7 @@ object PUCKSVGCanvas {
 class PUCKSVGCanvas
 ( listener : EventListener
   ) extends JSVGCanvas {
+
   setDocumentState(JSVGComponent.ALWAYS_DYNAMIC)
 
   userAgent = new BridgeUserAgent(){
@@ -66,7 +69,8 @@ class SVGCanvasListener
   controller : SVGController)
   extends EventListener {
 
-  import controller.swingInvokeLater
+
+  import controller.swingService._
 
   private def checkIfNodeAndGetId(txtElt: Element): Option[Int] = {
     if (txtElt.getParentNode.getNodeName == "a") {

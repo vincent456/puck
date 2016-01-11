@@ -10,10 +10,7 @@ import puck.graph._
 import javax.swing.tree._
 
 
-import puck.gui.svg.actions.SwingGraphController
-
-import scala.swing.{Swing, ScrollPane}
-import scalaz.Cord
+import scala.swing.{Publisher, Swing, ScrollPane}
 
 
 class CCTree(g : DependencyGraph, parentToChildMap : Map[DGEdge, List[DGEdge]])
@@ -195,15 +192,19 @@ object ConstraintViolationExplorer {
 
 import ConstraintViolationExplorer._
 class ConstraintViolationExplorer
-( controller : SwingGraphController,
-  violations : Seq[DGEdge])
+(publisher : Publisher,
+ violations : Seq[DGEdge])
+(implicit graph : DependencyGraph,
+ graphUtils : GraphUtils)
   extends ScrollPane {
+
+    //val swingService : Swing
 
     val kindSeq = Seq(TypeDecl, NameSpace)
 
-    val childToParentMap = violations.foldLeft(Map[DGEdge, Option[DGEdge]]())(createChildToParentMap(controller.graph, kindSeq))
+    val childToParentMap = violations.foldLeft(Map[DGEdge, Option[DGEdge]]())(createChildToParentMap(graph, kindSeq))
 
-    val tree = new CCTree(controller.graph, createParentToChildMap(childToParentMap))
+    val tree = new CCTree(graph, createParentToChildMap(childToParentMap))
     //tree.setCellRenderer(new CCTreeCellRenderer(graph))
     contents = swing.Component.wrap(tree)
 
@@ -216,10 +217,10 @@ class ConstraintViolationExplorer
           path.getLastPathComponent match {
             case edge : DGEdge =>
               if(isRightClick(e)){
-                val menu : JPopupMenu = new ViolationMenu(controller, edge){
+                val menu : JPopupMenu = new ViolationMenu(publisher, edge){
                   add( new AbstractAction("Focus in graph explorer") {
                     def actionPerformed(e: ActionEvent): Unit =
-                      ConstraintViolationExplorer.this.publish(GraphExplorerFocus(edge))
+                      publisher.publish(GraphFocus(graph, edge))
                   })
                 }
                 Swing.onEDT(menu.show(ConstraintViolationExplorer.this.peer, e.getX, e.getY))

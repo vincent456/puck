@@ -1,19 +1,29 @@
 package puck.gui.explorer
 
+import java.awt.Color
+
 import puck.graph._
-import puck.gui.PuckMainPanel.LeftGlued
+import puck.graph.io.VisibilitySet
+import VisibilitySet._
+import puck.gui._
 import ShowDG._
 import scala.swing._
-import Swing.VGlue
 import scala.swing.event.MouseClicked
 
 
-abstract class NodeInfosPanel
-( val graph : DependencyGraph,
+class NodeInfosPanel
+( publisher: Publisher,
+  val graph : DependencyGraph,
   val nodeId : NodeId )
   extends SplitPane(Orientation.Horizontal) {
 
-  def onEdgeButtonClick( source : NodeId, target : NodeId) : Unit
+  def onEdgeButtonClick( source : NodeId, target : NodeId) : Unit =
+    publisher publish
+      GraphDisplayRequest("Graph with uses selected",
+        graph, VisibilitySet.topLevelVisible(g).
+          hideWithName(g, Seq("@primitive")).
+          hideWithName(g, Seq("java")),
+        sUse = Some(Uses(source, target)))
 
   implicit val g = graph
   val useDetails = new BoxPanel(Orientation.Vertical){
@@ -47,6 +57,8 @@ abstract class NodeInfosPanel
     }
 
   leftComponent = new BoxPanel(Orientation.Vertical) {
+
+    background = Color.white
 
     contents += new Label(node.kind + " : " +
       (graph, node).shows(nodeNameTypCord))

@@ -5,10 +5,11 @@ import javax.swing.AbstractAction
 
 import puck.graph._
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, CreateVarStrategy}
+import puck.gui.Log
 import puck.gui.svg.SVGController
 import puck.util.LoggedEither._
 
-import scala.swing.Dialog
+import scala.swing.{Publisher, Dialog}
 import scala.swing.Swing.EmptyIcon
 import scalaz.Scalaz._
 
@@ -34,12 +35,13 @@ object MoveAction {
 }
 
 class MoveAction
-(controller : GraphController,
+(publisher : Publisher,
  newHost : DGNode,
  moved : List[NodeId])
-extends AbstractAction(MoveAction.label(controller.graph, moved, newHost)){
+(implicit graph : DependencyGraph,
+ graphUtils: GraphUtils)
+extends AbstractAction(MoveAction.label(graph, moved, newHost)){
 
-  import controller.{graph, graphUtils}
   import graphUtils.nodeKindKnowledge.kindOfKindType
   import graphUtils.{transformationRules => TR}
 
@@ -54,18 +56,13 @@ extends AbstractAction(MoveAction.label(controller.graph, moved, newHost)){
         }
 
       case InstanceValueDecl =>
-        controller.logger.
-          writeln("/!\\/!\\ Method overriding unchecked (TODO !!!) /!\\/!\\")
+        publisher.publish(Log(
+          "/!\\/!\\ Method overriding unchecked (TODO !!!) /!\\/!\\"))
 
         val oldContainer = g.container_!(moved.head)
 
         val isPullUp = g.isa_*(oldContainer, newHost.id)
         val isPushDown = g.isa_*(newHost.id, oldContainer)
-
-        controller.logger.
-          writeln("isPullUp = " + isPullUp)
-        controller.logger.
-          writeln("isPushDown = " + isPushDown)
 
         lazy val needNewReceiver = moved.exists {
           nid =>
@@ -100,7 +97,7 @@ extends AbstractAction(MoveAction.label(controller.graph, moved, newHost)){
   }
 
   override def actionPerformed(e: ActionEvent): Unit =
-    printErrOrPushGraph(controller, "Abstraction creation failure" )( doMove )
+    printErrOrPushGraph(publisher, "Abstraction creation failure" )( doMove )
 
 
 }

@@ -3,8 +3,10 @@ package puck
 import javax.swing.JOptionPane
 
 import puck.graph._
+import puck.gui.PrintErrOrPushGraph
 import puck.gui.svg.SVGController
 
+import scala.swing.Publisher
 import scalaz.{\/-, -\/}
 
 /**
@@ -12,20 +14,15 @@ import scalaz.{\/-, -\/}
   */
 package object actions {
 
-  def showInputDialog(msg : String) : Option[String] = {
-    val childName = JOptionPane.showInputDialog(msg)
+  def showInputDialog(msg : String, initialValue: String = "") : Option[String] = {
+    val childName = JOptionPane.showInputDialog(msg, initialValue)
     if (childName == null || childName.isEmpty) None
     else Some(childName)
   }
 
   def printErrOrPushGraph
-  ( controller: GraphController, msg : String )
-  ( lgt : LoggedTry[DependencyGraph]) : Unit = {
-    controller.logger.writeln(lgt.log)
-    lgt.value match {
-      case -\/(err) =>
-        controller.logger.writeln(s"$msg\n${err.getMessage}\nLog : ${lgt.log}")
-      case \/-(g) => controller.graphStack.pushGraph(g)
-    }
-  }
+  (publisher : Publisher, msg : String )
+  ( lgt : LoggedTry[DependencyGraph]) : Unit =
+    publisher.publish(PrintErrOrPushGraph(msg, lgt))
+
 }

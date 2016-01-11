@@ -8,12 +8,12 @@ import puck.graph.Uses
 
 
 
-  class ShowTypeRelationshipTextualAction
-  (edge : Option[Uses],
-   controller : SVGController)
+class ShowTypeRelationshipTextualAction
+( edge : Option[Uses],
+  controller : SVGController)
     extends AbstractAction(s"Show type bindings (text)")
   {
-    import controller.graph
+    import controller.graphStack.graph
     def actionPerformed(e: ActionEvent) : Unit =
       edge.foreach {
         uses =>
@@ -32,5 +32,5 @@ import puck.graph.Uses
     extends AbstractAction(s"Show type bindings (graphic)")
   {
     def actionPerformed(e: ActionEvent) : Unit =
-      controller.setSelectedEdgeForTypePrinting(edge)
+      controller.printingOptionsControl.setSelectedEdgeForTypePrinting(edge)
   }

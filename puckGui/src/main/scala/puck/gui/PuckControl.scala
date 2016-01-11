@@ -9,17 +9,21 @@ import puck.graph.io._
 import puck.gui.svg.SVGFrame
 import puck.util.{PuckLogger, PuckLog}
 
-import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
-import scala.swing.{Component, ProgressBar, Publisher}
+import scala.swing.{ProgressBar, Publisher}
 import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
-class PuckControl(logger0 : PuckLogger,
-                  val filesHandler : FilesHandler,
-                  val graphUtils: GraphUtils,
-                  private val progressBar : ProgressBar,
-                  private val delayedDisplay : ArrayBuffer[Component])
-  extends Publisher with StackListener{
+import scalaz.{\/-, -\/}
+
+
+
+class PuckControl
+( logger0 : PuckLogger,
+  val filesHandler : FilesHandler,
+  val graphUtils: GraphUtils,
+  private val progressBar : ProgressBar)
+  extends Publisher
+  with StackListener {
 
   implicit val logger : PuckLogger = logger0
   var dg2ast : DG2AST = _
@@ -28,8 +32,16 @@ class PuckControl(logger0 : PuckLogger,
 
   import PuckLog.defaultVerbosity
 
-  def update(controller: GraphStack): Unit =
-    publish(GraphUpdate(controller.graph))
+  this deafTo this
+
+  private [this] var printingOptionsControl0 : PrintingOptionsControl = _
+
+  def printingOptionsControl = printingOptionsControl0
+
+  def update(graphStack: GraphStack): Unit = {
+    println("graph update !")
+    publish(GraphUpdate(graphStack.graph))
+  }
 
   def loadCode( onSuccess : => Unit) = Future {
     progressBar.visible = true
@@ -45,9 +57,9 @@ class PuckControl(logger0 : PuckLogger,
       implicit def logger: PuckLogger = logger0
       def initialGraph: DependencyGraph = dg2ast.initialGraph
     }
+    printingOptionsControl0 = new PrintingOptionsControl(graphStack)
     graphStack.registerAsStackListeners(this)
 
-    delayedDisplay.foreach(_.visible = true)
   } onComplete {
     case Success(_) => onSuccess
     case Failure(exc) =>
@@ -68,6 +80,7 @@ class PuckControl(logger0 : PuckLogger,
       case _ : java.io.FileNotFoundException => logger writeln "constraint file not found"
       case e: Error => logger writeln e.getMessage
     }
+
   }
 
   def displayGraph(title : String,
@@ -81,7 +94,8 @@ class PuckControl(logger0 : PuckLogger,
 
     Future {
       logger.writeln("requesting svg frame")
-      new SVGFrame(pipedInput, opts, filesHandler, graphUtils, dg2ast, graphStack){
+      new SVGFrame(pipedInput, filesHandler, graphUtils,
+        dg2ast, graphStack, printingOptionsControl){
         this.setTitle(title)
       }
     }
@@ -103,19 +117,54 @@ class PuckControl(logger0 : PuckLogger,
       case Failure(exc) => exc.printStackTrace()
     }
 
+  def publishUndoRedoStatus() : Unit =
+   this publish UndoRedoStatus(graphStack.canUndo, graphStack.canRedo)
+
+
   reactions += {
+
+    case PushGraph(g) => graphStack.pushGraph(g)
+
+    case PrintErrOrPushGraph(msg, lgt) =>
+      lgt.value match {
+        case -\/(err) =>
+          logger.writeln(s"$msg\n${err.getMessage}\nLog : ${lgt.log}")
+        case \/-(g) =>
+          graphStack.pushGraph(g)
+          logger.writeln(lgt.log)
+      }
+
+    case Log(msg) =>
+      logger.writeln(msg)
+
+    case UndoAll =>
+      graphStack.undoAll()
+      publishUndoRedoStatus()
+
+    case Undo =>
+      graphStack.undo()
+      publishUndoRedoStatus()
+
+    case Redo =>
+      graphStack.redo()
+      publishUndoRedoStatus()
+
+
     case LoadCodeRequest => loadCode(loadConstraints())
 
     case LoadConstraintRequest => loadConstraints()
 
-    case GraphDisplayRequest(title, graph, printId, printSignature, visibility, sUse, format) =>
+    case GraphDisplayRequest(title, graph, visibility, sUse, format) =>
       displayGraph(title, graph,
-        PrintingOptions(visibility, printId, printSignature, sUse))(format)
+      printingOptionsControl.printingOptions.copy(visibility = visibility,
+        selectedUse = sUse))(format)
 
     case ConstraintDisplayRequest(graph) =>
       graph.printConstraints(logger, defaultVerbosity)
 
     case ApplyOnCodeRequest(searchResult) => applyOnCode(searchResult)
+
+    case evt => publish(evt)
 
   }
 

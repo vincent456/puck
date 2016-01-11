@@ -340,7 +340,12 @@ class SolvingActions
       case (TypeDecl, _) =>
         Stream(rules.move.staticDecl(g, wronglyContained.id, newCter))
 
-      case _ => ???
+      case (TypeConstructor, _) =>
+        Stream(LoggedError("TypeConstructor cannot be moved"))
+      //true for java or C++ but not necessarily for all kind of languages
+      //fail in move rule ? (which would rely on a canMove language specific predicate ?)
+
+      case (kindType, styp) => error(s"doMove $kindType typed $styp not expected")
     }
 
     stream map { ltg => s"Moving $wronglyContained " +
