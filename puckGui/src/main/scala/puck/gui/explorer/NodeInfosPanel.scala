@@ -1,6 +1,7 @@
 package puck.gui.explorer
 
 import java.awt.Color
+import javax.swing.JPopupMenu
 
 import puck.graph._
 import puck.graph.io.VisibilitySet
@@ -14,7 +15,8 @@ import scala.swing.event.MouseClicked
 class NodeInfosPanel
 ( publisher: Publisher,
   val graph : DependencyGraph,
-  val nodeId : NodeId )
+  val nodeId : NodeId,
+  edgeMenuBuilder : NodeIdP => JPopupMenu)
   extends SplitPane(Orientation.Horizontal) {
 
   def onEdgeButtonClick( source : NodeId, target : NodeId) : Unit =
@@ -126,7 +128,9 @@ class NodeInfosPanel
     }
 
 
-    def usesLabelBox(userId : NodeId, usedId : NodeId) : Component = {
+    class UsesLabelBox(userId : NodeId, usedId : NodeId)
+      extends BoxPanel(Orientation.Horizontal){
+
       val sideUses = graph.typeMemberUsesOf(userId, usedId)
       val primaryUses = graph.typeUsesOf(userId, usedId)
 
@@ -137,54 +141,64 @@ class NodeInfosPanel
         case _ => "(both dominant and dominated)"
       }
 
-
-      new BoxPanel(Orientation.Horizontal){
+      val fullName = graph.fullName(userId)
 
         contents += Button("<o>") {
           onEdgeButtonClick(userId, usedId)
         }
 
-        contents += new Label(graph.fullName(userId) + " " + tag) {
+        contents += new Label(fullName + " " + tag) {
 
           minimumSize = new Dimension(this.size.width, 30)
 
           listenTo(mouse.clicks)
           reactions += {
-            case MouseClicked(_, _, _, _, _) =>
+            case mc @ MouseClicked(_, point, _, _, _) =>
+              val evt = mc.peer
+              if(isRightClick(evt)) {
+                val menu: JPopupMenu = edgeMenuBuilder((userId, usedId))
+                Swing.onEDT(menu.show(this.peer,
+                  point.getX.toInt,
+                  point.getY.toInt))
+              }
+              else {
+                useDetails.contents.clear()
+                useDetails.contents +=
+                  new Label((graph, Uses(userId, usedId)).shows)
 
-              useDetails.contents.clear()
-              useDetails.contents +=
-                new Label((graph, Uses(userId, usedId)).shows)
+                addUsesSet("Dominant Uses :", primaryUses)
+                addUsesSet("Dominated Uses :", sideUses)
 
-              addUsesSet("Dominant Uses :", primaryUses)
-              addUsesSet("Dominated Uses :", sideUses)
-
-              useDetails.revalidate()
+                useDetails.revalidate()
+              }
           }
         }
 
         contents += Swing.HGlue
       }
-    }
+
 
     contents +=  new Label("used by:").leftGlued
 
-
     contents += new BoxPanel(Orientation.Vertical) {
 
-      graph.usersOf(node.id).foreach {
-        userId =>
-        contents += usesLabelBox(graph.declarationOf(userId), node.id)
+      val users = graph.usersOf(node.id).toSeq map {
+        userId => new UsesLabelBox(graph.declarationOf(userId), node.id)
       }
 
+      users.sortBy(_.fullName).foreach(contents += _)
+
     }
+
+
+
     graph.definitionOf(node.id) foreach {
       defId =>
         contents +=  new Label("uses :").leftGlued
+
         contents += new BoxPanel(Orientation.Vertical) {
-          graph.usedBy(defId).foreach {
-            contents += usesLabelBox(_, defId)
-          }
+          val used = graph.usedBy(defId).toSeq map (new UsesLabelBox(_, defId))
+          used.sortBy(_.fullName).foreach(contents += _)
         }
     }
 

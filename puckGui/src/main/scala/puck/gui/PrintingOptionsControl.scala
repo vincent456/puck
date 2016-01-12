@@ -1,7 +1,6 @@
 package puck.gui
 
-import puck.GraphStack
-import puck.graph.{DGEdge, NodeIdP, NodeId, Uses}
+import puck.graph._
 import puck.graph.io._
 
 import scala.swing.Publisher
@@ -9,67 +8,81 @@ import scala.swing.Publisher
 /**
   * Created by lorilan on 11/01/16.
   */
-class PrintingOptionsControl
-(val graphStack: GraphStack) extends Publisher {
+object PrintingOptionsControl {
+  def apply(graph : DependencyGraph) : PrintingOptionsControl =
+    new PrintingOptionsControl(VisibilitySet.allVisible(graph))
 
-  private var visibility : VisibilitySet.T = VisibilitySet.allVisible(graphStack.graph)
+}
+
+class PrintingOptionsControl
+(var visibility : VisibilitySet.T
+) extends Publisher {
+
+
   private var printId : Boolean = false
   private var printSignatures : Boolean = false
   private var printVirtualEdges : Boolean = true
   private var printConcreteUsesPerVirtualEdges : Boolean = true
   private var printRedOnly : Boolean = true
-  private var selectedEdgeForTypePrinting : Option[Uses] = None
+  private var selectedEdgeForTypePrinting0 : Option[Uses] = None
 
-
-  import graphStack.graph
 
   def printingOptions =
     PrintingOptions(visibility, printId, printSignatures,
-      selectedEdgeForTypePrinting,
+      selectedEdgeForTypePrinting0,
       printVirtualEdges, printConcreteUsesPerVirtualEdges,
       printRedOnly)
 
-  def setSignatureVisible(b : Boolean): Unit = {
+  def signatureVisible = printSignatures
+  def signatureVisible_=(b : Boolean): Unit =
     if( b != printSignatures ){
       printSignatures = b
-      this publish GraphUpdate(graph)
+      this publish PrintingOptionsUpdate
     }
-  }
-  def setSelectedEdgeForTypePrinting(se: Option[Uses]) : Unit = {
-    if( se != selectedEdgeForTypePrinting ){
-      selectedEdgeForTypePrinting = se
-      this publish GraphUpdate(graph)
+
+
+  def selectedEdgeForTypePrinting = selectedEdgeForTypePrinting0
+  def selectedEdgeForTypePrinting_=(se: Option[Uses]) : Unit = {
+    if( se != selectedEdgeForTypePrinting0 ){
+      selectedEdgeForTypePrinting0 = se
+      this publish PrintingOptionsUpdate
     }
   }
 
-  def setIdVisible(b : Boolean): Unit = {
+
+  def idVisible = printId
+  def idVisible_=(b : Boolean): Unit = {
     if( b != printId ){
       printId = b
-      this publish GraphUpdate(graph)
+      this publish PrintingOptionsUpdate
     }
   }
 
-  def setVirtualEdgesVisible(b : Boolean): Unit = {
+  def virtualEdgesVisible = printVirtualEdges
+  def virtualEdgesVisible_=(b : Boolean): Unit = {
     if( b != printVirtualEdges ){
       printVirtualEdges = b
-      this publish GraphUpdate(graph)
+      this publish PrintingOptionsUpdate
     }
   }
-  def setConcreteUsesPerVirtualEdges(b : Boolean): Unit = {
+  def concreteUsesPerVirtualEdges = printConcreteUsesPerVirtualEdges
+  def concreteUsesPerVirtualEdges_=(b : Boolean): Unit = {
     if( b != printConcreteUsesPerVirtualEdges ){
       printConcreteUsesPerVirtualEdges = b
-      this publish GraphUpdate(graph)
+      this publish PrintingOptionsUpdate
     }
   }
 
-  def setRedEdgesOnly(b : Boolean): Unit = {
+  def redEdgesOnly = printRedOnly
+  def redEdgesOnly_=(b : Boolean): Unit = {
     if( b != printRedOnly ){
       printRedOnly = b
-      this publish GraphUpdate(graph)
+      this publish PrintingOptionsUpdate
     }
   }
   import VisibilitySet._
-  def focusExpand(id : NodeId, focus : Boolean, expand : Boolean) : Unit = {
+  def focusExpand(graph : DependencyGraph,
+                  id : NodeId, focus : Boolean, expand : Boolean) : Unit = {
     if(focus)
       visibility = VisibilitySet.allHidden(graph).
         setVisibility(graph.containerPath(id), Visible)
@@ -78,30 +91,32 @@ class PrintingOptionsControl
       visibility =
         graph.content(id).foldLeft(visibility)(_.setVisibility(_, Visible))
 
-    this publish GraphUpdate(graph)
+    this publish PrintingOptionsUpdate
   }
 
-  def focus(e : NodeIdP) : Unit = {
+  def focus(graph : DependencyGraph,
+            e : NodeIdP) : Unit = {
     val concretes = DGEdge.concreteEdgesFrom(graph, e)
     visibility = concretes.foldLeft(VisibilitySet.allHidden(graph)){
       case (set, DGEdge(_, source, target)) =>
         val s2 = set.setVisibility(graph.containerPath(source), Visible)
         s2.setVisibility(graph.containerPath(target), Visible)
     }
-    this publish GraphUpdate(graph)
+    this publish PrintingOptionsUpdate
   }
 
-  private def setSubTreeVisibility(rootId : NodeId, v : Visibility, includeRoot : Boolean): Unit ={
+  private def setSubTreeVisibility(graph : DependencyGraph,
+                                   rootId : NodeId, v : Visibility, includeRoot : Boolean): Unit ={
     val nodes = graph.subTree(rootId, includeRoot)
     visibility = visibility.setVisibility(nodes, v)
-    this publish GraphUpdate(graph)
+    this publish PrintingOptionsUpdate
   }
-  def hide(root : NodeId): Unit =
-    setSubTreeVisibility(root, Hidden, includeRoot = true)
+  def hide(graph : DependencyGraph, root : NodeId): Unit =
+    setSubTreeVisibility(graph, root, Hidden, includeRoot = true)
 
-  def collapse(root: NodeId) : Unit =
-    setSubTreeVisibility(root, Hidden, includeRoot = false)
+  def collapse(graph : DependencyGraph, root: NodeId) : Unit =
+    setSubTreeVisibility(graph, root, Hidden, includeRoot = false)
 
-  def expandAll(root: NodeId) : Unit =
-    setSubTreeVisibility(root, Visible, includeRoot = true)
+  def expandAll(graph : DependencyGraph, root: NodeId) : Unit =
+    setSubTreeVisibility(graph, root, Visible, includeRoot = true)
 }

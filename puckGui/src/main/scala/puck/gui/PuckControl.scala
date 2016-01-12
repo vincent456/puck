@@ -2,7 +2,7 @@ package puck.gui
 
 import java.io.{PipedInputStream, PipedOutputStream}
 
-import puck.{StackListener, GraphStack, LoadingListener}
+import puck.{FilesHandlerDG2ASTControllerOps, StackListener, GraphStack, LoadingListener}
 import puck.graph._
 import puck.graph.io._
 
@@ -57,7 +57,7 @@ class PuckControl
       implicit def logger: PuckLogger = logger0
       def initialGraph: DependencyGraph = dg2ast.initialGraph
     }
-    printingOptionsControl0 = new PrintingOptionsControl(graphStack)
+    printingOptionsControl0 = PrintingOptionsControl(graphStack.graph)
     graphStack.registerAsStackListeners(this)
 
   } onComplete {
@@ -85,22 +85,26 @@ class PuckControl
 
   def displayGraph(title : String,
                    graph : DependencyGraph,
-                   opts : PrintingOptions) : DotOutputFormat => Unit = { format =>
+                   visibility : VisibilitySet.T,
+                   sUse : Option[Uses]) : Unit = {
     logger.writeln("Printing graph ...")
 
     val pipedOutput = new PipedOutputStream()
     val pipedInput = new PipedInputStream(pipedOutput)
 
+    printingOptionsControl.visibility = visibility
+    printingOptionsControl.selectedEdgeForTypePrinting = sUse
+
+    val opts = printingOptionsControl.printingOptions
 
     Future {
       logger.writeln("requesting svg frame")
-      new SVGFrame(pipedInput, filesHandler, graphUtils,
-        dg2ast, graphStack, printingOptionsControl){
+      new SVGFrame(pipedInput, this){
         this.setTitle(title)
       }
     }
 
-    DotPrinter.genImage(graph, graphUtils.dotHelper, opts, format, pipedOutput) {
+    DotPrinter.genImage(graph, graphUtils.dotHelper, opts, Svg, pipedOutput) {
       case Success(i) if i == 0 => logger.writeln("success")
       case _ => logger.writeln("fail")
     }
@@ -149,22 +153,33 @@ class PuckControl
       graphStack.redo()
       publishUndoRedoStatus()
 
+    case gf @ GraphFocus(g, e) =>
+      printingOptionsControl.focus(g, e)
+      this publish gf
 
     case LoadCodeRequest => loadCode(loadConstraints())
 
     case LoadConstraintRequest => loadConstraints()
 
-    case GraphDisplayRequest(title, graph, visibility, sUse, format) =>
-      displayGraph(title, graph,
-      printingOptionsControl.printingOptions.copy(visibility = visibility,
-        selectedUse = sUse))(format)
+    case GraphDisplayRequest(title, graph, visibility, sUse) =>
+      displayGraph(title, graph, visibility, sUse)
 
     case ConstraintDisplayRequest(graph) =>
       graph.printConstraints(logger, defaultVerbosity)
 
     case ApplyOnCodeRequest(searchResult) => applyOnCode(searchResult)
 
+    case PrintingOptionsUpdate => this publish GraphUpdate(graphStack.graph)
+    case pe : PrintingOptionEvent => pe(printingOptionsControl)
+
+    case GenCode(compareOutput) =>
+      import FilesHandlerDG2ASTControllerOps._
+      deleteOutDirAndapplyOnCode(dg2ast, filesHandler, graphStack.graph)
+      if(compareOutput)
+        compareOutputGraph(filesHandler, graphStack.graph)
+
     case evt => publish(evt)
+
 
   }
 

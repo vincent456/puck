@@ -1,7 +1,5 @@
 package puck
 
-import java.io.File
-
 import puck.graph.DependencyGraph
 import puck.graph.comparison.Mapping
 import puck.graph.io.{FilesHandler, DG2AST}
@@ -11,14 +9,14 @@ import sbt.IO
 /**
   * Created by lorilan on 05/01/16.
   */
-trait FilesHandlerDG2ASTControllerOps {
+object FilesHandlerDG2ASTControllerOps {
 
-  implicit val logger : PuckLogger
-  def graph : DependencyGraph
-  def dg2ast : DG2AST
-  val filesHandler : FilesHandler
 
-  def deleteOutDirAndapplyOnCode() : Unit = {
+  def deleteOutDirAndapplyOnCode
+  ( dg2ast : DG2AST,
+    filesHandler : FilesHandler,
+    graph : DependencyGraph)(implicit logger : PuckLogger) : Unit = {
+
     logger.writeln("Aplying recording on AST")
     dg2ast(graph)/*(new PuckFileLogger(_ => true, new File("/tmp/pucklog")))*/
 
@@ -32,7 +30,9 @@ trait FilesHandlerDG2ASTControllerOps {
 
   }
 
-  def compareOutputGraph() : Unit = {
+  def compareOutputGraph
+  ( filesHandler : FilesHandler,
+    graph : DependencyGraph)(implicit logger : PuckLogger) : Unit = {
     val outfh = filesHandler.fromOutDir
     logger.writeln("Loading output graph from code")
     val outdg2ast = outfh.loadGraph()
@@ -44,5 +44,4 @@ trait FilesHandlerDG2ASTControllerOps {
     logger.writeln(s"they are $res")
   }
 
-  def workingDirectory : File = filesHandler.workingDirectory
 }

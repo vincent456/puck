@@ -15,6 +15,7 @@ import org.w3c.dom.{Node, NodeList, Element}
 import org.w3c.dom.events.{EventListener, Event, MouseEvent}
 import org.w3c.dom.svg._
 import puck.graph.{NodeId, NodeIdP}
+import puck.gui.EdgeMenu
 
 import scala.swing.Publisher
 
@@ -230,8 +231,7 @@ class SVGCanvasListener
             gedge =>
               edgeFromGElement(gedge) foreach {
                 e =>
-                  val menu: SVGEdgeMenu = new SVGEdgeMenu(controller, e)
-                  menu.show(menuInvoker, evt.getClientX, evt.getClientY)
+                controller.edgeMenuBuilder(e).show(menuInvoker, evt.getClientX, evt.getClientY)
               }
           }
       }

@@ -9,52 +9,11 @@ import puck.graph.constraints.DecisionMaker.ChooseNodeKArg
 import puck.graph._
 import puck.graph.constraints.{AbstractionPolicy, Solver, DecisionMaker}
 import puck.graph.transformations.rules.{CreateTypeMember, CreateVarStrategy}
-import puck.gui.svg.SVGController
+import puck.actions.Choose
 import puck.util.Logged
 
-import scala.swing.Swing.EmptyIcon
-import scala.swing.{Publisher, Dialog}
+import scala.swing.Publisher
 import scalaz._, Scalaz._
-
-object ManualSolveAction {
-
-
-  sealed abstract class DisplayableChoice[+A]{
-    def toOption : Option[A]
-  }
-  case object DisplayableNone extends DisplayableChoice[Nothing]{
-    override def toString = "None of the choices above"
-    val toOption = None
-
-  }
-  case class DisplayableSome[T](value : T) extends DisplayableChoice[T]{
-    override def toString = value.toString
-    def toOption = Some(value)
-  }
-  
-
-  def forChoice[T](title : String,
-                   msg : Any,
-                   choices : Seq[T],
-                   k : Logged[Option[T]] => Unit,
-                   appendNone : Boolean = false) : Unit = {
-
-    choices match {
-      case Seq() => k(none[T].set(""))
-      case Seq(x) if !appendNone => k(some(x).set(""))
-      case _ =>
-        val sChoices = choices.map(DisplayableSome(_))
-        Dialog.showInput(null, msg, title,
-          Dialog.Message.Plain,
-          icon = EmptyIcon, if(appendNone) DisplayableNone +: sChoices else sChoices, sChoices.head) match {
-          case None => () //Cancel
-          case Some(x) => k(x.toOption.set(""))
-        }
-    }
-
-  }
-
-}
 
 class ManualSolveAction
 ( publisher : Publisher,
@@ -78,7 +37,7 @@ class ManualSolveAction
   override def abstractionKindAndPolicy
   ( lg : LoggedG, impl : ConcreteNode)
   ( k : Logged[Option[(NodeKind, AbstractionPolicy)]] => Unit) : Unit = {
-    ManualSolveAction.forChoice("Abstraction kind an policy",
+    Choose("Abstraction kind an policy",
       s"How to abstract ${lg.value.fullName(impl.id)} ?",
       impl.kind.abstractionChoices, k)
   }
@@ -92,7 +51,7 @@ class ManualSolveAction
         //k(Functor[Logged].lift( (sn : Option[ConcreteNode]) => sn.map(n => (graph, n.id))).apply(sn))
     }
 
-    ManualSolveAction.forChoice("Host choice",
+    Choose("Host choice",
       s"${predicate.toString}\n(None will try tro create a new one)",
       lg.value.concreteNodes.filter(predicate(lg.value,_)).toSeq,
           k1, appendNone = true)
@@ -113,14 +72,14 @@ class ManualSolveAction
   ( lg : LoggedG, toBeContained : DGNode)
   ( k : Logged[Option[NodeKind]] => Unit) : Unit = {
     val choices = lg.value.nodeKinds.filter(_.canContain(toBeContained.kind))
-    ManualSolveAction.forChoice("Host Kind", s"Which kind of container for $toBeContained",
+    Choose("Host Kind", s"Which kind of container for $toBeContained",
       choices, k)
   }
 
   override def selectExistingAbstraction
   ( lg : LoggedG, choices : Set[Abstraction])
   ( k : Logged[Option[Abstraction]] => Unit)  : Unit = {
-    ManualSolveAction.forChoice("Abstraction Choice",
+    Choose("Abstraction Choice",
       s"Use existing abstraction for\n${lg.value.fullName(violationTarget.id)}\n(None will try tro create a new one)",
       choices.toSeq, k, appendNone = true)
   }

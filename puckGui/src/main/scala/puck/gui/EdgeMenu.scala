@@ -1,30 +1,31 @@
-package puck.gui.svg
+package puck.gui
 
-import java.awt.Component
 import javax.swing.JPopupMenu
 
-import puck.actions.RemoveEdgeAction
-import puck.graph.io.PrintingOptions
-import puck.gui.svg.actions.ShowTypeRelationshipGraphicAction
+import puck.actions.{RedirectAction0, Choose, RemoveEdgeAction}
 import puck.graph._
-import puck.gui.svg.actions._
+import puck.graph.io.PrintingOptions
+import puck.gui.svg.actions.{ShowTypeRelationshipAction, _}
+
+import scala.swing.Publisher
 
 
-class SVGEdgeMenu
-( publisher : SVGController,
-  edge : NodeIdP)
+class EdgeMenu
+( publisher : Publisher,
+  edge : NodeIdP,
+  printingOptions: PrintingOptions,
+  implicit val graph: DependencyGraph,
+  implicit val graphUtils: GraphUtils)
   extends JPopupMenu {
 
-  implicit val graph: DependencyGraph = publisher.graphStack.graph
-  implicit val graphUtils: GraphUtils = publisher.graphUtils
+
 
   val (source, target) = edge
 
   if(graph.isViolation(edge)){
     val targetNode = graph.getConcreteNode(target)
     add(new ManualSolveAction(publisher, targetNode))
-    add(new AutoSolveAction(publisher, targetNode,
-      publisher.printingOptionsControl.printingOptions))
+    add(new AutoSolveAction(publisher, targetNode, printingOptions))
   }
 
   var isIsaEdge = false
@@ -39,8 +40,15 @@ class SVGEdgeMenu
     graph.getUsesEdge(src, tgt) foreach {
       uses =>
         isUseEdge = true
-        add(new ShowTypeRelationshipGraphicAction(Some(uses), publisher))
-        add(new ShowTypeRelationshipTextualAction(Some(uses), publisher))
+        add(new ShowTypeRelationshipAction(Some(uses), publisher))
+
+        val abstractions = graph.abstractions(target)
+        if(abstractions.nonEmpty)
+          add(new RedirectAction0(publisher, uses, abstractions.toSeq))
+
+
+
+
     }
 
   addShowBRActions(source, target)
@@ -51,10 +59,13 @@ class SVGEdgeMenu
 
   val isConcreteEdge = isIsaEdge || isUseEdge
 
+
   if(!isConcreteEdge)
       this.addMenuItem("Focus"){
         _ =>
-          publisher.printingOptionsControl.focus(edge)
+          publisher publish GraphFocus(graph, AbstractEdgeKind(edge))
       }
+
+
 
 }

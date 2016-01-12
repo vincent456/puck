@@ -5,11 +5,7 @@ import java.io.File
 import javax.swing._
 
 package object svg {
-  implicit class JPopupSyntax(val menu : JPopupMenu) extends AnyVal {
-    def addMenuItem(name : String)(action : ActionEvent => Unit) : JMenuItem = {
-      menu.add(abstractAction(name)(action))
-    }
-  }
+
 
   def checkBox(name: String, initiallySelected : Boolean)(f: Boolean => Unit) : JCheckBox = {
     val checkBox: JCheckBox = new JCheckBox
@@ -20,11 +16,7 @@ package object svg {
     checkBox
   }
 
-  def abstractAction(name:String)
-                    (action : ActionEvent => Unit) : AbstractAction =
-    new AbstractAction(name){
-      def actionPerformed(e: ActionEvent) : Unit = action(e)
-    }
+
 
   def jbutton(name:String)
              (action : ActionEvent => Unit) : JButton =

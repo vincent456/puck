@@ -1,8 +1,8 @@
-package puck.gui.svg
+package puck.gui
+package svg
 
 import puck.graph._
 import puck.gui.svg.actions.{AutoSolveAction, ManualSolveAction}
-import puck.gui.{ConcreteNodeMenu, VirtualNodeMenu}
 import javax.swing._
 
 object SVGNodeMenu{
@@ -49,13 +49,13 @@ class SVGConcreteNodeMenu
     }
 
     this.addMenuItem("Hide") { _ =>
-      printingOptionsControl.hide(node.id)
+      printingOptionsControl.hide(graph, node.id)
     }
     this.addMenuItem("Focus") { _ =>
-      printingOptionsControl.focusExpand(node.id, focus = true, expand = false)
+      printingOptionsControl.focusExpand(graph, node.id, focus = true, expand = false)
     }
     this.addMenuItem("Focus & Expand") { _ =>
-      printingOptionsControl.focusExpand(node.id, focus = true, expand = true)
+      printingOptionsControl.focusExpand(graph, node.id, focus = true, expand = true)
     }
     this.addMenuItem("Show code") { _ =>
       controller.printCode(node.id)
@@ -67,13 +67,13 @@ class SVGConcreteNodeMenu
 
     if (graph.content(node.id).nonEmpty) {
       this.addMenuItem("Collapse") { _ =>
-        printingOptionsControl.collapse(node.id)
+        printingOptionsControl.collapse(graph, node.id)
       }
       this.addMenuItem("Expand") { _ =>
-        printingOptionsControl.focusExpand(node.id, focus = false, expand = true)
+        printingOptionsControl.focusExpand(graph, node.id, focus = false, expand = true)
       }
       this.addMenuItem("Expand all") { _ =>
-        printingOptionsControl.expandAll(node.id)
+        printingOptionsControl.expandAll(graph, node.id)
       };()
     }
   }

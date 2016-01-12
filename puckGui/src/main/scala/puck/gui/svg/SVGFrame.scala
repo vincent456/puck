@@ -72,19 +72,19 @@ class SVGFrameMenu
   addHboxButtons()
 
 
-
+  import controller.genControl.filesHandler.workingDirectory
 
   private def addLoadSaveButton(c : Container) : Unit = {
     c add jbutton("Save") {
       _ =>
-        saveFile(controller.workingDirectory, this) match {
+        saveFile(workingDirectory, this) match {
           case None => controller.console.appendText("no file selected")
           case Some(f) =>  controller.saveRecordOnFile(f)
         }
     }
     c add jbutton("Load") {
       _ =>
-        openFile(controller.workingDirectory, this) match {
+        openFile(workingDirectory, this) match {
           case None => controller.console.appendText("no file selected")
           case Some(f) => controller.loadRecord(f)
         }
@@ -118,9 +118,7 @@ class SVGFrameMenu
     hbox add testCommutativityCB
 
     hbox add jbutton("Apply") {
-      _ => controller.deleteOutDirAndapplyOnCode()
-        if(testCommutativityCB.isSelected)
-          controller.compareOutputGraph()
+      _ => controller publish GenCode(testCommutativityCB.isSelected)
     }
 
     import controller.graphUtils.nodeKindKnowledge.kindOfKindType
@@ -131,26 +129,20 @@ class SVGFrameMenu
 
 
     hbox add jbutton("Show top level packages") {
-      _ => printingOptionsControl.focusExpand(graph.rootId, focus= false, expand = true)
+      _ => printingOptionsControl.focusExpand(graph, graph.rootId, focus= false, expand = true)
     }
 
     val _ = hbox add jbutton("Hide type relationship") {
-      _ => printingOptionsControl.setSelectedEdgeForTypePrinting(None)
+      _ => printingOptionsControl.selectedEdgeForTypePrinting = None
     }
   }
 }
 
 class SVGFrame
 ( stream: InputStream,
-  filesHandler : FilesHandler,
-  graphUtils : GraphUtils,
-  dg2ast : DG2AST,
-  graphStack: GraphStack,
-  printingOptionsControl: PrintingOptionsControl) extends JFrame {
-    val builder =
-      SVGController.builderFromFilesHander(filesHandler, graphUtils,
-        dg2ast, graphStack, printingOptionsControl)
-    val pan = new SVGPanel(builder)
+  control : PuckControl) extends JFrame {
+
+    val pan = new SVGPanel(control)
     this.setContentPane(pan)
 
     this.setVisible(true)
@@ -159,7 +151,7 @@ class SVGFrame
       this.revalidate()
 }
 
-class SVGPanel( builder : SVGController.Builder)
+class SVGPanel( control : PuckControl)
   extends JPanel with Publisher{
 
 
@@ -167,7 +159,7 @@ class SVGPanel( builder : SVGController.Builder)
   val console: SVGConsole = new SVGConsole()
   setLayout(new BorderLayout)
 
-  val controller: SVGController = builder(this)
+  val controller: SVGController = new SVGController(control, this)
 
   val canvas = new PUCKSVGCanvas(new SVGCanvasListener(this, controller))
 
@@ -183,7 +175,7 @@ class SVGPanel( builder : SVGController.Builder)
   centerPane.setRightComponent(new JPanel())
   centerPane.setResizeWeight(0.75)
 
-  controller.displayGraph(controller.graphStack.graph)
+  controller.displayGraph()
 
 
   this.add(centerPane, BorderLayout.CENTER)

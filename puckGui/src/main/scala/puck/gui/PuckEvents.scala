@@ -33,20 +33,43 @@ case class GraphDisplayRequest
 (title : String,
  graph : DependencyGraph,
  visibility : VisibilitySet.T,
- sUse : Option[Uses] = None,
- format : DotOutputFormat = Svg)
+ sUse : Option[Uses] = None)
   extends PuckEvent
 case class ConstraintDisplayRequest(graph : DependencyGraph) extends PuckEvent
 
-
 case class ApplyOnCodeRequest(searchResult : DependencyGraph) extends PuckEvent
+case class GenCode(compareOutput : Boolean) extends PuckEvent
 
-sealed abstract class PrintingOptionEvent extends PuckEvent
-case class SignatureVisible(b : Boolean) extends PrintingOptionEvent
-case class IdVisible(b : Boolean) extends PrintingOptionEvent
-case class VirtualEdgeVisible(b : Boolean) extends PrintingOptionEvent
-case class ConcreteUsePerVirtualEdgeVisible(b : Boolean) extends PrintingOptionEvent
-case class RedOnly(b : Boolean) extends PrintingOptionEvent
+
+case object PrintingOptionsUpdate extends PuckEvent
+sealed abstract class PrintingOptionEvent extends PuckEvent {
+  def apply(control : PrintingOptionsControl) : Unit
+}
+
+case class SignatureVisible(b : Boolean) extends PrintingOptionEvent {
+  def apply(control : PrintingOptionsControl) : Unit =
+    control.signatureVisible = b
+}
+case class IdVisible(b : Boolean) extends PrintingOptionEvent {
+  def apply(control : PrintingOptionsControl) : Unit =
+    control.idVisible = b
+}
+case class VirtualEdgeVisible(b : Boolean) extends PrintingOptionEvent{
+  def apply(control : PrintingOptionsControl) : Unit =
+    control.virtualEdgesVisible = b
+}
+case class ConcreteUsePerVirtualEdgeVisible(b : Boolean) extends PrintingOptionEvent{
+  def apply(control : PrintingOptionsControl) : Unit =
+    control.concreteUsesPerVirtualEdges = b
+}
+case class RedOnly(b : Boolean) extends PrintingOptionEvent{
+  def apply(control : PrintingOptionsControl) : Unit =
+    control.redEdgesOnly = b
+}
+case class EdgeForTypePrinting(su : Option[Uses]) extends PrintingOptionEvent {
+  def apply(control : PrintingOptionsControl) : Unit =
+    control.selectedEdgeForTypePrinting = su
+}
 
 
 object PuckEvents{

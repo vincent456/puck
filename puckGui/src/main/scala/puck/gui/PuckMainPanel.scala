@@ -40,9 +40,7 @@ class PuckMainPanel(filesHandler: FilesHandler,
         resizeWeight = 0.5
         leftComponent = new BoxPanel(Orientation.Vertical) {
           contents += new Label("Constraints Violations")
-          val vExplorer = new ConstraintViolationExplorer(interface, violations)(graph, graphUtils)
-          contents += vExplorer
-          interface listenTo vExplorer
+          contents += new ConstraintViolationExplorer(interface, violations)(graph, graphUtils)
         }
         rightComponent = consolePanel
       }

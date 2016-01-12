@@ -8,6 +8,7 @@ import javax.swing.event.{TreeSelectionEvent, TreeSelectionListener}
 import javax.swing.{Icon, AbstractAction, JPopupMenu, JTree}
 import javax.swing.tree.{TreePath, DefaultTreeCellRenderer}
 
+import puck.actions.Choose
 import puck.gui.svg.actions.ManualSolveAction
 import puck.graph._
 
@@ -107,8 +108,7 @@ class GraphExplorer(treeIcons : DGTreeIcons,
 
     if (graph.virtualNodes.nonEmpty) {
       val vn = graph.virtualNodes.head
-
-      ManualSolveAction.forChoice[ConcreteNode]("Concretize node",
+      Choose[ConcreteNode]("Concretize node",
         "Select a concrete value for the virtual node :",
         vn.potentialMatches.toSeq map graph.getConcreteNode,
         { loggedChoice =>
@@ -116,9 +116,7 @@ class GraphExplorer(treeIcons : DGTreeIcons,
             case None => ()
             case Some(cn) =>
               publish(PushGraph(graph.concretize(vn.id, cn.id)))
-
           }
-
         }
       )
     }

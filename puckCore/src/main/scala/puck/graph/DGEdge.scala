@@ -30,6 +30,7 @@ object DGEdge{
     if(e.kind == k) Some((e.source, e.target))
     else None
 
+
 }
 
 case object AbstractEdgeKind extends EKind {

@@ -1,17 +1,18 @@
 package puck.gui.svg
 
 import java.io._
+import javax.swing.JPopupMenu
 
 import org.apache.batik.anim.dom.SAXSVGDocumentFactory
 import org.apache.batik.util.XMLResourceDescriptor
 import org.w3c.dom.Element
 import org.w3c.dom.svg.{SVGGElement, SVGDocument}
 import puck.gui.svg.actions.{DefaultSwingService, SwingService}
-import puck.{FilesHandlerDG2ASTControllerOps, StackListener, GraphStack}
+import puck.{StackListener, GraphStack}
 import puck.graph._
 import puck.graph.constraints.ConstraintsParser
 import puck.graph.io._
-import puck.gui.{PrintingOptionsControl, TextAreaLogger}
+import puck.gui._
 import puck.gui.explorer.NodeInfosPanel
 import puck.util.PuckLog
 
@@ -21,14 +22,24 @@ import scala.util.{Failure, Success}
 
 
 
-abstract class SVGController
-(val graphUtils : GraphUtils,
- val dg2ast: DG2AST,
- val frame : SVGPanel,
- val graphStack : GraphStack,
- val printingOptionsControl: PrintingOptionsControl
-)
+class SVGController
+(val genControl : PuckControl,
+ val frame : SVGPanel)
   extends StackListener with Publisher {
+
+  this listenTo genControl.printingOptionsControl
+  genControl listenTo this
+
+  reactions += {
+    case PrintingOptionsUpdate =>
+      this.displayGraph()
+  }
+
+  val graphUtils : GraphUtils = genControl.graphUtils
+  def dg2ast: DG2AST = genControl.dg2ast
+  val graphStack : GraphStack = genControl.graphStack
+  val printingOptionsControl: PrintingOptionsControl =
+    genControl.printingOptionsControl
 
   val swingService : SwingService = DefaultSwingService
   import swingService._
@@ -37,12 +48,12 @@ abstract class SVGController
   import graphStack._
 
   def update(graphStack: GraphStack) : Unit  =
-    displayGraph(graphStack.graph)
+    displayGraph()
 
   lazy val console = frame.console
   implicit val logger = new TextAreaLogger(console.textArea, _ => true )
 
-  val initialGraph : DependencyGraph = dg2ast.initialGraph
+
 
 
   def nodesByName : Map[String, NodeId] =
@@ -81,9 +92,17 @@ abstract class SVGController
     others
   }
 
+  val edgeMenuBuilder : NodeIdP => JPopupMenu = {
+    e =>
+       new EdgeMenu(this, e,
+        printingOptionsControl.printingOptions,
+        graphStack.graph,
+        graphUtils )
+  }
+
   def showNodeInfos(nodeId: NodeId): Unit = {
     frame.centerPane.setRightComponent(
-    new NodeInfosPanel(this, graph, nodeId).peer)
+    new NodeInfosPanel(this, graph, nodeId, edgeMenuBuilder).peer)
     frame.centerPane.revalidate()
   }
 
@@ -121,21 +140,15 @@ abstract class SVGController
     console.displaySelection("")
   }
 
-
-
-
-
-
-  def displayGraph
-  (graph: DependencyGraph, fail : Boolean = false): Unit =
-    SVGController.documentFromGraph(graph, graphUtils,
+  def displayGraph(recCall : Boolean = false): Unit =
+    SVGController.documentFromGraph(graphStack.graph, graphUtils,
       printingOptionsControl.printingOptions) {
       res =>
         val smsg : Option[String] = res match {
           case Success(0) => None
           case Success(n) =>
 
-            if (fail)
+            if (recCall)
               Some("An error that cannot be recovered occured during the production of the SVG file by Graphviz")
             else {
               val tmpDir = System.getProperty("java.io.tmpdir")
@@ -144,10 +157,6 @@ abstract class SVGController
               DotPrinter.genDot(graph, graphUtils.dotHelper,
                 printingOptionsControl.printingOptions,
                 new FileWriter(f))
-
-//              SVGController.this.visibility = VisibilitySet.topLevelVisible(graph)
-//
-//              displayGraph(graph, fail = true)
 
               Some("error during SVG production dot can be found at " + f.getAbsolutePath /*+
                 "\nretry with top level package visibility only"*/)
@@ -163,8 +172,6 @@ abstract class SVGController
       case doc =>
         swingInvokeLater(() => frame.canvas.setDocument(doc))
     }
-
-
 
 
   def saveRecordOnFile(file : File) : Unit = {
@@ -206,43 +213,37 @@ abstract class SVGController
   }
 
   def printUseBindings(u : Uses) : Unit = {
-    val ustr = (graph, u).shows
-    graph.getNode(u.used).kind.kindType match {
-      case TypeDecl =>
-        console.appendText(s"Type uses $ustr selected")
-        val tmus = graph.typeMemberUsesOf(u)
-        if(tmus.isEmpty)
-          console.appendText("No type member uses associated")
-        else
-          console.appendText(tmus.map{tmu => (graph, tmu).shows}.mkString("TM uses are :\n", "\n", "\n"))
+    def print(u : Uses) : Unit = {
+      val ustr = (graph, u).shows
+      graph.getNode(u.used).kind.kindType match {
+        case TypeDecl =>
+          console.appendText(s"Type uses $ustr selected")
+          val tmus = graph.typeMemberUsesOf(u)
+          if (tmus.isEmpty)
+            console.appendText("No type member uses associated")
+          else
+            console.appendText(tmus.map { tmu => (graph, tmu).shows }.mkString("TM uses are :\n", "\n", "\n"))
 
-      case InstanceValueDecl =>
-        console.appendText(s"Type Member uses $ustr selected")
+        case InstanceValueDecl =>
+          console.appendText(s"Type Member uses $ustr selected")
 
-        val tus = graph.typeUsesOf(u)
-        if(tus.isEmpty)
-          console.appendText("No type uses associated")
-        else
-          console.appendText(tus.map{tu => (graph, tu).shows}.mkString("type uses are :\n", "\n", "\n"))
+          val tus = graph.typeUsesOf(u)
+          if (tus.isEmpty)
+            console.appendText("No type uses associated")
+          else
+            console.appendText(tus.map { tu => (graph, tu).shows }.mkString("type uses are :\n", "\n", "\n"))
 
-      case _ => console.appendText("unhandled kind of used node")
+        case _ => console.appendText("unhandled kind of used node")
+      }
+    }
+    print(u)
+    graph.definitionOf(u.user).foreach {
+      userDef => print(graph.getUsesEdge(userDef, u.used).get)
     }
   }
-  
 
 
-
-
-
-//  def abstractionChoices(id: NodeId): Seq[JMenuItem] =
-//    graph.getNode(id) match {
-//      case n: ConcreteNode => abstractionChoices(n)
-//      case vn: VirtualNode => Seq.empty
-//    }
-
-  def workingDirectory : File
-  def deleteOutDirAndapplyOnCode() : Unit
-  def compareOutputGraph() : Unit
+  displayGraph()
 
 
 
@@ -254,25 +255,6 @@ abstract class SVGController
 object SVGController {
 
   type  Builder  = SVGPanel => SVGController
-
-  def builderFromFilesHander
-  ( fh: FilesHandler,
-    graphUtils : GraphUtils,
-    dg2ast : DG2AST,
-    graphStack: GraphStack,
-    printingOptionsControl: PrintingOptionsControl) : Builder =
-  ( frame : SVGPanel) =>
-    new SVGController(graphUtils, dg2ast, frame,
-      graphStack, printingOptionsControl)
-    with FilesHandlerDG2ASTControllerOps {
-
-      def graph = graphStack.graph
-      val filesHandler = fh
-
-      displayGraph(graph)
-
-    }
-
 
   def documentFromStream(stream: InputStream): SVGDocument = {
     val parser: String = XMLResourceDescriptor.getXMLParserClassName
