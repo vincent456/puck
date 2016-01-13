@@ -28,8 +28,6 @@ class PuckInterfacePanel
 
   val graphExplorer = new GraphExplorer(treeIcons, graphUtils)
 
-
-
   val progressBar  = new ProgressBar()
   val control = new PuckControl(logger, filesHandler,
     graphUtils, progressBar)
@@ -47,16 +45,13 @@ class PuckInterfacePanel
     reactions += {
       case NodeClicked(n) if n.id != DependencyGraph.rootId =>
         Swing.onEDT {
-          val nodeInfoPanel =
-            new NodeInfosPanel(this, control.graph, n.id,
-              edge => new EdgeMenu(this, edge,
+          contents =
+            new NodeInfosPanel(PuckInterfacePanel.this, control.graph, n.id,
+              edge => new EdgeMenu(PuckInterfacePanel.this, edge,
                   control.printingOptionsControl.printingOptions,
                   control.graphStack.graph,
                   graphUtils)
             )
-          contents = nodeInfoPanel
-          control listenTo nodeInfoPanel
-          graphExplorer listenTo nodeInfoPanel
         }
 
     }

@@ -15,9 +15,6 @@ import org.w3c.dom.{Node, NodeList, Element}
 import org.w3c.dom.events.{EventListener, Event, MouseEvent}
 import org.w3c.dom.svg._
 import puck.graph.{NodeId, NodeIdP}
-import puck.gui.EdgeMenu
-
-import scala.swing.Publisher
 
 object PUCKSVGCanvas {
   val deafListener = new EventListener {

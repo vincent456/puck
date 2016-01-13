@@ -10,6 +10,8 @@ import puck.graph._
 import javax.swing.tree._
 
 
+import puck.graph.io.PrintingOptions
+
 import scala.swing.{Publisher, Swing, ScrollPane}
 
 
@@ -192,10 +194,11 @@ object ConstraintViolationExplorer {
 
 import ConstraintViolationExplorer._
 class ConstraintViolationExplorer
-(publisher : Publisher,
- violations : Seq[DGEdge])
-(implicit graph : DependencyGraph,
- graphUtils : GraphUtils)
+( publisher : Publisher,
+  violations : Seq[DGEdge],
+  getPO : () => PrintingOptions)
+( implicit graph : DependencyGraph,
+  graphUtils : GraphUtils)
   extends ScrollPane {
 
     //val swingService : Swing
@@ -212,12 +215,11 @@ class ConstraintViolationExplorer
 
       override def mouseClicked(e : MouseEvent) : Unit =  {
         val path : TreePath = tree.getPathForLocation(e.getX, e.getY)
-
         if(path!= null){
           path.getLastPathComponent match {
             case edge : DGEdge =>
               if(isRightClick(e)){
-                val menu : JPopupMenu = new ViolationMenu(publisher, edge){
+                val menu : JPopupMenu = new ViolationMenu(publisher, edge, getPO){
                   add( new AbstractAction("Focus in graph explorer") {
                     def actionPerformed(e: ActionEvent): Unit =
                       publisher.publish(GraphFocus(graph, edge))
@@ -225,6 +227,9 @@ class ConstraintViolationExplorer
                 }
                 Swing.onEDT(menu.show(ConstraintViolationExplorer.this.peer, e.getX, e.getY))
               }
+              else if(e.getClickCount > 1)
+                publisher.publish(GraphFocus(graph, edge))
+
             case _ => ()
           }
         }

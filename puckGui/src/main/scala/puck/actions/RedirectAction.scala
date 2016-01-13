@@ -6,10 +6,14 @@ import javax.swing.AbstractAction
 import puck.graph.ShowDG._
 import puck.graph._
 import puck.graph.transformations.rules.Redirection
-import puck.gui.svg.SVGController
-import puck.util.Logged
 
 import scala.swing.Publisher
+
+class DisplayableAbstraction(val abs : Abstraction, graph : DependencyGraph) {
+
+  override def toString : String = (graph, abs).shows
+
+}
 
 class RedirectAction0
 ( controller : Publisher,
@@ -18,17 +22,24 @@ class RedirectAction0
 (implicit graph : DependencyGraph,
  graphUtils: GraphUtils)
   extends AbstractAction("Use abstraction instead"){
-  override def actionPerformed(e: ActionEvent): Unit =
-    Choose("Redirect toward abtraction",
-    s"Choose which abstraction to use instead of ${(graph, edge.target).shows}",
-    abstractions,
-      { lgAbs : Logged[Option[Abstraction]] =>
-        val Some(abs) = lgAbs.value
-        new RedirectAction(controller, edge, abs).actionPerformed(e)
-      }
-    )
+  override def actionPerformed(e: ActionEvent): Unit = {
+    println("Choose Abstraction !" + abstractions)
 
+    val dAbstractions = abstractions map (new DisplayableAbstraction(_, graph))
+
+    Choose( "Redirect toward abtraction",
+      s"Choose which abstraction to use instead of ${(graph, edge.target).shows}",
+      dAbstractions) match {
+      case None =>()
+      case Some(dAbs) =>
+        printErrOrPushGraph(controller,"Redirection Action failure"){
+          Redirection.redirectUsesAndPropagate(graph.mileStone, edge, dAbs.abs)
+        }
+    }
+  }
 }
+
+
 
 class RedirectAction
 (controller : Publisher,

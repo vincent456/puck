@@ -15,7 +15,7 @@ object Choose {
     def toOption : Option[A]
   }
   case object DisplayableNone extends DisplayableChoice[Nothing]{
-    override def toString = "None of the choices above"
+    override def toString = "None of the choices below"
     val toOption = None
 
   }
@@ -24,8 +24,14 @@ object Choose {
     def toOption = Some(value)
   }
 
-
   def apply[T](title : String,
+               msg : Any,
+               choices : Seq[T]) : Option[T] =
+  Dialog.showInput(null, msg, title,
+    Dialog.Message.Plain,
+    icon = EmptyIcon, choices, choices.head)
+
+  def apply[T]( title : String,
                 msg : Any,
                 choices : Seq[T],
                 k : Logged[Option[T]] => Unit,
@@ -36,10 +42,8 @@ object Choose {
       case Seq(x) if !appendNone => k(some(x).set(""))
       case _ =>
         val sChoices = choices.map(DisplayableSome(_))
-        Dialog.showInput(null, msg, title,
-          Dialog.Message.Plain,
-          icon = EmptyIcon,
-          if(appendNone) DisplayableNone +: sChoices else sChoices, sChoices.head) match {
+          apply(title, msg,
+          if(appendNone) DisplayableNone +: sChoices else sChoices) match {
           case None => () //Cancel
           case Some(x) => k(x.toOption.set(""))
         }

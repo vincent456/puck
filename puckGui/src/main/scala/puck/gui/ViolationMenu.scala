@@ -13,7 +13,8 @@ import scala.swing.Publisher
   */
 class ViolationMenu
 (publisher : Publisher,
- edge : NodeIdP)
+ edge : NodeIdP,
+ getPO : () => PrintingOptions)
 (implicit graph : DependencyGraph,
   graphUtils : GraphUtils)
   extends JPopupMenu {
@@ -23,8 +24,6 @@ class ViolationMenu
 
   val targetNode = graph.getConcreteNode(target)
   add(new ManualSolveAction(publisher, targetNode))
-  add(new AutoSolveAction(publisher,
-    graph getConcreteNode target,
-    PrintingOptions(Set())))
+  add(new AutoSolveAction(publisher, graph getConcreteNode target, getPO()))
 
 }

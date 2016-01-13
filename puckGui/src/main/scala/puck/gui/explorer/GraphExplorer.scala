@@ -11,6 +11,7 @@ import javax.swing.tree.{TreePath, DefaultTreeCellRenderer}
 import puck.actions.Choose
 import puck.gui.svg.actions.ManualSolveAction
 import puck.graph._
+import puck.util._
 
 
 import scala.swing.{Swing, Component, ScrollPane}
@@ -108,17 +109,13 @@ class GraphExplorer(treeIcons : DGTreeIcons,
 
     if (graph.virtualNodes.nonEmpty) {
       val vn = graph.virtualNodes.head
-      Choose[ConcreteNode]("Concretize node",
+      Choose("Concretize node",
         "Select a concrete value for the virtual node :",
-        vn.potentialMatches.toSeq map graph.getConcreteNode,
-        { loggedChoice =>
-          loggedChoice.value match {
-            case None => ()
-            case Some(cn) =>
-              publish(PushGraph(graph.concretize(vn.id, cn.id)))
-          }
-        }
-      )
+        vn.potentialMatches.toSeq map graph.getConcreteNode) match {
+       case None => ()
+       case Some(cn) =>
+        publish(PushGraph(graph.concretize(vn.id, cn.id)))
+      }
     }
     else {
 
