@@ -101,7 +101,7 @@ class PuckInterfacePanel
         control.printingOptionsControl.printingOptions)
 
 
-      contents += makeButton("Show graph",
+      contents += makeButton("Show Dependency Graph (UML like format)",
         "Display a visual representation of the graph"){
         () =>
           PuckInterfacePanel.this publish
@@ -111,7 +111,7 @@ class PuckInterfacePanel
               hideWithName(g, Seq("java")))
       }
 
-      contents += makeButton("Show graph (Focus on violations)",
+      contents += makeButton("Focus on Violations (UML like format)",
         "Display a visual representation of the graph"){
         () => PuckInterfacePanel.this publish
           GraphDisplayRequest("Graph", g,
@@ -183,7 +183,7 @@ class PuckInterfacePanel
 
   rightComponent = new SplitPane(Orientation.Vertical) {
     leftComponent = new BoxPanel(Orientation.Vertical) {
-      contents += new Label("Dependency Graph")
+      contents += new Label("Dependency Graph Explorer")
       contents += graphExplorer
     }
     rightComponent = nodeInfos

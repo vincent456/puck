@@ -1,9 +1,10 @@
-package puck.gui
+package puck
+package gui
 
 import java.awt.Container
 
 import puck.graph._
-import puck.graph.io.{PrintingOptions, Svg, DotOutputFormat, VisibilitySet}
+import puck.graph.io.{PrintingOptions, VisibilitySet}
 import puck.gui.svg._
 
 import scala.swing.Publisher
@@ -122,10 +123,10 @@ object PuckEvents{
       printingOptions.printConcreteUsesPerVirtualEdges) {
       b => publisher.publish (ConcreteUsePerVirtualEdgeVisible (b) )
     }
-    addCheckBox ("Show RedOnly",
+    ignore(addCheckBox ("Show RedOnly",
       printingOptions.redOnly) {
       b => publisher.publish (RedOnly (b) )
-    }
+    })
   }
 
 }

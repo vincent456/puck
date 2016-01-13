@@ -4,11 +4,10 @@ import java.awt.{Container, Dimension, BorderLayout}
 import java.io.InputStream
 import javax.swing._
 
-import puck.util.{PuckSystemLogger, PuckNoopLogger, PuckLogger}
-import puck.{StackListener, GraphStack}
+
 import puck.actions.AddNodeAction
 import puck.graph.{DependencyGraph, NameSpace, GraphUtils}
-import puck.graph.io.{DG2AST, FilesHandler, PrintingOptions}
+import puck.graph.io.PrintingOptions
 import puck.gui._
 
 import scala.swing.{Publisher, Label}

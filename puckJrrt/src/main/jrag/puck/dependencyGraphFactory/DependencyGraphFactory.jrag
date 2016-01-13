@@ -174,12 +174,22 @@ aspect DependencyGraphFactory {
 		return nodeId;
 	}
 
-	public void BodyDecl.buildDG_handleDef(JastaddGraphBuilder builder, int thisDeclId){
+	public int BodyDecl.buildDG_handleDef(JastaddGraphBuilder builder, int thisDeclId){
 		ASTNode def = getDefinition();
 		int defId = builder.addDefinitionNode();
 		def.registerDef(builder, defId);
 		builder.addDef(thisDeclId, defId);
 		def.buildDG(builder, defId);
+		return defId;
+	}
+
+	public int ConstructorDecl.buildDG_handleDef(JastaddGraphBuilder builder, int thisDeclId){
+		int defId = super.buildDG_handleDef(builder, thisDeclId);
+		ConstructorAccess otherCtor = getConstructorAccess();
+		if(otherCtor.decl().hostType() != program().typeObject())
+			otherCtor.buildDG(builder, defId);
+
+		return defId;
 	}
 
 
@@ -188,6 +198,11 @@ aspect DependencyGraphFactory {
 		buildDGInChildren(builder, thisID);
 	}
 
+	public void ConstructorAccess.buildDG(JastaddGraphBuilder builder, int containerId){
+		int thisID = buildDGNode(builder);
+		builder.addEdge(new Uses(containerId, thisID, UsesAccessKind.none()));
+		buildDGInChildren(builder, containerId);
+	}
 
 	public void BodyDecl.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId ){
 		if(isNamedElement()){
@@ -214,13 +229,15 @@ aspect DependencyGraphFactory {
 
 		}
 		else if(this.getClass() == InstanceInitializer.class
-			|| this.getClass() == StaticInitializer.class ) {
+			|| this.getClass() == StaticInitializer.class
+            || this.getClass() == DocAnnotation.class ) {
 			super.buildDG(builder, hostTypeDeclId);
 		}
 		else
 			System.err.println("TODO !! "+ this.getClass() +".buildDG(JastaddGraphBuilder, int)");
 		
 	}
+
 
 	public void ASTNode.registerDef(JastaddGraphBuilder builder, int thisId){
 		throw new Error("registerAsDef not defined for " + this.getClass());
@@ -270,26 +287,26 @@ aspect DependencyGraphFactory {
 		}
 	}
 	
-	public void SuperConstructorAccess.buildDG(JastaddGraphBuilder builder, int containerId){
-		//if(!decl().type().fullName().equals( "java.lang.Object")){
-		if(!decl().type().fullName().equals( "@primitive.Unknown")){
-		//happens when call to constructor of java.lang.Object TODO check if no other cases
-
-		  	buildDGInChildren(builder, containerId);
-
-	      	int classNodeId = decl().buildDGNode(builder);
-	      	int ctorNodeId = buildDGNode(builder);
-
-		  	Uses typeUse = new Uses(containerId, classNodeId, UsesAccessKind.none());
-		  	Uses superConstructorUses = new Uses(containerId, ctorNodeId, UsesAccessKind.none());
-
-	      	builder.addEdge(typeUse);
-			builder.addEdge(superConstructorUses);
-
-	      	builder.addTypeRelationship(typeUse, superConstructorUses);
-
-	    }
-  	}
+//	public void SuperConstructorAccess.buildDG(JastaddGraphBuilder builder, int containerId){
+//		//if(!decl().type().fullName().equals( "java.lang.Object")){
+//		if(!decl().type().fullName().equals( "@primitive.Unknown")){
+//		//happens when call to constructor of java.lang.Object TODO check if no other cases
+//
+//		  	buildDGInChildren(builder, containerId);
+//
+//	      	int classNodeId = decl().buildDGNode(builder);
+//	      	int ctorNodeId = buildDGNode(builder);
+//
+//		  	Uses typeUse = new Uses(containerId, classNodeId, UsesAccessKind.none());
+//		  	Uses superConstructorUses = new Uses(containerId, ctorNodeId, UsesAccessKind.none());
+//
+//	      	builder.addEdge(typeUse);
+//			builder.addEdge(superConstructorUses);
+//
+//	      	builder.addTypeRelationship(typeUse, superConstructorUses);
+//
+//	    }
+//  	}
 
 	public void ClassInstanceExpr.buildDG(JastaddGraphBuilder builder, int containerId){
 		//System.err.println("ClassInstanceExpr.buildDG : " + this);

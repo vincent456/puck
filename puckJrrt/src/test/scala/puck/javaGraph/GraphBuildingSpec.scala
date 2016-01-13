@@ -21,9 +21,9 @@ class GraphBuildingSpec extends AcceptanceSpec {
     scenario("use of constructor only") {
 
       val _ = new ScenarioFactory(s"$examplesPath/A.java") {
-        val clazz = fullName2id(s"p.A")
-        val ctor = fullName2id(s"p.A.A()")
-        val userDecl = fullName2id(s"p.B.m()")
+        val clazz = fullName2id("p.A")
+        val ctor = fullName2id("p.A.A()")
+        val userDecl = fullName2id("p.B.m()")
         val user = getDefinition(graph, userDecl)
 
         assert(graph.uses(user, ctor))
@@ -32,7 +32,26 @@ class GraphBuildingSpec extends AcceptanceSpec {
         assert(!graph.uses(user, clazz))
       }
     }
+
+    scenario("use this constructor") {
+      val _ = new ScenarioFactory(s"$examplesPath/UsesThisConstructor.java") {
+        val primaryCtor = fullName2id("p.A.A(int,int)")
+        val secondaryCtor = fullName2id("p.A.A(int)")
+        assert(graph.uses(graph.definitionOf_!(secondaryCtor), primaryCtor))
+      }
+    }
+
+    scenario("use super constructor") {
+      val _ = new ScenarioFactory(s"$examplesPath/UsesSuperConstructor.java") {
+        val bCtor = fullName2id("p.B.B(int,int)")
+        val aCtor = fullName2id("p.A.A(int)")
+        assert(graph.uses(graph.definitionOf_!(bCtor), aCtor))
+      }
+    }
+
+
   }
+
   feature("use registration"){
     val examplesPath = graphBuildingExamplesPath +  "useRegistration/"
 

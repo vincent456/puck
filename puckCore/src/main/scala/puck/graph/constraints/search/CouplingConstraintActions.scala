@@ -84,7 +84,9 @@ class CouplingConstraintSolvingControl
     val  (g, automataState) = state
     if(g.isWronglyUsed(violationTarget.id) || g.isWronglyContained(violationTarget.id))
       automataState match {
-        case 0 =>val s =  (epsilon(g) ++ hostIntroAction(g), 1)
+        case 0 =>
+          val s : Seq[LoggedTry[(DependencyGraph, Int)]] =
+            (epsilon(g) ++ hostIntroAction(g), 1)/* ++ (hostAbsIntro(g), 3) ++ (moveContainerAction(g), 4)*/
           assert(s.nonEmpty)
           s
 
@@ -125,11 +127,23 @@ class CouplingConstraintSolvingControl
   val moveAction : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
        actionsGenerator.move(violationTarget) andThen toSeqLTG
 
+  val moveContainerAction : DependencyGraph => Seq[LoggedTry[DependencyGraph]] = {
+    dg =>
+      val s = dg.container(violationTarget.id) map (id => Seq(dg.getConcreteNode(id))) getOrElse Seq()
+      toSeqLTG(s flatMap (n => actionsGenerator.move(n)(dg)))
+  }
+
   val redirectTowardAbstractions : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
     actionsGenerator.redirectTowardExistingAbstractions(violationTarget)
 
   val absIntro : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
       actionsGenerator.absIntro(violationTarget) andThen toSeqLTG
+
+  val hostAbsIntro : DependencyGraph => Seq[LoggedTry[DependencyGraph]] ={
+    dg =>
+      val s = dg.container(violationTarget.id) map (id => Seq(dg.getConcreteNode(id))) getOrElse Seq()
+      toSeqLTG(s flatMap (n => actionsGenerator.absIntro(n)(dg)))
+  }
 
   def checkSuccess(g : DependencyGraph ) : LoggedTry[DependencyGraph] =
     if(g.isWronglyUsed(violationTarget.id)) LoggedError("Remaining violations")
@@ -198,7 +212,8 @@ class SolvingActions
             !dg.isViolation(Contains(hostHost.id, toBeCtedHost.id)) && {
             val dg2 = dg.addContains(hostHost.id, toBeCtedHost.id)
                         .addContains(toBeCtedHost.id, toBeContained.id)
-            !dg2.isWronglyUsed(toBeContained.id)})(g)
+            !dg2.isWronglyUsed(toBeContained.id)
+        })(g)
 
         hostStream  map (ltg => s"Searching host for $toBeCtedHost\n" <++: ltg map {
           case (hid, g1) => (toBeCtedHost.id, g1.addContains(hid, toBeCtedHost.id))
@@ -209,24 +224,14 @@ class SolvingActions
   def findHost
   (toBeContained: ConcreteNode): DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] =
    chooseNode((dg, cn) => dg.canContain(cn, toBeContained) &&
-      !dg.isViolation(Contains(cn.id, toBeContained.id)))
-  /*def findHostRecIntro
-  ( toBeContained : ConcreteNode ) : DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] =
-  { g =>
-    val s = findHost(toBeContained)(g)  //exception for factory to allow prototype
-
-    if(s.nonEmpty) s
-    else {
-      println("findhost rec case")
-      val ccks = containerKind(g, toBeContained.kind) flatMap (containerKind(g, _))
-      if(ccks.isEmpty) Stream()
-      else introNodes(ccks, g) flatMap {
-        case LoggedEither(log, \/-((_, g1))) => findHostRecIntro(toBeContained)(g1) map (lt => log <++: lt)
-        case ltg => Stream(ltg)
-      }
+      !dg.isViolation(Contains(cn.id, toBeContained.id)) && {
+      val dg1 : DependencyGraph =
+        dg.container(toBeContained.id) map (dg.removeContains(_, toBeContained.id)) getOrElse dg
+      val dg2 = dg1.addContains(cn.id, toBeContained.id)
+      dg2.content(toBeContained.id).forall(!dg2.isWronglyUsed(_)) //needed when moving violation host
     }
+   )
 
-  }*/
 
   val attribHost : ((ConcreteNode, DependencyGraph)) => Stream[LoggedTry[(NodeId, DependencyGraph)]] = {
     case (n, g) =>
@@ -349,7 +354,7 @@ class SolvingActions
     }
 
     stream map { ltg => s"Moving $wronglyContained " +
-      s"from ${(g, oldCter).shows} to ${(g, newCter).shows}" <++: ltg }
+      s"from ${(g, oldCter).shows} to ${(g, newCter).shows}\n" <++: ltg }
   }
 
   def absIntro

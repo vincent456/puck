@@ -9,9 +9,7 @@ import javax.swing.{Icon, AbstractAction, JPopupMenu, JTree}
 import javax.swing.tree.{TreePath, DefaultTreeCellRenderer}
 
 import puck.actions.Choose
-import puck.gui.svg.actions.ManualSolveAction
 import puck.graph._
-import puck.util._
 
 
 import scala.swing.{Swing, Component, ScrollPane}
@@ -114,7 +112,9 @@ class GraphExplorer(treeIcons : DGTreeIcons,
         vn.potentialMatches.toSeq map graph.getConcreteNode) match {
        case None => ()
        case Some(cn) =>
-        publish(PushGraph(graph.concretize(vn.id, cn.id)))
+         import ShowDG._
+         val msg = s"Concretize ${(graph, vn).shows} into ${cn.name}"
+        publish(PrintErrOrPushGraph(msg, LoggedSuccess(msg, graph.concretize(vn.id, cn.id))))
       }
     }
     else {
@@ -151,7 +151,8 @@ class GraphExplorer(treeIcons : DGTreeIcons,
                     })
                   Swing.onEDT(menu.show(GraphExplorer.this.peer, e.getX, e.getY))
                 }
-                else GraphExplorer.this.publish(NodeClicked(node))
+                else if(e.getClickCount == 1)
+                  GraphExplorer.this.publish(NodeClicked(node))
               case _ => ()
             }
           }

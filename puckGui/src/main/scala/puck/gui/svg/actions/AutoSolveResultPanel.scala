@@ -44,9 +44,12 @@ case class Log(msg : String) extends Event
 
 
 trait ResultPanel {
+  def selectedResult: Logged[DependencyGraph]
+}
+
+trait GraphPanelResultPanel extends ResultPanel {
   val swingService : SwingService = DefaultSwingService
   def printingOptions : PrintingOptions
-  def selectedResult : Logged[DependencyGraph]
   val graphUtils : GraphUtils
   val publisher : Publisher
 
@@ -98,7 +101,7 @@ class AutosolveResultPanel
 ( implicit val beforeGraph : DependencyGraph,
   val graphUtils : GraphUtils )
   extends SplitPane(Orientation.Horizontal)
-  with ResultPanel{
+  with GraphPanelResultPanel {
 
 
   val printingOptions: PrintingOptions = printingOptions0.copy(visibility = {
@@ -180,13 +183,13 @@ class AutosolveResultPanel
 
 
 
-class DummyResultPanel(val beforeGraph : DependencyGraph
-                      ) extends FlowPanel with ResultPanel {
-  def printingOptions : PrintingOptions = PrintingOptions(Set())
+class DummyResultPanel
+(val beforeGraph : DependencyGraph)
+  extends FlowPanel with ResultPanel {
+
   def selectedResult : Logged[DependencyGraph] = beforeGraph.set("")
 
-  lazy val graphUtils: GraphUtils = error("DummyResultPanel should not need graphUtils")
-  lazy val publisher: Publisher = error("DummyResultPanel should not need publisher")
+
 }
 
 trait Selector extends Publisher{
@@ -217,7 +220,7 @@ class SelectorResultPanel
  val printingOptions: PrintingOptions,
   val graphUtils: GraphUtils,
   val publisher: Publisher
-) extends BorderPanel with ResultPanel {
+) extends BorderPanel with GraphPanelResultPanel {
 
   add(selectedResultGraphPanel, Position.Center)
   add(selector, Position.South)

@@ -43,7 +43,7 @@ class PuckControl
     publish(GraphUpdate(graphStack.graph))
   }
 
-  def loadCode( onSuccess : => Unit) = Future {
+  def loadCodeAndConstraints() = Future {
     progressBar.visible = true
     progressBar.value = 0
 
@@ -61,14 +61,14 @@ class PuckControl
     graphStack.registerAsStackListeners(this)
 
   } onComplete {
-    case Success(_) => onSuccess
+    case Success(_) => loadConstraints(updateAnyway = true)
     case Failure(exc) =>
       progressBar.visible = false
       exc.printStackTrace()
   }
 
 
-  def loadConstraints() : Unit = {
+  def loadConstraints(updateAnyway : Boolean = false) : Unit = {
     try {
       logger.writeln("Loading constraints ...")
       dg2ast = filesHandler.parseConstraints(dg2ast)
@@ -77,8 +77,11 @@ class PuckControl
       dg2ast.initialGraph.printConstraints(logger, defaultVerbosity)
     }
     catch {
-      case _ : java.io.FileNotFoundException => logger writeln "constraint file not found"
-      case e: Error => logger writeln e.getMessage
+      case e: Error =>
+        logger writeln e.getMessage
+        if(updateAnyway) {
+          graphStack.updateStackListeners()
+        }
     }
 
   }
@@ -134,8 +137,8 @@ class PuckControl
         case -\/(err) =>
           logger.writeln(s"$msg\n${err.getMessage}\nLog : ${lgt.log}")
         case \/-(g) =>
-          graphStack.pushGraph(g)
           logger.writeln(lgt.log)
+          graphStack.pushGraph(g)
       }
 
     case Log(msg) =>
@@ -157,7 +160,7 @@ class PuckControl
       printingOptionsControl.focus(g, e)
       this publish gf
 
-    case LoadCodeRequest => loadCode(loadConstraints())
+    case LoadCodeRequest => loadCodeAndConstraints()
 
     case LoadConstraintRequest => loadConstraints()
 

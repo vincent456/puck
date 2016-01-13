@@ -70,6 +70,8 @@ aspect NodeFactory  {
 	//eq ParTypeAccess.accessed() = ((TypeAccess)getTypeAccess()).decl();
     eq ParTypeAccess.accessed() = genericDecl();
     eq MethodAccess.accessed() = decl();
+	eq ConstructorAccess.accessed() = decl();
+
 
 	public ASTNode Dot.accessed(){
 		if(isRightRotated())
@@ -79,7 +81,7 @@ aspect NodeFactory  {
 	}
 
 
-public int VarAccess.buildDGNode(JastaddGraphBuilder builder){
+	public int VarAccess.buildDGNode(JastaddGraphBuilder builder){
         this.lock();
         return ((ASTNode)decl()).buildDGNode(builder);
     }

@@ -1,0 +1,6 @@
+aspect DocAnnotation{
+
+   syn boolean DocAnnotation.isStatic() = true;
+
+   public void DocAnnotation.buildDGType(JastaddGraphBuilder builder, int thisId){}
+}

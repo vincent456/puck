@@ -67,61 +67,40 @@ object Debug {
 
   def mkMapStringSortedByKey[A,B](m : Map[A,B])(implicit ord: Ordering[A]) : String = {
     m.toList.sortBy(_._1).mkString("\t[",",\n\t ","]\n")
-
   }
 
 
-  implicit val showNodeIndex : scalaz.Show[NodeIndex] = scalaz.Show.shows[NodeIndex] {
-    case NodeIndex(_, cNodes, removedCnodes,
-    vNodes, removedVnodes,
-    cNodes2vNodes,
-    roles) =>
-      "Concrete Nodes : " +
-        mkMapStringSortedByKey(cNodes) +
-      "Removed Concrete Nodes : " +
-        mkMapStringSortedByKey(removedCnodes) +
-      "Virtual Nodes : " +
-        mkMapStringSortedByKey(vNodes) +
-      "Removed Virtual Nodes : " +
-        mkMapStringSortedByKey(removedVnodes) +
-      "CN -> VN : " +
-        cNodes2vNodes.mkString("\t[",",\n\t ","]\n") +
-      "Roles : " +
-        roles.mkString("\t[",",\n\t ","]\n")
+  implicit val edgeMapCordBuilder : CordBuilder[EdgeMap] = {
+    case (_, EdgeMap ( userMap, usedMap, accessKindMap,
+    contents, containers, superTypes, subTypes,
+    typeMemberUses2typeUsesMap,
+    typeUses2typeMemberUsesMap,
+    parameters, definition, types)) =>
+      val builder = new StringBuilder(150)
 
-  }
+      builder.append("used -> user\n\t")
+      builder.append(userMap.toString)
+      builder.append("\nuser -> used\n\t")
+      builder.append(usedMap.toString)
 
-  implicit val showEdgesMap : scalaz.Show[EdgeMap] = scalaz.Show.shows[EdgeMap] {
-    case EdgeMap ( userMap, usedMap, accessKindMap,
-      contents, containers, superTypes, subTypes,
-      typeMemberUses2typeUsesMap,
-      typeUses2typeMemberUsesMap,
-      parameters, definition, types) =>
-    val builder = new StringBuilder(150)
+      builder.append("\ncontainer -> content\n\t")
+      builder.append(contents.toString)
+      builder.append("\ncontent -> container\n\t")
+      builder.append(containers.toString())
 
-    builder.append("used -> user\n\t")
-    builder.append(userMap.toString)
-    builder.append("\nuser -> used\n\t")
-    builder.append(usedMap.toString)
+      builder.append("\nsub -> super\n\t")
+      builder.append(superTypes.toString)
+      builder.append("\nsuper -> sub\n\t")
+      builder.append(subTypes.toString)
 
-    builder.append("\ncontainer -> content\n\t")
-    builder.append(contents.toString)
-    builder.append("\ncontent -> container\n\t")
-    builder.append(containers.toString())
+      builder.append("\ntmUse -> tUse\n\t")
+      builder.append(typeMemberUses2typeUsesMap.toString)
+      builder.append("\ntUse -> tmUse\n\t")
+      builder.append(typeUses2typeMemberUsesMap.toString)
+      builder.append("\ntypes\n\t")
+      builder.append( mkMapStringSortedByKey(types))
 
-    builder.append("\nsub -> super\n\t")
-    builder.append(superTypes.toString)
-    builder.append("\nsuper -> sub\n\t")
-    builder.append(subTypes.toString)
-
-    builder.append("\ntmUse -> tUse\n\t")
-    builder.append(typeMemberUses2typeUsesMap.toString)
-    builder.append("\ntUse -> tmUse\n\t")
-    builder.append(typeUses2typeMemberUsesMap.toString)
-    builder.append("\ntypes\n\t")
-    builder.append( mkMapStringSortedByKey(types))
-
-    builder.toString()
+      builder.toString()
   }
 
 

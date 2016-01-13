@@ -6,7 +6,6 @@ import javax.swing.{JMenuItem, JPopupMenu}
 import puck.actions._
 import puck.graph._
 import puck.graph.transformations.rules.Redirection
-import puck.gui.svg._
 
 import scala.swing.Publisher
 

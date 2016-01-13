@@ -4,10 +4,8 @@ import javax.swing.JOptionPane
 
 import puck.graph._
 import puck.gui.PrintErrOrPushGraph
-import puck.gui.svg.SVGController
 
 import scala.swing.Publisher
-import scalaz.{\/-, -\/}
 
 /**
   * Created by lorilan on 15/12/15.

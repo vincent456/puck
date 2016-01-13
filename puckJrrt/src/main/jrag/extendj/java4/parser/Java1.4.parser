@@ -175,6 +175,12 @@ List interface_type_list =
   ;
 List class_body =
     LBRACE class_body_declarations.c? RBRACE      {: return c; :}
+  | LBRACE class_body_declarations.c? doc_comment.dc RBRACE
+        {:
+            BodyDecl d = new DocAnnotation();
+            d.docComment = dc;
+            return c.add(d);
+        :}
   ;
 List class_body_declarations =
     body_decl_with_comment.c                           {: return new List().add(c); :}
@@ -291,7 +297,12 @@ List extends_interfaces =
   ;
 
 List interface_body =
-    LBRACE interface_member_declarations.i? RBRACE  {: return i; :}
+      LBRACE interface_member_declarations.i? RBRACE {: return i; :}
+    | LBRACE interface_member_declarations.i? doc_comment.dc  RBRACE {:
+        BodyDecl d = new DocAnnotation();
+        d.docComment = dc;
+        return i.add(d);
+    :}
   ;
 List interface_member_declarations =
     interface_member_with_comment.i                                  {: return new List().add(i); :}
