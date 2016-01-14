@@ -86,7 +86,8 @@ object CompileHelper {
       val args: List[String] = "-classpath" :: jars.mkString("", File.pathSeparator, File.pathSeparator + ".") :: (
         if (srcdirs.isEmpty) sources
         else "-sourcepath" :: srcdirs.mkString("", File.pathSeparator, File.pathSeparator + ".") :: sources)
-      args.toArray
+      //( "-bootclasspath" :: "/home/lorilan/jre1.6.0_45/lib/rt.jar" :: args).toArray
+        args.toArray
     }
   }
 

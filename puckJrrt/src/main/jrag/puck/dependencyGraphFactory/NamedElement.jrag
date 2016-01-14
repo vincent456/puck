@@ -8,8 +8,6 @@ aspect NamedElement {
 	eq TypeDecl.isNamedElement() = true;
 	eq AbstractWildcardType.isNamedElement() = false;
     eq WildcardType.isNamedElement() = true;
-	//eq InterfaceDecl.isNamedElement() = true;
-	//eq ClassDecl.isNamedElement() = true;
 
     eq ParameterDeclaration.isNamedElement() = true;
     eq FieldDeclaration.isNamedElement() = true;

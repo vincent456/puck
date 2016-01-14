@@ -85,8 +85,10 @@ class CouplingConstraintSolvingControl
     if(g.isWronglyUsed(violationTarget.id) || g.isWronglyContained(violationTarget.id))
       automataState match {
         case 0 =>
-          val s : Seq[LoggedTry[(DependencyGraph, Int)]] =
-            (epsilon(g) ++ hostIntroAction(g), 1)/* ++ (hostAbsIntro(g), 3) ++ (moveContainerAction(g), 4)*/
+          val s =
+            setState((epsilon(g) ++ hostIntroAction(g), 1)) ++
+              setState((hostAbsIntro(g), 3)) ++
+              setState((moveContainerAction(g), 4))
           assert(s.nonEmpty)
           s
 
@@ -342,7 +344,9 @@ class SolvingActions
             Stream(rules.move.typeMemberBetweenUnrelatedTypeDecl(g, List(wronglyContained.id), oldCter, newCter, None))
         }
 
-      case (TypeDecl, _) =>
+      case (TypeDecl, _)
+        | (NameSpace, _)
+        | (StaticValueDecl, _) =>
         Stream(rules.move.staticDecl(g, wronglyContained.id, newCter))
 
       case (TypeConstructor, _) =>
@@ -468,11 +472,17 @@ class SolvingActions
             val (remainingWus, wuToRedirect) =
               wrongUsers.partition(cannotUseAbstraction(abs))
 
+
             val ltg: LoggedTG =
               wuToRedirect.foldLoggedEither(g) {
                 (g, wu) =>
-                  rules.redirection.
-                    redirectUsesAndPropagate(g, g.getUsesEdge(wu, used.id).get, abs)
+                  // Uses(wu, used.id) can have be deleted in a
+                  // previous iteration of this foldLoggedEither loop
+                  g.getUsesEdge(wu, used.id) match {
+                    case Some(uses) =>
+                      rules.redirection.redirectUsesAndPropagate(g, uses, abs)
+                    case None => LoggedSuccess(g)
+                  }
               }
 
             ltg.value match {

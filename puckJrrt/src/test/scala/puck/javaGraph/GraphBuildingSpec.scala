@@ -3,9 +3,6 @@ package javaGraph
 
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph._
-import puck.util.Debug
-
-//import nodeKind._
 
 
 class GraphBuildingSpec extends AcceptanceSpec {
@@ -85,6 +82,58 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
       }
     }
+
+
+    scenario("this use implicit") {
+      val _ = new ScenarioFactory(s"$examplesPath/ThisUseImplicit.java") {
+        val clazz = fullName2id("p.A")
+        val methM = fullName2id("p.A.m()")
+        val mUserViaThis = fullName2id("p.A.mUserViaThis()")
+        val mUserViaParameter = fullName2id("p.A.mUserViaParameter(A)")
+        val theParameter = fullName2id("p.A.mUserViaParameter(A).a")
+
+
+        val mUserViaThisDef = getDefinition(graph, mUserViaThis)
+        val mUserViaParameterDef = getDefinition(graph, mUserViaParameter)
+
+        //methodUse
+        assert( graph.uses(mUserViaThisDef, methM) )
+        assert( ! graph.uses(mUserViaThis, methM) )
+
+        //typeUse
+        assert( graph.uses(clazz, clazz) )
+
+        assert( graph.uses(mUserViaParameterDef, methM) )
+        assert( !graph.uses(mUserViaParameter, methM) )
+
+        assert( graph.uses(theParameter, clazz) )
+
+      }
+    }
+
+    scenario("super use explicit") {
+      val _ = new ScenarioFactory(s"$examplesPath/SuperUseExplicit.java") {
+        val methM = fullName2id("p.A.m()")
+        val mUserViaThis = fullName2id("p.B.mUserViaSuper()")
+
+        val mUserViaSuperDef = getDefinition(graph, mUserViaThis)
+
+        assert( graph.uses(mUserViaSuperDef, methM) )
+      }
+    }
+
+    scenario("super use implicit") {
+      val _ = new ScenarioFactory(s"$examplesPath/SuperUseImplicit.java") {
+        val methM = fullName2id("p.A.m()")
+        val mUserViaThis = fullName2id("p.B.mUserViaSuper()")
+
+        val mUserViaSuperDef = getDefinition(graph, mUserViaThis)
+
+        assert( graph.uses(mUserViaSuperDef, methM) )
+      }
+    }
+
+
 
     scenario("field type use") {
       val _ = new ScenarioFactory(s"$examplesPath/FieldTypeUse.java") {
@@ -363,31 +412,8 @@ class GraphBuildingSpec extends AcceptanceSpec {
   feature("anonymous class"){
     val examplesPath = graphBuildingExamplesPath +  "anonymousClass/"
 
-    scenario("this use explicit") {
+    ignore("anonymous class") {
       val _ = new ScenarioFactory(s"$examplesPath/AnonymousClass.java") {
-//        val clazz = fullName2id("p.A")
-//        val methM = fullName2id("p.A.m()")
-//        val mUserViaThis = fullName2id("p.A.mUserViaThis()")
-//        val mUserViaParameter = fullName2id("p.A.mUserViaParameter(A)")
-//        val theParameter = fullName2id("p.A.mUserViaParameter(A).a")
-//
-//
-//        val mUserViaThisDef = getDefinition(graph, mUserViaThis)
-//        val mUserViaParameterDef = getDefinition(graph, mUserViaParameter)
-//
-//        //methodUse
-//        assert( graph.uses(mUserViaThisDef, methM) )
-//        assert( ! graph.uses(mUserViaThis, methM) )
-//
-//        //typeUse
-//        assert( graph.uses(clazz, clazz) )
-//
-//        assert( graph.uses(mUserViaParameterDef, methM) )
-//        assert( !graph.uses(mUserViaParameter, methM) )
-//
-//        assert( graph.uses(theParameter, clazz) )
-
-        //QuickFrame(graph, "JayJay",JavaDotHelper)
       }
     }
   }
