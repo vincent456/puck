@@ -87,7 +87,7 @@ trait AGRoot extends NodeKind {
 
 trait NodeKindKnowledge {
 
-  def rootKind : NodeKind
+  def root : ConcreteNode
 
   def nodeKinds : List[NodeKind]
 

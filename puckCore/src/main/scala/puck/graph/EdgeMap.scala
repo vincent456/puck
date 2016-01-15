@@ -31,6 +31,8 @@ object EdgeMap {
 }
 import EdgeMap._
 import puck.PuckError
+import puck.graph.AbstractEdgeKind
+import puck.graph.AbstractEdgeKind
 
 case class EdgeMap
 ( userMap : EdgeMapT,
@@ -75,7 +77,8 @@ case class EdgeMap
         copy(definition = definition + (decl -> _def),
           containers = containers + (_def -> decl) )
           /*declaration = declaration + (_def -> decl) )*/
-      case _ => error()
+      case AbstractEdgeKind(_, _) => this
+      
     }
 
   private def newAccessKindMapOnAdd

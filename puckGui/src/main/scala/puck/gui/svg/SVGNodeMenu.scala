@@ -24,19 +24,16 @@ class SVGConcreteNodeMenu
     controller.graphStack.graph,
     controller.graphUtils,
     controller.selectedNodes,
-    controller.selectedEdge, node) {
+    controller.selectedEdge,
+    node,
+    controller.printingOptionsControl.printingOptions) {
 
   import controller.printingOptionsControl
 
   override def init() = {
     super.init()
 
-    if (graph.isWronglyContained(node.id)
-      || graph.isWronglyUsed(node.id)) {
-      this.add(new ManualSolveAction(controller, node))
-      this.add(new AutoSolveAction(controller, node,
-        printingOptionsControl.printingOptions))
-    }
+
 
     this.addSeparator()
     addShowOptions()

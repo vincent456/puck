@@ -5,7 +5,9 @@ import javax.swing.{JMenuItem, JPopupMenu}
 
 import puck.actions._
 import puck.graph._
+import puck.graph.io.PrintingOptions
 import puck.graph.transformations.rules.Redirection
+import puck.gui.svg.actions.{AutoSolveAction, ManualSolveAction}
 
 import scala.swing.Publisher
 
@@ -15,17 +17,18 @@ import scala.swing.Publisher
 
 object NodeMenu{
 
-  def apply(controller : Publisher,
+  def apply(publisher : Publisher,
             graph : DependencyGraph,
             graphUtils: GraphUtils,
             selectedNodes: List[NodeId],
             selectedEdge : Option[NodeIdP],
-            nodeId : NodeId) : JPopupMenu =
+            nodeId : NodeId,
+            printingOptions: PrintingOptions) : JPopupMenu =
     graph.getNode(nodeId) match {
       case n : ConcreteNode =>
-        new ConcreteNodeMenu(controller, graph, graphUtils, selectedNodes, selectedEdge, n)
+        new ConcreteNodeMenu(publisher, graph, graphUtils, selectedNodes, selectedEdge, n, printingOptions)
       case n : VirtualNode =>
-        new VirtualNodeMenu(controller, graph, graphUtils, n)
+        new VirtualNodeMenu(publisher, graph, graphUtils, n)
     }
 }
 
@@ -35,7 +38,8 @@ class ConcreteNodeMenu
  implicit val graphUtils : GraphUtils,
  val selectedNodes: List[NodeId],
  val selectedEdge : Option[NodeIdP],
- node : ConcreteNode) extends JPopupMenu {
+ node : ConcreteNode,
+ printingOptions : PrintingOptions) extends JPopupMenu {
 
   init()
 
@@ -72,6 +76,11 @@ class ConcreteNodeMenu
 
     selectedEdge foreach addEdgeSelectedOption
 
+    if (graph.isWronglyContained(node.id)
+      || graph.isWronglyUsed(node.id)) {
+      this.add(new ManualSolveAction(publisher, node))
+      this.add(new AutoSolveAction(publisher, node, printingOptions))
+    }
   }
 
   def abstractionChoices : Seq[JMenuItem] =

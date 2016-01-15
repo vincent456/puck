@@ -97,9 +97,9 @@ object RecordingComparatorInitialState {
     logger.writeln("*********************************** ")
     logger.writeln("*********************************** ")
 
-    val (nodeStatuses, remainingTransfos1) = normalizeNodeTransfos(graph1.rootKind, graph1.recording, initialTransfos)
+    val (nodeStatuses, remainingTransfos1) = normalizeNodeTransfos(graph1.root.kind, graph1.recording, initialTransfos)
 
-    val (nodeStatuses2, remainingTransfos2) = normalizeNodeTransfos(graph2.rootKind, graph2.recording, initialTransfos)
+    val (nodeStatuses2, remainingTransfos2) = normalizeNodeTransfos(graph2.root.kind, graph2.recording, initialTransfos)
 
     val (numCreatedNodes, initialMapping, removedNode, neuterNodes) =
       switchNodes(nodeStatuses, ResMap()) {

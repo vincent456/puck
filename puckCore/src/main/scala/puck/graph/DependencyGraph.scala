@@ -42,6 +42,28 @@ object DependencyGraph {
     engine.explore()
     engine.successes.nonEmpty
   }
+
+  def subGraph(fullGraph : DependencyGraph,
+               focus : Set[NodeId]): DependencyGraph = {
+    val kw = fullGraph.nodeKindKnowledge
+    val g0 = new DependencyGraph(kw, NodeIndex(kw.root), EdgeMap(),
+      AbstractionMap(), fullGraph.constraints, Recording())
+
+//    def addNodes(it : Iterable[NodeId], g0 : DependencyGraph) : DependencyGraph =
+//      it.foldLeft(g0)
+
+    focus.foldLeft(g0){
+      case (g, id) =>
+        val g1 = g.addConcreteNode(fullGraph.getConcreteNode(id))
+        val path = fullGraph.containerPath(id)
+        val g2 = path.foldLeft(g1)( (g,id) => g.addConcreteNode(fullGraph.getConcreteNode(id)))
+        path.tail.foldLeft((g2, path.head)){
+          case ((g, cter), cted) =>
+            (g.addContains(cter,cted), cted)
+        }._1
+    }
+  }
+
 }
 
 
@@ -53,8 +75,6 @@ class DependencyGraph
   /*private [this]*/ val abstractionsMap : AbstractionMap,
   val constraints : ConstraintsMaps,
   val recording : Recording) {
-
-  def rootKind = nodeKindKnowledge.rootKind
 
   def newGraph(//nLogger : PuckLogger = logger,
                nodesIndex : NodeIndex = nodesIndex,
@@ -218,8 +238,15 @@ class DependencyGraph
 
   def typedBy(tid : NodeId) : List[NodeId] = edges.typedBy(tid)
 
- def addContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): DependencyGraph =
-    addEdge(Contains(containerId, contentId), register)
+ def addContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): DependencyGraph = {
+   getNode(contentId).kind.kindType match {
+     case ValueDef => addEdge(ContainsDef(containerId, contentId), register)
+     case Parameter => addEdge(ContainsParam(containerId, contentId), register)
+     case _ => addEdge(Contains(containerId, contentId), register)
+   }
+ }
+
+
 
  def removeContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): DependencyGraph =
     removeEdge(Contains(containerId, contentId), register)
@@ -235,9 +262,6 @@ class DependencyGraph
 
  def removeIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : DependencyGraph=
     removeEdge(Isa(subTypeId, superTypeId))
-
- def addParam(decl : NodeId, param : NodeId) : DependencyGraph =
-    addEdge(ContainsParam(decl, param))
 
  def addUsesDependency
  ( typeUse : NodeIdP,

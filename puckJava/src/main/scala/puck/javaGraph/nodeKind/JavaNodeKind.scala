@@ -1,6 +1,7 @@
 package puck.javaGraph
 package nodeKind
 
+import puck.graph.DependencyGraph._
 import puck.graph._
 import puck.graph.constraints.AbstractionPolicy
 import ShowDG._
@@ -45,7 +46,8 @@ case object Param extends JavaNodeKind {
 
 object JavaNodeKind extends NodeKindKnowledge {
 
-  def rootKind : NodeKind = JavaRoot
+  val root = ConcreteNode(rootId, rootName, Package, mutable = true)
+
 
   def lightKind : NodeKind = Interface
 

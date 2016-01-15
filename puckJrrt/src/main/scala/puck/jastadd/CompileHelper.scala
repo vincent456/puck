@@ -55,7 +55,7 @@ object CompileHelper {
     builder.attachOrphanNodes()
     builder.registerSuperTypes()
 
-    val (_, initialRecord) = NodeMappingInitialState.normalizeNodeTransfos(JavaNodeKind.rootKind,
+    val (_, initialRecord) = NodeMappingInitialState.normalizeNodeTransfos(JavaNodeKind.root.kind,
         builder.g.recording, Seq())
 
     val g = builder.g.newGraph(recording = Recording())

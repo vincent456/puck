@@ -80,7 +80,7 @@ abstract class Abstract {
 
         val (pNode, g3) = g2.addConcreteNode(impl.name, paramKind)
         val g4 = g3.setType(pNode.id, g.styp(impl.id))
-          .addParam(wNode.id, pNode.id)
+          .addContains(wNode.id, pNode.id)
         val g5 =
           g4.addUses(rDef.id, impl.id, Some(Read))
             .addUses(wDef.id, impl.id, Some(Write))
@@ -105,7 +105,7 @@ abstract class Abstract {
             val param = g0.getConcreteNode(paramId)
             val (pabs, g01) = g0.addConcreteNode(param.name, param.kind, mutable = true)
             val g02 = g01.setType(pabs.id, g0 styp paramId)
-              .addParam(n.id, pabs.id)
+              .addContains(n.id, pabs.id)
             g02.usedBy(paramId).foldLeft(g02) {
               (g00, tid) => g01.addUses(pabs.id, tid)
             }
@@ -124,7 +124,7 @@ abstract class Abstract {
             val param = g0.getConcreteNode(paramId)
             val (pabs, g01) = g0.addConcreteNode(param.name, param.kind, mutable = true)
             val g02 = g01.setType(pabs.id, g0 styp paramId)
-              .addParam(n.id, pabs.id)
+              .addContains(n.id, pabs.id)
             g02.usedBy(paramId).foldLeft(g02) {
               (g00, tid) => g01.addUses(pabs.id, tid)
             }

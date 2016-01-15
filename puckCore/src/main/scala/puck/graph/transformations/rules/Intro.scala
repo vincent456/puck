@@ -101,7 +101,7 @@ abstract class Intro {
 
 
     def onSuccess(cid : NodeId, g : DependencyGraph) : (ConcreteNode, DependencyGraph) = {
-      val g2 = g.addParam(typeMemberDecl, pNode.id)
+      val g2 = g.addContains(typeMemberDecl, pNode.id)
         .setType(pNode.id, Some(NamedType(typeNode)))
 
       (pNode,

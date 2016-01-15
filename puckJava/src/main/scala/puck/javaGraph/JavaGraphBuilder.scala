@@ -13,10 +13,8 @@ import scalaz.{-\/, \/-}
 
 trait JavaGraphBuilder extends GraphBuilder{
 
-   val root = ConcreteNode(rootId, rootName, Package, mutable = true)
-
    g = new DependencyGraph(JavaNodeKind,
-     NodeIndex(root), EdgeMap(),
+     NodeIndex(JavaNodeKind.root), EdgeMap(),
      AbstractionMap(), ConstraintsMaps(), Recording())
 
   def addDefinitionNode() : NodeIdT = addAnonymousNode(Definition)

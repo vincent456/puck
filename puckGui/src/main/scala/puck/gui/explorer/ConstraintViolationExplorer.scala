@@ -3,7 +3,6 @@ package gui
 package explorer
 
 import java.awt.event.{ActionEvent, MouseEvent, MouseAdapter}
-import javax.swing.event.TreeModelListener
 import javax.swing.{AbstractAction, JPopupMenu, JTree}
 
 import puck.graph._
@@ -12,230 +11,225 @@ import javax.swing.tree._
 
 import puck.graph.io.PrintingOptions
 
-import scala.swing.{Publisher, Swing, ScrollPane}
+import scala.swing.BorderPanel.Position
+import scala.swing._
+import scala.swing.event.{MouseClicked, Event}
 
+case class FilterSource(filter : NodeId) extends Event
+case class FilterTarget(filter : NodeId) extends Event
 
-class CCTree(g : DependencyGraph, parentToChildMap : Map[DGEdge, List[DGEdge]])
-  extends JTree(new CCTreeModel(parentToChildMap)){
-
-
-  lazy val topLevelEdges = parentToChildMap(CCTreeModel.root)
-
-  implicit def idToNameString(dg : DependencyGraph, nid : NodeId) : String =
-    dg.getNode(nid) match {
-      case n : ConcreteNode =>
-        val name =
-          if(n.kind.kindType == ValueDef)
-            dg.container(n.id) map {
-              idToNameString(dg, _)
-            } getOrElse "OrphanDefinition"
-          else n.name
-
-        name + ShowDG.typeHolderCord(dg, dg.styp(n.id))
-      case vn : VirtualNode => vn.name(dg)
-    }
-
-  def edgeToString(nodeName : NodeId => String, e:  DGEdge ) : String =
-    if(e.source == e.target) s"${g.getNode(e.source).kind} - ${nodeName(e.source)}"
-    else {
-      val (ksrc, ktgt) = (g.getNode(e.source).kind, g.getNode(e.target).kind)
-      e.kind match {
-        case AbstractEdgeKind =>
-          val s = if(ksrc.toString endsWith "s") "es"
-          else "s"
-          if (ksrc == ktgt) s"$ksrc$s : ${nodeName(e.source)} -> ${nodeName(e.target)}"
-          else s"$ksrc : ${nodeName(e.source)} -> $ktgt : ${nodeName(e.target)}"
-
-        case _ =>
-          s"${nodeName(e.source)} ($ksrc) - ${e.kind} -> ${nodeName(e.target)} ($ktgt)"
-      }
-    }
-
-  def numViolations(acc : Map[DGEdge, Int], e : DGEdge) : Map[DGEdge, Int] = {
-    val children = parentToChildMap get e
-
-    if( children.isEmpty) acc + (e -> 1)
-    else {
-      val acc1 = children.get.foldLeft(acc)(numViolations)
-      val childrenViolations : List[Int] = children.get map acc1.apply
-      acc1 + (e -> childrenViolations.sum)
-    }
-
-  }
-
-  lazy val numViolationsMap = numViolations(Map(), CCTreeModel.root)
-
-  override def convertValueToText
-  (value: AnyRef, selected: Boolean,
-   expanded: Boolean, leaf: Boolean,
-   row: Int, hasFocus: Boolean) : String = {
-
-    value match {
-      case violation: DGEdge =>
-
-      val txt =
-        if(violation == CCTreeModel.root) ""
-        else {
-          val f: NodeId => String =
-            if (topLevelEdges contains violation) g.fullName
-            else idToNameString(g, _)
-          edgeToString(f, violation)
-        }
-
-        val numVs = numViolationsMap(violation)
-        if(leaf) txt
-        else txt + s" ($numVs violation(s))"
-      case _ => ""
-    }
-
-  }
-}
-
-
-object CCTreeModel {
-  val root : DGEdge = new DGEdge(AbstractEdgeKind, 0, 0)
-}
-class CCTreeModel
-( parentToChildMap : Map[DGEdge, List[DGEdge]]
-  ) extends TreeModel {
-
-  private def getChildren(parent: scala.Any) : List[DGEdge] =
-    parent match {
-      case e : DGEdge =>
-        parentToChildMap(e)
-      case _ => error(parent.getClass+ " where DGEdge was expected")
-    }
-
-  def getChild(parent: scala.Any, index: NodeId): DGEdge =
-    getChildren(parent)(index)
-
-  def isLeaf(node: scala.Any): Boolean =
-    node match {
-      case e : DGEdge => parentToChildMap.get(e).isEmpty
-      case _ => error(node.getClass+ " where DGEdge was expected")
-    }
-
-  def getChildCount(parent: scala.Any): NodeId =
-    getChildren(parent).size
-
-  def getRoot: AnyRef = CCTreeModel.root
-
-  def getIndexOfChild(parent: scala.Any, child: scala.Any): NodeId =
-    getChildren(parent).indexOf(child)
-
-  def valueForPathChanged(path: TreePath, newValue: scala.Any): Unit = ()
-  def removeTreeModelListener(l: TreeModelListener): Unit = ()
-  def addTreeModelListener(l: TreeModelListener): Unit = ()
-
-}
-
-
-object ConstraintViolationExplorer {
-  def mapWithE(m : Map[DGEdge, Option[DGEdge]], e : DGEdge) =
-    if(m contains e) m
-    else m + (e -> None)
-
-  def addChildToParentLink
-  (m : Map[DGEdge, Option[DGEdge]],
-   e : DGEdge, pe : DGEdge) : Map[DGEdge, Option[DGEdge]] = {
-    m getOrElse(e, None) match {
-      case None => m + (e -> Some(pe))
-      case Some(storedParent) =>
-        if (storedParent == pe) m
-        else error(s"storedParent = $storedParent, pe = $pe")
-    }
-  }
-
-  def createChildToParentMap
-  (graph : DependencyGraph,
-   ks : Seq[KindType])
-  (m : Map[DGEdge, Option[DGEdge]], e : DGEdge
-  ) : Map[DGEdge, Option[DGEdge]] = {
-    ks match {
-      case Nil => mapWithE(m, e)
-      case k +: remainings =>
-        val src = e.source
-        val tgt = e.target
-        val spsource = graph.containerOfKindType(k, e.source)
-        val sptarget = graph.containerOfKindType(k, e.target)
-        (spsource, sptarget) match {
-          case (None, None)
-               | (Some(`src`), Some(`tgt`)) => mapWithE(m, e)
-
-          case (Some(psource), Some(ptarget)) =>
-            val pe = new DGEdge(AbstractEdgeKind, psource, ptarget)
-            createChildToParentMap(graph, remainings)(addChildToParentLink(m, e, pe), pe)
-
-          case (None, Some(ptarget)) =>
-            val pe = new DGEdge(AbstractEdgeKind, src, ptarget)
-            createChildToParentMap(graph, remainings)(addChildToParentLink(m, e, pe), pe)
-          case (Some(psource), None) =>
-            val pe = new DGEdge(AbstractEdgeKind, psource, tgt)
-            createChildToParentMap(graph, remainings)(addChildToParentLink(m, e, pe), pe)
-        }
-    }
-  }
-
-  def createParentToChildMap
-  ( childToParentMap : Map[DGEdge, Option[DGEdge]] ) : Map[DGEdge, List[DGEdge]] = {
-    def add(m : Map[DGEdge, List[DGEdge]], pe: DGEdge, e: DGEdge) : Map[DGEdge, List[DGEdge]] = {
-      val l = m.getOrElse(pe, List())
-      m + (pe -> ( e :: l))
-    }
-
-    childToParentMap.foldLeft(Map[DGEdge, List[DGEdge]]()){
-      case (m, (e, None)) => add(m, CCTreeModel.root, e)
-      case (m, (e, Some(pe))) => add(m, pe, e)
-    }
-  }
-
-
-}
-
-import ConstraintViolationExplorer._
 class ConstraintViolationExplorer
 ( publisher : Publisher,
   violations : Seq[DGEdge],
+  treeIcons : DGTreeIcons,
   getPO : () => PrintingOptions)
 ( implicit graph : DependencyGraph,
   graphUtils : GraphUtils)
-  extends ScrollPane {
+  extends SplitPane {
 
-    //val swingService : Swing
+  def filterViolations
+  ( sourceFilter : Option[NodeId],
+    targetFilter : Option[NodeId]) : Seq[DGEdge] = {
 
-    val kindSeq = Seq(TypeDecl, NameSpace)
+    val vs = sourceFilter map (srcId =>
+      violations.filter(e =>
+      graph.contains_*(srcId, e.source)
+    )) getOrElse violations
 
-    val childToParentMap = violations.foldLeft(Map[DGEdge, Option[DGEdge]]())(createChildToParentMap(graph, kindSeq))
+    targetFilter map (tgtId => vs.filter(e =>
+      graph.contains_*(tgtId, e.target)
+    )) getOrElse vs
+  }
 
-    val tree = new CCTree(graph, createParentToChildMap(childToParentMap))
-    //tree.setCellRenderer(new CCTreeCellRenderer(graph))
-    contents = swing.Component.wrap(tree)
+  import swing.Component.wrap
+  def sources(violations : Seq[DGEdge]) : Set[NodeId] =
+    violations.foldLeft(Set[NodeId]())((s,e) => s + e.source)
+  def targets(violations : Seq[DGEdge]) : Set[NodeId] =
+    violations.foldLeft(Set[NodeId]())((s,e) => s + e.target)
 
-    tree.addMouseListener( new MouseAdapter {
 
-      override def mouseClicked(e : MouseEvent) : Unit =  {
-        val path : TreePath = tree.getPathForLocation(e.getX, e.getY)
-        if(path!= null){
-          path.getLastPathComponent match {
-            case edge : DGEdge =>
-              if(isRightClick(e)){
-                val menu : JPopupMenu = new ViolationMenu(publisher, edge, getPO){
+
+
+  val sourceTree = new JTree(DGTreeModel.subGraph(graph, sources(violations))) with DGTree {
+    def icons : DGTreeIcons = treeIcons
+
+    override def convertValueToText
+    (value: AnyRef, selected: Boolean,
+     expanded: Boolean, leaf: Boolean,
+     row: Int, hasFocus: Boolean) : String =
+      value match {
+        case null => ""
+        case node : DGNode  =>
+
+          val vsCount = violations.count (e => graph.contains_*(node.id, e.source))
+          s"${node.name} ($vsCount)"
+        case _ => ""
+      }
+
+
+  }
+  val targetTree = new JTree(DGTreeModel.subGraph(graph, targets(violations))) with DGTree {
+    def icons : DGTreeIcons = treeIcons
+
+    override def convertValueToText
+    (value: AnyRef, selected: Boolean,
+     expanded: Boolean, leaf: Boolean,
+     row: Int, hasFocus: Boolean) : String =
+      value match {
+        case null => ""
+        case node : DGNode  =>
+
+          val vsCount = violations.count (e => graph.contains_*(node.id, e.target))
+          s"${node.name} ($vsCount)"
+        case _ => ""
+      }
+
+  }
+
+  def selection(jTree: JTree): Option[NodeId] =
+    Option(jTree.getLastSelectedPathComponent.asInstanceOf[DGNode]) map (_.id)
+
+  def selectedSource : Option[NodeId] = selection(sourceTree)
+  def selectedTarget : Option[NodeId] = selection(targetTree)
+
+
+  var sourceFilter0 : Option[NodeId] = None
+  var targetFilter0 : Option[NodeId] = None
+
+  def sourceFilter : Option[NodeId] = sourceFilter0
+  def sourceFilter_=(sid : Option[NodeId]) = {
+    sourceFilter0 = sid
+    Swing.onEDT {
+      val vs = filterViolations(sourceFilter, targetFilter)
+      targetTree.setModel(DGTreeModel.subGraph(graph, targets(vs)))
+      sourceLabel.text = sid map graph.fullName getOrElse ""
+      updateViolationListPane(vs)
+    }
+  }
+  def targetFilter : Option[NodeId] = targetFilter0
+  def targetFilter_=(sid : Option[NodeId]) = {
+    targetFilter0 = sid
+    Swing.onEDT {
+      val vs = filterViolations(sourceFilter, targetFilter)
+      sourceTree.setModel(DGTreeModel.subGraph(graph, sources(vs)))
+      targetLabel.text = sid map graph.fullName getOrElse ""
+      updateViolationListPane(vs)
+    }
+  }
+
+  val sourceLabel = new Label()
+  val targetLabel = new Label()
+
+  reactions += {
+    case FilterSource(srcFilter) if srcFilter == graph.rootId =>
+      sourceFilter = None
+
+    case FilterSource(srcFilter) =>
+      sourceFilter = Some(srcFilter)
+
+    case FilterTarget(tgtFilter) if tgtFilter == graph.rootId =>
+      targetFilter = Some(tgtFilter)
+
+    case FilterTarget(tgtFilter) =>
+      targetFilter = Some(tgtFilter)
+  }
+
+  sourceTree.addMouseListener( new MouseAdapter {
+    override def mouseClicked(e : MouseEvent) : Unit =  {
+      val path : TreePath = sourceTree.getPathForLocation(e.getX, e.getY)
+      if(path!= null){
+        path.getLastPathComponent match {
+          case n : DGNode =>
+            if(isRightClick(e)) Swing.onEDT {
+              NodeMenu(publisher, graph, graphUtils, List(), None, n.id, getPO()).
+                show(sourceTree, e.getX, e.getY)
+            } else
+              ConstraintViolationExplorer.this.publish(FilterSource(n.id))
+          case _ => ()
+        }
+      }
+    }
+  })
+
+  targetTree.addMouseListener( new MouseAdapter {
+    override def mouseClicked(e : MouseEvent) : Unit =  {
+      val path : TreePath = targetTree.getPathForLocation(e.getX, e.getY)
+      if(path!= null){
+        path.getLastPathComponent match {
+          case n : DGNode =>
+            if(isRightClick(e)) Swing.onEDT {
+              NodeMenu(publisher, graph, graphUtils, List(), None, n.id, getPO()).
+                  show(targetTree, e.getX, e.getY)
+            } else
+              ConstraintViolationExplorer.this.publish(FilterTarget(n.id))
+          case _ => ()
+        }
+      }
+    }
+  })
+
+
+  resizeWeight = 0.4
+  this.leftComponent = new SplitPane(Orientation.Vertical){
+    resizeWeight = 0.5
+
+    this.leftComponent = new BorderPanel {
+        add( new Label("Sources"), Position.North)
+        add( new ScrollPane{
+           contents = wrap(sourceTree)
+          }, Position.Center)
+      add(sourceLabel, Position.South)
+
+    }
+
+    this.rightComponent = new BorderPanel {
+      add( new Label("Targets"), Position.North)
+      add( new ScrollPane{
+        contents = wrap(targetTree)
+      }, Position.Center)
+      add(targetLabel, Position.South)
+    }
+
+
+  }
+
+  val violationListPane = new BoxPanel(Orientation.Vertical)
+
+  this.rightComponent = new ScrollPane() {
+    contents = violationListPane
+  }
+
+
+  def updateViolationListPane(violations : Seq[DGEdge]) : Unit = {
+    violationListPane.contents.clear()
+    violationListPane.contents +=
+      new Label(s"${violations.size} violations : ")
+
+    import ShowDG._
+    violations.foreach {
+      edge =>
+        violationListPane.contents +=  new Label((graph, edge).shows) {
+          listenTo(mouse.clicks)
+          reactions += {
+            case mc @ MouseClicked(_,_,_,_,_) =>
+              val evt = mc.peer
+              if(isRightClick(evt)){
+                val menu : JPopupMenu = new ViolationMenu(publisher, edge.target, getPO){
                   add( new AbstractAction("Focus in graph explorer") {
                     def actionPerformed(e: ActionEvent): Unit =
                       publisher.publish(GraphFocus(graph, edge))
                   })
                 }
-                Swing.onEDT(menu.show(ConstraintViolationExplorer.this.peer, e.getX, e.getY))
+                Swing.onEDT(menu.show(this.peer, evt.getX, evt.getY))
               }
-              else if(e.getClickCount > 1)
+              else if(evt.getClickCount > 1)
                 publisher.publish(GraphFocus(graph, edge))
-
-            case _ => ()
           }
         }
-      }
-    })
-
-
-
+    }
+    violationListPane.revalidate()
+  }
+  updateViolationListPane(violations)
 }
+
+

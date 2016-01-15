@@ -62,9 +62,9 @@ trait GraphBuilder {
       ((getFullName(decl) + DependencyGraph.scopeSeparator + DependencyGraph.anonymousName) -> _def)
   }
   def addParams(decl : NodeId, params : List[Int]) : Unit = {
-    params.reverseIterator.foreach{
+    params.reverseIterator.foreach{ //order matters
       param =>
-        g = g.addParam(decl, param)
+        g = g.addContains(decl, param)
     }
   }
 

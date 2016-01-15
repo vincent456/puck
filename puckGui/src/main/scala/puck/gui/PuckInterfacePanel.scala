@@ -2,9 +2,7 @@ package puck.gui
 
 import java.awt.Dimension
 import java.io.File
-import javax.swing.{BoxLayout, JPanel}
 
-import puck.FilesHandlerDG2ASTControllerOps
 import puck.graph._
 import puck.graph.io.{VisibilitySet, FilesHandler}
 import puck.gui.explorer.{DGTreeIcons, NodeInfosPanel, GraphExplorer}
@@ -26,11 +24,12 @@ class PuckInterfacePanel
   val rightWidth = PuckMainPanel.width * 5/8
   val height = PuckMainPanel.height * 2/3
 
-  val graphExplorer = new GraphExplorer(treeIcons, graphUtils)
 
   val progressBar  = new ProgressBar()
   val control = new PuckControl(logger, filesHandler,
     graphUtils, progressBar)
+
+  val graphExplorer = new GraphExplorer(treeIcons, graphUtils, () => control.printingOptionsControl.printingOptions)
 
   control listenTo this
   this listenTo control

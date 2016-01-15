@@ -230,7 +230,7 @@ class SolvingActions
       val dg1 : DependencyGraph =
         dg.container(toBeContained.id) map (dg.removeContains(_, toBeContained.id)) getOrElse dg
       val dg2 = dg1.addContains(cn.id, toBeContained.id)
-      dg2.content(toBeContained.id).forall(!dg2.isWronglyUsed(_)) //needed when moving violation host
+      dg2.subTree(toBeContained.id).forall(!dg2.isWronglyUsed(_)) //needed when moving violation host
     }
    )
 

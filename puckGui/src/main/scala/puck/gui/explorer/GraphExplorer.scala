@@ -10,6 +10,7 @@ import javax.swing.tree.{TreePath, DefaultTreeCellRenderer}
 
 import puck.actions.Choose
 import puck.graph._
+import puck.graph.io.PrintingOptions
 
 
 import scala.swing.{Swing, Component, ScrollPane}
@@ -91,7 +92,8 @@ object GraphExplorer {
 }
 
 class GraphExplorer(treeIcons : DGTreeIcons,
-                    graphUtils : GraphUtils)
+                    graphUtils : GraphUtils,
+                    getPO : () => PrintingOptions)
   extends ScrollPane {
 
   reactions += {
@@ -121,7 +123,8 @@ class GraphExplorer(treeIcons : DGTreeIcons,
 
       val model: DGTreeModel = filter match {
         case None => new FullDGTreeModel(graph)
-        case Some(e) => new FocusedDGTreeModel(graph, e)
+        case Some(e) => DGTreeModel.focused(graph, e)
+          //new FocusedDGTreeModel(graph, e)
       }
 
       val tree: JTree = new JTree(model) with DGTree {
@@ -142,14 +145,14 @@ class GraphExplorer(treeIcons : DGTreeIcons,
                 if (isRightClick(e)) {
                   val menu: JPopupMenu =
                     NodeMenu(GraphExplorer.this, graph, graphUtils,
-                      selectedNodes, None, node.id)
+                      selectedNodes, None, node.id, getPO())
                   if (filter.nonEmpty)
                     menu.add(new AbstractAction("Show full graph") {
                       def actionPerformed(e: ActionEvent): Unit = {
                         GraphExplorer.this.display(graph, None)
                       }
                     })
-                  Swing.onEDT(menu.show(GraphExplorer.this.peer, e.getX, e.getY))
+                  Swing.onEDT(menu.show(tree, e.getX, e.getY))
                 }
                 else if(e.getClickCount == 1)
                   GraphExplorer.this.publish(NodeClicked(node))
