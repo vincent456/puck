@@ -3,6 +3,7 @@ package javaGraph
 
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph._
+import puck.util.Debug
 
 
 class GraphBuildingSpec extends AcceptanceSpec {
@@ -412,8 +413,27 @@ class GraphBuildingSpec extends AcceptanceSpec {
   feature("anonymous class"){
     val examplesPath = graphBuildingExamplesPath +  "anonymousClass/"
 
-    ignore("anonymous class") {
-      val _ = new ScenarioFactory(s"$examplesPath/AnonymousClass.java") {
+    scenario("anonymous class instanciated in local variable") {
+      val _ = new ScenarioFactory(s"$examplesPath/AnonymousClassLocalVariable.java") {
+        val m = fullName2id(s"p.A.ma()")
+        val mDef = graph.definitionOf_!(m)
+        val anonymousClass = fullName2id(s"p.A.ma().Anonymous0")
+
+        assert( graph.contains(mDef, anonymousClass) )
+      }
+    }
+
+    scenario("anonymous class instanciated in field") {
+      val _ = new ScenarioFactory(s"$examplesPath/AnonymousClassField.java") {
+
+
+        val field = fullName2id(s"p.A.f")
+
+        val fieldDef = graph.definitionOf_!(field)
+        val anonymousClass = fullName2id(s"p.A.f.Anonymous0")
+        assert( graph.contains(fieldDef, anonymousClass) )
+
+
       }
     }
   }

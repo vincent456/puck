@@ -40,7 +40,7 @@ aspect AST {
 			n=n.getParent();
 		return (BodyDecl)n;
 	}
-	
+
 	syn lazy boolean ASTNode.fromSource() {
 		CompilationUnit cu = compilationUnit();
 		return cu == null ? false : cu.fromSource(); 

@@ -163,8 +163,8 @@ object Mapping {
         equalsCVM(mappinG1toG2)(g1.edges.contents, g2.edges.contents)
       lazy val equalsContains2 =
         equalsCVM(mappinG1toG2)(g1.edges.parameters, g2.edges.parameters)
-      lazy val equalsContains3 =
-        equalsMap(mappinG1toG2)(g1.edges.definition, g2.edges.definition)
+//      lazy val equalsContains3 =
+//        equalsMap(mappinG1toG2)(g1.edges.definition, g2.edges.definition)
 
       lazy val equalsIsa =
         equalsCVM(mappinG1toG2)(g1.edges.superTypes, g2.edges.superTypes)
@@ -189,7 +189,7 @@ object Mapping {
 //      println("equalsTD2 = " + equalsTD2)
 
       equalsNodes && equalsUses1 && equalsUses2 && equalsUses3 &&
-        equalsContains1 && equalsContains2 && equalsContains3 &&
+        equalsContains1 && equalsContains2 && /*equalsContains3 &&*/
         equalsIsa && equalsTD1 && equalsTD2
 
     }

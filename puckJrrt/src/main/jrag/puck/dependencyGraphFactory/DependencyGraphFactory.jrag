@@ -95,30 +95,11 @@ aspect DependencyGraphFactory {
 		int tdNode = buildDG_TypeDecl(builder);
 		builder.addContains(containerId, tdNode);
 
-//        System.out.println("[BUILD] TypeDecl.buildDG " + this.fullName());
-//        System.out.println("[BUILD] "+this.getClass()+".isParameterized = "+ isParameterizedType());
-
         if(isParameterizedType()){
             ParTypeDecl parTypeDecl = (ParTypeDecl) this;
             System.out.println("[BUILD] parameterized type " + parTypeDecl.nameWithArgs());
 
-            /*for(int i=0; i<parTypeDecl.getNumArgument(); i++){
-                Access ta = parTypeDecl.getArgument(i);
-                int typeArgNode = ta.buildDGNode(builder);
-
-                builder.addContains(tdNode, typeArgNode);
-            }*/
         }
-
-//        if(isGenericType()){
-//            GenericTypeDecl genericTypeDecl = (GenericTypeDecl) this;
-//            List<TypeVariable>  types = genericTypeDecl.getTypeParameterList();
-//            for(TypeVariable tv : types){
-//                int typeArgNode = tv.buildDGNode(builder);
-//                builder.addContains(tdNode, typeArgNode);
-//            }
-//        }
-
 
         for (BodyDecl bd : getBodyDeclList()) {
 			bd.buildDG(builder, tdNode);
@@ -202,6 +183,13 @@ aspect DependencyGraphFactory {
 		int thisID = buildDGNode(builder);
 		builder.addEdge(new Uses(containerId, thisID, UsesAccessKind.none()));
 		buildDGInChildren(builder, containerId);
+	}
+
+	public void MemberInterfaceDecl.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId ){
+		getInterfaceDecl().buildDG(builder, hostTypeDeclId);
+	}
+	public void MemberClassDecl.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId ){
+		getClassDecl().buildDG(builder, hostTypeDeclId);
 	}
 
 	public void BodyDecl.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId ){
@@ -359,6 +347,7 @@ aspect DependencyGraphFactory {
 
 	public void Access.buildDG(JastaddGraphBuilder builder, int containerId){
 		if( this.getClass() != ThisAccess.class
+			&& this.getClass() != SuperAccess.class
 			&& this.getClass() != ClassAccess.class
 			&& this.getClass() != Wildcard.class )
 			System.err.println("TODO !! "+this.getClass()+".buildDG : " + this);

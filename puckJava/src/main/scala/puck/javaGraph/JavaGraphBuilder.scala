@@ -64,8 +64,8 @@ trait JavaGraphBuilder extends GraphBuilder{
             */
             case (Class, Interface) =>
 
-              val absMeths = (graph content absId).toList map graph.typedNode
-              val candidates = (graph content impl.id).toList map graph.typedNode
+              val absMeths = (graph content absId).toList filter (id => graph.kindType(id) == InstanceValueDecl) map graph.typedNode
+              val candidates = (graph content impl.id).toList filter (id => graph.kindType(id) == InstanceValueDecl) map graph.typedNode
               Type.findAndRegisterOverridedInList(graph, absMeths, candidates) {
                 Type.ignoreOnImplemNotFound
                   //errorOnImplemNotFound(graph.fullName(impl.id))

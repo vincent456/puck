@@ -135,7 +135,7 @@ case object ContainsParam extends ContainsKind {
   def unapply(e: DGEdge) : Option[NodeIdP] = pairOfKind(e, ContainsParam)
 }
 
-case object ContainsDef extends ContainsKind {
-  def apply(source : NodeId, target: NodeId) : DGEdge = new DGEdge(ContainsDef, source, target)
-  def unapply(e: DGEdge) : Option[NodeIdP] = pairOfKind(e, ContainsDef)
-}
+//case object ContainsDef extends ContainsKind {
+//  def apply(source : NodeId, target: NodeId) : DGEdge = new DGEdge(ContainsDef, source, target)
+//  def unapply(e: DGEdge) : Option[NodeIdP] = pairOfKind(e, ContainsDef)
+//}

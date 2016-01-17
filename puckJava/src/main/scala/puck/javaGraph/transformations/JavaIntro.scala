@@ -37,7 +37,7 @@ object JavaIntro extends Intro {
 
     (cn, defNode,
       g2.setType(cn.id, typ)
-      .addEdge(ContainsDef(cn.id, defNode.id)))
+      .addEdge(Contains(cn.id, defNode.id)))
   }
 
 

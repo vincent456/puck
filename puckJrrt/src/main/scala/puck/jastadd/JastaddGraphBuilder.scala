@@ -1,5 +1,6 @@
 package puck.jastadd
 
+import org.extendj.ast.AnonymousDecl
 import puck.graph._
 import puck.javaGraph.JavaGraphBuilder
 import puck.javaGraph.nodeKind._
@@ -54,7 +55,13 @@ class JastaddGraphBuilder(val program : AST.Program) extends JavaGraphBuilder {
           graph2ASTMap get nodeId match {
             case Some(FieldDeclHolder(d)) => addBodyDecl(d)
             case Some(mdh : MethodDeclHolder) => addBodyDecl(mdh.decl)
-            case Some(ConstructorDeclHolder(cdecl)) => addBodyDecl(cdecl)
+            case Some(ConstructorDeclHolder(cdecl)) =>
+              cdecl.hostType() match {
+                case classDecl : AnonymousDecl =>
+                  cdecl.buildDG(this, nodesByName(classDecl.fullName()))
+                case _ => addBodyDecl(cdecl)
+              }
+
             case Some(tdh : TypedKindDeclHolder) => addApiTypeNode(tdh.decl)
             case sdh =>
               println( g.fullName(nodeId) + " " + sdh + " attach orphan nodes unhandled case")

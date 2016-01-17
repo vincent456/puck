@@ -2,12 +2,17 @@ package puck
 
 import puck.javaGraph.JGraphUtils
 import jastadd.JavaFilesHandler
-//"/home/lorilan/puck_svn/examples/QualitasCorpus-20130901r/Systems/freecs/freecs-1.3.20100406/puck_test"
-//"/home/lorilan/test_cases_for_puck/QualitasCorpus/Systems/freecs/freecs-1.3.20100406/puck_test"
-//"/home/lorilan/test/parCtor"
-//"/home/lorilan/test_cases_for_puck/QualitasCorpus/Systems/freemind/freemind-0.9.0/puck_test"
+object Var{
+  val root = "/home/lorilan/puck_svn/examples/QualitasCorpus-20130901r/Systems"
+  //val root = "/home/lorilan/test_cases_for_puck/QualitasCorpus/Systems"
+
+  //val system = "freecs/freecs-1.3.20100406"
+  val system = "freemind/freemind-0.9.0"
+}
+
+import Var._
 object Front extends PuckApplication(
-  JavaFilesHandler("/home/lorilan/test_cases_for_puck/QualitasCorpus/Systems/freecs/freecs-1.3.20100406/puck_test"),
+  JavaFilesHandler(s"$root/$system/puck_test"),
   JGraphUtils, JavaIcons)
 
 

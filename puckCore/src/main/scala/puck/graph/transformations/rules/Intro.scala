@@ -51,7 +51,7 @@ abstract class Intro {
             (g0, usedByIcDef) =>
               g0.getUsesEdge_!(icDef, usedByIcDef).changeSource(g0, defNode.id)
           }
-          val (_, g3) = g2.removeEdge(ContainsDef(ic, icDef)).removeNode(icDef)
+          val (_, g3) = g2.removeEdge(Contains(ic, icDef)).removeNode(icDef)
 
           g3
       })

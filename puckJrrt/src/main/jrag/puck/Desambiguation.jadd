@@ -97,6 +97,11 @@ aspect Desambiguation{
 		return hostBodyDecl().fullName()+"."+name();		
 	}
 
+
+	public String AnonymousDecl.fullName(){
+		return hostBodyDecl().fullName() + "." + name();
+	}
+
 	public String InstanceInitializer.fullName(){
 		return hostType().fullName()+".InstanceInitializer";//add an id number ??
 	}

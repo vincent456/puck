@@ -240,7 +240,6 @@ class DependencyGraph
 
  def addContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): DependencyGraph = {
    getNode(contentId).kind.kindType match {
-     case ValueDef => addEdge(ContainsDef(containerId, contentId), register)
      case Parameter => addEdge(ContainsParam(containerId, contentId), register)
      case _ => addEdge(Contains(containerId, contentId), register)
    }
@@ -408,11 +407,11 @@ class DependencyGraph
 
   //special cases of content
   def definitionOf(declId : NodeId) : Option[NodeId] =
-  //assert kindType == InstanceValueDecl || StaticValueDecl || TypeConstructor
-    edges.definition get declId
+    //assert kindType == InstanceValueDecl || StaticValueDecl || TypeConstructor
+    edges.contents get declId flatMap (_.headOption)
 
   def definitionOf_!(declId : NodeId) : NodeId =
-    edges definition declId
+    definitionOf(declId).get
 
 
 

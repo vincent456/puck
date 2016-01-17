@@ -27,12 +27,10 @@ object EdgeMap {
                 EdgeMapT(), EdgeMapT(),
                 UseDependencyMap(),
                 UseDependencyMap(),
-                ParamMapT(), Node2NodeMap(), Map()/*, Node2NodeMap()*/)
+                ParamMapT(), /*Node2NodeMap(),*/ Map()/*, Node2NodeMap()*/)
 }
 import EdgeMap._
 import puck.PuckError
-import puck.graph.AbstractEdgeKind
-import puck.graph.AbstractEdgeKind
 
 case class EdgeMap
 ( userMap : EdgeMapT,
@@ -49,7 +47,7 @@ case class EdgeMap
   typeUses2typeMemberUsesMap : UseDependencyMap,
   //special cases of contains :
   parameters : ParamMapT,
-  definition : Node2NodeMap,
+  //definition : Node2NodeMap,
   //special case of use
   types : Map[NodeId, Type]){
 
@@ -73,9 +71,9 @@ case class EdgeMap
         copy(parameters = parameters + (decl, param),
           containers = containers + (param -> decl) )
           /*declaration = declaration + (param -> decl) )*/
-      case ContainsDef(decl, _def) =>
-        copy(definition = definition + (decl -> _def),
-          containers = containers + (_def -> decl) )
+//      case ContainsDef(decl, _def) =>
+//        copy(definition = definition + (decl -> _def),
+//          containers = containers + (_def -> decl) )
           /*declaration = declaration + (_def -> decl) )*/
       case AbstractEdgeKind(_, _) => this
       
@@ -116,9 +114,9 @@ case class EdgeMap
           containers = containers - edge.content)
           /*declaration = declaration - edge.content )*/
 
-      case ContainsDef =>
-        copy(definition = definition - (edge.container, edge.content),
-          containers = containers - edge.content)
+//      case ContainsDef =>
+//        copy(definition = definition - (edge.container, edge.content),
+//          containers = containers - edge.content)
           /*declaration = declaration - edge.content )*/
       case AbstractEdgeKind => this
     }
@@ -158,10 +156,10 @@ case class EdgeMap
       case Some(ps) => ps contains e.target
       case None => false
     }
-    case ContainsDef => definition get e.source match {
-      case Some(d) => d == e.target
-      case None => false
-    }
+//    case ContainsDef => definition get e.source match {
+//      case Some(d) => d == e.target
+//      case None => false
+//    }
     case Isa => isa(e.source, e.target)
     case Uses => uses(e.source, e.target)
     case AbstractEdgeKind => false

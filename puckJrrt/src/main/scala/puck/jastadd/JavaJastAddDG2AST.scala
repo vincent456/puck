@@ -188,7 +188,8 @@ class JavaJastAddDG2AST
         }
         newMap
       }
-    case Transformation(Regular, Edge(ContainsDef(source, target))) =>
+    case Transformation(Regular, Edge(Contains(source, target)))
+      if reenactor.kindType(target) == ValueDef =>
       CreateNode.addDef(program,resultGraph,id2declMap, source, target)
 
     case _ =>
@@ -197,6 +198,7 @@ class JavaJastAddDG2AST
       t match {
       case Transformation(Regular, Edge(e)) =>
         //println("creating edge " + e)
+
         CreateEdge(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e)
 
       case Transformation(_, RedirectionWithMerge(_, Source(_))) =>

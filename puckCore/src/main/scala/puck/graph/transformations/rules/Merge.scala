@@ -287,8 +287,8 @@ class Merge
           n.kind.kindType match {
             case Parameter =>
               g1.removeEdge(ContainsParam(g1.container(n.id).get, n.id))
-            case ValueDef =>
-              g1.removeEdge(ContainsDef(g1.container(n.id).get, n.id))
+//            case ValueDef =>
+//              g1.removeEdge(ContainsDef(g1.container(n.id).get, n.id))
             case _ => g1.removeEdge(Contains(g1.container(n.id).get, n.id))
           }
 
