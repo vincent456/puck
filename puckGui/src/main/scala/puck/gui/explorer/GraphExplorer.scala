@@ -146,6 +146,10 @@ class GraphExplorer(treeIcons : DGTreeIcons,
                   val menu: JPopupMenu =
                     NodeMenu(GraphExplorer.this, graph, graphUtils,
                       selectedNodes, None, node.id, getPO())
+                  menu.add(new AbstractAction("Node infos") {
+                    def actionPerformed(e: ActionEvent): Unit =
+                      GraphExplorer.this.publish(NodeClicked(node))
+                  })
                   if (filter.nonEmpty)
                     menu.add(new AbstractAction("Show full graph") {
                       def actionPerformed(e: ActionEvent): Unit = {
@@ -154,7 +158,7 @@ class GraphExplorer(treeIcons : DGTreeIcons,
                     })
                   Swing.onEDT(menu.show(tree, e.getX, e.getY))
                 }
-                else if(e.getClickCount == 1)
+                else if(node.kind.kindType != NameSpace)
                   GraphExplorer.this.publish(NodeClicked(node))
               case _ => ()
             }

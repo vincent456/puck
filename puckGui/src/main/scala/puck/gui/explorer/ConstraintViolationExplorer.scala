@@ -48,9 +48,14 @@ class ConstraintViolationExplorer
     violations.foldLeft(Set[NodeId]())((s,e) => s + e.target)
 
 
+  trait ViolationTreeHandle {
+    def extremities(violations : Seq[DGEdge]) : Set[NodeId]
+    def exty(edge : DGEdge) : NodeId
+    def event(nodeId : NodeId) : Event
+  }
 
-
-  val sourceTree = new JTree(DGTreeModel.subGraph(graph, sources(violations))) with DGTree {
+  class ViolationTree(handle : ViolationTreeHandle) extends
+    JTree(DGTreeModel.subGraph(graph, handle.extremities(violations))) with DGTree {
     def icons : DGTreeIcons = treeIcons
 
     override def convertValueToText
@@ -61,30 +66,51 @@ class ConstraintViolationExplorer
         case null => ""
         case node : DGNode  =>
 
-          val vsCount = violations.count (e => graph.contains_*(node.id, e.source))
+          val vsCount = violations.count (e => graph.contains_*(node.id, handle.exty(e)))
           s"${node.name} ($vsCount)"
         case _ => ""
       }
 
-
-  }
-  val targetTree = new JTree(DGTreeModel.subGraph(graph, targets(violations))) with DGTree {
-    def icons : DGTreeIcons = treeIcons
-
-    override def convertValueToText
-    (value: AnyRef, selected: Boolean,
-     expanded: Boolean, leaf: Boolean,
-     row: Int, hasFocus: Boolean) : String =
-      value match {
-        case null => ""
-        case node : DGNode  =>
-
-          val vsCount = violations.count (e => graph.contains_*(node.id, e.target))
-          s"${node.name} ($vsCount)"
-        case _ => ""
+    addMouseListener( new MouseAdapter {
+      override def mouseClicked(e : MouseEvent) : Unit =  {
+        val path : TreePath = ViolationTree.this.getPathForLocation(e.getX, e.getY)
+        if(path!= null){
+          path.getLastPathComponent match {
+            case n : DGNode =>
+              if(isRightClick(e)) Swing.onEDT {
+                val menu =NodeMenu(publisher, graph, graphUtils, List(), None, n.id, getPO())
+                menu.add(new AbstractAction("Node infos") {
+                  def actionPerformed(e: ActionEvent): Unit =
+                    ConstraintViolationExplorer.this.publish(NodeClicked(n))
+                })
+                menu.show(targetTree, e.getX, e.getY)
+              } else {
+                ConstraintViolationExplorer.this.publish(handle.event(n.id))
+                if(n.kind.kindType != NameSpace)
+                  ConstraintViolationExplorer.this.publish(NodeClicked(n))
+              }
+            case _ => ()
+          }
+        }
       }
-
+    })
   }
+
+  val sourceTree = new ViolationTree(new ViolationTreeHandle {
+    def exty(edge: DGEdge): NodeId = edge.source
+
+    def extremities(violations: Seq[DGEdge]): Set[NodeId] = sources(violations)
+
+    def event(nodeId: NodeId): Event = FilterSource(nodeId)
+  })
+
+  val targetTree = new ViolationTree(new ViolationTreeHandle {
+    def exty(edge: DGEdge): NodeId = edge.target
+
+    def extremities(violations: Seq[DGEdge]): Set[NodeId] = targets(violations)
+
+    def event(nodeId: NodeId): Event = FilterTarget(nodeId)
+  })
 
   def selection(jTree: JTree): Option[NodeId] =
     Option(jTree.getLastSelectedPathComponent.asInstanceOf[DGNode]) map (_.id)
@@ -133,41 +159,6 @@ class ConstraintViolationExplorer
     case FilterTarget(tgtFilter) =>
       targetFilter = Some(tgtFilter)
   }
-
-  sourceTree.addMouseListener( new MouseAdapter {
-    override def mouseClicked(e : MouseEvent) : Unit =  {
-      val path : TreePath = sourceTree.getPathForLocation(e.getX, e.getY)
-      if(path!= null){
-        path.getLastPathComponent match {
-          case n : DGNode =>
-            if(isRightClick(e)) Swing.onEDT {
-              NodeMenu(publisher, graph, graphUtils, List(), None, n.id, getPO()).
-                show(sourceTree, e.getX, e.getY)
-            } else
-              ConstraintViolationExplorer.this.publish(FilterSource(n.id))
-          case _ => ()
-        }
-      }
-    }
-  })
-
-  targetTree.addMouseListener( new MouseAdapter {
-    override def mouseClicked(e : MouseEvent) : Unit =  {
-      val path : TreePath = targetTree.getPathForLocation(e.getX, e.getY)
-      if(path!= null){
-        path.getLastPathComponent match {
-          case n : DGNode =>
-            if(isRightClick(e)) Swing.onEDT {
-              NodeMenu(publisher, graph, graphUtils, List(), None, n.id, getPO()).
-                  show(targetTree, e.getX, e.getY)
-            } else
-              ConstraintViolationExplorer.this.publish(FilterTarget(n.id))
-          case _ => ()
-        }
-      }
-    }
-  })
-
 
   resizeWeight = 0.4
   this.leftComponent = new SplitPane(Orientation.Vertical){

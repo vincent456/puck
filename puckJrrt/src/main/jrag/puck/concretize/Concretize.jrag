@@ -135,4 +135,18 @@ aspect Concretize {
         unit.unknownType_computed = true;
         unit.unknownType_value = t;
     }
+
+    public void CompilationUnit.removeImportDecl(TypeDecl td) {
+        List<ImportDecl> list = getImportDeclList();
+        for(int i=0; i< list.getNumChild(); i++){
+        if(list.getChild(i) instanceof SingleTypeImportDecl) {
+        ImportDecl idecl = list.getChild(i);
+        if(idecl.importedTypes().contains(td)) {
+        list.removeChild(i);
+        break;
+        }
+        }
+
+        }
+    }
 }

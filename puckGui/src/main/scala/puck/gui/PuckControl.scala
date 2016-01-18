@@ -1,6 +1,6 @@
 package puck.gui
 
-import java.io.{PipedInputStream, PipedOutputStream}
+import java.io.{File, PipedInputStream, PipedOutputStream}
 
 import puck.{FilesHandlerDG2ASTControllerOps, StackListener, GraphStack, LoadingListener}
 import puck.graph._
@@ -124,6 +124,22 @@ class PuckControl
       case Failure(exc) => exc.printStackTrace()
     }
 
+  def saveRecordOnFile(file : File) : Unit = {
+    Recording.write(file.getAbsolutePath, dg2ast.nodesByName, graph)
+  }
+
+  def loadRecord(file : File) : Unit = {
+    try graphStack.load(Recording.load(file.getAbsolutePath, dg2ast.nodesByName))
+    catch {
+      case Recording.LoadError(msg, m) =>
+        logger writeln ("Record loading error " + msg)
+        logger writeln ("cannot bind loaded map " + m.toList.sortBy(_._1).mkString("\n"))
+        logger writeln ("with " + dg2ast.nodesByName.toList.sortBy(_._1).mkString("\n"))
+    }
+
+  }
+
+
   def publishUndoRedoStatus() : Unit =
    this publish UndoRedoStatus(graphStack.canUndo, graphStack.canRedo)
 
@@ -164,6 +180,12 @@ class PuckControl
 
     case LoadConstraintRequest => loadConstraints()
 
+    case SaveRecord(f) =>
+      saveRecordOnFile(f)
+    case LoadRecord(f) =>
+      loadRecord(f)
+      this publish GraphUpdate(graph)
+
     case GraphDisplayRequest(title, graph, visibility, sUse) =>
       displayGraph(title, graph, visibility, sUse)
 
@@ -180,6 +202,8 @@ class PuckControl
       deleteOutDirAndapplyOnCode(dg2ast, filesHandler, graphStack.graph)
       if(compareOutput)
         compareOutputGraph(filesHandler, graphStack.graph)
+
+
 
     case evt => publish(evt)
 

@@ -99,6 +99,8 @@ class PuckInterfacePanel
         PuckInterfacePanel.this,
         control.printingOptionsControl.printingOptions)
 
+      PuckEvents.addLoadSaveButton(this.peer, PuckInterfacePanel.this,
+        control.filesHandler.workingDirectory)
 
       contents += makeButton("Show Dependency Graph (UML like format)",
         "Display a visual representation of the graph"){

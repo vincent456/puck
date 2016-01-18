@@ -12,10 +12,10 @@ object LoadAndApply {
 
   def main (args: Array[String]) : Unit = {
 
-    val recFileName = args.head
-    val recFile = new File(recFileName)
-
-    val fh = JavaFilesHandler()
+    /*val recFileName = args.head
+    val recFile = new File(recFileName)*/
+    val recFile = new File(FrontVars.workspace + "/planB2.puck")
+    val fh = JavaFilesHandler(FrontVars.workspace)
     implicit val logger = new PuckSystemLogger(_ => true)
 
     val dg2ast = fh.loadGraph()
@@ -41,7 +41,8 @@ object LoadAndApply {
     try {
       if(Mapping.equals(g, gout)){
         println("ARE equals")
-      }else {
+      }
+      else {
         println("are NOT equals")
         import puck.graph.ShowDG.DGShowOp
         import puck.util.Debug.nodeIndexCordBuilder

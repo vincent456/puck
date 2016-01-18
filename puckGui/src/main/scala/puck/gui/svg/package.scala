@@ -22,21 +22,4 @@ package object svg {
              (action : ActionEvent => Unit) : JButton =
   new JButton(abstractAction(name)(action))
 
-  private def chooseFile
-  ( currentDir : File,
-    chooserMode : JFileChooser => Int) : Option[File] = {
-    val chooser = new JFileChooser()
-    chooser.setCurrentDirectory(currentDir)
-    val returnVal: Int = chooserMode(chooser)
-    if (returnVal == JFileChooser.APPROVE_OPTION) {
-      Some(chooser.getSelectedFile)
-    }
-    else None
-  }
-
-  def openFile(currentDir : File, parent : java.awt.Component) : Option[File] =
-    chooseFile(currentDir, chooser => chooser.showOpenDialog(parent) )
-  def saveFile(currentDir : File, parent : java.awt.Component) : Option[File] =
-    chooseFile(currentDir, chooser => chooser.showSaveDialog(parent) )
-
 }

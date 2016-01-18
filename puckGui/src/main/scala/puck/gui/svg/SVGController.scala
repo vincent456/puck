@@ -45,27 +45,13 @@ class SVGController
   import swingService._
 
   graphStack registerAsStackListeners this
-  import graphStack._
+  import graphStack.graph
 
   def update(graphStack: GraphStack) : Unit  =
     displayGraph()
 
   lazy val console = frame.console
   implicit val logger = new TextAreaLogger(console.textArea, _ => true )
-
-
-
-
-  def nodesByName : Map[String, NodeId] =
-      dg2ast.nodesByName
-
-
-  def parseConstraints(decouple : File) : Unit = try {
-    val cm = ConstraintsParser(dg2ast.nodesByName, new FileReader(decouple))
-    pushGraph(graph.newGraph(constraints = cm))
-  } catch {
-    case e : Exception => logger.writeln(e.getMessage)
-  }
 
 
   type Color = String
@@ -173,22 +159,6 @@ class SVGController
         swingInvokeLater(() => frame.canvas.setDocument(doc))
     }
 
-
-  def saveRecordOnFile(file : File) : Unit = {
-    Recording.write(file.getAbsolutePath, nodesByName, graph)
-  }
-
-  def loadRecord(file : File) : Unit = {
-    try load(Recording.load(file.getAbsolutePath, nodesByName))
-    catch {
-      case Recording.LoadError(msg, m) =>
-        implicit val verbosity = (PuckLog.NoSpecialContext, PuckLog.Error)
-        logger writeln ("Record loading error " + msg)
-        logger writeln ("cannot bind loaded map " + m.toList.sortBy(_._1).mkString("\n"))
-        logger writeln ("with " + nodesByName.toList.sortBy(_._1).mkString("\n"))
-    }
-
-  }
 
   import ShowDG._
   def printRecording() : Unit =

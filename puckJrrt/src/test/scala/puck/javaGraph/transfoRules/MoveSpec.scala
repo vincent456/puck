@@ -22,7 +22,6 @@ class MoveSpec
         val package2 = fullName2id(s"p2")
         val classA = fullName2id(s"p1.A")
         val methADecl = fullName2id(s"p1.A.ma()")
-        val methADef = getDefinition(graph, methADecl)
 
         val classB = fullName2id(s"p1.B")
         val methBDecl = fullName2id(s"p1.B.mb()")
@@ -39,8 +38,39 @@ class MoveSpec
         assert(g2.uses(methBDef, methADecl))
 
       }
+    }
+
+    scenario("Move top from different packages ") {
+      val p = "topLevelClass/classesInDifferentPackages"
+      val _ = new ScenarioFactory(
+        s"$examplesPath/$p/A.java",
+        s"$examplesPath/$p/B.java",
+        s"$examplesPath/$p/Empty.java") {
+        val package1 = fullName2id(s"p1")
+        val package3 = fullName2id(s"p3")
+
+        val classA = fullName2id(s"p1.A")
+        val methADecl = fullName2id(s"p1.A.ma()")
+
+        val classB = fullName2id(s"p2.B")
+        val methBDecl = fullName2id(s"p2.B.mb()")
+        val methBDef =  graph.definitionOf_!(methBDecl)
+
+
+        assert(graph.container(classA).value == package1)
+        assert(graph.uses(methBDef, classA))
+        assert(graph.uses(methBDef, methADecl))
+
+        val g2 = Move.staticDecl(graph, classA, package3).right
+
+        assert(g2.container(classA).value == package3)
+        assert(g2.uses(methBDef, classA))
+        assert(g2.uses(methBDef, methADecl))
+
+      }
 
     }
+
   }
 
   val moveMethod_movedMethodUsesThis = examplesPath + "/method/movedMethodUsesThis"

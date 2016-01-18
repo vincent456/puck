@@ -183,7 +183,7 @@ object Mapping {
 //      println("equalsUses3 = " + equalsUses3)
 //      println("equalsContains1 = " + equalsContains1)
 //      println("equalsContains2 = " + equalsContains2)
-//      println("equalsContains3 = " + equalsContains3)
+//      //println("equalsContains3 = " + equalsContains3)
 //      println("equalsIsa = " + equalsIsa)
 //      println("equalsTD1 = " + equalsTD1)
 //      println("equalsTD2 = " + equalsTD2)

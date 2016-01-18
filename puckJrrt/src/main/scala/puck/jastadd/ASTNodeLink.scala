@@ -46,6 +46,7 @@ object ASTNodeLink{
   ( g : DependencyGraph,
     astNode : AST.Visible,
     nid : NodeId) : Unit = {
+
     val needMoreVisibility : NodeId => Boolean =
       g.getConcreteNode(nid).kind.kindType match {
       case TypeDecl => g.hostNameSpace(_) != g.hostNameSpace(nid)
@@ -53,6 +54,7 @@ object ASTNodeLink{
            | StaticValueDecl => g.hostTypeDecl(_) != g.hostTypeDecl(nid)
       case kt => error(s"$kt not expected")
     }
+
     import AST.ASTNode.VIS_PUBLIC
     if (astNode.getVisibility != VIS_PUBLIC) {
       if (g .usersOf(nid) exists needMoreVisibility)

@@ -2,7 +2,8 @@ package puck
 
 import java.awt.MouseInfo
 import java.awt.event.{ActionEvent, MouseEvent}
-import javax.swing.{AbstractAction, JMenuItem, JPopupMenu}
+import java.io.File
+import javax.swing.{JFileChooser, AbstractAction, JMenuItem, JPopupMenu}
 
 import scala.swing.{Swing, Orientation, BoxPanel, Component}
 
@@ -37,6 +38,21 @@ package object gui {
       def actionPerformed(e: ActionEvent) : Unit = action(e)
     }
 
+  private def chooseFile
+  ( currentDir : File,
+    chooserMode : JFileChooser => Int) : Option[File] = {
+    val chooser = new JFileChooser()
+    chooser.setCurrentDirectory(currentDir)
+    val returnVal: Int = chooserMode(chooser)
+    if (returnVal == JFileChooser.APPROVE_OPTION) {
+      Some(chooser.getSelectedFile)
+    }
+    else None
+  }
 
+  def openFile(currentDir : File, parent : java.awt.Component) : Option[File] =
+    chooseFile(currentDir, chooser => chooser.showOpenDialog(parent) )
+  def saveFile(currentDir : File, parent : java.awt.Component) : Option[File] =
+    chooseFile(currentDir, chooser => chooser.showSaveDialog(parent) )
 
 }

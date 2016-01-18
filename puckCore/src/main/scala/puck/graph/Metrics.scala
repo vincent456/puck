@@ -68,19 +68,28 @@ object Metrics {
     usedElts.intersect(subTree).size.toDouble / usedElts.union(subTree).size
   }
 
-  def cohesion(graph: DependencyGraph, root: NodeId): Double = {
-    val intd = internalDependencies(graph, root).size
-    val incOutSum = outgoingDependencies(graph, root).size + incomingDependencies(graph, root).size
-    intd.toDouble / (incOutSum + intd).toDouble
+  def cohesion(graph: DependencyGraph, root: NodeId): Double =
+    cohesion0(internalDependencies(graph, root).size,
+      outgoingDependencies(graph, root).size,
+      incomingDependencies(graph, root).size)
+
+  def cohesion0(internalDcies : Double, outgoingDcies : Double, incomingDcies : Double): Double = {
+    val incOutSum = outgoingDcies + incomingDcies
+    internalDcies / incOutSum + internalDcies
   }
 
-  def coupling(graph: DependencyGraph, root: NodeId): Double = {
-    val dependencies =
-      outgoingDependencies(graph, root).size +
-        incomingDependencies(graph, root).size +
-        internalDependencies(graph, root).size
-    1 - (providers(graph, root) ++ clients(graph, root)).size.toDouble / dependencies.toDouble
-  }
+  def coupling(graph: DependencyGraph, root: NodeId): Double =
+    coupling0(providers(graph, root).size, clients(graph, root).size,
+      internalDependencies(graph, root).size,
+      outgoingDependencies(graph, root).size,
+      incomingDependencies(graph, root).size)
+  
+  def coupling0(providers : Double, clients : Double,
+                internalDcies : Double,
+                outgoingDcies : Double,
+                incomingDcies : Double): Double =
+    1 - (providers + clients ) / (outgoingDcies + incomingDcies + internalDcies)
+
 
   def nameSpaceCoupling(graph : DependencyGraph) =
     graph.concreteNodes.foldLeft(0 : Double){

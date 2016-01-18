@@ -51,9 +51,8 @@ object Recording {
   case class LoadError(msg: String, map : Map[String, NodeId]) extends Throwable
   def load(fileName : String, map :  Map[String, NodeId]) : Recording = {
     val (m, numIds, r) = read(fileName)
-    try {
-      mapNodes(r, m, map, numIds)
-    } catch {
+    try mapNodes(r, m, map, numIds)
+    catch {
       case e : Error =>
         throw LoadError(e.getMessage, m)
       case e : Exception =>
@@ -63,17 +62,17 @@ object Recording {
 
 
 
-  def createMapping(currentIds : Map[String, NodeId],
+  def createMapping(recordIds : Map[String, NodeId],
                     newIds : Map[String, NodeId],
                     totalIds : Int ) : NodeId => NodeId = {
-    assert(currentIds.size == newIds.size, "Map should be of same size")
-    assert(totalIds >= currentIds.size)
+    assert(recordIds.size == newIds.size, "Map should be of same size")
+    assert(totalIds >= recordIds.size)
 
-    if(currentIds == newIds) identity
+    if(recordIds == newIds) identity
     else {
-      val m1 = Mapping.create(currentIds, newIds)
+      val m1 = Mapping.create(recordIds, newIds)
 
-      Range(currentIds.size, totalIds).foldLeft(m1) { case (m, id) =>
+      Range(recordIds.size, totalIds).foldLeft(m1) { case (m, id) =>
         m + (id -> id)
       }.apply
     }
@@ -81,10 +80,10 @@ object Recording {
 
   def mapNodes
   (rec : Recording,
-   currentIds : Map[String, NodeId],
+   recordIds : Map[String, NodeId],
    newIds : Map[String, NodeId], totalIds : Int) : Recording = {
     val mappin : NodeId => NodeId =
-      createMapping(currentIds, newIds, totalIds)
+      createMapping(recordIds, newIds, totalIds)
 
     val mappinNodeIdP : NodeIdP => NodeIdP = {
       case (n1, n2) => (mappin(n1), mappin(n2))

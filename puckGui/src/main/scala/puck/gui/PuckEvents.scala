@@ -2,6 +2,7 @@ package puck
 package gui
 
 import java.awt.Container
+import java.io.File
 
 import puck.graph._
 import puck.graph.io.{PrintingOptions, VisibilitySet}
@@ -29,6 +30,9 @@ case class Log(msg : String ) extends PuckEvent
 
 case object LoadCodeRequest extends PuckEvent
 case object LoadConstraintRequest extends PuckEvent
+
+case class SaveRecord(f : File) extends PuckEvent
+case class LoadRecord(f : File) extends PuckEvent
 
 case class GraphDisplayRequest
 (title : String,
@@ -129,4 +133,20 @@ object PuckEvents{
     })
   }
 
+  def addLoadSaveButton(c : Container, publisher : Publisher, currentDir : File) : Unit = {
+    c add jbutton("Save refactoring plan") {
+      _ =>
+        saveFile(currentDir, c) match {
+          case None => publisher publish Log("no file selected")
+          case Some(f) =>  publisher publish SaveRecord(f)
+        }
+    }
+    c add jbutton("Load refactoring plan") {
+      _ =>
+        openFile(currentDir, c) match {
+          case None => publisher publish Log("no file selected")
+          case Some(f) => publisher publish LoadRecord(f)
+        }
+    } ; ()
+  }
 }

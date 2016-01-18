@@ -2,17 +2,18 @@ package puck
 
 import puck.javaGraph.JGraphUtils
 import jastadd.JavaFilesHandler
-object Var{
-  val root = "/home/lorilan/puck_svn/examples/QualitasCorpus-20130901r/Systems"
-  //val root = "/home/lorilan/test_cases_for_puck/QualitasCorpus/Systems"
+object FrontVars {
+  //val root = "/home/lorilan/puck_svn/examples/QualitasCorpus-20130901r/Systems"
+  val root = "/home/lorilan/test_cases_for_puck/QualitasCorpus/Systems"
 
   //val system = "freecs/freecs-1.3.20100406"
   val system = "freemind/freemind-0.9.0"
+
+  val workspace = s"$root/$system/puck_test"
 }
 
-import Var._
 object Front extends PuckApplication(
-  JavaFilesHandler(s"$root/$system/puck_test"),
+  JavaFilesHandler(FrontVars.workspace),
   JGraphUtils, JavaIcons)
 
 

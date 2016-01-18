@@ -1,11 +1,8 @@
 package puck.jastadd
 package concretize
 
-import puck.PuckError
 import puck.graph._
-import puck.jastadd.JavaJastAddDG2AST
 import puck.javaGraph._
-import puck.javaGraph.nodeKind.{Method, Field}
 import puck.util.{PuckLog, PuckLogger}
 import org.extendj.{ast => AST}
 import ShowDG._
@@ -29,17 +26,18 @@ object RedirectSource {
       mDeclId )
   }
 
-  def addImportDeclIfNeeded
+  def fixImportDeclIfNeeded
   ( reenactor : DependencyGraph,
     id2declMap: NodeId => ASTNodeLink,
     tDecl : AST.TypeDecl,
-    tDeclId : NodeId )
+    tDeclId : NodeId,
+    oldPackage : String,
+    newPackage : String)
   ( implicit logger : PuckLogger): Unit = {
 
     def diffTypeDecl(td : AST.TypeDecl) =
       if(td != tDecl) Some(td.compilationUnit())
       else None
-
     val _ = reenactor.usersOf(tDeclId).foldLeft(Set[String]()){ (cus, userId) =>
       val scu = id2declMap(userId) match {
         case ParameterDeclHolder(decl) =>
@@ -48,23 +46,39 @@ object RedirectSource {
           diffTypeDecl(blk.hostType())
         case ExprHolder(expr) =>
           diffTypeDecl(expr.hostType())
-
         case dh : HasBodyDecl =>
           diffTypeDecl(dh.decl.hostType())
-
         case tdh : TypedKindDeclHolder =>
           diffTypeDecl(tdh.decl)
+
         case dh => throw new DGError("should not happen, decl holder class is " + dh.getClass)
       }
+
+      //3 cas
+      //user est dans oldPackage -> ajouter import
+      //user est dans newPackage -> enlever import
+      //user est dans autre package -> remplacer import
+
+
       scu match {
         case Some(cu) if !cus.contains(cu.pathName()) =>
-          if(cu.packageName() != tDecl.packageName()){
+
+          def removeImport() = {
+            logger.writeln(s"removeImportDecl of $tDecl in ${cu.pathName}")
+            cu.removeImportDecl(tDecl)
+          }
+          def addImport() = {
             val pa = new AST.TypeAccess(tDecl.fullName())
             pa.lock(tDecl)
-
             logger.writeln(s"addImportDecl of $pa in ${cu.pathName}")
             cu.addImportDecl(new AST.SingleTypeImportDecl(pa))
           }
+          cu.packageName() match {
+            case `oldPackage` => addImport()
+            case `newPackage` => removeImport()
+            case _ => addImport(); removeImport()
+          }
+
           cus + cu.pathName
         case _ => cus
       }
@@ -81,6 +95,7 @@ object RedirectSource {
     tDeclId : NodeId)
   ( implicit program : AST.Program, logger : PuckLogger) : Unit ={
     logger.writeln("moving " + tDecl.fullName() +" to package " + resultGraph.fullName(newPackage))
+
 
     if (tDecl.compilationUnit.getNumTypeDecl > 1) {
       logger.writeln(tDecl.name + " cu with more than one classe")(verbosity(PuckLog.Debug))
@@ -106,7 +121,11 @@ object RedirectSource {
     tDecl.flushCache()
     val oldFullName = resultGraph.fullName(oldPackage) + "." + tDecl.name()
     program.changeTypeMap(oldFullName, resultGraph.fullName(tDeclId), tDecl)
-    addImportDeclIfNeeded(reenactor, id2declMap, tDecl, tDeclId)
+
+    fixImportDeclIfNeeded(reenactor, id2declMap,
+      tDecl, tDeclId,
+      reenactor.fullName(oldPackage),
+      reenactor.fullName(newPackage))
   }
 
   def apply

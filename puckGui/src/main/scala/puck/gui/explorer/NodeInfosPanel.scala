@@ -43,10 +43,9 @@ class NodeInfosPanel
   val node = graph.getConcreteNode(nodeId)
 
   def mkStringWithNames(nodes : Iterable[NodeId]): String ={
-    nodes.map{ nid =>
-      val node = graph.getNode(nid)
-      (graph, node).shows(nodeNameTypCord)
-    }.mkString("\n", "\n", "\n")
+    nodes.toSeq.map{ nid =>
+      graph.fullName(nid) + (graph.styp(nid) map (t => " " + (graph, t).shows) getOrElse "")
+    }.sorted.mkString("\n", "\n", "\n")
   }
 
   val typeWeight =
@@ -64,13 +63,13 @@ class NodeInfosPanel
 
     contents += new Label(node.kind + " : " +
       (graph, node).shows(nodeNameTypCord))
-    val prov = Metrics.providers(graph, node.id)
-    val cl = Metrics.clients(graph, node.id)
+    val providers = Metrics.providers(graph, node.id)
+    val clients = Metrics.clients(graph, node.id)
     val internals = Metrics.internalDependencies(graph, node.id).size
     val outgoings = Metrics.outgoingDependencies(graph, node.id).size
     val incomings = Metrics.incomingDependencies(graph, node.id).size
-    val coupling = Metrics.coupling(graph, node.id)
-    val cohesion = Metrics.cohesion(graph, node.id)
+    val coupling = Metrics.coupling0(providers.size, clients.size, internals, outgoings, incomings)
+    val cohesion = Metrics.cohesion0(internals, outgoings, incomings)
 
     contents +=
       new Label(s"Internal dependencies : $internals \n") {
@@ -104,15 +103,15 @@ class NodeInfosPanel
     }.leftGlued
 
     contents += new TextArea(  "Providers : " +
-      (if (prov.isEmpty) "none\n"
-      else mkStringWithNames(prov))){
+      (if (providers.isEmpty) "none\n"
+      else mkStringWithNames(providers))){
       tooltip = "Nodes of the same kinds which contain a node used by a node contained by this one"
       editable = false
     }.leftGlued
 
     contents += new TextArea(  "Clients : " +
-      (if (cl.isEmpty) "none\n"
-      else mkStringWithNames(cl)) ){
+      (if (clients.isEmpty) "none\n"
+      else mkStringWithNames(clients)) ){
         tooltip = "Nodes of the same kinds which contain a node using a node contained by this one"
       editable = false
       }.leftGlued
