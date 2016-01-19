@@ -38,8 +38,7 @@ class PuckInterfacePanel
   control listenTo graphExplorer
 
   val nodeInfos = new ScrollPane(){
-    minimumSize = new Dimension(rightWidth/2, height)
-    preferredSize = minimumSize
+    //preferredSize = new Dimension(rightWidth/2, height)
 
     reactions += {
       case NodeClicked(n) if n.id != DependencyGraph.rootId =>
@@ -131,7 +130,7 @@ class PuckInterfacePanel
   }
 
   leftComponent = new BoxPanel(Orientation.Vertical) {
-    minimumSize = new Dimension(leftWidth, height)
+    preferredSize = new Dimension(leftWidth, height)
 
     val resultsWrapper = new FlowPanel()
 
