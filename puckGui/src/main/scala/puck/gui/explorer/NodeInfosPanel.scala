@@ -185,10 +185,8 @@ class NodeInfosPanel
       val users = graph.usersOf(node.id).toSeq map {
         userId => new UsesLabelBox(graph.declarationOf(userId), node.id)
       }
-
       users.sortBy(_.fullName).foreach(contents += _)
-
-    }
+    }.leftGlued
 
 
 
@@ -199,7 +197,7 @@ class NodeInfosPanel
         contents += new BoxPanel(Orientation.Vertical) {
           val used = graph.usedBy(defId).toSeq map (new UsesLabelBox(_, defId))
           used.sortBy(_.fullName).foreach(contents += _)
-        }
+        }.leftGlued
     }
 
   }
