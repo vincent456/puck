@@ -41,7 +41,7 @@ aspect TypeFactory {
 	}
 
 	public void FieldDeclaration.buildDGType(JastaddGraphBuilder builder, int thisId){
-		builder.setType(thisId, new NamedType(type().buildDGNode(builder)));
+		builder.setType(thisId, new NamedType(getTypeAccess().buildDGNode(builder)));
 	}
 
 

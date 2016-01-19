@@ -102,7 +102,7 @@ class PuckInterfacePanel
       PuckEvents.addLoadSaveButton(this.peer, PuckInterfacePanel.this,
         control.filesHandler.workingDirectory)
 
-      contents += makeButton("Show Dependency Graph (UML like format)",
+      contents += makeButton("Show DG in UML like view",
         "Display a visual representation of the graph"){
         () =>
           PuckInterfacePanel.this publish
@@ -112,7 +112,7 @@ class PuckInterfacePanel
               hideWithName(g, Seq("java")))
       }
 
-      contents += makeButton("Focus on Violations (UML like format)",
+      contents += makeButton("Show DG in UML like view (Focus on Violations)",
         "Display a visual representation of the graph"){
         () => PuckInterfacePanel.this publish
           GraphDisplayRequest("Graph", g,
@@ -183,8 +183,9 @@ class PuckInterfacePanel
   }
 
   rightComponent = new SplitPane(Orientation.Vertical) {
+    resizeWeight = 0.25
     leftComponent = new BoxPanel(Orientation.Vertical) {
-      contents += new Label("Dependency Graph Explorer")
+      contents += new Label("DG Explorer")
       contents += graphExplorer
     }
     rightComponent = nodeInfos

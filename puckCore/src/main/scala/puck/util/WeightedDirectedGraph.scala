@@ -27,7 +27,7 @@ object WeightedDirectedGraph {
 
     def extractUses(g : DependencyGraph,
                    wdg : WeightedDirectedGraph) : WeightedDirectedGraph =
-      g.edges.usedMap.iterator.foldLeft(wdg){
+      g.usesList.foldLeft(wdg){
         case (wdg0, e @ (user, used)) =>
           val re = relevantEdge(e)
           if(re._1 == re._2) wdg

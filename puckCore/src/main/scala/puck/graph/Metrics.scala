@@ -73,10 +73,9 @@ object Metrics {
       outgoingDependencies(graph, root).size,
       incomingDependencies(graph, root).size)
 
-  def cohesion0(internalDcies : Double, outgoingDcies : Double, incomingDcies : Double): Double = {
-    val incOutSum = outgoingDcies + incomingDcies
-    internalDcies / incOutSum + internalDcies
-  }
+  def cohesion0(internalDcies : Int, outgoingDcies : Int, incomingDcies : Int): Double =
+    internalDcies.toDouble / (outgoingDcies + incomingDcies + internalDcies).toDouble
+
 
   def coupling(graph: DependencyGraph, root: NodeId): Double =
     coupling0(providers(graph, root).size, clients(graph, root).size,
@@ -84,11 +83,11 @@ object Metrics {
       outgoingDependencies(graph, root).size,
       incomingDependencies(graph, root).size)
   
-  def coupling0(providers : Double, clients : Double,
-                internalDcies : Double,
-                outgoingDcies : Double,
-                incomingDcies : Double): Double =
-    1 - (providers + clients ) / (outgoingDcies + incomingDcies + internalDcies)
+  def coupling0(providers : Int, clients : Int,
+                internalDcies : Int,
+                outgoingDcies : Int,
+                incomingDcies : Int): Double =
+    1 - (providers + clients ).toDouble / (outgoingDcies + incomingDcies + internalDcies).toDouble
 
 
   def nameSpaceCoupling(graph : DependencyGraph) =

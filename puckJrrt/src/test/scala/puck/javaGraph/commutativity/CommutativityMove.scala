@@ -29,14 +29,39 @@ class CommutativityMove extends AcceptanceSpec {
       }
    }
 
-    scenario("Move top from differntPackages ") {
-      val p = "topLevelClass/classesInDifferentPackages"
+    scenario("Move top from different Packages - local var decl") {
+      val p = "topLevelClass/classesInDifferentPackages/localVarDecl"
       val _ = new ScenarioFactory(
         s"$examplesPath/$p/A.java",
         s"$examplesPath/$p/B.java",
         s"$examplesPath/$p/Empty.java") {
 
         val p1 = fullName2id(s"p1")
+        val package3 = fullName2id(s"p3")
+
+        val classA = fullName2id(s"p1.A")
+
+        val g = Move.staticDecl(graph, classA, package3).right
+
+        val recompiledEx = applyChangeAndMakeExample(g, outDir)
+
+        val gClean =
+          g.removeContains(g.rootId, p1).removeNode(p1)._2
+        assert( Mapping.equals(recompiledEx.graph, gClean) )
+
+      }
+
+    }
+
+    scenario("Move top from different Packages - field decl") {
+      val p = "topLevelClass/classesInDifferentPackages/fieldDecl"
+      val _ = new ScenarioFactory(
+        s"$examplesPath/$p/A.java",
+        s"$examplesPath/$p/B.java",
+        s"$examplesPath/$p/Empty.java") {
+
+        val p1 = fullName2id(s"p1")
+
         val package3 = fullName2id(s"p3")
 
         val classA = fullName2id(s"p1.A")

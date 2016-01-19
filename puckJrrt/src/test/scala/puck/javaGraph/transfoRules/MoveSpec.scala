@@ -41,7 +41,7 @@ class MoveSpec
     }
 
     scenario("Move top from different packages ") {
-      val p = "topLevelClass/classesInDifferentPackages"
+      val p = "topLevelClass/classesInDifferentPackages/localVarDecl"
       val _ = new ScenarioFactory(
         s"$examplesPath/$p/A.java",
         s"$examplesPath/$p/B.java",

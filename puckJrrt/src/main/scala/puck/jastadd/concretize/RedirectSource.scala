@@ -1,4 +1,5 @@
-package puck.jastadd
+package puck
+package jastadd
 package concretize
 
 import puck.graph._
@@ -38,7 +39,8 @@ object RedirectSource {
     def diffTypeDecl(td : AST.TypeDecl) =
       if(td != tDecl) Some(td.compilationUnit())
       else None
-    val _ = reenactor.usersOf(tDeclId).foldLeft(Set[String]()){ (cus, userId) =>
+
+    val cus = reenactor.usersOf(tDeclId).foldLeft(Set[String]()){ (cus, userId) =>
       val scu = id2declMap(userId) match {
         case ParameterDeclHolder(decl) =>
           diffTypeDecl(decl.hostType())
@@ -83,6 +85,7 @@ object RedirectSource {
         case _ => cus
       }
     }
+    cus.foreach(cuPath => logger.writeln(cuPath + " affected"))
   }
 
   def moveTypeKind

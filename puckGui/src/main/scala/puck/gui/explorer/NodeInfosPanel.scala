@@ -19,14 +19,6 @@ class NodeInfosPanel
   edgeMenuBuilder : NodeIdP => JPopupMenu)
   extends SplitPane(Orientation.Horizontal) {
 
-  def onEdgeButtonClick( source : NodeId, target : NodeId) : Unit =
-    publisher publish
-      GraphDisplayRequest("Graph with uses selected",
-        graph, VisibilitySet.topLevelVisible(g).
-          hideWithName(g, Seq("@primitive")).
-          hideWithName(g, Seq("java")),
-        sUse = Some(Uses(source, target)))
-
   implicit val g = graph
   val useDetails = new BoxPanel(Orientation.Vertical){
     minimumSize = new Dimension(100, 50)
@@ -127,8 +119,17 @@ class NodeInfosPanel
     }
 
 
+    //  def onEdgeButtonClick( source : NodeId, target : NodeId) : Unit =
+    //    publisher publish
+    //      GraphDisplayRequest("Graph with uses selected",
+    //        graph, VisibilitySet.topLevelVisible(g).
+    //          hideWithName(g, Seq("@primitive")).
+    //          hideWithName(g, Seq("java")),
+    //        sUse = Some(Uses(source, target)))
+
     class UsesLabelBox(userId : NodeId, usedId : NodeId)
-      extends BoxPanel(Orientation.Horizontal){
+    extends Label {
+      //extends BoxPanel(Orientation.Horizontal){
 
       val sideUses = graph.typeMemberUsesOf(userId, usedId)
       val primaryUses = graph.typeUsesOf(userId, usedId)
@@ -141,12 +142,12 @@ class NodeInfosPanel
       }
 
       val fullName = graph.fullName(userId)
+      text = fullName + " " + tag
+//        contents += Button("<o>") {
+//          onEdgeButtonClick(userId, usedId)
+//        }
 
-        contents += Button("<o>") {
-          onEdgeButtonClick(userId, usedId)
-        }
-
-        contents += new Label(fullName + " " + tag) {
+//        contents += new Label(fullName + " " + tag) {
 
           minimumSize = new Dimension(this.size.width, 30)
 
@@ -171,9 +172,9 @@ class NodeInfosPanel
                 useDetails.revalidate()
               }
           }
-        }
+ //       }
 
-        contents += Swing.HGlue
+//        contents += Swing.HGlue
       }
 
 

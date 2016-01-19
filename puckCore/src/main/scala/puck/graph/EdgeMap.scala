@@ -27,7 +27,8 @@ object EdgeMap {
                 EdgeMapT(), EdgeMapT(),
                 UseDependencyMap(),
                 UseDependencyMap(),
-                ParamMapT(), /*Node2NodeMap(),*/ Map()/*, Node2NodeMap()*/)
+                ParamMapT(),
+                Map(), EdgeMapT())
 }
 import EdgeMap._
 import puck.PuckError
@@ -49,7 +50,25 @@ case class EdgeMap
   parameters : ParamMapT,
   //definition : Node2NodeMap,
   //special case of use
-  types : Map[NodeId, Type]){
+  types : Map[NodeId, Type],
+  typedBy : EdgeMapT){
+
+
+  def allUsesList : List[NodeIdP] = usedMap.flatList ++ typeUsesList
+
+  def typeUsesList : List[NodeIdP] = {
+    for{
+      nt <- types.toList
+      (n , t) = nt
+      i <- t.ids
+    } yield (n,i)
+  }
+
+  def usedBy(userId : NodeId) : Set[NodeId] =
+    (types get userId map (_.ids.toSet) getOrElse Set()) ++ (usedMap getFlat userId)
+
+  def usersOf(usedId: NodeId) : Set[NodeId] =
+    (userMap getFlat usedId) ++ (typedBy getFlat usedId)
 
   def add(edge : DGEdge) : EdgeMap =
     edge match {
@@ -179,9 +198,21 @@ case class EdgeMap
   def setType(id : NodeId, st : Option[Type]) : EdgeMap =
     st match {
       case None =>
-        if(types contains id) copy(types = types - id)
-        else this
-      case Some(t) => copy(types = types + (id -> t))
+        types get id match {
+          case None => this
+          case Some(oldType) =>
+            val newTypedBy = oldType.ids.foldLeft(typedBy){
+            (tbm, tId) => tbm - (tId, id)
+          }
+          copy(types = types - id,
+            typedBy = newTypedBy)
+        }
+      case Some(t) =>
+        val newTypedBy = t.ids.foldLeft(typedBy){
+          (tbm, tId) => tbm + (tId, id)
+        }
+        copy(types = types + (id -> t),
+        typedBy = newTypedBy)
     }
 
 

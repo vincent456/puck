@@ -27,6 +27,35 @@ class ConstraintViolationExplorer
   graphUtils : GraphUtils)
   extends SplitPane {
 
+
+  def idToNameString(dg : DependencyGraph, nid : NodeId) : String =
+        dg.getNode(nid) match {
+          case n : ConcreteNode =>
+            val name =
+              if(n.kind.kindType == ValueDef)
+                dg.container(n.id) map {
+                  idToNameString(dg, _)
+                } getOrElse "OrphanDefinition"
+              else n.name
+            name + ShowDG.typeHolderCord(dg, dg.styp(n.id))
+              case vn : VirtualNode => vn.name(dg)
+            }
+  def edgeToString(nodeName : NodeId => String, e:  DGEdge ) : String =
+    if(e.source == e.target) s"${graph.getNode(e.source).kind} - ${nodeName(e.source)}"
+    else {
+      val (ksrc, ktgt) = (graph.getNode(e.source).kind, graph.getNode(e.target).kind)
+      e.kind match {
+        case AbstractEdgeKind =>
+          val s = if (ksrc.toString endsWith "s") "es"
+          else "s"
+          if (ksrc == ktgt) s"$ksrc$s : ${nodeName(e.source)} -> ${nodeName(e.target)}"
+          else s"$ksrc : ${nodeName(e.source)} -> $ktgt : ${nodeName(e.target)}"
+
+        case _ =>
+          s"${nodeName(e.source)} ($ksrc) - ${e.kind} -> ${nodeName(e.target)} ($ktgt)"
+      }
+    }
+
   def filterViolations
   ( sourceFilter : Option[NodeId],
     targetFilter : Option[NodeId]) : Seq[DGEdge] = {
@@ -196,10 +225,9 @@ class ConstraintViolationExplorer
     violationListPane.contents +=
       new Label(s"${violations.size} violations : ")
 
-    import ShowDG._
     violations.foreach {
       edge =>
-        violationListPane.contents +=  new Label((graph, edge).shows) {
+        violationListPane.contents +=  new Label(edgeToString(idToNameString(graph, _), edge)) {
           listenTo(mouse.clicks)
           reactions += {
             case mc @ MouseClicked(_,_,_,_,_) =>

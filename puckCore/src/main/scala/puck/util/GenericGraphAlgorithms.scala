@@ -23,10 +23,10 @@ object GreedyCycleRemover {
 
     //HYPOTHESIS : no more type edges have been replaced by regular uses
     def isSink(g : DependencyGraph)(id : NodeId) =
-      g.edges.usedMap get id isEmpty
+      g usedBy id isEmpty
 
     def isSource(g : DependencyGraph)(id : NodeId) =
-      g.edges.userMap get id isEmpty
+      g usersOf id isEmpty
 
     def removeEdgesUsingNode(id : NodeId, g : DependencyGraph) : DependencyGraph = {
       val useds = g usedBy id
@@ -192,7 +192,7 @@ object GenericGraphAlgorithms {
     def relevantEdge(idp : NodeIdP) = (relevantNode(idp._1), relevantNode(idp._2))
 
     def filterUses(g : DependencyGraph) : DependencyGraph =
-      g.edges.usedMap.iterator.foldLeft(g){
+      g.usesList.foldLeft(g){
         case (g0, e @ (user, used)) =>
           val re = relevantEdge(e)
           if( re == e) g0
@@ -236,7 +236,7 @@ object GenericGraphAlgorithms {
     def applyF(edges : List[NodeIdP]) =
       edges map f filter {case (s,t) => s != t} toSet
 
-    applyF(g.usesList) ++ applyF(g.typeUsesList)
+    applyF(g.usesList)
 
   }
 

@@ -75,7 +75,7 @@ object Debug {
     contents, containers, superTypes, subTypes,
     typeMemberUses2typeUsesMap,
     typeUses2typeMemberUsesMap,
-    parameters, /*definition,*/ types)) =>
+    parameters, types, typedBy)) =>
       val builder = new StringBuilder(150)
 
       builder.append("used -> user\n\t")
