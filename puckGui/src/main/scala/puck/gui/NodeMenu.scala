@@ -23,10 +23,10 @@ object NodeMenu{
             selectedNodes: List[NodeId],
             selectedEdge : Option[NodeIdP],
             nodeId : NodeId,
-            printingOptions: PrintingOptions) : JPopupMenu =
+            printingOptionsControl: PrintingOptionsControl) : JPopupMenu =
     graph.getNode(nodeId) match {
       case n : ConcreteNode =>
-        new ConcreteNodeMenu(publisher, graph, graphUtils, selectedNodes, selectedEdge, n, printingOptions)
+        new ConcreteNodeMenu(publisher, graph, graphUtils, selectedNodes, selectedEdge, n, printingOptionsControl)
       case n : VirtualNode =>
         new VirtualNodeMenu(publisher, graph, graphUtils, n)
     }
@@ -39,7 +39,7 @@ class ConcreteNodeMenu
  val selectedNodes: List[NodeId],
  val selectedEdge : Option[NodeIdP],
  node : ConcreteNode,
- printingOptions : PrintingOptions) extends JPopupMenu {
+ printingOptionsControl: PrintingOptionsControl) extends JPopupMenu {
 
   init()
 
@@ -79,7 +79,7 @@ class ConcreteNodeMenu
     if (graph.isWronglyContained(node.id)
       || graph.isWronglyUsed(node.id)) {
       this.add(new ManualSolveAction(publisher, node))
-      this.add(new AutoSolveAction(publisher, node, printingOptions))
+      this.add(new AutoSolveAction(publisher, node, printingOptionsControl))
     }
   }
 

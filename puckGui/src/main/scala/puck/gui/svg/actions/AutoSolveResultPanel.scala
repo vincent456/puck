@@ -6,7 +6,7 @@ import javax.swing.SwingUtilities
 import puck.graph._
 import puck.graph.io.{PrintingOptions, Visible, VisibilitySet}
 import VisibilitySet._
-import puck.gui.PuckConsolePanel
+import puck.gui._
 import puck.gui.search.{StateSelected, SimpleElementSelector, SortedElementSelector}
 import puck.gui.svg.{PUCKSVGCanvas, SVGController}
 import puck.search.{SearchState, Search}
@@ -50,6 +50,7 @@ trait ResultPanel {
 trait GraphPanelResultPanel extends ResultPanel {
   val swingService : SwingService = DefaultSwingService
   def printingOptions : PrintingOptions
+  val visibilitySet : VisibilitySet.T
   val graphUtils : GraphUtils
   val publisher : Publisher
 
@@ -73,19 +74,15 @@ trait GraphPanelResultPanel extends ResultPanel {
       }
     }
 
-
-
-
   def selectedResultGraphPanel = {
 
     import Recording.RecordOps
     val g = selectedResult.value
 
     val nodeVisibles  = {
-      val v = printingOptions.visibility
       val involveNodes = g.recording.subRecordFromLastMilestone.involveNodes
       val nns = involveNodes flatMap g.containerPath
-      v.setVisibility(nns, Visible)
+      visibilitySet.setVisibility(nns, Visible)
     }
 
     graphPanel(g, nodeVisibles)
@@ -96,28 +93,35 @@ trait GraphPanelResultPanel extends ResultPanel {
 class AutosolveResultPanel
 ( val publisher : Publisher,
   violationTarget : ConcreteNode,
-  printingOptions0: PrintingOptions,
+  printingOptionsControl: PrintingOptionsControl,
   res : Search[SResult])
 ( implicit val beforeGraph : DependencyGraph,
   val graphUtils : GraphUtils )
   extends SplitPane(Orientation.Horizontal)
   with GraphPanelResultPanel {
 
+  reactions += {
+    case poe : PrintingOptionEvent => poe(printingOptionsControl)
+      publish(PrintingOptionsUpdate)
+  }
 
-  val printingOptions: PrintingOptions = printingOptions0.copy(visibility = {
+  val visibilitySet = {
 
-      val users = beforeGraph.usersOf(violationTarget.id)
+    val users = beforeGraph.usersOf(violationTarget.id)
 
-      val targetAndAncestors =
-        beforeGraph.containerPath(violationTarget.id)
+    val targetAndAncestors =
+      beforeGraph.containerPath(violationTarget.id)
 
-      val vs = users.foldLeft(targetAndAncestors){
-        (s,id) => (beforeGraph.containerPath(id).toSet + id) ++: s
-      }
+    val vs = users.foldLeft(targetAndAncestors){
+      (s,id) => (beforeGraph.containerPath(id).toSet + id) ++: s
+    }
 
     VisibilitySet.allHidden(beforeGraph).setVisibility(vs, Visible)
 
-  })
+  }
+
+  def printingOptions: PrintingOptions =
+    printingOptionsControl.printingOptions.copy(visibility = visibilitySet)
 
   def selectedResult : Logged[DependencyGraph] = activePanel.selectedResult
 
@@ -128,8 +132,8 @@ class AutosolveResultPanel
   ( withSelector : Boolean,
     selector : => Component with Selector )  =
     if(withSelector) {
-      val p = new SelectorResultPanel(selector,
-        printingOptions, graphUtils, publisher)
+      val p = new SelectorResultPanel(selector, this)
+      p listenTo this
       this listenTo p
       this listenTo p.selector
       p
@@ -172,7 +176,14 @@ class AutosolveResultPanel
   }
 
   leftComponent = upPane
-  rightComponent = console
+  rightComponent = new SplitPane(Orientation.Vertical) {
+    leftComponent = new BoxPanel(Orientation.Vertical){
+      PuckEvents.addVisibilityCheckBoxes(this.peer,
+        AutosolveResultPanel.this,
+        printingOptionsControl.printingOptions)
+    }
+    rightComponent = console
+  }
 
   reactions += {
     case Log(msg) => console.textArea.text = msg
@@ -217,10 +228,13 @@ class SuccessSelector(res : Search[SResult])
 
 class SelectorResultPanel
 (val selector : Component with Selector,
- val printingOptions: PrintingOptions,
-  val graphUtils: GraphUtils,
-  val publisher: Publisher
-) extends BorderPanel with GraphPanelResultPanel {
+ val autosolveResultPanel : AutosolveResultPanel )
+  extends BorderPanel with GraphPanelResultPanel {
+
+  def printingOptions: PrintingOptions = autosolveResultPanel.printingOptions
+  val graphUtils: GraphUtils = autosolveResultPanel.graphUtils
+  val publisher : Publisher = autosolveResultPanel
+  val visibilitySet: VisibilitySet.T = autosolveResultPanel.visibilitySet
 
   add(selectedResultGraphPanel, Position.Center)
   add(selector, Position.South)
@@ -229,6 +243,9 @@ class SelectorResultPanel
 
   this listenTo selector
   reactions += {
+    case PrintingOptionsUpdate =>
+      add(selectedResultGraphPanel, Position.Center)
+
     case StateSelected(state) =>
       add(selectedResultGraphPanel, Position.Center)
       publish(Log(selector.selectedLog))

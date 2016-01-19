@@ -81,7 +81,7 @@ class SVGController
   val edgeMenuBuilder : NodeIdP => JPopupMenu = {
     e =>
        new EdgeMenu(this, e,
-        printingOptionsControl.printingOptions,
+        printingOptionsControl,
         graphStack.graph,
         graphUtils )
   }

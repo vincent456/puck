@@ -26,7 +26,7 @@ class SVGConcreteNodeMenu
     controller.selectedNodes,
     controller.selectedEdge,
     node,
-    controller.printingOptionsControl.printingOptions) {
+    controller.printingOptionsControl) {
 
   import controller.printingOptionsControl
 

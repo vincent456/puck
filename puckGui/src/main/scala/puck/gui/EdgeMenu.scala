@@ -13,7 +13,7 @@ import scala.swing.Publisher
 class EdgeMenu
 ( publisher : Publisher,
   edge : NodeIdP,
-  printingOptions: PrintingOptions,
+  printingOptionsControl: PrintingOptionsControl,
   implicit val graph: DependencyGraph,
   implicit val graphUtils: GraphUtils)
   extends JPopupMenu {
@@ -25,7 +25,7 @@ class EdgeMenu
   if(graph.isViolation(edge)){
     val targetNode = graph.getConcreteNode(target)
     add(new ManualSolveAction(publisher, targetNode))
-    add(new AutoSolveAction(publisher, targetNode, printingOptions))
+    add(new AutoSolveAction(publisher, targetNode, printingOptionsControl))
   }
 
   var isIsaEdge = false

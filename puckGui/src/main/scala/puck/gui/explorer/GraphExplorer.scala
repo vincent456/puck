@@ -93,7 +93,7 @@ object GraphExplorer {
 
 class GraphExplorer(treeIcons : DGTreeIcons,
                     graphUtils : GraphUtils,
-                    getPO : () => PrintingOptions)
+                    printingOptionsControl: PrintingOptionsControl)
   extends ScrollPane {
 
   reactions += {
@@ -145,7 +145,7 @@ class GraphExplorer(treeIcons : DGTreeIcons,
                 if (isRightClick(e)) {
                   val menu: JPopupMenu =
                     NodeMenu(GraphExplorer.this, graph, graphUtils,
-                      selectedNodes, None, node.id, getPO())
+                      selectedNodes, None, node.id, printingOptionsControl)
                   menu.add(new AbstractAction("Node infos") {
                     def actionPerformed(e: ActionEvent): Unit =
                       GraphExplorer.this.publish(NodeClicked(node))

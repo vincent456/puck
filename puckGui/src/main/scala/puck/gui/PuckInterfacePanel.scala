@@ -29,7 +29,7 @@ class PuckInterfacePanel
   val control = new PuckControl(logger, filesHandler,
     graphUtils, progressBar)
 
-  val graphExplorer = new GraphExplorer(treeIcons, graphUtils, () => control.printingOptionsControl.printingOptions)
+  val graphExplorer = new GraphExplorer(treeIcons, graphUtils, control.printingOptionsControl)
 
   control listenTo this
   this listenTo control
@@ -47,7 +47,7 @@ class PuckInterfacePanel
           contents =
             new NodeInfosPanel(PuckInterfacePanel.this, control.graph, n.id,
               edge => new EdgeMenu(PuckInterfacePanel.this, edge,
-                  control.printingOptionsControl.printingOptions,
+                  control.printingOptionsControl,
                   control.graphStack.graph,
                   graphUtils)
             )
@@ -93,14 +93,10 @@ class PuckInterfacePanel
       contents += p
 
       control.publishUndoRedoStatus()
-
-
-      PuckEvents.addVisibilityCheckBoxes(this.peer,
-        PuckInterfacePanel.this,
-        control.printingOptionsControl.printingOptions)
-
-      PuckEvents.addLoadSaveButton(this.peer, PuckInterfacePanel.this,
-        control.filesHandler.workingDirectory)
+      contents += new BoxPanel(Orientation.Horizontal) {
+        PuckEvents.addLoadSaveButton(this.peer, PuckInterfacePanel.this,
+          control.filesHandler.workingDirectory)
+      }.leftGlued
 
       contents += makeButton("Show DG in UML like view",
         "Display a visual representation of the graph"){

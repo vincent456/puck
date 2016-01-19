@@ -22,7 +22,7 @@ class ConstraintViolationExplorer
 ( publisher : Publisher,
   violations : Seq[DGEdge],
   treeIcons : DGTreeIcons,
-  getPO : () => PrintingOptions)
+  printingOptionsControl: PrintingOptionsControl)
 ( implicit graph : DependencyGraph,
   graphUtils : GraphUtils)
   extends SplitPane {
@@ -107,7 +107,7 @@ class ConstraintViolationExplorer
           path.getLastPathComponent match {
             case n : DGNode =>
               if(isRightClick(e)) Swing.onEDT {
-                val menu =NodeMenu(publisher, graph, graphUtils, List(), None, n.id, getPO())
+                val menu = NodeMenu(publisher, graph, graphUtils, List(), None, n.id, printingOptionsControl)
                 menu.add(new AbstractAction("Node infos") {
                   def actionPerformed(e: ActionEvent): Unit =
                     ConstraintViolationExplorer.this.publish(NodeClicked(n))
@@ -233,7 +233,7 @@ class ConstraintViolationExplorer
             case mc @ MouseClicked(_,_,_,_,_) =>
               val evt = mc.peer
               if(isRightClick(evt)){
-                val menu : JPopupMenu = new ViolationMenu(publisher, edge.target, getPO){
+                val menu : JPopupMenu = new ViolationMenu(publisher, edge.target, printingOptionsControl){
                   add( new AbstractAction("Focus in graph explorer") {
                     def actionPerformed(e: ActionEvent): Unit =
                       publisher.publish(GraphFocus(graph, edge))

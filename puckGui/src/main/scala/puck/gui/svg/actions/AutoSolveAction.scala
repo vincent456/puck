@@ -6,6 +6,7 @@ import javax.swing.{JComponent, AbstractAction}
 import puck.graph._
 import puck.graph.constraints.search.{GraphConstraintSolvingStateEvaluator, CouplingConstraintSolvingControl}
 import puck.graph.io.PrintingOptions
+import puck.gui.PrintingOptionsControl
 import puck.gui.svg.SVGController
 import puck.search.{Search, SearchEngine, DepthFirstSearchStrategy}
 import puck.util.Logged
@@ -19,7 +20,7 @@ import scala.swing.Dialog.{Message, Options, Result}
 class AutoSolveAction
 ( publisher : Publisher,
   violationTarget : ConcreteNode,
-  printingOptions: PrintingOptions)
+  printingOptionsControl: PrintingOptionsControl)
 (implicit graph : DependencyGraph,
   graphUtils: GraphUtils)
   extends AbstractAction("Solve (auto choices, choose result)") {
@@ -41,7 +42,7 @@ class AutoSolveAction
 //      }
 //    }
 //    else {
-    val panel = new AutosolveResultPanel(publisher, violationTarget, printingOptions, res)
+    val panel = new AutosolveResultPanel(publisher, violationTarget, printingOptionsControl, res)
     confirm(panel.peer) match {
         case Result.Ok => Some( panel.selectedResult)
         case Result.Cancel
