@@ -77,7 +77,33 @@ class CommutativityMove extends AcceptanceSpec {
       }
 
     }
+
+    scenario("Move top from different Packages - with static class member") {
+      val p = "topLevelClass/classesInDifferentPackages/withStaticClassMember"
+      val _ = new ScenarioFactory(
+        s"$examplesPath/$p/A.java",
+        s"$examplesPath/$p/B.java",
+        s"$examplesPath/$p/Empty.java") {
+
+        val p1 = fullName2id(s"p1")
+
+        val package3 = fullName2id(s"p3")
+
+        val classA = fullName2id(s"p1.A")
+
+        val g = Move.staticDecl(graph, classA, package3).right
+
+        val recompiledEx = applyChangeAndMakeExample(g, outDir)
+
+        val gClean =
+          g.removeContains(g.rootId, p1).removeNode(p1)._2
+        assert( Mapping.equals(recompiledEx.graph, gClean) )
+
+      }
+
+    }
   }
+
 
   val moveMethod_movedMethodUsesThis = examplesPath + "/method/movedMethodUsesThis"
   val moveMethodUsedByThis = examplesPath + "/method/usedByThis"

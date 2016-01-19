@@ -19,10 +19,10 @@ case class FilterSource(filter : NodeId) extends Event
 case class FilterTarget(filter : NodeId) extends Event
 
 class ConstraintViolationExplorer
-( publisher : Publisher,
-  violations : Seq[DGEdge],
-  treeIcons : DGTreeIcons,
-  printingOptionsControl: PrintingOptionsControl)
+(publisher : Publisher,
+ allViolations : Seq[DGEdge],
+ treeIcons : DGTreeIcons,
+ printingOptionsControl: PrintingOptionsControl)
 ( implicit graph : DependencyGraph,
   graphUtils : GraphUtils)
   extends SplitPane {
@@ -61,9 +61,9 @@ class ConstraintViolationExplorer
     targetFilter : Option[NodeId]) : Seq[DGEdge] = {
 
     val vs = sourceFilter map (srcId =>
-      violations.filter(e =>
+      allViolations.filter(e =>
       graph.contains_*(srcId, e.source)
-    )) getOrElse violations
+    )) getOrElse allViolations
 
     targetFilter map (tgtId => vs.filter(e =>
       graph.contains_*(tgtId, e.target)
@@ -84,7 +84,7 @@ class ConstraintViolationExplorer
   }
 
   class ViolationTree(handle : ViolationTreeHandle) extends
-    JTree(DGTreeModel.subGraph(graph, handle.extremities(violations))) with DGTree {
+    JTree(DGTreeModel.subGraph(graph, handle.extremities(allViolations))) with DGTree {
     def icons : DGTreeIcons = treeIcons
 
     override def convertValueToText
@@ -95,7 +95,7 @@ class ConstraintViolationExplorer
         case null => ""
         case node : DGNode  =>
 
-          val vsCount = violations.count (e => graph.contains_*(node.id, handle.exty(e)))
+          val vsCount = allViolations.count (e => graph.contains_*(node.id, handle.exty(e)))
           s"${node.name} ($vsCount)"
         case _ => ""
       }
@@ -223,7 +223,8 @@ class ConstraintViolationExplorer
   def updateViolationListPane(violations : Seq[DGEdge]) : Unit = {
     violationListPane.contents.clear()
     violationListPane.contents +=
-      new Label(s"${violations.size} violations : ")
+      new Label(s"${violations.size} / ${allViolations.size} violation" +
+        (if(violations.size > 1) "s" else ""))
 
     violations.foreach {
       edge =>
@@ -247,8 +248,10 @@ class ConstraintViolationExplorer
         }
     }
     violationListPane.revalidate()
+    violationListPane.repaint()
+
   }
-  updateViolationListPane(violations)
+  updateViolationListPane(allViolations)
 }
 
 

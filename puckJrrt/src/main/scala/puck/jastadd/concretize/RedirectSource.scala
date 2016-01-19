@@ -5,7 +5,7 @@ package concretize
 import puck.graph._
 import puck.javaGraph._
 import puck.util.{PuckLog, PuckLogger}
-import org.extendj.{ast => AST}
+import org.extendj.ast
 import ShowDG._
 import JavaJastAddDG2AST.verbosity
 
@@ -14,29 +14,29 @@ object RedirectSource {
 
   def moveMemberDecl
   ( reenactor : DependencyGraph,
-    tDeclFrom : AST.TypeDecl,
-    tDeclDest : AST.TypeDecl,
-    mDecl : AST.BodyDecl,
+    tDeclFrom : ast.TypeDecl,
+    tDeclDest : ast.TypeDecl,
+    mDecl : ast.BodyDecl,
     mDeclId : NodeId) : Unit = {
 
     tDeclFrom.removeBodyDecl(mDecl)
     tDeclDest.addBodyDecl(mDecl)
 
     ASTNodeLink.enlargeVisibility(
-      reenactor, mDecl.asInstanceOf[AST.Visible],
+      reenactor, mDecl.asInstanceOf[ast.Visible],
       mDeclId )
   }
 
   def fixImportDeclIfNeeded
   ( reenactor : DependencyGraph,
     id2declMap: NodeId => ASTNodeLink,
-    tDecl : AST.TypeDecl,
+    tDecl : ast.TypeDecl,
     tDeclId : NodeId,
     oldPackage : String,
     newPackage : String)
   ( implicit logger : PuckLogger): Unit = {
 
-    def diffTypeDecl(td : AST.TypeDecl) =
+    def diffTypeDecl(td : ast.TypeDecl) =
       if(td != tDecl) Some(td.compilationUnit())
       else None
 
@@ -70,10 +70,10 @@ object RedirectSource {
             cu.removeImportDecl(tDecl)
           }
           def addImport() = {
-            val pa = new AST.TypeAccess(tDecl.fullName())
+            val pa = new ast.TypeAccess(tDecl.fullName())
             pa.lock(tDecl)
             logger.writeln(s"addImportDecl of $pa in ${cu.pathName}")
-            cu.addImportDecl(new AST.SingleTypeImportDecl(pa))
+            cu.addImportDecl(new ast.SingleTypeImportDecl(pa))
           }
           cu.packageName() match {
             case `oldPackage` => addImport()
@@ -94,9 +94,9 @@ object RedirectSource {
     id2declMap: NodeId => ASTNodeLink,
     oldPackage : NodeId,
     newPackage: NodeId,
-    tDecl : AST.TypeDecl,
+    tDecl : ast.TypeDecl,
     tDeclId : NodeId)
-  ( implicit program : AST.Program, logger : PuckLogger) : Unit ={
+  ( implicit program : ast.Program, logger : PuckLogger) : Unit ={
     logger.writeln("moving " + tDecl.fullName() +" to package " + resultGraph.fullName(newPackage))
 
 
@@ -129,6 +129,17 @@ object RedirectSource {
       tDecl, tDeclId,
       reenactor.fullName(oldPackage),
       reenactor.fullName(newPackage))
+
+    val staticMemberType = reenactor.content(tDeclId) filter
+      (nid => (reenactor kindType nid) == TypeDecl)
+    staticMemberType.foreach{ id =>
+      id2declMap(id) match {
+        case t : TypedKindDeclHolder =>
+          moveTypeKind(resultGraph, reenactor, id2declMap, oldPackage, newPackage,t.decl, id)
+        case t => error(s"TypedKindDeclHolder expected but got ${t.getClass} ")
+      }
+
+    }
   }
 
   def apply
@@ -136,7 +147,7 @@ object RedirectSource {
     reenactor : DependencyGraph,
     id2declMap: NodeId => ASTNodeLink,
     e: DGEdge, newSourceId: NodeId)
-  ( implicit program : AST.Program, logger : PuckLogger) : Unit =  {
+  ( implicit program : ast.Program, logger : PuckLogger) : Unit =  {
 
 
     def move(source : NodeId, newSource : NodeId, target : NodeId) : Unit = {

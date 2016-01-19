@@ -16,7 +16,10 @@ object JastaddGraphBuilder {
       new DGEdge(Isa, n1, n2)
 
   def classKind = Class
+  def innerClassKind = InnerClass
+
   def interfaceKind = Interface
+  def innerInterfaceKind = InnerInterface
 
   def field = Field
   def staticField = StaticField

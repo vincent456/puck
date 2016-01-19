@@ -148,8 +148,13 @@ aspect NamedElement {
     	throw new DGBuildingError(this.fullName() + " - " + this.getClass()+" : Unkown nodekind");
     }
     eq TypeVariable.getDGNodeKind() = JastaddGraphBuilder.typeVariable();
-    eq ClassDecl.getDGNodeKind() = JastaddGraphBuilder.classKind();
-    eq InterfaceDecl.getDGNodeKind() = JastaddGraphBuilder.interfaceKind();
+    eq ClassDecl.getDGNodeKind() = isStatic() ?
+        JastaddGraphBuilder.classKind() : JastaddGraphBuilder.innerClassKind();
+
+
+    eq InterfaceDecl.getDGNodeKind() = isStatic() ?
+        JastaddGraphBuilder.interfaceKind() : JastaddGraphBuilder.innerInterfaceKind();
+
     eq WildcardType.getDGNodeKind() = JastaddGraphBuilder.wildcardType();
     eq PrimitiveType.getDGNodeKind() = JastaddGraphBuilder.primitive();
 	eq VoidType.getDGNodeKind() = JastaddGraphBuilder.primitive();
