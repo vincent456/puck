@@ -4,6 +4,7 @@ package concretize
 
 import puck.graph._
 import puck.javaGraph._
+import puck.javaGraph.nodeKind.Constructor
 import puck.util.{PuckLog, PuckLogger}
 import org.extendj.ast
 import ShowDG._
@@ -40,7 +41,13 @@ object RedirectSource {
       if(td != tDecl) Some(td.compilationUnit())
       else None
 
-    val cus = reenactor.usersOf(tDeclId).foldLeft(Set[String]()){ (cus, userId) =>
+    val staticContent = reenactor.content(tDeclId) filter (id => reenactor.kindType(id) match {
+      case TypeConstructor | StaticValueDecl => true
+      case _ => false})
+
+    val impactedUsers =  (staticContent flatMap reenactor.usersOf) ++ (reenactor usersOf tDeclId)
+
+    val cus = impactedUsers.foldLeft(Set[String]()){ (cus, userId) =>
       val scu = id2declMap(userId) match {
         case ParameterDeclHolder(decl) =>
           diffTypeDecl(decl.hostType())
@@ -78,14 +85,15 @@ object RedirectSource {
           cu.packageName() match {
             case `oldPackage` => addImport()
             case `newPackage` => removeImport()
-            case _ => addImport(); removeImport()
+            case _ => () // should be handled by the name locking
+              //addImport(); removeImport()
           }
 
           cus + cu.pathName
         case _ => cus
       }
     }
-    cus.foreach(cuPath => logger.writeln(cuPath + " affected"))
+
   }
 
   def moveTypeKind

@@ -3,7 +3,7 @@ package puck.gui
 import javax.swing.JPopupMenu
 
 import puck.graph.{NodeId, GraphUtils, DependencyGraph}
-import puck.gui.svg.actions.{AutoSolveAction, ManualSolveAction}
+import puck.gui.svg.actions.{AutoSolveAction}
 
 import scala.swing.Publisher
 
@@ -19,7 +19,7 @@ class ViolationMenu
   extends JPopupMenu {
 
   val targetNode = graph.getConcreteNode(target)
-  add(new ManualSolveAction(publisher, targetNode))
+  //add(new ManualSolveAction(publisher, targetNode))
   add(new AutoSolveAction(publisher, targetNode, printingOptionsControl))
 
 }

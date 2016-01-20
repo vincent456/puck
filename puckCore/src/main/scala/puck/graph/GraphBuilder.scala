@@ -23,14 +23,6 @@ trait GraphBuilder {
     }
   }
 
-  def addAnonymousNode(kind : NodeKind) : NodeIdT = {
-    val (n, g2) = g.addConcreteNode(DependencyGraph.anonymousName, kind)
-    g = g2
-    n.id
-  }
-
-
-
   def setMutability(id : NodeIdT, mutable : Boolean): Unit ={
     g = g.setMutability(id, mutable)
   }
@@ -56,11 +48,6 @@ trait GraphBuilder {
      g = g.addUsesDependency(typeUse, typeMemberUse)
   }
 
-  def addDef(decl : NodeId, _def : NodeId) : Unit = {
-    g = g.addEdge(Contains(decl, _def))
-    nodesByName +=
-      ((getFullName(decl) + DependencyGraph.scopeSeparator + DependencyGraph.anonymousName) -> _def)
-  }
   def addParams(decl : NodeId, params : List[Int]) : Unit = {
     params.reverseIterator.foreach{ //order matters
       param =>

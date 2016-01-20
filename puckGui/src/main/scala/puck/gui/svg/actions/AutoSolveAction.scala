@@ -23,10 +23,10 @@ class AutoSolveAction
   printingOptionsControl: PrintingOptionsControl)
 (implicit graph : DependencyGraph,
   graphUtils: GraphUtils)
-  extends AbstractAction("Solve (auto choices, choose result)") {
+  extends AbstractAction("Solve [BETA - under development]") {
 
   private def dialog(res : Search[SResult]) : Option[Logged[DependencyGraph]] = {
-    val title = "Auto solve"
+    val title = "Solve"
 
     val confirm : JComponent => Result.Value =
       c =>
@@ -74,7 +74,7 @@ class AutoSolveAction
     engine.explore()
 
     try {
-      puck.actions.printErrOrPushGraph(publisher, "Auto solve action : ") {
+      puck.actions.printErrOrPushGraph(publisher, "Solve action : ") {
         dialog(engine) match {
           case Some(g) => g.toLoggedTry
           case None => LoggedError("cancelled")

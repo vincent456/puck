@@ -40,6 +40,7 @@ object KindType {
   def isInstance(kt : KindType) : Boolean = !isStatic(kt)
 }
 
+
 sealed trait KindType
 case object UnknownKindType extends KindType
 case object NameSpace extends KindType

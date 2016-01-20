@@ -1,11 +1,12 @@
 package puck.javaGraph.commutativity
 
 import puck.Settings._
-import puck.graph.Factory
+import puck.graph.{ShowDG, Factory}
 import puck.graph.comparison.Mapping
 import puck.graph.transformations.rules.{CreateTypeMember, CreateParameter, Move}
 import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.nodeKind.Field
+import puck.util.Debug
 import puck.{QuickFrame, Settings, AcceptanceSpec}
 
 class CommutativityMove extends AcceptanceSpec {
@@ -29,7 +30,7 @@ class CommutativityMove extends AcceptanceSpec {
       }
    }
 
-    scenario("Move top from different Packages - local var decl") {
+  scenario("Move top from different Packages - local var decl") {
       val p = "topLevelClass/classesInDifferentPackages/localVarDecl"
       val _ = new ScenarioFactory(
         s"$examplesPath/$p/A.java",
@@ -155,16 +156,6 @@ class CommutativityMove extends AcceptanceSpec {
         val g = Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateTypeMember(Field))).right
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
-
-//        import scalaz.syntax.show._
-//        import puck.util.Debug.showNodeIndex
-//        g.nodesIndex.println
-//        recompiledEx.graph.nodesIndex.println
-//
-//        val mapping = Mapping.create(g, recompiledEx.graph)
-//
-//       println(Mapping.mapCVM(mapping, g.edges.userMap))
-//       println(recompiledEx.graph.edges.userMap)
 
         assert( Mapping.equals(g, recompiledEx.graph) )
 

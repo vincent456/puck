@@ -29,21 +29,21 @@ class FullDGTreeModel(val graph : DependencyGraph) extends DGTreeModel{
 
   def getRoot: AnyRef = graph.root
 
-  private def getChildren(parent: scala.Any) : Set[NodeId] =
+  private def getChildren(parent: scala.Any) : List[DGNode] =
     parent match {
       case node : DGNode =>
-        graph.content(node.id)
+        (graph.content(node.id) map graph.getNode).toList sortBy (_.name)
       case _ => error()
     }
 
   def getIndexOfChild(parent: scala.Any, child: scala.Any): Int =
-    getChildren(parent).toList map graph.getNode indexOf child
+    getChildren(parent) indexOf child
 
   def getChildCount(parent: scala.Any): Int =
     getChildren(parent).size
 
   def getChild(parent: scala.Any, index: Int): DGNode =
-    graph.getNode(getChildren(parent).toList(index))
+    getChildren(parent)(index)
 
   def isLeaf(node: scala.Any): Boolean =
     getChildCount(node) == 0

@@ -17,8 +17,6 @@ trait JavaGraphBuilder extends GraphBuilder{
      NodeIndex(JavaNodeKind.root), EdgeMap(),
      AbstractionMap(), ConstraintsMaps(), Recording())
 
-  def addDefinitionNode() : NodeIdT = addAnonymousNode(Definition)
-
   def addPackageNode(fullName: String, localName:String, mutable : Boolean) : NodeIdT =
     addNode(fullName, localName, Package, mutable)
 

@@ -33,7 +33,7 @@ object JavaIntro extends Intro {
     ): (ConcreteNode, ConcreteNode, DependencyGraph) = {
 
     val (cn, g) = this.apply(graph, localName, kind)
-    val (defNode, g2) = g.addConcreteNode(DependencyGraph.anonymousName, Definition)
+    val (defNode, g2) = g.addConcreteNode(DependencyGraph.definitionName, Definition)
 
     (cn, defNode,
       g2.setType(cn.id, typ)

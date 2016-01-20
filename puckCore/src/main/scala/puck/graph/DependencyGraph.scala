@@ -17,7 +17,7 @@ object DependencyGraph {
   val unrootedStringId = "<DETACHED>"
   val scopeSeparator : String = "."
 
-  val anonymousName : String = "Definition"
+  val definitionName : String = "Definition"
 
   type AbstractionMap = SetValueMap.T[NodeId, Abstraction]
   val AbstractionMap = SetValueMap

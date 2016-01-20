@@ -166,13 +166,17 @@ class GraphExplorer(treeIcons : DGTreeIcons,
         }
       })
 
+
+      def show(tp : TreePath): String =
+        tp.getLastPathComponent.asInstanceOf[DGNode].name
+
+
       tree.addTreeSelectionListener(new TreeSelectionListener {
         def valueChanged(e: TreeSelectionEvent): Unit = {
-          selectedNodes = e.getPaths.foldLeft(List[NodeId]()) {
-            (l, tp) =>
-              val n = tp.getLastPathComponent.asInstanceOf[DGNode]
-              n.id :: l
-          }
+
+          selectedNodes =
+            tree.getSelectionPaths map (_.getLastPathComponent.asInstanceOf[DGNode].id) toList
+
         }
       })
       contents = Component.wrap(tree)

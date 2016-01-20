@@ -35,6 +35,8 @@ object JastaddGraphBuilder {
   def primitive = Primitive
   def typeVariable = TypeVariable
   def wildcardType = WildCardType
+
+  def definitionName = DependencyGraph.definitionName
 }
 
 class JastaddGraphBuilder(val program : AST.Program) extends JavaGraphBuilder {
@@ -59,12 +61,10 @@ class JastaddGraphBuilder(val program : AST.Program) extends JavaGraphBuilder {
             case Some(FieldDeclHolder(d)) => addBodyDecl(d)
             case Some(mdh : MethodDeclHolder) => addBodyDecl(mdh.decl)
             case Some(ConstructorDeclHolder(cdecl)) =>
-              cdecl.hostType() match {
-                case classDecl : AnonymousDecl =>
-                  cdecl.buildDG(this, nodesByName(classDecl.fullName()))
+              nodesByName get cdecl.hostType().fullName() match {
+                case Some(pid) => cdecl.buildDG(this, pid)
                 case _ => addBodyDecl(cdecl)
               }
-
             case Some(tdh : TypedKindDeclHolder) => addApiTypeNode(tdh.decl)
             case sdh =>
               println( g.fullName(nodeId) + " " + sdh + " attach orphan nodes unhandled case")
@@ -153,19 +153,24 @@ class JastaddGraphBuilder(val program : AST.Program) extends JavaGraphBuilder {
   def register( nid : NodeIdT,
                 kindExpected : JavaNodeKind,
                 declHolder : => ASTNodeLink,
+                kindFound : String ): Unit =
+  register(nid, Set[NodeKind](kindExpected), declHolder, kindFound)
+
+  def register( nid : NodeIdT,
+                kindExpected : Set[NodeKind],
+                declHolder : => ASTNodeLink,
                 kindFound : String ): Unit ={
-    if(g.getConcreteNode(nid).kind == kindExpected)
+    if(kindExpected contains g.getConcreteNode(nid).kind)
       graph2ASTMap += (nid -> declHolder)
-    //g = g.setInternal(nid, declHolder)
     else
       throwRegisteringError(g.getConcreteNode(nid), kindFound)
   }
 
   def registerDecl(n : NodeIdT, decl : AST.InterfaceDecl) =
-    register(n, Interface, InterfaceDeclHolder(decl), "InterfaceDecl")
+    register(n, Set[NodeKind](Interface, InnerInterface), InterfaceDeclHolder(decl), "InterfaceDecl")
 
   def registerDecl(n : NodeIdT, decl : AST.ClassDecl) =
-    register(n, Class, ClassDeclHolder(decl), "ClassDecl")
+    register(n, Set[NodeKind](Class, InnerClass), ClassDeclHolder(decl), "ClassDecl")
 
   def registerDecl(n : NodeIdT, decl : AST.TypeVariable) =
     register(n, TypeVariable, TypeVariableHolder(decl), "TypeVariable")
@@ -176,33 +181,14 @@ class JastaddGraphBuilder(val program : AST.Program) extends JavaGraphBuilder {
   def registerDecl(n : NodeIdT, decl : AST.TypeDecl) =
     register(n, Primitive, PrimitiveDeclHolder(decl), "PrimitiveType")
 
-  /*def registerDecl(n : NodeIdT, decl : AST.PrimitiveType){
-    g.getNode(n).kind match {
-      case Primitive =>
-        g = g.setInternal(n, PrimitiveDeclHolder(Some(decl)))
-      case _ => throwRegisteringError(g.getNode(n), "PrimitiveType")
-    }
-  }*/
-
   def registerDecl(n : NodeIdT, decl : AST.ConstructorDecl)=
     register(n, Constructor, ConstructorDeclHolder(decl), "ConstructorDecl")
 
+  def registerDecl(n : NodeIdT, decl : AST.MethodDecl) : Unit =
+    register(n, Set[NodeKind](Method, StaticMethod, AbstractMethod), MethodDeclHolder(decl) , "MethodDecl")
 
-  def registerDecl(n : NodeIdT, decl : AST.MethodDecl) : Unit = {
-    g.getConcreteNode(n).kind match {
-      case Method | StaticMethod | AbstractMethod =>
-        graph2ASTMap += (n -> MethodDeclHolder(decl))
-      case _ => throwRegisteringError(g.getConcreteNode(n), "MethodDecl")
-    }
-  }
-
-  def registerDecl(n : NodeIdT, decl : AST.FieldDeclaration) : Unit = {
-    g.getConcreteNode(n).kind match {
-      case Field | StaticField=>
-        graph2ASTMap += (n -> FieldDeclHolder(decl))
-      case _ => throwRegisteringError(g.getConcreteNode(n), "FieldDeclaration")
-    }
-  }
+  def registerDecl(n : NodeIdT, decl : AST.FieldDeclaration) : Unit =
+    register(n, Set[NodeKind](Field, StaticField), FieldDeclHolder(decl), "FieldDeclaration")
 
   def registerDecl(n : NodeIdT, decl : AST.ParameterDeclaration) : Unit =
     register(n, Param, ParameterDeclHolder(decl), "ParameterDeclaration")

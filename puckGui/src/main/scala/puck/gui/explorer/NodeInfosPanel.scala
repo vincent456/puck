@@ -53,8 +53,8 @@ class NodeInfosPanel
 
     background = Color.white
 
-    contents += new Label(node.kind + " : " +
-      (graph, node).shows(nodeNameTypCord))
+    contents += new Label(s"${node.kind} ${node.name} : " +
+      (graph, graph.structuredType(node.id)).shows)
     val providers = Metrics.providers(graph, node.id)
     val clients = Metrics.clients(graph, node.id)
     val internals = Metrics.internalDependencies(graph, node.id).size

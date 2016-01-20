@@ -126,7 +126,7 @@ class PuckInterfacePanel
     case GraphUpdate(g) =>
       loadedGraphButtonsWrapper.contents.clear()
       loadedGraphButtonsWrapper.contents += loadedGraphButtons(g)
-      leftComponent.revalidate()
+      PuckInterfacePanel.this.revalidate()
   }
 
   leftComponent = new BoxPanel(Orientation.Vertical) {

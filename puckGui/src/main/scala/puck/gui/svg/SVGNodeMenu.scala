@@ -2,7 +2,6 @@ package puck.gui
 package svg
 
 import puck.graph._
-import puck.gui.svg.actions.{AutoSolveAction, ManualSolveAction}
 import javax.swing._
 
 object SVGNodeMenu{

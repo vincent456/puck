@@ -5,9 +5,8 @@ import javax.swing.{JMenuItem, JPopupMenu}
 
 import puck.actions._
 import puck.graph._
-import puck.graph.io.PrintingOptions
 import puck.graph.transformations.rules.Redirection
-import puck.gui.svg.actions.{AutoSolveAction, ManualSolveAction}
+import puck.gui.svg.actions.AutoSolveAction
 
 import scala.swing.Publisher
 
@@ -78,7 +77,7 @@ class ConcreteNodeMenu
 
     if (graph.isWronglyContained(node.id)
       || graph.isWronglyUsed(node.id)) {
-      this.add(new ManualSolveAction(publisher, node))
+      //this.add(new ManualSolveAction(publisher, node))
       this.add(new AutoSolveAction(publisher, node, printingOptionsControl))
     }
   }

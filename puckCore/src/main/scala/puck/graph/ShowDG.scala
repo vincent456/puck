@@ -57,7 +57,7 @@ object ShowDG extends ShowConstraints{
         val name =
           if(n.kind.kindType == ValueDef)
             dg.container(n.id) map {
-              dg.getConcreteNode(_).name + DependencyGraph.scopeSeparator + DependencyGraph.anonymousName
+              dg.getConcreteNode(_).name + DependencyGraph.scopeSeparator + n.name
             } getOrElse "OrphanDefinition"
           else n.name
         Cord(s"${n.id} - ${n.kind} $name", typeHolderCord(dg, dg.styp(n.id)))

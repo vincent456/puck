@@ -1,8 +1,11 @@
 package puck
 package javaGraph
 
+import puck.Settings._
+import puck.graph.comparison.Mapping
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph._
+import puck.graph.transformations.rules.Move
 import puck.util.Debug
 
 
@@ -150,6 +153,87 @@ class GraphBuildingSpec extends AcceptanceSpec {
   }
 
 
+  feature("contains registration"){
+
+    scenario("static class member") {
+      val _ = new ScenarioFactory(
+        s"$graphBuildingExamplesPath/staticClassMember/A.java") {
+
+        val p = fullName2id("p")
+        val classA = fullName2id("p.A")
+        val innerA = fullName2id("p.A.InnerA")
+        val innerACtor = fullName2id("p.A.InnerA.InnerA()")
+        val innerACtorDef = fullName2id("p.A.InnerA.InnerA().Definition")
+
+        graph.container(classA).value shouldBe p
+        graph.content(p) should contain (classA)
+
+        graph.container(innerA).value shouldBe classA
+        graph.content(classA) should contain (innerA)
+
+        graph.container(innerACtor).value shouldBe innerA
+        graph.content(innerA) should contain (innerACtor)
+
+        graph.container(innerACtorDef).value shouldBe innerACtor
+        graph.content(innerACtor) should contain (innerACtorDef)
+
+      }
+
+    }
+
+    scenario("instance class member") {
+      val _ = new ScenarioFactory(
+        s"$graphBuildingExamplesPath/instanceClassMember/A.java") {
+
+        val p = fullName2id("p")
+        val classA = fullName2id("p.A")
+        val innerA = fullName2id("p.A.InnerA")
+        val innerACtor = fullName2id("p.A.InnerA.InnerA()")
+        val innerACtorDef = fullName2id("p.A.InnerA.InnerA().Definition")
+
+        graph.container(classA).value shouldBe p
+        graph.content(p) should contain (classA)
+
+        graph.container(innerA).value shouldBe classA
+        graph.content(classA) should contain (innerA)
+
+        graph.container(innerACtor).value shouldBe innerA
+        graph.content(innerA) should contain (innerACtor)
+
+        graph.container(innerACtorDef).value shouldBe innerACtor
+        graph.content(innerACtor) should contain (innerACtorDef)
+
+      }
+
+    }
+
+    scenario("instance class declared in static method") {
+      val _ = new ScenarioFactory(
+        s"$graphBuildingExamplesPath/namedClassDeclaredInStaticMethod/A.java") {
+        val p = fullName2id("p")
+        val classA = fullName2id("p.A")
+        val meth = fullName2id("p.A.declareInnerClass()")
+        val methDef = fullName2id("p.A.declareInnerClass().Definition")
+//TODO fix type decl fullName
+//        val innerClass = fullName2id("p.A.declareInnerClass().CanDoMInstance")
+        val innerClass = fullName2id("p.A.CanDoMInstance")
+
+        graph.container(classA).value shouldBe p
+        graph.content(p) should contain (classA)
+
+        graph.container(meth).value shouldBe classA
+        graph.content(classA) should contain (meth)
+
+        graph.container(methDef).value shouldBe meth
+        graph.content(meth) should contain (methDef)
+
+        graph.container(innerClass).value shouldBe methDef
+        graph.content(methDef) should contain (innerClass)
+      }
+
+    }
+
+  }
 
 
   feature("typeUse typeMemberUse relation registration"){
@@ -163,7 +247,6 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
         val typeUsed = fullName2id("p.B")
         val typeMemberUsedDecl = fullName2id("p.B.mb()")
-
 
 
         val typeUse = graph.getUsesEdge(fieldTypeUserDecl, typeUsed).value

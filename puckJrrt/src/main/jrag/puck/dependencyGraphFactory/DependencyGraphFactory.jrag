@@ -76,6 +76,11 @@ aspect DependencyGraphFactory {
 
 	public boolean CompilationUnit.buildDependencyGraph_CU(JastaddGraphBuilder builder){
 		if(pathName() != null){
+
+			for(ImportDecl id : getImportDecls()){
+				id.lockAllNames();
+			}
+
 			int packageNode = builder.addPackage(getPackageDecl(), true);
 
 			for (TypeDecl td : getTypeDecls()){
@@ -156,10 +161,19 @@ aspect DependencyGraphFactory {
 	}
 
 	public int BodyDecl.buildDG_handleDef(JastaddGraphBuilder builder, int thisDeclId){
-		ASTNode def = getDefinition();
-		int defId = builder.addDefinitionNode();
+		Block def = getBody();
+		int defId = ASTNode.buildDefNode(builder, this);
 		def.registerDef(builder, defId);
-		builder.addDef(thisDeclId, defId);
+		builder.addContains(thisDeclId, defId);
+		def.buildDG(builder, defId);
+		return defId;
+	}
+
+	public int FieldDeclaration.buildDG_handleDef(JastaddGraphBuilder builder, int thisDeclId){
+		Expr def = getInit();
+		int defId = ASTNode.buildDefNode(builder, this);
+		def.registerDef(builder, defId);
+		builder.addContains(thisDeclId, defId);
 		def.buildDG(builder, defId);
 		return defId;
 	}
@@ -226,18 +240,6 @@ aspect DependencyGraphFactory {
 		
 	}
 
-
-	public void ASTNode.registerDef(JastaddGraphBuilder builder, int thisId){
-		throw new Error("registerAsDef not defined for " + this.getClass());
-	}
-
-	public void Block.registerDef(JastaddGraphBuilder builder, int thisId){
-		builder.registerDef(thisId, this);
-	}
-
-	public void Expr.registerDef(JastaddGraphBuilder builder, int thisId){
-		builder.registerDef(thisId, this);
-	}
 
 	static void Access.buildDG(TypeMemberAccess access, int containerId,
         scala.Option<UsesAccessKind> accK, JastaddGraphBuilder builder){

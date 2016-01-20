@@ -47,7 +47,7 @@ aspect Desambiguation{
 	public String ASTNode.fullName(){
 		throw new FullNameException(this);
 	}
-	
+
 	public String Program.fullName(){
 		throw new ProgramRootFullNameException(this);
 	}
@@ -62,7 +62,6 @@ aspect Desambiguation{
     }
 	
 	public String ParTypeAccess.fullName(){
-		//return ((TypeAccess)getTypeAccess()).fullName() + typeArgumentListString();
 		return genericDecl().fullName();
     }
 
@@ -78,35 +77,31 @@ aspect Desambiguation{
 		String fullName="";
 		List<VariableDecl> vdl = getVariableDeclList();
 		for (VariableDecl vd : vdl) {
-			fullName+=vd.hostBodyDecl().hostType().fullName()+"."+vd.name();
+			fullName+= hostType().typeName()+"."+vd.name();
 		}
 		return fullName;
 	}
 	
 	public String FieldDeclaration.fullName(){
-		return hostType().fullName()+"."+name();
+		return hostType().typeName()+"."+name();
 	}
 
+	public String VariableDecl.fullName(){ //should it have a fullName ??
+		return hostBodyDecl().fullName()+"."+name();
+	}
 
 	public String ParameterDeclaration.fullName(){
 		return hostBodyDecl().fullName()+"."+name();
-
 	}
-
-	public String VariableDecl.fullName(){
-		return hostBodyDecl().fullName()+"."+name();		
-	}
-
-
 	public String AnonymousDecl.fullName(){
 		return hostBodyDecl().fullName() + "." + name();
 	}
 
 	public String InstanceInitializer.fullName(){
-		return hostType().fullName()+".InstanceInitializer";//add an id number ??
+		return hostType().typeName()+".InstanceInitializer";//add an id number ??
 	}
 	public String StaticInitializer.fullName(){
-		return hostType().fullName()+".StaticInitializer";//add an id number ??
+		return hostType().typeName()+".StaticInitializer";//add an id number ??
 	}
 
 	
@@ -140,7 +135,7 @@ aspect Desambiguation{
 
     public String Callable.getDesambiguateFullName(){
 
-    	return hostType().fullName()+"."+name()
+    	return hostType().typeName()+"."+name()
     		    + getParametersAsString();
     }
 }

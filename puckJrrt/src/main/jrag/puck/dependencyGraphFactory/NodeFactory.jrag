@@ -1,44 +1,64 @@
 aspect NodeFactory  {
 
+	public int DGNamedElement.buildDGNode(JastaddGraphBuilder builder){
+		if(isSubstitute())
+			return ASTNode.buildDGNode(builder, (DGNamedElement)((Substitute) this).getOriginal());
+		else
+			return ASTNode.buildDGNode(builder, this);
 
-	public int ASTNode.buildDGNode(JastaddGraphBuilder builder){
-
-        if(isNamedElement()){
-			if(this instanceof ParameterDeclaration &&
-				this.getParent() instanceof CatchClause){
-				//not a parameter but a var decl in a catch clause
-				return hostBodyDecl().buildDGNode(builder);
-			}
-
-			DGNamedElement namedElement;
-			if(isSubstitute())
-				namedElement = (DGNamedElement) ((Substitute) this).getOriginal();
-			else
-				namedElement = (DGNamedElement) this;
-			try {
-				return builder.getNodeByName(namedElement.fullName());
-			}
-			catch(NoSuchElementException e){
-				int node = builder.addNode(namedElement.fullName(), namedElement.name(),
-					namedElement.getDGNodeKind(), fromSource());
-
-			    namedElement.registerDecl(builder, node);
-	      		return node;
-  			}
+	}
+	public int ParameterDeclaration.buildDGNode(JastaddGraphBuilder builder){
+		if(this.getParent() instanceof CatchClause){
+			//not a parameter but a var decl in a catch clause
+			return hostBodyDecl().buildDGNode(builder);
 		}
-
-		throw new DGBuildingError(this + " (" + this.getClass()+ ") in "+ this.hostBodyDecl() +
-			" in " + this.compilationUnit().pathName() +
-			" does not know how to create an DG Node");
+		return ASTNode.buildDGNode(builder, this);
 	}
 
-//	public int ConstructorDecl.buildDGNode(JastaddGraphBuilder builder){
-//		int nodeId = super.buildDGNode(builder);
-//		int hostTypeId = hostType().buildDGNode(builder);
-//		Uses typeUse = new Uses(nodeId, hostTypeId, UsesAccessKind.none());
-//		builder.addEdge(typeUse);
-//		return nodeId;
-//	}
+	public static int ASTNode.buildDGNode(JastaddGraphBuilder builder,
+										  DGNamedElement namedElement){
+		try {
+			return builder.getNodeByName(namedElement.fullName());
+		}
+		catch(NoSuchElementException e){
+			int node = builder.addNode(namedElement.fullName(), namedElement.name(),
+					namedElement.getDGNodeKind(), namedElement.fromSource());
+
+			namedElement.registerNode(builder, node);
+			return node;
+		}
+	}
+
+	public int ASTNode.throwBuildDGNodeError(){
+		throw new DGBuildingError(this + " (" + this.getClass()+ ") in "+ this.hostBodyDecl() +
+				" in " + this.compilationUnit().pathName() +
+				" does not know how to create an DG Node");
+	}
+
+	public static int ASTNode.buildDefNode(JastaddGraphBuilder builder,
+										   ASTNode namedElement){
+		String defFullName = namedElement.fullName() + "." +
+				JastaddGraphBuilder.definitionName();
+		try {
+			return builder.getNodeByName(defFullName);
+		}
+		catch(NoSuchElementException e){
+			return builder.addNode(defFullName,
+					JastaddGraphBuilder.definitionName(),
+					JastaddGraphBuilder.definition(),
+					namedElement.fromSource());
+		}
+	}
+
+	public int ASTNode.buildDGNode(JastaddGraphBuilder builder){
+		return throwBuildDGNodeError();
+	}
+	public int AbstractWildcardType.buildDGNode(JastaddGraphBuilder builder){
+		if(isNamedElement())
+			return super.buildDGNode(builder);
+		return throwBuildDGNodeError();
+	}
+
 
     public int ParClassDecl.buildDGNode(JastaddGraphBuilder builder){
         return genericDecl().buildDGNode(builder);
