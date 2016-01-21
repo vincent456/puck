@@ -126,7 +126,7 @@ abstract class Abstract {
             val g02 = g01.setType(pabs.id, g0 styp paramId)
               .addContains(n.id, pabs.id)
             g02.usedBy(paramId).foldLeft(g02) {
-              (g00, tid) => g01.addUses(pabs.id, tid)
+              (g00, tid) => g00.addUses(pabs.id, tid)
             }
         }
         val abs = AccessAbstraction(n.id, policy)

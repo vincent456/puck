@@ -53,6 +53,8 @@ case class EdgeMap
   types : Map[NodeId, Type],
   typedBy : EdgeMapT){
 
+  def containsList : List[NodeIdP] =
+    containers.toList map {case (cted, cter) => (cter, cted)}
 
   def allUsesList : List[NodeIdP] = usedMap.flatList ++ typeUsesList
 
@@ -65,10 +67,10 @@ case class EdgeMap
   }
 
   def usedBy(userId : NodeId) : Set[NodeId] =
-    (types get userId map (_.ids.toSet) getOrElse Set()) ++ (usedMap getFlat userId)
+    /*(types get userId map (_.ids.toSet) getOrElse Set()) ++*/ (usedMap getFlat userId)
 
   def usersOf(usedId: NodeId) : Set[NodeId] =
-    (userMap getFlat usedId) ++ (typedBy getFlat usedId)
+    (userMap getFlat usedId) /*++ (typedBy getFlat usedId)*/
 
   def add(edge : DGEdge) : EdgeMap =
     edge match {

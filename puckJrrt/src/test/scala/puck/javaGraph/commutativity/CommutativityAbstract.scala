@@ -7,6 +7,7 @@ import puck.graph.constraints.SupertypeAbstraction
 import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.JGraphUtils.{transformationRules => Rules}
 import puck.javaGraph.nodeKind.Interface
+import puck.util.Debug
 import puck.{QuickFrame, AcceptanceSpec, Settings}
 import puck.Settings.outDir
 class CommutativityAbstract extends AcceptanceSpec {
@@ -44,14 +45,12 @@ class CommutativityAbstract extends AcceptanceSpec {
         val packageP = fullName2id("p")
         val classA = fullName2id("p.A")
 
-
         val (AccessAbstraction(itc, _), g0) =
           Rules.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
             Interface, SupertypeAbstraction).right
 
         val g = g0.addContains(packageP, itc)
 
-        //println(Debug.showNodeIndex.shows(g.nodesIndex))
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
 

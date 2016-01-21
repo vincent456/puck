@@ -553,13 +553,12 @@ class DependencyGraph
   }
 
 
-  def violations() : Seq[DGEdge] =
-    concreteNodesId.flatMap { n =>
-      val wu = constraints.wrongUsers(this, n).map(Uses(_,n))
-      if(constraints.isWronglyContained(this, n))
-         Contains(container(n).get, n) +: wu
-      else wu
-    }.toSeq
+  def violations() : Seq[DGEdge] ={
+    def isViolation(e : NodeIdP) = constraints.isViolation(this, e._1, e._2)
+    (containsList filter isViolation map Contains.apply) ++:
+      (usesList filter isViolation map Uses.apply)
+  }
+
 
 
 
