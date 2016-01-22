@@ -49,15 +49,15 @@ object DGNodeWithViolationTreeCellRenderer
         case TypeConstructor
           | InstanceValueDecl
           | StaticValueDecl =>
-          graph.definitionOf(nodeId) map graph.usedBy getOrElse Set[NodeId]()
+          graph.definitionOf(nodeId) map graph.usedByExcludingTypeUse getOrElse Set[NodeId]()
         case _ => Set[NodeId]()
       }
-    (graph usedBy nodeId) ++ usedByDef exists (used => graph isViolation ((nodeId, used)))
+    (graph usedByExcludingTypeUse nodeId) ++ usedByDef exists (used => graph isViolation ((nodeId, used)))
   }
 
 
   def targetOfViolation(graph : DependencyGraph, nodeId : NodeId) : Boolean =
-    (graph usersOf nodeId) exists (user => graph isViolation ((user, nodeId)))
+    (graph usersOfExcludingTypeUse nodeId) exists (user => graph isViolation ((user, nodeId)))
 
   override def getTreeCellRendererComponent(tree: JTree, value: scala.Any, selected: Mutability,
                                             expanded: Mutability, leaf: Mutability, row: NodeId,
@@ -99,7 +99,7 @@ class GraphExplorer(treeIcons : DGTreeIcons,
   reactions += {
     case GraphUpdate(graph) => display(graph, None)
     case GraphFocus(graph, edge) =>
-      println("GraphExplorer receive GraphFocus")
+      println("GraphExplorer receives GraphFocus")
       display(graph, Some(edge))
   }
 
@@ -114,9 +114,11 @@ class GraphExplorer(treeIcons : DGTreeIcons,
         vn.potentialMatches.toSeq map graph.getConcreteNode) match {
        case None => ()
        case Some(cn) =>
-         import ShowDG._
-         val msg = s"Concretize ${(graph, vn).shows} into ${cn.name}"
-        publish(PrintErrOrPushGraph(msg, LoggedSuccess(msg, graph.concretize(vn.id, cn.id))))
+//         import ShowDG._
+//         val msg = s"Concretize ${(graph, vn).shows} into ${cn.name}"
+         import Recording._
+         val r2 = graph.recording.subRecordFromLastMilestone.concretize(vn.id, cn.id)
+        publish(RewriteHistory(r2))
       }
     }
     else {

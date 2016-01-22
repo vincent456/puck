@@ -82,6 +82,7 @@ class SVGController
     e =>
        new EdgeMenu(this, e,
         printingOptionsControl,
+        blurrySelection = true,
         graphStack.graph,
         graphUtils )
   }

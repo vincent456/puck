@@ -30,7 +30,7 @@ object Debug {
         (userId : NodeId) => ()
     }
 
-    g.usersOf(n).foreach {
+    g.usersOfExcludingTypeUse(n).foreach {
       userId =>
         logger.writeln(s"\t- user ${(g, userId).shows}")
         printUser(userId)
@@ -41,7 +41,7 @@ object Debug {
   def logUsedBy(g : DependencyGraph, logger : PuckLogger, n : NodeId) = {
     logger.writeln(s"used by ${(g, n).shows} :")
 
-    g.usedBy(n).foreach{
+    g.usedByExcludingTypeUse(n).foreach{
       usedId =>
         g.kindType(usedId) match {
           case InstanceValueDecl =>

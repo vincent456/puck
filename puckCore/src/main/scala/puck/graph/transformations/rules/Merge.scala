@@ -129,8 +129,8 @@ class Merge
         mergeInto0(g, consumedId, consumerId){
           (g, consumedId, _) =>
             val content = g.definitionOf(consumedId) match {
-              case None => g.parameters(consumedId)
-              case Some(d) => d :: g.parameters(consumedId)
+              case None => g.parametersOf(consumedId)
+              case Some(d) => d :: g.parametersOf(consumedId)
             }
 //            val content = g.content(consumedId)
             content.foldLoggedEither(g.comment("Delete consumed def")) {
@@ -164,7 +164,7 @@ class Merge
     val lg = g logComment log
 
     for {
-      g1 <- g.usersOf(consumedId).foldLoggedEither[PuckError, DependencyGraph](lg){
+      g1 <- g.usersOfExcludingTypeUse(consumedId).foldLoggedEither[PuckError, DependencyGraph](lg){
         (g0, userId) =>
           if(userId == consumedId) LoggedSuccess(g0.removeEdge(Uses(userId, userId)))
           else
@@ -174,7 +174,7 @@ class Merge
 
 
 
-      g2 <- g1.usedBy(consumedId).foldLoggedEither(g1){
+      g2 <- g1.usedByExcludingTypeUse(consumedId).foldLoggedEither(g1){
         (g0, usedId) =>
           LoggedSuccess(g0.changeSource(Uses(consumedId, usedId), consumerId))
       }
@@ -280,7 +280,7 @@ class Merge
           foldLoggedEither(graph)(removeConcreteNode)
       // g1 <- graph.content(n.id).map(graph.getConcreteNode).foldLeftM(graph)(removeConcreteNode)
       g2 <-
-      if (g1.usersOf(n.id).nonEmpty)
+      if (g1.usersOfExcludingTypeUse(n.id).nonEmpty)
         LoggedError("Cannot remove a used node")
       else {
         val g00 =
@@ -295,7 +295,7 @@ class Merge
         val g01 = graph.directSuperTypes(n.id).foldLeft(g00) {
           (g, supId) => g.removeIsa(n.id, supId)
         }
-        val g02 = graph.usedBy(n.id).foldLeft(g01) {
+        val g02 = graph.usedByExcludingTypeUse(n.id).foldLeft(g01) {
           (g, usedId) =>
             //getUsesEdge needed to recover accessKind
             g.removeEdge(g.getUsesEdge(n.id, usedId).get)

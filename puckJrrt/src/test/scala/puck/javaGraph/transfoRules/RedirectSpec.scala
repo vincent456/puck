@@ -116,7 +116,7 @@ class RedirectSpec
         assert(ctorUse.existsIn(graph))
         assert(!ctorMethodUse.existsIn(graph))
 
-        graph.parameters(callerDecl) shouldBe empty
+        graph.parametersOf(callerDecl) shouldBe empty
 
         val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
 
@@ -126,7 +126,7 @@ class RedirectSpec
         assert(ctorMethodUse.existsIn(g2))
         assert(!ctorUse.existsIn(g2))
 
-        val parameters = g2.parameters(callerDecl)
+        val parameters = g2.parametersOf(callerDecl)
         parameters.size shouldBe 1
 
         assert(g2.uses(parameters.head, factoryClass))
@@ -185,7 +185,7 @@ class RedirectSpec
         assert(ctorUse existsIn graph)
         assert(!(ctorMethodUse existsIn graph))
 
-        graph.parameters(callerDecl) shouldBe empty
+        graph.parametersOf(callerDecl) shouldBe empty
 
         val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
 
@@ -197,7 +197,7 @@ class RedirectSpec
         assert(!(ctorUse existsIn g2))
         assert(ctorMethodUse existsIn g2)
 
-        val parameters = g2.parameters(callerDecl)
+        val parameters = g2.parametersOf(callerDecl)
         parameters.size shouldBe 1
 
         assert(g2.uses(parameters.head, constructedClass))

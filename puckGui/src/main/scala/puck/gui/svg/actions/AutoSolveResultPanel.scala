@@ -76,7 +76,7 @@ trait GraphPanelResultPanel extends ResultPanel {
 
   def selectedResultGraphPanel = {
 
-    import Recording.RecordOps
+    import Recording.RecordingOps
     val g = selectedResult.value
 
     val nodeVisibles  = {
@@ -107,7 +107,7 @@ class AutosolveResultPanel
 
   val visibilitySet = {
 
-    val users = beforeGraph.usersOf(violationTarget.id)
+    val users = beforeGraph.usersOfExcludingTypeUse(violationTarget.id)
 
     val targetAndAncestors =
       beforeGraph.containerPath(violationTarget.id)

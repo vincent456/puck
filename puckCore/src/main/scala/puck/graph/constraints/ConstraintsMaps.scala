@@ -90,7 +90,6 @@ case class ConstraintsMaps
      val uses = Uses(user, used)
       forAncestors(graph, used){ used1 =>
        !graph.contains_*(used1.nid, user) &&
-        used1.nid != user &&
          hideConstraints.getOrElse(used1, Iterable.empty).exists(_.violated(graph, uses))
      }
    }
@@ -104,7 +103,7 @@ case class ConstraintsMaps
 
 
    def wrongUsers(graph : GraphT, node : NIdT) : List[NIdT] = {
-     graph.usersOf(node).foldLeft(List[NIdT]()){ case(acc, user) =>
+     graph.usersOfExcludingTypeUse(node).foldLeft(List[NIdT]()){ case(acc, user) =>
        if( isViolation(graph, user, node) ) user +: acc
        else acc
      }

@@ -14,13 +14,16 @@ class EdgeMenu
 ( publisher : Publisher,
   edge : NodeIdP,
   printingOptionsControl: PrintingOptionsControl,
+  blurrySelection : Boolean,
   implicit val graph: DependencyGraph,
   implicit val graphUtils: GraphUtils)
   extends JPopupMenu {
 
 
-
   val (source, target) = edge
+
+  println("target" + graph.getConcreteNode(target))
+  println("abstractions " +graph.abstractions(target))
 
   if(graph.isViolation(edge)){
     val targetNode = graph.getConcreteNode(target)
@@ -36,26 +39,26 @@ class EdgeMenu
     add(new RemoveEdgeAction(publisher, Isa(source, target)))
   }
 
-  def addShowBRActions(src : NodeId, tgt : NodeId) : Unit =
+  def addUsesActions(src : NodeId, tgt : NodeId) : Unit =
     graph.getUsesEdge(src, tgt) foreach {
       uses =>
         isUseEdge = true
         add(new ShowTypeRelationshipAction(Some(uses), publisher))
 
-        val abstractions = graph.abstractions(target)
+        val abstractions = graph.abstractions(tgt)
         if(abstractions.nonEmpty)
           add(new RedirectAction0(publisher, uses, abstractions.toSeq))
-
-
-
-
     }
 
-  addShowBRActions(source, target)
 
-  graph.definitionOf(source).foreach{
-    userDef => addShowBRActions(userDef, target)
-  }
+
+  if(blurrySelection)
+    graph.nodePlusDefAndParams(source).foreach{
+      userDef => addUsesActions(userDef, target)
+    }
+  else
+    addUsesActions(source, target)
+
 
   val isConcreteEdge = isIsaEdge || isUseEdge
 

@@ -5,7 +5,7 @@ object Metrics {
 
   def outgoingDependencies(graph: DependencyGraph, root: NodeId): Set[NodeIdP] =
     graph.subTree(root, includeRoot = true).foldLeft(Set[NodeIdP]()) {
-      (acc0, id) => graph.usedBy(id).foldLeft(acc0) {
+      (acc0, id) => graph.usedByExcludingTypeUse(id).foldLeft(acc0) {
         (acc, user) =>
           if (graph.contains_*(root, user)) acc
           else acc + ((id, user))
@@ -14,7 +14,7 @@ object Metrics {
 
   def incomingDependencies(graph: DependencyGraph, root: NodeId): Set[NodeIdP] =
     graph.subTree(root, includeRoot = true).foldLeft(Set[NodeIdP]()) {
-      (acc0, id) => graph.usersOf(id).foldLeft(acc0) {
+      (acc0, id) => graph.usersOfExcludingTypeUse(id).foldLeft(acc0) {
         (acc, user) =>
           if (graph.contains_*(root, user)) acc
           else acc + ((user, id))
@@ -23,7 +23,7 @@ object Metrics {
 
   def internalDependencies(graph: DependencyGraph, root: NodeId): Set[NodeIdP] =
     graph.subTree(root, includeRoot = true).foldLeft(Set[NodeIdP]()){
-      (acc0, id) => graph.usedBy(id).foldLeft(acc0) {
+      (acc0, id) => graph.usedByExcludingTypeUse(id).foldLeft(acc0) {
         (acc, used) =>
           if (graph.contains_*(root, used))
             acc + ((id, used))
@@ -46,7 +46,7 @@ object Metrics {
 
   private def connection(graph: DependencyGraph, node: DGNode, p: DGNode => Boolean) = {
     graph.nodes.foldLeft(Set[NodeId]()) { (acc, n) =>
-      if (n.id == node.id || n.kind != node.kind) acc
+      if (n.id == node.id || n.kind.kindType != node.kind.kindType) acc
       else if (p(n)) acc + n.id
       else acc
     }
@@ -114,7 +114,7 @@ object Metrics {
       if (border.isEmpty) (component, unreached)
       else {
         val n = border.head
-        val neighbors = (g.usedBy(n) ++ g.usersOf(n) - n) intersect unreached
+        val neighbors = (g.usedByExcludingTypeUse(n) ++ g.usersOfExcludingTypeUse(n) - n) intersect unreached
 
         //        println(s" n = ${g.getNode(n)}\n neighbors = ${neighbors.map(g.getNode)}")
 

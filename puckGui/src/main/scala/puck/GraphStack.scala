@@ -2,6 +2,7 @@ package puck
 
 import puck.graph.transformations.MileStone
 import puck.graph.{Recording, DependencyGraph}
+import Recording.RecordingOps
 import puck.util.PuckLogger
 
 import scala.collection.mutable
@@ -20,8 +21,9 @@ trait GraphStack {
   implicit def logger : PuckLogger
 
   def graph =
-    if(undoStack.nonEmpty) undoStack.head
+    if (undoStack.nonEmpty) undoStack.head
     else initialGraph
+
 
   protected val undoStack = mutable.Stack[DependencyGraph]()
   protected val redoStack = mutable.Stack[DependencyGraph]()
@@ -63,10 +65,12 @@ trait GraphStack {
   def pushGraph(graph: DependencyGraph) = {
     undoStack.push(graph)
     redoStack.clear()
-
-    //console.displayWeight(Metrics.weight(graph, graph.nodeKindKnowledge.lightKind))
-
     updateStackListeners()
+  }
+
+  def rewriteHistory(rec : Recording): Unit ={
+      undoStack.pop()
+      pushGraph(rec.redo(graph))
   }
 
   def load(rec : Recording): Unit =

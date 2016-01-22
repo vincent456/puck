@@ -45,7 +45,6 @@ case class VNode(n : VirtualNode) extends Operation {
 
 case class Edge(edge : DGEdge)
   extends Operation {
-
   def execute(g: DependencyGraph , op : Direction) = op match {
     case Regular =>edge.createIn(g)
     case Reverse => edge.deleteIn(g)
@@ -57,6 +56,7 @@ sealed abstract class Extremity{
   def create(n : NodeId) : Extremity
   def productPrefix : String
 }
+
 case class Source(node : NodeId) extends Extremity{
   def create(n : NodeId) : Extremity = Source(n)
 }

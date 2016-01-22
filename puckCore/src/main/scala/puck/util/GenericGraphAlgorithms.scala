@@ -23,14 +23,14 @@ object GreedyCycleRemover {
 
     //HYPOTHESIS : no more type edges have been replaced by regular uses
     def isSink(g : DependencyGraph)(id : NodeId) =
-      g usedBy id isEmpty
+      g usedByExcludingTypeUse id isEmpty
 
     def isSource(g : DependencyGraph)(id : NodeId) =
-      g usersOf id isEmpty
+      g usersOfExcludingTypeUse id isEmpty
 
     def removeEdgesUsingNode(id : NodeId, g : DependencyGraph) : DependencyGraph = {
-      val useds = g usedBy id
-      val users = g usersOf id
+      val useds = g usedByExcludingTypeUse id
+      val users = g usersOfExcludingTypeUse id
       val g1 = useds.foldLeft(g)((g0, used) => g0.removeEdge(Uses(id, used)))
       users.foldLeft(g1)((g0, user) => g0.removeEdge(Uses(user, id)))
     }

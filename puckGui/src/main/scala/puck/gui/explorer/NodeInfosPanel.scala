@@ -54,7 +54,7 @@ class NodeInfosPanel
     background = Color.white
 
     contents += new Label(s"${node.kind} ${node.name} : " +
-      (graph, graph.structuredType(node.id)).shows)
+      (graph, graph.structuredType(node.id)).shows + s"(${node.id})")
     val providers = Metrics.providers(graph, node.id)
     val clients = Metrics.clients(graph, node.id)
     val internals = Metrics.internalDependencies(graph, node.id).size
@@ -94,6 +94,13 @@ class NodeInfosPanel
       editable = false
     }.leftGlued
 
+    contents += new TextArea( "Abstractions :" +
+      (if(graph.abstractions(node.id).isEmpty) "none\n"
+      else mkStringWithNames(graph.abstractions(node.id).flatMap(_.nodes)))){
+      tooltip = "Number of direct super types"
+      editable = false
+    }.leftGlued
+
     contents += new TextArea(  "Providers : " +
       (if (providers.isEmpty) "none\n"
       else mkStringWithNames(providers))){
@@ -127,7 +134,8 @@ class NodeInfosPanel
     //          hideWithName(g, Seq("java")),
     //        sUse = Some(Uses(source, target)))
 
-    class UsesLabelBox(userId : NodeId, usedId : NodeId)
+    class UsesLabelBox(userId : NodeId, usedId : NodeId,
+                       val fullName : String)
     extends Label {
       //extends BoxPanel(Orientation.Horizontal){
 
@@ -141,7 +149,6 @@ class NodeInfosPanel
         case _ => "(both dominant and dominated)"
       }
 
-      val fullName = graph.fullName(userId)
       text = fullName + " " + tag
 //        contents += Button("<o>") {
 //          onEdgeButtonClick(userId, usedId)
@@ -182,20 +189,26 @@ class NodeInfosPanel
 
     contents += new BoxPanel(Orientation.Vertical) {
 
-      val users = graph.usersOf(node.id).toSeq map {
-        userId => new UsesLabelBox(graph.declarationOf(userId), node.id)
+      val users : Seq[UsesLabelBox] = graph.usersOf(node.id).toSeq map {
+        userId =>
+          val userDeclId = graph.declarationOf(userId)
+          new UsesLabelBox(userId, node.id, graph.fullName(userDeclId))
       }
       users.sortBy(_.fullName).foreach(contents += _)
     }.leftGlued
 
 
+    val nodeAndAssociates : List[NodeId] = graph nodePlusDefAndParams node.id
 
-    graph.definitionOf(node.id) foreach {
-      defId =>
+
+    nodeAndAssociates foreach {
+      id =>
         contents +=  new Label("uses :").leftGlued
 
         contents += new BoxPanel(Orientation.Vertical) {
-          val used = graph.usedBy(defId).toSeq map (new UsesLabelBox(_, defId))
+          val used  = graph.usedBy(id).toSeq map (used =>
+            new UsesLabelBox(id, used, graph.fullName(used)))
+
           used.sortBy(_.fullName).foreach(contents += _)
         }.leftGlued
     }

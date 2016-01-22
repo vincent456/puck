@@ -39,16 +39,19 @@ class PuckInterfacePanel
 
   val nodeInfos = new ScrollPane(){
     //preferredSize = new Dimension(rightWidth/2, height)
-
     reactions += {
       case NodeClicked(n) if n.id != DependencyGraph.rootId =>
         Swing.onEDT {
           contents =
             new NodeInfosPanel(PuckInterfacePanel.this, control.graph, n.id,
-              edge => new EdgeMenu(PuckInterfacePanel.this, edge,
-                  control.printingOptionsControl,
-                  control.graphStack.graph,
-                  graphUtils)
+              edge => {
+                println("creating edge menu")
+
+                new EdgeMenu(PuckInterfacePanel.this, edge,
+                control.printingOptionsControl,
+                blurrySelection = false,
+                control.graphStack.graph,
+                graphUtils)}
             )
         }
 
@@ -126,7 +129,7 @@ class PuckInterfacePanel
     case GraphUpdate(g) =>
       loadedGraphButtonsWrapper.contents.clear()
       loadedGraphButtonsWrapper.contents += loadedGraphButtons(g)
-      PuckInterfacePanel.this.revalidate()
+      PuckInterfacePanel.this.peer.getParent.revalidate()
   }
 
   leftComponent = new BoxPanel(Orientation.Vertical) {
@@ -157,7 +160,9 @@ class PuckInterfacePanel
           publish(LoadCodeRequest)
         }
         logger.writeln("Application directory : ")
-        logger.writeln(filesHandler.srcDirectory.toString)
+        val sf : Option[File]= filesHandler.srcDirectory.get
+        val path = sf map (_.getAbsolutePath) getOrElse "No directory selected"
+        logger.writeln(path)
     }
 
     progressBar.min = 0

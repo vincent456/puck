@@ -50,13 +50,13 @@ object Recording {
 
   case class LoadError(msg: String, map : Map[String, NodeId]) extends Throwable
   def load(fileName : String, map :  Map[String, NodeId]) : Recording = {
-    val (m, numIds, r) = read(fileName)
-    try mapNodes(r, m, map, numIds)
+    val (recMap, numIds, r) = read(fileName)
+    try mapNodes(r, createMapping(recMap, map, numIds))
     catch {
       case e : Error =>
-        throw LoadError(e.getMessage, m)
+        throw LoadError(e.getMessage, recMap)
       case e : Exception =>
-        throw LoadError(e.getMessage, m)
+        throw LoadError(e.getMessage, recMap)
     }
   }
 
@@ -80,10 +80,8 @@ object Recording {
 
   def mapNodes
   (rec : Recording,
-   recordIds : Map[String, NodeId],
-   newIds : Map[String, NodeId], totalIds : Int) : Recording = {
-    val mappin : NodeId => NodeId =
-      createMapping(recordIds, newIds, totalIds)
+   mappin : NodeId => NodeId) : Recording = {
+
 
     val mappinNodeIdP : NodeIdP => NodeIdP = {
       case (n1, n2) => (mappin(n1), mappin(n2))
@@ -134,16 +132,28 @@ object Recording {
 
     }
 
-
-
     rec.mapTransformation {
         case Transformation(direction, op) =>
           Transformation(direction, mappingOnOperation(op))
       }
   }
 
+  implicit class RecordingOps(val record : Recording) extends AnyVal {
 
-  implicit class RecordOps(val r : Recording ) extends AnyVal {
+    def redo(g : DependencyGraph) : DependencyGraph =
+      record.reverse.foldLeft(g)((g0, t) => t.redo(g0))
+
+    def mapTransformation(f : Transformation => Transformation) : Recording =
+      record map {
+        case t : Transformation => f(t)
+        case r => r
+      }
+
+    def comment(msg : String) : Recording =
+      Comment(msg) +: record
+
+    def mileStone : Recording = MileStone +: record
+
     def subRecordFromLastMilestone : Recording = {
       def f(r0 : Recording, acc : Recording) : Recording = r0 match {
         case Nil => acc
@@ -151,16 +161,112 @@ object Recording {
         case hd +: tl => f(tl, hd +: acc)
       }
 
-      f(r, Seq()).reverse
+      f(record, Seq()).reverse
     }
 
-    def involveNodes : Seq[NodeId] = r.foldLeft(Seq[NodeId]()){
+    def involveNodes : Seq[NodeId] = record.foldLeft(Seq[NodeId]()){
       case (acc, Transformation(_, op)) =>
         Operation.involvedNodes(op) ++: acc
       case (acc, _) => acc
 
     }
+
+    def concretize(vNodeId : NodeId, cNodeId : NodeId) : Recording = {
+      val r2 = record.filterNot {case Transformation(Regular, VNode(vn)) => vn.id == vNodeId
+      case _ => false}
+      Recording.mapNodes(r2, {
+        id =>
+          if(id == vNodeId) cNodeId
+          else id
+      })
+    }
+
+    def commentsSinceLastMileStone : Seq[String] = {
+      def aux(r : Recording, acc : Seq[String] = Seq()) : Seq[String] =
+        if(r.isEmpty) acc
+        else r.head match {
+          case MileStone => acc
+          case Comment(msg) => aux(r.tail, msg +: acc)
+          case _ => aux(r.tail, acc)
+        }
+
+      aux(record)
+    }
+
+
+    def addConcreteNode(n : ConcreteNode) : Recording =
+      Transformation(Regular, CNode(n)) +: record
+
+    def addVirtualNode(n : VirtualNode) : Recording =
+      Transformation(Regular, VNode(n)) +: record
+
+
+    def changeNodeName(nid : NodeId, oldName : String, newName : String) : Recording =
+      Transformation(Regular, ChangeNodeName(nid, oldName, newName)) +: record
+
+    def removeConcreteNode(n : ConcreteNode) : Recording =
+      Transformation(Reverse, CNode(n)) +: record
+
+    def removeVirtualNode(n : VirtualNode) : Recording =
+      Transformation(Reverse, VNode(n)) +: record
+
+    def addEdge(edge : DGEdge) : Recording =
+      Transformation(Regular, Edge(edge)) +: record
+
+    def removeEdge(edge : DGEdge) : Recording=
+      Transformation(Reverse, Edge(edge)) +: record
+
+    def changeEdgeTarget(edge : DGEdge, newTarget : NodeId, withMerge : Boolean) : Recording = {
+      val red = if(withMerge) new RedirectionWithMerge(edge, Target(newTarget))
+      else RedirectionOp(edge, Target(newTarget))
+      Transformation(Regular, red) +: record
+    }
+
+    def changeEdgeSource(edge : DGEdge, newTarget : NodeId, withMerge : Boolean) : Recording = {
+      val red = if(withMerge) new RedirectionWithMerge(edge, Source(newTarget))
+      else RedirectionOp(edge, Source(newTarget))
+      Transformation(Regular, red) +: record
+    }
+    def addTypeChange( typed : NodeId,
+                       oldType: Option[Type],
+                       newType : Option[Type]) : Recording =
+      Transformation(Regular, TypeChange(typed, oldType, newType)) +: record
+
+    def addRoleChange( typed : NodeId,
+                       oldRole: Option[Role],
+                       newRole : Option[Role]) : Recording =
+      Transformation(Regular, RoleChange(typed, oldRole, newRole)) +: record
+
+    def addAbstraction(impl : NodeId, abs : Abstraction) : Recording =
+      Transformation(Regular, AbstractionOp(impl, abs)) +: record
+
+    def removeAbstraction(impl : NodeId, abs : Abstraction) : Recording =
+      Transformation(Reverse, AbstractionOp(impl, abs)) +: record
+
+    def addTypeDependency( typeUse : NodeIdP,
+                           typeMemberUse :  NodeIdP) : Recording =
+      Transformation(Regular, TypeDependency(typeUse, typeMemberUse)) +: record
+
+    def changeTypeUseOfTypeMemberUse
+    ( oldTypeUse : NodeIdP,
+      newTypeUse : NodeIdP,
+      typeMemberUse :  NodeIdP) : Recording =
+      Transformation(Regular, ChangeTypeBinding((oldTypeUse, typeMemberUse),
+        TypeUse(newTypeUse))) +: record
+
+    def changeTypeMemberUseOfTypeUse
+    ( oldTypeMemberUse : NodeIdP,
+      newTypeMemberUse : NodeIdP,
+      typeUse :  NodeIdP) : Recording =
+      Transformation(Regular, ChangeTypeBinding((typeUse, oldTypeMemberUse),
+        InstanceValueUse(newTypeMemberUse))) +: record
+
+    def removeTypeDependency( typeUse : NodeIdP,
+                              typeMemberUse :  NodeIdP) : Recording =
+      Transformation(Reverse, TypeDependency(typeUse, typeMemberUse)) +: record
+
   }
+
 }
 
 

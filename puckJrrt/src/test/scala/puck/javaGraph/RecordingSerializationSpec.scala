@@ -2,20 +2,12 @@ package puck.javaGraph
 
 import java.io.{FileInputStream, ObjectInputStream, FileOutputStream, ObjectOutputStream}
 
-import com.sun.corba.se.pept.transport.ContactInfo
 import puck.graph._
-import puck.graph.transformations.Recording
 import puck.graph.transformations._
+import puck.graph.transformations.Recording
+import Recording.RecordingOps
 import puck.{Settings, AcceptanceSpec}
 import nodeKind._
-
-//class Toto extends Serializable
-//class Titi extends Toto
-//
-//
-//case class WrapToto(n : Toto)
-//class WrapTiti(override val n : Titi) extends WrapToto(n)
-//
 
 class RecordingSerializationSpec extends AcceptanceSpec {
 

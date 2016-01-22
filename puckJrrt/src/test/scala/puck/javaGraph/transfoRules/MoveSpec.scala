@@ -127,14 +127,14 @@ class MoveSpec
 
         assert(graph.container(methToMove).value == classA)
         assert(graph.uses(methUser, methToMove))
-        graph.parameters(methUserDecl) shouldBe empty
+        graph.parametersOf(methUserDecl) shouldBe empty
 
         val g2 = Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateParameter)).right
         g2.content(classA).size shouldBe (graph.content(classA).size - 1)
         assert(g2.container(methToMove).value == newHostClass)
         assert(g2.uses(methUser, methToMove))
 
-        val paramList = g2.parameters(methUserDecl)
+        val paramList = g2.parametersOf(methUserDecl)
         paramList.size shouldBe 1
         assert(g2.uses(paramList.head, newHostClass))
       }
@@ -227,16 +227,16 @@ class MoveSpec
         assert(graph.container(methToMove).value == classA)
 
         assert(graph.uses(methUser1, methToMove))
-        graph.parameters(methUser1Decl).size shouldBe 0
+        graph.parametersOf(methUser1Decl).size shouldBe 0
 
         assert(graph.uses(methUser2, methToMove))
-        graph.parameters(methUser2Decl).size shouldBe 0
+        graph.parametersOf(methUser2Decl).size shouldBe 0
 
         val g2 = Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateParameter)).right
 
-        val params1 = g2.parameters(methUser1Decl)
+        val params1 = g2.parametersOf(methUser1Decl)
         params1.size shouldBe 1
-        val params2 = g2.parameters(methUser2Decl)
+        val params2 = g2.parametersOf(methUser2Decl)
         params2.size shouldBe 1
 
         assert(g2.container(methToMove).value == newHostClass)
@@ -338,7 +338,7 @@ class MoveSpec
 
         assert(graph.container(methToMoveDecl).value == currentHost)
         assert(graph.uses(methToMoveDef, methUsed))
-        graph.parameters(methToMoveDecl).size shouldBe 0
+        graph.parametersOf(methToMoveDecl).size shouldBe 0
 
         val g2 = Move.typeMember(graph, List(methToMoveDecl), newHostClass, Some(CreateParameter)).right
 
@@ -346,7 +346,7 @@ class MoveSpec
 
         assert(g2.container(methToMoveDecl).value == newHostClass)
         assert(g2.uses(methToMoveDef, methUsed))
-        val params = g2.parameters(methToMoveDecl)
+        val params = g2.parametersOf(methToMoveDecl)
         params.size shouldBe 1
         assert(g2.uses(params.head, currentHost))
       }
@@ -392,12 +392,12 @@ class MoveSpec
 
         val newHostClass = fullName2id("p.B")
 
-        val numArgs = graph.parameters(methUserDecl).size
+        val numArgs = graph.parametersOf(methUserDecl).size
 
         val g2 = Move.typeMember(graph, List(methToMove1, methToMove2), newHostClass, Some(CreateParameter)).right
 
         g2.content(classA).size shouldBe (graph.content(classA).size - 2)
-        g2.parameters(methUserDecl).size  shouldBe (numArgs + 1)
+        g2.parametersOf(methUserDecl).size  shouldBe (numArgs + 1)
         assert(g2.container(methToMove1).value == newHostClass)
         assert(g2.container(methToMove2).value == newHostClass)
 

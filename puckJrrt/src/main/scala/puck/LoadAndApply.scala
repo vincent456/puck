@@ -8,6 +8,7 @@ import puck.util.PuckSystemLogger
 import puck.jastadd.JavaFilesHandler
 import sbt.IO
 
+import Recording.RecordingOps
 object LoadAndApply {
 
   def main (args: Array[String]) : Unit = {

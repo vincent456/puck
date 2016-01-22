@@ -19,8 +19,8 @@ object JavaTransformationHelper extends MergingCandidatesFinder {
       case Interface if g.content(nid).nonEmpty =>
         g.concreteNodes.find { other =>
           node.canBeMergedInto(other, None, g) &&
-            g.usersOf(nid).forall(!g.interloperOf(_,other.id)) &&
-            g.usedBy(nid).forall( !g.interloperOf(other.id, _) )
+            g.usersOfExcludingTypeUse(nid).forall(!g.interloperOf(_,other.id)) &&
+            g.usedByExcludingTypeUse(nid).forall( !g.interloperOf(other.id, _) )
         }
       case _ => None
     }

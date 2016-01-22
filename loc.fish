@@ -1,6 +1,4 @@
 function loc
-	cloc puckCore/src/main
-    cloc puckJava/src/main
-	wc -l (find puckJava/src/main -regextype "posix-extended" -iregex '.*\.(jrag|jadd)')
-    cloc puckCore/src/main puckJava/src/main
+	wc -l (find puckJrrt/src/main/jrag/puck -regextype "posix-extended" -iregex '.*\.(jrag|jadd)')
+    cloc puckCore/src/main puckJava/src/main puckGui/src/main puckJrrt/src/main
 end

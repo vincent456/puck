@@ -43,7 +43,7 @@ object Move {
 
   def usedBySiblingsViaSelf
   ( g : DependencyGraph, n : NodeId, h : TypeDeclNode ) : Boolean = {
-    val uses = g.usersOf(n) map (user => Uses(user, n))
+    val uses = g.usersOfExcludingTypeUse(n) map (user => Uses(user, n))
     uses.exists(isUsesOfSiblingViaSelf(g, h))
   }
 
@@ -153,7 +153,7 @@ object Move {
 
     val brWithOldContainerAsTypeUser = for {
       movedDef <- movedDefSet
-      used <-  g.usedBy(movedDef)
+      used <-  g.usedByExcludingTypeUse(movedDef)
       tuse <- g.typeUsesOf(movedDef, used)
       if tuse.user == oldContainer
     } yield {
@@ -275,7 +275,7 @@ object Move {
     val movedDeclWithArgUsableAsReceiver : Set[NodeId] =
       movedDecl.filter {
         nid =>
-          g0.parameters(nid) exists (g0.styp(_).get uses newContainer)
+          g0.parametersOf(nid) exists (g0.styp(_).get uses newContainer)
       }
 
     val oldSelfUse = Uses(oldContainer, oldContainer)
@@ -319,7 +319,7 @@ object Move {
     val newSelfUse = Uses(newContainer, newContainer)
     nodeSet.foldLoggedEither(g){
       (g0, used) =>
-        val params = g0 parameters used
+        val params = g0 parametersOf used
         params find {g0.styp(_) contains NamedType(newContainer)} match {
           case None =>
             LoggedError(s"An arg typed ${NamedType(newContainer)} was expected")

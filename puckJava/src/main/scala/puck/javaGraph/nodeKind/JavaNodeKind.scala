@@ -137,7 +137,7 @@ object JavaNodeKind extends NodeKindKnowledge {
       cid =>
         val n = g.getConcreteNode(cid)
         n.kind match {
-          case Constructor => g.parameters(cid).isEmpty
+          case Constructor => g.parametersOf(cid).isEmpty
           case _ => false
         }
     }

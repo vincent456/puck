@@ -54,28 +54,32 @@ case class EdgeMap
   typedBy : EdgeMapT){
 
   def containsList : List[NodeIdP] =
-    containers.toList map {case (cted, cter) => (cter, cted)}
+    containers.toList map (_.swap)
+
 
   def allUsesList : List[NodeIdP] = usedMap.flatList ++ typeUsesList
-
-  def typeUsesList : List[NodeIdP] = {
-    for{
+  def usesListExludingTypeUses : List[NodeIdP] = usedMap.flatList
+  def typeUsesList : List[NodeIdP] =
+    for {
       nt <- types.toList
       (n , t) = nt
       i <- t.ids
     } yield (n,i)
-  }
+
+
+  def usedByExcludingTypeUse(userId : NodeId) : Set[NodeId] = usedMap getFlat userId
+
+  def usersOfExcludingTypeUse(usedId: NodeId) : Set[NodeId] = userMap getFlat usedId
 
   def usedBy(userId : NodeId) : Set[NodeId] =
-    /*(types get userId map (_.ids.toSet) getOrElse Set()) ++*/ (usedMap getFlat userId)
+  (types get userId map (_.ids.toSet) getOrElse Set()) ++ (usedMap getFlat userId)
 
   def usersOf(usedId: NodeId) : Set[NodeId] =
-    (userMap getFlat usedId) /*++ (typedBy getFlat usedId)*/
+    (userMap getFlat usedId) ++ (typedBy getFlat usedId)
 
   def add(edge : DGEdge) : EdgeMap =
     edge match {
       case Uses(user, used, accK) =>
-
         copy(userMap = userMap + (used, user),
           usedMap = usedMap + (user, used),
           accessKindMap = newAccessKindMapOnAdd(user, used, accK))
@@ -91,11 +95,7 @@ case class EdgeMap
       case ContainsParam(decl, param) =>
         copy(parameters = parameters + (decl, param),
           containers = containers + (param -> decl) )
-          /*declaration = declaration + (param -> decl) )*/
-//      case ContainsDef(decl, _def) =>
-//        copy(definition = definition + (decl -> _def),
-//          containers = containers + (_def -> decl) )
-          /*declaration = declaration + (_def -> decl) )*/
+
       case AbstractEdgeKind(_, _) => this
       
     }
@@ -133,12 +133,7 @@ case class EdgeMap
       case ContainsParam =>
         copy(parameters = parameters - (edge.container, edge.content),
           containers = containers - edge.content)
-          /*declaration = declaration - edge.content )*/
 
-//      case ContainsDef =>
-//        copy(definition = definition - (edge.container, edge.content),
-//          containers = containers - edge.content)
-          /*declaration = declaration - edge.content )*/
       case AbstractEdgeKind => this
     }
 

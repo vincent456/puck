@@ -45,7 +45,7 @@ object RedirectSource {
       case TypeConstructor | StaticValueDecl => true
       case _ => false})
 
-    val impactedUsers =  (staticContent flatMap reenactor.usersOf) ++ (reenactor usersOf tDeclId)
+    val impactedUsers =  (staticContent flatMap reenactor.usersOfExcludingTypeUse) ++ (reenactor usersOfExcludingTypeUse tDeclId)
 
     val cus = impactedUsers.foldLeft(Set[String]()){ (cus, userId) =>
       val scu = id2declMap(userId) match {

@@ -38,10 +38,9 @@ class PuckControl
 
   def printingOptionsControl = printingOptionsControl0
 
-  def update(graphStack: GraphStack): Unit = {
-    println("graph update !")
+  def update(graphStack: GraphStack): Unit =
     publish(GraphUpdate(graphStack.graph))
-  }
+
 
   def loadCodeAndConstraints() = Future {
     progressBar.visible = true
@@ -156,6 +155,9 @@ class PuckControl
           logger.writeln(lgt.log)
           graphStack.pushGraph(g)
       }
+
+    case RewriteHistory(r) =>
+      graphStack.rewriteHistory(r)
 
     case Log(msg) =>
       logger.writeln(msg)

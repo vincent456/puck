@@ -107,7 +107,8 @@ class ConstraintViolationExplorer
           path.getLastPathComponent match {
             case n : DGNode =>
               if(isRightClick(e)) Swing.onEDT {
-                val menu = NodeMenu(publisher, graph, graphUtils, List(), None, n.id, printingOptionsControl)
+                val menu = NodeMenu(publisher, ConstraintViolationExplorer.this.graph,
+                  graphUtils, List(), None, n.id, printingOptionsControl)
                 menu.add(new AbstractAction("Node infos") {
                   def actionPerformed(e: ActionEvent): Unit =
                     ConstraintViolationExplorer.this.publish(NodeClicked(n))

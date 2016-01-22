@@ -1,12 +1,13 @@
 package puck.graph
 
 import puck.graph.DependencyGraph.AbstractionMap
-import puck.graph.comparison.{Mapping, RecordingComparatorControl}
+import puck.graph.comparison.RecordingComparatorControl
 import puck.graph.constraints.{ConstraintsMaps, AbstractionPolicy}
 import puck.search.{SearchEngine, DepthFirstSearchStrategy}
 import puck.util.{Logger, PuckNoopLogger, PuckLogger, PuckLog}
 
-import puck.graph.transformations.{Transformation, RecordingOps}
+import puck.graph.transformations.Transformation
+import puck.graph.transformations.Recording.RecordingOps
 
 object DependencyGraph {
 
@@ -187,7 +188,7 @@ class DependencyGraph
 
   def structuredType(id : NodeId) : Option[Type] = {
     //assert node is a typed value
-    nodeKindKnowledge.structuredType(this, id, parameters(id))
+    nodeKindKnowledge.structuredType(this, id, parametersOf(id))
   }
 
   def typedNode(id : NodeId ) : TypedNode = {
@@ -396,7 +397,6 @@ class DependencyGraph
       edges.parameters.getFlat(containerId)*/
 
 
-
   //special case alias for readibility
   def declarationOf(defId : NodeId) : NodeId =
     getNode(defId).kind.kindType match {
@@ -407,16 +407,19 @@ class DependencyGraph
 
   //special cases of content
   def definitionOf(declId : NodeId) : Option[NodeId] =
-    //assert kindType == InstanceValueDecl || StaticValueDecl || TypeConstructor
-    edges.contents get declId flatMap (_.headOption)
+    edges.contents get declId flatMap { ctent =>
+      ctent.headOption filter (id => getNode(id).kind.kindType == ValueDef)
+    }
 
   def definitionOf_!(declId : NodeId) : NodeId =
     definitionOf(declId).get
 
 
 
-  def parameters(declId : NodeId)  : List[NodeId] = edges.parameters.getFlat(declId)
+  def parametersOf(declId : NodeId)  : List[NodeId] = edges.parameters.getFlat(declId)
 
+  def nodePlusDefAndParams(nodeId : NodeId) : List[NodeId] =
+    parametersOf(nodeId) ++ definitionOf(nodeId).toList :+ nodeId
 
   def contains(containerId : NodeId, contentId : NodeId) : Boolean =
     edges.contains(containerId, contentId)
@@ -488,18 +491,26 @@ class DependencyGraph
     edges.uses(userId, usedId)
 
   def usesList : List[NodeIdP] = edges.allUsesList
+  def typeUsesList : List[NodeIdP] = edges.typeUsesList
+  def usesListExludingTypeUses : List[NodeIdP] = edges.usesListExludingTypeUses
 
+  def usedByExcludingTypeUse(userId : NodeId) : Set[NodeId] =
+    edges usedByExcludingTypeUse userId
 
   def usedBy(userId : NodeId) : Set[NodeId] =
     edges usedBy userId
-  
+
+
+  def usersOfExcludingTypeUse(usedId: NodeId) : Set[NodeId] =
+    edges usersOfExcludingTypeUse usedId
+
   def usersOf(usedId: NodeId) : Set[NodeId] =
     edges usersOf usedId
 
   // ugly name
   def usesFromUsedList(usedIds: List[NodeId]) : List[Uses] =
     usedIds flatMap {
-      tmid => this.usersOf(tmid) map (user => this.getUsesEdge(user,tmid).get)
+      tmid => this.usersOfExcludingTypeUse(tmid) map (user => this.getUsesEdge(user,tmid).get)
     }
 
   def usesFromUsedList(usedId: NodeId) : List[Uses] = usesFromUsedList(List(usedId))
@@ -541,17 +552,6 @@ class DependencyGraph
             rId.contains(absId) || wId.contains(absId)
         }
     }
-
-  def concretize(virtualNodeId : NodeId, concreteNodeId : NodeId) : DependencyGraph = {
-    //hypothesis : virtualNodeId is of namespace kindtype
-
-    val g1 = content(virtualNodeId).foldLeft(this) {
-      (g, id) => changeSource(Contains(virtualNodeId, id), concreteNodeId)
-    }
-    g1.removeNode(virtualNodeId)._2
-
-  }
-
 
   def violations() : Seq[DGEdge] ={
     def isViolation(e : NodeIdP) = constraints.isViolation(this, e._1, e._2)

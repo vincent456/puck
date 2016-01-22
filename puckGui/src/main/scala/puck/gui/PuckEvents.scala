@@ -17,7 +17,7 @@ case class GraphUpdate(graph : DependencyGraph) extends PuckEvent
 case class GraphFocus(graph : DependencyGraph, edge : DGEdge) extends PuckEvent
 case class PushGraph(graph : DependencyGraph) extends PuckEvent
 case class PrintErrOrPushGraph(msg : String, lgt : LoggedTry[DependencyGraph]) extends PuckEvent
-
+case class RewriteHistory(rec : Recording) extends PuckEvent
 case class NodeClicked(node : DGNode) extends PuckEvent
 
 case object Undo extends PuckEvent
@@ -75,6 +75,7 @@ case class EdgeForTypePrinting(su : Option[Uses]) extends PrintingOptionEvent {
   def apply(control : PrintingOptionsControl) : Unit =
     control.selectedEdgeForTypePrinting = su
 }
+
 
 
 object PuckEvents{

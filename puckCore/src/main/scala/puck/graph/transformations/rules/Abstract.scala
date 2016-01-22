@@ -100,13 +100,13 @@ abstract class Abstract {
 
         val g3 = g2.addUses(ndef.id, impl.id)
 
-        val g4 = g3.parameters(impl.id).foldRight(g3) {
+        val g4 = g3.parametersOf(impl.id).foldRight(g3) {
           (paramId, g0) =>
             val param = g0.getConcreteNode(paramId)
             val (pabs, g01) = g0.addConcreteNode(param.name, param.kind, mutable = true)
             val g02 = g01.setType(pabs.id, g0 styp paramId)
               .addContains(n.id, pabs.id)
-            g02.usedBy(paramId).foldLeft(g02) {
+            g02.usedByExcludingTypeUse(paramId).foldLeft(g02) {
               (g00, tid) => g01.addUses(pabs.id, tid)
             }
         }
@@ -119,13 +119,13 @@ abstract class Abstract {
         val (n, g1) = g.addConcreteNode(name, abskind)
         val g2 = g1.setType(n.id, g1 styp impl.id)
 
-        val g3 = g2.parameters(impl.id).foldRight(g2) {
+        val g3 = g2.parametersOf(impl.id).foldRight(g2) {
           (paramId, g0) =>
             val param = g0.getConcreteNode(paramId)
             val (pabs, g01) = g0.addConcreteNode(param.name, param.kind, mutable = true)
             val g02 = g01.setType(pabs.id, g0 styp paramId)
               .addContains(n.id, pabs.id)
-            g02.usedBy(paramId).foldLeft(g02) {
+            g02.usedByExcludingTypeUse(paramId).foldLeft(g02) {
               (g00, tid) => g00.addUses(pabs.id, tid)
             }
         }
@@ -147,9 +147,15 @@ abstract class Abstract {
 
         val g1 = g0.changeSource(Isa(subTypeId, oldSuperTypedId), newSuperTypeId)
 
-        val subTypeMeths = g1.content(subTypeId).toList map g1.typedNode
-        val newSupTypeMeths = g1. content(newSuperTypeId).toList map g1.typedNode
-        val oldSupTypeMeths = g1. content(oldSuperTypedId).toList map g1.typedNode
+        def extractMethod(typeDeclId : NodeId) : List[(ConcreteNode, Type)] =
+          g1.content(typeDeclId).toList map g1.getConcreteNode filter { n =>
+            n.kind.kindType == InstanceValueDecl &&
+              n.kind.abstractionNodeKinds(SupertypeAbstraction).nonEmpty
+          } map (n => (n, g1.styp(n.id).get))
+
+        val subTypeMeths = extractMethod(subTypeId)
+        val newSupTypeMeths = extractMethod(newSuperTypeId)
+        val oldSupTypeMeths = extractMethod(oldSuperTypedId)
 
         Type.findAndRegisterOverridedInList(g1, newSupTypeMeths, subTypeMeths){
           Type.ignoreOnImplemNotFound
@@ -167,7 +173,7 @@ abstract class Abstract {
       val log = "Abstract.redirectTypeUseInParameters : " +
         s"redirecting Uses(${meth.name}, ${clazz.name}) target to $interface\n"
 
-      val ltg = g.parameters(meth.id).foldLoggedEither(g){
+      val ltg = g.parametersOf(meth.id).foldLoggedEither(g){
         (g0, pid) =>
           if (g0.uses(pid, clazz.id))
             Redirection.redirectUsesAndPropagate(g0, Uses(pid, clazz.id),
@@ -186,7 +192,7 @@ abstract class Abstract {
       g.comment(s"redirectTypeUseInParameters(g, $members, $clazz, $interface)")){
       (g0, child) =>
         child.kind.kindType match {
-          case InstanceValueDecl if g0.parameters(child.id).exists(g0.uses(_, clazz.id)) =>
+          case InstanceValueDecl if g0.parametersOf(child.id).exists(g0.uses(_, clazz.id)) =>
             redirectTypeUseInParameters(g0, child, clazz, interface)
           case _ => LoggedSuccess(g0)
         }
@@ -215,7 +221,7 @@ abstract class Abstract {
       //TODO check if the right part of the and is valid for Delegation abstraction
       memberDecl.kind.canBeAbstractedWith(policy) && {
 
-        val usedNodes = (memberDecl.definition(g) map g.usedBy).getOrElse(Set())
+        val usedNodes = (memberDecl.definition(g) map g.usedByExcludingTypeUse).getOrElse(Set())
 
         usedNodes.isEmpty || {
           val usedSiblings = usedNodes filter sibling map g.getConcreteNode

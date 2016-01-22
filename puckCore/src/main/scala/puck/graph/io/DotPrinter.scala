@@ -32,28 +32,6 @@ object DotPrinter {
   }
 
 
-
-//  def makeImage(graph : DependencyGraph,
-//                graphUtils: GraphUtils,
-//                printingOptions: PrintingOptions,
-//                sOutput : Option[OutputStream] = None,
-//                outputFormat : DotOutputFormat = Png)
-//               (finish : Try[Int] => Unit = {case _ => ()}) : Unit = {
-//    //TODO fix bug when chaining the two function with a pipe
-////    makeDot(graph, graphUtils.dotHelper, printingOptions, new FileWriter(pathWithoutSuffix + ".dot"))
-////
-////    finish(Success(convertDot(graphvizDot, pathWithoutSuffix, sInput = None, sOutput, outputFormat)))
-//
-//    val pipedOutput = new PipedOutputStream()
-//    val pipedInput = new PipedInputStream(pipedOutput)
-//
-//    Future {
-//      convertDot(graphvizDot, pathWithoutSuffix, sInput = Some(pipedInput), sOutput, outputFormat)
-//    } onComplete finish
-//
-//    genDot(graph, graphUtils.dotHelper, printingOptions, writer = new OutputStreamWriter(pipedOutput))
-//  }
-
   type DotProcessBuilder = scala.sys.process.ProcessBuilder
   // relies on dot directory being in the PATH variable
   def dotProcessBuilderFromFile(pathWithoutSuffix : String, outputFormat: DotOutputFormat) : DotProcessBuilder =
@@ -71,10 +49,10 @@ object DotPrinter {
   ( graph : DependencyGraph,
     dotHelper: DotHelper,
     printingOptions: PrintingOptions,
-    writer : OutputStreamWriter) : Unit = {
-    val printer = new DotPrinter(new BufferedWriter(writer), graph, dotHelper, printingOptions)
-    printer.print()
-  }
+    writer : OutputStreamWriter) : Unit =
+    new DotPrinter(new BufferedWriter(writer), graph, dotHelper, printingOptions).print()
+
+
   def genDotFile
   ( graph : DependencyGraph,
     dotHelper: DotHelper,
@@ -121,6 +99,8 @@ class DotPrinter
   printingOptions: PrintingOptions){
 
   import printingOptions._
+
+
 
   val visibility = printingOptions.visibility
     .setVisibility(DependencyGraph.rootId, Hidden)
@@ -446,6 +426,7 @@ class DotPrinter
 
 
   def print(): Unit = {
+
     writeln("digraph G{")
     writeln("rankdir=LR; ranksep=equally; compound=true")
 
@@ -476,7 +457,7 @@ class DotPrinter
       }
 
       val (reg, virt, virtualViolations) =
-        filterAllEdgeBasedOnVisibleNodesAndFlagViolations(graph.usesList map Uses.apply, virt0, virtualViolations0)
+        filterAllEdgeBasedOnVisibleNodesAndFlagViolations(graph.usesListExludingTypeUses map Uses.apply, virt0, virtualViolations0)
 
       reg.foreach { case (e, v) => printArc(violationStyle(v), usesStyle)(e) }
 

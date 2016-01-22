@@ -47,7 +47,7 @@ abstract class Intro {
 
           val icDef = g definitionOf_! ic
 
-          val g2 = g.usedBy(icDef).foldLeft(g1){
+          val g2 = g.usedByExcludingTypeUse(icDef).foldLeft(g1){
             (g0, usedByIcDef) =>
               g0.getUsesEdge_!(icDef, usedByIcDef).changeSource(g0, defNode.id)
           }
@@ -105,7 +105,7 @@ abstract class Intro {
         .setType(pNode.id, Some(NamedType(typeNode)))
 
       (pNode,
-        g.usersOf(typeMemberDecl).foldLeft(g2) {
+        g.usersOfExcludingTypeUse(typeMemberDecl).foldLeft(g2) {
           (g0, userOfUser) =>
             g0.addEdge(Uses(userOfUser, cid))
         })

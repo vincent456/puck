@@ -57,7 +57,7 @@ object ASTNodeLink{
 
     import AST.ASTNode.VIS_PUBLIC
     if (astNode.getVisibility != VIS_PUBLIC) {
-      if (g .usersOf(nid) exists needMoreVisibility)
+      if (g .usersOfExcludingTypeUse(nid) exists needMoreVisibility)
         astNode.setVisibility(VIS_PUBLIC)
 
     }

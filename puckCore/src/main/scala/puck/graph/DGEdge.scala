@@ -36,7 +36,7 @@ object DGEdge{
 case object AbstractEdgeKind extends EKind {
   def apply(source: NodeId, target: NodeId): DGEdge = new DGEdge(AbstractEdgeKind, source, target)
   override def toString = "Edge"
-  def unapply(e: DGEdge) : Option[NodeIdP] = pairOfKind(e, Isa)
+  def unapply(e: DGEdge) : Option[NodeIdP] = pairOfKind(e, AbstractEdgeKind)
 }
 
 case class DGEdge(kind : EKind, source : NodeId, target: NodeId) {

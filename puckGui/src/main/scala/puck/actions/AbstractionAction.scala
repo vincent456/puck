@@ -74,7 +74,9 @@ class AbstractionAction
            node.kind.kindType match {
            case TypeDecl =>
              val typeMembers = graph.content(node.id).toList.
-                map(graph.getConcreteNode).
+                map(graph.getConcreteNode).filter(n =>
+               n.kind.kindType == InstanceValueDecl &&
+               n.kind.abstractionNodeKinds(policy).nonEmpty).
                 filter(TR.abstracter.canBeAbstracted(graph, _, node, policy))
              val ckBoxes = typeMembers.map(NodeCheckBox(graph, _))
 

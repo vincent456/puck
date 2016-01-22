@@ -80,7 +80,7 @@ class BridgeScenario private()
 
   def useInterfaceInstead
   (g : DependencyGraph, clazz : NodeId, interface : NodeId) : DependencyGraph =
-    g.usersOf(clazz).foldLeft(g){ (g0, userId) =>
+    g.usersOfExcludingTypeUse(clazz).foldLeft(g){ (g0, userId) =>
       TR.redirection.redirectUsesAndPropagate(g0,
         Uses(userId, clazz),
         AccessAbstraction(interface,
