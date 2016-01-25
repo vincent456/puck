@@ -1,36 +1,55 @@
 package puck.gui.explorer
 
 import java.awt.Color
-import javax.swing.JPopupMenu
+import javax.swing.{JTree, JPopupMenu}
 
 import puck.graph._
-import puck.graph.io.VisibilitySet
-import VisibilitySet._
-import puck.gui._
 import ShowDG._
 import scala.swing._
 import scala.swing.event.MouseClicked
+import puck.gui._
 
+
+class GraphTreePane(treeIcons : DGTreeIcons,
+                    graph : DependencyGraph,
+                    focus : Set[NodeId],
+                    title : String,
+                    sTooltipText : Option[String] = None)
+  extends  BoxPanel(Orientation.Vertical) {
+  contents += new Label(title) {
+    sTooltipText foreach (this.tooltip = _)
+  }
+
+  contents += new ScrollPane {
+    val model = DGTreeModel.subGraph(graph, focus)
+    val tree: JTree = new JTree(model) with DGTree {
+      def icons : DGTreeIcons = treeIcons
+    }
+    contents = Component.wrap(tree)
+  }
+}
 
 class NodeInfosPanel
 ( publisher: Publisher,
   val graph : DependencyGraph,
   val nodeId : NodeId,
-  edgeMenuBuilder : NodeIdP => JPopupMenu)
-  extends SplitPane(Orientation.Horizontal) {
+  edgeMenuBuilder : NodeIdP => JPopupMenu,
+  treeIcons : DGTreeIcons)
+  extends BoxPanel(Orientation.Vertical) {
 
   implicit val g = graph
-  val useDetails = new BoxPanel(Orientation.Vertical){
-    minimumSize = new Dimension(100, 50)
-  }
 
-  def addUsesSet(title : String, usesSet : Set[Uses]) : Unit =
+  background = Color.white
+
+  def addUsesSet(sb : StringBuilder, title : String, usesSet : Set[Uses]) : Unit =
     if(usesSet.nonEmpty) {
-      useDetails.contents += new Label(title)
-      usesSet.foreach(e => useDetails.contents += new Label((graph, e).shows))
+      sb.append(title)
+      sb.append("\n")
+      usesSet.foreach { e =>
+        sb append (graph, e).shows
+        sb append "\n"
+      }
   }
-
-  resizeWeight = 0.75
 
   val node = graph.getConcreteNode(nodeId)
 
@@ -49,9 +68,9 @@ class NodeInfosPanel
       case _ => ""
     }
 
-  leftComponent = new BoxPanel(Orientation.Vertical) {
 
-    background = Color.white
+
+
 
     contents += new Label(s"${node.kind} ${node.name} : " +
       (graph, graph.structuredType(node.id)).shows + s"(${node.id})")
@@ -62,6 +81,10 @@ class NodeInfosPanel
     val incomings = Metrics.incomingDependencies(graph, node.id).size
     val coupling = Metrics.coupling0(providers.size, clients.size, internals, outgoings, incomings)
     val cohesion = Metrics.cohesion0(internals, outgoings, incomings)
+
+    def packages(ids : Set[NodeId]) =
+      ids.foldLeft(Set[NodeId]())((s, id) =>
+        graph.containerOfKindType(NameSpace, id) map ( s + _) getOrElse s)
 
     contents +=
       new Label(s"Internal dependencies : $internals \n") {
@@ -101,19 +124,29 @@ class NodeInfosPanel
       editable = false
     }.leftGlued
 
-    contents += new TextArea(  "Providers : " +
+    contents += new BoxPanel(Orientation.Horizontal) {
+        contents += new GraphTreePane(treeIcons, graph, providers,
+          s"Providers : ${providers.size} in ${packages(providers).size} package(s)",
+          Some("Nodes of the same kinds which contain a node used by a node contained by this one"))
+      contents += new GraphTreePane(treeIcons, graph, clients,
+          s"Clients : ${clients.size} in ${packages(clients).size} package(s)",
+        Some("Nodes of the same kinds which contain a node using a node contained by this one"))
+    }
+/*
+    contents += new TextArea(  s"Providers : ( ${providers.size} in ${packages(providers).size} package(s))" +
       (if (providers.isEmpty) "none\n"
       else mkStringWithNames(providers))){
       tooltip = "Nodes of the same kinds which contain a node used by a node contained by this one"
       editable = false
     }.leftGlued
 
-    contents += new TextArea(  "Clients : " +
+    contents += new TextArea(  s"Clients : ( ${clients.size} in ${packages(clients).size} packages)" +
       (if (clients.isEmpty) "none\n"
       else mkStringWithNames(clients)) ){
         tooltip = "Nodes of the same kinds which contain a node using a node contained by this one"
       editable = false
       }.leftGlued
+*/
 
     contents += new BoxPanel(Orientation.Horizontal){
       contents += new Label(f"Coupling = $coupling%.2f"){
@@ -126,18 +159,9 @@ class NodeInfosPanel
     }
 
 
-    //  def onEdgeButtonClick( source : NodeId, target : NodeId) : Unit =
-    //    publisher publish
-    //      GraphDisplayRequest("Graph with uses selected",
-    //        graph, VisibilitySet.topLevelVisible(g).
-    //          hideWithName(g, Seq("@primitive")).
-    //          hideWithName(g, Seq("java")),
-    //        sUse = Some(Uses(source, target)))
-
     class UsesLabelBox(userId : NodeId, usedId : NodeId,
                        val fullName : String)
     extends Label {
-      //extends BoxPanel(Orientation.Horizontal){
 
       val sideUses = graph.typeMemberUsesOf(userId, usedId)
       val primaryUses = graph.typeUsesOf(userId, usedId)
@@ -150,11 +174,6 @@ class NodeInfosPanel
       }
 
       text = fullName + " " + tag
-//        contents += Button("<o>") {
-//          onEdgeButtonClick(userId, usedId)
-//        }
-
-//        contents += new Label(fullName + " " + tag) {
 
           minimumSize = new Dimension(this.size.width, 30)
 
@@ -169,19 +188,15 @@ class NodeInfosPanel
                   point.getY.toInt))
               }
               else {
-                useDetails.contents.clear()
-                useDetails.contents +=
-                  new Label((graph, Uses(userId, usedId)).shows)
+                val sb = new StringBuilder
+                sb append (graph, Uses(userId, usedId)).shows
+                sb append "\n"
+                addUsesSet(sb, "Dominant Uses :", primaryUses)
+                addUsesSet(sb, "Dominated Uses :", sideUses)
 
-                addUsesSet("Dominant Uses :", primaryUses)
-                addUsesSet("Dominated Uses :", sideUses)
-
-                useDetails.revalidate()
+                publisher publish Log(sb.toString())
               }
           }
- //       }
-
-//        contents += Swing.HGlue
       }
 
 
@@ -201,10 +216,10 @@ class NodeInfosPanel
     val nodeAndAssociates : List[NodeId] = graph nodePlusDefAndParams node.id
 
 
+    contents +=  new Label("uses :").leftGlued
+
     nodeAndAssociates foreach {
       id =>
-        contents +=  new Label("uses :").leftGlued
-
         contents += new BoxPanel(Orientation.Vertical) {
           val used  = graph.usedBy(id).toSeq map (used =>
             new UsesLabelBox(id, used, graph.fullName(used)))
@@ -213,7 +228,4 @@ class NodeInfosPanel
         }.leftGlued
     }
 
-  }
-
-  rightComponent = useDetails
 }

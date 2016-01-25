@@ -65,7 +65,15 @@ object Recording {
   def createMapping(recordIds : Map[String, NodeId],
                     newIds : Map[String, NodeId],
                     totalIds : Int ) : NodeId => NodeId = {
-    assert(recordIds.size == newIds.size, "Map should be of same size")
+    //assert(recordIds.size == newIds.size, "Map should be of same size")
+    if(recordIds.size != newIds.size) {
+      val recordedIds = recordIds.keys.toSet
+      val currentGraphIds = newIds.keys.toSet
+      val diff1 = recordedIds -- currentGraphIds
+      val diff2 = currentGraphIds -- recordedIds
+      error("recordedIds -- currentGraphIds = " + diff1 + " currentGraphIds -- recordedIds = " + diff2)
+
+    }
     assert(totalIds >= recordIds.size)
 
     if(recordIds == newIds) identity

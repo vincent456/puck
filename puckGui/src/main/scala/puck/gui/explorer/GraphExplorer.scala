@@ -99,7 +99,6 @@ class GraphExplorer(treeIcons : DGTreeIcons,
   reactions += {
     case GraphUpdate(graph) => display(graph, None)
     case GraphFocus(graph, edge) =>
-      println("GraphExplorer receives GraphFocus")
       display(graph, Some(edge))
   }
 

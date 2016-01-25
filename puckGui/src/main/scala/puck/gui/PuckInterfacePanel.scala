@@ -45,13 +45,12 @@ class PuckInterfacePanel
           contents =
             new NodeInfosPanel(PuckInterfacePanel.this, control.graph, n.id,
               edge => {
-                println("creating edge menu")
-
                 new EdgeMenu(PuckInterfacePanel.this, edge,
                 control.printingOptionsControl,
                 blurrySelection = false,
                 control.graphStack.graph,
-                graphUtils)}
+                graphUtils)},
+              treeIcons
             )
         }
 

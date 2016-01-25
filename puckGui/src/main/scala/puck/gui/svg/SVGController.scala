@@ -89,7 +89,7 @@ class SVGController
 
   def showNodeInfos(nodeId: NodeId): Unit = {
     frame.centerPane.setRightComponent(
-    new NodeInfosPanel(this, graph, nodeId, edgeMenuBuilder).peer)
+    new NodeInfosPanel(this, graph, nodeId, edgeMenuBuilder, ???).peer)
     frame.centerPane.revalidate()
   }
 

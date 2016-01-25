@@ -244,16 +244,3 @@ class SVGCanvasListener
     })
   }
 }
-
-
-
-//class SVGPanel
-//( doc : SVGDocument,
-//  eventListenerBuilder: EventListenerBuilder = defaultListener) extends JPanel {
-//
-//  setLayout(new BorderLayout())
-//  add("Center", canvas)
-//
-//  var controller : SVGController = _
-//
-//}
