@@ -11,9 +11,10 @@ import javax.swing.tree.{TreePath, DefaultTreeCellRenderer}
 import puck.actions.Choose
 import puck.graph._
 import puck.graph.io.PrintingOptions
+import puck.gui.menus.NodeMenu
 
 
-import scala.swing.{Swing, Component, ScrollPane}
+import scala.swing._
 
 trait DGTreeIcons {
   def iconOfKind(k: NodeKind ) : Icon
@@ -91,41 +92,41 @@ object GraphExplorer {
 
 }
 
-class GraphExplorer(treeIcons : DGTreeIcons,
-                    graphUtils : GraphUtils,
-                    printingOptionsControl: PrintingOptionsControl)
-  extends ScrollPane {
+class GraphExplorer
+( bus : Publisher,
+  treeIcons : DGTreeIcons,
+  graphUtils : GraphUtils,
+  printingOptionsControl: PrintingOptionsControl)
+  extends BoxPanel(Orientation.Vertical) {
+  contents += new Label("DG Explorer")
+  val treeWrapper = new ScrollPane()
+  contents +=  treeWrapper
 
-  reactions += {
-    case GraphUpdate(graph) => display(graph, None)
-    case GraphFocus(graph, edge) =>
-      display(graph, Some(edge))
-  }
+
 
   private var selectedNodes = List[NodeId]()
 
-  def display(graph: DependencyGraph, filter : Option[DGEdge] = None): Unit = {
+  def display(graph: DependencyGraph,
+              filter : Option[Either[DGEdge, Set[NodeId]]] = None): Unit = {
 
     if (graph.virtualNodes.nonEmpty) {
       val vn = graph.virtualNodes.head
       Choose("Concretize node",
         "Select a concrete value for the virtual node :",
         vn.potentialMatches.toSeq map graph.getConcreteNode) match {
-       case None => ()
-       case Some(cn) =>
-//         import ShowDG._
-//         val msg = s"Concretize ${(graph, vn).shows} into ${cn.name}"
-         import Recording._
-         val r2 = graph.recording.subRecordFromLastMilestone.concretize(vn.id, cn.id)
-        publish(RewriteHistory(r2))
+        case None => ()
+        case Some(cn) =>
+          import Recording._
+          val r2 = graph.recording.subRecordFromLastMilestone.concretize(vn.id, cn.id)
+          bus publish RewriteHistory(r2)
       }
     }
     else {
 
       val model: DGTreeModel = filter match {
         case None => new FullDGTreeModel(graph)
-        case Some(e) => DGTreeModel.focused(graph, e)
-          //new FocusedDGTreeModel(graph, e)
+        case Some(Left(e)) => DGTreeModel.focused(graph, e)
+        case Some(Right(s)) => DGTreeModel.subGraph(graph, s)
       }
 
       val tree: JTree = new JTree(model) with DGTree {
@@ -145,11 +146,11 @@ class GraphExplorer(treeIcons : DGTreeIcons,
               case node: DGNode =>
                 if (isRightClick(e)) {
                   val menu: JPopupMenu =
-                    NodeMenu(GraphExplorer.this, graph, graphUtils,
+                    NodeMenu(bus, graph, graphUtils,
                       selectedNodes, None, node.id, printingOptionsControl)
                   menu.add(new AbstractAction("Node infos") {
                     def actionPerformed(e: ActionEvent): Unit =
-                      GraphExplorer.this.publish(NodeClicked(node))
+                      bus publish NodeClicked(node)
                   })
                   if (filter.nonEmpty)
                     menu.add(new AbstractAction("Show full graph") {
@@ -160,7 +161,7 @@ class GraphExplorer(treeIcons : DGTreeIcons,
                   Swing.onEDT(menu.show(tree, e.getX, e.getY))
                 }
                 else if(node.kind.kindType != NameSpace)
-                  GraphExplorer.this.publish(NodeClicked(node))
+                  bus publish NodeClicked(node)
               case _ => ()
             }
           }
@@ -174,14 +175,16 @@ class GraphExplorer(treeIcons : DGTreeIcons,
 
       tree.addTreeSelectionListener(new TreeSelectionListener {
         def valueChanged(e: TreeSelectionEvent): Unit = {
-
           selectedNodes =
             tree.getSelectionPaths map (_.getLastPathComponent.asInstanceOf[DGNode].id) toList
 
         }
       })
-      contents = Component.wrap(tree)
+      treeWrapper.contents = Component.wrap(tree)
       this.repaint()
     }
   }
+
 }
+
+

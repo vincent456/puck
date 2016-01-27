@@ -1,12 +1,14 @@
 package puck
 package gui
+package menus
 
 import javax.swing.{JMenuItem, JPopupMenu}
 
 import puck.actions._
 import puck.graph._
 import puck.graph.transformations.rules.Redirection
-import puck.gui.svg.actions.AutoSolveAction
+import puck.gui.PrintingOptionsControl
+import puck.gui.svg.actions.{Log, AutoSolveAction}
 
 import scala.swing.Publisher
 

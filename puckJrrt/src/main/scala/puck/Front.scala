@@ -7,14 +7,14 @@ object FrontVars {
   val root = "/home/lorilan/test_cases_for_puck/QualitasCorpus/Systems"
   //val root = "/home/lorilan/test_cases_for_puck"
 
-  //val system = "freecs/freecs-1.3.20100406"
-  val system = "freemind/freemind-0.9.0"
+  val system = "freecs/freecs-1.3.20100406"
+  //val system = "freemind/freemind-0.9.0"
   //val system = "dspace-1.5.1"
   val workspace = s"$root/$system/puck_test"
 }
 
 object Front extends PuckApplication(
-  JavaFilesHandler(/*FrontVars.workspace*/),
+  JavaFilesHandler(FrontVars.workspace),
   JGraphUtils, JavaIcons)
 
 

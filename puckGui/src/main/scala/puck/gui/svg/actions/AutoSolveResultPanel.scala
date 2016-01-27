@@ -1,4 +1,5 @@
-package puck.gui.svg.actions
+package puck.gui.svg
+package actions
 
 import java.awt.Dimension
 import javax.swing.SwingUtilities
@@ -8,7 +9,6 @@ import puck.graph.io.{PrintingOptions, Visible, VisibilitySet}
 import VisibilitySet._
 import puck.gui._
 import puck.gui.search.{StateSelected, SimpleElementSelector, SortedElementSelector}
-import puck.gui.svg.{PUCKSVGCanvas, SVGController}
 import puck.search.{SearchState, Search}
 import puck.util._
 
@@ -60,13 +60,13 @@ trait GraphPanelResultPanel extends ResultPanel {
   ( graph : DependencyGraph,
     visibilitySet: VisibilitySet.T) : Component =
     new ScrollPane() {
-      SVGController.documentFromGraph(graph,
+      documentFromGraph(graph,
         graphUtils,
         printingOptions.copy(visibility = visibilitySet))(
-        SVGController.documentFromGraphErrorMsgGen(
+        documentFromGraphErrorMsgGen(
           msg => publisher.publish(Log(msg)))){
         case d =>
-          val c = new PUCKSVGCanvas(PUCKSVGCanvas.deafListener)
+          val c = PUCKSVGCanvas()
           swingInvokeLater { () =>
             c.setDocument(d)
             viewportView = Component.wrap(c)
@@ -178,9 +178,7 @@ class AutosolveResultPanel
   leftComponent = upPane
   rightComponent = new SplitPane(Orientation.Vertical) {
     leftComponent = new BoxPanel(Orientation.Vertical){
-      PuckEvents.addVisibilityCheckBoxes(this.peer,
-        AutosolveResultPanel.this,
-        printingOptionsControl.printingOptions)
+      SVGMenu.addVisibilityCheckBoxes(this, printingOptionsControl)
     }
     rightComponent = console
   }

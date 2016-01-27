@@ -4,20 +4,22 @@ import puck.graph._
 import puck.graph.io._
 
 import scala.swing.Publisher
-
+import VisibilitySet.VisibilitySetOps
 /**
   * Created by lorilan on 11/01/16.
   */
 object PrintingOptionsControl {
   def apply(graph : DependencyGraph) : PrintingOptionsControl =
-    new PrintingOptionsControl(VisibilitySet.allVisible(graph))
+    new PrintingOptionsControl(VisibilitySet.topLevelVisible(graph).
+      hideWithName(graph, Seq("@primitive")).
+      hideWithName(graph, Seq("java")))
+
 
 }
 
 class PrintingOptionsControl
-(var visibility : VisibilitySet.T
+(private var _visibility : VisibilitySet.T
 ) extends Publisher {
-
 
   private var printId : Boolean = false
   private var printSignatures : Boolean = false
@@ -32,6 +34,12 @@ class PrintingOptionsControl
       selectedEdgeForTypePrinting0,
       printVirtualEdges, printConcreteUsesPerVirtualEdges,
       printRedOnly)
+
+  def visibility : VisibilitySet.T = _visibility
+  def visibility_=(v : VisibilitySet.T) : Unit = {
+    _visibility = v
+    this publish PrintingOptionsUpdate
+  }
 
   def signatureVisible = printSignatures
   def signatureVisible_=(b : Boolean): Unit =

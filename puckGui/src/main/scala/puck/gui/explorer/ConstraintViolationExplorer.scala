@@ -10,6 +10,7 @@ import javax.swing.tree._
 
 
 import puck.graph.io.PrintingOptions
+import puck.gui.menus.{NodeMenu, ViolationMenu}
 
 import scala.swing.BorderPanel.Position
 import scala.swing._
@@ -18,30 +19,24 @@ import scala.swing.event.{MouseClicked, Event}
 case class FilterSource(filter : NodeId) extends Event
 case class FilterTarget(filter : NodeId) extends Event
 
-class ConstraintViolationExplorer
-(publisher : Publisher,
- allViolations : Seq[DGEdge],
- treeIcons : DGTreeIcons,
- printingOptionsControl: PrintingOptionsControl)
-( implicit graph : DependencyGraph,
-  graphUtils : GraphUtils)
-  extends SplitPane {
 
-
+object ConstraintViolationExplorer {
   def idToNameString(dg : DependencyGraph, nid : NodeId) : String =
-        dg.getNode(nid) match {
-          case n : ConcreteNode =>
-            val name =
-              if(n.kind.kindType == ValueDef)
-                dg.container(n.id) map {
-                  idToNameString(dg, _)
-                } getOrElse "OrphanDefinition"
-              else n.name
-            name + ShowDG.typeHolderCord(dg, dg.styp(n.id))
-              case vn : VirtualNode => vn.name(dg)
-            }
-  def edgeToString(nodeName : NodeId => String, e:  DGEdge ) : String =
-    if(e.source == e.target) s"${graph.getNode(e.source).kind} - ${nodeName(e.source)}"
+    dg.getNode(nid) match {
+      case n : ConcreteNode =>
+        val name =
+          if(n.kind.kindType == ValueDef)
+            dg.container(n.id) map {
+              idToNameString(dg, _)
+            } getOrElse "OrphanDefinition"
+          else n.name
+        name + ShowDG.typeHolderCord(dg, dg.styp(n.id))
+      case vn : VirtualNode => vn.name(dg)
+    }
+  def edgeToString(e:  DGEdge )(implicit graph : DependencyGraph): String = {
+    val nodeName : NodeId => String = idToNameString(graph, _)
+
+    if (e.source == e.target) s"${graph.getNode(e.source).kind} - ${nodeName(e.source)}"
     else {
       val (ksrc, ktgt) = (graph.getNode(e.source).kind, graph.getNode(e.target).kind)
       e.kind match {
@@ -55,6 +50,21 @@ class ConstraintViolationExplorer
           s"${nodeName(e.source)} ($ksrc) - ${e.kind} -> ${nodeName(e.target)} ($ktgt)"
       }
     }
+  }
+
+}
+import ConstraintViolationExplorer._
+
+class ConstraintViolationExplorer
+(publisher : Publisher,
+ allViolations : Seq[DGEdge],
+ treeIcons : DGTreeIcons,
+ printingOptionsControl: PrintingOptionsControl)
+( implicit graph : DependencyGraph,
+  graphUtils : GraphUtils)
+  extends SplitPane {
+
+
 
   def filterViolations
   ( sourceFilter : Option[NodeId],
@@ -229,7 +239,7 @@ class ConstraintViolationExplorer
 
     violations.foreach {
       edge =>
-        violationListPane.contents +=  new Label(edgeToString(idToNameString(graph, _), edge)) {
+        violationListPane.contents +=  new Label(edgeToString(edge)) {
           listenTo(mouse.clicks)
           reactions += {
             case mc @ MouseClicked(_,_,_,_,_) =>

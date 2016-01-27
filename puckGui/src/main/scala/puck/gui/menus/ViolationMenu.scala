@@ -1,9 +1,10 @@
-package puck.gui
+package puck.gui.menus
 
 import javax.swing.JPopupMenu
 
-import puck.graph.{NodeId, GraphUtils, DependencyGraph}
-import puck.gui.svg.actions.{AutoSolveAction}
+import puck.graph.{DependencyGraph, GraphUtils, NodeId}
+import puck.gui.PrintingOptionsControl
+import puck.gui.svg.actions.AutoSolveAction
 
 import scala.swing.Publisher
 

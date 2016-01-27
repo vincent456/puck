@@ -4,14 +4,16 @@ package svg
 import puck.graph._
 import javax.swing._
 
+import puck.gui.menus.{VirtualNodeMenu, ConcreteNodeMenu}
+
 object SVGNodeMenu{
 
   def apply(controller : SVGController,
             nodeId : NodeId) : JPopupMenu =
-    controller.graphStack.graph.getNode(nodeId) match {
+    controller.graph.getNode(nodeId) match {
       case n : ConcreteNode => new SVGConcreteNodeMenu(controller, n)
       case n : VirtualNode => new VirtualNodeMenu(controller,
-        controller.graphStack.graph,
+        controller.graph,
         controller.graphUtils, n)
     }
 }
@@ -20,7 +22,7 @@ class SVGConcreteNodeMenu
 (controller: SVGController,
  node : ConcreteNode)
   extends ConcreteNodeMenu(controller,
-    controller.graphStack.graph,
+    controller.graph,
     controller.graphUtils,
     controller.selectedNodes,
     controller.selectedEdge,
@@ -32,8 +34,6 @@ class SVGConcreteNodeMenu
   override def init() = {
     super.init()
 
-
-
     this.addSeparator()
     addShowOptions()
   }
@@ -41,7 +41,7 @@ class SVGConcreteNodeMenu
   private def addShowOptions() : Unit = {
 
     this.addMenuItem("Infos"){ _ =>
-      controller.showNodeInfos(node.id)
+      controller publish NodeClicked(node)
     }
 
     this.addMenuItem("Hide") { _ =>
@@ -54,11 +54,7 @@ class SVGConcreteNodeMenu
       printingOptionsControl.focusExpand(graph, node.id, focus = true, expand = true)
     }
     this.addMenuItem("Show code") { _ =>
-      controller.printCode(node.id)
-    }
-
-    this.addMenuItem("Show abstractions") { _ =>
-      controller.printAbstractions(node.id)
+      controller publish PrintCode(node.id)
     }
 
     if (graph.content(node.id).nonEmpty) {

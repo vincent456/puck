@@ -58,19 +58,22 @@ object VisibilitySet{
         }
     }
 
-  implicit class VisibilitySetOps(val visibles: T) extends AnyVal {
+  implicit class VisibilitySetOps(val hiddens: T) extends AnyVal {
 
     def hideWithName(graph : DependencyGraph, name : Seq[String]) : T =
-      VisibilitySet.hideWithName(graph, visibles, graph.rootId, name)
+      VisibilitySet.hideWithName(graph, hiddens, graph.rootId, name)
+
+    def visibleNodes(graph : DependencyGraph) : Set[NodeId] =
+      graph.nodesId.toSet -- hiddens
 
     def setVisibility(id : NodeId, v : Visibility) : T = v match {
-      case Visible => visibles - id
-      case Hidden => visibles + id
+      case Visible => hiddens - id
+      case Hidden => hiddens + id
     }
 
     def setVisibility(ids : Iterable[NodeId], v : Visibility) : T = v match {
-      case Visible => visibles -- ids
-      case Hidden => visibles ++ ids
+      case Visible => hiddens -- ids
+      case Hidden => hiddens ++ ids
     }
 
     def toggle(id : NodeId): T =
@@ -78,11 +81,15 @@ object VisibilitySet{
 
 
     def isVisible : NodeId => Boolean = id => !isHidden(id)
-    def isHidden : NodeId => Boolean = visibles.contains
+    def isHidden : NodeId => Boolean = hiddens.contains
 
     def visibility(id : NodeId) : Visibility =
       if(isVisible(id)) Visible
       else Hidden
+
+
+
+
 
   }
 

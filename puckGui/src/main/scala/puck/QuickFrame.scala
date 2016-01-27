@@ -21,7 +21,7 @@ object QuickFrame {
 
     Future {
       val canvas = new JSVGCanvas()
-      canvas.setDocument(SVGController.documentFromStream(pipedInput))
+      canvas.setDocument(gui.svg.documentFromStream(pipedInput))
       val imgframe = new JFrame(title)
       imgframe.add(canvas)
       imgframe.setVisible(true)

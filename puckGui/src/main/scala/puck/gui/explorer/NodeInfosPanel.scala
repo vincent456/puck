@@ -25,6 +25,7 @@ class GraphTreePane(treeIcons : DGTreeIcons,
     val tree: JTree = new JTree(model) with DGTree {
       def icons : DGTreeIcons = treeIcons
     }
+
     contents = Component.wrap(tree)
   }
 }
@@ -67,10 +68,6 @@ class NodeInfosPanel
 
       case _ => ""
     }
-
-
-
-
 
     contents += new Label(s"${node.kind} ${node.name} : " +
       (graph, graph.structuredType(node.id)).shows + s"(${node.id})")
@@ -120,7 +117,7 @@ class NodeInfosPanel
     contents += new TextArea( "Abstractions :" +
       (if(graph.abstractions(node.id).isEmpty) "none\n"
       else mkStringWithNames(graph.abstractions(node.id).flatMap(_.nodes)))){
-      tooltip = "Number of direct super types"
+      tooltip = "Set of node's abstractions"
       editable = false
     }.leftGlued
 
@@ -159,43 +156,23 @@ class NodeInfosPanel
     }
 
 
+
+
     class UsesLabelBox(userId : NodeId, usedId : NodeId,
                        val fullName : String)
-    extends Label {
-
-      val sideUses = graph.typeMemberUsesOf(userId, usedId)
-      val primaryUses = graph.typeUsesOf(userId, usedId)
-
-      def tag = (sideUses.isEmpty, primaryUses.isEmpty) match {
-        case (true, true) => ""
-        case (false, true) => "(dominant use)"
-        case (true, false) => "(dominated use)"
-        case _ => "(both dominant and dominated)"
-      }
-
-      text = fullName + " " + tag
-
-          minimumSize = new Dimension(this.size.width, 30)
+    extends Label(fullName) {
+        minimumSize = new Dimension(this.size.width, 30)
 
           listenTo(mouse.clicks)
           reactions += {
             case mc @ MouseClicked(_, point, _, _, _) =>
               val evt = mc.peer
-              if(isRightClick(evt)) {
-                val menu: JPopupMenu = edgeMenuBuilder((userId, usedId))
-                Swing.onEDT(menu.show(this.peer,
+              if(isRightClick(evt))
+                Swing.onEDT(edgeMenuBuilder((userId, usedId)).show(this.peer,
                   point.getX.toInt,
                   point.getY.toInt))
-              }
-              else {
-                val sb = new StringBuilder
-                sb append (graph, Uses(userId, usedId)).shows
-                sb append "\n"
-                addUsesSet(sb, "Dominant Uses :", primaryUses)
-                addUsesSet(sb, "Dominated Uses :", sideUses)
-
-                publisher publish Log(sb.toString())
-              }
+              else
+               publisher publish Log(NodeInfosPanel.useBindings(graph, Uses(userId, usedId)))
           }
       }
 
@@ -228,4 +205,41 @@ class NodeInfosPanel
         }.leftGlued
     }
 
+}
+
+object NodeInfosPanel {
+
+  def useBindings(graph : DependencyGraph, u : Uses) : String = {
+    def print(sb : StringBuilder, u : Uses) : Unit = {
+      val ustr = (graph, u).shows
+      graph.getNode(u.used).kind.kindType match {
+        case TypeDecl =>
+
+          sb.append(s"Type uses $ustr selected")
+          val tmus = graph.typeMemberUsesOf(u)
+          if (tmus.isEmpty)
+            sb.append("No type member uses associated")
+          else
+            sb.append(tmus.map { tmu => (graph, tmu).shows }.mkString("TM uses are :\n", "\n", "\n"))
+
+        case InstanceValueDecl =>
+          sb.append(s"Type Member uses $ustr selected")
+
+          val tus = graph.typeUsesOf(u)
+          if (tus.isEmpty)
+            sb.append("No type uses associated")
+          else
+            sb.append(tus.map { tu => (graph, tu).shows }.mkString("type uses are :\n", "\n", "\n"))
+
+        case _ => ()
+        //logger writeln "unhandled kind of used node"
+      }
+    }
+    val sb = new StringBuilder
+    print(sb, u)
+//    graph.nodePlusDefAndParams(u.user).foreach {
+//      userDef => print(sb, graph.getUsesEdge(userDef, u.used).get)
+//    }
+    sb.toString()
+  }
 }

@@ -1,11 +1,12 @@
-package puck.gui
+package puck.gui.menus
 
-import javax.swing.JPopupMenu
+import java.awt.event.ActionEvent
+import javax.swing.{AbstractAction, JPopupMenu}
 
-import puck.actions.{RedirectAction0, Choose, RemoveEdgeAction}
+import puck.actions.{RedirectAction0, RemoveEdgeAction}
 import puck.graph._
-import puck.graph.io.PrintingOptions
-import puck.gui.svg.actions.{ShowTypeRelationshipAction, _}
+import puck.gui.svg.actions._
+import puck.gui._
 
 import scala.swing.Publisher
 
@@ -43,7 +44,11 @@ class EdgeMenu
     graph.getUsesEdge(src, tgt) foreach {
       uses =>
         isUseEdge = true
-        add(new ShowTypeRelationshipAction(Some(uses), publisher))
+        add(new AbstractAction(s"Show type bindings"){
+          def actionPerformed(e: ActionEvent) : Unit =
+            publisher publish EdgeForTypePrinting(Some(uses))
+        })
+
 
         val abstractions = graph.abstractions(tgt)
         if(abstractions.nonEmpty)

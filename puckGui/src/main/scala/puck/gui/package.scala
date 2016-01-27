@@ -5,7 +5,7 @@ import java.awt.event.{ActionEvent, MouseEvent}
 import java.io.File
 import javax.swing.{JFileChooser, AbstractAction, JMenuItem, JPopupMenu}
 
-import scala.swing.{Swing, Orientation, BoxPanel, Component}
+import scala.swing._
 
 /**
   * Created by lorilan on 17/12/15.
@@ -54,5 +54,12 @@ package object gui {
     chooseFile(currentDir, chooser => chooser.showOpenDialog(parent) )
   def saveFile(currentDir : File, parent : java.awt.Component) : Option[File] =
     chooseFile(currentDir, chooser => chooser.showSaveDialog(parent) )
+
+  def button(name:String)
+            (action : () => Unit) : Button =
+    new Button(new Action(name){
+      def apply() = action()
+    })
+
 
 }

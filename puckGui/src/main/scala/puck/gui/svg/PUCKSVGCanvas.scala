@@ -15,16 +15,28 @@ import org.w3c.dom.{Node, NodeList, Element}
 import org.w3c.dom.events.{EventListener, Event, MouseEvent}
 import org.w3c.dom.svg._
 import puck.graph.{NodeId, NodeIdP}
+import puck.gui.svg.actions.SwingService
+
+import scala.swing.Publisher
 
 object PUCKSVGCanvas {
-  val deafListener = new EventListener {
-    override def handleEvent(evt: Event): Unit = ()
+
+  def apply() : PUCKSVGCanvas = new PUCKSVGCanvas {
+    val eventListener = new EventListener {
+      override def handleEvent(evt: Event): Unit = ()
+    }
   }
+
+  def apply(controller : SVGController,
+            swingService: SwingService): PUCKSVGCanvas = new PUCKSVGCanvas {
+    val eventListener = new SVGCanvasListener(this, controller, swingService)
+  }
+
 }
 
-class PUCKSVGCanvas
-( listener : EventListener
-  ) extends JSVGCanvas {
+abstract class PUCKSVGCanvas extends JSVGCanvas with Publisher {
+
+  val eventListener : EventListener
 
   setDocumentState(JSVGComponent.ALWAYS_DYNAMIC)
 
@@ -52,7 +64,7 @@ class PUCKSVGCanvas
     override def gvtRenderingCompleted (e: GVTTreeRendererEvent) : Unit = {
       root.addEventListenerNS(XMLConstants.XML_EVENTS_NAMESPACE_URI,
         SVGConstants.SVG_EVENT_CLICK,
-        listener, false, null)
+        eventListener, false, null)
     }
   })
 
@@ -64,12 +76,11 @@ class PUCKSVGCanvas
 
 class SVGCanvasListener
 ( menuInvoker : Component,
-  controller : SVGController)
+  controller : SVGController,
+  swingService: SwingService)
   extends EventListener {
 
-
-  import controller.swingService._
-
+  import swingService._
   private def checkIfNodeAndGetId(txtElt: Element): Option[Int] = {
     if (txtElt.getParentNode.getNodeName == "a") {
       val a: SVGAElement = txtElt.getParentNode.asInstanceOf[SVGAElement]

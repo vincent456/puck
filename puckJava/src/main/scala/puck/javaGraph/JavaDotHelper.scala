@@ -22,7 +22,7 @@ object JavaDotHelper extends DotHelper{
       case (Seq(fds, cts, mts, cls, tvs), n) =>
           val kind = graph.getConcreteNode(n).kind
           kind match {
-            case Interface | Class => Seq(fds, cts, mts, n +: cls, tvs)
+            case Interface | Class | InnerClass | InnerInterface => Seq(fds, cts, mts, n +: cls, tvs)
 
             case Constructor => Seq(fds, n +: cts, mts, cls, tvs)
 

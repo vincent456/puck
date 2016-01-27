@@ -22,7 +22,7 @@ class PuckApplication
     top.visible = true
   }
 
-  def top = new MainFrame {
+  val top = new MainFrame {
     title = "Puck"
 
     contents  = new PuckMainPanel(fh, gu, treeIcons)

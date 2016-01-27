@@ -21,3 +21,34 @@ class PuckConsolePanel
     }
   }
 }
+
+class ConsoleWithSelection
+( val lines: Int = 10,
+  val charPerLine: Int = 50)
+  extends SplitPane(Orientation.Horizontal) {
+
+  dividerSize = 0
+  resizeWeight = 0.2
+
+  private val selection: Label = new Label
+
+  val console = new PuckConsolePanel(){
+    selection +=: contents
+    textArea.rows = lines
+    textArea.columns = charPerLine
+  }
+
+  topComponent = selection
+  bottomComponent = console
+
+  def textArea = console.textArea
+
+  def displaySelection(node: String) : Unit = {
+    if (node.length > 0) selection.text = "Selection : " + node
+    else selection.text = "No selection"
+  }
+
+  def appendText(txt: String) : Unit = {
+    textArea.text = textArea.text + txt + "\n"
+  }
+}
