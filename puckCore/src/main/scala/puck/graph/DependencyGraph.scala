@@ -392,7 +392,9 @@ class DependencyGraph
     containerOfKindType_!(TypeDecl, nid)
 
   def content(containerId: NodeId) : Set[NodeId] =
-    edges.contents.getFlat(containerId) /*++
+    edges.contents.getFlat(containerId) ++
+      edges.parameters.getFlat(containerId)
+  /*++
       (definitionOf(containerId) map (Set(_))).getOrElse(Set()) ++
       edges.parameters.getFlat(containerId)*/
 
@@ -451,6 +453,12 @@ class DependencyGraph
     }
 
     aux(id, Seq())
+  }
+
+  def depth(id : NodeId) : Int = {
+    val cp = containerPath(id)
+    if(cp.head == id) 0
+    else cp.length
   }
 
   def fullName(id : NodeId) : String = {

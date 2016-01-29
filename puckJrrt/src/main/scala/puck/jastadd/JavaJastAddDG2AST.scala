@@ -6,7 +6,7 @@ import java.util.NoSuchElementException
 import puck.PuckError
 import puck.graph.ShowDG._
 import puck.graph._
-import puck.graph.constraints.{ConstraintsParser, SupertypeAbstraction}
+import puck.graph.constraints.{ConstraintsMaps, ConstraintsParser, SupertypeAbstraction}
 import puck.graph.io.{DG2AST, DG2ASTBuilder}
 import puck.graph.transformations._
 import puck.jastadd.concretize._
@@ -96,25 +96,6 @@ class JavaJastAddDG2AST
       case n => n.toString
     }
 
-
-
-  def parseConstraints
-  ( decouple : File)
-  ( implicit logger : PuckLogger) : DG2AST  =
-    try {
-      //val parser = ConstraintsPlParser(nodesByName)
-      val cm = ConstraintsParser(nodesByName, new FileReader(decouple))
-      new JavaJastAddDG2AST(program,
-        initialGraph.newGraph(constraints = cm),
-        initialRecord,
-        nodesByName,
-        graph2ASTMap)
-    } catch {
-      case e : Error =>
-      //e.printStackTrace()
-        logger.writeln("parsing failed : " + e.getMessage)((PuckLog.NoSpecialContext, PuckLog.Error))
-        this
-    }
 
 
   def apply(graph : DependencyGraph)(implicit logger : PuckLogger) : Unit = {
@@ -238,7 +219,7 @@ class JavaJastAddDG2AST
           case NoDecl => throw new PuckError(noApplyMsg)
         }
 
-      case Transformation(_, ChangeNodeName(nid, _, newName)) =>
+      case Transformation(_, Rename(nid, _, newName)) =>
         ASTNodeLink.setName(newName, safeGet(reenactor,id2declMap)(nid), reenactor, nid)
 
       case Transformation(_, ChangeTypeBinding(((tUser, tUsed), tmUse), TypeUse(newTuse @ (ntUser, ntUsed))))

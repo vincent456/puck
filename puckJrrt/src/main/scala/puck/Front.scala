@@ -10,7 +10,8 @@ object FrontVars {
   val system = "freecs/freecs-1.3.20100406"
   //val system = "freemind/freemind-0.9.0"
   //val system = "dspace-1.5.1"
-  val workspace = s"$root/$system/puck_test"
+  //val workspace = s"$root/$system/puck_test"
+  val workspace = s"/home/lorilan/projects/constraintsSolver/test_resources/distrib/bridge/hannemann_simplified"
 }
 
 object Front extends PuckApplication(

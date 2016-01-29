@@ -3,69 +3,89 @@ package puck
 import puck.graph.transformations.MileStone
 import puck.graph.{Recording, DependencyGraph}
 import Recording.RecordingOps
+import puck.gui._
 import puck.util.PuckLogger
 
 import scala.collection.mutable
+import scala.swing.Publisher
 
 /**
   * Created by lorilan on 15/12/15.
   */
 
 trait StackListener{
-  def update(controller: GraphStack) : Unit
+  def emptied(initialGraph: DependencyGraph) : Unit
+  def pushEvent(pushedGraph: DependencyGraph, previousHead : DependencyGraph) : Unit
+  def popEvent(poppedGraph: DependencyGraph, newHead : DependencyGraph) : Unit
 }
 
-trait GraphStack {
 
-  def initialGraph : DependencyGraph
-  implicit def logger : PuckLogger
 
-  def graph =
-    if (undoStack.nonEmpty) undoStack.head
-    else initialGraph
+class GraphStack(val bus : Publisher) {
 
+  def graph = undoStack.head
+
+  def graphOption = undoStack.headOption
 
   protected val undoStack = mutable.Stack[DependencyGraph]()
   protected val redoStack = mutable.Stack[DependencyGraph]()
 
-  protected val stackListeners = mutable.ArrayBuffer[StackListener]()
+  def setInitialGraph(g : DependencyGraph) : Unit = {
+    undoStack.clear()
+    redoStack.clear()
+    undoStack push g
+    bus publish GraphUpdate(graph)
+  }
 
-  def registerAsStackListeners(l : StackListener) =
-    stackListeners.append(l)
+  def fireEmptied() : Unit =
+    bus publish EmptiedButOne(graph)
 
-  def updateStackListeners() : Unit =
-    stackListeners.foreach(_.update(this))
+  def firePushEvent(previousHead : DependencyGraph) : Unit =
+    bus publish Pushed(graph, previousHead)
 
-  def canUndo = undoStack.nonEmpty
+  def firePopEvent(poppedGraph : DependencyGraph) : Unit =
+    bus publish Popped(poppedGraph, graph)
+
+  def canUndo = undoStack.size > 1
 
   def undoAll() = {
 
-    while(undoStack.nonEmpty)
+    while(undoStack.nonEmpty) {
       redoStack.push(undoStack.pop())
-    updateStackListeners()
+    }
+    undoStack.push(redoStack.pop())
+    fireEmptied()
   }
 
   def undo() = {
     val comments = graph.recording.commentsSinceLastMileStone
     redoStack.push(undoStack.pop())
 
-    ("Undo " +: comments) foreach (logger.writeln(_))
-    updateStackListeners()
+    val sb = new  mutable.StringBuilder()
+    ("Undo " +: comments) foreach (c => sb.append(s"$c\n"))
+    bus publish Log(sb.toString)
+
+    firePopEvent(redoStack.head)
   }
   def canRedo = redoStack.nonEmpty
 
   def redo()={
+    val oldHead = undoStack.head
     undoStack.push(redoStack.pop())
 
     val comments = graph.recording.commentsSinceLastMileStone
-    ("Redo " +: comments) foreach (logger.writeln(_))
-    updateStackListeners()
+    val sb = new  mutable.StringBuilder()
+    ("Redo " +: comments) foreach (c => sb.append(s"$c\n"))
+    bus publish Log(sb.toString)
+    firePushEvent(oldHead)
   }
 
   def pushGraph(graph: DependencyGraph) = {
+    val oldHead = undoStack.head
     undoStack.push(graph)
+    println("undostack size = " + undoStack.size)
     redoStack.clear()
-    updateStackListeners()
+    firePushEvent(oldHead)
   }
 
   def rewriteHistory(rec : Recording): Unit ={

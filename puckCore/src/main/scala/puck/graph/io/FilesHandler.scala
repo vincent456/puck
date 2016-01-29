@@ -4,6 +4,7 @@ package io
 
 import java.io._
 
+import puck.graph.constraints.{ConstraintsParser, ConstraintsMaps}
 import puck.graph.transformations.Transformation
 import puck.util._
 
@@ -32,7 +33,6 @@ trait DG2ASTBuilder{
 trait DG2AST {
   def apply(graph : DependencyGraph)(implicit logger : PuckLogger) : Unit
   def printCode(dir : File)(implicit logger : PuckLogger) : Unit
-  def parseConstraints(decouple : File)(implicit logger : PuckLogger) : DG2AST
   def initialGraph : DependencyGraph
   def initialRecord : Seq[Transformation]
   def nodesByName : Map[String, NodeId]
@@ -150,60 +150,23 @@ class FilesHandler
       logger, ll.orNull)
   }
 
-  /*def makeProlog(){
-    PrologPrinter.print(new BufferedWriter(new FileWriter(graphFile(".pl"))), ag)
-  }*/
-
   def parseConstraints
   ( dg2ast: DG2AST )
-  ( implicit logger : PuckLogger) : DG2AST = {
+  ( implicit logger : PuckLogger) : Option[ConstraintsMaps] = {
     decouple.get match{
-      case None => throw new DGError("cannot parse : no decouple file given")
+      case None =>
+        logger.writeln("cannot parse : no decouple file given")((PuckLog.NoSpecialContext, PuckLog.Error))
+        None
       case Some(f) =>
         logger.writeln("parsing " + f)
-        dg2ast.parseConstraints(f)
-    }
-
-  }
-
-  /*def printCSSearchStatesGraph
-  ( states : Map[Int, Seq[SearchState[SResult]]],
-    dotHelper : DotHelper,
-    visibility : VisibilitySet.T,
-    printId : Boolean,
-    printSignature : Boolean) : Unit = {
-    val d = graphFile("_results")
-    d.mkdir()
-    states.foreach{
-      case (cVal, l) =>
-        val subDir = graphFile("_results%c%d".format(File.separatorChar, cVal))
-        subDir.mkdir()
-        printCSSearchStatesGraph(subDir, l, dotHelper, visibility, None, printId, printSignature)
+        try Some(ConstraintsParser(dg2ast.nodesByName, new FileReader(f)))
+        catch {
+          case e : Error =>
+            logger.writeln("parsing failed : " + e.getMessage)((PuckLog.NoSpecialContext, PuckLog.Error))
+            None
+        }
     }
   }
-
-  def printCSSearchStatesGraph
-  ( dir : File,
-    states : Seq[SearchState[SResult]],
-    dotHelper : DotHelper,
-    visibility : VisibilitySet.T,
-    sPrinter : Option[(SearchState[SResult] => String)],
-    printId : Boolean,
-    printSignature : Boolean) : Unit = {
-
-    val printer = sPrinter match {
-      case Some(p) => p
-      case None =>
-        s : SearchState[_] => s.uuid()
-    }
-
-    states.foreach { s =>
-      val graph = graphOfResult(s.loggedResult.value)
-      val f = new File("%s%c%s.png".format(dir.getAbsolutePath, File.separatorChar, printer(s)))
-      val options = PrintingOptions(visibility, printId, printSignature, None)
-      DotPrinter.genImage(graph, dotHelper, options, Png, new FileOutputStream(f)){_ => ()}
-    }
-  }*/
 
   private def openList(files : Seq[String]) : Unit = {
     val ed = editor.get match {

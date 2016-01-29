@@ -128,7 +128,7 @@ object Recording {
       case TypeChange(typed, oldType, newType) =>
         TypeChange(mappin(typed), oldType map mappingOnType, newType map mappingOnType)
 
-      case cnn @ ChangeNodeName(nid, _, _) =>
+      case cnn @ Rename(nid, _, _) =>
         cnn.copy(nid = mappin(nid))
       case ChangeTypeBinding((e1,e2), binding) =>
         ChangeTypeBinding((mappinNodeIdP(e1),mappinNodeIdP(e2)),
@@ -210,7 +210,7 @@ object Recording {
 
 
     def changeNodeName(nid : NodeId, oldName : String, newName : String) : Recording =
-      Transformation(Regular, ChangeNodeName(nid, oldName, newName)) +: record
+      Transformation(Regular, Rename(nid, oldName, newName)) +: record
 
     def removeConcreteNode(n : ConcreteNode) : Recording =
       Transformation(Reverse, CNode(n)) +: record

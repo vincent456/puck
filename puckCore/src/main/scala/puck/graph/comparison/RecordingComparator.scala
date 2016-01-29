@@ -152,7 +152,7 @@ object RecordingComparator{
              | _ : AbstractionOp
              | _ : VNode
              | _ : CNode
-             | _ : ChangeNodeName
+             | _ : Rename
              | _ : RoleChange
              | _ : Comment => throw new Error("should not happen !!")
 

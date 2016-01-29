@@ -26,14 +26,14 @@ class SVGViewHandler
 
 
   def switchView(mainPanel: PuckMainPanel, treeIcons: DGTreeIcons) : Unit = {
-    this deafTo mainPanel.control
+    this deafTo mainPanel.control.Bus
     val tvh = new TreeViewHandler(mainPanel, treeIcons)
     mainPanel.viewHandler = tvh
     tvh.update(mainPanel.control.graph, None)
     mainPanel.revalidate()
   }
 
-  this listenTo mainPanel.control
+  this listenTo mainPanel.control.Bus
   reactions += {
     case GraphUpdate(graph) =>
       this.displayGraph(graph)

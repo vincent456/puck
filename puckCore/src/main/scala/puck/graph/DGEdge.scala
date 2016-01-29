@@ -122,7 +122,14 @@ case object Isa extends EKind {
   def unapply(e: DGEdge) : Option[NodeIdP] = pairOfKind(e, Isa)
 }
 
+
 sealed abstract class ContainsKind extends EKind
+object ContainsKind {
+  def unapply(e: DGEdge) : Option[NodeIdP] =
+    if (e.kind == Contains || e.kind == ContainsParam) Some((e.source, e.target))
+    else None
+
+}
 
 case object Contains extends ContainsKind{
   def apply(source : NodeId, target: NodeId) : DGEdge = new DGEdge(Contains, source, target)

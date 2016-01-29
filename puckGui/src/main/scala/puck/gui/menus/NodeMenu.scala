@@ -18,13 +18,15 @@ import scala.swing.Publisher
 
 object NodeMenu{
 
+  type Builder = (DependencyGraph, NodeId, List[NodeId], Option[NodeIdP]) => JPopupMenu
+
   def apply(publisher : Publisher,
+            graphUtils : GraphUtils,
+            printingOptionsControl : PrintingOptionsControl,
             graph : DependencyGraph,
-            graphUtils: GraphUtils,
-            selectedNodes: List[NodeId],
-            selectedEdge : Option[NodeIdP],
             nodeId : NodeId,
-            printingOptionsControl: PrintingOptionsControl) : JPopupMenu =
+            selectedNodes: List[NodeId],
+            selectedEdge : Option[NodeIdP]) : JPopupMenu =
     graph.getNode(nodeId) match {
       case n : ConcreteNode =>
         new ConcreteNodeMenu(publisher, graph, graphUtils, selectedNodes, selectedEdge, n, printingOptionsControl)

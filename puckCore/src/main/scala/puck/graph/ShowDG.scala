@@ -115,14 +115,7 @@ object ShowDG extends ShowConstraints{
     case Regular => "Add"
     case Reverse => "Remove"
   }
-  val addRmOperation : Operation => Boolean = {
-    case _ : VNode
-      | _ : CNode
-      | _ : Edge
-      | _ : AbstractionOp
-      | _ : TypeDependency => true
-    case _ => false
-  }
+
 
   implicit def abstractionCordBuilder : CordBuilder[Abstraction] = (dg, a) =>
     a match {
@@ -137,7 +130,7 @@ object ShowDG extends ShowConstraints{
   implicit def transformationtCord : CordBuilder[Recordable] = (dg, r) =>
     r match {
       case tf : Transformation =>
-        if(addRmOperation(tf.operation))
+        if(Transformation.isAddRmOperation(tf.operation))
           Cord(directAddRm(tf.direction), "(", transfoTargetCord(dg, tf.operation),")")
         else transfoTargetCord(dg, tf.operation)
 

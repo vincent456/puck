@@ -16,39 +16,29 @@ class TreeViewHandler
   extends ViewHandler with Publisher {
 
   def switchView(mainPanel: PuckMainPanel, treeIcons: DGTreeIcons) : Unit = {
-    this deafTo mainPanel.control
-    mainPanel.control deafTo graphExplorer
+    this deafTo mainPanel.control.Bus
     mainPanel.viewHandler = new SVGViewHandler(mainPanel)
   }
 
   import mainPanel.control
 
   val graphExplorer =
-    new GraphExplorer(mainPanel.control,
+    new GraphExplorer(control.Bus,
       treeIcons,
       control.graphUtils,
       control.printingOptionsControl)
 
-  control listenTo graphExplorer
-  this listenTo control
+  this listenTo control.Bus
 
   reactions += {
     case GraphUpdate(graph) =>
       update(graph, None)
-    case GraphFocus(graph, edge) =>
-      update(graph, Some(Left(edge)))
-    case VisibilityEvent(v) =>
-      println("tvh receives vis evt")
-      import puck.graph.io.VisibilitySet.VisibilitySetOps
-      update(control.graph, Some(Right(v.visibleNodes(control.graph))))
-
   }
 
 
   mainPanel.upPanel.setGraphView(graphExplorer)
 
   def update(graph : DependencyGraph, se : Option[Either[DGEdge, Set[NodeId]]]) : Unit = {
-    graphExplorer.display(graph, se)
     updateLeftOfPanel(graph)
     mainPanel.repaint()
   }
@@ -60,7 +50,7 @@ class TreeViewHandler
       else (new BoxPanel(Orientation.Vertical) {
             contents += new Label("Constraints Violations")
             val constraintViolationExplorer =
-              new ConstraintViolationExplorer(mainPanel.interface,
+              new ConstraintViolationExplorer(control.Bus,
                 violations, treeIcons,
                 control.printingOptionsControl)(graph,
                 control.graphUtils)

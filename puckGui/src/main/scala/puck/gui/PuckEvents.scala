@@ -10,12 +10,24 @@ import scala.swing.event.Event
 
 sealed abstract class PuckEvent extends Event
 
-case class GraphUpdate(graph : DependencyGraph) extends PuckEvent
 case class GraphFocus(graph : DependencyGraph, edge : DGEdge) extends PuckEvent
 case class PushGraph(graph : DependencyGraph) extends PuckEvent
 case class PrintErrOrPushGraph(msg : String, lgt : LoggedTry[DependencyGraph]) extends PuckEvent
 case class RewriteHistory(rec : Recording) extends PuckEvent
 case class NodeClicked(node : DGNode) extends PuckEvent
+
+
+sealed abstract class GraphStackEvent extends PuckEvent {
+  val graph : DependencyGraph
+}
+case class GraphUpdate(graph : DependencyGraph) extends GraphStackEvent
+case class EmptiedButOne(graph : DependencyGraph) extends GraphStackEvent
+case class Pushed(pushedGraph : DependencyGraph, previousHead : DependencyGraph) extends GraphStackEvent {
+  val graph : DependencyGraph = pushedGraph
+}
+case class Popped(poppedGraph : DependencyGraph, newHead : DependencyGraph) extends GraphStackEvent {
+  val graph : DependencyGraph = newHead
+}
 
 case object Undo extends PuckEvent
 case object UndoAll extends PuckEvent
@@ -45,7 +57,7 @@ sealed abstract class PrintingOptionEvent extends PuckEvent {
   def apply(control : PrintingOptionsControl) : Unit
 }
 
-case class VisibilityEvent(v : VisibilitySet.T) extends PrintingOptionEvent {
+case class VisibilityEvent(graph : DependencyGraph, v : VisibilitySet.T) extends PrintingOptionEvent {
   def apply(control : PrintingOptionsControl) : Unit =
     control.visibility = v
 }

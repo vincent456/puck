@@ -24,8 +24,8 @@ class PuckMainPanel(filesHandler: FilesHandler,
                     graphUtils: GraphUtils,
                     treeIcons : DGTreeIcons)
   extends SplitPane(Orientation.Horizontal) {
-  dividerSize = 3
 
+  dividerSize = 3
   preferredSize = new Dimension(PuckMainPanel.width, PuckMainPanel.height)
 
   val console = new ConsoleWithSelection()
@@ -37,26 +37,8 @@ class PuckMainPanel(filesHandler: FilesHandler,
 
 
 
-  val nodeInfos = new ScrollPane(){
-    reactions += {
-      case NodeClicked(n) if n.id != DependencyGraph.rootId =>
-        Swing.onEDT {
-          contents =
-            new NodeInfosPanel(interface, control.graph, n.id,
-              edge => {
-                new EdgeMenu(interface, edge,
-                  control.printingOptionsControl,
-                  blurrySelection = false,
-                  control.graphStack.graph,
-                  graphUtils)},
-              treeIcons
-            )
-        }
+  val nodeInfos = new NodeInfosPanel(control.Bus, control, treeIcons)
 
-    }
-  }
-
-  nodeInfos listenTo control
 
   object upPanel extends SplitPane(Orientation.Vertical) {
     leftComponent = interface
@@ -78,7 +60,7 @@ class PuckMainPanel(filesHandler: FilesHandler,
 
   var viewHandler : ViewHandler = new TreeViewHandler(this, treeIcons)
 
-  this listenTo interface
+  this listenTo control.Bus
 
   reactions += {
     case SwitchView => viewHandler.switchView(this, treeIcons)

@@ -8,7 +8,7 @@ object Operation {
     case CNode(cn) => Seq(cn.id)
     case Edge(e) => Seq(e.source, e.target)
     case RedirectionOp(e, exty) => Seq(e.source, e.target, exty.node)
-    case ChangeNodeName(id, _, _) => Seq(id)
+    case Rename(id, _, _) => Seq(id)
     case TypeChange(id, oldt, newt) =>
       val ot = oldt.map(_.ids).getOrElse(Seq())
       val nt = newt.map(_.ids).getOrElse(Seq())
@@ -22,13 +22,14 @@ object Operation {
   }
 }
 
-sealed trait Operation{
-
+sealed trait Operation {
   def execute(g: DependencyGraph , op : Direction) : DependencyGraph
   def productPrefix : String
 }
 
-case class CNode(n : ConcreteNode) extends Operation {
+sealed trait AddRmOperation extends Operation
+
+case class CNode(n : ConcreteNode) extends AddRmOperation {
 
   def execute(g: DependencyGraph , op : Direction) = op match {
     case Regular => g.addConcreteNode(n)
@@ -36,7 +37,7 @@ case class CNode(n : ConcreteNode) extends Operation {
   }
 }
 
-case class VNode(n : VirtualNode) extends Operation {
+case class VNode(n : VirtualNode) extends AddRmOperation {
   def execute(g: DependencyGraph , op : Direction) = op match {
     case Regular => g.addVirtualNode(n)
     case Reverse => g.removeVirtualNode(n)
@@ -44,7 +45,7 @@ case class VNode(n : VirtualNode) extends Operation {
 }
 
 case class Edge(edge : DGEdge)
-  extends Operation {
+  extends AddRmOperation {
   def execute(g: DependencyGraph , op : Direction) = op match {
     case Regular =>edge.createIn(g)
     case Reverse => edge.deleteIn(g)
@@ -97,7 +98,7 @@ class RedirectionWithMerge(edge : DGEdge, extremity : Extremity)
 
 }
 
-case class ChangeNodeName
+case class Rename
 ( nid : NodeId,
   oldName : String,
   newName : String)
@@ -125,7 +126,7 @@ case class TypeChange
 case class AbstractionOp
 (impl: NodeId,
  abs : Abstraction)
- extends Operation{
+ extends AddRmOperation {
 
   def execute(g: DependencyGraph , op : Direction) = op match {
     case Regular => g.addAbstraction(impl, abs)
@@ -165,7 +166,7 @@ case class ChangeTypeBinding(oldBinding : (NodeIdP,NodeIdP), extremity : BoundPa
 case class TypeDependency
 ( typeUse : NodeIdP,
   typeMemberUse :  NodeIdP)
-  extends Operation {
+  extends AddRmOperation {
   def execute(g: DependencyGraph , op : Direction) = op match {
     case Regular => g.addUsesDependency(typeUse, typeMemberUse)
     case Reverse => g.removeUsesDependency(typeUse, typeMemberUse)
@@ -182,13 +183,3 @@ extends Operation {
     case Reverse => g.setRole(id, oldRole)
   }
 }
-//case class AddFactoryMethod(constructor : NodeId, factory : ConcreteNode) extends Operation
-
-
-/*
-case class TTConstraint(ct : Constraint,
-                                                friend : AGNode)
-  extends TransformationTarget{
-
-  def execute(op : Operation) = ???
-}*/

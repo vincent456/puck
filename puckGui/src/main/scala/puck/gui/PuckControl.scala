@@ -1,6 +1,6 @@
 package puck.gui
 
-import java.io.{File, PipedInputStream, PipedOutputStream}
+import java.io.File
 
 import puck.{FilesHandlerDG2ASTControllerOps, StackListener, GraphStack, LoadingListener}
 import puck.graph._
@@ -20,8 +20,7 @@ class PuckControl
 ( logger0 : PuckLogger,
   val filesHandler : FilesHandler,
   val graphUtils: GraphUtils)
-  extends Publisher
-  with StackListener {
+  extends Publisher {
 
   val progressBar = new ProgressBar {
     min = 0
@@ -29,26 +28,23 @@ class PuckControl
     value = 0
     labelPainted = true
     visible = false
-
   }
 
+  object Bus extends Publisher
+  this listenTo Bus
 
   implicit val logger: PuckLogger = logger0
   var dg2ast: DG2AST = _
-  var graphStack: GraphStack = _
+  val graphStack: GraphStack = new GraphStack(Bus)
 
   def graph: DependencyGraph = graphStack.graph
 
   import PuckLog.defaultVerbosity
 
-  this deafTo this
 
   private[this] var printingOptionsControl0: PrintingOptionsControl = _
 
   def printingOptionsControl = printingOptionsControl0
-
-  def update(graphStack: GraphStack): Unit =
-    this publish GraphUpdate(graphStack.graph)
 
 
   def loadCodeAndConstraints() = Future {
@@ -61,39 +57,32 @@ class PuckControl
     }))
     progressBar.visible = false
 
-    graphStack = new GraphStack {
-      implicit def logger: PuckLogger = logger0
-      def initialGraph: DependencyGraph = dg2ast.initialGraph
-    }
-    printingOptionsControl0 = PrintingOptionsControl(graphStack.graph)
-    this listenTo printingOptionsControl0
-    graphStack.registerAsStackListeners(this)
+
+    printingOptionsControl0 = PrintingOptionsControl(dg2ast.initialGraph, Bus)
+
 
   } onComplete {
-    case Success(_) => loadConstraints(updateAnyway = true)
+    case Success(_) => loadConstraints(setInitialGraph = true)
     case Failure(exc) =>
       progressBar.visible = false
       exc.printStackTrace()
   }
 
 
-  def loadConstraints(updateAnyway : Boolean = false) : Unit = {
-    try {
+  def loadConstraints(setInitialGraph : Boolean = false) : Unit = {
       logger.writeln("Loading constraints ...")
-      dg2ast = filesHandler.parseConstraints(dg2ast)
-      graphStack.updateStackListeners()
-      logger.writeln(" done:")
-      dg2ast.initialGraph.printConstraints(logger, defaultVerbosity)
-    }
-    catch {
-      case e: Error =>
-        logger writeln e.getMessage
-        if(updateAnyway) {
-          graphStack.updateStackListeners()
-        }
+
+      filesHandler.parseConstraints(dg2ast) match {
+        case None if setInitialGraph =>
+          graphStack.setInitialGraph(dg2ast.initialGraph)
+        case Some(cm) =>
+          val g = dg2ast.initialGraph.newGraph(constraints = cm)
+          logger.writeln(" done:")
+          graphStack.setInitialGraph(g)
+          g.printConstraints(logger, defaultVerbosity)
+      }
     }
 
-  }
 
   def printRecording() : Unit = {
     import ShowDG._
@@ -129,12 +118,14 @@ class PuckControl
 
 
   def publishUndoRedoStatus() : Unit =
-   this publish UndoRedoStatus(graphStack.canUndo, graphStack.canRedo)
+    Bus publish UndoRedoStatus(graphStack.canUndo, graphStack.canRedo)
 
 
   reactions += {
 
-    case PushGraph(g) => graphStack.pushGraph(g)
+    case PushGraph(g) =>
+      graphStack.pushGraph(g)
+      publishUndoRedoStatus()
 
     case PrintErrOrPushGraph(msg, lgt) =>
       lgt.value match {
@@ -165,7 +156,6 @@ class PuckControl
 
     case gf @ GraphFocus(g, e) =>
       printingOptionsControl.focus(g, e)
-      this publish gf
 
     case LoadCodeRequest => loadCodeAndConstraints()
 
@@ -176,7 +166,7 @@ class PuckControl
 
     case LoadRecord(f) =>
       loadRecord(f)
-      this publish GraphUpdate(graph)
+      Bus publish GraphUpdate(graph)
 
     case ConstraintDisplayRequest(graph) =>
       graph.printConstraints(logger, defaultVerbosity)
@@ -184,12 +174,8 @@ class PuckControl
     case ApplyOnCodeRequest(searchResult) =>
       applyOnCode(searchResult)
 
-    case PrintingOptionsUpdate =>
-      this publish GraphUpdate(graphStack.graph)
-
     case pe : PrintingOptionEvent =>
       pe(printingOptionsControl)
-      this publish pe
 
     case GenCode(compareOutput) =>
       import FilesHandlerDG2ASTControllerOps._
@@ -199,8 +185,6 @@ class PuckControl
 
     case PrintCode(nodeId) =>
         logger writeln ("Code :\n" + dg2ast.code(graph, nodeId))
-
-    case evt => publish(evt)
 
   }
 

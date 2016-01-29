@@ -11,9 +11,8 @@ class PuckInterfacePanel
 ( control : PuckControl
 ) extends BoxPanel(Orientation.Vertical)  {
 
-  private val publisher = this
-  control listenTo this
-  this listenTo control
+  private val publisher = control.Bus
+  this listenTo control.Bus
 
   val leftWidth = PuckMainPanel.width * 3/8
   val rightWidth = PuckMainPanel.width * 5/8
@@ -55,16 +54,16 @@ class PuckInterfacePanel
         val f: File = fc.selectedFile
         if( f != null && !(f == filesHandler.srcDirectory.!)) {
           filesHandler.setWorkingDirectory(f)
-          publish(LoadCodeRequest)
+          publisher publish LoadCodeRequest
         }
         val sf : Option[File]= filesHandler.srcDirectory.get
         val path = sf map (_.getAbsolutePath) getOrElse "No directory selected"
-        this publish Log(s"Application directory :\n$path")
+        publisher publish Log(s"Application directory :\n$path")
     }
 
     contents += makeButton("(Re)load code & constraints",
       "Load the selected source code and build the access graph"){
-      () => publish(LoadCodeRequest)
+      () => publisher publish LoadCodeRequest
     }
     contents += control.progressBar
   }
@@ -84,7 +83,7 @@ class PuckInterfacePanel
           case UndoRedoStatus(canUndo, _) =>
             enabled = canUndo
         }
-        listenTo(control)
+        listenTo(control.Bus)
       })
 
     c.contents +=
@@ -98,7 +97,7 @@ class PuckInterfacePanel
           case UndoRedoStatus(canUndo, _) =>
             enabled = canUndo
         }
-        listenTo(control)
+        listenTo(control.Bus)
       })
 
     c.contents +=
@@ -106,13 +105,13 @@ class PuckInterfacePanel
 
         enabled = false
 
-        def apply() = publisher publish Undo
+        def apply() = publisher publish Redo
 
         reactions += {
           case UndoRedoStatus(_, canRedo) =>
             enabled = canRedo
         }
-        listenTo(control)
+        listenTo(control.Bus)
       })
   }
 
@@ -130,7 +129,6 @@ class PuckInterfacePanel
       addUndoRedoButton(p)
       contents += p
 
-      control.publishUndoRedoStatus()
       contents += new BoxPanel(Orientation.Horizontal) {
         contents += new Button() {
           val b : Button = this
@@ -146,7 +144,7 @@ class PuckInterfacePanel
 
         contents += new Button() {
           val b : Button = this
-          action = new Action("Save refactoring plan") {
+          action = new Action("Load refactoring plan") {
             def apply(): Unit = {
               openFile(control.filesHandler.workingDirectory, b.peer) match {
                 case None => publisher publish Log("no file selected")
@@ -168,7 +166,7 @@ class PuckInterfacePanel
       contents += makeButton("Focus on Violations",
         "Display a visual representation of the graph"){
         () => publisher publish
-          VisibilityEvent(VisibilitySet.violationsOnly(control.graph))
+          VisibilityEvent(control.graph, VisibilitySet.violationsOnly(control.graph))
       }
 
       val testCommutativityCB = new CheckBox("Test commutativity")

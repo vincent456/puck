@@ -21,6 +21,7 @@ package object actions {
   def printErrOrPushGraph
   (publisher : Publisher, msg : String )
   ( lgt : LoggedTry[DependencyGraph]) : Unit =
-    publisher.publish(PrintErrOrPushGraph(msg, lgt))
+    publisher publish PrintErrOrPushGraph(msg, lgt)
+
 
 }

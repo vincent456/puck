@@ -17,8 +17,6 @@ import org.w3c.dom.svg._
 import puck.graph.{NodeId, NodeIdP}
 import puck.gui.svg.actions.SwingService
 
-import scala.swing.Publisher
-
 object PUCKSVGCanvas {
 
   def apply() : PUCKSVGCanvas = new PUCKSVGCanvas {
@@ -34,7 +32,7 @@ object PUCKSVGCanvas {
 
 }
 
-abstract class PUCKSVGCanvas extends JSVGCanvas with Publisher {
+abstract class PUCKSVGCanvas extends JSVGCanvas {
 
   val eventListener : EventListener
 

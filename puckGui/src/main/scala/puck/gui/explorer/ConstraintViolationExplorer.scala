@@ -56,7 +56,7 @@ object ConstraintViolationExplorer {
 import ConstraintViolationExplorer._
 
 class ConstraintViolationExplorer
-(publisher : Publisher,
+(bus : Publisher,
  allViolations : Seq[DGEdge],
  treeIcons : DGTreeIcons,
  printingOptionsControl: PrintingOptionsControl)
@@ -94,46 +94,32 @@ class ConstraintViolationExplorer
   }
 
   class ViolationTree(handle : ViolationTreeHandle) extends
-    JTree(DGTreeModel.subGraph(graph, handle.extremities(allViolations))) with DGTree {
+    JTree(TreeModelAdapter.subGraph(graph, handle.extremities(allViolations))) with DGTree {
     def icons : DGTreeIcons = treeIcons
 
-    override def convertValueToText
-    (value: AnyRef, selected: Boolean,
-     expanded: Boolean, leaf: Boolean,
-     row: Int, hasFocus: Boolean) : String =
-      value match {
-        case null => ""
-        case node : DGNode  =>
+    override def convertNodeToText(n : DGNode) : String = {
+      val vsCount = allViolations.count (e => graph.contains_*(n.id, handle.exty(e)))
+      s"${n.name} ($vsCount)"
+    }
 
-          val vsCount = allViolations.count (e => graph.contains_*(node.id, handle.exty(e)))
-          s"${node.name} ($vsCount)"
-        case _ => ""
+    addNodeClickedAction(
+      (e, n) =>
+      if(isRightClick(e)) Swing.onEDT {
+        val menu = NodeMenu(bus, graphUtils, printingOptionsControl,
+          ConstraintViolationExplorer.this.graph, n.id,
+          List(), None)
+        menu.add(new AbstractAction("Node infos") {
+          def actionPerformed(e: ActionEvent): Unit =
+            bus publish NodeClicked(n)
+        })
+        menu.show(targetTree, e.getX, e.getY)
+      } else {
+        bus publish handle.event(n.id)
+        if(n.kind.kindType != NameSpace)
+          bus publish NodeClicked(n)
       }
+    )
 
-    addMouseListener( new MouseAdapter {
-      override def mouseClicked(e : MouseEvent) : Unit =  {
-        val path : TreePath = ViolationTree.this.getPathForLocation(e.getX, e.getY)
-        if(path!= null){
-          path.getLastPathComponent match {
-            case n : DGNode =>
-              if(isRightClick(e)) Swing.onEDT {
-                val menu = NodeMenu(publisher, ConstraintViolationExplorer.this.graph,
-                  graphUtils, List(), None, n.id, printingOptionsControl)
-                menu.add(new AbstractAction("Node infos") {
-                  def actionPerformed(e: ActionEvent): Unit =
-                    ConstraintViolationExplorer.this.publish(NodeClicked(n))
-                })
-                menu.show(targetTree, e.getX, e.getY)
-              } else {
-                ConstraintViolationExplorer.this.publish(handle.event(n.id))
-                if(n.kind.kindType != NameSpace)
-                  ConstraintViolationExplorer.this.publish(NodeClicked(n))
-              }
-            case _ => ()
-          }
-        }
-      }
-    })
   }
 
   val sourceTree = new ViolationTree(new ViolationTreeHandle {
@@ -167,7 +153,7 @@ class ConstraintViolationExplorer
     sourceFilter0 = sid
     Swing.onEDT {
       val vs = filterViolations(sourceFilter, targetFilter)
-      targetTree.setModel(DGTreeModel.subGraph(graph, targets(vs)))
+      targetTree.setModel(TreeModelAdapter.subGraph(graph, targets(vs)))
       sourceLabel.text = sid map graph.fullName getOrElse ""
       updateViolationListPane(vs)
     }
@@ -177,7 +163,7 @@ class ConstraintViolationExplorer
     targetFilter0 = sid
     Swing.onEDT {
       val vs = filterViolations(sourceFilter, targetFilter)
-      sourceTree.setModel(DGTreeModel.subGraph(graph, sources(vs)))
+      sourceTree.setModel(TreeModelAdapter.subGraph(graph, sources(vs)))
       targetLabel.text = sid map graph.fullName getOrElse ""
       updateViolationListPane(vs)
     }
@@ -245,16 +231,16 @@ class ConstraintViolationExplorer
             case mc @ MouseClicked(_,_,_,_,_) =>
               val evt = mc.peer
               if(isRightClick(evt)){
-                val menu : JPopupMenu = new ViolationMenu(publisher, edge.target, printingOptionsControl){
+                val menu : JPopupMenu = new ViolationMenu(bus, edge.target, printingOptionsControl){
                   add( new AbstractAction("Focus in graph explorer") {
                     def actionPerformed(e: ActionEvent): Unit =
-                      publisher.publish(GraphFocus(graph, edge))
+                      bus publish GraphFocus(graph, edge)
                   })
                 }
                 Swing.onEDT(menu.show(this.peer, evt.getX, evt.getY))
               }
               else if(evt.getClickCount > 1)
-                publisher.publish(GraphFocus(graph, edge))
+                bus publish GraphFocus(graph, edge)
           }
         }
     }

@@ -17,7 +17,7 @@ class SVGController
  console : ConsoleWithSelection)
   extends Publisher {
 
-  genControl listenTo this
+  genControl.Bus listenTo this
 
   def graph : DependencyGraph = genControl.graph
   val graphUtils = genControl.graphUtils
@@ -26,7 +26,7 @@ class SVGController
 
   val edgeMenuBuilder : NodeIdP => JPopupMenu = {
     e =>
-      new EdgeMenu(this, e, printingOptionsControl, blurrySelection = true,
+      new EdgeMenu(genControl.Bus, e, printingOptionsControl, blurrySelection = true,
         graph, graphUtils )
   }
 

@@ -9,17 +9,19 @@ import VisibilitySet.VisibilitySetOps
   * Created by lorilan on 11/01/16.
   */
 object PrintingOptionsControl {
-  def apply(graph : DependencyGraph) : PrintingOptionsControl =
-    new PrintingOptionsControl(VisibilitySet.topLevelVisible(graph).
+  def apply(graph : DependencyGraph,
+            bus : Publisher) : PrintingOptionsControl =
+    new PrintingOptionsControl(
+      VisibilitySet.topLevelVisible(graph).
       hideWithName(graph, Seq("@primitive")).
-      hideWithName(graph, Seq("java")))
+      hideWithName(graph, Seq("java")), bus)
 
 
 }
 
 class PrintingOptionsControl
-(private var _visibility : VisibilitySet.T
-) extends Publisher {
+(private var _visibility : VisibilitySet.T,
+ bus : Publisher) {
 
   private var printId : Boolean = false
   private var printSignatures : Boolean = false
@@ -38,14 +40,14 @@ class PrintingOptionsControl
   def visibility : VisibilitySet.T = _visibility
   def visibility_=(v : VisibilitySet.T) : Unit = {
     _visibility = v
-    this publish PrintingOptionsUpdate
+    bus publish PrintingOptionsUpdate
   }
 
   def signatureVisible = printSignatures
   def signatureVisible_=(b : Boolean): Unit =
     if( b != printSignatures ){
       printSignatures = b
-      this publish PrintingOptionsUpdate
+      bus publish PrintingOptionsUpdate
     }
 
 
@@ -53,7 +55,7 @@ class PrintingOptionsControl
   def selectedEdgeForTypePrinting_=(se: Option[Uses]) : Unit = {
     if( se != selectedEdgeForTypePrinting0 ){
       selectedEdgeForTypePrinting0 = se
-      this publish PrintingOptionsUpdate
+      bus publish PrintingOptionsUpdate
     }
   }
 
@@ -62,7 +64,7 @@ class PrintingOptionsControl
   def idVisible_=(b : Boolean): Unit = {
     if( b != printId ){
       printId = b
-      this publish PrintingOptionsUpdate
+      bus publish PrintingOptionsUpdate
     }
   }
 
@@ -70,14 +72,14 @@ class PrintingOptionsControl
   def virtualEdgesVisible_=(b : Boolean): Unit = {
     if( b != printVirtualEdges ){
       printVirtualEdges = b
-      this publish PrintingOptionsUpdate
+      bus publish PrintingOptionsUpdate
     }
   }
   def concreteUsesPerVirtualEdges = printConcreteUsesPerVirtualEdges
   def concreteUsesPerVirtualEdges_=(b : Boolean): Unit = {
     if( b != printConcreteUsesPerVirtualEdges ){
       printConcreteUsesPerVirtualEdges = b
-      this publish PrintingOptionsUpdate
+      bus publish PrintingOptionsUpdate
     }
   }
 
@@ -85,7 +87,7 @@ class PrintingOptionsControl
   def redEdgesOnly_=(b : Boolean): Unit = {
     if( b != printRedOnly ){
       printRedOnly = b
-      this publish PrintingOptionsUpdate
+      bus publish PrintingOptionsUpdate
     }
   }
   import VisibilitySet._
@@ -99,7 +101,7 @@ class PrintingOptionsControl
       visibility =
         graph.content(id).foldLeft(visibility)(_.setVisibility(_, Visible))
 
-    this publish PrintingOptionsUpdate
+    bus publish PrintingOptionsUpdate
   }
 
   def focus(graph : DependencyGraph,
@@ -110,14 +112,14 @@ class PrintingOptionsControl
         val s2 = set.setVisibility(graph.containerPath(source), Visible)
         s2.setVisibility(graph.containerPath(target), Visible)
     }
-    this publish PrintingOptionsUpdate
+    bus publish PrintingOptionsUpdate
   }
 
   private def setSubTreeVisibility(graph : DependencyGraph,
                                    rootId : NodeId, v : Visibility, includeRoot : Boolean): Unit ={
     val nodes = graph.subTree(rootId, includeRoot)
     visibility = visibility.setVisibility(nodes, v)
-    this publish PrintingOptionsUpdate
+    bus publish PrintingOptionsUpdate
   }
   def hide(graph : DependencyGraph, root : NodeId): Unit =
     setSubTreeVisibility(graph, root, Hidden, includeRoot = true)

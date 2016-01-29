@@ -1,6 +1,6 @@
 package puck.graph.transformations
 
-import puck.graph.DependencyGraph
+import puck.graph._
 
 abstract class Recordable extends Serializable {
   def redo(g: DependencyGraph) : DependencyGraph
@@ -15,6 +15,42 @@ case object Regular extends Direction {
 }
 case object Reverse extends Direction{
   def reverse = Regular
+}
+
+object Transformation {
+
+  val isAddRmOperation : Operation => Boolean = {
+    case _ : AddRmOperation => true
+    case _ => false
+  }
+
+  object Add {
+    def unapply(t : Transformation) : Option[AddRmOperation] =
+      t match {
+        case Transformation(Regular, o : AddRmOperation) =>
+          Some(o)
+        case _ => None
+      }
+  }
+  object Remove {
+    def unapply(t : Transformation) : Option[AddRmOperation] =
+      t match {
+        case Transformation(Reverse, o : AddRmOperation) =>
+          Some(o)
+        case _ => None
+      }
+  }
+
+  object Move {
+    def unapply(t : Transformation) : Option[(NodeIdP, NodeId)] =
+      t.operation match {
+        case RedirectionOp(e @ Contains(oldSrc, tgt), Source(newSrc)) =>
+          Some(((oldSrc, tgt), newSrc))
+        //case RedirectionOp(e @ ContainsParam(oldSrc, tgt), Source(newSrc)) =>
+        case _ => None
+      }
+  }
+
 }
 
 case class Transformation
