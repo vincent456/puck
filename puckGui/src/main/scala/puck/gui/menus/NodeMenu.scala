@@ -8,6 +8,7 @@ import puck.actions._
 import puck.graph._
 import puck.graph.transformations.rules.Redirection
 import puck.gui.PrintingOptionsControl
+import puck.gui.explorer.DGTreeIcons
 import puck.gui.svg.actions.{Log, AutoSolveAction}
 
 import scala.swing.Publisher
@@ -26,7 +27,8 @@ object NodeMenu{
             graph : DependencyGraph,
             nodeId : NodeId,
             selectedNodes: List[NodeId],
-            selectedEdge : Option[NodeIdP]) : JPopupMenu =
+            selectedEdge : Option[NodeIdP])
+           (implicit treeIcons: DGTreeIcons): JPopupMenu =
     graph.getNode(nodeId) match {
       case n : ConcreteNode =>
         new ConcreteNodeMenu(publisher, graph, graphUtils, selectedNodes, selectedEdge, n, printingOptionsControl)
@@ -42,7 +44,9 @@ class ConcreteNodeMenu
  val selectedNodes: List[NodeId],
  val selectedEdge : Option[NodeIdP],
  node : ConcreteNode,
- printingOptionsControl: PrintingOptionsControl) extends JPopupMenu {
+ printingOptionsControl: PrintingOptionsControl)
+(implicit treeIcons: DGTreeIcons)
+  extends JPopupMenu {
 
   init()
 

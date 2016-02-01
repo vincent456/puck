@@ -6,8 +6,12 @@ import javax.swing._
 import puck.graph.ShowDG._
 import puck.graph._
 import puck.graph.constraints.AbstractionPolicy
+import puck.gui
+import puck.gui.explorer.{StaticDGTreePane, DGTreeIcons, DGTree, TreeModelAdapter}
+import puck.gui.svg.actions.Log
 
-import scala.swing.{Publisher, Dialog}
+import scala.swing.BorderPanel.Position
+import scala.swing._
 import scala.swing.Dialog.{Message, Options, Result}
 
 object NodeCheckBox {
@@ -21,17 +25,52 @@ object NodeCheckBox {
     new NodeCheckBox(node, (graph, node).shows, selected)
 }
 
-class NodeCheckBox(val node : ConcreteNode, name : String, selected : Boolean)
-  extends JCheckBox(name, selected)
+class AbstractionPanel
+( graph : DependencyGraph,
+  potentialsHost : Set[NodeId],
+  abstractionChoices : List[ConcreteNode])
+(implicit treeIcons : DGTreeIcons)extends SplitPane(Orientation.Vertical) {
+
+  val choices = abstractionChoices.map(NodeCheckBox(graph, _))
+  def selectedNodes = choices.filter(_.selected).map(_.node)
+
+  val treePane = new StaticDGTreePane(graph, potentialsHost, "Select host")
+  def selectedHost = treePane.selecteNodes
+  leftComponent = treePane
+
+  if(abstractionChoices.isEmpty){
+    dividerSize = 0
+    resizeWeight = 1
+  }
+  else
+    rightComponent = new BorderPanel {
+      add(new Label("Select type member to abstract"), Position.North)
+      add(new ScrollPane {
+        contents = new BoxPanel(Orientation.Vertical) {
+          choices foreach contents.+=
+        }
+        preferredSize = new Dimension(600, 250)
+
+
+      }, Position.Center)
+    }
+
+
+}
+class NodeCheckBox(val node : ConcreteNode, name : String, initiallySelected : Boolean)
+  extends CheckBox(name){
+  selected = initiallySelected
+}
 
 class AbstractionAction
-(publisher : Publisher,
+(bus : Publisher,
  node : ConcreteNode,
  policy : AbstractionPolicy,
- kind : NodeKind)
+ abskind : NodeKind)
 (implicit graph : DependencyGraph,
- graphUtils: GraphUtils)
-  extends AbstractAction(s"$kind ($policy)"){
+ graphUtils: GraphUtils,
+ treeIcons: DGTreeIcons)
+  extends AbstractAction(s"$abskind ($policy)"){
 
      import graphUtils.{transformationRules => TR}
 
@@ -56,54 +95,56 @@ class AbstractionAction
        }
      }
 
-    private def methodDialog(choices : Seq[NodeCheckBox]) : Result.Value = {
-      val message = "Select type member to abstract"
-      val title = "TypeDecl abstraction options"
-      val panel = new JPanel(){
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS))
-        this add new JLabel(message)
-        choices foreach this.add
-      }
-      Dialog.showConfirmation(null, panel, title, Options.OkCancel, Message.Plain)
-    }
-
      override def actionPerformed(e: ActionEvent): Unit =
-       printErrOrPushGraph(publisher,"Abstraction action failure") {
+       printErrOrPushGraph(bus,"Abstraction action failure") {
 
-         val tAbsG : LoggedTry[(Abstraction, DependencyGraph)] =
+         val contentToAbstract : List[ConcreteNode] =
            node.kind.kindType match {
-           case TypeDecl =>
-             val typeMembers = graph.content(node.id).toList.
+           case TypeDecl => graph.content(node.id).toList.
                 map(graph.getConcreteNode).filter(n =>
                n.kind.kindType == InstanceValueDecl &&
                n.kind.abstractionNodeKinds(policy).nonEmpty).
                 filter(TR.abstracter.canBeAbstracted(graph, _, node, policy))
-             val ckBoxes = typeMembers.map(NodeCheckBox(graph, _))
+           case _ => List()
+         }
 
-            def selectedNodes = ckBoxes.filter(_.isSelected).map(_.node)
+         val title = "Abstraction options"
+         val potentialHosts = graph.nodes.filter(_.kind.canContain(abskind)).map(_.id).toSet
+         val panel = new AbstractionPanel(graph, potentialHosts, contentToAbstract)
 
-             methodDialog(ckBoxes) match {
-               case Result.Ok =>
-                 TR.abstracter.
-                   abstractTypeDeclAndReplaceByAbstractionWherePossible(graph.mileStone,
-                     node, kind, policy, selectedNodes)
-               case Result.Cancel =>
-                 LoggedError("Operation Canceled")
+         def confirm() : LoggedTry[DependencyGraph] =
+         Dialog.showConfirmation(null, panel.peer, title,
+           Options.OkCancel, Message.Plain) match {
+           case Result.Cancel
+           | Result.Closed =>
+             LoggedError("Operation Canceled")
+           case Result.Ok =>
+             if(panel.selectedHost.isEmpty) {
+               Dialog.showMessage(null, "Select a host", messageType = Message.Error)
+               confirm()
              }
-
-           case _ =>
-             TR.abstracter.createAbstraction(graph.mileStone, node, kind, policy)
-
+             else if(panel.selectedHost.size > 1 ){
+               Dialog.showMessage(null, "Select only one host", messageType = Message.Error)
+               confirm()
+             }
+             else {
+              val ltag : LoggedTry[(Abstraction, DependencyGraph)] =
+                node.kind.kindType match {
+                 case TypeDecl => TR.abstracter.
+                   abstractTypeDeclAndReplaceByAbstractionWherePossible(graph.mileStone,
+                     node, abskind, policy, panel.selectedNodes)
+                 case _ =>
+                   TR.abstracter.createAbstraction(graph.mileStone, node, abskind, policy)
+               }
+               ltag map { case (abs, g) =>
+                 val absNodes = abs.nodes.map(g.getConcreteNode)
+                 absNodes.foldLeft(g){
+                   (g, n) => g.addContains(panel.selectedHost.head, n.id)
+                 }
+               }
+             }
          }
 
-         tAbsG  map { case (abs, g) =>
-            val absNodes = abs.nodes.map(g.getConcreteNode)
-            absNodes.foldLeft(g){
-               (g,n) =>
-                 val h = getHost(n.kind)
-                 g.addContains(h, n.id)
-            }
-         }
+         confirm()
      }
-
 }

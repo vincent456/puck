@@ -3,8 +3,12 @@ package puck
 import java.awt.MouseInfo
 import java.awt.event.{ActionEvent, MouseEvent}
 import java.io.File
-import javax.swing.{JFileChooser, AbstractAction, JMenuItem, JPopupMenu}
+import javax.swing.Icon
+import javax.swing._
 
+import scala.swing.Action
+import scala.swing.Dialog._
+import scala.swing.Swing._
 import scala.swing._
 
 /**
@@ -60,6 +64,5 @@ package object gui {
     new Button(new Action(name){
       def apply() = action()
     })
-
 
 }

@@ -11,40 +11,12 @@ import scala.swing._
 import scala.swing.event.MouseClicked
 import puck.gui._
 
-class GraphTreePane(treeIcons : DGTreeIcons,
-                    graph : DependencyGraph,
-                    focus : Set[NodeId],
-                    header : Label)
-  extends  BoxPanel(Orientation.Vertical) {
 
-  def this(treeIcons : DGTreeIcons,
-      graph : DependencyGraph,
-      focus : Set[NodeId],
-      title : String,
-      sTooltipText : Option[String] = None) =
-    this(treeIcons, graph, focus, new Label(title) {
-      sTooltipText foreach (this.tooltip = _)
-    })
-
-  contents += header
-
-  val tree =
-    new JTree(TreeModelAdapter.subGraph(graph, focus)) with DGTree {
-
-    override def convertNodeToText(n : DGNode) : String =
-      n.name + (if (focus contains n.id) " *" else "")
-    def icons : DGTreeIcons = treeIcons
-
-  }
-
-  contents += new ScrollPane (Component.wrap(tree))
-
-}
 
 class NodeInfosPanel
 (bus : Publisher,
- control : PuckControl,
- treeIcons : DGTreeIcons)
+ control : PuckControl)
+(implicit treeIcons : DGTreeIcons)
   extends ScrollPane {
 
   this listenTo bus
@@ -76,7 +48,7 @@ class NodeInfosPanel
         background = Color.white
         tooltip = commonToolTip
       }
-    else new GraphTreePane(treeIcons, graph, s, treePaneTitle, Some(commonToolTip)) {
+    else new StaticDGTreePane(graph, s, treePaneTitle, Some(commonToolTip)) {
       action foreach tree.addNodeClickedAction
     }
 

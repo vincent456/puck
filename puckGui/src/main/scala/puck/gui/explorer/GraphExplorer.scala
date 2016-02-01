@@ -27,10 +27,10 @@ object GraphExplorer {
 
 class GraphExplorer
 ( bus : Publisher,
-  treeIcons : DGTreeIcons,
   graphUtils : GraphUtils,
   printingOptionsControl: PrintingOptionsControl)
-  extends BoxPanel(Orientation.Vertical) {
+(implicit treeIcons : DGTreeIcons)
+  extends BoxPanel(Orientation.Vertical){
   contents += new Label("DG Explorer")
   val treeWrapper = new ScrollPane()
 
@@ -41,7 +41,6 @@ class GraphExplorer
   val showFullGraphButton = new Button(new Action("Show full graph") {
     def apply() = {
       displayGraph(buttonVisible = false, Component.wrap(dynamicTree))
-
     }
   })
 

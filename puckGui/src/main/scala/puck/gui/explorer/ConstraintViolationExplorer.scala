@@ -58,10 +58,10 @@ import ConstraintViolationExplorer._
 class ConstraintViolationExplorer
 (bus : Publisher,
  allViolations : Seq[DGEdge],
- treeIcons : DGTreeIcons,
  printingOptionsControl: PrintingOptionsControl)
 ( implicit graph : DependencyGraph,
-  graphUtils : GraphUtils)
+  graphUtils : GraphUtils,
+  treeIcons : DGTreeIcons)
   extends SplitPane {
 
 

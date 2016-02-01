@@ -51,7 +51,7 @@ class SVGViewHandler
   import swingService._
 
   val svgController: SVGController = new SVGController(mainPanel.control, mainPanel.console)
-  val canvas = PUCKSVGCanvas(svgController, swingService)
+  val canvas = PUCKSVGCanvas(svgController, swingService, mainPanel.treeIcons)
   mainPanel.upPanel.setGraphView(Component.wrap(canvas))
 
 

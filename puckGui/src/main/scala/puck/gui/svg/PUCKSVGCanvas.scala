@@ -15,6 +15,7 @@ import org.w3c.dom.{Node, NodeList, Element}
 import org.w3c.dom.events.{EventListener, Event, MouseEvent}
 import org.w3c.dom.svg._
 import puck.graph.{NodeId, NodeIdP}
+import puck.gui.explorer.DGTreeIcons
 import puck.gui.svg.actions.SwingService
 
 object PUCKSVGCanvas {
@@ -26,8 +27,9 @@ object PUCKSVGCanvas {
   }
 
   def apply(controller : SVGController,
-            swingService: SwingService): PUCKSVGCanvas = new PUCKSVGCanvas {
-    val eventListener = new SVGCanvasListener(this, controller, swingService)
+            swingService: SwingService,
+            treeIcons: DGTreeIcons): PUCKSVGCanvas = new PUCKSVGCanvas {
+    val eventListener = new SVGCanvasListener(this, controller, swingService, treeIcons)
   }
 
 }
@@ -75,7 +77,8 @@ abstract class PUCKSVGCanvas extends JSVGCanvas {
 class SVGCanvasListener
 ( menuInvoker : Component,
   controller : SVGController,
-  swingService: SwingService)
+  swingService: SwingService,
+  treeIcons: DGTreeIcons)
   extends EventListener {
 
   import swingService._
@@ -227,7 +230,7 @@ class SVGCanvasListener
         case txtElt: SVGTextElement =>
           checkIfNodeAndGetId(txtElt) foreach {
             nodeId =>
-              val menu: JPopupMenu = SVGNodeMenu(controller, nodeId)
+              val menu: JPopupMenu = SVGNodeMenu(controller, nodeId)(treeIcons)
               menu.show(menuInvoker, evt.getClientX, evt.getClientY)
           }
         case _: SVGPathElement

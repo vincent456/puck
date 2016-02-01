@@ -12,7 +12,7 @@ import scala.swing._
   */
 class TreeViewHandler
   (mainPanel : PuckMainPanel,
-   treeIcons : DGTreeIcons)
+   implicit val treeIcons : DGTreeIcons)
   extends ViewHandler with Publisher {
 
   def switchView(mainPanel: PuckMainPanel, treeIcons: DGTreeIcons) : Unit = {
@@ -24,7 +24,6 @@ class TreeViewHandler
 
   val graphExplorer =
     new GraphExplorer(control.Bus,
-      treeIcons,
       control.graphUtils,
       control.printingOptionsControl)
 
@@ -43,21 +42,28 @@ class TreeViewHandler
     mainPanel.repaint()
   }
 
+  import mainPanel.downPanel
   def updateLeftOfPanel(graph : DependencyGraph) : Unit = {
     val violations = graph.violations()
-    val (c, rw) : (Component, Double) =
-      if (violations.isEmpty) (new Label("0 violations !"), 0)
-      else (new BoxPanel(Orientation.Vertical) {
-            contents += new Label("Constraints Violations")
-            val constraintViolationExplorer =
-              new ConstraintViolationExplorer(control.Bus,
-                violations, treeIcons,
-                control.printingOptionsControl)(graph,
-                control.graphUtils)
-            contents += constraintViolationExplorer
-           }, 0.5)
-    mainPanel.downPanel.leftComponent = c
-    mainPanel.downPanel.resizeWeight = rw
+      if (violations.isEmpty) {
+        downPanel.leftComponent = new Label("0 violations !")
+        downPanel.resizeWeight = 0
+        downPanel.dividerSize = 0
+      }
+      else {
+        downPanel.leftComponent = new BoxPanel(Orientation.Vertical) {
+          contents += new Label("Constraints Violations")
+          val constraintViolationExplorer =
+            new ConstraintViolationExplorer(control.Bus, violations,
+              control.printingOptionsControl)(graph,
+              control.graphUtils,
+              treeIcons)
+          contents += constraintViolationExplorer
+        }
+        downPanel.resizeWeight = 0.5
+        downPanel.dividerSize = 3
+      }
+
   }
 
 

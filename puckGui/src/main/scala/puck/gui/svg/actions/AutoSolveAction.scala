@@ -28,9 +28,9 @@ class AutoSolveAction
   private def dialog(res : Search[SResult]) : Option[Logged[DependencyGraph]] = {
     val title = "Solve"
 
-    val confirm : JComponent => Result.Value =
+    val confirm : Component => Result.Value =
       c =>
-        Dialog.showConfirmation(null, c, title, Options.OkCancel, Message.Plain)
+        Dialog.showConfirmation(null, c.peer, title, Options.OkCancel, Message.Plain)
 
 //    if(res.successes.isEmpty){
 //      confirm(new JLabel("No solution")) match{
@@ -43,7 +43,7 @@ class AutoSolveAction
 //    }
 //    else {
     val panel = new AutosolveResultPanel(publisher, violationTarget, printingOptionsControl, res)
-    confirm(panel.peer) match {
+    confirm(panel) match {
         case Result.Ok => Some( panel.selectedResult)
         case Result.Cancel
            | Result.Closed => None

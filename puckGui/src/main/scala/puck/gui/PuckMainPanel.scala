@@ -22,7 +22,7 @@ abstract class ViewHandler {
 
 class PuckMainPanel(filesHandler: FilesHandler,
                     graphUtils: GraphUtils,
-                    treeIcons : DGTreeIcons)
+                    val treeIcons : DGTreeIcons)
   extends SplitPane(Orientation.Horizontal) {
 
   dividerSize = 3
@@ -37,7 +37,7 @@ class PuckMainPanel(filesHandler: FilesHandler,
 
 
 
-  val nodeInfos = new NodeInfosPanel(control.Bus, control, treeIcons)
+  val nodeInfos = new NodeInfosPanel(control.Bus, control)(treeIcons)
 
 
   object upPanel extends SplitPane(Orientation.Vertical) {
@@ -53,6 +53,7 @@ class PuckMainPanel(filesHandler: FilesHandler,
 
   object downPanel extends SplitPane(Orientation.Vertical) {
     rightComponent = console
+    dividerSize = 0
   }
 
   leftComponent = upPanel
