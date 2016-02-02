@@ -17,7 +17,7 @@ object FrontVars {
 }
 
 object Front extends PuckApplication(
-  JavaFilesHandler(/*FrontVars.workspace*/),
+  JavaFilesHandler(FrontVars.workspace),
   JGraphUtils, JavaIcons)
 
 
