@@ -107,27 +107,6 @@ aspect NodeFactory  {
     }
 
 
-//	public int ParTypeAccess.buildDGNode(JavDGraphBuilder builder){
-//		return ((TypeAccess)getTypeAccess()).buildDGNode(builder);
-//	}
-
-
-//	interface TypeDeclared{
-//		TypeDecl getTypeDecl();
-//	}
-//
-//	TypeAccess implements TypeDeclared;
-//
-//	public TypeDecl TypeAccess.getTypeDecl(){
-//		return decl();
-//	}
-//	ParTypeAccess implements TypeDeclared;
-//
-//	public TypeDecl ParTypeAccess.getTypeDecl(){
-//		return ((TypeAccess)getTypeAccess()).getTypeDecl();
-//	}
-
-
 	public int VariableDeclaration.buildDGNode(JastaddGraphBuilder builder){
 		if(hostBodyDecl() instanceof StaticInitializer ||
 			hostBodyDecl()instanceof InstanceInitializer)
@@ -135,21 +114,6 @@ aspect NodeFactory  {
 
 		return builder.getDefinition(hostBodyDecl().buildDGNode(builder));
 	}
-
-	//needed because otherwise JastAdd create and empty decl
-//	public int FieldDeclaration.buildDGNode(JastaddGraphBuilder builder){
-//		return super.buildDGNode(builder);
-//	}
-
-
-	/*public DGNode FieldDecl.buildDGNode(JastaddGraphBuilder builder){
-		DGNode dgTypeNode = getTypeAccess().buildDGNode(builder);
-
-		return builder.addNode(fullName(), name(), 
-				JavaNodeKind.field(new JavaNamedType(dgTypeNode)));
-	}*/
-
-	
 
 	public int InstanceInitializer.buildDGNode(JastaddGraphBuilder builder){
 		return hostType().buildDGNode(builder);

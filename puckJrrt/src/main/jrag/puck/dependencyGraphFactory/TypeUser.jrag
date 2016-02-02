@@ -1,10 +1,5 @@
 aspect TypeUser {
 
-	public int Expr.buildTypeUserDGNode(JastaddGraphBuilder builder){
-		throw new DGBuildingError("Cannot get a primary user from the qualifier : " + this +
-                " ("+this.getClass()+")");
-	}
-
     interface TypeMember {
         public TypeDecl hostType();
         public String name();
@@ -16,196 +11,152 @@ aspect TypeUser {
 
     interface TypeMemberAccess{
         int buildDGNode(JastaddGraphBuilder builder);
+
         Expr getQualifier();
-        int buildTypeUserDGNodeFromLeftExpr(JastaddGraphBuilder builder, Uses typeMemberUse);
-        int buildTypeUserDGNode(JastaddGraphBuilder builder, Uses typeMemberUse);
+
         TypeMember decl();
+
         BodyDecl hostBodyDecl();
-        TypeDecl declaredTypeOfQualifier();
+
         TypeDecl hostType();
     }
     VarAccess implements TypeMemberAccess;
     MethodAccess implements TypeMemberAccess;
 
 
-    static TypeDecl Access.declaredTypeOfQualifier(TypeMemberAccess access) {
-        if(access.getQualifier() == null){
-            if(access.decl().hostType() == access.hostType())
-                return access.hostType();
-            else
-                return ((ClassDecl)access.hostType()).superclass();
-        }
-
-        if(access.getQualifier().isThisAccess())
-            return access.hostType();
-        else if(access.getQualifier().isSuperAccess())
-            return ((ClassDecl)access.hostType()).superclass();
-
-        return access.getQualifier().type();
-    }
-
-    public TypeDecl VarAccess.declaredTypeOfQualifier(){
-        return Access.declaredTypeOfQualifier(this);
-    }
-    public TypeDecl MethodAccess.declaredTypeOfQualifier(){
-        return Access.declaredTypeOfQualifier(this);
-    }
-
-    static int Access.buildTypeUserDGNode_thisQualifier(TypeMemberAccess access, JastaddGraphBuilder builder, Uses typeMemberUse){
-        int selfTypeNode = access.hostType().buildDGNode(builder);
-        builder.addEdge(new Uses(selfTypeNode, selfTypeNode, UsesAccessKind.none()));
-        return selfTypeNode;
-    }
-
-    static int Access.buildTypeUserDGNode_superQualifier(TypeMemberAccess access, JastaddGraphBuilder builder, Uses typeMemberUse){
-        ClassDecl thisClass = (ClassDecl)access.hostType();
-        int selfTypeNode = thisClass.buildDGNode(builder);
-        int superTypeNode = thisClass.superclass().buildDGNode(builder);
-        builder.addEdge(new Uses(selfTypeNode, superTypeNode, UsesAccessKind.none()));
-        return selfTypeNode;
-    }
-
-    static int Access.buildTypeUserDGNode(TypeMemberAccess access, JastaddGraphBuilder builder, Uses typeMemberUse){
-        if(access.getQualifier() == null){
-             if(access.decl().hostType() == access.hostBodyDecl().hostType())
-                return buildTypeUserDGNode_thisQualifier(access, builder, typeMemberUse);
-            else
-                return buildTypeUserDGNode_superQualifier(access, builder, typeMemberUse);
-        }
-
-        if(access.getQualifier().isThisAccess())
-            return buildTypeUserDGNode_thisQualifier(access, builder, typeMemberUse);
-        else if(access.getQualifier().isSuperAccess())
-            return buildTypeUserDGNode_superQualifier(access, builder, typeMemberUse);
-            //return access.decl().hostType().buildDGNode(builder);
-        else
-            return access.buildTypeUserDGNodeFromLeftExpr(builder, typeMemberUse);
-    }
-
-    public int VarAccess.buildTypeUserDGNode(JastaddGraphBuilder builder, Uses typeMemberUse){
-        return Access.buildTypeUserDGNode(this, builder, typeMemberUse);
-    }
-	public int MethodAccess.buildTypeUserDGNode(JastaddGraphBuilder builder, Uses typeMemberUse){
-        return Access.buildTypeUserDGNode(this, builder, typeMemberUse);
-    }
-  	
-  	class NoTypeUser extends Error {
+    class NoTypeUser extends Error {
         public NoTypeUser(){}
         public NoTypeUser(String msg){
             super(msg);
         }
     }
-	
-  public int Access.buildTypeUserDGNodeFromLeftExpr(JastaddGraphBuilder builder, Uses typeMemberUse){
-  	Expr lexpr = getLeftExpr();
-        
-      if(lexpr == null)
-        throw new NoTypeUser(this+"("+this.getClass()+") in "+this.compilationUnit().pathName()+" "+this.location());
-      else
-          return lexpr.typeUserFromLeftExpr(builder, typeMemberUse);
-  }
 
-  int Expr.typeUserFromLeftExpr(JastaddGraphBuilder builder, Uses typeMemberUse){
+    static void Access.buildTypeUse(JastaddGraphBuilder builder,
+                                    TypeMemberAccess access, Uses typeMemberUse) {
+
+        if(qualifierIsThisAccess(access)) {
+            int thisTypeId = access.hostType().buildDGNode(builder);
+            builder.addEdge(bindTypeUse(builder, thisTypeId, thisTypeId, typeMemberUse));
+        }
+        else if(qualifierIsSuperAccess(access)){
+            int thisTypeId = access.hostType().buildDGNode(builder);
+            int superTypeId = ((ClassDecl)access.hostType()).superclass().buildDGNode(builder);
+            builder.addEdge(bindTypeUse(builder, thisTypeId, superTypeId, typeMemberUse));
+        }
+        else
+            ((Access)access).buildTypeUseFromLeftExpr(builder, typeMemberUse);
+    }
+
+    static boolean Access.qualifierIsThisAccess(TypeMemberAccess access){
+        return access.getQualifier() == null &&
+                access.decl().hostType() == access.hostType()
+                || access.getQualifier() != null &&
+                access.getQualifier().isThisAccess();
+    }
+
+    static boolean Access.qualifierIsSuperAccess(TypeMemberAccess access){
+        return access.getQualifier() == null &&
+                access.decl().hostType() != access.hostType()
+                || access.getQualifier() != null &&
+                access.getQualifier().isSuperAccess();
+    }
+
+    public void Access.buildTypeUseFromLeftExpr(JastaddGraphBuilder builder, Uses typeMemberUse){
+        Expr lexpr = getLeftExpr();
+
+        if(lexpr == null)
+            throw new NoTypeUser(this+"("+this.getClass()+") in "+this.compilationUnit().pathName()+" "+this.location());
+        else
+            lexpr.findTypeUserAndBindUses(builder, typeMemberUse);
+
+    }
+
+    static Uses Access.bindTypeUse(JastaddGraphBuilder builder,
+                           int typeUserNode, int typeUsedNode,
+             Uses typeMemberUse){
+         Uses typeUse = new Uses(typeUserNode, typeUsedNode, UsesAccessKind.none());
+         builder.addTypeRelationship(typeUse, typeMemberUse);
+         return typeUse;
+    }
+
+    void Expr.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
         throw new DGBuildingError(this + "(" +this.getClass() + ") in " +
-        this.compilationUnit().pathName() +" line " +
-        this.location() + " typeUser not found");
-  }
+                this.compilationUnit().pathName() +" line " +
+                this.location() + " typeUser not found");
+    }
+    Uses Expr.bindTypeUse(JastaddGraphBuilder builder, int thisDGId, Uses typeMemberUse){
+        return Access.bindTypeUse(builder, thisDGId, type().buildDGNode(builder), typeMemberUse);
+    }
 
-  int AssignExpr.typeUserFromLeftExpr(JastaddGraphBuilder builder, Uses typeMemberUse){
-        return getDest().typeUserFromLeftExpr(builder, typeMemberUse);
-  }
+    // findTypeUserAndBindUses rec calls
 
-  int AddExpr.typeUserFromLeftExpr(JastaddGraphBuilder builder, Uses typeMemberUse){
-        System.out.println("AddExpr.typeUserFromLeftExpr(builder)");
+    void AssignExpr.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
+        getDest().findTypeUserAndBindUses(builder, typeMemberUse);
+    }
+
+    void Dot.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
+        if(isRightRotated())
+            rotateLeft();
+        getRight().findTypeUserAndBindUses(builder, typeMemberUse);
+    }
+
+    void ParExpr.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
+        getExpr().findTypeUserAndBindUses(builder, typeMemberUse);
+    }
+
+    // findTypeUserAndBindUses term cases
+
+
+    void AddExpr.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){  System.out.println("AddExpr.typeUserFromLeftExpr(builder)");
         System.out.println("=this.hostBodyDecl().buildDGNode(builder)");
         System.out.println("to check");
-        return this.hostBodyDecl().buildDGNode(builder);
-  }
+        bindTypeUse(builder, this.hostBodyDecl().buildDGNode(builder), typeMemberUse);
+    }
+
+    void CastExpr.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
+        //Access.bindTypeUse(builder, getTypeAccess().buildDGNode(builder), declaredTypeUsed, typeMemberUse);
+        bindTypeUse(builder, getTypeAccess().buildDGNode(builder), typeMemberUse);
+    }
+
+    void ClassInstanceExpr.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
+        bindTypeUse(builder, getAccess().buildDGNode(builder), typeMemberUse);
+    }
+
+    void Literal.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
+        //Access.bindTypeUse(builder, type().buildDGNode(builder), declaredTypeUsed, typeMemberUse);
+        bindTypeUse(builder, type().buildDGNode(builder), typeMemberUse);
+    }
 
 
-  int ClassAccess.typeUserFromLeftExpr(JastaddGraphBuilder builder, Uses typeMemberUse){
-        //In SomeRandomClass.class the class keyword is a classAccess
-        return this.hostBodyDecl().buildDGNode(builder);
-  }
+    // findTypeUserAndBindUses term cases - Access subclasses
 
 
+    void Access.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
+        bindTypeUse(builder, this.buildDGNode(builder), typeMemberUse);
+    }
 
-  int MethodAccess.typeUserFromLeftExpr(JastaddGraphBuilder builder, Uses typeMemberUse){
-     if(isSubstitute()){
-        MethodDeclSubstituted decl = (MethodDeclSubstituted)decl();
-
-        int thisNode = decl.getOriginal().buildDGNode(builder);
-
-        int typeUsed = decl.getTypeAccess().buildDGNode(builder);
-        Uses typeUse = new Uses(thisNode, typeUsed, UsesAccessKind.none());
-//      ParameterizedUses typeUse = new ParameterizedUses(thisNode, typeUsed, UsesAccessKind.none());
-        builder.addEdge(typeUse);
-        builder.addTypeRelationship(typeUse, typeMemberUse);
-
-        int typeUser = buildTypeUserDGNode(builder, typeMemberUse);
-        //int typeUser = buildTypeUserDGNodeFromLeftExpr(builder, typeMemberUse);
-
-        return typeUser;
-     }
-     else
-        return decl().buildDGNode(builder);
-  }
-
-//  int ParMethodAccess.typeUserFromLeftExpr(JastaddGraphBuilder builder, Uses typeMemberUse){
-//     int thisNode = decl().buildDGNode(builder);
-//     for(Access typeArg :  getTypeArgumentList()) {
-//         int typeArgNode = typeArg.buildDGNode(builder);
-//         ParameterizedUses typeUse = new ParameterizedUses(thisNode, typeArgNode);
-//        builder.addEdge(typeUse);
-//        builder.addTypeRelationship(typeUse, typeMemberUse);
-//     }
-//     return thisNode;
-//  }
-
-  int VarAccess.typeUserFromLeftExpr(JastaddGraphBuilder builder, Uses typeMemberUse){
-      return ((ASTNode)decl()).buildDGNode(builder);
-  }
-
-  //in case of use of static methods, fields ...
-  int TypeAccess.typeUserFromLeftExpr(JastaddGraphBuilder builder, Uses typeMemberUse){
-        return decl().buildDGNode(builder);
-  }
-
-  public int ClassInstanceExpr.typeUserFromLeftExpr(JastaddGraphBuilder builder, Uses typeMemberUse){
-       return getAccess().buildDGNode(builder);
-  }
+//    void ClassAccess.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
+//        //In SomeRandomClass.class the class keyword is a classAccess
+//        bindTypeUse(builder, this.hostBodyDecl().buildDGNode(builder), typeMemberUse);
+//    }
 
 
-  public int ArrayAccess.typeUserFromLeftExpr(JastaddGraphBuilder builder, Uses typeMemberUse){
-        //type() it's that simple !
-       return type().buildDGNode(builder);
-  }
+//    void MethodAccess.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
+//        if(isSubstitute()){
+//            MethodDeclSubstituted decl = (MethodDeclSubstituted)decl();
+//
+//            int thisNode = decl.getOriginal().buildDGNode(builder);
+//            int typeUsed = decl.getTypeAccess().buildDGNode(builder);
+//
+//            builder.addEdge(Access.bindTypeUse(builder, thisNode, typeUsed, typeMemberUse));
+//        }
+//        else
+//            bindTypeUse(builder, this.buildDGNode(builder), typeMemberUse);
+//    }
 
-  public int ParExpr.typeUserFromLeftExpr(JastaddGraphBuilder builder, Uses typeMemberUse){
-     return getExpr().typeUserFromLeftExpr(builder, typeMemberUse);
-  }
-
-  public int Dot.typeUserFromLeftExpr(JastaddGraphBuilder builder, Uses typeMemberUse){
-     if(isRightRotated())
-        rotateLeft();
-     return getRight().typeUserFromLeftExpr(builder, typeMemberUse);
-  }
-
-  // public int ASTNode.typeUserFromLeftExpr(JastaddGraphBuilder builder){
-  //   return buildDGNode(builder);
-  // }
-
-   public int CastExpr.typeUserFromLeftExpr(JastaddGraphBuilder builder, Uses typeMemberUse){
-     return getTypeAccess().buildDGNode(builder);
-   }
-
-   public int Literal.typeUserFromLeftExpr(JastaddGraphBuilder builder, Uses typeMemberUse){
-     return type().buildDGNode(builder);
-   }
-
-
-
-
-
+    void VarAccess.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
+        // do not lock varAccess
+        bindTypeUse(builder, ((ASTNode)decl()).buildDGNode(builder), typeMemberUse);
+    }
 
 }

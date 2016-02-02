@@ -1,12 +1,8 @@
 package puck
 package javaGraph
 
-import puck.Settings._
-import puck.graph.comparison.Mapping
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph._
-import puck.graph.transformations.rules.Move
-import puck.util.Debug
 
 
 class GraphBuildingSpec extends AcceptanceSpec {
@@ -238,6 +234,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
   feature("typeUse typeMemberUse relation registration"){
     val examplesPath = graphBuildingExamplesPath +  "typeRelationship/"
+
     scenario("call on field") {
       val _ = new ScenarioFactory(s"$examplesPath/CallOnField.java"){
 
@@ -251,12 +248,6 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
         val typeUse = graph.getUsesEdge(fieldTypeUserDecl, typeUsed).value
         val typeMemberUse = graph.getUsesEdge(methUserDef, typeMemberUsedDecl).value
-
-        /*println("typeMemberUses2typeUsesMap")
-        println(graph.typeMemberUses2typeUsesMap.content.mkString("\n"))
-        println("typeUses2typeMemberUsesMap")
-        println(graph.typeUses2typeMemberUsesMap.content.mkString("\n"))
-        */
 
         graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
         graph.typeUsesOf(typeMemberUse) should contain (typeUse)
@@ -283,7 +274,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
       }
     }
 
-    scenario("call from local variable"){
+    scenario("call on local variable"){
       val _ = new ScenarioFactory(s"$examplesPath/CallOnLocalVariable.java"){
 
         val mUserDecl = fullName2id("p.A.ma()")

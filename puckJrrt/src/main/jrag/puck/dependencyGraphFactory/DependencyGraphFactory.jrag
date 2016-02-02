@@ -248,16 +248,16 @@ aspect DependencyGraphFactory {
 		Uses typeMemberUses = new Uses(containerId, nodeId, accK);
 		builder.addEdge(typeMemberUses);
 
-		if(!(access instanceof StaticDeclAccess && ((StaticDeclAccess)access).isDeclStatic())) {
-			int typeUserId = access.buildTypeUserDGNode(builder, typeMemberUses);
-			//int typeUsedId = access.decl().hostType().buildDGNode(builder);
-			int typeUsedId = access.declaredTypeOfQualifier().buildDGNode(builder);
-
-			//the first use is a typeUses : it must have no accesskind
-			builder.addTypeRelationship(new Uses(typeUserId, typeUsedId, UsesAccessKind.none()),
-			typeMemberUses);
-		}
+		if(!access.isDeclStatic())
+			buildTypeUse(builder, access, typeMemberUses);
+//      if(!access.isDeclStatic()) {
+//          int typeUserId = buildTypeUserDGNode(access, builder, typeMemberUses);
+//          int typeUsedId = declaredTypeOfQualifier(access).buildDGNode(builder);
+//          bindTypeUse(builder, typeUserId, typeUsedId, typeMemberUses);
+//          //builder.addTypeRelationship(new Uses(typeUserId, typeUsedId, UsesAccessKind.none()), typeMemberUses);
+//      }
 	}
+
 	public void MethodAccess.buildDG(JastaddGraphBuilder builder, int containerId){
 
 		buildDG(this, containerId, UsesAccessKind.none(), builder);
@@ -277,27 +277,6 @@ aspect DependencyGraphFactory {
 		}
 	}
 	
-//	public void SuperConstructorAccess.buildDG(JastaddGraphBuilder builder, int containerId){
-//		//if(!decl().type().fullName().equals( "java.lang.Object")){
-//		if(!decl().type().fullName().equals( "@primitive.Unknown")){
-//		//happens when call to constructor of java.lang.Object TODO check if no other cases
-//
-//		  	buildDGInChildren(builder, containerId);
-//
-//	      	int classNodeId = decl().buildDGNode(builder);
-//	      	int ctorNodeId = buildDGNode(builder);
-//
-//		  	Uses typeUse = new Uses(containerId, classNodeId, UsesAccessKind.none());
-//		  	Uses superConstructorUses = new Uses(containerId, ctorNodeId, UsesAccessKind.none());
-//
-//	      	builder.addEdge(typeUse);
-//			builder.addEdge(superConstructorUses);
-//
-//	      	builder.addTypeRelationship(typeUse, superConstructorUses);
-//
-//	    }
-//  	}
-
 	public void ClassInstanceExpr.buildDG(JastaddGraphBuilder builder, int containerId){
 		//System.err.println("ClassInstanceExpr.buildDG : " + this);
 
@@ -340,8 +319,8 @@ aspect DependencyGraphFactory {
 		if(isRightRotated())
 			rotateLeft();
 
-		if( (getRight() instanceof StaticDeclAccess)
-			&& ((StaticDeclAccess) getRight()).isDeclStatic())
+		if( (getRight() instanceof PotentialStaticDeclAccess)
+			&& ((PotentialStaticDeclAccess) getRight()).isDeclStatic())
 			getRight().buildDG(builder,containerId);
 		else
 			buildDGInChildren(builder, containerId);
@@ -409,6 +388,12 @@ aspect DependencyGraphFactory {
 
 	void Access.addImplementsUses(JastaddGraphBuilder builder, int sub) {
 		throw new DGBuildingError(this.getClass() + " : expected TypeAccess or ParTypeAccess");
+	}
+	void Dot.addImplementsUses(JastaddGraphBuilder builder, int sub){
+		if(!isRightRotated())
+			rotateRight();
+
+		getRight().addImplementsEdges(builder,sub);
 	}
 	void TypeAccess.addImplementsUses(JastaddGraphBuilder builder, int sub){
 		int sn = buildDGNode(builder);

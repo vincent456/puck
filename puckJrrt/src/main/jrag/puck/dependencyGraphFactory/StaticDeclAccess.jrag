@@ -1,17 +1,48 @@
 
+//
+//aspect StaticDeclAccess {
+//
+//    public interface PotentialStaticDeclAccess{
+//        ASTNode lock();
+//    }
+//
+//    TypeMemberAccess extends PotentialStaticDeclAccess;
+//    ConstructorAccess implements PotentialStaticDeclAccess;
+//
+//    syn boolean PotentialStaticDeclAccess.isDeclStatic();
+//    eq ConstructorAccess.isDeclStatic() = true;
+//    eq TypeMemberAccess.isDeclStatic() = decl().isStatic();
+//
+//
+//}
+
+
+
 aspect StaticDeclAccess {
 
-    public interface StaticDeclAccess{
+    public interface PotentialStaticDeclAccess{
         ASTNode lock();
+        boolean isDeclStatic();
     }
 
-    VarAccess implements StaticDeclAccess;
-    MethodAccess implements StaticDeclAccess;
-    ConstructorAccess implements StaticDeclAccess;
+    TypeMemberAccess extends PotentialStaticDeclAccess;
+    ConstructorAccess implements PotentialStaticDeclAccess;
 
-    syn boolean StaticDeclAccess.isDeclStatic();
-    eq ConstructorAccess.isDeclStatic() = true;
-    eq VarAccess.isDeclStatic() =  decl().isStatic();
-    eq MethodAccess.isDeclStatic() =  decl().isStatic();
+    public boolean ConstructorAccess.isDeclStatic() {
+        return true;
+    }
+
+    public boolean VarAccess.isDeclStatic() {
+        return decl().isStatic();
+    }
+
+    public boolean MethodAccess.isDeclStatic() {
+        return decl().isStatic();
+    }
 
 }
+
+
+
+
+
