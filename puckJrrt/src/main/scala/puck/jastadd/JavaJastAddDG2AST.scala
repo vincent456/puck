@@ -19,11 +19,12 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
 
   def fromFiles(sources: List[String],
                 jars: List[String],
+                bootJars : List[String],
                 logger : PuckLogger,
                 ll : puck.LoadingListener): JavaJastAddDG2AST = {
     val sProg = puck.util.Time.time(logger, defaultVerbosity) {
       logger.writeln("Compiling sources ...")
-      CompileHelper(sources, jars)
+      CompileHelper(sources, jars, bootJars)
     }
     puck.util.Time.time(logger, defaultVerbosity) {
       logger.writeln("Building Access Graph ...")
@@ -46,6 +47,7 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
   ( srcDirectory : File,
     outDirectory : Option[File],
     jarListFile : Option[File],
+    javaRuntime : Option[File],
     logger : PuckLogger,
     ll : puck.LoadingListener = null
     ) : JavaJastAddDG2AST = {
@@ -57,7 +59,10 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
       val jarsFromList =
         jarListFile map (fileLines(_, keepEmptyLines = false)) getOrElse List()
 
-      fromFiles(sources, jarsFromList ++: jars, logger, ll)
+      fromFiles(sources,
+        jarsFromList ++: jars,
+        javaRuntime.toList map (_.getCanonicalPath),
+        logger, ll)
 
   }
   def verbosity : PuckLog.Level => PuckLog.Verbosity = l => (PuckLog.AG2AST, l)
@@ -103,8 +108,8 @@ class JavaJastAddDG2AST
     logger.writeln("applying change !")
     val record = graph.recording
 
-//    logger.writeln("before applying change : ")
-//    logger.writeln(program.prettyPrint())
+    logger.writeln("before applying change : ")
+    logger.writeln(program.prettyPrint())
 
     record.reverse.foldLeft((graph, initialGraph, graph2ASTMap)) {
       case ((resultGraph, reenactor, g2AST), t : Transformation) =>

@@ -72,16 +72,17 @@ class PuckInterfacePanel
 
 
   def addUndoRedoButton(c : Wrapper) : Unit = {
+    import control.graphStack
     c.contents +=
       new Button(new Action("Undo all") {
 
         enabled = false
 
-        def apply() = publisher publish UndoAll
+        def apply() = graphStack.undoAll()
 
         reactions += {
-          case UndoRedoStatus(canUndo, _) =>
-            enabled = canUndo
+          case _ : GraphStackEvent =>
+            enabled = graphStack.canUndo
         }
         listenTo(control.Bus)
       })
@@ -91,11 +92,11 @@ class PuckInterfacePanel
 
         enabled = false
 
-        def apply() = publisher publish Undo
+        def apply() = graphStack.undo()
 
         reactions += {
-          case UndoRedoStatus(canUndo, _) =>
-            enabled = canUndo
+          case _ : GraphStackEvent =>
+            enabled = graphStack.canUndo
         }
         listenTo(control.Bus)
       })
@@ -105,11 +106,11 @@ class PuckInterfacePanel
 
         enabled = false
 
-        def apply() = publisher publish Redo
+        def apply() = graphStack.redo()
 
         reactions += {
-          case UndoRedoStatus(_, canRedo) =>
-            enabled = canRedo
+          case _ : GraphStackEvent =>
+            enabled = graphStack.canRedo
         }
         listenTo(control.Bus)
       })

@@ -3,6 +3,7 @@ package javaGraph
 
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph._
+import puck.util.Debug
 
 
 class GraphBuildingSpec extends AcceptanceSpec {
@@ -270,6 +271,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val typeMemberUse = Uses(mUserDef, mUsed)
 
         graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
+        graph.typeUsesOf(typeMemberUse) should contain (typeUse)
 
       }
     }
@@ -287,6 +289,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val typeMemberUse = Uses(mUserDef, mUsed)
 
         graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
+        graph.typeUsesOf(typeMemberUse) should contain (typeUse)
       }
     }
 
@@ -302,6 +305,30 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val typeMemberUse = Uses(mUserDef, mUsed)
 
         graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
+        graph.typeUsesOf(typeMemberUse) should contain (typeUse)
+      }
+    }
+
+    scenario("cond expr"){
+      val _ = new ScenarioFactory(s"$examplesPath/ConditionalExprCase.java"){
+
+        val condM = fullName2id("p.Cond.condM(boolean,A).Definition")
+        val m = fullName2id("p.A.m()")
+
+        val paramA = fullName2id("p.Cond.condM(boolean,A).a")
+        val ctorA = fullName2id("p.A.A()")
+        val classA = fullName2id("p.A")
+
+        val typeUse = Uses(paramA, classA)
+        val typeUse1 = Uses(ctorA, classA)
+        val typeMemberUse = Uses(condM, m)
+
+        graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
+        graph.typeUsesOf(typeMemberUse) should contain (typeUse)
+
+        graph.typeMemberUsesOf(typeUse1) should contain (typeMemberUse)
+        graph.typeUsesOf(typeMemberUse) should contain (typeUse1)
+
       }
     }
   }

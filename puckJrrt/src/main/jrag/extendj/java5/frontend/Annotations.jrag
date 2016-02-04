@@ -146,8 +146,8 @@ aspect Annotations {
   }
   /* It is a compile-time error if the return type of a method declared in an
   annotation type is any type other than one of the following: one of the
-  primitive types, String, Class and any invocation of Class, an enum type
-  (§8.9), an annotation type, or an array (§10) of one of the preceding types.*/
+  primitive types, String, Class and any invocation of Class, an examples.codeGen.enum type
+  (ï¿½8.9), an annotation type, or an array (ï¿½10) of one of the preceding types.*/
   syn boolean TypeDecl.isValidAnnotationMethodReturnType() = false;
   eq PrimitiveType.isValidAnnotationMethodReturnType() = true;
   eq ReferenceType.isValidAnnotationMethodReturnType() {
@@ -198,8 +198,8 @@ aspect Annotations {
   }
 
   /* An ElementValue is used to specify a default value. It is a compile-time error
-  if the type of the element is not commensurate (§9.7) with the default value
-  specified. An ElementValue is always FP-strict (§15.4).*/
+  if the type of the element is not commensurate (ï¿½9.7) with the default value
+  specified. An ElementValue is always FP-strict (ï¿½15.4).*/
   public void AnnotationMethodDecl.typeCheck() {
     super.typeCheck();
     if (hasDefaultValue() && !type().commensurateWith(getDefaultValue())) {
@@ -520,14 +520,14 @@ aspect Annotations {
     return null;
   }
 
-  /* The annotation type named by an annotation must be accessible (§6.6) at the
+  /* The annotation type named by an annotation must be accessible (ï¿½6.6) at the
   point where the annotation is used, or a compile-time error occurs.
   Comment: This is done by the access control framework*/
 
   /**
    * The return type of this method defines the element type of the element-value
    * pair. An ElementValueArrayInitializer is similar to a normal array initializer
-   * (§10.6), except that annotations are permitted in place of expressions.
+   * (ï¿½10.6), except that annotations are permitted in place of expressions.
    */
   syn lazy TypeDecl ElementValuePair.type() {
     Map<String,SimpleSet> methodMap = enclosingAnnotationDecl().localMethodsSignatureMap();
@@ -549,11 +549,11 @@ aspect Annotations {
     * T is an array type E[] and either:
           o V is an ElementValueArrayInitializer and each ElementValueInitializer (analogous to a variable initializer in an array initializer) in V is commensurate with E. Or
           o V is an ElementValue that is commensurate with T.
-    * The type of V is assignment compatible (§5.2) with T and, furthermore:
-          o If T is a primitive type or String, V is a constant expression (§15.28).
+    * The type of V is assignment compatible (ï¿½5.2) with T and, furthermore:
+          o If T is a primitive type or String, V is a constant expression (ï¿½15.28).
           o V is not null.
-          o if T is Class, or an invocation of Class, and V is a class literal (§15.8.2).
-          o If T is an enum type, and V is an enum constant. */
+          o if T is Class, or an invocation of Class, and V is a class literal (ï¿½15.8.2).
+          o If T is an examples.codeGen.enum type, and V is an examples.codeGen.enum constant. */
   syn boolean TypeDecl.commensurateWith(ElementValue value) = value.commensurateWithTypeDecl(this);
   syn boolean ElementValue.commensurateWithTypeDecl(TypeDecl type) = false;
   eq ElementConstantValue.commensurateWithTypeDecl(TypeDecl type) {
@@ -612,7 +612,7 @@ aspect Annotations {
   inh TypeDecl ElementValue.unknownType();
 
   /* If the element type is not an annotation type or an array type, ElementValue
-  must be a ConditionalExpression (§15.25)
+  must be a ConditionalExpression (ï¿½15.25)
   TODO: How to enforce this. Is this already enforced?
   */
 

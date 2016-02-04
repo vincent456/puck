@@ -38,7 +38,7 @@ aspect SyntacticClassification {
   /**
    * The classified name type of a parsed name or expression.
    *
-   * Method Name is not in this enum because it never occurs in the ASTs
+   * Method Name is not in this examples.codeGen.enum because it never occurs in the ASTs
    * produced by our parser: the parser builds the correct node since it has a
    * different structure.
    */

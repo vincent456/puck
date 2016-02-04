@@ -31,7 +31,7 @@
 aspect Enums {
 
   /*
-     1) It is a compile-time error to attempt to explicitly instantiate an enum type
+     1) It is a compile-time error to attempt to explicitly instantiate an examples.codeGen.enum type
      (�15.9.1).
   */
   syn boolean TypeDecl.isEnumDecl() = false;
@@ -55,15 +55,15 @@ aspect Enums {
   eq EnumDecl.getModifiers().mayBeAbstract() = false;
 
   /*
-    9) Nested enum types are implicitly static. It is permissable to explicitly
-    declare a nested enum type to be static.
+    9) Nested examples.codeGen.enum types are implicitly static. It is permissable to explicitly
+    declare a nested examples.codeGen.enum type to be static.
   */
   eq EnumDecl.isStatic() = isNestedType();
   eq EnumDecl.getModifiers().mayBeStatic() = isNestedType();
 
   /*
-    12) It is a compile-time error for an enum to declare a finalizer. An instance of
-    an enum may never be finalized.
+    12) It is a compile-time error for an examples.codeGen.enum to declare a finalizer. An instance of
+    an examples.codeGen.enum may never be finalized.
   */
   public void EnumDecl.typeCheck() {
     super.typeCheck();
@@ -77,7 +77,7 @@ aspect Enums {
   }
 
   /*
-    10) The direct superclass of an enum type named E is Enum<E>.
+    10) The direct superclass of an examples.codeGen.enum type named E is Enum<E>.
   */
 
   syn lazy Opt EnumDecl.getSuperClassOpt() {
@@ -93,7 +93,7 @@ aspect Enums {
   }
 
   /*
-    3b) If the enum type has no constructor declarations, a parameterless default
+    3b) If the examples.codeGen.enum type has no constructor declarations, a parameterless default
     constructor is provided (which matches the implicit empty argument list).
     This default constructor is private.
   */
@@ -208,13 +208,13 @@ aspect Enums {
 
   /*
     11) In addition to the members it inherits from Enum<E>, for each declared
-    enum constant with the name n the enum type has an implicitly declared
+    examples.codeGen.enum constant with the name n the examples.codeGen.enum type has an implicitly declared
     public static final field named n of type E. These fields are considered to
-    be declared in the same order as the corresponding enum constants, before
-    any static fields explicitly declared in the enum type. Each such field is
-    initialized to the enum constant that corresponds to it. Each such field is
+    be declared in the same order as the corresponding examples.codeGen.enum constants, before
+    any static fields explicitly declared in the examples.codeGen.enum type. Each such field is
+    initialized to the examples.codeGen.enum constant that corresponds to it. Each such field is
     also considered to be annotated by the same annotations as the
-    corresponding enum constant. The enum constant is said to be created when
+    corresponding examples.codeGen.enum constant. The examples.codeGen.enum constant is said to be created when
     the corresponding field is initialized.
   */
 
@@ -231,8 +231,8 @@ aspect Enums {
   }
 
   /*
-    3) An enum constant may be followed by arguments, which are passed to the
-    constructor of the enum type when the constant is created during class
+    3) An examples.codeGen.enum constant may be followed by arguments, which are passed to the
+    constructor of the examples.codeGen.enum type when the constant is created during class
     initialization as described later in this section. The constructor to be
     invoked is chosen using the normal overloading rules (�15.12.2). If the
     arguments are omitted, an empty argument list is assumed.
@@ -259,8 +259,8 @@ aspect Enums {
   }
 
   /*
-    4) The optional class body of an enum constant implicitly defines an anonymous
-    class declaration (�15.9.5) that extends the immediately enclosing enum type.
+    4) The optional class body of an examples.codeGen.enum constant implicitly defines an anonymous
+    class declaration (�15.9.5) that extends the immediately enclosing examples.codeGen.enum type.
     The class body is governed by the usual rules of anonymous classes; in
     particular it cannot contain any constructors.
 
@@ -310,16 +310,16 @@ aspect Enums {
   }
 
   /*
-    7) It is a compile-time error for the class body of an enum constant to declare
+    7) It is a compile-time error for the class body of an examples.codeGen.enum constant to declare
     an abstract method.
 
     TODO: work on error messages
   */
 
   /*
-    8) An enum type is implicitly final unless it contains at least one enum
+    8) An examples.codeGen.enum type is implicitly final unless it contains at least one examples.codeGen.enum
     constant that has a class body. In any case, it is a compile-time error to
-    explicitly declare an enum type to be final.
+    explicitly declare an examples.codeGen.enum type to be final.
   */
 
   eq EnumDecl.isFinal() {
@@ -345,7 +345,7 @@ aspect Enums {
   }
 
   /*
-    13) In addition, if E is the name of an enum type, then that type has the
+    13) In addition, if E is the name of an examples.codeGen.enum type, then that type has the
     following implicitly declared static methods:
       public static E[] values();
       public static E valueOf(String name);
@@ -466,14 +466,14 @@ aspect Enums {
   inh TypeDecl EnumDecl.typeString();
 
   /*
-    14) It is a compile-time error to reference a static field of an enum type that
+    14) It is a compile-time error to reference a static field of an examples.codeGen.enum type that
     is not a compile-time constant (�15.28) from constructors, instance
     initializer blocks, or instance variable initializer expressions of that
     type.
   */
 
   /**
-   * @return true if the enum decl contains an abstract method declaration
+   * @return true if the examples.codeGen.enum decl contains an abstract method declaration
    */
   eq EnumDecl.isAbstract() {
     for (int i = 0; i < getNumBodyDecl(); i++) {
@@ -509,7 +509,7 @@ aspect Enums {
   }
 
   protected void TypeDecl.checkEnum(EnumDecl enumDecl) {
-    // non-EnumDecl TypeDecls should not check enum stuff
+    // non-EnumDecl TypeDecls should not check examples.codeGen.enum stuff
   }
 
   protected void VarAccess.checkEnum(EnumDecl enumDecl) {
@@ -520,7 +520,7 @@ aspect Enums {
   }
 
   /**
-   * Check if the enum constructor has an incorrect access modifier
+   * Check if the examples.codeGen.enum constructor has an incorrect access modifier
    */
   protected void ConstructorDecl.checkEnum(EnumDecl enumDecl) {
     super.checkEnum(enumDecl);
@@ -541,8 +541,8 @@ aspect Enums {
 
   /*
     15) It is a compile-time error for the constructors, instance initializer blocks,
-    or instance variable initializer expressions of an enum constant e to refer
-    to itself or to an enum constant of the same type that is declared to the
+    or instance variable initializer expressions of an examples.codeGen.enum constant e to refer
+    to itself or to an examples.codeGen.enum constant of the same type that is declared to the
     right of e.
 
   traversal that checks for errors
@@ -552,8 +552,8 @@ aspect Enums {
 
   // 8.9
 
-  /* 2) An enum constant may be preceded by annotation (�9.7) modifiers. If an
-  annotation a on an enum constant corresponds to an annotation type T, and T
+  /* 2) An examples.codeGen.enum constant may be preceded by annotation (�9.7) modifiers. If an
+  annotation a on an examples.codeGen.enum constant corresponds to an annotation type T, and T
   has a (meta-)annotation m that corresponds to annotation.Target, then m must
   have an element whose value is annotation.ElementType.FIELD, or a
   compile-time error occurs.
@@ -622,9 +622,13 @@ aspect Enums {
       BodyDecl d = getBodyDecl(i);
       out.print(d);
       if (d instanceof EnumConstant) {
-        if (i + 1 < getNumBodyDecl() && !(getBodyDecl(i + 1) instanceof EnumConstant)) {
-          out.println();
-          out.print(";");
+        if (i + 1 < getNumBodyDecl()) {
+          if (getBodyDecl(i + 1) instanceof EnumConstant)
+            out.print(",");
+          else {
+            out.println();
+            out.print(";");
+          }
         }
       }
     }
@@ -636,16 +640,16 @@ aspect Enums {
     out.println();
     out.print(getModifiers());
     out.print(getID());
-    out.print("(");
     if (getNumArg() > 0) {
-      out.join(getArgList(), new PrettyPrinter.Joiner() {
-        @Override
-        public void printSeparator(PrettyPrinter out) {
-          out.print(", ");
-        }
-      });
+        out.print("(");
+        out.join(getArgList(), new PrettyPrinter.Joiner() {
+          @Override
+          public void printSeparator(PrettyPrinter out) {
+            out.print(", ");
+          }
+        });
+        out.print(")");
     }
-    out.print(")");
     if (getNumBodyDecl() > 0) {
       out.print(" {");
       for (int i=0; i < getNumBodyDecl(); i++) {
@@ -654,14 +658,13 @@ aspect Enums {
       }
       out.print("}");
     }
-    out.print(",");
   }
 
   /**
    * From the Java Language Specification, third edition, section 8.9 Enums:
    *
-   * It is a compile-time error for an enum type E to have an abstract method
-   * m as a member unless E has one or more enum constants, and all of E's enum
+   * It is a compile-time error for an examples.codeGen.enum type E to have an abstract method
+   * m as a member unless E has one or more examples.codeGen.enum constants, and all of E's examples.codeGen.enum
    * constants have class bodies that provide concrete implementations of m.
    */
   eq EnumDecl.unimplementedMethods() {
@@ -718,7 +721,7 @@ aspect Enums {
   }
 
   /**
-   * Check that the enum does not contain unimplemented abstract methods.
+   * Check that the examples.codeGen.enum does not contain unimplemented abstract methods.
    */
   public void EnumDecl.checkModifiers() {
     super.checkModifiers();

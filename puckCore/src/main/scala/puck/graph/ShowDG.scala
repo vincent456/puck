@@ -26,18 +26,12 @@ object ShowDG extends ShowConstraints{
 
         tailRecTypeCord(dg, sep, end, builder.append(dg.getNode(nid).name(dg) + sep0), tl :: lt.tail )
       case Tuple(types) :: tl =>
-        tailRecTypeCord(dg, ", " :: sep, (")" + sep.head) :: end, builder append "(", types :: tl :: lt.tail )
+        tailRecTypeCord(dg, "," :: sep, (")" + sep.head) :: end, builder append "(", types :: tl :: lt.tail )
       case Arrow(in, out) :: tl =>
         tailRecTypeCord(dg, " -> " :: sep, "" :: end, builder, List(in, out) :: tl :: lt.tail )
     }
 
   implicit def typeCord : CordBuilder[Type] = (dg, t) => tailRecTypeCord(dg, List(""), List(""), new StringBuilder, List(List(t)))
-//  implicit def typeCord : CordBuilder[Type] = (dg, th) => th match {
-//    case NamedType(nid) => dg.getNode(nid).name(dg)
-//    case Tuple(types) => types.map(t => typeCord(dg,t).toString()).mkString("(", ", ", ")")
-//      //types.map(typeCord(dg,_)).fold
-//    case Arrow(in, out) => Cord( typeCord(dg, in), " -> ", typeCord(dg, out))
-//  }
 
   implicit def typeHolderCord : CordBuilder[Option[Type]] = (dg, th) => th match {
     case None => ""
@@ -64,15 +58,43 @@ object ShowDG extends ShowConstraints{
       case vn : VirtualNode => Cord(s"${vn.id} - ${vn.name(dg)}")
     }
 
-
   def nodeNameTypCord : CordBuilder[DGNode] =
     (dg, n) => n match {
       case cn : ConcreteNode => Cord(cn.name , typeHolderCord(dg, dg.styp(cn.id)))
       case _ => n.name(dg)
     }
 
+  def sigFullName : CordBuilder[NodeId] =  (g, n) => {
+    val ss = DependencyGraph.scopeSeparator
+    def aux(nid: NodeId, accu: String): Cord = {
+      val n = g.getNode(nid)
+      g.container(n.id) match {
+        case None if n.id == g.rootId =>
+          if(accu.isEmpty) Cord(g.root.name)
+          else Cord(accu.substring(1))
+        case None => Cord(DependencyGraph.unrootedStringId, ss, n.name, accu)
+        case Some(pid) =>
+          n.kind.kindType match {
+            case StaticValueDecl
+            | InstanceValueDecl
+            | TypeConstructor =>
+              g.structuredType(n.id) match {
+                case Some(Arrow(in, _)) =>
+                  aux(pid, ss + n.name + typeCord(g, in) + accu)
+                case _ =>
+                  aux(pid, ss + n.name + accu)
+              }
+            case _ => aux(pid, ss + n.name + accu)
+          }
+      }
+    }
+    aux(n, "")
+  }
+
+
   def fullNameEdgeCord : CordBuilder[DGEdge] =  (g, e) =>
     Cord(s"${e.kind}(${e.source} - ${g.fullName(e.source)}, ${e.target} - ${g.fullName(e.target)})")
+
 
 
   implicit def edgeCord : CordBuilder[DGEdge] =  (dg, e) =>

@@ -117,15 +117,10 @@ class PuckControl
   }
 
 
-  def publishUndoRedoStatus() : Unit =
-    Bus publish UndoRedoStatus(graphStack.canUndo, graphStack.canRedo)
-
-
   reactions += {
 
     case PushGraph(g) =>
       graphStack.pushGraph(g)
-      publishUndoRedoStatus()
 
     case PrintErrOrPushGraph(msg, lgt) =>
       lgt.value match {
@@ -141,18 +136,6 @@ class PuckControl
 
     case Log(msg) =>
       logger.writeln(msg)
-
-    case UndoAll =>
-      graphStack.undoAll()
-      publishUndoRedoStatus()
-
-    case Undo =>
-      graphStack.undo()
-      publishUndoRedoStatus()
-
-    case Redo =>
-      graphStack.redo()
-      publishUndoRedoStatus()
 
     case gf @ GraphFocus(g, e) =>
       printingOptionsControl.focus(g, e)

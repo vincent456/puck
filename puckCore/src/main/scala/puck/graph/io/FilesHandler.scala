@@ -12,13 +12,13 @@ import scala.sys.process.Process
 
 object FilesHandler{
   object Default{
-    final val srcDirName : String = "src"
-    final val outDirName : String = "out"
-    final val decoupleFileName: String = "decouple.pl"
-    final val graphFileName: String = "graph"
-    final val jarListFileName: String = "jar.list"
-    final val apiNodesFileName: String = "api_nodes"
-    final val logFileName: String = outDirName + File.separator + "graph_solving.log"
+    val srcDirName : String = "src"
+    val outDirName : String = "out"
+    val decoupleFileName: String = "decouple.pl"
+    val graphFileName: String = "graph"
+    val jarListFileName: String = "jar.list"
+    val apiNodesFileName: String = "api_nodes"
+    val logFileName: String = outDirName + File.separator + "graph_solving.log"
   }
 }
 
@@ -26,6 +26,7 @@ trait DG2ASTBuilder{
   def apply(srcDirectory : File,
             outDirectory : Option[File],
             jarListFile : Option[File],
+            javaRuntime : Option[File],
             logger : PuckLogger,
             ll : LoadingListener = null) : DG2AST
 }
@@ -45,6 +46,9 @@ object FileOption {
 }
 
 class FileOption(private [this] var sf : Option[File] = None) {
+
+  def this(f : File) = this(Some(f))
+
   def get = sf
   def ! = sf.get
   def set(sf : Option[File]) =
@@ -105,14 +109,6 @@ class FilesHandler
   }
 
 
-
-  /*private [this] var logger0 : PuckLogger = logFile match {
-    case None => new PuckSystemLogger(logPolicy)
-    case Some(f) => new PuckFileLogger (logPolicy, f)
-  }*/
-
-
-
   val srcDirectory = new FileOption()
 
   val outDirectory = new FileOption()
@@ -128,6 +124,10 @@ class FilesHandler
   val editor = new FileOption()
 
   val logFile = new FileOption()
+
+  //val javaRuntime = new FileOption()
+  val javaRuntime = new FileOption(new File("/home/lorilan/jre1.5.0_22/lib/rt.jar"))
+  //val javaRuntime = new FileOption(new File("/home/lorilan/jre1.6.0_45/lib/rt.jar"))
 
   setWorkingDirectory(workingDirectory)
 
@@ -147,6 +147,7 @@ class FilesHandler
       srcDirectory !,
       outDirectory.toOption,
       jarListFile,
+      javaRuntime.toOption,
       logger, ll.orNull)
   }
 
@@ -161,8 +162,8 @@ class FilesHandler
         logger.writeln("parsing " + f)
         try Some(ConstraintsParser(dg2ast.nodesByName, new FileReader(f)))
         catch {
-          case e : Error =>
-            logger.writeln("parsing failed : " + e.getMessage)((PuckLog.NoSpecialContext, PuckLog.Error))
+          case t : Throwable =>
+            logger.writeln("parsing failed : " + t.getMessage)((PuckLog.NoSpecialContext, PuckLog.Error))
             None
         }
     }

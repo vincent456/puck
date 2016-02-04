@@ -104,6 +104,12 @@ aspect TypeUser {
         getExpr().findTypeUserAndBindUses(builder, typeMemberUse);
     }
 
+    void ConditionalExpr.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
+        getFalseExpr().findTypeUserAndBindUses(builder, typeMemberUse);
+        getTrueExpr().findTypeUserAndBindUses(builder, typeMemberUse);
+    }
+
+
     // findTypeUserAndBindUses term cases
 
 
@@ -118,20 +124,11 @@ aspect TypeUser {
         bindTypeUse(builder, getTypeAccess().buildDGNode(builder), typeMemberUse);
     }
 
-    void ClassInstanceExpr.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
-        bindTypeUse(builder, getAccess().buildDGNode(builder), typeMemberUse);
-    }
-
     void Literal.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
         //Access.bindTypeUse(builder, type().buildDGNode(builder), declaredTypeUsed, typeMemberUse);
         bindTypeUse(builder, type().buildDGNode(builder), typeMemberUse);
     }
 
-
-    void ConditionalExpr.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
-        getFalseExpr().findTypeUserAndBindUses(builder, typeMemberUse);
-        getTrueExpr().findTypeUserAndBindUses(builder, typeMemberUse);
-    }
 
     // findTypeUserAndBindUses term cases - Access subclasses
 
@@ -159,9 +156,16 @@ aspect TypeUser {
 //            bindTypeUse(builder, this.buildDGNode(builder), typeMemberUse);
 //    }
 
+    void ClassInstanceExpr.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
+        super.findTypeUserAndBindUses(builder, typeMemberUse);
+        if(hasTypeDecl())
+            setTarget(null);
+    }
+
     void VarAccess.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
+        super.findTypeUserAndBindUses(builder, typeMemberUse);
         // do not lock varAccess
-        bindTypeUse(builder, ((ASTNode)decl()).buildDGNode(builder), typeMemberUse);
+        setTargetVariable(null);
     }
 
 }

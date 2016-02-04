@@ -30,20 +30,16 @@ class TreeViewHandler
   this listenTo control.Bus
 
   reactions += {
-    case GraphUpdate(graph) =>
-      update(graph, None)
+    case _: GraphStackEvent => update(control.graph)
   }
 
 
   mainPanel.upPanel.setGraphView(graphExplorer)
 
-  def update(graph : DependencyGraph, se : Option[Either[DGEdge, Set[NodeId]]]) : Unit = {
-    updateLeftOfPanel(graph)
-    mainPanel.repaint()
-  }
+
 
   import mainPanel.downPanel
-  def updateLeftOfPanel(graph : DependencyGraph) : Unit = {
+  def update(graph : DependencyGraph) : Unit = {
     val violations = graph.violations()
       if (violations.isEmpty) {
         downPanel.leftComponent = new Label("0 violations !")
@@ -63,6 +59,7 @@ class TreeViewHandler
         downPanel.resizeWeight = 0.5
         downPanel.dividerSize = 3
       }
+    downPanel.repaint()
 
   }
 

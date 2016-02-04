@@ -41,8 +41,6 @@ case class VirtualNode
  potentialMatches : Set[NodeId],
  kind : NodeKind) extends DGNode {
   val mutable = true
-  //def styp(g : DependencyGraph) = None
-  //def name : String =  potentialMatches mkString ("Virtual(", " \\/ ", ")")
 
   def mapConcrete[A](f : ConcreteNode => A, default : => A) : A = default
 
@@ -61,9 +59,9 @@ case class ConcreteNode
   kind : NodeKind,
   mutable : Boolean)  extends DGNode {
 
-  //def styp(g : DependencyGraph) = ???/* g styp id*/
 
   def name(g : DependencyGraph) : String = name
+
 
   override def toString = {
     val non = if(mutable) ""

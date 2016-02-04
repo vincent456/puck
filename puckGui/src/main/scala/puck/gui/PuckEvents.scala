@@ -29,12 +29,6 @@ case class Popped(poppedGraph : DependencyGraph, newHead : DependencyGraph) exte
   val graph : DependencyGraph = newHead
 }
 
-case object Undo extends PuckEvent
-case object UndoAll extends PuckEvent
-case object Redo extends PuckEvent
-case object RedoAll extends PuckEvent
-case class UndoRedoStatus(canUndo : Boolean, canRedo :Boolean) extends PuckEvent
-
 case class Log(msg : String ) extends PuckEvent
 case class PrintCode(id : NodeId) extends PuckEvent
 

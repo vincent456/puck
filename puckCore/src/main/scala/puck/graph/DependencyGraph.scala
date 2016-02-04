@@ -104,9 +104,6 @@ class DependencyGraph
   def isRoot(id : NodeId) = id == rootId
 
 
-
-  override def toString = edges.toString
-
   private [graph] def addConcreteNode(n : ConcreteNode) : DependencyGraph =
      newGraph(nodesIndex = nodesIndex.addConcreteNode(n),
               recording = recording.addConcreteNode(n))

@@ -2,6 +2,7 @@ package puck.graph.comparison
 
 import puck.PuckError
 import puck.graph._
+import puck.util.Debug
 
 
 object Mapping {
@@ -12,8 +13,12 @@ object Mapping {
   ) : Map[NodeId, NodeId] =
     create(nameIndex(g1), nameIndex(g2))
 
-  def nameIndex(g : DependencyGraph) : Map[String, NodeId] =
-   g.nodesId.toList map { id => (g.fullName(id), id) } toMap
+  def nameIndex(g : DependencyGraph) : Map[String, NodeId] = {
+    import ShowDG._
+    g.nodesId map ( id => ((g, id).shows(sigFullName), id) ) toMap
+  }
+
+
 
 
 

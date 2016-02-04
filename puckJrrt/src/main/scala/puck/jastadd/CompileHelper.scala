@@ -13,8 +13,8 @@ import org.extendj.parser
 
 object CompileHelper {
 
-  def apply(sources: List[String], jars: List[String]): Option[Program] = {
-      val arglist = createArglist(sources, jars, List())
+  def apply(sources: List[String], jars: List[String], bootJars : List[String]): Option[Program] = {
+      val arglist = createArglist(sources, jars, List(), bootJars)
 
       val f = new Frontend {
 //        protected override def processErrors(errors: java.util.Collection[Problem], unit: CompilationUnit): Unit =  {
@@ -68,9 +68,10 @@ object CompileHelper {
 
   def compileSrcsAndbuildGraph(sources: List[String],
                  jars: List[String],
+                 bootJars : List[String],
                  decouple : Option[java.io.File] = None) :
     (Program, DependencyGraph, Seq[Transformation], Map[String, NodeId], Map[NodeId, ASTNodeLink]) =
-    this.apply(sources, jars) match {
+    this.apply(sources, jars, bootJars) match {
       case None => throw new DGBuildingError("Compilation error, no AST generated")
       case Some(p) => buildGraph(p)
     }
@@ -79,17 +80,17 @@ object CompileHelper {
 
   private[puck] def createArglist(sources: List[String],
                                   jars: List[String],
-                                  srcdirs:List[String]): Array[String] = {
+                                  srcdirs:List[String],
+                                  bootClassPath : List[String]): Array[String] = {
 
-    if (jars.isEmpty) sources.toArray
-    else {
-      val args: List[String] = "-classpath" :: jars.mkString("", File.pathSeparator, File.pathSeparator + ".") :: (
-        if (srcdirs.isEmpty) sources
-        else
-          "-sourcepath" :: srcdirs.mkString("", File.pathSeparator, File.pathSeparator + ".") :: sources)
-      ( "-bootclasspath" :: "/home/lorilan/jre1.5.0_22/lib/rt.jar" :: args).toArray
-        //args.toArray
-    }
+    def prepend(argName : String, argValue : List[String], accu : List[String]) : List[String] =
+      if(argValue.isEmpty) accu
+      else argName :: argValue.mkString(File.pathSeparator) :: accu
+    //else argName :: argValue.mkString("", File.pathSeparator, File.pathSeparator + ".") :: accu
+
+    val args0 = prepend("-classpath", jars, sources)
+    val args1 = prepend("-sourcepath", srcdirs, args0)
+    prepend("-bootclasspath", bootClassPath, args1).toArray
   }
 
 

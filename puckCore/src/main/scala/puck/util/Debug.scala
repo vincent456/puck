@@ -105,7 +105,7 @@ object Debug {
 
 
   def mkMapStringSortedByFullName(g : DependencyGraph, m : Map[NodeId,DGNode]) : String = {
-    m.toList.map{case (id, _) => (g.fullName(id), id)}.
+    m.toList.map{ case (id, n) =>  ((g, id).shows(sigFullName) +" - " + n.kind , id) }.
       sortBy(_._1).mkString("\t[",",\n\t ","]\n")
 
   }

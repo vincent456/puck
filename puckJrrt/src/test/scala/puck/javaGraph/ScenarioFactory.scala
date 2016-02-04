@@ -31,9 +31,9 @@ case class ScenarioFactory
         this(t._1, t._2, t._3, t._4, t._5)
 
   def this(filePath : String) =
-    this(CompileHelper.compileSrcsAndbuildGraph(List(filePath), List()))
+    this(CompileHelper.compileSrcsAndbuildGraph(List(filePath), List(), List()))
   def this(filesPath : String*) =
-    this(CompileHelper.compileSrcsAndbuildGraph(filesPath.toList, List()))
+    this(CompileHelper.compileSrcsAndbuildGraph(filesPath.toList, List(), List()))
 
   implicit var logger : PuckLogger = new PuckFileLogger(_ => true, new java.io.File("/tmp/comparisonLog"))
   def compare: (DependencyGraph, DependencyGraph) => Boolean =
@@ -52,12 +52,4 @@ case class ScenarioFactory
     new ScenarioFactory(genSrc:_*)
   }
 
-//  val it = program.compilationUnitIterator()
-//  while(it.hasNext){
-//    val i : CompilationUnit = it.next().asInstanceOf[CompilationUnit]
-//    if(i.relativeName() != null) {
-//      println(i.getPackageDecl + " - " + i.relativeName())
-//      //println(i.getID + " has null relativeName")
-//    }
-//  }
 }

@@ -120,7 +120,7 @@ aspect ControlFlowGraph {
 	eq FieldDeclaration.exit().following() = getFollowingFieldOrInitializer(isStatic());
 	
 	// EnumConstant: Inherits from FieldDeclaration but adds arguments (Expr node children)
-	// control flow for enum constants: first the arguments, then the init expression, then the exit node
+	// control flow for examples.codeGen.enum constants: first the arguments, then the init expression, then the exit node
 	eq EnumConstant.entry().following() = SmallSet.<CFGNode>singleton(getNumArg() > 0 ? getArg(0).first() : hasInit() ? getInit().first() : exit());
 	eq EnumConstant.getArg(int i).following() {
 		if (i + 1 < getNumArg())

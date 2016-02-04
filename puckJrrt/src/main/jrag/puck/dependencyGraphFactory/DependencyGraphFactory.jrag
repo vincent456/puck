@@ -206,6 +206,7 @@ aspect DependencyGraphFactory {
 		getClassDecl().buildDG(builder, hostTypeDeclId);
 	}
 
+
 	public void BodyDecl.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId ){
 		if(isNamedElement()){
 			int declId = buildDGNode(builder);
@@ -232,7 +233,7 @@ aspect DependencyGraphFactory {
 		}
 		else if(this.getClass() == InstanceInitializer.class
 			|| this.getClass() == StaticInitializer.class
-            || this.getClass() == DocAnnotation.class ) {
+            || this.getClass() == DocAnnotation.class) {
 			super.buildDG(builder, hostTypeDeclId);
 		}
 		else
@@ -330,7 +331,8 @@ aspect DependencyGraphFactory {
 		if( this.getClass() != ThisAccess.class
 			&& this.getClass() != SuperAccess.class
 			&& this.getClass() != ClassAccess.class
-			&& this.getClass() != Wildcard.class )
+			&& this.getClass() != Wildcard.class
+			&& this.getClass() != WildcardExtends.class )
 			System.err.println("TODO !! "+this.getClass()+".buildDG : " + this);
 		super.buildDG(builder, containerId);
 	}

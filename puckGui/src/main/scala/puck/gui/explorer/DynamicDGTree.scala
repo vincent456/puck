@@ -47,18 +47,11 @@ class MutableTreeModel(var graph : DependencyGraph)
     }
 
   def pushEvent(newGraph: DependencyGraph, oldGraph : DependencyGraph) : Unit = {
+    println("MutableTreeModel.pushEvent")
+    println(s"oldGraph = $oldGraph")
+    println(s"graph = $graph")
     assert(oldGraph eq graph)
     val subRec : Recording = newGraph.recording.subRecordFromLastMilestone.reverse
-//    val nodeToRemove = subRec.filter{
-//      case  Transformation.Remove(CNode(cted)) => true
-//      case _ => false
-//    } map PartialFunction{case  Transformation.Remove(CNode(cted)) => cted.id }
-//
-//    val sorted = nodeToRemove.sortBy(oldGraph.depth)
-//
-//    sorted.foreach { id =>
-//      treeModelEvent(oldGraph, id) foreach fireNodesRemoved
-//    }
 
     subRec.foreach  {
           case Transformation.Add(Edge(ContainsKind(_, cted))) =>
@@ -84,35 +77,69 @@ class MutableTreeModel(var graph : DependencyGraph)
 
     graph = newGraph
   }
+
+  def popEvent(newGraph: DependencyGraph, oldGraph : DependencyGraph) : Unit = {
+    assert(oldGraph eq graph)
+    val subRec : Recording = oldGraph.recording.subRecordFromLastMilestone
+
+    subRec.foreach  {
+      case Transformation.Add(Edge(ContainsKind(_, cted))) =>
+        graph = oldGraph
+        treeModelEvent(oldGraph, cted) foreach fireNodesRemoved
+
+      case Transformation.Remove(CNode(cted)) =>
+        graph = newGraph
+        treeModelEvent(newGraph, cted.id) foreach fireNodesInserted
+
+      case Transformation.Move((_, tgt), _) =>
+        graph = newGraph
+        treeModelEvent(newGraph, tgt) foreach fireNodesInserted
+        graph = oldGraph
+        treeModelEvent(oldGraph, tgt) foreach fireNodesRemoved
+
+      case Transformation(_, Rename(id, oldName, newName)) =>
+        graph = oldGraph
+        parentTreeModelEvent(oldGraph, id) foreach fireStructureChanged
+
+      case _ =>
+    }
+
+    graph = newGraph
+  }
 }
 
 class DynamicDGTree
-(model : MutableTreeModel,
+(model0 : MutableTreeModel,
  bus : Publisher,
  menuBuilder : NodeMenu.Builder,
  val icons: DGTreeIcons)
-  extends JTree(model) with DGTree with Reactor {
+  extends JTree(model0) with DGTree with Reactor {
   self : JTree =>
 
   this listenTo bus
 
+  def model = getModel.asInstanceOf[MutableTreeModel]
+
   reactions += {
-//    case GraphUpdate(g) =>
-//      model.graph = g
-//      firePropertyChange(JTree.TREE_MODEL_PROPERTY, model, model);
-//      invalidate()
+    case Popped(poppedGraph, newHead) =>
+      model.popEvent(newHead, poppedGraph)
+      //setModel(new MutableTreeModel(newHead))
+
+    case EmptiedButOne(graph) =>
+      setModel(new MutableTreeModel(graph))
 
     case Pushed(pushedGraph, previousHead) =>
+
       if (pushedGraph.virtualNodes.isEmpty)
         model.pushEvent(pushedGraph, previousHead)
       else {
-        val vn = graph.virtualNodes.head
+        val vn = pushedGraph.virtualNodes.head
         Choose("Concretize node",
           "Select a concrete value for the virtual node :",
-          vn.potentialMatches.toSeq map graph.getConcreteNode) match {
+          vn.potentialMatches.toSeq map pushedGraph.getConcreteNode) match {
           case None => ()
           case Some(cn) =>
-            val r2 = graph.recording.subRecordFromLastMilestone.concretize(vn.id, cn.id)
+            val r2 = pushedGraph.recording.subRecordFromLastMilestone.concretize(vn.id, cn.id)
             bus publish RewriteHistory(r2)
         }
       }

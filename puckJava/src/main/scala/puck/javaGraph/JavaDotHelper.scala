@@ -3,7 +3,6 @@ package puck.javaGraph
 import puck.graph.{ConcreteNode, NodeId, DependencyGraph, DGNode}
 import puck.graph.io.{VisibilitySet, DotHelper}
 import puck.javaGraph.nodeKind._
-import VisibilitySet._
 
 object JavaDotHelper extends DotHelper{
 
@@ -48,8 +47,8 @@ object JavaDotHelper extends DotHelper{
   override def fillColor(n: DGNode): String = {
     def aux(cn : ConcreteNode) : String = cn.kind match {
         case Package => "#FF9933" //Orange
-        case Interface => "#FFFF99" // Light yellow
-        case Class | Constructor => "#FFFF33" //Yellow
+        case Interface | InnerInterface => "#FFFF99" // Light yellow
+        case Class | InnerClass | Constructor => "#FFFF33" //Yellow
         case Method | Field => "#FFFFFF" //White
         case Literal => "#CCFFCC" //Very Light green
         case Primitive => "#FFFFFF"

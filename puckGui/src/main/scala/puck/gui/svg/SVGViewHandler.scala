@@ -29,7 +29,7 @@ class SVGViewHandler
     this deafTo mainPanel.control.Bus
     val tvh = new TreeViewHandler(mainPanel, treeIcons)
     mainPanel.viewHandler = tvh
-    tvh.update(mainPanel.control.graph, None)
+    tvh.update(mainPanel.control.graph)
     mainPanel.revalidate()
   }
 
