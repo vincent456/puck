@@ -30,7 +30,7 @@ object KindType {
     case NameSpace => true
     case TypeDecl => true
     case StaticValueDecl => true
-    case InstanceTypeDecl => false
+    //case InstanceTypeDecl => false
     case InstanceValueDecl => false
     case TypeConstructor => true
     case Parameter => ???
@@ -46,7 +46,7 @@ case object UnknownKindType extends KindType
 case object NameSpace extends KindType
 
 case object TypeDecl extends KindType
-case object InstanceTypeDecl extends KindType
+//case object InstanceTypeDecl extends KindType
 
 case object TypeConstructor extends KindType
 

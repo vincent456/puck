@@ -103,7 +103,9 @@ aspect TypeUser {
     void ParExpr.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
         getExpr().findTypeUserAndBindUses(builder, typeMemberUse);
     }
-
+    void ArrayAccess.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
+        getLeftExpr().findTypeUserAndBindUses(builder, typeMemberUse);
+    }
     void ConditionalExpr.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
         getFalseExpr().findTypeUserAndBindUses(builder, typeMemberUse);
         getTrueExpr().findTypeUserAndBindUses(builder, typeMemberUse);

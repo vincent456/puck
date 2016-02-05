@@ -51,12 +51,14 @@ object Mapping {
   }
 
   def mapType(mappin : NodeId => NodeId): Type => Type = {
-    case nt : NamedType => nt.copy(mappin(nt.id))
-    case nt : Tuple => nt.copy(nt.types.map(mapType(mappin)))
-    case nt : Arrow =>
-      val i = nt.input
-      val o = nt.output
-      nt.copy(input = mapType(mappin)(i), output = mapType(mappin)(o))
+    case NamedType(id) => NamedType(mappin(id))
+    case Tuple(lt) => Tuple(lt.map(mapType(mappin)))
+    case Arrow(i, o) => Arrow(mapType(mappin)(i), mapType(mappin)(o))
+    case ParameterizedType(gid, targs) =>
+      ParameterizedType(mappin(gid), targs.map(mapType(mappin)))
+
+    case Covariant(t) => Covariant(mapType(mappin)(t))
+    case Contravariant(t) => Contravariant(mapType(mappin)(t))
   }
 
 //  import ShowDG._

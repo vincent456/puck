@@ -60,10 +60,10 @@ sealed abstract class Type {
 
   def ids : List[NodeId]
 
-  def changeNamedType(oldUsee : NodeId, newUsee: NodeId) : Type
+  def changeNamedType(oldUsed : NodeId, newUsed: NodeId) : Type
 
-  def changeNamedTypeContravariant(oldUsee : NodeId, newUsee: NodeId) =
-    changeNamedType(oldUsee, newUsee)
+  def changeNamedTypeContravariant(oldUsed : NodeId, newUsed: NodeId) =
+    changeNamedType(oldUsed, newUsed)
 
   def canOverride(graph : DependencyGraph,
                   other : Type) : Boolean = this.subtypeOf(graph, other)
@@ -85,8 +85,8 @@ case class NamedType(id : NodeId)
 
   override def makeClone() = copy(id)
 
-  def changeNamedType(oldUsee : NodeId, newUsee: NodeId) : NamedType =
-    if(id == oldUsee) copy(newUsee)
+  def changeNamedType(oldUsed : NodeId, newUsed: NodeId) : NamedType =
+    if(id == oldUsed) copy(newUsed)
     else makeClone()
 
   override def subtypeOf(graph : DependencyGraph,
@@ -117,8 +117,8 @@ case class Tuple(types: List[Type] = List())
 
   override def makeClone() : Tuple = copy(types)
 
-  def changeNamedType(oldUsee : NodeId, newUsee: NodeId) : Tuple =
-    copy(types.map(_.changeNamedType(oldUsee, newUsee)))
+  def changeNamedType(oldUsed : NodeId, newUsed: NodeId) : Tuple =
+    copy(types.map(_.changeNamedType(oldUsed, newUsed)))
 
   override def subtypeOf(graph : DependencyGraph,
                          other : Type) : Boolean =
@@ -162,8 +162,6 @@ case class Arrow(input : Type, output : Type)
     }
   }
 
-
-
   override def makeClone() : Arrow =
     copy(input.makeClone(), output.makeClone())
 
@@ -171,8 +169,8 @@ case class Arrow(input : Type, output : Type)
     copy(input.changeNamedType(oldUsee, newUsee),
       output.changeNamedType(oldUsee, newUsee))
 
-  override def changeNamedTypeContravariant(oldUsee : NodeId, newUsee: NodeId) =
-    copy(input.changeNamedType(oldUsee, newUsee), output)
+  override def changeNamedTypeContravariant(oldUsed : NodeId, newUsed: NodeId) =
+    copy(input.changeNamedType(oldUsed, newUsed), output)
 
   override def subtypeOf(graph : DependencyGraph,
                          other : Type) : Boolean =
@@ -185,3 +183,35 @@ case class Arrow(input : Type, output : Type)
 
 }
 
+sealed abstract class VariantType extends Type {
+  def t : Type
+  protected val make : Type => VariantType
+
+  def uses(id: NodeId): Boolean= t uses id
+  def ids: List[NodeId] = t.ids
+  def makeClone(): VariantType = make(t.makeClone())
+  def changeNamedType(oldUsed: NodeId, newUsed: NodeId): VariantType =
+    make(t.changeNamedType(oldUsed, newUsed))
+}
+case class Covariant(t : Type) extends VariantType {
+  val make = Covariant apply _
+}
+case class Contravariant(t : Type) extends VariantType {
+  val make = Contravariant apply _
+}
+//case class Invariant(t : Type) extends TypeParameter {
+//  val make = Invariant _
+//}
+case class ParameterizedType(genType : NodeId, params : List[Type])
+  extends Type {
+  def makeClone(): Type = copy()
+
+  def uses(id: NodeId): Mutability = genType == id || params.exists(_.ids contains id)
+
+  def ids: List[NodeId] = genType :: params.flatMap(_.ids)
+
+  def changeNamedType(oldUsed: NodeId, newUsed: NodeId): Type = {
+    def f(id : NodeId) = if(id == oldUsed) newUsed else id
+    copy(genType = f(genType), params = params map (_.changeNamedType(oldUsed, newUsed)))
+  }
+}

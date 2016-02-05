@@ -17,6 +17,10 @@ trait JavaGraphBuilder extends GraphBuilder{
      NodeIndex(JavaNodeKind.root), EdgeMap(),
      AbstractionMap(), ConstraintsMaps(), Recording())
 
+
+
+  val arrayTypeId = addNode("@primitive.[]","[]", GenericClass,  mutable = false)
+
   def addPackageNode(fullName: String, localName:String, mutable : Boolean) : NodeIdT =
     addNode(fullName, localName, Package, mutable)
 

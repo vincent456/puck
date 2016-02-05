@@ -21,7 +21,7 @@ object JavaDotHelper extends DotHelper{
       case (Seq(fds, cts, mts, cls, tvs), n) =>
           val kind = graph.getConcreteNode(n).kind
           kind match {
-            case Interface | Class | InnerClass | InnerInterface => Seq(fds, cts, mts, n +: cls, tvs)
+            case _ : TypeKind => Seq(fds, cts, mts, n +: cls, tvs)
 
             case Constructor => Seq(fds, n +: cts, mts, cls, tvs)
 
@@ -47,8 +47,8 @@ object JavaDotHelper extends DotHelper{
   override def fillColor(n: DGNode): String = {
     def aux(cn : ConcreteNode) : String = cn.kind match {
         case Package => "#FF9933" //Orange
-        case Interface | InnerInterface => "#FFFF99" // Light yellow
-        case Class | InnerClass | Constructor => "#FFFF33" //Yellow
+        case _ : TypeKind.InterfaceLike => "#FFFF99" // Light yellow
+        case _ : TypeKind.ClassLike | Constructor => "#FFFF33" //Yellow
         case Method | Field => "#FFFFFF" //White
         case Literal => "#CCFFCC" //Very Light green
         case Primitive => "#FFFFFF"

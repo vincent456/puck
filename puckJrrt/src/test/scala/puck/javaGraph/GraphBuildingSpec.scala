@@ -113,7 +113,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
     }
 
     scenario("super use explicit") {
-      val _ = new ScenarioFactory(s"$examplesPath/SuperUseExplicit.java") {
+      val _ = new ScenarioFactory(s"$examplesPath/SuperUseExplicit.java"){
         val methM = fullName2id("p.A.m()")
         val mUserViaThis = fullName2id("p.B.mUserViaSuper()")
 
@@ -124,7 +124,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
     }
 
     scenario("super use implicit") {
-      val _ = new ScenarioFactory(s"$examplesPath/SuperUseImplicit.java") {
+      val _ = new ScenarioFactory(s"$examplesPath/SuperUseImplicit.java"){
         val methM = fullName2id("p.A.m()")
         val mUserViaThis = fullName2id("p.B.mUserViaSuper()")
 
@@ -381,12 +381,37 @@ class GraphBuildingSpec extends AcceptanceSpec {
   feature("Generic types uses"){
     val examplesPath = graphBuildingExamplesPath +  "genericTypes/"
 
+    scenario("array decl"){
+      val _ = new ScenarioFactory(s"$examplesPath/ArrayDecl.java") {
+        val field = fullName2id("p.A.is")
+        val int = fullName2id("@primitive.int")
+        val array = fullName2id("@primitive.[]")
+
+
+        graph.styp(field).value should be (ParameterizedType(array, List(NamedType(int))))
+
+
+      }
+    }
+    scenario("array usage"){
+      val _ = new ScenarioFactory(s"$examplesPath/ArrayUsage.java") {
+        val arrayUser = fullName2id("p.A.arrayUser(A[])")
+        val m = fullName2id("p.A.m()")
+        val i = fullName2id("p.A.i")
+        val array = fullName2id("@primitive.[]")
+
+        assert( graph.uses(arrayUser, m) )
+        assert( graph.uses(arrayUser, i) )
+      }
+    }
     scenario("generic type declaration"){
       val _ = new ScenarioFactory(s"$examplesPath/GenericTypeDecl.java") {
         val actualParam = fullName2id("p.A")
         val genTypeDeclarant = fullName2id("p.GenTypeDeclarant")
         val user = fullName2id("p.GenTypeDeclarant.user")
         val genType = fullName2id("java.util.List")
+
+        graph.styp(user).value should be (ParameterizedType(genType, List(NamedType(actualParam))))
 
         assert( graph.uses(user, genType) )
 

@@ -15,7 +15,9 @@ object ShowDG extends ShowConstraints{
 
 
   def tailRecTypeCord
-  (dg : DependencyGraph, sep : List[String], end : List[String], builder : StringBuilder, lt : List[List[Type]]) : String =
+  (dg : DependencyGraph,
+   sep : List[String], end : List[String],
+   builder : StringBuilder, lt : List[List[Type]]) : String =
     if (lt.isEmpty) builder.toString()
     else lt.head match {
       case Nil => tailRecTypeCord(dg, sep.tail, end.tail, builder append end.head, lt.tail)
@@ -23,15 +25,30 @@ object ShowDG extends ShowConstraints{
         val sep0 =
           if(tl.nonEmpty) sep.head
           else ""
-
-        tailRecTypeCord(dg, sep, end, builder.append(dg.getNode(nid).name(dg) + sep0), tl :: lt.tail )
+        tailRecTypeCord(dg, sep, end,
+          builder.append(dg.getNode(nid).name(dg) + sep0),
+          tl :: lt.tail )
       case Tuple(types) :: tl =>
-        tailRecTypeCord(dg, "," :: sep, (")" + sep.head) :: end, builder append "(", types :: tl :: lt.tail )
+        tailRecTypeCord(dg, "," :: sep, (")" + sep.head) :: end,
+          builder append "(", types :: tl :: lt.tail )
       case Arrow(in, out) :: tl =>
         tailRecTypeCord(dg, " -> " :: sep, "" :: end, builder, List(in, out) :: tl :: lt.tail )
+
+      case ParameterizedType(genId, targs) :: tl =>
+        val genName = dg.getNode(genId).name(dg)
+        tailRecTypeCord(dg, "," :: sep, (">" + sep.head) :: end,
+          builder append s"$genName<", targs :: tl :: lt.tail )
+
+      case Covariant(t) :: tl =>
+        tailRecTypeCord(dg, "" :: sep, "" :: end,
+          builder append s"+", List(t) :: tl :: lt.tail )
+      case Contravariant(t) :: tl =>
+        tailRecTypeCord(dg, "" :: sep, "" :: end,
+          builder append s"-", List(t) :: tl :: lt.tail )
     }
 
-  implicit def typeCord : CordBuilder[Type] = (dg, t) => tailRecTypeCord(dg, List(""), List(""), new StringBuilder, List(List(t)))
+  implicit def typeCord : CordBuilder[Type] = (dg, t) =>
+    tailRecTypeCord(dg, List(""), List(""), new StringBuilder, List(List(t)))
 
   implicit def typeHolderCord : CordBuilder[Option[Type]] = (dg, th) => th match {
     case None => ""

@@ -24,19 +24,6 @@ case object Definition extends JavaNodeKind {
   override def kindType: KindType = ValueDef
 }
 
-case object TypeVariable extends JavaNodeKind {
-  def kindType : KindType = InstanceTypeDecl
-  def canContain(k : NodeKind) = false
-  override def abstractionPolicies = Seq()
-  def abstractionNodeKinds(p : AbstractionPolicy) = Seq()
-}
-case object WildCardType extends JavaNodeKind {
-  def kindType : KindType = InstanceTypeDecl
-  def canContain(k : NodeKind) = false
-  override def abstractionPolicies = Seq()
-  def abstractionNodeKinds(p : AbstractionPolicy) = Seq()
-}
-
 case object Param extends JavaNodeKind {
 
   def canContain(k: NodeKind): Boolean = false
@@ -58,7 +45,7 @@ object JavaNodeKind extends NodeKindKnowledge {
       case TypeConstructor => Seq(Constructor)
       case TypeDecl => Seq(Interface, Class)
       case InstanceValueDecl => Seq(Field, Method)
-      case InstanceTypeDecl => Seq(Interface, Class)
+      //case InstanceTypeDecl => Seq(Interface, Class)
       case StaticValueDecl => Seq(StaticField, StaticMethod)
       case Parameter => Seq(Param)
       case ValueDef => Seq(Definition)

@@ -16,8 +16,8 @@ object JavaIcons extends DGTreeIcons {
   val classIcon : Icon = new ImageIcon(getClass.getResource(s"$path/class.gif"))
   val interfaceIcon : Icon = new ImageIcon(getClass.getResource(s"$path/interface.gif"))
 
-  val innerClassIcon : Icon = new ImageIcon(getClass.getResource(s"$path/class_inner.png"))
-  val innerInterfaceIcon : Icon = new ImageIcon(getClass.getResource(s"$path/interface_inner.png"))
+//  val innerClassIcon : Icon = new ImageIcon(getClass.getResource(s"$path/class_inner.png"))
+//  val innerInterfaceIcon : Icon = new ImageIcon(getClass.getResource(s"$path/interface_inner.png"))
 
   val rootIcon : Icon = new ImageIcon(getClass.getResource(s"$path/root.gif"))
 
@@ -34,10 +34,10 @@ object JavaIcons extends DGTreeIcons {
   val unknownIcon : Icon = new ImageIcon(getClass.getResource(s"$path/question-mark.gif"))
 
   def iconOfKind(k: NodeKind): Icon = k match {
-    case Interface => interfaceIcon
-    case Class => classIcon
-    case InnerClass => innerClassIcon
-    case InnerInterface => innerInterfaceIcon
+    case _ : TypeKind.InterfaceLike => interfaceIcon
+    case _ : TypeKind.ClassLike => classIcon
+//    case InnerClass => innerClassIcon
+//    case InnerInterface => innerInterfaceIcon
     case AbstractMethod => abstractMethodIcon
     case StaticMethod => staticMethodIcon
     case Method => methodIcon

@@ -52,6 +52,7 @@ object CompileHelper {
                  ll : puck.LoadingListener = null )  :
   (Program, DependencyGraph, Seq[Transformation], Map[String, NodeId], Map[NodeId, ASTNodeLink]) = {
     val builder = p.buildDependencyGraph(null, ll)
+    builder.addContains(builder.nodesByName("@primitive"), builder.arrayTypeId)
     builder.attachOrphanNodes()
     builder.registerSuperTypes()
 

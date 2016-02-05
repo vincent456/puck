@@ -228,8 +228,8 @@ class DotPrinter
             graph.typeUsesOf(selected).foldLeft(init){
               (map, tm) => map. + (DGEdge.toPair(tm) -> "TDecl")
             }
-          case InstanceTypeDecl =>
-            sys.error("selection kind unhandle [TODO] - DotPrinter.typeRelationShipLabel")
+//          case InstanceTypeDecl =>
+//            sys.error("selection kind unhandle [TODO] - DotPrinter.typeRelationShipLabel")
           case _ =>
             sys.error("this uses target kind should not happen")
 

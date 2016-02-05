@@ -230,8 +230,8 @@ class Merge
 
   def removeTypeDependenciesInvolving(g : DependencyGraph, n : ConcreteNode) : DependencyGraph = {
     val g1 = n.kind.kindType match {
-      case TypeDecl
-        | InstanceTypeDecl =>
+      case TypeDecl/*
+        | InstanceTypeDecl */=>
         g.typeUses2typeMemberUses.foldLeft(g) {
           case (g0, (tUses, typeMemberUses)) if tUses.used == n.id =>
             typeMemberUses.foldLeft(g0) { _.removeUsesDependency(tUses, _)}

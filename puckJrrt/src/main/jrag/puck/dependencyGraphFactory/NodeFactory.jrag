@@ -2,9 +2,9 @@ aspect NodeFactory  {
 
 	public int DGNamedElement.buildDGNode(JastaddGraphBuilder builder){
 		if(isSubstitute())
-			return ASTNode.buildDGNode(builder, (DGNamedElement)((Substitute) this).getOriginal());
+			return builder.getNode((DGNamedElement)((Substitute) this).getOriginal());
 		else
-			return ASTNode.buildDGNode(builder, this);
+			return builder.getNode(this);
 
 	}
 	public int ParameterDeclaration.buildDGNode(JastaddGraphBuilder builder){
@@ -12,7 +12,7 @@ aspect NodeFactory  {
 			//not a parameter but a var decl in a catch clause
 			return hostBodyDecl().buildDGNode(builder);
 		}
-		return ASTNode.buildDGNode(builder, this);
+		return builder.getNode(this);
 	}
 
 	public static int ASTNode.buildDGNode(JastaddGraphBuilder builder,

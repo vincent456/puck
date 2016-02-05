@@ -17,11 +17,9 @@ aspect TypeFactory {
 		ArrayList<Integer> params = new ArrayList<Integer>();
 
 		for(ParameterDeclaration pdecl: c.getParameterList()){
-
-			int agTypeNode = pdecl.getTypeAccess().buildDGNode(builder);
 			int paramId = pdecl.buildDGNode(builder);
 			params.add(paramId);
-		 	builder.setType(paramId, new NamedType(agTypeNode));
+		 	builder.setType(paramId, builder.getType(pdecl.getTypeAccess()));
 		}
 		builder.addParams(thisId, params);
 	}
@@ -32,7 +30,7 @@ aspect TypeFactory {
 		
 	public void MethodDecl.buildDGType(JastaddGraphBuilder builder, int thisId){
 		ASTNode.astParamsToDGType(builder, thisId, this);
-		builder.setType(thisId, new NamedType(getTypeAccess().buildDGNode(builder)));
+		builder.setType(thisId, builder.getType(getTypeAccess()));
 	}
 
 	public void ConstructorDecl.buildDGType(JastaddGraphBuilder builder, int thisId){
@@ -41,7 +39,7 @@ aspect TypeFactory {
 	}
 
 	public void FieldDeclaration.buildDGType(JastaddGraphBuilder builder, int thisId){
-		builder.setType(thisId, new NamedType(getTypeAccess().buildDGNode(builder)));
+		builder.setType(thisId,  builder.getType(getTypeAccess()));
 	}
 
 

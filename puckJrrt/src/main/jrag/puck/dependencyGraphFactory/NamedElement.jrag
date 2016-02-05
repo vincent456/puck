@@ -46,7 +46,7 @@ aspect NamedElement {
 //    }
 
 
-    interface DGNamedElement {
+    public interface DGNamedElement {
 		String fullName();
 		String name();
 
@@ -101,43 +101,34 @@ aspect NamedElement {
     ParameterDeclarationSubstituted implements Substitute;
     VariableArityParameterDeclarationSubstituted implements Substitute;
 
-	//duplication needed for overloaded static resolution
-	public void TypeDecl.registerNode(JastaddGraphBuilder builder, int thisId){
-      //System.err.println(this.fullName() + " - " + this.getClass() + " registered as primitive");
+
+    interface Registerable {}
+
+    TypeDecl implements Registerable;
+    InterfaceDecl implements Registerable;
+    ClassDecl implements Registerable;
+    GenericInterfaceDecl implements Registerable;
+    GenericClassDecl implements Registerable;
+    WildcardType implements Registerable;
+    ConstructorDecl implements Registerable;
+    ParameterDeclaration implements Registerable;
+    FieldDeclaration implements Registerable;
+    MethodDecl implements Registerable;
+    TypeVariable implements Registerable;
+//    Block implements Registerable;
+//    Expr implements Registerable;
+
+	public void Registerable.registerNode(JastaddGraphBuilder builder, int thisId){
       builder.registerDecl(thisId, this);
   	}
-
-	public void InterfaceDecl.registerNode(JastaddGraphBuilder builder, int thisId){
-		builder.registerDecl(thisId, this);
-	}
-
-	public void ClassDecl.registerNode(JastaddGraphBuilder builder, int thisId){
+//duplication needed for overloaded static resolution
+    public void GenericInterfaceDecl.registerNode(JastaddGraphBuilder builder, int thisId){
+        builder.registerDecl(thisId, this);
+    }
+    public void GenericClassDecl.registerNode(JastaddGraphBuilder builder, int thisId){
         builder.registerDecl(thisId, this);
     }
 
-    public void WildcardType.registerNode(JastaddGraphBuilder builder, int thisId){
-        builder.registerDecl(thisId, this);
-    }
-
-    
-    public void ConstructorDecl.registerNode(JastaddGraphBuilder builder, int thisId){
-        builder.registerDecl(thisId, this);
-    }
-
-    public void ParameterDeclaration.registerNode(JastaddGraphBuilder builder, int thisId){
-        builder.registerDecl(thisId, this);
-    }
-
-    public void FieldDeclaration.registerNode(JastaddGraphBuilder builder, int thisId){
-        builder.registerDecl(thisId, this);
-    }
-
-    public void MethodDecl.registerNode(JastaddGraphBuilder builder, int thisId){
-        builder.registerDecl(thisId, this);
-    }
-    public void TypeVariable.registerNode(JastaddGraphBuilder builder, int thisId){
-        builder.registerDecl(thisId, this);
-    }
     public void Block.registerDef(JastaddGraphBuilder builder, int thisId){
         builder.registerDef(thisId, this);
     }
@@ -153,11 +144,21 @@ aspect NamedElement {
     	throw new DGBuildingError(this.fullName() + " - " + this.getClass()+" : Unkown nodekind");
     }
     eq TypeVariable.getDGNodeKind() = JastaddGraphBuilder.typeVariable();
-    eq ClassDecl.getDGNodeKind() = isInnerClass() ?
+
+    /*eq ClassDecl.getDGNodeKind() = isInnerClass() ?
         JastaddGraphBuilder.innerClassKind() : JastaddGraphBuilder.classKind();
 
     eq InterfaceDecl.getDGNodeKind() = isInnerType() ?
         JastaddGraphBuilder.innerInterfaceKind() : JastaddGraphBuilder.interfaceKind();
+*/
+
+    eq ClassDecl.getDGNodeKind() = JastaddGraphBuilder.classKind();
+
+    eq InterfaceDecl.getDGNodeKind() = JastaddGraphBuilder.interfaceKind();
+
+    eq GenericClassDecl.getDGNodeKind() = JastaddGraphBuilder.genClass(this);
+
+    eq GenericInterfaceDecl.getDGNodeKind() = JastaddGraphBuilder.genInterface(this);
 
     eq WildcardType.getDGNodeKind() = JastaddGraphBuilder.wildcardType();
     eq PrimitiveType.getDGNodeKind() = JastaddGraphBuilder.primitive();

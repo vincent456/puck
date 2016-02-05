@@ -200,7 +200,7 @@ aspect Generics {
   // version.
   eq ParClassDecl.topLevelType() = erasure().topLevelType();
 
-  interface GenericTypeDecl {
+  public interface GenericTypeDecl {
     syn boolean isGenericType();
     TypeDecl original();
     int getNumTypeParameter();
@@ -299,7 +299,7 @@ aspect Generics {
     return (TypeDecl) this;
   }
 
-  interface ParTypeDecl {
+  public interface ParTypeDecl {
     //syn String name();
     int getNumArgument();
     Access getArgument(int index);
