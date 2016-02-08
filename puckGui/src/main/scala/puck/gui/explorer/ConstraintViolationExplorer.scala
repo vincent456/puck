@@ -2,6 +2,7 @@ package puck
 package gui
 package explorer
 
+import java.awt.Color
 import java.awt.event.{ActionEvent, MouseEvent, MouseAdapter}
 import javax.swing.{AbstractAction, JPopupMenu, JTree}
 
@@ -64,7 +65,7 @@ class ConstraintViolationExplorer
   treeIcons : DGTreeIcons)
   extends SplitPane {
 
-
+  this listenTo bus
 
   def filterViolations
   ( sourceFilter : Option[NodeId],
@@ -147,25 +148,30 @@ class ConstraintViolationExplorer
 
   var sourceFilter0 : Option[NodeId] = None
   var targetFilter0 : Option[NodeId] = None
+  var filteredViolations0 : Seq[DGEdge] = allViolations
+
+  var focusedEdge : Option[DGEdge] = None
 
   def sourceFilter : Option[NodeId] = sourceFilter0
   def sourceFilter_=(sid : Option[NodeId]) = {
+    focusedEdge = None
     sourceFilter0 = sid
     Swing.onEDT {
-      val vs = filterViolations(sourceFilter, targetFilter)
-      targetTree.setModel(TreeModelAdapter.subGraph(graph, targets(vs)))
+      filteredViolations0 = filterViolations(sourceFilter, targetFilter)
+      targetTree.setModel(TreeModelAdapter.subGraph(graph, targets(filteredViolations0)))
       sourceLabel.text = sid map graph.fullName getOrElse ""
-      updateViolationListPane(vs)
+      updateViolationListPane()
     }
   }
   def targetFilter : Option[NodeId] = targetFilter0
   def targetFilter_=(sid : Option[NodeId]) = {
+    focusedEdge = None
     targetFilter0 = sid
     Swing.onEDT {
-      val vs = filterViolations(sourceFilter, targetFilter)
-      sourceTree.setModel(TreeModelAdapter.subGraph(graph, sources(vs)))
+      filteredViolations0 = filterViolations(sourceFilter, targetFilter)
+      sourceTree.setModel(TreeModelAdapter.subGraph(graph, sources(filteredViolations0)))
       targetLabel.text = sid map graph.fullName getOrElse ""
-      updateViolationListPane(vs)
+      updateViolationListPane()
     }
   }
 
@@ -184,6 +190,9 @@ class ConstraintViolationExplorer
 
     case FilterTarget(tgtFilter) =>
       targetFilter = Some(tgtFilter)
+
+    case GraphFocus(_, e) =>
+      focusedEdge = Some(e)
   }
 
   resizeWeight = 0.4
@@ -217,15 +226,24 @@ class ConstraintViolationExplorer
   }
 
 
-  def updateViolationListPane(violations : Seq[DGEdge]) : Unit = {
+  def updateViolationListPane() : Unit = {
     violationListPane.contents.clear()
     violationListPane.contents +=
-      new Label(s"${violations.size} / ${allViolations.size} violation" +
-        (if(violations.size > 1) "s" else ""))
+      new Label(s"${filteredViolations0.size} / ${allViolations.size} violation" +
+        (if(filteredViolations0.size > 1) "s" else ""))
 
-    violations.foreach {
+
+    var focusedLabel : Option[Label] = None
+
+    filteredViolations0.foreach {
       edge =>
         violationListPane.contents +=  new Label(edgeToString(edge)) {
+          self : Label =>
+          focusedEdge.foreach{
+            fe => if (edge == fe)
+              self.foreground = Color.BLUE
+              focusedLabel = Some(self)
+          }
           listenTo(mouse.clicks)
           reactions += {
             case mc @ MouseClicked(_,_,_,_,_) =>
@@ -239,8 +257,12 @@ class ConstraintViolationExplorer
                 }
                 Swing.onEDT(menu.show(this.peer, evt.getX, evt.getY))
               }
-              else if(evt.getClickCount > 1)
+              else if(evt.getClickCount > 1) {
+                self.foreground = Color.BLUE
+                focusedLabel foreach (_.foreground = Color.BLACK)
+                focusedLabel = Some(self)
                 bus publish GraphFocus(graph, edge)
+              }
           }
         }
     }
@@ -248,7 +270,7 @@ class ConstraintViolationExplorer
     violationListPane.repaint()
 
   }
-  updateViolationListPane(allViolations)
+  updateViolationListPane()
 }
 
 

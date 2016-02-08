@@ -6,6 +6,34 @@ import scala.language.implicitConversions
 
 object FileHelper {
 
+  implicit class FileOps(val f : File) extends AnyVal {
+    def \(child : String) : File =
+      new File(f.getAbsolutePath + File.separator + child)
+  }
+
+  object FileOption {
+    implicit def fileOptionToOptionFile(fo : FileOption) : Option[File] =
+      fo.get
+  }
+
+  class FileOption(private [this] var sf : Option[File] = None) {
+
+    def this(f : File) = this(Some(f))
+
+    def get = sf
+    def ! = sf.get
+    def set(sf : Option[File]) =
+      sf match {
+        case None => ()
+        case Some(f) => val fc = f.getCanonicalFile
+          this.sf =
+            if(fc.exists()) Some(fc)
+            else None
+      }
+
+    def toOption = sf
+  }
+
   implicit def string2file(filePath : String) : File = new File(filePath)
 
   def fileLines(file: File, keepEmptyLines: Boolean = false): List[String] = {

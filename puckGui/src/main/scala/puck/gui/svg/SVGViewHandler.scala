@@ -27,10 +27,9 @@ class SVGViewHandler
 
   def switchView(mainPanel: PuckMainPanel, treeIcons: DGTreeIcons) : Unit = {
     this deafTo mainPanel.control.Bus
-    val tvh = new TreeViewHandler(mainPanel, treeIcons)
-    mainPanel.viewHandler = tvh
-    tvh.update(mainPanel.control.graph)
-    mainPanel.revalidate()
+    mainPanel.viewHandler = new TreeViewHandler(mainPanel, treeIcons)
+//    mainPanel.revalidate()
+    mainPanel.control.Bus publish GraphUpdate(mainPanel.control.graph)
   }
 
   this listenTo mainPanel.control.Bus

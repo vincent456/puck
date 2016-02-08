@@ -1,0 +1,7 @@
+<puck-config>
+    <src>src</src>
+    <lib>lib</lib>
+    <out>out</out>
+    <decouple>decouple.wld</decouple>
+    <java-rt>/home/lorilan/jre1.6.0_45/lib/rt.jar</java-rt>
+</puck-config>
