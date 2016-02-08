@@ -40,11 +40,12 @@ object ShowDG extends ShowConstraints{
           builder append s"$genName<", targs :: tl :: lt.tail )
 
       case Covariant(t) :: tl =>
-        tailRecTypeCord(dg, "" :: sep, "" :: end,
-          builder append s"+", List(t) :: tl :: lt.tail )
+        tailRecTypeCord(dg,  sep,  end,
+          builder append s"+", (t :: tl) :: lt.tail )
       case Contravariant(t) :: tl =>
-        tailRecTypeCord(dg, "" :: sep, "" :: end,
-          builder append s"-", List(t) :: tl :: lt.tail )
+        tailRecTypeCord(dg,  sep,  end,
+          builder append s"-", (t :: tl) :: lt.tail )
+
     }
 
   implicit def typeCord : CordBuilder[Type] = (dg, t) =>

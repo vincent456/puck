@@ -59,6 +59,9 @@ aspect NodeFactory  {
 		return throwBuildDGNodeError();
 	}
 
+	public int ArrayDecl.buildDGNode(JastaddGraphBuilder builder){
+		return builder.arrayTypeId();
+	}
 
     public int ParClassDecl.buildDGNode(JastaddGraphBuilder builder){
         return genericDecl().buildDGNode(builder);

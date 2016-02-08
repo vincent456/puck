@@ -15,7 +15,7 @@ object FrontVars {
 
   val workspace = s"$root/$system/puck_test"
   //val workspace = s"/home/lorilan/projects/constraintsSolver/test_resources/distrib/bridge/hannemann_simplified"
-  //val workspace = s"/home/lorilan/test/anonymousClassCtor"
+  //val workspace = s"/home/lorilan/test/move"
 }
 
 object Front extends PuckApplication(

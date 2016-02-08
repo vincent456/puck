@@ -174,32 +174,37 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
     }
 
 
-  def getType(a : Access) : Type = a match {
-    case aa : ArrayTypeAccess =>
-      ParameterizedType(arrayTypeId, List(getType(aa.getAccess)))
+  def getType(a : Access) : Type = {
+    a.lock()
+    a match {
+      case aa: ArrayTypeAccess =>
+        ParameterizedType(arrayTypeId, List(getType(aa.getAccess)))
 
-    case ta : TypeAccess  =>
-      NamedType(getNode(ta.decl()))
-    case d : Dot =>
-      if(d.isRightRotated)
-        d.rotateLeft()
-      getType(d.getRight)
-    case pta : ParTypeAccess =>
-      val genId = getNode(pta.genericDecl())
-      val args : List[Type] =
-        Range.inclusive(pta.getNumTypeArgument-1, 0, -1).foldLeft(List[Type]()){
-          case (l, i) =>
-            getType(pta.getTypeArgument(i)) :: l
-        }
-      ParameterizedType(genId, args)
-    case we : WildcardExtends =>
-      Covariant(getType(we.getAccess))
-    case ws : WildcardSuper =>
-      Covariant(getType(ws.getAccess))
-    case w : Wildcard =>
-      NamedType(getNode(w.`type`()))
-    case _ => throw new Error(s"getType, ${a.compilationUnit().pathName()} line ${a.location()} " +
-      s"access.getClass == ${a.getClass}")
+      case ta: TypeAccess =>
+        NamedType(getNode(ta.decl()))
+      case d: Dot =>
+        if (d.isRightRotated)
+          d.rotateLeft()
+        getType(d.getRight)
+
+      case pta: ParTypeAccess =>
+        val genId = getNode(pta.genericDecl())
+        val args: List[Type] =
+          Range.inclusive(pta.getNumTypeArgument - 1, 0, -1).foldLeft(List[Type]()) {
+            case (l, i) =>
+              getType(pta.getTypeArgument(i)) :: l
+          }
+        ParameterizedType(genId, args)
+
+      case we: WildcardExtends =>
+        Covariant(getType(we.getAccess))
+      case ws: WildcardSuper =>
+        Covariant(getType(ws.getAccess))
+      case w: Wildcard =>
+        NamedType(getNode(w.`type`()))
+      case _ => throw new Error(s"getType, ${a.compilationUnit().pathName()} line ${a.location()} " +
+        s"access.getClass == ${a.getClass}")
+    }
   }
 
 //  ta.decl() match {

@@ -395,7 +395,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
     }
     scenario("array usage"){
       val _ = new ScenarioFactory(s"$examplesPath/ArrayUsage.java") {
-        val arrayUser = fullName2id("p.A.arrayUser(A[])")
+        val arrayUser = fullName2id("p.A.arrayUser(A[]).Definition")
         val m = fullName2id("p.A.m()")
         val i = fullName2id("p.A.i")
         val array = fullName2id("@primitive.[]")
@@ -463,24 +463,29 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val actualTypeParam = fullName2id("p.A")
         val actualTypeParamMethod = fullName2id("p.A.m()")
 
-        val fieldDeclarant = fullName2id("p.B.la")
+        val field = fullName2id("p.B.la")
 
         val userClass = fullName2id("p.B")
-        val userMethodDecl = fullName2id("p.B.mUser()")
-        val userMethodDef = getDefinition(graph, userMethodDecl)
+        val userMethodDef = fullName2id("p.B.mUser().Definition")
 
+        val genType = fullName2id("java.util.List")
         val genericMethod = fullName2id("java.util.List.get(int)")
 
-        val fieldTypeUse = graph.getUsesEdge(fieldDeclarant, actualTypeParam).value
+        val fieldGenTypeUse = graph.getUsesEdge(field, genType).value
+        val fieldParameterTypeUse = graph.getUsesEdge(field, actualTypeParam).value
         val typeMemberUse = graph.getUsesEdge(userMethodDef, actualTypeParamMethod).value
-        val parTypeUse = graph.getUsesEdge(genericMethod, actualTypeParam).value
 
+        graph.styp(field).value should be (ParameterizedType(genType, List(NamedType(actualTypeParam))))
 
-        assert( fieldTypeUse existsIn graph )
+        assert( fieldGenTypeUse existsIn graph )
+        assert( fieldParameterTypeUse existsIn graph )
         assert( typeMemberUse existsIn graph )
 
-        graph.typeMemberUsesOf(fieldTypeUse) should contain (typeMemberUse)
-        graph.typeUsesOf(typeMemberUse) should contain (parTypeUse)
+
+
+        graph.typeMemberUsesOf(fieldParameterTypeUse) should contain (typeMemberUse)
+        graph.typeUsesOf(typeMemberUse) should contain (fieldGenTypeUse)
+        graph.typeUsesOf(typeMemberUse) should contain (fieldParameterTypeUse)
 
       }
     }
