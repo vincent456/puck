@@ -11,21 +11,25 @@ object ConfigParser {
 
   import puck.util.FileHelper.FileOps
 
-  def apply(fh : FilesHandler) : Unit =
-       apply(fh, fh.workingDirectory \ "puck.cfg")
+  def apply(fh : Project) : Unit =
+       apply(fh, fh.workingDirectory \ Project.Default.config)
 
   import Utils._
 
 
-  def pathToFile(fh : FilesHandler, p : String) : File =
+  def pathToFile(fh : Project, p : String) : File =
   if(p startsWith "/") new File(p)
   else fh.workingDirectory \ p
 
-  def apply(fh : FilesHandler, config : File) : Unit = {
+  def apply(fh : Project, config : File) : Unit = {
     val n = XML.loadFile(config)
 
     (n \ "src" textOption) foreach {
       sr => fh.srcDirectory set Some(pathToFile(fh, sr))
+    }
+
+    (n \ "lib" textOption) foreach {
+      sr => fh.libDirectory set Some(pathToFile(fh, sr))
     }
 
     (n \ "out" textOption)foreach {

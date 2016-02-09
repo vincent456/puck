@@ -4,16 +4,16 @@ import java.awt.Dimension
 import javax.swing.UIManager
 
 import puck.graph.GraphUtils
-import puck.graph.io.FilesHandler
+import puck.graph.io.Project
 import puck.gui.PuckMainPanel
 import puck.gui.explorer.DGTreeIcons
 
 import scala.swing.{MainFrame, SwingApplication}
 
 class PuckApplication
-  ( fh : FilesHandler,
-    gu : GraphUtils,
-    treeIcons : DGTreeIcons)
+  (fh : Project,
+   gu : GraphUtils,
+   treeIcons : DGTreeIcons)
   extends SwingApplication{
 
   def startup(args: Array[String]) : Unit = {

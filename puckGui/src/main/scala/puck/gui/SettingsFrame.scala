@@ -1,12 +1,12 @@
 package puck.gui
 
-import puck.graph.io.FilesHandler
+import puck.graph.io.Project
 import puck.util.FileHelper.FileOption
 
 import scala.swing._
 import java.awt.Dimension
 
-class SettingsFrame(filesHandler : FilesHandler) extends Frame{
+class SettingsFrame(filesHandler : Project) extends Frame{
 
   title = "Settings"
   size = new Dimension(300, 150)
@@ -53,8 +53,8 @@ class SettingsFrame(filesHandler : FilesHandler) extends Frame{
       "Select the file containing the decoupling constraints",
       filesHandler.decouple)
 
-    contents += makeFileSelectionLine("Jar list file",
-      "Select a file containing a list of the jar libraries required by the analysed program",
-      filesHandler.jarListFile)
+//    contents += makeFileSelectionLine("Jar list file",
+//      "Select a file containing a list of the jar libraries required by the analysed program",
+//      filesHandler.jarListFile)
   }
 }

@@ -2,7 +2,7 @@ package puck
 
 import puck.graph.DependencyGraph
 import puck.graph.comparison.Mapping
-import puck.graph.io.{FilesHandler, DG2AST}
+import puck.graph.io.{Project, DG2AST}
 import puck.util.PuckLogger
 import sbt.IO
 
@@ -13,9 +13,9 @@ object FilesHandlerDG2ASTControllerOps {
 
 
   def deleteOutDirAndapplyOnCode
-  ( dg2ast : DG2AST,
-    filesHandler : FilesHandler,
-    graph : DependencyGraph)(implicit logger : PuckLogger) : Unit = {
+  (dg2ast : DG2AST,
+   filesHandler : Project,
+   graph : DependencyGraph)(implicit logger : PuckLogger) : Unit = {
 
     logger.writeln("Aplying recording on AST")
     dg2ast(graph)/*(new PuckFileLogger(_ => true, new File("/tmp/pucklog")))*/
@@ -31,8 +31,8 @@ object FilesHandlerDG2ASTControllerOps {
   }
 
   def compareOutputGraph
-  ( filesHandler : FilesHandler,
-    graph : DependencyGraph)(implicit logger : PuckLogger) : Unit = {
+  (filesHandler : Project,
+   graph : DependencyGraph)(implicit logger : PuckLogger) : Unit = {
     val outfh = filesHandler.fromOutDir
     logger.writeln("Loading output graph from code")
     val outdg2ast = outfh.loadGraph()

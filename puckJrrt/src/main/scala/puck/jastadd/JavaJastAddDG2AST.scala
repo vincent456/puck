@@ -1,13 +1,13 @@
 package puck.jastadd
 
-import java.io.{File, FileReader}
+import java.io.File
 import java.util.NoSuchElementException
 
 import puck.PuckError
 import puck.graph.ShowDG._
 import puck.graph._
-import puck.graph.constraints.{ConstraintsMaps, ConstraintsParser, SupertypeAbstraction}
-import puck.graph.io.{DG2AST, DG2ASTBuilder}
+import puck.graph.constraints.SupertypeAbstraction
+import puck.graph.io.{Project, DG2AST, DG2ASTBuilder}
 import puck.graph.transformations._
 import puck.jastadd.concretize._
 import puck.javaGraph.nodeKind._
@@ -43,25 +43,29 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
     //    dg2ast.initialGraph.edges.println
   }
 
+  /*
+
+      srcDirectory !,
+      outDirectory.toOption,
+      jarListFile,
+      javaRuntime.toOption
+   */
+
   def apply
-  ( srcDirectory : File,
-    outDirectory : Option[File],
-    jarListFile : Option[File],
-    javaRuntime : Option[File],
-    logger : PuckLogger,
-    ll : puck.LoadingListener = null
+  (fh : Project,
+   logger : PuckLogger,
+   ll : puck.LoadingListener = null
     ) : JavaJastAddDG2AST = {
     import puck.util.FileHelper.{fileLines, findAllFiles}
 
-      val srcSuffix = ".java"
-      val sources = findAllFiles(srcDirectory, srcSuffix, outDirectory map (_.getName))
-      val jars = findAllFiles(srcDirectory, ".jar", outDirectory map (_.getName))
-      val jarsFromList =
-        jarListFile map (fileLines(_, keepEmptyLines = false)) getOrElse List()
+    val srcDirectory = fh.srcDirectory getOrElse fh.workingDirectory
 
-      fromFiles(sources,
-        jarsFromList ++: jars,
-        javaRuntime.toList map (_.getCanonicalPath),
+    val sources : List[String] = findAllFiles(srcDirectory, ".java", fh.outDirectory map (_.getName))
+    val jars : List[String] =
+      fh.libDirectory map (findAllFiles(_, ".jar", fh.outDirectory map (_.getName))) getOrElse List()
+
+      fromFiles(sources, jars,
+        fh.javaRuntime.toList map (_.getCanonicalPath),
         logger, ll)
 
   }

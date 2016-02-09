@@ -17,9 +17,9 @@ import scalaz.{\/-, -\/}
 
 
 class PuckControl
-( logger0 : PuckLogger,
-  val filesHandler : FilesHandler,
-  val graphUtils: GraphUtils)
+(logger0 : PuckLogger,
+ val filesHandler : Project,
+ val graphUtils: GraphUtils)
   extends Publisher {
 
   val progressBar = new ProgressBar {

@@ -1,9 +1,8 @@
 package puck.gui
 
-import puck.graph.{DependencyGraph, GraphUtils}
-import puck.graph.io.FilesHandler
-import puck.gui.explorer.{GraphExplorer, NodeInfosPanel, DGTreeIcons, ConstraintViolationExplorer}
-import puck.gui.menus.EdgeMenu
+import puck.graph.GraphUtils
+import puck.graph.io.Project
+import puck.gui.explorer.{NodeInfosPanel, DGTreeIcons}
 
 import scala.swing._
 import java.awt.Dimension
@@ -20,7 +19,7 @@ abstract class ViewHandler {
   def switchView(mainPanel: PuckMainPanel, treeIcons: DGTreeIcons) : Unit
 }
 
-class PuckMainPanel(filesHandler: FilesHandler,
+class PuckMainPanel(filesHandler: Project,
                     graphUtils: GraphUtils,
                     val treeIcons : DGTreeIcons)
   extends SplitPane(Orientation.Horizontal) {

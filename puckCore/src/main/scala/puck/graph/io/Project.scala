@@ -11,21 +11,20 @@ import FileHelper._
 
 import scala.sys.process.Process
 
-object FilesHandler{
+object Project{
   object Default{
+    val config : String = "puck.xml"
     val srcDirName : String = "src"
     val outDirName : String = "out"
-    val decoupleFileName: String = "decouple.pl"
-    val jarListFileName: String = "jar.list"
+    val libDirName : String = "lib"
+    val decoupleFileName: String = "decouple.wld"
     val logFileName: String = outDirName + File.separator + "graph_solving.log"
   }
 }
+import Project.Default
 
 trait DG2ASTBuilder{
-  def apply(srcDirectory : File,
-            outDirectory : Option[File],
-            jarListFile : Option[File],
-            javaRuntime : Option[File],
+  def apply(fh : Project,
             logger : PuckLogger,
             ll : LoadingListener = null) : DG2AST
 }
@@ -39,15 +38,15 @@ trait DG2AST {
   def code(graph : DependencyGraph, id : NodeId) : String
 }
 
-class FilesHandler
+class Project
 ( val workingDirectory : File,
   val srcSuffix : String,
   val dG2ASTBuilder: DG2ASTBuilder){
 
 
 
-  def fromOutDir : FilesHandler =
-    new FilesHandler(outDirectory !, srcSuffix, dG2ASTBuilder)
+  def fromOutDir : Project =
+    new Project(outDirectory !, srcSuffix, dG2ASTBuilder)
 
 
   import PuckLog.defaultVerbosity
@@ -60,20 +59,18 @@ class FilesHandler
 
   var graphBuilder : GraphBuilder = _
 
+
+  import puck.util.FileHelper.FileOps
   def setDefaultValues(projectRoot : File): Unit = {
-    def defaultFile(fileName: String) =
-      Some(new File( projectRoot + File.separator + fileName))
 
-    import FilesHandler.Default
-
-    val Some(od) = defaultFile(Default.outDirName)
+    val Some(od) = Some(projectRoot \ Default.outDirName)
     if(!od.exists()){
       od.mkdir()
     }
+
     outDirectory set Some(od)
-    jarListFile set defaultFile(Default.jarListFileName)
-    decouple set defaultFile(Default.decoupleFileName)
-    logFile set defaultFile(Default.logFileName)
+    decouple set Some(projectRoot \ Default.decoupleFileName)
+    logFile set Some(projectRoot \ Default.logFileName)
   }
 
   def setWorkingDirectory(dir : File) : Unit = {
@@ -89,7 +86,7 @@ class FilesHandler
 
   val outDirectory = new FileOption()
 
-  val jarListFile = new FileOption()
+  val libDirectory = new FileOption()
 
   val decouple = new FileOption()
 
@@ -103,7 +100,7 @@ class FilesHandler
   //val javaRuntime = new FileOption(new File("/home/lorilan/jre1.5.0_22/lib/rt.jar"))
   //val javaRuntime = new FileOption(new File("/home/lorilan/jre1.6.0_45/lib/rt.jar"))
 
-  if(workingDirectory \ "puck.xml" exists())
+  if(workingDirectory \ Default.config exists())
     ConfigParser(this)
   else
     setWorkingDirectory(workingDirectory)
@@ -111,12 +108,7 @@ class FilesHandler
   def loadGraph
   ( ll : Option[LoadingListener] = None)
   ( implicit logger : PuckLogger) : DG2AST = {
-     dG2ASTBuilder(
-      srcDirectory !,
-      outDirectory.toOption,
-      jarListFile,
-      javaRuntime.toOption,
-      logger, ll.orNull)
+     dG2ASTBuilder(this, logger, ll.orNull)
   }
 
   def parseConstraints
