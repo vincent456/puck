@@ -160,7 +160,7 @@ object PuckJrrtBuild {
         ++: cfgFiles.getPaths.sorted
         ++: jrrtUtil.getPaths.sorted
         ++: jrrtOthers.getPaths
-        ++: puckFiles.getPaths)
+        ++: puckFiles.getPaths.sorted)
 
       println("generating ast and weaving aspects")
 
