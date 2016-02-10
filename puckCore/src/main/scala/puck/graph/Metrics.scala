@@ -32,31 +32,51 @@ object Metrics {
     }
 
 
-  def provides(graph: DependencyGraph, provider: NodeId, other: NodeId) = {
-    val these = graph.subTree(provider)
-    val others = graph.subTree(other)
+  def provides(graph: DependencyGraph, provider: NodeId, other: NodeId) : Boolean =
+    provides(graph, graph.subTree(provider), other, graph.subTree(other))
 
+
+  def provides(graph: DependencyGraph,
+                these: Seq[NodeId],
+                othersRoot : NodeId, others: Seq[NodeId]) : Boolean =
     these.exists { t =>
       others.exists { o =>
         graph.uses(o, t) &&
-          !(graph.contains_*(other, o) && graph.contains_*(other, t))
+          !(graph.contains_*(othersRoot, o) && graph.contains_*(othersRoot, t))
       }
     }
-  }
 
-  private def connection(graph: DependencyGraph, node: DGNode, p: DGNode => Boolean) = {
+
+  private def connection(graph: DependencyGraph, node: DGNode, p: DGNode => Boolean) =
     graph.nodes.foldLeft(Set[NodeId]()) { (acc, n) =>
       if (n.id == node.id || n.kind.kindType != node.kind.kindType) acc
       else if (p(n)) acc + n.id
       else acc
     }
-  }
+
 
   def providers(graph: DependencyGraph, id: NodeId): Set[NodeId] =
     connection(graph, graph.getNode(id), n => provides(graph, n.id, id))
 
   def clients(graph: DependencyGraph, id: NodeId): Set[NodeId] =
     connection(graph, graph.getNode(id), n => provides(graph, id, n.id))
+
+
+  def providersAndClients(graph: DependencyGraph, id : NodeId) : (Set[NodeId], Set[NodeId]) = {
+    val thisNode = graph.getNode(id)
+    val thisSubtree = graph.subTree(id)
+    graph.nodes.foldLeft((Set[NodeId](), Set[NodeId]())) {
+      case (acc @ (ps, cs), otherNode) =>
+      if (otherNode.id == thisNode.id || otherNode.kind.kindType != thisNode.kind.kindType) acc
+      else {
+        val otherSubtree = graph.subTree(otherNode.id)
+        if (provides(graph, otherSubtree, thisNode.id, thisSubtree)) (ps + otherNode.id, cs)
+        else if (provides(graph, thisSubtree, otherNode.id, otherSubtree)) (ps, cs + otherNode.id)
+        else acc
+      }
+
+    }
+  }
 
   def relativeCohesion(graph: DependencyGraph, userTree: NodeId, candidate: NodeId): Double = {
     val usedElts = outgoingDependencies(graph, userTree).map(_.used)
@@ -69,11 +89,11 @@ object Metrics {
   }
 
   def cohesion(graph: DependencyGraph, root: NodeId): Double =
-    cohesion0(internalDependencies(graph, root).size,
+    cohesion(internalDependencies(graph, root).size,
       outgoingDependencies(graph, root).size,
       incomingDependencies(graph, root).size)
 
-  def cohesion0(internalDcies : Int, outgoingDcies : Int, incomingDcies : Int): Double =
+  def cohesion(internalDcies : Int, outgoingDcies : Int, incomingDcies : Int): Double =
     internalDcies.toDouble / (outgoingDcies + incomingDcies + internalDcies).toDouble
 
 

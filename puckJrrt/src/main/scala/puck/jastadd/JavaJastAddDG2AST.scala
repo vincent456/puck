@@ -18,13 +18,14 @@ import org.extendj.{ast => AST}
 object JavaJastAddDG2AST extends DG2ASTBuilder {
 
   def fromFiles(sources: List[String],
+                sourcepaths : List[String],
                 jars: List[String],
                 bootJars : List[String],
                 logger : PuckLogger,
                 ll : puck.LoadingListener): JavaJastAddDG2AST = {
     val sProg = puck.util.Time.time(logger, defaultVerbosity) {
       logger.writeln("Compiling sources ...")
-      CompileHelper(sources, jars, bootJars)
+      CompileHelper(sources, sourcepaths, jars, bootJars)
     }
     puck.util.Time.time(logger, defaultVerbosity) {
       logger.writeln("Building Access Graph ...")
@@ -56,15 +57,18 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
    logger : PuckLogger,
    ll : puck.LoadingListener = null
     ) : JavaJastAddDG2AST = {
-    import puck.util.FileHelper.{fileLines, findAllFiles}
+    import puck.util.FileHelper.findAllFiles
 
     val srcDirectory = fh.srcDirectory getOrElse fh.workingDirectory
 
-    val sources : List[String] = findAllFiles(srcDirectory, ".java", fh.outDirectory map (_.getName))
+    val sources : List[String] = findAllFiles(srcDirectory, ".java", fh.outDirectory map (_.getPath))
     val jars : List[String] =
-      fh.libDirectory map (findAllFiles(_, ".jar", fh.outDirectory map (_.getName))) getOrElse List()
+      fh.libDirectory map (findAllFiles(_, ".jar", fh.outDirectory map (_.getPath))) getOrElse List()
 
-      fromFiles(sources, jars,
+    val sourcePath : List[String] =
+      fh.sourcepath map (f => List(f.getPath) ) getOrElse List()
+
+      fromFiles(sources, sourcePath, jars,
         fh.javaRuntime.toList map (_.getCanonicalPath),
         logger, ll)
 

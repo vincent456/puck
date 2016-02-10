@@ -1,6 +1,10 @@
 <puck-config>
+    <!-- root of source where all .java will be searched -->
     <src>src</src>
+    <!-- root of lib where all .jar will be searched -->
     <lib>lib</lib>
+    <!-- directory which will be passed as such as sourcepath compiler argument  -->
+    <sourcepath>freemind</sourcepath>
     <out>out</out>
     <decouple>decouple.wld</decouple>
     <java-rt>/home/lorilan/jre1.6.0_45/lib/rt.jar</java-rt>

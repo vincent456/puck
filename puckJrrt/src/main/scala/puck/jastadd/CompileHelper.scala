@@ -13,8 +13,11 @@ import org.extendj.parser
 
 object CompileHelper {
 
-  def apply(sources: List[String], jars: List[String], bootJars : List[String]): Option[Program] = {
-      val arglist = createArglist(sources, jars, List(), bootJars)
+  def apply(sources: List[String],
+            sourcepaths:List[String],
+            jars: List[String],
+            bootJars : List[String]): Option[Program] = {
+      val arglist = createArglist(sources, sourcepaths, jars, bootJars)
 
       val f = new Frontend {
 //        protected override def processErrors(errors: java.util.Collection[Problem], unit: CompilationUnit): Unit =  {
@@ -68,11 +71,12 @@ object CompileHelper {
   }
 
   def compileSrcsAndbuildGraph(sources: List[String],
-                 jars: List[String],
-                 bootJars : List[String],
-                 decouple : Option[java.io.File] = None) :
+                               sourcepaths:List[String],
+                               jars: List[String],
+                               bootJars : List[String],
+                               decouple : Option[java.io.File] = None) :
     (Program, DependencyGraph, Seq[Transformation], Map[String, NodeId], Map[NodeId, ASTNodeLink]) =
-    this.apply(sources, jars, bootJars) match {
+    this.apply(sources, sourcepaths, jars, bootJars) match {
       case None => throw new DGBuildingError("Compilation error, no AST generated")
       case Some(p) => buildGraph(p)
     }
@@ -80,8 +84,8 @@ object CompileHelper {
 
 
   private[puck] def createArglist(sources: List[String],
+                                  sourcepaths:List[String],
                                   jars: List[String],
-                                  srcdirs:List[String],
                                   bootClassPath : List[String]): Array[String] = {
 
     def prepend(argName : String, argValue : List[String], accu : List[String]) : List[String] =
@@ -90,7 +94,8 @@ object CompileHelper {
     //else argName :: argValue.mkString("", File.pathSeparator, File.pathSeparator + ".") :: accu
 
     val args0 = prepend("-classpath", jars, sources)
-    val args1 = prepend("-sourcepath", srcdirs, args0)
+    val args1 = prepend("-sourcepath", sourcepaths, args0)
+    println(sourcepaths)
     prepend("-bootclasspath", bootClassPath, args1).toArray
   }
 

@@ -7,6 +7,7 @@ import javax.swing.{JTree, JPopupMenu}
 import puck.graph._
 import ShowDG._
 import puck.gui.menus.EdgeMenu
+import puck.util.PuckLog
 import scala.swing._
 import scala.swing.event.MouseClicked
 import puck.gui._
@@ -81,15 +82,26 @@ class NodeInfosPanel
           case _ => ""
         }
 
+      val v : PuckLog.Verbosity = (PuckLog.NoSpecialContext, PuckLog.Info)
+      import puck.util.Time.time
       contents += new Label(s"${node.kind} ${graph.fullName(node.id)} : " +
         (graph, graph.structuredType(node.id)).shows + s"(${node.id})")
-      val providers = Metrics.providers(graph, node.id)
-      val clients = Metrics.clients(graph, node.id)
-      val internals = Metrics.internalDependencies(graph, node.id).size
-      val outgoings = Metrics.outgoingDependencies(graph, node.id).size
-      val incomings = Metrics.incomingDependencies(graph, node.id).size
+//      control.logger writeln "computing providers"
+//      val providers = time(control.logger, v)(Metrics.providers(graph, node.id))
+//      control.logger writeln "computing clients"
+//      val clients = time(control.logger, v)(Metrics.clients(graph, node.id))
+//
+      control.logger writeln "computing providers and clients"
+      val (providers, clients) = time(control.logger, v)(Metrics.providersAndClients(graph, node.id))
+
+      control.logger writeln "computing internal dependencies"
+      val internals = time(control.logger, v)(Metrics.internalDependencies(graph, node.id).size)
+      control.logger writeln "computing outgoing dependencies"
+      val outgoings = time(control.logger, v)(Metrics.outgoingDependencies(graph, node.id).size)
+      control.logger writeln "computing incoming dependencies"
+      val incomings = time(control.logger, v)(Metrics.incomingDependencies(graph, node.id).size)
       val coupling = Metrics.coupling0(providers.size, clients.size, internals, outgoings, incomings)
-      val cohesion = Metrics.cohesion0(internals, outgoings, incomings)
+      val cohesion = Metrics.cohesion(internals, outgoings, incomings)
 
       def packages(ids: Set[NodeId]) =
         ids.foldLeft(Set[NodeId]())((s, id) =>

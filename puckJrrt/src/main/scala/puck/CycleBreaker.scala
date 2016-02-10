@@ -21,7 +21,7 @@ object CycleBreaker {
       val fh = JavaFilesHandler()
       fh.loadGraph().asInstanceOf[JavaJastAddDG2AST]
     }
-    else JavaJastAddDG2AST.fromFiles(args.toList, List(), List(), logger, null)
+    else JavaJastAddDG2AST.fromFiles(args.toList, List(), List(), List(), logger, null)
 
     val n = dg2ast.nodesByName("screen.WelcomeCapital.printCapital(String)")
 

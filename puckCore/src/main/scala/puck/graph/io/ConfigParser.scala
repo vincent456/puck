@@ -32,6 +32,14 @@ object ConfigParser {
       sr => fh.libDirectory set Some(pathToFile(fh, sr))
     }
 
+    (n \ "sourcepath" textOption) foreach {
+      sr =>
+        println("setting sourcepath to "+Some(pathToFile(fh, sr)))
+        fh.sourcepath set Some(pathToFile(fh, sr))
+    }
+
+    println("sourcepath = " + fh.sourcepath)
+
     (n \ "out" textOption)foreach {
       sr => fh.outDirectory set Some(pathToFile(fh, sr))
     }

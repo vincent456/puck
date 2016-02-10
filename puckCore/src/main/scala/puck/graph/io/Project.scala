@@ -82,6 +82,8 @@ class Project
   }
 
 
+  val sourcepath = new FileOption()
+
   val srcDirectory = new FileOption()
 
   val outDirectory = new FileOption()

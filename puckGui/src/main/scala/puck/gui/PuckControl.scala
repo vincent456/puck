@@ -73,8 +73,9 @@ class PuckControl
       logger.writeln("Loading constraints ...")
 
       filesHandler.parseConstraints(dg2ast) match {
-        case None if setInitialGraph =>
-          graphStack.setInitialGraph(dg2ast.initialGraph)
+        case None =>
+          if(setInitialGraph)
+            graphStack.setInitialGraph(dg2ast.initialGraph)
         case Some(cm) =>
           val g = dg2ast.initialGraph.newGraph(constraints = cm)
           logger.writeln(" done:")

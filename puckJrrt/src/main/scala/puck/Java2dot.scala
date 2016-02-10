@@ -32,7 +32,7 @@ object Java2dot {
     val srcs = args.tail.tail.toList
 
     val (_, dg , _, fullName2id, _) =
-      CompileHelper.compileSrcsAndbuildGraph(sources = srcs, jars = List(), bootJars = List(), decouple = Some(decouple))
+      CompileHelper.compileSrcsAndbuildGraph(sources = srcs, sourcepaths = List(), jars = List(), bootJars = List(), decouple = Some(decouple))
 
     val cm = ConstraintsParser(fullName2id, new FileReader(decouple))
 

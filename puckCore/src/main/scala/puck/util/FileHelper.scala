@@ -18,6 +18,8 @@ object FileHelper {
 
   class FileOption(private [this] var sf : Option[File] = None) {
 
+    override def toString = s"FileOption(${sf.toString})"
+
     def this(f : File) = this(Some(f))
 
     def get = sf
