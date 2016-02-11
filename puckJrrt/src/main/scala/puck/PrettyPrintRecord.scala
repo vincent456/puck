@@ -1,12 +1,10 @@
 package puck
 
 import java.io.File
-import jastadd.JavaFilesHandler
 import puck.graph.ShowDG
 import puck.graph.transformations.Recording
-import puck.javaGraph.JGraphUtils
 import puck.util.PuckSystemLogger
-
+import jastadd._
 //object PrettyPrintRecord {
 //  def main (args: Array[String]) : Unit = {
 //
@@ -26,7 +24,7 @@ object PrettyPrintRecord {
     val recFileName = args.head
     val recFile = new File(recFileName)
 
-    val fh = JavaFilesHandler()
+    val fh = JavaProject()
     implicit val logger = new PuckSystemLogger(_ => true)
 
     val dg2ast = fh.loadGraph()

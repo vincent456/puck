@@ -15,7 +15,7 @@ package object javaGraph {
   }
 
 
-  object JGraphUtils extends GraphUtils {
+  abstract class JGraphUtils extends GraphUtils {
 
     val nodeKindKnowledge : NodeKindKnowledge = JavaNodeKind
 

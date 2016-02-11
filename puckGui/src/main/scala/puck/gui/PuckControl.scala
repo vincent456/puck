@@ -2,7 +2,8 @@ package puck.gui
 
 import java.io.File
 
-import puck.{FilesHandlerDG2ASTControllerOps, StackListener, GraphStack, LoadingListener}
+import puck.graph.io.Project. Default
+import puck.{FilesHandlerDG2ASTControllerOps, GraphStack, LoadingListener}
 import puck.graph._
 import puck.graph.io._
 
@@ -18,7 +19,6 @@ import scalaz.{\/-, -\/}
 
 class PuckControl
 (logger0 : PuckLogger,
- val filesHandler : Project,
  val graphUtils: GraphUtils)
   extends Publisher {
 
@@ -34,8 +34,26 @@ class PuckControl
   this listenTo Bus
 
   implicit val logger: PuckLogger = logger0
+
+  var project : Project = _
   var dg2ast: DG2AST = _
   val graphStack: GraphStack = new GraphStack(Bus)
+
+
+  loadConf(new File("."))
+
+  import puck.util.FileHelper.FileOps
+
+  def loadConf(file : File) : Unit = {
+    val fconf = file \ Default.configFile
+    project = new Project(
+      if (fconf.exists()) ConfigParser(fconf)
+      else {
+        logger writeln "Creating default puck.xml"
+        ConfigParser.createDefault(fconf)
+      },
+      graphUtils.dg2astBuilder)
+  }
 
   def graph: DependencyGraph = graphStack.graph
 
@@ -50,8 +68,11 @@ class PuckControl
   def loadCodeAndConstraints() = Future {
     progressBar.visible = true
     progressBar.value = 0
+    if(project.fileList(Project.Keys.srcs).isEmpty) {
+      throw new Error("No sources detected")
+    }
 
-    dg2ast = filesHandler.loadGraph(Some(new LoadingListener {
+    dg2ast = project.loadGraph(Some(new LoadingListener {
       override def update(loading: Double): Unit =
         progressBar.value = (loading * 100).toInt
     }))
@@ -65,14 +86,17 @@ class PuckControl
     case Success(_) => loadConstraints(setInitialGraph = true)
     case Failure(exc) =>
       progressBar.visible = false
-      exc.printStackTrace()
+      if(exc.getCause == null)
+        logger writeln exc.getMessage
+      else
+        logger writeln exc.getCause.getMessage
   }
 
 
   def loadConstraints(setInitialGraph : Boolean = false) : Unit = {
       logger.writeln("Loading constraints ...")
 
-      filesHandler.parseConstraints(dg2ast) match {
+      project.parseConstraints(dg2ast) match {
         case None =>
           if(setInitialGraph)
             graphStack.setInitialGraph(dg2ast.initialGraph)
@@ -95,7 +119,7 @@ class PuckControl
     Future {
       logger.write("generating code ...")
       dg2ast(record)
-      dg2ast.printCode(filesHandler.outDirectory !)
+      dg2ast.printCode(project.outDirectory get)
       logger.writeln(" done")
     } onComplete {
       case Success(_) => ()
@@ -163,9 +187,9 @@ class PuckControl
 
     case GenCode(compareOutput) =>
       import FilesHandlerDG2ASTControllerOps._
-      deleteOutDirAndapplyOnCode(dg2ast, filesHandler, graphStack.graph)
+      deleteOutDirAndapplyOnCode(dg2ast, project, graphStack.graph)
       if(compareOutput)
-        compareOutputGraph(filesHandler, graphStack.graph)
+        compareOutputGraph(project, graphStack.graph)
 
     case PrintCode(nodeId) =>
         logger writeln ("Code :\n" + dg2ast.code(graph, nodeId))

@@ -3,7 +3,8 @@ package puck.gui
 import java.awt.Dimension
 import java.io.File
 
-import puck.graph.io.VisibilitySet
+import puck.graph.io.Project.Default
+import puck.graph.io.{ConfigParser, Project, VisibilitySet}
 import scala.swing._
 import scala.swing.SequentialContainer.Wrapper
 
@@ -37,28 +38,31 @@ class PuckInterfacePanel
 
   preferredSize = new Dimension(leftWidth, height)
 
-  import control.filesHandler
+  import control.project
 
   def addAlwaysVisibleButtons(): Unit ={
     contents += makeButton("Settings", "To set graphviz dot path"){
-      () => val frame = new SettingsFrame(filesHandler)
+      () => val frame = new SettingsFrame(project)
         frame.visible = true
     }
 
-    contents += makeButton("Work space",
-      "Select the root directory containing the java (up to 1.5) source code you want to analyse"){
-      () => val fc = new FileChooser(filesHandler.srcDirectory !)
-        fc.title = "What directory contains your application ?"
-        fc.fileSelectionMode = FileChooser.SelectionMode.DirectoriesOnly
+    contents += makeButton("Load project",
+      "Select a workspace"){
+      () =>
+        val fc = new FileChooser(project.workspace){
+          title = "What directory contains your application ?"
+          fileSelectionMode = FileChooser.SelectionMode.DirectoriesOnly
+        }
+
         fc showDialog(null, "Select")
         val f: File = fc.selectedFile
-        if( f != null && !(f == filesHandler.srcDirectory.!)) {
-          filesHandler.setWorkingDirectory(f)
+        if( f != null && !(f == project.workspace)) {
+          control.loadConf(f)
           publisher publish LoadCodeRequest
         }
-        val sf : Option[File]= filesHandler.srcDirectory.get
+        val sf : Option[File]= project.someFile(Project.Keys.workspace)
         val path = sf map (_.getAbsolutePath) getOrElse "No directory selected"
-        publisher publish Log(s"Application directory :\n$path")
+        publisher publish Log(s"Workspace directory :\n$path")
     }
 
     contents += makeButton("(Re)load code & constraints",
@@ -134,8 +138,9 @@ class PuckInterfacePanel
         contents += new Button() {
           val b : Button = this
           action = new Action("Save refactoring plan") {
+
             def apply(): Unit = {
-              saveFile(control.filesHandler.workingDirectory, b.peer) match {
+              saveFile(control.project.workspace, b.peer) match {
                 case None => publisher publish Log("no file selected")
                 case Some(f) =>  publisher publish SaveRecord(f)
               }
@@ -147,7 +152,7 @@ class PuckInterfacePanel
           val b : Button = this
           action = new Action("Load refactoring plan") {
             def apply(): Unit = {
-              openFile(control.filesHandler.workingDirectory, b.peer) match {
+              openFile(control.project.workspace, b.peer) match {
                 case None => publisher publish Log("no file selected")
                 case Some(f) => publisher publish LoadRecord(f)
               }

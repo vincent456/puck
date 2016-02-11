@@ -19,14 +19,16 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
 
   def fromFiles(sources: List[String],
                 sourcepaths : List[String],
-                jars: List[String],
-                bootJars : List[String],
+                classpaths: List[String],
+                bootclasspaths : List[String],
                 logger : PuckLogger,
-                ll : puck.LoadingListener): JavaJastAddDG2AST = {
+                ll : puck.LoadingListener ): JavaJastAddDG2AST = {
     val sProg = puck.util.Time.time(logger, defaultVerbosity) {
       logger.writeln("Compiling sources ...")
-      CompileHelper(sources, sourcepaths, jars, bootJars)
+      CompileHelper(sources, sourcepaths, classpaths, bootclasspaths)
     }
+
+
     puck.util.Time.time(logger, defaultVerbosity) {
       logger.writeln("Building Access Graph ...")
       sProg match {
@@ -37,11 +39,6 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
       }
     }
 
-    //    import ShowDG._
-    //    import puck.util.Debug._
-    //    import scalaz.syntax.show._
-    //    (dg2ast.initialGraph, dg2ast.initialGraph.nodesIndex).println
-    //    dg2ast.initialGraph.edges.println
   }
 
   /*
@@ -53,23 +50,17 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
    */
 
   def apply
-  (fh : Project,
+  (p : Project,
    logger : PuckLogger,
    ll : puck.LoadingListener = null
     ) : JavaJastAddDG2AST = {
-    import puck.util.FileHelper.findAllFiles
 
-    val srcDirectory = fh.srcDirectory getOrElse fh.workingDirectory
+    import Project.Keys
 
-    val sources : List[String] = findAllFiles(srcDirectory, ".java", fh.outDirectory map (_.getPath))
-    val jars : List[String] =
-      fh.libDirectory map (findAllFiles(_, ".jar", fh.outDirectory map (_.getPath))) getOrElse List()
-
-    val sourcePath : List[String] =
-      fh.sourcepath map (f => List(f.getPath) ) getOrElse List()
-
-      fromFiles(sources, sourcePath, jars,
-        fh.javaRuntime.toList map (_.getCanonicalPath),
+    fromFiles(p fileList Keys.srcs,
+      p fileList Keys.sourcepaths,
+      p fileList Keys.classpath,
+      p fileList Keys.bootclasspath,
         logger, ll)
 
   }

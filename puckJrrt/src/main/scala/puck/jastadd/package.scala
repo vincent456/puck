@@ -2,17 +2,23 @@ package puck
 
 import java.io.File
 
-import puck.graph.io.Project
+import puck.graph.io.Project.Default
+import puck.graph.io.{ConfigParser, DG2ASTBuilder, Project}
+import puck.javaGraph.JGraphUtils
 
 /**
- * Created by lorilan on 03/11/15.
- */
+  * Created by lorilan on 11/02/16.
+  */
 package object jastadd {
 
-  def JavaFilesHandler(root : String) : Project = JavaFilesHandler(new File(root))
-  def JavaFilesHandler() : Project = JavaFilesHandler(new File("."))
+  import util.FileHelper.FileOps
 
-  def JavaFilesHandler(workingDirectory : java.io.File) : Project =
-    new Project(workingDirectory, ".java", JavaJastAddDG2AST)
+  def JavaProject() : Project = JavaProject(new File("."))
+  def JavaProject(f : File) : Project  =
+    new Project(ConfigParser(f \ Default.configFile), JavaJastAddDG2AST)
 
+  object ExtendJGraphUtils extends JGraphUtils {
+    val dg2astBuilder: DG2ASTBuilder = JavaJastAddDG2AST
+  }
 }
+

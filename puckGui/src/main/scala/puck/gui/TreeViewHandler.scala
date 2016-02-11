@@ -42,11 +42,13 @@ class TreeViewHandler
   def update(graph : DependencyGraph) : Unit = {
     val violations = graph.violations()
       if (violations.isEmpty) {
-        downPanel.leftComponent = new Label("0 violations !")
+        downPanel.orientation = Orientation.Horizontal
+        downPanel.leftComponent = new Label("0 violation !")
         downPanel.resizeWeight = 0
         downPanel.dividerSize = 0
       }
       else {
+        downPanel.orientation = Orientation.Vertical
         downPanel.leftComponent = new BoxPanel(Orientation.Vertical) {
           contents += new Label("Constraints Violations")
           val constraintViolationExplorer =

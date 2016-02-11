@@ -5,7 +5,7 @@ import puck.graph._
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.SupertypeAbstraction
 import puck.javaGraph.ScenarioFactory
-import puck.javaGraph.JGraphUtils.{transformationRules => Rules}
+import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
 import puck.javaGraph.nodeKind.Interface
 import puck.util.Debug
 import puck.{QuickFrame, AcceptanceSpec, Settings}

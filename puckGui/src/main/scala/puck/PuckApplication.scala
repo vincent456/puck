@@ -4,15 +4,13 @@ import java.awt.Dimension
 import javax.swing.UIManager
 
 import puck.graph.GraphUtils
-import puck.graph.io.Project
 import puck.gui.PuckMainPanel
 import puck.gui.explorer.DGTreeIcons
 
 import scala.swing.{MainFrame, SwingApplication}
 
 class PuckApplication
-  (fh : Project,
-   gu : GraphUtils,
+  (gu : GraphUtils,
    treeIcons : DGTreeIcons)
   extends SwingApplication{
 
@@ -24,8 +22,6 @@ class PuckApplication
 
   val top = new MainFrame {
     title = "Puck"
-
-    contents  = new PuckMainPanel(fh, gu, treeIcons)
-
+    contents  = new PuckMainPanel(gu, treeIcons)
   }
 }

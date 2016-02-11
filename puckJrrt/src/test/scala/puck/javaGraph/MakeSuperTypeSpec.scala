@@ -3,7 +3,7 @@ package puck.javaGraph
 import puck.graph.Type
 import puck.{Settings, AcceptanceSpec}
 
-import puck.javaGraph.JGraphUtils.{transformationRules => TR}
+import puck.jastadd.ExtendJGraphUtils.{transformationRules => TR}
 
 class MakeSuperTypeSpec extends AcceptanceSpec {
   feature("Make super type") {

@@ -6,6 +6,8 @@ object PuckLog{
 
   type Verbosity = (Kind, Level)
 
+  val verbose : Verbosity => Boolean = _ => true
+
   sealed abstract class Kind{
     def logString : String
   }

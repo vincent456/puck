@@ -20,7 +20,7 @@ object FilesHandlerDG2ASTControllerOps {
     logger.writeln("Aplying recording on AST")
     dg2ast(graph)/*(new PuckFileLogger(_ => true, new File("/tmp/pucklog")))*/
 
-    filesHandler.outDirectory.get match {
+    filesHandler.outDirectory match {
       case None => logger.writeln("no output directory : cannot print code")
       case Some(d) =>
         logger.writeln("Printing code")

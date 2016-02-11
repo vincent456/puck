@@ -1,26 +1,23 @@
 package puck
 
-import puck.javaGraph.JGraphUtils
-import jastadd.JavaFilesHandler
-object FrontVars {
-  val root = "/home/lorilan/test_cases_for_puck"
-  val system = "/jhotdraw/JHotDraw 7.0.6"
-  //val system = "/jhotdraw/jhotdraw-7.5.1"
-  //val system = "dspace-1.5.1"
+import jastadd._
+//object FrontVars {
+//  val root = "/home/lorilan/test_cases_for_puck"
+//  val system = "/jhotdraw/JHotDraw 7.0.6"
+//  //val system = "/jhotdraw/jhotdraw-7.5.1"
+//  //val system = "dspace-1.5.1"
+//
+//  //val root = "/home/lorilan/puck_svn/examples/QualitasCorpus-20130901r/Systems"
+//  //val root = "/home/lorilan/test_cases_for_puck/QualitasCorpus/Systems"
+//  //val system = "freecs/freecs-1.3.20100406"
+//  //val system = "freemind/freemind-0.9.0"
+//
+//  val workspace = s"$root/$system/puck_test"
+//  //val workspace = s"/home/lorilan/projects/constraintsSolver/test_resources/distrib/bridge/hannemann_simplified"
+//  //val workspace = s"/home/lorilan/test/move"
+//}
 
-  //val root = "/home/lorilan/puck_svn/examples/QualitasCorpus-20130901r/Systems"
-  //val root = "/home/lorilan/test_cases_for_puck/QualitasCorpus/Systems"
-  //val system = "freecs/freecs-1.3.20100406"
-  //val system = "freemind/freemind-0.9.0"
-
-  val workspace = s"$root/$system/puck_test"
-  //val workspace = s"/home/lorilan/projects/constraintsSolver/test_resources/distrib/bridge/hannemann_simplified"
-  //val workspace = s"/home/lorilan/test/move"
-}
-
-object Front extends PuckApplication(
-  JavaFilesHandler(/*FrontVars.workspace*/),
-  JGraphUtils, JavaIcons)
+object Front extends PuckApplication(ExtendJGraphUtils, JavaIcons)
 
 
 /*

@@ -13,14 +13,6 @@ import scala.swing.Publisher
   * Created by lorilan on 15/12/15.
   */
 
-trait StackListener{
-  def emptied(initialGraph: DependencyGraph) : Unit
-  def pushEvent(pushedGraph: DependencyGraph, previousHead : DependencyGraph) : Unit
-  def popEvent(poppedGraph: DependencyGraph, newHead : DependencyGraph) : Unit
-}
-
-
-
 class GraphStack(val bus : Publisher) {
 
   def graph = undoStack.head

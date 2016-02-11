@@ -9,7 +9,7 @@ import puck.graph._
 import puck.util.{LoggedEither, PuckNoopLogger, PuckFileLogger}
 import puck.{QuickFrame, Java2dot, PuckError, Settings}
 import puck.javaGraph.nodeKind.{Interface, Field, Class}
-import puck.javaGraph.JGraphUtils.{transformationRules => TR}
+import puck.jastadd.ExtendJGraphUtils.{transformationRules => TR}
 
 import scalaz.{-\/, \/-}
 

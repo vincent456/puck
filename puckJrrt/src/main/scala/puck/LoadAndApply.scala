@@ -5,18 +5,17 @@ import java.io.File
 import puck.graph.comparison.Mapping
 import puck.graph.transformations.Recording
 import puck.util.PuckSystemLogger
-import puck.jastadd.JavaFilesHandler
 import sbt.IO
-
+import jastadd._
 import Recording.RecordingOps
 object LoadAndApply {
 
   def main (args: Array[String]) : Unit = {
 
-    /*val recFileName = args.head
-    val recFile = new File(recFileName)*/
-    val recFile = new File(FrontVars.workspace + "/planB2.puck")
-    val fh = JavaFilesHandler(FrontVars.workspace)
+    val recFileName = args.head
+    val recFile = new File(recFileName)
+//    val recFile = new File(FrontVars.workspace + "/planB2.puck")
+    val fh = JavaProject()
     implicit val logger = new PuckSystemLogger(_ => true)
 
     val dg2ast = fh.loadGraph()
@@ -24,7 +23,7 @@ object LoadAndApply {
     val r = Recording.load(recFile.getAbsolutePath, dg2ast.nodesByName  )
     val g = r.redo(dg2ast.initialGraph)
 
-    val outDirectory = fh.outDirectory !
+    val outDirectory = fh.outDirectory get
 
     if(outDirectory.exists())
       IO.delete(outDirectory)
@@ -34,7 +33,7 @@ object LoadAndApply {
     dg2ast.printCode(outDirectory)
 
 
-    val fhout = JavaFilesHandler(outDirectory)
+    val fhout = JavaProject(outDirectory)
     val dg2astout = fhout.loadGraph()
 
     val gout = dg2astout.initialGraph

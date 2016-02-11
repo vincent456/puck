@@ -93,7 +93,7 @@ object FileHelper {
   def findAllFiles(suffix : String,
                    ignoredSubDir : Option[String],
                    res: List[String],
-                    f: File) : List[String] = {
+                   f: File) : List[String] = {
     
     val ignore : String => Boolean =
     ignoredSubDir match {

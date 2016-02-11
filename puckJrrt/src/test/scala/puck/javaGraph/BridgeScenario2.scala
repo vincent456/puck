@@ -17,14 +17,13 @@ import puck.graph.transformations.rules.CreateParameter
 import puck.graph.transformations.rules.CreateTypeMember
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember}
 import puck.graph._
-import puck.javaGraph.JGraphUtils._
 import puck.javaGraph.nodeKind._
 import puck.util.LoggedEither
 import puck.util.PuckFileLogger
 import puck.util.PuckNoopLogger
 import puck.util.{LoggedEither, PuckNoopLogger, PuckFileLogger}
 import puck.{QuickFrame, Java2dot, PuckError, Settings}
-import puck.javaGraph.JGraphUtils.{transformationRules => TR}
+import puck.jastadd.ExtendJGraphUtils.{transformationRules => TR}
 
 import scalaz.{-\/, \/-}
 

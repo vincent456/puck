@@ -3,7 +3,7 @@
 import puck.graph.{DGError, Write, Uses, AccessAbstraction}
 import puck.graph.constraints.SupertypeAbstraction
 import puck.javaGraph.ScenarioFactory
-import puck.javaGraph.JGraphUtils.{transformationRules => TR}
+import puck.jastadd.ExtendJGraphUtils.{transformationRules => TR}
 import puck.javaGraph.nodeKind.Interface
 import puck.{QuickFrame, AcceptanceSpec, GetDefinitionValue, Settings}
 

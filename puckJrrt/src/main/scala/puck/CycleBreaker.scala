@@ -1,14 +1,11 @@
 package puck
 
-import puck.graph.{DependencyGraph, ShowDG}
-import puck.graph.constraints.generation.CycleForbidener
-import puck.graph.constraints.search.{CouplingConstraintSolvingAllViolationsControl, CouplingConstraintSolvingControl}
+import puck.graph.io.{DG2ASTBuilder, Project}
+import puck.graph.constraints.search.CouplingConstraintSolvingControl
 import puck.jastadd._
 import puck.javaGraph.{JavaDotHelper, JGraphUtils}
 import puck.search.{SearchEngine, DepthFirstSearchStrategy}
-import puck.util.{LoggedEither, PuckLog, PuckSystemLogger}
-
-import scalaz.\/-
+import puck.util.PuckSystemLogger
 
 /**
   * Created by lorilan on 10/12/15.
@@ -17,8 +14,12 @@ object CycleBreaker {
   def main(args: Array[String]) = {
     implicit val logger = new PuckSystemLogger(_ => true)
 
+    val gu = new JGraphUtils {
+      val dg2astBuilder: DG2ASTBuilder = JavaJastAddDG2AST
+    }
+
     val dg2ast = if(args.isEmpty) {
-      val fh = JavaFilesHandler()
+      val fh = JavaProject()
       fh.loadGraph().asInstanceOf[JavaJastAddDG2AST]
     }
     else JavaJastAddDG2AST.fromFiles(args.toList, List(), List(), List(), logger, null)
@@ -29,7 +30,7 @@ object CycleBreaker {
 
     val searchControlStrategy =
           new CouplingConstraintSolvingControl(
-            JGraphUtils.transformationRules, dg2ast.initialGraph,
+            gu.transformationRules, dg2ast.initialGraph,
             dg2ast.initialGraph getConcreteNode n)
 
     val engine =

@@ -84,13 +84,13 @@ object PuckBuild extends Build {
           roots.foldLeft (Seq[(File,String)]()) {
             (acc, dir) =>
               try {
-              val fs = FileUtils.listFiles(dir, Array("scala","java"), true)
-              import scala.collection.JavaConversions._
-              fs.toSeq.foldLeft(acc) {
-                (acc0, f) =>
-                  acc0 :+(f, f.relativeTo(dir).get.toString)
+                val fs = FileUtils.listFiles(dir, Array("scala","java"), true)
+                import scala.collection.JavaConversions._
+                fs.toSeq.foldLeft(acc) {
+                  (acc0, f) =>
+                    acc0 :+(f, f.relativeTo(dir).get.toString)
 
-              }
+                }
               }
               catch {
                 case _ : IllegalArgumentException => sys.error(dir + " is not a valid directory")
@@ -161,12 +161,13 @@ object PuckBuild extends Build {
     dependsOn (puckJava % "test->test;compile->compile")
     dependsOn (puckGui % "compile->compile")
 
-    settings (mappings in Universal ++=
-      Seq((jarSources in puckCore).value -> ("lib/" + (srcJarFileName in puckCore).value),
-        (jarSources in puckGui).value -> ("lib/" + (srcJarFileName in puckGui).value),
-        jarSources.value -> ("lib/" + srcJarFileName.value)
-
-      ))
+    //pack sources with the binaries
+//    settings (mappings in Universal ++=
+//      Seq((jarSources in puckCore).value -> ("lib/" + (srcJarFileName in puckCore).value),
+//        (jarSources in puckGui).value -> ("lib/" + (srcJarFileName in puckGui).value),
+//        jarSources.value -> ("lib/" + srcJarFileName.value)
+//
+//      ))
 
     )
 

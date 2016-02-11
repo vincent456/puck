@@ -91,11 +91,9 @@ object CompileHelper {
     def prepend(argName : String, argValue : List[String], accu : List[String]) : List[String] =
       if(argValue.isEmpty) accu
       else argName :: argValue.mkString(File.pathSeparator) :: accu
-    //else argName :: argValue.mkString("", File.pathSeparator, File.pathSeparator + ".") :: accu
 
     val args0 = prepend("-classpath", jars, sources)
     val args1 = prepend("-sourcepath", sourcepaths, args0)
-    println(sourcepaths)
     prepend("-bootclasspath", bootClassPath, args1).toArray
   }
 

@@ -6,22 +6,60 @@ import java.io._
 
 import puck.graph.constraints.{ConstraintsParser, ConstraintsMaps}
 import puck.graph.transformations.Transformation
+import puck.util.HMap.StringKey
 import puck.util._
-import FileHelper._
-
-import scala.sys.process.Process
 
 object Project{
-  object Default{
-    val config : String = "puck.xml"
-    val srcDirName : String = "src"
-    val outDirName : String = "out"
-    val libDirName : String = "lib"
-    val decoupleFileName: String = "decouple.wld"
-    val logFileName: String = outDirName + File.separator + "graph_solving.log"
+
+  import HMap.StringKey
+
+  type Config = HMap[StringKey]
+  def emptyConf : Config = HMap.empty
+
+  type FileKey = StringKey[String]
+  type FileListKey = StringKey[List[String]]
+
+  object Keys {
+    val workspace : FileKey = StringKey("workspace")
+
+    val srcs : FileListKey = StringKey("src")
+    val sourcepaths : FileListKey = StringKey("sourcepath")
+    val classpath : FileListKey = StringKey("classpath")
+    val bootclasspath : FileListKey = StringKey("bootclasspath")
+
+    val out : FileKey = StringKey("out")
+    val decouple : FileKey = StringKey("decouple")
+    val log : FileKey =  StringKey("log")
+
+    val dotPath : FileKey =  StringKey("dot-path")
+    val editor : FileKey =  StringKey("editor")
+
+  }
+
+  val singleValueKeys : List[FileKey] = {
+    import Keys._
+    List(out, decouple, log)
+  }
+  val listValueKeys : List[FileListKey] = {
+    import Keys._
+    List(srcs, sourcepaths, classpath, bootclasspath)
+  }
+
+
+  def apply(seed : File, dG2ASTBuilder: DG2ASTBuilder) : Project =
+    new Project(ConfigParser(seed), dG2ASTBuilder)
+
+  object Default {
+
+    val configFile : String = "puck.xml"
+    val srcRoot : String = "src"
+    val out : String = "out"
+    val classpathRoot : String = "lib"
+    val decouple: String = "decouple.wld"
+    val log: String = out + File.separator + "log.txt"
   }
 }
-import Project.Default
+import Project._
 
 trait DG2ASTBuilder{
   def apply(fh : Project,
@@ -39,73 +77,57 @@ trait DG2AST {
 }
 
 class Project
-( val workingDirectory : File,
-  val srcSuffix : String,
-  val dG2ASTBuilder: DG2ASTBuilder){
+(var config : Project.Config,
+ val dG2ASTBuilder: DG2ASTBuilder){
 
+  def apply[T](key : StringKey[T])  : Option[T] = config get key
+  def set(k : FileKey, f : File) : Unit =
+    config = config put (k, f.getAbsolutePath)
+
+  def fileList(k : FileListKey ) : List[String] = config getOrElse (k, List())
 
 
   def fromOutDir : Project =
-    new Project(outDirectory !, srcSuffix, dG2ASTBuilder)
+    new Project(config, dG2ASTBuilder)
 
 
   import PuckLog.defaultVerbosity
-
-  val logPolicy : PuckLog.Verbosity => Boolean = {
-    case _ => true
-  }
 
   type GraphT = DependencyGraph
 
   var graphBuilder : GraphBuilder = _
 
 
-  import puck.util.FileHelper.FileOps
-  def setDefaultValues(projectRoot : File): Unit = {
+//  import puck.util.FileHelper.FileOps
+//  def setDefaultValues(projectRoot : File): Unit = {
+//
+//    val Some(od) = Some(projectRoot \ Default.outDirName)
+//    if(!od.exists()){
+//      od.mkdir()
+//    }
+//
+//    outDirectory set Some(od)
+//    decouple set Some(projectRoot \ Default.decoupleFileName)
+//    logFile set Some(projectRoot \ Default.logFileName)
+//  }
 
-    val Some(od) = Some(projectRoot \ Default.outDirName)
-    if(!od.exists()){
-      od.mkdir()
-    }
+  def workspace : File =
+    new File(config get Keys.workspace getOrElse ".")
 
-    outDirectory set Some(od)
-    decouple set Some(projectRoot \ Default.decoupleFileName)
-    logFile set Some(projectRoot \ Default.logFileName)
-  }
+  def someFile(k : FileKey) : Option[File] =
+    config get k map (new File(_))
 
-  def setWorkingDirectory(dir : File) : Unit = {
-    srcDirectory set Some(dir)
-    srcDirectory.get match {
-      case None => throw new DGError("Invalid working directory !!!")
-      case Some(d) => setDefaultValues(d)
-    }
-  }
+  def decouple = someFile(Keys.decouple)
+
+  def outDirectory = someFile(Keys.out)
+
+  def graphvizDot = someFile(Keys.dotPath)
+
+  def editor = someFile(Keys.editor)
+
+  def logFile = someFile(Keys.log)
 
 
-  val sourcepath = new FileOption()
-
-  val srcDirectory = new FileOption()
-
-  val outDirectory = new FileOption()
-
-  val libDirectory = new FileOption()
-
-  val decouple = new FileOption()
-
-  val graphvizDot = new FileOption()
-
-  val editor = new FileOption()
-
-  val logFile = new FileOption()
-
-  val javaRuntime = new FileOption()
-  //val javaRuntime = new FileOption(new File("/home/lorilan/jre1.5.0_22/lib/rt.jar"))
-  //val javaRuntime = new FileOption(new File("/home/lorilan/jre1.6.0_45/lib/rt.jar"))
-
-  if(workingDirectory \ Default.config exists())
-    ConfigParser(this)
-  else
-    setWorkingDirectory(workingDirectory)
 
   def loadGraph
   ( ll : Option[LoadingListener] = None)
@@ -116,7 +138,7 @@ class Project
   def parseConstraints
   ( dg2ast: DG2AST )
   ( implicit logger : PuckLogger) : Option[ConstraintsMaps] = {
-    decouple.get match{
+    decouple match{
       case None =>
         logger.writeln("cannot parse : no decouple file given")((PuckLog.NoSpecialContext, PuckLog.Error))
         None
@@ -131,19 +153,19 @@ class Project
     }
   }
 
-  private def openList(files : Seq[String]) : Unit = {
-    val ed = editor.get match {
-      case None => sys.env("EDITOR")
-      case Some(f) => f.getCanonicalPath
-    }
-    Process(ed  +: files ).!;()
-  }
-
-  import puck.util.FileHelper.findAllFiles
-
-  def openSources() = openList(findAllFiles(srcDirectory !, srcSuffix,
-    outDirectory.toOption map (_.getName)))
-  def openProduction() = openList(findAllFiles(outDirectory !, srcSuffix,
-    outDirectory.toOption map (_.getName)))
+//  private def openList(files : Seq[String]) : Unit = {
+//    val ed = editor.get match {
+//      case None => sys.env("EDITOR")
+//      case Some(f) => f.getCanonicalPath
+//    }
+//    Process(ed  +: files ).!;()
+//  }
+//
+//  import puck.util.FileHelper.findAllFiles
+//
+//  def openSources() = openList(findAllFiles(srcDirectory !, srcSuffix,
+//    outDirectory.toOption map (_.getName)))
+//  def openProduction() = openList(findAllFiles(outDirectory !, srcSuffix,
+//    outDirectory.toOption map (_.getName)))
 
 }

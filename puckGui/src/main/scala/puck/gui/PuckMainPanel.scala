@@ -3,6 +3,7 @@ package puck.gui
 import puck.graph.GraphUtils
 import puck.graph.io.Project
 import puck.gui.explorer.{NodeInfosPanel, DGTreeIcons}
+import puck.util.PuckLog
 
 import scala.swing._
 import java.awt.Dimension
@@ -19,8 +20,7 @@ abstract class ViewHandler {
   def switchView(mainPanel: PuckMainPanel, treeIcons: DGTreeIcons) : Unit
 }
 
-class PuckMainPanel(filesHandler: Project,
-                    graphUtils: GraphUtils,
+class PuckMainPanel(graphUtils: GraphUtils,
                     val treeIcons : DGTreeIcons)
   extends SplitPane(Orientation.Horizontal) {
 
@@ -28,13 +28,11 @@ class PuckMainPanel(filesHandler: Project,
   preferredSize = new Dimension(PuckMainPanel.width, PuckMainPanel.height)
 
   val console = new ConsoleWithSelection()
-  val logger = new TextAreaLogger(console.textArea, filesHandler.logPolicy)
+  val logger = new TextAreaLogger(console.textArea, PuckLog.verbose)
 
-  val control = new PuckControl(logger, filesHandler, graphUtils)
+  val control = new PuckControl(logger, graphUtils)
 
   val interface = new PuckInterfacePanel(control)
-
-
 
   val nodeInfos = new NodeInfosPanel(control.Bus, control)(treeIcons)
 
