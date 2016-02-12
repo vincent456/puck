@@ -2,11 +2,14 @@ package puck.gui
 
 import java.awt.Dimension
 import java.io.File
+import javax.swing.filechooser.FileNameExtensionFilter
 
-import puck.graph.io.Project.Default
-import puck.graph.io.{ConfigParser, Project, VisibilitySet}
+import puck.Project
+import puck.config.{ConfigWriter, Config}
+import puck.graph.io.VisibilitySet
 import scala.swing._
 import scala.swing.SequentialContainer.Wrapper
+
 
 class PuckInterfacePanel
 ( control : PuckControl
@@ -42,27 +45,75 @@ class PuckInterfacePanel
 
   def addAlwaysVisibleButtons(): Unit ={
     contents += makeButton("Settings", "To set graphviz dot path"){
-      () => val frame = new SettingsFrame(project)
-        frame.visible = true
-    }
+      () =>
+        import Dialog._
+        if(project == null) {
+          control.logger writeln "Create a project first"
+        }
+        else {
+          val ptmp = new Project(project.config, project.dG2ASTBuilder)
+          Dialog.showConfirmation(parent = null,
+            new SettingsPanel(ptmp).peer,
+            title = "Settings",
+            optionType = Options.OkCancel,
+            messageType = Message.Plain) match {
+            case Result.Ok =>
+              //TODO !!
+              val cfile = Config.defaultConfFile(project.workspace)
+              ConfigWriter(cfile, ptmp.config)
+              project = ptmp
+              control.logger writeln s"New settings saved in ${cfile.getPath}"
+            case _ =>
+              control.logger writeln "New settings discarded"
+          }
+        }
 
-    contents += makeButton("Load project",
+     }
+
+    contents += makeButton("Create project",
       "Select a workspace"){
       () =>
-        val fc = new FileChooser(project.workspace){
+        val fc = new FileChooser(){
           title = "What directory contains your application ?"
           fileSelectionMode = FileChooser.SelectionMode.DirectoriesOnly
         }
 
         fc showDialog(null, "Select")
         val f: File = fc.selectedFile
-        if( f != null && !(f == project.workspace)) {
+        if( f != null ) {
+          val fconf = Config.defaultConfFile(f)
+          if (fconf.exists())
+            control.logger writeln "Project already exists !"
+          else {
+            control.logger writeln "Creating default puck.xml"
+              ConfigWriter(fconf, Config.defautlConfig)
+              control.loadConf(fconf)
+              publisher publish LoadCodeRequest
+          }
+          val sf : Option[File]= project.someFile(Config.Keys.workspace)
+          val path = sf map (_.getAbsolutePath) getOrElse "No directory selected"
+          publisher publish Log(s"Workspace directory :\n$path")
+        }
+    }
+
+    contents += makeButton("Load project",
+      "Select a puck project file"){
+      () =>
+        val fc = new FileChooser(){
+          title = "Select a puck project file"
+          fileSelectionMode = FileChooser.SelectionMode.FilesOnly
+          fileFilter = new FileNameExtensionFilter("Puck config file", "xml", "cfg")
+        }
+
+        fc showDialog(null, "Select")
+        val f: File = fc.selectedFile
+        if( f != null && !(project!=null && f == Config.defaultConfFile(project.workspace))) {
           control.loadConf(f)
           publisher publish LoadCodeRequest
+          val sf : Option[File]= project.someFile(Config.Keys.workspace)
+          val path = sf map (_.getAbsolutePath) getOrElse "No directory selected"
+          publisher publish Log(s"Workspace directory :\n$path")
         }
-        val sf : Option[File]= project.someFile(Project.Keys.workspace)
-        val path = sf map (_.getAbsolutePath) getOrElse "No directory selected"
-        publisher publish Log(s"Workspace directory :\n$path")
     }
 
     contents += makeButton("(Re)load code & constraints",

@@ -9,32 +9,46 @@ object FileHelper {
   implicit class FileOps(val f : File) extends AnyVal {
     def \(child : String) : File =
       new File(f.getAbsolutePath + File.separator + child)
+
+    def pathRelativeTo(other : File) : String = {
+      val otherPath =
+        if(other.isDirectory && other.getPath.endsWith("."))
+          other.getPath.substring(0, other.getPath.length - 1)
+        else other.getPath
+
+      println(f.getPath)
+      println(otherPath)
+
+      if (f.getPath.startsWith(otherPath))
+        f.getPath.substring(otherPath.length)
+      else f.getPath
+    }
   }
 
-  object FileOption {
-    implicit def fileOptionToOptionFile(fo : FileOption) : Option[File] =
-      fo.get
-  }
-
-  class FileOption(private [this] var sf : Option[File] = None) {
-
-    override def toString = s"FileOption(${sf.toString})"
-
-    def this(f : File) = this(Some(f))
-
-    def get = sf
-    def ! = sf.get
-    def set(sf : Option[File]) =
-      sf match {
-        case None => ()
-        case Some(f) => val fc = f.getCanonicalFile
-          this.sf =
-            if(fc.exists()) Some(fc)
-            else None
-      }
-
-    def toOption = sf
-  }
+//  object FileOption {
+//    implicit def fileOptionToOptionFile(fo : FileOption) : Option[File] =
+//      fo.get
+//  }
+//
+//  class FileOption(private [this] var sf : Option[File] = None) {
+//
+//    override def toString = s"FileOption(${sf.toString})"
+//
+//    def this(f : File) = this(Some(f))
+//
+//    def get = sf
+//    def ! = sf.get
+//    def set(sf : Option[File]) =
+//      sf match {
+//        case None => ()
+//        case Some(f) => val fc = f.getCanonicalFile
+//          this.sf =
+//            if(fc.exists()) Some(fc)
+//            else None
+//      }
+//
+//    def toOption = sf
+//  }
 
   implicit def string2file(filePath : String) : File = new File(filePath)
 

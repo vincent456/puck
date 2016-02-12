@@ -2,8 +2,7 @@ package puck
 
 import java.io.File
 
-import puck.graph.io.Project.Default
-import puck.graph.io.{ConfigParser, DG2ASTBuilder, Project}
+import puck.config.{Config, ConfigParser}
 import puck.javaGraph.JGraphUtils
 
 /**
@@ -11,11 +10,9 @@ import puck.javaGraph.JGraphUtils
   */
 package object jastadd {
 
-  import util.FileHelper.FileOps
-
   def JavaProject() : Project = JavaProject(new File("."))
   def JavaProject(f : File) : Project  =
-    new Project(ConfigParser(f \ Default.configFile), JavaJastAddDG2AST)
+    new Project(ConfigParser(Config.defaultConfFile(f)), JavaJastAddDG2AST)
 
   object ExtendJGraphUtils extends JGraphUtils {
     val dg2astBuilder: DG2ASTBuilder = JavaJastAddDG2AST

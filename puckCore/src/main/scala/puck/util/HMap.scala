@@ -7,6 +7,7 @@ trait HMap[TypedKey[_]] { self =>
   def get[T](key: TypedKey[T]) : Option[T]
   def getOrElse[T](key: TypedKey[T], default : T) : T = get(key) getOrElse default
   def put[T](key: TypedKey[T], value: T) : HMap[TypedKey]
+  def keys : Iterable[TypedKey[_]]
 }
 
 object HMap {
@@ -14,6 +15,7 @@ object HMap {
     def get[T](key: TypedKey[T]) : Option[T] = m.get(key).asInstanceOf[Option[T]]
     def put[T](key: TypedKey[T], value: T) : HMap[TypedKey] =
       new WrappedMap[TypedKey](m + (key -> value.asInstanceOf[AnyRef]))
+    def keys : Iterable[TypedKey[_]] = m.keys
   }
 
   def empty[TypedKey[_]] : HMap[TypedKey] = new WrappedMap[TypedKey](Map())
@@ -32,6 +34,6 @@ object HMap {
 
   type IntKey[T] = HMapKey[Int, T]
   type StringKey[T] = HMapKey[String, T]
-  def StringKey[T : Manifest](v : String) : StringKey[T] = new HMapKey[String, T](v)
+  def  StringKey[T : Manifest](v : String) : StringKey[T] = new HMapKey[String, T](v)
   implicit def stringKey2String(k : StringKey[_]) : String = k.v
 }

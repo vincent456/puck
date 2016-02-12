@@ -3,11 +3,11 @@ package puck.jastadd
 import java.io.File
 import java.util.NoSuchElementException
 
-import puck.PuckError
+import puck.config.Config
+import puck.{DG2AST, DG2ASTBuilder, Project, PuckError}
 import puck.graph.ShowDG._
 import puck.graph._
 import puck.graph.constraints.SupertypeAbstraction
-import puck.graph.io.{Project, DG2AST, DG2ASTBuilder}
 import puck.graph.transformations._
 import puck.jastadd.concretize._
 import puck.javaGraph.nodeKind._
@@ -55,7 +55,7 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
    ll : puck.LoadingListener = null
     ) : JavaJastAddDG2AST = {
 
-    import Project.Keys
+    import Config.Keys
 
     fromFiles(p fileList Keys.srcs,
       p fileList Keys.sourcepaths,

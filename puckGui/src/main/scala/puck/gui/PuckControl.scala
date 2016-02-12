@@ -2,10 +2,9 @@ package puck.gui
 
 import java.io.File
 
-import puck.graph.io.Project. Default
-import puck.{FilesHandlerDG2ASTControllerOps, GraphStack, LoadingListener}
+import puck._
+import puck.config.{Config, ConfigParser}
 import puck.graph._
-import puck.graph.io._
 
 import puck.util.{PuckLogger, PuckLog}
 
@@ -39,19 +38,16 @@ class PuckControl
   var dg2ast: DG2AST = _
   val graphStack: GraphStack = new GraphStack(Bus)
 
+  {
+    if( Config.defaultConfFile(new File(".")).exists() )
+      loadConf(Config.defaultConfFile(new File(".")))
 
-  loadConf(new File("."))
+  }
 
-  import puck.util.FileHelper.FileOps
+
 
   def loadConf(file : File) : Unit = {
-    val fconf = file \ Default.configFile
-    project = new Project(
-      if (fconf.exists()) ConfigParser(fconf)
-      else {
-        logger writeln "Creating default puck.xml"
-        ConfigParser.createDefault(fconf)
-      },
+    project = new Project(ConfigParser(file),
       graphUtils.dg2astBuilder)
   }
 
@@ -68,7 +64,7 @@ class PuckControl
   def loadCodeAndConstraints() = Future {
     progressBar.visible = true
     progressBar.value = 0
-    if(project.fileList(Project.Keys.srcs).isEmpty) {
+    if(project.fileList(Config.Keys.srcs).isEmpty) {
       throw new Error("No sources detected")
     }
 
@@ -165,7 +161,11 @@ class PuckControl
     case gf @ GraphFocus(g, e) =>
       printingOptionsControl.focus(g, e)
 
-    case LoadCodeRequest => loadCodeAndConstraints()
+    case LoadCodeRequest =>
+      if(project == null)
+        logger writeln "select a project first"
+      else
+        loadCodeAndConstraints()
 
     case LoadConstraintRequest => loadConstraints()
 
@@ -186,7 +186,7 @@ class PuckControl
       pe(printingOptionsControl)
 
     case GenCode(compareOutput) =>
-      import FilesHandlerDG2ASTControllerOps._
+      import ProjectDG2ASTControllerOps._
       deleteOutDirAndapplyOnCode(dg2ast, project, graphStack.graph)
       if(compareOutput)
         compareOutputGraph(project, graphStack.graph)

@@ -1,65 +1,18 @@
 package puck
-package graph
-package io
 
 import java.io._
-
-import puck.graph.constraints.{ConstraintsParser, ConstraintsMaps}
+import puck.config.{Config, ConfigParser}
+import puck.graph._
+import puck.graph.constraints.{ConstraintsMaps, ConstraintsParser}
 import puck.graph.transformations.Transformation
-import puck.util.HMap.StringKey
+import puck.graph.{DependencyGraph, GraphBuilder}
 import puck.util._
 
 object Project{
 
-  import HMap.StringKey
-
-  type Config = HMap[StringKey]
-  def emptyConf : Config = HMap.empty
-
-  type FileKey = StringKey[String]
-  type FileListKey = StringKey[List[String]]
-
-  object Keys {
-    val workspace : FileKey = StringKey("workspace")
-
-    val srcs : FileListKey = StringKey("src")
-    val sourcepaths : FileListKey = StringKey("sourcepath")
-    val classpath : FileListKey = StringKey("classpath")
-    val bootclasspath : FileListKey = StringKey("bootclasspath")
-
-    val out : FileKey = StringKey("out")
-    val decouple : FileKey = StringKey("decouple")
-    val log : FileKey =  StringKey("log")
-
-    val dotPath : FileKey =  StringKey("dot-path")
-    val editor : FileKey =  StringKey("editor")
-
-  }
-
-  val singleValueKeys : List[FileKey] = {
-    import Keys._
-    List(out, decouple, log)
-  }
-  val listValueKeys : List[FileListKey] = {
-    import Keys._
-    List(srcs, sourcepaths, classpath, bootclasspath)
-  }
-
-
   def apply(seed : File, dG2ASTBuilder: DG2ASTBuilder) : Project =
     new Project(ConfigParser(seed), dG2ASTBuilder)
-
-  object Default {
-
-    val configFile : String = "puck.xml"
-    val srcRoot : String = "src"
-    val out : String = "out"
-    val classpathRoot : String = "lib"
-    val decouple: String = "decouple.wld"
-    val log: String = out + File.separator + "log.txt"
-  }
 }
-import Project._
 
 trait DG2ASTBuilder{
   def apply(fh : Project,
@@ -75,16 +28,47 @@ trait DG2AST {
   def nodesByName : Map[String, NodeId]
   def code(graph : DependencyGraph, id : NodeId) : String
 }
-
+import Config._
 class Project
-(var config : Project.Config,
+(var config : Config,
  val dG2ASTBuilder: DG2ASTBuilder){
 
-  def apply[T](key : StringKey[T])  : Option[T] = config get key
-  def set(k : FileKey, f : File) : Unit =
-    config = config put (k, f.getAbsolutePath)
 
-  def fileList(k : FileListKey ) : List[String] = config getOrElse (k, List())
+
+  def apply[T](key : ConfigKey[T])  : Option[T] = config get key
+
+  def set(k : FileKey, f : SingleFile) : Unit =
+    config = config put (k, f)
+
+  def add(k : FileListKey, ff : FileFinder) : Unit = {
+    val prev = config getOrElse (k, List())
+
+    config = config put (k, ff :: prev)
+  }
+  def remove(k : FileListKey, ff : FileFinder) : Unit = {
+    val prev = config getOrElse (k, List())
+
+    config = config put (k, prev filter (_ == ff))
+  }
+
+
+  def fileList(k : FileListKey ) : List[String] = {
+    val l = config getOrElse (k, List())
+    l.foldLeft(List[String]()){
+      case (acc, f @ SingleFile(_)) => f.resolvePath(workspace) :: acc
+      case (acc,f @ Root(_, suffix)) =>
+        import puck.util.FileHelper.findAllFiles
+        findAllFiles(suffix, ignoredSubDir = None, acc, new File(f.resolvePath(workspace)))
+
+    }
+  }
+
+
+  def workspace : File =
+    new File( (config get Keys.workspace getOrElse SingleFile(".")).path )
+
+  def someFile(k : FileKey) : Option[File] =
+    config get k map (v => new File(v.resolvePath(workspace)))
 
 
   def fromOutDir : Project =
@@ -97,25 +81,6 @@ class Project
 
   var graphBuilder : GraphBuilder = _
 
-
-//  import puck.util.FileHelper.FileOps
-//  def setDefaultValues(projectRoot : File): Unit = {
-//
-//    val Some(od) = Some(projectRoot \ Default.outDirName)
-//    if(!od.exists()){
-//      od.mkdir()
-//    }
-//
-//    outDirectory set Some(od)
-//    decouple set Some(projectRoot \ Default.decoupleFileName)
-//    logFile set Some(projectRoot \ Default.logFileName)
-//  }
-
-  def workspace : File =
-    new File(config get Keys.workspace getOrElse ".")
-
-  def someFile(k : FileKey) : Option[File] =
-    config get k map (new File(_))
 
   def decouple = someFile(Keys.decouple)
 

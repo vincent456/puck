@@ -1,6 +1,7 @@
 package puck.graph
 
-import puck.graph.io.{DG2ASTBuilder, DotHelper}
+import puck.DG2ASTBuilder
+import puck.graph.io.DotHelper
 import puck.graph.transformations.TransformationRules
 
 trait GraphUtils {

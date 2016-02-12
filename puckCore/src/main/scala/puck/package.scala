@@ -8,4 +8,6 @@ package object puck {
     val _ = a
   }
 
+  def error(str : String) : Nothing = throw new PuckError(str)
+  def error() : Nothing = error("should not happen !")
 }

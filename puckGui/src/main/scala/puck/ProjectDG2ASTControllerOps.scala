@@ -2,14 +2,13 @@ package puck
 
 import puck.graph.DependencyGraph
 import puck.graph.comparison.Mapping
-import puck.graph.io.{Project, DG2AST}
 import puck.util.PuckLogger
 import sbt.IO
 
 /**
   * Created by lorilan on 05/01/16.
   */
-object FilesHandlerDG2ASTControllerOps {
+object ProjectDG2ASTControllerOps {
 
 
   def deleteOutDirAndapplyOnCode
