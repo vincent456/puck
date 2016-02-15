@@ -241,6 +241,14 @@ aspect DependencyGraphFactory {
 		
 	}
 
+	public void GenericMethodDecl.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId ) {
+		super.buildDG(builder, hostTypeDeclId);
+		int thisNode = buildDGNode(builder);
+		for(TypeVariable tv : typeParameters()){
+		int tvNode = tv.buildDGNode(builder);
+		builder.addContains(thisNode, tvNode);
+		}
+	}
 
 	static void Access.buildDG(TypeMemberAccess access, int containerId,
         scala.Option<UsesAccessKind> accK, JastaddGraphBuilder builder){

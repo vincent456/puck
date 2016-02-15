@@ -230,6 +230,39 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
     }
 
+    scenario("generic classes variable"){
+      val _ = new ScenarioFactory(
+        s"$graphBuildingExamplesPath/typeVariables/ClassVariable.java") {
+
+        val classA = fullName2id("p.A")
+        val classB = fullName2id("p.B")
+
+        val ta =fullName2id("p.A@T")
+        val tb =fullName2id("p.B@T")
+        graph.contains(classA, ta)
+        graph.contains(classB, tb)
+
+      }
+    }
+
+    scenario("generic method variable"){
+      val _ = new ScenarioFactory(
+        s"$graphBuildingExamplesPath/typeVariables/MethodTypeVariable.java") {
+
+        val a = fullName2id("p.A")
+        val at = fullName2id("p.A@T")
+
+        val m1 = fullName2id("p.A.castMe(Object)")
+        val m2 = fullName2id("p.A.castMeInstead(Object)")
+
+        val mt1 =fullName2id("p.A.castMe(Object)@T")
+        val mt2 =fullName2id("p.A.castMeInstead(Object)@T")
+        graph.contains(a, at)
+        graph.contains(m1, mt1)
+        graph.contains(m2, mt2)
+
+      }
+    }
   }
 
 

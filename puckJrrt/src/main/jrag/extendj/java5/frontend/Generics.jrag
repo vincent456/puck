@@ -800,6 +800,10 @@ aspect LookupParTypeDecl {
       TypeDecl typeDecl = (TypeDecl) getParent().getParent();
       return typeDecl.fullName() + "@" + name();
     }
+    if (getParent().getParent() instanceof GenericMethodDecl) {
+        GenericMethodDecl genericMethodDecl = (GenericMethodDecl) getParent().getParent();
+        return genericMethodDecl.fullName() + "@" + name();
+    }
     return super.fullName();
   }
 

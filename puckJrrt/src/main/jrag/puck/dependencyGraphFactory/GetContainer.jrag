@@ -1,0 +1,18 @@
+
+aspect GetContainer {
+
+    public int ASTNode.getContainerNode(JastaddGraphBuilder builder){
+        return getParent().getContainerNode(builder);
+    }
+
+    public int CompilationUnit.getContainerNode(JastaddGraphBuilder builder){
+        return builder.addPackage(getPackageDecl(), false);
+    }
+
+    public int TypeDecl.getContainerNode(JastaddGraphBuilder builder){
+        int thisNode = builder.getNode(this);
+        int cterNode = getParent().getContainerNode(builder);
+        builder.addContains(cterNode, thisNode);
+        return thisNode;
+    }
+}
