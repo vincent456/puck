@@ -131,7 +131,8 @@ class DotPrinter
     if (printSignatures)
       styp => {
         import ShowDG._
-        (graph, styp).shows.replaceAllLiterally(">", "&gt;") + " "
+        (graph, styp).shows.replaceAllLiterally("<", "&lt;")
+          .replaceAllLiterally(">", "&gt;") + " "
       }
     else _ => ""
 
@@ -197,7 +198,7 @@ class DotPrinter
       case _ => sys.error("Label conflict")
     }
 
-      arcs += (dotId(source) + " -> " + dotId(target) + "[ " +
+      arcs += (dotId(source) + " -> " + dotId(target) + " [ " +
         label +
         subGraphArc(source, "ltail") +
         subGraphArc(target, "lhead") +

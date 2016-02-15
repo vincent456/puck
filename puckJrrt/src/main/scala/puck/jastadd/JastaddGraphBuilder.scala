@@ -141,9 +141,22 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
   }
 
   def addApiTypeNode(td: TypeDecl): NodeIdT = {
-    val packageNode = addPackage(td.packageName(), mutable = false)
+
     val tdNode = addNode(td.fullName(), td.name(), td.getDGNodeKind, mutable = false)
-    addContains(packageNode, tdNode)
+//
+//    def aux(n : ASTNode[T] forSome {type T <: ASTNode[_]}) :  NodeId = n match {
+//      case td2 : TypeDecl =>
+//        nodesByName get td2.fullName() match {
+//          case None => addApiTypeNode(td2)
+//          case Some(td2n) => td2n
+//        }
+//      case cu : CompilationUnit =>
+//        addPackage(cu.getPackageDecl, mutable = false)
+//      case _ => aux(n.getParent.asInstanceOf[ASTNode[ASTNode[_]]])
+//    }
+//    val cterId = aux(td.getParent.asInstanceOf[ASTNode[ASTNode[_]]])
+    val cterId = addPackage(td.packageName(), mutable = false)
+    addContains(cterId, tdNode)
     tdNode
   }
 

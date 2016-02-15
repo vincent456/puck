@@ -9,7 +9,7 @@ import puck.gui.PushGraph
 import scala.swing.Publisher
 
 class AddNodeAction
-(publisher : Publisher,
+(bus : Publisher,
  host : ConcreteNode,
  childKind : NodeKind)
 (implicit graph : DependencyGraph,
@@ -23,7 +23,7 @@ extends AbstractAction(s"Add $childKind")
     showInputDialog(s"New $childKind name:").foreach {
       childName =>
         val (n, g) = TR.intro(graph.mileStone, childName, childKind)
-        publisher.publish(PushGraph(g.addContains(host.id, n.id)))
+        bus publish PushGraph(g.addContains(host.id, n.id))
     }
   }
 }

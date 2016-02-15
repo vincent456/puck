@@ -53,18 +53,22 @@ class MutableTreeModel(var graph : DependencyGraph)
     assert(oldGraph eq graph)
     val subRec : Recording = newGraph.recording.subRecordFromLastMilestone.reverse
 
+    var reenactor = oldGraph
+
     subRec.foreach  {
           case Transformation.Add(Edge(ContainsKind(_, cted))) =>
             graph = newGraph
             treeModelEvent(newGraph, cted) foreach fireNodesInserted
 
           case Transformation.Remove(CNode(cted)) =>
-            graph = oldGraph
-            treeModelEvent(oldGraph, cted.id) foreach fireNodesRemoved
+            graph = reenactor
+            treeModelEvent(reenactor, cted.id) foreach fireNodesRemoved
+            reenactor = reenactor.removeNode(cted.id)._2
 
           case Transformation.Move((_, tgt), _) =>
-            graph = oldGraph
-            treeModelEvent(oldGraph, tgt) foreach fireNodesRemoved
+            graph = reenactor
+            treeModelEvent(reenactor, tgt) foreach fireNodesRemoved
+            reenactor = reenactor.removeNode(tgt)._2
             graph = newGraph
             treeModelEvent(newGraph, tgt) foreach fireNodesInserted
 

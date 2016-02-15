@@ -21,7 +21,7 @@ object NodeMenu{
 
   type Builder = (DependencyGraph, NodeId, List[NodeId], Option[NodeIdP]) => JPopupMenu
 
-  def apply(publisher : Publisher,
+  def apply(bus : Publisher,
             graphUtils : GraphUtils,
             printingOptionsControl : PrintingOptionsControl,
             graph : DependencyGraph,
@@ -31,14 +31,14 @@ object NodeMenu{
            (implicit treeIcons: DGTreeIcons): JPopupMenu =
     graph.getNode(nodeId) match {
       case n : ConcreteNode =>
-        new ConcreteNodeMenu(publisher, graph, graphUtils, selectedNodes, selectedEdge, n, printingOptionsControl)
+        new ConcreteNodeMenu(bus, graph, graphUtils, selectedNodes, selectedEdge, n, printingOptionsControl)
       case n : VirtualNode =>
-        new VirtualNodeMenu(publisher, graph, graphUtils, n)
+        new VirtualNodeMenu(bus, graph, graphUtils, n)
     }
 }
 
 class ConcreteNodeMenu
-(publisher: Publisher,
+(bus: Publisher,
  implicit val graph : DependencyGraph,
  implicit val graphUtils : GraphUtils,
  val selectedNodes: List[NodeId],
@@ -52,7 +52,7 @@ class ConcreteNodeMenu
 
   def init(): Unit = {
 
-    this.add(new RenameNodeAction(publisher, node))
+    this.add(new RenameNodeAction(bus, node))
     this.addSeparator()
 
     val item = new JMenuItem(s"Abstract ${node.name} as")
@@ -67,13 +67,13 @@ class ConcreteNodeMenu
     }
 
     if (node.kind.isWritable) {
-      this.add(new CreateInitalizerAction(publisher,
+      this.add(new CreateInitalizerAction(bus,
         graph.getConcreteNode(graph.hostTypeDecl(node.id))))
     }
 
     this.addSeparator()
-    this.add(new SetMutabilityAction(publisher, node, !node.mutable))
-    this.add(new RemoveNodeAction(publisher, node))
+    this.add(new SetMutabilityAction(bus, node, !node.mutable))
+    this.add(new RemoveNodeAction(bus, node))
 
     selectedNodes match {
       case Nil => ()
@@ -85,23 +85,22 @@ class ConcreteNodeMenu
 
     if (graph.isWronglyContained(node.id)
       || graph.isWronglyUsed(node.id)) {
-      //this.add(new ManualSolveAction(publisher, node))
-      this.add(new AutoSolveAction(publisher, node, printingOptionsControl))
+      ignore(this add new AutoSolveAction(bus, node, printingOptionsControl))
     }
   }
 
   def abstractionChoices : Seq[JMenuItem] =
     node.kind.abstractionChoices.map { case (k, p) =>
-      new JMenuItem(new AbstractionAction(publisher, node, p, k))
+      new JMenuItem(new AbstractionAction(bus, node, p, k))
     }
 
   def childChoices : Seq[JMenuItem] = {
     val ks = graph.nodeKinds.filter(node.kind.canContain)
-    ks map {k => new JMenuItem(new AddNodeAction(publisher, node, k))}
+    ks map {k => new JMenuItem(new AddNodeAction(bus, node, k))}
   }
 
   private def addAddIsaOption(sub: ConcreteNode, sup: ConcreteNode): Unit = {
-    ignore( this add new AddIsaAction(publisher, sub, sup) )
+    ignore( this add new AddIsaAction(bus, sub, sup) )
 
   }
 
@@ -112,15 +111,13 @@ class ConcreteNodeMenu
     val kt = graph.kindType(ids.head)
     val sameKind = ids.tail forall (graph.kindType(_) == kt)
     if (!sameContainer)
-      publisher.publish(Log("Move multiple only available for nodes with same container"))
+      bus publish Log("Move multiple only available for nodes with same container")
     else if (!sameKind)
-      publisher.publish(Log("Move multiple only available for nodes with same kind"))
+      bus publish Log("Move multiple only available for nodes with same kind")
     else {
       val selected: ConcreteNode = graph.getConcreteNode(ids.head)
       if (graph.canContain(node, selected))
-        ignore( this add new MoveAction(publisher, node, ids) )
-
-
+        ignore( this add new MoveAction(bus, node, ids) )
     }
 
   }
@@ -128,7 +125,7 @@ class ConcreteNodeMenu
   private def addOtherNodeSelectedOption(id: NodeId): Unit = {
     val selected: ConcreteNode = graph.getConcreteNode(id)
     if (graph.canContain(node, selected)) {
-      this.add(new MoveAction(publisher, node, List(id)))
+      this.add(new MoveAction(bus, node, List(id)))
     }
 
     //    val m: MergeMatcher = controller.transfoRules.
@@ -136,7 +133,7 @@ class ConcreteNodeMenu
     //
     //    if (m.canBeMergedInto(node, graph))
     if (selected.kind.kindType == node.kind.kindType)
-      this.add(new MergeAction(publisher, selected, node))
+      this.add(new MergeAction(bus, selected, node))
 
 
     if (selected.id != node.id) {
@@ -151,7 +148,7 @@ class ConcreteNodeMenu
       graph.abstractions(target).foreach {
         abs =>
           if (abs.nodes.contains(node.id))
-            this.add(new RedirectAction(publisher, uses, abs))
+            this.add(new RedirectAction(bus, uses, abs))
       }
 
     def addChangeInitUsesAction(ctorDef: NodeId) =
@@ -163,7 +160,7 @@ class ConcreteNodeMenu
               val g = Redirection.redirectSourceOfInitUseInFactory(graph.mileStone,
                 ctorId, ctorDef, target, node.id)
 
-              publisher.publish(PushGraph(g))
+              bus.publish(PushGraph(g))
           })
         case _ => ()
       }

@@ -1,5 +1,6 @@
 package puck.gui
 
+import puck._
 import java.awt.Dimension
 import java.io.File
 import javax.swing.filechooser.FileNameExtensionFilter
@@ -79,19 +80,19 @@ class PuckInterfacePanel
         }
 
         fc showDialog(null, "Select")
-        val workspace : File = fc.selectedFile
-        if( workspace != null ) {
-          println(s"f.getPath = ${workspace.getPath}")
-          val fconf = Config.defaultConfFile(workspace)
-          println(s"fconf.getPath = ${fconf.getPath}")
-          if (fconf.exists())
-            control.logger writeln "Project already exists !"
-          else {
-            control.logger writeln "Creating default puck.xml"
+
+        Option(fc.selectedFile) foreach {
+          workspace =>
+            val fconf = Config.defaultConfFile(workspace)
+            if (fconf.exists())
+              control.logger writeln "Project already exists !"
+            else {
+              control.logger writeln "Creating default puck.xml"
               ConfigWriter(fconf, Config.defautlConfig(workspace))
               control.loadConf(fconf)
-          }
+            }
         }
+
     }
 
     contents += makeButton("Load project",
@@ -104,18 +105,21 @@ class PuckInterfacePanel
         }
 
         fc showDialog(null, "Select")
-        val conffile : File = fc.selectedFile
-        if( conffile != null && !(project!=null &&
-          conffile == Config.defaultConfFile(project.workspace))) {
-          control.loadConf(conffile)
+        Option(fc.selectedFile) foreach {
+          conffile =>
+            if(project == null ||
+              Config.defaultConfFile(project.workspace) != conffile )
+              control.loadConf(conffile)
+
         }
+
     }
 
     contents += makeButton("(Re)load code & constraints",
       "Load the selected source code and build the access graph"){
       () => publisher publish LoadCodeRequest
     }
-    contents += control.progressBar
+    ignore(contents += control.progressBar)
   }
 
   addAlwaysVisibleButtons()
@@ -151,7 +155,7 @@ class PuckInterfacePanel
         listenTo(control.Bus)
       })
 
-    c.contents +=
+    ignore(c.contents +=
       new Button(new Action("Redo") {
 
         enabled = false
@@ -163,7 +167,7 @@ class PuckInterfacePanel
             enabled = graphStack.canRedo
         }
         listenTo(control.Bus)
-      })
+      }))
   }
 
   def addLoadedGraphButtons(): Unit= {
@@ -225,10 +229,10 @@ class PuckInterfacePanel
 
       contents += testCommutativityCB
 
-      contents += makeButton("Generate Code",
+      ignore(contents += makeButton("Generate Code",
         "Apply transformations on the code")(
         () =>publisher publish
-          GenCode(compareOutput = testCommutativityCB.selected))
+          GenCode(compareOutput = testCommutativityCB.selected)))
     }
 
 

@@ -28,17 +28,13 @@ class SVGViewHandler
   def switchView(mainPanel: PuckMainPanel, treeIcons: DGTreeIcons) : Unit = {
     this deafTo mainPanel.control.Bus
     mainPanel.viewHandler = new TreeViewHandler(mainPanel, treeIcons)
-//    mainPanel.revalidate()
     mainPanel.control.Bus publish GraphUpdate(mainPanel.control.graph)
   }
 
   this listenTo mainPanel.control.Bus
   reactions += {
-    case GraphUpdate(graph) =>
-      this.displayGraph(graph)
-
-    case GraphFocus(graph, edge) =>
-      this.displayGraph(graph)
+    case ge : GraphStackEvent =>
+      this.displayGraph(ge.graph)
 
     case PrintingOptionsUpdate =>
       this.displayGraph(control.graph)
@@ -144,7 +140,7 @@ class SVGMenu
   import graphUtils.nodeKindKnowledge.kindOfKindType
   assert(kindOfKindType(NameSpace).size == 1)
 
-  contents += Component.wrap(new JButton(new AddNodeAction(controller, graph.root, kindOfKindType(NameSpace).head)))
+  contents += Component.wrap(new JButton(new AddNodeAction(controller.genControl.Bus, graph.root, kindOfKindType(NameSpace).head)))
 
   contents += button("Show top level packages"){
     () => printingOptionsControl.

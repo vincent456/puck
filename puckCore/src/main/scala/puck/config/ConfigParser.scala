@@ -1,5 +1,5 @@
 package puck.config
-
+import puck._
 import java.io.{File, FileWriter}
 
 import puck.util.HMap.HMapKey
@@ -119,27 +119,6 @@ object ConfigParser {
 
   import XMLUtils._
 
-//  def createDefault(configFile : File) : Config = {
-//      val f = new FileWriter(configFile)
-//      f write
-//        s"""<puck-config>
-//          |    <workspace>.</workspace>
-//          |    <!-- root of source where all .java will be searched -->
-//          |    <src rec=".java">${Default.srcRoot}</src>
-//          |    <!-- root of lib where all .jar will be searched -->
-//          |    <classpath rec=".jar">${Default.classpathRoot}</classpath>
-//          |    <out>${Default.out}</out>
-//          |    <decouple>${Default.decouple}</decouple>
-//          |    <log>${Default.log}</log>
-//          | </puck-config>""".stripMargin
-//
-//      f.close()
-//      this.apply(configFile)
-//  }
-
-
-
-
   def apply(config : File) : Config = {
     val n = XML.loadFile(config)
 
@@ -175,11 +154,11 @@ object ConfigParser {
 object ConfigWriter {
 
   private def write(appendable: Appendable, conf : Config) : Unit = {
-    appendable.append("<puck-config>\n")
+    appendable append "<puck-config>\n"
     conf.keys foreach {
-      k => appendable.append(k xmlValue conf)
+      k => appendable append (k xmlValue conf)
     }
-    appendable.append("</puck-config>")
+    ignore( appendable append "</puck-config>" )
   }
 
   def apply(configFile : File, conf : Config) : Unit ={

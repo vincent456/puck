@@ -23,7 +23,7 @@ class SVGConcreteNodeMenu
 (controller: SVGController,
  node : ConcreteNode)
 (implicit treeIcons: DGTreeIcons)
-  extends ConcreteNodeMenu(controller,
+  extends ConcreteNodeMenu(controller.genControl.Bus,
     controller.graph,
     controller.graphUtils,
     controller.selectedNodes,

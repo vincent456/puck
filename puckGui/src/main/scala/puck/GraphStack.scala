@@ -75,7 +75,6 @@ class GraphStack(val bus : Publisher) {
   def pushGraph(graph: DependencyGraph) = {
     val oldHead = undoStack.head
     undoStack.push(graph)
-    println("undostack size = " + undoStack.size)
     redoStack.clear()
     firePushEvent(oldHead)
   }
