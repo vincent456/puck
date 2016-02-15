@@ -98,9 +98,9 @@ object Config {
     List(srcs, sourcepaths, classpath, bootclasspath)
   }
 
-  val defautlConfig =
+  def defautlConfig(workspace : File) =
     (empty
-      put (Keys.workspace, SingleFile("."))
+      put (Keys.workspace, SingleFile(workspace.getAbsolutePath))
       put (Keys.srcs, List(Root("src", ".java")))
       put (Keys.classpath, List(Root("lib", ".jar")))
       put (Keys.out, SingleFile("out"))

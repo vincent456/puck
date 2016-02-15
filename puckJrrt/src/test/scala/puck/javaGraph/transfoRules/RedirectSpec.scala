@@ -4,7 +4,6 @@ import puck.graph._
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, Redirection}
 import puck.javaGraph.ScenarioFactory
-import puck.javaGraph.JGraphUtils.{transformationRules => TR}
 import puck.javaGraph.nodeKind._
 import puck.{AcceptanceSpec, GetDefinitionValue, Settings}
 

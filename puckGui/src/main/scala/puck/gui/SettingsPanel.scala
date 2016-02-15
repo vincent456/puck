@@ -1,5 +1,5 @@
 package puck.gui
-
+import puck._
 import java.awt.geom.{Area, RoundRectangle2D}
 import java.awt.{Color, RenderingHints, BasicStroke}
 import javax.swing.border.AbstractBorder
@@ -70,9 +70,9 @@ class FileListSelectionPanel(project : Project, k : FileListKey)
 
   def selectSuffix : Option[String] =
     Dialog.showInput[String](
-      message = "Select suffix",
+      message = "Select suffix or Directory to select directory itself",
       title = "Suffix",
-      entries = Seq("None", ".java", ".jar"),
+      entries = Seq("Directory", ".java", ".jar"),
       initial = ".java")
 
   contents += new SettingLinePanel(k.v, addimg) {
@@ -88,12 +88,11 @@ class FileListSelectionPanel(project : Project, k : FileListKey)
           case f if !f.isDirectory =>
             Some(SingleFile(f.pathRelativeTo(project.workspace)))
           case f =>
-            selectSuffix match {
-              case None
-                   | Some("None")=>
-                Some(SingleFile(f.pathRelativeTo(project.workspace)))
-              case Some(suffix) =>
-                Some(Root(f.pathRelativeTo(project.workspace), suffix))
+            selectSuffix map {
+              case "Directory" =>
+                SingleFile(f.pathRelativeTo(project.workspace))
+              case suffix =>
+                Root(f.pathRelativeTo(project.workspace), suffix)
             }
         }
         sff foreach {
@@ -108,14 +107,14 @@ class FileListSelectionPanel(project : Project, k : FileListKey)
   contents += new Separator()
 
   def add(ff : FileFinder) : Unit =
-    contents += new SettingLinePanel(ff.path, deleteimg) {
+    ignore(contents += new SettingLinePanel(ff.path, deleteimg) {
       def action(mc : MouseClicked) : Unit =
         if(!isRightClick(mc.peer)){
           project.remove(k, ff)
           panel.contents -= this
           panel.revalidate()
         }
-    }
+    })
 
   project.config getOrElse (k, List()) foreach add
 
@@ -137,17 +136,17 @@ import java.awt.{Component, Graphics}
 
 class BubbleBorder
 ( color: Color,
-  thickness : Int,
-  radii : Int ) extends AbstractBorder {
+  thickness : Double,
+  radii : Double ) extends AbstractBorder {
 
   val stroke = new BasicStroke(thickness.toFloat)
-  val strokePad = thickness / 2
+  val strokePad : Double = thickness / 2d
   val hints = new RenderingHints (
     RenderingHints.KEY_ANTIALIASING,
     RenderingHints.VALUE_ANTIALIAS_ON)
 
   val insets : Insets = {
-    val pad = radii + strokePad
+    val pad = radii.toInt + strokePad.toInt
     new Insets(pad, pad, pad, pad)
   }
 
@@ -167,9 +166,9 @@ class BubbleBorder
     val bottomLineY = height - thickness
 
     val bubble = new RoundRectangle2D.Double(
-      0 + strokePad,
-      0 + strokePad,
-      width - thickness,
+      0d + strokePad,
+      0d + strokePad,
+      width.toDouble - thickness,
       bottomLineY,
       radii,
       radii)

@@ -48,7 +48,7 @@ class Project
   def remove(k : FileListKey, ff : FileFinder) : Unit = {
     val prev = config getOrElse (k, List())
 
-    config = config put (k, prev filter (_ == ff))
+    config = config put (k, prev filter (_ != ff))
   }
 
 

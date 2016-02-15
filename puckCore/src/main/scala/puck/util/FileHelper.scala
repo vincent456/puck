@@ -6,22 +6,38 @@ import scala.language.implicitConversions
 
 object FileHelper {
 
+  def removeEquals[T](l1 : List[T], l2 : List[T]) : (List[T], List[T]) =
+    (l1, l2) match {
+      case (h1 :: t1, h2 :: t2) if h1 == h2 => removeEquals(t1, t2)
+      case _ => (l1, l2)
+    }
+
+
   implicit class FileOps(val f : File) extends AnyVal {
     def \(child : String) : File =
       new File(f.getAbsolutePath + File.separator + child)
 
+    def ancestors : List[File] = {
+
+      def aux(acc : List[File], f: File) : List[File] = {
+        val p = f.getParentFile
+        if(p == null) acc
+        else aux(p :: acc, p)
+      }
+
+      aux(List(), f)
+    }
+
     def pathRelativeTo(other : File) : String = {
-      val otherPath =
-        if(other.isDirectory && other.getPath.endsWith("."))
-          other.getPath.substring(0, other.getPath.length - 1)
-        else other.getPath
 
-      println(f.getPath)
-      println(otherPath)
+      val thisAncestors = f.ancestors ::: List(f)
+      val otherAncestors = other.ancestors ::: List(other)
 
-      if (f.getPath.startsWith(otherPath))
-        f.getPath.substring(otherPath.length)
-      else f.getPath
+      removeEquals(thisAncestors, otherAncestors) match {
+        case (these, Nil) =>
+          these map (_.getName) mkString File.separator
+        case _ => f.getPath
+      }
     }
   }
 

@@ -73,26 +73,24 @@ class PuckInterfacePanel
     contents += makeButton("Create project",
       "Select a workspace"){
       () =>
-        val fc = new FileChooser(){
+        val fc = new FileChooser(new File(".")){
           title = "What directory contains your application ?"
           fileSelectionMode = FileChooser.SelectionMode.DirectoriesOnly
         }
 
         fc showDialog(null, "Select")
-        val f: File = fc.selectedFile
-        if( f != null ) {
-          val fconf = Config.defaultConfFile(f)
+        val workspace : File = fc.selectedFile
+        if( workspace != null ) {
+          println(s"f.getPath = ${workspace.getPath}")
+          val fconf = Config.defaultConfFile(workspace)
+          println(s"fconf.getPath = ${fconf.getPath}")
           if (fconf.exists())
             control.logger writeln "Project already exists !"
           else {
             control.logger writeln "Creating default puck.xml"
-              ConfigWriter(fconf, Config.defautlConfig)
+              ConfigWriter(fconf, Config.defautlConfig(workspace))
               control.loadConf(fconf)
-              publisher publish LoadCodeRequest
           }
-          val sf : Option[File]= project.someFile(Config.Keys.workspace)
-          val path = sf map (_.getAbsolutePath) getOrElse "No directory selected"
-          publisher publish Log(s"Workspace directory :\n$path")
         }
     }
 
@@ -106,13 +104,10 @@ class PuckInterfacePanel
         }
 
         fc showDialog(null, "Select")
-        val f: File = fc.selectedFile
-        if( f != null && !(project!=null && f == Config.defaultConfFile(project.workspace))) {
-          control.loadConf(f)
-          publisher publish LoadCodeRequest
-          val sf : Option[File]= project.someFile(Config.Keys.workspace)
-          val path = sf map (_.getAbsolutePath) getOrElse "No directory selected"
-          publisher publish Log(s"Workspace directory :\n$path")
+        val conffile : File = fc.selectedFile
+        if( conffile != null && !(project!=null &&
+          conffile == Config.defaultConfFile(project.workspace))) {
+          control.loadConf(conffile)
         }
     }
 

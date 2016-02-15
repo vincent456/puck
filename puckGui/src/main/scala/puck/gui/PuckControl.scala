@@ -49,6 +49,11 @@ class PuckControl
   def loadConf(file : File) : Unit = {
     project = new Project(ConfigParser(file),
       graphUtils.dg2astBuilder)
+
+    val sf : Option[File]= project.someFile(Config.Keys.workspace)
+    val path = sf map (_.getAbsolutePath) getOrElse "No directory selected"
+    logger writeln  s"Workspace directory :\n$path"
+    loadCodeAndConstraints()
   }
 
   def graph: DependencyGraph = graphStack.graph
