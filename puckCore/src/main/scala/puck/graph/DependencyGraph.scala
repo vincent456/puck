@@ -587,7 +587,7 @@ class DependencyGraph
   def isWronglyContained(id : NodeId) : Boolean = constraints.isWronglyContained(this, id)
 
   def printConstraints[V](logger : Logger[V], v : V) : Unit =
-    constraints.printConstraints(this, logger, v)
+    constraints.printConstraints(this, logger)(v)
 
   def subTree(root : NodeId, includeRoot : Boolean = true) : Seq[NodeId] = {
 

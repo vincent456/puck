@@ -107,12 +107,10 @@ class PuckInterfacePanel
         fc showDialog(null, "Select")
         Option(fc.selectedFile) foreach {
           conffile =>
-            if(project == null ||
-              Config.defaultConfFile(project.workspace) != conffile )
+            if( project == null ||
+                Config.defaultConfFile(project.workspace) != conffile )
               control.loadConf(conffile)
-
         }
-
     }
 
     contents += makeButton("(Re)load code & constraints",

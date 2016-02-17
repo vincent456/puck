@@ -1,6 +1,5 @@
 package puck.gui
 
-import puck.Project
 import puck.graph.GraphUtils
 import puck.gui.explorer.{NodeInfosPanel, DGTreeIcons}
 import puck.util.PuckLog

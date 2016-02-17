@@ -48,9 +48,10 @@ case class ConstraintsMaps
      copy(friendConstraints = addConstraintToMap(friendConstraints, ct))
 
 
-   def printConstraints[V](graph : GraphT, logger : Logger[V], v : V) : Unit = {
+   def printConstraints[V](graph : GraphT, logger : Logger[V])(implicit v : V) : Unit = {
+     logger writeln "printing constraints"
      namedSets.foreach{
-       case (_, namedSet) => logger.writeln((graph, namedSet).shows(namedRangeSetDefCord))(v)
+       case (_, namedSet) => logger.writeln((graph, namedSet).shows(namedRangeSetDefCord))
      }
 
      def printMap( m : Map [Range, ConstraintSet], cb : CordBuilder[Constraint]) =

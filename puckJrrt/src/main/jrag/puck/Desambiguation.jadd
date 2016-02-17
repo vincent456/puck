@@ -72,6 +72,12 @@ aspect Desambiguation{
 		return getDesambiguateFullName();
 	}
 
+	public String Callable.getDesambiguateFullName(){
+
+		return hostType().typeName()+"."+name()
+		+ getParametersAsString();
+	}
+
 	public String FieldDecl.fullName(){
 		//TODO seem strange, check if correct
 		String fullName="";
@@ -120,22 +126,26 @@ aspect Desambiguation{
 		if(params.getNumChild() > 0){
 			for(int i = 0; i< params.getNumChild() - 1; i++){
 				ParameterDeclaration pdecl = params.getChild(i);
-				stringParameters.append(pdecl.type().name());
+				stringParameters.append(pdecl.typeNameInSig());
 				stringParameters.append(",");
 			}
 		//		String[] splitName = pdecl.type().fullName().split("[.]");
 		//		stringParameters.append(splitName[splitName.length-1]);
 			ParameterDeclaration pdecl = params.getChild(params.getNumChild()-1);
-			stringParameters.append(pdecl.type().name());
+			stringParameters.append(pdecl.typeNameInSig());
 		}
     	stringParameters.append(")");
 
 		return stringParameters.toString();
     }
 
-    public String Callable.getDesambiguateFullName(){
+	public String ParameterDeclaration.typeNameInSig(){
+		if(getTypeAccess() instanceof ParTypeAccess){
+		ParTypeAccess pta = (ParTypeAccess) getTypeAccess();
+		return pta.genericDecl().getID();
+		}
+		return type().name();
+	}
 
-    	return hostType().typeName()+"."+name()
-    		    + getParametersAsString();
-    }
+
 }

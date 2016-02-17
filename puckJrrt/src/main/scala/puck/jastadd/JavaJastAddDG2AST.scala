@@ -41,14 +41,6 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
 
   }
 
-  /*
-
-      srcDirectory !,
-      outDirectory.toOption,
-      jarListFile,
-      javaRuntime.toOption
-   */
-
   def apply
   (p : Project,
    logger : PuckLogger,

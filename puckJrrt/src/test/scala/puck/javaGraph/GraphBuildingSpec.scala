@@ -260,6 +260,17 @@ class GraphBuildingSpec extends AcceptanceSpec {
         graph.contains(a, at)
         graph.contains(m1, mt1)
         graph.contains(m2, mt2)
+      }
+    }
+
+    scenario("up bounded type variable"){
+      val _ = new ScenarioFactory(s"$graphBuildingExamplesPath/typeVariables/NamingProblem.java") {
+        val u = fullName2id("p.Comparator.thenComparing(Comparator)@U")
+        val param = fullName2id("p.Comparator.thenComparing(Comparator).keyComparator")
+        val m = fullName2id("p.Comparator.thenComparing(Comparator)")
+
+        graph.contains(m, u)
+        graph.uses(param, u)
 
       }
     }
