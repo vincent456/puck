@@ -33,11 +33,8 @@ aspect NameCheck {
   public void ASTNode.nameCheck() {
   }
 
-  public TypeDecl ASTNode.extractSingleType(SimpleSet c) {
-    if (c.size() != 1) {
-      return null;
-    }
-    return (TypeDecl) c.iterator().next();
+  public TypeDecl ASTNode.extractSingleType(SimpleSet<TypeDecl> types) {
+    return types.isSingleton() ? types.singletonValue() : null;
   }
 
   public void SingleTypeImportDecl.nameCheck() {
@@ -49,7 +46,8 @@ aspect NameCheck {
     }
   }
 
-  inh SimpleSet ImportDecl.allImportedTypes(String name);
+  inh SimpleSet<TypeDecl> ImportDecl.allImportedTypes(String name);
+
   eq CompilationUnit.getImportDecl().allImportedTypes(String name) = importedTypes(name);
 
   public void TypeImportOnDemandDecl.nameCheck() {
@@ -64,12 +62,8 @@ aspect NameCheck {
     for (int i = 0; i < getNumImportDecl(); i++) {
       ImportDecl decl = getImportDecl(i);
       if (!decl.isOnDemand()) {
-        Iterator importIter = decl.importedTypes().iterator();
-        while (importIter.hasNext()) {
-          TypeDecl importedType = (TypeDecl) importIter.next();
-          Iterator iter = localLookupType(importedType.name()).iterator();
-          while (iter.hasNext()) {
-            TypeDecl local = (TypeDecl) iter.next();
+        for (TypeDecl importedType : decl.importedTypes()) {
+          for (TypeDecl local : localLookupType(importedType.name())) {
             if (local != importedType) {
               errorf("imported type %s conflicts with visible type", decl.typeName());
             }
@@ -113,8 +107,10 @@ aspect NameCheck {
     }
   }
 
-  // 8.8.5
-  syn lazy boolean ConstructorDecl.circularThisInvocation(ConstructorDecl decl) circular [true] {
+  /**
+   * @return {@code true} if this constructor (possibly indirectly) calls the given constructor.
+   */
+  syn lazy boolean ConstructorDecl.circularThisInvocation(ConstructorDecl decl) {
     if (hasConstructorInvocation()) {
       Expr e = ((ExprStmt) getConstructorInvocation()).getExpr();
       if (e instanceof ConstructorAccess) {
@@ -153,13 +149,13 @@ aspect NameCheck {
     super.nameCheck();
     ConstructorDecl decl = (ConstructorDecl) enclosingBodyDecl();
     if (((ExprStmt) decl.getConstructorInvocation()).getExpr() == this) {
-      // don't error-check the parsed constructor invocation in case it is not the used one
+      // Don't error-check the parsed constructor invocation in case it is not the used one.
       if (decls().isEmpty()) {
         errorf("no constructor matches %s", this.prettyPrint());
       } else if (decls().size() > 1 && validArgs()) {
         errorf("several most specific constructors for %s", this.prettyPrint());
-        for (Iterator iter = decls().iterator(); iter.hasNext(); ) {
-          errorf("         %s", ((ConstructorDecl) iter.next()).signature());
+        for (ConstructorDecl cons : decls()) {
+          errorf("         %s", cons.signature());
         }
       }
     }
@@ -190,12 +186,13 @@ aspect NameCheck {
           type().typeName());
     } else if (decls().size() > 1 && validArgs()) {
       error("several most specific constructors found");
-      for (Iterator iter = decls().iterator(); iter.hasNext(); ) {
-        errorf("         %s", ((ConstructorDecl) iter.next()).signature());
+      for (ConstructorDecl cons : decls()) {
+        errorf("         %s", cons.signature());
       }
     } else if (!hasTypeDecl()) {
-      // check if the constructor is accessible (stricter when not in a class instance expression)
-      // if constructor is private it can not be accessed outside the host class or a subtype of it
+      // Check if the constructor is accessible (stricter when not in a class
+      // instance expression) if constructor is private it can not be accessed
+      // outside the host class or a subtype of it.
       ConstructorDecl decl = decl();
       if (decl.isProtected() && !hostPackage().equals(decl.hostPackage()) &&
           !hostType().instanceOf(decl.hostType())) {
@@ -220,8 +217,7 @@ aspect NameCheck {
     if (decls().size() > 1) {
       StringBuilder sb = new StringBuilder();
       sb.append("several types named " + name() + ":");
-      for (Iterator iter = decls().iterator(); iter.hasNext(); ) {
-        TypeDecl t = (TypeDecl) iter.next();
+      for (TypeDecl t : decls()) {
         sb.append(" " + t.typeName());
       }
       error(sb.toString());
@@ -236,45 +232,54 @@ aspect NameCheck {
   }
 
   public void VarAccess.nameCheck() {
-    if (decls().isEmpty() && (!isQualified() || !qualifier().type().isUnknown() || qualifier().isPackageAccess())) {
+    if (decls().isEmpty()
+        && (!isQualified() || !qualifier().type().isUnknown() || qualifier().isPackageAccess())) {
       errorf("no field named %s is accessible", name());
     }
     if (decls().size() > 1) {
       StringBuffer sb = new StringBuffer();
       sb.append("several fields named " + name());
-      for (Iterator iter = decls().iterator(); iter.hasNext(); ) {
-        Variable v = (Variable) iter.next();
-        sb.append("\n    " + v.type().typeName() + "." + v.name() + " declared in " + v.hostType().typeName());
+      ArrayList<String> fields = new ArrayList<String>();
+      for (Variable v : decls()) {
+        fields.add(String.format("%n    %s %s declared in %s",
+            v.type().typeName(), v.name(), v.hostType().typeName()));
+      }
+      Collections.sort(fields);
+      for (String line : fields) {
+        sb.append(line);
       }
       error(sb.toString());
     }
 
     // 8.8.5.1
-    if (inExplicitConstructorInvocation() && !isQualified() && decl().isInstanceVariable() && hostType() == decl().hostType()) {
-      errorf("instance variable %s may not be accessed in an explicit constructor invocation", name());
+    if (inExplicitConstructorInvocation() && !isQualified()
+        && decl().isInstanceVariable() && hostType() == decl().hostType()) {
+      errorf("instance variable %s may not be accessed in an explicit constructor invocation",
+          name());
     }
 
     Variable v = decl();
-    if (!v.isFinal() && !v.isClassVariable() && !v.isInstanceVariable() && v.hostType() != hostType()) {
+    if (!v.isFinal() && !v.isClassVariable()
+        && !v.isInstanceVariable() && v.hostType() != hostType()) {
       error("A parameter/variable used but not declared in an inner class must be declared final");
     }
 
     // 8.3.2.3
-    if ((decl().isInstanceVariable() || decl().isClassVariable()) && !isQualified()) {
-      if (hostType() != null && !hostType().declaredBeforeUse(decl(), this)) {
+    if (decl().isField() && !isQualified()) {
+      if (hostType() != null && !declaredBefore(decl())) {
         if (inSameInitializer() && !simpleAssignment() && inDeclaringClass()) {
           BodyDecl b = closestBodyDecl(hostType());
           errorf("variable %s is used in %s before it is declared", decl().name(), b.prettyPrint());
         }
       }
     }
-
   }
 
-  // find the bodydecl declared in t in which this construct is nested
+  // Find the bodydecl declared in t in which this construct is nested.
   public BodyDecl VarAccess.closestBodyDecl(TypeDecl t) {
     ASTNode node = this;
-    while (!(node.getParent().getParent() instanceof Program) && node.getParent().getParent() != t) {
+    while (!(node.getParent().getParent() instanceof Program)
+        && node.getParent().getParent() != t) {
       node = node.getParent();
     }
     if (node instanceof BodyDecl) {
@@ -288,7 +293,8 @@ aspect NameCheck {
     if (b == null) {
       return false;
     }
-    if (b instanceof FieldDeclaration && ((FieldDeclaration) b).isStatic() == decl().isStatic()) {
+    if (b instanceof FieldDecl && ((FieldDecl) b).isStatic() == decl().isStatic()) {
+      // TODO(joqvist): fixme
       return true;
     }
     if (b instanceof InstanceInitializer && !decl().isStatic()) {
@@ -305,6 +311,7 @@ aspect NameCheck {
   syn boolean VarAccess.inDeclaringClass() = hostType() == decl().hostType();
 
   inh boolean TypeDecl.hasPackage(String packageName);
+
   inh boolean PackageAccess.hasPackage(String packageName);
 
   inh ASTNode TypeDecl.enclosingBlock();
@@ -318,14 +325,16 @@ aspect NameCheck {
       errorf("duplicate type %s in package %s", name(), packageName());
     }
 
-    if (!isTopLevelType() && !isAnonymous() && !isLocalClass() && extractSingleType(enclosingType().memberTypes(name())) != this) {
+    if (!isTopLevelType() && !isAnonymous() && !isLocalClass()
+        && extractSingleType(enclosingType().memberTypes(name())) != this) {
       errorf("duplicate member type %s in type %s", name(), enclosingType().typeName());
     }
 
     // 14.3
     if (isLocalClass()) {
       TypeDecl typeDecl = extractSingleType(lookupType(name()));
-      if (typeDecl != null && typeDecl != this && typeDecl.isLocalClass() && enclosingBlock() == typeDecl.enclosingBlock()) {
+      if (typeDecl != null && typeDecl != this && typeDecl.isLocalClass()
+          && enclosingBlock() == typeDecl.enclosingBlock()) {
         errorf("local class named %s may not be redeclared as a local class in the same block",
             name());
       }
@@ -349,35 +358,42 @@ aspect NameCheck {
     return false;
   }
 
-  public void FieldDeclaration.nameCheck() {
+  public void FieldDecl.nameCheck() {
     super.nameCheck();
     // 8.3
-    for (Iterator iter = hostType().memberFields(name()).iterator(); iter.hasNext(); ) {
-      Variable v = (Variable) iter.next();
-      if (v != this && v.hostType() == hostType()) {
-        errorf("field named %s is multiply declared in type %s", name(), hostType().typeName());
+    for (FieldDeclarator decl : getDeclaratorList()) {
+      for (Variable v : hostType().memberFields(decl.name())) {
+        if (v != decl && v.hostType() == hostType()) {
+          errorf("field named %s is multiply declared in type %s",
+              decl.name(), hostType().typeName());
+        }
       }
     }
-
   }
 
   inh VariableScope ParameterDeclaration.outerScope();
-  inh VariableScope VariableDeclaration.outerScope();
+
+  inh VariableScope VariableDeclarator.outerScope();
+
   eq BasicCatch.getParameter().outerScope() = this;
+
   eq Block.getStmt().outerScope() = this;
+
   eq TypeDecl.getChild().outerScope() = this;
+
   eq ForStmt.getInitStmt().outerScope() = this;
+
   eq ForStmt.getStmt().outerScope() = this;
+
   eq Program.getChild().outerScope() {
     throw new UnsupportedOperationException("outerScope() not defined");
   }
 
-  public void VariableDeclaration.nameCheck() {
-    SimpleSet decls = outerScope().lookupVariable(name());
-    for (Iterator iter = decls.iterator(); iter.hasNext(); ) {
-      Variable var = (Variable) iter.next();
-      if (var instanceof VariableDeclaration) {
-        VariableDeclaration decl = (VariableDeclaration) var;
+  public void VariableDeclarator.nameCheck() {
+    SimpleSet<Variable> decls = outerScope().lookupVariable(name());
+    for (Variable var : decls) {
+      if (var instanceof VariableDeclarator) {
+        VariableDeclarator decl = (VariableDeclarator) var;
         if (decl != this && decl.enclosingBodyDecl() == enclosingBodyDecl()) {
           errorf("duplicate declaration of local variable %s in enclosing scope", name());
         }
@@ -404,11 +420,10 @@ aspect NameCheck {
   }
 
   public void ParameterDeclaration.nameCheck() {
-    SimpleSet decls = outerScope().lookupVariable(name());
-    for (Iterator iter = decls.iterator(); iter.hasNext(); ) {
-      Variable var = (Variable) iter.next();
-      if (var instanceof VariableDeclaration) {
-        VariableDeclaration decl = (VariableDeclaration) var;
+    SimpleSet<Variable> decls = outerScope().lookupVariable(name());
+    for (Variable var : decls) {
+      if (var instanceof VariableDeclarator) {
+        VariableDeclarator decl = (VariableDeclarator) var;
         if (decl.enclosingBodyDecl() == enclosingBodyDecl()) {
           errorf("duplicate declaration of local variable %s", name());
         }
@@ -494,6 +509,7 @@ aspect NameCheck {
   }
 
   inh lazy Case Case.bind(Case c);
+
   eq SwitchStmt.getBlock().bind(Case c) {
     Block b = getBlock();
     for (int i = 0; i < b.getNumStmt(); i++) {
@@ -510,24 +526,28 @@ aspect NameCheck {
   eq LongType.assignableToInt() = false;
 
   syn boolean Case.constValue(Case c);
+
   eq ConstCase.constValue(Case c) {
     if (!(c instanceof ConstCase) || !getValue().isConstant()) {
       return false;
     }
-    if (!getValue().type().assignableToInt() || !((ConstCase) c).getValue().type().assignableToInt()) {
+    if (!getValue().type().assignableToInt()
+        || !((ConstCase) c).getValue().type().assignableToInt()) {
       return false;
     }
     return getValue().constant().intValue() == ((ConstCase) c).getValue().constant().intValue();
   }
+
   eq DefaultCase.constValue(Case c) = c instanceof DefaultCase;
 
-  inh SimpleSet LocalClassDeclStmt.otherLocalClassDecls(String name);
-  inh SimpleSet Block.otherLocalClassDecls(String name);
+  inh SimpleSet<TypeDecl> LocalClassDeclStmt.otherLocalClassDecls(String name);
 
-  eq BodyDecl.getChild().otherLocalClassDecls(String name) = SimpleSet.emptySet;
+  inh SimpleSet<TypeDecl> Block.otherLocalClassDecls(String name);
+
+  eq BodyDecl.getChild().otherLocalClassDecls(String name) = emptySet();
 
   eq Block.getStmt(int index).otherLocalClassDecls(String name) {
-    SimpleSet local = SimpleSet.emptySet;
+    SimpleSet<TypeDecl> local = emptySet();
     for (int i = index-1; i >= 0 && !(getStmt(i) instanceof Case); --i) {
       if (getStmt(i) instanceof LocalClassDeclStmt) {
         TypeDecl t = ((LocalClassDeclStmt) getStmt(i)).getClassDecl();
@@ -549,7 +569,7 @@ aspect NameCheck {
    */
   public void LocalClassDeclStmt.nameCheck() {
     TypeDecl decl = getClassDecl();
-    SimpleSet decls = otherLocalClassDecls(decl.name());
+    SimpleSet<TypeDecl> decls = otherLocalClassDecls(decl.name());
     if (!decls.isEmpty()) {
       errorf("another local class %s has already been declared in this scope", decl.name());
     }

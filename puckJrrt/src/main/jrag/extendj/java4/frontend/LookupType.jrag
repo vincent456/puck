@@ -95,12 +95,10 @@ aspect SpecialClasses {
   inh lazy TypeDecl ThrowStmt.typeNull();
 
   inh TypeDecl Expr.unknownType();
-
 }
 
 aspect LookupFullyQualifiedTypes {
-  syn lazy boolean Program.hasPackage(String packageName) =
-      isPackage(packageName);
+  syn lazy boolean Program.hasPackage(String packageName) = isPackage(packageName);
 
   /**
    * The scope of a declaration of an observable top level package is all
@@ -162,17 +160,18 @@ aspect LookupFullyQualifiedTypes {
    * the source type lives in a compilation unit with a different simple name.
    */
   private final Map<String, TypeDecl> Program.sourceTypeMap = new HashMap<String, TypeDecl>();
+
   private boolean Program.sourceTypeMapInitialized = false;
 
   /**
    * Lookup a type among source classes.
-   * <p>
-   * Invoking this method may cause more than just the specified type to be loaded, for
-   * example if there exists other types in the same source file, the additional
-   * types are also loaded and cached for the next lookup.
-   * <p>
-   * This method is not an attribute due to the necessary side-effects caused
-   * by loading and caching of extra types.
+   *
+   * <p>Invoking this method may cause more than just the specified type to be
+   * loaded, for example if there exists other types in the same source file,
+   * the additional types are also loaded and cached for the next lookup.
+   *
+   * <p>This method is not an attribute due to the necessary side-effects
+   * caused by loading and caching of extra types.
    */
   protected TypeDecl Program.lookupSourceType(String packageName, String typeName) {
     String fullName = packageName.equals("") ? typeName : packageName + "." + typeName;
@@ -214,20 +213,24 @@ aspect LookupFullyQualifiedTypes {
    * that are declared in compilation units with a different simple name than the type itself.
    */
   private final Map<String, TypeDecl> Program.libraryTypeMap = new HashMap<String, TypeDecl>();
+
+  private final Set<CompilationUnit> Program.libraryCompilationUnitSet =
+      new RobustSet<CompilationUnit>(new HashSet<CompilationUnit>());
+
   private boolean Program.libraryTypeMapInitialized = false;
 
   /**
    * Lookup a type among library classes. The lookup includes Jar and source files.
-   * <p>
-   * Invoking this method may cause more than just the specified type to be loaded, for
+   *
+   * <p>Invoking this method may cause more than just the specified type to be loaded, for
    * example if there exists other types in the same source file, the additional
    * types are also loaded and cached for the next lookup.
-   * <p>
-   * This method is not an attribute due to the necessary side-effects caused
+   *
+   * <p>This method is not an attribute due to the necessary side-effects caused
    * by loading and caching of extra types.
    */
   protected TypeDecl Program.lookupLibraryType(String packageName, String typeName) {
-    String fullName = packageName.equals("") ? typeName : packageName + "." + typeName;
+    String fullName = packageName.isEmpty() ? typeName : packageName + "." + typeName;
 
     if (!libraryTypeMapInitialized) {
       initializeLibraryTypeMap();
@@ -240,6 +243,9 @@ aspect LookupFullyQualifiedTypes {
 
     // Lookup the type in the library class path.
     CompilationUnit libraryUnit = getLibCompilationUnit(fullName);
+
+    // Store the compilation unit in a set for later introspection of loaded compilation units.
+    libraryCompilationUnitSet.add(libraryUnit);
 
     // Add all types from the compilation unit in the library type map so that we can find them on
     // the next type lookup. If we don't do this lookup might incorrectly miss a type that is not
@@ -288,7 +294,8 @@ aspect LookupFullyQualifiedTypes {
 aspect TypeScopePropagation {
   inh TypeDecl Access.unknownType();
 
-  syn lazy SimpleSet TypeAccess.decls() =
+  // Can not be lazy due to circular use from StaticImportDecl.importedTypes.
+  syn SimpleSet<TypeDecl> TypeAccess.decls() =
       packageName().equals("")
       ? lookupType(name())
       : lookupType(packageName(), name()).asSet();
@@ -297,135 +304,142 @@ aspect TypeScopePropagation {
    * @return a set containing this type, unless this is the unknown type in
    * which case an empty set is returned
    */
-  syn SimpleSet TypeDecl.asSet() = this;
-  eq UnknownType.asSet() = SimpleSet.emptySet;
+  syn SimpleSet<TypeDecl> TypeDecl.asSet() = this;
 
-  syn lazy SimpleSet PrimitiveTypeAccess.decls() = lookupType(PRIMITIVE_PACKAGE_NAME, name());
-  syn lazy String PrimitiveTypeAccess.getPackage() = PRIMITIVE_PACKAGE_NAME;
-  syn lazy String PrimitiveTypeAccess.getID() = getName();
+  eq UnknownType.asSet() = emptySet();
 
-  syn lazy TypeDecl TypeAccess.decl() {
-    SimpleSet decls = decls();
-    if (decls.size() == 1) {
-      return (TypeDecl) decls.iterator().next();
+  syn lazy SimpleSet<TypeDecl> PrimitiveTypeAccess.decls() =
+      lookupType(PRIMITIVE_PACKAGE_NAME, name());
+
+  // Can not be lazy due to circular use from StaticImportDecl.importedTypes.
+  syn TypeDecl TypeAccess.decl() {
+    SimpleSet<TypeDecl> decls = decls();
+    if (decls.isSingleton()) {
+      return decls.singletonValue();
     }
     return unknownType();
   }
 
   syn lazy TypeDecl ArrayTypeAccess.decl() = getAccess().type().arrayType();
 
-  syn SimpleSet ThisAccess.decls() = SimpleSet.emptySet;
-  syn SimpleSet SuperAccess.decls() = SimpleSet.emptySet;
+  syn SimpleSet<TypeDecl> ThisAccess.decls() = emptySet();
+
+  syn SimpleSet<TypeDecl> SuperAccess.decls() = emptySet();
 
   /**
-   * @return the type which this access references
+   * @return the type which this access references.
    */
   syn lazy TypeDecl ThisAccess.decl() = isQualified() ? qualifier().type() : hostType();
 
   /**
-   * @return the type whose supertype this super access references
+   * @return the type whose supertype this super access references.
    */
   syn lazy TypeDecl SuperAccess.decl() = isQualified() ? qualifier().type() : hostType();
 
   eq MethodAccess.getArg().lookupType(String name) = unqualifiedScope().lookupType(name);
+
   eq ConstructorAccess.getArg().lookupType(String name) = unqualifiedScope().lookupType(name);
+
   eq ArrayAccess.getExpr().lookupType(String name) = unqualifiedScope().lookupType(name);
-  eq ArrayTypeWithSizeAccess.getExpr().lookupType(String name) = unqualifiedScope().lookupType(name);
+
+  eq ArrayTypeWithSizeAccess.getExpr().lookupType(String name) =
+      unqualifiedScope().lookupType(name);
+
   eq ClassInstanceExpr.getArg().lookupType(String name) = unqualifiedScope().lookupType(name);
 
-  inh lazy SimpleSet CompilationUnit.lookupType(String name);
-  inh lazy SimpleSet TypeDecl.lookupType(String name);
-  inh SimpleSet BodyDecl.lookupType(String name);
-  inh SimpleSet Stmt.lookupType(String name);
-  inh lazy SimpleSet Block.lookupType(String name);
-  inh SimpleSet Expr.lookupType(String name);
+  inh lazy SimpleSet<TypeDecl> CompilationUnit.lookupType(String name);
+  inh lazy SimpleSet<TypeDecl> TypeDecl.lookupType(String name);
+  inh SimpleSet<TypeDecl> BodyDecl.lookupType(String name);
+  inh SimpleSet<TypeDecl> Stmt.lookupType(String name);
+  inh lazy SimpleSet<TypeDecl> Block.lookupType(String name);
+  inh SimpleSet<TypeDecl> Expr.lookupType(String name);
 
-  eq Program.getChild().lookupType(String name) = SimpleSet.emptySet;
+  eq Program.getChild().lookupType(String name) = emptySet();
 
   // The scope of a type import declaration is all the class and interface type declarations in
   // the compilation unit in which the import declaration appears.
   eq CompilationUnit.getChild().lookupType(String name) {
     // Locally declared types in the compilation unit.
-    SimpleSet set = localLookupType(name);
-    if (!set.isEmpty()) {
-      return set;
+    SimpleSet<TypeDecl> result = localLookupType(name);
+    if (!result.isEmpty()) {
+      return result;
     }
 
     // Imported types.
-    set = importedTypes(name);
-    if (!set.isEmpty()) {
-      return set;
+    result = importedTypes(name);
+    if (!result.isEmpty()) {
+      return result;
     }
 
     // Types in the same package.
-    TypeDecl result = lookupType(packageName(), name);
-    if (result.accessibleFromPackage(packageName())) {
-      return result;
+    TypeDecl pkgType = lookupType(packageName(), name);
+    if (pkgType.accessibleFromPackage(packageName())) {
+      return pkgType;
     }
 
     // Types imported on demand.
-    set = importedTypesOnDemand(name);
-    if (!set.isEmpty()) {
-      return set;
+    result = importedTypesOnDemand(name);
+    if (!result.isEmpty()) {
+      return result;
     }
 
     // Include primitive types.
-    result = lookupType(PRIMITIVE_PACKAGE_NAME, name);
-    if (!result.isUnknown()) {
-      return result;
+    TypeDecl primitiveType = lookupType(PRIMITIVE_PACKAGE_NAME, name);
+    if (!primitiveType.isUnknown()) {
+      return primitiveType;
     }
 
     // 7.5.5 Automatic Imports
-    result = lookupType("java.lang", name);
-    if (result.accessibleFromPackage(packageName())) {
-      return result;
+    TypeDecl defaultType = lookupType("java.lang", name);
+    if (defaultType.accessibleFromPackage(packageName())) {
+      return defaultType;
     }
     return lookupType(name);
   }
 
   /** Searches for a type with the given simple name in this compilation unit. */
-  syn SimpleSet CompilationUnit.localLookupType(String name) {
+  syn SimpleSet<TypeDecl> CompilationUnit.localLookupType(String name) {
     for (int i = 0; i < getNumTypeDecl(); i++) {
       if (getTypeDecl(i).name().equals(name)) {
-        return SimpleSet.emptySet.add(getTypeDecl(i));
+        return getTypeDecl(i);
       }
     }
-    return SimpleSet.emptySet;
+    return emptySet();
   }
 
-  syn SimpleSet CompilationUnit.importedTypes(String name) {
-    SimpleSet set = SimpleSet.emptySet;
+  syn SimpleSet<TypeDecl> CompilationUnit.importedTypes(String name) {
+    SimpleSet<TypeDecl> result = emptySet();
     for (int i = 0; i < getNumImportDecl(); i++) {
       if (!getImportDecl(i).isOnDemand()) {
-        for (Iterator iter = getImportDecl(i).importedTypes(name).iterator(); iter.hasNext(); ) {
-          set = set.add(iter.next());
+        for (TypeDecl type : getImportDecl(i).importedTypes(name)) {
+          result = result.add(type);
         }
       }
     }
-    return set;
+    return result;
   }
 
-  syn SimpleSet CompilationUnit.importedTypesOnDemand(String name) {
-    SimpleSet set = SimpleSet.emptySet;
+  syn SimpleSet<TypeDecl> CompilationUnit.importedTypesOnDemand(String name) {
+    SimpleSet<TypeDecl> result = emptySet();
     for (int i = 0; i < getNumImportDecl(); i++) {
       if (getImportDecl(i).isOnDemand()) {
-        for (Iterator iter = getImportDecl(i).importedTypes(name).iterator(); iter.hasNext(); ) {
-          set = set.add(iter.next());
+        for (TypeDecl type : getImportDecl(i).importedTypes(name)) {
+          result = result.add(type);
         }
       }
     }
-    return set;
+    return result;
   }
 
-  syn lazy SimpleSet ImportDecl.importedTypes(String name) = SimpleSet.emptySet;
+  syn lazy SimpleSet<TypeDecl> ImportDecl.importedTypes(String name) = emptySet();
 
   eq SingleTypeImportDecl.importedTypes(String name) {
-    SimpleSet set = SimpleSet.emptySet;
+    SimpleSet<TypeDecl> result = emptySet();
     TypeDecl type = getAccess().type();
     if (type.name().equals(name)) {
-      set = set.add(type);
+      result = result.add(type);
     }
-    return set;
+    return result;
   }
 
   /**
@@ -434,32 +448,32 @@ aspect TypeScopePropagation {
    * import declarations this returns the empty set.
    * @return TypeDecl of imported type wrapped in SimpleSet
    */
-  syn lazy SimpleSet ImportDecl.importedTypes() = SimpleSet.emptySet;
+  syn lazy SimpleSet<TypeDecl> ImportDecl.importedTypes() = emptySet();
 
-  eq SingleTypeImportDecl.importedTypes() = SimpleSet.emptySet.add(getAccess().type());
+  eq SingleTypeImportDecl.importedTypes() = getAccess().type();
 
   eq TypeImportOnDemandDecl.importedTypes(String name) {
-    SimpleSet set = SimpleSet.emptySet;
+    SimpleSet<TypeDecl> result = emptySet();
     if (getAccess() instanceof PackageAccess) {
       String packageName = ((PackageAccess) getAccess()).getPackage();
       TypeDecl typeDecl = lookupType(packageName, name);
-      if (typeDecl.accessibleFromPackage(packageName()) &&
-         typeDecl.typeName().equals(packageName + "." + name)) {
+      if (typeDecl.accessibleFromPackage(packageName())
+          && typeDecl.typeName().equals(packageName + "." + name)) {
         // Canonical names match.
-        set = set.add(typeDecl);
+        result = result.add(typeDecl);
       }
     } else {
-      for (Iterator iter = getAccess().type().memberTypes(name).iterator(); iter.hasNext(); ) {
-        TypeDecl decl = (TypeDecl) iter.next();
-        if (decl.accessibleFromPackage(packageName()) &&
-           decl.typeName().equals(getAccess().typeName() + "." + name)) {
+      for (TypeDecl type : getAccess().type().memberTypes(name)) {
+        if (type.accessibleFromPackage(packageName())
+            && type.typeName().equals(getAccess().typeName() + "." + name)) {
           // Canonical names match.
-          set = set.add(decl);
+          result = result.add(type);
         }
       }
     }
-    return set;
+    return result;
   }
+
   inh TypeDecl TypeImportOnDemandDecl.lookupType(String packageName, String typeName);
   inh String ImportDecl.packageName();
 
@@ -473,127 +487,120 @@ aspect TypeScopePropagation {
 
   eq ClassDecl.getImplicitConstructor().lookupType(String name) = localLookupType(name);
 
-  syn SimpleSet TypeDecl.localLookupType(String name) {
-    SimpleSet c = memberTypes(name);
-    if (!c.isEmpty()) {
-      return c;
+  syn SimpleSet<TypeDecl> TypeDecl.localLookupType(String name) {
+    SimpleSet<TypeDecl> result = memberTypes(name);
+    if (!result.isEmpty()) {
+      return result;
     }
     if (name().equals(name)) {
-      return SimpleSet.emptySet.add(this);
+      return this;
     }
 
-    c = lookupType(name);
+    result = lookupType(name);
     // 8.5.2
     if (isClassDecl() && isStatic() && !isTopLevelType()) {
-      SimpleSet newSet = SimpleSet.emptySet;
-      for (Iterator iter = c.iterator(); iter.hasNext(); ) {
-        TypeDecl d = (TypeDecl) iter.next();
-        //if (d.isStatic() || d.isTopLevelType() || this.instanceOf(d.enclosingType())) {
-          newSet = newSet.add(d);
-        //}
+      SimpleSet<TypeDecl> newSet = emptySet();
+      for (TypeDecl type : result) {
+        newSet = newSet.add(type);
       }
-      c = newSet;
+      result = newSet;
     }
-    return c;
+    return result;
   }
 
   eq Block.getStmt(int index).lookupType(String name) {
-    SimpleSet c = SimpleSet.emptySet;
+    SimpleSet<TypeDecl> result = emptySet();
     for (int i = index; i >= 0 && !(getStmt(i) instanceof Case); i--) {
       if (getStmt(i) instanceof LocalClassDeclStmt) {
         TypeDecl t = ((LocalClassDeclStmt) getStmt(i)).getClassDecl();
         if (t.name().equals(name)) {
-          c = c.add(t);
+          result = result.add(t);
         }
       }
     }
-    if (!c.isEmpty()) {
-      return c;
+    if (!result.isEmpty()) {
+      return result;
     }
     return lookupType(name);
   }
 
   eq ClassInstanceExpr.getAccess().lookupType(String name) {
-    SimpleSet c = lookupType(name);
-    if (c.size() == 1) {
-      if (isQualified()) {
-        c = keepInnerClasses(c);
-      }
+    SimpleSet<TypeDecl> result = lookupType(name);
+    if (result.isSingleton() && isQualified()) {
+      result = keepInnerClasses(result);
     }
-    return c;
+    return result;
   }
 
   eq ClassInstanceExpr.getTypeDecl().lookupType(String name) {
-    SimpleSet c = localLookupType(name);
-    if (!c.isEmpty()) {
-      return c;
+    SimpleSet<TypeDecl> result = localLookupType(name);
+    if (!result.isEmpty()) {
+      return result;
     }
-    c = lookupType(name);
-    if (!c.isEmpty()) {
-      return c;
+    result = lookupType(name);
+    if (!result.isEmpty()) {
+      return result;
     }
     return unqualifiedScope().lookupType(name);
   }
 
-  public SimpleSet ClassInstanceExpr.keepInnerClasses(SimpleSet c) {
-    SimpleSet newSet = SimpleSet.emptySet;
-    for (Iterator iter = c.iterator(); iter.hasNext(); ) {
-      TypeDecl t = (TypeDecl) iter.next();
-      if (t.isInnerType() && t.isClassDecl()) {
-        newSet = newSet.add(c);
+  public SimpleSet<TypeDecl> ClassInstanceExpr.keepInnerClasses(SimpleSet<TypeDecl> types) {
+    SimpleSet<TypeDecl> result = emptySet();
+    for (TypeDecl type : types) {
+      if (type.isInnerType() && type.isClassDecl()) {
+        result = result.add(type); // Note: fixed potential error found by type checking.
       }
     }
-    return newSet;
+    return result;
   }
 
-  eq ParseName.qualifiedLookupType(String name) = SimpleSet.emptySet;
+  eq ParseName.qualifiedLookupType(String name) = emptySet();
 
   eq AbstractDot.getRight().lookupType(String name) = getLeft().qualifiedLookupType(name);
 
-  syn SimpleSet Expr.qualifiedLookupType(String name) =
+  syn SimpleSet<TypeDecl> Expr.qualifiedLookupType(String name) =
       keepAccessibleTypes(type().memberTypes(name));
 
   eq ClassInstanceExpr.qualifiedLookupType(String name) {
-    SimpleSet c = keepAccessibleTypes(type().memberTypes(name));
-    if (!c.isEmpty()) {
-      return c;
+    SimpleSet<TypeDecl> result = keepAccessibleTypes(type().memberTypes(name));
+    if (!result.isEmpty()) {
+      return result;
     }
     if (type().name().equals(name)) {
-      return SimpleSet.emptySet.add(type());
+      return type();
     }
-    return SimpleSet.emptySet;
+    return emptySet();
   }
 
   eq PackageAccess.qualifiedLookupType(String name) {
-    SimpleSet c = SimpleSet.emptySet;
+    SimpleSet<TypeDecl> result = emptySet();
     TypeDecl typeDecl = lookupType(packageName(), name);
     if (!typeDecl.isUnknown()) {
       if (hostType() != null && typeDecl.accessibleFrom(hostType())) {
-        c = c.add(typeDecl);
+        result = result.add(typeDecl);
       } else if (hostType() == null && typeDecl.accessibleFromPackage(hostPackage())) {
-        c = c.add(typeDecl);
+        result = result.add(typeDecl);
       }
     }
-    return c;
+    return result;
   }
 
-  public SimpleSet Expr.keepAccessibleTypes(SimpleSet oldSet) {
-    SimpleSet newSet = SimpleSet.emptySet;
+  public SimpleSet<TypeDecl> Expr.keepAccessibleTypes(SimpleSet<TypeDecl> types) {
+    SimpleSet<TypeDecl> result = emptySet();
     TypeDecl hostType = hostType();
-    for (Iterator iter = oldSet.iterator(); iter.hasNext(); ) {
-      TypeDecl t = (TypeDecl) iter.next();
-      if ((hostType != null && t.accessibleFrom(hostType))
-          || (hostType == null && t.accessibleFromPackage(hostPackage()))) {
-        newSet = newSet.add(t);
+    for (TypeDecl type : types) {
+      if ((hostType != null && type.accessibleFrom(hostType))
+          || (hostType == null && type.accessibleFromPackage(hostPackage()))) {
+        result = result.add(type);
       }
     }
-    return newSet;
+    return result;
   }
 
-  syn lazy SimpleSet ClassInstanceExpr.localLookupType(String name) =
+  syn lazy SimpleSet<TypeDecl> ClassInstanceExpr.localLookupType(String name) =
       hasTypeDecl() && getTypeDecl().name().equals(name)
-      ? SimpleSet.emptySet.add(getTypeDecl())
-      : SimpleSet.emptySet;
+      ? getTypeDecl()
+      : ASTNode.<TypeDecl>emptySet();
 
   syn boolean TypeDecl.hasType(String name) = !memberTypes(name).isEmpty();
   syn boolean BodyDecl.declaresType(String name) = false;
@@ -606,59 +613,57 @@ aspect TypeScopePropagation {
   eq MemberInterfaceDecl.typeDecl() = getInterfaceDecl();
 
 
-  syn lazy SimpleSet TypeDecl.localTypeDecls(String name) {
-    SimpleSet set = SimpleSet.emptySet;
+  syn lazy SimpleSet<TypeDecl> TypeDecl.localTypeDecls(String name) {
+    SimpleSet<TypeDecl> result = emptySet();
     for (int i = 0; i < getNumBodyDecl(); i++) {
       if (getBodyDecl(i).declaresType(name)) {
-        set = set.add(getBodyDecl(i).type(name));
+        result = result.add(getBodyDecl(i).type(name));
       }
     }
-    return set;
+    return result;
   }
 
-  syn lazy SimpleSet TypeDecl.memberTypes(String name) = SimpleSet.emptySet;
+  // Can not be lazy due to circular use from StaticImportDecl.importedTypes.
+  syn SimpleSet<TypeDecl> TypeDecl.memberTypes(String name) = emptySet();
 
-  eq UnknownType.memberTypes(String name) = SimpleSet.emptySet;
+  eq UnknownType.memberTypes(String name) = emptySet();
 
   eq ClassDecl.memberTypes(String name) {
-    SimpleSet set = localTypeDecls(name);
-    if (!set.isEmpty()) {
-      return set;
+    SimpleSet<TypeDecl> result = localTypeDecls(name);
+    if (!result.isEmpty()) {
+      return result;
     }
     for (Iterator<TypeDecl> outerIter = interfacesIterator(); outerIter.hasNext(); ) {
       TypeDecl type = outerIter.next();
-      for (Iterator iter = type.memberTypes(name).iterator(); iter.hasNext(); ) {
-        TypeDecl decl = (TypeDecl) iter.next();
+      for (TypeDecl decl : type.memberTypes(name)) {
         if (!decl.isPrivate() && decl.accessibleFrom(this)) {
-          set = set.add(decl);
+          result = result.add(decl);
         }
       }
     }
     if (hasSuperclass()) {
-      for (Iterator iter = superclass().memberTypes(name).iterator(); iter.hasNext(); ) {
-        TypeDecl decl = (TypeDecl) iter.next();
+      for (TypeDecl decl : superclass().memberTypes(name)) {
         if (!decl.isPrivate() && decl.accessibleFrom(this)) {
-          set = set.add(decl);
+          result = result.add(decl);
         }
       }
     }
-    return set;
+    return result;
   }
 
   eq InterfaceDecl.memberTypes(String name) {
-    SimpleSet set = localTypeDecls(name);
-    if (!set.isEmpty()) {
-      return set;
+    SimpleSet<TypeDecl> result = localTypeDecls(name);
+    if (!result.isEmpty()) {
+      return result;
     }
     for (Iterator<TypeDecl> outerIter = interfacesIterator(); outerIter.hasNext(); ) {
       TypeDecl typeDecl = outerIter.next();
-      for (Iterator iter = typeDecl.memberTypes(name).iterator(); iter.hasNext(); ) {
-        TypeDecl decl = (TypeDecl) iter.next();
+      for (TypeDecl decl : typeDecl.memberTypes(name)) {
         if (!decl.isPrivate()) {
-          set = set.add(decl);
+          result = result.add(decl);
         }
       }
     }
-    return set;
+    return result;
   }
 }

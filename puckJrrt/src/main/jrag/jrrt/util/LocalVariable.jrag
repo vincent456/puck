@@ -4,7 +4,7 @@ aspect LocalVariable {
 		public BodyDecl enclosingBodyDecl();
 	}
 	
-	VariableDeclaration implements LocalDeclaration;
+	VariableDeclarator implements LocalDeclaration;
 	ParameterDeclaration implements LocalDeclaration;
 	
 	// find all variable accesses in a subtree

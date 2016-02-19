@@ -169,7 +169,7 @@ aspect DependencyGraphFactory {
 		return defId;
 	}
 
-	public int FieldDeclaration.buildDG_handleDef(JastaddGraphBuilder builder, int thisDeclId){
+	public int FieldDeclarator.buildDG_handleDef(JastaddGraphBuilder builder, int thisDeclId){
 		Expr def = getInit();
 		int defId = ASTNode.buildDefNode(builder, this);
 		def.registerDef(builder, defId);
@@ -206,6 +206,23 @@ aspect DependencyGraphFactory {
 		getClassDecl().buildDG(builder, hostTypeDeclId);
 	}
 
+	public void FieldDecl.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId ){
+		puck.graph.Type t = builder.getType(getTypeAccess());
+		for(FieldDeclarator fd : this.getDeclarators()){
+			int fdId = fd.buildDGNode(builder);
+			builder.addContains(hostTypeDeclId, fdId);
+			builder.setType(fdId, t);
+			fd.getInitOpt().buildDG(builder, fdId);
+		}
+	}
+	public void EnumConstant.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId ){
+//		if(hasArg() || hasInit())
+//			throw new PuckError("enum constant with arg or init unhandled");
+
+		int thisNode = builder.getNode(this);
+		builder.addContains(hostTypeDeclId, thisNode);
+		builder.setType(thisNode, builder.getType(this.hostType()));
+	}
 
 	public void BodyDecl.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId ){
 		if(isNamedElement()){

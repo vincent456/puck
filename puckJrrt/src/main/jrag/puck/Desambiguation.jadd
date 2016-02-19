@@ -78,29 +78,15 @@ aspect Desambiguation{
 		+ getParametersAsString();
 	}
 
-	public String FieldDecl.fullName(){
-		//TODO seem strange, check if correct
-		String fullName="";
-		List<VariableDecl> vdl = getVariableDeclList();
-		for (VariableDecl vd : vdl) {
-			fullName+= hostType().typeName()+"."+vd.name();
-		}
-		return fullName;
-	}
-	
-	public String FieldDeclaration.fullName(){
+	public String FieldDeclarator.fullName(){
 		return hostType().typeName()+"."+name();
-	}
-
-	public String VariableDecl.fullName(){ //should it have a fullName ??
-		return hostBodyDecl().fullName()+"."+name();
 	}
 
 	public String ParameterDeclaration.fullName(){
 		return hostBodyDecl().fullName()+"."+name();
 	}
 	public String AnonymousDecl.fullName(){
-		return hostBodyDecl().fullName() + "." + name();
+		return getParentNamedNode().fullName() + "." + name();
 	}
 
 	public String InstanceInitializer.fullName(){
@@ -146,6 +132,5 @@ aspect Desambiguation{
 		}
 		return type().name();
 	}
-
 
 }

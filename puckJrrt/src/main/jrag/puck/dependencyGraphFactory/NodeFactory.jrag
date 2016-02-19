@@ -91,7 +91,7 @@ aspect NodeFactory  {
     eq ClassInstanceExpr.accessed() = decl();
     eq TypeAccess.accessed() = decl();
 	//eq ParTypeAccess.accessed() = ((TypeAccess)getTypeAccess()).decl();
-    eq ParTypeAccess.accessed() = genericDecl();
+    eq ParTypeAccess.accessed() = type();
     eq MethodAccess.accessed() = decl();
 	eq ConstructorAccess.accessed() = decl();
 
@@ -110,7 +110,7 @@ aspect NodeFactory  {
     }
 
 
-	public int VariableDeclaration.buildDGNode(JastaddGraphBuilder builder){
+	public int VariableDeclarator.buildDGNode(JastaddGraphBuilder builder){
 		if(hostBodyDecl() instanceof StaticInitializer ||
 			hostBodyDecl()instanceof InstanceInitializer)
 			return hostBodyDecl().buildDGNode(builder);

@@ -15,7 +15,7 @@ object CreateEdge {
     typ : NodeId) : Unit = {
     id2declMap(typed)  match {
       //explicit upcast shouldn't be needed, why the compiling error ?
-      case dh @ (FieldDeclHolder(_)
+      case dh @ (FieldDeclHolder(_,_)
         | ParameterDeclHolder(_)
         | MethodDeclHolder(_)) =>
 
@@ -147,9 +147,9 @@ object CreateEdge {
     val sourceDecl = reenactor declarationOf e.user
     val ConstructorDeclHolder(cdecl) = id2declMap(e.used)
     id2declMap(sourceDecl) match {
-      case FieldDeclHolder(fdecl)
-        if fdecl.getInitOpt.isEmpty =>
-        CreateNode.createNewInstanceExpr(fdecl, cdecl)
+      case FieldDeclHolder(fdecl, idx)
+        if fdecl.getDeclarator(idx).getInitOpt.isEmpty =>
+        CreateNode.createNewInstanceExpr(fdecl.getDeclarator(idx), cdecl)
       case MethodDeclHolder(mdecl)
         if reenactor getRole sourceDecl contains Factory(e.used) =>
           mdecl.makeFactoryOf(cdecl)

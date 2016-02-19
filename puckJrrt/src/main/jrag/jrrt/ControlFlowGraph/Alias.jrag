@@ -8,17 +8,18 @@ aspect Alias {
 
 	Variable extends Location;
 	public boolean Variable.isHeapLocation() { return false; }
-	public boolean FieldDeclaration.isHeapLocation() { return !isConstant(); }
+	public boolean FieldDeclarator.isHeapLocation() { return !isConstant(); }
 	
 	public boolean Variable.mayAlias(Location l) { return this == l; }
-	public boolean FieldDeclaration.mayAlias(Location l) { return this == l || l instanceof AnyHeapLocation; }
+	public boolean FieldDeclarator.mayAlias(Location l) { return this == l || l instanceof AnyHeapLocation; }
 
-	public boolean FieldDeclaration.mustAlias(Location l) { return isStatic() && this == l;	}
+	public boolean FieldDeclarator.mustAlias(Location l) { return isStatic() && this == l;	}
 	public boolean ParameterDeclaration.mustAlias(Location l) { return mayAlias(l); }
-	public boolean VariableDeclaration.mustAlias(Location l) { return mayAlias(l); }
+	public boolean VariableDeclarator.mustAlias(Location l) { return mayAlias(l); }
 
 	public boolean InferredParameterDeclaration.mustAlias(Location l){ throw new RuntimeException("not implemented !"); }
 	public boolean CatchParameterDeclaration.mustAlias(Location l){ throw new RuntimeException("not implemented !"); }
+	public boolean EnumConstant.mustAlias(Location l){ throw new RuntimeException("not implemented !"); }
 
 	class ArrayElementLocation implements Location {
 		private TypeDecl type;
@@ -100,6 +101,12 @@ aspect Alias {
 			getChild(i).locationsWritten(res);
 		return res;
 	}
+
+	syn boolean Access.isDef() = isDest();
+	eq MethodAccess.isDef() = true;
+	eq ConstructorAccess.isDef() = true;
+	eq ClassInstanceExpr.isDef() = true;
+
 	public Collection<Location> Access.locationsWritten(Collection<Location> res) {
 		if(isDef() && getLocation() != null)
 			res.add(getLocation());

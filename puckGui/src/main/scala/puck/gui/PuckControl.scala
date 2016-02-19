@@ -59,9 +59,8 @@ class PuckControl
 
   {
     val workspace = "."
-    //val workspace = FrontVars.workspace
-    if (Config.defaultConfFile(new File(FrontVars.workspace)).exists())
-      loadConf(Config.defaultConfFile(new File(FrontVars.workspace)))
+    if (Config.defaultConfFile(new File(workspace)).exists())
+      loadConf(Config.defaultConfFile(new File(workspace)))
   }
 
 

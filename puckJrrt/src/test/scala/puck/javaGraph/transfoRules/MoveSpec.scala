@@ -306,10 +306,10 @@ class MoveSpec
         val classB = fullName2id("p.B")
 
         val methMaNode = graph.getConcreteNode(methMa)
-        graph.styp(methMa).value match {
-          case Arrow(in @ Tuple(_), _) =>
-            assert(1 == in.length && in.ids.contains(classB))
-        }
+
+        val Arrow(in @ Tuple(_), _) = graph.styp(methMa).value
+
+        assert(1 == in.length && in.ids.contains(classB))
 
         assert(graph.container(methMa).value == classA)
         assert(graph.uses(methUser, methMa))
@@ -319,9 +319,8 @@ class MoveSpec
         assert(g2.container(methMa).value == classB)
         assert(g2.uses(methUser, methMa))
 
-        g2.styp(methMa).value match {
-          case Arrow(in @ Tuple(_), _) => assert(0 == in.length)
-        }
+        val Arrow(in2 @ Tuple(_), _) = g2.styp(methMa).value
+        assert(0 == in2.length)
       }
     }
 

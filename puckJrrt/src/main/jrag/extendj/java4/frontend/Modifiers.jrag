@@ -34,23 +34,23 @@ aspect Modifiers {
 
   syn lazy boolean TypeDecl.hasAbstract() = false;
 
-  syn lazy Collection TypeDecl.unimplementedMethods() = Collections.EMPTY_LIST;
+  syn lazy Collection<MethodDecl> TypeDecl.unimplementedMethods() = Collections.emptyList();
+
   eq ClassDecl.unimplementedMethods() {
-    Collection c = new ArrayList();
+    Collection<MethodDecl> methods = new ArrayList<MethodDecl>();
     for (Iterator iter = interfacesMethodsIterator(); iter.hasNext(); ) {
       MethodDecl m = (MethodDecl) iter.next();
       boolean implemented = false;
-      SimpleSet set = (SimpleSet) localMethodsSignature(m.signature());
-      if (set.size() == 1) {
-        MethodDecl n = (MethodDecl) set.iterator().next();
+      SimpleSet<MethodDecl> result = localMethodsSignature(m.signature());
+      if (result.isSingleton()) {
+        MethodDecl n = result.singletonValue();
         if (!n.isAbstract()) {
           implemented = true;
         }
       }
       if (!implemented) {
-        set = ancestorMethods(m.signature());
-        for (Iterator i2 = set.iterator(); i2.hasNext(); ) {
-          MethodDecl n = (MethodDecl) i2.next();
+        result = ancestorMethods(m.signature());
+        for (MethodDecl n : result) {
           if (!n.isAbstract() && n.isPublic()) {
             implemented = true;
             break;
@@ -58,21 +58,20 @@ aspect Modifiers {
         }
       }
       if (!implemented) {
-        c.add(m);
+        methods.add(m);
       }
     }
 
     if (hasSuperclass()) {
-      for (Iterator iter = superclass().unimplementedMethods().iterator(); iter.hasNext(); ) {
-        MethodDecl m = (MethodDecl) iter.next();
-        SimpleSet set = (SimpleSet) localMethodsSignature(m.signature());
-        if (set.size() == 1) {
-          MethodDecl n = (MethodDecl) set.iterator().next();
+      for (MethodDecl m : superclass().unimplementedMethods()) {
+        SimpleSet<MethodDecl> result = localMethodsSignature(m.signature());
+        if (result.isSingleton()) {
+          MethodDecl n = result.singletonValue();
           if (n.isAbstract() || !n.overrides(m)) {
-            c.add(m);
+            methods.add(m);
           }
         } else {
-          c.add(m);
+          methods.add(m);
         }
       }
     }
@@ -80,10 +79,10 @@ aspect Modifiers {
     for (Iterator iter = localMethodsIterator(); iter.hasNext(); ) {
       MethodDecl m = (MethodDecl) iter.next();
       if (m.isAbstract()) {
-        c.add(m);
+        methods.add(m);
       }
     }
-    return c;
+    return methods;
   }
 
   eq ClassDecl.hasAbstract() = !unimplementedMethods().isEmpty();
@@ -97,7 +96,8 @@ aspect Modifiers {
 
     // 8.1.1
     if ((isProtected() || isPrivate()) && !(isMemberType() && enclosingType().isClassDecl())) {
-      error("protected and private may only be used on member types within a directly enclosing class declaration");
+      error("protected and private may only be used on member types within "
+          + "a directly enclosing class declaration");
     }
 
     // 8.1.1
@@ -111,8 +111,7 @@ aspect Modifiers {
     if (!isAbstract() && hasAbstract()) {
       StringBuilder sb = new StringBuilder();
       sb.append("" + name() + " is not declared abstract but contains abstract members: \n");
-      for (Iterator iter = unimplementedMethods().iterator(); iter.hasNext(); ) {
-        MethodDecl m = (MethodDecl) iter.next();
+      for (MethodDecl m : unimplementedMethods()) {
         sb.append("  " + m.signature() + " in " + m.hostType().typeName() + "\n");
       }
       error(sb.toString());
@@ -137,7 +136,7 @@ aspect Modifiers {
     super.checkModifiers();
   }
 
-  public void FieldDeclaration.checkModifiers() {
+  public void FieldDecl.checkModifiers() {
     super.checkModifiers();
     if (hostType().isInterfaceDecl()) {
       if (isProtected()) {
@@ -233,18 +232,21 @@ aspect Modifiers {
     if (!isSynthetic()) {
       super.checkModifiers();
       if (isStatic() && hostType().isInnerClass() && !isConstant()) {
-        error("*** Inner classes may not declare static members, unless they are compile-time constant fields");
+        error("*** Inner classes may not declare static members, "
+            + "unless they are compile-time constant fields");
       }
     }
   }
 
-  syn lazy boolean TypeDecl.isPublic() = getModifiers().isPublic() || isMemberType() && enclosingType().isInterfaceDecl();
-  //eq InterfaceDecl.isPublic() = !isProtected() && !isPrivate();
+  syn lazy boolean TypeDecl.isPublic() =
+      getModifiers().isPublic() || isMemberType() && enclosingType().isInterfaceDecl();
   syn boolean TypeDecl.isPrivate() = getModifiers().isPrivate();
   syn boolean TypeDecl.isProtected() = getModifiers().isProtected();
   syn boolean TypeDecl.isAbstract() = getModifiers().isAbstract();
   eq InterfaceDecl.isAbstract() = true;
-  syn lazy boolean TypeDecl.isStatic() = getModifiers().isStatic() || isMemberType() && enclosingType().isInterfaceDecl();
+  syn lazy boolean TypeDecl.isStatic() =
+      getModifiers().isStatic() || isMemberType() && enclosingType().isInterfaceDecl();
+
   // 8.5.2
   eq InterfaceDecl.isStatic() = getModifiers().isStatic() || isMemberType();
   syn boolean TypeDecl.isFinal() = getModifiers().isFinal();
@@ -253,11 +255,11 @@ aspect Modifiers {
   syn boolean TypeDecl.isSynthetic() = getModifiers().isSynthetic();
 
   syn boolean MemberDecl.isSynthetic() = false;
+  eq FieldDecl.isSynthetic() = getModifiers().isSynthetic();
   eq MethodDecl.isSynthetic() = getModifiers().isSynthetic();
-  eq FieldDeclaration.isSynthetic() = getModifiers().isSynthetic();
   syn boolean ConstructorDecl.isSynthetic() = getModifiers().isSynthetic();
 
-  syn boolean VariableDeclaration.isSynthetic() = getModifiers().isSynthetic();
+  syn boolean Declarator.isSynthetic() = getModifiers().isSynthetic();
   syn boolean ParameterDeclaration.isSynthetic() = getModifiers().isSynthetic();
 
   syn boolean MemberDecl.isStatic();
@@ -267,8 +269,10 @@ aspect Modifiers {
   syn boolean MethodDecl.isProtected() = getModifiers().isProtected();
   syn boolean MethodDecl.isAbstract() = getModifiers().isAbstract() || hostType().isInterfaceDecl();
   syn boolean MethodDecl.isStatic() = getModifiers().isStatic();
+
   // 8.4.3.3
-  syn boolean MethodDecl.isFinal() = getModifiers().isFinal() || hostType().isFinal() || isPrivate();
+  syn boolean MethodDecl.isFinal() =
+      getModifiers().isFinal() || hostType().isFinal() || isPrivate();
   syn boolean MethodDecl.isSynchronized() = getModifiers().isSynchronized();
   syn boolean MethodDecl.isNative() = getModifiers().isNative();
   syn boolean MethodDecl.isStrictfp() = getModifiers().isStrictfp();
@@ -277,14 +281,30 @@ aspect Modifiers {
   syn boolean ConstructorDecl.isPrivate() = getModifiers().isPrivate();
   syn boolean ConstructorDecl.isProtected() = getModifiers().isProtected();
 
-  syn boolean FieldDeclaration.isPublic() = getModifiers().isPublic() || hostType().isInterfaceDecl();
-  syn boolean FieldDeclaration.isPrivate() = getModifiers().isPrivate();
-  syn boolean FieldDeclaration.isProtected() = getModifiers().isProtected();
-  syn boolean FieldDeclaration.isStatic() = getModifiers().isStatic() || hostType().isInterfaceDecl();
-  syn boolean FieldDecl.isStatic() = getModifiers().isStatic();
-  syn boolean FieldDeclaration.isFinal() = getModifiers().isFinal() || hostType().isInterfaceDecl();
-  syn boolean FieldDeclaration.isTransient() = getModifiers().isTransient();
-  syn boolean FieldDeclaration.isVolatile() = getModifiers().isVolatile();
+  syn boolean Declarator.isPublic() = false;
+
+  eq FieldDeclarator.isPublic() =
+      getModifiers().isPublic() || hostType().isInterfaceDecl();
+
+  syn boolean Variable.isProtected() = getModifiers().isProtected();
+
+  syn boolean Variable.isPrivate() = getModifiers().isPrivate();
+
+  syn boolean FieldDecl.isPublic() =
+      getModifiers().isPublic() || hostType().isInterfaceDecl();
+  syn boolean FieldDecl.isPrivate() = getModifiers().isPrivate();
+  syn boolean FieldDecl.isProtected() = getModifiers().isProtected();
+  syn boolean FieldDecl.isStatic() =
+      getModifiers().isStatic() || hostType().isInterfaceDecl();
+  syn boolean FieldDecl.isFinal() = getModifiers().isFinal() || hostType().isInterfaceDecl();
+  syn boolean FieldDecl.isTransient() = getModifiers().isTransient();
+  syn boolean FieldDecl.isVolatile() = getModifiers().isVolatile();
+
+  syn boolean FieldDeclarator.isStatic() =
+      getModifiers().isStatic() || hostType().isInterfaceDecl();
+  syn boolean FieldDeclarator.isFinal() = getModifiers().isFinal() || hostType().isInterfaceDecl();
+  syn boolean FieldDeclarator.isTransient() = getModifiers().isTransient();
+  syn boolean FieldDeclarator.isVolatile() = getModifiers().isVolatile();
 
   eq MemberTypeDecl.isStatic() = typeDecl().isStatic();
 
@@ -300,13 +320,16 @@ aspect Modifiers {
   eq ClassDecl.getModifiers().mayBeFinal() = true;
 
   // 8.3.1
-  eq FieldDeclaration.getModifiers().mayBePublic() = true;
-  eq FieldDeclaration.getModifiers().mayBeProtected() = true;
-  eq FieldDeclaration.getModifiers().mayBePrivate() = true;
-  eq FieldDeclaration.getModifiers().mayBeStatic() = true;
-  eq FieldDeclaration.getModifiers().mayBeFinal() = true;
-  eq FieldDeclaration.getModifiers().mayBeTransient() = true;
-  eq FieldDeclaration.getModifiers().mayBeVolatile() = true;
+  eq FieldDecl.getModifiers().mayBePublic() = true;
+  eq FieldDecl.getModifiers().mayBeProtected() = true;
+  eq FieldDecl.getModifiers().mayBePrivate() = true;
+  eq FieldDecl.getModifiers().mayBeStatic() = true;
+  eq FieldDecl.getModifiers().mayBeFinal() = true;
+  eq FieldDecl.getModifiers().mayBeTransient() = true;
+  eq FieldDecl.getModifiers().mayBeVolatile() = true;
+
+  eq VarDeclStmt.getModifiers().mayBeFinal() = true;
+  eq VarDeclStmt.getModifiers().mayBeVolatile() = true;
 
   // 8.4.3
   eq MethodDecl.getModifiers().mayBePublic() = true;
@@ -323,8 +346,6 @@ aspect Modifiers {
   eq ConstructorDecl.getModifiers().mayBePublic() = true;
   eq ConstructorDecl.getModifiers().mayBeProtected() = true;
   eq ConstructorDecl.getModifiers().mayBePrivate() = true;
-
-  eq VariableDeclaration.getModifiers().mayBeFinal() = true;
 
   eq ParameterDeclaration.getModifiers().mayBeFinal() = true;
 

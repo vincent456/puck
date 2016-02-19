@@ -14,7 +14,7 @@ aspect NamedElement {
     eq MethodDecl.hasDefinition() {
         return !getBlockOpt().isEmpty();
     }
-    eq FieldDeclaration.hasDefinition() {
+    eq FieldDeclarator.hasDefinition() {
         return !getInitOpt().isEmpty();
     }
 
@@ -25,13 +25,7 @@ aspect NamedElement {
     public int ASTNode.getDefIndex(){throw new Error(this.getClass() + " has no def index");}
     public int ConstructorDecl.getDefIndex(){return 4;}
     public int MethodDecl.getDefIndex(){return 4;}
-    public int FieldDeclaration.getDefIndex(){return 2;}
 
-
-//    syn boolean ASTNode.hasParameters();
-//    eq ASTNode.hasParameters() = false;
-//    eq ConstructorDecl.hasParameters() = true;
-//    eq MethodDecl.hasParameters() = true;
 
     public int ASTNode.getParamIndex(){return -1;}
     public int ConstructorDecl.getParamIndex(){return 1;}
@@ -39,11 +33,7 @@ aspect NamedElement {
 
     public int ASTNode.getReturnTypeIndex(){return -1;}
     public int MethodDecl.getReturnTypeIndex(){return 1;}
-    public int FieldDeclaration.getReturnTypeIndex(){return 1;}
 
-//    public List<ParameterDeclaration> ASTNode.getParameters(){
-//        throw new Error(this.getClass() + " has no parameters");
-//    }
 
 
     public interface DGNamedElement {
@@ -68,8 +58,9 @@ aspect NamedElement {
 	// InterfaceDecl implements DGNamedElement;
 	// ClassDecl implements DGNamedElement;
 
+    EnumConstant implements DGNamedElement;
     ParameterDeclaration implements DGNamedElement;
-	FieldDeclaration implements DGNamedElement;
+	FieldDeclarator implements DGNamedElement;
 	MethodDecl implements DGNamedElement;
 	ConstructorDecl implements DGNamedElement;
 
@@ -112,9 +103,10 @@ aspect NamedElement {
     WildcardType implements Registerable;
     ConstructorDecl implements Registerable;
     ParameterDeclaration implements Registerable;
-    FieldDeclaration implements Registerable;
+    FieldDeclarator implements Registerable;
     MethodDecl implements Registerable;
     TypeVariable implements Registerable;
+    EnumConstant implements Registerable;
 //    Block implements Registerable;
 //    Expr implements Registerable;
 
@@ -165,8 +157,9 @@ aspect NamedElement {
 	eq VoidType.getDGNodeKind() = JastaddGraphBuilder.primitive();
     eq NullType.getDGNodeKind() = JastaddGraphBuilder.primitive();
     eq ParameterDeclaration.getDGNodeKind() = JastaddGraphBuilder.parameter();
+    eq EnumConstant.getDGNodeKind() = JastaddGraphBuilder.enumConstant();
 
-    eq FieldDeclaration.getDGNodeKind() {
+    eq FieldDeclarator.getDGNodeKind() {
         if(this.isStatic())
             return JastaddGraphBuilder.staticField();
         else

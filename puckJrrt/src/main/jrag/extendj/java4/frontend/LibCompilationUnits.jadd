@@ -1,4 +1,4 @@
-/* Copyright (c) 2013, Jesper Öqvist <jesper.oqvist@cs.lth.se>
+/* Copyright (c) 2013-2015, Jesper Öqvist <jesper.oqvist@cs.lth.se>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,10 @@
  */
 
 aspect LibraryCompilationUnits {
-  public Map<String, CompilationUnit>
-    Program.getLibCompilationUnitValueMap() {
-
-    return getLibCompilationUnit_String_values;
+  /**
+   * Returns a robust iterator that can be iterated while the colleciton is updated.
+   */
+  public Iterator<CompilationUnit> Program.libraryCompilationUnitIterator() {
+    return libraryCompilationUnitSet.iterator();
   }
 }

@@ -2,13 +2,13 @@ package puck.jastadd
 
 import puck.PuckError
 import puck.graph._
-import org.extendj.{ast => AST}
+import org.extendj.ast
 
 object ASTNodeLink{
 
   def setName(name : String, nl : ASTNodeLink,
               reenactor : DependencyGraph, renamed : NodeId) : Unit = nl match {
-    case FieldDeclHolder(decl) => decl.setID(name)
+    case FieldDeclHolder(decl, idx) => decl.getDeclarator(idx).setID(name)
     case dh : MethodDeclHolder => dh.decl.setID(name)
     case th : TypedKindDeclHolder =>
       val oldName = th.decl.getID
@@ -31,20 +31,20 @@ object ASTNodeLink{
   }
 
   def getPath(graph: DependencyGraph, packagedId : NodeId)
-             ( implicit program : AST.Program ) : String = {
+             ( implicit program : ast.Program ) : String = {
     val cpath = graph.containerPath(packagedId)
     val names = cpath.tail.map(graph.getConcreteNode(_).name)
     program.getRootPath + names.mkString(java.io.File.separator)
   }
   def getPath(graph: DependencyGraph, packagedId : NodeId, typeDeclId : NodeId)
-             ( implicit program : AST.Program ) : String  =
+             ( implicit program : ast.Program ) : String  =
     getPath(graph, packagedId) + java.io.File.separator +
       graph.getConcreteNode(typeDeclId).name + ".java"
 
 
   def enlargeVisibility
   ( g : DependencyGraph,
-    astNode : AST.Visible,
+    astNode : ast.Visible,
     nid : NodeId) : Unit = {
 
     val needMoreVisibility : NodeId => Boolean =
@@ -55,7 +55,7 @@ object ASTNodeLink{
       case kt => error(s"$kt not expected")
     }
 
-    import AST.ASTNode.VIS_PUBLIC
+    import ast.ASTNode.VIS_PUBLIC
     if (astNode.getVisibility != VIS_PUBLIC) {
       if (g .usersOfExcludingTypeUse(nid) exists needMoreVisibility)
         astNode.setVisibility(VIS_PUBLIC)
@@ -69,34 +69,34 @@ sealed trait ASTNodeLink
 
 case object NoDecl extends ASTNodeLink
 sealed abstract class HasNode extends ASTNodeLink {
-  def node : AST.ASTNode[_]
+  def node : ast.ASTNode[_]
 }
 case object PackageDeclHolder extends ASTNodeLink
 
 sealed abstract class DefHolder extends HasNode
-case class ExprHolder(expr : AST.Expr) extends DefHolder{
-  def node = expr.asInstanceOf[AST.ASTNode[_]]
+case class ExprHolder(expr : ast.Expr) extends DefHolder{
+  def node = expr.asInstanceOf[ast.ASTNode[_]]
 }
-case class BlockHolder(block : AST.Block) extends DefHolder{
-  def node = block.asInstanceOf[AST.ASTNode[_]]
+case class BlockHolder(block : ast.Block) extends DefHolder{
+  def node = block.asInstanceOf[ast.ASTNode[_]]
 }
 
-case class ParameterDeclHolder(decl : AST.ParameterDeclaration) extends HasNode {
-  def node = decl.asInstanceOf[AST.ASTNode[_]]
+case class ParameterDeclHolder(decl : ast.ParameterDeclaration) extends HasNode {
+  def node = decl.asInstanceOf[ast.ASTNode[_]]
 }
 
 sealed trait HasBodyDecl extends HasNode{
-  val decl : AST.BodyDecl
-  def node = decl.asInstanceOf[AST.ASTNode[_]]
+  val decl : ast.BodyDecl
+  def node = decl.asInstanceOf[ast.ASTNode[_]]
 }
 
 sealed trait HasMemberDecl extends HasBodyDecl{
-  override val decl : AST.MemberDecl
+  override val decl : ast.MemberDecl
 }
 
 object VariableDeclHolder {
-  def unapply(nl : ASTNodeLink) : Option[AST.Variable] = nl match {
-    case FieldDeclHolder(decl) => Some(decl)
+  def unapply(nl : ASTNodeLink) : Option[ast.Variable] = nl match {
+    case FieldDeclHolder(decl, idx) => Some(decl.getDeclarator(idx))
     case ParameterDeclHolder(decl) => Some(decl)
     case _ => None
   }
@@ -105,28 +105,31 @@ object VariableDeclHolder {
 
 class DeclarationCreationError(msg : String) extends DGError(msg)
 
-case class ConstructorDeclHolder(decl : AST.ConstructorDecl) extends HasBodyDecl
-case class MethodDeclHolder(decl : AST.MethodDecl) extends HasMemberDecl
+case class ConstructorDeclHolder(decl : ast.ConstructorDecl) extends HasBodyDecl
+case class MethodDeclHolder(decl : ast.MethodDecl) extends HasMemberDecl
 
 object CallableDeclHolder {
-  def unapply(nl : ASTNodeLink) : Option[AST.Callable] = nl match {
+  def unapply(nl : ASTNodeLink) : Option[ast.Callable] = nl match {
     case ConstructorDeclHolder(cdecl) => Some(cdecl)
     case MethodDeclHolder(mdecl) => Some(mdecl)
     case _ => None
   }
 }
 
-case class FieldDeclHolder(decl : AST.FieldDeclaration) extends HasMemberDecl
+case class FieldDeclHolder(decl : ast.FieldDecl, declaratorIndex : Int) extends HasMemberDecl {
+  def declarator = decl.getDeclarator(declaratorIndex)
+}
 
+case class EnumConstantHolder(decl : ast.EnumConstant) extends HasBodyDecl
 
 trait TypedKindDeclHolder extends HasNode {
-  def decl : AST.TypeDecl
-  def node = decl.asInstanceOf[AST.ASTNode[_]]
+  def decl : ast.TypeDecl
+  def node = decl.asInstanceOf[ast.ASTNode[_]]
 }
 
 
-case class InterfaceDeclHolder(decl : AST.InterfaceDecl) extends TypedKindDeclHolder
-case class ClassDeclHolder(decl : AST.ClassDecl) extends TypedKindDeclHolder
-case class WildCardTypeHolder(decl : AST.WildcardType) extends TypedKindDeclHolder
-case class TypeVariableHolder(decl : AST.TypeVariable) extends TypedKindDeclHolder
-case class PrimitiveDeclHolder(decl : AST.TypeDecl) extends TypedKindDeclHolder
+case class InterfaceDeclHolder(decl : ast.InterfaceDecl) extends TypedKindDeclHolder
+case class ClassDeclHolder(decl : ast.ClassDecl) extends TypedKindDeclHolder
+case class WildCardTypeHolder(decl : ast.WildcardType) extends TypedKindDeclHolder
+case class TypeVariableHolder(decl : ast.TypeVariable) extends TypedKindDeclHolder
+case class PrimitiveDeclHolder(decl : ast.TypeDecl) extends TypedKindDeclHolder

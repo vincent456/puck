@@ -43,7 +43,7 @@ aspect InsertEmptyStmt {
 		setStmt(new Block(new List<Stmt>().add(s).add(getStmt())));
 		return s;
 	}
-	eq EnhancedForStmt.getVariableDeclaration().insertStmtBefore(Stmt s) { throw new RefactoringException("cannot insert statement here"); }
+	eq EnhancedForStmt.getVariableDecl().insertStmtBefore(Stmt s) { throw new RefactoringException("cannot insert statement here"); }
 	eq EnhancedForStmt.getStmt().insertStmtBefore(Stmt s) {
 		setStmt(new Block(new List<Stmt>().add(s).add(getStmt())));
 		return s;
@@ -102,7 +102,7 @@ aspect InsertEmptyStmt {
 		setStmt(new Block(new List<Stmt>().add(getStmt()).add(s)));
 		return s;
 	}
-	eq EnhancedForStmt.getVariableDeclaration().insertStmtAfter(Stmt s) { throw new RefactoringException("cannot insert statement here"); }
+	eq EnhancedForStmt.getVariableDecl().insertStmtAfter(Stmt s) { throw new RefactoringException("cannot insert statement here"); }
 	eq EnhancedForStmt.getStmt().insertStmtAfter(Stmt s) {
 		if(!getStmt().canCompleteNormally())
 			throw new RefactoringException("cannot insert statement here");

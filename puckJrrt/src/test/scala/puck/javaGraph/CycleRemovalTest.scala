@@ -3,7 +3,7 @@ package puck.javaGraph
 import puck.graph._
 import puck.util.{GenericGraphAlgorithms, WeightedDirectedGraph, GreedyCycleRemover}
 import puck.util.GreedyCycleRemover.WDGHelper
-import puck.{QuickFrame, Settings, AcceptanceSpec}
+import puck.{Settings, AcceptanceSpec}
 
 /**
   * Created by lorilan on 08/12/15.

@@ -29,6 +29,7 @@
  */
 
 import java.io.File;
+import java.util.Set;
 import java.util.HashSet;
 import java.util.Collections;
 import java.util.Collection;
@@ -78,6 +79,7 @@ aspect ClassPath {
   inh CompilationUnit ASTNode.compilationUnit();
 
   eq CompilationUnit.getChild().compilationUnit() = this;
+
   eq Program.getChild().compilationUnit() = null; // No enclosing compilation unit found.
 
   /**
@@ -104,15 +106,21 @@ aspect ClassPath {
   public Iterator<CompilationUnit> Program.compilationUnitIterator() {
     return new Iterator<CompilationUnit>() {
       int index = 0;
+
+      @Override
       public boolean hasNext() {
         return index < getNumCompilationUnit();
       }
+
+      @Override
       public CompilationUnit next() {
         if (getNumCompilationUnit() == index) {
           throw new java.util.NoSuchElementException();
         }
         return getCompilationUnit(index++);
       }
+
+      @Override
       public void remove() {
         throw new UnsupportedOperationException();
       }
@@ -135,10 +143,12 @@ aspect ClassPath {
     /**
      * Tracks all currently available packages in the program classpath.
      */
-    private java.util.Set<String> packages = Collections.newSetFromMap(new HashMap<String,Boolean>());
+    private Set<String> packages = Collections.newSetFromMap(new HashMap<String, Boolean>());
 
     private boolean pathsInitialized = false;
+
     private ArrayList<PathPart> classPath = new ArrayList<PathPart>();
+
     private ArrayList<PathPart> sourcePath = new ArrayList<PathPart>();
 
     private final Program program;
@@ -170,9 +180,11 @@ aspect ClassPath {
 
       String[] bootclasspaths;
       if (program.options().hasValueForOption("-bootclasspath")) {
-        bootclasspaths = program.options().getValueForOption("-bootclasspath").split(File.pathSeparator);
+        bootclasspaths = program.options().getValueForOption("-bootclasspath")
+            .split(File.pathSeparator);
       } else {
-        bootclasspaths = System.getProperty("sun.boot.class.path").split(File.pathSeparator);
+        bootclasspaths = System.getProperty("sun.boot.class.path")
+            .split(File.pathSeparator);
       }
       for (int i = 0; i < bootclasspaths.length; i++) {
         classPaths.add(bootclasspaths[i]);
@@ -236,8 +248,7 @@ aspect ClassPath {
      */
     public synchronized InputStream getInputStream(String name) {
       try {
-        for (Iterator iter = classPath.iterator(); iter.hasNext(); ) {
-          PathPart part = (PathPart) iter.next();
+        for (PathPart part : classPath) {
           ClassSource source = part.findSource(name);
           if (source != ClassSource.NONE) {
             return source.openInputStream();
@@ -252,8 +263,8 @@ aspect ClassPath {
      * Load a compilation unit from disk based on a classname. A class file is parsed if one exists
      * matching the classname that is not older than a corresponding source file, otherwise the
      * source file is selected.
-     * <p>
-     * This method is called by the LibCompilationUnit NTA.  We rely on the result of this method
+     *
+     * <p>This method is called by the LibCompilationUnit NTA.  We rely on the result of this method
      * being cached because it will return a newly parsed compilation unit each time it is called.
      *
      * @return the loaded compilation unit, or the provided default compilation unit if no matching
@@ -376,8 +387,8 @@ aspect ClassPath {
    * Load a compilation unit from disk, selecting a class file
    * if one exists that is not older than a corresponding source
    * file, otherwise the source file is selected.
-   * <p>
-   * This method is called by the LibCompilationUnit NTA.  We rely on the
+   *
+   * <p>This method is called by the LibCompilationUnit NTA.  We rely on the
    * result of this method being cached because it will return a newly parsed
    * compilation unit each time it is called.
    *
@@ -396,14 +407,17 @@ aspect ClassPath {
   }
 
   private ClassSource CompilationUnit.classSource = ClassSource.NONE;
+
   private boolean CompilationUnit.fromSource = false;
 
   public void CompilationUnit.setClassSource(ClassSource source) {
     this.classSource = source;
   }
+
   public ClassSource CompilationUnit.getClassSource() {
     return classSource;
   }
+
   public void CompilationUnit.setFromSource(boolean value) {
     this.fromSource = value;
   }

@@ -74,13 +74,13 @@ aspect Diamond {
       return accessType;
     }
 
-    SimpleSet maxSpecific = chooseConstructor();
+    SimpleSet<MethodDecl> maxSpecific = chooseConstructor();
 
     if (maxSpecific.isEmpty()) {
       return getTypeAccess().type();
     }
 
-    MethodDecl constructor = (MethodDecl) maxSpecific.iterator().next();
+    MethodDecl constructor = maxSpecific.iterator().next();
     return constructor.type();
   }
 
@@ -91,11 +91,12 @@ aspect Diamond {
   eq ClassInstanceExpr.getAccess().getClassInstanceExpr() = this;
   eq Program.getChild(int i).getClassInstanceExpr() = null; // TODO
 
-  protected static SimpleSet DiamondAccess.mostSpecific(SimpleSet maxSpecific, MethodDecl decl) {
+  protected static SimpleSet<MethodDecl> DiamondAccess.mostSpecific(
+      SimpleSet<MethodDecl> maxSpecific, MethodDecl decl) {
     if (maxSpecific.isEmpty()) {
       maxSpecific = maxSpecific.add(decl);
     } else {
-      MethodDecl other = (MethodDecl) maxSpecific.iterator().next();
+      MethodDecl other = maxSpecific.iterator().next();
       if (decl.moreSpecificThan(other)) {
         maxSpecific = decl;
       } else if (!other.moreSpecificThan(decl)) {
@@ -109,7 +110,7 @@ aspect Diamond {
    * Choose a constructor for the diamond operator using placeholder
    * methods.
    */
-  protected SimpleSet DiamondAccess.chooseConstructor() {
+  protected SimpleSet<MethodDecl> DiamondAccess.chooseConstructor() {
     ClassInstanceExpr instanceExpr = getClassInstanceExpr();
     TypeDecl type = getTypeAccess().type();
 
@@ -120,7 +121,7 @@ aspect Diamond {
 
     List<StandInMethodDecl> placeholderMethods = genericType.getStandInMethodList();
 
-    SimpleSet maxSpecific = SimpleSet.emptySet;
+    SimpleSet<MethodDecl> maxSpecific = emptySet();
     Collection<MethodDecl> potentiallyApplicable = potentiallyApplicable(placeholderMethods);
     for (MethodDecl candidate : potentiallyApplicable) {
       if (applicableBySubtyping(instanceExpr, candidate)
@@ -146,11 +147,9 @@ aspect Diamond {
 
     // Copy the list of type parameters.
     int arg = 0;
-    for (Iterator iter = typeParams.iterator(); iter.hasNext(); ++arg) {
-      String substName = "#"+arg;
+    for (TypeVariable typeVar : typeParams) {
+      String substName = "#" + (arg++);
       typeArgs.add(new TypeAccess(substName));
-
-      TypeVariable typeVar = (TypeVariable) iter.next();
       List<Access> typeBounds = new List<Access>();
       for (Access typeBound : typeVar.getTypeBoundList()) {
         typeBounds.add((Access) typeBound.treeCopyNoTransform());
@@ -166,8 +165,7 @@ aspect Diamond {
         createQualifiedAccess(),
         typeArgs);
 
-    for (Iterator iter = constructors().iterator(); iter.hasNext(); ) {
-      ConstructorDecl decl = (ConstructorDecl) iter.next();
+    for (ConstructorDecl decl : constructors()) {
       if (decl instanceof ConstructorDeclSubstituted) {
         decl = ((ConstructorDeclSubstituted) decl).getOriginal();
       }
@@ -447,5 +445,4 @@ aspect Diamond {
       error("the diamond operator can only be used to instantiate generic classes");
     }
   }
-
 }

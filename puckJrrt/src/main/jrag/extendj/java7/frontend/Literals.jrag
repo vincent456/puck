@@ -533,7 +533,7 @@ aspect Java7Literals {
     /**
      * @return a readable name to describe this literal.
      */
-    public String name() {
+    private String name() {
       String name;
       switch (kind) {
         case DECIMAL:

@@ -1,30 +1,37 @@
 
 aspect Uses {
+
+	public abstract Collection<VarAccess> Declarator.uses();
 	// bind all uses of a variable to its declaration
 	public Collection<VarAccess> Variable.allUses() { return uses(); }
-	
+
 	public boolean Variable.isUsed() { return !allUses().isEmpty(); }
 	
-	syn lazy Collection<VarAccess> FieldDeclaration.uses() {
+	syn lazy Collection<VarAccess> FieldDeclarator.uses() {
 		Collection<VarAccess> col = new LinkedList<VarAccess>();
 		program().collectFieldUses(this, name(), col);
 		return col;
 	}
-	protected void ASTNode.collectFieldUses(FieldDeclaration decl, String name, Collection<VarAccess> col) {
+
+	syn lazy Collection<VarAccess> EnumConstant.uses() {
+		throw new Error("not implemented !");
+	}
+
+	protected void ASTNode.collectFieldUses(FieldDeclarator decl, String name, Collection<VarAccess> col) {
 		for(int i = 0; i < getNumChild(); i++)
 			getChild(i).collectFieldUses(decl, name, col);
 	}
-	protected void VarAccess.collectFieldUses(FieldDeclaration decl, String name, Collection<VarAccess> col) {
+	protected void VarAccess.collectFieldUses(FieldDeclarator decl, String name, Collection<VarAccess> col) {
 		super.collectFieldUses(decl, name, col);
 		if (name.equals(name()) && decl() == decl)
 			col.add(this);
 	}
 	
-	coll Collection<VarAccess> VariableDeclaration.uses() [new HashSet<VarAccess>()] 
+	coll Collection<VarAccess> VariableDeclarator.uses() [new HashSet<VarAccess>()]
 	                           with add root BodyDecl;
 	VarAccess contributes
-	this when decl() instanceof VariableDeclaration
-	to VariableDeclaration.uses() for (VariableDeclaration)decl();
+	this when decl() instanceof VariableDeclarator
+	to VariableDeclarator.uses() for (VariableDeclarator)decl();
 
 	coll Collection<VarAccess> ParameterDeclaration.uses() [new HashSet<VarAccess>()] 
 	                           with add root BodyDecl;
@@ -101,21 +108,21 @@ aspect Uses {
 	to LabeledStmt.uses() for (LabeledStmt)targetStmt();
 
 	// field declarations can be used by static imports
-	public boolean FieldDeclaration.isUsed() {
+	public boolean FieldDeclarator.isUsed() {
 		return !uses().isEmpty() || isStatic() && !staticImports().isEmpty();
 	}
 
-	coll Collection<StaticImportDecl> FieldDeclaration.staticImports() [new HashSet<StaticImportDecl>()]
+	coll Collection<StaticImportDecl> FieldDeclarator.staticImports() [new HashSet<StaticImportDecl>()]
 	                                                                    with add root Program;
 	StaticImportDecl contributes this
-	to FieldDeclaration.staticImports() for each importedFields();
+	to FieldDeclarator.staticImports() for each importedFields();
 	
 	public abstract SimpleSet StaticImportDecl.importedFields();
 	syn lazy SimpleSet SingleStaticImportDecl.importedFields() = removeInstanceVariables(type().memberFields(name()));
 	syn lazy SimpleSet StaticImportOnDemandDecl.importedFields() {
-		SimpleSet res = SimpleSet.emptySet;
+		SimpleSet res = SimpleSet.EMPTY_SET;
 		for(Object o : type().memberFieldsMap().values())
-			if(o instanceof FieldDeclaration && ((FieldDeclaration)o).isStatic())
+			if(o instanceof FieldDeclarator && ((FieldDeclarator)o).isStatic())
 				res = res.add(o);
 		return res;
 	}

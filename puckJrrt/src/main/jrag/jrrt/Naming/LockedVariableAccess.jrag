@@ -12,7 +12,7 @@ aspect LockedVariableAccess {
 		return va;
 	}
 	
-	refine VariableScopePropagation eq VarAccess.decls() = targetVariable == null ? refined() : SimpleSet.emptySet.add(targetVariable);
+	refine VariableScopePropagation eq VarAccess.decls() = targetVariable == null ? refined() : ASTNode.<Variable>emptySet().add(targetVariable);
 	
 //	refine Uses protected void VarAccess.collectFieldUses(FieldDeclaration decl, String name, Collection<VarAccess> col) {
 //		super.collectFieldUses(decl, name, col);
@@ -93,7 +93,7 @@ aspect LockedVariableAccess {
 		if(acc.isUnknownVarAccess()) {
 			if((qual == null || qual.isPure()) && target.isStatic()) {
 				TypeDecl host = target.hostType();
-				if(host.accessibleFrom(hostType()) && mayAccess((FieldDeclaration)target)) {
+				if(host.accessibleFrom(hostType()) && mayAccess(target)) {
 					this.flushCache();
 					Access hostAccess = host.createLockedAccess();
 					affectedByUnlock(hostAccess, this);

@@ -48,6 +48,12 @@ trait GraphBuilder {
      g = g.addUsesDependency(typeUse, typeMemberUse)
   }
 
+  def bindTypeUse(typeUser : NodeId, typeUsed:NodeId, typeMemberUse : Uses) : Uses ={
+    val typeUse = Uses(typeUser, typeUsed)
+    addTypeRelationship(typeUse, typeMemberUse)
+    typeUse
+  }
+
   def addParams(decl : NodeId, params : List[Int]) : Unit = {
     params.reverseIterator.foreach{ //order matters
       param =>

@@ -28,8 +28,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * This aspect implements access control. See section 6.6 in the Java language
+ * specification.
+ */
 aspect AccessControl {
-  // 6.6 Access Control
 
   syn lazy boolean ArrayDecl.accessibleFrom(TypeDecl type) = elementType().accessibleFrom(type);
 
@@ -50,11 +53,12 @@ aspect AccessControl {
     if (isPublic()) {
       return true;
     } else if (isProtected()) {
-      // isProtected implies a nested type
+      // If isProtected == true it implies a nested type.
       if (hostPackage().equals(type.hostPackage())) {
         return true;
       }
-      if (type.isNestedType() && type.enclosingType().withinBodyThatSubclasses(enclosingType()) != null) {
+      if (type.isNestedType()
+          && type.enclosingType().withinBodyThatSubclasses(enclosingType()) != null) {
         return true;
       }
       return false;
@@ -129,7 +133,9 @@ aspect AccessControl {
     }
   }
 
-  syn lazy boolean FieldDeclaration.accessibleFrom(TypeDecl type) {
+  syn boolean Declarator.accessibleFrom(TypeDecl type) = false;
+
+  syn lazy boolean FieldDeclarator.accessibleFrom(TypeDecl type) {
     if (isPublic()) {
       return true;
     } else if (isProtected()) {
@@ -199,21 +205,20 @@ aspect AccessControl {
 
     if (!isCircular()) {
       // 9.1.2
-      HashSet set = new HashSet();
-      for (int i = 0; i < getNumSuperInterface(); i++) {
-        TypeDecl decl = getSuperInterface(i).type();
-
+      Collection<TypeDecl> interfaces = new HashSet<TypeDecl>();
+      for (Access access : getSuperInterfaceList()) {
+        TypeDecl decl = access.type();
         if (!decl.isInterfaceDecl() && !decl.isUnknown()) {
           errorf("interface %s can not extend non interface type %s", fullName(), decl.fullName());
         }
         if (!decl.isCircular() && !decl.accessibleFrom(this)) {
           errorf("interface %s can not extend non accessible type %s", fullName(), decl.fullName());
         }
-        if (set.contains(decl)) {
+        if (interfaces.contains(decl)) {
           errorf("extended interface %s is mentionened multiple times in extends clause",
               decl.fullName());
         }
-        set.add(decl);
+        interfaces.add(decl);
       }
     }
   }

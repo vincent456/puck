@@ -52,9 +52,7 @@ aspect PrettyPrintUtil {
     prettyPrint(new PrettyPrinter("  ", out));
   }
 
-  /**
-   * @return the name of the class implementing this AST node
-   */
+  /** @return the name of the class implementing this AST node. */
   public String ASTNode.toString() {
     return getClass().getName();
   }
@@ -94,23 +92,23 @@ aspect PrettyPrintUtil {
       if (getInitStmt(0) instanceof VarDeclStmt) {
         VarDeclStmt var = (VarDeclStmt) getInitStmt(0);
         int minDimension = Integer.MAX_VALUE;
-        for (VariableDeclaration decl : var.getSingleDeclList()) {
+        for (VariableDeclarator decl : var.getDeclaratorList()) {
           minDimension = Math.min(minDimension, decl.type().dimension());
         }
 
         // Print type.
         out.print(var.getModifiers());
-        var.getTypeAccess().prettyPrint(out);
+        out.print(var.type().elementType().typeName());
         for (int i = minDimension; i > 0; i--) {
           out.print("[]");
         }
 
         // Print individual declarations.
-        for (int i = 0; i < var.getNumSingleDecl(); ++i) {
+        for (int i = 0; i < var.getNumDeclarator(); ++i) {
           if (i != 0) {
             out.print(",");
           }
-          VariableDeclaration decl = var.getSingleDecl(i);
+          VariableDeclarator decl = var.getDeclarator(i);
           out.print(" " + decl.name());
           for (int j = decl.type().dimension() - minDimension; j > 0; j -= 1) {
             out.print("[]");
@@ -125,7 +123,7 @@ aspect PrettyPrintUtil {
         out.print(stmt.getExpr());
         for (int i = 1; i < getNumInitStmt(); i++) {
           out.print(", ");
-          stmt = (ExprStmt)getInitStmt(i);
+          stmt = (ExprStmt) getInitStmt(i);
           out.print(stmt.getExpr());
         }
       } else {
@@ -210,7 +208,7 @@ aspect PrettyPrintUtil {
   /**
    * Has package name (not @primitive)
    */
-  syn boolean TypeAccess.hasPackage() = decl().isReferenceType() && !getPackage().isEmpty();
+  syn boolean TypeAccess.hasPackage() = !getPackage().isEmpty() && decl().isReferenceType();
 
   syn boolean InstanceInitializer.blockIsEmpty() = getBlock().getNumStmt() == 0;
 
@@ -246,9 +244,9 @@ aspect PrettyPrintUtil {
 
   syn boolean MethodDecl.hasModifiers() = getModifiers().getNumModifier() > 0;
 
-  syn boolean FieldDeclaration.hasModifiers() = getModifiers().getNumModifier() > 0;
+  syn boolean FieldDecl.hasModifiers() = getModifiers().getNumModifier() > 0;
 
-  syn boolean VariableDeclaration.hasModifiers() = getModifiers().getNumModifier() > 0;
+  syn boolean Declarator.hasModifiers() = getModifiers().getNumModifier() > 0;
 
   syn boolean ParameterDeclaration.hasModifiers() = getModifiers().getNumModifier() > 0;
 
@@ -264,7 +262,7 @@ aspect PrettyPrintUtil {
 
   syn String CharacterLiteral.escapedLiteral() = escape(getLITERAL());
 
-  syn boolean AbstractDot.needsDot() = !(getRight() instanceof ArrayAccess);
+  syn boolean AbstractDot.needsDot() = !(rightSide() instanceof ArrayAccess);
 
   /** The operator string used for pretty printing this expression. */
   syn String Binary.printOp();
@@ -349,7 +347,7 @@ aspect PrettyPrintUtil {
           result.append("\\\\");
           break;
         default:
-          int value = (int)s.charAt(i);
+          int value = (int) s.charAt(i);
           if (value < 0x20 || (value > 0x7e)) {
             result.append(asEscape(value));
           } else {

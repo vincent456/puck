@@ -1,5 +1,6 @@
 /* the names of fresh variables are guaranteed not to clash
- * with the names of other variables */
+ * with the names of other variables *//*
+
 aspect FreshVariables {
 	interface FreshVariable extends Variable { 
 		String pickFreshName();
@@ -54,7 +55,7 @@ aspect FreshVariables {
 	
 	public void FreshLocalVariable.eliminateFreshVariables() {
 		String new_name = pickFreshName();
-		VariableDeclaration vd = new VariableDeclaration(getModifiers(), getTypeAccess(), new_name, getInitOpt());
+		VariableDeclarator vd = new VariableDeclarator(getModifiers(), getTypeAccess(), new_name, getInitOpt());
 		for(VarAccess va : uses()) {
 			assert va.isLocked();
 			va.lock(vd);
@@ -65,7 +66,7 @@ aspect FreshVariables {
 	
 	public void FreshField.eliminateFreshVariables() {
 		String new_name = pickFreshName();
-		FieldDeclaration fd = new FieldDeclaration(getModifiers(), getTypeAccess(), new_name, getInitOpt());
+		FieldDeclarator fd = new FieldDeclarator(getModifiers(), getTypeAccess(), new_name, getInitOpt());
 		for(VarAccess va : uses()) {
 			assert va.isLocked();
 			va.lock(fd);
@@ -186,7 +187,7 @@ aspect FreshVariables {
 			va.lock(fp);
 		replaceWith(fp);
 	}
-	public void VariableDeclaration.freshenDeclaration() {
+	public void VariableDeclarator.freshenDeclaration() {
 		Collection<VarAccess> uses = allUses();
 		FreshLocalVariable fv = new FreshLocalVariable(getModifiers(), getTypeAccess(), getID(), getInitOpt());
 		for(VarAccess va : uses)
@@ -201,4 +202,4 @@ aspect FreshVariables {
 			va.lock(fv);
 		return fv;
 	}
-}
+}*/

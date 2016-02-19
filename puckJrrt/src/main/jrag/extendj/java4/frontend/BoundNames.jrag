@@ -29,34 +29,25 @@
  */
 
 aspect BoundNames {
-  public Access FieldDeclaration.createQualifiedBoundAccess() {
+  /** Create an access to this field. */
+  public Access FieldDeclarator.createBoundAccess() {
     if (isStatic()) {
       return hostType().createQualifiedAccess().qualifiesAccess(new BoundFieldAccess(this));
-    } else
-      return new ThisAccess("this").qualifiesAccess(
-        new BoundFieldAccess(this));
+    } else {
+      return new ThisAccess("this").qualifiesAccess(new BoundFieldAccess(this));
+    }
   }
 
-  // The memberMethods(String name) attribute is used to lookup member methods.
-  // It uses the methodsNameMap() map where a name is mapped to a list of member
-  // methods. We extend the map with the declaration m by either appending
-  // it to an existing list of declarations or adding a new list. That list
-  // will be used to name bind a new qualified name access.
+  /**
+   * The memberMethods(String name) attribute is used to lookup member methods.
+   * It uses the methodsNameMap() map where a name is mapped to a list of member
+   * methods. We extend the map with the declaration m by either appending
+   * it to an existing list of declarations or adding a new list. That list
+   * will be used to name bind a new qualified name access.
+   */
   public MethodDecl TypeDecl.addMemberMethod(MethodDecl m) {
     addBodyDecl(m);
-    return (MethodDecl) getBodyDecl(getNumBodyDecl()-1);
-    /*
-    HashMap map = methodsNameMap();
-    ArrayList list = (ArrayList) map.get(m.name());
-    if (list == null) {
-      list = new ArrayList(4);
-      map.put(m.name(), list);
-    }
-    list.add(m);
-    if (!memberMethods(m.name()).contains(m)) {
-      throw new Error("The method " + m.signature() + " added to " + typeName() + " can not be found using lookupMemberMethod");
-    }
-    */
+    return (MethodDecl) getBodyDecl(getNumBodyDecl() - 1);
   }
 
   public ConstructorDecl TypeDecl.addConstructor(ConstructorDecl c) {
@@ -69,27 +60,35 @@ aspect BoundNames {
     return ((MemberClassDecl) getBodyDecl(getNumBodyDecl()-1)).getClassDecl();
   }
 
-
-  // the new field must be unique otherwise an error occurs
-  public FieldDeclaration TypeDecl.addMemberField(FieldDeclaration f) {
+  /**
+   * Adds a new field to this type declaration.
+   * It is an error if the new field is not unique.
+   */
+  public FieldDecl TypeDecl.addMemberField(FieldDecl f) {
     addBodyDecl(f);
-    return (FieldDeclaration) getBodyDecl(getNumBodyDecl()-1);
+    return (FieldDecl) getBodyDecl(getNumBodyDecl() - 1);
   }
 
-  // A BoundMethodAccess is a MethodAccess where the name analysis is bypassed by explicitly setting the desired binding
-  // this is useful when name binding is cached and recomputation is undesired
+  /**
+   * A BoundMethodAccess is a MethodAccess where the name analysis is bypassed
+   * by explicitly setting the desired binding. This is useful when name
+   * binding is cached and recomputation is undesired.
+   */
   public BoundMethodAccess.BoundMethodAccess(String name, List args, MethodDecl methodDecl) {
     this(name, args);
     this.methodDecl = methodDecl;
   }
+
   private MethodDecl BoundMethodAccess.methodDecl;
+
   eq BoundMethodAccess.decl() = methodDecl;
 
-  public BoundFieldAccess.BoundFieldAccess(FieldDeclaration f) {
+  public BoundFieldAccess.BoundFieldAccess(FieldDeclarator f) {
     this(f.name(), f);
   }
 
-  eq BoundFieldAccess.decl() = getFieldDeclaration();
+  eq BoundFieldAccess.decl() = getFieldDeclarator();
+
   public boolean BoundFieldAccess.isExactVarAccess() {
     return false;
   }
@@ -103,14 +102,12 @@ aspect BoundNames {
     return new BoundMethodAccess(name(), args, this);
   }
 
-  public Access FieldDeclaration.createBoundFieldAccess() {
-    return createQualifiedBoundAccess();
-  }
-
   public TypeAccess TypeDecl.createBoundAccess() {
     return new BoundTypeAccess("", name(), this);
   }
-  eq BoundTypeAccess.decls() = SimpleSet.emptySet.add(getTypeDecl());
+
+  // TODO(joqvist): use getTypeDecl().asSet() here?
+  eq BoundTypeAccess.decls() = getTypeDecl();
 
   rewrite BytecodeTypeAccess {
     to Access {
@@ -118,12 +115,12 @@ aspect BoundNames {
         return new TypeAccess(packageName(), name());
       } else {
         String[] names = name().split("\\$");
-        Access a = null; // the resulting access
-        String newName = null; // the subname to try
-        TypeDecl type = null; // qualifying type if one
+        Access a = null; // The resulting access.
+        String newName = null; // The subname to try.
+        TypeDecl type = null; // Qualifying type if one.
         for (int i = 0; i < names.length; i++) {
           newName = newName == null ? names[i] : (newName + "$" + names[i]);
-          SimpleSet set;
+          SimpleSet<TypeDecl> set;
           if (type != null) {
             set = type.memberTypes(newName);
           } else if (packageName().equals("")) {
@@ -132,9 +129,11 @@ aspect BoundNames {
             set = lookupType(packageName(), newName).asSet();
           }
           if (!set.isEmpty()) {
-            a = a == null ? (Access) new TypeAccess(packageName(), newName) : (Access) a.qualifiesAccess(new TypeAccess(newName));
-            type = (TypeDecl) set.iterator().next();
-            newName = null; // reset subname
+            a = a == null
+                ? (Access) new TypeAccess(packageName(), newName)
+                : (Access) a.qualifiesAccess(new TypeAccess(newName));
+            type = set.iterator().next();
+            newName = null; // Reset subname.
           }
         }
         if (a == null) {

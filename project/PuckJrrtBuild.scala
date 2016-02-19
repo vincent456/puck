@@ -64,6 +64,10 @@ object PuckJrrtBuild {
   val ast = taskKey[Seq[File]]("use ast, jrag and jadd files to generates java")
   val astTask : Def.Setting[Task[Seq[File]]] = ast := {
 
+    val outDir = genRelativePath(jastaddOutDir.value)
+    if(!outDir.exists())
+      outDir.mkdirs()
+
     println("AST generation")
 
     val j4frontend = java4.value / "frontend"
@@ -124,19 +128,21 @@ object PuckJrrtBuild {
       }}
 
 
-    val cfgFiles =  controlFlowGraph.value * "*"
+    //val cfgFiles =  controlFlowGraph.value / "Alias.jrag" /*controlFlowGraph.value * "*"*/
     val jrrtUtil =  jrrtHome.value / "util" ** ("*.jrag" | "*.jadd" | "*.ast" )
-    val jrrtOthers = jrrtHome.value ** ("*.jrag" | "*.jadd" | "*.ast" ) --- cfgFiles --- jrrtUtil
+    val jrrtOthers = jrrtHome.value ** ("*.jrag" | "*.jadd" | "*.ast" ) /*--- cfgFiles*/ --- jrrtUtil
 
     val puckFiles : PathFinder = puckJragJaddSrc.value ** ("*.jrag" | "*.jadd" | "*.ast")
 
+
+    //val java4backendNeededFile : PathFinder = java4.value / "backend" / "GenerateClassfile.jrag"
 
     val generated = jastaddOutDir.value / "org" / "extendj"/ "ast" / "ASTNode.java"
     val mustUpdate =
       (!generated.exists()) || {
         val allFiles : PathFinder = java4grammar +++ j8variable +++ j7constant +++
-          java4others +++ java5grammar +++ java5others +++ java6files +++ java8grammar +++
-          java7grammar +++ java7others +++ java8others +++ cfgFiles +++ jrrtUtil +++ jrrtOthers +++ puckFiles
+          java4others  +++ java5grammar +++ java5others +++ java6files +++ java8grammar +++
+          java7grammar +++ java7others +++ java8others /*+++ cfgFiles*/ +++ jrrtUtil +++ jrrtOthers +++ puckFiles
 
         needUpdate(allFiles.get, generated)
       }
@@ -157,7 +163,7 @@ object PuckJrrtBuild {
         ++: java7grammar.getPaths
         ++: java7others.getPaths.sorted
         ++: java8others.getPaths
-        ++: cfgFiles.getPaths.sorted
+        //++: cfgFiles.getPaths.sorted
         ++: jrrtUtil.getPaths.sorted
         ++: jrrtOthers.getPaths
         ++: puckFiles.getPaths.sorted)

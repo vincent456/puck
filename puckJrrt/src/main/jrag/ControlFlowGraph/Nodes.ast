@@ -1,2 +1,0 @@
-EntryStmt : EmptyStmt;
-ExitStmt : EmptyStmt;

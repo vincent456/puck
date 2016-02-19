@@ -104,11 +104,13 @@ aspect Locking {
 					if(methodSigs.contains(md.signature()))
 						throw new RefactoringException("two or more methods with same signature");
 					methodSigs.add(md.signature());
-				} else if(bd instanceof FieldDeclaration) {
-					FieldDeclaration fd = (FieldDeclaration)bd;
-					if(fieldNames.contains(fd.name()))
+				} else if(bd instanceof FieldDecl) {
+					FieldDecl fdecl = (FieldDecl) bd;
+					for(FieldDeclarator fd : fdecl.getDeclaratorList()) {
+						if (fieldNames.contains(fd.name()))
 							throw new RefactoringException("two or more fields with same name");
-					fieldNames.add(fd.name());
+						fieldNames.add(fd.name());
+					}
 				} if(bd instanceof MemberTypeDecl) {
 					TypeDecl td = ((MemberTypeDecl)bd).typeDecl();
 					if(typeNames.contains(td.name()))

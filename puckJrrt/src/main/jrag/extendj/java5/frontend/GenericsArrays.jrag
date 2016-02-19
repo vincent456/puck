@@ -33,12 +33,17 @@ aspect GenericsArrays {
     String name = name() + "[]";
 
     List body = new List();
-    body.add(
-      new FieldDeclaration(
-        new Modifiers(new List().add(new Modifier("public")).add(new Modifier("final"))),
-        new PrimitiveTypeAccess("int"),
+    FieldDeclarator length = new FieldDeclarator(
         "length",
-        new Opt() // [Init:Expr]
+        new List<Dims>(),
+        new Opt<Expr>());
+    body.add(
+      new FieldDecl(
+          new Modifiers(new List<Modifier>(
+              new Modifier("public"),
+              new Modifier("final"))),
+          new PrimitiveTypeAccess("int"),
+          new List<FieldDeclarator>(length)
       )
     );
     MethodDecl clone = null;
@@ -53,10 +58,10 @@ aspect GenericsArrays {
     }
     if (clone != null) {
       body.add(
-          // we create a substituted method that substitutes the clone method in object
+          // We create a substituted method that substitutes the clone method in object
           // this has the following two consequences: the return value will be cast to the
           // expected return type rather than object, and the invoked method will be the
-          // method in object rather in the array
+          // method in object rather in the array.
           new MethodDeclSubstituted(
             new Modifiers(new List().add(new Modifier("public"))),
             new ArrayTypeAccess(createQualifiedAccess()),
@@ -64,18 +69,18 @@ aspect GenericsArrays {
             new List(),
             new List(),
             new Opt(new Block()),
-            (MethodDecl) typeObject().memberMethods("clone").iterator().next()
+            typeObject().memberMethods("clone").iterator().next()
           )
       );
     }
     TypeDecl typeDecl = new ArrayDecl(
         new Modifiers(new List().add(new Modifier("public"))),
         name,
-        new Opt(typeObject().createQualifiedAccess()), // [SuperClass]
-        new List().add(typeCloneable().createQualifiedAccess()).add(typeSerializable().createQualifiedAccess()), // Implements*
-        body // BodyDecl*
+        new Opt(typeObject().createQualifiedAccess()),
+        new List().add(typeCloneable().createQualifiedAccess())
+            .add(typeSerializable().createQualifiedAccess()),
+        body
       );
     return typeDecl;
   }
-
 }

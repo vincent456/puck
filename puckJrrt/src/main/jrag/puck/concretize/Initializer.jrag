@@ -12,7 +12,7 @@ aspect Initializer {
                 new ExprStmt(MethodAccess.createInitializerAccess(initializer)));
     }
 
-    public void FieldDeclaration.moveInitIntoInitializzer(MethodDecl initializer){
+    public void FieldDeclarator.moveInitIntoInitializzer(MethodDecl initializer){
         if(! getInitOpt().isEmpty() ) {
             //getInitOpt.isEmpty() means field is declared with a complex expression that
             //uses several things. The whole expr is moved with the first use, after that
@@ -38,15 +38,19 @@ aspect Initializer {
 
         ReturnStmt ret = (ReturnStmt)getBlock().getStmt(lastStmt);
 
-        VariableDeclaration flv =
-            new VariableDeclaration(ret.getResult().type().createLockedAccess(), "ret");
-//        FreshLocalVariable flv =
-//            new FreshLocalVariable(ret.getResult().type().createLockedAccess(), "ret");
-        flv.setInit(ret.getResult());
-        ret.setResult(flv.createLockedAccess());
-        getBlock().insertStmt(lastStmt, flv);
+        VariableDeclarator dtor = new VariableDeclarator();
+        dtor.init$Children();
+        dtor.setID("ret");
+        VarDeclStmt dstmt = new VarDeclStmt();
+        dstmt.init$Children();
+        dstmt.setTypeAccess(ret.getResult().type().createLockedAccess());
+        dstmt.addDeclarator(dtor);
+
+        dtor.setInit(ret.getResult());
+        ret.setResult(dtor.createLockedAccess());
+        getBlock().insertStmt(lastStmt, dstmt);
         lastStmt++;
-        ExprStmt initCall = new ExprStmt(new Dot(flv.createLockedAccess(), initializer.createLockedAccess(new List())));
+        ExprStmt initCall = new ExprStmt(new Dot(dtor.createLockedAccess(), initializer.createLockedAccess(new List())));
         getBlock().insertStmt(lastStmt, initCall);
     }
 

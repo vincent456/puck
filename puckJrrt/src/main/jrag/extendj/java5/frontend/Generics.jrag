@@ -1,5 +1,5 @@
 /* Copyright (c) 2005-2008, Torbjorn Ekman
- *                    2014, Jesper Öqvist <jesper.oqvist@cs.lth.se>
+ *               2014-2016, Jesper Öqvist <jesper.oqvist@cs.lth.se>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,9 +32,8 @@
 aspect Generics {
 
   /**
-   * Qualified access for wildcard types.
-   * Since they have no ordinary package and type name
-   * we just return the bound access.
+   * Qualified access for wildcard types.  Since they have no ordinary package
+   * and type name we just return the bound access.
    */
   public Access AbstractWildcardType.createQualifiedAccess() {
     return createBoundAccess();
@@ -66,9 +65,8 @@ aspect Generics {
   // Imported types are considered raw types by the name resolver
   // here we replace them by their generic counter parts.
   refine TypeScopePropagation eq CompilationUnit.getChild().lookupType(String name) {
-    SimpleSet result = SimpleSet.emptySet;
-    for (Iterator iter = refined(name).iterator(); iter.hasNext(); ) {
-      TypeDecl typeDecl = (TypeDecl) iter.next();
+    SimpleSet<TypeDecl> result = emptySet();
+    for (TypeDecl typeDecl : refined(name)) {
       if (typeDecl instanceof ParTypeDecl) {
         result = result.add(((ParTypeDecl) typeDecl).genericDecl());
       } else {
@@ -167,7 +165,7 @@ aspect Generics {
       list.add(type);
       return d.lookupParTypeDecl(list);
     }
-    // Using non-generic java.lang.Class
+    // Using non-generic java.lang.Class.
     return decl;
   }
 
@@ -200,7 +198,7 @@ aspect Generics {
   // version.
   eq ParClassDecl.topLevelType() = erasure().topLevelType();
 
-  public interface GenericTypeDecl {
+  interface GenericTypeDecl {
     syn boolean isGenericType();
     TypeDecl original();
     int getNumTypeParameter();
@@ -299,27 +297,32 @@ aspect Generics {
     return (TypeDecl) this;
   }
 
-  public interface ParTypeDecl {
-    //syn String name();
+  interface ParTypeDecl {
     int getNumArgument();
     Access getArgument(int index);
     syn boolean isParameterizedType();
     syn boolean isRawType();
     public String typeName();
-    SimpleSet localFields(String name);
-    Map<String,SimpleSet> localMethodsSignatureMap();
+    SimpleSet<Variable> localFields(String name);
+    Map<String, SimpleSet<MethodDecl>> localMethodsSignatureMap();
   }
 
   ParClassDecl implements ParTypeDecl;
+
   ParInterfaceDecl implements ParTypeDecl;
 
   syn boolean TypeDecl.isParameterizedType() = false;
+
   eq ParTypeDecl.isParameterizedType() = true;
 
   syn boolean TypeDecl.isRawType() = isNestedType() && enclosingType().isRawType();
+
   eq ParClassDecl.isRawType() = isNestedType() && enclosingType().isRawType();
+
   eq ParInterfaceDecl.isRawType() = isNestedType() && enclosingType().isRawType();
+
   eq RawClassDecl.isRawType() = true;
+
   eq RawInterfaceDecl.isRawType() = true;
 }
 
@@ -367,11 +370,6 @@ aspect GenericsTypeAnalysis {
 
   /** This method assumes that the bound type is generic. */
   public boolean TypeAccess.isRaw() {
-    /*
-    if (hasNextAccess()) {
-      return false;
-    }
-    */
     ASTNode parent = getParent();
     while (parent instanceof AbstractDot) {
       parent = parent.getParent();
@@ -382,15 +380,6 @@ aspect GenericsTypeAnalysis {
     if (parent instanceof ImportDecl) {
       return false;
     }
-    /*
-    Access a = this;
-    while (a.isTypeAccess() && hasNextAccess()) {
-      a = a.nextAccess();
-    }
-    if (a.isThisAccess() || a.isSuperAccess()) {
-      return false;
-    }
-    */
     return true;
   }
 
@@ -401,6 +390,7 @@ aspect GenericsTypeAnalysis {
     }
     return typeDecl;
   }
+
   refine TypeScopePropagation eq SuperAccess.decl() {
     TypeDecl typeDecl = refined();
     if (typeDecl instanceof ParTypeDecl) {
@@ -412,6 +402,7 @@ aspect GenericsTypeAnalysis {
   public boolean BoundTypeAccess.isRaw() {
     return getTypeDecl().isRawType();
   }
+
   public boolean ParTypeAccess.isRaw() {
     return false;
   }
@@ -428,9 +419,13 @@ aspect GenericsErasure {
     }
     return extractSingleType(enclosingType().erasure().memberTypes(name()));
   }
+
   eq ParClassDecl.erasure() = genericDecl();
+
   eq ParInterfaceDecl.erasure() = genericDecl();
-  eq TypeVariable.erasure() = getTypeBound(0).type().erasure(); // Skip last erasure?
+
+  eq TypeVariable.erasure() = getTypeBound(0).type().erasure(); // TODO(joqvist): skip last erasure?
+
   eq ArrayDecl.erasure() = componentType().erasure().arrayType();
 }
 
@@ -473,16 +468,15 @@ aspect GenericsTypeCheck {
     }
 
     // Check if a method has same signature as another in a supertype but does not override it.
-    Map<String,SimpleSet> map = erasedAncestorMethodsMap();
+    Map<String, SimpleSet<MethodDecl>> map = erasedAncestorMethodsMap();
     for (Iterator iter1 = localMethodsIterator(); iter1.hasNext(); ) {
       MethodDecl localMethod = (MethodDecl) iter1.next();
 
       String signature = localMethod.signature();
 
-      SimpleSet set = map.get(signature);
+      SimpleSet<MethodDecl> set = map.get(signature);
       if (set != null) {
-        for (Iterator i2 = set.iterator(); i2.hasNext(); ) {
-          MethodDecl decl = (MethodDecl) i2.next();
+        for (MethodDecl decl : set) {
           if (!decl.signature().equals(signature)) {
             localMethod.errorf("method %s in %s has the same erased signature as"
                 + " %s declared in %s but does not override it",
@@ -493,12 +487,12 @@ aspect GenericsTypeCheck {
     }
   }
 
-  syn lazy Map<String,SimpleSet> TypeDecl.erasedAncestorMethodsMap() =
+  syn lazy Map<String, SimpleSet<MethodDecl>> TypeDecl.erasedAncestorMethodsMap() =
       original().localMethodsSignatureMap();
 
   eq ClassDecl.erasedAncestorMethodsMap() {
-    Map<String,SimpleSet> localMap = localMethodsSignatureMap();
-    Map<String,SimpleSet> map = new HashMap<String,SimpleSet>();
+    Map<String, SimpleSet<MethodDecl>> localMap = localMethodsSignatureMap();
+    Map<String, SimpleSet<MethodDecl>> map = new HashMap<String, SimpleSet<MethodDecl>>();
     if (hasSuperclass()) {
       for (Iterator<MethodDecl> iter = superclass().localMethodsIterator(); iter.hasNext(); ) {
         MethodDecl m = iter.next();
@@ -521,8 +515,8 @@ aspect GenericsTypeCheck {
   }
 
   eq InterfaceDecl.erasedAncestorMethodsMap() {
-    Map<String,SimpleSet> localMap = localMethodsSignatureMap();
-    Map<String,SimpleSet> map = new HashMap<String,SimpleSet>(localMap);
+    Map<String, SimpleSet<MethodDecl>> localMap = localMethodsSignatureMap();
+    Map<String, SimpleSet<MethodDecl>> map = new HashMap<String, SimpleSet<MethodDecl>>(localMap);
     for (Iterator<MethodDecl> iter = interfacesMethodsIterator(); iter.hasNext(); ) {
       MethodDecl m = (MethodDecl) iter.next();
       if (m.accessibleFrom(this) && m.erasedMethod() != m) {
@@ -551,11 +545,12 @@ aspect GenericsTypeCheck {
    * @param dest destination map
    * @param src source map
    */
-  protected void TypeDecl.mergeMap(Map<String,SimpleSet> dest, Map<String,SimpleSet> src) {
-    for (Map.Entry<String,SimpleSet> entry: src.entrySet()) {
+  protected void TypeDecl.mergeMap(Map<String, SimpleSet<MethodDecl>> dest,
+      Map<String, SimpleSet<MethodDecl>> src) {
+    for (Map.Entry<String, SimpleSet<MethodDecl>> entry : src.entrySet()) {
       String signature = entry.getKey();
-      for (Iterator iter = entry.getValue().iterator(); iter.hasNext(); ) {
-        putSimpleSetElement(dest, signature, (SimpleSet) iter.next());
+      for (MethodDecl method : entry.getValue()) {
+        putSimpleSetElement(dest, signature, method);
       }
     }
   }
@@ -566,19 +561,19 @@ aspect GenericsTypeCheck {
 
     if (hasSuperclass()) {
       // JLS SE7 8.4.8.4
-      // check for duplicate methods inherited from parameterized supertype
+      // Check for duplicate methods inherited from parameterized supertype.
       if (superclass().isParameterizedType()) {
-        Map<String,SimpleSet> localMap = localMethodsSignatureMap();
-        Map<String,SimpleSet> methodMap = superclass().localMethodsSignatureMap();
-        for (Map.Entry<String,SimpleSet> entry: methodMap.entrySet()) {
+        Map<String, SimpleSet<MethodDecl>> localMap = localMethodsSignatureMap();
+        Map<String, SimpleSet<MethodDecl>> methodMap = superclass().localMethodsSignatureMap();
+        for (Map.Entry<String, SimpleSet<MethodDecl>> entry: methodMap.entrySet()) {
           String signature = entry.getKey();
           if (!localMap.containsKey(signature)) {
-            // not locally overridden
-            SimpleSet set = entry.getValue();
-            Iterator iter = set.iterator();
+            // Not locally overridden.
+            SimpleSet<MethodDecl> set = entry.getValue();
+            Iterator<MethodDecl> iter = set.iterator();
             iter.next();
             while (iter.hasNext()) {
-              MethodDecl m = (MethodDecl) iter.next();
+              iter.next();
               errorf("method with signature %s is multiply declared when inherited from %s",
                   signature, superclass().typeName());
             }
@@ -611,10 +606,10 @@ aspect GenericsTypeCheck {
     return true;
   }
 
-  syn lazy HashSet<InterfaceDecl> TypeDecl.implementedInterfaces() = new HashSet<InterfaceDecl>();
+  syn lazy Collection<InterfaceDecl> TypeDecl.implementedInterfaces() = Collections.emptySet();
 
   eq ClassDecl.implementedInterfaces() {
-    HashSet set = new HashSet();
+    Collection<InterfaceDecl> set = new HashSet<InterfaceDecl>();
     if (hasSuperclass()) {
       set.addAll(superclass().implementedInterfaces());
     }
@@ -704,96 +699,96 @@ aspect GenericsNameBinding {
   eq ParInterfaceDecl.getArgument().nameType() = NameType.TYPE_NAME;
   eq ParTypeAccess.getChild().nameType() = NameType.TYPE_NAME;
 
-  //eq GenericClassDecl.getParTypeDecl().isNestedType() = isNestedType();
-  //eq GenericClassDecl.getParTypeDecl().enclosingType() = enclosingType();
   eq GenericClassDecl.getTypeParameter().isNestedType() = true;
   eq GenericClassDecl.getTypeParameter().enclosingType() = this;
 
-  //eq GenericInterfaceDecl.getParTypeDecl().isNestedType() = isNestedType();
-  //eq GenericInterfaceDecl.getParTypeDecl().enclosingType() = enclosingType();
   eq GenericInterfaceDecl.getTypeParameter().isNestedType() = true;
   eq GenericInterfaceDecl.getTypeParameter().enclosingType() = this;
 
-  public SimpleSet GenericTypeDecl.addTypeVariables(SimpleSet c, String name) {
+  public SimpleSet<TypeDecl> GenericTypeDecl.addTypeVariables(SimpleSet<TypeDecl> types,
+      String name) {
     GenericTypeDecl original = (GenericTypeDecl) original();
     for (int i = 0; i < original.getNumTypeParameter(); i++) {
       TypeVariable p = original.getTypeParameter(i);
       if (p.name().equals(name)) {
-        c = c.add(p);
+        types = types.add(p);
       }
     }
-    return c;
+    return types;
   }
 
   eq GenericInterfaceDecl.getSuperInterface().lookupType(String name) {
-    SimpleSet c = addTypeVariables(SimpleSet.emptySet, name);
-    return !c.isEmpty() ? c : lookupType(name);
+    SimpleSet<TypeDecl> result = addTypeVariables(ASTNode.<TypeDecl>emptySet(), name);
+    return !result.isEmpty() ? result : lookupType(name);
   }
+
   eq GenericClassDecl.getSuperClass().lookupType(String name) {
-    SimpleSet c = addTypeVariables(SimpleSet.emptySet, name);
-    return !c.isEmpty() ? c : lookupType(name);
+    SimpleSet<TypeDecl> result = addTypeVariables(ASTNode.<TypeDecl>emptySet(), name);
+    return !result.isEmpty() ? result : lookupType(name);
   }
+
   eq GenericClassDecl.getImplements().lookupType(String name) {
-    SimpleSet c = addTypeVariables(SimpleSet.emptySet, name);
-    return !c.isEmpty() ? c : lookupType(name);
+    SimpleSet<TypeDecl> result = addTypeVariables(ASTNode.<TypeDecl>emptySet(), name);
+    return !result.isEmpty() ? result : lookupType(name);
   }
 
   eq GenericTypeDecl.getTypeParameter().lookupType(String name) {
-    SimpleSet c = memberTypes(name);
-    c = addTypeVariables(c, name);
-    if (!c.isEmpty()) {
-      return c;
+    SimpleSet<TypeDecl> result = memberTypes(name);
+    result = addTypeVariables(result, name);
+    if (!result.isEmpty()) {
+      return result;
     }
     // 8.5.2
     if (isClassDecl() && isStatic() && !isTopLevelType()) {
-      for (Iterator iter = lookupType(name).iterator(); iter.hasNext(); ) {
-        TypeDecl d = (TypeDecl) iter.next();
-        if (d.isStatic() || (d.enclosingType() != null && instanceOf(d.enclosingType()))) {
-          c = c.add(d);
+      for (TypeDecl type : lookupType(name)) {
+        if (type.isStatic() || (type.enclosingType() != null && instanceOf(type.enclosingType()))) {
+          result = result.add(type);
         }
       }
     } else {
-      c = lookupType(name);
+      result = lookupType(name);
     }
-    if (!c.isEmpty()) {
-      return c;
+    if (!result.isEmpty()) {
+      return result;
     }
-    return topLevelType().lookupType(name); // Fix to search imports
+    return topLevelType().lookupType(name); // Fix to search imports.
   }
+
   eq GenericTypeDecl.getBodyDecl(int index).lookupType(String name) {
-    SimpleSet c = memberTypes(name);
+    SimpleSet<TypeDecl> result = memberTypes(name);
     if (getBodyDecl(index).visibleTypeParameters()) {
-      c = addTypeVariables(c, name);
+      result = addTypeVariables(result, name);
     }
-    if (!c.isEmpty()) {
-      return c;
+    if (!result.isEmpty()) {
+      return result;
     }
     // 8.5.2
     if (isClassDecl() && isStatic() && !isTopLevelType()) {
-      for (Iterator iter = lookupType(name).iterator(); iter.hasNext(); ) {
-        TypeDecl d = (TypeDecl) iter.next();
-        if (d.isStatic() || (d.enclosingType() != null && instanceOf(d.enclosingType()))) {
-          c = c.add(d);
+      for (TypeDecl type : lookupType(name)) {
+        if (type.isStatic() || (type.enclosingType() != null && instanceOf(type.enclosingType()))) {
+          result = result.add(type);
         }
       }
     } else {
-      c = lookupType(name);
+      result = lookupType(name);
     }
-    if (!c.isEmpty()) {
-      return c;
+    if (!result.isEmpty()) {
+      return result;
     }
-    return topLevelType().lookupType(name); // Fix to search imports
-    // include type parameters if not static
+    return topLevelType().lookupType(name); // Fix to search imports.
+    // Include type parameters if not static.
   }
 
   public void ParClassDecl.collectErrors() {
-    // Disable error check for ParClassDecl which is an instanciated GenericClassDecl
+    // Disable error check for ParClassDecl which is an instanciated GenericClassDecl.
   }
+
   public void ParInterfaceDecl.collectErrors() {
-    // Disable error check for ParInterfaceDecl which is an instanciated GenericInterfaceDecl
+    // Disable error check for ParInterfaceDecl which is an instanciated GenericInterfaceDecl.
   }
 
 }
+
 aspect LookupParTypeDecl {
   eq TypeVariable.fullName() {
     if (getParent().getParent() instanceof TypeDecl) {
@@ -803,6 +798,7 @@ aspect LookupParTypeDecl {
     if (getParent().getParent() instanceof GenericMethodDecl) {
         GenericMethodDecl genericMethodDecl = (GenericMethodDecl) getParent().getParent();
         return genericMethodDecl.fullName() + "@" + name();
+//        return gmd.hostType().typeName() + "."+ gmd.signature() + "@" + name();
     }
     return super.fullName();
   }
@@ -816,7 +812,9 @@ aspect LookupParTypeDecl {
     }
     return this == a.type();
   }
+
   eq TypeVariable.sameSignature(Access a) = a.type() == this;
+
   syn boolean ParTypeDecl.sameSignature(Access a){
     if (a instanceof ParTypeAccess) {
       ParTypeAccess ta = (ParTypeAccess) a;
@@ -837,7 +835,9 @@ aspect LookupParTypeDecl {
     }
     return super.sameSignature(a);
   }
+
   eq RawClassDecl.sameSignature(Access a) = a instanceof TypeAccess && a.type() == this;
+
   eq RawInterfaceDecl.sameSignature(Access a) = a instanceof TypeAccess && a.type() == this;
 
   eq WildcardType.sameSignature(Access a) {
@@ -846,12 +846,14 @@ aspect LookupParTypeDecl {
     }
     return super.sameSignature(a);
   }
+
   eq WildcardExtendsType.sameSignature(Access a) {
     if (a instanceof WildcardExtends) {
       return getAccess().type().sameSignature(((WildcardExtends) a).getAccess());
     }
     return super.sameSignature(a);
   }
+
   eq WildcardSuperType.sameSignature(Access a) {
     if (a instanceof WildcardSuper) {
       return getAccess().type().sameSignature(((WildcardSuper) a).getAccess());
@@ -886,7 +888,7 @@ aspect LookupParTypeDecl {
     ParClassDecl typeDecl = typeArgs.size() == 0 ? new RawClassDecl() : new ParClassDecl();
     typeDecl.setModifiers((Modifiers) getModifiers().treeCopyNoTransform());
     typeDecl.setID(getID());
-    // ES: trying to only do this for ParClassDecl and then later for RawClassDecl
+    // Trying to only do this for ParClassDecl and then later for RawClassDecl
     if (!(typeDecl instanceof RawClassDecl)) {
       typeDecl.setArgumentList(createArgumentList(typeArgs));
     }
@@ -899,18 +901,18 @@ aspect LookupParTypeDecl {
         : new ParInterfaceDecl();
     typeDecl.setModifiers((Modifiers) getModifiers().treeCopyNoTransform());
     typeDecl.setID(getID());
-    // ES: trying to only do this for ParInterfaceDecl and then later for RawInterfaceDecl
+    // Trying to only do this for ParInterfaceDecl and then later for RawInterfaceDecl
     if (!(typeDecl instanceof RawInterfaceDecl)) {
       typeDecl.setArgumentList(createArgumentList(typeArgs));
     }
     return typeDecl;
   }
 
-  // TODO(jesper): remove final
+  // TODO(jesper): remove final.
   syn lazy final List RawClassDecl.getArgumentList() =
       ((GenericClassDecl) genericDecl()).createArgumentList(Collections.<TypeDecl>emptyList());
 
-  // TODO(jesper): remove final
+  // TODO(jesper): remove final.
   syn lazy final List RawInterfaceDecl.getArgumentList() =
       ((GenericInterfaceDecl) genericDecl()).createArgumentList(Collections.<TypeDecl>emptyList());
 
@@ -1048,7 +1050,7 @@ aspect LookupParTypeDecl {
   }
 
   public Access ParTypeDecl.substitute(Parameterization parTypeDecl) {
-    // TODO: include nesting as well....
+    // TODO(joqvist): include nesting as well.
     if (parTypeDecl.isRawType()) {
       return ((GenericTypeDecl) genericDecl()).rawType().createBoundAccess();
     }
@@ -1057,7 +1059,6 @@ aspect LookupParTypeDecl {
     }
     List<Access> list = new List<Access>();
     for (Access argument : getArgumentList()) {
-      //System.err.println("substituting " + argument.type().typeName() + " with " + parTypeDecl);
       list.add(argument.type().substitute(parTypeDecl));
     }
     return new ParTypeAccess(genericDecl().createQualifiedAccess(), list);
@@ -1109,22 +1110,12 @@ aspect LookupParTypeDecl {
     }
     TypeDecl typeDecl = parTypeDecl.substitute(this);
     if (typeDecl instanceof WildcardType) {
-      // The bound of this type variable
       return createBoundAccess();
-      //return lubType().createBoundAccess();
-      //return typeObject().createBoundAccess();
     } else if (typeDecl instanceof WildcardExtendsType) {
-
-//       if (typeDecl.instanceOf(this)) {
-        return ((WildcardExtendsType) typeDecl).extendsType().createBoundAccess();
-//      } else {
-//        return createBoundAccess();
-//      }
-
+      return ((WildcardExtendsType) typeDecl).extendsType().createBoundAccess();
     } else if (typeDecl instanceof WildcardSuperType) {
-      // the bound of this type variable
+      // The bound of this type variable.
       return createBoundAccess();
-      //return typeObject().createBoundAccess();
     }
     return typeDecl.createBoundAccess();
   }
@@ -1142,6 +1133,7 @@ aspect LookupParTypeDecl {
   }
 
   inh TypeDecl TypeVariable.typeNull();
+
   public Access TypeVariable.substituteParameterType(Parameterization parTypeDecl) {
     if (parTypeDecl.isRawType()) {
       return erasure().createBoundAccess();
@@ -1204,21 +1196,17 @@ aspect LookupParTypeDecl {
   syn lazy Opt ParClassDecl.getSuperClassOpt() {
     GenericClassDecl decl = (GenericClassDecl) genericDecl();
     Opt opt;
-    //System.err.println("Begin substituting extends clause");
     if (decl.hasSuperClass()) {
       opt = new Opt((decl.getSuperClass().type().substitute(this)));
     } else {
       opt = new Opt();
     }
-    //System.err.println("End substituting extends clause");
     return opt;
   }
 
   syn lazy List ParClassDecl.getImplementsList() {
     GenericClassDecl decl = (GenericClassDecl) genericDecl();
-    //System.err.println("Begin substituting implements list");
     List list = decl.getImplementsList().substitute(this);
-    //System.err.println("End substituting implements list");
     return list;
   }
 
@@ -1226,9 +1214,7 @@ aspect LookupParTypeDecl {
 
   syn lazy List ParInterfaceDecl.getSuperInterfaceList() {
     GenericInterfaceDecl decl = (GenericInterfaceDecl) genericDecl();
-    //System.err.println("Begin substituting implements list");
     List list = decl.getSuperInterfaceList().substitute(this);
-    //System.err.println("End substituting implements list");
     return list;
   }
 
@@ -1238,7 +1224,6 @@ aspect LookupParTypeDecl {
   syn lazy List InterfaceDeclSubstituted.getBodyDeclList() = new BodyDeclList();
   syn lazy List GenericClassDeclSubstituted.getBodyDeclList() = new BodyDeclList();
   syn lazy List GenericInterfaceDeclSubstituted.getBodyDeclList() = new BodyDeclList();
-
 
   syn boolean ASTNode.usesTypeVariable() {
     for (int i = 0; i < getNumChild(); i++) {
@@ -1253,7 +1238,9 @@ aspect LookupParTypeDecl {
       getModifiers().usesTypeVariable() || getTypeAccess().usesTypeVariable()
       || getParameterList().usesTypeVariable() || getExceptionList().usesTypeVariable();
 
-  syn lazy boolean FieldDeclaration.usesTypeVariable() = getTypeAccess().usesTypeVariable();
+  syn lazy boolean FieldDecl.usesTypeVariable() = getTypeAccess().usesTypeVariable();
+
+  syn lazy boolean FieldDeclarator.usesTypeVariable() = getTypeAccess().usesTypeVariable();
 
   eq TypeAccess.usesTypeVariable() = decl().usesTypeVariable() || super.usesTypeVariable();
 
@@ -1278,8 +1265,8 @@ aspect LookupParTypeDecl {
   eq WildcardSuperType.usesTypeVariable() = getAccess().type().usesTypeVariable();
   eq ArrayDecl.usesTypeVariable() = elementType().usesTypeVariable();
 
-  syn lazy final Map<String,SimpleSet> MemberSubstitutor.localMethodsSignatureMap() {
-    Map<String,SimpleSet> map = new HashMap<String,SimpleSet>();
+  syn lazy final Map<String, SimpleSet<MethodDecl>> MemberSubstitutor.localMethodsSignatureMap() {
+    Map<String, SimpleSet<MethodDecl>> map = new HashMap<String, SimpleSet<MethodDecl>>();
     for (Iterator<MethodDecl> iter = original().localMethodsIterator(); iter.hasNext(); ) {
       MethodDecl decl = iter.next();
 
@@ -1296,47 +1283,65 @@ aspect LookupParTypeDecl {
   syn nta BodyDecl BodyDeclList.localMethodSignatureCopy(MethodDecl originalMethod,
       MemberSubstitutor m) = originalMethod.substitutedBodyDecl(m);
 
-  syn lazy final SimpleSet MemberSubstitutor.localFields(String name) {
-    SimpleSet set = SimpleSet.emptySet;
-    for (Iterator iter = original().localFields(name).iterator(); iter.hasNext(); ) {
-      FieldDeclaration f = (FieldDeclaration) iter.next();
-
-      if (!f.isStatic() && (f.usesTypeVariable() || isRawType())) {
-        BodyDecl fCopy = ((BodyDeclList) getBodyDeclList()).localFieldCopy(f, this);
-        f = (FieldDeclaration) fCopy;
+  syn lazy final SimpleSet<Variable> MemberSubstitutor.localFields(String name) {
+    SimpleSet<Variable> set = emptySet();
+    Set<FieldDecl> substitutedDecls = new HashSet<FieldDecl>();
+    for (Variable f : original().localFields(name)) {
+      if (!f.isStatic() && (((ASTNode) f).usesTypeVariable() || isRawType())) {
+        if (f.fieldDecl() != null) {
+          substitutedDecls.add(f.fieldDecl());
+        }
+      } else {
+        set = set.add(f);
       }
-      set = set.add(f);
-
+    }
+    for (FieldDecl decl : substitutedDecls) {
+      FieldDecl f = ((BodyDeclList) getBodyDeclList()).localFieldCopy(decl, this);
+      for (FieldDeclarator field : f.getDeclaratorList()) {
+        if (field.name().equals(name)) {
+          set = set.add(field);
+        }
+      }
     }
     return set;
   }
 
-  syn nta BodyDecl BodyDeclList.localFieldCopy(FieldDeclaration originalDecl, MemberSubstitutor m) =
-      originalDecl.substitutedBodyDecl(m);
+  inh FieldDecl Variable.fieldDecl();
 
-  // TODO-ES: Add NTA for copies like above
-  syn lazy final SimpleSet MemberSubstitutor.localTypeDecls(String name) circular [SimpleSet.emptySet] {
-    SimpleSet set = SimpleSet.emptySet;
-    for (Iterator iter = original().localTypeDecls(name).iterator(); iter.hasNext(); ) {
-      TypeDecl t = (TypeDecl) iter.next();
+  eq FieldDecl.getDeclarator().fieldDecl() = this;
 
-      if (t.isStatic()) {
-        set = set.add(t);
-      } else if (t instanceof ClassDecl) {
+  eq VarDeclStmt.getDeclarator().fieldDecl() = null;
+
+  eq EnhancedForStmt.getVariableDecl().fieldDecl() = null;
+
+  eq Program.getChild().fieldDecl() = null;
+
+  syn nta FieldDecl BodyDeclList.localFieldCopy(FieldDecl originalDecl, MemberSubstitutor m) =
+      (FieldDecl) originalDecl.substitutedBodyDecl(m);
+
+  // TODO(ES): add NTA for copies like above.
+  syn lazy final SimpleSet<TypeDecl> MemberSubstitutor.localTypeDecls(String name)
+      circular [emptySet()] {
+    SimpleSet<TypeDecl> set = emptySet();
+    for (TypeDecl type : original().localTypeDecls(name)) {
+      if (type.isStatic()) {
+        set = set.add(type);
+      } else if (type instanceof ClassDecl) {
         MemberClassDecl copy =
-          ((BodyDeclList) getBodyDeclList()).localClassDeclCopy((ClassDecl) t, this);
+            ((BodyDeclList) getBodyDeclList()).localClassDeclCopy((ClassDecl) type, this);
         set = set.add(copy.getClassDecl());
-      } else if (t instanceof InterfaceDecl) {
+      } else if (type instanceof InterfaceDecl) {
         MemberInterfaceDecl copy =
-          ((BodyDeclList) getBodyDeclList()).localInterfaceDeclCopy((InterfaceDecl) t, this);
+            ((BodyDeclList) getBodyDeclList()).localInterfaceDeclCopy((InterfaceDecl) type, this);
         set = set.add(copy.getInterfaceDecl());
       }
     }
     return set;
   }
 
-  // ES: adding NTA to store copies in
-  syn nta MemberClassDecl BodyDeclList.localClassDeclCopy(ClassDecl originalDecl, MemberSubstitutor m) {
+  // NTA to store copies in.
+  syn nta MemberClassDecl BodyDeclList.localClassDeclCopy(ClassDecl originalDecl,
+      MemberSubstitutor m) {
     ClassDecl copy = originalDecl.substitutedClassDecl(m);
     return new MemberClassDecl(copy);
   }
@@ -1349,9 +1354,7 @@ aspect LookupParTypeDecl {
 
   syn lazy Collection<ConstructorDecl> MemberSubstitutor.constructors() {
     Collection<ConstructorDecl> constructors = new ArrayList<ConstructorDecl>();
-    for (Iterator iter = original().constructors().iterator(); iter.hasNext(); ) {
-      ConstructorDecl c = (ConstructorDecl) iter.next();
-
+    for (ConstructorDecl c : original().constructors()) {
       ConstructorDecl b = ((BodyDeclList) getBodyDeclList()).constructorCopy(c, this);
       constructors.add(b);
     }
@@ -1366,7 +1369,7 @@ aspect LookupParTypeDecl {
   }
 
   public BodyDecl MethodDecl.substitutedBodyDecl(Parameterization parTypeDecl) {
-      MethodDecl m = new MethodDeclSubstituted(
+    MethodDecl m = new MethodDeclSubstituted(
       (Modifiers) getModifiers().treeCopyNoTransform(),
       getTypeAccess().type().substituteReturnType(parTypeDecl),
       getID(),
@@ -1377,8 +1380,6 @@ aspect LookupParTypeDecl {
     );
     return m;
   }
-
-
 
   public Opt MethodDecl.substituteBody(Parameterization parTypeDecl) {
     return new Opt();
@@ -1402,21 +1403,37 @@ aspect LookupParTypeDecl {
     );
   }
 
-  public BodyDecl FieldDeclaration.substitutedBodyDecl(Parameterization parTypeDecl) {
-    return new FieldDeclarationSubstituted(
-      (Modifiers) getModifiers().treeCopyNoTransform(),
-      getTypeAccess().type().substituteReturnType(parTypeDecl),
-      getID(),
-      new Opt(),
-      this
-    );
+  public BodyDecl FieldDecl.substitutedBodyDecl(Parameterization parTypeDecl) {
+    List<FieldDeclarator> decls = new List<FieldDeclarator>();
+    for (FieldDeclarator decl : getDeclaratorList()) {
+      decls.add((FieldDeclarator) decl.treeCopyNoTransform());
+    }
+    return new FieldDeclSubstituted(
+        (Modifiers) getModifiers().treeCopyNoTransform(),
+        getTypeAccess().type().substituteReturnType(parTypeDecl),
+        decls,
+        this);
   }
 
-  syn FieldDeclaration FieldDeclaration.erasedField() = this;
-  eq FieldDeclarationSubstituted.erasedField() = getOriginal().erasedField();
+  inh FieldDeclarator FieldDeclarator.erasedField();
+
+  eq FieldDecl.getDeclarator(int index).erasedField() = getDeclarator(index);
+
+  eq FieldDeclSubstituted.getDeclarator(int index).erasedField() =
+      getOriginal().getDeclarator(index);
+
+  eq VarDeclStmt.getDeclarator().erasedField() {
+    throw new Error("FieldDeclarator child of VarDeclStmt");
+  }
+
+  eq EnhancedForStmt.getVariableDecl().erasedField() {
+    throw new Error("FieldDeclarator child of EnhancedForStmt");
+  }
 
   syn MethodDecl MethodDecl.erasedMethod() = this;
+
   eq MethodDeclSubstituted.erasedMethod() = getOriginal().erasedMethod();
+
   eq ParMethodDecl.erasedMethod() = genericMethodDecl().erasedMethod();
 
   syn TypeDecl TypeDecl.original() = this;
@@ -1428,12 +1445,11 @@ aspect LookupParTypeDecl {
 
   public ClassDecl ClassDecl.substitutedClassDecl(Parameterization parTypeDecl) {
     return new ClassDeclSubstituted(
-      (Modifiers) getModifiers().treeCopyNoTransform(),
-      getID(),
-      hasSuperClass() ? new Opt(getSuperClass().type().substitute(parTypeDecl)) : new Opt(),
-      getImplementsList().substitute(parTypeDecl),
-      this
-    );
+        (Modifiers) getModifiers().treeCopyNoTransform(),
+        getID(),
+        hasSuperClass() ? new Opt(getSuperClass().type().substitute(parTypeDecl)) : new Opt(),
+        getImplementsList().substitute(parTypeDecl),
+        this);
   }
 
   public ClassDecl GenericClassDecl.substitutedClassDecl(Parameterization parTypeDecl) {
@@ -1442,7 +1458,7 @@ aspect LookupParTypeDecl {
       getID(),
       hasSuperClass() ? new Opt(getSuperClass().type().substitute(parTypeDecl)) : new Opt(),
       getImplementsList().substitute(parTypeDecl),
-      new List(), // delegates TypeParameter lookup to original
+      new List(), // Delegates TypeParameter lookup to original.
       this
     );
   }
@@ -1461,7 +1477,7 @@ aspect LookupParTypeDecl {
       (Modifiers) getModifiers().treeCopyNoTransform(),
       getID(),
       getSuperInterfaceList().substitute(parTypeDecl),
-      new List(), // delegates TypeParameter lookup to original
+      new List(), // Delegates TypeParameter lookup to original.
       this
     );
   }
@@ -1522,13 +1538,13 @@ aspect LookupParTypeDecl {
 
   syn TypeDecl TypeDecl.asWildcardSuper() = lookupWildcardSuper(this);
 
-  syn nta LUBType WildcardsCompilationUnit.lookupLUBType(Collection bounds) = createLUBType(bounds);
+  syn nta LUBType WildcardsCompilationUnit.lookupLUBType(Collection<TypeDecl> bounds) =
+      createLUBType(bounds);
 
-  public static LUBType WildcardsCompilationUnit.createLUBType(Collection bounds) {
-    List boundList = new List();
+  public static LUBType WildcardsCompilationUnit.createLUBType(Collection<TypeDecl> bounds) {
+    List<Access> boundList = new List<Access>();
     StringBuilder name = new StringBuilder();
-    for (Iterator iter = bounds.iterator(); iter.hasNext(); ) {
-      TypeDecl typeDecl = (TypeDecl) iter.next();
+    for (TypeDecl typeDecl : bounds) {
       boundList.add(typeDecl.createBoundAccess());
       name.append("& " + typeDecl.typeName());
     }
@@ -1541,9 +1557,10 @@ aspect LookupParTypeDecl {
     return decl;
   }
 
-  inh LUBType TypeDecl.lookupLUBType(Collection bounds);
+  inh LUBType TypeDecl.lookupLUBType(Collection<TypeDecl> bounds);
 
-  eq Program.getChild().lookupLUBType(Collection bounds) = wildcards().lookupLUBType(bounds);
+  eq Program.getChild().lookupLUBType(Collection<TypeDecl> bounds) =
+      wildcards().lookupLUBType(bounds);
 
   syn String LUBType.typeName() {
     if (getNumTypeBound() == 0) {
@@ -1557,19 +1574,18 @@ aspect LookupParTypeDecl {
     return sb.toString();
   }
 
-  public HashSet LUBType.implementedInterfaces(){
-       HashSet ret = new HashSet();
-       for (int i = 0; i < getNumTypeBound(); i++) {
-           ret.addAll(getTypeBound(i).type().implementedInterfaces());
-       }
-       return ret;
-   }
+  public Collection<InterfaceDecl> LUBType.implementedInterfaces() {
+    Collection<InterfaceDecl> ret = new HashSet<InterfaceDecl>();
+    for (int i = 0; i < getNumTypeBound(); i++) {
+      ret.addAll(getTypeBound(i).type().implementedInterfaces());
+    }
+    return ret;
+  }
 
-  syn nta GLBType WildcardsCompilationUnit.lookupGLBType(ArrayList bounds) {
-    List boundList = new List();
+  syn nta GLBType WildcardsCompilationUnit.lookupGLBType(Collection<TypeDecl> bounds) {
+    List<Access> boundList = new List<Access>();
     StringBuilder name = new StringBuilder();
-    for (Iterator iter = bounds.iterator(); iter.hasNext(); ) {
-      TypeDecl typeDecl = (TypeDecl) iter.next();
+    for (TypeDecl typeDecl : bounds) {
       boundList.add(typeDecl.createBoundAccess());
       name.append("& " + typeDecl.typeName());
     }
@@ -1582,9 +1598,10 @@ aspect LookupParTypeDecl {
     return decl;
   }
 
-  inh GLBType TypeDecl.lookupGLBType(ArrayList bounds);
+  inh GLBType TypeDecl.lookupGLBType(Collection<TypeDecl> bounds);
 
-  eq Program.getChild().lookupGLBType(ArrayList bounds) = wildcards().lookupGLBType(bounds);
+  eq Program.getChild().lookupGLBType(Collection<TypeDecl> bounds) =
+      wildcards().lookupGLBType(bounds);
 
   syn String GLBType.typeName() {
     if (getNumTypeBound() == 0) {
@@ -1598,8 +1615,8 @@ aspect LookupParTypeDecl {
     return sb.toString();
   }
 
-  public HashSet GLBType.implementedInterfaces(){
-    HashSet ret = new HashSet();
+  public Collection<InterfaceDecl> GLBType.implementedInterfaces() {
+    Collection<InterfaceDecl> ret = new HashSet<InterfaceDecl>();
     for (int i = 0; i < getNumTypeBound(); i++) {
       ret.addAll(getTypeBound(i).type().implementedInterfaces());
     }
@@ -1638,12 +1655,4 @@ aspect SourceDeclarations {
 
   eq ConstructorDeclSubstituted.sourceConstructorDecl() =
       getOriginal().sourceConstructorDecl();
-
-  syn lazy Variable Variable.sourceVariableDecl();
-  eq VariableDeclaration.sourceVariableDecl() = this;
-  eq FieldDeclaration.sourceVariableDecl() = this;
-  eq FieldDeclarationSubstituted.sourceVariableDecl() = getOriginal().sourceVariableDecl();
-  eq ParameterDeclaration.sourceVariableDecl() = this;
-  eq ParameterDeclarationSubstituted.sourceVariableDecl() = getOriginal().sourceVariableDecl();
-
 }

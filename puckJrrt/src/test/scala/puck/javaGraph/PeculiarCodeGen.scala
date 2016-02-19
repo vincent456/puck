@@ -1,6 +1,5 @@
 package puck.javaGraph
 
-import puck.graph.ValueDef
 import puck.graph.comparison.Mapping
 import puck.{Settings, AcceptanceSpec}
 
@@ -61,7 +60,8 @@ class PeculiarCodeGen extends AcceptanceSpec {
     }
 
     scenario("wild card usage") {
-      makeTest(s"$examplesPath/wild/Test.java")
+      //makeTest(s"$examplesPath/wild/Test.java")
+      val _ = new ScenarioFactory(s"$examplesPath/wild/Test.java")
     }
 
   }

@@ -1,10 +1,10 @@
 package puck.jastadd
 
 import org.extendj.ast
-import org.extendj.ast.{List => _, Set => _, _} //import everything except List and Set
+import org.extendj.ast.{List => _, _} //import everything except List and Set
 import puck.graph._
 import puck.javaGraph.{nodeKind, JavaGraphBuilder}
-import puck.javaGraph.nodeKind._
+import puck.javaGraph.nodeKind.{EnumConstant => PuckEnumConstant, _}
 
 import scala.collection.JavaConversions.collectionAsScalaIterable
 
@@ -39,6 +39,8 @@ object JastaddGraphBuilder {
   def method = Method
   def staticMethod = StaticMethod
 
+  def enumConstant = PuckEnumConstant
+
   def parameter = Param
 
   def definition = Definition
@@ -46,6 +48,7 @@ object JastaddGraphBuilder {
   def primitive = Primitive
   def typeVariable = nodeKind.TypeVariable
   def wildcardType = WildCardType
+
 
   def definitionName = DependencyGraph.definitionName
 }
@@ -69,7 +72,7 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
           val n = g.getNode(nodeId)
           //println(s"orphan node : ${n.fullName}  : ${n.kind} - container = ${n.container}")
           graph2ASTMap get nodeId match {
-            case Some(FieldDeclHolder(d)) => addBodyDecl(d)
+            case Some(FieldDeclHolder(d, _)) => addBodyDecl(d)
             case Some(mdh : MethodDeclHolder) => addBodyDecl(mdh.decl)
             case Some(ConstructorDeclHolder(cdecl)) =>
               nodesByName get cdecl.hostType().fullName() match {
@@ -175,6 +178,15 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
 
     }
 
+  def bindTypeUse(typeUser : NodeId, typeUsed: TypeDecl, typeMemberUse : Uses) : Unit ={
+    val t = getType(typeUsed)
+    t.ids foreach {
+      tid => bindTypeUse(typeUser, tid, typeMemberUse)
+    }
+
+  }
+
+  def getType(t : ast.TypeDecl) : Type = getType(t.createLockedAccess())
 
   def getType(a : Access) : Type = {
     a.lock()
@@ -184,12 +196,14 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
 
       case ta: TypeAccess =>
         NamedType(getNode(ta.decl()))
+
       case d: Dot =>
         if (d.isRightRotated)
           d.rotateLeft()
         getType(d.getRight)
 
       case pta: ParTypeAccess =>
+
         val genId = getNode(pta.genericDecl())
         val args: List[Type] =
           Range.inclusive(pta.getNumTypeArgument - 1, 0, -1).foldLeft(List[Type]()) {
@@ -298,8 +312,12 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
   def registerDecl(n : NodeIdT, decl : MethodDecl) : Unit =
     register(n, Set[NodeKind](Method, StaticMethod, AbstractMethod), MethodDeclHolder(decl) , "MethodDecl")
 
-  def registerDecl(n : NodeIdT, decl : FieldDeclaration) : Unit =
-    register(n, Set[NodeKind](Field, StaticField), FieldDeclHolder(decl), "FieldDeclaration")
+  def registerDecl(n : NodeIdT, decl : FieldDeclarator) : Unit =
+    register(n, Set[NodeKind](Field, StaticField),
+      FieldDeclHolder(decl.getParent.getParent().asInstanceOf[FieldDecl], decl.getChildIndex), "FieldDeclaration")
+
+  def registerDecl(n : NodeIdT, decl : ast.EnumConstant) : Unit =
+    register(n, PuckEnumConstant, EnumConstantHolder(decl), "EnumConstant")
 
   def registerDecl(n : NodeIdT, decl : ParameterDeclaration) : Unit =
     register(n, Param, ParameterDeclHolder(decl), "ParameterDeclaration")

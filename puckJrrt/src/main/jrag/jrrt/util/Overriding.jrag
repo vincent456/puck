@@ -191,11 +191,11 @@ aspect Overriding {
 		return res;
 	}
 	
-	syn lazy Collection<FieldDeclaration> FieldDeclaration.hiddenFields() {
-		Collection<FieldDeclaration> res = new LinkedHashSet<FieldDeclaration>();
+	syn lazy Collection<FieldDeclarator> FieldDeclarator.hiddenFields() {
+		Collection<FieldDeclarator> res = new LinkedHashSet<FieldDeclarator>();
 		for(TypeDecl std : hostType().supertypes()) {
-			for(Iterator<FieldDeclaration> iter=std.memberFields(name()).iterator();iter.hasNext();) {
-				FieldDeclaration that = iter.next();
+			for(Iterator<Variable> iter= std.memberFields(name()).iterator();iter.hasNext();) {
+				FieldDeclarator that = (FieldDeclarator)iter.next();
 				if(that.accessibleFrom(hostType()))
 					res.add(that);
 			}

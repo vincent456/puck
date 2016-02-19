@@ -24,11 +24,11 @@ aspect ReplaceInstanceValueAccess {
         }
     }
 
-    public void ASTNode.replaceFieldAccess(FieldDeclaration oldUsed, Access newUsed) {
+    public void ASTNode.replaceFieldAccess(FieldDeclarator oldUsed, Access newUsed) {
         for(int i = 0; i < getNumChild(); i++)
             getChild(i).replaceFieldAccess(oldUsed, newUsed);
     }
-    public void VarAccess.replaceFieldAccess(FieldDeclaration oldUsed, Access newUsed) {
+    public void VarAccess.replaceFieldAccess(FieldDeclarator oldUsed, Access newUsed) {
         if(decl().equals(oldUsed)){
             replace(this).with(newUsed);
         }

@@ -269,7 +269,7 @@ class JavaJastAddDG2AST
 
     val (usedAsVisible : AST.Visible, usedAsMemberDecl : AST.MemberDecl) =
       id2declMap(typeMemberUse.used) match {
-        case FieldDeclHolder(fdecl) => (fdecl, fdecl)
+        case FieldDeclHolder(fdecl,_) => (fdecl, fdecl)
         case mdh : MethodDeclHolder => (mdh.decl, mdh.decl)
         case h => error(s"self use of $h by $user case unhandled")
       }

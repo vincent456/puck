@@ -68,7 +68,7 @@ aspect AccessMethod {
 	}
 		
 	public SimpleSet TypeDecl.localMethods(String name) {
-		SimpleSet res = SimpleSet.emptySet;
+		SimpleSet res = SimpleSet.EMPTY_SET;
 		for(Iterator i=localMethodsIterator();i.hasNext();) {
 			MethodDecl md = (MethodDecl)i.next();
 			if(md.name().equals(name))

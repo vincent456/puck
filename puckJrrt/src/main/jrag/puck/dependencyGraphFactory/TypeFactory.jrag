@@ -24,8 +24,13 @@ aspect TypeFactory {
 		builder.addParams(thisId, params);
 	}
 
+
 	public void FieldDecl.buildDGType(JastaddGraphBuilder builder, int thisId){
 		throw new DGBuildingError("missing type for FieldDecl");
+	}
+
+	public void EnumConstant.buildDGType(JastaddGraphBuilder builder, int thisId){
+		throw new DGBuildingError("missing type for EnumConstant");
 	}
 		
 	public void MethodDecl.buildDGType(JastaddGraphBuilder builder, int thisId){
@@ -38,7 +43,7 @@ aspect TypeFactory {
 		builder.setType(thisId, new NamedType(hostType().buildDGNode(builder)));
 	}
 
-	public void FieldDeclaration.buildDGType(JastaddGraphBuilder builder, int thisId){
+	public void FieldDeclarator.buildDGType(JastaddGraphBuilder builder, int thisId){
 		builder.setType(thisId,  builder.getType(getTypeAccess()));
 	}
 

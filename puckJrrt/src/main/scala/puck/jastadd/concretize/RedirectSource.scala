@@ -242,8 +242,8 @@ object RedirectSource {
 
     (id2declMap(reenactor container_! oldSource),
       id2declMap(newSourceDecl)) match {
-      case (FieldDeclHolder(fdecl), MethodDeclHolder(mdecl)) =>
-       fdecl.moveInitIntoInitializzer(mdecl)
+      case (FieldDeclHolder(fdecl,num), MethodDeclHolder(mdecl)) =>
+       fdecl.getDeclarator(num).moveInitIntoInitializzer(mdecl)
       case hs =>
         error(s"Redirect source of use handled in case of initializer creation, $hs not expected")
     }

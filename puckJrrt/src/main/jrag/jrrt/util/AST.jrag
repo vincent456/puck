@@ -3,7 +3,7 @@ aspect AST {
 		return Character.toLowerCase(s.charAt(0)) + s.substring(1);
 	}
 	
-	syn String FieldDeclaration.capitalisedName() = Character.toUpperCase(name().charAt(0))+name().substring(1); 
+	syn String FieldDeclarator.capitalisedName() = Character.toUpperCase(name().charAt(0))+name().substring(1);
 	
 	public static Object ASTNode.epsilon(SimpleSet set, Object alt) {
 		if(set.size() == 1)
@@ -50,19 +50,15 @@ aspect AST {
 		return getParent() != null && getParent().getParent() instanceof Block;
 	}
 	
-	public boolean Variable.isField() {
-		return isClassVariable() || isInstanceVariable();
-	}
-	
 	public void TypeDecl.removeBodyDecl(BodyDecl bd) {
 		getBodyDeclList().removeChild(getBodyDeclList().getIndexOfChild(bd));
 	}
 
-	public void BodyDecl.flushTreeCache() {
-		entry.flushTreeCache();
-		exit.flushTreeCache();
-		super.flushTreeCache();
-	}
+//	public void BodyDecl.flushTreeCache() {
+//		entry.flushTreeCache();
+//		exit.flushTreeCache();
+//		super.flushTreeCache();
+//	}
 	
 	protected ASTNode ASTNode.replaceWith(ASTNode newnode) {
 		return replace(this).with(newnode);

@@ -56,12 +56,12 @@ aspect TypeUser {
 
         if(qualifierIsThisAccess(access)) {
             int thisTypeId = access.hostType().buildDGNode(builder);
-            builder.addEdge(bindTypeUse(builder, thisTypeId, thisTypeId, typeMemberUse));
+            builder.addEdge(builder.bindTypeUse(thisTypeId, thisTypeId, typeMemberUse));
         }
         else if(qualifierIsSuperAccess(access)){
             int thisTypeId = access.hostType().buildDGNode(builder);
             int superTypeId = ((ClassDecl)access.hostType()).superclass().buildDGNode(builder);
-            builder.addEdge(bindTypeUse(builder, thisTypeId, superTypeId, typeMemberUse));
+            builder.addEdge(builder.bindTypeUse(thisTypeId, superTypeId, typeMemberUse));
         }
         else
             ((Access)access).buildTypeUseFromLeftExpr(builder, typeMemberUse);
@@ -91,23 +91,17 @@ aspect TypeUser {
 
     }
 
-    static Uses Access.bindTypeUse(JastaddGraphBuilder builder,
-                           int typeUserNode, int typeUsedNode,
-             Uses typeMemberUse){
-         Uses typeUse = new Uses(typeUserNode, typeUsedNode, UsesAccessKind.none());
-         builder.addTypeRelationship(typeUse, typeMemberUse);
-         return typeUse;
-    }
-
     void Expr.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
         throw new DGBuildingError(this + "(" +this.getClass() + ") in " +
                 this.compilationUnit().pathName() +" line " +
                 this.location() + " typeUser not found");
     }
-    Uses Expr.bindTypeUse(JastaddGraphBuilder builder, int thisDGId, Uses typeMemberUse){
-        return Access.bindTypeUse(builder, thisDGId, type().buildDGNode(builder), typeMemberUse);
+//    Uses Expr.bindTypeUse(JastaddGraphBuilder builder, int thisDGId, Uses typeMemberUse){
+//        return builder.bindTypeUse(thisDGId, type().buildDGNode(builder), typeMemberUse);
+//    }
+    void Expr.bindTypeUse(JastaddGraphBuilder builder, int thisDGId, Uses typeMemberUse){
+        builder.bindTypeUse(thisDGId, type(), typeMemberUse);
     }
-
     // findTypeUserAndBindUses rec calls
 
     void AssignExpr.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){

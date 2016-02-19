@@ -13,7 +13,7 @@ aspect Declaration {
 	interface TypedDeclaration extends Declaration {
 		TypeDecl type();
 		Access getTypeAccess();
-		void setTypeAccess(Access acc);
+		//void setTypeAccess(Access acc);
 		boolean isSubstituted();
 	}
 	
@@ -29,4 +29,9 @@ aspect Declaration {
 	public Access CatchParameterDeclaration.getTypeAccess(){
 		throw new RuntimeException("method declared in Declaration : TODO change type hierarchy -> CatchParameterDeclaration has multiple typeAccess");
 	}
+//
+//	public void Declarator.setTypeAcces(Access acc) {
+//		acc.getParent().getParent()
+//	}
+
 }

@@ -31,19 +31,19 @@ aspect TypeExt {
 		for(int i=cd.getNumBodyDecl()-1;i>=0;--i) {
 			BodyDecl bd = cd.getBodyDecl(i);
 			// TODO: handle instance initializers
-			if(bd instanceof FieldDeclaration) {
-				FieldDeclaration fd = (FieldDeclaration)bd;
-				if(!fd.hasInit())
-					continue;
-				for(ConstructorDecl ctor : ctors) {
-					if(ctor.isChained())
+			if(bd instanceof FieldDecl)
+				for(FieldDeclarator fd : ((FieldDecl) bd).getDeclarators()) {
+					if (!fd.hasInit())
 						continue;
-					Expr init = fd.getInit();
-					fd.setInit(null);
-					ctor.getBlock().insertStmt(0, AssignExpr.asStmt(fd.createLockedAccess(), init));
+					for (ConstructorDecl ctor : ctors) {
+						if (ctor.isChained())
+							continue;
+						Expr init = fd.getInit();
+						fd.setInit(null);
+						ctor.getBlock().insertStmt(0, AssignExpr.asStmt(fd.createLockedAccess(), init));
+					}
+					fd.setInitOpt(new Opt());
 				}
-				fd.setInitOpt(new Opt());
-			}
 		}
 		return cd;
 	}

@@ -20,7 +20,7 @@ aspect VarNesting {
 		return true;
 	}
 	eq ForStmt.getInitStmt().canIntroduceLocal(String name) = !hasNestingLocal(name) && !hasNestedLocal(name);
-	eq EnhancedForStmt.getVariableDeclaration().canIntroduceLocal(String name) = !hasNestingLocal(name) && !hasNestedLocal(name);
+	eq EnhancedForStmt.getVariableDecl().canIntroduceLocal(String name) = !hasNestingLocal(name) && !hasNestedLocal(name);
 	eq MethodDecl.getParameter().canIntroduceLocal(String name) = !hasNestedLocal(name);
 	eq ConstructorDecl.getParameter().canIntroduceLocal(String name) = !hasNestedLocal(name);
 	eq BasicCatch.getParameter().canIntroduceLocal(String name) = !hasNestingLocal(name) && !hasNestedLocal(name);

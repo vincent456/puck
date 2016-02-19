@@ -1,13 +1,13 @@
 aspect Modifiers {
-	inh Variable Modifiers.getModifiedVariable();
-	
-	eq Program.getChild().getModifiedVariable() = null;
-	eq TypeDecl.getModifiers().getModifiedVariable() = null;
-	eq ConstructorDecl.getModifiers().getModifiedVariable() = null;
-	eq MethodDecl.getModifiers().getModifiedVariable() = null;
-	eq FieldDeclaration.getModifiers().getModifiedVariable() = this;
-	eq VariableDeclaration.getModifiers().getModifiedVariable() = this;
-	eq ParameterDeclaration.getModifiers().getModifiedVariable() = this;
+//	inh Variable Modifiers.getModifiedVariable();
+//
+//	eq Program.getChild().getModifiedVariable() = null;
+//	eq TypeDecl.getModifiers().getModifiedVariable() = null;
+//	eq ConstructorDecl.getModifiers().getModifiedVariable() = null;
+//	eq MethodDecl.getModifiers().getModifiedVariable() = null;
+//	eq FieldDeclarator.getModifiers().getModifiedVariable() = this;
+//	eq VariableDeclarator.getModifiers().getModifiedVariable() = this;
+//	eq ParameterDeclaration.getModifiers().getModifiedVariable() = this;
 	
 	syn boolean MethodDecl.isPackageProtected() = !isPublic() && !isPrivate() && !isProtected();
 	
@@ -44,7 +44,7 @@ aspect Modifiers {
 	}
 	
 	public void MemberDecl.makeModifiersExplicit() { }
-	public void FieldDeclaration.makeModifiersExplicit() {
+	public void FieldDeclarator.makeModifiersExplicit() {
 		if(hostType().isInterfaceDecl())
 			getModifiers().addModifiers("public", "static", "final");
 	}

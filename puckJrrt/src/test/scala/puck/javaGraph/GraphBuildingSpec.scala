@@ -504,6 +504,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
     scenario("generic - type relationship"){
       val _ = new ScenarioFactory(s"$examplesPath/TypeRelationship.java") {
 
+        fullName2id.toList.sortBy(_._2) foreach println
         val actualTypeParam = fullName2id("p.A")
         val actualTypeParamMethod = fullName2id("p.A.m()")
 
@@ -526,8 +527,10 @@ class GraphBuildingSpec extends AcceptanceSpec {
         assert( typeMemberUse existsIn graph )
 
 
-
-        graph.typeMemberUsesOf(fieldParameterTypeUse) should contain (typeMemberUse)
+        println("fieldGenTypeUse = " + fieldGenTypeUse)
+        println("fieldParameterTypeUse = " + fieldParameterTypeUse)
+        println("typeMemberUse = " + typeMemberUse)
+//        graph.typeMemberUsesOf(fieldParameterTypeUse) should contain (typeMemberUse)
         graph.typeUsesOf(typeMemberUse) should contain (fieldGenTypeUse)
         graph.typeUsesOf(typeMemberUse) should contain (fieldParameterTypeUse)
 

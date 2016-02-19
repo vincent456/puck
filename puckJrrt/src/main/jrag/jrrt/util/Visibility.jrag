@@ -27,7 +27,7 @@ aspect Visibility {
 	TypeDecl implements Visible;
 	MethodDecl implements Visible;
 	ConstructorDecl implements Visible;
-	FieldDeclaration implements Visible;
+	FieldDeclarator implements Visible;
 	
 	public int Visible.getVisibility() {
 		if(isPrivate()) return VIS_PRIVATE;

@@ -2,10 +2,10 @@ aspect Refresh {
 	public Variable Variable.refresh() { return refreshVariable(); }
 	
 	syn Variable Variable.refreshVariable();
-	eq FieldDeclaration.refreshVariable() {
+	eq FieldDeclarator.refreshVariable() {
 		// the "length" field of array types is synthesised anew for every new array type
 		if(name().equals("length") && hostType().isArrayDecl())
-			return (FieldDeclaration)hostType().refresh().localFields("length").iterator().next();
+			return (FieldDeclarator)hostType().refresh().localFields("length").iterator().next();
 		return this;
 	}
 	eq FieldDeclarationSubstituted.refreshVariable() {
@@ -14,10 +14,11 @@ aspect Refresh {
 		return (FieldDeclarationSubstituted)ptd.localFields(name).iterator().next();
 	}
 	eq ParameterDeclaration.refreshVariable() = this;
-	eq VariableDeclaration.refreshVariable() = this;
+	eq VariableDeclarator.refreshVariable() = this;
 	//TODO check if correct
 	eq InferredParameterDeclaration.refreshVariable() = this;
 	eq CatchParameterDeclaration.refreshVariable() = this;
+	eq EnumConstant.refreshVariable() = this;
 
 	// TODO: same for ParameterDeclarationSubstituted and VariableArityParameterSubstituted
 	
@@ -62,5 +63,5 @@ aspect Refresh {
 	}
 	
 	// bound type accesses may sometimes hold onto stale copies of parameterised types
-	refine BoundNames eq BoundTypeAccess.decls() = SimpleSet.emptySet.add(getTypeDecl().refresh());
+	refine BoundNames eq BoundTypeAccess.decls() = ASTNode.<TypeDecl>emptySet().add(getTypeDecl().refresh());
 }

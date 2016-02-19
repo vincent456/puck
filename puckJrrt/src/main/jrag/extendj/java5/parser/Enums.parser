@@ -36,7 +36,8 @@ BodyDecl enum_constant =
   ;
 
 List arguments =
-  LPAREN argument_list RPAREN {: return argument_list; :}
+    LPAREN argument_list RPAREN {: return argument_list; :}
+  | LPAREN RPAREN {: return new List(); :}
   ;
 
 List annotations =
@@ -45,5 +46,5 @@ List annotations =
   ;
 
 List enum_body_declarations =
-  SEMICOLON class_body_declarations? {: return class_body_declarations; :}
+  SEMICOLON class_body_declarations? doc_comment_list? {: return class_body_declarations; :}
   ;

@@ -52,4 +52,7 @@ case class ScenarioFactory
     new ScenarioFactory(genSrc:_*)
   }
 
+  def printFullNames() : Unit =
+    fullName2id.keys.toList.sorted foreach println
+
 }

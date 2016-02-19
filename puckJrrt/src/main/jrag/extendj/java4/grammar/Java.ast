@@ -20,7 +20,7 @@ MethodAccess : Access ::= <ID:String> Arg:Expr*;
 ConstructorAccess : Access ::= <ID:String> Arg:Expr*;
 SuperConstructorAccess : ConstructorAccess;
 TypeAccess : Access ::= <Package:String> <ID:String>;
-PrimitiveTypeAccess : TypeAccess ::= /<Package:String>/ /<ID:String>/ <Name:String>;
+PrimitiveTypeAccess : TypeAccess ::= <Package:String> <ID:String>;
 ArrayTypeAccess : TypeAccess ::= /<Package:String>/ /<ID:String>/ Access;
 ArrayTypeWithSizeAccess : ArrayTypeAccess ::= Expr;
 ThisAccess : Access ::= <ID:String>;
@@ -30,8 +30,6 @@ PackageAccess : Access ::= <Package:String>;
 ArrayAccess : Access ::= Expr;
 
 ParseName : Access ::= <ID:String>;
-PackageOrTypeAccess : Access ::= <ID:String>;
-AmbiguousAccess : Access ::= <ID:String>;
 
 ClassInstanceExpr : Access ::= Access Arg:Expr* [TypeDecl];
 
@@ -41,7 +39,7 @@ abstract TypeDecl ::= Modifiers <ID:String> BodyDecl*;
 
 // 4.1 The Kinds of Types and Values
 abstract ReferenceType : TypeDecl;
-PrimitiveType : TypeDecl ::= Modifiers <ID:String> [SuperClass:Access] BodyDecl*;
+PrimitiveType : TypeDecl ::= Modifiers <ID:String> [SuperClass:Access] ParsedDecl:BodyDecl* /BodyDecl*/;
 EmptyType : PrimitiveType; // placeholder for ; in compilation unit
 NullType : TypeDecl;
 VoidType : TypeDecl;
@@ -75,13 +73,15 @@ ConstructorDecl : BodyDecl ::= Modifiers <ID:String> Parameter:ParameterDeclarat
 
 abstract MemberDecl : BodyDecl;
 
-FieldDecl : MemberDecl ::= Modifiers TypeAccess:Access VariableDecl*;
-FieldDeclaration : MemberDecl ::= Modifiers TypeAccess:Access <ID:String> [Init:Expr]; // Simplified FieldDecl
+FieldDecl : MemberDecl ::= Modifiers TypeAccess:Access Declarator:FieldDeclarator*;
 
-VarDeclStmt : Stmt ::= Modifiers TypeAccess:Access VariableDecl* /SingleDecl:VariableDeclaration*/;
-VariableDeclaration : Stmt ::= Modifiers TypeAccess:Access <ID:String> [Init:Expr]; // Simplified VarDeclStmt
+VarDeclStmt : Stmt ::= Modifiers TypeAccess:Access Declarator:VariableDeclarator*;
 
-VariableDecl ::= <ID:String> Dims* [Init:Expr];
+abstract Declarator ::= /TypeAccess:Access/ <ID:String> Dims* [Init:Expr];
+
+VariableDeclarator : Declarator;
+
+FieldDeclarator : Declarator;
 
 /**
  * A parameter declaration as used in either method parameter lists

@@ -1,6 +1,20 @@
 
 aspect GetContainer {
 
+    public ASTNode<?> ASTNode.getParentNamedNode_aux(){
+        if(getParent() == null)
+            throw new PuckError("no parent named node !");
+        return getParent().getParentNamedNode_aux();
+    }
+
+    public ASTNode<?> DGNamedElement.getParentNamedNode_aux(){
+         return this;
+    }
+
+    public ASTNode<?> ASTNode.getParentNamedNode(){
+        return getParent().getParentNamedNode_aux();
+    }
+
     public int ASTNode.getContainerNode(JastaddGraphBuilder builder){
         return getParent().getContainerNode(builder);
     }

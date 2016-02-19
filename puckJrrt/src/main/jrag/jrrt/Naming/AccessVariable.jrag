@@ -26,7 +26,7 @@ aspect AccessVariable {
 	eq Callable.hasVariable(String name) = !parameterDeclaration(name).isEmpty();
 	eq BasicCatch.hasVariable(String name) = getParameter().name().equals(name);
 	eq ForStmt.hasVariable(String name) = localVariableDeclaration(name) != null;
-	eq EnhancedForStmt.hasVariable(String name) = getVariableDeclaration().name().equals(name);
+	eq EnhancedForStmt.hasVariable(String name) = getVariableDecl().name().equals(name);
 	eq MultiCatch.hasVariable(String name){
 		throw new RuntimeException("not implemented");
 	}
@@ -40,12 +40,12 @@ aspect AccessVariable {
 	}
 	
 	class SymbolicFieldAccess implements SymbolicVarAccess {
-		private FieldDeclaration target;
+		private FieldDeclarator target;
 		private TypeDecl source;
 		private TypeDecl bend;
 		private boolean directlyVisible;  // i.e., neither shadowed nor hidden
 		
-		public SymbolicFieldAccess(FieldDeclaration target) {
+		public SymbolicFieldAccess(FieldDeclarator target) {
 			this.target = target;
 			this.source = target.hostType();
 			this.bend = target.hostType();
@@ -79,7 +79,7 @@ aspect AccessVariable {
 		}
 		
 		public SymbolicFieldAccess ensureAccessible(Expr e) {
-			if(target instanceof FieldDeclaration && e.mayAccess((FieldDeclaration)target))
+			if(target instanceof FieldDeclarator && e.mayAccess((FieldDeclarator)target))
 				return this;
 			return target.unknownVarAccess();
 		}
@@ -104,7 +104,7 @@ aspect AccessVariable {
 	}
 	
 	class UnknownVarAccess extends SymbolicFieldAccess {
-		public UnknownVarAccess(FieldDeclaration unknownField) {
+		public UnknownVarAccess(FieldDeclarator unknownField) {
 			super(unknownField);
 		}
 		
@@ -116,7 +116,7 @@ aspect AccessVariable {
 		
 		public boolean isUnknownVarAccess() { return true; }
 	}
-	syn lazy UnknownVarAccess Program.unknownVarAccess() = new UnknownVarAccess(unknownType().findSingleVariable("unknown"));
+	syn lazy UnknownVarAccess Program.unknownVarAccess() = new UnknownVarAccess((FieldDeclarator)unknownType().findSingleVariable("unknown"));
 	eq Program.getChild().unknownVarAccess() = unknownVarAccess();
 	inh UnknownVarAccess Expr.unknownVarAccess();
 	inh UnknownVarAccess TypeDecl.unknownVarAccess();
@@ -137,7 +137,7 @@ aspect AccessVariable {
 	inh SymbolicVarAccess ForStmt.accessVariable(Variable decl);
 	inh SymbolicVarAccess Expr.accessVariable(Variable decl);
 	inh SymbolicVarAccess CatchClause.accessVariable(Variable decl);
-	inh SymbolicVarAccess VariableDeclaration.accessVariable(Variable decl);
+	inh SymbolicVarAccess VariableDeclarator.accessVariable(Variable decl);
 	inh SymbolicVarAccess ParameterDeclaration.accessVariable(Variable decl);
 
 	eq Program.getChild().accessVariable(Variable decl) = unknownVarAccess();
@@ -192,9 +192,13 @@ aspect AccessVariable {
 		return new Scope() {
 			public boolean hasVariable(String name) {
 				for(int i=0;i<=j;++i)
-					if(getStmt(i) instanceof VariableDeclaration &&
-							((VariableDeclaration)getStmt(i)).name().equals(name))
-						return true;
+					if(getStmt(i) instanceof VarDeclStmt){
+						VarDeclStmt declStmt=((VarDeclStmt)getStmt(i));
+						for(Declarator d:declStmt.getDeclaratorList()){
+							if(d.name().equals(name))
+								return true;
+						}
+					}
 				return false;
 			}
 		};
@@ -262,8 +266,8 @@ aspect AccessVariable {
 	eq AbstractDot.getRight().accessVariable(Variable decl) = getLeft().qualifiedAccessVariable(decl);
 
 	eq ParseName.qualifiedAccessVariable(Variable decl) = unknownVarAccess();
-	eq PackageOrTypeAccess.qualifiedAccessVariable(Variable decl) = unknownVarAccess();
-	eq AmbiguousAccess.qualifiedAccessVariable(Variable decl) = unknownVarAccess();
+	//eq PackageOrTypeAccess.qualifiedAccessVariable(Variable decl) = unknownVarAccess();
+	//eq AmbiguousAccess.qualifiedAccessVariable(Variable decl) = unknownVarAccess();
 
 	// cf. qualifiedLookupVariable(String)
 	syn SymbolicVarAccess Expr.qualifiedAccessVariable(Variable decl) {
@@ -292,7 +296,7 @@ aspect AccessVariable {
 	// cf. localFields(String)
 	syn SymbolicFieldAccess TypeDecl.accessLocalField(Variable decl) {
 		for(Iterator iter = localFields(decl.name()).iterator(); iter.hasNext(); ) {
-			FieldDeclaration f = (FieldDeclaration)iter.next();
+			FieldDeclarator f = (FieldDeclarator)iter.next();
 			if(f.equals(decl))
 				return new SymbolicFieldAccess(f);
 		}
@@ -304,8 +308,8 @@ aspect AccessVariable {
 		accessLocalField(decl);
 	
 	syn boolean TypeDecl.canInherit(Variable v) {
-		if(v instanceof FieldDeclaration) {
-			FieldDeclaration fd = (FieldDeclaration)v;
+		if(v instanceof FieldDeclarator) {
+			FieldDeclarator fd = (FieldDeclarator)v;
 			return !fd.isPrivate() && fd.accessibleFrom(this); 
 		}
 		return false;
@@ -350,14 +354,14 @@ aspect AccessVariable {
 		for(ImportDecl i : getImportDecls())
 			if(!i.isOnDemand())
 				for(Iterator iter = i.importedFields(name).iterator(); iter.hasNext(); ) {
-					FieldDeclaration fd = (FieldDeclaration)iter.next();
+					FieldDeclarator fd = (FieldDeclarator)iter.next();
 					if(fd == decl)
 						return new SymbolicFieldAccess(fd);
 				}
 		for(ImportDecl i : getImportDecls())
 			if(i.isOnDemand())
 				for(Iterator iter = i.importedFields(name).iterator(); iter.hasNext(); ) {
-					FieldDeclaration fd = (FieldDeclaration)iter.next();
+					FieldDeclarator fd = (FieldDeclarator)iter.next();
 					if(fd == decl)
 						return new SymbolicFieldAccess(fd);
 				}
@@ -365,14 +369,14 @@ aspect AccessVariable {
 	}
 	inh SymbolicVarAccess CompilationUnit.accessVariable(Variable decl);
 	
-	eq EnhancedForStmt.getVariableDeclaration().accessVariable(Variable decl) = localAccessVariable(decl);
+	eq EnhancedForStmt.getVariableDecl().accessVariable(Variable decl) = localAccessVariable(decl);
 	eq EnhancedForStmt.getExpr().accessVariable(Variable decl) = localAccessVariable(decl);
 	eq EnhancedForStmt.getStmt().accessVariable(Variable decl) = localAccessVariable(decl);
 
 	// cf. localLookupVariable(String)
 	syn SymbolicVarAccess EnhancedForStmt.localAccessVariable(Variable decl) {
-		if(getVariableDeclaration() == decl)
-			return getVariableDeclaration();
+		if(getVariableDecl() == decl)
+			return getVariableDecl();
 		return accessVariable(decl).moveInto(this);
 	}	
 }

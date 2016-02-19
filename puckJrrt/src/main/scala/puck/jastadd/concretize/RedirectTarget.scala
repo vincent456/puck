@@ -23,7 +23,7 @@ object RedirectTarget {
         mdecl.setTypeAccess(tk.decl.createLockedAccess())
       case (ParameterDeclHolder(fdecl), tk: TypedKindDeclHolder) =>
         fdecl.setTypeAccess(tk.decl.createLockedAccess())
-      case (FieldDeclHolder(fdecl), tk: TypedKindDeclHolder) =>
+      case (FieldDeclHolder(fdecl, _), tk: TypedKindDeclHolder) =>
         fdecl.setTypeAccess(tk.decl.createLockedAccess())
     }
   }
@@ -89,7 +89,7 @@ object RedirectTarget {
                 methodUse =>
                   id2declMap(methodUse.used) match {
                     case MethodDeclHolder(mdecl)=>
-                      val fieldAccess = newk.decl.createLockedAccess()
+                      val fieldAccess = newk.decl.getDeclarator(newk.declaratorIndex).createLockedAccess()
                       bdh.decl.replaceThisQualifierFor(mdecl, fieldAccess)
                     case _ => throw  new JavaAGError("unhandled case !")
                   }
@@ -101,10 +101,10 @@ object RedirectTarget {
           }
 
 
-        case (FieldDeclHolder(oldDecl), FieldDeclHolder(newDecl)) =>
+        case (oldF : FieldDeclHolder, newF : FieldDeclHolder) =>
           sourceInAST match {
             case defHolder : DefHolder =>
-              defHolder.node.replaceFieldAccess(oldDecl, newDecl.createLockedAccess())
+              defHolder.node.replaceFieldAccess(oldF.declarator, newF.declarator.createLockedAccess())
             case k =>
               throw new JavaAGError(k + " as user of Field, redirection unhandled !")
           }

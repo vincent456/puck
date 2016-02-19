@@ -171,20 +171,20 @@ object PuckBuild extends Build {
 
     )
 
-  val puckScala : Project = (project
-    settingsSeq commonSettings("scala")
-
-    settingsSeq Seq[Setting[_]] {
-      libraryDependencies ++= Seq(
-        "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-        //"org.scala-lang" % "scala-library" % scalaVersion.value,
-        "org.scala-lang" % "scala-reflect" % scalaVersion.value
-      )
-    }
-
-    settingsSeq PuckScalaBuild.settings
-
-    dependsOn (puckGui % "compile->compile")
-  )
+//  val puckScala : Project = (project
+//    settingsSeq commonSettings("scala")
+//
+//    settingsSeq Seq[Setting[_]] {
+//      libraryDependencies ++= Seq(
+//        "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+//        //"org.scala-lang" % "scala-library" % scalaVersion.value,
+//        "org.scala-lang" % "scala-reflect" % scalaVersion.value
+//      )
+//    }
+//
+//    settingsSeq PuckScalaBuild.settings
+//
+//    dependsOn (puckGui % "compile->compile")
+//  )
 
 }

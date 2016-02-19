@@ -94,18 +94,18 @@ aspect Navigation {
 	}
 	
 	// find a local variable given its simple name
-	public VariableDeclaration ASTNode.findLocalVariable(String name) {
+	public VariableDeclarator ASTNode.findLocalVariable(String name) {
 		for(int i=0;i<getNumChild();++i) {
 			ASTNode child = getChild(i);
 			if(child != null) {
-				VariableDeclaration v = child.findLocalVariable(name);
+				VariableDeclarator v = child.findLocalVariable(name);
 				if(v != null) return v;
 			}
 		}
 		return null;
 	}
 	
-	public VariableDeclaration VariableDeclaration.findLocalVariable(String name) {
+	public VariableDeclarator VariableDeclarator.findLocalVariable(String name) {
 		if(name().equals(name))
 			return this;
 		return super.findLocalVariable(name);
@@ -148,18 +148,18 @@ aspect Navigation {
 	}
 	
 	// find a field given its name
-	public FieldDeclaration ASTNode.findField(String name) {
+	public FieldDeclarator ASTNode.findField(String name) {
 		for(int i=0;i<getNumChild();++i) {
 			ASTNode child = getChild(i);
 			if(child != null) {
-				FieldDeclaration md = child.findField(name);
+				FieldDeclarator md = child.findField(name);
 				if(md != null) return md;
 			}
 		}
 		return null;		
 	}
 	
-	public FieldDeclaration FieldDeclaration.findField(String name) {
+	public FieldDeclarator FieldDeclarator.findField(String name) {
 		if(name().equals(name))
 			return this;
 		return super.findField(name);
