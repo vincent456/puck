@@ -94,7 +94,7 @@ class BridgeScenario private()
     }.value
 
 
-  val cm = ConstraintsParser(fullName2id, new FileReader(BridgeScenario.path + "decouple.pl"))
+  val cm = ConstraintsParser(fullName2id, new FileReader(BridgeScenario.path + "decouple.wld"))
 
 
   val g0 = graph.newGraph(constraints = cm)

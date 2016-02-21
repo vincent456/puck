@@ -212,7 +212,8 @@ aspect DependencyGraphFactory {
 			int fdId = fd.buildDGNode(builder);
 			builder.addContains(hostTypeDeclId, fdId);
 			builder.setType(fdId, t);
-			fd.getInitOpt().buildDG(builder, fdId);
+			if(fd.hasInit())
+				fd.buildDG_handleDef(builder, fdId);
 		}
 	}
 	public void EnumConstant.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId ){

@@ -6,9 +6,7 @@ import javax.swing._
 import puck.graph.ShowDG._
 import puck.graph._
 import puck.graph.constraints.AbstractionPolicy
-import puck.gui
-import puck.gui.explorer.{StaticDGTreePane, DGTreeIcons, DGTree, TreeModelAdapter}
-import puck.gui.svg.actions.Log
+import puck.gui.explorer.{StaticDGTreePane, DGTreeIcons}
 
 import scala.swing.BorderPanel.Position
 import scala.swing._

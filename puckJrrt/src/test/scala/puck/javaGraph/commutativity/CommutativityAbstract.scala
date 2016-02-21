@@ -7,8 +7,7 @@ import puck.graph.constraints.SupertypeAbstraction
 import puck.javaGraph.ScenarioFactory
 import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
 import puck.javaGraph.nodeKind.Interface
-import puck.util.Debug
-import puck.{QuickFrame, AcceptanceSpec, Settings}
+import puck.{AcceptanceSpec, Settings}
 import puck.Settings.outDir
 class CommutativityAbstract extends AcceptanceSpec {
 

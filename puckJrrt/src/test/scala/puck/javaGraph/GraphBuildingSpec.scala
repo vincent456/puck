@@ -504,7 +504,6 @@ class GraphBuildingSpec extends AcceptanceSpec {
     scenario("generic - type relationship"){
       val _ = new ScenarioFactory(s"$examplesPath/TypeRelationship.java") {
 
-        fullName2id.toList.sortBy(_._2) foreach println
         val actualTypeParam = fullName2id("p.A")
         val actualTypeParamMethod = fullName2id("p.A.m()")
 
@@ -604,12 +603,9 @@ class GraphBuildingSpec extends AcceptanceSpec {
     scenario("anonymous class instanciated in field") {
       val _ = new ScenarioFactory(s"$examplesPath/AnonymousClassField.java") {
 
-
-        val field = fullName2id(s"p.A.f")
-
-        val fieldDef = graph.definitionOf_!(field)
+        val field = fullName2id(s"p.A.f.Definition")
         val anonymousClass = fullName2id(s"p.A.f.Anonymous0")
-        assert( graph.contains(fieldDef, anonymousClass) )
+        assert( graph.contains(field, anonymousClass) )
 
 
       }

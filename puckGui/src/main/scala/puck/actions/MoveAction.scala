@@ -6,7 +6,6 @@ import javax.swing.AbstractAction
 import puck.graph._
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, CreateVarStrategy}
 import puck.gui.Log
-import puck.gui.svg.SVGController
 import puck.util.LoggedEither._
 
 import scala.swing.{Publisher, Dialog}

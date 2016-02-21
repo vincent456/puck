@@ -4,11 +4,11 @@ import puck.graph._
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, Move}
 import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.nodeKind.Field
-import puck.{GetDefinitionValue, AcceptanceSpec, Settings}
+import puck.util.Debug
+import puck.{AcceptanceSpec, Settings}
 
 class MoveSpec
-  extends AcceptanceSpec
-  with GetDefinitionValue {
+  extends AcceptanceSpec {
 
   val examplesPath = Settings.testExamplesPath + "/move"
 
@@ -25,7 +25,7 @@ class MoveSpec
 
         val classB = fullName2id(s"p1.B")
         val methBDecl = fullName2id(s"p1.B.mb()")
-        val methBDef = getDefinition(graph, methBDecl)
+        val methBDef = fullName2id("p1.B.mb().Definition")
 
 
         assert(graph.container(classA).value == package1)
@@ -98,7 +98,7 @@ class MoveSpec
         val classA = fullName2id("p.A")
         val methToMove = fullName2id("p.A.methodToMove()")
         val methUserDecl = fullName2id("p.C.user()")
-        val methUserDef = getDefinition(graph, methUserDecl)
+        val methUserDef = fullName2id("p.C.user().Definition")
 
         val classB = fullName2id("p.B")
 
@@ -120,7 +120,7 @@ class MoveSpec
 
         val classA = fullName2id("p.A")
         val methUserDecl = fullName2id("p.A.mUser()")
-        val methUser = getDefinition(graph, methUserDecl)
+        val methUser = fullName2id("p.A.mUser().Definition")
         val methToMove = fullName2id("p.A.methodToMove()")
 
         val newHostClass = fullName2id("p.B")
@@ -145,7 +145,7 @@ class MoveSpec
 
         val classA = fullName2id("p.A")
         val methUserDecl = fullName2id("p.A.mUser()")
-        val methUser = getDefinition(graph, methUserDecl)
+        val methUser = fullName2id("p.A.mUser().Definition")
         val methToMove = fullName2id("p.A.methodToMove()")
 
         val newHostClass = fullName2id("p.B")
@@ -175,7 +175,7 @@ class MoveSpec
 
         val classA = fullName2id("p.A")
         val methUserDecl = fullName2id("p.A.mUser()")
-        val methUserDef = getDefinition(graph, methUserDecl)
+        val methUserDef = fullName2id("p.A.mUser().Definition")
 
         val methToMove = fullName2id("p.A.mUsedToMove()")
 
@@ -218,8 +218,8 @@ class MoveSpec
         val methUser1Decl = fullName2id("p.A.mUser1()")
         val methUser2Decl = fullName2id("p.A.mUser2()")
 
-        val methUser1 = getDefinition(graph, methUser1Decl)
-        val methUser2 = getDefinition(graph, methUser2Decl)
+        val methUser1 = fullName2id("p.A.mUser1().Definition")
+        val methUser2 = fullName2id("p.A.mUser2().Definition")
 
         val methToMove = fullName2id("p.A.methodToMove()")
         val newHostClass = fullName2id("p.B")
@@ -257,8 +257,8 @@ class MoveSpec
         val methUser1Decl = fullName2id("p.A.mUser1()")
         val methUser2Decl = fullName2id("p.A.mUser2()")
 
-        val methUser1 = getDefinition(graph, methUser1Decl)
-        val methUser2 = getDefinition(graph, methUser2Decl)
+        val methUser1 = fullName2id("p.A.mUser1().Definition")
+        val methUser2 = fullName2id("p.A.mUser2().Definition")
 
         val methToMove = fullName2id("p.A.methodToMove()")
 
@@ -330,7 +330,7 @@ class MoveSpec
 
         val currentHost = fullName2id("p.A")
         val methToMoveDecl = fullName2id("p.A.methodToMove()")
-        val methToMoveDef = getDefinition(graph, methToMoveDecl)
+        val methToMoveDef = fullName2id("p.A.methodToMove().Definition")
         val methUsed = fullName2id("p.A.mUsed()")
 
         val newHostClass = fullName2id("p.B")
@@ -340,7 +340,6 @@ class MoveSpec
         graph.parametersOf(methToMoveDecl).size shouldBe 0
 
         val g2 = Move.typeMember(graph, List(methToMoveDecl), newHostClass, Some(CreateParameter)).right
-
         g2.content(currentHost).size shouldBe (graph.content(currentHost).size - 1)
 
         assert(g2.container(methToMoveDecl).value == newHostClass)
@@ -360,7 +359,7 @@ class MoveSpec
 
         val classA = fullName2id("p.A")
         val methUserDecl = fullName2id("p.A.mUser()")
-        val methUser = getDefinition(graph, methUserDecl)
+        val methUser = fullName2id("p.A.mUser().Definition")
 
         val methToMoveDecl = fullName2id("p.A.methodToMove()")
 
@@ -385,7 +384,7 @@ class MoveSpec
 
         val classA = fullName2id("p.A")
         val methUserDecl = fullName2id("p.A.mUser()")
-        val methUser = getDefinition(graph, methUserDecl)
+        val methUser = fullName2id("p.A.mUser().Definition")
         val methToMove1 = fullName2id("p.A.methodToMove1()")
         val methToMove2 = fullName2id("p.A.methodToMove2()")
 

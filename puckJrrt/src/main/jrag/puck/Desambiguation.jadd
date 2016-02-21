@@ -89,6 +89,10 @@ aspect Desambiguation{
 		return getParentNamedNode().fullName() + "." + name();
 	}
 
+	public String EnumConstant.fullName(){
+		return getParentNamedNode().fullName() + "." + name();
+	}
+
 	public String InstanceInitializer.fullName(){
 		return hostType().typeName()+".InstanceInitializer";//add an id number ??
 	}

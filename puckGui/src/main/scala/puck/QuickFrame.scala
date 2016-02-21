@@ -6,7 +6,6 @@ import javax.swing.{JFrame, WindowConstants}
 import org.apache.batik.swing.JSVGCanvas
 import puck.graph.DependencyGraph
 import puck.graph.io._
-import puck.gui.svg.SVGController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

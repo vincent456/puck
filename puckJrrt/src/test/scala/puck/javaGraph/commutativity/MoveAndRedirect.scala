@@ -6,26 +6,25 @@ import puck.graph.transformations.rules.{Redirection, Move}
 import puck.graph.{LoggedTG, Uses, Factory, AccessAbstraction}
 import puck.graph.constraints.DelegationAbstraction
 import puck.javaGraph.ScenarioFactory
-import puck.{Settings, GetDefinitionValue, AcceptanceSpec}
+import puck.{Settings, AcceptanceSpec}
 
 /**
   * Created by lorilan on 04/12/15.
   */
 class MoveAndRedirect
-  extends AcceptanceSpec
-  with GetDefinitionValue{
+  extends AcceptanceSpec {
   val examplesPath = Settings.testExamplesPath + "/redirection/"
   feature("confluence of move and redirect"){
     val typeCtorPath = examplesPath + "typeConstructor"
 
     scenario("move factory then redirect") {
       val _ = new ScenarioFactory(s"$typeCtorPath/StaticFactory.java") {
-        val ctor = fullName2id(s"p.B.B()")
-        val factoryMethod = fullName2id(s"p.B.createB()")
-        val factoryClass = fullName2id(s"p.Factory")
+        val ctor = fullName2id("p.B.B()")
+        val factoryMethod = fullName2id("p.B.createB()")
+        val factoryClass = fullName2id("p.Factory")
 
-        val callerDecl = fullName2id(s"p.A.m()")
-        val callerDef = getDefinition(graph, callerDecl)
+        val callerDecl = fullName2id("p.A.m()")
+        val callerDef = fullName2id("p.A.m().Definition")
 
         val g =
           graph.addAbstraction(ctor, AccessAbstraction(factoryMethod, DelegationAbstraction))
@@ -49,12 +48,12 @@ class MoveAndRedirect
 
     scenario("redirect then move factory ") {
       val _ = new ScenarioFactory(s"$typeCtorPath/StaticFactory.java") {
-        val ctor = fullName2id(s"p.B.B()")
-        val factoryMethod = fullName2id(s"p.B.createB()")
-        val factoryClass = fullName2id(s"p.Factory")
+        val ctor = fullName2id("p.B.B()")
+        val factoryMethod = fullName2id("p.B.createB()")
+        val factoryClass = fullName2id("p.Factory")
 
-        val callerDecl = fullName2id(s"p.A.m()")
-        val callerDef = getDefinition(graph, callerDecl)
+        val callerDecl = fullName2id("p.A.m()")
+        val callerDef = fullName2id("p.A.m().Definition")
 
         val g =
           graph.addAbstraction(ctor, AccessAbstraction(factoryMethod, DelegationAbstraction))

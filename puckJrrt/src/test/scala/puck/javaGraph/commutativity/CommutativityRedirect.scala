@@ -1,17 +1,16 @@
 package puck.javaGraph.commutativity
 
 import puck.javaGraph.nodeKind.Field
-import puck.{GetDefinitionValue, AcceptanceSpec, QuickFrame, Settings}
+import puck.{AcceptanceSpec, Settings}
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 import puck.graph.{Factory, AccessAbstraction, Uses}
 import puck.graph.transformations.rules.{CreateTypeMember, CreateParameter, Redirection}
-import puck.javaGraph.{JavaDotHelper, ScenarioFactory}
+import puck.javaGraph.ScenarioFactory
 import puck.Settings.outDir
 
 class CommutativityRedirect
-  extends AcceptanceSpec
-  with GetDefinitionValue{
+  extends AcceptanceSpec {
 
   val examplesPath = Settings.testExamplesPath + "/redirection/"
 
@@ -85,11 +84,11 @@ class CommutativityRedirect
 
     scenario("From constructor to constructorMethod hosted elsewhere - non static, parameter") {
       val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedElsewhere.java") {
-        val ctor = fullName2id(s"p.B.B()")
-        val ctorMethod = fullName2id(s"p.Factory.createB()")
+        val ctor = fullName2id("p.B.B()")
+        val ctorMethod = fullName2id("p.Factory.createB()")
 
-        val callerDecl = fullName2id(s"p.A.m()")
-        val callerDef = getDefinition(graph, callerDecl)
+        val callerDecl = fullName2id("p.A.m()")
+        val callerDef = fullName2id("p.A.m().Definition")
 
         val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
 
@@ -103,11 +102,11 @@ class CommutativityRedirect
 
     scenario("From constructor to constructorMethod hosted elsewhere - non static, field") {
       val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedElsewhere.java") {
-        val ctor = fullName2id(s"p.B.B()")
-        val ctorMethod = fullName2id(s"p.Factory.createB()")
+        val ctor = fullName2id("p.B.B()")
+        val ctorMethod = fullName2id("p.Factory.createB()")
 
-        val callerDecl = fullName2id(s"p.A.m()")
-        val callerDef = getDefinition(graph, callerDecl)
+        val callerDecl = fullName2id("p.A.m()")
+        val callerDef = fullName2id("p.A.m().Definition")
 
         val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
                       .setRole(ctorMethod, Some(Factory(ctor)))
@@ -124,11 +123,11 @@ class CommutativityRedirect
 
     scenario("From constructor to constructorMethod hosted by self - non static, parameter") {
       val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedBySelf.java") {
-        val ctor = fullName2id(s"p.B.B()")
-        val ctorMethod = fullName2id(s"p.B.create()")
+        val ctor = fullName2id("p.B.B()")
+        val ctorMethod = fullName2id("p.B.create()")
 
-        val callerDecl = fullName2id(s"p.A.m()")
-        val callerDef = getDefinition(graph, callerDecl)
+        val callerDecl = fullName2id("p.A.m()")
+        val callerDef = fullName2id("p.A.m().Definition")
 
         val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
                       .setRole(ctorMethod, Some(Factory(ctor)))
@@ -145,11 +144,11 @@ class CommutativityRedirect
 
     scenario("From constructor to constructorMethod hosted by self - non static, field") {
       val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedBySelf.java") {
-        val ctor = fullName2id(s"p.B.B()")
-        val ctorMethod = fullName2id(s"p.B.create()")
+        val ctor = fullName2id("p.B.B()")
+        val ctorMethod = fullName2id("p.B.create()")
 
-        val callerDecl = fullName2id(s"p.A.m()")
-        val callerDef = getDefinition(graph, callerDecl)
+        val callerDecl = fullName2id("p.A.m()")
+        val callerDef = fullName2id("p.A.m().Definition")
 
         val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
 
@@ -174,7 +173,7 @@ class CommutativityRedirect
             val mAbs = fullName2id("p.B.m1()")
 
             val userDecl = fullName2id("p.A.m()")
-            val userDef = getDefinition(graph, userDecl)
+            val userDef = fullName2id("p.A.m().Definition")
 
 
             val g =

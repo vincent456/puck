@@ -5,7 +5,7 @@ import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, Redirection}
 import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.nodeKind._
-import puck.{AcceptanceSpec, GetDefinitionValue, Settings}
+import puck.{AcceptanceSpec, Settings}
 
 //import scalaz.syntax.show._
 //import puck.util.Debug.showNodeIndex
@@ -15,8 +15,7 @@ import puck.{AcceptanceSpec, GetDefinitionValue, Settings}
 
 
 class RedirectSpec
-  extends AcceptanceSpec
-  with GetDefinitionValue{
+  extends AcceptanceSpec {
 
   val examplesPath = Settings.testExamplesPath + "/redirection/"
 
@@ -29,7 +28,7 @@ class RedirectSpec
       val _ = new ScenarioFactory(s"$typeDeclPath/ClassToInterfaceSuperType.java") {
         val mUserDecl = fullName2id("p.A.mUser(ClassUsed)")
         val theParam = fullName2id("p.A.mUser(ClassUsed).cu")
-        val mUserDef = getDefinition(graph, mUserDecl)
+        val mUserDef = fullName2id("p.A.mUser(ClassUsed).Definition")
 
         val classUsed = fullName2id("p.ClassUsed")
         val mUsed = fullName2id("p.ClassUsed.mUsed()")
@@ -59,7 +58,7 @@ class RedirectSpec
         val mUserDecl = fullName2id("p.A.mUser(Delegatee)")
         val theParam = fullName2id("p.A.mUser(Delegatee).d")
 
-        val mUserDef = getDefinition(graph, mUserDecl)
+        val mUserDef = fullName2id("p.A.mUser(Delegatee).Definition")
 
         val delegatee = fullName2id("p.Delegatee")
         val mDelegatee = fullName2id("p.Delegatee.mUsed()")
@@ -106,7 +105,7 @@ class RedirectSpec
         val factoryCtor = fullName2id(s"p.Factory.Factory()")
 
         val callerDecl = fullName2id(s"p.A.m()")
-        val callerDef = getDefinition(graph, callerDecl)
+        val callerDef = fullName2id("p.A.m().Definition")
 
 
         val ctorUse = Uses(callerDef, ctor)
@@ -139,8 +138,7 @@ class RedirectSpec
         val factoryClass = fullName2id(s"p.Factory")
         val factoryCtor = fullName2id(s"p.Factory.Factory()")
 
-        val callerDecl = fullName2id(s"p.A.m()")
-        val callerDef = getDefinition(graph, callerDecl)
+        val callerDef = fullName2id("p.A.m().Definition")
 
         val callerHostClass = fullName2id(s"p.A")
 
@@ -173,10 +171,10 @@ class RedirectSpec
         val constructedClass = fullName2id(s"p.B")
 
         val callerDecl = fullName2id(s"p.A.m()")
-        val callerDef = getDefinition(graph, callerDecl)
+        val callerDef = fullName2id("p.A.m().Definition")
 
         val userOfTheCallerDecl = fullName2id(s"p.C.mc()")
-        val userOfTheCallerDef = getDefinition(graph, userOfTheCallerDecl)
+        val userOfTheCallerDef = fullName2id("p.C.mc().Definition")
 
         val ctorUse = Uses(callerDef, ctor)
         val ctorMethodUse = Uses(callerDef, ctorMethod)
@@ -214,10 +212,10 @@ class RedirectSpec
         val constructedClass = fullName2id(s"p.B")
 
         val callerDecl = fullName2id(s"p.A.m()")
-        val callerDef = getDefinition(graph, callerDecl)
+        val callerDef = fullName2id("p.A.m().Definition")
 
         val userOfTheCallerDecl = fullName2id(s"p.C.mc()")
-        val userOfTheCallerDef = getDefinition(graph, userOfTheCallerDecl)
+        val userOfTheCallerDef = fullName2id("p.C.mc().Definition")
 
         val ctorUse = Uses(callerDef, ctor)
         val ctorMethodUse = Uses(callerDef, ctorMethod)
@@ -243,7 +241,7 @@ class RedirectSpec
 
         val delegate = g2.nodes.find(n => n.name(g2).endsWith("_delegate")).value
 
-        assert(g2.uses(getDefinition(g2, delegate.id), ctor))
+        assert(g2.uses(g2.definitionOf_!(delegate.id), ctor))
         assert(!g2.uses(userOfTheCallerDef, constructedClass))
 
       }
@@ -265,7 +263,7 @@ class RedirectSpec
         val cAbs = fullName2id("p.B")
 
         val userDecl = fullName2id("p.A.m()")
-        val userDef = getDefinition(graph, userDecl)
+        val userDef = fullName2id("p.A.m().Definition")
 
         val useOfImplClass = Uses(userDef, cUsed)
         val useOfctor = Uses(userDef, cUsedCtor)

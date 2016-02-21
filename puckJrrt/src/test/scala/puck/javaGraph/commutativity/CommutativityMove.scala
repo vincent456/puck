@@ -80,17 +80,17 @@ class CommutativityMove extends AcceptanceSpec {
     }
 
     scenario("Move top from different Packages - with static class member") {
-      val p = "topLevelClass/classesInDifferentPackages/withStaticClassMember"
+      val d = s"$examplesPath/topLevelClass/classesInDifferentPackages/withStaticClassMember"
       val _ = new ScenarioFactory(
-        s"$examplesPath/$p/A.java",
-        s"$examplesPath/$p/B.java",
-        s"$examplesPath/$p/Empty.java") {
+        s"$d/A.java",
+        s"$d/B.java",
+        s"$d/Empty.java") {
 
-        val p1 = fullName2id(s"p1")
+        val p1 = fullName2id("p1")
 
-        val package3 = fullName2id(s"p3")
+        val package3 = fullName2id("p3")
 
-        val classA = fullName2id(s"p1.A")
+        val classA = fullName2id("p1.A")
 
         val g = Move.staticDecl(graph, classA, package3).right
 
