@@ -130,6 +130,6 @@ trait TypedKindDeclHolder extends HasNode {
 
 case class InterfaceDeclHolder(decl : ast.InterfaceDecl) extends TypedKindDeclHolder
 case class ClassDeclHolder(decl : ast.ClassDecl) extends TypedKindDeclHolder
-case class WildCardTypeHolder(decl : ast.WildcardType) extends TypedKindDeclHolder
+case class WildCardTypeHolder(decl : ast.AbstractWildcardType) extends TypedKindDeclHolder
 case class TypeVariableHolder(decl : ast.TypeVariable) extends TypedKindDeclHolder
 case class PrimitiveDeclHolder(decl : ast.TypeDecl) extends TypedKindDeclHolder

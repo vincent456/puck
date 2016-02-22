@@ -144,11 +144,16 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
   }
 
   def addApiTypeNode(td: TypeDecl): NodeIdT = {
-
     val tdNode = addNode(td.fullName(), td.name(), td.getDGNodeKind, mutable = false)
-    val cterId = td.getParent.getContainerNode(this)
-    //val cterId = addPackage(td.packageName(), mutable = false)
-    addContains(cterId, tdNode)
+
+    val cterId =
+      if(td.isTopLevelType)
+        addPackage(td.packageName(), false)
+      else
+        td.getParentNamedNode.buildDGNode(this)
+
+
+     addContains(cterId, tdNode)
     tdNode
   }
 
@@ -186,57 +191,50 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
 
   }
 
-  def getType(t : ast.TypeDecl) : Type = getType(t.createLockedAccess())
+//  def getType(td : ast.TypeDecl) : Type = {
+//    val access = td.createLockedAccess()
+//    td.program().addChild(access)
+//    val t = getType(access)
+//    td.program().removeChild(access.getChildIndex)
+//    t
+//  }
+
+  def getParamType(parTypeDecl : ParTypeDecl) : Type = {
+    val genId = getNode(parTypeDecl.genericDecl())
+    val args: List[Type] =
+      Range.inclusive(parTypeDecl.getNumArgument - 1, 0, -1).foldLeft(List[Type]()) {
+        case (l, i) =>
+          getType(parTypeDecl.getArgument(i)) :: l
+      }
+    ParameterizedType(genId, args)
+  }
+
+  def getType(td : ast.TypeDecl) : Type = td match {
+    case  parTypeDecl : ParTypeDecl => getParamType(parTypeDecl)
+    case wst : WildcardSuperType => Contravariant(getType(wst))
+    case wet : WildcardExtendsType => Covariant(getType(wet))
+    case _ => NamedType(getNode(td))
+  }
+
+
 
   def getType(a : Access) : Type = {
     a.lock()
     a match {
       case aa: ArrayTypeAccess =>
         ParameterizedType(arrayTypeId, List(getType(aa.getAccess)))
-
-      case ta: TypeAccess =>
-        NamedType(getNode(ta.decl()))
-
+    case ta: TypeAccess => NamedType(getNode(ta.decl()))
       case d: Dot =>
         if (d.isRightRotated)
           d.rotateLeft()
         getType(d.getRight)
 
-      case pta: ParTypeAccess =>
-
-        val genId = getNode(pta.genericDecl())
-        val args: List[Type] =
-          Range.inclusive(pta.getNumTypeArgument - 1, 0, -1).foldLeft(List[Type]()) {
-            case (l, i) =>
-              getType(pta.getTypeArgument(i)) :: l
-          }
-        ParameterizedType(genId, args)
-
-      case we: WildcardExtends =>
-        Covariant(getType(we.getAccess))
-      case ws: WildcardSuper =>
-        Covariant(getType(ws.getAccess))
-      case w: Wildcard =>
-        NamedType(getNode(w.`type`()))
+      case pta: ParTypeAccess => getType(pta.`type`())
+      case we: AbstractWildcard => getType(we.`type`())
       case _ => throw new Error(s"getType, ${a.compilationUnit().pathName()} line ${a.location()} " +
         s"access.getClass == ${a.getClass}")
     }
   }
-
-//  ta.decl() match {
-//    case ptd : ParTypeDecl =>
-//      val genId = getNode(ptd.genericDecl())
-//      val args : List[Type] =
-//        Range.inclusive(ptd.getNumArgument-1, 0, -1).foldLeft(List[Type]()){
-//          case (l, i) =>
-//            getType(ptd.getArgument(i).asInstanceOf[TypeAccess]) :: l
-//        }
-//      ParameterizedType(genId, args)
-//    case td : TypeDecl => NamedType(getNode(td))
-//    case k =>  throw new Error(s"getType, t.decl.getClass == ${k.getClass}")
-//  }
-
-
 
 //  val register : NodeId => ASTNode[_] =>  Unit = n => {
 //    case decl : InterfaceDecl =>
@@ -300,7 +298,7 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
   def registerDecl(n : NodeIdT, decl : ast.TypeVariable) =
     register(n, nodeKind.TypeVariable, TypeVariableHolder(decl), "TypeVariable")
 
-  def registerDecl(n : NodeIdT, decl : WildcardType) =
+  def registerDecl(n : NodeIdT, decl : AbstractWildcardType) =
     register(n, WildCardType, WildCardTypeHolder(decl), "WildCardType")
 
   def registerDecl(n : NodeIdT, decl : TypeDecl) =

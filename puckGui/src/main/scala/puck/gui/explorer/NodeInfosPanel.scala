@@ -83,22 +83,18 @@ class NodeInfosPanel
         }
 
       val v : PuckLog.Verbosity = (PuckLog.NoSpecialContext, PuckLog.Info)
-      import puck.util.Time.time
       contents += new Label(s"${node.kind} ${graph.fullName(node.id)} : " +
         (graph, graph.structuredType(node.id)).shows + s"(${node.id})")
 
-//      control.logger writeln "computing providers and clients"
-//      val (providers, clients) = time(control.logger, v)(Metrics.providersAndClients(graph, node.id))
-//      control.logger writeln "computing internal dependencies"
-//      val internals = time(control.logger, v)(Metrics.internalDependencies(graph, node.id).size)
-//      control.logger writeln "computing outgoing dependencies"
-//      val outgoings = time(control.logger, v)(Metrics.outgoingDependencies(graph, node.id).size)
-//      control.logger writeln "computing incoming dependencies"
-//      val incomings = time(control.logger, v)(Metrics.incomingDependencies(graph, node.id).size)
       val (providers, clients) = Metrics.providersAndClients(graph, node.id)
-      val internals = Metrics.internalDependencies(graph, node.id).size
-      val outgoings = Metrics.outgoingDependencies(graph, node.id).size
-      val incomings = Metrics.incomingDependencies(graph, node.id).size
+      private val subtree = graph.subTree(node.id, includeRoot = true)
+
+      val (outgoings, internals) = {
+        val (outs, ints) =
+          Metrics.outgoingAndInternalDependencies(graph, node.id, subtree)
+        (outs.size, ints.size)
+      }
+      val incomings = Metrics.incomingDependencies(graph, node.id, subtree).size
 
       val coupling = Metrics.coupling0(providers.size, clients.size, internals, outgoings, incomings)
       val cohesion = Metrics.cohesion(internals, outgoings, incomings)
@@ -188,7 +184,7 @@ class NodeInfosPanel
 object NodeInfosPanel {
 
   def useBindings(graph : DependencyGraph, u : Uses) : String = {
-    def print(sb : StringBuilder, u : Uses) : Unit = {
+    def print(sb : StringBuilder, u : Uses) : StringBuilder = {
       val ustr = (graph, u).shows
       graph.getNode(u.used).kind.kindType match {
         case TypeDecl =>
@@ -209,15 +205,14 @@ object NodeInfosPanel {
           else
             sb.append(tus.map { tu => (graph, tu).shows }.mkString("type uses are :\n", "\n", "\n"))
 
-        case _ => ()
+        case _ => sb
         //logger writeln "unhandled kind of used node"
       }
     }
     val sb = new StringBuilder
-    print(sb, u)
+    print(sb, u).toString()
 //    graph.nodePlusDefAndParams(u.user).foreach {
 //      userDef => print(sb, graph.getUsesEdge(userDef, u.used).get)
 //    }
-    sb.toString()
   }
 }

@@ -39,7 +39,7 @@ object Config {
 
     val path : String
     def resolvePath(workspace : File) : String =
-      if(path startsWith "/") path
+      if(new File(path).isAbsolute) path
       else (workspace \ path).getAbsolutePath
   }
 

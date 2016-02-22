@@ -120,7 +120,9 @@ aspect NamedElement {
     public void GenericClassDecl.registerNode(JastaddGraphBuilder builder, int thisId){
         builder.registerDecl(thisId, this);
     }
-
+    public void AbstractWildcardType.registerNode(JastaddGraphBuilder builder, int thisId){
+        builder.registerDecl(thisId, this);
+    }
     public void Block.registerDef(JastaddGraphBuilder builder, int thisId){
         builder.registerDef(thisId, this);
     }
@@ -152,7 +154,7 @@ aspect NamedElement {
 
     eq GenericInterfaceDecl.getDGNodeKind() = JastaddGraphBuilder.genInterface(this);
 
-    eq WildcardType.getDGNodeKind() = JastaddGraphBuilder.wildcardType();
+    eq AbstractWildcardType.getDGNodeKind() = JastaddGraphBuilder.wildcardType();
     eq PrimitiveType.getDGNodeKind() = JastaddGraphBuilder.primitive();
 	eq VoidType.getDGNodeKind() = JastaddGraphBuilder.primitive();
     eq NullType.getDGNodeKind() = JastaddGraphBuilder.primitive();

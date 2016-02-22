@@ -49,10 +49,10 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
 
     import Config.Keys
 
-    fromFiles(p fileList Keys.srcs,
-      p fileList Keys.sourcepaths,
-      p fileList Keys.classpath,
-      p fileList Keys.bootclasspath,
+    fromFiles(p pathList Keys.srcs,
+      p pathList Keys.sourcepaths,
+      p pathList Keys.classpath,
+      p pathList Keys.bootclasspath,
         logger, ll)
 
   }

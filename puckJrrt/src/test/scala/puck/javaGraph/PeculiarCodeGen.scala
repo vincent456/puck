@@ -9,7 +9,7 @@ import puck.{Settings, AcceptanceSpec}
 class PeculiarCodeGen extends AcceptanceSpec {
   val examplesPath = Settings.testExamplesPath + "/codeGen"
 
-  feature("Parse lock unlock gen cycle") {
+  feature("Parse lock unlock gen") {
 
     def makeTest(f : String) : Unit = {
       val _ = new ScenarioFactory(f) {

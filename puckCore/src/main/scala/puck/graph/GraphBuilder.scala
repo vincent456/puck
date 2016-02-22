@@ -32,6 +32,8 @@ trait GraphBuilder {
   }
 
   def addContains(containerId : NodeIdT, contentId : NodeIdT): Unit ={
+    if(containerId == contentId)
+      error("Cycle !!")
     g = g.addContains(containerId, contentId)
   }
 

@@ -52,7 +52,7 @@ class Project
   }
 
 
-  def fileList(k : FileListKey ) : List[String] = {
+  def pathList(k : FileListKey ) : List[String] = {
     val l = config getOrElse (k, List())
     l.foldLeft(List[String]()){
       case (acc, f @ SingleFile(_)) => f.resolvePath(workspace) :: acc

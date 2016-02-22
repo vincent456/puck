@@ -18,7 +18,6 @@ object CompileHelper {
             jars: List[String],
             bootJars : List[String]): Option[Program] = {
       val arglist = createArglist(sources, sourcepaths, jars, bootJars)
-
       val f = new Frontend {
 //        protected override def processErrors(errors: java.util.Collection[Problem], unit: CompilationUnit): Unit =  {
 //          System.err.println("Errors:")

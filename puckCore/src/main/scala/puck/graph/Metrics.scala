@@ -3,34 +3,53 @@ package puck.graph
 object Metrics {
 
 
-  def outgoingDependencies(graph: DependencyGraph, root: NodeId): Set[NodeIdP] =
-    graph.subTree(root, includeRoot = true).foldLeft(Set[NodeIdP]()) {
-      (acc0, id) => graph.usedByExcludingTypeUse(id).foldLeft(acc0) {
-        (acc, user) =>
-          if (graph.contains_*(root, user)) acc
-          else acc + ((id, user))
+  //prerequis : \forall n in nodes, graph.contains*(root, n)
+  def outgoingDependencies(graph: DependencyGraph, root : NodeId, nodes: Seq[NodeId]): Set[NodeIdP] =
+    nodes.foldLeft(Set[NodeIdP]()) {
+      (acc0, id) => graph.usedBy(id).foldLeft(acc0) {
+        (acc, used) =>
+          if (graph.contains_*(root, used)) acc
+          else acc + ((id, used))
       }
     }
 
-  def incomingDependencies(graph: DependencyGraph, root: NodeId): Set[NodeIdP] =
-    graph.subTree(root, includeRoot = true).foldLeft(Set[NodeIdP]()) {
-      (acc0, id) => graph.usersOfExcludingTypeUse(id).foldLeft(acc0) {
+  def outgoingDependencies(graph: DependencyGraph, root: NodeId): Set[NodeIdP] =
+    outgoingDependencies(graph, root, graph.subTree(root, includeRoot = true))
+  //prerequis : \forall n in nodes, graph.contains*(root, n)
+  def incomingDependencies(graph: DependencyGraph, root: NodeId, nodes: Seq[NodeId]): Set[NodeIdP] =
+    nodes.foldLeft(Set[NodeIdP]()) {
+      (acc0, id) => graph.usersOf(id).foldLeft(acc0) {
         (acc, user) =>
           if (graph.contains_*(root, user)) acc
           else acc + ((user, id))
       }
     }
 
-  def internalDependencies(graph: DependencyGraph, root: NodeId): Set[NodeIdP] =
-    graph.subTree(root, includeRoot = true).foldLeft(Set[NodeIdP]()){
-      (acc0, id) => graph.usedByExcludingTypeUse(id).foldLeft(acc0) {
+  def incomingDependencies(graph: DependencyGraph, root: NodeId): Set[NodeIdP] =
+    incomingDependencies(graph, root, graph.subTree(root, includeRoot = true))
+  //prerequis : \forall n in nodes, graph.contains*(root, n)
+  def internalDependencies(graph: DependencyGraph, root: NodeId, nodes: Seq[NodeId]): Set[NodeIdP] =
+    nodes.foldLeft(Set[NodeIdP]()){
+      (acc0, id) => graph.usedBy(id).foldLeft(acc0) {
         (acc, used) =>
-          if (graph.contains_*(root, used))
-            acc + ((id, used))
+          if (graph.contains_*(root, used)) acc + ((id, used))
           else acc
       }
     }
 
+  def internalDependencies(graph: DependencyGraph, root: NodeId): Set[NodeIdP] =
+    internalDependencies(graph, root, graph.subTree(root, includeRoot = true))
+  //prerequis : \forall n in nodes, graph.contains*(root, n)
+  def outgoingAndInternalDependencies(graph: DependencyGraph,
+                                root: NodeId, nodes: Seq[NodeId]
+                               ) : (Set[NodeIdP], Set[NodeIdP]) =
+    nodes.foldLeft((Set[NodeIdP](), Set[NodeIdP]())) {
+      (acc, id) => graph.usedBy(id).foldLeft(acc) {
+        case ((out, internals), used) =>
+          if (graph.contains_*(root, used)) (out, internals + ((id, used)))
+          else (out + ((id, used)), internals)
+    }
+  }
 
   def provides(graph: DependencyGraph, provider: NodeId, other: NodeId) : Boolean =
     provides(graph, graph.subTree(provider), other, graph.subTree(other))

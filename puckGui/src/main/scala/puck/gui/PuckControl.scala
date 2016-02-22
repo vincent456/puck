@@ -31,7 +31,7 @@ object FrontVars {
   //val workspace = s"$root/$system/puck_test"
   //val workspace = s"/home/lorilan/projects/constraintsSolver/test_resources/distrib/bridge/hannemann_simplified"
   //val workspace = "/home/lorilan/freemind-0.9.0_example"
-  val workspace = "/home/lorilan/test"
+  val workspace = "/home/lorilan/puck_svn/examples/dspace-1.5.1-src-release"
   }
 
 class PuckControl
@@ -89,7 +89,7 @@ class PuckControl
   def loadCodeAndConstraints() = Future {
     progressBar.visible = true
     progressBar.value = 0
-    if(project.fileList(Config.Keys.srcs).isEmpty) {
+    if(project.pathList(Config.Keys.srcs).isEmpty) {
       throw new Error("No sources detected")
     }
 
@@ -107,8 +107,15 @@ class PuckControl
     case Success(_) => loadConstraints(setInitialGraph = true)
     case Failure(exc) =>
       progressBar.visible = false
-      if(exc.getCause == null)
-        logger writeln exc.getMessage
+
+      exc.printStackTrace()
+
+      if(exc.getCause == null ) {
+        if(exc.getMessage == null)
+          logger write (exc.getStackTrace mkString "\n")
+        else
+          logger writeln exc.getMessage
+      }
       else
         logger writeln exc.getCause.getMessage
   }

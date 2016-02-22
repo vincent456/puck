@@ -425,17 +425,33 @@ class DependencyGraph
 
   def containsList : List[(NodeId, NodeId)] = edges.contents.flatList
 
-  def contains_*(containerId : NodeId, contentId : NodeId) : Boolean =
-    containerId == contentId || {
-      container(contentId) match {
-        case None => false
-        case Some(id) =>
-          //import ShowDG._
-          //logger.writeln(ShowDG.showDG[NodeId](this).show(id))(PuckLog.Debug)
-          contains_*(containerId, id)
-      }
-    }
+//  def contains_*(containerId : NodeId, contentId : NodeId) : Boolean =
+//    containerId == contentId || {
+//      container(contentId) match {
+//        case None => false
+//        case Some(id) =>
+//          //import ShowDG._
+//          //logger.writeln(ShowDG.showDG[NodeId](this).show(id))(PuckLog.Debug)
+//          contains_*(containerId, id)
+//      }
+//    }
 
+  def contains_*(containerId : NodeId, contentId : NodeId) : Boolean = {
+    def aux(nid: NodeId, visited: Set[NodeId]): Boolean =
+      containerId == nid || {
+        container(nid) match {
+          case None => false
+          case Some(id) =>
+            if(visited contains id)
+              error("cycle detected")
+            //import ShowDG._
+            //logger.writeln(ShowDG.showDG[NodeId](this).show(id))(PuckLog.Debug)
+            aux(id, visited + id)
+        }
+      }
+
+    aux(contentId, Set(contentId))
+  }
   def canContain(n : DGNode, cn : ConcreteNode) : Boolean =
       nodeKindKnowledge.canContain(this, n,cn)
 
