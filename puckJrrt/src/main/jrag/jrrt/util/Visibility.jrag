@@ -22,13 +22,14 @@ aspect Visibility {
 		public Modifiers getModifiers();
 		public boolean fromSource();
 		public Program program();
-		public String name();
+		//public String name(); // FieldDecl hold multiple names
 	}
 	TypeDecl implements Visible;
 	MethodDecl implements Visible;
 	ConstructorDecl implements Visible;
-	FieldDeclarator implements Visible;
-	
+	//FieldDeclarator implements Visible;
+	FieldDecl implements Visible;
+
 	public int Visible.getVisibility() {
 		if(isPrivate()) return VIS_PRIVATE;
 		if(isProtected()) return VIS_PROTECTED;

@@ -84,12 +84,17 @@ class GraphStack(val bus : Publisher) {
       pushGraph(rec.redo(graph))
   }
 
-  def load(rec : Recording): Unit =
-    pushGraph(rec.reverse.foldLeft(graph){
-    case (g, MileStone) =>
-      undoStack.push(g)
-      MileStone.redo(g)
-    case (g, t) => t.redo(g)
-  })
+  def load(rec : Recording): Unit = {
+    val g = rec.reverse.foldLeft(graph) {
+      case (g, MileStone) =>
+        undoStack.push(g)
+        MileStone.redo(g)
+      case (g, t) => t.redo(g)
+    }
+    if(!(g eq graph))
+      undoStack push g
+
+    bus publish GraphUpdate(graph)
+  }
 
 }

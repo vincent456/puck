@@ -297,7 +297,7 @@ aspect Generics {
     return (TypeDecl) this;
   }
 
-  interface ParTypeDecl {
+  public interface ParTypeDecl {
     int getNumArgument();
     Access getArgument(int index);
     syn boolean isParameterizedType();

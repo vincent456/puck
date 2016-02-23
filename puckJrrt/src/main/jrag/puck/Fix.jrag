@@ -1,0 +1,25 @@
+aspect Fix{
+        syn boolean BodyDecl.isField() = false;
+
+        eq FieldDecl.isField() = true;
+
+        syn lazy Variable Variable.sourceVariableDecl();
+        eq VariableDeclarator.sourceVariableDecl() = this;
+        eq FieldDeclarator.sourceVariableDecl() = this;
+        eq FieldDeclarationSubstituted.sourceVariableDecl() = getOriginal().sourceVariableDecl();
+        eq ParameterDeclaration.sourceVariableDecl() = this;
+        eq ParameterDeclarationSubstituted.sourceVariableDecl() = getOriginal().sourceVariableDecl();
+
+        eq EnumConstant.sourceVariableDecl() = this;
+        eq InferredParameterDeclaration.sourceVariableDecl() = this;
+        eq CatchParameterDeclaration.sourceVariableDecl() = this;
+
+        syn lazy boolean FieldDecl.hasInit() {
+            for (FieldDeclarator decl : getDeclaratorList()) {
+                if (decl.hasInit()) {
+                     return true;
+                }
+            }
+            return false;
+        }
+}

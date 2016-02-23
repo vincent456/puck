@@ -4,8 +4,7 @@ package transformations
 import java.io.{FileInputStream, ObjectInputStream, FileOutputStream, ObjectOutputStream}
 
 import puck.graph.comparison.Mapping
-
-
+import puck.util.PuckLogger
 
 
 object Recording {
@@ -49,7 +48,8 @@ object Recording {
   }
 
   case class LoadError(msg: String, map : Map[String, NodeId]) extends Throwable
-  def load(fileName : String, map :  Map[String, NodeId]) : Recording = {
+  def load(fileName : String, map :  Map[String, NodeId])
+          (implicit logger : PuckLogger): Recording = {
     val (recMap, numIds, r) = read(fileName)
     try mapNodes(r, createMapping(recMap, map, numIds))
     catch {
@@ -64,14 +64,21 @@ object Recording {
 
   def createMapping(recordIds : Map[String, NodeId],
                     newIds : Map[String, NodeId],
-                    totalIds : Int ) : NodeId => NodeId = {
+                    totalIds : Int )
+                   (implicit logger : PuckLogger): NodeId => NodeId = {
     //assert(recordIds.size == newIds.size, "Map should be of same size")
     if(recordIds.size != newIds.size) {
       val recordedIds = recordIds.keys.toSet
       val currentGraphIds = newIds.keys.toSet
       val diff1 = recordedIds -- currentGraphIds
       val diff2 = currentGraphIds -- recordedIds
-      error("recordedIds -- currentGraphIds = " + diff1 + " currentGraphIds -- recordedIds = " + diff2)
+
+      logger writeln ("fullname recoreded : " + recordIds.size)
+      logger writeln "recordedIds -- currentGraphIds = "
+      logger writeln diff1
+      logger writeln " currentGraphIds -- recordedIds = "
+      logger writeln diff2
+      error("mapping creation error recordIds.size != newIds.size")
 
     }
     assert(totalIds >= recordIds.size)

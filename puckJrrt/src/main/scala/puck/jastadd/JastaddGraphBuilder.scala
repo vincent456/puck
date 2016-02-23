@@ -148,12 +148,12 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
 
     val cterId =
       if(td.isTopLevelType)
-        addPackage(td.packageName(), false)
+        addPackage(td.packageName(), mutable = false)
       else
         td.getParentNamedNode.buildDGNode(this)
 
 
-     addContains(cterId, tdNode)
+    addContains(cterId, tdNode)
     tdNode
   }
 
@@ -190,14 +190,6 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
     }
 
   }
-
-//  def getType(td : ast.TypeDecl) : Type = {
-//    val access = td.createLockedAccess()
-//    td.program().addChild(access)
-//    val t = getType(access)
-//    td.program().removeChild(access.getChildIndex)
-//    t
-//  }
 
   def getParamType(parTypeDecl : ParTypeDecl) : Type = {
     val genId = getNode(parTypeDecl.genericDecl())

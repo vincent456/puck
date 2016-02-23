@@ -30,9 +30,10 @@ object FrontVars {
 
   //val workspace = s"$root/$system/puck_test"
   //val workspace = s"/home/lorilan/projects/constraintsSolver/test_resources/distrib/bridge/hannemann_simplified"
-  //val workspace = "/home/lorilan/freemind-0.9.0_example"
-  val workspace = "/home/lorilan/puck_svn/examples/dspace-1.5.1-src-release"
-  }
+  val workspace = "/home/lorilan/freemind-0.9.0_example"
+  //val workspace = "/home/lorilan/puck_svn/examples/dspace-1.5.1-src-release"
+  //val workspace = "/home/lorilan/screen_example"
+}
 
 class PuckControl
 (logger0 : PuckLogger,
@@ -104,7 +105,10 @@ class PuckControl
 
 
   } onComplete {
-    case Success(_) => loadConstraints(setInitialGraph = true)
+    case Success(_) =>
+      logger writeln s"Graph builded : ${dg2ast.initialGraph.nodes.size} nodes"
+      logger writeln s"${dg2ast.nodesByName.size} fullname registered"
+      loadConstraints(setInitialGraph = true)
     case Failure(exc) =>
       progressBar.visible = false
 
@@ -206,7 +210,7 @@ class PuckControl
 
     case LoadRecord(f) =>
       loadRecord(f)
-      Bus publish GraphUpdate(graph)
+
 
     case ConstraintDisplayRequest(graph) =>
       graph.printConstraints(logger, defaultVerbosity)

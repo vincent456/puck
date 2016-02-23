@@ -38,15 +38,14 @@ aspect Initializer {
 
         ReturnStmt ret = (ReturnStmt)getBlock().getStmt(lastStmt);
 
-        VariableDeclarator dtor = new VariableDeclarator();
-        dtor.init$Children();
-        dtor.setID("ret");
-        VarDeclStmt dstmt = new VarDeclStmt();
-        dstmt.init$Children();
-        dstmt.setTypeAccess(ret.getResult().type().createLockedAccess());
-        dstmt.addDeclarator(dtor);
+        VariableDeclarator dtor =
+                new VariableDeclarator("ret", new List<>(),
+                        new Opt<>(ret.getResult()));
 
-        dtor.setInit(ret.getResult());
+        Modifiers mods = new Modifiers(new List<>());
+        Access t = ret.getResult().type().createLockedAccess();
+        VarDeclStmt dstmt = new VarDeclStmt(mods, t, new List<>(dtor));
+
         ret.setResult(dtor.createLockedAccess());
         getBlock().insertStmt(lastStmt, dstmt);
         lastStmt++;
