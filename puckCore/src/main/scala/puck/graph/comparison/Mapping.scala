@@ -1,8 +1,9 @@
 package puck.graph.comparison
 
+import java.util.NoSuchElementException
+
 import puck.PuckError
 import puck.graph._
-import puck.util.Debug
 
 
 object Mapping {
@@ -15,7 +16,17 @@ object Mapping {
 
   def nameIndex(g : DependencyGraph) : Map[String, NodeId] = {
     import ShowDG._
-    g.nodesId map ( id => ((g, id).shows(sigFullName), id) ) toMap
+   // g.nodesId map ( id => ((g, id).shows(sigFullName), id) ) toMap
+    (g.nodesId map ( id => ((g, id).shows(sigFullName), id) )).foldLeft(Map[String, NodeId]()){
+      case (m, (k,id)) =>
+        if(m contains k) {
+          val id0 = m(k)
+          val n = g.getNode(id)
+          val n0 = g.getNode(id0)
+          error(s"$k already in map !!!! oldVal = $n0 newVal = $n" )
+        }
+        else m + (k -> id)
+    }
   }
 
 
@@ -25,16 +36,20 @@ object Mapping {
  def create
   ( m1 : Map[String, NodeId],
     m2 : Map[String, NodeId]
-    ) : Map[NodeId, NodeId] = {
+    ) : Map[NodeId, NodeId] =
+//   swap(m1).mapValues(m2.apply)
+{
    m1.foldLeft(Map[NodeId, NodeId]()){
      case (m, (name, nid1)) =>
        m2 get name match {
          case None => throw new PuckError(s"$name not found while building mapping")
-         case Some(nid2) => m + (nid1 -> nid2)
+         case Some(nid2) =>
+           if(nid1 == nid2) println(s"id mapping for $name $nid1")
+           m + (nid1 -> nid2)
        }
     }
    }
-   //  swap(m1).mapValues(m2.apply)
+
 
   def swap[A,B]( m : Map[A, B]) : Map[B, A] =
     m.toList.map {case (a,b) => (b,a)}.toMap
@@ -140,7 +155,39 @@ object Mapping {
 //      false
 //    }
 //    else {
-      val mappinG1toG2 = create(g1,g2).apply _
+      val mappinG1toG2 : NodeId => NodeId = {
+//        val map : Map[NodeId, NodeId] = create(g1, g2)
+
+        val ni1 = nameIndex(g1)
+        val ni2 = nameIndex(g2)
+        val map : Map[NodeId, NodeId] = create(ni1, ni2)
+
+        {
+          g1Id : NodeId =>
+            try {
+              map(g1Id)
+            } catch {
+              case nse : NoSuchElementException =>
+
+                nse.printStackTrace()
+
+                val ks1 = ni1.keys.toSet
+                val ks2 = ni2.keys.toSet
+                val diff1 = ks1 -- ks2
+                val diff2 = ks2 -- ks1
+                val fn = g1.fullName(g1Id)
+                error(s"no mapping found for $g1Id $fn - " +
+                  s"g1.nodesId.size = ${g1.nodesId.size} ni1.size =  ${ni1.size}"+
+//                  s"${ni1.size } ${ni2.size} ${map.size}" +
+                  s"ni1 get fn = ${ni1 get fn} ni2 get fn = ${ni2 get fn} map get g1Id = ${map get g1Id}" +
+//                  s" ks1 contains fn = ${ks1 contains fn} " +
+//                  s" ks2 contains fn = ${ks2 contains fn} " +
+                  " fullName diff1 = " + diff1 + " fullName diff2 = " + diff2)
+
+            }
+
+        }
+      }
 
       val mappinNodeIdP : NodeIdP => NodeIdP = {
         case (n1, n2) => (mappinG1toG2(n1), mappinG1toG2(n2))

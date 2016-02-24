@@ -63,6 +63,15 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
     td
   }
 
+  def getNode(n : DGNamedElement): NodeIdT =
+    super.addNode(n.dgFullName(), n.name(), n.getDGNodeKind, n.fromSource){
+      nid => n.registerNode(this, nid)
+    }
+
+  import JastaddGraphBuilder.definitionName
+  def getDefNode(n : DGNamedElement): NodeIdT =
+    super.addNode(n.dgFullName()+ "." + definitionName, definitionName, Definition, n.fromSource)()
+
   def attachOrphanNodes(fromId : Int = g.rootId) : Unit = {
     val lastId = g.numNodes - 1
     if(fromId < lastId){
@@ -70,12 +79,12 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
         //println(s"${g.container(nodeId)} contains $nodeId")
         if(g.container(nodeId).isEmpty && nodeId != g.rootId){
           val n = g.getNode(nodeId)
-          //println(s"orphan node : ${n.fullName}  : ${n.kind} - container = ${n.container}")
+          //println(s"orphan node : ${g.fullName(nodeId)}  : ${n.kind}")
           graph2ASTMap get nodeId match {
             case Some(FieldDeclHolder(d, _)) => addBodyDecl(d)
             case Some(mdh : MethodDeclHolder) => addBodyDecl(mdh.decl)
             case Some(ConstructorDeclHolder(cdecl)) =>
-              nodesByName get cdecl.hostType().fullName() match {
+              nodesByName get cdecl.hostType().dgFullName() match {
                 case Some(pid) => cdecl.buildDG(this, pid)
                 case _ => addBodyDecl(cdecl)
               }
@@ -119,32 +128,32 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
 
 
 
-  def addStringLiteral(literal: String, occurrences: java.util.Collection[BodyDecl]) : Unit = {
-
-    def stringType = {
-      val td = findTypeDecl("java.lang.string")
-      val nid = addApiTypeNode(td)
-      NamedType(nid)
-    }
-
-    println("string "+literal + " "+ occurrences.size()+" occurences" )
-
-    for(bd <- occurrences){
-      val packageNode = nodesByName(bd.hostBodyDecl.compilationUnit.getPackageDecl)
-
-      val bdNode = bd buildDGNode this
-      val strNode = addNode(bd.fullName()+literal, literal, nodeKind.Literal, mutable = false)
-      /*
-        this is obviously wrong: TODO FIX
-      */
-      addContains(packageNode, strNode)
-      setType(strNode, stringType)
-      addEdge(Uses(bdNode, strNode, Some(Read)))
-    }
-  }
+//  def addStringLiteral(literal: String, occurrences: java.util.Collection[BodyDecl]) : Unit = {
+//
+//    def stringType = {
+//      val td = findTypeDecl("java.lang.string")
+//      val nid = addApiTypeNode(td)
+//      NamedType(nid)
+//    }
+//
+//    println("string "+literal + " "+ occurrences.size()+" occurences" )
+//
+//    for(bd <- occurrences){
+//      val packageNode = nodesByName(bd.hostBodyDecl.compilationUnit.getPackageDecl)
+//
+//      val bdNode = bd buildDGNode this
+//      val strNode = addNode(bd.fullName()+literal, literal, nodeKind.Literal, mutable = false)()
+//      /*
+//        this is obviously wrong: TODO FIX
+//      */
+//      addContains(packageNode, strNode)
+//      setType(strNode, stringType)
+//      addEdge(Uses(bdNode, strNode, Some(Read)))
+//    }
+//  }
 
   def addApiTypeNode(td: TypeDecl): NodeIdT = {
-    val tdNode = addNode(td.fullName(), td.name(), td.getDGNodeKind, mutable = false)
+    val tdNode = getNode(td)
 
     val cterId =
       if(td.isTopLevelType)
@@ -169,20 +178,6 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
   private def throwRegisteringError(n : ConcreteNode, astType : String) =
     throw new Error(s"Wrong registering ! AGNode.kind : ${n.kind} while Node is an $astType")
 
-  def getNode(namedElement: DGNamedElement) : Int =
-    try getNodeByName(namedElement.fullName)
-    catch {
-      case e: NoSuchElementException =>
-        val node: Int =
-          addNode(namedElement.fullName,
-            namedElement.name,
-            namedElement.getDGNodeKind,
-            namedElement.fromSource)
-        namedElement.registerNode(this, node)
-        node
-
-    }
-
   def bindTypeUse(typeUser : NodeId, typeUsed: TypeDecl, typeMemberUse : Uses) : Unit ={
     val t = getType(typeUsed)
     t.ids foreach {
@@ -202,9 +197,9 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
   }
 
   def getType(td : ast.TypeDecl) : Type = td match {
-    case  parTypeDecl : ParTypeDecl => getParamType(parTypeDecl)
-    case wst : WildcardSuperType => Contravariant(getType(wst))
-    case wet : WildcardExtendsType => Covariant(getType(wet))
+    case parTypeDecl : ParTypeDecl => getParamType(parTypeDecl)
+    case wst : WildcardSuperType => Contravariant(getType(wst.getAccess))
+    case wet : WildcardExtendsType => Covariant(getType(wet.getAccess))
     case _ => NamedType(getNode(td))
   }
 

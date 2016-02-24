@@ -19,10 +19,10 @@ trait JavaGraphBuilder extends GraphBuilder{
 
 
 
-  val arrayTypeId = addNode("@primitive.[]","[]", GenericClass,  mutable = false)
+  val arrayTypeId = addNode("@primitive.[]","[]", GenericClass,  mutable = false)()
 
   def addPackageNode(fullName: String, localName:String, mutable : Boolean) : NodeIdT =
-    addNode(fullName, localName, Package, mutable)
+    addNode(fullName, localName, Package, mutable)()
 
   def getDefinition(nid : NodeId) =
      g.getConcreteNode(nid).definition_!(g)

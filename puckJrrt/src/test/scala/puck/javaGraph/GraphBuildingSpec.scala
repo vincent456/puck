@@ -211,9 +211,8 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val classA = fullName2id("p.A")
         val meth = fullName2id("p.A.declareInnerClass()")
         val methDef = fullName2id("p.A.declareInnerClass().Definition")
-//TODO fix type decl fullName
-//        val innerClass = fullName2id("p.A.declareInnerClass().CanDoMInstance")
-        val innerClass = fullName2id("p.A.CanDoMInstance")
+
+        val innerClass = fullName2id("p.A.declareInnerClass().CanDoMInstance")
 
         graph.container(classA).value shouldBe p
         graph.content(p) should contain (classA)

@@ -18,7 +18,7 @@ aspect NamedElement {
         return !getInitOpt().isEmpty();
     }
 
-    public Block BodyDecl.getBody(){throw new Error(this.getClass() + " has no def");}
+    public Block DGNamedElement.getBody(){throw new Error(this.getClass() + " has no def");}
     public Block ConstructorDecl.getBody(){return getBlock();}
     public Block MethodDecl.getBody(){return getBlock();}
 
@@ -37,14 +37,14 @@ aspect NamedElement {
 
 
     public interface DGNamedElement {
-		String fullName();
+		String dgFullName();
 		String name();
 
 		void registerNode(JastaddGraphBuilder builder, int thisId);
 
         boolean isSubstitute();
         boolean fromSource();
-        void buildDG(JastaddGraphBuilder builder, int containerId);
+
 	}
 
     syn boolean ASTNode.isNamedElement();
@@ -61,8 +61,10 @@ aspect NamedElement {
     EnumConstant implements DGNamedElement;
     ParameterDeclaration implements DGNamedElement;
 	FieldDeclarator implements DGNamedElement;
+    Callable extends DGNamedElement;
 	MethodDecl implements DGNamedElement;
 	ConstructorDecl implements DGNamedElement;
+
 
     syn boolean ASTNode.isSubstitute();
     eq ASTNode.isSubstitute() = false;

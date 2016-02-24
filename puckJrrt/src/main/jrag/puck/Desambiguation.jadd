@@ -1,117 +1,67 @@
 
 aspect Desambiguation{
 
-	String ParTypeAccess.typeArgumentListString(){
-	  StringBuilder sb = new StringBuilder();
-
-	  sb.append("<");
-	  for(int i = 0; i < getNumTypeArgument(); i++) {
-		  if(i != 0)
-			  sb.append(", ");
-		  
-		  if(getTypeArgument(i) instanceof Wildcard)
-              sb.append("?");
-          else
-		    sb.append(((TypeAccess)getTypeArgument(i)).fullName());
-	  }
-
-	  sb.append(">");
-
-	  return sb.toString();
-  	}
-
-	public String ParTypeAccess.name(){
-	//	return ((TypeAccess)getTypeAccess()).name() + typeArgumentListString();
-		return genericDecl().name();
+	public DGNamedElement ASTNode.getParentNamedNode_aux(){
+		if(getParent() == null)
+			throw new PuckError("no parent named node !");
+		return getParent().getParentNamedNode_aux();
 	}
 
-
-	public class FullNameException extends Error {
-		private ASTNode<?> node;
-		
-		public FullNameException(ASTNode<?> node){
-			this.node = node;
-		}
-		
-		public ASTNode<?> getNode(){
-			return node;
-		}
-	}
-	
-	public class ProgramRootFullNameException extends FullNameException {
-		public ProgramRootFullNameException(ASTNode<?> node){
-			super(node);
-		}
+	public DGNamedElement DGNamedElement.getParentNamedNode_aux(){
+		return this;
 	}
 
-	public String ASTNode.fullName(){
-		throw new FullNameException(this);
+	public DGNamedElement ASTNode.getParentNamedNode(){
+		return getParent().getParentNamedNode_aux();
 	}
 
-	public String Program.fullName(){
-		throw new ProgramRootFullNameException(this);
+	public String TypeDecl.dgFullName() {
+		if (isNestedType())
+			return getParentNamedNode().dgFullName() + "." + getID();
+
+		String packageName = packageName();
+		if (packageName.equals(""))
+			return getID();
+
+		return packageName + "." + getID();
 	}
 
-
-    public String TypeAccess.fullName(){
-    	return decl().fullName();
-    }
-
-	public String ArrayTypeAccess.fullName(){
-    	return getAccess().fullName()+"[]";
-    }
-	
-	public String ParTypeAccess.fullName(){
-		return genericDecl().fullName();
-    }
-
-	public String ConstructorDecl.fullName(){
-		return getDesambiguateFullName();
+	public String TypeVariable.dgFullName(){
+		return getParentNamedNode().dgFullName() + "@" + getID();
 	}
+
+	public String Callable.dgFullName(){
+		return hostType().dgFullName()+"."+name()
+				+ getParametersAsString();
+	}
+
 	public String MethodDecl.fullName(){
-		return getDesambiguateFullName();
+		return dgFullName();
 	}
 
-	public String Callable.getDesambiguateFullName(){
-
-		return hostType().typeName()+"."+name()
-		+ getParametersAsString();
+	public String FieldDeclarator.dgFullName(){
+		return hostType().dgFullName()+"."+name();
 	}
 
-	public String FieldDeclarator.fullName(){
-		return hostType().typeName()+"."+name();
+	public String ParameterDeclaration.dgFullName(){
+		return getParentNamedNode().dgFullName()+"."+name();
+	}
+	public String AnonymousDecl.dgFullName(){
+		return getParentNamedNode().dgFullName() + "." + name();
 	}
 
-	public String ParameterDeclaration.fullName(){
-		return hostBodyDecl().fullName()+"."+name();
-	}
-	public String AnonymousDecl.fullName(){
-		return getParentNamedNode().fullName() + "." + name();
+	public String EnumConstant.dgFullName(){
+		return getParentNamedNode().dgFullName() + "." + name();
 	}
 
-	public String EnumConstant.fullName(){
-		return getParentNamedNode().fullName() + "." + name();
-	}
 
-	public String InstanceInitializer.fullName(){
-		return hostType().typeName()+".InstanceInitializer";//add an id number ??
-	}
-	public String StaticInitializer.fullName(){
-		return hostType().typeName()+".StaticInitializer";//add an id number ??
-	}
 
-	
-	
-	public boolean ASTNode.isInScope(String scope){
-		return fullName().contains(scope);
-	}
-	
-    Callable extends TypeMember;
+	Callable extends TypeMember;
 
 	public String Callable.getParametersAsString(){
-    	
-    	StringBuilder stringParameters = new StringBuilder();
-    	stringParameters.append("(");
+
+		StringBuilder stringParameters = new StringBuilder();
+		stringParameters.append("(");
 		List<ParameterDeclaration> params = getParameterList();
 		if(params.getNumChild() > 0){
 			for(int i = 0; i< params.getNumChild() - 1; i++){
@@ -119,22 +69,161 @@ aspect Desambiguation{
 				stringParameters.append(pdecl.typeNameInSig());
 				stringParameters.append(",");
 			}
-		//		String[] splitName = pdecl.type().fullName().split("[.]");
-		//		stringParameters.append(splitName[splitName.length-1]);
 			ParameterDeclaration pdecl = params.getChild(params.getNumChild()-1);
 			stringParameters.append(pdecl.typeNameInSig());
 		}
-    	stringParameters.append(")");
+		stringParameters.append(")");
 
 		return stringParameters.toString();
-    }
+	}
 
 	public String ParameterDeclaration.typeNameInSig(){
 		if(getTypeAccess() instanceof ParTypeAccess){
-		ParTypeAccess pta = (ParTypeAccess) getTypeAccess();
-		return pta.genericDecl().getID();
+			ParTypeAccess pta = (ParTypeAccess) getTypeAccess();
+			return pta.genericDecl().getID();
 		}
 		return type().name();
 	}
 
 }
+
+
+//aspect Desambiguation{
+//
+//	String ParTypeAccess.typeArgumentListString(){
+//	  StringBuilder sb = new StringBuilder();
+//
+//	  sb.append("<");
+//	  for(int i = 0; i < getNumTypeArgument(); i++) {
+//		  if(i != 0)
+//			  sb.append(", ");
+//
+//		  if(getTypeArgument(i) instanceof Wildcard)
+//              sb.append("?");
+//          else
+//		    sb.append(((TypeAccess)getTypeArgument(i)).fullName());
+//	  }
+//
+//	  sb.append(">");
+//
+//	  return sb.toString();
+//  	}
+//
+//	public String ParTypeAccess.name(){
+//	//	return ((TypeAccess)getTypeAccess()).name() + typeArgumentListString();
+//		return genericDecl().name();
+//	}
+//
+//
+//	public class FullNameException extends Error {
+//		private ASTNode<?> node;
+//
+//		public FullNameException(ASTNode<?> node){
+//			this.node = node;
+//		}
+//
+//		public ASTNode<?> getNode(){
+//			return node;
+//		}
+//	}
+//
+//	public class ProgramRootFullNameException extends FullNameException {
+//		public ProgramRootFullNameException(ASTNode<?> node){
+//			super(node);
+//		}
+//	}
+//
+//	public String ASTNode.fullName(){
+//		throw new FullNameException(this);
+//	}
+//
+//	public String Program.fullName(){
+//		throw new ProgramRootFullNameException(this);
+//	}
+//
+//
+//    public String TypeAccess.fullName(){
+//    	return decl().fullName();
+//    }
+//
+//	public String ArrayTypeAccess.fullName(){
+//    	return getAccess().fullName()+"[]";
+//    }
+//
+//	public String ParTypeAccess.fullName(){
+//		return genericDecl().fullName();
+//    }
+//
+//	public String ConstructorDecl.fullName(){
+//		return getDesambiguateFullName();
+//	}
+//	public String MethodDecl.fullName(){
+//		return getDesambiguateFullName();
+//	}
+//
+//	public String Callable.getDesambiguateFullName(){
+//
+//		return hostType().typeName()+"."+name()
+//		+ getParametersAsString();
+//	}
+//
+//	public String FieldDeclarator.fullName(){
+//		return hostType().typeName()+"."+name();
+//	}
+//
+//	public String ParameterDeclaration.fullName(){
+//		return hostBodyDecl().fullName()+"."+name();
+//	}
+//	public String AnonymousDecl.fullName(){
+//		return getParentNamedNode().fullName() + "." + name();
+//	}
+//
+//	public String EnumConstant.fullName(){
+//		return getParentNamedNode().fullName() + "." + name();
+//	}
+//
+//	public String InstanceInitializer.fullName(){
+//		return hostType().typeName()+".InstanceInitializer";//add an id number ??
+//	}
+//	public String StaticInitializer.fullName(){
+//		return hostType().typeName()+".StaticInitializer";//add an id number ??
+//	}
+//
+//
+//
+//	public boolean ASTNode.isInScope(String scope){
+//		return fullName().contains(scope);
+//	}
+//
+//    Callable extends TypeMember;
+//
+//	public String Callable.getParametersAsString(){
+//
+//    	StringBuilder stringParameters = new StringBuilder();
+//    	stringParameters.append("(");
+//		List<ParameterDeclaration> params = getParameterList();
+//		if(params.getNumChild() > 0){
+//			for(int i = 0; i< params.getNumChild() - 1; i++){
+//				ParameterDeclaration pdecl = params.getChild(i);
+//				stringParameters.append(pdecl.typeNameInSig());
+//				stringParameters.append(",");
+//			}
+//		//		String[] splitName = pdecl.type().fullName().split("[.]");
+//		//		stringParameters.append(splitName[splitName.length-1]);
+//			ParameterDeclaration pdecl = params.getChild(params.getNumChild()-1);
+//			stringParameters.append(pdecl.typeNameInSig());
+//		}
+//    	stringParameters.append(")");
+//
+//		return stringParameters.toString();
+//    }
+//
+//	public String ParameterDeclaration.typeNameInSig(){
+//		if(getTypeAccess() instanceof ParTypeAccess){
+//		ParTypeAccess pta = (ParTypeAccess) getTypeAccess();
+//		return pta.genericDecl().getID();
+//		}
+//		return type().name();
+//	}
+//
+//}

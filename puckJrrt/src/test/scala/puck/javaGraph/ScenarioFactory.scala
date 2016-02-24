@@ -55,4 +55,6 @@ case class ScenarioFactory
   def printFullNames() : Unit =
     fullName2id.keys.toList.sorted foreach println
 
+  def printFullNamesSortedByKey() : Unit =
+    fullName2id.toList map (_.swap) sortBy(_._1) foreach println
 }

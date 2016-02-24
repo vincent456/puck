@@ -11,13 +11,18 @@ trait GraphBuilder {
 
   def getFullName( id : NodeIdT) : String = g.fullName(id)
 
-  def addNode(unambiguousFullName: String, localName:String, kind: NodeKind, mutable : Boolean): NodeIdT = {
+  def addNode(unambiguousFullName: String,
+              localName:String,
+              kind: NodeKind,
+              mutable : Boolean)
+             (onCreate : NodeId => Unit = _ => () ): NodeIdT = {
     nodesByName get unambiguousFullName match {
       case None =>
         val (n, g2) = g.addConcreteNode(localName, kind, mutable)
         //println(s"adding ${n.id} $unambiguousFullName ")
         this.nodesByName += (unambiguousFullName -> n.id)
         g = g2
+        onCreate(n.id)
         n.id
       case Some(id) => id /* check that the kind and type is indeed the same ??*/
     }

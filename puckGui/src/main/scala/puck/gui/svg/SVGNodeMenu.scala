@@ -43,7 +43,7 @@ class SVGConcreteNodeMenu
   private def addShowOptions() : Unit = {
 
     this.addMenuItem("Infos"){ _ =>
-      controller publish NodeClicked(node)
+      controller.genControl.Bus publish NodeClicked(node)
     }
 
     this.addMenuItem("Hide") { _ =>
