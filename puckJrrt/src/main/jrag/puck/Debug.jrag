@@ -1,0 +1,43 @@
+
+aspect Debug {
+
+       //static boolean ASTNode.debugPrint = false;
+
+//       void ASTNode.printClass(){
+//              System.out.println(getClass());
+//              for(ASTNode child: this)
+//                     child.printClass();
+//       }
+
+    public void ASTNode.collectGenericClassDecl_aux(Map<GenericClassDecl, java.util.List<ASTNode> > m){
+        for(int i=0; i<getNumChild(); i++){
+            getChild(i).collectGenericClassDecl_aux(m);
+        }
+    }
+    public Map<GenericClassDecl, java.util.List<ASTNode> > ASTNode.collectGenericClassDecl(){
+        Map<GenericClassDecl, java.util.List<ASTNode> > m = new HashMap<GenericClassDecl, java.util.List<ASTNode>>();
+        collectGenericClassDecl_aux(m);
+        return m;
+    }
+    public void GenericClassDecl.collectGenericClassDecl_aux(Map<GenericClassDecl, java.util.List<ASTNode> > m){
+        java.util.List<ASTNode> prev;
+        if(m.get(this) == null) {
+            prev = new ArrayList<ASTNode>();
+            m.put(this, prev);
+        }
+
+        prev = m.get(this);
+
+        prev.add(getParent());
+
+        super.collectGenericClassDecl_aux(m);
+        }
+
+    public int ASTNode.numNodes(){
+        int n = 1;
+        for(int i = 0; i< getNumChild(); i++){
+            n += getChild(i).numNodes();
+        }
+        return n;
+    }
+}
