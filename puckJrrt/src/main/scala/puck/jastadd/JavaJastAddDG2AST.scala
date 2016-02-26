@@ -3,6 +3,7 @@ package puck.jastadd
 import java.io.File
 import java.util.NoSuchElementException
 
+import org.extendj.ast.Program
 import puck.config.Config
 import puck.{DG2AST, DG2ASTBuilder, Project, PuckError}
 import puck.graph.ShowDG._
@@ -16,6 +17,9 @@ import puck.util.{PuckLog, PuckLogger}
 import org.extendj.{ast => AST}
 
 object JavaJastAddDG2AST extends DG2ASTBuilder {
+
+  implicit def wrap(t : (Program, DependencyGraph, Seq[Transformation], Map[String, NodeId], Map[NodeId, ASTNodeLink])) : JavaJastAddDG2AST =
+    new JavaJastAddDG2AST(t._1, t._2, t._3, t._4, t._5)
 
   def fromFiles(sources: List[String],
                 sourcepaths : List[String],
@@ -34,8 +38,25 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
       sProg match {
         case None => throw new DGBuildingError("Compilation error, no AST generated")
         case Some(p) =>
-          val t = CompileHelper.buildGraph(p, ll)
-          new JavaJastAddDG2AST(t._1, t._2, t._3, t._4, t._5)
+//          val td = p.findSimpleType("AttributeView")
+//          if(td != null) {
+//            val m = td.findMethod("startEditingTable")
+//
+//            if(m != null){
+//              println(m.prettyPrint())
+//            }
+//          }
+          logger.writeln(p.numNodes() + " ast nodes BEFORE building graph")
+
+          val t : JavaJastAddDG2AST = CompileHelper.buildGraph(p, ll)
+
+          logger.writeln(p.numNodes() + " ast nodes AFTER building graph")
+          logger writeln s"Graph builded : ${t.initialGraph.nodes.size} nodes"
+          logger writeln s"${t.nodesByName.size} fullname registered"
+
+
+          t
+
       }
     }
 
@@ -119,7 +140,7 @@ class JavaJastAddDG2AST
 //    logger.writeln(program.prettyPrint())
     logger.writeln("emptying caches")
     program.flushTreeCache()
-    program.flushLibraryTypesTreeCache();
+    program.flushLibraryTypesTreeCache()
     program.resetPrimitiveTypes()
 
     logger.writeln("unlocking")

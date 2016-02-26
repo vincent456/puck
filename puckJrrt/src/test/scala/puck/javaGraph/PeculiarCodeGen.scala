@@ -24,45 +24,48 @@ class PeculiarCodeGen extends AcceptanceSpec {
       makeTest(s"$examplesPath/anonymousClass/Test.java")
     }
 
-//    scenario("enum") {
-//      makeTest(s"$examplesPath/enum/Test.java")
-//    }
-//
-//    scenario("inner enum") {
-//      makeTest(s"$examplesPath/innerEnum/Test.java")
-//    }
-//
-//    scenario("method call on anonymous class instantiation") {
-//      makeTest(s"$examplesPath/anonymousClassInstCall/Test.java")
-//    }
-//    scenario("empty interface with comments") {
-//      makeTest(s"$examplesPath/emptyInterfaceWithComment/Test.java")
-//    }
-//
-//    scenario("gen type parameterized with an up-bounded wildcard") {
-//      makeTest(s"$examplesPath/genTypeUpBound/Test.java")
-//    }
-//
-//    scenario("instance initializer") {
-//      makeTest(s"$examplesPath/instanceInit/Test.java")
-//    }
-//
-//    scenario("parameterized class instanciation") {
-//      makeTest(s"$examplesPath/parClassInstanciation/Test.java")
-//    }
-//
-//    scenario("parameterized class subtyping ") {
-//      makeTest(s"$examplesPath/parClassSubtyping/Test.java")
-//    }
-//
-//    scenario("chained call with more than one argument") {
-//      makeTest(s"$examplesPath/chainedCallWithArgs/Test.java")
-//    }
-//
-//    scenario("wild card usage") {
-//      makeTest(s"$examplesPath/wild/Test.java")
-//      //val _ = new ScenarioFactory(s"$examplesPath/wild/Test.java")
-//    }
+    scenario("enum") {
+      makeTest(s"$examplesPath/enum/Test.java")
+    }
+
+    scenario("inner enum") {
+      makeTest(s"$examplesPath/innerEnum/Test.java")
+    }
+
+    scenario("method call on anonymous class instantiation") {
+      makeTest(s"$examplesPath/anonymousClassInstCall/Test.java")
+    }
+    scenario("empty interface with comments") {
+      makeTest(s"$examplesPath/emptyInterfaceWithComment/Test.java")
+    }
+
+    scenario("gen type parameterized with an up-bounded wildcard") {
+      makeTest(s"$examplesPath/genTypeUpBound/Test.java")
+    }
+
+    scenario("instance initializer") {
+      makeTest(s"$examplesPath/instanceInit/Test.java")
+    }
+
+    scenario("parameterized class instanciation") {
+      makeTest(s"$examplesPath/parClassInstanciation/Test.java")
+    }
+
+    scenario("parameterized class subtyping ") {
+      makeTest(s"$examplesPath/parClassSubtyping/Test.java")
+    }
+
+    scenario("chained call with more than one argument") {
+      makeTest(s"$examplesPath/chainedCallWithArgs/Test.java")
+    }
+
+    scenario("wild card usage") {
+      makeTest(s"$examplesPath/wild/Test.java")
+    }
+
+    scenario("overloading with variadic method"){
+      makeTest(s"${Settings.testExamplesPath}/graphBuilding/variadicMethod/A.java")
+    }
 
   }
 

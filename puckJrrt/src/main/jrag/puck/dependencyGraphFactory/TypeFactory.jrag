@@ -13,13 +13,12 @@ aspect TypeFactory {
 
 
 	static void ASTNode.astParamsToDGType(JastaddGraphBuilder builder, int thisId, Callable c){
-//		System.out.println("building params of "+ c.fullName());
-		ArrayList<Integer> params = new ArrayList<Integer>();
+		ArrayList<Integer> params = new ArrayList<>();
 
 		for(ParameterDeclaration pdecl: c.getParameterList()){
 			int paramId = pdecl.buildDGNode(builder);
 			params.add(paramId);
-		 	builder.setType(paramId, builder.getType(pdecl.getTypeAccess()));
+		 	builder.setType(paramId, builder.getType(pdecl.type()));
 		}
 		builder.addParams(thisId, params);
 	}

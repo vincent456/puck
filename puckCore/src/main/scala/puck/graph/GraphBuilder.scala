@@ -12,7 +12,7 @@ trait GraphBuilder {
   def getFullName( id : NodeIdT) : String = g.fullName(id)
 
   def addNode(unambiguousFullName: String,
-              localName:String,
+              localName: String,
               kind: NodeKind,
               mutable : Boolean)
              (onCreate : NodeId => Unit = _ => () ): NodeIdT = {
@@ -24,7 +24,7 @@ trait GraphBuilder {
         g = g2
         onCreate(n.id)
         n.id
-      case Some(id) => id /* check that the kind and type is indeed the same ??*/
+      case Some(id) => id
     }
   }
 
@@ -37,8 +37,8 @@ trait GraphBuilder {
   }
 
   def addContains(containerId : NodeIdT, contentId : NodeIdT): Unit ={
-    if(containerId == contentId)
-      error("Cycle !!")
+//    if(containerId == contentId)
+//      error("Cycle !!")
     g = g.addContains(containerId, contentId)
   }
 

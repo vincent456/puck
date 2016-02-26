@@ -37,22 +37,20 @@ object Mapping {
   ( m1 : Map[String, NodeId],
     m2 : Map[String, NodeId]
     ) : Map[NodeId, NodeId] =
-//   swap(m1).mapValues(m2.apply)
-{
-   m1.foldLeft(Map[NodeId, NodeId]()){
-     case (m, (name, nid1)) =>
-       m2 get name match {
-         case None => throw new PuckError(s"$name not found while building mapping")
-         case Some(nid2) =>
-           if(nid1 == nid2) println(s"id mapping for $name $nid1")
-           m + (nid1 -> nid2)
-       }
-    }
-   }
+   swap(m1).mapValues(m2.apply)
+//{
+//   m1.foldLeft(Map[NodeId, NodeId]()){
+//     case (m, (name, nid1)) =>
+//       m2 get name match {
+//         case None => throw new PuckError(s"$name not found while building mapping")
+//         case Some(nid2) => m + (nid1 -> nid2)
+//       }
+//    }
+//   }
 
 
   def swap[A,B]( m : Map[A, B]) : Map[B, A] =
-    m.toList.map {case (a,b) => (b,a)}.toMap
+    m.toList.map(_.swap).toMap
 
 
   def mapCVM[C[_], V]

@@ -73,7 +73,7 @@ object Recording {
       val diff1 = recordedIds -- currentGraphIds
       val diff2 = currentGraphIds -- recordedIds
 
-      logger writeln ("fullname recoreded : " + recordIds.size)
+      logger writeln ("fullname recorded : " + recordIds.size)
       logger writeln "recordedIds -- currentGraphIds = "
       logger writeln diff1
       logger writeln " currentGraphIds -- recordedIds = "

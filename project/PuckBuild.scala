@@ -24,7 +24,7 @@ object PuckBuild extends Build {
     name := s"puck-$module",
     version := "1.0-SNAPSHOT",
     scalaVersion := "2.11.7",
-    sbtVersion := "0.13.8",
+    sbtVersion := "0.13.11",
     classPathFileName := "CLASSPATH",
     srcJarFileName := s"${organization.value}.${name.value}-${version.value}-src.jar",
     printClassPathFile := {
@@ -114,12 +114,8 @@ object PuckBuild extends Build {
 
 
   lazy val root = (project in file(".")
-//    settings commonSettings("root")
-//    dependsOn (puckCore % "test->test;compile->compile",
-//    puckJava % "test->test;compile->compile",
-//    puckScala % "test->test;compile->compile")
     aggregate (puckCore, puckGui, puckJava, puckJrrt/*, puckScala*/)
-    )
+  )
 
   val puckCore : Project = (project
     settingsSeq commonSettings("core")
@@ -150,9 +146,10 @@ object PuckBuild extends Build {
   val puckJava : Project = (project
     settingsSeq commonSettings("java")
     dependsOn (puckCore % "test->test;compile->compile")
-    //dependsOn (puckGui % "compile->compile")
    )
 
+
+  val extendjUrl = "https://bitbucket.org/extendj/extendj.git"
 
   val puckJrrt : Project = (project
     settingsSeq commonSettings("jrrt")
@@ -160,6 +157,7 @@ object PuckBuild extends Build {
     enablePlugins JavaAppPackaging
     dependsOn (puckJava % "test->test;compile->compile")
     dependsOn (puckGui % "compile->compile")
+//    dependsOn RootProject(uri(extendjUrl))
 
     //pack sources with the binaries
 //    settings (mappings in Universal ++=

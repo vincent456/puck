@@ -149,7 +149,6 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
   }
 
-
   feature("contains registration"){
 
     scenario("static class member") {
@@ -273,8 +272,22 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
       }
     }
-  }
 
+    info("method m(A...) recognized as m(A[])")
+    scenario("overloading with variadic method"){
+      val _ = new ScenarioFactory(s"$graphBuildingExamplesPath/variadicMethod/A.java"){
+        val m1name = "p.A.m(double)"
+        val m1id = fullName2id(m1name)
+        val m2name = "p.A.m(double[])"
+        val m2id = fullName2id(m2name)
+
+        import ShowDG._
+        (graph, m1id).shows(sigFullName) shouldBe m1name
+        (graph, m2id).shows(sigFullName) shouldBe m2name
+
+      }
+    }
+  }
 
   feature("typeUse typeMemberUse relation registration"){
     val examplesPath = graphBuildingExamplesPath +  "typeRelationship/"
@@ -374,6 +387,8 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
       }
     }
+
+
   }
 
   feature("Abstraction registration"){
@@ -528,7 +543,6 @@ class GraphBuildingSpec extends AcceptanceSpec {
         println("fieldGenTypeUse = " + fieldGenTypeUse)
         println("fieldParameterTypeUse = " + fieldParameterTypeUse)
         println("typeMemberUse = " + typeMemberUse)
-//        graph.typeMemberUsesOf(fieldParameterTypeUse) should contain (typeMemberUse)
         graph.typeUsesOf(typeMemberUse) should contain (fieldGenTypeUse)
         graph.typeUsesOf(typeMemberUse) should contain (fieldParameterTypeUse)
 
