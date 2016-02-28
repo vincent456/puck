@@ -7,10 +7,8 @@ import java.awt.event.{ActionEvent, MouseEvent, MouseAdapter}
 import javax.swing.{AbstractAction, JPopupMenu, JTree}
 
 import puck.graph._
-import javax.swing.tree._
 
 
-import puck.graph.io.PrintingOptions
 import puck.gui.menus.{NodeMenu, ViolationMenu}
 
 import scala.swing.BorderPanel.Position

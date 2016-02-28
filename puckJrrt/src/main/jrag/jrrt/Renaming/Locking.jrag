@@ -52,7 +52,7 @@ aspect Locking {
 	MethodAccess implements LockableName;
 	ClassInstanceExpr implements LockableName;
 	ConstructorAccess implements LockableName;
-	
+
 	public ASTNode LockableName.lockAllNames() {
 		ASTNode res = lock();
 		if(res == this)

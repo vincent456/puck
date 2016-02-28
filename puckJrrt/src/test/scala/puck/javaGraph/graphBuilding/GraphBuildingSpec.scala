@@ -1,9 +1,9 @@
-package puck
-package javaGraph
+package puck.javaGraph.graphBuilding
 
-import puck.graph.constraints.SupertypeAbstraction
 import puck.graph._
-import puck.util.Debug
+import puck.graph.constraints.SupertypeAbstraction
+import puck.javaGraph.ScenarioFactory
+import puck.{AcceptanceSpec, Settings}
 
 
 class GraphBuildingSpec extends AcceptanceSpec {

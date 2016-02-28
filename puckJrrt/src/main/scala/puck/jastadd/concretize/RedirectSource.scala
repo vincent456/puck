@@ -45,7 +45,12 @@ object RedirectSource {
       case TypeConstructor | StaticValueDecl => true
       case _ => false})
 
-    val impactedUsers =  (staticContent flatMap reenactor.usersOfExcludingTypeUse) ++ (reenactor usersOfExcludingTypeUse tDeclId)
+    val impactedUsers =  (staticContent flatMap reenactor.usersOf) ++ (reenactor usersOf tDeclId)
+
+    impactedUsers foreach {id =>
+      println(reenactor.fullName(id))
+      println(id2declMap(id).asInstanceOf[HasNode].node.prettyPrint())
+    }
 
     val cus = impactedUsers.foldLeft(Set[String]()){ (cus, userId) =>
       val scu = id2declMap(userId) match {
@@ -69,6 +74,19 @@ object RedirectSource {
       //user est dans autre package -> remplacer import
 
 
+//      def createLockedAccess(tDecl : ast.TypeDecl) : ast.Access =
+//        if (tDecl.isTopLevelType){
+//          val pa = new ast.TypeAccess(tDecl.fullName())
+//          pa.lock(tDecl)
+//          pa
+//        }
+//        else {
+//          val parentAccess = createLockedAccess(tDecl.hostBodyDecl().hostType())
+//          val pa = new ast.TypeAccess(tDecl.name())
+//          pa.lock(tDecl)
+//          new ast.Dot(parentAccess, pa)
+//        }
+
       scu match {
         case Some(cu) if !cus.contains(cu.pathName()) =>
 
@@ -79,6 +97,7 @@ object RedirectSource {
           def addImport() = {
             val pa = new ast.TypeAccess(tDecl.fullName())
             pa.lock(tDecl)
+            //val pa = createLockedAccess(tDecl)
             logger.writeln(s"addImportDecl of $pa in ${cu.pathName}")
             cu.addImportDecl(new ast.SingleTypeImportDecl(pa))
           }
@@ -108,29 +127,32 @@ object RedirectSource {
     logger.writeln("moving " + tDecl.fullName() +" to package " + resultGraph.fullName(newPackage))
 
 
-    if (tDecl.compilationUnit.getNumTypeDecl > 1) {
-      logger.writeln(tDecl.name + " cu with more than one classe")(verbosity(PuckLog.Debug))
+    if(tDecl.isTopLevelType) {
+      if (tDecl.compilationUnit.getNumTypeDecl > 1) {
+        logger.writeln(tDecl.name + " cu with more than one classe")(verbosity(PuckLog.Debug))
 
-      logger.writeln(tDecl.program().prettyPrint())
-      val path = ASTNodeLink.getPath(reenactor, newPackage)
-      val oldcu = tDecl.compilationUnit()
+        logger.writeln(tDecl.program().prettyPrint())
+        val path = ASTNodeLink.getPath(reenactor, newPackage)
+        val oldcu = tDecl.compilationUnit()
 
-      oldcu.removeTypeDecl(tDecl)
-      val newCu = program.insertUnusedType(path, resultGraph.fullName(newPackage), tDecl)
+        oldcu.removeTypeDecl(tDecl)
+        val newCu = program.insertUnusedType(path, resultGraph.fullName(newPackage), tDecl)
 
-      newCu.setPathName(tDecl.fullName().replaceAllLiterally(".","/") +".java")
+        newCu.setPathName(tDecl.fullName().replaceAllLiterally(".", "/") + ".java")
 
-    }
-    else {
-      logger.writeln(tDecl.name + " cu with one classe")(verbosity(PuckLog.Debug))
-      logger.writeln("before " + program.getNumCompilationUnit + " cus in prog")(verbosity(PuckLog.Debug))
-      CreateEdge.setPackageDecl(resultGraph, newPackage, tDeclId, tDecl)
-      logger.writeln("after " + program.getNumCompilationUnit + " cus in prog")(verbosity(PuckLog.Debug))
+      }
+      else {
+        logger.writeln(tDecl.name + " cu with one classe")(verbosity(PuckLog.Debug))
+        logger.writeln("before " + program.getNumCompilationUnit + " cus in prog")(verbosity(PuckLog.Debug))
+        CreateEdge.setPackageDecl(resultGraph, newPackage, tDeclId, tDecl)
+        logger.writeln("after " + program.getNumCompilationUnit + " cus in prog")(verbosity(PuckLog.Debug))
 
+      }
     }
     ASTNodeLink.enlargeVisibility(reenactor, tDecl, tDeclId)
     tDecl.flushCache()
-    val oldFullName = resultGraph.fullName(oldPackage) + "." + tDecl.name()
+    //val oldFullName = resultGraph.fullName(oldPackage) + "." + tDecl.name()
+    val oldFullName = reenactor.fullName(tDeclId)
     program.changeTypeMap(oldFullName, resultGraph.fullName(tDeclId), tDecl)
 
     fixImportDeclIfNeeded(reenactor, id2declMap,
