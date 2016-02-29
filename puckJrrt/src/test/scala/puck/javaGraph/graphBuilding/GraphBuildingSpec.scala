@@ -540,9 +540,9 @@ class GraphBuildingSpec extends AcceptanceSpec {
         assert( typeMemberUse existsIn graph )
 
 
-        println("fieldGenTypeUse = " + fieldGenTypeUse)
-        println("fieldParameterTypeUse = " + fieldParameterTypeUse)
-        println("typeMemberUse = " + typeMemberUse)
+//        println("fieldGenTypeUse = " + fieldGenTypeUse)
+//        println("fieldParameterTypeUse = " + fieldParameterTypeUse)
+//        println("typeMemberUse = " + typeMemberUse)
         graph.typeUsesOf(typeMemberUse) should contain (fieldGenTypeUse)
         graph.typeUsesOf(typeMemberUse) should contain (fieldParameterTypeUse)
 

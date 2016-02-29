@@ -6,15 +6,9 @@ import puck.LoadingListener;
 
 aspect DependencyGraphFactory {
 
-	public JastaddGraphBuilder Program.buildDependencyGraph(/*Map<String,Collection<BodyDecl>> stringsRequest, */LoadingListener ll){
+	public JastaddGraphBuilder Program.buildDependencyGraph(LoadingListener ll){
 
 		JastaddGraphBuilder builder = new JastaddGraphBuilder(this);
-
-//		if(stringsRequest != null){
-//			for (java.util.Map.Entry<String, Collection<BodyDecl>>  entry : allStringUses(stringsRequest).entrySet()) {
-//				builder.addStringLiteral(entry.getKey(), entry.getValue());
-//			}
-//		}
 
 		if(ll == null)
             ll = new LoadingListener(){ public void update(double loading){}};
@@ -80,6 +74,7 @@ aspect DependencyGraphFactory {
 	public void CompilationUnit.buildDependencyGraph(JastaddGraphBuilder builder){
 			for(ImportDecl id : getImportDecls()){
 				id.lockAllNames();
+				//id.lockTypeAccess();
 			}
 
 			int packageNode = builder.addPackage(getPackageDecl(), true);
@@ -89,6 +84,16 @@ aspect DependencyGraphFactory {
 			}
 	}
 
+//	public void ImportDecl.lockTypeAccess(){
+//		Access a = getAccess();
+//		if(a instanceof AbstractDot){
+//			AbstractDot ad = (AbstractDot) a;
+//			if(ad.isRightRotated())
+//				ad.rotateLeft();
+//
+//			ad.getRight().lock();
+//		}
+//	}
 	public void TypeDecl.buildDG(JastaddGraphBuilder builder, int containerId){
 		
 		int tdNode = buildDG_TypeDecl(builder);
@@ -218,9 +223,6 @@ aspect DependencyGraphFactory {
 		}
 	}
 	public void EnumConstant.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId ){
-//		if(hasArg() || hasInit())
-//			throw new PuckError("enum constant with arg or init unhandled");
-
 		int thisNode = builder.getNode(this);
 		builder.addContains(hostTypeDeclId, thisNode);
 		builder.setType(thisNode, builder.getType(this.hostType()));
@@ -284,12 +286,6 @@ aspect DependencyGraphFactory {
 
 		if(!access.isDeclStatic())
 			buildTypeUse(builder, access, typeMemberUses);
-//      if(!access.isDeclStatic()) {
-//          int typeUserId = buildTypeUserDGNode(access, builder, typeMemberUses);
-//          int typeUsedId = declaredTypeOfQualifier(access).buildDGNode(builder);
-//          bindTypeUse(builder, typeUserId, typeUsedId, typeMemberUses);
-//          //builder.addTypeRelationship(new Uses(typeUserId, typeUsedId, UsesAccessKind.none()), typeMemberUses);
-//      }
 	}
 
 	public void MethodAccess.buildDG(JastaddGraphBuilder builder, int containerId){
@@ -302,11 +298,7 @@ aspect DependencyGraphFactory {
 	}
 
 	public void VarAccess.buildDG(JastaddGraphBuilder builder, int containerId){
-		//if(decl().isInstanceVariable() || decl().isClassVariable()){
-		/*if(decl().isLocalVariable() || decl().isMethodParameter()){
-			builder.addUses(containerId, buildDGNode(builder));
-		}
-		else */if(decl().isField()){
+		if(decl().isField()){
             buildDG(this, containerId, usesAccessKind(), builder);
 		}
 	}

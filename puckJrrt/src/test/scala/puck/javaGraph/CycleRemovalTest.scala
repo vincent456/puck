@@ -46,7 +46,7 @@ class CycleRemovalTest
 
  //      println(edges.mkString(","))
 //      println(nodes.mkString(","))
-      println(edgesToRemove)
+//      println(edgesToRemove)
       assert(edgesToRemove.nonEmpty)
     }
 

@@ -80,7 +80,7 @@ class CommutativityMove extends AcceptanceSpec {
     }
 
     scenario("Move top from different Packages - with static class member") {
-      val d = s"$examplesPath/topLevelClass/3"
+      val d = s"$examplesPath/topLevelClass/classesInDifferentPackages/withStaticClassMember"
       val _ = new ScenarioFactory(
         s"$d/A.java",
         s"$d/B.java",

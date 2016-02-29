@@ -6,7 +6,7 @@ import puck.config.Config.SingleFile
 import puck.config.{Config, ConfigParser}
 import puck.jastadd.JavaJastAddDG2AST
 import puck.javaGraph.ScenarioFactory
-import puck.util.PuckSystemLogger
+import puck.util.{PuckFileLogger, PuckSystemLogger}
 import puck.{Settings, AcceptanceSpec, Project}
 
 /**
@@ -18,7 +18,8 @@ class PeculiarCodeGraphBuilding extends AcceptanceSpec {
 
   feature("fixed number of nodes") {
 
-    implicit val logger = new PuckSystemLogger(_ => true)// new PuckFileLogger(_ => true, new java.io.File("/tmp/debugLog"))
+    //implicit val logger = new PuckSystemLogger(_ => true)
+    implicit val logger = new PuckFileLogger(_ => true, new java.io.File("/tmp/debugLog"))
 
     scenario("freemind problem") {
       val cfg = Config.empty put (Config.Keys.srcs, List(SingleFile(s"$graphBuildingExamplesPath/complexHierarchy/View.java")))

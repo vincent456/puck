@@ -47,11 +47,6 @@ object RedirectSource {
 
     val impactedUsers =  (staticContent flatMap reenactor.usersOf) ++ (reenactor usersOf tDeclId)
 
-    impactedUsers foreach {id =>
-      println(reenactor.fullName(id))
-      println(id2declMap(id).asInstanceOf[HasNode].node.prettyPrint())
-    }
-
     val cus = impactedUsers.foldLeft(Set[String]()){ (cus, userId) =>
       val scu = id2declMap(userId) match {
         case ParameterDeclHolder(decl) =>

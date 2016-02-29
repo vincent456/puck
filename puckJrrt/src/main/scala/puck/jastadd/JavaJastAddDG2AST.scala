@@ -136,8 +136,8 @@ class JavaJastAddDG2AST
         acc
     }
 
-//    logger.writeln("change applied : ")
-//    logger.writeln(program.prettyPrint())
+    logger.writeln("change applied : ")
+    logger.writeln(program.prettyPrint())
     logger.writeln("emptying caches")
     program.flushTreeCache()
     program.flushLibraryTypesTreeCache()
@@ -153,8 +153,8 @@ class JavaJastAddDG2AST
 //    program.eliminateFreshVariables()
     logger.writeln("done")
 
-//    logger.writeln("Program after unlock : ")
-//    logger.writeln(program.prettyPrint())
+    logger.writeln("Program after unlock : ")
+    logger.writeln(program.prettyPrint())
 
   }
 
