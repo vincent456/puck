@@ -84,16 +84,16 @@ aspect DependencyGraphFactory {
 			}
 	}
 
-//	public void ImportDecl.lockTypeAccess(){
-//		Access a = getAccess();
-//		if(a instanceof AbstractDot){
-//			AbstractDot ad = (AbstractDot) a;
-//			if(ad.isRightRotated())
-//				ad.rotateLeft();
-//
-//			ad.getRight().lock();
-//		}
-//	}
+	public void ImportDecl.lockTypeAccess(){
+		Access a = getAccess();
+		if(a instanceof AbstractDot){
+			AbstractDot ad = (AbstractDot) a;
+			if(ad.isRightRotated())
+				ad.rotateLeft();
+
+			ad.getRight().lock();
+		}
+	}
 	public void TypeDecl.buildDG(JastaddGraphBuilder builder, int containerId){
 		
 		int tdNode = buildDG_TypeDecl(builder);
@@ -373,11 +373,24 @@ aspect DependencyGraphFactory {
 		builder.addEdge(new Uses(containerId, nodeId, UsesAccessKind.none()));
 	}
 
+
 	public void ParTypeAccess.buildDG(JastaddGraphBuilder builder, int containerId){
-		int nodeId = buildDGNode(builder);
-		builder.addEdge(new Uses(containerId, nodeId, UsesAccessKind.none()));
+		builder.buildDG(this, containerId);
 		buildDGInChildren(builder, containerId);
 	}
+
+	public ASTNode ParTypeAccess.lock() {
+		ASTNode l = getTypeAccess().lock();
+		for(Access a : getTypeArguments())
+			a.lock();
+
+		return this;
+	}
+//public void ParTypeAccess.buildDG(JastaddGraphBuilder builder, int containerId){
+//		int nodeId = buildDGNode(builder);
+//		builder.addEdge(new Uses(containerId, nodeId, UsesAccessKind.none()));
+//		buildDGInChildren(builder, containerId);
+//	}
 
 	static void TypeDecl.addImplements(JastaddGraphBuilder builder,
     	int sub, List<Access> implementList){
@@ -422,6 +435,7 @@ aspect DependencyGraphFactory {
 
 		getRight().addImplementsUses(builder,sub);
 	}
+
 	void TypeAccess.addImplementsUses(JastaddGraphBuilder builder, int sub){
 		int sn = buildDGNode(builder);
 		builder.addEdge(new Uses(sub, sn, UsesAccessKind.none()));
@@ -466,4 +480,10 @@ aspect DependencyGraphFactory {
 	public Program Frontend.getProgram() {
 		return program;
 	}
+
+
+//	public void VarDeclStmt.buildDG(JastaddGraphBuilder builder, int containerId){
+//		getTypeAccess().lock();
+//		super.buildDG(builder, containerId);
+//	}
 }

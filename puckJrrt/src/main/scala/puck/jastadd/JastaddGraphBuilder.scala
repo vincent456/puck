@@ -215,7 +215,6 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
         if (d.isRightRotated)
           d.rotateLeft()
         getType(d.getRight)
-
       case pta: ParTypeAccess => getType(pta.`type`())
       case we: AbstractWildcard => getType(we.`type`())
       case _ => throw new Error(s"getType, ${a.compilationUnit().pathName()} line ${a.location()} " +
@@ -223,6 +222,9 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
     }
   }
 
+  def buildDG(pta : ParTypeAccess, containerId : NodeId) : Unit = {
+    getType(pta).ids.foreach(id => addEdge(Uses(containerId, id)))
+  }
 //  val register : NodeId => ASTNode[_] =>  Unit = n => {
 //    case decl : InterfaceDecl =>
 //      register(n, Interface, InterfaceDeclHolder(decl), "InterfaceDecl")

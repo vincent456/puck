@@ -55,6 +55,7 @@ aspect NamedElement {
     eq WildcardExtendsType.isNamedElement() = false;
 
 	TypeDecl implements DGNamedElement;
+    GenericTypeDecl implements DGNamedElement;
 	// InterfaceDecl implements DGNamedElement;
 	// ClassDecl implements DGNamedElement;
 

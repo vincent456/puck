@@ -47,5 +47,5 @@ aspect TypeFactory {
 	}
 
 
-
+	public boolean TypeVariable.isTopLevelType() { return false;}
 }

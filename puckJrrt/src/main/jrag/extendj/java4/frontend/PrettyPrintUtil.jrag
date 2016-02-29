@@ -90,34 +90,43 @@ aspect PrettyPrintUtil {
     out.print("for (");
     if (getNumInitStmt() > 0) {
       if (getInitStmt(0) instanceof VarDeclStmt) {
-        VarDeclStmt var = (VarDeclStmt) getInitStmt(0);
-        int minDimension = Integer.MAX_VALUE;
-        for (VariableDeclarator decl : var.getDeclaratorList()) {
-          minDimension = Math.min(minDimension, decl.type().dimension());
-        }
-
-        // Print type.
-        out.print(var.getModifiers());
-        out.print(var.type().elementType().typeName());
-        for (int i = minDimension; i > 0; i--) {
-          out.print("[]");
-        }
-
-        // Print individual declarations.
-        for (int i = 0; i < var.getNumDeclarator(); ++i) {
-          if (i != 0) {
-            out.print(",");
-          }
-          VariableDeclarator decl = var.getDeclarator(i);
-          out.print(" " + decl.name());
-          for (int j = decl.type().dimension() - minDimension; j > 0; j -= 1) {
-            out.print("[]");
-          }
-          if (decl.hasInit()) {
-            out.print(" = ");
-            out.print(decl.getInit());
-          }
-        }
+          VarDeclStmt var = (VarDeclStmt) getInitStmt(0);
+          out.print(var.getTypeAccess());
+          out.print(" ");
+          out.join(var.getDeclaratorList(), new PrettyPrinter.Joiner() {
+              @Override
+              public void printSeparator(PrettyPrinter out) {
+                out.print(", ");
+              }
+          });
+//        VarDeclStmt var = (VarDeclStmt) getInitStmt(0);
+//        int minDimension = Integer.MAX_VALUE;
+//        for (VariableDeclarator decl : var.getDeclaratorList()) {
+//          minDimension = Math.min(minDimension, decl.type().dimension());
+//        }
+//
+//        // Print type.
+//        out.print(var.getModifiers());
+//        out.print(var.type().elementType().typeName());
+//        for (int i = minDimension; i > 0; i--) {
+//          out.print("[]");
+//        }
+//
+//        // Print individual declarations.
+//        for (int i = 0; i < var.getNumDeclarator(); ++i) {
+//          if (i != 0) {
+//            out.print(",");
+//          }
+//          VariableDeclarator decl = var.getDeclarator(i);
+//          out.print(" " + decl.name());
+//          for (int j = decl.type().dimension() - minDimension; j > 0; j -= 1) {
+//            out.print("[]");
+//          }
+//          if (decl.hasInit()) {
+//            out.print(" = ");
+//            out.print(decl.getInit());
+//          }
+//        }
       } else if (getInitStmt(0) instanceof ExprStmt) {
         ExprStmt stmt = (ExprStmt) getInitStmt(0);
         out.print(stmt.getExpr());

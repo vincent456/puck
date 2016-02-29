@@ -59,14 +59,13 @@ class PeculiarCodeGen extends AcceptanceSpec {
       makeTest(s"$examplesPath/chainedCallWithArgs/Test.java")
     }
 
-    scenario("wild card usage") {
-      makeTest(s"$examplesPath/wild/Test.java")
-    }
-
     scenario("overloading with variadic method"){
       makeTest(s"${Settings.testExamplesPath}/graphBuilding/variadicMethod/A.java")
     }
 
+    scenario("wild card usage") {
+      makeTest(s"$examplesPath/wild/Test.java")
+    }
   }
 
 }
