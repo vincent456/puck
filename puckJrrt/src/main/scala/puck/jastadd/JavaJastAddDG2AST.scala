@@ -126,7 +126,7 @@ class JavaJastAddDG2AST
     record.reverse.foldLeft((graph, initialGraph, graph2ASTMap)) {
       case ((resultGraph, reenactor, g2AST), t : Transformation) =>
 
-//        logger.writeln("applying " + (reenactor, t).shows)
+        logger.writeln("applying " + (reenactor, t).shows)
         val newG2AST = applyOneTransformation(resultGraph, reenactor, g2AST, t)
 
         (resultGraph, t.redo(reenactor), newG2AST)
