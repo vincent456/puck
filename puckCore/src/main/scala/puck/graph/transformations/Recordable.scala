@@ -4,6 +4,7 @@ import puck.graph._
 
 abstract class Recordable extends Serializable {
   def redo(g: DependencyGraph) : DependencyGraph
+  def reverse : Recordable = this
 }
 
 sealed abstract class Direction {
@@ -59,6 +60,8 @@ case class Transformation
 
   def redo(g: DependencyGraph) : DependencyGraph = operation.execute(g, direction)
   def undo(g: DependencyGraph) : DependencyGraph = operation.execute(g, direction.reverse)
+
+  override def reverse : Transformation = Transformation(direction.reverse, operation)
 
 }
 

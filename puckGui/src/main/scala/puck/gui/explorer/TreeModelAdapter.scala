@@ -46,13 +46,18 @@ trait TreeModelAdapter extends TreeModel {
     listeners -= l
 
   def fireNodesChanged(e : TreeModelEvent) =
-    listeners foreach (_.treeNodesChanged(e))
+   listeners foreach (_.treeNodesChanged(e))
+
+
   def fireNodesInserted(e : TreeModelEvent) =
     listeners foreach (_.treeNodesInserted(e))
+
   def fireNodesRemoved(e : TreeModelEvent) =
     listeners foreach (_.treeNodesRemoved(e))
+
   def fireStructureChanged(e : TreeModelEvent) =
     listeners foreach (_.treeStructureChanged(e))
+
 
 }
 

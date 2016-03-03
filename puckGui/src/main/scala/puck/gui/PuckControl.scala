@@ -16,25 +16,25 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scalaz.{\/-, -\/}
 
 
-object FrontVars {
- // val root = "/home/lorilan/test_cases_for_puck"
-  // val system = "/jhotdraw/JHotDraw 7.0.6"
-  //val system = "/jhotdraw/jhotdraw-7.5.1"
-  //val system = "dspace-1.5.1"
-
-  //val root = "/home/lorilan/puck_svn/examples/QualitasCorpus-20130901r/Systems"
-  val root = "/home/lorilan/test_cases_for_puck/QualitasCorpus/Systems"
-  //val system = "freecs/freecs-1.3.20100406"
-  //val system = "freemind/freemind-0.9.0"
-  val system = "freemind/freemind-1.0.1"
-
-  //val workspace = s"$root/$system/puck_test"
-  //val workspace = s"/home/lorilan/projects/constraintsSolver/test_resources/distrib/bridge/hannemann_simplified"
-  //val workspace = "/home/lorilan/freemind-0.9.0_example"
-  //val workspace = "/home/lorilan/puck_svn/examples/dspace-1.5.1-src-release"
-  //val workspace = "/home/lorilan/test"
-  val workspace = "."
-}
+//object FrontVars {
+// // val root = "/home/lorilan/test_cases_for_puck"
+//  // val system = "/jhotdraw/JHotDraw 7.0.6"
+//  //val system = "/jhotdraw/jhotdraw-7.5.1"
+//  //val system = "dspace-1.5.1"
+//
+//  //val root = "/home/lorilan/puck_svn/examples/QualitasCorpus-20130901r/Systems"
+//  val root = "/home/lorilan/test_cases_for_puck/QualitasCorpus/Systems"
+//  //val system = "freecs/freecs-1.3.20100406"
+//  //val system = "freemind/freemind-0.9.0"
+//  val system = "freemind/freemind-1.0.1"
+//
+//  //val workspace = s"$root/$system/puck_test"
+//  //val workspace = s"/home/lorilan/projects/constraintsSolver/test_resources/distrib/bridge/hannemann_simplified"
+//  //val workspace = "/home/lorilan/freemind-0.9.0_example"
+//  //val workspace = "/home/lorilan/puck_svn/examples/dspace-1.5.1-src-release"
+//  //val workspace = "/home/lorilan/test"
+//  //val workspace = "."
+//}
 
 class PuckControl
 (logger0 : PuckLogger,
@@ -61,8 +61,8 @@ class PuckControl
 
   {
     val workspace = "."
-    if (Config.defaultConfFile(new File(FrontVars.workspace)).exists())
-      loadConf(Config.defaultConfFile(new File(FrontVars.workspace)))
+    if (Config.defaultConfFile(new File(workspace)).exists())
+      loadConf(Config.defaultConfFile(new File(workspace)))
   }
 
 
@@ -92,7 +92,7 @@ class PuckControl
     progressBar.visible = true
     progressBar.value = 0
     if(project.pathList(Config.Keys.srcs).isEmpty) {
-      throw new Error("No sources detected")
+      throw NoSourceDetected
     }
 
     dg2ast = project.loadGraph(Some(new LoadingListener {
@@ -113,16 +113,20 @@ class PuckControl
     case Failure(exc) =>
       progressBar.visible = false
 
-      exc.printStackTrace()
-
       if(exc.getCause == null ) {
         if(exc.getMessage == null)
           logger write (exc.getStackTrace mkString "\n")
-        else
+        else {
           logger writeln exc.getMessage
+          exc.printStackTrace()
+        }
       }
-      else
+      else {
+          if (exc.getCause != NoSourceDetected)
+            exc.printStackTrace()
         logger writeln exc.getCause.getMessage
+      }
+
   }
 
 

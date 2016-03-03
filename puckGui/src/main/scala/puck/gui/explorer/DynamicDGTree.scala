@@ -35,7 +35,7 @@ class MutableTreeModel(var graph : DependencyGraph)
       parentId =>
         val parentTreePath = treepath(g, parentId)
         val node = g.getConcreteNode(id)
-        val idx = getIndexOfChild(parentTreePath.getLastPathComponent, node)
+        val idx = TreeModelAdapter.getChildren(g, parentId) indexOf node
         new TreeModelEvent(this, parentTreePath, Array(idx), Array[Object](node))
     }
 
@@ -46,69 +46,52 @@ class MutableTreeModel(var graph : DependencyGraph)
         new TreeModelEvent(this, parentTreePath, null, null)
     }
 
-  def pushEvent(newGraph: DependencyGraph, oldGraph : DependencyGraph) : Unit = {
-    println("MutableTreeModel.pushEvent")
-    println(s"oldGraph = $oldGraph")
-    println(s"graph = $graph")
-    assert(oldGraph eq graph)
-    val subRec : Recording = newGraph.recording.subRecordFromLastMilestone.reverse
 
+  def applyRec(newGraph: DependencyGraph, oldGraph : DependencyGraph, subRec : Recording) : Unit = {
     var reenactor = oldGraph
 
     subRec.foreach  {
-          case Transformation.Add(Edge(ContainsKind(_, cted))) =>
-            graph = newGraph
-            treeModelEvent(newGraph, cted) foreach fireNodesInserted
-
-          case Transformation.Remove(CNode(cted)) =>
-            graph = reenactor
-            treeModelEvent(reenactor, cted.id) foreach fireNodesRemoved
-            reenactor = reenactor.removeNode(cted.id)._2
-
-          case Transformation.Move((_, tgt), _) =>
-            graph = reenactor
-            treeModelEvent(reenactor, tgt) foreach fireNodesRemoved
-            reenactor = reenactor.removeNode(tgt)._2
-            graph = newGraph
-            treeModelEvent(newGraph, tgt) foreach fireNodesInserted
-
-          case Transformation(_, Rename(id, oldName, newName)) =>
-            graph = newGraph
-            parentTreeModelEvent(newGraph, id) foreach fireStructureChanged
-
-          case _ =>
-        }
-
-    graph = newGraph
-  }
-
-  def popEvent(newGraph: DependencyGraph, oldGraph : DependencyGraph) : Unit = {
-    assert(oldGraph eq graph)
-    val subRec : Recording = oldGraph.recording.subRecordFromLastMilestone
-
-    subRec.foreach  {
       case Transformation.Add(Edge(ContainsKind(_, cted))) =>
-        graph = oldGraph
-        treeModelEvent(oldGraph, cted) foreach fireNodesRemoved
+        graph = newGraph
+        treeModelEvent(newGraph, cted) foreach fireNodesInserted
 
       case Transformation.Remove(CNode(cted)) =>
-        graph = newGraph
-        treeModelEvent(newGraph, cted.id) foreach fireNodesInserted
+        graph = reenactor
+        treeModelEvent(reenactor, cted.id) foreach fireNodesRemoved
+        reenactor = reenactor.removeNode(cted.id)._2
 
-      case Transformation.Move((_, tgt), _) =>
-        graph = newGraph
-        treeModelEvent(newGraph, tgt) foreach fireNodesInserted
-        graph = oldGraph
-        treeModelEvent(oldGraph, tgt) foreach fireNodesRemoved
+      case t @ Transformation.Move((oldc, tgt), newc) =>
+        graph = reenactor
+        treeModelEvent(reenactor, tgt) foreach fireNodesRemoved
+        reenactor = t.redo(reenactor)
+        graph = reenactor
+        treeModelEvent(reenactor, tgt) foreach fireNodesInserted
 
       case Transformation(_, Rename(id, oldName, newName)) =>
-        graph = oldGraph
-        parentTreeModelEvent(oldGraph, id) foreach fireStructureChanged
+        graph = newGraph
+        parentTreeModelEvent(newGraph, id) foreach fireStructureChanged
 
       case _ =>
     }
 
     graph = newGraph
+  }
+
+  def pushEvent(newGraph: DependencyGraph, oldGraph : DependencyGraph) : Unit = {
+//    println("MutableTreeModel.pushEvent")
+//    println(s"oldGraph = $oldGraph")
+//    println(s"graph = $graph")
+    assert(oldGraph eq graph)
+    val subRec : Recording = newGraph.recording.subRecordFromLastMilestone.reverse
+    applyRec(newGraph, oldGraph, subRec)
+
+  }
+
+  def popEvent(newGraph: DependencyGraph, oldGraph : DependencyGraph) : Unit = {
+    assert(oldGraph eq graph)
+    val subRec : Recording = oldGraph.recording.subRecordFromLastMilestone map (_.reverse)
+
+    applyRec(newGraph, oldGraph, subRec)
   }
 }
 

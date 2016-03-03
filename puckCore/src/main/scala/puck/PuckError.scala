@@ -11,3 +11,5 @@ object PuckError{
 class PuckError(msg:String) extends Error(msg){
   def this()=this("")
 }
+
+case object NoSourceDetected extends PuckError("No sources detected")
