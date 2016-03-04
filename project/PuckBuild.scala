@@ -1,5 +1,7 @@
 
 import java.io.FileWriter
+import java.text.SimpleDateFormat
+import java.util.Calendar
 
 import com.typesafe.sbt.packager.archetypes.JavaAppPackaging
 import com.typesafe.sbt.SbtNativePackager.Universal
@@ -22,7 +24,7 @@ object PuckBuild extends Build {
   def commonSettings(module: String) : Seq[Setting[_]] = Seq(
     organization := "fr.lip6",
     name := s"puck-$module",
-    version := "1.0-SNAPSHOT",
+    version := "1.1",
     scalaVersion := "2.11.7",
     sbtVersion := "0.13.11",
     classPathFileName := "CLASSPATH",
@@ -151,14 +153,19 @@ object PuckBuild extends Build {
 
   val extendjUrl = "https://bitbucket.org/extendj/extendj.git"
 
+  val timeFormat = new SimpleDateFormat("yyyy-MM-dd-HHmmss")
+
+  import com.typesafe.sbt.packager.Keys._
   val puckJrrt : Project = (project
     settingsSeq commonSettings("jrrt")
     settingsSeq PuckJrrtBuild.settings
     enablePlugins JavaAppPackaging
+
     dependsOn (puckJava % "test->test;compile->compile")
     dependsOn (puckGui % "compile->compile")
 //    dependsOn RootProject(uri(extendjUrl))
-
+    settings(packageName in Universal := s"puck-distrib-${timeFormat.format(Calendar.getInstance().getTime)}" )
+    //settings (jarName in assembly := "the-amazing-jar.jar")
     //pack sources with the binaries
 //    settings (mappings in Universal ++=
 //      Seq((jarSources in puckCore).value -> ("lib/" + (srcJarFileName in puckCore).value),

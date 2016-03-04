@@ -108,7 +108,6 @@ class PuckControl
   } onComplete {
     case Success(_) =>
       logger writeln s"Graph builded : ${dg2ast.initialGraph.nodes.size} nodes"
-      logger writeln s"${dg2ast.nodesByName.size} fullname registered"
       loadConstraints(setInitialGraph = true)
     case Failure(exc) =>
       progressBar.visible = false

@@ -32,31 +32,11 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
       CompileHelper(sources, sourcepaths, classpaths, bootclasspaths)
     }
 
-
     puck.util.Time.time(logger, defaultVerbosity) {
       logger.writeln("Building Access Graph ...")
       sProg match {
         case None => throw new DGBuildingError("Compilation error, no AST generated")
-        case Some(p) =>
-//          val td = p.findSimpleType("AttributeView")
-//          if(td != null) {
-//            val m = td.findMethod("startEditingTable")
-//
-//            if(m != null){
-//              println(m.prettyPrint())
-//            }
-//          }
-          logger.writeln(p.numNodes() + " ast nodes BEFORE building graph")
-
-          val t : JavaJastAddDG2AST = CompileHelper.buildGraph(p, ll)
-
-          logger.writeln(p.numNodes() + " ast nodes AFTER building graph")
-          logger writeln s"Graph builded : ${t.initialGraph.nodes.size} nodes"
-          logger writeln s"${t.nodesByName.size} fullname registered"
-
-
-          t
-
+        case Some(p) => wrap(CompileHelper.buildGraph(p, ll))
       }
     }
 
