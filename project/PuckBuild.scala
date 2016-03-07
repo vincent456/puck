@@ -112,9 +112,6 @@ object PuckBuild extends Build {
   )
 
 
-
-
-
   lazy val root = (project in file(".")
     aggregate (puckCore, puckGui, puckJava, puckJrrt/*, puckScala*/)
   )
@@ -153,19 +150,27 @@ object PuckBuild extends Build {
 
   val extendjUrl = "https://bitbucket.org/extendj/extendj.git"
 
+  val extendjRef : ProjectReference = RootProject(uri(extendjUrl))
+  //ProjectRef( uri(extendjUrl), "extendj")
+  //val extendjPath = settingKey[ClasspathDependency]("extendjPath")
+
+
+
   val timeFormat = new SimpleDateFormat("yyyy-MM-dd-HHmmss")
 
   import com.typesafe.sbt.packager.Keys._
   val puckJrrt : Project = (project
     settingsSeq commonSettings("jrrt")
-    settingsSeq PuckJrrtBuild.settings
+
+    dependsOn extendjRef
+    settingsSeq PuckJrrtBuild.settings(extendjRef)
+
     enablePlugins JavaAppPackaging
 
     dependsOn (puckJava % "test->test;compile->compile")
     dependsOn (puckGui % "compile->compile")
-//    dependsOn RootProject(uri(extendjUrl))
     settings(packageName in Universal := s"puck-distrib-${timeFormat.format(Calendar.getInstance().getTime)}" )
-    //settings (jarName in assembly := "the-amazing-jar.jar")
+
     //pack sources with the binaries
 //    settings (mappings in Universal ++=
 //      Seq((jarSources in puckCore).value -> ("lib/" + (srcJarFileName in puckCore).value),

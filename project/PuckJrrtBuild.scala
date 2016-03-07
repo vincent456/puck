@@ -313,11 +313,13 @@ object PuckJrrtBuild {
   }
 
 
-  def settings = {
+  def settings(extendjRef : ProjectReference) = {
 
     Seq[Setting[_]](
       jragSrcRoot := baseDirectory.value / "src" / "main" / "jrag",
+      //extendjRoot := (baseDirectory in extendjRef).value,
       extendjRoot := jragSrcRoot.value / "extendj",
+
       java4 := extendjRoot.value / "java4",
       java5 := extendjRoot.value / "java5",
       java6 := extendjRoot.value / "java6",
