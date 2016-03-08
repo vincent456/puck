@@ -1,5 +1,6 @@
 import sbt.Keys._
 import sbt._
+import scala.language.postfixOps
 
 object PuckJrrtBuild {
 
@@ -13,6 +14,7 @@ object PuckJrrtBuild {
     try{
       val opts = new Options()
       opts.terminal_names = true //"-t"
+      opts.no_compression = true
       opts.use_switch = true //"-w"
 
       val srcReader = new SrcReader(srcFile)
@@ -55,16 +57,43 @@ object PuckJrrtBuild {
 
   val puckJragJaddSrc = settingKey[File]("Location of puck jrag files")
 
-  val jastaddOutDir = settingKey[File]("Location of puck jrag files")
+  val extendjManagedSrc = settingKey[File]("Location extendj managed sources")
 
   /*
     Tasks
    */
 
+  val copyExtendJResources = taskKey[Seq[File]]("copy extendj resources")
+  val copyExtendJResourcesTask : Def.Setting[Task[Seq[File]]] = copyExtendJResources := {
+    val outDir = extendjManagedSrc.value
+
+    IO.copyDirectory(extendjRoot.value / "src" / "frontend",
+      outDir, preserveLastModified = true)
+
+    (outDir / "org" ** "*.java" ---
+      outDir / "org" / "extendj" / "scanner" / "JavaScanner.java" ---
+      outDir / "org" / "extendj" / "scanner" / "OriginalScanner.java" ---
+      outDir / "org" / "extendj" / "parser" / "JavaParser.java" ---
+      (outDir / "org" / "extendj" / "ast" ***) +++
+      (outDir / "beaver" ** "*.java" ) ).get
+  }
+
+  val copyScannerWrapper = taskKey[Seq[File]]("copy extendj java 8 scanner wrapper")
+  val copyScannerWrapperTask : Def.Setting[Task[Seq[File]]] = copyScannerWrapper := {
+    def f(r : File ) : File =
+      r / "org" / "extendj" / "scanner" / "JavaScanner.java"
+
+    val copied = f(extendjManagedSrc.value)
+    IO.copyFile( f(extendjRoot.value / "java8" / "src") ,
+      copied, preserveLastModified = true )
+
+    Seq(copied)
+  }
+
   val ast = taskKey[Seq[File]]("use ast, jrag and jadd files to generates java")
   val astTask : Def.Setting[Task[Seq[File]]] = ast := {
 
-    val outDir = genRelativePath(jastaddOutDir.value)
+    val outDir = extendjManagedSrc.value / "org" / "extendj"
     if(!outDir.exists())
       outDir.mkdirs()
 
@@ -134,10 +163,9 @@ object PuckJrrtBuild {
 
     val puckFiles : PathFinder = puckJragJaddSrc.value ** ("*.jrag" | "*.jadd" | "*.ast")
 
-
     //val java4backendNeededFile : PathFinder = java4.value / "backend" / "GenerateClassfile.jrag"
 
-    val generated = jastaddOutDir.value / "org" / "extendj"/ "ast" / "ASTNode.java"
+    val generated = extendjManagedSrc.value / "org" / "extendj"/ "ast" / "ASTNode.java"
     val mustUpdate =
       (!generated.exists()) || {
         val allFiles : PathFinder = java4grammar +++ j8variable +++ j7constant +++
@@ -179,7 +207,7 @@ object PuckJrrtBuild {
           +: "--beaver"
           +: "--visitCheck=false"
           +: "--cacheCycle=false"
-          +: ("--o=" + jastaddOutDir.value)
+          +: ("--o=" + extendjManagedSrc.value)
           +: "--defaultMap=new org.jastadd.util.RobustMap(new java.util.HashMap())"
           //+: "--noComponentCheck"
           //+: "--refineLegacy"
@@ -188,20 +216,12 @@ object PuckJrrtBuild {
       if(retVal != 0)
         sys.error("ast creation failure")
 
-
-
-        IO.copyDirectory(extendjRoot.value / "src" / "frontend",
-          jastaddOutDir.value,
-          preserveLastModified = true)
-
-
     }
 
-    (jastaddOutDir.value / "org" ** "*.java" ---
-      genRelativePath(jastaddOutDir.value )  / "scanner" / "JavaScanner.java" ---
-      genRelativePath(jastaddOutDir.value )  / "parser" / "JavaParser.java" +++
-      jastaddOutDir.value / "beaver" * "*" ).get
+    (extendjManagedSrc.value / "org" / "extendj" / "ast" * "*.java").get
   }
+
+
 
   val parser = taskKey[Seq[File]]("create java parser")
   val parserTask : Def.Setting[Task[Seq[File]]] = parser := {
@@ -209,7 +229,7 @@ object PuckJrrtBuild {
     println("Parser generation")
     //helper function to avoid a call to beaver main method that uses System.exit
 
-    val parserDir = genRelativePath(jastaddOutDir.value) / "parser"
+    val parserDir = extendjManagedSrc.value / "org" / "extendj" / "parser"
 
     parserDir.mkdirs()
 
@@ -253,9 +273,9 @@ object PuckJrrtBuild {
 
   val scanner = taskKey[Seq[File]]("create java scanner")
   val scannerTask : Def.Setting[Task[Seq[File]]] = scanner := {
+
     println("Scanner generation")
-    //val tmpDir = IO.createTemporaryDirectory
-    val scannerFlex = jastaddOutDir.value / "scanner" / "JavaScanner.flex"
+    val scannerFlex = extendjManagedSrc.value / "scanner" / s"OriginalScanner.flex"
 
     val j4dir = java4.value / "scanner"
     val j5dir = java5.value / "scanner"
@@ -281,8 +301,8 @@ object PuckJrrtBuild {
       j4dir / "Postamble.flex")
 
 
-    val scannerDir = genRelativePath(jastaddOutDir.value) / "scanner"
-    val scannerJavaFile = scannerDir / "JavaScanner.java"
+    val scannerDir = extendjManagedSrc.value / "org" / "extendj" / "scanner"
+    val scannerJavaFile = scannerDir / s"OriginalScanner.java"
 
     if( scannerJavaFile.exists && !needUpdate(filesToConcat, scannerFlex))
       println("Scanner generation : no update needed")
@@ -294,13 +314,9 @@ object PuckJrrtBuild {
         "-d", scannerDir.getPath,
         scannerFlex.getPath))
 
-
     }
     Seq(scannerJavaFile)
   }
-
-
-  def genRelativePath(root : File) : File = root / "org" / "extendj"
 
 
   def concat(target: File, files : Seq[File]): Unit = {
@@ -313,12 +329,12 @@ object PuckJrrtBuild {
   }
 
 
-  def settings(extendjRef : ProjectReference) = {
+  def settings(extendj : ProjectReference) = {
 
     Seq[Setting[_]](
       jragSrcRoot := baseDirectory.value / "src" / "main" / "jrag",
-      //extendjRoot := (baseDirectory in extendjRef).value,
-      extendjRoot := jragSrcRoot.value / "extendj",
+      extendjRoot := (baseDirectory in extendj).value,
+      //extendjRoot := jragSrcRoot.value / "extendj",
 
       java4 := extendjRoot.value / "java4",
       java5 := extendjRoot.value / "java5",
@@ -332,20 +348,20 @@ object PuckJrrtBuild {
 
       puckJragJaddSrc := jragSrcRoot.value / "puck",
 
-      jastaddOutDir := sourceManaged.value / "main",
+      extendjManagedSrc := sourceManaged.value / "main",
 
       mainClass in Compile := Some("puck.Front"),
-      (sourceGenerators in Compile) ++= Seq(parser.taskValue, scanner.taskValue, ast.taskValue),
-      (sourceGenerators in Test) ++= Seq(parser.taskValue, scanner.taskValue, ast.taskValue),
+      (sourceGenerators in Compile) ++= Seq(parser.taskValue, scanner.taskValue, ast.taskValue, copyExtendJResources.taskValue, copyScannerWrapper.taskValue),
+      (sourceGenerators in Test) ++= Seq(parser.taskValue, scanner.taskValue, ast.taskValue, copyExtendJResources.taskValue, copyScannerWrapper.taskValue),
 
-      cleanFiles += jastaddOutDir.value,
+      cleanFiles += extendjManagedSrc.value,
 
       parallelExecution in test := false, //cannot compile several program in parallel with jastadd
 
       //without this option, there is "cannot assign instance of scala.collection.immutable.List$SerializationProxy"
       // Cast exception raised in RecordingSerializationSpec ...
       //fork := true,
-      astTask, parserTask, scannerTask
+      astTask, parserTask, scannerTask, copyExtendJResourcesTask, copyScannerWrapperTask
     )
   }
 

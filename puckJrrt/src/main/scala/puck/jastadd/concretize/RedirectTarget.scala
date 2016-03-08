@@ -1,6 +1,7 @@
 package puck.jastadd
 package concretize
 
+import org.extendj.ast._
 import puck.graph._
 import puck.graph.transformations.{Target, RedirectionOp, Regular, Transformation}
 import puck.javaGraph._

@@ -1,11 +1,11 @@
 package puck.javaGraph.commutativity
 
 import puck.Settings._
-import puck.graph.{ShowDG, Factory}
+import puck.graph._
 import puck.graph.comparison.Mapping
 import puck.graph.transformations.rules.{CreateTypeMember, CreateParameter, Move}
 import puck.javaGraph.ScenarioFactory
-import puck.javaGraph.nodeKind.Field
+import puck.javaGraph.nodeKind.{Field, Package}
 import puck.util.Debug
 import puck.{QuickFrame, Settings, AcceptanceSpec}
 
@@ -13,41 +13,40 @@ class CommutativityMove extends AcceptanceSpec {
 
   val examplesPath = Settings.testExamplesPath + "/move"
 
+  def createTopLevelPackage(g : DependencyGraph, name : String) : (DependencyGraph, NodeId) = {
+    val (pn , g2) = g.addConcreteNode(name, Package)
+    (g2.addEdge(Contains(g.root.id, pn.id)), pn.id)
+  }
+
   feature("Move class") {
 
     scenario("Move top level class") {
-      val p = "topLevelClass"
-      val _ = new ScenarioFactory(s"$examplesPath/$p/A.java",
-        s"$examplesPath/$p/Empty.java"){
-        val package2 = fullName2id(s"p2")
-        val classA = fullName2id(s"p1.A")
+      val _ = new ScenarioFactory(s"$examplesPath/topLevelClass/A.java"){
+        val classA = fullName2id("p1.A")
 
-        val g = Move.staticDecl(graph, classA, package2).right
+        val (g0, package2) = createTopLevelPackage(graph, "p2")
+        val g1 = Move.staticDecl(g0, classA, package2).right
 
-        val recompiledEx = applyChangeAndMakeExample(g, outDir)
-        assert( Mapping.equals(g, recompiledEx.graph) )
+        val recompiledEx = applyChangeAndMakeExample(g1, outDir)
+        assert( Mapping.equals(g1, recompiledEx.graph) )
 
       }
    }
 
     scenario("Move top from different Packages - local var decl") {
-      val p = "topLevelClass/classesInDifferentPackages/localVarDecl"
-      val _ = new ScenarioFactory(
-        s"$examplesPath/$p/A.java",
-        s"$examplesPath/$p/B.java",
-        s"$examplesPath/$p/Empty.java") {
+      val p = s"$examplesPath/topLevelClass/classesInDifferentPackages/localVarDecl"
+      val _ = new ScenarioFactory(s"$p/A.java", s"$p/B.java") {
 
         val p1 = fullName2id(s"p1")
-        val package3 = fullName2id(s"p3")
-
         val classA = fullName2id(s"p1.A")
 
-        val g = Move.staticDecl(graph, classA, package3).right
+        val (g0, package3) = createTopLevelPackage(graph, "p3")
 
-        val recompiledEx = applyChangeAndMakeExample(g, outDir)
+        val g1 = Move.staticDecl(g0, classA, package3).right
 
-        val gClean =
-          g.removeContains(g.rootId, p1).removeNode(p1)._2
+        val recompiledEx = applyChangeAndMakeExample(g1, outDir)
+
+        val gClean = g1.removeContains(g1.rootId, p1).removeNode(p1)._2
         assert( Mapping.equals(recompiledEx.graph, gClean) )
 
       }
@@ -55,26 +54,92 @@ class CommutativityMove extends AcceptanceSpec {
     }
 
     scenario("Move top from different Packages - field decl") {
-      val p = "topLevelClass/classesInDifferentPackages/fieldDecl"
-      val _ = new ScenarioFactory(
-        s"$examplesPath/$p/A.java",
-        s"$examplesPath/$p/B.java",
-        s"$examplesPath/$p/Empty.java") {
+      val p = s"$examplesPath/topLevelClass/classesInDifferentPackages/fieldDecl"
+      val _ = new ScenarioFactory(s"$p/A.java", s"$p/B.java") {
 
         val p1 = fullName2id(s"p1")
+        val classA = fullName2id(s"p1.A")
 
-        val package3 = fullName2id(s"p3")
+        val (g0, package3) = createTopLevelPackage(graph, "p3")
+
+        val g1 = Move.staticDecl(g0, classA, package3).right
+
+        val recompiledEx = applyChangeAndMakeExample(g1, outDir)
+
+        val gClean = g1.removeContains(g1.rootId, p1).removeNode(p1)._2
+        assert( Mapping.equals(recompiledEx.graph, gClean) )
+
+      }
+
+    }
+
+    scenario("Move top from different Packages - actual parameter") {
+      val p = "topLevelClass/classesInDifferentPackages/actualParameter"
+      val _ = new ScenarioFactory(
+        s"$examplesPath/$p/A.java",
+        s"$examplesPath/$p/B.java") {
+
+        val p1 = fullName2id(s"p1")
+        val classA = fullName2id(s"p1.A")
+
+        val (g0, package3) = createTopLevelPackage(graph, "p3")
+
+        val g1 = Move.staticDecl(g0, classA, package3).right
+
+        val recompiledEx = applyChangeAndMakeExample(g1, outDir)
+
+        val gClean = g1.removeContains(g1.rootId, p1).removeNode(p1)._2
+        assert( Mapping.equals(recompiledEx.graph, gClean) )
+
+      }
+
+    }
+
+
+
+    scenario("Move top from different Packages - actual gen parameter") {
+      val p = "topLevelClass/classesInDifferentPackages/actualParameter"
+      val _ = new ScenarioFactory(
+        s"$examplesPath/$p/A.java",
+        s"$examplesPath/$p/GenB.java") {
+
+        val p1 = fullName2id(s"p1")
+        val (g0, package3) = createTopLevelPackage(graph, "p3")
 
         val classA = fullName2id(s"p1.A")
 
-        val g = Move.staticDecl(graph, classA, package3).right
+        val g1 = Move.staticDecl(g0, classA, package3).right
 
-        val recompiledEx = applyChangeAndMakeExample(g, outDir)
+        val recompiledEx = applyChangeAndMakeExample(g1, outDir)
 
-        val gClean =
-          g.removeContains(g.rootId, p1).removeNode(p1)._2
+        val gClean = g1.removeContains(g1.rootId, p1).removeNode(p1)._2
+
         assert( Mapping.equals(recompiledEx.graph, gClean) )
 
+      }
+
+    }
+
+    scenario("Move top from different Packages - actual parameter with overloading") {
+      val p = "topLevelClass/classesInDifferentPackages/actualParameterWithOverloading"
+      val _ = new ScenarioFactory(
+        s"$examplesPath/$p/ComboProperty.java",
+        s"$examplesPath/$p/OptionPanel.java") {
+
+        val p1 = fullName2id("p1")
+        val classA = fullName2id("p1.ComboProperty")
+
+        val (g0, package3) = createTopLevelPackage(graph, "p3")
+
+        val g1 = Move.staticDecl(g0, classA, package3).right
+
+        applyChanges(g1, outDir)
+        //val recompiledEx = applyChangeAndMakeExample(g1, outDir)
+
+        //val gClean = g1.removeContains(g1.rootId, p1).removeNode(p1)._2
+        //assert( Mapping.equals(recompiledEx.graph, g1) )
+
+        assert(true)
       }
 
     }
@@ -96,8 +161,7 @@ class CommutativityMove extends AcceptanceSpec {
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
 
-        val gClean =
-          g.removeContains(g.rootId, p1).removeNode(p1)._2
+        val gClean = g.removeContains(g.rootId, p1).removeNode(p1)._2
         assert( Mapping.equals(recompiledEx.graph, gClean) )
 
       }

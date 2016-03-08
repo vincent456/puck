@@ -31,7 +31,7 @@ aspect Call {
 	MethodDecl implements Callable;
 
 	public String Callable.fullName() {
-		return hostType().fullName() + "." + signature(); 
+		return hostType().fullName() + "." + signature();
 	}
 	
 	public void Callable.setParameter(String name, ParameterDeclaration pd) {

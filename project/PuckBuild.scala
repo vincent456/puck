@@ -112,8 +112,12 @@ object PuckBuild extends Build {
   )
 
 
+  val extendjUrl = "https://bitbucket.org/extendj/extendj.git"
+
+  val extendj : ProjectReference = RootProject(uri(extendjUrl))
+
   lazy val root = (project in file(".")
-    aggregate (puckCore, puckGui, puckJava, puckJrrt/*, puckScala*/)
+    aggregate (puckCore, puckGui, puckJava, puckJrrt, extendj/*, puckScala*/)
   )
 
   val puckCore : Project = (project
@@ -148,11 +152,7 @@ object PuckBuild extends Build {
    )
 
 
-  val extendjUrl = "https://bitbucket.org/extendj/extendj.git"
 
-  val extendjRef : ProjectReference = RootProject(uri(extendjUrl))
-  //ProjectRef( uri(extendjUrl), "extendj")
-  //val extendjPath = settingKey[ClasspathDependency]("extendjPath")
 
 
 
@@ -162,8 +162,7 @@ object PuckBuild extends Build {
   val puckJrrt : Project = (project
     settingsSeq commonSettings("jrrt")
 
-    dependsOn extendjRef
-    settingsSeq PuckJrrtBuild.settings(extendjRef)
+    settingsSeq PuckJrrtBuild.settings(extendj)
 
     enablePlugins JavaAppPackaging
 

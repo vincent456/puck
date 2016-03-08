@@ -4,10 +4,10 @@ import java.io.File
 
 import puck.graph.transformations.Transformation
 import puck.graph.{DependencyGraph, NodeId}
-import puck.jastadd.{ASTNodeLink, JavaJastAddDG2AST, CompileHelper}
+import puck.jastadd.CompileHelper
 import puck.util.{FileHelper, PuckFileLogger, PuckLogger}
 import sbt.IO
-import org.extendj.ast.Program
+import org.extendj.ast.{ASTNodeLink, JavaJastAddDG2AST, Program}
 
 object ScenarioFactory {
   def fromDirectory(path: String): ScenarioFactory = {
@@ -40,14 +40,19 @@ case class ScenarioFactory
     (g1, g2) => DependencyGraph.areEquivalent(initialRecord,g1,g2, logger)
 
 
-  def applyChangeAndMakeExample
-  ( g: DependencyGraph,
-    outDir : File) : ScenarioFactory = {
+  def applyChanges(g: DependencyGraph,
+                   outDir : File) : Unit = {
     val dg2ast = new JavaJastAddDG2AST(program, graph, initialRecord, fullName2id, dg2astMap)
 
     dg2ast.apply(g)(new PuckFileLogger(_ => true, new File("/tmp/pucklog")))
     IO.delete(outDir)
     dg2ast.printCode(outDir)
+  }
+  def applyChangeAndMakeExample
+  ( g: DependencyGraph,
+    outDir : File) : ScenarioFactory = {
+    applyChanges(g, outDir)
+
     val genSrc = FileHelper.findAllFiles(outDir, ".java", None)
     new ScenarioFactory(genSrc:_*)
   }

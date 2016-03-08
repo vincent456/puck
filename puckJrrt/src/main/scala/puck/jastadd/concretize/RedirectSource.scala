@@ -2,6 +2,8 @@ package puck
 package jastadd
 package concretize
 
+import org.extendj.ast._
+import puck.graph.TypeDecl
 import puck.graph._
 import puck.javaGraph._
 import puck.javaGraph.nodeKind.Constructor

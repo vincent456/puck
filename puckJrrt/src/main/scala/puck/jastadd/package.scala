@@ -2,6 +2,7 @@ package puck
 
 import java.io.File
 
+import org.extendj.ast.JavaJastAddDG2AST
 import puck.config.{Config, ConfigParser}
 import puck.javaGraph.JGraphUtils
 

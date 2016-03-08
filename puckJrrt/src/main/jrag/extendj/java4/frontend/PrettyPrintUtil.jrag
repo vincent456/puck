@@ -90,15 +90,16 @@ aspect PrettyPrintUtil {
     out.print("for (");
     if (getNumInitStmt() > 0) {
       if (getInitStmt(0) instanceof VarDeclStmt) {
-          VarDeclStmt var = (VarDeclStmt) getInitStmt(0);
-          out.print(var.getTypeAccess());
-          out.print(" ");
-          out.join(var.getDeclaratorList(), new PrettyPrinter.Joiner() {
-              @Override
-              public void printSeparator(PrettyPrinter out) {
-                out.print(", ");
-              }
-          });
+        out.print((VarDeclStmt)getInitStmt(0));
+//          VarDeclStmt var = (VarDeclStmt) getInitStmt(0);
+//          out.print(var.getTypeAccess());
+//          out.print(" ");
+//          out.join(var.getDeclaratorList(), new PrettyPrinter.Joiner() {
+//              @Override
+//              public void printSeparator(PrettyPrinter out) {
+//                out.print(", ");
+//              }
+//          });
 //        VarDeclStmt var = (VarDeclStmt) getInitStmt(0);
 //        int minDimension = Integer.MAX_VALUE;
 //        for (VariableDeclarator decl : var.getDeclaratorList()) {
@@ -135,12 +136,13 @@ aspect PrettyPrintUtil {
           stmt = (ExprStmt) getInitStmt(i);
           out.print(stmt.getExpr());
         }
+        out.print("; ");
       } else {
         throw new Error("Unexpected initializer in for loop: " + getInitStmt(0));
       }
     }
 
-    out.print("; ");
+
     if (hasCondition()) {
       out.print(getCondition());
     }

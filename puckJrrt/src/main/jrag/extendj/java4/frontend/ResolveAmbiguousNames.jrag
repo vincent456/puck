@@ -220,7 +220,7 @@ aspect NameResolution {
           }
         case AMBIGUOUS_NAME:
           if (!lookupVariable(name()).isEmpty()) {
-            return new VarAccess(name(), start(), end());
+              return new VarAccess(name(), start(), end());
           } else {
             if (lookupType(name()).isEmpty()) {
               return new PackageAccess(name(), start(), end());

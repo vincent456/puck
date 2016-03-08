@@ -1,4 +1,3 @@
-import puck.jastadd.JastaddGraphBuilder;
 import puck.graph.Isa;
 import puck.graph.Uses;
 import puck.graph.UsesAccessKind;
@@ -316,7 +315,7 @@ aspect DependencyGraphFactory {
 		if(!decls.isSingleton()){
 			System.out.println("Warning ! method access " + this.name() +
 					" in " + this.compilationUnit().pathName() + " line " + this.location() +
-					"refers to several declaration : ");
+					" refers to several declaration : ");
 			for(MethodDecl decl : decls)
 				System.out.println(decl.dgFullName());
 		}
@@ -507,7 +506,8 @@ aspect DependencyGraphFactory {
 		Collection<ConstructorDecl> ctrs = constructors();
 
 		for(ConstructorDecl c : ctrs){
-			if(c.getParametersAsString().equals(paramsDescr)){
+			//if(c.getParametersAsString().equals(paramsDescr)){
+			if(c.signature().equals(paramsDescr)){
 				return c;
 			}
 		}

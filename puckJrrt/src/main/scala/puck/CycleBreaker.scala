@@ -1,5 +1,6 @@
 package puck
 
+import org.extendj.ast.JavaJastAddDG2AST
 import puck.graph.constraints.search.CouplingConstraintSolvingControl
 import puck.jastadd._
 import puck.javaGraph.{JavaDotHelper, JGraphUtils}

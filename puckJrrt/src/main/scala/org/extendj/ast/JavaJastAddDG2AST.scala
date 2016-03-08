@@ -1,30 +1,30 @@
-package puck.jastadd
+package org.extendj.ast
 
 import java.io.File
 import java.util.NoSuchElementException
 
-import org.extendj.ast.Program
 import puck.config.Config
-import puck.{DG2AST, DG2ASTBuilder, Project, PuckError}
 import puck.graph.ShowDG._
 import puck.graph._
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations._
+import puck.jastadd._
 import puck.jastadd.concretize._
 import puck.javaGraph.nodeKind._
 import puck.util.PuckLog._
 import puck.util.{PuckLog, PuckLogger}
-import org.extendj.{ast => AST}
+import puck.{DG2AST, DG2ASTBuilder, Project, PuckError}
+
 
 object JavaJastAddDG2AST extends DG2ASTBuilder {
 
   implicit def wrap(t : (Program, DependencyGraph, Seq[Transformation], Map[String, NodeId], Map[NodeId, ASTNodeLink])) : JavaJastAddDG2AST =
     new JavaJastAddDG2AST(t._1, t._2, t._3, t._4, t._5)
 
-  def fromFiles(sources: List[String],
-                sourcepaths : List[String],
-                classpaths: List[String],
-                bootclasspaths : List[String],
+  def fromFiles(sources: scala.List[String],
+                sourcepaths : scala.List[String],
+                classpaths: scala.List[String],
+                bootclasspaths : scala.List[String],
                 logger : PuckLogger,
                 ll : puck.LoadingListener ): JavaJastAddDG2AST = {
     val sProg = puck.util.Time.time(logger, defaultVerbosity) {
@@ -61,7 +61,7 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
 }
 
 class JavaJastAddDG2AST
-( val program : AST.Program,
+( val program : Program,
   val initialGraph : DependencyGraph,
   val initialRecord : Seq[Transformation],
   val nodesByName : Map[String, NodeId],
@@ -198,7 +198,7 @@ class JavaJastAddDG2AST
       case Transformation(_, AbstractionOp(impl, AccessAbstraction(abs, SupertypeAbstraction))) =>
         (id2declMap get impl, reenactor.getConcreteNode(abs).kind) match {
           case (Some(MethodDeclHolder(decl)), AbstractMethod) =>
-            decl.setVisibility(AST.ASTNode.VIS_PUBLIC)
+            decl.setVisibility(ASTNode.VIS_PUBLIC)
           case _ => ()
         }
 
@@ -241,10 +241,10 @@ class JavaJastAddDG2AST
     id2declMap
   }
 
-  val introVarAccess : (AST.ASTNode[_], AST.MemberDecl, AST.Access) => Unit =
+  val introVarAccess : (ASTNode[_], MemberDecl, Access) => Unit =
     (user, decl, access) => user.introduceVarAccess(decl, access)
 
-  val replaceSelfRefByVarAccess : (AST.ASTNode[_], AST.MemberDecl, AST.Access) => Unit =
+  val replaceSelfRefByVarAccess : (ASTNode[_], MemberDecl, Access) => Unit =
     (user, decl, access) => user.replaceThisQualifierFor(decl, access)
 
 
@@ -253,22 +253,22 @@ class JavaJastAddDG2AST
     id2declMap: NodeId => ASTNodeLink,
     typeMemberUse : NodeIdP,
     typeUse : NodeIdP,
-    f : (AST.ASTNode[_], AST.MemberDecl, AST.Access) => Unit)
+    f : (ASTNode[_], MemberDecl, Access) => Unit)
   : Unit = {
-    val v : AST.Variable = id2declMap(typeUse.user) match {
+    val v : Variable = id2declMap(typeUse.user) match {
       case VariableDeclHolder(decl) => decl
       case dh => error(s"expect parameter or field, $dh not handled")
     }
 
     val newAccess = v.createLockedAccess()
 
-    val user : AST.ASTNode[_] = id2declMap(typeMemberUse.user) match {
+    val user : ASTNode[_] = id2declMap(typeMemberUse.user) match {
       case defh : DefHolder => defh.node
       case nodeHolder => error("create var access, expect a def " +
         s"(expr or block) as user but found  $nodeHolder")
     }
 
-    val (usedAsVisible : AST.Visible, usedAsMemberDecl : AST.MemberDecl) =
+    val (usedAsVisible : Visible, usedAsMemberDecl : MemberDecl) =
       id2declMap(typeMemberUse.used) match {
         case FieldDeclHolder(fdecl,_) => (fdecl, fdecl)
         case mdh : MethodDeclHolder => (mdh.decl, mdh.decl)
@@ -301,7 +301,7 @@ class JavaJastAddDG2AST
         s"(expr or block) as user but found $nodeHolder")
     }
 
-    val mUsed : AST.MemberDecl = id2declMap(methodUsed) match {
+    val mUsed : MemberDecl = id2declMap(methodUsed) match {
       case dh : HasMemberDecl => dh.decl
       case nodeHolder => error("replace message receiver, expect" +
         s" a field or a method as used but found $nodeHolder")

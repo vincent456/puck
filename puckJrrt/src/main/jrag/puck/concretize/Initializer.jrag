@@ -3,7 +3,7 @@ aspect Initializer {
     public static MethodAccess MethodAccess.createInitializerAccess(MethodDecl initializer){
         MethodAccess ma = new MethodAccess(initializer.name(), new List<Expr>());
         ma.setTargetMethod(new SavedMethodDecl(initializer), true);
-        ma.lock(initializer);
+        ma.setTargetMethod(initializer.save(), false); //ma.lock(initializer); call to isMonoCall ends up with nullpointer exception
         return ma;
     }
 

@@ -24,6 +24,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val userDecl = fullName2id("p.B.m()")
         val user = getDefinition(graph, userDecl)
 
+
         assert(graph.uses(user, ctor))
         assert(graph.uses(ctor, clazz))
 
@@ -549,6 +550,33 @@ class GraphBuildingSpec extends AcceptanceSpec {
       }
     }
 
+    scenario("upper bounded wildcard"){
+      val _ = new ScenarioFactory(s"$examplesPath/Wildcard.java") {
+        val upperBoundedField = fullName2id("p.C.upperBounded")
+        val bound = fullName2id("p.A")
+        val genType = fullName2id("p.B")
+
+        assert(graph uses (upperBoundedField, genType))
+        assert(graph uses (upperBoundedField, bound))
+        val t = ParameterizedType(genType, List(Covariant(NamedType(bound))) )
+        graph.styp(upperBoundedField).value should be (t)
+
+      }
+    }
+
+    scenario("lower bounded wildcard"){
+      val _ = new ScenarioFactory(s"$examplesPath/Wildcard.java") {
+        val lowerBoundedField = fullName2id("p.C.lowerBounded")
+        val bound = fullName2id("p.A")
+        val genType = fullName2id("p.B")
+
+        assert(graph uses (lowerBoundedField, genType))
+        assert(graph uses (lowerBoundedField, bound))
+        val t = ParameterizedType(genType, List(Contravariant(NamedType(bound))) )
+        graph.styp(lowerBoundedField).value should be (t)
+
+      }
+    }
   }
 
   feature("Read/Write uses"){

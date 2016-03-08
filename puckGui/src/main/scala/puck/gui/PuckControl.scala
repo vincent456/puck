@@ -16,7 +16,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scalaz.{\/-, -\/}
 
 
-//object FrontVars {
+object FrontVars {
 // // val root = "/home/lorilan/test_cases_for_puck"
 //  // val system = "/jhotdraw/JHotDraw 7.0.6"
 //  //val system = "/jhotdraw/jhotdraw-7.5.1"
@@ -30,11 +30,11 @@ import scalaz.{\/-, -\/}
 //
 //  //val workspace = s"$root/$system/puck_test"
 //  //val workspace = s"/home/lorilan/projects/constraintsSolver/test_resources/distrib/bridge/hannemann_simplified"
-//  //val workspace = "/home/lorilan/freemind-0.9.0_example"
+    val workspace = "/home/lorilan/freemind-0.9.0_example"
 //  //val workspace = "/home/lorilan/puck_svn/examples/dspace-1.5.1-src-release"
 //  //val workspace = "/home/lorilan/test"
 //  //val workspace = "."
-//}
+}
 
 class PuckControl
 (logger0 : PuckLogger,
@@ -61,8 +61,8 @@ class PuckControl
 
   {
     val workspace = "."
-    if (Config.defaultConfFile(new File(workspace)).exists())
-      loadConf(Config.defaultConfFile(new File(workspace)))
+    if (Config.defaultConfFile(new File(FrontVars.workspace)).exists())
+      loadConf(Config.defaultConfFile(new File(FrontVars.workspace)))
   }
 
 

@@ -2,7 +2,7 @@
 
 %public
 %final
-%class JavaScanner
+%class OriginalScanner
 %extends Scanner
 
 %type Symbol

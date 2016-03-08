@@ -2,9 +2,9 @@ package puck.javaGraph.graphBuilding
 
 import java.io.File
 
+import org.extendj.ast.JavaJastAddDG2AST
 import puck.config.Config.SingleFile
 import puck.config.{Config, ConfigParser}
-import puck.jastadd.JavaJastAddDG2AST
 import puck.javaGraph.ScenarioFactory
 import puck.util.{PuckFileLogger, PuckSystemLogger}
 import puck.{Settings, AcceptanceSpec, Project}
