@@ -10,7 +10,7 @@ public class ComboProperty {
 		super();
     }
 
-	public ComboProperty(String[] possibles, List possibleTranslations) {}
+    public ComboProperty(String[] possibles, List possibleTranslations) {}
 
 	public ComboProperty(List possibles, List possibleTranslations) {}
 }

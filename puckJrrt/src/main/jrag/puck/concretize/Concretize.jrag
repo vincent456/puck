@@ -139,14 +139,17 @@ aspect Concretize {
     public void CompilationUnit.removeImportDecl(TypeDecl td) {
         List<ImportDecl> list = getImportDeclList();
         for(int i=0; i< list.getNumChild(); i++){
-        if(list.getChild(i) instanceof SingleTypeImportDecl) {
-        ImportDecl idecl = list.getChild(i);
-        if(idecl.importedTypes().contains(td)) {
-        list.removeChild(i);
-        break;
+            if(list.getChild(i) instanceof SingleTypeImportDecl) {
+                ImportDecl idecl = list.getChild(i);
+                if(idecl.importedTypes().contains(td)) {
+                    list.removeChild(i);
+                    break;
+                }
+            }
         }
-        }
+    }
 
-        }
+    public boolean ImportDecl.doesImport(TypeDecl td) {
+        return this.importedTypes().contains(td);
     }
 }

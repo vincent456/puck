@@ -4,7 +4,9 @@ import java.io.File
 
 object Settings {
   val envVarName = "puck_project_dir"
-  val projectPath = sys.env get envVarName match {
+
+  val projectPath =
+    sys.env get envVarName match {
     case Some (d) => d
     case None => throw new PuckError(s"$envVarName undefined : please define an environment variable named $envVarName  with the project path")
   }

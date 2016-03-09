@@ -5,18 +5,14 @@ import puck.graph._
 import puck.graph.comparison.Mapping
 import puck.graph.transformations.rules.{CreateTypeMember, CreateParameter, Move}
 import puck.javaGraph.ScenarioFactory
-import puck.javaGraph.nodeKind.{Field, Package}
-import puck.util.Debug
-import puck.{QuickFrame, Settings, AcceptanceSpec}
+import puck.javaGraph.nodeKind.Field
+import puck.{Settings, AcceptanceSpec}
 
 class CommutativityMove extends AcceptanceSpec {
 
   val examplesPath = Settings.testExamplesPath + "/move"
 
-  def createTopLevelPackage(g : DependencyGraph, name : String) : (DependencyGraph, NodeId) = {
-    val (pn , g2) = g.addConcreteNode(name, Package)
-    (g2.addEdge(Contains(g.root.id, pn.id)), pn.id)
-  }
+  import puck.javaGraph.transfoRules.MoveSpec.createTopLevelPackage
 
   feature("Move class") {
 
@@ -32,6 +28,19 @@ class CommutativityMove extends AcceptanceSpec {
 
       }
    }
+
+    scenario("Move top level class - moved type uses type of old package") {
+      val _ = new ScenarioFactory(s"$examplesPath/topLevelClass/A.java"){
+        val classB = fullName2id("p1.B")
+
+        val (g0, package2) = createTopLevelPackage(graph, "p2")
+        val g1 = Move.staticDecl(g0, classB, package2).right
+
+        val recompiledEx = applyChangeAndMakeExample(g1, outDir)
+        assert( Mapping.equals(g1, recompiledEx.graph) )
+
+      }
+    }
 
     scenario("Move top from different Packages - local var decl") {
       val p = s"$examplesPath/topLevelClass/classesInDifferentPackages/localVarDecl"
@@ -133,11 +142,10 @@ class CommutativityMove extends AcceptanceSpec {
 
         val g1 = Move.staticDecl(g0, classA, package3).right
 
-        applyChanges(g1, outDir)
-        //val recompiledEx = applyChangeAndMakeExample(g1, outDir)
+        val recompiledEx = applyChangeAndMakeExample(g1, outDir)
 
-        //val gClean = g1.removeContains(g1.rootId, p1).removeNode(p1)._2
-        //assert( Mapping.equals(recompiledEx.graph, g1) )
+        val gClean = g1.removeContains(g1.rootId, p1).removeNode(p1)._2
+        assert( Mapping.equals(recompiledEx.graph, g1) )
 
         assert(true)
       }
@@ -146,18 +154,15 @@ class CommutativityMove extends AcceptanceSpec {
 
     scenario("Move top from different Packages - with static class member") {
       val d = s"$examplesPath/topLevelClass/classesInDifferentPackages/withStaticClassMember"
-      val _ = new ScenarioFactory(
-        s"$d/A.java",
-        s"$d/B.java",
-        s"$d/Empty.java") {
+      val _ = new ScenarioFactory(s"$d/A.java", s"$d/B.java") {
 
         val p1 = fullName2id("p1")
 
-        val package3 = fullName2id("p3")
-
         val classA = fullName2id("p1.A")
 
-        val g = Move.staticDecl(graph, classA, package3).right
+        val (g0, package3) = createTopLevelPackage(graph, "p3")
+
+        val g = Move.staticDecl(g0, classA, package3).right
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
 

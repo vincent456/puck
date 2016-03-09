@@ -40,10 +40,10 @@ trait TreeModelAdapter extends TreeModel {
   def valueForPathChanged(path: TreePath, newValue: scala.Any): Unit = ()
 
   def addTreeModelListener(l: TreeModelListener): Unit =
-    listeners += l
+    ignore(listeners += l)
 
   def removeTreeModelListener(l: TreeModelListener): Unit =
-    listeners -= l
+    ignore(listeners -= l)
 
   def fireNodesChanged(e : TreeModelEvent) =
    listeners foreach (_.treeNodesChanged(e))

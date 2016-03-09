@@ -6,7 +6,15 @@ import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.nodeKind.Field
 import puck.util.Debug
 import puck.{AcceptanceSpec, Settings}
+import puck.javaGraph.nodeKind.Package
 
+object MoveSpec {
+  def createTopLevelPackage(g : DependencyGraph, name : String) : (DependencyGraph, NodeId) = {
+    val (pn , g2) = g.addConcreteNode(name, Package)
+    (g2.addEdge(Contains(g.root.id, pn.id)), pn.id)
+  }
+}
+import MoveSpec.createTopLevelPackage
 class MoveSpec
   extends AcceptanceSpec {
 
@@ -15,16 +23,14 @@ class MoveSpec
   feature("Move class") {
 
     scenario("Move top level class") {
-      val p = "topLevelClass"
-      val _ = new ScenarioFactory(s"$examplesPath/$p/A.java",
-        s"$examplesPath/$p/Empty.java") {
-        val package1 = fullName2id(s"p1")
-        val package2 = fullName2id(s"p2")
-        val classA = fullName2id(s"p1.A")
-        val methADecl = fullName2id(s"p1.A.ma()")
+      val _ = new ScenarioFactory(s"$examplesPath/topLevelClass/A.java") {
+        val package1 = fullName2id("p1")
 
-        val classB = fullName2id(s"p1.B")
-        val methBDecl = fullName2id(s"p1.B.mb()")
+        val classA = fullName2id("p1.A")
+        val methADecl = fullName2id("p1.A.ma()")
+
+        val classB = fullName2id("p1.B")
+        val methBDecl = fullName2id("p1.B.mb()")
         val methBDef = fullName2id("p1.B.mb().Definition")
 
 
@@ -32,7 +38,10 @@ class MoveSpec
         assert(graph.uses(methBDef, classA))
         assert(graph.uses(methBDef, methADecl))
 
-        val g2 = Move.staticDecl(graph, classA, package2).right
+
+        val (g1, package2) = createTopLevelPackage(graph, "p2")
+
+        val g2 = Move.staticDecl(g1, classA, package2).right
         assert(g2.container(classA).value == package2)
         assert(g2.uses(methBDef, classA))
         assert(g2.uses(methBDef, methADecl))
@@ -41,19 +50,15 @@ class MoveSpec
     }
 
     scenario("Move top from different packages ") {
-      val p = "topLevelClass/classesInDifferentPackages/localVarDecl"
-      val _ = new ScenarioFactory(
-        s"$examplesPath/$p/A.java",
-        s"$examplesPath/$p/B.java",
-        s"$examplesPath/$p/Empty.java") {
-        val package1 = fullName2id(s"p1")
-        val package3 = fullName2id(s"p3")
+      val p = s"$examplesPath/topLevelClass/classesInDifferentPackages/localVarDecl"
+      val _ = new ScenarioFactory(s"$p/A.java", s"$p/B.java") {
+        val package1 = fullName2id("p1")
 
-        val classA = fullName2id(s"p1.A")
-        val methADecl = fullName2id(s"p1.A.ma()")
+        val classA = fullName2id("p1.A")
+        val methADecl = fullName2id("p1.A.ma()")
 
-        val classB = fullName2id(s"p2.B")
-        val methBDecl = fullName2id(s"p2.B.mb()")
+        val classB = fullName2id("p2.B")
+        val methBDecl = fullName2id("p2.B.mb()")
         val methBDef =  graph.definitionOf_!(methBDecl)
 
 
@@ -61,7 +66,8 @@ class MoveSpec
         assert(graph.uses(methBDef, classA))
         assert(graph.uses(methBDef, methADecl))
 
-        val g2 = Move.staticDecl(graph, classA, package3).right
+        val (g1, package3) = createTopLevelPackage(graph, "p3")
+        val g2 = Move.staticDecl(g1, classA, package3).right
 
         assert(g2.container(classA).value == package3)
         assert(g2.uses(methBDef, classA))

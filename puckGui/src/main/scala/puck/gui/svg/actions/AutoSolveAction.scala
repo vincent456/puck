@@ -1,13 +1,11 @@
 package puck.gui.svg.actions
 
 import java.awt.event.ActionEvent
-import javax.swing.{JComponent, AbstractAction}
+import javax.swing.AbstractAction
 
 import puck.graph._
-import puck.graph.constraints.search.{GraphConstraintSolvingStateEvaluator, CouplingConstraintSolvingControl}
-import puck.graph.io.PrintingOptions
+import puck.graph.constraints.search.CouplingConstraintSolvingControl
 import puck.gui.PrintingOptionsControl
-import puck.gui.svg.SVGController
 import puck.search.{Search, SearchEngine, DepthFirstSearchStrategy}
 import puck.util.Logged
 

@@ -126,6 +126,13 @@ trait TypedKindDeclHolder extends HasNode {
   def node = decl.asInstanceOf[ASTNode[_]]
 }
 
+object TypedKindDeclHolder {
+  def unapply(l : ASTNodeLink) : Option[TypeDecl] =
+    l match {
+      case th : TypedKindDeclHolder => Some(th.decl)
+      case _ => None
+    }
+}
 
 case class InterfaceDeclHolder(decl : InterfaceDecl) extends TypedKindDeclHolder
 case class ClassDeclHolder(decl : ClassDecl) extends TypedKindDeclHolder
