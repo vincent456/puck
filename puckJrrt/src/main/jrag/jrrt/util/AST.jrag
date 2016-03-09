@@ -1,4 +1,11 @@
+import static org.extendj.ast.ASTNode.mandatoryAssert;
 aspect AST {
+
+	public static void ASTNode.mandatoryAssert(boolean test){
+		if(!test)
+			throw new AssertionError();
+	}
+
 	public static String ASTNode.unCapitalise(String s) {
 		return Character.toLowerCase(s.charAt(0)) + s.substring(1);
 	}
@@ -103,7 +110,7 @@ aspect AST {
 		while(r instanceof AbstractDot) {
 			AbstractDot rdot = (AbstractDot)r;
 			Access rdot_left = (Access) rdot.getLeft(); rdot.setLeft(null);
-			l = new AbstractDot(l, rdot_left);
+			l = new Dot(l, rdot_left);
 			r = rdot.getRight(); rdot.setRight(null);
 		}
 		setLeft(l);
@@ -120,7 +127,7 @@ aspect AST {
 		while(l instanceof AbstractDot) {
 			AbstractDot ldot = (AbstractDot)l;
 			Access ldot_right = (Access)ldot.getRight(); ldot.setRight(null);
-			r = new AbstractDot(ldot_right, r);
+			r = new Dot(ldot_right, r);
 			l = ldot.getLeft(); ldot.setLeft(null);
 		}
 		setLeft(l);
@@ -162,7 +169,7 @@ aspect AST {
 			AbstractDot parent = parentDot();
 			if(!parent.isRightChildOfDot())
 				return;
-			AbstractDot g = new AbstractDot(null, parent.getRight());
+			AbstractDot g = new Dot(null, parent.getRight());
 			AbstractDot p = parent.parentDot();
 			p.setRight(this);
 			while(p.isRightChildOfDot())
@@ -180,14 +187,16 @@ aspect AST {
 	
 	//original
 	// public Expr Access.getQualifier() {
-	// 	assert !hasParentDot() || 
+	// 	mandatoryAssert( !hasParentDot() ||
 	// 		(isLeftChildOfDot() && (!parentDot().hasParentDot() || parentDot().isLeftChildOfDot())) ||
-	// 		isRightChildOfDot(); // i.e., is rotated to left
+	// 		isRightChildOfDot()); // i.e., is rotated to left
 	// 	return isRightChildOfDot() ? parentDot().getLeft() : null;
 	// }
 
 	public Expr Access.getQualifier() {
-		assert !hasParentDot() ||  !isRightRotated(); // i.e., is rotated to left
+		if(hasParentDot() && !isRightRotated())
+			parentDot().rotateLeft();
+		//mandatoryAssert(!hasParentDot() ||  !isRightRotated()); // i.e., is rotated to left
 		return isRightChildOfDot() ? parentDot().getLeft() : null;
 	}
 	

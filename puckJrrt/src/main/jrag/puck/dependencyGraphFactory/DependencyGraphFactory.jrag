@@ -177,9 +177,11 @@ aspect DependencyGraphFactory {
 	public int ConstructorDecl.buildDef(JastaddGraphBuilder builder, int thisDeclId){
 		int defId = BodyDecl.buildDef(builder, this, getBody(), thisDeclId);
 
-		ConstructorAccess otherCtor = getConstructorAccess();
-		if(otherCtor.decl().hostType() != program().typeObject())
-			otherCtor.buildDG(builder, defId);
+		if(hostType() != program().typeObject()){
+			ConstructorAccess otherCtor=getConstructorAccess();
+			if(otherCtor.decl().hostType()!=program().typeObject())
+				otherCtor.buildDG(builder,defId);
+		}
 
 		return defId;
 	}

@@ -50,7 +50,7 @@ aspect LockedVariableAccess {
 	}
 	
 	public ASTNode VarAccess.lock(Variable target) {
-		assert target != null;
+		mandatoryAssert(target != null);
 		setTargetVariable(target);
 		return this;
 	}
@@ -71,7 +71,7 @@ aspect LockedVariableAccess {
 	}
 	public Access VarAccess.unlock() {
 		Expr qual = getQualifier();
-		assert (qual==null || (parentDot() != null && qual == parentDot().getLeft()));
+		mandatoryAssert(qual==null || (parentDot() != null && qual == parentDot().getLeft()));
 		Variable target = targetVariable.refresh();
 		setTargetVariable(null);
 		flushCache();
@@ -111,7 +111,7 @@ aspect LockedVariableAccess {
 	
 	// eliminating locked variable accesses
 	public Access SymbolicFieldAccess.accessByModifyingAccess(VarAccess originalAccess) {
-		assert originalAccess != null;
+		mandatoryAssert(originalAccess != null);
 		Expr qualifier = originalAccess.getQualifier();
 		TypeDecl enclosing = originalAccess.hostType();
 		VarAccess va = originalAccess;

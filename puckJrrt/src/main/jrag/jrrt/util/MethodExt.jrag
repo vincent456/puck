@@ -177,7 +177,7 @@ aspect MethodExt {
 				ClassDecl cd = (ClassDecl) rt;
 				
 				SimpleSet m = cd.localMethodsSignature(sig);
-				assert(m.size() <= 1);
+		        mandatoryAssert(m.size() <= 1);
 				for (Iterator i = m.iterator(); i.hasNext();) {
 					MethodDecl md = (MethodDecl) i.next();
 					if (md instanceof MethodDeclSubstituted)
@@ -211,7 +211,7 @@ aspect MethodExt {
 				InterfaceDecl id = (InterfaceDecl) rt;
 				
 				SimpleSet m = id.localMethodsSignature(sig);
-				assert(m.size() <= 1);
+				mandatoryAssert(m.size() <= 1);
 				for (Iterator i = m.iterator(); i.hasNext();) {
 					MethodDecl md = (MethodDecl) i.next();
 					if (md instanceof MethodDeclSubstituted)

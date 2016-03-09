@@ -32,8 +32,8 @@ object FrontVars {
 //  //val workspace = s"/home/lorilan/projects/constraintsSolver/test_resources/distrib/bridge/hannemann_simplified"
     val workspace = "/home/lorilan/freemind-0.9.0_example"
 //  //val workspace = "/home/lorilan/puck_svn/examples/dspace-1.5.1-src-release"
-//  //val workspace = "/home/lorilan/test"
-//  //val workspace = "."
+//  val workspace = "/home/lorilan/test"
+//  val workspace = "."
 }
 
 class PuckControl

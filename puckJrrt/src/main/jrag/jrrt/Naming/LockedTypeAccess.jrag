@@ -132,7 +132,7 @@ aspect LockedTypeAccess {
 	public ASTNode TypeAccess.lock() { return decl().isVoid() ? this : lock(decl()); }
 	public ASTNode AbstractWildcard.lock() { return this; }
 	public ASTNode TypeAccess.lock(TypeDecl decl) {
-		assert decl != null && !decl.isUnknown();
+		mandatoryAssert(decl != null && !decl.isUnknown());
 		setTargetType(decl);
 		return this;
 	}
@@ -148,7 +148,7 @@ aspect LockedTypeAccess {
 	
 	public Access TypeAccess.unlock() {
 		Expr qual = getQualifier();
-		assert qual == null || qual.isPure();
+		mandatoryAssert(qual == null || qual.isPure());
 		TypeDecl target = targetType.refresh();
 		setTargetType(null);
 		flushTreeCache();
@@ -202,7 +202,7 @@ aspect LockedTypeAccess {
 	}
 	
 	protected Access TypeAccess.unlockPrimitiveTypeAccess(TypeDecl target, Expr qual) {
-		assert qual == null;
+		mandatoryAssert(qual == null);
 		setID(target.name());
 		return this;
 	}
@@ -234,7 +234,7 @@ aspect LockedTypeAccess {
 	}
 
 	protected Access TypeAccess.unlockMemberTypeAccess(TypeDecl target, Expr qual) {
-		assert qual == this.getQualifier();
+		mandatoryAssert(qual == this.getQualifier());
 		if(qual != null) {
 			// try to build an access using the given qualifier
 			if(qual.isTypeAccess()) {

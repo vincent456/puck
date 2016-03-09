@@ -84,12 +84,12 @@ aspect LockedConstructor {
 	}
 	
 	public ConstructorAccess ConstructorAccess.lock(ConstructorDecl ctor) {
-		assert ctor != null && ctor != unknownConstructor();
+		mandatoryAssert(ctor != null && ctor != unknownConstructor());
 		setTarget(ctor);
 		return this;
 	}
 	public ClassInstanceExpr ClassInstanceExpr.lock(ConstructorDecl ctor) {
-		assert ctor != null && ctor != unknownConstructor();
+		mandatoryAssert(ctor != null && ctor != unknownConstructor());
 		setTarget(ctor);
 		return this;
 	}

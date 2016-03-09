@@ -58,7 +58,7 @@ aspect InlineMethodAccess {
 //	public void VarAccess.expatiateQualifiers() {
 //		if(decl().isInstanceVariable() && !isQualified()) {
 //			SymbolicVarAccess acc = accessVariable(decl());
-//			assert(acc != null && acc instanceof SymbolicFieldAccess);
+//			mandatoryAssert(acc != null && acc instanceof SymbolicFieldAccess);
 //			Expr qual = ((SymbolicFieldAccess)acc).getBend().createLockedAccess().qualifiesAccess(new ThisAccess(true));
 //			replace(this).with(qual.qualifiesAccess(this));
 //			flushTreeCache();
@@ -69,7 +69,7 @@ aspect InlineMethodAccess {
 //	public void MethodAccess.expatiateQualifiers() {
 //		if(!isQualified()) {
 //			MethodAccessInfo acc = accessMethod(decl());
-//			assert(acc != null);
+//			mandatoryAssert(acc != null);
 //			Expr qual = acc.getBend().createLockedAccess().qualifiesAccess(new ThisAccess(true));
 //			replace(this).with(qual.qualifiesAccess(this));
 //			flushTreeCache();

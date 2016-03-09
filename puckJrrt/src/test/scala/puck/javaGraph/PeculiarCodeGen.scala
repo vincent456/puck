@@ -66,6 +66,11 @@ class PeculiarCodeGen extends AcceptanceSpec {
     scenario("wild card usage") {
       makeTest(s"$examplesPath/wild/Test.java")
     }
+
+    scenario("chained call in static context") {
+      makeTest(s"$examplesPath/chainedCallInStaticContext/Test.java")
+    }
+
   }
 
 }

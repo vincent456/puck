@@ -109,7 +109,7 @@ aspect LockedMethodAccess {
 	}
 	
 	public ASTNode MethodAccess.lock(MethodDecl md) {
-		assert md != null && !md.isUnknown();
+		mandatoryAssert(md != null && !md.isUnknown());
 		setTargetMethod(md.save(), isMonoCall());
 		return this;
 	}
