@@ -1,6 +1,5 @@
 package puck.graph.transformations.rules
 
-import puck.{graph, PuckError}
 import puck.graph._
 import ShowDG._
 
@@ -121,6 +120,20 @@ abstract class Intro {
         LoggedSuccess(onSuccess(cid, g1))
     }
 
+//    def onSuccess(sCid : Option[NodeId], g : DependencyGraph) : (ConcreteNode, DependencyGraph) = {
+//      val g2 = g.addContains(typeMemberDecl, pNode.id)
+//        .setType(pNode.id, Some(NamedType(typeNode)))
+//
+//      (pNode,
+//        sCid.foldLeft(g){(g0, cid) =>
+//          g.usersOfExcludingTypeUse(typeMemberDecl).foldLeft(g2) {
+//            (g1, userOfUser) =>
+//              g1.addEdge(Uses(userOfUser, cid))
+//          }
+//        })
+//    }
+//
+//    LoggedSuccess(onSuccess(g1.getDefaultConstructorOfType(typeNode), g1))
 
   }
 

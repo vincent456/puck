@@ -25,7 +25,7 @@ object PuckBuild extends Build {
     organization := "fr.lip6",
     name := s"puck-$module",
     version := "1.1",
-    scalaVersion := "2.11.7",
+    scalaVersion := "2.11.8",
     sbtVersion := "0.13.11",
     classPathFileName := "CLASSPATH",
     srcJarFileName := s"${organization.value}.${name.value}-${version.value}-src.jar",

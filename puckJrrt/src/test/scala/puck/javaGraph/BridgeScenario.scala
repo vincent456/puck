@@ -1,13 +1,13 @@
 package puck.javaGraph
 
-import java.io.{File, FileReader}
+import java.io.FileReader
 
 import org.scalatest.{OptionValues, EitherValues}
 import puck.graph.constraints.{ConstraintsParser, SupertypeAbstraction}
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember}
 import puck.graph._
-import puck.util.{LoggedEither, PuckNoopLogger, PuckFileLogger}
-import puck.{QuickFrame, Java2dot, PuckError, Settings}
+import puck.util.LoggedEither
+import puck.{PuckError, Settings}
 import puck.javaGraph.nodeKind.{Interface, Field, Class}
 import puck.jastadd.ExtendJGraphUtils.{transformationRules => TR}
 

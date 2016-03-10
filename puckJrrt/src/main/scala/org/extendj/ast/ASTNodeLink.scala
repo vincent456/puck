@@ -87,6 +87,7 @@ case class ParameterDeclHolder(decl : ParameterDeclaration) extends HasNode {
 sealed trait HasBodyDecl extends HasNode{
   val decl : BodyDecl
   def node = decl.asInstanceOf[ASTNode[_]]
+
 }
 
 sealed trait HasMemberDecl extends HasBodyDecl{

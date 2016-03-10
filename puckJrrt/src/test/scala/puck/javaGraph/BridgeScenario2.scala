@@ -1,31 +1,18 @@
 package puck.javaGraph
 
 
-import java.io.{File, FileReader}
+
 
 import org.scalatest.{OptionValues, EitherValues}
-import puck.Java2dot
-import puck.PuckError
-import puck.QuickFrame
-import puck.Settings
+
 import puck.graph.AccessAbstraction
 import puck.graph.DependencyGraph
-import puck.graph.Uses
-import puck.graph._
 import puck.graph.constraints._
-import puck.graph.transformations.rules.CreateParameter
 import puck.graph.transformations.rules.CreateTypeMember
-import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember}
 import puck.graph._
 import puck.javaGraph.nodeKind._
-import puck.util.LoggedEither
-import puck.util.PuckFileLogger
-import puck.util.PuckNoopLogger
-import puck.util.{LoggedEither, PuckNoopLogger, PuckFileLogger}
-import puck.{QuickFrame, Java2dot, PuckError, Settings}
+import puck.{PuckError, Settings}
 import puck.jastadd.ExtendJGraphUtils.{transformationRules => TR}
-
-import scalaz.{-\/, \/-}
 
 
 object BridgeScenario2 {

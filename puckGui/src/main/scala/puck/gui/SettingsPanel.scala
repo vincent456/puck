@@ -3,7 +3,7 @@ import puck._
 import java.awt.geom.{Area, RoundRectangle2D}
 import java.awt.{Color, RenderingHints, BasicStroke}
 import javax.swing.border.AbstractBorder
-import javax.swing.{ImageIcon, Icon}
+import javax.swing.ImageIcon
 
 import puck.Project
 import puck.config.Config

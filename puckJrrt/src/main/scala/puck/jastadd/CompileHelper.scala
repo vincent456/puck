@@ -1,7 +1,6 @@
 package puck.jastadd
 
 import java.io.{File, InputStream}
-import java.util.Iterator
 
 import puck.graph.comparison.NodeMappingInitialState
 import puck.graph.transformations.{Recording, Transformation}

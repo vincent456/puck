@@ -1,7 +1,7 @@
 package puck.javaGraph
 
 import puck.graph.{ConcreteNode, NodeId, DependencyGraph, DGNode}
-import puck.graph.io.{VisibilitySet, DotHelper}
+import puck.graph.io.DotHelper
 import puck.javaGraph.nodeKind._
 
 object JavaDotHelper extends DotHelper{

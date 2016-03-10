@@ -1,7 +1,5 @@
 package puck.javaGraph
 
-import java.util.NoSuchElementException
-
 import puck.graph._
 import puck.graph.constraints.{SupertypeAbstraction, ConstraintsMaps}
 import puck.javaGraph.nodeKind._

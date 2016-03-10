@@ -2,14 +2,12 @@ package puck.gui.explorer
 
 import java.awt.Color
 import java.awt.event.MouseEvent
-import javax.swing.{JTree, JPopupMenu}
 
 import puck.graph._
 import ShowDG._
 import puck.gui.menus.EdgeMenu
 import puck.util.PuckLog
 import scala.swing._
-import scala.swing.event.MouseClicked
 import puck.gui._
 
 
@@ -125,7 +123,7 @@ class NodeInfosPanel
       }.leftGlued
 
       val subTypes = graph.directSubTypes(node.id)
-      val superTypes = graph.directSubTypes(node.id)
+      val superTypes = graph.directSuperTypes(node.id)
 
       contents += new BoxPanel(Orientation.Horizontal) {
         contents += labelOrTreePane(subTypes, "No subtype",

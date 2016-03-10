@@ -12,7 +12,7 @@ import puck.util.LoggedEither._
 
 import scalaz.std.list._
 import scalaz.syntax.foldable._
-import scalaz.{-\/, NonEmptyList, \/, \/-}
+import scalaz.{-\/, \/-, NonEmptyList}
 
 
 

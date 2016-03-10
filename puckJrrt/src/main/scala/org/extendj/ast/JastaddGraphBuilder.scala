@@ -52,6 +52,8 @@ object JastaddGraphBuilder {
 class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
   var graph2ASTMap = Map[Int, ASTNodeLink]()
 
+
+
   def findTypeDecl(typ : String): TypeDecl ={
     val td = program findType typ
     if(td == null)

@@ -2,7 +2,6 @@ package puck
 package jastadd
 package concretize
 
-import puck.graph
 import puck.graph.{TypeDecl => PTypeDecl, _}
 import puck.javaGraph._
 import puck.util.{PuckLog, PuckLogger}
@@ -13,13 +12,44 @@ import ShowDG._
 
 object RedirectSource {
 
+  def typesUsedInSubtree(graph : DependencyGraph, root : NodeId) : Seq[NodeId] =
+    for {
+      nid <- graph subTree root
+      id <- graph usedBy nid
+      if graph.kindType(id) == PTypeDecl
+    } yield id
+
+  def isAutoImported(t : TypeDecl) : Boolean = {
+    t.isPrimitiveType || t.isString || t.isArrayDecl || t.isObject || t.isVoid
+  }
+
+  def removeImport
+  ( cu: CompilationUnit, tDecl : TypeDecl)
+  ( implicit logger : PuckLogger) : Unit = {
+    logger.writeln(s"removeImportDecl of $tDecl in ${cu.pathName}")
+    cu.removeImportDecl(tDecl)
+  }
+  def addImport
+  ( cu: CompilationUnit, tDecl : TypeDecl)
+  ( implicit logger : PuckLogger) : Unit = {
+    val pa = new TypeAccess(tDecl.fullName())
+    pa.lock(tDecl)
+    if(!(tDecl.getVisibility == ASTNode.VIS_PUBLIC))
+      tDecl.setVisibility(ASTNode.VIS_PUBLIC)
+    logger.writeln(s"addImportDecl of $pa in ${cu.pathName}")
+    cu.addImportDecl(new SingleTypeImportDecl(pa))
+
+  }
+
 
   def moveMemberDecl
   ( reenactor : DependencyGraph,
+    id2declMap: NodeId => ASTNodeLink,
     tDeclFrom : TypeDecl,
     tDeclDest : TypeDecl,
     mDecl : BodyDecl,
-    mDeclId : NodeId) : Unit = {
+    mDeclId : NodeId)
+  ( implicit logger : PuckLogger): Unit = {
 
     tDeclFrom.removeBodyDecl(mDecl)
     tDeclDest.addBodyDecl(mDecl)
@@ -27,24 +57,34 @@ object RedirectSource {
     ASTNodeLink.enlargeVisibility(
       reenactor, mDecl.asInstanceOf[Visible],
       mDeclId )
+
+    if(tDeclFrom.compilationUnit() != tDeclDest.compilationUnit()){
+      val typesUsed = typesUsedInSubtree(reenactor, mDeclId)
+
+      import scala.collection.JavaConversions._
+      val cu = tDeclDest.compilationUnit()
+      val imports = tDeclDest.compilationUnit().getImportDecls.toList
+
+      typesUsed.toSet[NodeId].foreach {
+       tid =>
+          typeDecl(reenactor, id2declMap, tid)(addImport(cu, _))
+      }
+    }
   }
 
-  def removeImport
-  ( cu: CompilationUnit, tDecl : TypeDecl)
-  ( implicit logger : PuckLogger) : Unit= {
-    logger.writeln(s"removeImportDecl of $tDecl in ${cu.pathName}")
-    cu.removeImportDecl(tDecl)
+
+  def typeDecl
+  (reenactor : DependencyGraph,
+   id2declMap: NodeId => ASTNodeLink,
+   typeId : NodeId)
+  (f : TypeDecl => Unit) : Unit = {
+    id2declMap(typeId) match {
+      case TypedKindDeclHolder(t) => f(t)
+      case NoDecl if reenactor.fullName(typeId) == "@primitive.[]" => ()
+      case h => error(s"TypedKindDeclHolder expected got $h for ${reenactor.fullName(typeId)}")
+    }
   }
-  def addImport
-  ( cu: CompilationUnit, tDecl : TypeDecl)
-  ( implicit logger : PuckLogger) : Unit= {
-    val pa = new TypeAccess(tDecl.fullName())
-    pa.lock(tDecl)
-    if(!(tDecl.getVisibility == ASTNode.VIS_PUBLIC))
-      tDecl.setVisibility(ASTNode.VIS_PUBLIC)
-    logger.writeln(s"addImportDecl of $pa in ${cu.pathName}")
-    cu.addImportDecl(new SingleTypeImportDecl(pa))
-  }
+
 
   def fixImportOfMovedTypeDecl
   (reenactor : DependencyGraph,
@@ -56,44 +96,29 @@ object RedirectSource {
    newlyCreatedCu : Boolean)
   ( implicit logger : PuckLogger): Unit = {
 
-    val typesUsed = for {
-      nid <- reenactor subTree tDeclId
-      id <- reenactor usedBy nid
-      if reenactor.kindType(id) == PTypeDecl
-    } yield id
-
+    val typesUsed = typesUsedInSubtree(reenactor, tDeclId)
     val cu = tDecl.compilationUnit()
-
-    def isAutoImported(t : TypeDecl) : Boolean = {
-      t.isPrimitiveType || t.isString || t.isArrayDecl || t.isObject || t.isVoid
-    }
-
     //3 cas
     //used est dans oldPackage -> ajouter import
     //used est dans newPackage -> enlever import
     //used est dans autre package -> remplacer import
 
-    val _ = (typesUsed.toSet[NodeId] - tDeclId).foreach{
-       typeId =>
-          id2declMap(typeId) match {
-            case TypedKindDeclHolder(t) =>
-              if(!isAutoImported(t))
-                t.compilationUnit().packageName() match {
-                  case `newPackage` => removeImport(cu, t)
-                  case `oldPackage` => addImport(cu, t)
-                  case _ if newlyCreatedCu => addImport(cu, t)
-                  case _ => () // should be handled by the name locking
-                  //addImport(cu, tDecl); removeImport(cu, tDecl)
-                }
-            case NoDecl if reenactor.fullName(typeId) == "@primitive.[]" => ()
-            case h =>
-              error(s"TypedKindDeclHolder expected got $h for ${reenactor.fullName(typeId)}")
-          }
-
+    (typesUsed.toSet[NodeId] - tDeclId).foreach{ typeId =>
+      typeDecl(reenactor, id2declMap, typeId){
+        t =>
+          if(!isAutoImported(t))
+            t.compilationUnit().packageName() match {
+              case `newPackage` => removeImport(cu, t)
+              case `oldPackage` => addImport(cu, t)
+              case _ if newlyCreatedCu => addImport(cu, t)
+              case _ => () // should be handled by the name locking
+              //addImport(cu, tDecl); removeImport(cu, tDecl)
+            }
+      }
     }
-    //reenactor.containerOfKindType_!(NameSpace, )
-
   }
+
+
 
 
   def fixImportForUsersOfMovedTypeDecl
@@ -160,7 +185,7 @@ object RedirectSource {
     newPackage: NodeId,
     tDecl : TypeDecl,
     tDeclId : NodeId)
-  ( implicit program : Program, logger : PuckLogger) : Unit ={
+  ( implicit program : Program, logger : PuckLogger) : Unit = {
     logger.writeln("moving " + tDecl.fullName() +" to package " + resultGraph.fullName(newPackage))
 
 
@@ -221,15 +246,12 @@ object RedirectSource {
 
     def move(source : NodeId, newSource : NodeId, target : NodeId) : Unit = {
       (id2declMap(source), id2declMap(newSource), id2declMap(target)) match {
-        case (ClassDeclHolder(c1Decl),
-        ClassDeclHolder(c2Decl),
+        case (TypedKindDeclHolder(oldTdecl),
+        TypedKindDeclHolder(newTdecl),
         bdh : HasMemberDecl) =>
-          moveMemberDecl(reenactor, c1Decl, c2Decl, bdh.decl, target)
+          moveMemberDecl(reenactor, id2declMap, oldTdecl, newTdecl, bdh.decl, target)
 
-        case (InterfaceDeclHolder(oldItcDecl),
-        InterfaceDeclHolder(newItcDecl),
-        MethodDeclHolder(mDecl)) =>
-          moveMemberDecl(reenactor, oldItcDecl, newItcDecl, mDecl, target)
+
 
         case (PackageDeclHolder, PackageDeclHolder, i: TypedKindDeclHolder) =>
           moveTypeKind(resultGraph, reenactor, id2declMap, source, newSource, i.decl, target)

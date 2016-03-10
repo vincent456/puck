@@ -5,7 +5,7 @@ import puck.graph.transformations.Recording
 import puck.gui._
 import java.awt.event.ActionEvent
 import javax.swing.{AbstractAction, JPopupMenu, JTree}
-import javax.swing.event.{TreeModelListener, TreeModelEvent}
+import javax.swing.event.TreeModelEvent
 import javax.swing.tree.TreePath
 
 import puck.graph.transformations._
@@ -14,7 +14,7 @@ import Recording.RecordingOps
 import puck.graph._
 
 
-import puck.gui.{NodeClicked, Pushed, GraphUpdate}
+import puck.gui.{NodeClicked, Pushed}
 import puck.gui.menus.NodeMenu
 
 import scala.swing.{Swing, Reactor, Publisher}

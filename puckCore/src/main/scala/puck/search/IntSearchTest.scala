@@ -2,8 +2,6 @@ package puck.search
 
 import puck.graph.{LoggedSuccess, LoggedTry}
 
-import scalaz.{\/-, -\/}
-
 class IntControl
 (target : Int)
   extends SearchControl[Int]{

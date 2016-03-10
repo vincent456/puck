@@ -9,7 +9,6 @@ import puck.graph._
 import puck.util.{PuckLogger, PuckLog}
 
 import scala.concurrent.Future
-import scala.swing.event.Event
 import scala.swing.{ProgressBar, Publisher}
 import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global

@@ -1,13 +1,9 @@
 package puck
 package javaGraph
 
-import java.io.{FileWriter, File}
-
 import puck.Settings._
 import puck.graph.Try
 import puck.graph.comparison.Mapping
-import puck.util.PuckLog.{Info, NoSpecialContext}
-import puck.util.PuckSystemLogger
 
 
 class BridgeManualRefactoringSpec extends AcceptanceSpec {

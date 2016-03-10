@@ -7,7 +7,6 @@ import puck.graph.transformations.{Target, RedirectionOp, Regular, Transformatio
 import puck.javaGraph._
 import puck.util.PuckLogger
 import ShowDG._
-import org.extendj.{ast => AST}
 
 object RedirectTarget {
 

@@ -4,7 +4,6 @@ import puck.graph._
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, Move}
 import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.nodeKind.Field
-import puck.util.Debug
 import puck.{AcceptanceSpec, Settings}
 import puck.javaGraph.nodeKind.Package
 

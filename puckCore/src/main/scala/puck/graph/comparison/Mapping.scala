@@ -2,7 +2,6 @@ package puck.graph.comparison
 
 import java.util.NoSuchElementException
 
-import puck.PuckError
 import puck.graph._
 
 

@@ -4,7 +4,7 @@ package constraints
 
 import puck.PuckError
 import puck.graph.transformations.TransformationRules
-import puck.util.{LoggedEither, Logged}
+import puck.util.Logged
 import puck.util.LoggedEither._
 import scalaz.{\/-, -\/}
 import scalaz.syntax.writer._

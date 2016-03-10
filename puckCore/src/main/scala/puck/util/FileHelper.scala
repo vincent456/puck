@@ -1,7 +1,6 @@
 package puck.util
 
 import java.io.{FileReader, BufferedReader, File}
-import java.util.regex.{Matcher, Pattern}
 import scala.language.implicitConversions
 
 object FileHelper {

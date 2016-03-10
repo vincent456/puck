@@ -4,8 +4,6 @@ package rules
 
 import puck.PuckError
 import puck.graph.DependencyGraph.AbstractionMap
-import puck.graph.{TypeConstructor, StaticValueDecl}
-import puck.graph.constraints.NotAnAbstraction
 import puck.util.LoggedEither._
 import ShowDG._
 import scalaz.std.list._

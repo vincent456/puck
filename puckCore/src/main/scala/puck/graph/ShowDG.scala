@@ -6,8 +6,6 @@ import puck.graph.transformations._
 import scalaz.{Cord, Show}
 
 
-import scala.language.implicitConversions
-
 object ShowDG extends ShowConstraints{
 
   implicit def showFromToString[A] : Show[A] = Show.showFromToString[A]

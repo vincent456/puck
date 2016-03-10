@@ -3,7 +3,7 @@ package gui
 package explorer
 
 import java.awt.Color
-import java.awt.event.{ActionEvent, MouseEvent, MouseAdapter}
+import java.awt.event.ActionEvent
 import javax.swing.{AbstractAction, JPopupMenu, JTree}
 
 import puck.graph._

@@ -1,6 +1,6 @@
 package puck.graph.transformations.rules
 
-import puck.{graph, PuckError}
+import puck.PuckError
 import puck.graph._
 import puck.util.LoggedEither, LoggedEither._
 import puck.graph.ShowDG._

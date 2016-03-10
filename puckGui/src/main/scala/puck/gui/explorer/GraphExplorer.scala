@@ -4,7 +4,6 @@ package explorer
 
 import java.awt.event.ActionEvent
 import javax.swing.{AbstractAction, JPopupMenu, JTree}
-import javax.swing.tree.TreePath
 
 import puck.graph._
 import puck.gui.menus.NodeMenu

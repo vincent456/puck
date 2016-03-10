@@ -1,7 +1,6 @@
 package puck.graph
 package transformations.rules
 
-import puck.PuckError
 import puck.graph.ShowDG._
 import puck.graph.constraints.{AbstractionPolicy, DelegationAbstraction, SupertypeAbstraction}
 import puck.util.LoggedEither._

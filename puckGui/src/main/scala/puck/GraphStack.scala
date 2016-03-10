@@ -4,7 +4,6 @@ import puck.graph.transformations.MileStone
 import puck.graph.{Recording, DependencyGraph}
 import Recording.RecordingOps
 import puck.gui._
-import puck.util.PuckLogger
 
 import scala.collection.mutable
 import scala.swing.Publisher
