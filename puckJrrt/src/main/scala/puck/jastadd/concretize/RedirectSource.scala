@@ -93,7 +93,11 @@ object RedirectSource {
 
       typesUsed.toSet[NodeId].foreach {
        tid =>
-          typeDecl(reenactor, id2declMap, tid)(addImport(cu, _))
+          typeDecl(reenactor, id2declMap, tid){
+            t =>
+            if(!isAutoImported(t))
+              addImport(cu, t)
+          }
       }
     }
   }
