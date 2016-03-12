@@ -38,17 +38,20 @@ import scala.xml.XML
 
 object Config {
 
+  def taggedString(tag : String, content : String,
+                   attributes : List[(String, String)] = List()) : String = {
+    val attrString =
+      if(attributes.isEmpty) ""
+      else
+        attributes map {case (k, v) => s"""$k="$v""""} mkString (" ", " ", "")
+    s"<$tag$attrString>$content</$tag>"
+  }
+
   abstract class ConfigKey[Phantom : Manifest](v : String)
     extends HMapKey[String, Phantom](v) {
 
-    def tagedString(s : String,
-                    attributes : List[(String, String)] = List()) : String = {
-      val attrString =
-        if(attributes.isEmpty) ""
-        else
-          attributes map {case (k, v) => s"""$k="$v""""} mkString (" ", " ", "")
-      s"<$v$attrString>$s</$v>"
-    }
+    def taggedString(s : String, attributes : List[(String, String)] = List()) : String =
+      Config.taggedString(v, s, attributes)
 
 
     def xmlValue(config: Config) : String
@@ -70,12 +73,12 @@ object Config {
   }
 
   case class SingleFile(path : String) extends FileFinder
-  case class Root(path : String, suffix : String) extends FileFinder
+  case class Root(path : String, suffix : String, exclude : Seq[String]) extends FileFinder
 
   class FileKey(v : String) extends ConfigKey[SingleFile](v) {
     def xmlValue(config: Config) : String =
       config get this match {
-        case Some(SingleFile(path)) => s"\t${tagedString(path)}\n"
+        case Some(SingleFile(path)) => s"\t${taggedString(path)}\n"
         case None => ""
       }
   }
@@ -83,8 +86,11 @@ object Config {
   class FileListKey(v : String) extends ConfigKey[List[FileFinder]](v) {
 
     def xmlValue(ff: FileFinder) : String = ff match {
-      case SingleFile(path) => tagedString(path)
-      case Root(path, suffix) => tagedString(path, List(("rec", suffix)))
+      case SingleFile(path) => taggedString(path)
+      case Root(path, suffix, Seq()) => taggedString(path, List(("rec", suffix)))
+      case Root(path, suffix, s) =>
+        val content = s map (Config.taggedString("exclude",_))
+        taggedString(content mkString "\n", List(("rec", suffix), ("root", path)))
     }
 
     def xmlValue(config: Config) : String =
@@ -127,8 +133,8 @@ object Config {
   def defautlConfig(workspace : File) =
     (empty
       put (Keys.workspace, SingleFile(workspace.getAbsolutePath))
-      put (Keys.srcs, List(Root("src", ".java")))
-      put (Keys.classpath, List(Root("lib", ".jar")))
+      put (Keys.srcs, List(Root("src", ".java", Seq())))
+      put (Keys.classpath, List(Root("lib", ".jar", Seq())))
       put (Keys.out, SingleFile("out"))
       put (Keys.decouple, SingleFile("decouple.wld"))
       put (Keys.log, SingleFile("puck-log.txt"))
@@ -164,11 +170,18 @@ object ConfigParser {
         (n \ k).foldLeft(c) {
           (c1, knode) =>
             val prev = c1 getOrElse (k, List())
-            val path = knode.text
             val newVal =
-              knode singleOptionAttribute "rec" match {
-                case None =>  SingleFile(path) :: prev
-                case Some(suffix) => Root(path, suffix) :: prev
+              (knode singleOptionAttribute "rec",
+                knode singleOptionAttribute "root") match {
+                case (None,_) =>
+                  val path = knode.text
+                  SingleFile(path) :: prev
+                case (Some(suffix), None) =>
+                  val path = knode.text
+                  Root(path, suffix, Seq()) :: prev
+                case (Some(suffix), Some(path)) =>
+                  val ex = (knode \ "exclude").theSeq map (_.text)
+                  Root(path, suffix, ex) :: prev
               }
             c1 put (k, newVal)
 

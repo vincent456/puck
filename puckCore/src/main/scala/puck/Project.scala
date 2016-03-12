@@ -82,9 +82,11 @@ class Project
     val l = config getOrElse (k, List())
     l.foldLeft(List[String]()){
       case (acc, f @ SingleFile(_)) => f.resolvePath(workspace) :: acc
-      case (acc,f @ Root(_, suffix)) =>
-        import puck.util.FileHelper.findAllFiles
-        findAllFiles(suffix, ignoredSubDir = None, acc, new File(f.resolvePath(workspace)))
+      case (acc,f @ Root(_, suffix, excludes)) =>
+        import puck.util.FileHelper.{findAllFiles, FileOps}
+        val resolvedPath =  new File(f.resolvePath(workspace))
+        val resolvedExcludes = excludes map (resolvedPath \ _)
+        findAllFiles(suffix, resolvedExcludes, acc, resolvedPath)
 
     }
   }

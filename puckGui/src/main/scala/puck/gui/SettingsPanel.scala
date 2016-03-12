@@ -118,7 +118,7 @@ class FileListSelectionPanel(project : Project, k : FileListKey)
               case "Directory" =>
                 SingleFile(f.pathRelativeTo(project.workspace))
               case suffix =>
-                Root(f.pathRelativeTo(project.workspace), suffix)
+                Root(f.pathRelativeTo(project.workspace), suffix, Seq())
             }
         }
         sff foreach {
