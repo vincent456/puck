@@ -24,12 +24,56 @@
  * Author of this file : Loïc Girault
  */
 
+//package puck
+//
+//import jastadd._
+//
+//object Front extends PuckApplication(ExtendJGraphUtils, JavaIcons)
+
+
 package puck
 
+import java.awt.Dimension
+import java.io.File
+import javax.swing.UIManager
+
+import puck.config.Config
+import puck.gui.PuckMainPanel
+
+import scala.swing.{MainFrame, SwingApplication}
 import jastadd._
 
-object Front extends PuckApplication(ExtendJGraphUtils, JavaIcons)
+object Front extends SwingApplication{
 
+  val pmp = new PuckMainPanel(ExtendJGraphUtils, JavaIcons)
+
+  def startup(args: Array[String]) : Unit = {
+
+    val f0 =
+      if(args.isEmpty || ! new File(args(0)).exists()) new File(".")
+      else new File(args(0))
+
+    val f = f0.getAbsoluteFile
+
+    val sConf =
+      if (f.isDirectory && Config.defaultConfFile(f).exists())
+        Some(Config.defaultConfFile(f))
+      else if (f.isFile) Some(f)
+      else None
+
+    sConf foreach pmp.control.loadConf
+
+
+    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
+    if (top.size == new Dimension(0,0)) top.pack()
+    top.visible = true
+  }
+
+  val top = new MainFrame {
+    title = "Puck"
+    contents  = pmp
+  }
+}
 
 /*
  from http://stackoverflow.com/questions/2315912/scala-best-way-to-parse-command-line-parameters-cli

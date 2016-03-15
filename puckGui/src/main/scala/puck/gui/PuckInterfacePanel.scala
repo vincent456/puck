@@ -68,17 +68,16 @@ class PuckInterfacePanel
 
   preferredSize = new Dimension(leftWidth, height)
 
-  import control.project
+  import control.sProject
 
   def addAlwaysVisibleButtons(): Unit ={
     contents += makeButton("Settings", "To set graphviz dot path"){
       () =>
         import Dialog._
-        if(project == null) {
-          control.logger writeln "Create a project first"
-        }
-        else {
-          val ptmp = new Project(project.config, project.dG2ASTBuilder)
+        sProject match {
+          case None => control.logger writeln "Create a project first"
+          case Some(p) =>
+          val ptmp = new Project(p.config, p.dG2ASTBuilder)
           Dialog.showConfirmation(parent = null,
             new SettingsPanel(ptmp).peer,
             title = "Settings",
@@ -86,9 +85,9 @@ class PuckInterfacePanel
             messageType = Message.Plain) match {
             case Result.Ok =>
               //TODO !!
-              val cfile = Config.defaultConfFile(project.workspace)
+              val cfile = Config.defaultConfFile(p.workspace)
               ConfigWriter(cfile, ptmp.config)
-              project = ptmp
+              sProject = Some(ptmp)
               control.logger writeln s"New settings saved in ${cfile.getPath}"
             case _ =>
               control.logger writeln "New settings discarded"
@@ -133,8 +132,8 @@ class PuckInterfacePanel
         fc showDialog(null, "Select")
         Option(fc.selectedFile) foreach {
           conffile =>
-            if( project == null ||
-                Config.defaultConfFile(project.workspace) != conffile )
+            if( sProject.isEmpty ||
+                Config.defaultConfFile(sProject.get.workspace) != conffile )
               control.loadConf(conffile)
         }
     }
@@ -213,8 +212,8 @@ class PuckInterfacePanel
           val b : Button = this
           action = new Action("Save refactoring plan") {
 
-            def apply(): Unit = {
-              saveFile(control.project.workspace, b.peer) match {
+            def apply(): Unit = control.sProject foreach { p =>
+              saveFile(p.workspace, b.peer) match {
                 case None => publisher publish Log("no file selected")
                 case Some(f) =>  publisher publish SaveRecord(f)
               }
@@ -225,8 +224,8 @@ class PuckInterfacePanel
         contents += new Button() {
           val b : Button = this
           action = new Action("Load refactoring plan") {
-            def apply(): Unit = {
-              openFile(control.project.workspace, b.peer) match {
+            def apply(): Unit =  control.sProject foreach { p =>
+              openFile(p.workspace, b.peer) match {
                 case None => publisher publish Log("no file selected")
                 case Some(f) => publisher publish LoadRecord(f)
               }

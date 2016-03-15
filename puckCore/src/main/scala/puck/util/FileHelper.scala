@@ -42,6 +42,9 @@ object FileHelper {
     def \(child : String) : File =
       new File(f.getAbsolutePath + File.separator + child)
 
+    def \(child : File) : File = this \ child.getPath
+
+
     def ancestors : List[File] = {
 
       def aux(acc : List[File], f: File) : List[File] = {
@@ -143,13 +146,13 @@ object FileHelper {
   def findAllFiles(root : File,
                    suffix : String,
                    ignoredSubDir : Seq[File]) : List[String] =
-    findAllFiles(suffix, ignoredSubDir, List(), root)
+    findAllFiles(root, suffix, ignoredSubDir, List())
 
-  def findAllFiles(suffix : String,
+  def findAllFiles(root: File,
+                   suffix : String,
                    ignoredSubDir : Seq[File],
-                   res: List[String],
-                   f: File) : List[String] = {
-    
+                   res: List[String]) : List[String] = {
+
     def aux(res: List[String],
             f: File) : List[String] = {
       if (f.isDirectory)
@@ -166,7 +169,7 @@ object FileHelper {
       }
     }
 
-    aux(res, f)
+    aux(res, root)
 
   }
   

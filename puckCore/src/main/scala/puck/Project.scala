@@ -86,14 +86,14 @@ class Project
         import puck.util.FileHelper.{findAllFiles, FileOps}
         val resolvedPath =  new File(f.resolvePath(workspace))
         val resolvedExcludes = excludes map (resolvedPath \ _)
-        findAllFiles(suffix, resolvedExcludes, acc, resolvedPath)
+        findAllFiles(resolvedPath, suffix, resolvedExcludes, acc)
 
     }
   }
 
 
   def workspace : File =
-    new File( (config get Keys.workspace getOrElse SingleFile(".")).path )
+    new File((config get Keys.workspace getOrElse SingleFile(".")).path)
 
   def someFile(k : FileKey) : Option[File] =
     config get k map (v => new File(v.resolvePath(workspace)))

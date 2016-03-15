@@ -34,10 +34,10 @@ import puck.jastadd.CompileHelper
 import puck.util.{FileHelper, PuckFileLogger, PuckLogger}
 import sbt.IO
 import org.extendj.ast.{ASTNodeLink, JavaJastAddDG2AST, Program}
-
+import FileHelper.FileOps
 object ScenarioFactory {
   def fromDirectory(path: String): ScenarioFactory = {
-     new ScenarioFactory(FileHelper.findAllFiles(new File(path), ".java", Some("out")):_*)
+     new ScenarioFactory(FileHelper.findAllFiles(new File(path), ".java", Seq(new File(path) \ "out")):_*)
   }
 }
 
@@ -79,7 +79,7 @@ case class ScenarioFactory
     outDir : File) : ScenarioFactory = {
     applyChanges(g, outDir)
 
-    val genSrc = FileHelper.findAllFiles(outDir, ".java", None)
+    val genSrc = FileHelper.findAllFiles(outDir, ".java", Seq())
     new ScenarioFactory(genSrc:_*)
   }
 

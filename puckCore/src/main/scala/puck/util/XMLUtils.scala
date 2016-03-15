@@ -50,7 +50,7 @@ object XMLUtils {
       optionAttribute(attr, _.toBoolean) getOrElse false
 
 
-    def singleAttribute(node : Node, attr : String) : String =
+    def singleAttribute(attr : String) : String =
       node attribute attr match {
         case Some(Seq(att)) => att.text
         case Some(atts) if atts.nonEmpty => error(s"only one $attr expected")

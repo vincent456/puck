@@ -55,7 +55,7 @@ class PuckMainPanel(graphUtils: GraphUtils,
   val console = new ConsoleWithSelection()
   val logger = new TextAreaLogger(console.textArea, PuckLog.verbose)
 
-  val control = new PuckControl(logger, graphUtils)
+  val control = PuckControl(graphUtils, logger)
 
   val interface = new PuckInterfacePanel(control)
 

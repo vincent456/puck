@@ -41,30 +41,55 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scalaz.{\/-, -\/}
 
 
-object FrontVars {
-// // val root = "/home/lorilan/test_cases_for_puck"
-//  // val system = "/jhotdraw/JHotDraw 7.0.6"
-//  //val system = "/jhotdraw/jhotdraw-7.5.1"
-//  //val system = "dspace-1.5.1"
-//
-//  //val root = "/home/lorilan/puck_svn/examples/QualitasCorpus-20130901r/Systems"
-//  val root = "/home/lorilan/test_cases_for_puck/QualitasCorpus/Systems"
-//  //val system = "freecs/freecs-1.3.20100406"
-//  //val system = "freemind/freemind-0.9.0"
-//  val system = "freemind/freemind-1.0.1"
-//
-//  //val workspace = s"$root/$system/puck_test"
-//  //val workspace = s"/home/lorilan/projects/constraintsSolver/test_resources/distrib/bridge/hannemann_simplified"
-//    val workspace = "/home/lorilan/freemind-0.9.0_example"
-//  //val workspace = "/home/lorilan/puck_svn/examples/dspace-1.5.1-src-release"
-//  val workspace = "/home/lorilan/test"
+object PuckControl {
+
+  // // val root = "/home/lorilan/test_cases_for_puck"
+  //  // val system = "/jhotdraw/JHotDraw 7.0.6"
+  //  //val system = "/jhotdraw/jhotdraw-7.5.1"
+  //  //val system = "dspace-1.5.1"
+  //
+  //  //val root = "/home/lorilan/puck_svn/examples/QualitasCorpus-20130901r/Systems"
+  //  val root = "/home/lorilan/test_cases_for_puck/QualitasCorpus/Systems"
+  //  //val system = "freecs/freecs-1.3.20100406"
+  //  //val system = "freemind/freemind-0.9.0"
+  //  val system = "freemind/freemind-1.0.1"
+  //
+  //  //val workspace = s"$root/$system/puck_test"
+  //  //val workspace = s"/home/lorilan/projects/constraintsSolver/test_resources/distrib/bridge/hannemann_simplified"
+  //    val workspace = "/home/lorilan/freemind-0.9.0_example"
+  //  //val workspace = "/home/lorilan/puck_svn/examples/dspace-1.5.1-src-release"
+  //  val workspace = "/home/lorilan/test"
+
   val workspace = "."
+
+  def apply(graphUtils: GraphUtils, logger : PuckLogger) : PuckControl =
+    new PuckControl(graphUtils, logger)
+
+//  def apply(graphUtils: GraphUtils, f : String, logger : PuckLogger) : PuckControl  =
+//    this.apply(graphUtils, new File(f), logger )
+
+  def apply(graphUtils: GraphUtils, f : File, logger : PuckLogger)  : PuckControl = {
+    val pc = this apply (graphUtils, logger)
+    val sConf =
+      if(f.isDirectory && Config.defaultConfFile(f).exists())
+        Some(Config.defaultConfFile(f))
+      else if(f.isFile) Some(f)
+      else None
+
+    sConf foreach pc.loadConf
+
+    pc
+  }
+
+
 }
 
 class PuckControl
-(logger0 : PuckLogger,
- val graphUtils: GraphUtils)
+(val graphUtils: GraphUtils,
+implicit val logger: PuckLogger)
   extends Publisher {
+
+  var sProject : Option[Project] = None
 
   val progressBar = new ProgressBar {
     min = 0
@@ -77,30 +102,23 @@ class PuckControl
   object Bus extends Publisher
   this listenTo Bus
 
-  implicit val logger: PuckLogger = logger0
 
-  var project : Project = _
   var dg2ast: DG2AST = _
   val graphStack: GraphStack = new GraphStack(Bus)
 
 
-  {
-    val workspace = "."
-    if (Config.defaultConfFile(new File(FrontVars.workspace)).exists())
-      loadConf(Config.defaultConfFile(new File(FrontVars.workspace)))
-  }
 
 
 
 
   def loadConf(file : File) : Unit = {
-    project = new Project(ConfigParser(file),
-      graphUtils.dg2astBuilder)
+    sProject = Some(new Project(ConfigParser(file),
+      graphUtils.dg2astBuilder))
 
-    val sf : Option[File]= project.someFile(Config.Keys.workspace)
+    val sf : Option[File]= sProject flatMap (_.someFile(Config.Keys.workspace))
     val path = sf map (_.getAbsolutePath) getOrElse "No directory selected"
     logger writeln  s"Workspace directory :\n$path"
-    loadCodeAndConstraints()
+    loadCodeAndConstraints(sProject.get)
   }
 
   def graph: DependencyGraph = graphStack.graph
@@ -113,23 +131,22 @@ class PuckControl
   def printingOptionsControl = printingOptionsControl0
 
 
-  def loadCodeAndConstraints() = Future {
+  def loadCodeAndConstraints(project : Project) = Future {
     progressBar.visible = true
     progressBar.value = 0
-    if(project.pathList(Config.Keys.srcs).isEmpty) {
-      throw NoSourceDetected
-    }
+      if (project.pathList(Config.Keys.srcs).isEmpty)
+      {
+        throw NoSourceDetected
+      }
 
-    dg2ast = project.loadGraph(Some(new LoadingListener {
-      override def update(loading: Double): Unit =
-        progressBar.value = (loading * 100).toInt
-    }))
-    progressBar.visible = false
-
-
-    printingOptionsControl0 = PrintingOptionsControl(dg2ast.initialGraph, Bus)
+      dg2ast = project.loadGraph(Some(new LoadingListener {
+        override def update(loading: Double): Unit =
+          progressBar.value = (loading * 100).toInt
+      }))
+      progressBar.visible = false
 
 
+      printingOptionsControl0 = PrintingOptionsControl(dg2ast.initialGraph, Bus)
   } onComplete {
     case Success(_) =>
       logger writeln s"Graph builded : ${dg2ast.initialGraph.nodes.size} nodes"
@@ -154,8 +171,11 @@ class PuckControl
   }
 
 
-  def loadConstraints(setInitialGraph : Boolean = false) : Unit = {
-      logger.writeln("Loading constraints ...")
+  def loadConstraints(setInitialGraph : Boolean = false) : Unit =
+    sProject foreach {
+        project =>
+        logger.writeln("Loading constraints ...")
+
 
       project.parseConstraints(dg2ast) match {
         case None =>
@@ -178,10 +198,14 @@ class PuckControl
 
   def applyOnCode(record : DependencyGraph) : Unit =
     Future {
-      logger.write("generating code ...")
-      dg2ast(record)
-      dg2ast.printCode(project.outDirectory get)
-      logger.writeln(" done")
+      sProject foreach {
+        p =>
+        logger.write("generating code ...")
+        dg2ast(record)
+        dg2ast.printCode(p.outDirectory get)
+        logger.writeln(" done")
+      }
+
     } onComplete {
       case Success(_) => ()
       case Failure(exc) => exc.printStackTrace()
@@ -227,10 +251,12 @@ class PuckControl
       printingOptionsControl.focus(g, e)
 
     case LoadCodeRequest =>
-      if(project == null)
-        logger writeln "select a project first"
-      else
-        loadCodeAndConstraints()
+      sProject match {
+        case None =>
+          logger writeln "select a project first"
+        case Some(p) => loadCodeAndConstraints(p)
+      }
+
 
     case LoadConstraintRequest => loadConstraints()
 
@@ -251,11 +277,12 @@ class PuckControl
       pe(printingOptionsControl)
 
     case GenCode(compareOutput) =>
-      import ProjectDG2ASTControllerOps._
-      deleteOutDirAndapplyOnCode(dg2ast, project, graphStack.graph)
-      if(compareOutput)
-        compareOutputGraph(project, graphStack.graph)
-
+      sProject foreach { p =>
+        import ProjectDG2ASTControllerOps._
+        deleteOutDirAndapplyOnCode(dg2ast,p, graphStack.graph)
+        if (compareOutput)
+          compareOutputGraph(p, graphStack.graph)
+      }
     case PrintCode(nodeId) =>
         logger writeln ("Code :\n" + dg2ast.code(graph, nodeId))
 

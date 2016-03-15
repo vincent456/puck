@@ -47,6 +47,25 @@ object PuckBuild extends Build {
   val jarSources = taskKey[File]("create a jar containing source files")
   val srcJarFileName = settingKey[String]("name of the jar containing source files")
 
+//  def classPathFileNameTask  = Def.taskDyn {
+//    val f = baseDirectory.value / "target" / classPathFileName.value
+//    val fcp = (fullClasspath in configuration.value).value.map(_.data.absolutePath)
+//    Def task f
+//  }
+
+  def classPathFileNameTask(cfg : Configuration): Def.Initialize[Task[File]] = Def.task {
+    val f = baseDirectory.value / "target" / classPathFileName.value
+
+    val writter = new FileWriter(f)
+    val fcp = (fullClasspath in cfg).value.map(_.data.absolutePath)
+    writter write "#!/bin/bash\n"
+    writter write fcp.mkString("export CLASSPATH=", ":", "")
+    // fish style :
+    //writter.write(fcp.mkString("set CLASSPATH ", ":", ""))
+    writter.close()
+    f
+  }
+
   def commonSettings(module: String) : Seq[Setting[_]] = Seq(
     organization := "fr.lip6",
     name := s"puck-$module",
@@ -55,18 +74,8 @@ object PuckBuild extends Build {
     sbtVersion := "0.13.11",
     classPathFileName := "CLASSPATH",
     srcJarFileName := s"${organization.value}.${name.value}-${version.value}-src.jar",
-    printClassPathFile := {
-
-      val f = baseDirectory.value / "target" / classPathFileName.value
-
-      val writter = new FileWriter(f)
-      val fcp = (fullClasspath in Test).value.map(_.data.absolutePath)
-      //writter.write(fcp.mkString("CLASSPATH=", ":", ""))
-      // fish style :
-      writter.write(fcp.mkString("set CLASSPATH ", ":", ""))
-      writter.close()
-      f
-    },
+    printClassPathFile in Test := classPathFileNameTask(Test).value,
+    printClassPathFile in Compile := classPathFileNameTask(Compile).value,
 
     resolvers += Resolver.url("Typesafe Releases",
           url("https://repo.typesafe.com/typesafe/releases/"))(Resolver.ivyStylePatterns),
@@ -96,16 +105,6 @@ object PuckBuild extends Build {
       "-Ywarn-unused-import"  // 2.11 only
     ),
 
-
-    printClassPathFile := {
-
-      val f = baseDirectory.value / "target" / classPathFileName.value
-      val writter = new FileWriter(f)
-      val fcp = (fullClasspath in Compile).value.map(_.data.absolutePath)
-      writter.write(fcp.mkString("set CLASSPATH ", ":", ""))
-      writter.close()
-      f
-    },
     jarSources := {
 
       def listFileWithRelativePaths(roots : Seq[File]) : Seq[(File, String)] =
@@ -187,6 +186,8 @@ object PuckBuild extends Build {
   import com.typesafe.sbt.packager.Keys._
   val puckJrrt : Project = (project
     settingsSeq commonSettings("jrrt")
+
+    settings (libraryDependencies += "org.apache.ant" % "ant" % "1.9.6")
 
     settingsSeq PuckJrrtBuild.settings(extendj)
 
