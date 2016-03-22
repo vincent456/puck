@@ -137,7 +137,7 @@ object PuckBuild extends Build {
   )
 
 
-  val extendjUrl = "https://bitbucket.org/extendj/extendj.git"
+  val extendjUrl = "https://bitbucket.org/extendj/extendj.git#master"
 
   val extendj : ProjectReference = RootProject(uri(extendjUrl))
 

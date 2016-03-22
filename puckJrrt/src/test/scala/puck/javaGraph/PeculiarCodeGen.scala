@@ -37,10 +37,10 @@ class PeculiarCodeGen extends AcceptanceSpec {
 
   feature("Parse lock unlock gen") {
 
-    def makeTest(f : String) : Unit = {
+    def makeTest(f: String): Unit = {
       val _ = new ScenarioFactory(f) {
         val recompiledEx = applyChangeAndMakeExample(graph, Settings.outDir)
-        assert( Mapping.equals(graph, recompiledEx.graph) )
+        assert(Mapping.equals(graph, recompiledEx.graph))
       }
     }
 
@@ -85,7 +85,7 @@ class PeculiarCodeGen extends AcceptanceSpec {
       makeTest(s"$examplesPath/chainedCallWithArgs.java")
     }
 
-    scenario("overloading with variadic method"){
+    scenario("overloading with variadic method") {
       makeTest(s"${Settings.testExamplesPath}/graphBuilding/variadicMethod/A.java")
     }
 
@@ -97,6 +97,25 @@ class PeculiarCodeGen extends AcceptanceSpec {
       makeTest(s"$examplesPath/chainedCallInStaticContext.java")
     }
 
+    scenario("variable declared final in foreach loop") {
+      makeTest(s"$examplesPath/finalfor.java")
+    }
+
+    scenario("Generic method with type variable updounded by a parameterized type") {
+      makeTest(s"$examplesPath/genParameterBoundedWithParameterizedType.java")
+    }
+
+    scenario("Generic array") {
+      makeTest(s"$examplesPath/genArray.java")
+    }
+
+    scenario("Parenthesized expr in conditionnal expr") {
+      makeTest(s"$examplesPath/parExprInConditionnalExpr.java")
+    }
+
+    scenario("Clone override") {
+      makeTest(s"$examplesPath/cloneOverride.java")
+    }
   }
 
 }
