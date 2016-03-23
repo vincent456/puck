@@ -247,7 +247,10 @@ case class EdgeMap
     typeMemberUsesOf(typeUse.user, typeUse.used)
 
   def typeUsesOf(tmUser : NodeId, tmUsed : NodeId) : Set[Uses] =
-    typeMemberUses2typeUsesMap getFlat ((tmUser, tmUsed)) map {
+    typeMemberUses2typeUsesMap getFlat ((tmUser, tmUsed)) map /*{ u =>
+      println(u)
+      u
+    } map*/ {
       case (s,t) =>
         try {
           getUses(s, t).get

@@ -59,7 +59,9 @@ object NodeMenu{
            (implicit treeIcons: DGTreeIcons): JPopupMenu =
     graph.getNode(nodeId) match {
       case n : ConcreteNode =>
-        new ConcreteNodeMenu(bus, graph, cm, graphUtils, selectedNodes, selectedEdge, n, printingOptionsControl)
+        new ConcreteNodeMenu(bus, graph, cm, graphUtils,
+          selectedNodes, selectedEdge, blurryEdgeSelection = false,
+          n, printingOptionsControl)
       case n : VirtualNode =>
         new VirtualNodeMenu(bus, graph, graphUtils, n)
     }
@@ -72,6 +74,7 @@ class ConcreteNodeMenu
  implicit val graphUtils : GraphUtils,
  val selectedNodes: List[NodeId],
  val selectedEdge : Option[NodeIdP],
+ blurryEdgeSelection : Boolean,
  node : ConcreteNode,
  printingOptionsControl: PrintingOptionsControl)
 (implicit treeIcons: DGTreeIcons)
@@ -110,7 +113,11 @@ class ConcreteNodeMenu
       case nodes => addOtherNodesSelectedOption(nodes)
     }
 
-    selectedEdge foreach addEdgeSelectedOption
+    selectedEdge.toList flatMap {
+      case (source, target) =>
+        graph.nodePlusDefAndParams(source) map ((_, target))
+    } foreach addEdgeSelectedOption
+
 
     scm foreach {
       cm =>

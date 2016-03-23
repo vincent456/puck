@@ -50,7 +50,7 @@ class GraphStack(val bus : Publisher) {
   def setInitialGraph(g : DependencyGraph) : Unit = {
     undoStack.clear()
     redoStack.clear()
-    undoStack push g
+    ignore(undoStack push g)
   }
 
   def fireEmptied() : Unit =

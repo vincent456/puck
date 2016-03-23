@@ -117,9 +117,27 @@ object Redirection {
     val newKindType = newUsed.kindType(g)
 
     val ltg : LoggedTG = (oldKindType, newKindType) match {
-      case (InstanceValueDecl, InstanceValueDecl)
-           | (TypeDecl, TypeDecl) =>
+      case (InstanceValueDecl, InstanceValueDecl) =>
         redirectInstanceUsesAndPropagate(g, oldUse, newUsed)
+
+      case (TypeDecl, TypeDecl) =>
+
+        val used = oldUse.used
+        graph styp oldUse.user match {
+          case Some(NamedType(`used`))
+           | Some(ParameterizedType(`used`, _)) =>
+            redirectInstanceUsesAndPropagate(g, oldUse, newUsed)
+
+          case Some(ParameterizedType(_, _)) =>
+            println(cl(g, oldUse))
+            LoggedError("type redirection of type parameter not handled")
+
+          case Some(t) => LoggedError(s"unexpected type $t")
+          case None =>
+            LoggedError("Type redirection, user should be typed")
+
+        }
+
 
       case (TypeConstructor, InstanceValueDecl) =>
         redirectTypeConstructorToInstanceValueDecl(g, oldUse, newUsed)()

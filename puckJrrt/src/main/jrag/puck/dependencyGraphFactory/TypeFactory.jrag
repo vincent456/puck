@@ -50,6 +50,11 @@ aspect TypeFactory {
 	}
 
 
+	public void SubstitutedBodyDecl.buildDGType(JastaddGraphBuilder builder, int thisId){
+		System.out.println("SubstitutedBodyDecl.buildDGType TODO !!!");
+	}
+
+
 	public void FieldDecl.buildDGType(JastaddGraphBuilder builder, int thisId){
 		throw new DGBuildingError("missing type for FieldDecl");
 	}

@@ -1,19 +1,26 @@
 package p;
 
-import java.util.List;
-import java.util.ArrayList;
+class Wrapper<T> {
+    private T t;
+
+    public void set(T t){}
+    public T get(){return t;}
+
+}
 
 class A{
     void m(){}
 }
 
 class B {
-    List<A> la = new ArrayList<A>();
+    Wrapper<A> wa = new Wrapper<A>();
+    A a = new A();
 
-    void mUser(){
+    void doM(){
+        wa.get().m();
+    }
 
-        la.add(new A());
-
-        la.get(0).m();
+    void init(){
+        wa.set(a);
     }
 }

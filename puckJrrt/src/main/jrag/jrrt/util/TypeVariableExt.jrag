@@ -9,8 +9,25 @@ aspect TypeVariableExt {
 	interface GenericElement {
 		int getNumTypeParameter();
 		TypeVariable getTypeParameter(int i);
+
 	}
-	
+
+	public boolean GenericElement.ownTypeVariable(TypeVariable tv){
+		for(int i =0; i<getNumTypeParameter(); i++){
+			if(tv == getTypeParameter(i))
+				return true;
+		}
+		return false;
+	}
+
+	public boolean GenericTypeDecl.ownTypeVariable(TypeVariable tv){
+		for(int i =0; i<getNumTypeParameter(); i++){
+			if(tv == getTypeParameter(i))
+				return true;
+		}
+		return false;
+	}
+
 	GenericMethodDecl implements GenericElement;
 	GenericConstructorDecl implements GenericElement;
 	GenericTypeDecl implements GenericElement;

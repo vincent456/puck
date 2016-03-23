@@ -548,13 +548,15 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val actualTypeParam = fullName2id("p.A")
         val actualTypeParamMethod = fullName2id("p.A.m()")
 
-        val field = fullName2id("p.B.la")
+        val field = fullName2id("p.B.wa")
 
         val userClass = fullName2id("p.B")
-        val userMethodDef = fullName2id("p.B.mUser().Definition")
+        val userMethodDef = fullName2id("p.B.doM().Definition")
 
-        val genType = fullName2id("java.util.List")
-        val genericMethod = fullName2id("java.util.List.get(int)")
+        val genType = fullName2id("p.Wrapper")
+        val genericMethod = fullName2id("p.Wrapper.get()")
+
+        printFullNamesSortedByKey()
 
         val fieldGenTypeUse = graph.getUsesEdge(field, genType).value
         val fieldParameterTypeUse = graph.getUsesEdge(field, actualTypeParam).value
@@ -567,10 +569,10 @@ class GraphBuildingSpec extends AcceptanceSpec {
         assert( typeMemberUse existsIn graph )
 
 
-//        println("fieldGenTypeUse = " + fieldGenTypeUse)
-//        println("fieldParameterTypeUse = " + fieldParameterTypeUse)
-//        println("typeMemberUse = " + typeMemberUse)
-        graph.typeUsesOf(typeMemberUse) should contain (fieldGenTypeUse)
+        //typeMemberUse = ("p.B.doMonA().Definition", "p.A.m()")
+        //fieldGenTypeUse = ("p.B.wa", "p.Wrapper")
+        //fieldParameterTypeUse = ("p.B.wa", "p.A")
+        //graph.typeUsesOf(typeMemberUse) should contain (fieldGenTypeUse)
         graph.typeUsesOf(typeMemberUse) should contain (fieldParameterTypeUse)
 
       }

@@ -123,7 +123,7 @@ class BridgeScenario private()
   val cm = ConstraintsParser(fullName2id, new FileReader(BridgeScenario.path + "decouple.wld"))
 
 
-  val g0 = graph.newGraph(constraints = cm)
+  val g0 = graph //.newGraph(constraints = cm)
 
   val (c1, g1) = intro2classMerge(g0, "StarStyle", printStar1, printStar2)
   val (c2, g2) = intro2classMerge(g1, "CapitalStyle", printCapital1, printCapital2)

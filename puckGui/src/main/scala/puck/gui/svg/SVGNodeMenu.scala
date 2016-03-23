@@ -55,6 +55,7 @@ class SVGConcreteNodeMenu
     controller.graphUtils,
     controller.selectedNodes,
     controller.selectedEdge,
+    blurryEdgeSelection = true,
     node,
     controller.printingOptionsControl) {
 
