@@ -31,6 +31,7 @@ import java.io.File
 import puck._
 import puck.config.{Config, ConfigParser}
 import puck.graph._
+import puck.graph.constraints.ConstraintsMaps
 
 import puck.util.{PuckLogger, PuckLog}
 
@@ -80,8 +81,6 @@ object PuckControl {
 
     pc
   }
-
-
 }
 
 class PuckControl
@@ -105,11 +104,7 @@ implicit val logger: PuckLogger)
 
   var dg2ast: DG2AST = _
   val graphStack: GraphStack = new GraphStack(Bus)
-
-
-
-
-
+  var constraints : Option[ConstraintsMaps] = None
 
   def loadConf(file : File) : Unit = {
     sProject = Some(new Project(ConfigParser(file),
@@ -135,9 +130,7 @@ implicit val logger: PuckLogger)
     progressBar.visible = true
     progressBar.value = 0
       if (project.pathList(Config.Keys.srcs).isEmpty)
-      {
         throw NoSourceDetected
-      }
 
       dg2ast = project.loadGraph(Some(new LoadingListener {
         override def update(loading: Double): Unit =
@@ -173,20 +166,27 @@ implicit val logger: PuckLogger)
 
   def loadConstraints(setInitialGraph : Boolean = false) : Unit =
     sProject foreach {
-        project =>
+      project =>
         logger.writeln("Loading constraints ...")
 
 
-      project.parseConstraints(dg2ast) match {
-        case None =>
-          if(setInitialGraph)
-            graphStack.setInitialGraph(dg2ast.initialGraph)
-        case Some(cm) =>
-          val g = dg2ast.initialGraph.newGraph(constraints = cm)
-          logger writeln " done:"
-          graphStack.setInitialGraph(g)
-          g.printConstraints(logger, defaultVerbosity)
-      }
+        constraints = project.parseConstraints(dg2ast)
+        logger write " done :"
+
+        if(setInitialGraph)
+          graphStack.setInitialGraph(dg2ast.initialGraph)
+
+        constraints match {
+          case None =>
+            if(setInitialGraph)
+              Bus publish GraphUpdate(graph)
+            logger writeln "no constraints found"
+          case Some(cm) =>
+            (graph, cm).printConstraints(logger, defaultVerbosity)
+            Bus publish ConstraintsUpdate(graph, cm)
+        }
+
+
     }
 
 
@@ -268,7 +268,11 @@ implicit val logger: PuckLogger)
 
 
     case ConstraintDisplayRequest(graph) =>
-      graph.printConstraints(logger, defaultVerbosity)
+      constraints match {
+        case None => logger writeln "no constraints"
+        case Some(cm) => (graph, cm).printConstraints(logger, defaultVerbosity)
+      }
+
 
     case ApplyOnCodeRequest(searchResult) =>
       applyOnCode(searchResult)

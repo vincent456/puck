@@ -33,6 +33,7 @@ import java.awt.event.ActionEvent
 import javax.swing.{AbstractAction, JPopupMenu, JTree}
 
 import puck.graph._
+import puck.graph.constraints.ConstraintsMaps
 
 
 import puck.gui.menus.{NodeMenu, ViolationMenu}
@@ -83,7 +84,8 @@ import ConstraintViolationExplorer._
 class ConstraintViolationExplorer
 (bus : Publisher,
  allViolations : Seq[DGEdge],
- printingOptionsControl: PrintingOptionsControl)
+ printingOptionsControl: PrintingOptionsControl,
+ constraints : ConstraintsMaps)
 ( implicit graph : DependencyGraph,
   graphUtils : GraphUtils,
   treeIcons : DGTreeIcons)
@@ -131,13 +133,13 @@ class ConstraintViolationExplorer
       (e, n) =>
       if(isRightClick(e)) Swing.onEDT {
         val menu = NodeMenu(bus, graphUtils, printingOptionsControl,
-          ConstraintViolationExplorer.this.graph, n.id,
+          ConstraintViolationExplorer.this.graph, constraints, n.id,
           List(), None)
         menu.add(new AbstractAction("Node infos") {
           def actionPerformed(e: ActionEvent): Unit =
             bus publish NodeClicked(n)
         })
-        menu.show(targetTree, e.getX, e.getY)
+        menu.show(ViolationTree.this, e.getX, e.getY)
       } else {
         bus publish handle.event(n.id)
         if(n.kind.kindType != NameSpace)
@@ -273,7 +275,7 @@ class ConstraintViolationExplorer
             case mc @ MouseClicked(_,_,_,_,_) =>
               val evt = mc.peer
               if(isRightClick(evt)){
-                val menu : JPopupMenu = new ViolationMenu(bus, edge.target, printingOptionsControl){
+                val menu : JPopupMenu = new ViolationMenu(bus, edge.target, printingOptionsControl, constraints){
                   add( new AbstractAction("Focus in graph explorer") {
                     def actionPerformed(e: ActionEvent): Unit =
                       bus publish GraphFocus(graph, edge)

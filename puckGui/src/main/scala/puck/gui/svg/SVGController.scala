@@ -53,6 +53,7 @@ class SVGController
   val edgeMenuBuilder : NodeIdP => JPopupMenu = {
     e =>
       new EdgeMenu(genControl.Bus, e, printingOptionsControl, blurrySelection = true,
+        genControl.constraints,
         graph, graphUtils )
   }
 

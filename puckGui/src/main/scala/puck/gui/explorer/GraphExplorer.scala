@@ -32,6 +32,7 @@ import java.awt.event.ActionEvent
 import javax.swing.{AbstractAction, JPopupMenu, JTree}
 
 import puck.graph._
+import puck.graph.constraints.ConstraintsMaps
 import puck.gui.menus.NodeMenu
 
 
@@ -51,15 +52,15 @@ object GraphExplorer {
 }
 
 class GraphExplorer
-( bus : Publisher,
-  graphUtils : GraphUtils,
-  printingOptionsControl: PrintingOptionsControl)
+( control : PuckControl)
 (implicit treeIcons : DGTreeIcons)
   extends BoxPanel(Orientation.Vertical){
   contents += new Label("DG Explorer")
   val treeWrapper = new ScrollPane()
 
-  this listenTo bus
+  this listenTo control.Bus
+
+  import control.{Bus => bus, graphUtils, printingOptionsControl}
 
   var dynamicTree : DynamicDGTree = _
 
@@ -74,14 +75,20 @@ class GraphExplorer
   contents += treeWrapper
 
   val menuBuilder : NodeMenu.Builder =
-    NodeMenu(bus, graphUtils, printingOptionsControl, _, _, _, _)
-
+    NodeMenu(bus, graphUtils, printingOptionsControl, _, _, _, _, _)
 
   reactions += {
     case GraphUpdate(graph) =>
       dynamicTree =
-        new DynamicDGTree(new MutableTreeModel(graph), bus, menuBuilder, treeIcons)
+        new DynamicDGTree(new MutableTreeModel(graph), bus, menuBuilder, treeIcons, control.constraints)
       displayGraph(buttonVisible = false, Component.wrap(dynamicTree))
+
+    case ConstraintsUpdate(graph, cm) =>
+      dynamicTree =
+        new DynamicDGTree(new MutableTreeModel(graph), bus, menuBuilder, treeIcons, Some(cm))
+      displayGraph(buttonVisible = false, Component.wrap(dynamicTree))
+
+
     case GraphFocus(graph, edge) =>
       displayGraph(buttonVisible = true,  filteredTree(graph, Left(edge)))
     case VisibilityEvent(g, v) =>

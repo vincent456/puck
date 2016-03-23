@@ -51,6 +51,7 @@ class SVGConcreteNodeMenu
 (implicit treeIcons: DGTreeIcons)
   extends ConcreteNodeMenu(controller.genControl.Bus,
     controller.graph,
+    controller.genControl.constraints,
     controller.graphUtils,
     controller.selectedNodes,
     controller.selectedEdge,

@@ -30,6 +30,7 @@ package gui
 import java.io.File
 
 import puck.graph._
+import puck.graph.constraints.ConstraintsMaps
 import puck.graph.io.VisibilitySet
 
 import scala.swing.event.Event
@@ -43,6 +44,7 @@ case class RewriteHistory(rec : Recording) extends PuckEvent
 case class NodeClicked(node : DGNode) extends PuckEvent
 
 
+case class ConstraintsUpdate(graph : DependencyGraph, cm : ConstraintsMaps) extends PuckEvent
 sealed abstract class GraphStackEvent extends PuckEvent {
   val graph : DependencyGraph
 }

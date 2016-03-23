@@ -28,6 +28,7 @@ package puck.gui
 
 
 import puck.graph._
+import puck.graph.constraints.ConstraintsMaps
 import puck.gui.explorer.{GraphExplorer, DGTreeIcons, ConstraintViolationExplorer}
 import puck.gui.svg.SVGViewHandler
 
@@ -48,15 +49,13 @@ class TreeViewHandler
 
   import mainPanel.control
 
-  val graphExplorer =
-    new GraphExplorer(control.Bus,
-      control.graphUtils,
-      control.printingOptionsControl)
+  val graphExplorer = new GraphExplorer(control)
 
   this listenTo control.Bus
 
   reactions += {
-    case _: GraphStackEvent => update(control.graph)
+    case _: GraphStackEvent => update(control.graph, control.constraints)
+    case ConstraintsUpdate(g, cm) => update(g, Some(cm))
   }
 
 
@@ -65,28 +64,32 @@ class TreeViewHandler
 
 
   import mainPanel.downPanel
-  def update(graph : DependencyGraph) : Unit = {
-    val violations = graph.violations()
-      if (violations.isEmpty) {
-        downPanel.orientation = Orientation.Horizontal
-        downPanel.leftComponent = new Label("0 violation !")
-        downPanel.resizeWeight = 0
-        downPanel.dividerSize = 0
+  def update(graph : DependencyGraph, constraints : Option[ConstraintsMaps]) : Unit = {
+    val violations = constraints match {
+      case None => Seq()
+      case Some(cm) => (graph, cm).violations()
+    }
+
+    if (violations.isEmpty) {
+      downPanel.orientation = Orientation.Horizontal
+      downPanel.leftComponent = new Label("0 violation !")
+      downPanel.resizeWeight = 0
+      downPanel.dividerSize = 0
+    }
+    else {
+      downPanel.orientation = Orientation.Vertical
+      downPanel.leftComponent = new BoxPanel(Orientation.Vertical) {
+        contents += new Label("Constraints Violations")
+        val constraintViolationExplorer =
+          new ConstraintViolationExplorer(control.Bus, violations,
+            control.printingOptionsControl, constraints.get)(graph,
+            control.graphUtils,
+            treeIcons)
+        contents += constraintViolationExplorer
       }
-      else {
-        downPanel.orientation = Orientation.Vertical
-        downPanel.leftComponent = new BoxPanel(Orientation.Vertical) {
-          contents += new Label("Constraints Violations")
-          val constraintViolationExplorer =
-            new ConstraintViolationExplorer(control.Bus, violations,
-              control.printingOptionsControl)(graph,
-              control.graphUtils,
-              treeIcons)
-          contents += constraintViolationExplorer
-        }
-        downPanel.resizeWeight = 0.5
-        downPanel.dividerSize = 3
-      }
+      downPanel.resizeWeight = 0.5
+      downPanel.dividerSize = 3
+    }
     downPanel.repaint()
 
   }

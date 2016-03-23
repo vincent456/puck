@@ -30,6 +30,7 @@ package rules
 
 import puck.PuckError
 import puck.graph.DependencyGraph.AbstractionMap
+import puck.graph.constraints.ConstraintsMaps
 import puck.util.LoggedEither._
 import ShowDG._
 import scalaz.std.list._
@@ -42,7 +43,7 @@ trait MergingCandidatesFinder {
   implicit def mergeMatcher(n : ConcreteNode): MergeMatcher =
     mergeMatcherInstances.semanticMergeMatcher(n)
 
-  def find(g : DependencyGraph, nid : ConcreteNode) : Option[ConcreteNode] = None
+  def find(g : DependencyGraph, nid : ConcreteNode)(implicit constraints: ConstraintsMaps) : Option[ConcreteNode] = None
 
   def findIn(g : DependencyGraph, methodId : NodeId,  interfaceId : NodeId): Option[NodeId] =
     findIn(g, g.getConcreteNode(methodId), g.getConcreteNode(interfaceId))

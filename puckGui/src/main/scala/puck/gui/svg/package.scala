@@ -31,6 +31,7 @@ import java.io.{PipedInputStream, PipedOutputStream, InputStream}
 import org.apache.batik.anim.dom.SAXSVGDocumentFactory
 import org.apache.batik.util.XMLResourceDescriptor
 import org.w3c.dom.svg.SVGDocument
+import puck.graph.constraints.ConstraintsMaps
 import puck.graph.io.{Svg, DotPrinter, PrintingOptions}
 import puck.graph.{GraphUtils, DependencyGraph}
 
@@ -61,6 +62,7 @@ package object svg {
   def documentFromGraph
   ( graph: DependencyGraph,
     graphUtils : GraphUtils,
+    scm : Option[ConstraintsMaps],
     printingOptions: PrintingOptions,
     fail : Boolean = false)
   ( onDotConversionResult: scala.util.Try[Int] => Unit)
@@ -73,7 +75,7 @@ package object svg {
       documentFromStream(pipedInput)
     }
 
-    DotPrinter.genImage(graph, graphUtils.dotHelper, printingOptions, Svg,
+    DotPrinter.genImage(graph, graphUtils.dotHelper, scm, printingOptions, Svg,
       pipedOutput)(onDotConversionResult)
 
 

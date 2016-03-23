@@ -53,7 +53,7 @@ object QuickFrame {
       imgframe.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
     }
 
-    DotPrinter.genImage(graph, dotHelper, opts, Svg, pipedOutput)()
+    DotPrinter.genImage(graph, dotHelper, None, opts, Svg, pipedOutput)()
 
   }
 }

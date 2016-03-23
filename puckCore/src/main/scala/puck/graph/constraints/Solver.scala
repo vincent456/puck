@@ -1,4 +1,5 @@
 /*
+/*
  * Puck is a dependency analysis and refactoring tool.
  * Copyright (C) 2016 Loïc Girault loic.girault@gmail.com
  *               2016 Mikal Ziane  mikal.ziane@lip6.fr
@@ -504,3 +505,4 @@ class Solver
 
 
 }
+*/

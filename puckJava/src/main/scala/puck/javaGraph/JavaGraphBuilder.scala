@@ -39,7 +39,7 @@ trait JavaGraphBuilder extends GraphBuilder{
 
    g = new DependencyGraph(JavaNodeKind,
      NodeIndex(JavaNodeKind.root), EdgeMap(),
-     AbstractionMap(), ConstraintsMaps(), Recording())
+     AbstractionMap(), Recording())
 
 
 

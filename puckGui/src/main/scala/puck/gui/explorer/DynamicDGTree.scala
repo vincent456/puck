@@ -27,6 +27,7 @@
 package puck.gui.explorer
 
 import puck.actions.Choose
+import puck.graph.constraints.ConstraintsMaps
 import puck.graph.transformations.Recording
 import puck.gui._
 import java.awt.event.ActionEvent
@@ -125,7 +126,8 @@ class DynamicDGTree
 (model0 : MutableTreeModel,
  bus : Publisher,
  menuBuilder : NodeMenu.Builder,
- val icons: DGTreeIcons)
+ val icons: DGTreeIcons,
+ override val constraints : Option[ConstraintsMaps])
   extends JTree(model0) with DGTree with Reactor {
   self : JTree =>
 
@@ -161,7 +163,7 @@ class DynamicDGTree
   addNodeClickedAction {
     (e, node) =>
       if (isRightClick(e)) {
-        val menu: JPopupMenu = menuBuilder(graph, node.id, selectedNodes, None)
+        val menu: JPopupMenu = menuBuilder(graph, constraints, node.id, selectedNodes, None)
         menu.add(new AbstractAction("Node infos") {
           def actionPerformed(e: ActionEvent): Unit =
             bus publish NodeClicked(node)

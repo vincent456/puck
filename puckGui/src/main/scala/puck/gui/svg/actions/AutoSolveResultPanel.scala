@@ -31,6 +31,7 @@ import java.awt.Dimension
 import javax.swing.SwingUtilities
 
 import puck.graph._
+import puck.graph.constraints.ConstraintsMaps
 import puck.graph.io.{PrintingOptions, Visible, VisibilitySet}
 import VisibilitySet._
 import puck.gui._
@@ -77,6 +78,7 @@ trait GraphPanelResultPanel extends ResultPanel {
   val swingService : SwingService = DefaultSwingService
   def printingOptions : PrintingOptions
   val visibilitySet : VisibilitySet.T
+  val constraints : ConstraintsMaps
   val graphUtils : GraphUtils
   val publisher : Publisher
 
@@ -88,6 +90,7 @@ trait GraphPanelResultPanel extends ResultPanel {
     new ScrollPane() {
       documentFromGraph(graph,
         graphUtils,
+        Some(constraints),
         printingOptions.copy(visibility = visibilitySet))(
         documentFromGraphErrorMsgGen(
           msg => publisher.publish(Log(msg)))){
@@ -118,6 +121,7 @@ trait GraphPanelResultPanel extends ResultPanel {
 
 class AutosolveResultPanel
 ( val publisher : Publisher,
+  val constraints : ConstraintsMaps,
   violationTarget : ConcreteNode,
   printingOptionsControl: PrintingOptionsControl,
   res : Search[SResult])
@@ -158,7 +162,7 @@ class AutosolveResultPanel
   ( withSelector : Boolean,
     selector : => Component with Selector )  =
     if(withSelector) {
-      val p = new SelectorResultPanel(selector, this)
+      val p = new SelectorResultPanel(selector, constraints, this)
       p listenTo this
       this listenTo p
       this listenTo p.selector
@@ -252,6 +256,7 @@ class SuccessSelector(res : Search[SResult])
 
 class SelectorResultPanel
 (val selector : Component with Selector,
+ val constraints : ConstraintsMaps,
  val autosolveResultPanel : AutosolveResultPanel )
   extends BorderPanel with GraphPanelResultPanel {
 

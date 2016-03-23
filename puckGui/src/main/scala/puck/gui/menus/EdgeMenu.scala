@@ -31,6 +31,7 @@ import javax.swing.{AbstractAction, JPopupMenu}
 
 import puck.actions.{RedirectAction0, RemoveEdgeAction}
 import puck.graph._
+import puck.graph.constraints.ConstraintsMaps
 import puck.gui.svg.actions._
 import puck.gui._
 
@@ -42,6 +43,7 @@ class EdgeMenu
   edge : NodeIdP,
   printingOptionsControl: PrintingOptionsControl,
   blurrySelection : Boolean,
+  constraints: Option[ConstraintsMaps],
   implicit val graph: DependencyGraph,
   implicit val graphUtils: GraphUtils)
   extends JPopupMenu {
@@ -52,11 +54,15 @@ class EdgeMenu
   println("target" + graph.getConcreteNode(target))
   println("abstractions " +graph.abstractions(target))
 
-  if(graph.isViolation(edge)){
-    val targetNode = graph.getConcreteNode(target)
-    //add(new ManualSolveAction(publisher, targetNode))
-    add(new AutoSolveAction(publisher, targetNode, printingOptionsControl))
+  constraints foreach {
+    cm =>
+      if((graph, cm).isViolation(edge)){
+        val targetNode = graph.getConcreteNode(target)
+        //add(new ManualSolveAction(publisher, targetNode))
+        add(new AutoSolveAction(publisher, cm, targetNode, printingOptionsControl))
+      }
   }
+
 
   var isIsaEdge = false
   var isUseEdge = false

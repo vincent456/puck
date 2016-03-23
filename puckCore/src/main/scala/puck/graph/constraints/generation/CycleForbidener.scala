@@ -48,13 +48,12 @@ object CycleForbidener {
   }
 
 
-  def genConstraints(g : DependencyGraph) : DependencyGraph ={
+  def genConstraints(g : DependencyGraph) : ConstraintsMaps ={
     val wdg = WeightedDirectedGraph.fromDG(g, isNameSpace)
     val remover = new GreedyCycleRemover(WDGHelper)
     val edgesToRemove = remover.edgesToRemove(wdg)
-    val cm =
-      (edgesToRemove map edgeToConstraint).
+    (edgesToRemove map edgeToConstraint).
         foldLeft(ConstraintsMaps())(_.addHideConstraint(_))
-    g.newGraph(constraints = cm)
+
   }
 }

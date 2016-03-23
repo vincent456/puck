@@ -244,8 +244,14 @@ class PuckInterfacePanel
 
       contents += makeButton("Focus on Violations",
         "Display a visual representation of the graph"){
-        () => publisher publish
-          VisibilityEvent(control.graph, VisibilitySet.violationsOnly(control.graph))
+        () =>
+          val vs = control.constraints match {
+            case None => VisibilitySet.allHidden(control.graph)
+            case Some(cm) => VisibilitySet.violationsOnly(control.graph, cm)
+          }
+
+          publisher publish VisibilityEvent(control.graph, vs)
+
       }
 
       val testCommutativityCB = new CheckBox("Test commutativity")
@@ -260,7 +266,8 @@ class PuckInterfacePanel
 
 
   reactions += {
-    case GraphUpdate(g) =>
+    case GraphUpdate(_)
+    | ConstraintsUpdate(_,_) =>
       contents.clear()
       addAlwaysVisibleButtons()
       addLoadedGraphButtons()

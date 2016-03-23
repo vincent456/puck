@@ -32,6 +32,7 @@ import javax.swing.{JMenuItem, JPopupMenu}
 
 import puck.actions._
 import puck.graph._
+import puck.graph.constraints.ConstraintsMaps
 import puck.graph.transformations.rules.Redirection
 import puck.gui.PrintingOptionsControl
 import puck.gui.explorer.DGTreeIcons
@@ -45,19 +46,20 @@ import scala.swing.Publisher
 
 object NodeMenu{
 
-  type Builder = (DependencyGraph, NodeId, List[NodeId], Option[NodeIdP]) => JPopupMenu
+  type Builder = (DependencyGraph, Option[ConstraintsMaps], NodeId, List[NodeId], Option[NodeIdP]) => JPopupMenu
 
   def apply(bus : Publisher,
             graphUtils : GraphUtils,
             printingOptionsControl : PrintingOptionsControl,
             graph : DependencyGraph,
+            cm : Option[ConstraintsMaps],
             nodeId : NodeId,
             selectedNodes: List[NodeId],
             selectedEdge : Option[NodeIdP])
            (implicit treeIcons: DGTreeIcons): JPopupMenu =
     graph.getNode(nodeId) match {
       case n : ConcreteNode =>
-        new ConcreteNodeMenu(bus, graph, graphUtils, selectedNodes, selectedEdge, n, printingOptionsControl)
+        new ConcreteNodeMenu(bus, graph, cm, graphUtils, selectedNodes, selectedEdge, n, printingOptionsControl)
       case n : VirtualNode =>
         new VirtualNodeMenu(bus, graph, graphUtils, n)
     }
@@ -66,6 +68,7 @@ object NodeMenu{
 class ConcreteNodeMenu
 (bus: Publisher,
  implicit val graph : DependencyGraph,
+ scm : Option[ConstraintsMaps],
  implicit val graphUtils : GraphUtils,
  val selectedNodes: List[NodeId],
  val selectedEdge : Option[NodeIdP],
@@ -109,10 +112,14 @@ class ConcreteNodeMenu
 
     selectedEdge foreach addEdgeSelectedOption
 
-    if (graph.isWronglyContained(node.id)
-      || graph.isWronglyUsed(node.id)) {
-      ignore(this add new AutoSolveAction(bus, node, printingOptionsControl))
+    scm foreach {
+      cm =>
+        if ((graph, cm).isWronglyContained(node.id)
+          || (graph, cm).isWronglyUsed(node.id)) {
+          ignore(this add new AutoSolveAction(bus, cm, node, printingOptionsControl))
+        }
     }
+
   }
 
   def abstractionChoices : Seq[JMenuItem] =

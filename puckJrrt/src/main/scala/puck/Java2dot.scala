@@ -28,7 +28,7 @@ package puck
 
 import java.io.{File, FileReader}
 
-import puck.graph.constraints.ConstraintsParser
+import puck.graph.constraints.{ConstraintsMaps, ConstraintsParser}
 import puck.graph.io.VisibilitySet._
 import puck.graph.io._
 import puck.graph.{DependencyGraph, NodeId}
@@ -40,6 +40,7 @@ object Java2dot {
   def quickDot
   ( outFileName : String,
     dg : DependencyGraph,
+    cm : ConstraintsMaps,
     fullName2id : Map[String, NodeId]) : Unit = {
 
     val vis =
@@ -48,7 +49,7 @@ object Java2dot {
         .setVisibility(dg.subTree(fullName2id("@primitive")), Hidden)
 
     val options = PrintingOptions(vis, printId = true, printSignatures = false, selectedUse = None)
-    DotPrinter.genDotFile(dg, JavaDotHelper, options, outFileName)
+    DotPrinter.genDotFile(dg, JavaDotHelper, Some(cm), options, outFileName)
   }
 
   def main (args: Array[String]) : Unit = {
@@ -62,6 +63,6 @@ object Java2dot {
 
     val cm = ConstraintsParser(fullName2id, new FileReader(decouple))
 
-    quickDot(outFileName, dg.newGraph(constraints = cm), fullName2id)
+    quickDot(outFileName, dg, cm, fullName2id)
   }
 }

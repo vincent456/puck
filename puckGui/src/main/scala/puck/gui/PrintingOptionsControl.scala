@@ -55,12 +55,13 @@ class PrintingOptionsControl
   private var printConcreteUsesPerVirtualEdges : Boolean = true
   private var printRedOnly : Boolean = true
   private var selectedEdgeForTypePrinting0 : Option[Uses] = None
-
+  private var printTypeUses : Boolean = false
 
   def printingOptions =
     PrintingOptions(visibility, printId, printSignatures,
       selectedEdgeForTypePrinting0,
-      printVirtualEdges, printConcreteUsesPerVirtualEdges,
+      printVirtualEdges, printTypeUses,
+      printConcreteUsesPerVirtualEdges,
       printRedOnly)
 
   def visibility : VisibilitySet.T = _visibility
@@ -105,6 +106,14 @@ class PrintingOptionsControl
   def concreteUsesPerVirtualEdges_=(b : Boolean): Unit = {
     if( b != printConcreteUsesPerVirtualEdges ){
       printConcreteUsesPerVirtualEdges = b
+      bus publish PrintingOptionsUpdate
+    }
+  }
+
+  def typeUsesVisible = printTypeUses
+  def typeUsesVisible_=(b : Boolean): Unit = {
+    if( b != printTypeUses ){
+      printTypeUses = b
       bus publish PrintingOptionsUpdate
     }
   }

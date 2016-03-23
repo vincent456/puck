@@ -30,6 +30,8 @@ package io
 
 import java.io._
 
+import puck.graph.constraints.ConstraintsMaps
+
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.sys.process.Process
@@ -74,22 +76,25 @@ object DotPrinter {
   def genDot
   ( graph : DependencyGraph,
     dotHelper: DotHelper,
+    scm : Option[ConstraintsMaps],
     printingOptions: PrintingOptions,
     writer : OutputStreamWriter) : Unit =
-    new DotPrinter(new BufferedWriter(writer), graph, dotHelper, printingOptions).print()
+    new DotPrinter(new BufferedWriter(writer), graph, dotHelper, scm, printingOptions).print()
 
 
   def genDotFile
   ( graph : DependencyGraph,
     dotHelper: DotHelper,
+    scm : Option[ConstraintsMaps],
     printingOptions: PrintingOptions,
     pathWithoutSuffix : String) : Unit =
-    genDot(graph, dotHelper, printingOptions, new FileWriter(pathWithoutSuffix + ".dot"))
+    genDot(graph, dotHelper, scm, printingOptions, new FileWriter(pathWithoutSuffix + ".dot"))
 
 
   def genImage
   (graph : DependencyGraph,
    dotHelper: DotHelper,
+   scm : Option[ConstraintsMaps],
    printingOptions: PrintingOptions,
    outputFormat: DotOutputFormat,
    output : OutputStream)
@@ -103,7 +108,7 @@ object DotPrinter {
       (dotProcessBuilderFromInputStream(pipedInput, outputFormat) #> output).!
     } onComplete finish
 
-    genDot(graph, dotHelper, printingOptions, writer = new OutputStreamWriter(pipedOutput))
+    genDot(graph, dotHelper, scm, printingOptions, writer = new OutputStreamWriter(pipedOutput))
   }
 
 }
@@ -114,6 +119,7 @@ case class PrintingOptions
  printSignatures : Boolean = false,
  selectedUse : Option[Uses] = None,
  printVirtualEdges : Boolean = false,
+ printTypeUses : Boolean = true,
  printConcreteUsesPerVirtualEdges : Boolean = true,
  redOnly: Boolean = false)
 
@@ -122,6 +128,7 @@ class DotPrinter
 ( writer: BufferedWriter,
   graph : DependencyGraph,
   helper : DotHelper,
+  scm : Option[ConstraintsMaps],
   printingOptions: PrintingOptions){
 
   import printingOptions._
@@ -174,7 +181,11 @@ class DotPrinter
           case _ => e
       }
 
-  private val concreteViolations : Seq[DGEdge] = graph.violations map transformParamOrDefToDecl distinct
+  private val concreteViolations : Seq[DGEdge] = scm match {
+    case None => Seq()
+    case Some(cm) => (graph,cm).violations map transformParamOrDefToDecl distinct
+  }
+
 
 //  import scalaz.syntax.show._
 //  import ShowDG._
@@ -483,8 +494,13 @@ class DotPrinter
         case (e, v) => printArc(violationStyle(v), isaStyle)(e)
       }
 
+
+      val usesList =
+        if(printTypeUses) graph.usesList
+        else graph.usesListExludingTypeUses
+
       val (reg, virt, virtualViolations) =
-        filterAllEdgeBasedOnVisibleNodesAndFlagViolations(graph.usesListExludingTypeUses map Uses.apply, virt0, virtualViolations0)
+        filterAllEdgeBasedOnVisibleNodesAndFlagViolations(usesList map Uses.apply, virt0, virtualViolations0)
 
       reg.foreach { case (e, v) => printArc(violationStyle(v), usesStyle)(e) }
 

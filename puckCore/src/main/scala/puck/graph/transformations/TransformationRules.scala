@@ -43,7 +43,7 @@ class TransformationRules
 
 
 
-  def findMergingCandidate = mergingCandidatesFinder.find _
+  //def findMergingCandidate = mergingCandidatesFinder.find _
   def mergeMatcherInstances = mergingCandidatesFinder.mergeMatcherInstances
 
   lazy val merge = new Merge(mergingCandidatesFinder)
@@ -52,8 +52,8 @@ class TransformationRules
   val redirection = Redirection
   val move = Move
 
-  def addHideFromRootException(g : DependencyGraph, node : NodeId, friend : NodeId): DependencyGraph =
-    g.newGraph(constraints = g.constraints.addHideFromRootException(g, node, friend))
+//  def addHideFromRootException(g : DependencyGraph, node : NodeId, friend : NodeId): DependencyGraph =
+//    g.newGraph(constraints = g.constraints.addHideFromRootException(g, node, friend))
   /*def addHideFromRootException(node : NIdT, friend : NIdT): GraphT = {
     constraints.printConstraints(g, logger, (PuckLog.InGraph, PuckLog.Debug))
     val ng = newGraph(nConstraints = constraints.addHideFromRootException(g, node,friend))

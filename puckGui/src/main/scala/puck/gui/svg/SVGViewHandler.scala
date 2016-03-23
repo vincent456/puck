@@ -31,6 +31,7 @@ import javax.swing.JButton
 
 import puck._
 import puck.actions.AddNodeAction
+import puck.graph.constraints.ConstraintsMaps
 import puck.graph.{NameSpace, GraphUtils, DependencyGraph}
 import puck.graph.io.DotPrinter
 import puck.gui.explorer.DGTreeIcons
@@ -60,10 +61,14 @@ class SVGViewHandler
   this listenTo mainPanel.control.Bus
   reactions += {
     case ge : GraphStackEvent =>
-      this.displayGraph(ge.graph)
+      this.displayGraph(ge.graph, control.constraints)
 
     case PrintingOptionsUpdate =>
-      this.displayGraph(control.graph)
+      this.displayGraph(control.graph, control.constraints)
+
+    case ConstraintsUpdate(g, cm) =>
+      this.displayGraph(g, Some(cm))
+
   }
 
 
@@ -76,8 +81,8 @@ class SVGViewHandler
   mainPanel.upPanel.setGraphView(Component.wrap(canvas))
 
 
-  def displayGraph(graph : DependencyGraph, recCall : Boolean = false): Unit =
-    documentFromGraph(graph, graphUtils,
+  def displayGraph(graph : DependencyGraph, scm : Option[ConstraintsMaps], recCall : Boolean = false): Unit =
+    documentFromGraph(graph, graphUtils, scm,
       printingOptionsControl.printingOptions) {
       res =>
         val smsg : Option[String] = res match {
@@ -90,7 +95,7 @@ class SVGViewHandler
               val tmpDir = System.getProperty("java.io.tmpdir")
               val f = new File(tmpDir + File.separator + "graph.dot")
 
-              DotPrinter.genDot(graph, graphUtils.dotHelper,
+              DotPrinter.genDot(graph, graphUtils.dotHelper, scm,
                 printingOptionsControl.printingOptions,
                 new FileWriter(f))
 
@@ -109,7 +114,7 @@ class SVGViewHandler
         swingInvokeLater(() => canvas.setDocument(doc))
     }
 
-  displayGraph(control.graph)
+  displayGraph(control.graph, control.constraints)
 
   mainPanel.downPanel.leftComponent = new SVGMenu(svgController)
 
@@ -139,6 +144,10 @@ object SVGMenu {
     addCheckBox ("Show Virtual Edges",
       printingOptions.printVirtualEdges) {
       b => control.virtualEdgesVisible = b
+    }
+    addCheckBox ("Show Type Uses",
+      printingOptions.printTypeUses) {
+      b => control.typeUsesVisible = b
     }
     addCheckBox ("Concrete Uses/Virtual Edge",
       printingOptions.printConcreteUsesPerVirtualEdges) {

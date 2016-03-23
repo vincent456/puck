@@ -54,16 +54,16 @@ object CycleBreaker {
 
     QuickFrame(dg2ast.initialGraph, "g", JavaDotHelper)
 
-    val searchControlStrategy =
-          new CouplingConstraintSolvingControl(
-            gu.transformationRules, dg2ast.initialGraph,
-            dg2ast.initialGraph getConcreteNode n)
-
-    val engine =
-         new SearchEngine(new DepthFirstSearchStrategy(), searchControlStrategy)
-
-        engine.explore()
-//    val g2 = CycleForbidener.genConstraints(dg2ast.initialGraph)
+//    val searchControlStrategy =
+//          new CouplingConstraintSolvingControl(
+//            gu.transformationRules, dg2ast.initialGraph,
+//            dg2ast.initialGraph getConcreteNode n)
+//
+//    val engine =
+//         new SearchEngine(new DepthFirstSearchStrategy(), searchControlStrategy)
+//
+//        engine.explore()
+//    val g2 = Forbidener.genConstraints(dg2ast.initialGraph)
 //    println("#####################")
 //    println("Generated constraints :")
 //

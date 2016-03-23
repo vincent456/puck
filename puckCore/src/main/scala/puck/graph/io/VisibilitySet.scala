@@ -26,6 +26,7 @@
 
 package puck.graph.io
 
+import puck.graph.constraints.ConstraintsMaps
 import puck.graph.{NodeKind, DependencyGraph, NodeId}
 
 trait Visibility{
@@ -51,8 +52,8 @@ object VisibilitySet{
     Set[NodeId]().setVisibility(graph.nodesId, Hidden)
 
 
-  def violationsOnly(graph : DependencyGraph) : T =
-    graph.violations().foldLeft(allHidden(graph)){
+  def violationsOnly(graph : DependencyGraph, constraints : ConstraintsMaps) : T =
+    (graph, constraints).violations().foldLeft(allHidden(graph)){
       (s, edge) =>
       val path1 = graph.containerPath(edge.source)
       val path2 = graph.containerPath(edge.target)

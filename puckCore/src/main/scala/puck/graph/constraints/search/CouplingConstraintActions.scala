@@ -29,7 +29,7 @@ package constraints.search
 
 import puck.graph.ShowDG._
 import puck.graph._
-import puck.graph.constraints.SupertypeAbstraction
+import puck.graph.constraints.{ConstraintsMaps, SupertypeAbstraction}
 import puck.graph.transformations.TransformationRules
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, CreateVarStrategy}
 import puck.search._
@@ -46,6 +46,7 @@ import scalaz.{-\/, \/-, NonEmptyList}
 class CouplingConstraintSolvingAllViolationsControl
 (val rules : TransformationRules,
  val initialGraph : DependencyGraph,
+ val constraints : ConstraintsMaps,
  val violationsKindPriority : Seq[NodeKind]
 ) extends SearchControl[DependencyGraph] {
 
@@ -53,14 +54,14 @@ class CouplingConstraintSolvingAllViolationsControl
                   l : Seq[NodeKind] = violationsKindPriority.toStream) : Seq[DGNode] =  l match {
     case topPriority +: tl =>
       val tgts = graph.nodes.toStream filter { n =>
-        n.kind == topPriority && (graph.wrongUsers(n.id).nonEmpty ||
-          graph.isWronglyContained(n.id))
+        n.kind == topPriority && ((graph, constraints).wrongUsers(n.id).nonEmpty ||
+          (graph, constraints).isWronglyContained(n.id))
       }
       if(tgts.nonEmpty) tgts
       else findTargets(graph, tl)
 
-    case Seq() => graph.nodes.toStream filter { n => graph.wrongUsers(n.id).nonEmpty ||
-      graph.isWronglyContained(n.id) }
+    case Seq() => graph.nodes.toStream filter { n => (graph, constraints).wrongUsers(n.id).nonEmpty ||
+      (graph, constraints).isWronglyContained(n.id) }
   }
 
   def nextStates(g : DependencyGraph) : Seq[LoggedTry[DependencyGraph]] = {
@@ -75,7 +76,7 @@ class CouplingConstraintSolvingAllViolationsControl
 
         val engine =
           new SearchEngine(new DepthFirstSearchStrategy(),
-            new CouplingConstraintSolvingControl(rules, g, cn),
+            new CouplingConstraintSolvingControl(rules, g, constraints, cn),
             Some(1))
 
         engine.explore()
@@ -91,6 +92,7 @@ class CouplingConstraintSolvingAllViolationsControl
 class CouplingConstraintSolvingControl
 (val rules : TransformationRules,
  val initialGraph : DependencyGraph,
+ val constraints : ConstraintsMaps,
  val violationTarget : ConcreteNode
   ) extends SearchControl[(DependencyGraph, Int)]{
 
@@ -108,7 +110,7 @@ class CouplingConstraintSolvingControl
 
   def nextStates(state : (DependencyGraph, Int)) : Seq[LoggedTry[(DependencyGraph, Int)]] = {
     val  (g, automataState) = state
-    if(g.isWronglyUsed(violationTarget.id) || g.isWronglyContained(violationTarget.id))
+    if((g, constraints).isWronglyUsed(violationTarget.id) || (g, constraints).isWronglyContained(violationTarget.id))
       automataState match {
         case 0 =>
           val s =
@@ -133,7 +135,7 @@ class CouplingConstraintSolvingControl
   }
 
 
-  val actionsGenerator = new SolvingActions(rules)
+  val actionsGenerator = new SolvingActions(rules, constraints)
 
   def extractGraph[A](ng : (A, DependencyGraph)): DependencyGraph = ng._2
 
@@ -174,13 +176,14 @@ class CouplingConstraintSolvingControl
   }
 
   def checkSuccess(g : DependencyGraph ) : LoggedTry[DependencyGraph] =
-    if(g.isWronglyUsed(violationTarget.id)) LoggedError("Remaining violations")
+    if((g, constraints).isWronglyUsed(violationTarget.id)) LoggedError("Remaining violations")
     else LoggedSuccess(g)
 
 }
 
 class SolvingActions
-(val rules : TransformationRules) {
+(val rules : TransformationRules,
+ implicit val constraints: ConstraintsMaps) {
 
   var newCterNumGen = 0
 
@@ -237,10 +240,10 @@ class SolvingActions
       case (toBeCtedHost, g) =>
         val hostStream =
         chooseNode((dg, hostHost) => dg.canContain(hostHost, toBeCtedHost) &&
-            !dg.isViolation(Contains(hostHost.id, toBeCtedHost.id)) && {
+            !(dg, constraints).isViolation(Contains(hostHost.id, toBeCtedHost.id)) && {
             val dg2 = dg.addContains(hostHost.id, toBeCtedHost.id)
                         .addContains(toBeCtedHost.id, toBeContained.id)
-            !dg2.isWronglyUsed(toBeContained.id)
+            !(dg2, constraints).isWronglyUsed(toBeContained.id)
         })(g)
 
         hostStream  map (ltg => s"Searching host for $toBeCtedHost\n" <++: ltg map {
@@ -252,11 +255,11 @@ class SolvingActions
   def findHost
   (toBeContained: ConcreteNode): DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] =
    chooseNode((dg, cn) => dg.canContain(cn, toBeContained) &&
-      !dg.isViolation(Contains(cn.id, toBeContained.id)) && {
+      !(dg, constraints).isViolation(Contains(cn.id, toBeContained.id)) && {
       val dg1 : DependencyGraph =
         dg.container(toBeContained.id) map (dg.removeContains(_, toBeContained.id)) getOrElse dg
       val dg2 = dg1.addContains(cn.id, toBeContained.id)
-      dg2.subTree(toBeContained.id).forall(!dg2.isWronglyUsed(_)) //needed when moving violation host
+      dg2.subTree(toBeContained.id).forall(!(dg2, constraints).isWronglyUsed(_)) //needed when moving violation host
     }
    )
 
@@ -459,7 +462,7 @@ class SolvingActions
     DependencyGraph => Stream[LoggedTG] =
     g =>
         redirectTowardExistingAbstractions(used,
-          g wrongUsers used.id,
+          (g, constraints) wrongUsers used.id,
           g abstractions used.id)(g)
 
 
@@ -482,11 +485,11 @@ class SolvingActions
             val uses = g.getUsesEdge(userId, used.id).get
 
             (abs, uses.accessKind) match {
-              case (AccessAbstraction(absId, _), _) => g.interloperOf(userId, absId)
-              case (ReadWriteAbstraction(Some(rid), _), Some(Read)) => g.interloperOf(userId, rid)
-              case (ReadWriteAbstraction(_, Some(wid)), Some(Write)) => g.interloperOf(userId, wid)
+              case (AccessAbstraction(absId, _), _) => (g, constraints).interloperOf(userId, absId)
+              case (ReadWriteAbstraction(Some(rid), _), Some(Read)) => (g, constraints).interloperOf(userId, rid)
+              case (ReadWriteAbstraction(_, Some(wid)), Some(Write)) => (g, constraints).interloperOf(userId, wid)
               case (ReadWriteAbstraction(Some(rid), Some(wid)), Some(RW)) =>
-                g.interloperOf(userId, rid) || g.interloperOf(userId, wid)
+                (g, constraints).interloperOf(userId, rid) || (g, constraints).interloperOf(userId, wid)
               case _ => sys.error("should not happen")
             }
 

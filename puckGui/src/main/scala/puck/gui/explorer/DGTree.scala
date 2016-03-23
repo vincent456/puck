@@ -34,6 +34,7 @@ import javax.swing.tree.{DefaultTreeCellRenderer, TreePath}
 import javax.swing.{JTree, Icon}
 
 import puck.graph._
+import puck.graph.constraints.ConstraintsMaps
 
 /**
   * Created by Loïc Girault on 29/01/16.
@@ -45,6 +46,7 @@ trait DGTree {
   self : JTree =>
 
   def graph : DependencyGraph = getModel.asInstanceOf[TreeModelAdapter].graph
+  def constraints : Option[ConstraintsMaps] = None
   def icons : DGTreeIcons
 
   def convertNodeToText(n : DGNode) : String = n.name
@@ -96,7 +98,7 @@ trait DGTree {
 object DGNodeWithViolationTreeCellRenderer
   extends DefaultTreeCellRenderer {
 
-  def sourceOfViolation(graph : DependencyGraph, nodeId : NodeId) : Boolean = {
+  def sourceOfViolation(graph : DependencyGraph, constraints: ConstraintsMaps, nodeId : NodeId) : Boolean = {
 
     val usedByDef =
       graph.kindType(nodeId) match {
@@ -106,12 +108,12 @@ object DGNodeWithViolationTreeCellRenderer
           graph.definitionOf(nodeId) map graph.usedByExcludingTypeUse getOrElse Set[NodeId]()
         case _ => Set[NodeId]()
       }
-    (graph usedByExcludingTypeUse nodeId) ++ usedByDef exists (used => graph isViolation ((nodeId, used)))
+    (graph usedByExcludingTypeUse nodeId) ++ usedByDef exists (used => (graph, constraints) isViolation ((nodeId, used)))
   }
 
 
-  def targetOfViolation(graph : DependencyGraph, nodeId : NodeId) : Boolean =
-    (graph usersOfExcludingTypeUse nodeId) exists (user => graph isViolation ((user, nodeId)))
+  def targetOfViolation(graph : DependencyGraph, constraints: ConstraintsMaps, nodeId : NodeId) : Boolean =
+    (graph usersOfExcludingTypeUse nodeId) exists (user => (graph, constraints) isViolation ((user, nodeId)))
 
   override def getTreeCellRendererComponent(tree: JTree, value: scala.Any, selected: Mutability,
                                             expanded: Mutability, leaf: Mutability, row: NodeId,
@@ -120,8 +122,9 @@ object DGNodeWithViolationTreeCellRenderer
     tree match {
       case dgTree : DGTree =>
         val node = value.asInstanceOf[DGNode]
-        if(sourceOfViolation(dgTree.graph, node.id) ||
-          targetOfViolation(dgTree.graph, node.id))
+        if(dgTree.constraints.nonEmpty &&
+          (sourceOfViolation(dgTree.graph, dgTree.constraints.get, node.id) ||
+          targetOfViolation(dgTree.graph, dgTree.constraints.get, node.id)))
           c.setForeground(Color.RED)
 
         setIcon(dgTree.icons.iconOfKind(node.kind))

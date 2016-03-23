@@ -51,7 +51,6 @@ class GraphStack(val bus : Publisher) {
     undoStack.clear()
     redoStack.clear()
     undoStack push g
-    bus publish GraphUpdate(g)
   }
 
   def fireEmptied() : Unit =

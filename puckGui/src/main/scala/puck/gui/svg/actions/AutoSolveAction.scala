@@ -30,6 +30,7 @@ import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
 
 import puck.graph._
+import puck.graph.constraints.ConstraintsMaps
 import puck.graph.constraints.search.CouplingConstraintSolvingControl
 import puck.gui.PrintingOptionsControl
 import puck.search.{Search, SearchEngine, DepthFirstSearchStrategy}
@@ -43,6 +44,7 @@ import scala.swing.Dialog.{Message, Options, Result}
 
 class AutoSolveAction
 ( publisher : Publisher,
+  cm : ConstraintsMaps,
   violationTarget : ConcreteNode,
   printingOptionsControl: PrintingOptionsControl)
 (implicit graph : DependencyGraph,
@@ -66,7 +68,7 @@ class AutoSolveAction
 //      }
 //    }
 //    else {
-    val panel = new AutosolveResultPanel(publisher, violationTarget, printingOptionsControl, res)
+    val panel = new AutosolveResultPanel(publisher, cm, violationTarget, printingOptionsControl, res)
     confirm(panel) match {
         case Result.Ok => Some( panel.selectedResult)
         case Result.Cancel
@@ -87,7 +89,7 @@ class AutoSolveAction
     val searchControlStrategy =
       new CouplingConstraintSolvingControl(
         graphUtils.transformationRules,
-        g, violationTarget)
+        g, cm, violationTarget)
 
     val engine =
       new SearchEngine(

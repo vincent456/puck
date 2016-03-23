@@ -74,7 +74,7 @@ object DependencyGraph {
                focus : Set[NodeId]): DependencyGraph = {
     val kw = fullGraph.nodeKindKnowledge
     val g0 = new DependencyGraph(kw, NodeIndex(kw.root), EdgeMap(),
-      AbstractionMap(), fullGraph.constraints, Recording())
+      AbstractionMap(), Recording())
 
 //    def addNodes(it : Iterable[NodeId], g0 : DependencyGraph) : DependencyGraph =
 //      it.foldLeft(g0)
@@ -91,6 +91,39 @@ object DependencyGraph {
     }
   }
 
+  implicit class ConstraintsOps(val gc : (DependencyGraph, ConstraintsMaps)) extends AnyVal {
+    def graph = gc._1
+    def constraints = gc._2
+
+    def violations() : Seq[DGEdge] = {
+      (graph.containsList filter isViolation map Contains.apply) ++:
+        (graph.usesList filter isViolation map Uses.apply)
+    }
+
+    def isViolation(e : NodeIdP) : Boolean = {
+      val (source, target) = e
+      constraints.isViolation(graph, source, target)
+    }
+
+    def isViolation(e : DGEdge) : Boolean = {
+      e.kind match {
+        case AbstractEdgeKind => false
+        case _ => /*Contains | ContainsDef | ContainsParam | Uses | Isa => */
+          constraints.isViolation(graph, e.source, e.target)
+
+      }
+    }
+
+    def wrongUsers(id : NodeId) : List[NodeId] = constraints.wrongUsers(graph, id)
+    def interloperOf(id1 : NodeId, id2 :NodeId) = constraints.isViolation(graph, id1, id2)
+    def isWronglyUsed(id : NodeId) = constraints.wrongUsers(graph, id).nonEmpty
+    def isWronglyContained(id : NodeId) : Boolean = constraints.isWronglyContained(graph, id)
+
+    def printConstraints[V](logger : Logger[V], v : V) : Unit =
+      constraints.printConstraints(graph, logger)(v)
+
+  }
+
 }
 
 
@@ -100,19 +133,17 @@ class DependencyGraph
   /*private [this]*/ val nodesIndex : NodeIndex,
   /*private [this]*/ val edges : EdgeMap,
   /*private [this]*/ val abstractionsMap : AbstractionMap,
-  val constraints : ConstraintsMaps,
   val recording : Recording) {
 
   def newGraph(//nLogger : PuckLogger = logger,
                nodesIndex : NodeIndex = nodesIndex,
                edges : EdgeMap = edges,
                abstractionsMap : AbstractionMap = abstractionsMap,
-               constraints : ConstraintsMaps = constraints,
                recording : Recording = recording) : DependencyGraph =
     new DependencyGraph(//nLogger,
                         nodeKindKnowledge,
                         nodesIndex, edges,
-                        abstractionsMap, constraints, recording)
+                        abstractionsMap, recording)
 
   //def withLogger(l : PuckLogger) = newGraph(nLogger = l)
   implicit val defaulVerbosity : PuckLog.Verbosity =
@@ -599,37 +630,6 @@ class DependencyGraph
             rId.contains(absId) || wId.contains(absId)
         }
     }
-
-  def violations() : Seq[DGEdge] ={
-    def isViolation(e : NodeIdP) = constraints.isViolation(this, e._1, e._2)
-    (containsList filter isViolation map Contains.apply) ++:
-      (usesList filter isViolation map Uses.apply)
-  }
-
-
-
-
-  def isViolation(e : NodeIdP) : Boolean = {
-    val (source, target) = e
-    constraints.isViolation(this, source, target)
-  }
-
-  def isViolation(e : DGEdge) : Boolean = {
-    e.kind match {
-      case AbstractEdgeKind => false
-      case _ => /*Contains | ContainsDef | ContainsParam | Uses | Isa => */
-        constraints.isViolation(this, e.source, e.target)
-
-    }
-  }
-
-  def wrongUsers(id : NodeId) : List[NodeId] = constraints.wrongUsers(this, id)
-  def interloperOf(id1 : NodeId, id2 :NodeId) = constraints.isViolation(this, id1, id2)
-  def isWronglyUsed(id : NodeId) = constraints.wrongUsers(this, id).nonEmpty
-  def isWronglyContained(id : NodeId) : Boolean = constraints.isWronglyContained(this, id)
-
-  def printConstraints[V](logger : Logger[V], v : V) : Unit =
-    constraints.printConstraints(this, logger)(v)
 
   def subTree(root : NodeId, includeRoot : Boolean = true) : Seq[NodeId] = {
 

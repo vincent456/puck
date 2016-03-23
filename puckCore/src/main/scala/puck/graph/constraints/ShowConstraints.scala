@@ -33,7 +33,7 @@ trait ShowConstraints {
   type CordBuilder[A] = (DependencyGraph, A) => Cord
 
   implicit def rangeCord : CordBuilder[Range] = { (dg, r) =>
-    val prefix = r match { case Scope(id) => "'" case Element(id) => "e:'" }
+    val prefix = r match { case Scope(id) => "'" case Element(id) => "r:'" }
     Cord(prefix, dg.fullName(r.nid), "'")
   }
 

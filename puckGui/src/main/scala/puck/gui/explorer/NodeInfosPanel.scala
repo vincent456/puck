@@ -53,8 +53,9 @@ class NodeInfosPanel
       if (isRightClick(evt))
         Swing.onEDT(new EdgeMenu(control.Bus, edge,
           control.printingOptionsControl,
-          blurrySelection = false, graph,
-          control.graphUtils).show(c.peer, evt.getX, evt.getY))
+          blurrySelection = false,
+          control.constraints,
+          graph, control.graphUtils).show(c.peer, evt.getX, evt.getY))
       else edge match {
         case Uses(src,tgt,ak) =>
           bus publish Log(NodeInfosPanel.useBindings(graph, Uses(src,tgt,ak)))

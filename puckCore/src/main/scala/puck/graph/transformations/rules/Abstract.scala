@@ -28,7 +28,7 @@ package puck.graph
 package transformations.rules
 
 import puck.graph.ShowDG._
-import puck.graph.constraints.{AbstractionPolicy, DelegationAbstraction, SupertypeAbstraction}
+import puck.graph.constraints.{ConstraintsMaps, AbstractionPolicy, DelegationAbstraction, SupertypeAbstraction}
 import puck.util.LoggedEither._
 
 import scalaz.std.list._
@@ -39,7 +39,8 @@ abstract class Abstract {
 
   def absIntroPredicate(impl : DGNode,
                         absPolicy : AbstractionPolicy,
-                        absKind : NodeKind) : NodePredicate =
+                        absKind : NodeKind)
+                       (implicit constraints: ConstraintsMaps) : NodePredicate =
 
 
     (absKind.kindType, absPolicy) match {
@@ -47,15 +48,15 @@ abstract class Abstract {
         (graph, potentialHost) => {
           val typeDecl = graph.container(impl.id).get
           val potentialSuperType = potentialHost.id
-          val canExtends = !graph.interloperOf(typeDecl, potentialSuperType)
+          val canExtends = !(graph, constraints).interloperOf(typeDecl, potentialSuperType)
           canExtends && graph.nodeKindKnowledge.canContain(graph, potentialHost, absKind)
         }
       case (_, SupertypeAbstraction) =>
-        (graph, potentialHost) => !graph.interloperOf(impl.id, potentialHost.id) &&
+        (graph, potentialHost) => !(graph, constraints).interloperOf(impl.id, potentialHost.id) &&
           graph.nodeKindKnowledge.canContain(graph, potentialHost, absKind)
 
       case (_, DelegationAbstraction) =>
-        (graph, potentialHost) => !graph.interloperOf(potentialHost.id, impl.id) &&
+        (graph, potentialHost) => !(graph, constraints).interloperOf(potentialHost.id, impl.id) &&
           graph.nodeKindKnowledge.canContain(graph, potentialHost, absKind)
     }
 
