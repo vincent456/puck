@@ -83,6 +83,10 @@ trait GraphBuilder {
 
   def bindTypeUse(typeUser : NodeId, typeUsed:NodeId, typeMemberUse : Uses) : Uses ={
     val typeUse = Uses(typeUser, typeUsed)
+//    import ShowDG._
+//    (g,typeUse).println
+//    (g,typeMemberUse).println
+
     addTypeRelationship(typeUse, typeMemberUse)
     typeUse
   }

@@ -117,26 +117,32 @@ object Redirection {
     val newKindType = newUsed.kindType(g)
 
     val ltg : LoggedTG = (oldKindType, newKindType) match {
-      case (InstanceValueDecl, InstanceValueDecl) =>
+      case (InstanceValueDecl, InstanceValueDecl)
+      | (TypeDecl, TypeDecl) =>
         redirectInstanceUsesAndPropagate(g, oldUse, newUsed)
 
-      case (TypeDecl, TypeDecl) =>
-
-        val used = oldUse.used
-        graph styp oldUse.user match {
-          case Some(NamedType(`used`))
-           | Some(ParameterizedType(`used`, _)) =>
-            redirectInstanceUsesAndPropagate(g, oldUse, newUsed)
-
-          case Some(ParameterizedType(_, _)) =>
-            println(cl(g, oldUse))
-            LoggedError("type redirection of type parameter not handled")
-
-          case Some(t) => LoggedError(s"unexpected type $t")
-          case None =>
-            LoggedError("Type redirection, user should be typed")
-
-        }
+//      case (TypeDecl, TypeDecl) =>
+//
+//        val used = oldUse.used
+//        graph styp oldUse.user match {
+//          case Some(NamedType(`used`))
+//           | Some(ParameterizedType(`used`, _)) =>
+//            redirectInstanceUsesAndPropagate(g, oldUse, newUsed)
+//
+//          case Some(ParameterizedType(_, _)) =>
+//            import ShowDG._
+//
+//            g.typeMemberUsesOf(oldUse).foldLoggedEither(g){
+//              (g0, u) =>
+//                (g0, u).println
+//                redirectUsesAndPropagate(g0, u, newUsed)
+//            }
+//
+//          case Some(t) => LoggedError(s"unexpected type $t")
+//          case None =>
+//            LoggedError("Type redirection, user should be typed")
+//
+//        }
 
 
       case (TypeConstructor, InstanceValueDecl) =>

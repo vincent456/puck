@@ -116,7 +116,8 @@ aspect NodeFactory  {
     eq MethodAccess.accessed() = decl();
 	eq ConstructorAccess.accessed() = decl();
 	eq VarAccess.accessed() = (ASTNode)decl();
-
+	eq ThisAccess.accessed() = hostType();
+	eq SuperAccess.accessed() = ((ClassDecl)hostType()).superclass();
 
 	public ASTNode Dot.accessed(){
 		if(isRightRotated())

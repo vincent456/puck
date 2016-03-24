@@ -391,7 +391,7 @@ class CommutativityMove extends AcceptanceSpec {
     }
 
     scenario("used factory moved in client"){
-      val _ = new ScenarioFactory(s"$moveStaticMethod/usedFactory/UsedFactory.java") {
+      val _ = new ScenarioFactory(s"$moveStaticMethod/usedFactory/UsedFactory.java"){
 
         val ctor = fullName2id("p.A.A()")
         val factory = fullName2id("p.A.createA()")

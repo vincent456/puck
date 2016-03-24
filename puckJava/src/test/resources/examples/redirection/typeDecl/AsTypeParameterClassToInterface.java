@@ -2,25 +2,18 @@ package p;
 
 class Wrapper<T> {
     private T t;
-
     public void set(T t){}
     public T get(){return t;}
 
 }
 
-class A{
-    void m(){}
-}
+interface I { void m(); }
+
+class A implements I { public void m(){} }
+
 
 class B {
     Wrapper<A> wa = new Wrapper<A>();
-    A a = new A();
 
-    void doM(){
-        wa.get().m();
-    }
-
-    void init(){
-        wa.set(a);
-    }
+    void doM(){ wa.get().m(); }
 }

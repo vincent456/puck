@@ -26,9 +26,10 @@
 
 package org.extendj.ast
 
-import puck.graph._
+import puck.graph.{TypeDecl => PuckTypeDecl, _}
 import puck.javaGraph.nodeKind.{EnumConstant => PuckEnumConstant, _}
 import puck.javaGraph.{JavaGraphBuilder, nodeKind}
+
 
 object JastaddGraphBuilder {
 
@@ -73,6 +74,7 @@ object JastaddGraphBuilder {
 
 
   def definitionName = DependencyGraph.definitionName
+
 }
 
 class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
@@ -203,9 +205,16 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
     throw new Error(s"Wrong registering ! AGNode.kind : ${n.kind} while Node is an $astType")
 
   def bindTypeUse(typeUser : NodeId, typeUsed: TypeDecl, typeMemberUse : Uses) : Unit ={
-    val t = getType(typeUsed)
-    t.ids foreach {
-      tid => bindTypeUse(typeUser, tid, typeMemberUse)
+    g.kindType(typeMemberUse.used) match {
+      case PuckTypeDecl =>
+        // getType(typeUsed).ids contains typeMemberUse.used
+        bindTypeUse(typeUser, typeMemberUse.used, typeMemberUse)
+      case _ =>
+        val tid = getType(typeUsed) match {
+          case NamedType(id) => id
+          case ParameterizedType(id, _) => id
+        }
+        bindTypeUse(typeUser, tid, typeMemberUse)
     }
 
   }

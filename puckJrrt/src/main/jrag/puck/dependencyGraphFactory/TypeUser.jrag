@@ -27,9 +27,9 @@
 aspect TypeUser {
 
     interface TypeMember {
-        public TypeDecl hostType();
-        public String name();
-
+        TypeDecl hostType();
+        String name();
+        boolean isStatic();
     }
 
     Variable extends TypeMember;
@@ -175,25 +175,28 @@ aspect TypeUser {
     // findTypeUserAndBindUses term cases - Access subclasses
 
     void Access.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
-        if(accessed() instanceof TypeMemberSubstitute) {
-            TypeMemberSubstitute substitute = (TypeMemberSubstitute) accessed();
-            if(substitute.getOriginalType() == type())
-                bindTypeUse(builder, this.buildDGNode(builder), typeMemberUse);
-            else if(substitute.getOriginalType() instanceof TypeVariable){
-                TypeVariable tv= (TypeVariable)substitute.getOriginalType();
-                if(tv.owner() instanceof GenericTypeDecl)
-                    findTypeVariableInstanciatorAndBindUsesInLeftExpr(builder, substitute.type(),
-                            tv, typeMemberUse);
-                else
-                    System.out.println("Access.findTypeUserAndBindUses tv.owner() " +
-                            "not instanceof GenericTypeDecl : TODO !!!");
+        if(accessed() instanceof TypeMemberSubstitute)
+            findTypeUserAndBindUses(builder, typeMemberUse, (TypeMemberSubstitute) accessed());
+        else
+            bindTypeUse(builder, this.buildDGNode(builder), typeMemberUse);
+    }
 
-            }
+
+    void Access.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse, TypeMemberSubstitute substitute){
+        if(substitute.getOriginalType() == type())
+            bindTypeUse(builder, this.buildDGNode(builder), typeMemberUse);
+        else if(substitute.getOriginalType() instanceof TypeVariable){
+            TypeVariable tv= (TypeVariable)substitute.getOriginalType();
+            if(tv.owner() instanceof GenericTypeDecl)
+                findTypeVariableInstanciatorAndBindUsesInLeftExpr(builder, substitute.type(),
+                        tv, typeMemberUse);
             else
-                mandatoryAssert(false);
+                System.out.println("Access.findTypeUserAndBindUses tv.owner() " +
+                        "not instanceof GenericTypeDecl : TODO !!!");
 
         }
-        bindTypeUse(builder, this.buildDGNode(builder), typeMemberUse);
+        else
+            mandatoryAssert(false);
     }
 
     void ClassInstanceExpr.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
@@ -233,10 +236,10 @@ aspect TypeUser {
                                                  TypeVariable tv,
                                                  Uses typeMemberUse){
         Variable v =  this.decl();
-        if(v.type() instanceof GenericElement){
-            GenericElement ge = (GenericElement) v.type();
+        if(v.type() instanceof ParTypeDecl){
+            GenericElement ge = (GenericElement) ((ParTypeDecl) v.type()).genericDecl();
             if(ge.ownTypeVariable(tv))
-                builder.bindTypeUse(this.buildDGNode(builder), type(), typeMemberUse);
+                builder.bindTypeUse(this.buildDGNode(builder), typeUsed, typeMemberUse);
             else
                 System.out.println("Access.findTypeVariableInstanciatorAndBindUses " +
                         "not ge.ownTypeVariable(tv) : TODO !!!");

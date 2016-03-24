@@ -542,41 +542,107 @@ class GraphBuildingSpec extends AcceptanceSpec {
       }
     }
 
-    scenario("generic - type relationship"){
-      val _ = new ScenarioFactory(s"$examplesPath/TypeRelationship.java") {
+    scenario("generic - type parameter as method return type"){
+      val _ = new ScenarioFactory(s"$examplesPath/TypeParameterAsMethodReturnType.java"){
 
         val actualTypeParam = fullName2id("p.A")
         val actualTypeParamMethod = fullName2id("p.A.m()")
 
         val field = fullName2id("p.B.wa")
 
-        val userClass = fullName2id("p.B")
         val userMethodDef = fullName2id("p.B.doM().Definition")
 
         val genType = fullName2id("p.Wrapper")
         val genericMethod = fullName2id("p.Wrapper.get()")
 
-        printFullNamesSortedByKey()
-
         val fieldGenTypeUse = graph.getUsesEdge(field, genType).value
         val fieldParameterTypeUse = graph.getUsesEdge(field, actualTypeParam).value
         val typeMemberUse = graph.getUsesEdge(userMethodDef, actualTypeParamMethod).value
+        val genericMethodUse = graph.getUsesEdge(userMethodDef, genericMethod).value
 
         graph.styp(field).value should be (ParameterizedType(genType, List(NamedType(actualTypeParam))))
 
         assert( fieldGenTypeUse existsIn graph )
         assert( fieldParameterTypeUse existsIn graph )
         assert( typeMemberUse existsIn graph )
-
+        assert( genericMethodUse existsIn graph)
 
         //typeMemberUse = ("p.B.doMonA().Definition", "p.A.m()")
         //fieldGenTypeUse = ("p.B.wa", "p.Wrapper")
         //fieldParameterTypeUse = ("p.B.wa", "p.A")
         //graph.typeUsesOf(typeMemberUse) should contain (fieldGenTypeUse)
         graph.typeUsesOf(typeMemberUse) should contain (fieldParameterTypeUse)
+        graph.typeMemberUsesOf(fieldParameterTypeUse) should contain (typeMemberUse)
+        graph.typeMemberUsesOf(fieldParameterTypeUse).size should be (1)
+        //graph.typeMemberUsesOf(fieldParameterTypeUse) should not contain (genericMethodUse)
+      }
+    }
+
+    scenario("generic - type uses  relationship between type parameter and variable declaration type"){
+      val _ = new ScenarioFactory(s"$examplesPath/TypeRelationShipBetweenParTypeAndVariableType.java"){
+
+        val actualTypeParam = fullName2id("p.A")
+        val actualTypeParamMethod = fullName2id("p.A.m()")
+
+        val field = fullName2id("p.B.wa")
+        val userMethodDef = fullName2id("p.B.assignA().Definition")
+        val genType = fullName2id("p.Wrapper")
+
+        val fieldGenTypeUse = graph.getUsesEdge(field, genType).value
+        val fieldParameterTypeUse = graph.getUsesEdge(field, actualTypeParam).value
+
+        val methodTypeUse = graph.getUsesEdge(userMethodDef, actualTypeParam).value
+        val methodTypeMemberUse = graph.getUsesEdge(userMethodDef, actualTypeParamMethod).value
+
+        graph.styp(field).value should be (ParameterizedType(genType, List(NamedType(actualTypeParam))))
+
+        assert( fieldGenTypeUse existsIn graph )
+        assert( fieldParameterTypeUse existsIn graph )
+        assert( methodTypeUse existsIn graph )
+        assert( methodTypeMemberUse existsIn graph)
+
+        graph.typeUsesOf(methodTypeMemberUse) should contain (methodTypeUse)
+        graph.typeMemberUsesOf(methodTypeUse) should contain (methodTypeMemberUse)
+        graph.typeMemberUsesOf(methodTypeUse).size should be (1)
+
+        graph.typeMemberUsesOf(fieldParameterTypeUse) should contain (methodTypeUse)
+
 
       }
     }
+
+    scenario("generic - type uses  relationship between type parameter and variable declaration type - foreach case"){
+      val _ = new ScenarioFactory(s"$examplesPath/TypeParameterTypesForeachArgument.java"){
+
+        val actualTypeParam = fullName2id("p.I")
+        val actualTypeParamMethod = fullName2id("p.I.m()")
+
+        val field = fullName2id("p.C.is")
+        val userMethodDef = fullName2id("p.C.doAllM().Definition")
+        val genType = fullName2id("java.util.List")
+
+        val fieldGenTypeUse = graph.getUsesEdge(field, genType).value
+        val fieldParameterTypeUse = graph.getUsesEdge(field, actualTypeParam).value
+
+        val methodTypeUse = graph.getUsesEdge(userMethodDef, actualTypeParam).value
+        val methodTypeMemberUse = graph.getUsesEdge(userMethodDef, actualTypeParamMethod).value
+
+        graph.styp(field).value should be (ParameterizedType(genType, List(NamedType(actualTypeParam))))
+
+        assert( fieldGenTypeUse existsIn graph )
+        assert( fieldParameterTypeUse existsIn graph )
+        assert( methodTypeUse existsIn graph )
+        assert( methodTypeMemberUse existsIn graph)
+
+        graph.typeUsesOf(methodTypeMemberUse) should contain (methodTypeUse)
+        graph.typeMemberUsesOf(methodTypeUse) should contain (methodTypeMemberUse)
+        graph.typeMemberUsesOf(methodTypeUse).size should be (1)
+
+        graph.typeMemberUsesOf(fieldParameterTypeUse) should contain (methodTypeUse)
+
+      }
+    }
+
 
     scenario("upper bounded wildcard"){
       val _ = new ScenarioFactory(s"$examplesPath/Wildcard.java") {

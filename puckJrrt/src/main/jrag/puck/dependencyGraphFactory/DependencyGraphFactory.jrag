@@ -456,6 +456,37 @@ aspect DependencyGraphFactory {
 
 		return this;
 	}
+
+	public void Declarator.buildDG(JastaddGraphBuilder builder, int containerId) {
+		super.buildDG(builder, containerId);
+		if(getInit() instanceof Access)
+			((Access)getInit()).bindTypeUses(builder, this, this.getTypeAccess());
+	}
+
+	public void EnhancedForStmt.buildDG(JastaddGraphBuilder builder, int containerId) {
+		super.buildDG(builder, containerId);
+		if(getExpr() instanceof Access)
+			((Access)getExpr()).bindTypeUses(builder, getVariableDecl(), this.getTypeAccess());
+	}
+
+	void Access.bindTypeUses(JastaddGraphBuilder builder,
+					ASTNode boundTypeUser,
+					Access boundTypeUsed){
+
+			Uses typeUses = new Uses(boundTypeUser.buildDGNode(builder),
+									boundTypeUsed.buildDGNode(builder),
+									UsesAccessKind.none());
+
+			if(this == lastAccess())
+				findTypeUserAndBindUses(builder, typeUses);
+			else if(lastAccess() instanceof TypeMemberAccess){
+				TypeMemberAccess tma = (TypeMemberAccess) lastAccess();
+				if(tma.decl().isStatic())
+					lastAccess().findTypeUserAndBindUses(builder, typeUses);
+				else
+					lastAccess().buildTypeUseFromLeftExpr(builder, typeUses);
+			}
+	}
 //public void ParTypeAccess.buildDG(JastaddGraphBuilder builder, int containerId){
 //		int nodeId = buildDGNode(builder);
 //		builder.addEdge(new Uses(containerId, nodeId, UsesAccessKind.none()));
