@@ -26,12 +26,15 @@
 
 package puck.javaGraph
 
-import puck.graph.Type
+import puck.graph.constraints.SupertypeAbstraction
+import puck.graph.{AccessAbstraction, Type}
 import puck.{Settings, AcceptanceSpec}
 
 import puck.jastadd.ExtendJGraphUtils.{transformationRules => TR}
 
 class MakeSuperTypeSpec extends AcceptanceSpec {
+  //info("We are testing behavior of the abstraction rule, i.e. we check that the structure of the graph after rule application")
+
   feature("Make super type") {
     val examplesPath = Settings.testExamplesPath + "/makeSuperType"
     val superInterfacePath = examplesPath + "/superInterface/"
@@ -49,7 +52,8 @@ class MakeSuperTypeSpec extends AcceptanceSpec {
         assert(g2.isa(classA, superA))
 
         g2.abstractions(methNotInInterface) should be(empty)
-
+        g2.abstractions(methInInterface) should contain (AccessAbstraction(abstractMethInInterface, SupertypeAbstraction))
+        g2.abstractions(methInInterface).size shouldBe 1
       }
     }
 

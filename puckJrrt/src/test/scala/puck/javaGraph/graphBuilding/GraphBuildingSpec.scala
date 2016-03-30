@@ -605,7 +605,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
         graph.typeMemberUsesOf(methodTypeUse) should contain (methodTypeMemberUse)
         graph.typeMemberUsesOf(methodTypeUse).size should be (1)
 
-        graph.typeMemberUsesOf(fieldParameterTypeUse) should contain (methodTypeUse)
+        graph.usesThatShouldUsesASuperTypeOf(fieldParameterTypeUse) should contain (methodTypeUse)
 
 
       }
@@ -638,7 +638,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
         graph.typeMemberUsesOf(methodTypeUse) should contain (methodTypeMemberUse)
         graph.typeMemberUsesOf(methodTypeUse).size should be (1)
 
-        graph.typeMemberUsesOf(fieldParameterTypeUse) should contain (methodTypeUse)
+        graph.usesThatShouldUsesASuperTypeOf(fieldParameterTypeUse) should contain (methodTypeUse)
 
       }
     }

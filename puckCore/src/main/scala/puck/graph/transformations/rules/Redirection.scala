@@ -47,8 +47,8 @@ object Redirection {
     val selfUse = Uses(clazz,clazz)
     val g1 = g.changeSource(g.getUsesEdge_!(ctorDef, initializer), factoryDef)
       .addUses(factoryDef, clazz)
-      .removeUsesDependency(selfUse, (ctorDef, initializer))
-      .addUsesDependency((factoryDef, clazz), (factoryDef, initializer))
+      .removeBinding(selfUse, (ctorDef, initializer))
+      .addBinding((factoryDef, clazz), (factoryDef, initializer))
 
     if(g1.typeMemberUsesOf(selfUse).isEmpty)
       g1.removeEdge(selfUse)
@@ -183,7 +183,7 @@ object Redirection {
 
             intro.parameter(g1, typeOfNewReveiver, decl.id) map {
               case (pNode, g2) =>
-                g2.addUsesDependency((pNode.id, typeOfNewReveiver), (userOfCtor, absNode))
+                g2.addBinding((pNode.id, typeOfNewReveiver), (userOfCtor, absNode))
             }
 
           case CreateTypeMember(kind) =>
@@ -193,12 +193,35 @@ object Redirection {
               kind) map {
               case (newTypeUse, g2) =>
                 intro.addUsesAndSelfDependency(
-                  g2.addUsesDependency(newTypeUse, (userOfCtor, absNode)),
+                  g2.addBinding(newTypeUse, (userOfCtor, absNode)),
                   userOfCtor, newTypeUse.user)
             }
         }
 
       case _ => LoggedError("constructor should have one abs node")
+    }
+  }
+
+  def redirectImpactedTypeUses
+    (g : DependencyGraph,
+     oldTypeUse : Uses,
+     newTypeToUse : NodeId) : LoggedTG = {
+    val oldTypeUsed = oldTypeUse.used
+    val impactedTypeUses =
+      if (g.isa_*(oldTypeUsed, newTypeToUse))
+        g.usesThatShouldUsesASuperTypeOf(oldTypeUse)
+      else if (g.isa_*(newTypeToUse, oldTypeUsed))
+        g.usesThatShouldUsesASubtypeOf(oldTypeUse)
+      else
+        g.usesThatShouldUsesASuperTypeOf(oldTypeUse) ++
+          g.usesThatShouldUsesASubtypeOf(oldTypeUse)
+
+    g.abstractions(oldTypeUsed).find (abs => abs.nodes contains newTypeToUse) match {
+      case None => LoggedError("no satisfying abstraction found")
+      case Some(abs) =>
+        impactedTypeUses.foldLoggedEither(g){
+          redirectInstanceUsesAndPropagate(_,_, abs)
+        }
     }
   }
 
@@ -220,27 +243,42 @@ object Redirection {
     val typeMemberTRset = cl(g, oldUse) //.filter{ case (tu, _) => !tu.selfUse }
 
     val ltg : LoggedTG =
-      if(typeMemberTRset.nonEmpty)
-        typeMemberTRset.groupBy(_._1).toList.foldLoggedEither(g comment log) {
-        case (g0, (tu, trSet)) =>
-          val g1 = tu.changeTarget(g0, newTypeToUse)
-          val newTypeUse = tu.copy(target = newTypeToUse)
-          trSet.foldLoggedEither( g1 ) {
-            case (g00, (_, tmu)) =>
-              for{
-                abs <- tmAbstraction(g, newTypeToUse, tmu.used)
-                gNewTmus <- redirect(g00, tmu, abs)
-                (g01, nTmus) = gNewTmus
-              } yield {
-                nTmus.foldLeft(g01.removeUsesDependency(tu,tmu)){
-                  _.changeTypeUseOfTypeMemberUse(tu, newTypeUse,_)
+      if(typeMemberTRset.nonEmpty) {
+        val groupedByTypeUse = typeMemberTRset.groupBy(_._1)
+
+        val ltg0 = groupedByTypeUse.toList.foldLoggedEither(g comment log) {
+          case (g0, (tu, trSet)) =>
+            val g1 = tu.changeTarget(g0, newTypeToUse)
+
+            val newTypeUse = tu.copy(target = newTypeToUse)
+            trSet.foldLoggedEither(g1) {
+              case (g00, (_, tmu)) =>
+                for {
+                  abs <- tmAbstraction(g, newTypeToUse, tmu.used)
+                  gNewTmus <- redirect(g00, tmu, abs)
+                  (g01, nTmus) = gNewTmus
+                } yield {
+                  nTmus.foldLeft(g01.removeBinding(tu, tmu)) {
+                    _.changeTypeUseOfTypeMemberUse(tu, newTypeUse, _)
+                  }
                 }
-              }
-          }
+            }
         }
+
+        ltg0 flatMap {
+          g1 =>
+            groupedByTypeUse.keys.toList.foldLoggedEither(g1) {
+              redirectImpactedTypeUses(_,_, newTypeToUse)
+            }
+        }
+
+      }
       else {
         if(newUsed.kindType(g) == TypeDecl)
-          redirect(g, oldUse, newUsed).map(_._1)
+          redirect(g, oldUse, newUsed) flatMap {
+            case (g0,_) =>
+              redirectImpactedTypeUses(g0, oldUse, newTypeToUse)
+          }
         else
           LoggedError("empty binding relationship and not redirecting a type decl")
       }

@@ -68,26 +68,32 @@ trait GraphBuilder {
     g = g.addContains(containerId, contentId)
   }
 
-  def addEdge(e : DGEdge): Unit ={
+  def addEdge(e : DGEdge): Unit =
     g = g.addEdge(e)
-  }
 
-  def addIsa(subTypeId: NodeIdT, superTypeId: NodeIdT): Unit = {
+
+  def addIsa(subTypeId: NodeIdT, superTypeId: NodeIdT): Unit =
     g = g.addIsa(subTypeId, superTypeId)
-  }
 
-   def addTypeRelationship(typeUse : DGEdge,
-                           typeMemberUse : Uses): Unit ={
-     g = g.addUsesDependency(typeUse, typeMemberUse)
-  }
 
-  def bindTypeUse(typeUser : NodeId, typeUsed:NodeId, typeMemberUse : Uses) : Uses ={
+  def addTypeUsesConstraint(superTypeUse : NodeIdP,
+                            subTypeUse : NodeIdP): Unit =
+    g = g.addTypeUsesConstraint(superTypeUse, subTypeUse)
+
+
+
+  def addBinding( typeUse : DGEdge,
+                  typeMemberUse : Uses): Unit =
+     g = g.addBinding(typeUse, typeMemberUse)
+
+
+  def addBinding(typeUser : NodeId, typeUsed:NodeId, typeMemberUse : Uses) : Uses ={
     val typeUse = Uses(typeUser, typeUsed)
 //    import ShowDG._
 //    (g,typeUse).println
 //    (g,typeMemberUse).println
 
-    addTypeRelationship(typeUse, typeMemberUse)
+    addBinding(typeUse, typeMemberUse)
     typeUse
   }
 

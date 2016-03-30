@@ -259,7 +259,7 @@ class Merge
         | InstanceTypeDecl */=>
         g.typeUses2typeMemberUses.foldLeft(g) {
           case (g0, (tUses, typeMemberUses)) if tUses.used == n.id =>
-            typeMemberUses.foldLeft(g0) { _.removeUsesDependency(tUses, _)}
+            typeMemberUses.foldLeft(g0) { _.removeBinding(tUses, _)}
           case (g0, _) => g0
         }
 
@@ -271,7 +271,7 @@ class Merge
            | ValueDef =>
         g.typeUses2typeMemberUses.foldLeft(g) {
           case (g0, (tUses, typeMemberUses)) if tUses.user == n.id =>
-            typeMemberUses.foldLeft(g0) { _.removeUsesDependency(tUses, _)}
+            typeMemberUses.foldLeft(g0) { _.removeBinding(tUses, _)}
           case (g0, _) => g0
         }
       case UnknownKindType => error("removeTypeDependenciesInvolving UnknownKindType")
@@ -282,7 +282,7 @@ class Merge
           g1.typeMemberUses2typeUses.foldLeft(g1) {
             case (g0, (tmUses, typeUses)) if tmUses.user == n.id =>
               typeUses.foldLeft(g0) {
-                _.removeUsesDependency(_, tmUses)
+                _.removeBinding(_, tmUses)
               }
             case (g0, _) => g0
           }

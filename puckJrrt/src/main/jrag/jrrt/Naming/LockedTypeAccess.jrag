@@ -54,8 +54,8 @@ aspect LockedTypeAccess {
 		TypeAccess tacc = new TypeAccess(genericDecl().name());
 		tacc.lock(genericDecl());
 		List<Access> targs = new List<Access>();
-		for(int i=0;i<getNumArgument();++i)
-			targs.add(getArgument(i).type().createLockedAccess());
+		for(int i=0;i<numTypeParameter();++i)
+			targs.add(getParameterization().args.get(i).createLockedAccess());
 		return new ParTypeAccess(tacc, targs);
 	}
 	
@@ -311,8 +311,8 @@ aspect LockedTypeAccess {
 	
 	protected Access TypeAccess.unlockParTypeAccess(ParTypeDecl target, Expr qual) {
 		List<Access> args = new List<Access>();
-		for(int i=0;i<target.getNumArgument();++i) {
-			Access targetAccess = target.getArgument(i).type().createLockedAccess();
+		for(int i=0;i<target.numTypeParameter();++i) {
+			Access targetAccess = target.getParameterization().args.get(i).createLockedAccess();
 			affectedByUnlock(targetAccess);
 			args.add(targetAccess);
 		}

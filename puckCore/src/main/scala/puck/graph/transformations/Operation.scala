@@ -194,8 +194,8 @@ case class TypeDependency
   typeMemberUse :  NodeIdP)
   extends AddRmOperation {
   def execute(g: DependencyGraph , op : Direction) = op match {
-    case Regular => g.addUsesDependency(typeUse, typeMemberUse)
-    case Reverse => g.removeUsesDependency(typeUse, typeMemberUse)
+    case Regular => g.addBinding(typeUse, typeMemberUse)
+    case Reverse => g.removeBinding(typeUse, typeMemberUse)
   }
 }
 

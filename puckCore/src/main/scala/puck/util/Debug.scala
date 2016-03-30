@@ -101,6 +101,8 @@ object Debug {
     contents, containers, superTypes, subTypes,
     typeMemberUses2typeUsesMap,
     typeUses2typeMemberUsesMap,
+    typeUsesSuperTypeConstraints,
+    typeUsesSubTypeConstraints,
     parameters, types, typedBy)) =>
       val builder = new StringBuilder(150)
 

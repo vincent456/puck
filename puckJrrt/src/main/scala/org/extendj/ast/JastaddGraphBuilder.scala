@@ -75,7 +75,24 @@ object JastaddGraphBuilder {
 
   def definitionName = DependencyGraph.definitionName
 
+
+  def qualifierIsThisAccess(access : TypeMemberAccess) : Boolean =
+    access.getQualifier == null &&
+      access.decl().hostType() == access.hostType() ||
+      access.getQualifier != null &&
+      access.getQualifier.isThisAccess
+
+
+  def qualifierIsSuperAccess(access : TypeMemberAccess) : Boolean =
+     access.getQualifier == null &&
+      access.decl().hostType() != access.hostType() ||
+       access.getQualifier != null &&
+      access.getQualifier.isSuperAccess
+
+
 }
+
+import JastaddGraphBuilder.{qualifierIsSuperAccess, qualifierIsThisAccess}
 
 class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
   var graph2ASTMap = Map[Int, ASTNodeLink]()
@@ -152,6 +169,28 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
     }
   }
 
+ def buildDef(defOwner : DGNamedElement ,
+    theDef : Block , defOwnerId: Int) : Int = {
+    val defId = getDefNode(defOwner)
+    theDef.registerDef(this, defId)
+    addContains(defOwnerId, defId)
+    theDef.buildDG(this, defId)
+    defId
+  }
+
+  def buildTypeUse(access : TypeMemberAccess, typeMemberUse: Uses) : Unit = {
+    if(qualifierIsThisAccess(access)) {
+      val thisTypeId = access.hostType().buildDGNode(this)
+      addEdge(addBinding(thisTypeId, thisTypeId, typeMemberUse))
+    }
+    else if(qualifierIsSuperAccess(access)){
+      val thisTypeId = access.hostType().buildDGNode(this)
+      val superTypeId = access.hostType.asInstanceOf[ClassDecl].superclass().buildDGNode(this)
+      addEdge(addBinding(thisTypeId, superTypeId, typeMemberUse))
+    }
+    else
+      access.asInstanceOf[Access].buildTypeUseFromLeftExpr(this, typeMemberUse)
+  }
 
 
 //  def addStringLiteral(literal: String, occurrences: java.util.Collection[BodyDecl]) : Unit = {
@@ -204,17 +243,23 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
   private def throwRegisteringError(n : ConcreteNode, astType : String) =
     throw new Error(s"Wrong registering ! AGNode.kind : ${n.kind} while Node is an $astType")
 
+  def addTypeUsesConstraint(userOfSuperType : NodeId,
+                            superTypeUsed : NodeId,
+                            userOfSubType : NodeId,
+                            subTypeUsed : NodeId): Unit =
+    addTypeUsesConstraint((userOfSuperType, superTypeUsed), (userOfSubType, subTypeUsed))
+
   def bindTypeUse(typeUser : NodeId, typeUsed: TypeDecl, typeMemberUse : Uses) : Unit ={
     g.kindType(typeMemberUse.used) match {
       case PuckTypeDecl =>
         // getType(typeUsed).ids contains typeMemberUse.used
-        bindTypeUse(typeUser, typeMemberUse.used, typeMemberUse)
+        addTypeUsesConstraint(typeMemberUse,(typeUser, typeMemberUse.used))
       case _ =>
         val tid = getType(typeUsed) match {
           case NamedType(id) => id
           case ParameterizedType(id, _) => id
         }
-        bindTypeUse(typeUser, tid, typeMemberUse)
+        addBinding(typeUser, tid, typeMemberUse)
     }
 
   }
@@ -222,9 +267,9 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
   def getParamType(parTypeDecl : ParTypeDecl) : Type = {
     val genId = getNode(parTypeDecl.genericDecl())
     val args =
-      Range.inclusive(parTypeDecl.getNumArgument - 1, 0, -1).foldLeft(scala.List[Type]()) {
+      Range.inclusive(parTypeDecl.numTypeParameter() - 1, 0, -1).foldLeft(scala.List[Type]()) {
         case (l, i) =>
-          getType(parTypeDecl.getArgument(i)) :: l
+          getType(parTypeDecl.getParameterization.args.get(i)) :: l
       }
     ParameterizedType(genId, args)
   }

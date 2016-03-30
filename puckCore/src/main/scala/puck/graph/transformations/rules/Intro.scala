@@ -61,14 +61,14 @@ abstract class Intro {
       case (g0, ctor) =>
         val ctorDef = g definitionOf_! ctor
         g0.addUses(ctorDef, cnDecl.id)
-          .addUsesDependency((typeInitialized,typeInitialized), (ctorDef, cnDecl.id))
+          .addBinding((typeInitialized,typeInitialized), (ctorDef, cnDecl.id))
 
     }
     (cnDecl.id,
       initializedContent.foldLeft(g3.addContains(typeInitialized, cnDecl.id)){
         (g, ic) =>
           val g1 = g.addUses(defNode.id, ic, Some(Write))
-                    .addUsesDependency((typeInitialized,typeInitialized), (defNode.id, ic))
+                    .addBinding((typeInitialized,typeInitialized), (defNode.id, ic))
 
           val icDef = g definitionOf_! ic
 
@@ -214,7 +214,7 @@ abstract class Intro {
           else g.addUses(cter, cter)
 
         g1.addUses(user, used)
-          .addUsesDependency((cter, cter), (user,used))
+          .addBinding((cter, cter), (user,used))
       case _ => g.addUses(user, used)
 
   }

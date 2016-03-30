@@ -165,9 +165,10 @@ object Mapping {
     assert(g1.virtualNodes.isEmpty)
     assert(g2.virtualNodes.isEmpty)
 
-//    implicit val gp = (g1, g2)
 
     g1.nodesId.size == g2.nodesId.size && {
+//    implicit val gp = (g1, g2)
+//
 //    if(g1.nodesId.size != g2.nodesId.size){
 //      val fulln1Set = (g1.nodesIndex.concreteNodesId map g1.fullName).toSet
 //      val fulln2Set = (g2.nodesIndex.concreteNodesId map g2.fullName).toSet
@@ -240,8 +241,6 @@ object Mapping {
         equalsCVM(mappinG1toG2)(g1.edges.contents, g2.edges.contents)
       lazy val equalsContains2 =
         equalsCVM(mappinG1toG2)(g1.edges.parameters, g2.edges.parameters)
-//      lazy val equalsContains3 =
-//        equalsMap(mappinG1toG2)(g1.edges.definition, g2.edges.definition)
 
       lazy val equalsIsa =
         equalsCVM(mappinG1toG2)(g1.edges.superTypes, g2.edges.superTypes)
@@ -260,13 +259,12 @@ object Mapping {
 //      println("equalsUses3 = " + equalsUses3)
 //      println("equalsContains1 = " + equalsContains1)
 //      println("equalsContains2 = " + equalsContains2)
-//      //println("equalsContains3 = " + equalsContains3)
 //      println("equalsIsa = " + equalsIsa)
 //      println("equalsTD1 = " + equalsTD1)
 //      println("equalsTD2 = " + equalsTD2)
 
       equalsNodes && equalsUses1 && equalsUses2 && equalsUses3 &&
-        equalsContains1 && equalsContains2 && /*equalsContains3 &&*/
+        equalsContains1 && equalsContains2 &&
         equalsIsa && equalsTD1 && equalsTD2
 
     }

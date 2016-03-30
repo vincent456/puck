@@ -53,6 +53,8 @@ object EdgeMap {
                 EdgeMapT(), EdgeMapT(),
                 UseDependencyMap(),
                 UseDependencyMap(),
+                UseDependencyMap(),
+                UseDependencyMap(),
                 ParamMapT(),
                 Map(), EdgeMapT())
 }
@@ -61,7 +63,7 @@ import puck.PuckError
 
 case class EdgeMap
 ( userMap : EdgeMapT,
-  usedMap  : EdgeMapT, //formely usesMap
+  usedMap  : EdgeMapT,
   accessKindMap: AccessKindMap,
   //contains
   contents  : EdgeMapT,
@@ -72,6 +74,8 @@ case class EdgeMap
   //BR
   typeMemberUses2typeUsesMap : UseDependencyMap,
   typeUses2typeMemberUsesMap : UseDependencyMap,
+  typeUsesSuperTypeConstraints : UseDependencyMap, // if ((a, t), (a, s)) then constraint( t :> s )
+  typeUsesSubTypeConstraints : UseDependencyMap, // if ((a, t), (a, s)) then constraint( t :< s )
   //special cases of contains :
   parameters : ParamMapT,
   //definition : Node2NodeMap,
@@ -213,10 +217,17 @@ case class EdgeMap
     copy(typeMemberUses2typeUsesMap = typeMemberUses2typeUsesMap + (typeMemberUse, typeUse),
       typeUses2typeMemberUsesMap = typeUses2typeMemberUsesMap + (typeUse, typeMemberUse))
 
+
   def removeUsesDependency(typeUse : NodeIdP,
                            typeMemberUse : NodeIdP) : EdgeMap =
     copy(typeMemberUses2typeUsesMap = typeMemberUses2typeUsesMap - (typeMemberUse, typeUse),
       typeUses2typeMemberUsesMap = typeUses2typeMemberUsesMap - (typeUse, typeMemberUse))
+
+  def addTypeUsesConstraint(typeUse1 : NodeIdP, typeUse2 : NodeIdP) : EdgeMap =
+    copy(typeUsesSuperTypeConstraints = typeUsesSuperTypeConstraints + (typeUse1, typeUse2),
+           typeUsesSubTypeConstraints = typeUsesSubTypeConstraints + (typeUse2, typeUse1))
+
+
 
   def setType(id : NodeId, st : Option[Type]) : EdgeMap =
     st match {

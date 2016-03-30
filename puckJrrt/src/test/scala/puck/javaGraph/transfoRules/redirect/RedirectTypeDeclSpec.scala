@@ -142,5 +142,52 @@ class RedirectTypeDeclSpec
     }
   }
 
+  scenario("From class to superType interface - impact local variable type") {
+    val _ = new ScenarioFactory(s"$examplesPath/ClassToInterface-ImpactLocalVar.java") {
+      val typeUsed = fullName2id("p.A")
+
+      val superType = fullName2id("p.I")
+
+      val typeUser1 = fullName2id("p.Wrapper.get()")
+      val typeUser2 = fullName2id("p.B.getA().Definition")
+
+      val typeUse1 = graph.getUsesEdge(typeUser1, typeUsed).value
+      val typeUse2 = graph.getUsesEdge(typeUser2, typeUsed).value
+
+      graph.usesThatShouldUsesASuperTypeOf(typeUse1) should contain (typeUse2)
+
+      val g2 =
+        Redirection.redirectUsesAndPropagate(graph,
+          typeUse1, AccessAbstraction(superType, SupertypeAbstraction)).right
+
+      assert(Uses(typeUser1, superType).existsIn(g2))
+      assert(Uses(typeUser2, superType).existsIn(g2))
+
+    }
+  }
+
+  scenario("From class to superType interface - type parameter context - impact local variable type") {
+    val _ = new ScenarioFactory(s"$examplesPath/ClassToInterface-TypeParam-ImpactLocalVar.java") {
+      val typeUsed = fullName2id("p.A")
+
+      val superType = fullName2id("p.I")
+
+      val typeUser1 = fullName2id("p.B.wa")
+      val typeUser2 = fullName2id("p.B.getA().Definition")
+
+      val typeUse1 = graph.getUsesEdge(typeUser1, typeUsed).value
+      val typeUse2 = graph.getUsesEdge(typeUser2, typeUsed).value
+
+      graph.usesThatShouldUsesASuperTypeOf(typeUse1) should contain (typeUse2)
+
+      val g2 =
+        Redirection.redirectUsesAndPropagate(graph,
+          typeUse1, AccessAbstraction(superType, SupertypeAbstraction)).right
+
+      assert(Uses(typeUser1, superType).existsIn(g2))
+      assert(Uses(typeUser2, superType).existsIn(g2))
+
+    }
+  }
 
 }

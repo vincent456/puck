@@ -47,8 +47,8 @@ aspect Refresh {
 	eq ArrayDecl.refreshType() = componentType().refresh().arrayType();
 	eq ParTypeDecl.refreshType() {
 		ArrayList<TypeDecl> types = new ArrayList<TypeDecl>();
-		for(int i=0;i<getNumArgument();++i)
-			types.add(getArgument(i).type().refresh());
+		for(int i=0;i<numTypeParameter();++i)
+			types.add(getParameterization().args.get(i).refresh());
 		return ((GenericTypeDecl)((TypeDecl)getParent().getParent()).refresh()).lookupParTypeDecl(types);
 	}
 	eq RawClassDecl.refreshType() = ((GenericTypeDecl)((TypeDecl)getParent().getParent()).refresh()).rawType();

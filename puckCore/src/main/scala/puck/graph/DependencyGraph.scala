@@ -317,13 +317,26 @@ class DependencyGraph
  def removeIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : DependencyGraph=
     removeEdge(Isa(subTypeId, superTypeId))
 
- def addUsesDependency
+ def addTypeUsesConstraint(superTypeUse : NodeIdP, subTypeUse : NodeIdP) : DependencyGraph =
+    newGraph(edges = edges.addTypeUsesConstraint(superTypeUse, subTypeUse) )
+
+ def usesThatShouldUsesASubtypeOf(typeUse : NodeIdP) : Set[Uses]=
+    edges.typeUsesSuperTypeConstraints getFlat typeUse map {
+      case (s, t) => edges.getUses(s,t).get
+    }
+
+ def usesThatShouldUsesASuperTypeOf(typeUse : NodeIdP) : Set[Uses]=
+    edges.typeUsesSubTypeConstraints getFlat typeUse map {
+      case (s, t) => edges.getUses(s,t).get
+    }
+
+ def addBinding
  ( typeUse : NodeIdP,
    typeMemberUse : NodeIdP) : DependencyGraph =
       newGraph(edges = edges.addUsesDependency(typeUse, typeMemberUse),
           recording = recording.addTypeDependency(typeUse, typeMemberUse))
 
- def removeUsesDependency
+ def removeBinding
  ( typeUse : NodeIdP,
    typeMemberUse : NodeIdP) : DependencyGraph =
       newGraph(edges = edges.removeUsesDependency(typeUse, typeMemberUse),
