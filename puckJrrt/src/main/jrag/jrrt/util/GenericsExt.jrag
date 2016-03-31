@@ -1,10 +1,6 @@
 aspect GenericsExt {
 
-	interface TypeDeclSubstituted { }
-	ClassDeclSubstituted implements TypeDeclSubstituted;
-	InterfaceDeclSubstituted implements TypeDeclSubstituted;
-	GenericClassDeclSubstituted implements TypeDeclSubstituted;
-	GenericInterfaceDeclSubstituted implements TypeDeclSubstituted;
+
 
 	
 	// for an inherited method, get the method that is actually inherited (may be substituted copy)

@@ -109,14 +109,18 @@ aspect NamedElement {
         ASTNode getOriginal();
     }
 
+    interface TypeDeclSubstitute extends Substitute { }
+
+
     interface TypeMemberSubstitute extends Substitute {
         TypeDecl type();
     }
 
-    ClassDeclSubstituted implements Substitute;
-    GenericClassDeclSubstituted implements Substitute;
-    InterfaceDeclSubstituted implements Substitute;
-    GenericInterfaceDeclSubstituted implements Substitute;
+    ClassDeclSubstituted implements TypeDeclSubstitute;
+    InterfaceDeclSubstituted implements TypeDeclSubstitute;
+    GenericClassDeclSubstituted implements TypeDeclSubstitute;
+    GenericInterfaceDeclSubstituted implements TypeDeclSubstitute;
+
     ConstructorDeclSubstituted implements Substitute;
     FieldDeclarationSubstituted implements TypeMemberSubstitute;
     MethodDeclSubstituted implements TypeMemberSubstitute;

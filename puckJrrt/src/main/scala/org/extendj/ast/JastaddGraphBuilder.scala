@@ -313,18 +313,66 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
       println("Access.constraintTypeUses with Anonymous Class not handled yet !")
     else lvalueType match {
       case lvalueParType : ParTypeDecl =>
-        rvalue.lastAccess().constraintTypeUses(this, lvalue,lvalueParType)
+        constraintParTypeUses(lvalue, lvalueParType, rvalue.lastAccess())
       case _ =>
         if(rvalue.lastAccess().accessed().isInstanceOf[Substitute] ||
           rvalue.lastAccess().`type`().isInstanceOf[Substitute])
           rvalue.lastAccess().findTypeUserAndBindUses(this,
             Uses(lvalue, lvalueType.buildDGNode(this)))
         else
-          addTypeUsesConstraint(lvalue, lvalueType.buildDGNode(this),
-            rvalue.lastAccess().buildDGNode(this),
-            rvalue.lastAccess().`type`().buildDGNode(this))
+          addTypeUsesConstraint(lvalue,
+            lvalueType buildDGNode this,
+            rvalue.lastAccess() buildDGNode this,
+            rvalue.lastAccess().`type`() buildDGNode this )
     }
 
+
+
+  def constraintParTypeUses
+  ( lvalue : NodeId,
+    lvalueType : ParTypeDecl,
+    rvalue : Access) : Unit =
+    if(!rvalue.`type`().isInstanceOf[ParTypeDecl])
+      println("Access.constraintTypeUses this.type() " +
+        "not instanceof ParTypeDecl  : TODO !!!")
+    else {
+      val rValueType = rvalue.`type`().asInstanceOf[ParTypeDecl]
+      if(rValueType.numTypeParameter() != lvalueType.numTypeParameter())
+        println("Access.constraintTypeUses " +
+          "rValueType.getNumArgument() != lValueType.getNumArgument()  : TODO !!!")
+      else {
+        //Hypothesis : argument are in same order  C<B,A> extends I<A,B> kind of case not handled
+        val rvalueNode = rvalue buildDGNode this
+        addTypeUsesConstraint(lvalue,
+          lvalueType.genericDecl() buildDGNode this,
+          rvalueNode,
+          rValueType.genericDecl() buildDGNode this)
+
+        def normalizeTypeDecl(t : TypeDecl) : TypeDecl = t match {
+          case _ : WildcardType => rvalue.program().typeObject()
+          case wst : WildcardSuperType if wst.getAccess.isInstanceOf[TypeAccess] =>
+            wst.getAccess.asInstanceOf[TypeAccess].decl()
+          case wet : WildcardExtendsType if wet.getAccess.isInstanceOf[TypeAccess] =>
+            wet.getAccess.asInstanceOf[TypeAccess].decl()
+          case _ => t
+        }
+
+        Range(0, lvalueType.numTypeParameter()).foreach {
+          i =>
+            val lvalueArg = normalizeTypeDecl(lvalueType.getParameterization.getArg(i))
+            val rvalueArg = normalizeTypeDecl(rValueType.getParameterization.getArg(i))
+
+            (lvalueArg, rvalueArg) match {
+              case (_, tv : TypeVariable) =>
+                rvalue.findTypeVariableInstanciatorAndBindUses(this,
+                  lvalueArg, tv, Uses(lvalue, lvalueArg buildDGNode this))
+              case _ =>
+                addTypeUsesConstraint(lvalue, lvalueArg buildDGNode this,
+                  rvalueNode, rvalueArg buildDGNode this)
+            }
+        }
+      }
+    }
 
 //  val register : NodeId => ASTNode[_] =>  Unit = n => {
 //    case decl : InterfaceDecl =>

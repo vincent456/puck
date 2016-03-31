@@ -56,7 +56,7 @@ aspect Refresh {
 	eq WildcardType.refreshType() = program().wildcards().typeWildcard();
 	eq WildcardExtendsType.refreshType() = program().wildcards().lookupWildcardExtends(getAccess().type().refresh());
 	eq WildcardSuperType.refreshType() = program().wildcards().lookupWildcardSuper(getAccess().type().refresh());
-	eq TypeDeclSubstituted.refreshType() {
+	eq TypeDeclSubstitute.refreshType() {
 		TypeDecl encl = enclosingType().refreshType();
 		String name = sourceTypeDecl().name();
 		return (TypeDecl)encl.localTypeDecls(name).iterator().next();

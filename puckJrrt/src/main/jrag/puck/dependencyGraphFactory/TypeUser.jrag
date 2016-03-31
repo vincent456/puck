@@ -174,42 +174,6 @@ aspect TypeUser {
             mandatoryAssert(false);
     }
 
-    void Access.constraintTypeUses(JastaddGraphBuilder builder,
-                                   int otherTypeUser,
-                                   ParTypeDecl lValueType){
-        if(! (this.type() instanceof  ParTypeDecl) )
-            System.out.println("Access.constraintTypeUses this.type() " +
-                    "not instanceof ParTypeDecl  : TODO !!!");
-
-        ParTypeDecl rValueType = (ParTypeDecl) this.type();
-        if(rValueType.numTypeParameter() != lValueType.numTypeParameter())
-            System.out.println("Access.constraintTypeUses " +
-                    "rValueType.getNumArgument() != lValueType.getNumArgument()  : TODO !!!");
-
-        //Hypothesis : argument are in same order  C<B,A> extends I<A,B> kind of case not handled
-        int thisNodeId = this.buildDGNode(builder);
-        builder.addTypeUsesConstraint(thisNodeId, rValueType.genericDecl().buildDGNode(builder) ,
-                otherTypeUser, lValueType.genericDecl().buildDGNode(builder));
-
-        for(int i =0; i<lValueType.numTypeParameter(); i++) {
-            TypeDecl lValueArg = lValueType.getParameterization().getArg(i);
-            TypeDecl rValueArg = rValueType.getParameterization().getArg(i);
-            if(lValueArg instanceof WildcardType || rValueArg instanceof WildcardType)
-                continue;
-
-            if(rValueArg instanceof TypeVariable)
-                findTypeVariableInstanciatorAndBindUses(builder,
-                        lValueArg,
-                        (TypeVariable)rValueArg,
-                        new Uses(otherTypeUser, rValueArg.buildDGNode(builder), UsesAccessKind.none()));
-            else
-                builder.addTypeUsesConstraint(thisNodeId, rValueArg.buildDGNode(builder),
-                        otherTypeUser, lValueArg.buildDGNode(builder));
-        }
-
-    }
-
-
     void ClassInstanceExpr.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
         super.findTypeUserAndBindUses(builder, typeMemberUse);
         if(hasTypeDecl())
