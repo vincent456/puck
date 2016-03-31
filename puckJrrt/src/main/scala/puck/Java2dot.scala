@@ -26,21 +26,23 @@
 
 package puck
 
-import java.io.{File, FileReader}
+import java.io.File
 
-import puck.graph.constraints.{ConstraintsMaps, ConstraintsParser}
+import org.extendj.ast.JavaJastAddDG2AST
+import puck.config.ConfigParser
+import puck.graph.constraints.ConstraintsMaps
 import puck.graph.io.VisibilitySet._
 import puck.graph.io._
 import puck.graph.{DependencyGraph, NodeId}
-import puck.jastadd.CompileHelper
 import puck.javaGraph.JavaDotHelper
+import puck.util.PuckSystemLogger
 
 object Java2dot {
 
   def quickDot
   ( outFileName : String,
     dg : DependencyGraph,
-    cm : ConstraintsMaps,
+    scm : Option[ConstraintsMaps],
     fullName2id : Map[String, NodeId]) : Unit = {
 
     val vis =
@@ -48,21 +50,27 @@ object Java2dot {
         .setVisibility(dg.subTree(fullName2id("java")), Hidden)
         .setVisibility(dg.subTree(fullName2id("@primitive")), Hidden)
 
-    val options = PrintingOptions(vis, printId = true, printSignatures = false, selectedUse = None)
-    DotPrinter.genDotFile(dg, JavaDotHelper, Some(cm), options, outFileName)
+    val options = PrintingOptions(vis,
+      printId = false,
+      printSignatures = true,
+      selectedUse = None,
+      printTypeUses = false)
+    DotPrinter.genDotFile(dg, JavaDotHelper, scm, options, outFileName)
   }
 
   def main (args: Array[String]) : Unit = {
 
-    val outFileName = args.head
-    val decouple = new File(args.tail.head)
-    val srcs = args.tail.tail.toList
+    val fn =
+      if(args.isEmpty) "puck.xml"
+      else args.head
 
-    val (_, dg , _, fullName2id, _) =
-      CompileHelper.compileSrcsAndbuildGraph(sources = srcs, sourcepaths = List(), jars = List(), bootJars = List(), decouple = Some(decouple))
+    implicit val logger = new PuckSystemLogger(_ => true)
 
-    val cm = ConstraintsParser(fullName2id, new FileReader(decouple))
+    val p = new Project(ConfigParser(new File(fn)), JavaJastAddDG2AST)
+    val dg2ast = p.loadGraph()
+    val scm = p.parseConstraints(dg2ast)
 
-    quickDot(outFileName, dg, cm, fullName2id)
+    quickDot("out", dg2ast.initialGraph, scm, dg2ast.nodesByName)
+    logger writeln "done"
   }
 }

@@ -429,38 +429,21 @@ aspect DependencyGraphFactory {
 	public void Declarator.buildDG(JastaddGraphBuilder builder, int containerId) {
 		super.buildDG(builder, containerId);
 		if(getInit() instanceof Access)
-			((Access)getInit()).constraintTypeUses(builder, this, this.getTypeAccess());
+			builder.constraintTypeUses(this.buildDGNode(builder),
+						this.getTypeAccess().type(),
+						(Access)getInit());
 	}
 
 	public void EnhancedForStmt.buildDG(JastaddGraphBuilder builder, int containerId) {
 		super.buildDG(builder, containerId);
-		if(getExpr() instanceof Access)
-			((Access)getExpr()).constraintTypeUses(builder, getVariableDecl(), this.getTypeAccess());
-	}
-
-	void Access.constraintTypeUses(JastaddGraphBuilder builder,
-					ASTNode boundTypeUser,
-					Access boundTypeUsed){
-
-		int dgTuser = boundTypeUser.buildDGNode(builder);
-		int dgTused = boundTypeUsed.buildDGNode(builder);
-
-		if(this.type() instanceof AnonymousDecl){
-			System.out.println("Access.constraintTypeUses with Anonymous Class not handled yet !");
-			return;
+		if(getExpr() instanceof Access){
+			System.out.println("EnhancedForStmt.buildDG : fix type constraint building");
+			//((Access)getExpr()).constraintTypeUses(builder, getVariableDecl(), this.getTypeAccess());
+			int dgTuser = getVariableDecl().buildDGNode(builder);
+			int dgTused = this.getTypeAccess().buildDGNode(builder);
+			((Access) getExpr()).lastAccess().findTypeUserAndBindUses(builder,
+							new Uses(dgTuser, dgTused, UsesAccessKind.none()));
 		}
-
-		if(boundTypeUsed.type() instanceof ParTypeDecl)
-			lastAccess().constraintTypeUses(builder, dgTuser,
-					(ParTypeDecl)lastAccess().type());
-		else if(lastAccess().accessed() instanceof Substitute||
-				lastAccess().type() instanceof Substitute)
-			lastAccess().findTypeUserAndBindUses(builder,
-					new Uses(dgTuser, dgTused, UsesAccessKind.none()));
-		else
-			builder.addTypeUsesConstraint(dgTuser, dgTused,
-					lastAccess().buildDGNode(builder),
-					lastAccess().type().buildDGNode(builder));
 	}
 
 	static void TypeDecl.addImplements(JastaddGraphBuilder builder,

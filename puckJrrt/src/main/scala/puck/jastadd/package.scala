@@ -32,9 +32,6 @@ import org.extendj.ast.JavaJastAddDG2AST
 import puck.config.{Config, ConfigParser}
 import puck.javaGraph.JGraphUtils
 
-/**
-  * Created by Loïc Girault on 11/02/16.
-  */
 package object jastadd {
 
   def JavaProject() : Project = JavaProject(new File("."))

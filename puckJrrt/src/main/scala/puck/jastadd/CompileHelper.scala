@@ -32,7 +32,7 @@ import puck.graph.comparison.NodeMappingInitialState
 import puck.graph.transformations.{Recording, Transformation}
 import puck.graph.{DGBuildingError, DependencyGraph, NodeId}
 import puck.javaGraph.nodeKind.JavaNodeKind
-import org.extendj.ast.{List => ASTList, _}
+import org.extendj.ast.{List => _, _} //hide ast.List and import everything else
 import org.extendj.parser
 
 
@@ -97,8 +97,7 @@ object CompileHelper {
   def compileSrcsAndbuildGraph(sources: List[String],
                                sourcepaths:List[String],
                                jars: List[String],
-                               bootJars : List[String],
-                               decouple : Option[java.io.File] = None) :
+                               bootJars : List[String]) :
     (Program, DependencyGraph, Seq[Transformation], Map[String, NodeId], Map[NodeId, ASTNodeLink]) =
     this.apply(sources, sourcepaths, jars, bootJars) match {
       case None => throw new DGBuildingError("Compilation error, no AST generated")

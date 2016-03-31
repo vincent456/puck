@@ -269,7 +269,7 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
     val args =
       Range.inclusive(parTypeDecl.numTypeParameter() - 1, 0, -1).foldLeft(scala.List[Type]()) {
         case (l, i) =>
-          getType(parTypeDecl.getParameterization.args.get(i)) :: l
+          getType(parTypeDecl.getParameterization.getArg(i)) :: l
       }
     ParameterizedType(genId, args)
   }
@@ -304,6 +304,28 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
   def buildDG(pta : ParTypeAccess, containerId : NodeId) : Unit = {
     getType(pta).ids.foreach(id => addEdge(Uses(containerId, id)))
   }
+
+  def constraintTypeUses
+  ( lvalue : NodeId,
+    lvalueType : TypeDecl,
+    rvalue : Access): Unit =
+    if(rvalue.`type`().isInstanceOf[AnonymousDecl])
+      println("Access.constraintTypeUses with Anonymous Class not handled yet !")
+    else lvalueType match {
+      case lvalueParType : ParTypeDecl =>
+        rvalue.lastAccess().constraintTypeUses(this, lvalue,lvalueParType)
+      case _ =>
+        if(rvalue.lastAccess().accessed().isInstanceOf[Substitute] ||
+          rvalue.lastAccess().`type`().isInstanceOf[Substitute])
+          rvalue.lastAccess().findTypeUserAndBindUses(this,
+            Uses(lvalue, lvalueType.buildDGNode(this)))
+        else
+          addTypeUsesConstraint(lvalue, lvalueType.buildDGNode(this),
+            rvalue.lastAccess().buildDGNode(this),
+            rvalue.lastAccess().`type`().buildDGNode(this))
+    }
+
+
 //  val register : NodeId => ASTNode[_] =>  Unit = n => {
 //    case decl : InterfaceDecl =>
 //      register(n, Interface, InterfaceDeclHolder(decl), "InterfaceDecl")

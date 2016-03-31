@@ -192,8 +192,8 @@ aspect TypeUser {
                 otherTypeUser, lValueType.genericDecl().buildDGNode(builder));
 
         for(int i =0; i<lValueType.numTypeParameter(); i++) {
-            TypeDecl lValueArg = lValueType.getParameterization().args.get(i);
-            TypeDecl rValueArg = rValueType.getParameterization().args.get(i);
+            TypeDecl lValueArg = lValueType.getParameterization().getArg(i);
+            TypeDecl rValueArg = rValueType.getParameterization().getArg(i);
             if(lValueArg instanceof WildcardType || rValueArg instanceof WildcardType)
                 continue;
 
