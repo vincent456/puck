@@ -83,14 +83,14 @@ aspect TypeUser {
         Expr lexpr = getLeftExpr();
 
         if(lexpr == null)
-            throw new NoTypeUser(this+"("+this.getClass()+") in "+this.compilationUnit().pathName()+" "+this.location());
+            throw new NoTypeUser(this.prettyPrint()+"("+this.getClass()+") in "+this.compilationUnit().pathName()+" "+this.location());
         else
             lexpr.findTypeUserAndBindUses(builder, typeMemberUse);
 
     }
 
     void Expr.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
-        throw new DGBuildingError(this + "(" +this.getClass() + ") in " +
+        throw new DGBuildingError(this.prettyPrint() + "(" +this.getClass() + ") in " +
                 this.compilationUnit().pathName() +" line " +
                 this.location() + " typeUser not found");
     }

@@ -77,24 +77,24 @@ class PuckInterfacePanel
         sProject match {
           case None => control.logger writeln "Create a project first"
           case Some(p) =>
-          val ptmp = new Project(p.config, p.dG2ASTBuilder)
-          Dialog.showConfirmation(parent = null,
-            new SettingsPanel(ptmp).peer,
-            title = "Settings",
-            optionType = Options.OkCancel,
-            messageType = Message.Plain) match {
-            case Result.Ok =>
-              //TODO !!
-              val cfile = Config.defaultConfFile(p.workspace)
-              ConfigWriter(cfile, ptmp.config)
-              sProject = Some(ptmp)
-              control.logger writeln s"New settings saved in ${cfile.getPath}"
-            case _ =>
-              control.logger writeln "New settings discarded"
-          }
+            val ptmp = new Project(p.config, p.dG2ASTBuilder)
+            Dialog.showConfirmation(parent = null,
+              new SettingsPanel(ptmp).peer,
+              title = "Settings",
+              optionType = Options.OkCancel,
+              messageType = Message.Plain) match {
+              case Result.Ok =>
+                //TODO !!
+                val cfile = Config.defaultConfFile(p.workspace)
+                ConfigWriter(cfile, ptmp.config)
+                sProject = Some(ptmp)
+                control.logger writeln s"New settings saved in ${cfile.getPath}"
+              case _ =>
+                control.logger writeln "New settings discarded"
+            }
         }
 
-     }
+    }
 
     contents += makeButton("Create project",
       "Select a workspace"){
@@ -133,7 +133,7 @@ class PuckInterfacePanel
         Option(fc.selectedFile) foreach {
           conffile =>
             if( sProject.isEmpty ||
-                Config.defaultConfFile(sProject.get.workspace) != conffile )
+              Config.defaultConfFile(sProject.get.workspace) != conffile )
               control.loadConf(conffile)
         }
     }
@@ -194,80 +194,98 @@ class PuckInterfacePanel
   }
 
   def addLoadedGraphButtons(): Unit= {
-      contents += makeButton("(Re)load constraints",
-        "Decorate the graph with the constraints of the selected decouple file"){
-        () => publisher publish LoadConstraintRequest
-      }
-      contents += makeButton("Show constraints",
-        "Show the constraints the graph has to satisfy"){
-        () => publisher publish ConstraintDisplayRequest(control.graph)
-      }
-
-      val p = new BoxPanel(Orientation.Horizontal)
-      addUndoRedoButton(p)
-      contents += p
-
-      contents += new BoxPanel(Orientation.Horizontal) {
-        contents += new Button() {
-          val b : Button = this
-          action = new Action("Save refactoring plan") {
-
-            def apply(): Unit = control.sProject foreach { p =>
-              saveFile(p.workspace, b.peer) match {
-                case None => publisher publish Log("no file selected")
-                case Some(f) =>  publisher publish SaveRecord(f)
-              }
-            }
-          }
-        }
-
-        contents += new Button() {
-          val b : Button = this
-          action = new Action("Load refactoring plan") {
-            def apply(): Unit =  control.sProject foreach { p =>
-              openFile(p.workspace, b.peer) match {
-                case None => publisher publish Log("no file selected")
-                case Some(f) => publisher publish LoadRecord(f)
-              }
-            }
-          }
-        }
-      }.leftGlued
-
-      contents += makeButton("Switch UML/Tree view", ""){
-        () => publisher publish SwitchView
-      }
-
-      contents += makeButton("Show recording", ""){
-        control.printRecording
-      }
-
-      contents += makeButton("Focus on Violations",
-        "Display a visual representation of the graph"){
-        () =>
-          val vs = control.constraints match {
-            case None => VisibilitySet.allHidden(control.graph)
-            case Some(cm) => VisibilitySet.violationsOnly(control.graph, cm)
-          }
-
-          publisher publish VisibilityEvent(control.graph, vs)
-
-      }
-
-      val testCommutativityCB = new CheckBox("Test commutativity")
-
-      contents += testCommutativityCB
-
-      ignore(contents += makeButton("Generate Code",
-        "Apply transformations on the code")(
-        () =>publisher publish
-          GenCode(compareOutput = testCommutativityCB.selected)))
+    contents += makeButton("(Re)load constraints",
+      "Decorate the graph with the constraints of the selected decouple file"){
+      () => publisher publish LoadConstraintRequest
     }
+    contents += makeButton("Show constraints",
+      "Show the constraints the graph has to satisfy"){
+      () => publisher publish ConstraintDisplayRequest(control.graph)
+    }
+
+    val p = new BoxPanel(Orientation.Horizontal)
+    addUndoRedoButton(p)
+    contents += p
+
+    contents += new BoxPanel(Orientation.Horizontal) {
+      contents += new Button() {
+        val b : Button = this
+        action = new Action("Save refactoring plan") {
+
+          def apply(): Unit = control.sProject foreach { p =>
+            saveFile(p.workspace, b.peer) match {
+              case None => publisher publish Log("no file selected")
+              case Some(f) =>  publisher publish SaveRecord(f)
+            }
+          }
+        }
+      }
+
+      contents += new Button() {
+        val b : Button = this
+        action = new Action("Load refactoring plan") {
+          def apply(): Unit =  control.sProject foreach { p =>
+            openFile(p.workspace, b.peer) match {
+              case None => publisher publish Log("no file selected")
+              case Some(f) => publisher publish LoadRecord(f)
+            }
+          }
+        }
+      }
+    }.leftGlued
+
+    contents += makeButton("Switch UML/Tree view", ""){
+      () => publisher publish SwitchView
+    }
+
+    contents += makeButton("Show recording", ""){
+      control.printRecording
+    }
+
+    contents += makeButton("Focus on Violations",
+      "Show only the nodes involved in a constraint violation"){
+      () =>
+        val vs = control.constraints match {
+          case None => VisibilitySet.allHidden(control.graph)
+          case Some(cm) => VisibilitySet.violationsOnly(control.graph, cm)
+        }
+
+        publisher publish VisibilityEvent(control.graph, vs)
+
+    }
+
+    contents += new Button() {
+      val b : Button = this
+      action = new Action("Export Graph") {
+
+        def apply(): Unit = control.sProject foreach { p =>
+
+          val fc = new FileChooser(){
+            title = "Select a folder where to export the graph"
+            fileSelectionMode = FileChooser.SelectionMode.DirectoriesOnly
+          }
+          fc showDialog(null, "Select")
+          Option(fc.selectedFile) foreach {
+            f => publisher publish ExportGraph(f)
+          }
+        }
+      }
+    }
+
+    val testCommutativityCB = new CheckBox("Test commutativity")
+
+    contents += testCommutativityCB
+
+    ignore(contents += makeButton("Generate Code",
+      "Apply transformations on the code")(
+      () =>publisher publish
+        GenCode(compareOutput = testCommutativityCB.selected)))
+  }
 
 
   reactions += {
     case GraphUpdate(_)
-    | ConstraintsUpdate(_,_) =>
+         | ConstraintsUpdate(_,_) =>
       contents.clear()
       addAlwaysVisibleButtons()
       addLoadedGraphButtons()

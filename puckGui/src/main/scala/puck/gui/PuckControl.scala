@@ -32,14 +32,14 @@ import puck._
 import puck.config.{Config, ConfigParser}
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
-
-import puck.util.{PuckLogger, PuckLog}
+import puck.graph.io.CSVPrinter
+import puck.util.{PuckLog, PuckLogger}
 
 import scala.concurrent.Future
-import scala.swing.{ProgressBar, Publisher}
+import scala.swing.{ProgressBar, Publisher, Swing}
 import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scalaz.{\/-, -\/}
+import scalaz.{-\/, \/-}
 
 
 object PuckControl {
@@ -289,6 +289,9 @@ implicit val logger: PuckLogger)
       }
     case PrintCode(nodeId) =>
         logger writeln ("Code :\n" + dg2ast.code(graph, nodeId))
+
+    case ExportGraph(f) =>
+      Swing onEDT CSVPrinter(graph, f)
 
   }
 

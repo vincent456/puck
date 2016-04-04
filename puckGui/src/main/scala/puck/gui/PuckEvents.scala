@@ -66,6 +66,8 @@ case object LoadConstraintRequest extends PuckEvent
 case class SaveRecord(f : File) extends PuckEvent
 case class LoadRecord(f : File) extends PuckEvent
 
+case class ExportGraph(f: File) extends PuckEvent
+
 case object SwitchView extends PuckEvent
 case class ConstraintDisplayRequest(graph : DependencyGraph) extends PuckEvent
 
