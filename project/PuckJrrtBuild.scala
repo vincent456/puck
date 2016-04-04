@@ -223,13 +223,14 @@ object PuckJrrtBuild {
 
       println("generating ast and weaving aspects")
 
-      val jastAddJar = baseDirectory.value / "project" / "lib" / "jastadd2.jar"
+      val jastAddJar = extendjRoot.value / "tools" / "jastadd2.jar"
 
       val retVal = Fork.java(new ForkOptions(bootJars = Seq(jastAddJar/*, jastAddParserJar*/) ),
         "jastadd.JastAdd"
           +: "--package=org.extendj.ast"
           +: "--rewrite=true"
           +: "--beaver"
+          +: "--rewrite=cnta"
           +: "--visitCheck=false"
           +: "--cacheCycle=false"
           +: ("--o=" + extendjManagedSrc.value)

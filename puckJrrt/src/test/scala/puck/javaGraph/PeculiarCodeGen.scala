@@ -116,6 +116,10 @@ class PeculiarCodeGen extends AcceptanceSpec {
     scenario("Clone override") {
       makeTest(s"$examplesPath/cloneOverride.java")
     }
+
+    scenario("raw generic subtype usage"){
+      makeTest(s"$examplesPath/raw-generic-subtype-usage.java")
+    }
   }
 
 }
