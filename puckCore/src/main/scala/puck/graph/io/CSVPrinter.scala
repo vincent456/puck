@@ -29,7 +29,7 @@ package puck.graph.io
 import puck.error
 import java.io.{File, FileWriter}
 
-import puck.graph.{DependencyGraph, NodeIdP}
+import puck.graph.{DGNode, DependencyGraph, InstanceValueDecl, NodeIdP, Parameter, StaticValueDecl, TypeConstructor}
 
 object CSVPrinter{
 
@@ -39,16 +39,25 @@ object CSVPrinter{
     if(!f.isDirectory)
       error("CSVPrinter(graph, f) error : f must be a directory")
     else {
+
+      import puck.graph.ShowDG._
+      def sig(n : DGNode) : String =
+        n.kind.kindType match {
+          case TypeConstructor
+               | InstanceValueDecl
+               | StaticValueDecl
+               | Parameter =>
+            graph.structuredType(n.id) map (t => (graph, t).shows) getOrElse ""
+          case _ => ""
+        }
+
       import puck.util.FileHelper.FileOps
 
-
-
-
       val nodesWriter = new FileWriter(f \ "nodes.csv")
-      nodesWriter write s"id\t$sep full name\t$sep kind$bl"
+      nodesWriter write s"id\t$sep kind\t$sep name\t$sep qualified name\t$sep type$bl"
       graph.nodes.foreach (
         n =>
-          nodesWriter write s"${n.id}\t$sep ${graph fullName n.id}\t$sep ${n.kind}$bl"
+          nodesWriter write s"${n.id}\t$sep ${n.kind}\t$sep ${n.name}\t$sep ${graph fullName n.id}\t$sep ${sig(n)}$bl"
       )
       nodesWriter.close()
 

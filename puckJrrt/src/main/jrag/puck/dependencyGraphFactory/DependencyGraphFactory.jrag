@@ -56,15 +56,6 @@ aspect DependencyGraphFactory {
 		builder.addApiTypeNodeAndRegister(typeNull());
 	}
 
-    public int Program.getNumCuFromSources(){
-        int i =0;
-        for (CompilationUnit cu : (List<CompilationUnit>)getCompilationUnitList()){
-            if(cu.fromSource())
-            i++;
-        }
-        return i;
-    }
-
 	private void Program.build(JastaddGraphBuilder builder, LoadingListener ll){
 		double nchild = getCompilationUnitList().getNumChild(); //getNumCuFromSources();
 		double d = 0.0;
@@ -363,22 +354,6 @@ aspect DependencyGraphFactory {
 	syn boolean ASTNode.isAbstractDot();
 	eq ASTNode.isAbstractDot() = false;
 	eq AbstractDot.isAbstractDot() = true;
-
-	public Expr Access.getLeftExpr(){
-		if(!getParent().isAbstractDot())
-			return null;
-		
-		AbstractDot parent = (AbstractDot) getParent();
-		Expr lsibling = parent.getLeft();
-		
-		if(lsibling == this) //already leftmost child
-			return null;
-		
-		if(lsibling.isAbstractDot())
-			return ((AbstractDot)lsibling).getRight();
-		
-		return lsibling;
-	}
 
 	public void AbstractDot.buildDG(JastaddGraphBuilder builder, int containerId){
 		if(isRightRotated())

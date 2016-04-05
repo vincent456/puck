@@ -26,6 +26,7 @@
 
 package puck.javaGraph.graphBuilding
 
+
 import puck.graph._
 import puck.graph.constraints.SupertypeAbstraction
 import puck.javaGraph.ScenarioFactory
@@ -34,48 +35,7 @@ import puck.{AcceptanceSpec, Settings}
 
 class GraphBuildingSpec extends AcceptanceSpec {
 
-  def getDefinition(g : DependencyGraph, nid : NodeId) : NodeId =
-    g.getConcreteNode(nid).definition(g).value
-
   val graphBuildingExamplesPath = Settings.testExamplesPath + "/graphBuilding/"
-
-  feature("constructor registration") {
-    val examplesPath = graphBuildingExamplesPath + "constructor/"
-
-    scenario("use of constructor only") {
-
-      val _ = new ScenarioFactory(s"$examplesPath/A.java") {
-        val clazz = fullName2id("p.A")
-        val ctor = fullName2id("p.A.A()")
-        val userDecl = fullName2id("p.B.m()")
-        val user = getDefinition(graph, userDecl)
-
-
-        assert(graph.uses(user, ctor))
-        assert(graph.uses(ctor, clazz))
-
-        assert(!graph.uses(user, clazz))
-      }
-    }
-
-    scenario("use this constructor") {
-      val _ = new ScenarioFactory(s"$examplesPath/UsesThisConstructor.java") {
-        val primaryCtor = fullName2id("p.A.A(int,int)")
-        val secondaryCtor = fullName2id("p.A.A(int)")
-        assert(graph.uses(graph.definitionOf_!(secondaryCtor), primaryCtor))
-      }
-    }
-
-    scenario("use super constructor") {
-      val _ = new ScenarioFactory(s"$examplesPath/UsesSuperConstructor.java") {
-        val bCtor = fullName2id("p.B.B(int,int)")
-        val aCtor = fullName2id("p.A.A(int)")
-        assert(graph.uses(graph.definitionOf_!(bCtor), aCtor))
-      }
-    }
-
-
-  }
 
   feature("use registration"){
     val examplesPath = graphBuildingExamplesPath +  "useRegistration/"
@@ -93,8 +53,8 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val theParameter = fullName2id("p.A.mUserViaParameter(A).a")
 
 
-        val mUserViaThisDef = getDefinition(graph, mUserViaThis)
-        val mUserViaParameterDef = getDefinition(graph, mUserViaParameter)
+        val mUserViaThisDef = fullName2id("p.A.mUserViaThis().Definition")
+        val mUserViaParameterDef = fullName2id("p.A.mUserViaParameter(A).Definition")
 
         //methodUse
         assert( graph.uses(mUserViaThisDef, methM) )
@@ -121,8 +81,8 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val theParameter = fullName2id("p.A.mUserViaParameter(A).a")
 
 
-        val mUserViaThisDef = getDefinition(graph, mUserViaThis)
-        val mUserViaParameterDef = getDefinition(graph, mUserViaParameter)
+        val mUserViaThisDef = fullName2id("p.A.mUserViaThis().Definition")
+        val mUserViaParameterDef = fullName2id("p.A.mUserViaParameter(A).Definition")
 
         //methodUse
         assert( graph.uses(mUserViaThisDef, methM) )
@@ -142,9 +102,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
     scenario("super use explicit") {
       val _ = new ScenarioFactory(s"$examplesPath/SuperUseExplicit.java"){
         val methM = fullName2id("p.A.m()")
-        val mUserViaThis = fullName2id("p.B.mUserViaSuper()")
-
-        val mUserViaSuperDef = getDefinition(graph, mUserViaThis)
+        val mUserViaSuperDef = fullName2id("p.B.mUserViaSuper().Definition")
 
         assert( graph.uses(mUserViaSuperDef, methM) )
       }
@@ -153,9 +111,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
     scenario("super use implicit") {
       val _ = new ScenarioFactory(s"$examplesPath/SuperUseImplicit.java"){
         val methM = fullName2id("p.A.m()")
-        val mUserViaThis = fullName2id("p.B.mUserViaSuper()")
-
-        val mUserViaSuperDef = getDefinition(graph, mUserViaThis)
+        val mUserViaSuperDef = fullName2id("p.B.mUserViaSuper().Definition")
 
         assert( graph.uses(mUserViaSuperDef, methM) )
       }
@@ -323,8 +279,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
       val _ = new ScenarioFactory(s"$examplesPath/CallOnField.java"){
 
         val fieldTypeUserDecl = fullName2id("p.A.b")
-        val methUserDecl = fullName2id("p.A.ma()")
-        val methUserDef = getDefinition(graph, methUserDecl)
+        val methUserDef = fullName2id("p.A.ma().Definition")
 
         val typeUsed = fullName2id("p.B")
         val typeMemberUsedDecl = fullName2id("p.B.mb()")
@@ -344,14 +299,13 @@ class GraphBuildingSpec extends AcceptanceSpec {
     scenario("call on method's parameter"){
       val _ = new ScenarioFactory(s"$examplesPath/CallOnParameter.java"){
 
-        val mUserDecl = fullName2id("p.A.ma(B)")
         val theParameter = fullName2id("p.A.ma(B).b")
-        val mUserDef = getDefinition(graph, mUserDecl)
+        val mUser = fullName2id("p.A.ma(B).Definition")
         val classUsed = fullName2id("p.B")
         val mUsed = fullName2id("p.B.mb()")
 
         val typeUse = Uses(theParameter, classUsed)
-        val typeMemberUse = Uses(mUserDef, mUsed)
+        val typeMemberUse = Uses(mUser, mUsed)
 
         graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
         graph.typeUsesOf(typeMemberUse) should contain (typeUse)
@@ -362,14 +316,13 @@ class GraphBuildingSpec extends AcceptanceSpec {
     scenario("call on local variable"){
       val _ = new ScenarioFactory(s"$examplesPath/CallOnLocalVariable.java"){
 
-        val mUserDecl = fullName2id("p.A.ma()")
-        val mUserDef = getDefinition(graph, mUserDecl)
+        val mUser = fullName2id("p.A.ma().Definition")
         val mUsed = fullName2id("p.B.mb()")
 
         val classUsed = fullName2id("p.B")
 
-        val typeUse = Uses(mUserDef, classUsed)
-        val typeMemberUse = Uses(mUserDef, mUsed)
+        val typeUse = Uses(mUser, classUsed)
+        val typeMemberUse = Uses(mUser, mUsed)
 
         graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
         graph.typeUsesOf(typeMemberUse) should contain (typeUse)
@@ -378,14 +331,13 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
     scenario("chained call"){
       val _ = new ScenarioFactory(s"$examplesPath/ChainedCall.java"){
-        val mUserDecl = fullName2id("p.A.ma()")
-        val mUserDef = getDefinition(graph, mUserDecl)
+        val mUser = fullName2id("p.A.ma().Definition")
         val mUsed = fullName2id("p.C.mc()")
         val mIntermediate = fullName2id("p.B.mb()")
         val classUsed = fullName2id("p.C")
 
         val typeUse = Uses(mIntermediate, classUsed)
-        val typeMemberUse = Uses(mUserDef, mUsed)
+        val typeMemberUse = Uses(mUser, mUsed)
 
         graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
         graph.typeUsesOf(typeMemberUse) should contain (typeUse)
@@ -520,8 +472,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
         val theParameter = fullName2id("p.GenColl.put(T).t")
         val userClass = fullName2id("p.User")
 
-        val userMethodDecl = fullName2id("p.User.m()")
-        val userMethodDef = getDefinition(graph, userMethodDecl)
+        val userMethodDef = fullName2id("p.User.m().Definition")
 
         val genCollNum = numNodesWithFullname(graph, "p.GenColl")
         genCollNum shouldBe 1
@@ -679,23 +630,16 @@ class GraphBuildingSpec extends AcceptanceSpec {
     scenario("generic type declaration"){
       val _ = new ScenarioFactory(s"$examplesPath/A.java") {
         val field = fullName2id(s"p.A.f")
-        val getterDecl = fullName2id(s"p.A.getF()")
-        val getter = getDefinition(graph, getterDecl)
+        val getter = fullName2id(s"p.A.getF().Definition")
 
-        val setterDecl = fullName2id(s"p.A.setF(int)")
-        val setter = getDefinition(graph, setterDecl)
+        val setter = fullName2id(s"p.A.setF(int).Definition")
 
-        val inc0Decl = fullName2id(s"p.A.incF0()")
-        val inc1Decl = fullName2id(s"p.A.incF1()")
-        val inc2Decl = fullName2id(s"p.A.incF2()")
-        val dec0Decl = fullName2id(s"p.A.decF0()")
-        val dec1Decl = fullName2id(s"p.A.decF1()")
+        val inc0 = fullName2id(s"p.A.incF0().Definition")
+        val inc1 = fullName2id(s"p.A.incF1().Definition")
+        val inc2 = fullName2id(s"p.A.incF2().Definition")
+        val dec0 = fullName2id(s"p.A.decF0().Definition")
+        val dec1 = fullName2id(s"p.A.decF1().Definition")
 
-        val inc0 = getDefinition(graph, inc0Decl)
-        val inc1 = getDefinition(graph, inc1Decl)
-        val inc2 = getDefinition(graph, inc2Decl)
-        val dec0 = getDefinition(graph, dec0Decl)
-        val dec1 = getDefinition(graph, dec1Decl)
 
         assert( graph.uses(getter, field) )
         graph.usesAccessKind(getter, field) shouldBe Some(Read)
@@ -727,8 +671,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
     scenario("anonymous class instanciated in local variable") {
       val _ = new ScenarioFactory(s"$examplesPath/AnonymousClassLocalVariable.java") {
-        val m = fullName2id(s"p.A.ma()")
-        val mDef = graph.definitionOf_!(m)
+        val mDef = fullName2id(s"p.A.ma().Definition")
         val anonymousClass = fullName2id(s"p.A.ma().Anonymous0")
 
         assert( graph.contains(mDef, anonymousClass) )

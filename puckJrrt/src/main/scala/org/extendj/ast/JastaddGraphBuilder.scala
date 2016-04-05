@@ -94,10 +94,10 @@ object JastaddGraphBuilder {
 
 import JastaddGraphBuilder.{qualifierIsSuperAccess, qualifierIsThisAccess}
 
-class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
+class JastaddGraphBuilder(val program : Program)
+  extends JavaGraphBuilder
+  with TypeUsage {
   var graph2ASTMap = Map[Int, ASTNodeLink]()
-
-
 
   def findTypeDecl(typ : String): TypeDecl ={
     val td = program findType typ
@@ -169,7 +169,7 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
     }
   }
 
- def buildDef(defOwner : DGNamedElement ,
+ def buildDef(defOwner : DGNamedElement,
     theDef : Block , defOwnerId: Int) : Int = {
     val defId = getDefNode(defOwner)
     theDef.registerDef(this, defId)
@@ -178,44 +178,34 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
     defId
   }
 
-  def buildTypeUse(access : TypeMemberAccess, typeMemberUse: Uses) : Unit = {
-    if(qualifierIsThisAccess(access)) {
-      val thisTypeId = access.hostType().buildDGNode(this)
+  def buildTypeUse(tmAccess : TypeMemberAccess, typeMemberUse: Uses) : Unit = {
+    if(qualifierIsThisAccess(tmAccess)) {
+      val thisTypeId = tmAccess.hostType().buildDGNode(this)
       addEdge(addBinding(thisTypeId, thisTypeId, typeMemberUse))
     }
-    else if(qualifierIsSuperAccess(access)){
-      val thisTypeId = access.hostType().buildDGNode(this)
-      val superTypeId = access.hostType.asInstanceOf[ClassDecl].superclass().buildDGNode(this)
+    else if(qualifierIsSuperAccess(tmAccess)){
+      val thisTypeId = tmAccess.hostType().buildDGNode(this)
+      val superTypeId = tmAccess.hostType.asInstanceOf[ClassDecl].superclass().buildDGNode(this)
       addEdge(addBinding(thisTypeId, superTypeId, typeMemberUse))
     }
-    else
-      access.asInstanceOf[Access].buildTypeUseFromLeftExpr(this, typeMemberUse)
+    else {
+      val access = tmAccess.asInstanceOf[Access]
+      try access.qualifier().findTypeUserAndBindUses(this, typeMemberUse)
+      catch {
+        case _: Error =>
+            throw new NoTypeUser(access.prettyPrint() + "(" + access.getClass + ") in " +
+              access.compilationUnit().pathName() + " " + access.location())
+
+
+      }
+    }
   }
 
+  //a.b.c()
+  //typeMemberUse, used is c
+  //b is qualifier
+  //a is qualifier's qualifier
 
-//  def addStringLiteral(literal: String, occurrences: java.util.Collection[BodyDecl]) : Unit = {
-//
-//    def stringType = {
-//      val td = findTypeDecl("java.lang.string")
-//      val nid = addApiTypeNode(td)
-//      NamedType(nid)
-//    }
-//
-//    println("string "+literal + " "+ occurrences.size()+" occurences" )
-//
-//    for(bd <- occurrences){
-//      val packageNode = nodesByName(bd.hostBodyDecl.compilationUnit.getPackageDecl)
-//
-//      val bdNode = bd buildDGNode this
-//      val strNode = addNode(bd.fullName()+literal, literal, nodeKind.Literal, mutable = false)()
-//      /*
-//        this is obviously wrong: TODO FIX
-//      */
-//      addContains(packageNode, strNode)
-//      setType(strNode, stringType)
-//      addEdge(Uses(bdNode, strNode, Some(Read)))
-//    }
-//  }
 
   def addApiTypeNode(td: TypeDecl): NodeIdT = {
     val tdNode = getNode(td)
@@ -249,20 +239,7 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
                             subTypeUsed : NodeId): Unit =
     addTypeUsesConstraint((userOfSuperType, superTypeUsed), (userOfSubType, subTypeUsed))
 
-  def bindTypeUse(typeUser : NodeId, typeUsed: TypeDecl, typeMemberUse : Uses) : Unit ={
-    g.kindType(typeMemberUse.used) match {
-      case PuckTypeDecl =>
-        // getType(typeUsed).ids contains typeMemberUse.used
-        addTypeUsesConstraint(typeMemberUse,(typeUser, typeMemberUse.used))
-      case _ =>
-        val tid = getType(typeUsed) match {
-          case NamedType(id) => id
-          case ParameterizedType(id, _) => id
-        }
-        addBinding(typeUser, tid, typeMemberUse)
-    }
 
-  }
 
   def getParamType(parTypeDecl : ParTypeDecl) : Type = {
     val genId = getNode(parTypeDecl.genericDecl())
@@ -304,75 +281,6 @@ class JastaddGraphBuilder(val program : Program) extends JavaGraphBuilder {
   def buildDG(pta : ParTypeAccess, containerId : NodeId) : Unit = {
     getType(pta).ids.foreach(id => addEdge(Uses(containerId, id)))
   }
-
-  def constraintTypeUses
-  ( lvalue : NodeId,
-    lvalueType : TypeDecl,
-    rvalue : Access): Unit =
-    if(rvalue.`type`().isInstanceOf[AnonymousDecl])
-      println("Access.constraintTypeUses with Anonymous Class not handled yet !")
-    else lvalueType match {
-      case lvalueParType : ParTypeDecl =>
-        constraintParTypeUses(lvalue, lvalueParType, rvalue.lastAccess())
-      case _ =>
-        if(rvalue.lastAccess().accessed().isInstanceOf[Substitute] ||
-          rvalue.lastAccess().`type`().isInstanceOf[Substitute])
-          rvalue.lastAccess().findTypeUserAndBindUses(this,
-            Uses(lvalue, lvalueType.buildDGNode(this)))
-        else
-          addTypeUsesConstraint(lvalue,
-            lvalueType buildDGNode this,
-            rvalue.lastAccess() buildDGNode this,
-            rvalue.lastAccess().`type`() buildDGNode this )
-    }
-
-
-
-  def constraintParTypeUses
-  ( lvalue : NodeId,
-    lvalueType : ParTypeDecl,
-    rvalue : Access) : Unit =
-    if(!rvalue.`type`().isInstanceOf[ParTypeDecl])
-      println("Access.constraintTypeUses this.type() " +
-        "not instanceof ParTypeDecl  : TODO !!!")
-    else {
-      val rValueType = rvalue.`type`().asInstanceOf[ParTypeDecl]
-      if(rValueType.numTypeParameter() != lvalueType.numTypeParameter())
-        println("Access.constraintTypeUses " +
-          "rValueType.getNumArgument() != lValueType.getNumArgument()  : TODO !!!")
-      else {
-        //Hypothesis : argument are in same order  C<B,A> extends I<A,B> kind of case not handled
-        val rvalueNode = rvalue buildDGNode this
-        addTypeUsesConstraint(lvalue,
-          lvalueType.genericDecl() buildDGNode this,
-          rvalueNode,
-          rValueType.genericDecl() buildDGNode this)
-
-        def normalizeTypeDecl(t : TypeDecl) : TypeDecl = t match {
-          case _ : WildcardType => rvalue.program().typeObject()
-          case wst : WildcardSuperType if wst.getAccess.isInstanceOf[TypeAccess] =>
-            wst.getAccess.asInstanceOf[TypeAccess].decl()
-          case wet : WildcardExtendsType if wet.getAccess.isInstanceOf[TypeAccess] =>
-            wet.getAccess.asInstanceOf[TypeAccess].decl()
-          case _ => t
-        }
-
-        Range(0, lvalueType.numTypeParameter()).foreach {
-          i =>
-            val lvalueArg = normalizeTypeDecl(lvalueType.getParameterization.getArg(i))
-            val rvalueArg = normalizeTypeDecl(rValueType.getParameterization.getArg(i))
-
-            (lvalueArg, rvalueArg) match {
-              case (_, tv : TypeVariable) =>
-                rvalue.findTypeVariableInstanciatorAndBindUses(this,
-                  lvalueArg, tv, Uses(lvalue, lvalueArg buildDGNode this))
-              case _ =>
-                addTypeUsesConstraint(lvalue, lvalueArg buildDGNode this,
-                  rvalueNode, rvalueArg buildDGNode this)
-            }
-        }
-      }
-    }
 
 //  val register : NodeId => ASTNode[_] =>  Unit = n => {
 //    case decl : InterfaceDecl =>

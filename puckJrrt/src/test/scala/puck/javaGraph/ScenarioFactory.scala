@@ -29,18 +29,33 @@ package puck.javaGraph
 import java.io.File
 
 import puck.graph.transformations.Transformation
-import puck.graph.{DependencyGraph, NodeId}
-import puck.jastadd.CompileHelper
+import puck.graph.{DGBuildingError, DependencyGraph, NodeId}
 import puck.util.{FileHelper, PuckFileLogger, PuckLogger}
 import sbt.IO
 import org.extendj.ast.{ASTNodeLink, JavaJastAddDG2AST, Program}
 import FileHelper.FileOps
+import puck.Project
+import puck.config.ConfigParser
+
+
+
+
+
 object ScenarioFactory {
+  implicit val logger : PuckLogger = new PuckFileLogger(_ => true, new java.io.File("/tmp/comparisonLog"))
+
   def fromDirectory(path: String): ScenarioFactory = {
      new ScenarioFactory(FileHelper.findAllFiles(new File(path), ".java", Seq(new File(path) \ "out")):_*)
   }
+
+  def fromConfigFile(f : File) : ScenarioFactory = {
+    val dg2ast = new Project(ConfigParser(f),JavaJastAddDG2AST).loadGraph().asInstanceOf[JavaJastAddDG2AST]
+    new ScenarioFactory(dg2ast)
+  }
+
 }
 
+import ScenarioFactory.logger
 
 case class ScenarioFactory
 ( program : Program,
@@ -49,19 +64,31 @@ case class ScenarioFactory
   fullName2id : Map[String, NodeId],
   dg2astMap : Map[NodeId, ASTNodeLink]){
 
-  def this(t : (Program,
-                DependencyGraph,
-                Seq[Transformation],
-                Map[String, NodeId],
-                Map[NodeId, ASTNodeLink])) =
-        this(t._1, t._2, t._3, t._4, t._5)
+   def this(dg2ast : JavaJastAddDG2AST) =
+    this(dg2ast.program,
+      dg2ast.initialGraph,
+      dg2ast.initialRecord,
+      dg2ast.nodesByName,
+      dg2ast.graph2ASTMap)
 
-  def this(filePath : String) =
-    this(CompileHelper.compileSrcsAndbuildGraph(List(filePath), List(), List(), List()))
+  def this(filePathOrCode : String) = this {
+    if(filePathOrCode endsWith ".java" )
+      JavaJastAddDG2AST.fromFiles(List(filePathOrCode), List(), List(), List())
+    else
+      JavaJastAddDG2AST.compile(filePathOrCode.stripMargin) match {
+        case None => throw new DGBuildingError("Compilation error, no AST generated")
+        case Some(p) => JavaJastAddDG2AST.buildGraph(p, null)
+      }
+  }
+
+
   def this(filesPath : String*) =
-    this(CompileHelper.compileSrcsAndbuildGraph(filesPath.toList, List(), List(), List()))
+    this(JavaJastAddDG2AST.fromFiles(filesPath.toList, List(), List(), List()))
 
-  implicit var logger : PuckLogger = new PuckFileLogger(_ => true, new java.io.File("/tmp/comparisonLog"))
+  implicit val logger = ScenarioFactory.logger
+
+
+
   def compare: (DependencyGraph, DependencyGraph) => Boolean =
     (g1, g2) => DependencyGraph.areEquivalent(initialRecord,g1,g2, logger)
 
@@ -84,7 +111,7 @@ case class ScenarioFactory
   }
 
   def printFullNames() : Unit =
-    fullName2id.keys.toList.sorted foreach println
+    fullName2id.toList sortBy(_._1) foreach println
 
   def printFullNamesSortedByKey() : Unit =
     fullName2id.toList map (_.swap) sortBy(_._1) foreach println

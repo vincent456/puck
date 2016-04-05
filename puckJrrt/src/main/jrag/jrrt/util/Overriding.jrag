@@ -143,12 +143,13 @@ aspect Overriding {
 	
 	syn lazy Collection<TypeDecl> TypeDecl.supertypestransitive() {
 		java.util.Set<TypeDecl> supertypestransitive = new HashSet<TypeDecl>();
-		for (TypeDecl supertype : supertypes()) {
-			supertypestransitive.addAll(supertype.supertypestransitive());
-			supertypestransitive.add(supertype);
-		} 
-		if(supertypes().size() == 0 && isInterfaceDecl())
-			supertypestransitive.add(program().findType("java.lang.Object"));
+		if(fullName().equals("java.lang.Object"))
+			supertypestransitive.add(this);
+		else
+			for (TypeDecl supertype : supertypes()) {
+				supertypestransitive.addAll(supertype.supertypestransitive());
+				supertypestransitive.add(supertype);
+			}
 		return supertypestransitive;
 	}
 	
@@ -166,30 +167,10 @@ aspect Overriding {
 		Collection<TypeDecl> res = new LinkedList<TypeDecl>();
 		if(superclass() != null)
 			res.add(superclass());
-		for(Iterator<TypeDecl> iter = interfacesIterator(); iter.hasNext();)
-			res.add(iter.next());
+		res.addAll(superInterfaces());
 		return res;
 	}
-	eq InterfaceDecl.supertypes() {
-		Collection<TypeDecl> res = new LinkedList<TypeDecl>();
-		for(Iterator<TypeDecl> iter = interfacesIterator(); iter.hasNext();)
-			res.add(iter.next());
-		return res;		
-	}
-	
-	syn lazy Collection<InterfaceDecl> TypeDecl.superinterfaces() = Collections.emptySet();
-	eq ClassDecl.superinterfaces() {
-		Collection<InterfaceDecl> res = new LinkedList<InterfaceDecl>();
-		for(Iterator<TypeDecl> iter = interfacesIterator(); iter.hasNext();)
-			res.add((InterfaceDecl)iter.next());
-		return res;
-	}
-	eq InterfaceDecl.superinterfaces() {
-		Collection<InterfaceDecl> res = new LinkedList<InterfaceDecl>();
-		for(Iterator<TypeDecl> iter = interfacesIterator(); iter.hasNext();)
-			res.add((InterfaceDecl)iter.next());
-		return res;
-	}
+	eq InterfaceDecl.supertypes() = superInterfaces();
 	
 	syn lazy Collection<FieldDeclarator> FieldDeclarator.hiddenFields() {
 		Collection<FieldDeclarator> res = new LinkedHashSet<FieldDeclarator>();
@@ -213,7 +194,7 @@ aspect Overriding {
 		for(TypeDecl inheritor : inheritors) {
 			if(inheritor == hostType())
 				continue;
-			for(InterfaceDecl sup : inheritor.superinterfaces())
+			for(TypeDecl sup : inheritor.superInterfaces())
 				for(Iterator<MethodDecl> iter = sup.methodsSignature(signature()).iterator();iter.hasNext();)
 					res.add(iter.next());
 		}

@@ -76,5 +76,5 @@ aspect TypeExt {
 					return true;
 		return false;
 	}
-	
+
 }

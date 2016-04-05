@@ -36,6 +36,9 @@ aspect TypeUser {
     MethodDecl implements TypeMember;
 
     interface TypeMemberAccess{
+
+        TypeDecl type(); //return type of method or type of field
+
         int buildDGNode(JastaddGraphBuilder builder);
 
         Expr getQualifier();
@@ -78,25 +81,12 @@ aspect TypeUser {
     }
 
 
-
-    public void Access.buildTypeUseFromLeftExpr(JastaddGraphBuilder builder, Uses typeMemberUse){
-        Expr lexpr = getLeftExpr();
-
-        if(lexpr == null)
-            throw new NoTypeUser(this.prettyPrint()+"("+this.getClass()+") in "+this.compilationUnit().pathName()+" "+this.location());
-        else
-            lexpr.findTypeUserAndBindUses(builder, typeMemberUse);
-
-    }
-
     void Expr.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
         throw new DGBuildingError(this.prettyPrint() + "(" +this.getClass() + ") in " +
                 this.compilationUnit().pathName() +" line " +
                 this.location() + " typeUser not found");
     }
-//    Uses Expr.bindTypeUse(JastaddGraphBuilder builder, int thisDGId, Uses typeMemberUse){
-//        return builder.bindTypeUse(thisDGId, type().buildDGNode(builder), typeMemberUse);
-//    }
+
     void Expr.bindTypeUse(JastaddGraphBuilder builder, int thisDGId, Uses typeMemberUse){
         builder.bindTypeUse(thisDGId, type(), typeMemberUse);
     }
@@ -116,7 +106,7 @@ aspect TypeUser {
         getExpr().findTypeUserAndBindUses(builder, typeMemberUse);
     }
     void ArrayAccess.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
-        getLeftExpr().findTypeUserAndBindUses(builder, typeMemberUse);
+        prevExpr().findTypeUserAndBindUses(builder, typeMemberUse);
     }
     void ConditionalExpr.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
         getFalseExpr().findTypeUserAndBindUses(builder, typeMemberUse);
@@ -146,32 +136,9 @@ aspect TypeUser {
 
     void Access.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
         if(accessed() instanceof TypeMemberSubstitute)
-            findTypeUserAndBindUses(builder, typeMemberUse, (TypeMemberSubstitute) accessed());
+            builder.findTypeUserAndBindUses(typeMemberUse, this, (TypeMemberSubstitute) accessed());
         else
             bindTypeUse(builder, this.buildDGNode(builder), typeMemberUse);
-    }
-
-
-    void Access.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse, TypeMemberSubstitute substitute){
-        if(substitute.getOriginalType() instanceof TypeVariable){
-            TypeVariable tv= (TypeVariable)substitute.getOriginalType();
-            if(tv.owner() instanceof GenericTypeDecl)
-                findTypeVariableInstanciatorAndBindUsesInLeftExpr(builder, substitute.type(),
-                        tv, typeMemberUse);
-            else
-                System.out.println("Access.findTypeUserAndBindUses tv.owner() " +
-                        "not instanceof GenericTypeDecl : TODO !!!");
-
-        }
-        else if( substitute.getOriginalType() instanceof ParTypeDecl
-                || type() instanceof ParTypeDecl ){
-            System.out.println("Access.findTypeUserAndBindUses substitute.getOriginalType()  " +
-                    "instanceof ParTypeDecl : TODO !!!");
-        }
-        else if(type().instanceOf(substitute.getOriginalType()))
-            bindTypeUse(builder, this.buildDGNode(builder), typeMemberUse);
-        else
-            mandatoryAssert(false);
     }
 
     void ClassInstanceExpr.findTypeUserAndBindUses(JastaddGraphBuilder builder, Uses typeMemberUse){
@@ -184,43 +151,6 @@ aspect TypeUser {
         super.findTypeUserAndBindUses(builder, typeMemberUse);
         // do not lock varAccess
         setTargetVariable(null);
-    }
-
-    void Access.findTypeVariableInstanciatorAndBindUsesInLeftExpr(JastaddGraphBuilder builder,
-                                                           TypeDecl typeUsed,
-                                                           TypeVariable tv,
-                                                           Uses typeMemberUse) {
-        Expr lexpr = getLeftExpr();
-        if (lexpr == null)
-            throw new NoTypeUser(this + "(" + this.getClass() + ") in " + this.compilationUnit().pathName() + " " + this.location());
-        else
-            lexpr.findTypeVariableInstanciatorAndBindUses(builder, typeUsed, tv, typeMemberUse);
-
-    }
-
-    void Expr.findTypeVariableInstanciatorAndBindUses(JastaddGraphBuilder builder,
-                                                 TypeDecl typeUsed,
-                                                 TypeVariable tv,
-                                                 Uses typeMemberUse){
-        System.out.println(this.getClass()+".findTypeVariableInstanciatorAndBindUses : TODO !!!");
-    }
-
-
-    void Access.findTypeVariableInstanciatorAndBindUses(JastaddGraphBuilder builder,
-                                                 TypeDecl typeUsed,
-                                                 TypeVariable tv,
-                                                 Uses typeMemberUse){
-        if(this.type() instanceof ParTypeDecl){
-            GenericElement ge = (GenericElement) ((ParTypeDecl) this.type()).genericDecl();
-            if(ge.ownTypeVariable(tv))
-                builder.bindTypeUse(this.buildDGNode(builder), typeUsed, typeMemberUse);
-            else
-                System.out.println("Access.findTypeVariableInstanciatorAndBindUses " +
-                        "not ge.ownTypeVariable(tv) : TODO !!!");
-        }
-        else
-            findTypeVariableInstanciatorAndBindUsesInLeftExpr(builder, typeUsed, tv, typeMemberUse);
-
     }
 
     public TypeDecl TypeMemberSubstitute.getOriginalType(){

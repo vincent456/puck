@@ -109,8 +109,9 @@ aspect NamedElement {
         ASTNode getOriginal();
     }
 
-    interface TypeDeclSubstitute extends Substitute { }
-
+    interface TypeDeclSubstitute extends Substitute {
+        TypeDecl getOriginal();
+    }
 
     interface TypeMemberSubstitute extends Substitute {
         TypeDecl type();

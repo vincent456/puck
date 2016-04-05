@@ -228,7 +228,6 @@ object PuckJrrtBuild {
       val retVal = Fork.java(new ForkOptions(bootJars = Seq(jastAddJar/*, jastAddParserJar*/) ),
         "jastadd.JastAdd"
           +: "--package=org.extendj.ast"
-          +: "--rewrite=true"
           +: "--beaver"
           +: "--rewrite=cnta"
           +: "--visitCheck=false"

@@ -66,7 +66,8 @@ aspect AST {
 //		exit.flushTreeCache();
 //		super.flushTreeCache();
 //	}
-	
+
+
 	protected ASTNode ASTNode.replaceWith(ASTNode newnode) {
 		return replace(this).with(newnode);
 	}
@@ -105,45 +106,45 @@ aspect AST {
 
 
 	public void AbstractDot.rotateLeft() {
-		Expr l = getLeft(); setLeft(null);
-		Access r = getRight(); setRight(null);
-		while(r instanceof AbstractDot) {
-			AbstractDot rdot = (AbstractDot)r;
-			Access rdot_left = (Access) rdot.getLeft(); rdot.setLeft(null);
-			l = new Dot(l, rdot_left);
-			r = rdot.getRight(); rdot.setRight(null);
-		}
-		setLeft(l);
-		setRight(r);
-
-		setRightRotated(false);
-		l.setRightRotated(false);
-		r.setRightRotated(false);
+//		Expr l = getLeft(); setLeft(null);
+//		Access r = getRight(); setRight(null);
+//		while(r instanceof AbstractDot) {
+//			AbstractDot rdot = (AbstractDot)r;
+//			Access rdot_left = (Access) rdot.getLeft(); rdot.setLeft(null);
+//			l = new Dot(l, rdot_left);
+//			r = rdot.getRight(); rdot.setRight(null);
+//		}
+//		setLeft(l);
+//		setRight(r);
+//
+//		setRightRotated(false);
+//		l.setRightRotated(false);
+//		r.setRightRotated(false);
 	}
 	
 	public void AbstractDot.rotateRight() {
-		Expr l = getLeft(); setLeft(null);
-		Access r = getRight(); setRight(null);
-		while(l instanceof AbstractDot) {
-			AbstractDot ldot = (AbstractDot)l;
-			Access ldot_right = (Access)ldot.getRight(); ldot.setRight(null);
-			r = new Dot(ldot_right, r);
-			l = ldot.getLeft(); ldot.setLeft(null);
-		}
-		setLeft(l);
-		setRight(r);
-
-		setRightRotated(true);
-		l.setRightRotated(true);
-		r.setRightRotated(true);
+//		Expr l = getLeft(); setLeft(null);
+//		Access r = getRight(); setRight(null);
+//		while(l instanceof AbstractDot) {
+//			AbstractDot ldot = (AbstractDot)l;
+//			Access ldot_right = (Access)ldot.getRight(); ldot.setRight(null);
+//			r = new Dot(ldot_right, r);
+//			l = ldot.getLeft(); ldot.setLeft(null);
+//		}
+//		setLeft(l);
+//		setRight(r);
+//
+//		setRightRotated(true);
+//		l.setRightRotated(true);
+//		r.setRightRotated(true);
 	}
 	
-	// TODO: some bits of the compiler don't work properly when AbstractDots are left-heavy; these refinements are just temporary fixes
-	refine QualifiedNames eq ImportDecl.typeName() {
-    	if(getAccess() instanceof AbstractDot)
-    		((AbstractDot)getAccess()).rotateRight();
-    	return refined();
-	}
+//	// TODO: some bits of the compiler don't work properly when AbstractDots are left-heavy; these refinements are just temporary fixes
+//	refine QualifiedNames eq ImportDecl.typeName() {
+//    	if(getAccess() instanceof AbstractDot)
+//    		((AbstractDot)getAccess()).rotateRight();
+//    	return refined();
+//	}
 	
 	/* f.bundleQualifier() does the following:
 	 * 

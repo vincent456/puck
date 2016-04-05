@@ -121,9 +121,6 @@ class PeculiarCodeGen extends AcceptanceSpec {
       makeTest(s"$examplesPath/raw-generic-subtype-usage.java")
     }
 
-    scenario("explicit this"){
-      makeTest(s"$examplesPath/use-of-super-class-via-this.java")
-    }
   }
 
 }

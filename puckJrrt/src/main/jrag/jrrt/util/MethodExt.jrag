@@ -176,10 +176,9 @@ aspect MethodExt {
 			if (rt instanceof ClassDecl) {
 				ClassDecl cd = (ClassDecl) rt;
 				
-				SimpleSet m = cd.localMethodsSignature(sig);
-		        mandatoryAssert(m.size() <= 1);
-				for (Iterator i = m.iterator(); i.hasNext();) {
-					MethodDecl md = (MethodDecl) i.next();
+				SimpleSet<MethodDecl> mds = cd.localMethodsSignature(sig);
+		        mandatoryAssert(mds.size() <= 1);
+				for (MethodDecl md : mds) {
 					if (md instanceof MethodDeclSubstituted)
 						md = ((MethodDeclSubstituted) md).getOriginal();
 					
@@ -190,16 +189,16 @@ aspect MethodExt {
 				if(!cd.isObject()) {
 					TypeDecl superclass = cd.superclass().sourceTypeDecl();
 					String sup_sig = superTypeSignature(sig, superclass, cd);
-					SimpleSet mds = superclass.methodsSignature(sup_sig);
-					if (!mds.isEmpty() && ((MethodDecl) mds.iterator().next()).accessibleFrom(cd)) {
+					SimpleSet<MethodDecl> mdsig = superclass.methodsSignature(sup_sig);
+					if (!mdsig.isEmpty() && mdsig.iterator().next().accessibleFrom(cd)) {
 						to_process.push((ReferenceType)superclass);
 						sigs.push(sup_sig);
 					}
 				}
 				
 				// interfaces
-				for (Iterator i = cd.interfacesSourceDecls().iterator(); i.hasNext();) {
-					InterfaceDecl id = (InterfaceDecl) i.next();
+				for (TypeDecl td : cd.superInterfaces()) {
+					InterfaceDecl id = (InterfaceDecl) td;
 					String sup_sigg = superTypeSignature(sig, id, cd);
 					if (!id.methodsSignature(sup_sigg).isEmpty()) {
 						to_process.push(id);
@@ -210,10 +209,9 @@ aspect MethodExt {
 			} else if (rt instanceof InterfaceDecl) {
 				InterfaceDecl id = (InterfaceDecl) rt;
 				
-				SimpleSet m = id.localMethodsSignature(sig);
-				mandatoryAssert(m.size() <= 1);
-				for (Iterator i = m.iterator(); i.hasNext();) {
-					MethodDecl md = (MethodDecl) i.next();
+				SimpleSet<MethodDecl> mds = id.localMethodsSignature(sig);
+				mandatoryAssert(mds.size() <= 1);
+				for (MethodDecl md : mds) {
 					if (md instanceof MethodDeclSubstituted)
 						md = ((MethodDeclSubstituted) md).getOriginal();
 					
@@ -221,8 +219,8 @@ aspect MethodExt {
 				}
 				
 				// super interfaces
-				for (Iterator<InterfaceDecl> i = id.superInterfacesSourceDecls().iterator(); i.hasNext();) {
-					InterfaceDecl idecl = i.next();
+				for (TypeDecl td : id.superInterfaces()) {
+					InterfaceDecl idecl = (InterfaceDecl) td;
 					String sup_sig = superTypeSignature(sig, idecl, rt);
 					if (!idecl.methodsSignature(sup_sig).isEmpty()) {
 						to_process.push(idecl);
@@ -235,8 +233,8 @@ aspect MethodExt {
 			
 
 			// child types
-			for (Iterator i = rt.childTypes().iterator(); i.hasNext();) {
-				ReferenceType rtp = (ReferenceType) ((ReferenceType) i.next()).sourceTypeDecl();
+			for (TypeDecl ct : rt.childTypes()) {
+				ReferenceType rtp = (ReferenceType) ct.sourceTypeDecl();
 				String sub_sig = subTypeSignature(sig, rt, rtp);
 				SimpleSet mds = rtp.methodsSignature(sub_sig);
 				if (!mds.isEmpty() && ((MethodDecl)mds.iterator().next())

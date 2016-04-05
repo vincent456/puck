@@ -26,47 +26,153 @@
 
 package org.extendj.ast
 
-import java.io.File
+
+import java.io.{ByteArrayInputStream, File, FileWriter, InputStream}
 import java.util.NoSuchElementException
 
+import org.extendj.parser
 import puck.config.Config
 import puck.graph.ShowDG._
 import puck.graph._
+import puck.graph.comparison.NodeMappingInitialState
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations._
-import puck.jastadd._
+import puck.graph.transformations.Recording
 import puck.jastadd.concretize._
 import puck.javaGraph.nodeKind._
 import puck.util.PuckLog._
 import puck.util.{PuckLog, PuckLogger}
 import puck.{DG2AST, DG2ASTBuilder, Project, PuckError}
 
+import scala.{List => SList}
 
 object JavaJastAddDG2AST extends DG2ASTBuilder {
 
-  implicit def wrap(t : (Program, DependencyGraph, Seq[Transformation], Map[String, NodeId], Map[NodeId, ASTNodeLink])) : JavaJastAddDG2AST =
-    new JavaJastAddDG2AST(t._1, t._2, t._3, t._4, t._5)
+  def buildGraph(p : Program,
+                 ll : puck.LoadingListener)  : JavaJastAddDG2AST = {
+    val builder = p.buildDependencyGraph(ll)
+    builder.addContains(builder.nodesByName("@primitive"), builder.arrayTypeId)
+    builder.attachOrphanNodes()
+    builder.registerSuperTypes()
 
-  def fromFiles(sources: scala.List[String],
-                sourcepaths : scala.List[String],
-                classpaths: scala.List[String],
-                bootclasspaths : scala.List[String],
-                logger : PuckLogger,
-                ll : puck.LoadingListener ): JavaJastAddDG2AST = {
+    val (_, initialRecord) = NodeMappingInitialState.normalizeNodeTransfos(JavaNodeKind.root.kind,
+      builder.g.recording, Seq())
+
+    val g = builder.g.newGraph(recording = Recording())
+
+    new JavaJastAddDG2AST(p, g,
+      initialRecord,
+      builder.nodesByName,
+      builder.graph2ASTMap)
+  }
+
+  def fromFiles(sources: SList[String],
+                sourcepaths : SList[String],
+                classpaths: SList[String],
+                bootclasspaths : SList[String],
+                ll : puck.LoadingListener = null)
+               (implicit logger : PuckLogger): JavaJastAddDG2AST = {
     val sProg = puck.util.Time.time(logger, defaultVerbosity) {
       logger.writeln("Compiling sources ...")
-      CompileHelper(sources, sourcepaths, classpaths, bootclasspaths)
+      compile(sources, sourcepaths, classpaths, bootclasspaths)
     }
 
     puck.util.Time.time(logger, defaultVerbosity) {
       logger.writeln("Building Access Graph ...")
       sProg match {
         case None => throw new DGBuildingError("Compilation error, no AST generated")
-        case Some(p) => wrap(CompileHelper.buildGraph(p, ll))
+        case Some(p) => buildGraph(p, ll)
+      }
+    }
+  }
+
+  def compile(sources: SList[String],
+              sourcepaths:SList[String],
+              jars: SList[String],
+              bootJars : SList[String]): Option[Program] = {
+    val arglist = createArglist(sources, sourcepaths, jars, bootJars)
+    val f = new Frontend {
+      //        protected override def processErrors(errors: java.util.Collection[Problem], unit: CompilationUnit): Unit =  {
+      //          System.err.println("Errors:")
+      //
+      //            val it: Iterator[_] = errors.iterator
+      //            while (it.hasNext) {
+      //              val i = it.next()
+      //              System.err.println(i)
+      //            }
+      //
+      //        }
+      protected override def processWarnings(errors: java.util.Collection[Problem], unit: CompilationUnit): Unit = {
+      }
+    }
+    val br = new BytecodeReader() {
+      def read(is: InputStream, fullName: String, p: Program) : CompilationUnit = {
+        new BytecodeParser(is, fullName).parse(null, null, p)
       }
     }
 
+    val jp = new JavaParser() {
+      override def parse(is: InputStream, fileName: String) : CompilationUnit = {
+        new parser.JavaParser().parse(is, fileName)
+      }
+    }
+
+    if (f.run(arglist, br, jp) == 0){
+      Some(f.getProgram)}
+    else
+      None
   }
+
+
+  def compile(code : String) : Option[Program] = {
+    import puck.util.FileHelper.FileOps
+    val f = new File(System.getProperty("java.io.tmpdir")) \ "Tmp.java"
+    val fw = new FileWriter(f)
+    fw.write(code)
+    fw.close()
+
+    compile(SList(f.getAbsolutePath),SList(),SList(),SList())
+  }
+
+
+  /*  try {
+      val noSource = "<no source>"
+      val noPath = "<no path>"
+      val p = new Program()
+      p initBytecodeReader Program.defaultBytecodeReader()
+      val parser = Program.defaultJavaParser()
+      p initJavaParser parser
+
+      val cu0 = parser.parse(
+        new ByteArrayInputStream(code.getBytes("UTF-8")), noPath)
+
+      p addCompilationUnit cu0
+
+      val cu = p getCompilationUnit 0
+      cu.setClassSource(new FileClassSource(new SourceFolderPath(noSource), noPath))
+      cu setFromSource true
+      Some(p)
+    } catch {
+      case _ : Exception => None
+    }*/
+
+
+
+
+  private def createArglist(sources: SList[String],
+                            sourcepaths:SList[String],
+                            jars: SList[String],
+                            bootClassPath : SList[String]): Array[String] = {
+
+    def prepend(argName : String, argValue : SList[String], accu : SList[String]) : SList[String] =
+      if(argValue.isEmpty) accu
+      else argName :: argValue.mkString(File.pathSeparator) :: accu
+
+    val args0 = prepend("-classpath", jars, sources)
+    val args1 = prepend("-sourcepath", sourcepaths, args0)
+    prepend("-bootclasspath", bootClassPath, args1).toArray
+  }
+
 
   def apply
   (p : Project,
@@ -79,10 +185,10 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
     fromFiles(p pathList Keys.srcs,
       p pathList Keys.sourcepaths,
       p pathList Keys.classpath,
-      p pathList Keys.bootclasspath,
-        logger, ll)
+      p pathList Keys.bootclasspath)(logger)
 
   }
+
   def verbosity : PuckLog.Level => PuckLog.Verbosity = l => (PuckLog.AG2AST, l)
 }
 
@@ -94,6 +200,7 @@ class JavaJastAddDG2AST
   val graph2ASTMap : Map[NodeId, ASTNodeLink]) extends DG2AST {
 
   implicit val p = program
+
 
   implicit val defaultVerbosity = (PuckLog.AG2AST, PuckLog.Info)
 

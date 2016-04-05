@@ -29,9 +29,10 @@ package puck.javaGraph.graphBuilding
 import org.extendj.ast.JavaJastAddDG2AST
 import puck.config.Config.SingleFile
 import puck.config.Config
+import puck.graph.Uses
 import puck.javaGraph.ScenarioFactory
 import puck.util.PuckFileLogger
-import puck.{Settings, AcceptanceSpec, Project}
+import puck.{AcceptanceSpec, Project, Settings}
 
 /**
   * Created by Loïc Girault on 25/02/16.
@@ -40,43 +41,26 @@ class PeculiarCodeGraphBuilding extends AcceptanceSpec {
 
   val graphBuildingExamplesPath = Settings.testExamplesPath + "/graphBuilding/"
 
-  feature("fixed number of nodes") {
-
     //implicit val logger = new PuckSystemLogger(_ => true)
     implicit val logger = new PuckFileLogger(_ => true, new java.io.File("/tmp/debugLog"))
 
-    scenario("freemind problem") {
-      val cfg = Config.empty put (Config.Keys.srcs, List(SingleFile(s"$graphBuildingExamplesPath/complexHierarchy/View.java")))
-      val p = new Project(cfg, JavaJastAddDG2AST)
-      val s0 = p.loadGraph().asInstanceOf[JavaJastAddDG2AST]
-
-
-      val n0Number = s0.initialGraph.nodes.size
-      Range(0, 10).foreach { _ =>
-        val s = p.loadGraph().asInstanceOf[JavaJastAddDG2AST]
-        val nNumber = s.initialGraph.nodes.size
-
-        assert(nNumber == n0Number)
-      }
-    }
-
-    scenario("freemind problem - uses expected") {
-      val _ = new ScenarioFactory(s"$graphBuildingExamplesPath/complexHierarchy/View.java") {
-
-        val getRowCount = fullName2id("p.AttributeTableModel.getRowCount()")
-        val startEditingTable = fullName2id("p.View.startEditingTable().Definition")
-        val field = fullName2id("p.View.currentAttributeTableModel")
-
-        graph.usedBy(startEditingTable).size should be (2)
-
-        assert(graph.uses(startEditingTable, field))
-        assert(graph.uses(startEditingTable, getRowCount))
-
-      }
-    }
-
     scenario("Multi interface with same sig - ref typed as I") {
-      val _ = new ScenarioFactory(s"$graphBuildingExamplesPath/complexHierarchy/MultiInterface.java") {
+      val _ = new ScenarioFactory(
+      """
+        |package p;
+        |
+        |interface I { void m();}
+        |interface I2 { void m();}
+        |abstract class AC implements I, I2 {}
+        |class C extends AC{ public void m(){} }
+        |
+        |class Test{
+        |
+        |    I i = new C();
+        |    void mi(){ i.m(); }
+        |}
+      """
+      ) {
 
         val im = fullName2id("p.I.m()")
         val i2m = fullName2id("p.I2.m()")
@@ -92,7 +76,22 @@ class PeculiarCodeGraphBuilding extends AcceptanceSpec {
     }
 
     scenario("Multi interface with same sig - ref typed as I2") {
-      val _ = new ScenarioFactory(s"$graphBuildingExamplesPath/complexHierarchy/MultiInterface.java") {
+      val _ = new ScenarioFactory(
+        """
+          |package p;
+          |
+          |interface I { void m();}
+          |interface I2 { void m();}
+          |abstract class AC implements I, I2 {}
+          |class C extends AC{ public void m(){} }
+          |
+          |class Test{
+          |
+          |    I2 i2 = new C();
+          |    void mi2(){ i2.m(); }
+          |}
+        """
+      ) {
 
         val im = fullName2id("p.I.m()")
         val i2m = fullName2id("p.I2.m()")
@@ -108,7 +107,21 @@ class PeculiarCodeGraphBuilding extends AcceptanceSpec {
     }
 
     scenario("Multi interface with same sig - ref typed as AC") {
-      val _ = new ScenarioFactory(s"$graphBuildingExamplesPath/complexHierarchy/MultiInterface.java") {
+      val _ = new ScenarioFactory(
+        """
+          |package p;
+          |
+          |interface I { void m();}
+          |interface I2 { void m();}
+          |abstract class AC implements I, I2 {}
+          |class C extends AC{ public void m(){} }
+          |
+          |class Test{
+          |    AC ac = new C();
+          |    void mac(){ ac.m(); }
+          |}
+        """
+      ) {
 
         val im = fullName2id("p.I.m()")
         val i2m = fullName2id("p.I2.m()")
@@ -124,7 +137,21 @@ class PeculiarCodeGraphBuilding extends AcceptanceSpec {
     }
 
     scenario("Multi interface with same sig - ref typed as C") {
-      val _ = new ScenarioFactory(s"$graphBuildingExamplesPath/complexHierarchy/MultiInterface.java") {
+      val _ = new ScenarioFactory(
+        """
+          |package p;
+          |
+          |interface I { void m();}
+          |interface I2 { void m();}
+          |abstract class AC implements I, I2 {}
+          |class C extends AC{ public void m(){} }
+          |
+          |class Test{
+          |    C c = new C();
+          |    void mc(){ c.m(); }
+          |}
+        """
+      ) {
 
         val im = fullName2id("p.I.m()")
         val i2m = fullName2id("p.I2.m()")
@@ -138,5 +165,132 @@ class PeculiarCodeGraphBuilding extends AcceptanceSpec {
       }
     }
 
+    scenario("Use of parameterized method where Type variable instantiated via subclassing"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class ListModel<E>{
+          |    E e;
+          |    E getE(){ return e;}
+          |}
+          |class HasElement extends ListModel<String> {}
+          |
+          |public class C {
+          |
+          |    HasElement data;
+          |
+          |    public void m() { data.getE().toString(); }
+          |
+          |}"""
+      ){
+        val mDef = fullName2id("p.C.m().Definition")
+        val getE = fullName2id("p.ListModel.getE()")
+
+        val hasElement = fullName2id("p.HasElement")
+        val string = fullName2id("java.lang.String")
+        val toString_ = fullName2id("java.lang.String.toString()")
+
+
+        assert(graph.uses(mDef, getE))
+        assert(graph.uses(mDef, toString_))
+
+        graph.typeUsesOf(mDef, toString_) should contain (Uses(hasElement, string))
+      }
+    }
+
+
+  scenario("Use of parameterized method with RAW Type variable (instantiated) via subclassing"){
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |class ListModel<E>{
+        |    E e;
+        |    E getE(){ return e;}
+        |}
+        |class HasElement extends ListModel {}
+        |
+        |public class C {
+        |
+        |    HasElement data;
+        |
+        |    public void m() { data.getE().toString(); }
+        |
+        |}"""
+    ){
+      val mDef = fullName2id("p.C.m().Definition")
+      val getE = fullName2id("p.ListModel.getE()")
+
+      val hasElement = fullName2id("p.HasElement")
+      val obj = fullName2id("java.lang.Object")
+      val toString_ = fullName2id("java.lang.Object.toString()")
+
+
+      assert(graph.uses(mDef, getE))
+      assert(graph.uses(mDef, toString_))
+
+      graph.typeUsesOf(mDef, toString_) should contain (Uses(hasElement, obj))
+    }
   }
+
+  scenario("Use of parameterized method where Type variable instantiated via interface subtyping"){
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |interface ListModel<E>{  E getE(); }
+        |interface HasElement extends ListModel<String> {}
+        |
+        |public class C {
+        |
+        |    HasElement data;
+        |
+        |    public void m() { data.getE().toString(); }
+        |
+        |}"""
+    ){
+      val mDef = fullName2id("p.C.m().Definition")
+      val getE = fullName2id("p.ListModel.getE()")
+
+      val hasElement = fullName2id("p.HasElement")
+      val string = fullName2id("java.lang.String")
+      val toString_ = fullName2id("java.lang.String.toString()")
+
+
+      assert(graph.uses(mDef, getE))
+      assert(graph.uses(mDef, toString_))
+
+      graph.typeUsesOf(mDef, toString_) should contain (Uses(hasElement, string))
+    }
+  }
+
+  scenario("Use of parameterized method with RAW Type variable (instantiated) via interface subtyping"){
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |interface ListModel<E>{ E getE(); }
+        |interface HasElement extends ListModel {}
+        |
+        |public class C {
+        |
+        |    HasElement data;
+        |
+        |    public void m() { data.getE().toString(); }
+        |
+        |}"""
+    ){
+      val mDef = fullName2id("p.C.m().Definition")
+      val getE = fullName2id("p.ListModel.getE()")
+
+      val hasElement = fullName2id("p.HasElement")
+      val obj = fullName2id("java.lang.Object")
+      val toString_ = fullName2id("java.lang.Object.toString()")
+
+
+      assert(graph.uses(mDef, getE))
+      assert(graph.uses(mDef, toString_))
+
+      graph.typeUsesOf(mDef, toString_) should contain (Uses(hasElement, obj))
+    }
+  }
+
+
 }

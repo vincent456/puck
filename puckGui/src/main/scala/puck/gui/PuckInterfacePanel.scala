@@ -260,12 +260,21 @@ class PuckInterfacePanel
 
         def apply(): Unit = control.sProject foreach { p =>
 
-          val fc = new FileChooser(){
-            title = "Select a folder where to export the graph"
-            fileSelectionMode = FileChooser.SelectionMode.DirectoriesOnly
+          val sd = p.outDirectory match {
+            case Some(d) =>
+              if(!d.exists())
+                d.mkdirs()
+              Some(d)
+            case None =>
+              val fc = new FileChooser(){
+                title = "Select a folder where to export the graph"
+                fileSelectionMode = FileChooser.SelectionMode.DirectoriesOnly
+              }
+              fc showDialog(null, "Select")
+              Option(fc.selectedFile)
           }
-          fc showDialog(null, "Select")
-          Option(fc.selectedFile) foreach {
+
+          sd foreach {
             f => publisher publish ExportGraph(f)
           }
         }
