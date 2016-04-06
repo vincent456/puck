@@ -412,8 +412,6 @@ aspect DependencyGraphFactory {
 	public void EnhancedForStmt.buildDG(JastaddGraphBuilder builder, int containerId) {
 		super.buildDG(builder, containerId);
 		if(getExpr() instanceof Access){
-			System.out.println("EnhancedForStmt.buildDG : fix type constraint building");
-			//((Access)getExpr()).constraintTypeUses(builder, getVariableDecl(), this.getTypeAccess());
 			int dgTuser = getVariableDecl().buildDGNode(builder);
 			int dgTused = this.getTypeAccess().buildDGNode(builder);
 			((Access) getExpr()).lastAccess().findTypeUserAndBindUses(builder,

@@ -41,7 +41,8 @@ aspect TypeUser {
 
         int buildDGNode(JastaddGraphBuilder builder);
 
-        Expr getQualifier();
+        boolean isQualified();
+        Expr qualifier();
 
         TypeMember decl();
 

@@ -77,17 +77,17 @@ object JastaddGraphBuilder {
 
 
   def qualifierIsThisAccess(access : TypeMemberAccess) : Boolean =
-    access.getQualifier == null &&
+    (!access.isQualified) &&
       access.decl().hostType() == access.hostType() ||
-      access.getQualifier != null &&
-      access.getQualifier.isThisAccess
+      access.isQualified &&
+      access.qualifier.isThisAccess
 
 
   def qualifierIsSuperAccess(access : TypeMemberAccess) : Boolean =
-     access.getQualifier == null &&
+    (!access.isQualified) &&
       access.decl().hostType() != access.hostType() ||
-       access.getQualifier != null &&
-      access.getQualifier.isSuperAccess
+      access.isQualified &&
+      access.qualifier.isSuperAccess
 
 
 }

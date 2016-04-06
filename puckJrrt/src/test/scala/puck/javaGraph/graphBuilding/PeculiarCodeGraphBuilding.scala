@@ -165,132 +165,21 @@ class PeculiarCodeGraphBuilding extends AcceptanceSpec {
       }
     }
 
-    scenario("Use of parameterized method where Type variable instantiated via subclassing"){
-      val _ = new ScenarioFactory(
-        """package p;
-          |
-          |class ListModel<E>{
-          |    E e;
-          |    E getE(){ return e;}
-          |}
-          |class HasElement extends ListModel<String> {}
-          |
-          |public class C {
-          |
-          |    HasElement data;
-          |
-          |    public void m() { data.getE().toString(); }
-          |
-          |}"""
-      ){
-        val mDef = fullName2id("p.C.m().Definition")
-        val getE = fullName2id("p.ListModel.getE()")
-
-        val hasElement = fullName2id("p.HasElement")
-        val string = fullName2id("java.lang.String")
-        val toString_ = fullName2id("java.lang.String.toString()")
 
 
-        assert(graph.uses(mDef, getE))
-        assert(graph.uses(mDef, toString_))
-
-        graph.typeUsesOf(mDef, toString_) should contain (Uses(hasElement, string))
-      }
-    }
-
-
-  scenario("Use of parameterized method with RAW Type variable (instantiated) via subclassing"){
+  scenario("this.array"){
     val _ = new ScenarioFactory(
       """package p;
         |
-        |class ListModel<E>{
-        |    E e;
-        |    E getE(){ return e;}
-        |}
-        |class HasElement extends ListModel {}
-        |
         |public class C {
-        |
-        |    HasElement data;
-        |
-        |    public void m() { data.getE().toString(); }
-        |
+        |    int[] array;
+        |    final void m() {
+        |        int l = this.array.length;
+        |    }
         |}"""
     ){
-      val mDef = fullName2id("p.C.m().Definition")
-      val getE = fullName2id("p.ListModel.getE()")
-
-      val hasElement = fullName2id("p.HasElement")
-      val obj = fullName2id("java.lang.Object")
-      val toString_ = fullName2id("java.lang.Object.toString()")
-
-
-      assert(graph.uses(mDef, getE))
-      assert(graph.uses(mDef, toString_))
-
-      graph.typeUsesOf(mDef, toString_) should contain (Uses(hasElement, obj))
+      assert(true)
     }
   }
-
-  scenario("Use of parameterized method where Type variable instantiated via interface subtyping"){
-    val _ = new ScenarioFactory(
-      """package p;
-        |
-        |interface ListModel<E>{  E getE(); }
-        |interface HasElement extends ListModel<String> {}
-        |
-        |public class C {
-        |
-        |    HasElement data;
-        |
-        |    public void m() { data.getE().toString(); }
-        |
-        |}"""
-    ){
-      val mDef = fullName2id("p.C.m().Definition")
-      val getE = fullName2id("p.ListModel.getE()")
-
-      val hasElement = fullName2id("p.HasElement")
-      val string = fullName2id("java.lang.String")
-      val toString_ = fullName2id("java.lang.String.toString()")
-
-
-      assert(graph.uses(mDef, getE))
-      assert(graph.uses(mDef, toString_))
-
-      graph.typeUsesOf(mDef, toString_) should contain (Uses(hasElement, string))
-    }
-  }
-
-  scenario("Use of parameterized method with RAW Type variable (instantiated) via interface subtyping"){
-    val _ = new ScenarioFactory(
-      """package p;
-        |
-        |interface ListModel<E>{ E getE(); }
-        |interface HasElement extends ListModel {}
-        |
-        |public class C {
-        |
-        |    HasElement data;
-        |
-        |    public void m() { data.getE().toString(); }
-        |
-        |}"""
-    ){
-      val mDef = fullName2id("p.C.m().Definition")
-      val getE = fullName2id("p.ListModel.getE()")
-
-      val hasElement = fullName2id("p.HasElement")
-      val obj = fullName2id("java.lang.Object")
-      val toString_ = fullName2id("java.lang.Object.toString()")
-
-
-      assert(graph.uses(mDef, getE))
-      assert(graph.uses(mDef, toString_))
-
-      graph.typeUsesOf(mDef, toString_) should contain (Uses(hasElement, obj))
-    }
-  }
-
 
 }

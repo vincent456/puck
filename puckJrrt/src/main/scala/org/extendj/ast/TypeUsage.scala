@@ -58,34 +58,8 @@ trait TypeUsage {
         tv.owner() match {
           case tvOwner : GenericTypeDecl =>
             val qualifierHostType = qualifier.asInstanceOf[TypeMemberAccess].decl().hostType()
-
-            //try
-              findTypeVariableInstanciatorAndBindUsesInLeftExpr(tv, tvOwner,
-                qualifierDecl.`type`(), typeMemberUse, qualifier)
-            /*catch {
-              case _ : NoTypeUser =>
-
-                println("qualifierHostType = " + qualifierHostType.fullName())
-                val supertypes = qualifierHostType.supertypestransitive()
-                import scala.collection.JavaConversions._
-                supertypes.find {
-                  case pt : ParTypeDecl =>
-                    println("ParTypeDecl : " + pt.fullName())
-                    pt.genericDecl() eq tvOwner
-                  case t =>
-                    println("ignored : " + t.fullName())
-                    false
-                } match {
-                  case Some(typUsed) =>
-                    val someTypUser = typUsed.childTypes() find qualifierHostType.instanceOf
-                    someTypUser.foreach {
-                      tUser =>
-                        addBinding(tUser.buildDGNode(this), typUsed.buildDGNode(this), typeMemberUse)
-                    }
-                  case None => println("tv owner not found !")
-                }
-              case e => println(e.getClass +" catched")
-            }*/
+            findTypeVariableInstanciatorAndBindUses(tv, tvOwner,
+                  qualifierDecl.`type`(), typeMemberUse, qualifier)
           case _ =>
             println("Access.findTypeUserAndBindUses tv.owner() " +
               "not instanceof GenericTypeDecl : TODO !!!")
@@ -103,20 +77,7 @@ trait TypeUsage {
     }
   }
 
-  def findTypeVariableInstanciatorAndBindUsesInLeftExpr
-  (tv : TypeVariable,
-   tvOwner : GenericTypeDecl,
-   tvValue : TypeDecl,
-   typeMemberUse : Uses,
-   typeMemberUseQualifier: Access) : Unit =
-    try
-      findTypeVariableInstanciatorAndBindUses(tv, tvOwner, tvValue,
-        typeMemberUse, typeMemberUseQualifier.prevExpr())
-    catch {
-      case e : Error =>
-        throw new NoTypeUser(typeMemberUseQualifier.prettyPrint() + "(" + typeMemberUseQualifier.getClass + ") in " +
-          typeMemberUseQualifier.compilationUnit().pathName() + " " + typeMemberUseQualifier.location());
-    }
+
 
 
 
@@ -128,35 +89,39 @@ trait TypeUsage {
    typeMemberUse : Uses,
    e: Expr){
     e match {
-      case ma : Access =>
-        ma.`type`() match {
+      case a : Access =>
+        a.`type`() match {
           case ptd : ParTypeDecl =>
             val ge = ptd.genericDecl().asInstanceOf[GenericElement]
             if(ge.ownTypeVariable(tv))
-              bindTypeUse(ma.buildDGNode(this), tvValue, typeMemberUse)
+              bindTypeUse(a.buildDGNode(this), tvValue, typeMemberUse)
             else
               println("Access.findTypeVariableInstanciatorAndBindUses " +
                 "not ge.ownTypeVariable(tv) : TODO !!!")
           case t =>
-            if(t.instanceOf(tvOwner.asInstanceOf[TypeDecl])){
-              val tvOwnerTd = tvOwner.asInstanceOf[TypeDecl]
-              import scala.collection.JavaConversions._
-              println(s"findTypeVariableInstanciatorAndBindUses(${tv.name()}, ${tvOwner.fullName()}, ${tvValue.name()}, Uses(), ${ma.prettyPrint()})")
-              println(" tvOwnerTd.childTypes() = " +  (tvOwnerTd.childTypes() map (_.name()) mkString ", ") )
-              tvOwnerTd.childTypes() find t.instanceOf match {
+            val tvOwnerTd = tvOwner.asInstanceOf[TypeDecl]
+
+            import scala.collection.JavaConversions._
+
+            def findTypeUserInHierachyAnBindUse(subtype : TypeDecl) : Unit =
+              tvOwnerTd :: tvOwnerTd.childTypes().toList find subtype.instanceOf match {
                 case Some(typUser) =>
-                  //TODO check which is correct
                   val tUser = typUser.buildDGNode(this)
                   val tUsed = tvValue.buildDGNode(this)
                   addEdge(Uses(tUser, tUsed))
+                  //TODO check which is correct
                   addBinding(tUser, tUsed, typeMemberUse)
-                  //or bindTypeUse(typUser.buildDGNode(this), tvValue, typeMemberUse) ??
+                //or bindTypeUse(typUser.buildDGNode(this), tvValue, typeMemberUse) ??
                 case None => throw new NoTypeUser(s"${e.prettyPrint()} : ${e.getClass} in " +
                   s"${e.compilationUnit().pathName()} line ${e.location()}")
               }
-            }
+
+            if(t.instanceOf(tvOwnerTd))
+              findTypeUserInHierachyAnBindUse(t)
+            else if(a.isQualified)
+                findTypeVariableInstanciatorAndBindUses(tv, tvOwner, tvValue, typeMemberUse, a.prevExpr())
             else
-              findTypeVariableInstanciatorAndBindUsesInLeftExpr(tv, tvOwner, tvValue, typeMemberUse, ma)
+                findTypeUserInHierachyAnBindUse(a.hostType())
         }
 
       case o => println(s"${o.getClass}.findTypeVariableInstanciatorAndBindUses : TODO !!!")
