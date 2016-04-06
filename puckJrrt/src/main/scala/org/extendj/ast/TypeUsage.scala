@@ -81,6 +81,11 @@ trait TypeUsage {
 
 
 
+  def addBinding(user : TypeDecl, used : TypeDecl, tmUse : Uses) : Unit = {
+    val tUser = user.buildDGNode(this)
+    val tUsed = used.buildDGNode(this)
+    addEdge(addBinding(tUser, tUsed, tmUse))
+  }
 
   def findTypeVariableInstanciatorAndBindUses
   (tv : TypeVariable,
@@ -104,15 +109,13 @@ trait TypeUsage {
             import scala.collection.JavaConversions._
 
             def findTypeUserInHierachyAnBindUse(subtype : TypeDecl) : Unit =
-              tvOwnerTd :: tvOwnerTd.childTypes().toList find subtype.instanceOf match {
-                case Some(typUser) =>
-                  val tUser = typUser.buildDGNode(this)
-                  val tUsed = tvValue.buildDGNode(this)
-                  addEdge(Uses(tUser, tUsed))
-                  //TODO check which is correct
-                  addBinding(tUser, tUsed, typeMemberUse)
-                //or bindTypeUse(typUser.buildDGNode(this), tvValue, typeMemberUse) ??
-                case None => throw new NoTypeUser(s"${e.prettyPrint()} : ${e.getClass} in " +
+              tvOwnerTd.childTypes() find subtype.instanceOf match {
+                case Some(typUser) => addBinding(typUser, tvValue, typeMemberUse)
+
+                case None if subtype instanceOf tvOwnerTd =>
+                  addBinding(subtype, tvValue, typeMemberUse)
+                case None =>
+                  throw new NoTypeUser(s"${e.prettyPrint()} : ${e.getClass} in " +
                   s"${e.compilationUnit().pathName()} line ${e.location()}")
               }
 
