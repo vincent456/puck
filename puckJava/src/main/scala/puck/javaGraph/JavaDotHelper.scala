@@ -52,7 +52,8 @@ object JavaDotHelper extends DotHelper{
             case Constructor => Seq(fds, n +: cts, mts, cls, tvs)
 
             case Field
-            | StaticField => Seq(n +: fds, cts, mts, cls, tvs)
+            | StaticField
+            | EnumConstant => Seq(n +: fds, cts, mts, cls, tvs)
 
             case _ : MethodKind
             | StaticMethod => Seq(fds, cts, n +: mts, cls, tvs)
@@ -75,7 +76,7 @@ object JavaDotHelper extends DotHelper{
         case Package => "#FF9933" //Orange
         case _ : TypeKind.InterfaceLike => "#FFFF99" // Light yellow
         case _ : TypeKind.ClassLike | Constructor => "#FFFF33" //Yellow
-        case Method | Field => "#FFFFFF" //White
+        case Method | Field | EnumConstant => "#FFFFFF" //White
         case Literal => "#CCFFCC" //Very Light green
         case Primitive => "#FFFFFF"
         case _ => throw new Error("Unknown JavaNodeKind")
