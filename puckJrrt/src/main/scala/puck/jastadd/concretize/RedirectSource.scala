@@ -141,8 +141,8 @@ object RedirectSource {
               case `newPackage` => removeImport(cu, t)
               case `oldPackage` => addImport(cu, t)
               case _ if newlyCreatedCu => addImport(cu, t)
-              case _ => () // should be handled by the name locking
-              //addImport(cu, tDecl); removeImport(cu, tDecl)
+              case _ => // should be handled by the name locking
+              addImport(cu, tDecl); removeImport(cu, tDecl)
             }
       }
     }
@@ -196,8 +196,8 @@ object RedirectSource {
           cu.packageName() match {
             case `oldPackage` => addImport(cu, tDecl)
             case `newPackage` => removeImport(cu, tDecl)
-            case _ => () // should be handled by the name locking
-              //addImport(cu, tDecl); removeImport(cu, tDecl)
+            case _ =>  // should be handled by the name locking
+              addImport(cu, tDecl); removeImport(cu, tDecl)
           }
 
           cus + cu.pathName

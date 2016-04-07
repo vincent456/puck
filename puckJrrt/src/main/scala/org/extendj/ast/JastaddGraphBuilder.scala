@@ -125,7 +125,8 @@ class JastaddGraphBuilder(val program : Program)
           //println(s"orphan node : ${g.fullName(nodeId)}  : ${n.kind}")
           graph2ASTMap get nodeId match {
             case Some(FieldDeclHolder(d, _)) => addBodyDecl(d)
-            case Some(mdh : MethodDeclHolder) => addBodyDecl(mdh.decl)
+            case Some(MethodDeclHolder(d)) => addBodyDecl(d)
+            case Some(EnumConstantHolder(d)) => addBodyDecl(d)
             case Some(ConstructorDeclHolder(cdecl)) =>
               nodesByName get cdecl.hostType().dgFullName() match {
                 case Some(pid) => cdecl.buildDG(this, pid)
