@@ -275,12 +275,12 @@ aspect LockedMethodAccess {
 		MethodAccess ma = constructAccess(original, args);
 		if(!directlyVisible) {
 			if(!target.isStatic())
-				throw new RefactoringException("cannot access method");
+					throw new RefactoringException(this +" : cannot access target method");
 			if(inStaticCtxt)
 				if(qualifier.isTypeAccess() && qualifier.type().equals(source))
 					return ma.parentDot();
 				else
-					throw new RefactoringException("cannot access method");
+					throw new RefactoringException(this +" : cannot access target method");
 			if(source == bend && source.equals(qualifier.type()))
 				return ma.parentDot();
 			else if(!qualifier.isTypeAccess() && qualifier.type().equals(bend)) {
@@ -290,10 +290,10 @@ aspect LockedMethodAccess {
 				return (Access) ma.parentDot().replace(ma.parentDot()).with(
 						new ParExpr(new CastExpr(sourceAccess, qualifier)).qualifiesAccess(ma));
 			}
-			throw new RefactoringException("cannot access method");
+			throw new RefactoringException(this +" : cannot access target method");
 		} else {
 			if(!target.accessibleFrom(enclosing))
-				throw new RefactoringException("method not accessible");
+				throw new RefactoringException(this +" : target method not accessible");
 			return ma.parentDot();
 		}
 	}

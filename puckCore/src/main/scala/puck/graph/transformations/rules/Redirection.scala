@@ -90,7 +90,7 @@ object Redirection {
    newUsed : Abstraction) : LoggedTry[(DependencyGraph, List[Uses])] =
     try LoggedSuccess {
       (newUsed, oldUse.accessKind) match {
-        case (AccessAbstraction(absId, pol), None) =>
+        case (AccessAbstraction(absId, _), None) =>
           (oldUse.changeTarget(g, absId), List(oldUse.copy(target = absId)))
         case (ReadWriteAbstraction(Some(rid), _), Some(Read)) =>
           (oldUse.changeTarget(g, rid), List(oldUse.copy(target = rid)))
@@ -120,30 +120,6 @@ object Redirection {
       case (InstanceValueDecl, InstanceValueDecl)
       | (TypeDecl, TypeDecl) =>
         redirectInstanceUsesAndPropagate(g, oldUse, newUsed)
-
-//      case (TypeDecl, TypeDecl) =>
-//
-//        val used = oldUse.used
-//        graph styp oldUse.user match {
-//          case Some(NamedType(`used`))
-//           | Some(ParameterizedType(`used`, _)) =>
-//            redirectInstanceUsesAndPropagate(g, oldUse, newUsed)
-//
-//          case Some(ParameterizedType(_, _)) =>
-//            import ShowDG._
-//
-//            g.typeMemberUsesOf(oldUse).foldLoggedEither(g){
-//              (g0, u) =>
-//                (g0, u).println
-//                redirectUsesAndPropagate(g0, u, newUsed)
-//            }
-//
-//          case Some(t) => LoggedError(s"unexpected type $t")
-//          case None =>
-//            LoggedError("Type redirection, user should be typed")
-//
-//        }
-
 
       case (TypeConstructor, InstanceValueDecl) =>
         redirectTypeConstructorToInstanceValueDecl(g, oldUse, newUsed)()
@@ -202,7 +178,7 @@ object Redirection {
     }
   }
 
-  def redirectImpactedTypeUses
+  def propagateTypeConstraints
     (g : DependencyGraph,
      oldTypeUse : Uses,
      newTypeToUse : NodeId) : LoggedTG = {
@@ -225,6 +201,28 @@ object Redirection {
     }
   }
 
+
+  def redirectTypeMemberUses
+  ( g : DependencyGraph,
+    oldTypeUses : Uses,
+    brSet : Set[(Uses, Uses)], // \forall p in brSet, p._1 == oldTypeUses
+    newTypeToUse : NodeId
+  ): LoggedTG = {
+    val newTypeUse = oldTypeUses.copy(target = newTypeToUse)
+    brSet.foldLoggedEither(g) {
+      case (g00, (_, tmu)) =>
+        for {
+          abs <- tmAbstraction(g, newTypeToUse, tmu.used)
+          gNewTmus <- redirect(g00, tmu, abs)
+          (g01, nTmus) = gNewTmus
+        } yield {
+          nTmus.foldLeft(g01.removeBinding(oldTypeUses, tmu)) {
+            _.changeTypeUseOfTypeMemberUse(oldTypeUses, newTypeUse, _)
+          }
+        }
+    }
+  }
+
   def redirectInstanceUsesAndPropagate
     (g : DependencyGraph,
      oldUse : Uses,
@@ -240,48 +238,29 @@ object Redirection {
       case _ => newUsed.containerIn(g).get
     }
 
-    val typeMemberTRset = cl(g, oldUse) //.filter{ case (tu, _) => !tu.selfUse }
+    val typeMemberTRset = cl(g, oldUse)
 
     val ltg : LoggedTG =
       if(typeMemberTRset.nonEmpty) {
         val groupedByTypeUse = typeMemberTRset.groupBy(_._1)
 
-        val ltg0 = groupedByTypeUse.toList.foldLoggedEither(g comment log) {
-          case (g0, (tu, trSet)) =>
+        groupedByTypeUse.toList.foldLoggedEither(g comment log) {
+          case (g0, (tu, brSet)) =>
             val g1 = tu.changeTarget(g0, newTypeToUse)
-
-            val newTypeUse = tu.copy(target = newTypeToUse)
-            trSet.foldLoggedEither(g1) {
-              case (g00, (_, tmu)) =>
-                for {
-                  abs <- tmAbstraction(g, newTypeToUse, tmu.used)
-                  gNewTmus <- redirect(g00, tmu, abs)
-                  (g01, nTmus) = gNewTmus
-                } yield {
-                  nTmus.foldLeft(g01.removeBinding(tu, tmu)) {
-                    _.changeTypeUseOfTypeMemberUse(tu, newTypeUse, _)
-                  }
-                }
-            }
-        }
-
-        ltg0 flatMap {
+            redirectTypeMemberUses(g1, tu, brSet, newTypeToUse)
+        } flatMap {
           g1 =>
             groupedByTypeUse.keys.toList.foldLoggedEither(g1) {
-              redirectImpactedTypeUses(_,_, newTypeToUse)
+              propagateTypeConstraints(_,_, newTypeToUse)
             }
         }
 
       }
-      else {
-        if(newUsed.kindType(g) == TypeDecl)
+      else //assert(newUsed.kindType(g) == TypeDecl)
           redirect(g, oldUse, newUsed) flatMap {
             case (g0,_) =>
-              redirectImpactedTypeUses(g0, oldUse, newTypeToUse)
+              propagateTypeConstraints(g0, oldUse, newTypeToUse)
           }
-        else
-          LoggedError("empty binding relationship and not redirecting a type decl")
-      }
 
     log <++: ltg
   }

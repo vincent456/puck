@@ -46,7 +46,23 @@ class RedirectTypeDeclSpec
   val examplesPath = s"${Settings.testExamplesPath}/redirection/typeDecl/"
 
   scenario("From class to superType interface") {
-    val _ = new ScenarioFactory(s"$examplesPath/ClassToInterfaceSuperType.java") {
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |class ClassUsed implements SuperType{ public void mUsed(){} }
+        |
+        |interface SuperType { void mUsed(); }
+        |
+        |class A {
+        |
+        |    public static void main(String[] args){
+        |        A a = new A();
+        |        a.mUser(new ClassUsed());
+        |    }
+        |
+        |    void mUser(ClassUsed cu){ cu.mUsed(); }
+        |}"""
+    ) {
       val mUserDecl = fullName2id("p.A.mUser(ClassUsed)")
       val theParam = fullName2id("p.A.mUser(ClassUsed).cu")
       val mUserDef = fullName2id("p.A.mUser(ClassUsed).Definition")
@@ -75,7 +91,26 @@ class RedirectTypeDeclSpec
   //val interfaceToInterfaceSuperType
 
   scenario("From class to delegator class") {
-    val _ = new ScenarioFactory(s"$examplesPath/ClassToClassDelegate.java") {
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |class Delegatee { void mUsed(){} }
+        |
+        |class Delegator {
+        |    Delegatee d;
+        |    void mUsed(){ d.mUsed(); }
+        |}
+        |
+        |class A {
+        |
+        |    public static void main(String[] args){
+        |        A a = new A();
+        |        a.mUser(new Delegatee());
+        |    }
+        |
+        |    void mUser(Delegatee d){ d.mUsed(); }
+        |}"""
+    ) {
       val mUserDecl = fullName2id("p.A.mUser(Delegatee)")
       val theParam = fullName2id("p.A.mUser(Delegatee).d")
 
@@ -105,15 +140,53 @@ class RedirectTypeDeclSpec
 
   }
 
-  /*val interfaceToClassDelegate = new ExampleSample(typeDeclPath + "interfaceToClassDelegate/A.java"){
-    val rootPackage = fullName2id("interfaceToClassDelegate")
-    val mUser = fullName2id("interfaceToClassDelegate.A.mUser__I")
-    val interface = fullName2id("interfaceToClassDelegate.I")
-    val delegator = fullName2id("interfaceToClassDelegate.Delegator")
-  }*/
+  ignore("From interface to delegator class") {
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |interface I { void mUsed(); }
+        |
+        |class Impl implements I { public void mUsed(){} }
+        |
+        |class Delegator {
+        |    I d;
+        |    void mUsed(){ d.mUsed(); }
+        |}
+        |
+        |class A {
+        |
+        |    public static void main(String[] args){
+        |        A a = new A();
+        |        a.mUser(new Impl());
+        |    }
+        |
+        |    void mUser(I i){ i.mUsed(); }
+        |}"""
+    ){
 
+    }
+  }
   scenario("From class to superType interface as type parameter context") {
-    val _ = new ScenarioFactory(s"$examplesPath/AsTypeParameterClassToInterface.java") {
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |class Wrapper<T> {
+        |    private T t;
+        |    public void set(T t){}
+        |    public T get(){return t;}
+        |
+        |}
+        |
+        |interface I { void m(); }
+        |
+        |class A implements I { public void m(){} }
+        |
+        |
+        |class B {
+        |    Wrapper<A> wa = new Wrapper<A>();
+        |
+        |    void doM(){ wa.get().m(); }
+        |}""") {
       val actualTypeParam = fullName2id("p.A")
       val actualTypeParamMethod = fullName2id("p.A.m()")
 
@@ -143,7 +216,25 @@ class RedirectTypeDeclSpec
   }
 
   scenario("From class to superType interface - impact local variable type") {
-    val _ = new ScenarioFactory(s"$examplesPath/ClassToInterface-ImpactLocalVar.java") {
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |class Wrapper {
+        |    A a = new A();
+        |    public A get(){return a;}
+        |
+        |}
+        |
+        |interface I {  }
+        |
+        |class A implements I {  }
+        |
+        |class B {
+        |    Wrapper wa = new Wrapper();
+        |
+        |    void getA(){ A a = wa.get(); }
+        |}"""
+    ) {
       val typeUsed = fullName2id("p.A")
 
       val superType = fullName2id("p.I")
@@ -167,7 +258,27 @@ class RedirectTypeDeclSpec
   }
 
   scenario("From class to superType interface - type parameter context - impact local variable type") {
-    val _ = new ScenarioFactory(s"$examplesPath/ClassToInterface-TypeParam-ImpactLocalVar.java") {
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |class Wrapper<T> {
+        |    private T t;
+        |    public void set(T t){}
+        |    public T get(){return t;}
+        |
+        |}
+        |
+        |interface I { }
+        |
+        |class A implements I { }
+        |
+        |
+        |class B {
+        |    Wrapper<A> wa = new Wrapper<A>();
+        |
+        |    void getA(){ A a = wa.get(); }
+        |}"""
+    ) {
       val typeUsed = fullName2id("p.A")
 
       val superType = fullName2id("p.I")

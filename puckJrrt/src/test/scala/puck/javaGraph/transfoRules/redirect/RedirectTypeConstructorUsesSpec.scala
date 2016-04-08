@@ -42,7 +42,20 @@ class RedirectTypeConstructorUsesSpec
   val examplesPath =  s"${Settings.testExamplesPath}/redirection/typeConstructor"
 
   scenario("From constructor to constructorMethod hosted elsewhere - non static, parameter") {
-    val _ = new ScenarioFactory(s"$examplesPath/ConstructorToConstructorMethodHostedElsewhere.java") {
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |class Factory{
+        |    Factory(){}
+        |    B createB(){ return new B(); }
+        |}
+        |
+        |class B { B(){} }
+        |
+        |class A {
+        |    void m() { B b = new B(); }
+        |}"""
+    ) {
       val ctor = fullName2id(s"p.B.B()")
       val ctorMethod = fullName2id(s"p.Factory.createB()")
       val factoryClass = fullName2id(s"p.Factory")
@@ -76,7 +89,20 @@ class RedirectTypeConstructorUsesSpec
   }
 
   scenario("From constructor to constructorMethod hosted elsewhere - non static, field") {
-    val _ = new ScenarioFactory(s"$examplesPath/ConstructorToConstructorMethodHostedElsewhere.java") {
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |class Factory{
+        |    Factory(){}
+        |    B createB(){ return new B(); }
+        |}
+        |
+        |class B { B(){} }
+        |
+        |class A {
+        |    void m() { B b = new B(); }
+        |}"""
+    ) {
       val ctor = fullName2id(s"p.B.B()")
       val ctorMethod = fullName2id(s"p.Factory.createB()")
       val factoryClass = fullName2id(s"p.Factory")
@@ -109,7 +135,23 @@ class RedirectTypeConstructorUsesSpec
 
 
   scenario("From constructor to constructorMethod hosted by self - non static, parameter") {
-    val _ = new ScenarioFactory(s"$examplesPath/ConstructorToConstructorMethodHostedBySelf.java") {
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |class B {
+        |    B(){}
+        |    B create(){return new B();}
+        |}
+        |
+        |class A { void m(){ new B(); } }
+        |
+        |class C {
+        |    void mc(){
+        |        A a = new A();
+        |        a.m();
+        |    }
+        |}"""
+    ) {
       val ctor = fullName2id(s"p.B.B()")
       val ctorMethod = fullName2id(s"p.B.create()")
       val constructedClass = fullName2id(s"p.B")
@@ -150,7 +192,23 @@ class RedirectTypeConstructorUsesSpec
   }
 
   scenario("From constructor to constructorMethod hosted by self - non static, field") {
-    val _ = new ScenarioFactory(s"$examplesPath/ConstructorToConstructorMethodHostedBySelf.java") {
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |class B {
+        |    B(){}
+        |    B create(){return new B();}
+        |}
+        |
+        |class A { void m(){ new B(); } }
+        |
+        |class C {
+        |    void mc(){
+        |        A a = new A();
+        |        a.m();
+        |    }
+        |}"""
+    ) {
       val ctor = fullName2id(s"p.B.B()")
       val ctorMethod = fullName2id(s"p.B.create()")
       val constructedClass = fullName2id(s"p.B")

@@ -38,10 +38,29 @@ import puck.javaGraph.ScenarioFactory
 class RedirectTypeMemberSpec
   extends AcceptanceSpec {
 
-    val examplesPath = s"${Settings.testExamplesPath}/redirection/typeMember"
-
     scenario("From method to method superType"){
-      val _ = new ScenarioFactory(s"$examplesPath/MethodToMethodSuperType.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |interface B {
+          |    void m1();
+          |    void m2();
+          |}
+          |
+          |class Bimpl implements B {
+          |    public void m1(){}
+          |    public void m2(){}
+          |}
+          |
+          |class A {
+          |
+          |    void m(){
+          |        Bimpl b = new Bimpl();
+          |        b.m1();
+          |        b.m2();
+          |    }
+          |}"""
+      ) {
         val mUsed = fullName2id("p.Bimpl.m1()")
         val mAbs = fullName2id("p.B.m1()")
         val cUsed = fullName2id("p.Bimpl")

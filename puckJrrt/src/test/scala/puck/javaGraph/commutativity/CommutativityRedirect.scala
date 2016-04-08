@@ -42,10 +42,24 @@ class CommutativityRedirect
 
   feature("TypeDecl uses redirection") {
 
-    val typeDeclPath = examplesPath + "typeDecl/"
-
-    scenario("From class to superType interface") {
-      val _ = new ScenarioFactory(s"$typeDeclPath/ClassToInterfaceSuperType.java") {
+    scenario("From class to interface superType") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class ClassUsed implements SuperType{ public void mUsed(){} }
+          |
+          |interface SuperType { void mUsed(); }
+          |
+          |class A {
+          |
+          |    public static void main(String[] args){
+          |        A a = new A();
+          |        a.mUser(new ClassUsed());
+          |    }
+          |
+          |    void mUser(ClassUsed cu){ cu.mUsed(); }
+          |}"""
+      ) {
         val theParam = fullName2id("p.A.mUser(ClassUsed).cu")
 
         val classUsed = fullName2id("p.ClassUsed")
@@ -63,12 +77,31 @@ class CommutativityRedirect
       }
     }
 
-    //val classToClassSupertype
+    ignore("From class to class superType"){}
 
-    //val interfaceToInterfaceSuperType
+    ignore("From interface to interface superType"){}
 
     ignore("From class to delegator class") {
-      new ScenarioFactory(s"$typeDeclPath/ClassToClassDelegate.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class Delegatee { void mUsed(){} }
+          |
+          |class Delegator {
+          |    Delegatee d;
+          |    void mUsed(){ d.mUsed(); }
+          |}
+          |
+          |class A {
+          |
+          |    public static void main(String[] args){
+          |        A a = new A();
+          |        a.mUser(new Delegatee());
+          |    }
+          |
+          |    void mUser(Delegatee d){ d.mUsed(); }
+          |}"""
+      ) {
         val theParam = fullName2id("p.A.mUser(Delegatee).d")
 
         val delegatee = fullName2id("p.Delegatee")
@@ -90,26 +123,57 @@ class CommutativityRedirect
         val recompiledEx = applyChangeAndMakeExample(g2, outDir)
 
         assert(Mapping.equals(g2, recompiledEx.graph))
-      };
-      ()
+      }
 
     }
 
-    /*val interfaceToClassDelegate = new ExampleSample(typeDeclPath + "interfaceToClassDelegate/A.java"){
-      val rootPackage = fullName2id("interfaceToClassDelegate")
-      val mUser = fullName2id("interfaceToClassDelegate.A.mUser__I")
-      val interface = fullName2id("interfaceToClassDelegate.I")
-      val delegator = fullName2id("interfaceToClassDelegate.Delegator")
-    }*/
+    ignore("From interface to delegator class") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |interface I { void mUsed(); }
+          |
+          |class Impl implements I { public void mUsed(){} }
+          |
+          |class Delegator {
+          |    I d;
+          |    void mUsed(){ d.mUsed(); }
+          |}
+          |
+          |class A {
+          |
+          |    public static void main(String[] args){
+          |        A a = new A();
+          |        a.mUser(new Impl());
+          |    }
+          |
+          |    void mUser(I i){ i.mUsed(); }
+          |}"""
+      ){
+
+      }
+    }
 
   }
 
   feature("TypeConstructor uses redirection") {
 
-    val typeCtorPath = examplesPath + "typeConstructor"
 
     scenario("From constructor to constructorMethod hosted elsewhere - non static, parameter") {
-      val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedElsewhere.java") {
+      val _ = new ScenarioFactory(
+          """package p;
+            |
+            |class Factory{
+            |    Factory(){}
+            |    B createB(){ return new B(); }
+            |}
+            |
+            |class B { B(){} }
+            |
+            |class A {
+            |    void m() { B b = new B(); }
+            |}"""
+          ){
         val ctor = fullName2id("p.B.B()")
         val ctorMethod = fullName2id("p.Factory.createB()")
 
@@ -128,7 +192,20 @@ class CommutativityRedirect
     }
 
     scenario("From constructor to constructorMethod hosted elsewhere - non static, field") {
-      val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedElsewhere.java") {
+      val _ = new ScenarioFactory(
+          """package p;
+            |
+            |class Factory{
+            |    Factory(){}
+            |    B createB(){ return new B(); }
+            |}
+            |
+            |class B { B(){} }
+            |
+            |class A {
+            |    void m() { B b = new B(); }
+            |}"""
+      ) {
         val ctor = fullName2id("p.B.B()")
         val ctorMethod = fullName2id("p.Factory.createB()")
 
@@ -149,7 +226,23 @@ class CommutativityRedirect
     }
 
     ignore("From constructor to constructorMethod hosted by self - non static, parameter") {
-      val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedBySelf.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class B {
+          |    B(){}
+          |    B create(){return new B();}
+          |}
+          |
+          |class A { void m(){ new B(); } }
+          |
+          |class C {
+          |    void mc(){
+          |        A a = new A();
+          |        a.m();
+          |    }
+          |}"""
+      ) {
         val ctor = fullName2id("p.B.B()")
         val ctorMethod = fullName2id("p.B.create()")
 
@@ -174,7 +267,23 @@ class CommutativityRedirect
     }
 
     scenario("From constructor to constructorMethod hosted by self - non static, field") {
-      val _ = new ScenarioFactory(s"$typeCtorPath/ConstructorToConstructorMethodHostedBySelf.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class B {
+          |    B(){}
+          |    B create(){return new B();}
+          |}
+          |
+          |class A { void m(){ new B(); } }
+          |
+          |class C {
+          |    void mc(){
+          |        A a = new A();
+          |        a.m();
+          |    }
+          |}"""
+      ) {
         val ctor = fullName2id("p.B.B()")
         val ctorMethod = fullName2id("p.B.create()")
 
@@ -199,7 +308,26 @@ class CommutativityRedirect
         val typeMemberPath = examplesPath + "typeMember"
 
         scenario("From method to method superType"){
-          val _ = new ScenarioFactory(s"$typeMemberPath/MethodToMethodSuperType.java") {
+          val _ = new ScenarioFactory(
+            """package p;
+              |
+              |interface B {
+              |    void m1();
+              |    void m2();
+              |}
+              |
+              |class Bimpl implements B {
+              |    public void m1(){}
+              |    public void m2(){}
+              |}
+              |
+              |class A {
+              |    void m(){
+              |        Bimpl b = new Bimpl();
+              |        b.m1();
+              |        b.m2();
+              |    }
+              |}""") {
             val mUsed = fullName2id("p.Bimpl.m1()")
             val mAbs = fullName2id("p.B.m1()")
 
