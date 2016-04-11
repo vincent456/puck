@@ -4,20 +4,20 @@ aspect LockedMethodAccess {
 	 * rules, but instead immediately binds to its target. For every locked method access,
 	 * we also cache whether or not it is a monomorphic call. */
 	private SavedMethodDecl MethodAccess.targetMethod = null;
-	private boolean MethodAccess.isMonoCall = false;
-	private SavedMethodDecl MethodAccess.setTargetMethod(SavedMethodDecl smd, boolean isMonoCall) { 
+	private boolean MethodAccess.isMonomorphicCall = false;
+	private SavedMethodDecl MethodAccess.setTargetMethod(SavedMethodDecl smd, boolean isMonomorphicCall) { 
 		this.targetMethod = smd;
-		this.isMonoCall = isMonoCall;
+		this.isMonomorphicCall = isMonomorphicCall;
 		return smd;
 	}
 	
-	public MethodAccess.MethodAccess(MethodDecl target, List<Expr> args, boolean isMonoCall) {
+	public MethodAccess.MethodAccess(MethodDecl target, List<Expr> args, boolean isMonomorphicCall) {
 		this(target.name(), args);
-		setTargetMethod(target.save(), isMonoCall);
+		setTargetMethod(target.save(), isMonomorphicCall);
 	}
 	
-	public MethodAccess MethodDecl.createLockedAccess(List<Expr> args, boolean isMonoCall) {
-		return new MethodAccess(this, args, isMonoCall);
+	public MethodAccess MethodDecl.createLockedAccess(List<Expr> args, boolean isMonomorphicCall) {
+		return new MethodAccess(this, args, isMonomorphicCall);
 	}
 	public MethodAccess MethodDecl.createLockedAccess(List<Expr> args) {
 		return createLockedAccess(args, false);
@@ -110,7 +110,7 @@ aspect LockedMethodAccess {
 	
 	public ASTNode MethodAccess.lock(MethodDecl md) {
 		mandatoryAssert(md != null && !md.isUnknown());
-		setTargetMethod(md.save(), isMonoCall());
+		setTargetMethod(md.save(), isMonomorphicCall());
 		return this;
 	}
 	
@@ -127,7 +127,7 @@ aspect LockedMethodAccess {
 	public Access MethodAccess.unlock() {
 		Expr qual = getQualifier();
 		MethodDecl target = targetMethod.getDecl();
-		boolean isMonoCall = this.isMonoCall;
+		boolean isMonomorphicCall = this.isMonomorphicCall;
 		setTargetMethod(null, false);
 		flushCache();
 		if(fromSource())
@@ -137,11 +137,11 @@ aspect LockedMethodAccess {
 		} else if(!fromSource()) {
 			throw new RefactoringException("cannot adjust method access in compiled code");
 		} else {
-			return unlock(qual, target, isMonoCall);
+			return unlock(qual, target, isMonomorphicCall);
 		}
 	}
 	
-	public Access MethodAccess.unlock(Expr qual, MethodDecl target, boolean isMonoCall) {
+	public Access MethodAccess.unlock(Expr qual, MethodDecl target, boolean isMonomorphicCall) {
 		if((qual == null ? inStaticContext() : qual.staticContextQualifier()) && !target.isStatic())
 			throw new RefactoringException("cannot access instance method in static context");
 		MethodAccessInfo acc = accessMethod(target);
@@ -165,7 +165,7 @@ aspect LockedMethodAccess {
 				acc = parent.accessMethod(target);
 				if(acc != null) {
 					this.flushTreeCache();
-					Access newAcc = acc.eliminate(this, null, enclosingType(), isMonoCall, inStaticContext(), (List<Expr>) getArgs().fullCopyAndDetach());
+					Access newAcc = acc.eliminate(this, null, enclosingType(), isMonomorphicCall, inStaticContext(), (List<Expr>) getArgs().fullCopyAndDetach());
 					return (Access) replace(parent).with(newAcc);
 				}
 			}
@@ -173,22 +173,22 @@ aspect LockedMethodAccess {
 				compilationUnit().pathName() + " line " + location());
 		}
 		this.flushTreeCache();
-		Access res = acc.eliminate(this, qual, enclosingType(), isMonoCall, inStaticContext(), (List<Expr>) getArgs().fullCopyAndDetach());
+		Access res = acc.eliminate(this, qual, enclosingType(), isMonomorphicCall, inStaticContext(), (List<Expr>) getArgs().fullCopyAndDetach());
 		if(res == null)
 			throw new RefactoringException("cannot access method "+target.name());
 		return res;
 	}
 	
 	// eliminating locked method accesses
-	public Access MethodAccessInfo.eliminate(MethodAccess original, Expr qualifier, TypeDecl enclosing, boolean isMonoCall, boolean inStaticCtxt, List<Expr> args) {
+	public Access MethodAccessInfo.eliminate(MethodAccess original, Expr qualifier, TypeDecl enclosing, boolean isMonomorphicCall, boolean inStaticCtxt, List<Expr> args) {
 		args.setParent(original);
 		if(qualifier == null)
-			return eliminate(original, enclosing, isMonoCall, inStaticCtxt, args);
+			return eliminate(original, enclosing, isMonomorphicCall, inStaticCtxt, args);
 		else
-			return eliminateQualified(original, qualifier, enclosing, isMonoCall, inStaticCtxt, args);
+			return eliminateQualified(original, qualifier, enclosing, isMonomorphicCall, inStaticCtxt, args);
 	}
 	
-	public Access MethodAccessInfo.eliminate(MethodAccess original, TypeDecl enclosing, boolean isMonoCall, boolean inStaticCtxt, List<Expr> args) {
+	public Access MethodAccessInfo.eliminate(MethodAccess original, TypeDecl enclosing, boolean isMonomorphicCall, boolean inStaticCtxt, List<Expr> args) {
 		if(!directlyVisible) {
 			if(target.isStatic())
 				return (Access) original.replace(original).with(
@@ -197,7 +197,7 @@ aspect LockedMethodAccess {
 				throw new RefactoringException("cannot access non-static method in static context");
 			MethodAccess ma = constructAccess(original, args);
 			ma.flushTreeCache();
-			if(isMonoCall && !target.isPrivate()) {
+			if(isMonomorphicCall && !target.isPrivate()) {
 				// need to construct a super call
 				if(bend instanceof ClassDecl && source == ((ClassDecl)bend).superclass()) {
 					if(bend == enclosing) {
@@ -271,7 +271,7 @@ aspect LockedMethodAccess {
 	}
 
 	public Access MethodAccessInfo.eliminateQualified(MethodAccess original, Expr qualifier, TypeDecl enclosing,
-			boolean isMonoCall, boolean inStaticCtxt, List<Expr> args) {
+			boolean isMonomorphicCall, boolean inStaticCtxt, List<Expr> args) {
 		MethodAccess ma = constructAccess(original, args);
 		if(!directlyVisible) {
 			if(!target.isStatic())
@@ -293,7 +293,7 @@ aspect LockedMethodAccess {
 			throw new RefactoringException(this +" : cannot access target method");
 		} else {
 			if(!target.accessibleFrom(enclosing))
-				throw new RefactoringException(this +" : target method not accessible");
+				throw new RefactoringException("method not accessible");
 			return ma.parentDot();
 		}
 	}

@@ -97,6 +97,18 @@ aspect ReplaceTypeAccess {
     }
 */
 
+    interface Binder {}
+
+    VarDeclStmt implements Binder;
+    Declarator implements Binder;
+
+    public void Binder.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
+        if(this.getTypeAccess().type().equals(oldUsed)){
+            this.setTypeAccess(newUsed.createLockedAccess());
+            this.flushTreeCache();
+        }
+    }
+
     public void TypeAccess.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
 
         if( this.decl().equals(oldUsed) ){
@@ -106,9 +118,6 @@ aspect ReplaceTypeAccess {
         }
 
     }
-
-
-
 
     public void ClassInstanceExpr.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
 

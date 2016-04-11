@@ -32,7 +32,7 @@ aspect MethodExt {
 	syn lazy Collection<MethodAccess> MethodDecl.monoUses() {
 		Collection<MethodAccess> res = new HashSet<MethodAccess>();
 		for(MethodAccess ma : uses())
-			if(ma.isMonoCall())
+			if(ma.isMonomorphicCall())
 				res.add(ma);
 		return res;
 	}

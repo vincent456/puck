@@ -50,6 +50,9 @@ aspect AccessMethod {
 
 	public MethodAccessInfo MethodAccessInfo.moveDownTo(TypeDecl td) {
 		bend = td;
+//		if ((td == target.hostType() &&
+//				td.localMethodsSignature(target.signature()).size()!=1 )
+//			|| (!td.localMethodsSignature(target.signature()).isEmpty())) {
 		if(!td.localMethodsSignature(target.signature()).isEmpty()) {
 			directlyVisible = false;
 		} else {

@@ -27,12 +27,12 @@
 package puck.javaGraph.commutativity
 
 import puck.javaGraph.nodeKind.Field
-import puck.{AcceptanceSpec, Settings}
+import puck.{AcceptanceSpec, QuickFrame, Settings}
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
-import puck.graph.{Factory, AccessAbstraction, Uses}
-import puck.graph.transformations.rules.{CreateTypeMember, CreateParameter, Redirection}
-import puck.javaGraph.ScenarioFactory
+import puck.graph.{AccessAbstraction, Factory, Uses}
+import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, Redirection}
+import puck.javaGraph.{JavaDotHelper, ScenarioFactory}
 import puck.Settings.outDir
 
 class CommutativityRedirect
@@ -328,17 +328,16 @@ class CommutativityRedirect
               |        b.m2();
               |    }
               |}""") {
-            val mUsed = fullName2id("p.Bimpl.m1()")
-            val mAbs = fullName2id("p.B.m1()")
+            val `p.Bimpl.m1()` = fullName2id("p.Bimpl.m1()")
+            val `p.B.m1()` = fullName2id("p.B.m1()")
 
-            val userDecl = fullName2id("p.A.m()")
-            val userDef = fullName2id("p.A.m().Definition")
+            val `p.A.m().Definition` = fullName2id("p.A.m().Definition")
 
 
             val g =
               Redirection.redirectUsesAndPropagate(graph,
-                Uses(userDef, mUsed), AccessAbstraction(mAbs, SupertypeAbstraction)).right
-
+                Uses(`p.A.m().Definition`, `p.Bimpl.m1()`),
+                AccessAbstraction(`p.B.m1()`, SupertypeAbstraction)).right
 
             val recompiledEx = applyChangeAndMakeExample(g, outDir)
             assert( Mapping.equals(g, recompiledEx.graph) )

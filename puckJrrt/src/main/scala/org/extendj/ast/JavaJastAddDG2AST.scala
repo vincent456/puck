@@ -38,6 +38,7 @@ import puck.graph.comparison.NodeMappingInitialState
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations._
 import puck.graph.transformations.Recording
+import puck.graph.transformations.Transformation.{Add, Remove}
 import puck.jastadd.concretize._
 import puck.javaGraph.nodeKind._
 import puck.util.PuckLog._
@@ -289,7 +290,7 @@ class JavaJastAddDG2AST
     id2declMap: Map[NodeId, ASTNodeLink],
     t: Transformation)
   ( implicit logger : PuckLogger): Map[NodeId, ASTNodeLink] = t match {
-    case Transformation(Regular, CNode(n)) =>
+    case Add(CNode(n)) =>
       //redo t before createDecl
       if(n.kind == Definition) id2declMap
       else {
@@ -299,7 +300,7 @@ class JavaJastAddDG2AST
         }
         newMap
       }
-    case Transformation(Regular, Edge(Contains(source, target)))
+    case Add(Edge(Contains(source, target)))
       if reenactor.kindType(target) == ValueDef =>
       CreateNode.addDef(program,resultGraph,id2declMap, source, target)
 
@@ -307,9 +308,8 @@ class JavaJastAddDG2AST
       lazy val noApplyMsg = s"${(resultGraph, t).shows} not applied"
 
       t match {
-      case Transformation(Regular, Edge(e)) =>
+      case Add(Edge(e)) =>
         //println("creating edge " + e)
-
         CreateEdge(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e)
 
       case Transformation(_, RedirectionWithMerge(_, Source(_))) =>
@@ -337,7 +337,7 @@ class JavaJastAddDG2AST
 
       case Transformation(_, AbstractionOp(_, _)) => ()
 
-      case Transformation(Reverse, CNode(n)) =>
+      case Remove(CNode(n)) =>
         id2declMap get n.id foreach {
           case dh: TypedKindDeclHolder => dh.decl.puckDelete()
           case bdh : HasBodyDecl => bdh.decl.puckDelete()
@@ -358,7 +358,7 @@ class JavaJastAddDG2AST
           createVarAccess(reenactor, safeGet(reenactor,id2declMap), tmUse, newTuse,
             replaceSelfRefByVarAccess)
 
-      case Transformation(Regular, TypeDependency(typeUse @(tUser, tUsed), tmUse)) =>
+      case Add(TypeDependency(typeUse @(tUser, tUsed), tmUse)) =>
         if (tUser != tUsed && tUser != tmUse.user)
         createVarAccess(reenactor, safeGet(reenactor,id2declMap), tmUse, typeUse,
           introVarAccess)
