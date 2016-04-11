@@ -51,36 +51,50 @@ object NodeCheckBox {
 
 class AbstractionPanel
 ( graph : DependencyGraph,
+  absDefaultName : String,
   potentialsHost : Set[NodeId],
   abstractionChoices : List[ConcreteNode])
-(implicit treeIcons : DGTreeIcons)extends SplitPane(Orientation.Vertical) {
+( implicit treeIcons : DGTreeIcons ) extends BorderPanel {
+
+  val absNameTxtField = new TextField(absDefaultName)
+  def absName : String = absNameTxtField.text
 
   val choices = abstractionChoices.map(NodeCheckBox(graph, _))
   def selectedNodes = choices.filter(_.selected).map(_.node)
 
   val treePane = new StaticDGTreePane(graph, potentialsHost, "Select host")
   def selectedHost = treePane.selecteNodes
-  leftComponent = treePane
-
-  if(abstractionChoices.isEmpty){
-    dividerSize = 0
-    resizeWeight = 1
-  }
-  else
-    rightComponent = new BorderPanel {
-      add(new Label("Select type member to abstract"), Position.North)
-      add(new ScrollPane {
-        contents = new BoxPanel(Orientation.Vertical) {
-          choices foreach contents.+=
-        }
-        preferredSize = new Dimension(600, 250)
 
 
-      }, Position.Center)
+  this.add(
+    new BoxPanel(Orientation.Horizontal) {
+      contents += new Label("Abstraction's name :")
+      contents += absNameTxtField
+      contents += Swing.HGlue
+    }, Position.North)
+
+  this.add(new SplitPane(Orientation.Vertical) {
+     leftComponent = treePane
+
+    if(abstractionChoices.isEmpty){
+      dividerSize = 0
+      resizeWeight = 1
     }
+    else
+      rightComponent = new BorderPanel {
+        add(new Label("Select type member to abstract"), Position.North)
+        add(new ScrollPane {
+          contents = new BoxPanel(Orientation.Vertical) {
+            choices foreach contents.+=
+          }
+          preferredSize = new Dimension(600, 250)
 
 
+        }, Position.Center)
+      }
+  }, Position.Center)
 }
+
 class NodeCheckBox(val node : ConcreteNode, name : String, initiallySelected : Boolean)
   extends CheckBox(name){
   selected = initiallySelected
@@ -126,15 +140,28 @@ class AbstractionAction
            node.kind.kindType match {
            case TypeDecl => graph.content(node.id).toList.
                 map(graph.getConcreteNode).filter(n =>
-               n.kind.kindType == InstanceValueDecl &&
-               n.kind.abstractionNodeKinds(policy).nonEmpty).
+                 n.kind.kindType == InstanceValueDecl &&
+                 n.kind.abstractionNodeKinds(policy).nonEmpty).
                 filter(TR.abstracter.canBeAbstracted(graph, _, node, policy))
            case _ => List()
          }
 
+         val absDefaultName = TR.abstracter.abstractionName(graph, node, abskind, policy, None)
+
          val title = "Abstraction options"
          val potentialHosts = graph.nodes.filter(_.kind.canContain(abskind)).map(_.id).toSet
-         val panel = new AbstractionPanel(graph, potentialHosts, contentToAbstract)
+         val panel = new AbstractionPanel(graph, absDefaultName, potentialHosts, contentToAbstract)
+
+         def setAbsName(arg : (Abstraction, DependencyGraph)) : (List[ConcreteNode], DependencyGraph) = {
+           val (abs, g) = arg
+           abs match {
+             case AccessAbstraction(nid, _) if absDefaultName != panel.absName  =>
+               val g1 = g.setName(nid, panel.absName)
+               (List(g1.getConcreteNode(nid)), g1)
+             case _ =>
+              (abs.nodes map g.getConcreteNode, g)
+           }
+         }
 
          def confirm() : LoggedTry[DependencyGraph] =
          Dialog.showConfirmation(null, panel.peer, title,
@@ -160,9 +187,8 @@ class AbstractionAction
                  case _ =>
                    TR.abstracter.createAbstraction(graph.mileStone, node, abskind, policy)
                }
-               ltag map { case (abs, g) =>
-                 val absNodes = abs.nodes.map(g.getConcreteNode)
-                 absNodes.foldLeft(g){
+               ltag map setAbsName map { case (absNodes, g) =>
+                  absNodes.foldLeft(g){
                    (g, n) => g.addContains(panel.selectedHost.head, n.id)
                  }
                }

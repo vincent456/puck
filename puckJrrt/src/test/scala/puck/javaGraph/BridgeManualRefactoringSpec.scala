@@ -39,6 +39,8 @@ class BridgeManualRefactoringSpec extends AcceptanceSpec {
   scenario("bridge simplified ``manual'' refactoring"){
     val bs = BridgeScenario2()
 
+    QuickFrame(bs.gFinal, "BS", JavaDotHelper)
+
     val recompiledEx = bs.applyChangeAndMakeExample(bs.gFinal, outDir)
 
 //    import scalaz.syntax.show._

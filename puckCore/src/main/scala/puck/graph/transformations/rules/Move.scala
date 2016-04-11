@@ -240,7 +240,7 @@ object Move {
     newContainer : NodeId,
     createVarStrategy: Option[CreateVarStrategy] = None) : LoggedTG = {
 
-    val typeMembersMovedStr = typeMembersMovedId.map( (graph,_).shows ).mkString("[",", ", "]")
+    val typeMembersMovedStr = typeMembersMovedId.map(nid => (graph, nid).shows ).mkString("[",", ", "]")
     val g0 = graph.comment(s"Move.typeMember(g, $typeMembersMovedStr, ${(graph,newContainer).shows}, $createVarStrategy)")
     /** PRECONDITION all typeMembersMoved have same host */
     val oldContainer = g0.container(typeMembersMovedId.head).get

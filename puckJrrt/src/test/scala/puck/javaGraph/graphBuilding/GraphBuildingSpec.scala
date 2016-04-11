@@ -35,251 +35,15 @@ import puck.{AcceptanceSpec, Settings}
 
 class GraphBuildingSpec extends AcceptanceSpec {
 
-  val graphBuildingExamplesPath = Settings.testExamplesPath + "/graphBuilding/"
-
-  feature("contains registration"){
-
-    scenario("static class member") {
-      val _ = new ScenarioFactory(
-        s"$graphBuildingExamplesPath/staticClassMember/A.java") {
-
-        val p = fullName2id("p")
-        val classA = fullName2id("p.A")
-        val innerA = fullName2id("p.A.InnerA")
-        val innerACtor = fullName2id("p.A.InnerA.InnerA()")
-        val innerACtorDef = fullName2id("p.A.InnerA.InnerA().Definition")
-
-        graph.container(classA).value shouldBe p
-        graph.content(p) should contain (classA)
-
-        graph.container(innerA).value shouldBe classA
-        graph.content(classA) should contain (innerA)
-
-        graph.container(innerACtor).value shouldBe innerA
-        graph.content(innerA) should contain (innerACtor)
-
-        graph.container(innerACtorDef).value shouldBe innerACtor
-        graph.content(innerACtor) should contain (innerACtorDef)
-
-      }
-
-    }
-
-    scenario("instance class member") {
-      val _ = new ScenarioFactory(
-        s"$graphBuildingExamplesPath/instanceClassMember/A.java") {
-
-        val p = fullName2id("p")
-        val classA = fullName2id("p.A")
-        val innerA = fullName2id("p.A.InnerA")
-        val innerACtor = fullName2id("p.A.InnerA.InnerA()")
-        val innerACtorDef = fullName2id("p.A.InnerA.InnerA().Definition")
-
-        graph.container(classA).value shouldBe p
-        graph.content(p) should contain (classA)
-
-        graph.container(innerA).value shouldBe classA
-        graph.content(classA) should contain (innerA)
-
-        graph.container(innerACtor).value shouldBe innerA
-        graph.content(innerA) should contain (innerACtor)
-
-        graph.container(innerACtorDef).value shouldBe innerACtor
-        graph.content(innerACtor) should contain (innerACtorDef)
-
-      }
-
-    }
-
-    scenario("instance class declared in static method") {
-      val _ = new ScenarioFactory(
-        s"$graphBuildingExamplesPath/namedClassDeclaredInStaticMethod/A.java") {
-        val p = fullName2id("p")
-        val classA = fullName2id("p.A")
-        val meth = fullName2id("p.A.declareInnerClass()")
-        val methDef = fullName2id("p.A.declareInnerClass().Definition")
-
-        val innerClass = fullName2id("p.A.declareInnerClass().CanDoMInstance")
-
-        graph.container(classA).value shouldBe p
-        graph.content(p) should contain (classA)
-
-        graph.container(meth).value shouldBe classA
-        graph.content(classA) should contain (meth)
-
-        graph.container(methDef).value shouldBe meth
-        graph.content(meth) should contain (methDef)
-
-        graph.container(innerClass).value shouldBe methDef
-        graph.content(methDef) should contain (innerClass)
-      }
-
-    }
-
-    scenario("generic classes variable"){
-      val _ = new ScenarioFactory(
-        s"$graphBuildingExamplesPath/typeVariables/ClassVariable.java") {
-
-        val classA = fullName2id("p.A")
-        val classB = fullName2id("p.B")
-
-        val ta =fullName2id("p.A@T")
-        val tb =fullName2id("p.B@T")
-        graph.contains(classA, ta)
-        graph.contains(classB, tb)
-
-      }
-    }
-
-    scenario("generic method variable"){
-      val _ = new ScenarioFactory(
-        s"$graphBuildingExamplesPath/typeVariables/MethodTypeVariable.java") {
-
-        val a = fullName2id("p.A")
-        val at = fullName2id("p.A@T")
-
-        val m1 = fullName2id("p.A.castMe(Object)")
-        val m2 = fullName2id("p.A.castMeInstead(Object)")
-
-        val mt1 =fullName2id("p.A.castMe(Object)@T")
-        val mt2 =fullName2id("p.A.castMeInstead(Object)@T")
-        graph.contains(a, at)
-        graph.contains(m1, mt1)
-        graph.contains(m2, mt2)
-      }
-    }
-
-    scenario("up bounded type variable"){
-      val _ = new ScenarioFactory(s"$graphBuildingExamplesPath/typeVariables/NamingProblem.java") {
-        val u = fullName2id("p.Comparator.thenComparing(Comparator)@U")
-        val param = fullName2id("p.Comparator.thenComparing(Comparator).keyComparator")
-        val m = fullName2id("p.Comparator.thenComparing(Comparator)")
-
-        graph.contains(m, u)
-        graph.uses(param, u)
-
-      }
-    }
-
-    info("method m(A...) recognized as m(A[])")
-    scenario("overloading with variadic method"){
-      val _ = new ScenarioFactory(s"$graphBuildingExamplesPath/variadicMethod/A.java"){
-        val m1name = "p.A.m(double)"
-        val m1id = fullName2id(m1name)
-        val m2name = "p.A.m(double[])"
-        val m2id = fullName2id(m2name)
-
-        import ShowDG._
-        (graph, m1id).shows(sigFullName) shouldBe m1name
-        (graph, m2id).shows(sigFullName) shouldBe m2name
-
-      }
-    }
-  }
-
-  feature("typeUse typeMemberUse relation registration"){
-    val examplesPath = graphBuildingExamplesPath +  "typeRelationship/"
-
-    scenario("call on field") {
-      val _ = new ScenarioFactory(s"$examplesPath/CallOnField.java"){
-
-        val fieldTypeUserDecl = fullName2id("p.A.b")
-        val methUserDef = fullName2id("p.A.ma().Definition")
-
-        val typeUsed = fullName2id("p.B")
-        val typeMemberUsedDecl = fullName2id("p.B.mb()")
-
-
-        val typeUse = graph.getUsesEdge(fieldTypeUserDecl, typeUsed).value
-        val typeMemberUse = graph.getUsesEdge(methUserDef, typeMemberUsedDecl).value
-
-        graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
-        graph.typeUsesOf(typeMemberUse) should contain (typeUse)
-
-      }
-
-
-    }
-
-    scenario("call on method's parameter"){
-      val _ = new ScenarioFactory(s"$examplesPath/CallOnParameter.java"){
-
-        val theParameter = fullName2id("p.A.ma(B).b")
-        val mUser = fullName2id("p.A.ma(B).Definition")
-        val classUsed = fullName2id("p.B")
-        val mUsed = fullName2id("p.B.mb()")
-
-        val typeUse = Uses(theParameter, classUsed)
-        val typeMemberUse = Uses(mUser, mUsed)
-
-        graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
-        graph.typeUsesOf(typeMemberUse) should contain (typeUse)
-
-      }
-    }
-
-    scenario("call on local variable"){
-      val _ = new ScenarioFactory(s"$examplesPath/CallOnLocalVariable.java"){
-
-        val mUser = fullName2id("p.A.ma().Definition")
-        val mUsed = fullName2id("p.B.mb()")
-
-        val classUsed = fullName2id("p.B")
-
-        val typeUse = Uses(mUser, classUsed)
-        val typeMemberUse = Uses(mUser, mUsed)
-
-        graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
-        graph.typeUsesOf(typeMemberUse) should contain (typeUse)
-      }
-    }
-
-    scenario("chained call"){
-      val _ = new ScenarioFactory(s"$examplesPath/ChainedCall.java"){
-        val mUser = fullName2id("p.A.ma().Definition")
-        val mUsed = fullName2id("p.C.mc()")
-        val mIntermediate = fullName2id("p.B.mb()")
-        val classUsed = fullName2id("p.C")
-
-        val typeUse = Uses(mIntermediate, classUsed)
-        val typeMemberUse = Uses(mUser, mUsed)
-
-        graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
-        graph.typeUsesOf(typeMemberUse) should contain (typeUse)
-      }
-    }
-
-    scenario("cond expr"){
-      val _ = new ScenarioFactory(s"$examplesPath/ConditionalExprCase.java"){
-
-        val condM = fullName2id("p.Cond.condM(boolean,A).Definition")
-        val m = fullName2id("p.A.m()")
-
-        val paramA = fullName2id("p.Cond.condM(boolean,A).a")
-        val ctorA = fullName2id("p.A.A()")
-        val classA = fullName2id("p.A")
-
-        val typeUse = Uses(paramA, classA)
-        val typeUse1 = Uses(ctorA, classA)
-        val typeMemberUse = Uses(condM, m)
-
-        graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
-        graph.typeUsesOf(typeMemberUse) should contain (typeUse)
-
-        graph.typeMemberUsesOf(typeUse1) should contain (typeMemberUse)
-        graph.typeUsesOf(typeMemberUse) should contain (typeUse1)
-
-      }
-    }
-
-
-  }
 
   feature("Abstraction registration"){
-    val examplesPath = graphBuildingExamplesPath +  "abstractionRegistration/"
     scenario("one class one interface"){
       val p = "interfaceSupertype"
-      val _ = new ScenarioFactory(s"$examplesPath/$p/A.java"){
+      val _ = new ScenarioFactory(
+        """package interfaceSupertype;
+          |
+          |interface SuperType { void ma(); }
+          |class A implements SuperType{ public void ma(){} }"""){
 
         val classUsed = fullName2id(s"$p.A")
         val mUsed = fullName2id(s"$p.A.ma()")
@@ -294,10 +58,13 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
 
   feature("Isa registration"){
-    val examplesPath = graphBuildingExamplesPath +  "subTyping/"
-
     scenario("simple case"){
-      val _ = new ScenarioFactory(s"$examplesPath/RegularSuperType.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {}
+          |
+          |class B extends A {}""") {
         val superClass = fullName2id("p.A")
         val subClass = fullName2id("p.B")
 
@@ -307,7 +74,14 @@ class GraphBuildingSpec extends AcceptanceSpec {
     }
 
     scenario("generic super type"){
-      val _ = new ScenarioFactory(s"$examplesPath/GenericSuperType.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {}
+          |
+          |class Gen<T> {}
+          |
+          |class C extends Gen<A> {}""") {
         val superClass = fullName2id("p.Gen")
         val subClass = fullName2id("p.C")
         val paramType = fullName2id("p.A")
@@ -321,7 +95,8 @@ class GraphBuildingSpec extends AcceptanceSpec {
   }
 
   feature("Generic types uses"){
-    val examplesPath = graphBuildingExamplesPath +  "genericTypes/"
+    val examplesPath = Settings.testExamplesPath +
+      "/graphBuilding/genericTypes/"
 
     scenario("array decl"){
       val _ = new ScenarioFactory(s"$examplesPath/ArrayDecl.java") {
@@ -397,8 +172,6 @@ class GraphBuildingSpec extends AcceptanceSpec {
     }
 
 
-
-
     scenario("upper bounded wildcard"){
       val _ = new ScenarioFactory(s"$examplesPath/Wildcard.java") {
         val upperBoundedField = fullName2id("p.C.upperBounded")
@@ -429,10 +202,28 @@ class GraphBuildingSpec extends AcceptanceSpec {
   }
 
   feature("Read/Write uses"){
-    val examplesPath = graphBuildingExamplesPath +  "readWrite/"
 
     scenario("generic type declaration"){
-      val _ = new ScenarioFactory(s"$examplesPath/A.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |    int f = 0;
+          |
+          |    public int getF() { return f; }
+          |
+          |    public void setF(int f) { this.f = f; }
+          |
+          |    public void incF0() { this.f = f + 1; }
+          |
+          |    public void incF1() { f++; }
+          |
+          |    public void incF2() { ++f; }
+          |
+          |    public void decF0() { --f; }
+          |    public void decF1() { f--; }
+          |}"""
+      ) {
         val field = fullName2id(s"p.A.f")
         val getter = fullName2id(s"p.A.getF().Definition")
 
@@ -471,10 +262,21 @@ class GraphBuildingSpec extends AcceptanceSpec {
   }
 
   feature("anonymous class"){
-    val examplesPath = graphBuildingExamplesPath +  "anonymousClass/"
 
     scenario("anonymous class instanciated in local variable") {
-      val _ = new ScenarioFactory(s"$examplesPath/AnonymousClassLocalVariable.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |interface DoM { void m(); }
+          |
+          |class A {
+          |
+          |    void ma(){
+          |        DoM d2 = new DoM(){
+          |            public void m(){ System.out.println("also do m !"); }
+          |        };
+          |    }
+          |}""") {
         val mDef = fullName2id(s"p.A.ma().Definition")
         val anonymousClass = fullName2id(s"p.A.ma().Anonymous0")
 
@@ -483,7 +285,18 @@ class GraphBuildingSpec extends AcceptanceSpec {
     }
 
     scenario("anonymous class instanciated in field") {
-      val _ = new ScenarioFactory(s"$examplesPath/AnonymousClassField.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |interface DoM { void m(); }
+          |
+          |class A {
+          |
+          |    DoM f = new DoM(){
+          |        public void m(){ System.out.println("do m !"); }
+          |    };
+          |
+          |}""") {
 
         val field = fullName2id(s"p.A.f.Definition")
         val anonymousClass = fullName2id(s"p.A.f.Anonymous0")

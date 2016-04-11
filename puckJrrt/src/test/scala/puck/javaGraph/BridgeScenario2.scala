@@ -29,17 +29,17 @@ package puck.javaGraph
 
 
 
-import org.scalatest.{OptionValues, EitherValues}
-
+import org.scalatest.{EitherValues, OptionValues}
 import puck.graph.AccessAbstraction
 import puck.graph.DependencyGraph
 import puck.graph.constraints._
 import puck.graph.transformations.rules.CreateTypeMember
 import puck.graph._
 import puck.javaGraph.nodeKind._
-import puck.{PuckError, Settings}
+import puck.{PuckError, QuickFrame, Settings}
 import puck.jastadd.ExtendJGraphUtils.{transformationRules => TR}
-
+import DependencyGraph.findElementByName
+import puck.util.Debug
 
 object BridgeScenario2 {
   val path = Settings.projectPath + "/test_resources/distrib/bridge/hannemann_simplified/"
@@ -53,43 +53,50 @@ class BridgeScenario2 private()
   extends ScenarioFactory(
     BridgeScenario.path + "screen/BridgeDemo.java",
     BridgeScenario.path + "screen/Screen.java")
-  with EitherValues
-  with OptionValues {
+    with EitherValues
+    with OptionValues {
 
   import BridgeScenario.tryToEither
 
-  val p = "screen"
-  val screenPackage = fullName2id(p)
-  val screenClass = fullName2id(s"$p.Screen")
+  val screen = fullName2id("screen")
+  val `screen.Screen` = fullName2id("screen.Screen")
 
-  val welcomeStar = fullName2id(s"$p.WelcomeStar")
-  val welcomeStarCtor = fullName2id(s"$p.WelcomeStar.WelcomeStar()")
+  val `screen.WelcomeStar` = fullName2id("screen.WelcomeStar")
+  val `screen.WelcomeStar.WelcomeStar()` = fullName2id("screen.WelcomeStar.WelcomeStar()")
+  val `screen.WelcomeStar.WelcomeStar().Definition` = fullName2id("screen.WelcomeStar.WelcomeStar().Definition")
+  val `screen.WelcomeStar.draw()` = fullName2id("screen.WelcomeStar.draw()")
 
-  val infoStar = fullName2id(s"$p.InfoStar")
-  val welcomeStarMeth = fullName2id(s"$p.WelcomeStar.draw()")
-  val infoStarMeth = fullName2id(s"$p.InfoStar.draw()")
+  val `screen.InfoStar` = fullName2id("screen.InfoStar")
+  val `screen.InfoStar.InfoStar()` = fullName2id("screen.InfoStar.InfoStar()")
+  val `screen.InfoStar.InfoStar().Definition` = fullName2id("screen.InfoStar.InfoStar().Definition")
+  val `screen.InfoStar.draw()` = fullName2id("screen.InfoStar.draw()")
 
-  val welcomeCapital = fullName2id(s"$p.WelcomeCapital")
-  val infoCapital = fullName2id(s"$p.InfoCapital")
-  val welcomeCapitalMeth = fullName2id(s"$p.WelcomeCapital.draw()")
-  val infoCapitalMeth = fullName2id(s"$p.InfoCapital.draw()")
+  val `screen.WelcomeCapital` = fullName2id("screen.WelcomeCapital")
+  val `screen.WelcomeCapital.WelcomeCapital()` = fullName2id("screen.WelcomeCapital.WelcomeCapital()")
+  val `screen.WelcomeCapital.WelcomeCapital().Definition` = fullName2id("screen.WelcomeCapital.WelcomeCapital().Definition")
+  val `screen.WelcomeCapital.draw()` = fullName2id("screen.WelcomeCapital.draw()")
+
+  val `screen.InfoCapital` = fullName2id("screen.InfoCapital")
+  val `screen.InfoCapital.InfoCapital()` = fullName2id("screen.InfoCapital.InfoCapital()")
+  val `screen.InfoCapital.InfoCapital().Definition` = fullName2id("screen.InfoCapital.InfoCapital().Definition")
+  val `screen.InfoCapital.draw()` = fullName2id("screen.InfoCapital.draw()")
 
 
-  val printStar1 = fullName2id(s"$p.WelcomeStar.printStar(String)")
-  val printStar2 = fullName2id(s"$p.InfoStar.printStar(String)")
+  val `screen.WelcomeStar.printStar(String)` = fullName2id("screen.WelcomeStar.printStar(String)")
+  val `screen.InfoStar.printStar(String)` = fullName2id("screen.InfoStar.printStar(String)")
 
-  val printCapital1 = fullName2id(s"$p.WelcomeCapital.printCapital(String)")
-  val printCapital2 = fullName2id(s"$p.InfoCapital.printCapital(String)")
+  val `screen.WelcomeCapital.printCapital(String)` = fullName2id("screen.WelcomeCapital.printCapital(String)")
+  val `screen.InfoCapital.printCapital(String)` = fullName2id("screen.InfoCapital.printCapital(String)")
 
   var printId = 0
 
   def introClassMoveMethod
-  (g : DependencyGraph, className : String, method : NodeId) : (ConcreteNode, DependencyGraph)= {
+  (g : DependencyGraph, className : String, method : NodeId) : (NodeId, DependencyGraph)= {
     val g0 = g.comment("-- introClassMoveMethod (begin) --")
     val (c, g1) = TR.intro(g0, className, Class)
 
-    val g2 = g1.addContains(screenPackage, c.id)
-    (c, TR.move.typeMember(g2, List(method), c.id,
+    val g2 = g1.addContains(screen, c.id)
+    (c.id, TR.move.typeMember(g2, List(method), c.id,
       Some(CreateTypeMember(Field))).value.right.value.
       comment("-- introClassMoveMethod (end) --"))
   }
@@ -98,123 +105,151 @@ class BridgeScenario2 private()
   (g : DependencyGraph,
    className : String,
    printMethod1 : NodeId,
-   printMethod2 : NodeId) : (ConcreteNode, DependencyGraph) = {
+   printMethod2 : NodeId) : (NodeId, DependencyGraph) = {
     val (classNode, g1) = introClassMoveMethod(g, className, printMethod1)
-    val g2 =
-      TR.move.typeMember(g1, List(printMethod2), classNode.id,
-        Some(CreateTypeMember(Field))).value.right.value
+
+    val g2 = TR.move.typeMember(g1, List(printMethod2), classNode,
+      Some(CreateTypeMember(Field))).value.right.value
 
     val g3 = TR.merge.mergeInto(g2, printMethod2, printMethod1).value.right.value
     (classNode, TR.rename(g3, printMethod1, "print"))
-   }
+  }
 
-    val g0 = graph
-    /*.newGraph(constraints =
-      ConstraintsParser(fullName2id, new FileReader(BridgeScenario.path + "decouple.pl")))*/
+  val g0 = graph
+  /*.newGraph(constraints =
+    ConstraintsParser(fullName2id, new FileReader(BridgeScenario.path + "decouple.pl")))*/
 
-    val (starPrinter, g1) = introClassMoveBothMethodAndMerge(g0, "StarPrinter", printStar1, printStar2)
-    val (capitalPrinter, g2) = introClassMoveBothMethodAndMerge(g1, "CapitalPrinter", printCapital1, printCapital2)
+  val (starPrinter, g1) = introClassMoveBothMethodAndMerge(g0, "StarPrinter",
+    `screen.WelcomeStar.printStar(String)`, `screen.InfoStar.printStar(String)`)
+  val (capitalPrinter, g2) = introClassMoveBothMethodAndMerge(g1, "CapitalPrinter",
+    `screen.WelcomeCapital.printCapital(String)`, `screen.InfoCapital.printCapital(String)`)
 
 
-    val (AccessAbstraction(printerInterface, _), g3) =
-          TR.abstracter.createAbstraction(g2, starPrinter,
-            Interface, SupertypeAbstraction).value.right.value
+  val (AccessAbstraction(printerInterface, _), g3) =
+    TR.abstracter.createAbstraction(g2, g2 getConcreteNode starPrinter,
+      Interface, SupertypeAbstraction).value.right.value
 
-    val g4 =
-       TR.rename(g3.addContains(screenPackage, printerInterface), printerInterface, "Printer").
-        addIsa(capitalPrinter.id, printerInterface)
+  val g4 =
+    TR.makeSuperType(TR.rename(g3.addContains(screen, printerInterface), printerInterface, "Printer"),
+      capitalPrinter, printerInterface)().value.right.value
 
-    val g5 = List(welcomeStar, welcomeCapital, infoStar, infoCapital).foldLeft(g4){
-      (g, c)=> TR.intro.initializer(g1,welcomeStar)._2
+  import ShowDG._
+
+  val printerField = findElementByName(g4,
+    "screen.WelcomeCapital.capitalprinter_delegate").value.id
+
+  val pf2 = findElementByName(g4,
+    "screen.InfoCapital.capitalprinter_delegate").value.id
+
+  val pf3 = findElementByName(g4,
+    "screen.WelcomeStar.starprinter_delegate").value.id
+  val pf4 = findElementByName(g4,
+    "screen.InfoStar.starprinter_delegate").value.id
+
+  //QuickFrame(g4, "G4", JavaDotHelper)
+  val g5 =
+    List((printerField,capitalPrinter),
+      (pf2,capitalPrinter),
+      (pf3,starPrinter),
+      (pf4,starPrinter)).foldLeft(g4){
+      case (g, (fid, tid) ) =>
+        TR.redirection.redirect(g, g.getUsesEdge(fid, tid).value,
+          AccessAbstraction(printerInterface, SupertypeAbstraction)).value.right.value._1
     }
 
-    val Some(printerField) =  g5.content(welcomeStar).find(n => g5.getConcreteNode(n).kind == Field)
-    val g6 = TR.move.pullUp(g5, List(printerField), welcomeStar, screenClass).value.right.value
+  val classes = List(`screen.WelcomeStar`,
+    `screen.WelcomeCapital`,
+    `screen.InfoStar`,
+    `screen.InfoCapital`)
+  val ctors =
+    List(`screen.WelcomeStar.WelcomeStar()`,
+      `screen.WelcomeCapital.WelcomeCapital()`,
+      `screen.InfoStar.InfoStar()`,
+      `screen.InfoCapital.InfoCapital()`)
+  val ctorsDef =
+    List(`screen.WelcomeStar.WelcomeStar().Definition`,
+      `screen.WelcomeCapital.WelcomeCapital().Definition`,
+      `screen.InfoStar.InfoStar().Definition`,
+      `screen.InfoCapital.InfoCapital().Definition`)
 
-//    val (AccessAbstraction(welcomeStarFactory, _), g3) =
-//      TR.abstracter.createAbstraction(g2, g2.getConcreteNode(welcomeStarCtor),
-//        StaticMethod, DelegationAbstraction).value.right.value
+  val (g6, initializers)= classes.foldRight((g5, List[NodeId]())){
+    case (c, (g, acc))=>
+    val (init, g1) = TR.intro.initializer(g, c)
+    (g1, init :: acc)
+  }
 
-//    val g4 = g3.addContains(welcomeStar, welcomeStarFactory)
+  val (g7, factories) = ctors.foldRight((g6, List[NodeId]())){
+    case (ctor, (g, acc)) =>
+      val (AccessAbstraction(id, _), g2) =
+        TR.abstracter.createAbstraction(g, g.getConcreteNode(ctor),
+        StaticMethod, DelegationAbstraction).value.right.value
+      (g2, id :: acc)
+  }
 
+  val List(initStar, initCapital, initStar2, initCapital2) = initializers
+  val List(wsFactory, wcFactory, isFactory, icFactory) = factories
 
-    def gFinal = g6
+  val g8 = g7.setName(wsFactory, "createWS")
+        .setName(wcFactory, "createWC")
+        .setName(isFactory, "createIS")
+        .setName(icFactory, "createIC")
 
-  //  def intro2classMerge
-//  ( g : DependencyGraph, className : String,
-//    meth1 : NodeId, meth2 : NodeId) = {
-//    val g0 = g.comment("-- intro2classMerge (begin) --")
-//
-//    val (c1, g1) = introClassMoveMethod(g0, className, meth1)
-//
-//    val (c2, g2) = introClassMoveMethod(g1, className+"Tmp", meth2)
-//    val g3 = TR.mergeInto(g2.comment("-- Merging methods (begin) --"), meth2, meth1).value.right.value
-//    (c1, TR.mergeInto(g3.comment("-- Merging methods (end) --"), c2.id, c1.id).value.right.value
-//      .comment("-- intro2classMerge (end) --"))
-//  }
-//
-//  def useInterfaceInstead
-//  (g : DependencyGraph, clazz : NodeId, interface : NodeId) : DependencyGraph =
-//    g.usersOf(clazz).foldLeft(g){ (g0, userId) =>
-//      TR.redirection.redirectUsesAndPropagate(g0,
-//        Uses(userId, clazz),
-//        AccessAbstraction(interface,
-//          SupertypeAbstraction)).value.right.value
-//    }
-//
-//  def getDelegate(g : DependencyGraph, clazz : NodeId) =
-//    g.content(clazz).find{ id =>
-//      val n = g.getConcreteNode(id)
-//      n.name.endsWith("_delegate")
-//    }.value
-//
-//
-//
-//  val (c1, g1) = intro2classMerge(g0, "StarStyle", printStar1, printStar2)
-//  val (c2, g2) = intro2classMerge(g1, "CapitalStyle", printCapital1, printCapital2)
-//  val g3 =  TR.rename(TR.rename(g2, printStar1, "printStyle"), printCapital1, "printStyle")
-//
-//  val (AccessAbstraction(i1Id, _), g4) = TR.abstracter.createAbstraction(g3, c1, Interface, SupertypeAbstraction).value.right.value
-//  val g5 = g4.addContains(screen, i1Id)
-//  val (AccessAbstraction(i2Id, _), g6) = TR.abstracter.createAbstraction(g5, c2, Interface, SupertypeAbstraction).value.right.value
-//  val g7 = g6.addContains(screen, i2Id)
-//
-//  val g8 = TR.rename(TR.mergeInto(g7, i2Id, i1Id).value.right.value, i1Id, "StyleProvider")
-//
-//  val g9 = useInterfaceInstead(g8, c1.id, i1Id)
-//
-//  val g10 = useInterfaceInstead(g9, c2.id, i1Id)
-//
-//
-//  val delegate = getDelegate(g10, welcomeStar)
-//
-//  val g11 =
-//  //    TR.move.typeMember(TR.rename(g10, delegate, "styleProvider"), List(delegate), screenClass).value.right.value
-//    TR.move.typeMember(TR.rename(g10, delegate, "styleProvider"), List(delegate), screenClass, Some(CreateParameter)) match {
-//      case LoggedEither(l, \/-(v)) => v
-//      case LoggedEither(l, -\/(e)) =>
-//        println(l)
-//        throw e
-//
-//    }
-//
-//  val g12 = TR.mergeInto(g11, getDelegate(g11, infoStar), delegate).value.right.value
-//  val g13 = TR.mergeInto(g12, getDelegate(g12, welcomeCapital), delegate).value.right.value
-//  val g14 = TR.mergeInto(g13, getDelegate(g13, infoCapital), delegate).value.right.value
-//
-//
-//  val g15 = TR.mergeInto(TR.rename(g14, welcomeStar, "WelcomeScreen"),
-//    welcomeCapitalMeth, welcomeStarMeth).value.right.value
-//  val g16 = TR.mergeInto(g15, welcomeCapital, welcomeStar).value.right.value
-//
-//
-//  //QuickFrame(g16)
-//
-//  val g17 = TR.mergeInto(TR.rename(g16, infoStar, "InfoScreen"),
-//    infoCapitalMeth, infoStarMeth).value.right.value
-//  val g18 = TR.mergeInto(g17, infoCapital, infoStar).value.right.value
-//
-//  def gFinal = g18
+  val `screen.BridgeDemo` = fullName2id("screen.BridgeDemo")
+
+  val g9 = factories.foldLeft(g8)(_.addContains(`screen.BridgeDemo`, _))
+
+  val g10 = (ctors zip ctorsDef zip initializers zip factories).foldLeft(g9){
+    case (g, (((ctor, ctorDef), init), fcty)) =>
+      TR.redirection.redirectSourceOfInitUseInFactory(g, ctor, ctorDef, init, fcty)
+  }
+
+  val g11 = TR.move.typeMember(g10, List(printerField), `screen.Screen`).value.right.value
+  val g12 = List(pf2, pf3, pf4).foldLeft(g11.setName(printerField, "printer")){
+    case (g, pf) => TR.merge.mergeInto(g, pf, printerField).value.right.value
+  }
+  val main = fullName2id("screen.BridgeDemo.main(String[]).Definition")
+
+  val g13 = (ctors zip factories).foldLeft(g12){
+    case (g, (ctor, fty)) =>
+      TR.redirection.redirect(g, Uses(main, ctor),
+        AccessAbstraction(fty, DelegationAbstraction)).value.right.value._1
+  }
+
+  def moveInitAndMerge(g : DependencyGraph,
+                       initId : NodeId, initId2 : NodeId,
+                       initName : String) : DependencyGraph = {
+    val g2 = TR.move.typeMember(g.setName(initId, "initStar"), List(initId),`screen.Screen`, None).value.right.value
+    TR.merge.mergeInto(g2, initId2, initId).value.right.value
+  }
+
+  val g14 = moveInitAndMerge(g13, initStar, initStar2, "initStar")
+
+  val g15 = moveInitAndMerge(g14, initCapital, initCapital2, "initCapital")
+
+  def merge2ClassesAnd2Methods(g : DependencyGraph,
+                               name : String,
+                               c1 : NodeId, c2 :NodeId,
+                               m1 : NodeId, m2 : NodeId) : DependencyGraph = {
+    val g2 = TR.merge.mergeInto(g, c1, c2).value.right.value
+    val g3 = TR.merge.mergeInto(g2, m1, m2).value.right.value
+    g3.setName(c2, name)
+  }
+
+  val g16 = merge2ClassesAnd2Methods(g15,
+    "WelcomeScreen",
+    `screen.WelcomeStar`,
+    `screen.WelcomeCapital`,
+    `screen.WelcomeStar.draw()`,
+    `screen.WelcomeCapital.draw()`)
+
+  val g17 = merge2ClassesAnd2Methods(g16,
+    "InfoScreen",
+    `screen.InfoStar`,
+    `screen.InfoCapital`,
+    `screen.InfoStar.draw()`,
+    `screen.InfoCapital.draw()`)
+
+  def gFinal = g17
 
 }
 

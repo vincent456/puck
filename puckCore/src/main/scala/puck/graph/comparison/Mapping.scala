@@ -42,7 +42,7 @@ object Mapping {
   def nameIndex(g : DependencyGraph) : Map[String, NodeId] = {
     import ShowDG._
    // g.nodesId map ( id => ((g, id).shows(sigFullName), id) ) toMap
-    (g.nodesId map ( id => ((g, id).shows(sigFullName), id) )).foldLeft(Map[String, NodeId]()){
+    (g.nodesId map ( id => ((g, id).shows(desambiguatedFullName), id) )).foldLeft(Map[String, NodeId]()){
       case (m, (k,id)) =>
         if(m contains k) {
           val id0 = m(k)

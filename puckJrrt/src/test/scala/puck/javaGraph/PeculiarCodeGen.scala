@@ -86,7 +86,13 @@ class PeculiarCodeGen extends AcceptanceSpec {
     }
 
     scenario("overloading with variadic method") {
-      makeTest(s"${Settings.testExamplesPath}/graphBuilding/variadicMethod/A.java")
+      makeTest(
+        """package p;
+          |
+          |class A {
+          |    void m(double d){ }
+          |    void m(double... d){ }
+          |}""")
     }
 
     scenario("wild card usage") {

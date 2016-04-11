@@ -124,6 +124,21 @@ object DependencyGraph {
 
   }
 
+    def findElementByName(g : DependencyGraph, fn : String) : Option[ConcreteNode] = {
+      val splitted = fn split s"\\${DependencyGraph.scopeSeparator}"
+
+      import ShowDG._
+      def aux(names : List[String], current : Option[NodeId]) : Option[ConcreteNode] =
+        (names, current) match {
+        case (_, None) => None
+        case (Nil, Some(id)) => Some(g getConcreteNode id)
+        case (hd :: tl, Some(id)) => aux(tl,
+          g content id find ( cid => (g, g.getNode(cid)).shows(desambiguatedLocalName) == hd))
+        }
+
+      aux(splitted.toList, Some(rootId))
+    }
+
 }
 
 
@@ -164,6 +179,8 @@ class DependencyGraph
   private [graph] def addConcreteNode(n : ConcreteNode) : DependencyGraph =
      newGraph(nodesIndex = nodesIndex.addConcreteNode(n),
               recording = recording.addConcreteNode(n))
+
+
 
   def addConcreteNode
   ( localName : String,
@@ -551,6 +568,7 @@ class DependencyGraph
     else
       DependencyGraph.unrootedStringId +: path ).mkString(DependencyGraph.scopeSeparator)
   }
+
 
 
   def directSuperTypes(sub: NodeId) : Set[NodeId] = edges.superTypes getFlat sub

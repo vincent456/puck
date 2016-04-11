@@ -106,7 +106,21 @@ object ShowDG extends ShowConstraints{
       case _ => n.name(dg)
     }
 
-  def sigFullName : CordBuilder[NodeId] =  (g, n) => {
+
+  def desambiguatedLocalName : CordBuilder[DGNode] =  (g, n) => {
+    n.kind.kindType match {
+      case StaticValueDecl
+           | InstanceValueDecl
+           | TypeConstructor =>
+        g.structuredType(n.id) match {
+          case Some(Arrow(in, _)) =>
+            n.name + typeCord(g, in)
+          case _ => n.name
+        }
+      case _ =>  n.name
+    }
+  }
+  def desambiguatedFullName : CordBuilder[NodeId] = (g, n) => {
     val ss = DependencyGraph.scopeSeparator
     def aux(nid: NodeId, accu: String): Cord = {
       val n = g.getNode(nid)
@@ -116,18 +130,7 @@ object ShowDG extends ShowConstraints{
           else Cord(accu.substring(1))
         case None => Cord(DependencyGraph.unrootedStringId, ss, n.name, accu)
         case Some(pid) =>
-          n.kind.kindType match {
-            case StaticValueDecl
-            | InstanceValueDecl
-            | TypeConstructor =>
-              g.structuredType(n.id) match {
-                case Some(Arrow(in, _)) =>
-                  aux(pid, ss + n.name + typeCord(g, in) + accu)
-                case _ =>
-                  aux(pid, ss + n.name + accu)
-              }
-            case _ => aux(pid, ss + n.name + accu)
-          }
+          aux(pid, ss + desambiguatedLocalName(g, n) + accu)
       }
     }
     aux(n, "")
@@ -136,7 +139,6 @@ object ShowDG extends ShowConstraints{
 
   def fullNameEdgeCord : CordBuilder[DGEdge] =  (g, e) =>
     Cord(s"${e.kind}(${e.source} - ${g.fullName(e.source)}, ${e.target} - ${g.fullName(e.target)})")
-
 
 
   implicit def edgeCord : CordBuilder[DGEdge] =  (dg, e) =>
