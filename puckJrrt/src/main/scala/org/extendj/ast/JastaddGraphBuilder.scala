@@ -144,7 +144,7 @@ class JastaddGraphBuilder(val program : Program)
     }
   }
 
-  import scala.collection.JavaConversions.asScalaBuffer
+  import scala.collection.JavaConversions._
   def addParams(decl : NodeId, params : java.util.ArrayList[Integer]) : Unit =
     addParams(decl, params.toList.map(_.toInt))
 
@@ -281,6 +281,20 @@ class JastaddGraphBuilder(val program : Program)
 
   def buildDG(pta : ParTypeAccess, containerId : NodeId) : Unit = {
     getType(pta).ids.foreach(id => addEdge(Uses(containerId, id)))
+  }
+
+  def buildDG(containerId : NodeId, stmt : VarDeclStmt) : Unit = {
+    val t = getType(stmt.getTypeAccess)
+    val astType = stmt.getTypeAccess.`type`()
+    t.ids.foreach (id => addEdge(Uses(containerId, id)))
+    stmt.getDeclarators filter(_.hasInit) foreach {
+      vd =>
+          vd.getInit.buildDG(this, containerId)
+          vd.getInit match {
+            case a: Access => constraintTypeUses(containerId, astType, a)
+            case _ => ()
+          }
+    }
   }
 
 //  val register : NodeId => ASTNode[_] =>  Unit = n => {

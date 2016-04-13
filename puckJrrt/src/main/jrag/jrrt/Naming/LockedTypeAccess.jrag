@@ -134,6 +134,8 @@ aspect LockedTypeAccess {
 	public ASTNode TypeAccess.lock(TypeDecl decl) {
 		mandatoryAssert(decl != null && !decl.isUnknown());
 		setTargetType(decl);
+		if(parent != null)
+			replace(this).with(this);
 		return this;
 	}
 	
@@ -301,7 +303,8 @@ aspect LockedTypeAccess {
 		SimpleSet s = lookupName(pkg);
 		if(!s.isEmpty() && !s.isSingleton(lookupPackage(pkg)) ||
 				!lookupType(target.packageName(), target.name()).equals(target))
-			throw new RefactoringException("cannot access toplevel type");
+			throw new RefactoringException("cannot access toplevel type "+ target.fullName() + " in "
+		+ this.compilationUnit().pathName() + " line " + this.location());
 		if (qual!=null) {
 			this.flushCache();
 			return (Access) replace(parentDot()).with(this);

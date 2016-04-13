@@ -100,7 +100,7 @@ aspect ReplaceTypeAccess {
     interface Binder {}
 
     VarDeclStmt implements Binder;
-    Declarator implements Binder;
+    FieldDecl implements Binder;
 
     public void Binder.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
         if(this.getTypeAccess().type().equals(oldUsed)){

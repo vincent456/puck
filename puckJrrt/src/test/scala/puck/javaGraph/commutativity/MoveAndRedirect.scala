@@ -60,9 +60,9 @@ class MoveAndRedirect
         for{
           g0 <- Move.typeMember(g, List(factoryMethod), factoryClass, None)
 
-          gAndUses <- Redirection.redirect(g0, Uses(callerDef, ctor),
+          g1 <- Redirection.redirectUsesAndPropagate(g0, Uses(callerDef, ctor),
             AccessAbstraction(factoryMethod, DelegationAbstraction))
-        } yield gAndUses._1
+        } yield g1
 
         val g2 = ltg.right
 
@@ -87,11 +87,11 @@ class MoveAndRedirect
 
         val ltg : LoggedTG =
           for{
-            gAndUses <- Redirection.redirect(g, Uses(callerDef, ctor),
+            g0 <- Redirection.redirectUsesAndPropagate(g, Uses(callerDef, ctor),
               AccessAbstraction(factoryMethod, DelegationAbstraction))
 
-            g0 <- Move.typeMember(gAndUses._1, List(factoryMethod), factoryClass, None)
-          } yield g0
+            g1 <- Move.typeMember(g0, List(factoryMethod), factoryClass, None)
+          } yield g1
 
         val g2 = ltg.right
 

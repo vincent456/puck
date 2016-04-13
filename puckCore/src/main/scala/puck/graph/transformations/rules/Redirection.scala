@@ -84,7 +84,7 @@ object Redirection {
     else LoggedSuccess(log, absSet.head)
   }
 
- def redirect
+ private [rules] def redirect
   (g : DependencyGraph,
    oldUse : Uses,
    newUsed : Abstraction) : LoggedTry[(DependencyGraph, List[Uses])] =

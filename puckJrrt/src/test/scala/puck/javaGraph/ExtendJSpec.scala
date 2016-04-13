@@ -26,6 +26,8 @@
 
 package puck.javaGraph
 
+import java.io.File
+
 import org.extendj.ast.TypedKindDeclHolder
 import puck.AcceptanceSpec
 
@@ -101,4 +103,17 @@ class ExtendJSpec  extends AcceptanceSpec {
       i.childTypes().size() shouldBe (3)
     }
   }
+
+ /* scenario("testing lock and caches"){
+    new ScenarioFactory(
+      """package p;
+        | class A { void ma(){
+        |       A a = new A();
+        |   }
+        | }
+      """
+    ){
+      applyChanges(graph, new File("/tmp/puckOut/"))
+    }
+  }*/
 }

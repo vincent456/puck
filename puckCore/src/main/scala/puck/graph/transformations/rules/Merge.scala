@@ -58,52 +58,48 @@ class Merge
 
 
 
-  def mergeTypeUsesDependencies
+
+  def mergeTypeBindings
   ( g0 : DependencyGraph,
     consumedId : NodeId,
     consumerId : NodeId
     ) : DependencyGraph = {
     val g = g0.comment(" Merge TypeUses Dependencies")
-    val g1 = g.kindType(consumedId) match {
-      case InstanceValueDecl
-         | StaticValueDecl =>
+
+    def changeTypeMemberUseForTypeUses(g : DependencyGraph,
+                                       oldTMUse : NodeIdP, typeUses : Set[NodeIdP],
+                                       newTMUse : NodeIdP) : DependencyGraph =
+      typeUses.foldLeft(g)(_.changeTypeMemberUseOfTypeUse(oldTMUse, newTMUse, _))
+
+    def changeTypeUseForTypeMemberUses
+    ( g : DependencyGraph,
+      tu2tmus : (NodeIdP, Set[NodeIdP])) : DependencyGraph = {
+      val (tUse, tmUses) = tu2tmus
+      tUse match {
+        case (`consumedId`, `consumedId`) =>
+          tmUses.foldLeft(g)(_.changeTypeUseOfTypeMemberUse(tUse, (consumerId, consumerId), _))
+        case (user, `consumedId`) =>
+          tmUses.foldLeft(g)(_.changeTypeUseOfTypeMemberUse(tUse, (user, consumerId), _))
+        case _ => g
+      }
+    }
+
+    g.kindType(consumedId) match {
+      case InstanceValueDecl =>
         g.typeMemberUses2typeUses.foldLeft(g) {
           case (g0, (tmUses, typeUses)) if tmUses.used == consumedId =>
-            typeUses.foldLeft(g0) { case (g00, tUse) =>
-              g00.changeTypeMemberUseOfTypeUse(tmUses, (tmUses.user, consumerId), tUse)
-            }
+            changeTypeMemberUseForTypeUses(g0, tmUses, typeUses, (tmUses.user, consumerId))
           case (g0, _) => g0
         }
 
-      case TypeDecl =>
-        g.typeUses2typeMemberUses.foldLeft(g) {
-          case (g0, (tUses, typeMemberUses)) if tUses.used == consumedId =>
-            typeMemberUses.foldLeft(g0) { case (g00, tmUse) =>
-              g00.changeTypeUseOfTypeMemberUse(tUses, (tUses.user, consumerId), tmUse)
-            }
-          case (g0, _) => g0
-        }
+      case TypeDecl => g.typeUses2typeMemberUses.foldLeft(g)(changeTypeUseForTypeMemberUses)
+
       case NameSpace // no type dependencies involved when merging namespaces
-        | TypeConstructor => g
+        | TypeConstructor
+        | StaticValueDecl => g
+
       case _ => ???
     }
-
-    val g2 = g.typeMemberUses2typeUses.foldLeft(g1) {
-      case (g0, (tmUses, typeUses)) if tmUses.user == consumedId =>
-        typeUses.foldLeft(g0) { case (g00, tUse) =>
-          g00.changeTypeMemberUseOfTypeUse(tmUses, (consumerId, tmUses.used), tUse)
-        }
-      case (g0, _) => g0
-    }
-
-    g.typeUses2typeMemberUses.foldLeft(g2) {
-      case (g0, (tUses, typeMemberUses)) if tUses.user == consumedId =>
-        typeMemberUses.foldLeft(g0) { case (g00, tmUse) =>
-          g00.changeTypeUseOfTypeMemberUse(tUses, (consumerId, tUses.used), tmUse)
-        }
-      case (g0, _) => g0
-    }
-
   }
 
   def mergeChildrenOfTypeDecl
@@ -145,7 +141,7 @@ class Merge
     consumedId : NodeId,
     consumerId : NodeId
     ) : LoggedTG = {
-    val g = graph.comment(s"Merge.mergeInto(g, ${(graph, consumedId).shows}, ${(graph, consumerId).shows})")
+    val g = graph.comment(s"Merging ${(graph, consumedId).shows} into ${(graph, consumerId).shows}")
     val consumed = g.getConcreteNode(consumedId)
     consumed.kind.kindType match {
       case InstanceValueDecl
@@ -157,7 +153,6 @@ class Merge
               case None => g.parametersOf(consumedId)
               case Some(d) => d :: g.parametersOf(consumedId)
             }
-//            val content = g.content(consumedId)
             content.foldLoggedEither(g.comment("Delete consumed def")) {
               (g, cid) => removeConcreteNode(g, g.getConcreteNode(cid))
             }
@@ -184,12 +179,9 @@ class Merge
     consumedId : NodeId,
     consumerId : NodeId)
   ( mergeChildren : MergeIntoFun ) : LoggedTG = {
-    val log = s"Merging ${g.getNode(consumedId)} into ${g.getNode(consumerId)}"
-
-    val lg = g logComment log
 
     for {
-      g1 <- g.usersOfExcludingTypeUse(consumedId).foldLoggedEither[PuckError, DependencyGraph](lg){
+      g1 <- g.usersOfExcludingTypeUse(consumedId).foldLoggedEither[PuckError, DependencyGraph](g){
         (g0, userId) =>
           if(userId == consumedId) LoggedSuccess(g0.removeEdge(Uses(userId, userId)))
           else
@@ -220,7 +212,7 @@ class Merge
           }
       }
 
-      g5 = mergeTypeUsesDependencies(g4, consumedId, consumerId)
+      g5 = mergeTypeBindings(g4, consumedId, consumerId)
 
       g6 <- g5.abstractions(consumedId).foldLoggedEither(g5){
         (g0, abs) =>
@@ -253,7 +245,7 @@ class Merge
     }
   }
 
-  def removeTypeDependenciesInvolving(g : DependencyGraph, n : ConcreteNode) : DependencyGraph = {
+  def removeBindingsInvolving(g : DependencyGraph, n : ConcreteNode) : DependencyGraph = {
     val g1 = n.kind.kindType match {
       case TypeDecl/*
         | InstanceTypeDecl */=>
@@ -274,7 +266,7 @@ class Merge
             typeMemberUses.foldLeft(g0) { _.removeBinding(tUses, _)}
           case (g0, _) => g0
         }
-      case UnknownKindType => error("removeTypeDependenciesInvolving UnknownKindType")
+      case UnknownKindType => error("removeBindingsInvolving UnknownKindType")
 
     }
    /* val g2 =*/ n.kind.kindType match {
@@ -325,7 +317,7 @@ class Merge
             //getUsesEdge needed to recover accessKind
             g.removeEdge(g.getUsesEdge(n.id, usedId).get)
         }
-        val g03 = removeTypeDependenciesInvolving(g02.setType(n.id, None), n)
+        val g03 = removeBindingsInvolving(g02.setType(n.id, None), n)
         LoggedSuccess(g03.removeConcreteNode(n))
       }
 

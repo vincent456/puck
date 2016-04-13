@@ -165,16 +165,16 @@ class RecordingSerializationSpec extends AcceptanceSpec {
       import bridgeScenario._
       Recording.write(tmpFile, fullName2id, gFinal)
 
-      val bridge2 = BridgeScenario()
+      val bridge = BridgeScenario()
 
-      val r2 = Recording.load(tmpFile, bridge2.fullName2id)
+      val r2 = Recording.load(tmpFile, bridge.fullName2id)
 
       val gFinalCopy = r2.redo(g0)
 
-      bridge2.gFinal.nodes.toSet should be (gFinalCopy.nodes.toSet)
-      bridge2.gFinal.containsList.toSet should be (gFinalCopy.containsList.toSet)
-      bridge2.gFinal.usesList.toSet should be (gFinalCopy.usesList.toSet)
-      bridge2.gFinal.isaList.toSet should be (gFinalCopy.isaList.toSet)
+      bridge.gFinal.nodes.toSet should be (gFinalCopy.nodes.toSet)
+      bridge.gFinal.containsList.toSet should be (gFinalCopy.containsList.toSet)
+      bridge.gFinal.usesList.toSet should be (gFinalCopy.usesList.toSet)
+      bridge.gFinal.isaList.toSet should be (gFinalCopy.isaList.toSet)
     }
   }
 }

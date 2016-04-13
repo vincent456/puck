@@ -169,13 +169,13 @@ aspect LockedMethodAccess {
 					return (Access) replace(parent).with(newAcc);
 				}
 			}
-		throw new RefactoringException("cannot access method "+target.name() +" in " +
+		throw new RefactoringException("cannot access method "+target.fullName() +" in " +
 				compilationUnit().pathName() + " line " + location());
 		}
 		this.flushTreeCache();
 		Access res = acc.eliminate(this, qual, enclosingType(), isMonomorphicCall, inStaticContext(), (List<Expr>) getArgs().fullCopyAndDetach());
 		if(res == null)
-			throw new RefactoringException("cannot access method "+target.name());
+			throw new RefactoringException("cannot access method "+target.fullName());
 		return res;
 	}
 	

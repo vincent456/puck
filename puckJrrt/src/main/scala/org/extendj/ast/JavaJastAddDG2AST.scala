@@ -202,7 +202,6 @@ class JavaJastAddDG2AST
 
   implicit val p = program
 
-
   implicit val defaultVerbosity = (PuckLog.AG2AST, PuckLog.Info)
 
   def safeGet
@@ -252,6 +251,7 @@ class JavaJastAddDG2AST
 
     logger.writeln("change applied : ")
     logger.writeln(program.prettyPrint())
+
     logger.writeln("emptying caches")
     program.flushTreeCache()
     program.flushLibraryTypesTreeCache()
