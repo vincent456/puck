@@ -232,26 +232,36 @@ case class EdgeMap
     copy(typeUsesSuperTypeConstraints = typeUsesSuperTypeConstraints - (typeUse1, typeUse2),
       typeUsesSubTypeConstraints = typeUsesSubTypeConstraints - (typeUse2, typeUse1))
 
+  def redirectTypeUse(typed : NodeId, oldTypeUsed : NodeId, newTypeUsed : NodeId) : EdgeMap =
+     types get typed map { t =>
+       val newType = t.changeNamedType(oldTypeUsed, newTypeUsed)
+       this.copy(types = types + (typed -> newType))
+     } getOrElse this
 
-  def setType(id : NodeId, st : Option[Type]) : EdgeMap =
-    st match {
-      case None =>
-        types get id match {
-          case None => this
-          case Some(oldType) =>
-            val newTypedBy = oldType.ids.foldLeft(typedBy){
-            (tbm, tId) => tbm - (tId, id)
-          }
-          copy(types = types - id,
-            typedBy = newTypedBy)
-        }
-      case Some(t) =>
-        val newTypedBy = t.ids.foldLeft(typedBy){
-          (tbm, tId) => tbm + (tId, id)
-        }
-        copy(types = types + (id -> t),
-        typedBy = newTypedBy)
-    }
+
+
+  def setType(typed : NodeId, t : Type) : EdgeMap = this.copy (types = types + (typed -> t))
+  def removeType(typed: NodeId) : EdgeMap = this.copy(types = types - typed)
+
+//  def setType(id : NodeId, st : Option[Type]) : EdgeMap =
+//    st match {
+//      case None =>
+//        types get id match {
+//          case None => this
+//          case Some(oldType) =>
+//            val newTypedBy = oldType.ids.foldLeft(typedBy){
+//            (tbm, tId) => tbm - (tId, id)
+//          }
+//          copy(types = types - id,
+//            typedBy = newTypedBy)
+//        }
+//      case Some(t) =>
+//        val newTypedBy = t.ids.foldLeft(typedBy){
+//          (tbm, tId) => tbm + (tId, id)
+//        }
+//        copy(types = types + (id -> t),
+//        typedBy = newTypedBy)
+//    }
 
 
   def typeUsesOf(typeMemberUse : Uses) : Set[Uses] =

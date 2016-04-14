@@ -35,10 +35,7 @@ object Operation {
     case Edge(e) => Seq(e.source, e.target)
     case RedirectionOp(e, exty) => Seq(e.source, e.target, exty.node)
     case RenameOp(id, _, _) => Seq(id)
-    case TypeChange(id, oldt, newt) =>
-      val ot = oldt.map(_.ids).getOrElse(Seq())
-      val nt = newt.map(_.ids).getOrElse(Seq())
-      id +:ot ++: nt
+    case AType(id, t) => id +: t.ids
     case AbstractionOp(id, abs) => id :: abs.nodes
     case ChangeTypeBindingOp(((n1, n2), (n3, n4)), ext) =>
       Seq(ext.edge._1, ext.edge._2, n1, n2, n3, n4)
@@ -137,15 +134,11 @@ extends Operation {
 }
 
 
-case class TypeChange
-(typed : NodeId,
- oldType: Option[Type],
- newType : Option[Type])
-  extends Operation{
+case class AType(typed : NodeId, t : Type) extends AddRmOperation {
 
   override def execute(g: DependencyGraph, op: Direction) = op match {
-    case Regular => g.setType(typed, newType)
-    case Reverse => g.setType(typed, oldType)
+    case Regular => g.addType(typed, t)
+    case Reverse => g.rmType(typed)
   }
 }
 

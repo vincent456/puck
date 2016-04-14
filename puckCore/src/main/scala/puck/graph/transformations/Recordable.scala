@@ -86,13 +86,13 @@ object Transformation {
       }
   }
 
-  object ChangeType {
-    def unapply(t : Transformation) : Option[(NodeId, Option[Type], Option[Type])] =
-      t.operation match {
-        case TypeChange(typed, oldT, newT) => Some((typed, oldT, newT))
-        case _ => None
-      }
-  }
+//  object AType {
+//    def unapply(t : Transformation) : Option[(NodeId, Type)] =
+//      t.operation match {
+//        case SetType(typed, typ) => Some((typed, typ))
+//        case _ => None
+//      }
+//  }
 
   object Rename {
     def unapply(t : Transformation) : Option[(NodeId, String)] =

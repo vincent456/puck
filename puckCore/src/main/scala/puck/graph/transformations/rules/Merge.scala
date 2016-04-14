@@ -162,8 +162,8 @@ class Merge
         val g1 = g.typedBy(consumedId).foldLeft(g){
           (g0, t) =>
             g0.getConcreteNode(t).kind.kindType match {
-              case TypeConstructor => g0.setType(t, None)
-              case _ => g0.changeType(t, consumedId, consumerId)
+              case TypeConstructor => g0.rmType(t)
+              case _ => g0.changeTarget(Uses(t, consumedId), consumerId)
             }
 
         }
@@ -241,7 +241,7 @@ class Merge
         case Some(cid) => g7.removeContains(cid, consumedId)
         case None => g7
       }
-      (g8 removeNode consumedId)._2.setType(consumedId, None)
+      (g8 removeNode consumedId)._2.rmType(consumedId)
     }
   }
 
@@ -317,7 +317,7 @@ class Merge
             //getUsesEdge needed to recover accessKind
             g.removeEdge(g.getUsesEdge(n.id, usedId).get)
         }
-        val g03 = removeBindingsInvolving(g02.setType(n.id, None), n)
+        val g03 = removeBindingsInvolving(g02.rmType(n.id), n)
         LoggedSuccess(g03.removeConcreteNode(n))
       }
 

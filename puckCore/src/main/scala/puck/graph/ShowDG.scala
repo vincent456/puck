@@ -155,6 +155,14 @@ object ShowDG extends ShowConstraints{
       case CNode(n) => nodeCord(dg, n)
       case VNode(n) =>nodeCord(dg, n)
       case Edge(edge) => edgeCord(dg, edge)
+      case RedirectionOp(edge, Target(newTgt))
+        if dg.kindType(edge.target) == TypeDecl =>
+
+        val typed = nodeIdCord(dg, edge.source)
+        val oldType = nodeIdCord(dg, edge.target)
+        val newType =  nodeIdCord(dg, newTgt)
+        Cord("TypeChange(", typed ,",", oldType, ",", newType ,")")
+
       case RedirectionOp(edge, exty) =>
         val ecord = edgeCord(dg, edge)
         val xcord = extremityCord(dg, exty)
@@ -163,11 +171,10 @@ object ShowDG extends ShowConstraints{
         Cord(tgt.productPrefix, "(Uses(",  nodeIdCord(dg, n1), ", ", nodeIdCord(dg,n2),
           "),Uses(", nodeIdCord(dg, n3), ", ", nodeIdCord(dg,n4) ,"))")
 
-      case TypeChange(typed, soldT, snewT) =>
+      case AType(typed, t) =>
         val typedCord = nodeIdCord(dg, typed)
-        val soldTcord : Cord = soldT map (typeCord(dg,_)) getOrElse "NoType"
-        val snewTcord : Cord = snewT map (typeCord(dg,_)) getOrElse "NoType"
-        Cord("TypeChange(", typedCord, ", ", soldTcord, ", " ,snewTcord ,")")
+        val tcord : Cord = typeCord(dg, t)
+        Cord("SetType(", typedCord, ", ", tcord,")")
 
       case ChangeTypeBindingOp((tUse, tmUse), exty) =>
         val tUseCord = nodeIdPCord(dg, tUse)

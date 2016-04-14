@@ -54,7 +54,7 @@ object JavaIntro extends Intro {
   (graph: DependencyGraph,
    localName: String,
    kind: NodeKind,
-   typ: Option[Type],
+   typ: Type,
    mutable: Mutability
     ): (ConcreteNode, ConcreteNode, DependencyGraph) = {
 
@@ -62,7 +62,7 @@ object JavaIntro extends Intro {
     val (defNode, g2) = g.addConcreteNode(DependencyGraph.definitionName, Definition)
 
     (cn, defNode,
-      g2.setType(cn.id, typ)
+      g2.addType(cn.id, typ)
       .addEdge(Contains(cn.id, defNode.id)))
   }
 
@@ -72,7 +72,9 @@ object JavaIntro extends Intro {
     typeNode : NodeId) : LoggedTry[(ConcreteNode, DependencyGraph)] = {
 
     val (cn, _, g2)=
-      intro.nodeWithDef(g, g.getConcreteNode(typeNode).name, Constructor, Some(NamedType(typeNode)), mutable = true)
+      intro.nodeWithDef(g,
+        g.getConcreteNode(typeNode).name, Constructor,
+        NamedType(typeNode), mutable = true)
     LoggedSuccess((cn, g2.addContains(typeNode, cn.id)))
   }
 }

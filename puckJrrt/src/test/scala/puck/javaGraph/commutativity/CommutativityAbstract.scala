@@ -46,7 +46,15 @@ class CommutativityAbstract extends AcceptanceSpec {
 
     scenario("simple case") {
 
-      val _ = new ScenarioFactory(s"${noSuperTypePath}SimpleCase.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |class A {
+          |
+          |    private int f;
+          |    public void m(){}
+          |
+          |}"""
+      ) {
 
         val packageP = fullName2id("p")
         val classA = fullName2id("p.A")

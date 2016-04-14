@@ -59,7 +59,7 @@ trait GraphBuilder {
   }
 
   def setType(id : NodeIdT, typ : Type): Unit ={
-    g = g.setType(id, Some(typ))
+    g = g.addType(id, typ)
   }
 
   def addContains(containerId : NodeIdT, contentId : NodeIdT): Unit ={

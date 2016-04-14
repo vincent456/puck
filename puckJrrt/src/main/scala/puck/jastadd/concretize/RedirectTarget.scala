@@ -27,161 +27,183 @@
 package puck.jastadd
 package concretize
 
-import org.extendj.ast._
-import puck.graph._
-import puck.graph.transformations.{Target, RedirectionOp, Regular, Transformation}
+import org.extendj.ast.{TypedKindDeclHolder, _}
+import puck.graph.{TypeDecl => PTypeDecl, _}
+import puck.graph.transformations.{RedirectionOp, Regular, Target, Transformation}
 import puck.javaGraph._
 import puck.util.PuckLogger
 import ShowDG._
 
 object RedirectTarget {
 
-  def setType
-  ( graph: DependencyGraph,
-    reenactor : DependencyGraph,
-    id2declMap: NodeId => ASTNodeLink,
-    typeUser : NodeId, typeId: NodeId)
-  (implicit logger : PuckLogger) : Unit = {
+  def changeType
+  ( typeUser : NodeId,
+    oldTypeId : NodeId,
+    typeId: NodeId)
+  ( implicit logger : PuckLogger,
+     resultAndReenactor : (DependencyGraph, DependencyGraph),
+     id2declMap: NodeId => ASTNodeLink ) : Unit = {
+
+    val (_, reenactor) = resultAndReenactor
+
     logger.writeln(s"setting type of ${(reenactor, typeUser).shows} " +
       s"to ${(reenactor, typeId).shows}")
-    (id2declMap(typeUser), id2declMap(typeId)) match {
-      case (MethodDeclHolder(mdecl), tk: TypedKindDeclHolder) =>
-        mdecl.setTypeAccess(tk.decl.createLockedAccess())
-      case (ParameterDeclHolder(fdecl), tk: TypedKindDeclHolder) =>
-        fdecl.setTypeAccess(tk.decl.createLockedAccess())
-      case (FieldDeclHolder(fdecl, _), tk: TypedKindDeclHolder) =>
-        fdecl.setTypeAccess(tk.decl.createLockedAccess())
+
+    val TypedKindDeclHolder(tdecl) = id2declMap(typeId)
+    val TypedKindDeclHolder(oldTdecl) = id2declMap(oldTypeId)
+
+    id2declMap(typeUser) match {
+//      case MethodDeclHolder(mdecl) =>
+//        mdecl.setTypeAccess(tdecl.createLockedAccess())
+//      case ParameterDeclHolder(fdecl) =>
+//        fdecl.setTypeAccess(tdecl.createLockedAccess())
+//      case FieldDeclHolder(fdecl, _) =>
+//        fdecl.setTypeAccess(tdecl.createLockedAccess())
+      case BlockHolder(block) =>
+
+        val MethodDeclHolder(mdecl) = id2declMap(reenactor container_! typeUser)
+         //TODO find why !(block eq mdecl.getBlock)
+        //logger.writeln(block eq mdecl.getBlock)
+        mdecl.getBlock.replaceTypeAccess(oldTdecl, tdecl)
+
+      case holder : HasNode =>  holder.node.replaceTypeAccess(oldTdecl, tdecl)
+
+      case k => throw new JavaAGError(k + " as user of TypeKind, redirection unhandled !")
     }
   }
-    def apply
-  ( graph: DependencyGraph,
-    reenactor : DependencyGraph,
-    id2declMap: NodeId => ASTNodeLink,
-    e: DGEdge, newTargetId: NodeId)
-  ( implicit logger : PuckLogger) : Unit =  {
+
+  def redirectUse
+  ( e: DGEdge,
+    target : DGNode,
+    newTarget: DGNode)
+  ( implicit logger : PuckLogger,
+    resultAndReenactor : (DependencyGraph, DependencyGraph),
+    id2declMap: NodeId => ASTNodeLink ) : Unit = {
+    val (resultGraph, reenactor) = resultAndReenactor
+    val source = reenactor.getNode(e.source)
+    val sourceInAST = id2declMap(source.id)
+
+    (id2declMap(target.id), id2declMap(newTarget.id)) match {
+      case (oldk: ClassDeclHolder, newk: FieldDeclHolder) =>
+        // assume this a case replace this.m by delegate.m
+        logger.writeln()
+        logger.writeln()
+        logger.writeln("*** REPLACE THIS QUALIFIER")
+        val t = Transformation(Regular, RedirectionOp(e, Target(newTarget.id)))
+        logger.writeln((reenactor, t).shows)
+        //TODO refine
+        (sourceInAST, reenactor styp newTarget.id) match {
+          case (bdh : HasBodyDecl, Some(NamedType(fieldType))) =>
+            logger.write("*** typeUse ")
+            logger.writeln((reenactor, Uses(newTarget.id, fieldType)).shows)
+            logger.writeln("type member uses " + reenactor.typeMemberUsesOf(newTarget.id, fieldType))
+            logger.writeln()
+            logger.writeln()
+
+            reenactor.typeMemberUsesOf(newTarget.id, fieldType).foreach{
+              methodUse =>
+                id2declMap(methodUse.used) match {
+                  case MethodDeclHolder(mdecl)=>
+                    val fieldAccess = newk.decl.getDeclarator(newk.declaratorIndex).createLockedAccess()
+                    bdh.decl.replaceThisQualifierFor(mdecl, fieldAccess)
+                  case _ => throw  new JavaAGError("unhandled case !")
+                }
+            }
+
+          case _ =>
+            val t = Transformation(Regular, RedirectionOp(e, Target(newTarget.id)))
+            throw new JavaAGError((reenactor, t).shows + " unhandled")
+        }
+
+
+      case (oldF : FieldDeclHolder, newF : FieldDeclHolder) =>
+        sourceInAST match {
+          case defHolder : DefHolder =>
+            defHolder.node.replaceFieldAccess(oldF.declarator, newF.declarator.createLockedAccess())
+          case k =>
+            throw new JavaAGError(k + " as user of Field, redirection unhandled !")
+        }
+
+
+      case (oldk: MethodDeclHolder, newk: MethodDeclHolder) =>
+        sourceInAST match {
+          case defHolder : DefHolder =>
+            //TODO find why !(block eq mdecl.getBlock)
+            //logger.writeln(block eq mdecl.getBlock)
+
+            val CallableDeclHolder(cdecl) = id2declMap(reenactor.container_!(e.source))
+            cdecl.replaceMethodCall(oldk.decl, newk.decl)
+
+          case k =>
+            throw new JavaAGError(k + " as user of Method, redirection unhandled !")
+        }
+
+      case (ConstructorDeclHolder(oldc), ConstructorDeclHolder(newc)) =>
+        sourceInAST match {
+          case BlockHolder(block) =>
+            val MethodDeclHolder(mdecl) = id2declMap(reenactor.container_!(e.source))
+
+            //TODO find why !(block eq mdecl.getBlock)
+            mdecl.getBlock.replaceConstructorCall(oldc, newc)
+
+          case defHolder : DefHolder =>
+            defHolder.node.replaceConstructorCall(oldc, newc)
+
+          case src =>
+            throw new JavaAGError(s"constructor change, ${src.getClass} as uses source unhandled")
+        }
+
+      case (ConstructorDeclHolder(cdecl), methCtor: MethodDeclHolder) =>
+        sourceInAST match {
+          case ConstructorDeclHolder(_) =>
+            throw new JavaAGError("redirection to constructor method within " +
+              "constructor no implemented (see methodDecl)")
+          case dh: DefHolder => dh.node.replaceByConstructorMethodCall(cdecl, methCtor.decl)
+
+          case k =>
+            throw new JavaAGError(k + " as user of MethodKind, redirection unhandled !")
+        }
+
+
+      case _ =>
+        throw new JavaAGError("redirecting TARGET of %s to %s : application failure !".format(e, newTarget))
+    }
+  }
+
+
+  def apply
+  ( e: DGEdge, newTargetId: NodeId)
+  ( implicit logger : PuckLogger,
+    resultAndReenactor : (DependencyGraph, DependencyGraph),
+    id2declMap: NodeId => ASTNodeLink ) : Unit = {
+    val (resultGraph, reenactor) = resultAndReenactor
+
     logger.writeln(s"redirecting ${(reenactor, e).shows} " +
       s"target to ${(reenactor, newTargetId).shows}")
     if(e.target != newTargetId) {
-      val target = reenactor.getNode(e.target)
-      val source = reenactor.getNode(e.source)
-      val newTarget = reenactor.getNode(newTargetId)
 
+      if(e.kind == Isa) {
+        (id2declMap(e.source),
+          id2declMap(e.target), id2declMap(newTargetId)) match {
+          case (ClassDeclHolder(srcDecl),
+               InterfaceDeclHolder(odlDecl), InterfaceDeclHolder(newDecl)) =>
+            srcDecl.replaceImplements(odlDecl.createLockedAccess(), newDecl.createLockedAccess())
+          case _ =>
+            throw new JavaAGError("redirecting TARGET of %s to %s : application failure !".format(e, reenactor.getNode(newTargetId)))
+        }
+      } else {
+        val target = reenactor.getNode(e.target)
+        val newTarget = reenactor.getNode(newTargetId)
 
-      val sourceInAST = id2declMap(source.id)
+        if (target.kind.kindType == PTypeDecl &&
+          newTarget.kind.kindType == PTypeDecl)
+          changeType(e.source, e.target, newTargetId)
+        else
+          redirectUse(e, target, newTarget)
 
-      (id2declMap(target.id), id2declMap(newTarget.id)) match {
-        case (InterfaceDeclHolder(odlDecl), InterfaceDeclHolder(newDecl))
-          if e.kind == Isa =>
-          sourceInAST match {
-            case ClassDeclHolder(srcDecl) =>
-              srcDecl.replaceImplements(odlDecl.createLockedAccess(), newDecl.createLockedAccess())
-            case _ => throw new JavaAGError("isa arc should only be between TypeKinds")
-          }
-
-        case (oldk: TypedKindDeclHolder, newk: TypedKindDeclHolder) =>
-           sourceInAST match {
-             case BlockHolder(block) =>
-               val MethodDeclHolder(mdecl) = id2declMap(reenactor.container_!(e.source))
-
-               //TODO find why !(block eq mdecl.getBlock)
-               //logger.writeln(block eq mdecl.getBlock)
-               mdecl.getBlock.replaceTypeAccess(oldk.decl, newk.decl)
-
-             case holder : HasNode =>
-               holder.node.replaceTypeAccess(oldk.decl, newk.decl)
-
-             case k => throw new JavaAGError(k + " as user of TypeKind, redirection unhandled !")
-          }
-
-
-
-        case (oldk: ClassDeclHolder, newk: FieldDeclHolder) =>
-          // assume this a case replace this.m by delegate.m
-          logger.writeln()
-          logger.writeln()
-          logger.writeln("*** REPLACE THIS QUALIFIER")
-          val t = Transformation(Regular, RedirectionOp(e, Target(newTargetId)))
-          logger.writeln((reenactor, t).shows)
-          //TODO refine
-          (sourceInAST, reenactor styp newTarget.id) match {
-            case (bdh : HasBodyDecl, Some(NamedType(fieldType))) =>
-              logger.write("*** typeUse ")
-              logger.writeln((reenactor, Uses(newTargetId, fieldType)).shows)
-              logger.writeln("type member uses " + reenactor.typeMemberUsesOf(newTargetId, fieldType))
-              logger.writeln()
-              logger.writeln()
-
-              reenactor.typeMemberUsesOf(newTargetId, fieldType).foreach{
-                methodUse =>
-                  id2declMap(methodUse.used) match {
-                    case MethodDeclHolder(mdecl)=>
-                      val fieldAccess = newk.decl.getDeclarator(newk.declaratorIndex).createLockedAccess()
-                      bdh.decl.replaceThisQualifierFor(mdecl, fieldAccess)
-                    case _ => throw  new JavaAGError("unhandled case !")
-                  }
-              }
-
-            case _ =>
-              val t = Transformation(Regular, RedirectionOp(e, Target(newTargetId)))
-              throw new JavaAGError((reenactor, t).shows + " unhandled")
-          }
-
-
-        case (oldF : FieldDeclHolder, newF : FieldDeclHolder) =>
-          sourceInAST match {
-            case defHolder : DefHolder =>
-              defHolder.node.replaceFieldAccess(oldF.declarator, newF.declarator.createLockedAccess())
-            case k =>
-              throw new JavaAGError(k + " as user of Field, redirection unhandled !")
-          }
-
-
-        case (oldk: MethodDeclHolder, newk: MethodDeclHolder) =>
-          sourceInAST match {
-            case defHolder : DefHolder =>
-              //TODO find why !(block eq mdecl.getBlock)
-              //logger.writeln(block eq mdecl.getBlock)
-
-              val CallableDeclHolder(cdecl) = id2declMap(reenactor.container_!(e.source))
-              cdecl.replaceMethodCall(oldk.decl, newk.decl)
-
-            case k =>
-              throw new JavaAGError(k + " as user of Method, redirection unhandled !")
-          }
-
-        case (ConstructorDeclHolder(oldc), ConstructorDeclHolder(newc)) =>
-          sourceInAST match {
-            case BlockHolder(block) =>
-              val MethodDeclHolder(mdecl) = id2declMap(reenactor.container_!(e.source))
-
-              //TODO find why !(block eq mdecl.getBlock)
-              mdecl.getBlock.replaceConstructorCall(oldc, newc)
-
-            case defHolder : DefHolder =>
-              defHolder.node.replaceConstructorCall(oldc, newc)
-
-            case src =>
-              throw new JavaAGError(s"constructor change, ${src.getClass} as uses source unhandled")
-          }
-
-        case (ConstructorDeclHolder(cdecl), methCtor: MethodDeclHolder) =>
-          sourceInAST match {
-            case ConstructorDeclHolder(_) =>
-              throw new JavaAGError("redirection to constructor method within " +
-                "constructor no implemented (see methodDecl)")
-            case dh: DefHolder => dh.node.replaceByConstructorMethodCall(cdecl, methCtor.decl)
-
-            case k =>
-              throw new JavaAGError(k + " as user of MethodKind, redirection unhandled !")
-          }
-
-
-        case _ =>
-          println("source = " + source)
-          println("target = " + target)
-          println("new target = " + newTarget)
-          throw new JavaAGError("redirecting TARGET of %s to %s : application failure !".format(e, newTarget))
       }
+
+
     }
   }
 }

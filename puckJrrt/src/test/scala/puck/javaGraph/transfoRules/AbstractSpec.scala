@@ -41,7 +41,13 @@ class AbstractSpec extends AcceptanceSpec {
     info("no pre-existing super type")
     val noSuperTypePath = examplesPath + "/classIntoInterface/noExistingSuperType"
     scenario("simple case"){
-      val _ = new ScenarioFactory(s"$noSuperTypePath/SimpleCase.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |class A {
+          |    private int f;
+          |    public void m(){}
+          |}"""
+      ) {
         val classA = fullName2id("p.A")
         val methM = fullName2id("p.A.m()")
         val field = fullName2id("p.A.f")

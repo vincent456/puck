@@ -158,8 +158,8 @@ object Recording {
         AbstractionOp(mappin(impl), ReadWriteAbstraction(sRabs map mappin, sWabs map mappin))
 
 
-      case TypeChange(typed, oldType, newType) =>
-        TypeChange(mappin(typed), oldType map mappingOnType, newType map mappingOnType)
+      case AType(typed, t) =>
+        AType(mappin(typed), mappingOnType(t))
 
       case cnn @ RenameOp(nid, _, _) =>
         cnn.copy(nid = mappin(nid))
@@ -268,10 +268,11 @@ object Recording {
       else RedirectionOp(edge, Source(newTarget))
       Transformation(Regular, red) +: record
     }
-    def addTypeChange( typed : NodeId,
-                       oldType: Option[Type],
-                       newType : Option[Type]) : Recording =
-      Transformation(Regular, TypeChange(typed, oldType, newType)) +: record
+    def addType( typed : NodeId, t : Type) : Recording =
+      Transformation(Regular, AType(typed, t)) +: record
+
+    def removeType( typed : NodeId, t : Type) : Recording =
+      Transformation(Reverse, AType(typed, t)) +: record
 
     def addRoleChange( typed : NodeId,
                        oldRole: Option[Role],

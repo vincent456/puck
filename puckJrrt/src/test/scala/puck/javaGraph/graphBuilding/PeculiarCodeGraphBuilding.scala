@@ -167,7 +167,7 @@ class PeculiarCodeGraphBuilding extends AcceptanceSpec {
 
 
 
-  scenario("this.array"){
+  ignore("this.array"){
     val _ = new ScenarioFactory(
       """package p;
         |

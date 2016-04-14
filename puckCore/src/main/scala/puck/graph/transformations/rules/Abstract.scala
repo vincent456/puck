@@ -75,10 +75,10 @@ abstract class Abstract {
   ( g : DependencyGraph,
     impl : NodeId,
     sUsesAccessKind: Option[UsesAccessKind]
-    ) : Option[Type] =
+    ) : Type =
     sUsesAccessKind match {
-      case None | Some(Read) => g styp impl
-      case Some(Write) => Some(g.nodeKindKnowledge.writeType(g))
+      case None | Some(Read) => (g styp impl).get
+      case Some(Write) => g.nodeKindKnowledge.writeType(g)
       case Some(RW) => sys.error("should not happen")
   }
 
@@ -94,21 +94,22 @@ abstract class Abstract {
       case DelegationAbstraction if impl.kind.isWritable =>
 
         val rName = abstractionName(g, impl, abskind, DelegationAbstraction, Some(Read))
-        val rStype = absType(g, impl.id, Some(Read))
+        val rType = absType(g, impl.id, Some(Read))
         val wName = abstractionName(g, impl, abskind, DelegationAbstraction, Some(Write))
-        val wStype = absType(g, impl.id, Some(Write))
+        val wType = absType(g, impl.id, Some(Write))
 
         val paramKind = g.nodeKindKnowledge.kindOfKindType(Parameter).head
 
 
-        val (rNode, rDef, g1) = intro.nodeWithDef(g, rName, abskind, rStype, isMutable)
-        val (wNode, wDef, g2) = intro.nodeWithDef(g1, wName, abskind, wStype, isMutable)
+        val (rNode, rDef, g1) = intro.nodeWithDef(g, rName, abskind, rType, isMutable)
+        val (wNode, wDef, g2) = intro.nodeWithDef(g1, wName, abskind, wType, isMutable)
 
         val (pNode, g3) = g2.addConcreteNode(impl.name, paramKind)
-        val g4 = g3.setType(pNode.id, g.styp(impl.id))
-          .addContains(wNode.id, pNode.id)
+        val g4 = g.styp(impl.id) map (g3.addType(pNode.id, _)) getOrElse g3
+
         val g5 =
-          g4.addUses(rDef.id, impl.id, Some(Read))
+          g4.addContains(wNode.id, pNode.id)
+            .addUses(rDef.id, impl.id, Some(Read))
             .addUses(wDef.id, impl.id, Some(Write))
 
         val abs = ReadWriteAbstraction(Some(rNode.id), Some(wNode.id))
@@ -118,7 +119,7 @@ abstract class Abstract {
         val name = abstractionName(g, impl, abskind, policy, None)
 
         val (n, ndef, g1) =
-          intro.nodeWithDef(g, name, abskind, g styp impl.id, isMutable)
+          intro.nodeWithDef(g, name, abskind, (g styp impl.id).get, isMutable)
         val g2 =
           if(impl.kind.kindType == TypeConstructor)
              g1.setRole(n.id, Some(Factory(impl.id)))
@@ -130,9 +131,9 @@ abstract class Abstract {
           (paramId, g0) =>
             val param = g0.getConcreteNode(paramId)
             val (pabs, g01) = g0.addConcreteNode(param.name, param.kind, mutable = true)
-            val g02 = g01.setType(pabs.id, g0 styp paramId)
-              .addContains(n.id, pabs.id)
-            g02.usedByExcludingTypeUse(paramId).foldLeft(g02) {
+            val g02 = (g0 styp paramId) map (g01.addType(pabs.id, _)) getOrElse g01
+
+            g02.usedByExcludingTypeUse(paramId).foldLeft(g02.addContains(n.id, pabs.id)) {
               (g00, tid) => g01.addUses(pabs.id, tid)
             }
         }
@@ -143,15 +144,16 @@ abstract class Abstract {
 
         val name = abstractionName(g, impl, abskind, policy, None)
         val (n, g1) = g.addConcreteNode(name, abskind)
-        val g2 = g1.setType(n.id, g1 styp impl.id)
+        val g2 = (g1 styp impl.id) map (g1.addType(n.id, _)) getOrElse g1
+
 
         val g3 = g2.parametersOf(impl.id).foldRight(g2) {
           (paramId, g0) =>
             val param = g0.getConcreteNode(paramId)
             val (pabs, g01) = g0.addConcreteNode(param.name, param.kind, mutable = true)
-            val g02 = g01.setType(pabs.id, g0 styp paramId)
-              .addContains(n.id, pabs.id)
-            g02.usedByExcludingTypeUse(paramId).foldLeft(g02) {
+            val g02 = (g0 styp paramId) map (g01.addType(pabs.id, _)) getOrElse g01
+
+            g02.usedByExcludingTypeUse(paramId).foldLeft(g02.addContains(n.id, pabs.id)) {
               (g00, tid) => g00.addUses(pabs.id, tid)
             }
         }
@@ -296,7 +298,8 @@ abstract class Abstract {
 
           val g1 = g0.addContains(interface.id, absMethodId)
             //is change type needed in case of delegation policy
-            .changeType(absMethodId, clazz.id, interface.id) //change return type
+            .changeTarget(Uses(absMethodId, clazz.id), interface.id) //change return type
+            //.changeType(absMethodId, clazz.id, interface.id) //change return type
           redirectTypeUseInParameters(g1, g1.getConcreteNode(absMethodId),
             clazz, interface)
 

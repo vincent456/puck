@@ -63,14 +63,15 @@ object CreateEdge {
 
 
   def apply
-  ( graph: DependencyGraph,
-    reenactor : DependencyGraph,
-    id2declMap: NodeId => ASTNodeLink,
-    e: DGEdge)
-  ( implicit program : AST.Program, logger : PuckLogger) = {
+  ( e: DGEdge)
+  ( implicit program : AST.Program,
+    logger : PuckLogger,
+    resultAndReenactor : (DependencyGraph, DependencyGraph),
+    id2declMap: NodeId => ASTNodeLink ) = {
+    val (resultGraph, reenactor) = resultAndReenactor
         e.kind match {
           case Contains =>
-            createContains(graph, reenactor, id2declMap, e)
+            createContains(resultGraph, reenactor, id2declMap, e)
           case ContainsParam =>
             (id2declMap(e.container), id2declMap(e.content)) match {
               case (MethodDeclHolder(mdecl), ParameterDeclHolder(pdecl)) =>
@@ -87,16 +88,16 @@ object CreateEdge {
 
           case Uses =>
             val u = e.asInstanceOf[Uses]
-            val (source, target ) = (graph.getNode(e.source), graph.getNode(e.target))
+            val (source, target ) = (resultGraph.getNode(e.source), resultGraph.getNode(e.target))
             (source.kind, target.kind) match {
               case (Class, Interface) =>
                 logger.writeln("do not create %s : assuming its an isa edge (TOCHECK)".format(e)) // class imple
               case (Definition, Constructor) =>
-                createUsesOfConstructor(graph, reenactor, id2declMap, u)
+                createUsesOfConstructor(resultGraph, reenactor, id2declMap, u)
 
 
 //              case (Definition, Field) => ()
-//                createUsesofField(graph, reenactor, id2declMap, u)
+//                createUsesofField(resultGraph, reenactor, id2declMap, u)
               case (Definition, Method) if ensureIsInitalizerUseByCtor(reenactor, u)=>
                 createInitializerCall(reenactor, id2declMap, u)
 

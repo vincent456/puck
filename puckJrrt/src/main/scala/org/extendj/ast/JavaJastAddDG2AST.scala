@@ -27,7 +27,7 @@
 package org.extendj.ast
 
 
-import java.io.{ByteArrayInputStream, File, FileWriter, InputStream}
+import java.io.{File, FileWriter, InputStream}
 import java.util.NoSuchElementException
 
 import org.extendj.parser
@@ -314,8 +314,10 @@ class JavaJastAddDG2AST
         lazy val noApplyMsg = s"${(resultGraph, t).shows} not applied"
 
         t match {
-          case Add(Edge(e)) =>
-            CreateEdge(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e)
+          case Add(Edge(e)) => CreateEdge(e)
+
+          case Add(AType(user, NamedType(newType))) =>
+               CreateEdge.createTypeUse(safeGet(resultGraph, id2declMap), user, newType)
 
           case ChangeSource(Contains(source, target), newSource) =>
             RedirectSource.move(source, target, newSource)
@@ -326,14 +328,7 @@ class JavaJastAddDG2AST
           case ChangeSource(Uses(source, target, _), newSource)  =>
             RedirectSource.changeUser(source, target, newSource)
 
-          case ChangeTarget(e, newTarget) =>
-            RedirectTarget(resultGraph, reenactor, safeGet(resultGraph, id2declMap), e, newTarget)
-
-          case ChangeType(user, None, Some(NamedType(newType))) =>
-            CreateEdge.createTypeUse(safeGet(resultGraph, id2declMap), user, newType)
-
-          case ChangeType(user, Some(NamedType(oldType)), Some(NamedType(newType))) =>
-            RedirectTarget.setType(resultGraph, reenactor, safeGet(resultGraph, id2declMap), user, newType)
+          case ChangeTarget(e, newTarget) => RedirectTarget(e, newTarget)
 
           // TODO see if can be performed in add node instead
           case Add(AbstractionOp(impl, AccessAbstraction(abs, SupertypeAbstraction))) =>

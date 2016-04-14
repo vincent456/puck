@@ -271,22 +271,24 @@ class DependencyGraph
   }
 
 
-  def setType(id : NodeId, t : Option[Type]) : DependencyGraph = {
-    //println(s"setting type of ${getNode(id)}  to $t")
-
+  def addType(id : NodeId, t : Type) : DependencyGraph =
     newGraph(edges = edges.setType(id, t),
-      recording = recording.addTypeChange(id, styp(id), t))
-  }
+      recording = recording.addType(id, t))
 
 
-  def changeType
-  ( id : NodeId,
-    oldUsed: NodeId,
-    newUsed : NodeId) : DependencyGraph =
-    styp(id) match {
-      case None => this
-      case Some(t) => setType(id, Some(t.changeNamedType(oldUsed, newUsed)))
-    }
+  def rmType(id : NodeId) : DependencyGraph =
+    edges.types get id map {
+      t => newGraph(edges = edges.removeType(id),
+        recording = recording.removeType(id, t))
+    } getOrElse this
+
+
+//    def setType(id : NodeId, t : Option[Type]) : DependencyGraph = {
+//    //println(s"setting type of ${getNode(id)}  to $t")
+//
+//    newGraph(edges = edges.setType(id, t),
+//      recording = recording.addTypeChange(id, styp(id), t))
+//  }
 
 
   def setMutability(id : NodeId, mutable : Boolean) =
@@ -414,15 +416,29 @@ class DependencyGraph
       List(readEdge, writeEdge))
   }
 
-  def changeTarget(edge : DGEdge, newTarget : NodeId) : DependencyGraph =
-    if(isChangeType(edge, newTarget))
-      changeType(edge.user, edge.used, newTarget)
-    else {
-      val g1 = edge.deleteIn(this, register = false)
-      val newEdge : DGEdge = edge.copy(target = newTarget)
-      val newRecording = recording.changeEdgeTarget(edge, newTarget, withMerge = newEdge.existsIn(this))
-      newEdge.createIn(g1, register = false).newGraph(recording = newRecording)
-    }
+  def changeTarget(edge : DGEdge, newTarget : NodeId) : DependencyGraph = {
+    val newEdge : DGEdge = edge.copy(target = newTarget)
+    val newRecording = recording.changeEdgeTarget(edge, newTarget, withMerge = newEdge.existsIn(this))
+
+    if (isChangeType(edge, newTarget))
+      newGraph(
+        edges = edges.redirectTypeUse(edge.user, edge.used, newTarget),
+        recording = newRecording)
+    else
+      removeEdge(edge, register = false)
+        .addEdge(newEdge, register = false)
+        .newGraph(recording = newRecording)
+
+  }
+
+//  def changeType
+//  ( id : NodeId,
+//    oldUsed: NodeId,
+//    newUsed : NodeId) : DependencyGraph =
+//    styp(id) match {
+//      case None => this
+//      case Some(t) => setType(id, Some(t.changeNamedType(oldUsed, newUsed)))
+//    }
 
   def changeSource(edge : DGEdge, newSource : NodeId) : DependencyGraph = {
     val g1 = edge.deleteIn(this, register = false)

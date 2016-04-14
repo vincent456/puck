@@ -47,7 +47,7 @@ abstract class Intro {
     val returnType = writeType(graph)
 
     val (cnDecl, defNode, g) =
-      intro.nodeWithDef(graph, "init", initializerKind, Some(returnType), isMutable)
+      intro.nodeWithDef(graph, "init", initializerKind, returnType, isMutable)
 
     val g2 =
       if(initializedContent.nonEmpty &&
@@ -100,13 +100,13 @@ abstract class Intro {
    typeNode : NodeId,
    mutable : Mutability = true
     )  : (ConcreteNode, ConcreteNode, DependencyGraph) =
-    nodeWithDef(graph, localName, kind, Some(NamedType(typeNode)), mutable)
+    nodeWithDef(graph, localName, kind, NamedType(typeNode), mutable)
 
   def nodeWithDef
   (graph : DependencyGraph,
    localName: String,
    kind : NodeKind,
-   typ : Option[Type],
+   typ : Type,
    mutable : Mutability
     )  : (ConcreteNode, ConcreteNode, DependencyGraph)
 
@@ -127,7 +127,7 @@ abstract class Intro {
 
     def onSuccess(cid : NodeId, g : DependencyGraph) : (ConcreteNode, DependencyGraph) = {
       val g2 = g.addContains(typeMemberDecl, pNode.id)
-        .setType(pNode.id, Some(NamedType(typeNode)))
+        .addType(pNode.id, NamedType(typeNode))
 
       (pNode,
         g.usersOfExcludingTypeUse(typeMemberDecl).foldLeft(g2) {

@@ -97,12 +97,13 @@ aspect ReplaceTypeAccess {
     }
 */
 
-    interface Binder {}
+    interface TypeUser {}
 
-    VarDeclStmt implements Binder;
-    FieldDecl implements Binder;
-
-    public void Binder.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
+    VarDeclStmt implements TypeUser;
+    FieldDecl implements TypeUser;
+    MethodDecl  implements TypeUser;
+    ParameterDeclaration implements TypeUser;
+    public void TypeUser.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
         if(this.getTypeAccess().type().equals(oldUsed)){
             this.setTypeAccess(newUsed.createLockedAccess());
             this.flushTreeCache();
