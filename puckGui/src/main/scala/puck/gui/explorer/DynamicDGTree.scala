@@ -37,14 +37,12 @@ import javax.swing.tree.TreePath
 
 import puck.graph.transformations._
 import Recording.RecordingOps
-
 import puck.graph._
-
-
+import puck.graph.transformations.Transformation.ChangeSource
 import puck.gui.{NodeClicked, Pushed}
 import puck.gui.menus.NodeMenu
 
-import scala.swing.{Swing, Reactor, Publisher}
+import scala.swing.{Publisher, Reactor, Swing}
 
 /**
   * Created by Loïc Girault on 29/01/16.
@@ -87,14 +85,14 @@ class MutableTreeModel(var graph : DependencyGraph)
         treeModelEvent(reenactor, cted.id) foreach fireNodesRemoved
         reenactor = reenactor.removeNode(cted.id)._2
 
-      case t @ Transformation.Move((oldc, tgt), newc) =>
+      case t @ ChangeSource(Contains(oldc, tgt), newc) =>
         graph = reenactor
         treeModelEvent(reenactor, tgt) foreach fireNodesRemoved
         reenactor = t.redo(reenactor)
         graph = reenactor
         treeModelEvent(reenactor, tgt) foreach fireNodesInserted
 
-      case Transformation(_, Rename(id, oldName, newName)) =>
+      case Transformation(_, RenameOp(id, oldName, newName)) =>
         graph = newGraph
         parentTreeModelEvent(newGraph, id) foreach fireStructureChanged
 

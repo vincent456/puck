@@ -56,9 +56,9 @@ object NodeMappingInitialState{
   val discardedOp : Operation => Boolean = {
     case _: AbstractionOp => true
     case _: TypeChange => true
-    case _: Rename => true
+    case _: RenameOp => true
     case _: Comment => true
-    case _: TypeDependency => true
+    case _: TypeBinding => true
     case _ => false
   }
 

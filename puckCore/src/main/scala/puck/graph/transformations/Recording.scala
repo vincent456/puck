@@ -161,13 +161,13 @@ object Recording {
       case TypeChange(typed, oldType, newType) =>
         TypeChange(mappin(typed), oldType map mappingOnType, newType map mappingOnType)
 
-      case cnn @ Rename(nid, _, _) =>
+      case cnn @ RenameOp(nid, _, _) =>
         cnn.copy(nid = mappin(nid))
-      case ChangeTypeBinding((e1,e2), binding) =>
-        ChangeTypeBinding((mappinNodeIdP(e1),mappinNodeIdP(e2)),
+      case ChangeTypeBindingOp((e1,e2), binding) =>
+        ChangeTypeBindingOp((mappinNodeIdP(e1),mappinNodeIdP(e2)),
           binding.create(mappinNodeIdP(binding.edge)))
-      case TypeDependency(tUse, tmUse) =>
-        TypeDependency(mappinNodeIdP(tUse),mappinNodeIdP(tmUse))
+      case TypeBinding(tUse, tmUse) =>
+        TypeBinding(mappinNodeIdP(tUse),mappinNodeIdP(tmUse))
       case RoleChange(id, sor, snr) =>
         RoleChange(mappin(id), sor map mappingOnRole, snr map mappingOnRole)
 
@@ -243,7 +243,7 @@ object Recording {
 
 
     def changeNodeName(nid : NodeId, oldName : String, newName : String) : Recording =
-      Transformation(Regular, Rename(nid, oldName, newName)) +: record
+      Transformation(Regular, RenameOp(nid, oldName, newName)) +: record
 
     def removeConcreteNode(n : ConcreteNode) : Recording =
       Transformation(Reverse, CNode(n)) +: record
@@ -284,27 +284,37 @@ object Recording {
     def removeAbstraction(impl : NodeId, abs : Abstraction) : Recording =
       Transformation(Reverse, AbstractionOp(impl, abs)) +: record
 
-    def addTypeDependency( typeUse : NodeIdP,
-                           typeMemberUse :  NodeIdP) : Recording =
-      Transformation(Regular, TypeDependency(typeUse, typeMemberUse)) +: record
+    def addTypeBinding(typeUse : NodeIdP,
+                       typeMemberUse :  NodeIdP) : Recording =
+      Transformation(Regular, TypeBinding(typeUse, typeMemberUse)) +: record
+
+    def removeTypeBinding(typeUse : NodeIdP,
+                          typeMemberUse :  NodeIdP) : Recording =
+      Transformation(Reverse, TypeBinding(typeUse, typeMemberUse)) +: record
+
+    def addTypeUseConstraint(superTypeUse : NodeIdP,
+                             subTypeUse :  NodeIdP) : Recording =
+      Transformation(Regular, TypeUseConstraint(superTypeUse, subTypeUse)) +: record
+
+    def removeTypeUseConstraint(superTypeUse : NodeIdP,
+                                subTypeUse :  NodeIdP) : Recording =
+      Transformation(Reverse, TypeUseConstraint(superTypeUse, subTypeUse)) +: record
 
     def changeTypeUseOfTypeMemberUse
     ( oldTypeUse : NodeIdP,
       newTypeUse : NodeIdP,
       typeMemberUse :  NodeIdP) : Recording =
-      Transformation(Regular, ChangeTypeBinding((oldTypeUse, typeMemberUse),
+      Transformation(Regular, ChangeTypeBindingOp((oldTypeUse, typeMemberUse),
         TypeUse(newTypeUse))) +: record
 
     def changeTypeMemberUseOfTypeUse
     ( oldTypeMemberUse : NodeIdP,
       newTypeMemberUse : NodeIdP,
       typeUse :  NodeIdP) : Recording =
-      Transformation(Regular, ChangeTypeBinding((typeUse, oldTypeMemberUse),
+      Transformation(Regular, ChangeTypeBindingOp((typeUse, oldTypeMemberUse),
         InstanceValueUse(newTypeMemberUse))) +: record
 
-    def removeTypeDependency( typeUse : NodeIdP,
-                              typeMemberUse :  NodeIdP) : Recording =
-      Transformation(Reverse, TypeDependency(typeUse, typeMemberUse)) +: record
+
 
   }
 

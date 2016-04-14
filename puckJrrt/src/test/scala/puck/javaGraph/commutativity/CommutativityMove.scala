@@ -47,7 +47,7 @@ class CommutativityMove extends AcceptanceSpec {
         val classA = fullName2id("p1.A")
 
         val (g0, package2) = createTopLevelPackage(graph, "p2")
-        val g1 = Move.staticDecl(g0, classA, package2).right
+        val g1 = Move.staticDecl(g0, classA, package2).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g1, outDir)
         assert( Mapping.equals(g1, recompiledEx.graph) )
@@ -60,7 +60,7 @@ class CommutativityMove extends AcceptanceSpec {
         val classB = fullName2id("p1.B")
 
         val (g0, package2) = createTopLevelPackage(graph, "p2")
-        val g1 = Move.staticDecl(g0, classB, package2).right
+        val g1 = Move.staticDecl(g0, classB, package2).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g1, outDir)
         assert( Mapping.equals(g1, recompiledEx.graph) )
@@ -77,7 +77,7 @@ class CommutativityMove extends AcceptanceSpec {
 
         val (g0, package3) = createTopLevelPackage(graph, "p3")
 
-        val g1 = Move.staticDecl(g0, classA, package3).right
+        val g1 = Move.staticDecl(g0, classA, package3).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g1, outDir)
 
@@ -97,7 +97,7 @@ class CommutativityMove extends AcceptanceSpec {
 
         val (g0, package3) = createTopLevelPackage(graph, "p3")
 
-        val g1 = Move.staticDecl(g0, classA, package3).right
+        val g1 = Move.staticDecl(g0, classA, package3).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g1, outDir)
 
@@ -119,7 +119,7 @@ class CommutativityMove extends AcceptanceSpec {
 
         val (g0, package3) = createTopLevelPackage(graph, "p3")
 
-        val g1 = Move.staticDecl(g0, classA, package3).right
+        val g1 = Move.staticDecl(g0, classA, package3).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g1, outDir)
 
@@ -143,7 +143,7 @@ class CommutativityMove extends AcceptanceSpec {
 
         val classA = fullName2id(s"p1.A")
 
-        val g1 = Move.staticDecl(g0, classA, package3).right
+        val g1 = Move.staticDecl(g0, classA, package3).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g1, outDir)
 
@@ -166,7 +166,7 @@ class CommutativityMove extends AcceptanceSpec {
 
         val (g0, package3) = createTopLevelPackage(graph, "p3")
 
-        val g1 = Move.staticDecl(g0, classA, package3).right
+        val g1 = Move.staticDecl(g0, classA, package3).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g1, outDir)
 
@@ -188,7 +188,7 @@ class CommutativityMove extends AcceptanceSpec {
 
         val (g0, package3) = createTopLevelPackage(graph, "p3")
 
-        val g = Move.staticDecl(g0, classA, package3).right
+        val g = Move.staticDecl(g0, classA, package3).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
 
@@ -215,7 +215,7 @@ class CommutativityMove extends AcceptanceSpec {
 
         val classB = fullName2id("p.B")
 
-        val g = Move.typeMember(graph, List(methToMove), classB, Some(CreateParameter)).right
+        val g = Move.typeMember(graph, List(methToMove), classB, Some(CreateParameter)).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
 
@@ -232,7 +232,7 @@ class CommutativityMove extends AcceptanceSpec {
 
         val newHostClass = fullName2id("p.B")
 
-        val g = Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateParameter)).right
+        val g = Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateParameter)).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
 
@@ -248,7 +248,7 @@ class CommutativityMove extends AcceptanceSpec {
 
         val newHostClass = fullName2id("p.B")
 
-        val g = Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateTypeMember(Field))).right
+        val g = Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateTypeMember(Field))).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
 
@@ -264,7 +264,7 @@ class CommutativityMove extends AcceptanceSpec {
 
         val newHostClass = fullName2id("p.B")
 
-        val g = Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateTypeMember(Field))).right
+        val g = Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateTypeMember(Field))).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
         assert( Mapping.equals(g, recompiledEx.graph) )
@@ -279,7 +279,7 @@ class CommutativityMove extends AcceptanceSpec {
         val methToMove = fullName2id("p.A.methodToMove()")
         val newHostClass = fullName2id("p.B")
 
-        val g = Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateParameter)).right
+        val g = Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateParameter)).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
         assert( Mapping.equals(g, recompiledEx.graph) )
@@ -296,7 +296,7 @@ class CommutativityMove extends AcceptanceSpec {
 
         val g =
           Move.typeMember(graph, List(methToMove), newHostClass,
-            Some(CreateTypeMember(Field))).right
+            Some(CreateTypeMember(Field))).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
         assert( Mapping.equals(g, recompiledEx.graph) )
@@ -310,7 +310,7 @@ class CommutativityMove extends AcceptanceSpec {
         val methMa = fullName2id("p.A.ma__B")
         val classB = fullName2id("p.B")
 
-        val g = Move.typeMember(graph, List(methMa), classB).right
+        val g = Move.typeMember(graph, List(methMa), classB).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
         assert( Mapping.equals(g, recompiledEx.graph) )
@@ -325,7 +325,7 @@ class CommutativityMove extends AcceptanceSpec {
 
         val newHostClass = fullName2id("p.B")
 
-        val g = Move.typeMember(graph, List(methToMoveDecl), newHostClass, Some(CreateParameter)).right
+        val g = Move.typeMember(graph, List(methToMoveDecl), newHostClass, Some(CreateParameter)).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
         assert( Mapping.equals(g, recompiledEx.graph) )
@@ -344,7 +344,7 @@ class CommutativityMove extends AcceptanceSpec {
 
         val newHostClass = fullName2id("p.B")
 
-        val g = Move.typeMember(graph, List(methToMoveDecl, methUserDecl), newHostClass, Some(CreateParameter)).right
+        val g = Move.typeMember(graph, List(methToMoveDecl, methUserDecl), newHostClass, Some(CreateParameter)).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
 
@@ -362,7 +362,7 @@ class CommutativityMove extends AcceptanceSpec {
 
         val newHostClass = fullName2id("p.B")
 
-        val g = Move.typeMember(graph, List(methToMove1, methToMove2), newHostClass, Some(CreateParameter)).right
+        val g = Move.typeMember(graph, List(methToMove1, methToMove2), newHostClass, Some(CreateParameter)).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
         assert( Mapping.equals(g, recompiledEx.graph) )
@@ -382,7 +382,7 @@ class CommutativityMove extends AcceptanceSpec {
 
         val g = graph.setRole(factory, Some(Factory(ctor)))
 
-        val g1 = Move.typeMember(g, List(factory), client, None).right
+        val g1 = Move.typeMember(g, List(factory), client, None).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g1, outDir)
         assert( Mapping.equals(g1, recompiledEx.graph) )
@@ -400,7 +400,7 @@ class CommutativityMove extends AcceptanceSpec {
 
         val g = graph.setRole(factory, Some(Factory(ctor)))
 
-        val g1 = Move.typeMember(g, List(factory), client, None).right
+        val g1 = Move.typeMember(g, List(factory), client, None).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g1, outDir)
         assert( Mapping.equals(g1, recompiledEx.graph) )
@@ -417,7 +417,7 @@ class CommutativityMove extends AcceptanceSpec {
 
         val g = graph.setRole(factory, Some(Factory(ctor)))
 
-        val g1 = Move.typeMember(g, List(factory), factoryClass, None).right
+        val g1 = Move.typeMember(g, List(factory), factoryClass, None).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g1, outDir)
         assert( Mapping.equals(g1, recompiledEx.graph) )

@@ -53,7 +53,7 @@ class CommutativityAbstract extends AcceptanceSpec {
 
         val (AccessAbstraction(itc, _), g0) =
           Rules.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
-            Interface, SupertypeAbstraction).right
+            Interface, SupertypeAbstraction).rvalue
         val g = g0.addContains(packageP, itc)
 
 
@@ -72,7 +72,7 @@ class CommutativityAbstract extends AcceptanceSpec {
 
         val (AccessAbstraction(itc, _), g0) =
           Rules.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
-            Interface, SupertypeAbstraction).right
+            Interface, SupertypeAbstraction).rvalue
 
         val g = g0.addContains(packageP, itc)
 
@@ -90,7 +90,7 @@ class CommutativityAbstract extends AcceptanceSpec {
 
         val (AccessAbstraction(itc, _), g0) =
           Rules.abstracter.createAbstraction(graph, graph.getConcreteNode(classB),
-            Interface, SupertypeAbstraction).right
+            Interface, SupertypeAbstraction).rvalue
         val g = g0.addContains(packageP, itc)
 
 
@@ -108,7 +108,7 @@ class CommutativityAbstract extends AcceptanceSpec {
 
         val (AccessAbstraction(itc, _), g0) =
           Rules.abstracter.createAbstraction(graph, graph.getConcreteNode(classC),
-            Interface, SupertypeAbstraction).right
+            Interface, SupertypeAbstraction).rvalue
         val g = g0.addContains(packageP, itc)
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
@@ -124,7 +124,7 @@ class CommutativityAbstract extends AcceptanceSpec {
 
         val (AccessAbstraction(itc, _), g0) =
           Rules.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
-            Interface, SupertypeAbstraction).right
+            Interface, SupertypeAbstraction).rvalue
         val g = g0.addContains(packageP, itc)
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
@@ -143,7 +143,7 @@ class CommutativityAbstract extends AcceptanceSpec {
 
         val (AccessAbstraction(itc, _), g0) =
           Rules.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
-            Interface, SupertypeAbstraction).right
+            Interface, SupertypeAbstraction).rvalue
         val g = g0.addContains(packageP, itc)
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)

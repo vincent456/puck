@@ -76,7 +76,7 @@ class RedirectTypeConstructorUsesSpec
       val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
 
       val g2 = Redirection.redirectTypeConstructorToInstanceValueDecl(g,
-        ctorUse, AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateParameter).right
+        ctorUse, AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateParameter).rvalue
 
       assert(ctorMethodUse.existsIn(g2))
       assert(!ctorUse.existsIn(g2))
@@ -122,7 +122,7 @@ class RedirectTypeConstructorUsesSpec
       val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
 
       val g2 = Redirection.redirectTypeConstructorToInstanceValueDecl(g,
-        ctorUse, AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateTypeMember(Field)).right
+        ctorUse, AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateTypeMember(Field)).rvalue
 
       assert(ctorMethodUse.existsIn(g2))
       assert(!ctorUse.existsIn(g2))
@@ -174,7 +174,7 @@ class RedirectTypeConstructorUsesSpec
 
       val g2 =
         Redirection.redirectTypeConstructorToInstanceValueDecl(g,
-          ctorUse, AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateParameter).right
+          ctorUse, AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateParameter).rvalue
 
 
       assert(!(ctorUse existsIn g2))
@@ -233,7 +233,7 @@ class RedirectTypeConstructorUsesSpec
 
       val g2 =
         Redirection.redirectTypeConstructorToInstanceValueDecl(g,
-          ctorUse, AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateTypeMember(Field)).right
+          ctorUse, AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateTypeMember(Field)).rvalue
 
 
       assert(!(ctorUse existsIn g2))

@@ -68,7 +68,7 @@ class CommutativityRedirect
         val g =
           Redirection.redirectUsesAndPropagate(graph,
             Uses(theParam, classUsed),
-            AccessAbstraction(superType, SupertypeAbstraction)).right
+            AccessAbstraction(superType, SupertypeAbstraction)).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
 
@@ -118,7 +118,7 @@ class CommutativityRedirect
         val g2 =
           Redirection.redirectUsesAndPropagate(g,
             Uses(theParam, delegatee),
-            AccessAbstraction(delegator, DelegationAbstraction)).right
+            AccessAbstraction(delegator, DelegationAbstraction)).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g2, outDir)
 
@@ -184,7 +184,7 @@ class CommutativityRedirect
                     .setRole(ctorMethod, Some(Factory(ctor)))
 
         val g2 = Redirection.redirectTypeConstructorToInstanceValueDecl(g,
-          Uses(callerDef, ctor), AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateParameter).right
+          Uses(callerDef, ctor), AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateParameter).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g2, outDir)
         assert(Mapping.equals(g2, recompiledEx.graph))
@@ -216,7 +216,7 @@ class CommutativityRedirect
                       .setRole(ctorMethod, Some(Factory(ctor)))
 
         val g2 = Redirection.redirectTypeConstructorToInstanceValueDecl(g,
-          Uses(callerDef, ctor), AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateTypeMember(Field)).right
+          Uses(callerDef, ctor), AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateTypeMember(Field)).rvalue
 
 
         val recompiledEx = applyChangeAndMakeExample(g2, outDir)
@@ -257,7 +257,7 @@ class CommutativityRedirect
         val g2 =
           Redirection.redirectTypeConstructorToInstanceValueDecl(g,
             Uses(callerDef, ctor),
-            AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateParameter).right
+            AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateParameter).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g2, outDir)
 
@@ -294,7 +294,7 @@ class CommutativityRedirect
 
         val g2 =
           Redirection.redirectTypeConstructorToInstanceValueDecl(g,
-            Uses(callerDef, ctor), AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateTypeMember(Field)).right
+            Uses(callerDef, ctor), AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateTypeMember(Field)).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g2, outDir)
         assert(Mapping.equals(g2, recompiledEx.graph))
@@ -337,7 +337,7 @@ class CommutativityRedirect
             val g =
               Redirection.redirectUsesAndPropagate(graph,
                 Uses(`p.A.m().Definition`, `p.Bimpl.m1()`),
-                AccessAbstraction(`p.B.m1()`, SupertypeAbstraction)).right
+                AccessAbstraction(`p.B.m1()`, SupertypeAbstraction)).rvalue
 
             val recompiledEx = applyChangeAndMakeExample(g, outDir)
             assert( Mapping.equals(g, recompiledEx.graph) )

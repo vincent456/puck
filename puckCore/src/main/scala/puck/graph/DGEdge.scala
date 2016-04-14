@@ -95,8 +95,7 @@ case class DGEdge(kind : EKind, source : NodeId, target: NodeId) {
     kind + "( " + source + ", " + target + ")"
   }
 
-  def existsIn(graph : DependencyGraph) =
-    graph.exists(this)
+  def existsIn(graph : DependencyGraph) = graph exists this
 
   def createIn(graph : DependencyGraph, register : Boolean = true) : DependencyGraph =
     graph.addEdge(this, register)
@@ -128,8 +127,6 @@ class Uses(source : NodeId, target: NodeId, val accessKind : Option[UsesAccessKi
   def withAccessKind(accessKind: Option[UsesAccessKind]) : Uses =
     new Uses(source, target, accessKind)
 
-  def isDominant(graph : DependencyGraph) : Boolean = graph.typeMemberUsesOf(this).nonEmpty
-  def isDominated(graph : DependencyGraph) : Boolean = graph.typeUsesOf(this).nonEmpty
 }
 
 case object Uses extends EKind {
@@ -167,8 +164,3 @@ case object ContainsParam extends ContainsKind {
   def apply(source : NodeId, target: NodeId) : DGEdge = new DGEdge(ContainsParam, source, target)
   def unapply(e: DGEdge) : Option[NodeIdP] = pairOfKind(e, ContainsParam)
 }
-
-//case object ContainsDef extends ContainsKind {
-//  def apply(source : NodeId, target: NodeId) : DGEdge = new DGEdge(ContainsDef, source, target)
-//  def unapply(e: DGEdge) : Option[NodeIdP] = pairOfKind(e, ContainsDef)
-//}

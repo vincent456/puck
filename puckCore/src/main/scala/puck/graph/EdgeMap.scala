@@ -228,6 +228,10 @@ case class EdgeMap
            typeUsesSubTypeConstraints = typeUsesSubTypeConstraints + (typeUse2, typeUse1))
 
 
+  def removeTypeUsesConstraint(typeUse1 : NodeIdP, typeUse2 : NodeIdP) : EdgeMap =
+    copy(typeUsesSuperTypeConstraints = typeUsesSuperTypeConstraints - (typeUse1, typeUse2),
+      typeUsesSubTypeConstraints = typeUsesSubTypeConstraints - (typeUse2, typeUse1))
+
 
   def setType(id : NodeId, st : Option[Type]) : EdgeMap =
     st match {

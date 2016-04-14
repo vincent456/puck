@@ -78,7 +78,7 @@ class RedirectTypeDeclSpec
 
       val g2 =
         Redirection.redirectUsesAndPropagate(graph,
-          typeUse, AccessAbstraction(superType, SupertypeAbstraction)).right
+          typeUse, AccessAbstraction(superType, SupertypeAbstraction)).rvalue
 
       assert(Uses(theParam, superType).existsIn(g2))
       assert(Uses(mUserDef, absmUsed).existsIn(g2))
@@ -132,7 +132,7 @@ class RedirectTypeDeclSpec
 
       val g2 =
         Redirection.redirectUsesAndPropagate(g,
-          typeUse, AccessAbstraction(delegator, DelegationAbstraction)).right
+          typeUse, AccessAbstraction(delegator, DelegationAbstraction)).rvalue
 
       assert(Uses(theParam, delegator).existsIn(g2))
       assert(Uses(mUserDef, mDelegator).existsIn(g2))
@@ -207,7 +207,7 @@ class RedirectTypeDeclSpec
 
       val g2 =
         Redirection.redirectUsesAndPropagate(graph,
-          fieldParameterTypeUse, AccessAbstraction(interfaceTypeParam, SupertypeAbstraction)).right
+          fieldParameterTypeUse, AccessAbstraction(interfaceTypeParam, SupertypeAbstraction)).rvalue
 
       assert(Uses(field, interfaceTypeParam).existsIn(g2))
       assert(Uses(userMethodDef, interfaceMethod).existsIn(g2))
@@ -249,7 +249,7 @@ class RedirectTypeDeclSpec
 
       val g2 =
         Redirection.redirectUsesAndPropagate(graph,
-          typeUse1, AccessAbstraction(superType, SupertypeAbstraction)).right
+          typeUse1, AccessAbstraction(superType, SupertypeAbstraction)).rvalue
 
       assert(Uses(typeUser1, superType).existsIn(g2))
       assert(Uses(typeUser2, superType).existsIn(g2))
@@ -293,7 +293,7 @@ class RedirectTypeDeclSpec
 
       val g2 =
         Redirection.redirectUsesAndPropagate(graph,
-          typeUse1, AccessAbstraction(superType, SupertypeAbstraction)).right
+          typeUse1, AccessAbstraction(superType, SupertypeAbstraction)).rvalue
 
       assert(Uses(typeUser1, superType).existsIn(g2))
       assert(Uses(typeUser2, superType).existsIn(g2))

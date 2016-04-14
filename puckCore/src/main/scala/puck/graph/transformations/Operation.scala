@@ -34,15 +34,15 @@ object Operation {
     case CNode(cn) => Seq(cn.id)
     case Edge(e) => Seq(e.source, e.target)
     case RedirectionOp(e, exty) => Seq(e.source, e.target, exty.node)
-    case Rename(id, _, _) => Seq(id)
+    case RenameOp(id, _, _) => Seq(id)
     case TypeChange(id, oldt, newt) =>
       val ot = oldt.map(_.ids).getOrElse(Seq())
       val nt = newt.map(_.ids).getOrElse(Seq())
       id +:ot ++: nt
     case AbstractionOp(id, abs) => id :: abs.nodes
-    case ChangeTypeBinding(((n1, n2), (n3, n4)), ext) =>
+    case ChangeTypeBindingOp(((n1, n2), (n3, n4)), ext) =>
       Seq(ext.edge._1, ext.edge._2, n1, n2, n3, n4)
-    case TypeDependency((n1, n2), (n3, n4)) =>
+    case TypeBinding((n1, n2), (n3, n4)) =>
       Seq(n1, n2, n3, n4)
     case RoleChange(id, _, _) => Seq(id)
   }
@@ -124,7 +124,7 @@ class RedirectionWithMerge(edge : DGEdge, extremity : Extremity)
 
 }
 
-case class Rename
+case class RenameOp
 ( nid : NodeId,
   oldName : String,
   newName : String)
@@ -174,7 +174,7 @@ case class InstanceValueUse(edge : NodeIdP) extends BoundPart  {
   def create(e : NodeIdP) : BoundPart = InstanceValueUse(e)
 }
 
-case class ChangeTypeBinding(oldBinding : (NodeIdP,NodeIdP), extremity : BoundPart) extends Operation {
+case class ChangeTypeBindingOp(oldBinding : (NodeIdP,NodeIdP), extremity : BoundPart) extends Operation {
 
    def execute(g: DependencyGraph , op : Direction) = (op, extremity) match {
     case (Regular, TypeUse(tu)) =>
@@ -188,14 +188,23 @@ case class ChangeTypeBinding(oldBinding : (NodeIdP,NodeIdP), extremity : BoundPa
   }
 }
 
-
-case class TypeDependency
+case class TypeBinding
 ( typeUse : NodeIdP,
   typeMemberUse :  NodeIdP)
   extends AddRmOperation {
   def execute(g: DependencyGraph , op : Direction) = op match {
     case Regular => g.addBinding(typeUse, typeMemberUse)
     case Reverse => g.removeBinding(typeUse, typeMemberUse)
+  }
+}
+
+case class TypeUseConstraint
+( superTypeUse : NodeIdP,
+  subTypeUse :  NodeIdP)
+  extends AddRmOperation {
+  def execute(g: DependencyGraph , op : Direction) = op match {
+    case Regular => g.addTypeUsesConstraint(superTypeUse, subTypeUse)
+    case Reverse => g.removeTypeUsesConstraint(superTypeUse, subTypeUse)
   }
 }
 

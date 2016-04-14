@@ -55,7 +55,7 @@ class AbstractSpec extends AcceptanceSpec {
 
         val (AccessAbstraction(itc, _), g) =
           TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
-            Interface, SupertypeAbstraction).right
+            Interface, SupertypeAbstraction).rvalue
         assert( g.isa(classA, itc) )
 
         g.abstractions(classA).size shouldBe 1
@@ -87,7 +87,7 @@ class AbstractSpec extends AcceptanceSpec {
 
         val (AccessAbstraction(itc, _), g) =
           TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
-            Interface, SupertypeAbstraction).right
+            Interface, SupertypeAbstraction).rvalue
 
         assert( g.isa(classA, itc) )
 
@@ -134,7 +134,7 @@ class AbstractSpec extends AcceptanceSpec {
 
         val (AccessAbstraction(itc, _), g) =
           TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classB),
-            Interface, SupertypeAbstraction).right
+            Interface, SupertypeAbstraction).rvalue
         assert( g.isa(classB, itc) )
 
         g.abstractions(classB).size shouldBe 1
@@ -171,7 +171,7 @@ class AbstractSpec extends AcceptanceSpec {
 
         val (AccessAbstraction(itc, _), g) =
           TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classC),
-            Interface, SupertypeAbstraction).right
+            Interface, SupertypeAbstraction).rvalue
 
         assert( g.isa(classC, itc) )
 
@@ -197,7 +197,7 @@ class AbstractSpec extends AcceptanceSpec {
 
         val (AccessAbstraction(itc, _), g) =
           TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
-            Interface, SupertypeAbstraction).right
+            Interface, SupertypeAbstraction).rvalue
 
         assert( g.isa(classA, itc))
 
@@ -219,7 +219,7 @@ class AbstractSpec extends AcceptanceSpec {
 
         val (AccessAbstraction(itc, _), g) =
           TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
-            Interface, SupertypeAbstraction).right
+            Interface, SupertypeAbstraction).rvalue
 
         assert( g.isa(classA, itc))
 
@@ -252,7 +252,7 @@ class AbstractSpec extends AcceptanceSpec {
 
         val (AccessAbstraction(itc, _), g) =
           TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
-            Interface, SupertypeAbstraction).right
+            Interface, SupertypeAbstraction).rvalue
 
         assert( g.isa(classA, itc) )
         assert( g.isa(itc, superA) )

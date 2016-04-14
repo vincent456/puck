@@ -68,15 +68,52 @@ object Transformation {
       }
   }
 
-  object Move {
-    def unapply(t : Transformation) : Option[(NodeIdP, NodeId)] =
+  object ChangeSource {
+    def unapply(t : Transformation) : Option[(DGEdge, NodeId)] =
       t.operation match {
-        case RedirectionOp(e @ Contains(oldSrc, tgt), Source(newSrc)) =>
-          Some(((oldSrc, tgt), newSrc))
-        //case RedirectionOp(e @ ContainsParam(oldSrc, tgt), Source(newSrc)) =>
+        case RedirectionWithMerge(_ , _) => None
+        case RedirectionOp(edge, Source(newSrc)) if edge.source != newSrc =>
+          Some((edge, newSrc))
         case _ => None
       }
   }
+
+  object ChangeTarget{
+    def unapply(t : Transformation) : Option[(DGEdge, NodeId)] =
+      t.operation match {
+         case RedirectionOp(edge, Target(newTgt)) => Some((edge, newTgt))
+        case _ => None
+      }
+  }
+
+  object ChangeType {
+    def unapply(t : Transformation) : Option[(NodeId, Option[Type], Option[Type])] =
+      t.operation match {
+        case TypeChange(typed, oldT, newT) => Some((typed, oldT, newT))
+        case _ => None
+      }
+  }
+
+  object Rename {
+    def unapply(t : Transformation) : Option[(NodeId, String)] =
+      t.operation match {
+        case RenameOp(nid, _, newName) => Some((nid, newName))
+        case _ => None
+      }
+  }
+
+  object ChangeTypeBinding {
+    def unapply(t : Transformation) : Option[(NodeIdP, NodeIdP, NodeIdP)] =
+      t.operation match {
+        case ChangeTypeBindingOp((oldTu, tmu), TypeUse(newTu)) =>
+          Some((oldTu, tmu, newTu))
+        case _ => None
+      }
+  }
+
+
+
+
 
 }
 

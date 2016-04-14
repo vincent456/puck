@@ -64,7 +64,7 @@ class MoveAndRedirect
             AccessAbstraction(factoryMethod, DelegationAbstraction))
         } yield g1
 
-        val g2 = ltg.right
+        val g2 = ltg.rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g2, outDir)
 
@@ -93,7 +93,7 @@ class MoveAndRedirect
             g1 <- Move.typeMember(g0, List(factoryMethod), factoryClass, None)
           } yield g1
 
-        val g2 = ltg.right
+        val g2 = ltg.rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g2, outDir)
 

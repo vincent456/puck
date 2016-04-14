@@ -93,7 +93,7 @@ class RedirectTypeMemberSpec
 
         val g =
           Redirection.redirectUsesAndPropagate(graph,
-            useOfmeth, AccessAbstraction(mAbs, SupertypeAbstraction)).right
+            useOfmeth, AccessAbstraction(mAbs, SupertypeAbstraction)).rvalue
 
 
         assert(! (useOfImplClass existsIn g))

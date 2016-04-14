@@ -173,12 +173,12 @@ object RecordingComparator{
         // they are used to compute the change on the graph, its the change themselves we want to compare
         // removed in NodeMappingInitialState.normalizeNodeTransfos
         case _ : TypeChange // TODO see if need to be compared
-             | _ : TypeDependency
-             | _ : ChangeTypeBinding
+             | _ : TypeBinding
+             | _ : ChangeTypeBindingOp
              | _ : AbstractionOp
              | _ : VNode
              | _ : CNode
-             | _ : Rename
+             | _ : RenameOp
              | _ : RoleChange
              | _ : Comment => throw new Error("should not happen !!")
 

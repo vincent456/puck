@@ -70,7 +70,7 @@ object CreateEdge {
   ( implicit program : AST.Program, logger : PuckLogger) = {
         e.kind match {
           case Contains =>
-            createContains(graph,reenactor, id2declMap, e)
+            createContains(graph, reenactor, id2declMap, e)
           case ContainsParam =>
             (id2declMap(e.container), id2declMap(e.content)) match {
               case (MethodDeclHolder(mdecl), ParameterDeclHolder(pdecl)) =>

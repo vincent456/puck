@@ -31,48 +31,35 @@ package puck.javaGraph
 
 import java.io.FileWriter
 
-import org.scalatest.{EitherValues, OptionValues}
+import org.scalatest.{EitherValues, FeatureSpec, OptionValues}
 import puck.graph.AccessAbstraction
 import puck.graph.DependencyGraph
 import puck.graph.constraints._
 import puck.graph.transformations.rules.CreateTypeMember
 import puck.graph._
 import puck.javaGraph.nodeKind._
-import puck.{AcceptanceSpec, PuckError, Settings}
+import puck.{LoggedEitherValues, PuckError, Settings}
 import puck.jastadd.ExtendJGraphUtils.{transformationRules => TR}
 import DependencyGraph.findElementByName
 import puck.Settings._
 import puck.graph.comparison.Mapping
-import puck.util.LoggedEither
-
-import scalaz.{-\/, \/-}
 
 object BridgeScenario {
 
   val path = Settings.projectPath + "/test_resources/distrib/bridge/hannemann_simplified/"
 
-  implicit class LoggedEitherValue[E, G](val t : LoggedEither[E, G]) extends AnyVal {
-    def rvalue : G = t.value match {
-      case -\/(err) => error(s"right expected, got $err\nlog : ${t.log}")
-      case \/-(g) => g
-    }
-
-    def lvalue : E = t.value match {
-      case -\/(err) => err
-      case \/-(r) => error(s"left expected, got $r\nlog : ${t.log}")
-    }
-  }
   def apply() = new BridgeScenario()
 }
 
-import BridgeScenario.LoggedEitherValue
+import BridgeScenario.path
 
 class BridgeScenario private()
   extends ScenarioFactory(
-    BridgeScenario.path + "screen/BridgeDemo.java",
-    BridgeScenario.path + "screen/Screen.java")
+    s"$path/screen/BridgeDemo.java",
+    s"$path/screen/Screen.java")
     with EitherValues
-    with OptionValues {
+    with OptionValues
+    with LoggedEitherValues {
 
   val screen = fullName2id("screen")
   val `screen.Screen` = fullName2id("screen.Screen")
@@ -290,11 +277,10 @@ class BridgeScenario private()
   def gFinal = g14
 }
 
-class BridgeManualRefactoringSpec extends AcceptanceSpec {
+class BridgeManualRefactoringSpec extends FeatureSpec {
 
-  implicit def tryToEither[T]( g : Try[T]) : Either[PuckError, T] = g.toEither
 
-  scenario("bridge simplified ``manual'' refactoring"){
+  scenario("bridge ``manual'' refactoring"){
     val bs = BridgeScenario()
 
     //QuickFrame(bs.gFinal, "BS", JavaDotHelper)
@@ -303,16 +289,16 @@ class BridgeManualRefactoringSpec extends AcceptanceSpec {
 
     val g = bs.gFinal
     val g2 =  recompiledEx.graph
-    import puck.util.Debug._
-    import ShowDG._
-
-    val gwriter = new FileWriter("/tmp/nodes.g")
-    gwriter.write((g, g.nodesIndex).shows)
-    gwriter.close()
-
-    val g2writer = new FileWriter("/tmp/nodes.g2")
-    g2writer.write((g2, g2.nodesIndex).shows)
-    g2writer.close()
+//    import puck.util.Debug._
+//    import ShowDG._
+//
+//    val gwriter = new FileWriter("/tmp/nodes.g")
+//    gwriter.write((g, g.nodesIndex).shows)
+//    gwriter.close()
+//
+//    val g2writer = new FileWriter("/tmp/nodes.g2")
+//    g2writer.write((g2, g2.nodesIndex).shows)
+//    g2writer.close()
 
     assert( Mapping.equals(bs.gFinal, recompiledEx.graph) )
 

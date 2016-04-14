@@ -266,74 +266,69 @@ object RedirectSource {
     }
   }
 
-  def apply
-  ( resultGraph: DependencyGraph,
-    reenactor : DependencyGraph,
-    id2declMap: NodeId => ASTNodeLink,
-    e: DGEdge, newSourceId: NodeId)
-  ( implicit program : Program, logger : PuckLogger) : Unit =  {
-
-
-    def move(source : NodeId, newSource : NodeId, target : NodeId) : Unit = {
-      (id2declMap(source), id2declMap(newSource), id2declMap(target)) match {
-        case (TypedKindDeclHolder(oldTdecl),
-        TypedKindDeclHolder(newTdecl),
-        bdh : HasMemberDecl) =>
-          moveMemberDecl(reenactor, id2declMap, oldTdecl, newTdecl, bdh.decl, target)
+  def move(source : NodeId, target : NodeId, newSource : NodeId)
+          ( implicit program : Program,
+            logger : PuckLogger,
+            resultAndReenactor : (DependencyGraph, DependencyGraph),
+            id2declMap: NodeId => ASTNodeLink ) : Unit = {
+    val (resultGraph, reenactor) = resultAndReenactor
+    (id2declMap(source), id2declMap(newSource), id2declMap(target)) match {
+      case (TypedKindDeclHolder(oldTdecl),
+      TypedKindDeclHolder(newTdecl),
+      bdh : HasMemberDecl) =>
+        moveMemberDecl(reenactor, id2declMap, oldTdecl, newTdecl, bdh.decl, target)
 
 
 
-        case (PackageDeclHolder, PackageDeclHolder, i: TypedKindDeclHolder) =>
-          moveTypeKind(resultGraph, reenactor, id2declMap, source, newSource, i.decl, target)
+      case (PackageDeclHolder, PackageDeclHolder, i: TypedKindDeclHolder) =>
+        moveTypeKind(resultGraph, reenactor, id2declMap, source, newSource, i.decl, target)
 
-        //        case (ClassDeclHolder(classDecl),
-        //        InterfaceDeclHolder(absDecl),
-        //        idh@InterfaceDeclHolder(superDecl)) =>
-        //          classDecl.removeImplements(superDecl)
-        //          absDecl.addSuperInterfaceId(idh.decl.createLockedAccess())
-        //
-        //        case (InterfaceDeclHolder(subDecl),
-        //        InterfaceDeclHolder(absDecl),
-        //        idh@InterfaceDeclHolder(superDecl)) =>
-        //          subDecl.removeSuperInterface(superDecl)
-        //          absDecl.addSuperInterfaceId(idh.decl.createLockedAccess())
+      //        case (ClassDeclHolder(classDecl),
+      //        InterfaceDeclHolder(absDecl),
+      //        idh@InterfaceDeclHolder(superDecl)) =>
+      //          classDecl.removeImplements(superDecl)
+      //          absDecl.addSuperInterfaceId(idh.decl.createLockedAccess())
+      //
+      //        case (InterfaceDeclHolder(subDecl),
+      //        InterfaceDeclHolder(absDecl),
+      //        idh@InterfaceDeclHolder(superDecl)) =>
+      //          subDecl.removeSuperInterface(superDecl)
+      //          absDecl.addSuperInterfaceId(idh.decl.createLockedAccess())
 
-        case _ =>
-          val eStr = (reenactor, e).shows
-          val nsrcStr = (reenactor, newSource).shows
-          throw new JavaAGError(s"redirecting SOURCE of $eStr to $nsrcStr : application failure !")
-      }
+      case _ =>
+        val eStr = (reenactor, Contains(source, target)).shows
+        val nsrcStr = (reenactor, newSource).shows
+        throw new JavaAGError(s"redirecting SOURCE of $eStr to $nsrcStr : application failure !")
     }
+  }
 
-    if (e.source != newSourceId) {
-      //else do nothing*
+  def redirectIsaSource(source : NodeId, target : NodeId, newSource : NodeId)
+                       ( implicit program : Program,
+            logger : PuckLogger,
+            id2declMap: NodeId => ASTNodeLink ) : Unit = {
+    removeIsa(id2declMap(source), id2declMap(target))
+    CreateEdge.createIsa(id2declMap(newSource), id2declMap(target))
+  }
 
-      e.kind match {
-        case Contains => move(e.source, newSourceId, e.target)
-        case Isa =>
-          removeIsa(id2declMap(e.source), id2declMap(e.target))
-          CreateEdge.createIsa(id2declMap(newSourceId), id2declMap(e.target))
+  def changeUser(source : NodeId, target : NodeId, newSource : NodeId)
+                     ( implicit program : Program,
+                       logger : PuckLogger,
+                       resultAndReenactor : (DependencyGraph, DependencyGraph),
+                       id2declMap: NodeId => ASTNodeLink ) : Unit = {
+    val (_, reenactor) = resultAndReenactor
 
-        case Uses => //in case of initializer
-          val newSrcDecl = reenactor container_! newSourceId
-          reenactor getRole newSrcDecl match {
-            case Some(Initializer(_)) =>
-              moveFieldInitialization(reenactor, id2declMap, e.source, newSrcDecl)
-            case Some(Factory(_)) =>
-              assert( reenactor getRole e.target match {
-                case Some(Initializer(_)) => true
-                case _ => false
-              })
-              moveInitFromCtorToFactory(reenactor, id2declMap, e.target, e.source, newSrcDecl)
-            case sr => error(s"Redirect source of use, expecting new user to be some initializer," +
-              s" ${reenactor getConcreteNode newSrcDecl} is $sr ")
-          }
-
-
-        case _ =>
-          logger.writeln(s"Redirect source of ${e.kind} ignored")
-
-      }
+    val newSrcDecl = reenactor container_! newSource
+    reenactor getRole newSrcDecl match {
+      case Some(Initializer(_)) =>
+        moveFieldInitialization(reenactor, id2declMap, source, newSrcDecl)
+      case Some(Factory(_)) =>
+        assert( reenactor getRole target match {
+          case Some(Initializer(_)) => true
+          case _ => false
+        })
+        moveInitFromCtorToFactory(reenactor, id2declMap, target, source, newSrcDecl)
+      case sr => error(s"Redirect source of use, expecting new user to be some initializer," +
+        s" ${reenactor getConcreteNode newSrcDecl} is $sr ")
     }
   }
 
