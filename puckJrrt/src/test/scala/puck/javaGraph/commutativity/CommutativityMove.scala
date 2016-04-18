@@ -43,7 +43,21 @@ class CommutativityMove extends AcceptanceSpec {
   feature("Move class") {
 
     scenario("Move top level class") {
-      val _ = new ScenarioFactory(s"$examplesPath/topLevelClass/A.java"){
+      val _ = new ScenarioFactory(
+        """package p1;
+          |
+          |public class A {
+          |    public A(){}
+          |    public void ma(){}
+          |}
+          |
+          |class B {
+          |    public void mb(){
+          |        A a = new A();
+          |        a.ma();
+          |    }
+          |}"""
+      ){
         val classA = fullName2id("p1.A")
 
         val (g0, package2) = createTopLevelPackage(graph, "p2")
@@ -56,7 +70,20 @@ class CommutativityMove extends AcceptanceSpec {
    }
 
     scenario("Move top level class - moved type uses type of old package") {
-      val _ = new ScenarioFactory(s"$examplesPath/topLevelClass/A.java"){
+      val _ = new ScenarioFactory(
+        """package p1;
+          |
+          |public class A {
+          |    public A(){}
+          |    public void ma(){}
+          |}
+          |
+          |class B {
+          |    public void mb(){
+          |        A a = new A();
+          |        a.ma();
+          |    }
+          |}"""){
         val classB = fullName2id("p1.B")
 
         val (g0, package2) = createTopLevelPackage(graph, "p2")
@@ -201,15 +228,24 @@ class CommutativityMove extends AcceptanceSpec {
   }
 
 
-  val moveMethod_movedMethodUsesThis = examplesPath + "/method/movedMethodUsesThis"
-  val moveMethodUsedByThis = examplesPath + "/method/usedByThis"
-  val movedMethodNOTusedByThis = examplesPath + "/method/NOTusedByThis"
-
 
   feature("Move method"){
 
     scenario("moved method not used by this"){
-      val _ = new ScenarioFactory(s"$movedMethodNOTusedByThis/MovedMethodHasNoParameter.java"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A { public void methodToMove(){} }
+          |
+          |class B { }
+          |
+          |class C {
+          |    public void user(){
+          |        A a = new A();
+          |        a.methodToMove();
+          |    }
+          |}"""
+      ){
 
         val methToMove = fullName2id("p.A.methodToMove()")
 
@@ -226,7 +262,18 @@ class CommutativityMove extends AcceptanceSpec {
 
 
     scenario("move method used by this - keep reference with parameter"){
-      val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodHasNoParameter.java"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |
+          |    public void mUser(){ methodToMove(); }
+          |
+          |    public void methodToMove(){}
+          |}
+          |
+          |class B{ }"""
+      ){
 
         val methToMove = fullName2id("p.A.methodToMove()")
 
@@ -242,7 +289,18 @@ class CommutativityMove extends AcceptanceSpec {
     }
 
     scenario("move method used by this - keep reference with Field"){
-      val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodHasNoParameter.java"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |
+          |    public void mUser(){ methodToMove(); }
+          |
+          |    public void methodToMove(){}
+          |}
+          |
+          |class B{ }"""
+      ){
 
         val methToMove = fullName2id("p.A.methodToMove()")
 
@@ -258,7 +316,21 @@ class CommutativityMove extends AcceptanceSpec {
     }
 
     scenario("move method used by this - user also via self another method that will not be moved "){
-      val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodUsedAlongASiblingMethodThatIsNotMoved.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |    void mUser(){
+          |        mUsedToMove();
+          |        mUsedOther();
+          |    }
+          |
+          |    void mUsedToMove(){}
+          |    void mUsedOther(){}
+          |}
+          |
+          |class B{ }"""
+      ) {
 
         val methToMove = fullName2id("p.A.mUsedToMove()")
 
@@ -274,7 +346,20 @@ class CommutativityMove extends AcceptanceSpec {
     scenario("move method used by this several times - keep reference with Parameter"){
 
 
-      val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodUsedByThisSeveralTimes.java"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |
+          |    public void mUser1(){ methodToMove(); }
+          |
+          |    public void mUser2(){ methodToMove(); }
+          |
+          |    public void methodToMove(){}
+          |}
+          |
+          |class B{ }"""
+      ){
 
         val methToMove = fullName2id("p.A.methodToMove()")
         val newHostClass = fullName2id("p.B")
@@ -288,7 +373,20 @@ class CommutativityMove extends AcceptanceSpec {
     }
 
     scenario("move method used by this several times - keep reference with Field"){
-      val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodUsedByThisSeveralTimes.java"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |
+          |    public void mUser1(){ methodToMove(); }
+          |
+          |    public void mUser2(){ methodToMove(); }
+          |
+          |    public void methodToMove(){}
+          |}
+          |
+          |class B{ }"""
+      ){
 
         val methToMove = fullName2id("p.A.methodToMove()")
 
@@ -305,7 +403,20 @@ class CommutativityMove extends AcceptanceSpec {
     }
 
     ignore("Move method not used by this to class of a parameter"){
-      val _ = new ScenarioFactory(s"$movedMethodNOTusedByThis/MovedMethodHasNoParameter.java"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A { public void methodToMove(){} }
+          |
+          |class B { }
+          |
+          |class C {
+          |    public void user(){
+          |        A a = new A();
+          |        a.methodToMove();
+          |    }
+          |}"""
+      ){
 
         val methMa = fullName2id("p.A.ma__B")
         val classB = fullName2id("p.B")
@@ -319,7 +430,20 @@ class CommutativityMove extends AcceptanceSpec {
 
 
     scenario("moved method uses this - keep reference with parameter "){
-      val _ = new ScenarioFactory(s"$moveMethod_movedMethodUsesThis/MovedMethodHasNoParameter.java"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |
+          |    public A(){}
+          |
+          |    public void mUsed(){}
+          |
+          |    public void methodToMove(){ mUsed();}
+          |}
+          |
+          |class B{ }"""
+      ){
 
         val methToMoveDecl = fullName2id("p.A.methodToMove()")
 
@@ -337,7 +461,18 @@ class CommutativityMove extends AcceptanceSpec {
   feature("Move methods"){
 
     scenario("one of the moved method is used by another") {
-      val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodHasNoParameter.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |
+          |    public void mUser(){ methodToMove(); }
+          |
+          |    public void methodToMove(){}
+          |}
+          |
+          |class B{ }"""
+      ) {
 
         val methUserDecl = fullName2id("p.A.mUser()")
         val methToMoveDecl = fullName2id("p.A.methodToMove()")
@@ -355,7 +490,22 @@ class CommutativityMove extends AcceptanceSpec {
     }
 
     scenario("two moved method both used by an unmoved one") {
-      val _ = new ScenarioFactory(s"$moveMethodUsedByThis/TwoMovedMethodUsedBySameUnmovedSibling.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |
+          |    public void mUser(){
+          |        methodToMove1();
+          |        methodToMove2();
+          |    }
+          |
+          |    public void methodToMove1(){}
+          |    public void methodToMove2(){}
+          |}
+          |
+          |class B{ }"""
+      ) {
 
         val methToMove1 = fullName2id("p.A.methodToMove1()")
         val methToMove2 = fullName2id("p.A.methodToMove2()")
@@ -370,10 +520,23 @@ class CommutativityMove extends AcceptanceSpec {
       }
     }
   }
-  val moveStaticMethod = examplesPath + "/staticMethod"
+
   feature("Move static method"){
     scenario("unused factory"){
-      val _ = new ScenarioFactory(s"$moveStaticMethod/unusedFactory/UnusedFactory.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |    A(){}
+          |
+          |    static A createA(){return new A();}
+          |
+          |}
+          |
+          |class Client {
+          |    void m(){ A a = new A(); }
+          |}"""
+      ) {
 
         val ctor = fullName2id("p.A.A()")
         val factory = fullName2id("p.A.createA()")
@@ -391,7 +554,19 @@ class CommutativityMove extends AcceptanceSpec {
     }
 
     scenario("used factory moved in client"){
-      val _ = new ScenarioFactory(s"$moveStaticMethod/usedFactory/UsedFactory.java"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |    A(){}
+          |
+          |    static A createA(){return new A();}
+          |}
+          |
+          |class Factory{ }
+          |
+          |class Client { void m(){ A a = A.createA(); } }"""
+      ){
 
         val ctor = fullName2id("p.A.A()")
         val factory = fullName2id("p.A.createA()")
@@ -408,7 +583,19 @@ class CommutativityMove extends AcceptanceSpec {
       }
     }
     scenario("used factory moved in outsider host"){
-      val _ = new ScenarioFactory(s"$moveStaticMethod/usedFactory/UsedFactory.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |    A(){}
+          |
+          |    static A createA(){return new A();}
+          |}
+          |
+          |class Factory{ }
+          |
+          |class Client { void m(){ A a = A.createA(); } }"""
+      ) {
 
         val ctor = fullName2id("p.A.A()")
         val factory = fullName2id("p.A.createA()")

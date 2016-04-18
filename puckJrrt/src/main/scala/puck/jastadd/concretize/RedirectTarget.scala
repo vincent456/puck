@@ -46,24 +46,19 @@ object RedirectTarget {
 
     val (_, reenactor) = resultAndReenactor
 
-    logger.writeln(s"setting type of ${(reenactor, typeUser).shows} " +
-      s"to ${(reenactor, typeId).shows}")
+    logger.writeln(s"change type in ${(reenactor, typeUser).shows} " +
+      s"from ${(reenactor, oldTypeId).shows}" +
+      s" to ${(reenactor, typeId).shows}")
 
     val TypedKindDeclHolder(tdecl) = id2declMap(typeId)
     val TypedKindDeclHolder(oldTdecl) = id2declMap(oldTypeId)
 
     id2declMap(typeUser) match {
-//      case MethodDeclHolder(mdecl) =>
-//        mdecl.setTypeAccess(tdecl.createLockedAccess())
-//      case ParameterDeclHolder(fdecl) =>
-//        fdecl.setTypeAccess(tdecl.createLockedAccess())
-//      case FieldDeclHolder(fdecl, _) =>
-//        fdecl.setTypeAccess(tdecl.createLockedAccess())
       case BlockHolder(block) =>
 
         val MethodDeclHolder(mdecl) = id2declMap(reenactor container_! typeUser)
          //TODO find why !(block eq mdecl.getBlock)
-        //logger.writeln(block eq mdecl.getBlock)
+        logger.writeln("block eq mdecl.getBlock = " + (block eq mdecl.getBlock))
         mdecl.getBlock.replaceTypeAccess(oldTdecl, tdecl)
 
       case holder : HasNode =>  holder.node.replaceTypeAccess(oldTdecl, tdecl)

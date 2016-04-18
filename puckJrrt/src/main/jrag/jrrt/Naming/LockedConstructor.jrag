@@ -34,7 +34,7 @@ aspect LockedConstructor {
 	private void ConstructorAccess.setTarget(ConstructorDecl targetConstructor) {
 		this.targetConstructor = targetConstructor;
 	}
-	private void ClassInstanceExpr.setTarget(ConstructorDecl targetConstructor) {
+	void ClassInstanceExpr.setTarget(ConstructorDecl targetConstructor) {
 		this.targetConstructor = targetConstructor;
 	}
 	

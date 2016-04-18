@@ -191,13 +191,13 @@ case class TypeBinding
   }
 }
 
-case class TypeUseConstraint
-( superTypeUse : NodeIdP,
-  subTypeUse :  NodeIdP)
+case class TypeUseConstraintOp
+( typeUse : NodeIdP,
+  constraint :  TypeUseConstraint)
   extends AddRmOperation {
   def execute(g: DependencyGraph , op : Direction) = op match {
-    case Regular => g.addTypeUsesConstraint(superTypeUse, subTypeUse)
-    case Reverse => g.removeTypeUsesConstraint(superTypeUse, subTypeUse)
+    case Regular => g.addTypeUsesConstraint(typeUse, constraint)
+    case Reverse => g.removeTypeUsesConstraint(typeUse, constraint)
   }
 }
 

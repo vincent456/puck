@@ -24,29 +24,16 @@
  * Author of this file : Loïc Girault
  */
 
-aspect Fix{
-        syn boolean BodyDecl.isField() = false;
+package puck.graph
 
-        eq FieldDecl.isField() = true;
-
-        syn lazy Variable Variable.sourceVariableDecl();
-        eq VariableDeclarator.sourceVariableDecl() = this;
-        eq FieldDeclarator.sourceVariableDecl() = this;
-        eq FieldDeclarationSubstituted.sourceVariableDecl() = getOriginal().sourceVariableDecl();
-        eq ParameterDeclaration.sourceVariableDecl() = this;
-
-        eq EnumConstant.sourceVariableDecl() = this;
-        eq InferredParameterDeclaration.sourceVariableDecl() = this;
-        eq CatchParameterDeclaration.sourceVariableDecl() = this;
-
-        syn lazy boolean FieldDecl.hasInit() {
-            for (FieldDeclarator decl : getDeclaratorList()) {
-                if (decl.hasInit()) {
-                     return true;
-                }
-            }
-            return false;
-        }
-
-        public boolean TypeVariable.isTopLevelType() { return false;}
+/**
+  * Created by Loïc Girault on 15/04/16.
+  */
+sealed abstract class TypeUseConstraint {
+  def constrainedType : NodeId = constrainedUse._2
+  def constrainedUse : NodeIdP
 }
+
+case class Sup(constrainedUse : NodeIdP) extends TypeUseConstraint
+case class Sub(constrainedUse : NodeIdP) extends TypeUseConstraint
+case class Eq(constrainedUse : NodeIdP) extends TypeUseConstraint

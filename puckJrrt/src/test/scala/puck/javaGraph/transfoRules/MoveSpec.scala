@@ -48,7 +48,21 @@ class MoveSpec
   feature("Move class") {
 
     scenario("Move top level class") {
-      val _ = new ScenarioFactory(s"$examplesPath/topLevelClass/A.java") {
+      val _ = new ScenarioFactory(
+        """package p1;
+          |
+          |public class A {
+          |    public A(){}
+          |    public void ma(){}
+          |}
+          |
+          |class B {
+          |    public void mb(){
+          |        A a = new A();
+          |        a.ma();
+          |    }
+          |}"""
+      ) {
         val package1 = fullName2id("p1")
 
         val classA = fullName2id("p1.A")
@@ -104,9 +118,6 @@ class MoveSpec
 
   }
 
-  val moveMethod_movedMethodUsesThis = examplesPath + "/method/movedMethodUsesThis"
-  val moveMethodUsedByThis = examplesPath + "/method/usedByThis"
-  val movedMethodNOTusedByThis = examplesPath + "/method/NOTusedByThis"
 
   def assertIsArrowAndUncurry(t : Type) : Arrow = {
     t match {
@@ -124,7 +135,20 @@ class MoveSpec
   feature("Move method"){
 
     scenario("moved method not used by this"){
-      val _ = new ScenarioFactory(s"$movedMethodNOTusedByThis/MovedMethodHasNoParameter.java"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A { public void methodToMove(){} }
+          |
+          |class B { }
+          |
+          |class C {
+          |    public void user(){
+          |        A a = new A();
+          |        a.methodToMove();
+          |    }
+          |}"""
+      ){
 
         val classA = fullName2id("p.A")
         val methToMove = fullName2id("p.A.methodToMove()")
@@ -147,7 +171,17 @@ class MoveSpec
 
 
     scenario("move method used by this - keep reference with parameter"){
-      val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodHasNoParameter.java"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |
+          |    public void mUser(){ methodToMove(); }
+          |
+          |    public void methodToMove(){}
+          |}
+          |
+          |class B{ }"""){
 
         val classA = fullName2id("p.A")
         val methUserDecl = fullName2id("p.A.mUser()")
@@ -172,7 +206,18 @@ class MoveSpec
     }
 
     scenario("move method used by this - keep reference with Field"){
-      val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodHasNoParameter.java"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |
+          |    public void mUser(){ methodToMove(); }
+          |
+          |    public void methodToMove(){}
+          |}
+          |
+          |class B{ }"""
+      ){
 
         val classA = fullName2id("p.A")
         val methUserDecl = fullName2id("p.A.mUser()")
@@ -202,7 +247,21 @@ class MoveSpec
     }
 
     scenario("move method used by this - user also via self another method that will not be moved "){
-      val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodUsedAlongASiblingMethodThatIsNotMoved.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |    void mUser(){
+          |        mUsedToMove();
+          |        mUsedOther();
+          |    }
+          |
+          |    void mUsedToMove(){}
+          |    void mUsedOther(){}
+          |}
+          |
+          |class B{ }"""
+      ) {
 
         val classA = fullName2id("p.A")
         val methUserDecl = fullName2id("p.A.mUser()")
@@ -243,7 +302,20 @@ class MoveSpec
     scenario("move method used by this several times - keep reference with Parameter"){
 
 
-      val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodUsedByThisSeveralTimes.java"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |
+          |    public void mUser1(){ methodToMove(); }
+          |
+          |    public void mUser2(){ methodToMove(); }
+          |
+          |    public void methodToMove(){}
+          |}
+          |
+          |class B{ }"""
+      ){
 
         val classA = fullName2id("p.A")
         val methUser1Decl = fullName2id("p.A.mUser1()")
@@ -282,7 +354,20 @@ class MoveSpec
     }
 
     scenario("move method used by this several times - keep reference with Field"){
-      val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodUsedByThisSeveralTimes.java"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |
+          |    public void mUser1(){ methodToMove(); }
+          |
+          |    public void mUser2(){ methodToMove(); }
+          |
+          |    public void methodToMove(){}
+          |}
+          |
+          |class B{ }"""
+      ){
 
         val classA = fullName2id("p.A")
         val methUser1Decl = fullName2id("p.A.mUser1()")
@@ -326,7 +411,20 @@ class MoveSpec
     }
 
     ignore("Move method not used by this to class of a parameter"){
-      val _ = new ScenarioFactory(s"$movedMethodNOTusedByThis/MovedMethodHasNoParameter.java"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A { public void methodToMove(){} }
+          |
+          |class B { }
+          |
+          |class C {
+          |    public void user(){
+          |        A a = new A();
+          |        a.methodToMove();
+          |    }
+          |}"""
+      ){
 
         val rootPackage = fullName2id("p")
 
@@ -357,7 +455,20 @@ class MoveSpec
 
 
     scenario("moved method uses this - keep reference with parameter "){
-      val _ = new ScenarioFactory(s"$moveMethod_movedMethodUsesThis/MovedMethodHasNoParameter.java"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |
+          |    public A(){}
+          |
+          |    public void mUsed(){}
+          |
+          |    public void methodToMove(){ mUsed();}
+          |}
+          |
+          |class B{ }"""
+      ){
 
         val currentHost = fullName2id("p.A")
         val methToMoveDecl = fullName2id("p.A.methodToMove()")
@@ -386,7 +497,18 @@ class MoveSpec
   feature("Move methods"){
 
     scenario("one of the moved is used by another") {
-      val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodHasNoParameter.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |
+          |    public void mUser(){ methodToMove(); }
+          |
+          |    public void methodToMove(){}
+          |}
+          |
+          |class B{ }"""
+      ) {
 
         val classA = fullName2id("p.A")
         val methUserDecl = fullName2id("p.A.mUser()")
@@ -411,7 +533,22 @@ class MoveSpec
 
 
     scenario("two moved method both used by an unmoved one") {
-      val _ = new ScenarioFactory(s"$moveMethodUsedByThis/TwoMovedMethodUsedBySameUnmovedSibling.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |
+          |    public void mUser(){
+          |        methodToMove1();
+          |        methodToMove2();
+          |    }
+          |
+          |    public void methodToMove1(){}
+          |    public void methodToMove2(){}
+          |}
+          |
+          |class B{ }"""
+      ) {
 
         val classA = fullName2id("p.A")
         val methUserDecl = fullName2id("p.A.mUser()")

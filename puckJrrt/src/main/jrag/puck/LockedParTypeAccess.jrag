@@ -1,0 +1,41 @@
+aspect LockedParTypeAccess{
+
+    private TypeDecl ParTypeAccess.targetType = null;
+    private void ParTypeAccess.setTargetType(TypeDecl td) {
+        targetType = td;
+    }
+    public boolean ParTypeAccess.isLocked() { return targetType != null; }
+
+    refine Generics eq ParTypeAccess.type() = isLocked() ? targetType.refresh() : refined();
+
+    public ASTNode ParTypeAccess.lock() { return lock(type()); }
+
+    public ASTNode ParTypeAccess.lock(TypeDecl decl) {
+        mandatoryAssert(decl != null && !decl.isUnknown());
+        setTargetType(decl);
+        //is it always true for type variables ?
+        if(parent != null && !(decl instanceof TypeVariable))
+            replace(this).with(this);
+        //needed for ParseName rewritten to TypeAccess. otherwise lock is lost on cache flush
+        return this;
+    }
+
+    public Access ParTypeAccess.unlock() {
+        Expr qual = getQualifier();
+        mandatoryAssert(qual == null || qual.isPure());
+        TypeDecl target = targetType.refresh();
+        setTargetType(null);
+        flushTreeCache();
+        if(!target.hasName())
+            throw new RefactoringException("cannot unlock access to nameless type");
+        try {
+            if(!isObscured() && type().equals(target))
+                return this;
+            return unlock(qual, target);
+        } finally {
+            setTargetType(null);
+        }
+    }
+
+
+}

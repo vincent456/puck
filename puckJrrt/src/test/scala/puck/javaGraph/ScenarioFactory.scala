@@ -87,6 +87,7 @@ case class ScenarioFactory
 
   implicit val logger = ScenarioFactory.logger
 
+  //implicit def idOfFullName(fn : String) : NodeId = fullName2id apply fn
 
 
   def compare: (DependencyGraph, DependencyGraph) => Boolean =
@@ -115,4 +116,6 @@ case class ScenarioFactory
 
   def printFullNamesSortedByKey() : Unit =
     fullName2id.toList map (_.swap) sortBy(_._1) foreach println
+
+
 }

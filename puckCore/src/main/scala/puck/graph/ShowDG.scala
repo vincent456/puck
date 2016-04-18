@@ -189,6 +189,20 @@ object ShowDG extends ShowConstraints{
     case Reverse => "Remove"
   }
 
+  val tcOp : TypeUseConstraint => String = {
+    case Sub(_) => ":>"
+    case Eq(_) =>  ":="
+    case Sup(_) => ":<"
+  }
+
+  def typeConstraintCordBuilder : CordBuilder[(NodeIdP, TypeUseConstraint)] = {
+   case (dg, ((tuser, tused), tc)) =>
+     val tu1 = s"Uses($tuser - ${desambiguatedFullName(dg, tuser)}, $tused - ${desambiguatedFullName(dg, tused)})"
+     val (tuser2, tused2) = tc.constrainedUse
+     val tu2 = s"Uses($tuser2 - ${desambiguatedFullName(dg, tuser2)}, $tused2 - ${desambiguatedFullName(dg, tused2)})"
+
+     Cord(s"$tu1 ${tcOp(tc)} $tu2")
+  }
 
   implicit def abstractionCordBuilder : CordBuilder[Abstraction] = (dg, a) =>
     a match {

@@ -382,6 +382,8 @@ object PuckJrrtBuild {
       cleanFiles += extendjManagedSrc.value,
 
       parallelExecution in test := false, //cannot compile several program in parallel with jastadd
+      parallelExecution in testOnly := false,
+      parallelExecution in testQuick := false,
 
       //without this option, there is "cannot assign instance of scala.collection.immutable.List$SerializationProxy"
       // Cast exception raised in RecordingSerializationSpec ...

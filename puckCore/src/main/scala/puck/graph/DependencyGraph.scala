@@ -350,13 +350,25 @@ class DependencyGraph
       newGraph(edges = edges.removeUsesDependency(typeUse, typeMemberUse),
         recording = recording.removeTypeBinding(typeUse, typeMemberUse))
 
-  def addTypeUsesConstraint(superTypeUse : NodeIdP, subTypeUse : NodeIdP) : DependencyGraph =
-    newGraph(edges = edges.addTypeUsesConstraint(superTypeUse, subTypeUse),
-      recording = recording.addTypeUseConstraint(superTypeUse, subTypeUse))
+  def addTypeUsesConstraint(typeUse : NodeIdP, constraint : TypeUseConstraint) : DependencyGraph =
+    newGraph(edges =
+      constraint match {
+        case Sub(subTypeUse) => edges.addTypeUsesConstraint(typeUse, subTypeUse)
+        case Sup(supTypeUse) => edges.addTypeUsesConstraint(supTypeUse, typeUse)
+        case Eq(oTypeUse) => edges.addEqTypeUsesConstraint(typeUse, oTypeUse)
+      },
+      recording = recording.addTypeUseConstraint(typeUse, constraint))
 
-  def removeTypeUsesConstraint(superTypeUse : NodeIdP, subTypeUse : NodeIdP) : DependencyGraph =
-    newGraph(edges = edges.removeTypeUsesConstraint(superTypeUse, subTypeUse),
-      recording = recording.removeTypeUseConstraint(superTypeUse, subTypeUse))
+  def removeTypeUsesConstraint(typeUse : NodeIdP, constraint : TypeUseConstraint) : DependencyGraph =
+    newGraph(edges =  constraint match {
+      case Sub(subTypeUse) => edges.removeTypeUsesConstraint(typeUse, subTypeUse)
+      case Sup(supTypeUse) => edges.removeTypeUsesConstraint(supTypeUse, typeUse)
+      case Eq(oTypeUse) => edges.removeEqTypeUsesConstraint(typeUse, oTypeUse)
+    },
+    recording = recording.removeTypeUseConstraint(typeUse, constraint))
+
+
+
 
 
   def changeTypeUseOfTypeMemberUse
@@ -584,14 +596,33 @@ class DependencyGraph
     dst.foldLeft(dst) { case (acc, id) => acc ++ subTypes(id) }
   }
 
+
+  private def typeUsesConstrained(typeUse : NodeIdP)(f: TypeUseConstraint => Boolean) : Set[Uses]=
+    edges.typeUsesConstraints getFlat typeUse filter f map {
+      tuc =>
+      val (s, t) = tuc.constrainedUse
+      edges.getUses(s,t).getOrElse {
+        import ShowDG._
+        error((this,(s,t)).shows + " does not exist")
+      }
+    }
+
+
   def usesThatShouldUsesASubtypeOf(typeUse : NodeIdP) : Set[Uses]=
-    edges.typeUsesSuperTypeConstraints getFlat typeUse map {
-      case (s, t) => edges.getUses(s,t).get
+    typeUsesConstrained(typeUse) {
+      case Sub(_) => true
+      case _ => false
     }
 
   def usesThatShouldUsesASuperTypeOf(typeUse : NodeIdP) : Set[Uses]=
-    edges.typeUsesSubTypeConstraints getFlat typeUse map {
-      case (s, t) => edges.getUses(s,t).get
+    typeUsesConstrained(typeUse) {
+      case Sup(_) => true
+      case _ => false
+    }
+  def usesThatShouldUsesSameTypeAs(typeUse : NodeIdP) : Set[Uses]=
+    typeUsesConstrained(typeUse) {
+      case Eq(_) => true
+      case _ => false
     }
 
 

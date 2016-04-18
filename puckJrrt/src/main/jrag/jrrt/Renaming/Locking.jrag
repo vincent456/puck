@@ -48,6 +48,7 @@ aspect Locking {
 	}
 	PackageAccess implements LockableName;
 	TypeAccess implements LockableName;
+	ParTypeAccess implements LockableName;
 	VarAccess implements LockableName;
 	MethodAccess implements LockableName;
 	ClassInstanceExpr implements LockableName;

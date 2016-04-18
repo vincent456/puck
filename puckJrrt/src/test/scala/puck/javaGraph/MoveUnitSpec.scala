@@ -31,12 +31,22 @@ import puck.graph.transformations.rules.Move
 
 
 class MoveUnitSpec extends UnitSpec {
-  val examplesPath = Settings.testExamplesPath + "/move"
-  val moveMethodNotUsedByThis = examplesPath + "/method/NOTusedByThis"
-  val moveMethodUsedByThis = examplesPath + "/method/usedByThis"
 
   "Move" should "know that a typeMember is NOT used by self type" in {
-    val _ = new ScenarioFactory(s"$moveMethodNotUsedByThis/MovedMethodHasNoParameter.java"){
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |class A { public void methodToMove(){} }
+        |
+        |class B { }
+        |
+        |class C {
+        |    public void user(){
+        |        A a = new A();
+        |        a.methodToMove();
+        |    }
+        |}"""
+    ){
 
       val classA = graph.getConcreteNode(fullName2id("p.A"))
       val methToMove = graph.getConcreteNode(fullName2id("p.A.methodToMove()"))
@@ -49,7 +59,18 @@ class MoveUnitSpec extends UnitSpec {
 
   it should "know that a typeMember is used by self type" in {
 
-    val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodHasNoParameter.java") {
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |class A {
+        |
+        |    public void mUser(){ methodToMove(); }
+        |
+        |    public void methodToMove(){}
+        |}
+        |
+        |class B{ }"""
+    ) {
 
       val classA = graph.getConcreteNode(fullName2id("p.A"))
       val methToMove = graph.getConcreteNode(fullName2id("p.A.methodToMove()"))
@@ -59,7 +80,20 @@ class MoveUnitSpec extends UnitSpec {
     }
   }
   it should "know that a typeMember is used by self type when used several times" in {
-    val _ = new ScenarioFactory(s"$moveMethodUsedByThis/MovedMethodUsedByThisSeveralTimes.java") {
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |class A {
+        |
+        |    public void mUser1(){ methodToMove(); }
+        |
+        |    public void mUser2(){ methodToMove(); }
+        |
+        |    public void methodToMove(){}
+        |}
+        |
+        |class B{ }"""
+    ) {
 
       val classA = graph.getConcreteNode(fullName2id("p.A"))
       val methToMove = graph.getConcreteNode(fullName2id("p.A.methodToMove()"))

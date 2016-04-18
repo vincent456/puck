@@ -160,11 +160,6 @@ aspect NamedElement {
         builder.registerDef(thisId, this);
     }
 
-    public void Expr.registerDef(JastaddGraphBuilder builder, int thisId){
-        builder.registerDef(thisId, this);
-    }
-
-
     syn JavaNodeKind DGNamedElement.getDGNodeKind();
 
     eq TypeDecl.getDGNodeKind(){

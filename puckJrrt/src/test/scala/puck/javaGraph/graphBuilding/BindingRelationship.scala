@@ -27,7 +27,7 @@
 package puck.javaGraph.graphBuilding
 
 import puck.AcceptanceSpec
-import puck.graph.Uses
+import puck.graph.{NamedType, ParameterizedType, Uses}
 import puck.javaGraph.ScenarioFactory
 
 /**
@@ -171,4 +171,212 @@ class BindingRelationship extends AcceptanceSpec {
 
     }
   }
+
+  scenario("generic - type parameter as method return type"){
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |class Wrapper<T> {  T get(){return null;} }
+        |
+        |class A{ void m(){} }
+        |
+        |class B {
+        |    Wrapper<A> wa = new Wrapper<A>();
+        |
+        |    void doM(){ wa.get().m(); }
+        |}"""
+    ){
+
+      val actualTypeParam = fullName2id("p.A")
+      val actualTypeParamMethod = fullName2id("p.A.m()")
+
+      val field = fullName2id("p.B.wa")
+
+      val userMethodDef = fullName2id("p.B.doM().Definition")
+
+      val genType = fullName2id("p.Wrapper")
+      val genericMethod = fullName2id("p.Wrapper.get()")
+
+      val fieldGenTypeUse = graph.getUsesEdge(field, genType).value
+      val fieldParameterTypeUse = graph.getUsesEdge(field, actualTypeParam).value
+      val typeMemberUse = graph.getUsesEdge(userMethodDef, actualTypeParamMethod).value
+      val genericMethodUse = graph.getUsesEdge(userMethodDef, genericMethod).value
+
+      graph.styp(field).value should be (ParameterizedType(genType, List(NamedType(actualTypeParam))))
+
+      //typeMemberUse = ("p.B.doMonA().Definition", "p.A.m()")
+      //fieldGenTypeUse = ("p.B.wa", "p.Wrapper")
+      //fieldParameterTypeUse = ("p.B.wa", "p.A")
+      //graph.typeUsesOf(typeMemberUse) should contain (fieldGenTypeUse)
+      graph.typeUsesOf(typeMemberUse) should contain (fieldParameterTypeUse)
+      graph.typeMemberUsesOf(fieldParameterTypeUse) should contain (typeMemberUse)
+      graph.typeMemberUsesOf(fieldParameterTypeUse).size should be (1)
+      //graph.typeMemberUsesOf(fieldParameterTypeUse) should not contain (genericMethodUse)
+    }
+
+
+  }
+
+  scenario("use of method of type a variable value instanciated via subtyping"){
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |class Wrapper<T>{  T getT(){ return null; } }
+        |
+        |class C { void execute(){} }
+        |
+        |class WC extends Wrapper<C> {
+        |    public void m() { getT().execute(); }
+        |}"""
+    ){
+
+      val typeValue = fullName2id("p.C")
+      val typeValueMethod = fullName2id("p.C.execute()")
+
+      val userMethodDef = fullName2id("p.WC.m().Definition")
+      val genType = fullName2id("p.Wrapper")
+      val wc = fullName2id("p.WC")
+
+
+      val classTypeUse = graph.getUsesEdge(wc, typeValue).value
+      val useOfExecute = graph.getUsesEdge(userMethodDef, typeValueMethod).value
+
+
+      assert( classTypeUse existsIn graph )
+      assert( useOfExecute existsIn graph )
+
+      graph.typeUsesOf(useOfExecute) should contain (classTypeUse)
+      graph.typeMemberUsesOf(classTypeUse) should contain (useOfExecute)
+      graph.typeMemberUsesOf(classTypeUse).size should be (1)
+
+    }
+  }
+
+  scenario("Use of parameterized method where Type variable instantiated via subclassing"){
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |class ListModel<E>{
+        |    E e;
+        |    E getE(){ return e;}
+        |}
+        |class HasElement extends ListModel<String> {}
+        |
+        |public class C {
+        |
+        |    HasElement data;
+        |
+        |    public void m() { data.getE().toString(); }
+        |
+        |}"""
+    ){
+      val mDef = fullName2id("p.C.m().Definition")
+      val getE = fullName2id("p.ListModel.getE()")
+
+      val hasElement = fullName2id("p.HasElement")
+      val string = fullName2id("java.lang.String")
+      val toString_ = fullName2id("java.lang.String.toString()")
+
+
+      assert(graph.uses(mDef, getE))
+      assert(graph.uses(mDef, toString_))
+
+      graph.typeUsesOf(mDef, toString_) should contain (Uses(hasElement, string))
+    }
+  }
+
+
+  scenario("Use of parameterized method with RAW Type variable (instantiated) via subclassing"){
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |class ListModel<E>{
+        |    E e;
+        |    E getE(){ return e;}
+        |}
+        |class HasElement extends ListModel {}
+        |
+        |public class C {
+        |
+        |    HasElement data;
+        |
+        |    public void m() { data.getE().toString(); }
+        |
+        |}"""
+    ){
+      val mDef = fullName2id("p.C.m().Definition")
+      val getE = fullName2id("p.ListModel.getE()")
+
+      val hasElement = fullName2id("p.HasElement")
+      val obj = fullName2id("java.lang.Object")
+      val toString_ = fullName2id("java.lang.Object.toString()")
+
+
+      assert(graph.uses(mDef, getE))
+      assert(graph.uses(mDef, toString_))
+
+      graph.typeUsesOf(mDef, toString_) should contain (Uses(hasElement, obj))
+    }
+  }
+
+  scenario("Use of parameterized method where Type variable instantiated via interface subtyping"){
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |interface ListModel<E>{  E getE(); }
+        |interface HasElement extends ListModel<String> {}
+        |
+        |public class C {
+        |
+        |    HasElement data;
+        |
+        |    public void m() { data.getE().toString(); }
+        |
+        |}"""
+    ){
+      val mDef = fullName2id("p.C.m().Definition")
+      val getE = fullName2id("p.ListModel.getE()")
+
+      val hasElement = fullName2id("p.HasElement")
+      val string = fullName2id("java.lang.String")
+      val toString_ = fullName2id("java.lang.String.toString()")
+
+
+      assert(graph.uses(mDef, getE))
+      assert(graph.uses(mDef, toString_))
+
+      graph.typeUsesOf(mDef, toString_) should contain (Uses(hasElement, string))
+    }
+  }
+
+  scenario("Use of parameterized method with RAW Type variable (instantiated) via interface subtyping"){
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |interface ListModel<E>{ E getE(); }
+        |interface HasElement extends ListModel {}
+        |
+        |public class C {
+        |
+        |    HasElement data;
+        |
+        |    public void m() { data.getE().toString(); }
+        |
+        |}"""
+    ){
+      val mDef = fullName2id("p.C.m().Definition")
+      val getE = fullName2id("p.ListModel.getE()")
+
+      val hasElement = fullName2id("p.HasElement")
+      val obj = fullName2id("java.lang.Object")
+      val toString_ = fullName2id("java.lang.Object.toString()")
+
+
+      assert(graph.uses(mDef, getE))
+      assert(graph.uses(mDef, toString_))
+
+      graph.typeUsesOf(mDef, toString_) should contain (Uses(hasElement, obj))
+    }
+  }
+
 }

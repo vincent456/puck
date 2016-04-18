@@ -272,7 +272,6 @@ class RedirectTypeDeclSpec
         |
         |class A implements I { }
         |
-        |
         |class B {
         |    Wrapper<A> wa = new Wrapper<A>();
         |

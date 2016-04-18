@@ -253,10 +253,15 @@ class JavaJastAddDG2AST
     logger.writeln("change applied : ")
     logger.writeln(program.prettyPrint())
 
-    logger.writeln("emptying caches")
+    logger.writeln("flushing caches")
     program.flushTreeCache()
+
+    logger.writeln("after emptying cache : ")
+    logger.writeln(program.prettyPrint())
+
     program.flushLibraryTypesTreeCache()
     program.resetPrimitiveTypes()
+
 
     logger.writeln("unlocking")
     try

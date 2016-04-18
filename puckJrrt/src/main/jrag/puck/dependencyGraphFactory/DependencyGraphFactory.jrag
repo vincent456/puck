@@ -28,6 +28,7 @@ import puck.graph.Isa;
 import puck.graph.Uses;
 import puck.graph.UsesAccessKind;
 import puck.LoadingListener;
+import puck.graph.DGBuildingError;
 
 aspect DependencyGraphFactory {
 
@@ -184,15 +185,6 @@ aspect DependencyGraphFactory {
 		return defId;
 	}
 
-	public void FieldDeclarator.buildInit(JastaddGraphBuilder builder, int thisDeclId){
-		Expr def = getInit();
-		int defId = builder.getDefNode(this);
-		def.registerDef(builder, defId);
-		builder.addContains(thisDeclId, defId);
-		def.buildDG(builder, defId);
-	}
-
-
 	public void ParameterDeclaration.buildDG(JastaddGraphBuilder builder, int containerId){
 		int thisID = buildDGNode(builder);
 		buildDGInChildren(builder, thisID);
@@ -212,14 +204,7 @@ aspect DependencyGraphFactory {
 	}
 
 	public void FieldDecl.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId){
-		puck.graph.Type t = builder.getType(getTypeAccess());
-		for(FieldDeclarator fd : this.getDeclarators()){
-			int fdId = fd.buildDGNode(builder);
-			builder.addContains(hostTypeDeclId, fdId);
-			builder.setType(fdId, t);
-			if(fd.hasInit())
-				fd.buildInit(builder, fdId);
-		}
+		builder.buildDG(hostTypeDeclId, this);
 	}
 
 //	public void Declarator.buildDG(JastaddGraphBuilder builder, int containerId) {
@@ -239,8 +224,8 @@ aspect DependencyGraphFactory {
 		if(getExpr() instanceof Access){
 			int dgTuser = getVariableDecl().buildDGNode(builder);
 			int dgTused = this.getTypeAccess().buildDGNode(builder);
-			((Access) getExpr()).lastAccess().findTypeUserAndBindUses(builder,
-					new Uses(dgTuser, dgTused, UsesAccessKind.none()));
+			builder.findTypeUserAndBindUses(new Uses(dgTuser, dgTused, UsesAccessKind.none()),
+				((Access) getExpr()).lastAccess());
 		}
 	}
 
@@ -257,7 +242,7 @@ aspect DependencyGraphFactory {
 		int declId = buildDGNode(builder);
 		builder.addContains(hostTypeDeclId, declId);
 
-		buildDGType(builder, declId);
+		builder.buildDGType(declId, this);
 
 		if(hasDefinition()){
 			for(int i=0; i< getNumChild(); i++)
@@ -358,21 +343,7 @@ aspect DependencyGraphFactory {
 	}
 
 	public void ClassInstanceExpr.buildDG(JastaddGraphBuilder builder, int containerId){
-		//System.err.println("ClassInstanceExpr.buildDG : " + this);
-
-		getArgList().buildDG(builder, containerId);
-		getTypeDeclOpt().buildDG(builder, containerId);
-
-		//getAccess().accessed().buildDGNode avoid lock
-		int classNodeId = getAccess().accessed().buildDGNode(builder);
-		int ctorNodeId = buildDGNode(builder);//does lock
-		if(hasTypeDecl())
-			setTarget(null);//unlock anonymous decl
-
-		Uses constructorUses = new Uses(containerId, ctorNodeId, UsesAccessKind.none());
-		builder.addEdge(constructorUses);
-
-
+		builder.buildDG(containerId, this);
 	}
 
 	syn boolean ASTNode.isAbstractDot();
@@ -416,16 +387,6 @@ aspect DependencyGraphFactory {
 		builder.buildDG(this, containerId);
 		buildDGInChildren(builder, containerId);
 	}
-
-	public ASTNode ParTypeAccess.lock() {
-		ASTNode l = getTypeAccess().lock();
-		for(Access a : getTypeArguments())
-			a.lock();
-
-		return this;
-	}
-
-
 
 	static void TypeDecl.addImplements(JastaddGraphBuilder builder,
 									   int sub, List<Access> implementList){

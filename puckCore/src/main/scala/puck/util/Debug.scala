@@ -97,12 +97,11 @@ object Debug {
 
 
   implicit val edgeMapCordBuilder : CordBuilder[EdgeMap] = {
-    case (_, EdgeMap ( userMap, usedMap, accessKindMap,
+    case (dg, EdgeMap ( userMap, usedMap, accessKindMap,
     contents, containers, superTypes, subTypes,
     typeMemberUses2typeUsesMap,
     typeUses2typeMemberUsesMap,
-    typeUsesSuperTypeConstraints,
-    typeUsesSubTypeConstraints,
+    typeUsesConstraints,
     parameters, types, typedBy)) =>
       val builder = new StringBuilder(150)
 
@@ -125,6 +124,9 @@ object Debug {
       builder.append(typeMemberUses2typeUsesMap.toString)
       builder.append("\ntUse -> tmUse\n\t")
       builder.append(typeUses2typeMemberUsesMap.toString)
+      builder.append("\ntypeUsesConstraints\n")
+      builder append print(typeUsesConstraints, (k : NodeIdP, v : TypeUseConstraint) => typeConstraintCordBuilder(dg,(k,v)).toString())
+
       builder.append("\ntypes\n\t")
       builder.append( mkMapStringSortedByKey(types))
 
@@ -137,6 +139,19 @@ object Debug {
       sortBy(_._1).mkString("\t[",",\n\t ","]\n")
 
   }
+
+  def print[K,V](s : SetValueMap.T[K,V], p : (K, V)  => String) : String = {
+    val sb = new StringBuilder()
+    s.iterator.foreach{ case (k, v) =>
+      sb append "\t"
+      sb append p(k, v)
+      sb append "\n"
+    }
+    sb.toString()
+  }
+
+
+
 
   implicit val nodeIndexCordBuilder : CordBuilder[NodeIndex] = {
     case (g, NodeIndex(_, cNodes, removedCnodes,

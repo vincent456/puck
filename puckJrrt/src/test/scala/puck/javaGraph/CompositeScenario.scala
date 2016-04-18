@@ -71,7 +71,7 @@ class CompositeScenario private ()
 
   val (fsElement, g1) = abstractFile(g0)
 
-  val g2 = TR.redirection.redirectInstanceUsesAndPropagate(g1,
+  val g2 = TR.redirection.redirectUsesAndPropagate(g1,
     Uses(`fileSystem.Directory.files`, `fileSystem.File`),
     AccessAbstraction(fsElement, SupertypeAbstraction)).rvalue
 

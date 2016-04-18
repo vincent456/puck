@@ -293,13 +293,13 @@ object Recording {
                           typeMemberUse :  NodeIdP) : Recording =
       Transformation(Reverse, TypeBinding(typeUse, typeMemberUse)) +: record
 
-    def addTypeUseConstraint(superTypeUse : NodeIdP,
-                             subTypeUse :  NodeIdP) : Recording =
-      Transformation(Regular, TypeUseConstraint(superTypeUse, subTypeUse)) +: record
+    def addTypeUseConstraint(typeUse : NodeIdP,
+                             constraint :  TypeUseConstraint) : Recording =
+      Transformation(Regular, TypeUseConstraintOp(typeUse, constraint)) +: record
 
-    def removeTypeUseConstraint(superTypeUse : NodeIdP,
-                                subTypeUse :  NodeIdP) : Recording =
-      Transformation(Reverse, TypeUseConstraint(superTypeUse, subTypeUse)) +: record
+    def removeTypeUseConstraint(typeUse : NodeIdP,
+                                constraint :  TypeUseConstraint) : Recording =
+      Transformation(Reverse, TypeUseConstraintOp(typeUse, constraint)) +: record
 
     def changeTypeUseOfTypeMemberUse
     ( oldTypeUse : NodeIdP,

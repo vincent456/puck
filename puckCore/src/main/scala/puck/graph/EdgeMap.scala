@@ -53,8 +53,7 @@ object EdgeMap {
                 EdgeMapT(), EdgeMapT(),
                 UseDependencyMap(),
                 UseDependencyMap(),
-                UseDependencyMap(),
-                UseDependencyMap(),
+                SetValueMap(),
                 ParamMapT(),
                 Map(), EdgeMapT())
 }
@@ -74,8 +73,11 @@ case class EdgeMap
   //BR
   typeMemberUses2typeUsesMap : UseDependencyMap,
   typeUses2typeMemberUsesMap : UseDependencyMap,
-  typeUsesSuperTypeConstraints : UseDependencyMap, // if ((a, t), (a, s)) then constraint( t :> s )
-  typeUsesSubTypeConstraints : UseDependencyMap, // if ((a, t), (a, s)) then constraint( t :< s )
+  typeUsesConstraints : SetValueMap.T[NodeIdP, TypeUseConstraint],
+  // if ((a, t), Sub(a, s)) then constraint( t :> s )
+  // if ((a, t), Sup(a, s)) then constraint( t <: s )
+  // if ((a, t), Eq(a, s)) then constraint( t =:= s )
+
   //special cases of contains :
   parameters : ParamMapT,
   //definition : Node2NodeMap,
@@ -223,14 +225,30 @@ case class EdgeMap
     copy(typeMemberUses2typeUsesMap = typeMemberUses2typeUsesMap - (typeMemberUse, typeUse),
       typeUses2typeMemberUsesMap = typeUses2typeMemberUsesMap - (typeUse, typeMemberUse))
 
-  def addTypeUsesConstraint(typeUse1 : NodeIdP, typeUse2 : NodeIdP) : EdgeMap =
-    copy(typeUsesSuperTypeConstraints = typeUsesSuperTypeConstraints + (typeUse1, typeUse2),
-           typeUsesSubTypeConstraints = typeUsesSubTypeConstraints + (typeUse2, typeUse1))
+  def addTypeUsesConstraint(superTypeUse : NodeIdP, subTypeUse : NodeIdP) : EdgeMap =
+    copy(typeUsesConstraints =
+      typeUsesConstraints +
+      (subTypeUse, Sup(superTypeUse)) +
+        (superTypeUse, Sub(subTypeUse)))
 
+  def removeTypeUsesConstraint(superTypeUse : NodeIdP, subTypeUse : NodeIdP) : EdgeMap =
+    copy(typeUsesConstraints =
+      typeUsesConstraints -
+        (subTypeUse, Sup(superTypeUse)) -
+        (superTypeUse, Sub(subTypeUse)))
 
-  def removeTypeUsesConstraint(typeUse1 : NodeIdP, typeUse2 : NodeIdP) : EdgeMap =
-    copy(typeUsesSuperTypeConstraints = typeUsesSuperTypeConstraints - (typeUse1, typeUse2),
-      typeUsesSubTypeConstraints = typeUsesSubTypeConstraints - (typeUse2, typeUse1))
+  def addEqTypeUsesConstraint(typeUse : NodeIdP, otherTypeUse : NodeIdP) : EdgeMap =
+    copy(typeUsesConstraints =
+      typeUsesConstraints +
+        (otherTypeUse, Eq(typeUse)) +
+        (typeUse, Eq(otherTypeUse)))
+
+  def removeEqTypeUsesConstraint(typeUse : NodeIdP, otherTypeUse : NodeIdP) : EdgeMap =
+    copy(typeUsesConstraints =
+      typeUsesConstraints -
+        (otherTypeUse, Eq(typeUse)) -
+        (typeUse, Eq(otherTypeUse)))
+
 
   def redirectTypeUse(typed : NodeId, oldTypeUsed : NodeId, newTypeUsed : NodeId) : EdgeMap =
      types get typed map { t =>

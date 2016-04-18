@@ -15,11 +15,13 @@ aspect LockedTypeAccess {
 	private void TypeAccess.setTargetType(TypeDecl td) {
 		targetType = td;
 	}
-	
 	public boolean TypeAccess.isLocked() { return targetType != null; }
-	
+
+
+
 	refine LookupType eq TypeAccess.decls() = isLocked() ? targetType.refresh() : refined();
 	refine Generics eq TypeAccess.decl() = isLocked() ? targetType.refresh() : refined();
+
 
 	refine PrettyPrint public void TypeAccess.prettyPrint(PrettyPrinter out) {
 		if(!isLocked()) {
@@ -149,8 +151,12 @@ aspect LockedTypeAccess {
 	// primitive types can never be shadowed, so there's no point in locking them
 	public ASTNode PrimitiveTypeAccess.lock() { return this; }
 	public Access PrimitiveTypeAccess.unlock() { return this; }
-	
-	public Access TypeAccess.unlock() {
+
+	interface CanBeObscured { boolean isObscured(); }
+	TypeAccess implements CanBeObscured;
+	ParTypeAccess implements CanBeObscured;
+
+	public Access CanBeObscured.unlock() {
 		Expr qual = getQualifier();
 		mandatoryAssert(qual == null || qual.isPure());
 		TypeDecl target = targetType.refresh();
@@ -159,14 +165,16 @@ aspect LockedTypeAccess {
 		if(!target.hasName())
 			throw new RefactoringException("cannot unlock access to nameless type");
 		try {
-			if(!isObscured() && decl().equals(target))
+			if(!isObscured() && type().equals(target))
 				return this;
 			return unlock(qual, target);
 		} finally {
 			setTargetType(null);
 		}
 	}
-	
+
+
+
 	public boolean TypeAccess.isObscured() {
 		if(!fromSource())
 			return false;
@@ -175,6 +183,22 @@ aspect LockedTypeAccess {
 			return !(lookupName(tlpkg) instanceof PackageDecl);
 		return !(lookupName(name()) instanceof TypeDecl);
 	}
+
+	public boolean ParTypeAccess.isObscured() {
+		if(!fromSource())
+			return false;
+
+		if(getTypeAccess() instanceof CanBeObscured &&
+				((CanBeObscured)getTypeAccess()).isObscured() )
+			return true;
+
+		for(Access a : getTypeArguments()){
+			if(a instanceof CanBeObscured &&
+					((CanBeObscured)a).isObscured())
+				return true;
+		}
+		return false;
+	}
 	
 	syn boolean TypeDecl.inaccessibleFrom(TypeAccess acc) {
 		if(acc.hostType() == null)
@@ -182,7 +206,10 @@ aspect LockedTypeAccess {
 		else
 			return !this.accessibleFrom(acc.hostType());
 	}
-	
+
+	public Access ParTypeAccess.unlock(Expr qual, TypeDecl target){
+		throw new RefactoringException("not implemented");
+	}
 	public Access TypeAccess.unlock(Expr qual, TypeDecl target) {
 		if(!fromSource() || hostBodyDecl() instanceof MethodDecl && ((MethodDecl)hostBodyDecl()).isNative())
 			throw new RefactoringException("cannot fix access in library");

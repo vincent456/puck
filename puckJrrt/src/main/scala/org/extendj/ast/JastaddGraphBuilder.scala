@@ -29,7 +29,7 @@ package org.extendj.ast
 import puck.graph.{TypeDecl => PuckTypeDecl, _}
 import puck.javaGraph.nodeKind.{EnumConstant => PuckEnumConstant, _}
 import puck.javaGraph.{JavaGraphBuilder, nodeKind}
-
+import scala.{List => SList}
 
 object JastaddGraphBuilder {
 
@@ -96,7 +96,8 @@ import JastaddGraphBuilder.{qualifierIsSuperAccess, qualifierIsThisAccess}
 
 class JastaddGraphBuilder(val program : Program)
   extends JavaGraphBuilder
-  with TypeUsage {
+  with TypeUsage
+  with GraphBuilderVisitor {
   var graph2ASTMap = Map[Int, ASTNodeLink]()
 
   def findTypeDecl(typ : String): TypeDecl ={
@@ -106,13 +107,13 @@ class JastaddGraphBuilder(val program : Program)
     td
   }
 
-  def getNode(n : DGNamedElement): NodeIdT =
+  def getNode(n : DGNamedElement): NodeId =
     super.addNode(n.dgFullName(), n.name(), n.getDGNodeKind, n.fromSource){
       nid => n.registerNode(this, nid)
     }
 
   import JastaddGraphBuilder.definitionName
-  def getDefNode(n : DGNamedElement): NodeIdT =
+  def getDefNode(n : DGNamedElement): NodeId =
     super.addNode(n.dgFullName()+ "." + definitionName, definitionName, Definition, n.fromSource)()
 
   def attachOrphanNodes(fromId : Int = g.rootId) : Unit = {
@@ -148,6 +149,40 @@ class JastaddGraphBuilder(val program : Program)
   def addParams(decl : NodeId, params : java.util.ArrayList[Integer]) : Unit =
     addParams(decl, params.toList.map(_.toInt))
 
+  def buildDGType(thisId : NodeId, decl : FieldDeclarator) : Unit = {
+    setType(thisId,  getType(decl.getTypeAccess))
+  }
+
+  def buildDGType(thisId : NodeId, decl : BodyDecl) : Unit = decl match {
+    case cDecl : ConstructorDecl =>
+      astParamsToDGType(thisId, cDecl)
+      setType(thisId, NamedType(cDecl.hostType() buildDGNode this))
+    case mDecl : MethodDecl =>
+      astParamsToDGType(thisId, mDecl)
+      setType(thisId, getType(mDecl.getTypeAccess))
+    case _ : SubstitutedBodyDecl =>
+      println("SubstitutedBodyDecl.buildDGType TODO !!!")
+    case _ : FieldDecl =>
+      throw new DGBuildingError("missing type for FieldDecl")
+    case _ : EnumConstant =>
+      throw new DGBuildingError("missing type for EnumConstant")
+    case _ => ()
+
+  }
+
+
+
+  def astParamsToDGType(thisId : NodeId, c : Callable ) : Unit = {
+    addParams(thisId,
+      c.getParameterList.foldRight(SList[NodeId]()) {
+      case (pdecl, params) =>
+        val paramId = pdecl buildDGNode this
+        setType(paramId, getType(pdecl.`type`()))
+        paramId :: params
+    })
+  }
+
+
   def addApiNode(nodeKind : String, typ : String, bodydeclName: String) : Unit = {
     //println("trying to add type "+typ + " " + bodydeclName+ " ... ")
 
@@ -170,15 +205,6 @@ class JastaddGraphBuilder(val program : Program)
     }
   }
 
- def buildDef(defOwner : DGNamedElement,
-    theDef : Block , defOwnerId: Int) : Int = {
-    val defId = getDefNode(defOwner)
-    theDef.registerDef(this, defId)
-    addContains(defOwnerId, defId)
-    theDef.buildDG(this, defId)
-    defId
-  }
-
   def buildTypeUse(tmAccess : TypeMemberAccess, typeMemberUse: Uses) : Unit = {
     if(qualifierIsThisAccess(tmAccess)) {
       val thisTypeId = tmAccess.hostType().buildDGNode(this)
@@ -191,7 +217,7 @@ class JastaddGraphBuilder(val program : Program)
     }
     else {
       val access = tmAccess.asInstanceOf[Access]
-      try access.qualifier().findTypeUserAndBindUses(this, typeMemberUse)
+      try findTypeUserAndBindUses(typeMemberUse, access.qualifier())
       catch {
         case _: Error =>
             throw new NoTypeUser(access.prettyPrint() + "(" + access.getClass + ") in " +
@@ -234,14 +260,6 @@ class JastaddGraphBuilder(val program : Program)
   private def throwRegisteringError(n : ConcreteNode, astType : String) =
     throw new Error(s"Wrong registering ! AGNode.kind : ${n.kind} while Node is an $astType")
 
-  def addTypeUsesConstraint(userOfSuperType : NodeId,
-                            superTypeUsed : NodeId,
-                            userOfSubType : NodeId,
-                            subTypeUsed : NodeId): Unit =
-    addTypeUsesConstraint((userOfSuperType, superTypeUsed), (userOfSubType, subTypeUsed))
-
-
-
   def getParamType(parTypeDecl : ParTypeDecl) : Type = {
     val genId = getNode(parTypeDecl.genericDecl())
     val args =
@@ -279,23 +297,6 @@ class JastaddGraphBuilder(val program : Program)
     }
   }
 
-  def buildDG(pta : ParTypeAccess, containerId : NodeId) : Unit = {
-    getType(pta).ids.foreach(id => addEdge(Uses(containerId, id)))
-  }
-
-  def buildDG(containerId : NodeId, stmt : VarDeclStmt) : Unit = {
-    val t = getType(stmt.getTypeAccess)
-    val astType = stmt.getTypeAccess.`type`()
-    t.ids.foreach (id => addEdge(Uses(containerId, id)))
-    stmt.getDeclarators filter(_.hasInit) foreach {
-      vd =>
-          vd.getInit.buildDG(this, containerId)
-          vd.getInit match {
-            case a: Access => constraintTypeUses(containerId, astType, a)
-            case _ => ()
-          }
-    }
-  }
 
 //  val register : NodeId => ASTNode[_] =>  Unit = n => {
 //    case decl : InterfaceDecl =>
