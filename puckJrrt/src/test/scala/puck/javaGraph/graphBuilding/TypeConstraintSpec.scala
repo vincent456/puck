@@ -60,8 +60,8 @@ class TypeConstraintSpec extends AcceptanceSpec {
 
       graph.usesThatShouldUsesSameTypeAs((`p.B.wa`, `p.A`)) should contain (Uses(`p.B.wa.Definition`, `p.A`))
 
-//      graph.usesThatShouldUsesASuperTypeOf((`p.Wrapper.Wrapper()`, `p.Wrapper`)) should contain ((`p.B.wa`, `p.Wrapper`))
-//      graph.usesThatShouldUsesASubtypeOf((`p.B.wa`, `p.Wrapper`)) should contain ((`p.Wrapper.Wrapper()`, `p.Wrapper`))
+      graph.usesThatShouldUsesASuperTypeOf((`p.Wrapper.Wrapper()`, `p.Wrapper`)) should contain (Uses(`p.B.wa`, `p.Wrapper`))
+      graph.usesThatShouldUsesASubtypeOf((`p.B.wa`, `p.Wrapper`)) should contain (Uses(`p.Wrapper.Wrapper()`, `p.Wrapper`))
 
 
 
@@ -97,12 +97,6 @@ class TypeConstraintSpec extends AcceptanceSpec {
 
       assert (Uses(`p.B.assignA().Definition`, `p.A`) existsIn graph)
       assert (Uses(`p.B.assignA().Definition`, `p.A.m()`) existsIn graph)
-
-      import ShowDG._
-      import Debug._
-
-      (graph, graph.nodesIndex).println
-      (graph, graph.edges).println
 
       graph.styp(`p.B.wa`).value should be (ParameterizedType(`p.Wrapper`, List(NamedType(`p.A`))))
 
@@ -186,22 +180,9 @@ class TypeConstraintSpec extends AcceptanceSpec {
 
     }
   }
-  scenario("Use of boo"){
+
+  scenario("2 type variables"){
     val _ = new ScenarioFactory(
-/*      """package p;
-        |
-        |class Wrapper<T> {  T get(){return null;} }
-        |class WO extends Wrapper<Object>{}
-        |class WWO extends Wrapper<WO> {}
-        |public class C {
-        |
-        |    WWO wwo;
-        |
-        |    public void m() {
-        |       WO wo = wwo.get();
-        |       Object o = wo.get();
-        |    }
-        |}"""*/
     """package p;
       |
       |import java.util.Map;

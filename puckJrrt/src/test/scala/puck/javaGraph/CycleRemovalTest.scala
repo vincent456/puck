@@ -37,45 +37,66 @@ import puck.{Settings, AcceptanceSpec}
 class CycleRemovalTest
   extends AcceptanceSpec {
 
+  feature("Layering algorithm") {
+    scenario("3 package 3 classes") {
+      val _ = new ScenarioFactory(
+        """package p1;
+          |import p3.C;
+          |
+          |public class A {
+          |
+          |    C c = new C();
+          |
+          |    void ma(){
+          |        c.mc1();
+          |        c.mc2();
+          |    }
+          |}""",
+        """package p2;
+          |import p1.A;
+          |public class B { A a = new A(); }""",
+        """package p3;
+          |import p2.B;
+          |
+          |public class C {
+          |
+          |    B b = new B();
+          |
+          |    public void mc1(){}
+          |    public void mc2(){}
+          |}"""
+      ) {
 
-  val examplesPath = Settings.testExamplesPath + "/cycle"
-  feature("Layering algorithm"){
-    val rootDir = examplesPath + "/3packages3classes"
-    scenario("3 package 3 classes"){
-      val scenar = ScenarioFactory.fromDirectory(rootDir)
-      import scenar.graph
+        val isRelevantNode: (DependencyGraph, NodeId) => Boolean = {
+          (g, id) =>
+            val n = g.getNode(id)
+            n.kind.kindType match {
+              case NameSpace | TypeDecl => true
+              case _ => false
+            }
+        }
 
 
-      val isRelevantNode : (DependencyGraph, NodeId) => Boolean = {
-        (g, id) =>
-          val n = g.getNode(id)
-          n.kind.kindType match {
-            case NameSpace | TypeDecl => true
-            case _ => false
-          }
+        //      val edges = reduceGraph(graph, isRelevantNode)
+        //      //graph.usesList ++ graph.typeUsesList
+        //      val nodes = graph.nodesId.toSet filter (isRelevantNode(graph, _))
+        //      val remover = new GreedyCycleRemover(NaiveHelper)
+        //      val edgesToRemove = remover.edgesToRemove((nodes, edges))
+
+        val rg = GenericGraphAlgorithms.reduceGraphG(graph, isRelevantNode)
+        //QuickFrame(rg, "RG",JavaDotHelper)
+        //      val edgesToRemove = greedyCycleRemoval(rg)
+
+        val wdg = WeightedDirectedGraph.fromDG(graph, isRelevantNode)
+        val remover = new GreedyCycleRemover(WDGHelper)
+        val edgesToRemove = remover.edgesToRemove(wdg).toList
+
+        //      println(edges.mkString(","))
+        //      println(nodes.mkString(","))
+        //      println(edgesToRemove)
+        assert(edgesToRemove.nonEmpty)
       }
-
-
-//      val edges = reduceGraph(graph, isRelevantNode)
-//      //graph.usesList ++ graph.typeUsesList
-//      val nodes = graph.nodesId.toSet filter (isRelevantNode(graph, _))
-//      val remover = new GreedyCycleRemover(NaiveHelper)
-//      val edgesToRemove = remover.edgesToRemove((nodes, edges))
-
-      val rg = GenericGraphAlgorithms.reduceGraphG(graph, isRelevantNode)
-      //QuickFrame(rg, "RG",JavaDotHelper)
-//      val edgesToRemove = greedyCycleRemoval(rg)
-
-      val wdg = WeightedDirectedGraph.fromDG(graph, isRelevantNode)
-      val remover = new GreedyCycleRemover(WDGHelper)
-      val edgesToRemove = remover.edgesToRemove(wdg).toList
-
- //      println(edges.mkString(","))
-//      println(nodes.mkString(","))
-//      println(edgesToRemove)
-      assert(edgesToRemove.nonEmpty)
     }
-
   }
 
 }

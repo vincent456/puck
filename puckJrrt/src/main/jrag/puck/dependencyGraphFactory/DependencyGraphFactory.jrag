@@ -285,7 +285,8 @@ aspect DependencyGraphFactory {
 		}
 	}
 
-	public static SimpleSet<MethodDecl> MethodAccess.keepMethodsInDifferentTypeHierarchy(SimpleSet<MethodDecl> decls){
+	public SimpleSet<MethodDecl> MethodAccess.decls_keepMethodsInDifferentTypeHierarchy(){
+		SimpleSet<MethodDecl> decls = decls();
 		if(decls.isSingleton())
 			return decls;
 
@@ -306,29 +307,7 @@ aspect DependencyGraphFactory {
 	}
 
 	public void MethodAccess.buildDG(JastaddGraphBuilder builder, int containerId){
-		//buildDG(this, containerId, UsesAccessKind.none(), builder);
-		if(!isSubstitute())
-			this.lock();
-		SimpleSet<MethodDecl> decls = keepMethodsInDifferentTypeHierarchy(decls());
-		if(!decls.isSingleton()){
-			System.out.println("Warning ! method access " + this.name() +
-					" in " + this.compilationUnit().pathName() + " line " + this.location() +
-					" refers to several declaration : ");
-			for(MethodDecl decl : decls)
-				System.out.println(decl.dgFullName());
-		}
-		for(MethodDecl decl : decls){
-			int nodeId = decl.buildDGNode(builder);
-			Uses typeMemberUses = new Uses(containerId, nodeId, UsesAccessKind.none());
-			builder.addEdge(typeMemberUses);
-
-			if(!decl.isStatic())
-				builder.buildTypeUse(this, typeMemberUses);
-		}
-
-		for(Expr e : getArgList()){
-			e.buildDG(builder, containerId);
-		}
+		builder.buildDG(containerId, this);
 	}
 
 	public void VarAccess.buildDG(JastaddGraphBuilder builder, int containerId){

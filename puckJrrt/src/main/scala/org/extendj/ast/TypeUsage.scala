@@ -43,9 +43,9 @@ trait TypeUsage {
   def bindTypeUse(typeUser : NodeId,
                   typeUsed: TypeDecl,
                   typeMemberUse : Uses/*,
-                  constraint : NodeIdP => TypeUseConstraint /*= Sub.apply */*/) : Unit ={
+                  constraint : NodeIdP => TypeUseConstraint = Sub.apply*/ ) : Unit ={
     g.kindType(typeMemberUse.used) match {
-      case PuckTypeDecl =>
+      case PuckTypeDecl => /*error("bindTypeUse error !!!!")*/
         addTypeUsesConstraint(typeMemberUse, Sub((typeUser, typeMemberUse.used)))
       case _ =>
         val tid = getType(typeUsed) match {
@@ -61,11 +61,11 @@ trait TypeUsage {
   ( typeMemberUse : Uses,
     qualifier : Expr) : Unit = {
 
-    def aux(access : Access) : Unit = access.accessed() match {
+    def aux(qualifier : Access) : Unit = qualifier.accessed() match {
       case accessed : TypeMemberSubstitute =>
-        findTypeUserAndBindUses(typeMemberUse, access, accessed)
+        findTypeUserAndBindUses(typeMemberUse, qualifier, accessed)
       case _ =>
-        bindTypeUse(access buildDGNode this, access, typeMemberUse)
+        bindTypeUse(qualifier buildDGNode this, qualifier, typeMemberUse)
     }
 
     qualifier match {
@@ -159,9 +159,15 @@ trait TypeUsage {
           case ptd : ParTypeDecl =>
             val ge = ptd.genericDecl().asInstanceOf[GenericElement]
             if(ge.ownTypeVariable(tv))
+              g.kindType(typeMemberUse.used) match {
+                case PuckTypeDecl =>
+                  addTypeUsesConstraint(typeMemberUse, Eq((typeUserNodeId, typeMemberUse.used)))
+                case _ => bindTypeUse(a buildDGNode this, tvValue, typeMemberUse)
+              }
+
               //addTypeUsesConstraint(typeMemberUse, Sub((a.buildDGNode(this), typeMemberUse.used)))
               //bindTypeUse(a.buildDGNode(this), tvValue, typeMemberUse)
-              addTypeUsesConstraint(typeMemberUse, Eq((typeUserNodeId, typeMemberUse.used)))
+
             else
               println("Access.findTypeVariableInstanciatorAndBindUses " +
                 "not ge.ownTypeVariable(tv) : TODO !!!")
@@ -210,7 +216,7 @@ trait TypeUsage {
         if(rvalue.lastAccess().accessed().isInstanceOf[Substitute] ||
           rvalue.lastAccess().`type`().isInstanceOf[Substitute])
           findTypeUserAndBindUses(Uses(lvalue, lvalueType.buildDGNode(this)),
-            rvalue.lastAccess())
+            rvalue.lastAccess().getQualifier)
         else
           addTypeUsesConstraint((lvalue, lvalueType buildDGNode this),
             Sub((rvalue.lastAccess() buildDGNode this,
@@ -252,17 +258,13 @@ trait TypeUsage {
             val lvalueArg = normalizeTypeDecl(lvalueType.getParameterization.getArg(i))
             val rvalueArg = normalizeTypeDecl(rValueType.getParameterization.getArg(i))
 
-            (lvalueArg, rvalueArg) match {
-              case (_, tv : TypeVariable) =>
-                findTypeVariableInstanciatorAndBindUses(tv, tv.owner().asInstanceOf[GenericTypeDecl],
-                  lvalueArg, Uses(lvalue, lvalueArg buildDGNode this), rvalueNodeId, rvalue)
-              case _ =>
-                val tv = rValueType.genericDecl().asInstanceOf[GenericClassDecl].getTypeParameter(i)
-                findTypeVariableInstanciatorAndBindUses(tv, tv.owner().asInstanceOf[GenericTypeDecl],
-                  lvalueArg, Uses(lvalue, lvalueArg buildDGNode this), rvalueNodeId, rvalue)
-//                addTypeUsesConstraint((lvalue, lvalueArg buildDGNode this),
-//                  Eq((rvalueNode, rvalueArg buildDGNode this)))
+            val tv : TypeVariable = rvalueArg match {
+              case tv : TypeVariable => tv
+              case _ => rValueType.genericDecl().asInstanceOf[GenericTypeDecl].getTypeParameter(i)
             }
+
+            findTypeVariableInstanciatorAndBindUses(tv, tv.owner().asInstanceOf[GenericTypeDecl],
+              lvalueArg, Uses(lvalue, lvalueArg buildDGNode this), rvalueNodeId, rvalue)
         }
       }
     }

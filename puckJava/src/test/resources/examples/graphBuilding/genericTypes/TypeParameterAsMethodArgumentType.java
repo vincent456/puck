@@ -16,7 +16,5 @@ class B {
     Wrapper<A> wa = new Wrapper<A>();
     A a = new A();
 
-    void init(){
-        wa.set(a);
-    }
+    void init(){ wa.set(a); }
 }

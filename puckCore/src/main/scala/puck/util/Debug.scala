@@ -105,29 +105,34 @@ object Debug {
     parameters, types, typedBy)) =>
       val builder = new StringBuilder(150)
 
-      builder.append("used -> user\n\t")
-      builder.append(userMap.toString)
-      builder.append("\nuser -> used\n\t")
-      builder.append(usedMap.toString)
+      builder.append("used -> user\n")
+      builder append print(userMap, (used : NodeId, user : NodeId) =>
+        s"$used - ${desambiguatedFullName(dg, used)} used by $user - ${desambiguatedFullName(dg, user)}")
 
-      builder.append("\ncontainer -> content\n\t")
-      builder.append(contents.toString)
-      builder.append("\ncontent -> container\n\t")
-      builder.append(containers.toString())
+      builder.append("\nuser -> used\n")
+      builder append print(usedMap, (user : NodeId, used : NodeId) =>
+        s"$user - ${desambiguatedFullName(dg, user)} uses $used - ${desambiguatedFullName(dg, used)}")
 
-      builder.append("\nsub -> super\n\t")
-      builder.append(superTypes.toString)
-      builder.append("\nsuper -> sub\n\t")
-      builder.append(subTypes.toString)
+//      builder.append("\ncontainer -> content\n")
+//      builder append print(contents, (container : NodeId, content : NodeId) =>
+//        s"${desambiguatedFullName(dg, container)} contains ${desambiguatedFullName(dg, content)}")
+//      builder.append("\ncontent -> container\n\t")
+//      builder.append(containers.toString())
 
-      builder.append("\ntmUse -> tUse\n\t")
-      builder.append(typeMemberUses2typeUsesMap.toString)
-      builder.append("\ntUse -> tmUse\n\t")
-      builder.append(typeUses2typeMemberUsesMap.toString)
-      builder.append("\ntypeUsesConstraints\n")
-      builder append print(typeUsesConstraints, (k : NodeIdP, v : TypeUseConstraint) => typeConstraintCordBuilder(dg,(k,v)).toString())
+//      builder.append("\nsub -> super\n")
+//      builder append print(superTypes, (sub : NodeId, sup : NodeId) =>
+//        s"${desambiguatedFullName(dg, sub)} is a ${desambiguatedFullName(dg, sup)}")
+//      builder.append("\nsuper -> sub\n\t")
+//      builder.append(subTypes.toString)
 
-      builder.append("\ntypes\n\t")
+//      builder.append("\ntmUse -> tUse\n\t")
+//      builder.append(typeMemberUses2typeUsesMap.toString)
+//      builder.append("\ntUse -> tmUse\n\t")
+//      builder.append(typeUses2typeMemberUsesMap.toString)
+//      builder.append("\ntypeUsesConstraints\n")
+//      builder append print(typeUsesConstraints, (k : NodeIdP, v : TypeUseConstraint) => typeConstraintCordBuilder(dg,(k,v)).toString())
+
+      builder.append("\ntypes\n")
       builder.append( mkMapStringSortedByKey(types))
 
       builder.toString()

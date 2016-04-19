@@ -44,7 +44,18 @@ class MoveAndRedirect
     val typeCtorPath = examplesPath + "typeConstructor"
 
     scenario("move factory then redirect") {
-      val _ = new ScenarioFactory(s"$typeCtorPath/StaticFactory.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class Factory{ }
+          |
+          |class B {
+          |    B(){}
+          |    static B createB(){ return new B(); }
+          |}
+          |
+          |class A { void m() { B b = new B(); } }"""
+      ) {
         val ctor = fullName2id("p.B.B()")
         val factoryMethod = fullName2id("p.B.createB()")
         val factoryClass = fullName2id("p.Factory")
@@ -73,7 +84,18 @@ class MoveAndRedirect
     }
 
     scenario("redirect then move factory ") {
-      val _ = new ScenarioFactory(s"$typeCtorPath/StaticFactory.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class Factory{ }
+          |
+          |class B {
+          |    B(){}
+          |    static B createB(){ return new B(); }
+          |}
+          |
+          |class A { void m() { B b = new B(); } }"""
+      ) {
         val ctor = fullName2id("p.B.B()")
         val factoryMethod = fullName2id("p.B.createB()")
         val factoryClass = fullName2id("p.Factory")

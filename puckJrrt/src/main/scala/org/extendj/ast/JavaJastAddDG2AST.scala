@@ -135,6 +135,19 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
     compile(SList(f.getAbsolutePath),SList(),SList(),SList())
   }
 
+  def compile(cus : SList[String]) : Option[Program] = {
+    import puck.util.FileHelper.FileOps
+    val fs = cus.zipWithIndex map { case (code, idx) =>
+      val f = new File(System.getProperty("java.io.tmpdir")) \ s"Tmp$idx.java"
+      val fw = new FileWriter(f)
+      fw.write(code)
+      fw.close()
+      f.getAbsolutePath
+    }
+
+    compile(fs, SList(),SList(),SList())
+  }
+
 
   /*  try {
       val noSource = "<no source>"

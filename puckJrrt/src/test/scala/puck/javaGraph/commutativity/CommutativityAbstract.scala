@@ -73,7 +73,14 @@ class CommutativityAbstract extends AcceptanceSpec {
     }
 
     scenario("method self use in class"){
-      val _ = new ScenarioFactory(s"$noSuperTypePath/MethodSelfUse.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |    public void m(){}
+          |    public void methodUser(A a){ a.m(); }
+          |}"""
+      ) {
 
         val packageP = fullName2id("p")
         val classA = fullName2id("p.A")
@@ -92,7 +99,19 @@ class CommutativityAbstract extends AcceptanceSpec {
     }
 
     scenario("field self use in class"){
-      val _ = new ScenarioFactory(s"$noSuperTypePath/FieldSelfUse.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class B {
+          |
+          |    private int f;
+          |
+          |    //do we put it in the interface ?
+          |    //knowledge of subclass is considered bad smell so we will not (only b heuristic)
+          |    public void fieldUserThatShouldNotBeInInterface(B b){ int dummy = b.f; }
+          |
+          |}"""
+      ) {
         val packageP = fullName2id("p")
         val classB = fullName2id("p.B")
 
@@ -109,7 +128,17 @@ class CommutativityAbstract extends AcceptanceSpec {
     }
 
     scenario("field use via parameter of self type"){
-      val _ = new ScenarioFactory(s"$noSuperTypePath/FieldUseViaParameterSelfType.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class C {
+          |
+          |    private int f;
+          |
+          |    public void fieldUserThatCanBeInInterface(){ int dummy = this.f; }
+          |
+          |}"""
+      ) {
         val packageP = fullName2id("p")
         val classC = fullName2id("p.C")
 
@@ -126,7 +155,20 @@ class CommutativityAbstract extends AcceptanceSpec {
     }
 
     scenario("use of type member sibling by self and parameter"){
-      val _ = new ScenarioFactory(s"$noSuperTypePath/SelfTypeMemberUseViaParameterAndSelf.java"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |
+          |    private int f;
+          |
+          |    public void m(int i){}
+          |
+          |    public void canBeInInterface(A a){ a.m(this.f); }
+          |
+          |    public void cannotBeInInterface(A a){ this.m(a.f); }
+          |}"""
+      ){
         val packageP = fullName2id("p")
         val classA = fullName2id("p.A")
 
@@ -142,10 +184,19 @@ class CommutativityAbstract extends AcceptanceSpec {
     }
 
     info("super type already present")
-    val withSuperTypePath = examplesPath + "/classIntoInterface/existingSuperType"
-
     scenario("existing supertype - simple case"){
-      val _ = new ScenarioFactory(s"$withSuperTypePath/SimpleCase.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |interface SuperA{
+          |    public void mInInterface();
+          |}
+          |
+          |class A implements SuperA {
+          |    public void mInInterface(){}
+          |    public void mNotInInterface(){}
+          |}"""
+      ) {
         val packageP = fullName2id("p")
         val classA = fullName2id("p.A")
 
@@ -163,10 +214,19 @@ class CommutativityAbstract extends AcceptanceSpec {
     }
   }
 
-  val ctorIntoFactoryPath = examplesPath + "/constructorIntoFactoryMethod"
   feature("Intro initializer"){
     scenario("one constructor one initialized field"){
-      val _ = new ScenarioFactory(ctorIntoFactoryPath + "/OneConstructorOneInitializedField.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class F{}
+          |
+          |public class A {
+          |
+          |    private F f = new F();
+          |    public A(){}
+          |}"""
+      ) {
         val classA = fullName2id("p.A")
 
         val (initializer, g) = Rules.intro.initializer(graph, classA)

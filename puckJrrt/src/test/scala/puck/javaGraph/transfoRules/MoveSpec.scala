@@ -43,8 +43,6 @@ import MoveSpec.createTopLevelPackage
 class MoveSpec
   extends AcceptanceSpec {
 
-  val examplesPath = Settings.testExamplesPath + "/move"
-
   feature("Move class") {
 
     scenario("Move top level class") {
@@ -89,8 +87,24 @@ class MoveSpec
     }
 
     scenario("Move top from different packages ") {
-      val p = s"$examplesPath/topLevelClass/classesInDifferentPackages/localVarDecl"
-      val _ = new ScenarioFactory(s"$p/A.java", s"$p/B.java") {
+      val _ = new ScenarioFactory(
+        """package p1;
+          |
+          |public class A {
+          |    public A(){}
+          |    public void ma(){}
+          |}""",
+        """package p2;
+          |
+          |import p1.A;
+          |
+          |public class B {
+          |    public void mb(){
+          |        A a = new A();
+          |        a.ma();
+          |    }
+          |}"""
+      ) {
         val package1 = fullName2id("p1")
 
         val classA = fullName2id("p1.A")

@@ -95,11 +95,13 @@ class GraphBuildingSpec extends AcceptanceSpec {
   }
 
   feature("Generic types uses"){
-    val examplesPath = Settings.testExamplesPath +
-      "/graphBuilding/genericTypes/"
 
     scenario("array decl"){
-      val _ = new ScenarioFactory(s"$examplesPath/ArrayDecl.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A { int[] is; }"""
+      ) {
         val field = fullName2id("p.A.is")
         val int = fullName2id("@primitive.int")
         val array = fullName2id("@primitive.[]")
@@ -111,7 +113,17 @@ class GraphBuildingSpec extends AcceptanceSpec {
       }
     }
     scenario("array usage"){
-      val _ = new ScenarioFactory(s"$examplesPath/ArrayUsage.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |    void m(){}
+          |
+          |    int i = 0;
+          |
+          |    void arrayUser(A[] as){ as[i].m(); }
+          |}
+        """.stripMargin) {
         val arrayUser = fullName2id("p.A.arrayUser(A[]).Definition")
         val m = fullName2id("p.A.m()")
         val i = fullName2id("p.A.i")
@@ -122,7 +134,15 @@ class GraphBuildingSpec extends AcceptanceSpec {
       }
     }
     scenario("generic type declaration"){
-      val _ = new ScenarioFactory(s"$examplesPath/GenericTypeDecl.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |import java.util.List;
+          |
+          |class A {}
+          |
+          |class GenTypeDeclarant { private List<A> user; }"""
+      ) {
         val actualParam = fullName2id("p.A")
         val genTypeDeclarant = fullName2id("p.GenTypeDeclarant")
         val user = fullName2id("p.GenTypeDeclarant.user")
@@ -143,7 +163,26 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
 
     scenario("generic method declaration"){
-      val _ = new ScenarioFactory(s"$examplesPath/MethodOfGenericType.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |import java.util.List;
+          |
+          |class A{}
+          |
+          |class User {
+          |
+          |    public void m(){
+          |        GenColl<A> colla = new GenColl<A>();
+          |        colla.put(new A());
+          |    }
+          |
+          |}
+          |
+          |class GenColl<T> {
+          |    public void put(T t){}
+          |}"""
+      ) {
 
         val actualTypeParam = fullName2id("p.A")
         val formalTypeParam = fullName2id("p.GenColl@T")
@@ -173,7 +212,18 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
 
     scenario("upper bounded wildcard"){
-      val _ = new ScenarioFactory(s"$examplesPath/Wildcard.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {}
+          |
+          |class B<T>{}
+          |
+          |class C {
+          |    B<? super A> lowerBounded;
+          |    B<? extends A> upperBounded;
+          |}"""
+      ) {
         val upperBoundedField = fullName2id("p.C.upperBounded")
         val bound = fullName2id("p.A")
         val genType = fullName2id("p.B")
@@ -187,7 +237,18 @@ class GraphBuildingSpec extends AcceptanceSpec {
     }
 
     scenario("lower bounded wildcard"){
-      val _ = new ScenarioFactory(s"$examplesPath/Wildcard.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {}
+          |
+          |class B<T>{}
+          |
+          |class C {
+          |    B<? super A> lowerBounded;
+          |    B<? extends A> upperBounded;
+          |}"""
+      ) {
         val lowerBoundedField = fullName2id("p.C.lowerBounded")
         val bound = fullName2id("p.A")
         val genType = fullName2id("p.B")

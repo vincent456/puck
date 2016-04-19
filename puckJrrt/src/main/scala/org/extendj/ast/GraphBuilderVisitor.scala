@@ -73,9 +73,14 @@ trait GraphBuilderVisitor {
         }
     }
   }
+
   def buildDG(containerId : NodeId, member : FieldDecl) : Unit = {
     val t = getType(member.getTypeAccess)
-    t.ids.foreach (id => addEdge(Uses(containerId, id)))
+    t match {
+      case ParameterizedType(_, params) =>
+        params.flatMap(_.ids) foreach (id => addEdge(Uses(containerId, id)))
+      case _ =>
+    }
 
     val astType = member.`type`()
 
@@ -111,5 +116,30 @@ trait GraphBuilderVisitor {
     theDef.buildDG(this, defId)
     defId
   }
+
+  def buildDG(containerId : NodeId, ma : MethodAccess) : Unit = {
+    if(!ma.isSubstitute)
+      ma.lock()
+    val decls = ma.decls_keepMethodsInDifferentTypeHierarchy()
+    if(!decls.isSingleton()){
+      println(s"Warning ! method access ${ma.name()}" +
+        s" in ${ma.compilationUnit().pathName()} line ${ma.location()}" +
+        " refers to several declaration : ")
+      decls.foreach(d => println(d.dgFullName()))
+    }
+    decls.foreach{
+      decl =>
+        val nodeId = decl buildDGNode this
+        val typeMemberUses = Uses(containerId, nodeId)
+        addEdge(typeMemberUses)
+
+        if(!decl.isStatic)
+          buildTypeUse(ma, typeMemberUses)
+    }
+    ma.getArgs.foreach{
+      expr => expr.buildDG(this, containerId)
+    }
+  }
+
 
 }

@@ -36,10 +36,18 @@ class MakeSuperTypeSpec extends AcceptanceSpec {
   //info("We are testing behavior of the abstraction rule, i.e. we check that the structure of the graph after rule application")
 
   feature("Make super type") {
-    val examplesPath = Settings.testExamplesPath + "/makeSuperType"
-    val superInterfacePath = examplesPath + "/superInterface/"
     scenario("Compatible super interface") {
-      val _ = new ScenarioFactory(s"$superInterfacePath/Compatible.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |interface SuperA {
+          |    void mInInterface();
+          |}
+          |
+          |class A {
+          |    public void mInInterface(){}
+          |    public void mNotInInterface(){}
+          |}""") {
         val classA = fullName2id("p.A")
         val superA = fullName2id("p.SuperA")
 
@@ -58,7 +66,12 @@ class MakeSuperTypeSpec extends AcceptanceSpec {
     }
 
     scenario("Incompatible super interface") {
-      val _ = new ScenarioFactory(s"$superInterfacePath/Incompatible.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |interface SuperA { void m(); }
+          |class A { public void notM(){} }
+          |"""
+      ) {
         val classA = fullName2id("p.A")
         val superA = fullName2id("p.SuperA")
 

@@ -27,8 +27,9 @@
 package puck.javaGraph.graphBuilding
 
 import puck.AcceptanceSpec
-import puck.graph.{NamedType, ParameterizedType, Uses}
+import puck.graph.{NamedType, ParameterizedType, ShowDG, Uses}
 import puck.javaGraph.ScenarioFactory
+import puck.util.Debug
 
 /**
   * Created by Loïc Girault on 11/04/16.
@@ -187,31 +188,18 @@ class BindingRelationship extends AcceptanceSpec {
         |}"""
     ){
 
-      val actualTypeParam = fullName2id("p.A")
-      val actualTypeParamMethod = fullName2id("p.A.m()")
+      val `Uses("p.B.wa", "p.Wrapper")` = graph.getUsesEdge("p.B.wa", "p.Wrapper").value
+      val `Uses("p.B.wa", "p.A")` = graph.getUsesEdge("p.B.wa", "p.A").value
+      val `Uses("p.B.doM().Definition", "p.A.m()")` = graph.getUsesEdge("p.B.doM().Definition", "p.A.m()").value
+      val `Uses("p.B.doM().Definition", "p.Wrapper.get()")` = graph.getUsesEdge("p.B.doM().Definition", "p.Wrapper.get()").value
 
-      val field = fullName2id("p.B.wa")
+      graph.styp("p.B.wa").value should be (ParameterizedType("p.Wrapper", List(NamedType("p.A"))))
 
-      val userMethodDef = fullName2id("p.B.doM().Definition")
-
-      val genType = fullName2id("p.Wrapper")
-      val genericMethod = fullName2id("p.Wrapper.get()")
-
-      val fieldGenTypeUse = graph.getUsesEdge(field, genType).value
-      val fieldParameterTypeUse = graph.getUsesEdge(field, actualTypeParam).value
-      val typeMemberUse = graph.getUsesEdge(userMethodDef, actualTypeParamMethod).value
-      val genericMethodUse = graph.getUsesEdge(userMethodDef, genericMethod).value
-
-      graph.styp(field).value should be (ParameterizedType(genType, List(NamedType(actualTypeParam))))
-
-      //typeMemberUse = ("p.B.doMonA().Definition", "p.A.m()")
-      //fieldGenTypeUse = ("p.B.wa", "p.Wrapper")
-      //fieldParameterTypeUse = ("p.B.wa", "p.A")
-      //graph.typeUsesOf(typeMemberUse) should contain (fieldGenTypeUse)
-      graph.typeUsesOf(typeMemberUse) should contain (fieldParameterTypeUse)
-      graph.typeMemberUsesOf(fieldParameterTypeUse) should contain (typeMemberUse)
-      graph.typeMemberUsesOf(fieldParameterTypeUse).size should be (1)
-      //graph.typeMemberUsesOf(fieldParameterTypeUse) should not contain (genericMethodUse)
+      //graph.typeUsesOf(`Uses("p.B.doM().Definition", "p.A.m()")`) should contain (`Uses("p.B.wa", "p.Wrapper")`)
+      graph.typeUsesOf(`Uses("p.B.doM().Definition", "p.A.m()")`) should contain (`Uses("p.B.wa", "p.A")`)
+      graph.typeMemberUsesOf(`Uses("p.B.wa", "p.A")`) should contain (`Uses("p.B.doM().Definition", "p.A.m()")`)
+      graph.typeMemberUsesOf(`Uses("p.B.wa", "p.A")`).size should be (1)
+      //graph.typeMemberUsesOf(`Uses("p.B.wa", "p.A")`) should not contain (`Uses("p.B.doM().Definition", "p.Wrapper.get()")`)
     }
 
 

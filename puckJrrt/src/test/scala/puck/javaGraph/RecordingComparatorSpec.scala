@@ -72,27 +72,59 @@ class RecordingComparatorSpec extends AcceptanceSpec {
     }
 
   val methodUsesViaThisField = {
-    val p = "methodUsesViaThisField"
-    new ScenarioFactory(s"${Settings.testExamplesPath}/misc/$p/A.java") {
-      val rootPackage = fullName2id(p)
+    new ScenarioFactory(
+      """package p;
+        |
+        |class B { public void mb(){} }
+        |//hideSetFrom(['p.B'], ['p.A']).
+        |class A {
+        |
+        |    private B b;
+        |
+        |    public void ma(){ b.mb(); }
+        |}"""
+    ) {
+      val rootPackage = fullName2id("p")
 
-      val classA = fullName2id(s"$p.A")
-      val fieldA = fullName2id(s"$p.A.b")
-      val methA = fullName2id(s"$p.A.ma()")
+      val classA = fullName2id("p.A")
+      val fieldA = fullName2id("p.A.b")
+      val methA = fullName2id("p.A.ma()")
 
-      val classB = fullName2id(s"$p.B")
+      val classB = fullName2id("p.B")
       val classBNode = graph.getConcreteNode(classB)
-      val methB = fullName2id(s"$p.B.mb()")
+      val methB = fullName2id("p.B.mb()")
 
     }
   }
   val needToMergeInterfaces = {
-    val p = "needToMergeInterfaces"
-    new ScenarioFactory(s"${Settings.testExamplesPath}/misc/$p/A.java") {
+    new ScenarioFactory(
+      """package p;
+        |
+        |interface IB { public void mb(); }
+        |
+        |class B implements IB { public void mb(){} }
+        |
+        |interface IC { public void mb(); }
+        |
+        |class C implements IC { public void mb(){} }
+        |
+        |
+        |//hideSetFrom(['p.B'], ['p.A']).
+        |class A {
+        |
+        |    private B b;
+        |    private C c;
+        |
+        |    public void ma(){
+        |        b.mb();
+        |        c.mb();
+        |    }
+        |}"""
+    ) {
       //val packageNeedToMergeInterfaces = fullName2id("examples.misc.needToMergeInterfaces")
 
-      val itcC = fullName2id(s"$p.IC")
-      val itcB = fullName2id(s"$p.IB")
+      val itcC = fullName2id("p.IC")
+      val itcB = fullName2id("p.IB")
 
     }
   }

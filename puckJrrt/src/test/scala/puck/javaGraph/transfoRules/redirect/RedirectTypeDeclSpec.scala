@@ -28,16 +28,9 @@ package puck.javaGraph.transfoRules.redirect
 
 import puck.graph._
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
-import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, Redirection}
+import puck.graph.transformations.rules.Redirection
 import puck.javaGraph.ScenarioFactory
-import puck.javaGraph.nodeKind._
 import puck.{AcceptanceSpec, Settings}
-
-//import scalaz.syntax.show._
-//import puck.util.Debug.showNodeIndex
-//println(graph.nodesIndex.shows)
-
-
 
 
 class RedirectTypeDeclSpec

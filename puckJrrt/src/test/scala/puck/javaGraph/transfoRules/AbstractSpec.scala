@@ -39,7 +39,6 @@ class AbstractSpec extends AcceptanceSpec {
   feature("Abstract class into interface"){
 
     info("no pre-existing super type")
-    val noSuperTypePath = examplesPath + "/classIntoInterface/noExistingSuperType"
     scenario("simple case"){
       val _ = new ScenarioFactory(
         """package p;
@@ -73,7 +72,14 @@ class AbstractSpec extends AcceptanceSpec {
     }
 
     scenario("method self use in class"){
-      val _ = new ScenarioFactory(s"$noSuperTypePath/MethodSelfUse.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |    public void m(){}
+          |    public void methodUser(A a){ a.m(); }
+          |}"""
+      ) {
         val classA = fullName2id("p.A")
         val methM = fullName2id("p.A.m()")
         val methMUserDecl = fullName2id("p.A.methodUser(A)")
@@ -113,7 +119,19 @@ class AbstractSpec extends AcceptanceSpec {
     }
 
     scenario("field self use in class"){
-      val _ = new ScenarioFactory(s"$noSuperTypePath/FieldSelfUse.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class B {
+          |
+          |    private int f;
+          |
+          |    //do we put it in the interface ?
+          |    //knowledge of subclass is considered bad smell so we will not (only b heuristic)
+          |    public void fieldUserThatShouldNotBeInInterface(B b){ int dummy = b.f; }
+          |
+          |}"""
+      ) {
         val classB = fullName2id("p.B")
         val field = fullName2id("p.B.f")
 
@@ -156,7 +174,17 @@ class AbstractSpec extends AcceptanceSpec {
     }
 
     scenario("field use via parameter of self type"){
-      val _ = new ScenarioFactory(s"$noSuperTypePath/FieldUseViaParameterSelfType.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class C {
+          |
+          |    private int f;
+          |
+          |    public void fieldUserThatCanBeInInterface(){ int dummy = this.f; }
+          |
+          |}"""
+      ) {
         val classC = fullName2id("p.C")
         val field = fullName2id("p.C.f")
 
@@ -193,7 +221,20 @@ class AbstractSpec extends AcceptanceSpec {
     }
 
     scenario("use of type member sibling by self and parameter"){
-      val _ = new ScenarioFactory(s"$noSuperTypePath/SelfTypeMemberUseViaParameterAndSelf.java"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |
+          |    private int f;
+          |
+          |    public void m(int i){}
+          |
+          |    public void canBeInInterface(A a){ a.m(this.f); }
+          |
+          |    public void cannotBeInInterface(A a){ this.m(a.f); }
+          |}"""
+      ){
         val classA = fullName2id("p.A")
         val field = fullName2id("p.A.f")
         val usedMeth = fullName2id("p.A.m(int)")
@@ -215,7 +256,26 @@ class AbstractSpec extends AcceptanceSpec {
     }
 
     ignore("use of type member sibling by local variable and parameter"){
-      val _ = new ScenarioFactory(s"$noSuperTypePath/SelfTypeMemberUseViaParameterAndLocalVariable.java"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |
+          |    private int f;
+          |
+          |    public void m(int i){}
+          |
+          |    public void canBeInInterface(A a1){
+          |        A a2 = new A();
+          |        a1.m(a2.f);
+          |    }
+          |
+          |    public void cannotBeInInterface(A a1){
+          |        A a2 = new A();
+          |        a2.m(a1.f);
+          |    }
+          |}"""
+      ){
         val classA = fullName2id("p.A")
         val field = fullName2id("p.A.f")
         val usedMeth = fullName2id("p.A.m(int)")
@@ -241,10 +301,19 @@ class AbstractSpec extends AcceptanceSpec {
 
 
     info("super type already present")
-    val withSuperTypePath = examplesPath + "/classIntoInterface/existingSuperType"
-
     scenario("existing supertype - simple case"){
-      val _ = new ScenarioFactory(s"$withSuperTypePath/SimpleCase.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |interface SuperA{
+          |    public void mInInterface();
+          |}
+          |
+          |class A implements SuperA {
+          |    public void mInInterface(){}
+          |    public void mNotInInterface(){}
+          |}"""
+      ) {
         val classA = fullName2id("p.A")
         val methInInterface = fullName2id("p.A.mInInterface()")
         val methNotInInterface = fullName2id("p.A.mNotInInterface()")
@@ -277,10 +346,19 @@ class AbstractSpec extends AcceptanceSpec {
     }
   }
 
-  val ctorIntoFactoryPath = examplesPath + "/constructorIntoFactoryMethod"
   feature("Intro initializer"){
     scenario("one constructor one initialized field"){
-      val _ = new ScenarioFactory(ctorIntoFactoryPath + "/OneConstructorOneInitializedField.java") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class F{}
+          |
+          |public class A {
+          |
+          |    private F f = new F();
+          |    public A(){}
+          |}"""
+      ) {
         val classA = fullName2id("p.A")
         val classActor = fullName2id("p.A.A()")
         val initializedField = fullName2id("p.A.f")
@@ -308,15 +386,54 @@ class AbstractSpec extends AcceptanceSpec {
 
   feature("Abstract constructor into factory method"){
     ignore("one constructor no initialized field"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class F{}
+          |
+          |public class A {
+          |
+          |    private F f; //not initialized means not initialized outside of the constructor
+          |    public A(){ f = new F(); }
+          |
+          |}"""
+      ) {
 
+      }
     }
 
     ignore("one constructor one initialized field"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class F{}
+          |
+          |public class A {
+          |
+          |    private F f = new F();
+          |    public A(){}
+          |}"""
+      ) {
 
+      }
     }
 
     ignore("two constructors one initialized field"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class F{}
+          |class G{}
+          |public class A {
+          |
+          |    private F f = new F();
+          |    private G g;
+          |    public A() { g = new G(); }
+          |    public A(G g){ this.g = g; }
+          |}"""
+      ) {
 
+      }
     }
 
   }
