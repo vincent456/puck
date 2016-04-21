@@ -298,10 +298,11 @@ class DependencyGraph
   def exists(e : DGEdge) : Boolean = edges.exists(e)
 
   def addEdge(e : DGEdge, register : Boolean = true): DependencyGraph =
-    newGraph( edges = edges.add(e),
-              recording =
-                  if(register) recording.addEdge(e)
-                  else recording)
+    newGraph(edges = edges.add(e),
+      recording =
+        if (register) recording.addEdge(e)
+        else recording)
+
 
 
   def removeEdge(e : DGEdge, register : Boolean = true): DependencyGraph =

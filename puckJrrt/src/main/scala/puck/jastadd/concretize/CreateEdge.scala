@@ -123,6 +123,10 @@ object CreateEdge {
     (id2declMap(sourceDecl), id2declMap(e.used)) match {
       case (ConstructorDeclHolder(cdecl), MethodDeclHolder(mdecl)) =>
         cdecl.unsetImplicitConstructor()
+        cdecl.hostType() match {
+          case cd : ClassDecl =>
+            cd.addBodyDecl(cdecl)
+        }
         cdecl.addInitializerCall(mdecl)
       case hs => error("createInitializerCall : expected constructor using method got " + hs)
     }

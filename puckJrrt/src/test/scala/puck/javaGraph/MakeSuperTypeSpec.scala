@@ -28,7 +28,7 @@ package puck.javaGraph
 
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.{AccessAbstraction, Type}
-import puck.{Settings, AcceptanceSpec}
+import puck.AcceptanceSpec
 
 import puck.jastadd.ExtendJGraphUtils.{transformationRules => TR}
 

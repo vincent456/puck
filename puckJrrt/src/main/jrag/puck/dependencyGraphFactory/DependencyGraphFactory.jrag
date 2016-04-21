@@ -311,14 +311,7 @@ aspect DependencyGraphFactory {
 	}
 
 	public void VarAccess.buildDG(JastaddGraphBuilder builder, int containerId){
-		if(decl().isField()){
-			int nodeId = buildDGNode(builder);
-			Uses typeMemberUses = new Uses(containerId, nodeId, usesAccessKind());
-			builder.addEdge(typeMemberUses);
-
-			if(!isDeclStatic())
-				builder.buildTypeUse(this, typeMemberUses);
-		}
+		builder.buildDG(containerId, this);
 	}
 
 	public void ClassInstanceExpr.buildDG(JastaddGraphBuilder builder, int containerId){

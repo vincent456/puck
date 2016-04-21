@@ -76,11 +76,6 @@ trait GraphBuilderVisitor {
 
   def buildDG(containerId : NodeId, member : FieldDecl) : Unit = {
     val t = getType(member.getTypeAccess)
-    t match {
-      case ParameterizedType(_, params) =>
-        params.flatMap(_.ids) foreach (id => addEdge(Uses(containerId, id)))
-      case _ =>
-    }
 
     val astType = member.`type`()
 
@@ -89,6 +84,7 @@ trait GraphBuilderVisitor {
         val fdId = fd buildDGNode this
         addContains(containerId, fdId)
         setType(fdId, t)
+        // t.ids.foreach (id => addEdge(Uses(fdId, id))) is not needed see EdgeMap.uses
 
         if( fd.hasInit ) {
           val defId = buildFieldInit(fdId, fd, fd.getInit)
@@ -116,6 +112,16 @@ trait GraphBuilderVisitor {
     theDef.buildDG(this, defId)
     defId
   }
+
+  def buildDG(containerId : NodeId, va : VarAccess) : Unit =
+    if(va. decl().isField){
+      val  nodeId = va buildDGNode this
+      val typeMemberUses = Uses(containerId, nodeId, va.usesAccessKind())
+      addEdge(typeMemberUses)
+
+      if(!va.isDeclStatic)
+        buildTypeUse(va, typeMemberUses)
+    }
 
   def buildDG(containerId : NodeId, ma : MethodAccess) : Unit = {
     if(!ma.isSubstitute)

@@ -84,7 +84,9 @@ object ShowDG extends ShowConstraints{
     (dg, nid) => nodeCord(dg, dg.getNode(nid))
 
   implicit def nodeIdPCord : CordBuilder[NodeIdP] =
-    {case (dg, (nid1, nid2)) => Cord("Edge(", nodeIdCord(dg,nid1), ", ", nodeIdCord(dg,nid2), ")")}
+  {case (dg, (nid1, nid2)) => Cord(s"Edge( $nid1 - ", desambiguatedFullName(dg,nid1),
+    s", $nid2 - ", desambiguatedFullName(dg,nid2), ")")}
+    //{case (dg, (nid1, nid2)) => Cord("Edge(", nodeIdCord(dg,nid1), ", ", nodeIdCord(dg,nid2), ")")}
 
 
   implicit def nodeCord : CordBuilder[DGNode] = (dg, n) =>

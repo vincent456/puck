@@ -95,9 +95,9 @@ case class ScenarioFactory
 
   implicit val logger = ScenarioFactory.logger
 
-  protected implicit def idOfFullName(fn : String) : NodeId = fullName2id apply fn
+  implicit def idOfFullName(fn : String) : NodeId = fullName2id apply fn
 
-  protected implicit def idOfFullName(gfn : (DependencyGraph, String)) : NodeId = {
+  implicit def idOfFullName(gfn : (DependencyGraph, String)) : NodeId = {
     val (g,fn) = gfn
     DependencyGraph.findElementByName(g, fn).get.id
   }

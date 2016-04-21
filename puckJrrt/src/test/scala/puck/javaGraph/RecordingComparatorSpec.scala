@@ -30,7 +30,7 @@ package puck.javaGraph
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph._
 import puck.javaGraph.nodeKind._
-import puck.{Settings, PuckError, AcceptanceSpec}
+import puck.{PuckError, AcceptanceSpec}
 import puck.jastadd.ExtendJGraphUtils.{transformationRules => TR}
 
 import scalaz._

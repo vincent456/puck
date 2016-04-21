@@ -26,9 +26,6 @@
 
 package puck.javaGraph
 
-import java.io.File
-
-import org.extendj.ast.TypedKindDeclHolder
 import puck.AcceptanceSpec
 
 /**

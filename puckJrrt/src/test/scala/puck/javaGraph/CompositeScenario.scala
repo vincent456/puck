@@ -31,10 +31,12 @@ import puck.Settings._
 import puck.graph.{AccessAbstraction, DependencyGraph, NodeId, ShowDG, Uses}
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.SupertypeAbstraction
-import puck.jastadd.ExtendJGraphUtils.{transformationRules => TR}
+import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
 import puck.{LoggedEitherValues, Settings}
 import puck.javaGraph.nodeKind._
 
+import ShowDG._
+import puck.util.Debug._
 /**
   * Created by Loïc Girault on 14/04/16.
   */
@@ -57,23 +59,45 @@ class CompositeScenario private ()
 
   def abstractFile(g : DependencyGraph) : (NodeId, DependencyGraph) = {
     val (AccessAbstraction(itcId, _), g1) =
-      TR.abstracter.createAbstraction(g, g getConcreteNode "fileSystem.File",
+      Rules.abstracter.createAbstraction(g, g getConcreteNode "fileSystem.File",
         Interface, SupertypeAbstraction).rvalue
 
       val g2 = g1.addContains("fileSystem", itcId)
 
-    (itcId, TR.rename(g2, itcId, "FSElement"))
+    (itcId, Rules.rename(g2, itcId, "FSElement"))
   }
 
   val (fsElement, g1) = abstractFile(g0)
 
-  val g2 = g1 //TR.makeSuperType(g1, "fileSystem.Directory", (g1, "fileSystem.FSElement"))().rvalue
-  val g3 = TR.redirection.redirectUsesAndPropagate(g2,
+
+  //(g1, g1.edges).println
+
+  val g2 = Rules.redirection.redirectUsesAndPropagate(g1,
     Uses("fileSystem.Directory.files", "fileSystem.File"),
     AccessAbstraction(fsElement, SupertypeAbstraction)).rvalue
 
 
-  def gFinal = g3
+
+  val g3 = Rules.makeSuperType(g2, "fileSystem.Directory", (g2, "fileSystem.FSElement"))().rvalue
+
+  val g4 = Rules.redirection.redirectUsesAndPropagate(g3,
+    Uses("fileSystem.Directory.directories", "fileSystem.Directory"),
+    AccessAbstraction((g3, "fileSystem.FSElement"), SupertypeAbstraction)).rvalue
+
+  val g5 = Rules.merge.mergeInto(g4,
+    "fileSystem.Directory.directories",
+    "fileSystem.Directory.files").rvalue
+
+  val g6 = Rules.redirection.redirectUsesAndPropagate(g5,
+    Uses("fileSystem.Directory.add(Directory).d", "fileSystem.Directory"),
+    AccessAbstraction((g5, "fileSystem.FSElement"), SupertypeAbstraction)).rvalue
+
+  val g7 = Rules.merge.mergeInto(g6,
+      "fileSystem.Directory.add(File)",
+      "fileSystem.Directory.add(Directory)").rvalue
+
+
+  def gFinal = g5
 }
 
 class CompositeManualRefactoringSpec
@@ -82,15 +106,9 @@ class CompositeManualRefactoringSpec
   scenario("composite ``manual'' refactoring"){
     val bs = CompositeScenario()
 
-//    import ShowDG._
-//    import Debug._
-//    (bs.gFinal, bs.gFinal.nodesIndex).println
-
-    val recompiledEx = bs.applyChangeAndMakeExample(bs.gFinal, outDir)
+     val recompiledEx = bs.applyChangeAndMakeExample(bs.gFinal, outDir)
 
     assert( Mapping.equals(bs.gFinal, recompiledEx.graph) )
-
-
 
   }
 }

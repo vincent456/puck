@@ -64,35 +64,63 @@ class Merge
     consumedId : NodeId,
     consumerId : NodeId
     ) : DependencyGraph = {
-    val g = g0.comment(" Merge TypeUses Dependencies")
+    val g = g0.comment("Merge TypeUses Dependencies")
+    import ShowDG._
+    val log = s"consumed= $consumedId - ${(g, consumedId).shows(desambiguatedFullName)}, " +
+      s"consumer= $consumerId - ${(g, consumerId).shows(desambiguatedFullName)}"
 
-    def changeTypeMemberUseForTypeUses(g : DependencyGraph,
-                                       oldTMUse : NodeIdP, typeUses : Set[NodeIdP],
-                                       newTMUse : NodeIdP) : DependencyGraph =
-      typeUses.foldLeft(g)(_.changeTypeMemberUseOfTypeUse(oldTMUse, newTMUse, _))
+
+    def changeTypeBindings
+    ( f : (DependencyGraph, NodeIdP,NodeIdP,NodeIdP) => DependencyGraph,
+      g : DependencyGraph,
+      tu2tmus : (NodeIdP, Set[NodeIdP])) : DependencyGraph = {
+      val (tUse, tmUses) = tu2tmus
+      tUse match {
+        case (`consumedId`, `consumedId`) =>
+          tmUses.foldLeft(g)(f(_,tUse, (consumerId, consumerId), _))
+        case (user, `consumedId`) =>
+          tmUses.foldLeft(g){f(_,tUse, (user, consumerId), _)}
+        case (`consumedId`, used) =>
+          tmUses.foldLeft(g){f(_,tUse, (consumerId, used), _)}
+        case _ => g
+      }
+    }
 
     def changeTypeUseForTypeMemberUses
     ( g : DependencyGraph,
-      tu2tmus : (NodeIdP, Set[NodeIdP])) : DependencyGraph = {
+      tu2tmus : (NodeIdP, Set[NodeIdP])) : DependencyGraph =
+      changeTypeBindings( (g0, oldU, newU, otherU) =>
+        g0.changeTypeUseOfTypeMemberUse(oldU, newU, otherU),
+        g, tu2tmus)
+
+    def changeTypeMemberUseForTypeUses
+    ( g : DependencyGraph,
+      tu2tmus : (NodeIdP, Set[NodeIdP])) : DependencyGraph =
+      changeTypeBindings( (g0, oldU, newU, otherU) =>
+        g0.changeTypeMemberUseOfTypeUse(oldU, newU, otherU),
+        g, tu2tmus)
+    /*{
       val (tUse, tmUses) = tu2tmus
       tUse match {
         case (`consumedId`, `consumedId`) =>
           tmUses.foldLeft(g)(_.changeTypeUseOfTypeMemberUse(tUse, (consumerId, consumerId), _))
         case (user, `consumedId`) =>
-          tmUses.foldLeft(g)(_.changeTypeUseOfTypeMemberUse(tUse, (user, consumerId), _))
+          tmUses.foldLeft(g){_.changeTypeUseOfTypeMemberUse(tUse, (user, consumerId), _)}
+        case (`consumedId`, used) =>
+          tmUses.foldLeft(g){_.changeTypeUseOfTypeMemberUse(tUse, (consumerId, used), _)}
         case _ => g
       }
-    }
+    }*/
+
+
 
     g.kindType(consumedId) match {
       case InstanceValueDecl =>
-        g.typeMemberUses2typeUses.foldLeft(g) {
-          case (g0, (tmUses, typeUses)) if tmUses.used == consumedId =>
-            changeTypeMemberUseForTypeUses(g0, tmUses, typeUses, (tmUses.user, consumerId))
-          case (g0, _) => g0
-        }
+        val g1 = g.typeMemberUses2typeUses.foldLeft(g)(changeTypeMemberUseForTypeUses)
+        g1.typeUses2typeMemberUses.foldLeft(g1)(changeTypeUseForTypeMemberUses)
 
-      case TypeDecl => g.typeUses2typeMemberUses.foldLeft(g)(changeTypeUseForTypeMemberUses)
+      case TypeDecl
+        | Parameter => g.typeUses2typeMemberUses.foldLeft(g)(changeTypeUseForTypeMemberUses)
 
       case NameSpace // no type dependencies involved when merging namespaces
         | TypeConstructor
@@ -148,14 +176,19 @@ class Merge
       | StaticValueDecl
       | TypeConstructor =>
         mergeInto0(g, consumedId, consumerId){
-          (g, consumedId, _) =>
-            val content = g.definitionOf(consumedId) match {
-              case None => g.parametersOf(consumedId)
-              case Some(d) => d :: g.parametersOf(consumedId)
-            }
-            content.foldLoggedEither(g.comment("Delete consumed def")) {
-              (g, cid) => removeConcreteNode(g, g.getConcreteNode(cid))
-            }
+          (g, consumedId, consumerId) =>
+            val ps = g.parametersOf(consumedId).zip(g.parametersOf(consumerId))
+
+            for {
+              g0 <- g.definitionOf(consumedId).map {
+                cid => removeConcreteNode(g, g.getConcreteNode(cid))
+              } getOrElse LoggedSuccess(g)
+              g1 <- ps.foldLoggedEither(g0){
+                case (g, (pConsumed, pConsumer)) =>
+                  mergeInto0(g, pConsumed, pConsumer)((g,_,_) =>
+                    LoggedSuccess(g.removeEdge(ContainsParam(consumedId, pConsumed))))
+              }
+            } yield g1
         }
 
       case TypeDecl =>
@@ -188,7 +221,6 @@ class Merge
             LoggedSuccess(s"redirecting ($userId, $consumedId) toward $consumerId\n",
               g0.changeTarget(Uses(userId, consumedId), consumerId))
       }
-
 
 
       g2 <- g1.usedByExcludingTypeUse(consumedId).foldLoggedEither(g1){
@@ -244,6 +276,17 @@ class Merge
       (g8 removeNode consumedId)._2.rmType(consumedId)
     }
   }
+//  def removeType(g : DependencyGraph, consumed : NodeId) : DependencyGraph = {
+//    val g1 = g.styp(consumed) map {
+//      t => t.ids.foldLeft(g) {
+//        (g0, id) => g0.typeMemberUsesOf(Uses(consumed, id)).foldLeft(g0) {
+//          (g1, tmu) => g1.removeBinding((consumed, id), tmu)
+//        }
+//      }
+//    } getOrElse g
+//
+//    g1 rmType consumed
+//  }
 
   def removeBindingsInvolving(g : DependencyGraph, n : ConcreteNode) : DependencyGraph = {
     val g1 = n.kind.kindType match {

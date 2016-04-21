@@ -26,7 +26,7 @@
 
 package puck.javaGraph.transfoRules.redirect
 
-import puck.{Settings, AcceptanceSpec}
+import puck.AcceptanceSpec
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.{AccessAbstraction, Uses}
 import puck.graph.transformations.rules.Redirection

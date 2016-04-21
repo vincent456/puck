@@ -27,12 +27,12 @@
 package puck.javaGraph.commutativity
 
 import puck.javaGraph.nodeKind.Field
-import puck.{AcceptanceSpec, QuickFrame, Settings}
+import puck.{AcceptanceSpec, Settings}
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 import puck.graph.{AccessAbstraction, Factory, Uses}
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, Redirection}
-import puck.javaGraph.{JavaDotHelper, ScenarioFactory}
+import puck.javaGraph.ScenarioFactory
 import puck.Settings.outDir
 
 class CommutativityRedirect
