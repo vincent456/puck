@@ -1,18 +1,18 @@
 aspect LockedParTypeAccess{
 
     private TypeDecl ParTypeAccess.targetType = null;
-    private void ParTypeAccess.setTargetType(TypeDecl td) {
+    void ParTypeAccess.setTarget(TypeDecl td) {
         targetType = td;
     }
     public boolean ParTypeAccess.isLocked() { return targetType != null; }
 
     refine Generics eq ParTypeAccess.type() = isLocked() ? targetType.refresh() : refined();
 
-    public ASTNode ParTypeAccess.lock() { return lock(type()); }
+    public ASTNode ParTypeAccess.lock() {return lock(type()); }
 
     public ASTNode ParTypeAccess.lock(TypeDecl decl) {
         mandatoryAssert(decl != null && !decl.isUnknown());
-        setTargetType(decl);
+        setTarget(decl);
         //is it always true for type variables ?
         if(parent != null && !(decl instanceof TypeVariable))
             replace(this).with(this);
@@ -24,7 +24,7 @@ aspect LockedParTypeAccess{
         Expr qual = getQualifier();
         mandatoryAssert(qual == null || qual.isPure());
         TypeDecl target = targetType.refresh();
-        setTargetType(null);
+        setTarget(null);
         flushTreeCache();
         if(!target.hasName())
             throw new RefactoringException("cannot unlock access to nameless type");
@@ -33,9 +33,50 @@ aspect LockedParTypeAccess{
                 return this;
             return unlock(qual, target);
         } finally {
-            setTargetType(null);
+            setTarget(null);
         }
     }
 
 
+
+    public void ParTypeAccess.eliminateLockedNames() {
+        if(isLocked())
+            unlock();
+        super.eliminateLockedNames();
+     }
+
+    public Access ParTypeAccess.unlock(Expr qual, TypeDecl target){
+        if(target.isParameterizedType())
+            return unlockParTypeAccess(qual, (ParTypeDecl)target);
+
+        throw new RefactoringException("ParTypeAccess targeting something else than a ParTypeDecl : not implemented");
+     }
+
+    protected Access ParTypeAccess.unlockParTypeAccess(Expr qual, ParTypeDecl target) {
+        List<Access> args = new List<Access>();
+        for(int i=0;i<target.numTypeParameter();++i) {
+            Access targetAccess = target.getParameterization().args.get(i).createLockedAccess();
+            affectedByUnlock(targetAccess);
+            args.add(targetAccess);
+        }
+        Access rawAccess = ((GenericTypeDecl)target.genericDecl()).rawType().createLockedAccess();
+        affectedByUnlock(rawAccess);
+        Access acc = new ParTypeAccess(rawAccess, args);
+        if(qual != null) {
+            affectedByUnlock(acc);
+            acc = qual.qualifiesAccess(acc);
+        }
+        // do we always need to replace ?
+        return (Access) replace(qual!=null?parentDot():this).with(acc);
+    }
+
+    refine PrettyPrint public void ParTypeAccess.prettyPrint(PrettyPrinter out) {
+        if(!isLocked()) {
+           refined(out);
+        } else {
+            out.print("[[");
+            refined(out);
+            out.print("]]");
+        }
+    }
 }

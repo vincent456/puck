@@ -30,6 +30,17 @@ aspect ReplaceTypeAccess {
     public void ASTNode.setTypeAccess(Access tAccess){
         throw new PuckError(this.getClass() + ".setTypeAccess not implemented");
     }
+    boolean ASTNode.isParTypeAccess(){ return false;}
+    boolean ParTypeAccess.isParTypeAccess(){ return true;}
+    ParTypeAccess  ASTNode.getParTypeAccessParent(){
+        ASTNode c = this;
+        while(c.getParent()!=null){
+            c = c.getParent();
+            if(c.isParTypeAccess())
+                return (ParTypeAccess) c;
+        }
+        return null;
+    }
 
     void TypeDecl.replaceTypeAccessInList(Access oldAccess, Access newAccess, List<Access> list){
         if(!oldAccess.isTypeAccess() || !newAccess.isTypeAccess())
@@ -68,27 +79,32 @@ aspect ReplaceTypeAccess {
             getChild(i).replaceTypeAccess(oldUsed, newUsed);
     }
 
+//    public void TypeAccess.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
+//        if( this.decl().equals(oldUsed) )
+//            replace(this).with(newUsed.createLockedAccess());
+//    }
     public void TypeAccess.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
-        if( this.decl().equals(oldUsed) )
-            replace(this).with(newUsed.createLockedAccess());
+        if( this.decl().equals(oldUsed) ){
+            Access newAccess=newUsed.createLockedAccess();
+            replace(this).with(newAccess);
+            ParTypeAccess ptaParent=newAccess.getParTypeAccessParent();
+            if(ptaParent!=null){
+                ptaParent.setTarget(null);
+                ptaParent.flushTreeCache();
+                ptaParent.lock(ptaParent.type());
+            }
+        }
     }
 
     public void ClassInstanceExpr.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
 
         if( getAccess() instanceof ParTypeAccess){
 //            throw new PuckError("recheck !");
-//            if(decl().isSubstitute()) {
-//                ConstructorDeclSubstituted parDecl = ((ConstructorDeclSubstituted) decl()).copy();
-//                ParClassDecl parClassDecl = (ParClassDecl) parDecl.hostType();
-//
-//                /*TODO check if several instances/decl of the same parameterized type what happens then ??*/
-//                for(Access arg : parClassDecl.getArgumentList())
-//                    arg.replaceTypeAccess(oldUsed, newUsed);
-//            }
-//
+            setTarget(null);
+            flushTreeCache();
             List<Access> typeArgs =  ((ParTypeAccess) getAccess()).getTypeArguments();
-            for(int i = 0; i<typeArgs.getNumChild(); i++)
-                typeArgs.getChild(i).replaceTypeAccess(oldUsed, newUsed);
+            typeArgs.replaceTypeAccess(oldUsed, newUsed);
+            lock();
 
         }
         getArgList().replaceTypeAccess(oldUsed, newUsed);

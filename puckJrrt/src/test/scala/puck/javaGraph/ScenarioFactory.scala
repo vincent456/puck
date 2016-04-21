@@ -71,11 +71,11 @@ case class ScenarioFactory
       dg2ast.nodesByName,
       dg2ast.graph2ASTMap)
 
-  def this(filePathOrCode : String) = this {
-    if(filePathOrCode endsWith ".java" )
-      JavaJastAddDG2AST.fromFiles(List(filePathOrCode), List(), List(), List())
-    else
-      JavaJastAddDG2AST.compile(filePathOrCode.stripMargin) match {
+  def this(code : String) = this {
+//    if(code endsWith ".java" )
+//      JavaJastAddDG2AST.fromFiles(List(code), List(), List(), List())
+//    else
+      JavaJastAddDG2AST.compile(code.stripMargin) match {
         case None => throw new DGBuildingError("Compilation error, no AST generated")
         case Some(p) => JavaJastAddDG2AST.buildGraph(p, null)
       }
@@ -96,6 +96,11 @@ case class ScenarioFactory
   implicit val logger = ScenarioFactory.logger
 
   protected implicit def idOfFullName(fn : String) : NodeId = fullName2id apply fn
+
+  protected implicit def idOfFullName(gfn : (DependencyGraph, String)) : NodeId = {
+    val (g,fn) = gfn
+    DependencyGraph.findElementByName(g, fn).get.id
+  }
 
 
   def compare: (DependencyGraph, DependencyGraph) => Boolean =

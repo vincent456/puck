@@ -28,8 +28,10 @@ package puck.graph.transformations.rules
 
 import puck.PuckError
 import puck.graph._
-import puck.util.LoggedEither, LoggedEither._
+import puck.util.LoggedEither
+import LoggedEither._
 import puck.graph.ShowDG._
+
 import scalaz.std.list._
 import scalaz.std.set._
 
@@ -178,25 +180,50 @@ object Redirection {
     }
   }
 
+
   def propagateTypeConstraints
     (g : DependencyGraph,
      oldTypeUse : Uses,
      newTypeToUse : NodeId) : LoggedTG = {
+//    import puck.util.Debug._
+//    println("propagateTypeConstraints")
+//    (g, g.edges).println
     val oldTypeUsed = oldTypeUse.used
-    val impactedTypeUses =
+
+    val tucs = g.typeConstraints(oldTypeUse)
+
+    val (tucsThatNeedPropagation, tucsThatNeedUpdate) =
       if (g.isa_*(oldTypeUsed, newTypeToUse))
-        g.usesThatShouldUsesASuperTypeOf(oldTypeUse)
+        tucs.partition{
+          case Sup(_) | Eq(_) => true
+          case Sub(_) => false
+        }
       else if (g.isa_*(newTypeToUse, oldTypeUsed))
-        g.usesThatShouldUsesASubtypeOf(oldTypeUse)
+        tucs.partition{
+          case Sub(_) | Eq(_) => true
+          case Sup(_) => false
+        }
       else
-        g.usesThatShouldUsesASuperTypeOf(oldTypeUse) ++
-          g.usesThatShouldUsesASubtypeOf(oldTypeUse)
+        tucs.partition{
+          case Eq(_) => true
+          case Sub(_) | Sup(_) => false
+        }
 
     g.abstractions(oldTypeUsed).find (abs => abs.nodes contains newTypeToUse) match {
       case None => LoggedError("no satisfying abstraction found")
-      case Some(abs) =>
-        impactedTypeUses.foldLoggedEither(g){
-          redirectInstanceUsesAndPropagate(_,_, abs)
+      case Some(abs @ AccessAbstraction(absId, _)) =>
+
+        def update(g : DependencyGraph, tuc : TypeUseConstraint) : DependencyGraph =
+          g.removeTypeUsesConstraint(oldTypeUse, tuc)
+            .addTypeUsesConstraint((oldTypeUse.user, absId), tuc.copyWithNewTypeUsed(absId))
+
+        val g1 = tucsThatNeedUpdate.foldLeft(g)(update)
+
+        tucsThatNeedPropagation.foldLoggedEither(g1) {
+          case (g0, tuc) =>
+            val (s,t) = tuc.constrainedUse
+            val g1 = update(g0, tuc)
+            redirectInstanceUsesAndPropagate(g1, Uses(s,t), abs)
         }
     }
   }
@@ -228,7 +255,7 @@ object Redirection {
      oldUse : Uses,
      newUsed : Abstraction
       ) : LoggedTG = {
-    val log = s"redirectUsesAndPropagate(g, oldUse = ${(g, oldUse).shows},  " +
+    val log = s"redirectInstanceUsesAndPropagate(g, oldUse = ${(g, oldUse).shows},  " +
               s"newUsed = ${(g, newUsed).shows})\n"
 
     val newTypeToUse = newUsed.kindType(g) match {

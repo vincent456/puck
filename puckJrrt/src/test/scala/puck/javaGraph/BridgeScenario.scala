@@ -38,7 +38,7 @@ import puck.graph.constraints._
 import puck.graph.transformations.rules.CreateTypeMember
 import puck.graph._
 import puck.javaGraph.nodeKind._
-import puck.{LoggedEitherValues, PuckError, Settings}
+import puck.{LoggedEitherValues, Settings}
 import puck.jastadd.ExtendJGraphUtils.{transformationRules => TR}
 import DependencyGraph.findElementByName
 import puck.Settings._

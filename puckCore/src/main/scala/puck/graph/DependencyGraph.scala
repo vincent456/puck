@@ -597,15 +597,22 @@ class DependencyGraph
   }
 
 
-  private def typeUsesConstrained(typeUse : NodeIdP)(f: TypeUseConstraint => Boolean) : Set[Uses]=
-    edges.typeUsesConstraints getFlat typeUse filter f map {
-      tuc =>
-      val (s, t) = tuc.constrainedUse
-      edges.getUses(s,t).getOrElse {
-        import ShowDG._
-        error((this,(s,t)).shows + " does not exist")
-      }
+  private def checkTypeUseExist(tuc : TypeUseConstraint) : Uses = {
+    val (s, t) = tuc.constrainedUse
+    edges.getUses(s,t).getOrElse {
+      import ShowDG._
+      error((this,(s,t)).shows + " does not exist")
     }
+  }
+
+  def typeConstraints(typeUse : NodeIdP) : Set[TypeUseConstraint] = {
+   val tucs =  edges.typeUsesConstraints getFlat typeUse
+    tucs foreach checkTypeUseExist
+    tucs
+  }
+
+  private def typeUsesConstrained(typeUse : NodeIdP)(f: TypeUseConstraint => Boolean) : Set[Uses]=
+    edges.typeUsesConstraints getFlat typeUse filter f map checkTypeUseExist
 
 
   def usesThatShouldUsesASubtypeOf(typeUse : NodeIdP) : Set[Uses]=

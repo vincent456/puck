@@ -26,12 +26,12 @@
 
  package puck.javaGraph.transfoRules
 
-import puck.graph.{DGError, Write, Uses, AccessAbstraction}
+import puck.graph.{AccessAbstraction,  DependencyGraph, Uses, Write}
 import puck.graph.constraints.SupertypeAbstraction
 import puck.javaGraph.ScenarioFactory
-import puck.jastadd.ExtendJGraphUtils.{transformationRules => TR}
+import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
 import puck.javaGraph.nodeKind.Interface
-import puck.{QuickFrame, AcceptanceSpec, Settings}
+import puck.{AcceptanceSpec, Settings}
 
 class AbstractSpec extends AcceptanceSpec {
   val examplesPath = Settings.testExamplesPath + "/abstract"
@@ -39,7 +39,7 @@ class AbstractSpec extends AcceptanceSpec {
   feature("Abstract class into interface"){
 
     info("no pre-existing super type")
-    scenario("simple case"){
+    scenario("simple case - method without args"){
       val _ = new ScenarioFactory(
         """package p;
           |class A {
@@ -47,26 +47,51 @@ class AbstractSpec extends AcceptanceSpec {
           |    public void m(){}
           |}"""
       ) {
-        val classA = fullName2id("p.A")
-        val methM = fullName2id("p.A.m()")
-        val field = fullName2id("p.A.f")
+        assert( graph.directSuperTypes("p.A").isEmpty )
 
-        assert( graph.directSuperTypes(classA).isEmpty )
-
-        assert( graph.abstractions(classA).isEmpty )
-        assert( graph.abstractions(methM).isEmpty )
-        assert( graph.abstractions(field).isEmpty )
+        assert( graph.abstractions("p.A").isEmpty )
+        assert( graph.abstractions("p.A.m()").isEmpty )
+        assert( graph.abstractions("p.A.f").isEmpty )
 
 
-        val (AccessAbstraction(itc, _), g) =
-          TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
+        val (AccessAbstraction(itc, _), g0) =
+          Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
             Interface, SupertypeAbstraction).rvalue
-        assert( g.isa(classA, itc) )
+        val g = g0.addContains("p", itc)
+        assert( g.isa("p.A", itc) )
 
-        g.abstractions(classA).size shouldBe 1
-        g.abstractions(methM).size shouldBe 1
-        assert( g.abstractions(field).isEmpty ,
+        g.abstractions("p.A").size shouldBe 1
+        g.abstractions("p.A.m()").size shouldBe 1
+        assert( g.abstractions("p.A.f").isEmpty ,
           "Field cannot be exposed in an interface")
+      }
+
+    }
+
+    scenario("simple case - method with one arg"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |class B {}
+          |class A {
+          |    public void m(B b){}
+          |}"""
+      ) {
+
+        assert( graph.directSuperTypes("p.A").isEmpty )
+
+        assert( graph.abstractions("p.A").isEmpty )
+        assert( graph.abstractions("p.A.m(B)").isEmpty )
+
+        val (AccessAbstraction(itc, _), g0) =
+          Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
+            Interface, SupertypeAbstraction).rvalue
+        val g = g0.addContains("p", itc)
+        assert( g.isa("p.A", itc) )
+
+        assert( DependencyGraph.findElementByName(g, "p.A.m(B)").nonEmpty )
+
+        g.abstractions("p.A").size shouldBe 1
+        g.abstractions("p.A.m(B)").size shouldBe 1
       }
 
     }
@@ -98,7 +123,7 @@ class AbstractSpec extends AcceptanceSpec {
 
 
         val (AccessAbstraction(itc, _), g) =
-          TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
+          Rules.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
             Interface, SupertypeAbstraction).rvalue
 
         assert( g.isa(classA, itc) )
@@ -151,13 +176,13 @@ class AbstractSpec extends AcceptanceSpec {
         assert( graph.abstractions(fieldUserThatShouldNotBeInInterfaceDecl).isEmpty )
 
 
-        assert( !TR.abstracter.canBeAbstracted(graph,
+        assert( !Rules.abstracter.canBeAbstracted(graph,
           graph.getConcreteNode(fieldUserThatShouldNotBeInInterfaceDecl),
           graph.getConcreteNode(classB),
           SupertypeAbstraction))
 
         val (AccessAbstraction(itc, _), g) =
-          TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classB),
+          Rules.abstracter.createAbstraction(graph, graph.getConcreteNode(classB),
             Interface, SupertypeAbstraction).rvalue
         assert( g.isa(classB, itc) )
 
@@ -204,7 +229,7 @@ class AbstractSpec extends AcceptanceSpec {
         assert( graph.abstractions(fieldUserThatCanBeInInterfaceDecl).isEmpty )
 
         val (AccessAbstraction(itc, _), g) =
-          TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classC),
+          Rules.abstracter.createAbstraction(graph, graph.getConcreteNode(classC),
             Interface, SupertypeAbstraction).rvalue
 
         assert( g.isa(classC, itc) )
@@ -243,7 +268,7 @@ class AbstractSpec extends AcceptanceSpec {
         val methCannotBeInInterface = fullName2id("p.A.cannotBeInInterface(A)")
 
         val (AccessAbstraction(itc, _), g) =
-          TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
+          Rules.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
             Interface, SupertypeAbstraction).rvalue
 
         assert( g.isa(classA, itc))
@@ -284,7 +309,7 @@ class AbstractSpec extends AcceptanceSpec {
         val methCannotBeInInterface = fullName2id("p.A.cannotBeInInterface(A)")
 
         val (AccessAbstraction(itc, _), g) =
-          TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
+          Rules.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
             Interface, SupertypeAbstraction).rvalue
 
         assert( g.isa(classA, itc))
@@ -326,7 +351,7 @@ class AbstractSpec extends AcceptanceSpec {
 
 
         val (AccessAbstraction(itc, _), g) =
-          TR.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
+          Rules.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
             Interface, SupertypeAbstraction).rvalue
 
         assert( g.isa(classA, itc) )
@@ -370,7 +395,7 @@ class AbstractSpec extends AcceptanceSpec {
         assert(graph.uses(initializedField, fieldType))
         assert(graph.uses(fieldDef, fieldTypeCtor))
 
-        val (initializer, g) = TR.intro.initializer(graph, classA)
+        val (initializer, g) = Rules.intro.initializer(graph, classA)
         val initializerDef = g.definitionOf_!(initializer)
 
         assert(g.uses(initializedField, fieldType))

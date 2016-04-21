@@ -28,7 +28,7 @@ package puck.javaGraph
 
 import org.scalatest.{EitherValues, FeatureSpec, OptionValues}
 import puck.Settings._
-import puck.graph.{AccessAbstraction, DependencyGraph, NodeId, Uses}
+import puck.graph.{AccessAbstraction, DependencyGraph, NodeId, ShowDG, Uses}
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.SupertypeAbstraction
 import puck.jastadd.ExtendJGraphUtils.{transformationRules => TR}
@@ -52,31 +52,28 @@ class CompositeScenario private ()
   with EitherValues
   with OptionValues
   with LoggedEitherValues {
-  val fileSystem = fullName2id("fileSystem")
-  val `fileSystem.File` = fullName2id("fileSystem.File")
 
-  val `fileSystem.Directory.files` = fullName2id("fileSystem.Directory.files")
-
-  val g0 = graph
+   val g0 = graph
 
   def abstractFile(g : DependencyGraph) : (NodeId, DependencyGraph) = {
     val (AccessAbstraction(itcId, _), g1) =
-      TR.abstracter.createAbstraction(g, g getConcreteNode`fileSystem.File`,
+      TR.abstracter.createAbstraction(g, g getConcreteNode "fileSystem.File",
         Interface, SupertypeAbstraction).rvalue
 
-      val g2 = g1.addContains(fileSystem, itcId)
+      val g2 = g1.addContains("fileSystem", itcId)
 
     (itcId, TR.rename(g2, itcId, "FSElement"))
   }
 
   val (fsElement, g1) = abstractFile(g0)
 
-  val g2 = TR.redirection.redirectUsesAndPropagate(g1,
-    Uses(`fileSystem.Directory.files`, `fileSystem.File`),
+  val g2 = g1 //TR.makeSuperType(g1, "fileSystem.Directory", (g1, "fileSystem.FSElement"))().rvalue
+  val g3 = TR.redirection.redirectUsesAndPropagate(g2,
+    Uses("fileSystem.Directory.files", "fileSystem.File"),
     AccessAbstraction(fsElement, SupertypeAbstraction)).rvalue
 
 
-  def gFinal = g2
+  def gFinal = g3
 }
 
 class CompositeManualRefactoringSpec

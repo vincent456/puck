@@ -46,9 +46,11 @@ object RedirectTarget {
 
     val (_, reenactor) = resultAndReenactor
 
-    logger.writeln(s"change type in ${(reenactor, typeUser).shows} " +
+    val log = s"change type in ${(reenactor, typeUser).shows} " +
       s"from ${(reenactor, oldTypeId).shows}" +
-      s" to ${(reenactor, typeId).shows}")
+      s" to ${(reenactor, typeId).shows}"
+
+    logger writeln log
 
     val TypedKindDeclHolder(tdecl) = id2declMap(typeId)
     val TypedKindDeclHolder(oldTdecl) = id2declMap(oldTypeId)
@@ -61,6 +63,7 @@ object RedirectTarget {
         logger.writeln("block eq mdecl.getBlock = " + (block eq mdecl.getBlock))
         mdecl.getBlock.replaceTypeAccess(oldTdecl, tdecl)
 
+      case FieldDeclHolder(decl,_) => decl.getTypeAccess.replaceTypeAccess(oldTdecl, tdecl)
       case holder : HasNode =>  holder.node.replaceTypeAccess(oldTdecl, tdecl)
 
       case k => throw new JavaAGError(k + " as user of TypeKind, redirection unhandled !")

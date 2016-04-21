@@ -44,7 +44,7 @@ class CommutativityAbstract extends AcceptanceSpec {
     info("no pre-existing super type")
     val noSuperTypePath = examplesPath + "/classIntoInterface/noExistingSuperType/"
 
-    scenario("simple case") {
+    scenario("simple case - method without args") {
 
       val _ = new ScenarioFactory(
         """package p;
@@ -56,14 +56,31 @@ class CommutativityAbstract extends AcceptanceSpec {
           |}"""
       ) {
 
-        val packageP = fullName2id("p")
-        val classA = fullName2id("p.A")
+        val (AccessAbstraction(itc, _), g0) =
+          Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
+            Interface, SupertypeAbstraction).rvalue
+        val g = g0.addContains("p", itc)
+
+        val recompiledEx = applyChangeAndMakeExample(g, outDir)
+
+        assert( Mapping.equals(g, recompiledEx.graph) )
+      }
+
+    }
+
+    scenario("simple case - method with one arg"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |class B {}
+          |class A {
+          |    public void m(B b){}
+          |}"""
+      ) {
 
         val (AccessAbstraction(itc, _), g0) =
-          Rules.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
+          Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
             Interface, SupertypeAbstraction).rvalue
-        val g = g0.addContains(packageP, itc)
-
+        val g = g0.addContains("p", itc)
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
 
@@ -82,14 +99,11 @@ class CommutativityAbstract extends AcceptanceSpec {
           |}"""
       ) {
 
-        val packageP = fullName2id("p")
-        val classA = fullName2id("p.A")
-
         val (AccessAbstraction(itc, _), g0) =
-          Rules.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
+          Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
             Interface, SupertypeAbstraction).rvalue
 
-        val g = g0.addContains(packageP, itc)
+        val g = g0.addContains("p", itc)
 
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)

@@ -105,9 +105,9 @@ object Debug {
     parameters, types, typedBy)) =>
       val builder = new StringBuilder(150)
 
-      builder.append("used -> user\n")
-      builder append print(userMap, (used : NodeId, user : NodeId) =>
-        s"$used - ${desambiguatedFullName(dg, used)} used by $user - ${desambiguatedFullName(dg, user)}")
+//      builder.append("used -> user\n")
+//      builder append print(userMap, (used : NodeId, user : NodeId) =>
+//        s"$used - ${desambiguatedFullName(dg, used)} used by $user - ${desambiguatedFullName(dg, user)}")
 
       builder.append("\nuser -> used\n")
       builder append print(usedMap, (user : NodeId, used : NodeId) =>
@@ -118,6 +118,10 @@ object Debug {
 //        s"${desambiguatedFullName(dg, container)} contains ${desambiguatedFullName(dg, content)}")
 //      builder.append("\ncontent -> container\n\t")
 //      builder.append(containers.toString())
+      builder.append("\ntypes\n")
+      builder.append( types.toList map { case (nid, t) =>
+        s"$nid - ${desambiguatedFullName(dg, nid)} : ${typeCord(dg, t)}"
+      } mkString("\t", "\n\t", "\n"))
 
 //      builder.append("\nsub -> super\n")
 //      builder append print(superTypes, (sub : NodeId, sup : NodeId) =>
@@ -129,11 +133,9 @@ object Debug {
 //      builder.append(typeMemberUses2typeUsesMap.toString)
 //      builder.append("\ntUse -> tmUse\n\t")
 //      builder.append(typeUses2typeMemberUsesMap.toString)
-//      builder.append("\ntypeUsesConstraints\n")
-//      builder append print(typeUsesConstraints, (k : NodeIdP, v : TypeUseConstraint) => typeConstraintCordBuilder(dg,(k,v)).toString())
+      builder.append("\ntypeUsesConstraints\n")
+      builder append print(typeUsesConstraints, (k : NodeIdP, v : TypeUseConstraint) => typeConstraintCordBuilder(dg,(k,v)).toString())
 
-      builder.append("\ntypes\n")
-      builder.append( mkMapStringSortedByKey(types))
 
       builder.toString()
   }
