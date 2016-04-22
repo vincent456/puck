@@ -42,6 +42,9 @@ object Operation {
     case TypeBinding((n1, n2), (n3, n4)) =>
       Seq(n1, n2, n3, n4)
     case RoleChange(id, _, _) => Seq(id)
+    case TypeUseConstraintOp((id1, id2), ct) =>
+      val (id3, id4) = ct.constrainedUse
+      Seq(id1, id2, id3, id4)
   }
 }
 

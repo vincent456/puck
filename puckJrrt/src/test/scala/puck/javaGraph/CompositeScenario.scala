@@ -32,7 +32,7 @@ import puck.graph.{AccessAbstraction, DependencyGraph, NodeId, Uses}
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.SupertypeAbstraction
 import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
-import puck.LoggedEitherValues
+import puck.{LoggedEitherValues, Settings}
 import puck.javaGraph.nodeKind._
 
 /**
@@ -106,6 +106,7 @@ class CompositeManualRefactoringSpec
 
      val recompiledEx = bs.applyChangeAndMakeExample(bs.gFinal, outDir)
 
+    println(Settings.tmpDir)
     assert( Mapping.equals(bs.gFinal, recompiledEx.graph) )
 
   }
