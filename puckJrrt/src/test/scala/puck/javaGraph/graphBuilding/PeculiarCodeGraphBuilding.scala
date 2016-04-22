@@ -26,6 +26,8 @@
 
 package puck.javaGraph.graphBuilding
 
+import java.io.File
+
 import puck.javaGraph.ScenarioFactory
 
 import puck.AcceptanceSpec
@@ -35,7 +37,7 @@ import puck.AcceptanceSpec
   */
 class PeculiarCodeGraphBuilding extends AcceptanceSpec {
 
-    scenario("Multi interface with same sig - ref typed as I") {
+      scenario("Multi interface with same sig - ref typed as I") {
       val _ = new ScenarioFactory(
       """
         |package p;

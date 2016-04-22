@@ -49,6 +49,8 @@ aspect Concretize {
 
     private String CompilationUnit.containingDirectory(){
         int idx = pathName().lastIndexOf(File.separatorChar);
+        if(idx == -1)
+            idx = pathName().lastIndexOf("/");
         return pathName().substring(0, idx -1);
     }
 

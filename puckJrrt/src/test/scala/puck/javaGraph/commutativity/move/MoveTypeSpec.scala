@@ -53,10 +53,9 @@ class MoveTypeSpec extends AcceptanceSpec  {
         |    }
         |}"""
     ){
-      val classA = fullName2id("p1.A")
 
       val (g0, package2) = createTopLevelPackage(graph, "p2")
-      val g1 = Move.staticDecl(g0, classA, package2).rvalue
+      val g1 = Move.staticDecl(g0, "p1.A", package2).rvalue
 
       val recompiledEx = applyChangeAndMakeExample(g1, outDir)
       assert( Mapping.equals(g1, recompiledEx.graph) )

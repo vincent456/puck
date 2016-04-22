@@ -44,6 +44,7 @@ import puck.config.ConfigParser
 object ScenarioFactory {
   implicit val logger : PuckLogger = new PuckFileLogger(_ => true, new java.io.File(Settings.tmpDir + "comparisonLog"))
 
+
   def fromDirectory(path: String): ScenarioFactory = {
      new ScenarioFactory(FileHelper.findAllFiles(new File(path), ".java", Seq(new File(path) \ "out")):_*)
   }
@@ -111,7 +112,9 @@ case class ScenarioFactory
                    outDir : File) : Unit = {
     val dg2ast = new JavaJastAddDG2AST(program, graph, initialRecord, fullName2id, dg2astMap)
 
+
     dg2ast.apply(g)(new PuckFileLogger(_ => true, new File(Settings.tmpDir + "pucklog")))
+
     IO.delete(outDir)
     dg2ast.printCode(outDir)
   }

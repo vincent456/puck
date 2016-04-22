@@ -79,7 +79,8 @@ class ConfigUnitSpec extends UnitSpec{
     val f2 = new File(tmpDir + "/a/b/c/d/e")
     f2.mkdirs()
 
+
     f1 pathRelativeTo f2 shouldBe f1.getAbsolutePath
-    f2 pathRelativeTo f1 shouldBe "d/e"
+    f2 pathRelativeTo f1 shouldBe ("d" + File.separator + "e")
   }
  }

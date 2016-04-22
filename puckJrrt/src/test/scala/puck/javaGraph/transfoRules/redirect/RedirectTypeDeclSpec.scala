@@ -74,6 +74,8 @@ class RedirectTypeDeclSpec
       assert(Uses(theParam, superType).existsIn(g2))
       assert(Uses(mUserDef, absmUsed).existsIn(g2))
 
+      assert(!Uses(theParam, classUsed).existsIn(g2))
+      assert(!Uses(mUserDef, mUsed).existsIn(g2))
     }
   }
 
