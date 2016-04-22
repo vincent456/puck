@@ -70,8 +70,8 @@ object LoadAndApply {
       }
       else {
         println("are NOT equals")
-        import puck.graph.ShowDG.DGShowOp
-        import puck.util.Debug.nodeIndexCordBuilder
+        import puck.graph.ShowDG._
+
 //        import scalaz.syntax.show._
 //        import puck.util.Debug.showNodeIndex
         println((g, g.nodesIndex).shows)

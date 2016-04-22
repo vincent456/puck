@@ -35,8 +35,6 @@ import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
 import puck.{LoggedEitherValues, Settings}
 import puck.javaGraph.nodeKind._
 
-import ShowDG._
-import puck.util.Debug._
 /**
   * Created by Loïc Girault on 14/04/16.
   */

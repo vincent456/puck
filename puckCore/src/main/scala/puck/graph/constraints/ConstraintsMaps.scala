@@ -77,16 +77,16 @@ case class ConstraintsMaps
    def printConstraints[V](graph : GraphT, logger : Logger[V])(implicit v : V) : Unit = {
      logger writeln "printing constraints"
      namedSets.foreach{
-       case (_, namedSet) => logger.writeln((graph, namedSet).shows(namedRangeSetDefCord))
+       case (_, namedSet) => logger.writeln((graph, namedSet).shows(stringOfNamedRangeSetDef))
      }
 
-     def printMap( m : Map [Range, ConstraintSet], cb : CordBuilder[Constraint]) =
+     def printMap( m : Map [Range, ConstraintSet], cb : DGStringBuilder[Constraint]) =
        m foreach { case (k, s) =>
          s.foreach { c => if(c.owners.head == k )
            logger.writeln((graph, c).shows(cb))(v)}
        }
-     printMap(hideConstraints, ShowDG.constraintCord)
-     printMap(friendConstraints, ShowDG.friendConstraintCord)
+     printMap(hideConstraints, ShowDG.stringOfConstraint)
+     printMap(friendConstraints, ShowDG.stringOfFriendConstraint)
    }
 
 

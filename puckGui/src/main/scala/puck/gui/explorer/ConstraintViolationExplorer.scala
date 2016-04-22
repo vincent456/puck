@@ -56,7 +56,7 @@ object ConstraintViolationExplorer {
               idToNameString(dg, _)
             } getOrElse "OrphanDefinition"
           else n.name
-        name + ShowDG.typeHolderCord(dg, dg.styp(n.id))
+        name + ShowDG.stringOfTypeOption(dg, dg.styp(n.id))
       case vn : VirtualNode => vn.name(dg)
     }
   def edgeToString(e:  DGEdge )(implicit graph : DependencyGraph): String = {

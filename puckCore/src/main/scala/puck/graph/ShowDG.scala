@@ -29,67 +29,63 @@ package puck.graph
 import puck.graph.constraints.ShowConstraints
 import puck.graph.transformations._
 
-import scalaz.{Cord, Show}
+import scala.math.Ordering
 
 
 object ShowDG extends ShowConstraints{
 
-  implicit def showFromToString[A] : Show[A] = Show.showFromToString[A]
-
-
-
-  def tailRecTypeCord
+  def tailRecStringOfType
   (dg : DependencyGraph,
    sep : List[String], end : List[String],
    builder : StringBuilder, lt : List[List[Type]]) : String =
     if (lt.isEmpty) builder.toString()
     else lt.head match {
-      case Nil => tailRecTypeCord(dg, sep.tail, end.tail, builder append end.head, lt.tail)
+      case Nil => tailRecStringOfType(dg, sep.tail, end.tail, builder append end.head, lt.tail)
       case NamedType(nid) :: tl =>
         val sep0 =
           if(tl.nonEmpty) sep.head
           else ""
-        tailRecTypeCord(dg, sep, end,
+        tailRecStringOfType(dg, sep, end,
           builder.append(dg.getNode(nid).name(dg) + sep0),
           tl :: lt.tail )
       case Tuple(types) :: tl =>
-        tailRecTypeCord(dg, "," :: sep, (")" + sep.head) :: end,
+        tailRecStringOfType(dg, "," :: sep, (")" + sep.head) :: end,
           builder append "(", types :: tl :: lt.tail )
       case Arrow(in, out) :: tl =>
-        tailRecTypeCord(dg, " -> " :: sep, "" :: end, builder, List(in, out) :: tl :: lt.tail )
+        tailRecStringOfType(dg, " -> " :: sep, "" :: end, builder, List(in, out) :: tl :: lt.tail )
 
       case ParameterizedType(genId, targs) :: tl =>
         val genName = dg.getNode(genId).name(dg)
-        tailRecTypeCord(dg, "," :: sep, (">" + sep.head) :: end,
+        tailRecStringOfType(dg, "," :: sep, (">" + sep.head) :: end,
           builder append s"$genName<", targs :: tl :: lt.tail )
 
       case Covariant(t) :: tl =>
-        tailRecTypeCord(dg,  sep,  end,
+        tailRecStringOfType(dg,  sep,  end,
           builder append s"+", (t :: tl) :: lt.tail )
       case Contravariant(t) :: tl =>
-        tailRecTypeCord(dg,  sep,  end,
+        tailRecStringOfType(dg,  sep,  end,
           builder append s"-", (t :: tl) :: lt.tail )
 
     }
 
-  implicit def typeCord : CordBuilder[Type] = (dg, t) =>
-    tailRecTypeCord(dg, List(""), List(""), new StringBuilder, List(List(t)))
+  implicit def stringOfType : DGStringBuilder[Type] = (dg, t) =>
+    tailRecStringOfType(dg, List(""), List(""), new StringBuilder, List(List(t)))
 
-  implicit def typeHolderCord : CordBuilder[Option[Type]] = (dg, th) => th match {
+  implicit def stringOfTypeOption : DGStringBuilder[Option[Type]] = (dg, th) => th match {
     case None => ""
-    case Some(t) => Cord(" : ", typeCord(dg, t))
+    case Some(t) => " : " + stringOfType(dg, t)
   }
 
-  implicit def nodeIdCord : CordBuilder[NodeId] =
-    (dg, nid) => nodeCord(dg, dg.getNode(nid))
+  implicit def stringOfNodeId : DGStringBuilder[NodeId] =
+    (dg, nid) => stringOfNode(dg, dg.getNode(nid))
 
-  implicit def nodeIdPCord : CordBuilder[NodeIdP] =
-  {case (dg, (nid1, nid2)) => Cord(s"Edge( $nid1 - ", desambiguatedFullName(dg,nid1),
-    s", $nid2 - ", desambiguatedFullName(dg,nid2), ")")}
+  implicit def stringOfNodeIdP : DGStringBuilder[NodeIdP] =
+  {case (dg, (nid1, nid2)) => s"Edge( $nid1 - ${desambiguatedFullName(dg,nid1)}" +
+    s", $nid2 - ${desambiguatedFullName(dg,nid2)})"}
     //{case (dg, (nid1, nid2)) => Cord("Edge(", nodeIdCord(dg,nid1), ", ", nodeIdCord(dg,nid2), ")")}
 
 
-  implicit def nodeCord : CordBuilder[DGNode] = (dg, n) =>
+  implicit def stringOfNode : DGStringBuilder[DGNode] = (dg, n) =>
     n match {
       case n : ConcreteNode =>
         val name =
@@ -98,39 +94,39 @@ object ShowDG extends ShowConstraints{
               dg.getConcreteNode(_).name + DependencyGraph.scopeSeparator + n.name
             } getOrElse "OrphanDefinition"
           else n.name
-        Cord(s"${n.id} - ${n.kind} $name", typeHolderCord(dg, dg.styp(n.id)))
-      case vn : VirtualNode => Cord(s"${vn.id} - ${vn.name(dg)}")
+        s"${n.id} - ${n.kind} $name${stringOfTypeOption(dg, dg.styp(n.id))}"
+      case vn : VirtualNode => s"${vn.id} - ${vn.name(dg)}"
     }
 
-  def nodeNameTypCord : CordBuilder[DGNode] =
+  def nodeNameTyp : DGStringBuilder[DGNode] =
     (dg, n) => n match {
-      case cn : ConcreteNode => Cord(cn.name , typeHolderCord(dg, dg.styp(cn.id)))
+      case cn : ConcreteNode => cn.name + stringOfTypeOption(dg, dg.styp(cn.id))
       case _ => n.name(dg)
     }
 
 
-  def desambiguatedLocalName : CordBuilder[DGNode] =  (g, n) => {
+  def desambiguatedLocalName : DGStringBuilder[DGNode] = (g, n) => {
     n.kind.kindType match {
       case StaticValueDecl
            | InstanceValueDecl
            | TypeConstructor =>
         g.structuredType(n.id) match {
           case Some(Arrow(in, _)) =>
-            n.name + typeCord(g, in)
+            n.name + stringOfType(g, in)
           case _ => n.name
         }
       case _ =>  n.name
     }
   }
-  def desambiguatedFullName : CordBuilder[NodeId] = (g, n) => {
+  def desambiguatedFullName : DGStringBuilder[NodeId] = (g, n) => {
     val ss = DependencyGraph.scopeSeparator
-    def aux(nid: NodeId, accu: String): Cord = {
+    def aux(nid: NodeId, accu: String): String = {
       val n = g.getNode(nid)
       g.container(n.id) match {
         case None if n.id == g.rootId =>
-          if(accu.isEmpty) Cord(g.root.name)
-          else Cord(accu.substring(1))
-        case None => Cord(DependencyGraph.unrootedStringId, ss, n.name, accu)
+          if(accu.isEmpty) g.root.name
+          else accu.substring(1)
+        case None => DependencyGraph.unrootedStringId + ss + n.name + accu
         case Some(pid) =>
           aux(pid, ss + desambiguatedLocalName(g, n) + accu)
       }
@@ -139,50 +135,50 @@ object ShowDG extends ShowConstraints{
   }
 
 
-  def fullNameEdgeCord : CordBuilder[DGEdge] =  (g, e) =>
-    Cord(s"${e.kind}(${e.source} - ${g.fullName(e.source)}, ${e.target} - ${g.fullName(e.target)})")
+  def edgeFullName : DGStringBuilder[DGEdge] = (g, e) =>
+    s"${e.kind}(${e.source} - ${g.fullName(e.source)}, ${e.target} - ${g.fullName(e.target)})"
 
 
-  implicit def edgeCord : CordBuilder[DGEdge] =  (dg, e) =>
-    Cord(e.kind.toString, "( " + nodeIdCord(dg, e.source), ", ", nodeIdCord(dg, e.target), ")")
-  implicit def brCord : CordBuilder[(DGEdge,DGEdge)] =
-  {case (dg, (u1, u2)) => Cord("Edge(", edgeCord(dg,u1), ", ", edgeCord(dg,u2), ")")}
+  implicit def stringOfEdge : DGStringBuilder[DGEdge] = (dg, e) =>
+    s"${e.kind}( ${desambiguatedFullName(dg, e.source)}, ${desambiguatedFullName(dg, e.target)})"
+
+  implicit def stringOfBR : DGStringBuilder[(DGEdge,DGEdge)] =
+  {case (dg, (u1, u2)) => s"(${stringOfEdge(dg,u1)}, ${stringOfEdge(dg,u2)})"}
 
 
-  implicit def extremityCord : CordBuilder[Extremity] =
-    (dg, e) => Cord(e.productPrefix, "(", nodeCord(dg, dg.getNode(e.node)), ")")
+  implicit def stringOfExtremity : DGStringBuilder[Extremity] =
+    (dg, e) => s"${e.productPrefix}(${stringOfNode(dg, dg.getNode(e.node))})"
 
-  implicit def transfoTargetCord : CordBuilder[Operation] = (dg, tgt) =>
+  implicit def stringOfOperation : DGStringBuilder[Operation] = (dg, tgt) =>
     tgt match {
-      case CNode(n) => nodeCord(dg, n)
-      case VNode(n) =>nodeCord(dg, n)
-      case Edge(edge) => edgeCord(dg, edge)
+      case CNode(n) => stringOfNode(dg, n)
+      case VNode(n) =>stringOfNode(dg, n)
+      case Edge(edge) => stringOfEdge(dg, edge)
       case RedirectionOp(edge, Target(newTgt))
         if dg.kindType(edge.target) == TypeDecl =>
 
-        val typed = nodeIdCord(dg, edge.source)
-        val oldType = nodeIdCord(dg, edge.target)
-        val newType =  nodeIdCord(dg, newTgt)
-        Cord("TypeChange(", typed ,",", oldType, ",", newType ,")")
+        val typed = stringOfNodeId(dg, edge.source)
+        val oldType = stringOfNodeId(dg, edge.target)
+        val newType =  stringOfNodeId(dg, newTgt)
+        s"TypeChange($typed, $oldType, $newType)"
 
       case RedirectionOp(edge, exty) =>
-        val ecord = edgeCord(dg, edge)
-        val xcord = extremityCord(dg, exty)
-        Cord(tgt.productPrefix, "(", ecord ,",", xcord ,")")
+        val ecord = stringOfEdge(dg, edge)
+        val xcord = stringOfExtremity(dg, exty)
+        s"${tgt.productPrefix}($ecord, $xcord)"
       case TypeBinding((n1,n2), (n3,n4)) =>
-        Cord(tgt.productPrefix, "(Uses(",  nodeIdCord(dg, n1), ", ", nodeIdCord(dg,n2),
-          "),Uses(", nodeIdCord(dg, n3), ", ", nodeIdCord(dg,n4) ,"))")
+        s"${tgt.productPrefix}(Uses(${stringOfNodeId(dg, n1)}, ${stringOfNodeId(dg,n2)})," +
+          s"Uses(${stringOfNodeId(dg, n3)}, ${stringOfNodeId(dg,n4)}))"
 
       case AType(typed, t) =>
-        val typedCord = nodeIdCord(dg, typed)
-        val tcord : Cord = typeCord(dg, t)
-        Cord("SetType(", typedCord, ", ", tcord,")")
+        val typedCord = stringOfNodeId(dg, typed)
+        val tcord : String = stringOfType(dg, t)
+        s"SetType($typedCord, $tcord)"
 
       case ChangeTypeBindingOp((tUse, tmUse), exty) =>
-        val tUseCord = nodeIdPCord(dg, tUse)
-        val tmUseCord = nodeIdPCord(dg, tmUse)
-        Cord("ChangeTypeBinding((", tUseCord, ", ", tmUseCord,"),", exty.productPrefix,
-          "(", nodeIdPCord(dg, exty.edge) ,")")
+        val tUseCord = stringOfNodeIdP(dg, tUse)
+        val tmUseCord = stringOfNodeIdP(dg, tmUse)
+        s"ChangeTypeBinding(($tUseCord, $tmUseCord),${exty.productPrefix}(${stringOfNodeIdP(dg, exty.edge)})"
       case _ => tgt.toString
     }
 
@@ -197,41 +193,140 @@ object ShowDG extends ShowConstraints{
     case Sup(_) => ":<"
   }
 
-  def typeConstraintCordBuilder : CordBuilder[(NodeIdP, TypeUseConstraint)] = {
+  def stringOfTypeConstraint : DGStringBuilder[(NodeIdP, TypeUseConstraint)] = {
    case (dg, ((tuser, tused), tc)) =>
      val tu1 = s"Uses($tuser - ${desambiguatedFullName(dg, tuser)}, $tused - ${desambiguatedFullName(dg, tused)})"
      val (tuser2, tused2) = tc.constrainedUse
      val tu2 = s"Uses($tuser2 - ${desambiguatedFullName(dg, tuser2)}, $tused2 - ${desambiguatedFullName(dg, tused2)})"
 
-     Cord(s"$tu1 ${tcOp(tc)} $tu2")
+     s"$tu1 ${tcOp(tc)} $tu2"
   }
 
-  implicit def abstractionCordBuilder : CordBuilder[Abstraction] = (dg, a) =>
+  implicit def stringOfAbstraction : DGStringBuilder[Abstraction] = (dg, a) =>
     a match {
       case AccessAbstraction(nid, policy) =>
-        Cord("AccessAbstraction(", dg.getNode(nid).name , ", ", policy.toString,")")
+        s"AccessAbstraction(${dg.getNode(nid).name}, ${policy.toString})"
       case ReadWriteAbstraction(rid, wid) =>
         val n1 = rid map (dg.getNode(_).name) toString ()
         val n2 = wid map (dg.getNode(_).name) toString ()
-        Cord("ReadWriteAbstraction(", n1 , ", ", n2,")")
+        s"ReadWriteAbstraction($n1 , $n2)"
     }
 
-  implicit def transformationtCord : CordBuilder[Recordable] = (dg, r) =>
+  implicit def stringOfRecordable : DGStringBuilder[Recordable] = (dg, r) =>
     r match {
       case tf : Transformation =>
         if(Transformation.isAddRmOperation(tf.operation))
-          Cord(directAddRm(tf.direction), "(", transfoTargetCord(dg, tf.operation),")")
-        else transfoTargetCord(dg, tf.operation)
+          s"${directAddRm(tf.direction)}(${stringOfOperation(dg, tf.operation)})"
+        else stringOfOperation(dg, tf.operation)
 
-      case MileStone => Cord(r.toString)
-      case Comment(msg) => Cord("***", msg, "***")
+      case MileStone => r.toString
+      case Comment(msg) => s"***$msg***"
     }
+
+  def print[K,C[_],V](s : CollectionValueMap[K, C, V], p : (K, V)  => String) : String = {
+    val sb = new StringBuilder()
+    s.iterator.foreach{ case (k, v) =>
+      sb append "\t"
+      sb append p(k, v)
+      sb append "\n"
+    }
+    sb.toString()
+  }
+  implicit val stringOfEdgeMap : DGStringBuilder[EdgeMap] = {
+    case (dg, EdgeMap ( userMap, usedMap, accessKindMap,
+    contents, containers, superTypes, subTypes,
+    typeMemberUses2typeUsesMap,
+    typeUses2typeMemberUsesMap,
+    typeUsesConstraints,
+    parameters, types, typedBy)) =>
+      val builder = new StringBuilder(150)
+
+      //      builder.append("used -> user\n")
+      //      builder append print(userMap, (used : NodeId, user : NodeId) =>
+      //        s"$used - ${desambiguatedFullName(dg, used)} used by $user - ${desambiguatedFullName(dg, user)}")
+
+      //      builder.append("\nuser -> used\n")
+      //      builder append print(usedMap, (user : NodeId, used : NodeId) =>
+      //        s"$user - ${desambiguatedFullName(dg, user)} uses $used - ${desambiguatedFullName(dg, used)}")
+
+      //      builder.append("\ncontainer -> content\n")
+      //      builder append print(contents, (container : NodeId, content : NodeId) =>
+      //        s"$container - ${desambiguatedFullName(dg, container)} contains $content - ${desambiguatedFullName(dg, content)}")
+      //      builder.append("\ncontent -> container\n")
+      //      builder append containers.toList.map {
+      //        case (content, container) =>
+      //            s"$content - ${desambiguatedFullName(dg, content)} contained by $container - ${desambiguatedFullName(dg, container)}"
+      //      }.mkString("\t",",\n\t ","\n")
+
+      //      builder.append("\nmethod -> parameters\n")
+      //      builder append print(parameters, (container : NodeId, content : NodeId) =>
+      //        s"$container - ${desambiguatedFullName(dg, container)} contains $content - ${desambiguatedFullName(dg, content)}")
+
+
+      //      builder.append("\ntypes\n")
+      //      builder.append( types.toList map { case (nid, t) =>
+      //        s"$nid - ${desambiguatedFullName(dg, nid)} : ${typeCord(dg, t)}"
+      //      } mkString("\t", "\n\t", "\n"))
+
+      //      builder.append("\nsub -> super\n")
+      //      builder append print(superTypes, (sub : NodeId, sup : NodeId) =>
+      //        s"${desambiguatedFullName(dg, sub)} is a ${desambiguatedFullName(dg, sup)}")
+      //      builder.append("\nsuper -> sub\n\t")
+      //      builder.append(subTypes.toString)
+
+      val pToString : NodeIdP => String = {
+        case (p1, p2) => s"($p1 - ${desambiguatedFullName(dg, p1)}, $p2 - ${desambiguatedFullName(dg, p2)})"
+      }
+
+      builder.append("\ntmUse -> tUse\n")
+      builder append print(typeMemberUses2typeUsesMap, (tmUse : NodeIdP, tUses : NodeIdP) =>
+        s"${pToString(tmUse)} -> ${pToString(tUses)}")
+
+      builder.append("\ntUse -> tmUse\n")
+      builder append print(typeUses2typeMemberUsesMap, (tUse : NodeIdP, tmUse : NodeIdP) =>
+        s"${pToString(tUse)} -> ${pToString(tmUse)}")
+
+      //      builder.append("\ntypeUsesConstraints\n")
+      //      builder append print(typeUsesConstraints, (k : NodeIdP, v : TypeUseConstraint) => typeConstraintCordBuilder(dg,(k,v)).toString())
+
+
+      builder.toString()
+  }
+
+
+  def mkMapStringSortedByKey[A,B](m : Map[A,B])(implicit ord: Ordering[A]) : String = {
+    m.toList.sortBy(_._1).mkString("\t[",",\n\t ","]\n")
+  }
+  def mkMapStringSortedByFullName(g : DependencyGraph, m : Map[NodeId,DGNode]) : String = {
+    m.toList.map{ case (id, n) =>  ((g, id).shows(desambiguatedFullName) +" - " + n.kind , id) }.
+      sortBy(_._1).mkString("\t[",",\n\t ","]\n")
+  }
+
+
+
+  implicit val stringOfNodeIndex : DGStringBuilder[NodeIndex] = {
+    case (g, NodeIndex(_, cNodes, removedCnodes,
+    vNodes, removedVnodes,
+    cNodes2vNodes,
+    roles)) =>
+      "Concrete Nodes : " +
+        mkMapStringSortedByFullName(g, cNodes) +
+        "Removed Concrete Nodes : " +
+        mkMapStringSortedByFullName(g, removedCnodes) +
+        "Virtual Nodes : " +
+        mkMapStringSortedByFullName(g, vNodes) +
+        "Removed Virtual Nodes : " +
+        mkMapStringSortedByFullName(g, removedVnodes) +
+        "CN -> VN : " +
+        cNodes2vNodes.mkString("\t[",",\n\t ","]\n") +
+        "Roles : " +
+        roles.mkString("\t[",",\n\t ","]\n")
+  }
 
 
   implicit class DGShowOp[A](val p : (DependencyGraph, A)) extends AnyVal {
-    def shows(implicit cb : CordBuilder[A]) : String =
-      cb(p._1, p._2).toString()
+    def shows(implicit cb : DGStringBuilder[A]) : String = cb(p._1, p._2)
 
-    def println(implicit cb : CordBuilder[A]) : Unit = System.out.println(shows)
+    def println(implicit cb : DGStringBuilder[A]) : Unit = System.out.println(shows)
   }
 }

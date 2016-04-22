@@ -36,8 +36,6 @@ import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
 import puck.Settings._
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
-import ShowDG._
-import puck.util.Debug._
 
 object BridgeScenario {
 
@@ -174,16 +172,18 @@ class BridgeScenario private()
       Rules.redirection.redirectSourceOfInitUseInFactory(g.mileStone, ctor, ctorDef, init, fcty)
   }
 
-  val g8 = Rules.move.typeMember(g7, List(printerField), "screen.Screen").rvalue
-  val g9 = List(pf2, pf3, pf4).foldLeft(g8.setName(printerField, "printer")){
-    case (g, pf) => Rules.merge.mergeInto(g, pf, printerField).rvalue
-  }
+  val g8 = Rules.move.typeMember(g7, List(printerField), "screen.Screen").rvalue.mileStone
 
+  val g9 = List(pf2, pf3, pf4).foldLeft(g8.setName(printerField, "printer")){
+    case (g, pf) =>
+      val g0 = Rules.move.typeMember(g.mileStone, List(pf), "screen.Screen").rvalue
+      Rules.merge.mergeInto(g0, pf, printerField).rvalue
+  }
   val main : NodeId = "screen.BridgeDemo.main(String[]).Definition"
 
   val g10 = (ctors zip factories).foldLeft(g9){
     case (g, (ctor, fty)) =>
-      Rules.redirection.redirectUsesAndPropagate(g, Uses(main, ctor),
+      Rules.redirection.redirectUsesAndPropagate(g.mileStone, Uses(main, ctor),
         AccessAbstraction(fty, DelegationAbstraction)).rvalue
   }
 

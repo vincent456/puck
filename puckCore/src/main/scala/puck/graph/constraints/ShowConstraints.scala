@@ -27,107 +27,55 @@
 package puck.graph
 package constraints
 import Keywords._
-import scalaz.Cord
 
 trait ShowConstraints {
-  type CordBuilder[A] = (DependencyGraph, A) => Cord
+  type DGStringBuilder[A] = (DependencyGraph, A) => String
 
-  implicit def rangeCord : CordBuilder[Range] = { (dg, r) =>
+  implicit def stringOfRange : DGStringBuilder[Range] = { (dg, r) =>
     val prefix = r match { case Scope(id) => "'" case Element(id) => "r:'" }
-    Cord(prefix, dg.fullName(r.nid), "'")
+      prefix + dg.fullName(r.nid) + "'"
   }
 
-  def namedRangeSetDefCord : CordBuilder[NamedRangeSet] = (dg, nrs) =>
-      Cord(nrs.id, " = ", nrs.declare_pre, rangeSetCord(dg, nrs.setDef), nrs.declare_post)
+  def stringOfNamedRangeSetDef : DGStringBuilder[NamedRangeSet] = (dg, nrs) =>
+      nrs.id + " = " + nrs.declare_pre + stringOfRangeSet(dg, nrs.setDef) + nrs.declare_post
 
 
 
-  implicit def rangeSetCord : CordBuilder[RangeSet] = { (dg, rs) =>
+  implicit def stringOfRangeSet : DGStringBuilder[RangeSet] = { (dg, rs) =>
     rs match {
-      case RootedRangeSet(s) => "r:" +: rangeSetCord(dg, s)
+      case RootedRangeSet(s) => "r:" + stringOfRangeSet(dg, s)
       case NamedRangeSet(id, setDef) => id
       case RangeSetUnion(sets, set) =>
-        Cord("[", Cord.mkCord(",\n", sets.map(rangeSetCord(dg,_)).toSeq:_*), ",\n",
-          Cord.mkCord(",\n", set.map(rangeCord(dg,_)).toSeq:_*), "]")
+        sets.map(stringOfRangeSet(dg,_)).mkString ("[",",\n","\n") +
+          set.map(stringOfRange(dg,_)).mkString("", "\n", "]")
       case RangeSetDiff(plus, minus) =>
-        Cord(rangeSetCord(dg, plus), "\\", rangeSetCord(dg, minus))
+        stringOfRangeSet(dg, plus) + "\\" + stringOfRangeSet(dg, minus)
       case LiteralRangeSet(content) =>
-        Cord("[", Cord.mkCord(",\n", content.map(rangeCord(dg,_)).toSeq:_*), "]")
+        content.map(stringOfRange(dg,_)).mkString ("[",",\n","]")
     }
   }
-  def friendConstraintCord : CordBuilder[Constraint] = (dg, c) =>
-    Cord(rangeSetCord(dg, c.friends), s" $friendOf ",  rangeSetCord(dg, c.owners))
+  def stringOfFriendConstraint : DGStringBuilder[Constraint] = (dg, c) =>
+    s"${stringOfRangeSet(dg, c.friends)} $friendOf ${stringOfRangeSet(dg, c.owners)}"
 
 
-  implicit def constraintCord : CordBuilder[Constraint] = {(dg, c) =>
+  implicit def stringOfConstraint : DGStringBuilder[Constraint] = { (dg, c) =>
 
-    val c0 = Cord(hide, " ", rangeSetCord(dg, c.owners))
+    val c0 = s"$hide ${stringOfRangeSet(dg, c.owners)}"
 
     val c1 =
       if(c.facades.isEmpty) c0
-      else Cord(c0, s" $except ", rangeSetCord(dg, c.facades))
+      else s"$c0 $except ${stringOfRangeSet(dg, c.facades)}"
 
     val c2 =
       if(c.interlopers.isEmpty) c1
-      else Cord(c1, s" $from ", rangeSetCord(dg, c.interlopers))
+      else s"$c1 $from ${stringOfRangeSet(dg, c.interlopers)}"
 
     if(c.friends.isEmpty) c2
-    else Cord(c2, s" $butNotFrom ", rangeSetCord(dg, c.friends))
+    else s"$c2 $butNotFrom ${stringOfRangeSet(dg, c.friends)}"
 
   }
 
-  implicit def constraintSetCord :  CordBuilder[ConstraintSet] = { (dg, cs) =>
-    Cord.mkCord("\n", cs.content.map(constraintCord(dg, _)).toSeq:_*)
+  implicit def stringOfConstraintSet :  DGStringBuilder[ConstraintSet] = { (dg, cs) =>
+     cs.content.map(stringOfConstraint(dg, _)) mkString "\n"
   }
 }
-
-//object ShowConstraints {
-//  import ShowDG.CordBuilder
-//
-//  implicit def rangeCord : CordBuilder[Range] = { (dg, r) =>
-//    val prefix = r match { case Scope(id) => "'" case Element(id) => "e:'" }
-//    Cord(prefix, dg.fullName(r.nid), "'")
-//  }
-//
-//  def namedRangeSetDefCord : CordBuilder[NamedRangeSet] = (dg, nrs) =>
-//    Cord(nrs.declare, "(" + nrs.id + ", ", rangeSetCord(dg, nrs.setDef),").")
-//
-//  implicit def rangeSetCord : CordBuilder[RangeSet] = { (dg, rs) =>
-//    rs match {
-//      case NamedRangeSet(id, setDef) => id
-//      case RangeSetUnion(sets, set) =>
-//        Cord("[", Cord.mkCord(",\n", sets.map(rangeSetCord(dg,_)).toSeq:_*), ",\n",
-//            Cord.mkCord(",\n", set.map(rangeCord(dg,_)).toSeq:_*), "]")
-//      case RangeSetDiff(plus, minus) =>
-//        Cord(rangeSetCord(dg, plus), "\\", rangeSetCord(dg, minus))
-//      case LiteralRangeSet(content) =>
-//        Cord("[", Cord.mkCord(",\n", content.map(rangeCord(dg,_)).toSeq:_*), "]")
-//    }
-//  }
-//
-//  implicit def constraintCord : CordBuilder[Constraint] = {(dg, c) =>
-//
-//    def twoArgsFormat(prefix : String, set : RangeSet) =
-//      Cord(prefix, "(", rangeSetCord(dg, c.owners), ", ", rangeSetCord(dg, set), ").")
-//
-//    (c.facades.isEmpty, c.interlopers.isEmpty, c.friends.isEmpty) match {
-//      case (true, false, true) =>
-//        if(dg.isRoot(c.interlopers.head.nid))
-//          Cord("hide(", rangeSetCord(dg, c.owners), ").")
-//        else
-//          twoArgsFormat("hideFrom", c.interlopers)
-//      case (true, false, false)
-//        if dg.isRoot(c.interlopers.head.nid) => twoArgsFormat("hideButFrom", c.friends)
-//      case (false, false, true)
-//        if dg.isRoot(c.interlopers.head.nid) => twoArgsFormat("hideBut", c.facades)
-//      case (_, _, _) => Cord("hide(", rangeSetCord(dg, c.owners), ",\n",
-//        rangeSetCord(dg, c.facades), ",\n",
-//        rangeSetCord(dg, c.interlopers),  ",\n",
-//        rangeSetCord(dg, c.friends), ").")
-//    }
-//  }
-//
-//  implicit def constraintSetCord :  CordBuilder[ConstraintSet] = { (dg, cs) =>
-//    Cord.mkCord("\n", cs.content.map(constraintCord(dg, _)).toSeq:_*)
-//  }
-//}

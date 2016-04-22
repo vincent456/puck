@@ -159,7 +159,6 @@ object Move {
         g0.changeSource(Contains(oldContainer, movedId), newContainer)
     }
 
-    val g1 = adjustSelfUsesBR(g0, movedDeclSet, movedDefSet, oldSelfUse, newSelfUse)
 
 
 
@@ -167,15 +166,17 @@ object Move {
       usesBetween(g, siblings map (g.definitionOf(_)) flatten, movedDeclSet).filter(usesViaThis(g))
 
     val newTypeUse = Uses(oldContainer, newContainer)
-    val g2 =
-      if(usesOfMovedViaThis.nonEmpty && ! (newTypeUse existsIn g1) )
-        g1.addUses(oldContainer, newContainer)
-      else g1
+    val g1 =
+      if(usesOfMovedViaThis.nonEmpty && ! (newTypeUse existsIn g0) )
+        g0.addUses(oldContainer, newContainer)
+      else g0
 
-    val g3 = usesOfMovedViaThis.foldLeft(g2){
+    val g2 = usesOfMovedViaThis.foldLeft(g1){
       (g00, u) =>
         g00.changeTypeUseOfTypeMemberUse(oldSelfUse, newTypeUse, u)
     }
+
+    val g3 = adjustSelfUsesBR(g2, movedDeclSet, movedDefSet, oldSelfUse, newSelfUse)
 
     val brWithOldContainerAsTypeUser = for {
       movedDef <- movedDefSet
@@ -275,10 +276,13 @@ object Move {
         newSelfUse createIn g
       else g
 
-    usesBetweenMovedDefsViaThis.foldLeft(g1){
+    val g2 = usesBetweenMovedDefsViaThis.foldLeft(g1){
       _.changeTypeUseOfTypeMemberUse(oldSelfUse, newSelfUse, _)
     }
 
+    if(g2.typeMemberUsesOf(oldSelfUse).isEmpty)
+        g2.removeEdge(oldSelfUse)
+    else g2
   }
 
   def typeMemberBetweenUnrelatedTypeDecl

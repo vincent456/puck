@@ -214,19 +214,19 @@ object NodeInfosPanel {
       graph.getNode(u.used).kind.kindType match {
         case TypeDecl =>
 
-          sb.append(s"Type uses $ustr selected\n")
+          sb append s"Type uses $ustr selected\n"
           val tmus = graph.typeMemberUsesOf(u)
           if (tmus.isEmpty)
-            sb.append("No type member uses associated")
+            sb append "No type member uses associated"
           else
             sb.append(tmus.map { tmu => (graph, tmu).shows }.mkString("TM uses are :\n", "\n", "\n"))
 
         case InstanceValueDecl =>
-          sb.append(s"Type Member uses $ustr selected\n")
+          sb append s"Type Member uses $ustr selected\n"
 
           val tus = graph.typeUsesOf(u)
           if (tus.isEmpty)
-            sb.append("No type uses associated")
+            sb append "No type uses associated"
           else
             sb.append(tus.map { tu => (graph, tu).shows }.mkString("type uses are :\n", "\n", "\n"))
 
