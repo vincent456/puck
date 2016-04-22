@@ -27,7 +27,7 @@
 package puck.javaGraph.commutativity
 
 import puck.javaGraph.nodeKind.Field
-import puck.{AcceptanceSpec, Settings}
+import puck.AcceptanceSpec
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 import puck.graph.{AccessAbstraction, Factory, Uses}
@@ -37,8 +37,6 @@ import puck.Settings.outDir
 
 class CommutativityRedirect
   extends AcceptanceSpec {
-
-  val examplesPath = Settings.testExamplesPath + "/redirection/"
 
   feature("TypeDecl uses redirection") {
 
@@ -304,8 +302,6 @@ class CommutativityRedirect
   }
 
   feature("TypeMember uses redirection"){
-
-        val typeMemberPath = examplesPath + "typeMember"
 
         scenario("From method to method superType"){
           val _ = new ScenarioFactory(

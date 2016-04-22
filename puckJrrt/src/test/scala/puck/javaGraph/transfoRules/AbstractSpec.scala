@@ -31,10 +31,9 @@ import puck.graph.constraints.SupertypeAbstraction
 import puck.javaGraph.ScenarioFactory
 import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
 import puck.javaGraph.nodeKind.Interface
-import puck.{AcceptanceSpec, Settings}
+import puck.AcceptanceSpec
 
 class AbstractSpec extends AcceptanceSpec {
-  val examplesPath = Settings.testExamplesPath + "/abstract"
 
   feature("Abstract class into interface"){
 

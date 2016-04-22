@@ -30,13 +30,11 @@ import puck.graph._
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 import puck.graph.transformations.rules.Redirection
 import puck.javaGraph.ScenarioFactory
-import puck.{AcceptanceSpec, Settings}
+import puck.AcceptanceSpec
 
 
 class RedirectTypeDeclSpec
   extends AcceptanceSpec {
-
-  val examplesPath = s"${Settings.testExamplesPath}/redirection/typeDecl/"
 
   scenario("From class to superType interface") {
     val _ = new ScenarioFactory(

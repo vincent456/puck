@@ -27,18 +27,13 @@
 package puck.javaGraph.graphBuilding
 
 import puck.javaGraph.ScenarioFactory
-import puck.util.PuckFileLogger
-import puck.{AcceptanceSpec, Settings}
+
+import puck.AcceptanceSpec
 
 /**
   * Created by Loïc Girault on 25/02/16.
   */
 class PeculiarCodeGraphBuilding extends AcceptanceSpec {
-
-  val graphBuildingExamplesPath = Settings.testExamplesPath + "/graphBuilding/"
-
-    //implicit val logger = new PuckSystemLogger(_ => true)
-    implicit val logger = new PuckFileLogger(_ => true, new java.io.File("/tmp/debugLog"))
 
     scenario("Multi interface with same sig - ref typed as I") {
       val _ = new ScenarioFactory(

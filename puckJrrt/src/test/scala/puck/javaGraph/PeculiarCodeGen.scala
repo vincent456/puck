@@ -33,7 +33,6 @@ import puck.{Settings, AcceptanceSpec}
   * Created by Loïc Girault on 04/02/16.
   */
 class PeculiarCodeGen extends AcceptanceSpec {
-  val examplesPath = Settings.testExamplesPath + "/codeGen"
 
   feature("Parse lock unlock gen") {
 

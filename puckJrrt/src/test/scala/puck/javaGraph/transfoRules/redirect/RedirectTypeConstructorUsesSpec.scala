@@ -31,15 +31,13 @@ import puck.graph.transformations.rules.{CreateTypeMember, CreateParameter, Redi
 import puck.graph.{AccessAbstraction, Uses}
 import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.nodeKind.Field
-import puck.{AcceptanceSpec, Settings}
+import puck.AcceptanceSpec
 
 /**
   * Created by Loïc Girault on 24/03/16.
   */
 class RedirectTypeConstructorUsesSpec
   extends AcceptanceSpec {
-
-  val examplesPath =  s"${Settings.testExamplesPath}/redirection/typeConstructor"
 
   scenario("From constructor to constructorMethod hosted elsewhere - non static, parameter") {
     val _ = new ScenarioFactory(

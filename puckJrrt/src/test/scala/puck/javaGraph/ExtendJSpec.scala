@@ -101,16 +101,4 @@ class ExtendJSpec  extends AcceptanceSpec {
     }
   }
 
- /* scenario("testing lock and caches"){
-    new ScenarioFactory(
-      """package p;
-        | class A { void ma(){
-        |       A a = new A();
-        |   }
-        | }
-      """
-    ){
-      applyChanges(graph, new File("/tmp/puckOut/"))
-    }
-  }*/
 }

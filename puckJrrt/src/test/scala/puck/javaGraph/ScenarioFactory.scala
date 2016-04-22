@@ -28,13 +28,13 @@ package puck.javaGraph
 
 import java.io.File
 
-import puck.graph.transformations.Transformation
+import puck.graph.transformations.{Recording, Transformation}
 import puck.graph.{DGBuildingError, DependencyGraph, NodeId}
 import puck.util.{FileHelper, PuckFileLogger, PuckLogger}
 import sbt.IO
 import org.extendj.ast.{ASTNodeLink, JavaJastAddDG2AST, Program}
 import FileHelper.FileOps
-import puck.Project
+import puck.{Project, Settings}
 import puck.config.ConfigParser
 
 
@@ -42,7 +42,7 @@ import puck.config.ConfigParser
 
 
 object ScenarioFactory {
-  implicit val logger : PuckLogger = new PuckFileLogger(_ => true, new java.io.File("/tmp/comparisonLog"))
+  implicit val logger : PuckLogger = new PuckFileLogger(_ => true, new java.io.File(Settings.tmpDir + "comparisonLog"))
 
   def fromDirectory(path: String): ScenarioFactory = {
      new ScenarioFactory(FileHelper.findAllFiles(new File(path), ".java", Seq(new File(path) \ "out")):_*)
@@ -111,7 +111,7 @@ case class ScenarioFactory
                    outDir : File) : Unit = {
     val dg2ast = new JavaJastAddDG2AST(program, graph, initialRecord, fullName2id, dg2astMap)
 
-    dg2ast.apply(g)(new PuckFileLogger(_ => true, new File("/tmp/pucklog")))
+    dg2ast.apply(g)(new PuckFileLogger(_ => true, new File(Settings.tmpDir + "pucklog")))
     IO.delete(outDir)
     dg2ast.printCode(outDir)
   }
@@ -130,5 +130,7 @@ case class ScenarioFactory
   def printFullNamesSortedByKey() : Unit =
     fullName2id.toList map (_.swap) sortBy(_._1) foreach println
 
+  def printRecord(g : DependencyGraph) : Unit =
+    Recording.write(Settings.tmpDir + "plan.pck", fullName2id, g)
 
 }

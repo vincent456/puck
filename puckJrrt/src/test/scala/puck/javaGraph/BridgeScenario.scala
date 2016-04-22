@@ -31,16 +31,14 @@ import puck.graph.DependencyGraph
 import puck.graph.transformations.rules.CreateTypeMember
 import puck.graph._
 import puck.javaGraph.nodeKind._
-import puck.{LoggedEitherValues, Settings}
+import puck.LoggedEitherValues
 import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
 import puck.Settings._
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 
 object BridgeScenario {
-
-  val path = Settings.projectPath + "/test_resources/distrib/bridge/hannemann_simplified/"
-
+  val path = getClass.getResource("/bridge/hannemann_simplified").getPath
   def apply() = new BridgeScenario()
 }
 

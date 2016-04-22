@@ -32,16 +32,15 @@ import puck.graph.transformations.rules.{Redirection, Move}
 import puck.graph.{LoggedTG, Uses, Factory, AccessAbstraction}
 import puck.graph.constraints.DelegationAbstraction
 import puck.javaGraph.ScenarioFactory
-import puck.{Settings, AcceptanceSpec}
+import puck.AcceptanceSpec
 
 /**
   * Created by Loïc Girault on 04/12/15.
   */
 class MoveAndRedirect
   extends AcceptanceSpec {
-  val examplesPath = Settings.testExamplesPath + "/redirection/"
+
   feature("confluence of move and redirect"){
-    val typeCtorPath = examplesPath + "typeConstructor"
 
     scenario("move factory then redirect") {
       val _ = new ScenarioFactory(

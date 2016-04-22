@@ -28,18 +28,18 @@ package puck.javaGraph
 
 import org.scalatest.{EitherValues, FeatureSpec, OptionValues}
 import puck.Settings._
-import puck.graph.{AccessAbstraction, DependencyGraph, NodeId, ShowDG, Uses}
+import puck.graph.{AccessAbstraction, DependencyGraph, NodeId, Uses}
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.SupertypeAbstraction
 import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
-import puck.{LoggedEitherValues, Settings}
+import puck.LoggedEitherValues
 import puck.javaGraph.nodeKind._
 
 /**
   * Created by Loïc Girault on 14/04/16.
   */
 object CompositeScenario {
-  val path = Settings.projectPath + "/test_resources/distrib/composite/"
+  val path = getClass.getResource("/composite/").getPath
   def apply() : CompositeScenario = new CompositeScenario()
 }
 
