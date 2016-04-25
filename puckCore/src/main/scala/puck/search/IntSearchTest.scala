@@ -38,7 +38,7 @@ class IntControl
 
   def nextStates(i: Int): Seq[LoggedTry[Int]] = {
     if(i == target) Seq()
-    else actionPlus(i) ++ actionMoins(i)
+    else actionMoins(i) ++ actionPlus(i)
   }
 }
 

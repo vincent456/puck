@@ -108,7 +108,27 @@ class CouplingConstraintSolvingControl
 //    s._1 map ( _ map {case (t,g) =>  (g, s._2)})
 
 
-  def nextStates(state : (DependencyGraph, Int)) : Seq[LoggedTry[(DependencyGraph, Int)]] = {
+  def nextStates(state : (DependencyGraph, Int)) : Seq[LoggedTry[(DependencyGraph, Int)]] =
+    blindNextStates(state)
+
+  def blindNextStates(state : (DependencyGraph, Int)) : Seq[LoggedTry[(DependencyGraph, Int)]] = {
+    val (g, automataState) = state
+    if((g, constraints).isWronglyUsed(violationTarget.id) || (g, constraints).isWronglyContained(violationTarget.id))
+      automataState match {
+        case 0 =>
+          val s =
+            setState(( redirectTowardAbstractions(g) ++ moveAction(g) ++ moveContainerAction(g) ++
+              absIntro(g) ++ hostIntroAction(g) ++ hostAbsIntro(g), 0))
+
+          assert(s.nonEmpty)
+          s
+
+        case _ => Seq()
+      }
+    else Seq()
+  }
+
+  def controlledNextStates(state : (DependencyGraph, Int)) : Seq[LoggedTry[(DependencyGraph, Int)]] = {
     val  (g, automataState) = state
     if((g, constraints).isWronglyUsed(violationTarget.id) || (g, constraints).isWronglyContained(violationTarget.id))
       automataState match {

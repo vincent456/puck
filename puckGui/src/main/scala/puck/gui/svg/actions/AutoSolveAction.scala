@@ -31,9 +31,9 @@ import javax.swing.AbstractAction
 
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
-import puck.graph.constraints.search.CouplingConstraintSolvingControl
+import puck.graph.constraints.search.{CouplingConstraintSolvingControl, GraphConstraintSolvingStateEvaluator}
 import puck.gui.PrintingOptionsControl
-import puck.search.{Search, SearchEngine, DepthFirstSearchStrategy}
+import puck.search.{BreadthFirstSearchStrategy, DepthFirstSearchStrategy, Search, SearchEngine}
 import puck.util.Logged
 
 import scala.swing._
@@ -93,8 +93,9 @@ class AutoSolveAction
 
     val engine =
       new SearchEngine(
-        new DepthFirstSearchStrategy[(DependencyGraph, Int)],
-        searchControlStrategy/*,
+        new BreadthFirstSearchStrategy[(DependencyGraph, Int)],
+        searchControlStrategy,
+        Some(1)/*,
         evaluator = Some(GraphConstraintSolvingStateEvaluator)*/)
 
     engine.explore()

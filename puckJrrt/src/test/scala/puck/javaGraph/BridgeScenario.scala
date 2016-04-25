@@ -26,16 +26,26 @@
 
 package puck.javaGraph
 
+import java.io.FileReader
+
 import org.scalatest.{EitherValues, FeatureSpec, OptionValues}
 import puck.graph.DependencyGraph
 import puck.graph.transformations.rules.CreateTypeMember
 import puck.graph._
 import puck.javaGraph.nodeKind._
-import puck.LoggedEitherValues
+import puck.{LoggedEitherValues, QuickFrame}
 import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
 import puck.Settings._
 import puck.graph.comparison.Mapping
-import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
+import puck.graph.constraints.search.CouplingConstraintSolvingControl
+import puck.graph.constraints.{ConstraintsParser, DelegationAbstraction, SupertypeAbstraction}
+import puck.graph.io.VisibilitySet
+import puck.gui.PrintingOptionsControl
+import puck.gui.svg.actions.AutoSolveAction
+import puck.jastadd.ExtendJGraphUtils
+import puck.search.{BreadthFirstSearchStrategy, SearchEngine}
+
+import scala.swing.{FlowPanel, Panel}
 
 object BridgeScenario {
   val path = getClass.getResource("/bridge/hannemann_simplified").getPath
@@ -112,9 +122,9 @@ class BridgeScenario private()
 
   val g4 =
     List((printerField, capitalPrinter),
-        (pf2, capitalPrinter),
-        (pf3, starPrinter),
-        (pf4, starPrinter)).foldLeft(g3){
+      (pf2, capitalPrinter),
+      (pf3, starPrinter),
+      (pf4, starPrinter)).foldLeft(g3){
       case (g, (fid, tid) ) =>
         Rules.redirection.redirectUsesAndPropagate(g.mileStone, g.getUsesEdge(fid, tid).value,
           AccessAbstraction(printerInterface, SupertypeAbstraction)).rvalue
@@ -138,8 +148,8 @@ class BridgeScenario private()
 
   val (g5, initializers)= classes.foldRight((g4, List[NodeId]())){
     case (c, (g, acc))=>
-    val (init, g1) = Rules.intro.initializer(g.mileStone, c)
-    (g1, init :: acc)
+      val (init, g1) = Rules.intro.initializer(g.mileStone, c)
+      (g1, init :: acc)
   }
 
   def addFactories(g : DependencyGraph, ctors : List[NodeId]) : (DependencyGraph, List[NodeId]) = {
@@ -154,10 +164,10 @@ class BridgeScenario private()
 
     val List(wsFactory, wcFactory, isFactory, icFactory) = factories
 
-      val g2 = g1.mileStone.setName(wsFactory, "createWS")
-            .setName(wcFactory, "createWC")
-            .setName(isFactory, "createIS")
-            .setName(icFactory, "createIC").mileStone
+    val g2 = g1.mileStone.setName(wsFactory, "createWS")
+      .setName(wcFactory, "createWC")
+      .setName(isFactory, "createIS")
+      .setName(icFactory, "createIC").mileStone
 
     (g2, factories)
   }
@@ -242,6 +252,47 @@ class BridgeManualRefactoringSpec extends FeatureSpec {
     val g2 =  recompiledEx.graph
 
     assert( Mapping.equals(bs.gFinal, recompiledEx.graph) )
+
+  }
+}
+
+class BridgeAutoSolveUsingGUIS extends FeatureSpec {
+
+  scenario("bridge ``manual'' refactoring"){
+    val bs = BridgeScenario()
+    //QuickFrame(bs.graph, "Graph", ExtendJGraphUtils.dotHelper)
+    import bs._
+    val cm = ConstraintsParser(bs.fullName2id, new FileReader(s"$path/decouple.wld"))
+
+    val publisher = new FlowPanel()
+    val poc = new PrintingOptionsControl(VisibilitySet.allVisible(bs.graph), publisher)
+    poc.typeUsesVisible = true
+    new AutoSolveAction(publisher, cm,
+      bs.graph getConcreteNode "screen.InfoStar.printStar(String)", poc)(bs.graph, ExtendJGraphUtils).actionPerformed(null)
+  }
+}
+
+class BridgeAutoSolveSpec extends FeatureSpec {
+
+  scenario("bridge ``manual'' refactoring"){
+    val bs = BridgeScenario()
+    import bs._
+    val cm = ConstraintsParser(bs.fullName2id, new FileReader(s"$path/decouple.wld"))
+
+    val searchControlStrategy =
+      new CouplingConstraintSolvingControl(
+        Rules,
+        bs.graph, cm, bs.graph getConcreteNode "screen.InfoStar.printStar(String)")
+
+    val engine =
+      new SearchEngine(
+        new BreadthFirstSearchStrategy[(DependencyGraph, Int)],
+        searchControlStrategy,
+        Some(5)/*,
+            evaluator = Some(GraphConstraintSolvingStateEvaluator)*/)
+
+    engine.explore()
+    println(engine.successes.size + " successes")
 
   }
 }
