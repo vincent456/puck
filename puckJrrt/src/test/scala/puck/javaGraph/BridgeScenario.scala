@@ -34,6 +34,7 @@ import puck.graph.transformations.rules.CreateTypeMember
 import puck.graph._
 import puck.javaGraph.nodeKind._
 import puck.{LoggedEitherValues, QuickFrame}
+import puck.TestUtils._
 import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
 import puck.Settings._
 import puck.graph.comparison.Mapping
@@ -44,8 +45,10 @@ import puck.gui.PrintingOptionsControl
 import puck.gui.svg.actions.AutoSolveAction
 import puck.jastadd.ExtendJGraphUtils
 import puck.search.{BreadthFirstSearchStrategy, SearchEngine}
+import puck.util.LoggedEither
 
 import scala.swing.{FlowPanel, Panel}
+import scalaz.\/-
 
 object BridgeScenario {
   val path = getClass.getResource("/bridge/hannemann_simplified").getPath
@@ -293,6 +296,11 @@ class BridgeAutoSolveSpec extends FeatureSpec {
 
     engine.explore()
     println(engine.successes.size + " successes")
+// show successes
+    engine.successes foreach showSuccess
+// show successes: alternate version
+    //  showEngineSuccesses(engine)
+
 
   }
 }
