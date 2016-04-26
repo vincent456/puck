@@ -50,12 +50,9 @@ class AStarSearchStrategy[T]
 
   val remainingStates = new mutable.PriorityQueue[SearchState[T]]()
 
-  def addState(s: SearchState[T]): Unit =
-    ignore(remainingStates += s)
-
+  def addState(s: SearchState[T]): Unit = ignore(remainingStates += s)
 
   def popState() : SearchState[T] = remainingStates.dequeue()
-
 
   def canContinue: Boolean = remainingStates.nonEmpty
 }
