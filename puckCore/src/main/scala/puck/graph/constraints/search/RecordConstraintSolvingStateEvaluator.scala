@@ -60,7 +60,7 @@ class RecordConstraintSolvingStateEvaluator
 }
 
 
-object GraphConstraintSolvingStateEvaluator
+class GraphConstraintSolvingStateEvaluator(f : DependencyGraph => Double)
   extends Evaluator[SResult]{
 
   def evaluate(s : SearchState[SResult]): Double =
@@ -68,13 +68,13 @@ object GraphConstraintSolvingStateEvaluator
       case -\/(err) => 0
       case \/-(res) =>
         val g = graphOfResult(res)
-        Metrics.nameSpaceCoupling(g)
+        f(g)
     }
 
   def equals(s1 : SearchState[SResult], s2 : SearchState[SResult] ): Boolean =
     (s1.loggedResult.value, s2.loggedResult.value) match {
       case (\/-(res1), \/-(res2)) =>
-        Mapping.equals(res1._1, res2._1)
+        Mapping.equals(graphOfResult(res1), graphOfResult(res2))
       case _ => false
     }
 

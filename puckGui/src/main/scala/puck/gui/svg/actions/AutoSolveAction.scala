@@ -31,7 +31,7 @@ import javax.swing.AbstractAction
 
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
-import puck.graph.constraints.search.{CouplingConstraintSolvingControl, GraphConstraintSolvingStateEvaluator}
+import puck.graph.constraints.search.CouplingConstraintSolvingControl
 import puck.gui.PrintingOptionsControl
 import puck.search.{BreadthFirstSearchStrategy, DepthFirstSearchStrategy, Search, SearchEngine}
 import puck.util.Logged

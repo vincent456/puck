@@ -38,13 +38,13 @@ import puck.TestUtils._
 import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
 import puck.Settings._
 import puck.graph.comparison.Mapping
-import puck.graph.constraints.search.CouplingConstraintSolvingControl
+import puck.graph.constraints.search.{CouplingConstraintSolvingControl, GraphConstraintSolvingStateEvaluator}
 import puck.graph.constraints.{ConstraintsParser, DelegationAbstraction, SupertypeAbstraction}
 import puck.graph.io.VisibilitySet
 import puck.gui.PrintingOptionsControl
 import puck.gui.svg.actions.AutoSolveAction
 import puck.jastadd.ExtendJGraphUtils
-import puck.search.{BreadthFirstSearchStrategy, SearchEngine}
+import puck.search.{AStarSearchStrategy, BreadthFirstSearchStrategy, SearchEngine}
 import puck.util.LoggedEither
 
 import scala.swing.{FlowPanel, Panel}
@@ -277,7 +277,34 @@ class BridgeAutoSolveUsingGUIS extends FeatureSpec {
 
 class BridgeAutoSolveSpec extends FeatureSpec {
 
-  scenario("bridge ``manual'' refactoring"){
+//  scenario("bridge  scenario, auto solve test - BreadthFirstSearchStrategy"){
+//    val bs = BridgeScenario()
+//    import bs._
+//    val cm = ConstraintsParser(bs.fullName2id, new FileReader(s"$path/decouple.wld"))
+//
+//    val searchControlStrategy =
+//      new CouplingConstraintSolvingControl(
+//        Rules,
+//        bs.graph, cm, bs.graph getConcreteNode "screen.InfoStar.printStar(String)")
+//
+//    val engine =
+//      new SearchEngine(
+//        new BreadthFirstSearchStrategy[(DependencyGraph, Int)],
+//        searchControlStrategy,
+//        Some(5)/*,
+//            evaluator = Some(GraphConstraintSolvingStateEvaluator)*/)
+//
+//    engine.explore()
+//    println(engine.successes.size + " successes")
+//    // show successes
+//    engine.successes foreach showSuccess
+//    // show successes: alternate version
+//    //  showEngineSuccesses(engine)
+//
+//
+//  }
+
+  scenario("bridge  scenario, auto solve test - AStarSearchStrategy"){
     val bs = BridgeScenario()
     import bs._
     val cm = ConstraintsParser(bs.fullName2id, new FileReader(s"$path/decouple.wld"))
@@ -289,16 +316,16 @@ class BridgeAutoSolveSpec extends FeatureSpec {
 
     val engine =
       new SearchEngine(
-        new BreadthFirstSearchStrategy[(DependencyGraph, Int)],
+        new AStarSearchStrategy[(DependencyGraph, Int)](new GraphConstraintSolvingStateEvaluator(Metrics.nameSpaceCoupling)),
         searchControlStrategy,
         Some(5)/*,
             evaluator = Some(GraphConstraintSolvingStateEvaluator)*/)
 
     engine.explore()
     println(engine.successes.size + " successes")
-// show successes
+    // show successes
     engine.successes foreach showSuccess
-// show successes: alternate version
+    // show successes: alternate version
     //  showEngineSuccesses(engine)
 
 
