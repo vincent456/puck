@@ -27,8 +27,6 @@
 package puck
 package search
 
-import puck.graph.LoggedTry
-
 import scala.collection.mutable
 
 /**
@@ -55,17 +53,9 @@ class AStarSearchStrategy[T]
   def addState(s: SearchState[T]): Unit =
     ignore(remainingStates += s)
 
-  def currentState: SearchState[T] =
-    remainingStates.head
 
-  def addState(currentResult: LoggedTry[T], choices: Seq[LoggedTry[T]]): Unit =
-    ignore(remainingStates += currentState.createNextState(currentResult, choices))
+  def popState() : SearchState[T] = remainingStates.dequeue()
 
-  def nextState: SearchState[T] = {
-    if (remainingStates.head.triedAll) remainingStates.dequeue()
-    remainingStates.head
-  }
 
-  def canContinue: Boolean =
-    !remainingStates.head.triedAll || remainingStates.tail.nonEmpty
+  def canContinue: Boolean = remainingStates.nonEmpty
 }

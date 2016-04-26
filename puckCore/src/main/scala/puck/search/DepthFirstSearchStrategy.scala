@@ -26,7 +26,7 @@
 
 package puck.search
 
-import puck.graph.LoggedTry
+import puck.ignore
 import scala.collection.mutable
 
 class DepthFirstSearchStrategy[T] extends SearchStrategy[T] {
@@ -34,23 +34,11 @@ class DepthFirstSearchStrategy[T] extends SearchStrategy[T] {
 
   val remainingStates = mutable.Stack[SearchState[T]]()
 
-  def currentState = remainingStates.head
+  def addState(s : SearchState[T]) : Unit = ignore(remainingStates push s)
 
-  private def push(s : SearchState[T]) : Unit = {
-    val _ = remainingStates push s
-  }
+  def canContinue : Boolean = remainingStates.nonEmpty
 
-  def addState(s : SearchState[T]) : Unit = push(s)
+  def popState() : SearchState[T] =  remainingStates.pop()
 
-  def addState(currentResult : LoggedTry[T], choices : Seq[LoggedTry[T]]) : Unit =
-    this push currentState.createNextState(currentResult, choices)
-
-  def canContinue : Boolean =
-  !remainingStates.head.triedAll || remainingStates.tail.nonEmpty
-
-  def nextState : SearchState[T] = {
-    if (remainingStates.head.triedAll) remainingStates.pop()
-    remainingStates.head
-  }
 
 }

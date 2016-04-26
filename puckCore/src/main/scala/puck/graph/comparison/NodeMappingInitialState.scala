@@ -31,9 +31,6 @@ import puck.graph.comparison.RecordingComparator._
 import puck.graph.transformations._
 import puck.util.{PuckLogger, PuckLog}
 
-import puck.search.SearchState
-
-
 import scala.collection.immutable.HashSet
 import scalaz._, Scalaz._
 
@@ -108,7 +105,7 @@ object RecordingComparatorInitialState {
   def apply(initialTransfos: Seq[Transformation],
             graph1: DependencyGraph,
             graph2: DependencyGraph,
-            logger: PuckLogger): SearchState[Compared] = {
+            logger: PuckLogger): Compared = {
 
     logger.writeln("*********************************** ")
     logger.writeln("*********************************** ")
@@ -188,7 +185,7 @@ object RecordingComparatorInitialState {
       logger.writeln("recording2")
       graph2.recording foreach { t => logger.writeln(t.toString) }
 
-      new SearchState(0, None, LoggedError(NoSolution), Seq())
+      throw NoSolution
     }
     else {
 
@@ -250,12 +247,8 @@ object RecordingComparatorInitialState {
 
       filteredTransfos2 foreach { t => logger.writeln(t.toString) }
 
-      if (filteredTransfos1.length != filteredTransfos2.length)
-        new SearchState(0, None, LoggedError(NoSolution), Seq())
-      else{
-        val res = (initialMapping, nodesToMap, filteredTransfos1, filteredTransfos2)
-        new SearchState(0, None, LoggedSuccess(res), RecordingComparator.nextStates(res))
-      }
+      if (filteredTransfos1.length != filteredTransfos2.length) throw NoSolution
+      else (initialMapping, nodesToMap, filteredTransfos1, filteredTransfos2)
     }
 
 

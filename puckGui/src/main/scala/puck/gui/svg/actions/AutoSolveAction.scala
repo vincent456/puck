@@ -95,7 +95,7 @@ class AutoSolveAction
       new SearchEngine(
         new BreadthFirstSearchStrategy[(DependencyGraph, Int)],
         searchControlStrategy,
-        Some(1)/*,
+        None/*,
         evaluator = Some(GraphConstraintSolvingStateEvaluator)*/)
 
     engine.explore()

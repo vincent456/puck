@@ -27,22 +27,16 @@
 package puck.search
 
 import puck.graph.{Error, LoggedTry, error}
-import puck.util.{BreadthFirstTreeIterator, HasChildren, Logged}
+import puck.util.Logged
 
-import scala.collection.mutable
+
 import scalaz.{-\/, \/-}
-
-class SearchStateIterator[R]
-( val root : SearchState[R]
-  ) extends BreadthFirstTreeIterator[SearchState[R]]
 
 class SearchState[T]
 ( val id : Int,
   val prevState : Option[SearchState[T]],
-  val loggedResult : LoggedTry[T],
-  val choices : Seq[LoggedTry[T]]
- )extends HasChildren[SearchState[T]]{
-
+  val loggedResult : LoggedTry[T]
+){
 
   import scalaz.syntax.writer._
 
@@ -56,25 +50,6 @@ class SearchState[T]
     case _ => error("state contains a success")
   }
 
-
-  def createNextState(cr : LoggedTry[T], choices : Seq[LoggedTry[T]]) : SearchState[T] = {
-    val s = new SearchState(this.nextChildId(), Some(this), cr, choices)
-    this.nextStates += s
-    s
-  }
-
-
-  private [this] var _nextChoice : Seq[LoggedTry[T]] = choices
-
-  def nextChoice : Option[LoggedTry[T]] =
-    if(triedAll) None
-    else {
-      val n = _nextChoice.head
-      _nextChoice = _nextChoice.tail
-      Some(n)
-    }
-
-  def triedAll : Boolean = _nextChoice.isEmpty
 
   private def uuid0 : Seq[Int] = {
     prevState match{
@@ -135,12 +110,6 @@ class SearchState[T]
 
 
   override def toString = uuid()
-
-  def children = nextStates
-
-  def iterator = new SearchStateIterator(this)
-
-  val nextStates = mutable.ListBuffer[SearchState[T]]()
 
   var cid = -1
 

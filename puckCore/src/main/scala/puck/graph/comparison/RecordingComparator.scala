@@ -175,6 +175,7 @@ object RecordingComparator{
         case _ : AType // TODO see if need to be compared
              | _ : TypeBinding
              | _ : ChangeTypeBindingOp
+             | _ : TypeUseConstraintOp
              | _ : AbstractionOp
              | _ : VNode
              | _ : CNode
@@ -198,7 +199,7 @@ class RecordingComparatorControl
   logger : PuckLogger )
   extends SearchControl[Compared]{
 
-  def initialState = RecordingComparatorInitialState(initialRecord, graph1, graph2, logger)
+  def initialState : Compared = RecordingComparatorInitialState(initialRecord, graph1, graph2, logger)
   def nextStates(t: Compared): Seq[LoggedTry[Compared]] =
     RecordingComparator.nextStates(t)
 }

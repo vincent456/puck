@@ -45,7 +45,7 @@ import scalaz.{-\/, \/-, NonEmptyList}
 
 class CouplingConstraintSolvingAllViolationsControl
 (val rules : TransformationRules,
- val initialGraph : DependencyGraph,
+ val initialState : DependencyGraph,
  val constraints : ConstraintsMaps,
  val violationsKindPriority : Seq[NodeKind]
 ) extends SearchControl[DependencyGraph] {
@@ -84,9 +84,6 @@ class CouplingConstraintSolvingAllViolationsControl
     }
   }
 
-  def initialState : SearchState[DependencyGraph] =
-    new SearchState(0, None, LoggedSuccess(initialGraph), nextStates(initialGraph))
-
 }
 
 class CouplingConstraintSolvingControl
@@ -97,8 +94,7 @@ class CouplingConstraintSolvingControl
   ) extends SearchControl[(DependencyGraph, Int)]{
 
 
-  def initialState : SearchState[(DependencyGraph, Int)] =
-    new SearchState(0, None, LoggedSuccess((initialGraph, 0)), nextStates((initialGraph,0)))
+  def initialState : (DependencyGraph, Int) = (initialGraph, 0)
 
 
 
@@ -109,7 +105,7 @@ class CouplingConstraintSolvingControl
 
 
   def nextStates(state : (DependencyGraph, Int)) : Seq[LoggedTry[(DependencyGraph, Int)]] =
-    blindNextStates(state)
+    controlledNextStates(state)
 
   def blindNextStates(state : (DependencyGraph, Int)) : Seq[LoggedTry[(DependencyGraph, Int)]] = {
     val (g, automataState) = state

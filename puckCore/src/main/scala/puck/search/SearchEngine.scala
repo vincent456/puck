@@ -27,7 +27,7 @@
 package puck.search
 
 import puck._
-import puck.graph.LoggedTry
+import puck.graph.{LoggedTry, LoggedSuccess}
 
 import scala.collection.mutable
 import scalaz.{-\/, \/-}
@@ -45,12 +45,6 @@ trait Search[Result]{
         m + (state.depth -> (state +: seq))
     }
 
-  def allStatesByDepth : Map[Int, Seq[SearchState[Result]]] =
-    initialState.iterator.foldLeft(Map[Int, Seq[SearchState[Result]]]()){
-      (m, state) =>
-        val seq = m.getOrElse(state.depth, Seq())
-        m + (state.depth -> (state +: seq))
-    }
 }
 
 
@@ -64,7 +58,7 @@ class SearchEngine[T]
   val successes = mutable.ListBuffer[SearchState[T]]()
   val failures = mutable.ListBuffer[SearchState[T]]()
 
-  val initialState : SearchState[T] = control.initialState
+  val initialState : SearchState[T] = new SearchState(0 , None, LoggedSuccess(control.initialState))
 
 
   val enoughSuccess : () => Boolean =
@@ -97,12 +91,14 @@ class SearchEngine[T]
 
   protected var numExploredStates = 0
 
-  def addState(cr : LoggedTry[T], choices : Seq[LoggedTry[T]]) : Unit = {
+  def addState(parent : SearchState[T], choices : Seq[LoggedTry[T]]) : Unit = {
     numExploredStates = numExploredStates + 1
 
-    if(choices.isEmpty)
-      storeResult(searchStrategy.currentState.createNextState(cr, Seq()))
-    else searchStrategy.addState(cr, choices)
+    if(choices.isEmpty) storeResult(parent)
+    else choices.zipWithIndex.foreach{
+      case (c,i) =>
+        searchStrategy.addState(new SearchState[T](i, Some(parent), c))
+    }
   }
 
   def init() : Unit = ()
@@ -110,39 +106,35 @@ class SearchEngine[T]
   def exploredStates = numExploredStates
 
   def oneStep() : Unit= {
-    searchStrategy.nextState.nextChoice foreach (lt =>
-      lt.value match {
-        case \/-(cc) => addState(lt, control.nextStates(cc) map (ltnext => lt.log <++: ltnext))
-        case _ =>  addState(lt, Seq())
-      })
+    val state = searchStrategy.popState()
+
+    state.loggedResult.value match {
+        case \/-(cc) =>
+          addState( state, control.nextStates(cc) map (ltnext => state.loggedResult.log <++: ltnext))
+        case _ => ()
+      }
   }
 
-  def explore() : Unit =
-    if(initialState.choices.isEmpty)
-      storeResult(initialState)
-    else {
-      searchStrategy.addState(initialState)
-      numExploredStates = 1
+  def explore() : Unit = {
+    searchStrategy.addState(initialState)
 
-      do oneStep()
-      while(searchStrategy.canContinue && !enoughSuccess())
-    }
+    numExploredStates = 1
 
+    do oneStep()
+    while (searchStrategy.canContinue && !enoughSuccess())
+  }
 
 }
 
 trait SearchControl[T]{
-  //def produce(t : T) : Seq[LoggedTry[T]]
-  def initialState : SearchState[T]
+  def initialState : T
   def nextStates(t : T) : Seq[LoggedTry[T]]
 }
 
 trait SearchStrategy[T] {
   def addState(s : SearchState[T]) : Unit
-  def addState(currentResult : LoggedTry[T], choices : Seq[LoggedTry[T]]) : Unit
   def canContinue : Boolean
-  def currentState : SearchState[T]
-  def nextState: SearchState[T]
+  def popState() : SearchState[T]
 }
 
 
