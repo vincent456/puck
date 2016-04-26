@@ -137,7 +137,7 @@ class AutosolveResultPanel
 
   val visibilitySet = {
 
-    val users = beforeGraph.usersOfExcludingTypeUse(violationTarget.id)
+    val users = beforeGraph.usersOf(violationTarget.id)
 
     val targetAndAncestors =
       beforeGraph.containerPath(violationTarget.id)

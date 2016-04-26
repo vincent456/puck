@@ -464,13 +464,15 @@ class SolvingActions
     (g2.container(impl.id), g2.kindType(host)) match {
       case (None, _) => LoggedError("current impl has no container")
       case (Some(c), TypeDecl) =>
-        val graph5 = g2.addAbstraction(c, AccessAbstraction(host, abs.policy))
-        val graph6 =
-          if(abs.policy == SupertypeAbstraction)
-            graph5.addIsa(c, host).addUses(c, host)
-          else graph5
-        LoggedSuccess((abs, graph6))
-
+        if(c == host) LoggedError("node cannot be its own abstraction")
+        else {
+          val graph5 = g2.addAbstraction(c, AccessAbstraction(host, abs.policy))
+          val graph6 =
+            if (abs.policy == SupertypeAbstraction)
+              graph5.addIsa(c, host).addUses(c, host)
+            else graph5
+          LoggedSuccess((abs, graph6))
+        }
       case _ => LoggedSuccess((abs, g2))
     }
     
