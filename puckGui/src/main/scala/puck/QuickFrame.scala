@@ -26,6 +26,7 @@
 
 package puck
 
+import java.awt.Dimension
 import java.io.{PipedInputStream, PipedOutputStream}
 import javax.swing.{JFrame, WindowConstants}
 
@@ -47,10 +48,12 @@ object QuickFrame {
     Future {
       val canvas = new JSVGCanvas()
       canvas.setDocument(gui.svg.documentFromStream(pipedInput))
-      val imgframe = new JFrame(title)
-      imgframe.add(canvas)
-      imgframe.setVisible(true)
-      imgframe.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
+      new JFrame(title) {
+        setMinimumSize(new Dimension(1024,768))
+        add(canvas)
+        setVisible(true)
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
+      }
     }
 
     DotPrinter.genImage(graph, dotHelper, None, opts, Svg, pipedOutput)()
