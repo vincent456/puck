@@ -76,7 +76,7 @@ class CouplingConstraintSolvingAllViolationsControl
 
         val engine =
           new SearchEngine(new DepthFirstSearchStrategy(),
-            new CouplingConstraintSolvingControl(rules, g, constraints, cn),
+            new BlindControl(rules, g, constraints, cn),
             Some(1))
 
         engine.explore()
@@ -86,34 +86,21 @@ class CouplingConstraintSolvingAllViolationsControl
 
 }
 
-class CouplingConstraintSolvingControl
-(val rules : TransformationRules,
- val initialGraph : DependencyGraph,
- val constraints : ConstraintsMaps,
- val violationTarget : ConcreteNode
-  ) extends SearchControl[(DependencyGraph, Int)]{
 
-
-  def initialState : (DependencyGraph, Int) = (initialGraph, 0)
-
-
-
-  implicit def setState( s : (Seq[LoggedTry[DependencyGraph]], Int) ) : Seq[LoggedTry[(DependencyGraph, Int)]] =
-     s._1 map ( _ map ((_, s._2)))
-//  implicit def setState2[T]( s : (Seq[LoggedTry[(T, DependencyGraph)]], Int) ) : Seq[LoggedTry[(DependencyGraph, Int)]] =
-//    s._1 map ( _ map {case (t,g) =>  (g, s._2)})
-
-
-  def nextStates(state : (DependencyGraph, Int)) : Seq[LoggedTry[(DependencyGraph, Int)]] =
-    controlledNextStates(state)
-
-  def blindNextStates(state : (DependencyGraph, Int)) : Seq[LoggedTry[(DependencyGraph, Int)]] = {
+class BlindControl
+(val rules: TransformationRules,
+ val initialGraph: DependencyGraph,
+ val constraints: ConstraintsMaps,
+ val violationTarget: ConcreteNode
+) extends SearchControl[SResult]
+  with ActionGenerator {
+  def nextStates(state : (DependencyGraph, Int)) : Seq[LoggedTry[(DependencyGraph, Int)]] = {
     val (g, automataState) = state
-    if((g, constraints).isWronglyUsed(violationTarget.id) || (g, constraints).isWronglyContained(violationTarget.id))
+    if ((g, constraints).isWronglyUsed(violationTarget.id) || (g, constraints).isWronglyContained(violationTarget.id))
       automataState match {
         case 0 =>
           val s =
-            setState(( redirectTowardAbstractions(g) ++ moveAction(g) ++ moveContainerAction(g) ++
+            setState((redirectTowardAbstractions(g) ++ moveAction(g) ++ moveContainerAction(g) ++
               absIntro(g) ++ hostIntroAction(g) ++ hostAbsIntro(g), 0))
 
           assert(s.nonEmpty)
@@ -123,8 +110,17 @@ class CouplingConstraintSolvingControl
       }
     else Seq()
   }
+}
 
-  def controlledNextStates(state : (DependencyGraph, Int)) : Seq[LoggedTry[(DependencyGraph, Int)]] = {
+class ControlWithHeuristic
+(val rules: TransformationRules,
+ val initialGraph: DependencyGraph,
+ val constraints: ConstraintsMaps,
+ val violationTarget: ConcreteNode
+) extends SearchControl[SResult]
+  with ActionGenerator {
+
+  def nextStates(state : (DependencyGraph, Int)) : Seq[LoggedTry[(DependencyGraph, Int)]] = {
     val  (g, automataState) = state
     if((g, constraints).isWronglyUsed(violationTarget.id) || (g, constraints).isWronglyContained(violationTarget.id))
       automataState match {
@@ -149,6 +145,26 @@ class CouplingConstraintSolvingControl
       }
     else Seq()
   }
+
+}
+trait ActionGenerator {
+ val rules : TransformationRules
+ val initialGraph : DependencyGraph
+ val constraints : ConstraintsMaps
+ val violationTarget : ConcreteNode
+
+
+
+  def initialState : (DependencyGraph, Int) = (initialGraph, 0)
+
+
+
+  implicit def setState( s : (Seq[LoggedTry[DependencyGraph]], Int) ) : Seq[LoggedTry[(DependencyGraph, Int)]] =
+     s._1 map ( _ map ((_, s._2)))
+//  implicit def setState2[T]( s : (Seq[LoggedTry[(T, DependencyGraph)]], Int) ) : Seq[LoggedTry[(DependencyGraph, Int)]] =
+//    s._1 map ( _ map {case (t,g) =>  (g, s._2)})
+
+
 
 
   val actionsGenerator = new SolvingActions(rules, constraints)

@@ -37,7 +37,7 @@ object SResultEvaluator {
 
   //Constructeurs d'Evaluator pour Dependency Graph
 
-  //comparaison directe de deux graphes de dépendances quelconques
+  //comparaison directe de deux graphes de dépendances sans noeud virtuel
   def equalityByMapping(fitness : DependencyGraph => Double) : Evaluator[SResult] =
     new SResultEvaluator(fitness,  Mapping.equals)
 

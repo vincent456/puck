@@ -52,7 +52,7 @@ object QuickFrame {
         setMinimumSize(new Dimension(1024,768))
         add(canvas)
         setVisible(true)
-        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE)
       }
     }
 
