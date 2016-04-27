@@ -337,7 +337,7 @@ class BridgeAutoSolveSpec extends FeatureSpec {
           QuickFrame(g0, "G"+i, ExtendJGraphUtils.dotHelper)
           val vn = g0.virtualNodes.head
           Choose("Concretize node",
-            "Select a concrete value for the virtual node :",
+            s"Select a concrete value for the virtual node $vn :",
             vn.potentialMatches.toSeq map g0.getConcreteNode) match {
             case None => ()
             case Some(cn) =>
