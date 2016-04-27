@@ -1,0 +1,4 @@
+import [location]
+location = [Location]
+vehicules = [Velo]
+hide vehicules from location
