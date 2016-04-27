@@ -33,9 +33,25 @@ import puck.search.{Evaluator, SearchState}
 
 import scalaz.{-\/, \/-}
 
-class RecordConstraintSolvingStateEvaluator
-(val initialRecord : Seq[Transformation])
-  extends Evaluator[SResult]{
+object SResultEvaluator {
+
+  //Equality between two graphs established by comparing their refactoring plan
+  //Precondition : both refactoring plan are build on the same initial graph
+  def equalityBasedOnRecording
+  ( initialRecord : Seq[Transformation],
+    fitness : DependencyGraph => Double) : Evaluator[SResult] =
+    new SResultEvaluator(fitness,  DependencyGraph.areEquivalent(initialRecord, _, _))
+
+
+  def equalityByMapping(fitness : DependencyGraph => Double) : Evaluator[SResult] =
+    new SResultEvaluator(fitness,  Mapping.equals)
+
+}
+
+class SResultEvaluator
+( val fitness : DependencyGraph => Double,
+  val equals : ( DependencyGraph,  DependencyGraph) => Boolean)
+  extends  Evaluator[SResult] {
 
 
   def evaluate(s : SearchState[SResult]): Double =
@@ -43,42 +59,15 @@ class RecordConstraintSolvingStateEvaluator
       case -\/(err) => 0
       case \/-(res) =>
         val g = graphOfResult(res)
-        Metrics.nameSpaceCoupling(g)
+        fitness(g)
     }
 
   def equals(s1 : SearchState[SResult], s2 : SearchState[SResult] ): Boolean =
     (s1.loggedResult.value, s2.loggedResult.value) match {
-      case (\/-(res1), \/-(res2)) =>
-        DependencyGraph.areEquivalent(initialRecord,
-          graphOfResult(res1),
-          graphOfResult(res2))
+      case (\/-(res1), \/-(res2)) => equals(graphOfResult(res1), graphOfResult(res2))
       case _ => false
     }
 
-
-
 }
 
-
-class GraphConstraintSolvingStateEvaluator(f : DependencyGraph => Double)
-  extends Evaluator[SResult]{
-
-  def evaluate(s : SearchState[SResult]): Double =
-    s.loggedResult.value match {
-      case -\/(err) => 0
-      case \/-(res) =>
-        val g = graphOfResult(res)
-        f(g)
-    }
-
-  def equals(s1 : SearchState[SResult], s2 : SearchState[SResult] ): Boolean =
-    (s1.loggedResult.value, s2.loggedResult.value) match {
-      case (\/-(res1), \/-(res2)) =>
-        Mapping.equals(graphOfResult(res1), graphOfResult(res2))
-      case _ => false
-    }
-
-
-
-}
 

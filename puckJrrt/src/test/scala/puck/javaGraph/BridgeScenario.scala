@@ -38,7 +38,7 @@ import puck.TestUtils._
 import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
 import puck.Settings._
 import puck.graph.comparison.Mapping
-import puck.graph.constraints.search.{CouplingConstraintSolvingControl, GraphConstraintSolvingStateEvaluator}
+import puck.graph.constraints.search.{CouplingConstraintSolvingControl, SResultEvaluator}
 import puck.graph.constraints.{ConstraintsParser, DelegationAbstraction, SupertypeAbstraction}
 import puck.graph.io.VisibilitySet
 import puck.gui.PrintingOptionsControl
@@ -290,7 +290,7 @@ class BridgeAutoSolveSpec extends FeatureSpec {
         new BreadthFirstSearchStrategy[(DependencyGraph, Int)],
         searchControlStrategy,
         Some(5)/*,
-            evaluator = Some(GraphConstraintSolvingStateEvaluator)*/)
+            evaluator = Some(SResultEvaluator.equalityByMapping(Metrics.nameSpaceCoupling))*/)
 
     engine.explore()
     println(engine.successes.size + " successes")
@@ -314,10 +314,10 @@ class BridgeAutoSolveSpec extends FeatureSpec {
 //
 //    val engine =
 //      new SearchEngine(
-//        new AStarSearchStrategy[(DependencyGraph, Int)](new GraphConstraintSolvingStateEvaluator(Metrics.nameSpaceCoupling)),
+//        new AStarSearchStrategy[(DependencyGraph, Int)](SResultEvaluator.equalityByMapping(Metrics.nameSpaceCoupling)),
 //        searchControlStrategy,
 //        Some(5)/*,
-//            evaluator = Some(GraphConstraintSolvingStateEvaluator)*/)
+//            evaluator = Some(SResultEvaluator.equalityByMapping(Metrics.nameSpaceCoupling))*/)
 //
 //    engine.explore()
 //    println(engine.successes.size + " successes")
@@ -325,7 +325,6 @@ class BridgeAutoSolveSpec extends FeatureSpec {
 //    engine.successes foreach showSuccess
 //    // show successes: alternate version
 //    //  showEngineSuccesses(engine)
-//
 //
 //  }
 }
