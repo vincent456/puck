@@ -26,27 +26,30 @@
 
 package puck.javaGraph
 
-import java.io.FileReader
+import java.io.{File, FileReader}
 
 import org.scalatest.{EitherValues, FeatureSpec, OptionValues}
 import puck.graph.DependencyGraph
 import puck.graph.transformations.rules.CreateTypeMember
 import puck.graph._
 import puck.javaGraph.nodeKind._
-import puck.LoggedEitherValues
+import puck.{LoggedEitherValues, QuickFrame, Settings}
 import puck.TestUtils._
 import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
 import puck.Settings._
+import puck.actions.Choose
 import puck.graph.comparison.Mapping
-import puck.graph.constraints.search.{CouplingConstraintSolvingControl, SResultEvaluator}
+import puck.graph.constraints.search.{BlindControl, SResultEvaluator}
 import puck.graph.constraints.{ConstraintsParser, DelegationAbstraction, SupertypeAbstraction}
 import puck.graph.io.VisibilitySet
-import puck.gui.PrintingOptionsControl
+import puck.gui.{PrintingOptionsControl, RewriteHistory}
 import puck.gui.svg.actions.AutoSolveAction
 import puck.jastadd.ExtendJGraphUtils
 import puck.search.{AStarSearchStrategy, BreadthFirstSearchStrategy, SearchEngine}
+import puck.util.LoggedEither
 
 import scala.swing.FlowPanel
+import scalaz.\/-
 
 object BridgeScenario {
   val path = getClass.getResource("/bridge/hannemann_simplified").getPath
@@ -275,34 +278,7 @@ class BridgeAutoSolveUsingGUIS extends FeatureSpec {
 
 class BridgeAutoSolveSpec extends FeatureSpec {
 
-  scenario("bridge  scenario, auto solve test - BreadthFirstSearchStrategy"){
-    val bs = BridgeScenario()
-    import bs._
-    val cm = ConstraintsParser(bs.fullName2id, new FileReader(s"$path/decouple.wld"))
-
-    val searchControlStrategy =
-      new CouplingConstraintSolvingControl(
-        Rules,
-        bs.graph, cm, bs.graph getConcreteNode "screen.InfoStar.printStar(String)")
-
-    val engine =
-      new SearchEngine(
-        new BreadthFirstSearchStrategy[(DependencyGraph, Int)],
-        searchControlStrategy,
-        Some(5)/*,
-            evaluator = Some(SResultEvaluator.equalityByMapping(Metrics.nameSpaceCoupling))*/)
-
-    engine.explore()
-    println(engine.successes.size + " successes")
-    // show successes
-    engine.successes foreach showSuccess
-    // show successes: alternate version
-    //  showEngineSuccesses(engine)
-
-
-  }
-
-//  scenario("bridge  scenario, auto solve test - AStarSearchStrategy"){
+//  scenario("bridge  scenario, auto solve test - BreadthFirstSearchStrategy"){
 //    val bs = BridgeScenario()
 //    import bs._
 //    val cm = ConstraintsParser(bs.fullName2id, new FileReader(s"$path/decouple.wld"))
@@ -314,7 +290,7 @@ class BridgeAutoSolveSpec extends FeatureSpec {
 //
 //    val engine =
 //      new SearchEngine(
-//        new AStarSearchStrategy[(DependencyGraph, Int)](SResultEvaluator.equalityByMapping(Metrics.nameSpaceCoupling)),
+//        new BreadthFirstSearchStrategy[(DependencyGraph, Int)],
 //        searchControlStrategy,
 //        Some(5)/*,
 //            evaluator = Some(SResultEvaluator.equalityByMapping(Metrics.nameSpaceCoupling))*/)
@@ -326,5 +302,58 @@ class BridgeAutoSolveSpec extends FeatureSpec {
 //    // show successes: alternate version
 //    //  showEngineSuccesses(engine)
 //
+//
 //  }
+
+  scenario("bridge  scenario, auto solve test - AStarSearchStrategy"){
+    val bs = BridgeScenario()
+    import bs._
+    val cm = ConstraintsParser(bs.fullName2id, new FileReader(s"$path/decouple.wld"))
+
+    val graphBeforeSearch = bs.graph.mileStone
+
+    val searchControlStrategy =
+      new BlindControl(
+        Rules,
+        graphBeforeSearch, cm, bs.graph getConcreteNode "screen.InfoStar.printStar(String)")
+
+    val engine =
+      new SearchEngine(
+        new AStarSearchStrategy[(DependencyGraph, Int)](SResultEvaluator.equalityByMapping(Metrics.nameSpaceCoupling)),
+        searchControlStrategy,
+        Some(5)/*,
+            evaluator = Some(SResultEvaluator.equalityByMapping(Metrics.nameSpaceCoupling))*/)
+
+    engine.explore()
+    println(engine.successes.size + " successes")
+
+    //engine.successes foreach showSuccess
+    engine.successes.zipWithIndex foreach {
+      case (ss, i) =>
+        val LoggedEither(_, \/-((g, _))) = ss.loggedResult
+
+        var g0 = g
+        while (g0.virtualNodes.nonEmpty) {
+          QuickFrame(g0, "G"+i, ExtendJGraphUtils.dotHelper)
+          val vn = g0.virtualNodes.head
+          Choose("Concretize node",
+            "Select a concrete value for the virtual node :",
+            vn.potentialMatches.toSeq map g0.getConcreteNode) match {
+            case None => ()
+            case Some(cn) =>
+              import Recording.RecordingOps
+              val r2 = g0.recording.subRecordFromLastMilestone.concretize(vn.id, cn.id)
+              g0 = r2 redo graphBeforeSearch
+          }
+        }
+        QuickFrame(g0, "G"+i, ExtendJGraphUtils.dotHelper)
+        val bs2 : ScenarioFactory = BridgeScenario()
+        import puck.util.FileHelper.FileOps
+        //puck.ignore(bs2.applyChangeAndMakeExample(g0, Settings.outDir \ ("g"+i)))
+        puck.ignore(bs2.applyChanges(g0, new File("/tmp/puckRes"+i)))
+    }
+    // show successes: alternate version
+    //  showEngineSuccesses(engine)
+
+  }
 }
