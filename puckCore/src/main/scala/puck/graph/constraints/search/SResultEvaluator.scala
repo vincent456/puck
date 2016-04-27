@@ -35,16 +35,18 @@ import scalaz.{-\/, \/-}
 
 object SResultEvaluator {
 
-  //Equality between two graphs established by comparing their refactoring plan
-  //Precondition : both refactoring plan are build on the same initial graph
+  //Constructeurs d'Evaluator pour Dependency Graph
+
+  //comparaison directe de deux graphes de dépendances quelconques
+  def equalityByMapping(fitness : DependencyGraph => Double) : Evaluator[SResult] =
+    new SResultEvaluator(fitness,  Mapping.equals)
+
+  //on compare deux graphes de dépendances issus du même graphe initial en comparant leurs plans de refactoring
+  //moins coûteux que de les comparer directement - initialement prévu pour le backtrack
   def equalityBasedOnRecording
   ( initialRecord : Seq[Transformation],
     fitness : DependencyGraph => Double) : Evaluator[SResult] =
     new SResultEvaluator(fitness,  DependencyGraph.areEquivalent(initialRecord, _, _))
-
-
-  def equalityByMapping(fitness : DependencyGraph => Double) : Evaluator[SResult] =
-    new SResultEvaluator(fitness,  Mapping.equals)
 
 }
 

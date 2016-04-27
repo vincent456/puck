@@ -27,16 +27,12 @@
 package puck.javaGraph
 
 import org.scalatest.{EitherValues, FeatureSpec, OptionValues}
-import puck.Settings._
-import puck.graph.comparison.Mapping
 import puck.graph.constraints.SupertypeAbstraction
-import puck.graph._
 import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
 import puck.javaGraph.nodeKind._
-import puck.util.LoggedEither
 import puck.{LoggedEitherValues, Settings}
-
-import scalaz.{-\/, \/-}
+import puck.graph._
+import puck.graph.comparison.Mapping
 
 /**
   * Created by Loïc Girault on 14/04/16.
@@ -59,7 +55,7 @@ class CompositeScenarioKeepLog private ()
 
   val g0 = graph
 
-  def abstractFile(g : DependencyGraph) : LoggedTry[DependencyGraph] =
+  def abstractFile(g : DependencyGraph) : LoggedTG =
     Rules.abstracter.createAbstraction(g0, g0 getConcreteNode "fileSystem.File",
       Interface, SupertypeAbstraction).map{
       case (AccessAbstraction(itcId, _), g1) =>
@@ -67,55 +63,28 @@ class CompositeScenarioKeepLog private ()
         Rules.rename(g1.addContains("fileSystem", itcId), itcId, "FSElement")
     }
 
-
-  val ltg1 =
-    abstractFile(g0) flatMap {
-      g1 =>
-        Rules.redirection.redirectUsesAndPropagate(g1,
-          Uses("fileSystem.Directory.files", "fileSystem.File"),
-          AccessAbstraction((g1, "fileSystem.FSElement"), SupertypeAbstraction))
-    } flatMap /*{
-      g2 => Rules.makeSuperType(g2, "fileSystem.Directory", (g2, "fileSystem.FSElement"))()
-    } flatMap*/ {
-      g3 => Rules.redirection.redirectUsesAndPropagate(g3,
-        Uses("fileSystem.Directory.directories", "fileSystem.Directory"),
-        AccessAbstraction((g3, "fileSystem.FSElement"), SupertypeAbstraction))
-    }
-
-  println(ltg1.log)
-  ltg1.value match {
-    case -\/(err) =>
-      println(err)
-    case \/-(g) =>
-      println("success")
-  }
-//    for {
-//    g1 : DependencyGraph <- abstractFile(g0)
-//    g2 : DependencyGraph <- Rules.redirection.redirectUsesAndPropagate(g1,
-//      Uses("fileSystem.Directory.files", "fileSystem.File"),
-//      AccessAbstraction((g1, "fileSystem.FSElement"), SupertypeAbstraction))
-//    g3 : DependencyGraph <- Rules.makeSuperType(g2, "fileSystem.Directory", (g2, "fileSystem.FSElement"))()
-//    g4 <- Rules.redirection.redirectUsesAndPropagate(g3,
-//      Uses("fileSystem.Directory.directories", "fileSystem.Directory"),
-//      AccessAbstraction((g3, "fileSystem.FSElement"), SupertypeAbstraction))
-//  } yield g4
-
-
-
-  /*val g5 = Rules.merge.mergeInto(g4,
-    "fileSystem.Directory.directories",
-    "fileSystem.Directory.files").rvalue
-
-  val g6 = Rules.redirection.redirectUsesAndPropagate(g5,
-    Uses("fileSystem.Directory.add(Directory).d", "fileSystem.Directory"),
-    AccessAbstraction((g5, "fileSystem.FSElement"), SupertypeAbstraction)).rvalue
-
-  val g7 = Rules.merge.mergeInto(g6,
+  val ltg =  for {
+    g1 <- abstractFile(g0)
+    g2 <- Rules.redirection.redirectUsesAndPropagate(g1,
+      Uses("fileSystem.Directory.files", "fileSystem.File"),
+      AccessAbstraction((g1, "fileSystem.FSElement"), SupertypeAbstraction))
+    g3 <- Rules.makeSuperType(g2, "fileSystem.Directory", (g2, "fileSystem.FSElement"))()
+    g4 <- Rules.redirection.redirectUsesAndPropagate(g3,
+      Uses("fileSystem.Directory.directories", "fileSystem.Directory"),
+      AccessAbstraction((g3, "fileSystem.FSElement"), SupertypeAbstraction))
+    g5 <- Rules.merge.mergeInto(g4,
+      "fileSystem.Directory.directories",
+      "fileSystem.Directory.files")
+    g6 <- Rules.redirection.redirectUsesAndPropagate(g5,
+      Uses("fileSystem.Directory.add(Directory).d", "fileSystem.Directory"),
+      AccessAbstraction((g5, "fileSystem.FSElement"), SupertypeAbstraction))
+    g7 <- Rules.merge.mergeInto(g6,
       "fileSystem.Directory.add(File)",
-      "fileSystem.Directory.add(Directory)").rvalue*/
+      "fileSystem.Directory.add(Directory)")
+  } yield g4
 
 
-  def gFinal = ltg1.rvalue
+  def gFinal = ltg.rvalue
 }
 
 class CompositeManualLogRefactoringSpec
@@ -124,10 +93,9 @@ class CompositeManualLogRefactoringSpec
   scenario("composite ``manual'' refactoring"){
     val bs = CompositeScenarioKeepLog()
 
-   /*  val recompiledEx = bs.applyChangeAndMakeExample(bs.gFinal, outDir)
+    val recompiledEx = bs.applyChangeAndMakeExample(bs.gFinal, Settings.outDir)
 
-    println(Settings.tmpDir)
-    assert( Mapping.equals(bs.gFinal, recompiledEx.graph) )*/
+    assert( Mapping.equals(bs.gFinal, recompiledEx.graph) )
 
   }
 }
