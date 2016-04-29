@@ -58,7 +58,6 @@ package object svg {
   }
 
 
-
   def documentFromGraph
   ( graph: DependencyGraph,
     graphUtils : GraphUtils,

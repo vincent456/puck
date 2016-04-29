@@ -32,7 +32,7 @@ import puck._
 import puck.config.{Config, ConfigParser}
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
-import puck.graph.io.CSVPrinter
+import puck.graph.io.{CSVPrinter, DotPrinter}
 import puck.util.{PuckLog, PuckLogger}
 
 import scala.concurrent.Future
@@ -91,10 +91,17 @@ implicit val logger: PuckLogger)
     sProject = Some(new Project(ConfigParser(file),
       graphUtils.dg2astBuilder))
 
+    sProject.foreach {
+      p =>
+        DotPrinter.dotPath = p.graphvizDot.map(_.getAbsolutePath).getOrElse("")
+    }
+
     val sf : Option[File]= sProject flatMap (_.someFile(Config.Keys.workspace))
     val path = sf map (_.getAbsolutePath) getOrElse "No directory selected"
     logger writeln  s"Workspace directory :\n$path"
     loadCodeAndConstraints(sProject.get)
+
+
   }
 
   def graph: DependencyGraph = graphStack.graph

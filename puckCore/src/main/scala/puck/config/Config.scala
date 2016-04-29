@@ -123,7 +123,7 @@ object Config {
 
   val singleValueKeys : List[FileKey] = {
     import Keys._
-    List(out, decouple, log)
+    List(dotPath, out, decouple, log)
   }
   val listValueKeys : List[FileListKey] = {
     import Keys._
@@ -135,6 +135,8 @@ object Config {
       put (Keys.workspace, SingleFile(workspace.getAbsolutePath))
       put (Keys.srcs, List(Root("src", ".java", Seq())))
       put (Keys.classpath, List(Root("lib", ".jar", Seq())))
+
+      put (Keys.dotPath, SingleFile(""))
       put (Keys.out, SingleFile("out"))
       put (Keys.decouple, SingleFile("decouple.wld"))
       put (Keys.log, SingleFile("puck-log.txt"))

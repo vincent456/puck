@@ -32,8 +32,9 @@ import java.io.File
 import javax.swing.filechooser.FileNameExtensionFilter
 
 import puck.Project
-import puck.config.{ConfigWriter, Config}
-import puck.graph.io.VisibilitySet
+import puck.config.{Config, ConfigWriter}
+import puck.graph.io.{DotPrinter, VisibilitySet}
+
 import scala.swing._
 import scala.swing.SequentialContainer.Wrapper
 
@@ -88,6 +89,10 @@ class PuckInterfacePanel
                 val cfile = Config.defaultConfFile(p.workspace)
                 ConfigWriter(cfile, ptmp.config)
                 sProject = Some(ptmp)
+                sProject.foreach {
+                  p =>
+                    DotPrinter.dotPath = p.graphvizDot.map(_.getAbsolutePath).getOrElse("")
+                }
                 control.logger writeln s"New settings saved in ${cfile.getPath}"
               case _ =>
                 control.logger writeln "New settings discarded"
