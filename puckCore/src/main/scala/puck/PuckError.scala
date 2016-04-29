@@ -30,8 +30,14 @@ package puck
  * Created by Loïc Girault on 2/23/15.
  */
 
-object PuckError{
+object PuckError {
   def apply(msg : String) = new PuckError(msg)
+
+  def unapply(arg: Error) : Option[String] = arg match {
+    case e : PuckError => Some(e.getMessage)
+    case _ => None
+  }
+
 }
 
 class PuckError(msg:String) extends Error(msg){

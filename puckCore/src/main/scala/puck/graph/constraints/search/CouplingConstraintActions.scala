@@ -516,9 +516,7 @@ class SolvingActions
         val cannotUseAbstraction: Abstraction => NodeId => Boolean = {
           abs => userId =>
 
-            val uses = g.getUsesEdge(userId, used.id).get
-
-            (abs, uses.accessKind) match {
+            (abs,  g.getAccessKind((userId, used.id))) match {
               case (AccessAbstraction(absId, _), _) => (g, constraints).interloperOf(userId, absId)
               case (ReadWriteAbstraction(Some(rid), _), Some(Read)) => (g, constraints).interloperOf(userId, rid)
               case (ReadWriteAbstraction(_, Some(wid)), Some(Write)) => (g, constraints).interloperOf(userId, wid)
@@ -541,11 +539,11 @@ class SolvingActions
                 (g, wu) =>
                   // Uses(wu, used.id) can have be deleted in a
                   // previous iteration of this foldLoggedEither loop
-                  g.getUsesEdge(wu, used.id) match {
-                    case Some(uses) =>
-                      rules.redirection.redirectUsesAndPropagate(g, uses, abs)
-                    case None => LoggedSuccess(g)
-                  }
+                  if(g uses (wu, used.id))
+                      rules.redirection.redirectUsesAndPropagate(g, (wu, used.id), abs)
+                  else
+                    LoggedSuccess(g)
+
               }
 
             ltg.value match {

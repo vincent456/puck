@@ -27,7 +27,7 @@
 package puck.javaGraph.graphBuilding
 
 import puck.AcceptanceSpec
-import puck.graph.{NamedType, ParameterizedType, Uses}
+import puck.graph.{NamedType, NodeIdP, ParameterizedType, Uses}
 import puck.javaGraph.ScenarioFactory
 
 /**
@@ -48,15 +48,9 @@ class BindingRelationship extends AcceptanceSpec {
         |    public void ma(){ b.mb(); }
         |}"""){
 
-      val fieldTypeUserDecl = fullName2id("p.A.b")
-      val methUserDef = fullName2id("p.A.ma().Definition")
+      val typeUse : NodeIdP = ("p.A.b", "p.B")
+      val typeMemberUse : NodeIdP = ("p.A.ma().Definition", "p.B.mb()")
 
-      val typeUsed = fullName2id("p.B")
-      val typeMemberUsedDecl = fullName2id("p.B.mb()")
-
-
-      val typeUse = graph.getUsesEdge(fieldTypeUserDecl, typeUsed).value
-      val typeMemberUse = graph.getUsesEdge(methUserDef, typeMemberUsedDecl).value
 
       graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
       graph.typeUsesOf(typeMemberUse) should contain (typeUse)
@@ -75,13 +69,10 @@ class BindingRelationship extends AcceptanceSpec {
         |class A { public void ma(B b){ b.mb(); } }"""
     ){
 
-      val theParameter = fullName2id("p.A.ma(B).b")
-      val mUser = fullName2id("p.A.ma(B).Definition")
-      val classUsed = fullName2id("p.B")
-      val mUsed = fullName2id("p.B.mb()")
 
-      val typeUse = Uses(theParameter, classUsed)
-      val typeMemberUse = Uses(mUser, mUsed)
+
+      val typeUse : NodeIdP = ("p.A.ma(B).b", "p.B")
+      val typeMemberUse : NodeIdP = ("p.A.ma(B).Definition", "p.B.mb()")
 
       graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
       graph.typeUsesOf(typeMemberUse) should contain (typeUse)
@@ -102,13 +93,10 @@ class BindingRelationship extends AcceptanceSpec {
         |
         |class B { public void mb(){} }"""){
 
-      val mUser = fullName2id("p.A.ma().Definition")
-      val mUsed = fullName2id("p.B.mb()")
 
-      val classUsed = fullName2id("p.B")
 
-      val typeUse = Uses(mUser, classUsed)
-      val typeMemberUse = Uses(mUser, mUsed)
+      val typeUse : NodeIdP = ("p.A.ma().Definition", "p.B")
+      val typeMemberUse : NodeIdP = ("p.A.ma().Definition", "p.B.mb()")
 
       graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
       graph.typeUsesOf(typeMemberUse) should contain (typeUse)
@@ -130,13 +118,9 @@ class BindingRelationship extends AcceptanceSpec {
         |
         |class C { public void mc(){} }"""
     ){
-      val mUser = fullName2id("p.A.ma().Definition")
-      val mUsed = fullName2id("p.C.mc()")
-      val mIntermediate = fullName2id("p.B.mb()")
-      val classUsed = fullName2id("p.C")
 
-      val typeUse = Uses(mIntermediate, classUsed)
-      val typeMemberUse = Uses(mUser, mUsed)
+      val typeUse : NodeIdP = ("p.B.mb()", "p.C")
+      val typeMemberUse : NodeIdP = ("p.A.ma().Definition", "p.C.mc()")
 
       graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
       graph.typeUsesOf(typeMemberUse) should contain (typeUse)
@@ -152,16 +136,10 @@ class BindingRelationship extends AcceptanceSpec {
         |    void condM(boolean c, A a) {  (c ? new A() : a).m(); }
         |}"""){
 
-      val condM = fullName2id("p.Cond.condM(boolean,A).Definition")
-      val m = fullName2id("p.A.m()")
 
-      val paramA = fullName2id("p.Cond.condM(boolean,A).a")
-      val ctorA = fullName2id("p.A.A()")
-      val classA = fullName2id("p.A")
-
-      val typeUse = Uses(paramA, classA)
-      val typeUse1 = Uses(ctorA, classA)
-      val typeMemberUse = Uses(condM, m)
+      val typeUse : NodeIdP = ("p.Cond.condM(boolean,A).a", "p.A")
+      val typeUse1 : NodeIdP = ("p.A.A()", "p.A")
+      val typeMemberUse : NodeIdP = ("p.Cond.condM(boolean,A).Definition", "p.A.m()")
 
       graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)
       graph.typeUsesOf(typeMemberUse) should contain (typeUse)
@@ -187,18 +165,18 @@ class BindingRelationship extends AcceptanceSpec {
         |}"""
     ){
 
-      val `Uses("p.B.wa", "p.Wrapper")` = graph.getUsesEdge("p.B.wa", "p.Wrapper").value
-      val `Uses("p.B.wa", "p.A")` = graph.getUsesEdge("p.B.wa", "p.A").value
-      val `Uses("p.B.doM().Definition", "p.A.m()")` = graph.getUsesEdge("p.B.doM().Definition", "p.A.m()").value
-      val `Uses("p.B.doM().Definition", "p.Wrapper.get()")` = graph.getUsesEdge("p.B.doM().Definition", "p.Wrapper.get()").value
+      val `("p.B.wa", "p.Wrapper")` : NodeIdP = ("p.B.wa", "p.Wrapper")
+      val `("p.B.wa", "p.A")`  : NodeIdP= ("p.B.wa", "p.A")
+      val `("p.B.doM().Definition", "p.A.m()")`  : NodeIdP = ("p.B.doM().Definition", "p.A.m()")
+      val `("p.B.doM().Definition", "p.Wrapper.get()")` : NodeIdP = ("p.B.doM().Definition", "p.Wrapper.get()")
 
       graph.styp("p.B.wa").value should be (ParameterizedType("p.Wrapper", List(NamedType("p.A"))))
 
-      //graph.typeUsesOf(`Uses("p.B.doM().Definition", "p.A.m()")`) should contain (`Uses("p.B.wa", "p.Wrapper")`)
-      graph.typeUsesOf(`Uses("p.B.doM().Definition", "p.A.m()")`) should contain (`Uses("p.B.wa", "p.A")`)
-      graph.typeMemberUsesOf(`Uses("p.B.wa", "p.A")`) should contain (`Uses("p.B.doM().Definition", "p.A.m()")`)
-      graph.typeMemberUsesOf(`Uses("p.B.wa", "p.A")`).size should be (1)
-      //graph.typeMemberUsesOf(`Uses("p.B.wa", "p.A")`) should not contain (`Uses("p.B.doM().Definition", "p.Wrapper.get()")`)
+      //graph.typeUsesOf(`("p.B.doM().Definition", "p.A.m()")`) should contain (`("p.B.wa", "p.Wrapper")`)
+      graph.typeUsesOf(`("p.B.doM().Definition", "p.A.m()")`) should contain (`("p.B.wa", "p.A")`)
+      graph.typeMemberUsesOf(`("p.B.wa", "p.A")`) should contain (`("p.B.doM().Definition", "p.A.m()")`)
+      graph.typeMemberUsesOf(`("p.B.wa", "p.A")`).size should be (1)
+      //graph.typeMemberUsesOf(`("p.B.wa", "p.A")`) should not contain (`("p.B.doM().Definition", "p.Wrapper.get()")`)
     }
 
 
@@ -217,20 +195,12 @@ class BindingRelationship extends AcceptanceSpec {
         |}"""
     ){
 
-      val typeValue = fullName2id("p.C")
-      val typeValueMethod = fullName2id("p.C.execute()")
 
-      val userMethodDef = fullName2id("p.WC.m().Definition")
-      val genType = fullName2id("p.Wrapper")
-      val wc = fullName2id("p.WC")
+      assert( graph.uses("p.WC", "p.C"))
+      assert( graph.uses("p.WC.m().Definition", "p.C.execute()"))
 
-
-      val classTypeUse = graph.getUsesEdge(wc, typeValue).value
-      val useOfExecute = graph.getUsesEdge(userMethodDef, typeValueMethod).value
-
-
-      assert( classTypeUse existsIn graph )
-      assert( useOfExecute existsIn graph )
+      val classTypeUse : NodeIdP = ("p.WC", "p.C")
+      val useOfExecute : NodeIdP = ("p.WC.m().Definition", "p.C.execute()")
 
       graph.typeUsesOf(useOfExecute) should contain (classTypeUse)
       graph.typeMemberUsesOf(classTypeUse) should contain (useOfExecute)
@@ -268,7 +238,7 @@ class BindingRelationship extends AcceptanceSpec {
       assert(graph.uses(mDef, getE))
       assert(graph.uses(mDef, toString_))
 
-      graph.typeUsesOf(mDef, toString_) should contain (Uses(hasElement, string))
+      graph.typeUsesOf(mDef, toString_) should contain ((hasElement, string))
     }
   }
 
@@ -302,7 +272,7 @@ class BindingRelationship extends AcceptanceSpec {
       assert(graph.uses(mDef, getE))
       assert(graph.uses(mDef, toString_))
 
-      graph.typeUsesOf(mDef, toString_) should contain (Uses(hasElement, obj))
+      graph.typeUsesOf(mDef, toString_) should contain ((hasElement, obj))
     }
   }
 
@@ -332,7 +302,7 @@ class BindingRelationship extends AcceptanceSpec {
       assert(graph.uses(mDef, getE))
       assert(graph.uses(mDef, toString_))
 
-      graph.typeUsesOf(mDef, toString_) should contain (Uses(hasElement, string))
+      graph.typeUsesOf(mDef, toString_) should contain ((hasElement, string))
     }
   }
 
@@ -362,7 +332,7 @@ class BindingRelationship extends AcceptanceSpec {
       assert(graph.uses(mDef, getE))
       assert(graph.uses(mDef, toString_))
 
-      graph.typeUsesOf(mDef, toString_) should contain (Uses(hasElement, obj))
+      graph.typeUsesOf(mDef, toString_) should contain ((hasElement, obj))
     }
   }
 

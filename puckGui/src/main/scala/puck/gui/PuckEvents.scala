@@ -86,7 +86,7 @@ case class VisibilityEvent(graph : DependencyGraph, v : VisibilitySet.T) extends
     control.visibility = v
 }
 
-case class EdgeForTypePrinting(su : Option[Uses]) extends PrintingOptionEvent {
+case class EdgeForTypePrinting(su : Option[NodeIdP]) extends PrintingOptionEvent {
   def apply(control : PrintingOptionsControl) : Unit =
     control.selectedEdgeForTypePrinting = su
 }

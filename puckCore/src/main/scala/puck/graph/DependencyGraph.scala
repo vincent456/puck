@@ -76,9 +76,6 @@ object DependencyGraph {
     val g0 = new DependencyGraph(kw, NodeIndex(kw.root), EdgeMap(),
       AbstractionMap(), Recording())
 
-//    def addNodes(it : Iterable[NodeId], g0 : DependencyGraph) : DependencyGraph =
-//      it.foldLeft(g0)
-
     focus.foldLeft(g0){
       case (g, id) =>
         val g1 = g.addConcreteNode(fullGraph.getConcreteNode(id))
@@ -209,7 +206,7 @@ class DependencyGraph
   def virtualNodes : Iterable[VirtualNode] = nodesIndex.virtualNodes
 
   def nodesId : Iterable[NodeId] = nodesIndex.nodesId
-  //def removedNodesId : Iterable[NodeId] = nodesIndex.removedNodesId
+
   def concreteNodesId : Iterable[NodeId] = nodesIndex.concreteNodesId
 
   def numNodes : Int = nodesIndex.numNodes
@@ -256,6 +253,7 @@ class DependencyGraph
   def getRole(id: NodeId) : Option[Role] = nodesIndex.getRole(id)
 
   def styp(id : NodeId) : Option[Type] = edges.types get id
+  def typ(id : NodeId) : Type = edges.types(id)
 
   def structuredType(id : NodeId) : Option[Type] = {
     //assert node is a typed value
@@ -281,14 +279,6 @@ class DependencyGraph
       t => newGraph(edges = edges.removeType(id),
         recording = recording.removeType(id, t))
     } getOrElse this
-
-
-//    def setType(id : NodeId, t : Option[Type]) : DependencyGraph = {
-//    //println(s"setting type of ${getNode(id)}  to $t")
-//
-//    newGraph(edges = edges.setType(id, t),
-//      recording = recording.addTypeChange(id, styp(id), t))
-//  }
 
 
   def setMutability(id : NodeId, mutable : Boolean) =
@@ -369,18 +359,22 @@ class DependencyGraph
     recording = recording.removeTypeUseConstraint(typeUse, constraint))
 
 
-
-
-
   def changeTypeUseOfTypeMemberUse
- ( oldTypeUse : NodeIdP,
-   newTypeUse : NodeIdP,
-   tmUse : NodeIdP) : DependencyGraph = {
-   newGraph(edges =
-      edges.removeUsesDependency(oldTypeUse, tmUse).
-            addUsesDependency(newTypeUse, tmUse),
-     recording = recording.changeTypeUseOfTypeMemberUse(oldTypeUse, newTypeUse, tmUse))
- }
+   ( oldTypeUse : NodeIdP,
+     newTypeUse : NodeIdP,
+     tmUse : NodeIdP) : DependencyGraph = {
+     newGraph(edges =
+        edges.removeUsesDependency(oldTypeUse, tmUse).
+              addUsesDependency(newTypeUse, tmUse),
+       recording = recording.changeTypeUseOfTypeMemberUse(oldTypeUse, newTypeUse, tmUse))
+   }
+
+  def changeTypeUseForTypeMemberUseSet
+  ( oldTypeUse : NodeIdP,
+    newTypeUse : NodeIdP,
+    tmus : Set[NodeIdP]) : DependencyGraph =
+    tmus.foldLeft(this)(_.changeTypeUseOfTypeMemberUse(oldTypeUse, newTypeUse, _))
+
 
   def changeTypeMemberUseOfTypeUse
   ( oldTmUse : NodeIdP,
@@ -391,6 +385,14 @@ class DependencyGraph
         addUsesDependency(typeUse, newTmUse),
       recording = recording.changeTypeMemberUseOfTypeUse(oldTmUse, newTmUse, typeUse))
   }
+
+
+  def changeTypeMemberUseOfTypeUseSet
+  ( oldTmUse : NodeIdP,
+    newTmUse : NodeIdP,
+    tus : Set[NodeIdP]) : DependencyGraph =
+    tus.foldLeft(this)(_.changeTypeMemberUseOfTypeUse(oldTmUse, newTmUse, _))
+
 
   def addAbstraction(id : NodeId, abs : Abstraction) : DependencyGraph =
     newGraph(abstractionsMap = abstractionsMap + (id, abs),
@@ -413,11 +415,11 @@ class DependencyGraph
       case kt => false
     })
 
-  def changeTarget
+  def splitWithTargets
     (edge : Uses,
      readTarget : NodeId,
      writeTarget : NodeId
-    ) : (DependencyGraph, List[Uses]) = {
+    ) : (DependencyGraph, Set[NodeIdP]) = {
     val g1 = edge.deleteIn(this, register = false)
     val readEdge : Uses = edge.copy(target = readTarget).withAccessKind(Some(Read))
     val writeEdge : Uses = edge.copy(target = writeTarget).withAccessKind(Some(Write))
@@ -426,7 +428,7 @@ class DependencyGraph
         recording.changeEdgeTarget(edge, readTarget, withMerge = readEdge.existsIn(this))
                  .changeEdgeTarget(edge, readTarget, withMerge = readEdge.existsIn(this))
     (readEdge.createIn(g1, register = false).newGraph(recording = newRecording),
-      List(readEdge, writeEdge))
+      Set(readEdge, writeEdge) map DGEdge.toPair)
   }
 
   def changeTarget(edge : DGEdge, newTarget : NodeId) : DependencyGraph = {
@@ -444,14 +446,6 @@ class DependencyGraph
 
   }
 
-//  def changeType
-//  ( id : NodeId,
-//    oldUsed: NodeId,
-//    newUsed : NodeId) : DependencyGraph =
-//    styp(id) match {
-//      case None => this
-//      case Some(t) => setType(id, Some(t.changeNamedType(oldUsed, newUsed)))
-//    }
 
   def changeSource(edge : DGEdge, newSource : NodeId) : DependencyGraph = {
     val g1 = edge.deleteIn(this, register = false)
@@ -598,12 +592,11 @@ class DependencyGraph
   }
 
 
-  private def checkTypeUseExist(tuc : TypeUseConstraint) : Uses = {
+  private def checkTypeUseExist(tuc : TypeUseConstraint) : NodeIdP = {
     val (s, t) = tuc.constrainedUse
-    edges.getUses(s,t).getOrElse {
-      import ShowDG._
-      error((this,(s,t)).shows + " does not exist")
-    }
+    import ShowDG._
+    if(edges.uses(s,t))  tuc.constrainedUse
+    else error((this,(s,t)).shows + " does not exist")
   }
 
   def typeConstraints(typeUse : NodeIdP) : Set[TypeUseConstraint] = {
@@ -612,22 +605,22 @@ class DependencyGraph
     tucs
   }
 
-  private def typeUsesConstrained(typeUse : NodeIdP)(f: TypeUseConstraint => Boolean) : Set[Uses]=
+  private def typeUsesConstrained(typeUse : NodeIdP)(f: TypeUseConstraint => Boolean) : Set[NodeIdP]=
     edges.typeUsesConstraints getFlat typeUse filter f map checkTypeUseExist
 
 
-  def usesThatShouldUsesASubtypeOf(typeUse : NodeIdP) : Set[Uses]=
+  def usesThatShouldUsesASubtypeOf(typeUse : NodeIdP) : Set[NodeIdP]=
     typeUsesConstrained(typeUse) {
       case Sub(_) => true
       case _ => false
     }
 
-  def usesThatShouldUsesASuperTypeOf(typeUse : NodeIdP) : Set[Uses]=
+  def usesThatShouldUsesASuperTypeOf(typeUse : NodeIdP) : Set[NodeIdP]=
     typeUsesConstrained(typeUse) {
       case Sup(_) => true
       case _ => false
     }
-  def usesThatShouldUsesSameTypeAs(typeUse : NodeIdP) : Set[Uses]=
+  def usesThatShouldUsesSameTypeAs(typeUse : NodeIdP) : Set[NodeIdP]=
     typeUsesConstrained(typeUse) {
       case Eq(_) => true
       case _ => false
@@ -645,11 +638,8 @@ class DependencyGraph
   def usesAccessKind(userId: NodeId, usedId: NodeId) : Option[UsesAccessKind] =
     edges.accessKindMap.get((userId, usedId))
 
-  def getUsesEdge(userId: NodeId, usedId: NodeId) : Option[Uses] =
-    edges.getUses(userId, usedId)
-
-  def getUsesEdge_!(userId: NodeId, usedId: NodeId) : Uses =
-    getUsesEdge(userId, usedId).get
+  def getAccessKind(uses: NodeIdP)  : Option[UsesAccessKind] =
+    edges getAccessKind uses
 
   def uses(userId: NodeId, usedId: NodeId) : Boolean =
     edges.uses(userId, usedId)
@@ -671,24 +661,16 @@ class DependencyGraph
   def usersOf(usedId: NodeId) : Set[NodeId] =
     edges usersOf usedId
 
-  // ugly name
-  def usesFromUsedList(usedIds: List[NodeId]) : List[Uses] =
-    usedIds flatMap {
-      tmid => this.usersOfExcludingTypeUse(tmid) map (user => this.getUsesEdge(user,tmid).get)
-    }
-
-  def usesFromUsedList(usedId: NodeId) : List[Uses] = usesFromUsedList(List(usedId))
-
-  def typeUsesOf(typeMemberUse : Uses) : Set[Uses] =
+  def typeUsesOf(typeMemberUse : NodeIdP) : Set[NodeIdP] =
     edges typeUsesOf typeMemberUse
 
-  def typeMemberUsesOf(typeUse : Uses) : Set[Uses] =
+  def typeMemberUsesOf(typeUse : NodeIdP) : Set[NodeIdP] =
     edges typeMemberUsesOf typeUse
 
-  def typeUsesOf(tmUser : NodeId, tmUsed : NodeId) : Set[Uses] =
+  def typeUsesOf(tmUser : NodeId, tmUsed : NodeId) : Set[NodeIdP] =
     edges typeUsesOf (tmUser, tmUsed)
 
-  def typeMemberUsesOf(typeUser : NodeId, typeUsed : NodeId) : Set[Uses] =
+  def typeMemberUsesOf(typeUser : NodeId, typeUsed : NodeId) : Set[NodeIdP] =
     edges typeMemberUsesOf (typeUser, typeUsed)
 
   def typeMemberUses2typeUses : Seq[(NodeIdP, Set[NodeIdP])] =

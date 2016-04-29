@@ -117,7 +117,7 @@ case class PrintingOptions
 (visibility : VisibilitySet.T,
  printId : Boolean = false,
  printSignatures : Boolean = false,
- selectedUse : Option[Uses] = None,
+ selectedUse : Option[NodeIdP] = None,
  printVirtualEdges : Boolean = false,
  printTypeUses : Boolean = true,
  printConcreteUsesPerVirtualEdges : Boolean = true,
@@ -249,22 +249,23 @@ class DotPrinter
       else ColorThickness.regular
   }
 
+  import puck.graph.NodeIdPOps
 
   val typeRelationShipLabel : NodeIdP => String =
     selectedUse match {
       case None => _ => ""
       case Some(selected) =>
-        val labelMap : Map[NodeIdP, String]= graph.kindType(selected.target) match {
+        val labelMap : Map[NodeIdP, String]= graph.kindType(selected.used) match {
           case TypeDecl =>
-            val init = Map(DGEdge.toPair(selected) -> "TDecl")
-            graph.typeMemberUsesOf(selected).foldLeft(init){
-              (map, tm) => map. + (DGEdge.toPair(tm) -> "TMember")
+            val init = Map(selected -> "TDecl")
+            (graph typeMemberUsesOf selected).foldLeft(init){
+              (map, tm) => map + (tm -> "TMember")
             }
           case InstanceValueDecl
                | TypeConstructor =>
-            val init = Map(DGEdge.toPair(selected) -> "TMember")
-            graph.typeUsesOf(selected).foldLeft(init){
-              (map, tm) => map. + (DGEdge.toPair(tm) -> "TDecl")
+            val init = Map(selected -> "TMember")
+            (graph typeUsesOf selected).foldLeft(init){
+              (map, tm) => map + (tm -> "TDecl")
             }
 //          case InstanceTypeDecl =>
 //            sys.error("selection kind unhandle [TODO] - DotPrinter.typeRelationShipLabel")

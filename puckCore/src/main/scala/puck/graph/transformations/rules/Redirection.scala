@@ -47,7 +47,7 @@ object Redirection {
     val clazz = g.container_!(ctorDecl)
     val factoryDef = g.definitionOf_!(factory)
     val selfUse = Uses(clazz,clazz)
-    val g1 = g.changeSource(g.getUsesEdge_!(ctorDef, initializer), factoryDef)
+    val g1 = g.changeSource(Uses(ctorDef, initializer), factoryDef)
       .addUses(factoryDef, clazz)
       .removeBinding(selfUse, (ctorDef, initializer))
       .addBinding((factoryDef, clazz), (factoryDef, initializer))
@@ -57,7 +57,7 @@ object Redirection {
     else g1
   }
 
-  def cl(g: DependencyGraph, u : Uses) : Set[(Uses, Uses)] = {
+  def cl(g: DependencyGraph, u : NodeIdP) : Set[(NodeIdP, NodeIdP)] = {
     val cl0 =  for {
       tu <- g.typeUsesOf(u) + u
       tmu <- g.typeMemberUsesOf(tu)
@@ -88,18 +88,18 @@ object Redirection {
 
  private [rules] def redirect
   (g : DependencyGraph,
-   oldUse : Uses,
-   newUsed : Abstraction) : LoggedTry[(DependencyGraph, List[Uses])] =
+   oldUse : NodeIdP,
+   newUsed : Abstraction) : LoggedTry[(DependencyGraph, Set[NodeIdP])] =
     try LoggedSuccess {
-      (newUsed, oldUse.accessKind) match {
+      (newUsed, g getAccessKind oldUse ) match {
         case (AccessAbstraction(absId, _), None) =>
-          (oldUse.changeTarget(g, absId), List(oldUse.copy(target = absId)))
+          (oldUse.changeTarget(g, Uses, absId), Set((oldUse.user, absId)))
         case (ReadWriteAbstraction(Some(rid), _), Some(Read)) =>
-          (oldUse.changeTarget(g, rid), List(oldUse.copy(target = rid)))
+          (oldUse.changeTarget(g, Uses, rid), Set((oldUse.user, rid)))
         case (ReadWriteAbstraction(_, Some(wid)), Some(Write)) =>
-          (oldUse.changeTarget(g, wid), List(oldUse.copy(target = wid)))
+          (oldUse.changeTarget(g, Uses, wid), Set((oldUse.user, wid)))
         case (ReadWriteAbstraction(Some(rid), Some(wid)), Some(RW)) =>
-            g.changeTarget(oldUse, rid, wid)
+           oldUse.splitWithTargets(g, rid, wid)
         case _ => throw new PuckError(s"error while redirecting ${(g,oldUse).shows} toward ${(g, newUsed).shows}")
       }
     } catch {
@@ -109,7 +109,7 @@ object Redirection {
 
   def redirectUsesAndPropagate
     (graph : DependencyGraph,
-     oldUse : Uses,
+     oldUse : NodeIdP,
      newUsed : Abstraction
       ): LoggedTG = {
 
@@ -140,14 +140,14 @@ object Redirection {
 
   def redirectTypeConstructorToInstanceValueDecl
   (g : DependencyGraph,
-   oldUse : Uses,
+   oldUse : NodeIdP,
    newUsed : Abstraction )
   ( createVarStrategy: CreateVarStrategy = CreateTypeMember(g.nodeKindKnowledge.defaultKindForNewReceiver)
     ) : LoggedTG = {
     newUsed.nodes match {
       case List(absNode) =>
 
-        val g1 = oldUse.changeTarget(g, absNode)
+        val g1 = oldUse.changeTarget(g, Uses, absNode)
 
         import g.nodeKindKnowledge.intro
         import DGEdge.toPair
@@ -183,7 +183,7 @@ object Redirection {
 
   def propagateTypeConstraints
     (g : DependencyGraph,
-     oldTypeUse : Uses,
+     oldTypeUse : NodeIdP,
      newTypeToUse : NodeId) : LoggedTG = {
 //    import puck.util.Debug._
 //    println("propagateTypeConstraints")
@@ -231,11 +231,11 @@ object Redirection {
 
   def redirectTypeMemberUses
   ( g : DependencyGraph,
-    oldTypeUses : Uses,
-    brSet : Set[(Uses, Uses)], // \forall p in brSet, p._1 == oldTypeUses
+    oldTypeUses : NodeIdP,
+    brSet : Set[(NodeIdP, NodeIdP)], // \forall p in brSet, p._1 == oldTypeUses
     newTypeToUse : NodeId
   ): LoggedTG = {
-    val newTypeUse = oldTypeUses.copy(target = newTypeToUse)
+    val newTypeUse = (oldTypeUses.user, newTypeToUse)
     brSet.foldLoggedEither(g) {
       case (g00, (_, tmu)) =>
         for {
@@ -243,16 +243,15 @@ object Redirection {
           gNewTmus <- redirect(g00, tmu, abs)
           (g01, nTmus) = gNewTmus
         } yield {
-          nTmus.foldLeft(g01.removeBinding(oldTypeUses, tmu)) {
-            _.changeTypeUseOfTypeMemberUse(oldTypeUses, newTypeUse, _)
-          }
+          g01.removeBinding(oldTypeUses, tmu)
+              .changeTypeUseForTypeMemberUseSet(oldTypeUses, newTypeUse, nTmus)
         }
     }
   }
 
   def redirectInstanceUsesAndPropagate
     (g : DependencyGraph,
-     oldUse : Uses,
+     oldUse : NodeIdP,
      newUsed : Abstraction
       ) : LoggedTG = {
     val log = s"redirectInstanceUsesAndPropagate(g, oldUse = ${(g, oldUse).shows},  " +
@@ -273,7 +272,7 @@ object Redirection {
 
         groupedByTypeUse.toList.foldLoggedEither(g comment log) {
           case (g0, (tu, brSet)) =>
-            val g1 = tu.changeTarget(g0, newTypeToUse)
+            val g1 = tu.changeTarget(g0, Uses, newTypeToUse)
             redirectTypeMemberUses(g1, tu, brSet, newTypeToUse)
         } flatMap {
           g1 =>

@@ -241,10 +241,9 @@ abstract class Abstract {
           sid != originSiblingDecl.id &&
           sid != memberDecl.id
 
-      def usedOnlyViaSelf(user : NodeId, used : NodeId) : Boolean = {
-        val typeUses = g.typeUsesOf(user, used)
-        typeUses.forall { _.selfUse }
-      }
+      def usedOnlyViaSelf(user : NodeId, used : NodeId) : Boolean =
+        g.typeUsesOf(user, used) forall { case (s, t) => s == t }
+      
 
       //TODO check if the right part of the and is valid for Delegation abstraction
       memberDecl.kind.canBeAbstractedWith(policy) && {

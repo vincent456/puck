@@ -28,14 +28,24 @@ package puck.graph.transformations.rules
 
 import puck.util.LoggedEither._
 import puck.graph._
+import puck.graph.NodeIdPOps
 
-import scalaz.-\/
 import scalaz.std.list._
 import scalaz.std.set._
 import ShowDG._
-sealed trait CreateVarStrategy
-case object CreateParameter extends CreateVarStrategy
-case class CreateTypeMember(kind : NodeKind) extends CreateVarStrategy
+import puck.PuckError
+sealed trait CreateVarStrategy {
+  def apply ( g : DependencyGraph, oldTu : NodeIdP, newTu : NodeId, tmUses : Set[NodeIdP] ) : LoggedTG
+}
+case object CreateParameter extends CreateVarStrategy {
+  def apply ( g : DependencyGraph, oldTu : NodeIdP, newTu : NodeId, tmUses : Set[NodeIdP] ) : LoggedTG =
+    Move.createParam(g,oldTu, newTu, tmUses)
+
+}
+case class CreateTypeMember(kind : NodeKind) extends CreateVarStrategy {
+  def apply ( g : DependencyGraph, oldTu : NodeIdP, newTu : NodeId, tmUses : Set[NodeIdP] ) : LoggedTG =
+    Move.createTypeMember(g, oldTu, newTu, tmUses, kind)
+}
 
 object Move {
 
@@ -43,7 +53,7 @@ object Move {
   ( g : DependencyGraph,
     movedId : NodeId,
     newContainer : NodeId
-    ) : LoggedTG =
+  ) : LoggedTG =
     g.container(movedId) match {
       case None =>
         LoggedError(s"${(g, movedId).shows} has no container !!!")
@@ -56,177 +66,139 @@ object Move {
           changeSource(Contains(oldContainer, movedId), newContainer) logComment log).toLoggedEither
     }
 
-  private def withContainer[T]
-  (g : DependencyGraph, nid : NodeId)
-  ( f : NodeId => Try[T]
-    ) : Try[T] =
-    g.container(nid) match {
-      case None =>
-        -\/(new RedirectionError(s"${(g, nid).shows} has no container !!!"))
-      case Some(containerId) => f(containerId)
-    }
-
-
-  def usedBySiblingsViaSelf
-  ( g : DependencyGraph, n : NodeId, h : TypeDeclNode ) : Boolean = {
-    val uses = g.usersOfExcludingTypeUse(n) map (user => Uses(user, n))
-    uses.exists(isUsesOfSiblingViaSelf(g, h))
-  }
-
-  type TypeDeclNode = DGNode
-  def usedBySiblingsViaSelf
-    (uses : List[Uses], g : DependencyGraph, h : TypeDeclNode ) : Boolean =
-    uses.exists(isUsesOfSiblingViaSelf(g, h))
-
-  type SiblingUsers = Set[Uses]
-  type OtherUsers = Set[Uses]
-  def partitionSiblingUsesAndOtherUses
-  (uses : Set[Uses], g : DependencyGraph, h : TypeDeclNode ) :(SiblingUsers, OtherUsers) =
-    uses.partition(isUsesOfSiblingViaSelf(g, h))
-
-  private def isUsesOfSiblingViaSelf
-  ( graph : DependencyGraph, containingTypeDecl : TypeDeclNode) : Uses => Boolean = {
-
-    val isSiblingUse: Uses => Boolean =
-      u => graph.hostTypeDecl(u.user) == containingTypeDecl.id && u.user != u.used
-
-    u =>
-      isSiblingUse(u) && {
-        val tuses = graph.typeUsesOf(u)
-        tuses.exists(_.selfUse)
-    }
-  }
-
-
-  private def logTypeMemberMove
-  ( g : DependencyGraph,
-    typeMembersMoved : Seq[NodeId],
-    oldContainer : NodeId,
-    newContainer : NodeId
-    ) : LoggedTG = {
-
-    val log = "moving type members  " +
-      typeMembersMoved.map(n => (g, n).shows).mkString(", ") +
-      s"from ${(g, oldContainer).shows} " +
-      s"to ${(g, newContainer).shows}"
-
-    (g logComment log).toLoggedEither
-  }
-
-  private def isUsesOfOtherMovedNodeViaSelf
-  ( graph : DependencyGraph, movedNodes : List[NodeId]) : Uses => Boolean = {
-    u =>
-      movedNodes.contains(u.user) && {
-        val tuses = graph.typeUsesOf(u)
-        tuses.forall(_.selfUse)
-      }
-  }
-
-  def usesBetween(g : DependencyGraph, sources :  Set[NodeId], targets : Set[NodeId]): Set[Uses] =
+  def usesBetween(g : DependencyGraph, sources :  Set[NodeId], targets : Set[NodeId]): Set[NodeIdP] =
     for{
       s <- sources
       t <- targets
       if g.uses(s,t)
-    } yield {
-      g.getUsesEdge(s,t).get
-    }
+    } yield (s,t)
 
-  def usesViaThis(g : DependencyGraph)(tmu : Uses) : Boolean =
-    g.typeUsesOf(tmu).exists(tu => tu.source == tu.target)
-
-  def usesViaParamOrField(g : DependencyGraph)(tmu : Uses) : Boolean =
-    g.typeUsesOf(tmu).exists(tu => tu.source != tu.target)
+  def usesViaThis(g : DependencyGraph)(tmu : NodeIdP) : Boolean =
+    (g typeUsesOf tmu) exists (_.selfUse)
 
 
-  def pullUp
-  ( g : DependencyGraph,
+  def usesBetweenViaThis(g : DependencyGraph, sources :  Set[NodeId], targets : Set[NodeId]): Set[NodeIdP] =
+    usesBetween(g, sources, targets) filter usesViaThis(g)
+
+
+  private abstract class MoveTypeMember
+  ( g0 : DependencyGraph,
     typeMembersMovedId : List[NodeId],
     oldContainer : NodeId,
-    newContainer : NodeId) : LoggedTG = {
+    newContainer : NodeId ){
 
-    val movedDeclSet = typeMembersMovedId.toSet
-    val movedDefSet : Set[NodeId] =
-      movedDeclSet map g.definitionOf flatten
+    val movedDecls = typeMembersMovedId.toSet
+    val movedDefs : Set[NodeId] = movedDecls flatMap g0.definitionOf
 
-    val siblings = g.content(oldContainer) -- movedDeclSet
+    val siblings = g0.content(oldContainer) -- movedDecls
+
+    val usesOfSiblingViaThis: Set[NodeIdP] =
+      usesBetweenViaThis(g0, movedDefs, siblings)
 
     val oldSelfUse = Uses(oldContainer, oldContainer)
     val newSelfUse = Uses(newContainer, newContainer)
 
-
-    val g0 = typeMembersMovedId.foldLeft(g){
+    val g1 = typeMembersMovedId.foldLeft(g0) {
       (g0, movedId) =>
         g0.changeSource(Contains(oldContainer, movedId), newContainer)
     }
 
+    def adjustSelfUsesBR(g : DependencyGraph) = {
+      val usesBetweenMovedDefsViaThis = usesBetweenViaThis(g, movedDefs, movedDecls)
 
+      val g1 =
+        if(usesBetweenMovedDefsViaThis.nonEmpty && !(newSelfUse existsIn g))
+          newSelfUse createIn g
+        else g
 
+      val g2 =
+        g1.changeTypeUseForTypeMemberUseSet(oldSelfUse, newSelfUse,
+          usesBetweenMovedDefsViaThis)
 
-    val usesOfMovedViaThis : Set[Uses] =
-      usesBetween(g, siblings map (g.definitionOf(_)) flatten, movedDeclSet).filter(usesViaThis(g))
-
-    val newTypeUse = Uses(oldContainer, newContainer)
-    val g1 =
-      if(usesOfMovedViaThis.nonEmpty && ! (newTypeUse existsIn g0) )
-        g0.addUses(oldContainer, newContainer)
-      else g0
-
-    val g2 = usesOfMovedViaThis.foldLeft(g1){
-      (g00, u) =>
-        g00.changeTypeUseOfTypeMemberUse(oldSelfUse, newTypeUse, u)
+      if(g2.typeMemberUsesOf(oldSelfUse).isEmpty)
+        g2.removeEdge(oldSelfUse)
+      else g2
     }
 
-    val g3 = adjustSelfUsesBR(g2, movedDeclSet, movedDefSet, oldSelfUse, newSelfUse)
+    def apply() : LoggedTG
+  }
 
-    val brWithOldContainerAsTypeUser = for {
-      movedDef <- movedDefSet
-      used <-  g.usedByExcludingTypeUse(movedDef)
-      tuse <- g.typeUsesOf(movedDef, used)
-      if tuse.user == oldContainer
-    } yield {
-      (tuse, (movedDef, used))
-    }
+  def pullUp
+  (g0 : DependencyGraph,
+   typeMembersMovedId : List[NodeId],
+   oldContainer : NodeId,
+   newContainer : NodeId) : LoggedTG = {
 
-    val g4 = brWithOldContainerAsTypeUser.foldLeft(g3){
-      case (g00, (tuse, tmUse)) =>
-        val newSuperUse = Uses(newContainer, tuse.used)
-
-        val g01 =
-          if(!(newSuperUse existsIn g00))
-            g00.addEdge(newSuperUse)
-        else g00
-
-        val g02 = g01.changeTypeUseOfTypeMemberUse(tuse, newSuperUse, tmUse)
-
-        if(g02.typeMemberUsesOf(tuse).isEmpty)
-          g02.removeEdge(tuse)
-        else g02
-
-    }
-
-    val usesOfSiblingViaThis : Set[Uses] =
-      usesBetween(g, movedDefSet, siblings).filter(usesViaThis(g))
+    val worker : MoveTypeMember =
+      new MoveTypeMember(g0, typeMembersMovedId, oldContainer, newContainer) {
 
 
-
-    val g5 =
-      if(usesOfSiblingViaThis.nonEmpty && !(newSelfUse existsIn g4))
-        newSelfUse createIn g4
-      else g4
-
-    usesOfSiblingViaThis.foldLoggedEither(g5){
-      (g0, e) =>
-          g.abstractions(e.target) find (abs => abs.nodes.forall(g.contains(newContainer,_))) match {
-            case Some(abs) =>
-              Redirection.redirect(g, e, abs).map {
-                case (g, lu) =>
-                  lu.foldLeft(g)(_.changeTypeUseOfTypeMemberUse(oldSelfUse, newSelfUse, _))
+        def redirectUsesOfSiblingTowardNewSiblings(g : DependencyGraph) : LoggedTG =
+          usesOfSiblingViaThis.foldLoggedEither(g) {
+            (g0, e) =>
+              g0.abstractions(e.used) find (abs => abs.nodes.forall(g0.contains(newContainer, _))) match {
+                case Some(abs) =>
+                  Redirection.redirect(g0, e, abs).map {
+                    case (g00, lu) =>
+                      g00.changeTypeUseForTypeMemberUseSet(oldSelfUse, newSelfUse, lu)
+                  }
+                case None => LoggedError("pullUp abstract sibling not found")
               }
-            case None => LoggedError("pullUp abstract sibling not found")
           }
-    }
 
 
+        def adjustSuperUsesBR(g : DependencyGraph) : DependencyGraph = {
+          val brWithOldContainerAsTypeUser = for {
+            movedDef <- movedDefs
+            used <- g0.usedBy(movedDef)
+            tuse <- g0.typeUsesOf(movedDef, used)
+            if tuse.user == oldContainer
+          } yield {
+            (tuse, (movedDef, used))
+          }
+
+          brWithOldContainerAsTypeUser.foldLeft(g) {
+            case (g00, (tuse, tmUse)) =>
+              val newSuperUse = Uses(newContainer, tuse.used)
+
+              val g01 =
+                if (!(newSuperUse existsIn g00))
+                  g00.addEdge(newSuperUse)
+                else g00
+
+              val g02 = g01.changeTypeUseOfTypeMemberUse(tuse, newSuperUse, tmUse)
+
+              if (g02.typeMemberUsesOf(tuse).isEmpty)
+                g02.removeEdge(Uses(tuse))
+              else g02
+
+          }
+        }
+
+        val usesOfMovedViaThis: Set[NodeIdP] =
+          usesBetweenViaThis(g0, siblings flatMap g0.definitionOf, movedDecls)
+
+        val newTypeUse = Uses(oldContainer, newContainer)
+
+
+        def apply() : LoggedTG = {
+
+          val g2 =
+            if (usesOfMovedViaThis.nonEmpty && !(newTypeUse existsIn g1))
+              g1.addUses(oldContainer, newContainer)
+            else g1
+
+          val g3 = g2.changeTypeUseForTypeMemberUseSet(oldSelfUse, newTypeUse, usesOfMovedViaThis)
+
+          val g4 = adjustSelfUsesBR(g3)
+
+          val g5 = adjustSuperUsesBR(g4)
+
+          redirectUsesOfSiblingTowardNewSiblings(g5)
+
+        }
+      }
+    worker()
   }
 
   def pushDown
@@ -244,7 +216,7 @@ object Move {
     val typeMembersMovedStr = typeMembersMovedId.map(nid => (graph, nid).shows ).mkString("[",", ", "]")
     val g0 = graph.comment(s"Move.typeMember(g, $typeMembersMovedStr, ${(graph,newContainer).shows}, $createVarStrategy)")
     /** PRECONDITION all typeMembersMoved have same host */
-    val oldContainer = g0.container(typeMembersMovedId.head).get
+    val oldContainer = g0 container_! typeMembersMovedId.head
 
     val isPullUp = g0.isa_*(oldContainer, newContainer)
     val isPushDown = g0.isa_*(newContainer, oldContainer)
@@ -262,28 +234,7 @@ object Move {
 
   }
 
-  private def adjustSelfUsesBR
-  (g : DependencyGraph,
-   movedDecl : Set[NodeId],
-   movedDef : Set[NodeId],
-   oldSelfUse : Uses,
-   newSelfUse : Uses) = {
-    val usesBetweenMovedDefsViaThis =
-      usesBetween(g, movedDef, movedDecl).filter(usesViaThis(g))
 
-    val g1 =
-     if(usesBetweenMovedDefsViaThis.nonEmpty && !(newSelfUse existsIn g))
-        newSelfUse createIn g
-      else g
-
-    val g2 = usesBetweenMovedDefsViaThis.foldLeft(g1){
-      _.changeTypeUseOfTypeMemberUse(oldSelfUse, newSelfUse, _)
-    }
-
-    if(g2.typeMemberUsesOf(oldSelfUse).isEmpty)
-        g2.removeEdge(oldSelfUse)
-    else g2
-  }
 
   def typeMemberBetweenUnrelatedTypeDecl
   ( g0 : DependencyGraph,
@@ -292,147 +243,129 @@ object Move {
     newContainer : NodeId,
     createVarStrategy: Option[CreateVarStrategy] = None) : LoggedTG = {
 
+    val worker : MoveTypeMember =
+      new MoveTypeMember(g0, typeMembersMovedId, oldContainer, newContainer) {
 
-    val movedDecl = typeMembersMovedId.toSet
-    val siblings = g0.content(oldContainer) -- movedDecl
-
-    val movedDef : Set[NodeId] =
-      movedDecl map g0.definitionOf flatten
-
-    val movedDefUsingSiblingViaThis : Set[NodeId] =
-      usesBetween(g0, movedDef, siblings).filter(usesViaThis(g0)).map(_.user)
-
-    val movedDeclWithArgUsableAsReceiver : Set[NodeId] =
-      movedDecl.filter {
-        nid =>
-          g0.parametersOf(nid) exists (g0.styp(_).get uses newContainer)
-      }
-
-    val oldSelfUse = Uses(oldContainer, oldContainer)
-
-
-    val g1 = typeMembersMovedId.foldLeft(g0){
-      (g0, movedId) =>
-        g0.changeSource(Contains(oldContainer, movedId), newContainer)
-    }
-
-    val g2 = adjustSelfUsesBR(g1, movedDecl, movedDef, oldSelfUse, Uses(newContainer, newContainer))
-
-   /* println("moving " + movedDecl)
-    println("siblings are " + siblings)
-    println("moved using sibling via def " +
-      (movedDefUsingSiblingViaThis map g0.container_!))
-    println("moved with arg usable as receiver" + movedDeclWithArgUsableAsReceiver)
-*/
-    for {
-      g3 <- useArgAsReceiver(g2, oldContainer, newContainer, movedDeclWithArgUsableAsReceiver)
-      g4 <- useReceiverAsArg(g3, oldContainer, newContainer, movedDefUsingSiblingViaThis, siblings)
-      g5 <- createNewReceiver(g4, newContainer,
-        movedDecl -- movedDeclWithArgUsableAsReceiver, siblings,
-        createVarStrategy)
-    } yield {
-      if( (oldSelfUse existsIn g5) &&
-        g5.typeMemberUsesOf(oldSelfUse).isEmpty)
-        g5.removeEdge(oldSelfUse)
-      else g5
-    }
-
-  }
-
-  import puck.util.LoggedEither, LoggedEither._
-  def useArgAsReceiver
-  ( g: DependencyGraph,
-    oldContainer : NodeId,
-    newContainer : NodeId,
-    nodeSet: Set[NodeId]
-    ) : LoggedTG = {
-    val newSelfUse = Uses(newContainer, newContainer)
-    nodeSet.foldLoggedEither(g){
-      (g0, used) =>
-        val params = g0 parametersOf used
-        params find {g0.styp(_) contains NamedType(newContainer)} match {
-          case None =>
-            LoggedError(s"An arg typed ${NamedType(newContainer)} was expected")
-          case Some(pid) =>
-            val (_, g1) = g0.removeNode(pid)
-            val oldTypeUses = Uses(pid, newContainer)
-            val g2 = g0.typeMemberUsesOf(oldTypeUses).foldLeft(g1){
-                _.changeTypeUseOfTypeMemberUse(oldTypeUses, newSelfUse, _)
-            }
-            LoggedSuccess(g2)
+        import puck.util.LoggedEither, LoggedEither._
+        def useArgAsReceiver
+        ( g: DependencyGraph,
+          oldContainer : NodeId,
+          newContainer : NodeId,
+          nodeSet: Set[NodeId]
+        ) : LoggedTG = {
+          val newSelfUse = Uses(newContainer, newContainer)
+          nodeSet.foldLoggedEither(g){
+            (g0, used) =>
+              val params = g0 parametersOf used
+              params find ( g0.typ(_) uses newContainer ) match {
+                case None =>
+                  LoggedError(s"An arg typed ${NamedType(newContainer)} was expected")
+                case Some(pid) =>
+                  val (_, g1) = g0.removeNode(pid)
+                  val oldTypeUses = (pid, newContainer)
+                  LoggedSuccess (
+                    g1.changeTypeUseForTypeMemberUseSet(oldTypeUses, newSelfUse,
+                      g0.typeMemberUsesOf(oldTypeUses))
+                  )
+              }
+          }
         }
-    }
+
+        def useReceiverAsArg
+        ( g: DependencyGraph,
+          oldContainer : NodeId,
+          newContainer : NodeId,
+          nodeSet : Set[NodeId],
+          siblings : Set[NodeId]
+        ) : LoggedTG = {
+          val oldSelfUse = (oldContainer, oldContainer)
+          nodeSet.foldLoggedEither(g){
+            (g0, user) =>
+              val decl = g0.container_!(user)
+              addParamOfTypeAndSetTypeDependency(g0, decl,
+                oldContainer, oldSelfUse,
+                usesBetween(g0, Set(user), siblings))
+          }
+        }
+
+        def createNewReceiver
+        ( g: DependencyGraph,
+          newContainer : NodeId,
+          usesThatRequireNewReceiver : Set[NodeIdP],
+          createVarStrategy: CreateVarStrategy) : LoggedTG = {
+
+          def singleTypeUse(tmUse : NodeIdP) : NodeIdP = {
+            val tus =  g.typeUsesOf(tmUse)
+            if(tus.size > 1) error("require type member uses with only one type use")
+            else tus.head
+          }
+
+          try {
+            val typeUses = usesThatRequireNewReceiver.groupBy(singleTypeUse).toList
+
+            typeUses.foldLoggedEither(g) {
+              case (g0, (tu, tmUses)) =>
+                createVarStrategy(g0, tu, newContainer, tmUses)
+            }
+          }catch {
+            case e : PuckError => LoggedError(e)
+          }
+        }
+
+        val movedDefUsingSiblingViaThis: Set[NodeId] =
+          usesOfSiblingViaThis map (_.user)
+
+        val movedDeclWithArgUsableAsReceiver: Set[NodeId] =
+          movedDecls.filter {
+            nid =>
+              g0.parametersOf(nid) exists (g0.typ(_) uses newContainer)
+          }
+
+        val movedDeclWithoutArgUsableAsReceiver =
+          movedDecls -- movedDeclWithArgUsableAsReceiver
+
+        val usesThatRequireNewReceiver = for {
+          declId <- movedDeclWithoutArgUsableAsReceiver
+          user <- g0 usersOf declId
+          if !(movedDefs contains user)
+        } yield (user, declId)
+
+        def apply() : LoggedTG = {
+
+          for {
+            g2 <- useArgAsReceiver(g1, oldContainer, newContainer, movedDeclWithArgUsableAsReceiver)
+
+            g3 <- useReceiverAsArg(g2, oldContainer, newContainer, movedDefUsingSiblingViaThis, siblings)
+
+            g4 <- (usesThatRequireNewReceiver.nonEmpty, createVarStrategy) match {
+              case (true, Some(strategy)) =>
+                createNewReceiver(g3, newContainer, usesThatRequireNewReceiver, strategy)
+              case (true, None) => LoggedError("create var strategy required")
+              case _ => LoggedSuccess(g3)
+            }
+
+          } yield adjustSelfUsesBR(g4)
+
+        }
+      }
+    worker()
   }
+
+
 
   def addParamOfTypeAndSetTypeDependency
   (g: DependencyGraph,
    declId : NodeId,
    pType : NodeId,
-   oldTypeUse : Uses,
-   tmUses : Set[Uses]
-    ) : LoggedTG  = {
+   oldTypeUse : NodeIdP,
+   tmUses : Set[NodeIdP]
+  ) : LoggedTG  = {
     import g.nodeKindKnowledge.intro
     intro.parameter(g, pType, declId) map {
       case (pNode, g2) =>
-        val newTypeUse = Uses(pNode.id, pType)
+        val newTypeUse = (pNode.id, pType)
+        g2.changeTypeUseForTypeMemberUseSet(oldTypeUse, newTypeUse, tmUses)
 
-        tmUses.foldLeft(g2) {
-          _.changeTypeUseOfTypeMemberUse(oldTypeUse, newTypeUse, _)
-        }
-    }
-  }
-
-  def useReceiverAsArg
-  ( g: DependencyGraph,
-    oldContainer : NodeId,
-    newContainer : NodeId,
-    nodeSet : Set[NodeId],
-    siblings : Set[NodeId]
-    ) : LoggedTG = {
-    val oldSelfUse = Uses(oldContainer, oldContainer)
-    nodeSet.foldLoggedEither(g){
-      (g0, user) =>
-        val decl = g0.container_!(user)
-        addParamOfTypeAndSetTypeDependency(g0, decl,
-            oldContainer, oldSelfUse, usesBetween(g0, Set(user), siblings))
-    }
-  }
-
-  def createNewReceiver
-  ( g: DependencyGraph,
-    newContainer : NodeId,
-    declNodeSet : Set[NodeId],
-    tmUsedToKeep : Set[NodeId] = Set(), //when declNodeSet are moved nodes, not used for "simple" redirection
-    createVarStrategy: Option[CreateVarStrategy] = None) : LoggedTG = {
-
-
-    val defNodeSet = declNodeSet map g.definitionOf filter (_.nonEmpty) map (_.get)
-
-    val typeUses : Set[Uses] =
-      g.usesFromUsedList(declNodeSet.toList)
-        .filterNot(u => defNodeSet.contains(u.user))
-        .flatMap(g.typeUsesOf).toSet
-
-    createVarStrategy match {
-      case Some(strategy) =>
-
-        typeUses.foldLoggedEither(g) {
-          (g0, tu) =>
-            val tmUses = g.typeMemberUsesOf(tu).filterNot(tmUsedToKeep contains _.used)
-            val tmContainer =
-              if (tu.selfUse) tu.user
-              else g.container(tu.user).get
-
-            strategy match {
-              case CreateParameter =>
-                createParam(g0, tu, newContainer, tmUses)
-              case CreateTypeMember(k) =>
-                createTypeMember(g0, tu, newContainer, tmContainer, tmUses, k)
-            }
-        }
-      case None if typeUses.nonEmpty =>
-        LoggedError("create var strategy required")
-      case None => LoggedSuccess(g)
     }
   }
 
@@ -441,16 +374,16 @@ object Move {
 
   def createParam
   (g : DependencyGraph,
-   someOldTypeUse : Uses,
+   oldTypeUse : NodeIdP,
    newTypeUsed : NodeId,
-   tmUses : Set[Uses]
-    ): LoggedTG ={
+   tmUses : Set[NodeIdP]
+  ): LoggedTG ={
 
     val usesByUser = tmUses.groupBy(_.user)
     //introduce one parameter by user even with several uses
     //these were all previously this use so it makes sens to keep one reference
     val tmUsesStr = tmUses.map(u => (g,u).shows).mkString("[",", ","]")
-    usesByUser.toList.foldLoggedEither(g.comment(s"createParam(g,${(g, someOldTypeUse).shows}, ${(g,newTypeUsed).shows}, $tmUsesStr)")) {
+    usesByUser.toList.foldLoggedEither(g.comment(s"createParam(g,${(g, oldTypeUse).shows}, ${(g,newTypeUsed).shows}, $tmUsesStr)")) {
       case (g0, (impl, typeMemberUses)) =>
         val user = g0.getConcreteNode(impl)
 
@@ -459,19 +392,23 @@ object Move {
         val decl = g0.getConcreteNode(g0.container_!(impl))
 
         addParamOfTypeAndSetTypeDependency(g0, decl.id,
-          newTypeUsed, someOldTypeUse, typeMemberUses)
+          newTypeUsed, oldTypeUse, typeMemberUses)
 
     }
   }
 
   def createTypeMember
   (g : DependencyGraph,
-   oldTypeUse : Uses,
+   oldTypeUse : NodeIdP,
    newTypeUsed : NodeId,
-   tmContainer : NodeId,
-   tmUses : Set[Uses],
+   tmUses : Set[NodeIdP],
    kind : NodeKind
-    ): LoggedTG ={
+  ): LoggedTG ={
+
+    val tmContainer =
+      if (oldTypeUse.selfUse) oldTypeUse.user
+      else g.container(oldTypeUse.user).get
+
     // assert forall user in tmUses, container(user) = tmContainer
     import g.nodeKindKnowledge.intro
     for {
@@ -487,12 +424,7 @@ object Move {
             typeMemberUse.user, delegateId) // replace this.m by this.delegate.m
       }
     }
-
-
-
-
   }
-
 
 
 }

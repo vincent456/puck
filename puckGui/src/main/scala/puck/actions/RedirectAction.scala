@@ -43,7 +43,7 @@ class DisplayableAbstraction(val abs : Abstraction, graph : DependencyGraph) {
 
 class RedirectAction0
 ( controller : Publisher,
-  edge : Uses,
+  edge : NodeIdP,
   abstractions : Seq[Abstraction])
 (implicit graph : DependencyGraph,
  graphUtils: GraphUtils)
@@ -69,7 +69,7 @@ class RedirectAction0
 
 class RedirectAction
 (controller : Publisher,
- edge : Uses,
+ edge : NodeIdP,
  abs : Abstraction)
 (implicit graph : DependencyGraph,
  graphUtils: GraphUtils)

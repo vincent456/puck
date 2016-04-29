@@ -183,12 +183,17 @@ case class EdgeMap
     }
 
 
+  def getAccessKind(uses: NodeIdP)  : Option[UsesAccessKind] =
+    accessKindMap get uses
+
   def getUses(userId: NodeId, usedId: NodeId) : Option[Uses] = {
     if(uses(userId, usedId))
       Some(Uses(userId, usedId, accessKindMap get ((userId, usedId))))
     else
       None
   }
+
+  def uses(use : NodeIdP) : Boolean = uses(use.user, use.used)
 
   def uses(userId: NodeId, usedId: NodeId) : Boolean =
     userMap.bind(usedId, userId) || {
@@ -282,32 +287,28 @@ case class EdgeMap
 //    }
 
 
-  def typeUsesOf(typeMemberUse : Uses) : Set[Uses] =
-    typeUsesOf(typeMemberUse.user, typeMemberUse.used)
 
 
-  def typeMemberUsesOf(typeUse : Uses) : Set[Uses] =
+  def typeMemberUsesOf(typeUse : NodeIdP) : Set[NodeIdP] =
     typeMemberUsesOf(typeUse.user, typeUse.used)
 
-  def typeUsesOf(tmUser : NodeId, tmUsed : NodeId) : Set[Uses] =
-    typeMemberUses2typeUsesMap getFlat ((tmUser, tmUsed)) map /*{ u =>
-      println(u)
-      u
-    } map*/ {
-      case (s,t) =>
-        try {
-          getUses(s, t).get
-        }catch {
-          case _ : Throwable =>
-            throw new PuckError(s"Uses($s, $t) does not exist !")
-        }
-    }
-
-
-  def typeMemberUsesOf(typeUser : NodeId, typeUsed : NodeId) : Set[Uses] =
+  def typeMemberUsesOf(typeUser : NodeId, typeUsed : NodeId) : Set[NodeIdP] =
     typeUses2typeMemberUsesMap getFlat ((typeUser, typeUsed)) map {
-      case (s, t) => getUses(s,t).get
+      case u @ (s,t) if uses(s,t) => u
+      case (s,t) => throw new PuckError(s"Uses($s, $t) does not exist !")
     }
+
+
+  def typeUsesOf(typeMemberUse : NodeIdP) : Set[NodeIdP] =
+    typeUsesOf(typeMemberUse.user, typeMemberUse.used)
+
+  def typeUsesOf(tmUser : NodeId, tmUsed : NodeId) : Set[NodeIdP] =
+    typeMemberUses2typeUsesMap getFlat ((tmUser, tmUsed)) map {
+      case u @ (s,t) if uses(s,t) => u
+      case (s,t) => throw new PuckError(s"Uses($s, $t) does not exist !")
+    }
+
+
 
   
 }

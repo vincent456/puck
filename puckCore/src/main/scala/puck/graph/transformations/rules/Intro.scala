@@ -74,7 +74,7 @@ abstract class Intro {
 
           val g2 = g.usedByExcludingTypeUse(icDef).foldLeft(g1){
             (g0, usedByIcDef) =>
-              g0.getUsesEdge_!(icDef, usedByIcDef).changeSource(g0, defNode.id)
+              Uses(icDef, usedByIcDef).changeSource(g0, defNode.id)
           }
           val (_, g3) = g2.removeEdge(Contains(ic, icDef)).removeNode(icDef)
 

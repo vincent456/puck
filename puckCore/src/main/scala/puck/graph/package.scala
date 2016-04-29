@@ -55,6 +55,17 @@ package object graph {
 
     def user = p._1
     def used = p._2
+
+    def source = p._1
+    def target = p._2
+
+    def selfUse = p._1 == p._2
+
+    def changeTarget(g : DependencyGraph, k : EKind, newTgt : NodeId) =
+      g.changeTarget(k(p), newTgt)
+
+    def splitWithTargets(g :  DependencyGraph, rTgt : NodeId, wTgt : NodeId) =
+      g.splitWithTargets(Uses(p._1, p._2), rTgt, wTgt)
   }
 
   type TypedNode = (ConcreteNode, Type)

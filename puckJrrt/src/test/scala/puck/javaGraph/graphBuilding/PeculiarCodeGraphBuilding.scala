@@ -166,7 +166,7 @@ class PeculiarCodeGraphBuilding extends AcceptanceSpec {
         |
         |public class C {
         |    int[] array;
-        |    final void m() {
+        |    void m() {
         |        int l = this.array.length;
         |    }
         |}"""

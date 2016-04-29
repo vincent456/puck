@@ -73,18 +73,17 @@ class EdgeMenu
   }
 
   def addUsesActions(src : NodeId, tgt : NodeId) : Unit =
-    graph.getUsesEdge(src, tgt) foreach {
-      uses =>
+    if(graph.uses(src, tgt)){
         isUseEdge = true
         add(new AbstractAction(s"Show type bindings"){
           def actionPerformed(e: ActionEvent) : Unit =
-            publisher publish EdgeForTypePrinting(Some(uses))
+            publisher publish EdgeForTypePrinting(Some((src, tgt)))
         })
 
 
         val abstractions = graph.abstractions(tgt)
         if(abstractions.nonEmpty)
-          add(new RedirectAction0(publisher, uses, abstractions.toSeq))
+          add(new RedirectAction0(publisher, (src, tgt), abstractions.toSeq))
     }
 
 

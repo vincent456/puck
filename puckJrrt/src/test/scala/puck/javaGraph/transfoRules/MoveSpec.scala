@@ -277,37 +277,29 @@ class MoveSpec
           |class B{ }"""
       ) {
 
-        val classA = fullName2id("p.A")
-        val methUserDecl = fullName2id("p.A.mUser()")
-        val methUserDef = fullName2id("p.A.mUser().Definition")
-
-        val methToMove = fullName2id("p.A.mUsedToMove()")
-
-        val otherUsedMethod = fullName2id("p.A.mUsedOther()")
-
-        val newHostClass = fullName2id("p.B")
-
-        assert(graph.uses(methUserDef, methToMove))
-        assert(graph.uses(methUserDef, otherUsedMethod))
-        graph.typeUsesOf(Uses(methUserDef, methToMove)) should contain (Uses(classA, classA))
-        graph.typeUsesOf(Uses(methUserDef, otherUsedMethod)) should contain (Uses(classA, classA))
-
-        val g2 = Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateTypeMember(Field))).rvalue
-
-        val ma2Delegate =
-          g2.content(classA).find{
-            id =>
-              g2.getConcreteNode(id).name == "b_delegate"
-          }.value
 
 
-        assert(g2.uses(methUserDef, methToMove))
-        assert(g2.uses(methUserDef, otherUsedMethod))
 
-        assert(g2.uses(ma2Delegate, newHostClass))
 
-        g2.typeUsesOf(Uses(methUserDef, methToMove)) should contain (Uses(ma2Delegate, newHostClass))
-        g2.typeUsesOf(Uses(methUserDef, otherUsedMethod)) should contain (Uses(classA, classA))
+        val selfUse : NodeIdP = ("p.A","p.A")
+        assert(graph.uses("p.A.mUser().Definition", "p.A.mUsedToMove()"))
+        assert(graph.uses("p.A.mUser().Definition", "p.A.mUsedOther()"))
+        graph.typeUsesOf(Uses("p.A.mUser().Definition", "p.A.mUsedToMove()")) should contain (selfUse)
+        graph.typeUsesOf(Uses("p.A.mUser().Definition", "p.A.mUsedOther()")) should contain (selfUse)
+
+        val g2 = Move.typeMember(graph, List("p.A.mUsedToMove()"), "p.B", Some(CreateTypeMember(Field))).rvalue
+
+
+
+        assert(g2.uses("p.A.mUser().Definition", "p.A.mUsedToMove()"))
+        assert(g2.uses("p.A.mUser().Definition", "p.A.mUsedOther()"))
+
+        assert(g2.uses((g2, "p.A.b_delegate"), "p.B"))
+
+        val newTypeUse : NodeIdP = ((g2, "p.A.b_delegate"), "p.B")
+
+        g2.typeUsesOf(Uses("p.A.mUser().Definition", "p.A.mUsedToMove()")) should contain (newTypeUse)
+        g2.typeUsesOf(Uses("p.A.mUser().Definition", "p.A.mUsedOther()")) should contain (selfUse)
 
       }
     }

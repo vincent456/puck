@@ -27,7 +27,7 @@
 package puck.javaGraph.graphBuilding
 
 import puck.AcceptanceSpec
-import puck.graph.{NamedType, ParameterizedType, Uses}
+import puck.graph.{NamedType, NodeIdP, ParameterizedType, Uses}
 import puck.javaGraph.ScenarioFactory
 
 /**
@@ -46,23 +46,18 @@ class TypeConstraintSpec extends AcceptanceSpec {
         |class B {  Wrapper<A> wa = new Wrapper<A>(); } """
     ){
 
-      val `p.A` = fullName2id("p.A")
-      val `p.B.wa` = fullName2id("p.B.wa")
-      val `p.B.wa.Definition` = fullName2id("p.B.wa.Definition")
-      val `p.Wrapper` = fullName2id("p.Wrapper")
-      val `p.Wrapper.Wrapper()` = fullName2id("p.Wrapper.Wrapper()")
 
+      assert(graph uses ("p.B.wa.Definition", "p.A"))
 
-      assert(graph uses (`p.B.wa.Definition`, `p.A`))
+      graph.styp("p.B.wa").value should be (ParameterizedType("p.Wrapper", List(NamedType("p.A"))))
 
-      graph.styp(`p.B.wa`).value should be (ParameterizedType(`p.Wrapper`, List(NamedType(`p.A`))))
+      val usesOfA : NodeIdP = ("p.B.wa.Definition", "p.A")
 
-      graph.usesThatShouldUsesSameTypeAs((`p.B.wa`, `p.A`)) should contain (Uses(`p.B.wa.Definition`, `p.A`))
-
-      graph.usesThatShouldUsesASuperTypeOf((`p.Wrapper.Wrapper()`, `p.Wrapper`)) should contain (Uses(`p.B.wa`, `p.Wrapper`))
-      graph.usesThatShouldUsesASubtypeOf((`p.B.wa`, `p.Wrapper`)) should contain (Uses(`p.Wrapper.Wrapper()`, `p.Wrapper`))
-
-
+      val usesOfWrapper1 : NodeIdP = ("p.B.wa", "p.Wrapper")
+      val usesOfWrapper2 : NodeIdP = ("p.Wrapper.Wrapper()", "p.Wrapper")
+      graph.usesThatShouldUsesSameTypeAs(("p.B.wa", "p.A")) should contain ( usesOfA )
+      graph.usesThatShouldUsesASuperTypeOf(("p.Wrapper.Wrapper()", "p.Wrapper")) should contain ( usesOfWrapper1 )
+      graph.usesThatShouldUsesASubtypeOf(("p.B.wa", "p.Wrapper")) should contain ( usesOfWrapper2 )
 
     }
   }
@@ -84,31 +79,24 @@ class TypeConstraintSpec extends AcceptanceSpec {
         |    }
         |}"""){
 
-      val `p.A` = fullName2id("p.A")
-      val `p.A.m()` = fullName2id("p.A.m()")
+      val typeUse : NodeIdP = ("p.B.assignA().Definition", "p.A")
+      val tmUse  : NodeIdP = ("p.B.assignA().Definition", "p.A.m()")
 
-      val `p.B.wa` = fullName2id("p.B.wa")
-      val `p.B.assignA().Definition` = fullName2id("p.B.assignA().Definition")
-      val `p.Wrapper` = fullName2id("p.Wrapper")
+      assert (Uses("p.B.wa", "p.Wrapper") existsIn graph)
+      assert (Uses("p.B.wa", "p.A") existsIn graph)
 
-      assert (Uses(`p.B.wa`, `p.Wrapper`) existsIn graph)
-      assert (Uses(`p.B.wa`, `p.A`) existsIn graph)
+      assert (Uses(typeUse) existsIn graph)
+      assert (Uses(tmUse) existsIn graph)
 
-      assert (Uses(`p.B.assignA().Definition`, `p.A`) existsIn graph)
-      assert (Uses(`p.B.assignA().Definition`, `p.A.m()`) existsIn graph)
+      graph.styp("p.B.wa").value should be (ParameterizedType("p.Wrapper", List(NamedType("p.A"))))
 
-      graph.styp(`p.B.wa`).value should be (ParameterizedType(`p.Wrapper`, List(NamedType(`p.A`))))
+      graph.typeUsesOf(tmUse) should contain (typeUse)
 
-      graph.typeUsesOf(Uses(`p.B.assignA().Definition`, `p.A.m()`)) should contain (
-        Uses(`p.B.assignA().Definition`, `p.A`))
+      graph.typeMemberUsesOf(typeUse) should contain (tmUse)
 
-      graph.typeMemberUsesOf(Uses(`p.B.assignA().Definition`, `p.A`)) should contain (
-        Uses(`p.B.assignA().Definition`, `p.A.m()`))
+      graph.typeMemberUsesOf(typeUse).size should be (1)
 
-      graph.typeMemberUsesOf(Uses(`p.B.assignA().Definition`, `p.A`)).size should be (1)
-
-      graph.usesThatShouldUsesASuperTypeOf(Uses(`p.B.wa`, `p.A`)) should contain (
-        Uses(`p.B.assignA().Definition`, `p.A`))
+      graph.usesThatShouldUsesASuperTypeOf(("p.B.wa", "p.A")) should contain (typeUse)
 
 
     }
@@ -130,20 +118,15 @@ class TypeConstraintSpec extends AcceptanceSpec {
         |    }
         |}"""){
 
-      val actualTypeParam = fullName2id("p.I")
-      val actualTypeParamMethod = fullName2id("p.I.m()")
 
-      val field = fullName2id("p.C.is")
-      val userMethodDef = fullName2id("p.C.doAllM().Definition")
-      val genType = fullName2id("java.util.List")
 
-      val fieldGenTypeUse = graph.getUsesEdge(field, genType).value
-      val fieldParameterTypeUse = graph.getUsesEdge(field, actualTypeParam).value
+      val fieldGenTypeUse : NodeIdP = ("p.C.is", "java.util.List")
+      val fieldParameterTypeUse : NodeIdP = ("p.C.is", "p.I")
 
-      val methodTypeUse = graph.getUsesEdge(userMethodDef, actualTypeParam).value
-      val methodTypeMemberUse = graph.getUsesEdge(userMethodDef, actualTypeParamMethod).value
+      val methodTypeUse : NodeIdP = ("p.C.doAllM().Definition", "p.I")
+      val methodTypeMemberUse : NodeIdP = ("p.C.doAllM().Definition", "p.I.m()")
 
-      graph.styp(field).value should be (ParameterizedType(genType, List(NamedType(actualTypeParam))))
+      graph.styp("p.C.is").value should be (ParameterizedType("java.util.List", List(NamedType("p.I"))))
 
       graph.typeUsesOf(methodTypeMemberUse) should contain (methodTypeUse)
       graph.typeMemberUsesOf(methodTypeUse) should contain (methodTypeMemberUse)

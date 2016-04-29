@@ -55,23 +55,18 @@ class MoveAndRedirect
           |
           |class A { void m() { B b = new B(); } }"""
       ) {
-        val ctor = fullName2id("p.B.B()")
-        val factoryMethod = fullName2id("p.B.createB()")
-        val factoryClass = fullName2id("p.Factory")
 
-        val callerDecl = fullName2id("p.A.m()")
-        val callerDef = fullName2id("p.A.m().Definition")
 
         val g =
-          graph.addAbstraction(ctor, AccessAbstraction(factoryMethod, DelegationAbstraction))
-              .setRole(factoryMethod, Some(Factory(ctor)))
+          graph.addAbstraction("p.B.B()", AccessAbstraction("p.B.createB()", DelegationAbstraction))
+              .setRole("p.B.createB()", Some(Factory("p.B.B()")))
 
         val ltg : LoggedTG =
         for{
-          g0 <- Move.typeMember(g, List(factoryMethod), factoryClass, None)
+          g0 <- Move.staticDecl(g, "p.B.createB()", "p.Factory")
 
-          g1 <- Redirection.redirectUsesAndPropagate(g0, Uses(callerDef, ctor),
-            AccessAbstraction(factoryMethod, DelegationAbstraction))
+          g1 <- Redirection.redirectUsesAndPropagate(g0, ("p.A.m().Definition", "p.B.B()"),
+            AccessAbstraction("p.B.createB()", DelegationAbstraction))
         } yield g1
 
         val g2 = ltg.rvalue
@@ -95,23 +90,18 @@ class MoveAndRedirect
           |
           |class A { void m() { B b = new B(); } }"""
       ) {
-        val ctor = fullName2id("p.B.B()")
-        val factoryMethod = fullName2id("p.B.createB()")
-        val factoryClass = fullName2id("p.Factory")
-
-        val callerDecl = fullName2id("p.A.m()")
-        val callerDef = fullName2id("p.A.m().Definition")
 
         val g =
-          graph.addAbstraction(ctor, AccessAbstraction(factoryMethod, DelegationAbstraction))
-            .setRole(factoryMethod, Some(Factory(ctor)))
+          graph.addAbstraction("p.B.B()", AccessAbstraction("p.B.createB()", DelegationAbstraction))
+            .setRole("p.B.createB()", Some(Factory("p.B.B()")))
 
         val ltg : LoggedTG =
-          for{
-            g0 <- Redirection.redirectUsesAndPropagate(g, Uses(callerDef, ctor),
-              AccessAbstraction(factoryMethod, DelegationAbstraction))
+          for {
+            g0 <- Redirection.redirectUsesAndPropagate(g, ("p.A.m().Definition", "p.B.B()"),
+              AccessAbstraction("p.B.createB()", DelegationAbstraction))
 
-            g1 <- Move.typeMember(g0, List(factoryMethod), factoryClass, None)
+            g1 <- Move.staticDecl(g0, "p.B.createB()", "p.Factory")
+
           } yield g1
 
         val g2 = ltg.rvalue

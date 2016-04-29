@@ -54,7 +54,7 @@ class PrintingOptionsControl
   private var printVirtualEdges : Boolean = true
   private var printConcreteUsesPerVirtualEdges : Boolean = true
   private var printRedOnly : Boolean = true
-  private var selectedEdgeForTypePrinting0 : Option[Uses] = None
+  private var selectedEdgeForTypePrinting0 : Option[NodeIdP] = None
   private var printTypeUses : Boolean = false
 
   def printingOptions =
@@ -79,7 +79,7 @@ class PrintingOptionsControl
 
 
   def selectedEdgeForTypePrinting = selectedEdgeForTypePrinting0
-  def selectedEdgeForTypePrinting_=(se: Option[Uses]) : Unit = {
+  def selectedEdgeForTypePrinting_=(se: Option[NodeIdP]) : Unit = {
     if( se != selectedEdgeForTypePrinting0 ){
       selectedEdgeForTypePrinting0 = se
       bus publish PrintingOptionsUpdate

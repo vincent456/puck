@@ -44,9 +44,7 @@ object DGEdge{
     val includedInVirtual : NodeIdP => Boolean = {
       case (user, used) => graph.contains_*(source, user) && graph.contains_*(target, used)
     }
-    val concreteUses = graph.usesList filter includedInVirtual map {
-      case (user, used) => graph.getUsesEdge_!(user, used)
-    }
+    val concreteUses = graph.usesList filter includedInVirtual map Uses.apply
 
     (graph.isaList filter includedInVirtual map Isa.apply) ++ concreteUses
 

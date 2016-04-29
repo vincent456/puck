@@ -55,11 +55,8 @@ class MoveMethodSpec extends AcceptanceSpec {
           |}"""
       ){
 
-        val methToMove = fullName2id("p.A.methodToMove()")
-
-        val classB = fullName2id("p.B")
-
-        val g = Move.typeMember(graph, List(methToMove), classB, Some(CreateParameter)).rvalue
+        val g = Move.typeMember(graph, List("p.A.methodToMove()"), "p.B",
+          Some(CreateParameter)).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
 
@@ -83,11 +80,9 @@ class MoveMethodSpec extends AcceptanceSpec {
           |class B{ }"""
       ){
 
-        val methToMove = fullName2id("p.A.methodToMove()")
 
-        val newHostClass = fullName2id("p.B")
-
-        val g = Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateParameter)).rvalue
+        val g = Move.typeMember(graph, List("p.A.methodToMove()"), "p.B",
+          Some(CreateParameter)).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
 
@@ -137,11 +132,8 @@ class MoveMethodSpec extends AcceptanceSpec {
           |class B{ }"""
       ) {
 
-        val methToMove = fullName2id("p.A.mUsedToMove()")
-
-        val newHostClass = fullName2id("p.B")
-
-        val g = Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateTypeMember(Field))).rvalue
+        val g = Move.typeMember(graph, List("p.A.mUsedToMove()"), "p.B",
+          Some(CreateTypeMember(Field))).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
         assert( Mapping.equals(g, recompiledEx.graph) )
@@ -166,10 +158,7 @@ class MoveMethodSpec extends AcceptanceSpec {
           |class B{ }"""
       ){
 
-        val methToMove = fullName2id("p.A.methodToMove()")
-        val newHostClass = fullName2id("p.B")
-
-        val g = Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateParameter)).rvalue
+        val g = Move.typeMember(graph, List("p.A.methodToMove()"), "p.B", Some(CreateParameter)).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
         assert( Mapping.equals(g, recompiledEx.graph) )
@@ -373,14 +362,11 @@ class MoveMethodSpec extends AcceptanceSpec {
           |class Client { void m(){ A a = A.createA(); } }"""
       ){
 
-        val ctor = fullName2id("p.A.A()")
-        val factory = fullName2id("p.A.createA()")
 
-        val client = fullName2id("p.Client")
 
-        val g = graph.setRole(factory, Some(Factory(ctor)))
+        val g = graph.setRole("p.A.createA()", Some(Factory("p.A.A()")))
 
-        val g1 = Move.typeMember(g, List(factory), client, None).rvalue
+        val g1 = Move.staticDecl(g, "p.A.createA()", "p.Client").rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g1, outDir)
         assert( Mapping.equals(g1, recompiledEx.graph) )
@@ -402,14 +388,9 @@ class MoveMethodSpec extends AcceptanceSpec {
           |class Client { void m(){ A a = A.createA(); } }"""
       ) {
 
-        val ctor = fullName2id("p.A.A()")
-        val factory = fullName2id("p.A.createA()")
+        val g = graph.setRole("p.A.createA()", Some(Factory("p.A.A()")))
 
-        val factoryClass = fullName2id("p.Factory")
-
-        val g = graph.setRole(factory, Some(Factory(ctor)))
-
-        val g1 = Move.typeMember(g, List(factory), factoryClass, None).rvalue
+        val g1 = Move.staticDecl(g, "p.A.createA()", "p.Factory").rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g1, outDir)
         assert( Mapping.equals(g1, recompiledEx.graph) )

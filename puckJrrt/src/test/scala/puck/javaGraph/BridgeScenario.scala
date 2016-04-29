@@ -130,7 +130,7 @@ class BridgeScenario private()
       (pf3, starPrinter),
       (pf4, starPrinter)).foldLeft(g3){
       case (g, (fid, tid) ) =>
-        Rules.redirection.redirectUsesAndPropagate(g.mileStone, g.getUsesEdge(fid, tid).value,
+        Rules.redirection.redirectUsesAndPropagate(g.mileStone, (fid, tid),
           AccessAbstraction(printerInterface, SupertypeAbstraction)).rvalue
     }
 
@@ -204,7 +204,7 @@ class BridgeScenario private()
                        initName : String) : DependencyGraph = {
     val g2 =
       Rules.move.typeMember(g.setName(initId, initName),
-        List(initId),"screen.Screen", None).rvalue
+        List(initId), "screen.Screen", None).rvalue
     Rules.merge.mergeInto(g2, initId2, initId).rvalue
   }
 
@@ -260,21 +260,21 @@ class BridgeManualRefactoringSpec extends FeatureSpec {
   }
 }
 
-class BridgeAutoSolveUsingGUIS extends FeatureSpec {
-
-  scenario("bridge ``manual'' refactoring"){
-    val bs = BridgeScenario()
-    //QuickFrame(bs.graph, "Graph", ExtendJGraphUtils.dotHelper)
-    import bs._
-    val cm = ConstraintsParser(bs.fullName2id, new FileReader(s"$path/decouple.wld"))
-
-    val publisher = new FlowPanel()
-    val poc = new PrintingOptionsControl(VisibilitySet.allVisible(bs.graph), publisher)
-    poc.typeUsesVisible = true
-    new AutoSolveAction(publisher, cm,
-      bs.graph getConcreteNode "screen.InfoStar.printStar(String)", poc)(bs.graph, ExtendJGraphUtils).actionPerformed(null)
-  }
-}
+//class BridgeAutoSolveUsingGUIS extends FeatureSpec {
+//
+//  scenario("bridge ``manual'' refactoring"){
+//    val bs = BridgeScenario()
+//    //QuickFrame(bs.graph, "Graph", ExtendJGraphUtils.dotHelper)
+//    import bs._
+//    val cm = ConstraintsParser(bs.fullName2id, new FileReader(s"$path/decouple.wld"))
+//
+//    val publisher = new FlowPanel()
+//    val poc = new PrintingOptionsControl(VisibilitySet.allVisible(bs.graph), publisher)
+//    poc.typeUsesVisible = true
+//    new AutoSolveAction(publisher, cm,
+//      bs.graph getConcreteNode "screen.InfoStar.printStar(String)", poc)(bs.graph, ExtendJGraphUtils).actionPerformed(null)
+//  }
+//}
 
 class BridgeAutoSolveSpec extends FeatureSpec {
 
@@ -305,55 +305,55 @@ class BridgeAutoSolveSpec extends FeatureSpec {
 //
 //  }
 
-  scenario("bridge  scenario, auto solve test - AStarSearchStrategy"){
-    val bs = BridgeScenario()
-    import bs._
-    val cm = ConstraintsParser(bs.fullName2id, new FileReader(s"$path/decouple.wld"))
-
-    val graphBeforeSearch = bs.graph.mileStone
-
-    val searchControlStrategy =
-      new BlindControl(
-        Rules,
-        graphBeforeSearch, cm, bs.graph getConcreteNode "screen.InfoStar.printStar(String)")
-
-    val engine =
-      new SearchEngine(
-        new AStarSearchStrategy[(DependencyGraph, Int)](SResultEvaluator.equalityByMapping(Metrics.nameSpaceCoupling)),
-        searchControlStrategy,
-        Some(5)/*,
-            evaluator = Some(SResultEvaluator.equalityByMapping(Metrics.nameSpaceCoupling))*/)
-
-    engine.explore()
-    println(engine.successes.size + " successes")
-
-    //engine.successes foreach showSuccess
-    engine.successes.zipWithIndex foreach {
-      case (ss, i) =>
-        val LoggedEither(_, \/-((g, _))) = ss.loggedResult
-
-        var g0 = g
-        while (g0.virtualNodes.nonEmpty) {
-          QuickFrame(g0, "G"+i, ExtendJGraphUtils.dotHelper)
-          val vn = g0.virtualNodes.head
-          Choose("Concretize node",
-            s"Select a concrete value for the virtual node $vn :",
-            vn.potentialMatches.toSeq map g0.getConcreteNode) match {
-            case None => ()
-            case Some(cn) =>
-              import Recording.RecordingOps
-              val r2 = g0.recording.subRecordFromLastMilestone.concretize(vn.id, cn.id)
-              g0 = r2 redo graphBeforeSearch
-          }
-        }
-        QuickFrame(g0, "G"+i, ExtendJGraphUtils.dotHelper)
-        val bs2 : ScenarioFactory = BridgeScenario()
-        import puck.util.FileHelper.FileOps
-        //puck.ignore(bs2.applyChangeAndMakeExample(g0, Settings.outDir \ ("g"+i)))
-        puck.ignore(bs2.applyChanges(g0, new File("/tmp/puckRes"+i)))
-    }
-    // show successes: alternate version
-    //  showEngineSuccesses(engine)
-
-  }
+//  scenario("bridge  scenario, auto solve test - AStarSearchStrategy"){
+//    val bs = BridgeScenario()
+//    import bs._
+//    val cm = ConstraintsParser(bs.fullName2id, new FileReader(s"$path/decouple.wld"))
+//
+//    val graphBeforeSearch = bs.graph.mileStone
+//
+//    val searchControlStrategy =
+//      new BlindControl(
+//        Rules,
+//        graphBeforeSearch, cm, bs.graph getConcreteNode "screen.InfoStar.printStar(String)")
+//
+//    val engine =
+//      new SearchEngine(
+//        new AStarSearchStrategy[(DependencyGraph, Int)](SResultEvaluator.equalityByMapping(Metrics.nameSpaceCoupling)),
+//        searchControlStrategy,
+//        Some(5)/*,
+//            evaluator = Some(SResultEvaluator.equalityByMapping(Metrics.nameSpaceCoupling))*/)
+//
+//    engine.explore()
+//    println(engine.successes.size + " successes")
+//
+//    //engine.successes foreach showSuccess
+//    engine.successes.zipWithIndex foreach {
+//      case (ss, i) =>
+//        val LoggedEither(_, \/-((g, _))) = ss.loggedResult
+//
+//        var g0 = g
+//        while (g0.virtualNodes.nonEmpty) {
+//          QuickFrame(g0, "G"+i, ExtendJGraphUtils.dotHelper)
+//          val vn = g0.virtualNodes.head
+//          Choose("Concretize node",
+//            s"Select a concrete value for the virtual node $vn :",
+//            vn.potentialMatches.toSeq map g0.getConcreteNode) match {
+//            case None => ()
+//            case Some(cn) =>
+//              import Recording.RecordingOps
+//              val r2 = g0.recording.subRecordFromLastMilestone.concretize(vn.id, cn.id)
+//              g0 = r2 redo graphBeforeSearch
+//          }
+//        }
+//        QuickFrame(g0, "G"+i, ExtendJGraphUtils.dotHelper)
+//        val bs2 : ScenarioFactory = BridgeScenario()
+//        import puck.util.FileHelper.FileOps
+//        //puck.ignore(bs2.applyChangeAndMakeExample(g0, Settings.outDir \ ("g"+i)))
+//        puck.ignore(bs2.applyChanges(g0, new File("/tmp/puckRes"+i)))
+//    }
+//    // show successes: alternate version
+//    //  showEngineSuccesses(engine)
+//
+//  }
 }

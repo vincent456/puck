@@ -180,30 +180,17 @@ class RedirectTypeDeclSpec
         |
         |    void doM(){ wa.get().m(); }
         |}""") {
-      val actualTypeParam = fullName2id("p.A")
-      val actualTypeParamMethod = fullName2id("p.A.m()")
 
-      val interfaceTypeParam = fullName2id("p.I")
-      val interfaceMethod = fullName2id("p.I.m()")
-
-      val field = fullName2id("p.B.wa")
-
-      val userClass = fullName2id("p.B")
-      val userMethodDef = fullName2id("p.B.doM().Definition")
-
-      val genType = fullName2id("p.Wrapper")
-      val genericMethod = fullName2id("p.Wrapper.get()")
-
-      val fieldGenTypeUse = graph.getUsesEdge(field, genType).value
-      val fieldParameterTypeUse = graph.getUsesEdge(field, actualTypeParam).value
-      val typeMemberUse = graph.getUsesEdge(userMethodDef, actualTypeParamMethod).value
+      val fieldGenTypeUse : NodeIdP = ("p.B.wa", "p.Wrapper")
+      val fieldParameterTypeUse : NodeIdP = ("p.B.wa", "p.A")
+      val typeMemberUse : NodeIdP = ("p.B.doM().Definition", "p.A.m()")
 
       val g2 =
         Redirection.redirectUsesAndPropagate(graph,
-          fieldParameterTypeUse, AccessAbstraction(interfaceTypeParam, SupertypeAbstraction)).rvalue
+          fieldParameterTypeUse, AccessAbstraction("p.I", SupertypeAbstraction)).rvalue
 
-      assert(Uses(field, interfaceTypeParam).existsIn(g2))
-      assert(Uses(userMethodDef, interfaceMethod).existsIn(g2))
+      assert(g2.uses("p.B.wa", "p.I"))
+      assert(g2.uses("p.B.doM().Definition", "p.I.m()"))
 
     }
   }
@@ -228,24 +215,19 @@ class RedirectTypeDeclSpec
         |    void getA(){ A a = wa.get(); }
         |}"""
     ) {
-      val typeUsed = fullName2id("p.A")
 
-      val superType = fullName2id("p.I")
 
-      val typeUser1 = fullName2id("p.Wrapper.get()")
-      val typeUser2 = fullName2id("p.B.getA().Definition")
-
-      val typeUse1 = graph.getUsesEdge(typeUser1, typeUsed).value
-      val typeUse2 = graph.getUsesEdge(typeUser2, typeUsed).value
+      val typeUse1 : NodeIdP = ("p.Wrapper.get()", "p.A")
+      val typeUse2 : NodeIdP = ("p.B.getA().Definition", "p.A")
 
       graph.usesThatShouldUsesASuperTypeOf(typeUse1) should contain (typeUse2)
 
       val g2 =
         Redirection.redirectUsesAndPropagate(graph,
-          typeUse1, AccessAbstraction(superType, SupertypeAbstraction)).rvalue
+          typeUse1, AccessAbstraction("p.I", SupertypeAbstraction)).rvalue
 
-      assert(Uses(typeUser1, superType).existsIn(g2))
-      assert(Uses(typeUser2, superType).existsIn(g2))
+      assert(Uses("p.Wrapper.get()", "p.I").existsIn(g2))
+      assert(Uses("p.B.getA().Definition", "p.I").existsIn(g2))
 
     }
   }
@@ -271,24 +253,20 @@ class RedirectTypeDeclSpec
         |    void getA(){ A a = wa.get(); }
         |}"""
     ) {
-      val typeUsed = fullName2id("p.A")
 
-      val superType = fullName2id("p.I")
 
-      val typeUser1 = fullName2id("p.B.wa")
-      val typeUser2 = fullName2id("p.B.getA().Definition")
 
-      val typeUse1 = graph.getUsesEdge(typeUser1, typeUsed).value
-      val typeUse2 = graph.getUsesEdge(typeUser2, typeUsed).value
+      val typeUse1 : NodeIdP = ("p.B.wa", "p.A")
+      val typeUse2 : NodeIdP = ("p.B.getA().Definition", "p.A")
 
       graph.usesThatShouldUsesASuperTypeOf(typeUse1) should contain (typeUse2)
 
       val g2 =
         Redirection.redirectUsesAndPropagate(graph,
-          typeUse1, AccessAbstraction(superType, SupertypeAbstraction)).rvalue
+          typeUse1, AccessAbstraction("p.I", SupertypeAbstraction)).rvalue
 
-      assert(Uses(typeUser1, superType).existsIn(g2))
-      assert(Uses(typeUser2, superType).existsIn(g2))
+      assert(Uses("p.B.wa", "p.I").existsIn(g2))
+      assert(Uses("p.B.getA().Definition", "p.I").existsIn(g2))
 
     }
   }

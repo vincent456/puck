@@ -184,7 +184,8 @@ class ConcreteNodeMenu
 
   private def addEdgeSelectedOption(edge: NodeIdP): Unit = {
     val (source, target) = edge
-    def addRedirectAction(uses: Uses) =
+
+    def addRedirectAction(uses: NodeIdP) =
       graph.abstractions(target).foreach {
         abs =>
           if (abs.nodes.contains(node.id))
@@ -205,15 +206,14 @@ class ConcreteNodeMenu
         case _ => ()
       }
 
-    graph.getUsesEdge(source, target).foreach {
-      uses => addRedirectAction(uses)
-    }
+    if(graph.uses(source, target))
+        addRedirectAction(edge)
+
 
     graph.definitionOf(source).foreach {
       userDef =>
-        graph.getUsesEdge(userDef, target).foreach {
-          usesFromDef =>
-            addRedirectAction(usesFromDef)
+        if(graph.uses(userDef, target)) {
+            addRedirectAction((userDef, target))
             addChangeInitUsesAction(userDef)
         }
     }
