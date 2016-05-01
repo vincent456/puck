@@ -59,19 +59,19 @@ object DotPrinter {
     val selected = new ColorThickness("black", 5)
   }
 
-  var dotPath : String = ""
+  var dotPath : Option[String] = None
 
   type DotProcessBuilder = scala.sys.process.ProcessBuilder
   // relies on dot directory being in the PATH variable
   def dotProcessBuilderFromFile(pathWithoutSuffix : String, outputFormat: DotOutputFormat) : DotProcessBuilder =
-    Process(List(dotPath + "dot", "-T" + outputFormat, pathWithoutSuffix + ".dot"))
+    Process(List(dotPath getOrElse "dot", "-T" + outputFormat, pathWithoutSuffix + ".dot"))
 
   def dotProcessBuilderFromFileToFile(pathWithoutSuffix : String, outputFormat: DotOutputFormat) : DotProcessBuilder =
-    Process(List(dotPath + "dot", "-O", "-T" + outputFormat, pathWithoutSuffix + ".dot"))
+    Process(List(dotPath getOrElse  "dot", "-O", "-T" + outputFormat, pathWithoutSuffix + ".dot"))
   // processBuilder #> new File( pathWithoutSuffix + "." + outputFormat)).!
 
   def dotProcessBuilderFromInputStream(input : InputStream, outputFormat: DotOutputFormat) : DotProcessBuilder=
-    Process(List(dotPath + "dot", "-T" + outputFormat)) #< input
+    Process(List(dotPath getOrElse "dot", "-T" + outputFormat)) #< input
 
 
   def genDot

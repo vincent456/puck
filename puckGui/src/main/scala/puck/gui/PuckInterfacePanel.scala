@@ -91,7 +91,7 @@ class PuckInterfacePanel
                 sProject = Some(ptmp)
                 sProject.foreach {
                   p =>
-                    DotPrinter.dotPath = p.graphvizDot.map(_.getAbsolutePath).getOrElse("")
+                    DotPrinter.dotPath = p.graphvizDot.map(_.getAbsolutePath)
                 }
                 control.logger writeln s"New settings saved in ${cfile.getPath}"
               case _ =>

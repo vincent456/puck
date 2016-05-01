@@ -32,7 +32,6 @@ import java.awt.event.ActionEvent
 import javax.swing.{AbstractAction, JPopupMenu, JTree}
 
 import puck.graph._
-import puck.graph.constraints.ConstraintsMaps
 import puck.gui.menus.NodeMenu
 
 

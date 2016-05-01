@@ -33,6 +33,7 @@ trait HMap[TypedKey[_]] { self =>
   def get[T](key: TypedKey[T]) : Option[T]
   def getOrElse[T](key: TypedKey[T], default : T) : T = get(key) getOrElse default
   def put[T](key: TypedKey[T], value: T) : HMap[TypedKey]
+  def remove[T](key: TypedKey[T]) : HMap[TypedKey]
   def keys : Iterable[TypedKey[_]]
 }
 
@@ -41,6 +42,8 @@ object HMap {
     def get[T](key: TypedKey[T]) : Option[T] = m.get(key).asInstanceOf[Option[T]]
     def put[T](key: TypedKey[T], value: T) : HMap[TypedKey] =
       new WrappedMap[TypedKey](m + (key -> value.asInstanceOf[AnyRef]))
+
+    def remove[T](key: TypedKey[T]) : HMap[TypedKey] = new WrappedMap[TypedKey](m - key)
     def keys : Iterable[TypedKey[_]] = m.keys
   }
 

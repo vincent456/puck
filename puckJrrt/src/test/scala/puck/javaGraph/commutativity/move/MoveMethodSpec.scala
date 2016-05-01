@@ -30,8 +30,9 @@ import puck.Settings._
 import puck.graph._
 import puck.graph.comparison.Mapping
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, Move}
+import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
 import puck.javaGraph.ScenarioFactory
-import puck.javaGraph.nodeKind.Field
+import puck.javaGraph.nodeKind.{Field, Class}
 import puck.AcceptanceSpec
 
 class MoveMethodSpec extends AcceptanceSpec {
@@ -111,6 +112,40 @@ class MoveMethodSpec extends AcceptanceSpec {
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
 
         assert( Mapping.equals(g, recompiledEx.graph) )
+
+      }
+    }
+
+    scenario("move one of two mutually recursive methods - keep reference with Field"){
+      val _ = new ScenarioFactory(
+        """package example;
+          |
+          |class PingPong {
+          |
+          |    void ping(int i){
+          |        if(i > 0){
+          |            System.out.println("ping");
+          |            pong(i - 1);
+          |        }
+          |    }
+          |    void pong(int i){
+          |        if(i > 0){
+          |            System.out.println("pong");
+          |            ping(i - 1);
+          |        }
+          |    }
+          |
+          |}"""
+      ){
+
+        val (pong, g) = Rules.intro(graph, "Pong", Class)
+        val g1 = g.addContains("example", pong.id)
+
+        val g2 = Move.typeMember(g1, List[NodeId]("example.PingPong.pong(int)"), pong.id, Some(CreateParameter)).rvalue//Some(CreateTypeMember(Field))).rvalue
+
+        val recompiledEx = applyChangeAndMakeExample(g2, outDir)
+
+        assert( Mapping.equals(g2, recompiledEx.graph) )
 
       }
     }
@@ -239,11 +274,7 @@ class MoveMethodSpec extends AcceptanceSpec {
           |class B{ }"""
       ){
 
-        val methToMoveDecl = fullName2id("p.A.methodToMove()")
-
-        val newHostClass = fullName2id("p.B")
-
-        val g = Move.typeMember(graph, List(methToMoveDecl), newHostClass, Some(CreateParameter)).rvalue
+        val g = Move.typeMember(graph, List[NodeId]("p.A.methodToMove()"), "p.B", Some(CreateParameter)).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
         assert( Mapping.equals(g, recompiledEx.graph) )

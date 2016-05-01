@@ -93,7 +93,7 @@ implicit val logger: PuckLogger)
 
     sProject.foreach {
       p =>
-        DotPrinter.dotPath = p.graphvizDot.map(_.getAbsolutePath).getOrElse("")
+        DotPrinter.dotPath = p.graphvizDot.map(_.getAbsolutePath)
     }
 
     val sf : Option[File]= sProject flatMap (_.someFile(Config.Keys.workspace))

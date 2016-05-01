@@ -68,7 +68,7 @@ class FileKeyPanel(project : Project, k : FileKey)
   })
 
   border = new BubbleBorder(Color.BLACK, 1, 8)
-  contents += new SettingLinePanel(k.v, editimg) {
+  val line = new SettingLinePanel(k.v, editimg) {
     def action(mc : MouseClicked) : Unit = {
       val fc = new FileChooser(project.workspace){
         title = k.v
@@ -83,6 +83,19 @@ class FileKeyPanel(project : Project, k : FileKey)
       }
      }
   }
+
+  line.contents += {
+    new Label {
+      icon = new ImageIcon(deleteimg)
+      listenTo(mouse.clicks)
+      reactions += {
+        case mc @ MouseClicked(_, _, _, _, _) =>
+          project remove k
+          path.text = ""
+      }
+    }
+  }
+  contents += line
   contents += new Separator()
   contents += path
 

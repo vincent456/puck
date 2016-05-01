@@ -66,6 +66,9 @@ class Project
   def set(k : FileKey, f : SingleFile) : Unit =
     config = config put (k, f)
 
+  def remove[T](key : ConfigKey[T]) : Unit =
+    config = config remove key
+
   def add(k : FileListKey, ff : FileFinder) : Unit = {
     val prev = config getOrElse (k, List())
 

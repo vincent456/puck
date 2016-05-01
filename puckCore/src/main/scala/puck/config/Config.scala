@@ -136,7 +136,6 @@ object Config {
       put (Keys.srcs, List(Root("src", ".java", Seq())))
       put (Keys.classpath, List(Root("lib", ".jar", Seq())))
 
-      put (Keys.dotPath, SingleFile(""))
       put (Keys.out, SingleFile("out"))
       put (Keys.decouple, SingleFile("decouple.wld"))
       put (Keys.log, SingleFile("puck-log.txt"))
