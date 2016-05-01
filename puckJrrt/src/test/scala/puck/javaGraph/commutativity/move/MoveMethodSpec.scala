@@ -141,7 +141,9 @@ class MoveMethodSpec extends AcceptanceSpec {
         val (pong, g) = Rules.intro(graph, "Pong", Class)
         val g1 = g.addContains("example", pong.id)
 
-        val g2 = Move.typeMember(g1, List[NodeId]("example.PingPong.pong(int)"), pong.id, Some(CreateParameter)).rvalue//Some(CreateTypeMember(Field))).rvalue
+        val g2 = Move.typeMember(g1, List[NodeId]("example.PingPong.pong(int)"), pong.id,
+        //Some(CreateParameter)).rvalue
+        Some(CreateTypeMember(Field))).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g2, outDir)
 

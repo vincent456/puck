@@ -53,7 +53,7 @@ object Type {
   }
 
   val ignoreOnImplemNotFound : OnImplemNotFound = {
-    (g, _, cs) => g.toLoggedTG.map((_,cs))
+    (g, _, cs) => LoggedSuccess((g,cs))
   }
 
   def findAndRegisterOverridedInList

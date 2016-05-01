@@ -90,12 +90,8 @@ package object graph {
 
 
   implicit class GOps(val g : DependencyGraph) extends AnyVal{
-    def logComment(msg : String) : LoggedG =
-      g.comment(msg) set (msg + "\n")
-
-    def toLoggedTG : LoggedTG =
-      g.set("").toLoggedEither
-
+    def logComment(msg : String) : LoggedTG =
+      LoggedSuccess(msg, g.comment(msg))
   }
 
   implicit class LoggedOps[A](val lg: Logged[A]) extends AnyVal {

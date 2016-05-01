@@ -122,29 +122,35 @@ abstract class Intro {
 
     val newTypeUsedNode = g.getConcreteNode(typeNode)
     val paramKind = g.nodeKindKnowledge.kindOfKindType(Parameter).head
-    val (pNode, g1) = g.addConcreteNode(newTypeUsedNode.name.toLowerCase, paramKind)
+
+    g.logComment(s"Intro parameter typed ${(g,NamedType(typeNode)).shows} " +
+        s"to ${(g, typeMemberDecl).shows}").flatMap {
+      g0 =>
+        val (pNode, g1) = g0.addConcreteNode(newTypeUsedNode.name.toLowerCase, paramKind)
 
 
-    def onSuccess(cid : NodeId, g : DependencyGraph) : (ConcreteNode, DependencyGraph) = {
-      val g2 = g.addContains(typeMemberDecl, pNode.id)
-        .addType(pNode.id, NamedType(typeNode))
+        def onSuccess(cid : NodeId, g : DependencyGraph) : (ConcreteNode, DependencyGraph) = {
+          val g2 = g.addContains(typeMemberDecl, pNode.id)
+            .addType(pNode.id, NamedType(typeNode))
 
-      (pNode,
-        g.usersOfExcludingTypeUse(typeMemberDecl).foldLeft(g2) {
-          (g0, userOfUser) =>
-            g0.addEdge(Uses(userOfUser, cid))
-        })
-    }
-
-    g1.getDefaultConstructorOfType(typeNode) match {
-      case None =>
-        intro.defaultConstructor(g1, typeNode) map {
-          case (cn, g2) => onSuccess(cn.id, g2)
+          (pNode,
+            g.usersOfExcludingTypeUse(typeMemberDecl).foldLeft(g2) {
+              (g0, userOfUser) =>
+                g0.addEdge(Uses(userOfUser, cid))
+            })
         }
-//        LoggedError(s"no default constructor for $typeNode")
-      case Some(cid) =>
-        LoggedSuccess(onSuccess(cid, g1))
+
+        g1.getDefaultConstructorOfType(typeNode) match {
+          case None =>
+            intro.defaultConstructor(g1, typeNode) map {
+              case (cn, g2) => onSuccess(cn.id, g2)
+            }
+          case Some(cid) =>
+            LoggedSuccess(onSuccess(cid, g1))
+        }
     }
+
+
 
 //    def onSuccess(sCid : Option[NodeId], g : DependencyGraph) : (ConcreteNode, DependencyGraph) = {
 //      val g2 = g.addContains(typeMemberDecl, pNode.id)

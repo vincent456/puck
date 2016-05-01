@@ -278,9 +278,6 @@ class MoveSpec
       ) {
 
 
-
-
-
         val selfUse : NodeIdP = ("p.A","p.A")
         assert(graph.uses("p.A.mUser().Definition", "p.A.mUsedToMove()"))
         assert(graph.uses("p.A.mUser().Definition", "p.A.mUsedOther()"))
@@ -323,38 +320,30 @@ class MoveSpec
           |class B{ }"""
       ){
 
-        val classA = fullName2id("p.A")
-        val methUser1Decl = fullName2id("p.A.mUser1()")
-        val methUser2Decl = fullName2id("p.A.mUser2()")
 
-        val methUser1 = fullName2id("p.A.mUser1().Definition")
-        val methUser2 = fullName2id("p.A.mUser2().Definition")
 
-        val methToMove = fullName2id("p.A.methodToMove()")
-        val newHostClass = fullName2id("p.B")
+        assert(graph.container("p.A.methodToMove()").value == fullName2id("p.A"))
 
-        assert(graph.container(methToMove).value == classA)
+        assert(graph.uses("p.A.mUser1().Definition", "p.A.methodToMove()"))
+        graph.parametersOf("p.A.mUser1()").size shouldBe 0
 
-        assert(graph.uses(methUser1, methToMove))
-        graph.parametersOf(methUser1Decl).size shouldBe 0
+        assert(graph.uses("p.A.mUser2().Definition", "p.A.methodToMove()"))
+        graph.parametersOf("p.A.mUser2()").size shouldBe 0
 
-        assert(graph.uses(methUser2, methToMove))
-        graph.parametersOf(methUser2Decl).size shouldBe 0
+        val g2 = Move.typeMember(graph, List("p.A.methodToMove()"), "p.B", Some(CreateParameter)).rvalue
 
-        val g2 = Move.typeMember(graph, List(methToMove), newHostClass, Some(CreateParameter)).rvalue
-
-        val params1 = g2.parametersOf(methUser1Decl)
+        val params1 = g2.parametersOf("p.A.mUser1()")
         params1.size shouldBe 1
-        val params2 = g2.parametersOf(methUser2Decl)
+        val params2 = g2.parametersOf("p.A.mUser2()")
         params2.size shouldBe 1
 
-        assert(g2.container(methToMove).value == newHostClass)
+        assert(g2.container("p.A.methodToMove()").value == fullName2id("p.B"))
 
-        assert(g2.uses(methUser1, methToMove))
-        assert(g2.uses(params1.head, newHostClass))
+        assert(g2.uses("p.A.mUser1().Definition", "p.A.methodToMove()"))
+        assert(g2.uses(params1.head, "p.B"))
 
-        assert(g2.uses(methUser2, methToMove))
-        assert(g2.uses(params2.head, newHostClass))
+        assert(g2.uses("p.A.mUser2().Definition", "p.A.methodToMove()"))
+        assert(g2.uses(params2.head, "p.B"))
 
       }
     }

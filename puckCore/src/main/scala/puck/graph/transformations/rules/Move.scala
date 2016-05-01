@@ -62,8 +62,8 @@ object Move {
           s"from ${(g, oldContainer).shows} " +
           s"to ${(g, newContainer).shows}"
 
-        (g.comment(s"Move.staticDecl(g, ${(g, movedId).shows}, ${(g, newContainer).shows})").
-          changeSource(Contains(oldContainer, movedId), newContainer) logComment log).toLoggedEither
+        g.comment(s"Move.staticDecl(g, ${(g, movedId).shows}, ${(g, newContainer).shows})").
+          changeSource(Contains(oldContainer, movedId), newContainer) logComment log
     }
 
   def usesBetween(g : DependencyGraph, sources :  Set[NodeId], targets : Set[NodeId]): Set[NodeIdP] =
