@@ -30,7 +30,9 @@ import java.io.File
 
 object Settings {
 
-  val tmpDir = (System getProperty "java.io.tmpdir") + File.separator
+  val tmpDir =
+    if("Mac OS X" == System.getProperty("os.name")) "/tmp/"
+    else (System getProperty "java.io.tmpdir") + File.separator
 
   val outDir = new File(Settings.tmpDir + "testPuck")
 }
