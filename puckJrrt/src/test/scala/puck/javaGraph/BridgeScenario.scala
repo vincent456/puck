@@ -48,8 +48,6 @@ class BridgeScenario private()
   extends ScenarioFactory(
     s"$path/screen/BridgeDemo.java",
     s"$path/screen/Screen.java")
-    with EitherValues
-    with OptionValues
     with LoggedEitherValues {
 
   var printId = 0

@@ -31,8 +31,6 @@ import puck.graph._
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
 
 
-
-
 sealed abstract class TypeKind extends JavaNodeKind {
   def kindType: KindType = TypeDecl
 }
@@ -64,7 +62,7 @@ object TypeKind {
     }
 
     def abstractionNodeKinds(p : AbstractionPolicy) = p match {
-      case SupertypeAbstraction => Seq(Interface, GenericInterface)
+      case SupertypeAbstraction => Seq(Interface/*, GenericInterface*/)
       case DelegationAbstraction => Seq()//Class)//also interface ?
     }
   }
@@ -91,7 +89,7 @@ object TypeKind {
     
 
     def abstractionNodeKinds(p : AbstractionPolicy) : Seq[NodeKind] = p match {
-      case SupertypeAbstraction => Seq[NodeKind](Interface, Class, GenericInterface, GenericClass)
+      case SupertypeAbstraction => Seq[NodeKind](Interface, Class/*, GenericInterface, GenericClass*/)
       case DelegationAbstraction => Seq[NodeKind]()//Class)//also interface ?
     }
 

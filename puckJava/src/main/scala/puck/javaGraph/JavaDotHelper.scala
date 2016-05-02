@@ -44,7 +44,7 @@ object JavaDotHelper extends DotHelper{
   override def splitByKind(graph : DependencyGraph, ns: Seq[NodeId]) = {
     val init : Seq[Seq[NodeId]] = Seq(Seq(), Seq(), Seq(), Seq(), Seq())
     ns.foldLeft( init ){
-      case (Seq(fds, cts, mts, cls, tvs), n) =>
+      case (s @ Seq(fds, cts, mts, cls, tvs), n) =>
           val kind = graph.getConcreteNode(n).kind
           kind match {
             case _ : TypeKind => Seq(fds, cts, mts, n +: cls, tvs)
@@ -58,7 +58,7 @@ object JavaDotHelper extends DotHelper{
             case _ : MethodKind
             | StaticMethod => Seq(fds, cts, n +: mts, cls, tvs)
 
-            case TypeVariable => Seq(fds, cts, mts, cls, n +: tvs)
+            case TypeVariable => s
 
             case _ => throw new Error(kind + " : wrong NodeKind contained by a class")
           }
@@ -79,7 +79,7 @@ object JavaDotHelper extends DotHelper{
         case Method | Field | EnumConstant => "#FFFFFF" //White
         case Literal => "#CCFFCC" //Very Light green
         case Primitive => "#FFFFFF"
-        case _ => throw new Error("Unknown JavaNodeKind")
+        case k => throw new Error(s"$k : Unknown JavaNodeKind")
       }
     n mapConcrete(aux, "#00FF00")
   }

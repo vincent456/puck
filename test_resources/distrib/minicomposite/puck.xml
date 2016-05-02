@@ -1,8 +1,0 @@
-<puck-config>
-	<out>out</out>
-	<classpath rec=".jar">lib</classpath>
-	<log>puck-log.txt</log>
-	<decouple>src/location/decouple.wld</decouple>
-	<workspace>/Users/cedric/Repo-Git-Loic/constraintSolver/test_resources/distrib/./minicomposite</workspace>
-	<src rec=".java">src/location</src>
-</puck-config>

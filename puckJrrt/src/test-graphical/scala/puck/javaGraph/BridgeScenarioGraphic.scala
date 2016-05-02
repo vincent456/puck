@@ -74,7 +74,7 @@ class BridgeAutoSolveSpec extends FeatureSpec {
     scenario("bridge  scenario, auto solve test - BreadthFirstSearchStrategy"){
       val bs = BridgeScenario()
       import bs._
-      val cm = ConstraintsParser(bs.fullName2id, new FileReader(s"$path/decouple.wld"))
+      val cm = parseConstraints( s"$path/decouple.wld" )
 
       val searchControlStrategy =
         new BlindControl(
@@ -125,20 +125,7 @@ class BridgeAutoSolveSpec extends FeatureSpec {
         case (ss, i) =>
           val LoggedEither(_, \/-((g, _))) = ss.loggedResult
 
-          var g0 = g
-          while (g0.virtualNodes.nonEmpty) {
-            QuickFrame(g0, "G"+i, ExtendJGraphUtils.dotHelper)
-            val vn = g0.virtualNodes.head
-            Choose("Concretize node",
-              s"Select a concrete value for the virtual node $vn :",
-              vn.potentialMatches.toSeq map g0.getConcreteNode) match {
-              case None => ()
-              case Some(cn) =>
-                import Recording.RecordingOps
-                val r2 = g0.recording.subRecordFromLastMilestone.concretize(vn.id, cn.id)
-                g0 = r2 redo graphBeforeSearch
-            }
-          }
+          val g0 = removeVirtualNodes(graphBeforeSearch, g)
           QuickFrame(g0, "G"+i, ExtendJGraphUtils.dotHelper)
           val bs2 : ScenarioFactory = BridgeScenario()
           import puck.util.FileHelper.FileOps
