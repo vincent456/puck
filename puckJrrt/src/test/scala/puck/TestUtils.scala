@@ -1,19 +1,18 @@
 package puck
 
-import java.awt.Frame
 import java.awt.event.WindowEvent
 
-import scala.swing.Component
 import puck.actions.Choose
 import puck.graph.DependencyGraph
 import puck.graph.transformations.Recording
 import puck.jastadd.ExtendJGraphUtils.dotHelper
-import puck.search.{BreadthFirstSearchStrategy, SearchEngine, SearchState}
+import puck.search.{AStarSearchStrategy, BreadthFirstSearchStrategy, SearchEngine, SearchState}
 import puck.util.LoggedEither
 import puck.graph.DependencyGraph.ConstraintsOps
 import puck.graph.constraints.ConstraintsMaps
-import puck.graph.constraints.search.BlindControl
 import puck.jastadd.ExtendJGraphUtils.Rules
+import puck.graph.constraints.search.{BlindControl, SResultEvaluator}
+
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
@@ -56,7 +55,7 @@ object TestUtils {
     g0
   }
 
-  def solveAll(graph : DependencyGraph, constraints : ConstraintsMaps, previouslyRemainingViolation : Int = -1) : Option[DependencyGraph] =
+  def solveAllBlindBFS(graph : DependencyGraph, constraints : ConstraintsMaps, previouslyRemainingViolation : Int = -1) : Option[DependencyGraph] =
     (graph, constraints).violations() match {
       case Seq() => Some(graph)
       case s @ (hd +: _) if s.size != previouslyRemainingViolation =>
@@ -81,7 +80,36 @@ object TestUtils {
         else{
           val LoggedEither(_, \/-((g, _))) = engine.successes.head.loggedResult
 
-          solveAll(removeVirtualNodes(graph, g, Some(constraints)), constraints, s.size)
+          solveAllBlindBFS(removeVirtualNodes(graph, g, Some(constraints)), constraints, s.size)
+        }
+      case _ => Some(graph)
+    }
+  def solveAllBlindAStar(graph : DependencyGraph, constraints : ConstraintsMaps, previouslyRemainingViolation : Int = -1) : Option[DependencyGraph] =
+    (graph, constraints).violations() match {
+      case Seq() => Some(graph)
+      case s @ (hd +: _) if s.size != previouslyRemainingViolation =>
+        println(s.size + " remaining violations")
+        val target = hd.target
+
+        val searchControlStrategy =
+          new BlindControl(
+            Rules,
+            graph, constraints, graph getConcreteNode target)
+
+        val engine =
+          new SearchEngine(
+            new AStarSearchStrategy[(DependencyGraph, Int)] (SResultEvaluator.equalityByMapping(_ => 1)),
+            searchControlStrategy,
+            Some(1)/*,
+              evaluator = Some(SResultEvaluator.equalityByMapping(Metrics.nameSpaceCoupling))*/)
+
+        engine.explore()
+
+        if(engine.successes.isEmpty) None
+        else{
+          val LoggedEither(_, \/-((g, _))) = engine.successes.head.loggedResult
+
+          solveAllBlindAStar(removeVirtualNodes(graph, g, Some(constraints)), constraints, s.size)
         }
       case _ => Some(graph)
     }
