@@ -27,19 +27,21 @@
 package puck
 
 import java.awt.Dimension
-import java.io.{PipedInputStream, PipedOutputStream}
+import java.io.{FileWriter, PipedInputStream, PipedOutputStream}
 import javax.swing.{JFrame, WindowConstants}
 
 import org.apache.batik.swing.JSVGCanvas
 import puck.graph.DependencyGraph
+import puck.graph.constraints.ConstraintsMaps
 import puck.graph.io._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-object QuickFrame {
+object Quick {
 
-  def apply(graph : DependencyGraph, title : String = "QuickFrame", dotHelper : DotHelper) = {
+  def frame(graph : DependencyGraph, title : String = "QuickFrame", scm : Option[ConstraintsMaps] = None)
+           (implicit dotHelper : DotHelper)= {
     val pipedOutput = new PipedOutputStream()
     val pipedInput = new PipedInputStream(pipedOutput)
 
@@ -56,7 +58,13 @@ object QuickFrame {
       }
     }
 
-    DotPrinter.genImage(graph, dotHelper, None, opts, Svg, pipedOutput)()
+    DotPrinter.genImage(graph, dotHelper, scm, opts, Svg, pipedOutput)()
 
+  }
+
+  def dot ( graph : DependencyGraph, path : String, scm : Option[ConstraintsMaps] = None)
+          ( implicit dotHelper : DotHelper): Unit = {
+    val opts = PrintingOptions(VisibilitySet.allVisible(graph), printId=true, printSignatures= true)
+    DotPrinter.genDot(graph, dotHelper, scm, opts, new FileWriter(path))
   }
 }

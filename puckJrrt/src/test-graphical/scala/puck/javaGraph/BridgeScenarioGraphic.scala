@@ -28,16 +28,13 @@ package puck.javaGraph
 
 import java.io.{File, FileReader}
 
-import org.scalatest.{EitherValues, FeatureSpec, OptionValues}
+import org.scalatest.FeatureSpec
 import puck.graph.DependencyGraph
-import puck.graph.transformations.rules.CreateTypeMember
 import puck.graph._
-import puck.javaGraph.nodeKind._
-import puck.{LoggedEitherValues, QuickFrame}
-import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
-import puck.Settings._
-import puck.graph.comparison.Mapping
-import puck.graph.constraints.{ConstraintsParser, DelegationAbstraction, SupertypeAbstraction}
+import puck.Quick
+import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules, _}
+
+import puck.graph.constraints.ConstraintsParser
 import puck.graph.io.VisibilitySet
 import puck.gui.PrintingOptionsControl
 import puck.gui.svg.actions.AutoSolveAction
@@ -45,9 +42,8 @@ import puck.jastadd.ExtendJGraphUtils
 import puck.search.{AStarSearchStrategy, BreadthFirstSearchStrategy, SearchEngine}
 
 import puck.TestUtils._
-import scala.swing.{FlowPanel, Panel}
+import scala.swing.FlowPanel
 import BridgeScenario.path
-import puck.actions.Choose
 import puck.graph.constraints.search.{BlindControl, SResultEvaluator}
 import puck.util.LoggedEither
 
@@ -126,10 +122,8 @@ class BridgeAutoSolveSpec extends FeatureSpec {
           val LoggedEither(_, \/-((g, _))) = ss.loggedResult
 
           val g0 = removeVirtualNodes(graphBeforeSearch, g)
-          QuickFrame(g0, "G"+i, ExtendJGraphUtils.dotHelper)
+          Quick.frame(g0, "G"+i)
           val bs2 : ScenarioFactory = BridgeScenario()
-          import puck.util.FileHelper.FileOps
-          //puck.ignore(bs2.applyChangeAndMakeExample(g0, Settings.outDir \ ("g"+i)))
           puck.ignore(bs2.applyChanges(g0, new File("/tmp/puckRes"+i)))
       }
       // show successes: alternate version

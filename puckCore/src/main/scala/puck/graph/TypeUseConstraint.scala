@@ -30,20 +30,26 @@ package puck.graph
   * Created by Loïc Girault on 15/04/16.
   */
 sealed abstract class TypeUseConstraint {
+  def constrainedUser : NodeId = constrainedUse._1
   def constrainedType : NodeId = constrainedUse._2
+
   def constrainedUse : NodeIdP
-  def copyWithNewTypeUsed(tUsed : NodeId) : TypeUseConstraint
+
+  def copyWith(user : NodeId = constrainedUser, used : NodeId = constrainedType) : TypeUseConstraint
 }
 
 case class Sup(constrainedUse : NodeIdP) extends TypeUseConstraint{
-  def copyWithNewTypeUsed(tUsed : NodeId) : Sup =
-    copy((constrainedUse.user, tUsed))
+
+  def copyWith(user : NodeId , used : NodeId) : Sup =
+    copy((user,used))
 }
 case class Sub(constrainedUse : NodeIdP) extends TypeUseConstraint{
-  def copyWithNewTypeUsed(tUsed : NodeId) : Sub =
-    copy((constrainedUse.user, tUsed))
+
+  def copyWith(user : NodeId , used : NodeId) : Sub =
+    copy((user,used))
 }
 case class Eq(constrainedUse : NodeIdP) extends TypeUseConstraint{
-  def copyWithNewTypeUsed(tUsed : NodeId) : Eq =
-    copy((constrainedUse.user, tUsed))
+
+  def copyWith(user : NodeId , used : NodeId) : Eq =
+    copy((user,used))
 }

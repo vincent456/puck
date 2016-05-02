@@ -21,8 +21,8 @@ public class Location {
     	return dispo;
     }
     public int getNombreVelos() {return velos.size();}
- 
-    public void rendreVelo(int id) { 
+
+    public void rendreVelo(int id) {
     	for (Velo v : velos) {
     		if (v.getId() == id) {
     			v.setUtilisateur(null);
@@ -34,9 +34,9 @@ public class Location {
     	int dispo = 0;
     	for (Velo v : velos) {
     		if (v.getUtilisateur() == null) {
-    			dispo++;   	
+    			dispo++;
     		}
     	}
     	return dispo;
-    }    
+    }
 }

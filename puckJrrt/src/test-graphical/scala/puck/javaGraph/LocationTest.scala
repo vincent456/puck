@@ -1,7 +1,7 @@
 package puck.javaGraph
 
-import puck.{AcceptanceSpec, QuickFrame}
-import puck.jastadd.ExtendJGraphUtils
+import puck.{AcceptanceSpec, Quick}
+import puck.jastadd.ExtendJGraphUtils.dotHelper
 import puck.TestUtils._
 
 /**
@@ -23,11 +23,11 @@ class LocationTest
 
       val constraints = parseConstraints(s"$path/decouple.wld")
 
-      QuickFrame(graph, "bob",ExtendJGraphUtils.dotHelper)
       solveAll(graph, constraints) match {
         case None => println("no results")
-        case Some(g) => QuickFrame(g, "solved", ExtendJGraphUtils.dotHelper)
+        case Some(g) => Quick.dot(g, "/tmp/solved")
       }
+
     }
 
   }

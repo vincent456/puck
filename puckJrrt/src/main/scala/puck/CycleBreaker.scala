@@ -50,7 +50,7 @@ object CycleBreaker {
 
     val n = dg2ast.nodesByName("screen.WelcomeCapital.printCapital(String)")
 
-    QuickFrame(dg2ast.initialGraph, "g", JavaDotHelper)
+    Quick.frame(dg2ast.initialGraph, "g")(JavaDotHelper)
 
 //    val searchControlStrategy =
 //          new CouplingConstraintSolvingControl(

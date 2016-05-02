@@ -168,6 +168,8 @@ object Recording {
           binding.create(mappinNodeIdP(binding.edge)))
       case TypeBinding(tUse, tmUse) =>
         TypeBinding(mappinNodeIdP(tUse),mappinNodeIdP(tmUse))
+      case TypeUseConstraintOp(tu, ct) =>
+        TypeUseConstraintOp(mappinNodeIdP(tu), ct.copyWith(mappin(ct.constrainedUser), mappin(ct.constrainedType)))
       case RoleChange(id, sor, snr) =>
         RoleChange(mappin(id), sor map mappingOnRole, snr map mappingOnRole)
 

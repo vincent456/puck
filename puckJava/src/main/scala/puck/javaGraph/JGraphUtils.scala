@@ -45,6 +45,6 @@ abstract class JGraphUtils extends GraphUtils {
   val violationsKindPriority: Seq[NodeKind] =
     Seq[JavaNodeKind]( Field, Constructor, Class, Interface)
 
-  val dotHelper : DotHelper = JavaDotHelper
+  implicit val dotHelper : DotHelper = JavaDotHelper
 
 }

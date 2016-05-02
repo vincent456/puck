@@ -26,7 +26,7 @@
 
 package puck.javaGraph
 
-import org.scalatest.{EitherValues, FeatureSpec, OptionValues}
+import org.scalatest.FeatureSpec
 import puck.graph.DependencyGraph
 import puck.graph.transformations.rules.CreateTypeMember
 import puck.graph._

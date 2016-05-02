@@ -3,7 +3,7 @@ package puck
 import puck.actions.Choose
 import puck.graph.DependencyGraph
 import puck.graph.transformations.Recording
-import puck.jastadd.ExtendJGraphUtils
+import puck.jastadd.ExtendJGraphUtils.dotHelper
 import puck.search.{BreadthFirstSearchStrategy, SearchEngine, SearchState}
 import puck.util.LoggedEither
 import puck.graph.DependencyGraph.ConstraintsOps
@@ -19,7 +19,7 @@ import scalaz.\/-
 object TestUtils {
   def showSuccess(ss : SearchState[(DependencyGraph, Int)]) = {
     val LoggedEither(_, \/-((g, _))) = ss.loggedResult
-    QuickFrame(g, "G", ExtendJGraphUtils.dotHelper)
+    Quick.frame(g, "G")
   }
 
   def showEngineSuccesses(engine : SearchEngine[(DependencyGraph, Int)]) =
@@ -29,7 +29,7 @@ object TestUtils {
                          gWithVirtualNodes : DependencyGraph) : DependencyGraph = {
     var g0 = gWithVirtualNodes
     while (g0.virtualNodes.nonEmpty) {
-      QuickFrame(g0, "G", ExtendJGraphUtils.dotHelper)
+      Quick.frame(g0, "G")
       val vn = g0.virtualNodes.head
       Choose("Concretize node",
         s"Select a concrete value for the virtual node $vn :",
@@ -44,10 +44,11 @@ object TestUtils {
     g0
   }
 
-  def solveAll(graph : DependencyGraph, constraints : ConstraintsMaps) : Option[DependencyGraph] =
+  def solveAll(graph : DependencyGraph, constraints : ConstraintsMaps, previouslyRemainingViolation : Int = -1) : Option[DependencyGraph] =
     (graph, constraints).violations() match {
       case Seq() => Some(graph)
-      case hd +: _ =>
+      case s @ (hd +: _) if s.size != previouslyRemainingViolation =>
+        println(s.size + " remaining violations")
         val target = hd.target
 
         val searchControlStrategy =
@@ -68,7 +69,8 @@ object TestUtils {
         else{
           val LoggedEither(_, \/-((g, _))) = engine.successes.head.loggedResult
 
-          solveAll(removeVirtualNodes(graph, g), constraints)
+          solveAll(removeVirtualNodes(graph, g), constraints, s.size)
         }
+      case _ => Some(graph)
     }
 }

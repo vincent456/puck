@@ -215,7 +215,7 @@ object Redirection {
 
         def update(g : DependencyGraph, tuc : TypeUseConstraint) : DependencyGraph =
           g.removeTypeUsesConstraint(oldTypeUse, tuc)
-            .addTypeUsesConstraint((oldTypeUse.user, absId), tuc.copyWithNewTypeUsed(absId))
+            .addTypeUsesConstraint((oldTypeUse.user, absId), tuc.copyWith(used = absId))
 
         val g1 = tucsThatNeedUpdate.foldLeft(g)(update)
 
