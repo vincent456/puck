@@ -28,7 +28,8 @@
  */
 package piccolo
 
-import java.awt.Font
+import java.awt.{Font, KeyEventDispatcher, KeyboardFocusManager}
+import java.awt.event.{KeyEvent, KeyListener}
 import java.awt.geom.Rectangle2D
 import java.util
 
@@ -37,6 +38,8 @@ import org.piccolo2d.event.PBasicInputEventHandler
 import org.piccolo2d.event.PInputEvent
 import org.piccolo2d.extras.PFrame
 import org.piccolo2d.nodes.{PPath, PText}
+import org.piccolo2d.util.PBounds
+import puck.ignore
 import puck.graph.{DependencyGraph, NodeId}
 
 class TitledSquareNode
@@ -131,19 +134,63 @@ class PiccoloTest(g : DependencyGraph, aCanvas : PCanvas)
     val root = createHierarchy(g.rootId)
     getCanvas.getLayer.addChild(root)
     getCanvas.removeInputEventListener(getCanvas.getPanEventHandler)
+    setFocusable(true)
+    setFocusTraversalKeysEnabled(false)
+
+    val kbManager = KeyboardFocusManager.getCurrentKeyboardFocusManager
+    val VK_NUMPAD_MINUS = 0x6D
+    kbManager.addKeyEventDispatcher( new KeyEventDispatcher {
+      def dispatchKeyEvent( e : KeyEvent) : Boolean = {
+        if(e.getID == KeyEvent.KEY_PRESSED) {
+          val zoomHint = 5
+          val currentBounds = getCanvas.getCamera.getViewBounds
+          e.getKeyCode match {
+            case KeyEvent.VK_ADD =>
+              val newBounds =
+                new PBounds( currentBounds.getX + zoomHint,
+                  currentBounds.getY + zoomHint,
+                  currentBounds.getWidth - zoomHint * 2,
+                  currentBounds.getHeight - zoomHint * 2)
+              ignore(getCanvas.getCamera.animateViewToCenterBounds(newBounds, true, 200))
+            case KeyEvent.VK_MINUS | VK_NUMPAD_MINUS =>
+              val newBounds =
+                new PBounds( currentBounds.getX - zoomHint,
+                  currentBounds.getY - zoomHint,
+                  currentBounds.getWidth + zoomHint * 2,
+                  currentBounds.getHeight + zoomHint * 2)
+
+              ignore(getCanvas.getCamera.animateViewToCenterBounds(newBounds, true, 200))
+            case c =>
+              println( Integer.toHexString(c) + KeyEvent.getKeyText(c) + " ingnored")
+          }
+        }
+        false
+      }
+    })
+
+    getCanvas.addInputEventListener(new PBasicInputEventHandler() {
+      override def keyTyped(e: PInputEvent): Unit = println("canvas key typed !")
+      override def keyReleased(e: PInputEvent): Unit = println("canvas key released !")
+
+      override def keyPressed(event: PInputEvent) : Unit = println("canvas key pressed !")
+    })
     getCanvas.addInputEventListener(new PBasicInputEventHandler() {
       override def mousePressed(event: PInputEvent) : Unit = {
         def aux(n0 : PNode) : Unit = n0 match {
             case _: PText => ()
             case _ : TitledSquareNode
                  | _  : PRoot =>
-              puck.ignore(getCanvas.getCamera.animateViewToCenterBounds(n0.getGlobalBounds, true, 500))
+              ignore(getCanvas.getCamera.animateViewToCenterBounds(n0.getGlobalBounds, true, 500))
             case n  if n.getParent != null => aux(n.getParent)
             case n => ()
         }
 
         aux(event.getPickedNode)
       }
+
+
+
+
     })
   }
 
