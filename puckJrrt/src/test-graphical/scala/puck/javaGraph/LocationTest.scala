@@ -26,12 +26,12 @@ class LocationTest
       solveAllBlindBFS(graph, constraints) match {
         case None => println("no results")
         case Some(g) => Quick.dot(g, "/tmp/solved-blind_bfs", Some(constraints))
-          Quick.frame(g, scm = Some(constraints))
+          Quick.frame(g, "Blind BFS", scm = Some(constraints))
       }
       solveAllBlindAStar(graph, constraints) match {
         case None => println("no results")
         case Some(g) => Quick.dot(g, "/tmp/solved-blind_astar", Some(constraints))
-          Quick.frame(g, scm = Some(constraints))
+          Quick.frame(g, "Blind A Star",  scm = Some(constraints))
       }
 
     }
