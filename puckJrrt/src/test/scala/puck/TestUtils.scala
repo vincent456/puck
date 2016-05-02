@@ -1,5 +1,9 @@
 package puck
 
+import java.awt.Frame
+import java.awt.event.WindowEvent
+
+import scala.swing.Component
 import puck.actions.Choose
 import puck.graph.DependencyGraph
 import puck.graph.transformations.Recording
@@ -11,6 +15,8 @@ import puck.graph.constraints.ConstraintsMaps
 import puck.graph.constraints.search.BlindControl
 import puck.jastadd.ExtendJGraphUtils.Rules
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.Success
 import scalaz.\/-
 
 /**
@@ -25,11 +31,12 @@ object TestUtils {
   def showEngineSuccesses(engine : SearchEngine[(DependencyGraph, Int)]) =
     engine.successes foreach showSuccess
 
-  def removeVirtualNodes(gWithoutVirtualNodes : DependencyGraph,
-                         gWithVirtualNodes : DependencyGraph) : DependencyGraph = {
+  def removeVirtualNodes(gWithoutVirtualNodes: DependencyGraph,
+                         gWithVirtualNodes: DependencyGraph,
+                         scm: Option[ConstraintsMaps] = None): DependencyGraph = {
     var g0 = gWithVirtualNodes
     while (g0.virtualNodes.nonEmpty) {
-      Quick.frame(g0, "G")
+      val ff = Quick.frame(g0, "G", scm)
       val vn = g0.virtualNodes.head
       Choose("Concretize node",
         s"Select a concrete value for the virtual node $vn :",
@@ -39,6 +46,11 @@ object TestUtils {
           import Recording.RecordingOps
           val r2 = g0.recording.subRecordFromLastMilestone.concretize(vn.id, cn.id)
           g0 = r2 redo gWithoutVirtualNodes
+      }
+      ff onComplete {
+        case Success(jframe) =>
+          jframe.dispatchEvent(new WindowEvent(jframe, WindowEvent.WINDOW_CLOSING));
+        case _ => println("failure")
       }
     }
     g0
@@ -69,7 +81,7 @@ object TestUtils {
         else{
           val LoggedEither(_, \/-((g, _))) = engine.successes.head.loggedResult
 
-          solveAll(removeVirtualNodes(graph, g), constraints, s.size)
+          solveAll(removeVirtualNodes(graph, g, Some(constraints)), constraints, s.size)
         }
       case _ => Some(graph)
     }

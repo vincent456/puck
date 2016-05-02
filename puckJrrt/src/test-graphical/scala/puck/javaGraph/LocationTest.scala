@@ -25,7 +25,8 @@ class LocationTest
 
       solveAll(graph, constraints) match {
         case None => println("no results")
-        case Some(g) => Quick.dot(g, "/tmp/solved")
+        case Some(g) => Quick.dot(g, "/tmp/solved", Some(constraints))
+                        Quick.frame(g, scm = Some(constraints))
       }
 
     }

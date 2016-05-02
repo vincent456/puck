@@ -26,40 +26,53 @@
 
 package puck
 
-import java.awt.Dimension
+import java.awt.{Dimension, Frame, Toolkit}
 import java.io.{FileWriter, PipedInputStream, PipedOutputStream}
-import javax.swing.{JFrame, WindowConstants}
+import java.util.concurrent.Executor
+import javax.swing.{JFrame, SwingUtilities, WindowConstants}
 
 import org.apache.batik.swing.JSVGCanvas
 import puck.graph.DependencyGraph
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.io._
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
+/*object SwingExecutionContext {
+  implicit val swingExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(new Executor {
+    def execute(command: Runnable): Unit = SwingUtilities invokeLater command
+  })
+}
+import SwingExecutionContext.swingExecutionContext*/
 object Quick {
 
-  def frame(graph : DependencyGraph, title : String = "QuickFrame", scm : Option[ConstraintsMaps] = None)
-           (implicit dotHelper : DotHelper)= {
+  def frame(graph : DependencyGraph, title : String = "QuickFrame",
+            scm : Option[ConstraintsMaps] = None)
+           (implicit dotHelper : DotHelper) : Future[JFrame] = {
     val pipedOutput = new PipedOutputStream()
     val pipedInput = new PipedInputStream(pipedOutput)
 
     val opts = PrintingOptions(VisibilitySet.allVisible(graph), printId=true, printSignatures= true)
 
-    Future {
+    val f = Future {
       val canvas = new JSVGCanvas()
       canvas.setDocument(gui.svg.documentFromStream(pipedInput))
       new JFrame(title) {
-        setMinimumSize(new Dimension(1024,768))
+        val screenSize = Toolkit.getDefaultToolkit.getScreenSize
+        screenSize.height = screenSize.height - 40
+        setMinimumSize(screenSize)
+        //setExtendedState(Frame.MAXIMIZED_BOTH)
         add(canvas)
         setVisible(true)
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE)
+
       }
     }
 
     DotPrinter.genImage(graph, dotHelper, scm, opts, Svg, pipedOutput)()
-
+    f
   }
 
   def dot ( graph : DependencyGraph, path : String, scm : Option[ConstraintsMaps] = None)

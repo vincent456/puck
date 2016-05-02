@@ -28,7 +28,7 @@ package puck.actions
 
 import puck.util._
 
-import scala.swing.Dialog
+import scala.swing.{Component, Dialog}
 import scala.swing.Swing.EmptyIcon
 import scalaz.Scalaz._
 
