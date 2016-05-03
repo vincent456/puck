@@ -1,11 +1,8 @@
 package puck.javaGraph
 
-import java.io.File
-
 import puck.{AcceptanceSpec, Quick, Settings}
 import puck.jastadd.ExtendJGraphUtils.dotHelper
 import puck.TestUtils._
-import puck.graph.DependencyGraph
 import puck.graph.comparison.Mapping
 
 /**
@@ -60,13 +57,20 @@ class LocationTest
 
     (bfsScenario.res, aStarScenario.res) match {
       case (Some(g), Some(g2)) if Mapping.equals(g, g2) =>
-        bfsScenario.applyChangeAndMakeExample(g, Settings.tmpDir+"out")
+        bfsScenario.applyChangeAndMakeExample(g, Settings.tmpDir+"out/common")
 
         Quick.frame(g, "Blind BFS & A Star", scm = Some(bfsScenario.constraints))
         assert(true)
       case _ =>
-        bfsScenario.res foreach (Quick.frame(_, "Blind BFS", scm = Some(bfsScenario.constraints)))
-        aStarScenario.res foreach (Quick.frame(_, "Blind A Star", scm = Some(aStarScenario.constraints)))
+        bfsScenario.res foreach { g =>
+          Quick.frame(g, "Blind BFS", scm = Some(bfsScenario.constraints))
+          bfsScenario.applyChangeAndMakeExample(g, Settings.tmpDir+"out/bfs")
+        }
+
+        aStarScenario.res foreach { g2 =>
+          Quick.frame(g2, "Blind A Star", scm = Some(aStarScenario.constraints))
+          aStarScenario.applyChangeAndMakeExample(g2, Settings.tmpDir + "out/astar")
+        }
         assert(false)
     }
 
