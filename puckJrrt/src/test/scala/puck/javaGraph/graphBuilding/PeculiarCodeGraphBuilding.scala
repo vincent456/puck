@@ -26,7 +26,7 @@
 
 package puck.javaGraph.graphBuilding
 
-import puck.javaGraph.ScenarioFactory
+import puck.javaGraph.{LocationTestBlindControl, ScenarioFactory}
 import puck.AcceptanceSpec
 
 /**
@@ -166,4 +166,15 @@ class PeculiarCodeGraphBuilding extends AcceptanceSpec {
     }
   }
 
+  import LocationTestBlindControl.path
+  scenario("Location"){
+    val _ = new ScenarioFactory(
+      s"$path/location/Location.java",
+      s"$path/location/Velo.java"){
+      import puck.graph.ShowDG._
+      (graph, graph.nodesIndex).println
+      (graph, graph.edges).println
+      assert(true)
+    }
+  }
 }

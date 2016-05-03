@@ -8,7 +8,7 @@ import puck.graph.comparison.Mapping
 /**
   * Created by cedric on 02/05/2016.
   */
-object LocationTest {
+object LocationTestControlWithHeuristic {
 
   val path = getClass.getResource("/miniComposite").getPath
 
@@ -19,7 +19,7 @@ object LocationTest {
 
       val constraints = parseConstraints(s"$path/decouple.wld")
 
-      val res = solveAllBlindBFS(graph, constraints)
+      val res = solveAllHeuristicBFS(graph, constraints)
 
 
       res match {
@@ -36,11 +36,11 @@ object LocationTest {
     val constraints = parseConstraints(s"$path/decouple.wld")
 
 
-    val res = solveAllBlindAStar(graph, constraints)
+    val res = solveAllHeuristicAStar(graph, constraints)
 
     res match {
       case None => println("no results")
-      case Some(g) => Quick.dot(g, Settings.tmpDir + "solved-blind_aStar", Some(constraints))
+      case Some(g) => Quick.dot(g, Settings.tmpDir + "solved-heuristic_aStar", Some(constraints))
     }
 
   }
@@ -48,28 +48,28 @@ object LocationTest {
 
 }
 
-import LocationTest._
+import LocationTestControlWithHeuristic._
 
-class LocationTest
+class LocationTestControlWithHeuristic
   extends AcceptanceSpec {
 
-  scenario("location 1er test") {
+  scenario("location 2eme test") {
 
     (bfsScenario.res, aStarScenario.res) match {
       case (Some(g), Some(g2)) if Mapping.equals(g, g2) =>
-        bfsScenario.applyChangeAndMakeExample(g, Settings.tmpDir+"out/common")
+        bfsScenario.applyChangeAndMakeExample(g, Settings.tmpDir+"out/heuristic_common")
 
-        Quick.frame(g, "Blind BFS & A Star", scm = Some(bfsScenario.constraints))
+        Quick.frame(g, "Heuristic BFS & A Star", scm = Some(bfsScenario.constraints))
         assert(true)
       case _ =>
         bfsScenario.res foreach { g =>
-          Quick.frame(g, "Blind BFS", scm = Some(bfsScenario.constraints))
-          bfsScenario.applyChangeAndMakeExample(g, Settings.tmpDir+"out/bfs")
+          Quick.frame(g, "Heuristic BFS", scm = Some(bfsScenario.constraints))
+          bfsScenario.applyChangeAndMakeExample(g, Settings.tmpDir+"out/heuristic_bfs")
         }
 
         aStarScenario.res foreach { g2 =>
-          Quick.frame(g2, "Blind A Star", scm = Some(aStarScenario.constraints))
-          aStarScenario.applyChangeAndMakeExample(g2, Settings.tmpDir + "out/astar")
+          Quick.frame(g2, "Heuristic A Star", scm = Some(aStarScenario.constraints))
+          aStarScenario.applyChangeAndMakeExample(g2, Settings.tmpDir + "out/heuristic_astar")
         }
         assert(false)
     }
