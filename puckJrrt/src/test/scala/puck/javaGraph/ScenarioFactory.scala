@@ -119,6 +119,9 @@ case class ScenarioFactory
     IO.delete(outDir)
     dg2ast.printCode(outDir)
   }
+  def applyChangeAndMakeExample ( g: DependencyGraph, outDir : String) : ScenarioFactory =
+    applyChangeAndMakeExample(g, new File(outDir))
+
   def applyChangeAndMakeExample
   ( g: DependencyGraph,
     outDir : File) : ScenarioFactory = {

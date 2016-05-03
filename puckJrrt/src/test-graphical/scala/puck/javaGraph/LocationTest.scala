@@ -60,6 +60,7 @@ class LocationTest
 
     (bfsScenario.res, aStarScenario.res) match {
       case (Some(g), Some(g2)) if Mapping.equals(g, g2) =>
+        bfsScenario.applyChangeAndMakeExample(g, Settings.tmpDir+"out")
 
         Quick.frame(g, "Blind BFS & A Star", scm = Some(bfsScenario.constraints))
         assert(true)
