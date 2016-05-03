@@ -38,35 +38,60 @@ import puck.AcceptanceSpec
 class MoveMethodSpec extends AcceptanceSpec {
 
 
-  feature("Move one method"){
+  feature("Move one method not used by siblings") {
 
-    scenario("moved method not used by this"){
+    scenario("moved method not used by this") {
       val _ = new ScenarioFactory(
         """package p;
           |
-          |class A { public void methodToMove(){} }
+          |class A { void m(){} }
           |
           |class B { }
           |
-          |class C {
-          |    public void user(){
-          |        A a = new A();
-          |        a.methodToMove();
-          |    }
-          |}"""
-      ){
+          |class C { void user(A a){ a.m(); } }"""
+      ) {
 
-        val g = Move.typeMember(graph, List("p.A.methodToMove()"), "p.B",
-          Some(CreateParameter)).rvalue
+        val g = Move.typeMember(graph, List("p.A.m()"), "p.B", Some(CreateParameter)).rvalue
 
-        val recompiledEx = applyChangeAndMakeExample(g, outDir)
+        val expectedResult = new ScenarioFactory(
+          """package p;
+            |
+            |class A { }
+            |
+            |class B { void m(){} }
+            |
+            |class C { void user(B b, A a){ b.m(); } }"""
+        )
 
-        assert( Mapping.equals(g, recompiledEx.graph) )
+        assert(Mapping.equals(g, expectedResult.graph))
+
+        val generated = applyChangeAndMakeExample(g, outDir)
+        assert(Mapping.equals(g, generated.graph))
       }
 
     }
 
+    scenario("move to class of a parameter") {
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A { void m(B b){} }
+          |
+          |class B { }
+          |
+          |class C {
+          |   A a; B b;
+          |   void user(){ a.m(b); }
+          |}"""
+      ) {
+        val g = Move.typeMember(graph, List[NodeId]("p.A.m(B)"), "p.B").rvalue
 
+        val recompiledEx = applyChangeAndMakeExample(g, outDir)
+        assert(Mapping.equals(g, recompiledEx.graph))
+      }
+    }
+  }
+  feature("Move one method used by siblings"){
     scenario("move method used by this - keep reference with parameter"){
       val _ = new ScenarioFactory(
         """package p;
@@ -233,33 +258,6 @@ class MoveMethodSpec extends AcceptanceSpec {
       }
     }
 
-    ignore("Move method not used by this to class of a parameter"){
-      val _ = new ScenarioFactory(
-        """package p;
-          |
-          |class A { public void methodToMove(){} }
-          |
-          |class B { }
-          |
-          |class C {
-          |    public void user(){
-          |        A a = new A();
-          |        a.methodToMove();
-          |    }
-          |}"""
-      ){
-
-        val methMa = fullName2id("p.A.ma__B")
-        val classB = fullName2id("p.B")
-
-        val g = Move.typeMember(graph, List(methMa), classB).rvalue
-
-        val recompiledEx = applyChangeAndMakeExample(g, outDir)
-        assert( Mapping.equals(g, recompiledEx.graph) )
-      }
-    }
-
-
     scenario("moved method uses this - keep reference with parameter "){
       val _ = new ScenarioFactory(
         """package p;
@@ -321,29 +319,16 @@ class MoveMethodSpec extends AcceptanceSpec {
         """package p;
           |
           |class A {
-          |
-          |    public void mUser(){
-          |        methodToMove1();
-          |        methodToMove2();
-          |    }
-          |
-          |    public void methodToMove1(){}
-          |    public void methodToMove2(){}
+          |    public void mUser(){ m1(); m2(); }
+          |    public void m1(){}
+          |    public void m2(){}
           |}
           |
           |class B{ }"""
       ) {
-
-        val methToMove1 = fullName2id("p.A.methodToMove1()")
-        val methToMove2 = fullName2id("p.A.methodToMove2()")
-
-        val newHostClass = fullName2id("p.B")
-
-        val g = Move.typeMember(graph, List(methToMove1, methToMove2), newHostClass, Some(CreateParameter)).rvalue
-
+        val g = Move.typeMember(graph, List[NodeId]("p.A.m1()", "p.A.m2()"), "p.B", Some(CreateParameter)).rvalue
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
         assert( Mapping.equals(g, recompiledEx.graph) )
-
       }
     }
   }

@@ -105,24 +105,9 @@ aspect DependencyGraphFactory {
 		}
 	}
 	public void TypeDecl.buildDG(JastaddGraphBuilder builder, int containerId){
-
-		int tdNode = buildDG_TypeDecl(builder);
-		builder.addContains(containerId, tdNode);
-
-		if(isParameterizedType()){
-			ParTypeDecl parTypeDecl = (ParTypeDecl) this;
-			System.out.println("[BUILD] parameterized type " + parTypeDecl.nameWithArgs());
-		}
-
-		for (BodyDecl bd : getBodyDeclList()) {
-			bd.buildDG(builder, tdNode);
-		}
+		builder.buildDG(this, containerId);
 	}
 
-
-	int TypeDecl.buildDG_TypeDecl(JastaddGraphBuilder builder){
-		throw new DGBuildingError(this.getClass() + " : expected ClassDecl or InterfaceDecl");
-	}
 
 	void ClassDecl.addExtends(JastaddGraphBuilder builder, int thisId){
 		if (hasSuperclass() && !"java.lang.Object".equals(superclass().fullName())){
@@ -133,9 +118,7 @@ aspect DependencyGraphFactory {
 		}
 	}
 
-	int TypeVariable.buildDG_TypeDecl(JastaddGraphBuilder builder){
-		return buildDGNode(builder);
-	}
+
 
 	public void GenericTypeDecl.buildDG_TypeParameters(JastaddGraphBuilder builder, int thisId){
 		for(TypeVariable tv: getTypeParameterList()){
@@ -144,29 +127,6 @@ aspect DependencyGraphFactory {
 		}
 	}
 
-	int ClassDecl.buildDG_TypeDecl(JastaddGraphBuilder builder){
-		int nodeId = buildDGNode(builder);
-
-		addExtends(builder, nodeId);
-
-		TypeDecl.addImplements(builder, nodeId, getImplementss());
-
-		return nodeId;
-	}
-
-	int InterfaceDecl.buildDG_TypeDecl(JastaddGraphBuilder builder){
-		int agNode = buildDGNode(builder);
-
-		TypeDecl.addImplements(builder, agNode, getSuperInterfaces());
-
-		return agNode;
-	}
-
-	public int GenericTypeDecl.buildDG_TypeDecl(JastaddGraphBuilder builder){
-		int nodeId = super.buildDG_TypeDecl(builder);
-		buildDG_TypeParameters(builder, nodeId);
-		return nodeId;
-	}
 
 	public int DGNamedElement.buildDef(JastaddGraphBuilder builder, int thisDeclId){
 		return builder.buildDef(this, getBody(), thisDeclId);
@@ -261,10 +221,6 @@ aspect DependencyGraphFactory {
 		}
 	}
 
-	public void WildcardSuperType.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId ){}
-	public void WildcardExtendsType.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId ){}
-
-
 	public void BodyDecl.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId ){
 		if(this.getClass() == InstanceInitializer.class
 				|| this.getClass() == StaticInitializer.class
@@ -356,7 +312,7 @@ aspect DependencyGraphFactory {
 
 
 	public void ParTypeAccess.buildDG(JastaddGraphBuilder builder, int containerId){
-		builder.buildDG(this, containerId);
+		builder.buildDG(containerId, this);
 		buildDGInChildren(builder, containerId);
 	}
 

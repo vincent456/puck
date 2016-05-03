@@ -27,6 +27,9 @@
 package org.extendj.ast
 
 import puck.graph.{Uses, _}
+import puck.javaGraph.nodeKind.Constructor
+import puck.javaGraph.transformations.JavaIntro
+
 import scala.collection.JavaConversions._
 /**
   * Created by Loïc Girault on 18/04/16.
@@ -34,7 +37,45 @@ import scala.collection.JavaConversions._
 trait GraphBuilderVisitor {
   this : JastaddGraphBuilder =>
 
-  def buildDG(pta : ParTypeAccess, containerId : NodeId) : Unit = {
+  def buildDG(td : TypeDecl, containerId : NodeId) : Unit = td match {
+    case _ : WildcardExtendsType | _ : WildcardSuperType => ()
+    case _ =>
+      val n = buildTypeDecl(td)
+      addContains(containerId, n)
+      if(td.isParameterizedType){
+        val ptd = td.asInstanceOf[ParTypeDecl]
+        println("[BUILD] parameterized type " + ptd.nameWithArgs())
+      }
+      td.getBodyDeclList foreach (_.buildDG(this, n))
+  }
+
+  def buildTypeDecl(td : TypeDecl) : NodeId = td match {
+    case tv : TypeVariable =>
+      tv buildDGNode this
+    case cd : ClassDecl =>
+      val n = cd buildDGNode this
+      cd.addExtends(this, n)
+      TypeDecl.addImplements(this, n, cd.getImplementss)
+
+      if(cd.isGenericType)
+        cd.asInstanceOf[GenericClassDecl].buildDG_TypeParameters(this, n)
+
+      if(cd.hasImplicitConstructor)
+        cd.getImplicitConstructor.buildDG(this, n)
+
+      n
+    case id : InterfaceDecl =>
+      val n = id buildDGNode this
+      TypeDecl.addImplements(this, n, id.getSuperInterfaces)
+      if(id.isGenericType)
+        id.asInstanceOf[GenericInterfaceDecl].buildDG_TypeParameters(this, n)
+      n
+
+    case _ =>
+      throw new DGBuildingError(s"ClassDecl or InterfaceDecl exptected, $td found");
+  }
+
+  def buildDG(containerId : NodeId, pta : ParTypeAccess) : Unit = {
     getType(pta).ids.foreach(id => addEdge(Uses(containerId, id)))
   }
 

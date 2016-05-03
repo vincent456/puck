@@ -26,9 +26,7 @@
 
 package puck.javaGraph.graphBuilding
 
-import java.io.File
-
-import puck.javaGraph.{LocationTest, ScenarioFactory}
+import puck.javaGraph.ScenarioFactory
 import puck.AcceptanceSpec
 
 /**
@@ -54,15 +52,9 @@ class PeculiarCodeGraphBuilding extends AcceptanceSpec {
       """
       ) {
 
-        val im = fullName2id("p.I.m()")
-        val i2m = fullName2id("p.I2.m()")
-        val cm = fullName2id("p.C.m()")
-
-        val mi = fullName2id("p.Test.mi().Definition")
-
-        assert(graph.uses(mi, im))
-        assert(!graph.uses(mi, i2m))
-        assert(!graph.uses(mi, cm))
+        assert(graph.uses("p.Test.mi().Definition", "p.I.m()"))
+        assert(!graph.uses("p.Test.mi().Definition", "p.I2.m()"))
+        assert(!graph.uses("p.Test.mi().Definition", "p.C.m()"))
 
       }
     }
@@ -173,15 +165,5 @@ class PeculiarCodeGraphBuilding extends AcceptanceSpec {
       assert(true)
     }
   }
-  import LocationTest.path
-  scenario("Location"){
-    val _ = new ScenarioFactory(
-      s"$path/location/Location.java",
-      s"$path/location/Velo.java"){
-      import puck.graph.ShowDG._
-      (graph, graph.nodesIndex).println
-      (graph, graph.edges).println
-      assert(true)
-    }
-  }
+
 }

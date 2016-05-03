@@ -253,7 +253,6 @@ object Move {
           newContainer : NodeId,
           nodeSet: Set[NodeId]
         ) : LoggedTG = {
-          val newSelfUse = Uses(newContainer, newContainer)
           nodeSet.foldLoggedEither(g){
             (g0, used) =>
               val params = g0 parametersOf used
@@ -275,16 +274,13 @@ object Move {
         ( g: DependencyGraph,
           oldContainer : NodeId,
           newContainer : NodeId,
-          nodeSet : Set[NodeId],
-          siblings : Set[NodeId]
+          usesOfSiblingViaThis : Set[NodeIdP]
         ) : LoggedTG = {
-          val oldSelfUse = (oldContainer, oldContainer)
-          nodeSet.foldLoggedEither(g){
-            (g0, user) =>
+          usesOfSiblingViaThis.groupBy(_.user).toList.foldLoggedEither(g){
+            case (g0, (user, siblingUses)) =>
               val decl = g0.container_!(user)
               addParamOfTypeAndSetTypeDependency(g0, decl,
-                oldContainer, oldSelfUse,
-                usesBetween(g0, Set(user), siblings))
+                oldContainer, oldSelfUse, siblingUses)
           }
         }
 
@@ -312,20 +308,18 @@ object Move {
           }
         }
 
-        val movedDefUsingSiblingViaThis: Set[NodeId] =
-          usesOfSiblingViaThis map (_.user)
 
         val movedDeclWithArgUsableAsReceiver: Set[NodeId] =
-          movedDecls.filter {
-            nid =>
-              g0.parametersOf(nid) exists (g0.typ(_) uses newContainer)
-          }
-
-        val movedDeclWithoutArgUsableAsReceiver =
-          movedDecls -- movedDeclWithArgUsableAsReceiver
+          for { nid <- movedDecls
+            if g0.parametersOf(nid) exists (g0.typ(_) uses newContainer)
+          } yield nid
+//          movedDecls.filter {
+//            nid =>
+//              g0.parametersOf(nid) exists (g0.typ(_) uses newContainer)
+//          }
 
         val usesThatRequireNewReceiver = for {
-          declId <- movedDeclWithoutArgUsableAsReceiver
+          declId <- movedDecls -- movedDeclWithArgUsableAsReceiver
           user <- g0 usersOf declId
           if !(movedDefs contains user)
         } yield (user, declId)
@@ -335,7 +329,7 @@ object Move {
           for {
             g2 <- useArgAsReceiver(g1, oldContainer, newContainer, movedDeclWithArgUsableAsReceiver)
 
-            g3 <- useReceiverAsArg(g2, oldContainer, newContainer, movedDefUsingSiblingViaThis, siblings)
+            g3 <- useReceiverAsArg(g2, oldContainer, newContainer, usesOfSiblingViaThis)
 
             g4 <- (usesThatRequireNewReceiver.nonEmpty, createVarStrategy) match {
               case (true, Some(strategy)) =>
