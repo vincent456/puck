@@ -38,17 +38,21 @@ import puck.util.LoggedEither._
 
 import scalaz.std.list._
 import scalaz.syntax.foldable._
-import scalaz.{-\/, \/-, NonEmptyList}
-
+import scalaz.{-\/, NonEmptyList, \/-}
 
 
 
 class CouplingConstraintSolvingAllViolationsControl
 (val rules : TransformationRules,
- val initialState : DependencyGraph,
+ val initialGraph : DependencyGraph,
  val constraints : ConstraintsMaps,
- val violationsKindPriority : Seq[NodeKind]
-) extends SearchControl[DependencyGraph] {
+ val violationsKindPriority : Seq[NodeKind],
+ controlBuilder : ControleBuilder,
+ strategyBuilder: StrategyBuilder[SResult],
+ maxResultPerStep : Option[Int]
+) extends SearchControl[SResult] {
+
+  val initialState : SResult = (initialGraph, 0)
 
   def findTargets(graph : DependencyGraph,
                   l : Seq[NodeKind] = violationsKindPriority.toStream) : Seq[DGNode] =  l match {
@@ -60,27 +64,26 @@ class CouplingConstraintSolvingAllViolationsControl
       if(tgts.nonEmpty) tgts
       else findTargets(graph, tl)
 
-    case Seq() => graph.nodes.toStream filter { n => (graph, constraints).wrongUsers(n.id).nonEmpty ||
+    case Nil => graph.nodes.toStream filter { n => (graph, constraints).wrongUsers(n.id).nonEmpty ||
       (graph, constraints).isWronglyContained(n.id) }
   }
 
-  def nextStates(g : DependencyGraph) : Seq[LoggedTry[DependencyGraph]] = {
-    val targets = findTargets(g)
+  def nextStates(sr : SResult) : Seq[LoggedTry[SResult]] = {
+    val (g, _) = sr
 
-    targets flatMap {
+    g.nodesId foreach (nid => (g, constraints).wrongUsers(nid) )
+
+     findTargets(g) flatMap {
       case vn : VirtualNode =>
-        Seq(LoggedError[DependencyGraph](s"cannot solve violations toward virtual node $vn"))
+        Seq(LoggedError[SResult](s"cannot solve violations toward virtual node $vn"))
 
       case cn : ConcreteNode =>
-
-
         val engine =
-          new SearchEngine(new DepthFirstSearchStrategy(),
-            new BlindControl(rules, g, constraints, cn),
-            Some(1))
+          new SearchEngine(strategyBuilder(), controlBuilder(rules, g, constraints, cn), maxResultPerStep)
 
         engine.explore()
-        engine.successes map (ss => ss.loggedResult map (_._1))
+
+        engine.successes map (_.loggedResult)
     }
   }
 

@@ -107,7 +107,7 @@ case class EdgeMap
   (types get userId map (_.ids.toSet) getOrElse Set()) ++ (usedMap getFlat userId)
 
   def usersOf(usedId: NodeId) : Set[NodeId] =
-    (userMap getFlat usedId) ++ (typedBy getFlat usedId)
+    (userMap getFlat usedId) ++ typedBy(usedId).toSet
 
   def add(edge : DGEdge) : EdgeMap =
     edge match {

@@ -130,7 +130,7 @@ case class ConstraintsMaps
 
 
    def wrongUsers(graph : GraphT, node : NIdT) : List[NIdT] = {
-     graph.usersOfExcludingTypeUse(node).foldLeft(List[NIdT]()){ case(acc, user) =>
+     graph.usersOf(node).foldLeft(List[NIdT]()){ case(acc, user) =>
        if( isViolation(graph, user, node) ) user +: acc
        else acc
      }

@@ -40,12 +40,12 @@ class AStarSearchStrategy[T]
 
   implicit object SearchStateOrdering extends Ordering[SearchState[T]]{
 
-    def evaluateWithDepthPenaly(x: SearchState[T]) =
+    def evaluateWithDepthPenaly(x: SearchState[T]) : Int =
       // Math.max(evaluator.evaluateInt(x) + x.depth * depthCost, 0)
-      x.depth
+     x.depth
 
-    override def compare(x: SearchState[T], y: SearchState[T]): Int =
-      evaluateWithDepthPenaly(y) - evaluateWithDepthPenaly(x)
+    override def compare(sx: SearchState[T], sy: SearchState[T]): Int =
+      evaluateWithDepthPenaly(sx) compareTo evaluateWithDepthPenaly(sy)
   }
 
   val remainingStates = new mutable.PriorityQueue[SearchState[T]]()
