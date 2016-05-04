@@ -42,7 +42,7 @@ class AddIsaAction
  graphUtils: GraphUtils)
 extends AbstractAction(s"Add ${sub.name} isa ${sup.name}") {
 
-  import graphUtils.{transformationRules => TR}
+  import graphUtils.{Rules => TR}
 
   def actionPerformed(e: ActionEvent) : Unit =
     printErrOrPushGraph(controller, "Make SuperType Action failure") {
@@ -74,11 +74,11 @@ class RemoveNodeAction
  graphUtils: GraphUtils)
 extends AbstractAction(s"Delete node and children") {
 
-  import graphUtils.{transformationRules => TR}
+  import graphUtils.{Rules => TR}
 
   def actionPerformed(e: ActionEvent) : Unit =
     printErrOrPushGraph(controller, "Remove Node Action failure"){
-      TR.removeConcreteNode(graph.mileStone, node)
+      TR.remove.concreteNode(graph.mileStone, node)
     }
 }
 
@@ -90,7 +90,7 @@ class RenameNodeAction
  graphUtils: GraphUtils)
   extends AbstractAction("Rename") {
 
-  import graphUtils.{transformationRules => TR}
+  import graphUtils.{Rules => TR}
 
   override def actionPerformed(e: ActionEvent): Unit = {
     showInputDialog("New name:", node.name).foreach {
@@ -109,7 +109,7 @@ class CreateInitalizerAction
  graphUtils: GraphUtils)
   extends AbstractAction(s"Create initializer of $node") {
 
-  import graphUtils.{transformationRules => TR}
+  import graphUtils.{Rules => TR}
 
   def actionPerformed(e: ActionEvent) : Unit =
     printErrOrPushGraph(controller, "Remove Node Action failure"){

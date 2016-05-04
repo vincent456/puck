@@ -30,7 +30,7 @@ import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.{AccessAbstraction, Type}
 import puck.AcceptanceSpec
 
-import puck.jastadd.ExtendJGraphUtils.{transformationRules => TR}
+import puck.jastadd.ExtendJGraphUtils.{Rules => TR}
 
 class MakeSuperTypeSpec extends AcceptanceSpec {
   //info("We are testing behavior of the abstraction rule, i.e. we check that the structure of the graph after rule application")

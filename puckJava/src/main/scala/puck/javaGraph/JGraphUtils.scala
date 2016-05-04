@@ -39,7 +39,7 @@ abstract class JGraphUtils extends GraphUtils {
 
   val nodeKindKnowledge : NodeKindKnowledge = JavaNodeKind
 
-  val transformationRules: TransformationRules =
+  val Rules: TransformationRules =
     new TransformationRules(JavaTransformationHelper, JavaRenamer, JavaAbstract, JavaIntro)
 
   val violationsKindPriority: Seq[NodeKind] =

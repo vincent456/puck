@@ -43,7 +43,7 @@ class AddNodeAction
 extends AbstractAction(s"Add $childKind")
 {
 
-  import graphUtils.{transformationRules => TR}
+  import graphUtils.{Rules => TR}
 
   override def actionPerformed(actionEvent: ActionEvent): Unit = {
     showInputDialog(s"New $childKind name:").foreach {

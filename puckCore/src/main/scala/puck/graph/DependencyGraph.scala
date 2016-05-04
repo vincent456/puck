@@ -274,7 +274,7 @@ class DependencyGraph
       recording = recording.addType(id, t))
 
 
-  def rmType(id : NodeId) : DependencyGraph =
+  def removeType(id : NodeId) : DependencyGraph =
     edges.types get id map {
       t => newGraph(edges = edges.removeType(id),
         recording = recording.removeType(id, t))

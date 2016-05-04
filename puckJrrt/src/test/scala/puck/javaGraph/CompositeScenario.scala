@@ -31,7 +31,7 @@ import puck.Settings._
 import puck.graph.{AccessAbstraction, DependencyGraph, NodeId, Uses}
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.SupertypeAbstraction
-import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
+import puck.jastadd.ExtendJGraphUtils.{Rules => Rules}
 import puck.{LoggedEitherValues, Settings}
 import puck.javaGraph.nodeKind._
 

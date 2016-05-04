@@ -232,7 +232,7 @@ class VirtualNodeMenu
   node.potentialMatches foreach {
     id =>
       val consumer = graph.getConcreteNode(id)
-      import graphUtils.{transformationRules => TR}
+      import graphUtils.{Rules => TR}
       this.addMenuItem(s"Concretize as $consumer") { _ =>
         printErrOrPushGraph(controller,"Concretize action failure") {
           TR.merge.mergeInto(graph.mileStone, node.id, consumer.id)

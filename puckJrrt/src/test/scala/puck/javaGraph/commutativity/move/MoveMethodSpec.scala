@@ -30,49 +30,60 @@ import puck.Settings._
 import puck.graph._
 import puck.graph.comparison.Mapping
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, Move}
-import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
+import puck.jastadd.ExtendJGraphUtils.Rules
 import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.nodeKind.{Field, Class}
 import puck.AcceptanceSpec
 
 class MoveMethodSpec extends AcceptanceSpec {
 
+  def compareWithExpectedAndGenerated(initialCode : String,
+                                      transfo : ScenarioFactory => DependencyGraph,
+                                      expectedResultCode: String) : Unit = puck.ignore {
+     new ScenarioFactory(initialCode) {
+
+      val g : DependencyGraph = transfo(this)
+
+      import ShowDG._
+      (g, g.edges).println
+
+      val expectedResult = new ScenarioFactory(expectedResultCode)
+       (expectedResult.graph, expectedResult.graph.edges).println
+      assert(Mapping.equals(g, expectedResult.graph))
+
+      val generated = applyChangeAndMakeExample(g, outDir)
+      assert(Mapping.equals(g, generated.graph))
+    }
+  }
+
 
   feature("Move one method not used by siblings") {
 
     scenario("moved method not used by this") {
-      val _ = new ScenarioFactory(
+      compareWithExpectedAndGenerated(
         """package p;
           |
           |class A { void m(){} }
           |
           |class B { }
           |
-          |class C { void user(A a){ a.m(); } }"""
-      ) {
-
-        val g = Move.typeMember(graph, List("p.A.m()"), "p.B", Some(CreateParameter)).rvalue
-
-        val expectedResult = new ScenarioFactory(
-          """package p;
-            |
-            |class A { }
-            |
-            |class B { void m(){} }
-            |
-            |class C { void user(B b, A a){ b.m(); } }"""
-        )
-
-        assert(Mapping.equals(g, expectedResult.graph))
-
-        val generated = applyChangeAndMakeExample(g, outDir)
-        assert(Mapping.equals(g, generated.graph))
-      }
-
+          |class C { void user(A a){ a.m(); } }""",
+        bs => {
+          import bs.{graph, idOfFullName}
+          Move.typeMember(graph, List("p.A.m()"), "p.B", Some(CreateParameter)).rvalue
+        },
+        """package p;
+          |
+          |class A { }
+          |
+          |class B { void m(){} }
+          |
+          |class C { void user(B b, A a){ b.m(); } }"""
+      )
     }
 
-    scenario("move to class of a parameter") {
-      val _ = new ScenarioFactory(
+    scenario("move to class of a parameter - moved is not a uses' source ") {
+      compareWithExpectedAndGenerated(
         """package p;
           |
           |class A { void m(B b){} }
@@ -82,15 +93,174 @@ class MoveMethodSpec extends AcceptanceSpec {
           |class C {
           |   A a; B b;
           |   void user(){ a.m(b); }
-          |}"""
-      ) {
-        val g = Move.typeMember(graph, List[NodeId]("p.A.m(B)"), "p.B").rvalue
-
-        val recompiledEx = applyChangeAndMakeExample(g, outDir)
-        assert(Mapping.equals(g, recompiledEx.graph))
-      }
+          |}""",
+          bs => {
+            import bs.{graph, idOfFullName}
+            Move.typeMember(graph, List("p.A.m(B)"), "p.B").rvalue
+          },
+          """package p;
+            |
+            |class A { }
+            |
+            |class B { void m(){} }
+            |
+            |class C {
+            |   A a; B b;
+            |   void user(){ b.m(); }
+            |}"""
+        )
     }
+
+    scenario("move to class of a parameter - moved is not a uses' source - old receiver used as plain ref") {
+      compareWithExpectedAndGenerated(
+        """package p;
+          |
+          |class A { void m(B b){} }
+          |
+          |class B { }
+          |
+          |class C {
+          |   A a; B b;
+          |   void user(){ a.m(b); A a2 = a; }
+          |}""",
+        bs => {
+          import bs.{graph, idOfFullName}
+          Move.typeMember(graph, List("p.A.m(B)"), "p.B").rvalue
+        },
+        """package p;
+          |
+          |class A { }
+          |
+          |class B { void m(){} }
+          |
+          |class C {
+          |   A a; B b;
+          |   void user(){ b.m(); A a2 = a; }
+          |}"""
+      )
+    }
+
+
+    scenario("move to class of a parameter - moved uses future sibling") {
+      compareWithExpectedAndGenerated(
+        """package p;
+          |
+          |class A { void m(B b){ b.mb(); } }
+          |
+          |class B { void mb(){} }
+          |
+          |class C {
+          |   A a; B b;
+          |   void user(){ a.m(b); }
+          |}""",
+        bs => {
+          import bs.{graph, idOfFullName}
+          Move.typeMember(graph, List("p.A.m(B)"), "p.B").rvalue
+        },
+        """package p;
+          |
+          |class A { }
+          |
+          |class B { void m(){ mb(); } void mb(){} }
+          |
+          |class C {
+          |   A a; B b;
+          |   void user(){ b.m(); }
+          |}"""
+      )
+    }
+
+
+    scenario("move to class of a parameter - moved uses old sibling") {
+      compareWithExpectedAndGenerated(
+        """package p;
+          |
+          |class A { void ma(){}  void m(B b){ ma(); } }
+          |
+          |class B { }
+          |
+          |class C {
+          |   A a; B b;
+          |   void user(){ a.m(b); }
+          |}""",
+        bs => {
+          import bs.{graph, idOfFullName}
+          Move.typeMember(graph, List("p.A.m(B)"), "p.B").rvalue
+        },
+          """package p;
+            |
+            |class A { void ma(){} }
+            |
+            |class B { void m(A a){ a.ma(); }  }
+            |
+            |class C {
+            |   A a; B b;
+            |   void user(){ b.m(a); }
+            |}"""
+        )
+    }
+
+    scenario("move to class of a parameter - moved uses both old and future sibling") {
+      compareWithExpectedAndGenerated(
+        """package p;
+          |
+          |class A { void ma(){}  void m(B b){ ma(); b.mb();} }
+          |
+          |class B { void mb(){} }
+          |
+          |class C {
+          |   A a; B b;
+          |   void user(){ a.m(b); }
+          |}""",
+        bs => {
+          import bs.{graph, idOfFullName}
+          Move.typeMember(graph, List("p.A.m(B)"), "p.B").rvalue
+        },
+        """package p;
+          |
+          |class A { void ma(){} }
+          |
+          |class B { void mb(){} void m(A a){ a.ma(); mb();}  }
+          |
+          |class C {
+          |   A a; B b;
+          |   void user(){ b.m(a); }
+          |}"""
+      )
+    }
+
+    scenario("move to class of a parameter (more than one acceptable parameter) - moved uses both old and future sibling") {
+      compareWithExpectedAndGenerated(
+        """package p;
+          |
+          |class A { void ma(){}  void m(B b, B b2){ ma(); b.mb(); b2.mb();} }
+          |
+          |class B { void mb(){} }
+          |
+          |class C {
+          |   A a; B b;
+          |   void user(){ a.m(b); }
+          |}""",
+        bs => {
+          import bs.{graph, idOfFullName}
+          Move.typeMember(graph, List("p.A.m(B)"), "p.B", Some(CreateParameter)).rvalue
+        },
+        """package p;
+          |
+          |class A { void ma(){} }
+          |
+          |class B { void mb(){} void m(A a, B b2){ a.ma(); mb(); b2.mb();}  }
+          |
+          |class C {
+          |   A a; B b;
+          |   void user(){ b.m(a); }
+          |}"""
+      )
+    }
+
   }
+
+
   feature("Move one method used by siblings"){
     scenario("move method used by this - keep reference with parameter"){
       val _ = new ScenarioFactory(

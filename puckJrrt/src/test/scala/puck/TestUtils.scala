@@ -9,7 +9,7 @@ import puck.util.LoggedEither
 import puck.graph.DependencyGraph.ConstraintsOps
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.constraints.search.BlindControl
-import puck.jastadd.ExtendJGraphUtils.transformationRules
+import puck.jastadd.ExtendJGraphUtils.Rules
 
 import scalaz.\/-
 
@@ -53,7 +53,7 @@ object TestUtils {
 
         val searchControlStrategy =
           new BlindControl(
-            transformationRules,
+            Rules,
             graph, constraints, graph getConcreteNode target)
 
         val engine =

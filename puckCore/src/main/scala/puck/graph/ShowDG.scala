@@ -245,28 +245,28 @@ object ShowDG extends ShowConstraints{
       //      builder append print(userMap, (used : NodeId, user : NodeId) =>
       //        s"$used - ${desambiguatedFullName(dg, used)} used by $user - ${desambiguatedFullName(dg, user)}")
 
-      //      builder.append("\nuser -> used\n")
-      //      builder append print(usedMap, (user : NodeId, used : NodeId) =>
-      //        s"$user - ${desambiguatedFullName(dg, user)} uses $used - ${desambiguatedFullName(dg, used)}")
+            builder.append("\nuser -> used\n")
+            builder append print(usedMap, (user : NodeId, used : NodeId) =>
+              s"$user - ${desambiguatedFullName(dg, user)} uses $used - ${desambiguatedFullName(dg, used)}")
 
-            builder.append("\ncontainer -> content\n")
-            builder append print(contents, (container : NodeId, content : NodeId) =>
-              s"$container - ${desambiguatedFullName(dg, container)} contains $content - ${desambiguatedFullName(dg, content)}")
-            builder.append("\ncontent -> container\n")
-            builder append containers.toList.map {
-              case (content, container) =>
-                  s"$content - ${desambiguatedFullName(dg, content)} contained by $container - ${desambiguatedFullName(dg, container)}"
-            }.mkString("\t",",\n\t ","\n")
+//            builder.append("\ncontainer -> content\n")
+//            builder append print(contents, (container : NodeId, content : NodeId) =>
+//              s"$container - ${desambiguatedFullName(dg, container)} contains $content - ${desambiguatedFullName(dg, content)}")
+//            builder.append("\ncontent -> container\n")
+//            builder append containers.toList.map {
+//              case (content, container) =>
+//                  s"$content - ${desambiguatedFullName(dg, content)} contained by $container - ${desambiguatedFullName(dg, container)}"
+//            }.mkString("\t",",\n\t ","\n")
 
       //      builder.append("\nmethod -> parameters\n")
       //      builder append print(parameters, (container : NodeId, content : NodeId) =>
       //        s"$container - ${desambiguatedFullName(dg, container)} contains $content - ${desambiguatedFullName(dg, content)}")
 
 
-      //      builder.append("\ntypes\n")
-      //      builder.append( types.toList map { case (nid, t) =>
-      //        s"$nid - ${desambiguatedFullName(dg, nid)} : ${typeCord(dg, t)}"
-      //      } mkString("\t", "\n\t", "\n"))
+            builder.append("\ntypes\n")
+            builder.append( types.toList map { case (nid, t) =>
+              s"$nid - ${desambiguatedFullName(dg, nid)} : ${stringOfType(dg, t)}"
+            } mkString("\t", "\n\t", "\n"))
 
       //      builder.append("\nsub -> super\n")
       //      builder append print(superTypes, (sub : NodeId, sup : NodeId) =>
@@ -274,17 +274,17 @@ object ShowDG extends ShowConstraints{
       //      builder.append("\nsuper -> sub\n\t")
       //      builder.append(subTypes.toString)
 
-//      val pToString : NodeIdP => String = {
-//        case (p1, p2) => s"($p1 - ${desambiguatedFullName(dg, p1)}, $p2 - ${desambiguatedFullName(dg, p2)})"
-//      }
+      val pToString : NodeIdP => String = {
+        case (p1, p2) => s"($p1 - ${desambiguatedFullName(dg, p1)}, $p2 - ${desambiguatedFullName(dg, p2)})"
+      }
 //
 //      builder.append("\ntmUse -> tUse\n")
 //      builder append print(typeMemberUses2typeUsesMap, (tmUse : NodeIdP, tUses : NodeIdP) =>
 //        s"${pToString(tmUse)} -> ${pToString(tUses)}")
 //
-//      builder.append("\ntUse -> tmUse\n")
-//      builder append print(typeUses2typeMemberUsesMap, (tUse : NodeIdP, tmUse : NodeIdP) =>
-//        s"${pToString(tUse)} -> ${pToString(tmUse)}")
+      builder.append("\ntUse -> tmUse\n")
+      builder append print(typeUses2typeMemberUsesMap, (tUse : NodeIdP, tmUse : NodeIdP) =>
+        s"${pToString(tUse)} -> ${pToString(tmUse)}")
 
       //      builder.append("\ntypeUsesConstraints\n")
       //      builder append print(typeUsesConstraints, (k : NodeIdP, v : TypeUseConstraint) => typeConstraintCordBuilder(dg,(k,v)).toString())

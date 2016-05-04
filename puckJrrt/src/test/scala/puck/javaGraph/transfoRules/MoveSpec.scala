@@ -61,27 +61,21 @@ class MoveSpec
           |    }
           |}"""
       ) {
-        val package1 = fullName2id("p1")
-
-        val classA = fullName2id("p1.A")
-        val methADecl = fullName2id("p1.A.ma()")
-
-        val classB = fullName2id("p1.B")
-        val methBDecl = fullName2id("p1.B.mb()")
-        val methBDef = fullName2id("p1.B.mb().Definition")
 
 
-        assert(graph.container(classA).value == package1)
-        assert(graph.uses(methBDef, classA))
-        assert(graph.uses(methBDef, methADecl))
+
+
+        assert(graph.container("p1.A").value == fullName2id("p1"))
+        assert(graph.uses("p1.B.mb().Definition", "p1.A"))
+        assert(graph.uses("p1.B.mb().Definition", "p1.A.ma()"))
 
 
         val (g1, package2) = createTopLevelPackage(graph, "p2")
 
-        val g2 = Move.staticDecl(g1, classA, package2).rvalue
-        assert(g2.container(classA).value == package2)
-        assert(g2.uses(methBDef, classA))
-        assert(g2.uses(methBDef, methADecl))
+        val g2 = Move.staticDecl(g1, "p1.A", package2).rvalue
+        assert(g2.container("p1.A").value == package2)
+        assert(g2.uses("p1.B.mb().Definition", "p1.A"))
+        assert(g2.uses("p1.B.mb().Definition", "p1.A.ma()"))
 
       }
     }

@@ -29,7 +29,7 @@ package puck.javaGraph.transfoRules
 import puck.AcceptanceSpec
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph._
-import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
+import puck.jastadd.ExtendJGraphUtils.{Rules => Rules}
 import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.nodeKind.Interface
 

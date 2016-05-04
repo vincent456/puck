@@ -33,8 +33,9 @@ import puck.graph.DependencyGraph.AbstractionMap
 import puck.graph.constraints.ConstraintsMaps
 import puck.util.LoggedEither._
 import ShowDG._
-import scalaz.std.list._
+
 import scalaz.std.set._
+import scalaz.std.list._
 
 trait MergingCandidatesFinder {
 
@@ -163,7 +164,7 @@ class Merge
 
             for {
               g0 <- g.definitionOf(consumedId).map {
-                cid => removeConcreteNode(g, g.getConcreteNode(cid))
+                cid => Remove.concreteNode(g, g.getConcreteNode(cid))
               } getOrElse LoggedSuccess(g)
               g1 <- ps.foldLoggedEither(g0){
                 case (g, (pConsumed, pConsumer)) =>
@@ -177,7 +178,7 @@ class Merge
         val g1 = g.typedBy(consumedId).foldLeft(g){
           (g0, t) =>
             g0.getConcreteNode(t).kind.kindType match {
-              case TypeConstructor => g0.rmType(t)
+              case TypeConstructor => g0.removeType(t)
               case _ => g0.changeTarget(Uses(t, consumedId), consumerId)
             }
 
@@ -255,80 +256,12 @@ class Merge
         case Some(cid) => g7.removeContains(cid, consumedId)
         case None => g7
       }
-      (g8 removeNode consumedId)._2.rmType(consumedId)
+      (g8 removeNode consumedId)._2.removeType(consumedId)
     }
   }
 
 
-  def removeBindingsInvolving(g : DependencyGraph, n : ConcreteNode) : DependencyGraph = {
-    val g1 = n.kind.kindType match {
-      case TypeDecl =>
-        g.typeUses2typeMemberUses.foldLeft(g) {
-          case (g0, (tUses, typeMemberUses)) if tUses.used == n.id =>
-            typeMemberUses.foldLeft(g0) { _.removeBinding(tUses, _)}
-          case (g0, _) => g0
-        }
 
-      case NameSpace  => g // no type dependencies involved when removing namespaces
-      case InstanceValueDecl
-           | StaticValueDecl
-           | TypeConstructor
-           | Parameter
-           | ValueDef =>
-        g.typeUses2typeMemberUses.foldLeft(g) {
-          case (g0, (tUses, typeMemberUses)) if tUses.user == n.id =>
-            typeMemberUses.foldLeft(g0) { _.removeBinding(tUses, _)}
-          case (g0, _) => g0
-        }
-      case UnknownKindType => error("removeBindingsInvolving UnknownKindType")
 
-    }
-    n.kind.kindType match {
-      case ValueDef =>
-          g1.typeMemberUses2typeUses.foldLeft(g1) {
-            case (g0, (tmUses, typeUses)) if tmUses.user == n.id =>
-              typeUses.foldLeft(g0) {
-                _.removeBinding(_, tmUses)
-              }
-            case (g0, _) => g0
-          }
-      case _ => g1
-    }
 
-  }
-
-  def removeConcreteNode
-  ( g : DependencyGraph,
-    n : ConcreteNode
-    ) : LoggedTG = {
-    val graph = g.comment(s"Remove($n)")
-    for {
-      g1 <- graph.content(n.id).map(graph.getConcreteNode).
-          foldLoggedEither(graph)(removeConcreteNode)
-
-      g2 <-
-      if (g1.usersOfExcludingTypeUse(n.id).nonEmpty)
-        LoggedError("Cannot remove a used node")
-      else {
-        val g00 =
-          n.kind.kindType match {
-            case Parameter =>
-              g1.removeEdge(ContainsParam(g1.container(n.id).get, n.id))
-            case _ => g1.removeEdge(Contains(g1.container(n.id).get, n.id))
-          }
-
-        val g01 = graph.directSuperTypes(n.id).foldLeft(g00) {
-          (g, supId) => g.removeIsa(n.id, supId)
-        }
-        val g02 = graph.usedByExcludingTypeUse(n.id).foldLeft(g01) {
-          (g, usedId) =>
-            //getUsesEdge needed to recover accessKind
-            g.removeEdge(Uses(n.id, usedId))
-        }
-        val g03 = removeBindingsInvolving(g02.rmType(n.id), n)
-        LoggedSuccess(g03.removeConcreteNode(n))
-      }
-
-    } yield g2
-  }
 }

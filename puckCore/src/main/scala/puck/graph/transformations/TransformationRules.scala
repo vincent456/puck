@@ -35,6 +35,8 @@ import puck.util.LoggedEither._
 import scalaz.std.list._
 import ShowDG._
 
+
+
 class TransformationRules
 ( mergingCandidatesFinder : MergingCandidatesFinder,
   val rename : Renamer,
@@ -47,8 +49,7 @@ class TransformationRules
   def mergeMatcherInstances = mergingCandidatesFinder.mergeMatcherInstances
 
   lazy val merge = new Merge(mergingCandidatesFinder)
-  def removeConcreteNode = merge.removeConcreteNode _
-
+  val remove = Remove
   val redirection = Redirection
   val move = Move
 

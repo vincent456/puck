@@ -68,7 +68,7 @@ class MoveAction
 extends AbstractAction(MoveAction.label(graph, moved, newHost)){
 
   import graphUtils.nodeKindKnowledge.kindOfKindType
-  import graphUtils.{transformationRules => TR}
+  import graphUtils.{Rules => TR}
 
   def doMove : LoggedTG = {
     val g = graph.mileStone

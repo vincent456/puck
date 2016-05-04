@@ -31,7 +31,7 @@ import puck.graph.constraints.SupertypeAbstraction
 import puck.graph._
 import puck.javaGraph.nodeKind._
 import puck.{PuckError, AcceptanceSpec}
-import puck.jastadd.ExtendJGraphUtils.{transformationRules => TR}
+import puck.jastadd.ExtendJGraphUtils.{Rules => TR}
 
 import scalaz._
 

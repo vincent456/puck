@@ -52,7 +52,7 @@ trait TypeUsage {
           case NamedType(id) => id
           case ParameterizedType(id, _) => id
         }
-        addBinding(typeUser, tid, typeMemberUse)
+        puck.ignore(addBinding(typeUser, tid, typeMemberUse))
     }
 
   }

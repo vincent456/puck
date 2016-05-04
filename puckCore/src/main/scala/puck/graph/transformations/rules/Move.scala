@@ -34,6 +34,8 @@ import scalaz.std.list._
 import scalaz.std.set._
 import ShowDG._
 import puck.PuckError
+
+import scalaz._
 sealed trait CreateVarStrategy {
   def apply ( g : DependencyGraph, oldTu : NodeIdP, newTu : NodeId, tmUses : Set[NodeIdP] ) : LoggedTG
 }
@@ -107,7 +109,7 @@ object Move {
       val usesBetweenMovedDefsViaThis = usesBetweenViaThis(g, movedDefs, movedDecls)
 
       val g1 =
-        if(usesBetweenMovedDefsViaThis.nonEmpty && !(newSelfUse existsIn g))
+        if(g.typeMemberUsesOf(newSelfUse).nonEmpty && !(newSelfUse existsIn g))
           newSelfUse createIn g
         else g
 
@@ -251,21 +253,66 @@ object Move {
         ( g: DependencyGraph,
           oldContainer : NodeId,
           newContainer : NodeId,
-          nodeSet: Set[NodeId]
+          movedDeclWithArgUsableAsReceiver: Set[NodeId]
         ) : LoggedTG = {
-          nodeSet.foldLoggedEither(g){
-            (g0, used) =>
-              val params = g0 parametersOf used
-              params find ( g0.typ(_) uses newContainer ) match {
+
+          def findReceiver(userOfMovedDecl : NodeId) = {
+            val candidates =
+              (g0 usedBy userOfMovedDecl) filter (g0.uses(_, oldContainer))
+            if (candidates.size != 1)
+              LoggedError(s"useArgAsReceiver searching old receiver failure : ${candidates.size} candidates")
+            else LoggedSuccess(candidates.head)
+          }
+
+          def findActualParameter(userOfMovedDecl : NodeId) = {
+            val candidates =
+              (g0 usedBy userOfMovedDecl) filter (g0.uses(_, newContainer))
+            if (candidates.size != 1)
+              LoggedError(s"useArgAsReceiver searching actual parameter failure : ${candidates.size} candidates")
+            else LoggedSuccess(candidates.head)
+          }
+
+          movedDeclWithArgUsableAsReceiver.foldLoggedEither(g){
+            (g0, movedDecl) =>
+              ( g0 parametersOf movedDecl ) find ( g0.typ(_) uses newContainer ) match {
                 case None =>
                   LoggedError(s"An arg typed ${NamedType(newContainer)} was expected")
                 case Some(pid) =>
-                  val (_, g1) = g0.removeNode(pid)
-                  val oldTypeUses = (pid, newContainer)
-                  LoggedSuccess (
-                    g1.changeTypeUseForTypeMemberUseSet(oldTypeUses, newSelfUse,
-                      g0.typeMemberUsesOf(oldTypeUses))
-                  )
+                  val (_, g1) =
+                    g0.removeEdge(ContainsParam(movedDecl, pid))
+                      .removeType(pid)
+                      .removeNode(pid)
+                  val paramTypeUses = (pid, newContainer)
+
+                    //inside the moved method, accesses qualified by the removed parameter
+                    //are now qualified by this
+                    val g2 = g1.changeTypeUseForTypeMemberUseSet( paramTypeUses, newSelfUse,
+                      g0 typeMemberUsesOf paramTypeUses )
+
+                    import LoggedEither.loggedEitherMonad
+                    (g0 usersOf movedDecl).foldLoggedEither(g2){
+                      (g2, user) =>
+                        Apply[LoggedTry].apply2(findReceiver(user),
+                          findActualParameter(user)){(receiver, actualParam) =>
+
+                          val g3 = g2.changeTypeUseOfTypeMemberUse((receiver, oldContainer),
+                            (actualParam,newContainer),
+                            (user,movedDecl))
+
+                          val otherUsesQualifiedByReceiver =
+                            g3.typeMemberUsesOf(receiver, oldContainer).filter(_.user == user)
+
+                          if(otherUsesQualifiedByReceiver.isEmpty)
+                            g3.typeUsesOf((user, receiver))
+                              .foldLeft(g3.removeEdge(Uses(user, receiver))){
+                                (g, tu) => g.removeBinding(tu, (user, receiver))
+                              }
+                          else g3
+                        }
+
+                    }
+
+
               }
           }
         }

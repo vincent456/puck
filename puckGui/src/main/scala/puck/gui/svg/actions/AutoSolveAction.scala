@@ -88,7 +88,7 @@ class AutoSolveAction
 
     val searchControlStrategy =
       new ControlWithHeuristic(
-        graphUtils.transformationRules,
+        graphUtils.Rules,
         g, cm, violationTarget)
 
     val engine =

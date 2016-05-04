@@ -32,7 +32,7 @@ import org.scalatest.FeatureSpec
 import puck.graph.DependencyGraph
 import puck.graph._
 import puck.Quick
-import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules, _}
+import puck.jastadd.ExtendJGraphUtils.{Rules => Rules, _}
 
 import puck.graph.constraints.ConstraintsParser
 import puck.graph.io.VisibilitySet

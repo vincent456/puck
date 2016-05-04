@@ -96,6 +96,12 @@ case object NoDecl extends ASTNodeLink
 sealed abstract class HasNode extends ASTNodeLink {
   def node : ASTNode[_]
 }
+//object ASTNodeHolder {
+//  def unapply(nl : ASTNodeLink) : Option[ASTNode[_]] = nl match {
+//    case hn : HasNode => Some(hn.node)
+//    case _ => None
+//  }
+//}
 case object PackageDeclHolder extends ASTNodeLink
 
 sealed abstract class DefHolder extends HasNode

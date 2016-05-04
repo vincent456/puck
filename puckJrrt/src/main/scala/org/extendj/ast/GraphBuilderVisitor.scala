@@ -27,8 +27,6 @@
 package org.extendj.ast
 
 import puck.graph.{Uses, _}
-import puck.javaGraph.nodeKind.Constructor
-import puck.javaGraph.transformations.JavaIntro
 
 import scala.collection.JavaConversions._
 /**

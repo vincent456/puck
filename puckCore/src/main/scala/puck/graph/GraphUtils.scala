@@ -33,7 +33,7 @@ import puck.graph.transformations.TransformationRules
 trait GraphUtils {
   val dg2astBuilder : DG2ASTBuilder
   val nodeKindKnowledge : NodeKindKnowledge
-  val transformationRules : TransformationRules
+  val Rules : TransformationRules
   val violationsKindPriority : Seq[NodeKind]
   val dotHelper : DotHelper
 }

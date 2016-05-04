@@ -29,7 +29,7 @@
 import puck.graph.{AccessAbstraction,  DependencyGraph, Uses, Write}
 import puck.graph.constraints.SupertypeAbstraction
 import puck.javaGraph.ScenarioFactory
-import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
+import puck.jastadd.ExtendJGraphUtils.{Rules => Rules}
 import puck.javaGraph.nodeKind.Interface
 import puck.AcceptanceSpec
 

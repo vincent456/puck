@@ -110,7 +110,7 @@ class AbstractionAction
  treeIcons: DGTreeIcons)
   extends AbstractAction(s"$abskind ($policy)"){
 
-     import graphUtils.{transformationRules => TR}
+     import graphUtils.{Rules => TR}
 
      def getHost(absKind : NodeKind) : NodeId = {
        def aux(id : NodeId) : Option[NodeId] =

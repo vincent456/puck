@@ -28,7 +28,7 @@ package puck.javaGraph
 
 import org.scalatest.{EitherValues, FeatureSpec, OptionValues}
 import puck.graph.constraints.SupertypeAbstraction
-import puck.jastadd.ExtendJGraphUtils.{transformationRules => Rules}
+import puck.jastadd.ExtendJGraphUtils.{Rules => Rules}
 import puck.javaGraph.nodeKind._
 import puck.{LoggedEitherValues, Settings}
 import puck.graph._

@@ -237,7 +237,7 @@ object GenericGraphAlgorithms {
             g0
           else {
             val rn = relevantNode(n)
-            (t.ids map relevantNode).foldLeft(g0 rmType n){
+            (t.ids map relevantNode).foldLeft(g0 removeType n){
               case (g1, id) =>
                 if(id == rn) g1
                 else g1.addEdge(Uses(rn, id))

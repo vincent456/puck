@@ -141,7 +141,7 @@ case class AType(typed : NodeId, t : Type) extends AddRmOperation {
 
   override def execute(g: DependencyGraph, op: Direction) = op match {
     case Regular => g.addType(typed, t)
-    case Reverse => g.rmType(typed)
+    case Reverse => g.removeType(typed)
   }
 }
 

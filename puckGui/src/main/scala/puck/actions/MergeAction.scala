@@ -41,7 +41,7 @@ case class MergeAction
  graphUtils: GraphUtils)
   extends AbstractAction(s"Merge $consumed into this") {
 
-  import graphUtils.{transformationRules => TR}
+  import graphUtils.{Rules => TR}
 
   override def actionPerformed(e: ActionEvent): Unit =
     printErrOrPushGraph(controller,"Merge action failure") {
