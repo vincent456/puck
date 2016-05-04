@@ -34,5 +34,7 @@ object Settings {
     if("Mac OS X" == System.getProperty("os.name")) "/tmp/"
     else (System getProperty "java.io.tmpdir") + File.separator
 
+  println("Tmp dir : " + tmpDir)
+
   val outDir = new File(Settings.tmpDir + "testPuck")
 }

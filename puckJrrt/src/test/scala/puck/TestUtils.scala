@@ -3,15 +3,16 @@ package puck
 import java.awt.event.WindowEvent
 
 import puck.actions.Choose
-import puck.graph.{ConcreteNode, DependencyGraph, SResult}
-import puck.graph.transformations.{Recording, TransformationRules}
+import puck.graph.{DependencyGraph, LoggedTG, SResult}
+import puck.graph.transformations.Recording
 import puck.jastadd.ExtendJGraphUtils.dotHelper
 import puck.search._
 import puck.util.LoggedEither
 import puck.graph.DependencyGraph.ConstraintsOps
 import puck.graph.constraints.ConstraintsMaps
-import puck.jastadd.ExtendJGraphUtils.Rules
-import puck.graph.constraints.search.{BlindControl, ControlWithHeuristic, SResultEvaluator}
+import puck.graph.constraints.search._
+import puck.jastadd.ExtendJGraphUtils.{Rules, violationsKindPriority}
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
 import scalaz.\/-
@@ -53,12 +54,23 @@ object TestUtils {
     g0
   }
 
-  type ControleBuilder = (TransformationRules, DependencyGraph, ConstraintsMaps, ConcreteNode) => SearchControl[SResult]
-  type StrategyBuilder = () => SearchStrategy[SResult]
+
+
+  def solveAllKeepVN[T](graph : DependencyGraph, constraints : ConstraintsMaps,
+                        controlBuilder : ControleBuilder,
+                        strategyBuilder : StrategyBuilder[SResult],
+                        maxResultTotal : Option[Int],
+                        maxResultPerStep : Option[Int]) : Seq[LoggedTG] = {
+    val control = new CouplingConstraintSolvingAllViolationsControl(
+      Rules, graph, constraints, violationsKindPriority, controlBuilder, strategyBuilder, maxResultTotal)
+    val engine = new SearchEngine(strategyBuilder(), control, maxResultPerStep)
+    engine.explore()
+    engine.successes map (ss => ss.loggedResult map (_._1))
+  }
 
   def solveAll(graph : DependencyGraph, constraints : ConstraintsMaps,
                controlBuilder : ControleBuilder,
-               strategyBuilder : StrategyBuilder,
+               strategyBuilder : StrategyBuilder[SResult],
                previouslyRemainingViolation : Int = -1) : Option[DependencyGraph] =
     (graph, constraints).violations() match {
       case Seq() => Some(graph)
@@ -66,10 +78,9 @@ object TestUtils {
         println(s.size + " remaining violations")
         val target = hd.target
 
-        val searchControlStrategy =
-          new BlindControl(
-            Rules,
-            graph, constraints, graph getConcreteNode target)
+        val searchControlStrategy = controlBuilder(
+          Rules,
+          graph, constraints, graph getConcreteNode target)
 
         val engine =
           new SearchEngine(
