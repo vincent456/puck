@@ -35,6 +35,30 @@ import puck.javaGraph.ScenarioFactory
   */
 class TypeConstraintSpec extends AcceptanceSpec {
 
+  scenario("Field init") {
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |class A {}
+        |
+        |class B {  A a = new A(); } """
+    ) {
+      graph.usesThatShouldUsesASubtypeOf(("p.B.a", "p.A")) should contain ( ("p.A.A()", "p.A") : NodeIdP)
+    }
+  }
+
+  scenario("Field assignment") {
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |class A {  }
+        |
+        |class B {  A a;  void m(){ a = new A(); }  } """
+    ) {
+      graph.usesThatShouldUsesASubtypeOf(("p.B.a", "p.A")) should contain ( ("p.A.A()", "p.A") : NodeIdP)
+    }
+  }
+
   scenario("generic - type uses  constraint between type parameter and init"){
     val _ = new ScenarioFactory(
       """package p;
@@ -51,13 +75,9 @@ class TypeConstraintSpec extends AcceptanceSpec {
 
       graph.styp("p.B.wa").value should be (ParameterizedType("p.Wrapper", List(NamedType("p.A"))))
 
-      val usesOfA : NodeIdP = ("p.B.wa.Definition", "p.A")
-
-      val usesOfWrapper1 : NodeIdP = ("p.B.wa", "p.Wrapper")
-      val usesOfWrapper2 : NodeIdP = ("p.Wrapper.Wrapper()", "p.Wrapper")
-      graph.usesThatShouldUsesSameTypeAs(("p.B.wa", "p.A")) should contain ( usesOfA )
-      graph.usesThatShouldUsesASuperTypeOf(("p.Wrapper.Wrapper()", "p.Wrapper")) should contain ( usesOfWrapper1 )
-      graph.usesThatShouldUsesASubtypeOf(("p.B.wa", "p.Wrapper")) should contain ( usesOfWrapper2 )
+      graph.usesThatShouldUsesSameTypeAs(("p.B.wa", "p.A")) should contain ( ("p.B.wa.Definition", "p.A") : NodeIdP )
+      graph.usesThatShouldUsesASuperTypeOf(("p.Wrapper.Wrapper()", "p.Wrapper")) should contain ( ("p.B.wa", "p.Wrapper") : NodeIdP )
+      graph.usesThatShouldUsesASubtypeOf(("p.B.wa", "p.Wrapper")) should contain (  ("p.Wrapper.Wrapper()", "p.Wrapper") : NodeIdP)
 
     }
   }

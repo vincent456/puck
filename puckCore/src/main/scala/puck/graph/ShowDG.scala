@@ -82,7 +82,7 @@ object ShowDG extends ShowConstraints{
   implicit def stringOfNodeIdP : DGStringBuilder[NodeIdP] =
   {case (dg, (nid1, nid2)) => s"Edge( $nid1 - ${desambiguatedFullName(dg,nid1)}" +
     s", $nid2 - ${desambiguatedFullName(dg,nid2)})"}
-    //{case (dg, (nid1, nid2)) => Cord("Edge(", nodeIdCord(dg,nid1), ", ", nodeIdCord(dg,nid2), ")")}
+  //{case (dg, (nid1, nid2)) => Cord("Edge(", nodeIdCord(dg,nid1), ", ", nodeIdCord(dg,nid2), ")")}
 
 
   implicit def stringOfNode : DGStringBuilder[DGNode] = (dg, n) =>
@@ -193,13 +193,18 @@ object ShowDG extends ShowConstraints{
     case Sup(_) => ":<"
   }
 
-  def stringOfTypeConstraint : DGStringBuilder[(NodeIdP, TypeUseConstraint)] = {
-   case (dg, ((tuser, tused), tc)) =>
-     val tu1 = s"Uses($tuser - ${desambiguatedFullName(dg, tuser)}, $tused - ${desambiguatedFullName(dg, tused)})"
-     val (tuser2, tused2) = tc.constrainedUse
-     val tu2 = s"Uses($tuser2 - ${desambiguatedFullName(dg, tuser2)}, $tused2 - ${desambiguatedFullName(dg, tused2)})"
+  implicit def stringOfTypeUseConstraint : DGStringBuilder[TypeUseConstraint] = {
+    (dg, tc) =>
+      val (tuser2, tused2) = tc.constrainedUse
+      val tu2 = s"Uses($tuser2 - ${desambiguatedFullName(dg, tuser2)}, $tused2 - ${desambiguatedFullName(dg, tused2)})"
 
-     s"$tu1 ${tcOp(tc)} $tu2"
+      s"${tcOp(tc)} $tu2"
+  }
+
+  def stringOfTypeConstraint : DGStringBuilder[(NodeIdP, TypeUseConstraint)] = {
+    case (dg, ((tuser, tused), tc)) =>
+      val tu1 = s"Uses($tuser - ${desambiguatedFullName(dg, tuser)}, $tused - ${desambiguatedFullName(dg, tused)})"
+      s"$tu1 ${stringOfTypeUseConstraint(dg, tc)}"
   }
 
   implicit def stringOfAbstraction : DGStringBuilder[Abstraction] = (dg, a) =>
@@ -241,53 +246,54 @@ object ShowDG extends ShowConstraints{
     parameters, types, typedBy)) =>
       val builder = new StringBuilder(150)
 
-      //      builder.append("used -> user\n")
-      //      builder append print(userMap, (used : NodeId, user : NodeId) =>
-      //        s"$used - ${desambiguatedFullName(dg, used)} used by $user - ${desambiguatedFullName(dg, user)}")
-
-            builder.append("\nuser -> used\n")
-            builder append print(usedMap, (user : NodeId, used : NodeId) =>
-              s"$user - ${desambiguatedFullName(dg, user)} uses $used - ${desambiguatedFullName(dg, used)}")
-
-//            builder.append("\ncontainer -> content\n")
-//            builder append print(contents, (container : NodeId, content : NodeId) =>
-//              s"$container - ${desambiguatedFullName(dg, container)} contains $content - ${desambiguatedFullName(dg, content)}")
-//            builder.append("\ncontent -> container\n")
-//            builder append containers.toList.map {
-//              case (content, container) =>
-//                  s"$content - ${desambiguatedFullName(dg, content)} contained by $container - ${desambiguatedFullName(dg, container)}"
-//            }.mkString("\t",",\n\t ","\n")
-
-      //      builder.append("\nmethod -> parameters\n")
-      //      builder append print(parameters, (container : NodeId, content : NodeId) =>
-      //        s"$container - ${desambiguatedFullName(dg, container)} contains $content - ${desambiguatedFullName(dg, content)}")
-
-
-            builder.append("\ntypes\n")
-            builder.append( types.toList map { case (nid, t) =>
-              s"$nid - ${desambiguatedFullName(dg, nid)} : ${stringOfType(dg, t)}"
-            } mkString("\t", "\n\t", "\n"))
-
-      //      builder.append("\nsub -> super\n")
-      //      builder append print(superTypes, (sub : NodeId, sup : NodeId) =>
-      //        s"${desambiguatedFullName(dg, sub)} is a ${desambiguatedFullName(dg, sup)}")
-      //      builder.append("\nsuper -> sub\n\t")
-      //      builder.append(subTypes.toString)
-
-      val pToString : NodeIdP => String = {
-        case (p1, p2) => s"($p1 - ${desambiguatedFullName(dg, p1)}, $p2 - ${desambiguatedFullName(dg, p2)})"
-      }
+//      builder.append("used -> user\n")
+//      builder append print(userMap, (used : NodeId, user : NodeId) =>
+//        s"$used - ${desambiguatedFullName(dg, used)} used by $user - ${desambiguatedFullName(dg, user)}")
 //
-//      builder.append("\ntmUse -> tUse\n")
+//      builder.append("\nuser -> used\n")
+//      builder append print(usedMap, (user : NodeId, used : NodeId) =>
+//        s"$user - ${desambiguatedFullName(dg, user)} uses $used - ${desambiguatedFullName(dg, used)}")
+//
+//      builder.append("\ncontainer -> content\n")
+//      builder append print(contents, (container : NodeId, content : NodeId) =>
+//        s"$container - ${desambiguatedFullName(dg, container)} contains $content - ${desambiguatedFullName(dg, content)}")
+//      builder.append("\ncontent -> container\n")
+//      builder append containers.toList.map {
+//        case (content, container) =>
+//          s"$content - ${desambiguatedFullName(dg, content)} contained by $container - ${desambiguatedFullName(dg, container)}"
+//      }.mkString("\t",",\n\t ","\n")
+//
+//      builder.append("\nmethod -> parameters\n")
+//      builder append print(parameters, (container : NodeId, content : NodeId) =>
+//        s"$container - ${desambiguatedFullName(dg, container)} contains $content - ${desambiguatedFullName(dg, content)}")
+//
+//
+//      builder.append("\ntypes\n")
+//      builder.append( types.toList map { case (nid, t) =>
+//        s"$nid - ${desambiguatedFullName(dg, nid)} : ${stringOfType(dg, t)}"
+//      } mkString("\t", "\n\t", "\n"))
+//
+//      builder.append("\nsub -> super\n")
+//      builder append print(superTypes, (sub : NodeId, sup : NodeId) =>
+//        s"${desambiguatedFullName(dg, sub)} is a ${desambiguatedFullName(dg, sup)}")
+//      builder.append("\nsuper -> sub\n\t")
+//      builder.append(subTypes.toString)
+//
+//      val pToString : NodeIdP => String = {
+//        case (p1, p2) => s"($p1 - ${desambiguatedFullName(dg, p1)}, $p2 - ${desambiguatedFullName(dg, p2)})"
+//      }
+//
+//      builder append "\ntmUse -> tUse\n"
 //      builder append print(typeMemberUses2typeUsesMap, (tmUse : NodeIdP, tUses : NodeIdP) =>
 //        s"${pToString(tmUse)} -> ${pToString(tUses)}")
 //
-      builder.append("\ntUse -> tmUse\n")
-      builder append print(typeUses2typeMemberUsesMap, (tUse : NodeIdP, tmUse : NodeIdP) =>
-        s"${pToString(tUse)} -> ${pToString(tmUse)}")
+//      builder append "\ntUse -> tmUse\n"
+//      builder append print(typeUses2typeMemberUsesMap, (tUse : NodeIdP, tmUse : NodeIdP) =>
+//        s"${pToString(tUse)} -> ${pToString(tmUse)}")
 
-      //      builder.append("\ntypeUsesConstraints\n")
-      //      builder append print(typeUsesConstraints, (k : NodeIdP, v : TypeUseConstraint) => typeConstraintCordBuilder(dg,(k,v)).toString())
+      builder.append("\ntypeUsesConstraints\n")
+      builder append print(typeUsesConstraints,
+        (k : NodeIdP, v : TypeUseConstraint) => stringOfTypeConstraint(dg,(k,v)))
 
 
       builder.toString()

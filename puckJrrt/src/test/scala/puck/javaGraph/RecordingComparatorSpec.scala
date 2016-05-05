@@ -187,7 +187,7 @@ class RecordingComparatorSpec extends AcceptanceSpec {
       liftAssert(needToMergeInterfaces, t1, t2, expected = true)
     }
 
-    scenario("Different path, merge, same result "){
+    ignore("Different path, merge, same result "){
       import methodUsesViaThisField._
 
       val t1 =

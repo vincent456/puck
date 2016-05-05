@@ -54,7 +54,6 @@ trait TypeUsage {
         }
         puck.ignore(addBinding(typeUser, tid, typeMemberUse))
     }
-
   }
 
   def findTypeUserAndBindUses

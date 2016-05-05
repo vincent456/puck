@@ -44,23 +44,11 @@ aspect DependencyGraphFactory {
 		return builder;
 	}
 
-	void PrimitiveCompilationUnit.addPrimitiveTypes(JastaddGraphBuilder builder){
-		builder.addApiTypeNodeAndRegister(typeBoolean());
-		builder.addApiTypeNodeAndRegister(typeByte());
-		builder.addApiTypeNodeAndRegister(typeShort());
-		builder.addApiTypeNodeAndRegister(typeChar());
-		builder.addApiTypeNodeAndRegister(typeInt());
-		builder.addApiTypeNodeAndRegister(typeLong());
-		builder.addApiTypeNodeAndRegister(typeFloat());
-		builder.addApiTypeNodeAndRegister(typeDouble());
-		builder.addApiTypeNodeAndRegister(typeVoid());
-		builder.addApiTypeNodeAndRegister(typeNull());
-	}
-
 	private void Program.build(JastaddGraphBuilder builder, LoadingListener ll){
 		double nchild = getCompilationUnitList().getNumChild(); //getNumCuFromSources();
 		double d = 0.0;
-		getPrimitiveCompilationUnit().addPrimitiveTypes(builder);
+
+		builder.addPrimitiveTypes(this);
 
 		for (CompilationUnit cu : getCompilationUnitList()){
 			cu.buildDependencyGraph(builder);
@@ -167,15 +155,11 @@ aspect DependencyGraphFactory {
 		builder.buildDG(hostTypeDeclId, this);
 	}
 
-//	public void Declarator.buildDG(JastaddGraphBuilder builder, int containerId) {
-//		super.buildDG(builder, containerId);
-//		if(getInit() instanceof Access)
-//			builder.constraintTypeUses(this.buildDGNode(builder),
-//					this.getTypeAccess().type(),
-//					(Access)getInit());
-//	}
-
 	public void VarDeclStmt.buildDG(JastaddGraphBuilder builder, int containerId){
+		builder.buildDG(containerId, this);
+	}
+
+	public void AssignExpr.buildDG(JastaddGraphBuilder builder, int containerId){
 		builder.buildDG(containerId, this);
 	}
 

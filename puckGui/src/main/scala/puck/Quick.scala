@@ -26,17 +26,16 @@
 
 package puck
 
-import java.awt.{Dimension, Frame, Toolkit}
+import java.awt.Toolkit
 import java.io.{FileWriter, PipedInputStream, PipedOutputStream}
-import java.util.concurrent.Executor
-import javax.swing.{JFrame, SwingUtilities, WindowConstants}
+
+import javax.swing.{JFrame, WindowConstants}
 
 import org.apache.batik.swing.JSVGCanvas
 import puck.graph.DependencyGraph
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.io._
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 

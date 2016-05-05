@@ -27,16 +27,16 @@
 package puck.javaGraph.commutativity
 
 import puck.javaGraph.nodeKind.Field
-import puck.AcceptanceSpec
+import puck.{AcceptanceSpec, TransfoRulesSpec}
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
-import puck.graph.{AccessAbstraction, Factory, Uses}
+import puck.graph.{AccessAbstraction, Factory, NodeIdP, Uses}
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, Redirection}
 import puck.javaGraph.ScenarioFactory
 import puck.Settings.outDir
 
-class CommutativityRedirect
-  extends AcceptanceSpec {
+class RedirectSpec
+  extends TransfoRulesSpec {
 
   feature("TypeDecl uses redirection") {
 
@@ -158,35 +158,32 @@ class CommutativityRedirect
 
 
     scenario("From constructor to constructorMethod hosted elsewhere - non static, parameter") {
-      val _ = new ScenarioFactory(
+      compareWithExpectedAndGenerated(
           """package p;
             |
-            |class Factory{
-            |    Factory(){}
-            |    B createB(){ return new B(); }
-            |}
+            |class Factory{ B createB(){ return new B(); } }
             |
             |class B { B(){} }
             |
-            |class A {
-            |    void m() { B b = new B(); }
-            |}"""
-          ){
-        val ctor = fullName2id("p.B.B()")
-        val ctorMethod = fullName2id("p.Factory.createB()")
+            |class A { void m() { B b = new B(); } }""",
+        bs => {
+          import bs.{graph, idOfFullName}
 
-        val callerDecl = fullName2id("p.A.m()")
-        val callerDef = fullName2id("p.A.m().Definition")
+          val g = graph.addAbstraction("p.B.B()",
+              AccessAbstraction("p.Factory.createB()", DelegationAbstraction))
+            .setRole("p.Factory.createB()", Some(Factory("p.B.B()")))
 
-        val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
-                    .setRole(ctorMethod, Some(Factory(ctor)))
-
-        val g2 = Redirection.redirectTypeConstructorToInstanceValueDecl(g,
-          Uses(callerDef, ctor), AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateParameter).rvalue
-
-        val recompiledEx = applyChangeAndMakeExample(g2, outDir)
-        assert(Mapping.equals(g2, recompiledEx.graph))
-      }
+          Redirection.redirectTypeConstructorToInstanceValueDecl(g,
+            ("p.A.m().Definition", "p.B.B()") : NodeIdP,
+            AccessAbstraction("p.Factory.createB()", DelegationAbstraction))(CreateParameter).rvalue
+        },
+          """package p;
+            |
+            |class Factory{ B createB(){ return new B(); } }
+            |
+            |class B { B(){} }
+            |
+            |class A { void m(Factory factory) { B b = factory.createB(); } }""")
     }
 
     scenario("From constructor to constructorMethod hosted elsewhere - non static, field") {

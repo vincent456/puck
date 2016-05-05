@@ -31,11 +31,11 @@ import puck.graph._
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.SupertypeAbstraction
 import puck.javaGraph.ScenarioFactory
-import puck.jastadd.ExtendJGraphUtils.{Rules => Rules}
+import puck.jastadd.ExtendJGraphUtils.Rules
 import puck.javaGraph.nodeKind.Interface
-import puck.AcceptanceSpec
+import puck.{AcceptanceSpec, TransfoRulesSpec}
 import puck.Settings.outDir
-class CommutativityAbstract extends AcceptanceSpec {
+class AbstractSpec extends TransfoRulesSpec {
 
   feature("Abstract class into interface") {
 
@@ -46,10 +46,8 @@ class CommutativityAbstract extends AcceptanceSpec {
       val _ = new ScenarioFactory(
         """package p;
           |class A {
-          |
           |    private int f;
           |    public void m(){}
-          |
           |}"""
       ) {
 
@@ -218,8 +216,8 @@ class CommutativityAbstract extends AcceptanceSpec {
 
         val recompiledEx = applyChangeAndMakeExample(g, outDir)
 
-//        QuickFrame(g, "g")
-//        QuickFrame(recompiledEx.graph, "recompiled")
+        //        QuickFrame(g, "g")
+        //        QuickFrame(recompiledEx.graph, "recompiled")
         assert( Mapping.equals(g, recompiledEx.graph) )
       }
     }
@@ -227,28 +225,33 @@ class CommutativityAbstract extends AcceptanceSpec {
 
   feature("Intro initializer"){
     scenario("one constructor one initialized field"){
-      val _ = new ScenarioFactory(
+      compareWithExpectedAndGenerated(
+        """package p;
+          |
+          |class F{}
+          |
+          |public class A {
+          |    private F f = new F();
+          |    public A(){}
+          |}""",
+        bs => {
+          import bs.{graph, idOfFullName}
+          Rules.intro.initializer(graph, "p.A")._2
+        },
         """package p;
           |
           |class F{}
           |
           |public class A {
           |
-          |    private F f = new F();
-          |    public A(){}
-          |}"""
-      ) {
-        val classA = fullName2id("p.A")
-
-        val (initializer, g) = Rules.intro.initializer(graph, classA)
-
-        val recompiledEx = applyChangeAndMakeExample(g, outDir)
-
-        assert( Mapping.equals(g, recompiledEx.graph) )
-      }
+          |    private F f;
+          |
+          |    public A(){ init(); }
+          |
+          |    void init(){ f = new F(); }
+          |
+          |}""")
     }
   }
-
-
 }
 

@@ -32,30 +32,10 @@ import puck.graph.comparison.Mapping
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, Move}
 import puck.jastadd.ExtendJGraphUtils.Rules
 import puck.javaGraph.ScenarioFactory
-import puck.javaGraph.nodeKind.{Field, Class}
-import puck.AcceptanceSpec
+import puck.javaGraph.nodeKind.{Class, Field}
+import puck.TransfoRulesSpec
 
-class MoveMethodSpec extends AcceptanceSpec {
-
-  def compareWithExpectedAndGenerated(initialCode : String,
-                                      transfo : ScenarioFactory => DependencyGraph,
-                                      expectedResultCode: String) : Unit = puck.ignore {
-     new ScenarioFactory(initialCode) {
-
-      val g : DependencyGraph = transfo(this)
-
-      import ShowDG._
-      (g, g.edges).println
-
-      val expectedResult = new ScenarioFactory(expectedResultCode)
-       (expectedResult.graph, expectedResult.graph.edges).println
-      assert(Mapping.equals(g, expectedResult.graph))
-
-      val generated = applyChangeAndMakeExample(g, outDir)
-      assert(Mapping.equals(g, generated.graph))
-    }
-  }
-
+class MoveMethodSpec extends TransfoRulesSpec {
 
   feature("Move one method not used by siblings") {
 

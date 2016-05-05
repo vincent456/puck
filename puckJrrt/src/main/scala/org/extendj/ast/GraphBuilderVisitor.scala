@@ -102,6 +102,7 @@ trait GraphBuilderVisitor {
     t.ids.foreach (id => addEdge(Uses(containerId, id)))
 
     val astType = stmt.`type`()
+    println("VarDeclStmt : " + stmt.prettyPrint())
 
     stmt.getDeclarators filter(_.hasInit) foreach {
       vd =>
@@ -110,6 +111,23 @@ trait GraphBuilderVisitor {
           case a: Access => constraintTypeUses(containerId, astType, containerId, a)
           case _ => ()
         }
+    }
+  }
+
+  def buildDG(containerId : NodeId, expr : AssignExpr) : Unit = {
+    expr.getSource.buildDG(this, containerId)
+    expr.getDest.buildDG(this, containerId)
+
+    val astType = expr.getDest.`type`()
+    val destNode = expr.getDest match {
+      case a : Access => a.lastAccess().accessed().buildDGNode(this)
+      case _ => throw new DGBuildingError()
+    }
+
+    expr.getSource match {
+      case src : Access =>
+        constraintTypeUses(destNode, astType, src.lastAccess().buildDGNode(this), src)
+      case _ => ()
     }
   }
 

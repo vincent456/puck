@@ -31,6 +31,80 @@ import java.util.NoSuchElementException
 import puck.graph._
 
 
+
+object Equality {
+
+  def equalsCVM[C[_], V]
+  ( mappin : V => V)
+  ( cvm1 : CollectionValueMap[V, C, V],
+    cvm2 : CollectionValueMap[V, C, V]) : Boolean =
+    equalsCVM[V, C, V](mappin, mappin)(cvm1, cvm2)
+
+
+  def equalsCVM[K, C[_], V]
+  ( mappinKey : K => K,
+    mappinValue : V => V)
+  ( cvm1 : CollectionValueMap[K, C, V],
+    cvm2 : CollectionValueMap[K, C, V]) : Boolean =
+    cvm1.content.size == cvm2.content.size &&
+      cvm1.content.forall {
+        case ((k1, vs1)) =>
+          val vs2 = cvm2.content(mappinKey(k1))
+          cvm1.handler.map(vs1, mappinValue) == vs2
+      }
+
+}
+
+object EqualityWithDebugPrint {
+
+
+  import ShowDG.{DGStringBuilder, DGShowOp}
+
+  def equalsCVM[C[_], V]
+  ( mappin : V => V)
+  ( cvm1 : CollectionValueMap[V, C, V],
+    cvm2 : CollectionValueMap[V, C, V])
+  (implicit  dgp : (DependencyGraph, DependencyGraph),
+   sb : DGStringBuilder[V]): Boolean =
+    equalsCVM[V, C, V](mappin, mappin)(cvm1, cvm2)(dgp,sb,sb)
+
+
+  def equalsCVM[K, C[_], V]
+  ( mappinKey : K => K,
+    mappinValue : V => V)
+  ( cvm1 : CollectionValueMap[K, C, V],
+    cvm2 : CollectionValueMap[K, C, V])
+  (implicit  dgp : (DependencyGraph, DependencyGraph),
+   ksb : DGStringBuilder[K],
+   vsb : DGStringBuilder[V]): Boolean = {
+    val (g1, g2) = dgp
+    def msg(g: DependencyGraph)(k: K, vs: C[V]): String = {
+      s"(${(g, k).shows}, ${cvm1.handler.toList(vs) map (v => (g, v).shows) mkString("[", ",", "]")})"
+    }
+
+    if (cvm1.content.size != cvm2.content.size) {
+      val mappedCvm1 = cvm1.toList map {
+        case (k, vs) => (mappinKey(k), cvm1.handler.map(vs, mappinValue))
+      }
+      val diff1 = mappedCvm1 diff cvm2.toList
+      val diff2 = cvm2.toList diff mappedCvm1
+      println("diff1 = " + (diff1 map (msg(g1) _).tupled) + "diff2 = " + (diff2 map (msg(g2) _).tupled))
+      false
+    }
+    else
+      cvm1.content.forall {
+        case ((k1, vs1)) =>
+          val vs2 = cvm2.content(mappinKey(k1))
+          if (cvm1.handler.map(vs1, mappinValue) != vs2) {
+            error(msg(g1)(k1, vs1) + " <-^->" + msg(g2)(mappinKey(k1), vs2))
+          }
+          true
+
+      }
+  }
+
+}
+
 object Mapping {
 
   def create
@@ -41,7 +115,7 @@ object Mapping {
 
   def nameIndex(g : DependencyGraph) : Map[String, NodeId] = {
     import ShowDG._
-   // g.nodesId map ( id => ((g, id).shows(sigFullName), id) ) toMap
+    // g.nodesId map ( id => ((g, id).shows(sigFullName), id) ) toMap
     (g.nodesId map ( id => ((g, id).shows(desambiguatedFullName), id) )).foldLeft(Map[String, NodeId]()){
       case (m, (k,id)) =>
         if(m contains k) {
@@ -58,20 +132,20 @@ object Mapping {
 
 
 
- def create
+  def create
   ( m1 : Map[String, NodeId],
     m2 : Map[String, NodeId]
-    ) : Map[NodeId, NodeId] =
-   swap(m1) mapValues m2.apply
-//{
-//   m1.foldLeft(Map[NodeId, NodeId]()){
-//     case (m, (name, nid1)) =>
-//       m2 get name match {
-//         case None => throw new PuckError(s"$name not found while building mapping")
-//         case Some(nid2) => m + (nid1 -> nid2)
-//       }
-//    }
-//   }
+  ) : Map[NodeId, NodeId] =
+    swap(m1) mapValues m2.apply
+  //{
+  //   m1.foldLeft(Map[NodeId, NodeId]()){
+  //     case (m, (name, nid1)) =>
+  //       m2 get name match {
+  //         case None => throw new PuckError(s"$name not found while building mapping")
+  //         case Some(nid2) => m + (nid1 -> nid2)
+  //       }
+  //    }
+  //   }
 
 
   def swap[A,B]( m : Map[A, B]) : Map[B, A] =
@@ -99,52 +173,6 @@ object Mapping {
     case Contravariant(t) => Contravariant(mapType(mappin)(t))
   }
 
-  import ShowDG._
-
-  def equalsCVM[C[_], V]
-  ( mappin : V => V)
-  ( cvm1 : CollectionValueMap[V, C, V],
-    cvm2 : CollectionValueMap[V, C, V])
-  (implicit ord: Ordering[V], dgp : (DependencyGraph, DependencyGraph), cb : DGStringBuilder[V]): Boolean = {
-    val (g1, g2) = dgp
-    def msg(g: DependencyGraph)(k: V, vs: C[V]): String = {
-      s"(${(g, k).shows}, ${cvm1.handler.toList(vs) map (v => (g, v).shows) mkString("[", ",", "]")})"
-    }
-
-    if (cvm1.content.size != cvm2.content.size) {
-      val mappedCvm1 = cvm1.toList map {
-        case (k, vs) => (mappin(k), cvm1.handler.map(vs, mappin))
-      }
-      val diff1 = mappedCvm1 diff cvm2.toList
-      val diff2 = cvm2.toList diff mappedCvm1
-      //error(mkMapStringSortedByKey(cvm1.content) + "<>" + mkMapStringSortedByKey(cvm2.content) +
-      println("diff1 = " + (diff1 map (msg(g1) _).tupled) + "diff2 = " + (diff2 map (msg(g2) _).tupled))
-      false
-    }
-    else
-      cvm1.content.forall {
-        case ((k1, vs1)) =>
-          val vs2 = cvm2.content(mappin(k1))
-          if (cvm1.handler.map(vs1, mappin) != vs2) {
-            error(msg(g1)(k1, vs1) + " <-^->" + msg(g2)(mappin(k1), vs2))
-          }
-          true
-
-      }
-  }
-
-//  def equalsCVM[C[_], V]
-//  ( mappin : V => V)
-//  ( cvm1 : CollectionValueMap[V, C, V],
-//    cvm2 : CollectionValueMap[V, C, V]) : Boolean =
-//      cvm1.content.size == cvm2.content.size &&
-//        cvm1.content.forall {
-//          case ((k1, vs1)) =>
-//            val vs2 = cvm2.content(mappin(k1))
-//            cvm1.handler.map(vs1, mappin) == vs2
-//        }
-
-    
 
   def equalsMap[V]
   ( mappin : V => V)
@@ -158,6 +186,9 @@ object Mapping {
       }
 
 
+  import ShowDG._
+  import EqualityWithDebugPrint._
+
   def equals
   ( g1 : DependencyGraph,
     g2 : DependencyGraph
@@ -166,7 +197,7 @@ object Mapping {
     assert(g2.virtualNodes.isEmpty)
 
 
-//    g1.nodesId.size == g2.nodesId.size && {
+    //    g1.nodesId.size == g2.nodesId.size && {
     implicit val gp = (g1, g2)
 
     if(g1.nodesId.size != g2.nodesId.size){
@@ -180,21 +211,20 @@ object Mapping {
     }
     else {
       val mappinG1toG2 : NodeId => NodeId = {
-//        val map : Map[NodeId, NodeId] = create(g1, g2)
+        //        val map : Map[NodeId, NodeId] = create(g1, g2)
 
         val ni1 = nameIndex(g1)
         val ni2 = nameIndex(g2)
-//        println("*********************** ni1 ***************************")
-//        println(ni1)
-//        println("*********************** ni2 ***************************")
-//        println(ni2)
+        //        println("*********************** ni1 ***************************")
+        //        println(ni1)
+        //        println("*********************** ni2 ***************************")
+        //        println(ni2)
         val map : Map[NodeId, NodeId] = create(ni1, ni2)
 
         {
           g1Id : NodeId =>
-            try {
-              map(g1Id)
-            } catch {
+            try map(g1Id)
+            catch {
               case nse : NoSuchElementException =>
 
                 nse.printStackTrace()
@@ -206,10 +236,10 @@ object Mapping {
                 val fn = g1.fullName(g1Id)
                 error(s"no mapping found for $g1Id $fn - " +
                   s"g1.nodesId.size = ${g1.nodesId.size} ni1.size =  ${ni1.size} "+
-//                  s"${ni1.size } ${ni2.size} ${map.size}" +
+                  //                  s"${ni1.size } ${ni2.size} ${map.size}" +
                   s"ni1 get fn = ${ni1 get fn} ni2 get fn = ${ni2 get fn} map get g1Id = ${map get g1Id} " +
-//                  s" ks1 contains fn = ${ks1 contains fn} " +
-//                  s" ks2 contains fn = ${ks2 contains fn} " +
+                  //                  s" ks1 contains fn = ${ks1 contains fn} " +
+                  //                  s" ks2 contains fn = ${ks2 contains fn} " +
                   s"fullName diff1 = $diff1 fullName diff2 = $diff2")
 
             }
@@ -228,15 +258,16 @@ object Mapping {
           g1n == g2n
       }
 
-      lazy val equalsUses1 =
+      lazy val equalsUses =
         equalsCVM(mappinG1toG2)(g1.edges.userMap, g2.edges.userMap)
-      lazy val equalsUses2 : Boolean =
+
+      lazy val equalTypes : Boolean =
         g1.edges.types.forall {
           case ((id1, t1)) =>
             val t2 = g2.edges.types(mappinG1toG2(id1))
             mapType(mappinG1toG2)(t1) == t2
         }
-      lazy val equalsUses3 = g1.edges.accessKindMap.forall{
+      lazy val equalsUsesAccessKind = g1.edges.accessKindMap.forall{
         case (k, v) =>
           g2.edges.accessKindMap(mappinNodeIdP(k)) == v
       }
@@ -249,27 +280,38 @@ object Mapping {
       lazy val equalsIsa =
         equalsCVM(mappinG1toG2)(g1.edges.superTypes, g2.edges.superTypes)
 
-      lazy val equalsTD1 =
+
+      lazy val equalsBR =
         equalsCVM(mappinNodeIdP)(g1.edges.typeMemberUses2typeUsesMap,
           g2.edges.typeMemberUses2typeUsesMap)
-      lazy val equalsTD2 =
-        equalsCVM(mappinNodeIdP)(g1.edges.typeUses2typeMemberUsesMap,
-          g2.edges.typeUses2typeMemberUsesMap)
+      //      lazy val equalsTD2 =
+      //        equalsCVM(mappinNodeIdP)(g1.edges.typeUses2typeMemberUsesMap,
+      //          g2.edges.typeUses2typeMemberUsesMap)
+
+      def mappinTUC(tuc : TypeUseConstraint) : TypeUseConstraint =
+        tuc.copyWith(user = mappinG1toG2(tuc.constrainedUser),
+          used = mappinG1toG2(tuc.constrainedType))
+
+
+      lazy val equalsTypeUseConstraints =
+        equalsCVM(mappinNodeIdP, mappinTUC)(g1.edges.typeUsesConstraints,
+          g2.edges.typeUsesConstraints)
+
 
       println("###############################")
       println("equalsNodes = " + equalsNodes)
-      println("equalsUses1 = " + equalsUses1)
-      println("equalsUses2 = " + equalsUses2)
-      println("equalsUses3 = " + equalsUses3)
+      println("equalsUses = " + equalsUses)
+      println("equalTypes = " + equalTypes)
+      println("equalsUsesAccessKind = " + equalsUsesAccessKind)
       println("equalsContains1 = " + equalsContains1)
       println("equalsContains2 = " + equalsContains2)
       println("equalsIsa = " + equalsIsa)
-      println("equalsTD1 = " + equalsTD1)
-      println("equalsTD2 = " + equalsTD2)
+      println("equalsBR = " + equalsBR)
+      println("equalsTypeUseConstraints = " + equalsTypeUseConstraints)
 
-      equalsNodes && equalsUses1 && equalsUses2 && equalsUses3 &&
+      equalsNodes && equalsUses && equalTypes && equalsUsesAccessKind &&
         equalsContains1 && equalsContains2 &&
-        equalsIsa && equalsTD1 && equalsTD2
+        equalsIsa && equalsBR && equalsTypeUseConstraints
 
     }
 

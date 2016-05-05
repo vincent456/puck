@@ -30,7 +30,7 @@ package puck.javaGraph.graphBuilding
 import puck.graph._
 import puck.graph.constraints.SupertypeAbstraction
 import puck.javaGraph.ScenarioFactory
-import puck.{AcceptanceSpec, Settings}
+import puck.AcceptanceSpec
 
 
 class GraphBuildingSpec extends AcceptanceSpec {
@@ -38,20 +38,14 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
   feature("Abstraction registration"){
     scenario("one class one interface"){
-      val p = "interfaceSupertype"
       val _ = new ScenarioFactory(
-        """package interfaceSupertype;
+        """package p;
           |
           |interface SuperType { void ma(); }
           |class A implements SuperType{ public void ma(){} }"""){
 
-        val classUsed = fullName2id(s"$p.A")
-        val mUsed = fullName2id(s"$p.A.ma()")
-        val superType = fullName2id(s"$p.SuperType")
-        val absmUsed = fullName2id(s"$p.SuperType.ma()")
-
-        graph.abstractions(classUsed) should contain ( AccessAbstraction(superType, SupertypeAbstraction) )
-        graph.abstractions(mUsed) should contain ( AccessAbstraction(absmUsed, SupertypeAbstraction) )
+        graph.abstractions("p.A") should contain ( AccessAbstraction("p.SuperType", SupertypeAbstraction) )
+        graph.abstractions("p.A.ma()") should contain ( AccessAbstraction("p.SuperType.ma()", SupertypeAbstraction) )
       }
     }
   }
@@ -65,10 +59,8 @@ class GraphBuildingSpec extends AcceptanceSpec {
           |class A {}
           |
           |class B extends A {}""") {
-        val superClass = fullName2id("p.A")
-        val subClass = fullName2id("p.B")
 
-        assert( graph.isa(subClass, superClass) )
+        assert( graph.isa("p.B", "p.A") )
 
       }
     }
