@@ -151,40 +151,39 @@ class ControlWithHeuristic
 
 }
 trait ActionGenerator {
- val rules : TransformationRules
- val initialGraph : DependencyGraph
- val constraints : ConstraintsMaps
- val violationTarget : ConcreteNode
+  val rules: TransformationRules
+  val initialGraph: DependencyGraph
+  val constraints: ConstraintsMaps
+  val violationTarget: ConcreteNode
 
 
-
-  def initialState : (DependencyGraph, Int) = (initialGraph, 0)
-
+  def initialState: (DependencyGraph, Int) = (initialGraph, 0)
 
 
-  implicit def setState( s : (Seq[LoggedTry[DependencyGraph]], Int) ) : Seq[LoggedTry[(DependencyGraph, Int)]] =
-     s._1 map ( _ map ((_, s._2)))
-//  implicit def setState2[T]( s : (Seq[LoggedTry[(T, DependencyGraph)]], Int) ) : Seq[LoggedTry[(DependencyGraph, Int)]] =
-//    s._1 map ( _ map {case (t,g) =>  (g, s._2)})
+  implicit def setState(s: (Seq[LoggedTry[DependencyGraph]], Int)): Seq[LoggedTry[(DependencyGraph, Int)]] =
+    s._1 map (_ map ((_, s._2)))
 
-
+  //  implicit def setState2[T]( s : (Seq[LoggedTry[(T, DependencyGraph)]], Int) ) : Seq[LoggedTry[(DependencyGraph, Int)]] =
+  //    s._1 map ( _ map {case (t,g) =>  (g, s._2)})
 
 
   val actionsGenerator = new SolvingActions(rules, constraints)
 
-  def extractGraph[A](ng : (A, DependencyGraph)): DependencyGraph = ng._2
+  def extractGraph[A](ng: (A, DependencyGraph)): DependencyGraph = ng._2
 
-  def toSeqLTG[T]( s : Seq[LoggedTry[(T, DependencyGraph)]] ) :  Seq[LoggedTry[DependencyGraph]] =
-    s map ( _ map (_._2))
+  def toSeqLTG[T](s: Seq[LoggedTry[(T, DependencyGraph)]]): Seq[LoggedTry[DependencyGraph]] =
+    s map (_ map (_._2))
 
-  val epsilon : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-        g => Seq(LoggedSuccess("Epsilon transition\n", g))
+  val epsilon: DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
+    g => Seq(LoggedSuccess("Epsilon transition\n", g))
 
-//  val nameSpaceIntro: DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-//    g => toSeqLTG(actionsGenerator.introNodes(g.nodeKindKnowledge.kindOfKindType(NameSpace), g))
-//
-//  val typeDeclIntro: DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-//    g => toSeqLTG(actionsGenerator.introNodes(g.nodeKindKnowledge.kindOfKindType(TypeDecl), g))
+  //  val nameSpaceIntro: DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
+  //    g => toSeqLTG(actionsGenerator.introNodes(g.nodeKindKnowledge.kindOfKindType(NameSpace), g))
+  //
+  //  val typeDeclIntro: DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
+  //    g => toSeqLTG(actionsGenerator.introNodes(g.nodeKindKnowledge.kindOfKindType(TypeDecl), g))
+
+
 
   val hostIntroAction : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
        actionsGenerator.hostIntro(violationTarget) andThen toSeqLTG
@@ -254,6 +253,8 @@ class SolvingActions
   }*/
 
 
+
+
   def introNodes(nodeKinds: Seq[NodeKind], g: DependencyGraph): Stream[LoggedTry[(NodeId, DependencyGraph)]] =
     nodeKinds.toStream map {
       hostKind =>
@@ -309,7 +310,7 @@ class SolvingActions
 
 
   def canBeVirtualized : KindType => Boolean = {
-    case NameSpace => true
+    //case NameSpace => true
     case _ => false
   }
 

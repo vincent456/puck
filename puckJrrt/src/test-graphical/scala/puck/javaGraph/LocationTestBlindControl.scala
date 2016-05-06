@@ -24,7 +24,7 @@ object LocationSolveAll {
       val constraints = parseConstraints(s"$path/decouple.wld")
 
       val res = solveAllKeepVN(graph, constraints, blindControlBuilder,
-        () => new AStarSearchStrategy[(DependencyGraph, Int)](SResultEvaluator.equalityByMapping(_ => 1)),
+        () => new AStarSearchStrategy[(DependencyGraph, Int)](SResultEvaluator.equalityByMapping(_.numNodes)),
         Some(1),Some(1))
 
       if(res.isEmpty) println("no results")
