@@ -27,12 +27,12 @@
 package puck.javaGraph
 
 import org.scalatest.{EitherValues, FeatureSpec, OptionValues}
-import puck.Settings._
+import puck.Settings.outDir
 import puck.graph.{AccessAbstraction, DependencyGraph, NodeId, Uses}
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.SupertypeAbstraction
 import puck.jastadd.ExtendJGraphUtils.{Rules => Rules}
-import puck.{LoggedEitherValues, Settings}
+import puck.LoggedEitherValues
 import puck.javaGraph.nodeKind._
 
 /**
@@ -103,10 +103,8 @@ class CompositeManualRefactoringSpec
 
   scenario("composite ``manual'' refactoring"){
     val bs = CompositeScenario()
+    val recompiledEx = bs.applyChangeAndMakeExample(bs.gFinal, outDir)
 
-     val recompiledEx = bs.applyChangeAndMakeExample(bs.gFinal, outDir)
-
-    println(Settings.tmpDir)
     assert( Mapping.equals(bs.gFinal, recompiledEx.graph) )
 
   }

@@ -97,17 +97,6 @@ aspect DependencyGraphFactory {
 	}
 
 
-	void ClassDecl.addExtends(JastaddGraphBuilder builder, int thisId){
-		if (hasSuperclass() && !"java.lang.Object".equals(superclass().fullName())){
-
-			builder.addIsa(thisId, getSuperClass().buildDGNode(builder));
-
-			getSuperClass().buildIsaEdges(builder, thisId);
-		}
-	}
-
-
-
 	public void GenericTypeDecl.buildDG_TypeParameters(JastaddGraphBuilder builder, int thisId){
 		for(TypeVariable tv: getTypeParameterList()){
 			int nodeId = tv.buildDGNode(builder);
@@ -151,17 +140,21 @@ aspect DependencyGraphFactory {
 		getClassDecl().buildDG(builder, hostTypeDeclId);
 	}
 
-	public void FieldDecl.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId){
-		builder.buildDG(hostTypeDeclId, this);
+	interface Buildable { }
+
+	//method generated in each subclass, hence achieving the double dispatch
+	public void Buildable.buildDG(JastaddGraphBuilder builder, int containerId){
+			builder.buildDG(containerId, this);
 	}
 
-	public void VarDeclStmt.buildDG(JastaddGraphBuilder builder, int containerId){
-		builder.buildDG(containerId, this);
-	}
+	FieldDecl implements Buildable;
+	VarDeclStmt implements Buildable;
+	ReturnStmt implements Buildable;
+	AssignExpr implements Buildable;
+	MethodAccess implements Buildable;
+	VarAccess implements Buildable;
+	ClassInstanceExpr implements Buildable;
 
-	public void AssignExpr.buildDG(JastaddGraphBuilder builder, int containerId){
-		builder.buildDG(containerId, this);
-	}
 
 	public void EnhancedForStmt.buildDG(JastaddGraphBuilder builder, int containerId) {
 		super.buildDG(builder, containerId);
@@ -246,17 +239,7 @@ aspect DependencyGraphFactory {
 		return keeped;
 	}
 
-	public void MethodAccess.buildDG(JastaddGraphBuilder builder, int containerId){
-		builder.buildDG(containerId, this);
-	}
 
-	public void VarAccess.buildDG(JastaddGraphBuilder builder, int containerId){
-		builder.buildDG(containerId, this);
-	}
-
-	public void ClassInstanceExpr.buildDG(JastaddGraphBuilder builder, int containerId){
-		builder.buildDG(containerId, this);
-	}
 
 	syn boolean ASTNode.isAbstractDot();
 	eq ASTNode.isAbstractDot() = false;

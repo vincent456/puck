@@ -31,9 +31,9 @@ import puck.graph._
 import puck.util.LoggedEither
 import LoggedEither._
 import puck.graph.ShowDG._
-
 import scalaz.std.list._
 import scalaz.std.set._
+import ShowDG._
 
 object Redirection {
 
@@ -77,12 +77,12 @@ object Redirection {
     typeAbs : NodeId,
     tmImpl : NodeId
   ) : LoggedTry[Abstraction] = {
-    val log = s"tmAbstraction(g, ${(g, typeAbs).shows}, ${(g, tmImpl).shows})"
+    val log = s"tmAbstraction : searching an abstraction of ${(g, tmImpl).shows} in ${(g, typeAbs).shows}"
     val absSet = g.abstractions(tmImpl).filter { abs =>
       abs.nodes.forall(g.contains(typeAbs,_))
     }
     if(absSet.size != 1)
-      LoggedError(log + s"one abstraction required ${absSet.size} found")
+      LoggedError(log + s" one abstraction required ${absSet.size} found")
     else LoggedSuccess(log, absSet.head)
   }
 
@@ -126,9 +126,13 @@ object Redirection {
       case (TypeConstructor, InstanceValueDecl) =>
         redirectTypeConstructorToInstanceValueDecl(g, oldUse, newUsed)()
 
-      case (StaticValueDecl, StaticValueDecl)
-           | (TypeConstructor, StaticValueDecl) =>
+      case (StaticValueDecl, StaticValueDecl) =>
         redirect(g, oldUse, newUsed).map(_._1)
+      case (TypeConstructor, StaticValueDecl) =>
+        redirect(g, oldUse, newUsed).flatMap {
+          case (g1, _) =>
+            updateTypeUseConstraintForTypeConstructorRedirect(g1, oldUse, newUsed)
+        }
 
       case (kt1, kt2) =>
         LoggedError(s"redirection of type $kt1 to $kt2 unhandled")
@@ -136,6 +140,27 @@ object Redirection {
 
     val log = s"redirect uses and propagate from $oldKindType to $newKindType\n"
     log <++: ltg
+  }
+
+  def updateTypeUseConstraintForTypeConstructorRedirect
+  (g : DependencyGraph,
+   ctorUse : NodeIdP,
+   newUsed : Abstraction ) : LoggedTG = {
+    val (userOfCtor, ctor)= ctorUse
+    val ctorTypeUse = (ctor, g container_! ctor)
+    val constrainedUseToChange =
+      g.typeConstraints(ctorTypeUse) filter ( _.constrainedUser == userOfCtor )
+    val AccessAbstraction(absNode, _) = newUsed
+
+    g.typ(absNode) match {
+      case NamedType(tid) =>
+        constrainedUseToChange.foldLoggedEither(g){
+          (g0, ct) =>
+            LoggedSuccess(g.removeTypeUsesConstraint(ctorTypeUse, ct)
+              .addTypeUsesConstraint((absNode, tid), ct))
+        }
+      case _ => LoggedError("gen type factory type constraint change unhandled : TODO")
+    }
   }
 
   def redirectTypeConstructorToInstanceValueDecl
@@ -151,7 +176,7 @@ object Redirection {
     import g.nodeKindKnowledge.intro
 
     val typeOfNewReveiver = g.container(absNode).get
-    val (userOfCtor, ctor)= ctorUse
+    val (userOfCtor, _)= ctorUse
 
     val ltg = createVarStrategy match {
       case CreateParameter =>
@@ -163,34 +188,16 @@ object Redirection {
         }
 
       case CreateTypeMember(kind) =>
-        intro.typeMember(g1,
-          typeOfNewReveiver,
-          g.hostTypeDecl(userOfCtor),
-          kind) map {
+        intro.typeMember(g1, typeOfNewReveiver,
+          g.hostTypeDecl(userOfCtor), kind) map {
           case (newTypeUse, g2) =>
             intro.addUsesAndSelfDependency(
               g2.addBinding(newTypeUse, (userOfCtor, absNode)),
               userOfCtor, newTypeUse.user)
         }
     }
-    ltg flatMap {
-      g =>
-        val ctorTypeUse = (ctor, g container_! ctor)
-        val constrainedUseToChange = g.typeConstraints(ctorTypeUse).filter { ct =>
-          ct.constrainedUser == userOfCtor || g.uses(userOfCtor, ct.constrainedUser)
-        }
-        g.typ(absNode) match {
-          case NamedType(tid) =>
-            constrainedUseToChange.foldLoggedEither(g){
-              (g0, ct) =>
-                LoggedSuccess(g.removeTypeUsesConstraint(ctorTypeUse, ct)
-                  .addTypeUsesConstraint((absNode, tid), ct))
-            }
-          case _ => LoggedError("gen type factory type constraint change unhandled : TODO")
-        }
+    ltg flatMap (updateTypeUseConstraintForTypeConstructorRedirect(_, ctorUse, newUsed))
 
-
-    }
 
   }
 
@@ -199,6 +206,7 @@ object Redirection {
   (g : DependencyGraph,
    oldTypeUse : NodeIdP,
    newTypeToUse : NodeId) : LoggedTG = {
+    val log = s"propagateTypeConstraints old = ${(g, oldTypeUse).shows} new = ${(g, newTypeToUse).shows}"
     //    import puck.util.Debug._
     //    println("propagateTypeConstraints")
     //    (g, g.edges).println
@@ -225,19 +233,23 @@ object Redirection {
 
     g.abstractions(oldTypeUsed).find (abs => abs.nodes contains newTypeToUse) match {
       case None => LoggedError("no satisfying abstraction found")
+      case Some(ReadWriteAbstraction(_, _)) =>
+        LoggedError("!!! type is not supposed to have a r/w abs !!!")
       case Some(abs @ AccessAbstraction(absId, _)) =>
 
         def update(g : DependencyGraph, tuc : TypeUseConstraint) : DependencyGraph =
           g.removeTypeUsesConstraint(oldTypeUse, tuc)
-            .addTypeUsesConstraint((oldTypeUse.user, absId), tuc.copyWith(used = absId))
+            .addTypeUsesConstraint((oldTypeUse.user, absId), tuc)
 
         val g1 = tucsThatNeedUpdate.foldLeft(g)(update)
 
         tucsThatNeedPropagation.foldLoggedEither(g1) {
           case (g0, tuc) =>
             val (s,t) = tuc.constrainedUse
+            //LoggedSuccess( update(g0, tuc) )
             val g1 = update(g0, tuc)
-            redirectInstanceUsesAndPropagate(g1, Uses(s,t), abs)
+            if( t == absId ) LoggedSuccess(g1)
+            else redirectInstanceUsesAndPropagate(g1, (s,t), abs)
         }
     }
   }
@@ -268,6 +280,7 @@ object Redirection {
    oldUse : NodeIdP,
    newUsed : Abstraction
   ) : LoggedTG = {
+
     val log = s"redirectInstanceUsesAndPropagate(g, oldUse = ${(g, oldUse).shows},  " +
       s"newUsed = ${(g, newUsed).shows})\n"
 

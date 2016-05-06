@@ -40,42 +40,34 @@ class RedirectTypeDeclSpec
     val _ = new ScenarioFactory(
       """package p;
         |
-        |class ClassUsed implements SuperType{ public void mUsed(){} }
+        |class C implements I{ public void m(){} }
         |
-        |interface SuperType { void mUsed(); }
+        |interface I { void m(); }
         |
         |class A {
         |
         |    public static void main(String[] args){
         |        A a = new A();
-        |        a.mUser(new ClassUsed());
+        |        a.mUser(new C());
         |    }
         |
-        |    void mUser(ClassUsed cu){ cu.mUsed(); }
+        |    void mUser(C cu){ cu.m(); }
         |}"""
     ) {
-      val mUserDecl = fullName2id("p.A.mUser(ClassUsed)")
-      val theParam = fullName2id("p.A.mUser(ClassUsed).cu")
-      val mUserDef = fullName2id("p.A.mUser(ClassUsed).Definition")
 
-      val classUsed = fullName2id("p.ClassUsed")
-      val mUsed = fullName2id("p.ClassUsed.mUsed()")
-      val superType = fullName2id("p.SuperType")
-      val absmUsed = fullName2id("p.SuperType.mUsed()")
-
-      val typeUse = Uses(theParam, classUsed)
+      val typeUse = Uses("p.A.mUser(C).cu", "p.C")
       assert(typeUse.existsIn(graph))
-      assert(Uses(mUserDef, mUsed).existsIn(graph))
+      assert(Uses("p.A.mUser(C).Definition", "p.C.m()").existsIn(graph))
 
       val g2 =
         Redirection.redirectUsesAndPropagate(graph,
-          typeUse, AccessAbstraction(superType, SupertypeAbstraction)).rvalue
+          typeUse, AccessAbstraction("p.I", SupertypeAbstraction)).rvalue
 
-      assert(Uses(theParam, superType).existsIn(g2))
-      assert(Uses(mUserDef, absmUsed).existsIn(g2))
+      assert(Uses("p.A.mUser(C).cu", "p.I").existsIn(g2))
+      assert(Uses("p.A.mUser(C).Definition", "p.I.m()").existsIn(g2))
 
-      assert(!Uses(theParam, classUsed).existsIn(g2))
-      assert(!Uses(mUserDef, mUsed).existsIn(g2))
+      assert(!Uses("p.A.mUser(C).cu", "p.C").existsIn(g2))
+      assert(!Uses("p.A.mUser(C).Definition", "p.C.m()").existsIn(g2))
     }
   }
 
@@ -165,9 +157,7 @@ class RedirectTypeDeclSpec
         |
         |class Wrapper<T> {
         |    private T t;
-        |    public void set(T t){}
         |    public T get(){return t;}
-        |
         |}
         |
         |interface I { void m(); }
@@ -181,14 +171,10 @@ class RedirectTypeDeclSpec
         |    void doM(){ wa.get().m(); }
         |}""") {
 
-      val fieldGenTypeUse : NodeIdP = ("p.B.wa", "p.Wrapper")
-      val fieldParameterTypeUse : NodeIdP = ("p.B.wa", "p.A")
-      val typeMemberUse : NodeIdP = ("p.B.doM().Definition", "p.A.m()")
 
-      val g2 =
-        Redirection.redirectUsesAndPropagate(graph,
-          fieldParameterTypeUse, AccessAbstraction("p.I", SupertypeAbstraction)).rvalue
-
+      val ltg =  Redirection.redirectUsesAndPropagate(graph,  ("p.B.wa", "p.A"),
+        AccessAbstraction("p.I", SupertypeAbstraction))
+      val g2 = ltg.rvalue
       assert(g2.uses("p.B.wa", "p.I"))
       assert(g2.uses("p.B.doM().Definition", "p.I.m()"))
 
@@ -216,15 +202,12 @@ class RedirectTypeDeclSpec
         |}"""
     ) {
 
-
-      val typeUse1 : NodeIdP = ("p.Wrapper.get()", "p.A")
-      val typeUse2 : NodeIdP = ("p.B.getA().Definition", "p.A")
-
-      graph.usesThatShouldUsesASuperTypeOf(typeUse1) should contain (typeUse2)
+      graph.usesThatShouldUsesASuperTypeOf(("p.Wrapper.get()", "p.A")) should contain (
+        ("p.B.getA().Definition", "p.A") : NodeIdP)
 
       val g2 =
         Redirection.redirectUsesAndPropagate(graph,
-          typeUse1, AccessAbstraction("p.I", SupertypeAbstraction)).rvalue
+          ("p.Wrapper.get()", "p.A"), AccessAbstraction("p.I", SupertypeAbstraction)).rvalue
 
       assert(Uses("p.Wrapper.get()", "p.I").existsIn(g2))
       assert(Uses("p.B.getA().Definition", "p.I").existsIn(g2))

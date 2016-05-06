@@ -436,31 +436,27 @@ class MoveMethodSpec extends TransfoRulesSpec {
   feature("Move several methods"){
 
     scenario("one of the moved method is used by another") {
-      val _ = new ScenarioFactory(
+      compareWithExpectedAndGenerated(
         """package p;
           |
           |class A {
-          |
-          |    public void mUser(){ methodToMove(); }
-          |
-          |    public void methodToMove(){}
+          |    void m1(){ m2(); }
+          |    void m2(){}
           |}
           |
-          |class B{ }"""
-      ) {
-
-        val methUserDecl = fullName2id("p.A.mUser()")
-        val methToMoveDecl = fullName2id("p.A.methodToMove()")
-
-        val newHostClass = fullName2id("p.B")
-
-        val g = Move.typeMember(graph, List(methToMoveDecl, methUserDecl), newHostClass, Some(CreateParameter)).rvalue
-
-        val recompiledEx = applyChangeAndMakeExample(g, outDir)
-
-        assert( Mapping.equals(g, recompiledEx.graph) )
-
-      }
+          |class B{ }""",
+        bs => {
+          import bs.{graph, idOfFullName}
+          Move.typeMember(graph, List[NodeId]("p.A.m1()", "p.A.m2()"), "p.B").rvalue
+      },
+        """package p;
+          |
+          |class A { }
+          |
+          |class B {
+          |    void m1(){ m2(); }
+          |    void m2(){}
+          |}""")
 
     }
 

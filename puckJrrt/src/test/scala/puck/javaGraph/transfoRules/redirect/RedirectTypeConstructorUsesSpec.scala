@@ -43,46 +43,35 @@ class RedirectTypeConstructorUsesSpec
     val _ = new ScenarioFactory(
       """package p;
         |
-        |class Factory{
-        |    Factory(){}
-        |    B createB(){ return new B(); }
-        |}
+        |class Factory{ B createB(){ return new B(); } }
         |
-        |class B { B(){} }
+        |class B { }
         |
-        |class A {
-        |    void m() { B b = new B(); }
-        |}"""
+        |class A { void m() { B b = new B(); } }"""
     ) {
-      val ctor = fullName2id(s"p.B.B()")
-      val ctorMethod = fullName2id(s"p.Factory.createB()")
-      val factoryClass = fullName2id(s"p.Factory")
-      val factoryCtor = fullName2id(s"p.Factory.Factory()")
-
-      val callerDecl = fullName2id(s"p.A.m()")
-      val callerDef = fullName2id("p.A.m().Definition")
 
 
-      val ctorUse = Uses(callerDef, ctor)
-      val ctorMethodUse = Uses(callerDef, ctorMethod)
+
+      val ctorUse = Uses("p.A.m().Definition", "p.B.B()")
+      val ctorMethodUse = Uses("p.A.m().Definition", "p.Factory.createB()")
 
       assert(ctorUse.existsIn(graph))
       assert(!ctorMethodUse.existsIn(graph))
 
-      graph.parametersOf(callerDecl) shouldBe empty
+      graph.parametersOf("p.A.m()") shouldBe empty
 
-      val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
+      val g = graph.addAbstraction("p.B.B()", AccessAbstraction("p.Factory.createB()", DelegationAbstraction))
 
       val g2 = Redirection.redirectTypeConstructorToInstanceValueDecl(g,
-        ctorUse, AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateParameter).rvalue
+        ctorUse, AccessAbstraction("p.Factory.createB()", DelegationAbstraction))(CreateParameter).rvalue
 
       assert(ctorMethodUse.existsIn(g2))
       assert(!ctorUse.existsIn(g2))
 
-      val parameters = g2.parametersOf(callerDecl)
+      val parameters = g2.parametersOf("p.A.m()")
       parameters.size shouldBe 1
 
-      assert(g2.uses(parameters.head, factoryClass))
+      assert(g2.uses(parameters.head, "p.Factory"))
     }
   }
 
@@ -90,42 +79,28 @@ class RedirectTypeConstructorUsesSpec
     val _ = new ScenarioFactory(
       """package p;
         |
-        |class Factory{
-        |    Factory(){}
-        |    B createB(){ return new B(); }
-        |}
+        |class Factory{ B createB(){ return new B(); } }
         |
-        |class B { B(){} }
+        |class B { }
         |
-        |class A {
-        |    void m() { B b = new B(); }
-        |}"""
+        |class A { void m() { B b = new B(); } }"""
     ) {
-      val ctor = fullName2id(s"p.B.B()")
-      val ctorMethod = fullName2id(s"p.Factory.createB()")
-      val factoryClass = fullName2id(s"p.Factory")
-      val factoryCtor = fullName2id(s"p.Factory.Factory()")
 
-      val callerDef = fullName2id("p.A.m().Definition")
-
-      val callerHostClass = fullName2id(s"p.A")
-
-
-      val ctorUse = Uses(callerDef, ctor)
-      val ctorMethodUse = Uses(callerDef, ctorMethod)
+      val ctorUse = Uses("p.A.m().Definition", "p.B.B()")
+      val ctorMethodUse = Uses("p.A.m().Definition", "p.Factory.createB()")
 
       assert(ctorUse.existsIn(graph))
       assert(!ctorMethodUse.existsIn(graph))
 
-      val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
+      val g = graph.addAbstraction("p.B.B()", AccessAbstraction("p.Factory.createB()", DelegationAbstraction))
 
       val g2 = Redirection.redirectTypeConstructorToInstanceValueDecl(g,
-        ctorUse, AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateTypeMember(Field)).rvalue
+        ctorUse, AccessAbstraction("p.Factory.createB()", DelegationAbstraction))(CreateTypeMember(Field)).rvalue
 
       assert(ctorMethodUse.existsIn(g2))
       assert(!ctorUse.existsIn(g2))
 
-      g2.content(callerHostClass).size shouldBe (graph.content(callerHostClass).size + 1)
+      g2.content("p.A").size shouldBe (graph.content("p.A").size + 1)
 
       //assert(g2.uses(parameters.head, factoryClass))
     }
@@ -136,10 +111,7 @@ class RedirectTypeConstructorUsesSpec
     val _ = new ScenarioFactory(
       """package p;
         |
-        |class B {
-        |    B(){}
-        |    B create(){return new B();}
-        |}
+        |class B { B create(){return new B();} }
         |
         |class A { void m(){ new B(); } }
         |
@@ -150,41 +122,34 @@ class RedirectTypeConstructorUsesSpec
         |    }
         |}"""
     ) {
-      val ctor = fullName2id(s"p.B.B()")
-      val ctorMethod = fullName2id(s"p.B.create()")
-      val constructedClass = fullName2id(s"p.B")
 
-      val callerDecl = fullName2id(s"p.A.m()")
-      val callerDef = fullName2id("p.A.m().Definition")
 
-      val userOfTheCallerDecl = fullName2id(s"p.C.mc()")
-      val userOfTheCallerDef = fullName2id("p.C.mc().Definition")
 
-      val ctorUse = Uses(callerDef, ctor)
-      val ctorMethodUse = Uses(callerDef, ctorMethod)
+      val ctorUse = Uses("p.A.m().Definition", "p.B.B()")
+      val ctorMethodUse = Uses("p.A.m().Definition", "p.B.create()")
 
       assert(ctorUse existsIn graph)
       assert(!(ctorMethodUse existsIn graph))
 
-      graph.parametersOf(callerDecl) shouldBe empty
+      graph.parametersOf("p.A.m()") shouldBe empty
 
-      val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
+      val g = graph.addAbstraction("p.B.B()", AccessAbstraction("p.B.create()", DelegationAbstraction))
 
       val g2 =
-        Redirection.redirectTypeConstructorToInstanceValueDecl(g,
-          ctorUse, AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateParameter).rvalue
+        Redirection.redirectTypeConstructorToInstanceValueDecl(g, ctorUse,
+          AccessAbstraction("p.B.create()", DelegationAbstraction))(CreateParameter).rvalue
 
 
       assert(!(ctorUse existsIn g2))
       assert(ctorMethodUse existsIn g2)
 
-      val parameters = g2.parametersOf(callerDecl)
+      val parameters = g2.parametersOf("p.A.m()")
       parameters.size shouldBe 1
 
-      assert(g2.uses(parameters.head, constructedClass))
+      assert(g2.uses(parameters.head, "p.B"))
 
-      assert(g2.uses(userOfTheCallerDef, ctor))
-      assert(!g2.uses(userOfTheCallerDef, constructedClass))
+      assert(g2.uses("p.C.mc().Definition", "p.B.B()"))
+      assert(!g2.uses("p.C.mc().Definition", "p.B"))
 
     }
   }
@@ -193,10 +158,7 @@ class RedirectTypeConstructorUsesSpec
     val _ = new ScenarioFactory(
       """package p;
         |
-        |class B {
-        |    B(){}
-        |    B create(){return new B();}
-        |}
+        |class B { B create(){ return new B(); } }
         |
         |class A { void m(){ new B(); } }
         |
@@ -207,31 +169,21 @@ class RedirectTypeConstructorUsesSpec
         |    }
         |}"""
     ) {
-      val ctor = fullName2id(s"p.B.B()")
-      val ctorMethod = fullName2id(s"p.B.create()")
-      val constructedClass = fullName2id(s"p.B")
 
-      val callerDecl = fullName2id(s"p.A.m()")
-      val callerDef = fullName2id("p.A.m().Definition")
+      val ctorUse = Uses("p.A.m().Definition", "p.B.B()")
+      val ctorMethodUse = Uses("p.A.m().Definition", "p.B.create()")
 
-      val userOfTheCallerDecl = fullName2id(s"p.C.mc()")
-      val userOfTheCallerDef = fullName2id("p.C.mc().Definition")
-
-      val ctorUse = Uses(callerDef, ctor)
-      val ctorMethodUse = Uses(callerDef, ctorMethod)
-
-      val callerHostClass = fullName2id(s"p.A")
-
+      val callerHostClass = fullName2id("p.A")
 
       assert(ctorUse existsIn graph)
       assert(!(ctorMethodUse existsIn graph))
 
 
-      val g = graph.addAbstraction(ctor, AccessAbstraction(ctorMethod, DelegationAbstraction))
+      val g = graph.addAbstraction("p.B.B()", AccessAbstraction("p.B.create()", DelegationAbstraction))
 
       val g2 =
         Redirection.redirectTypeConstructorToInstanceValueDecl(g,
-          ctorUse, AccessAbstraction(ctorMethod, DelegationAbstraction))(CreateTypeMember(Field)).rvalue
+          ctorUse, AccessAbstraction("p.B.create()", DelegationAbstraction))(CreateTypeMember(Field)).rvalue
 
 
       assert(!(ctorUse existsIn g2))
@@ -241,9 +193,10 @@ class RedirectTypeConstructorUsesSpec
 
       val delegate = g2.nodes.find(n => n.name(g2).endsWith("_delegate")).value
 
-      assert(g2.uses(g2.definitionOf_!(delegate.id), ctor))
-      assert(!g2.uses(userOfTheCallerDef, constructedClass))
+      assert(g2.uses(g2.definitionOf_!(delegate.id), "p.B.B()"))
+      assert(!g2.uses("p.C.mc().Definition", "p.B"))
 
     }
   }
+
 }

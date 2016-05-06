@@ -109,13 +109,13 @@ object Move {
       val usesBetweenMovedDefsViaThis = usesBetweenViaThis(g, movedDefs, movedDecls)
 
       val g1 =
-        if(g.typeMemberUsesOf(newSelfUse).nonEmpty && !(newSelfUse existsIn g))
-          newSelfUse createIn g
-        else g
+        g.changeTypeUseForTypeMemberUseSet(oldSelfUse, newSelfUse,
+          usesBetweenMovedDefsViaThis)
 
       val g2 =
-        g1.changeTypeUseForTypeMemberUseSet(oldSelfUse, newSelfUse,
-          usesBetweenMovedDefsViaThis)
+        if(g1.typeMemberUsesOf(newSelfUse).nonEmpty && !(newSelfUse existsIn g1))
+          newSelfUse createIn g1
+        else g1
 
       if(g2.typeMemberUsesOf(oldSelfUse).isEmpty)
         g2.removeEdge(oldSelfUse)
@@ -360,10 +360,6 @@ object Move {
           for { nid <- movedDecls
             if g0.parametersOf(nid) exists (g0.typ(_) uses newContainer)
           } yield nid
-//          movedDecls.filter {
-//            nid =>
-//              g0.parametersOf(nid) exists (g0.typ(_) uses newContainer)
-//          }
 
         val usesThatRequireNewReceiver = for {
           declId <- movedDecls -- movedDeclWithArgUsableAsReceiver

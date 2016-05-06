@@ -174,7 +174,7 @@ abstract class Intro {
    typeNode : NodeId,
    tmContainer : NodeId,
    kind : NodeKind
-    ) : LoggedTry[(Uses, DependencyGraph)] = {
+    ) : LoggedTry[(NodeIdP, DependencyGraph)] = {
     val g = graph.comment(s"Intro.typeMember(g, ${(graph, typeNode).shows}, ${(graph,tmContainer).shows}, $kind)")
 
     val ltCid : LoggedTry[(NodeId, DependencyGraph)] =
@@ -193,16 +193,16 @@ abstract class Intro {
         val (delegateDecl, delegateDef, g1) =
           typedNodeWithDef(g0, delegateName, kind, typeNode)
 
-        val newTypeUse = Uses(delegateDecl.id, typeNode)
+        val newTypeUse = (delegateDecl.id, typeNode)
 
         val tmContainerKind = g0.getConcreteNode(tmContainer).kind
-        if(tmContainerKind canContain kind)
-          LoggedSuccess(
+        if(tmContainerKind canContain kind) LoggedSuccess {
             (newTypeUse,
               g1.addContains(tmContainer, delegateDecl.id)
-                .addEdge(Uses(delegateDef.id, constructorId))))
-        else
-          LoggedError(s"$tmContainerKind cannot contain $kind")
+                .addEdge(Uses(delegateDef.id, constructorId))
+                .addTypeUsesConstraint(newTypeUse, Sub((constructorId, typeNode))))
+        }
+        else LoggedError(s"$tmContainerKind cannot contain $kind")
 
     }
   }

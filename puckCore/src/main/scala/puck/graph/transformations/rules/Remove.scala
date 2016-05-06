@@ -46,7 +46,7 @@ object Remove{
         foldLoggedEither(graph)(remove.concreteNode)
 
       g2 <-
-      if (g1.usersOfExcludingTypeUse(n.id).nonEmpty)
+      if (g1.usersOf(n.id).nonEmpty)
         LoggedError("Cannot remove a used node")
       else {
         val g00 =
@@ -64,12 +64,22 @@ object Remove{
             g.removeEdge(Uses(n.id, usedId))
         }
         val g03 = remove.bindingsInvolving(g02.removeType(n.id), n)
-        LoggedSuccess(g03.removeConcreteNode(n))
+        val g04 = remove.typeUseConstraintInvolving(g03, n)
+        LoggedSuccess(g04.removeConcreteNode(n))
       }
 
     } yield g2
   }
 
+  def typeUseConstraintInvolving(g : DependencyGraph, n : ConcreteNode) : DependencyGraph = {
+    val tcs = g.typeConstraintsIterator.filter {
+      case ((user, used), ct) =>
+        user == n.id || used == n.id
+    }
+    tcs.foldLeft(g){
+      case (g0, (use, tuc)) => g0.removeTypeUsesConstraint(use, tuc)
+    }
+  }
   def bindingsInvolving(g : DependencyGraph, n : ConcreteNode) : DependencyGraph = {
     val g1 = n.kind.kindType match {
       case TypeDecl =>

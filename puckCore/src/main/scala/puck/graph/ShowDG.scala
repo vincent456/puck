@@ -290,7 +290,7 @@ object ShowDG extends ShowConstraints{
 //      builder append "\ntUse -> tmUse\n"
 //      builder append print(typeUses2typeMemberUsesMap, (tUse : NodeIdP, tmUse : NodeIdP) =>
 //        s"${pToString(tUse)} -> ${pToString(tmUse)}")
-
+//
       builder.append("\ntypeUsesConstraints\n")
       builder append print(typeUsesConstraints,
         (k : NodeIdP, v : TypeUseConstraint) => stringOfTypeConstraint(dg,(k,v)))

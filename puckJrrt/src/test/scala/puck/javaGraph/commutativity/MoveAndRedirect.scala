@@ -26,72 +26,65 @@
 
 package puck.javaGraph.commutativity
 
-import puck.Settings._
-import puck.graph.comparison.Mapping
-import puck.graph.transformations.rules.{Redirection, Move}
-import puck.graph.{LoggedTG, Uses, Factory, AccessAbstraction}
+import puck.graph.transformations.rules.{Move, Redirection}
+import puck.graph.{AccessAbstraction, Factory, LoggedTG}
 import puck.graph.constraints.DelegationAbstraction
-import puck.javaGraph.ScenarioFactory
-import puck.AcceptanceSpec
+import puck.TransfoRulesSpec
 
 /**
   * Created by Loïc Girault on 04/12/15.
   */
 class MoveAndRedirect
-  extends AcceptanceSpec {
+  extends TransfoRulesSpec {
 
   feature("confluence of move and redirect"){
 
+    val initialCode =
+      """package p;
+        |
+        |class Factory{ }
+        |
+        |class B { static B createB(){ return new B(); } }
+        |
+        |class A { void m() { B b = new B(); } }"""
+
+    val expectedCode =
+      """package p;
+        |
+        |class Factory{ static B createB(){ return new B(); } }
+        |
+        |class B { }
+        |
+        |class A { void m() { B b = Factory.createB(); } }"""
+
+
     scenario("move factory then redirect") {
-      val _ = new ScenarioFactory(
-        """package p;
-          |
-          |class Factory{ }
-          |
-          |class B {
-          |    B(){}
-          |    static B createB(){ return new B(); }
-          |}
-          |
-          |class A { void m() { B b = new B(); } }"""
-      ) {
+      compareWithExpectedAndGenerated(initialCode,
+        bs => {
+          import bs.{graph, idOfFullName}
 
-
-        val g =
-          graph.addAbstraction("p.B.B()", AccessAbstraction("p.B.createB()", DelegationAbstraction))
+          val g =
+            graph.addAbstraction("p.B.B()", AccessAbstraction("p.B.createB()", DelegationAbstraction))
               .setRole("p.B.createB()", Some(Factory("p.B.B()")))
 
-        val ltg : LoggedTG =
-        for{
-          g0 <- Move.staticDecl(g, "p.B.createB()", "p.Factory")
+          val ltg : LoggedTG =
+            for{
+              g0 <- Move.staticDecl(g, "p.B.createB()", "p.Factory")
 
-          g1 <- Redirection.redirectUsesAndPropagate(g0, ("p.A.m().Definition", "p.B.B()"),
-            AccessAbstraction("p.B.createB()", DelegationAbstraction))
-        } yield g1
+              g1 <- Redirection.redirectUsesAndPropagate(g0, ("p.A.m().Definition", "p.B.B()"),
+                AccessAbstraction("p.B.createB()", DelegationAbstraction))
+            } yield g1
 
-        val g2 = ltg.rvalue
-
-        val recompiledEx = applyChangeAndMakeExample(g2, outDir)
-
-        assert(Mapping.equals(g2, recompiledEx.graph))
-      }
+          ltg.rvalue
+        }, expectedCode)
     }
 
     scenario("redirect then move factory ") {
-      val _ = new ScenarioFactory(
-        """package p;
-          |
-          |class Factory{ }
-          |
-          |class B {
-          |    B(){}
-          |    static B createB(){ return new B(); }
-          |}
-          |
-          |class A { void m() { B b = new B(); } }"""
-      ) {
+      compareWithExpectedAndGenerated(initialCode,
+        bs => {
+          import bs.{graph, idOfFullName}
 
-        val g =
+          val g =
           graph.addAbstraction("p.B.B()", AccessAbstraction("p.B.createB()", DelegationAbstraction))
             .setRole("p.B.createB()", Some(Factory("p.B.B()")))
 
@@ -104,12 +97,8 @@ class MoveAndRedirect
 
           } yield g1
 
-        val g2 = ltg.rvalue
-
-        val recompiledEx = applyChangeAndMakeExample(g2, outDir)
-
-        assert(Mapping.equals(g2, recompiledEx.graph))
-      }
+          ltg.rvalue
+        }, expectedCode)
     }
 
   }

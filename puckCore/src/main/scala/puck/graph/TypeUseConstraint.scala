@@ -29,6 +29,23 @@ package puck.graph
 /**
   * Created by Loïc Girault on 15/04/16.
   */
+
+object TypeUseConstraint {
+
+  def comply(g : DependencyGraph, tuc : TypeUseConstraint, t : NodeId) : Boolean = tuc match {
+    case Eq((_, constrainedType)) => constrainedType == t
+    case Sup((_, constrainedType)) => g.isa_*(t, constrainedType)
+    case Sub((_, constrainedType)) => g.isa_*(constrainedType, t)
+
+  }
+
+  implicit class NodeIdOps(val gt : (DependencyGraph,NodeId)) extends AnyVal {
+    def g = gt._1
+    def t = gt._2
+    def complyWith(tuc : TypeUseConstraint) : Boolean = comply(g, tuc ,t)
+  }
+}
+
 sealed abstract class TypeUseConstraint {
   def constrainedUser : NodeId = constrainedUse._1
   def constrainedType : NodeId = constrainedUse._2

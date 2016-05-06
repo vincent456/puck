@@ -56,11 +56,7 @@ trait MergingCandidatesFinder {
 class Merge
 ( mergingCandidatesFinder: MergingCandidatesFinder){
 
-
-
-
-
-  def mergeTypeBindings
+  def mergeBindingRelationship
   ( g0 : DependencyGraph,
     consumedId : NodeId,
     consumerId : NodeId
@@ -115,8 +111,36 @@ class Merge
         | TypeConstructor
         | StaticValueDecl => g
 
-      case _ => ???
+     // case _ => ???
     }
+  }
+
+  def mergeTypeConstraints
+  ( g0 : DependencyGraph,
+    consumedId : NodeId,
+    consumerId : NodeId
+  ) : DependencyGraph ={
+    val it : Iterator[(NodeIdP, TypeUseConstraint)] =
+      g0.kindType(consumedId) match {
+      case NameSpace => Iterator.empty
+      case TypeDecl =>
+        g0.typeConstraintsIterator.filter {
+          case ((user, used), ct) => user == consumedId || used == consumedId
+        }
+      case _ =>
+        g0.typeConstraintsIterator.filter {
+          case ((user, used), ct) => user == consumedId
+        }
+    }
+    val map : NodeId => NodeId = id => if (id == consumedId) consumerId else id
+    it.foldLeft(g0){
+      case (g, ((user, used), tuc)) =>
+        g.removeTypeUsesConstraint((user, used), tuc).
+          addTypeUsesConstraint((map(user), map(used)),
+            tuc.copyWith(user = map(tuc.constrainedUser), used = map(tuc.constrainedType)))
+
+    }
+
   }
 
   def mergeChildrenOfTypeDecl
@@ -181,7 +205,6 @@ class Merge
               case TypeConstructor => g0.removeType(t)
               case _ => g0.changeTarget(Uses(t, consumedId), consumerId)
             }
-
         }
         mergeInto0(g1, consumedId, consumerId)(mergeChildrenOfTypeDecl)
 
@@ -227,7 +250,9 @@ class Merge
           }
       }
 
-      g5 = mergeTypeBindings(g4, consumedId, consumerId)
+      g5 = mergeTypeConstraints(
+        mergeBindingRelationship(g4, consumedId, consumerId),
+        consumedId, consumerId)
 
       g6 <- g5.abstractions(consumedId).foldLoggedEither(g5){
         (g0, abs) =>

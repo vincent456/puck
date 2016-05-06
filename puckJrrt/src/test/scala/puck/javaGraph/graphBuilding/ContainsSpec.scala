@@ -53,22 +53,22 @@ class ContainsSpec extends AcceptanceSpec {
         |}""") {
 
       val p = fullName2id("p")
-      val classA = fullName2id("p.A")
-      val innerA = fullName2id("p.A.InnerA")
-      val innerACtor = fullName2id("p.A.InnerA.InnerA()")
-      val innerACtorDef = fullName2id("p.A.InnerA.InnerA().Definition")
+      val `p.A` = fullName2id("p.A")
+      val `p.A.InnerA` = fullName2id("p.A.InnerA")
+      val `p.A.InnerA.InnerA()` = fullName2id("p.A.InnerA.InnerA()")
+      val `p.A.InnerA.InnerA().Definition` = fullName2id("p.A.InnerA.InnerA().Definition")
 
-      graph.container(classA).value shouldBe p
-      graph.content(p) should contain (classA)
+      graph.container(`p.A`).value shouldBe p
+      graph.content(p) should contain (`p.A`)
 
-      graph.container(innerA).value shouldBe classA
-      graph.content(classA) should contain (innerA)
+      graph.container(`p.A.InnerA`).value shouldBe `p.A`
+      graph.content(`p.A`) should contain (`p.A.InnerA`)
 
-      graph.container(innerACtor).value shouldBe innerA
-      graph.content(innerA) should contain (innerACtor)
+      graph.container(`p.A.InnerA.InnerA()`).value shouldBe `p.A.InnerA`
+      graph.content(`p.A.InnerA`) should contain (`p.A.InnerA.InnerA()`)
 
-      graph.container(innerACtorDef).value shouldBe innerACtor
-      graph.content(innerACtor) should contain (innerACtorDef)
+      graph.container(`p.A.InnerA.InnerA().Definition`).value shouldBe `p.A.InnerA.InnerA()`
+      graph.content(`p.A.InnerA.InnerA()`) should contain (`p.A.InnerA.InnerA().Definition`)
 
     }
 

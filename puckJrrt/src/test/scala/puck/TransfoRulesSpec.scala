@@ -20,15 +20,17 @@ class TransfoRulesSpec
 
       val g : DependencyGraph = transfo(this)
 
-      import ShowDG._
-      println("graph initial")
-      (graph, graph.edges).println
-      println("graph post transfo")
-      (g, g.edges).println
 
       val expectedResult = new ScenarioFactory(expectedResultCode)
-      println("graph expected")
-      (expectedResult.graph, expectedResult.graph.edges).println
+
+//      import ShowDG._
+//      println("graph initial")
+//      (graph, graph.edges).println
+//      println("graph post transfo")
+//      (g, g.edges).println
+//      println("graph expected")
+//      (expectedResult.graph, expectedResult.graph.edges).println
+
       assert(Mapping.equals(g, expectedResult.graph), "graph produced by transfo != expected")
 
       val generated = applyChangeAndMakeExample(g, Settings.outDir)

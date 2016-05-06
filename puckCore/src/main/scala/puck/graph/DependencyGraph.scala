@@ -605,6 +605,9 @@ class DependencyGraph
     tucs
   }
 
+  def typeConstraintsIterator : Iterator[(NodeIdP, TypeUseConstraint)] =
+    edges.typeUsesConstraints.iterator
+
   private def typeUsesConstrained(typeUse : NodeIdP)(f: TypeUseConstraint => Boolean) : Set[NodeIdP]=
     edges.typeUsesConstraints getFlat typeUse filter f map checkTypeUseExist
 

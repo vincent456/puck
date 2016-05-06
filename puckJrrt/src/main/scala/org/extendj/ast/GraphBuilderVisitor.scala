@@ -51,8 +51,16 @@ trait GraphBuilderVisitor {
     case tv : TypeVariable =>
       tv buildDGNode this
     case cd : ClassDecl =>
+
       val n = cd buildDGNode this
-      cd.addExtends(this, n)
+
+      // addExtends
+      if(cd.hasSuperclass && cd.superclass().fullName() != "java.lang.Object"){
+        addIsa(n, cd.getSuperClass buildDGNode this)
+        cd.getSuperClass.buildIsaEdges(this, n)
+      }
+
+
       TypeDecl.addImplements(this, n, cd.getImplementss)
 
       if(cd.isGenericType)
@@ -102,7 +110,6 @@ trait GraphBuilderVisitor {
     t.ids.foreach (id => addEdge(Uses(containerId, id)))
 
     val astType = stmt.`type`()
-    println("VarDeclStmt : " + stmt.prettyPrint())
 
     stmt.getDeclarators filter(_.hasInit) foreach {
       vd =>
@@ -126,7 +133,7 @@ trait GraphBuilderVisitor {
 
     expr.getSource match {
       case src : Access =>
-        constraintTypeUses(destNode, astType, src.lastAccess().buildDGNode(this), src)
+        constraintTypeUses(destNode, astType, src.lastAccess().buildDGNode(this), src.lastAccess())
       case _ => ()
     }
   }
@@ -152,6 +159,7 @@ trait GraphBuilderVisitor {
         }
     }
   }
+
 
   def buildFieldInit(fieldId : NodeId, field : FieldDeclarator, init : Expr) : NodeId ={
     val defId = getDefNode(field)
@@ -204,5 +212,19 @@ trait GraphBuilderVisitor {
     }
   }
 
+
+  def buildDG(containerId : NodeId, rs : ReturnStmt) : Unit = {
+    rs.buildDGInChildren(this, containerId)
+    rs.getResult match {
+      case a : Access =>
+        val methodNode = rs.hostBodyDecl().buildDGNode(this)
+        val astType = rs.hostBodyDecl().asInstanceOf[MethodDecl].`type`()
+        constraintTypeUses(methodNode, astType, a.lastAccess().buildDGNode(this), a.lastAccess())
+
+      case _ : Literal | _ : CastExpr=> ()
+      case resExpr => throw new DGBuildingError("buildDG ReturnStmt case not expected : " + resExpr)
+    }
+
+  }
 
 }

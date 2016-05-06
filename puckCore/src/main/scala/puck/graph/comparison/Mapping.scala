@@ -94,7 +94,13 @@ object EqualityWithDebugPrint {
     else
       cvm1.content.forall {
         case ((k1, vs1)) =>
-          val vs2 = cvm2.content(mappinKey(k1))
+
+          val vs2 = try cvm2.content(mappinKey(k1))
+          catch {
+            case _ : NoSuchElementException =>
+              val k2 = mappinKey(k1)
+              error( (g1, k1).shows + " mapped as " + (g2, k2).shows + " not found ")
+          }
           if (cvm1.handler.map(vs1, mappinValue) != vs2) {
             error(msg(g1)(k1, vs1) + " <-^->" + msg(g2)(mappinKey(k1), vs2))
           }
@@ -186,8 +192,9 @@ object Mapping {
       }
 
 
-  import ShowDG._
-  import EqualityWithDebugPrint._
+//  import ShowDG._
+//  import EqualityWithDebugPrint._
+  import Equality._
 
   def equals
   ( g1 : DependencyGraph,
@@ -197,8 +204,8 @@ object Mapping {
     assert(g2.virtualNodes.isEmpty)
 
 
-    //    g1.nodesId.size == g2.nodesId.size && {
-    implicit val gp = (g1, g2)
+    g1.nodesId.size == g2.nodesId.size && {
+    /*implicit val gp = (g1, g2)
 
     if(g1.nodesId.size != g2.nodesId.size){
       val fulln1Set = (g1.nodesIndex.concreteNodesId map g1.fullName).toSet
@@ -209,7 +216,7 @@ object Mapping {
         error("fullName diff1 = " + diff1 + " fullName diff2 = " + diff2)
       false
     }
-    else {
+    else {*/
       val mappinG1toG2 : NodeId => NodeId = {
         //        val map : Map[NodeId, NodeId] = create(g1, g2)
 
@@ -298,16 +305,16 @@ object Mapping {
           g2.edges.typeUsesConstraints)
 
 
-      println("###############################")
-      println("equalsNodes = " + equalsNodes)
-      println("equalsUses = " + equalsUses)
-      println("equalTypes = " + equalTypes)
-      println("equalsUsesAccessKind = " + equalsUsesAccessKind)
-      println("equalsContains1 = " + equalsContains1)
-      println("equalsContains2 = " + equalsContains2)
-      println("equalsIsa = " + equalsIsa)
-      println("equalsBR = " + equalsBR)
-      println("equalsTypeUseConstraints = " + equalsTypeUseConstraints)
+//      println("###############################")
+//      println("equalsNodes = " + equalsNodes)
+//      println("equalsUses = " + equalsUses)
+//      println("equalTypes = " + equalTypes)
+//      println("equalsUsesAccessKind = " + equalsUsesAccessKind)
+//      println("equalsContains1 = " + equalsContains1)
+//      println("equalsContains2 = " + equalsContains2)
+//      println("equalsIsa = " + equalsIsa)
+//      println("equalsBR = " + equalsBR)
+//      println("equalsTypeUseConstraints = " + equalsTypeUseConstraints)
 
       equalsNodes && equalsUses && equalTypes && equalsUsesAccessKind &&
         equalsContains1 && equalsContains2 &&
