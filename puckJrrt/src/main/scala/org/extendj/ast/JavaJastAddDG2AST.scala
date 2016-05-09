@@ -368,6 +368,20 @@ class JavaJastAddDG2AST
               case NoDecl => throw new PuckError(noApplyMsg)
             }
 
+          case Remove(Edge(ContainsParam(method, paramId))) =>
+            (id2declMap get method, id2declMap get paramId) match {
+              case (Some(MethodDeclHolder(m)), Some(ParameterDeclHolder(param))) =>
+                val index = param.getChildIndex
+                m removeParameter index
+                m.getBlock removeParameterAccess param
+                reenactor.usersOf(method) map id2declMap.get foreach {
+                  case Some(hn : HasNode) => hn.node.removeParameter(m,index)
+                  case _ => ()
+                }
+
+              case _ => logger.writeln(noApplyMsg + " : case not handled")
+            }
+
           case Rename(nid, newName) =>
             ASTNodeLink.setName(newName, safeGet(reenactor, id2declMap)(nid), reenactor, nid)
 
@@ -385,19 +399,7 @@ class JavaJastAddDG2AST
               createVarAccess(reenactor, safeGet(reenactor, id2declMap), tmUse, typeUse,
                 introVarAccess)
 
-          case Remove(Edge(ContainsParam(method, param))) =>
-            (id2declMap get method, id2declMap get param) match {
-              case (Some(MethodDeclHolder(m)), Some(ParameterDeclHolder(param))) =>
-                val index = param.getChildIndex
-                m removeParameter index
 
-                reenactor.usersOf(method) map id2declMap.get foreach {
-                  case Some(hn : HasNode) => hn.node.removeParameter(m,index)
-                  case _ => ()
-                }
-
-              case _ => logger.writeln(noApplyMsg + " : case not handled")
-            }
 
           case Transformation(_, op) =>
             if (!discardedOp(op))

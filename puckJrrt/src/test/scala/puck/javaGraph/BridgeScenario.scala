@@ -226,7 +226,7 @@ class BridgeScenario private()
   // g1 - g7 : true
   // g8+ : false
 
-  def gFinal = g14
+  def gFinal = g8
 }
 
 class BridgeManualRefactoringSpec extends FeatureSpec {

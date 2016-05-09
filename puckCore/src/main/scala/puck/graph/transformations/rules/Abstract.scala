@@ -118,11 +118,15 @@ abstract class Abstract {
       case DelegationAbstraction =>
         val name = abstractionName(g, impl, abskind, policy, None)
 
-        val (n, ndef, g1) =
+        val (absNode, ndef, g1) =
           intro.nodeWithDef(g, name, abskind, (g styp impl.id).get, isMutable)
         val g2 =
-          if(impl.kind.kindType == TypeConstructor)
-             g1.setRole(n.id, Some(Factory(impl.id)))
+          if(impl.kind.kindType == TypeConstructor) {
+            val typ = g container_! impl.id
+            g1.setRole(absNode.id, Some(Factory(impl.id)))
+              //type returned must be a subtype of the factory type
+                .addTypeUsesConstraint((impl.id, typ), Sup((absNode.id, typ)) )
+          }
           else g1
 
         val g3 = g2.addUses(ndef.id, impl.id)
@@ -133,11 +137,11 @@ abstract class Abstract {
             val (pabs, g01) = g0.addConcreteNode(param.name, param.kind, mutable = true)
             val g02 = (g0 styp paramId) map (g01.addType(pabs.id, _)) getOrElse g01
 
-            g02.usedByExcludingTypeUse(paramId).foldLeft(g02.addContains(n.id, pabs.id)) {
+            g02.usedByExcludingTypeUse(paramId).foldLeft(g02.addContains(absNode.id, pabs.id)) {
               (g00, tid) => g01.addUses(pabs.id, tid)
             }
         }
-        val abs = AccessAbstraction(n.id, policy)
+        val abs = AccessAbstraction(absNode.id, policy)
         (abs, g4.addAbstraction(impl.id, abs))
 
       case SupertypeAbstraction =>
@@ -387,7 +391,6 @@ abstract class Abstract {
         val methods = g.content(impl.id).foldLeft(List[ConcreteNode]()){
           (acc, mid) =>
             val member = g.getConcreteNode(mid)
-
             if(member.kind.canBeAbstractedWith(DelegationAbstraction)) member +: acc
             else acc
         }

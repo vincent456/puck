@@ -123,6 +123,14 @@ object LoggedEither {
       a.foldLeft[LoggedEither[E, B]](LoggedEither(lb.written, lb.value.right[E])) {
         (b0, a0) => b0 flatMap (f(_, a0))
       }
+
+    def foldLoggedEither[E, B]
+    ( lb : LoggedEither[E, B])
+    ( f : (B, A) => LoggedEither[E, B])
+    ( implicit F: Foldable[F]):  LoggedEither[E, B] =
+      a.foldLeft[LoggedEither[E, B]](lb) {
+        (b0, a0) => b0 flatMap (f(_, a0))
+      }
   }
 
   implicit def loggedEitherMonad[L] =

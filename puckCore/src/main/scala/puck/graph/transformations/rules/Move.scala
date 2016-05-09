@@ -272,7 +272,10 @@ object Move {
             else LoggedSuccess(candidates.head)
           }
 
-          movedDeclWithArgUsableAsReceiver.foldLoggedEither(g){
+          val log = "use arg as receiver for " +
+            (movedDeclWithArgUsableAsReceiver map (id => (g,id).shows) mkString ("[", "," ,"]"))
+
+          movedDeclWithArgUsableAsReceiver.foldLoggedEither(g.logComment(log)){
             (g0, movedDecl) =>
               ( g0 parametersOf movedDecl ) find ( g0.typ(_) uses newContainer ) match {
                 case None =>
@@ -323,7 +326,11 @@ object Move {
           newContainer : NodeId,
           usesOfSiblingViaThis : Set[NodeIdP]
         ) : LoggedTG = {
-          usesOfSiblingViaThis.groupBy(_.user).toList.foldLoggedEither(g){
+          val usersOfSiblingViaThis = usesOfSiblingViaThis.groupBy(_.user)
+          val log = "use receiver as arg for " +
+            (usersOfSiblingViaThis.keys map (id => (g,id).shows) mkString ("[", "," ,"]"))
+
+          usersOfSiblingViaThis.toList.foldLoggedEither(g){
             case (g0, (user, siblingUses)) =>
               val decl = g0.container_!(user)
               addParamOfTypeAndSetTypeDependency(g0, decl,
@@ -344,9 +351,13 @@ object Move {
           }
 
           try {
-            val typeUses = usesThatRequireNewReceiver.groupBy(singleTypeUse).toList
+            val typeUses = usesThatRequireNewReceiver.groupBy(singleTypeUse)
 
-            typeUses.foldLoggedEither(g) {
+            val log = "create new receiver for " +
+              (typeUses.keys map (id => (g,id).shows) mkString ("[", "," ,"]"))
+
+
+            typeUses.toList.foldLoggedEither(g.logComment(log)) {
               case (g0, (tu, tmUses)) =>
                 createVarStrategy(g0, tu, newContainer, tmUses)
             }

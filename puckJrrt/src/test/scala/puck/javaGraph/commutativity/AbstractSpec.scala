@@ -29,10 +29,10 @@ package puck.javaGraph.commutativity
 
 import puck.graph._
 import puck.graph.comparison.Mapping
-import puck.graph.constraints.SupertypeAbstraction
+import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 import puck.javaGraph.ScenarioFactory
 import puck.jastadd.ExtendJGraphUtils.Rules
-import puck.javaGraph.nodeKind.Interface
+import puck.javaGraph.nodeKind.{Interface, StaticMethod}
 import puck.{AcceptanceSpec, TransfoRulesSpec}
 import puck.Settings.outDir
 class AbstractSpec extends TransfoRulesSpec {
@@ -43,23 +43,27 @@ class AbstractSpec extends TransfoRulesSpec {
 
     scenario("simple case - method without args") {
 
-      val _ = new ScenarioFactory(
+      compareWithExpectedAndGenerated(
         """package p;
           |class A {
           |    private int f;
           |    public void m(){}
-          |}"""
-      ) {
+          |}""",
+        bs => {
+          import bs.{graph, idOfFullName}
 
-        val (AccessAbstraction(itc, _), g0) =
-          Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
-            Interface, SupertypeAbstraction).rvalue
-        val g = g0.addContains("p", itc)
+          val (AccessAbstraction(itc, _), g0) =
+            Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
+              Interface, SupertypeAbstraction).rvalue
+          g0.addContains("p", itc)
 
-        val recompiledEx = applyChangeAndMakeExample(g, outDir)
-
-        assert( Mapping.equals(g, recompiledEx.graph) )
-      }
+        },
+        """package p;
+          |interface A_SupertypeAbstraction { void m(); }
+          |class A implements A_SupertypeAbstraction {
+          |    private int f;
+          |    public void m(){}
+          |}""")
 
     }
 
@@ -223,35 +227,27 @@ class AbstractSpec extends TransfoRulesSpec {
     }
   }
 
-  feature("Intro initializer"){
-    scenario("one constructor one initialized field"){
+
+  feature("Abstract constructor") {
+    scenario("static factory method") {
       compareWithExpectedAndGenerated(
         """package p;
-          |
-          |class F{}
-          |
-          |public class A {
-          |    private F f = new F();
-          |    public A(){}
-          |}""",
+           |class FactoryClass{}
+           |class A{}
+        """,
         bs => {
           import bs.{graph, idOfFullName}
-          Rules.intro.initializer(graph, "p.A")._2
+          val (AccessAbstraction(factoryMethod, _), g) =
+            Rules.abstracter.createAbstraction(graph, graph getConcreteNode "p.A.A()",
+            StaticMethod, DelegationAbstraction).rvalue
+          g.addContains("p.FactoryClass", factoryMethod)
         },
         """package p;
-          |
-          |class F{}
-          |
-          |public class A {
-          |
-          |    private F f;
-          |
-          |    public A(){ init(); }
-          |
-          |    void init(){ f = new F(); }
-          |
-          |}""")
+          |class FactoryClass{ static A create(){return new A();}}
+          |class A{}
+        """)
     }
   }
+
 }
 

@@ -165,7 +165,17 @@ class MoveMethodSpec extends TransfoRulesSpec {
           |}""",
         bs => {
           import bs.{graph, idOfFullName}
-          Move.typeMember(graph, List("p.A.m(B)"), "p.B").rvalue
+          val ltg = Move.typeMember(graph.mileStone, List("p.A.m(B)"), "p.B")
+          println(ltg.log)
+          val g  = ltg.rvalue
+          import puck.graph.transformations.Recording.RecordingOps
+          import puck.graph.ShowDG._
+          g.recording.subRecordFromLastMilestone.reverse.foreach{
+            r => (g,r).println
+          }
+
+          g
+
         },
           """package p;
             |

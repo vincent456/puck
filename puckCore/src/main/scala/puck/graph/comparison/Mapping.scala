@@ -97,8 +97,10 @@ object EqualityWithDebugPrint {
 
           val vs2 = try cvm2.content(mappinKey(k1))
           catch {
-            case _ : NoSuchElementException =>
+            case e : NoSuchElementException =>
               val k2 = mappinKey(k1)
+              println(cvm1.content mkString ",")
+              println(cvm2.content mkString ",")
               error( (g1, k1).shows + " mapped as " + (g2, k2).shows + " not found ")
           }
           if (cvm1.handler.map(vs1, mappinValue) != vs2) {
@@ -192,9 +194,9 @@ object Mapping {
       }
 
 
-//  import ShowDG._
-//  import EqualityWithDebugPrint._
-  import Equality._
+  import ShowDG._
+  import EqualityWithDebugPrint._
+//  import Equality._
 
   def equals
   ( g1 : DependencyGraph,
@@ -205,8 +207,8 @@ object Mapping {
 
 
     g1.nodesId.size == g2.nodesId.size && {
-    /*implicit val gp = (g1, g2)
-
+    implicit val gp = (g1, g2)
+    /*
     if(g1.nodesId.size != g2.nodesId.size){
       val fulln1Set = (g1.nodesIndex.concreteNodesId map g1.fullName).toSet
       val fulln2Set = (g2.nodesIndex.concreteNodesId map g2.fullName).toSet
