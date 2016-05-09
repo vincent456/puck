@@ -32,6 +32,7 @@ object LocationSolveAll {
         case LoggedEither(_, \/-(g)) =>
           Quick.dot(g, Settings.tmpDir + "solved-blind_bfs", Some(constraints))
           Quick.frame(g, "Blind BFS", scm = Some(constraints))
+          applyChangeAndMakeExample(g, Settings.tmpDir+"out/blindControl")
       }
 
 
@@ -90,19 +91,19 @@ class LocationTestBlindControl
 
     (bfsScenario.res, aStarScenario.res) match {
       case (Some(g), Some(g2)) if Mapping.equals(g, g2) =>
-        //        bfsScenario.applyChangeAndMakeExample(g, Settings.tmpDir+"out/blind_common")
+                bfsScenario.applyChangeAndMakeExample(g, Settings.tmpDir+"out/blind_common")
 
         Quick.frame(g, "Blind BFS & A Star", scm = Some(bfsScenario.constraints))
         assert(true)
       case _ =>
         bfsScenario.res foreach { g =>
           Quick.frame(g, "Blind BFS", scm = Some(bfsScenario.constraints))
-          //          bfsScenario.applyChangeAndMakeExample(g, Settings.tmpDir+"out/blind_bfs")
+                    bfsScenario.applyChangeAndMakeExample(g, Settings.tmpDir+"out/blind_bfs")
         }
 
         aStarScenario.res foreach { g2 =>
           Quick.frame(g2, "Blind A Star", scm = Some(aStarScenario.constraints))
-          //        aStarScenario.applyChangeAndMakeExample(g2, Settings.tmpDir + "out/blind_astar")
+                  aStarScenario.applyChangeAndMakeExample(g2, Settings.tmpDir + "out/blind_astar")
         }
         assert(false)
     }
