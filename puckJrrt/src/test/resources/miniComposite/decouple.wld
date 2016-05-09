@@ -1,4 +1,4 @@
 import [location]
 rental = [location]
 vehicules = [Velo]
-hide vehicules from location
+hide vehicules from rental

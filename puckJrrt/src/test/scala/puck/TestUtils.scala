@@ -56,14 +56,23 @@ object TestUtils {
 
 
 
-  def solveAllKeepVN[T](graph : DependencyGraph, constraints : ConstraintsMaps,
-                        controlBuilder : ControleBuilder,
-                        strategyBuilder : StrategyBuilder[SResult],
-                        maxResultTotal : Option[Int],
-                        maxResultPerStep : Option[Int]) : Seq[LoggedTG] = {
+  def solveAll_targeted[T](graph : DependencyGraph, constraints : ConstraintsMaps,
+                           controlBuilder : ControleBuilder,
+                           strategyBuilder : StrategyBuilder[SResult],
+                           maxResultTotal : Option[Int],
+                           maxResultPerStep : Option[Int]) : Seq[LoggedTG] = {
     val control = new CouplingConstraintSolvingAllViolationsControl(
-      Rules, graph, constraints, violationsKindPriority, controlBuilder, strategyBuilder, maxResultTotal)
-    val engine = new SearchEngine(strategyBuilder(), control, maxResultPerStep)
+      Rules, graph, constraints, violationsKindPriority, controlBuilder, strategyBuilder, maxResultPerStep)
+    val engine = new SearchEngine(strategyBuilder(), control, maxResultTotal )
+    engine.explore()
+    engine.successes map (ss => ss.loggedResult map (_._1))
+  }
+
+  def solveAll[T](graph : DependencyGraph, constraints : ConstraintsMaps,
+                   strategyBuilder : StrategyBuilder[SResult],
+                    maxResult : Option[Int]) : Seq[LoggedTG] = {
+    val control = new BlindControl(Rules, graph, constraints, violationsKindPriority)
+    val engine = new SearchEngine(strategyBuilder(), control, maxResult)
     engine.explore()
     engine.successes map (ss => ss.loggedResult map (_._1))
   }
@@ -101,10 +110,10 @@ object TestUtils {
     }
 
   def solveAllBlindBFS(graph : DependencyGraph, constraints : ConstraintsMaps) : Option[DependencyGraph] =
-    solveAll(graph, constraints, new BlindControl(_,_,_,_), () => new BreadthFirstSearchStrategy[(DependencyGraph, Int)])
+    solveAll(graph, constraints, new TargetedBlindControl(_,_,_,_), () => new BreadthFirstSearchStrategy[(DependencyGraph, Int)])
 
   def solveAllBlindAStar(graph : DependencyGraph, constraints : ConstraintsMaps) : Option[DependencyGraph] =
-    solveAll(graph, constraints, new BlindControl(_,_,_,_), () => new AStarSearchStrategy[(DependencyGraph, Int)] (SResultEvaluator.equalityByMapping(_ => 1)))
+    solveAll(graph, constraints, new TargetedBlindControl(_,_,_,_), () => new AStarSearchStrategy[(DependencyGraph, Int)] (SResultEvaluator.equalityByMapping(_ => 1)))
 
   def solveAllHeuristicBFS(graph : DependencyGraph, constraints : ConstraintsMaps) : Option[DependencyGraph] =
     solveAll(graph, constraints, new ControlWithHeuristic(_,_,_,_), () => new BreadthFirstSearchStrategy[(DependencyGraph, Int)])

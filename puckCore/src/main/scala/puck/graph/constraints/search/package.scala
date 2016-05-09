@@ -11,7 +11,7 @@ package object search {
   type ControleBuilder = (TransformationRules, DependencyGraph, ConstraintsMaps, ConcreteNode) => SearchControl[SResult]
   type StrategyBuilder[T] = () => SearchStrategy[T]
 
-  val blindControlBuilder : ControleBuilder = new BlindControl(_,_,_,_)
+  val blindControlBuilder : ControleBuilder = new TargetedBlindControl(_,_,_,_)
   val controlWithHeuristic : ControleBuilder = new ControlWithHeuristic(_,_,_,_)
 
 

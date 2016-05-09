@@ -32,19 +32,18 @@ import org.scalatest.FeatureSpec
 import puck.graph.DependencyGraph
 import puck.graph._
 import puck.Quick
-import puck.jastadd.ExtendJGraphUtils.{Rules => Rules, _}
-
+import puck.jastadd.ExtendJGraphUtils.{Rules, _}
 import puck.graph.constraints.ConstraintsParser
 import puck.graph.io.VisibilitySet
 import puck.gui.PrintingOptionsControl
 import puck.gui.svg.actions.AutoSolveAction
 import puck.jastadd.ExtendJGraphUtils
 import puck.search.{AStarSearchStrategy, BreadthFirstSearchStrategy, SearchEngine}
-
 import puck.TestUtils._
+
 import scala.swing.FlowPanel
 import BridgeScenario.path
-import puck.graph.constraints.search.{BlindControl, SResultEvaluator}
+import puck.graph.constraints.search.{BlindControl, SResultEvaluator, TargetedBlindControl}
 import puck.util.LoggedEither
 
 import scalaz.\/-
@@ -73,7 +72,7 @@ class BridgeAutoSolveSpec extends FeatureSpec {
       val cm = parseConstraints( s"$path/decouple.wld" )
 
       val searchControlStrategy =
-        new BlindControl(
+        new TargetedBlindControl(
           Rules,
           bs.graph, cm, bs.graph getConcreteNode "screen.InfoStar.printStar(String)")
 
@@ -102,7 +101,7 @@ class BridgeAutoSolveSpec extends FeatureSpec {
       val graphBeforeSearch = bs.graph.mileStone
 
       val searchControlStrategy =
-        new BlindControl(
+        new TargetedBlindControl(
           Rules,
           graphBeforeSearch, cm, bs.graph getConcreteNode "screen.InfoStar.printStar(String)")
 

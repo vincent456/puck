@@ -366,6 +366,7 @@ object Move {
             }
           }catch {
             case e : PuckError => LoggedError(e)
+            case e : NoSuchElementException => LoggedError(e.getMessage)
           }
         }
 

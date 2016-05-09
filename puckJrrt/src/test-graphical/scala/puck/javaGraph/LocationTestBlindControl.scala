@@ -23,16 +23,22 @@ object LocationSolveAll {
 
       val constraints = parseConstraints(s"$path/decouple.wld")
 
-      val res = solveAllKeepVN(graph, constraints, blindControlBuilder,
+//      val res = solveAll_targeted(graph, constraints, blindControlBuilder,
+//        () => new AStarSearchStrategy[(DependencyGraph, Int)](SResultEvaluator.equalityByMapping(_.numNodes)),
+//        Some(100),Some(5))
+
+      val res = solveAll(graph, constraints,
         () => new AStarSearchStrategy[(DependencyGraph, Int)](SResultEvaluator.equalityByMapping(_.numNodes)),
-        Some(1),Some(1000))
+        Some(1))
 
       if(res.isEmpty) println("no results")
-      else res foreach {
-        case LoggedEither(_, \/-(g)) =>
-          Quick.dot(g, Settings.tmpDir + "solved-blind_bfs", Some(constraints))
-          Quick.frame(g, "Blind BFS", scm = Some(constraints))
-        //  applyChangeAndMakeExample(g, Settings.tmpDir+"out/blindControl")
+      else {
+        println(res.size + " result(s)")
+        res foreach {
+          case LoggedEither(_, \/-(g)) =>
+            Quick.dot(g, Settings.tmpDir + "solved-blind_bfs", Some(constraints))
+            Quick.frame(g, "Blind BFS", scm = Some(constraints))
+        }
       }
 
 

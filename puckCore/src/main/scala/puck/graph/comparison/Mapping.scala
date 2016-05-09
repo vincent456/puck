@@ -181,7 +181,6 @@ object Mapping {
     case Contravariant(t) => Contravariant(mapType(mappin)(t))
   }
 
-
   def equalsMap[V]
   ( mappin : V => V)
   ( cvm1 : Map[V, V],
