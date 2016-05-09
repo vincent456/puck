@@ -33,9 +33,10 @@ import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 import puck.javaGraph.ScenarioFactory
 import puck.jastadd.ExtendJGraphUtils.Rules
 import puck.javaGraph.nodeKind.{Interface, StaticMethod}
-import puck.{AcceptanceSpec, TransfoRulesSpec}
+import puck.TransfoRulesSpec
 import puck.Settings.outDir
 class AbstractSpec extends TransfoRulesSpec {
+
 
   feature("Abstract class into interface") {
 
@@ -68,47 +69,52 @@ class AbstractSpec extends TransfoRulesSpec {
     }
 
     scenario("simple case - method with one arg"){
-      val _ = new ScenarioFactory(
+      compareWithExpectedAndGenerated(
         """package p;
           |class B {}
-          |class A {
-          |    public void m(B b){}
-          |}"""
-      ) {
+          |class A { public void m(B b){} }""",
+        bs => {
+          import bs.{graph, idOfFullName}
 
-        val (AccessAbstraction(itc, _), g0) =
+          val (AccessAbstraction(itc, _), g0) =
           Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
             Interface, SupertypeAbstraction).rvalue
-        val g = g0.addContains("p", itc)
-
-        val recompiledEx = applyChangeAndMakeExample(g, outDir)
-
-        assert( Mapping.equals(g, recompiledEx.graph) )
-      }
+          g0.addContains("p", itc)
+      },
+        """package p;
+          |class B {}
+          |interface A_SupertypeAbstraction { public void m(B b); }
+          |class A implements A_SupertypeAbstraction { public void m(B b){} } """)
 
     }
 
     scenario("method self use in class"){
-      val _ = new ScenarioFactory(
+      compareWithExpectedAndGenerated(
         """package p;
           |
           |class A {
           |    public void m(){}
           |    public void methodUser(A a){ a.m(); }
-          |}"""
-      ) {
+          |}""",
+        bs => {
+          import bs.{graph, idOfFullName}
 
         val (AccessAbstraction(itc, _), g0) =
           Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
             Interface, SupertypeAbstraction).rvalue
 
-        val g = g0.addContains("p", itc)
-
-
-        val recompiledEx = applyChangeAndMakeExample(g, outDir)
-
-        assert( Mapping.equals(g, recompiledEx.graph) )
-      }
+        g0.addContains("p", itc)
+      },
+        """package p;
+          |
+          |interface A_SupertypeAbstraction {
+          |    void m();
+          |    void methodUser(A_SupertypeAbstraction a);
+          |}
+          |class A implements A_SupertypeAbstraction{
+          |    public void m(){}
+          |    public void methodUser(A_SupertypeAbstraction a){ a.m(); }
+          |}""")
     }
 
     scenario("field self use in class"){

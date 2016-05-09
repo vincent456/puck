@@ -127,6 +127,24 @@ abstract class Intro {
         s"to ${(g, typeMemberDecl).shows}").flatMap {
       g0 =>
         val (pNode, g1) = g0.addConcreteNode(newTypeUsedNode.name.toLowerCase, paramKind)
+        LoggedSuccess((pNode, g1.addContains(typeMemberDecl, pNode.id)
+          .addType(pNode.id, NamedType(typeNode))))
+    }
+  }
+
+  /*def parameter
+  ( g : DependencyGraph,
+    typeNode : NodeId,
+    typeMemberDecl : NodeId
+  ) : LoggedTry[(ConcreteNode, DependencyGraph)] = {
+
+    val newTypeUsedNode = g.getConcreteNode(typeNode)
+    val paramKind = g.nodeKindKnowledge.kindOfKindType(Parameter).head
+
+    g.logComment(s"Intro parameter typed ${(g,NamedType(typeNode)).shows} " +
+      s"to ${(g, typeMemberDecl).shows}").flatMap {
+      g0 =>
+        val (pNode, g1) = g0.addConcreteNode(newTypeUsedNode.name.toLowerCase, paramKind)
 
 
         def onSuccess(cid : NodeId, g : DependencyGraph) : (ConcreteNode, DependencyGraph) = {
@@ -150,24 +168,7 @@ abstract class Intro {
         }
     }
 
-
-
-//    def onSuccess(sCid : Option[NodeId], g : DependencyGraph) : (ConcreteNode, DependencyGraph) = {
-//      val g2 = g.addContains(typeMemberDecl, pNode.id)
-//        .setType(pNode.id, Some(NamedType(typeNode)))
-//
-//      (pNode,
-//        sCid.foldLeft(g){(g0, cid) =>
-//          g.usersOfExcludingTypeUse(typeMemberDecl).foldLeft(g2) {
-//            (g1, userOfUser) =>
-//              g1.addEdge(Uses(userOfUser, cid))
-//          }
-//        })
-//    }
-//
-//    LoggedSuccess(onSuccess(g1.getDefaultConstructorOfType(typeNode), g1))
-
-  }
+  }*/
 
   def typeMember
   (graph : DependencyGraph,

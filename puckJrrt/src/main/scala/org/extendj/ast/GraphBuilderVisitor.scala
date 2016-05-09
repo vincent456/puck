@@ -198,6 +198,9 @@ trait GraphBuilderVisitor {
         " refers to several declaration : ")
       decls.foreach(d => println(d.dgFullName()))
     }
+    ma.getArgs.foreach{
+      expr => expr.buildDG(this, containerId)
+    }
     decls.foreach{
       decl =>
         val nodeId = decl buildDGNode this
@@ -206,10 +209,17 @@ trait GraphBuilderVisitor {
 
         if(!decl.isStatic)
           buildTypeUse(ma, typeMemberUses)
+
+        decl.getParameterList.toList.zip(ma.getArgs.toList).foreach{
+          case (param, arg : Access) =>
+            val paramId = param buildDGNode this
+            val argId = arg buildDGNode this
+            constraintTypeUses(paramId, param.`type`(), argId, arg)
+          case (_, arg) =>
+            throw new DGBuildingError()
+        }
     }
-    ma.getArgs.foreach{
-      expr => expr.buildDG(this, containerId)
-    }
+
   }
 
 

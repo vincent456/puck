@@ -28,7 +28,6 @@ package puck.graph.transformations.rules
 
 import puck.util.LoggedEither._
 import puck.graph._
-import puck.graph.NodeIdPOps
 
 import scalaz.std.list._
 import scalaz.std.set._
@@ -251,8 +250,6 @@ object Move {
         import puck.util.LoggedEither, LoggedEither._
         def useArgAsReceiver
         ( g: DependencyGraph,
-          oldContainer : NodeId,
-          newContainer : NodeId,
           movedDeclWithArgUsableAsReceiver: Set[NodeId]
         ) : LoggedTG = {
 
@@ -275,7 +272,7 @@ object Move {
           val log = "use arg as receiver for " +
             (movedDeclWithArgUsableAsReceiver map (id => (g,id).shows) mkString ("[", "," ,"]"))
 
-          movedDeclWithArgUsableAsReceiver.foldLoggedEither(g.logComment(log)){
+          movedDeclWithArgUsableAsReceiver.foldLoggedEither(g logComment log){
             (g0, movedDecl) =>
               ( g0 parametersOf movedDecl ) find ( g0.typ(_) uses newContainer ) match {
                 case None =>
@@ -299,13 +296,21 @@ object Move {
                           findActualParameter(user)){(receiver, actualParam) =>
 
                           val g3 = g2.changeTypeUseOfTypeMemberUse((receiver, oldContainer),
-                            (actualParam,newContainer),
+                            (actualParam, newContainer),
                             (user,movedDecl))
 
                           val otherUsesQualifiedByReceiver =
                             g3.typeMemberUsesOf(receiver, oldContainer).filter(_.user == user)
 
-                          if(otherUsesQualifiedByReceiver.isEmpty)
+                          val qualifierWillBeUsedAsArg = {
+                            val movedDef = g0.definitionOf(movedDecl)
+                            movedDef.nonEmpty && {
+                              usesOfSiblingViaThis exists (uses => uses.user == movedDef.get)
+                            }
+                          }
+
+                          if(otherUsesQualifiedByReceiver.isEmpty &&
+                                ! qualifierWillBeUsedAsArg)
                             g3.typeUsesOf((user, receiver))
                               .foldLeft(g3.removeEdge(Uses(user, receiver))){
                                 (g, tu) => g.removeBinding(tu, (user, receiver))
@@ -322,15 +327,13 @@ object Move {
 
         def useReceiverAsArg
         ( g: DependencyGraph,
-          oldContainer : NodeId,
-          newContainer : NodeId,
           usesOfSiblingViaThis : Set[NodeIdP]
         ) : LoggedTG = {
           val usersOfSiblingViaThis = usesOfSiblingViaThis.groupBy(_.user)
           val log = "use receiver as arg for " +
             (usersOfSiblingViaThis.keys map (id => (g,id).shows) mkString ("[", "," ,"]"))
 
-          usersOfSiblingViaThis.toList.foldLoggedEither(g){
+          usersOfSiblingViaThis.toList.foldLoggedEither(g logComment log){
             case (g0, (user, siblingUses)) =>
               val decl = g0.container_!(user)
               addParamOfTypeAndSetTypeDependency(g0, decl,
@@ -381,9 +384,9 @@ object Move {
         def apply() : LoggedTG = {
 
           for {
-            g2 <- useArgAsReceiver(g1, oldContainer, newContainer, movedDeclWithArgUsableAsReceiver)
+            g2 <- useArgAsReceiver(g1, movedDeclWithArgUsableAsReceiver)
 
-            g3 <- useReceiverAsArg(g2, oldContainer, newContainer, usesOfSiblingViaThis)
+            g3 <- useReceiverAsArg(g2, usesOfSiblingViaThis)
 
             g4 <- (usesThatRequireNewReceiver.nonEmpty, createVarStrategy) match {
               case (true, Some(strategy)) =>

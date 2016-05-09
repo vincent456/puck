@@ -173,7 +173,6 @@ class MoveMethodSpec extends TransfoRulesSpec {
           g.recording.subRecordFromLastMilestone.reverse.foreach{
             r => (g,r).println
           }
-
           g
 
         },
