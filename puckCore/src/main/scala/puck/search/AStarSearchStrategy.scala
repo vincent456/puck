@@ -47,7 +47,7 @@ class AStarSearchStrategy[T]
       evaluateWithDepthPenaly(sx) compareTo evaluateWithDepthPenaly(sy)
   }
 
-  val remainingStates = new mutable.PriorityQueue[SearchState[T]]()
+  val remainingStates = new mutable.PriorityQueue[SearchState[T]]()(SearchStateOrdering)
 
   def addState(s: SearchState[T]): Unit = ignore(remainingStates += s)
 
