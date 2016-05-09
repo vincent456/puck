@@ -25,7 +25,7 @@ object LocationSolveAll {
 
       val res = solveAllKeepVN(graph, constraints, blindControlBuilder,
         () => new AStarSearchStrategy[(DependencyGraph, Int)](SResultEvaluator.equalityByMapping(_.numNodes)),
-        Some(1),Some(1))
+        Some(1),Some(100))
 
       if(res.isEmpty) println("no results")
       else res foreach {
