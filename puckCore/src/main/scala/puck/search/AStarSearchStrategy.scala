@@ -34,7 +34,8 @@ import scala.collection.mutable
   */
 class AStarSearchStrategy[T]
 ( evaluator: Evaluator [T],
-  depthCost : Int = 1
+  depthCost : Int = 1,
+  maxDepth : Int = 100 // ajouté par Mikal
   ) extends SearchStrategy[T] {
 
 
@@ -48,8 +49,9 @@ class AStarSearchStrategy[T]
   }
 
   val remainingStates = new mutable.PriorityQueue[SearchState[T]]()(SearchStateOrdering.reverse)
-
-  def addState(s: SearchState[T]): Unit = ignore(remainingStates += s)
+  def addState(s: SearchState[T]): Unit = ignore(
+    if (s.depth < maxDepth) // ajouté par Mikal
+      remainingStates += s )
 
   def popState() : SearchState[T] = remainingStates.dequeue()
 
