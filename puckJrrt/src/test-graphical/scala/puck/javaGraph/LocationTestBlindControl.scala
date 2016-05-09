@@ -14,12 +14,12 @@ import scalaz.\/-
 
 
 object LocationSolveAll {
-  val path = getClass.getResource("/miniComposite").getPath
+  val path = getClass.getResource("/bridge/hannemann_simplified").getPath
 
   def main(args : Array[String]) : Unit =
     new ScenarioFactory(
-      s"$path/location/Location.java",
-      s"$path/location/Velo.java") {
+      s"$path/screen/BridgeDemo.java",
+      s"$path/screen/Screen.java") {
 
       val constraints = parseConstraints(s"$path/decouple.wld")
 
@@ -51,12 +51,12 @@ object LocationSolveAll {
   */
 object LocationTestBlindControl {
 
-  val path = getClass.getResource("/miniComposite").getPath
+  val path = getClass.getResource("/bridge/hannemann_simplified").getPath
 
   val bfsScenario =
     new ScenarioFactory(
-      s"$path/location/Location.java",
-      s"$path/location/Velo.java") {
+      s"$path/screen/BridgeDemo.java",
+      s"$path/screen/Screen.java") {
 
       val constraints = parseConstraints(s"$path/decouple.wld")
 
@@ -70,8 +70,9 @@ object LocationTestBlindControl {
     }
 
   val aStarScenario = new ScenarioFactory(
-    s"$path/location/Location.java",
-    s"$path/location/Velo.java") {
+    s"$path/screen/BridgeDemo.java",
+    s"$path/screen/Screen.java") {
+
 
     val constraints = parseConstraints(s"$path/decouple.wld")
 
