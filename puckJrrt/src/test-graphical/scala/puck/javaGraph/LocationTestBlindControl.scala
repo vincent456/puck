@@ -32,7 +32,7 @@ object LocationSolveAll {
         case LoggedEither(_, \/-(g)) =>
           Quick.dot(g, Settings.tmpDir + "solved-blind_bfs", Some(constraints))
           Quick.frame(g, "Blind BFS", scm = Some(constraints))
-          applyChangeAndMakeExample(g, Settings.tmpDir+"out/blindControl")
+        //  applyChangeAndMakeExample(g, Settings.tmpDir+"out/blindControl")
       }
 
 
