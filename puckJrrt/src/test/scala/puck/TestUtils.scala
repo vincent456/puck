@@ -3,12 +3,11 @@ package puck
 import java.awt.event.WindowEvent
 
 import puck.actions.Choose
-import puck.graph.{ConcreteNode, DependencyGraph, LoggedTG, NodeId, SResult}
+import puck.graph.{ConcreteNode, DependencyGraph, LoggedTG, SResult}
 import puck.graph.transformations.Recording
 import puck.jastadd.ExtendJGraphUtils.dotHelper
 import puck.search._
 import puck.util.LoggedEither
-import puck.graph.DependencyGraph.ConstraintsOps
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.constraints.search._
 import puck.jastadd.ExtendJGraphUtils.{Rules, violationsKindPriority}

@@ -34,40 +34,50 @@ import puck.search.SearchControl
 /**
   * Created by Loïc Girault on 10/05/16.
   */
-class TargetedControlWithHeuristic
-(val rules: TransformationRules,
- val initialGraph: DependencyGraph,
- val constraints: ConstraintsMaps,
- val violationTarget : ConcreteNode
-) extends SearchControl[(DependencyGraph, AutomataState)]
-  with ActionGenerator
-  with CheckViolation {
 
-  def initialState: (DependencyGraph, AutomataState) = (initialGraph, 0)
+trait Heuristic extends ActionGenerator {
 
-  def nextStates(state : (DependencyGraph, AutomataState)) : Seq[LoggedTry[(DependencyGraph, AutomataState)]] = {
-    val (g, automataState) = state
-    if(!isViolationTarget(g, violationTarget.id)) Seq()
-    else automataState match {
+  def nextStates
+  (violationTarget : ConcreteNode )
+  (g : DependencyGraph,
+   automataState : AutomataState) : Seq[LoggedTry[DecoratedGraph[AutomataState]]] = {
+    automataState match {
       case 0 =>
         val s =
-          setState((epsilon(g) ++ hostIntroAction(violationTarget)(g), 1)) ++
-            setState((hostAbsIntro(violationTarget)(g), 3)) ++
-            setState((moveContainerAction(violationTarget)(g), 4))
+          decorate(epsilon(g) ++ hostIntroAction(violationTarget)(g), 1) ++
+            decorate(hostAbsIntro(violationTarget)(g), 3) ++
+            decorate(moveContainerAction(violationTarget)(g), 4)
         assert(s.nonEmpty)
         s
 
-      case 1 => val s = (moveAction(violationTarget)(g), 2)
+      case 1 => val s = decorate(moveAction(violationTarget)(g), 2)
         assert(s.nonEmpty)
         s
-      case 2 => val s = (epsilon(g) ++ absIntro(violationTarget)(g), 3)
+      case 2 => val s = decorate(epsilon(g) ++ absIntro(violationTarget)(g), 3)
         assert(s.nonEmpty)
         s
-      case 3 => val s = (redirectTowardAbstractions(violationTarget)(g),4)
+      case 3 => val s = decorate(redirectTowardAbstractions(violationTarget)(g),4)
         assert(s.nonEmpty)
         s
       case _ => Seq()
     }
   }
+}
+
+class TargetedControlWithHeuristic
+(val rules: TransformationRules,
+ val initialGraph: DependencyGraph,
+ val constraints: ConstraintsMaps,
+ val violationTarget : ConcreteNode
+) extends SearchControl[DecoratedGraph[AutomataState]]
+  with Heuristic
+  with CheckViolation {
+
+  def initialState: DecoratedGraph[AutomataState] = (initialGraph, 0)
+
+  def nextStates(state : DecoratedGraph[AutomataState]) : Seq[LoggedTry[DecoratedGraph[AutomataState]]] =
+    if(!isViolationTarget(state._1, violationTarget.id)) Seq()
+    else nextStates(violationTarget)(state._1, state._2)
+
 
 }

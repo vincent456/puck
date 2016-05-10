@@ -39,38 +39,23 @@ class ControlWithHeuristic
  val initialGraph: DependencyGraph,
  val constraints: ConstraintsMaps,
  val violationsKindPriority : Seq[NodeKind]
-) extends SearchControl[(DependencyGraph, Option[(ConcreteNode, AutomataState)])]
-  with ActionGenerator
+) extends SearchControl[DecoratedGraph[Option[(ConcreteNode, AutomataState)]]]
+  with Heuristic
   with TargetFinder {
 
-  def initialState: (DependencyGraph, Option[(ConcreteNode, AutomataState)]) = (initialGraph, None)
+  def initialState: DecoratedGraph[Option[(ConcreteNode, AutomataState)]] = (initialGraph, None)
 
   def nextStates(g : DependencyGraph,
                  violationTarget : ConcreteNode,
-                 automataState: AutomataState) : Seq[LoggedTry[(DependencyGraph, Option[(ConcreteNode, AutomataState)])]] =
+                 automataState: AutomataState) : Seq[LoggedTry[DecoratedGraph[Option[(ConcreteNode, AutomataState)]]]] =
     if(!isViolationTarget(g, violationTarget.id)) Seq(LoggedSuccess((g, None)))
-    else automataState match {
-      case 0 =>
-        val s =
-          setState((epsilon(g) ++ hostIntroAction(violationTarget)(g), Some((violationTarget, 1)))) ++
-            setState((hostAbsIntro(violationTarget)(g), Some((violationTarget, 3)))) ++
-            setState((moveContainerAction(violationTarget)(g), Some((violationTarget, 4))))
-        assert(s.nonEmpty)
-        s
+    else mapSeqLoggedTry[DecoratedGraph[AutomataState], DecoratedGraph[Option[(ConcreteNode, AutomataState)]]](
+      nextStates(violationTarget)(g, automataState),
+      { case (g1, automataState1) => (g1, Some((violationTarget, automataState1)))})
 
-      case 1 => val s = (moveAction(violationTarget)(g), Some((violationTarget, 2)))
-        assert(s.nonEmpty)
-        s
-      case 2 => val s = (epsilon(g) ++ absIntro(violationTarget)(g), Some((violationTarget, 3)))
-        assert(s.nonEmpty)
-        s
-      case 3 => val s = (redirectTowardAbstractions(violationTarget)(g), Some((violationTarget, 4)))
-        assert(s.nonEmpty)
-        s
-      case _ => Seq()
-    }
 
-  def nextStates(state : (DependencyGraph, Option[(ConcreteNode, AutomataState)])) : Seq[LoggedTry[(DependencyGraph, Option[(ConcreteNode, AutomataState)])]] = {
+
+  def nextStates(state : DecoratedGraph[Option[(ConcreteNode, AutomataState)]]) : Seq[LoggedTry[DecoratedGraph[Option[(ConcreteNode, AutomataState)]]]] = {
     state match {
       case (g, Some((violationTarget, automataState))) => nextStates(g, violationTarget, automataState)
       case (g, None) => findTargets(g) flatMap (nextStates(g, _, 0))

@@ -31,9 +31,9 @@ import javax.swing.AbstractAction
 
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
-import puck.graph.constraints.search.{ControlWithHeuristic, TargetedControlWithHeuristic}
+import puck.graph.constraints.search.TargetedControlWithHeuristic
 import puck.gui.PrintingOptionsControl
-import puck.search.{BreadthFirstSearchStrategy, DepthFirstSearchStrategy, Search, SearchEngine}
+import puck.search.{BreadthFirstSearchStrategy, Search, SearchEngine}
 import puck.util.Logged
 
 import scala.swing._

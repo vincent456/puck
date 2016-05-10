@@ -43,7 +43,7 @@ import puck.TestUtils._
 
 import scala.swing.FlowPanel
 import BridgeScenario.path
-import puck.graph.constraints.search.{BlindControl, DecoratedGraphEvalutaor, TargetedBlindControl}
+import puck.graph.constraints.search.DecoratedGraphEvalutaor
 import puck.util.LoggedEither
 
 import scalaz.\/-

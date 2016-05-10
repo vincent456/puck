@@ -38,13 +38,16 @@ trait ActionGenerator {
   val initialGraph: DependencyGraph
   val constraints: ConstraintsMaps
 
-  implicit def setState[T](s: (Seq[LoggedTry[DependencyGraph]], T)): Seq[LoggedTry[(DependencyGraph, T)]] =
-    s._1 map (_ map ((_, s._2)))
+  def mapSeqLoggedTry[S, T](s : Seq[LoggedTry[S]], f : S => T) : Seq[LoggedTry[T]] =
+    s map (_ map f)
+
+  def decorate[T](s: Seq[LoggedTry[DependencyGraph]], t : T): Seq[LoggedTry[DecoratedGraph[T]]] =
+    mapSeqLoggedTry[DependencyGraph, DecoratedGraph[T]](s, (_, t))
 
   val actionsGenerator = new SolvingActions(rules, constraints)
 
   def toSeqLTG[T](s: Seq[LoggedTry[(T, DependencyGraph)]]): Seq[LoggedTry[DependencyGraph]] =
-    s map (_ map (_._2))
+    mapSeqLoggedTry[(T, DependencyGraph), DependencyGraph](s, _._2)
 
   val epsilon: DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
     g => Seq(LoggedSuccess("Epsilon transition\n", g))

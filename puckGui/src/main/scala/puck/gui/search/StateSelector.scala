@@ -27,8 +27,6 @@
 package puck.gui.search
 
 import puck.graph._
-import puck.graph.io.VisibilitySet
-import puck.gui.{ConstraintDisplayRequest, ApplyOnCodeRequest}
 import puck.search.SearchState
 
 import scala.swing._
@@ -92,60 +90,5 @@ class SortedElementSelector[T]
   }
 
   def selectedState = simpleStateSelector.selectedState
-
-}
-
-class StateSelector
-( map : Map[Int, Seq[SearchState[SResult]]],
-  printId : () => Boolean,
-  printSig: () => Boolean,
-  visibility : VisibilitySet.T)
-  extends SortedElementSelector[SearchState[SResult]](map, StateSelected.apply) {
-
-
-  val secondLine = new FlowPanel()
-  /*secondLine.contents += new Button(""){
-      action = new Action("Show"){
-        def apply() {
-          StateSelector.this publish
-            GraphDisplayRequest(couplingValues.selection.item + " " + searchStateComboBox.selection.item.uuid(),
-              graphOfResult(searchStateComboBox.selection.item.result), printId(), printSig())
-        }
-      }
-    }
-  */
-
-//  secondLine.contents += new Button(""){
-//    action = new Action("Show"){
-//      def apply() : Unit = {
-//
-//        val state: SearchState[SResult] = selectedState
-//        var id = -1
-//
-//        StateSelector.this publish SearchStateSeqPrintingRequest(state.uuid()+"history",
-//          state.ancestors(includeSelf = true), Some({s => id +=1
-//            id.toString}), printId(), printSig(), visibility)
-//
-//      }
-//    }
-//  }
-
-  secondLine.contents += new Button(""){
-    action = new Action("Constraint"){
-      def apply() : Unit =  {
-        val state: SearchState[SResult] = selectedState
-        StateSelector.this publish ConstraintDisplayRequest(graphOfResult(state.loggedResult.value))
-      }
-    }
-  }
-
-  secondLine.contents += new Button(""){
-    action = new Action("Apply"){
-      def apply() : Unit = {
-        StateSelector.this publish ApplyOnCodeRequest(graphOfResult(selectedState.loggedResult.value))
-      }
-    }
-  }
-  contents += secondLine
 
 }

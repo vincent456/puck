@@ -34,7 +34,7 @@ import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
 import puck.gui.svg.actions._
 import puck.gui._
-
+import puck.ignore
 import scala.swing.Publisher
 
 
@@ -83,7 +83,7 @@ class EdgeMenu
 
         val abstractions = graph.abstractions(tgt)
         if(abstractions.nonEmpty)
-          add(new RedirectAction0(publisher, (src, tgt), abstractions.toSeq))
+          ignore(add(new RedirectAction0(publisher, (src, tgt), abstractions.toSeq)))
     }
 
 
