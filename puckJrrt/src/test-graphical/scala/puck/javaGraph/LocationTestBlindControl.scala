@@ -26,8 +26,8 @@ object LocationTestBlindControlSolveAll {
 //        () => new AStarSearchStrategy[(DependencyGraph, Int)](SResultEvaluator.equalityByMapping(_.numNodes)),
 //        Some(100),Some(5))
 
-      val res = solveAll(graph, constraints,
-        () => new AStarSearchStrategy[(DependencyGraph, Int)](DecoratedGraphEvalutaor.equalityByMapping(_.numNodes),1,7),
+      val res = solveAllBlind(graph, constraints,
+        () => new AStarSearchStrategy(DecoratedGraphEvaluator.equalityByMapping(_.numNodes),1,7),
         Some(1))
 
       if(res.isEmpty) println("no results")

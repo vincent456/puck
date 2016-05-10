@@ -29,40 +29,19 @@ package puck.javaGraph
 import java.io.{File, FileReader}
 
 import org.scalatest.FeatureSpec
-import puck.graph.DependencyGraph
 import puck.graph._
 import puck.Quick
 import puck.jastadd.ExtendJGraphUtils.{Rules, _}
 import puck.graph.constraints.ConstraintsParser
-import puck.graph.io.VisibilitySet
-import puck.gui.PrintingOptionsControl
-import puck.gui.svg.actions.AutoSolveAction
-import puck.jastadd.ExtendJGraphUtils
 import puck.search.{AStarSearchStrategy, BreadthFirstSearchStrategy, SearchEngine}
 import puck.TestUtils._
 
-import scala.swing.FlowPanel
 import BridgeScenario.path
-import puck.graph.constraints.search.DecoratedGraphEvalutaor
+import puck.graph.constraints.search.{DecoratedGraphEvaluator, TargetedBlindControl}
 import puck.util.LoggedEither
 
 import scalaz.\/-
 
-class BridgeAutoSolveUsingGUIS extends FeatureSpec {
-
-  scenario("bridge ``manual'' refactoring"){
-    val bs = BridgeScenario()
-    //QuickFrame(bs.graph, "Graph", ExtendJGraphUtils.dotHelper)
-    import bs._
-    val cm = ConstraintsParser(bs.fullName2id, new FileReader(s"$path/decouple.wld"))
-
-    val publisher = new FlowPanel()
-    val poc = new PrintingOptionsControl(VisibilitySet.allVisible(bs.graph), publisher)
-    poc.typeUsesVisible = true
-    new AutoSolveAction(publisher, cm,
-      bs.graph getConcreteNode "screen.InfoStar.printStar(String)", poc)(bs.graph, ExtendJGraphUtils).actionPerformed(null)
-  }
-}
 
 class BridgeAutoSolveSpec extends FeatureSpec {
 
@@ -72,13 +51,12 @@ class BridgeAutoSolveSpec extends FeatureSpec {
       val cm = parseConstraints( s"$path/decouple.wld" )
 
       val searchControlStrategy =
-        new TargetedBlindControl(
-          Rules,
-          bs.graph, cm, bs.graph getConcreteNode "screen.InfoStar.printStar(String)")
+        new TargetedBlindControl(Rules, bs.graph, cm,
+          bs.graph getConcreteNode "screen.InfoStar.printStar(String)")
 
       val engine =
         new SearchEngine(
-          new BreadthFirstSearchStrategy[(DependencyGraph, Int)],
+          new BreadthFirstSearchStrategy,
           searchControlStrategy,
           Some(5)/*,
               evaluator = Some(SResultEvaluator.equalityByMapping(Metrics.nameSpaceCoupling))*/)
@@ -107,7 +85,7 @@ class BridgeAutoSolveSpec extends FeatureSpec {
 
       val engine =
         new SearchEngine(
-          new AStarSearchStrategy[(DependencyGraph, Int)](DecoratedGraphEvalutaor.equalityByMapping(Metrics.nameSpaceCoupling)),
+          new AStarSearchStrategy[DecoratedGraph[Unit]](DecoratedGraphEvaluator.equalityByMapping(Metrics.nameSpaceCoupling)),
           searchControlStrategy,
           Some(5)/*,
               evaluator = Some(SResultEvaluator.equalityByMapping(Metrics.nameSpaceCoupling))*/)

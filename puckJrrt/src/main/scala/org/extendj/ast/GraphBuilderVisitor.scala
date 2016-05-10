@@ -215,8 +215,9 @@ trait GraphBuilderVisitor {
             val paramId = param buildDGNode this
             val argId = arg buildDGNode this
             constraintTypeUses(paramId, param.`type`(), argId, arg)
+          case (_, _ : Literal) =>()
           case (_, arg) =>
-            throw new DGBuildingError()
+            throw new DGBuildingError(s"Access expected but found : $arg")
         }
     }
 

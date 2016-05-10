@@ -241,7 +241,7 @@ class FailureSelector(res : Search[OneStepResult])
     res.failuresByDepth, StateSelected.apply) with Selector{
 
   assert(res.failures.nonEmpty)
-  def selectedResult = selectedState.prevState.get.success map graphOfResult
+  def selectedResult = selectedState.prevState.get.success map (_.graph)
   override def selectedLog = selectedState.loggedResult.log
 }
 
@@ -250,7 +250,7 @@ class SuccessSelector(res : Search[OneStepResult])
   assert(res.successes.nonEmpty)
 
   setStatesList(res.successes)
-  def selectedResult = selectedState.success map graphOfResult
+  def selectedResult = selectedState.success map (_.graph)
 }
 
 

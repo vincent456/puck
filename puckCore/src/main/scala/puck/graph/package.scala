@@ -72,7 +72,6 @@ package object graph {
 
   type TypedNode = (ConcreteNode, Type)
 
-
   type Recording = Seq[Recordable]
   val Recording = transformations.Recording
 
@@ -84,14 +83,12 @@ package object graph {
   type OneStepResult = DecoratedGraph[AutomataState]
   type SResult = DecoratedGraph[Option[(ConcreteNode, AutomataState)]]
 
-  def graphOfResult(res : Error \/ SResult) : DependencyGraph = res match {
-    case \/-((g,_)) => g
-    case _ => error("no graph in this result")
+
+
+  implicit class DecoratedGraphOps[T](val dg : DecoratedGraph[T]) extends  AnyVal {
+    def graph : DependencyGraph = dg._1
+    def decoration : T = dg._2
   }
-
-  def graphOfResult(res : DecoratedGraph[_]) : DependencyGraph = res._1
-  def recordOfResult(res : SResult) : Recording = res._1.recording
-
 
   implicit class GOps(val g : DependencyGraph) extends AnyVal{
     def logComment(msg : String) : LoggedTG =
@@ -102,12 +99,6 @@ package object graph {
     def toLoggedEither[E] : LoggedEither[E, A] = LoggedEither(lg.written, lg.value.right[E])
     def toLoggedTry : LoggedTry[A] = toLoggedEither[Error]
   }
-
-  implicit class LoggedOrOps[E, A](val lg: LoggedEither[E, A]) extends AnyVal {
-    def error(e : E) : LoggedEither[E, A] = lg.left_>>(e)
-
-  }
-
 
   def LoggedError[A]( e: String): LoggedTry[A] =
     LoggedEither(e, -\/(new PuckError(e)))

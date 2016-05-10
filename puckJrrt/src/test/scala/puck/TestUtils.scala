@@ -3,7 +3,7 @@ package puck
 import java.awt.event.WindowEvent
 
 import puck.actions.Choose
-import puck.graph.{ConcreteNode, DependencyGraph, LoggedTG, SResult}
+import puck.graph.{ConcreteNode, DecoratedGraph, DependencyGraph, LoggedTG, SResult}
 import puck.graph.transformations.Recording
 import puck.jastadd.ExtendJGraphUtils.dotHelper
 import puck.search._
@@ -20,12 +20,12 @@ import scalaz.\/-
   * Created by cedric on 26/04/2016.
   */
 object TestUtils {
-  def showSuccess(ss : SearchState[(DependencyGraph, Int)]) = {
-    val LoggedEither(_, \/-((g, _))) = ss.loggedResult
-    Quick.frame(g, "G")
+  def showSuccess[T](ss : SearchState[DecoratedGraph[T]]) = {
+    val LoggedEither(_, \/-(dg)) = ss.loggedResult
+    Quick.frame(dg.graph, "G")
   }
 
-  def showEngineSuccesses(engine : SearchEngine[(DependencyGraph, Int)]) =
+  def showEngineSuccesses[T](engine : SearchEngine[DecoratedGraph[T]]) =
     engine.successes foreach showSuccess
 
   def removeVirtualNodes(gWithoutVirtualNodes: DependencyGraph,
@@ -53,18 +53,18 @@ object TestUtils {
     g0
   }
 
-  def solveAllHeuristic[T](graph : DependencyGraph, constraints : ConstraintsMaps,
-                           strategyBuilder : StrategyBuilder[SResult],
-                           maxResultTotal : Option[Int]) : Seq[LoggedTG] = {
+  def solveAllHeuristic(graph : DependencyGraph, constraints : ConstraintsMaps,
+                        strategyBuilder : StrategyBuilder[SResult],
+                        maxResultTotal : Option[Int]) : Seq[LoggedTG] = {
     val control = new ControlWithHeuristic(Rules, graph, constraints, violationsKindPriority)
     val engine = new SearchEngine(strategyBuilder(), control, maxResultTotal )
     engine.explore()
     engine.successes map (ss => ss.loggedResult map (_._1))
   }
 
-  def solveAll[T](graph : DependencyGraph, constraints : ConstraintsMaps,
-                  strategyBuilder : StrategyBuilder[(DependencyGraph, Option[ConcreteNode])],
-                  maxResult : Option[Int]) : Seq[LoggedTG] = {
+  def solveAllBlind[T](graph : DependencyGraph, constraints : ConstraintsMaps,
+                       strategyBuilder : StrategyBuilder[(DependencyGraph, Option[ConcreteNode])],
+                       maxResult : Option[Int]) : Seq[LoggedTG] = {
     val control = new BlindControl(Rules, graph, constraints, violationsKindPriority)
     val engine = new SearchEngine(strategyBuilder(), control, maxResult)
     engine.explore()
@@ -76,15 +76,16 @@ object TestUtils {
     case LoggedEither(_, \/-(g))  +: _ => Some(g)
   }
 
+
   def solveAllBlindBFS(graph : DependencyGraph, constraints : ConstraintsMaps) : Option[DependencyGraph] =
-    solveAll(graph, constraints, () => new BreadthFirstSearchStrategy, Some(1))
+    solveAllBlind(graph, constraints, () => new BreadthFirstSearchStrategy, Some(1))
 
   def solveAllBlindAStar(graph : DependencyGraph, constraints : ConstraintsMaps) : Option[DependencyGraph] =
-    solveAll(graph, constraints, () => new AStarSearchStrategy(DecoratedGraphEvalutaor.equalityByMapping(_ => 1)), Some(1))
+    solveAllBlind(graph, constraints, () => new AStarSearchStrategy(DecoratedGraphEvaluator.equalityByMapping(_ => 1)), Some(1))
 
   def solveAllHeuristicBFS(graph : DependencyGraph, constraints : ConstraintsMaps) : Option[DependencyGraph] =
     solveAllHeuristic(graph, constraints,  () => new BreadthFirstSearchStrategy, Some(1))
 
   def solveAllHeuristicAStar(graph : DependencyGraph, constraints : ConstraintsMaps) : Option[DependencyGraph] =
-    solveAllHeuristic(graph, constraints, () => new AStarSearchStrategy(DecoratedGraphEvalutaor.equalityByMapping(_ => 1)), Some(1))
+    solveAllHeuristic(graph, constraints, () => new AStarSearchStrategy(DecoratedGraphEvaluator.equalityByMapping(_ => 1)), Some(1))
 }
