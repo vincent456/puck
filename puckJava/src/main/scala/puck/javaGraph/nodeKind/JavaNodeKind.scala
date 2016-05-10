@@ -81,8 +81,8 @@ object JavaNodeKind extends NodeKindKnowledge {
 
 
   val nodeKinds = List[NodeKind](JavaRoot, Package, Interface,
-    Class, Constructor, Method, /*ConstructorMethod,*/
-    Field, AbstractMethod, Literal, Primitive)
+    Class, Constructor, Method,
+    Field, AbstractMethod, /*Literal,*/ Primitive)
 
   def concreteNodeTestPred(graph : DependencyGraph, nid : NodeId)
                           (pred: ConcreteNode => Boolean): Boolean =

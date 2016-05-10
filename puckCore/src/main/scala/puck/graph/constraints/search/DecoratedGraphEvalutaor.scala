@@ -33,30 +33,30 @@ import puck.search.{Evaluator, SearchState}
 
 import scalaz.{-\/, \/-}
 
-object SResultEvaluator {
+object DecoratedGraphEvalutaor {
 
   //Constructeurs d'Evaluator pour Dependency Graph
 
   //comparaison directe de deux graphes de dépendances sans noeud virtuel
-  def equalityByMapping(fitness : DependencyGraph => Double) : Evaluator[SResult] =
-    new SResultEvaluator(fitness,  Mapping.equals)
+  def equalityByMapping[T](fitness : DependencyGraph => Double) : Evaluator[DecoratedGraph[T]] =
+    new DecoratedGraphEvalutaor(fitness,  Mapping.equals)
 
   //on compare deux graphes de dépendances issus du même graphe initial en comparant leurs plans de refactoring
   //moins coûteux que de les comparer directement - initialement prévu pour le backtrack
   def equalityBasedOnRecording
   ( initialRecord : Seq[Transformation],
     fitness : DependencyGraph => Double) : Evaluator[SResult] =
-    new SResultEvaluator(fitness,  DependencyGraph.areEquivalent(initialRecord, _, _))
+    new DecoratedGraphEvalutaor(fitness,  DependencyGraph.areEquivalent(initialRecord, _, _))
 
 }
 
-class SResultEvaluator
+class DecoratedGraphEvalutaor[T]
 ( val fitness : DependencyGraph => Double,
   val equals : ( DependencyGraph,  DependencyGraph) => Boolean)
-  extends  Evaluator[SResult] {
+  extends Evaluator[DecoratedGraph[T]] {
 
 
-  def evaluate(s : SearchState[SResult]): Double =
+  def evaluate(s : SearchState[DecoratedGraph[T]]): Double =
     s.loggedResult.value match {
       case -\/(err) => 0
       case \/-(res) =>
@@ -64,7 +64,7 @@ class SResultEvaluator
         fitness(g)
     }
 
-  def equals(s1 : SearchState[SResult], s2 : SearchState[SResult] ): Boolean =
+  def equals(s1 : SearchState[DecoratedGraph[T]], s2 : SearchState[DecoratedGraph[T]] ): Boolean =
     (s1.loggedResult.value, s2.loggedResult.value) match {
       case (\/-(res1), \/-(res2)) => equals(graphOfResult(res1), graphOfResult(res2))
       case _ => false

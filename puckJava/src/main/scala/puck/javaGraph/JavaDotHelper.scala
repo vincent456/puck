@@ -72,7 +72,7 @@ object JavaDotHelper extends DotHelper{
         case _ : TypeKind.InterfaceLike => "#FFFF99" // Light yellow
         case _ : TypeKind.ClassLike | Constructor => "#FFFF33" //Yellow
         case Method | Field | EnumConstant => "#FFFFFF" //White
-        case Literal => "#CCFFCC" //Very Light green
+        //case Literal => "#CCFFCC" //Very Light green
         case Primitive => "#FFFFFF"
         case TypeVariable => "#009900"
         case k => throw new Error(s"$k : Unknown JavaNodeKind")

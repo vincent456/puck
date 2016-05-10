@@ -35,7 +35,7 @@ import scala.swing._
 import scala.swing.event.{Event, SelectionChanged}
 
 
-case class StateSelected(state : SearchState[SResult]) extends Event
+case class StateSelected[T](state : SearchState[DecoratedGraph[T]]) extends Event
 
 class SimpleElementSelector[T]
  ( evtGen : T => Event)

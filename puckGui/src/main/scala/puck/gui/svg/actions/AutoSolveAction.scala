@@ -31,16 +31,13 @@ import javax.swing.AbstractAction
 
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
-import puck.graph.constraints.search.ControlWithHeuristic
+import puck.graph.constraints.search.{ControlWithHeuristic, TargetedControlWithHeuristic}
 import puck.gui.PrintingOptionsControl
 import puck.search.{BreadthFirstSearchStrategy, DepthFirstSearchStrategy, Search, SearchEngine}
 import puck.util.Logged
 
 import scala.swing._
 import scala.swing.Dialog.{Message, Options, Result}
-
-
-
 
 class AutoSolveAction
 ( publisher : Publisher,
@@ -51,7 +48,7 @@ class AutoSolveAction
   graphUtils: GraphUtils)
   extends AbstractAction("Solve [BETA - under development]") {
 
-  private def dialog(res : Search[SResult]) : Option[Logged[DependencyGraph]] = {
+  private def dialog(res : Search[OneStepResult]) : Option[Logged[DependencyGraph]] = {
     val title = "Solve"
 
     val confirm : Component => Result.Value =
@@ -87,7 +84,7 @@ class AutoSolveAction
     }
 
     val searchControlStrategy =
-      new ControlWithHeuristic(
+      new TargetedControlWithHeuristic(
         graphUtils.Rules,
         g, cm, violationTarget)
 

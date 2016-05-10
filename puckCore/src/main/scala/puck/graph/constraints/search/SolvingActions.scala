@@ -27,193 +27,20 @@
 package puck.graph
 package constraints.search
 
-import puck.graph.ShowDG._
-import puck.graph._
 import puck.graph.constraints.{ConstraintsMaps, SupertypeAbstraction}
 import puck.graph.transformations.TransformationRules
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, CreateVarStrategy}
-import puck.search._
 import puck.util.LoggedEither
 import puck.util.LoggedEither._
 
 import scalaz.std.list._
 import scalaz.syntax.foldable._
 import scalaz.{-\/, NonEmptyList, \/-}
+import ShowDG._
 
-
-
-class CouplingConstraintSolvingAllViolationsControl
-(val rules : TransformationRules,
- val initialGraph : DependencyGraph,
- val constraints : ConstraintsMaps,
- val violationsKindPriority : Seq[NodeKind],
- controlBuilder : ControleBuilder,
- strategyBuilder: StrategyBuilder[SResult],
- maxResultPerStep : Option[Int]
-) extends SearchControl[SResult] {
-
-  val initialState : SResult = (initialGraph, 0)
-
-  def findTargets(graph : DependencyGraph,
-                  l : Seq[NodeKind] = violationsKindPriority.toStream) : Seq[DGNode] =  l match {
-    case topPriority +: tl =>
-      val tgts = graph.nodes.toStream filter { n =>
-        n.kind == topPriority && ((graph, constraints).wrongUsers(n.id).nonEmpty ||
-          (graph, constraints).isWronglyContained(n.id))
-      }
-      if(tgts.nonEmpty) tgts
-      else findTargets(graph, tl)
-
-    case Nil => graph.nodes.toStream filter { n => (graph, constraints).wrongUsers(n.id).nonEmpty ||
-      (graph, constraints).isWronglyContained(n.id) }
-  }
-
-  def nextStates(sr : SResult) : Seq[LoggedTry[SResult]] = {
-    val (g, _) = sr
-
-    g.nodesId foreach (nid => (g, constraints).wrongUsers(nid) )
-
-     findTargets(g) flatMap {
-      case vn : VirtualNode =>
-        Seq(LoggedError[SResult](s"cannot solve violations toward virtual node $vn"))
-
-      case cn : ConcreteNode =>
-        val engine =
-          new SearchEngine(strategyBuilder(), controlBuilder(rules, g, constraints, cn), maxResultPerStep)
-
-        engine.explore()
-
-        engine.successes map (_.loggedResult)
-    }
-  }
-
-}
-
-class TargetedBlindControl
-(val rules: TransformationRules,
- val initialGraph: DependencyGraph,
- val constraints: ConstraintsMaps,
- val violationTarget: ConcreteNode
-) extends SearchControl[SResult]
-  with TargetedActionGenerator {
-  def nextStates(state : (DependencyGraph, Int)) : Seq[LoggedTry[(DependencyGraph, Int)]] = {
-    val (g, automataState) = state
-    if ((g, constraints).isWronglyUsed(violationTarget.id) || (g, constraints).isWronglyContained(violationTarget.id))
-      automataState match {
-        case 0 =>
-          val s =
-            setState((redirectTowardAbstractions(g) ++ moveAction(g) ++ moveContainerAction(g) ++
-              absIntro(g) ++ hostIntroAction(g) ++ hostAbsIntro(g), 0))
-
-          assert(s.nonEmpty)
-          s
-
-        case _ => Seq()
-      }
-    else Seq()
-  }
-}
-
-class ControlWithHeuristic
-(val rules: TransformationRules,
- val initialGraph: DependencyGraph,
- val constraints: ConstraintsMaps,
- val violationTarget: ConcreteNode
-) extends SearchControl[SResult]
-  with TargetedActionGenerator {
-
-  def nextStates(state : (DependencyGraph, Int)) : Seq[LoggedTry[(DependencyGraph, Int)]] = {
-    val  (g, automataState) = state
-    if((g, constraints).isWronglyUsed(violationTarget.id) || (g, constraints).isWronglyContained(violationTarget.id))
-      automataState match {
-        case 0 =>
-          val s =
-            setState((epsilon(g) ++ hostIntroAction(g), 1)) ++
-              setState((hostAbsIntro(g), 3)) ++
-              setState((moveContainerAction(g), 4))
-          assert(s.nonEmpty)
-          s
-
-        case 1 => val s = (moveAction(g), 2)
-          assert(s.nonEmpty)
-          s
-        case 2 => val s = (epsilon(g) ++ absIntro(g), 3)
-          assert(s.nonEmpty)
-          s
-        case 3 => val s = (redirectTowardAbstractions(g), 4)
-          assert(s.nonEmpty)
-          s
-        case _ => Seq()
-      }
-    else Seq()
-  }
-
-}
-trait TargetedActionGenerator {
-  val rules: TransformationRules
-  val initialGraph: DependencyGraph
-  val constraints: ConstraintsMaps
-  val violationTarget: ConcreteNode
-
-
-  def initialState: (DependencyGraph, Int) = (initialGraph, 0)
-
-
-  implicit def setState(s: (Seq[LoggedTry[DependencyGraph]], Int)): Seq[LoggedTry[(DependencyGraph, Int)]] =
-    s._1 map (_ map ((_, s._2)))
-
-  //  implicit def setState2[T]( s : (Seq[LoggedTry[(T, DependencyGraph)]], Int) ) : Seq[LoggedTry[(DependencyGraph, Int)]] =
-  //    s._1 map ( _ map {case (t,g) =>  (g, s._2)})
-
-
-  val actionsGenerator = new SolvingActions(rules, constraints)
-
-  def extractGraph[A](ng: (A, DependencyGraph)): DependencyGraph = ng._2
-
-  def toSeqLTG[T](s: Seq[LoggedTry[(T, DependencyGraph)]]): Seq[LoggedTry[DependencyGraph]] =
-    s map (_ map (_._2))
-
-  val epsilon: DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-    g => Seq(LoggedSuccess("Epsilon transition\n", g))
-
-  //  val nameSpaceIntro: DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-  //    g => toSeqLTG(actionsGenerator.introNodes(g.nodeKindKnowledge.kindOfKindType(NameSpace), g))
-  //
-  //  val typeDeclIntro: DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-  //    g => toSeqLTG(actionsGenerator.introNodes(g.nodeKindKnowledge.kindOfKindType(TypeDecl), g))
-
-
-
-  val hostIntroAction : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-       actionsGenerator.hostIntro(violationTarget) andThen toSeqLTG
-
-  val moveAction : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-       actionsGenerator.move(violationTarget) andThen toSeqLTG
-
-  val moveContainerAction : DependencyGraph => Seq[LoggedTry[DependencyGraph]] = {
-    dg =>
-      val s = dg.container(violationTarget.id) map (id => Seq(dg.getConcreteNode(id))) getOrElse Seq()
-      toSeqLTG(s flatMap (n => actionsGenerator.move(n)(dg)))
-  }
-
-  val redirectTowardAbstractions : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-    actionsGenerator.redirectTowardExistingAbstractions(violationTarget)
-
-  val absIntro : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-      actionsGenerator.absIntro(violationTarget) andThen toSeqLTG
-
-  val hostAbsIntro : DependencyGraph => Seq[LoggedTry[DependencyGraph]] ={
-    dg =>
-      val s = dg.container(violationTarget.id) map (id => Seq(dg.getConcreteNode(id))) getOrElse Seq()
-      toSeqLTG(s flatMap (n => actionsGenerator.absIntro(n)(dg)))
-  }
-
-  def checkSuccess(g : DependencyGraph ) : LoggedTry[DependencyGraph] =
-    if((g, constraints).isWronglyUsed(violationTarget.id)) LoggedError("Remaining violations")
-    else LoggedSuccess(g)
-
-}
-
+/**
+  * Created by Loïc Girault on 10/05/16.
+  */
 class SolvingActions
 (val rules : TransformationRules,
  implicit val constraints: ConstraintsMaps) {
@@ -274,12 +101,12 @@ class SolvingActions
     } flatMap {
       case (toBeCtedHost, g) =>
         val hostStream =
-        chooseNode((dg, hostHost) => dg.canContain(hostHost, toBeCtedHost) &&
+          chooseNode((dg, hostHost) => dg.canContain(hostHost, toBeCtedHost) &&
             !(dg, constraints).isViolation(Contains(hostHost.id, toBeCtedHost.id)) && {
             val dg2 = dg.addContains(hostHost.id, toBeCtedHost.id)
-                        .addContains(toBeCtedHost.id, toBeContained.id)
+              .addContains(toBeCtedHost.id, toBeContained.id)
             !(dg2, constraints).isWronglyUsed(toBeContained.id)
-        })(g)
+          })(g)
 
         hostStream  map (ltg => s"Searching host for $toBeCtedHost\n" <++: ltg map {
           case (hid, g1) => (toBeCtedHost.id, g1.addContains(hid, toBeCtedHost.id))
@@ -289,22 +116,22 @@ class SolvingActions
 
   def findHost
   (toBeContained: ConcreteNode): DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] =
-   chooseNode((dg, cn) => dg.canContain(cn, toBeContained) &&
+    chooseNode((dg, cn) => dg.canContain(cn, toBeContained) &&
       !(dg, constraints).isViolation(Contains(cn.id, toBeContained.id)) && {
       val dg1 : DependencyGraph =
         dg.container(toBeContained.id) map (dg.removeContains(_, toBeContained.id)) getOrElse dg
       val dg2 = dg1.addContains(cn.id, toBeContained.id)
       dg2.subTree(toBeContained.id).forall(!(dg2, constraints).isWronglyUsed(_)) //needed when moving violation host
     }
-   )
+    )
 
 
   val attribHost : ((ConcreteNode, DependencyGraph)) => Stream[LoggedTry[(NodeId, DependencyGraph)]] = {
     case (n, g) =>
       val hostStream = findHost(n)(g)
       hostStream  map (ltg => s"Searching host for $n\n" <++: ltg map {
-      case (hid, g1) => (n.id, g1.addContains(hid, n.id))
-    })
+        case (hid, g1) => (n.id, g1.addContains(hid, n.id))
+      })
   }
 
 
@@ -329,7 +156,6 @@ class SolvingActions
 
         val s = partitionByKind(graph)(choices, List()).toStream
 
-
         s flatMap {
           nel =>
             if (nel.tail.isEmpty) Stream(logNodeChosen(nel.head, graph))
@@ -342,11 +168,11 @@ class SolvingActions
             }
         }
       }
- }
+  }
 
   def partitionByKind
   ( graph : DependencyGraph
-    ) : (List[DGNode], List[NonEmptyList[DGNode]]) => List[NonEmptyList[DGNode]] = {
+  ) : (List[DGNode], List[NonEmptyList[DGNode]]) => List[NonEmptyList[DGNode]] = {
     case (Nil, acc) => acc
     case (hd :: tl, acc) =>
       val (same, diff) = tl.partition(n => n.kind == hd.kind)
@@ -364,24 +190,24 @@ class SolvingActions
 
   def move
   ( wronglyContained : ConcreteNode
-    ) : DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] = {
+  ) : DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] = {
     g0 =>
       val lg = s"trying to move $wronglyContained, searching host\n"
       findHost(wronglyContained)(g0) flatMap {
         case LoggedEither(log, -\/(err)) => Stream(LoggedEither(lg + log, -\/(err)))
         case LoggedEither(log, \/-((newCter, g))) =>
-              val oldCter = g.container_!(wronglyContained.id)
-              doMove(g, wronglyContained, oldCter, newCter) map (ltg => (lg + log) <++: ltg.map((newCter, _)))
+          val oldCter = g.container_!(wronglyContained.id)
+          doMove(g, wronglyContained, oldCter, newCter) map (ltg => (lg + log) <++: ltg.map((newCter, _)))
       }
   }
 
 
   def doMove
-    ( g: DependencyGraph,
-      wronglyContained : ConcreteNode,
-      oldCter : NodeId,
-      newCter : NodeId
-    ) :  Stream[LoggedTG] = {
+  ( g: DependencyGraph,
+    wronglyContained : ConcreteNode,
+    oldCter : NodeId,
+    newCter : NodeId
+  ) :  Stream[LoggedTG] = {
     val stream: Stream[LoggedTG] = (wronglyContained.kind.kindType, g.styp(wronglyContained.id)) match {
       case (InstanceValueDecl, Some(typ)) =>
 
@@ -409,8 +235,8 @@ class SolvingActions
         }
 
       case (TypeDecl, _)
-        | (NameSpace, _)
-        | (StaticValueDecl, _) =>
+           | (NameSpace, _)
+           | (StaticValueDecl, _) =>
         Stream(rules.move.staticDecl(g, wronglyContained.id, newCter))
 
       case (TypeConstructor, _) =>
@@ -440,40 +266,40 @@ class SolvingActions
           (hostIntro(g2.getConcreteNode(abs.nodes.head))(g2) ++
             chooseNode(rules.abstracter.absIntroPredicate(impl,
               abs.policy, absNodeKind))(g2)).map {
-                lt => lt.flatMap {
-                  case (host, g3) =>
-                    s"Searching host for $abs\n" <++: introAbsContainsAndIsa(abs, impl, g3, host)
-                }
+            lt => lt.flatMap {
+              case (host, g3) =>
+                s"Searching host for $abs\n" <++: introAbsContainsAndIsa(abs, impl, g3, host)
+            }
           }
       }
 
 
 
-/*  def absIntro
-  (impl : ConcreteNode
-    ) : DependencyGraph => Stream[LoggedTry[(Abstraction, DependencyGraph)]] =
-    g =>
-    impl.kind.abstractionChoices.toStream flatMap {
-      case (absNodeKind, absPolicy) =>
+  /*  def absIntro
+    (impl : ConcreteNode
+      ) : DependencyGraph => Stream[LoggedTry[(Abstraction, DependencyGraph)]] =
+      g =>
+      impl.kind.abstractionChoices.toStream flatMap {
+        case (absNodeKind, absPolicy) =>
 
-        chooseNode(rules.abstracter.absIntroPredicate(impl,
-          absPolicy, absNodeKind))(g) .map { lt =>
-           lt.flatMap {
-            case (host, g2) =>
-              rules.abstracter.createAbstraction(g2, impl, absNodeKind, absPolicy).flatMap {
-                case (abs, g3) =>
-                  s"Searching host for $abs\n" <++: introAbsContainsAndIsa(abs, impl, g3, host)
-              }
+          chooseNode(rules.abstracter.absIntroPredicate(impl,
+            absPolicy, absNodeKind))(g) .map { lt =>
+             lt.flatMap {
+              case (host, g2) =>
+                rules.abstracter.createAbstraction(g2, impl, absNodeKind, absPolicy).flatMap {
+                  case (abs, g3) =>
+                    s"Searching host for $abs\n" <++: introAbsContainsAndIsa(abs, impl, g3, host)
+                }
+            }
           }
-        }
 
-    }*/
+      }*/
 
   def introAbsContainsAndIsa
-   ( abs : Abstraction,
-     impl : ConcreteNode,
-     g : DependencyGraph,
-     host : NodeId) : LoggedTry[(Abstraction, DependencyGraph)] = {
+  ( abs : Abstraction,
+    impl : ConcreteNode,
+    g : DependencyGraph,
+    host : NodeId) : LoggedTry[(Abstraction, DependencyGraph)] = {
     val g2 = abs.nodes.foldLeft(g){_.addContains(host, _)}
 
     (g2.container(impl.id), g2.kindType(host)) match {
@@ -490,17 +316,17 @@ class SolvingActions
         }
       case _ => LoggedSuccess((abs, g2))
     }
-    
+
   }
 
 
   def redirectTowardExistingAbstractions
   ( used : ConcreteNode) :
-    DependencyGraph => Stream[LoggedTG] =
+  DependencyGraph => Stream[LoggedTG] =
     g =>
-        redirectTowardExistingAbstractions(used,
-          (g, constraints) wrongUsers used.id,
-          g abstractions used.id)(g)
+      redirectTowardExistingAbstractions(used,
+        (g, constraints) wrongUsers used.id,
+        g abstractions used.id)(g)
 
 
 
@@ -543,7 +369,7 @@ class SolvingActions
                   // Uses(wu, used.id) can have be deleted in a
                   // previous iteration of this foldLoggedEither loop
                   if(g uses (wu, used.id))
-                      rules.redirection.redirectUsesAndPropagate(g, (wu, used.id), abs)
+                    rules.redirection.redirectUsesAndPropagate(g, (wu, used.id), abs)
                   else
                     LoggedSuccess(g)
 
@@ -556,47 +382,4 @@ class SolvingActions
             }
         }
       }
-
-
-
-
-
- /* implicit val LTM = puck.util.LoggedEither.loggedEitherMonad[Error]
-
-  type FindHost = (DependencyGraph, ConcreteNode) => LoggedTry[(NodeId, DependencyGraph)]
-  type DoMove = (DependencyGraph, ConcreteNode, NodeId, NodeId) => (LoggedTG \/ (CreateVarStrategy => LoggedTG))
-
-  val solveContains0 :
-  (DependencyGraph, ConcreteNode) =>
-    FindHost => DoMove => (LoggedTG \/ LoggedTry[(CreateVarStrategy => LoggedTG)]) =
-
-    ( g, wronglyContained )  => findHost => doMove => {
-
-    val oldCter = g.container_!(wronglyContained.id)
-
-    val g0 = g.removeContains(oldCter, wronglyContained.id, register = false)
-
-    def checkContainsSolved(g : DependencyGraph) : LoggedTG =
-      if(g.isWronglyContained(wronglyContained.id)) LoggedSuccess(g)
-      else LoggedError("constraint unsolvable")
-
-
-    /*findHost(g0, wronglyContained,
-      (graph : DependencyGraph, potentialHost: ConcreteNode) =>
-        !graph.interloperOf(potentialHost.id, wronglyContained.id))*/
-
-    val moveThenCheck: (NodeId, DependencyGraph) => (LoggedTG \/ (CreateVarStrategy => LoggedTG)) =
-      (newCter, g1) =>
-        doMove(g1.addContains(oldCter, wronglyContained.id, register = false),
-          wronglyContained, oldCter, newCter).bimap(
-          _ flatMap checkContainsSolved,
-          f => f andThen (_ flatMap checkContainsSolved)
-        )
-
-      LTM.cozip(findHost(g0, wronglyContained) map moveThenCheck.tupled).bimap(LTM.join,identity)
-
-  }*/
-
-
 }
-

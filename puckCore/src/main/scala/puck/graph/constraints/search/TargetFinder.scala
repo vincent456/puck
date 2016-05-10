@@ -24,18 +24,39 @@
  * Author of this file : Loïc Girault
  */
 
-//package puck.javaGraph.nodeKind
-//
-//import puck.graph.NodeKind
-//import puck.graph.constraints.{DelegationAbstraction, AbstractionPolicy}
-//
-//case object Literal extends JavaNodeKind {
-//  override val toString = "Literal"
-//
-//  def canContain(k : NodeKind) = false
-//  //TODO in case of method abstraction cf field comment
-//  override def abstractionPolicies = Seq(DelegationAbstraction)
-//  def abstractionNodeKinds(p : AbstractionPolicy) = ???
-//    ///List(Field(puck.graph.dummyId, typ), Method())
-//  def kindType = ???
-//}
+package puck.graph.constraints.search
+
+import puck.graph._
+import puck.graph.constraints.ConstraintsMaps
+
+/**
+  * Created by Loïc Girault on 10/05/16.
+  */
+trait CheckViolation {
+  val constraints: ConstraintsMaps
+
+  def isViolationTarget(g: DependencyGraph, nid: NodeId): Boolean =
+    (g, constraints).isWronglyUsed(nid) || (g, constraints).isWronglyContained(nid)
+
+}
+trait TargetFinder
+  extends CheckViolation {
+
+  val violationsKindPriority: Seq[NodeKind]
+
+  def findTargets(graph : DependencyGraph,
+                  l : Seq[NodeKind] = violationsKindPriority.toStream) : Seq[ConcreteNode] =  l match {
+    case topPriority +: tl =>
+      val tgts = graph.concreteNodes.toStream filter { n =>
+        n.kind == topPriority && ((graph, constraints).wrongUsers(n.id).nonEmpty ||
+          (graph, constraints).isWronglyContained(n.id))
+      }
+      if(tgts.nonEmpty) tgts
+      else findTargets(graph, tl)
+
+    case Nil => graph.concreteNodes.toStream filter { n => (graph, constraints).wrongUsers(n.id).nonEmpty ||
+      (graph, constraints).isWronglyContained(n.id) }
+  }
+
+
+}

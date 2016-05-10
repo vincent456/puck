@@ -124,7 +124,7 @@ class AutosolveResultPanel
   val constraints : ConstraintsMaps,
   violationTarget : ConcreteNode,
   printingOptionsControl: PrintingOptionsControl,
-  res : Search[SResult])
+  res : Search[OneStepResult])
 ( implicit val beforeGraph : DependencyGraph,
   val graphUtils : GraphUtils )
   extends SplitPane(Orientation.Horizontal)
@@ -236,8 +236,8 @@ trait Selector extends Publisher{
   def selectedLog : String = selectedResult.written
 }
 
-class FailureSelector(res : Search[SResult])
-  extends SortedElementSelector[SearchState[SResult]](
+class FailureSelector(res : Search[OneStepResult])
+  extends SortedElementSelector[SearchState[OneStepResult]](
     res.failuresByDepth, StateSelected.apply) with Selector{
 
   assert(res.failures.nonEmpty)
@@ -245,8 +245,8 @@ class FailureSelector(res : Search[SResult])
   override def selectedLog = selectedState.loggedResult.log
 }
 
-class SuccessSelector(res : Search[SResult])
-  extends SimpleElementSelector[SearchState[SResult]](StateSelected.apply) with Selector{
+class SuccessSelector(res : Search[OneStepResult])
+  extends SimpleElementSelector[SearchState[OneStepResult]](StateSelected.apply) with Selector{
   assert(res.successes.nonEmpty)
 
   setStatesList(res.successes)

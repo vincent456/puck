@@ -26,10 +26,12 @@
 
 package puck
 
+import puck.graph.constraints.search.AutomataState
 import puck.graph.transformations.Recordable
-import puck.util.{LoggedEither, Logged}
+import puck.util.{Logged, LoggedEither}
 
-import scalaz._, Scalaz._
+import scalaz._
+import Scalaz._
 
 package object graph {
 
@@ -78,14 +80,16 @@ package object graph {
   val isMutable = true
   val notMutable = false
 
-  type SResult = (DependencyGraph, Int)
+  type DecoratedGraph[T] = (DependencyGraph, T)
+  type OneStepResult = DecoratedGraph[AutomataState]
+  type SResult = DecoratedGraph[Option[(ConcreteNode, AutomataState)]]
 
   def graphOfResult(res : Error \/ SResult) : DependencyGraph = res match {
     case \/-((g,_)) => g
     case _ => error("no graph in this result")
   }
 
-  def graphOfResult(res : SResult) : DependencyGraph = res._1
+  def graphOfResult(res : DecoratedGraph[_]) : DependencyGraph = res._1
   def recordOfResult(res : SResult) : Recording = res._1.recording
 
 

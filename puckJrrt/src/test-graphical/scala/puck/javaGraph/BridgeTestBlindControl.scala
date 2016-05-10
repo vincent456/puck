@@ -27,7 +27,7 @@ object BridgeTestBlindControlSolveAll {
 //        () => new AStarSearchStrategy[(DependencyGraph, Int)](SResultEvaluator.equalityByMapping(_.numNodes)),
 //        Some(100),Some(5))
       val res = solveAll(graph, constraints,
-        () => new AStarSearchStrategy[(DependencyGraph, Int)](SResultEvaluator.equalityByMapping(_.numNodes)),
+        () => new AStarSearchStrategy[(DependencyGraph, Int)](DecoratedGraphEvalutaor.equalityByMapping(_.numNodes)),
         Some(1))
 
       if(res.isEmpty) println("no results")

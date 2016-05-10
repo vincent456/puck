@@ -43,7 +43,7 @@ import puck.TestUtils._
 
 import scala.swing.FlowPanel
 import BridgeScenario.path
-import puck.graph.constraints.search.{BlindControl, SResultEvaluator, TargetedBlindControl}
+import puck.graph.constraints.search.{BlindControl, DecoratedGraphEvalutaor, TargetedBlindControl}
 import puck.util.LoggedEither
 
 import scalaz.\/-
@@ -107,7 +107,7 @@ class BridgeAutoSolveSpec extends FeatureSpec {
 
       val engine =
         new SearchEngine(
-          new AStarSearchStrategy[(DependencyGraph, Int)](SResultEvaluator.equalityByMapping(Metrics.nameSpaceCoupling)),
+          new AStarSearchStrategy[(DependencyGraph, Int)](DecoratedGraphEvalutaor.equalityByMapping(Metrics.nameSpaceCoupling)),
           searchControlStrategy,
           Some(5)/*,
               evaluator = Some(SResultEvaluator.equalityByMapping(Metrics.nameSpaceCoupling))*/)
