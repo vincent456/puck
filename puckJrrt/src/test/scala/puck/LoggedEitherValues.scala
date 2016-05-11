@@ -45,6 +45,7 @@ trait LoggedEitherValues {
   class LoggedEitherValuable[E, G](t : LoggedEither[E, G], show : E => String) {
     def rvalue : G = t.value match {
       case -\/(err) =>
+        println(t.log)
         throw new TestFailedException(Some("loggedEitherRightValueNotDefined : " + err.toString),
           Some(new PuckError(err.toString)), 0)
       case \/-(g) => g

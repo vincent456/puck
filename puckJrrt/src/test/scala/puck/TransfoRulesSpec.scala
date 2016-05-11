@@ -10,32 +10,36 @@ import puck.javaGraph.ScenarioFactory
   */
 class TransfoRulesSpec
   extends FeatureSpec
-  with LoggedEitherValues{
+    with LoggedEitherValues{
 
   def compareWithExpectedAndGenerated(initialCode : String,
                                       transfo : ScenarioFactory => DependencyGraph,
-                                      expectedResultCode: String) : Unit = puck.ignore {
-    new ScenarioFactory(initialCode) {
+                                      expectedResultCode: String) : Unit =
+    compareScenarioWithExpectedAndGenerated(new ScenarioFactory(initialCode),
+      transfo, new ScenarioFactory(expectedResultCode))
+
+  def compareScenarioWithExpectedAndGenerated(scenario : ScenarioFactory,
+                                              transfo : ScenarioFactory => DependencyGraph,
+                                              expectedResult: ScenarioFactory) : Unit = {
+    val g : DependencyGraph = transfo(scenario)
 
 
-      val g : DependencyGraph = transfo(this)
+    import ShowDG._
+    println("graph initial")
+    (scenario.graph, scenario.graph.nodesIndex).println
+    //(scenario.graph, scenario.graph.edges).println
+    println("graph post transfo")
+    (g, g.nodesIndex).println
+    //(g, g.edges).println
+    println("graph expected")
+    (expectedResult.graph, expectedResult.graph.nodesIndex).println
+    //(expectedResult.graph, expectedResult.graph.edges).println
 
+    assert(Mapping.equals(g, expectedResult.graph), "graph produced by transfo != expected")
 
-      val expectedResult = new ScenarioFactory(expectedResultCode)
+    val generated = scenario.applyChangeAndMakeExample(g, Settings.outDir)
+    assert(Mapping.equals(g, generated.graph), "graph produced by transfo != generated")
 
-      import ShowDG._
-      println("graph initial")
-      (graph, graph.edges).println
-      println("graph post transfo")
-      (g, g.edges).println
-      println("graph expected")
-      (expectedResult.graph, expectedResult.graph.edges).println
-
-      assert(Mapping.equals(g, expectedResult.graph), "graph produced by transfo != expected")
-
-      val generated = applyChangeAndMakeExample(g, Settings.outDir)
-      assert(Mapping.equals(g, generated.graph), "graph produced by transfo != generated")
-    }
   }
 
 }

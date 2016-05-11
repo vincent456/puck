@@ -78,7 +78,7 @@ aspect DependencyGraphFactory {
 		int packageNode = builder.addPackage(getPackageDecl(), true);
 
 		for (TypeDecl td : getTypeDecls()){
-			td.buildDG(builder, packageNode);
+			builder.buildDG(packageNode, td);
 		}
 	}
 
@@ -92,10 +92,6 @@ aspect DependencyGraphFactory {
 			ad.getRight().lock();
 		}
 	}
-	public void TypeDecl.buildDG(JastaddGraphBuilder builder, int containerId){
-		builder.buildDG(this, containerId);
-	}
-
 
 	public void GenericTypeDecl.buildDG_TypeParameters(JastaddGraphBuilder builder, int thisId){
 		for(TypeVariable tv: getTypeParameterList()){
@@ -147,24 +143,17 @@ aspect DependencyGraphFactory {
 			builder.buildDG(containerId, this);
 	}
 
-	FieldDecl implements Buildable;
-	VarDeclStmt implements Buildable;
-	ReturnStmt implements Buildable;
 	AssignExpr implements Buildable;
-	MethodAccess implements Buildable;
-	VarAccess implements Buildable;
 	ClassInstanceExpr implements Buildable;
-
-
-	public void EnhancedForStmt.buildDG(JastaddGraphBuilder builder, int containerId) {
-		super.buildDG(builder, containerId);
-		if(getExpr() instanceof Access){
-			int dgTuser = getVariableDecl().buildDGNode(builder);
-			int dgTused = this.getTypeAccess().buildDGNode(builder);
-			builder.findTypeUserAndBindUses(new Uses(dgTuser, dgTused, UsesAccessKind.none()),
-				((Access) getExpr()).lastAccess());
-		}
-	}
+	EnhancedForStmt implements Buildable;
+	FieldDecl implements Buildable;
+	MethodAccess implements Buildable;
+	ParTypeAccess implements Buildable;
+	ReturnStmt implements Buildable;
+	TypeDecl implements Buildable;
+	TypeAccess implements Buildable;
+	VarAccess implements Buildable;
+	VarDeclStmt implements Buildable;
 
 
 	public void EnumConstant.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId ){
@@ -172,7 +161,6 @@ aspect DependencyGraphFactory {
 		builder.addContains(hostTypeDeclId, thisNode);
 		builder.setType(thisNode, builder.getType(this.hostType()));
 	}
-
 
 
 	public void DGNamedElement.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId ){
@@ -272,16 +260,6 @@ aspect DependencyGraphFactory {
 		buildDGInChildren(builder, containerId);
 	}
 
-	public void TypeAccess.buildDG(JastaddGraphBuilder builder, int containerId){
-		int nodeId = buildDGNode(builder);
-		builder.addEdge(new Uses(containerId, nodeId, UsesAccessKind.none()));
-	}
-
-
-	public void ParTypeAccess.buildDG(JastaddGraphBuilder builder, int containerId){
-		builder.buildDG(containerId, this);
-		buildDGInChildren(builder, containerId);
-	}
 
 	static void TypeDecl.addImplements(JastaddGraphBuilder builder,
 									   int sub, List<Access> implementList){

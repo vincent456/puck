@@ -55,7 +55,7 @@ object JavaIntro extends Intro {
    localName: String,
    kind: NodeKind,
    typ: Type,
-   mutable: Mutability
+   mutable: Mutability = true
     ): (ConcreteNode, ConcreteNode, DependencyGraph) = {
 
     val (cn, g) = this.apply(graph, localName, kind)

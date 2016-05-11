@@ -80,6 +80,32 @@ class RedirectTypeDeclUsesSpec
     )
   }
 
+  scenario("From class to interface superType - with method with parameters") {
+    compareWithExpectedAndGenerated(
+      """package p;
+        |
+        |class C implements I{ public void m(int i){} }
+        |
+        |interface I { void m(int i); }
+        |
+        |class A { int f = 42; void user(C c){ c.m(f); } }""",
+      bs => {
+        import bs.{graph, idOfFullName}
+
+        Redirection.redirectUsesAndPropagate(graph,
+          ("p.A.user(C).c", "p.C"),
+          AccessAbstraction("p.I", SupertypeAbstraction)).rvalue
+      },
+      """package p;
+        |
+        |class C implements I{ public void m(int i){} }
+        |
+        |interface I { void m(int i); }
+        |
+        |class A { int f = 42;  void user(I c){ c.m(f); } }"""
+    )
+  }
+
   ignore("From class to class superType"){}
 
   ignore("From interface to interface superType"){}

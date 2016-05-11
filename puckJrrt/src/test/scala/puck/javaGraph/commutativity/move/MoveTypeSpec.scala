@@ -26,8 +26,9 @@
 
 package puck.javaGraph.commutativity.move
 
-import puck.AcceptanceSpec
+import puck.{AcceptanceSpec, TransfoRulesSpec}
 import puck.Settings._
+import puck.graph.Contains
 import puck.graph.comparison.Mapping
 import puck.graph.transformations.rules.Move
 import puck.javaGraph.ScenarioFactory
@@ -36,7 +37,8 @@ import puck.javaGraph.transfoRules.MoveSpec._
 /**
   * Created by Loïc Girault on 19/04/16.
   */
-class MoveTypeSpec extends AcceptanceSpec  {
+class MoveTypeSpec
+  extends TransfoRulesSpec  {
   scenario("Move top level class") {
     val _ = new ScenarioFactory(
       """package p1;
@@ -193,7 +195,7 @@ class MoveTypeSpec extends AcceptanceSpec  {
 
 
   scenario("Move top from different Packages - actual gen parameter") {
-    val _ = new ScenarioFactory(
+    compareScenarioWithExpectedAndGenerated(new ScenarioFactory(
       """package p1;
         |
         |public class A {
@@ -209,22 +211,33 @@ class MoveTypeSpec extends AcceptanceSpec  {
         |class C{
         |    B<A> ba;
         |    void m(){ ba.m(new A()); }
-        |}""") {
+        |}"""),
+      bs => {
+        import bs.{graph, idOfFullName}
+        val (g0, package3) = createTopLevelPackage(graph, "p3")
 
-      val p1 = fullName2id(s"p1")
-      val (g0, package3) = createTopLevelPackage(graph, "p3")
+        val g1 = Move.staticDecl(g0, "p1.A", package3).rvalue
 
-      val classA = fullName2id(s"p1.A")
+        (g1 removeNode "p1")._2.removeEdge(Contains(graph.rootId, "p1"))
 
-      val g1 = Move.staticDecl(g0, classA, package3).rvalue
-
-      val recompiledEx = applyChangeAndMakeExample(g1, outDir)
-
-      val gClean = g1.removeContains(g1.rootId, p1).removeNode(p1)._2
-
-      assert( Mapping.equals(recompiledEx.graph, gClean) )
-
-    }
+    }, new ScenarioFactory(
+        """package p3;
+          |
+          |public class A {
+          |    public A(){}
+          |    public void ma(){}
+          |}""",
+        """package p2;
+          |
+          |import p3.A;
+          |
+          |class B<T>{ void m(T t){} }
+          |
+          |class C{
+          |    B<A> ba;
+          |    void m(){ ba.m(new A()); }
+          |}"""
+      ))
 
   }
 

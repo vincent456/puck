@@ -59,12 +59,12 @@ object ScenarioFactory {
 
 import ScenarioFactory.logger
 
-case class ScenarioFactory
-( program : Program,
-  graph : DependencyGraph,
-  initialRecord : Seq[Transformation],
-  fullName2id : Map[String, NodeId],
-  dg2astMap : Map[NodeId, ASTNodeLink]){
+class ScenarioFactory
+( val program : Program,
+  val graph : DependencyGraph,
+  val initialRecord : Seq[Transformation],
+  val fullName2id : Map[String, NodeId],
+  val dg2astMap : Map[NodeId, ASTNodeLink]){
 
    def this(dg2ast : JavaJastAddDG2AST) =
     this(dg2ast.program,

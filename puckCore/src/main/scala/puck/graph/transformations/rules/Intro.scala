@@ -107,7 +107,7 @@ abstract class Intro {
    localName: String,
    kind : NodeKind,
    typ : Type,
-   mutable : Mutability
+   mutable : Mutability = true
     )  : (ConcreteNode, ConcreteNode, DependencyGraph)
 
   def defaultConstructor

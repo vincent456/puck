@@ -35,7 +35,7 @@ import puck.javaGraph.ScenarioFactory
 /**
   * Created by Loïc Girault on 24/03/16.
   */
-class RedirectTypeMemberSpec
+class RedirectTypeMemberUsesSpec
   extends AcceptanceSpec {
 
     scenario("From method to method superType"){

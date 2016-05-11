@@ -27,8 +27,8 @@
 package puck.javaGraph.transfoRules.redirect
 
 import puck.graph.constraints.DelegationAbstraction
-import puck.graph.transformations.rules.{CreateTypeMember, CreateParameter, Redirection}
-import puck.graph.{AccessAbstraction, Uses}
+import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, Redirection}
+import puck.graph.{AccessAbstraction, Factory, Uses}
 import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.nodeKind.Field
 import puck.AcceptanceSpec
@@ -49,8 +49,6 @@ class RedirectTypeConstructorUsesSpec
         |
         |class A { void m() { B b = new B(); } }"""
     ) {
-
-
 
       val ctorUse = Uses("p.A.m().Definition", "p.B.B()")
       val ctorMethodUse = Uses("p.A.m().Definition", "p.Factory.createB()")
@@ -134,7 +132,7 @@ class RedirectTypeConstructorUsesSpec
       graph.parametersOf("p.A.m()") shouldBe empty
 
       val g = graph.addAbstraction("p.B.B()", AccessAbstraction("p.B.create()", DelegationAbstraction))
-
+        .setRole("p.B.create()", Some(Factory("p.B.B()")))
       val g2 =
         Redirection.redirectTypeConstructorToInstanceValueDecl(g, ctorUse,
           AccessAbstraction("p.B.create()", DelegationAbstraction))(CreateParameter).rvalue

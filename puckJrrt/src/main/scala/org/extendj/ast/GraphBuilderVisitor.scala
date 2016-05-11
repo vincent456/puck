@@ -35,7 +35,7 @@ import scala.collection.JavaConversions._
 trait GraphBuilderVisitor {
   this : JastaddGraphBuilder =>
 
-  def buildDG(td : TypeDecl, containerId : NodeId) : Unit = td match {
+  def buildDG(containerId : NodeId, td : TypeDecl) : Unit = td match {
     case _ : WildcardExtendsType | _ : WildcardSuperType => ()
     case _ =>
       val n = buildTypeDecl(td)
@@ -83,6 +83,7 @@ trait GraphBuilderVisitor {
 
   def buildDG(containerId : NodeId, pta : ParTypeAccess) : Unit = {
     getType(pta).ids.foreach(id => addEdge(Uses(containerId, id)))
+    pta.buildDGInChildren(this, containerId)
   }
 
   def buildDG(containerId : NodeId, expr : ClassInstanceExpr) : Unit = {
@@ -105,6 +106,16 @@ trait GraphBuilderVisitor {
     addEdge(Uses(containerId, ctorNodeId))
   }
 
+  def buildDG(containerId : NodeId, stmt : EnhancedForStmt) : Unit = {
+    stmt.buildDGInChildren(this, containerId)
+    stmt.getExpr match {
+      case access : Access =>
+        val typeUser = stmt.getVariableDecl buildDGNode this
+        val typeUsed = stmt.getTypeAccess buildDGNode this
+        findTypeUserAndBindUses(Uses(typeUser, typeUsed), access.lastAccess())
+      case _ => ()
+    }
+  }
   def buildDG(containerId : NodeId, stmt : VarDeclStmt) : Unit = {
     val t = getType(stmt.getTypeAccess)
     t.ids.foreach (id => addEdge(Uses(containerId, id)))
@@ -174,7 +185,7 @@ trait GraphBuilderVisitor {
     val defId = getDefNode(defOwner)
     theDef.registerDef(this, defId)
     addContains(defOwnerId, defId)
-    theDef.buildDG(this, defId)
+    theDef.buildDGInChildren(this, defId)
     defId
   }
 
@@ -187,6 +198,9 @@ trait GraphBuilderVisitor {
       if(!va.isDeclStatic)
         buildTypeUse(va, typeMemberUses)
     }
+
+  def buildDG(containerId : NodeId, ta : TypeAccess) : Unit =
+    addEdge(Uses(containerId, ta buildDGNode this))
 
   def buildDG(containerId : NodeId, ma : MethodAccess) : Unit = {
     if(!ma.isSubstitute)
@@ -201,7 +215,10 @@ trait GraphBuilderVisitor {
     ma.getArgs.foreach{
       expr => expr.buildDG(this, containerId)
     }
-    decls.foreach{
+    decls.map{
+      case mds : MethodDeclSubstituted => mds.sourceMethodDecl()
+      case md => md
+    }.foreach{
       decl =>
         val nodeId = decl buildDGNode this
         val typeMemberUses = Uses(containerId, nodeId)
@@ -211,10 +228,14 @@ trait GraphBuilderVisitor {
           buildTypeUse(ma, typeMemberUses)
 
         decl.getParameterList.toList.zip(ma.getArgs.toList).foreach{
+          case (param, arg : Access) if param.`type`().isInstanceOf[TypeVariable] =>
+            System.err.println("parameter type constraint, param typed with a type variable case not handled")
           case (param, arg : Access) =>
             val paramId = param buildDGNode this
             val argId = arg buildDGNode this
             constraintTypeUses(paramId, param.`type`(), argId, arg)
+          case (_, ae : AddExpr) =>
+            System.err.println("parameter type constraint, AddExpr case not handled")
           case (_, _ : Literal) =>()
           case (_, arg) =>
             throw new DGBuildingError(s"Access expected but found : $arg")

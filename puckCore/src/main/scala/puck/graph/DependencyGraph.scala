@@ -595,13 +595,13 @@ class DependencyGraph
   private def checkTypeUseExist(tuc : TypeUseConstraint) : NodeIdP = {
     val (s, t) = tuc.constrainedUse
     import ShowDG._
-    if(edges.uses(s,t))  tuc.constrainedUse
-    else error((this,(s,t)).shows + " does not exist")
+    if(edges.uses(s,t)) tuc.constrainedUse
+    else error((this,Uses(s,t)).shows + " does not exist")
   }
 
   def typeConstraints(typeUse : NodeIdP) : Set[TypeUseConstraint] = {
    val tucs =  edges.typeUsesConstraints getFlat typeUse
-    tucs foreach checkTypeUseExist
+    //tucs foreach checkTypeUseExist
     tucs
   }
 

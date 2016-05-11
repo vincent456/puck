@@ -135,6 +135,9 @@ class JastaddGraphBuilder(val program : Program)
                 case _ => addBodyDecl(cdecl)
               }
             case Some(tdh : TypedKindDeclHolder) => addApiTypeNode(tdh.decl)
+            case Some(ParameterDeclHolder(d)) =>
+              println("attaching " + d.dgFullName())
+              //addBodyDecl(d.hostBodyDecl())
             case sdh =>
               println( g.fullName(nodeId) + " " + sdh + " attach orphan nodes unhandled case")
               ()

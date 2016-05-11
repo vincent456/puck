@@ -33,7 +33,7 @@ import puck.javaGraph.ScenarioFactory
 import puck.AcceptanceSpec
 
 
-class RedirectTypeDeclSpec
+class RedirectTypeDeclUseSpec
   extends AcceptanceSpec {
 
   scenario("From class to superType interface") {

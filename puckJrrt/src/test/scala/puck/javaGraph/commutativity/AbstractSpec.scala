@@ -174,7 +174,7 @@ class AbstractSpec extends TransfoRulesSpec {
     }
 
     scenario("use of type member sibling by self and parameter"){
-      val _ = new ScenarioFactory(
+      compareWithExpectedAndGenerated(
         """package p;
           |
           |class A {
@@ -186,20 +186,33 @@ class AbstractSpec extends TransfoRulesSpec {
           |    public void canBeInInterface(A a){ a.m(this.f); }
           |
           |    public void cannotBeInInterface(A a){ this.m(a.f); }
-          |}"""
-      ){
-        val packageP = fullName2id("p")
-        val classA = fullName2id("p.A")
+          |}""",
+        bs => {
+          import bs.{graph, idOfFullName}
 
         val (AccessAbstraction(itc, _), g0) =
-          Rules.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
+          Rules.abstracter.createAbstraction(graph, graph getConcreteNode "p.A",
             Interface, SupertypeAbstraction).rvalue
-        val g = g0.addContains(packageP, itc)
-
-        val recompiledEx = applyChangeAndMakeExample(g, outDir)
-
-        assert( Mapping.equals(g, recompiledEx.graph) )
-      }
+         g0.addContains("p", itc)
+        },
+        """package p;
+          |
+          |interface A_SupertypeAbstraction {
+          |    void m(int i);
+          |    void canBeInInterface(A_SupertypeAbstraction a);
+          |}
+          |
+          |class A implements A_SupertypeAbstraction{
+          |
+          |    private int f;
+          |
+          |    public void m(int i){}
+          |
+          |    public void canBeInInterface(A_SupertypeAbstraction a){ a.m(this.f); }
+          |
+          |    public void cannotBeInInterface(A a){ this.m(a.f); }
+          |}"""
+      )
     }
 
     info("super type already present")

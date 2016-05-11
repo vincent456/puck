@@ -114,7 +114,6 @@ trait TypeUsage {
       case ( tv : TypeVariable, _ ) =>
         tv.owner() match {
           case tvOwner : GenericTypeDecl =>
-            val qualifierHostType = qualifier.asInstanceOf[TypeMemberAccess].decl().hostType()
             findTypeVariableInstanciatorAndBindUses(tv, tvOwner,
                   qualifierDecl.`type`(), typeMemberUse,
                   qualifier buildDGNode this, qualifier)

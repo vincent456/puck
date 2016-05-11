@@ -250,9 +250,9 @@ object ShowDG extends ShowConstraints{
 //      builder append print(userMap, (used : NodeId, user : NodeId) =>
 //        s"$used - ${desambiguatedFullName(dg, used)} used by $user - ${desambiguatedFullName(dg, user)}")
 //
-      builder.append("\nuser -> used\n")
-      builder append print(usedMap, (user : NodeId, used : NodeId) =>
-        s"$user - ${desambiguatedFullName(dg, user)} uses $used - ${desambiguatedFullName(dg, used)}")
+//      builder.append("\nuser -> used\n")
+//      builder append print(usedMap, (user : NodeId, used : NodeId) =>
+//        s"$user - ${desambiguatedFullName(dg, user)} uses $used - ${desambiguatedFullName(dg, used)}")
 //
 //      builder.append("\ncontainer -> content\n")
 //      builder append print(contents, (container : NodeId, content : NodeId) =>
@@ -291,9 +291,9 @@ object ShowDG extends ShowConstraints{
 //      builder append print(typeUses2typeMemberUsesMap, (tUse : NodeIdP, tmUse : NodeIdP) =>
 //        s"${pToString(tUse)} -> ${pToString(tmUse)}")
 //
-//      builder.append("\ntypeUsesConstraints\n")
-//      builder append print(typeUsesConstraints,
-//        (k : NodeIdP, v : TypeUseConstraint) => stringOfTypeConstraint(dg,(k,v)))
+      builder.append("\ntypeUsesConstraints\n")
+      builder append print(typeUsesConstraints,
+        (k : NodeIdP, v : TypeUseConstraint) => stringOfTypeConstraint(dg,(k,v)))
 
 
       builder.toString()

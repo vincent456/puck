@@ -231,8 +231,11 @@ object Redirection {
           case Sub(_) | Sup(_) => false
         }
 
-    g.abstractions(oldTypeUsed).find (abs => abs.nodes contains newTypeToUse) match {
-      case None => LoggedError("no satisfying abstraction found")
+//    val tucString =  tucsThatNeedPropagation map (tuc => (g,tuc).shows) mkString ("\n", "\n", "\n")
+//    println(s"tucsThatNeedPropagation : ${(g,oldTypeUse).shows} $tucString" )
+
+    log <++: (g.abstractions(oldTypeUsed).find (abs => abs.nodes contains newTypeToUse) match {
+      case None => LoggedError(s"${(g,newTypeToUse).shows} is not an abstraction of ${(g,oldTypeUsed).shows} ")
       case Some(ReadWriteAbstraction(_, _)) =>
         LoggedError("!!! type is not supposed to have a r/w abs !!!")
       case Some(abs @ AccessAbstraction(absId, _)) =>
@@ -251,9 +254,37 @@ object Redirection {
             if( t == absId ) LoggedSuccess(g1)
             else redirectInstanceUsesAndPropagate(g1, (s,t), abs)
         }
-    }
+    })
   }
 
+
+  def propagateParameterTypeConstraints
+  (g : DependencyGraph,
+   typeMember : NodeId,
+   abs : Abstraction) = {
+
+    val parameters = g parametersOf typeMember
+    if(parameters.isEmpty) g
+    else {
+      val AccessAbstraction(absId,_) = abs
+      val absParameters = g parametersOf absId
+      val paramsConstraints = for {
+        pids <- parameters zip absParameters
+        (pid, absPid) = pids
+        tid <- g usedBy pid
+        ct <- g.typeConstraints((pid, tid))
+      } yield (pid, absPid, tid, ct)
+      ()
+
+      paramsConstraints.foldLeft(g) {
+        case (g01, (pid, absPid, tid, tuc)) =>
+          val g02 = g01.addTypeUsesConstraint((absPid, tid), tuc)
+          if(g.usersOf(typeMember).intersect(g.usersOf(tuc.constrainedUser)).isEmpty)
+            g02.removeTypeUsesConstraint((pid, tid), tuc)
+          else g02
+      }
+    }
+  }
 
   def redirectTypeMemberUses
   ( g : DependencyGraph,
@@ -264,13 +295,15 @@ object Redirection {
     val newTypeUse = (oldTypeUses.user, newTypeToUse)
     brSet.foldLoggedEither(g) {
       case (g00, (_, tmu)) =>
+
         for {
           abs <- tmAbstraction(g, newTypeToUse, tmu.used)
           gNewTmus <- redirect(g00, tmu, abs)
           (g01, nTmus) = gNewTmus
         } yield {
-          g01.removeBinding(oldTypeUses, tmu)
+          val g02 = g01.removeBinding(oldTypeUses, tmu)
             .changeTypeUseForTypeMemberUseSet(oldTypeUses, newTypeUse, nTmus)
+          propagateParameterTypeConstraints(g02, tmu.used, abs)
         }
     }
   }

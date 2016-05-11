@@ -95,7 +95,7 @@ class CompositeScenario private ()
       "fileSystem.Directory.add(Directory)").rvalue
 
 
-  def gFinal = g5
+  def gFinal = g6
 }
 
 class CompositeManualRefactoringSpec
@@ -103,6 +103,7 @@ class CompositeManualRefactoringSpec
 
   scenario("composite ``manual'' refactoring"){
     val bs = CompositeScenario()
+
     val recompiledEx = bs.applyChangeAndMakeExample(bs.gFinal, outDir)
 
     assert( Mapping.equals(bs.gFinal, recompiledEx.graph) )
