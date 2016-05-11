@@ -29,7 +29,7 @@ object LocationTestBlindControlSolveAll {
 
       val res = solveAllBlind(graph, constraints,
         () => new AStarSearchStrategy(DecoratedGraphEvaluator.equalityByMapping(_.numNodes),1,7),
-        Some(1))
+         Some(1))
 
       if(res.isEmpty) println("no results")
       else {
