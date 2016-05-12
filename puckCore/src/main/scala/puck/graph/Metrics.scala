@@ -28,6 +28,10 @@ package puck.graph
 
 object Metrics {
 
+  // ajouté par Mikal
+  def numSons(graph: DependencyGraph, root : NodeId) =
+    graph.content(root).size
+
 
   //prerequis : \forall n in nodes, graph.contains*(root, n)
   def outgoingDependencies(graph: DependencyGraph, root : NodeId, nodes: Seq[NodeId]): Set[NodeIdP] =
@@ -270,6 +274,8 @@ object Metrics {
 
     components.size
   }
+
+
 
 
 //  def weight
