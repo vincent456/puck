@@ -51,8 +51,12 @@ class AStarSearchStrategy[T]
 
   val remainingStates = new mutable.PriorityQueue[SearchState[T]]()(SearchStateOrdering.reverse)
   def addState(s: SearchState[T]): Unit = ignore(
-    if ((s.depth < maxDepth) && remainingStates.length < maxSize)// ajouté par Mikal
-      remainingStates += s )
+    if ((s.depth < maxDepth)){
+      remainingStates += s
+      if (remainingStates.length > maxSize)
+        remainingStates.init
+    }
+  )
 
   def popState() : SearchState[T] = remainingStates.dequeue()
 
