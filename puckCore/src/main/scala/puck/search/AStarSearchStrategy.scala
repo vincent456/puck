@@ -34,16 +34,15 @@ import scala.collection.mutable
   */
 class AStarSearchStrategy[T]
 ( evaluator: Evaluator [T],
-  depthCost : Int = 1,
   maxDepth : Int = 100, // ajouté par Mikal
-  maxSize : Int = 100
+  maxSize : Int = 1000
   ) extends SearchStrategy[T] {
 
 
   implicit object SearchStateOrdering extends Ordering[SearchState[T]]{
 
     def evaluateWithDepthPenaly(x: SearchState[T]) : Int =
-      Math.max(evaluator.evaluateInt(x) + x.depth * depthCost, 0)
+      Math.max(evaluator.evaluateInt(x) + x.depth, 0)
 
     override def compare(sx: SearchState[T], sy: SearchState[T]): Int =
       evaluateWithDepthPenaly(sx) compareTo evaluateWithDepthPenaly(sy)

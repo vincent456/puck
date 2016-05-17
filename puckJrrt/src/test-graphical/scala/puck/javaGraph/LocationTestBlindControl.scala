@@ -28,7 +28,7 @@ object LocationTestBlindControlSolveAll {
 
 
       val res = solveAllBlind(graph, constraints,
-        () => new AStarSearchStrategy(DecoratedGraphEvaluator.equalityByMapping(_.numNodes),1,10,1000),
+        () => new AStarSearchStrategy(DecoratedGraphEvaluator.equalityByMapping(_.numNodes),10,1000),
          Some(1))
 
       if(res.isEmpty) println("no results")
@@ -84,8 +84,6 @@ object LocationTestBlindControl {
     }
 
   }
-
-
 }
 
 import puck.javaGraph.BridgeTestBlindControl._
