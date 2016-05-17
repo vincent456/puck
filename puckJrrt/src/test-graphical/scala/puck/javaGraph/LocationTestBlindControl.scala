@@ -1,7 +1,7 @@
 package puck.javaGraph
 
 import puck.TestUtils._
-import puck.graph.DependencyGraph
+import puck.graph.{DependencyGraph, Metrics}
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.search._
 import puck.jastadd.ExtendJGraphUtils.dotHelper
@@ -27,8 +27,11 @@ object LocationTestBlindControlSolveAll {
 //        Some(100),Some(5))
 
 
+      val fitness1 : DependencyGraph => Double =
+        Metrics.fitness1(_, constraints, 10, 1, 5)
+
       val res = solveAllBlind(graph, constraints,
-        () => new AStarSearchStrategy(DecoratedGraphEvaluator.equalityByMapping(_.numNodes),10,1000),
+        () => new AStarSearchStrategy(DecoratedGraphEvaluator.equalityByMapping(fitness1),10,1000),
          Some(1))
 
       if(res.isEmpty) println("no results")

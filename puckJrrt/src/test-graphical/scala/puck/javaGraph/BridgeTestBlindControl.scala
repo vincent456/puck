@@ -4,7 +4,7 @@ import puck.graph.constraints.search._
 import puck.{AcceptanceSpec, Quick, Settings}
 import puck.jastadd.ExtendJGraphUtils.dotHelper
 import puck.TestUtils._
-import puck.graph.{DependencyGraph, ShowDG}
+import puck.graph.{DependencyGraph, Metrics, ShowDG}
 import puck.graph.comparison.Mapping
 import puck.search.{AStarSearchStrategy, BreadthFirstSearchStrategy}
 import puck.util.LoggedEither
@@ -27,8 +27,11 @@ object BridgeTestBlindControlSolveAll {
 //        () => new AStarSearchStrategy[(DependencyGraph, Int)](SResultEvaluator.equalityByMapping(_.numNodes)),
 //        Some(100),Some(5))
 
+      val fitness1 : DependencyGraph => Double =
+        Metrics.fitness1(_, constraints, 10, 1, 5)
+
       val res = solveAllBlind(graph, constraints,
-        () => new AStarSearchStrategy(DecoratedGraphEvaluator.equalityByMapping(_.numNodes),1,6),
+        () => new AStarSearchStrategy(DecoratedGraphEvaluator.equalityByMapping(fitness1),10,1000),
         Some(1))
 
       if(res.isEmpty) println("no results")

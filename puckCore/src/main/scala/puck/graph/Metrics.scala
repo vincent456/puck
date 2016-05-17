@@ -26,11 +26,30 @@
 
 package puck.graph
 
+import puck.graph.constraints.ConstraintsMaps
+
 object Metrics {
 
   // ajouté par Mikal
+  // nombre de noeuds contenus dans root
   def numSons(graph: DependencyGraph, root : NodeId) =
     graph.content(root).size
+
+  // ajouté par Mikal
+  // nombre de noeuds dans le package par dégfaut
+  def numSonsOfDefault(graph : DependencyGraph) =
+    numSons(graph, graph.rootId)
+
+  // ajouté par Mikal
+  def numViolations(graph : DependencyGraph, cm : ConstraintsMaps) = {
+    import DependencyGraph.ConstraintsOps
+    (graph, cm).violations().size
+  }
+
+  // ajouté par Mikal
+  def fitness1(graph : DependencyGraph, cm : ConstraintsMaps, kViols : Int = 10, kComplex : Int = 1, kDefault : Int = 5) = {
+    kViols*numViolations(graph, cm)  + kComplex*graph.numNodes + kDefault*numSonsOfDefault(graph)
+  }
 
 
   //prerequis : \forall n in nodes, graph.contains*(root, n)
