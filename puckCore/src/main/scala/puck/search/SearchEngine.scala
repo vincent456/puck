@@ -27,7 +27,7 @@
 package puck.search
 
 import puck._
-import puck.graph.{LoggedTry, LoggedSuccess}
+import puck.graph.{LoggedSuccess, LoggedTry}
 
 import scala.collection.mutable
 import scalaz.{-\/, \/-}

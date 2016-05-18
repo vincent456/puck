@@ -48,14 +48,18 @@ class AStarSearchStrategy[T]
       evaluateWithDepthPenaly(sx) compareTo evaluateWithDepthPenaly(sy)
   }
 
-  val remainingStates = new mutable.PriorityQueue[SearchState[T]]()(SearchStateOrdering.reverse)
-  def addState(s: SearchState[T]): Unit = ignore(
-    if ((s.depth < maxDepth)){
+  var remainingStates = new mutable.PriorityQueue[SearchState[T]]()(SearchStateOrdering.reverse)
+
+  def isSuccess(s: SearchState[T]) =
+    s.loggedResult.value.isRight
+
+  def addState(s: SearchState[T]): Unit =
+    if (isSuccess(s) && (s.depth < maxDepth)) {
       remainingStates += s
       if (remainingStates.length > maxSize)
-        remainingStates.init
+        remainingStates = remainingStates.init
     }
-  )
+
 
   def popState() : SearchState[T] = remainingStates.dequeue()
 
