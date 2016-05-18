@@ -279,9 +279,9 @@ object ShowDG extends ShowConstraints{
 //      builder.append("\nsuper -> sub\n\t")
 //      builder.append(subTypes.toString)
 //
-//      val pToString : NodeIdP => String = {
-//        case (p1, p2) => s"($p1 - ${desambiguatedFullName(dg, p1)}, $p2 - ${desambiguatedFullName(dg, p2)})"
-//      }
+      val pToString : NodeIdP => String = {
+        case (p1, p2) => s"($p1 - ${desambiguatedFullName(dg, p1)}, $p2 - ${desambiguatedFullName(dg, p2)})"
+      }
 //
 //      builder append "\ntmUse -> tUse\n"
 //      builder append print(typeMemberUses2typeUsesMap, (tmUse : NodeIdP, tUses : NodeIdP) =>
@@ -290,7 +290,7 @@ object ShowDG extends ShowConstraints{
 //      builder append "\ntUse -> tmUse\n"
 //      builder append print(typeUses2typeMemberUsesMap, (tUse : NodeIdP, tmUse : NodeIdP) =>
 //        s"${pToString(tUse)} -> ${pToString(tmUse)}")
-//
+
       builder.append("\ntypeUsesConstraints\n")
       builder append print(typeUsesConstraints,
         (k : NodeIdP, v : TypeUseConstraint) => stringOfTypeConstraint(dg,(k,v)))

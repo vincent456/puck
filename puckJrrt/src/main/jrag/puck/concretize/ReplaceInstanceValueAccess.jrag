@@ -71,7 +71,8 @@ aspect ReplaceInstanceValueAccess {
     }
 
     public void MethodAccess.replaceMethodCall(MethodDecl oldUsed, MethodDecl newUsed){
-        if(targetMethod.getDecl() == oldUsed) {
+        if( targetMethod != null &&
+           targetMethod.getDecl() == oldUsed) {
             MethodAccess ma = new MethodAccess(newUsed.name(), this.getArgList());
             boolean isMonoCall = this.isMonomorphicCall;
             if(newUsed.hostType().isInterfaceDecl())

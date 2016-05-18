@@ -193,9 +193,9 @@ object Mapping {
       }
 
 
-  import ShowDG._
-  import EqualityWithDebugPrint._
-//  import Equality._
+//  import ShowDG._
+//  import EqualityWithDebugPrint._
+  import Equality._
 
   def equals
   ( g1 : DependencyGraph,
@@ -306,16 +306,16 @@ object Mapping {
           g2.edges.typeUsesConstraints)
 
 
-      println("###############################")
-      println("equalsNodes = " + equalsNodes)
-      println("equalsUses = " + equalsUses)
-      println("equalTypes = " + equalTypes)
-      println("equalsUsesAccessKind = " + equalsUsesAccessKind)
-      println("equalsContains1 = " + equalsContains1)
-      println("equalsContains2 = " + equalsContains2)
-      println("equalsIsa = " + equalsIsa)
-      println("equalsBR = " + equalsBR)
-      println("equalsTypeUseConstraints = " + equalsTypeUseConstraints)
+//      println("###############################")
+//      println("equalsNodes = " + equalsNodes)
+//      println("equalsUses = " + equalsUses)
+//      println("equalTypes = " + equalTypes)
+//      println("equalsUsesAccessKind = " + equalsUsesAccessKind)
+//      println("equalsContains1 = " + equalsContains1)
+//      println("equalsContains2 = " + equalsContains2)
+//      println("equalsIsa = " + equalsIsa)
+//      println("equalsBR = " + equalsBR)
+//      println("equalsTypeUseConstraints = " + equalsTypeUseConstraints)
 
       equalsNodes && equalsUses && equalTypes && equalsUsesAccessKind &&
         equalsContains1 && equalsContains2 &&

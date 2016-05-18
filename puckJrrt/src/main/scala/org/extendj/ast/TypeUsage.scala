@@ -37,16 +37,17 @@ trait TypeUsage {
 
   def bindTypeUse(exprId : NodeId,
                   expr : Expr,
-                  typeMemberUse : Uses) : Unit =
+                  typeMemberUse : NodeIdP) : Unit =
     bindTypeUse(exprId, expr.`type`(), typeMemberUse)
 
   def bindTypeUse(typeUser : NodeId,
                   typeUsed: TypeDecl,
-                  typeMemberUse : Uses/*,
-                  constraint : NodeIdP => TypeUseConstraint = Sub.apply*/ ) : Unit ={
+                  typeMemberUse : NodeIdP/*,
+                  constraint : NodeIdP => TypeUseConstraint = Sub.apply*/ ) : Unit = {
     g.kindType(typeMemberUse.used) match {
       case PuckTypeDecl => /*error("bindTypeUse error !!!!")*/
-        addTypeUsesConstraint(typeMemberUse, Sub((typeUser, typeMemberUse.used)))
+        addTypeUsesConstraint(typeMemberUse, Sub((typeUser, typeUsed buildDGNode this)))
+        //addTypeUsesConstraint(typeMemberUse, Sub((typeUser, typeMemberUse.used)))
       case _ =>
         val tid = getType(typeUsed) match {
           case NamedType(id) => id
@@ -56,30 +57,30 @@ trait TypeUsage {
     }
   }
 
-  def findTypeUserAndBindUses
-  ( typeMemberUse : Uses,
+  def findTypeUsersAndBindUses
+  ( typeMemberUse : NodeIdP,
     qualifier : Expr) : Unit = {
 
     def aux(qualifier : Access) : Unit = qualifier.accessed() match {
       case accessed : TypeMemberSubstitute =>
-        findTypeUserAndBindUses(typeMemberUse, qualifier, accessed)
+        findTypeUsersAndBindUses(typeMemberUse, qualifier, accessed)
       case _ =>
         bindTypeUse(qualifier buildDGNode this, qualifier, typeMemberUse)
     }
 
     qualifier match {
-      case ae: AssignExpr => findTypeUserAndBindUses(typeMemberUse, ae.getDest)
+      case ae: AssignExpr => findTypeUsersAndBindUses(typeMemberUse, ae.getDest)
       case d: Dot =>
         if (d.isRightRotated)
           d.rotateLeft()
-        findTypeUserAndBindUses(typeMemberUse, d.getRight)
+        findTypeUsersAndBindUses(typeMemberUse, d.getRight)
       case pe: ParExpr =>
-        findTypeUserAndBindUses(typeMemberUse, pe.getExpr)
+        findTypeUsersAndBindUses(typeMemberUse, pe.getExpr)
       case aa: ArrayAccess =>
-        findTypeUserAndBindUses(typeMemberUse, aa.prevExpr())
+        findTypeUsersAndBindUses(typeMemberUse, aa.prevExpr())
       case ce: ConditionalExpr =>
-        findTypeUserAndBindUses(typeMemberUse, ce.getFalseExpr)
-        findTypeUserAndBindUses(typeMemberUse, ce.getTrueExpr)
+        findTypeUsersAndBindUses(typeMemberUse, ce.getFalseExpr)
+        findTypeUsersAndBindUses(typeMemberUse, ce.getTrueExpr)
 
       // findTypeUserAndBindUses term cases
       case ae: AddExpr =>
@@ -107,9 +108,9 @@ trait TypeUsage {
     }
   }
 
-  def findTypeUserAndBindUses(typeMemberUse : Uses,
-                              qualifier : Access,
-                              qualifierDecl : TypeMemberSubstitute) : Unit = {
+  def findTypeUsersAndBindUses(typeMemberUse : NodeIdP,
+                               qualifier : Access,
+                               qualifierDecl : TypeMemberSubstitute) : Unit = {
     (qualifierDecl.getOriginalType, qualifier.`type`()) match {
       case ( tv : TypeVariable, _ ) =>
         tv.owner() match {
@@ -138,7 +139,7 @@ trait TypeUsage {
 
 
 
-  def addBinding(user : TypeDecl, used : TypeDecl, tmUse : Uses) : Unit = {
+  def addBinding(user : TypeDecl, used : TypeDecl, tmUse : NodeIdP) : Unit = {
     val tUser = user.buildDGNode(this)
     val tUsed = used.buildDGNode(this)
     addEdge(addBinding(tUser, tUsed, tmUse))
@@ -148,7 +149,7 @@ trait TypeUsage {
   (tv : TypeVariable,
    tvOwner : GenericTypeDecl,
    tvValue : TypeDecl,
-   typeMemberUse : Uses,
+   typeMemberUse : NodeIdP,
    typeUserNodeId : NodeId,
    e: Expr) : Unit = {
     e match {
@@ -213,7 +214,7 @@ trait TypeUsage {
       case _ =>
         if(rvalue.lastAccess().accessed().isInstanceOf[Substitute] ||
           rvalue.lastAccess().`type`().isInstanceOf[Substitute])
-          findTypeUserAndBindUses(Uses(lvalue, lvalueType.buildDGNode(this)),
+          findTypeUsersAndBindUses((lvalue, lvalueType.buildDGNode(this)),
             rvalue.lastAccess().getQualifier)
         else
           addTypeUsesConstraint((lvalue, lvalueType buildDGNode this),

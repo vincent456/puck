@@ -46,12 +46,12 @@ aspect RenameMethod {
 		int idx = getBodyDeclList().getIndexOfChild(md);
 		if(idx != -1) {
 			getBodyDeclList().removeChild(idx);
-			localMethodsSignatureMap_computed = false;
+			localMethodsSignatureMap_computed = null;
 		}
 		boolean found = !localMethodsSignature(sig).isEmpty();
 		if(idx != -1) {
 			getBodyDeclList().insertChild(md, idx);
-			localMethodsSignatureMap_computed = false;
+			localMethodsSignatureMap_computed = null;
 		}
 		if(found)
 			return false;

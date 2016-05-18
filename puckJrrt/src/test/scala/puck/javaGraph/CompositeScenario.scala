@@ -95,7 +95,7 @@ class CompositeScenario private ()
       "fileSystem.Directory.add(Directory)").rvalue
 
 
-  def gFinal = g6
+  def gFinal = g7
 }
 
 class CompositeManualRefactoringSpec

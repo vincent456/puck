@@ -294,7 +294,6 @@ class DependencyGraph
         else recording)
 
 
-
   def removeEdge(e : DGEdge, register : Boolean = true): DependencyGraph =
     newGraph( edges = edges.remove(e),
               recording =
@@ -305,11 +304,13 @@ class DependencyGraph
 
  def addContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): DependencyGraph = {
    getNode(contentId).kind.kindType match {
-     case Parameter => addEdge(ContainsParam(containerId, contentId), register)
+     case Parameter | TypeVariableKT =>
+       Thread.dumpStack()
+       println("!!! uses addContainsParam instead !!! ")
+       addEdge(ContainsParam(containerId, contentId), register)
      case _ => addEdge(Contains(containerId, contentId), register)
    }
  }
-
 
 
  def removeContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): DependencyGraph =
@@ -725,4 +726,30 @@ class DependencyGraph
     nodeKindKnowledge.getConstructorOfType(this, typeId)
 
 
+  def typeVariableValue(tvid : NodeId, binder : NodeId) : Type = {
+    val ParameterizedType(genType, tvs) =  typ(binder)
+    tvs(parametersOf(genType).indexOf(tvid))
+  }
+
+  def typeVariableValue(tvid : NodeId, tmUse : NodeIdP) : Type = {
+    val tuses = typeUsesOf(tmUse)
+    if(tuses.size > 1) error()
+    else typeVariableValue(tvid, tuses.head.user)
+  }
+
+  def findTypeVariableInstanciator
+  (ctxt : NodeId, tvUser : NodeId, tvId : NodeId) : Set[NodeIdP] =
+    kindType(tvUser) match {
+      case Parameter => findTypeVariableInstanciator(ctxt, container_!(tvUser), tvId)
+      case InstanceValueDecl | StaticValueDecl =>
+        typeUsesOf(ctxt, tvUser)
+    }
+//  def findTypeVariableOwner(tvUser : NodeId, tvId : NodeId) : NodeId =
+//  kindType(tvUser) match {
+//    case Parameter => findTypeVariableOwner(container_!(tvUser), tvId)
+//    case InstanceValueDecl | StaticValueDecl | TypeDecl =>
+//      if(container_!(tvId) == tvUser) tvUser
+//      else findTypeVariableOwner(container_!(tvId), tvId)
+//    case _ => error("no type variable owner found")
+//  }
 }

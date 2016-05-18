@@ -93,14 +93,6 @@ aspect DependencyGraphFactory {
 		}
 	}
 
-	public void GenericTypeDecl.buildDG_TypeParameters(JastaddGraphBuilder builder, int thisId){
-		for(TypeVariable tv: getTypeParameterList()){
-			int nodeId = tv.buildDGNode(builder);
-			builder.addContains(thisId, nodeId);
-		}
-	}
-
-
 	public int DGNamedElement.buildDef(JastaddGraphBuilder builder, int thisDeclId){
 		return builder.buildDef(this, getBody(), thisDeclId);
 	}

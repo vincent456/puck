@@ -82,25 +82,24 @@ trait GraphBuilder {
 
 
 
-  def addBinding( typeUse : DGEdge,
-                  typeMemberUse : Uses): Unit =
+  def addBinding( typeUse : NodeIdP,
+                  typeMemberUse : NodeIdP): Unit =
      g = g.addBinding(typeUse, typeMemberUse)
 
 
-  def addBinding(typeUser : NodeId, typeUsed:NodeId, typeMemberUse : Uses) : Uses ={
-    val typeUse = Uses(typeUser, typeUsed)
+  def addBinding(typeUser : NodeId, typeUsed:NodeId, typeMemberUse : NodeIdP) : Uses ={
 //    import ShowDG._
 //    (g,typeUse).println
 //    (g,typeMemberUse).println
 
-    addBinding(typeUse, typeMemberUse)
-    typeUse
+    addBinding((typeUser, typeUsed), typeMemberUse)
+    Uses(typeUser, typeUsed)
   }
 
   def addParams(decl : NodeId, params : List[Int]) : Unit = {
     params.reverseIterator.foreach{ //order matters
       param =>
-        g = g.addContains(decl, param)
+        g = g.addEdge(ContainsParam(decl, param))
     }
   }
 

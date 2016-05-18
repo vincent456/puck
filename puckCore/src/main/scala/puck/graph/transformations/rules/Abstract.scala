@@ -158,7 +158,7 @@ abstract class Abstract {
             val (pabs, g01) = g0.addConcreteNode(param.name, param.kind)
             val g02 = (g0 styp paramId) map (g01.addType(pabs.id, _)) getOrElse g01
 
-            g02.addContains(n.id, pabs.id)
+            g02.addEdge(ContainsParam(n.id, pabs.id))
 //            g02.usedByExcludingTypeUse(paramId).foldLeft(g02.addContains(n.id, pabs.id)) {
 //              (g00, tid) => g00.addUses(pabs.id, tid)
 //            }

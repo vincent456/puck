@@ -43,8 +43,6 @@ case object Primitive extends TypeKind {
 
 object TypeKind {
 
-
-
   trait InterfaceLike extends TypeKind with Serializable{
 
     def canContain(k : NodeKind) : Boolean = {
@@ -125,20 +123,14 @@ case object GenericClass extends ClassLike with GenType {
 
   override val toString : String = "GenericClass"
 }
-//case class GenInterface(numParams : Int /*params : List[Variance]*/)
-//  extends TypeKind.Interface with TypeKind.GenType {
-//}
-//case class GenClass(params : List[Variance])
-//  extends TypeKind.Class with TypeKind.GenType {
-//}
-case object TypeVariable extends TypeKind {
- // def kindType : KindType = InstanceTypeDecl
+
+case object TypeVariable extends JavaNodeKind {
+  def kindType : KindType = TypeVariableKT
   def canContain(k : NodeKind) = false
   override def abstractionPolicies = Seq()
   def abstractionNodeKinds(p : AbstractionPolicy) = Seq()
 }
 case object WildCardType extends TypeKind {
-  //def kindType : KindType = InstanceTypeDecl
   def canContain(k : NodeKind) = false
   override def abstractionPolicies = Seq()
   def abstractionNodeKinds(p : AbstractionPolicy) = Seq()

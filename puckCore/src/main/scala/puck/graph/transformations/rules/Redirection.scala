@@ -201,6 +201,7 @@ object Redirection {
 
   }
 
+  //def propagateParameterTypeConstraints
 
   def propagateTypeConstraints
   (g : DependencyGraph,
@@ -210,7 +211,7 @@ object Redirection {
     //    import puck.util.Debug._
     //    println("propagateTypeConstraints")
     //    (g, g.edges).println
-    val oldTypeUsed = oldTypeUse.used
+    val (oldTypeUser, oldTypeUsed) = oldTypeUse
 
     val tucs = g.typeConstraints(oldTypeUse)
 
@@ -226,15 +227,15 @@ object Redirection {
           case Sup(_) => false
         }
       else
-        tucs.partition{
+        tucs.partition {
           case Eq(_) => true
           case Sub(_) | Sup(_) => false
         }
 
-//    val tucString =  tucsThatNeedPropagation map (tuc => (g,tuc).shows) mkString ("\n", "\n", "\n")
-//    println(s"tucsThatNeedPropagation : ${(g,oldTypeUse).shows} $tucString" )
+    val tucString =  tucsThatNeedPropagation map (tuc => (g,tuc).shows) mkString ("\n", "\n", "\n")
+   val log2 = s"\ntucsThatNeedPropagation : ${(g,oldTypeUse).shows} $tucString"
 
-    log <++: (g.abstractions(oldTypeUsed).find (abs => abs.nodes contains newTypeToUse) match {
+    (log  + log2)<++: (g.abstractions(oldTypeUsed).find (abs => abs.nodes contains newTypeToUse) match {
       case None => LoggedError(s"${(g,newTypeToUse).shows} is not an abstraction of ${(g,oldTypeUsed).shows} ")
       case Some(ReadWriteAbstraction(_, _)) =>
         LoggedError("!!! type is not supposed to have a r/w abs !!!")
@@ -245,6 +246,13 @@ object Redirection {
             .addTypeUsesConstraint((oldTypeUse.user, absId), tuc)
 
         val g1 = tucsThatNeedUpdate.foldLeft(g)(update)
+
+        val (tucsInvolvingTypeVariables, tucsToPropagate) =
+          tucsThatNeedPropagation.partition(tuc => g.kindType(tuc.constrainedType) == TypeVariableKT)
+
+//        tucsInvolvingTypeVariables.foreach {
+//          tuc =>
+//        }
 
         tucsThatNeedPropagation.foldLoggedEither(g1) {
           case (g0, tuc) =>

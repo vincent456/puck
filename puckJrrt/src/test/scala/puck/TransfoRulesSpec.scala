@@ -18,27 +18,43 @@ class TransfoRulesSpec
     compareScenarioWithExpectedAndGenerated(new ScenarioFactory(initialCode),
       transfo, new ScenarioFactory(expectedResultCode))
 
+
   def compareScenarioWithExpectedAndGenerated(scenario : ScenarioFactory,
                                               transfo : ScenarioFactory => DependencyGraph,
                                               expectedResult: ScenarioFactory) : Unit = {
+
+    def print(g : DependencyGraph, name : String) : Unit = {
+//      import ShowDG._
+//      println(s"graph $name")
+//      (g, g.nodesIndex).println
+//      (g, g.edges).println
+    }
+
+
+    print(scenario.graph, "initial")
+
     val g : DependencyGraph = transfo(scenario)
 
+    print(g, "post transfo")
 
-    import ShowDG._
-    println("graph initial")
-    (scenario.graph, scenario.graph.nodesIndex).println
-    //(scenario.graph, scenario.graph.edges).println
-    println("graph post transfo")
-    (g, g.nodesIndex).println
-    //(g, g.edges).println
-    println("graph expected")
-    (expectedResult.graph, expectedResult.graph.nodesIndex).println
-    //(expectedResult.graph, expectedResult.graph.edges).println
+    print(expectedResult.graph, "expected")
+
+    val someGenerated =
+      try Left(scenario.applyChangeAndMakeExample(g, Settings.outDir))
+      catch {
+        case t : Throwable => Right(t)
+      }
 
     assert(Mapping.equals(g, expectedResult.graph), "graph produced by transfo != expected")
 
-    val generated = scenario.applyChangeAndMakeExample(g, Settings.outDir)
-    assert(Mapping.equals(g, generated.graph), "graph produced by transfo != generated")
+  //(expectedResult.graph, expectedResult.graph.nodesIndex).println
+
+    someGenerated match {
+      case Left(generated) => assert(Mapping.equals(g, generated.graph), "graph produced by transfo != generated")
+      case Right(t) => t.printStackTrace()
+        assert(false, t.getMessage)
+    }
+
 
   }
 

@@ -225,17 +225,16 @@ object PuckJrrtBuild {
 
       val jastAddJar = extendjRoot.value / "tools" / "jastadd2.jar"
 
-      val retVal = Fork.java(new ForkOptions(bootJars = Seq(jastAddJar/*, jastAddParserJar*/) ),
+      val retVal = Fork.java(new ForkOptions(bootJars = Seq(jastAddJar) ),
         "jastadd.JastAdd"
           +: "--package=org.extendj.ast"
           +: "--beaver"
           +: "--rewrite=cnta"
+          +: "--safeLazy"
           +: "--visitCheck=false"
           +: "--cacheCycle=false"
-          +: ("--o=" + extendjManagedSrc.value)
           +: "--defaultMap=new org.jastadd.util.RobustMap(new java.util.HashMap())"
-          //+: "--noComponentCheck"
-          //+: "--refineLegacy"
+          +: ("--o=" + extendjManagedSrc.value)
           +: orderedPaths)
 
       if(retVal != 0)

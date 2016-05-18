@@ -30,6 +30,7 @@ import puck.graph._
 import puck.javaGraph.nodeKind.{EnumConstant => PuckEnumConstant, _}
 import puck.javaGraph.{JavaGraphBuilder, nodeKind}
 import scala.{List => SList}
+import scala.collection.JavaConversions._
 
 object JastaddGraphBuilder {
 
@@ -39,21 +40,9 @@ object JastaddGraphBuilder {
       new DGEdge(Isa, n1, n2)
 
   def classKind : JavaNodeKind = Class
-  //def innerClassKind : JavaNodeKind = InnerClass
-
   def interfaceKind : JavaNodeKind = Interface
-  //def innerInterfaceKind : JavaNodeKind= InnerInterface
-
   def genInterface(gid: GenericInterfaceDecl) : JavaNodeKind = GenericInterface
   def genClass(gid: GenericClassDecl) : JavaNodeKind = GenericClass
-
-  /*{
-    Range.inclusive(gid.getTypeParameters.getNumChild - 1, 0, -1 ).foldLeft(List[Variance]()){
-      case (l, i) =>
-        gid.getTypeParameter(i)
-    }
-
-  }*/
 
   def field = Field
   def staticField = StaticField
@@ -71,6 +60,7 @@ object JastaddGraphBuilder {
   def primitive = Primitive
   def typeVariable = nodeKind.TypeVariable
   def wildcardType = WildCardType
+
 
 
   def definitionName = DependencyGraph.definitionName
@@ -149,10 +139,6 @@ class JastaddGraphBuilder(val program : Program)
     }
   }
 
-  import scala.collection.JavaConversions._
-  def addParams(decl : NodeId, params : java.util.ArrayList[Integer]) : Unit =
-    addParams(decl, params.toList.map(_.toInt))
-
   def buildDGType(thisId : NodeId, decl : FieldDeclarator) : Unit = {
     setType(thisId,  getType(decl.getTypeAccess))
   }
@@ -221,7 +207,7 @@ class JastaddGraphBuilder(val program : Program)
     }
     else {
       val access = tmAccess.asInstanceOf[Access]
-      try findTypeUserAndBindUses(typeMemberUse, access.qualifier())
+      try findTypeUsersAndBindUses(typeMemberUse, access.qualifier())
       catch {
         case _: Error =>
             throw new NoTypeUser(access.prettyPrint() + "(" + access.getClass + ") in " +
@@ -247,8 +233,10 @@ class JastaddGraphBuilder(val program : Program)
       else
         td.getParentNamedNode.buildDGNode(this)
 
-
-    addContains(cterId, tdNode)
+    if(td.isInstanceOf[TypeVariable])
+      addEdge(ContainsParam(cterId, tdNode))
+    else
+      addEdge(Contains(cterId, tdNode))
     tdNode
   }
 

@@ -83,7 +83,7 @@ class TypeConstraintSpec extends AcceptanceSpec {
   }
 
   scenario("generic - type uses  relationship between type parameter and variable declaration type"){
-    val _ = new ScenarioFactory(
+    val sf = new ScenarioFactory(
       """package p;
         |
         |class Wrapper<T> { T get(){return null;} }
@@ -97,29 +97,31 @@ class TypeConstraintSpec extends AcceptanceSpec {
         |        A a = wa.get();
         |        a.m();
         |    }
-        |}"""){
+        |}""")
 
-      val typeUse : NodeIdP = ("p.B.assignA().Definition", "p.A")
-      val tmUse  : NodeIdP = ("p.B.assignA().Definition", "p.A.m()")
+    import sf.{graph, idOfFullName}
+    import puck.graph.ShowDG._
 
-      assert (Uses("p.B.wa", "p.Wrapper") existsIn graph)
-      assert (Uses("p.B.wa", "p.A") existsIn graph)
+    (graph, graph.edges).println
 
-      assert (Uses(typeUse) existsIn graph)
-      assert (Uses(tmUse) existsIn graph)
+    assert (graph.uses("p.B.wa", "p.Wrapper"))
+    assert (graph.uses("p.B.wa", "p.A"))
 
-      graph.styp("p.B.wa").value should be (ParameterizedType("p.Wrapper", List(NamedType("p.A"))))
+    assert (graph.uses("p.B.assignA().Definition", "p.A"))
+    assert (graph.uses("p.B.assignA().Definition", "p.A.m()"))
 
-      graph.typeUsesOf(tmUse) should contain (typeUse)
+    graph.styp("p.B.wa").value should be (ParameterizedType("p.Wrapper", List(NamedType("p.A"))))
 
-      graph.typeMemberUsesOf(typeUse) should contain (tmUse)
+    graph.typeUsesOf(("p.B.assignA().Definition", "p.A.m()")) should contain (("p.B.assignA().Definition", "p.A") : NodeIdP)
 
-      graph.typeMemberUsesOf(typeUse).size should be (1)
+    graph.typeMemberUsesOf(("p.B.assignA().Definition", "p.A")) should contain (("p.B.assignA().Definition", "p.A.m()") : NodeIdP)
 
-      graph.usesThatShouldUsesASuperTypeOf(("p.B.wa", "p.A")) should contain (typeUse)
+    graph.typeMemberUsesOf(("p.B.assignA().Definition", "p.A")).size should be (1)
+
+    graph.usesThatShouldUsesASuperTypeOf(("p.B.wa", "p.A")) should contain (("p.B.assignA().Definition", "p.A") : NodeIdP)
 
 
-    }
+
   }
 
   scenario("generic - type uses  relationship between type parameter and variable declaration type - foreach case"){
@@ -185,34 +187,34 @@ class TypeConstraintSpec extends AcceptanceSpec {
 
   scenario("2 type variables"){
     val _ = new ScenarioFactory(
-    """package p;
-      |
-      |import java.util.Map;
-      |import java.util.jar.Attributes;
-      |
-      |public class C {
-      |
-      |    Map<String, Attributes> datas;
-      |
-      |    public void m() {
-      |       for(String s : datas.keySet()){
-      |         Attributes i = datas.get(s);
-      |       }
-      |    }
-      |}"""
+      """package p;
+        |
+        |import java.util.Map;
+        |import java.util.jar.Attributes;
+        |
+        |public class C {
+        |
+        |    Map<String, Attributes> datas;
+        |
+        |    public void m() {
+        |       for(String s : datas.keySet()){
+        |         Attributes i = datas.get(s);
+        |       }
+        |    }
+        |}"""
     ){
-//      val mDef = fullName2id("p.C.m().Definition")
-//      val get = fullName2id("java.util.Map.get(Object)")
+      //      val mDef = fullName2id("p.C.m().Definition")
+      //      val get = fullName2id("java.util.Map.get(Object)")
 
-//      val hasElement = fullName2id("p.HasElement")
-//      val obj = fullName2id("java.lang.Object")
-//      val toString_ = fullName2id("java.lang.Object.toString()")
+      //      val hasElement = fullName2id("p.HasElement")
+      //      val obj = fullName2id("java.lang.Object")
+      //      val toString_ = fullName2id("java.lang.Object.toString()")
 
 
-//      assert(graph.uses(mDef, get))
-//      assert(graph.uses(mDef, toString_))
-//
-//      graph.typeUsesOf(mDef, toString_) should contain (Uses(hasElement, obj))
+      //      assert(graph.uses(mDef, get))
+      //      assert(graph.uses(mDef, toString_))
+      //
+      //      graph.typeUsesOf(mDef, toString_) should contain (Uses(hasElement, obj))
     }
   }
 }

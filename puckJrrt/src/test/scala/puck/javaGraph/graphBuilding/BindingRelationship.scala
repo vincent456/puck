@@ -165,18 +165,14 @@ class BindingRelationship extends AcceptanceSpec {
         |}"""
     ){
 
-      val `("p.B.wa", "p.Wrapper")` : NodeIdP = ("p.B.wa", "p.Wrapper")
-      val `("p.B.wa", "p.A")`  : NodeIdP= ("p.B.wa", "p.A")
-      val `("p.B.doM().Definition", "p.A.m()")`  : NodeIdP = ("p.B.doM().Definition", "p.A.m()")
-      val `("p.B.doM().Definition", "p.Wrapper.get()")` : NodeIdP = ("p.B.doM().Definition", "p.Wrapper.get()")
 
       graph.styp("p.B.wa").value should be (ParameterizedType("p.Wrapper", List(NamedType("p.A"))))
 
-      //graph.typeUsesOf(`("p.B.doM().Definition", "p.A.m()")`) should contain (`("p.B.wa", "p.Wrapper")`)
-      graph.typeUsesOf(`("p.B.doM().Definition", "p.A.m()")`) should contain (`("p.B.wa", "p.A")`)
-      graph.typeMemberUsesOf(`("p.B.wa", "p.A")`) should contain (`("p.B.doM().Definition", "p.A.m()")`)
-      graph.typeMemberUsesOf(`("p.B.wa", "p.A")`).size should be (1)
-      //graph.typeMemberUsesOf(`("p.B.wa", "p.A")`) should not contain (`("p.B.doM().Definition", "p.Wrapper.get()")`)
+      //graph.typeUsesOf(("p.B.doM().Definition", "p.A.m()")) should contain (("p.B.wa", "p.Wrapper") : NodeIdP )
+      graph.typeUsesOf(("p.B.doM().Definition", "p.A.m()")) should contain (("p.B.wa", "p.A") : NodeIdP)
+      graph.typeMemberUsesOf(("p.B.wa", "p.A")) should contain (("p.B.doM().Definition", "p.A.m()") : NodeIdP)
+      graph.typeMemberUsesOf(("p.B.wa", "p.A")).size should be (1)
+      //graph.typeMemberUsesOf(("p.B.wa", "p.A")) should not contain ("p.B.doM().Definition", "p.Wrapper.get()" : NodeIdP)
     }
 
 
@@ -321,18 +317,10 @@ class BindingRelationship extends AcceptanceSpec {
         |
         |}"""
     ){
-      val mDef = fullName2id("p.C.m().Definition")
-      val getE = fullName2id("p.ListModel.getE()")
 
-      val hasElement = fullName2id("p.HasElement")
-      val obj = fullName2id("java.lang.Object")
-      val toString_ = fullName2id("java.lang.Object.toString()")
-
-
-      assert(graph.uses(mDef, getE))
-      assert(graph.uses(mDef, toString_))
-
-      graph.typeUsesOf(mDef, toString_) should contain ((hasElement, obj))
+      assert(graph.uses("p.C.m().Definition", "p.ListModel.getE()"))
+      assert(graph.uses("p.C.m().Definition", "java.lang.Object.toString()"))
+      graph.typeUsesOf("p.C.m().Definition", "java.lang.Object.toString()") should contain (("p.HasElement", "java.lang.Object") : NodeIdP)
     }
   }
 

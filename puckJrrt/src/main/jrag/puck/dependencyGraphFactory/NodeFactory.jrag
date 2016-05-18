@@ -41,35 +41,11 @@ aspect NodeFactory  {
 		return builder.getNode(this);
 	}
 
-//	public static int ASTNode.buildDGNode(JastaddGraphBuilder builder,
-//										  DGNamedElement namedElement){
-//		try {
-//			return builder.getNodeByName(namedElement.fullName());
-//		}
-//		catch(NoSuchElementException e){
-//			int node = builder.addNode(namedElement.fullName(), namedElement.name(),
-//					namedElement.getDGNodeKind(), namedElement.fromSource());
-//
-//			namedElement.registerNode(builder, node);
-//			return node;
-//		}
-//	}
-
 	public int ASTNode.throwBuildDGNodeError(){
 		throw new DGBuildingError(this + " (" + this.getClass()+ ") in "+ this.hostBodyDecl() +
 				" in " + this.compilationUnit().pathName() +
 				" does not know how to create an DG Node");
 	}
-
-//	public static int ASTNode.buildDefNode(JastaddGraphBuilder builder,
-//										   ASTNode namedElement){
-//		String defFullName = namedElement.fullName() + "." +
-//				JastaddGraphBuilder.definitionName();
-//		return builder.addNode(defFullName,
-//					JastaddGraphBuilder.definitionName(),
-//					JastaddGraphBuilder.definition(),
-//					namedElement.fromSource());
-//	}
 
 	public int ASTNode.buildDGNode(JastaddGraphBuilder builder){
 		return throwBuildDGNodeError();

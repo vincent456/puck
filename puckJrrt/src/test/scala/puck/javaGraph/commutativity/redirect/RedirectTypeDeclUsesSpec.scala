@@ -92,8 +92,7 @@ class RedirectTypeDeclUsesSpec
       bs => {
         import bs.{graph, idOfFullName}
 
-        Redirection.redirectUsesAndPropagate(graph,
-          ("p.A.user(C).c", "p.C"),
+        Redirection.redirectUsesAndPropagate(graph, ("p.A.user(C).c", "p.C"),
           AccessAbstraction("p.I", SupertypeAbstraction)).rvalue
       },
       """package p;
@@ -103,6 +102,65 @@ class RedirectTypeDeclUsesSpec
         |interface I { void m(int i); }
         |
         |class A { int f = 42;  void user(I c){ c.m(f); } }"""
+    )
+  }
+
+  scenario("From class to interface superType - needs propagation") {
+    compareWithExpectedAndGenerated(
+      """package p;
+        |
+        |import java.util.ArrayList;
+        |import java.util.List;
+        |
+        |interface Vehicule {}
+        |
+        |class Train implements Vehicule {}
+        |
+        |public class ClientTrain {
+        |    List<Train> trains = new ArrayList<Train>();
+        |    List<Integer> horaires = new ArrayList<Integer>();
+        |
+        |    public List<Train> nombreTrainsAvant(int h) {
+        |        List<Train> avant = new ArrayList<Train>();
+        |        for(int i =0; i < trains.size(); i++){
+        |            if(horaires.get(i) < h)
+        |                avant.add(trains.get(i));
+        |        }
+        |
+        |        return avant;
+        |    }
+        |
+        |}""",
+      bs => {
+        import bs.{graph, idOfFullName}
+
+        Redirection.redirectUsesAndPropagate(graph, ("p.ClientTrain.trains", "p.Train"),
+          AccessAbstraction("p.Vehicule", SupertypeAbstraction)).rvalue
+      },
+      """package p;
+        |
+        |import java.util.ArrayList;
+        |import java.util.List;
+        |
+        |interface Vehicule {}
+        |
+        |class Train implements Vehicule {}
+        |
+        |public class ClientTrain {
+        |    List<Vehicule> trains = new ArrayList<Vehicule>();
+        |    List<Integer> horaires = new ArrayList<Integer>();
+        |
+        |    public List<Vehicule> nombreTrainsAvant(int h) {
+        |        List<Vehicule> avant = new ArrayList<Vehicule>();
+        |        for(int i =0; i < trains.size(); i++){
+        |            if(horaires.get(i) < h)
+        |                avant.add(trains.get(i));
+        |        }
+        |
+        |        return avant;
+        |    }
+        |
+        |}"""
     )
   }
 
@@ -131,23 +189,13 @@ class RedirectTypeDeclUsesSpec
         |    void mUser(Delegatee d){ d.mUsed(); }
         |}"""
     ) {
-      val theParam = fullName2id("p.A.mUser(Delegatee).d")
-
-      val delegatee = fullName2id("p.Delegatee")
-      val mDelegatee = fullName2id("p.Delegatee.mUsed()")
-
-      val delegator = fullName2id("p.Delegator")
-      val mDelegator = fullName2id("p.Delegator.mUsed()")
-
-      //QuickFrame(graph, "g", JavaDotHelper)
-
-      val g = graph.addAbstraction(delegatee, AccessAbstraction(delegator, DelegationAbstraction))
-        .addAbstraction(mDelegatee, AccessAbstraction(mDelegator, DelegationAbstraction))
+      val g = graph.addAbstraction("p.Delegatee", AccessAbstraction("p.Delegator", DelegationAbstraction))
+        .addAbstraction("p.Delegatee.mUsed()", AccessAbstraction("p.Delegator.mUsed()", DelegationAbstraction))
 
       val g2 =
         Redirection.redirectUsesAndPropagate(g,
-          Uses(theParam, delegatee),
-          AccessAbstraction(delegator, DelegationAbstraction)).rvalue
+          ("p.A.mUser(Delegatee).d", "p.Delegatee"),
+          AccessAbstraction("p.Delegator", DelegationAbstraction)).rvalue
 
       val recompiledEx = applyChangeAndMakeExample(g2, outDir)
 

@@ -47,6 +47,10 @@ trait GraphBuilderVisitor {
       td.getBodyDeclList foreach (_.buildDG(this, n))
   }
 
+  def buildTypeVariables(tid : NodeId, gtd : GenericTypeDecl) : Unit =
+    gtd.getTypeParameterList foreach (tv =>
+      addEdge(ContainsParam(tid, tv buildDGNode this)))
+
   def buildTypeDecl(td : TypeDecl) : NodeId = td match {
     case tv : TypeVariable =>
       tv buildDGNode this
@@ -64,7 +68,9 @@ trait GraphBuilderVisitor {
       TypeDecl.addImplements(this, n, cd.getImplementss)
 
       if(cd.isGenericType)
-        cd.asInstanceOf[GenericClassDecl].buildDG_TypeParameters(this, n)
+        buildTypeVariables(n, cd.asInstanceOf[GenericTypeDecl])
+
+
 
       if(cd.hasImplicitConstructor)
         cd.getImplicitConstructor.buildDG(this, n)
@@ -74,7 +80,8 @@ trait GraphBuilderVisitor {
       val n = id buildDGNode this
       TypeDecl.addImplements(this, n, id.getSuperInterfaces)
       if(id.isGenericType)
-        id.asInstanceOf[GenericInterfaceDecl].buildDG_TypeParameters(this, n)
+        buildTypeVariables(n, id.asInstanceOf[GenericTypeDecl])
+
       n
 
     case _ =>
@@ -112,7 +119,7 @@ trait GraphBuilderVisitor {
       case access : Access =>
         val typeUser = stmt.getVariableDecl buildDGNode this
         val typeUsed = stmt.getTypeAccess buildDGNode this
-        findTypeUserAndBindUses(Uses(typeUser, typeUsed), access.lastAccess())
+        findTypeUsersAndBindUses((typeUser, typeUsed), access.lastAccess())
       case _ => ()
     }
   }
@@ -215,8 +222,10 @@ trait GraphBuilderVisitor {
     ma.getArgs.foreach{
       expr => expr.buildDG(this, containerId)
     }
+
     decls.map{
-      case mds : MethodDeclSubstituted => mds.sourceMethodDecl()
+      case mds : MethodDeclSubstituted =>
+        mds.sourceMethodDecl()
       case md => md
     }.foreach{
       decl =>
@@ -228,8 +237,6 @@ trait GraphBuilderVisitor {
           buildTypeUse(ma, typeMemberUses)
 
         decl.getParameterList.toList.zip(ma.getArgs.toList).foreach{
-          case (param, arg : Access) if param.`type`().isInstanceOf[TypeVariable] =>
-            System.err.println("parameter type constraint, param typed with a type variable case not handled")
           case (param, arg : Access) =>
             val paramId = param buildDGNode this
             val argId = arg buildDGNode this
