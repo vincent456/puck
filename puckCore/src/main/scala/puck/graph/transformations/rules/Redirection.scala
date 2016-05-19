@@ -207,7 +207,7 @@ object Redirection {
   (g : DependencyGraph,
    oldTypeUse : NodeIdP,
    newTypeToUse : NodeId) : LoggedTG = {
-    val log = s"propagateTypeConstraints old = ${(g, oldTypeUse).shows} new = ${(g, newTypeToUse).shows}"
+    val log = s"propagateTypeConstraints old Type Use = ${(g, oldTypeUse).shows} new type to use = ${(g, newTypeToUse).shows}"
     //    import puck.util.Debug._
     //    println("propagateTypeConstraints")
     //    (g, g.edges).println

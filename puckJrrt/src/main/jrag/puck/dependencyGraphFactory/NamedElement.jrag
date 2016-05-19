@@ -103,7 +103,13 @@ aspect NamedElement {
     eq InterfaceDeclSubstituted.isSubstitute() = true;
     eq MethodDeclSubstituted.isSubstitute() = true;
 
-    eq MethodAccess.isSubstitute() = decl().isSubstitute();
+    public boolean Access.isSubstitute() {
+        try {
+            return accessed().isSubstitute();
+        } catch(Throwable e){
+            return false;
+        }
+    }
 
     interface Substitute {
         ASTNode getOriginal();

@@ -29,6 +29,7 @@ package org.extendj.ast
 import puck.graph._
 import puck.javaGraph.nodeKind.{EnumConstant => PuckEnumConstant, _}
 import puck.javaGraph.{JavaGraphBuilder, nodeKind}
+
 import scala.{List => SList}
 import scala.collection.JavaConversions._
 
@@ -80,15 +81,25 @@ object JastaddGraphBuilder {
       access.qualifier.isSuperAccess
 
 
+  type JASTNode = ASTNode[_ <: ASTNode[_]]
+
+//  implicit def pDecl2astNode(pd : ParameterDeclaration) : JASTNode = pd.asInstanceOf[JASTNode]
+//  implicit def expr2astNode(e : Expr) : JASTNode = e.asInstanceOf[JASTNode]
+//  implicit def td2astNode(td : TypeDecl) : JASTNode = td.asInstanceOf[JASTNode]
+//  implicit def declarator2astNode(d : Declarator) : JASTNode = d.asInstanceOf[JASTNode]
+//  implicit def bd2astNode(bd : BodyDecl) : JASTNode = bd.asInstanceOf[JASTNode]
+
+
 }
 
-import JastaddGraphBuilder.{qualifierIsSuperAccess, qualifierIsThisAccess}
+
 
 class JastaddGraphBuilder(val program : Program)
   extends JavaGraphBuilder
   with TypeUsage
   with GraphBuilderVisitor
-  with Registration {
+  with Registration
+  with NodeFactory {
   var graph2ASTMap = Map[Int, ASTNodeLink]()
 
   def findTypeDecl(typ : String): TypeDecl ={
@@ -146,7 +157,7 @@ class JastaddGraphBuilder(val program : Program)
   def buildDGType(thisId : NodeId, decl : BodyDecl) : Unit = decl match {
     case cDecl : ConstructorDecl =>
       astParamsToDGType(thisId, cDecl)
-      setType(thisId, NamedType(cDecl.hostType() buildDGNode this))
+      setType(thisId, NamedType(this buildNode cDecl.hostType()))
     case mDecl : MethodDecl =>
       astParamsToDGType(thisId, mDecl)
       setType(thisId, getType(mDecl.getTypeAccess))
@@ -166,7 +177,7 @@ class JastaddGraphBuilder(val program : Program)
     addParams(thisId,
       c.getParameterList.foldRight(SList[NodeId]()) {
       case (pdecl, params) =>
-        val paramId = pdecl buildDGNode this
+        val paramId = this buildNode pdecl
         setType(paramId, getType(pdecl.`type`()))
         paramId :: params
     })
@@ -195,29 +206,6 @@ class JastaddGraphBuilder(val program : Program)
     }
   }
 
-  def buildTypeUse(tmAccess : TypeMemberAccess, typeMemberUse: Uses) : Unit = {
-    if(qualifierIsThisAccess(tmAccess)) {
-      val thisTypeId = tmAccess.hostType().buildDGNode(this)
-      addEdge(addBinding(thisTypeId, thisTypeId, typeMemberUse))
-    }
-    else if(qualifierIsSuperAccess(tmAccess)){
-      val thisTypeId = tmAccess.hostType().buildDGNode(this)
-      val superTypeId = tmAccess.hostType.asInstanceOf[ClassDecl].superclass().buildDGNode(this)
-      addEdge(addBinding(thisTypeId, superTypeId, typeMemberUse))
-    }
-    else {
-      val access = tmAccess.asInstanceOf[Access]
-      try findTypeUsersAndBindUses(typeMemberUse, access.qualifier())
-      catch {
-        case _: Error =>
-            throw new NoTypeUser(access.prettyPrint() + "(" + access.getClass + ") in " +
-              access.compilationUnit().pathName() + " " + access.location())
-
-
-      }
-    }
-  }
-
   //a.b.c()
   //typeMemberUse, used is c
   //b is qualifier
@@ -231,7 +219,7 @@ class JastaddGraphBuilder(val program : Program)
       if(td.isTopLevelType)
         addPackage(td.packageName(), mutable = false)
       else
-        td.getParentNamedNode.buildDGNode(this)
+        this buildNode td.getParentNamedNode
 
     if(td.isInstanceOf[TypeVariable])
       addEdge(ContainsParam(cterId, tdNode))

@@ -50,22 +50,16 @@ object DependencyGraph {
   val AbstractionMap = SetValueMap
 
 
-  
-  implicit def idToNode(implicit graph : DependencyGraph, id : NodeId) : DGNode =
-               graph.getNode(id)
-
-
-
   def areEquivalent[Kind <: NodeKind, T](initialRecord : Seq[Transformation],
-                      graph1 : DependencyGraph,
-                      graph2 : DependencyGraph,
-                      logger : PuckLogger = PuckNoopLogger) : Boolean = {
+                                         graph1 : DependencyGraph,
+                                         graph2 : DependencyGraph,
+                                         logger : PuckLogger = PuckNoopLogger) : Boolean = {
     val recordingComparatorControl =
       new RecordingComparatorControl(initialRecord, graph1, graph2, logger)
 
     val engine =
       new SearchEngine(new DepthFirstSearchStrategy,
-      recordingComparatorControl, maxResult = Some(1))
+        recordingComparatorControl, maxResult = Some(1))
     engine.explore()
     engine.successes.nonEmpty
   }
@@ -88,53 +82,22 @@ object DependencyGraph {
     }
   }
 
-  implicit class ConstraintsOps(val gc : (DependencyGraph, ConstraintsMaps)) extends AnyVal {
-    def graph = gc._1
-    def constraints = gc._2
 
-    def violations() : Seq[DGEdge] = {
-      (graph.containsList filter isViolation map Contains.apply) ++:
-        (graph.usesList filter isViolation map Uses.apply)
-    }
 
-    def isViolation(e : NodeIdP) : Boolean = {
-      val (source, target) = e
-      constraints.isViolation(graph, source, target)
-    }
+  def findElementByName(g : DependencyGraph, fn : String) : Option[ConcreteNode] = {
+    val splitted = fn split s"\\${DependencyGraph.scopeSeparator}"
 
-    def isViolation(e : DGEdge) : Boolean = {
-      e.kind match {
-        case AbstractEdgeKind => false
-        case _ => /*Contains | ContainsDef | ContainsParam | Uses | Isa => */
-          constraints.isViolation(graph, e.source, e.target)
-
-      }
-    }
-
-    def wrongUsers(id : NodeId) : List[NodeId] = constraints.wrongUsers(graph, id)
-    def interloperOf(id1 : NodeId, id2 :NodeId) = constraints.isViolation(graph, id1, id2)
-    def isWronglyUsed(id : NodeId) = constraints.wrongUsers(graph, id).nonEmpty
-    def isWronglyContained(id : NodeId) : Boolean = constraints.isWronglyContained(graph, id)
-
-    def printConstraints[V](logger : Logger[V], v : V) : Unit =
-      constraints.printConstraints(graph, logger)(v)
-
-  }
-
-    def findElementByName(g : DependencyGraph, fn : String) : Option[ConcreteNode] = {
-      val splitted = fn split s"\\${DependencyGraph.scopeSeparator}"
-
-      import ShowDG._
-      def aux(names : List[String], current : Option[NodeId]) : Option[ConcreteNode] =
-        (names, current) match {
+    import ShowDG._
+    def aux(names : List[String], current : Option[NodeId]) : Option[ConcreteNode] =
+      (names, current) match {
         case (_, None) => None
         case (Nil, Some(id)) => Some(g getConcreteNode id)
         case (hd :: tl, Some(id)) => aux(tl,
           g content id find ( cid => (g, g.getNode(cid)).shows(desambiguatedLocalName) == hd))
-        }
+      }
 
-      aux(splitted.toList, Some(rootId))
-    }
+    aux(splitted.toList, Some(rootId))
+  }
 
 }
 
@@ -153,9 +116,9 @@ class DependencyGraph
                abstractionsMap : AbstractionMap = abstractionsMap,
                recording : Recording = recording) : DependencyGraph =
     new DependencyGraph(//nLogger,
-                        nodeKindKnowledge,
-                        nodesIndex, edges,
-                        abstractionsMap, recording)
+      nodeKindKnowledge,
+      nodesIndex, edges,
+      abstractionsMap, recording)
 
   //def withLogger(l : PuckLogger) = newGraph(nLogger = l)
   implicit val defaulVerbosity : PuckLog.Verbosity =
@@ -174,8 +137,8 @@ class DependencyGraph
 
 
   private [graph] def addConcreteNode(n : ConcreteNode) : DependencyGraph =
-     newGraph(nodesIndex = nodesIndex.addConcreteNode(n),
-              recording = recording.addConcreteNode(n))
+    newGraph(nodesIndex = nodesIndex.addConcreteNode(n),
+      recording = recording.addConcreteNode(n))
 
 
 
@@ -183,7 +146,7 @@ class DependencyGraph
   ( localName : String,
     kind : NodeKind,
     mutable : Mutability = true
-    ) : (ConcreteNode, DependencyGraph) = {
+  ) : (ConcreteNode, DependencyGraph) = {
     val(n, nIndex) = nodesIndex.addConcreteNode(localName, kind, mutable)
     (n, newGraph(nodesIndex = nIndex,
       recording = recording.addConcreteNode(n)))
@@ -224,8 +187,8 @@ class DependencyGraph
 
 
   def removeConcreteNode(n : ConcreteNode) : DependencyGraph =
-      newGraph(nodesIndex = nodesIndex removeConcreteNode n,
-        recording = recording removeConcreteNode n)
+    newGraph(nodesIndex = nodesIndex removeConcreteNode n,
+      recording = recording removeConcreteNode n)
 
 
   def removeVirtualNode(n : VirtualNode) : DependencyGraph =
@@ -247,8 +210,8 @@ class DependencyGraph
   }
 
   def setRole(id : NodeId, srole : Option[Role]) : DependencyGraph = {
-      newGraph(nodesIndex = nodesIndex.setRole(id, srole),
-        recording = recording.addRoleChange(id, getRole(id), srole))
+    newGraph(nodesIndex = nodesIndex.setRole(id, srole),
+      recording = recording.addRoleChange(id, getRole(id), srole))
   }
   def getRole(id: NodeId) : Option[Role] = nodesIndex.getRole(id)
 
@@ -262,10 +225,10 @@ class DependencyGraph
 
   def typedNode(id : NodeId ) : TypedNode = {
     val cn = getConcreteNode(id)
-        styp(id) match {
-          case None => error(s"$cn has no type")
-          case Some(t) => (cn, t)
-      }
+    styp(id) match {
+      case None => error(s"$cn has no type")
+      case Some(t) => (cn, t)
+    }
   }
 
 
@@ -296,51 +259,51 @@ class DependencyGraph
 
   def removeEdge(e : DGEdge, register : Boolean = true): DependencyGraph =
     newGraph( edges = edges.remove(e),
-              recording =
-                  if(register) recording.removeEdge(e)
-                  else recording)
+      recording =
+        if(register) recording.removeEdge(e)
+        else recording)
 
   def typedBy(tid : NodeId) : List[NodeId] = edges.typedBy(tid)
 
- def addContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): DependencyGraph = {
-   getNode(contentId).kind.kindType match {
-     case Parameter | TypeVariableKT =>
-       Thread.dumpStack()
-       println("!!! uses addContainsParam instead !!! ")
-       addEdge(ContainsParam(containerId, contentId), register)
-     case _ => addEdge(Contains(containerId, contentId), register)
-   }
- }
+  def addContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): DependencyGraph = {
+    getNode(contentId).kind.kindType match {
+      case Parameter | TypeVariableKT =>
+        Thread.dumpStack()
+        println("!!! uses addContainsParam instead !!! ")
+        addEdge(ContainsParam(containerId, contentId), register)
+      case _ => addEdge(Contains(containerId, contentId), register)
+    }
+  }
 
 
- def removeContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): DependencyGraph =
+  def removeContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): DependencyGraph =
     removeEdge(Contains(containerId, contentId), register)
 
- def addUses(userId: NodeId, useeId: NodeId,
-             sAccessKind : Option[UsesAccessKind] = None,
-             register : Boolean = true): DependencyGraph =
+  def addUses(userId: NodeId, useeId: NodeId,
+              sAccessKind : Option[UsesAccessKind] = None,
+              register : Boolean = true): DependencyGraph =
     addEdge(Uses(userId, useeId, sAccessKind))
 
 
- def addIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : DependencyGraph=
+  def addIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : DependencyGraph=
     addEdge(Isa(subTypeId, superTypeId))
 
- def removeIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : DependencyGraph=
+  def removeIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : DependencyGraph=
     removeEdge(Isa(subTypeId, superTypeId))
 
 
 
- def addBinding
- ( typeUse : NodeIdP,
-   typeMemberUse : NodeIdP) : DependencyGraph =
-      newGraph(edges = edges.addUsesDependency(typeUse, typeMemberUse),
-          recording = recording.addTypeBinding(typeUse, typeMemberUse))
+  def addBinding
+  ( typeUse : NodeIdP,
+    typeMemberUse : NodeIdP) : DependencyGraph =
+    newGraph(edges = edges.addUsesDependency(typeUse, typeMemberUse),
+      recording = recording.addTypeBinding(typeUse, typeMemberUse))
 
- def removeBinding
- ( typeUse : NodeIdP,
-   typeMemberUse : NodeIdP) : DependencyGraph =
-      newGraph(edges = edges.removeUsesDependency(typeUse, typeMemberUse),
-        recording = recording.removeTypeBinding(typeUse, typeMemberUse))
+  def removeBinding
+  ( typeUse : NodeIdP,
+    typeMemberUse : NodeIdP) : DependencyGraph =
+    newGraph(edges = edges.removeUsesDependency(typeUse, typeMemberUse),
+      recording = recording.removeTypeBinding(typeUse, typeMemberUse))
 
   def addTypeUsesConstraint(typeUse : NodeIdP, constraint : TypeUseConstraint) : DependencyGraph =
     newGraph(edges =
@@ -357,18 +320,18 @@ class DependencyGraph
       case Sup(supTypeUse) => edges.removeTypeUsesConstraint(supTypeUse, typeUse)
       case Eq(oTypeUse) => edges.removeEqTypeUsesConstraint(typeUse, oTypeUse)
     },
-    recording = recording.removeTypeUseConstraint(typeUse, constraint))
+      recording = recording.removeTypeUseConstraint(typeUse, constraint))
 
 
   def changeTypeUseOfTypeMemberUse
-   ( oldTypeUse : NodeIdP,
-     newTypeUse : NodeIdP,
-     tmUse : NodeIdP) : DependencyGraph = {
-     newGraph(edges =
-        edges.removeUsesDependency(oldTypeUse, tmUse).
-              addUsesDependency(newTypeUse, tmUse),
-       recording = recording.changeTypeUseOfTypeMemberUse(oldTypeUse, newTypeUse, tmUse))
-   }
+  ( oldTypeUse : NodeIdP,
+    newTypeUse : NodeIdP,
+    tmUse : NodeIdP) : DependencyGraph = {
+    newGraph(edges =
+      edges.removeUsesDependency(oldTypeUse, tmUse).
+        addUsesDependency(newTypeUse, tmUse),
+      recording = recording.changeTypeUseOfTypeMemberUse(oldTypeUse, newTypeUse, tmUse))
+  }
 
   def changeTypeUseForTypeMemberUseSet
   ( oldTypeUse : NodeIdP,
@@ -397,18 +360,18 @@ class DependencyGraph
 
   def addAbstraction(id : NodeId, abs : Abstraction) : DependencyGraph =
     newGraph(abstractionsMap = abstractionsMap + (id, abs),
-             recording = recording.addAbstraction(id, abs))
+      recording = recording.addAbstraction(id, abs))
 
   def removeAbstraction(id : NodeId, abs : Abstraction) : DependencyGraph =
     newGraph(abstractionsMap = abstractionsMap - (id, abs),
-             recording = recording.removeAbstraction(id, abs))
+      recording = recording.removeAbstraction(id, abs))
 
 
   private def isChangeType(edge : DGEdge, newTarget : NodeId) : Boolean =
     edge.kind == Uses && (getNode(edge.user).kind.kindType match {
       case InstanceValueDecl
-        | StaticValueDecl
-        | Parameter =>
+           | StaticValueDecl
+           | Parameter =>
         val oldUsedKind = getNode(edge.used).kind.kindType
         val newUsedKind = getNode(newTarget).kind.kindType
 
@@ -417,17 +380,17 @@ class DependencyGraph
     })
 
   def splitWithTargets
-    (edge : Uses,
-     readTarget : NodeId,
-     writeTarget : NodeId
-    ) : (DependencyGraph, Set[NodeIdP]) = {
+  (edge : Uses,
+   readTarget : NodeId,
+   writeTarget : NodeId
+  ) : (DependencyGraph, Set[NodeIdP]) = {
     val g1 = edge.deleteIn(this, register = false)
     val readEdge : Uses = edge.copy(target = readTarget).withAccessKind(Some(Read))
     val writeEdge : Uses = edge.copy(target = writeTarget).withAccessKind(Some(Write))
 
     val newRecording =
-        recording.changeEdgeTarget(edge, readTarget, withMerge = readEdge.existsIn(this))
-                 .changeEdgeTarget(edge, readTarget, withMerge = readEdge.existsIn(this))
+      recording.changeEdgeTarget(edge, readTarget, withMerge = readEdge.existsIn(this))
+        .changeEdgeTarget(edge, readTarget, withMerge = readEdge.existsIn(this))
     (readEdge.createIn(g1, register = false).newGraph(recording = newRecording),
       Set(readEdge, writeEdge) map DGEdge.toPair)
   }
@@ -536,24 +499,24 @@ class DependencyGraph
       }
     }
 
-//  def contains_*(containerId : NodeId, contentId : NodeId) : Boolean = {
-//    def aux(nid: NodeId, visited: Set[NodeId]): Boolean =
-//      containerId == nid || {
-//        container(nid) match {
-//          case None => false
-//          case Some(id) =>
-//            if(visited contains id)
-//              error("cycle detected")
-//            //import ShowDG._
-//            //logger.writeln(ShowDG.showDG[NodeId](this).show(id))(PuckLog.Debug)
-//            aux(id, visited + id)
-//        }
-//      }
-//
-//    aux(contentId, Set(contentId))
-//  }
+  //  def contains_*(containerId : NodeId, contentId : NodeId) : Boolean = {
+  //    def aux(nid: NodeId, visited: Set[NodeId]): Boolean =
+  //      containerId == nid || {
+  //        container(nid) match {
+  //          case None => false
+  //          case Some(id) =>
+  //            if(visited contains id)
+  //              error("cycle detected")
+  //            //import ShowDG._
+  //            //logger.writeln(ShowDG.showDG[NodeId](this).show(id))(PuckLog.Debug)
+  //            aux(id, visited + id)
+  //        }
+  //      }
+  //
+  //    aux(contentId, Set(contentId))
+  //  }
   def canContain(n : DGNode, cn : ConcreteNode) : Boolean =
-      nodeKindKnowledge.canContain(this, n,cn)
+    nodeKindKnowledge.canContain(this, n,cn)
 
   def canBe(n : DGNode, cn : ConcreteNode) : Boolean =
     nodeKindKnowledge.canBe(this)(n,cn)
@@ -601,7 +564,7 @@ class DependencyGraph
   }
 
   def typeConstraints(typeUse : NodeIdP) : Set[TypeUseConstraint] = {
-   val tucs =  edges.typeUsesConstraints getFlat typeUse
+    val tucs =  edges.typeUsesConstraints getFlat typeUse
     //tucs foreach checkTypeUseExist
     tucs
   }
@@ -744,12 +707,12 @@ class DependencyGraph
       case InstanceValueDecl | StaticValueDecl =>
         typeUsesOf(ctxt, tvUser)
     }
-//  def findTypeVariableOwner(tvUser : NodeId, tvId : NodeId) : NodeId =
-//  kindType(tvUser) match {
-//    case Parameter => findTypeVariableOwner(container_!(tvUser), tvId)
-//    case InstanceValueDecl | StaticValueDecl | TypeDecl =>
-//      if(container_!(tvId) == tvUser) tvUser
-//      else findTypeVariableOwner(container_!(tvId), tvId)
-//    case _ => error("no type variable owner found")
-//  }
+  //  def findTypeVariableOwner(tvUser : NodeId, tvId : NodeId) : NodeId =
+  //  kindType(tvUser) match {
+  //    case Parameter => findTypeVariableOwner(container_!(tvUser), tvId)
+  //    case InstanceValueDecl | StaticValueDecl | TypeDecl =>
+  //      if(container_!(tvId) == tvUser) tvUser
+  //      else findTypeVariableOwner(container_!(tvId), tvId)
+  //    case _ => error("no type variable owner found")
+  //  }
 }

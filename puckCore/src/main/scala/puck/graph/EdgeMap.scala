@@ -209,10 +209,7 @@ case class EdgeMap
       case Some(ps) => ps contains e.target
       case None => false
     }
-//    case ContainsDef => definition get e.source match {
-//      case Some(d) => d == e.target
-//      case None => false
-//    }
+
     case Isa => isa(e.source, e.target)
     case Uses => uses(e.source, e.target)
     case AbstractEdgeKind => false
@@ -265,27 +262,6 @@ case class EdgeMap
 
   def setType(typed : NodeId, t : Type) : EdgeMap = this.copy (types = types + (typed -> t))
   def removeType(typed: NodeId) : EdgeMap = this.copy(types = types - typed)
-
-//  def setType(id : NodeId, st : Option[Type]) : EdgeMap =
-//    st match {
-//      case None =>
-//        types get id match {
-//          case None => this
-//          case Some(oldType) =>
-//            val newTypedBy = oldType.ids.foldLeft(typedBy){
-//            (tbm, tId) => tbm - (tId, id)
-//          }
-//          copy(types = types - id,
-//            typedBy = newTypedBy)
-//        }
-//      case Some(t) =>
-//        val newTypedBy = t.ids.foldLeft(typedBy){
-//          (tbm, tId) => tbm + (tId, id)
-//        }
-//        copy(types = types + (id -> t),
-//        typedBy = newTypedBy)
-//    }
-
 
 
 

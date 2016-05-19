@@ -165,6 +165,8 @@ class BindingRelationship extends AcceptanceSpec {
         |}"""
     ){
 
+      import puck.graph.ShowDG._
+      (graph, graph.edges).println
 
       graph.styp("p.B.wa").value should be (ParameterizedType("p.Wrapper", List(NamedType("p.A"))))
 

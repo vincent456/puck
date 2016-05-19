@@ -39,9 +39,8 @@ aspect TypeUser {
 
         TypeDecl type(); //return type of method or type of field
 
-        int buildDGNode(JastaddGraphBuilder builder);
-
         boolean isQualified();
+
         Expr qualifier();
 
         TypeMember decl();

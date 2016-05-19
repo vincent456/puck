@@ -28,12 +28,65 @@ package org.extendj.ast
 
 import puck.graph.{TypeDecl => PuckTypeDecl, _}
 
+import JastaddGraphBuilder.{qualifierIsSuperAccess, qualifierIsThisAccess}
 /**
   * Created by Loïc Girault on 05/04/16.
   */
+
+abstract class TypeVariableInstanciator {
+  def buildNode( builder : JastaddGraphBuilder) : NodeId
+}
+case class TVIAccess(a : Access) extends TypeVariableInstanciator{
+  def buildNode( builder : JastaddGraphBuilder) : NodeId =
+    builder.getDefinition(builder.buildNode(a.hostBodyDecl()))
+
+}
+case class TVIVarDecl(d : Declarator) extends TypeVariableInstanciator{
+  def buildNode( builder : JastaddGraphBuilder) : NodeId = d match {
+    case fd : FieldDeclarator => builder.buildNode(fd)
+    case vd : VariableDeclarator => builder.buildNode(vd)
+  }
+
+}
+case class TVITypeDecl(td : TypeDecl) extends TypeVariableInstanciator{
+  def buildNode( builder : JastaddGraphBuilder) : NodeId =
+    builder.buildNode(td)
+}
+
+
 trait TypeUsage {
   this : JastaddGraphBuilder =>
 
+
+  def buildTypeUse(tmAccess : TypeMemberAccess, typeMemberUse: Uses) : Unit = {
+    if(qualifierIsThisAccess(tmAccess)) {
+      val thisTypeId = this buildNode tmAccess.hostType()
+      addEdge(addBinding(thisTypeId, thisTypeId, typeMemberUse))
+    }
+    else if(qualifierIsSuperAccess(tmAccess)){
+      val thisTypeId = this buildNode tmAccess.hostType()
+      val superTypeId = this buildNode tmAccess.hostType.asInstanceOf[ClassDecl].superclass()
+      addEdge(addBinding(thisTypeId, superTypeId, typeMemberUse))
+    }
+    else {
+      val access = tmAccess.asInstanceOf[Access]
+      try getQualifiers(access.qualifier()) foreach {
+        qualifier =>
+          //if(qualifier.`type`() == access.accessed().hostType())
+          if(!qualifier.isSubstitute)
+            bindTypeUse(this buildNode qualifier, qualifier, typeMemberUse)
+          else {
+              val a = qualifier.asInstanceOf[Access]
+              bindParTypeUse(a, a.accessed().asInstanceOf[TypeMemberSubstitute], typeMemberUse)
+          }
+      }
+      catch {
+        case _: Error =>
+          throw new NoTypeUser(access.prettyPrint() + "(" + access.getClass + ") in " +
+            access.compilationUnit().pathName() + " " + access.location())
+      }
+    }
+  }
 
   def bindTypeUse(exprId : NodeId,
                   expr : Expr,
@@ -42,64 +95,43 @@ trait TypeUsage {
 
   def bindTypeUse(typeUser : NodeId,
                   typeUsed: TypeDecl,
-                  typeMemberUse : NodeIdP/*,
-                  constraint : NodeIdP => TypeUseConstraint = Sub.apply*/ ) : Unit = {
-    g.kindType(typeMemberUse.used) match {
-      case PuckTypeDecl => /*error("bindTypeUse error !!!!")*/
-        addTypeUsesConstraint(typeMemberUse, Sub((typeUser, typeUsed buildDGNode this)))
-        //addTypeUsesConstraint(typeMemberUse, Sub((typeUser, typeMemberUse.used)))
-      case _ =>
+                  typeMemberUse : NodeIdP) : Unit = {
         val tid = getType(typeUsed) match {
           case NamedType(id) => id
           case ParameterizedType(id, _) => id
+          case _ => error()
         }
         puck.ignore(addBinding(typeUser, tid, typeMemberUse))
-    }
   }
 
-  def findTypeUsersAndBindUses
-  ( typeMemberUse : NodeIdP,
-    qualifier : Expr) : Unit = {
 
-    def aux(qualifier : Access) : Unit = qualifier.accessed() match {
-      case accessed : TypeMemberSubstitute =>
-        findTypeUsersAndBindUses(typeMemberUse, qualifier, accessed)
-      case _ =>
-        bindTypeUse(qualifier buildDGNode this, qualifier, typeMemberUse)
-    }
+  //out case :
+  def normaliseQualifier(qualifier : Expr) : Expr = qualifier match {
+    case ae: AssignExpr => normaliseQualifier(ae.getDest)
+    case d: Dot =>
+      if (d.isRightRotated)
+        d.rotateLeft()
+      normaliseQualifier(d.getRight)
+    case pe: ParExpr =>
+      normaliseQualifier(pe.getExpr)
+    case aa: ArrayAccess =>
+      normaliseQualifier(aa.prevExpr())
+    case _ => qualifier
 
-    qualifier match {
-      case ae: AssignExpr => findTypeUsersAndBindUses(typeMemberUse, ae.getDest)
-      case d: Dot =>
-        if (d.isRightRotated)
-          d.rotateLeft()
-        findTypeUsersAndBindUses(typeMemberUse, d.getRight)
-      case pe: ParExpr =>
-        findTypeUsersAndBindUses(typeMemberUse, pe.getExpr)
-      case aa: ArrayAccess =>
-        findTypeUsersAndBindUses(typeMemberUse, aa.prevExpr())
+  }
+
+  def getQualifiers(qualifier : Expr) : Seq[Expr] = {
+
+    normaliseQualifier(qualifier) match {
       case ce: ConditionalExpr =>
-        findTypeUsersAndBindUses(typeMemberUse, ce.getFalseExpr)
-        findTypeUsersAndBindUses(typeMemberUse, ce.getTrueExpr)
+        getQualifiers(ce.getFalseExpr) ++
+        getQualifiers(ce.getTrueExpr)
 
       // findTypeUserAndBindUses term cases
-      case ae: AddExpr =>
-        bindTypeUse(ae.hostBodyDecl buildDGNode this, ae, typeMemberUse)
-      case ce: CastExpr =>
-        bindTypeUse(ce.getTypeAccess buildDGNode this, ce, typeMemberUse)
+      case e @ ( _ : AddExpr | _ : CastExpr | _ : Literal) =>
+        Seq(e)
 
-      case l: Literal =>
-        bindTypeUse(l.`type`() buildDGNode this, l, typeMemberUse)
-      // findTypeUserAndBindUses term cases - Access subclasses
-
-      case cie: ClassInstanceExpr if cie.hasTypeDecl =>
-        aux(cie)
-        cie.setTarget(null) //unlock anonymous typeDecl
-      case va : VarAccess =>
-        aux(va)
-        // do not lock varAccess
-        va.setTarget(null)
-      case a : Access => aux(a)
+      case a : Access => Seq(a)
 
       case _ =>
         throw new DGBuildingError(qualifier.prettyPrint() + "(" + qualifier.getClass + ") in " +
@@ -108,19 +140,24 @@ trait TypeUsage {
     }
   }
 
-  def findTypeUsersAndBindUses(typeMemberUse : NodeIdP,
-                               qualifier : Access,
-                               qualifierDecl : TypeMemberSubstitute) : Unit = {
+
+  def bindParTypeUse(qualifier : Access,
+                     qualifierDecl : TypeMemberSubstitute,
+                     typeMemberUse : NodeIdP) : Unit = {
     (qualifierDecl.getOriginalType, qualifier.`type`()) match {
       case ( tv : TypeVariable, _ ) =>
         tv.owner() match {
           case tvOwner : GenericTypeDecl =>
-            findTypeVariableInstanciatorAndBindUses(tv, tvOwner,
-                  qualifierDecl.`type`(), typeMemberUse,
-                  qualifier buildDGNode this, qualifier)
+            findTypeVariableInstanciator(tv, tvOwner, qualifierDecl.`type`(), qualifier) foreach (
+               e =>
+                 bindTypeUse(e buildNode this, qualifierDecl.`type`(), typeMemberUse)
+              )
+
+
           case _ =>
             println("Access.findTypeUserAndBindUses tv.owner() " +
               "not instanceof GenericTypeDecl : TODO !!!")
+
         }
 
       case (_ : ParTypeDecl, _)
@@ -128,74 +165,76 @@ trait TypeUsage {
         println("Access.findTypeUserAndBindUses qualifierDecl.getOriginalType()  " +
           "instanceof ParTypeDecl : TODO !!!")
 
+
       case (_, _) if qualifier.`type`().instanceOf(qualifierDecl.getOriginalType) =>
-        bindTypeUse(qualifier.buildDGNode(this), qualifier, typeMemberUse)
+        bindTypeUse(buildNode(qualifier), qualifier, typeMemberUse)
+
 
       case _ => error()
     }
   }
 
 
-
-
-
   def addBinding(user : TypeDecl, used : TypeDecl, tmUse : NodeIdP) : Unit = {
-    val tUser = user.buildDGNode(this)
-    val tUsed = used.buildDGNode(this)
+    val tUser = this buildNode user
+    val tUsed = this buildNode used
     addEdge(addBinding(tUser, tUsed, tmUse))
   }
 
-  def findTypeVariableInstanciatorAndBindUses
+
+
+  def findTypeVariableInstanciator
   (tv : TypeVariable,
-   tvOwner : GenericTypeDecl,
+   tvOwner : GenericElement,
    tvValue : TypeDecl,
-   typeMemberUse : NodeIdP,
-   typeUserNodeId : NodeId,
-   e: Expr) : Unit = {
+   e: Expr) : Option[TypeVariableInstanciator]= {
     e match {
+      case ca : ClassInstanceExpr => Some(TVIAccess(ca))
+
       case a : Access =>
         a.`type`() match {
           case ptd : ParTypeDecl =>
             val ge = ptd.genericDecl().asInstanceOf[GenericElement]
-            if(ge.ownTypeVariable(tv))
-              g.kindType(typeMemberUse.used) match {
-                case PuckTypeDecl =>
-                  addTypeUsesConstraint(typeMemberUse, Eq((typeUserNodeId, typeMemberUse.used)))
-                case _ => bindTypeUse(a buildDGNode this, tvValue, typeMemberUse)
-              }
+            if(ge.ownTypeVariable(tv)) Some(TVIVarDecl(a.accessed().asInstanceOf[Declarator]))
 
-              //addTypeUsesConstraint(typeMemberUse, Sub((a.buildDGNode(this), typeMemberUse.used)))
-              //bindTypeUse(a.buildDGNode(this), tvValue, typeMemberUse)
-
-            else
+            else {
               println("Access.findTypeVariableInstanciatorAndBindUses " +
                 "not ge.ownTypeVariable(tv) : TODO !!!")
+              None
+            }
           case t =>
             val tvOwnerTd = tvOwner.asInstanceOf[TypeDecl]
 
             import scala.collection.JavaConversions._
 
-            def findTypeUserInHierachyAnBindUse(subtype : TypeDecl) : Unit =
+            def findTypeUserInHierachyAnBindUse(subtype : TypeDecl)  =
               tvOwnerTd.childTypes() find subtype.instanceOf match {
-                case Some(typUser) => addBinding(typUser, tvValue, typeMemberUse)
+                case Some(typUser) =>
+                  addEdge(Uses(buildNode(typUser), buildNode(tvValue)))
+                  Some(TVITypeDecl(typUser))
+                  //addBinding(typUser, tvValue, typeMemberUse)
 
                 case None if subtype instanceOf tvOwnerTd =>
-                  addBinding(subtype, tvValue, typeMemberUse)
+                  addEdge(Uses(buildNode(subtype), buildNode(tvValue)))
+                  Some(TVITypeDecl(subtype))
+                  //addBinding(subtype, tvValue, typeMemberUse)
                 case None =>
-                  throw new NoTypeUser(s"${e.prettyPrint()} : ${e.getClass} in " +
+                  println(s"${e.prettyPrint()} : ${e.getClass} in " +
                   s"${e.compilationUnit().pathName()} line ${e.location()}")
+                  None
               }
 
             if(t.instanceOf(tvOwnerTd))
               findTypeUserInHierachyAnBindUse(t)
             else if(a.isQualified)
-                findTypeVariableInstanciatorAndBindUses(tv, tvOwner, tvValue,
-                  typeMemberUse, a.prevExpr() buildDGNode this, a.prevExpr())
+                findTypeVariableInstanciator(tv, tvOwner, tvValue, a.prevExpr())
             else
                 findTypeUserInHierachyAnBindUse(a.hostType())
         }
 
-      case o => println(s"${o.getClass}.findTypeVariableInstanciatorAndBindUses : TODO !!!")
+      case o =>
+        println(s"${o.getClass}.findTypeVariableInstanciatorAndBindUses : TODO !!!")
+        None
     }
   }
 
@@ -204,22 +243,29 @@ trait TypeUsage {
   def constraintTypeUses
   ( lvalue : NodeId,
     lvalueType : TypeDecl,
-    rvalueNodeId : NodeId,
     rvalue : Access): Unit =
     if(rvalue.`type`().isInstanceOf[AnonymousDecl])
       println("Access.constraintTypeUses with Anonymous Class not handled yet !")
     else lvalueType match {
       case lvalueParType : ParTypeDecl =>
-        constraintParTypeUses(lvalue, lvalueParType, rvalueNodeId, rvalue.lastAccess())
+        constraintParTypeUses(lvalue, lvalueParType, rvalue.lastAccess())
+      case _  if rvalue.isSubstitute =>
+        val tms = rvalue.accessed().asInstanceOf[TypeMemberSubstitute]
+
+        tms.getOriginalType match {
+          case tv : TypeVariable =>
+            findTypeVariableInstanciator(tv, tv.owner(), tms.`type`(), rvalue) foreach {
+              e =>
+                addTypeUsesConstraint((lvalue, buildNode(lvalueType)),
+                  Sub((e buildNode this, buildNode(tms.`type`())) ))
+            }
+          case _ =>
+            addTypeUsesConstraint((lvalue, this buildNode lvalueType),
+              Sub((buildNode(rvalue.lastAccess()), buildNode(rvalue.lastAccess().`type`())) ))
+        }
       case _ =>
-        if(rvalue.lastAccess().accessed().isInstanceOf[Substitute] ||
-          rvalue.lastAccess().`type`().isInstanceOf[Substitute])
-          findTypeUsersAndBindUses((lvalue, lvalueType.buildDGNode(this)),
-            rvalue.lastAccess().getQualifier)
-        else
-          addTypeUsesConstraint((lvalue, lvalueType buildDGNode this),
-            Sub((rvalue.lastAccess() buildDGNode this,
-            rvalue.lastAccess().`type`() buildDGNode this)))
+          addTypeUsesConstraint((lvalue, this buildNode lvalueType),
+            Sub((buildNode(rvalue.lastAccess()), buildNode(rvalue.lastAccess().`type`())) ))
     }
 
 
@@ -227,7 +273,6 @@ trait TypeUsage {
   def constraintParTypeUses
   ( lvalue : NodeId,
     lvalueType : ParTypeDecl,
-    rvalueNodeId : NodeId,
     rvalue : Access) : Unit =
     if(!rvalue.`type`().isInstanceOf[ParTypeDecl])
       println("Access.constraintTypeUses this.type() " +
@@ -239,9 +284,9 @@ trait TypeUsage {
           "rValueType.getNumArgument() != lValueType.getNumArgument()  : TODO !!!")
       else {
         //Hypothesis : argument are in same order  C<B,A> extends I<A,B> kind of case not handled
-        val rvalueNode = rvalue buildDGNode this
-        addTypeUsesConstraint((lvalue, lvalueType.genericDecl() buildDGNode this),
-          Sub( (rvalueNode, rValueType.genericDecl() buildDGNode this) ))
+        val rvalueNode = this buildNode rvalue
+        addTypeUsesConstraint((lvalue, this buildNode lvalueType.genericDecl()),
+          Sub( (rvalueNode, this buildNode rValueType.genericDecl()) ))
 
         def normalizeTypeDecl(t : TypeDecl) : TypeDecl = t match {
           case _ : WildcardType => rvalue.program().typeObject()
@@ -257,13 +302,27 @@ trait TypeUsage {
             val lvalueArg = normalizeTypeDecl(lvalueType.getParameterization.getArg(i))
             val rvalueArg = normalizeTypeDecl(rValueType.getParameterization.getArg(i))
 
+            val tvValueId = {
+              val lid = buildNode(lvalueArg)
+              val rid = buildNode(rvalueArg)
+              if(lid != rid) error()
+              lid
+            }
+
             val tv : TypeVariable = rvalueArg match {
               case tv : TypeVariable => tv
               case _ => rValueType.genericDecl().asInstanceOf[GenericTypeDecl].getTypeParameter(i)
             }
 
-            findTypeVariableInstanciatorAndBindUses(tv, tv.owner().asInstanceOf[GenericTypeDecl],
-              lvalueArg, Uses(lvalue, lvalueArg buildDGNode this), rvalueNodeId, rvalue)
+            // findTypeVariableInstanciatorAndBindUses(tv, tv.owner().asInstanceOf[GenericTypeDecl],
+            //lvalueArg, Uses(lvalue, lvalueArg buildDGNode this), rvalueNodeId, rvalue)
+
+
+            findTypeVariableInstanciator(tv, tv.owner().asInstanceOf[GenericTypeDecl],
+              lvalueArg, rvalue) foreach {
+              e =>
+                addTypeUsesConstraint((lvalue, tvValueId), Eq((e buildNode this, tvValueId)))
+            }
         }
       }
     }

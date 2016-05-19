@@ -49,35 +49,33 @@ trait GraphBuilderVisitor {
 
   def buildTypeVariables(tid : NodeId, gtd : GenericTypeDecl) : Unit =
     gtd.getTypeParameterList foreach (tv =>
-      addEdge(ContainsParam(tid, tv buildDGNode this)))
+      addEdge(ContainsParam(tid, this buildNode tv)))
+
+
 
   def buildTypeDecl(td : TypeDecl) : NodeId = td match {
-    case tv : TypeVariable =>
-      tv buildDGNode this
+    case tv : TypeVariable => this buildNode tv
     case cd : ClassDecl =>
 
-      val n = cd buildDGNode this
+      val n = this buildNode cd
 
       // addExtends
       if(cd.hasSuperclass && cd.superclass().fullName() != "java.lang.Object"){
-        addIsa(n, cd.getSuperClass buildDGNode this)
+        addIsa(n, this buildNode cd.getSuperClass)
         cd.getSuperClass.buildIsaEdges(this, n)
       }
-
 
       TypeDecl.addImplements(this, n, cd.getImplementss)
 
       if(cd.isGenericType)
         buildTypeVariables(n, cd.asInstanceOf[GenericTypeDecl])
 
-
-
       if(cd.hasImplicitConstructor)
         cd.getImplicitConstructor.buildDG(this, n)
 
       n
     case id : InterfaceDecl =>
-      val n = id buildDGNode this
+      val n = this buildNode id
       TypeDecl.addImplements(this, n, id.getSuperInterfaces)
       if(id.isGenericType)
         buildTypeVariables(n, id.asInstanceOf[GenericTypeDecl])
@@ -106,7 +104,7 @@ trait GraphBuilderVisitor {
     expr.getTypeDeclOpt.buildDG(this, containerId)
 
 
-    val ctorNodeId = expr buildDGNode this //does lock
+    val ctorNodeId = this buildNode expr //does lock
     if( expr.hasTypeDecl )
       expr setTarget null//unlock anonymous decl
 
@@ -117,10 +115,20 @@ trait GraphBuilderVisitor {
     stmt.buildDGInChildren(this, containerId)
     stmt.getExpr match {
       case access : Access =>
-        val typeUser = stmt.getVariableDecl buildDGNode this
-        val typeUsed = stmt.getTypeAccess buildDGNode this
-        findTypeUsersAndBindUses((typeUser, typeUsed), access.lastAccess())
-      case _ => ()
+        val superTypeUser = this buildNode stmt.getVariableDecl
+        val superTypeUsed = this buildNode stmt.getTypeAccess
+
+        val typUsed = stmt.getExpr.`type`().asInstanceOf[ParTypeDecl]
+        val subTypeUsed = this buildNode typUsed.getParameterization.getArg(0)
+
+        getQualifiers(access.lastAccess()) foreach {
+          typBinder =>
+          val subTypeUser = this buildNode typBinder
+          bindTypeUse(subTypeUser, typBinder, (subTypeUser, subTypeUsed))
+          addTypeUsesConstraint((superTypeUser, superTypeUsed),
+            Sub((subTypeUser, subTypeUsed)))
+        }
+      case _ => println("type constraint in : " + stmt.prettyPrint() + " not handled")
     }
   }
   def buildDG(containerId : NodeId, stmt : VarDeclStmt) : Unit = {
@@ -133,7 +141,7 @@ trait GraphBuilderVisitor {
       vd =>
         vd.getInit.buildDG(this, containerId)
         vd.getInit match {
-          case a: Access => constraintTypeUses(containerId, astType, containerId, a)
+          case a: Access => constraintTypeUses(containerId, astType, a)
           case _ => ()
         }
     }
@@ -145,13 +153,13 @@ trait GraphBuilderVisitor {
 
     val astType = expr.getDest.`type`()
     val destNode = expr.getDest match {
-      case a : Access => a.lastAccess().accessed().buildDGNode(this)
+      case a : Access => this buildNode  a.lastAccess().accessed()
       case _ => throw new DGBuildingError()
     }
 
     expr.getSource match {
       case src : Access =>
-        constraintTypeUses(destNode, astType, src.lastAccess().buildDGNode(this), src.lastAccess())
+        constraintTypeUses(destNode, astType, src.lastAccess())
       case _ => ()
     }
   }
@@ -163,15 +171,15 @@ trait GraphBuilderVisitor {
 
     member.getDeclarators.foreach {
       fd =>
-        val fdId = fd buildDGNode this
+        val fdId = this buildNode fd
         addContains(containerId, fdId)
         setType(fdId, t)
         // t.ids.foreach (id => addEdge(Uses(fdId, id))) is not needed see EdgeMap.uses
 
         if( fd.hasInit ) {
-          val defId = buildFieldInit(fdId, fd, fd.getInit)
+          puck.ignore(buildFieldInit(fdId, fd, fd.getInit))
           fd.getInit match {
-            case a: Access => constraintTypeUses(fdId, astType, defId, a)
+            case a: Access => constraintTypeUses(fdId, astType, a)
             case _ => ()
           }
         }
@@ -196,9 +204,18 @@ trait GraphBuilderVisitor {
     defId
   }
 
+  def buildDG(containerId : NodeId, pd : ParameterDeclaration) : Unit = {
+    buildNode(pd)
+    pd.buildDGInChildren(this, containerId)
+  }
+
+  def buildDG(containerId : NodeId, va : ConstructorAccess) : Unit = {
+    addEdge(Uses(containerId, buildNode(va)))
+    va.buildDGInChildren(this, containerId)
+  }
   def buildDG(containerId : NodeId, va : VarAccess) : Unit =
     if(va. decl().isField){
-      val  nodeId = va buildDGNode this
+      val nodeId = this buildNode va
       val typeMemberUses = Uses(containerId, nodeId, va.usesAccessKind())
       addEdge(typeMemberUses)
 
@@ -207,7 +224,7 @@ trait GraphBuilderVisitor {
     }
 
   def buildDG(containerId : NodeId, ta : TypeAccess) : Unit =
-    addEdge(Uses(containerId, ta buildDGNode this))
+    addEdge(Uses(containerId, this buildNode ta))
 
   def buildDG(containerId : NodeId, ma : MethodAccess) : Unit = {
     if(!ma.isSubstitute)
@@ -229,7 +246,7 @@ trait GraphBuilderVisitor {
       case md => md
     }.foreach{
       decl =>
-        val nodeId = decl buildDGNode this
+        val nodeId = this buildNode decl.asInstanceOf[DGNamedElement]
         val typeMemberUses = Uses(containerId, nodeId)
         addEdge(typeMemberUses)
 
@@ -238,9 +255,8 @@ trait GraphBuilderVisitor {
 
         decl.getParameterList.toList.zip(ma.getArgs.toList).foreach{
           case (param, arg : Access) =>
-            val paramId = param buildDGNode this
-            val argId = arg buildDGNode this
-            constraintTypeUses(paramId, param.`type`(), argId, arg)
+            val paramId = this buildNode param
+            constraintTypeUses(paramId, param.`type`(), arg)
           case (_, ae : AddExpr) =>
             System.err.println("parameter type constraint, AddExpr case not handled")
           case (_, _ : Literal) =>()
@@ -256,9 +272,9 @@ trait GraphBuilderVisitor {
     rs.buildDGInChildren(this, containerId)
     rs.getResult match {
       case a : Access =>
-        val methodNode = rs.hostBodyDecl().buildDGNode(this)
+        val methodNode = this buildNode rs.hostBodyDecl()
         val astType = rs.hostBodyDecl().asInstanceOf[MethodDecl].`type`()
-        constraintTypeUses(methodNode, astType, a.lastAccess().buildDGNode(this), a.lastAccess())
+        constraintTypeUses(methodNode, astType, a.lastAccess())
 
       case _ : Literal | _ : CastExpr=> ()
       case resExpr => throw new DGBuildingError("buildDG ReturnStmt case not expected : " + resExpr)

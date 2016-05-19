@@ -35,8 +35,6 @@ sealed abstract class EKind {
 
 object DGEdge{
 
-
-
   implicit def toPair(e : DGEdge) : NodeIdP = (e.user, e.used)
 
   def concreteEdgesFrom(graph : DependencyGraph, virtual : NodeIdP) : List[DGEdge] = {
@@ -106,8 +104,6 @@ case class DGEdge(kind : EKind, source : NodeId, target: NodeId) {
 
 
 }
-
-
 
 class Uses(source : NodeId, target: NodeId, val accessKind : Option[UsesAccessKind])
   extends DGEdge(Uses, source, target){

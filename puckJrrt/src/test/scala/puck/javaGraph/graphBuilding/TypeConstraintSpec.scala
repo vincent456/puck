@@ -59,7 +59,7 @@ class TypeConstraintSpec extends AcceptanceSpec {
     }
   }
 
-  scenario("generic - type uses  constraint between type parameter and init"){
+  scenario("generic - type uses  FieldDecl constraint "){
     val _ = new ScenarioFactory(
       """package p;
         |
@@ -69,8 +69,6 @@ class TypeConstraintSpec extends AcceptanceSpec {
         |
         |class B {  Wrapper<A> wa = new Wrapper<A>(); } """
     ){
-
-
       assert(graph uses ("p.B.wa.Definition", "p.A"))
 
       graph.styp("p.B.wa").value should be (ParameterizedType("p.Wrapper", List(NamedType("p.A"))))
@@ -82,7 +80,30 @@ class TypeConstraintSpec extends AcceptanceSpec {
     }
   }
 
-  scenario("generic - type uses  relationship between type parameter and variable declaration type"){
+  ignore("generic - type uses  VarDecl constraint "){
+    val _ = new ScenarioFactory(
+      """package p;
+        |
+        |class Wrapper<T> { T get(){return null;} }
+        |
+        |class A{ void m(){} }
+        |
+        |class B { void mb(){ Wrapper<A> wa = new Wrapper<A>(); } }"""
+    ){
+
+      assert(graph uses ("p.B.mb().Definition", "p.A"))
+
+      import puck.graph.ShowDG._
+      (graph, graph.edges).println
+//      graph.usesThatShouldUsesSameTypeAs(("p.B.mb.Definition", "p.A")) should not contain ( ("p.B.mb.Definition", "p.A") : NodeIdP )
+//      graph.usesThatShouldUsesASuperTypeOf(("p.Wrapper.Wrapper()", "p.Wrapper")) should contain ( ("p.B.wa", "p.Wrapper") : NodeIdP )
+//      graph.usesThatShouldUsesASubtypeOf(("p.B.wa", "p.Wrapper")) should contain (  ("p.Wrapper.Wrapper()", "p.Wrapper") : NodeIdP)
+
+    }
+  }
+
+
+  scenario("generic - type uses  constraint between type parameter and variable declaration type"){
     val sf = new ScenarioFactory(
       """package p;
         |
@@ -100,8 +121,8 @@ class TypeConstraintSpec extends AcceptanceSpec {
         |}""")
 
     import sf.{graph, idOfFullName}
-    import puck.graph.ShowDG._
 
+    import puck.graph.ShowDG._
     (graph, graph.edges).println
 
     assert (graph.uses("p.B.wa", "p.Wrapper"))
@@ -119,12 +140,9 @@ class TypeConstraintSpec extends AcceptanceSpec {
     graph.typeMemberUsesOf(("p.B.assignA().Definition", "p.A")).size should be (1)
 
     graph.usesThatShouldUsesASuperTypeOf(("p.B.wa", "p.A")) should contain (("p.B.assignA().Definition", "p.A") : NodeIdP)
-
-
-
   }
 
-  scenario("generic - type uses  relationship between type parameter and variable declaration type - foreach case"){
+  scenario("generic - type uses  constraint between type parameter and variable declaration type - foreach case"){
     val _ = new ScenarioFactory(
       """package p;
         |import java.util.List;

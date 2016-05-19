@@ -8,7 +8,7 @@ import puck.graph.{DependencyGraph, ShowDG}
 import puck.graph.comparison.Mapping
 import puck.search.{AStarSearchStrategy, BreadthFirstSearchStrategy}
 import puck.util.LoggedEither
-import puck.graph.DependencyGraph.ConstraintsOps
+import puck.graph.ConstraintsOps
 
 import scalaz.\/-
 

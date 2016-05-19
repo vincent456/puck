@@ -26,9 +26,10 @@
 
 package puck
 
+import puck.graph.constraints.ConstraintsMaps
 import puck.graph.constraints.search.AutomataState
 import puck.graph.transformations.Recordable
-import puck.util.{Logged, LoggedEither}
+import puck.util.{Logged, LoggedEither, Logger}
 
 import scalaz._
 import Scalaz._
@@ -53,6 +54,10 @@ package object graph {
 
   type NodeIdP = (NodeId, NodeId)
 
+  type Parameterization = Map[NodeId, Type]
+  type ParameterizationId = Int
+
+
   implicit class NodeIdPOps( val p : NodeIdP) extends AnyVal{
 
     def user = p._1
@@ -68,6 +73,39 @@ package object graph {
 
     def splitWithTargets(g :  DependencyGraph, rTgt : NodeId, wTgt : NodeId) =
       g.splitWithTargets(Uses(p._1, p._2), rTgt, wTgt)
+  }
+
+  implicit class ConstraintsOps(val gc : (DependencyGraph, ConstraintsMaps)) extends AnyVal {
+    def graph = gc._1
+    def constraints = gc._2
+
+    def violations() : Seq[DGEdge] = {
+      (graph.containsList filter isViolation map Contains.apply) ++:
+        (graph.usesList filter isViolation map Uses.apply)
+    }
+
+    def isViolation(e : NodeIdP) : Boolean = {
+      val (source, target) = e
+      constraints.isViolation(graph, source, target)
+    }
+
+    def isViolation(e : DGEdge) : Boolean = {
+      e.kind match {
+        case AbstractEdgeKind => false
+        case _ => /*Contains | ContainsDef | ContainsParam | Uses | Isa => */
+          constraints.isViolation(graph, e.source, e.target)
+
+      }
+    }
+
+    def wrongUsers(id : NodeId) : List[NodeId] = constraints.wrongUsers(graph, id)
+    def interloperOf(id1 : NodeId, id2 :NodeId) = constraints.isViolation(graph, id1, id2)
+    def isWronglyUsed(id : NodeId) = constraints.wrongUsers(graph, id).nonEmpty
+    def isWronglyContained(id : NodeId) : Boolean = constraints.isWronglyContained(graph, id)
+
+    def printConstraints[V](logger : Logger[V], v : V) : Unit =
+      constraints.printConstraints(graph, logger)(v)
+
   }
 
   type TypedNode = (ConcreteNode, Type)

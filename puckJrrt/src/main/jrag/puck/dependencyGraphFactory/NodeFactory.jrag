@@ -26,61 +26,12 @@
 
 aspect NodeFactory  {
 
-	public int DGNamedElement.buildDGNode(JastaddGraphBuilder builder){
-		if(isSubstitute())
-			return builder.getNode((DGNamedElement)((Substitute) this).getOriginal());
-		else
-			return builder.getNode(this);
-
-	}
-	public int ParameterDeclaration.buildDGNode(JastaddGraphBuilder builder){
-		if(this.getParent() instanceof CatchClause){
-			//not a parameter but a var decl in a catch clause
-			return hostBodyDecl().buildDGNode(builder);
-		}
-		return builder.getNode(this);
-	}
-
-	public int ASTNode.throwBuildDGNodeError(){
-		throw new DGBuildingError(this + " (" + this.getClass()+ ") in "+ this.hostBodyDecl() +
-				" in " + this.compilationUnit().pathName() +
-				" does not know how to create an DG Node");
-	}
-
-	public int ASTNode.buildDGNode(JastaddGraphBuilder builder){
-		return throwBuildDGNodeError();
-	}
-	public int AbstractWildcardType.buildDGNode(JastaddGraphBuilder builder){
-		if(isNamedElement())
-			return super.buildDGNode(builder);
-		return throwBuildDGNodeError();
-	}
-
-	public int ArrayDecl.buildDGNode(JastaddGraphBuilder builder){
-		return builder.arrayTypeId();
-	}
-
-    public int ParClassDecl.buildDGNode(JastaddGraphBuilder builder){
-        return genericDecl().buildDGNode(builder);
-    }
-
-    public int ParInterfaceDecl.buildDGNode(JastaddGraphBuilder builder){
-        return genericDecl().buildDGNode(builder);
-    }
-
-    public int Access.buildDGNode(JastaddGraphBuilder builder){
-        if(!isSubstitute())
-			this.lock();
-
-        return accessed().buildDGNode(builder);
-    }
-
-    private ASTNode Access.undefinedAccessed(){
+    private DGNamedElement Access.undefinedAccessed(){
 		throw new Error(this.prettyPrint() + "- " + this.compilationUnit().pathName()+ " line "+ this.location() +" - " +
 		this.getClass() + " : accessed not implemented");
     }
 
-    syn ASTNode Access.accessed();
+    syn DGNamedElement Access.accessed();
     eq Access.accessed() = undefinedAccessed();
     eq ClassAccess.accessed() = type();
     eq ArrayAccess.accessed() = type();
@@ -91,44 +42,15 @@ aspect NodeFactory  {
     eq ParTypeAccess.accessed() = type();
     eq MethodAccess.accessed() = decl();
 	eq ConstructorAccess.accessed() = decl();
-	eq VarAccess.accessed() = (ASTNode)decl();
+	eq VarAccess.accessed() = (DGNamedElement) decl();
 	eq ThisAccess.accessed() = hostType();
 	eq SuperAccess.accessed() = ((ClassDecl)hostType()).superclass();
 
-	public ASTNode Dot.accessed(){
+	public DGNamedElement Dot.accessed(){
 		if(isRightRotated())
 			rotateLeft();
 
 		return getRight().accessed();
 	}
-
-	public int VariableDeclarator.buildDGNode(JastaddGraphBuilder builder){
-		if(hostBodyDecl() instanceof StaticInitializer ||
-			hostBodyDecl()instanceof InstanceInitializer)
-			return hostBodyDecl().buildDGNode(builder);
-
-		return builder.getDefinition(hostBodyDecl().buildDGNode(builder));
-	}
-
-	public int InstanceInitializer.buildDGNode(JastaddGraphBuilder builder){
-		return hostType().buildDGNode(builder);
-	}
-
-	public int StaticInitializer.buildDGNode(JastaddGraphBuilder builder){
-		return hostType().buildDGNode(builder);
-	}
-
-	public int ParExpr.buildDGNode(JastaddGraphBuilder builder){
-		return getExpr().buildDGNode(builder);
-	}
-
-	public int Dot.buildDGNode(JastaddGraphBuilder builder){
-		if(isRightRotated())
-			rotateLeft();
-
-		return getRight().buildDGNode(builder);
-	}
-
-	
 
 }

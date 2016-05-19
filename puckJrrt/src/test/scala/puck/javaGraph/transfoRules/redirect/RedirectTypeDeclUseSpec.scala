@@ -36,6 +36,39 @@ import puck.AcceptanceSpec
 class RedirectTypeDeclUseSpec
   extends AcceptanceSpec {
 
+//  scenario("find type Variable value") {
+//    val _ = new ScenarioFactory(
+//      """package p;
+//        |
+//        |class Wrapper<T> { public T get(){return null;} }
+//        |
+//        |class A { public void m(){} }
+//        |
+//        |class B {
+//        |    Wrapper<A> wa = new Wrapper<A>();
+//        |
+//        |    void doM(){ wa.get().m(); }
+//        |}""") {
+//
+//      println(graph.typ("p.Wrapper.get()"))
+//      println(graph.kindType("p.Wrapper@T"))
+//
+//      def typeInContext(typeUser: NodeId, typeVariable : NodeId, ctxt : NodeId) = {
+//        graph.typeUsesOf(ctxt, typeUser)
+//      }
+//
+//
+//      println(typeInContext("p.Wrapper.get()", "p.Wrapper@T", "p.B.doM().Definition"))
+//      import ShowDG._
+//      (graph, graph.edges).println
+//
+//
+//
+//
+//    }
+//  }
+
+
   scenario("From class to superType interface") {
     val _ = new ScenarioFactory(
       """package p;
@@ -172,9 +205,17 @@ class RedirectTypeDeclUseSpec
         |}""") {
 
 
+      import ShowDG._
+      (graph, graph.edges).println
+
       val ltg =  Redirection.redirectUsesAndPropagate(graph,  ("p.B.wa", "p.A"),
         AccessAbstraction("p.I", SupertypeAbstraction))
       val g2 = ltg.rvalue
+
+      import ShowDG._
+      println(ltg.log)
+      (g2, g2.edges).println
+
       assert(g2.uses("p.B.wa", "p.I"))
       assert(g2.uses("p.B.doM().Definition", "p.I.m()"))
 

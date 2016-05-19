@@ -35,7 +35,7 @@ import puck.util.PuckSystemLogger
   * Created by Loïc Girault on 10/12/15.
   */
 object CycleBreaker {
-  def main(args: Array[String]) = {
+  def main(args: Array[String]) : Unit = {
     implicit val logger = new PuckSystemLogger(_ => true)
 
     val gu = new JGraphUtils {
@@ -50,7 +50,7 @@ object CycleBreaker {
 
     val n = dg2ast.nodesByName("screen.WelcomeCapital.printCapital(String)")
 
-    Quick.frame(dg2ast.initialGraph, "g")(JavaDotHelper)
+    puck.ignore(Quick.frame(dg2ast.initialGraph, "g")(JavaDotHelper))
 
 //    val searchControlStrategy =
 //          new CouplingConstraintSolvingControl(
