@@ -1,5 +1,7 @@
 package puck.javaGraph
 
+import java.io.File
+
 import puck.{Quick, Settings}
 import puck.TestUtils._
 import puck.graph.constraints.search.DecoratedGraphEvaluator
@@ -42,6 +44,7 @@ object LocationTestBlindControlSolveAll {
           case LoggedEither(_, \/-(g)) =>
             Quick.dot(g, Settings.tmpDir + "solved-blind_bfs", Some(constraints))
             Quick.frame(g, "Blind BFS", scm = Some(constraints))
+            //applyChanges(g, new File(Settings.tmpDir))
         }
       }
 

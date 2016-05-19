@@ -28,6 +28,7 @@ package puck
 package search
 
 import scala.collection.mutable
+import scala.collection.mutable._
 
 /**
   * Created by Loïc Girault on 16/11/15.
@@ -48,7 +49,8 @@ class AStarSearchStrategy[T]
       evaluateWithDepthPenaly(sx) compareTo evaluateWithDepthPenaly(sy)
   }
 
-  var remainingStates = new mutable.PriorityQueue[SearchState[T]]()(SearchStateOrdering.reverse)
+  // var remainingStates = new mutable.PriorityQueue[SearchState[T]]()(SearchStateOrdering.reverse)
+  var remainingStates : mutable.SortedSet[SearchState[T]] = new mutable.TreeSet[SearchState[T]]()(SearchStateOrdering)
 
   def isSuccess(s: SearchState[T]) =
     s.loggedResult.value.isRight
@@ -56,12 +58,15 @@ class AStarSearchStrategy[T]
   def addState(s: SearchState[T]): Unit =
     if (isSuccess(s) && (s.depth < maxDepth)) {
       remainingStates += s
-      if (remainingStates.length > maxSize)
-        remainingStates = remainingStates.init
+      if (remainingStates.size > maxSize)
+        remainingStates.remove(remainingStates.last)
     }
 
-
-  def popState() : SearchState[T] = remainingStates.dequeue()
+  def popState() : SearchState[T] = {
+    val res = remainingStates.head
+    remainingStates.remove(remainingStates.head)
+    return res
+  }
 
   def canContinue: Boolean = remainingStates.nonEmpty
 }
