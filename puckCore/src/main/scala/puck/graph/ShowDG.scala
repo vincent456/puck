@@ -142,8 +142,8 @@ object ShowDG extends ShowConstraints{
   implicit def stringOfEdge : DGStringBuilder[DGEdge] = (dg, e) =>
     s"${e.kind}( ${desambiguatedFullName(dg, e.source)}, ${desambiguatedFullName(dg, e.target)})"
 
-  implicit def stringOfBR : DGStringBuilder[(DGEdge,DGEdge)] =
-  {case (dg, (u1, u2)) => s"(${stringOfEdge(dg,u1)}, ${stringOfEdge(dg,u2)})"}
+  implicit def stringOfBR : DGStringBuilder[(NodeIdP,NodeIdP)] =
+  {case (dg, (u1, u2)) => s"(${stringOfNodeIdP(dg,u1)}, ${stringOfNodeIdP(dg,u2)})"}
 
 
   implicit def stringOfExtremity : DGStringBuilder[Extremity] =

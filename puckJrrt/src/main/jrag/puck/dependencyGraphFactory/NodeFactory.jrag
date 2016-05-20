@@ -26,12 +26,12 @@
 
 aspect NodeFactory  {
 
-    private DGNamedElement Access.undefinedAccessed(){
+    private ASTNode<? extends ASTNode> Access.undefinedAccessed(){
 		throw new Error(this.prettyPrint() + "- " + this.compilationUnit().pathName()+ " line "+ this.location() +" - " +
 		this.getClass() + " : accessed not implemented");
     }
 
-    syn DGNamedElement Access.accessed();
+    syn ASTNode<? extends ASTNode> Access.accessed();
     eq Access.accessed() = undefinedAccessed();
     eq ClassAccess.accessed() = type();
     eq ArrayAccess.accessed() = type();
@@ -42,11 +42,11 @@ aspect NodeFactory  {
     eq ParTypeAccess.accessed() = type();
     eq MethodAccess.accessed() = decl();
 	eq ConstructorAccess.accessed() = decl();
-	eq VarAccess.accessed() = (DGNamedElement) decl();
+	eq VarAccess.accessed() = (ASTNode<? extends ASTNode>) decl();
 	eq ThisAccess.accessed() = hostType();
 	eq SuperAccess.accessed() = ((ClassDecl)hostType()).superclass();
 
-	public DGNamedElement Dot.accessed(){
+	public ASTNode<? extends ASTNode> Dot.accessed(){
 		if(isRightRotated())
 			rotateLeft();
 

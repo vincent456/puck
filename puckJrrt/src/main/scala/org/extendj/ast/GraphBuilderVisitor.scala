@@ -124,7 +124,7 @@ trait GraphBuilderVisitor {
         getQualifiers(access.lastAccess()) foreach {
           typBinder =>
           val subTypeUser = this buildNode typBinder
-          bindTypeUse(subTypeUser, typBinder, (subTypeUser, subTypeUsed))
+
           addTypeUsesConstraint((superTypeUser, superTypeUsed),
             Sub((subTypeUser, subTypeUsed)))
         }
@@ -153,7 +153,7 @@ trait GraphBuilderVisitor {
 
     val astType = expr.getDest.`type`()
     val destNode = expr.getDest match {
-      case a : Access => this buildNode  a.lastAccess().accessed()
+      case a : Access => buildNode(a.lastAccess())
       case _ => throw new DGBuildingError()
     }
 
@@ -226,6 +226,9 @@ trait GraphBuilderVisitor {
   def buildDG(containerId : NodeId, ta : TypeAccess) : Unit =
     addEdge(Uses(containerId, this buildNode ta))
 
+
+
+
   def buildDG(containerId : NodeId, ma : MethodAccess) : Unit = {
     if(!ma.isSubstitute)
       ma.lock()
@@ -240,11 +243,9 @@ trait GraphBuilderVisitor {
       expr => expr.buildDG(this, containerId)
     }
 
-    decls.map{
-      case mds : MethodDeclSubstituted =>
-        mds.sourceMethodDecl()
-      case md => md
-    }.foreach{
+    //99% du temps il y'a une déclaration mais dans des cas ou une classe implémente
+    //plusieurs interfaces indépendante possédant une signature commune, on peux avoir plusieurs déclaration
+    decls foreach {
       decl =>
         val nodeId = this buildNode decl.asInstanceOf[DGNamedElement]
         val typeMemberUses = Uses(containerId, nodeId)
@@ -253,19 +254,58 @@ trait GraphBuilderVisitor {
         if(!decl.isStatic)
           buildTypeUse(ma, typeMemberUses)
 
-        decl.getParameterList.toList.zip(ma.getArgs.toList).foreach{
-          case (param, arg : Access) =>
-            val paramId = this buildNode param
-            constraintTypeUses(paramId, param.`type`(), arg)
-          case (_, ae : AddExpr) =>
-            System.err.println("parameter type constraint, AddExpr case not handled")
-          case (_, _ : Literal) =>()
-          case (_, arg) =>
-            throw new DGBuildingError(s"Access expected but found : $arg")
+        if(! decl.isSubstitute)
+          decl.getParameterList.toList.zip(ma.getArgs.toList) foreach putConstraintOnArg
+         else {
+          val substitutedDecl = decl.asInstanceOf[MethodDeclSubstituted]
+          val genDecl = substitutedDecl.sourceMethodDecl()
+
+          genDecl.getParameterList.toList.zip(
+            substitutedDecl.getParameterList.toList).zip(
+            ma.getArgs.toList) foreach putConstraintOnSubstitutedArg(ma)
+
         }
     }
-
   }
+
+  private def putConstraintOnArg_common[T](f : PartialFunction[(T,Access), Unit])
+                                     (p : (T, Expr) ) : Unit = {
+    val (t, argValue) = p
+    argValue match {
+      case a: Access => f((t, a))
+      case ae: AddExpr =>
+        System.err.println("parameter type constraint, AddExpr case not handled")
+      case _: Literal => ()
+      case arg => throw new DGBuildingError(s"Access expected but found : $arg")
+    }
+  }
+
+  private val putConstraintOnArg: ((ParameterDeclaration, Expr)) => Unit =
+    putConstraintOnArg_common[ParameterDeclaration] {
+      case (param, arg: Access) =>
+        val paramId = this buildNode param
+        constraintTypeUses(paramId, param.`type`(), arg)
+    } _
+  private def putConstraintOnSubstitutedArg(ma : MethodAccess): (((ParameterDeclaration,ParameterDeclaration), Expr)) => Unit =
+    putConstraintOnArg_common[(ParameterDeclaration,ParameterDeclaration)] {
+      case ((genParam, substituteParam), arg: Access) =>
+        val paramId = this buildNode genParam
+
+        (genParam.`type`(), substituteParam.`type`()) match {
+          case (tv : TypeVariable, tvValue) =>
+            findTypeVariableInstanciator(tv, tvValue, ma)  foreach {
+              e =>
+                addTypeUsesConstraint((e buildNode this, buildNode(tvValue)),
+                  Sub((buildNode(arg), buildNode(arg.`type`())) ))
+            }
+
+          case (genT, subT) if genT == subT =>
+            constraintTypeUses(paramId, genT, arg)
+          case (genT, subT) =>
+            System.err.println(s"(genT = ${genT.name()}, subT = ${subT.name()}) arg type constraint unhandled case")
+        }
+
+    } _
 
 
   def buildDG(containerId : NodeId, rs : ReturnStmt) : Unit = {

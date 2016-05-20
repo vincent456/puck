@@ -40,7 +40,7 @@ trait NodeFactory {
     case cie: ClassInstanceExpr =>
       if(!cie.hasTypeDecl)
         cie.lock()
-      buildNode(cie.accessed())
+      buildNode(cie.accessed().asInstanceOf[DGNamedElement])
     case d : Dot =>
       if(d.isRightRotated)
         d.rotateLeft()
@@ -48,7 +48,7 @@ trait NodeFactory {
     case ac : Access =>
       if(!ac.isSubstitute)
         ac.lock()
-      buildNode(ac.accessed())
+      buildNode(ac.accessed().asInstanceOf[DGNamedElement])
   }
 
   def buildNode(n : DGNamedElement) : NodeId = n match {

@@ -165,19 +165,67 @@ class BindingRelationship extends AcceptanceSpec {
         |}"""
     ){
 
-      import puck.graph.ShowDG._
-      (graph, graph.edges).println
-
       graph.styp("p.B.wa").value should be (ParameterizedType("p.Wrapper", List(NamedType("p.A"))))
 
-      //graph.typeUsesOf(("p.B.doM().Definition", "p.A.m()")) should contain (("p.B.wa", "p.Wrapper") : NodeIdP )
+      graph.typeUsesOf(("p.B.doM().Definition", "p.Wrapper.get()")) should contain (("p.B.wa", "p.Wrapper") : NodeIdP)
+      graph.typeUsesOf(("p.B.doM().Definition", "p.Wrapper.get()")) should not contain (("p.B.wa", "p.A") : NodeIdP)
+
       graph.typeUsesOf(("p.B.doM().Definition", "p.A.m()")) should contain (("p.B.wa", "p.A") : NodeIdP)
+      graph.typeUsesOf(("p.B.doM().Definition", "p.A.m()")) should not contain (("p.B.wa", "p.Wrapper") : NodeIdP )
+
       graph.typeMemberUsesOf(("p.B.wa", "p.A")) should contain (("p.B.doM().Definition", "p.A.m()") : NodeIdP)
       graph.typeMemberUsesOf(("p.B.wa", "p.A")).size should be (1)
+
       //graph.typeMemberUsesOf(("p.B.wa", "p.A")) should not contain ("p.B.doM().Definition", "p.Wrapper.get()" : NodeIdP)
     }
+  }
 
+  scenario("generic - type parameter as argument type"){
+    val _ = new ScenarioFactory(
+      s"""package fileSystem;
+          |
+          |import java.util.ArrayList;
+          |import java.util.List;
+          |
+          |class Directory {
+          |   private List<Directory> directories = new ArrayList<Directory>();
+          |   public void add( Directory d ) { directories.add( d ); }
+          |}"""
+    ){
 
+      graph.typeMemberUsesOf(("fileSystem.Directory.directories", "java.util.List")) should contain (
+        ("fileSystem.Directory.add(Directory).Definition", "java.util.List.add(E)") : NodeIdP)
+
+      graph.typeMemberUsesOf(("fileSystem.Directory.directories", "java.util.List")).size should be (1)
+
+      graph.typeMemberUsesOf(("fileSystem.Directory.directories", "fileSystem.Directory")) shouldBe empty
+
+    }
+  }
+
+  scenario("generic - foreach"){
+    val _ = new ScenarioFactory(
+      s"""package fileSystem;
+          |
+          |import java.util.ArrayList;
+          |import java.util.List;
+          |
+          |class Directory {
+          |   private String    name;
+          |   private List<Directory> directories = new ArrayList<Directory>();
+          |
+          |   public void display(String path) {
+          |      System.out.println(path + name);
+          |      String npath = path + name +"/";
+          |      for(Directory d: directories)
+          |         d.display(npath);
+          |   }
+          |}"""
+    ){
+
+      graph.typeMemberUsesOf(("fileSystem.Directory.directories", "java.util.List")) shouldBe empty
+
+    }
   }
 
   scenario("use of method of type a variable value instanciated via subtyping"){

@@ -250,11 +250,7 @@ object Redirection {
         val (tucsInvolvingTypeVariables, tucsToPropagate) =
           tucsThatNeedPropagation.partition(tuc => g.kindType(tuc.constrainedType) == TypeVariableKT)
 
-//        tucsInvolvingTypeVariables.foreach {
-//          tuc =>
-//        }
-
-        tucsThatNeedPropagation.foldLoggedEither(g1) {
+        tucsToPropagate.foldLoggedEither(g1) {
           case (g0, tuc) =>
             val (s,t) = tuc.constrainedUse
             //LoggedSuccess( update(g0, tuc) )
@@ -333,6 +329,7 @@ object Redirection {
     }
 
     val typeMemberTRset = cl(g, oldUse)
+    val log2 = typeMemberTRset map (n => (g,n).shows) mkString(" typeMemberTRset = ", "\n", "\n")
 
     val ltg : LoggedTG =
       if(typeMemberTRset.nonEmpty) {
@@ -356,7 +353,7 @@ object Redirection {
             propagateTypeConstraints(g0, oldUse, newTypeToUse)
         }
 
-    log <++: ltg
+    (log + log2) <++: ltg
   }
 
 

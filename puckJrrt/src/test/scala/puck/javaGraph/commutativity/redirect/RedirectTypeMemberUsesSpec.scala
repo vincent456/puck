@@ -76,22 +76,22 @@ class RedirectTypeMemberUsesSpec
     def code(tName : String) =
       s"""package fileSystem;
           |
-      |import java.util.ArrayList;
+          |import java.util.ArrayList;
           |import java.util.List;
           |
-      |interface FSElement {
+          |interface FSElement {
           |   void display(String path);
           |   void ls();
           |}
           |
-      |class File implements FSElement {
+          |class File implements FSElement {
           |   public File( String name ) { this.name = name; }
           |   public void display(String path){ System.out.println(path+name); }
           |   public void ls() { display(""); }
           |   private String name;
           |}
           |
-      |public class Directory implements FSElement {
+          |public class Directory implements FSElement {
           |   public Directory( String name ) { this.name = name; }
           |   public void add( File f ) { files.add( f ); }
           |   public void add( $tName d ) { directories.add( d ); }
@@ -107,12 +107,13 @@ class RedirectTypeMemberUsesSpec
           |   private String    name;
           |   private List<File> files = new ArrayList<File>();
           |   private List<$tName> directories = new ArrayList<$tName>();
-          |}
-    """
+          |}"""
 
     compareWithExpectedAndGenerated( code("Directory"),
       s => {
         import s.{graph, idOfFullName}
+        import puck.graph.ShowDG._
+        (graph, graph.edges).println
 
         Redirection.redirectUsesAndPropagate(graph, ("fileSystem.Directory.add(Directory).d", "fileSystem.Directory"),
           AccessAbstraction("fileSystem.FSElement", SupertypeAbstraction)).rvalue
