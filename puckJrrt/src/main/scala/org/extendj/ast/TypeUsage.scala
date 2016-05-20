@@ -146,19 +146,10 @@ trait TypeUsage {
                      typeMemberUse : NodeIdP) : Unit = {
     (qualifierDecl.getOriginalType, qualifier.`type`()) match {
       case ( tv : TypeVariable, _ ) =>
-        tv.owner() match {
-          case tvOwner : GenericTypeDecl =>
-            findTypeVariableInstanciator(tv, tvOwner, qualifierDecl.`type`(), qualifier) foreach (
-               e =>
-                 bindTypeUse(e buildNode this, qualifierDecl.`type`(), typeMemberUse)
-              )
+        findTypeVariableInstanciator(tv, qualifierDecl.`type`(), qualifier) foreach (
+          e =>
+            bindTypeUse(e buildNode this, qualifierDecl.`type`(), typeMemberUse) )
 
-
-          case _ =>
-            println("Access.findTypeUserAndBindUses tv.owner() " +
-              "not instanceof GenericTypeDecl : TODO !!!")
-
-        }
 
       case (_ : ParTypeDecl, _)
            | (_, _ : ParTypeDecl) =>
@@ -185,60 +176,61 @@ trait TypeUsage {
 
   def findTypeVariableInstanciator
   (tv : TypeVariable,
-   tvOwner : GenericElement,
    tvValue : TypeDecl,
-   e: Expr) : Option[TypeVariableInstanciator]= {
-    e match {
-      case ca : ClassInstanceExpr => Some(TVIAccess(ca))
+   expr : Expr) : Option[TypeVariableInstanciator]= {
 
-      case a : Access =>
-        a.`type`() match {
-          case ptd : ParTypeDecl =>
-            val ge = ptd.genericDecl().asInstanceOf[GenericElement]
-            if(ge.ownTypeVariable(tv)) Some(TVIVarDecl(a.accessed().asInstanceOf[Declarator]))
+    (expr, tv.owner()) match {
+      case (ca : ClassInstanceExpr, _ ) => Some(TVIAccess(ca))
+      case (d : AbstractDot, _ ) => findTypeVariableInstanciator(tv, tvValue, d.lastAccess())
+      case (a : Access, gmd : GenericMethodDecl ) =>
+        if(a.accessed() == gmd) Some(TVIAccess(a))
+        else {
+          println("findTypeVariableInstanciator tv.owner() : GenericMethodDecl " +
+                      "a.accessed() != tv.owner() : TODO !!!")
+          None
+        }
+      case (a : Access, gtd : GenericTypeDecl) =>
 
-            else {
-              println("Access.findTypeVariableInstanciatorAndBindUses " +
-                "not ge.ownTypeVariable(tv) : TODO !!!")
+        val tvOwnerTd = gtd.asInstanceOf[TypeDecl]
+
+        import scala.collection.JavaConversions._
+        def findTVInstanciatiorInHierachy(subtype : TypeDecl)  =
+          tvOwnerTd.childTypes() find subtype.instanceOf match {
+            case Some(typUser) =>
+              addEdge(Uses(buildNode(typUser), buildNode(tvValue)))
+              Some(TVITypeDecl(typUser))
+
+            case None if subtype instanceOf tvOwnerTd =>
+              addEdge(Uses(buildNode(subtype), buildNode(tvValue)))
+              Some(TVITypeDecl(subtype))
+
+            case None =>
+              println("findTVInstanciatiorInHierachy failure :" +
+                s"${expr.prettyPrint()} : ${expr.getClass} in " +
+                s"${expr.compilationUnit().pathName()} line ${expr.location()}")
               None
-            }
-          case t =>
-            val tvOwnerTd = tvOwner.asInstanceOf[TypeDecl]
+          }
 
-            import scala.collection.JavaConversions._
+        (a.accessed(), a.`type`()) match {
+          case (d : Declarator, ptd : ParTypeDecl) if ptd.genericDecl() == gtd =>
+              Some(TVIVarDecl(a.accessed().asInstanceOf[Declarator]))
 
-            def findTypeUserInHierachyAnBindUse(subtype : TypeDecl)  =
-              tvOwnerTd.childTypes() find subtype.instanceOf match {
-                case Some(typUser) =>
-                  addEdge(Uses(buildNode(typUser), buildNode(tvValue)))
-                  Some(TVITypeDecl(typUser))
-                  //addBinding(typUser, tvValue, typeMemberUse)
+          case (d : Declarator, td) if td instanceOf tvOwnerTd =>
+            findTVInstanciatiorInHierachy(td)
 
-                case None if subtype instanceOf tvOwnerTd =>
-                  addEdge(Uses(buildNode(subtype), buildNode(tvValue)))
-                  Some(TVITypeDecl(subtype))
-                  //addBinding(subtype, tvValue, typeMemberUse)
-                case None =>
-                  println(s"${e.prettyPrint()} : ${e.getClass} in " +
-                  s"${e.compilationUnit().pathName()} line ${e.location()}")
-                  None
-              }
+          case _ if a.isQualified =>
+            findTypeVariableInstanciator(tv, tvValue, a.prevExpr())
 
-            if(t.instanceOf(tvOwnerTd))
-              findTypeUserInHierachyAnBindUse(t)
-            else if(a.isQualified)
-                findTypeVariableInstanciator(tv, tvOwner, tvValue, a.prevExpr())
-            else
-                findTypeUserInHierachyAnBindUse(a.hostType())
+          case _ =>
+            findTVInstanciatiorInHierachy(a.hostType())
         }
 
-      case o =>
-        println(s"${o.getClass}.findTypeVariableInstanciatorAndBindUses : TODO !!!")
+      case (_, owner) =>
+        println(s"findTypeVariableInstanciator(tv = ${tv.name}, tvValue = ${tvValue.name()}, " +
+          s"expr = ${expr.prettyPrint()}), tvOwner.getClass = ${owner.getClass} : TODO !!!")
         None
     }
   }
-
-
 
   def constraintTypeUses
   ( lvalue : NodeId,
@@ -251,10 +243,9 @@ trait TypeUsage {
         constraintParTypeUses(lvalue, lvalueParType, rvalue.lastAccess())
       case _  if rvalue.isSubstitute =>
         val tms = rvalue.accessed().asInstanceOf[TypeMemberSubstitute]
-
         tms.getOriginalType match {
           case tv : TypeVariable =>
-            findTypeVariableInstanciator(tv, tv.owner(), tms.`type`(), rvalue) foreach {
+            findTypeVariableInstanciator(tv, tms.`type`(), rvalue) foreach {
               e =>
                 addTypeUsesConstraint((lvalue, buildNode(lvalueType)),
                   Sub((e buildNode this, buildNode(tms.`type`())) ))
@@ -267,8 +258,6 @@ trait TypeUsage {
           addTypeUsesConstraint((lvalue, this buildNode lvalueType),
             Sub((buildNode(rvalue.lastAccess()), buildNode(rvalue.lastAccess().`type`())) ))
     }
-
-
 
   def constraintParTypeUses
   ( lvalue : NodeId,
@@ -314,15 +303,9 @@ trait TypeUsage {
               case _ => rValueType.genericDecl().asInstanceOf[GenericTypeDecl].getTypeParameter(i)
             }
 
-            // findTypeVariableInstanciatorAndBindUses(tv, tv.owner().asInstanceOf[GenericTypeDecl],
-            //lvalueArg, Uses(lvalue, lvalueArg buildDGNode this), rvalueNodeId, rvalue)
-
-
-            findTypeVariableInstanciator(tv, tv.owner().asInstanceOf[GenericTypeDecl],
-              lvalueArg, rvalue) foreach {
+            findTypeVariableInstanciator(tv, lvalueArg, rvalue) foreach (
               e =>
-                addTypeUsesConstraint((lvalue, tvValueId), Eq((e buildNode this, tvValueId)))
-            }
+                addTypeUsesConstraint((lvalue, tvValueId), Eq((e buildNode this, tvValueId))) )
         }
       }
     }
