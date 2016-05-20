@@ -235,8 +235,6 @@ object Mapping {
             catch {
               case nse : NoSuchElementException =>
 
-                nse.printStackTrace()
-
                 val ks1 = ni1.keys.toSet
                 val ks2 = ni2.keys.toSet
                 val diff1 = ks1 -- ks2
