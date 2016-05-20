@@ -93,8 +93,6 @@ class TypeConstraintSpec extends AcceptanceSpec {
 
       assert(graph uses ("p.B.mb().Definition", "p.A"))
 
-      import puck.graph.ShowDG._
-      (graph, graph.edges).println
 //      graph.usesThatShouldUsesSameTypeAs(("p.B.mb.Definition", "p.A")) should not contain ( ("p.B.mb.Definition", "p.A") : NodeIdP )
 //      graph.usesThatShouldUsesASuperTypeOf(("p.Wrapper.Wrapper()", "p.Wrapper")) should contain ( ("p.B.wa", "p.Wrapper") : NodeIdP )
 //      graph.usesThatShouldUsesASubtypeOf(("p.B.wa", "p.Wrapper")) should contain (  ("p.Wrapper.Wrapper()", "p.Wrapper") : NodeIdP)
@@ -102,6 +100,24 @@ class TypeConstraintSpec extends AcceptanceSpec {
     }
   }
 
+  scenario("generic - thread from gen return type to gen arg "){
+    val _ = new ScenarioFactory(
+      """package p;
+        |import java.util.List;
+        |class A {}
+        |class B {
+        | List<A> la1; List<A> la2;
+        | void m(){ la1.add(la2.get(0)); }
+        |} """
+    ){
+
+      import puck.graph.ShowDG._
+
+      (graph, graph.edges).println
+      graph.usesThatShouldUsesASuperTypeOf(("p.B.la2", "p.A")) should contain (("p.B.la1", "p.A") : NodeIdP)
+
+    }
+  }
 
   scenario("generic - type uses  constraint between type parameter and variable declaration type"){
     val sf = new ScenarioFactory(

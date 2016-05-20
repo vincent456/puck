@@ -268,7 +268,7 @@ class DependencyGraph
   def addContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): DependencyGraph = {
     getNode(contentId).kind.kindType match {
       case Parameter | TypeVariableKT =>
-        Thread.dumpStack()
+        //Thread.dumpStack()
         println("!!! uses addContainsParam instead !!! ")
         addEdge(ContainsParam(containerId, contentId), register)
       case _ => addEdge(Contains(containerId, contentId), register)

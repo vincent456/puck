@@ -122,7 +122,6 @@ class RedirectTypeConstructorUsesSpec
     ) {
 
 
-
       val ctorUse = Uses("p.A.m().Definition", "p.B.B()")
       val ctorMethodUse = Uses("p.A.m().Definition", "p.B.create()")
 

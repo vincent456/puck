@@ -39,14 +39,16 @@ class RedirectTypeConstructorUsesSpec
   extends TransfoRulesSpec {
 
   scenario("From constructor to constructorMethod - static") {
-    compareWithExpectedAndGenerated(
-      """package p;
+    def code(createInstance : String) : String =
+      s"""package p;
         |
         |class Factory{ static B createB(){ return new B(); } }
         |
         |class B { }
         |
-        |class A { void m() { B b = new B(); } }""",
+        |class A { void m() { B b = $createInstance; } }"""
+
+    compareWithExpectedAndGenerated(code("new B()"),
       bs => {
         import bs.{graph, idOfFullName}
 
@@ -57,13 +59,7 @@ class RedirectTypeConstructorUsesSpec
         Redirection.redirectUsesAndPropagate(g, ("p.A.m().Definition", "p.B.B()"),
           AccessAbstraction("p.Factory.createB()", DelegationAbstraction)).rvalue
       },
-      """package p;
-        |
-        |class Factory{ static B createB(){ return new B(); } }
-        |
-        |class B { }
-        |
-        |class A { void m() { B b = Factory.createB(); } }""")
+      code("Factory.createB()"))
   }
 
   scenario("From constructor to constructorMethod hosted elsewhere - non static, parameter") {

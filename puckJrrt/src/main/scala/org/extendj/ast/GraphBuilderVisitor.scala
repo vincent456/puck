@@ -293,11 +293,8 @@ trait GraphBuilderVisitor {
 
         (genParam.`type`(), substituteParam.`type`()) match {
           case (tv : TypeVariable, tvValue) =>
-            findTypeVariableInstanciator(tv, tvValue, ma)  foreach {
-              e =>
-                addTypeUsesConstraint((e buildNode this, buildNode(tvValue)),
-                  Sub((buildNode(arg), buildNode(arg.`type`())) ))
-            }
+            findTypeVariableInstanciator(tv, tvValue, ma)  foreach (
+              e => constraintTypeUses(e buildNode this, tvValue, arg) )
 
           case (genT, subT) if genT == subT =>
             constraintTypeUses(paramId, genT, arg)

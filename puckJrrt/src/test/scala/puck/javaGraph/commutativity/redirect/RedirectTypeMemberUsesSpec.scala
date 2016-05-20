@@ -43,12 +43,12 @@ class RedirectTypeMemberUsesSpec
     def code(tName : String) : String =
       s"""package p;
           |
-        |interface B {
+          |interface B {
           |    void m1();
           |    void m2();
           |}
           |
-        |class Bimpl implements B {
+          |class Bimpl implements B {
           |    public void m1(){}
           |    public void m2(){}
           |}
@@ -201,7 +201,7 @@ class RedirectTypeMemberUsesSpec
     compareWithExpectedAndGenerated(genCodeParamType("A", "A", "A"),
       s => {
         import s.{graph, idOfFullName}
-        Redirection.redirectUsesAndPropagate(graph, ("p.C.delegate()", "p.A"),
+        Redirection.redirectUsesAndPropagate(graph, ("p.C.delegate", "p.A"),
           AccessAbstraction("p.I", SupertypeAbstraction)).rvalue
       }, genCodeParamType("I", "I", "I"))
   }

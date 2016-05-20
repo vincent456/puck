@@ -31,7 +31,7 @@ import puck.TransfoRulesSpec
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, Redirection}
-import puck.graph.{AccessAbstraction, Factory, NodeIdP, Uses}
+import puck.graph.{AccessAbstraction, Factory, NodeIdP, ShowDG, Uses}
 import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.nodeKind.Field
 
@@ -106,8 +106,8 @@ class RedirectTypeDeclUsesSpec
   }
 
   scenario("From class to interface superType - needs propagation") {
-    compareWithExpectedAndGenerated(
-      """package p;
+    def code(lType : String ) =
+      s"""package p;
         |
         |import java.util.ArrayList;
         |import java.util.List;
@@ -117,41 +117,11 @@ class RedirectTypeDeclUsesSpec
         |class Train implements Vehicule {}
         |
         |public class ClientTrain {
-        |    List<Train> trains = new ArrayList<Train>();
+        |    List<$lType> trains = new ArrayList<$lType>();
         |    List<Integer> horaires = new ArrayList<Integer>();
         |
-        |    public List<Train> nombreTrainsAvant(int h) {
-        |        List<Train> avant = new ArrayList<Train>();
-        |        for(int i =0; i < trains.size(); i++){
-        |            if(horaires.get(i) < h)
-        |                avant.add(trains.get(i));
-        |        }
-        |
-        |        return avant;
-        |    }
-        |
-        |}""",
-      bs => {
-        import bs.{graph, idOfFullName}
-
-        Redirection.redirectUsesAndPropagate(graph, ("p.ClientTrain.trains", "p.Train"),
-          AccessAbstraction("p.Vehicule", SupertypeAbstraction)).rvalue
-      },
-      """package p;
-        |
-        |import java.util.ArrayList;
-        |import java.util.List;
-        |
-        |interface Vehicule {}
-        |
-        |class Train implements Vehicule {}
-        |
-        |public class ClientTrain {
-        |    List<Vehicule> trains = new ArrayList<Vehicule>();
-        |    List<Integer> horaires = new ArrayList<Integer>();
-        |
-        |    public List<Vehicule> nombreTrainsAvant(int h) {
-        |        List<Vehicule> avant = new ArrayList<Vehicule>();
+        |    public List<$lType> nombreTrainsAvant(int h) {
+        |        List<$lType> avant = new ArrayList<$lType>();
         |        for(int i =0; i < trains.size(); i++){
         |            if(horaires.get(i) < h)
         |                avant.add(trains.get(i));
@@ -161,7 +131,17 @@ class RedirectTypeDeclUsesSpec
         |    }
         |
         |}"""
-    )
+
+    compareWithExpectedAndGenerated(code("Train"),
+      bs => {
+        import bs.{graph, idOfFullName}
+
+        import ShowDG._
+        (graph, graph.edges).println
+
+        Redirection.redirectUsesAndPropagate(graph, ("p.ClientTrain.trains", "p.Train"),
+          AccessAbstraction("p.Vehicule", SupertypeAbstraction)).rvalue
+      }, code("Vehicule"))
   }
 
   ignore("From class to class superType"){}

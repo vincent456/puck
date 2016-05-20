@@ -63,6 +63,7 @@ class MoveMethodSpec extends TransfoRulesSpec {
     }
 
     scenario("move to class of a parameter - moved is not a uses' source ") {
+
       compareWithExpectedAndGenerated(
         """package p;
           |
