@@ -31,24 +31,22 @@ object LocationTestBlindControlSolveAll {
 
 
       val fitness1 : DependencyGraph => Double =
-        Metrics.fitness1(_, constraints, 10, 1, 5)
+        Metrics.fitness1(_, constraints, 1, 1, 2)
 
       val res = solveAllBlind(graph, constraints,
-        () => new AStarSearchStrategyGraphDisplay(DecoratedGraphEvaluator.equalityByMapping(fitness1),Some(constraints), 10,1000),
+        () => new AStarSearchStrategyGraphDisplay(DecoratedGraphEvaluator.equalityByMapping(fitness1),Some(constraints),
+          10, 1000, "/tmp/"),
         Some(1))
 
       if(res.isEmpty) println("no results")
       else {
         println(res.size + " result(s)")
-        res foreach {
-          case LoggedEither(_, \/-(g)) =>
-            Quick.dot(g, Settings.tmpDir + "solved-blind_bfs", Some(constraints))
-            Quick.frame(g, "Blind BFS", scm = Some(constraints))
+  //      res foreach {
+  //        case LoggedEither(_, \/-(g)) =>
+            //Quick.dot(g, Settings.tmpDir + "solved-blind_bfs", Some(constraints))
+            //Quick.frame(g, "Blind BFS", scm = Some(constraints))
             //applyChanges(g, new File(Settings.tmpDir))
-        }
-      }
-
-
-
+        //   }
+       }
     }
 }

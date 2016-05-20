@@ -27,8 +27,7 @@
 package puck
 
 import java.awt.Toolkit
-import java.io.{FileWriter, PipedInputStream, PipedOutputStream}
-
+import java.io.{FileOutputStream, FileWriter, PipedInputStream, PipedOutputStream}
 import javax.swing.{JFrame, WindowConstants}
 
 import org.apache.batik.swing.JSVGCanvas
@@ -79,4 +78,10 @@ object Quick {
     val opts = PrintingOptions(VisibilitySet.allVisible(graph), printId=true, printSignatures= true)
     DotPrinter.genDot(graph, dotHelper, scm, opts, new FileWriter(path))
   }
+  def svg ( graph : DependencyGraph, path : String, scm : Option[ConstraintsMaps] = None)
+          ( implicit dotHelper : DotHelper): Unit = {
+    val opts = PrintingOptions(VisibilitySet.allVisible(graph), printId=true, printSignatures= true)
+    DotPrinter.genImage(graph, dotHelper, scm, opts, Svg, new FileOutputStream(path))()
+  }
+
 }
