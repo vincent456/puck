@@ -80,10 +80,7 @@ object ShowDG extends ShowConstraints{
     (dg, nid) => stringOfNode(dg, dg.getNode(nid))
 
   implicit def stringOfNodeIdP : DGStringBuilder[NodeIdP] =
-  {case (dg, (nid1, nid2)) => s"Edge( $nid1 - ${desambiguatedFullName(dg,nid1)}" +
-    s", $nid2 - ${desambiguatedFullName(dg,nid2)})"}
-  //{case (dg, (nid1, nid2)) => Cord("Edge(", nodeIdCord(dg,nid1), ", ", nodeIdCord(dg,nid2), ")")}
-
+  {case (dg, (nid1, nid2)) => s"Edge( ${desambiguatedFullName(dg,nid1)}, ${desambiguatedFullName(dg,nid2)})"}
 
   implicit def stringOfNode : DGStringBuilder[DGNode] = (dg, n) =>
     n match {
@@ -193,17 +190,13 @@ object ShowDG extends ShowConstraints{
     case Sup(_) => ":<"
   }
 
-  implicit def stringOfTypeUseConstraint : DGStringBuilder[TypeUseConstraint] = {
-    (dg, tc) =>
-      val (tuser2, tused2) = tc.constrainedUse
-      val tu2 = s"Uses($tuser2 - ${desambiguatedFullName(dg, tuser2)}, $tused2 - ${desambiguatedFullName(dg, tused2)})"
+  implicit def stringOfTypeUseConstraint : DGStringBuilder[TypeUseConstraint] =
+    (dg, tc) => s"${tcOp(tc)} ${stringOfNodeIdP(dg,tc.constrainedUse)}"
 
-      s"${tcOp(tc)} $tu2"
-  }
 
   def stringOfTypeConstraint : DGStringBuilder[(NodeIdP, TypeUseConstraint)] = {
-    case (dg, ((tuser, tused), tc)) =>
-      val tu1 = s"Uses($tuser - ${desambiguatedFullName(dg, tuser)}, $tused - ${desambiguatedFullName(dg, tused)})"
+    case (dg, (tuse, tc)) =>
+      val tu1 = stringOfNodeIdP(dg,tuse)
       s"$tu1 ${stringOfTypeUseConstraint(dg, tc)}"
   }
 

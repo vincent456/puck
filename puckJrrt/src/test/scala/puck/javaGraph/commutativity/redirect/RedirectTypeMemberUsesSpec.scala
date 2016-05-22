@@ -112,8 +112,6 @@ class RedirectTypeMemberUsesSpec
     compareWithExpectedAndGenerated( code("Directory"),
       s => {
         import s.{graph, idOfFullName}
-        import puck.graph.ShowDG._
-        (graph, graph.edges).println
 
         Redirection.redirectUsesAndPropagate(graph, ("fileSystem.Directory.add(Directory).d", "fileSystem.Directory"),
           AccessAbstraction("fileSystem.FSElement", SupertypeAbstraction)).rvalue

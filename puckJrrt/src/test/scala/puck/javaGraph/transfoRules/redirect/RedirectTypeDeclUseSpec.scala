@@ -205,16 +205,8 @@ class RedirectTypeDeclUseSpec
         |}""") {
 
 
-      import ShowDG._
-      (graph, graph.edges).println
-
-      val ltg =  Redirection.redirectUsesAndPropagate(graph,  ("p.B.wa", "p.A"),
-        AccessAbstraction("p.I", SupertypeAbstraction))
-      val g2 = ltg.rvalue
-
-      import ShowDG._
-      println(ltg.log)
-      (g2, g2.edges).println
+      val g2 =  Redirection.redirectUsesAndPropagate(graph,  ("p.B.wa", "p.A"),
+        AccessAbstraction("p.I", SupertypeAbstraction)).rvalue
 
       assert(g2.uses("p.B.wa", "p.I"))
       assert(g2.uses("p.B.doM().Definition", "p.I.m()"))

@@ -90,12 +90,17 @@ class CompositeScenario private ()
     Uses("fileSystem.Directory.add(Directory).d", "fileSystem.Directory"),
     AccessAbstraction((g5, "fileSystem.FSElement"), SupertypeAbstraction)).rvalue
 
-  val g7 = Rules.merge.mergeInto(g6,
+  //Should this step be necessary ??
+  val g7 = Rules.redirection.redirectUsesAndPropagate(g6,
+    Uses("fileSystem.Directory.add(File).f", "fileSystem.File"),
+    AccessAbstraction((g6, "fileSystem.FSElement"), SupertypeAbstraction)).rvalue
+
+  val g8 = Rules.merge.mergeInto(g7,
       "fileSystem.Directory.add(File)",
       "fileSystem.Directory.add(Directory)").rvalue
 
 
-  def gFinal = g7
+  def gFinal = g8
 }
 
 class CompositeManualRefactoringSpec

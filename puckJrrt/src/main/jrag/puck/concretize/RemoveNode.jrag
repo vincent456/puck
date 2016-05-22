@@ -101,7 +101,7 @@ aspect RemoveNode {
                 ad.replaceWith(ad.getRight());
             }
             else
-                throw new RefactoringException("Removing parameter outside of a dot scope not handled");
+                getParent().removeChild(this);
         }
     }
 //    public void ClassDecl.removeImplements(InterfaceDecl decl) {

@@ -110,12 +110,7 @@ class TypeConstraintSpec extends AcceptanceSpec {
         | void m(){ la1.add(la2.get(0)); }
         |} """
     ){
-
-      import puck.graph.ShowDG._
-
-      (graph, graph.edges).println
       graph.usesThatShouldUsesASuperTypeOf(("p.B.la2", "p.A")) should contain (("p.B.la1", "p.A") : NodeIdP)
-
     }
   }
 
@@ -137,9 +132,6 @@ class TypeConstraintSpec extends AcceptanceSpec {
         |}""")
 
     import sf.{graph, idOfFullName}
-
-    import puck.graph.ShowDG._
-    (graph, graph.edges).println
 
     assert (graph.uses("p.B.wa", "p.Wrapper"))
     assert (graph.uses("p.B.wa", "p.A"))

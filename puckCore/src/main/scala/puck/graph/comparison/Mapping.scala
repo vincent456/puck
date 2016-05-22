@@ -79,7 +79,9 @@ object EqualityWithDebugPrint {
    vsb : DGStringBuilder[V]): Boolean = {
     val (g1, g2) = dgp
     def msg(g: DependencyGraph)(k: K, vs: C[V]): String = {
-      s"(${(g, k).shows}, ${cvm1.handler.toList(vs) map (v => (g, v).shows) mkString("[", ",", "]")})"
+      val kmsg = (g, k).shows
+      cvm1.handler.toList(vs) map (v => kmsg + " " +(g, v).shows) mkString "\n"
+
     }
 
     if (cvm1.content.size != cvm2.content.size) {
@@ -88,7 +90,9 @@ object EqualityWithDebugPrint {
       }
       val diff1 = mappedCvm1 diff cvm2.toList
       val diff2 = cvm2.toList diff mappedCvm1
-      println("diff1 = " + (diff1 map (msg(g1) _).tupled) + "diff2 = " + (diff2 map (msg(g2) _).tupled))
+      println("diff1 = \n" + (diff1 map (msg(g1) _).tupled mkString "\n"))
+      println("-----")
+      println("diff2 = \n" + (diff2 map (msg(g2) _).tupled mkString "\n"))
       false
     }
     else

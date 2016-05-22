@@ -136,9 +136,6 @@ class RedirectTypeDeclUsesSpec
       bs => {
         import bs.{graph, idOfFullName}
 
-        import ShowDG._
-        (graph, graph.edges).println
-
         Redirection.redirectUsesAndPropagate(graph, ("p.ClientTrain.trains", "p.Train"),
           AccessAbstraction("p.Vehicule", SupertypeAbstraction)).rvalue
       }, code("Vehicule"))
