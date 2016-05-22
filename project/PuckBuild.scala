@@ -194,7 +194,7 @@ object PuckBuild extends Build {
     enablePlugins JavaAppPackaging
 
     dependsOn (puckJava % "test->test;compile->compile")
-    dependsOn (puckGui % "compile->compile")
+    dependsOn (puckGui % "test->testcompile->compile")
     settings(packageName in Universal := s"puck-distrib-${timeFormat.format(Calendar.getInstance().getTime)}" )
 
     //pack sources with the binaries

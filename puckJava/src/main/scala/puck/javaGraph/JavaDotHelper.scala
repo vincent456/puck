@@ -47,7 +47,7 @@ object JavaDotHelper extends DotHelper{
       case (s @ Seq(fds, cts, mts, cls, tvs), n) =>
           val kind = graph.getConcreteNode(n).kind
           kind match {
-            //case TypeVariable => s
+            case TypeVariable => s
             case _ : TypeKind => Seq(fds, cts, mts, n +: cls, tvs)
             case Constructor => Seq(fds, n +: cts, mts, cls, tvs)
             case Field
