@@ -42,7 +42,6 @@ object Metrics {
 
   // ajouté par Mikal
   def numViolations(graph : DependencyGraph, cm : ConstraintsMaps) = {
-    import DependencyGraph.ConstraintsOps
     (graph, cm).violations().size
   }
 
