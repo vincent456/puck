@@ -1,12 +1,13 @@
 package puck.search
 
-import java.io.{File, FileOutputStream}
+import java.io.{File, FileOutputStream, FileWriter}
 
 import puck.graph._
 import puck.Quick
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.DecoratedGraphOps
 import puck.graph.io.{DotHelper, DotPrinter, Svg}
+import puck.util.LoggedEither
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.mutable
@@ -52,8 +53,12 @@ class AStarSearchStrategyGraphDisplay[T]
 
       if(remainingStates.nonEmpty) {
         i+=1
-        val \/-(dg) = remainingStates.head.loggedResult.value
-        Quick.svg(dg.graph, dir.getCanonicalPath + File.separator + "#_"+ i + "_#" + remainingStates.head.toString + ".svg", scm)
+        val LoggedEither(log, \/-(dg)) = remainingStates.head.loggedResult
+        val name = dir.getCanonicalPath + File.separator + "#_"+ i + "_#" + remainingStates.head.toString
+        Quick.svg(dg.graph, name + ".svg", scm)
+        val fw = new FileWriter(name + ".transfos")
+        fw.write(log)
+        fw.close()
       }
     }
   }
