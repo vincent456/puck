@@ -27,6 +27,16 @@ class AStarSearchStrategyGraphDisplay[T]
   var i : Integer = 0
   if(!dir.exists())
     dir.mkdirs()
+  else {
+    val files : Array[String] = dir.list()
+    files foreach {
+      case f : String =>
+          println(f)
+          import puck.util.FileHelper.FileOps
+          (dir \ f).delete()
+    }
+    dir.mkdirs()
+  }
 
   override def addState(s: SearchState[DecoratedGraph[T]]): Unit = {
     super.addState(s)

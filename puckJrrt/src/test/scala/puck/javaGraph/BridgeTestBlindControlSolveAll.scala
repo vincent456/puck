@@ -32,11 +32,11 @@ object BridgeTestBlindControlSolveAll {
 
 
       val fitness1 : DependencyGraph => Double =
-        Metrics.fitness1(_, constraints, 1, 1, 2)
+        Metrics.fitness1(_, constraints, 5, 1, 2)
 
       val res = solveAllBlind(graph, constraints,
         () => new AStarSearchStrategyGraphDisplay(DecoratedGraphEvaluator.equalityByMapping(fitness1),Some(constraints),
-          10, 1000, "/tmp/"),
+          30, 5, "/tmp/"),
         Some(1))
 
       if(res.isEmpty) println("no results")
