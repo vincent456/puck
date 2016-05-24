@@ -1,8 +1,7 @@
 package puck.javaGraph
 
-import org.piccolo2d.extras.PFrame
-import piccolo.PiccoloTest
-import puck.piccolo.ClassLayoutPNode
+
+import piccolo.{PiccoloDynamicBuildTest, PiccoloTest}
 
 /**
   * Created by lorilan on 4/29/16.
@@ -14,17 +13,24 @@ object PiccoloBridge {
   }
 }
 
-object PiccoloClassTest {
+object PiccoloDynamicBridge {
   def main(args : Array[String]) : Unit =  {
     val bs = BridgeScenario()
-    import bs._
-
-
-    new PFrame("HierarchyZoomExample", false, null) {
-      override def initialize() : Unit = {
-        val c = ClassLayoutPNode.createClass(graph, "screen.Screen")
-        getCanvas.getLayer.addChild(c)
-      }
-    }
+    new PiccoloDynamicBuildTest(bs.graph)
   }
 }
+
+//object PiccoloClassTest {
+//  def main(args : Array[String]) : Unit =  {
+//    val bs = BridgeScenario()
+//    import bs._
+//
+//
+//    new PFrame("HierarchyZoomExample", false, null) {
+//      override def initialize() : Unit = {
+//        val c = TypeDeclShapedPNode.createClass(graph, "screen.Screen")
+//        getCanvas.getLayer.addChild(c)
+//      }
+//    }
+//  }
+//}

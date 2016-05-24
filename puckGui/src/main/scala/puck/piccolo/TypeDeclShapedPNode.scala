@@ -11,15 +11,15 @@ import puck.graph.{DependencyGraph, NodeId}
 /**
   * Created by lorilan on 5/22/16.
   */
-object ClassLayoutPNode {
+object TypeDeclShapedPNode {
   val fontSize = 8
   val lineHeight = 10
   val width = 100
 
 
-  def createClass(g : DependencyGraph, cid : NodeId) : ClassLayoutPNode = {
+  def createClass(g : DependencyGraph, cid : NodeId) : TypeDeclShapedPNode = {
     import puck.graph.ShowDG._
-    val cln = new ClassLayoutPNode(g.getNode(cid).name)
+    val cln = new TypeDeclShapedPNode(g.getNode(cid).name, cid)
     g.content(cid) map (n =>
       (g, g getNode n).shows(desambiguatedLocalName)) foreach  cln.addMember
 
@@ -28,21 +28,33 @@ object ClassLayoutPNode {
 }
 
 
-import ClassLayoutPNode._
-class ClassLayoutPNode
- (title : String) extends PPath.Float(new Rectangle2D.Float(0, 0, width, lineHeight)){
+import TypeDeclShapedPNode._
+class TypeDeclShapedPNode
+ (val title : String ,
+  val id : NodeId)
+  extends PPath.Float(new Rectangle2D.Float(0, 0, width, lineHeight))
+  with DGPNode {
 
   animateToColor(Color.YELLOW, 0)
 
-  addChild(new PText(title) {
-    setFont(new Font("SansSerif", Font.PLAIN, fontSize))
-  })
+  def addTitle() : Unit =
+    addChild(new PText(title) {
+      setFont(new Font("SansSerif", Font.PLAIN, fontSize))
+    })
 
+  addTitle()
+
+  def contentSize = getChildrenCount - 1 // minus title
   def addMember(sig : String) : Unit ={
     setHeight(getHeight + lineHeight)
     addChild(new PText(sig) {
       setFont(new Font("SansSerif", Font.PLAIN, fontSize))
     })
+  }
+  def clearContent() : Unit = {
+    removeAllChildren()
+    setHeight(lineHeight)
+    addTitle()
   }
 
   override def layoutChildren() : Unit = {

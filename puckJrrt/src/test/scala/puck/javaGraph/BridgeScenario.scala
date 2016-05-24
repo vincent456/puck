@@ -32,10 +32,11 @@ import puck.graph.transformations.rules.CreateTypeMember
 import puck.graph._
 import puck.javaGraph.nodeKind._
 import puck.LoggedEitherValues
-import puck.jastadd.ExtendJGraphUtils.{Rules => Rules}
+import puck.jastadd.ExtendJGraphUtils.Rules
 import puck.Settings._
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
+import puck.jastadd.ExtendJGraphUtils
 
 object BridgeScenario {
   val path = getClass.getResource("/bridge/hannemann_simplified").getPath
@@ -233,6 +234,8 @@ class BridgeManualRefactoringSpec extends FeatureSpec {
 
   scenario("bridge ``manual'' refactoring"){
     val bs = BridgeScenario()
+
+    puck.Quick.dot(bs.graph, "/tmp/bridge.dot")(ExtendJGraphUtils.dotHelper)
 
     val recompiledEx = bs.applyChangeAndMakeExample(bs.gFinal, outDir)
 

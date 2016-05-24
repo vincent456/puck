@@ -43,7 +43,7 @@ import puck.gui.PuckMainPanel
 import scala.swing.{MainFrame, SwingApplication}
 import jastadd._
 
-object Front extends SwingApplication{
+object Front extends SwingApplication {
 
   // // val root = "/home/lorilan/test_cases_for_puck"
   //  // val system = "/jhotdraw/JHotDraw 7.0.6"

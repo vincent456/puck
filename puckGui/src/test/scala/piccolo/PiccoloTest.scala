@@ -28,10 +28,8 @@
  */
 package piccolo
 
-import java.awt.{Font, KeyEventDispatcher, KeyboardFocusManager}
-import java.awt.event.{KeyEvent, KeyListener}
-import java.awt.geom.Rectangle2D
-import java.util
+import java.awt.{KeyEventDispatcher, KeyboardFocusManager}
+import java.awt.event.KeyEvent
 
 import org.piccolo2d.{PCanvas, PNode, PRoot}
 import org.piccolo2d.event.PBasicInputEventHandler
@@ -41,82 +39,18 @@ import org.piccolo2d.nodes.{PPath, PText}
 import org.piccolo2d.util.PBounds
 import puck.ignore
 import puck.graph.{DependencyGraph, NodeId}
-
-class TitledSquareNode
-  ( title : String,
-    s : Int
-  ) extends PPath.Float(new Rectangle2D.Float(0, 0, 100, 100)) {
-
-  val titlePnode = new PNode() {
-    setBounds(0, 0, 100, 10)
-    addChild(new PText(title) {
-      setFont(new Font("SansSerif", Font.PLAIN, 8))
-    })
-    //println(s"$title : (w, h) = ($getWidth, $getHeight)")
-  }
+import puck.piccolo.TitledSquareNode
 
 
-  super.addChild(titlePnode)
-
-//  val body = new PPath.Float(new Rectangle2D.Float(0, 0, 89, 89)) with GridLayoutPNode{
-//    val side = s
-//  }
-  val body = new PNode() with GridLayoutPNode {
-     val side = s
-     setBounds(0, 0, 80, 80)
-  }
-
-  super.addChild(body)
-  titlePnode.offset(0d,0d)
-  body.offset(10d, 10d)
-
-  override def addChild( child : PNode) : Unit = {
-    body addChild child
-    //child.scale( child.getScale * 0.9)
-  }
-
-  //public void fullPaint(final PPaintContext paintContext)
-//  override def fullPaint( aPaintContext: PPaintContext ) : Unit =
-//  if(aPaintContext.getScale != 0) super.fullPaint(aPaintContext)
-//
-//  override def paint( aPaintContext: PPaintContext ) : Unit =
-//    if(aPaintContext.getScale != 0) super.paint(aPaintContext)
-  //println(s"$title'body : (x,y ) = (${body.getX}, ${body.getY}) , (w, h) = (${body.getWidth}, ${body.getHeight}), offset = ${body.getOffset}")
-}
 
 
-trait GridLayoutPNode {
-  self : PNode =>
 
-  val side : Int
 
-  override def layoutChildren() : Unit = {
-    var xOffset = 0d
-    var yOffset = 0d
-
-    import scala.collection.JavaConversions._
-    val it  = getChildrenIterator.asInstanceOf[util.ListIterator[PNode]]
-    it.zipWithIndex.foreach {
-      case (n, i) =>
-        if(i % side == 0) {
-          xOffset = 0
-          if( i > 0 )
-            yOffset += (n.getHeight * n.getScale)
-        }
-
-        n.offset(xOffset, yOffset)
-        xOffset += (n.getWidth * n.getScale)
-    }
-  }
-
-}
 
 class PiccoloTest(g : DependencyGraph, aCanvas : PCanvas)
   extends PFrame("HierarchyZoomExample", false, aCanvas) {
 
   import puck.graph.ShowDG._
-
-
 
 
   def this(g : DependencyGraph) = this(g, null)
@@ -187,18 +121,17 @@ class PiccoloTest(g : DependencyGraph, aCanvas : PCanvas)
 
         aux(event.getPickedNode)
       }
-
-
-
-
     })
   }
+
 
   def createHierarchy(node : NodeId) : PNode = {
 
     val numChildren = g.content(node).size
 
     val s = getSide(numChildren)
+
+    import puck.graph.ShowDG._
 
     val result = new TitledSquareNode(s"${(g, node).shows}", getSide(numChildren))
 //      new PPath.Float(new Rectangle2D.Float(0, 0, 100, 100))

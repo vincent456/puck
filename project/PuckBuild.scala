@@ -177,10 +177,6 @@ object PuckBuild extends Build {
    )
 
 
-
-
-
-
   val timeFormat = new SimpleDateFormat("yyyy-MM-dd-HHmmss")
 
   import com.typesafe.sbt.packager.Keys._
@@ -194,7 +190,7 @@ object PuckBuild extends Build {
     enablePlugins JavaAppPackaging
 
     dependsOn (puckJava % "test->test;compile->compile")
-    dependsOn (puckGui % "test->testcompile->compile")
+    dependsOn (puckGui % "test->test;compile->compile")
     settings(packageName in Universal := s"puck-distrib-${timeFormat.format(Calendar.getInstance().getTime)}" )
 
     //pack sources with the binaries
