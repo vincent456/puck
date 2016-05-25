@@ -37,7 +37,7 @@ import org.piccolo2d.util.PBounds
 import puck._
 import puck.graph._
 import puck.piccolo.{DGPNode, TitledSquareNode, TypeDeclShapedPNode}
-
+import TitledSquareNode.getSide
 /**
   * Created by Loïc Girault on 23/05/16.
   */
@@ -48,15 +48,6 @@ class PiccoloDynamicBuildTest(g : DependencyGraph, aCanvas : PCanvas)
 
 
   def this(g : DependencyGraph) = this(g, null)
-
-  def getSide(numChild : Int ) : Int = {
-
-    def aux(i : Int) : Int =
-      if(i * i >= numChild) i
-      else aux(i + 1)
-
-    aux(1)
-  }
 
   def squareNode(n : NodeId) : PNode with DGPNode  = {
     val numChildren = g.content(n).size
@@ -134,6 +125,22 @@ class PiccoloDynamicBuildTest(g : DependencyGraph, aCanvas : PCanvas)
   }
 
   def addContent(n : DGPNode) : Unit = {
+    val pn = n.asInstanceOf[PNode]
+
+    val content = g content n.id
+
+    val size =
+      if( content.isEmpty ) 1
+      else 8d / (10d * getSide(content.size))
+
+    content map squareNode foreach {
+      c =>
+      pn addChild c
+      c scale size
+    }
+  }
+
+  def addContentSpecificLayout(n : DGPNode) : Unit = {
     val pn = n.asInstanceOf[PNode]
     g.content(n.id) map g.getNode map { child =>
       child.kind.kindType match {

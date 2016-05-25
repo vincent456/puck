@@ -13,8 +13,8 @@ import puck.graph.{DependencyGraph, NodeId}
   */
 object TypeDeclShapedPNode {
   val fontSize = 8
-  val lineHeight = 10
-  val width = 100
+  val lineHeight : Float = 10
+  val width : Float = 100
 
 
   def createClass(g : DependencyGraph, cid : NodeId) : TypeDeclShapedPNode = {
@@ -32,7 +32,7 @@ import TypeDeclShapedPNode._
 class TypeDeclShapedPNode
  (val title : String ,
   val id : NodeId)
-  extends PPath.Float(new Rectangle2D.Float(0, 0, width, lineHeight))
+  extends PPath.Float(new Rectangle2D.Float(0f, 0f, width, lineHeight))
   with DGPNode {
 
   animateToColor(Color.YELLOW, 0)

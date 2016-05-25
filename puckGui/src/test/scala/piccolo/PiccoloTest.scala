@@ -43,7 +43,7 @@ import puck.piccolo.TitledSquareNode
 
 
 
-
+import TitledSquareNode.getSide
 
 
 
@@ -55,14 +55,7 @@ class PiccoloTest(g : DependencyGraph, aCanvas : PCanvas)
 
   def this(g : DependencyGraph) = this(g, null)
 
-  def getSide(numChild : Int ) : Int = {
 
-    def aux(i : Int) : Int =
-      if(i * i >= numChild) i
-      else aux(i + 1)
-
-    aux(1)
-  }
 
   override def initialize() : Unit = {
     val root = createHierarchy(g.rootId)
