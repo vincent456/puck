@@ -70,6 +70,7 @@ object JavaNodeKind extends NodeKindKnowledge {
       case NameSpace => Seq(Package)
       case TypeConstructor => Seq(Constructor)
       case TypeDecl => Seq(Interface, Class)
+      case TypeVariableKT => Seq(TypeVariable)
       case InstanceValueDecl => Seq(Field, Method)
       //case InstanceTypeDecl => Seq(Interface, Class)
       case StaticValueDecl => Seq(StaticField, StaticMethod)
@@ -168,7 +169,8 @@ object JavaNodeKind extends NodeKindKnowledge {
     else {
       val n = graph.getNode(id)
       (n.kind, graph styp id) match {
-      case (_ : MethodKind, Some(t)) =>Some(Arrow(Tuple(), t))
+      case ((Constructor | _ : MethodKind), Some(t)) =>
+        Some(Arrow(Tuple(), t))
       case (_, Some(t))=> Some(t)
       case (_, None) => None /*error(s"missing type for $n")*/
 
