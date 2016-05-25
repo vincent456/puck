@@ -44,6 +44,7 @@ trait GridLayoutPNode {
 
     import scala.collection.JavaConversions._
     val it  = getChildrenIterator.asInstanceOf[util.ListIterator[PNode]]
+
     it.zipWithIndex.foreach {
       case (n, i) =>
         if(i % side == 0) {
@@ -52,7 +53,7 @@ trait GridLayoutPNode {
             yOffset += (n.getHeight * n.getScale)
         }
 
-        n.offset(xOffset, yOffset)
+        n.setOffset(xOffset, yOffset)
         xOffset += (n.getWidth * n.getScale)
     }
   }

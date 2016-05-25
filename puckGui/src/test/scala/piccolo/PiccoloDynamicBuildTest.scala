@@ -32,19 +32,33 @@ import java.awt.{KeyEventDispatcher, KeyboardFocusManager}
 import org.piccolo2d.{PCanvas, PNode, PRoot}
 import org.piccolo2d.event.{PBasicInputEventHandler, PInputEvent}
 import org.piccolo2d.extras.PFrame
-import org.piccolo2d.nodes.{PPath, PText}
+import org.piccolo2d.nodes.PText
 import org.piccolo2d.util.PBounds
 import puck._
 import puck.graph._
 import puck.piccolo.{DGPNode, TitledSquareNode, TypeDeclShapedPNode}
 import TitledSquareNode.getSide
+
+import scala.swing._
 /**
   * Created by Loïc Girault on 23/05/16.
   */
+object PiccoloDynamicBuildTest {
+
+  implicit class BoundsOp(val b: PBounds) extends AnyVal {
+    def copy(x: Double = b.getX, y: Double = b.getY,
+             width: Double = b.getWidth,
+             height: Double = b.getHeight) = new PBounds(x, y, width, height)
+  }
+
+}
+
+import PiccoloDynamicBuildTest._
 class PiccoloDynamicBuildTest(g : DependencyGraph, aCanvas : PCanvas)
   extends PFrame("PiccoloDynamicBuildTest", false, aCanvas) {
 
   import puck.graph.ShowDG._
+
 
 
   def this(g : DependencyGraph) = this(g, null)
@@ -58,6 +72,15 @@ class PiccoloDynamicBuildTest(g : DependencyGraph, aCanvas : PCanvas)
     }
   }
 
+  def focus(n0 : PNode) : Unit = n0 match {
+    case _ : TitledSquareNode
+         | _  : PRoot =>
+      println("focus ...")
+      ignore(getCanvas.getCamera.animateViewToCenterBounds(n0.getGlobalBounds, true, 500))
+    case n  if n.getParent != null => focus(n.getParent)
+    case n => ()
+  }
+
   override def initialize() : Unit = {
     val root = squareNode(g.rootId)
     addContent(root)
@@ -69,27 +92,49 @@ class PiccoloDynamicBuildTest(g : DependencyGraph, aCanvas : PCanvas)
 
     val kbManager = KeyboardFocusManager.getCurrentKeyboardFocusManager
     val VK_NUMPAD_MINUS = 0x6D
+
+    def zoom(zoomHint : Int) : Unit = {
+      val currentBounds = getCanvas.getCamera.getViewBounds
+      val newBounds =
+        new PBounds( currentBounds.getX + zoomHint,
+          currentBounds.getY + zoomHint,
+          currentBounds.getWidth - zoomHint * 2,
+          currentBounds.getHeight - zoomHint * 2)
+      ignore(getCanvas.getCamera.animateViewToCenterBounds(newBounds, true, 200))
+    }
+    def zoomIn() : Unit = zoom(50)
+    def zoomOut() : Unit = zoom(-50)
+
+
+
+
     kbManager.addKeyEventDispatcher( new KeyEventDispatcher {
       def dispatchKeyEvent( e : KeyEvent) : Boolean = {
         if(e.getID == KeyEvent.KEY_PRESSED) {
-          val zoomHint = 5
-          val currentBounds = getCanvas.getCamera.getViewBounds
-          e.getKeyCode match {
-            case KeyEvent.VK_ADD =>
-              val newBounds =
-                new PBounds( currentBounds.getX + zoomHint,
-                  currentBounds.getY + zoomHint,
-                  currentBounds.getWidth - zoomHint * 2,
-                  currentBounds.getHeight - zoomHint * 2)
-              ignore(getCanvas.getCamera.animateViewToCenterBounds(newBounds, true, 200))
-            case KeyEvent.VK_MINUS | VK_NUMPAD_MINUS =>
-              val newBounds =
-                new PBounds( currentBounds.getX - zoomHint,
-                  currentBounds.getY - zoomHint,
-                  currentBounds.getWidth + zoomHint * 2,
-                  currentBounds.getHeight + zoomHint * 2)
+          val moveHint = 50
 
+          e.getKeyCode match {
+            case KeyEvent.VK_UP | KeyEvent.VK_KP_UP =>
+              val currentBounds = getCanvas.getCamera.getViewBounds
+              val newBounds = currentBounds.copy(y = currentBounds.getY - moveHint)
               ignore(getCanvas.getCamera.animateViewToCenterBounds(newBounds, true, 200))
+            case KeyEvent.VK_DOWN | KeyEvent.VK_KP_DOWN =>
+              val currentBounds = getCanvas.getCamera.getViewBounds
+              val newBounds = currentBounds.copy(y = currentBounds.getY + moveHint)
+              ignore(getCanvas.getCamera.animateViewToCenterBounds(newBounds, true, 200))
+
+            case KeyEvent.VK_LEFT | KeyEvent.VK_KP_LEFT =>
+              val currentBounds = getCanvas.getCamera.getViewBounds
+              val newBounds = currentBounds.copy(x = currentBounds.getX - moveHint)
+              ignore(getCanvas.getCamera.animateViewToCenterBounds(newBounds, true, 200))
+
+            case KeyEvent.VK_RIGHT | KeyEvent.VK_KP_RIGHT =>
+              val currentBounds = getCanvas.getCamera.getViewBounds
+              val newBounds = currentBounds.copy(x = currentBounds.getX + moveHint)
+              ignore(getCanvas.getCamera.animateViewToCenterBounds(newBounds, true, 200))
+
+            case KeyEvent.VK_ADD => zoomIn()
+            case KeyEvent.VK_MINUS | VK_NUMPAD_MINUS => zoomOut()
             case c =>
               println( Integer.toHexString(c) + KeyEvent.getKeyText(c) + " ingnored")
           }
@@ -101,28 +146,55 @@ class PiccoloDynamicBuildTest(g : DependencyGraph, aCanvas : PCanvas)
     getCanvas.addInputEventListener(new PBasicInputEventHandler() {
       override def keyTyped(e: PInputEvent): Unit = println("canvas key typed !")
       override def keyReleased(e: PInputEvent): Unit = println("canvas key released !")
-
       override def keyPressed(event: PInputEvent) : Unit = println("canvas key pressed !")
     })
-    getCanvas.addInputEventListener(new PBasicInputEventHandler() {
-      override def mousePressed(event: PInputEvent) : Unit = {
-        def aux(n0 : PNode) : Unit = n0 match {
-          case _: PText => ()
-          case dgn : DGPNode =>
-            if(dgn.contentSize == 0) addContent(dgn)
-            else dgn.clearContent()
-            ignore(getCanvas.getCamera.animateViewToCenterBounds(n0.getGlobalBounds, true, 500))
-          case _  : PRoot =>
 
-            ignore(getCanvas.getCamera.animateViewToCenterBounds(n0.getGlobalBounds, true, 500))
-          case n  if n.getParent != null => aux(n.getParent)
-          case n => ()
+
+    getCanvas.addInputEventListener(new PBasicInputEventHandler() {
+      override def mousePressed(event: PInputEvent) : Unit =
+        if(event.isRightMouseButton){
+          val pos = event.getCanvasPosition
+          val menu = new PopupMenu(){
+            contents += new MenuItem(new Action("Focus"){
+              def apply() : Unit = focus(event.getPickedNode)
+
+            })
+          }
+          Swing.onEDT(menu.show(Component.wrap(getCanvas), pos.getX.toInt, pos.getY.toInt))
         }
 
-        aux(event.getPickedNode)
+
+      override def mouseClicked(event : PInputEvent) : Unit =
+        if(event.getClickCount == 2 ) {
+          def aux(n0 : PNode) : Unit = n0 match {
+            case _: PText => ()
+            case dgn : DGPNode =>
+              if(dgn.contentSize == 0) addContent(dgn)
+              else dgn.clearContent()
+            case n  if n.getParent != null => aux(n.getParent)
+            case n => ()
+          }
+
+          aux(event.getPickedNode)
+        }
+
+      override def mouseDragged( event : PInputEvent) : Unit = {
+        val currentBounds = getCanvas.getCamera.getViewBounds
+        val w = currentBounds.getWidth / 2
+        val h = currentBounds.getHeight / 2
+        val p = event.getPosition
+        val newBounds = currentBounds.copy(x = p.getX - w, y = p.getY - h )
+        ignore(getCanvas.getCamera.animateViewToCenterBounds(newBounds, true, 200))
+      }
+      override def mouseWheelRotated(event: PInputEvent) : Unit = {
+        if (event.getWheelRotation > 0) zoomOut()
+        if (event.getWheelRotation < 0) zoomIn()
       }
     })
+
   }
+
+
 
   def addContent(n : DGPNode) : Unit = {
     val pn = n.asInstanceOf[PNode]

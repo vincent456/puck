@@ -88,7 +88,7 @@ class PiccoloTest(g : DependencyGraph, aCanvas : PCanvas)
 
               ignore(getCanvas.getCamera.animateViewToCenterBounds(newBounds, true, 200))
             case c =>
-              println( Integer.toHexString(c) + KeyEvent.getKeyText(c) + " ingnored")
+              println( Integer.toHexString(c) + " " + KeyEvent.getKeyText(c) + " ignored")
           }
         }
         false
@@ -98,9 +98,9 @@ class PiccoloTest(g : DependencyGraph, aCanvas : PCanvas)
     getCanvas.addInputEventListener(new PBasicInputEventHandler() {
       override def keyTyped(e: PInputEvent): Unit = println("canvas key typed !")
       override def keyReleased(e: PInputEvent): Unit = println("canvas key released !")
-
       override def keyPressed(event: PInputEvent) : Unit = println("canvas key pressed !")
     })
+
     getCanvas.addInputEventListener(new PBasicInputEventHandler() {
       override def mousePressed(event: PInputEvent) : Unit = {
         def aux(n0 : PNode) : Unit = n0 match {
