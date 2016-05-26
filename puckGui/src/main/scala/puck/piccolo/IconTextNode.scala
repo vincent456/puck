@@ -26,48 +26,40 @@
 
 package puck.piccolo
 
-import java.awt.geom.Rectangle2D
+import java.awt.{Font, Image}
 
 import org.piccolo2d.PNode
-import org.piccolo2d.nodes.PPath
-
-object TitledSquareNode {
-  def getSide(numChild : Int ) : Int = {
-
-    def aux(i : Int) : Int =
-      if(i * i >= numChild) i
-      else aux(i + 1)
-
-    aux(1)
-  }
-}
+import org.piccolo2d.nodes.{PImage, PText}
+import puck.graph.{DependencyGraph, NodeId}
+import puck.gui.NodeKindIcons
 
 /**
-  * Created by Loïc Girault on 23/05/16.
+  * Created by Loïc Girault on 26/05/16.
   */
-class TitledSquareNode
-( titlePnode : PNode,
-  s : Int
-) extends PPath.Float(new Rectangle2D.Float(0, 0, 100, 100)) {
-
-  titlePnode.setBounds(0, 0, 100, 10)
-
-
-  super.addChild(titlePnode)
-
-  val body = new PNode() with GridLayoutPNode {
-    val side = s
-    setBounds(0, 0, 80, 80)
+object IconTextNode {
+  def apply(g : DependencyGraph, nid : NodeId)
+           (implicit icons : NodeKindIcons): IconTextNode = {
+    val n = g.getNode(nid)
+    import puck.graph.ShowDG._
+    new IconTextNode((g, n).shows(desambiguatedLocalName),
+      icons.iconOfKind(n.kind).getImage)
   }
+}
+class IconTextNode
+(text : String,
+ icon : Image )
+  extends PNode {
 
-  super.addChild(body)
-  titlePnode.offset(0d,0d)
-  body.offset(10d, 10d)
-
-  override def addChild( child : PNode) : Unit = {
-    body addChild child
-    //child.scale( child.getScale * 0.9)
+  val picon = new PImage(icon)
+  addChild(picon)
+  val ptext = new PText(text) {
+    setFont(new Font("SansSerif", Font.PLAIN, 8))
   }
+  addChild(ptext)
 
-
+  override def layoutChildren() : Unit = {
+    val (x,y) = (0d, 0d)
+    picon.setOffset(x, y)
+    ptext.setOffset(picon.getWidth, y)
+  }
 }

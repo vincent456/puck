@@ -24,50 +24,15 @@
  * Author of this file : Loïc Girault
  */
 
-package puck.piccolo
+package puck.gui
 
-import java.awt.geom.Rectangle2D
+import javax.swing.ImageIcon
 
-import org.piccolo2d.PNode
-import org.piccolo2d.nodes.PPath
-
-object TitledSquareNode {
-  def getSide(numChild : Int ) : Int = {
-
-    def aux(i : Int) : Int =
-      if(i * i >= numChild) i
-      else aux(i + 1)
-
-    aux(1)
-  }
-}
+import puck.graph.NodeKind
 
 /**
-  * Created by Loïc Girault on 23/05/16.
+  * Created by Loïc Girault on 29/01/16.
   */
-class TitledSquareNode
-( titlePnode : PNode,
-  s : Int
-) extends PPath.Float(new Rectangle2D.Float(0, 0, 100, 100)) {
-
-  titlePnode.setBounds(0, 0, 100, 10)
-
-
-  super.addChild(titlePnode)
-
-  val body = new PNode() with GridLayoutPNode {
-    val side = s
-    setBounds(0, 0, 80, 80)
-  }
-
-  super.addChild(body)
-  titlePnode.offset(0d,0d)
-  body.offset(10d, 10d)
-
-  override def addChild( child : PNode) : Unit = {
-    body addChild child
-    //child.scale( child.getScale * 0.9)
-  }
-
-
+trait NodeKindIcons {
+  def iconOfKind(k: NodeKind ) : ImageIcon
 }

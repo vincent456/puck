@@ -27,7 +27,7 @@
 package puck.gui
 
 import puck.graph.GraphUtils
-import puck.gui.explorer.{NodeInfosPanel, DGTreeIcons}
+import puck.gui.explorer.NodeInfosPanel
 import puck.util.PuckLog
 
 import scala.swing._
@@ -42,11 +42,11 @@ object PuckMainPanel{
 }
 
 abstract class ViewHandler {
-  def switchView(mainPanel: PuckMainPanel, treeIcons: DGTreeIcons) : Unit
+  def switchView(mainPanel: PuckMainPanel, treeIcons: NodeKindIcons) : Unit
 }
 
 class PuckMainPanel(graphUtils: GraphUtils,
-                    val treeIcons : DGTreeIcons)
+                    val treeIcons : NodeKindIcons)
   extends SplitPane(Orientation.Horizontal) {
 
   dividerSize = 3

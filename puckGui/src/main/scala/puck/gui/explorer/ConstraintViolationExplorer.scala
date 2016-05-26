@@ -88,7 +88,7 @@ class ConstraintViolationExplorer
  constraints : ConstraintsMaps)
 ( implicit graph : DependencyGraph,
   graphUtils : GraphUtils,
-  treeIcons : DGTreeIcons)
+  treeIcons : NodeKindIcons)
   extends SplitPane {
 
   this listenTo bus
@@ -122,7 +122,7 @@ class ConstraintViolationExplorer
 
   class ViolationTree(handle : ViolationTreeHandle) extends
     JTree(TreeModelAdapter.subGraph(graph, handle.extremities(allViolations))) with DGTree {
-    def icons : DGTreeIcons = treeIcons
+    def icons : NodeKindIcons = treeIcons
 
     override def convertNodeToText(n : DGNode) : String = {
       val vsCount = allViolations.count (e => graph.contains_*(n.id, handle.exty(e)))

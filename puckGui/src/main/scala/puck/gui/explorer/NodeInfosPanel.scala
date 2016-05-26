@@ -41,7 +41,7 @@ import puck.gui._
 class NodeInfosPanel
 (bus : Publisher,
  control : PuckControl)
-(implicit treeIcons : DGTreeIcons)
+(implicit treeIcons : NodeKindIcons)
   extends ScrollPane {
 
   this listenTo bus

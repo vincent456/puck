@@ -30,14 +30,13 @@ import java.awt.Dimension
 import javax.swing.UIManager
 
 import puck.graph.GraphUtils
-import puck.gui.PuckMainPanel
-import puck.gui.explorer.DGTreeIcons
+import puck.gui.{NodeKindIcons, PuckMainPanel}
 
 import scala.swing.{MainFrame, SwingApplication}
 
 class PuckApplication
   (gu : GraphUtils,
-   treeIcons : DGTreeIcons)
+   treeIcons : NodeKindIcons)
   extends SwingApplication{
 
   def startup(args: Array[String]) : Unit = {

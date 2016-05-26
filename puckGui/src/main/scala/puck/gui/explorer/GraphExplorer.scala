@@ -52,7 +52,7 @@ object GraphExplorer {
 
 class GraphExplorer
 ( control : PuckControl)
-(implicit treeIcons : DGTreeIcons)
+(implicit treeIcons : NodeKindIcons)
   extends BoxPanel(Orientation.Vertical){
   contents += new Label("DG Explorer")
   val treeWrapper = new ScrollPane()
@@ -113,7 +113,7 @@ class GraphExplorer
       }
 
     Component.wrap(new JTree(model) with DGTree {
-        def icons : DGTreeIcons = treeIcons
+        def icons : NodeKindIcons = treeIcons
         addNodeClickedAction {
           (e, node) =>
             if (isRightClick(e)) {

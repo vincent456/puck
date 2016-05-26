@@ -28,9 +28,10 @@ package puck.gui.explorer
 
 import javax.swing.JTree
 
-import puck.graph.{DGNode, NodeId, DependencyGraph}
+import puck.graph.{DGNode, DependencyGraph, NodeId}
+import puck.gui.NodeKindIcons
 
-import scala.swing.{Component, ScrollPane, BorderPanel, Label}
+import scala.swing.{BorderPanel, Component, Label, ScrollPane}
 import scala.swing.BorderPanel.Position
 /**
   * Created by Loïc Girault on 01/02/16.
@@ -39,14 +40,14 @@ class StaticDGTreePane
 ( graph : DependencyGraph,
   focus : Set[NodeId],
   header : Label)
-(implicit treeIcons : DGTreeIcons)
+(implicit treeIcons : NodeKindIcons)
   extends  BorderPanel {
 
   def this(graph : DependencyGraph,
       focus : Set[NodeId],
       title : String,
       sTooltipText : Option[String] = None)(
-    implicit treeIcons : DGTreeIcons) =
+    implicit treeIcons : NodeKindIcons) =
     this(graph, focus, new Label(title) {
       sTooltipText foreach (this.tooltip = _)
     })
@@ -58,7 +59,7 @@ class StaticDGTreePane
 
     override def convertNodeToText(n : DGNode) : String =
       n.name + (if (focus contains n.id) " *" else "")
-    def icons : DGTreeIcons = treeIcons
+    def icons : NodeKindIcons = treeIcons
 
   }
 

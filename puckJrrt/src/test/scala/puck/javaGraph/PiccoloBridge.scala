@@ -2,6 +2,7 @@ package puck.javaGraph
 
 
 import piccolo.{PiccoloDynamicBuildTest, PiccoloTest}
+import puck.JavaIcons
 
 /**
   * Created by lorilan on 4/29/16.
@@ -9,14 +10,14 @@ import piccolo.{PiccoloDynamicBuildTest, PiccoloTest}
 object PiccoloBridge {
   def main(args : Array[String]) : Unit =  {
     val bs = BridgeScenario()
-    new PiccoloTest(bs.graph)
+    puck.ignore(new PiccoloTest(bs.graph))
   }
 }
 
 object PiccoloDynamicBridge {
   def main(args : Array[String]) : Unit =  {
     val bs = BridgeScenario()
-    new PiccoloDynamicBuildTest(bs.graph)
+    puck.ignore(new PiccoloDynamicBuildTest(bs.graph, JavaIcons))
   }
 }
 

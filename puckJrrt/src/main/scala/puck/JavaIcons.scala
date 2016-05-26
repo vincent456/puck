@@ -26,37 +26,37 @@
 
 package puck
 
-import javax.swing.{Icon, ImageIcon}
+import javax.swing.ImageIcon
 
 import puck.graph.{AGRoot, NodeKind}
-import puck.gui.explorer.DGTreeIcons
+import puck.gui.NodeKindIcons
 import puck.javaGraph.nodeKind._
 
 /**
   * Created by Loïc Girault on 05/01/16.
   */
-object JavaIcons extends DGTreeIcons {
+object JavaIcons extends NodeKindIcons {
 
   val path = "/icons"
 
-  val classIcon : Icon = new ImageIcon(getClass.getResource(s"$path/class.gif"))
-  val interfaceIcon : Icon = new ImageIcon(getClass.getResource(s"$path/interface.gif"))
+  val classIcon : ImageIcon = new ImageIcon(getClass.getResource(s"$path/class.gif"))
+  val interfaceIcon : ImageIcon = new ImageIcon(getClass.getResource(s"$path/interface.gif"))
 
-  val rootIcon : Icon = new ImageIcon(getClass.getResource(s"$path/root.gif"))
+  val rootIcon : ImageIcon = new ImageIcon(getClass.getResource(s"$path/root.gif"))
 
-  val constructorIcon : Icon = new ImageIcon(getClass.getResource(s"$path/constructor.png"))
+  val constructorIcon : ImageIcon = new ImageIcon(getClass.getResource(s"$path/constructor.png"))
 
-  val methodIcon : Icon = new ImageIcon(getClass.getResource(s"$path/method.png"))
-  val abstractMethodIcon : Icon = new ImageIcon(getClass.getResource(s"$path/method_abstract.png"))
-  val staticMethodIcon : Icon = new ImageIcon(getClass.getResource(s"$path/method_static.png"))
+  val methodIcon : ImageIcon = new ImageIcon(getClass.getResource(s"$path/method.png"))
+  val abstractMethodIcon : ImageIcon = new ImageIcon(getClass.getResource(s"$path/method_abstract.png"))
+  val staticMethodIcon : ImageIcon = new ImageIcon(getClass.getResource(s"$path/method_static.png"))
 
-  val packageIcon : Icon = new ImageIcon(getClass.getResource(s"$path/package.gif"))
-  val fieldIcon : Icon = new ImageIcon(getClass.getResource(s"$path/field.png"))
-  val staticFieldIcon : Icon = new ImageIcon(getClass.getResource(s"$path/field_static.png"))
+  val packageIcon : ImageIcon = new ImageIcon(getClass.getResource(s"$path/package.gif"))
+  val fieldIcon : ImageIcon = new ImageIcon(getClass.getResource(s"$path/field.png"))
+  val staticFieldIcon : ImageIcon = new ImageIcon(getClass.getResource(s"$path/field_static.png"))
 
-  val unknownIcon : Icon = new ImageIcon(getClass.getResource(s"$path/question-mark.gif"))
+  val unknownIcon : ImageIcon = new ImageIcon(getClass.getResource(s"$path/question-mark.gif"))
 
-  def iconOfKind(k: NodeKind): Icon = k match {
+  def iconOfKind(k: NodeKind): ImageIcon = k match {
     case _ : TypeKind.InterfaceLike => interfaceIcon
     case _ : TypeKind.ClassLike => classIcon
 //    case InnerClass => innerClassIcon

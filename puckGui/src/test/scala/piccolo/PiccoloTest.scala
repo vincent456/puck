@@ -28,7 +28,7 @@
  */
 package piccolo
 
-import java.awt.{KeyEventDispatcher, KeyboardFocusManager}
+import java.awt.{Font, KeyEventDispatcher, KeyboardFocusManager}
 import java.awt.event.KeyEvent
 
 import org.piccolo2d.{PCanvas, PNode, PRoot}
@@ -40,9 +40,6 @@ import org.piccolo2d.util.PBounds
 import puck.ignore
 import puck.graph.{DependencyGraph, NodeId}
 import puck.piccolo.TitledSquareNode
-
-
-
 import TitledSquareNode.getSide
 
 
@@ -95,11 +92,11 @@ class PiccoloTest(g : DependencyGraph, aCanvas : PCanvas)
       }
     })
 
-    getCanvas.addInputEventListener(new PBasicInputEventHandler() {
+    getCanvas addInputEventListener new PBasicInputEventHandler() {
       override def keyTyped(e: PInputEvent): Unit = println("canvas key typed !")
       override def keyReleased(e: PInputEvent): Unit = println("canvas key released !")
       override def keyPressed(event: PInputEvent) : Unit = println("canvas key pressed !")
-    })
+    }
 
     getCanvas.addInputEventListener(new PBasicInputEventHandler() {
       override def mousePressed(event: PInputEvent) : Unit = {
@@ -126,7 +123,9 @@ class PiccoloTest(g : DependencyGraph, aCanvas : PCanvas)
 
     import puck.graph.ShowDG._
 
-    val result = new TitledSquareNode(s"${(g, node).shows}", getSide(numChildren))
+    val result = new TitledSquareNode(new PText(s"${(g, node).shows}"){
+      setFont(new Font("SansSerif", Font.PLAIN, 8))
+    }, getSide(numChildren))
 //      new PPath.Float(new Rectangle2D.Float(0, 0, 100, 100))
 //        with GridLayoutPNode {
 //          val side = s

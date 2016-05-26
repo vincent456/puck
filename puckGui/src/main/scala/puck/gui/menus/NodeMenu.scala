@@ -34,9 +34,8 @@ import puck.actions._
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.transformations.rules.Redirection
-import puck.gui.PrintingOptionsControl
-import puck.gui.explorer.DGTreeIcons
-import puck.gui.svg.actions.{Log, AutoSolveAction}
+import puck.gui.{NodeKindIcons, PrintingOptionsControl}
+import puck.gui.svg.actions.{AutoSolveAction, Log}
 
 import scala.swing.Publisher
 
@@ -56,7 +55,7 @@ object NodeMenu{
             nodeId : NodeId,
             selectedNodes: List[NodeId],
             selectedEdge : Option[NodeIdP])
-           (implicit treeIcons: DGTreeIcons): JPopupMenu =
+           (implicit treeIcons: NodeKindIcons): JPopupMenu =
     graph.getNode(nodeId) match {
       case n : ConcreteNode =>
         new ConcreteNodeMenu(bus, graph, cm, graphUtils,
@@ -77,7 +76,7 @@ class ConcreteNodeMenu
  blurryEdgeSelection : Boolean,
  node : ConcreteNode,
  printingOptionsControl: PrintingOptionsControl)
-(implicit treeIcons: DGTreeIcons)
+(implicit treeIcons: NodeKindIcons)
   extends JPopupMenu {
 
   init()

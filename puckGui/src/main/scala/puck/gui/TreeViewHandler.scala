@@ -29,7 +29,7 @@ package puck.gui
 
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
-import puck.gui.explorer.{GraphExplorer, DGTreeIcons, ConstraintViolationExplorer}
+import puck.gui.explorer.{GraphExplorer, ConstraintViolationExplorer}
 import puck.gui.svg.SVGViewHandler
 
 import scala.swing._
@@ -39,10 +39,10 @@ import scala.swing._
   */
 class TreeViewHandler
   (mainPanel : PuckMainPanel,
-   implicit val treeIcons : DGTreeIcons)
+   implicit val treeIcons : NodeKindIcons)
   extends ViewHandler with Publisher {
 
-  def switchView(mainPanel: PuckMainPanel, treeIcons: DGTreeIcons) : Unit = {
+  def switchView(mainPanel: PuckMainPanel, treeIcons: NodeKindIcons) : Unit = {
     this deafTo mainPanel.control.Bus
     mainPanel.viewHandler = new SVGViewHandler(mainPanel)
   }

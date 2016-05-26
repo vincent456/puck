@@ -36,8 +36,9 @@ import org.piccolo2d.nodes.PText
 import org.piccolo2d.util.PBounds
 import puck._
 import puck.graph._
-import puck.piccolo.{DGPNode, TitledSquareNode, TypeDeclShapedPNode}
+import puck.piccolo.{DGPNode, IconTextNode, TitledSquareNode, TypeDeclShapedPNode}
 import TitledSquareNode.getSide
+import puck.gui.NodeKindIcons
 
 import scala.swing._
 /**
@@ -53,19 +54,21 @@ object PiccoloDynamicBuildTest {
 
 }
 
+
+
 import PiccoloDynamicBuildTest._
-class PiccoloDynamicBuildTest(g : DependencyGraph, aCanvas : PCanvas)
+class PiccoloDynamicBuildTest(g : DependencyGraph,
+                              aCanvas : PCanvas,
+                              nk : NodeKindIcons)
   extends PFrame("PiccoloDynamicBuildTest", false, aCanvas) {
 
-  import puck.graph.ShowDG._
-
-
-
-  def this(g : DependencyGraph) = this(g, null)
+  def this(g : DependencyGraph,
+           nk : NodeKindIcons) = this(g, null, nk)
 
   def squareNode(n : NodeId) : PNode with DGPNode  = {
     val numChildren = g.content(n).size
-    new TitledSquareNode(s"${(g, n).shows}", getSide(numChildren)) with DGPNode {
+    val titleNode = IconTextNode(g, n)(nk)
+    new TitledSquareNode(titleNode, getSide(numChildren)) with DGPNode {
       val id = n
       def contentSize : Int = body.getChildrenCount
       def clearContent() : Unit = body.removeAllChildren()
@@ -95,18 +98,17 @@ class PiccoloDynamicBuildTest(g : DependencyGraph, aCanvas : PCanvas)
 
     def zoom(zoomHint : Int) : Unit = {
       val currentBounds = getCanvas.getCamera.getViewBounds
-      val newBounds =
-        new PBounds( currentBounds.getX + zoomHint,
-          currentBounds.getY + zoomHint,
-          currentBounds.getWidth - zoomHint * 2,
-          currentBounds.getHeight - zoomHint * 2)
-      ignore(getCanvas.getCamera.animateViewToCenterBounds(newBounds, true, 200))
+      val x = currentBounds.getX + zoomHint
+      val y = currentBounds.getY + zoomHint
+      val w = currentBounds.getWidth - zoomHint * 2
+      val h = currentBounds.getHeight - zoomHint * 2
+      if(w > 0 && h >0)
+        ignore(getCanvas.getCamera.
+          animateViewToCenterBounds(new PBounds(x, y, w, h), true, 200))
+
     }
     def zoomIn() : Unit = zoom(50)
     def zoomOut() : Unit = zoom(-50)
-
-
-
 
     kbManager.addKeyEventDispatcher( new KeyEventDispatcher {
       def dispatchKeyEvent( e : KeyEvent) : Boolean = {
@@ -136,7 +138,7 @@ class PiccoloDynamicBuildTest(g : DependencyGraph, aCanvas : PCanvas)
             case KeyEvent.VK_ADD => zoomIn()
             case KeyEvent.VK_MINUS | VK_NUMPAD_MINUS => zoomOut()
             case c =>
-              println( Integer.toHexString(c) + KeyEvent.getKeyText(c) + " ingnored")
+              println( Integer.toHexString(c) + " - " + KeyEvent.getKeyText(c) + " ignored")
           }
         }
         false
@@ -157,7 +159,6 @@ class PiccoloDynamicBuildTest(g : DependencyGraph, aCanvas : PCanvas)
           val menu = new PopupMenu(){
             contents += new MenuItem(new Action("Focus"){
               def apply() : Unit = focus(event.getPickedNode)
-
             })
           }
           Swing.onEDT(menu.show(Component.wrap(getCanvas), pos.getX.toInt, pos.getY.toInt))
@@ -180,12 +181,13 @@ class PiccoloDynamicBuildTest(g : DependencyGraph, aCanvas : PCanvas)
 
       override def mouseDragged( event : PInputEvent) : Unit = {
         val currentBounds = getCanvas.getCamera.getViewBounds
-        val w = currentBounds.getWidth / 2
-        val h = currentBounds.getHeight / 2
+        val w = currentBounds.getWidth / 2.0
+        val h = currentBounds.getHeight / 2.0
         val p = event.getPosition
         val newBounds = currentBounds.copy(x = p.getX - w, y = p.getY - h )
         ignore(getCanvas.getCamera.animateViewToCenterBounds(newBounds, true, 200))
       }
+
       override def mouseWheelRotated(event: PInputEvent) : Unit = {
         if (event.getWheelRotation > 0) zoomOut()
         if (event.getWheelRotation < 0) zoomIn()
@@ -218,6 +220,7 @@ class PiccoloDynamicBuildTest(g : DependencyGraph, aCanvas : PCanvas)
       child.kind.kindType match {
         case TypeDecl => TypeDeclShapedPNode.createClass(g, child.id)
         case NameSpace => squareNode(child.id)
+        case _ => puck.error("!")
 
       }
     } foreach pn.addChild

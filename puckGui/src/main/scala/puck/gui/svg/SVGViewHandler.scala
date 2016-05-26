@@ -32,11 +32,10 @@ import javax.swing.JButton
 import puck._
 import puck.actions.AddNodeAction
 import puck.graph.constraints.ConstraintsMaps
-import puck.graph.{NameSpace, GraphUtils, DependencyGraph}
+import puck.graph.{DependencyGraph, GraphUtils, NameSpace}
 import puck.graph.io.DotPrinter
-import puck.gui.explorer.DGTreeIcons
-import puck.gui.svg.actions.{SwingService, DefaultSwingService}
-import puck.gui._
+import puck.gui.svg.actions.{DefaultSwingService, SwingService}
+import puck.gui.{NodeKindIcons, _}
 
 import scala.swing.SequentialContainer.Wrapper
 import scala.swing._
@@ -52,7 +51,7 @@ class SVGViewHandler
 
 
 
-  def switchView(mainPanel: PuckMainPanel, treeIcons: DGTreeIcons) : Unit = {
+  def switchView(mainPanel: PuckMainPanel, treeIcons: NodeKindIcons) : Unit = {
     this deafTo mainPanel.control.Bus
     mainPanel.viewHandler = new TreeViewHandler(mainPanel, treeIcons)
     mainPanel.control.Bus publish GraphUpdate(mainPanel.control.graph)

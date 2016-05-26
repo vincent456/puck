@@ -124,7 +124,7 @@ class DynamicDGTree
 (model0 : MutableTreeModel,
  bus : Publisher,
  menuBuilder : NodeMenu.Builder,
- val icons: DGTreeIcons,
+ val icons: NodeKindIcons,
  override val constraints : Option[ConstraintsMaps])
   extends JTree(model0) with DGTree with Reactor {
   self : JTree =>

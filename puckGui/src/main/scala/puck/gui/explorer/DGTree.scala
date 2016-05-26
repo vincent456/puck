@@ -31,23 +31,19 @@ import java.awt.Color
 import java.awt.event.{MouseAdapter, MouseEvent}
 import javax.swing.event.{TreeSelectionEvent, TreeSelectionListener}
 import javax.swing.tree.{DefaultTreeCellRenderer, TreePath}
-import javax.swing.{JTree, Icon}
+import javax.swing.JTree
 
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
+import puck.gui.NodeKindIcons
 
-/**
-  * Created by Loïc Girault on 29/01/16.
-  */
-trait DGTreeIcons {
-  def iconOfKind(k: NodeKind ) : Icon
-}
+
 trait DGTree {
   self : JTree =>
 
   def graph : DependencyGraph = getModel.asInstanceOf[TreeModelAdapter].graph
   def constraints : Option[ConstraintsMaps] = None
-  def icons : DGTreeIcons
+  def icons : NodeKindIcons
 
   def convertNodeToText(n : DGNode) : String = n.name
 

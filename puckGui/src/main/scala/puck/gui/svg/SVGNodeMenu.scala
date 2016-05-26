@@ -30,13 +30,13 @@ package svg
 import puck.graph._
 import javax.swing._
 
-import puck.gui.explorer.DGTreeIcons
-import puck.gui.menus.{VirtualNodeMenu, ConcreteNodeMenu}
+import puck.gui.NodeKindIcons
+import puck.gui.menus.{ConcreteNodeMenu, VirtualNodeMenu}
 
 object SVGNodeMenu{
 
   def apply(controller : SVGController,
-            nodeId : NodeId)(implicit treeIcons: DGTreeIcons) : JPopupMenu =
+            nodeId : NodeId)(implicit treeIcons: NodeKindIcons) : JPopupMenu =
     controller.graph.getNode(nodeId) match {
       case n : ConcreteNode => new SVGConcreteNodeMenu(controller, n)
       case n : VirtualNode => new VirtualNodeMenu(controller,
@@ -48,7 +48,7 @@ object SVGNodeMenu{
 class SVGConcreteNodeMenu
 (controller: SVGController,
  node : ConcreteNode)
-(implicit treeIcons: DGTreeIcons)
+(implicit treeIcons: NodeKindIcons)
   extends ConcreteNodeMenu(controller.genControl.Bus,
     controller.graph,
     controller.genControl.constraints,

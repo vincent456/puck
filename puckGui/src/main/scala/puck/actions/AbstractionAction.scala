@@ -32,7 +32,8 @@ import javax.swing._
 import puck.graph.ShowDG._
 import puck.graph._
 import puck.graph.constraints.AbstractionPolicy
-import puck.gui.explorer.{StaticDGTreePane, DGTreeIcons}
+import puck.gui.NodeKindIcons
+import puck.gui.explorer.StaticDGTreePane
 
 import scala.swing.BorderPanel.Position
 import scala.swing._
@@ -54,7 +55,7 @@ class AbstractionPanel
   absDefaultName : String,
   potentialsHost : Set[NodeId],
   abstractionChoices : List[ConcreteNode])
-( implicit treeIcons : DGTreeIcons ) extends BorderPanel {
+( implicit treeIcons : NodeKindIcons ) extends BorderPanel {
 
   val absNameTxtField = new TextField(absDefaultName)
   def absName : String = absNameTxtField.text
@@ -107,7 +108,7 @@ class AbstractionAction
  abskind : NodeKind)
 (implicit graph : DependencyGraph,
  graphUtils: GraphUtils,
- treeIcons: DGTreeIcons)
+ treeIcons: NodeKindIcons)
   extends AbstractAction(s"$abskind ($policy)"){
 
      import graphUtils.{Rules => TR}

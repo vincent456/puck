@@ -34,14 +34,14 @@ import javax.swing.{JPopupMenu, KeyStroke}
 import org.apache.batik.dom.GenericText
 import org.apache.batik.dom.events.NodeEventTarget
 import org.apache.batik.swing.JSVGCanvas
-import org.apache.batik.swing.gvt.{GVTTreeRendererEvent, GVTTreeRendererAdapter}
+import org.apache.batik.swing.gvt.{GVTTreeRendererAdapter, GVTTreeRendererEvent}
 import org.apache.batik.swing.svg.JSVGComponent
 import org.apache.batik.util.{SVGConstants, XMLConstants}
-import org.w3c.dom.{Node, NodeList, Element}
-import org.w3c.dom.events.{EventListener, Event, MouseEvent}
+import org.w3c.dom.{Element, Node, NodeList}
+import org.w3c.dom.events.{Event, EventListener, MouseEvent}
 import org.w3c.dom.svg._
 import puck.graph.{NodeId, NodeIdP}
-import puck.gui.explorer.DGTreeIcons
+import puck.gui.NodeKindIcons
 import puck.gui.svg.actions.SwingService
 
 object PUCKSVGCanvas {
@@ -54,7 +54,7 @@ object PUCKSVGCanvas {
 
   def apply(controller : SVGController,
             swingService: SwingService,
-            treeIcons: DGTreeIcons): PUCKSVGCanvas = new PUCKSVGCanvas {
+            treeIcons: NodeKindIcons): PUCKSVGCanvas = new PUCKSVGCanvas {
     val eventListener = new SVGCanvasListener(this, controller, swingService, treeIcons)
   }
 
@@ -104,7 +104,7 @@ class SVGCanvasListener
 ( menuInvoker : Component,
   controller : SVGController,
   swingService: SwingService,
-  treeIcons: DGTreeIcons)
+  treeIcons: NodeKindIcons)
   extends EventListener {
 
   import swingService._
