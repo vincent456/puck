@@ -273,8 +273,8 @@ trait GraphBuilderVisitor {
     val (t, argValue) = p
     argValue match {
       case a: Access => f((t, a))
-      case ae: AddExpr =>
-        System.err.println("parameter type constraint, AddExpr case not handled")
+      case ae: ArithmeticExpr =>
+        System.err.println("parameter type constraint, ArithmeticExpr case not handled")
       case _: Literal => ()
       case arg => throw new DGBuildingError(s"Access expected but found : $arg")
     }

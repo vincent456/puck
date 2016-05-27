@@ -51,7 +51,7 @@ object Remove{
       else {
         val g00 =
           n.kind.kindType match {
-            case Parameter => g1.removeEdge(ContainsParam(g1.container(n.id).get, n.id))
+            case Parameter | TypeVariableKT => g1.removeEdge(ContainsParam(g1.container(n.id).get, n.id))
             case _ => g1.removeEdge(Contains(g1.container(n.id).get, n.id))
           }
 
@@ -82,7 +82,7 @@ object Remove{
   }
   def bindingsInvolving(g : DependencyGraph, n : ConcreteNode) : DependencyGraph = {
     val g1 = n.kind.kindType match {
-      case TypeDecl =>
+      case TypeDecl | TypeVariableKT =>
         g.typeUses2typeMemberUses.foldLeft(g) {
           case (g0, (tUses, typeMemberUses)) if tUses.used == n.id =>
             typeMemberUses.foldLeft(g0) { _.removeBinding(tUses, _)}

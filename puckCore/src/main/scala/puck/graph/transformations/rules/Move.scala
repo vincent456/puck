@@ -247,19 +247,45 @@ object Move {
     val worker : MoveTypeMember =
       new MoveTypeMember(g0, typeMembersMovedId, oldContainer, newContainer) {
 
+
+        def findReceiver(userOfMovedDecl : NodeId) = {
+          val log = s"\nsearching old receiver\n" +
+            "userOfMovedDecl = " +  (g0, userOfMovedDecl ).shows(desambiguatedFullName)
+
+          val candidates =
+            (g0 usedBy userOfMovedDecl)  filter (g0.uses(_,oldContainer))
+
+//          import scala.collection.mutable
+//          val candidates =  mutable.Set[NodeId]()
+//
+//          val bounds = mutable.Set[NodeId]((g0 usedBy userOfMovedDecl).toSeq:_*)
+//          bounds remove movedDecl
+//          val visited = mutable.Set[NodeId]()
+//          while(bounds.nonEmpty) { //should'nt we limit the loop to 2 iterations ??
+//            val c = bounds.head
+//            bounds remove c
+//
+//            visited add c
+//            g0.usedBy(c) diff visited foreach bounds.add
+//
+//            if(g0.uses(c,typeOfReceiver) && c != typeOfReceiver)
+//              candidates add c
+//          }
+
+          if (candidates.size != 1)
+            LoggedError(s"$log\nfailure, candidates = " + (candidates map (c => (g0, c).shows)) )
+          else LoggedSuccess(s"$log\nsuccess :  receiver =${(g0, candidates.head).shows}",
+            candidates.head)
+        }
+
+
         import puck.util.LoggedEither, LoggedEither._
         def useArgAsReceiver
-        ( g: DependencyGraph,
-          movedDeclWithArgUsableAsReceiver: Set[NodeId]
+        ( g: DependencyGraph/*,
+          movedDeclWithArgUsableAsReceiver: Set[NodeId]*/
         ) : LoggedTG = {
 
-          def findReceiver(userOfMovedDecl : NodeId) = {
-            val candidates =
-              (g0 usedBy userOfMovedDecl) filter (g0.uses(_, oldContainer))
-            if (candidates.size != 1)
-              LoggedError(s"useArgAsReceiver searching old receiver failure : ${candidates.size} candidates")
-            else LoggedSuccess(candidates.head)
-          }
+
 
           def findActualParameter(userOfMovedDecl : NodeId) = {
             val candidates =
@@ -270,7 +296,17 @@ object Move {
           }
 
           val log = "use arg as receiver for " +
-            (movedDeclWithArgUsableAsReceiver map (id => (g,id).shows) mkString ("[", "," ,"]"))
+            (movedDeclWithArgUsableAsReceiver map (id => (g,id).shows(desambiguatedFullName)) mkString ("[ ", ", " ," ]"))
+
+          def isReceiverTypeConstrainedIn(g : DependencyGraph, receiver : NodeId, ctxt : NodeId) : Boolean =
+          g.kindType(receiver) match {
+            case Parameter | InstanceValueDecl =>
+            g.typ(receiver).ids.exists { tid =>
+              g.typeConstraints((receiver, tid)).exists(ct => ct.constrainedUser == ctxt )
+            }
+            case _ => //do not know but in doubt ...
+              true
+          }
 
           movedDeclWithArgUsableAsReceiver.foldLoggedEither(g logComment log){
             (g0, movedDecl) =>
@@ -278,47 +314,52 @@ object Move {
                 case None =>
                   LoggedError(s"An arg typed ${NamedType(newContainer)} was expected")
                 case Some(pid) =>
-                  val (_, g1) =
-                    g0.removeEdge(ContainsParam(movedDecl, pid))
-                      .removeType(pid)
-                      .removeNode(pid)
+
+                  val ltg = Remove.concreteNode(g0, g0.getConcreteNode(pid))
+
                   val paramTypeUses = (pid, newContainer)
 
-                    //inside the moved method, accesses qualified by the removed parameter
-                    //are now qualified by this
-                    val g2 = g1.changeTypeUseForTypeMemberUseSet( paramTypeUses, newSelfUse,
-                      g0 typeMemberUsesOf paramTypeUses )
+                  //inside the moved method, accesses qualified by the removed parameter
+                  //are now qualified by this
+                  val ltg2 = ltg map (_.changeTypeUseForTypeMemberUseSet( paramTypeUses, newSelfUse,
+                    g0 typeMemberUsesOf paramTypeUses ))
 
-                    import LoggedEither.loggedEitherMonad
-                    (g0 usersOf movedDecl).foldLoggedEither(g2){
-                      (g2, user) =>
-                        Apply[LoggedTry].apply2(findReceiver(user),
-                          findActualParameter(user)){(receiver, actualParam) =>
+                  import LoggedEither.loggedEitherMonad
+                  (g0 usersOf movedDecl).foldLoggedEither(ltg2){
+                    (g2, user) =>
+                      Apply[LoggedTry].apply2(findReceiver(user),
+                        findActualParameter(user)){(receiver, actualParam) =>
 
-                          val g3 = g2.changeTypeUseOfTypeMemberUse((receiver, oldContainer),
-                            (actualParam, newContainer),
-                            (user,movedDecl))
+                        val g3 = g2.changeTypeUseOfTypeMemberUse((receiver, oldContainer),
+                          (actualParam, newContainer),
+                          (user,movedDecl))
 
-                          val otherUsesQualifiedByReceiver =
-                            g3.typeMemberUsesOf(receiver, oldContainer).filter(_.user == user)
+                        val otherUsesQualifiedByReceiver =
+                          g3.typeMemberUsesOf(receiver, oldContainer).filter(_.user == user)
 
-                          val qualifierWillBeUsedAsArg = {
-                            val movedDef = g0.definitionOf(movedDecl)
-                            movedDef.nonEmpty && {
-                              usesOfSiblingViaThis exists (uses => uses.user == movedDef.get)
-                            }
-                          }
 
-                          if(otherUsesQualifiedByReceiver.isEmpty &&
-                                ! qualifierWillBeUsedAsArg)
-                            g3.typeUsesOf((user, receiver))
-                              .foldLeft(g3.removeEdge(Uses(user, receiver))){
-                                (g, tu) => g.removeBinding(tu, (user, receiver))
-                              }
-                          else g3
+                        val qualifierWillBeUsedAsArg = {
+                          val someMovedDef = g0.definitionOf(movedDecl)
+                          someMovedDef.nonEmpty &&
+                            usesOfSiblingViaThis.exists(uses => uses.user == someMovedDef.get)
                         }
 
-                    }
+                        val isTypedConstrained =
+                          isReceiverTypeConstrainedIn(g3, receiver, user)
+                        // meaning it appears as plain ref, as rvalue, parameter or in return stmt
+                        // use should not be deleted
+
+                        if(otherUsesQualifiedByReceiver.isEmpty &&
+                          ! qualifierWillBeUsedAsArg &&
+                          ! isTypedConstrained)
+                          g3.typeUsesOf((user, receiver))
+                            .foldLeft(g3.removeEdge(Uses(user, receiver))){
+                              (g, tu) => g.removeBinding(tu, (user, receiver))
+                            }
+                        else g3
+                      }
+
+                  }
 
 
               }
@@ -326,25 +367,35 @@ object Move {
         }
 
         def useReceiverAsArg
-        ( g: DependencyGraph,
-          usesOfSiblingViaThis : Set[NodeIdP]
+        ( g: DependencyGraph/*,
+          usesOfSiblingViaThis : Set[NodeIdP]*/
         ) : LoggedTG = {
+          //this is the moved nodes that uses their unmoved siblings !
           val usersOfSiblingViaThis = usesOfSiblingViaThis.groupBy(_.user)
-          val log = "use receiver as arg for " +
-            (usersOfSiblingViaThis.keys map (id => (g,id).shows) mkString ("[", "," ,"]"))
+          val log = "\nuse receiver as arg for " +
+            (usersOfSiblingViaThis.keys map (id => (g,id).shows(desambiguatedFullName)) mkString ("[ ", ", " ," ]\n"))
 
           usersOfSiblingViaThis.toList.foldLoggedEither(g logComment log){
-            case (g0, (user, siblingUses)) =>
-              val decl = g0.container_!(user)
+            case (g0, (movedDef, siblingUses)) =>
+              val decl = g0.container_!(movedDef)
+
               addParamOfTypeAndSetTypeDependency(g0, decl,
-                oldContainer, oldSelfUse, siblingUses)
+                oldContainer, oldSelfUse, siblingUses) flatMap  {
+                case (pnode, g1) =>
+                  g1.usersOf(g1 container_! movedDef).foldLoggedEither(g1) {
+                    case (g00, user) =>
+                      findReceiver(user) map { receiver =>
+                        g00.addTypeUsesConstraint((pnode.id, oldContainer),
+                          Sub((receiver, oldContainer)))}
+                  }
+            }
           }
         }
 
         def createNewReceiver
         ( g: DependencyGraph,
-          newContainer : NodeId,
-          usesThatRequireNewReceiver : Set[NodeIdP],
+          newContainer : NodeId/*,
+          usesThatRequireNewReceiver : Set[NodeIdP]*/,
           createVarStrategy: CreateVarStrategy) : LoggedTG = {
 
           def singleTypeUse(tmUse : NodeIdP) : NodeIdP = {
@@ -385,13 +436,13 @@ object Move {
         def apply() : LoggedTG = {
 
           for {
-            g2 <- useArgAsReceiver(g1, movedDeclWithArgUsableAsReceiver)
+            g2 <- useArgAsReceiver(g1/*, movedDeclWithArgUsableAsReceiver*/)
 
-            g3 <- useReceiverAsArg(g2, usesOfSiblingViaThis)
+            g3 <- useReceiverAsArg(g2/*, usesOfSiblingViaThis*/)
 
             g4 <- (usesThatRequireNewReceiver.nonEmpty, createVarStrategy) match {
               case (true, Some(strategy)) =>
-                createNewReceiver(g3, newContainer, usesThatRequireNewReceiver, strategy)
+                createNewReceiver(g3, newContainer, /*usesThatRequireNewReceiver,*/ strategy)
               case (true, None) => LoggedError("create var strategy required")
               case _ => LoggedSuccess(g3)
             }
@@ -411,13 +462,12 @@ object Move {
    pType : NodeId,
    oldTypeUse : NodeIdP,
    tmUses : Set[NodeIdP]
-  ) : LoggedTG  = {
+  ) : LoggedTry[(ConcreteNode, DependencyGraph)]  = {
     import g.nodeKindKnowledge.intro
     intro.parameter(g, pType, declId) map {
       case (pNode, g2) =>
         val newTypeUse = (pNode.id, pType)
-        g2.changeTypeUseForTypeMemberUseSet(oldTypeUse, newTypeUse, tmUses)
-
+        (pNode, g2.changeTypeUseForTypeMemberUseSet(oldTypeUse, newTypeUse, tmUses))
     }
   }
 
@@ -444,7 +494,7 @@ object Move {
         val decl = g0.getConcreteNode(g0.container_!(impl))
 
         addParamOfTypeAndSetTypeDependency(g0, decl.id,
-          newTypeUsed, oldTypeUse, typeMemberUses)
+          newTypeUsed, oldTypeUse, typeMemberUses) map (_._2)
 
     }
   }

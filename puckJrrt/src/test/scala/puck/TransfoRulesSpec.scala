@@ -47,7 +47,6 @@ class TransfoRulesSpec
 
     assert(Mapping.equals(g, expectedResult.graph), "graph produced by transfo != expected")
 
-  //(expectedResult.graph, expectedResult.graph.nodesIndex).println
 
     someGenerated match {
       case Left(generated) => assert(Mapping.equals(g, generated.graph), "graph produced by transfo != generated")
