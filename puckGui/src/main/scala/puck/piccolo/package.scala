@@ -24,50 +24,17 @@
  * Author of this file : Loïc Girault
  */
 
-package puck.piccolo
+package puck
 
-import java.awt.geom.Rectangle2D
-
-import org.piccolo2d.PNode
-import org.piccolo2d.nodes.PPath
-
-object TitledSquareNode {
-  def getSide(numChild : Int ) : Int = {
-
-    def aux(i : Int) : Int =
-      if(i * i >= numChild) i
-      else aux(i + 1)
-
-    aux(1)
-  }
-}
+import org.piccolo2d.util.PBounds
 
 /**
-  * Created by Loïc Girault on 23/05/16.
+  * Created by Loïc Girault on 31/05/16.
   */
-class TitledSquareNode
-( titlePnode : PNode,
-  s : Int
-) extends PPath.Float(new Rectangle2D.Float(0, 0, 100, 100)) {
-
-  titlePnode.setBounds(0, 0, 100, 10)
-
-
-  super.addChild(titlePnode)
-
-  val body = new PNode() with GridLayoutPNode {
-    val side = s
-    setBounds(0, 0, 80, 80)
+package object piccolo {
+  implicit class BoundsOp(val b: PBounds) extends AnyVal {
+    def copy(x: Double = b.getX, y: Double = b.getY,
+             width: Double = b.getWidth,
+             height: Double = b.getHeight) = new PBounds(x, y, width, height)
   }
-
-  super.addChild(body)
-  titlePnode.offset(0d,0d)
-  body.offset(10d, 10d)
-
-  override def addChild( child : PNode) : Unit = {
-    body addChild child
-    //child.scale( child.getScale * 0.9)
-  }
-
-
 }

@@ -1,7 +1,7 @@
 package puck.javaGraph
 
 
-import piccolo.{PiccoloDynamicBuildTest, PiccoloTest}
+import piccolo.{PiccoloDynamicSquareZoomTest$, PiccoloTest}
 import puck.JavaIcons
 
 /**
@@ -17,7 +17,7 @@ object PiccoloBridge {
 object PiccoloDynamicBridge {
   def main(args : Array[String]) : Unit =  {
     val bs = BridgeScenario()
-    puck.ignore(new PiccoloDynamicBuildTest(bs.graph, JavaIcons))
+    puck.ignore(new PiccoloDynamicSquareZoomTest(bs.graph, JavaIcons))
   }
 }
 

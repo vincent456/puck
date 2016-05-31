@@ -24,23 +24,38 @@
  * Author of this file : Loïc Girault
  */
 
-package puck.piccolo
+package piccolo
 
-import org.piccolo2d.PNode
-import puck.graph.NodeId
+import org.piccolo2d.PCanvas
+import org.piccolo2d.extras.PFrame
+import puck.graph.{DependencyGraph, NodeId}
+import puck.gui.NodeKindIcons
+import puck.piccolo.{IconTextNode, Register}
 
 /**
-  * Created by Loïc Girault on 23/05/16.
+  * Created by Loïc Girault on 31/05/16.
   */
-object DGPNode {
-  def unapply(arg: DGPNode): Some[NodeId] = Some(arg.id)
-  type T = PNode with DGPNode
-}
-trait DGPNode {
-  this : PNode =>
-  val id : NodeId
-  def contentSize : Int
-  def clearContent() : Unit
 
-  def toPNode : PNode with DGPNode = this
+
+class TitleNodeExpanseTest (g : DependencyGraph,
+                            aCanvas : PCanvas,
+                            nk : NodeKindIcons)
+  extends PFrame("TitleNodeExpanseTest", false, aCanvas) {
+
+  implicit val nodeKindIcons : NodeKindIcons = nk
+  val register = new Register()
+
+  def getNode(nid : NodeId) : IconTextNode  = {
+    val numChildren = g.content(nid).size
+    val titleNode = IconTextNode(g, nid)(nk)
+    val n = new TitledGridSquareDGPNode(nid, titleNode, numChildren)
+    register += (nid -> titleNode)
+    n
+  }
+
+  def this(g : DependencyGraph,
+           nk : NodeKindIcons) = this(g, null, nk)
+
+
+
 }

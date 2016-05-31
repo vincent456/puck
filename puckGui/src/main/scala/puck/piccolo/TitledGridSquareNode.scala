@@ -26,21 +26,48 @@
 
 package puck.piccolo
 
+import java.awt.geom.Rectangle2D
+
 import org.piccolo2d.PNode
-import puck.graph.NodeId
+import org.piccolo2d.nodes.PPath
+
+object TitledGridSquareNode {
+  def getSide(numChild : Int ) : Int = {
+
+    def aux(i : Int) : Int =
+      if(i * i >= numChild) i
+      else aux(i + 1)
+
+    aux(1)
+  }
+}
 
 /**
   * Created by Loïc Girault on 23/05/16.
   */
-object DGPNode {
-  def unapply(arg: DGPNode): Some[NodeId] = Some(arg.id)
-  type T = PNode with DGPNode
-}
-trait DGPNode {
-  this : PNode =>
-  val id : NodeId
-  def contentSize : Int
-  def clearContent() : Unit
+class TitledGridSquareNode
+( titlePnode : PNode,
+  s : Int
+) extends PPath.Float(new Rectangle2D.Float(0, 0, 100, 100)) {
 
-  def toPNode : PNode with DGPNode = this
+  titlePnode.setBounds(0, 0, 100, 10)
+
+
+  super.addChild(titlePnode)
+
+  val body = new PNode() with GridLayoutPNode {
+    val side = s
+    setBounds(0, 0, 80, 80)
+  }
+
+  super.addChild(body)
+  titlePnode.offset(0d,0d)
+  body.offset(10d, 10d)
+
+  override def addChild( child : PNode) : Unit = {
+    body addChild child
+    //child.scale( child.getScale * 0.9)
+  }
+
+
 }

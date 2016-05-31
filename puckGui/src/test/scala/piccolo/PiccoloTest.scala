@@ -39,8 +39,8 @@ import org.piccolo2d.nodes.{PPath, PText}
 import org.piccolo2d.util.PBounds
 import puck.ignore
 import puck.graph.{DependencyGraph, NodeId}
-import puck.piccolo.TitledSquareNode
-import TitledSquareNode.getSide
+import puck.piccolo.{TitledGridSquareNode$, ViewCommands}
+import TitledGridSquareNode.getSide
 
 
 
@@ -61,36 +61,7 @@ class PiccoloTest(g : DependencyGraph, aCanvas : PCanvas)
     setFocusable(true)
     setFocusTraversalKeysEnabled(false)
 
-    val kbManager = KeyboardFocusManager.getCurrentKeyboardFocusManager
-    val VK_NUMPAD_MINUS = 0x6D
-    kbManager.addKeyEventDispatcher( new KeyEventDispatcher {
-      def dispatchKeyEvent( e : KeyEvent) : Boolean = {
-        if(e.getID == KeyEvent.KEY_PRESSED) {
-          val zoomHint = 5
-          val currentBounds = getCanvas.getCamera.getViewBounds
-          e.getKeyCode match {
-            case KeyEvent.VK_ADD =>
-              val newBounds =
-                new PBounds( currentBounds.getX + zoomHint,
-                  currentBounds.getY + zoomHint,
-                  currentBounds.getWidth - zoomHint * 2,
-                  currentBounds.getHeight - zoomHint * 2)
-              ignore(getCanvas.getCamera.animateViewToCenterBounds(newBounds, true, 200))
-            case KeyEvent.VK_MINUS | VK_NUMPAD_MINUS =>
-              val newBounds =
-                new PBounds( currentBounds.getX - zoomHint,
-                  currentBounds.getY - zoomHint,
-                  currentBounds.getWidth + zoomHint * 2,
-                  currentBounds.getHeight + zoomHint * 2)
-
-              ignore(getCanvas.getCamera.animateViewToCenterBounds(newBounds, true, 200))
-            case c =>
-              println( Integer.toHexString(c) + " " + KeyEvent.getKeyText(c) + " ignored")
-          }
-        }
-        false
-      }
-    })
+    ViewCommands.addGlobalKeyEventDispatcher(this)
 
     getCanvas addInputEventListener new PBasicInputEventHandler() {
       override def keyTyped(e: PInputEvent): Unit = println("canvas key typed !")
@@ -102,7 +73,7 @@ class PiccoloTest(g : DependencyGraph, aCanvas : PCanvas)
       override def mousePressed(event: PInputEvent) : Unit = {
         def aux(n0 : PNode) : Unit = n0 match {
             case _: PText => ()
-            case _ : TitledSquareNode
+            case _ : TitledGridSquareNode
                  | _  : PRoot =>
               ignore(getCanvas.getCamera.animateViewToCenterBounds(n0.getGlobalBounds, true, 500))
             case n  if n.getParent != null => aux(n.getParent)
@@ -123,7 +94,7 @@ class PiccoloTest(g : DependencyGraph, aCanvas : PCanvas)
 
     import puck.graph.ShowDG._
 
-    val result = new TitledSquareNode(new PText(s"${(g, node).shows}"){
+    val result = new TitledGridSquareNode(new PText(s"${(g, node).shows}"){
       setFont(new Font("SansSerif", Font.PLAIN, 8))
     }, getSide(numChildren))
 //      new PPath.Float(new Rectangle2D.Float(0, 0, 100, 100))

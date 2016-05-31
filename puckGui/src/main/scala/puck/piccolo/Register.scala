@@ -26,21 +26,20 @@
 
 package puck.piccolo
 
-import org.piccolo2d.PNode
-import puck.graph.NodeId
+import puck.graph.{DependencyGraph, _}
+
+import scala.collection.mutable
 
 /**
-  * Created by Loïc Girault on 23/05/16.
+  * Created by Loïc Girault on 31/05/16.
   */
-object DGPNode {
-  def unapply(arg: DGPNode): Some[NodeId] = Some(arg.id)
-  type T = PNode with DGPNode
-}
-trait DGPNode {
-  this : PNode =>
-  val id : NodeId
-  def contentSize : Int
-  def clearContent() : Unit
+class Register {
+  val content = new mutable.HashMap[NodeId, DGPNode.T]()
 
-  def toPNode : PNode with DGPNode = this
+  def +=(kv : (NodeId, DGPNode.T)) = content += kv
+  def firstVisible(nid : NodeId, g : DependencyGraph) : DGPNode.T =
+    content get nid match {
+      case Some(n) => n
+      case None => firstVisible(g container_! nid, g)
+    }
 }
