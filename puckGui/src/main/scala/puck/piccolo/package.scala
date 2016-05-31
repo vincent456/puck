@@ -26,6 +26,8 @@
 
 package puck
 
+import java.awt.geom.Rectangle2D
+
 import org.piccolo2d.util.PBounds
 
 /**
@@ -36,5 +38,8 @@ package object piccolo {
     def copy(x: Double = b.getX, y: Double = b.getY,
              width: Double = b.getWidth,
              height: Double = b.getHeight) = new PBounds(x, y, width, height)
+
+    def rectangle : Rectangle2D =
+      new Rectangle2D.Double(b.getX, b.getY, b.getWidth, b.getHeight)
   }
 }

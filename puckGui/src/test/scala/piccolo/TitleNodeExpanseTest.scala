@@ -26,11 +26,16 @@
 
 package piccolo
 
-import org.piccolo2d.PCanvas
+import java.awt.Color
+
+import org.piccolo2d.event.{PBasicInputEventHandler, PInputEvent}
+import org.piccolo2d.{PCanvas, PLayer, PNode}
 import org.piccolo2d.extras.PFrame
+import org.piccolo2d.extras.event.PSelectionEventHandler
+import org.piccolo2d.nodes.{PPath, PText}
 import puck.graph.{DependencyGraph, NodeId}
 import puck.gui.NodeKindIcons
-import puck.piccolo.{IconTextNode, Register}
+import puck.piccolo.{DGPNode, DecoratorGroup, IconTextNode, Register, TitledExpansableNode, ViewCommands}
 
 /**
   * Created by Loïc Girault on 31/05/16.
@@ -44,18 +49,64 @@ class TitleNodeExpanseTest (g : DependencyGraph,
 
   implicit val nodeKindIcons : NodeKindIcons = nk
   val register = new Register()
+  val nodeLayer = getCanvas.getLayer
+  val edgeLayer = new PLayer()
 
-  def getNode(nid : NodeId) : IconTextNode  = {
-    val numChildren = g.content(nid).size
+  def getNode(nid : NodeId) : TitledExpansableNode  = {
     val titleNode = IconTextNode(g, nid)(nk)
-    val n = new TitledGridSquareDGPNode(nid, titleNode, numChildren)
-    register += (nid -> titleNode)
+    val n = new TitledExpansableNode(nid, titleNode)
+    register += (nid -> n)
     n
   }
 
   def this(g : DependencyGraph,
            nk : NodeKindIcons) = this(g, null, nk)
 
+  override def initialize() : Unit = {
+    val n = getNode(0)
+    nodeLayer addChild n
+    getCanvas.removeInputEventListener(getCanvas.getPanEventHandler)
 
+    // Create a selection handler so we can see that the decorator actually
+    // works
+    import scala.collection.JavaConversions.seqAsJavaList
+    val selectableParents = List(n)
+    //selectableParents.add(vdg)
+
+    val ps: PSelectionEventHandler = new PSelectionEventHandler(getCanvas.getLayer, selectableParents)
+    getCanvas.addInputEventListener(ps)
+
+    getCanvas.addInputEventListener(new PBasicInputEventHandler() {
+
+      override def mouseClicked(event : PInputEvent) : Unit =
+        if(event.getClickCount == 2 ) {
+          def aux(n0 : PNode) : Unit = n0 match {
+            case _: PText => ()
+            case dgn : DGPNode =>
+              if(dgn.contentSize == 0) addContent(dgn)
+              else dgn.clearContent()
+            case n  if n.getParent != null => aux(n.getParent)
+            case n => ()
+          }
+
+          println("mouseClicked : "+ event.getPickedNode.getClass)
+          aux(event.getPickedNode)
+        }
+
+
+    })
+
+  }
+
+  def addContent(n : DGPNode) : Unit = {
+
+    val pn = n.asInstanceOf[PNode]
+    val content = g content n.id
+
+    content map getNode foreach {
+      c =>
+        pn addChild c
+    }
+  }
 
 }

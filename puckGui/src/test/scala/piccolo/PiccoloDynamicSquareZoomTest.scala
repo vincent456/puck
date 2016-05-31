@@ -139,15 +139,7 @@ class PiccoloDynamicSquareZoomTest(g : DependencyGraph,
     setFocusable(true)
     setFocusTraversalKeysEnabled(false)
 
-
     ViewCommands.addGlobalKeyEventDispatcher(this)
-
-
-    getCanvas.addInputEventListener(new PBasicInputEventHandler() {
-      override def keyTyped(e: PInputEvent): Unit = println("canvas key typed !")
-      override def keyReleased(e: PInputEvent): Unit = println("canvas key released !")
-      override def keyPressed(event: PInputEvent) : Unit = println("canvas key pressed !")
-    })
 
 
     getCanvas.addInputEventListener(new PBasicInputEventHandler() {

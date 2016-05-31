@@ -29,6 +29,7 @@ package puck.piccolo
 import java.awt.{Font, Image}
 
 import org.piccolo2d.PNode
+import org.piccolo2d.extras.nodes.PComposite
 import org.piccolo2d.nodes.{PImage, PText}
 import puck.graph.{DependencyGraph, NodeId}
 import puck.gui.NodeKindIcons
@@ -48,12 +49,12 @@ object IconTextNode {
 class IconTextNode
 (text : String,
  icon : Image )
-  extends PNode {
+  extends PComposite {
 
   val picon = new PImage(icon)
   addChild(picon)
   val ptext = new PText(text) {
-    setFont(new Font("SansSerif", Font.PLAIN, 8))
+    setFont(new Font("SansSerif", Font.PLAIN, 12))
   }
   addChild(ptext)
 

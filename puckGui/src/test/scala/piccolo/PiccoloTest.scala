@@ -36,11 +36,10 @@ import org.piccolo2d.event.PBasicInputEventHandler
 import org.piccolo2d.event.PInputEvent
 import org.piccolo2d.extras.PFrame
 import org.piccolo2d.nodes.{PPath, PText}
-import org.piccolo2d.util.PBounds
 import puck.ignore
 import puck.graph.{DependencyGraph, NodeId}
-import puck.piccolo.{TitledGridSquareNode$, ViewCommands}
-import TitledGridSquareNode.getSide
+import puck.piccolo.ViewCommands
+import puck.piccolo.TitledGridSquareNode
 
 
 
@@ -89,6 +88,8 @@ class PiccoloTest(g : DependencyGraph, aCanvas : PCanvas)
   def createHierarchy(node : NodeId) : PNode = {
 
     val numChildren = g.content(node).size
+
+    import TitledGridSquareNode.getSide
 
     val s = getSide(numChildren)
 
