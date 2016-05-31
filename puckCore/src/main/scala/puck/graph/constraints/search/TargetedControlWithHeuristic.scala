@@ -71,7 +71,8 @@ class TargetedControlWithHeuristic
  val violationTarget : ConcreteNode
 ) extends SearchControl[DecoratedGraph[AutomataState]]
   with Heuristic
-  with CheckViolation {
+  with CheckViolation
+  with TerminalStateWhenTargetedViolationRemoved[AutomataState] {
 
   def initialState: DecoratedGraph[AutomataState] = (initialGraph, 0)
 

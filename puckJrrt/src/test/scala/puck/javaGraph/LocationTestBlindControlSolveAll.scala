@@ -1,20 +1,19 @@
 package puck.javaGraph
 
+
 import java.io.File
 
-import puck.{Quick, Settings}
 import puck.TestUtils._
 import puck.graph.constraints.search.DecoratedGraphEvaluator
-import puck.graph.{DependencyGraph, Metrics}
-import puck.search.AStarSearchStrategyGraphDisplay
-import puck.util.LoggedEither
+import puck.graph.{ConcreteNode, _}
+import puck.search.{AStarSearchStrategy, AStarSearchStrategyGraphDisplay}
 import puck.jastadd.ExtendJGraphUtils.dotHelper
 
-import scalaz.\/-
 
 /**
   * Created by cedric on 18/05/2016.
   */
+
 object LocationTestBlindControlSolveAll {
   val path = getClass.getResource("/miniComposite").getPath
 
@@ -33,20 +32,22 @@ object LocationTestBlindControlSolveAll {
       val fitness1 : DependencyGraph => Double =
         Metrics.fitness1(_, constraints, 1, 1, 2)
 
-      val res = solveAllBlind(graph, constraints,
-        () => new AStarSearchStrategyGraphDisplay(DecoratedGraphEvaluator.equalityByMapping(fitness1),Some(constraints),
-          10, 1000, "/tmp/"),
-        Some(1))
+      val evaluator = DecoratedGraphEvaluator.equalityByMapping[Option[ConcreteNode]](fitness1)
+      val strategy =new AStarSearchStrategyGraphDisplay[Option[ConcreteNode]](
+        evaluator, Some(constraints),
+        10, 1000, "/tmp/DG-Imgs")
+
+      implicit val ordering = AStarSearchStrategy.ordering(evaluator)
+
+      val res = solveAllBlind(graph, constraints, strategy, Some(1))
 
       if(res.isEmpty) println("no results")
       else {
         println(res.size + " result(s)")
-  //      res foreach {
-  //        case LoggedEither(_, \/-(g)) =>
-            //Quick.dot(g, Settings.tmpDir + "solved-blind_bfs", Some(constraints))
-            //Quick.frame(g, "Blind BFS", scm = Some(constraints))
-            //applyChanges(g, new File(Settings.tmpDir))
-        //   }
+        res foreach {
+           ss =>
+            strategy.printSuccessState("result#" + ordering.evaluateWithDepthPenalty(ss), ss)
+           }
        }
     }
 }

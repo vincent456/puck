@@ -28,6 +28,7 @@ package puck.graph.constraints.search
 
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
+import puck.search.SearchControl
 
 /**
   * Created by Loïc Girault on 10/05/16.
@@ -39,6 +40,7 @@ trait CheckViolation {
     (g, constraints).isWronglyUsed(nid) || (g, constraints).isWronglyContained(nid)
 
 }
+
 trait TargetFinder
   extends CheckViolation {
 
@@ -58,5 +60,25 @@ trait TargetFinder
       (graph, constraints).isWronglyContained(n.id) }
   }
 
-
 }
+
+trait TerminalStateWhenTargetedViolationRemoved[T] {
+  self : SearchControl[DecoratedGraph[T]] =>
+
+  val constraints: ConstraintsMaps
+  val violationTarget : ConcreteNode
+
+  override def isTerminalState(t : DecoratedGraph[T]) : Boolean =
+    !(t.graph, constraints).isWronglyContained(violationTarget.id) &&
+      !(t.graph, constraints).isWronglyUsed(violationTarget.id)
+}
+
+trait TerminalStateWhenNoViolations[T] {
+  self : SearchControl[DecoratedGraph[T]] =>
+
+  val constraints: ConstraintsMaps
+
+  override def isTerminalState(t : DecoratedGraph[T]) : Boolean =
+    (t.graph, constraints).violations().isEmpty
+}
+

@@ -28,11 +28,21 @@ package puck
 package search
 
 import scala.collection.mutable
-import scala.collection.mutable._
 
 /**
   * Created by Loïc Girault on 16/11/15.
   */
+
+object AStarSearchStrategy {
+  def ordering[T](evaluator: Evaluator [T])= new Ordering[SearchState[T]]{
+
+    def evaluateWithDepthPenalty(x: SearchState[T]) : Int =
+      Math.max(evaluator.evaluateInt(x) + x.depth, 0)
+
+    override def compare(sx: SearchState[T], sy: SearchState[T]): Int =
+      evaluateWithDepthPenalty(sx) compareTo evaluateWithDepthPenalty(sy)
+  }
+}
 class AStarSearchStrategy[T]
 ( evaluator: Evaluator [T],
   maxDepth : Int = 100, // ajouté par Mikal
@@ -40,14 +50,7 @@ class AStarSearchStrategy[T]
   ) extends SearchStrategy[T] {
 
 
-  implicit object SearchStateOrdering extends Ordering[SearchState[T]]{
-
-    def evaluateWithDepthPenaly(x: SearchState[T]) : Int =
-      Math.max(evaluator.evaluateInt(x) + x.depth, 0)
-
-    override def compare(sx: SearchState[T], sy: SearchState[T]): Int =
-      evaluateWithDepthPenaly(sx) compareTo evaluateWithDepthPenaly(sy)
-  }
+  implicit val SearchStateOrdering = AStarSearchStrategy.ordering(evaluator)
 
   // var remainingStates = new mutable.PriorityQueue[SearchState[T]]()(SearchStateOrdering.reverse)
   var remainingStates : mutable.SortedSet[SearchState[T]] = new mutable.TreeSet[SearchState[T]]()(SearchStateOrdering)

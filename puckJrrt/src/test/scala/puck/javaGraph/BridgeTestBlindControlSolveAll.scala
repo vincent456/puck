@@ -5,7 +5,7 @@ import java.io.File
 import puck.{Quick, Settings}
 import puck.TestUtils._
 import puck.graph.constraints.search.DecoratedGraphEvaluator
-import puck.graph.{DependencyGraph, Metrics}
+import puck.graph.{ConcreteNode, DependencyGraph, Metrics}
 import puck.search.AStarSearchStrategyGraphDisplay
 import puck.util.LoggedEither
 import puck.jastadd.ExtendJGraphUtils.dotHelper
@@ -34,20 +34,21 @@ object BridgeTestBlindControlSolveAll {
       val fitness1 : DependencyGraph => Double =
         Metrics.fitness1(_, constraints, 5, 1, 2)
 
-      val res = solveAllBlind(graph, constraints,
-        () => new AStarSearchStrategyGraphDisplay(DecoratedGraphEvaluator.equalityByMapping(fitness1),Some(constraints),
-          30, 5, "/tmp/"),
-        Some(1))
+      val strategy =
+        new AStarSearchStrategyGraphDisplay[Option[ConcreteNode]](
+          DecoratedGraphEvaluator.equalityByMapping(fitness1),
+          Some(constraints),
+          30, 5, "/tmp/DG-Imgs")
+
+      val res = solveAllBlind(graph, constraints, strategy, Some(1))
 
       if(res.isEmpty) println("no results")
       else {
         println(res.size + " result(s)")
-        //      res foreach {
-        //        case LoggedEither(_, \/-(g)) =>
-        //Quick.dot(g, Settings.tmpDir + "solved-blind_bfs", Some(constraints))
-        //Quick.frame(g, "Blind BFS", scm = Some(constraints))
-        //applyChanges(g, new File(Settings.tmpDir))
-        //   }
+        res.zipWithIndex foreach {
+          case (ss, i) =>
+            strategy.printSuccessState("result#" + i, ss)
+        }
       }
     }
 }

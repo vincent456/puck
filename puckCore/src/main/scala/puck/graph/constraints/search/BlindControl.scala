@@ -23,12 +23,15 @@ class TargetedBlindControl
   val violationTarget : ConcreteNode
   ) extends SearchControl[DecoratedGraph[Unit]] //DecoratedGraph[Unit] let us share the DecoratedGraphEvalutaor
   with Blind
-  with CheckViolation {
+  with CheckViolation
+  with TerminalStateWhenTargetedViolationRemoved[Unit] {
   def initialState: DecoratedGraph[Unit] = (initialGraph, ())
 
   def nextStates(t: DecoratedGraph[Unit]): Seq[LoggedTry[DecoratedGraph[Unit]]] =
     if(!isViolationTarget(t._1, violationTarget.id)) Seq()
     else decorate(nextStates(violationTarget)(t._1), ())
+
+
 }
 
 class BlindControl
@@ -38,7 +41,8 @@ class BlindControl
  val violationsKindPriority : Seq[NodeKind]
 ) extends SearchControl[DecoratedGraph[Option[ConcreteNode]]]
   with Blind
-  with TargetFinder {
+  with TargetFinder
+  with TerminalStateWhenNoViolations[Option[ConcreteNode]] {
 
   def initialState: DecoratedGraph[Option[ConcreteNode]] = (initialGraph, None)
 
@@ -52,8 +56,8 @@ class BlindControl
   state match {
     case (g, Some(violationTarget)) => nextStates(g)(violationTarget)
     case (g, None) => findTargets(g) flatMap nextStates(g)
-
  }
+
 }
 
 

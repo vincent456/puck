@@ -80,24 +80,20 @@ class SearchEngine[T]
             ignore(successes += resState)
     }
 
-  def storeResult(resState : SearchState[T]) : Unit = {
-    ignore(resState.loggedResult.value match {
-      case -\/(err) => failures += resState
-      case \/-(g) => storeSuccess(resState)
-
-    })
-
-  }
-
   protected var numExploredStates = 0
 
-  def addState(parent : SearchState[T], choices : Seq[LoggedTry[T]]) : Unit = {
-    numExploredStates = numExploredStates + 1
+  def addState(state : SearchState[T]) : Unit =
+    ignore(state.loggedResult.value match {
+    case \/-(t) if control isTerminalState t =>
+      storeSuccess(state)
+    case \/-(_) => searchStrategy addState state
+    case -\/(err) => failures += state // case added for completude but eliminated in oneStep
+  })
 
-    if(choices.isEmpty) storeResult(parent)
-    else choices.zipWithIndex.foreach{
-      case (c,i) =>
-        searchStrategy.addState(new SearchState[T](i, Some(parent), c))
+  def addChoicesStates(parent : SearchState[T], choices : Seq[LoggedTry[T]]) : Unit = {
+    numExploredStates = numExploredStates + 1
+    choices.zipWithIndex.foreach{
+      case (c,i) => addState(new SearchState[T](i, Some(parent), c))
     }
   }
 
@@ -107,11 +103,10 @@ class SearchEngine[T]
 
   def oneStep() : Unit= {
     val state = searchStrategy.popState()
-
     state.loggedResult.value match {
         case \/-(cc) =>
-          addState( state, control.nextStates(cc) map (ltnext => state.loggedResult.log <++: ltnext))
-        case _ => ()
+          addChoicesStates(state, control.nextStates(cc) map (ltnext => state.loggedResult.log <++: ltnext))
+        case _ => ignore(failures += state)
       }
   }
 
@@ -129,6 +124,7 @@ class SearchEngine[T]
 trait SearchControl[T]{
   def initialState : T
   def nextStates(t : T) : Seq[LoggedTry[T]]
+  def isTerminalState(t : T) : Boolean = nextStates(t).isEmpty
 }
 
 trait SearchStrategy[T] {

@@ -62,13 +62,22 @@ object TestUtils {
     engine.successes map (ss => ss.loggedResult map (_._1))
   }
 
-  def solveAllBlind[T](graph : DependencyGraph, constraints : ConstraintsMaps,
-                       strategyBuilder : StrategyBuilder[(DependencyGraph, Option[ConcreteNode])],
-                       maxResult : Option[Int]) : Seq[LoggedTG] = {
+  def solveAllBlind(graph : DependencyGraph, constraints : ConstraintsMaps,
+                       strategy : SearchStrategy[DecoratedGraph[Option[ConcreteNode]]],
+                       maxResult : Option[Int]) : Seq[SearchState[DecoratedGraph[Option[ConcreteNode]]]] = {
     val control = new BlindControl(Rules, graph, constraints, violationsKindPriority)
-    val engine = new SearchEngine(strategyBuilder(), control, maxResult)
+    val engine = new SearchEngine(strategy, control, maxResult)
     engine.explore()
-    engine.successes map (ss => ss.loggedResult map (_._1))
+    engine.successes
+  }
+  def solveAllBlindEval(graph : DependencyGraph, constraints : ConstraintsMaps,
+                       strategy : SearchStrategy[DecoratedGraph[Option[ConcreteNode]]],
+                           evaluator : Option[Evaluator [DecoratedGraph[Option[ConcreteNode]]]],
+                       maxResult : Option[Int]) : Seq[SearchState[DecoratedGraph[Option[ConcreteNode]]]] = {
+    val control = new BlindControl(Rules, graph, constraints, violationsKindPriority)
+    val engine = new SearchEngine(strategy, control, maxResult, evaluator)
+    engine.explore()
+    engine.successes
   }
 
   implicit def toOption( s : Seq[LoggedTG]) : Option[DependencyGraph] = s match {
@@ -77,15 +86,4 @@ object TestUtils {
   }
 
 
-  def solveAllBlindBFS(graph : DependencyGraph, constraints : ConstraintsMaps) : Option[DependencyGraph] =
-    solveAllBlind(graph, constraints, () => new BreadthFirstSearchStrategy, Some(1))
-
-  def solveAllBlindAStar(graph : DependencyGraph, constraints : ConstraintsMaps) : Option[DependencyGraph] =
-    solveAllBlind(graph, constraints, () => new AStarSearchStrategy(DecoratedGraphEvaluator.equalityByMapping(_ => 1)), Some(1))
-
-  def solveAllHeuristicBFS(graph : DependencyGraph, constraints : ConstraintsMaps) : Option[DependencyGraph] =
-    solveAllHeuristic(graph, constraints,  () => new BreadthFirstSearchStrategy, Some(1))
-
-  def solveAllHeuristicAStar(graph : DependencyGraph, constraints : ConstraintsMaps) : Option[DependencyGraph] =
-    solveAllHeuristic(graph, constraints, () => new AStarSearchStrategy(DecoratedGraphEvaluator.equalityByMapping(_ => 1)), Some(1))
 }

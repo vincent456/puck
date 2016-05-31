@@ -41,7 +41,8 @@ class ControlWithHeuristic
  val violationsKindPriority : Seq[NodeKind]
 ) extends SearchControl[DecoratedGraph[Option[(ConcreteNode, AutomataState)]]]
   with Heuristic
-  with TargetFinder {
+  with TargetFinder
+  with TerminalStateWhenNoViolations[Option[(ConcreteNode, AutomataState)]]{
 
   def initialState: DecoratedGraph[Option[(ConcreteNode, AutomataState)]] = (initialGraph, None)
 
