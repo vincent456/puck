@@ -31,6 +31,7 @@ import java.awt.{Font, Image}
 import org.piccolo2d.PNode
 import org.piccolo2d.extras.nodes.PComposite
 import org.piccolo2d.nodes.{PImage, PText}
+import org.piccolo2d.util.{PBounds, PPaintContext}
 import puck.graph.{DependencyGraph, NodeId}
 import puck.gui.NodeKindIcons
 
@@ -58,9 +59,12 @@ class IconTextNode
   }
   addChild(ptext)
 
+  override def toString : String = s"IconTextNode : $text"
+
   override def layoutChildren() : Unit = {
     val (x,y) = (0d, 0d)
     picon.setOffset(x, y)
     ptext.setOffset(picon.getWidth, y)
   }
+
 }

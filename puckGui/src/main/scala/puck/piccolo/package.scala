@@ -42,4 +42,13 @@ package object piccolo {
     def rectangle : Rectangle2D =
       new Rectangle2D.Double(b.getX, b.getY, b.getWidth, b.getHeight)
   }
+
+  def squareSide(numChild : Int ) : Int = {
+
+    def aux(i : Int) : Int =
+      if(i * i >= numChild) i
+      else aux(i + 1)
+
+    aux(1)
+  }
 }

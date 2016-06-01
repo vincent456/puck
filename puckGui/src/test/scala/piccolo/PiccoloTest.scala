@@ -28,8 +28,8 @@
  */
 package piccolo
 
-import java.awt.{Font, KeyEventDispatcher, KeyboardFocusManager}
-import java.awt.event.KeyEvent
+import java.awt.Font
+
 
 import org.piccolo2d.{PCanvas, PNode, PRoot}
 import org.piccolo2d.event.PBasicInputEventHandler
@@ -40,7 +40,7 @@ import puck.ignore
 import puck.graph.{DependencyGraph, NodeId}
 import puck.piccolo.ViewCommands
 import puck.piccolo.TitledGridSquareNode
-
+import puck.piccolo.squareSide
 
 
 class PiccoloTest(g : DependencyGraph, aCanvas : PCanvas)
@@ -89,15 +89,14 @@ class PiccoloTest(g : DependencyGraph, aCanvas : PCanvas)
 
     val numChildren = g.content(node).size
 
-    import TitledGridSquareNode.getSide
 
-    val s = getSide(numChildren)
+    val s = squareSide(numChildren)
 
     import puck.graph.ShowDG._
 
     val result = new TitledGridSquareNode(new PText(s"${(g, node).shows}"){
       setFont(new Font("SansSerif", Font.PLAIN, 8))
-    }, getSide(numChildren))
+    }, squareSide(numChildren))
 //      new PPath.Float(new Rectangle2D.Float(0, 0, 100, 100))
 //        with GridLayoutPNode {
 //          val side = s

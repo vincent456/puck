@@ -26,49 +26,34 @@
 
 package piccolo
 
-import org.piccolo2d.{PCanvas, PLayer, PNode, PRoot}
+import org.piccolo2d.{PCanvas, PNode, PRoot}
 import org.piccolo2d.event.{PBasicInputEventHandler, PInputEvent}
 import org.piccolo2d.extras.PFrame
-import org.piccolo2d.nodes.{PPath,  PText}
+import org.piccolo2d.nodes.PText
 import puck._
 import puck.graph._
 import puck.piccolo.{DGPNode, IconTextNode, Register, TitledGridSquareNode, ViewCommands}
 import puck.gui.NodeKindIcons
-
+import puck.piccolo.squareSide
 import scala.swing._
 /**
   * Created by Loïc Girault on 23/05/16.
   */
 object PiccoloDynamicSquareZoomTest {
 
-  def edge(source : DGPNode, target : DGPNode) : PPath = {
-    val bound1 = source.toPNode.getFullBounds.getCenter2D
-    val bound2 = target.toPNode.getFullBounds.getCenter2D
 
-    val e = new PPath.Float()
-    e.moveTo(bound1.getX, bound1.getY)
-    e.lineTo(bound2.getX, bound2.getY)
-
-
-    println(e.getAllNodes.size())
-    println(e.getBounds)
-
-    e
-  }
 
 }
 import puck.piccolo.BoundsOp
-import puck.piccolo.TitledGridSquareNode.getSide
 class TitledGridSquareDGPNode
 ( val id : NodeId,
   titleNode : PNode,
   numChildren : Int
-) extends TitledGridSquareNode(titleNode, getSide(numChildren)) with DGPNode {
+) extends TitledGridSquareNode(titleNode, squareSide(numChildren)) with DGPNode {
   def contentSize : Int = body.getChildrenCount
   def clearContent() : Unit = body.removeAllChildren()
 }
 
-import PiccoloDynamicSquareZoomTest._
 class PiccoloDynamicSquareZoomTest(g : DependencyGraph,
                                    aCanvas : PCanvas,
                                    nk : NodeKindIcons)
@@ -79,12 +64,9 @@ class PiccoloDynamicSquareZoomTest(g : DependencyGraph,
   def this(g : DependencyGraph,
            nk : NodeKindIcons) = this(g, null, nk)
 
-  val register = new Register()
+  val register = new Register[TitledGridSquareDGPNode]()
 
   //nodeLayer underneath edgeLayer
-  val nodeLayer = getCanvas.getLayer
-  val edgeLayer = new PLayer()
-  getCanvas.getCamera.addLayer(1, edgeLayer)
 
   def squareNode(nid : NodeId) : TitledGridSquareDGPNode  = {
     val numChildren = g.content(nid).size
@@ -95,27 +77,7 @@ class PiccoloDynamicSquareZoomTest(g : DependencyGraph,
   }
 
 
-  def addUsedBy(n0 : PNode ): Unit = n0 match {
-  //  case n : DGPNode => addUsedBy(n)
-    case n : TitledGridSquareDGPNode =>
-      println(getCanvas.getCamera.getLayerCount)
 
-      g.usedBy(n.id) map (register.firstVisible(_, g)) foreach {
-        used =>
-          import puck.graph.ShowDG._
-          println(s"add ${(g, (n.id, used.id)).shows}")
-          Swing.onEDT(edgeLayer addChild edge(n, used))
-      }
-
-      println("TitledSquareDGPNode ...")
-      if(! n.isInstanceOf[DGPNode]) println("dafuq ??")
-    case n if n.getParent != null =>
-      addUsedBy(n.getParent)
-    case n =>
-      println(n.getClass +  " add uses ignored")
-      n.getClass.getInterfaces foreach (i => println(i.getName))
-
-  }
 
   def focus(n0 : PNode) : Unit = n0 match {
     case _ : TitledGridSquareNode
@@ -133,7 +95,7 @@ class PiccoloDynamicSquareZoomTest(g : DependencyGraph,
     addContent(root)
 
 
-    nodeLayer addChild root
+    getCanvas.getLayer addChild root
 
     getCanvas.removeInputEventListener(getCanvas.getPanEventHandler)
     setFocusable(true)
@@ -149,9 +111,6 @@ class PiccoloDynamicSquareZoomTest(g : DependencyGraph,
           val menu = new PopupMenu(){
             contents += new MenuItem(new Action("Focus"){
               def apply() : Unit = focus(event.getPickedNode)
-            })
-            contents += new MenuItem(new Action("uses"){
-              def apply() : Unit = addUsedBy(event.getPickedNode)
             })
           }
           Swing.onEDT(menu.show(Component.wrap(getCanvas), pos.getX.toInt, pos.getY.toInt))
@@ -195,7 +154,7 @@ class PiccoloDynamicSquareZoomTest(g : DependencyGraph,
 
     val size =
       if( content.isEmpty ) 1
-      else 8d / (10d * getSide(content.size))
+      else 8d / (10d * squareSide(content.size))
 
     content map squareNode foreach {
       c =>

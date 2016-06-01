@@ -27,6 +27,7 @@
 package puck.piccolo
 
 import java.awt.{Color, Graphics2D, Paint}
+import java.util
 
 import org.piccolo2d.PNode
 import org.piccolo2d.util.{PBounds, PPaintContext}
@@ -37,40 +38,71 @@ import puck.graph.NodeId
   */
 class TitledExpansableNode
 ( val id: NodeId,
-  titlePnode : PNode
+  val titlePnode : PNode
 ) extends DecoratorGroup with DGPNode{
 
 
+  val padding : Double = 5d
+  val body = new PNode {
+    def side : Int = squareSide(getChildrenCount)
+    override def layoutChildren() : Unit = {
+      var xOffset = 0d
+      var yOffset = 0d
+      var refHeight = 0d
+      import scala.collection.JavaConversions._
+      val it  = getChildrenIterator.asInstanceOf[util.ListIterator[PNode]]
+
+      it.zipWithIndex.foreach {
+        case (n, i) =>
+          if(i % side == 0) {
+            xOffset = 0
+            if( i > 0 ) {
+              yOffset += refHeight + padding
+              refHeight = 0d
+            }
+          }
+          if(n.getHeight > refHeight)
+            refHeight = n.getHeight
+
+          n.setOffset(xOffset, yOffset)
+          xOffset += n.getWidth + padding
+      }
+    }
+
+  }
+
+
+
   super.addChild(titlePnode)
-
-  val body = new DecoratorGroup{}
-
   super.addChild(body)
-  titlePnode.offset(0d,0d)
-  body.offset(10d, 10d)
+
+    titlePnode.setOffset(margin, margin)
+    body.setOffset(margin+padding, titlePnode.getFullBounds.getHeight + margin * 2)
 
   override def addChild( child : PNode) : Unit = {
     body addChild child
-    //child.scale( child.getScale * 0.9)
   }
+
   def contentSize: Int = body.getChildrenCount
 
   def clearContent(): Unit = body.removeAllChildren()
+
 }
+
 // cf group example
 trait DecoratorGroup extends PNode  {
 
-  private val INDENT: Int = 10
+  val margin: Int = 10
   private val cachedChildBounds: PBounds = new PBounds
   private var comparisonBounds: PBounds = new PBounds
 
-  override def paint(ppc: PPaintContext) {
+  override def paint(ppc: PPaintContext) : Unit = {
     val paint: Paint = Color.black
     if (paint != null) {
       val g2: Graphics2D = ppc.getGraphics
       g2.setPaint(paint)
       val bounds: PBounds = getUnionOfChildrenBounds(null)
-      bounds.setRect(bounds.getX - INDENT, bounds.getY - INDENT, bounds.getWidth + 2 * INDENT, bounds.getHeight + 2 * INDENT)
+      bounds.setRect(bounds.getX - margin, bounds.getY - margin, bounds.getWidth + 2 * margin, bounds.getHeight + 2 * margin)
 
       g2.draw(bounds.rectangle)
       //g2.fill(bounds)
@@ -81,7 +113,7 @@ trait DecoratorGroup extends PNode  {
   override def computeFullBounds(dstBounds: PBounds): PBounds = {
     val result: PBounds = getUnionOfChildrenBounds(dstBounds)
     cachedChildBounds.setRect(result)
-    result.setRect(result.getX - INDENT, result.getY - INDENT, result.getWidth + 2 * INDENT, result.getHeight + 2 * INDENT)
+    result.setRect(result.getX - margin, result.getY - margin, result.getWidth + 2 * margin, result.getHeight + 2 * margin)
     localToParent(result)
      result
   }
@@ -93,4 +125,8 @@ trait DecoratorGroup extends PNode  {
 
     super.validateFullBounds
   }
+
+  override def getBoundsReference :  PBounds =
+    computeFullBounds(null)
+
 }

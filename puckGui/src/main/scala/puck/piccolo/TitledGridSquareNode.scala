@@ -31,17 +31,6 @@ import java.awt.geom.Rectangle2D
 import org.piccolo2d.PNode
 import org.piccolo2d.nodes.PPath
 
-object TitledGridSquareNode {
-  def getSide(numChild : Int ) : Int = {
-
-    def aux(i : Int) : Int =
-      if(i * i >= numChild) i
-      else aux(i + 1)
-
-    aux(1)
-  }
-}
-
 /**
   * Created by Loïc Girault on 23/05/16.
   */

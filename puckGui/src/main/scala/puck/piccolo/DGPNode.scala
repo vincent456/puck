@@ -35,6 +35,9 @@ import puck.graph.NodeId
 object DGPNode {
   def unapply(arg: DGPNode): Some[NodeId] = Some(arg.id)
   type T = PNode with DGPNode
+
+  implicit def toPNode(n : T) : PNode = n.asInstanceOf[PNode]
+
 }
 trait DGPNode {
   this : PNode =>

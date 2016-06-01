@@ -26,35 +26,63 @@
 
 package piccolo
 
-import java.awt.Color
-
 import org.piccolo2d.event.{PBasicInputEventHandler, PInputEvent}
 import org.piccolo2d.{PCanvas, PLayer, PNode}
 import org.piccolo2d.extras.PFrame
-import org.piccolo2d.extras.event.PSelectionEventHandler
-import org.piccolo2d.nodes.{PPath, PText}
 import puck.graph.{DependencyGraph, NodeId}
 import puck.gui.NodeKindIcons
-import puck.piccolo.{DGPNode, DecoratorGroup, IconTextNode, Register, TitledExpansableNode, ViewCommands}
+import puck.piccolo.{Arrow, IconTextNode, Register, TitledExpansableNode}
+
+import scala.swing._
 
 /**
   * Created by Loïc Girault on 31/05/16.
   */
 
+object TitleNodeExpanseTest {
+  def edge(source : TitledExpansableNode, target : TitledExpansableNode) : PNode = {
+    val srcBoundCenter = source.titlePnode.getGlobalFullBounds.getCenter2D
+    val tgtBoundCenter = target.titlePnode.getGlobalFullBounds.getCenter2D
 
+    Arrow(srcBoundCenter, tgtBoundCenter)
+  }
+}
+import TitleNodeExpanseTest.edge
 class TitleNodeExpanseTest (g : DependencyGraph,
                             aCanvas : PCanvas,
                             nk : NodeKindIcons)
   extends PFrame("TitleNodeExpanseTest", false, aCanvas) {
 
   implicit val nodeKindIcons : NodeKindIcons = nk
-  val register = new Register()
+  val register = new Register[TitledExpansableNode]()
   val nodeLayer = getCanvas.getLayer
   val edgeLayer = new PLayer()
+  getCanvas.getCamera.addLayer(0, edgeLayer)
 
   def getNode(nid : NodeId) : TitledExpansableNode  = {
     val titleNode = IconTextNode(g, nid)(nk)
     val n = new TitledExpansableNode(nid, titleNode)
+    n.titlePnode.addInputEventListener(new PBasicInputEventHandler() {
+
+      override def mousePressed(event: PInputEvent) : Unit =
+        if(event.isRightMouseButton){
+          val pos = event.getCanvasPosition
+          val menu = new PopupMenu(){
+            contents += new MenuItem(new Action("uses"){
+              def apply() : Unit = addUsedBy(n)
+            })
+          }
+          Swing.onEDT(menu.show(Component.wrap(getCanvas), pos.getX.toInt, pos.getY.toInt))
+        }
+
+      override def mouseClicked(event : PInputEvent) : Unit =
+        if(event.getClickCount == 2 ) {
+          if(n.contentSize == 0) addContent(n)
+          else n.clearContent()
+        }
+
+
+    })
     register += (nid -> n)
     n
   }
@@ -69,38 +97,26 @@ class TitleNodeExpanseTest (g : DependencyGraph,
 
     // Create a selection handler so we can see that the decorator actually
     // works
-    import scala.collection.JavaConversions.seqAsJavaList
-    val selectableParents = List(n)
-    //selectableParents.add(vdg)
-
-    val ps: PSelectionEventHandler = new PSelectionEventHandler(getCanvas.getLayer, selectableParents)
-    getCanvas.addInputEventListener(ps)
-
-    getCanvas.addInputEventListener(new PBasicInputEventHandler() {
-
-      override def mouseClicked(event : PInputEvent) : Unit =
-        if(event.getClickCount == 2 ) {
-          def aux(n0 : PNode) : Unit = n0 match {
-            case _: PText => ()
-            case dgn : DGPNode =>
-              if(dgn.contentSize == 0) addContent(dgn)
-              else dgn.clearContent()
-            case n  if n.getParent != null => aux(n.getParent)
-            case n => ()
-          }
-
-          println("mouseClicked : "+ event.getPickedNode.getClass)
-          aux(event.getPickedNode)
-        }
-
-
-    })
+    //    import scala.collection.JavaConversions.seqAsJavaList
+    //    val selectableParents = List(n)
+    //    val ps: PSelectionEventHandler = new PSelectionEventHandler(getCanvas.getLayer, selectableParents)
+    //    getCanvas.addInputEventListener(ps)
 
   }
 
-  def addContent(n : DGPNode) : Unit = {
+  def addUsedBy(n : TitledExpansableNode ): Unit =
+    g.usedBy(n.id) map (register.firstVisible(_, g)) foreach {
+      used =>
+        Swing.onEDT{
+          val e = edge(n, used)
+          edgeLayer addChild e
+          //e.repaint()
+        }
+    }
 
-    val pn = n.asInstanceOf[PNode]
+  def addContent(n : TitledExpansableNode) : Unit = {
+
+    val pn = n.toPNode
     val content = g content n.id
 
     content map getNode foreach {

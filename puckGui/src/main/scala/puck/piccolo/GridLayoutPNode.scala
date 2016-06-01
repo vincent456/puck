@@ -33,10 +33,11 @@ import org.piccolo2d.PNode
 /**
   * Created by Loïc Girault on 23/05/16.
   */
+
 trait GridLayoutPNode {
   self : PNode =>
 
-  val side : Int
+  def side : Int
 
   override def layoutChildren() : Unit = {
     var xOffset = 0d

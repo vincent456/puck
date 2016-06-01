@@ -33,11 +33,11 @@ import scala.collection.mutable
 /**
   * Created by Loïc Girault on 31/05/16.
   */
-class Register {
-  val content = new mutable.HashMap[NodeId, DGPNode.T]()
+class Register[T <: DGPNode] {
+  val content = new mutable.HashMap[NodeId, T]()
 
-  def +=(kv : (NodeId, DGPNode.T)) = content += kv
-  def firstVisible(nid : NodeId, g : DependencyGraph) : DGPNode.T =
+  def +=(kv : (NodeId, T)) = content += kv
+  def firstVisible(nid : NodeId, g : DependencyGraph) : T =
     content get nid match {
       case Some(n) => n
       case None => firstVisible(g container_! nid, g)
