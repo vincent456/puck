@@ -42,8 +42,17 @@ object DGPNode {
 trait DGPNode {
   this : PNode =>
   val id : NodeId
+
+  def addContent(child : DGPNode) : Unit
+  def content : Iterable[DGPNode]
   def contentSize : Int
   def clearContent() : Unit
 
+  private def fullContent(acc : List[DGPNode]) : List[DGPNode] =
+    this.content.foldLeft(acc){
+      (acc, n) => n :: n.fullContent(acc)
+    }
+
+  def fullContent : List[DGPNode] = fullContent(List[DGPNode]())
   def toPNode : PNode with DGPNode = this
 }

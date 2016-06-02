@@ -62,12 +62,15 @@ object Arrow {
     path
   }
 
-  def apply(src : Point2D, tgt : Point2D) : Arrow = {
-    new Arrow((src.getX, src.getY), (tgt.getX, tgt.getY))
-  }
+  def apply(src : Point2D, tgt : Point2D) : Arrow =
+    new Arrow(src, tgt)
+
 }
 import Arrow._
 class Arrow(source : P, target : P) extends PComposite {
+
+  def this(src : Point2D, tgt : Point2D)  =
+    this((src.getX, src.getY), (tgt.getX, tgt.getY))
 
   val theta : Double = 0.45
   val l : Double = 10d

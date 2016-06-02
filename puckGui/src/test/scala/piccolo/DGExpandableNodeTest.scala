@@ -31,7 +31,7 @@ import org.piccolo2d.{PCanvas, PLayer, PNode}
 import org.piccolo2d.extras.PFrame
 import puck.graph.{DependencyGraph, NodeId}
 import puck.gui.NodeKindIcons
-import puck.piccolo.{Arrow, IconTextNode, Register, TitledExpansableNode}
+import puck.piccolo.{Arrow, DGExpandableNode, IconTextNode, PUses, Register}
 
 import scala.swing._
 
@@ -39,37 +39,26 @@ import scala.swing._
   * Created by Loïc Girault on 31/05/16.
   */
 
-object TitleNodeExpanseTest {
-  def edge(source : TitledExpansableNode, target : TitledExpansableNode) : PNode = {
-    val srcBoundCenter = source.titlePnode.getGlobalFullBounds.getCenter2D
-    val tgtBoundCenter = target.titlePnode.getGlobalFullBounds.getCenter2D
-
-    Arrow(srcBoundCenter, tgtBoundCenter)
-  }
-}
-import TitleNodeExpanseTest.edge
-class TitleNodeExpanseTest (g : DependencyGraph,
-                            aCanvas : PCanvas,
-                            nk : NodeKindIcons)
-  extends PFrame("TitleNodeExpanseTest", false, aCanvas) {
+class DGExpandableNodeTest(g : DependencyGraph,
+                           aCanvas : PCanvas,
+                           nk : NodeKindIcons)
+  extends PFrame("DGExpandableNodeTest", false, aCanvas) {
 
   implicit val nodeKindIcons : NodeKindIcons = nk
-  val register = new Register[TitledExpansableNode]()
+  val register = new Register[DGExpandableNode]()
   val nodeLayer = getCanvas.getLayer
   val edgeLayer = new PLayer()
   getCanvas.getCamera.addLayer(0, edgeLayer)
 
-  def getNode(nid : NodeId) : TitledExpansableNode  = {
-    val titleNode = IconTextNode(g, nid)(nk)
-    val n = new TitledExpansableNode(nid, titleNode)
-    n.titlePnode.addInputEventListener(new PBasicInputEventHandler() {
+  def clickEventHandler(n : DGExpandableNode) : PBasicInputEventHandler =
+    new PBasicInputEventHandler() {
 
       override def mousePressed(event: PInputEvent) : Unit =
         if(event.isRightMouseButton){
           val pos = event.getCanvasPosition
           val menu = new PopupMenu(){
             contents += new MenuItem(new Action("uses"){
-              def apply() : Unit = addUsedBy(n)
+              def apply() : Unit = addUses(n)
             })
           }
           Swing.onEDT(menu.show(Component.wrap(getCanvas), pos.getX.toInt, pos.getY.toInt))
@@ -78,14 +67,27 @@ class TitleNodeExpanseTest (g : DependencyGraph,
       override def mouseClicked(event : PInputEvent) : Unit =
         if(event.getClickCount == 2 ) {
           if(n.contentSize == 0) addContent(n)
-          else n.clearContent()
+          else {
+            n.fullContent.foreach {
+              c =>
+                val en = c.asInstanceOf[DGExpandableNode]
+                en.usedBy.foreach(_.delete())
+                en.usesOf.foreach(_.delete())
+            }
+            n.clearContent()
+          }
         }
 
 
-    })
-    register += (nid -> n)
+    }
+
+  def getNode(nid : NodeId) : DGExpandableNode  = register.getOrElse(nid, {
+    val titleNode = IconTextNode(g, nid)(nk)
+    val n = new DGExpandableNode(nid, titleNode)
+    n.titlePnode.addInputEventListener(clickEventHandler(n))
+    n.addPropertyChangeListener(PNode.PROPERTY_PARENT, register.parentPropertyListener)
     n
-  }
+  })
 
   def this(g : DependencyGraph,
            nk : NodeKindIcons) = this(g, null, nk)
@@ -93,7 +95,9 @@ class TitleNodeExpanseTest (g : DependencyGraph,
   override def initialize() : Unit = {
     val n = getNode(0)
     nodeLayer addChild n
+    println(getCanvas.getZoomEventHandler!=null)
     getCanvas.removeInputEventListener(getCanvas.getPanEventHandler)
+    getCanvas.removeInputEventListener(getCanvas.getZoomEventHandler)
 
     // Create a selection handler so we can see that the decorator actually
     // works
@@ -104,24 +108,47 @@ class TitleNodeExpanseTest (g : DependencyGraph,
 
   }
 
-  def addUsedBy(n : TitledExpansableNode ): Unit =
+
+  def addUses(n : DGExpandableNode ): Unit = {
     g.usedBy(n.id) map (register.firstVisible(_, g)) foreach {
       used =>
-        Swing.onEDT{
-          val e = edge(n, used)
-          edgeLayer addChild e
-          //e.repaint()
+        import puck.graph.ShowDG._
+        (g, (n.id, used.id)).println
+
+        Swing.onEDT {
+          val e = new PUses(n, used)
+          if(!(n.usedBy contains e)) {
+            n.usedBy += e
+            used.usesOf += e
+            edgeLayer addChild e
+            e.repaint()
+          }
         }
     }
+    g.usersOf(n.id) map (register.firstVisible(_, g)) foreach {
+      user=>
+        import puck.graph.ShowDG._
+        (g, (user.id, n.id)).println
+        Swing.onEDT{
+          val e = new PUses(user, n)
+          if(!(n.usedBy contains e)) {
+            n.usesOf += e
+            user.usedBy += e
+            edgeLayer addChild e
+            e.repaint()
+          }
+        }
+    }
+  }
 
-  def addContent(n : TitledExpansableNode) : Unit = {
+  def addContent(n : DGExpandableNode) : Unit = {
 
     val pn = n.toPNode
     val content = g content n.id
 
     content map getNode foreach {
       c =>
-        pn addChild c
+        pn addContent c
     }
   }
 

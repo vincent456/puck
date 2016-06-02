@@ -52,6 +52,10 @@ class TitledGridSquareDGPNode
 ) extends TitledGridSquareNode(titleNode, squareSide(numChildren)) with DGPNode {
   def contentSize : Int = body.getChildrenCount
   def clearContent() : Unit = body.removeAllChildren()
+
+  def addContent(child: DGPNode): Unit = ???
+
+  def content: Iterable[DGPNode] = ???
 }
 
 class PiccoloDynamicSquareZoomTest(g : DependencyGraph,

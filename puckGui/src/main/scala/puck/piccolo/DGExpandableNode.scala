@@ -27,20 +27,23 @@
 package puck.piccolo
 
 import java.awt.{Color, Graphics2D, Paint}
+import java.beans.{PropertyChangeEvent, PropertyChangeListener}
 import java.util
 
 import org.piccolo2d.PNode
+import org.piccolo2d.extras.nodes.PComposite
 import org.piccolo2d.util.{PBounds, PPaintContext}
 import puck.graph.NodeId
+
+import scala.collection.mutable
 
 /**
   * Created by Loïc Girault on 31/05/16.
   */
-class TitledExpansableNode
+class DGExpandableNode
 ( val id: NodeId,
   val titlePnode : PNode
 ) extends DecoratorGroup with DGPNode{
-
 
   val padding : Double = 5d
   val body = new PNode {
@@ -61,17 +64,18 @@ class TitledExpansableNode
               refHeight = 0d
             }
           }
-          if(n.getHeight > refHeight)
-            refHeight = n.getHeight
+          if(n.getFullBounds.getHeight > refHeight)
+            refHeight = n.getFullBounds.getHeight
 
           n.setOffset(xOffset, yOffset)
-          xOffset += n.getWidth + padding
+          xOffset += n.getFullBounds.getWidth + padding
       }
     }
 
   }
 
-
+  val usedBy = mutable.ListBuffer[PUses]()
+  val usesOf = mutable.ListBuffer[PUses]()
 
   super.addChild(titlePnode)
   super.addChild(body)
@@ -79,13 +83,76 @@ class TitledExpansableNode
     titlePnode.setOffset(margin, margin)
     body.setOffset(margin+padding, titlePnode.getFullBounds.getHeight + margin * 2)
 
-  override def addChild( child : PNode) : Unit = {
-    body addChild child
+  override def addContent(child : DGPNode) : Unit = {
+    body addChild child.toPNode
+    this.addPropertyChangeListener(PNode.PROPERTY_FULL_BOUNDS,
+      new PropertyChangeListener() {
+        def propertyChange(evt: PropertyChangeEvent): Unit = {
+          child.asInstanceOf[DGExpandableNode].
+            firePropertyChange(PNode.PROPERTY_CODE_FULL_BOUNDS,
+              PNode.PROPERTY_FULL_BOUNDS, null, child.toPNode.getFullBounds)
+        }
+      })
+  }
+
+  def content : Iterable[DGPNode] = {
+    import scala.collection.JavaConversions._
+    body.getChildrenReference.asInstanceOf[util.List[DGPNode]]
   }
 
   def contentSize: Int = body.getChildrenCount
 
-  def clearContent(): Unit = body.removeAllChildren()
+  def clearContent(): Unit =  body.removeAllChildren()
+
+
+  //def parent
+
+}
+
+
+case class PUses(source : DGExpandableNode,
+            target : DGExpandableNode/*,
+            virtuality : Option[Int]*/)
+  extends PComposite {
+
+  def addArrow() : Unit = {
+
+   val arrow  = Arrow(
+      source.titlePnode.getGlobalFullBounds.getCenter2D,
+      target.titlePnode.getGlobalFullBounds.getCenter2D)
+    this addChild arrow
+
+  }
+
+  addArrow()
+
+  {
+    val listener = new PropertyChangeListener() {
+      def propertyChange(evt: PropertyChangeEvent): Unit = {
+        PUses.this.removeAllChildren()
+        addArrow()
+      }
+    }
+    for {
+      exty <- List(source, target)
+      pty <-
+      List(PNode.PROPERTY_TRANSFORM,
+            PNode.PROPERTY_BOUNDS,
+            PNode.PROPERTY_PAINT)
+    }
+      exty.addPropertyChangeListener(pty,listener)
+
+
+
+
+
+  }
+  def delete(): Unit =
+    if(getParent != null){
+      source.usesOf -= this
+      target.usedBy -= this
+      getParent removeChild this
+    }
 
 }
 
@@ -125,8 +192,5 @@ trait DecoratorGroup extends PNode  {
 
     super.validateFullBounds
   }
-
-  override def getBoundsReference :  PBounds =
-    computeFullBounds(null)
 
 }

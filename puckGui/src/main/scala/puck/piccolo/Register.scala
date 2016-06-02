@@ -26,6 +26,8 @@
 
 package puck.piccolo
 
+import java.beans.{PropertyChangeEvent, PropertyChangeListener}
+
 import puck.graph.{DependencyGraph, _}
 
 import scala.collection.mutable
@@ -34,12 +36,38 @@ import scala.collection.mutable
   * Created by Loïc Girault on 31/05/16.
   */
 class Register[T <: DGPNode] {
-  val content = new mutable.HashMap[NodeId, T]()
+  val visibleContent = new mutable.HashMap[NodeId, T]()
+  val invisibleContent = new mutable.HashMap[NodeId, T]()
 
-  def +=(kv : (NodeId, T)) = content += kv
+  def +=(kv : (NodeId, T)) = {
+    invisibleContent -= kv._1
+    visibleContent += kv
+  }
+
   def firstVisible(nid : NodeId, g : DependencyGraph) : T =
-    content get nid match {
+    visibleContent get nid match {
       case Some(n) => n
       case None => firstVisible(g container_! nid, g)
     }
+
+  def getOrElse(nid : NodeId, t : => T) : T =
+    invisibleContent.getOrElse(nid,
+      visibleContent.getOrElse(nid, t))
+
+
+  val  parentPropertyListener =
+    new PropertyChangeListener() {
+    def propertyChange(evt: PropertyChangeEvent): Unit = {
+      val src = evt.getSource.asInstanceOf[T]
+      if(evt.getNewValue == null){
+        invisibleContent += (src.id -> src)
+        visibleContent -= src.id
+      }
+      else {
+        visibleContent += (src.id -> src)
+        invisibleContent -= src.id
+      }
+    }
+  }
+
 }
