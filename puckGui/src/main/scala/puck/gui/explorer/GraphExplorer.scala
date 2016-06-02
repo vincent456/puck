@@ -51,8 +51,8 @@ object GraphExplorer {
 }
 
 class GraphExplorer
-( control : PuckControl)
-(implicit treeIcons : NodeKindIcons)
+( control : PuckControl,
+  nodeKindIcons : NodeKindIcons)
   extends BoxPanel(Orientation.Vertical){
   contents += new Label("DG Explorer")
   val treeWrapper = new ScrollPane()
@@ -74,17 +74,17 @@ class GraphExplorer
   contents += treeWrapper
 
   val menuBuilder : NodeMenu.Builder =
-    NodeMenu(bus, graphUtils, printingOptionsControl, _, _, _, _, _)
+    NodeMenu(bus, graphUtils, printingOptionsControl, _, _, _, _, _)(nodeKindIcons)
 
   reactions += {
     case GraphUpdate(graph) =>
       dynamicTree =
-        new DynamicDGTree(new MutableTreeModel(graph), bus, menuBuilder, treeIcons, control.constraints)
+        new DynamicDGTree(new MutableTreeModel(graph), bus, menuBuilder, nodeKindIcons, control.constraints)
       displayGraph(buttonVisible = false, Component.wrap(dynamicTree))
 
     case ConstraintsUpdate(graph, cm) =>
       dynamicTree =
-        new DynamicDGTree(new MutableTreeModel(graph), bus, menuBuilder, treeIcons, Some(cm))
+        new DynamicDGTree(new MutableTreeModel(graph), bus, menuBuilder, nodeKindIcons, Some(cm))
       displayGraph(buttonVisible = false, Component.wrap(dynamicTree))
 
 
@@ -113,7 +113,7 @@ class GraphExplorer
       }
 
     Component.wrap(new JTree(model) with DGTree {
-        def icons : NodeKindIcons = treeIcons
+        def icons : NodeKindIcons = nodeKindIcons
         addNodeClickedAction {
           (e, node) =>
             if (isRightClick(e)) {

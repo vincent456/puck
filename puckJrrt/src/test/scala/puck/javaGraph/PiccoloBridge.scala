@@ -1,8 +1,10 @@
 package puck.javaGraph
 
 
-import piccolo.{PiccoloDynamicSquareZoomTest, PiccoloTest, DGExpandableNodeTest}
+import org.piccolo2d.extras.PFrame
+import piccolo.{PiccoloDynamicSquareZoomTest, PiccoloTest}
 import puck.JavaIcons
+import puck.piccolo.DGCanvas
 
 /**
   * Created by lorilan on 4/29/16.
@@ -24,7 +26,7 @@ object PiccoloDynamicBridge {
 object ExpanseBridge {
   def main(args : Array[String]) : Unit =  {
     val bs = BridgeScenario()
-    puck.ignore(new DGExpandableNodeTest(bs.graph, JavaIcons))
+    new PFrame("ExpanseBridge", false, new DGCanvas(bs.graph, JavaIcons))
   }
 }
 //object PiccoloClassTest {

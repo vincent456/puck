@@ -44,18 +44,17 @@ import scala.util.{Failure, Success}
 /**
   * Created by Loïc Girault on 26/01/16.
   */
+object SVGViewHandler extends ViewHandler{
+  def installView(mainPanel: PuckMainPanel, nodeKindIcons: NodeKindIcons) : Publisher = {
+    new SVGViewHandler(mainPanel)
+  }
+}
+
 class SVGViewHandler
 (mainPanel : PuckMainPanel)
-  extends ViewHandler with Publisher {
+  extends Publisher {
   import mainPanel.control
 
-
-
-  def switchView(mainPanel: PuckMainPanel, treeIcons: NodeKindIcons) : Unit = {
-    this deafTo mainPanel.control.Bus
-    mainPanel.viewHandler = new TreeViewHandler(mainPanel, treeIcons)
-    mainPanel.control.Bus publish GraphUpdate(mainPanel.control.graph)
-  }
 
   this listenTo mainPanel.control.Bus
   reactions += {
@@ -76,7 +75,7 @@ class SVGViewHandler
   import swingService._
 
   val svgController: SVGController = new SVGController(mainPanel.control, mainPanel.console)
-  val canvas = PUCKSVGCanvas(svgController, swingService, mainPanel.treeIcons)
+  val canvas = PUCKSVGCanvas(svgController, swingService, mainPanel.nodeKindIcons)
   mainPanel.upPanel.setGraphView(Component.wrap(canvas))
 
 

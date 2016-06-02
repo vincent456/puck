@@ -29,27 +29,30 @@ package puck.gui
 
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
-import puck.gui.explorer.{GraphExplorer, ConstraintViolationExplorer}
-import puck.gui.svg.SVGViewHandler
+import puck.gui.explorer.GraphExplorer
+
 
 import scala.swing._
 
 /**
   * Created by Loïc Girault on 26/01/16.
   */
+
+object TreeViewHandler extends ViewHandler {
+  def installView(mainPanel: PuckMainPanel, treeIcons: NodeKindIcons) : Publisher = {
+    new TreeViewHandler(mainPanel,
+      new GraphExplorer(mainPanel.control, treeIcons))
+
+  }
+}
+
 class TreeViewHandler
   (mainPanel : PuckMainPanel,
-   implicit val treeIcons : NodeKindIcons)
-  extends ViewHandler with Publisher {
-
-  def switchView(mainPanel: PuckMainPanel, treeIcons: NodeKindIcons) : Unit = {
-    this deafTo mainPanel.control.Bus
-    mainPanel.viewHandler = new SVGViewHandler(mainPanel)
-  }
+   graphExplorer : Component)
+  extends Publisher {
 
   import mainPanel.control
 
-  val graphExplorer = new GraphExplorer(control)
 
   this listenTo control.Bus
 
@@ -61,39 +64,8 @@ class TreeViewHandler
 
   mainPanel.upPanel.setGraphView(graphExplorer)
 
-
-
-  import mainPanel.downPanel
-  def update(graph : DependencyGraph, constraints : Option[ConstraintsMaps]) : Unit = {
-    val violations = constraints match {
-      case None => Seq()
-      case Some(cm) => (graph, cm).violations()
-    }
-
-    if (violations.isEmpty) {
-      downPanel.orientation = Orientation.Horizontal
-      downPanel.leftComponent = new Label("0 violation !")
-      downPanel.resizeWeight = 0
-      downPanel.dividerSize = 0
-    }
-    else {
-      downPanel.orientation = Orientation.Vertical
-      downPanel.leftComponent = new BoxPanel(Orientation.Vertical) {
-        contents += new Label("Constraints Violations")
-        val constraintViolationExplorer =
-          new ConstraintViolationExplorer(control.Bus, violations,
-            control.printingOptionsControl, constraints.get)(graph,
-            control.graphUtils,
-            treeIcons)
-        contents += constraintViolationExplorer
-      }
-      downPanel.resizeWeight = 0.5
-      downPanel.dividerSize = 3
-    }
-    downPanel.repaint()
-
-  }
-
+  def update(graph : DependencyGraph, constraints : Option[ConstraintsMaps]) : Unit =
+    mainPanel.downPanel.setConstraintViolationExplorer(graph, constraints)
 
 }
 

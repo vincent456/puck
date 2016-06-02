@@ -26,12 +26,16 @@
 
 package puck.gui
 
-import puck.graph.GraphUtils
-import puck.gui.explorer.NodeInfosPanel
+import puck.graph.{DependencyGraph, GraphUtils}
+import puck.gui.explorer.{ConstraintViolationExplorer, NodeInfosPanel}
 import puck.util.PuckLog
 
 import scala.swing._
 import java.awt.Dimension
+
+import puck.graph.constraints.ConstraintsMaps
+import puck.gui.svg.SVGViewHandler
+import puck.piccolo.PiccoloViewHandler
 
 
 object PuckMainPanel{
@@ -42,11 +46,11 @@ object PuckMainPanel{
 }
 
 abstract class ViewHandler {
-  def switchView(mainPanel: PuckMainPanel, treeIcons: NodeKindIcons) : Unit
+  def installView(mainPanel: PuckMainPanel, nodeKindIcons: NodeKindIcons) : Publisher
 }
 
 class PuckMainPanel(graphUtils: GraphUtils,
-                    val treeIcons : NodeKindIcons)
+                    val nodeKindIcons : NodeKindIcons)
   extends SplitPane(Orientation.Horizontal) {
 
   dividerSize = 3
@@ -59,7 +63,7 @@ class PuckMainPanel(graphUtils: GraphUtils,
 
   val interface = new PuckInterfacePanel(control)
 
-  val nodeInfos = new NodeInfosPanel(control.Bus, control)(treeIcons)
+  val nodeInfos = new NodeInfosPanel(control.Bus, control)(nodeKindIcons)
 
 
   object upPanel extends SplitPane(Orientation.Vertical) {
@@ -76,17 +80,64 @@ class PuckMainPanel(graphUtils: GraphUtils,
   object downPanel extends SplitPane(Orientation.Vertical) {
     rightComponent = console
     dividerSize = 0
+
+    def setConstraintViolationExplorer
+    ( graph : DependencyGraph, constraints : Option[ConstraintsMaps]) : Unit = {
+
+      val violations = constraints match {
+        case None => Seq()
+        case Some(cm) => (graph, cm).violations()
+      }
+
+      if (violations.isEmpty) {
+        orientation = Orientation.Horizontal
+        leftComponent = new Label("0 violation !")
+        resizeWeight = 0
+        dividerSize = 0
+      }
+      else {
+        orientation = Orientation.Vertical
+        leftComponent = new BoxPanel(Orientation.Vertical) {
+          contents += new Label("Constraints Violations")
+          val constraintViolationExplorer =
+            new ConstraintViolationExplorer(control.Bus, violations,
+              control.printingOptionsControl, constraints.get)(graph,
+              control.graphUtils,
+              nodeKindIcons)
+          contents += constraintViolationExplorer
+        }
+        resizeWeight = 0.5
+        dividerSize = 3
+      }
+      repaint()
+
+    }
   }
 
   leftComponent = upPanel
   rightComponent = downPanel
 
-  var viewHandler : ViewHandler = new TreeViewHandler(this, treeIcons)
+  object viewSwitcher {
+    val handlers = List[ViewHandler](TreeViewHandler, SVGViewHandler, PiccoloViewHandler)
+
+    var currentView : Publisher = _
+
+    var i = 0
+    def switchView() = {
+      currentView deafTo control.Bus
+      i = (i + 1) % handlers.size
+      currentView = handlers(i).installView(PuckMainPanel.this, nodeKindIcons)
+      control.Bus publish GraphUpdate(control.graph)
+    }
+
+  }
 
   this listenTo control.Bus
 
+  viewSwitcher.currentView = viewSwitcher.handlers.head.installView(PuckMainPanel.this, nodeKindIcons)
+
   reactions += {
-    case SwitchView => viewHandler.switchView(this, treeIcons)
+    case SwitchView => viewSwitcher.switchView()
   }
 }
 

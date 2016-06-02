@@ -24,31 +24,42 @@
  * Author of this file : Loïc Girault
  */
 
-package piccolo
+package puck.piccolo
 
 import org.piccolo2d.event.{PBasicInputEventHandler, PInputEvent}
 import org.piccolo2d.{PCanvas, PLayer, PNode}
-import org.piccolo2d.extras.PFrame
-import puck.graph.{DependencyGraph, NodeId}
-import puck.gui.NodeKindIcons
-import puck.piccolo.{Arrow, DGExpandableNode, IconTextNode, PUses, Register}
+import org.piccolo2d.extras.swing.PScrollPane
+import puck.graph._
+import puck.gui.{GraphUpdate, NodeKindIcons, PuckControl, PuckMainPanel, TreeViewHandler, ViewHandler}
 
-import scala.swing._
+import scala.swing.{Component, _}
 
 /**
-  * Created by Loïc Girault on 31/05/16.
+  * Created by Loïc Girault on 02/06/16.
   */
+object PiccoloViewHandler extends ViewHandler {
 
-class DGExpandableNodeTest(g : DependencyGraph,
-                           aCanvas : PCanvas,
-                           nk : NodeKindIcons)
-  extends PFrame("DGExpandableNodeTest", false, aCanvas) {
 
-  implicit val nodeKindIcons : NodeKindIcons = nk
+  def installView(mainPanel: PuckMainPanel,
+                  nodeKindIcons: NodeKindIcons) : Publisher = {
+    new TreeViewHandler(mainPanel,
+      scala.swing.Component.wrap(new PiccoloGraphExplorer(mainPanel.control, nodeKindIcons)))
+
+  }
+}
+class DGCanvas
+( val g : DependencyGraph,
+  implicit val nodeKindIcons : NodeKindIcons) extends PCanvas {
   val register = new Register[DGExpandableNode]()
-  val nodeLayer = getCanvas.getLayer
+  val nodeLayer = getLayer
   val edgeLayer = new PLayer()
-  getCanvas.getCamera.addLayer(0, edgeLayer)
+  getCamera.addLayer(0, edgeLayer)
+
+
+  nodeLayer addChild getNode(0)
+
+  removeInputEventListener(getPanEventHandler)
+  removeInputEventListener(getZoomEventHandler)
 
   def clickEventHandler(n : DGExpandableNode) : PBasicInputEventHandler =
     new PBasicInputEventHandler() {
@@ -61,7 +72,7 @@ class DGExpandableNodeTest(g : DependencyGraph,
               def apply() : Unit = addUses(n)
             })
           }
-          Swing.onEDT(menu.show(Component.wrap(getCanvas), pos.getX.toInt, pos.getY.toInt))
+          Swing.onEDT(menu.show(Component.wrap(DGCanvas.this), pos.getX.toInt, pos.getY.toInt))
         }
 
       override def mouseClicked(event : PInputEvent) : Unit =
@@ -82,32 +93,23 @@ class DGExpandableNodeTest(g : DependencyGraph,
     }
 
   def getNode(nid : NodeId) : DGExpandableNode  = register.getOrElse(nid, {
-    val titleNode = IconTextNode(g, nid)(nk)
+    val titleNode = IconTextNode(g, nid)
     val n = new DGExpandableNode(nid, titleNode)
     n.titlePnode.addInputEventListener(clickEventHandler(n))
     n.addPropertyChangeListener(PNode.PROPERTY_PARENT, register.parentPropertyListener)
     n
   })
 
-  def this(g : DependencyGraph,
-           nk : NodeKindIcons) = this(g, null, nk)
+  def addContent(n : DGExpandableNode) : Unit = {
 
-  override def initialize() : Unit = {
-    val n = getNode(0)
-    nodeLayer addChild n
-    println(getCanvas.getZoomEventHandler!=null)
-    getCanvas.removeInputEventListener(getCanvas.getPanEventHandler)
-    getCanvas.removeInputEventListener(getCanvas.getZoomEventHandler)
+    val pn = n.toPNode
+    val content = g content n.id
 
-    // Create a selection handler so we can see that the decorator actually
-    // works
-    //    import scala.collection.JavaConversions.seqAsJavaList
-    //    val selectableParents = List(n)
-    //    val ps: PSelectionEventHandler = new PSelectionEventHandler(getCanvas.getLayer, selectableParents)
-    //    getCanvas.addInputEventListener(ps)
-
+    content map getNode foreach {
+      c =>
+        pn addContent c
+    }
   }
-
 
   def addUses(n : DGExpandableNode ): Unit = {
     g.usedBy(n.id) map (register.firstVisible(_, g)) foreach {
@@ -140,16 +142,18 @@ class DGExpandableNodeTest(g : DependencyGraph,
         }
     }
   }
-
-  def addContent(n : DGExpandableNode) : Unit = {
-
-    val pn = n.toPNode
-    val content = g content n.id
-
-    content map getNode foreach {
-      c =>
-        pn addContent c
-    }
-  }
-
 }
+
+class PiccoloGraphExplorer
+(control : PuckControl,
+ nodeKindIcons: NodeKindIcons
+) extends PScrollPane(new PCanvas()) with Publisher{
+
+  this listenTo control.Bus
+
+  reactions += {
+    case GraphUpdate(graph) => setViewportView(new DGCanvas(graph, nodeKindIcons))
+
+  }
+}
+

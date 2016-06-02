@@ -54,7 +54,7 @@ object Java2dot {
       printId = false,
       printSignatures = true,
       selectedUse = None,
-      printTypeUses = false)
+      printTypeUses = true)
     DotPrinter.genDotFile(dg, JavaDotHelper, scm, options, outFileName)
   }
 
