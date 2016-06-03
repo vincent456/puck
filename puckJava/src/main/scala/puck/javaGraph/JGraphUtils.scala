@@ -43,7 +43,7 @@ abstract class JGraphUtils extends GraphUtils {
     new TransformationRules(JavaTransformationHelper, JavaRenamer, JavaAbstract, JavaIntro)
 
   val violationsKindPriority: Seq[NodeKind] =
-    Seq[JavaNodeKind]( Field, Constructor, Class, Interface)
+    Seq[JavaNodeKind]( Field, Constructor, Class, Interface) // other kinds such as Method have lesser priority
 
   implicit val dotHelper : DotHelper = JavaDotHelper
 
