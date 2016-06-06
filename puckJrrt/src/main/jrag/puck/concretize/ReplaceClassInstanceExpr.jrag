@@ -38,12 +38,11 @@ aspect ReplaceClassInstanceExpr {
         if(decl() != cdecl)
             return;
 
-        if (!(this.hostBodyDecl() instanceof MethodDecl))
-            throw new Error("replaceByConstructorMethodCall, this.hostBodyDecl is " +
-                    this.hostBodyDecl().getClass() + "does not know what to do !!");
+//        if (!(this.hostBodyDecl() instanceof MethodDecl))
+//            throw new Error("replaceByConstructorMethodCall, this.hostBodyDecl is " +
+//                    this.hostBodyDecl().getClass() + "does not know what to do !!");
 
         Access acc = cm.createLockedAccess(this.getArgs(), true);
-        //Access acc = cm.createBoundAccess(this.getArgs());
         acc.lock();
 
         if(cm.isStatic()) replace(this).with(acc);

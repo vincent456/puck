@@ -26,13 +26,11 @@
 
 package puck.actions
 
-import java.awt.event.ActionEvent
-import javax.swing.AbstractAction
 
 import puck.graph.{GraphUtils, DependencyGraph, ConcreteNode, NodeKind}
 import puck.gui.PushGraph
 
-import scala.swing.Publisher
+import scala.swing.{Action, Publisher}
 
 class AddNodeAction
 (bus : Publisher,
@@ -40,12 +38,12 @@ class AddNodeAction
  childKind : NodeKind)
 (implicit graph : DependencyGraph,
  graphUtils: GraphUtils)
-extends AbstractAction(s"Add $childKind")
+extends Action(s"Add $childKind")
 {
 
   import graphUtils.{Rules => TR}
 
-  override def actionPerformed(actionEvent: ActionEvent): Unit = {
+  def apply(): Unit = {
     showInputDialog(s"New $childKind name:").foreach {
       childName =>
         val (n, g) = TR.intro(graph.mileStone, childName, childKind)

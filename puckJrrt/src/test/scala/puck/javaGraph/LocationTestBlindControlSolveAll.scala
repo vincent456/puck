@@ -9,6 +9,8 @@ import puck.graph.{ConcreteNode, _}
 import puck.search.{AStarSearchStrategy, AStarSearchStrategyGraphDisplay}
 import puck.jastadd.ExtendJGraphUtils.dotHelper
 
+import scalaz.\/-
+
 
 /**
   * Created by cedric on 18/05/2016.
@@ -46,8 +48,14 @@ object LocationTestBlindControlSolveAll {
         println(res.size + " result(s)")
         res foreach {
            ss =>
-            strategy.printSuccessState("result#" + ordering.evaluateWithDepthPenalty(ss), ss)
+             val fit = ordering.evaluateWithDepthPenalty(ss)
+              strategy.printSuccessState("result#" + fit, ss)
+             val \/-(dg) = ss.loggedResult.value
+             Recording.write( "/tmp/DG-Imgs/result#" + fit + ".pck", fullName2id, dg.graph)
            }
+
+        val \/-(dg) = res.head.loggedResult.value
+        applyChanges(dg.graph, new File("/tmp/puck-location"))
        }
     }
 }

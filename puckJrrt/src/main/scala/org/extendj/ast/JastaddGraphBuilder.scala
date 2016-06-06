@@ -26,6 +26,7 @@
 
 package org.extendj.ast
 
+import puck.LoadingListener
 import puck.graph._
 import puck.javaGraph.nodeKind.{EnumConstant => PuckEnumConstant, _}
 import puck.javaGraph.{JavaGraphBuilder, nodeKind}
@@ -83,11 +84,30 @@ object JastaddGraphBuilder {
 
   type JASTNode = ASTNode[_ <: ASTNode[_]]
 
-//  implicit def pDecl2astNode(pd : ParameterDeclaration) : JASTNode = pd.asInstanceOf[JASTNode]
-//  implicit def expr2astNode(e : Expr) : JASTNode = e.asInstanceOf[JASTNode]
-//  implicit def td2astNode(td : TypeDecl) : JASTNode = td.asInstanceOf[JASTNode]
-//  implicit def declarator2astNode(d : Declarator) : JASTNode = d.asInstanceOf[JASTNode]
-//  implicit def bd2astNode(bd : BodyDecl) : JASTNode = bd.asInstanceOf[JASTNode]
+
+  def apply(p : Program,
+            sll : Option[puck.LoadingListener]) : JastaddGraphBuilder = {
+    val builder = new JastaddGraphBuilder(p)
+
+    val nchild = p.getCompilationUnitList.getNumChild.toDouble //getNumCuFromSources();
+    var d = 0d
+
+    builder.addPrimitiveTypes(p)
+    import scala.collection.JavaConversions._
+    p.getCompilationUnitList foreach {
+      cu =>
+        cu buildDependencyGraph builder
+        sll foreach {
+          ll =>
+            d += 1
+            ll.update(d/nchild)
+        }
+    }
+    sll foreach (_.update(1))
+
+    builder
+  }
+
 
 
 }

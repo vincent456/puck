@@ -29,8 +29,7 @@ package gui
 package explorer
 
 import java.awt.Color
-import java.awt.event.ActionEvent
-import javax.swing.{AbstractAction, JPopupMenu, JTree}
+import javax.swing.JTree
 
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
@@ -135,11 +134,10 @@ class ConstraintViolationExplorer
         val menu = NodeMenu(bus, graphUtils, printingOptionsControl,
           ConstraintViolationExplorer.this.graph, n.id,
           List(), None)(treeIcons, constraints)
-        menu.add(new AbstractAction("Node infos") {
-          def actionPerformed(e: ActionEvent): Unit =
-            bus publish NodeClicked(n)
-        })
-        menu.show(ViolationTree.this, e.getX, e.getY)
+        menu.contents += new Action("Node infos") {
+          def apply() : Unit = bus publish NodeClicked(n)
+        }
+        menu.show(Component wrap ViolationTree.this, e.getX, e.getY)
       } else {
         bus publish handle.event(n.id)
         if(n.kind.kindType != NameSpace)
@@ -275,13 +273,12 @@ class ConstraintViolationExplorer
             case mc @ MouseClicked(_,_,_,_,_) =>
               val evt = mc.peer
               if(isRightClick(evt)){
-                val menu : JPopupMenu = new ViolationMenu(bus, edge.target, printingOptionsControl, constraints){
-                  add( new AbstractAction("Focus in graph explorer") {
-                    def actionPerformed(e: ActionEvent): Unit =
-                      bus publish GraphFocus(graph, edge)
-                  })
+                val menu : PopupMenu = new ViolationMenu(bus, edge.target, printingOptionsControl, constraints){
+                  contents +=  new Action("Focus in graph explorer") {
+                    def apply() : Unit = bus publish GraphFocus(graph, edge)
+                  }
                 }
-                Swing.onEDT(menu.show(this.peer, evt.getX, evt.getY))
+                Swing.onEDT(menu.show(this, evt.getX, evt.getY))
               }
               else if(evt.getClickCount > 1) {
                 self.foreground = Color.BLUE

@@ -28,15 +28,15 @@ package puck.gui
 package svg
 
 import puck.graph._
-import javax.swing._
 
-import puck.gui.NodeKindIcons
 import puck.gui.menus.{ConcreteNodeMenu, VirtualNodeMenu}
+
+import scala.swing.{Action, PopupMenu}
 
 object SVGNodeMenu{
 
   def apply(controller : SVGController,
-            nodeId : NodeId)(implicit treeIcons: NodeKindIcons) : JPopupMenu =
+            nodeId : NodeId)(implicit treeIcons: NodeKindIcons) : PopupMenu =
     controller.graph.getNode(nodeId) match {
       case n : ConcreteNode => new SVGConcreteNodeMenu(controller, n, treeIcons)
       case n : VirtualNode => new VirtualNodeMenu(controller,
@@ -60,8 +60,6 @@ class SVGConcreteNodeMenu
     controller.printingOptionsControl,
     treeIcons) {
 
-  import controller.printingOptionsControl
-
   override def init() = {
     super.init()
 
@@ -70,27 +68,34 @@ class SVGConcreteNodeMenu
 
   private def addShowOptions() : Unit = {
 
-    this.addMenuItem("Hide") { _ =>
+    contents += new Action("Hide") {
+      def apply() : Unit =
       printingOptionsControl.hide(graph, node.id)
     }
-    this.addMenuItem("Focus") { _ =>
+    contents += new Action("Focus") {
+      def apply() : Unit =
       printingOptionsControl.focusExpand(graph, node.id, focus = true, expand = false)
     }
-    this.addMenuItem("Focus & Expand") { _ =>
+    contents += new Action("Focus & Expand") {
+      def apply() : Unit =
       printingOptionsControl.focusExpand(graph, node.id, focus = true, expand = true)
     }
-    this.addMenuItem("Show code") { _ =>
+    contents += new Action("Show code") {
+      def apply() : Unit =
       controller publish PrintCode(node.id)
     }
 
     if (graph.content(node.id).nonEmpty) {
-      this.addMenuItem("Collapse") { _ =>
+      contents += new Action("Collapse") {
+        def apply() : Unit =
         printingOptionsControl.collapse(graph, node.id)
       }
-      this.addMenuItem("Expand") { _ =>
+      contents += new Action("Expand") {
+        def apply() : Unit =
         printingOptionsControl.focusExpand(graph, node.id, focus = false, expand = true)
       }
-      this.addMenuItem("Expand all") { _ =>
+      contents += new Action("Expand all") {
+        def apply() : Unit =
         printingOptionsControl.expandAll(graph, node.id)
       };()
     }

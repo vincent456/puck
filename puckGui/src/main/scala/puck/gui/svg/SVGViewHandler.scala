@@ -27,7 +27,6 @@
 package puck.gui.svg
 
 import java.io.{File, FileWriter}
-import javax.swing.JButton
 
 import puck._
 import puck.actions.AddNodeAction
@@ -175,7 +174,7 @@ class SVGMenu
   import graphUtils.nodeKindKnowledge.kindOfKindType
   assert(kindOfKindType(NameSpace).size == 1)
 
-  contents += Component.wrap(new JButton(new AddNodeAction(controller.genControl.Bus, graph.root, kindOfKindType(NameSpace).head)))
+  contents += new AddNodeAction(controller.genControl.Bus, graph.root, kindOfKindType(NameSpace).head)
 
   contents += button("Show top level packages"){
     () => printingOptionsControl.

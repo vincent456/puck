@@ -26,10 +26,9 @@
 
 package puck.gui.svg
 
-import java.awt.Component
 import java.awt.event.{InputEvent, KeyEvent}
 import java.util.regex.{Matcher, Pattern}
-import javax.swing.{JPopupMenu, KeyStroke}
+import javax.swing.KeyStroke
 
 import org.apache.batik.dom.GenericText
 import org.apache.batik.dom.events.NodeEventTarget
@@ -44,6 +43,8 @@ import puck.graph.{NodeId, NodeIdP}
 import puck.gui.NodeKindIcons
 import puck.gui.svg.actions.SwingService
 
+import scala.swing.{Component, PopupMenu}
+
 object PUCKSVGCanvas {
 
   def apply() : PUCKSVGCanvas = new PUCKSVGCanvas {
@@ -55,7 +56,7 @@ object PUCKSVGCanvas {
   def apply(controller : SVGController,
             swingService: SwingService,
             treeIcons: NodeKindIcons): PUCKSVGCanvas = new PUCKSVGCanvas {
-    val eventListener = new SVGCanvasListener(this, controller, swingService, treeIcons)
+    val eventListener = new SVGCanvasListener(Component wrap this, controller, swingService, treeIcons)
   }
 
 }
@@ -256,7 +257,7 @@ class SVGCanvasListener
         case txtElt: SVGTextElement =>
           checkIfNodeAndGetId(txtElt) foreach {
             nodeId =>
-              val menu: JPopupMenu = SVGNodeMenu(controller, nodeId)(treeIcons)
+              val menu: PopupMenu = SVGNodeMenu(controller, nodeId)(treeIcons)
               menu.show(menuInvoker, evt.getClientX, evt.getClientY)
           }
         case _: SVGPathElement

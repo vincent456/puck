@@ -26,13 +26,16 @@
 
 package puck.javaGraph
 
+import java.io.File
+
 import org.scalatest.{EitherValues, FeatureSpec, OptionValues}
 import puck.Settings.outDir
 import puck.graph.{AccessAbstraction, DependencyGraph, NodeId, Uses}
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.SupertypeAbstraction
-import puck.jastadd.ExtendJGraphUtils.{Rules => Rules}
+import puck.jastadd.ExtendJGraphUtils.Rules
 import puck.LoggedEitherValues
+import puck.graph.transformations.Recording
 import puck.javaGraph.nodeKind._
 
 /**
@@ -105,13 +108,23 @@ class CompositeScenario private ()
 
 class CompositeManualRefactoringSpec
   extends FeatureSpec {
+//
+//  scenario("composite ``manual'' refactoring"){
+//    val bs = CompositeScenario()
+//
+//    val recompiledEx = bs.applyChangeAndMakeExample(bs.gFinal, outDir)
+//
+//    assert( Mapping.equals(bs.gFinal, recompiledEx.graph) )
+//
+//  }
 
-  scenario("composite ``manual'' refactoring"){
-    val bs = CompositeScenario()
-
-    val recompiledEx = bs.applyChangeAndMakeExample(bs.gFinal, outDir)
-
-    assert( Mapping.equals(bs.gFinal, recompiledEx.graph) )
-
+  scenario("miniComposite apply search generated plan"){
+    val path = getClass.getResource("/miniComposite").getPath
+    val s = new ScenarioFactory(
+      s"$path/location/Location.java",
+      s"$path/location/Velo.java")
+    val r = Recording.load(s"$path/plan.pck", s.fullName2id)(s.logger)
+    import Recording.RecordingOps
+    s.applyChanges(r.redo(s.graph), new File("/tmp/testPuck"))
   }
 }

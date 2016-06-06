@@ -26,15 +26,13 @@
 
 package puck.gui.svg
 
-import javax.swing.JPopupMenu
-
 import org.w3c.dom.Element
 import org.w3c.dom.svg.SVGGElement
 import puck.graph._
 import puck.gui._
 import puck.gui.menus.EdgeMenu
 
-import scala.swing.Publisher
+import scala.swing.{PopupMenu, Publisher}
 
 
 
@@ -50,7 +48,7 @@ class SVGController
   val printingOptionsControl = genControl.printingOptionsControl
 
 
-  val edgeMenuBuilder : NodeIdP => JPopupMenu = {
+  val edgeMenuBuilder : NodeIdP => PopupMenu = {
     e =>
       new EdgeMenu(genControl.Bus, e, printingOptionsControl, blurrySelection = true,
         genControl.constraints,

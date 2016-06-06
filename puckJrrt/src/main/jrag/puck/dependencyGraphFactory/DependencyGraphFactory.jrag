@@ -32,33 +32,6 @@ import puck.graph.DGBuildingError;
 
 aspect DependencyGraphFactory {
 
-	public JastaddGraphBuilder Program.buildDependencyGraph(LoadingListener ll){
-
-		JastaddGraphBuilder builder = new JastaddGraphBuilder(this);
-
-		if(ll == null)
-			ll = new LoadingListener(){ public void update(double loading){}};
-
-		build(builder, ll);
-
-		return builder;
-	}
-
-	private void Program.build(JastaddGraphBuilder builder, LoadingListener ll){
-		double nchild = getCompilationUnitList().getNumChild(); //getNumCuFromSources();
-		double d = 0.0;
-
-		builder.addPrimitiveTypes(this);
-
-		for (CompilationUnit cu : getCompilationUnitList()){
-			cu.buildDependencyGraph(builder);
-			d++;
-			ll.update(d/nchild);
-		}
-		ll.update(1);
-	}
-
-
 	void ASTNode.buildDGInChildren(JastaddGraphBuilder builder, int containerId){
 		for(int i=0; i< getNumChild(); i++){
 			getChild(i).buildDG(builder, containerId);

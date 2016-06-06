@@ -30,8 +30,7 @@ import puck.actions.Choose
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.transformations.Recording
 import puck.gui._
-import java.awt.event.ActionEvent
-import javax.swing.{AbstractAction, JPopupMenu, JTree}
+import javax.swing.JTree
 import javax.swing.event.TreeModelEvent
 import javax.swing.tree.TreePath
 
@@ -42,7 +41,7 @@ import puck.graph.transformations.Transformation.ChangeSource
 import puck.gui.{NodeClicked, Pushed}
 import puck.gui.menus.NodeMenu
 
-import scala.swing.{Publisher, Reactor, Swing}
+import scala.swing._
 
 /**
   * Created by Loïc Girault on 29/01/16.
@@ -161,8 +160,8 @@ class DynamicDGTree
   addNodeClickedAction {
     (e, node) =>
       if (isRightClick(e)) {
-        val menu: JPopupMenu = menuBuilder(graph, node.id, selectedNodes, None)
-        Swing.onEDT(menu.show(this, e.getX, e.getY))
+        val menu: PopupMenu = menuBuilder(graph, node.id, selectedNodes, None)
+        Swing.onEDT(menu.show(Component wrap this, e.getX, e.getY))
       }
       else if(node.kind.kindType != NameSpace)
         bus publish NodeClicked(node)

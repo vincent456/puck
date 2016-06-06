@@ -26,15 +26,13 @@
 
 package puck.actions
 
-import java.awt.event.ActionEvent
-import javax.swing.AbstractAction
 
 import puck.graph._
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, CreateVarStrategy}
 import puck.gui.Log
 import puck.util.LoggedEither._
 
-import scala.swing.{Publisher, Dialog}
+import scala.swing.{Action, Publisher, Dialog}
 import scala.swing.Swing.EmptyIcon
 import scalaz.Scalaz._
 
@@ -65,7 +63,7 @@ class MoveAction
  moved : List[NodeId])
 (implicit graph : DependencyGraph,
  graphUtils: GraphUtils)
-extends AbstractAction(MoveAction.label(graph, moved, newHost)){
+extends Action(MoveAction.label(graph, moved, newHost)){
 
   import graphUtils.nodeKindKnowledge.kindOfKindType
   import graphUtils.{Rules => TR}
@@ -121,7 +119,7 @@ extends AbstractAction(MoveAction.label(graph, moved, newHost)){
     }
   }
 
-  override def actionPerformed(e: ActionEvent): Unit =
+  override def apply() : Unit =
     printErrOrPushGraph(publisher, "Abstraction creation failure" )( doMove )
 
 

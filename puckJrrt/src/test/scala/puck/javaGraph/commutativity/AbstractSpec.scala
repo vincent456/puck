@@ -266,6 +266,26 @@ class AbstractSpec extends TransfoRulesSpec {
           |class A{}
         """)
     }
+
+    scenario("static factory method with one arg") {
+      compareWithExpectedAndGenerated(
+        """package p;
+          |class FactoryClass{}
+          |class A{ int f; A(int f){this.f = f;} }
+        """,
+        bs => {
+          import bs.{graph, idOfFullName}
+          val (AccessAbstraction(factoryMethod, _), g) =
+            Rules.abstracter.createAbstraction(graph, graph getConcreteNode "p.A.A(int)",
+              StaticMethod, DelegationAbstraction).rvalue
+
+           g.addContains("p.FactoryClass", factoryMethod)
+        },
+        """package p;
+          |class FactoryClass{ static A create(int f){return new A(f);}}
+          |class A{ int f; A(int f){this.f = f;} }
+        """)
+    }
   }
 
 }

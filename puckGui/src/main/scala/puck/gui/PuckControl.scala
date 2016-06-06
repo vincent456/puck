@@ -33,7 +33,7 @@ import puck.config.{Config, ConfigParser}
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.io.{CSVPrinter, DotPrinter}
-import puck.util.{PuckLog, PuckLogger}
+import puck.util.{PuckLog, PuckLogger, PuckSystemLogger}
 
 import scala.concurrent.Future
 import scala.swing.{ProgressBar, Publisher, Swing}
@@ -46,6 +46,9 @@ object PuckControl {
 
   def apply(graphUtils: GraphUtils, logger : PuckLogger) : PuckControl =
     new PuckControl(graphUtils, logger)
+
+  def apply(graphUtils: GraphUtils) : PuckControl =
+    new PuckControl(graphUtils, new PuckSystemLogger(_ => true))
 
 //  def apply(graphUtils: GraphUtils, f : String, logger : PuckLogger) : PuckControl  =
 //    this.apply(graphUtils, new File(f), logger )
@@ -206,10 +209,11 @@ implicit val logger: PuckLogger)
   def loadRecord(file : File) : Unit = {
     try graphStack.load(Recording.load(file.getAbsolutePath, dg2ast.nodesByName))
     catch {
-      case Recording.LoadError(msg, m) =>
+      case e @ Recording.LoadError(msg, m) =>
+        println(e.printStackTrace())
         logger writeln ("Record loading error " + msg)
-        logger writeln ("cannot bind loaded map " + m.toList.sortBy(_._1).mkString("\n"))
-        logger writeln ("with " + dg2ast.nodesByName.toList.sortBy(_._1).mkString("\n"))
+        logger writeln ("cannot bind loaded map " + m.toList.sortBy(_._2).mkString("\n"))
+        logger writeln ("with " + dg2ast.nodesByName.toList.sortBy(_._2).mkString("\n"))
     }
 
   }

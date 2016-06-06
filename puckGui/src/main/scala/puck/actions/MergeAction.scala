@@ -26,12 +26,9 @@
 
 package puck.actions
 
-import java.awt.event.ActionEvent
-import javax.swing.AbstractAction
-
 import puck.graph.{GraphUtils, DependencyGraph, ConcreteNode, DGNode}
 
-import scala.swing.Publisher
+import scala.swing.{Action, Publisher}
 
 case class MergeAction
 (controller : Publisher,
@@ -39,11 +36,11 @@ case class MergeAction
  consumer : ConcreteNode)
 (implicit graph : DependencyGraph,
  graphUtils: GraphUtils)
-  extends AbstractAction(s"Merge $consumed into this") {
+  extends Action(s"Merge $consumed into this") {
 
   import graphUtils.{Rules => TR}
 
-  override def actionPerformed(e: ActionEvent): Unit =
+  def apply(): Unit =
     printErrOrPushGraph(controller,"Merge action failure") {
 
       val sConsumerHost= graph.container(consumer.id)

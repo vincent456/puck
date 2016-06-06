@@ -43,7 +43,7 @@ import puck.graph.constraints.{ConstraintsMaps, ConstraintsParser}
 
 
 object ScenarioFactory {
-  implicit val logger : PuckLogger = new PuckFileLogger(_ => true, new java.io.File(Settings.tmpDir + "comparisonLog"))
+  implicit val logger : PuckFileLogger = new PuckFileLogger(_ => true, new java.io.File(Settings.tmpDir + "pucklog"))
 
 
   def fromDirectory(path: String): ScenarioFactory = {
@@ -114,7 +114,7 @@ class ScenarioFactory
     val dg2ast = new JavaJastAddDG2AST(program, graph, initialRecord, fullName2id, dg2astMap)
 
 
-    dg2ast.apply(g)(new PuckFileLogger(_ => true, new File(Settings.tmpDir + "pucklog")))
+    dg2ast.apply(g)(logger)
 
     IO.delete(outDir)
     dg2ast.printCode(outDir)

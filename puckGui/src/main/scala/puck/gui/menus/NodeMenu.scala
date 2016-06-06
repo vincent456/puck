@@ -28,16 +28,15 @@ package puck
 package gui
 package menus
 
-import javax.swing.{JMenuItem, JPopupMenu}
+
 
 import puck.actions._
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.transformations.rules.Redirection
-import puck.gui.{NodeKindIcons, PrintingOptionsControl}
 import puck.gui.svg.actions.{AutoSolveAction, Log}
 
-import scala.swing.Publisher
+import scala.swing._
 
 /**
   * Created by Loïc Girault on 16/12/15.
@@ -45,7 +44,7 @@ import scala.swing.Publisher
 
 object NodeMenu{
 
-  type Builder = (DependencyGraph, NodeId, List[NodeId], Option[NodeIdP]) => JPopupMenu
+  type Builder = (DependencyGraph, NodeId, List[NodeId], Option[NodeIdP]) => PopupMenu
 
   def apply(bus : Publisher,
             graphUtils : GraphUtils,
@@ -55,7 +54,7 @@ object NodeMenu{
             selectedNodes: List[NodeId],
             selectedEdge : Option[NodeIdP])
            (implicit treeIcons: NodeKindIcons,
-            cm : Option[ConstraintsMaps]): JPopupMenu =
+            cm : Option[ConstraintsMaps]): PopupMenu =
     graph.getNode(nodeId) match {
       case n : ConcreteNode =>
         new ConcreteNodeMenu(bus, graph, cm, graphUtils,
@@ -75,36 +74,38 @@ class ConcreteNodeMenu
  val selectedEdge : Option[NodeIdP],
  blurryEdgeSelection : Boolean,
  node : ConcreteNode,
- printingOptionsControl: PrintingOptionsControl,
- implicit val treeIcons: NodeKindIcons)
-  extends JPopupMenu {
+ val printingOptionsControl: PrintingOptionsControl,
+ implicit val nodeKindIcons: NodeKindIcons)
+  extends PopupMenu {
 
   init()
 
+
+
   def init(): Unit = {
 
-    this.add(new RenameNodeAction(bus, node))
-    this.addSeparator()
+    contents += new RenameNodeAction(bus, node)
+    contents += new Separator()
 
-    val item = new JMenuItem(s"Abstract ${node.name} as")
-    item.setEnabled(false)
-    this.add(item)
+    contents += new MenuItem(s"Abstract ${node.name} as") {
+      enabled = false
+    }
 
-    abstractionChoices foreach this.add
+    abstractionChoices foreach contents.+=
 
     if (childChoices.nonEmpty) {
-      this.addSeparator()
-      childChoices.foreach(this.add)
+      contents += new Separator()
+      childChoices foreach contents.+=
     }
 
     if (node.kind.isWritable) {
-      this.add(new CreateInitalizerAction(bus,
-        graph.getConcreteNode(graph.hostTypeDecl(node.id))))
+      contents += new CreateInitalizerAction(bus,
+        graph.getConcreteNode(graph.hostTypeDecl(node.id)))
     }
 
-    this.addSeparator()
-    this.add(new SetMutabilityAction(bus, node, !node.mutable))
-    this.add(new RemoveNodeAction(bus, node))
+    contents += new Separator()
+    contents += new SetMutabilityAction(bus, node, !node.mutable)
+    contents += new RemoveNodeAction(bus, node)
 
     selectedNodes match {
       case Nil => ()
@@ -122,27 +123,27 @@ class ConcreteNodeMenu
       cm =>
         if ((graph, cm).isWronglyContained(node.id)
           || (graph, cm).isWronglyUsed(node.id)) {
-          ignore(this add new AutoSolveAction(bus, cm, node, printingOptionsControl))
+          contents += new AutoSolveAction(bus, cm, node, printingOptionsControl)
         }
      }
-    this.addSeparator()
-    this.addMenuItem("Infos"){ _ =>
-      bus publish NodeClicked(node)
-    }
+    contents += new Separator()
+    ignore(contents += new Action("Infos"){
+      def apply() : Unit = bus publish NodeClicked(node)
+    })
   }
 
-  def abstractionChoices : Seq[JMenuItem] =
+  def abstractionChoices : Seq[MenuItem] =
     node.kind.abstractionChoices.map { case (k, p) =>
-      new JMenuItem(new AbstractionAction(bus, node, p, k))
+      new MenuItem(new AbstractionAction(bus, node, p, k))
     }
 
-  def childChoices : Seq[JMenuItem] = {
+  def childChoices : Seq[MenuItem] = {
     val ks = graph.nodeKinds.filter(node.kind.canContain)
-    ks map {k => new JMenuItem(new AddNodeAction(bus, node, k))}
+    ks map {k => new MenuItem(new AddNodeAction(bus, node, k))}
   }
 
   private def addAddIsaOption(sub: ConcreteNode, sup: ConcreteNode): Unit = {
-    ignore( this add new AddIsaAction(bus, sub, sup) )
+    ignore( contents += new AddIsaAction(bus, sub, sup) )
 
   }
 
@@ -159,7 +160,7 @@ class ConcreteNodeMenu
     else {
       val selected: ConcreteNode = graph.getConcreteNode(ids.head)
       if (graph.canContain(node, selected))
-        ignore( this add new MoveAction(bus, node, ids) )
+        ignore(  contents += new MoveAction(bus, node, ids) )
     }
 
   }
@@ -167,7 +168,7 @@ class ConcreteNodeMenu
   private def addOtherNodeSelectedOption(id: NodeId): Unit = {
     val selected: ConcreteNode = graph.getConcreteNode(id)
     if (graph.canContain(node, selected)) {
-      this.add(new MoveAction(bus, node, List(id)))
+      contents += new MoveAction(bus, node, List(id))
     }
 
     //    val m: MergeMatcher = controller.transfoRules.
@@ -175,7 +176,7 @@ class ConcreteNodeMenu
     //
     //    if (m.canBeMergedInto(node, graph))
     if (selected.kind.kindType == node.kind.kindType)
-      this.add(new MergeAction(bus, selected, node))
+      contents += new MergeAction(bus, selected, node)
 
 
     if (selected.id != node.id) {
@@ -191,20 +192,20 @@ class ConcreteNodeMenu
       graph.abstractions(target).foreach {
         abs =>
           if (abs.nodes.contains(node.id))
-            this.add(new RedirectAction(bus, uses, abs))
+            contents += new RedirectAction(bus, uses, abs)
       }
 
     def addChangeInitUsesAction(ctorDef: NodeId) =
       (graph.getRole(node.id), graph.getRole(target)) match {
         case (Some(Factory(ctorId)), Some(Initializer(_)))
           if ctorId == source =>
-          this.add(abstractAction("Call to initialization in factory") {
-            _ =>
+          contents += new Action("Call to initialization in factory") {
+            def apply() : Unit = {
               val g = Redirection.redirectSourceOfInitUseInFactory(graph.mileStone,
                 ctorId, ctorDef, target, node.id)
-
               bus.publish(PushGraph(g))
-          })
+            }
+          }
         case _ => ()
       }
 
@@ -229,17 +230,18 @@ class VirtualNodeMenu
  graph : DependencyGraph,
  graphUtils : GraphUtils,
  node : VirtualNode
-) extends JPopupMenu {
+) extends PopupMenu {
 
   node.potentialMatches foreach {
     id =>
       val consumer = graph.getConcreteNode(id)
       import graphUtils.{Rules => TR}
-      this.addMenuItem(s"Concretize as $consumer") { _ =>
-        printErrOrPushGraph(controller,"Concretize action failure") {
-          TR.merge.mergeInto(graph.mileStone, node.id, consumer.id)
-        }
-      }
+      contents += new MenuItem(new Action(s"Concretize as $consumer") {
+        def apply() : Unit =
+          printErrOrPushGraph(controller,"Concretize action failure") {
+            TR.merge.mergeInto(graph.mileStone, node.id, consumer.id)
+          }
+      })
   }
 
 }

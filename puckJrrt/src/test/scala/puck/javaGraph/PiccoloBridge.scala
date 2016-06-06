@@ -1,14 +1,12 @@
 package puck.javaGraph
 
 
-import javax.swing.JPopupMenu
-
 import org.piccolo2d.extras.PFrame
 import piccolo.{PiccoloDynamicSquareZoomTest, PiccoloTest}
-import puck.{GraphStack, JavaIcons}
-import puck.piccolo.DGCanvas
+import puck.gui.PuckControl
+import puck.JavaIcons
+import puck.piccolo.{DGCanvas, PiccoloNodeMenu}
 
-import scala.swing.Publisher
 
 /**
   * Created by lorilan on 4/29/16.
@@ -30,9 +28,9 @@ object PiccoloDynamicBridge {
 object ExpanseBridge {
   def main(args : Array[String]) : Unit =  {
     val bs = BridgeScenario()
-    val gs = new GraphStack(new Publisher(){})
-    gs.pushGraph(bs.graph)
+    val ctrl = new PuckControl(puck.jastadd.ExtendJGraphUtils, bs.logger)
+    ctrl.graphStack pushGraph bs.graph
     new PFrame("ExpanseBridge", false,
-      new DGCanvas(gs, JavaIcons, (_,_,_,_) => new JPopupMenu()))
+      new DGCanvas(ctrl.graphStack, JavaIcons, PiccoloNodeMenu(ctrl,JavaIcons)))
   }
 }

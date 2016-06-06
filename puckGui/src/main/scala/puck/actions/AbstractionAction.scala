@@ -26,8 +26,6 @@
 
 package puck.actions
 
-import java.awt.event.ActionEvent
-import javax.swing._
 
 import puck.graph.ShowDG._
 import puck.graph._
@@ -35,8 +33,8 @@ import puck.graph.constraints.AbstractionPolicy
 import puck.gui.NodeKindIcons
 import puck.gui.explorer.StaticDGTreePane
 
-import scala.swing.BorderPanel.Position
 import scala.swing._
+import scala.swing.BorderPanel.Position
 import scala.swing.Dialog.{Message, Options, Result}
 
 object NodeCheckBox {
@@ -109,7 +107,7 @@ class AbstractionAction
 (implicit graph : DependencyGraph,
  graphUtils: GraphUtils,
  treeIcons: NodeKindIcons)
-  extends AbstractAction(s"$abskind ($policy)"){
+  extends Action(s"$abskind ($policy)"){
 
      import graphUtils.{Rules => TR}
 
@@ -134,7 +132,7 @@ class AbstractionAction
        }
      }
 
-     override def actionPerformed(e: ActionEvent): Unit =
+     def apply() : Unit =
        printErrOrPushGraph(bus,"Abstraction action failure") {
 
          val contentToAbstract : List[ConcreteNode] =

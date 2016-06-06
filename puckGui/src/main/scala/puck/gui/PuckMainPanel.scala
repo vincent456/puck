@@ -34,9 +34,6 @@ import scala.swing._
 import java.awt.Dimension
 
 import puck.graph.constraints.ConstraintsMaps
-import puck.gui.svg.SVGViewHandler
-import puck.piccolo.PiccoloViewHandler
-
 
 object PuckMainPanel{
   val width = 1024

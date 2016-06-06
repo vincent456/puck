@@ -119,7 +119,7 @@ abstract class Abstract {
         val name = abstractionName(g, impl, abskind, policy, None)
 
         val (absNode, ndef, g1) =
-          intro.nodeWithDef(g, name, abskind, (g styp impl.id).get)
+          intro.nodeWithDef(g, name, abskind, g typ impl.id)
         val g2 =
           if(impl.kind.kindType == TypeConstructor) {
             val typ = g container_! impl.id
@@ -129,19 +129,16 @@ abstract class Abstract {
           }
           else g1
 
-        val g3 = g2.addUses(ndef.id, impl.id)
-
-        val g4 = g3.parametersOf(impl.id).foldRight(g3) {
+        val g3 = g2.parametersOf(impl.id).foldRight(g2) {
           (paramId, g0) =>
             val param = g0.getConcreteNode(paramId)
             val (pabs, g01) = g0.addConcreteNode(param.name, param.kind)
             val g02 = (g0 styp paramId) map (g01.addType(pabs.id, _)) getOrElse g01
+            g02.addEdge(ContainsParam(absNode.id, pabs.id))
 
-            g02.addContains(absNode.id, pabs.id)
-//            g02.usedByExcludingTypeUse(paramId).foldLeft(g02.addContains(absNode.id, pabs.id)) {
-//              (g00, tid) => g01.addUses(pabs.id, tid)
-//            }
         }
+        val g4 = g3.addUses(ndef.id, impl.id)
+
         val abs = AccessAbstraction(absNode.id, policy)
         (abs, g4.addAbstraction(impl.id, abs))
 

@@ -44,6 +44,18 @@ class Register {
     visibleContent += kv
   }
 
+//  def -=(k : (NodeId, DGPNode)) = {
+//    invisibleContent += k
+//    visibleContent -= k._1
+//
+//  }
+//  def -=(k : NodeId) = {
+//    visibleContent get k foreach {
+//      v => invisibleContent += (k -> v)
+//    }
+//    visibleContent -= k
+//  }
+
   def firstVisible(nid : NodeId, g : DependencyGraph) : DGPNode =
     visibleContent get nid match {
       case Some(n) => n
@@ -65,14 +77,14 @@ class Register {
     new PropertyChangeListener() {
     def propertyChange(evt: PropertyChangeEvent): Unit = {
       val src = evt.getSource.asInstanceOf[DGPNode]
-      if(evt.getNewValue == null){
+      if(evt.getNewValue == null) {
+        //Register.this -= (src.id -> src)
         invisibleContent += (src.id -> src)
         visibleContent -= src.id
       }
-      else {
-        visibleContent += (src.id -> src)
-        invisibleContent -= src.id
-      }
+      else
+        Register.this += (src.id -> src)
+
     }
   }
 

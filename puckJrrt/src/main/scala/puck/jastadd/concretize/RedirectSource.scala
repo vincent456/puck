@@ -142,6 +142,7 @@ object RedirectSource {
               case `oldPackage` => addImport(cu, t)
               case _ if newlyCreatedCu => addImport(cu, t)
               case _ => // should be handled by the name locking
+              //remove old import, create new properly named import
               addImport(cu, tDecl); removeImport(cu, tDecl)
             }
       }
@@ -170,7 +171,7 @@ object RedirectSource {
 
     val impactedUsers =  (staticContent flatMap reenactor.usersOf) ++ (reenactor usersOf tDeclId)
 
-    val _ = impactedUsers.foldLeft(Set[String]()){ (cus, userId) =>
+    puck.ignore(impactedUsers.foldLeft(Set[String]()){ (cus, userId) =>
       val scu = id2declMap(userId) match {
         case ParameterDeclHolder(decl) =>
           diffTypeDecl(decl.hostType())
@@ -197,13 +198,13 @@ object RedirectSource {
             case `oldPackage` => addImport(cu, tDecl)
             case `newPackage` => removeImport(cu, tDecl)
             case _ =>  // should be handled by the name locking
-              addImport(cu, tDecl); removeImport(cu, tDecl)
+              removeImport(cu, tDecl); addImport(cu, tDecl)
           }
 
           cus + cu.pathName
         case _ => cus
       }
-    }
+    })
 
   }
 

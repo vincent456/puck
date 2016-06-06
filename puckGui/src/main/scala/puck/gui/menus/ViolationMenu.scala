@@ -24,16 +24,14 @@
  * Author of this file : Loïc Girault
  */
 
-package puck.gui.menus
-
-import javax.swing.JPopupMenu
+package puck.gui
+package menus
 
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.{DependencyGraph, GraphUtils, NodeId}
-import puck.gui.PrintingOptionsControl
 import puck.gui.svg.actions.AutoSolveAction
 
-import scala.swing.Publisher
+import scala.swing.{PopupMenu, Publisher}
 
 /**
   * Created by Loïc Girault on 17/12/15.
@@ -45,10 +43,10 @@ class ViolationMenu
  constraints : ConstraintsMaps)
 (implicit graph : DependencyGraph,
   graphUtils : GraphUtils)
-  extends JPopupMenu {
+  extends PopupMenu {
 
   val targetNode = graph.getConcreteNode(target)
   //add(new ManualSolveAction(publisher, targetNode))
-  add(new AutoSolveAction(publisher, constraints, targetNode, printingOptionsControl))
+  contents += new AutoSolveAction(publisher, constraints, targetNode, printingOptionsControl)
 
 }

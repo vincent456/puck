@@ -51,7 +51,8 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
 
   def buildGraph(p : Program,
                  ll : puck.LoadingListener)  : JavaJastAddDG2AST = {
-    val builder = p.buildDependencyGraph(ll)
+
+    val builder = JastaddGraphBuilder(p, Option(ll))
     builder.addContains(builder.nodesByName("@primitive"), builder.arrayTypeId)
     builder.attachOrphanNodes()
     builder.registerSuperTypes()

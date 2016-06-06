@@ -26,16 +26,14 @@
 
 package puck.gui.menus
 
-import java.awt.event.ActionEvent
-import javax.swing.{AbstractAction, JPopupMenu}
-
 import puck.actions.{RedirectAction0, RemoveEdgeAction}
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
 import puck.gui.svg.actions._
 import puck.gui._
 import puck.ignore
-import scala.swing.Publisher
+
+import scala.swing.{Action, PopupMenu, Publisher}
 
 
 class EdgeMenu
@@ -46,7 +44,7 @@ class EdgeMenu
   constraints: Option[ConstraintsMaps],
   implicit val graph: DependencyGraph,
   implicit val graphUtils: GraphUtils)
-  extends JPopupMenu {
+  extends PopupMenu {
 
 
   val (source, target) = edge
@@ -59,7 +57,7 @@ class EdgeMenu
       if((graph, cm).isViolation(edge)){
         val targetNode = graph.getConcreteNode(target)
         //add(new ManualSolveAction(publisher, targetNode))
-        add(new AutoSolveAction(publisher, cm, targetNode, printingOptionsControl))
+        contents += new AutoSolveAction(publisher, cm, targetNode, printingOptionsControl)
       }
   }
 
@@ -69,21 +67,21 @@ class EdgeMenu
 
   if(graph.isa(source, target)) {
     isIsaEdge = true
-    add(new RemoveEdgeAction(publisher, Isa(source, target)))
+    contents += new RemoveEdgeAction(publisher, Isa(source, target))
   }
 
   def addUsesActions(src : NodeId, tgt : NodeId) : Unit =
     if(graph.uses(src, tgt)){
-        isUseEdge = true
-        add(new AbstractAction(s"Show type bindings"){
-          def actionPerformed(e: ActionEvent) : Unit =
-            publisher publish EdgeForTypePrinting(Some((src, tgt)))
-        })
+      isUseEdge = true
+      contents += new Action(s"Show type bindings"){
+        def apply() : Unit =
+          publisher publish EdgeForTypePrinting(Some((src, tgt)))
+      }
 
 
-        val abstractions = graph.abstractions(tgt)
-        if(abstractions.nonEmpty)
-          ignore(add(new RedirectAction0(publisher, (src, tgt), abstractions.toSeq)))
+      val abstractions = graph.abstractions(tgt)
+      if(abstractions.nonEmpty)
+        ignore(contents += new RedirectAction0(publisher, (src, tgt), abstractions.toSeq))
     }
 
 
@@ -100,10 +98,10 @@ class EdgeMenu
 
 
   if(!isConcreteEdge)
-      this.addMenuItem("Focus"){
-        _ =>
-          publisher publish GraphFocus(graph, AbstractEdgeKind(edge))
-      }
+    contents += new Action("Focus"){
+      def apply() : Unit =
+        publisher publish GraphFocus(graph, AbstractEdgeKind(edge))
+    }
 
 
 

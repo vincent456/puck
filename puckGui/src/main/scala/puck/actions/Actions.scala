@@ -26,13 +26,11 @@
 
 package puck.actions
 
-import java.awt.event.ActionEvent
-import javax.swing.AbstractAction
-
+import scala.swing.Action
+import scala.swing.Publisher
 import puck.graph._
 import puck.gui.PushGraph
 
-import scala.swing.Publisher
 
 class AddIsaAction
 (controller : Publisher,
@@ -40,11 +38,11 @@ class AddIsaAction
  sup : ConcreteNode)
 (implicit graph : DependencyGraph,
  graphUtils: GraphUtils)
-extends AbstractAction(s"Add ${sub.name} isa ${sup.name}") {
+extends Action(s"Add ${sub.name} isa ${sup.name}") {
 
   import graphUtils.{Rules => TR}
 
-  def actionPerformed(e: ActionEvent) : Unit =
+  def apply() : Unit =
     printErrOrPushGraph(controller, "Make SuperType Action failure") {
       TR.makeSuperType(graph.mileStone, sub.id, sup.id)()
     }
@@ -56,9 +54,9 @@ class RemoveEdgeAction
 (controller : Publisher,
  edge : DGEdge)
 (implicit graph : DependencyGraph)
-  extends AbstractAction(s"Delete $edge") {
+  extends Action(s"Delete $edge") {
 
-  def actionPerformed(e: ActionEvent) : Unit =
+  def apply() : Unit =
     printErrOrPushGraph(controller, "Remove Node Action failure"){
       edge.kind match {
         case Isa => LoggedSuccess(edge.deleteIn(graph.mileStone))
@@ -72,11 +70,11 @@ class RemoveNodeAction
  node : ConcreteNode)
 (implicit graph : DependencyGraph,
  graphUtils: GraphUtils)
-extends AbstractAction(s"Delete node and children") {
+extends Action(s"Delete node and children") {
 
   import graphUtils.{Rules => TR}
 
-  def actionPerformed(e: ActionEvent) : Unit =
+  def apply() : Unit =
     printErrOrPushGraph(controller, "Remove Node Action failure"){
       TR.remove.concreteNode(graph.mileStone, node)
     }
@@ -88,11 +86,11 @@ class RenameNodeAction
  node : ConcreteNode )
 (implicit graph : DependencyGraph,
  graphUtils: GraphUtils)
-  extends AbstractAction("Rename") {
+  extends Action("Rename") {
 
   import graphUtils.{Rules => TR}
 
-  override def actionPerformed(e: ActionEvent): Unit = {
+  def apply(): Unit = {
     showInputDialog("New name:", node.name).foreach {
       newName =>
           val g = TR.rename(graph.mileStone, node.id, newName)
@@ -107,11 +105,11 @@ class CreateInitalizerAction
  node : ConcreteNode)
 (implicit graph : DependencyGraph,
  graphUtils: GraphUtils)
-  extends AbstractAction(s"Create initializer of $node") {
+  extends Action(s"Create initializer of $node") {
 
   import graphUtils.{Rules => TR}
 
-  def actionPerformed(e: ActionEvent) : Unit =
+  def apply() : Unit =
     printErrOrPushGraph(controller, "Remove Node Action failure"){
       LoggedSuccess(TR.intro.initializer(graph.mileStone, node.id)._2)
     }
@@ -123,9 +121,9 @@ class SetMutabilityAction
  mutable : Boolean)
 (implicit graph : DependencyGraph,
  graphUtils: GraphUtils)
-  extends AbstractAction(s"Set $node " + (if(mutable) "mutable" else "immutable")) {
+  extends Action(s"Set $node " + (if(mutable) "mutable" else "immutable")) {
 
-  def actionPerformed(e: ActionEvent) : Unit =
+  def apply() : Unit =
     printErrOrPushGraph(controller, "Mutability Action failure"){
       LoggedSuccess(graph.setMutability(node.id, mutable))
     }

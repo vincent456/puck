@@ -26,9 +26,6 @@
 
 package puck.gui.svg.actions
 
-import java.awt.event.ActionEvent
-import javax.swing.AbstractAction
-
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.constraints.search.TargetedControlWithHeuristic
@@ -46,7 +43,7 @@ class AutoSolveAction
   printingOptionsControl: PrintingOptionsControl)
 (implicit graph : DependencyGraph,
   graphUtils: GraphUtils)
-  extends AbstractAction("Solve [BETA - under development]") {
+  extends Action("Solve [BETA - under development]") {
 
   private def dialog(res : Search[OneStepResult]) : Option[Logged[DependencyGraph]] = {
     val title = "Solve"
@@ -74,7 +71,7 @@ class AutoSolveAction
   }
 
 
-  override def actionPerformed(e: ActionEvent): Unit = {
+  override def apply(): Unit = {
     //val g = graph.mileStone
     val g = graph.nodes.foldLeft(graph.mileStone){
       case (g, n) => n.kind.kindType match {

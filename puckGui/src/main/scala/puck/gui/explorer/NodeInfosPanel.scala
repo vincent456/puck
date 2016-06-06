@@ -55,7 +55,7 @@ class NodeInfosPanel
           control.printingOptionsControl,
           blurrySelection = false,
           control.constraints,
-          graph, control.graphUtils).show(c.peer, evt.getX, evt.getY))
+          graph, control.graphUtils).show(c, evt.getX, evt.getY))
       else edge match {
         case Uses(src,tgt,ak) =>
           bus publish Log(NodeInfosPanel.useBindings(graph, Uses(src,tgt,ak)))

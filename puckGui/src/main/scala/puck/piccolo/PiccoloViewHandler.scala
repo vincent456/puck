@@ -25,16 +25,15 @@
  */
 
 package puck.piccolo
-
-import org.piccolo2d.event.{PBasicInputEventHandler, PDragEventHandler, PDragSequenceEventHandler, PInputEvent}
+import puck.gui.{GraphStackEvent, NodeKindIcons, Popped, PrintCode, PuckControl, PuckMainPanel, Pushed, TreeViewHandler, ViewHandler, actionToMenuItem}
+import org.piccolo2d.event.{PBasicInputEventHandler, PDragEventHandler, PInputEvent}
 import org.piccolo2d.{PCanvas, PLayer, PNode}
 import org.piccolo2d.extras.swing.PScrollPane
 import puck.GraphStack
 import puck.graph._
 import puck.graph.transformations.Transformation.ChangeSource
-import puck.graph.transformations.{CNode, Edge, RenameOp, Transformation}
-import puck.gui.menus.NodeMenu
-import puck.gui.{EmptiedButOne, GraphStackEvent, GraphUpdate, NodeKindIcons, Popped, PuckControl, PuckMainPanel, Pushed, TreeViewHandler, ViewHandler}
+import puck.graph.transformations.{Edge, RenameOp, Transformation}
+import puck.gui.menus.{ConcreteNodeMenu, NodeMenu}
 
 import scala.swing._
 
@@ -56,7 +55,7 @@ object PiccoloViewHandler extends ViewHandler {
 class DGCanvas
 (val graphStack: GraphStack,
  implicit val nodeKindIcons : NodeKindIcons,
- menuBuilder : NodeMenu.Builder)
+ menuBuilder : PiccoloNodeMenu.Builder)
   extends PCanvas {
 
 
@@ -139,45 +138,51 @@ class DGCanvas
       override def mousePressed(event: PInputEvent) : Unit =
         if(event.isRightMouseButton){
           val pos = event.getCanvasPosition
-          val menu = menuBuilder(graph, n.id, List(), None)
-          Swing.onEDT(menu.show(DGCanvas.this, pos.getX.toInt, pos.getY.toInt))
-//            new PopupMenu(){
-//            contents += new MenuItem(new Action("uses"){
-//              def apply() : Unit = addUses(n)
-//            })
-//          }
-//          Swing.onEDT(menu.show(Component.wrap(DGCanvas.this), pos.getX.toInt, pos.getY.toInt))
+          val menu = menuBuilder(DGCanvas.this, n)
+
+//          menu.add(new AbstractAction("Print"){
+//            def actionPerformed(e: ActionEvent): Unit =
+//              getNode(graph.rootId).toPNode.print()
+//          })
+          Swing.onEDT(menu.show(Component wrap DGCanvas.this,
+            pos.getX.toInt, pos.getY.toInt))
         }
 
       override def mouseClicked(event : PInputEvent) : Unit =
         if(event.getClickCount == 2 ) {
-          if(n.contentSize == 0) addContent(n)
-          else {
-            val newValue = ! n.getChild(0).getVisible
-            n.fullContent.foreach {
-              c =>
-                val en = c.asInstanceOf[DGExpandableNode]
-                en.usedBy.foreach(_.delete())
-                en.usesOf.foreach(_.delete())
-            }
-            n.clearContent()
-          }
+          if(n.contentSize == 0) expand(n)
+          else collapse(n)
         }
 
 
     }
 
+  def hide(n : DGPNode) : Unit =
+    n.toPNode.setParent(null)
 
+  def expand(n : DGPNode) : Unit = addContent(n)
+  def collapse(n : DGExpandableNode) : Unit = {
+      val newValue = ! n.getChild(0).getVisible
+      n.fullContent.foreach {
+        c =>
+          val en = c.asInstanceOf[DGExpandableNode]
+          en.usedBy.foreach(_.delete())
+          en.usesOf.foreach(_.delete())
+      }
+      n.clearContent()
+    }
 
-  def addContent(n : DGExpandableNode) : Unit = {
+  def expandAll(n : DGPNode) : Unit =
+    addContent(n) foreach expandAll
+
+  def addContent(n : DGPNode) : Seq[DGPNode] = {
 
     val pn = n.toPNode
     val content = graph content n.id
 
-    content map getNode foreach {
-      c =>
-        pn addContent c
-    }
+    val children =  content.toSeq map getNode
+    children foreach pn.addContent
+    children
   }
 
   def addUses(n : DGExpandableNode ): Unit = {
@@ -213,6 +218,85 @@ class DGCanvas
   }
 }
 
+object PiccoloNodeMenu {
+  type Builder = (DGCanvas, DGExpandableNode) => PopupMenu
+  def apply(controller: PuckControl,
+            nodeKindIcons: NodeKindIcons) : Builder =
+            (canvas: DGCanvas,  node: DGExpandableNode) =>
+              new PiccoloNodeMenu(controller, nodeKindIcons, canvas, node)
+}
+class PiccoloNodeMenu
+(controller : PuckControl,
+ nodeKindIcons: NodeKindIcons,
+ canvas : DGCanvas,
+ node : DGExpandableNode/*,
+ selectedNodes : List[NodeId],
+ selectedEdge: Option[NodeIdP]*/)
+extends ConcreteNodeMenu(
+  controller.Bus,
+  controller.graph,
+  controller.constraints,
+  controller.graphUtils,
+  List(),//selectedNodes,
+  None,//selectedEdge,
+  blurryEdgeSelection = false,
+  controller.graph getConcreteNode node.id,
+  controller.printingOptionsControl,
+  nodeKindIcons
+  ){
+  override def init() = {
+    super.init()
+
+    addShowOptions()
+
+  }
+
+  private def addShowOptions() : Unit = {
+
+    contents += new Action("Show uses"){
+      def apply() : Unit = canvas addUses node
+    }
+
+    /*contents += new Action("Hide") {
+      def apply() : Unit =
+        printingOptionsControl.hide(graph, node.id)
+        canvas hide node
+
+    }
+//    contents += new Action("Focus") {
+//      def apply() : Unit =
+//        printingOptionsControl.focusExpand(graph, node.id, focus = true, expand = false)
+//    }
+//    contents += new Action("Focus & Expand") {
+//      def apply() : Unit =
+//        printingOptionsControl.focusExpand(graph, node.id, focus = true, expand = true)
+//    }
+    contents += new Action("Show code") {
+      def apply() : Unit =
+        controller publish PrintCode(node.id)
+    }
+
+    if (graph.content(node.id).nonEmpty) {
+      contents += new Action("Collapse") {
+        def apply() : Unit =
+          printingOptionsControl.collapse(graph, node.id)
+          canvas collapse node
+
+      }
+      contents += new Action("Expand") {
+        def apply() : Unit =
+          printingOptionsControl.focusExpand(graph, node.id, focus = false, expand = true)
+          canvas expand node
+      }
+      contents += new Action("Expand all") {
+        def apply() : Unit =
+          printingOptionsControl.expandAll(graph, node.id)
+          canvas expandAll node
+      };()
+    }*/
+  }
+}
+
 class PiccoloGraphExplorer
 (control : PuckControl,
  nodeKindIcons: NodeKindIcons
@@ -220,11 +304,7 @@ class PiccoloGraphExplorer
 
   var canvas : DGCanvas = _
 
-  val menuBuilder : NodeMenu.Builder =
-    NodeMenu(control.Bus, control.graphUtils, control.printingOptionsControl, _, _, _, _)(nodeKindIcons, control.constraints)
-
   this listenTo control.Bus
-
 
   reactions += {
     case Popped(poppedGraph, newHead) =>
@@ -233,7 +313,7 @@ class PiccoloGraphExplorer
     case Pushed(pushedGraph, previousHead) =>
       canvas.pushEvent(pushedGraph, previousHead)
     case evt : GraphStackEvent =>
-      canvas = new DGCanvas(control.graphStack, nodeKindIcons, menuBuilder)
+      canvas = new DGCanvas(control.graphStack, nodeKindIcons, PiccoloNodeMenu(control,nodeKindIcons))
       setViewportView(canvas)
 
 

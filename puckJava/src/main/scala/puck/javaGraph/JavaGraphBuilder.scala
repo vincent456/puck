@@ -41,7 +41,7 @@ trait JavaGraphBuilder extends GraphBuilder{
      NodeIndex(JavaNodeKind.root), EdgeMap(),
      AbstractionMap(), Recording())
 
-
+  nodesByName += (g.root.name -> g.rootId)
 
   val arrayTypeId = addNode("@primitive.[]","[]", GenericClass,  mutable = false)()
 
