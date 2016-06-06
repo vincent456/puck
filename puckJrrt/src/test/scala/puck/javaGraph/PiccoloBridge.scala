@@ -5,8 +5,10 @@ import javax.swing.JPopupMenu
 
 import org.piccolo2d.extras.PFrame
 import piccolo.{PiccoloDynamicSquareZoomTest, PiccoloTest}
-import puck.JavaIcons
+import puck.{GraphStack, JavaIcons}
 import puck.piccolo.DGCanvas
+
+import scala.swing.Publisher
 
 /**
   * Created by lorilan on 4/29/16.
@@ -28,8 +30,10 @@ object PiccoloDynamicBridge {
 object ExpanseBridge {
   def main(args : Array[String]) : Unit =  {
     val bs = BridgeScenario()
+    val gs = new GraphStack(new Publisher(){})
+    gs.pushGraph(bs.graph)
     new PFrame("ExpanseBridge", false,
-      new DGCanvas(bs.graph, JavaIcons, (_,_,_,_) => new JPopupMenu()))
+      new DGCanvas(gs, JavaIcons, (_,_,_,_) => new JPopupMenu()))
   }
 }
 //object PiccoloClassTest {
