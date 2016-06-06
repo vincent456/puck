@@ -96,11 +96,7 @@ trait TypeUsage {
   def bindTypeUse(typeUser : NodeId,
                   typeUsed: TypeDecl,
                   typeMemberUse : NodeIdP) : Unit = {
-        val tid = getType(typeUsed) match {
-          case NamedType(id) => id
-          case ParameterizedType(id, _) => id
-          case _ => error()
-        }
+        val tid = Type.mainId(getType(typeUsed))
         puck.ignore(addBinding(typeUser, tid, typeMemberUse))
   }
 

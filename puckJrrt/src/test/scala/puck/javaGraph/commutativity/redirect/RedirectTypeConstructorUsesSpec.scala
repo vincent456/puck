@@ -186,4 +186,43 @@ class RedirectTypeConstructorUsesSpec
         |class C { void mc(A a){ a.m(); } }""")
   }
 
+  scenario("Redirect init use from constructor to factory") {
+    compareWithExpectedAndGenerated(
+      """package p;
+        |
+        |class A {
+        | int f;
+        | void init() { f = 42; }
+        | A(){ init(); }
+        | static A create(){
+        |   return new A();
+        | }
+        |}
+        """,
+      bs => {
+        import bs.{graph, idOfFullName}
+
+        val g = graph.setRole("p.A.init()", Some(Initializer("p.A.f")))
+                      .setRole("p.A.create()", Some(Factory("p.A.A()")))
+
+        Redirection.redirectSourceOfInitUseInFactory(g,
+          "p.A.A()", "p.A.A().Definition",
+          "p.A.init()", "p.A.create()")
+
+      },
+      """package p;
+        |
+        |class A {
+        | int f;
+        | void init() { f = 42; }
+        | A(){}
+        | static A create(){
+        |   A ret = new A();
+        |   ret.init();
+        |   return ret;
+        | }
+        |}
+      """)
+  }
+
 }

@@ -76,6 +76,11 @@ object Type {
     } map(_._1)
 
 
+  def mainId(t : Type) : NodeId = t match {
+    case NamedType(id) => id
+    case ParameterizedType(id, _) => id
+    case _ => error()
+  }
 }
 
 sealed abstract class Type {

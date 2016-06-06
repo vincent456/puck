@@ -36,17 +36,3 @@ object ExpanseBridge {
       new DGCanvas(gs, JavaIcons, (_,_,_,_) => new JPopupMenu()))
   }
 }
-//object PiccoloClassTest {
-//  def main(args : Array[String]) : Unit =  {
-//    val bs = BridgeScenario()
-//    import bs._
-//
-//
-//    new PFrame("HierarchyZoomExample", false, null) {
-//      override def initialize() : Unit = {
-//        val c = TypeDeclShapedPNode.createClass(graph, "screen.Screen")
-//        getCanvas.getLayer.addChild(c)
-//      }
-//    }
-//  }
-//}

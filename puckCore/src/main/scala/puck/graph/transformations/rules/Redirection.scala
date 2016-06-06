@@ -30,7 +30,6 @@ import puck.PuckError
 import puck.graph._
 import puck.util.LoggedEither
 import LoggedEither._
-import puck.graph.ShowDG._
 import scalaz.std.list._
 import scalaz.std.set._
 import ShowDG._
@@ -52,9 +51,27 @@ object Redirection {
       .removeBinding(selfUse, (ctorDef, initializer))
       .addBinding((factoryDef, clazz), (factoryDef, initializer))
 
-    if(g1.typeMemberUsesOf(selfUse).isEmpty)
-      g1.removeEdge(selfUse)
-    else g1
+    val tid = Type.mainId(g1.typ(factory))
+
+    val returnTypeConstraint = {
+       val tucs =  g1.typeConstraints((factory, tid)).filter{
+         case Sub(_) => true
+         case _ => false
+       }
+       if(tucs.size > 1) error()
+      tucs.head
+    }
+    //type constraint on factory return type
+    val Sub((_, st)) = returnTypeConstraint
+
+    val g2 =  g1.removeTypeUsesConstraint((factory, tid), returnTypeConstraint)
+          .addTypeUsesConstraint((factory, tid), Sub((factoryDef, st)))
+          //constraint on newly extracted local variable
+          .addTypeUsesConstraint((factoryDef, st), returnTypeConstraint)
+
+    if(g2.typeMemberUsesOf(selfUse).isEmpty)
+      g2.removeEdge(selfUse)
+    else g2
   }
 
   def cl(g: DependencyGraph, u : NodeIdP) : Set[(NodeIdP, NodeIdP)] = {

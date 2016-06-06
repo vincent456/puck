@@ -194,7 +194,7 @@ object ShowDG extends ShowConstraints{
     (dg, tc) => s"${tcOp(tc)} ${stringOfNodeIdP(dg,tc.constrainedUse)}"
 
 
-  def stringOfTypeConstraint : DGStringBuilder[(NodeIdP, TypeUseConstraint)] = {
+  implicit def stringOfTypeConstraint : DGStringBuilder[(NodeIdP, TypeUseConstraint)] = {
     case (dg, (tuse, tc)) =>
       val tu1 = stringOfNodeIdP(dg,tuse)
       s"$tu1 ${stringOfTypeUseConstraint(dg, tc)}"
