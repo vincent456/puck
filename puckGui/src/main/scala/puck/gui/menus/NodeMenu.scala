@@ -45,22 +45,22 @@ import scala.swing.Publisher
 
 object NodeMenu{
 
-  type Builder = (DependencyGraph, Option[ConstraintsMaps], NodeId, List[NodeId], Option[NodeIdP]) => JPopupMenu
+  type Builder = (DependencyGraph, NodeId, List[NodeId], Option[NodeIdP]) => JPopupMenu
 
   def apply(bus : Publisher,
             graphUtils : GraphUtils,
             printingOptionsControl : PrintingOptionsControl,
             graph : DependencyGraph,
-            cm : Option[ConstraintsMaps],
             nodeId : NodeId,
             selectedNodes: List[NodeId],
             selectedEdge : Option[NodeIdP])
-           (implicit treeIcons: NodeKindIcons): JPopupMenu =
+           (implicit treeIcons: NodeKindIcons,
+            cm : Option[ConstraintsMaps]): JPopupMenu =
     graph.getNode(nodeId) match {
       case n : ConcreteNode =>
         new ConcreteNodeMenu(bus, graph, cm, graphUtils,
           selectedNodes, selectedEdge, blurryEdgeSelection = false,
-          n, printingOptionsControl)
+          n, printingOptionsControl, treeIcons)
       case n : VirtualNode =>
         new VirtualNodeMenu(bus, graph, graphUtils, n)
     }
@@ -75,8 +75,8 @@ class ConcreteNodeMenu
  val selectedEdge : Option[NodeIdP],
  blurryEdgeSelection : Boolean,
  node : ConcreteNode,
- printingOptionsControl: PrintingOptionsControl)
-(implicit treeIcons: NodeKindIcons)
+ printingOptionsControl: PrintingOptionsControl,
+ implicit val treeIcons: NodeKindIcons)
   extends JPopupMenu {
 
   init()
@@ -124,8 +124,11 @@ class ConcreteNodeMenu
           || (graph, cm).isWronglyUsed(node.id)) {
           ignore(this add new AutoSolveAction(bus, cm, node, printingOptionsControl))
         }
+     }
+    this.addSeparator()
+    this.addMenuItem("Infos"){ _ =>
+      bus publish NodeClicked(node)
     }
-
   }
 
   def abstractionChoices : Seq[JMenuItem] =

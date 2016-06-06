@@ -30,21 +30,20 @@ import org.piccolo2d.{PCanvas, PNode, PRoot}
 import org.piccolo2d.event.{PBasicInputEventHandler, PInputEvent}
 import org.piccolo2d.extras.PFrame
 import org.piccolo2d.nodes.PText
+import org.piccolo2d.util.PBounds
 import puck._
 import puck.graph._
-import puck.piccolo.{DGPNode, IconTextNode, Register, TitledGridSquareNode, ViewCommands}
+import puck.piccolo.{DGPNode, PUses, Register, squareSide}
 import puck.gui.NodeKindIcons
-import puck.piccolo.squareSide
+import puck.piccolo.util.{TitledGridSquareNode, ViewCommands}
+
+import scala.collection.mutable
 import scala.swing._
 /**
   * Created by Loïc Girault on 23/05/16.
   */
-object PiccoloDynamicSquareZoomTest {
 
-
-
-}
-import puck.piccolo.BoundsOp
+import puck.piccolo.{BoundsOp, DGTitleNode}
 class TitledGridSquareDGPNode
 ( val id : NodeId,
   titleNode : PNode,
@@ -56,6 +55,15 @@ class TitledGridSquareDGPNode
   def addContent(child: DGPNode): Unit = ???
 
   def content: Iterable[DGPNode] = ???
+
+  //global bounds used by edges as referential for source and target coordinates
+  override def arrowGlobalBounds: PBounds = ???
+
+  override def usedBy: mutable.Buffer[PUses] = ???
+
+  override def usesOf: mutable.Buffer[PUses] = ???
+
+  override def rmContent(child: DGPNode): Unit = ???
 }
 
 class PiccoloDynamicSquareZoomTest(g : DependencyGraph,
@@ -68,16 +76,12 @@ class PiccoloDynamicSquareZoomTest(g : DependencyGraph,
   def this(g : DependencyGraph,
            nk : NodeKindIcons) = this(g, null, nk)
 
-  val register = new Register[TitledGridSquareDGPNode]()
-
   //nodeLayer underneath edgeLayer
 
   def squareNode(nid : NodeId) : TitledGridSquareDGPNode  = {
     val numChildren = g.content(nid).size
-    val titleNode = IconTextNode(g, nid)(nk)
-    val n = new TitledGridSquareDGPNode(nid, titleNode, numChildren)
-    register += (nid -> n)
-    n
+    val titleNode = DGTitleNode(g, nid)(nk)
+    new TitledGridSquareDGPNode(nid, titleNode, numChildren)
   }
 
 

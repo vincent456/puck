@@ -24,7 +24,7 @@
  * Author of this file : Loïc Girault
  */
 
-package puck.piccolo
+package puck.piccolo.util
 
 import java.util
 
@@ -42,10 +42,8 @@ trait GridLayoutPNode {
   override def layoutChildren() : Unit = {
     var xOffset = 0d
     var yOffset = 0d
-
-    import scala.collection.JavaConversions._
     val it  = getChildrenIterator.asInstanceOf[util.ListIterator[PNode]]
-
+    import scala.collection.JavaConversions._
     it.zipWithIndex.foreach {
       case (n, i) =>
         if(i % side == 0) {

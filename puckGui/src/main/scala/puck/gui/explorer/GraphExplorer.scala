@@ -74,7 +74,7 @@ class GraphExplorer
   contents += treeWrapper
 
   val menuBuilder : NodeMenu.Builder =
-    NodeMenu(bus, graphUtils, printingOptionsControl, _, _, _, _, _)(nodeKindIcons)
+    NodeMenu(bus, graphUtils, printingOptionsControl, _, _, _, _)(nodeKindIcons, control.constraints)
 
   reactions += {
     case GraphUpdate(graph) =>

@@ -699,20 +699,4 @@ class DependencyGraph
     if(tuses.size > 1) error()
     else typeVariableValue(tvid, tuses.head.user)
   }
-
-  def findTypeVariableInstanciator
-  (ctxt : NodeId, tvUser : NodeId, tvId : NodeId) : Set[NodeIdP] =
-    kindType(tvUser) match {
-      case Parameter => findTypeVariableInstanciator(ctxt, container_!(tvUser), tvId)
-      case InstanceValueDecl | StaticValueDecl =>
-        typeUsesOf(ctxt, tvUser)
-    }
-  //  def findTypeVariableOwner(tvUser : NodeId, tvId : NodeId) : NodeId =
-  //  kindType(tvUser) match {
-  //    case Parameter => findTypeVariableOwner(container_!(tvUser), tvId)
-  //    case InstanceValueDecl | StaticValueDecl | TypeDecl =>
-  //      if(container_!(tvId) == tvUser) tvUser
-  //      else findTypeVariableOwner(container_!(tvId), tvId)
-  //    case _ => error("no type variable owner found")
-  //  }
 }

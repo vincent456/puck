@@ -117,27 +117,15 @@ class PuckMainPanel(graphUtils: GraphUtils,
   leftComponent = upPanel
   rightComponent = downPanel
 
-  object viewSwitcher {
-    val handlers = List[ViewHandler](TreeViewHandler, SVGViewHandler, PiccoloViewHandler)
-
-    var currentView : Publisher = _
-
-    var i = 0
-    def switchView() = {
-      currentView deafTo control.Bus
-      i = (i + 1) % handlers.size
-      currentView = handlers(i).installView(PuckMainPanel.this, nodeKindIcons)
-      control.Bus publish GraphUpdate(control.graph)
-    }
-
-  }
-
   this listenTo control.Bus
 
-  viewSwitcher.currentView = viewSwitcher.handlers.head.installView(PuckMainPanel.this, nodeKindIcons)
+  var currentView : Publisher = TreeViewHandler.installView(PuckMainPanel.this, nodeKindIcons)
 
   reactions += {
-    case SwitchView => viewSwitcher.switchView()
+    case SwitchView(handler) =>
+      currentView deafTo control.Bus
+      currentView = handler.installView(this, nodeKindIcons)
+      control.Bus publish GraphUpdate(control.graph)
   }
 }
 

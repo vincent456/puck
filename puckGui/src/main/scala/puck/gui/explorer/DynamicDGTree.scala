@@ -161,11 +161,7 @@ class DynamicDGTree
   addNodeClickedAction {
     (e, node) =>
       if (isRightClick(e)) {
-        val menu: JPopupMenu = menuBuilder(graph, constraints, node.id, selectedNodes, None)
-        menu.add(new AbstractAction("Node infos") {
-          def actionPerformed(e: ActionEvent): Unit =
-            bus publish NodeClicked(node)
-        })
+        val menu: JPopupMenu = menuBuilder(graph, node.id, selectedNodes, None)
         Swing.onEDT(menu.show(this, e.getX, e.getY))
       }
       else if(node.kind.kindType != NameSpace)

@@ -24,15 +24,15 @@
  * Author of this file : Loïc Girault
  */
 
-package puck.piccolo
+package puck.piccolo.util
 
-import java.awt.{KeyEventDispatcher, KeyboardFocusManager}
 import java.awt.event.KeyEvent
+import java.awt.{KeyEventDispatcher, KeyboardFocusManager}
 
 import org.piccolo2d.extras.PFrame
 import org.piccolo2d.util.PBounds
 import puck._
-
+import puck.piccolo.BoundsOp
 /**
   * Created by Loïc Girault on 31/05/16.
   */

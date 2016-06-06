@@ -24,7 +24,7 @@
  * Author of this file : Loïc Girault
  */
 
-package puck.piccolo
+package puck.piccolo.util
 
 import java.awt.Color
 import java.awt.geom.{Path2D, Point2D}
@@ -66,7 +66,7 @@ object Arrow {
     new Arrow(src, tgt)
 
 }
-import Arrow._
+import puck.piccolo.util.Arrow._
 class Arrow(source : P, target : P) extends PComposite {
 
   def this(src : Point2D, tgt : Point2D)  =

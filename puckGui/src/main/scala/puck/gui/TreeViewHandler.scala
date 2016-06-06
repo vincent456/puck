@@ -39,6 +39,8 @@ import scala.swing._
   */
 
 object TreeViewHandler extends ViewHandler {
+  override def toString = "Tree View"
+
   def installView(mainPanel: PuckMainPanel, treeIcons: NodeKindIcons) : Publisher = {
     new TreeViewHandler(mainPanel,
       new GraphExplorer(mainPanel.control, treeIcons))

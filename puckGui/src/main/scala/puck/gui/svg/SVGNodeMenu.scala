@@ -38,7 +38,7 @@ object SVGNodeMenu{
   def apply(controller : SVGController,
             nodeId : NodeId)(implicit treeIcons: NodeKindIcons) : JPopupMenu =
     controller.graph.getNode(nodeId) match {
-      case n : ConcreteNode => new SVGConcreteNodeMenu(controller, n)
+      case n : ConcreteNode => new SVGConcreteNodeMenu(controller, n, treeIcons)
       case n : VirtualNode => new VirtualNodeMenu(controller,
         controller.graph,
         controller.graphUtils, n)
@@ -47,8 +47,8 @@ object SVGNodeMenu{
 
 class SVGConcreteNodeMenu
 (controller: SVGController,
- node : ConcreteNode)
-(implicit treeIcons: NodeKindIcons)
+ node : ConcreteNode,
+ treeIcons: NodeKindIcons)
   extends ConcreteNodeMenu(controller.genControl.Bus,
     controller.graph,
     controller.genControl.constraints,
@@ -57,22 +57,18 @@ class SVGConcreteNodeMenu
     controller.selectedEdge,
     blurryEdgeSelection = true,
     node,
-    controller.printingOptionsControl) {
+    controller.printingOptionsControl,
+    treeIcons) {
 
   import controller.printingOptionsControl
 
   override def init() = {
     super.init()
 
-    this.addSeparator()
     addShowOptions()
   }
 
   private def addShowOptions() : Unit = {
-
-    this.addMenuItem("Infos"){ _ =>
-      controller.genControl.Bus publish NodeClicked(node)
-    }
 
     this.addMenuItem("Hide") { _ =>
       printingOptionsControl.hide(graph, node.id)

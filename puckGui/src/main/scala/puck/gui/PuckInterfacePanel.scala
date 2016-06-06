@@ -34,9 +34,12 @@ import javax.swing.filechooser.FileNameExtensionFilter
 import puck.Project
 import puck.config.{Config, ConfigWriter}
 import puck.graph.io.{DotPrinter, VisibilitySet}
+import puck.gui.svg.SVGViewHandler
+import puck.piccolo.PiccoloViewHandler
 
 import scala.swing._
 import scala.swing.SequentialContainer.Wrapper
+import scala.swing.event.SelectionChanged
 
 
 class PuckInterfacePanel
@@ -239,9 +242,20 @@ class PuckInterfacePanel
       }
     }.leftGlued
 
-    contents += makeButton("Switch UML/Tree view", ""){
-      () => publisher publish SwitchView
-    }
+    contents += new ComboBox(List[ViewHandler](TreeViewHandler, SVGViewHandler, PiccoloViewHandler)) {
+        minimumSize = new Dimension(leftWidth, 30)
+        maximumSize = minimumSize
+        preferredSize = minimumSize
+        this listenTo selection
+
+        reactions += {
+          case SelectionChanged(_) =>
+            publisher publish SwitchView(selection.item)
+        }
+
+      }.leftGlued
+
+
 
     contents += makeButton("Show recording", ""){
       control.printRecording

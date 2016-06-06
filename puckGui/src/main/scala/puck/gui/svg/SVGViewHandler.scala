@@ -45,6 +45,8 @@ import scala.util.{Failure, Success}
   * Created by Loïc Girault on 26/01/16.
   */
 object SVGViewHandler extends ViewHandler{
+  override def toString = "Dot SVG View"
+
   def installView(mainPanel: PuckMainPanel, nodeKindIcons: NodeKindIcons) : Publisher = {
     new SVGViewHandler(mainPanel)
   }

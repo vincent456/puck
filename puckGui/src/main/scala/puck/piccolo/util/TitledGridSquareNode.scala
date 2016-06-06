@@ -24,47 +24,39 @@
  * Author of this file : Loïc Girault
  */
 
-package puck.piccolo
+package puck.piccolo.util
 
-import java.awt.{Font, Image}
+import java.awt.geom.Rectangle2D
 
 import org.piccolo2d.PNode
-import org.piccolo2d.extras.nodes.PComposite
-import org.piccolo2d.nodes.{PImage, PText}
-import org.piccolo2d.util.{PBounds, PPaintContext}
-import puck.graph.{DependencyGraph, NodeId}
-import puck.gui.NodeKindIcons
+import org.piccolo2d.nodes.PPath
 
 /**
-  * Created by Loïc Girault on 26/05/16.
+  * Created by Loïc Girault on 23/05/16.
   */
-object IconTextNode {
-  def apply(g : DependencyGraph, nid : NodeId)
-           (implicit icons : NodeKindIcons): IconTextNode = {
-    val n = g.getNode(nid)
-    import puck.graph.ShowDG._
-    new IconTextNode((g, n).shows(desambiguatedLocalName),
-      icons.iconOfKind(n.kind).getImage)
-  }
-}
-class IconTextNode
-(text : String,
- icon : Image )
-  extends PComposite {
+class TitledGridSquareNode
+( titlePnode : PNode,
+  s : Int
+) extends PPath.Float(new Rectangle2D.Float(0, 0, 100, 100)) {
 
-  val picon = new PImage(icon)
-  addChild(picon)
-  val ptext = new PText(text) {
-    setFont(new Font("SansSerif", Font.PLAIN, 12))
-  }
-  addChild(ptext)
+  titlePnode.setBounds(0, 0, 100, 10)
 
-  override def toString : String = s"IconTextNode : $text"
 
-  override def layoutChildren() : Unit = {
-    val (x,y) = (0d, 0d)
-    picon.setOffset(x, y)
-    ptext.setOffset(picon.getWidth, y)
+  super.addChild(titlePnode)
+
+  val body = new PNode() with GridLayoutPNode {
+    val side = s
+    setBounds(0, 0, 80, 80)
   }
+
+  super.addChild(body)
+  titlePnode.offset(0d,0d)
+  body.offset(10d, 10d)
+
+  override def addChild( child : PNode) : Unit = {
+    body addChild child
+    //child.scale( child.getScale * 0.9)
+  }
+
 
 }

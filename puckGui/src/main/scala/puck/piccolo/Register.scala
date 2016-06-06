@@ -35,22 +35,28 @@ import scala.collection.mutable
 /**
   * Created by Loïc Girault on 31/05/16.
   */
-class Register[T <: DGPNode] {
-  val visibleContent = new mutable.HashMap[NodeId, T]()
-  val invisibleContent = new mutable.HashMap[NodeId, T]()
+class Register {
+  val visibleContent = new mutable.HashMap[NodeId, DGPNode]()
+  val invisibleContent = new mutable.HashMap[NodeId, DGPNode]()
 
-  def +=(kv : (NodeId, T)) = {
+  def +=(kv : (NodeId, DGPNode)) = {
     invisibleContent -= kv._1
     visibleContent += kv
   }
 
-  def firstVisible(nid : NodeId, g : DependencyGraph) : T =
+  def firstVisible(nid : NodeId, g : DependencyGraph) : DGPNode =
     visibleContent get nid match {
       case Some(n) => n
       case None => firstVisible(g container_! nid, g)
     }
 
-  def getOrElse(nid : NodeId, t : => T) : T =
+  def get(nid : NodeId) : Option[DGPNode] =
+    invisibleContent get nid match {
+      case s @ Some(_) => s
+      case None => visibleContent get nid
+    }
+
+  def getOrElse(nid : NodeId, t : => DGPNode) : DGPNode =
     invisibleContent.getOrElse(nid,
       visibleContent.getOrElse(nid, t))
 
@@ -58,7 +64,7 @@ class Register[T <: DGPNode] {
   val  parentPropertyListener =
     new PropertyChangeListener() {
     def propertyChange(evt: PropertyChangeEvent): Unit = {
-      val src = evt.getSource.asInstanceOf[T]
+      val src = evt.getSource.asInstanceOf[DGPNode]
       if(evt.getNewValue == null){
         invisibleContent += (src.id -> src)
         visibleContent -= src.id
@@ -69,5 +75,7 @@ class Register[T <: DGPNode] {
       }
     }
   }
+
+
 
 }

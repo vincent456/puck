@@ -133,8 +133,8 @@ class ConstraintViolationExplorer
       (e, n) =>
       if(isRightClick(e)) Swing.onEDT {
         val menu = NodeMenu(bus, graphUtils, printingOptionsControl,
-          ConstraintViolationExplorer.this.graph, constraints, n.id,
-          List(), None)
+          ConstraintViolationExplorer.this.graph, n.id,
+          List(), None)(treeIcons, constraints)
         menu.add(new AbstractAction("Node infos") {
           def actionPerformed(e: ActionEvent): Unit =
             bus publish NodeClicked(n)

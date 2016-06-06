@@ -27,7 +27,10 @@
 package puck.piccolo
 
 import org.piccolo2d.PNode
+import org.piccolo2d.util.PBounds
 import puck.graph.NodeId
+import scala.collection.mutable
+
 
 /**
   * Created by Loïc Girault on 23/05/16.
@@ -38,12 +41,18 @@ object DGPNode {
 
   implicit def toPNode(n : T) : PNode = n.asInstanceOf[PNode]
 
+  val ATTRIBUTE_CONTAINER : String = "container"
+
 }
 trait DGPNode {
   this : PNode =>
   val id : NodeId
 
+  def usedBy : mutable.Buffer[PUses]
+  def usesOf : mutable.Buffer[PUses]
+
   def addContent(child : DGPNode) : Unit
+  def rmContent(child : DGPNode) : Unit
   def content : Iterable[DGPNode]
   def contentSize : Int
   def clearContent() : Unit
@@ -55,4 +64,8 @@ trait DGPNode {
 
   def fullContent : List[DGPNode] = fullContent(List[DGPNode]())
   def toPNode : PNode with DGPNode = this
+
+  //global bounds used by edges as referential for source and target coordinates
+  //e.g : title node global bounds in the case of the expandable node
+  def arrowGlobalBounds : PBounds
 }

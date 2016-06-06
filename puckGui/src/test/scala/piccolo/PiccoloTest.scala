@@ -30,7 +30,6 @@ package piccolo
 
 import java.awt.Font
 
-
 import org.piccolo2d.{PCanvas, PNode, PRoot}
 import org.piccolo2d.event.PBasicInputEventHandler
 import org.piccolo2d.event.PInputEvent
@@ -38,9 +37,8 @@ import org.piccolo2d.extras.PFrame
 import org.piccolo2d.nodes.{PPath, PText}
 import puck.ignore
 import puck.graph.{DependencyGraph, NodeId}
-import puck.piccolo.ViewCommands
-import puck.piccolo.TitledGridSquareNode
 import puck.piccolo.squareSide
+import puck.piccolo.util.{TitledGridSquareNode, ViewCommands}
 
 
 class PiccoloTest(g : DependencyGraph, aCanvas : PCanvas)

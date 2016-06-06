@@ -26,14 +26,13 @@
 
 package puck.piccolo
 
-import java.awt.{Color, Graphics2D, Paint}
 import java.beans.{PropertyChangeEvent, PropertyChangeListener}
-import java.util
+import java.{util => jutil}
 
 import org.piccolo2d.PNode
-import org.piccolo2d.extras.nodes.PComposite
-import org.piccolo2d.util.{PBounds, PPaintContext}
+import org.piccolo2d.util.PBounds
 import puck.graph.NodeId
+import puck.piccolo.util.{DecoratorGroup, IconTextNode}
 
 import scala.collection.mutable
 
@@ -42,7 +41,7 @@ import scala.collection.mutable
   */
 class DGExpandableNode
 ( val id: NodeId,
-  val titlePnode : PNode
+  val titlePnode : IconTextNode
 ) extends DecoratorGroup with DGPNode{
 
   val padding : Double = 5d
@@ -53,7 +52,7 @@ class DGExpandableNode
       var yOffset = 0d
       var refHeight = 0d
       import scala.collection.JavaConversions._
-      val it  = getChildrenIterator.asInstanceOf[util.ListIterator[PNode]]
+      val it  = getChildrenIterator.asInstanceOf[jutil.ListIterator[PNode]]
 
       it.zipWithIndex.foreach {
         case (n, i) =>
@@ -80,24 +79,34 @@ class DGExpandableNode
   super.addChild(titlePnode)
   super.addChild(body)
 
-    titlePnode.setOffset(margin, margin)
-    body.setOffset(margin+padding, titlePnode.getFullBounds.getHeight + margin * 2)
+  titlePnode.setOffset(margin, margin)
+  body.setOffset(margin+padding, titlePnode.getFullBounds.getHeight + margin * 2)
 
-  override def addContent(child : DGPNode) : Unit = {
+
+  def addContent(child : DGPNode) : Unit = {
     body addChild child.toPNode
+
+
+//    child.toPNode.getClientProperties.
+//      addAttribute(DGPNode.ATTRIBUTE_CONTAINER, this)
+
     this.addPropertyChangeListener(PNode.PROPERTY_FULL_BOUNDS,
       new PropertyChangeListener() {
         def propertyChange(evt: PropertyChangeEvent): Unit = {
           child.asInstanceOf[DGExpandableNode].
             firePropertyChange(PNode.PROPERTY_CODE_FULL_BOUNDS,
-              PNode.PROPERTY_FULL_BOUNDS, null, child.toPNode.getFullBounds)
+              PNode.PROPERTY_FULL_BOUNDS, null,
+              child.toPNode.getFullBounds)
         }
       })
+
   }
+  def rmContent(child : DGPNode) : Unit =
+    body removeChild child.toPNode
 
   def content : Iterable[DGPNode] = {
     import scala.collection.JavaConversions._
-    body.getChildrenReference.asInstanceOf[util.List[DGPNode]]
+    body.getChildrenReference.asInstanceOf[jutil.List[DGPNode]]
   }
 
   def contentSize: Int = body.getChildrenCount
@@ -105,92 +114,12 @@ class DGExpandableNode
   def clearContent(): Unit =  body.removeAllChildren()
 
 
+
   //def parent
-
+  //global bounds used by edges as referential for source and target coordinates
+  override def arrowGlobalBounds: PBounds = titlePnode.getGlobalFullBounds
 }
 
 
-case class PUses(source : DGExpandableNode,
-            target : DGExpandableNode/*,
-            virtuality : Option[Int]*/)
-  extends PComposite {
-
-  def addArrow() : Unit = {
-
-   val arrow  = Arrow(
-      source.titlePnode.getGlobalFullBounds.getCenter2D,
-      target.titlePnode.getGlobalFullBounds.getCenter2D)
-    this addChild arrow
-
-  }
-
-  addArrow()
-
-  {
-    val listener = new PropertyChangeListener() {
-      def propertyChange(evt: PropertyChangeEvent): Unit = {
-        PUses.this.removeAllChildren()
-        addArrow()
-      }
-    }
-    for {
-      exty <- List(source, target)
-      pty <-
-      List(PNode.PROPERTY_TRANSFORM,
-            PNode.PROPERTY_BOUNDS,
-            PNode.PROPERTY_PAINT)
-    }
-      exty.addPropertyChangeListener(pty,listener)
 
 
-
-
-
-  }
-  def delete(): Unit =
-    if(getParent != null){
-      source.usesOf -= this
-      target.usedBy -= this
-      getParent removeChild this
-    }
-
-}
-
-// cf group example
-trait DecoratorGroup extends PNode  {
-
-  val margin: Int = 10
-  private val cachedChildBounds: PBounds = new PBounds
-  private var comparisonBounds: PBounds = new PBounds
-
-  override def paint(ppc: PPaintContext) : Unit = {
-    val paint: Paint = Color.black
-    if (paint != null) {
-      val g2: Graphics2D = ppc.getGraphics
-      g2.setPaint(paint)
-      val bounds: PBounds = getUnionOfChildrenBounds(null)
-      bounds.setRect(bounds.getX - margin, bounds.getY - margin, bounds.getWidth + 2 * margin, bounds.getHeight + 2 * margin)
-
-      g2.draw(bounds.rectangle)
-      //g2.fill(bounds)
-
-    }
-  }
-
-  override def computeFullBounds(dstBounds: PBounds): PBounds = {
-    val result: PBounds = getUnionOfChildrenBounds(dstBounds)
-    cachedChildBounds.setRect(result)
-    result.setRect(result.getX - margin, result.getY - margin, result.getWidth + 2 * margin, result.getHeight + 2 * margin)
-    localToParent(result)
-     result
-  }
-
-  override def validateFullBounds: Boolean = {
-    comparisonBounds = getUnionOfChildrenBounds(comparisonBounds)
-    if (cachedChildBounds != comparisonBounds)
-      setPaintInvalid(true)
-
-    super.validateFullBounds
-  }
-
-}

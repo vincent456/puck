@@ -1,6 +1,8 @@
 package puck.javaGraph
 
 
+import javax.swing.JPopupMenu
+
 import org.piccolo2d.extras.PFrame
 import piccolo.{PiccoloDynamicSquareZoomTest, PiccoloTest}
 import puck.JavaIcons
@@ -26,7 +28,8 @@ object PiccoloDynamicBridge {
 object ExpanseBridge {
   def main(args : Array[String]) : Unit =  {
     val bs = BridgeScenario()
-    new PFrame("ExpanseBridge", false, new DGCanvas(bs.graph, JavaIcons))
+    new PFrame("ExpanseBridge", false,
+      new DGCanvas(bs.graph, JavaIcons, (_,_,_,_) => new JPopupMenu()))
   }
 }
 //object PiccoloClassTest {

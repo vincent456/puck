@@ -29,11 +29,18 @@ package puck
 import java.awt.geom.Rectangle2D
 
 import org.piccolo2d.util.PBounds
+import puck.graph.{DependencyGraph, NodeId}
+import puck.gui.NodeKindIcons
+import puck.piccolo.util.IconTextNode
 
 /**
   * Created by Loïc Girault on 31/05/16.
   */
 package object piccolo {
+
+  val PROPERTY_GLOBAL_COORDONATE = "global_coordonate"
+  val PROPERTY_CODE_GLOBAL_COORDONATE : Int = 1 << 11
+
   implicit class BoundsOp(val b: PBounds) extends AnyVal {
     def copy(x: Double = b.getX, y: Double = b.getY,
              width: Double = b.getWidth,
@@ -50,5 +57,14 @@ package object piccolo {
       else aux(i + 1)
 
     aux(1)
+  }
+
+  def DGTitleNode
+  (g : DependencyGraph, nid : NodeId)
+  (implicit icons : NodeKindIcons): IconTextNode = {
+    val n = g.getNode(nid)
+    import puck.graph.ShowDG._
+    IconTextNode((g, n).shows(desambiguatedLocalName),
+      icons.iconOfKind(n.kind).getImage)
   }
 }
