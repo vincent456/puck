@@ -108,23 +108,15 @@ class CompositeScenario private ()
 
 class CompositeManualRefactoringSpec
   extends FeatureSpec {
-//
-//  scenario("composite ``manual'' refactoring"){
-//    val bs = CompositeScenario()
-//
-//    val recompiledEx = bs.applyChangeAndMakeExample(bs.gFinal, outDir)
-//
-//    assert( Mapping.equals(bs.gFinal, recompiledEx.graph) )
-//
-//  }
 
-  scenario("miniComposite apply search generated plan"){
-    val path = getClass.getResource("/miniComposite").getPath
-    val s = new ScenarioFactory(
-      s"$path/location/Location.java",
-      s"$path/location/Velo.java")
-    val r = Recording.load(s"$path/plan.pck", s.fullName2id)(s.logger)
-    import Recording.RecordingOps
-    s.applyChanges(r.redo(s.graph), new File("/tmp/testPuck"))
+  scenario("composite ``manual'' refactoring"){
+    val bs = CompositeScenario()
+
+    val recompiledEx = bs.applyChangeAndMakeExample(bs.gFinal, outDir)
+
+    assert( Mapping.equals(bs.gFinal, recompiledEx.graph) )
+
   }
+
+
 }

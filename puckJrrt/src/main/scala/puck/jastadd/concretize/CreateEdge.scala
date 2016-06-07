@@ -145,8 +145,10 @@ object CreateEdge {
       case (PackageDeclHolder, i: TypedKindDeclHolder) =>
         setPackageDecl(reenactor, e.container, e.content, i.decl)
         program.registerType(graph.fullName(e.content), i.decl)
-      case (th: TypedKindDeclHolder, MethodDeclHolder(mdecl)) =>
-        th.decl.addBodyDecl(mdecl)
+      case (TypedKindDeclHolder(tdecl), MethodDeclHolder(mdecl)) =>
+        tdecl.addBodyDecl(mdecl)
+        if(mdecl.isAbstract)
+          tdecl.getModifiers.addModifier("abstract")
 
       case (_, PackageDeclHolder) => () // can be ignored
 

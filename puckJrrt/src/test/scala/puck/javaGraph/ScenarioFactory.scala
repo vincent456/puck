@@ -60,18 +60,13 @@ object ScenarioFactory {
 import ScenarioFactory.logger
 
 class ScenarioFactory
-( val program : Program,
-  val graph : DependencyGraph,
-  val initialRecord : Seq[Transformation],
-  val fullName2id : Map[String, NodeId],
-  val dg2astMap : Map[NodeId, ASTNodeLink]){
+(val dg2ast : JavaJastAddDG2AST ){
 
-   def this(dg2ast : JavaJastAddDG2AST) =
-    this(dg2ast.program,
-      dg2ast.initialGraph,
-      dg2ast.initialRecord,
-      dg2ast.nodesByName,
-      dg2ast.graph2ASTMap)
+  val program : Program = dg2ast.program
+  val graph : DependencyGraph = dg2ast.initialGraph
+  val initialRecord : Seq[Transformation] =  dg2ast.initialRecord
+  val fullName2id : Map[String, NodeId] = dg2ast.nodesByName
+  val dg2astMap : Map[NodeId, ASTNodeLink] = dg2ast.graph2ASTMap
 
   def this(code : String) = this {
 //    if(code endsWith ".java" )

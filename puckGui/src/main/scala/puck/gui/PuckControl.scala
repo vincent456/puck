@@ -266,8 +266,8 @@ implicit val logger: PuckLogger)
       }
 
 
-    case ApplyOnCodeRequest(searchResult) =>
-      applyOnCode(searchResult)
+    case ApplyOnCodeRequest(rec) =>
+      applyOnCode(rec)
 
     case pe : PrintingOptionEvent =>
       pe(printingOptionsControl)

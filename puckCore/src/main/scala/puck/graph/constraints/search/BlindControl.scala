@@ -28,8 +28,8 @@ class TargetedBlindControl
   def initialState: DecoratedGraph[Unit] = (initialGraph, ())
 
   def nextStates(t: DecoratedGraph[Unit]): Seq[LoggedTry[DecoratedGraph[Unit]]] =
-    if(!isViolationTarget(t._1, violationTarget.id)) Seq()
-    else decorate(nextStates(violationTarget)(t._1), ())
+    if(!isViolationTarget(t.graph, violationTarget.id)) Seq()
+    else decorate(nextStates(violationTarget)(t.graph), ())
 
 
 }
@@ -49,7 +49,7 @@ class BlindControl
   def nextStates(g: DependencyGraph)(violationTarget : ConcreteNode) : Seq[LoggedTry[DecoratedGraph[Option[ConcreteNode]]]] =
     if((g,constraints).violations().isEmpty) Seq()
     else if(!isViolationTarget(g, violationTarget.id)) Seq(LoggedSuccess((g, None)))
-    else decorate(nextStates(violationTarget)(g), Some(violationTarget))
+    else decorate(nextStates(violationTarget)(g.mileStone), Some(violationTarget))
 
 
   def nextStates(state : DecoratedGraph[Option[ConcreteNode]]) : Seq[LoggedTry[DecoratedGraph[Option[ConcreteNode]]]] =
