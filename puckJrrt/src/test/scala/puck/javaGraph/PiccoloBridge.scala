@@ -29,7 +29,7 @@ object ExpanseBridge {
   def main(args : Array[String]) : Unit =  {
     val bs = BridgeScenario()
     val ctrl = new PuckControl(puck.jastadd.ExtendJGraphUtils, bs.logger)
-    ctrl.graphStack pushGraph bs.graph
+    ctrl.graphStack setInitialGraph bs.graph
     new PFrame("ExpanseBridge", false,
       new DGCanvas(ctrl.graphStack, JavaIcons, PiccoloNodeMenu(ctrl,JavaIcons)))
   }

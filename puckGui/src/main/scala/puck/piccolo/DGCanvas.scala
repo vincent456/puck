@@ -40,18 +40,6 @@ import scala.swing._
 /**
   * Created by Loïc Girault on 02/06/16.
   */
-object PiccoloViewHandler extends ViewHandler {
-
-  override def toString = "PiccoloView"
-  def installView(mainPanel: PuckMainPanel,
-                  nodeKindIcons: NodeKindIcons) : Publisher = {
-    new TreeViewHandler(mainPanel,
-      scala.swing.Component.wrap(new PiccoloGraphExplorer(mainPanel.control, nodeKindIcons)))
-
-  }
-}
-
-
 class DGCanvas
 (val graphStack: GraphStack,
  implicit val nodeKindIcons : NodeKindIcons,
@@ -59,7 +47,6 @@ class DGCanvas
   extends PCanvas {
 
 
-  addInputEventListener(new PDragEventHandler())
 
   import graphStack.graph
 
@@ -67,6 +54,11 @@ class DGCanvas
   val nodeLayer = getLayer
   val edgeLayer = new PLayer()
   getCamera.addLayer(0, edgeLayer)
+//  val dragLayer = new PLayer()
+//  getCamera.addLayer(0, dragLayer)
+//
+//  addInputEventListener(new MoveNodeDragEventHandler(dragLayer))
+
 
   def getNode(nid : NodeId) : DGPNode  = register.getOrElse(nid, {
     val titleNode = DGTitleNode(graph, nid)
@@ -140,10 +132,7 @@ class DGCanvas
           val pos = event.getCanvasPosition
           val menu = menuBuilder(DGCanvas.this, n)
 
-//          menu.add(new AbstractAction("Print"){
-//            def actionPerformed(e: ActionEvent): Unit =
-//              getNode(graph.rootId).toPNode.print()
-//          })
+
           Swing.onEDT(menu.show(Component wrap DGCanvas.this,
             pos.getX.toInt, pos.getY.toInt))
         }
@@ -218,105 +207,7 @@ class DGCanvas
   }
 }
 
-object PiccoloNodeMenu {
-  type Builder = (DGCanvas, DGExpandableNode) => PopupMenu
-  def apply(controller: PuckControl,
-            nodeKindIcons: NodeKindIcons) : Builder =
-            (canvas: DGCanvas,  node: DGExpandableNode) =>
-              new PiccoloNodeMenu(controller, nodeKindIcons, canvas, node)
-}
-class PiccoloNodeMenu
-(controller : PuckControl,
- nodeKindIcons: NodeKindIcons,
- canvas : DGCanvas,
- node : DGExpandableNode/*,
- selectedNodes : List[NodeId],
- selectedEdge: Option[NodeIdP]*/)
-extends ConcreteNodeMenu(
-  controller.Bus,
-  controller.graph,
-  controller.constraints,
-  controller.graphUtils,
-  List(),//selectedNodes,
-  None,//selectedEdge,
-  blurryEdgeSelection = false,
-  controller.graph getConcreteNode node.id,
-  controller.printingOptionsControl,
-  nodeKindIcons
-  ){
-  override def init() = {
-    super.init()
-
-    addShowOptions()
-
-  }
-
-  private def addShowOptions() : Unit = {
-
-    contents += new Action("Show uses"){
-      def apply() : Unit = canvas addUses node
-    }
-
-    /*contents += new Action("Hide") {
-      def apply() : Unit =
-        printingOptionsControl.hide(graph, node.id)
-        canvas hide node
-
-    }
-//    contents += new Action("Focus") {
-//      def apply() : Unit =
-//        printingOptionsControl.focusExpand(graph, node.id, focus = true, expand = false)
-//    }
-//    contents += new Action("Focus & Expand") {
-//      def apply() : Unit =
-//        printingOptionsControl.focusExpand(graph, node.id, focus = true, expand = true)
-//    }
-    contents += new Action("Show code") {
-      def apply() : Unit =
-        controller publish PrintCode(node.id)
-    }
-
-    if (graph.content(node.id).nonEmpty) {
-      contents += new Action("Collapse") {
-        def apply() : Unit =
-          printingOptionsControl.collapse(graph, node.id)
-          canvas collapse node
-
-      }
-      contents += new Action("Expand") {
-        def apply() : Unit =
-          printingOptionsControl.focusExpand(graph, node.id, focus = false, expand = true)
-          canvas expand node
-      }
-      contents += new Action("Expand all") {
-        def apply() : Unit =
-          printingOptionsControl.expandAll(graph, node.id)
-          canvas expandAll node
-      };()
-    }*/
-  }
-}
-
-class PiccoloGraphExplorer
-(control : PuckControl,
- nodeKindIcons: NodeKindIcons
-) extends PScrollPane(new PCanvas()) with Publisher{
-
-  var canvas : DGCanvas = _
-
-  this listenTo control.Bus
-
-  reactions += {
-    case Popped(poppedGraph, newHead) =>
-      canvas.popEvent(newHead, poppedGraph)
-    //setModel(new MutableTreeModel(newHead))
-    case Pushed(pushedGraph, previousHead) =>
-      canvas.pushEvent(pushedGraph, previousHead)
-    case evt : GraphStackEvent =>
-      canvas = new DGCanvas(control.graphStack, nodeKindIcons, PiccoloNodeMenu(control,nodeKindIcons))
-      setViewportView(canvas)
 
 
-  }
-}
+
 
