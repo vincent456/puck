@@ -26,7 +26,7 @@
 
 package puck.piccolo
 
-import org.piccolo2d.PCanvas
+import org.piccolo2d.{PCanvas, PLayer}
 import org.piccolo2d.extras.swing.PScrollPane
 import puck.gui.{GraphStackEvent, NodeKindIcons, Popped, PuckControl, PuckMainPanel, Pushed, TreeViewHandler, ViewHandler}
 
@@ -51,16 +51,15 @@ class PiccoloGraphExplorer
     case Pushed(pushedGraph, previousHead) =>
       canvas.pushEvent(pushedGraph, previousHead)
     case evt : GraphStackEvent =>
-      canvas = new DGCanvas(control.graphStack, nodeKindIcons, PiccoloNodeMenu(control,nodeKindIcons))
+      canvas = new DGCanvas(control, nodeKindIcons)
       setViewportView(canvas)
-
 
   }
 }
 
 object PiccoloViewHandler extends ViewHandler {
 
-  override def toString = "PiccoloView"
+  override def toString = "Piccolo View"
   def installView(mainPanel: PuckMainPanel,
                   nodeKindIcons: NodeKindIcons) : Publisher = {
     new TreeViewHandler(mainPanel,

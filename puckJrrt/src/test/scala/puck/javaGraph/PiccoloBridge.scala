@@ -31,6 +31,6 @@ object ExpanseBridge {
     val ctrl = new PuckControl(puck.jastadd.ExtendJGraphUtils, bs.logger)
     ctrl.graphStack setInitialGraph bs.graph
     new PFrame("ExpanseBridge", false,
-      new DGCanvas(ctrl.graphStack, JavaIcons, PiccoloNodeMenu(ctrl,JavaIcons)))
+      new DGCanvas(ctrl, JavaIcons))
   }
 }

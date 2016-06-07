@@ -47,14 +47,13 @@ object JavaDotHelper extends DotHelper{
       case (s @ Seq(fds, cts, mts, cls, tvs), n) =>
           val kind = graph.getConcreteNode(n).kind
           kind match {
-            case TypeVariable => s
-            case _ : TypeKind => Seq(fds, cts, mts, n +: cls, tvs)
-            case Constructor => Seq(fds, n +: cts, mts, cls, tvs)
+            case _ : MethodKind => Seq(fds, cts, n +: mts, cls, tvs)
             case Field
             | StaticField
             | EnumConstant => Seq(n +: fds, cts, mts, cls, tvs)
-            case _ : MethodKind
-            | StaticMethod => Seq(fds, cts, n +: mts, cls, tvs)
+            case Constructor => Seq(fds, n +: cts, mts, cls, tvs)
+            case _ : TypeKind => Seq(fds, cts, mts, n +: cls, tvs)
+            case TypeVariable => Seq(fds, cts, mts, cls, n +:tvs)
             case _ => throw new Error(kind + " : wrong NodeKind contained by a class")
           }
         }

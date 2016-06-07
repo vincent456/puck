@@ -27,6 +27,8 @@
 package puck.graph
 
 import puck.graph.constraints.ConstraintsMaps
+import puck.graph.io.DotHelper
+
 
 object Metrics {
 
@@ -293,9 +295,31 @@ object Metrics {
     components.size
   }
 
+  def LCOM(helper : DotHelper)(g : DependencyGraph, n : NodeId): Double = {
+    val children = g.content(n) map g.getConcreteNode
+    val Seq(fields, constructors, methods, innerTypes, typeVariablees) =
+      helper.splitByKind(g, g.content(n).toSeq)
 
+    val fs = fields.toSet
+    val ms = methods.toSet ++ constructors.toSet
+    val is = ( methods map (m => g.usedBy(m) intersect fs )) ++
+      (constructors map (m => g.usedBy(m) intersect fs))
 
-
+    var p = 0
+    var q = 0
+    for {
+      i <- is
+      j <- is
+      if i eq j
+    } {
+      if((i intersect j).isEmpty)
+        p = p + 1
+      else
+        q = q + 1
+    }
+    if(p > q) (p - q).toDouble / ms.size
+    else 0d
+  }
 //  def weight
 //  ( g: DependencyGraph,
 //    lightKind : NodeKind,

@@ -46,7 +46,7 @@ object DGPNode {
 }
 trait DGPNode {
   this : PNode =>
-  val id : NodeId
+  def id : NodeId
 
   def usedBy : mutable.Buffer[PUses]
   def usesOf : mutable.Buffer[PUses]

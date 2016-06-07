@@ -35,18 +35,21 @@ import org.piccolo2d.nodes.{PImage, PText}
   * Created by Loïc Girault on 26/05/16.
   */
 
-object IconTextNode {
-  def apply(text : String,
+object IdIconTextNode {
+  def apply(id : Int,
+            text : String,
             icon : Image ) = {
-    new IconTextNode(new PText(text) {
+    new IdIconTextNode(id,
+      new PText(text) {
       setFont(new Font("SansSerif", Font.PLAIN, 12))
     },
     new PImage(icon))
   }
 }
 
-class IconTextNode
-(val text : PText,
+class IdIconTextNode
+(val id : Int,
+ val text : PText,
  val icon : PImage )
   extends PComposite {
 
@@ -60,5 +63,8 @@ class IconTextNode
     icon.setOffset(x, y)
     text.setOffset(icon.getWidth, y)
   }
+
+  override def clone() : IdIconTextNode =
+    IdIconTextNode(id, text.getText, icon.getImage)
 
 }

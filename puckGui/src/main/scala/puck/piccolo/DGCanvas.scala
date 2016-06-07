@@ -25,15 +25,12 @@
  */
 
 package puck.piccolo
-import puck.gui.{GraphStackEvent, NodeKindIcons, Popped, PrintCode, PuckControl, PuckMainPanel, Pushed, TreeViewHandler, ViewHandler, actionToMenuItem}
-import org.piccolo2d.event.{PBasicInputEventHandler, PDragEventHandler, PInputEvent}
+import puck.gui.{NodeKindIcons, PuckControl}
+import org.piccolo2d.event.{PBasicInputEventHandler, PInputEvent}
 import org.piccolo2d.{PCanvas, PLayer, PNode}
-import org.piccolo2d.extras.swing.PScrollPane
-import puck.GraphStack
 import puck.graph._
 import puck.graph.transformations.Transformation.ChangeSource
 import puck.graph.transformations.{Edge, RenameOp, Transformation}
-import puck.gui.menus.{ConcreteNodeMenu, NodeMenu}
 
 import scala.swing._
 
@@ -41,28 +38,22 @@ import scala.swing._
   * Created by Loïc Girault on 02/06/16.
   */
 class DGCanvas
-(val graphStack: GraphStack,
- implicit val nodeKindIcons : NodeKindIcons,
- menuBuilder : PiccoloNodeMenu.Builder)
+( control : PuckControl,
+ implicit val nodeKindIcons : NodeKindIcons)
   extends PCanvas {
+  import control.graphStack.graph
 
-
-
-  import graphStack.graph
-
+  val menuBuilder = PiccoloNodeMenu(control,nodeKindIcons)
   val register = new Register()
   val nodeLayer = getLayer
   val edgeLayer = new PLayer()
   getCamera.addLayer(0, edgeLayer)
-//  val dragLayer = new PLayer()
-//  getCamera.addLayer(0, dragLayer)
-//
-//  addInputEventListener(new MoveNodeDragEventHandler(dragLayer))
 
+  addInputEventListener(new MoveNodeDragEventHandler(control, this))
 
   def getNode(nid : NodeId) : DGPNode  = register.getOrElse(nid, {
     val titleNode = DGTitleNode(graph, nid)
-    val n = new DGExpandableNode(nid, titleNode)
+    val n = new DGExpandableNode(titleNode)
     n.titlePnode.addInputEventListener(clickEventHandler(n))
     n.addPropertyChangeListener(PNode.PROPERTY_PARENT, register.parentPropertyListener)
     n
@@ -87,7 +78,7 @@ class DGCanvas
         val n = getNode(tgt)
 
         register.get(oldc) foreach ( _ rmContent n )
-        register.get(oldc) foreach ( _ addContent n )
+        register.get(newc) foreach ( _ addContent n )
 
       case Transformation(_, RenameOp(id, _, _)) =>
       val n = getNode(id).asInstanceOf[DGExpandableNode]

@@ -32,7 +32,7 @@ import java.{util => jutil}
 import org.piccolo2d.PNode
 import org.piccolo2d.util.PBounds
 import puck.graph.NodeId
-import puck.piccolo.util.{DecoratorGroup, IconTextNode}
+import puck.piccolo.util.{DecoratorGroup, IdIconTextNode}
 
 import scala.collection.mutable
 
@@ -40,9 +40,10 @@ import scala.collection.mutable
   * Created by Loïc Girault on 31/05/16.
   */
 class DGExpandableNode
-( val id: NodeId,
-  val titlePnode : IconTextNode
+( val titlePnode : IdIconTextNode
 ) extends DecoratorGroup with DGPNode{
+
+  def id : NodeId = titlePnode.id
 
   val padding : Double = 5d
   val body = new PNode {

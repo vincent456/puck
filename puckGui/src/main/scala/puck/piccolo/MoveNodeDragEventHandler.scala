@@ -26,21 +26,85 @@
 
 package puck.piccolo
 
-import org.piccolo2d.{PLayer, PNode}
+import java.{util => jutil}
+
+import org.piccolo2d.{PLayer, PNode, PRoot}
 import org.piccolo2d.event.{PDragEventHandler, PInputEvent}
+import puck.actions.MoveAction
+import puck.gui.PuckControl
+import puck.piccolo.util.IdIconTextNode
+
 
 /**
   * Created by Loïc Girault on 07/06/16.
   */
-class MoveNodeDragEventHandler(dragLayer : PLayer) extends PDragEventHandler {
+class MoveNodeDragEventHandler
+( control : PuckControl,
+  canvas : DGCanvas
+) extends PDragEventHandler {
+
+  val dragLayer = new PLayer()
+  canvas.getCamera.addLayer(0, dragLayer)
+//  def printBounds(n : PNode) : Unit = {
+//    println("bounds "  + n.getBounds)
+//    println("fullBounds "  + n.getFullBounds)
+//    println("globalBounds "  + n.getGlobalBounds)
+//    println("globalFullBounds "  + n.getGlobalFullBounds)
+//  }
+
+  setMinDragStartDistance(1d)
+  var copy : IdIconTextNode = _
   override def startDrag (event: PInputEvent) : Unit  = {
-    val original = event.getPickedNode
-    val copy = original.clone().asInstanceOf[PNode]
-    println(original.getGlobalFullBounds)
-    copy setBounds original.getGlobalFullBounds
-    dragLayer addChild copy
-    setDraggedNode(copy)
-    //setRaiseToTopOnPress(true)
+    event.getPickedNode match {
+      case original : IdIconTextNode =>
+        copy = original.clone()
+
+        val bds = original.getGlobalFullBounds
+
+        dragLayer addChild copy
+        copy.translate(bds.getX, bds.getY)
+
+        event.getPath.pushNode(copy)
+        event.getPath.pushTransform(null)
+      }
+
     super.startDrag(event)
+
+  }
+
+
+  def getExpandableParent(n : PNode) : Option[DGExpandableNode] = n match {
+    case n : DGExpandableNode => Some(n)
+    case null | _ : PRoot | _ : PLayer => None
+    case _ => getExpandableParent(n.getParent)
+  }
+
+  override def endDrag(event: PInputEvent) : Unit  = {
+    if(copy!= null && (event.getPath.getPickedNode eq copy)) {
+      event.getPath.popTransform(null)
+      event.getPath.popNode(null)
+      val l : jutil.ArrayList[PNode] = new jutil.ArrayList[PNode]()
+      canvas.nodeLayer.findIntersectingNodes(copy.getGlobalFullBounds, l)
+      val it =l.iterator()
+      var sp : Option[DGExpandableNode] = None
+      while(it.hasNext && sp.isEmpty){
+        sp = getExpandableParent(it.next())
+      }
+
+      sp.foreach{ n =>
+        val dgn = control.graph.getNode(n.id)
+        val g = control.graph
+        if(g.canContain(dgn, g.getConcreteNode(copy.id)))
+          new MoveAction(control.Bus, dgn, List(copy.id))(g, control.graphUtils).apply()
+        else
+          control.logger write s"$dgn cannot contain ${copy.text.getText}"
+      }
+
+      dragLayer.removeAllChildren()
+      copy = null
+    }
+
+    super.endDrag(event)
+
   }
 }

@@ -31,7 +31,7 @@ import java.awt.geom.Rectangle2D
 import org.piccolo2d.util.PBounds
 import puck.graph.{DependencyGraph, NodeId}
 import puck.gui.NodeKindIcons
-import puck.piccolo.util.IconTextNode
+import puck.piccolo.util.IdIconTextNode
 
 /**
   * Created by Loïc Girault on 31/05/16.
@@ -61,10 +61,11 @@ package object piccolo {
 
   def DGTitleNode
   (g : DependencyGraph, nid : NodeId)
-  (implicit icons : NodeKindIcons): IconTextNode = {
+  (implicit icons : NodeKindIcons): IdIconTextNode = {
     val n = g.getNode(nid)
     import puck.graph.ShowDG._
-    IconTextNode((g, n).shows(desambiguatedLocalName),
+    IdIconTextNode(nid,
+      (g, n).shows(desambiguatedLocalName),
       icons.iconOfKind(n.kind).getImage)
   }
 }
