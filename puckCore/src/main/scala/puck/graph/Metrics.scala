@@ -27,7 +27,7 @@
 package puck.graph
 
 import puck.graph.constraints.ConstraintsMaps
-import puck.graph.io.DotHelper
+import puck.util.UnionFind
 
 
 object Metrics {
@@ -295,77 +295,114 @@ object Metrics {
     components.size
   }
 
-  def LCOM(helper : DotHelper)(g : DependencyGraph, n : NodeId): Double = {
-    val children = g.content(n) map g.getConcreteNode
-    val Seq(fields, constructors, methods, innerTypes, typeVariablees) =
-      helper.splitByKind(g, g.content(n).toSeq)
+
+
+  def averageI(ds : Seq[Int]) : Double =
+    if(ds.isEmpty) 0
+    else ds.sum.toDouble / ds.size
+
+  def averageD(ds : Seq[Double]) : Double =
+    if(ds.isEmpty) 0
+    else ds.sum / ds.size
+
+  def apply_metric_on_types[T]
+  (metric : (DependencyGraph, NodeId) => T,
+   g : DependencyGraph,
+   ignoresPrefix : Seq[String]): Seq[(String,T)] = {
+    val types = g.nodes filter (_.kind.kindType == TypeDecl)
+
+    for{
+      t <- types.toSeq
+      fname = g fullName t.id
+      if ignoresPrefix forall (p => !(fname startsWith p))
+    } yield (fname, metric(g, t.id))
+
+  }
+  // define in "A Metrics Suite for Object Oriented Design" - Chidamber & Kemerer - TSE 1994
+  def LCOM(g : DependencyGraph, tid : NodeId): Int = {
+    val m = DependencyGraph.splitByKind (g, g.content(tid).toSeq)
+    val fields =  m.getOrElse("Field", Seq())
+
+    val methods =
+      m.getOrElse("StaticMethod", Seq()) ++
+      m.getOrElse("AbstractMethod", Seq()) ++
+      m.getOrElse("Constructor", Seq()) ++
+      m.getOrElse("Method", Seq())
 
     val fs = fields.toSet
-    val ms = methods.toSet ++ constructors.toSet
-    val is = ( methods map (m => g.usedBy(m) intersect fs )) ++
-      (constructors map (m => g.usedBy(m) intersect fs))
 
+    def usedFields(m : NodeId) :Set[NodeId] =
+      g definitionOf m map (mdef => g.usedBy(mdef)  intersect fs) getOrElse Set()
+    val indexedIs = (methods map usedFields).zipWithIndex // cf bellow comment for the use of index
     var p = 0
     var q = 0
+
     for {
-      i <- is
-      j <- is
-      if i eq j
+      (i, idxI) <- indexedIs
+      (j, idxJ) <- indexedIs
+      if idxI != idxJ //cannot use !( i eq j ) because
+    // "different instances" of empty set are merged
     } {
       if((i intersect j).isEmpty)
         p = p + 1
       else
         q = q + 1
     }
-    if(p > q) (p - q).toDouble / ms.size
-    else 0d
+
+    if(p > q) p - q
+    else 0
   }
-//  def weight
-//  ( g: DependencyGraph,
-//    lightKind : NodeKind,
-//    cyclePenalty: Double = 5): Double = {
-//
-//    val types = g.nodes.filter { _.kind.kindType == TypeDecl } map ( _.id)
-//
-//    val tsByNameSpaces = types.groupBy(g.hostNameSpace).toList
-//
-//    val (w, extraNSdeps) = tsByNameSpaces.foldLeft((0d, Set[NodeIdP]())){
-//      case ((wAcc, extraNSdepAcc), (hns, ts)) =>
-//
-//        val (newWacc, intraNSdep, newExtraNSdep) =
-//          ts.foldLeft((wAcc, Set[NodeIdP](), extraNSdepAcc)) {
-//            case ((wAcc0, intraNSdepAcc0, extraNSdepAcc0), t) =>
-//              val outDep = outgoingDependencies(g, t)
-//              val (intraNSdep, extraNSdep) =
-//                outDep.partition(u => g.hostNameSpace(u.used) == hns)
-//
-//              val intraNSdep0 = intraNSdep map {
-//                case (user, used) => (g.hostTypeDecl(user), g.hostTypeDecl(used))
-//              }
-//
-//              val extraNSdep0 = extraNSdep map {
-//                case (user, used) => (g.hostNameSpace(user), g.hostNameSpace(used))
-//              }
-//              (wAcc0 + typeWeight(g, t),
-//                intraNSdepAcc0 ++ intraNSdep0,
-//                extraNSdepAcc0 ++ extraNSdep0)
-//          }
-//
-//
-//        val (lightUses, regularUses) =
-//          intraNSdep partition (u => g.getNode(u.used).kind == lightKind)
-//
-//        val intraUsesWeight =
-//          lightUses.size.toDouble / 2 + regularUses.size
-//
-//
-//        val cycleWeight = numberOfCycles(intraNSdep).toDouble * (cyclePenalty /2)
-//
-//        (newWacc + intraUsesWeight + cycleWeight, newExtraNSdep)
-//    }
-//
-//
-//    w + numberOfCycles(extraNSdeps) * cyclePenalty
-//  }
+
+  // Hitz & Montazeri - Measuring Coupling and cohesion in object oriented system
+  def LCOM4(g : DependencyGraph, tid : NodeId): Int = {
+    val childrens = g.content(tid)
+
+
+    val roots = childrens filter (c => g.usersOf(c).forall(!g.contains_*(tid, _)) )
+
+
+    val uf = new UnionFind(childrens)
+
+    def dfs(n : NodeId) : Unit =
+      g.definitionOf(n) foreach {
+        ndef =>
+        g.usedBy(ndef).foreach{
+          used =>
+            if(childrens contains used) {
+              if (!uf.find(n, used))
+                uf.union(n, used)
+
+              dfs(used)
+            }
+        }
+      }
+
+    roots foreach dfs
+
+    uf.size
+  }
+
+  //LCOM Brian Henderson-Sellers - Object-Oriented Metrics: Measures of Complexity - Prentice Hall 1996
+  def LCOM_hs(g : DependencyGraph, tid : NodeId): Double = {
+    val m = DependencyGraph.splitByKind (g, g.content(tid).toSeq)
+    val fields =  m.getOrElse("Field", Seq())
+
+    println(m)
+    val methods =
+      m.getOrElse("StaticMethod", Seq()) ++
+        m.getOrElse("AbstractMethod", Seq()) ++
+        m.getOrElse("Constructor", Seq()) ++
+        m.getOrElse("Method", Seq())
+
+    val ms = methods.toSet
+
+    def usersOf(f : NodeId) : Int = (g.usersOf(f) intersect ms).size
+
+    val numMethods = methods.size
+    (((fields map usersOf).sum.toDouble / fields.size) - numMethods) / ( 1 - numMethods)
+
+  }
+
+
 }
 

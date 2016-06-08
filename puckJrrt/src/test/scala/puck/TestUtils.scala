@@ -3,7 +3,8 @@ package puck
 import java.awt.event.WindowEvent
 
 import puck.actions.Choose
-import puck.graph.{ConcreteNode, DecoratedGraph, DependencyGraph, LoggedTG, SResult}
+import puck.graph.Metrics._
+import puck.graph.{ConcreteNode, DecoratedGraph, DependencyGraph, LoggedTG, Metrics, NodeId, SResult}
 import puck.graph.transformations.Recording
 import puck.jastadd.ExtendJGraphUtils.dotHelper
 import puck.search._
@@ -85,5 +86,22 @@ object TestUtils {
     case LoggedEither(_, \/-(g))  +: _ => Some(g)
   }
 
+  def printLCOM(g : DependencyGraph) : Unit = {
+
+    def p[T](metric : (DependencyGraph, NodeId) => T, avg : Seq[T] => Double) : Unit = {
+      val lcoms = apply_metric_on_types(metric, g, Seq("@primitive", "java"))
+      println(lcoms mkString "\n")
+      println("average = " + avg(lcoms.map(_._2)))
+    }
+
+    println("LCOM")
+    p(LCOM, averageI)
+    println("LCOM hs")
+    p(LCOM_hs, averageD)
+
+    println("LCOM4")
+    p(LCOM4, averageI)
+
+  }
 
 }

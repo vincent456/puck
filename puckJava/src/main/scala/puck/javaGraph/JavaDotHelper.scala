@@ -32,33 +32,11 @@ import puck.javaGraph.nodeKind._
 
 object JavaDotHelper extends DotHelper{
 
-  override def isDotSubgraph(n: DGNode): Boolean =
-    n.kind == Package
-
   override def namePrefix(n: DGNode): String =  n.kind match {
       case Package => "&lt;&lt;package&gt;&gt; "
       case Interface => "&lt;&lt;interface&gt;&gt; "
       case _ => ""
     }
-
-  override def splitByKind(graph : DependencyGraph, ns: Seq[NodeId]) = {
-    val init : Seq[Seq[NodeId]] = Seq(Seq(), Seq(), Seq(), Seq(), Seq())
-    ns.foldLeft( init ){
-      case (s @ Seq(fds, cts, mts, cls, tvs), n) =>
-          val kind = graph.getConcreteNode(n).kind
-          kind match {
-            case _ : MethodKind => Seq(fds, cts, n +: mts, cls, tvs)
-            case Field
-            | StaticField
-            | EnumConstant => Seq(n +: fds, cts, mts, cls, tvs)
-            case Constructor => Seq(fds, n +: cts, mts, cls, tvs)
-            case _ : TypeKind => Seq(fds, cts, mts, n +: cls, tvs)
-            case TypeVariable => Seq(fds, cts, mts, cls, n +:tvs)
-            case _ => throw new Error(kind + " : wrong NodeKind contained by a class")
-          }
-        }
-
-  }
 
   override def isDotClass(n : DGNode): Boolean = n.kind match {
       case Class | Interface | Primitive => true

@@ -273,9 +273,9 @@ trait GraphBuilderVisitor {
     val (t, argValue) = p
     argValue match {
       case a: Access => f((t, a))
-      case ae: ArithmeticExpr =>
-        System.err.println("parameter type constraint, ArithmeticExpr case not handled")
-      case _: Literal => ()
+      case ae: Binary =>
+        System.err.println("parameter type constraint, Binary case not handled")
+      case _: Literal | _ : CastExpr  => ()
       case arg => throw new DGBuildingError(s"Access expected but found : $arg")
     }
   }
@@ -313,6 +313,8 @@ trait GraphBuilderVisitor {
         val astType = rs.hostBodyDecl().asInstanceOf[MethodDecl].`type`()
         constraintTypeUses(methodNode, astType, a.lastAccess())
 
+      case ae: Binary =>
+        System.err.println("parameter type constraint, Binary case not handled")
       case _ : Literal | _ : CastExpr=> ()
       case resExpr => throw new DGBuildingError("buildDG ReturnStmt case not expected : " + resExpr)
     }

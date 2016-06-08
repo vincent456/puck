@@ -83,7 +83,6 @@ object DependencyGraph {
   }
 
 
-
   def findElementByName(g : DependencyGraph, fn : String) : Option[ConcreteNode] = {
     val splitted = fn split s"\\${DependencyGraph.scopeSeparator}"
 
@@ -97,6 +96,18 @@ object DependencyGraph {
       }
 
     aux(splitted.toList, Some(rootId))
+  }
+
+  def splitByKind(g : DependencyGraph, ns: Seq[NodeId]) : Map[String, Seq[NodeId]] = {
+    def add(m: Map[String, Seq[NodeId]], key: String, n: NodeId) = {
+      val newVal = n +: m.getOrElse(key, Seq())
+      m + (key -> newVal)
+    }
+    ns.foldLeft( Map[String, Seq[NodeId]]() ){
+      case (m, n) =>
+        val kind = g.getNode(n).kind
+        add(m, kind.toString, n)
+    }
   }
 
 }

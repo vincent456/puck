@@ -358,8 +358,22 @@ class DotPrinter
         decorate_name(n) + sig + ite + "</TD></TR>")
     }
 
-    val Seq(fields, ctrs, mts, innerClasses, typeVariables) =
-      helper splitByKind (graph, graph.content(nid).toSeq filter visibility.isVisible)
+    val m = DependencyGraph.splitByKind (graph, graph.content(nid).toSeq filter visibility.isVisible)
+    val fields = m.getOrElse("EnumConstant", Seq()) ++
+      m.getOrElse("StaticField", Seq()) ++
+      m.getOrElse("Field", Seq())
+
+    val ctrs = m.getOrElse("Constructor", Seq())
+
+    val mts = m.getOrElse("StaticMethod", Seq()) ++
+      m.getOrElse("AbstractMethod", Seq()) ++
+      m.getOrElse("Method", Seq())
+
+    val innerClasses = m.getOrElse("Interface", Seq()) ++
+      m.getOrElse("Class", Seq())
+
+    val typeVariables = m.getOrElse("TypeVariable", Seq())
+
 
 
     writeln(s""" ${n.id} [ label = <<TABLE BGCOLOR="${helper.fillColor(n)}"> <TR> <TD PORT="${n.id}" HREF="${n.id}" BORDER="0"> <B>""" +

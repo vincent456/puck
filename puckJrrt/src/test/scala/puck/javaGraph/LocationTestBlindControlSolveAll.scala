@@ -3,17 +3,13 @@ package puck.javaGraph
 
 import java.io.File
 
-import puck.GraphStack
 import puck.TestUtils._
 import puck.graph.constraints.search.DecoratedGraphEvaluator
-import puck.graph.transformations.{MileStone, Recording}
+import puck.graph.transformations.Recording
 import puck.graph.{ConcreteNode, _}
-import puck.gui.PuckControl
 import puck.search.{AStarSearchStrategy, AStarSearchStrategyGraphDisplay}
 import puck.jastadd.ExtendJGraphUtils.dotHelper
-import puck.util.PuckSystemLogger
 
-import scala.swing.Publisher
 import scalaz.\/-
 
 
@@ -71,9 +67,11 @@ object LocationLoadAndApplyRecord {
       s"$path/location/Location.java",
       s"$path/location/Velo.java")
 
-    val r = Recording.load(s"$path/plan.pck", s.fullName2id)(s.logger)
+    println("original")
+    printLCOM(s.graph)
 
-/*    val numMilStone = r count (_ == MileStone)
+    val r = Recording.load(s"$path/plan.pck", s.fullName2id)(s.logger)
+    /*    val numMilStone = r count (_ == MileStone)
     println(numMilStone)
 
     val graphStack = new GraphStack(new Publisher(){})
@@ -89,7 +87,13 @@ object LocationLoadAndApplyRecord {
 
 
     import Recording.RecordingOps
-    s.applyChangeAndMakeExample(r.redo(s.graph), new File("/tmp/testPuck"))
+
+    val g2 = r.redo(s.graph)
+
+    println("transformed")
+    printLCOM(g2)
+
+    s.applyChangeAndMakeExample(g2, new File("/tmp/testPuck"))
   }
 
 
