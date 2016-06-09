@@ -1,0 +1,4 @@
+import ['nano']
+prives = ['Personne']
+clients = ['Client.client(Personne)']
+hide prives from clients

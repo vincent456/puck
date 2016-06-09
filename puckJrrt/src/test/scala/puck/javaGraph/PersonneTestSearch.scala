@@ -40,7 +40,7 @@ object PersonneTestSearch {
 
 
     val fitness1: DependencyGraph => Double =
-      Metrics.fitness1(_, constraints, 1, 1, 2)
+      Metrics.fitness1(_, constraints, 1, 1)
 
     val evaluator = DecoratedGraphEvaluator.equalityByMapping[Option[ConcreteNode]](fitness1)
     val strategy = new AStarSearchStrategyGraphDisplay[Option[ConcreteNode]](

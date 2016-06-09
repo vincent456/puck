@@ -3,30 +3,35 @@ package puck.javaGraph
 
 import java.io.File
 
-import puck.Settings
+import puck.{GraphStack, Quick, Settings}
 import puck.TestUtils._
 import puck.graph.constraints.search.DecoratedGraphEvaluator
-import puck.graph.transformations.Recording
+import puck.graph.transformations.{MileStone, Recording}
 import puck.graph.{ConcreteNode, _}
+import puck.gui.PuckControl
 import puck.search.{AStarSearchStrategy, AStarSearchStrategyGraphDisplay}
 import puck.jastadd.ExtendJGraphUtils.dotHelper
+import puck.util.PuckSystemLogger
+import puck.graph.io.DotPrinter
 
+import scala.swing.Publisher
 import scalaz.\/-
 
 
 /**
-  * Created by cedric on 18/05/2016.
+  * Created by Mikal on 09/06/2016.
   */
 
-object LocationTestBlindControlSolveAll {
-  val path = getClass.getResource("/miniComposite").getPath
+object NanoTestSearch {
+  val path = getClass.getResource("/nanoPersonne/").getPath
 
   val outDir = Settings.tmpDir + File.separator + "DG-Imgs"
 
   def main(args : Array[String]) : Unit = {
     val scenario = new ScenarioFactory(
-      s"$path/location/Location.java",
-      s"$path/location/Velo.java")
+      s"$path/nano/Personne.java",
+      s"$path/nano/Client.java")
+
 
     val constraints = scenario.parseConstraints(s"$path/decouple.wld")
 
@@ -55,50 +60,19 @@ object LocationTestBlindControlSolveAll {
           val fit = ordering.evaluateWithDepthPenalty(ss)
           strategy.printSuccessState("result#" + fit, ss)
           val \/-(dg) = ss.loggedResult.value
-          Recording.write(outDir + File.separator +"result#" + fit + ".pck",
+          val result = outDir + File.separator +"result#" + fit + ".pck"
+          Recording.write(result,
             scenario.fullName2id, dg.graph)
+          val s = new ScenarioFactory(
+            s"$path/nano/Personne.java",
+            s"$path/nano/Client.java")
+          val r = Recording.load(s"$result", s.fullName2id)(s.logger)
+          import Recording.RecordingOps
+          val resdir = new File( Settings.tmpDir + File.separator+"testPuck"+fit)
+          val sf = s.applyChangeAndMakeExample(r.redo(s.graph),resdir )
+          Quick.svg(sf.graph, resdir + File.separator + "nano.svg", Some(constraints))
+
       }
     }
   }
-}
-
-object LocationLoadAndApplyRecord {
-  def main(args : Array[String]) : Unit ={
-    val path = getClass.getResource("/miniComposite").getPath
-
-    val s = new ScenarioFactory(
-      s"$path/location/Location.java",
-      s"$path/location/Velo.java")
-
-    println("original")
-    printMetrics(s.graph)
-
-    val r = Recording.load(s"$path/plan.pck", s.fullName2id)(s.logger)
-    /*    val numMilStone = r count (_ == MileStone)
-    println(numMilStone)
-
-    val graphStack = new GraphStack(new Publisher(){})
-    graphStack setInitialGraph s.graph
-    graphStack.load(r)
-//    var remainingMileStone = numMilStone
-//    while (remainingMileStone > 4) {
-//      graphStack.undo()
-//      remainingMileStone -= 1
-//    }
-
-    s.applyChangeAndMakeExample(graphStack.graph, new File("/tmp/testPuck"))*/
-
-
-    import Recording.RecordingOps
-
-    val g2 = r.redo(s.graph)
-
-    println("transformed")
-    printMetrics(g2)
-
-    s.applyChangeAndMakeExample(g2, new File("/tmp/testPuck"))
-  }
-
-
-
 }

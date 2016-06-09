@@ -37,4 +37,5 @@ object Settings {
   println("Tmp dir : " + tmpDir)
 
   val outDir = new File(Settings.tmpDir + "testPuck")
+  println("out dir : " + tmpDir)
 }

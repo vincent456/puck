@@ -32,7 +32,7 @@ object BridgeTestBlindControlSolveAll {
 
 
       val fitness1 : DependencyGraph => Double =
-        Metrics.fitness1(_, constraints, 5, 1, 2)
+        Metrics.fitness1(_, constraints, 5, 1)
 
       val strategy =
         new AStarSearchStrategyGraphDisplay[Option[ConcreteNode]](

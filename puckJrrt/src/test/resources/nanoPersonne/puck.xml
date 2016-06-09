@@ -1,0 +1,8 @@
+<puck-config>
+	<src rec=".java">nano</src>
+	<workspace>D:\repos\puckGit\puck\puckJrrt\src\test\resources\nanoPersonne</workspace>
+	<decouple>decouple.wld</decouple>
+	
+	<out>out</out>
+	<log>puck-log.txt</log>
+</puck-config>
