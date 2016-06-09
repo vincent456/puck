@@ -36,6 +36,7 @@ import puck.jastadd.ExtendJGraphUtils.Rules
 import puck.Settings._
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
+import puck.graph.transformations.Recording
 import puck.jastadd.ExtendJGraphUtils
 
 object BridgeScenario {
@@ -246,10 +247,14 @@ class BridgeManualRefactoringSpec extends FeatureSpec {
     val g2 =  recompiledEx.graph
 
     printLCOM(g)
-
     assert( Mapping.equals(bs.gFinal, recompiledEx.graph) )
 
   }
 }
 
-
+object BridgeManualRefactoringSpecGenRecord {
+  def main(args: Array[String]) : Unit = {
+    val bs = BridgeScenario()
+    Recording.write(path+".pck", bs.fullName2id, bs.gFinal)
+  }
+}
