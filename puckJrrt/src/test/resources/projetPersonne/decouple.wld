@@ -1,0 +1,4 @@
+import ['projetPersonne.personne']
+prives = ['Personne']
+clients = ['Client']
+hide prives from clients

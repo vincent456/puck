@@ -47,7 +47,7 @@ aspect Concretize {
     }
 
 
-    private String CompilationUnit.containingDirectory(){
+private String CompilationUnit.containingDirectory(){
         int idx = pathName().lastIndexOf(File.separatorChar);
         if(idx == -1)
             idx = pathName().lastIndexOf("/");
@@ -58,7 +58,7 @@ aspect Concretize {
         if(packageName().length() == 0)
             return containingDirectory();
 
-        String packagePath = packageName().replaceAll("\\.", File.separator);
+        String packagePath = packageName().replaceAll("\\\\.", File.separator);
         int idx = pathName().indexOf(packagePath);
 
         if(idx != -1)
