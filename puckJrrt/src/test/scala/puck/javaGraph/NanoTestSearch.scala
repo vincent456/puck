@@ -5,11 +5,12 @@ import java.io.File
 
 import puck.{GraphStack, Quick, Settings}
 import puck.TestUtils._
+import puck.graph.comparison.Mapping
 import puck.graph.constraints.search.DecoratedGraphEvaluator
 import puck.graph.transformations.{MileStone, Recording}
 import puck.graph.{ConcreteNode, _}
 import puck.gui.PuckControl
-import puck.search.{AStarSearchStrategy, AStarSearchStrategyGraphDisplay}
+import puck.search.{AStarSearchStrategy, AStarSearchStrategyGraphDisplay, AStarSearchStrategyGraphDisplayOnly}
 import puck.jastadd.ExtendJGraphUtils.dotHelper
 import puck.util.PuckSystemLogger
 import puck.graph.io.DotPrinter
@@ -44,7 +45,7 @@ object NanoTestSearch {
       Metrics.fitness1(_, constraints, 1, 1)
 
     val evaluator = DecoratedGraphEvaluator.equalityByMapping[Option[ConcreteNode]](fitness1)
-    val strategy = new AStarSearchStrategyGraphDisplay[Option[ConcreteNode]](
+    val strategy = new AStarSearchStrategyGraphDisplayOnly[Option[ConcreteNode]](
       evaluator, Some(constraints),
       10, 1000, outDir)
 
@@ -71,6 +72,7 @@ object NanoTestSearch {
           val resdir = new File( Settings.tmpDir + File.separator+"testPuck"+fit)
           val sf = s.applyChangeAndMakeExample(r.redo(s.graph),resdir )
           Quick.svg(sf.graph, resdir + File.separator + "nano.svg", Some(constraints))
+//          println("Graphs equality? "+Mapping.equals(sf.graph, s.graph))
 
       }
     }
