@@ -47,6 +47,9 @@ class DGCanvas
   val register = new Register()
   val nodeLayer = getLayer
   val edgeLayer = new PLayer()
+
+
+
   getCamera.addLayer(0, edgeLayer)
 
   addInputEventListener(new MoveNodeDragEventHandler(control, this))
@@ -165,26 +168,11 @@ class DGCanvas
     children
   }
 
-  def addUses(n : DGExpandableNode ): Unit = {
-    graph.usedBy(n.id) map (register.firstVisible(_, graph)) foreach {
-      used =>
-        import puck.graph.ShowDG._
-        (graph, (n.id, used.id)).println
-
-        Swing.onEDT {
-          val e = new PUses(n, used)
-          if(!(n.usedBy contains e)) {
-            n.usedBy += e
-            used.usesOf += e
-            edgeLayer addChild e
-            e.repaint()
-          }
-        }
-    }
+  def addIncommingUses(n : DGExpandableNode ): Unit = {
     graph.usersOf(n.id) map (register.firstVisible(_, graph)) foreach {
       user=>
-        import puck.graph.ShowDG._
-        (graph, (user.id, n.id)).println
+//        import puck.graph.ShowDG._
+//        (graph, (user.id, n.id)).println
         Swing.onEDT{
           val e = new PUses(user, n)
           if(!(n.usedBy contains e)) {
@@ -196,6 +184,25 @@ class DGCanvas
         }
     }
   }
+
+  def addOutgoingUses(n : DGExpandableNode ): Unit = {
+    graph.usedBy(n.id) map (register.firstVisible(_, graph)) foreach {
+      used =>
+        //        import puck.graph.ShowDG._
+        //        (graph, (n.id, used.id)).println
+
+        Swing.onEDT {
+          val e = new PUses(n, used)
+          if(!(n.usedBy contains e)) {
+            n.usedBy += e
+            used.usesOf += e
+            edgeLayer addChild e
+            e.repaint()
+          }
+        }
+    }
+  }
+
 }
 
 

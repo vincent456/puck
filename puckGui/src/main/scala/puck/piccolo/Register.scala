@@ -39,6 +39,8 @@ class Register {
   val visibleContent = new mutable.HashMap[NodeId, DGPNode]()
   val invisibleContent = new mutable.HashMap[NodeId, DGPNode]()
 
+  val usesMap = new scala.collection.mutable.HashMap[NodeIdP, PUses]
+
   def +=(kv : (NodeId, DGPNode)) = {
     invisibleContent -= kv._1
     visibleContent += kv

@@ -26,7 +26,7 @@
 
 package puck.piccolo.util
 
-import java.awt.Color
+import java.awt.{Color, Paint}
 import java.awt.geom.{Path2D, Point2D}
 
 import org.piccolo2d.extras.nodes.{PComposite, PLine}
@@ -62,15 +62,21 @@ object Arrow {
     path
   }
 
-  def apply(src : Point2D, tgt : Point2D) : Arrow =
-    new Arrow(src, tgt)
+  def apply(src : Point2D, tgt : Point2D, headStyle : HeadStyle) : Arrow =
+    new Arrow(src, tgt, headStyle)
 
 }
-import puck.piccolo.util.Arrow._
-class Arrow(source : P, target : P) extends PComposite {
 
-  def this(src : Point2D, tgt : Point2D)  =
-    this((src.getX, src.getY), (tgt.getX, tgt.getY))
+sealed abstract class HeadStyle
+case object Circle extends HeadStyle
+case object EmptyTriangle extends HeadStyle
+case object FullTriangle extends HeadStyle
+
+import puck.piccolo.util.Arrow._
+class Arrow(source : P, target : P, headStyle : HeadStyle) extends PComposite {
+
+  def this(src : Point2D, tgt : Point2D, headStyle : HeadStyle)  =
+    this((src.getX, src.getY), (tgt.getX, tgt.getY), headStyle)
 
   val theta : Double = 0.45
   val l : Double = 10d
@@ -103,13 +109,27 @@ class Arrow(source : P, target : P) extends PComposite {
   line.addPoint(0, source.x, source.y)
   line.addPoint(1, target.x, target.y)
 
-  val head = {
+  def triangle(paint : Paint) : PPath = {
     val p1 = target
     val (p2, p3) = arrowBaseHeadCoordinates
     val h = PPath.createPolyline(Array(p1.point, p2.point, p3.point))
-    h.setPaint(Color.BLACK)
+    h.setPaint(paint)
+
     h
   }
+
+
+  val head = headStyle match {
+    case FullTriangle => triangle(Color.BLACK)
+    case EmptyTriangle => triangle(Color.WHITE)
+    case Circle => PPath.createEllipse((target.x - l)/2, (target.y - l)/2, l, l)
+  }
+
+  override def setPaint(newPaint : Paint) : Unit = {
+    line setPaint newPaint
+    head setPaint newPaint
+  }
+
 
   addChild(line)
   addChild(head)

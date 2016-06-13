@@ -4,7 +4,10 @@ import java.beans.{PropertyChangeEvent, PropertyChangeListener}
 
 import org.piccolo2d.PNode
 import org.piccolo2d.extras.nodes.PComposite
-import puck.piccolo.util.Arrow
+import puck.graph.NodeIdP
+import puck.piccolo.util.{Arrow, Circle, FullTriangle}
+
+import scala.collection.mutable
 
 /**
   * Created by lorilan on 6/3/16.
@@ -28,11 +31,18 @@ case class PUses(source : DGPNode,
 
   def addArrow() : Unit = {
 
+    val headStyle =
+      if(usesSet.size > 1) Circle
+      else FullTriangle
+
    val arrow  = Arrow(
       source.arrowGlobalBounds.getCenter2D,
-      target.arrowGlobalBounds.getCenter2D)
+      target.arrowGlobalBounds.getCenter2D,
+     headStyle)
     this addChild arrow
   }
+
+  val usesSet = mutable.Set[NodeIdP]((source.id, target.id))
 
 
   addArrow()

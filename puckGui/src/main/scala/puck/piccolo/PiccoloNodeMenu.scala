@@ -63,15 +63,17 @@ class PiccoloNodeMenu
   ){
   override def init() = {
     super.init()
-
     addShowOptions()
-
   }
 
   private def addShowOptions() : Unit = {
 
-    contents += new Action("Show uses"){
-      def apply() : Unit = canvas addUses node
+    contents += new Action("Show incomming uses"){
+      def apply() : Unit = canvas addIncommingUses node
+    }
+
+    contents += new Action("Show outgoing uses"){
+      def apply() : Unit = canvas addOutgoingUses node
     }
 
     /*contents += new Action("Hide") {
