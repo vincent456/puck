@@ -101,4 +101,18 @@ class ExtendJSpec  extends AcceptanceSpec {
     }
   }
 
+  scenario("from source vs not from source"){
+    val _ = new ScenarioFactory(
+      """package p;
+        | import java.util.List;
+        | interface I extends List<String>{}
+      """
+    ){
+      val l = program.findType("java.util.List")
+      val i = program.findType("p.I")
+      assert(!l.fromSource())
+      assert(i.fromSource())
+
+    }
+  }
 }

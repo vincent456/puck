@@ -34,9 +34,17 @@ import puck.graph.{DGBuildingError, NodeId}
 trait NodeFactory {
   this : JastaddGraphBuilder =>
 
+  def getDefinition(bd : DGNamedElement) =
+    g.getConcreteNode(buildNode(bd)).definition(g).getOrElse {
+      getDefNode(bd)
+    }
+
+
   def buildNode( a : Access) : NodeId = a match {
     case va : VarAccess if va.decl().isLocalVariable => // No lock
-      getDefinition(buildNode(va.hostBodyDecl()))
+      getDefinition(va.hostBodyDecl().getDGNamedNode())
+
+
     case cie: ClassInstanceExpr =>
       if(!cie.hasTypeDecl)
         cie.lock()
@@ -72,6 +80,8 @@ trait NodeFactory {
     case fd : FieldDecl =>
       if(fd.getNumDeclarator == 1) buildNode(fd.getDeclarator(0))
       else throw new DGBuildingError(s"FieldDecl with ${fd.getNumDeclarator} declarators not expected")
+    case _ : StaticInitializer | _ : InstanceInitializer => buildNode(bodyDecl.hostType())
+
     case _ => throw new DGBuildingError(bodyDecl + " not expected")
   }
 

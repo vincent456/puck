@@ -68,7 +68,7 @@ object LocationLoadAndApplyRecord {
       s"$path/location/Velo.java")
 
     println("original")
-    printLCOM(s.graph)
+    printMetrics(s.graph)
 
     val r = Recording.load(s"$path/plan.pck", s.fullName2id)(s.logger)
     /*    val numMilStone = r count (_ == MileStone)
@@ -91,7 +91,7 @@ object LocationLoadAndApplyRecord {
     val g2 = r.redo(s.graph)
 
     println("transformed")
-    printLCOM(g2)
+    printMetrics(g2)
 
     s.applyChangeAndMakeExample(g2, new File("/tmp/testPuck"))
   }

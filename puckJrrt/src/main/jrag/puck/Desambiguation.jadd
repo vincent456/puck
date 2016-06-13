@@ -25,18 +25,18 @@
  */
 aspect Desambiguation{
 
-	public DGNamedElement ASTNode.getParentNamedNode_aux(){
+	public DGNamedElement ASTNode.getDGNamedNode(){
 		if(getParent() == null)
 			throw new PuckError("no parent named node !");
-		return getParent().getParentNamedNode_aux();
+		return getParent().getDGNamedNode();
 	}
 
-	public DGNamedElement DGNamedElement.getParentNamedNode_aux(){
+	public DGNamedElement DGNamedElement.getDGNamedNode(){
 		return this;
 	}
 
 	public DGNamedElement ASTNode.getParentNamedNode(){
-		return getParent().getParentNamedNode_aux();
+		return getParent().getDGNamedNode();
 	}
 
 	public String TypeDecl.dgFullName() {

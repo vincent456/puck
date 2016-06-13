@@ -27,8 +27,8 @@
 package org.extendj.ast
 
 import puck.graph.{TypeDecl => PuckTypeDecl, _}
-
 import JastaddGraphBuilder.{qualifierIsSuperAccess, qualifierIsThisAccess}
+import puck.PuckError
 /**
   * Created by Loïc Girault on 05/04/16.
   */
@@ -81,9 +81,11 @@ trait TypeUsage {
           }
       }
       catch {
-        case _: Error =>
-          throw new NoTypeUser(access.prettyPrint() + "(" + access.getClass + ") in " +
-            access.compilationUnit().pathName() + " " + access.location())
+        case e: PuckError =>
+          throw e
+//        case e =>
+//          throw new NoTypeUser(s"${access.prettyPrint()}($access) in " +
+//            s"${access.compilationUnit().pathName()} ${access.location()} (${e.getMessage})")
       }
     }
   }
@@ -236,7 +238,8 @@ trait TypeUsage {
       println("Access.constraintTypeUses with Anonymous Class not handled yet !")
     else lvalueType match {
       case lvalueParType : ParTypeDecl =>
-        constraintParTypeUses(lvalue, lvalueParType, rvalue.lastAccess())
+        if(lvalueParType.isRawType) println(s"Raw ParType at ${rvalue.fullLocation()} : no type constraint generated")
+        else constraintParTypeUses(lvalue, lvalueParType, rvalue.lastAccess())
       case _  if rvalue.isSubstitute =>
         val tms = rvalue.accessed().asInstanceOf[TypeMemberSubstitute]
         tms.getOriginalType match {
@@ -262,16 +265,19 @@ trait TypeUsage {
     if(!rvalue.`type`().isInstanceOf[ParTypeDecl])
       println("Access.constraintTypeUses this.type() " +
         "not instanceof ParTypeDecl  : TODO !!!")
-    else {
-      val rValueType = rvalue.`type`().asInstanceOf[ParTypeDecl]
-      if(rValueType.numTypeParameter() != lvalueType.numTypeParameter())
+    else  rvalue.`type`() match {
+      case rvalueType : ParTypeDecl if rvalueType.isRawType =>
+        println("raw rvalue type, type constraint not generated")
+      case rvalueType : ParTypeDecl =>
+
+      if(rvalueType.numTypeParameter() != lvalueType.numTypeParameter())
         println("Access.constraintTypeUses " +
-          "rValueType.getNumArgument() != lValueType.getNumArgument()  : TODO !!!")
+          "rvalueType.getNumArgument() != lValueType.getNumArgument()  : TODO !!!")
       else {
         //Hypothesis : argument are in same order  C<B,A> extends I<A,B> kind of case not handled
         val rvalueNode = this buildNode rvalue
         addTypeUsesConstraint((lvalue, this buildNode lvalueType.genericDecl()),
-          Sub( (rvalueNode, this buildNode rValueType.genericDecl()) ))
+          Sub( (rvalueNode, this buildNode rvalueType.genericDecl()) ))
 
         def normalizeTypeDecl(t : TypeDecl) : TypeDecl = t match {
           case _ : WildcardType => rvalue.program().typeObject()
@@ -285,26 +291,95 @@ trait TypeUsage {
         Range(0, lvalueType.numTypeParameter()).foreach {
           i =>
             val lvalueArg = normalizeTypeDecl(lvalueType.getParameterization.getArg(i))
-            val rvalueArg = normalizeTypeDecl(rValueType.getParameterization.getArg(i))
+            val rvalueArg = normalizeTypeDecl(rvalueType.getParameterization.getArg(i))
+            if(lvalueArg.isObject)
+              System.err.println(rvalue.fullLocation() + " lvalue object as type argument not constrained")
+            else {
+              import puck.graph.ShowDG._
+              val tvValueId = {
+                val lid = buildNode(lvalueArg)
+                val rid = buildNode(rvalueArg)
+                if (lid != rid) {
+                  println(lvalueType.asInstanceOf[DGNamedElement].dgFullName())
+                  Range(0, lvalueType.numTypeParameter()).foreach {
+                    i => println("->" + lvalueType.getParameterization.getArg(i).dgFullName())
+                  }
+                  println(rvalueType.asInstanceOf[DGNamedElement].dgFullName())
+                  Range(0, lvalueType.numTypeParameter()).foreach {
+                    i => println("->" + rvalueType.getParameterization.getArg(i).dgFullName())
+                  }
+                  puck.error(lvalueArg.fullLocation() + " " + lvalueArg.getClass +
+                    (g, lid).shows(desambiguatedFullName) + "!=" + (g, lid).shows(desambiguatedFullName))
+                }
+                lid
+              }
 
-            val tvValueId = {
-              val lid = buildNode(lvalueArg)
-              val rid = buildNode(rvalueArg)
-              if(lid != rid) error()
-              lid
+              val tv: TypeVariable = rvalueArg match {
+                case tv: TypeVariable => tv
+                case _ => rvalueType.genericDecl().asInstanceOf[GenericTypeDecl].getTypeParameter(i)
+              }
+
+              findTypeVariableInstanciator(tv, lvalueArg, rvalue) foreach (
+                e =>
+                  addTypeUsesConstraint((lvalue, tvValueId), Eq((e buildNode this, tvValueId))))
             }
-
-            val tv : TypeVariable = rvalueArg match {
-              case tv : TypeVariable => tv
-              case _ => rValueType.genericDecl().asInstanceOf[GenericTypeDecl].getTypeParameter(i)
-            }
-
-            findTypeVariableInstanciator(tv, lvalueArg, rvalue) foreach (
-              e =>
-                addTypeUsesConstraint((lvalue, tvValueId), Eq((e buildNode this, tvValueId))) )
         }
       }
     }
 
+
+  def normalizeAccessAndApply
+  (f : Access => Unit,
+   default : Expr => Unit) : PartialFunction[Expr, Unit] = {
+    case a : Access => f(a)
+    case p : ParExpr => normalizeAccessAndApply(f, default)(p.getExpr)
+    case ce : ConditionalExpr =>
+      normalizeAccessAndApply(f,default)(ce.getFalseExpr)
+      normalizeAccessAndApply(f,default)(ce.getTrueExpr)
+    case a : AssignSimpleExpr => a.getSource
+      normalizeAccessAndApply(f,default)(a.getSource)
+      normalizeAccessAndApply(f,default)(a.getDest)
+    case ace : ArrayCreationExpr =>
+      System.err.println("type constraint, ArrayCreationExpr not handled")
+    case (_ : Binary | _ : Unary)=>
+      System.err.println("type constraint, Unary or Binary expr not handled")
+    case _: Literal | _ : CastExpr  => ()
+    case e => default(e)
+  }
+
+  private def putConstraintOnArg_common[T](f : PartialFunction[(T,Access), Unit])
+                                          (p : (T, Expr) ) : Unit = {
+    val (t, argValue) = p
+
+    normalizeAccessAndApply(
+      a => f((t, a)),
+      arg => throw new DGBuildingError(s"Access expected but found : $arg")
+    )(argValue)
+
+  }
+
+  protected val putConstraintOnArg: ((ParameterDeclaration, Expr)) => Unit =
+    putConstraintOnArg_common[ParameterDeclaration] {
+      case (param, arg: Access) =>
+        val paramId = this buildNode param
+        constraintTypeUses(paramId, param.`type`(), arg)
+    } _
+  protected def putConstraintOnSubstitutedArg(ma : MethodAccess): (((ParameterDeclaration,ParameterDeclaration), Expr)) => Unit =
+    putConstraintOnArg_common[(ParameterDeclaration,ParameterDeclaration)] {
+      case ((genParam, substituteParam), arg: Access) =>
+        val paramId = this buildNode genParam
+
+        (genParam.`type`(), substituteParam.`type`()) match {
+          case (tv : TypeVariable, tvValue) =>
+            findTypeVariableInstanciator(tv, tvValue, ma)  foreach (
+              e => constraintTypeUses(e buildNode this, tvValue, arg) )
+
+          case (genT, subT) if genT == subT =>
+            constraintTypeUses(paramId, genT, arg)
+          case (genT, subT) =>
+            System.err.println(s"(genT = ${genT.name()}, subT = ${subT.name()}) arg type constraint unhandled case")
+        }
+
+    } _
 
 }

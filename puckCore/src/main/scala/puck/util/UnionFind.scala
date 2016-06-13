@@ -98,7 +98,7 @@ class UnionFind[T](all: Iterable[T]) {
     var set = new HashSet[T]
     set = set + e
 
-    def add(elem: T) {
+    def add(elem: T) : Unit = {
       set = set + elem
     }
 

@@ -86,22 +86,24 @@ object TestUtils {
     case LoggedEither(_, \/-(g))  +: _ => Some(g)
   }
 
-  def printLCOM(g : DependencyGraph) : Unit = {
-
-    def p[T](metric : (DependencyGraph, NodeId) => T, avg : Seq[T] => Double) : Unit = {
+  def printMetrics(g : DependencyGraph) : Unit = {
+    println(s"############################################")
+    println(s"############################################")
+    def p[T](name : String, metric : (DependencyGraph, NodeId) => T, avg : Seq[T] => Double) : Unit = {
+      println(s"******\t$name\t******")
       val lcoms = apply_metric_on_types(metric, g, Seq("@primitive", "java"))
       println(lcoms mkString "\n")
       println("average = " + avg(lcoms.map(_._2)))
     }
+    p("LCOM", LCOM, averageI)
 
-    println("LCOM")
-    p(LCOM, averageI)
-    println("LCOM hs")
-    p(LCOM_hs, averageD)
+    p("LCOM hs", LCOM_hs, averageD)
 
-    println("LCOM4")
-    p(LCOM4, averageI)
+    p("LCOM4", LCOM4, averageI)
 
+    p("CBO", CBO, averageI)
+
+    println()
   }
 
 }

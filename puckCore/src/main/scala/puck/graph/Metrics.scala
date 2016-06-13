@@ -295,8 +295,6 @@ object Metrics {
     components.size
   }
 
-
-
   def averageI(ds : Seq[Int]) : Double =
     if(ds.isEmpty) 0
     else ds.sum.toDouble / ds.size
@@ -353,6 +351,13 @@ object Metrics {
     else 0
   }
 
+  // define in "A Metrics Suite for Object Oriented Design" - Chidamber & Kemerer - TSE 1994
+  def CBO(g : DependencyGraph, tid :NodeId) : Int ={
+    val (ps, cs) = providersAndClients(g, tid)
+    val duplicate = ps intersect cs
+    ps.size + cs.size - duplicate.size
+  }
+
   // Hitz & Montazeri - Measuring Coupling and cohesion in object oriented system
   def LCOM4(g : DependencyGraph, tid : NodeId): Int = {
     val childrens = g.content(tid)
@@ -363,21 +368,23 @@ object Metrics {
 
     val uf = new UnionFind(childrens)
 
-    def dfs(n : NodeId) : Unit =
+    def dfs(n : NodeId, usedByUsers : Set[NodeId]) : Unit =
+      if(!(usedByUsers contains n))//prevent uses cycles
       g.definitionOf(n) foreach {
         ndef =>
-        g.usedBy(ndef).foreach{
+        val usedBy = g.usedBy(ndef)
+          usedBy.foreach {
           used =>
             if(childrens contains used) {
               if (!uf.find(n, used))
                 uf.union(n, used)
 
-              dfs(used)
+              dfs(used, usedBy ++ usedByUsers)
             }
         }
       }
 
-    roots foreach dfs
+    roots foreach (dfs(_, Set()))
 
     uf.size
   }
@@ -387,7 +394,6 @@ object Metrics {
     val m = DependencyGraph.splitByKind (g, g.content(tid).toSeq)
     val fields =  m.getOrElse("Field", Seq())
 
-    println(m)
     val methods =
       m.getOrElse("StaticMethod", Seq()) ++
         m.getOrElse("AbstractMethod", Seq()) ++
@@ -402,6 +408,8 @@ object Metrics {
     (((fields map usersOf).sum.toDouble / fields.size) - numMethods) / ( 1 - numMethods)
 
   }
+
+
 
 
 }

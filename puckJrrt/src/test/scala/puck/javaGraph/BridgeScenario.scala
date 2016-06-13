@@ -236,17 +236,17 @@ class BridgeManualRefactoringSpec extends FeatureSpec {
   scenario("bridge ``manual'' refactoring"){
     val bs = BridgeScenario()
 
-    import puck.TestUtils.printLCOM
-    printLCOM(bs.graph)
+    import puck.TestUtils.printMetrics
 
     puck.Quick.dot(bs.graph, "/tmp/bridge.dot")(ExtendJGraphUtils.dotHelper)
 
     val recompiledEx = bs.applyChangeAndMakeExample(bs.gFinal, outDir)
 
-    val g = bs.gFinal
-    val g2 =  recompiledEx.graph
+    println("original")
+    printMetrics(bs.graph)
+    println("transformed")
+    printMetrics(bs.gFinal)
 
-    printLCOM(g)
     assert( Mapping.equals(bs.gFinal, recompiledEx.graph) )
 
   }

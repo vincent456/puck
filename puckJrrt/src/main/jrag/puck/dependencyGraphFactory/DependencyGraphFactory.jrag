@@ -32,6 +32,10 @@ import puck.graph.DGBuildingError;
 
 aspect DependencyGraphFactory {
 
+	public String ASTNode.fullLocation(){
+		return compilationUnit().pathName() + " line " + location();
+	}
+
 	void ASTNode.buildDGInChildren(JastaddGraphBuilder builder, int containerId){
 		for(int i=0; i< getNumChild(); i++){
 			getChild(i).buildDG(builder, containerId);

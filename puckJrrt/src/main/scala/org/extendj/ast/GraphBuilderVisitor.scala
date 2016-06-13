@@ -26,7 +26,9 @@
 
 package org.extendj.ast
 
+import puck.PuckError
 import puck.graph.{Uses, _}
+import puck.gui.PuckEvent
 
 import scala.collection.JavaConversions._
 /**
@@ -50,6 +52,7 @@ trait GraphBuilderVisitor {
   def buildTypeVariables(tid : NodeId, gtd : GenericTypeDecl) : Unit =
     gtd.getTypeParameterList foreach (tv =>
       addEdge(ContainsParam(tid, this buildNode tv)))
+
 
 
 
@@ -92,14 +95,19 @@ trait GraphBuilderVisitor {
   }
 
   def buildDG(containerId : NodeId, expr : ClassInstanceExpr) : Unit = {
-    expr.getAccess match {
+    def onAccess(access : Access ) : Unit =
+      access match {
       case _ :TypeAccess => ()
       case pta : ParTypeAccess =>
         pta.getTypeArguments.foreach {
           ta => ta.buildDG(this, containerId)
         }
+      case d : AbstractDot => onAccess(d.getRight)
+      case _ => throw new DGBuildingError(s"ClassInstanceExpr access kind ${access.getClass} not handled " +
+        s"in ${access.compilationUnit().pathName()} line ${access.location()}")
     }
 
+    onAccess(expr.getAccess)
     expr.getArgList.buildDG(this, containerId)
     expr.getTypeDeclOpt.buildDG(this, containerId)
 
@@ -229,7 +237,7 @@ trait GraphBuilderVisitor {
 
 
 
-  def buildDG(containerId : NodeId, ma : MethodAccess) : Unit = {
+  def buildDG(containerId : NodeId, ma : MethodAccess) : Unit = if(ma.fromSource()){
     if(!ma.isSubstitute)
       ma.lock()
     val decls = ma.decls_keepMethodsInDifferentTypeHierarchy()
@@ -254,9 +262,14 @@ trait GraphBuilderVisitor {
         if(!decl.isStatic)
           buildTypeUse(ma, typeMemberUses)
 
-        if(! decl.isSubstitute)
+        if(! decl.isSubstitute) try
           decl.getParameterList.toList.zip(ma.getArgs.toList) foreach putConstraintOnArg
-         else {
+          catch {
+            case pe : PuckError =>
+
+              throw pe
+          }
+        else {
           val substitutedDecl = decl.asInstanceOf[MethodDeclSubstituted]
           val genDecl = substitutedDecl.sourceMethodDecl()
 
@@ -268,56 +281,25 @@ trait GraphBuilderVisitor {
     }
   }
 
-  private def putConstraintOnArg_common[T](f : PartialFunction[(T,Access), Unit])
-                                     (p : (T, Expr) ) : Unit = {
-    val (t, argValue) = p
-    argValue match {
-      case a: Access => f((t, a))
-      case ae: Binary =>
-        System.err.println("parameter type constraint, Binary case not handled")
-      case _: Literal | _ : CastExpr  => ()
-      case arg => throw new DGBuildingError(s"Access expected but found : $arg")
-    }
-  }
 
-  private val putConstraintOnArg: ((ParameterDeclaration, Expr)) => Unit =
-    putConstraintOnArg_common[ParameterDeclaration] {
-      case (param, arg: Access) =>
-        val paramId = this buildNode param
-        constraintTypeUses(paramId, param.`type`(), arg)
-    } _
-  private def putConstraintOnSubstitutedArg(ma : MethodAccess): (((ParameterDeclaration,ParameterDeclaration), Expr)) => Unit =
-    putConstraintOnArg_common[(ParameterDeclaration,ParameterDeclaration)] {
-      case ((genParam, substituteParam), arg: Access) =>
-        val paramId = this buildNode genParam
-
-        (genParam.`type`(), substituteParam.`type`()) match {
-          case (tv : TypeVariable, tvValue) =>
-            findTypeVariableInstanciator(tv, tvValue, ma)  foreach (
-              e => constraintTypeUses(e buildNode this, tvValue, arg) )
-
-          case (genT, subT) if genT == subT =>
-            constraintTypeUses(paramId, genT, arg)
-          case (genT, subT) =>
-            System.err.println(s"(genT = ${genT.name()}, subT = ${subT.name()}) arg type constraint unhandled case")
-        }
-
-    } _
 
 
   def buildDG(containerId : NodeId, rs : ReturnStmt) : Unit = {
     rs.buildDGInChildren(this, containerId)
-    rs.getResult match {
-      case a : Access =>
+    if(rs.fromSource()) normalizeAccessAndApply (
+      {a =>
         val methodNode = this buildNode rs.hostBodyDecl()
         val astType = rs.hostBodyDecl().asInstanceOf[MethodDecl].`type`()
-        constraintTypeUses(methodNode, astType, a.lastAccess())
+        constraintTypeUses(methodNode, astType, a.lastAccess())},
+      {
+        case null =>()
+        // empty return. Since the code compiles, it is well typed and
+        // it means the return type is void and no constraint is needed
+        case e => throw new DGBuildingError(s"buildDG ReturnStmt case not expected : $e " +
+          rs.compilationUnit().pathName() + " line " + rs.location())
+      }
 
-      case ae: Binary =>
-        System.err.println("parameter type constraint, Binary case not handled")
-      case _ : Literal | _ : CastExpr=> ()
-      case resExpr => throw new DGBuildingError("buildDG ReturnStmt case not expected : " + resExpr)
-    }
+      )(rs.getResult)
 
   }
 

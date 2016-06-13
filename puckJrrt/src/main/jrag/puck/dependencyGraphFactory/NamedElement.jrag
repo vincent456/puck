@@ -128,7 +128,7 @@ aspect NamedElement {
     GenericClassDeclSubstituted implements TypeDeclSubstitute;
     GenericInterfaceDeclSubstituted implements TypeDeclSubstitute;
 
-    ConstructorDeclSubstituted implements Substitute;
+    ConstructorDeclSubstituted implements TypeMemberSubstitute;
     FieldDeclarationSubstituted implements TypeMemberSubstitute;
     MethodDeclSubstituted implements TypeMemberSubstitute;
 

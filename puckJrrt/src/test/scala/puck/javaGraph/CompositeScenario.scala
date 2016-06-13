@@ -112,6 +112,13 @@ class CompositeManualRefactoringSpec
   scenario("composite ``manual'' refactoring"){
     val bs = CompositeScenario()
 
+    import puck.TestUtils._
+
+    println("original")
+    printMetrics(bs.graph)
+    println("transformed")
+    printMetrics(bs.gFinal)
+
     val recompiledEx = bs.applyChangeAndMakeExample(bs.gFinal, outDir)
 
     assert( Mapping.equals(bs.gFinal, recompiledEx.graph) )

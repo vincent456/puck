@@ -26,9 +26,9 @@
 
 package puck.search
 
+import puck.PuckError
 import puck.graph.{Error, LoggedTry, error}
 import puck.util.Logged
-
 
 import scalaz.{-\/, \/-}
 
@@ -45,7 +45,7 @@ class SearchState[T]
       case -\/(err) => error("state contains a failed result : " + err.getMessage)
   }
 
-  def fail : Logged[Error] = loggedResult.value match {
+  def fail : Logged[PuckError] = loggedResult.value match {
     case -\/(err) => err set loggedResult.log
     case _ => error("state contains a success")
   }
