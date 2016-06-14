@@ -44,11 +44,17 @@ class DGCanvas
   import control.graphStack.graph
 
   val menuBuilder = PiccoloNodeMenu(control,nodeKindIcons)
-  val register = new Register()
+
   val nodeLayer = getLayer
   val edgeLayer = new PLayer()
+  getRoot.addChild(edgeLayer)
+
+  val register = new Register(control, edgeLayer)
 
 
+
+  getRoot.addAttribute("control", control)
+  getRoot.addAttribute("register", register)
 
   getCamera.addLayer(0, edgeLayer)
 
@@ -98,10 +104,6 @@ class DGCanvas
 
   import puck.graph.Recording.RecordingOps
   def pushEvent(newGraph: DependencyGraph, oldGraph : DependencyGraph) : Unit = {
-    //    println("MutableTreeModel.pushEvent")
-    //    println(s"oldGraph = $oldGraph")
-    //    println(s"graph = $graph")
-
     //assert(oldGraph eq graph)
     val subRec : Recording = newGraph.recording.subRecordFromLastMilestone.reverse
     applyRec(newGraph, oldGraph, subRec)
@@ -144,16 +146,7 @@ class DGCanvas
     n.toPNode.setParent(null)
 
   def expand(n : DGPNode) : Unit = addContent(n)
-  def collapse(n : DGExpandableNode) : Unit = {
-      val newValue = ! n.getChild(0).getVisible
-      n.fullContent.foreach {
-        c =>
-          val en = c.asInstanceOf[DGExpandableNode]
-          en.usedBy.foreach(_.delete())
-          en.usesOf.foreach(_.delete())
-      }
-      n.clearContent()
-    }
+  def collapse(n : DGExpandableNode) : Unit =  n.clearContent()
 
   def expandAll(n : DGPNode) : Unit =
     addContent(n) foreach expandAll
@@ -169,38 +162,13 @@ class DGCanvas
   }
 
   def addIncommingUses(n : DGExpandableNode ): Unit = {
-    graph.usersOf(n.id) map (register.firstVisible(_, graph)) foreach {
-      user=>
-//        import puck.graph.ShowDG._
-//        (graph, (user.id, n.id)).println
-        Swing.onEDT{
-          val e = new PUses(user, n)
-          if(!(n.usedBy contains e)) {
-            n.usesOf += e
-            user.usedBy += e
-            edgeLayer addChild e
-            e.repaint()
-          }
-        }
-    }
+    val uses = for(user <- graph.usersOf(n.id)) yield (user, n.id)
+    register addUses uses
   }
 
   def addOutgoingUses(n : DGExpandableNode ): Unit = {
-    graph.usedBy(n.id) map (register.firstVisible(_, graph)) foreach {
-      used =>
-        //        import puck.graph.ShowDG._
-        //        (graph, (n.id, used.id)).println
-
-        Swing.onEDT {
-          val e = new PUses(n, used)
-          if(!(n.usedBy contains e)) {
-            n.usedBy += e
-            used.usesOf += e
-            edgeLayer addChild e
-            e.repaint()
-          }
-        }
-    }
+    val uses = for(used <- graph.usedBy(n.id)) yield (n.id, used)
+    register addUses uses
   }
 
 }

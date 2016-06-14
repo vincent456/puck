@@ -35,18 +35,7 @@ import ShowDG._
 import puck.PuckError
 
 import scalaz._
-sealed trait CreateVarStrategy {
-  def apply ( g : DependencyGraph, oldTu : NodeIdP, newTu : NodeId, tmUses : Set[NodeIdP] ) : LoggedTG
-}
-case object CreateParameter extends CreateVarStrategy {
-  def apply ( g : DependencyGraph, oldTu : NodeIdP, newTu : NodeId, tmUses : Set[NodeIdP] ) : LoggedTG =
-    Move.createParam(g,oldTu, newTu, tmUses)
 
-}
-case class CreateTypeMember(kind : NodeKind) extends CreateVarStrategy {
-  def apply ( g : DependencyGraph, oldTu : NodeIdP, newTu : NodeId, tmUses : Set[NodeIdP] ) : LoggedTG =
-    Move.createTypeMember(g, oldTu, newTu, tmUses, kind)
-}
 
 object Move {
 

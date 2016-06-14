@@ -28,49 +28,42 @@ package puck.piccolo
 
 import java.beans.{PropertyChangeEvent, PropertyChangeListener}
 
-import puck.graph.{DependencyGraph, _}
+import org.piccolo2d.PLayer
+import puck.graph.{_}
+import puck.gui.PuckControl
 
 import scala.collection.mutable
 
 /**
   * Created by Loïc Girault on 31/05/16.
   */
-class Register {
-  val visibleContent = new mutable.HashMap[NodeId, DGPNode]()
-  val invisibleContent = new mutable.HashMap[NodeId, DGPNode]()
+class Register(control : PuckControl, edgeLayer : PLayer) {
+  val visibleContent = new mutable.HashMap[NodeId, DGExpandableNode]()
+  val invisibleContent = new mutable.HashMap[NodeId, DGExpandableNode]()
 
   val usesMap = new scala.collection.mutable.HashMap[NodeIdP, PUses]
 
-  def +=(kv : (NodeId, DGPNode)) = {
+  def +=(kv : (NodeId, DGExpandableNode)) = {
     invisibleContent -= kv._1
     visibleContent += kv
   }
 
-//  def -=(k : (NodeId, DGPNode)) = {
-//    invisibleContent += k
-//    visibleContent -= k._1
-//
-//  }
-//  def -=(k : NodeId) = {
-//    visibleContent get k foreach {
-//      v => invisibleContent += (k -> v)
-//    }
-//    visibleContent -= k
-//  }
+  import control.graph
 
-  def firstVisible(nid : NodeId, g : DependencyGraph) : DGPNode =
+
+  def firstVisible(nid : NodeId) : DGExpandableNode =
     visibleContent get nid match {
       case Some(n) => n
-      case None => firstVisible(g container_! nid, g)
+      case None => firstVisible(graph container_! nid)
     }
 
-  def get(nid : NodeId) : Option[DGPNode] =
+  def get(nid : NodeId) : Option[DGExpandableNode] =
     invisibleContent get nid match {
       case s @ Some(_) => s
       case None => visibleContent get nid
     }
 
-  def getOrElse(nid : NodeId, t : => DGPNode) : DGPNode =
+  def getOrElse(nid : NodeId, t : => DGExpandableNode) : DGExpandableNode =
     invisibleContent.getOrElse(nid,
       visibleContent.getOrElse(nid, t))
 
@@ -78,18 +71,28 @@ class Register {
   val  parentPropertyListener =
     new PropertyChangeListener() {
     def propertyChange(evt: PropertyChangeEvent): Unit = {
-      val src = evt.getSource.asInstanceOf[DGPNode]
+      val src = evt.getSource.asInstanceOf[DGExpandableNode]
       if(evt.getNewValue == null) {
-        //Register.this -= (src.id -> src)
         invisibleContent += (src.id -> src)
         visibleContent -= src.id
       }
       else
         Register.this += (src.id -> src)
-
     }
   }
 
+  def addUses(uses : Iterable[NodeIdP]) : Unit =
+  uses map {case u @ (user,used) =>
+    ((firstVisible(user), firstVisible(used)), u)
+  } groupBy( _._1) foreach {
+    case ((visiblePUser, visiblePUsed), it) =>
+      val puse = usesMap.getOrElse((visiblePUser.id, visiblePUsed.id),
+          PUses(visiblePUser, visiblePUsed, edgeLayer))
+
+      val groupedUses = (it map (_._2)).toList
+      println((visiblePUser.id -> visiblePUsed.id)+".usesSet ++= "+ groupedUses)
+      puse.usesSet ++= groupedUses
+  }
 
 
 }

@@ -48,9 +48,6 @@ trait DGPNode {
   this : PNode =>
   def id : NodeId
 
-  def usedBy : mutable.Buffer[PUses]
-  def usesOf : mutable.Buffer[PUses]
-
   def addContent(child : DGPNode) : Unit
   def rmContent(child : DGPNode) : Unit
   def content : Iterable[DGPNode]

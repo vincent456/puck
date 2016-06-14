@@ -26,11 +26,11 @@
 
 package puck.piccolo.util
 
-import java.awt.{Color, Paint}
+import java.awt.{Color, Font, Paint, Stroke}
 import java.awt.geom.{Path2D, Point2D}
 
 import org.piccolo2d.extras.nodes.{PComposite, PLine}
-import org.piccolo2d.nodes.PPath
+import org.piccolo2d.nodes.{PPath, PText}
 
 /**
   * Created by Loïc Girault on 01/06/16.
@@ -114,10 +114,20 @@ class Arrow(source : P, target : P, headStyle : HeadStyle) extends PComposite {
     val (p2, p3) = arrowBaseHeadCoordinates
     val h = PPath.createPolyline(Array(p1.point, p2.point, p3.point))
     h.setPaint(paint)
-
     h
   }
 
+
+  def addLabel(text : String): Unit ={
+    val center = getBounds.getCenter2D
+    val pt = new PText(text) {
+      setFont(new Font("SansSerif", Font.PLAIN, 12))
+    }
+    this.addChild(pt)
+    val x = center.getX - pt.getFullBounds.width / 2
+    val y = center.getY - pt.getFullBounds.height / 2
+    pt.offset(x, y)
+  }
 
   val head = headStyle match {
     case FullTriangle => triangle(Color.BLACK)
@@ -129,7 +139,10 @@ class Arrow(source : P, target : P, headStyle : HeadStyle) extends PComposite {
     line setPaint newPaint
     head setPaint newPaint
   }
-
+  def setStrokePaint(newPaint : Paint) : Unit = {
+    line setStrokePaint newPaint
+    head setStrokePaint newPaint
+  }
 
   addChild(line)
   addChild(head)

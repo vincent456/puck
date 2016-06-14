@@ -35,7 +35,7 @@ import puck.graph.NodeId
 import puck.piccolo.util.{DecoratorGroup, IdIconTextNode}
 
 import scala.collection.mutable
-
+import scala.collection.JavaConversions._
 /**
   * Created by Loïc Girault on 31/05/16.
   */
@@ -52,7 +52,7 @@ class DGExpandableNode
       var xOffset = 0d
       var yOffset = 0d
       var refHeight = 0d
-      import scala.collection.JavaConversions._
+
       val it  = getChildrenIterator.asInstanceOf[jutil.ListIterator[PNode]]
 
       it.zipWithIndex.foreach {
@@ -71,11 +71,8 @@ class DGExpandableNode
           xOffset += n.getFullBounds.getWidth + padding
       }
     }
-
+    //setPropertyChangeParentMask(getPropertyChangeParentMask | PNode.PROPERTY_CODE_FULL_BOUNDS)
   }
-
-  val usedBy = mutable.ListBuffer[PUses]()
-  val usesOf = mutable.ListBuffer[PUses]()
 
   super.addChild(titlePnode)
   super.addChild(body)
@@ -83,25 +80,54 @@ class DGExpandableNode
   titlePnode.setOffset(margin, margin)
   body.setOffset(margin+padding, titlePnode.getFullBounds.getHeight + margin * 2)
 
+//  def addChilrenEventPropagator(propertyName : String,
+//                                propertyCode : Int): Unit ={
+//    this.addPropertyChangeListener(propertyName,
+//      new PropertyChangeListener() {
+//        def propertyChange(evt: PropertyChangeEvent): Unit = {
+//          val it  = body.getChildrenIterator.asInstanceOf[jutil.ListIterator[DGExpandableNode]]
+//          it.foreach ( _.firePropertyChange(propertyCode, propertyName, null, null) )
+//        }
+//      })
+//  }
+//  addChilrenEventPropagator(PNode.PROPERTY_FULL_BOUNDS, PNode.PROPERTY_CODE_FULL_BOUNDS)
+  this.addPropertyChangeListener(PNode.PROPERTY_FULL_BOUNDS,
+    new PropertyChangeListener() {
+      def propertyChange(evt: PropertyChangeEvent): Unit = {
+        val it  = body.getChildrenIterator.asInstanceOf[jutil.ListIterator[DGExpandableNode]]
+        it.foreach {
+          child =>
+            child.firePropertyChange(PNode.PROPERTY_CODE_FULL_BOUNDS,
+              PNode.PROPERTY_FULL_BOUNDS, null, null)
+        }
+      }
+    })
 
-  def addContent(child : DGPNode) : Unit = {
+  this.addPropertyChangeListener(PNode.PROPERTY_PARENT,
+    new PropertyChangeListener() {
+      def propertyChange(evt: PropertyChangeEvent): Unit = {
+        val isVisible = evt.getNewValue != null
+        DGExpandableNode.this.setVisible(isVisible)
+      }
+    })
+
+  this.addPropertyChangeListener(PNode.PROPERTY_VISIBLE,
+    new PropertyChangeListener() {
+      def propertyChange(evt: PropertyChangeEvent): Unit = {
+        val it  = body.getChildrenIterator.asInstanceOf[jutil.ListIterator[DGExpandableNode]]
+        it.foreach {
+          child =>
+            child.firePropertyChange(PNode.PROPERTY_CODE_VISIBLE,
+              PNode.PROPERTY_VISIBLE, null, evt.getNewValue)
+        }
+      }
+    })
+
+
+  def addContent(child : DGPNode) : Unit =
     body addChild child.toPNode
 
 
-//    child.toPNode.getClientProperties.
-//      addAttribute(DGPNode.ATTRIBUTE_CONTAINER, this)
-
-    this.addPropertyChangeListener(PNode.PROPERTY_FULL_BOUNDS,
-      new PropertyChangeListener() {
-        def propertyChange(evt: PropertyChangeEvent): Unit = {
-          child.asInstanceOf[DGExpandableNode].
-            firePropertyChange(PNode.PROPERTY_CODE_FULL_BOUNDS,
-              PNode.PROPERTY_FULL_BOUNDS, null,
-              child.toPNode.getFullBounds)
-        }
-      })
-
-  }
   def rmContent(child : DGPNode) : Unit =
     body removeChild child.toPNode
 

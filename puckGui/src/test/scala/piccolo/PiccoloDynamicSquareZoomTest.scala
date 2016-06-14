@@ -59,10 +59,6 @@ class TitledGridSquareDGPNode
   //global bounds used by edges as referential for source and target coordinates
   override def arrowGlobalBounds: PBounds = ???
 
-  override def usedBy: mutable.Buffer[PUses] = ???
-
-  override def usesOf: mutable.Buffer[PUses] = ???
-
   override def rmContent(child: DGPNode): Unit = ???
 }
 
