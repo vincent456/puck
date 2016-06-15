@@ -31,7 +31,6 @@ import scala.collection.mutable
 
 class BreadthFirstSearchStrategy[T] extends SearchStrategy[T] {
 
-
   val remainingStates = mutable.Queue[SearchState[T]]()
 
   def addState(s : SearchState[T]) : Unit = remainingStates enqueue s

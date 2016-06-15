@@ -118,7 +118,6 @@ package object graph {
   val notMutable = false
 
   type DecoratedGraph[T] = (DependencyGraph, T)
-  type OneStepResult = DecoratedGraph[AutomataState]
   type SResult = DecoratedGraph[Option[(ConcreteNode, AutomataState)]]
 
 

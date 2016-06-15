@@ -33,9 +33,14 @@ import javax.swing.filechooser.FileNameExtensionFilter
 
 import puck.Project
 import puck.config.{Config, ConfigWriter}
+import puck.graph.{DecoratedGraph, DependencyGraph, Metrics}
+import puck.graph.constraints.ConstraintsMaps
+import puck.graph.constraints.search.{BlindControl, ControlWithHeuristic, DecoratedGraphEvaluator}
 import puck.graph.io.{DotPrinter, VisibilitySet}
 import puck.gui.svg.SVGViewHandler
+import puck.gui.svg.actions.AutoSolveAction
 import puck.piccolo.PiccoloViewHandler
+import puck.search._
 
 import scala.swing._
 import scala.swing.SequentialContainer.Wrapper
@@ -253,9 +258,64 @@ class PuckInterfacePanel
             publisher publish SwitchView(selection.item)
         }
 
-      }.leftGlued
+      }
 
 
+    type ControlBuilder = (DependencyGraph, ConstraintsMaps) => SearchControl[DecoratedGraph[Any]]
+    type StrategyBuilder = (DependencyGraph => Double) => SearchStrategy[DecoratedGraph[Any]]
+
+
+    import control.graphUtils
+    val controlCB = new ComboBox[ControlBuilder](List(
+      new ((DependencyGraph, ConstraintsMaps) => SearchControl[DecoratedGraph[Any]]) {
+        override val toString = "Blind control"
+        def apply(dg : DependencyGraph, cm : ConstraintsMaps) =
+          new BlindControl(graphUtils.Rules, dg, cm, graphUtils.violationsKindPriority).
+            asInstanceOf[SearchControl[DecoratedGraph[Any]]]
+      },
+      new ((DependencyGraph, ConstraintsMaps) => SearchControl[DecoratedGraph[Any]]) {
+        override val toString = "Control with Heuristic"
+        def apply(dg : DependencyGraph, cm : ConstraintsMaps) =
+          new ControlWithHeuristic(graphUtils.Rules, dg, cm, graphUtils.violationsKindPriority).
+            asInstanceOf[SearchControl[DecoratedGraph[Any]]]
+      }
+    )) {
+      minimumSize = new Dimension(leftWidth, 30)
+      maximumSize = minimumSize
+      preferredSize = minimumSize
+    }
+
+    val strategyCB =  new ComboBox(List[StrategyBuilder](
+      new ((DependencyGraph => Double) => SearchStrategy[DecoratedGraph[Any]]) {
+        override val toString = "Depth-first Strategy"
+        def apply(f : (DependencyGraph => Double)) = new DepthFirstSearchStrategy()
+      },
+      new ((DependencyGraph => Double) => SearchStrategy[DecoratedGraph[Any]]) {
+        override val toString = "Breadth-first Strategy"
+        def apply(f : (DependencyGraph => Double)) = new BreadthFirstSearchStrategy()
+      },
+      new ((DependencyGraph => Double) => SearchStrategy[DecoratedGraph[Any]]) {
+        override val toString = "A* Strategy"
+        def apply(f : (DependencyGraph => Double)) = new AStarSearchStrategy(DecoratedGraphEvaluator.equalityByMapping(f))
+      }
+    )) {
+      minimumSize = new Dimension(leftWidth, 30)
+      maximumSize = minimumSize
+      preferredSize = minimumSize
+    }
+
+    contents += controlCB
+    contents += strategyCB
+    contents += makeButton("Search", ""){
+      () =>
+        control.constraints foreach {
+          cm =>
+            val s = strategyCB.selection.item(Metrics.fitness1(_, cm))
+            val c = controlCB.selection.item(control.graph, cm)
+            new AutoSolveAction(control.Bus, cm, control.printingOptionsControl, s, c)(control.graphUtils).apply()
+        }
+
+    }
 
     contents += makeButton("Show recording", ""){
       control.printRecording

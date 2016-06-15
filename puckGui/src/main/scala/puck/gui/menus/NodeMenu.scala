@@ -34,7 +34,7 @@ import puck.actions._
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.transformations.rules.Redirection
-import puck.gui.svg.actions.{AutoSolveAction, Log}
+import puck.gui.svg.actions.{TargetedAutoSolveAction, Log}
 
 import scala.swing._
 
@@ -123,7 +123,7 @@ class ConcreteNodeMenu
       cm =>
         if ((graph, cm).isWronglyContained(node.id)
           || (graph, cm).isWronglyUsed(node.id)) {
-          contents += new AutoSolveAction(bus, cm, node, printingOptionsControl)
+          contents += new TargetedAutoSolveAction(bus, cm, node, printingOptionsControl)
         }
      }
     contents += new Separator()

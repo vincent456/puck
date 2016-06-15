@@ -49,7 +49,6 @@ class AStarSearchStrategy[T]
   maxSize : Int = 1000
   ) extends SearchStrategy[T] {
 
-
   implicit val SearchStateOrdering = AStarSearchStrategy.ordering(evaluator)
 
   // var remainingStates = new mutable.PriorityQueue[SearchState[T]]()(SearchStateOrdering.reverse)

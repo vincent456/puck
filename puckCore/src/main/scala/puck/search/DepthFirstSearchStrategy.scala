@@ -31,7 +31,6 @@ import scala.collection.mutable
 
 class DepthFirstSearchStrategy[T] extends SearchStrategy[T] {
 
-
   val remainingStates = mutable.Stack[SearchState[T]]()
 
   def addState(s : SearchState[T]) : Unit = ignore(remainingStates push s)

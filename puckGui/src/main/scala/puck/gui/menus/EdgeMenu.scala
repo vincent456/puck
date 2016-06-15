@@ -57,7 +57,7 @@ class EdgeMenu
       if((graph, cm).isViolation(edge)){
         val targetNode = graph.getConcreteNode(target)
         //add(new ManualSolveAction(publisher, targetNode))
-        contents += new AutoSolveAction(publisher, cm, targetNode, printingOptionsControl)
+        contents += new TargetedAutoSolveAction(publisher, cm, targetNode, printingOptionsControl)
       }
   }
 

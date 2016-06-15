@@ -29,7 +29,7 @@ package menus
 
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.{DependencyGraph, GraphUtils, NodeId}
-import puck.gui.svg.actions.AutoSolveAction
+import puck.gui.svg.actions.TargetedAutoSolveAction
 
 import scala.swing.{PopupMenu, Publisher}
 
@@ -47,6 +47,6 @@ class ViolationMenu
 
   val targetNode = graph.getConcreteNode(target)
   //add(new ManualSolveAction(publisher, targetNode))
-  contents += new AutoSolveAction(publisher, constraints, targetNode, printingOptionsControl)
+  contents += new TargetedAutoSolveAction(publisher, constraints, targetNode, printingOptionsControl)
 
 }

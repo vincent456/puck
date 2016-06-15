@@ -29,8 +29,9 @@ package puck.gui.svg.actions
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.constraints.search.TargetedControlWithHeuristic
+import puck.graph.io.VisibilitySet
 import puck.gui.PrintingOptionsControl
-import puck.search.{BreadthFirstSearchStrategy, Search, SearchEngine}
+import puck.search._
 import puck.util.Logged
 
 import scala.swing._
@@ -39,13 +40,69 @@ import scala.swing.Dialog.{Message, Options, Result}
 class AutoSolveAction
 ( publisher : Publisher,
   cm : ConstraintsMaps,
+  printingOptionsControl: PrintingOptionsControl,
+  strategy : SearchStrategy[DecoratedGraph[Any]],
+  control : SearchControl[DecoratedGraph[Any]])
+(implicit graphUtils: GraphUtils)
+  extends Action("Solve") {
+
+  implicit val graph = control.initialState.graph
+
+  private def dialog[T](res : Search[DecoratedGraph[T]]) : Option[Logged[DependencyGraph]] = {
+    val title = "Solve"
+
+    val confirm : Component => Result.Value =
+      c =>
+        Dialog.showConfirmation(null, c.peer, title, Options.OkCancel, Message.Plain)
+
+
+    val panel = new AutoSolveResultPanel(publisher, cm, VisibilitySet.allVisible(graph), printingOptionsControl, res)
+    confirm(panel) match {
+      case Result.Ok => Some( panel.selectedResult)
+      case Result.Cancel
+           | Result.Closed => None
+    }
+  }
+
+
+  override def apply(): Unit = {
+    val g = graph.mileStone
+
+    val engine =
+      new SearchEngine( strategy, control, Some(1)/*,
+        evaluator = Some(GraphConstraintSolvingStateEvaluator)*/)
+
+    engine.explore()
+
+    try {
+      puck.actions.printErrOrPushGraph(publisher, "Solve action : ") {
+        dialog(engine) match {
+          case Some(g) => g.toLoggedTry
+          case None => LoggedError("cancelled")
+        }
+      }
+    }
+    catch{
+      case t : Throwable =>
+        println("catched "+ t.getMessage)
+        t.printStackTrace()
+    }
+
+  }
+}
+
+
+
+class TargetedAutoSolveAction
+( publisher : Publisher,
+  cm : ConstraintsMaps,
   violationTarget : ConcreteNode,
   printingOptionsControl: PrintingOptionsControl)
 (implicit graph : DependencyGraph,
   graphUtils: GraphUtils)
   extends Action("Solve [BETA - under development]") {
 
-  private def dialog(res : Search[OneStepResult]) : Option[Logged[DependencyGraph]] = {
+  private def dialog[T](res : Search[DecoratedGraph[T]]) : Option[Logged[DependencyGraph]] = {
     val title = "Solve"
 
     val confirm : Component => Result.Value =
@@ -62,7 +119,7 @@ class AutoSolveAction
 //      }
 //    }
 //    else {
-    val panel = new AutosolveResultPanel(publisher, cm, violationTarget, printingOptionsControl, res)
+    val panel = AutoSolveResultPanel(publisher, cm, violationTarget, printingOptionsControl, res)
     confirm(panel) match {
         case Result.Ok => Some( panel.selectedResult)
         case Result.Cancel

@@ -119,12 +119,38 @@ trait GraphPanelResultPanel extends ResultPanel {
 }
 
 
-class AutosolveResultPanel
-( val publisher : Publisher,
-  val constraints : ConstraintsMaps,
+object AutoSolveResultPanel {
+  def apply[S]( publisher : Publisher,
+  constraints : ConstraintsMaps,
   violationTarget : ConcreteNode,
   printingOptionsControl: PrintingOptionsControl,
-  res : Search[OneStepResult])
+  res : Search[DecoratedGraph[S]])
+  ( implicit beforeGraph : DependencyGraph,
+    graphUtils : GraphUtils ) : AutoSolveResultPanel[S] = {
+    val visibilitySet = {
+
+      val users = beforeGraph.usersOf(violationTarget.id)
+
+      val targetAndAncestors =
+        beforeGraph.containerPath(violationTarget.id)
+
+      val vs = users.foldLeft(targetAndAncestors){
+        (s,id) => (beforeGraph.containerPath(id).toSet + id) ++: s
+      }
+
+      VisibilitySet.allHidden(beforeGraph).setVisibility(vs, Visible)
+
+    }
+    new AutoSolveResultPanel(publisher, constraints, visibilitySet, printingOptionsControl, res)
+  }
+}
+
+class AutoSolveResultPanel[S]
+( val publisher : Publisher,
+  val constraints : ConstraintsMaps,
+  val visibilitySet: VisibilitySet.T,
+  printingOptionsControl: PrintingOptionsControl,
+  res : Search[DecoratedGraph[S]])
 ( implicit val beforeGraph : DependencyGraph,
   val graphUtils : GraphUtils )
   extends SplitPane(Orientation.Horizontal)
@@ -135,20 +161,7 @@ class AutosolveResultPanel
       publish(PrintingOptionsUpdate)
   }
 
-  val visibilitySet = {
 
-    val users = beforeGraph.usersOf(violationTarget.id)
-
-    val targetAndAncestors =
-      beforeGraph.containerPath(violationTarget.id)
-
-    val vs = users.foldLeft(targetAndAncestors){
-      (s,id) => (beforeGraph.containerPath(id).toSet + id) ++: s
-    }
-
-    VisibilitySet.allHidden(beforeGraph).setVisibility(vs, Visible)
-
-  }
 
   def printingOptions: PrintingOptions =
     printingOptionsControl.printingOptions.copy(visibility = visibilitySet)
@@ -236,8 +249,8 @@ trait Selector extends Publisher{
   def selectedLog : String = selectedResult.written
 }
 
-class FailureSelector(res : Search[OneStepResult])
-  extends SortedElementSelector[SearchState[OneStepResult]](
+class FailureSelector[S](res : Search[DecoratedGraph[S]])
+  extends SortedElementSelector[SearchState[DecoratedGraph[S]]](
     res.failuresByDepth, StateSelected.apply) with Selector{
 
   assert(res.failures.nonEmpty)
@@ -245,8 +258,8 @@ class FailureSelector(res : Search[OneStepResult])
   override def selectedLog = selectedState.loggedResult.log
 }
 
-class SuccessSelector(res : Search[OneStepResult])
-  extends SimpleElementSelector[SearchState[OneStepResult]](StateSelected.apply) with Selector{
+class SuccessSelector[S](res : Search[DecoratedGraph[S]])
+  extends SimpleElementSelector[SearchState[DecoratedGraph[S]]](StateSelected.apply) with Selector{
   assert(res.successes.nonEmpty)
 
   setStatesList(res.successes)
@@ -254,10 +267,10 @@ class SuccessSelector(res : Search[OneStepResult])
 }
 
 
-class SelectorResultPanel
+class SelectorResultPanel[S]
 (val selector : Component with Selector,
  val constraints : ConstraintsMaps,
- val autosolveResultPanel : AutosolveResultPanel )
+ val autosolveResultPanel : AutoSolveResultPanel[S] )
   extends BorderPanel with GraphPanelResultPanel {
 
   def printingOptions: PrintingOptions = autosolveResultPanel.printingOptions
