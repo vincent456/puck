@@ -1,6 +1,5 @@
 package puck.javaGraph
 
-
 import java.io.File
 
 import puck.{GraphStack, Quick, Settings}

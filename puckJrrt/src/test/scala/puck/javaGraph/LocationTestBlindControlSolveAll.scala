@@ -3,7 +3,7 @@ package puck.javaGraph
 
 import java.io.File
 
-import puck.Settings
+import puck.{Quick, Settings}
 import puck.TestUtils._
 import puck.graph.constraints.search.DecoratedGraphEvaluator
 import puck.graph.transformations.Recording
@@ -55,17 +55,29 @@ object LocationTestBlindControlSolveAll {
           val fit = ordering.evaluateWithDepthPenalty(ss)
           strategy.printSuccessState("result#" + fit, ss)
           val \/-(dg) = ss.loggedResult.value
-          Recording.write(outDir + File.separator +"result#" + fit + ".pck",
+          val result = outDir + File.separator +"result#" + fit + ".pck"
+          Recording.write(result,
             scenario.fullName2id, dg.graph)
+          val s = new ScenarioFactory(
+            s"$path/location/Location.java",
+            s"$path/location/Velo.java")
+          val r = Recording.load(s"$result", s.fullName2id)(s.logger)
+          import Recording.RecordingOps
+          val resdir = new File( Settings.tmpDir + File.separator+"testPuck"+fit)
+          val sf = s.applyChangeAndMakeExample(r.redo(s.graph),resdir )
+          Quick.svg(sf.graph, resdir + File.separator + "location.svg", Some(constraints))
+        //          println("Graphs equality? "+Mapping.equals(sf.graph, s.graph))
+
       }
     }
   }
 }
+object LocationTestSearch {
+  val path = getClass.getResource("/miniComposite").getPath
 
-object LocationLoadAndApplyRecord {
-  def main(args : Array[String]) : Unit ={
-    val path = getClass.getResource("/miniComposite").getPath
+  val outDir = Settings.tmpDir + File.separator + "DG-Imgs"
 
+  def main(args : Array[String]) : Unit = {
     val s = new ScenarioFactory(
       s"$path/location/Location.java",
       s"$path/location/Velo.java")
@@ -74,20 +86,6 @@ object LocationLoadAndApplyRecord {
     printMetrics(s.graph)
 
     val r = Recording.load(s"$path/plan.pck", s.fullName2id)(s.logger)
-    /*    val numMilStone = r count (_ == MileStone)
-    println(numMilStone)
-
-    val graphStack = new GraphStack(new Publisher(){})
-    graphStack setInitialGraph s.graph
-    graphStack.load(r)
-//    var remainingMileStone = numMilStone
-//    while (remainingMileStone > 4) {
-//      graphStack.undo()
-//      remainingMileStone -= 1
-//    }
-
-    s.applyChangeAndMakeExample(graphStack.graph, new File("/tmp/testPuck"))*/
-
 
     import Recording.RecordingOps
 
@@ -98,7 +96,6 @@ object LocationLoadAndApplyRecord {
 
     s.applyChangeAndMakeExample(g2, new File("/tmp/testPuck"))
   }
-
 
 
 }
