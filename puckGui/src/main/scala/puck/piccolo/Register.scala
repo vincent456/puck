@@ -34,6 +34,12 @@ import puck.gui.PuckControl
 
 import scala.collection.mutable
 
+object Register {
+
+
+
+}
+
 /**
   * Created by Loïc Girault on 31/05/16.
   */
@@ -44,8 +50,15 @@ class Register(control : PuckControl, edgeLayer : PLayer) {
   val usesMap = new scala.collection.mutable.HashMap[NodeIdP, PUses]
 
   def +=(kv : (NodeId, DGExpandableNode)) = {
+    println(s"${kv._1} is visible")
     invisibleContent -= kv._1
     visibleContent += kv
+  }
+
+  def -=(kv : (NodeId, DGExpandableNode)) = {
+    println(s"${kv._1} is not visible")
+    invisibleContent += kv
+    visibleContent -= kv._1
   }
 
   import control.graph
@@ -72,22 +85,48 @@ class Register(control : PuckControl, edgeLayer : PLayer) {
     new PropertyChangeListener() {
     def propertyChange(evt: PropertyChangeEvent): Unit = {
       val src = evt.getSource.asInstanceOf[DGExpandableNode]
-      if(evt.getNewValue == null) {
-        invisibleContent += (src.id -> src)
-        visibleContent -= src.id
-      }
+      if(evt.getNewValue == null)
+        Register.this -= (src.id -> src)
       else
         Register.this += (src.id -> src)
     }
   }
+
+  val  visibilityPropertyListener =
+    new PropertyChangeListener() {
+      def propertyChange(evt: PropertyChangeEvent): Unit = {
+        val src = evt.getSource.asInstanceOf[DGExpandableNode]
+        val isVisible = src.getVisible
+        if(!isVisible)
+          Register.this -= (src.id -> src)
+        else
+          Register.this += (src.id -> src)
+
+      }
+    }
+
+  val  usesDeletePropertyListener =
+    new PropertyChangeListener() {
+      def propertyChange(evt: PropertyChangeEvent): Unit = {
+          val uses = evt.getSource.asInstanceOf[PUses]
+          usesMap -= (uses.source.id -> uses.target.id)
+          addUses(uses.usesSet)
+      }
+    }
 
   def addUses(uses : Iterable[NodeIdP]) : Unit =
   uses map {case u @ (user,used) =>
     ((firstVisible(user), firstVisible(used)), u)
   } groupBy( _._1) foreach {
     case ((visiblePUser, visiblePUsed), it) =>
-      val puse = usesMap.getOrElse((visiblePUser.id, visiblePUsed.id),
-          PUses(visiblePUser, visiblePUsed, edgeLayer))
+      val puse =
+        usesMap.getOrElse((visiblePUser.id, visiblePUsed.id), {
+          val p = PUses(visiblePUser, visiblePUsed, edgeLayer)
+          p.addPropertyChangeListener(PUses.property_uses_delete, usesDeletePropertyListener)
+          usesMap += ((visiblePUser.id, visiblePUsed.id) -> p)
+          p
+      }
+      )
 
       val groupedUses = (it map (_._2)).toList
       println((visiblePUser.id -> visiblePUsed.id)+".usesSet ++= "+ groupedUses)

@@ -30,7 +30,7 @@ import java.awt.{Color, Font, Paint, Stroke}
 import java.awt.geom.{Path2D, Point2D}
 
 import org.piccolo2d.extras.nodes.{PComposite, PLine}
-import org.piccolo2d.nodes.{PPath, PText}
+import org.piccolo2d.nodes.{PPath, PShape, PText}
 
 /**
   * Created by Loïc Girault on 01/06/16.
@@ -85,8 +85,10 @@ class Arrow(source : P, target : P, headStyle : HeadStyle) extends PComposite {
   val l_sin_theta : Double =  l * Math.sin(theta)
 
   def arrowBaseHeadCoordinates : (P,P) = {
-    val a = source
-    val c = target
+    val (a,c) =
+      if(source != target) (source, target)
+      else((target.x- 10, target.y), target)
+
 
     val ac_length = Math.sqrt( (c.x - a.x) * (c.x - a.x) + (c.y - a.y) * (c.y - a.y) )
 
@@ -105,10 +107,17 @@ class Arrow(source : P, target : P, headStyle : HeadStyle) extends PComposite {
     (d(v), d(v * -1))
   }
 
-  private val line = new PLine()
-  line.addPoint(0, source.x, source.y)
-  line.addPoint(1, target.x, target.y)
-
+  private val line =
+    if(source != target) {
+      val l = new PLine()
+      l.addPoint(0, source.x, source.y)
+      l.addPoint(1, target.x, target.y)
+      l
+    }
+    else {
+      val diametre = 30d
+      PPath.createEllipse(source.x - diametre, source.y - diametre,diametre,diametre)
+    }
   def triangle(paint : Paint) : PPath = {
     val p1 = target
     val (p2, p3) = arrowBaseHeadCoordinates
@@ -140,7 +149,10 @@ class Arrow(source : P, target : P, headStyle : HeadStyle) extends PComposite {
     head setPaint newPaint
   }
   def setStrokePaint(newPaint : Paint) : Unit = {
-    line setStrokePaint newPaint
+    line match {
+      case l : PLine => l setStrokePaint newPaint
+      case s : PShape => s setStrokePaint newPaint
+    }
     head setStrokePaint newPaint
   }
 

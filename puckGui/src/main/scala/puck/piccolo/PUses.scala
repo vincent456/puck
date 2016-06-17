@@ -26,8 +26,13 @@ object PUses {
     edgeLayer addChild u
     u
   }
+
+  val property_uses_delete = "usesDelete"
+
+  val property_code_uses_delete = 1 << 11 // PNode default properties goes up to 1 << 10
 }
 
+import PUses._
 case class PUses(source : DGExpandableNode,
                  target : DGExpandableNode)
   extends PComposite {
@@ -75,9 +80,14 @@ case class PUses(source : DGExpandableNode,
     }
 
     def ++=(uses : Iterable[NodeIdP]) = {
-      uses foreach addElem
-      PUses.this.removeAllChildren()
-      PUses.this.addArrow()
+      var elemAdded = false
+      uses foreach {u =>
+        elemAdded = elemAdded | addElem(u)
+      }
+      if(elemAdded) {
+        PUses.this.removeAllChildren()
+        PUses.this.addArrow()
+      }
 
     }
     override def -=(u : NodeIdP) = {
@@ -112,31 +122,24 @@ case class PUses(source : DGExpandableNode,
       exty.addPropertyChangeListener(PNode.PROPERTY_VISIBLE,
         // ie an ancestor is detached, must find first visible ancestor
         new PropertyChangeListener() {
-        def propertyChange(evt: PropertyChangeEvent): Unit = Option(PUses.this.getRoot) foreach {
-          root =>
-          val register = root.getAttribute("register").asInstanceOf[Register]
-          println("removing " + (source.id -> target.id))
-          register.usesMap -= (source.id -> target.id)
-          delete()
-          register addUses usesSet
-        }
+        def propertyChange(evt: PropertyChangeEvent): Unit = delete()
       })
 
       exty.body.addPropertyChangeListener(PNode.PROPERTY_CHILDREN,
         // new children ! potentially new real extremity to attach
         new PropertyChangeListener() {
-          def propertyChange(evt: PropertyChangeEvent): Unit = {
-
-          }
+          def propertyChange(evt: PropertyChangeEvent): Unit = delete()
         })
     }
   }
 
 
 
-  def delete(): Unit =
-    if(getParent != null)
+  def delete(): Unit = {
+    if (getParent != null)
       getParent removeChild this
 
+    firePropertyChange(property_code_uses_delete, property_uses_delete, null, null)
+  }
 
 }

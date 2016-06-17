@@ -60,11 +60,12 @@ class DGCanvas
 
   addInputEventListener(new MoveNodeDragEventHandler(control, this))
 
-  def getNode(nid : NodeId) : DGPNode  = register.getOrElse(nid, {
+  def getNode(nid : NodeId) : DGExpandableNode  = register.getOrElse(nid, {
     val titleNode = DGTitleNode(graph, nid)
     val n = new DGExpandableNode(titleNode)
     n.titlePnode.addInputEventListener(clickEventHandler(n))
-    n.addPropertyChangeListener(PNode.PROPERTY_PARENT, register.parentPropertyListener)
+    n.addPropertyChangeListener(PNode.PROPERTY_VISIBLE, register.visibilityPropertyListener)
+    register += (nid -> n)
     n
   })
 
@@ -114,9 +115,9 @@ class DGCanvas
 
     applyRec(newGraph, oldGraph, subRec)
   }
-
-  nodeLayer addChild getNode(0).toPNode
-
+  val rootNode = getNode(graph.rootId)
+  nodeLayer addChild rootNode
+  register += (graph.rootId -> rootNode)
   removeInputEventListener(getPanEventHandler)
   removeInputEventListener(getZoomEventHandler)
 

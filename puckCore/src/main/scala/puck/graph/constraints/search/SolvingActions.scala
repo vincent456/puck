@@ -55,32 +55,6 @@ class SolvingActions
 
 
 
-  /*  def hostIntro
-  (toBeContained : ConcreteNode
-  ) : DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] =
-    g => hostIntro(containerKind(g, toBeContained.kind))(g)
-
-
-  def hostIntro
-  (containerKinds : Seq[NodeKind]
-  ) : DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] = { g =>
-    println("host intro")
-    containerKinds map {
-      hostKind =>
-        newCterNumGen += 1
-        val hostName = s"${toBeContained.name}_container$newCterNumGen"
-        rules.intro(g, hostName, hostKind)
-    } flatMap {
-      case (n, g1) =>
-        findHost(n)(g1) map (ltg => s"Searching host for $n\n" <++: ltg map {
-          case (hid, g2) => (n.id, g2.addContains(hid, n.id))
-        })
-    }
-  }*/
-
-
-
-
   def introNodes(nodeKinds: Seq[NodeKind], g: DependencyGraph): Stream[LoggedTry[(NodeId, DependencyGraph)]] =
     nodeKinds.toStream map {
       hostKind =>
@@ -100,13 +74,13 @@ class SolvingActions
         rules.intro(g, hostName, hostKind)
     } flatMap {
       case (toBeCtedHost, g) =>
-        val hostStream =
-          chooseNode((dg, hostHost) => dg.canContain(hostHost, toBeCtedHost) &&
-            !(dg, constraints).isViolation(Contains(hostHost.id, toBeCtedHost.id)) && {
-            val dg2 = dg.addContains(hostHost.id, toBeCtedHost.id)
-              .addContains(toBeCtedHost.id, toBeContained.id)
-            !(dg2, constraints).isWronglyUsed(toBeContained.id)
-          })(g)
+        val hostStream = findHost(toBeCtedHost)(g)
+//          chooseNode((dg, hostHost) => dg.canContain(hostHost, toBeCtedHost) && hostHost.id != dg.rootId &&
+//            !(dg, constraints).isViolation(Contains(hostHost.id, toBeCtedHost.id)) && {
+//            val dg2 = dg.addContains(hostHost.id, toBeCtedHost.id)
+//              .addContains(toBeCtedHost.id, toBeContained.id)
+//            !(dg2, constraints).isWronglyUsed(toBeContained.id)
+//          })(g)
 
         hostStream  map (ltg => s"Searching host for $toBeCtedHost\n" <++: ltg map {
           case (hid, g1) => (toBeCtedHost.id, g1.addContains(hid, toBeCtedHost.id))
@@ -116,7 +90,7 @@ class SolvingActions
 
   def findHost
   (toBeContained: ConcreteNode): DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] =
-    chooseNode((dg, cn) => dg.canContain(cn, toBeContained) && /*cn.id != dg.rootId &&*/
+    chooseNode((dg, cn) => dg.canContain(cn, toBeContained) &&
       !(dg, constraints).isViolation(Contains(cn.id, toBeContained.id)) && {
       val dg1 : DependencyGraph =
         dg.container(toBeContained.id) map (dg.removeContains(_, toBeContained.id)) getOrElse dg

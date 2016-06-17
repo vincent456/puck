@@ -40,7 +40,7 @@ object IdIconTextNode {
             text : String,
             icon : Image ) = {
     new IdIconTextNode(id,
-      new PText(text) {
+      new PText(id +" - "+ text) {
       setFont(new Font("SansSerif", Font.PLAIN, 12))
     },
     new PImage(icon))

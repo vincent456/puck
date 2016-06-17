@@ -107,6 +107,7 @@ class DGExpandableNode
     new PropertyChangeListener() {
       def propertyChange(evt: PropertyChangeEvent): Unit = {
         val isVisible = evt.getNewValue != null
+        println(isVisible +" "+ getVisible)
         DGExpandableNode.this.setVisible(isVisible)
       }
     })
@@ -114,12 +115,8 @@ class DGExpandableNode
   this.addPropertyChangeListener(PNode.PROPERTY_VISIBLE,
     new PropertyChangeListener() {
       def propertyChange(evt: PropertyChangeEvent): Unit = {
-        val it  = body.getChildrenIterator.asInstanceOf[jutil.ListIterator[DGExpandableNode]]
-        it.foreach {
-          child =>
-            child.firePropertyChange(PNode.PROPERTY_CODE_VISIBLE,
-              PNode.PROPERTY_VISIBLE, null, evt.getNewValue)
-        }
+        val children  = body.getChildrenIterator.asInstanceOf[jutil.ListIterator[DGExpandableNode]]
+        children foreach ( child => child.setVisible(!child.getVisible) )
       }
     })
 

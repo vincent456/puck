@@ -48,7 +48,11 @@ object ASTNodeLink{
         cdecl.setID(name)
       }
       val oldFullName = reenactor.fullName(renamed)
-      val newFullName = reenactor.fullName(reenactor.container_!(renamed)) + "." + name
+      val containerFullName = reenactor.fullName(reenactor.container_!(renamed))
+
+      val newFullName =
+        if(containerFullName.isEmpty) name
+        else  s"$containerFullName.$name"
       th.decl.program().changeTypeMap(oldFullName, newFullName, th.decl)
 
     case ch : ConstructorDeclHolder => ch.decl.setID(name)
