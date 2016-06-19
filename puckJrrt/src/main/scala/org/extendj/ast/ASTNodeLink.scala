@@ -26,13 +26,15 @@
 
 package org.extendj.ast
 
-import puck.PuckError
 import puck.graph.{TypeDecl => PTypeDecl, _}
+import puck.jastadd.concretize.RedirectSource
+import puck.util.PuckLogger
 
 object ASTNodeLink{
 
-  def setName(name : String, nl : ASTNodeLink,
-              reenactor : DependencyGraph, renamed : NodeId) : Unit = nl match {
+  def setName(name : String, dg2ast : NodeId => ASTNodeLink,
+              reenactor : DependencyGraph, renamed : NodeId)
+             ( implicit logger : PuckLogger) : Unit = dg2ast(renamed) match {
     case FieldDeclHolder(decl, idx) => decl.getDeclarator(idx).setID(name)
     case dh : MethodDeclHolder => dh.decl.setID(name)
     case th : TypedKindDeclHolder =>
@@ -56,8 +58,29 @@ object ASTNodeLink{
       th.decl.program().changeTypeMap(oldFullName, newFullName, th.decl)
 
     case ch : ConstructorDeclHolder => ch.decl.setID(name)
-    case h => throw new PuckError(h.getClass + " setName unhandled")
+    case h => setPackageName(name, dg2ast, reenactor, renamed)
   }
+
+  def setPackageName(name : String, dg2ast : NodeId => ASTNodeLink,
+                     reenactor : DependencyGraph, renamed : NodeId)
+                    ( implicit logger : PuckLogger) : Unit = {
+
+    val oldName = reenactor fullName renamed
+    val newName = {
+      val containerName = reenactor fullName (reenactor container_! renamed)
+      if(containerName.isEmpty) name
+      else s"$containerName.$name"
+    }
+
+    reenactor.content(renamed) map (id => (id, dg2ast(id))) foreach {
+        case (tid, TypedKindDeclHolder(td)) =>
+          td.compilationUnit().setPackageDecl(newName) //both setter and affectation needed
+          td.compilationUnit().packageName_value = newName //this value is the cached one
+          RedirectSource.fixImportForUsersOfMovedTypeDecl(reenactor, dg2ast, td, tid, oldName, newName)
+          RedirectSource.fixImportOfMovedTypeDecl(reenactor, dg2ast, td, tid, oldName, newName, newlyCreatedCu = false)
+      }
+  }
+
 
   def getPath(graph: DependencyGraph, packagedId : NodeId)
              ( implicit program : Program ) : String = {
