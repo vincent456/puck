@@ -82,6 +82,7 @@ object ShowDG extends ShowConstraints{
   implicit def stringOfNodeIdP : DGStringBuilder[NodeIdP] =
   {case (dg, (nid1, nid2)) => s"Edge( ${desambiguatedFullName(dg,nid1)}, ${desambiguatedFullName(dg,nid2)})"}
 
+  // /!\ this method is used to build mapping based on full names, modifying it can break a LOT of tests !
   implicit def stringOfNode : DGStringBuilder[DGNode] = (dg, n) =>
     n match {
       case n : ConcreteNode =>
@@ -91,7 +92,7 @@ object ShowDG extends ShowConstraints{
               dg.getConcreteNode(_).name + DependencyGraph.scopeSeparator + n.name
             } getOrElse "OrphanDefinition"
           else n.name
-        s"${n.id} - ${n.kind} $name${stringOfTypeOption(dg, dg.structuredType(n.id))}"
+        s"${n.id} - ${n.kind} $name${stringOfTypeOption(dg, dg.styp(n.id))}"
       case vn : VirtualNode => s"${vn.id} - ${vn.name(dg)}"
     }
 
