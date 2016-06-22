@@ -97,15 +97,15 @@ trait GraphBuilderVisitor {
   def buildDG(containerId : NodeId, expr : ClassInstanceExpr) : Unit = {
     def onAccess(access : Access ) : Unit =
       access match {
-      case _ :TypeAccess => ()
-      case pta : ParTypeAccess =>
-        pta.getTypeArguments.foreach {
-          ta => ta.buildDG(this, containerId)
-        }
-      case d : AbstractDot => onAccess(d.getRight)
-      case _ => throw new DGBuildingError(s"ClassInstanceExpr access kind ${access.getClass} not handled " +
-        s"in ${access.compilationUnit().pathName()} line ${access.location()}")
-    }
+        case _ :TypeAccess => ()
+        case pta : ParTypeAccess =>
+          pta.getTypeArguments.foreach {
+            ta => ta.buildDG(this, containerId)
+          }
+        case d : AbstractDot => onAccess(d.getRight)
+        case _ => throw new DGBuildingError(s"ClassInstanceExpr access kind ${access.getClass} not handled " +
+          s"in ${access.compilationUnit().pathName()} line ${access.location()}")
+      }
 
     onAccess(expr.getAccess)
     expr.getArgList.buildDG(this, containerId)
@@ -131,10 +131,10 @@ trait GraphBuilderVisitor {
 
         getQualifiers(access.lastAccess()) foreach {
           typBinder =>
-          val subTypeUser = this buildNode typBinder
+            val subTypeUser = this buildNode typBinder
 
-          addTypeUsesConstraint((superTypeUser, superTypeUsed),
-            Sub((subTypeUser, subTypeUsed)))
+            addTypeUsesConstraint((superTypeUser, superTypeUsed),
+              Sub((subTypeUser, subTypeUsed)))
         }
       case _ => println("type constraint in : " + stmt.prettyPrint() + " not handled")
     }
@@ -264,11 +264,11 @@ trait GraphBuilderVisitor {
 
         if(! decl.isSubstitute) try
           decl.getParameterList.toList.zip(ma.getArgs.toList) foreach putConstraintOnArg
-          catch {
-            case pe : PuckError =>
+        catch {
+          case pe : PuckError =>
 
-              throw pe
-          }
+            throw pe
+        }
         else {
           val substitutedDecl = decl.asInstanceOf[MethodDeclSubstituted]
           val genDecl = substitutedDecl.sourceMethodDecl()
@@ -299,8 +299,7 @@ trait GraphBuilderVisitor {
           rs.compilationUnit().pathName() + " line " + rs.location())
       }
 
-      )(rs.getResult)
-
+    )(rs.getResult)
   }
 
 }
