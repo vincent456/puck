@@ -74,15 +74,7 @@ class SolvingActions
         rules.intro(g, hostName, hostKind)
     } flatMap {
       case (toBeCtedHost, g) =>
-        val hostStream = findHost(toBeCtedHost)(g)
-//          chooseNode((dg, hostHost) => dg.canContain(hostHost, toBeCtedHost) && hostHost.id != dg.rootId &&
-//            !(dg, constraints).isViolation(Contains(hostHost.id, toBeCtedHost.id)) && {
-//            val dg2 = dg.addContains(hostHost.id, toBeCtedHost.id)
-//              .addContains(toBeCtedHost.id, toBeContained.id)
-//            !(dg2, constraints).isWronglyUsed(toBeContained.id)
-//          })(g)
-
-        hostStream  map (ltg => s"Searching host for $toBeCtedHost\n" <++: ltg map {
+        findHost(toBeCtedHost)(g) map (ltg => s"Searching host for $toBeCtedHost\n" <++: ltg map {
           case (hid, g1) => (toBeCtedHost.id, g1.addContains(hid, toBeCtedHost.id))
         })
     }
@@ -246,28 +238,6 @@ class SolvingActions
             }
           }
       }
-
-
-
-  /*  def absIntro
-    (impl : ConcreteNode
-      ) : DependencyGraph => Stream[LoggedTry[(Abstraction, DependencyGraph)]] =
-      g =>
-      impl.kind.abstractionChoices.toStream flatMap {
-        case (absNodeKind, absPolicy) =>
-
-          chooseNode(rules.abstracter.absIntroPredicate(impl,
-            absPolicy, absNodeKind))(g) .map { lt =>
-             lt.flatMap {
-              case (host, g2) =>
-                rules.abstracter.createAbstraction(g2, impl, absNodeKind, absPolicy).flatMap {
-                  case (abs, g3) =>
-                    s"Searching host for $abs\n" <++: introAbsContainsAndIsa(abs, impl, g3, host)
-                }
-            }
-          }
-
-      }*/
 
   def introAbsContainsAndIsa
   ( abs : Abstraction,

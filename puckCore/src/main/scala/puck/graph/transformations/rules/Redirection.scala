@@ -94,7 +94,7 @@ object Redirection {
     typeAbs : NodeId,
     tmImpl : NodeId
   ) : LoggedTry[Abstraction] = {
-    val log = s"tmAbstraction : searching an abstraction of ${(g, tmImpl).shows} in ${(g, typeAbs).shows}"
+    val log = s"tmAbstraction : searching an abstraction of ${(g, tmImpl).shows} in ${(g, typeAbs).shows}\n"
     val absSet = g.abstractions(tmImpl).filter { abs =>
       abs.nodes.forall(g.contains(typeAbs,_))
     }
@@ -346,7 +346,7 @@ object Redirection {
     }
 
     val typeMemberTRset = cl(g, oldUse)
-    val log2 = typeMemberTRset map (n => (g,n).shows) mkString(" typeMemberTRset = ", "\n", "\n")
+    val log2 = typeMemberTRset map (n => (g,n).shows) mkString(" type members TRset = ", "\n", "\n")
 
     val ltg : LoggedTG =
       if(typeMemberTRset.nonEmpty) {

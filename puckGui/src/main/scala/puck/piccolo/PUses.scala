@@ -1,6 +1,7 @@
 package puck.piccolo
 
 import java.awt.Color
+import java.awt.geom.Point2D
 import java.beans.{PropertyChangeEvent, PropertyChangeListener}
 
 import org.piccolo2d.{PLayer, PNode}
@@ -37,8 +38,12 @@ case class PUses(source : DGExpandableNode,
                  target : DGExpandableNode)
   extends PComposite {
 
+  def toNodeIdP = (source.id, target.id)
 
-  def addArrow() : Unit = Option(getRoot) foreach { root =>
+  def addArrow() : Unit = addArrow(source.arrowGlobalBounds.getCenter2D,
+                          target.arrowGlobalBounds.getCenter2D)
+
+  def addArrow(arrowSrc : Point2D, arrowTgt : Point2D) : Unit = Option(getRoot) foreach { root =>
     val control = root.getAttribute("control").asInstanceOf[PuckControl]
 
     val forbidden = control.constraints exists {
@@ -50,10 +55,7 @@ case class PUses(source : DGExpandableNode,
       if(numUses > 1) Circle
       else FullTriangle
 
-   val arrow  = Arrow(
-      source.arrowGlobalBounds.getCenter2D,
-      target.arrowGlobalBounds.getCenter2D,
-     headStyle)
+   val arrow  = Arrow(arrowSrc, arrowTgt, headStyle)
 
     if(numUses > 1){
       arrow.addLabel(numUses.toString)
@@ -136,8 +138,7 @@ case class PUses(source : DGExpandableNode,
 
 
   def delete(): Unit = {
-    if (getParent != null)
-      getParent removeChild this
+    removeFromParent()
 
     firePropertyChange(property_code_uses_delete, property_uses_delete, null, null)
   }

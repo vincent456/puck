@@ -133,5 +133,18 @@ class Register(control : PuckControl, edgeLayer : PLayer) {
       puse.usesSet ++= groupedUses
   }
 
+  def removeIncommingUses(n : NodeId ): Unit =
+    removeUses {case (k,_) =>  k._2 == n}
 
+  def removeOutgoingUses(n : NodeId ): Unit =
+    removeUses {case (k,_) =>  k._1 == n}
+
+
+  def removeUses(p : ((NodeIdP, PUses))=> Boolean ): Unit = {
+    val kvs = usesMap filter p
+    kvs foreach {case (k,v) =>
+      usesMap remove k
+      v delete()
+    }
+  }
 }

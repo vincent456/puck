@@ -26,9 +26,8 @@
 
 package puck.piccolo
 
-import puck.gui.actionToMenuItem
+import puck.gui.{NodeKindIcons, PrintCode, PuckControl, actionToMenuItem}
 import puck.gui.menus.ConcreteNodeMenu
-import puck.gui.{NodeKindIcons, PuckControl}
 
 import scala.swing.{Action, PopupMenu}
 
@@ -76,25 +75,44 @@ class PiccoloNodeMenu
       def apply() : Unit = canvas addOutgoingUses node
     }
 
-    /*contents += new Action("Hide") {
-      def apply() : Unit =
+    contents += new Action("Hide incomming uses"){
+      def apply() : Unit = canvas addIncommingUses node
+    }
+
+    contents += new Action("Hide outgoing uses"){
+      def apply() : Unit = canvas addOutgoingUses node
+    }
+
+    contents += new Action("Hide") {
+      def apply() : Unit = {
         printingOptionsControl.hide(graph, node.id)
         canvas hide node
-
+      }
     }
-//          contents += new Action("Print"){
-//            def apply() : Unit =
-//              canvas.getNode(graph.rootId).toPNode.print()
-//          })
 
-//    contents += new Action("Focus") {
-//      def apply() : Unit =
-//        printingOptionsControl.focusExpand(graph, node.id, focus = true, expand = false)
-//    }
-//    contents += new Action("Focus & Expand") {
-//      def apply() : Unit =
-//        printingOptionsControl.focusExpand(graph, node.id, focus = true, expand = true)
-//    }
+    contents += new Action("Focus") {
+      def apply() : Unit = {
+        printingOptionsControl.focusExpand(graph, node.id, focus = true, expand = false)
+        canvas focus node
+      }
+    }
+
+    contents += new Action("Focus & Expand") {
+      def apply() : Unit = {
+        printingOptionsControl.focusExpand(graph, node.id, focus = true, expand = true)
+        canvas focus node
+        canvas expand node
+      }
+    }
+
+
+    //          contents += new Action("Print"){
+    //            def apply() : Unit =
+    //              canvas.getNode(graph.rootId).toPNode.print()
+    //          })
+
+
+
     contents += new Action("Show code") {
       def apply() : Unit =
         controller publish PrintCode(node.id)
@@ -102,21 +120,23 @@ class PiccoloNodeMenu
 
     if (graph.content(node.id).nonEmpty) {
       contents += new Action("Collapse") {
-        def apply() : Unit =
+        def apply() : Unit = {
           printingOptionsControl.collapse(graph, node.id)
           canvas collapse node
-
+        }
       }
       contents += new Action("Expand") {
-        def apply() : Unit =
+        def apply() : Unit = {
           printingOptionsControl.focusExpand(graph, node.id, focus = false, expand = true)
           canvas expand node
+        }
       }
       contents += new Action("Expand all") {
-        def apply() : Unit =
+        def apply() : Unit = {
           printingOptionsControl.expandAll(graph, node.id)
           canvas expandAll node
+        }
       };()
-    }*/
+    }
   }
 }

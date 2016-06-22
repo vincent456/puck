@@ -1,6 +1,6 @@
 # Puck
 
-This is the official repository of <a href="https://puck.lip6.fr">Puck</a>
+This is the official repository of <a href="http://puck.lip6.fr">Puck</a>
 
 How to compile :
 Once you've installed <a href="http://www.scala-sbt.org/">sbt</a>,

@@ -59,6 +59,7 @@ class DGCanvas
   getCamera.addLayer(0, edgeLayer)
 
   addInputEventListener(new MoveNodeDragEventHandler(control, this))
+  addInputEventListener(new ArrowDragEventHandler(control, this))
 
   def getNode(nid : NodeId) : DGExpandableNode  = register.getOrElse(nid, {
     val titleNode = DGTitleNode(graph, nid)
@@ -143,34 +144,46 @@ class DGCanvas
 
     }
 
-  def hide(n : DGPNode) : Unit =
-    n.toPNode.setParent(null)
+  def hide(n : DGExpandableNode) : Unit =
+    n.removeFromParent()
 
-  def expand(n : DGPNode) : Unit = addContent(n)
+  def focus(n : DGExpandableNode) : Unit = {
+    val p = n.getParent
+    p.removeAllChildren()
+    p.addChild(n)
+
+  }
+
+  def expand(n : DGExpandableNode) : Unit = addContent(n)
   def collapse(n : DGExpandableNode) : Unit =  n.clearContent()
 
-  def expandAll(n : DGPNode) : Unit =
+  def expandAll(n : DGExpandableNode) : Unit =
     addContent(n) foreach expandAll
 
-  def addContent(n : DGPNode) : Seq[DGPNode] = {
+  def addContent(n : DGExpandableNode) : Seq[DGExpandableNode] = {
 
-    val pn = n.toPNode
     val content = graph content n.id
 
-    val children =  content.toSeq map getNode
-    children foreach pn.addContent
+    val children = content.toSeq map getNode
+    children foreach n.addContent
     children
   }
 
-  def addIncommingUses(n : DGExpandableNode ): Unit = {
+  def addIncommingUses( n : DGExpandableNode ) : Unit = {
     val uses = for(user <- graph.usersOf(n.id)) yield (user, n.id)
     register addUses uses
   }
 
-  def addOutgoingUses(n : DGExpandableNode ): Unit = {
+  def addOutgoingUses( n : DGExpandableNode ) : Unit = {
     val uses = for(used <- graph.usedBy(n.id)) yield (n.id, used)
     register addUses uses
   }
+
+  def removeIncommingUses( n : DGExpandableNode ) : Unit =
+    register removeIncommingUses n.id
+
+  def removeOutgoingUses( n : DGExpandableNode ) : Unit =
+    register removeOutgoingUses n.id
 
 }
 

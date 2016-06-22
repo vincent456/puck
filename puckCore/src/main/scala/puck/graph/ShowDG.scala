@@ -91,7 +91,7 @@ object ShowDG extends ShowConstraints{
               dg.getConcreteNode(_).name + DependencyGraph.scopeSeparator + n.name
             } getOrElse "OrphanDefinition"
           else n.name
-        s"${n.id} - ${n.kind} $name${stringOfTypeOption(dg, dg.styp(n.id))}"
+        s"${n.id} - ${n.kind} $name${stringOfTypeOption(dg, dg.structuredType(n.id))}"
       case vn : VirtualNode => s"${vn.id} - ${vn.name(dg)}"
     }
 

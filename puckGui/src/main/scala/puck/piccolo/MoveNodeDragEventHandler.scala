@@ -66,11 +66,16 @@ class MoveNodeDragEventHandler
 
         event.getPath.pushNode(copy)
         event.getPath.pushTransform(null)
+      case _ => ()
       }
 
     super.startDrag(event)
 
   }
+
+  override def shouldStartDragInteraction(event : PInputEvent) : Boolean =
+    super.shouldStartDragInteraction(event) &&
+      event.getPickedNode.isInstanceOf[IdIconTextNode]
 
 
   def getExpandableParent(n : PNode) : Option[DGExpandableNode] = n match {

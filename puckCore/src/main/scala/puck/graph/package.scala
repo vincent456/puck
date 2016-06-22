@@ -137,21 +137,40 @@ package object graph {
     def toLoggedTry : LoggedTry[A] = toLoggedEither[Error]
   }
 
-  def LoggedError[A]( e: String): LoggedTry[A] =
-    LoggedEither(e, -\/(new PuckError(e)))
+  object LoggedError{
+    def apply[A]( e: String): LoggedTry[A] =
+      LoggedEither(e, -\/(new PuckError(e)))
 
-  def LoggedError[A]( e: Error): LoggedTry[A] =
-    LoggedEither("", -\/(e))
+    def apply[A]( e: Error): LoggedTry[A] =
+      LoggedEither("", -\/(e))
 
-  def LoggedError[A](msg : String, e: PuckError): LoggedTry[A] =
-    LoggedEither(msg, -\/(e))
+    def apply[A](msg : String, e: PuckError): LoggedTry[A] =
+      LoggedEither(msg, -\/(e))
+
+    def unapply[A](arg: LoggedTry[A]): Option[(String, Error)] =
+      arg.value match {
+        case -\/(err) => Some((arg.log, err))
+        case _ => None
+      }
+
+  }
+
+  object LoggedSuccess{
+    def apply[A]( a : A): LoggedTry[A] =
+      LoggedSuccess("", a)
+
+    def apply[A](msg : String, a : A): LoggedTry[A] =
+      LoggedEither(msg, \/-(a))
 
 
-  def LoggedSuccess[A]( a : A): LoggedTry[A] =
-    LoggedSuccess("", a)
+    def unapply[A](arg: LoggedTry[A]): Option[(String, A)] =
+      arg.value match {
+        case \/-(success) => Some((arg.log, success))
+        case _ => None
+      }
+  }
 
-  def LoggedSuccess[A](msg : String, a : A): LoggedTry[A] =
-    LoggedEither(msg, \/-(a))
+
 
 
 
