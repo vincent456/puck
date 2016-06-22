@@ -47,6 +47,7 @@ import scala.swing.SequentialContainer.Wrapper
 import scala.swing.event.SelectionChanged
 
 
+
 class PuckInterfacePanel
 ( control : PuckControl
 ) extends BoxPanel(Orientation.Vertical)  {
@@ -262,7 +263,7 @@ class PuckInterfacePanel
 
 
     type ControlBuilder = (DependencyGraph, ConstraintsMaps) => SearchControl[DecoratedGraph[Any]]
-    type StrategyBuilder = (DependencyGraph => Double) => SearchStrategy[DecoratedGraph[Any]]
+    type StrategyBuilder = () => SearchStrategy[DecoratedGraph[Any]]
 
 
     import control.graphUtils
@@ -285,18 +286,43 @@ class PuckInterfacePanel
       preferredSize = minimumSize
     }
 
+    val kViolTextField = new TextField("1", 5)
+    val kComplexTextField = new TextField("1", 5)
+
+    val ponderationPanel = new BoxPanel(Orientation.Vertical) {
+      contents += new BoxPanel(Orientation.Horizontal) {
+        contents += new Label("Violation weight")
+        contents += kViolTextField
+      }
+      contents += new BoxPanel(Orientation.Horizontal) {
+        contents += new Label("Complexity weight")
+        contents += kComplexTextField
+      }
+    }
+
     val strategyCB =  new ComboBox(List[StrategyBuilder](
-      new ((DependencyGraph => Double) => SearchStrategy[DecoratedGraph[Any]]) {
-        override val toString = "Depth-first Strategy"
-        def apply(f : (DependencyGraph => Double)) = new DepthFirstSearchStrategy()
-      },
-      new ((DependencyGraph => Double) => SearchStrategy[DecoratedGraph[Any]]) {
-        override val toString = "Breadth-first Strategy"
-        def apply(f : (DependencyGraph => Double)) = new BreadthFirstSearchStrategy()
-      },
-      new ((DependencyGraph => Double) => SearchStrategy[DecoratedGraph[Any]]) {
+      new (() => SearchStrategy[DecoratedGraph[Any]]) {
         override val toString = "A* Strategy"
-        def apply(f : (DependencyGraph => Double)) = new AStarSearchStrategy(DecoratedGraphEvaluator.equalityByMapping(f))
+        def apply() = {
+          Dialog.showConfirmation(message = ponderationPanel.peer)
+          val f = control.constraints map {
+            cm =>
+              val kViol = kViolTextField.text.toInt
+              val kComplex = kComplexTextField.text.toInt
+              Metrics.fitness1(_ : DependencyGraph , cm, kViol, kComplex).toDouble
+          } getOrElse ((_ : DependencyGraph) => 0d )
+          new AStarSearchStrategy(DecoratedGraphEvaluator.equalityByMapping(f))
+        }
+
+
+      },
+    new (() => SearchStrategy[DecoratedGraph[Any]]) {
+        override val toString = "Depth-first Strategy"
+        def apply() = new DepthFirstSearchStrategy()
+      },
+    new (() => SearchStrategy[DecoratedGraph[Any]]) {
+        override val toString = "Breadth-first Strategy"
+        def apply() = new BreadthFirstSearchStrategy()
       }
     )) {
       minimumSize = new Dimension(leftWidth, 30)
@@ -310,7 +336,7 @@ class PuckInterfacePanel
       () =>
         control.constraints foreach {
           cm =>
-            val s = strategyCB.selection.item(Metrics.fitness1(_, cm))
+            val s = strategyCB.selection.item()
             val c = controlCB.selection.item(control.graph, cm)
             Swing onEDT new AutoSolveAction(control.Bus, cm, control.printingOptionsControl, s, c)(control.graphUtils).apply()
         }
