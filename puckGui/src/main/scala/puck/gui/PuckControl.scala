@@ -26,7 +26,7 @@
 
 package puck.gui
 
-import java.io.File
+import java.io.{File, FileWriter}
 
 import puck._
 import puck.config.{Config, ConfigParser}
@@ -41,7 +41,7 @@ import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scalaz.{-\/, \/-}
 
-
+import ShowDG._
 object PuckControl {
 
   def apply(graphUtils: GraphUtils, logger : PuckLogger) : PuckControl =
@@ -173,7 +173,7 @@ implicit val logger: PuckLogger)
               Bus publish GraphUpdate(graph)
             logger writeln "no constraints found"
           case Some(cm) =>
-            (graph, cm).printConstraints(logger, defaultVerbosity)
+            logger.writeln((graph,cm).shows)
             Bus publish ConstraintsUpdate(graph, cm)
         }
 
@@ -181,26 +181,10 @@ implicit val logger: PuckLogger)
     }
 
 
-  def printRecording() : Unit = {
-    import ShowDG._
+  def printRecording() : Unit =
     graph.recording.reverseIterator.foreach(r => logger writeln (graph, r).shows)
-  }
 
 
-  def applyOnCode(record : DependencyGraph) : Unit =
-    Future {
-      sProject foreach {
-        p =>
-        logger.write("generating code ...")
-        dg2ast(record)
-        dg2ast.printCode(p.outDirectory get)
-        logger.writeln(" done")
-      }
-
-    } onComplete {
-      case Success(_) => ()
-      case Failure(exc) => exc.printStackTrace()
-    }
 
   def saveRecordOnFile(file : File) : Unit = {
     Recording.write(file.getAbsolutePath, dg2ast.nodesByName, graph)
@@ -260,14 +244,10 @@ implicit val logger: PuckLogger)
 
 
     case ConstraintDisplayRequest(graph) =>
-      constraints match {
-        case None => logger writeln "no constraints"
-        case Some(cm) => (graph, cm).printConstraints(logger, defaultVerbosity)
-      }
-
-
-    case ApplyOnCodeRequest(rec) =>
-      applyOnCode(rec)
+      logger writeln (constraints match {
+        case None => "no constraints"
+        case Some(cm) => (graph,cm).shows
+      })
 
     case pe : PrintingOptionEvent =>
       pe(printingOptionsControl)
@@ -275,7 +255,7 @@ implicit val logger: PuckLogger)
     case GenCode(compareOutput) =>
       sProject foreach { p =>
         import ProjectDG2ASTControllerOps._
-        deleteOutDirAndapplyOnCode(dg2ast,p, graphStack.graph)
+        deleteOutDirAndApplyOnCode(dg2ast,p, graphStack.graph, constraints)
         if (compareOutput)
           compareOutputGraph(p, graphStack.graph)
       }

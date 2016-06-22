@@ -78,4 +78,24 @@ trait ShowConstraints {
   implicit def stringOfConstraintSet :  DGStringBuilder[ConstraintSet] = { (dg, cs) =>
      cs.content.map(stringOfConstraint(dg, _)) mkString "\n"
   }
+
+  implicit def stringOfConstraintsMaps :  DGStringBuilder[ConstraintsMaps] = { (dg, cm) =>
+    val sb = new StringBuilder
+
+    cm.namedSets.foreach{
+      case (_, namedSet) =>
+        sb append stringOfNamedRangeSetDef(dg, namedSet)
+        sb append "\n"
+    }
+
+    def printMap( m : Map [Range, ConstraintSet], cb : DGStringBuilder[Constraint]) =
+      m foreach { case (k, s) =>
+        s.foreach { c => if(c.owners.head == k )
+          sb append cb(dg, c)
+        }
+      }
+    printMap(cm.hideConstraints, stringOfConstraint)
+    printMap(cm.friendConstraints, stringOfFriendConstraint)
+    sb.toString
+  }
 }

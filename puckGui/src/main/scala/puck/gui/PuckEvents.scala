@@ -71,10 +71,7 @@ case class ExportGraph(f: File) extends PuckEvent
 case class SwitchView(handler : ViewHandler) extends PuckEvent
 case class ConstraintDisplayRequest(graph : DependencyGraph) extends PuckEvent
 
-case class ApplyOnCodeRequest(searchResult : DependencyGraph) extends PuckEvent
 case class GenCode(compareOutput : Boolean) extends PuckEvent
-
-
 
 case object PrintingOptionsUpdate extends PuckEvent
 sealed abstract class PrintingOptionEvent extends PuckEvent {

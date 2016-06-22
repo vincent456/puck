@@ -26,8 +26,11 @@
 
 package puck
 
-import puck.graph.DependencyGraph
+import java.io.FileWriter
+
+import puck.graph.{DependencyGraph, ShowDG}
 import puck.graph.comparison.Mapping
+import puck.graph.constraints.ConstraintsMaps
 import puck.util.PuckLogger
 import sbt.IO
 
@@ -37,20 +40,34 @@ import sbt.IO
 object ProjectDG2ASTControllerOps {
 
 
-  def deleteOutDirAndapplyOnCode
+  def deleteOutDirAndApplyOnCode
   (dg2ast : DG2AST,
-   filesHandler : Project,
-   graph : DependencyGraph)(implicit logger : PuckLogger) : Unit = {
+   project : Project,
+   graph : DependencyGraph,
+   constraints : Option[ConstraintsMaps])
+  (implicit logger : PuckLogger) : Unit = {
 
     logger.writeln("Aplying recording on AST")
     dg2ast(graph)/*(new PuckFileLogger(_ => true, new File("/tmp/pucklog")))*/
 
-    filesHandler.outDirectory match {
+    project.outDirectory match {
       case None => logger.writeln("no output directory : cannot print code")
       case Some(d) =>
         logger.writeln("Printing code")
         IO.delete(d)
         dg2ast.printCode(d)
+
+        constraints foreach {
+          cm =>
+            logger.write("printing constraints ...")
+            import puck.util.FileHelper.FileOps
+            val decoupleName = project.decouple.map(_.getName) getOrElse "decouple.wld"
+            val fw = new FileWriter(d \ decoupleName)
+            import ShowDG._
+            fw write (graph,cm).shows
+            fw.close()
+        }
+
     }
 
   }

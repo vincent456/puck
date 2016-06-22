@@ -27,11 +27,7 @@
 package puck.graph
 package constraints
 
-import puck.graph.ShowDG._
 import puck.graph.constraints.ConstraintsMaps._
-import puck.util.Logger
-
-
 
 object ConstraintsMaps{
   type FriendConstraintMap = Map[Range, ConstraintSet]
@@ -72,22 +68,6 @@ case class ConstraintsMaps
 
    def addFriendConstraint(ct : Constraint) =
      copy(friendConstraints = addConstraintToMap(friendConstraints, ct))
-
-
-   def printConstraints[V](graph : GraphT, logger : Logger[V])(implicit v : V) : Unit = {
-     logger writeln "printing constraints"
-     namedSets.foreach{
-       case (_, namedSet) => logger.writeln((graph, namedSet).shows(stringOfNamedRangeSetDef))
-     }
-
-     def printMap( m : Map [Range, ConstraintSet], cb : DGStringBuilder[Constraint]) =
-       m foreach { case (k, s) =>
-         s.foreach { c => if(c.owners.head == k )
-           logger.writeln((graph, c).shows(cb))(v)}
-       }
-     printMap(hideConstraints, ShowDG.stringOfConstraint)
-     printMap(friendConstraints, ShowDG.stringOfFriendConstraint)
-   }
 
 
    def friendOf(graph : GraphT, node : NIdT, befriended : NIdT) : Boolean = {

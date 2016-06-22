@@ -25,7 +25,7 @@
  */
 
 package puck.piccolo
-
+import puck.ignore
 import java.beans.{PropertyChangeEvent, PropertyChangeListener}
 import java.{util => jutil}
 
@@ -122,11 +122,11 @@ class DGExpandableNode
 
 
   def addContent(child : DGPNode) : Unit =
-    body addChild child.toPNode
+    ignore(body addChild child.toPNode)
 
 
   def rmContent(child : DGPNode) : Unit =
-    body removeChild child.toPNode
+    ignore(body removeChild child.toPNode)
 
   def content : Iterable[DGPNode] = {
     import scala.collection.JavaConversions._

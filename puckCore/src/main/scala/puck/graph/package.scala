@@ -103,9 +103,6 @@ package object graph {
     def isWronglyUsed(id : NodeId) = constraints.wrongUsers(graph, id).nonEmpty
     def isWronglyContained(id : NodeId) : Boolean = constraints.isWronglyContained(graph, id)
 
-    def printConstraints[V](logger : Logger[V], v : V) : Unit =
-      constraints.printConstraints(graph, logger)(v)
-
   }
 
   type TypedNode = (ConcreteNode, Type)

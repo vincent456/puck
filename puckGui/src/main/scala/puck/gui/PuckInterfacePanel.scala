@@ -305,12 +305,11 @@ class PuckInterfacePanel
         override val toString = "A* Strategy"
         def apply() = {
           Dialog.showConfirmation(message = ponderationPanel.peer)
-          val f = control.constraints map {
-            cm =>
-              val kViol = kViolTextField.text.toInt
-              val kComplex = kComplexTextField.text.toInt
-              Metrics.fitness1(_ : DependencyGraph , cm, kViol, kComplex).toDouble
-          } getOrElse ((_ : DependencyGraph) => 0d )
+          //function is called in search button action only if constraints is non empty
+          val cm = control.constraints.get
+          val kViol = kViolTextField.text.toInt
+          val kComplex = kComplexTextField.text.toInt
+          val f = Metrics.fitness1(_ : DependencyGraph , cm, kViol, kComplex).toDouble
           new AStarSearchStrategy(DecoratedGraphEvaluator.equalityByMapping(f))
         }
 
