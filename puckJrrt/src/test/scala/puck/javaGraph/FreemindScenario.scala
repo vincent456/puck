@@ -29,9 +29,9 @@ package puck.javaGraph
 import java.io.File
 
 import org.extendj.ast.JavaJastAddDG2AST
-import puck.Project
+import puck.{NonExistentEdge, Project, PuckError}
 import puck.config.ConfigParser
-import puck.graph.{Abstraction, AccessAbstraction, DependencyGraph, LoggedError, LoggedSuccess, NodeId, NodeIdP}
+import puck.graph.{Abstraction, AccessAbstraction, DependencyGraph, InstanceValueDecl, LoggedError, LoggedSuccess, NodeId, NodeIdP}
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations.rules.Redirection
 import puck.jastadd.ExtendJGraphUtils.Rules._
@@ -62,7 +62,29 @@ object FreemindScenario {
   }
 
 
-
+  import puck.graph.ShowDG._
+  def checkNonEmptyQualifyingRelationship(g : DependencyGraph) = {
+    println("****************************************************************")
+    println("****************************************************************")
+    println("****************************************************************")
+    println("[CHECK non empty qualifying relationship ]")
+    g.usesListExludingTypeUses.foreach {
+      tmu =>
+        try {
+          if (g.kindType(tmu._2) == InstanceValueDecl
+              &&  g.typeUsesOf(tmu).isEmpty)
+            println((g, tmu).shows + " has no type uses !!!")
+        } catch {
+          case NonExistentEdge(u) if u.used == DependencyGraph.findElementByName(g, "java.lang.Object[]").get.id => ()
+          case NonExistentEdge(u) if u.used == DependencyGraph.findElementByName(g, "java.lang.String[]").get.id => ()
+          case NonExistentEdge(u) =>
+          throw new PuckError("!!!! " + (g, u.user).shows(desambiguatedFullName) + " uses " + (g, u.used).shows(desambiguatedFullName) + " does not exist !!")
+        }
+    }
+    println("[CHECK ended ]")
+    println("****************************************************************")
+    println("****************************************************************")
+  }
 
   def main(args : Array[String]) : Unit = {
     val cfgFilePath = "/home/lorilan/projects/constraintsSolver/freemind-puck-cfg.xml"
@@ -87,7 +109,7 @@ object FreemindScenario {
 
     def redirectWrongUsers(g : DependencyGraph, wronglyUsed : NodeId, abs : Abstraction) =
       (g,constraints).wrongUsers(wronglyUsed).foldLoggedEither(g){
-        (g, user) => redirection.redirectInstanceUsesAndPropagate(g, (user, wronglyUsed), abs)
+        (g, user) => redirection.redirectUsesAndPropagate(g, (user, wronglyUsed), abs)
       }
 
     import puck.graph.ShowDG._
@@ -106,6 +128,7 @@ object FreemindScenario {
         controller)
 
 
+    checkNonEmptyQualifyingRelationship(graph)
 
     println("-----------")
 
@@ -128,10 +151,10 @@ object FreemindScenario {
 
       g4 <- redirectWrongUsers(g3, errorMsgMethod, errorMsgAbs)
 
-      g5 <- redirectWrongUsers(g4, infoMsgMethod, infoMsgAbs)
+//      g5 <- redirectWrongUsers(g4, infoMsgMethod, infoMsgAbs)
 
     } yield {
-        g5
+        g4
     }
 
     ltg match {

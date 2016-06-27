@@ -29,6 +29,7 @@ package puck.javaGraph.graphBuilding
 
 import puck.javaGraph.ScenarioFactory
 import puck.AcceptanceSpec
+import puck.graph.NodeId
 
 /**
   * Created by Loïc Girault on 25/02/16.
@@ -163,6 +164,19 @@ class PeculiarCodeGraphBuilding extends AcceptanceSpec {
         |    }
         |}"""
     ){
+      assert(true)
+    }
+  }
+
+  scenario("Structured type"){
+    val _ = new ScenarioFactory(
+      """package p;
+        |import java.util.*;
+        |class C {
+        |Map<String, Integer> m = Collections.unmodifiableSortedMap(new TreeMap<String, Integer>());
+        |}"""
+    ){
+      val _ = graph.structuredType("java.util.Collections.unmodifiableSortedMap(SortedMap)")
       assert(true)
     }
   }

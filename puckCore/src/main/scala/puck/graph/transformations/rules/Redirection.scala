@@ -75,17 +75,17 @@ object Redirection {
   }
 
   def cl(g: DependencyGraph, u : NodeIdP) : Set[(NodeIdP, NodeIdP)] = {
-    val cl0 =  for {
-      tu <- g.typeUsesOf(u) + u
+    val tus : Set[NodeIdP] =
+      g.kindType(u.used) match {
+        case TypeDecl => Set(u)
+        case _ => g.typeUsesOf(u)
+      }
+
+    for {
+      tu <-  tus
       tmu <- g.typeMemberUsesOf(tu)
     } yield (tu, tmu)
 
-    val cl1 = for  {
-      tmu <- g.typeMemberUsesOf(u) + u
-      tu <- g.typeUsesOf(tmu)
-    } yield (tu, tmu)
-
-    cl0 ++ cl1
   }
 
 
@@ -346,7 +346,7 @@ object Redirection {
     }
 
     val typeMemberTRset = cl(g, oldUse)
-    val log2 = typeMemberTRset map (n => (g,n).shows) mkString(" type members TRset = ", "\n", "\n")
+    val log2 = typeMemberTRset map (n => (g,n).shows) mkString(" type members TRset = {", "\n", "}\n")
 
     val ltg : LoggedTG =
       if(typeMemberTRset.nonEmpty) {

@@ -317,6 +317,7 @@ abstract class Abstract {
       case _ => sys.error("type should not have a RW abstraction")
     }
 
+
     for{
 
       g2 <- members.foldLoggedEither(g1)(createAbstractTypeMemberWithSuperSelfType(_, _, interface))

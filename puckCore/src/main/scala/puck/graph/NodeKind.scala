@@ -26,7 +26,8 @@
 
 package puck.graph
 
-import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
+import puck.NodeError
+import puck.graph.constraints.{AbstractionPolicy, DelegationAbstraction, SupertypeAbstraction}
 import puck.graph.transformations.rules.Intro
 
 trait NodeKind {
@@ -158,9 +159,15 @@ trait NodeKindKnowledge {
   def getConstructorOfType(g: DependencyGraph, tid : NodeId) : Option[NodeId]
 
   def structuredType(graph : DependencyGraph, id : NodeId, params : List[NodeId]) : Option[Type] = {
+    //in case of generic method, the type variables it owns precede the parameters
+    val ps = params.dropWhile(graph.kindType(_) == TypeVariableKT)
+
     //assert node is a typed value
-    if(params.isEmpty) graph styp id
-    else Some(Arrow(Tuple(params map (pid => graph styp pid get)), graph styp id get))
+    if(ps.isEmpty) graph styp id
+    else {
+      Some(Arrow(Tuple(ps map (pid => graph styp pid getOrElse( throw new NodeError(pid, graph.fullName(pid) + " has no type !")))),
+        graph styp id getOrElse( throw new NodeError(id, graph.fullName(id) + " has no type !"))))
+    }
   }
   
   

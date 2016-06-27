@@ -126,8 +126,11 @@ trait GraphBuilderVisitor {
         val superTypeUser = this buildNode stmt.getVariableDecl
         val superTypeUsed = this buildNode stmt.getTypeAccess
 
-        val typUsed = stmt.getExpr.`type`().asInstanceOf[ParTypeDecl]
-        val subTypeUsed = this buildNode typUsed.getParameterization.getArg(0)
+        val subTypeUsed = stmt.getExpr.`type`() match {
+          case typUsed : ParTypeDecl => this buildNode typUsed.getParameterization.getArg(0)
+          case typUsed : ArrayDecl => this buildNode typUsed.elementType()
+        }
+
 
         getQualifiers(access.lastAccess()) foreach {
           typBinder =>

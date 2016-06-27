@@ -58,7 +58,7 @@ object EdgeMap {
                 Map(), EdgeMapT())
 }
 import EdgeMap._
-import puck.PuckError
+import puck.NonExistentEdge
 
 case class EdgeMap
 ( userMap : EdgeMapT,
@@ -271,7 +271,7 @@ case class EdgeMap
   def typeMemberUsesOf(typeUser : NodeId, typeUsed : NodeId) : Set[NodeIdP] =
     typeUses2typeMemberUsesMap getFlat ((typeUser, typeUsed)) map {
       case u @ (s,t) if uses(s,t) => u
-      case (s,t) => throw new PuckError(s"Uses($s, $t) does not exist !")
+      case (s,t) => throw NonExistentEdge(Uses(s,t))
     }
 
 
@@ -281,7 +281,7 @@ case class EdgeMap
   def typeUsesOf(tmUser : NodeId, tmUsed : NodeId) : Set[NodeIdP] =
     typeMemberUses2typeUsesMap getFlat ((tmUser, tmUsed)) map {
       case u @ (s,t) if uses(s,t) => u
-      case (s,t) => throw new PuckError(s"Uses($s, $t) does not exist !")
+      case (s,t) => throw NonExistentEdge(Uses(s,t))
     }
 
 

@@ -26,67 +26,95 @@
 
 package puck.gui.svg.actions
 
+
+import java.awt.event.WindowEvent
+
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.constraints.search.TargetedControlWithHeuristic
 import puck.graph.io.VisibilitySet
 import puck.gui.PrintingOptionsControl
 import puck.search._
-import puck.util.Logged
 
+import scala.swing.BorderPanel.Position
 import scala.swing._
-import scala.swing.Dialog.{Message, Options, Result}
+
+
+
+object ResultFrame{
+
+  def apply[T](publisher : Publisher,
+               cm : ConstraintsMaps,
+               printingOptionsControl: PrintingOptionsControl,
+               res : Search[DecoratedGraph[T]])
+              (implicit graphUtils: GraphUtils): Frame = {
+
+    implicit val LoggedSuccess(_, (graph,_)) = res.initialState.loggedResult
+
+    val title = "Solve"
+
+    new Frame(){
+      frame =>
+
+      visible = true
+      minimumSize = new Dimension(640, 480)
+      preferredSize = new Dimension(1920,1084)
+      override def close() : Unit =
+        frame.peer.dispatchEvent(new WindowEvent(frame.peer, WindowEvent.WINDOW_CLOSING))
+
+      contents = new BorderPanel{
+        val panel = new AutoSolveResultPanel(publisher, cm, VisibilitySet.allVisible(graph), printingOptionsControl, res)
+        add(panel, Position.Center)
+        add(new BoxPanel(Orientation.Horizontal){
+          contents += Swing.HGlue
+          contents += new Button("OK"){
+
+            action = new Action("OK"){
+              def apply(): Unit ={
+                try puck.actions.printErrOrPushGraph(publisher, "Solve action : ") {
+                    panel.selectedResult.toLoggedTry
+                }
+                catch{
+                  case t : Throwable =>
+                    println("catched "+ t.getMessage)
+                    t.printStackTrace()
+                }
+                close()
+              }
+            }
+          }
+          contents += Button("Cancel")(close())
+          contents += Swing.HGlue
+        }, Position.South)
+      }
+    }
+
+
+
+  }
+}
 
 class AutoSolveAction
-( publisher : Publisher,
-  cm : ConstraintsMaps,
-  printingOptionsControl: PrintingOptionsControl,
-  strategy : SearchStrategy[DecoratedGraph[Any]],
-  control : SearchControl[DecoratedGraph[Any]])
+(bus : Publisher,
+ cm : ConstraintsMaps,
+ printingOptionsControl: PrintingOptionsControl,
+ strategy : SearchStrategy[DecoratedGraph[Any]],
+ control : SearchControl[DecoratedGraph[Any]])
 (implicit graphUtils: GraphUtils)
   extends Action("Solve") {
 
   implicit val graph = control.initialState.graph
 
-  private def dialog[T](res : Search[DecoratedGraph[T]]) : Option[Logged[DependencyGraph]] = {
-    val title = "Solve"
-
-    val confirm : Component => Result.Value =
-      c =>
-        Dialog.showConfirmation(null, c.peer, title, Options.OkCancel, Message.Plain)
-
-
-    val panel = new AutoSolveResultPanel(publisher, cm, VisibilitySet.allVisible(graph), printingOptionsControl, res)
-    confirm(panel) match {
-      case Result.Ok => Some( panel.selectedResult)
-      case Result.Cancel
-           | Result.Closed => None
-    }
-  }
-
-
   override def apply(): Unit = {
     val g = graph.mileStone
 
     val engine =
-      new SearchEngine( strategy, control, Some(1)/*,
+      new SearchEngine(strategy, control, Some(1) /*,
         evaluator = Some(GraphConstraintSolvingStateEvaluator)*/)
 
     engine.explore()
 
-    try {
-      puck.actions.printErrOrPushGraph(publisher, "Solve action : ") {
-        dialog(engine) match {
-          case Some(g) => g.toLoggedTry
-          case None => LoggedError("cancelled")
-        }
-      }
-    }
-    catch{
-      case t : Throwable =>
-        println("catched "+ t.getMessage)
-        t.printStackTrace()
-    }
+    Swing onEDT ResultFrame(bus, cm, printingOptionsControl, engine)
 
   }
 }
@@ -94,43 +122,17 @@ class AutoSolveAction
 
 
 class TargetedAutoSolveAction
-( publisher : Publisher,
-  cm : ConstraintsMaps,
-  violationTarget : ConcreteNode,
-  printingOptionsControl: PrintingOptionsControl)
+(bus : Publisher,
+ cm : ConstraintsMaps,
+ violationTarget : ConcreteNode,
+ printingOptionsControl: PrintingOptionsControl)
 (implicit graph : DependencyGraph,
   graphUtils: GraphUtils)
   extends Action("Solve [BETA - under development]") {
 
-  private def dialog[T](res : Search[DecoratedGraph[T]]) : Option[Logged[DependencyGraph]] = {
-    val title = "Solve"
-
-    val confirm : Component => Result.Value =
-      c =>
-        Dialog.showConfirmation(null, c.peer, title, Options.OkCancel, Message.Plain)
-
-//    if(res.successes.isEmpty){
-//      confirm(new JLabel("No solution")) match{
-//        case Result.Ok =>
-//          val panel = new AutosolveResultPanel(violationTarget, controller, res)
-//          val resVal = confirm(panel.peer)
-//          Some((resVal, panel.selectedResult))
-//        case Result.Cancel => None
-//      }
-//    }
-//    else {
-    val panel = AutoSolveResultPanel(publisher, cm, violationTarget, printingOptionsControl, res)
-    confirm(panel) match {
-        case Result.Ok => Some( panel.selectedResult)
-        case Result.Cancel
-           | Result.Closed => None
-    }
-  }
-
-
   override def apply(): Unit = {
     //val g = graph.mileStone
-    val g = graph.nodes.foldLeft(graph.mileStone){
+    val g = graph.nodes.foldLeft(graph.mileStone) {
       case (g, n) => n.kind.kindType match {
         case TypeDecl => g.setMutability(n.id, false)
         case _ => g
@@ -146,24 +148,12 @@ class TargetedAutoSolveAction
       new SearchEngine(
         new BreadthFirstSearchStrategy[(DependencyGraph, Int)],
         searchControlStrategy,
-        None/*,
+        None /*,
         evaluator = Some(GraphConstraintSolvingStateEvaluator)*/)
 
     engine.explore()
 
-    try {
-      puck.actions.printErrOrPushGraph(publisher, "Solve action : ") {
-        dialog(engine) match {
-          case Some(g) => g.toLoggedTry
-          case None => LoggedError("cancelled")
-        }
-      }
-    }
-    catch{
-     case t : Throwable =>
-       println("catched "+ t.getMessage)
-       t.printStackTrace()
-    }
+    Swing onEDT ResultFrame(bus, cm, printingOptionsControl, engine)
 
   }
 }

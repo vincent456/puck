@@ -26,6 +26,8 @@
 
 package puck
 
+import puck.graph.{DGEdge, NodeId}
+
 /**
  * Created by Loïc Girault on 2/23/15.
  */
@@ -43,5 +45,8 @@ object PuckError {
 class PuckError(msg:String) extends Error(msg){
   def this()=this("")
 }
+
+case class NodeError(nid : NodeId, msg : String) extends PuckError(msg)
+case class NonExistentEdge(dGEdge: DGEdge) extends PuckError(dGEdge + " does not exist !")
 
 case object NoSourceDetected extends PuckError("No sources detected")
