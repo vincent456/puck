@@ -71,6 +71,7 @@ aspect ReplaceInstanceValueAccess {
     }
 
     public void MethodAccess.replaceMethodCall(MethodDecl oldUsed, MethodDecl newUsed){
+        this.getArgList().replaceMethodCall(oldUsed, newUsed);
         if( targetMethod != null &&
            targetMethod.getDecl() == oldUsed) {
             MethodAccess ma = new MethodAccess(newUsed.name(), this.getArgList());

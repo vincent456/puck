@@ -27,7 +27,7 @@
 package puck.javaGraph
 
 import puck.graph._
-import puck.graph.constraints.{SupertypeAbstraction, ConstraintsMaps}
+import puck.graph.constraints.SupertypeAbstraction
 import puck.javaGraph.nodeKind._
 
 
@@ -67,7 +67,7 @@ trait JavaGraphBuilder extends GraphBuilder{
               case ((sb, nodeParent), p) =>
                 sb append p
                 val nId = addPackageNode(sb.toString(), p, mutable)
-                addContains(nodeParent, nId)
+                addEdge(Contains(nodeParent, nId))
                 sb append "."
                 (sb, nId)
           }

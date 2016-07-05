@@ -42,7 +42,8 @@ class ViolationMenu
  printingOptionsControl: PrintingOptionsControl,
  constraints : ConstraintsMaps)
 (implicit graph : DependencyGraph,
-  graphUtils : GraphUtils)
+  graphUtils : GraphUtils,
+ nodeKindIcons: NodeKindIcons)
   extends PopupMenu {
 
   val targetNode = graph.getConcreteNode(target)

@@ -95,6 +95,12 @@ class Project
   }
 
 
+  def compileOptions : List[(String, String)] =
+    (config get Keys.encoding) map {
+      v => List((Keys.encoding.v, v))
+    } getOrElse List()
+
+
   def workspace : File =
     new File((config get Keys.workspace getOrElse SingleFile(".")).path)
 

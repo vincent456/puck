@@ -43,7 +43,8 @@ class EdgeMenu
   blurrySelection : Boolean,
   constraints: Option[ConstraintsMaps],
   implicit val graph: DependencyGraph,
-  implicit val graphUtils: GraphUtils)
+  implicit val graphUtils: GraphUtils,
+  implicit val nodeKindIcons: NodeKindIcons)
   extends PopupMenu {
 
 

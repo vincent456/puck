@@ -26,7 +26,7 @@
 
 package puck.gui
 
-import java.io.{File, FileWriter}
+import java.io.File
 
 import puck._
 import puck.config.{Config, ConfigParser}
@@ -36,25 +36,24 @@ import puck.graph.io.{CSVPrinter, DotPrinter}
 import puck.util.{PuckLog, PuckLogger, PuckSystemLogger}
 
 import scala.concurrent.Future
-import scala.swing.{ProgressBar, Publisher, Swing}
+import scala.swing.{ProgressBar, Publisher, Reactor, Swing}
 import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scalaz.{-\/, \/-}
-
 import ShowDG._
 object PuckControl {
 
-  def apply(graphUtils: GraphUtils, logger : PuckLogger) : PuckControl =
-    new PuckControl(graphUtils, logger)
+  def apply(graphUtils: GraphUtils, nodeKindIcons : NodeKindIcons, logger : PuckLogger) : PuckControl =
+    new PuckControl(graphUtils, nodeKindIcons, logger)
 
-  def apply(graphUtils: GraphUtils) : PuckControl =
-    new PuckControl(graphUtils, new PuckSystemLogger(_ => true))
+  def apply(graphUtils: GraphUtils, nodeKindIcons : NodeKindIcons) : PuckControl =
+    new PuckControl(graphUtils, nodeKindIcons, new PuckSystemLogger(_ => true))
 
 //  def apply(graphUtils: GraphUtils, f : String, logger : PuckLogger) : PuckControl  =
 //    this.apply(graphUtils, new File(f), logger )
 
-  def apply(graphUtils: GraphUtils, f : File, logger : PuckLogger)  : PuckControl = {
-    val pc = this apply (graphUtils, logger)
+  def apply(graphUtils: GraphUtils, nodeKindIcons : NodeKindIcons, f : File, logger : PuckLogger)  : PuckControl = {
+    val pc = this apply (graphUtils, nodeKindIcons, logger)
     val sConf =
       if(f.isDirectory && Config.defaultConfFile(f).exists())
         Some(Config.defaultConfFile(f))
@@ -69,8 +68,9 @@ object PuckControl {
 
 class PuckControl
 (val graphUtils: GraphUtils,
-implicit val logger: PuckLogger)
-  extends Publisher {
+ val nodeKindIcons : NodeKindIcons,
+ implicit val logger: PuckLogger)
+  extends Reactor {
 
   var sProject : Option[Project] = None
 

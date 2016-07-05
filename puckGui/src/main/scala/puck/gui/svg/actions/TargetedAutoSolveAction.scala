@@ -33,21 +33,20 @@ import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.constraints.search.TargetedControlWithHeuristic
 import puck.graph.io.VisibilitySet
-import puck.gui.PrintingOptionsControl
+import puck.gui.{NodeKindIcons, PrintingOptionsControl}
 import puck.search._
 
 import scala.swing.BorderPanel.Position
 import scala.swing._
 
-
-
 object ResultFrame{
 
-  def apply[T](publisher : Publisher,
+  def apply[T](bus : Publisher,
                cm : ConstraintsMaps,
                printingOptionsControl: PrintingOptionsControl,
                res : Search[DecoratedGraph[T]])
-              (implicit graphUtils: GraphUtils): Frame = {
+              (implicit graphUtils: GraphUtils,
+               nodeKindIcons: NodeKindIcons): Frame = {
 
     implicit val LoggedSuccess(_, (graph,_)) = res.initialState.loggedResult
 
@@ -63,7 +62,7 @@ object ResultFrame{
         frame.peer.dispatchEvent(new WindowEvent(frame.peer, WindowEvent.WINDOW_CLOSING))
 
       contents = new BorderPanel{
-        val panel = new AutoSolveResultPanel(publisher, cm, VisibilitySet.allVisible(graph), printingOptionsControl, res)
+        val panel = new AutoSolveResultPanel(bus, cm, VisibilitySet.allVisible(graph), printingOptionsControl, res)
         add(panel, Position.Center)
         add(new BoxPanel(Orientation.Horizontal){
           contents += Swing.HGlue
@@ -71,8 +70,8 @@ object ResultFrame{
 
             action = new Action("OK"){
               def apply(): Unit ={
-                try puck.actions.printErrOrPushGraph(publisher, "Solve action : ") {
-                    panel.selectedResult.toLoggedTry
+                try puck.actions.printErrOrPushGraph(bus, "Solve action : "){
+                  panel.selectedResult.toLoggedTry
                 }
                 catch{
                   case t : Throwable =>
@@ -100,7 +99,8 @@ class AutoSolveAction
  printingOptionsControl: PrintingOptionsControl,
  strategy : SearchStrategy[DecoratedGraph[Any]],
  control : SearchControl[DecoratedGraph[Any]])
-(implicit graphUtils: GraphUtils)
+(implicit graphUtils: GraphUtils,
+ nodeKindIcons: NodeKindIcons)
   extends Action("Solve") {
 
   implicit val graph = control.initialState.graph
@@ -114,7 +114,7 @@ class AutoSolveAction
 
     engine.explore()
 
-    Swing onEDT ResultFrame(bus, cm, printingOptionsControl, engine)
+    Swing onEDT puck.ignore(ResultFrame(bus, cm, printingOptionsControl, engine))
 
   }
 }
@@ -127,7 +127,8 @@ class TargetedAutoSolveAction
  violationTarget : ConcreteNode,
  printingOptionsControl: PrintingOptionsControl)
 (implicit graph : DependencyGraph,
-  graphUtils: GraphUtils)
+ graphUtils: GraphUtils,
+ nodeKindIcons: NodeKindIcons)
   extends Action("Solve [BETA - under development]") {
 
   override def apply(): Unit = {
@@ -153,7 +154,7 @@ class TargetedAutoSolveAction
 
     engine.explore()
 
-    Swing onEDT ResultFrame(bus, cm, printingOptionsControl, engine)
+    Swing onEDT puck.ignore(ResultFrame(bus, cm, printingOptionsControl, engine))
 
   }
 }

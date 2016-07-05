@@ -75,6 +75,14 @@ object Config {
   case class SingleFile(path : String) extends FileFinder
   case class Root(path : String, suffix : String, exclude : Seq[String]) extends FileFinder
 
+
+  class StringKey(v : String) extends ConfigKey[String](v) {
+    def xmlValue(config: Config) : String =
+      config get this match {
+        case Some(value) => s"\t${taggedString(value)}\n"
+        case None => ""
+      }
+  }
   class FileKey(v : String) extends ConfigKey[SingleFile](v) {
     def xmlValue(config: Config) : String =
       config get this match {
@@ -82,7 +90,6 @@ object Config {
         case None => ""
       }
   }
-
   class FileListKey(v : String) extends ConfigKey[List[FileFinder]](v) {
 
     def xmlValue(ff: FileFinder) : String = ff match {
@@ -102,8 +109,11 @@ object Config {
   }
 
   object Keys {
+    implicit def str2strKey(v : String)  : StringKey = new StringKey(v)
     implicit def str2FileKey(v : String)  : FileKey = new FileKey(v)
     implicit def str2FileListKey(v : String)  : FileListKey = new FileListKey(v)
+
+    //see org.extendj.ast.Frontend.initOptions() for extendj options
 
     val workspace : FileKey = "workspace"
 
@@ -111,6 +121,8 @@ object Config {
     val sourcepaths : FileListKey = "sourcepath"
     val classpath : FileListKey = "classpath"
     val bootclasspath : FileListKey = "bootclasspath"
+
+    val encoding : StringKey = "encoding"
 
     val out : FileKey = "out"
     val decouple : FileKey = "decouple"
@@ -121,6 +133,10 @@ object Config {
 
   }
 
+  val stringValueKeys : List[StringKey] = {
+    import Keys._
+    List(encoding)
+  }
   val singleValueKeys : List[FileKey] = {
     import Keys._
     List(dotPath, out, decouple, log)
@@ -160,12 +176,24 @@ object ConfigParser {
 
     val initConf = Config.empty put (Keys.workspace, SingleFile(root))
 
-    val c1 = Config.singleValueKeys.foldLeft(initConf){
-      case (c, k) =>
-        (n \ k).textOption map {
-          v => c put (k, SingleFile(v))
-        } getOrElse c
-    }
+
+    def aux[K](c0 : Config, keys : Seq[ConfigKey[K]], f : String => K ) : Config =
+      keys.foldLeft(c0){
+        case (c, k) =>
+          (n \ k).textOption map {
+            v => c put (k, f(v))
+          } getOrElse c
+      }
+
+    val c0 = aux(initConf, Config.stringValueKeys, identity)
+    val c1 = aux(c0, Config.singleValueKeys, SingleFile.apply)
+
+//     val c1 = Config.singleValueKeys.foldLeft(initConf){
+//      case (c, k) =>
+//        (n \ k).textOption map {
+//          v => c put (k, SingleFile(v))
+//        } getOrElse c
+//    }
     Config.listValueKeys.foldLeft(c1){
       case (c, k) =>
         (n \ k).foldLeft(c) {

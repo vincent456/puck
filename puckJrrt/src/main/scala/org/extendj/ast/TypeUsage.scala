@@ -26,7 +26,7 @@
 
 package org.extendj.ast
 
-import puck.graph.{TypeDecl => PuckTypeDecl, _}
+import puck.graph.{TypeDecl => _, _}//hiding TypeDecl and importing everything else
 import JastaddGraphBuilder.{qualifierIsSuperAccess, qualifierIsThisAccess}
 import puck.PuckError
 /**
@@ -77,7 +77,16 @@ trait TypeUsage {
             bindTypeUse(this buildNode qualifier, qualifier, typeMemberUse)
           else {
               val a = qualifier.asInstanceOf[Access]
-              bindParTypeUse(a, a.accessed().asInstanceOf[TypeMemberSubstitute], typeMemberUse)
+              a.accessed() match {
+                case tms : TypeMemberSubstitute =>
+                  bindParTypeUse(a, tms, typeMemberUse)
+                case cds : ConstructorDeclSubstituted =>
+                  bindTypeUse(getNode(cds.getOriginal), cds.getOriginal.hostType(), typeMemberUse)
+
+                case _ => error()
+
+              }
+
           }
       }
       catch {
@@ -147,6 +156,11 @@ trait TypeUsage {
         findTypeVariableInstanciator(tv, qualifierDecl.`type`(), qualifier) foreach (
           e =>
             bindTypeUse(e buildNode this, qualifierDecl.`type`(), typeMemberUse) )
+
+      case (origType : ParTypeDecl,  usageType : ParTypeDecl)
+        if origType.genericDecl() == usageType.genericDecl() =>
+        //Type variable are ignored here
+        bindTypeUse(buildNode(qualifier), qualifier, typeMemberUse)
 
 
       case (_ : ParTypeDecl, _)
@@ -241,9 +255,10 @@ trait TypeUsage {
         if(lvalueParType.isRawType) println(s"Raw ParType at ${rvalue.fullLocation()} : no type constraint generated")
         else constraintParTypeUses(lvalue, lvalueParType, rvalue.lastAccess())
       case _  if rvalue.isSubstitute =>
-        val tms = rvalue.accessed().asInstanceOf[TypeMemberSubstitute]
-        tms.getOriginalType match {
-          case tv : TypeVariable =>
+
+        rvalue.accessed() match {
+          case tms : TypeMemberSubstitute if tms.getOriginalType.isInstanceOf[TypeVariable] =>
+            val tv = tms.getOriginalType.asInstanceOf[TypeVariable]
             findTypeVariableInstanciator(tv, tms.`type`(), rvalue) foreach {
               e =>
                 addTypeUsesConstraint((lvalue, buildNode(lvalueType)),
@@ -253,6 +268,7 @@ trait TypeUsage {
             addTypeUsesConstraint((lvalue, this buildNode lvalueType),
               Sub((buildNode(rvalue.lastAccess()), buildNode(rvalue.lastAccess().`type`())) ))
         }
+
       case _ =>
           addTypeUsesConstraint((lvalue, this buildNode lvalueType),
             Sub((buildNode(rvalue.lastAccess()), buildNode(rvalue.lastAccess().`type`())) ))
@@ -339,6 +355,8 @@ trait TypeUsage {
     case a : AssignSimpleExpr => a.getSource
       normalizeAccessAndApply(f,default)(a.getSource)
       normalizeAccessAndApply(f,default)(a.getDest)
+    case ioe : InstanceOfExpr =>
+      System.err.println("type constraint, InstanceOfExpr not handled")
     case ace : ArrayCreationExpr =>
       System.err.println("type constraint, ArrayCreationExpr not handled")
     case (_ : Binary | _ : Unary)=>
@@ -353,7 +371,7 @@ trait TypeUsage {
 
     normalizeAccessAndApply(
       a => f((t, a)),
-      arg => throw new DGBuildingError(s"Access expected but found : $arg")
+      arg => throw new DGBuildingError(s"Access expected but found : $arg " + arg.fullLocation())
     )(argValue)
 
   }

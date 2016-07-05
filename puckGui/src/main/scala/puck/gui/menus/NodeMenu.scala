@@ -66,7 +66,7 @@ object NodeMenu{
 }
 
 class ConcreteNodeMenu
-(bus: Publisher,
+(val bus: Publisher,
  implicit val graph : DependencyGraph,
  scm : Option[ConstraintsMaps],
  implicit val graphUtils : GraphUtils,

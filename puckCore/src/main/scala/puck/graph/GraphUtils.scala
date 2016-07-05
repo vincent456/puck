@@ -36,4 +36,5 @@ trait GraphUtils {
   val Rules : TransformationRules
   val violationsKindPriority : Seq[NodeKind]
   val dotHelper : DotHelper
+
 }

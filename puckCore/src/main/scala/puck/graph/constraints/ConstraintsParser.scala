@@ -114,7 +114,7 @@ object ConstraintsParser
   //val eol = ";"
 
   def ident : Parser[String] = (
-    """[^\[\]\s',().=;:]+""".r
+    """[^\[\]\s',()=;:]+""".r
       | "'" ~> """[^\s']+""".r <~ "'"
     )
 

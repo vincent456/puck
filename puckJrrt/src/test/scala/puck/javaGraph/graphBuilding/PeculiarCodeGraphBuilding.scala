@@ -29,7 +29,7 @@ package puck.javaGraph.graphBuilding
 
 import puck.javaGraph.ScenarioFactory
 import puck.AcceptanceSpec
-import puck.graph.NodeId
+import puck.graph.InstanceValueDecl
 
 /**
   * Created by Loïc Girault on 25/02/16.
@@ -178,6 +178,25 @@ class PeculiarCodeGraphBuilding extends AcceptanceSpec {
     ){
       val _ = graph.structuredType("java.util.Collections.unmodifiableSortedMap(SortedMap)")
       assert(true)
+    }
+  }
+
+  scenario("Method call qualified by constructor"){
+    val _ = new ScenarioFactory(
+      """package p;
+        |import java.util.*;
+        |class C {
+        |   void m(Collection<String> cs){
+        |     Iterator iter = new Vector(cs).iterator();
+        |   }
+        |}"""
+    ){
+      graph.usesListExludingTypeUses.foreach {
+        tmu =>
+          if (graph.kindType(tmu._2) == InstanceValueDecl)
+            assert(graph.typeUsesOf(tmu).nonEmpty)
+
+      }
     }
   }
 

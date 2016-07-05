@@ -54,20 +54,20 @@ object CSVPrinter{
       import puck.util.FileHelper.FileOps
 
       val nodesWriter = new FileWriter(f \ "nodes.csv")
-      nodesWriter write s"id\t$sep kind\t$sep name\t$sep qualified name\t$sep type$bl"
+      nodesWriter write s"id${sep}kind${sep}name${sep}qualified name${sep}type$bl"
       graph.nodes.foreach (
         n =>
-          nodesWriter write s"${n.id}\t$sep ${n.kind}\t$sep ${n.name}\t$sep ${graph fullName n.id}\t$sep ${sig(n)}$bl"
+          nodesWriter write s"${n.id}$sep${n.kind}$sep${n.name}$sep${graph fullName n.id}$sep${sig(n)}$bl"
       )
       nodesWriter.close()
 
       val edgesWriter = new FileWriter(f \ "edges.csv")
-      edgesWriter write s"source\t$sep target\t$sep label$bl"
+      edgesWriter write s"source${sep}target${sep}label$bl"
 
       def printEdges(edges : List[NodeIdP], label : String) =
         edges foreach {
           case (source, target) =>
-            edgesWriter write s"$source\t$sep $target\t$sep $label$bl"
+            edgesWriter write s"$source$sep$target$sep$label$bl"
         }
 
       printEdges(graph.containsList, "Contains")

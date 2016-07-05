@@ -27,7 +27,7 @@
 aspect NodeFactory  {
 
     private ASTNode<? extends ASTNode> Access.undefinedAccessed(){
-		throw new Error(this.prettyPrint() + "- " + this.compilationUnit().pathName()+ " line "+ this.location() +" - " +
+		throw new Error(this.prettyPrint() + "- " + this.fullLocation() +" - " +
 		this.getClass() + " : accessed not implemented");
     }
 

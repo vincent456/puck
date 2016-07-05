@@ -29,7 +29,7 @@ package puck.gui
 import puck.graph._
 import puck.graph.io._
 
-import scala.swing.Publisher
+import scala.swing.{Publisher, Reactor}
 import VisibilitySet.VisibilitySetOps
 /**
   * Created by Loïc Girault on 11/01/16.
@@ -47,7 +47,7 @@ object PrintingOptionsControl {
 
 class PrintingOptionsControl
 (private var _visibility : VisibilitySet.T,
- bus : Publisher) {
+ bus : Publisher) extends Reactor {
 
   private var printId : Boolean = false
   private var printSignatures : Boolean = false
@@ -164,4 +164,11 @@ class PrintingOptionsControl
 
   def expandAll(graph : DependencyGraph, root: NodeId) : Unit =
     setSubTreeVisibility(graph, root, Visible, includeRoot = true)
+
+  this listenTo bus
+
+  reactions += {
+    case evt : ReceivedByPrintControlEvt => evt(this)
+  }
+
 }

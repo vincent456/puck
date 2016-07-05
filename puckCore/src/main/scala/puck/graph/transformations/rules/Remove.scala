@@ -38,6 +38,11 @@ object Remove{
 
   def concreteNode
   ( g : DependencyGraph,
+    nid : NodeId
+  ) : LoggedTG = remove.concreteNode(g, g getConcreteNode nid)
+
+  def concreteNode
+  ( g : DependencyGraph,
     n : ConcreteNode
   ) : LoggedTG = {
     val graph = g.comment(s"Remove($n)")

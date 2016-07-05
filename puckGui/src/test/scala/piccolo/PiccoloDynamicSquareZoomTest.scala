@@ -26,18 +26,17 @@
 
 package piccolo
 
-import org.piccolo2d.{PCanvas, PNode, PRoot}
 import org.piccolo2d.event.{PBasicInputEventHandler, PInputEvent}
 import org.piccolo2d.extras.PFrame
 import org.piccolo2d.nodes.PText
 import org.piccolo2d.util.PBounds
+import org.piccolo2d.{PCanvas, PNode, PRoot}
 import puck._
 import puck.graph._
-import puck.piccolo.{DGPNode, PUses, Register, squareSide}
 import puck.gui.NodeKindIcons
 import puck.piccolo.util.{TitledGridSquareNode, ViewCommands}
+import puck.piccolo.{DGPNode, squareSide}
 
-import scala.collection.mutable
 import scala.swing._
 /**
   * Created by Loïc Girault on 23/05/16.
@@ -76,7 +75,7 @@ class PiccoloDynamicSquareZoomTest(g : DependencyGraph,
 
   def squareNode(nid : NodeId) : TitledGridSquareDGPNode  = {
     val numChildren = g.content(nid).size
-    val titleNode = DGTitleNode(g, nid)(nk)
+    val titleNode = DGTitleNode(g, nid, nk)
     new TitledGridSquareDGPNode(nid, titleNode, numChildren)
   }
 

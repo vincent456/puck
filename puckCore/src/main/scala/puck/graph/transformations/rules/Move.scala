@@ -304,7 +304,7 @@ object Move {
                   LoggedError(s"An arg typed ${NamedType(newContainer)} was expected")
                 case Some(pid) =>
 
-                  val ltg = Remove.concreteNode(g0, g0.getConcreteNode(pid))
+                  val ltg = Remove.concreteNode(g0, pid)
 
                   val paramTypeUses = (pid, newContainer)
 

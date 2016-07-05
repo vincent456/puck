@@ -26,9 +26,9 @@
 
 package puck.piccolo
 
-import org.piccolo2d.{PCanvas, PLayer}
+import org.piccolo2d.PCanvas
 import org.piccolo2d.extras.swing.PScrollPane
-import puck.gui.{GraphStackEvent, NodeKindIcons, Popped, PuckControl, PuckMainPanel, Pushed, TreeViewHandler, ViewHandler}
+import puck.gui.{GraphFocus, GraphStackEvent, NodeKindIcons, Popped, PuckControl, PuckMainPanel, Pushed, TreeViewHandler, ViewHandler}
 
 import scala.swing.Publisher
 
@@ -53,6 +53,9 @@ class PiccoloGraphExplorer
     case evt : GraphStackEvent =>
       canvas = new DGCanvas(control, nodeKindIcons)
       setViewportView(canvas)
+
+    case GraphFocus(_, edge) =>
+      canvas.focus(Set(edge.source, edge.target))
 
   }
 }

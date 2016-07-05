@@ -37,32 +37,24 @@ import scala.swing._
 /**
   * Created by Loïc Girault on 02/06/16.
   */
-class DGCanvas
-( control : PuckControl,
- implicit val nodeKindIcons : NodeKindIcons)
-  extends PCanvas {
-  import control.graphStack.graph
+abstract class BasicGraphCanvas
+( val bus : Publisher,
+  implicit val nodeKindIcons : NodeKindIcons
+) extends PCanvas {
+  def graph : DependencyGraph
 
-  val menuBuilder = PiccoloNodeMenu(control,nodeKindIcons)
-
+  val menuBuilder = PiccoloNodeMenu.readOnly(bus, graph)
   val nodeLayer = getLayer
   val edgeLayer = new PLayer()
   getRoot.addChild(edgeLayer)
-
-  val register = new Register(control, edgeLayer)
-
-
-
-  getRoot.addAttribute("control", control)
-  getRoot.addAttribute("register", register)
-
   getCamera.addLayer(0, edgeLayer)
 
-  addInputEventListener(new MoveNodeDragEventHandler(control, this))
-  addInputEventListener(new ArrowDragEventHandler(control, this))
+
+  var register = new Register(() => graph, edgeLayer)
+  getRoot.addAttribute("register", register)
 
   def getNode(nid : NodeId) : DGExpandableNode  = register.getOrElse(nid, {
-    val titleNode = DGTitleNode(graph, nid)
+    val titleNode = DGTitleNode(graph, nid, nodeKindIcons)
     val n = new DGExpandableNode(titleNode)
     n.titlePnode.addInputEventListener(clickEventHandler(n))
     n.addPropertyChangeListener(PNode.PROPERTY_VISIBLE, register.visibilityPropertyListener)
@@ -71,56 +63,9 @@ class DGCanvas
   })
 
 
-
-  def applyRec(newGraph: DependencyGraph, oldGraph : DependencyGraph, subRec : Recording) : Unit = {
-    var reenactor = oldGraph
-
-    subRec.foreach  {
-      case Transformation.Add(Edge(ContainsKind(cter, cted))) =>
-
-        register.get(cter) foreach ( _ addContent getNode(cted) )
-
-      case Transformation.Remove(Contains(cter, cted)) =>
-
-        register.get(cter) foreach ( _ rmContent getNode(cted) )
-
-      case t @ ChangeSource(Contains(oldc, tgt), newc) =>
-
-        val n = getNode(tgt)
-
-        register.get(oldc) foreach ( _ rmContent n )
-        register.get(newc) foreach ( _ addContent n )
-
-      case Transformation(_, RenameOp(id, _, _)) =>
-      val n = getNode(id).asInstanceOf[DGExpandableNode]
-        import puck.graph.ShowDG._
-        val newNameWithSig = (newGraph, newGraph getNode id).shows(desambiguatedLocalName)
-        n.titlePnode.text.setText(newNameWithSig)
-
-
-      case _ =>
-    }
-
-//    graph = newGraph
-  }
-
-  import puck.graph.Recording.RecordingOps
-  def pushEvent(newGraph: DependencyGraph, oldGraph : DependencyGraph) : Unit = {
-    //assert(oldGraph eq graph)
-    val subRec : Recording = newGraph.recording.subRecordFromLastMilestone.reverse
-    applyRec(newGraph, oldGraph, subRec)
-  }
-  def popEvent(newGraph: DependencyGraph, oldGraph : DependencyGraph) : Unit = {
-    //assert(oldGraph eq graph)
-    val subRec : Recording = oldGraph.recording.subRecordFromLastMilestone map (_.reverse)
-
-    applyRec(newGraph, oldGraph, subRec)
-  }
   val rootNode = getNode(graph.rootId)
   nodeLayer addChild rootNode
-  register += (graph.rootId -> rootNode)
-  removeInputEventListener(getPanEventHandler)
-  removeInputEventListener(getZoomEventHandler)
+
 
   def clickEventHandler(n : DGExpandableNode) : PBasicInputEventHandler =
     new PBasicInputEventHandler() {
@@ -128,10 +73,10 @@ class DGCanvas
       override def mousePressed(event: PInputEvent) : Unit =
         if(event.isRightMouseButton){
           val pos = event.getCanvasPosition
-          val menu = menuBuilder(DGCanvas.this, n)
+          val menu = menuBuilder(BasicGraphCanvas.this, n)
 
 
-          Swing.onEDT(menu.show(Component wrap DGCanvas.this,
+          Swing.onEDT(menu.show(Component wrap BasicGraphCanvas.this,
             pos.getX.toInt, pos.getY.toInt))
         }
 
@@ -140,9 +85,8 @@ class DGCanvas
           if(n.contentSize == 0) expand(n)
           else collapse(n)
         }
-
-
     }
+
 
   def hide(n : DGExpandableNode) : Unit =
     n.removeFromParent()
@@ -154,7 +98,7 @@ class DGCanvas
 
   }
 
-  def expand(n : DGExpandableNode) : Unit = addContent(n)
+  def expand(n : DGExpandableNode) : Unit = puck.ignore(addContent(n))
   def collapse(n : DGExpandableNode) : Unit =  n.clearContent()
 
   def expandAll(n : DGExpandableNode) : Unit =
@@ -185,6 +129,91 @@ class DGCanvas
   def removeOutgoingUses( n : DGExpandableNode ) : Unit =
     register removeOutgoingUses n.id
 
+
+
+  def focus(ns : Set[NodeId]) : Unit = {
+    val focusedNodes = ns.foldLeft(Set[NodeId]()){
+      case (acc, nid) => acc ++ (graph containerPath nid)
+    }
+    register = new Register(() => graph, edgeLayer)
+
+    register += (graph.rootId -> rootNode)
+    rootNode.clearContent()
+
+    (focusedNodes - graph.rootId) foreach {
+      nid =>
+        val n = getNode(nid)
+        val c = getNode(graph container_! nid)
+        c.addContent(n)
+    }
+  }
+
+}
+
+class DGCanvas
+( control : PuckControl,
+  nodeKindIcons : NodeKindIcons)
+  extends BasicGraphCanvas(control.Bus, nodeKindIcons) {
+
+
+  def graph = control.graph
+
+  override val menuBuilder = PiccoloNodeMenu(control, nodeKindIcons)
+
+  getRoot.addAttribute("control", control)
+
+
+
+  addInputEventListener(new MoveNodeDragEventHandler(control, this))
+  addInputEventListener(new ArrowDragEventHandler(control, this))
+
+
+
+  def applyRec(newGraph: DependencyGraph, oldGraph : DependencyGraph, subRec : Recording) : Unit = {
+
+    subRec.foreach  {
+      case Transformation.Add(Edge(ContainsKind(cter, cted))) =>
+
+        register.get(cter) foreach ( _ addContent getNode(cted) )
+
+      case Transformation.Remove(Contains(cter, cted)) =>
+
+        register.get(cter) foreach ( _ rmContent getNode(cted) )
+
+      case t @ ChangeSource(Contains(oldc, tgt), newc) =>
+
+        val n = getNode(tgt)
+
+        register.get(oldc) foreach ( _ rmContent n )
+        register.get(newc) foreach ( _ addContent n )
+
+      case Transformation(_, RenameOp(id, _, _)) =>
+        val n = getNode(id)
+        import puck.graph.ShowDG._
+        val newNameWithSig = (newGraph, newGraph getNode id).shows(desambiguatedLocalName)
+        n.titlePnode.text.setText(newNameWithSig)
+
+
+      case _ =>
+    }
+
+  }
+
+  import puck.graph.Recording.RecordingOps
+  def pushEvent(newGraph: DependencyGraph, oldGraph : DependencyGraph) : Unit = {
+    //assert(oldGraph eq graph)
+    val subRec : Recording = newGraph.recording.subRecordFromLastMilestone.reverse
+    applyRec(newGraph, oldGraph, subRec)
+  }
+  def popEvent(newGraph: DependencyGraph, oldGraph : DependencyGraph) : Unit = {
+    //assert(oldGraph eq graph)
+    val subRec : Recording = oldGraph.recording.subRecordFromLastMilestone map (_.reverse)
+
+    applyRec(newGraph, oldGraph, subRec)
+  }
+
+  removeInputEventListener(getPanEventHandler)
+  removeInputEventListener(getZoomEventHandler)
 }
 
 

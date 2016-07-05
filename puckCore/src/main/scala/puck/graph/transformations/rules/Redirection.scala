@@ -30,6 +30,7 @@ import puck.PuckError
 import puck.graph._
 import puck.util.LoggedEither
 import LoggedEither._
+
 import scalaz.std.list._
 import scalaz.std.set._
 import ShowDG._
@@ -100,7 +101,7 @@ object Redirection {
     }
     if(absSet.size != 1)
       LoggedError(log + s" one abstraction required ${absSet.size} found")
-    else LoggedSuccess(log, absSet.head)
+    else LoggedSuccess(absSet.head)
   }
 
   private [rules] def redirect
@@ -136,9 +137,12 @@ object Redirection {
     val newKindType = newUsed.kindType(g)
 
     val ltg : LoggedTG = (oldKindType, newKindType) match {
-      case (InstanceValueDecl, InstanceValueDecl)
-           | (TypeDecl, TypeDecl) =>
-        redirectInstanceUsesAndPropagate(g, oldUse, newUsed)
+      case (TypeDecl, TypeDecl) =>
+        val AccessAbstraction(newUsedId, _) = newUsed
+        redirectInstanceUsesAndPropagate(g, oldUse, newUsedId)
+
+      case (InstanceValueDecl, InstanceValueDecl) =>
+        redirectInstanceUsesAndPropagate(g, oldUse, newUsed.containerIn(g).get)
 
       case (TypeConstructor, InstanceValueDecl) =>
         redirectTypeConstructorToInstanceValueDecl(g, oldUse, newUsed)()
@@ -228,7 +232,7 @@ object Redirection {
     //    import puck.util.Debug._
     //    println("propagateTypeConstraints")
     //    (g, g.edges).println
-    val (oldTypeUser, oldTypeUsed) = oldTypeUse
+    val (_, oldTypeUsed) = oldTypeUse
 
     val tucs = g.typeConstraints(oldTypeUse)
 
@@ -249,13 +253,16 @@ object Redirection {
           case Sub(_) | Sup(_) => false
         }
 
-    val tucString =  tucsThatNeedPropagation map (tuc => (g,tuc).shows) mkString ("\n", "\n", "\n")
-   val log2 = s"\ntucsThatNeedPropagation : ${(g,oldTypeUse).shows} $tucString"
+    val tucsString = (for{ ct <- tucs.toList } yield
+      (g,(oldTypeUse, ct)).shows) mkString "\n"
+    val tucsThatNeedPropagationString =
+      (for{ ct <- tucsThatNeedPropagation.toList } yield
+        (g,(oldTypeUse, ct)).shows) mkString ("\n", "\n", "")
+    val log2 = s"\nall constraints = {$tucsString}\ntucsThatNeedPropagation : {$tucsThatNeedPropagationString}\n"
 
-    (log  + log2)<++: (g.abstractions(oldTypeUsed).find (abs => abs.nodes contains newTypeToUse) match {
+    (log  + log2) <++: (g.abstractions(oldTypeUsed).find (abs => abs.nodes contains newTypeToUse) match {
       case None => LoggedError(s"${(g,newTypeToUse).shows} is not an abstraction of ${(g,oldTypeUsed).shows} ")
-      case Some(ReadWriteAbstraction(_, _)) =>
-        LoggedError("!!! type is not supposed to have a r/w abs !!!")
+      case Some(ReadWriteAbstraction(_, _)) => LoggedError("!!! type is not supposed to have a r/w abs !!!")
       case Some(abs @ AccessAbstraction(absId, _)) =>
 
         def update(g : DependencyGraph, tuc : TypeUseConstraint) : DependencyGraph =
@@ -269,11 +276,11 @@ object Redirection {
 
         tucsToPropagate.foldLoggedEither(g1) {
           case (g0, tuc) =>
-            val (s,t) = tuc.constrainedUse
+            val (s, t) = tuc.constrainedUse
             //LoggedSuccess( update(g0, tuc) )
             val g1 = update(g0, tuc)
-            if( t == absId ) LoggedSuccess(g1)
-            else redirectInstanceUsesAndPropagate(g1, (s,t), abs)
+            log <++: (if( t == absId ) LoggedSuccess(g1)
+            else redirectInstanceUsesAndPropagate(g1, (s,t), absId))
         }
     })
   }
@@ -314,6 +321,7 @@ object Redirection {
     newTypeToUse : NodeId
   ): LoggedTG = {
     val newTypeUse = (oldTypeUses.user, newTypeToUse)
+    "redirectTypeMemberUses:\n" <++:
     brSet.foldLoggedEither(g) {
       case (g00, (_, tmu)) =>
 
@@ -332,25 +340,19 @@ object Redirection {
   def redirectInstanceUsesAndPropagate
   (g : DependencyGraph,
    oldUse : NodeIdP,
-   newUsed : Abstraction
+   newTypeToUse : NodeId
+   //newUsed : Abstraction
   ) : LoggedTG = {
 
     val log = s"redirectInstanceUsesAndPropagate(g, oldUse = ${(g, oldUse).shows},  " +
-      s"newUsed = ${(g, newUsed).shows})\n"
+      s"newTypeToUse = ${(g, newTypeToUse).shows})\n"
 
-    val newTypeToUse = newUsed.kindType(g) match {
-      case TypeDecl =>
-        val AccessAbstraction(nid, _) = newUsed
-        nid
-      case _ => newUsed.containerIn(g).get
-    }
-
-    val typeMemberTRset = cl(g, oldUse)
-    val log2 = typeMemberTRset map (n => (g,n).shows) mkString(" type members TRset = {", "\n", "}\n")
+    val qualifyingSet = cl(g, oldUse)
+    val log2 = qualifyingSet map (n => (g,n).shows) mkString(" type members TRset = {", "\n", "}\n")
 
     val ltg : LoggedTG =
-      if(typeMemberTRset.nonEmpty) {
-        val groupedByTypeUse = typeMemberTRset.groupBy(_._1)
+      if(qualifyingSet.nonEmpty) {
+        val groupedByTypeUse = qualifyingSet.groupBy(_._1)
 
         groupedByTypeUse.toList.foldLoggedEither(g comment log) {
           case (g0, (tu, brSet)) =>
@@ -364,11 +366,14 @@ object Redirection {
         }
 
       }
-      else //assert(newUsed.kindType(g) == TypeDecl)
-        redirect(g, oldUse, newUsed) flatMap {
-          case (g0,_) =>
-            propagateTypeConstraints(g0, oldUse, newTypeToUse)
-        }
+      else
+        g.kindType(oldUse.used) match {
+        case TypeDecl =>
+            propagateTypeConstraints(oldUse.changeTarget(g, Uses, newTypeToUse), oldUse, newTypeToUse)
+        case _ => LoggedError("empty qualyfing set, type redirection is expected")
+
+
+      }
 
     (log + log2) <++: ltg
   }

@@ -28,10 +28,10 @@ package puck.javaGraph
 
 import java.io.File
 
-import org.extendj.ast.JavaJastAddDG2AST
-import puck.{NonExistentEdge, Project, PuckError}
+import org.extendj.ast.{HasNode, JavaJastAddDG2AST}
+import puck.{NonExistentEdge, Project}
 import puck.config.ConfigParser
-import puck.graph.{Abstraction, AccessAbstraction, DependencyGraph, InstanceValueDecl, LoggedError, LoggedSuccess, NodeId, NodeIdP}
+import puck.graph._
 import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations.rules.Redirection
 import puck.jastadd.ExtendJGraphUtils.Rules._
@@ -61,9 +61,17 @@ object FreemindScenario {
 
   }
 
-
+  def printUsageFullLocation(dG2AST: JavaJastAddDG2AST, g : DependencyGraph, use : NodeIdP) : Unit = {
+    val (user, _) = use
+    dG2AST.graph2ASTMap(g.container_!(user)) match {
+      case hn: HasNode =>
+        val n = hn.node
+        println(n.fullLocation())
+      case _ => ()
+    }
+  }
   import puck.graph.ShowDG._
-  def checkNonEmptyQualifyingRelationship(g : DependencyGraph) = {
+  def checkNonEmptyQualifyingRelationship(dG2AST: JavaJastAddDG2AST, g : DependencyGraph) = {
     println("****************************************************************")
     println("****************************************************************")
     println("****************************************************************")
@@ -72,13 +80,18 @@ object FreemindScenario {
       tmu =>
         try {
           if (g.kindType(tmu._2) == InstanceValueDecl
-              &&  g.typeUsesOf(tmu).isEmpty)
+              &&  g.typeUsesOf(tmu).isEmpty) {
+
+            printUsageFullLocation(dG2AST, g, tmu)
             println((g, tmu).shows + " has no type uses !!!")
+          }
         } catch {
-          case NonExistentEdge(u) if u.used == DependencyGraph.findElementByName(g, "java.lang.Object[]").get.id => ()
-          case NonExistentEdge(u) if u.used == DependencyGraph.findElementByName(g, "java.lang.String[]").get.id => ()
+//          case NonExistentEdge(u) if u.used == DependencyGraph.findElementByName(g, "java.lang.Object[]").get.id => ()
+//          case NonExistentEdge(u) if u.used == DependencyGraph.findElementByName(g, "java.lang.String[]").get.id => ()
+//          case NonExistentEdge(u) if g.fullName(u.used).endsWith("[]") => ()
           case NonExistentEdge(u) =>
-          throw new PuckError("!!!! " + (g, u.user).shows(desambiguatedFullName) + " uses " + (g, u.used).shows(desambiguatedFullName) + " does not exist !!")
+            printUsageFullLocation(dG2AST, g, tmu)
+            println((g, u).shows + " type uses of " +(g, tmu).shows + " does not exist ")
         }
     }
     println("[CHECK ended ]")
@@ -88,6 +101,7 @@ object FreemindScenario {
 
   def main(args : Array[String]) : Unit = {
     val cfgFilePath = "/home/lorilan/projects/constraintsSolver/freemind-puck-cfg.xml"
+    val planPath = "/home/lorilan/test_cases_for_puck/QualitasCorpus/Systems/freemind/freemind-1.0.1/src/freemind/00fremind_plan.pck"
     val project = new Project(ConfigParser(new File(cfgFilePath)),JavaJastAddDG2AST)
 
     implicit val logger = new PuckFileLogger(_ => true, project.logFile.get)
@@ -109,15 +123,19 @@ object FreemindScenario {
 
     def redirectWrongUsers(g : DependencyGraph, wronglyUsed : NodeId, abs : Abstraction) =
       (g,constraints).wrongUsers(wronglyUsed).foldLoggedEither(g){
-        (g, user) => redirection.redirectUsesAndPropagate(g, (user, wronglyUsed), abs)
+        (g, user) =>
+          if( g.uses(user, wronglyUsed) )
+            redirection.redirectUsesAndPropagate(g, (user, wronglyUsed), abs)
+          else LoggedSuccess(g) // redirected in a previous iteration of the fold loop
       }
 
-    import puck.graph.ShowDG._
-    println("(graph,constraints).wrongUsers(errorMsgMethod)")
-    (graph,constraints).wrongUsers(errorMsgMethod) ++
-      (graph,constraints).wrongUsers(infoMsgMethod) foreach {
+      import puck.graph.ShowDG._/*++
+      (graph,constraints).wrongUsers(infoMsgMethod)*/
+    (graph,constraints).wrongUsers(errorMsgMethod) foreach {
+      println("(graph,constraints).wrongUsers(errorMsgMethod)")
       m =>
         (graph, m).println(desambiguatedFullName)
+        println("typeUsesOf.isEmpty = " + graph.typeUsesOf((m,errorMsgMethod)).isEmpty)
 
     }
 
@@ -128,7 +146,7 @@ object FreemindScenario {
         controller)
 
 
-    checkNonEmptyQualifyingRelationship(graph)
+    //checkNonEmptyQualifyingRelationship(s.dg2ast, graph)
 
     println("-----------")
 
@@ -146,20 +164,32 @@ object FreemindScenario {
 
       infoMsgAbs = g2.abstractions(infoMsgMethod).head
 
-      g3 = g2.setName(itId, "Messenger")
-              .addContains("freemind.modes", itId)
+      g3 = g2.addContains("freemind.modes", itId)
+              .setName(itId, "Messenger")
 
       g4 <- redirectWrongUsers(g3, errorMsgMethod, errorMsgAbs)
 
-//      g5 <- redirectWrongUsers(g4, infoMsgMethod, infoMsgAbs)
+      g5 <- redirectWrongUsers(g4, infoMsgMethod, infoMsgAbs)
 
-    } yield {
-        g4
-    }
+      g6 <- move.staticDecl(g5, "freemind.controller.filter.util", "freemind.modes")
+
+      g7 <- move.typeMember(g6,
+        List[NodeId]("freemind.modes.mindmapmode.MindMapArrowLinkModel.changeInclination(MapView,int,int,int,int)"),
+        "freemind.view.mindmapview.MapView")
+      g8 <- remove.concreteNode(g7, "freemind.modes.browsemode.BrowseArrowLinkModel.changeInclination(MapView,int,int,int,int)")
+
+    } yield g7
+
 
     ltg match {
       case LoggedSuccess(_, g) =>
         println("success : " + (g, constraints).violations().size + " violations")
+        Recording.write(planPath, dg2ast.nodesByName, g)
+        project.outDirectory foreach {
+          dir =>
+            println("printing code in " + dir.getAbsolutePath)
+            s.applyChanges(g, dir)
+        }
       case LoggedError(log, _) =>
         println("error : "+ log)
     }

@@ -31,9 +31,8 @@ package concretize
 import puck.graph.{TypeDecl => PTypeDecl, _}
 import puck.javaGraph._
 import puck.util.{PuckLog, PuckLogger}
-import org.extendj.ast.{List => _, _}
+import org.extendj.ast.{TypedKindDeclHolder, List => _, _}
 import org.extendj.ast.JavaJastAddDG2AST.verbosity
-
 import ShowDG._
 
 object RedirectSource {
@@ -283,6 +282,18 @@ object RedirectSource {
 
       case (PackageDeclHolder, PackageDeclHolder, i: TypedKindDeclHolder) =>
         moveTypeKind(resultGraph, reenactor, id2declMap, source, newSource, i.decl, target)
+
+      case (PackageDeclHolder, PackageDeclHolder, PackageDeclHolder) =>
+        reenactor.subTree(source).filter{
+          n =>
+            reenactor.kindType(n) == PTypeDecl &&
+              (reenactor kindType reenactor.container_!(n)) == NameSpace // only top level types
+        } map (n => (reenactor.container_!(n), n) ) foreach {
+          case (p, t) =>
+            val TypedKindDeclHolder(tdecl) = id2declMap(t)
+            moveTypeKind(resultGraph, reenactor, id2declMap, p, p, tdecl, t)
+        }
+
 
       //        case (ClassDeclHolder(classDecl),
       //        InterfaceDeclHolder(absDecl),

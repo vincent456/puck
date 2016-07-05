@@ -32,19 +32,19 @@ import javax.swing.SwingUtilities
 
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
-import puck.graph.io.{PrintingOptions, Visible, VisibilitySet}
-import VisibilitySet._
+import puck.graph.io.VisibilitySet._
+import puck.graph.io.{PrintingOptions, VisibilitySet, Visible}
 import puck.gui._
-import puck.gui.search.{StateSelected, SimpleElementSelector, SortedElementSelector}
-import puck.search.{SearchState, Search}
+import puck.gui.search.{SimpleElementSelector, SortedElementSelector, StateSelected}
+import puck.piccolo.BasicGraphCanvas
+import puck.search.{Search, SearchState}
 import puck.util._
 
 import scala.concurrent.ExecutionContext
 import scala.swing.BorderPanel.Position
 import scala.swing.TabbedPane.Page
-import scala.swing.event.Event
 import scala.swing._
-
+import scala.swing.event.Event
 import scalaz.syntax.writer._
 
 //this trait is needed to dispatch graphical computation on the rerserved thread in Intellij Idea plugin
@@ -80,27 +80,32 @@ trait GraphPanelResultPanel extends ResultPanel {
   val visibilitySet : VisibilitySet.T
   val constraints : ConstraintsMaps
   val graphUtils : GraphUtils
+  val nodeKindIcons : NodeKindIcons
   val publisher : Publisher
 
-  import swingService.{executor, swingInvokeLater}
-
   def graphPanel
-  ( graph : DependencyGraph,
+  ( g : DependencyGraph,
     visibilitySet: VisibilitySet.T) : Component =
     new ScrollPane() {
-      documentFromGraph(graph,
-        graphUtils,
-        Some(constraints),
-        printingOptions.copy(visibility = visibilitySet))(
-        documentFromGraphErrorMsgGen(
-          msg => publisher.publish(Log(msg)))){
-        case d =>
-          val c = PUCKSVGCanvas()
-          swingInvokeLater { () =>
-            c.setDocument(d)
-            viewportView = Component.wrap(c)
-          }
-      }
+
+//      documentFromGraph(g,
+//        graphUtils,
+//        Some(constraints),
+//        printingOptions.copy(visibility = visibilitySet))(
+//        documentFromGraphErrorMsgGen(
+//          msg => publisher.publish(Log(msg)))){
+//        case d =>
+//          val c = PUCKSVGCanvas()
+//          swingInvokeLater { () =>
+//            c.setDocument(d)
+//            viewportView = Component.wrap(c)
+//          }
+//      }
+      viewportView =
+        Component.wrap(
+          new BasicGraphCanvas(publisher, nodeKindIcons) {
+            def graph: DependencyGraph = g
+        })
     }
 
   def selectedResultGraphPanel = {
@@ -119,31 +124,31 @@ trait GraphPanelResultPanel extends ResultPanel {
 }
 
 
-object AutoSolveResultPanel {
-  def apply[S]( publisher : Publisher,
-  constraints : ConstraintsMaps,
-  violationTarget : ConcreteNode,
-  printingOptionsControl: PrintingOptionsControl,
-  res : Search[DecoratedGraph[S]])
-  ( implicit beforeGraph : DependencyGraph,
-    graphUtils : GraphUtils ) : AutoSolveResultPanel[S] = {
-    val visibilitySet = {
-
-      val users = beforeGraph.usersOf(violationTarget.id)
-
-      val targetAndAncestors =
-        beforeGraph.containerPath(violationTarget.id)
-
-      val vs = users.foldLeft(targetAndAncestors){
-        (s,id) => (beforeGraph.containerPath(id).toSet + id) ++: s
-      }
-
-      VisibilitySet.allHidden(beforeGraph).setVisibility(vs, Visible)
-
-    }
-    new AutoSolveResultPanel(publisher, constraints, visibilitySet, printingOptionsControl, res)
-  }
-}
+//object AutoSolveResultPanel {
+//  def apply[S]( publisher : Publisher,
+//  constraints : ConstraintsMaps,
+//  violationTarget : ConcreteNode,
+//  printingOptionsControl: PrintingOptionsControl,
+//  res : Search[DecoratedGraph[S]])
+//  ( implicit beforeGraph : DependencyGraph,
+//    graphUtils : GraphUtils ) : AutoSolveResultPanel[S] = {
+//    val visibilitySet = {
+//
+//      val users = beforeGraph.usersOf(violationTarget.id)
+//
+//      val targetAndAncestors =
+//        beforeGraph.containerPath(violationTarget.id)
+//
+//      val vs = users.foldLeft(targetAndAncestors){
+//        (s,id) => (beforeGraph.containerPath(id).toSet + id) ++: s
+//      }
+//
+//      VisibilitySet.allHidden(beforeGraph).setVisibility(vs, Visible)
+//
+//    }
+//    new AutoSolveResultPanel(publisher, constraints, visibilitySet, printingOptionsControl, res)
+//  }
+//}
 
 class AutoSolveResultPanel[S]
 ( val publisher : Publisher,
@@ -152,7 +157,8 @@ class AutoSolveResultPanel[S]
   printingOptionsControl: PrintingOptionsControl,
   res : Search[DecoratedGraph[S]])
 ( implicit val beforeGraph : DependencyGraph,
-  val graphUtils : GraphUtils )
+  val graphUtils : GraphUtils,
+  val nodeKindIcons: NodeKindIcons)
   extends SplitPane(Orientation.Horizontal)
   with GraphPanelResultPanel {
 
@@ -270,7 +276,8 @@ class SuccessSelector[S](res : Search[DecoratedGraph[S]])
 class SelectorResultPanel[S]
 (val selector : Component with Selector,
  val constraints : ConstraintsMaps,
- val autosolveResultPanel : AutoSolveResultPanel[S] )
+ val autosolveResultPanel : AutoSolveResultPanel[S])
+(implicit val nodeKindIcons: NodeKindIcons )
   extends BorderPanel with GraphPanelResultPanel {
 
   def printingOptions: PrintingOptions = autosolveResultPanel.printingOptions

@@ -337,7 +337,8 @@ class PuckInterfacePanel
           cm =>
             val s = strategyCB.selection.item()
             val c = controlCB.selection.item(control.graph, cm)
-            Swing onEDT new AutoSolveAction(control.Bus, cm, control.printingOptionsControl, s, c)(control.graphUtils).apply()
+            Swing onEDT new AutoSolveAction(control.Bus, cm, control.printingOptionsControl,
+              s, c)(control.graphUtils, control.nodeKindIcons).apply()
         }
 
     }

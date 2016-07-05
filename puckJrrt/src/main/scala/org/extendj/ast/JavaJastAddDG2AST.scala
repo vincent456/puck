@@ -53,7 +53,7 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
                  ll : puck.LoadingListener)  : JavaJastAddDG2AST = {
 
     val builder = JastaddGraphBuilder(p, Option(ll))
-    builder.addContains(builder.nodesByName("@primitive"), builder.arrayTypeId)
+    builder.addEdge(Contains(builder.nodesByName("@primitive"), builder.arrayTypeId))
     builder.attachOrphanNodes()
     builder.registerSuperTypes()
 
@@ -72,11 +72,12 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
                 sourcepaths : SList[String],
                 classpaths: SList[String],
                 bootclasspaths : SList[String],
+                options : SList[(String, String)] = SList(),
                 ll : puck.LoadingListener = null)
                (implicit logger : PuckLogger): JavaJastAddDG2AST = {
     val sProg = puck.util.Time.time(logger, defaultVerbosity) {
       logger.writeln("Compiling sources ...")
-      compile(sources, sourcepaths, classpaths, bootclasspaths)
+      compile(sources, sourcepaths, classpaths, bootclasspaths, options)
     }
 
     puck.util.Time.time(logger, defaultVerbosity) {
@@ -91,8 +92,9 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
   def compile(sources: SList[String],
               sourcepaths:SList[String],
               jars: SList[String],
-              bootJars : SList[String]): Option[Program] = {
-    val arglist = createArglist(sources, sourcepaths, jars, bootJars)
+              bootJars : SList[String],
+              options : SList[(String, String)]): Option[Program] = {
+    val arglist = createArglist(sources, sourcepaths, jars, bootJars, options)
     val f = new Frontend {
       //        protected override def processErrors(errors: java.util.Collection[Problem], unit: CompilationUnit): Unit =  {
       //          System.err.println("Errors:")
@@ -133,7 +135,7 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
     fw.write(code)
     fw.close()
 
-    compile(SList(f.getAbsolutePath),SList(),SList(),SList())
+    compile(SList(f.getAbsolutePath),SList(),SList(),SList(),SList())
   }
 
   def compile(cus : SList[String]) : Option[Program] = {
@@ -146,7 +148,7 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
       f.getAbsolutePath
     }
 
-    compile(fs, SList(),SList(),SList())
+    compile(fs, SList(),SList(),SList(),SList())
   }
 
 
@@ -177,7 +179,8 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
   private def createArglist(sources: SList[String],
                             sourcepaths:SList[String],
                             jars: SList[String],
-                            bootClassPath : SList[String]): Array[String] = {
+                            bootClassPath : SList[String],
+                            options : SList[(String, String)]): Array[String] = {
 
     def prepend(argName : String, argValue : SList[String], accu : SList[String]) : SList[String] =
       if(argValue.isEmpty) accu
@@ -185,7 +188,11 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
 
     val args0 = prepend("-classpath", jars, sources)
     val args1 = prepend("-sourcepath", sourcepaths, args0)
-    prepend("-bootclasspath", bootClassPath, args1).toArray
+    val args2 = prepend("-bootclasspath", bootClassPath, args1)
+    options.foldLeft(args2){
+      case (args, (name, value)) =>
+        prepend(name, SList(value), args)
+    }.toArray
   }
 
 

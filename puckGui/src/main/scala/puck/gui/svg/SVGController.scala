@@ -52,7 +52,7 @@ class SVGController
     e =>
       new EdgeMenu(genControl.Bus, e, printingOptionsControl, blurrySelection = true,
         genControl.constraints,
-        graph, graphUtils )
+        graph, graphUtils, genControl.nodeKindIcons )
   }
 
   type Color = String

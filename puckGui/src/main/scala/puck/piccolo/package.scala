@@ -60,8 +60,7 @@ package object piccolo {
   }
 
   def DGTitleNode
-  (g : DependencyGraph, nid : NodeId)
-  (implicit icons : NodeKindIcons): IdIconTextNode = {
+  (g : DependencyGraph, nid : NodeId, icons : NodeKindIcons): IdIconTextNode = {
     val n = g.getNode(nid)
     import puck.graph.ShowDG._
     IdIconTextNode(nid,

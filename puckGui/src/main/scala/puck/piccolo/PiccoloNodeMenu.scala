@@ -26,46 +26,50 @@
 
 package puck.piccolo
 
-import puck.gui.{NodeKindIcons, PrintCode, PuckControl, actionToMenuItem}
+import puck.graph.DependencyGraph
 import puck.gui.menus.ConcreteNodeMenu
+import puck.gui.{Collapse, ExpandAll, FocusExpand, Hide, NodeClicked, NodeKindIcons, PrintCode, PuckControl, actionToMenuItem}
 
-import scala.swing.{Action, PopupMenu}
+import scala.swing.{Action, PopupMenu, Publisher}
 
 /**
   * Created by Loïc Girault on 07/06/16.
   */
 object PiccoloNodeMenu {
-  type Builder = (DGCanvas, DGExpandableNode) => PopupMenu
+  type Builder = (BasicGraphCanvas, DGExpandableNode) => PopupMenu
   def apply(controller: PuckControl,
             nodeKindIcons: NodeKindIcons) : Builder =
-    (canvas: DGCanvas,  node: DGExpandableNode) =>
+    (canvas: BasicGraphCanvas,  node: DGExpandableNode) =>
       new PiccoloNodeMenu(controller, nodeKindIcons, canvas, node)
-}
-class PiccoloNodeMenu
-(controller : PuckControl,
- nodeKindIcons: NodeKindIcons,
- canvas : DGCanvas,
- node : DGExpandableNode/*,
- selectedNodes : List[NodeId],
- selectedEdge: Option[NodeIdP]*/)
-  extends ConcreteNodeMenu(
-    controller.Bus,
-    controller.graph,
-    controller.constraints,
-    controller.graphUtils,
-    List(),//selectedNodes,
-    None,//selectedEdge,
-    blurryEdgeSelection = false,
-    controller.graph getConcreteNode node.id,
-    controller.printingOptionsControl,
-    nodeKindIcons
-  ){
-  override def init() = {
-    super.init()
-    addShowOptions()
-  }
 
-  private def addShowOptions() : Unit = {
+  def readOnly(b : Publisher, g : DependencyGraph) : Builder =
+     (c: BasicGraphCanvas,  n: DGExpandableNode) =>
+    new PopupMenu with PReadOnlyMenu {
+      val canvas = c
+      val node: DGExpandableNode = n
+      val bus: Publisher = b
+      val graph: DependencyGraph = g
+
+      contents += new Action("Infos"){
+        def apply() : Unit = bus publish NodeClicked(g getConcreteNode n.id)
+      }
+      addReadOnlyOptions()
+    }
+
+
+
+}
+
+trait PReadOnlyMenu {
+ this : PopupMenu =>
+
+  val canvas : BasicGraphCanvas
+  val node : DGExpandableNode
+  val bus : Publisher
+  val graph : DependencyGraph
+
+
+  def addReadOnlyOptions() : Unit = {
 
     contents += new Action("Show incomming uses"){
       def apply() : Unit = canvas addIncommingUses node
@@ -85,21 +89,21 @@ class PiccoloNodeMenu
 
     contents += new Action("Hide") {
       def apply() : Unit = {
-        printingOptionsControl.hide(graph, node.id)
+        bus publish Hide(graph, node.id)
         canvas hide node
       }
     }
 
     contents += new Action("Focus") {
       def apply() : Unit = {
-        printingOptionsControl.focusExpand(graph, node.id, focus = true, expand = false)
+        bus publish FocusExpand(graph, node.id, focus = true, expand = false)
         canvas focus node
       }
     }
 
     contents += new Action("Focus & Expand") {
       def apply() : Unit = {
-        printingOptionsControl.focusExpand(graph, node.id, focus = true, expand = true)
+        bus publish FocusExpand(graph, node.id, focus = true, expand = true)
         canvas focus node
         canvas expand node
       }
@@ -115,28 +119,56 @@ class PiccoloNodeMenu
 
     contents += new Action("Show code") {
       def apply() : Unit =
-        controller publish PrintCode(node.id)
+        bus publish PrintCode(node.id)
     }
 
     if (graph.content(node.id).nonEmpty) {
       contents += new Action("Collapse") {
         def apply() : Unit = {
-          printingOptionsControl.collapse(graph, node.id)
+          bus publish Collapse(graph, node.id)
           canvas collapse node
         }
       }
       contents += new Action("Expand") {
         def apply() : Unit = {
-          printingOptionsControl.focusExpand(graph, node.id, focus = false, expand = true)
+          bus publish FocusExpand(graph, node.id, focus = false, expand = true)
           canvas expand node
         }
       }
       contents += new Action("Expand all") {
         def apply() : Unit = {
-          printingOptionsControl.expandAll(graph, node.id)
+          bus publish ExpandAll(graph, node.id)
           canvas expandAll node
         }
       };()
     }
   }
 }
+
+class PiccoloNodeMenu
+(controller : PuckControl,
+ nodeKindIcons: NodeKindIcons,
+ val canvas : BasicGraphCanvas,
+ val node : DGExpandableNode/*,
+ selectedNodes : List[NodeId],
+ selectedEdge: Option[NodeIdP]*/)
+  extends ConcreteNodeMenu(
+    controller.Bus,
+    controller.graph,
+    controller.constraints,
+    controller.graphUtils,
+    List(),//selectedNodes,
+    None,//selectedEdge,
+    blurryEdgeSelection = false,
+    controller.graph getConcreteNode node.id,
+    controller.printingOptionsControl,
+    nodeKindIcons
+  ) with PReadOnlyMenu {
+
+  override def init() = {
+    super.init()
+    addReadOnlyOptions()
+  }
+
+}
+

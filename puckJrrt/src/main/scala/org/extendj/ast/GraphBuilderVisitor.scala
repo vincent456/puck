@@ -28,7 +28,6 @@ package org.extendj.ast
 
 import puck.PuckError
 import puck.graph.{Uses, _}
-import puck.gui.PuckEvent
 
 import scala.collection.JavaConversions._
 /**
@@ -41,7 +40,7 @@ trait GraphBuilderVisitor {
     case _ : WildcardExtendsType | _ : WildcardSuperType => ()
     case _ =>
       val n = buildTypeDecl(td)
-      addContains(containerId, n)
+      addEdge(Contains(containerId, n))
       if(td.isParameterizedType){
         val ptd = td.asInstanceOf[ParTypeDecl]
         println("[BUILD] parameterized type " + ptd.nameWithArgs())
@@ -103,6 +102,7 @@ trait GraphBuilderVisitor {
             ta => ta.buildDG(this, containerId)
           }
         case d : AbstractDot => onAccess(d.getRight)
+        case da : DiamondAccess => onAccess(da.getTypeAccess)
         case _ => throw new DGBuildingError(s"ClassInstanceExpr access kind ${access.getClass} not handled " +
           s"in ${access.compilationUnit().pathName()} line ${access.location()}")
       }
@@ -183,7 +183,7 @@ trait GraphBuilderVisitor {
     member.getDeclarators.foreach {
       fd =>
         val fdId = this buildNode fd
-        addContains(containerId, fdId)
+        addEdge(Contains(containerId, fdId))
         setType(fdId, t)
         // t.ids.foreach (id => addEdge(Uses(fdId, id))) is not needed see EdgeMap.uses
 
@@ -201,7 +201,7 @@ trait GraphBuilderVisitor {
   def buildFieldInit(fieldId : NodeId, field : FieldDeclarator, init : Expr) : NodeId ={
     val defId = getDefNode(field)
     registerDef(defId, init)
-    addContains(fieldId, defId)
+    addEdge(Contains(fieldId, defId))
     init.buildDG(this, defId)
     defId
   }
@@ -210,13 +210,14 @@ trait GraphBuilderVisitor {
                theDef : Block , defOwnerId: NodeId) : NodeId = {
     val defId = getDefNode(defOwner)
     theDef.registerDef(this, defId)
-    addContains(defOwnerId, defId)
+    addEdge(Contains(defOwnerId, defId))
     theDef.buildDGInChildren(this, defId)
     defId
   }
 
   def buildDG(containerId : NodeId, pd : ParameterDeclaration) : Unit = {
-    buildNode(pd)
+    /*val pid = */buildNode(pd)
+    //addEdge(ContainsParam(containerId, pid))
     pd.buildDGInChildren(this, containerId)
   }
 

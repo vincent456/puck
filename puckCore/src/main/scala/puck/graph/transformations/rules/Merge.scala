@@ -111,7 +111,7 @@ class Merge
         | TypeConstructor
         | StaticValueDecl => g
 
-     // case _ => ???
+      case _ => puck.error()
     }
   }
 
@@ -188,7 +188,7 @@ class Merge
 
             for {
               g0 <- g.definitionOf(consumedId).map {
-                cid => Remove.concreteNode(g, g.getConcreteNode(cid))
+                cid => Remove.concreteNode(g, cid)
               } getOrElse LoggedSuccess(g)
               g1 <- ps.foldLoggedEither(g0){
                 case (g, (pConsumed, pConsumer)) =>

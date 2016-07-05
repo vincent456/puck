@@ -29,8 +29,7 @@ package puck.piccolo
 import java.beans.{PropertyChangeEvent, PropertyChangeListener}
 
 import org.piccolo2d.PLayer
-import puck.graph.{_}
-import puck.gui.PuckControl
+import puck.graph._
 
 import scala.collection.mutable
 
@@ -43,11 +42,14 @@ object Register {
 /**
   * Created by Loïc Girault on 31/05/16.
   */
-class Register(control : PuckControl, edgeLayer : PLayer) {
+class Register(graph : () => DependencyGraph,
+               edgeLayer : PLayer) {
   val visibleContent = new mutable.HashMap[NodeId, DGExpandableNode]()
   val invisibleContent = new mutable.HashMap[NodeId, DGExpandableNode]()
 
   val usesMap = new scala.collection.mutable.HashMap[NodeIdP, PUses]
+
+  //import control.graph
 
   def +=(kv : (NodeId, DGExpandableNode)) = {
     println(s"${kv._1} is visible")
@@ -61,13 +63,13 @@ class Register(control : PuckControl, edgeLayer : PLayer) {
     visibleContent -= kv._1
   }
 
-  import control.graph
+
 
 
   def firstVisible(nid : NodeId) : DGExpandableNode =
     visibleContent get nid match {
       case Some(n) => n
-      case None => firstVisible(graph container_! nid)
+      case None => firstVisible(graph() container_! nid)
     }
 
   def get(nid : NodeId) : Option[DGExpandableNode] =
@@ -85,10 +87,12 @@ class Register(control : PuckControl, edgeLayer : PLayer) {
     new PropertyChangeListener() {
     def propertyChange(evt: PropertyChangeEvent): Unit = {
       val src = evt.getSource.asInstanceOf[DGExpandableNode]
-      if(evt.getNewValue == null)
-        Register.this -= (src.id -> src)
-      else
-        Register.this += (src.id -> src)
+      puck.ignore {
+        if (evt.getNewValue == null)
+          Register.this -= (src.id -> src)
+        else
+          Register.this += (src.id -> src)
+      }
     }
   }
 
@@ -97,10 +101,12 @@ class Register(control : PuckControl, edgeLayer : PLayer) {
       def propertyChange(evt: PropertyChangeEvent): Unit = {
         val src = evt.getSource.asInstanceOf[DGExpandableNode]
         val isVisible = src.getVisible
-        if(!isVisible)
-          Register.this -= (src.id -> src)
-        else
-          Register.this += (src.id -> src)
+        puck.ignore{
+          if(!isVisible)
+            Register.this -= (src.id -> src)
+          else
+            Register.this += (src.id -> src)
+        }
 
       }
     }

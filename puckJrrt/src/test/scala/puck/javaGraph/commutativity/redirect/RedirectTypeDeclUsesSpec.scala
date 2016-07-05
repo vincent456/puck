@@ -30,10 +30,9 @@ import puck.Settings.outDir
 import puck.TransfoRulesSpec
 import puck.graph.comparison.Mapping
 import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
-import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, Redirection}
-import puck.graph.{AccessAbstraction, Factory, NodeIdP, ShowDG, Uses}
+import puck.graph.transformations.rules.Redirection
+import puck.graph.AccessAbstraction
 import puck.javaGraph.ScenarioFactory
-import puck.javaGraph.nodeKind.Field
 
 class RedirectTypeDeclUsesSpec
   extends TransfoRulesSpec {
@@ -105,7 +104,7 @@ class RedirectTypeDeclUsesSpec
     )
   }
 
-  scenario("From class to interface superType - needs propagation") {
+  scenario("From class to interface superType - type parameter propagation") {
     def code(lType : String ) =
       s"""package p;
         |
@@ -132,14 +131,70 @@ class RedirectTypeDeclUsesSpec
         |
         |}"""
 
-    compareWithExpectedAndGenerated(code("Train"),
+    compareWithExpectedAndGenerated(
+      code("Train"),
+
       bs => {
         import bs.{graph, idOfFullName}
 
         Redirection.redirectUsesAndPropagate(graph, ("p.ClientTrain.trains", "p.Train"),
           AccessAbstraction("p.Vehicule", SupertypeAbstraction)).rvalue
-      }, code("Vehicule"))
+      },
+
+      code("Vehicule"))
   }
+
+  scenario("From class to interface superType - return type propagation") {
+    compareWithExpectedAndGenerated(
+      """package p;
+        |
+        |class C implements I{ public void m(int i){} }
+        |
+        |interface I { void m(int i); }
+        |
+        |abstract class A { abstract C getC(); void user(){ getC().m(42); } }""",
+      bs => {
+        import bs.{graph, idOfFullName}
+        Redirection.redirectUsesAndPropagate(graph, ("p.A.user().Definition", "p.C.m(int)"),
+          AccessAbstraction("p.I.m(int)", SupertypeAbstraction)).rvalue
+      },
+      """package p;
+        |
+        |class C implements I{ public void m(int i){} }
+        |
+        |interface I { void m(int i); }
+        |
+        |abstract class A { abstract I getC(); void user(){ getC().m(42); } }"""
+    )
+  }
+
+  scenario("From class to interface superType - return type propagation,  chained call") {
+    compareWithExpectedAndGenerated(
+      """package p;
+        |
+        |class C implements I{ public void m(int i){} }
+        |
+        |interface I { void m(int i); }
+        |
+        |abstract class A { abstract C getC(); }
+        |abstract class B { abstract A getA(); void user(){ getA().getC().m(42); } }
+        |""",
+      bs => {
+        import bs.{graph, idOfFullName}
+        Redirection.redirectUsesAndPropagate(graph, ("p.B.user().Definition", "p.C.m(int)"),
+          AccessAbstraction("p.I.m(int)", SupertypeAbstraction)).rvalue
+      },
+      """package p;
+        |
+        |class C implements I{ public void m(int i){} }
+        |
+        |interface I { void m(int i); }
+        |
+        |abstract class A { abstract I getC(); }
+        |abstract class B { abstract A getA(); void user(){ getA().getC().m(42); } }"""
+    )
+  }
+
 
   ignore("From class to class superType"){}
 

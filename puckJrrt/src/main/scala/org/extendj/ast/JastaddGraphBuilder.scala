@@ -26,7 +26,6 @@
 
 package org.extendj.ast
 
-import puck.LoadingListener
 import puck.graph._
 import puck.javaGraph.nodeKind.{EnumConstant => PuckEnumConstant, _}
 import puck.javaGraph.{JavaGraphBuilder, nodeKind}
@@ -145,7 +144,7 @@ class JastaddGraphBuilder(val program : Program)
       for(nodeId <- Range.inclusive(fromId, lastId) ){
         //println(s"${g.container(nodeId)} contains $nodeId")
         if(g.container(nodeId).isEmpty && nodeId != g.rootId){
-          val n = g.getNode(nodeId)
+          //val n = g.getNode(nodeId)
           //println(s"orphan node : ${g.fullName(nodeId)}  : ${n.kind}")
           graph2ASTMap get nodeId match {
             case Some(FieldDeclHolder(d, _)) => addBodyDecl(d)
@@ -158,7 +157,7 @@ class JastaddGraphBuilder(val program : Program)
               }
             case Some(tdh : TypedKindDeclHolder) => addApiTypeNode(tdh.decl)
             case Some(ParameterDeclHolder(d)) =>
-              println("attaching " + d.dgFullName())
+              //println("attaching " + d.dgFullName())
               //addBodyDecl(d.hostBodyDecl())
             case sdh =>
               println( g.fullName(nodeId) + " " + sdh + " attach orphan nodes unhandled case")

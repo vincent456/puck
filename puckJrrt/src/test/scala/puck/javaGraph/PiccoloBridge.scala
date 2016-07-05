@@ -3,9 +3,9 @@ package puck.javaGraph
 
 import org.piccolo2d.extras.PFrame
 import piccolo.{PiccoloDynamicSquareZoomTest, PiccoloTest}
-import puck.gui.PuckControl
 import puck.JavaIcons
-import puck.piccolo.{DGCanvas, PiccoloNodeMenu}
+import puck.gui.PuckControl
+import puck.piccolo.DGCanvas
 
 
 /**
@@ -28,7 +28,7 @@ object PiccoloDynamicBridge {
 object ExpanseBridge {
   def main(args : Array[String]) : Unit =  {
     val bs = BridgeScenario()
-    val ctrl = new PuckControl(puck.jastadd.ExtendJGraphUtils, bs.logger)
+    val ctrl = new PuckControl(puck.jastadd.ExtendJGraphUtils, JavaIcons, bs.logger)
     ctrl.graphStack setInitialGraph bs.graph
     new PFrame("ExpanseBridge", false,
       new DGCanvas(ctrl, JavaIcons))

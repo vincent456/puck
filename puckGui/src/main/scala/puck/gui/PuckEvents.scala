@@ -43,18 +43,18 @@ case class PrintErrOrPushGraph(msg : String, lgt : LoggedTry[DependencyGraph]) e
 case class RewriteHistory(rec : Recording) extends PuckEvent
 case class NodeClicked(node : DGNode) extends PuckEvent
 
-
 case class ConstraintsUpdate(graph : DependencyGraph, cm : ConstraintsMaps) extends PuckEvent
+
 sealed abstract class GraphStackEvent extends PuckEvent {
-  val graph : DependencyGraph
+  def graph : DependencyGraph
 }
 case class GraphUpdate(graph : DependencyGraph) extends GraphStackEvent
 case class EmptiedButOne(graph : DependencyGraph) extends GraphStackEvent
 case class Pushed(pushedGraph : DependencyGraph, previousHead : DependencyGraph) extends GraphStackEvent {
-  val graph : DependencyGraph = pushedGraph
+  def graph : DependencyGraph = pushedGraph
 }
 case class Popped(poppedGraph : DependencyGraph, newHead : DependencyGraph) extends GraphStackEvent {
-  val graph : DependencyGraph = newHead
+  def graph : DependencyGraph = newHead
 }
 
 case class Log(msg : String ) extends PuckEvent
@@ -74,16 +74,41 @@ case class ConstraintDisplayRequest(graph : DependencyGraph) extends PuckEvent
 case class GenCode(compareOutput : Boolean) extends PuckEvent
 
 case object PrintingOptionsUpdate extends PuckEvent
+
+
 sealed abstract class PrintingOptionEvent extends PuckEvent {
   def apply(control : PrintingOptionsControl) : Unit
 }
 
-case class VisibilityEvent(graph : DependencyGraph, v : VisibilitySet.T) extends PrintingOptionEvent {
+//events emitted by the printing option controller
+case class VisibilityEvent(graph : DependencyGraph, v : VisibilitySet.T)
+  extends PrintingOptionEvent {
   def apply(control : PrintingOptionsControl) : Unit =
     control.visibility = v
 }
 
-case class EdgeForTypePrinting(su : Option[NodeIdP]) extends PrintingOptionEvent {
+case class EdgeForTypePrinting(su : Option[NodeIdP])
+  extends PrintingOptionEvent {
   def apply(control : PrintingOptionsControl) : Unit =
     control.selectedEdgeForTypePrinting = su
+}
+
+sealed abstract class ReceivedByPrintControlEvt extends PrintingOptionEvent
+//event received by the printing option controller
+case class Hide(graph: DependencyGraph, node : NodeId) extends ReceivedByPrintControlEvt {
+  def apply(control : PrintingOptionsControl) : Unit =
+    control.hide(graph, node)
+}
+case class FocusExpand(graph: DependencyGraph, node : NodeId,
+                       focus : Boolean, expand : Boolean) extends ReceivedByPrintControlEvt{
+  def apply(control : PrintingOptionsControl) : Unit =
+    control.focusExpand(graph, node, focus, expand)
+}
+case class Collapse(graph: DependencyGraph, node : NodeId) extends ReceivedByPrintControlEvt{
+  def apply(control : PrintingOptionsControl) : Unit =
+    control.collapse(graph, node)
+}
+case class ExpandAll(graph: DependencyGraph, node : NodeId) extends ReceivedByPrintControlEvt{
+  def apply(control : PrintingOptionsControl) : Unit =
+    control.expandAll(graph, node)
 }

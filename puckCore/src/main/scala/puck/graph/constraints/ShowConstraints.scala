@@ -92,6 +92,7 @@ trait ShowConstraints {
       m foreach { case (k, s) =>
         s.foreach { c => if(c.owners.head == k )
           sb append cb(dg, c)
+          sb append "\n"
         }
       }
     printMap(cm.hideConstraints, stringOfConstraint)
