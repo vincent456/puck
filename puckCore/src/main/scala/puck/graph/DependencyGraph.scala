@@ -261,6 +261,14 @@ class DependencyGraph
 
   def exists(e : DGEdge) : Boolean = edges.exists(e)
 
+  def tmpPred(e : DGEdge) = {
+
+    val b = e.kind == Uses && kindType(e.source) == TypeDecl &&
+      kindType(e.target) == TypeDecl && e.source != e.target
+    if(b)
+      println(fullName(e.source) + " -> " + fullName(e.target))
+    b
+  }
   def addEdge(e : DGEdge, register : Boolean = true): DependencyGraph =
     newGraph(edges = edges.add(e),
       recording =
@@ -481,7 +489,11 @@ class DependencyGraph
   //special cases of content
   def definitionOf(declId : NodeId) : Option[NodeId] =
     edges.contents get declId flatMap { ctent =>
-      ctent.headOption filter (id => getNode(id).kind.kindType == ValueDef)
+      val s : Set[NodeId] = ctent filter (id =>
+          getNode(id).kind.kindType == ValueDef )
+
+      //definition may be preceded by type variable decl with gen methods
+      s.headOption
     }
 
   def definitionOf_!(declId : NodeId) : NodeId =

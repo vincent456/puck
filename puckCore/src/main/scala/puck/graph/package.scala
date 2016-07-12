@@ -29,10 +29,10 @@ package puck
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.constraints.search.AutomataState
 import puck.graph.transformations.Recordable
-import puck.util.{Logged, LoggedEither, Logger}
+import puck.util.{Logged, LoggedEither}
 
+import scalaz.Scalaz._
 import scalaz._
-import Scalaz._
 
 package object graph {
 

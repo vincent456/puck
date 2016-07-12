@@ -26,9 +26,9 @@
 
 package org.extendj.ast
 
-import puck.graph.{TypeDecl => _, _}//hiding TypeDecl and importing everything else
-import JastaddGraphBuilder.{qualifierIsSuperAccess, qualifierIsThisAccess}
+import org.extendj.ast.JastaddGraphBuilder.{qualifierIsSuperAccess, qualifierIsThisAccess}
 import puck.PuckError
+import puck.graph.{TypeDecl => _, _}
 /**
   * Created by Loïc Girault on 05/04/16.
   */
@@ -38,7 +38,11 @@ abstract class TypeVariableInstanciator {
 }
 case class TVIAccess(a : Access) extends TypeVariableInstanciator{
   def buildNode( builder : JastaddGraphBuilder) : NodeId =
-    builder.getDefinition(builder.buildNode(a.hostBodyDecl()))
+    builder.definitionOf(builder.buildNode(a.hostBodyDecl())) match {
+      case Some(d) => d
+      case None =>
+        puck.error(s"no def for ${a.hostBodyDecl().prettyPrint()} in ${a.hostBodyDecl().fullLocation()}")
+    }
 
 }
 case class TVIVarDecl(d : Declarator) extends TypeVariableInstanciator{
@@ -177,15 +181,6 @@ trait TypeUsage {
     }
   }
 
-
-  def addBinding(user : TypeDecl, used : TypeDecl, tmUse : NodeIdP) : Unit = {
-    val tUser = this buildNode user
-    val tUsed = this buildNode used
-    addEdge(addBinding(tUser, tUsed, tmUse))
-  }
-
-
-
   def findTypeVariableInstanciator
   (tv : TypeVariable,
    tvValue : TypeDecl,
@@ -311,24 +306,24 @@ trait TypeUsage {
             if(lvalueArg.isObject)
               System.err.println(rvalue.fullLocation() + " lvalue object as type argument not constrained")
             else {
-              import puck.graph.ShowDG._
-              val tvValueId = {
-                val lid = buildNode(lvalueArg)
-                val rid = buildNode(rvalueArg)
-                if (lid != rid) {
-                  println(lvalueType.asInstanceOf[DGNamedElement].dgFullName())
-                  Range(0, lvalueType.numTypeParameter()).foreach {
-                    i => println("->" + lvalueType.getParameterization.getArg(i).dgFullName())
-                  }
-                  println(rvalueType.asInstanceOf[DGNamedElement].dgFullName())
-                  Range(0, lvalueType.numTypeParameter()).foreach {
-                    i => println("->" + rvalueType.getParameterization.getArg(i).dgFullName())
-                  }
-                  puck.error(lvalueArg.fullLocation() + " " + lvalueArg.getClass +
-                    (g, lid).shows(desambiguatedFullName) + "!=" + (g, lid).shows(desambiguatedFullName))
-                }
-                lid
-              }
+//              val tvValueId = {
+//                val lid = buildNode(lvalueArg)
+//                val rid = buildNode(rvalueArg)
+//                if (lid != rid) {
+//                  println(lvalueType.asInstanceOf[DGNamedElement].dgFullName())
+//                  Range(0, lvalueType.numTypeParameter()).foreach {
+//                    i => println("->" + lvalueType.getParameterization.getArg(i).dgFullName())
+//                  }
+//                  println(rvalueType.asInstanceOf[DGNamedElement].dgFullName())
+//                  Range(0, lvalueType.numTypeParameter()).foreach {
+//                    i => println("->" + rvalueType.getParameterization.getArg(i).dgFullName())
+//                  }
+//                  puck.error(rvalue.prettyPrint()+ " " +rvalue.fullLocation() + " " + lvalueArg.getClass + " " +
+//                    (g, lid).shows(desambiguatedFullName) + " != " + (g, lid).shows(desambiguatedFullName))
+//                }
+//                lid
+//              }
+              val tvValueId =  buildNode(lvalueArg)
 
               val tv: TypeVariable = rvalueArg match {
                 case tv: TypeVariable => tv

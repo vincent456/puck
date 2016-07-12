@@ -27,7 +27,7 @@
 package org.extendj.ast
 
 import puck.PuckError
-import puck.graph.{Uses, _}
+import puck.graph._
 
 import scala.collection.JavaConversions._
 /**
@@ -53,7 +53,41 @@ trait GraphBuilderVisitor {
       addEdge(ContainsParam(tid, this buildNode tv)))
 
 
+  def buildIsaEdge(sub : NodeId, supAccess : Access): Unit = supAccess match {
+    case ad : AbstractDot =>
+      if(!ad.isRightRotated)
+        ad.rotateRight()
+      buildIsaEdge(sub, ad.getRight)
 
+    case ta : TypeAccess =>
+      addIsa(sub, this buildNode supAccess)
+
+    case pta : ParTypeAccess =>
+      addIsa(sub, this buildNode pta.getTypeAccess)
+      pta.getTypeArguments.foreach (buildInheritanceUses(sub, _))
+
+    case _ => puck.error(s"$supAccess : expected TypeAccess or ParTypeAccess")
+  }
+
+  def buildInheritanceUses(sub : NodeId, typArgAccess : Access) : Unit = typArgAccess match {
+    case ad : AbstractDot =>
+      if(!ad.isRightRotated)
+        ad.rotateRight()
+      buildInheritanceUses(sub, ad.getRight)
+    case ta : TypeAccess =>
+      addEdge(Uses(sub, this buildNode ta))
+
+    case pta : ParTypeAccess =>
+      addEdge(Uses(sub, this buildNode pta.getTypeAccess))
+      pta.getTypeArguments.foreach (buildInheritanceUses(sub, _))
+
+    case wc : Wildcard => ()
+
+    case wc : WildcardSuper =>
+      buildInheritanceUses(sub, wc.getAccess)
+    case wc : WildcardExtends =>
+      buildInheritanceUses(sub, wc.getAccess)
+  }
 
   def buildTypeDecl(td : TypeDecl) : NodeId = td match {
     case tv : TypeVariable => this buildNode tv
@@ -63,11 +97,10 @@ trait GraphBuilderVisitor {
 
       // addExtends
       if(cd.hasSuperclass && cd.superclass().fullName() != "java.lang.Object"){
-        addIsa(n, this buildNode cd.getSuperClass)
-        cd.getSuperClass.buildIsaEdges(this, n)
+        buildIsaEdge(n, cd.getSuperClass)
       }
 
-      TypeDecl.addImplements(this, n, cd.getImplementss)
+      cd.getImplementss foreach (buildIsaEdge(n, _))
 
       if(cd.isGenericType)
         buildTypeVariables(n, cd.asInstanceOf[GenericTypeDecl])
@@ -78,7 +111,7 @@ trait GraphBuilderVisitor {
       n
     case id : InterfaceDecl =>
       val n = this buildNode id
-      TypeDecl.addImplements(this, n, id.getSuperInterfaces)
+      id.getSuperInterfaces foreach (buildIsaEdge(n, _))
       if(id.isGenericType)
         buildTypeVariables(n, id.asInstanceOf[GenericTypeDecl])
 
@@ -126,11 +159,22 @@ trait GraphBuilderVisitor {
         val superTypeUser = this buildNode stmt.getVariableDecl
         val superTypeUsed = this buildNode stmt.getTypeAccess
 
-        val subTypeUsed = stmt.getExpr.`type`() match {
-          case typUsed : ParTypeDecl => this buildNode typUsed.getParameterization.getArg(0)
-          case typUsed : ArrayDecl => this buildNode typUsed.elementType()
-        }
 
+        val subTypeUsed = stmt.getExpr.`type`() match {
+          case typUsed : ArrayDecl => this buildNode typUsed.elementType()
+          case t : TypeDecl =>
+            val iterable : ParInterfaceDecl =
+              if(t.fullName() startsWith "java.lang.Iterable") t.asInstanceOf[ParInterfaceDecl]
+              else
+                t.supertypestransitive().find(_.name == "Iterable") match {
+                  case Some(iter) =>iter.asInstanceOf[ParInterfaceDecl]
+                  case None =>
+                    puck.error(s"Expr in ${stmt.prettyPrint()}, typed ${t.fullName()} should be a subtype of Iterable (${stmt.fullLocation()})")
+                }
+
+            buildNode(iterable.getParameterization.getArg(0))
+
+        }
 
         getQualifiers(access.lastAccess()) foreach {
           typBinder =>
@@ -237,9 +281,6 @@ trait GraphBuilderVisitor {
 
   def buildDG(containerId : NodeId, ta : TypeAccess) : Unit =
     addEdge(Uses(containerId, this buildNode ta))
-
-
-
 
   def buildDG(containerId : NodeId, ma : MethodAccess) : Unit = if(ma.fromSource()){
     if(!ma.isSubstitute)

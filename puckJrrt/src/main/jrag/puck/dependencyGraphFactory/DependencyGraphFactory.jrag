@@ -187,8 +187,6 @@ aspect DependencyGraphFactory {
 		return keeped;
 	}
 
-
-
 	syn boolean ASTNode.isAbstractDot();
 	eq ASTNode.isAbstractDot() = false;
 	eq AbstractDot.isAbstractDot() = true;
@@ -221,70 +219,10 @@ aspect DependencyGraphFactory {
 	}
 
 
-	static void TypeDecl.addImplements(JastaddGraphBuilder builder,
-									   int sub, List<Access> implementList){
-
-		for(Access a : implementList){
-			a.buildIsaEdges(builder, sub);
-		}
-	}
-
-	void Access.buildIsaEdges(JastaddGraphBuilder builder, int sub){
-		throw new DGBuildingError(
-				this.compilationUnit().pathName() /*+ " line " + this.getLocation()*/ +
-						this.getClass() + " : expected TypeAccess or ParTypeAccess");
-	}
-
-	void AbstractDot.buildIsaEdges(JastaddGraphBuilder builder, int sub){
-		if(!isRightRotated())
-			rotateRight();
-
-		getRight().buildIsaEdges(builder, sub);
-	}
-
-	void TypeAccess.buildIsaEdges(JastaddGraphBuilder builder, int sub) {
-		builder.addEdge(JastaddGraphBuilder.isa(sub, builder.buildNode(this)));
-	}
-
-	void ParTypeAccess.buildIsaEdges(JastaddGraphBuilder builder, int sub){
-		getTypeAccess().buildIsaEdges(builder, sub);
-		for(Access typeArg : getTypeArguments()){
-			typeArg.addImplementsUses(builder, sub);
-		}
-	}
-
 	void Access.addImplementsUses(JastaddGraphBuilder builder, int sub) {
 		throw new DGBuildingError(this.getClass() + " : expected TypeAccess or ParTypeAccess");
 	}
 
-
-	void AbstractDot.addImplementsUses(JastaddGraphBuilder builder, int sub){
-		if(!isRightRotated())
-			rotateRight();
-
-		getRight().addImplementsUses(builder,sub);
-	}
-
-	void TypeAccess.addImplementsUses(JastaddGraphBuilder builder, int sub){
-		int sn = builder.buildNode(this);
-		builder.addEdge(new Uses(sub, sn, UsesAccessKind.none()));
-	}
-
-	void ParTypeAccess.addImplementsUses(JastaddGraphBuilder builder, int sub){
-		getTypeAccess().addImplementsUses(builder, sub);
-		for(Access typeArg : getTypeArguments()){
-			typeArg.addImplementsUses(builder, sub);
-		}
-	}
-	void Wildcard.addImplementsUses(JastaddGraphBuilder builder, int sub){}
-	void WildcardSuper.addImplementsUses(JastaddGraphBuilder builder, int sub){
-		int sn = builder.buildNode(getAccess());
-		builder.addEdge(new Uses(sub, sn, UsesAccessKind.none()));
-	}
-	void WildcardExtends.addImplementsUses(JastaddGraphBuilder builder, int sub){
-		int sn = builder.buildNode(getAccess());
-		builder.addEdge(new Uses(sub, sn, UsesAccessKind.none()));
-	}
 
 	boolean TypeDecl.isFromStdLib(){
 		return compilationUnit().packageName() == PRIMITIVE_PACKAGE_NAME ||

@@ -81,29 +81,15 @@ trait GraphPanelResultPanel extends ResultPanel {
   val constraints : ConstraintsMaps
   val graphUtils : GraphUtils
   val nodeKindIcons : NodeKindIcons
-  val publisher : Publisher
+  val bus : Publisher
 
   def graphPanel
   ( g : DependencyGraph,
     visibilitySet: VisibilitySet.T) : Component =
     new ScrollPane() {
-
-//      documentFromGraph(g,
-//        graphUtils,
-//        Some(constraints),
-//        printingOptions.copy(visibility = visibilitySet))(
-//        documentFromGraphErrorMsgGen(
-//          msg => publisher.publish(Log(msg)))){
-//        case d =>
-//          val c = PUCKSVGCanvas()
-//          swingInvokeLater { () =>
-//            c.setDocument(d)
-//            viewportView = Component.wrap(c)
-//          }
-//      }
       viewportView =
         Component.wrap(
-          new BasicGraphCanvas(publisher, nodeKindIcons) {
+          new BasicGraphCanvas(bus, nodeKindIcons) {
             def graph: DependencyGraph = g
         })
     }
@@ -123,39 +109,12 @@ trait GraphPanelResultPanel extends ResultPanel {
   }
 }
 
-
-//object AutoSolveResultPanel {
-//  def apply[S]( publisher : Publisher,
-//  constraints : ConstraintsMaps,
-//  violationTarget : ConcreteNode,
-//  printingOptionsControl: PrintingOptionsControl,
-//  res : Search[DecoratedGraph[S]])
-//  ( implicit beforeGraph : DependencyGraph,
-//    graphUtils : GraphUtils ) : AutoSolveResultPanel[S] = {
-//    val visibilitySet = {
-//
-//      val users = beforeGraph.usersOf(violationTarget.id)
-//
-//      val targetAndAncestors =
-//        beforeGraph.containerPath(violationTarget.id)
-//
-//      val vs = users.foldLeft(targetAndAncestors){
-//        (s,id) => (beforeGraph.containerPath(id).toSet + id) ++: s
-//      }
-//
-//      VisibilitySet.allHidden(beforeGraph).setVisibility(vs, Visible)
-//
-//    }
-//    new AutoSolveResultPanel(publisher, constraints, visibilitySet, printingOptionsControl, res)
-//  }
-//}
-
 class AutoSolveResultPanel[S]
-( val publisher : Publisher,
-  val constraints : ConstraintsMaps,
-  val visibilitySet: VisibilitySet.T,
-  printingOptionsControl: PrintingOptionsControl,
-  res : Search[DecoratedGraph[S]])
+(val bus : Publisher,
+ val constraints : ConstraintsMaps,
+ val visibilitySet: VisibilitySet.T,
+ printingOptionsControl: PrintingOptionsControl,
+ res : Search[DecoratedGraph[S]])
 ( implicit val beforeGraph : DependencyGraph,
   val graphUtils : GraphUtils,
   val nodeKindIcons: NodeKindIcons)
@@ -166,8 +125,6 @@ class AutoSolveResultPanel[S]
     case poe : PrintingOptionEvent => poe(printingOptionsControl)
       publish(PrintingOptionsUpdate)
   }
-
-
 
   def printingOptions: PrintingOptions =
     printingOptionsControl.printingOptions.copy(visibility = visibilitySet)
@@ -181,7 +138,7 @@ class AutoSolveResultPanel[S]
   ( withSelector : Boolean,
     selector : => Component with Selector )  =
     if(withSelector) {
-      val p = new SelectorResultPanel(selector, constraints, this)
+      val p = new SelectorResultPanel(bus, selector, constraints, this)
       p listenTo this
       this listenTo p
       this listenTo p.selector
@@ -216,21 +173,21 @@ class AutoSolveResultPanel[S]
 
     dividerSize = 3
     preferredSize = new Dimension(1024, 780)
-
+    resizeWeight = 0.5
     leftComponent = graphPanel(beforeGraph, printingOptions.visibility)
 
-    // val stateSelector = new SortedStateSelector(res.allStatesByDepth)
     rightComponent = tabs
 
   }
 
-  leftComponent = upPane
-  rightComponent = new SplitPane(Orientation.Vertical) {
+  topComponent = upPane
+  bottomComponent = console
+    /*new SplitPane(Orientation.Vertical) {
     leftComponent = new BoxPanel(Orientation.Vertical){
       SVGMenu.addVisibilityCheckBoxes(this, printingOptionsControl)
     }
     rightComponent = console
-  }
+  }*/
 
   reactions += {
     case Log(msg) => console.textArea.text = msg
@@ -274,7 +231,8 @@ class SuccessSelector[S](res : Search[DecoratedGraph[S]])
 
 
 class SelectorResultPanel[S]
-(val selector : Component with Selector,
+(val bus : Publisher,
+ val selector : Component with Selector,
  val constraints : ConstraintsMaps,
  val autosolveResultPanel : AutoSolveResultPanel[S])
 (implicit val nodeKindIcons: NodeKindIcons )
@@ -282,7 +240,6 @@ class SelectorResultPanel[S]
 
   def printingOptions: PrintingOptions = autosolveResultPanel.printingOptions
   val graphUtils: GraphUtils = autosolveResultPanel.graphUtils
-  val publisher : Publisher = autosolveResultPanel
   val visibilitySet: VisibilitySet.T = autosolveResultPanel.visibilitySet
 
   add(selectedResultGraphPanel, Position.Center)

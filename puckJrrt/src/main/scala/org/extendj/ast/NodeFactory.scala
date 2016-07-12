@@ -92,14 +92,14 @@ trait NodeFactory {
 
     val n = buildNode(vd.hostBodyDecl())
     if(isAnonymousBlock(vd.hostBodyDecl()))  n
-    else getDefinition(n)
+    else definitionOf(n).get
   }
 
   def buildNode(n : Expr) : NodeId = n match {
     case a : Access => buildNode(a)
     case l : Literal => buildNode(l.`type`())
     case pexpr : ParExpr => buildNode(pexpr.getExpr)
-    case expr : Expr => getDefinition(buildNode(expr.hostBodyDecl()))
+    case expr : Expr => definitionOf(buildNode(expr.hostBodyDecl())).get
     case _ => throw new DGBuildingError()
   }
 }

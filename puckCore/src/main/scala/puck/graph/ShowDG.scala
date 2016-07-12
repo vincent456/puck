@@ -26,6 +26,7 @@
 
 package puck.graph
 
+import puck.graph.DependencyGraph.AbstractionMap
 import puck.graph.constraints.ShowConstraints
 import puck.graph.transformations._
 
@@ -201,15 +202,18 @@ object ShowDG extends ShowConstraints{
       s"$tu1 ${stringOfTypeUseConstraint(dg, tc)}"
   }
 
-  implicit def stringOfAbstraction : DGStringBuilder[Abstraction] = (dg, a) =>
-    a match {
-      case AccessAbstraction(nid, policy) =>
-        s"AccessAbstraction(${dg.getNode(nid).name}, ${policy.toString})"
-      case ReadWriteAbstraction(rid, wid) =>
-        val n1 = rid map (dg.getNode(_).name) toString ()
-        val n2 = wid map (dg.getNode(_).name) toString ()
-        s"ReadWriteAbstraction($n1 , $n2)"
-    }
+  val desambiguatedLocalStringOfId : DGStringBuilder[NodeId] = {
+    case (g, id) =>  desambiguatedLocalName(g, g getConcreteNode id)
+  }
+
+  implicit val stringOfAbstraction : DGStringBuilder[Abstraction] = {
+    case (g, AccessAbstraction(nid, policy)) =>
+      s"AccessAbstraction(${desambiguatedLocalStringOfId(g, nid)}, $policy)"
+    case (g, ReadWriteAbstraction(srid, swid)) =>
+      val rstr = srid map (desambiguatedLocalStringOfId(g,_))
+      val wstr = swid map (desambiguatedLocalStringOfId(g,_))
+      s"ReadWriteAbstraction(r = $rstr, w = $wstr)"
+  }
 
   implicit def stringOfRecordable : DGStringBuilder[Recordable] = (dg, r) =>
     r match {
@@ -323,6 +327,18 @@ object ShowDG extends ShowConstraints{
         roles.mkString("\t[",",\n\t ","]\n")
   }
 
+  implicit val stringOfAbstractionMap : DGStringBuilder[AbstractionMap] = {
+    case (g, m) =>
+      val sb  = new StringBuilder()
+      sb append "Abstraction Map : {\n"
+      m.toList foreach { case (id, abs) =>
+        sb append desambiguatedLocalStringOfId(g, id)
+        sb append " :\n"
+        sb append (abs map (stringOfAbstraction(g, _)) mkString("\t[", ",\n\t" ,"]\n"))
+      }
+      sb append "}\n"
+      sb.toString()
+  }
 
   implicit class DGShowOp[A](val p : (DependencyGraph, A)) extends AnyVal {
     def shows(implicit cb : DGStringBuilder[A]) : String = cb(p._1, p._2)

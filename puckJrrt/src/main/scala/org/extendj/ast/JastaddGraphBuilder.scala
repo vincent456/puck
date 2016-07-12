@@ -135,8 +135,8 @@ class JastaddGraphBuilder(val program : Program)
 
   import JastaddGraphBuilder.definitionName
   def getDefNode(n : DGNamedElement): NodeId =
-    super.addNode(n.dgFullName()+ "." + definitionName, definitionName, Definition, n.fromSource)()
-
+    super.addNode(n.dgFullName() + "." + definitionName, definitionName, Definition, n.fromSource)()
+  
 
   def attachOrphanNodes(fromId : Int = g.rootId) : Unit = {
     val lastId = g.numNodes - 1

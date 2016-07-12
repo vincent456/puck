@@ -48,12 +48,9 @@ trait JavaGraphBuilder extends GraphBuilder{
   def addPackageNode(fullName: String, localName:String, mutable : Boolean) : NodeIdT =
     addNode(fullName, localName, Package, mutable)()
 
-  def getDefinition(nid : NodeId) =
-     g.getConcreteNode(nid).definition_!(g)
-//    catch {
-//      case e :  NoSuchElementException =>
-//        error(s"missing def for ${g.getNode(nid)}")
-//    }
+  def definitionOf(nid : NodeId) =
+    g.getConcreteNode(nid).definition(g)
+
 
 
   def addPackage(p : String, mutable : Boolean): NodeIdT =
@@ -84,12 +81,7 @@ trait JavaGraphBuilder extends GraphBuilder{
           val impl = graph.getConcreteNode(implId)
           val absNode = graph.getConcreteNode(absId)
           (impl.kind, absNode.kind) match {
-            /*case (Class, Class)
-              | (Class, Interface)
-              | (Interface, Interface) =>
-            */
-            case (Class, Interface) =>
-
+            case (Class, Interface) | (Class, Class) =>
               val absMeths = (graph content absId).toList filter (id => graph.kindType(id) == InstanceValueDecl) map graph.typedNode
               val candidates = (graph content impl.id).toList filter (id => graph.kindType(id) == InstanceValueDecl) map graph.typedNode
               Type.findAndRegisterOverridedInList(graph, absMeths, candidates) {

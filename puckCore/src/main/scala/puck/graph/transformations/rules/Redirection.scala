@@ -370,7 +370,7 @@ object Redirection {
         g.kindType(oldUse.used) match {
         case TypeDecl =>
             propagateTypeConstraints(oldUse.changeTarget(g, Uses, newTypeToUse), oldUse, newTypeToUse)
-        case _ => LoggedError("empty qualyfing set, type redirection is expected")
+        case _ => LoggedError(s"${(g, oldUse).shows} empty qualyfing set, type redirection is expected")
 
 
       }

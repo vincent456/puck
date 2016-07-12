@@ -294,7 +294,6 @@ abstract class Abstract {
       meth : ConcreteNode,
       interface : ConcreteNode
       ) : LoggedTG ={
-
       createAbstraction(g, meth, meth.kind.abstractionNodeKinds(policy).head, policy) flatMap {
         case (AccessAbstraction(absMethodId, _), g0) =>
 
@@ -391,7 +390,7 @@ abstract class Abstract {
         val methods = g.content(impl.id).foldLeft(List[ConcreteNode]()){
           (acc, mid) =>
             val member = g.getConcreteNode(mid)
-            if(member.kind.canBeAbstractedWith(DelegationAbstraction)) member +: acc
+            if(member.kind canBeAbstractedWith DelegationAbstraction) member +: acc
             else acc
         }
 

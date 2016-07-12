@@ -32,7 +32,21 @@ import puck.AcceptanceSpec
   * Created by Loïc Girault on 04/04/16.
   */
 class ExtendJSpec  extends AcceptanceSpec {
-  scenario("collec superType"){
+
+  scenario("collect superTypes"){
+    val _ = new ScenarioFactory(
+      """package p;
+        |class C implements I2{}
+        | interface I{}
+        | interface I2 extends I{}
+      """
+    ){
+      val i = program.findType("p.C")
+      i.supertypestransitive().size() shouldBe (3) // with java.lang.Object
+    }
+  }
+
+  scenario("collect superTypes (interwined hierarchy)"){
     val _ = new ScenarioFactory(
       """package p;
         | interface I{}
@@ -45,7 +59,7 @@ class ExtendJSpec  extends AcceptanceSpec {
     ){
       val i = program.findType("p.A")
 
-      i.supertypestransitive().size() shouldBe (6)
+      i.supertypestransitive().size() shouldBe (6) // with java.lang.Object
     }
   }
 
@@ -72,6 +86,8 @@ class ExtendJSpec  extends AcceptanceSpec {
       i.superInterfaces().size() shouldBe (1)
     }
   }
+
+
 
   scenario("collec child gen types"){
     val _ = new ScenarioFactory(

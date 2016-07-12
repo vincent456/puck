@@ -39,7 +39,8 @@ sealed trait DGNode{
   def definition(g : DependencyGraph) : Option[NodeId] = {
     kind.kindType match {
       case InstanceValueDecl
-           | StaticValueDecl =>
+           | StaticValueDecl
+           | TypeConstructor =>
         g definitionOf this.id
       case _ => None
     }
