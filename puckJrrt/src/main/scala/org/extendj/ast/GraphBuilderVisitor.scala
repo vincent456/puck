@@ -283,7 +283,8 @@ trait GraphBuilderVisitor {
     addEdge(Uses(containerId, this buildNode ta))
 
   def buildDG(containerId : NodeId, ma : MethodAccess) : Unit = if(ma.fromSource()){
-    if(!ma.isSubstitute)
+    if(!(ma.isSubstitute ||
+        (ma.decl().hostType().isEnumDecl  && ma.decl().location() == "0")))
       ma.lock()
     val decls = ma.decls_keepMethodsInDifferentTypeHierarchy()
     if(!decls.isSingleton()){

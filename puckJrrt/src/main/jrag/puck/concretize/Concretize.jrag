@@ -184,4 +184,11 @@ private String CompilationUnit.containingDirectory(){
     public boolean ImportDecl.doesImport(TypeDecl td) {
         return this.importedTypes().contains(td);
     }
+
+    public void TypeDecl.introduceMethod(MethodDecl m) {
+        addBodyDecl(m);
+        localMethodsSignatureMap_computed = null;
+//        methodsSignatureMap_computed = null;
+//        methodsNameMap_computed = null;
+   }
 }

@@ -14,15 +14,15 @@ import java.util.*;
  */
 
 aspect AccessMethod {
-	
+
 	class MethodAccessInfo {
 		private MethodDecl target;
 		private TypeDecl source;
 		private TypeDecl bend;
 		private Collection<MethodDecl> competitors;
 		private boolean directlyVisible;
-		
-		public MethodAccessInfo(MethodDecl target, TypeDecl td, 
+
+		public MethodAccessInfo(MethodDecl target, TypeDecl td,
 								Collection<MethodDecl> competitors) {
 			this.target = target;
 			this.source = td;
@@ -30,7 +30,7 @@ aspect AccessMethod {
 			this.competitors = competitors;
 			this.directlyVisible = true;
 		}
-		
+
 		public TypeDecl getSource() { return source; }
 		public TypeDecl getBend() { return bend; }
 
@@ -38,7 +38,7 @@ aspect AccessMethod {
 			return "MethodAccessInfo(target = "+target.fullName()+", source = "+ source.fullName()+")";
 		}
 	}
-	
+
 	public boolean MethodDecl.applicableTo(List<Expr> args) {
 		if(getNumParameter() != args.getNumChild())
 			return false;
@@ -63,13 +63,13 @@ aspect AccessMethod {
 		}
 		return this;
 	}
-		
+
 	public MethodAccessInfo MethodAccessInfo.moveInto(TypeDecl td) {
 		if(!td.memberMethods(target.name()).isEmpty())
 			directlyVisible = false;
 		return this;
 	}
-		
+
 	public SimpleSet TypeDecl.localMethods(String name) {
 		SimpleSet res = SimpleSet.EMPTY_SET;
 		for(Iterator i=localMethodsIterator();i.hasNext();) {
@@ -79,14 +79,20 @@ aspect AccessMethod {
 		}
 		return res;
 	}
-	
+
 	// cf. attribute lookupMethod(String) in LookupMethod.jrag
 	inh MethodAccessInfo Expr.accessMethod(MethodDecl md);
-	inh MethodAccessInfo TypeDecl.accessMethod(MethodDecl md);
+
+		//stmt ?
+
 	inh MethodAccessInfo BodyDecl.accessMethod(MethodDecl md);
 
+	inh MethodAccessInfo TypeDecl.accessMethod(MethodDecl md);
+
 	eq MethodAccess.getArg().accessMethod(MethodDecl md) = unqualifiedScope().accessMethod(md);
+
 	eq ConstructorAccess.getArg().accessMethod(MethodDecl md) = unqualifiedScope().accessMethod(md);
+
 	eq ArrayAccess.getExpr().accessMethod(MethodDecl md) = unqualifiedScope().accessMethod(md);
 	eq ArrayTypeWithSizeAccess.getExpr().accessMethod(MethodDecl md) = unqualifiedScope().accessMethod(md);
 
@@ -116,16 +122,20 @@ aspect AccessMethod {
 		}
 		return null;
 	}
-	
-	eq AbstractDot.getRight().accessMethod(MethodDecl md) = 
-		getLeft().type().accessMemberMethod(md);
+
+	eq AbstractDot.getRight().accessMethod(MethodDecl md) =
+	getLeft().type().accessMemberMethod(md);
 
 	// cf. attribute memberMethods(String)
 	syn MethodAccessInfo TypeDecl.accessMemberMethod(MethodDecl md) =
-		accessLocalMethod(md);
-	
+	accessLocalMethod(md);
+
 	eq ClassDecl.accessMemberMethod(MethodDecl md) {
-		MethodAccessInfo acc = accessLocalMethod(md);
+		MethodAccessInfo /*acc;
+		if(md instanceof ParMethodDecl)
+			acc = accessLocalMethod((ParMethodDecl)md);
+		else
+			*/acc = accessLocalMethod(md);
 		if(acc != null) return acc;
 		if(hasSuperclass()) {
 			acc = superclass().accessMemberMethod(md);
@@ -140,9 +150,13 @@ aspect AccessMethod {
 		}
 		return null;
 	}
-	
+
 	eq InterfaceDecl.accessMemberMethod(MethodDecl md) {
-		MethodAccessInfo acc = accessLocalMethod(md);
+		MethodAccessInfo /*acc;
+		if(md instanceof ParMethodDecl)
+			acc = accessLocalMethod((ParMethodDecl)md);
+		else
+			*/acc = accessLocalMethod(md);
 		if(acc != null) return acc;
 		for(Iterator iter = interfacesIterator(); iter.hasNext(); ) {
 			TypeDecl type = (TypeDecl)iter.next();
@@ -155,7 +169,7 @@ aspect AccessMethod {
 			return acc.moveDownTo(this);
 		return null;
 	}
-	
+
 	// somewhat similar to attribute localMethodsSignature(String)
 	public MethodAccessInfo TypeDecl.accessLocalMethod(MethodDecl md) {
 		for(Iterator<MethodDecl> iter=localMethodsIterator();iter.hasNext();) {
@@ -168,7 +182,43 @@ aspect AccessMethod {
 		}
 		return null;
 	}
-	
+
+	public MethodAccessInfo TypeDecl.accessLocalMethod(ParMethodDecl pmd) {
+		List<Access> args = pmd.getTypeArguments();
+		Collection<TypeDecl> argsDecls = new java.util.ArrayList<>();
+		for(Access a : args){
+			argsDecls.add(a.type());
+		}
+		//the generic methode comparison is needed because of
+		// cache emptying before code generation
+		GenericMethodDecl gmd;
+		if( pmd.genericMethodDecl() instanceof GenericMethodDeclSubstituted )
+			gmd = ((GenericMethodDeclSubstituted) pmd.genericMethodDecl()).getOriginal();
+		else
+			gmd = pmd.genericMethodDecl();
+
+		for(Iterator<MethodDecl> iter= localMethodsIterator();iter.hasNext();) {
+			MethodDecl md2 = iter.next();
+			if(md2 instanceof GenericMethodDecl){
+				GenericMethodDecl gmd2;
+				if(md2 instanceof GenericMethodDeclSubstituted)
+					gmd2 = ((GenericMethodDeclSubstituted)md2).getOriginal();
+				else
+					gmd2 = (GenericMethodDecl)md2;
+
+				if(gmd2.equals(gmd)) {
+
+					ParMethodDecl pmd2 = gmd2.lookupParMethodDecl(argsDecls);
+
+					Collection<MethodDecl> competitors = new HashSet<MethodDecl>(memberMethods(pmd2.name()));
+					competitors.remove(pmd2);
+					return new MethodAccessInfo(pmd2, this, competitors);
+				}
+			}
+		}
+		return null;
+	}
+
 	// Java 1.5 extensions
 	eq CompilationUnit.getTypeDecl().accessMethod(MethodDecl md) {
 		String name = md.name();

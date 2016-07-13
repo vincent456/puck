@@ -146,7 +146,7 @@ object CreateEdge {
         setPackageDecl(reenactor, e.container, e.content, i.decl)
         program.registerType(graph.fullName(e.content), i.decl)
       case (TypedKindDeclHolder(tdecl), MethodDeclHolder(mdecl)) =>
-        tdecl.addBodyDecl(mdecl)
+        tdecl.introduceMethod(mdecl)
         if(mdecl.isAbstract)
           tdecl.getModifiers.addModifier("abstract")
 

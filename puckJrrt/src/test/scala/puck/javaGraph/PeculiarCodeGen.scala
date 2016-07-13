@@ -236,6 +236,83 @@ class PeculiarCodeGen extends AcceptanceSpec {
       )
     }
 
+    scenario("Generic method in gen type - from library") {
+      makeTest(
+        """package p;
+          |import java.util.List;
+          |
+          |public class Test {
+          |    public String[] m(List<String> l) {
+          |       return l.toArray(new String[l.size()]);
+          |    }
+          |}
+          |"""
+      )
+    }
+
+    scenario("Generic method in gen type - from source") {
+      makeTest(
+        """package p;
+          |
+          |interface List<E> {
+          |   <T> T[] toArray(T[] var1);
+          |   int size();
+          |}
+          |public class Test {
+          |    public String[] m(List<String> l) {
+          |       return l.toArray(new String[l.size()]);
+          |    }
+          |}
+          |"""
+      )
+    }
+
+    scenario("Inner Generic type - from library") {
+      makeTest(
+        """package p;
+          |
+          |import java.util.Map;
+          |import java.util.Map.Entry;
+          |
+          |public class Test {
+          |    public void m(Map<String, Object> m) {
+          |         for(Entry<String, Object> e : m.entrySet()){
+          |            String s = e.getValue().toString();
+          |         }
+          |    }
+          |}
+          |"""
+      )
+    }
+
+    scenario("Inner Generic type - from source") {
+      makeTest(
+        """package p;
+          |
+          |import java.util.Set;
+          |
+          |public interface Map<K, V> {
+          |
+          |    Set<Map.Entry<K, V>> entrySet();
+          |
+          |    public interface Entry<K, V> {
+          |        K getKey();
+          |
+          |        V getValue();
+          |    }
+          |}
+          |
+          |public class Test {
+          |    public void m(Map<String, Object> m) {
+          |          for(Map.Entry<String, Object> e : m.entrySet()){
+          |             String s = e.getValue().toString();
+          |          }
+          |    }
+          |}
+          |"""
+      )
+    }
+
     scenario("Generic method with type variable updounded by a parameterized type") {
       makeTest(
         """package p;
