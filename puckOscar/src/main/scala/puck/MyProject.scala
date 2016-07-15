@@ -1,8 +1,8 @@
 /**
   * Created by Cedric and Mikal july 2016
   */
+
 import oscar.cp._
-import oscar.util._
 
 import scala.collection.mutable.ArrayBuffer
 

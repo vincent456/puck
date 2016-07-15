@@ -1,6 +1,7 @@
 /**
   * Created by cedric on 07/07/2016.
   */
+
 import oscar.cp._
 
 object Essai3 extends CPModel with App {

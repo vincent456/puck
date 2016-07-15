@@ -1,7 +1,7 @@
 /**
   * Created by cedric on 07/07/2016.
   */
-import org.jfree.data.Values
+
 import oscar.cp._
 
 object Essai extends CPModel with App {

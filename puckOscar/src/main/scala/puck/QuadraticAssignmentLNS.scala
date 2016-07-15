@@ -17,8 +17,6 @@ import oscar.cp._
 import oscar.util._
 
 import scala.io.Source
-import java.lang._
-import scala.collection.JavaConversions._
 
 /**
  * Quadratic Assignment Problem:
