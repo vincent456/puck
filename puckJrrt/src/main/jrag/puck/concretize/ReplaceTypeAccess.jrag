@@ -74,29 +74,34 @@ aspect ReplaceTypeAccess {
         replaceTypeAccessInList(oldAccess, newAccess, getSuperInterfaceList());
     }
 
-    public void ASTNode.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
+    public boolean ASTNode.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
+        boolean replaced = false;
         for(int i = 0; i < getNumChild(); i++)
-            getChild(i).replaceTypeAccess(oldUsed, newUsed);
+            replaced = replaced || getChild(i).replaceTypeAccess(oldUsed, newUsed);
+        return replaced;
     }
 
-//    public void TypeAccess.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
-//        if( this.decl().equals(oldUsed) )
-//            replace(this).with(newUsed.createLockedAccess());
-//    }
-    public void TypeAccess.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
+
+    public boolean TypeAccess.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
         if( this.decl().equals(oldUsed) ){
             Access newAccess=newUsed.createLockedAccess();
             replace(this).with(newAccess);
-            ParTypeAccess ptaParent=newAccess.getParTypeAccessParent();
-            if(ptaParent!=null){
-                ptaParent.setTarget(null);
-                ptaParent.flushTreeCache();
-                ptaParent.lock(ptaParent.type());
-            }
+            return true;
         }
+        return false;
     }
 
-    public void ClassInstanceExpr.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
+    public boolean ParTypeAccess.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
+        if(super.replaceTypeAccess(oldUsed, newUsed)){
+            setTarget(null);
+            type_reset();
+            lock(type());
+            return true;
+        }
+        return false;
+    }
+
+    public boolean ClassInstanceExpr.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
 
         if( getAccess() instanceof ParTypeAccess){
 //            throw new PuckError("recheck !");
@@ -109,5 +114,20 @@ aspect ReplaceTypeAccess {
         }
         getArgList().replaceTypeAccess(oldUsed, newUsed);
         getTypeDeclOpt().replaceTypeAccess(oldUsed, newUsed);
+        return false;
+    }
+
+    interface TypeAccessReplacer {}
+
+    ParameterDeclaration implements TypeAccessReplacer;
+    MethodDecl implements TypeAccessReplacer;
+
+    public boolean TypeAccessReplacer.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
+
+        if(super.replaceTypeAccess(oldUsed, newUsed)){
+            type_reset();
+            return true;
+        }
+        return false;
     }
 }

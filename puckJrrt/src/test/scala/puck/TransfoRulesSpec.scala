@@ -12,16 +12,19 @@ class TransfoRulesSpec
   extends FeatureSpec
     with LoggedEitherValues{
 
-  def compareWithExpectedAndGenerated(initialCode : String,
+  implicit def scenarioOfString(code : String) : ScenarioFactory =
+    new ScenarioFactory(code)
+
+//  def compareWithExpectedAndGenerated(initialCode : String,
+//                                      transfo : ScenarioFactory => DependencyGraph,
+//                                      expectedResultCode: String) : Unit =
+//    compareWithExpectedAndGenerated(new ScenarioFactory(initialCode),
+//      transfo, new ScenarioFactory(expectedResultCode))
+
+
+  def compareWithExpectedAndGenerated(scenario : ScenarioFactory,
                                       transfo : ScenarioFactory => DependencyGraph,
-                                      expectedResultCode: String) : Unit =
-    compareScenarioWithExpectedAndGenerated(new ScenarioFactory(initialCode),
-      transfo, new ScenarioFactory(expectedResultCode))
-
-
-  def compareScenarioWithExpectedAndGenerated(scenario : ScenarioFactory,
-                                              transfo : ScenarioFactory => DependencyGraph,
-                                              expectedResult: ScenarioFactory) : Unit = {
+                                      expectedResult: ScenarioFactory) : Unit = {
 
     def print(g : DependencyGraph, name : String) : Unit = {
 //      import ShowDG._

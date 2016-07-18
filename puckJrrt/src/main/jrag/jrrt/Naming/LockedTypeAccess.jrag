@@ -330,8 +330,8 @@ aspect LockedTypeAccess {
 		SimpleSet s = lookupName(pkg);
 		if(!s.isEmpty() && !s.isSingleton(lookupPackage(pkg)) ||
 				!lookupType(target.packageName(), target.name()).equals(target))
-			throw new RefactoringException("cannot access toplevel type "+ target.fullName() + " in "
-		+ this.compilationUnit().pathName() + " line " + this.location());
+			throw new RefactoringException("cannot access toplevel type "+
+					target.fullName() + " in " + this.fullLocation());
 		if (qual!=null) {
 			this.flushCache();
 			return (Access) replace(parentDot()).with(this);

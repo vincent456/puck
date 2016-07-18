@@ -37,5 +37,6 @@ aspect LookupTypeExt {
 
     public void Program.registerType(String fullName, TypeDecl td){
         sourceTypeMap.put(fullName, td);
+        lookupType_String_String_reset();
     }
 }

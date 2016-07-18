@@ -31,6 +31,7 @@ import puck.Settings._
 import puck.graph.Contains
 import puck.graph.comparison.Mapping
 import puck.graph.transformations.rules.Move
+import puck.jastadd.ExtendJGraphUtils._
 import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.transfoRules.MoveSpec._
 
@@ -39,8 +40,9 @@ import puck.javaGraph.transfoRules.MoveSpec._
   */
 class MoveTypeSpec
   extends TransfoRulesSpec  {
+
   scenario("Move top level class") {
-    val _ = new ScenarioFactory(
+    compareWithExpectedAndGenerated(
       """package p1;
         |
         |public class A {
@@ -53,16 +55,30 @@ class MoveTypeSpec
         |        A a = new A();
         |        a.ma();
         |    }
-        |}"""
-    ){
+        |}""",
+      bs => {
+        import bs.{graph, idOfFullName}
+        val (g0, package2) = createTopLevelPackage(graph, "p2")
+        Move.staticDecl(g0, "p1.A", package2).rvalue
+      },
+      new ScenarioFactory(
+      """package p2;
+        |
+        |public class A {
+        |    public A(){}
+        |    public void ma(){}
+        |}""",
 
-      val (g0, package2) = createTopLevelPackage(graph, "p2")
-      val g1 = Move.staticDecl(g0, "p1.A", package2).rvalue
-
-      val recompiledEx = applyChangeAndMakeExample(g1, outDir)
-      assert( Mapping.equals(g1, recompiledEx.graph) )
-
-    }
+     """package p1;
+        |
+        |import p2.A;
+        |
+        |class B {
+        |    public void mb(){
+        |        A a = new A();
+        |        a.ma();
+        |    }
+        |}"""))
   }
 
   scenario("Move top level class - moved type uses type of old package") {
@@ -195,7 +211,7 @@ class MoveTypeSpec
 
 
   scenario("Move top from different Packages - actual gen parameter") {
-    compareScenarioWithExpectedAndGenerated(new ScenarioFactory(
+    compareWithExpectedAndGenerated(new ScenarioFactory(
       """package p1;
         |
         |public class A {

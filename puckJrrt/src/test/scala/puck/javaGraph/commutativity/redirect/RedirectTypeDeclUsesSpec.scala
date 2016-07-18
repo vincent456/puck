@@ -37,9 +37,10 @@ import puck.javaGraph.ScenarioFactory
 class RedirectTypeDeclUsesSpec
   extends TransfoRulesSpec {
 
+
   scenario("From class to interface superType") {
-    compareWithExpectedAndGenerated(
-      """package p;
+    def code(typeUsed : String) =
+      s"""package p;
         |
         |class C implements I{ public void m(){} }
         |
@@ -52,31 +53,18 @@ class RedirectTypeDeclUsesSpec
         |        a.user(new C());
         |    }
         |
-        |    void user(C c){ c.m(); }
-        |}""",
+        |    void user($typeUsed c){ c.m(); }
+        |}"""
+
+    compareWithExpectedAndGenerated(
+      code("C"),
       bs => {
         import bs.{graph, idOfFullName}
 
         Redirection.redirectUsesAndPropagate(graph,
           ("p.A.user(C).c", "p.C"),
           AccessAbstraction("p.I", SupertypeAbstraction)).rvalue
-      },
-      """package p;
-        |
-        |class C implements I{ public void m(){} }
-        |
-        |interface I { void m(); }
-        |
-        |class A {
-        |
-        |    public static void main(String[] args){
-        |        A a = new A();
-        |        a.user(new C());
-        |    }
-        |
-        |    void user(I c){ c.m(); }
-        |}"""
-    )
+      }, code("I"))
   }
 
   scenario("From class to interface superType - with method with parameters") {
@@ -144,31 +132,26 @@ class RedirectTypeDeclUsesSpec
       code("Vehicule"))
   }
 
+
   scenario("From class to interface superType - return type propagation") {
-    compareWithExpectedAndGenerated(
-      """package p;
+    def code(typeUsed : String ) =
+      s"""package p;
         |
         |class C implements I{ public void m(int i){} }
         |
         |interface I { void m(int i); }
         |
-        |abstract class A { abstract C getC(); void user(){ getC().m(42); } }""",
+        |abstract class A { abstract $typeUsed getC(); void user(){ getC().m(42); } }"""
+
+    compareWithExpectedAndGenerated(code("C"),
       bs => {
         import bs.{graph, idOfFullName}
         Redirection.redirectUsesAndPropagate(graph, ("p.A.user().Definition", "p.C.m(int)"),
           AccessAbstraction("p.I.m(int)", SupertypeAbstraction)).rvalue
-      },
-      """package p;
-        |
-        |class C implements I{ public void m(int i){} }
-        |
-        |interface I { void m(int i); }
-        |
-        |abstract class A { abstract I getC(); void user(){ getC().m(42); } }"""
-    )
+      }, code("I"))
   }
 
-  scenario("From class to interface superType - return type propagation,  chained call") {
+  scenario("From class to interface superType - return type propagation, chained call") {
     compareWithExpectedAndGenerated(
       """package p;
         |
@@ -196,13 +179,91 @@ class RedirectTypeDeclUsesSpec
   }
 
 
+  scenario("From class to interface superType - return type propagation, impact local var type") {
+    def code(typeUsed : String ) =
+      s"""package p;
+        |
+        |class C implements I{ }
+        |
+        |interface I {  }
+        |
+        |abstract class A { abstract $typeUsed getC(); void user(){ $typeUsed c = getC(); } }"""
+    compareWithExpectedAndGenerated(code("C"),
+      bs => {
+        import bs.{graph, idOfFullName}
+        Redirection.redirectUsesAndPropagate(graph, ("p.A.getC()", "p.C"),
+          AccessAbstraction("p.I", SupertypeAbstraction)).rvalue
+      },code("I"))
+  }
+
+  scenario("From class to interface superType - used in type parameter context") {
+    def code(typeUsed : String ) =
+      s"""package p;
+        |
+        |class Wrapper<T> {
+        |    private T t;
+        |    public T get(){return t;}
+        |}
+        |
+        |interface I { void m(); }
+        |
+        |class A implements I { public void m(){} }
+        |
+        |class B {
+        |    Wrapper<$typeUsed> wa = new Wrapper<$typeUsed>();
+        |
+        |    void doM(){ wa.get().m(); }
+        |}"""
+
+    compareWithExpectedAndGenerated(code("A"),
+      bs => {
+        import bs.{graph, idOfFullName}
+        val g2 = Redirection.redirectUsesAndPropagate(graph, ("p.B.wa", "p.A"),
+          AccessAbstraction("p.I", SupertypeAbstraction)).rvalue
+
+        assert(g2.uses("p.B.doM().Definition", "p.I.m()"))
+
+        g2
+      },code("I"))
+  }
+
+  scenario("From class to interface superType - used in type parameter context, impact local var type") {
+    def code(typeUsed : String ) =
+      s"""package p;
+          |
+          |class Wrapper<T> {
+          |    private T t;
+          |    public T get(){return t;}
+          |}
+          |
+          |interface I {  }
+          |
+          |class A implements I { }
+          |
+          |
+          |class B {
+          |    Wrapper<$typeUsed> wa = new Wrapper<$typeUsed>();
+          |
+          |    void doM(){ $typeUsed a = wa.get(); }
+          |}"""
+
+    compareWithExpectedAndGenerated(code("A"),
+      bs => {
+        import bs.{graph, idOfFullName}
+        Redirection.redirectUsesAndPropagate(graph, ("p.B.wa", "p.A"),
+          AccessAbstraction("p.I", SupertypeAbstraction)).rvalue
+      }, code("I"))
+  }
+
+
   ignore("From class to class superType"){}
 
   ignore("From interface to interface superType"){}
 
   ignore("From class to delegator class") {
-    val _ = new ScenarioFactory(
-      """package p;
+
+    def code(typeUsed : String) =
+      s"""package p;
         |
         |class Delegatee { void mUsed(){} }
         |
@@ -218,22 +279,20 @@ class RedirectTypeDeclUsesSpec
         |        a.mUser(new Delegatee());
         |    }
         |
-        |    void mUser(Delegatee d){ d.mUsed(); }
+        |    void mUser($typeUsed d){ d.mUsed(); }
         |}"""
-    ) {
-      val g = graph.addAbstraction("p.Delegatee", AccessAbstraction("p.Delegator", DelegationAbstraction))
-        .addAbstraction("p.Delegatee.mUsed()", AccessAbstraction("p.Delegator.mUsed()", DelegationAbstraction))
 
-      val g2 =
-        Redirection.redirectUsesAndPropagate(g,
-          ("p.A.mUser(Delegatee).d", "p.Delegatee"),
-          AccessAbstraction("p.Delegator", DelegationAbstraction)).rvalue
+    compareWithExpectedAndGenerated(
+      code("Delegatee"),
+      bs => {
+        import bs.{graph, idOfFullName}
+        val g = graph.addAbstraction("p.Delegatee", AccessAbstraction("p.Delegator", DelegationAbstraction))
+          .addAbstraction("p.Delegatee.mUsed()", AccessAbstraction("p.Delegator.mUsed()", DelegationAbstraction))
 
-      val recompiledEx = applyChangeAndMakeExample(g2, outDir)
-
-      assert(Mapping.equals(g2, recompiledEx.graph))
-    }
-
+        Redirection.redirectUsesAndPropagate(g, ("p.A.mUser(Delegatee).d", "p.Delegatee"),
+            AccessAbstraction("p.Delegator", DelegationAbstraction)).rvalue
+      },
+      code("Delegator"))
   }
 
   ignore("From interface to delegator class") {

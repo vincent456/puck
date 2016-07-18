@@ -150,6 +150,12 @@ object CreateEdge {
         if(mdecl.isAbstract)
           tdecl.getModifiers.addModifier("abstract")
 
+      case (TypedKindDeclHolder(tdecl), fdh @ FieldDeclHolder(fdecl, _)) =>
+        //a field decl may contain several field declaration.
+        import scala.collection.JavaConversions._
+        if(!tdecl.fieldsIterator().contains(fdh.declarator))
+          tdecl.introduceField(fdecl)
+
       case (_, PackageDeclHolder) => () // can be ignored
 
       case (ClassDeclHolder(clsdecl), bdHolder : HasBodyDecl) =>

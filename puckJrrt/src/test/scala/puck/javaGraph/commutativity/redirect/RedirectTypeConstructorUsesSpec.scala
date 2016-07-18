@@ -109,7 +109,6 @@ class RedirectTypeConstructorUsesSpec
 
         Redirection.redirectTypeConstructorToInstanceValueDecl(g, ("p.A.m().Definition", "p.B.B()"),
           AccessAbstraction("p.Factory.createB()", DelegationAbstraction))(CreateTypeMember(Field)).rvalue
-
       },
       """package p;
         |
@@ -123,7 +122,7 @@ class RedirectTypeConstructorUsesSpec
         |}""")
   }
 
-  ignore("From constructor to constructorMethod hosted by self - non static, parameter") {
+  scenario("From constructor to constructorMethod hosted by self - non static, parameter") {
     compareWithExpectedAndGenerated(
       """package p;
         |
