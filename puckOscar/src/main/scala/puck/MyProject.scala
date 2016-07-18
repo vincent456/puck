@@ -115,7 +115,7 @@ object MyModel extends CPModel with App {
   println("NODES")
   printNodes(NODES)
 
-  val abstracted_nodes : ArrayBuffer[CPIntVar] = ArrayBuffer(
+  val abstracted_nodes : Array[CPIntVar] = Array(
     CPIntVar(-1 to NODES.size-1)
   )
 
@@ -194,13 +194,15 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPIntVar] = {
   // soit c'est l'abstraction d'un noeud qui est à droite d'un arc
   // qui domine
 
-  abstracted_nodes.foreach(x =>
-    add( x == -1 )
-  )
+  var y : CPIntVar = CPIntVar(0 to nbNodes)
+  println("$$$ "+y)
+ // abstracted_nodes.foreach(x =>
+ //    println("$$$$$ " +(red_uses.toArray)(0))
+ // )
 
   var nb_red_uses :Int =0
   search {
-    binaryFirstFail(red_uses.values.toSeq ++ abstracted_nodes.toSeq)
+    binaryFirstFail(red_uses.values.toSeq ++ abstracted_nodes.toSeq ++ Seq(y))
   } onSolution {
     println("The red uses are:")
     printArcs2(red_uses)
@@ -211,6 +213,8 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPIntVar] = {
     nb_red_uses = 0
     red_uses.values.map( x => nb_red_uses+= x.value)
     println("nb violations  = " + nb_red_uses)
+    println("reduses to Array")
+    println(red_uses.toArray.mkString(","))
 
 
  //   if (nbNewNode.value ==1)
