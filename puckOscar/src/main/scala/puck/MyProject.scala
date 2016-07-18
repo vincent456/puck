@@ -13,6 +13,9 @@ class Node (n : String, k : Int, e : Option[Boolean] = None) {
     case Some(v) => v
     case None => false
   }
+  override def toString = {
+    "(" + nom + ", " +kind + ", " + external +")"
+  }
 }
 
 object MyModel extends CPModel with App {
@@ -51,6 +54,7 @@ object MyModel extends CPModel with App {
   val kAttribute = 5
   val kValueDef = 6   // attribute initialisation or method body
   val kparameter = 7
+  val kInterface = 8
 
   def printArcs(m: Map[Int,Set[Int]]) = {
     if (m.isEmpty)
@@ -70,6 +74,21 @@ object MyModel extends CPModel with App {
       m.keys.foreach(x =>
         print(x + " : " + m(x).value + "    "))
     }
+    println()
+  }
+
+  def printQualified( m: Map[(Int, Int),(Int, Int)]) = {
+    if (m.isEmpty)
+      println("No arcs")
+    else {
+      m.keys.foreach(x =>
+        print(x + " : " + m(x) + "    "))
+    }
+    println()
+  }
+
+  def printNodes(nodes : ArrayBuffer[Node]): Unit = {
+    nodes.map(x => print("" + x +", "))
     println()
   }
 
@@ -93,8 +112,12 @@ object MyModel extends CPModel with App {
     new Node("nom", kparameter),
     new Node("String", kClass, Option(true))
   )
+  println("NODES")
+  printNodes(NODES)
 
-
+  val abstracted_nodes : ArrayBuffer[CPIntVar] = ArrayBuffer(
+    CPIntVar(-1 to NODES.size-1)
+  )
 
   val uses_map_orig =  Map(
     cPersonne -> Set(cPersonne) , mmainDef -> Set(mclient,cPersonne), ccPersonneDef -> Set(anom),
@@ -102,7 +125,6 @@ object MyModel extends CPModel with App {
   )
   println("USES ARCS")
   printArcs(uses_map_orig)
-
 
   // var uses_map: Map[CPIntVar, Set[CPIntVar]] = Map()
   // NODES.map(_ => (uses_map += NodeVar -> Set()))
@@ -134,8 +156,11 @@ object MyModel extends CPModel with App {
   printArcs(hidden_orig)
 
 val qualified_by_orig:Map[(Int, Int),(Int, Int)] = Map (
-  (mclientDef, mgetNom) -> ((mclient, cPersonne))
+  (mclientDef, mgetNom) -> ((parapmclient, cPersonne)),
+  (parapmclient, cPersonne) -> ((parapmclient, cPersonne))
   )
+  println("QUALIFIED_BY ARCS")
+  printQualified(qualified_by_orig)
 
 def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPIntVar] = {
   var result: Map[(Int, Int), CPIntVar] = Map()
@@ -148,7 +173,6 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPIntVar] = {
 }
 
   val allUses_orig = uses_map_orig ++ type_uses_orig
-
   val red_uses = makeVars(allUses_orig)
 
   allUses_orig.keys.foreach(s =>
@@ -158,28 +182,58 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPIntVar] = {
       else
         add(red_uses((s, t)) == 0)))
 
+
+  // pour tout noeud abstracted
+  // sa valeur doit correspondre à un dominant
+  // d'un red uses
+  // sinon on met -1
+
+  // Reformulation
+  // pour pour tout noeud abstracted
+  // soit sa valeur est -1
+  // soit c'est l'abstraction d'un noeud qui est à droite d'un arc
+  // qui domine
+
+  abstracted_nodes.foreach(x =>
+    add( x == -1 )
+  )
+
   var nb_red_uses :Int =0
   search {
-    binaryFirstFail(red_uses.values.toSeq)
+    binaryFirstFail(red_uses.values.toSeq ++ abstracted_nodes.toSeq)
   } onSolution {
     println("The red uses are:")
     printArcs2(red_uses)
-//    nb_red_uses = 0
-//    red_uses.values.map( x => nb_red_uses+= x.value)
+    println("abstracted nodes:")
+    abstracted_nodes.map(x => print("" + x))
+    println()
+
+    nb_red_uses = 0
+    red_uses.values.map( x => nb_red_uses+= x.value)
+    println("nb violations  = " + nb_red_uses)
+
+
+ //   if (nbNewNode.value ==1)
+ //     NODES += new Node("Personne_ABS", kInterface)
+ //   println("NODES")
+ //   printNodes(NODES)
   }
 
-
-  val maxNewNodes : Int = 2
+  val maxNewNodes : Int = 1 // because 1 qualifies all the violations
   var nbNewNode = CPIntVar(0 to maxNewNodes)
 
   start()
-
 }
 
 // TODO
-// deboguer les arcs uses et type uses
 // faire varier les arcs uses pour casser les dépendances
 // d'abord introduire une interface au dessus de Personne
 // comme on a besoin uniquement de la methode getnom on pourrait
 // par inférence de type ne definir l'interface qu'avec cette methode
+
+// on ajoute donc un noeud SI cela permet de diminuer les violations
+// donc on veut A TERME optimiser NBViolations + NBNewNodes
+
+// MAIS dans un premier temps on va essayer de simplement ajouter un noeud : une interface
+// Etape 1 : incrementer maxNewNodes  et on crée le noeud
 
