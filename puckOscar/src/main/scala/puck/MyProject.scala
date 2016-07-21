@@ -204,7 +204,7 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
 */
   for ( n <- NODES.indices){
 
-    val ru = for ((s, t) <- red_uses.keys if t == n) yield red_uses((s, t))
+    val ru = for ((s, t) <- red_uses.keys if t == n; if NODES(n).kind == kClass) yield red_uses((s, t))
     if(ru.nonEmpty)
      add(may_be_abstracted(n) === isOr(ru) )
   }
@@ -252,7 +252,7 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
   val maxNewNodes : Int = 1 // because 1 qualifies all the violations
   var nbNewNode = CPIntVar(0 to maxNewNodes)
 
-  start()
+  start(nSols=1)
 }
 
 // TODO
