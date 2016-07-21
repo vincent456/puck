@@ -67,25 +67,25 @@ object MyModel extends CPModel with App {
     }
   }
 
-  def printArcs2(m : Map[(Int,Int),CPIntVar]) = {
+  def printArcs0[V](m : Map[(Int,Int),V])(str : V => String) = {
     if (m.isEmpty)
       println("No arcs")
-    else {
-      m.keys.foreach(x =>
-        print(x + " : " + m(x).value + "    "))
-    }
+    else
+      m.foreach {
+        case (x, v) =>
+          print(x + " : " + str(v) + "    ")
+      }
+
     println()
   }
 
-  def printQualified( m: Map[(Int, Int),(Int, Int)]) = {
-    if (m.isEmpty)
-      println("No arcs")
-    else {
-      m.keys.foreach(x =>
-        print(x + " : " + m(x) + "    "))
-    }
-    println()
-  }
+  def printArcs2(m : Map[(Int,Int),CPIntVar]) =
+    printArcs0(m)(_.value.toString)
+
+
+  def printQualified( m: Map[(Int, Int),(Int, Int)]) =
+    printArcs0(m)(_.toString)
+
 
   def printNodes(nodes : ArrayBuffer[Node]): Unit = {
     nodes.map(x => print("" + x +", "))
@@ -162,26 +162,52 @@ val qualified_by_orig:Map[(Int, Int),(Int, Int)] = Map (
   println("QUALIFIED_BY ARCS")
   printQualified(qualified_by_orig)
 
-def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPIntVar] = {
-  var result: Map[(Int, Int), CPIntVar] = Map()
-  m.keys.foreach(s =>
-    m(s).foreach(t =>
-      (result += (s, t) -> CPIntVar(0 to 1))
-    )
-  )
-  result
+
+def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
+  val s: Iterable[((Int, Int), CPBoolVar)] = (for {
+    (s, ts) <- m
+    t <- ts
+  } yield ((s, t) -> CPBoolVar()))
+
+  s.toMap
 }
 
   val allUses_orig = uses_map_orig ++ type_uses_orig
   val red_uses = makeVars(allUses_orig)
+  val may_be_abstracted  = Array.fill(NODES.size)(CPBoolVar())
+  println("MAY BE ABSTRACTED")
+  for ( n <- NODES.indices)
+   println(n + " : "+ may_be_abstracted(n))
 
-  allUses_orig.keys.foreach(s =>
-    allUses_orig(s).foreach(t =>
-      if (arcExists(s,t, hidden_orig) ==1)
-        add(red_uses((s, t)) == 1)
-      else
-        add(red_uses((s, t)) == 0)))
+  for {
+    (s, ts) <- allUses_orig
+    t <- ts
+  }{
+    if (arcExists(s,t, hidden_orig) ==1)
+      add(red_uses((s, t)) == 1)
+    else
+      add(red_uses((s, t)) == 0)
+  }
 
+  /* equivalent to the for construct directly above
+  allUses_orig.foreach{
+    case (s, ts) =>
+      ts.foreach( t =>
+        if (arcExists(s,t, hidden_orig) ==1) {
+          add(red_uses((s, t)) == 1)
+        }
+        else{
+          add(red_uses((s, t)) == 0)
+        }
+      )
+  }
+*/
+  for ( n <- NODES.indices){
+
+    val ru = for ((s, t) <- red_uses.keys if t == n) yield red_uses((s, t))
+    if(ru.nonEmpty)
+     add(may_be_abstracted(n) === isOr(ru) )
+  }
 
   // pour tout noeud abstracted
   // sa valeur doit correspondre à un dominant
@@ -211,7 +237,7 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPIntVar] = {
     println()
 
     nb_red_uses = 0
-    red_uses.values.map( x => nb_red_uses+= x.value)
+    red_uses.values.foreach( nb_red_uses += _.value)
     println("nb violations  = " + nb_red_uses)
     println("reduses to Array")
     println(red_uses.toArray.mkString(","))
