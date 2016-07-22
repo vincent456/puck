@@ -156,8 +156,8 @@ object MyModel extends CPModel with App {
   printArcs(hidden_orig)
 
 val qualified_by_orig:Map[(Int, Int),(Int, Int)] = Map (
-  (mclientDef, mgetNom) -> ((parapmclient, cPersonne)),
-  (parapmclient, cPersonne) -> ((parapmclient, cPersonne))
+  (mclientDef, mgetNom) -> ((parapmclient, cPersonne))
+//  ,(parapmclient, cPersonne) -> ((parapmclient, cPersonne))
   )
   println("QUALIFIED_BY ARCS")
   printQualified(qualified_by_orig)
@@ -175,9 +175,6 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
   val allUses_orig = uses_map_orig ++ type_uses_orig
   val red_uses = makeVars(allUses_orig)
   val may_be_abstracted  = Array.fill(NODES.size)(CPBoolVar())
-  println("MAY BE ABSTRACTED")
-  for ( n <- NODES.indices)
-   println(n + " : "+ may_be_abstracted(n))
 
   for {
     (s, ts) <- allUses_orig
@@ -189,13 +186,11 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
       add(red_uses((s, t)) == 0)
   }
 
-
-
   // un noeud may be abstracted si c'est un dominant d'un red uses
 
   // version temporaire
   // Pour chaque noeud
-  // s'il existe un red_uses où il apparait à droite
+  // s'il existe un red_uses où il apparait à DROITE (on abstrait ce qui est utilisé par ce qui utilise)
   // et si c'est une classe
   // alors il peut etre abstrait
 
@@ -207,7 +202,25 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
   }
 */
   // version plus ambitieuse qui vérifie la domination (qualification)
-  //
+  // un noeud n may be abstracted s'il est à droite d'un red uses
+  // et s'il est à droite d'un uses qui est lui même à droite d'un qualified_by
+
+  def redUses(n: Int): Iterable[CPBoolVar] = {
+    for ((s, t) <- red_uses.keys
+         if t == n
+    )
+      yield red_uses((s, t))
+  }
+
+  def abstractable(n:Int) : Iterable[CPBoolVar] = {
+    for ((s, t) <- red_uses.keys
+         if t == n;
+         if qualified_by_orig.values.toSet.contains((s,t))
+    )
+      yield red_uses((s, t))
+  }
+
+//  def qualifiedBy()
 
 
   // pour tout noeud abstracted
@@ -227,12 +240,14 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
  //    println("$$$$$ " +(red_uses.toArray)(0))
  // )
   for ( n <- NODES.indices){
-    val ru = for ((s, t) <- red_uses.keys if t == n) yield red_uses((s, t))
+    val ru : Iterable[CPBoolVar]= abstractable(n)
+
     if(ru.nonEmpty)
       add(may_be_abstracted(n) === isOr(ru) )
   }
 
   var nb_red_uses :Int =0
+
   search {
     binaryFirstFail(red_uses.values.toSeq ++ abstracted_nodes.toSeq ++ Seq(y))
   } onSolution {
@@ -247,6 +262,12 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
     println("nb violations  = " + nb_red_uses)
     println("reduses to Array")
     println(red_uses.toArray.mkString(","))
+
+    println("Nodes that may be abstracted")
+    for (t <- NODES.indices
+      if may_be_abstracted(t).value ==1
+     )
+      println(t)
 
 
  //   if (nbNewNode.value ==1)
