@@ -153,7 +153,7 @@ object MyModel extends CPModel with App {
 
 val qualified_by_orig:Map[(Int, Int),(Int, Int)] = Map (
   (mclientDef, mgetNom) -> ((parapmclient, cPersonne))
-//  ,(parapmclient, cPersonne) -> ((parapmclient, cPersonne))
+  ,(parapmclient, cPersonne) -> ((parapmclient, cPersonne))
   )
   println("QUALIFIED_BY ARCS")
   printQualified(qualified_by_orig)
@@ -176,44 +176,45 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
     t <- ts
   }{
     if (arcExists(s,t, hidden_orig) ==1)
-      add(red_uses((s, t)) == 1,Strong)
+      add(red_uses((s, t)) == 1)
     else
-      add(red_uses((s, t)) == 0,Strong)
+      add(red_uses((s, t)) == 0)
   }
 
+  // un noeud n may be abstracted si deux conditions sont remplies.
+  // Normalement la première devrait être impliquée par la seconde
+  // Condition 1 :  n est la cible d'un red uses (s,n)
+  // On calcule donc un isOr sur les red_uses potentiels où n est la cible (deuxieme élément)
 
-
-  // version temporaire
-  // Pour chaque noeud
-  // s'il existe un red_uses où il apparait à DROITE (on abstrait ce qui est utilisé par ce qui utilise)
-  // et si c'est une classe
-  // alors il peut etre abstrait
-
- /*
-  for ( n <- NODES.indices){
-    val ru = for ((s, t) <- red_uses.keys if t == n; if NODES(n).kind == kClass) yield red_uses((s, t))
-    if(ru.nonEmpty)
-     add(may_be_abstracted(n) === isOr(ru) )
-  }
-*/
-  // version plus ambitieuse qui vérifie la domination (qualification)
-  // un noeud n may be abstracted s'il est à droite d'un red uses
-  // et s'il est à droite d'un uses qui est lui même à droite d'un qualified_by
-
-  def redUses(n: Int): Iterable[CPBoolVar] = {
+  def redUsesOfNode(n: Int): Iterable[CPBoolVar] = {
     for ((s, t) <- red_uses.keys
          if t == n
     )
-      yield red_uses((s, t))
+      yield red_uses((s, n))
   }
 
-  def abstractable(n:Int) : Iterable[CPBoolVar] = {
+  // Condition 2 : n est à droite d'un dominant (d,t) d'un red uses (a,b) c'est à dire s'il est
+  // la cible d'un uses (d,t) qui est à droite d'un use (a,b) dans qualified_by et si (a,b) est red
+  // On calcule donc tous les (a,b) concernés et leur statut de red_use potentiel
+  // puis on fait un isOr
+
+  def redUsesQualifiedBy(n : Int) : Iterable[CPBoolVar] = {
+    val qualif = for (((a,b),(d,t)) <- qualified_by_orig
+      if t ==n
+      )
+      yield red_uses((a,b))
+    qualif
+  }
+
+/* vielle version qui est peu claire et certainement incomplète
+  def dominatingRedUses(n:Int) : Iterable[CPBoolVar] = {
     for ((s, t) <- red_uses.keys
          if t == n;
-         if qualified_by_orig.values.toSet.contains((s,t))
+         if qualified_by_orig.values.toSet.contains((s,n)) // (s,n) dominates some uses arc
     )
-      yield red_uses((s, t))
+      yield red_uses((s, n))
   }
+ */
 
   // pour tout noeud abstracted
   // sa valeur doit correspondre à un dominant
@@ -232,28 +233,26 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
  //    println("$$$$$ " +(red_uses.toArray)(0))
  // )
   for ( n <- NODES.indices){
-    val ru : Iterable[CPBoolVar]= abstractable(n)
-    if(ru.nonEmpty)
-      add((may_be_abstracted(n) === isOr(ru)) ==1,Strong )
-    else add((may_be_abstracted(n) === 0) ==1,Strong )
+    val ruon : Iterable[CPBoolVar]= redUsesOfNode(n)
+    val ruqb : Iterable[CPBoolVar]= redUsesQualifiedBy(n)
+    if(ruon.nonEmpty && ruqb.nonEmpty)
+      add(may_be_abstracted(n) === (isOr(ruon) && isOr(ruqb)))
+    else add(may_be_abstracted(n) === 0)
   }
 
   def nbRedUses() : Int = {
     red_uses.values.count(_.value ==1)
   }
 
- var nb_red_uses : CPIntVar = CPIntVar(0 to allUses_orig.size)
-  var abstractableNodes : Array[Int] = Array()
-
+  var nb_red_uses : CPIntVar = CPIntVar(0 to allUses_orig.size)
   val MAX_NEW_NODES =1
   var nbNewNodes : CPIntVar = CPIntVar(0 to MAX_NEW_NODES)
 
- minimize(nb_red_uses*3 + nbNewNodes)
- minimize(nb_red_uses)
- add(nb_red_uses ===nbRedUses())
+  minimize(nb_red_uses*3 + nbNewNodes)
+  minimize(nb_red_uses)
+  add(nb_red_uses ===nbRedUses())
 
-
-    val chosenNodes  = Array.fill(NODES.size)(CPBoolVar())
+  val chosenNodes  = Array.fill(NODES.size)(CPBoolVar())
 
   (chosenNodes,may_be_abstracted).zipped.foreach( (chosen,maybe_abstracted) =>
     add(chosen ==> maybe_abstracted)
