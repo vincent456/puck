@@ -115,10 +115,6 @@ object MyModel extends CPModel with App {
   println("NODES")
   printNodes(NODES)
 
-  val abstracted_nodes : Array[CPIntVar] = Array(
-    CPIntVar(-1 to NODES.size-1)
-  )
-
   val uses_map_orig =  Map(
     cPersonne -> Set(cPersonne) , mmainDef -> Set(mclient,cPersonne), ccPersonneDef -> Set(anom),
     mgetNomDef ->Set(anom), mclientDef -> Set(mgetNom), mgetNom -> Set(cString)
@@ -186,7 +182,7 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
       add(red_uses((s, t)) == 0)
   }
 
-  // un noeud may be abstracted si c'est un dominant d'un red uses
+
 
   // version temporaire
   // Pour chaque noeud
@@ -220,7 +216,6 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
       yield red_uses((s, t))
   }
 
-//  def qualifiedBy()
 
 
   // pour tout noeud abstracted
@@ -276,10 +271,9 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
  //   printNodes(NODES)
   }
 
-  val maxNewNodes : Int = 1 // because 1 qualifies all the violations
-  var nbNewNode = CPIntVar(0 to maxNewNodes)
 
-  start(nSols=1)
+  //start(nSols=1)
+  start()
 }
 
 // TODO
