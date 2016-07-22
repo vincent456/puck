@@ -327,6 +327,20 @@ object RedirectSource {
               case _ => puck.error()
             }
           }
+
+          val usedBy = ((reenactor.content(target) + target) flatMap reenactor.usedBy) - target
+
+          ( usedBy intersect reenactor.content(source)).foreach {
+            id2declMap(_) match {
+              case FieldDeclHolder(fdecl, i) =>
+                bdh.decl.handleQualifierOfAccessOfStaticMember(fdecl.getDeclarator(i), oldTdecl)
+              case MethodDeclHolder(mdecl) =>
+                bdh.decl.handleQualifierOfAccessOfStaticMember(mdecl, oldTdecl)
+              case ConstructorDeclHolder(cdecl) =>
+                bdh.decl.handleQualifierOfAccessOfStaticMember(cdecl, oldTdecl)
+              case h => puck.error(h + " not expected")
+            }
+          }
         }
 
 

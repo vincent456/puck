@@ -154,7 +154,14 @@ aspect LockedMethodAccess {
 				// since the target is static, we can access it through the raw type
 				if(host.isGenericType())
 					host = ((GenericTypeDecl)host).rawType();
-				if(host.accessibleFrom(hostType()) && target.accessibleFrom(hostType()))
+
+				if(!host.accessibleFrom(hostType())) {
+					host.setVisibility(VIS_PUBLIC);
+					host.flushVisibilityCache();
+				}
+				if(!target.accessibleFrom(hostType()))
+					target.setVisibility(VIS_PUBLIC);
+				//if(host.accessibleFrom(hostType()) && target.accessibleFrom(hostType()))
 					if (squal.isEmpty() || (squal.nonEmpty() && squal.get().type() != host)) {
 						this.flushTreeCache();
 						Access hostAccess = host.createLockedAccess();

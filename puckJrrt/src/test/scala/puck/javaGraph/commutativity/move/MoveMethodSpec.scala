@@ -548,8 +548,8 @@ class MoveMethodSpec extends TransfoRulesSpec {
     }
   }
 
-  feature("Move static method"){
-    scenario("unused factory"){
+  feature("Move static method") {
+    scenario("unused factory") {
       compareWithExpectedAndGenerated(
         """package p;
           |
@@ -573,7 +573,7 @@ class MoveMethodSpec extends TransfoRulesSpec {
           |}""")
     }
 
-    scenario("used factory moved in client"){
+    scenario("used factory moved in client") {
       compareWithExpectedAndGenerated(
         """package p;
           |
@@ -598,7 +598,7 @@ class MoveMethodSpec extends TransfoRulesSpec {
 
     }
 
-    scenario("used factory moved in outsider host"){
+    scenario("used factory moved in outsider host") {
       compareWithExpectedAndGenerated(
         """package p;
           |
@@ -619,6 +619,165 @@ class MoveMethodSpec extends TransfoRulesSpec {
           |class Factory{ static A createA(){return new A();} }
           |
           |class Client { void m(){ A a = Factory.createA(); } }""")
+
+    }
+
+    scenario("static method using another (not-moved) static method") {
+      compareWithExpectedAndGenerated(
+        """package p;
+          |
+          |class A {
+          |   static int get42(){ return times2(21); }
+          |   static int times2(int i){ return i * 2; }
+          |}
+          |
+          |class B{ }
+          |
+          |class C{ void m(){ int i = A.get42(); } }""",
+        bs => {
+          import bs.{graph, idOfFullName}
+          Move.staticDecl(graph, "p.A.get42()", "p.B").rvalue
+        },
+        """package p;
+          |
+          |class A { static int times2(int i){ return i * 2; } }
+          |
+          |class B { static int get42(){ return A.times2(21); } }
+          |
+          |class C { void m(){ int i = B.get42(); } }"""
+        )
+    }
+
+    scenario("static method using another (not-moved) static method - used as constructor arg") {
+      compareWithExpectedAndGenerated(
+        """package p;
+          |
+          |class A {
+          |   static int get42(){ return times2(21); }
+          |   static int times2(int i){ return i * 2; }
+          |}
+          |
+          |class B{ }
+          |
+          |class D { D(int i){} }
+          |
+          |class C{ void m(){ D d = new D(A.get42()); } }""",
+        bs => {
+          import bs.{graph, idOfFullName}
+          Move.staticDecl(graph, "p.A.get42()", "p.B").rvalue
+        },
+        """package p;
+          |
+          |class A { static int times2(int i){ return i * 2; } }
+          |
+          |class B { static int get42(){ return A.times2(21); } }
+          |
+          |class D { D(int i){} }
+          |
+          |class C { void m(){ D d = new D(B.get42()); } }"""
+      )
+    }
+
+    scenario("static method using another (not-moved) static method - different packages") {
+      compareWithExpectedAndGenerated(
+        Seq(
+        """package p1;
+          |
+          |public class A {
+          |   public static int get42(){ return times2(21); }
+          |   public static int times2(int i){ return i * 2; }
+          |}""",
+       """package p2;
+          |public class B{ } """,
+       """package p3;
+          |import p1.A;
+          |public class C{ void m(){ int i = A.get42(); } }"""),
+        bs => {
+          import bs.{graph, idOfFullName}
+          Move.staticDecl(graph, "p1.A.get42()", "p2.B").rvalue
+        },
+        Seq(
+          """package p1;
+            |public class A {
+            |   public static int times2(int i){ return i * 2; }
+            |}""",
+          """package p2;
+            |import p1.A;
+            |public class B{ public static int get42(){ return A.times2(21); } } """,
+          """package p3;
+            |import p2.B;
+            |public class C{ void m(){ int i = B.get42(); } }""")
+      )
+
+    }
+
+    scenario("static method using another (not-moved) static method - used as constructor arg, different packages") {
+      compareWithExpectedAndGenerated(
+        Seq(
+          """package p1;
+            |
+            |public class A {
+            |   public static int get42(){ return times2(21); }
+            |   public static int times2(int i){ return i * 2; }
+            |}""",
+          """package p2;
+            |public class B{ } """,
+          """package p3;
+            |import p1.A;
+            |class D { D(int i){} }
+            |class C { void m(){ D d = new D(A.get42()); } }"""),
+        bs => {
+          import bs.{graph, idOfFullName}
+          Move.staticDecl(graph, "p1.A.get42()", "p2.B").rvalue
+        },
+        Seq(
+          """package p1;
+            |public class A {
+            |   public static int times2(int i){ return i * 2; }
+            |}""",
+          """package p2;
+            |import p1.A;
+            |public class B{ public static int get42(){ return A.times2(21); } } """,
+          """package p3;
+            |import p2.B;
+            |class D { D(int i){} }
+            |class C { void m(){ D d = new D(B.get42()); } }""")
+      )
+
+    }
+    scenario("static method using a sibling (not-moved) static field -  different packages") {
+      compareWithExpectedAndGenerated(
+        Seq(
+          """package p1;
+            |
+            |public class A {
+            |   private static int i42 = 42;
+            |   public static int get42(){ return i42; }
+            |}""",
+          """package p2;
+            |public class B{ } """,
+          """package p3;
+            |import p1.A;
+            |class D { D(int i){} }
+            |class C { void m(){ D d = new D(A.get42()); } }"""),
+        bs => {
+          import bs.{graph, idOfFullName}
+          bs.printFullNamesSortedByKey()
+          Move.staticDecl(graph, "p1.A.get42()", "p2.B").rvalue
+        },
+        Seq(
+          """package p1;
+            |public class A {
+            |   public static int i42 = 42;
+            |}""",
+          """package p2;
+            |import p1.A;
+            |public class B{ public static int get42(){ return A.i42; } } """,
+          """package p3;
+            |import p2.B;
+            |class D { D(int i){} }
+            |class C { void m(){ D d = new D(B.get42()); } }""")
+      )
 
     }
   }

@@ -150,4 +150,5 @@ aspect Concretize {
     public void TypeDecl.flushVisibilityCache(){
         isPublic_reset();
     }
+
 }

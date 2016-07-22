@@ -28,22 +28,33 @@ import puck.PuckError;
 
 aspect HandleQualifier {
 
-    public void ASTNode.handleQualifierOfAccessOfStaticMember(MemberDecl staticMemberDecl, TypeDecl newContainingType){
+    //proper signature for scala then gen cast to factorize code
+    public void ASTNode.handleQualifierOfAccessOfStaticMember(BodyDecl staticMemberDecl, TypeDecl newContainingType){
+        handleQualifierOfAccessOfStaticMember((ASTNode) staticMemberDecl, newContainingType);
+    }
+    public void ASTNode.handleQualifierOfAccessOfStaticMember(FieldDeclarator staticMemberDecl, TypeDecl newContainingType){
+        handleQualifierOfAccessOfStaticMember((ASTNode) staticMemberDecl, newContainingType);
+    }
+
+    protected void ASTNode.handleQualifierOfAccessOfStaticMember(ASTNode staticMemberDecl, TypeDecl newContainingType){
         for(int i = 0; i < getNumChild(); i++){
             getChild(i).handleQualifierOfAccessOfStaticMember(staticMemberDecl, newContainingType);
         }
     }
 
-    public void TypeMemberAccess.handleQualifierOfAccessOfStaticMember(MemberDecl staticMemberDecl, TypeDecl newContainingType){
+    public void TypeMemberAccess.handleQualifierOfAccessOfStaticMember(ASTNode staticMemberDecl, TypeDecl newContainingType){
         if(accessed() == staticMemberDecl){
             if(isQualified())
                 if(hostType() == newContainingType)
                     replace(parentDot()).with(this);
                 else
                     replace(qualifier()).with(newContainingType.createLockedAccess());
-            else if(hostType() != newContainingType)
+            else if(hostType() != newContainingType){
                 this.qualifyWith(newContainingType.createLockedAccess());
+                parentDot().flushTreeCache();
+            }
 
         }
+        super.handleQualifierOfAccessOfStaticMember(staticMemberDecl, newContainingType);
     }
 }

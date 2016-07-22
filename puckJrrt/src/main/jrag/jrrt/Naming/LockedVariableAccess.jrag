@@ -60,7 +60,7 @@ aspect LockedVariableAccess {
 	public Access VarAccess.unlock() {
 		Opt<Expr> squal = qualifierOpt();
 		mandatoryAssert(squal.isEmpty() ||
-			(parentDot() != null && squal.get() == parentDot().getLeft()));
+			(parentDot() != null && squal.get() == prevExpr()));
 		Variable target = targetVariable.refresh();
 		setTarget(null);
 		flushCache();
@@ -82,6 +82,17 @@ aspect LockedVariableAccess {
 		if(acc.isUnknownVarAccess()) {
 			if((squal.isEmpty() || squal.get().isPure()) && target.isStatic()) {
 				TypeDecl host = target.hostType();
+
+				if(target.isField()) {
+					if (!host.accessibleFrom(hostType())) {
+						host.setVisibility(VIS_PUBLIC);
+						host.flushVisibilityCache();
+					}
+					if (!target.accessibleFrom(hostType())){
+						target.getModifiers().setVisibility(VIS_PUBLIC);
+						target.getModifiers().flushTreeCache();
+					}
+				}
 				if(host.accessibleFrom(hostType()) && mayAccess(target)) {
 					this.flushCache();
 					Access hostAccess = host.createLockedAccess();

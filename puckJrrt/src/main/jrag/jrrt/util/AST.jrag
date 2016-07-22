@@ -94,6 +94,7 @@ aspect AST {
 		if(children==null)
 			children = new ASTNode[1];
 		children[0] = t;
+		numChildren = 1;
 	}
 	public boolean Opt.nonEmpty(){
 		return !isEmpty();
