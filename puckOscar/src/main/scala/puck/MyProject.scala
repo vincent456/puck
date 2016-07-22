@@ -164,7 +164,6 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
     (s, ts) <- m
     t <- ts
   } yield ((s, t) -> CPBoolVar()))
-
   s.toMap
 }
 
@@ -177,9 +176,9 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
     t <- ts
   }{
     if (arcExists(s,t, hidden_orig) ==1)
-      add(red_uses((s, t)) == 1)
+      add(red_uses((s, t)) == 1,Strong)
     else
-      add(red_uses((s, t)) == 0)
+      add(red_uses((s, t)) == 0,Strong)
   }
 
 
@@ -216,8 +215,6 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
       yield red_uses((s, t))
   }
 
-
-
   // pour tout noeud abstracted
   // sa valeur doit correspondre à un dominant
   // d'un red uses
@@ -236,40 +233,61 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
  // )
   for ( n <- NODES.indices){
     val ru : Iterable[CPBoolVar]= abstractable(n)
-
     if(ru.nonEmpty)
-      add(may_be_abstracted(n) === isOr(ru) )
+      add((may_be_abstracted(n) === isOr(ru)) ==1,Strong )
+    else add((may_be_abstracted(n) === 0) ==1,Strong )
   }
 
-  var nb_red_uses :Int =0
+  def nbRedUses() : Int = {
+    red_uses.values.count(_.value ==1)
+  }
+
+ var nb_red_uses : CPIntVar = CPIntVar(0 to allUses_orig.size)
+  var abstractableNodes : Array[Int] = Array()
+
+  val MAX_NEW_NODES =1
+  var nbNewNodes : CPIntVar = CPIntVar(0 to MAX_NEW_NODES)
+
+ minimize(nb_red_uses*3 + nbNewNodes)
+ minimize(nb_red_uses)
+ add(nb_red_uses ===nbRedUses())
+
+
+    val chosenNodes  = Array.fill(NODES.size)(CPBoolVar())
+
+  (chosenNodes,may_be_abstracted).zipped.foreach( (chosen,maybe_abstracted) =>
+    add(chosen ==> maybe_abstracted)
+  )
+
+  def trues( elements : Array[CPBoolVar]): Array[Int] = {
+    val result = for (t <- NODES.indices
+                    if elements(t).value ==1
+    )
+      yield t
+    result
+  }
 
   search {
-    binaryFirstFail(red_uses.values.toSeq ++ abstracted_nodes.toSeq ++ Seq(y))
+    binaryFirstFail(red_uses.values.toSeq ++ may_be_abstracted.toSeq++Seq(nbNewNodes)++ Seq(nb_red_uses)
+      ++chosenNodes.toSeq)
   } onSolution {
     println("The red uses are:")
     printArcs2(red_uses)
-    println("abstracted nodes:")
-    abstracted_nodes.map(x => print("" + x))
-    println()
-
-    nb_red_uses = 0
-    red_uses.values.foreach( nb_red_uses += _.value)
-    println("nb violations  = " + nb_red_uses)
-    println("reduses to Array")
-    println(red_uses.toArray.mkString(","))
+    println("nb violations  = " + nbRedUses())
 
     println("Nodes that may be abstracted")
-    for (t <- NODES.indices
-      if may_be_abstracted(t).value ==1
-     )
-      println(t)
+    println(trues(may_be_abstracted).mkString(","))
+    println("Nodes that are chosen for abstraction")
+    println(trues(chosenNodes).mkString(","))
+    println("nbNewNodes = "+nbNewNodes.value)
+    println("nb_red_uses = "+nb_red_uses.value)
 
-
- //   if (nbNewNode.value ==1)
+ //  if (nbNewNode.value ==1)
  //     NODES += new Node("Personne_ABS", kInterface)
  //   println("NODES")
  //   printNodes(NODES)
   }
+
 
 
   //start(nSols=1)
