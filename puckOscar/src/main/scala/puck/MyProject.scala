@@ -189,25 +189,26 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
       add(red_uses((s, t)) == 0)
   }
 
-  /* equivalent to the for construct directly above
-  allUses_orig.foreach{
-    case (s, ts) =>
-      ts.foreach( t =>
-        if (arcExists(s,t, hidden_orig) ==1) {
-          add(red_uses((s, t)) == 1)
-        }
-        else{
-          add(red_uses((s, t)) == 0)
-        }
-      )
-  }
-*/
-  for ( n <- NODES.indices){
 
+
+  // un noeud may be abstracted si c'est un dominant d'un red uses
+
+  // version temporaire
+  // Pour chaque noeud
+  // s'il existe un red_uses où il apparait à droite
+  // et si c'est une classe
+  // alors il peut etre abstrait
+
+ /*
+  for ( n <- NODES.indices){
     val ru = for ((s, t) <- red_uses.keys if t == n; if NODES(n).kind == kClass) yield red_uses((s, t))
     if(ru.nonEmpty)
      add(may_be_abstracted(n) === isOr(ru) )
   }
+*/
+  // version plus ambitieuse qui vérifie la domination (qualification)
+  //
+
 
   // pour tout noeud abstracted
   // sa valeur doit correspondre à un dominant
@@ -225,6 +226,11 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
  // abstracted_nodes.foreach(x =>
  //    println("$$$$$ " +(red_uses.toArray)(0))
  // )
+  for ( n <- NODES.indices){
+    val ru = for ((s, t) <- red_uses.keys if t == n) yield red_uses((s, t))
+    if(ru.nonEmpty)
+      add(may_be_abstracted(n) === isOr(ru) )
+  }
 
   var nb_red_uses :Int =0
   search {
