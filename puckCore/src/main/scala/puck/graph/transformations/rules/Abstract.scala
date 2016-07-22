@@ -28,7 +28,7 @@ package puck.graph
 package transformations.rules
 
 import puck.graph.ShowDG._
-import puck.graph.constraints.{ConstraintsMaps, AbstractionPolicy, DelegationAbstraction, SupertypeAbstraction}
+import puck.graph.constraints.ConstraintsMaps
 import puck.util.LoggedEither._
 
 import scalaz.std.list._

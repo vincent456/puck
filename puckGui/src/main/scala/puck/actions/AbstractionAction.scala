@@ -29,7 +29,6 @@ package puck.actions
 
 import puck.graph.ShowDG._
 import puck.graph._
-import puck.graph.constraints.AbstractionPolicy
 import puck.gui.NodeKindIcons
 import puck.gui.explorer.StaticDGTreePane
 

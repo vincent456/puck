@@ -130,10 +130,24 @@ aspect Concretize {
         localMethodsSignatureMap_reset();
     }
 
+    public void TypeDecl.removeMethod(MethodDecl m) {
+        removeBodyDecl(m);
+        localMethodsSignatureMap_reset();
+    }
+
     public void TypeDecl.introduceField(FieldDecl m) {
         addBodyDecl(m);
         localFields_String_reset();
         localFieldsMap_reset();
     }
 
+    public void TypeDecl.removeField(FieldDecl m) {
+        removeBodyDecl(m);
+        localFields_String_reset();
+        localFieldsMap_reset();
+    }
+
+    public void TypeDecl.flushVisibilityCache(){
+        isPublic_reset();
+    }
 }

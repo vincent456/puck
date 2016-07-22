@@ -26,7 +26,6 @@
 
 package puck.graph
 
-import puck.graph.constraints.SupertypeAbstraction
 import puck.util.LoggedEither._
 
 import scalaz.std.list._
@@ -79,6 +78,8 @@ object Type {
   def mainId(t : Type) : NodeId = t match {
     case NamedType(id) => id
     case ParameterizedType(id, _) => id
+    case Covariant(tt) => mainId(tt)
+    case Contravariant(tt) => mainId(tt)
     case _ => error()
   }
 }

@@ -125,7 +125,10 @@ aspect LockedMethodAccess {
 	}
 	
 	public Access MethodAccess.unlock() {
-		Expr qual = getQualifier();
+		Opt<Expr> squal = qualifierOpt();
+		if(squal.nonEmpty()) {
+			squal.get().flushAttrCache();
+		}
 		MethodDecl target = targetMethod.getDecl();
 		boolean isMonomorphicCall = this.isMonomorphicCall;
 		setTargetMethod(null, false);
@@ -137,29 +140,29 @@ aspect LockedMethodAccess {
 		} else if(!fromSource()) {
 			throw new RefactoringException("cannot adjust method access in compiled code");
 		} else {
-			return unlock(qual, target, isMonomorphicCall);
+			return unlock(squal, target, isMonomorphicCall);
 		}
 	}
 	
-	public Access MethodAccess.unlock(Expr qual, MethodDecl target, boolean isMonomorphicCall) {
-		if((qual == null ? inStaticContext() : qual.staticContextQualifier()) && !target.isStatic())
+	public Access MethodAccess.unlock(Opt<Expr> squal, MethodDecl target, boolean isMonomorphicCall) {
+		if((squal.isEmpty() ? inStaticContext() : squal.get().staticContextQualifier()) && !target.isStatic())
 			throw new RefactoringException("cannot access instance method in static context");
 		MethodAccessInfo acc = accessMethod(target);
 		if(acc == null) {
-			if((qual == null || qual.isPure()) && target.isStatic()) {
+			if((squal.isEmpty() || squal.get().isPure()) && target.isStatic()) {
 				TypeDecl host = target.hostType();
 				// since the target is static, we can access it through the raw type
 				if(host.isGenericType())
 					host = ((GenericTypeDecl)host).rawType();
 				if(host.accessibleFrom(hostType()) && target.accessibleFrom(hostType()))
-					if (qual == null || (qual!=null && qual.type() != host)) {
+					if (squal.isEmpty() || (squal.nonEmpty() && squal.get().type() != host)) {
 						this.flushTreeCache();
 						Access hostAccess = host.createLockedAccess();
 						affectedByUnlock(hostAccess, this);
-						return (Access) replace(qual!=null ? parentDot() : this).with(hostAccess.qualifiesAccess(this));
+						return (Access) replace(squal.nonEmpty() ? parentDot() : this).with(hostAccess.qualifiesAccess(this));
 					} else
-						return qual!=null ? parentDot() : this;
-			} else if(qual != null && (qual.isThisAccess() || qual.isSuperAccess())) {
+						return squal.nonEmpty() ? parentDot() : this;
+			} else if(squal.nonEmpty() && (squal.get().isThisAccess() || squal.get().isSuperAccess())) {
 				// throw away the qualifier and try again
 				AbstractDot parent = parentDot();
 				acc = parent.accessMethod(target);
@@ -173,6 +176,9 @@ aspect LockedMethodAccess {
 					" in " + fullLocation());
 		}
 		this.flushTreeCache();
+		Expr qual = null;
+		if(squal.nonEmpty())
+			qual = squal.get();
 		Access res = acc.eliminate(this, qual, enclosingType(), isMonomorphicCall, inStaticContext(), (List<Expr>) getArgs().fullCopyAndDetach());
 		if(res == null)
 			throw new RefactoringException("cannot access method "+target.fullName());
@@ -293,7 +299,8 @@ aspect LockedMethodAccess {
 			throw new RefactoringException(this +" : cannot access target method");
 		} else {
 			if(!target.accessibleFrom(enclosing))
-				throw new RefactoringException("method not accessible");
+				throw new RefactoringException("method "+ target.fullName()+
+									" not accessible from " + enclosing.fullName() );
 			return ma.parentDot();
 		}
 	}

@@ -27,7 +27,7 @@
 package puck.search
 
 import puck.PuckError
-import puck.graph.{Error, LoggedTry, error}
+import puck.graph.{LoggedTry, error}
 import puck.util.Logged
 
 import scalaz.{-\/, \/-}

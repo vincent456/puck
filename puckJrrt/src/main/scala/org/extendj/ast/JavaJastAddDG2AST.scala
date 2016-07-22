@@ -35,7 +35,6 @@ import puck.config.Config
 import puck.graph.ShowDG._
 import puck.graph._
 import puck.graph.comparison.NodeMappingInitialState
-import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations._
 import puck.graph.transformations.Recording
 import puck.graph.transformations.Transformation._
@@ -274,27 +273,20 @@ class JavaJastAddDG2AST
     logger.writeln("change applied : ")
     logger.writeln(program.prettyPrint())
 
-//    logger.writeln("flushing caches")
-//    program.flushTreeCache()
-//
-//    logger.writeln("after emptying cache : ")
-//    logger.writeln(program.prettyPrint())
-//
-//    program.flushLibraryTypesTreeCache()
-//    program.resetPrimitiveTypes()
-
-
     logger.writeln("unlocking")
-    try program.eliminateLockedNamesInSubtree()
+    try {
+      program.eliminateLockedNamesInSubtree()
+    }
     catch {
       case e : Exception =>
         e.printStackTrace()
     }
-//    program.eliminateFreshVariables()
     logger.writeln("done")
 
     logger.writeln("Program after unlock : ")
     logger.writeln(program.prettyPrint())
+    logger.writeln("Program after unlock end of print ")
+
 
   }
 
@@ -390,7 +382,23 @@ class JavaJastAddDG2AST
             }
 
           case Rename(nid, newName) =>
-            ASTNodeLink.setName(newName, safeGet(reenactor, id2declMap), reenactor, nid)
+//            implicit val nodeLinks : NodeId => ASTNodeLink =
+//              safeGet(reenactor, id2declMap) _
+            ASTNodeLink.setName(newName, reenactor, nid)
+            mapping(nid) match {
+              case decl : HasNode =>
+                reenactor.usersOf(nid) foreach {
+                    mapping(_) match {
+                      case user : HasNode =>
+                        user.node.rename(decl.node, newName)
+                      case _ => ()
+                    }
+
+                }
+              case PackageDeclHolder => ()
+              case NoDecl =>
+                logger.writeln("tried to apply rename but no decl was found")
+            }
 
           case ChangeTypeBinding((tUser, tUsed), tmUse @ (tmUser, tmUsed), newTuse@(ntUser, ntUsed)) =>
             if (tUser == tUsed) {
@@ -455,7 +463,7 @@ class JavaJastAddDG2AST
 
     ASTNodeLink.enlargeVisibility(
       reenactor, usedAsVisible,
-      typeMemberUse.used)
+      typeMemberUse.used)(id2declMap)
 
   }
 

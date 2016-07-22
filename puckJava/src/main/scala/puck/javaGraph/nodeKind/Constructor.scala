@@ -27,8 +27,7 @@
 package puck.javaGraph
 package nodeKind
 
-import puck.graph.{TypeConstructor, KindType, NodeKind}
-import puck.graph.constraints.{SupertypeAbstraction, AbstractionPolicy, DelegationAbstraction}
+import puck.graph._
 
 case object Constructor extends JavaNodeKind {
 

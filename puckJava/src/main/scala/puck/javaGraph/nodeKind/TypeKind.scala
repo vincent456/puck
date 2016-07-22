@@ -28,8 +28,6 @@ package puck.javaGraph.nodeKind
 
 
 import puck.graph._
-import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
-
 
 sealed abstract class TypeKind extends JavaNodeKind {
   def kindType: KindType = TypeDecl

@@ -18,8 +18,11 @@ aspect Rename {
 	}
 	
 	public void ASTNode.eliminateLockedNames() {
-		for(int i=0;i<getNumChild();++i)
+		for(int i=0;i<getNumChild();++i) {
+			if(getChild(i) == null)
+				System.out.println("ERROR !");
 			getChild(i).eliminateLockedNames();
+		}
 	}
 	
 	/* Any sweep over the tree to unlock names may introduce new locked names. We collect these 

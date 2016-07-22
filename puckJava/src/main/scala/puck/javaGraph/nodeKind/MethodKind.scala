@@ -27,9 +27,6 @@
 package puck.javaGraph.nodeKind
 
 import puck.graph._
-import puck.graph.constraints.{AbstractionPolicy, DelegationAbstraction, SupertypeAbstraction}
-
-
 
 
 trait MethodKind extends JavaNodeKind {

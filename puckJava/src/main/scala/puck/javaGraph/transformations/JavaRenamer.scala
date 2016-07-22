@@ -27,7 +27,6 @@
 package puck.javaGraph.transformations
 
 import puck.graph._
-import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations.rules.Renamer
 import puck.javaGraph.nodeKind.{MethodKind, TypeKind, Constructor}
 

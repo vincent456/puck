@@ -27,7 +27,6 @@
 package puck.graph
 
 import puck.NodeError
-import puck.graph.constraints.{AbstractionPolicy, DelegationAbstraction, SupertypeAbstraction}
 import puck.graph.transformations.rules.Intro
 
 trait NodeKind {

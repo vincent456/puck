@@ -63,8 +63,6 @@ aspect DependencyGraphFactory {
 		Access a = getAccess();
 		if(a instanceof AbstractDot){
 			AbstractDot ad = (AbstractDot) a;
-			if(ad.isRightRotated())
-				ad.rotateLeft();
 
 			ad.getRight().lock();
 		}
@@ -192,12 +190,11 @@ aspect DependencyGraphFactory {
 	eq AbstractDot.isAbstractDot() = true;
 
 	public void AbstractDot.buildDG(JastaddGraphBuilder builder, int containerId){
-		if(isRightRotated())
-			rotateLeft();
-
 		if( (getRight() instanceof PotentialStaticDeclAccess)
-				&& ((PotentialStaticDeclAccess) getRight()).isDeclStatic())
-			getRight().buildDG(builder,containerId);
+				&& ((PotentialStaticDeclAccess) getRight()).isDeclStatic()){
+			getRight().buildDG(builder, containerId);
+			getLeft().lockAllNames();
+		}
 		else
 			buildDGInChildren(builder, containerId);
 	}

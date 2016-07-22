@@ -26,8 +26,7 @@
 
 package puck.javaGraph.nodeKind
 
-import puck.graph.{NameSpace, NodeKind}
-import puck.graph.constraints.AbstractionPolicy
+import puck.graph.{AbstractionPolicy, NameSpace, NodeKind}
 
 case object Package extends JavaNodeKind {
   override val toString = "Package"

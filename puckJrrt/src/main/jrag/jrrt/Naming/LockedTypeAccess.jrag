@@ -157,8 +157,8 @@ aspect LockedTypeAccess {
 	ParTypeAccess implements CanBeObscured;
 
 	public Access CanBeObscured.unlock() {
-		Expr qual = getQualifier();
-		mandatoryAssert(qual == null || qual.isPure());
+		Opt<Expr> squal = qualifierOpt();
+		mandatoryAssert(squal.isEmpty() || squal.get().isPure());
 		TypeDecl target = targetType.refresh();
 		setTargetType(null);
 		flushTreeCache();
@@ -167,7 +167,7 @@ aspect LockedTypeAccess {
 		try {
 			if(!isObscured() && type().equals(target))
 				return this;
-			return unlock(qual, target);
+			return unlock(squal, target);
 		} finally {
 			setTargetType(null);
 		}
@@ -207,67 +207,68 @@ aspect LockedTypeAccess {
 			return !this.accessibleFrom(acc.hostType());
 	}
 
-	public Access TypeAccess.unlock(Expr qual, TypeDecl target) {
+	public Access TypeAccess.unlock(Opt<Expr> squal, TypeDecl target) {
 		if(!fromSource() || hostBodyDecl() instanceof MethodDecl && ((MethodDecl)hostBodyDecl()).isNative())
 			throw new RefactoringException("cannot fix access in library");
 		if(target.isRawType())
 			target = target.erasure();
 		if(target.isParameterizedType())
 			throw new RefactoringException("par type access != type access should not happen");
-			//return unlockParTypeAccess((ParTypeDecl)target, qual);
+			//return unlockParTypeAccess((ParTypeDecl)target, squal);
 		if(target.isTypeVariable())
-			return unlockTypeVariableAccess((TypeVariable)target, qual);
+			return unlockTypeVariableAccess((TypeVariable)target, squal);
 		if(target instanceof PrimitiveType || target instanceof VoidType)
-			return unlockPrimitiveTypeAccess(target, qual);
+			return unlockPrimitiveTypeAccess(target, squal);
 		if(target.isArrayDecl())
-			return unlockArrayTypeAccess((ArrayDecl)target, qual);
+			return unlockArrayTypeAccess((ArrayDecl)target, squal);
 		if(target.isLocalClass())
-			return unlockLocalClassAccess((ClassDecl)target, qual);
+			return unlockLocalClassAccess((ClassDecl)target, squal);
 		if(target.isMemberType())
-			return unlockMemberTypeAccess(target, qual);
+			return unlockMemberTypeAccess(target, squal);
 		if(target.isTopLevelType())
-			return unlockTopLevelTypeAccess(target, qual);
+			return unlockTopLevelTypeAccess(target, squal);
 		throw new Error("cannot fix access to this kind of type");		
 	}
 	
-	protected Access TypeAccess.unlockPrimitiveTypeAccess(TypeDecl target, Expr qual) {
-		mandatoryAssert(qual == null);
+	protected Access TypeAccess.unlockPrimitiveTypeAccess(TypeDecl target, Opt<Expr> squal) {
+		mandatoryAssert(squal.isEmpty());
 		setID(target.name());
 		return this;
 	}
 	
-	protected Access TypeAccess.unlockTypeVariableAccess(TypeVariable target, Expr qual) {
+	protected Access TypeAccess.unlockTypeVariableAccess(TypeVariable target, Opt<Expr> squal) {
 		SimpleSet names = lookupName(target.name());
 		if(names.isEmpty()) return this;
 		if(!names.isSingleton(target))
 			throw new RefactoringException("cannot access shadowed/obscured type variable "+ this.name());
 		setPackage("");
 		setID(target.name());
-		if (qual!=null) {
+		if (squal.nonEmpty()) {
 			this.flushCache();
 			replace(parentDot()).with(this);
 		}
 		return this;
 	}
 	
-	protected Access TypeAccess.unlockLocalClassAccess(ClassDecl target, Expr qual) {
+	protected Access TypeAccess.unlockLocalClassAccess(ClassDecl target, Opt<Expr> squal) {
 		if(!lookupName(target.name()).isSingleton(target))
 			throw new RefactoringException("cannot access shadowed/obscured local class");
 		setPackage("");
 		setID(target.name());
-		if (qual!=null) {
+		if (squal.nonEmpty()) {
 			this.flushCache();
 			replace(parentDot()).with(this);
 		}
 		return this;
 	}
 
-	protected Access TypeAccess.unlockMemberTypeAccess(TypeDecl target, Expr qual) {
-		mandatoryAssert(qual == this.getQualifier());
-		if(qual != null) {
+	protected Access TypeAccess.unlockMemberTypeAccess(TypeDecl target, Opt<Expr> squal) {
+		mandatoryAssert(squal.isEmpty() && !this.isQualified() ||
+				squal.get() == this.qualifier());
+		if(squal.nonEmpty()) {
 			// try to build an access using the given qualifier
-			if(qual.isTypeAccess()) {
-				TypeDecl outer = qual.type().refresh();
+			if(squal.get().isTypeAccess()) {
+				TypeDecl outer = squal.get().type().refresh();
 				if(outer.memberTypes(target.name()).isSingleton(target)) {
 					if(target.inaccessibleFrom(this))
 						throw new RefactoringException("inaccessible type");
@@ -277,13 +278,13 @@ aspect LockedTypeAccess {
 				}
 			}
 			// we need to throw away the qualifier, but make sure it is pure
-			if(!qual.isPure())
+			if(!squal.get().isPure())
 				throw new RefactoringException("cannot access member type");
 		}
 		if(lookupName(target.name()).isSingleton(target)) {
 			setPackage("");
 			setID(target.name());
-			if (qual!=null) {
+			if (squal.nonEmpty()) {
 				this.flushCache();
 				replace(parentDot()).with(this);
 			}
@@ -301,24 +302,24 @@ aspect LockedTypeAccess {
 			// trying to build an access to its raw type)
 			if(target.isGenericType() && outer.isGenericType())
 				outer = ((GenericTypeDecl)outer).rawType();
-			if (qual!=null && qual.type()!=outer || qual==null) {
+			if (squal.nonEmpty() && squal.get().type()!=outer || squal.isEmpty()) {
 				this.flushCache();
 				Access outerAccess = outer.createLockedAccess();
 				target.affectedByUnlock(outerAccess, this);
 				this.lock(target);
-				return (Access) replace(qual!=null?parentDot():this).with(outerAccess.qualifiesAccess(this));
+				return (Access) replace(squal.nonEmpty()?parentDot():this).with(outerAccess.qualifiesAccess(this));
 			}
 			return parentDot();
 		}
 	}
 	
-	protected Access TypeAccess.unlockTopLevelTypeAccess(TypeDecl target, Expr qual) {
+	protected Access TypeAccess.unlockTopLevelTypeAccess(TypeDecl target, Opt<Expr> squal) {
 		SimpleSet lookedUp = lookupName(target.name());
 		if (lookedUp instanceof TypeDecl
 				&& lookedUp.isSingleton(target)) {
 			setPackage("");
 			setID(target.name());
-			if (qual != null) {
+			if (squal.nonEmpty()) {
 				this.flushCache();
 				replace(parentDot()).with(this);
 			}
@@ -332,7 +333,7 @@ aspect LockedTypeAccess {
 				!lookupType(target.packageName(), target.name()).equals(target))
 			throw new RefactoringException("cannot access toplevel type "+
 					target.fullName() + " in " + this.fullLocation());
-		if (qual!=null) {
+		if (squal.nonEmpty()) {
 			this.flushCache();
 			return (Access) replace(parentDot()).with(this);
 		}
@@ -357,20 +358,20 @@ aspect LockedTypeAccess {
 		return (Access) replace(qual!=null?parentDot():this).with(acc);
 	}
 	
-	protected Access TypeAccess.unlockArrayTypeAccess(ArrayDecl target, Expr qual) {
+	protected Access TypeAccess.unlockArrayTypeAccess(ArrayDecl target, Opt<Expr> squal) {
 		Access acc = target.componentType().createLockedAccess();
 		affectedByUnlock(acc);
 		if (acc.type() == this.type())
 			return this;
-		if(qual != null)
-			acc = qual.qualifiesAccess(acc);
-		return (Access) replace(qual!=null?parentDot():this).with(new ArrayTypeAccess(acc));
+		if(squal.nonEmpty())
+			acc = squal.get().qualifiesAccess(acc);
+		return (Access) replace(squal.nonEmpty()?parentDot():this).with(new ArrayTypeAccess(acc));
 	}
 	
-	protected Access ArrayTypeAccess.unlockArrayTypeAccess(ArrayDecl target, Expr qual) {
+	protected Access ArrayTypeAccess.unlockArrayTypeAccess(ArrayDecl target, Opt<Expr> squal) {
 		Access acc = target.componentType().createLockedAccess();
 		affectedByUnlock(acc);
 		setAccess(acc);
-		return qual == null ? this : parentDot();
+		return squal.isEmpty() ? this : parentDot();
 	}
 }

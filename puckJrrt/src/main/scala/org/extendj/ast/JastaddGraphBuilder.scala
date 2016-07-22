@@ -283,10 +283,7 @@ class JastaddGraphBuilder(val program : Program)
         ParameterizedType(arrayTypeId, scala.List(getType(aa.getAccess)))
       case bta : BoundTypeAccess => getType(bta.getTypeDecl)
       case ta: TypeAccess => NamedType(getNode(ta.decl()))
-      case d: Dot =>
-        if (d.isRightRotated)
-          d.rotateLeft()
-        getType(d.getRight)
+      case d: Dot => getType(d.getRight)
       case pta: ParTypeAccess => getType(pta.`type`())
       case we: AbstractWildcard => getType(we.`type`())
       case _ => throw new Error(s"getType, ${a.compilationUnit().pathName()} line ${a.location()} " +

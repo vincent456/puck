@@ -34,19 +34,19 @@ aspect ReplaceInstanceValueAccess {
 
     public void MethodAccess.replaceThisQualifierFor(MemberDecl method, Access byAccess){
         if(this.decl() == method){
-            if(getQualifier() == null || getQualifier().isThisAccess())
-                replace(this).with(new Dot(byAccess, this));
+            if(!isQualified() || qualifier().isThisAccess())
+                this.qualifyWith(byAccess);
             else
-                replace(getQualifier()).with(byAccess);
+                replace(qualifier()).with(byAccess);
         }
     }
 
     public void VarAccess.replaceThisQualifierFor(MemberDecl field, Access byAccess){
         if(this.decl() == field){
-            if(getQualifier() == null || getQualifier().isThisAccess())
-                replace(this).with(new Dot(byAccess, this));
+            if(!isQualified() || qualifier().isThisAccess())
+                this.qualifyWith(byAccess);
             else
-                replace(getQualifier()).with(byAccess);
+                replace(qualifier()).with(byAccess);
         }
     }
 

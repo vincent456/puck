@@ -33,9 +33,9 @@ aspect ReplaceMessageReceiver {
 
     public void MethodAccess.replaceMessageReceiver(MemberDecl messageSend, Variable oldReceiver, Variable newReceiver){
         if(this.decl() == messageSend){
-            if(!(getQualifier() == null || getQualifier().isThisAccess())
-                 &&  getQualifier().doesAccessToVariable(oldReceiver) ) {
-                replace(getQualifier()).with(newReceiver.createLockedAccess());
+            if(isQualified() && !qualifier().isThisAccess()
+                 &&  qualifier().doesAccessToVariable(oldReceiver) ) {
+                replace(qualifier()).with(newReceiver.createLockedAccess());
             }
         }
     }
@@ -48,10 +48,10 @@ aspect ReplaceMessageReceiver {
 
     public void MethodAccess.replaceAllMessageReceiver(MemberDecl messageSend, Variable newReceiver){
         if(this.decl() == messageSend){
-            if(getQualifier() == null || getQualifier().isThisAccess())
+            if(!isQualified() || qualifier().isThisAccess())
                 replace(this).with(new Dot(newReceiver.createLockedAccess(), this));
             else
-                replace(getQualifier()).with(newReceiver.createLockedAccess());
+                replace(qualifier()).with(newReceiver.createLockedAccess());
         }
     }
 
@@ -60,8 +60,6 @@ aspect ReplaceMessageReceiver {
     }
 
     public boolean Dot.doesAccessToVariable(Variable oldReceiver){
-        if(isRightRotated())
-            rotateLeft();
         return getRight().doesAccessToVariable(oldReceiver);
     }
 

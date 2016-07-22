@@ -28,7 +28,6 @@ package puck.graph
 
 import puck.graph.DependencyGraph.AbstractionMap
 import puck.graph.comparison.RecordingComparatorControl
-import puck.graph.constraints.AbstractionPolicy
 import puck.search.{SearchEngine, DepthFirstSearchStrategy}
 import puck.util.{PuckNoopLogger, PuckLogger, PuckLog}
 
@@ -261,14 +260,6 @@ class DependencyGraph
 
   def exists(e : DGEdge) : Boolean = edges.exists(e)
 
-  def tmpPred(e : DGEdge) = {
-
-    val b = e.kind == Uses && kindType(e.source) == TypeDecl &&
-      kindType(e.target) == TypeDecl && e.source != e.target
-    if(b)
-      println(fullName(e.source) + " -> " + fullName(e.target))
-    b
-  }
   def addEdge(e : DGEdge, register : Boolean = true): DependencyGraph =
     newGraph(edges = edges.add(e),
       recording =
@@ -490,7 +481,7 @@ class DependencyGraph
   def definitionOf(declId : NodeId) : Option[NodeId] =
     edges.contents get declId flatMap { ctent =>
       val s : Set[NodeId] = ctent filter (id =>
-          getNode(id).kind.kindType == ValueDef )
+        getNode(id).kind.kindType == ValueDef )
 
       //definition may be preceded by type variable decl with gen methods
       s.headOption
@@ -673,8 +664,20 @@ class DependencyGraph
            typeMemberUse : Uses) : Boolean =
     typeMemberUsesOf( typeUse ) contains typeMemberUse
 
-  def abstractions(id : NodeId) : Set[Abstraction] =
-    abstractionsMap getFlat id
+  def abstractions(id : NodeId) : Set[Abstraction] = {
+
+    var visited : Set[Abstraction] = Set()
+    var toVisit : Set[Abstraction] = abstractionsMap getFlat id
+
+    while(toVisit.nonEmpty) {
+      val newlyReached = (toVisit.head.nodes map abstractionsMap.getFlat).reduce(_ ++ _)
+      visited = visited + toVisit.head
+      toVisit = toVisit.tail ++ (newlyReached diff visited)
+    }
+
+    visited
+  }
+
 
   def isAbstraction(implId : NodeId, absId : NodeId, pol : AbstractionPolicy) : Boolean =
     isAbstraction(implId, absId).exists{_.policy == pol}

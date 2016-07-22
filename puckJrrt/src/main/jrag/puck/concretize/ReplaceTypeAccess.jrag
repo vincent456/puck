@@ -130,4 +130,12 @@ aspect ReplaceTypeAccess {
         }
         return false;
     }
+
+    public boolean VarDeclStmt.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
+        if(super.replaceTypeAccess(oldUsed, newUsed)) {
+            flushTreeCache();
+            return true;
+        }
+        return false;
+    }
 }

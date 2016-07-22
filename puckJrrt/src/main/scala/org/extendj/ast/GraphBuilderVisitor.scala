@@ -55,8 +55,6 @@ trait GraphBuilderVisitor {
 
   def buildIsaEdge(sub : NodeId, supAccess : Access): Unit = supAccess match {
     case ad : AbstractDot =>
-      if(!ad.isRightRotated)
-        ad.rotateRight()
       buildIsaEdge(sub, ad.getRight)
 
     case ta : TypeAccess =>
@@ -71,8 +69,6 @@ trait GraphBuilderVisitor {
 
   def buildInheritanceUses(sub : NodeId, typArgAccess : Access) : Unit = typArgAccess match {
     case ad : AbstractDot =>
-      if(!ad.isRightRotated)
-        ad.rotateRight()
       buildInheritanceUses(sub, ad.getRight)
     case ta : TypeAccess =>
       addEdge(Uses(sub, this buildNode ta))
@@ -283,11 +279,9 @@ trait GraphBuilderVisitor {
     addEdge(Uses(containerId, this buildNode ta))
 
   def buildDG(containerId : NodeId, ma : MethodAccess) : Unit = if(ma.fromSource()){
-    if(ma.decl().hostType().isEnumDecl  && ma.decl().location() == "0")
+    if(!(ma.decl().hostType().isEnumDecl  && ma.decl().location() == "0"))
       ma.lock()
-//    if(!(ma.isSubstitute ||
-//        (ma.decl().hostType().isEnumDecl  && ma.decl().location() == "0")))
-//      ma.lock()
+
     val decls = ma.decls_keepMethodsInDifferentTypeHierarchy()
     if(!decls.isSingleton()){
       println(s"Warning ! method access ${ma.name()}" +
@@ -295,11 +289,10 @@ trait GraphBuilderVisitor {
         " refers to several declaration : ")
       decls.foreach(d => println(d.dgFullName()))
     }
-    ma.getArgs.foreach{
-      expr => expr.buildDG(this, containerId)
-    }
+    ma.getArgs foreach ( _.buildDG(this, containerId) )
 
-    //99% du temps il y'a une déclaration mais dans des cas ou une classe implémente
+
+    //99% du temps il y'a une seule déclaration mais dans des cas ou une classe implémente
     //plusieurs interfaces indépendante possédant une signature commune, on peux avoir plusieurs déclaration
     decls foreach {
       decl =>
@@ -310,13 +303,8 @@ trait GraphBuilderVisitor {
         if(!decl.isStatic)
           buildTypeUse(ma, typeMemberUses)
 
-        if(! decl.isSubstitute) try
+        if(! decl.isSubstitute)
           decl.getParameterList.toList.zip(ma.getArgs.toList) foreach putConstraintOnArg
-        catch {
-          case pe : PuckError =>
-
-            throw pe
-        }
         else {
           val substitutedDecl = decl.asInstanceOf[MethodDeclSubstituted]
           val genDecl = substitutedDecl.sourceMethodDecl()

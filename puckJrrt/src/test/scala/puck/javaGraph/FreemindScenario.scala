@@ -32,7 +32,6 @@ import org.extendj.ast.{HasNode, JavaJastAddDG2AST}
 import puck.{NonExistentEdge, Project}
 import puck.config.ConfigParser
 import puck.graph._
-import puck.graph.constraints.SupertypeAbstraction
 import puck.graph.transformations.rules.Redirection
 import puck.jastadd.ExtendJGraphUtils.Rules._
 import puck.javaGraph.nodeKind.Interface

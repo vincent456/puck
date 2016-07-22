@@ -2,7 +2,7 @@ package puck
 
 import org.scalatest.FeatureSpec
 import puck.graph.comparison.Mapping
-import puck.graph.{DependencyGraph, ShowDG}
+import puck.graph.DependencyGraph
 import puck.javaGraph.ScenarioFactory
 
 /**
@@ -12,14 +12,13 @@ class TransfoRulesSpec
   extends FeatureSpec
     with LoggedEitherValues{
 
+
+
   implicit def scenarioOfString(code : String) : ScenarioFactory =
     new ScenarioFactory(code)
 
-//  def compareWithExpectedAndGenerated(initialCode : String,
-//                                      transfo : ScenarioFactory => DependencyGraph,
-//                                      expectedResultCode: String) : Unit =
-//    compareWithExpectedAndGenerated(new ScenarioFactory(initialCode),
-//      transfo, new ScenarioFactory(expectedResultCode))
+  implicit def scenarioOfStrings(codes : Seq[String]) : ScenarioFactory =
+    new ScenarioFactory(codes:_*)
 
 
   def compareWithExpectedAndGenerated(scenario : ScenarioFactory,

@@ -24,30 +24,26 @@
  * Author of this file : Loïc Girault
  */
 
-aspect NodeFactory  {
+import puck.PuckError;
 
-    private ASTNode<? extends ASTNode> Access.undefinedAccessed(){
-		throw new Error(this.prettyPrint() + "- " + this.fullLocation() +" - " +
-		this.getClass() + " : accessed not implemented");
+aspect HandleQualifier {
+
+    public void ASTNode.handleQualifierOfAccessOfStaticMember(MemberDecl staticMemberDecl, TypeDecl newContainingType){
+        for(int i = 0; i < getNumChild(); i++){
+            getChild(i).handleQualifierOfAccessOfStaticMember(staticMemberDecl, newContainingType);
+        }
     }
 
-    syn ASTNode<? extends ASTNode> Access.accessed();
-    eq Access.accessed() = undefinedAccessed();
-    eq ClassAccess.accessed() = type();
-    eq ArrayAccess.accessed() = type();
-    eq SuperConstructorAccess.accessed() = decl();
-    eq ClassInstanceExpr.accessed() = decl();
-    eq TypeAccess.accessed() = decl();
-	//eq ParTypeAccess.accessed() = ((TypeAccess)getTypeAccess()).decl();
-    eq ParTypeAccess.accessed() = type();
-    eq MethodAccess.accessed() = decl();
-	eq ConstructorAccess.accessed() = decl();
-	eq VarAccess.accessed() = (ASTNode<? extends ASTNode>) decl();
-	eq ThisAccess.accessed() = hostType();
-	eq SuperAccess.accessed() = ((ClassDecl)hostType()).superclass();
+    public void TypeMemberAccess.handleQualifierOfAccessOfStaticMember(MemberDecl staticMemberDecl, TypeDecl newContainingType){
+        if(accessed() == staticMemberDecl){
+            if(isQualified())
+                if(hostType() == newContainingType)
+                    replace(parentDot()).with(this);
+                else
+                    replace(qualifier()).with(newContainingType.createLockedAccess());
+            else if(hostType() != newContainingType)
+                this.qualifyWith(newContainingType.createLockedAccess());
 
-	public ASTNode<? extends ASTNode> Dot.accessed(){
-		return getRight().accessed();
-	}
-
+        }
+    }
 }

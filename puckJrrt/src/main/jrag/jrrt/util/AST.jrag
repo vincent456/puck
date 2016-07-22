@@ -61,13 +61,6 @@ aspect AST {
 		getBodyDeclList().removeChild(getBodyDeclList().getIndexOfChild(bd));
 	}
 
-//	public void BodyDecl.flushTreeCache() {
-//		entry.flushTreeCache();
-//		exit.flushTreeCache();
-//		super.flushTreeCache();
-//	}
-
-
 	protected ASTNode ASTNode.replaceWith(ASTNode newnode) {
 		return replace(this).with(newnode);
 	}
@@ -78,129 +71,6 @@ aspect AST {
 		parent.setChild(qual.qualifiesAccess(this), idx);
 	}
 
-	/* JastAddJ stores multiply qualified accesses as right-heavy trees
-	 * for example, [A.this.f] is
-	 *     .
-	 *    / \
-	 *   A   .
-	 *      / \
-	 *    this f
-	 *    
-	 *  Unfortunately, this makes it rather hard to extract the complete
-	 *  qualifier of an access; for example, we'd like to see in this example
-	 *  that [f] is qualified by [A.this], not just by [this].
-	 *  
-	 *  This method rotates the tree to the left; e.g., the above example
-	 *  becomes
-	 *  
-	 *       .
-	 *      / \
-	 *     .   f
-	 *    / \
-	 *   A this
-	 */
-
-	private boolean Expr.rightRotated = true;
-	void Expr.setRightRotated(boolean b) { rightRotated = b; }
-	public boolean Expr.isRightRotated(){return rightRotated;}
-
-
-	public void AbstractDot.rotateLeft() {
-//		Expr l = getLeft(); setLeft(null);
-//		Access r = getRight(); setRight(null);
-//		while(r instanceof AbstractDot) {
-//			AbstractDot rdot = (AbstractDot)r;
-//			Access rdot_left = (Access) rdot.getLeft(); rdot.setLeft(null);
-//			l = new Dot(l, rdot_left);
-//			r = rdot.getRight(); rdot.setRight(null);
-//		}
-//		setLeft(l);
-//		setRight(r);
-//
-//		setRightRotated(false);
-//		l.setRightRotated(false);
-//		r.setRightRotated(false);
-	}
-	
-	public void AbstractDot.rotateRight() {
-//		Expr l = getLeft(); setLeft(null);
-//		Access r = getRight(); setRight(null);
-//		while(l instanceof AbstractDot) {
-//			AbstractDot ldot = (AbstractDot)l;
-//			Access ldot_right = (Access)ldot.getRight(); ldot.setRight(null);
-//			r = new Dot(ldot_right, r);
-//			l = ldot.getLeft(); ldot.setLeft(null);
-//		}
-//		setLeft(l);
-//		setRight(r);
-//
-//		setRightRotated(true);
-//		l.setRightRotated(true);
-//		r.setRightRotated(true);
-	}
-	
-//	// TODO: some bits of the compiler don't work properly when AbstractDots are left-heavy; these refinements are just temporary fixes
-//	refine QualifiedNames eq ImportDecl.typeName() {
-//    	if(getAccess() instanceof AbstractDot)
-//    		((AbstractDot)getAccess()).rotateRight();
-//    	return refined();
-//	}
-	
-	/* f.bundleQualifier() does the following:
-	 * 
-	 * 
-	 *      .                    .
-	 *     / \                  / \
-	 *    A   .        ~>      .   f
-	 *       / \              / \
-	 *     this f            A this
-	 *     
-	 *     
-	 *      .                    .
-	 *     / \                  / \
-	 *    A   .                .   g
-	 *       / \       ~>     / \
-	 *     this .            .   f
-	 *         / \          / \
-	 *        f   g        A this
-	 *        
-	 */
-	public void Access.bundleQualifier() {
-		if(isLeftChildOfDot()) {
-			AbstractDot parent = parentDot();
-			if(!parent.isRightChildOfDot())
-				return;
-			AbstractDot g = new Dot(null, parent.getRight());
-			AbstractDot p = parent.parentDot();
-			p.setRight(this);
-			while(p.isRightChildOfDot())
-				p = p.parentDot();
-			p.rotateLeft();
-			p.replaceWith(g);
-			g.setLeft(p);
-		} else if(isRightChildOfDot()) {
-			AbstractDot p = parentDot();
-			while(p.isRightChildOfDot())
-				p = p.parentDot();
-			p.rotateLeft();
-		}
-	}
-	
-	//original
-	// public Expr Access.getQualifier() {
-	// 	mandatoryAssert( !hasParentDot() ||
-	// 		(isLeftChildOfDot() && (!parentDot().hasParentDot() || parentDot().isLeftChildOfDot())) ||
-	// 		isRightChildOfDot()); // i.e., is rotated to left
-	// 	return isRightChildOfDot() ? parentDot().getLeft() : null;
-	// }
-
-	public Expr Access.getQualifier() {
-		if(hasParentDot() && !isRightRotated())
-			parentDot().rotateLeft();
-		//mandatoryAssert(!hasParentDot() ||  !isRightRotated()); // i.e., is rotated to left
-		return isRightChildOfDot() ? parentDot().getLeft() : null;
-	}
-	
 
 	public boolean ASTNode.isInTree() {
 		ASTNode node = this;
@@ -208,5 +78,24 @@ aspect AST {
 			node = node.getParent();
 		return node instanceof Program;
 	}
-	
+
+	public Opt<Expr> Access.qualifierOpt(){
+		Opt<Expr> squal = new Opt<>();
+		if(isQualified())
+			squal.wrap(qualifier());
+
+		return squal;
+	}
+	public T Opt.get(){
+		return getChild(0);
+	}
+	//setChild() remove the old parent relationship the node might have
+	public void Opt.wrap(T t){
+		if(children==null)
+			children = new ASTNode[1];
+		children[0] = t;
+	}
+	public boolean Opt.nonEmpty(){
+		return !isEmpty();
+	}
 }

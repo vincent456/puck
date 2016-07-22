@@ -27,8 +27,7 @@
 package puck.javaGraph.commutativity
 
 import puck.TransfoRulesSpec
-import puck.graph.AccessAbstraction
-import puck.graph.constraints.SupertypeAbstraction
+import puck.graph.{AccessAbstraction, SupertypeAbstraction}
 import puck.graph.transformations.rules.Redirection
 import puck.jastadd.ExtendJGraphUtils.Rules.abstracter
 import puck.javaGraph.nodeKind.Interface

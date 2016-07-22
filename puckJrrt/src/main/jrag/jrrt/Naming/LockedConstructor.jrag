@@ -140,7 +140,8 @@ aspect LockedConstructor {
 			setArgList(MethodAccessInfo.insertCasts(targetConstructor, getArgList()));
 			flushCache();
 			if(!decl().equals(targetConstructor))
-				throw new RefactoringException("cannot disambiguate constructor access");
+				throw new RefactoringException("cannot disambiguate constructor access " +
+					this.prettyPrint() + " at " + this.fullLocation());
 		}
 		return this;
 	}

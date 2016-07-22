@@ -120,8 +120,6 @@ trait TypeUsage {
   def normaliseQualifier(qualifier : Expr) : Expr = qualifier match {
     case ae: AssignExpr => normaliseQualifier(ae.getDest)
     case d: Dot =>
-      if (d.isRightRotated)
-        d.rotateLeft()
       normaliseQualifier(d.getRight)
     case pe: ParExpr =>
       normaliseQualifier(pe.getExpr)

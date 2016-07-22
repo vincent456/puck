@@ -28,7 +28,6 @@ package puck.javaGraph.commutativity.redirect
 
 import puck.TransfoRulesSpec
 import puck.graph._
-import puck.graph.constraints.DelegationAbstraction
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, Redirection}
 import puck.javaGraph.nodeKind.Field
 

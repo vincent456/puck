@@ -27,7 +27,6 @@
 package puck.javaGraph
 
 import puck.graph._
-import puck.graph.constraints.SupertypeAbstraction
 import puck.javaGraph.nodeKind._
 
 

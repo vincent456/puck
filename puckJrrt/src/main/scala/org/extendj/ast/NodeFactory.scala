@@ -49,10 +49,7 @@ trait NodeFactory {
       if(!cie.hasTypeDecl)
         cie.lock()
       buildNode(cie.accessed().asInstanceOf[DGNamedElement])
-    case d : Dot =>
-      if(d.isRightRotated)
-        d.rotateLeft()
-      buildNode(d.getRight)
+    case d : Dot => buildNode(d.getRight)
     case ac : Access =>
       if(!ac.isSubstitute)
         ac.lock()

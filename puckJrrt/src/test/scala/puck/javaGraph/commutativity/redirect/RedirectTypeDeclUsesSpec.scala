@@ -26,12 +26,9 @@
 
 package puck.javaGraph.commutativity.redirect
 
-import puck.Settings.outDir
 import puck.TransfoRulesSpec
-import puck.graph.comparison.Mapping
-import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 import puck.graph.transformations.rules.Redirection
-import puck.graph.AccessAbstraction
+import puck.graph.{AccessAbstraction, DelegationAbstraction, SupertypeAbstraction}
 import puck.javaGraph.ScenarioFactory
 
 class RedirectTypeDeclUsesSpec
@@ -255,6 +252,36 @@ class RedirectTypeDeclUsesSpec
       }, code("I"))
   }
 
+  scenario("From class to interface superType - used in wildcard context"){
+    def code(typeUsed : String ) =
+      s"""package p;
+          |
+          |class Wrapper<T> {
+          |    private T t;
+          |    public T get(){return t;}
+          |}
+          |
+          |interface I { void m(); }
+          |
+          |class A implements I { public void m(){} }
+          |
+          |class B {
+          |    Wrapper<? extends $typeUsed> wa = new Wrapper<$typeUsed>();
+          |
+          |    void doM(){ wa.get().m(); }
+          |}"""
+
+    compareWithExpectedAndGenerated(code("A"),
+      bs => {
+        import bs.{graph, idOfFullName}
+        val g2 = Redirection.redirectUsesAndPropagate(graph, ("p.B.wa", "p.A"),
+          AccessAbstraction("p.I", SupertypeAbstraction)).rvalue
+
+        assert(g2.uses("p.B.doM().Definition", "p.I.m()"))
+
+        g2
+      },code("I"))
+  }
 
   ignore("From class to class superType"){}
 

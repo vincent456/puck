@@ -69,18 +69,25 @@ object RedirectSource {
 
   def moveMemberDecl
   ( reenactor : DependencyGraph,
-    id2declMap: NodeId => ASTNodeLink,
     tDeclFrom : TypeDecl,
     tDeclDest : TypeDecl,
-    mDecl : BodyDecl,
+    hmd : HasMemberDecl,
     mDeclId : NodeId)
-  ( implicit logger : PuckLogger): Unit = {
+  ( implicit id2declMap: NodeId => ASTNodeLink,
+    logger : PuckLogger): Unit = {
 
-    tDeclFrom.removeBodyDecl(mDecl)
-    tDeclDest.addBodyDecl(mDecl)
+
+    hmd match {
+      case FieldDeclHolder(fdecl, _) =>
+        tDeclFrom.removeField(fdecl)
+        tDeclDest.introduceField(fdecl)
+      case MethodDeclHolder(mdecl) =>
+        tDeclFrom.removeMethod(mdecl)
+        tDeclDest.introduceMethod(mdecl)
+    }
 
     ASTNodeLink.enlargeVisibility(
-      reenactor, mDecl.asInstanceOf[Visible],
+      reenactor, hmd.decl.asInstanceOf[Visible],
       mDeclId )
 
     if(tDeclFrom.compilationUnit() != tDeclDest.compilationUnit()){
@@ -91,15 +98,17 @@ object RedirectSource {
       val imports = tDeclDest.compilationUnit().getImportDecls.toList
 
       typesUsed.toSet[NodeId].foreach {
-       tid =>
+        tid =>
           typeDecl(reenactor, id2declMap, tid){
             t =>
-            if(!isAutoImported(t))
-              addImport(cu, t)
+              if(!isAutoImported(t))
+                addImport(cu, t)
           }
       }
     }
   }
+
+
 
 
   def typeDecl
@@ -117,13 +126,13 @@ object RedirectSource {
 
   def fixImportOfMovedTypeDecl
   (reenactor : DependencyGraph,
-   id2declMap: NodeId => ASTNodeLink,
    tDecl : TypeDecl,
    tDeclId : NodeId,
    oldPackage : String,
    newPackage : String,
    newlyCreatedCu : Boolean)
-  ( implicit logger : PuckLogger): Unit = {
+  ( implicit id2declMap: NodeId => ASTNodeLink,
+    logger : PuckLogger): Unit = {
 
     val typesUsed = typesUsedInSubtree(reenactor, tDeclId)
     val cu = tDecl.compilationUnit()
@@ -141,8 +150,8 @@ object RedirectSource {
               case `oldPackage` => addImport(cu, t)
               case _ if newlyCreatedCu => addImport(cu, t)
               case _ => // should be handled by the name locking
-              //remove old import, create new properly named import
-              addImport(cu, tDecl); removeImport(cu, tDecl)
+                //remove old import, create new properly named import
+                addImport(cu, tDecl); removeImport(cu, tDecl)
             }
       }
     }
@@ -153,12 +162,12 @@ object RedirectSource {
 
   def fixImportForUsersOfMovedTypeDecl
   ( reenactor : DependencyGraph,
-    id2declMap: NodeId => ASTNodeLink,
     tDecl : TypeDecl,
     tDeclId : NodeId,
     oldPackage : String,
     newPackage : String)
-  ( implicit logger : PuckLogger): Unit = {
+  ( implicit id2declMap: NodeId => ASTNodeLink,
+    logger : PuckLogger): Unit = {
 
     def diffTypeDecl(td : TypeDecl) =
       if(td != tDecl) Some(td.compilationUnit())
@@ -207,64 +216,97 @@ object RedirectSource {
 
   }
 
-  def moveTypeKind
+  def moveNestedTypeKind
   ( resultGraph: DependencyGraph,
     reenactor : DependencyGraph,
+    oldContainer : NodeId,
+    newContainer: NodeId,
+    tDecl : TypeDecl,
+    tDeclId : NodeId)
+  ( implicit program : Program,
     id2declMap: NodeId => ASTNodeLink,
+    logger : PuckLogger) : Unit = {
+    logger.writeln("moving " + tDecl.fullName() + " to  " + resultGraph.fullName(newContainer))
+    ???
+  }
+  def moveTopLevelTypeKind
+  ( resultGraph: DependencyGraph,
+    reenactor : DependencyGraph,
     oldPackage : NodeId,
     newPackage: NodeId,
     tDecl : TypeDecl,
     tDeclId : NodeId)
-  ( implicit program : Program, logger : PuckLogger) : Unit = {
+  ( implicit program : Program,
+    id2declMap: NodeId => ASTNodeLink,
+    logger : PuckLogger) : Unit = {
     logger.writeln("moving " + tDecl.fullName() +" to package " + resultGraph.fullName(newPackage))
 
 
     var newlyCreatedCu = false
-    if(tDecl.isTopLevelType) {
-      if (tDecl.compilationUnit.getNumTypeDecl > 1) {
-        logger.writeln(tDecl.name + " cu with more than one classe")(verbosity(PuckLog.Debug))
-        newlyCreatedCu = true
-        logger.writeln(tDecl.program().prettyPrint())
-        val path = ASTNodeLink.getPath(reenactor, newPackage)
-        val oldcu = tDecl.compilationUnit()
 
-        oldcu.removeTypeDecl(tDecl)
-        val newCu = program.insertUnusedType(path, resultGraph.fullName(newPackage), tDecl)
+    if (tDecl.compilationUnit.getNumTypeDecl > 1) {
+      logger.writeln(tDecl.name + " cu with more than one classe")(verbosity(PuckLog.Debug))
+      newlyCreatedCu = true
+      logger.writeln(tDecl.program().prettyPrint())
+      val path = ASTNodeLink.getPath(reenactor, newPackage)
+      val oldcu = tDecl.compilationUnit()
 
-        newCu.setPathName(tDecl.fullName().replaceAllLiterally(".", "/") + ".java")
+      oldcu.removeTypeDecl(tDecl)
+      val newCu = program.insertUnusedType(path, resultGraph.fullName(newPackage), tDecl)
 
-      }
-      else {
-        logger.writeln(tDecl.name + " cu with one classe")(verbosity(PuckLog.Debug))
-        logger.writeln("before " + program.getNumCompilationUnit + " cus in prog")(verbosity(PuckLog.Debug))
-        CreateEdge.setPackageDecl(resultGraph, newPackage, tDeclId, tDecl)
-        logger.writeln("after " + program.getNumCompilationUnit + " cus in prog")(verbosity(PuckLog.Debug))
+      newCu.setPathName(tDecl.fullName().replaceAllLiterally(".", "/") + ".java")
 
-      }
+    }
+    else {
+      logger.writeln(tDecl.name + " cu with one classe")(verbosity(PuckLog.Debug))
+      logger.writeln("before " + program.getNumCompilationUnit + " cus in prog")(verbosity(PuckLog.Debug))
+      CreateEdge.setPackageDecl(resultGraph, newPackage, tDeclId, tDecl)
+      logger.writeln("after " + program.getNumCompilationUnit + " cus in prog")(verbosity(PuckLog.Debug))
     }
 
-    ASTNodeLink.enlargeVisibility(reenactor, tDecl, tDeclId)
+    fixVisibilityAndImports(resultGraph, reenactor,
+      reenactor fullName oldPackage, reenactor fullName newPackage,
+      tDecl, tDeclId, newlyCreatedCu)
+
+  }
+
+  def fixVisibilityAndImports
+  (resultGraph: DependencyGraph,
+   reenactor : DependencyGraph,
+
+   oldPackageFullName : String,
+   newPackageFullName : String,
+   tDecl : TypeDecl,
+   tDeclId : NodeId,
+   newlyCreatedCu : Boolean)
+  ( implicit program : Program,
+    id2declMap: NodeId => ASTNodeLink,
+    logger : PuckLogger) : Unit= {
+    ASTNodeLink.enlargeVisibility(resultGraph, tDecl, tDeclId)
     tDecl.flushCache()
     //val oldFullName = resultGraph.fullName(oldPackage) + "." + tDecl.name()
     val oldFullName = reenactor.fullName(tDeclId)
     program.changeTypeMap(oldFullName, resultGraph.fullName(tDeclId), tDecl)
 
-    val oldPackageFullName =  reenactor.fullName(oldPackage)
-    val newPackageFullName = reenactor.fullName(newPackage)
-    fixImportForUsersOfMovedTypeDecl(reenactor, id2declMap, tDecl, tDeclId, oldPackageFullName, newPackageFullName)
-    fixImportOfMovedTypeDecl(reenactor, id2declMap, tDecl, tDeclId, oldPackageFullName, newPackageFullName, newlyCreatedCu)
+
+    fixImportForUsersOfMovedTypeDecl(reenactor, tDecl, tDeclId, oldPackageFullName, newPackageFullName)
+    fixImportOfMovedTypeDecl(reenactor, tDecl, tDeclId, oldPackageFullName, newPackageFullName, newlyCreatedCu)
 
     val staticMemberType = reenactor.content(tDeclId) filter
       (nid => (reenactor kindType nid) == PTypeDecl)
     staticMemberType.foreach{ id =>
       id2declMap(id) match {
         case t : TypedKindDeclHolder =>
-          moveTypeKind(resultGraph, reenactor, id2declMap, oldPackage, newPackage,t.decl, id)
+          fixVisibilityAndImports(resultGraph, reenactor,
+            oldPackageFullName, newPackageFullName, t.decl, id, newlyCreatedCu)
         case t => error(s"TypedKindDeclHolder expected but got ${t.getClass} ")
       }
 
     }
   }
+
+
+
 
   def move(source : NodeId, target : NodeId, newSource : NodeId)
           ( implicit program : Program,
@@ -276,12 +318,26 @@ object RedirectSource {
       case (TypedKindDeclHolder(oldTdecl),
       TypedKindDeclHolder(newTdecl),
       bdh : HasMemberDecl) =>
-        moveMemberDecl(reenactor, id2declMap, oldTdecl, newTdecl, bdh.decl, target)
+        moveMemberDecl(reenactor, oldTdecl, newTdecl, bdh, target)
+        if(bdh.decl.isStatic) {
+          reenactor.usersOf(target).foreach {
+            id2declMap(_) match {
+              case hn : HasNode =>
+                hn.node.handleQualifierOfAccessOfStaticMember(bdh.decl, newTdecl)
+              case _ => puck.error()
+            }
+          }
+        }
 
 
+      case (_, _, TypedKindDeclHolder(tDecl)) =>
+        if(tDecl.isTopLevelType)
+          moveTopLevelTypeKind(resultGraph, reenactor, source, newSource, tDecl, target)
+        else if(tDecl.isStatic){
+          moveNestedTypeKind(resultGraph, reenactor, source, newSource, tDecl, target)
+        }
+        else throw new PuckError("Moving inner (non static) type not handled")
 
-      case (PackageDeclHolder, PackageDeclHolder, i: TypedKindDeclHolder) =>
-        moveTypeKind(resultGraph, reenactor, id2declMap, source, newSource, i.decl, target)
 
       case (PackageDeclHolder, PackageDeclHolder, PackageDeclHolder) =>
         reenactor.subTree(source).filter{
@@ -291,7 +347,10 @@ object RedirectSource {
         } map (n => (reenactor.container_!(n), n) ) foreach {
           case (p, t) =>
             val TypedKindDeclHolder(tdecl) = id2declMap(t)
-            moveTypeKind(resultGraph, reenactor, id2declMap, p, p, tdecl, t)
+            val packageFullName = reenactor fullName p
+            fixVisibilityAndImports(resultGraph, reenactor,
+              packageFullName, packageFullName, tdecl, t,
+              newlyCreatedCu = false)
         }
 
 
@@ -309,24 +368,24 @@ object RedirectSource {
 
       case _ =>
         val eStr = (reenactor, Contains(source, target)).shows
-        val nsrcStr = (reenactor, newSource).shows
+        val nsrcStr = (reenactor, newSource).shows(desambiguatedFullName)
         throw new JavaAGError(s"redirecting SOURCE of $eStr to $nsrcStr : application failure !")
     }
   }
 
   def redirectIsaSource(source : NodeId, target : NodeId, newSource : NodeId)
                        ( implicit program : Program,
-            logger : PuckLogger,
-            id2declMap: NodeId => ASTNodeLink ) : Unit = {
+                         logger : PuckLogger,
+                         id2declMap: NodeId => ASTNodeLink ) : Unit = {
     removeIsa(id2declMap(source), id2declMap(target))
     CreateEdge.createIsa(id2declMap(newSource), id2declMap(target))
   }
 
   def changeUser(source : NodeId, target : NodeId, newSource : NodeId)
-                     ( implicit program : Program,
-                       logger : PuckLogger,
-                       resultAndReenactor : (DependencyGraph, DependencyGraph),
-                       id2declMap: NodeId => ASTNodeLink ) : Unit = {
+                ( implicit program : Program,
+                  logger : PuckLogger,
+                  resultAndReenactor : (DependencyGraph, DependencyGraph),
+                  id2declMap: NodeId => ASTNodeLink ) : Unit = {
     val (_, reenactor) = resultAndReenactor
 
     val newSrcDecl = reenactor container_! newSource
@@ -363,7 +422,7 @@ object RedirectSource {
     (id2declMap(reenactor container_! oldSource),
       id2declMap(newSourceDecl)) match {
       case (FieldDeclHolder(fdecl,num), MethodDeclHolder(mdecl)) =>
-       fdecl.getDeclarator(num).moveInitIntoInitializzer(mdecl)
+        fdecl.getDeclarator(num).moveInitIntoInitializzer(mdecl)
       case hs =>
         error(s"Redirect source of use handled in case of initializer creation, $hs not expected")
     }

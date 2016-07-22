@@ -58,8 +58,9 @@ aspect LockedVariableAccess {
 		super.eliminateLockedNames();
 	}
 	public Access VarAccess.unlock() {
-		Expr qual = getQualifier();
-		mandatoryAssert(qual==null || (parentDot() != null && qual == parentDot().getLeft()));
+		Opt<Expr> squal = qualifierOpt();
+		mandatoryAssert(squal.isEmpty() ||
+			(parentDot() != null && squal.get() == parentDot().getLeft()));
 		Variable target = targetVariable.refresh();
 		setTarget(null);
 		flushCache();
@@ -70,29 +71,29 @@ aspect LockedVariableAccess {
 		} else if(!fromSource()) {
 			throw new RefactoringException("cannot fix variable access in compiled code");
 		} else {
-			return unlock(qual, target);
+			return unlock(squal, target);
 		}
 	}
 	
-	public Access VarAccess.unlock(Expr qual, Variable target) {
-		if((qual == null ? inStaticContext() : qual.staticContextQualifier()) && target.isField() && !target.isStatic())
+	public Access VarAccess.unlock(Opt<Expr> squal, Variable target) {
+		if((squal.isEmpty()  ? inStaticContext() : squal.get().staticContextQualifier()) && target.isField() && !target.isStatic())
 			throw new RefactoringException("cannot access instance variable in static context");
 		SymbolicVarAccess acc = accessVariable(target);
 		if(acc.isUnknownVarAccess()) {
-			if((qual == null || qual.isPure()) && target.isStatic()) {
+			if((squal.isEmpty() || squal.get().isPure()) && target.isStatic()) {
 				TypeDecl host = target.hostType();
 				if(host.accessibleFrom(hostType()) && mayAccess(target)) {
 					this.flushCache();
 					Access hostAccess = host.createLockedAccess();
 					affectedByUnlock(hostAccess, this);
-					return (Access) replace(qual!=null ? parentDot() : this).with(hostAccess.qualifiesAccess(this));
+					return (Access) replace(squal.nonEmpty() ? parentDot() : this).with(hostAccess.qualifiesAccess(this));
 				}
-			} else if(qual != null && (qual.isThisAccess() || qual.isSuperAccess())) {
+			} else if(squal.nonEmpty() && (squal.get().isThisAccess() || squal.get().isSuperAccess())) {
 				acc = parentDot().accessVariable(target);
 				if(acc != null && !acc.isUnknownVarAccess())
 					return acc.accessByModifyingAccess(this);
 			}
-			throw new RefactoringException("cannot access variable "+target.name());
+			throw new RefactoringException("cannot access variable "+target.name() + " at " + fullLocation());
 		}
 		return acc.accessByModifyingAccess(this);
 	}
@@ -100,17 +101,17 @@ aspect LockedVariableAccess {
 	// eliminating locked variable accesses
 	public Access SymbolicFieldAccess.accessByModifyingAccess(VarAccess originalAccess) {
 		mandatoryAssert(originalAccess != null);
-		Expr qualifier = originalAccess.getQualifier();
+		Opt<Expr> squalifier = originalAccess.qualifierOpt();
 		TypeDecl enclosing = originalAccess.hostType();
 		VarAccess va = originalAccess;
 		va.flushCache();
 		
-		Expr to_replace = qualifier == null ? originalAccess : originalAccess.parentDot(); 
+		Expr to_replace = squalifier.isEmpty() ? originalAccess : originalAccess.parentDot();
 		Access access = null;
 		ASTNode parent = to_replace.replace(to_replace);
 		
 		if(target.isStatic()) {
-			if (qualifier == null || qualifier.type() != target.hostType()) {
+			if (squalifier.isEmpty() || squalifier.get().type() != target.hostType()) {
 				Access hostAccess = target.hostType().createLockedAccess();
 				parent.affectedByUnlock(hostAccess, va);
 				access = hostAccess.qualifiesAccess(va);
@@ -121,7 +122,7 @@ aspect LockedVariableAccess {
 			if(directlyVisible) {
 				access = va;
 			} else {
-				if(qualifier == null) {
+				if(squalifier.isEmpty()) {
 					if(source.equals(bend)) {
 						if(bend.equals(enclosing)) {                                         	// this.f
 							parent.affectedByUnlock(va);
@@ -157,23 +158,23 @@ aspect LockedVariableAccess {
 						}
 					}
 				} else {
-					if(!bend.equals(qualifier.type()))
+					if(!bend.equals(squalifier.get().type()))
 						throw new RefactoringException("cannot access variable");
-					if(source.equals(qualifier.type()))
+					if(source.equals(squalifier.get().type()))
 						access = va;
 					Access sourceAccess = source.createLockedAccess();
 					va.lock(target);
 					parent.affectedByUnlock(sourceAccess, va);
 					// "super" is treated as a normal expression in JastAddJ, but it actually isn't
-					if(qualifier.isSuperAccess())
-						qualifier = qualifier.convertSuperToThis();
-					access = new ParExpr(new CastExpr(sourceAccess, qualifier)).qualifiesAccess(va);
+					if(squalifier.get().isSuperAccess())
+						squalifier.setChild(squalifier.get().convertSuperToThis(), 0);
+					access = new ParExpr(new CastExpr(sourceAccess, squalifier.get())).qualifiesAccess(va);
 				}
 			}
 		}
 		access.flushCache();
-		if (qualifier != null) {
-			qualifier.flushTreeCache();
+		if (squalifier.nonEmpty()) {
+			squalifier.get().flushTreeCache();
 		}
 		if (to_replace.equals(access))
 			return access;
@@ -185,7 +186,7 @@ aspect LockedVariableAccess {
 	}
 	
 	public Access LocalDeclaration.accessByModifyingAccess(VarAccess originalAccess) {
-		if(originalAccess.getQualifier() != null)
+		if(originalAccess.isQualified())
 			throw new RefactoringException("cannot qualify access to local variable");
 		return originalAccess;
 	}

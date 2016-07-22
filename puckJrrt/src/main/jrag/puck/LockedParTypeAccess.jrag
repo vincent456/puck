@@ -21,8 +21,8 @@ aspect LockedParTypeAccess{
     }
 
     public Access ParTypeAccess.unlock() {
-        Expr qual = getQualifier();
-        mandatoryAssert(qual == null || qual.isPure());
+        Opt<Expr> squal = qualifierOpt();
+        mandatoryAssert(squal.isEmpty() || squal.get().isPure());
         TypeDecl target = targetType.refresh();
         setTarget(null);
         flushTreeCache();
@@ -31,7 +31,7 @@ aspect LockedParTypeAccess{
         try {
             if(!isObscured() && type().equals(target))
                 return this;
-            return unlock(qual, target);
+            return unlock(squal, target);
         } finally {
             setTarget(null);
         }
@@ -45,14 +45,14 @@ aspect LockedParTypeAccess{
         super.eliminateLockedNames();
      }
 
-    public Access ParTypeAccess.unlock(Expr qual, TypeDecl target){
+    public Access ParTypeAccess.unlock(Opt<Expr> squal, TypeDecl target){
         if(target.isParameterizedType())
-            return unlockParTypeAccess(qual, (ParTypeDecl)target);
+            return unlockParTypeAccess(squal, (ParTypeDecl)target);
 
         throw new RefactoringException("ParTypeAccess targeting something else than a ParTypeDecl : not implemented");
      }
 
-    protected Access ParTypeAccess.unlockParTypeAccess(Expr qual, ParTypeDecl target) {
+    protected Access ParTypeAccess.unlockParTypeAccess(Opt<Expr> squal, ParTypeDecl target) {
         List<Access> args = new List<Access>();
         for(int i=0;i<target.numTypeParameter();++i) {
             Access targetAccess = target.getParameterization().args.get(i).createLockedAccess();
@@ -62,12 +62,12 @@ aspect LockedParTypeAccess{
         Access rawAccess = ((GenericTypeDecl)target.genericDecl()).rawType().createLockedAccess();
         affectedByUnlock(rawAccess);
         Access acc = new ParTypeAccess(rawAccess, args);
-        if(qual != null) {
+        if(squal.nonEmpty()) {
             affectedByUnlock(acc);
-            acc = qual.qualifiesAccess(acc);
+            acc = squal.get().qualifiesAccess(acc);
         }
         // do we always need to replace ?
-        return (Access) replace(qual!=null?parentDot():this).with(acc);
+        return (Access) replace(squal.nonEmpty()?parentDot():this).with(acc);
     }
 
     refine PrettyPrint public void ParTypeAccess.prettyPrint(PrettyPrinter out) {

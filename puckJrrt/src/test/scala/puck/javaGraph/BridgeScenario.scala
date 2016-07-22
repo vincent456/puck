@@ -35,7 +35,6 @@ import puck.LoggedEitherValues
 import puck.jastadd.ExtendJGraphUtils.Rules
 import puck.Settings._
 import puck.graph.comparison.Mapping
-import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 import puck.graph.transformations.Recording
 import puck.jastadd.ExtendJGraphUtils
 
@@ -231,26 +230,7 @@ class BridgeScenario private()
   def gFinal = g14
 }
 
-class BridgeManualRefactoringSpec extends FeatureSpec {
 
-  scenario("bridge ``manual'' refactoring"){
-    val bs = BridgeScenario()
-
-    import puck.TestUtils.printMetrics
-
-    puck.Quick.dot(bs.graph, "/tmp/bridge.dot")(ExtendJGraphUtils.dotHelper)
-
-    val recompiledEx = bs.applyChangeAndMakeExample(bs.gFinal, outDir)
-
-    println("original")
-    printMetrics(bs.graph)
-    println("transformed")
-    printMetrics(bs.gFinal)
-
-    assert( Mapping.equals(bs.gFinal, recompiledEx.graph) )
-
-  }
-}
 
 object BridgeManualRefactoringSpecGenRecord {
   def main(args: Array[String]) : Unit = {

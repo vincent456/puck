@@ -26,8 +26,6 @@
 
 package puck.graph
 
-import puck.graph.constraints.SupertypeAbstraction
-
 trait GraphBuilder {
   var g : DependencyGraph = _
   type NodeIdT = NodeId

@@ -26,10 +26,9 @@
 
  package puck.javaGraph.transfoRules
 
-import puck.graph.{AccessAbstraction,  DependencyGraph, Uses, Write}
-import puck.graph.constraints.SupertypeAbstraction
+import puck.graph.{AccessAbstraction, DependencyGraph, SupertypeAbstraction, Uses, Write}
 import puck.javaGraph.ScenarioFactory
-import puck.jastadd.ExtendJGraphUtils.{Rules => Rules}
+import puck.jastadd.ExtendJGraphUtils.Rules
 import puck.javaGraph.nodeKind.Interface
 import puck.AcceptanceSpec
 

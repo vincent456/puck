@@ -27,8 +27,7 @@
 package puck.javaGraph
 package nodeKind
 
-import puck.graph.{InstanceValueDecl, StaticValueDecl, KindType, NodeKind}
-import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction, AbstractionPolicy}
+import puck.graph._
 
 
 case object StaticField extends JavaNodeKind{

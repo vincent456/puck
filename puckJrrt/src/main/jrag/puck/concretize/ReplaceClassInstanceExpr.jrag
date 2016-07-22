@@ -73,15 +73,15 @@ aspect ReplaceClassInstanceExpr {
 
     public void VarAccess.introduceVarAccess(MemberDecl field, Access byAccess){
         if(this.decl() == field){
-            if(getQualifier().isEmptyReceiver())
-                replace(getQualifier()).with(byAccess);
+            if(qualifier().isEmptyReceiver())
+                replace(qualifier()).with(byAccess);
         }
     }
 
     public void MethodAccess.introduceVarAccess(MemberDecl method, Access byAccess){
         if(this.decl() == method){
-            if(getQualifier().isEmptyReceiver())
-                replace(getQualifier()).with(byAccess);
+            if(qualifier().isEmptyReceiver())
+                replace(qualifier()).with(byAccess);
         }
     }
 

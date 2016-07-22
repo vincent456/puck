@@ -27,7 +27,7 @@
 package puck.graph
 package constraints.search
 
-import puck.graph.constraints.{ConstraintsMaps, SupertypeAbstraction}
+import puck.graph.constraints.ConstraintsMaps
 import puck.graph.transformations.TransformationRules
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, CreateVarStrategy}
 import puck.util.LoggedEither

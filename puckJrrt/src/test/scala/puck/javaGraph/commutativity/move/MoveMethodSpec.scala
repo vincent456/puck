@@ -75,21 +75,21 @@ class MoveMethodSpec extends TransfoRulesSpec {
           |   A a; B b;
           |   void user(){ a.m(b); }
           |}""",
-          bs => {
-            import bs.{graph, idOfFullName}
-            Move.typeMember(graph, List("p.A.m(B)"), "p.B").rvalue
-          },
-          """package p;
-            |
-            |class A { }
-            |
-            |class B { void m(){} }
-            |
-            |class C {
-            |   A a; B b;
-            |   void user(){ b.m(); }
-            |}"""
-        )
+        bs => {
+          import bs.{graph, idOfFullName}
+          Move.typeMember(graph, List("p.A.m(B)"), "p.B").rvalue
+        },
+        """package p;
+          |
+          |class A { }
+          |
+          |class B { void m(){} }
+          |
+          |class C {
+          |   A a; B b;
+          |   void user(){ b.m(); }
+          |}"""
+      )
     }
 
     scenario("move to class of a parameter - moved is not a uses' source - old receiver used as plain ref") {
@@ -167,24 +167,58 @@ class MoveMethodSpec extends TransfoRulesSpec {
         bs => {
           import bs.{graph, idOfFullName}
           Move.typeMember(graph.mileStone, List("p.A.m(B)"), "p.B").rvalue
-//          val ltg = Move.typeMember(graph.mileStone, List("p.A.m(B)"), "p.B")
-//          val g  = ltg.rvalue
-//          import puck.graph.transformations.Recording.RecordingOps
-//          import puck.graph.ShowDG._
-//          g
+          //          val ltg = Move.typeMember(graph.mileStone, List("p.A.m(B)"), "p.B")
+          //          val g  = ltg.rvalue
+          //          import puck.graph.transformations.Recording.RecordingOps
+          //          import puck.graph.ShowDG._
+          //          g
 
         },
-          """package p;
+        """package p;
+          |
+          |class A { void ma(){} }
+          |
+          |class B { void m(A a){ a.ma(); }  }
+          |
+          |class C {
+          |   A a; B b;
+          |   void user(){ b.m(a); }
+          |}"""
+      )
+    }
+
+    scenario("move to class of a parameter in another package - moved uses old sibling") {
+      compareWithExpectedAndGenerated(
+        Seq("""package p1;
+              |import p2.B;
+              |
+              |public class A {
+              |   public void ma(B b, int i){}
+              |   public void ma(B b){ ma(b, 42); }
+              |}
+              |""",
+          """package p2;
             |
-            |class A { void ma(){} }
+            |public class B { }
+            |"""),
+        bs => {
+          import bs.{graph, idOfFullName}
+          Move.typeMember(graph.mileStone, List("p1.A.ma(B)"), "p2.B").rvalue
+        },
+        Seq("""package p1;
+              |import p2.B;
+              |
+              |public class A {
+              |   public void ma(B b, int i){}
+              |
+              |}
+              |""",
+          """package p2;
+            |import p1.A;
             |
-            |class B { void m(A a){ a.ma(); }  }
-            |
-            |class C {
-            |   A a; B b;
-            |   void user(){ b.m(a); }
-            |}"""
-        )
+            |public class B { public void ma(A a){ a.ma(this, 42); } }
+            |""")
+      )
     }
 
     scenario("move to class of a parameter - moved uses both old and future sibling") {
@@ -250,32 +284,7 @@ class MoveMethodSpec extends TransfoRulesSpec {
 
   feature("Move one method used by siblings"){
     scenario("move method used by this - keep reference with parameter"){
-      val _ = new ScenarioFactory(
-        """package p;
-          |
-          |class A {
-          |
-          |    public void mUser(){ methodToMove(); }
-          |
-          |    public void methodToMove(){}
-          |}
-          |
-          |class B{ }"""
-      ){
-
-
-        val g = Move.typeMember(graph, List("p.A.methodToMove()"), "p.B",
-          Some(CreateParameter)).rvalue
-
-        val recompiledEx = applyChangeAndMakeExample(g, outDir)
-
-        assert( Mapping.equals(g, recompiledEx.graph) )
-
-      }
-    }
-
-    scenario("move method used by this - keep reference with Field"){
-      val _ = new ScenarioFactory(
+      compareWithExpectedAndGenerated(
         """package p;
           |
           |class A {
@@ -285,17 +294,48 @@ class MoveMethodSpec extends TransfoRulesSpec {
           |    public void m(){}
           |}
           |
-          |class B{ }"""
-      ){
+          |class B{ }""",
+        bs => {
+          import bs.{graph, idOfFullName}
+          Move.typeMember(graph, List("p.A.m()"), "p.B",
+            Some(CreateParameter)).rvalue
+        },
+        """package p;
+          |
+          |class A {
+          |    public void mUser(B b){ b.m(); }
+          |}
+          |
+          |class B{ public void m(){} }"""
+      )
+    }
 
-        val g = Move.typeMember(graph, List[NodeId]("p.A.m()"), "p.B",
-                  Some(CreateTypeMember(Field))).rvalue
-
-        val recompiledEx = applyChangeAndMakeExample(g, outDir)
-
-        assert( Mapping.equals(g, recompiledEx.graph) )
-
-      }
+    scenario("move method used by this - keep reference with Field"){
+      compareWithExpectedAndGenerated(
+        """package p;
+          |
+          |class A {
+          |
+          |    public void mUser(){ m(); }
+          |
+          |    public void m(){}
+          |}
+          |
+          |class B{ }""",
+        bs => {
+          import bs.{graph, idOfFullName}
+          Move.typeMember(graph, List("p.A.m()"), "p.B",
+            Some(CreateTypeMember(Field))).rvalue
+        },
+        """package p;
+          |
+          |class A {
+          |    public B b = new B();
+          |    public void mUser(){ b.m(); }
+          |}
+          |
+          |class B{ public void m(){} }"""
+      )
     }
 
     scenario("move one of two mutually recursive methods - keep reference with Field"){
@@ -324,8 +364,8 @@ class MoveMethodSpec extends TransfoRulesSpec {
         val g1 = g.addContains("example", pong.id)
 
         val g2 = Move.typeMember(g1, List[NodeId]("example.PingPong.pong(int)"), pong.id,
-        //Some(CreateParameter)).rvalue
-        Some(CreateTypeMember(Field))).rvalue
+          //Some(CreateParameter)).rvalue
+          Some(CreateTypeMember(Field))).rvalue
 
         val recompiledEx = applyChangeAndMakeExample(g2, outDir)
 
@@ -335,28 +375,39 @@ class MoveMethodSpec extends TransfoRulesSpec {
     }
 
     scenario("move method used by this - user also via self another method that will not be moved "){
-      val _ = new ScenarioFactory(
+      compareWithExpectedAndGenerated(
         """package p;
           |
           |class A {
           |    void mUser(){
-          |        mUsedToMove();
-          |        mUsedOther();
+          |        m1();
+          |        m2();
           |    }
           |
-          |    void mUsedToMove(){}
-          |    void mUsedOther(){}
+          |    void m1(){}
+          |    void m2(){}
           |}
           |
-          |class B{ }"""
-      ) {
-
-        val g = Move.typeMember(graph, List("p.A.mUsedToMove()"), "p.B",
-          Some(CreateTypeMember(Field))).rvalue
-
-        val recompiledEx = applyChangeAndMakeExample(g, outDir)
-        assert( Mapping.equals(g, recompiledEx.graph) )
-      }
+          |class B{ }""",
+        bs => {
+          import bs.{graph, idOfFullName}
+          Move.typeMember(graph, List("p.A.m1()"), "p.B",
+            Some(CreateTypeMember(Field))).rvalue
+        },
+        """package p;
+          |
+          |class A {
+          |   B b = new B();
+          |    void mUser(){
+          |        b.m1();
+          |        m2();
+          |    }
+          |
+          |    void m2(){}
+          |}
+          |
+          |class B{ void m1(){} }"""
+      )
     }
 
     scenario("move method used by this several times - keep reference with Parameter"){
@@ -455,7 +506,7 @@ class MoveMethodSpec extends TransfoRulesSpec {
         bs => {
           import bs.{graph, idOfFullName}
           Move.typeMember(graph, List[NodeId]("p.A.m1()", "p.A.m2()"), "p.B").rvalue
-      },
+        },
         """package p;
           |
           |class A { }
@@ -468,7 +519,7 @@ class MoveMethodSpec extends TransfoRulesSpec {
     }
 
     scenario("two moved method both used by an unmoved one") {
-      val _ = new ScenarioFactory(
+      compareWithExpectedAndGenerated(
         """package p;
           |
           |class A {
@@ -477,96 +528,98 @@ class MoveMethodSpec extends TransfoRulesSpec {
           |    public void m2(){}
           |}
           |
-          |class B{ }"""
-      ) {
-        val g = Move.typeMember(graph, List[NodeId]("p.A.m1()", "p.A.m2()"), "p.B", Some(CreateParameter)).rvalue
-        val recompiledEx = applyChangeAndMakeExample(g, outDir)
-        assert( Mapping.equals(g, recompiledEx.graph) )
-      }
+          |class B{ }""",
+        bs => {
+          import bs.{graph, idOfFullName}
+          Move.typeMember(graph, List[NodeId]("p.A.m1()", "p.A.m2()"), "p.B", Some(CreateParameter)).rvalue
+        },
+        """package p;
+          |
+          |class A {
+          |    public void mUser(B b){ b.m1(); b.m2(); }
+          |}
+          |
+          |class B{
+          |    public void m1(){}
+          |    public void m2(){}
+          |
+          |}""")
+
     }
   }
 
   feature("Move static method"){
     scenario("unused factory"){
-      val _ = new ScenarioFactory(
+      compareWithExpectedAndGenerated(
         """package p;
           |
-          |class A {
-          |    A(){}
-          |
-          |    static A createA(){return new A();}
-          |
-          |}
+          |class A {  static A createA(){return new A();} }
           |
           |class Client {
           |    void m(){ A a = new A(); }
-          |}"""
-      ) {
-
-        val ctor = fullName2id("p.A.A()")
-        val factory = fullName2id("p.A.createA()")
-
-        val client = fullName2id("p.Client")
-
-        val g = graph.setRole(factory, Some(Factory(ctor)))
-
-        val g1 = Move.typeMember(g, List(factory), client, None).rvalue
-
-        val recompiledEx = applyChangeAndMakeExample(g1, outDir)
-        assert( Mapping.equals(g1, recompiledEx.graph) )
-
-      }
+          |}""",
+        bs => {
+          import bs.{graph, idOfFullName}
+          val g = graph.setRole("p.A.createA()", Some(Factory("p.A.A()")))
+          Move.staticDecl(g, "p.A.createA()", "p.Client").rvalue
+        },
+        """package p;
+          |
+          |class A { }
+          |
+          |class Client {
+          |    static A createA(){return new A();}
+          |    void m(){ A a = new A(); }
+          |}""")
     }
 
     scenario("used factory moved in client"){
-      val _ = new ScenarioFactory(
+      compareWithExpectedAndGenerated(
         """package p;
           |
-          |class A {
-          |    A(){}
+          |class A {  static A createA(){return new A();}  }
           |
+          |
+          |class Client { void m(){ A a = A.createA(); } }""",
+        bs => {
+          import bs.{graph, idOfFullName}
+          val g = graph.setRole("p.A.createA()", Some(Factory("p.A.A()")))
+          Move.staticDecl(g, "p.A.createA()", "p.Client").rvalue
+        },
+        """package p;
+          |
+          |class A { }
+          |
+          |class Client {
           |    static A createA(){return new A();}
-          |}
-          |
-          |class Factory{ }
-          |
-          |class Client { void m(){ A a = A.createA(); } }"""
-      ){
+          |    void m(){ A a = createA(); }
+          |}""")
 
 
-
-        val g = graph.setRole("p.A.createA()", Some(Factory("p.A.A()")))
-
-        val g1 = Move.staticDecl(g, "p.A.createA()", "p.Client").rvalue
-
-        val recompiledEx = applyChangeAndMakeExample(g1, outDir)
-        assert( Mapping.equals(g1, recompiledEx.graph) )
-
-      }
     }
+
     scenario("used factory moved in outsider host"){
-      val _ = new ScenarioFactory(
+      compareWithExpectedAndGenerated(
         """package p;
           |
-          |class A {
-          |    A(){}
-          |
-          |    static A createA(){return new A();}
-          |}
+          |class A { static A createA(){return new A();} }
           |
           |class Factory{ }
           |
-          |class Client { void m(){ A a = A.createA(); } }"""
-      ) {
+          |class Client { void m(){ A a = A.createA(); } }""",
+        bs => {
+          import bs.{graph, idOfFullName}
+          val g = graph.setRole("p.A.createA()", Some(Factory("p.A.A()")))
+          Move.staticDecl(g, "p.A.createA()", "p.Factory").rvalue
+        },
+        """package p;
+          |
+          |class A {  }
+          |
+          |class Factory{ static A createA(){return new A();} }
+          |
+          |class Client { void m(){ A a = Factory.createA(); } }""")
 
-        val g = graph.setRole("p.A.createA()", Some(Factory("p.A.A()")))
-
-        val g1 = Move.staticDecl(g, "p.A.createA()", "p.Factory").rvalue
-
-        val recompiledEx = applyChangeAndMakeExample(g1, outDir)
-        assert( Mapping.equals(g1, recompiledEx.graph) )
-
-      }
     }
   }
 }

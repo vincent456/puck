@@ -30,12 +30,10 @@ import java.io.File
 
 import org.scalatest.{EitherValues, FeatureSpec, OptionValues}
 import puck.Settings.outDir
-import puck.graph.{AccessAbstraction, DependencyGraph, NodeId, Uses}
+import puck.graph.{AccessAbstraction, DependencyGraph, NodeId, SupertypeAbstraction, Uses}
 import puck.graph.comparison.Mapping
-import puck.graph.constraints.SupertypeAbstraction
 import puck.jastadd.ExtendJGraphUtils.Rules
 import puck.LoggedEitherValues
-import puck.graph.transformations.Recording
 import puck.javaGraph.nodeKind._
 
 /**

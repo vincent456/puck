@@ -27,8 +27,7 @@
 package puck.javaGraph.commutativity
 
 import puck.graph.transformations.rules.{Move, Redirection}
-import puck.graph.{AccessAbstraction, Factory, LoggedTG}
-import puck.graph.constraints.DelegationAbstraction
+import puck.graph.{AccessAbstraction, DelegationAbstraction, Factory, LoggedTG}
 import puck.TransfoRulesSpec
 
 /**

@@ -32,20 +32,21 @@ import puck.util.PuckLogger
 
 object ASTNodeLink{
 
-  def setName(name : String, dg2ast : NodeId => ASTNodeLink,
+  def setName(name : String,
               reenactor : DependencyGraph, renamed : NodeId)
-             ( implicit logger : PuckLogger) : Unit = dg2ast(renamed) match {
+             ( implicit dg2ast : NodeId => ASTNodeLink,
+               logger : PuckLogger) : Unit = dg2ast(renamed) match {
     case FieldDeclHolder(decl, idx) => decl.getDeclarator(idx).setID(name)
-    case dh : MethodDeclHolder => dh.decl.setID(name)
-    case th : TypedKindDeclHolder =>
-      val oldName = th.decl.getID
-      th.decl.setID(name)
-      val cu = th.decl.compilationUnit()
+    case MethodDeclHolder(mdecl) => mdecl.setID(name)
+    case TypedKindDeclHolder(tdecl) =>
+      val oldName = tdecl.getID
+      tdecl.setID(name)
+      val cu = tdecl.compilationUnit()
       //TODO if printed in place oldName.java should be deleted
       if(cu.pathName().endsWith(s"$oldName.java"))
         cu.setPathName(cu.pathName().replaceAllLiterally(s"$oldName.java", s"$name.java"))
       import scala.collection.JavaConversions._
-      th.decl.constructors().foreach{cdecl =>
+      tdecl.constructors().foreach{cdecl =>
         cdecl.flushAttrCache()
         cdecl.setID(name)
       }
@@ -55,15 +56,16 @@ object ASTNodeLink{
       val newFullName =
         if(containerFullName.isEmpty) name
         else  s"$containerFullName.$name"
-      th.decl.program().changeTypeMap(oldFullName, newFullName, th.decl)
+      tdecl.program().changeTypeMap(oldFullName, newFullName, tdecl)
 
-    case ch : ConstructorDeclHolder => ch.decl.setID(name)
-    case h => setPackageName(name, dg2ast, reenactor, renamed)
+    case ConstructorDeclHolder(cdecl) => cdecl.setID(name)
+    case h => setPackageName(name, reenactor, renamed)
   }
 
-  def setPackageName(name : String, dg2ast : NodeId => ASTNodeLink,
-                     reenactor : DependencyGraph, renamed : NodeId)
-                    ( implicit logger : PuckLogger) : Unit = {
+  def setPackageName
+  ( name : String,
+    reenactor : DependencyGraph, renamed : NodeId)
+  ( implicit dg2ast : NodeId => ASTNodeLink, logger : PuckLogger) : Unit = {
 
     val oldName = reenactor fullName renamed
     val newName = {
@@ -73,12 +75,12 @@ object ASTNodeLink{
     }
 
     reenactor.content(renamed) map (id => (id, dg2ast(id))) foreach {
-        case (tid, TypedKindDeclHolder(td)) =>
-          td.compilationUnit().setPackageDecl(newName) //both setter and affectation needed
-          td.compilationUnit().packageName_value = newName //this value is the cached one
-          RedirectSource.fixImportForUsersOfMovedTypeDecl(reenactor, dg2ast, td, tid, oldName, newName)
-          RedirectSource.fixImportOfMovedTypeDecl(reenactor, dg2ast, td, tid, oldName, newName, newlyCreatedCu = false)
-      }
+      case (tid, TypedKindDeclHolder(td)) =>
+        td.compilationUnit().setPackageDecl(newName) //both setter and affectation needed
+        td.compilationUnit().packageName_value = newName //this value is the cached one
+        RedirectSource.fixImportForUsersOfMovedTypeDecl(reenactor, td, tid, oldName, newName)
+        RedirectSource.fixImportOfMovedTypeDecl(reenactor, td, tid, oldName, newName, newlyCreatedCu = false)
+    }
   }
 
 
@@ -97,21 +99,60 @@ object ASTNodeLink{
   def enlargeVisibility
   ( g : DependencyGraph,
     astNode : Visible,
-    nid : NodeId) : Unit = {
-
-    val needMoreVisibility : NodeId => Boolean =
-      g.getConcreteNode(nid).kind.kindType match {
-      case PTypeDecl => g.hostNameSpace(_) != g.hostNameSpace(nid)
-      case InstanceValueDecl
-           | StaticValueDecl => g.hostTypeDecl(_) != g.hostTypeDecl(nid)
-      case kt => error(s"$kt not expected")
-    }
+    nid : NodeId)
+  ( implicit id2declMap: NodeId => ASTNodeLink) : Unit = {
+    val n = g.getConcreteNode(nid)
 
     import ASTNode.VIS_PUBLIC
-    if (astNode.getVisibility != VIS_PUBLIC) {
-      if (g .usersOfExcludingTypeUse(nid) exists needMoreVisibility)
-        astNode.setVisibility(VIS_PUBLIC)
+    n.kind.kindType match {
+      case PTypeDecl  =>
 
+        val hostNameSpace = g.hostNameSpace(nid)
+        val needMoreVisibility : NodeId => Boolean =
+          g.hostNameSpace(_) != hostNameSpace
+        val ctors = g.content(nid)
+
+        val contentThatNeedMoreVisibility = ctors.filter {
+          ctor =>
+            g.usersOfExcludingTypeUse(ctor) exists needMoreVisibility
+        }
+
+        contentThatNeedMoreVisibility foreach { n =>
+          val v  : Visible = id2declMap(n) match {
+            case hn : HasNode =>
+              hn.node match {
+                case v : Visible => v
+                case _ => puck.error()
+              }
+            case _ => puck.error()
+          }
+          v.setVisibility(VIS_PUBLIC)
+          v.getModifiers.flushAttrCache()
+        }
+
+        if (contentThatNeedMoreVisibility.nonEmpty ||
+          (g.usersOfExcludingTypeUse(nid) exists needMoreVisibility)) {
+          astNode.setVisibility(VIS_PUBLIC)
+          astNode.asInstanceOf[TypeDecl].flushVisibilityCache()
+          astNode.getModifiers.flushAttrCache()
+        }
+
+      case InstanceValueDecl | StaticValueDecl
+        if astNode.getVisibility != VIS_PUBLIC =>
+
+        val hostTypeDecl = g.hostTypeDecl(nid)
+
+        val needMoreVisibility : NodeId => Boolean =
+          g.hostTypeDecl(_) != hostTypeDecl
+
+        if (g.usersOfExcludingTypeUse(nid) exists needMoreVisibility) {
+          astNode.setVisibility(VIS_PUBLIC)
+          astNode.getModifiers.flushAttrCache()
+        }
+
+
+      case InstanceValueDecl | StaticValueDecl => ()
+      case kt => error(s"$kt not expected")
     }
 
   }

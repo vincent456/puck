@@ -26,20 +26,24 @@
 
 package puck.javaGraph.commutativity.move
 
-import puck.{AcceptanceSpec, TransfoRulesSpec}
+import puck.TransfoRulesSpec
 import puck.Settings._
-import puck.graph.Contains
+import puck.graph.{Contains, DependencyGraph, NodeId}
 import puck.graph.comparison.Mapping
 import puck.graph.transformations.rules.Move
-import puck.jastadd.ExtendJGraphUtils._
 import puck.javaGraph.ScenarioFactory
-import puck.javaGraph.transfoRules.MoveSpec._
+import puck.javaGraph.nodeKind.Package
 
 /**
   * Created by Loïc Girault on 19/04/16.
   */
 class MoveTypeSpec
   extends TransfoRulesSpec  {
+
+  def createTopLevelPackage(g : DependencyGraph, name : String) : (DependencyGraph, NodeId) = {
+    val (pn , g2) = g.addConcreteNode(name, Package)
+    (g2.addEdge(Contains(g.root.id, pn.id)), pn.id)
+  }
 
   scenario("Move top level class") {
     compareWithExpectedAndGenerated(
@@ -61,7 +65,7 @@ class MoveTypeSpec
         val (g0, package2) = createTopLevelPackage(graph, "p2")
         Move.staticDecl(g0, "p1.A", package2).rvalue
       },
-      new ScenarioFactory(
+      Seq(
       """package p2;
         |
         |public class A {
@@ -108,37 +112,31 @@ class MoveTypeSpec
   }
 
   scenario("Move top from different Packages - local var decl") {
-    val _ = new ScenarioFactory(
-      """package p1;
+    def code(aPackage : String) = Seq(
+      s"""package $aPackage;
         |
         |public class A {
         |    public A(){}
         |    public void ma(){}
         |}""",
-      """package p2;
+      s"""package p2;
         |
-        |import p1.A;
+        |import $aPackage.A;
         |
         |public class B {
         |    public void mb(){
         |        A a = new A();
         |        a.ma();
         |    }
-        |}""") {
-
-      val p1 = fullName2id(s"p1")
-      val classA = fullName2id(s"p1.A")
-
-      val (g0, package3) = createTopLevelPackage(graph, "p3")
-
-      val g1 = Move.staticDecl(g0, classA, package3).rvalue
-
-      val recompiledEx = applyChangeAndMakeExample(g1, outDir)
-
-      val gClean = g1.removeContains(g1.rootId, p1).removeNode(p1)._2
-      assert( Mapping.equals(recompiledEx.graph, gClean) )
-
-    }
+        |}""")
+    compareWithExpectedAndGenerated(
+      code("p1"),
+      bs => {
+        import bs.{graph, idOfFullName}
+        val (g0, package3) = createTopLevelPackage(graph, "p3")
+        val g1 = Move.staticDecl(g0, "p1.A", package3).rvalue
+        g1.removeContains(g1.rootId, "p1").removeNode("p1")._2
+      },code("p3"))
 
   }
 
@@ -211,23 +209,26 @@ class MoveTypeSpec
 
 
   scenario("Move top from different Packages - actual gen parameter") {
-    compareWithExpectedAndGenerated(new ScenarioFactory(
-      """package p1;
+
+    def code(aPackage : String) : Seq[String] = Seq(
+      s"""package $aPackage;
         |
         |public class A {
         |    public A(){}
         |    public void ma(){}
         |}""",
-      """package p2;
+      s"""package p2;
         |
-        |import p1.A;
+        |import $aPackage.A;
         |
         |class B<T>{ void m(T t){} }
         |
         |class C{
         |    B<A> ba;
         |    void m(){ ba.m(new A()); }
-        |}"""),
+        |}""")
+
+    compareWithExpectedAndGenerated(code("p1"),
       bs => {
         import bs.{graph, idOfFullName}
         val (g0, package3) = createTopLevelPackage(graph, "p3")
@@ -236,26 +237,11 @@ class MoveTypeSpec
 
         (g1 removeNode "p1")._2.removeEdge(Contains(graph.rootId, "p1"))
 
-    }, new ScenarioFactory(
-        """package p3;
-          |
-          |public class A {
-          |    public A(){}
-          |    public void ma(){}
-          |}""",
-        """package p2;
-          |
-          |import p3.A;
-          |
-          |class B<T>{ void m(T t){} }
-          |
-          |class C{
-          |    B<A> ba;
-          |    void m(){ ba.m(new A()); }
-          |}"""
-      ))
+    }, code("p3"))
 
   }
+
+
 
   scenario("Move top from different Packages - actual parameter with overloading") {
     val p = "topLevelClass/classesInDifferentPackages/actualParameterWithOverloading"
@@ -348,8 +334,64 @@ class MoveTypeSpec
 
       val gClean = g.removeContains(g.rootId, p1).removeNode(p1)._2
       assert( Mapping.equals(recompiledEx.graph, gClean) )
-
     }
+  }
+
+  scenario("Move top from different Packages - static method inside") {
+
+    def code(aPackage : String) : Seq[String] = Seq(
+      s"""package $aPackage;
+          |
+          |public class A {
+          |    static public int ma(){ return 42;}
+          |}""",
+      s"""package p2;
+          |
+          |import $aPackage.A;
+          |
+          |class C{
+          |    void m(){ int i = A.ma(); }
+          |}""")
+
+    compareWithExpectedAndGenerated(code("p1"),
+      bs => {
+        import bs.{graph, idOfFullName}
+        val (g0, package3) = createTopLevelPackage(graph, "p3")
+
+        val g1 = Move.staticDecl(g0, "p1.A", package3).rvalue
+
+        (g1 removeNode "p1")._2.removeEdge(Contains(graph.rootId, "p1"))
+
+      }, code("p3"))
+
+  }
+
+  scenario("Move top from different Packages - static method inside - import static") {
+
+    def code(aPackage : String) : Seq[String] = Seq(
+      s"""package $aPackage;
+          |
+          |public class A {
+          |    static public int ma(){ return 42;}
+          |}""",
+      s"""package p2;
+          |
+          |import static $aPackage.A.ma;
+          |
+          |class C{
+          |    void m(){ int i = ma(); }
+          |}""")
+
+    compareWithExpectedAndGenerated(code("p1"),
+      bs => {
+        import bs.{graph, idOfFullName}
+        val (g0, package3) = createTopLevelPackage(graph, "p3")
+
+        val g1 = Move.staticDecl(g0, "p1.A", package3).rvalue
+
+        (g1 removeNode "p1")._2.removeEdge(Contains(graph.rootId, "p1"))
+
+      }, code("p3"))
 
   }
 }

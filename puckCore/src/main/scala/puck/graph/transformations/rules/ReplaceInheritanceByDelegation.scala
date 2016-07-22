@@ -26,9 +26,8 @@
 
 package puck.graph.transformations.rules
 
-import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 import puck.graph.transformations.TransformationRules
-import puck.graph.{AccessAbstraction, Contains, DependencyGraph, Isa, LoggedError, LoggedSuccess, LoggedTG, NodeId, NodeIdP, NodeKind}
+import puck.graph._
 import puck.util.LoggedEither._
 
 import scalaz.std.list._

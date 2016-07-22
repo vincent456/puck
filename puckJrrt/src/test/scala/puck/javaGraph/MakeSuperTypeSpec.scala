@@ -26,10 +26,8 @@
 
 package puck.javaGraph
 
-import puck.graph.constraints.SupertypeAbstraction
-import puck.graph.{AccessAbstraction, Type}
+import puck.graph.{AccessAbstraction, SupertypeAbstraction, Type}
 import puck.AcceptanceSpec
-
 import puck.jastadd.ExtendJGraphUtils.{Rules => TR}
 
 class MakeSuperTypeSpec extends AcceptanceSpec {

@@ -24,14 +24,30 @@
  * Author of this file : Loïc Girault
  */
 
-package puck.graph.constraints
+aspect Rename {
 
+    public void ASTNode.rename(ASTNode<?> decl, String newName){
+        for(int i = 0; i < getNumChild(); i++)
+            getChild(i).rename(decl, newName);
+    }
 
-sealed abstract class RedirectionPolicy
-sealed abstract class AbstractionPolicy extends RedirectionPolicy
+    public void VarAccess.rename(ASTNode<?> decl, String newName){
+        if( this.decl().equals(decl) ){
+            setID(newName);
+        }
+    }
 
-case object DelegationAbstraction extends AbstractionPolicy
+    public void MethodAccess.rename(ASTNode<?> decl, String newName){
+        if( this.decl().equals(decl) ){
+            setID(newName);
+        }
+        super.rename(decl, newName);
+    }
 
-case object SupertypeAbstraction extends AbstractionPolicy //with AbstractionKind
-
-case object NotAnAbstraction extends RedirectionPolicy
+    public void TypeAccess.rename(ASTNode<?> decl, String newName){
+        if( this.decl().equals(decl) ){
+            setID(newName);
+        }
+        super.rename(decl, newName);
+    }
+}

@@ -371,8 +371,6 @@ object Redirection {
         case TypeDecl =>
             propagateTypeConstraints(oldUse.changeTarget(g, Uses, newTypeToUse), oldUse, newTypeToUse)
         case _ => LoggedError(s"${(g, oldUse).shows} empty qualyfing set, type redirection is expected")
-
-
       }
 
     (log + log2) <++: ltg

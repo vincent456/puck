@@ -4,7 +4,7 @@ import java.awt.event.WindowEvent
 
 import puck.actions.Choose
 import puck.graph.Metrics._
-import puck.graph.{ConcreteNode, DecoratedGraph, DependencyGraph, LoggedTG, Metrics, NodeId, SResult}
+import puck.graph.{ConcreteNode, DecoratedGraph, DependencyGraph, LoggedTG, NodeId, SResult}
 import puck.graph.transformations.Recording
 import puck.jastadd.ExtendJGraphUtils.dotHelper
 import puck.search._

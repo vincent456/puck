@@ -28,7 +28,6 @@ package puck.javaGraph.graphBuilding
 
 
 import puck.graph._
-import puck.graph.constraints.SupertypeAbstraction
 import puck.javaGraph.ScenarioFactory
 import puck.AcceptanceSpec
 

@@ -197,15 +197,31 @@ object Recording {
 
     def mileStone : Recording = MileStone +: record
 
-    def subRecordFromLastMilestone : Recording = {
-      def f(r0 : Recording, acc : Recording) : Recording = r0 match {
-        case Nil => acc
-        case MileStone +: tl => acc
+    def splitAtLastMilestone : (Recording, Recording) = {
+      def f(r0 : Recording, acc : Recording) :  (Recording, Recording) = r0 match {
+        case Nil => (Nil, acc.reverse)
+        case MileStone +: tl => (tl, acc.reverse)
         case hd +: tl => f(tl, hd +: acc)
       }
 
-      f(record, Seq()).reverse
+      f(record, List())
     }
+
+    def splitAtMilestones : Seq[Recording] = {
+      def aux(r : Recording, acc : List[Recording]) : Seq[Recording] =
+        r.splitAtLastMilestone match {
+          case (Nil, rec) => rec :: acc
+          case (remaining, rec) => aux(remaining, rec :: acc)
+
+        }
+      aux(record, List())
+    }
+
+    def subRecordFromLastMilestone : Recording =
+      splitAtLastMilestone._2
+
+
+
 
     def involveNodes : Seq[NodeId] = record.foldLeft(Seq[NodeId]()){
       case (acc, Transformation(_, op)) =>

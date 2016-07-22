@@ -29,7 +29,6 @@ package puck.javaGraph.commutativity
 
 import puck.graph._
 import puck.graph.comparison.Mapping
-import puck.graph.constraints.{DelegationAbstraction, SupertypeAbstraction}
 import puck.javaGraph.ScenarioFactory
 import puck.jastadd.ExtendJGraphUtils.Rules
 import puck.javaGraph.nodeKind.{Interface, StaticMethod}

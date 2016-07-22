@@ -83,7 +83,7 @@ aspect RemoveNode {
 
     void ASTNode.removeParameter(MethodDecl md, int paramIndex){
         for(int i =getNumChild() -1 ; i >=0 ; i--)
-        getChild(i).removeParameter(md, paramIndex);
+            getChild(i).removeParameter(md, paramIndex);
     }
     void MethodAccess.removeParameter(MethodDecl md, int paramIndex) {
         super.removeParameter(md, paramIndex);
@@ -92,35 +92,14 @@ aspect RemoveNode {
 
     void ASTNode.removeParameterAccess(ParameterDeclaration param){
         for(int i =getNumChild() -1 ; i >=0 ; i--)
-        getChild(i).removeParameterAccess(param);
+            getChild(i).removeParameterAccess(param);
     }
     void VarAccess.removeParameterAccess(ParameterDeclaration param){
         if(this.decl() == param){
-            if(this.getParent() instanceof AbstractDot){
-                AbstractDot ad = (AbstractDot) getParent();
-                ad.replaceWith(ad.getRight());
-            }
+            if(parentDot() != null)
+                parentDot().replaceWith(parentDot().getRight());
             else
                 getParent().removeChild(this);
         }
     }
-//    public void ClassDecl.removeImplements(InterfaceDecl decl) {
-//        int idx = -1;
-//        for(int i = 0; i < getImplementsList().getNumChild(); i++){
-//            if(((TypeAccess)getImplements(i)).decl().equals(decl))
-//                idx = i;
-//        }
-//        if(idx!= -1)
-//            getImplementsList().removeChild(idx);
-//    }
-//
-//    public void InterfaceDecl.removeSuperInterface(InterfaceDecl decl) {
-//        int idx = -1;
-//        for(int i = 0; i < getSuperInterfaceIdList().getNumChild(); i++){
-//            if(((TypeAccess)getSuperInterfaceId(i)).decl().equals(decl))
-//                idx = i;
-//        }
-//        if(idx!= -1)
-//            getSuperInterfaceIdList().removeChild(idx);
-//    }
 }

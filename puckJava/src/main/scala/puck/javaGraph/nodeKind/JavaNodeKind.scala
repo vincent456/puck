@@ -29,7 +29,6 @@ package nodeKind
 
 import puck.graph.DependencyGraph._
 import puck.graph._
-import puck.graph.constraints.AbstractionPolicy
 import ShowDG._
 import puck.graph.transformations.rules.Intro
 import puck.javaGraph.transformations.JavaIntro
