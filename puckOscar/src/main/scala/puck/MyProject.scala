@@ -192,8 +192,8 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
     for ((s, t) <- red_uses.keys
          if t == n
     )
-      yield red_uses((s, n))
-  }
+    yield red_uses((s, n))
+   }
 
   // Condition 2 : n est à droite d'un dominant (d,t) d'un red uses (a,b) c'est à dire s'il est
   // la cible d'un uses (d,t) qui est à droite d'un use (a,b) dans qualified_by et si (a,b) est red
