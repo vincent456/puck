@@ -261,13 +261,10 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
     add(chosen ==> maybe_abstracted)
   )
 
-  def trues( elements : Array[CPBoolVar]): Array[Int] = {
-    val result = for (t <- NODES.indices
-                    if elements(t).value ==1
-    )
-      yield t
-    result
-  }
+  def trues( elements : Array[CPBoolVar]): Array[Int] =
+      for (t <- NODES.indices
+           if elements(t).value ==1
+    ) yield t
 
   search {
     binaryFirstFail(red_uses.values.toSeq ++ may_be_abstracted.toSeq++Seq(nbNewNodes)++ Seq(nb_red_uses)
