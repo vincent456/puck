@@ -6,17 +6,7 @@ import oscar.cp._
 
 import scala.collection.mutable.ArrayBuffer
 
-class Node (n : String, k : Int, e : Option[Boolean] = None) {
-  var nom : String = n
-  var kind : Int = k
-  var external : Boolean = e match {
-    case Some(v) => v
-    case None => false
-  }
-  override def toString = {
-    "(" + nom + ", " +kind + ", " + external +")"
-  }
-}
+case class Node ( nom : String, kind : Int, external : Boolean = false)
 
 object MyModel extends CPModel with App {
 
@@ -101,16 +91,16 @@ object MyModel extends CPModel with App {
   //def getST(s:Int, t:Int, map_orig:Map[Int,Set[Int]]): ()
 
   val NODES = ArrayBuffer(
-    new Node("nano",kPackage), new Node("Client", kClass), new Node("Personne",kClass),
-    new Node("main",kMethod), new Node("main", kValueDef),
-    new Node("client", kMethod), new Node("client", kValueDef),
-    new Node("nom", kAttribute), new Node("nom", kValueDef),
-    new Node("Personne", kConstructor), new Node("Personne", kValueDef),
-    new Node("getNom", kMethod), new Node("getNom", kValueDef),
-    new Node("p", kparameter),
-    new Node("args", kparameter),
-    new Node("nom", kparameter),
-    new Node("String", kClass, Option(true))
+    Node("nano",kPackage), Node("Client", kClass), Node("Personne",kClass),
+    Node("main",kMethod), Node("main", kValueDef),
+    Node("client", kMethod), Node("client", kValueDef),
+    Node("nom", kAttribute), Node("nom", kValueDef),
+    Node("Personne", kConstructor), Node("Personne", kValueDef),
+    Node("getNom", kMethod), Node("getNom", kValueDef),
+    Node("p", kparameter),
+    Node("args", kparameter),
+    Node("nom", kparameter),
+    Node("String", kClass, external = true)
   )
   println("NODES")
   printNodes(NODES)
@@ -249,7 +239,7 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
 
   val nb_red_uses : CPIntVar = CPIntVar(0 to allUses_orig.size)
   val MAX_NEW_NODES =1
-  var nbNewNodes : CPIntVar = CPIntVar(0 to MAX_NEW_NODES)
+  val nbNewNodes : CPIntVar = CPIntVar(0 to MAX_NEW_NODES)
 
   minimize(nb_red_uses*3 + nbNewNodes)
   minimize(nb_red_uses)
