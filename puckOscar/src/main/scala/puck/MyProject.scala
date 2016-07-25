@@ -247,7 +247,7 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
     red_uses.values.count(_.value ==1)
   }
 
-  var nb_red_uses : CPIntVar = CPIntVar(0 to allUses_orig.size)
+  val nb_red_uses : CPIntVar = CPIntVar(0 to allUses_orig.size)
   val MAX_NEW_NODES =1
   var nbNewNodes : CPIntVar = CPIntVar(0 to MAX_NEW_NODES)
 
