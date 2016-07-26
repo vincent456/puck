@@ -182,7 +182,9 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
   }
 
   // un noeud n may be abstracted si deux conditions sont remplies.
-  // Normalement la première devrait être impliquée par la seconde
+  // Normalement la première est impliquée par la seconde
+  // par définitiion de la dominance
+
   // Condition 1 :  n est la cible d'un red uses (s,n)
   // On calcule donc un isOr sur les red_uses potentiels où n est la cible (deuxieme élément)
 
@@ -236,7 +238,8 @@ def makeVars(m:Map[Int, Set[Int]]): Map[(Int,Int),CPBoolVar] = {
     val ruon : Iterable[CPBoolVar]= redUsesOfNode(n)
     val ruqb : Iterable[CPBoolVar]= redUsesQualifiedBy(n)
     if(ruon.nonEmpty && ruqb.nonEmpty)
-      add(may_be_abstracted(n) === (isOr(ruon) && isOr(ruqb)))
+//      add(may_be_abstracted(n) === (isOr(ruon) && isOr(ruqb)))
+        add(isOr(ruqb))
     else add(may_be_abstracted(n) === 0)
   }
 
