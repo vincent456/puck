@@ -29,6 +29,7 @@ package puck
 import java.io.File
 
 import org.extendj.ast.JavaJastAddDG2AST
+import puck.config.Config.Config
 import puck.config.{Config, ConfigParser}
 import puck.javaGraph.JGraphUtils
 
@@ -41,8 +42,9 @@ package object jastadd {
 
     def withConfig(configFile : String) : Project = withConfig(new File(configFile))
 
-    def withConfig(configFile : File) : Project =
-      new Project(ConfigParser(configFile), JavaJastAddDG2AST)
+    def withConfig(configFile : File) : Project = withConfig(ConfigParser(configFile))
+
+    def withConfig(cfg : Config) : Project = new Project(cfg, JavaJastAddDG2AST)
   }
 
 

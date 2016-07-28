@@ -41,14 +41,11 @@ import puck.graph.DependencyGraph
 object LoadAndApply  {
 
   def applyRecords
-  ( projectFileName : String,
+  ( p : Project,
     recs : Seq[String],
     testCommutativity : Boolean = false)
   ( implicit logger : PuckLogger ) : Project = {
 
-
-    //    val recFile = new File(FrontVars.workspace + "/planB2.puck")
-    val p = JavaProject.withConfig(projectFileName)
 
     val dg2ast = p.loadGraph()
 
@@ -91,11 +88,10 @@ object LoadAndApply  {
 
 
   def applyRecursivelyStepByStep
-  ( projectFileName : String,
+  ( p : Project,
     recFileName : String )
   (implicit logger : PuckLogger) : Project = {
 
-    val p =  JavaProject.withConfig(projectFileName)
     val dg2ast = p.loadGraph().asInstanceOf[JavaJastAddDG2AST]
     //val scm = p.parseConstraints(dg2ast)
 
@@ -131,7 +127,7 @@ object LoadAndApply  {
 
 
   def main (args: Array[String]) : Unit = {
-    this.applyRecords("./puck.xml", args.toSeq)(new PuckSystemLogger(_ => true))
+    this.applyRecords(JavaProject(), args.toSeq)(new PuckSystemLogger(_ => true))
   }
 
 

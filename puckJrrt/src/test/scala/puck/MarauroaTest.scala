@@ -28,8 +28,10 @@ package puck
 
 import java.io.File
 
-import puck.util.{PuckFileLogger, PuckLogger, PuckSystemLogger}
+import puck.util.{PuckFileLogger, PuckLog, PuckLogger, PuckSystemLogger}
 import LoadAndApply._
+import puck.config.Config
+import puck.config.Config.{Keys, Root, SingleFile}
 import puck.graph.transformations.Recording
 import puck.graph.{DecoratedGraph, DependencyGraph, LoggedSuccess, Metrics}
 import puck.graph.constraints.search.{BlindControl, DecoratedGraphEvaluator}
@@ -43,14 +45,25 @@ object MarauroaTest {
 
   val root = "/home/lorilan/projects/arianne-marauroa"
 
+  def project(srcFolder : String, constraint : String = "decouple.wld") : Project = {
+    val cfg = (Config.empty
+      put (Keys.workspace, SingleFile(root))
+      put (Keys.srcs, List(Root(srcFolder, ".java", Seq())))
+      put (Keys.classpath, List(Root("libs", ".jar", Seq())))
+
+      put (Keys.out, SingleFile("out"))
+      put (Keys.decouple, SingleFile(constraint))
+      put (Keys.log, SingleFile("puck-log.txt"))
+      )
+    JavaProject.withConfig(cfg)
+  }
 }
-import MarauroaTest.{logger, root}
+import MarauroaTest.{logger, root, project}
 
 object MarauroaLoadMutant {
 
   def main(args : Array[String]) : Unit =
-    ignore(applyRecords(
-      root + "/original-puck-cfg.xml",
+    ignore(applyRecords(project("src.original"),
       Seq(root + "/mutant-03moves-01.pck")))
 
 }
@@ -59,41 +72,48 @@ object MarauroaMarauroaLoadMutantApplyRec {
 
   def main(args : Array[String]) : Unit =
     ignore(applyRecursivelyStepByStep(
-      root + "/original-puck-cfg.xml",
+      project("src.original"),
       root + "/mutant2.pck"))
 
 }
 
 object LoadAndSearchSolutions {
 
-  def main(args : Array[String]) : Unit =
-    SearchSolution(JavaProject.withConfig(root + "/mutant-03moves-01-puck-cfg.xml"))
 
+  val baseName = "constraint-gen3-01"
+
+  def main(args : Array[String]) : Unit =
+    //SearchSolution(project("src.mutant-03moves-02"))
+    SearchSolution(project("src.generated", baseName+".wld"),
+      baseName)(new PuckFileLogger(_ => true,
+      new File(root + File.separator + baseName + ".log")))
 }
 
 object SearchSolution {
-  def apply(p : Project) : Unit = {
+  def apply(p : Project, baseName : String)
+           (implicit logger : PuckLogger): Unit = {
     val dg2ast = p.loadGraph()
 
     p.parseConstraints(dg2ast) match {
-      case None => println("no output constraints")
+      case None => logger.writeln("no output constraints")
       case Some(cm) =>
         val f = Metrics.fitness1(_: DependencyGraph, cm, kViols = 1, kComplex = 1).toDouble
+
         val strategy = new AStarSearchStrategy[DecoratedGraph[Any]](DecoratedGraphEvaluator.equalityByMapping(f))
         val dg = dg2ast.initialGraph.mileStone
         val control = new BlindControl(Rules, dg, cm, violationsKindPriority).
           asInstanceOf[SearchControl[DecoratedGraph[Any]]]
 
         val engine = new SearchEngine(strategy, control, Some(1))
-        println("search start !")
-        engine.explore()
+        logger.writeln("search start !")
+        puck.util.Time.time(logger, PuckLog.defaultVerbosity)(engine.explore())
 
-        println(engine.successes.size + " solutions found")
+
+        logger.writeln(engine.successes.size + " solutions found for " + baseName)
         engine.successes map (st => (st.uuid(), st.loggedResult)) foreach {
           case (id, LoggedSuccess(_, (g,_))) =>
             import puck.util.FileHelper.FileOps
-            val recFile = p.workspace \ s"mutant0solution$id.rec"
-            println("writing solution " + id)
+            val recFile = p.workspace \  s"$baseName-solution$id.rec"
             Recording.write(recFile.getAbsolutePath, dg2ast.nodesByName, g)
         }
     }
@@ -109,8 +129,7 @@ object LoadMutantAndSearchSolutions {
   def main(args : Array[String]) : Unit = {
 
     //    val recFile = new File(FrontVars.workspace + "/planB2.puck")
-    applyRecords(
-      root + "/original-puck-cfg.xml",
+    applyRecords( project("src.original"),
       Seq(root + "/mutant0.pck")).fromOutDir foreach SearchSolution.apply
   }
 }
