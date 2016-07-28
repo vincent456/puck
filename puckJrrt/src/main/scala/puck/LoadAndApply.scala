@@ -29,62 +29,111 @@ package puck
 import java.io.File
 
 import puck.graph.comparison.Mapping
-import puck.graph.transformations.Recording
-import puck.util.PuckSystemLogger
+import puck.graph.transformations.{Recordable, Recording}
+import puck.jastadd.JavaProject
+import puck.util.{PuckLogger, PuckSystemLogger}
 import sbt.IO
-import jastadd._
 import Recording.RecordingOps
-object LoadAndApply {
+import org.extendj.ast.JavaJastAddDG2AST
+import puck.graph.DependencyGraph
+
+
+object LoadAndApply  {
+
+  def applyRecords
+  ( projectFileName : String,
+    recs : Seq[String],
+    testCommutativity : Boolean = false)
+  ( implicit logger : PuckLogger ) : Project = {
+
+
+    //    val recFile = new File(FrontVars.workspace + "/planB2.puck")
+    val p = JavaProject.withConfig(projectFileName)
+
+    val dg2ast = p.loadGraph()
+
+    val g = recs.foldLeft(dg2ast.initialGraph) {
+      case (g0, recName) =>
+        val r = Recording.load(new File(recName).getAbsolutePath, dg2ast.nodesByName  )
+        r.redo(g0)
+    }
+
+    import ProjectDG2ASTControllerOps.deleteOutDirAndApplyOnCode
+
+    deleteOutDirAndApplyOnCode(dg2ast, p, g, p.parseConstraints(dg2ast))
+
+    if (testCommutativity) {
+      p.fromOutDir foreach {
+        outProject =>
+          val dg2astout = outProject.loadGraph()
+
+          val gout = dg2astout.initialGraph
+
+          try {
+            if (Mapping.equals(g, gout)) {
+              println("ARE equals")
+            }
+            else {
+              println("are NOT equals")
+              import puck.graph.ShowDG._
+
+              (g, g.nodesIndex).println
+              (gout, gout.nodesIndex).println
+            }
+          } catch {
+            case e: PuckError => println(e.getMessage)
+          }
+      }
+    }
+
+    p
+  }
+
+
+  def applyRecursivelyStepByStep
+  ( projectFileName : String,
+    recFileName : String )
+  (implicit logger : PuckLogger) : Project = {
+
+    val p =  JavaProject.withConfig(projectFileName)
+    val dg2ast = p.loadGraph().asInstanceOf[JavaJastAddDG2AST]
+    //val scm = p.parseConstraints(dg2ast)
+
+    val r = Recording.load(recFileName, dg2ast.nodesByName  )
+
+    val splittedRec = r.splitAtMilestones
+
+    def applyRec(g: DependencyGraph, i : Int, recs : Seq[Seq[Recordable]]) : DependencyGraph =
+      if(i == 0 || recs.isEmpty) g
+      else applyRec(recs.head.redo(g), i - 1, recs.tail)
+
+
+    p.outDirectory foreach {
+      outDirectory =>
+        for(i <- splittedRec.indices) {
+          println("***********************************************")
+          println("***********************************************")
+          println("***********************************************")
+          println("***********************************************")
+          println("STEP " + i)
+          println("***********************************************")
+          println("***********************************************")
+
+          val dg2ast = p.loadGraph().asInstanceOf[JavaJastAddDG2AST]
+          val g = applyRec(dg2ast.initialGraph, i, splittedRec)
+          dg2ast(g)
+          dg2ast.printCode(outDirectory)
+        }
+        println( outDirectory.getAbsolutePath)
+    }
+    p
+  }
+
 
   def main (args: Array[String]) : Unit = {
-
-    val recFileName = args.head
-    val recFile = new File(recFileName)
-//    val recFile = new File(FrontVars.workspace + "/planB2.puck")
-    val fh = JavaProject()
-    implicit val logger = new PuckSystemLogger(_ => true)
-
-    val dg2ast = fh.loadGraph()
-
-    val r = Recording.load(recFile.getAbsolutePath, dg2ast.nodesByName  )
-    val g = r.redo(dg2ast.initialGraph)
-
-    val outDirectory = fh.outDirectory get
-
-    if(outDirectory.exists())
-      IO.delete(outDirectory)
-
-
-    dg2ast(g)
-    dg2ast.printCode(outDirectory)
-
-
-    val fhout = JavaProject(outDirectory)
-    val dg2astout = fhout.loadGraph()
-
-    val gout = dg2astout.initialGraph
-
-    try {
-      if(Mapping.equals(g, gout)){
-        println("ARE equals")
-      }
-      else {
-        println("are NOT equals")
-        import puck.graph.ShowDG._
-
-//        import scalaz.syntax.show._
-//        import puck.util.Debug.showNodeIndex
-        println((g, g.nodesIndex).shows)
-        println((gout, gout.nodesIndex).shows)
-
-//        val mapping = Mapping.create(g, gout)
-//
-//        println(Mapping.mapCVM(mapping, g.edges.userMap))
-//        println(gout.edges.userMap)
-      }
-    } catch {
-      case e : PuckError => println(e.getMessage)
-    }
+    this.applyRecords("./puck.xml", args.toSeq)(new PuckSystemLogger(_ => true))
   }
+
+
 
 }

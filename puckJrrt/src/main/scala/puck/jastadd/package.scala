@@ -34,9 +34,18 @@ import puck.javaGraph.JGraphUtils
 
 package object jastadd {
 
-  def JavaProject() : Project = JavaProject(new File("."))
-  def JavaProject(f : File) : Project  =
-    new Project(ConfigParser(Config.defaultConfFile(f)), JavaJastAddDG2AST)
+  object JavaProject {
+    def apply() : Project = JavaProject(new File("."))
+    def apply(root : String) : Project  = JavaProject(new File(root))
+    def apply(root : File) : Project  = withConfig(Config.defaultConfFile(root))
+
+    def withConfig(configFile : String) : Project = withConfig(new File(configFile))
+
+    def withConfig(configFile : File) : Project =
+      new Project(ConfigParser(configFile), JavaJastAddDG2AST)
+  }
+
+
 
   object ExtendJGraphUtils extends JGraphUtils {
     val dg2astBuilder: DG2ASTBuilder = JavaJastAddDG2AST

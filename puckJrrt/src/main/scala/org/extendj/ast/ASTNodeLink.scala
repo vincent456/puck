@@ -122,7 +122,7 @@ object ASTNodeLink{
             case hn : HasNode =>
               hn.node match {
                 case v : Visible => v
-                case _ => puck.error()
+                case nv => puck.error("Visible expected but got " + nv)
               }
             case _ => puck.error()
           }
@@ -131,7 +131,7 @@ object ASTNodeLink{
         }
 
         if (contentThatNeedMoreVisibility.nonEmpty ||
-          (g.usersOfExcludingTypeUse(nid) exists needMoreVisibility)) {
+          (g.usersOf(nid) exists needMoreVisibility)) {
           astNode.setVisibility(VIS_PUBLIC)
           astNode.asInstanceOf[TypeDecl].flushVisibilityCache()
           astNode.getModifiers.flushAttrCache()

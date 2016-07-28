@@ -26,24 +26,26 @@
 
 package org.extendj.ast
 
-import puck.graph.{DGBuildingError, NodeId}
-
+import puck.graph.{Contains, DGBuildingError, NodeId}
+import puck.javaGraph.nodeKind.{TypeVariable => PTypeVariable, EnumConstant => PEnumConstant, _}
 /**
   * Created by Loïc Girault on 19/05/16.
   */
 trait NodeFactory {
   this : JastaddGraphBuilder =>
 
-  def getDefinition(bd : DGNamedElement) =
-    g.getConcreteNode(buildNode(bd)).definition(g).getOrElse {
-      getDefNode(bd)
+  def getDefinition(bd : DGNamedElement) = {
+    val n = g.getConcreteNode(buildNode(bd))
+    n.definition(g).getOrElse {
+      val defNode = getDefNode(bd)
+      g = g.addEdge(Contains(n.id, defNode))
+      defNode
     }
-
+  }
 
   def buildNode( a : Access) : NodeId = a match {
     case va : VarAccess if va.decl().isLocalVariable => // No lock
       getDefinition(va.hostBodyDecl().getDGNamedNode())
-
 
     case cie: ClassInstanceExpr =>
       if(!cie.hasTypeDecl)
@@ -98,5 +100,41 @@ trait NodeFactory {
     case pexpr : ParExpr => buildNode(pexpr.getExpr)
     case expr : Expr => definitionOf(buildNode(expr.hostBodyDecl())).get
     case _ => throw new DGBuildingError()
+  }
+
+  def refTypeNodeKind(n : ReferenceType) : JavaNodeKind = {
+
+    def aux(n : ReferenceType) : TypeKind = n match {
+      case gcd : GenericClassDecl => GenericClass
+      case cd : ClassDecl => Class
+      case gid : GenericInterfaceDecl => GenericInterface
+      case id : InterfaceDecl => Interface
+      case _ =>
+        throw new DGBuildingError(s"${n.dgFullName()} - ${n.getClass} : Unkown nodekind")
+    }
+
+    if(n.isInnerType) Inner(aux(n))
+    else aux(n)
+  }
+
+  def nodeKind(n : DGNamedElement) : JavaNodeKind = n match {
+    case _ : TypeVariable => PTypeVariable
+    case rt : ReferenceType => refTypeNodeKind(rt)
+    case _ : AbstractWildcardType => WildCardType
+    case _ : PrimitiveType
+         | _ : VoidType
+         | _ : NullType => Primitive
+    case _ : ParameterDeclaration => Param
+    case _ : EnumConstant => PEnumConstant
+    case fd : FieldDeclarator =>
+      if(fd.isStatic) StaticField
+      else Field
+    case md : MethodDecl =>
+      if(md.isAbstract) AbstractMethod
+      else if (md.isStatic) StaticMethod
+      else Method
+    case _ : ConstructorDecl => Constructor
+    case _ =>
+      throw new DGBuildingError(s"${n.dgFullName()} - ${n.getClass} : Unkown nodekind")
   }
 }

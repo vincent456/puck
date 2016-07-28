@@ -28,6 +28,7 @@ package puck.jastadd
 package concretize
 
 import org.extendj.ast.{TypedKindDeclHolder, _}
+import puck.ignore
 import puck.graph.{TypeDecl => PTypeDecl, _}
 import puck.graph.transformations.{RedirectionOp, Regular, Target, Transformation}
 import puck.javaGraph._
@@ -61,10 +62,12 @@ object RedirectTarget {
         val MethodDeclHolder(mdecl) = id2declMap(reenactor container_! typeUser)
          //TODO find why !(block eq mdecl.getBlock)
         logger.writeln("block eq mdecl.getBlock = " + (block eq mdecl.getBlock))
-        mdecl.getBlock.replaceTypeAccess(oldTdecl, tdecl)
+        ignore(mdecl.getBlock.replaceTypeAccess(oldTdecl, tdecl))
 
-      case FieldDeclHolder(decl,_) => decl.getTypeAccess.replaceTypeAccess(oldTdecl, tdecl)
-      case holder : HasNode =>  holder.node.replaceTypeAccess(oldTdecl, tdecl)
+      case FieldDeclHolder(decl,_) =>
+        ignore(decl.getTypeAccess.replaceTypeAccess(oldTdecl, tdecl))
+      case holder : HasNode =>
+        ignore(holder.node.replaceTypeAccess(oldTdecl, tdecl))
 
       case k => throw new JavaAGError(k + " as user of TypeKind, redirection unhandled !")
     }

@@ -73,7 +73,7 @@ object Config {
   }
 
   case class SingleFile(path : String) extends FileFinder
-  case class Root(path : String, suffix : String, exclude : Seq[String]) extends FileFinder
+  case class Root(path : String, suffix : String, exclude : Seq[String] = Seq()) extends FileFinder
 
 
   class StringKey(v : String) extends ConfigKey[String](v) {

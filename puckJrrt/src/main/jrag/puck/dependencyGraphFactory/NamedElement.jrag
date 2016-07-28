@@ -68,9 +68,9 @@ aspect NamedElement {
 
 		void registerNode(JastaddGraphBuilder builder, int thisId);
 
+        boolean isSynthetic();
         boolean isSubstitute();
         boolean fromSource();
-
 	}
 
     syn boolean ASTNode.isNamedElement();
@@ -165,54 +165,4 @@ aspect NamedElement {
     public void Block.registerDef(JastaddGraphBuilder builder, int thisId){
         builder.registerDef(thisId, this);
     }
-
-    syn JavaNodeKind DGNamedElement.getDGNodeKind();
-
-    eq TypeDecl.getDGNodeKind(){
-    	throw new DGBuildingError(this.fullName() + " - " + this.getClass()+" : Unkown nodekind");
-    }
-    eq TypeVariable.getDGNodeKind() = JastaddGraphBuilder.typeVariable();
-
-    /*eq ClassDecl.getDGNodeKind() = isInnerClass() ?
-        JastaddGraphBuilder.innerClassKind() : JastaddGraphBuilder.classKind();
-
-    eq InterfaceDecl.getDGNodeKind() = isInnerType() ?
-        JastaddGraphBuilder.innerInterfaceKind() : JastaddGraphBuilder.interfaceKind();
-*/
-
-    eq ClassDecl.getDGNodeKind() = JastaddGraphBuilder.classKind();
-
-    eq InterfaceDecl.getDGNodeKind() = JastaddGraphBuilder.interfaceKind();
-
-    eq GenericClassDecl.getDGNodeKind() = JastaddGraphBuilder.genClass(this);
-
-    eq GenericInterfaceDecl.getDGNodeKind() = JastaddGraphBuilder.genInterface(this);
-
-    eq AbstractWildcardType.getDGNodeKind() = JastaddGraphBuilder.wildcardType();
-    eq PrimitiveType.getDGNodeKind() = JastaddGraphBuilder.primitive();
-	eq VoidType.getDGNodeKind() = JastaddGraphBuilder.primitive();
-    eq NullType.getDGNodeKind() = JastaddGraphBuilder.primitive();
-    eq ParameterDeclaration.getDGNodeKind() = JastaddGraphBuilder.parameter();
-    eq EnumConstant.getDGNodeKind() = JastaddGraphBuilder.enumConstant();
-
-    eq FieldDeclarator.getDGNodeKind() {
-        if(this.isStatic())
-            return JastaddGraphBuilder.staticField();
-        else
-            return JastaddGraphBuilder.field();
-
-    }
-
-    eq MethodDecl.getDGNodeKind(){
-    	if(this.isAbstract())
-	        return JastaddGraphBuilder.abstractMethod();
-	    else if (this.isStatic())
-            return JastaddGraphBuilder.staticMethod();
-        else
-	        return JastaddGraphBuilder.method();
-    }
-
-    eq ConstructorDecl.getDGNodeKind() = JastaddGraphBuilder.constructor();
-
-
 }

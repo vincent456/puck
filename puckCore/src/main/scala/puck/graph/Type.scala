@@ -32,7 +32,7 @@ import scalaz.std.list._
 import ShowDG._
 
 object Type {
-  def findOverridedIn
+  def findOverriddenIn
   ( g : DependencyGraph,
     absName : String, absSig : Type,
     candidates : List[TypedNode]) : Option[(TypedNode, List[TypedNode])] = {
@@ -42,6 +42,18 @@ object Type {
       case (c, t) => c.name == absName && absSig.canOverride(g, t)
     }
   }
+
+  def findOverridingIn
+  ( g : DependencyGraph,
+    implName : String, implSig : Type,
+    candidates : List[TypedNode]) : Option[(TypedNode, List[TypedNode])] = {
+    //println(s"searching for abstraction of $absName $absSig in $candidates")
+    import puck.util.Collections.SelectList
+    candidates.select {
+      case (c, t) => c.name == implName && t.canOverride(g, implSig)
+    }
+  }
+
 
   type OnImplemNotFound =
     (DependencyGraph, ConcreteNode, List[TypedNode]) => LoggedTry[(DependencyGraph, List[TypedNode])]
@@ -64,7 +76,7 @@ object Type {
       case ((g0, cs), (supMeth, supMethT)) =>
         supMeth.kind.kindType match {
           case InstanceValueDecl =>
-            findOverridedIn(g0, supMeth.name, supMethT, cs) match {
+            findOverriddenIn(g0, supMeth.name, supMethT, cs) match {
               case Some(((subMeth, _), newCandidates)) =>
                 LoggedSuccess((g0.addAbstraction(subMeth.id, AccessAbstraction(supMeth.id, SupertypeAbstraction)), newCandidates))
               case None => onImplemNotFound(g0, supMeth, candidates)

@@ -52,7 +52,7 @@ object TypeKind {
     }
     override def canBe(k : NodeKind) : Boolean = {
       k match {
-        case _ : InterfaceLike => true
+        case _ : InterfaceLike | Inner (_: InterfaceLike) => true
         case _ => false
       }
     }
@@ -67,7 +67,7 @@ object TypeKind {
 
     override def canBe(k : NodeKind) : Boolean = {
       k match {
-        case _ : ClassLike | _: InterfaceLike => true
+        case _ : TypeKind => true
         case _ => false
       }
     }
@@ -120,6 +120,13 @@ case object GenericClass extends ClassLike with GenType {
     a.isInstanceOf[ClassLike] && a.isInstanceOf[GenType]
 
   override val toString : String = "GenericClass"
+}
+
+case class Inner(t : TypeKind) extends TypeKind {
+  def canContain(k: NodeKind): Mutability = t.canContain(k)
+  def abstractionNodeKinds(p: AbstractionPolicy): Seq[NodeKind] = t.abstractionNodeKinds(p)
+
+  override def kindType: KindType = InstanceTypeDecl
 }
 
 case object TypeVariable extends JavaNodeKind {

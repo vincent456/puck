@@ -86,7 +86,7 @@ class CollectionValueMap[K, C[_], V]
 
   def get(key : K) = content get key
 
-  def getFlat(key : K) : C[V]= content.getOrElse(key, handler.empty)
+  def getFlat(key : K) : C[V] = content.getOrElse(key, handler.empty)
 
   def + (key :K , v : V) : CollectionValueMap[K, C, V] = {
     val values : C[V] = content getOrElse (key, handler.empty)

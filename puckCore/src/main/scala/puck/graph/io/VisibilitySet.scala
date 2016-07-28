@@ -53,7 +53,7 @@ object VisibilitySet{
 
 
   def violationsOnly(graph : DependencyGraph, constraints : ConstraintsMaps) : T =
-    (graph, constraints).violations().foldLeft(allHidden(graph)){
+    (graph, constraints).violations.foldLeft(allHidden(graph)){
       (s, edge) =>
       val path1 = graph.containerPath(edge.source)
       val path2 = graph.containerPath(edge.target)

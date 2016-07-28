@@ -208,54 +208,9 @@ object Mapping {
     assert(g1.virtualNodes.isEmpty)
     assert(g2.virtualNodes.isEmpty)
 
-
-    g1.nodesId.size == g2.nodesId.size && {
+    g1.nodesId.size >= g2.nodesId.size && {
+    val mappinG1toG2 : Map[NodeId, NodeId] = create(g1, g2)
     implicit val gp = (g1, g2)
-    /*
-    if(g1.nodesId.size != g2.nodesId.size){
-      val fulln1Set = (g1.nodesIndex.concreteNodesId map g1.fullName).toSet
-      val fulln2Set = (g2.nodesIndex.concreteNodesId map g2.fullName).toSet
-      val diff1 = fulln1Set -- fulln2Set
-      val diff2 = fulln2Set -- fulln1Set
-      if(diff1.nonEmpty || diff2.nonEmpty)
-        error("fullName diff1 = " + diff1 + " fullName diff2 = " + diff2)
-      false
-    }
-    else {*/
-      val mappinG1toG2 : NodeId => NodeId = {
-        //        val map : Map[NodeId, NodeId] = create(g1, g2)
-
-        val ni1 = nameIndex(g1)
-        val ni2 = nameIndex(g2)
-        //        println("*********************** ni1 ***************************")
-        //        println(ni1)
-        //        println("*********************** ni2 ***************************")
-        //        println(ni2)
-        val map : Map[NodeId, NodeId] = create(ni1, ni2)
-
-        {
-          g1Id : NodeId =>
-            try map(g1Id)
-            catch {
-              case nse : NoSuchElementException =>
-
-                val ks1 = ni1.keys.toSet
-                val ks2 = ni2.keys.toSet
-                val diff1 = ks1 -- ks2
-                val diff2 = ks2 -- ks1
-                val fn = g1.fullName(g1Id)
-                error(s"no mapping found for $g1Id $fn - " +
-                  s"g1.nodesId.size = ${g1.nodesId.size} ni1.size =  ${ni1.size} "+
-                  //                  s"${ni1.size } ${ni2.size} ${map.size}" +
-                  s"ni1 get fn = ${ni1 get fn} ni2 get fn = ${ni2 get fn} map get g1Id = ${map get g1Id} " +
-                  //                  s" ks1 contains fn = ${ks1 contains fn} " +
-                  //                  s" ks2 contains fn = ${ks2 contains fn} " +
-                  s"fullName diff1 = $diff1 fullName diff2 = $diff2")
-
-            }
-
-        }
-      }
 
       val mappinNodeIdP : NodeIdP => NodeIdP = {
         case (n1, n2) => (mappinG1toG2(n1), mappinG1toG2(n2))
@@ -263,9 +218,18 @@ object Mapping {
 
       val equalsNodes = g1.concreteNodes.forall{
         g1n =>
-          val g2Id = mappinG1toG2(g1n.id)
-          val g2n = g2.getConcreteNode(g2Id).copy(id = g1n.id)
-          g1n == g2n
+          try {
+            val g2Id = mappinG1toG2(g1n.id)
+            val g2n = g2.getConcreteNode(g2Id).copy(id = g1n.id)
+            g1n == g2n
+          } catch {
+            case _ : NoSuchElementException =>
+              g1.nodesIndex.getConcreteNodeWithStatus(g1n.id) match {
+                case (_, Removed) => true
+                case _ => false
+              }
+          }
+
       }
 
       lazy val equalsUses =

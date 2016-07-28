@@ -113,7 +113,7 @@ object FreemindScenario {
 
     import s._
 
-    println((graph, constraints).violations().size + " violations")
+    println((graph, constraints).violations.size + " violations")
     val ctrlName = "freemind.controller.Controller"
     val controller : NodeId = fullName2id(ctrlName)
 
@@ -182,7 +182,7 @@ object FreemindScenario {
 
     ltg match {
       case LoggedSuccess(_, g) =>
-        println("success : " + (g, constraints).violations().size + " violations")
+        println("success : " + (g, constraints).violations.size + " violations")
         Recording.write(planPath, dg2ast.nodesByName, g)
         project.outDirectory foreach {
           dir =>

@@ -79,7 +79,7 @@ package object graph {
     def graph = gc._1
     def constraints = gc._2
 
-    def violations() : Seq[DGEdge] = {
+    def violations : Seq[DGEdge] = {
       (graph.containsList filter isViolation map Contains.apply) ++:
         (graph.usesList filter isViolation map Uses.apply)
     }

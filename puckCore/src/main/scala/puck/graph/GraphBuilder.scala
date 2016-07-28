@@ -80,14 +80,11 @@ trait GraphBuilder {
 
   def addBinding( typeUse : NodeIdP,
                   typeMemberUse : NodeIdP): Unit =
-     g = g.addBinding(typeUse, typeMemberUse)
+    g = g/*.addUses(typeUse.user, typeUse.used)*/
+      .addBinding(typeUse, typeMemberUse)
 
 
-  def addBinding(typeUser : NodeId, typeUsed:NodeId, typeMemberUse : NodeIdP) : Uses ={
-//    import ShowDG._
-//    (g,typeUse).println
-//    (g,typeMemberUse).println
-
+  def addBinding(typeUser : NodeId, typeUsed:NodeId, typeMemberUse : NodeIdP) : Uses = {
     addBinding((typeUser, typeUsed), typeMemberUse)
     Uses(typeUser, typeUsed)
   }
@@ -99,16 +96,64 @@ trait GraphBuilder {
     }
   }
 
-  type ImplId = NodeId
-  type AbsId = NodeId
-
-  def registerAbstraction : DependencyGraph => (ImplId, Abstraction) => DependencyGraph =
-    graph => (implId , abs) => graph.addAbstraction(implId, abs)
-
-
-  def registerSuperTypes() =
-    g = g.isaEdges.foldLeft(g){ (g, e) =>
-      registerAbstraction(g)(e.source, AccessAbstraction(e.target, SupertypeAbstraction))
+  def registerSuperTypeAbtractions() = {
+    val superTypesMap = g.edges.superTypes.content
+    superTypesMap foreach {
+      case (subId, directSuperTypes) =>
+        val subMethIds = g instanceValuesWithType subId
+        g = directSuperTypes.foldLeft(g) {
+          (g, supId) =>
+            g.addAbstraction(subId, AccessAbstraction(supId, SupertypeAbstraction))
+        }
+        g = registerMethodsDirectOverridingInTypeHierarchy(g, subMethIds, directSuperTypes)
     }
+  }
 
+  def registerMethodsDirectOverridingInTypeHierarchy
+  (g : DependencyGraph,
+   subMethods : List[(ConcreteNode, Type)],
+   directSuperTypes : Set[NodeId]) : DependencyGraph = {
+    directSuperTypes.foldLeft(g) {
+      case (g0, superType) =>
+        val (g1, remainings) = registerMethodsDirectOverridingInSuperType(g, subMethods, superType)
+        registerMethodsDirectOverridingInTypeHierarchy(g1, remainings, g directSuperTypes superType)
+    }
+  }
+
+  def registerMethodsDirectOverridingInSuperType
+  (g : DependencyGraph,
+   subMethods : List[(ConcreteNode, Type)],
+   superType : NodeId) : (DependencyGraph, List[(ConcreteNode, Type)]) = {
+    val overriddenCandidates = g instanceValuesWithType superType
+
+    val (g1, nonOverridingsMethods, _) = subMethods.foldLeft((g, List[(ConcreteNode, Type)](), overriddenCandidates)){
+      case ((g0, remainingSubs, remainingCandidates), typedMeth @ (subMeth, subMethSig)) =>
+        Type.findOverridingIn(g0, subMeth.name, subMethSig, remainingCandidates) match {
+          case None => (g0, typedMeth :: remainingSubs, remainingCandidates)
+          case Some(((absM,_), remainingCandidates1)) =>
+            (g0.addAbstraction(subMeth.id, AccessAbstraction(absM.id, SupertypeAbstraction)),
+              remainingSubs, remainingCandidates1)
+        }
+    }
+    (g1, nonOverridingsMethods)
+  }
+
+
+  //  def registerAbstraction(graph: DependencyGraph, implId : NodeId, abs: Abstraction) : DependencyGraph =
+  //    abs match {
+  //      case AccessAbstraction(absId, SupertypeAbstraction) =>
+  //        val impl = graph.getConcreteNode(implId)
+  //        val absNode = graph.getConcreteNode(absId)
+  //        val absMeths = g instanceValuesWithType absId
+  //        val candidates = g instanceValuesWithType impl.id
+  //        Type.findAndRegisterOverridedInList(graph, absMeths, candidates) {
+  //          Type.ignoreOnImplemNotFound
+  //          //errorOnImplemNotFound(graph.fullName(impl.id))
+  //        } match {
+  //          case LoggedSuccess(_, g) => g.addAbstraction(implId, abs)
+  //          case LoggedError(_, err) => throw err
+  //        }
+  //
+  //      case _ => g.addAbstraction(implId, abs)
+  //    }
 }

@@ -32,8 +32,6 @@ import puck.javaGraph.nodeKind._
 
 import DependencyGraph._
 
-import scalaz.{-\/, \/-}
-
 trait JavaGraphBuilder extends GraphBuilder{
 
    g = new DependencyGraph(JavaNodeKind,
@@ -73,28 +71,8 @@ trait JavaGraphBuilder extends GraphBuilder{
     }
 
 
-  override def registerAbstraction : DependencyGraph => (ImplId, Abstraction) => DependencyGraph =
-    graph => (implId , abs) =>
-      abs match {
-        case AccessAbstraction(absId, SupertypeAbstraction) =>
-          val impl = graph.getConcreteNode(implId)
-          val absNode = graph.getConcreteNode(absId)
-          (impl.kind, absNode.kind) match {
-            case (Class, Interface) | (Class, Class) =>
-              val absMeths = (graph content absId).toList filter (id => graph.kindType(id) == InstanceValueDecl) map graph.typedNode
-              val candidates = (graph content impl.id).toList filter (id => graph.kindType(id) == InstanceValueDecl) map graph.typedNode
-              Type.findAndRegisterOverridedInList(graph, absMeths, candidates) {
-                Type.ignoreOnImplemNotFound
-                  //errorOnImplemNotFound(graph.fullName(impl.id))
-              } .value match {
-                case \/-(g) => g.addAbstraction(implId, abs)
-                case -\/(err) => throw err
-              }
 
-            case _ => graph
-          }
-        case _ => super.registerAbstraction(graph)(implId , abs)
-      }
+
 
   def typeEdge(typeUser : NodeId, typeUsed : NodeId) : DGEdge = {
     if(g.getConcreteNode(typeUser).kind.kindType == TypeDecl &&

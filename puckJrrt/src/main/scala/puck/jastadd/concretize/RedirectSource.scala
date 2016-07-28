@@ -229,6 +229,7 @@ object RedirectSource {
     logger.writeln("moving " + tDecl.fullName() + " to  " + resultGraph.fullName(newContainer))
     ???
   }
+
   def moveTopLevelTypeKind
   ( resultGraph: DependencyGraph,
     reenactor : DependencyGraph,
@@ -358,27 +359,15 @@ object RedirectSource {
           n =>
             reenactor.kindType(n) == PTypeDecl &&
               (reenactor kindType reenactor.container_!(n)) == NameSpace // only top level types
-        } map (n => (reenactor.container_!(n), n) ) foreach {
+        } map (n => (reenactor container_! n, n) ) foreach {
           case (p, t) =>
             val TypedKindDeclHolder(tdecl) = id2declMap(t)
-            val packageFullName = reenactor fullName p
+            CreateEdge.setPackageDecl(resultGraph, p, t, tdecl)
+            val packageFullName = resultGraph fullName p
             fixVisibilityAndImports(resultGraph, reenactor,
               packageFullName, packageFullName, tdecl, t,
               newlyCreatedCu = false)
         }
-
-
-      //        case (ClassDeclHolder(classDecl),
-      //        InterfaceDeclHolder(absDecl),
-      //        idh@InterfaceDeclHolder(superDecl)) =>
-      //          classDecl.removeImplements(superDecl)
-      //          absDecl.addSuperInterfaceId(idh.decl.createLockedAccess())
-      //
-      //        case (InterfaceDeclHolder(subDecl),
-      //        InterfaceDeclHolder(absDecl),
-      //        idh@InterfaceDeclHolder(superDecl)) =>
-      //          subDecl.removeSuperInterface(superDecl)
-      //          absDecl.addSuperInterfaceId(idh.decl.createLockedAccess())
 
       case _ =>
         val eStr = (reenactor, Contains(source, target)).shows

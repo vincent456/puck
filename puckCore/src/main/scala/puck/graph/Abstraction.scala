@@ -36,7 +36,6 @@ case object DelegationAbstraction extends AbstractionPolicy
 
 case object SupertypeAbstraction extends AbstractionPolicy
 
-case object Subtype extends AbstractionPolicy // hack (?) to implement sub type redirection
 
 sealed abstract class Abstraction {
   def policy: AbstractionPolicy

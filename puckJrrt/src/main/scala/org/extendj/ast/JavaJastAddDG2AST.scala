@@ -46,7 +46,8 @@ import puck.{DG2AST, DG2ASTBuilder, Project, PuckError}
 
 import scala.{List => SList}
 
-object JavaJastAddDG2AST extends DG2ASTBuilder {
+object JavaJastAddDG2AST
+  extends DG2ASTBuilder {
 
   def buildGraph(p : Program,
                  ll : puck.LoadingListener)  : JavaJastAddDG2AST = {
@@ -54,7 +55,7 @@ object JavaJastAddDG2AST extends DG2ASTBuilder {
     val builder = JastaddGraphBuilder(p, Option(ll))
     builder.addEdge(Contains(builder.nodesByName("@primitive"), builder.arrayTypeId))
     builder.attachOrphanNodes()
-    builder.registerSuperTypes()
+    builder.registerSuperTypeAbtractions()
 
     val (_, initialRecord) = NodeMappingInitialState.normalizeNodeTransfos(JavaNodeKind.root.kind,
       builder.g.recording, Seq())
@@ -226,7 +227,7 @@ class JavaJastAddDG2AST
 
   def safeGet
   ( graph : DependencyGraph,
-    id2declMap : Map[NodeId, ASTNodeLink] )
+    id2declMap : Map[NodeId, ASTNodeLink])
   ( id : NodeId ) : ASTNodeLink =
     try id2declMap(id)
     catch {
@@ -253,8 +254,8 @@ class JavaJastAddDG2AST
     logger.writeln("applying change !")
     val record = graph.recording
 
-    logger.writeln("before applying change : ")
-    logger.writeln(program.prettyPrint())
+//    logger.writeln("before applying change : ")
+//    logger.writeln(program.prettyPrint())
 
     record.reverse.foldLeft((graph, initialGraph, graph2ASTMap)) {
       case ((resultGraph, reenactor, g2AST), t : Transformation) =>
@@ -283,8 +284,8 @@ class JavaJastAddDG2AST
     }
     logger.writeln("done")
 
-    logger.writeln("Program after unlock : ")
-    logger.writeln(program.prettyPrint())
+//    logger.writeln("Program after unlock : ")
+//    logger.writeln(program.prettyPrint())
     logger.writeln("Program after unlock end of print ")
 
 

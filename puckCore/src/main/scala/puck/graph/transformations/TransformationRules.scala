@@ -69,8 +69,8 @@ class TransformationRules
       LoggedError(s"${(g, sub).shows} cannot be ${(g, sup).shows}")
     else {
 
-      val subMethods = g.content(sub).toList map g.typedNode
-      val supMethods = g.content(sup).toList map g.typedNode
+      val subMethods = g.instanceValuesWithType(sub)
+      val supMethods = g.instanceValuesWithType(sup)
 
       Type.findAndRegisterOverridedInList(g, supMethods, subMethods)(
         onImplemNotFound) map ( _.addIsa(sub, sup).

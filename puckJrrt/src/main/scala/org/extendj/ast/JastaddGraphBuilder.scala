@@ -111,8 +111,6 @@ object JastaddGraphBuilder {
 
 }
 
-
-
 class JastaddGraphBuilder(val program : Program)
   extends JavaGraphBuilder
   with TypeUsage
@@ -129,13 +127,13 @@ class JastaddGraphBuilder(val program : Program)
   }
 
   def getNode(n : DGNamedElement): NodeId =
-    super.addNode(n.dgFullName(), n.name(), n.getDGNodeKind, n.fromSource){
+    super.addNode(n.dgFullName(), n.name(), nodeKind(n), n.fromSource && !n.isSynthetic){
       nid => n.registerNode(this, nid)
     }
 
   import JastaddGraphBuilder.definitionName
   def getDefNode(n : DGNamedElement): NodeId =
-    super.addNode(n.dgFullName() + "." + definitionName, definitionName, Definition, n.fromSource)()
+    super.addNode(n.dgFullName() + "." + definitionName, definitionName, Definition, n.fromSource && !n.isSynthetic)()
   
 
   def attachOrphanNodes(fromId : Int = g.rootId) : Unit = {

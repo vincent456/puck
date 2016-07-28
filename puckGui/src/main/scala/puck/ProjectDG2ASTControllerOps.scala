@@ -75,15 +75,19 @@ object ProjectDG2ASTControllerOps {
   def compareOutputGraph
   (filesHandler : Project,
    graph : DependencyGraph)(implicit logger : PuckLogger) : Unit = {
-    val outfh = filesHandler.fromOutDir
-    logger.writeln("Loading output graph from code")
-    val outdg2ast = outfh.loadGraph()
-    logger.writeln("Comparing graphs ...")
+    filesHandler.fromOutDir match {
+      case None => println("No out project")
+      case Some(outfh) =>
+        logger.writeln("Loading output graph from code")
+        val outdg2ast = outfh.loadGraph()
+        logger.writeln("Comparing graphs ...")
 
-    val res = if(Mapping.equals(graph, outdg2ast.initialGraph)) "EQUAL"
-    else "NOT equal"
+        val res = if(Mapping.equals(graph, outdg2ast.initialGraph)) "EQUAL"
+        else "NOT equal"
 
-    logger.writeln(s"they are $res")
+        logger.writeln(s"they are $res")
+    }
+
   }
 
 }

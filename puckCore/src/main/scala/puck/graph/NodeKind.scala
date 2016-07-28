@@ -53,12 +53,13 @@ trait NodeKind {
 
 object KindType {
   val isStatic : KindType => Boolean = {
-    case NameSpace => true
-    case TypeDecl => true
-    case TypeVariableKT => false
-    case StaticValueDecl => true
-    case InstanceValueDecl => false
-    case TypeConstructor => true
+    case NameSpace
+         | TypeDecl
+         | StaticValueDecl
+         | TypeConstructor => true
+    case TypeVariableKT
+         | InstanceValueDecl
+         | InstanceTypeDecl => false
     case Parameter => ???
     case ValueDef => ???
     case UnknownKindType => ???
@@ -73,7 +74,7 @@ case object NameSpace extends KindType
 
 case object TypeDecl extends KindType
 case object TypeVariableKT extends KindType
-//case object InstanceTypeDecl extends KindType
+case object InstanceTypeDecl extends KindType
 
 case object TypeConstructor extends KindType
 

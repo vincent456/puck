@@ -1,8 +1,7 @@
 package org.extendj.ast
 
 import puck.graph.{ConcreteNode, NodeKind}
-import puck.javaGraph.nodeKind
-import puck.javaGraph.nodeKind.{EnumConstant => PuckEnumConstant, _}
+import puck.javaGraph.nodeKind.{EnumConstant => PuckEnumConstant, TypeVariable => PuckTypeVariable, _}
 
 /**
   * Created by lorilan on 5/5/16.
@@ -60,20 +59,24 @@ trait Registration {
       throwRegisteringError(g.getConcreteNode(nid), kindFound)
   }
 
+  def wrapInner(tk : TypeKind, decl : ReferenceType) : TypeKind =
+    if(decl.isInnerType) Inner(tk)
+    else tk
+
   def registerDecl(n : NodeIdT, decl : InterfaceDecl) =
-    register(n, Interface, InterfaceDeclHolder(decl), "InterfaceDecl")
+    register(n, wrapInner(Interface, decl), InterfaceDeclHolder(decl), "InterfaceDecl")
 
   def registerDecl(n : NodeIdT, decl : ClassDecl) =
-    register(n, Class, ClassDeclHolder(decl), "ClassDecl")
+    register(n, wrapInner(Class, decl), ClassDeclHolder(decl), "ClassDecl")
 
   def registerDecl(n : NodeIdT, decl : GenericInterfaceDecl) =
-    register(n, GenericInterface, InterfaceDeclHolder(decl), "GenericInterfaceDecl")
+    register(n, wrapInner(GenericInterface, decl), InterfaceDeclHolder(decl), "GenericInterfaceDecl")
 
   def registerDecl(n : NodeIdT, decl : GenericClassDecl) =
-    register(n, GenericClass, ClassDeclHolder(decl), "GenericClassDecl")
+    register(n, wrapInner(GenericClass, decl), ClassDeclHolder(decl), "GenericClassDecl")
 
   def registerDecl(n : NodeIdT, decl : TypeVariable) =
-    register(n, nodeKind.TypeVariable, TypeVariableHolder(decl), "TypeVariable")
+    register(n, PuckTypeVariable, TypeVariableHolder(decl), "TypeVariable")
 
   def registerDecl(n : NodeIdT, decl : AbstractWildcardType) =
     register(n, WildCardType, WildCardTypeHolder(decl), "WildCardType")

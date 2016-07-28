@@ -233,14 +233,11 @@ class DependencyGraph
     nodeKindKnowledge.structuredType(this, id, parametersOf(id))
   }
 
-  def typedNode(id : NodeId ) : TypedNode = {
-    val cn = getConcreteNode(id)
-    styp(id) match {
-      case None => error(s"$cn has no type")
-      case Some(t) => (cn, t)
-    }
-  }
-
+  def instanceValuesWithType(typeId : NodeId) : List[TypedNode] =
+    for {
+      m <- (this content typeId).toList map getConcreteNode
+      if m.kind.kindType == InstanceValueDecl
+    } yield (m, this typ m.id)
 
   def addType(id : NodeId, t : Type) : DependencyGraph =
     newGraph(edges = edges.setType(id, t),

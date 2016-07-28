@@ -26,7 +26,6 @@
 
 package org.extendj.ast
 
-import puck.PuckError
 import puck.graph._
 
 import scala.collection.JavaConversions._

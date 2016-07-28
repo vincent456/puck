@@ -108,9 +108,18 @@ class Project
     config get k map (v => new File(v.resolvePath(workspace)))
 
 
-  def fromOutDir : Project =
-    new Project(config, dG2ASTBuilder)
+  def fromOutDir : Option[Project] = outDirectory map {
+    outDir =>
 
+    val outConfig = {
+      val cfg = config.put(Keys.srcs, List(Root(outDir.getAbsolutePath, ".java")))
+      decouple map { d =>
+        cfg.put(Keys.decouple, SingleFile(outDir.getAbsolutePath + File.separator + d.getName))
+      } getOrElse cfg
+    }
+
+    new Project(outConfig, dG2ASTBuilder)
+  }
 
   import PuckLog.defaultVerbosity
 
