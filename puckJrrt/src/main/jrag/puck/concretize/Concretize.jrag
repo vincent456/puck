@@ -151,4 +151,19 @@ aspect Concretize {
         isPublic_reset();
     }
 
+    static <T extends ASTNode> List<T> ASTNode.listFromScala(scala.collection.Iterable<T> iterable){
+        List<T> l = new List<T>();
+        scala.collection.Iterator<T> it = iterable.iterator();
+        while(it.hasNext()){
+        l.add(it.next());
+        }
+        return l;
+    }
+    public void ASTNode.setParent(Program p){
+        this.setParent((ASTNode)p);
+    }
+    public static ParTypeAccess ParTypeAccess.create(Access p0, scala.collection.Iterable<Access> p1){
+        return new ParTypeAccess(p0, ASTNode.listFromScala(p1));
+    }
+
 }

@@ -87,6 +87,29 @@ class AbstractSpec extends TransfoRulesSpec {
 
     }
 
+    scenario("method return wildcard param type"){
+
+      compareWithExpectedAndGenerated(
+        """package p;
+          |import java.util.Enumeration;
+          |
+          |class C { public Enumeration<?> getThem(){ return null; }  }""",
+        bs => {
+          import bs.{graph, idOfFullName}
+
+          val (AccessAbstraction(itc, _), g0) =
+            Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.C"),
+              Interface, SupertypeAbstraction).rvalue
+          g0.addContains("p", itc)
+        },
+        """package p;
+          |import java.util.Enumeration;
+          |
+          |interface C_SupertypeAbstraction { Enumeration<?> getThem(); }
+          |class C implements C_SupertypeAbstraction { public Enumeration<?> getThem(){ return null; }  }""")
+
+    }
+
     scenario("method self use in class"){
       compareWithExpectedAndGenerated(
         """package p;
@@ -171,6 +194,9 @@ class AbstractSpec extends TransfoRulesSpec {
         assert( Mapping.equals(g, recompiledEx.graph) )
       }
     }
+
+
+
 
     scenario("use of type member sibling by self and parameter"){
       compareWithExpectedAndGenerated(

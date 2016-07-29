@@ -294,15 +294,11 @@ class JavaJastAddDG2AST
   def printCode(dir : File)(implicit logger : PuckLogger) : Unit =
     program.printCodeInDirectory(dir)
 
-
-
   val discardedOp : Operation => Boolean = {
     case _ : Comment
     | _ : TypeBinding
     | _ : AbstractionOp => true
-
     case _ => false
-
   }
 
   def applyOneTransformation
@@ -334,7 +330,7 @@ class JavaJastAddDG2AST
         t match {
           case Add(Edge(e)) => CreateEdge(e)
 
-          case Add(AType(user, NamedType(newType))) =>
+          case Add(AType(user, newType)) =>
                CreateEdge.createTypeUse(safeGet(resultGraph, id2declMap), user, newType)
 
           case ChangeSource(Contains(source, target), newSource) =>

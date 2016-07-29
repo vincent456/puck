@@ -26,8 +26,6 @@
 
 package puck
 
-import java.io.File
-
 import org.extendj.ast.JavaJastAddDG2AST
 import puck.graph.transformations.Recording
 import puck.graph.transformations.rules.CreateTypeMember
@@ -171,12 +169,12 @@ object MutantGen {
 
     val scm = p.parseConstraints(dg2ast)
 
-    val filePrefix = "mutant-03moves-02"
+    val filePrefix = "mutant-01move-01"
     import puck.util.FileHelper.FileOps
     val recFile = p.workspace \ s"$filePrefix.pck"
     val logFile = p.workspace \ s"$filePrefix.log"
 
-    val numberOfmove = 3
+    val numberOfmove = 1
 
     import dg2ast._
 
@@ -185,7 +183,7 @@ object MutantGen {
     scm foreach {
       cm =>
         val mutant = makeRandomMove(numberOfmove, initialGraph, (initialGraph, cm).violations.size, cm)(mutantLogger)
-        println((mutant,cm).violations.size + " violations")
+        mutantLogger.writeln((mutant,cm).violations.size + " violations")
 
         Recording.write(recFile.getAbsolutePath, dg2ast.nodesByName, mutant)
         dg2ast(mutant)

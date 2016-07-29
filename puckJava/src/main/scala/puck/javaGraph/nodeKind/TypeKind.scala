@@ -35,8 +35,8 @@ sealed abstract class TypeKind extends JavaNodeKind {
 
 case object Primitive extends TypeKind {
   def canContain(k: NodeKind) = false
-  def abstractionNodeKinds(p : AbstractionPolicy) =
-    throw new DGError("do not know how to abstract primitive kind")
+  def abstractionNodeKinds(p : AbstractionPolicy) = Seq()
+    //throw new DGError("do not know how to abstract primitive kind")
 }
 
 object TypeKind {

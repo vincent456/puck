@@ -28,7 +28,6 @@ package puck.javaGraph.graphBuilding
 
 import puck.AcceptanceSpec
 import puck.graph.{DependencyGraph, ShowDG}
-import puck.graph.ShowDG._
 import puck.javaGraph.ScenarioFactory
 
 /**

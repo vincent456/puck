@@ -30,7 +30,7 @@ import java.io.{File, FileReader}
 
 import puck.graph.transformations.{Recording, Transformation}
 import puck.graph.{DGBuildingError, DependencyGraph, NodeId}
-import puck.util.{FileHelper, PuckFileLogger, PuckLogger}
+import puck.util.{FileHelper, PuckFileLogger}
 import sbt.IO
 import org.extendj.ast.{ASTNodeLink, JavaJastAddDG2AST, Program}
 import FileHelper.FileOps

@@ -24,34 +24,45 @@
  * Author of this file : Loïc Girault
  */
 
-package puck.jastadd
-package concretize
+package org.extendj.ast
 
-import org.extendj.ast._
 import puck.graph._
+import puck.jastadd.concretize.CreateNode
 import puck.javaGraph._
 import puck.javaGraph.nodeKind._
 import puck.util.PuckLogger
-import org.extendj.{ast => AST}
+
+
 
 object CreateEdge {
+
+  def createTypeAccess
+  (id2declMap: NodeId => ASTNodeLink,
+   typ : Type)
+  ( implicit program : Program): Access = (typ, id2declMap(Type.mainId(typ)) ) match {
+    case (NamedType(_), TypedKindDeclHolder(tdecl)) => tdecl.createLockedAccess()
+    case (ParameterizedType(_, args), TypedKindDeclHolder(gt : GenericTypeDecl)) =>
+      val argsAccesses = args.map(createTypeAccess(id2declMap, _))
+
+
+      val pta = ParTypeAccess.create(gt.createLockedAccess(), argsAccesses)
+      pta.setParent(program)
+      val ptd = gt.lookupParTypeDecl(pta)
+      ptd.createLockedAccess()
+    case (t, dh) => throw new JavaAGError(s"CreateEdge.createTypeUse: ($t, $dh) where expected a typeDecl")
+  }
 
   def createTypeUse
   (id2declMap: NodeId => ASTNodeLink,
     typed : NodeId,
-    typ : NodeId) : Unit = {
+    typ : Type)
+  ( implicit program : Program): Unit =
     id2declMap(typed)  match {
       //explicit upcast shouldn't be needed, why the compiling error ?
       case dh @ (FieldDeclHolder(_,_)
         | ParameterDeclHolder(_)
         | MethodDeclHolder(_)) =>
-
-        val taccess : AST.Access = id2declMap(typ) match {
-          case tdh : TypedKindDeclHolder => tdh.decl.createLockedAccess()
-          case dh => throw new JavaAGError(s"CreateEdge.createTypeUse: $dh where expected a typeDecl")
-        }
-
-        dh.asInstanceOf[HasNode].node.setTypeAccess(taccess)
+        dh.asInstanceOf[HasNode].node.setTypeAccess(createTypeAccess(id2declMap, typ))
 
       case ConstructorDeclHolder(_) => ()
 
@@ -59,12 +70,9 @@ object CreateEdge {
     }
 
 
-  }
-
-
   def apply
   ( e: DGEdge)
-  ( implicit program : AST.Program,
+  ( implicit program : Program,
     logger : PuckLogger,
     resultAndReenactor : (DependencyGraph, DependencyGraph),
     id2declMap: NodeId => ASTNodeLink ) = {
@@ -118,7 +126,7 @@ object CreateEdge {
     ( reenactor : DependencyGraph,
       id2declMap : NodeId => ASTNodeLink,
       e : Uses)
-    ( implicit program : AST.Program, logger : PuckLogger) : Unit = {
+    ( implicit program : Program, logger : PuckLogger) : Unit = {
     val sourceDecl = reenactor.container_!(e.user)
     (id2declMap(sourceDecl), id2declMap(e.used)) match {
       case (ConstructorDeclHolder(cdecl), MethodDeclHolder(mdecl)) =>
@@ -140,7 +148,7 @@ object CreateEdge {
     reenactor : DependencyGraph,
     id2declMap : NodeId => ASTNodeLink,
     e : DGEdge)
-  ( implicit program : AST.Program, logger : PuckLogger) : Unit =
+  ( implicit program : Program, logger : PuckLogger) : Unit =
     (id2declMap(e.container), id2declMap(e.content)) match {
       case (PackageDeclHolder, i: TypedKindDeclHolder) =>
         setPackageDecl(reenactor, e.container, e.content, i.decl)
@@ -240,8 +248,8 @@ object CreateEdge {
   ( graph: DependencyGraph,
     packageId : NodeId,
     typeDeclNodeId : NodeId,
-    td : AST.TypeDecl)
-  ( implicit program : AST.Program, logger : PuckLogger) = {
+    td : TypeDecl)
+  ( implicit program : Program, logger : PuckLogger) = {
 
     val cu = td.compilationUnit()
     val pkgDecl = graph.fullName(packageId)

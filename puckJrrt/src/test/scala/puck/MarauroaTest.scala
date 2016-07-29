@@ -21,22 +21,19 @@
  * Author attributions in that material or in the Appropriate Legal
  * Notices displayed by works containing it is required.
  *
- * Author of this file : Loïc Girault
+ * Author of this file : Loïc Giraul
  */
 
 package puck
 
 import java.io.File
 
-import puck.util.{PuckFileLogger, PuckLog, PuckLogger, PuckSystemLogger}
+import puck.util.{PuckFileLogger, PuckLogger}
 import LoadAndApply._
 import puck.config.Config
 import puck.config.Config.{Keys, Root, SingleFile}
 import puck.graph.transformations.Recording
-import puck.graph.{DecoratedGraph, DependencyGraph, LoggedSuccess, Metrics}
-import puck.graph.constraints.search.{BlindControl, DecoratedGraphEvaluator}
-import puck.search.{AStarSearchStrategy, SearchControl, SearchEngine}
-import puck.jastadd.ExtendJGraphUtils._
+import puck.graph.LoggedSuccess
 import puck.jastadd.JavaProject
 
 object MarauroaTest {
@@ -60,27 +57,26 @@ object MarauroaTest {
 }
 import MarauroaTest.{logger, root, project}
 
-object MarauroaLoadMutant {
+object MarauroaLoadRecordAndApply {
 
   def main(args : Array[String]) : Unit =
     ignore(applyRecords(project("src.original"),
-      Seq(root + "/mutant-03moves-01.pck")))
+      Seq(root + "/constraint-gen1-05-solution-manual-partial.pck")))
 
 }
 
-object MarauroaMarauroaLoadMutantApplyRec {
+object MarauroaLoadRecordAndApplyStepByStep {
 
   def main(args : Array[String]) : Unit =
     ignore(applyRecursivelyStepByStep(
       project("src.original"),
-      root + "/mutant2.pck"))
+      root + "/constraint-gen1-05-solution-manual-partial.pck"))
 
 }
 
 object LoadAndSearchSolutions {
 
-
-  val baseName = "constraint-gen3-01"
+  val baseName = "constraint-gen1-05"
 
   def main(args : Array[String]) : Unit =
     //SearchSolution(project("src.mutant-03moves-02"))
@@ -89,49 +85,30 @@ object LoadAndSearchSolutions {
       new File(root + File.separator + baseName + ".log")))
 }
 
-object SearchSolution {
-  def apply(p : Project, baseName : String)
-           (implicit logger : PuckLogger): Unit = {
-    val dg2ast = p.loadGraph()
+object GenConstraintAndSearchSolutions {
 
-    p.parseConstraints(dg2ast) match {
-      case None => logger.writeln("no output constraints")
-      case Some(cm) =>
-        val f = Metrics.fitness1(_: DependencyGraph, cm, kViols = 1, kComplex = 1).toDouble
-
-        val strategy = new AStarSearchStrategy[DecoratedGraph[Any]](DecoratedGraphEvaluator.equalityByMapping(f))
-        val dg = dg2ast.initialGraph.mileStone
-        val control = new BlindControl(Rules, dg, cm, violationsKindPriority).
-          asInstanceOf[SearchControl[DecoratedGraph[Any]]]
-
-        val engine = new SearchEngine(strategy, control, Some(1))
-        logger.writeln("search start !")
-        puck.util.Time.time(logger, PuckLog.defaultVerbosity)(engine.explore())
-
-
-        logger.writeln(engine.successes.size + " solutions found for " + baseName)
-        engine.successes map (st => (st.uuid(), st.loggedResult)) foreach {
-          case (id, LoggedSuccess(_, (g,_))) =>
-            import puck.util.FileHelper.FileOps
-            val recFile = p.workspace \  s"$baseName-solution$id.rec"
-            Recording.write(recFile.getAbsolutePath, dg2ast.nodesByName, g)
-        }
-    }
-  }
-}
-
-object LoadMutantAndSearchSolutions {
-
-  implicit val logger : PuckLogger = new PuckSystemLogger(_ => true)
-
-
+  val numConstraint = 1
+  def genBaseName(id : Int) = s"constraint-gen$numConstraint-$id"
 
   def main(args : Array[String]) : Unit = {
+    var i = 4
+    while(new File(root + File.separator + genBaseName(i)).exists())
+      i = i + 1
 
-    //    val recFile = new File(FrontVars.workspace + "/planB2.puck")
-    applyRecords( project("src.original"),
-      Seq(root + "/mutant0.pck")).fromOutDir foreach SearchSolution.apply
+    val baseName = genBaseName(i)
+    val p = project("src.generated", baseName+".wld")
+
+    val(dg, names2id, cm) =  ConstraintGen(p, baseName, numConstraint)
+    SearchSolution(dg, cm) map (st => (st.uuid(), st.loggedResult)) foreach {
+          case (id, LoggedSuccess(_, (g,_))) =>
+            import puck.util.FileHelper.FileOps
+            val recFile = p.workspace \  s"$baseName-solution$id.pck"
+            Recording.write(recFile.getAbsolutePath, names2id, g)
+        }
+
   }
 }
+
+
 
 

@@ -27,7 +27,7 @@
 package puck.javaGraph.graphBuilding
 
 import puck.AcceptanceSpec
-import puck.graph.{NamedType, NodeIdP, ParameterizedType, Uses}
+import puck.graph.{NamedType, NodeIdP, ParameterizedType}
 import puck.javaGraph.ScenarioFactory
 
 /**

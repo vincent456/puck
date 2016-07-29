@@ -27,7 +27,7 @@
 package puck
 
 import java.io.File
-
+import org.extendj.ast
 import org.extendj.ast.JavaJastAddDG2AST
 import puck.config.Config.Config
 import puck.config.{Config, ConfigParser}
@@ -47,6 +47,12 @@ package object jastadd {
     def withConfig(cfg : Config) : Project = new Project(cfg, JavaJastAddDG2AST)
   }
 
+//  implicit class JastaddConversion[T <: ast.ASTNode[_]](val i : Iterable[T]) extends AnyVal {
+//
+//    def toASTList : ast.List[T]=
+//      new ast.List[T](i.toSeq:_*)
+//
+//  }
 
 
   object ExtendJGraphUtils extends JGraphUtils {

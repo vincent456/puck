@@ -60,6 +60,7 @@ class CompositeScenarioKeepLog private ()
       case (AccessAbstraction(itcId, _), g1) =>
         g1.addContains("fileSystem", itcId)
         Rules.rename(g1.addContains("fileSystem", itcId), itcId, "FSElement")
+      case _ => puck.error()
     }
 
   val ltg =  for {

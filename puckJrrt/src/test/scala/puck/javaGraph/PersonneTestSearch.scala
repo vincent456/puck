@@ -3,17 +3,14 @@ package puck.javaGraph
 
 import java.io.File
 
-import puck.{GraphStack, Quick, Settings}
+import puck.{Quick, Settings}
 import puck.TestUtils._
 import puck.graph.constraints.search.DecoratedGraphEvaluator
-import puck.graph.transformations.{MileStone, Recording}
+import puck.graph.transformations.Recording
 import puck.graph.{ConcreteNode, _}
-import puck.gui.PuckControl
-import puck.search.{AStarSearchStrategy, AStarSearchStrategyGraphDisplay, AStarSearchStrategyGraphDisplayOnly}
+import puck.search.{AStarSearchStrategy, AStarSearchStrategyGraphDisplayOnly}
 import puck.jastadd.ExtendJGraphUtils.dotHelper
-import puck.util.PuckSystemLogger
-
-import scala.swing.Publisher
+import scala.language.reflectiveCalls
 import scalaz.\/-
 
 
@@ -40,7 +37,7 @@ object PersonneTestSearch {
 
 
     val fitness1: DependencyGraph => Double =
-      Metrics.fitness1(_, constraints, 1, 1)
+      Metrics.fitness1(_, constraints, 1, 1).toDouble
 
     val evaluator = DecoratedGraphEvaluator.equalityByMapping[Option[ConcreteNode]](fitness1)
     val strategy = new AStarSearchStrategyGraphDisplayOnly[Option[ConcreteNode]](

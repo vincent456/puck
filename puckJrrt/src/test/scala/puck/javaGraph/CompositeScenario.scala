@@ -26,7 +26,6 @@
 
 package puck.javaGraph
 
-import java.io.File
 
 import org.scalatest.{EitherValues, FeatureSpec, OptionValues}
 import puck.Settings.outDir

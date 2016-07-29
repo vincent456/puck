@@ -10,7 +10,7 @@ import puck.graph.transformations.Recording
 import puck.graph.{ConcreteNode, _}
 import puck.search.{AStarSearchStrategy, AStarSearchStrategyGraphDisplay}
 import puck.jastadd.ExtendJGraphUtils.dotHelper
-
+import scala.language.reflectiveCalls
 import scalaz.\/-
 
 
@@ -36,7 +36,7 @@ object LocationTestBlindControlSolveAll {
 
 
     val fitness1: DependencyGraph => Double =
-      Metrics.fitness1(_, constraints, 1, 1)
+      Metrics.fitness1(_, constraints, 1, 1).toDouble
 
     val evaluator = DecoratedGraphEvaluator.equalityByMapping[Option[ConcreteNode]](fitness1)
     val strategy = new AStarSearchStrategyGraphDisplay[Option[ConcreteNode]](
@@ -94,7 +94,7 @@ object LocationTestSearch {
     println("transformed")
     printMetrics(g2)
 
-    s.applyChangeAndMakeExample(g2, new File("/tmp/testPuck"))
+    puck.ignore(s.applyChangeAndMakeExample(g2, new File("/tmp/testPuck")))
   }
 
 
