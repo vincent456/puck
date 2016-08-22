@@ -30,17 +30,6 @@ aspect ReplaceTypeAccess {
     public void ASTNode.setTypeAccess(Access tAccess){
         throw new PuckError(this.getClass() + ".setTypeAccess not implemented");
     }
-    boolean ASTNode.isParTypeAccess(){ return false;}
-    boolean ParTypeAccess.isParTypeAccess(){ return true;}
-    ParTypeAccess  ASTNode.getParTypeAccessParent(){
-        ASTNode c = this;
-        while(c.getParent()!=null){
-            c = c.getParent();
-            if(c.isParTypeAccess())
-                return (ParTypeAccess) c;
-        }
-        return null;
-    }
 
     void TypeDecl.replaceTypeAccessInList(Access oldAccess, Access newAccess, List<Access> list){
         if(!oldAccess.isTypeAccess() || !newAccess.isTypeAccess())
@@ -82,12 +71,7 @@ aspect ReplaceTypeAccess {
     }
 
 
-    public boolean EnhancedForStmt.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
-        boolean replaced = super.replaceTypeAccess(oldUsed, newUsed);
-        if(replaced)
-            flushTreeCache();
-        return replaced;
-    }
+
 
     public boolean TypeAccess.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
         if( this.decl().equals(oldUsed) ){
@@ -138,9 +122,29 @@ aspect ReplaceTypeAccess {
         return false;
     }
 
+    public boolean EnhancedForStmt.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
+        boolean replaced = super.replaceTypeAccess(oldUsed, newUsed);
+        if(replaced)
+        flushTreeCache();
+        return replaced;
+    }
     public boolean VarDeclStmt.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
         if(super.replaceTypeAccess(oldUsed, newUsed)) {
             flushTreeCache();
+            return true;
+        }
+        return false;
+    }
+
+    void Declarator.getTypeAccessReset() {
+        getTypeAccess_reset();
+    }
+
+    public boolean FieldDecl.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
+        if(super.replaceTypeAccess(oldUsed, newUsed)) {
+            for(Declarator d : getDeclaratorList()){
+                d.getTypeAccessReset();
+            }
             return true;
         }
         return false;

@@ -136,6 +136,7 @@ aspect LockedMethodAccess {
 		if(fromSource())
 			setID(target.name());
 		if(decl().equals(target)) {
+			TypeDecl td = this.type();
 			return this;
 		} else if(!fromSource()) {
 			throw new RefactoringException("cannot adjust method access in compiled code");
@@ -179,8 +180,17 @@ aspect LockedMethodAccess {
 					return (Access) replace(parent).with(newAcc);
 				}
 			}
-		throw new RefactoringException("cannot access method "+target.fullName() +
-					" in " + fullLocation());
+			else if(squal.nonEmpty()
+				&& decl() instanceof MethodDeclSubstituted
+				&& target instanceof MethodDeclSubstituted ){
+					MethodDeclSubstituted subDecl = (MethodDeclSubstituted) decl();
+					MethodDeclSubstituted subTarget = (MethodDeclSubstituted) target;
+
+					if(subDecl.getOriginal() == subTarget.getOriginal())
+					return this;
+			}
+			throw new RefactoringException("cannot access method "+target.fullName() +
+						" in " + fullLocation());
 		}
 		this.flushTreeCache();
 		Expr qual = null;

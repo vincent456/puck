@@ -65,7 +65,7 @@ object RedirectTarget {
         ignore(mdecl.getBlock.replaceTypeAccess(oldTdecl, tdecl))
 
       case FieldDeclHolder(decl,_) =>
-        ignore(decl.getTypeAccess.replaceTypeAccess(oldTdecl, tdecl))
+        ignore(decl.replaceTypeAccess(oldTdecl, tdecl))
       case holder : HasNode =>
         ignore(holder.node.replaceTypeAccess(oldTdecl, tdecl))
 

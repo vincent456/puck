@@ -6,7 +6,7 @@ import org.extendj.ast.JavaJastAddDG2AST
 import puck.graph.{DependencyGraph, NodeId, NodeIdP, NodeIdPOps, ShowDG}
 import puck.graph.constraints.{ConstraintMapBuilder, ConstraintsMaps, LiteralRangeSet, Scope}
 import puck.jastadd.JavaProject
-import puck.util.{PuckFileLogger, PuckLogger, PuckSystemLogger}
+import puck.util.{PuckFileLogger, PuckLogger}
 import puck.javaGraph.nodeKind._
 
 import scala.util.Random
