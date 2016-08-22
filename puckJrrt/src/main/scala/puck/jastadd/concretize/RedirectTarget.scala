@@ -193,7 +193,6 @@ object RedirectTarget {
             throw new JavaAGError("redirecting TARGET of %s to %s : application failure !".format(e, reenactor.getNode(newTargetId)))
         }
       } else {
-        (reenactor,e.source).println(desambiguatedFullName)
         val target = reenactor.getNode(e.target)
         val newTarget = reenactor.getNode(newTargetId)
 

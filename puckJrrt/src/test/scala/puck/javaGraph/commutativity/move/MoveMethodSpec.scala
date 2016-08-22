@@ -330,8 +330,8 @@ class MoveMethodSpec extends TransfoRulesSpec {
         """package p;
           |
           |class A {
-          |    public B b = new B();
-          |    public void mUser(){ b.m(); }
+          |    protected B b_delegate = new B();
+          |    public void mUser(){ b_delegate.m(); }
           |}
           |
           |class B{ public void m(){} }"""
@@ -397,9 +397,9 @@ class MoveMethodSpec extends TransfoRulesSpec {
         """package p;
           |
           |class A {
-          |   B b = new B();
+          |   B b_delegate = new B();
           |    void mUser(){
-          |        b.m1();
+          |        b_delegate.m1();
           |        m2();
           |    }
           |

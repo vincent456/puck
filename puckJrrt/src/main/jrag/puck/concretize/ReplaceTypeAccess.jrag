@@ -86,6 +86,9 @@ aspect ReplaceTypeAccess {
         if(super.replaceTypeAccess(oldUsed, newUsed)){
             setTarget(null);
             type_reset();
+            for (Access argument : getTypeArgumentList()) {
+                argument.flushTreeCache();
+            }
             lock(type());
             return true;
         }
