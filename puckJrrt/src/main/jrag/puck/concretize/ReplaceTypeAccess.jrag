@@ -77,10 +77,17 @@ aspect ReplaceTypeAccess {
     public boolean ASTNode.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
         boolean replaced = false;
         for(int i = 0; i < getNumChild(); i++)
-            replaced = replaced || getChild(i).replaceTypeAccess(oldUsed, newUsed);
+            replaced = getChild(i).replaceTypeAccess(oldUsed, newUsed) || replaced;
         return replaced;
     }
 
+
+    public boolean EnhancedForStmt.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
+        boolean replaced = super.replaceTypeAccess(oldUsed, newUsed);
+        if(replaced)
+            flushTreeCache();
+        return replaced;
+    }
 
     public boolean TypeAccess.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){
         if( this.decl().equals(oldUsed) ){

@@ -309,6 +309,7 @@ class JavaJastAddDG2AST
     val (resultGraph, reenactor) = resultAndReenactor
     implicit val mapping : NodeId => ASTNodeLink = safeGet(resultGraph, id2declMap)
 
+    val tstr = (reenactor, t).shows
     t match {
       case Add(CNode(n)) =>
         //redo t before createDecl
