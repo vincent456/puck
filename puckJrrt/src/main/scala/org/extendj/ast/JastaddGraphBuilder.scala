@@ -195,7 +195,11 @@ class JastaddGraphBuilder(val program : Program)
     addParams(thisId,
       c.getParameterList.foldRight(SList[NodeId]()) {
       case (pdecl, params) =>
+
         val paramId = this buildNode pdecl
+
+        pdecl.getTypeAccess.lock()
+
         setType(paramId, getType(pdecl.`type`()))
         paramId :: params
     })

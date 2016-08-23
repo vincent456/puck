@@ -71,6 +71,31 @@ class RedirectTypeMemberUsesSpec
 
   }
 
+  scenario("Parameterized type T<X> and argument typed as X - short version"){
+    def code(tName : String) =
+      s"""package fileSystem;
+          |
+          |import java.util.ArrayList;
+          |import java.util.List;
+          |
+          |interface FSElement { }
+          |
+          |public class Directory implements FSElement {
+          |   public void add( $tName d ) { directories.add( d ); }
+          |//   private List<FSElement> temoin;
+          |   private List<$tName> directories = new ArrayList<$tName>();
+          |}"""
+
+    compareWithExpectedAndGenerated( code("Directory"),
+      s => {
+        import s.{graph, idOfFullName}
+
+        Redirection.redirectUsesAndPropagate(graph, ("fileSystem.Directory.add(Directory).d", "fileSystem.Directory"),
+          AccessAbstraction("fileSystem.FSElement", SupertypeAbstraction)).rvalue
+      },
+      code("FSElement"))
+  }
+
   scenario("Parameterized type T<X> and argument typed as X"){
     def code(tName : String) =
       s"""package fileSystem;
@@ -78,33 +103,19 @@ class RedirectTypeMemberUsesSpec
           |import java.util.ArrayList;
           |import java.util.List;
           |
-          |interface FSElement {
-          |   void display(String path);
-          |   void ls();
-          |}
-          |
-          |class File implements FSElement {
-          |   public File( String name ) { this.name = name; }
-          |   public void display(String path){ System.out.println(path+name); }
-          |   public void ls() { display(""); }
-          |   private String name;
-          |}
+          |interface FSElement { void display(String path); }
           |
           |public class Directory implements FSElement {
           |   public Directory( String name ) { this.name = name; }
-          |   public void add( File f ) { files.add( f ); }
           |   public void add( $tName d ) { directories.add( d ); }
           |   public void display(String path) {
           |      System.out.println(path + name);
           |      String npath = path + name +"/";
-          |      for(File f: files)
-          |         f.display(npath);
           |      for($tName d: directories)
           |         d.display(npath);
           |   }
-          |   public void ls(){ display(""); }
           |   private String    name;
-          |   private List<File> files = new ArrayList<File>();
+          |//   private List<FSElement> temoin;
           |   private List<$tName> directories = new ArrayList<$tName>();
           |}"""
 

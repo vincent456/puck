@@ -52,8 +52,9 @@ trait NodeFactory {
         cie.lock()
       buildNode(cie.accessed().asInstanceOf[DGNamedElement])
     case d : Dot => buildNode(d.getRight)
+
     case ac : Access =>
-      if(!ac.isSubstitute)
+      if(!ac.isSubstitute /*&& !ac.accessed().isInstanceOf[TypeVariable]*/)
         ac.lock()
       buildNode(ac.accessed().asInstanceOf[DGNamedElement])
   }

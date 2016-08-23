@@ -100,25 +100,25 @@ class CompositeScenario private ()
       "fileSystem.Directory.add(Directory)").rvalue
 
 
-  def gFinal = g8
+  def gFinal = g2
 }
 
 class CompositeManualRefactoringSpec
   extends FeatureSpec {
 
   scenario("composite ``manual'' refactoring"){
-    val bs = CompositeScenario()
+    val s = CompositeScenario()
 
 //    import puck.TestUtils._
 
 //    println("original")
-//    printMetrics(bs.graph)
+//    printMetrics(s.graph)
 //    println("transformed")
-//    printMetrics(bs.gFinal)
+//    printMetrics(s.gFinal)
 
-    val recompiledEx = bs.applyChangeAndMakeExample(bs.gFinal, outDir)
+    val recompiledEx = s.applyChangeAndMakeExample(s.gFinal, outDir)
 
-    assert( Mapping.equals(bs.gFinal, recompiledEx.graph) )
+    assert( Mapping.equals(s.gFinal, recompiledEx.graph) )
 
   }
 

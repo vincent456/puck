@@ -90,9 +90,23 @@ aspect ReplaceTypeAccess {
                 argument.flushTreeCache();
             }
             lock(type());
+            type().flushTypeVariableLock();
             return true;
         }
         return false;
+    }
+
+    public void ASTNode.flushTypeVariableLock(){
+        for(int i=0; i< getNumChild(); i++){
+            getChild(i).flushTypeVariableLock();
+        }
+    }
+
+    public void TypeAccess.flushTypeVariableLock(){
+        if(accessed() instanceof TypeVariable)
+            setTargetType(null);
+        else
+            super.flushTypeVariableLock();
     }
 
     public boolean ClassInstanceExpr.replaceTypeAccess(TypeDecl oldUsed, TypeDecl newUsed){

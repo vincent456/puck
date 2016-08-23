@@ -178,13 +178,13 @@ object CreateEdge {
   ( implicit logger : PuckLogger) : Unit = (sub, sup) match {
     case (ClassDeclHolder(sDecl), InterfaceDeclHolder(idecl)) =>
       sDecl.addImplements(idecl.createLockedAccess())
-
+      sDecl.flushAttrCache()
     case (InterfaceDeclHolder(ideclSub), InterfaceDeclHolder(ideclSup)) =>
       ideclSub.addSuperInterface(ideclSup.createLockedAccess())
-
+      ideclSub.flushAttrCache()
     case (ClassDeclHolder(subDecl), ClassDeclHolder(superDecl)) =>
       subDecl.setSuperClass(superDecl.createLockedAccess())
-
+      subDecl.flushAttrCache()
     case e => logger.writeln(s"isa($e) not created")
   }
 
