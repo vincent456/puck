@@ -271,13 +271,15 @@ class PuckInterfacePanel
       new ((DependencyGraph, ConstraintsMaps) => SearchControl[DecoratedGraph[Any]]) {
         override val toString = "Blind control"
         def apply(dg : DependencyGraph, cm : ConstraintsMaps) =
-          new BlindControl(graphUtils.Rules, dg, cm, graphUtils.violationsKindPriority).
+          new BlindControl(graphUtils.Rules, dg, cm, control.mutabilitySet,
+            graphUtils.violationsKindPriority).
             asInstanceOf[SearchControl[DecoratedGraph[Any]]]
       },
       new ((DependencyGraph, ConstraintsMaps) => SearchControl[DecoratedGraph[Any]]) {
         override val toString = "Control with Heuristic"
         def apply(dg : DependencyGraph, cm : ConstraintsMaps) =
-          new ControlWithHeuristic(graphUtils.Rules, dg, cm, graphUtils.violationsKindPriority).
+          new ControlWithHeuristic(graphUtils.Rules, dg, cm, control.mutabilitySet,
+            graphUtils.violationsKindPriority).
             asInstanceOf[SearchControl[DecoratedGraph[Any]]]
       }
     )) {

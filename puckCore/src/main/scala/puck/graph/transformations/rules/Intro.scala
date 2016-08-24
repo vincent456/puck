@@ -60,7 +60,7 @@ abstract class Intro {
     val returnType = writeType(graph)
 
     val (cnDecl, defNode, g) =
-      intro.nodeWithDef(graph, "init", initializerKind, returnType, isMutable)
+      intro.nodeWithDef(graph, "init", initializerKind, returnType)
 
     val g2 =
       if(initializedContent.nonEmpty &&
@@ -101,27 +101,23 @@ abstract class Intro {
   def apply
   ( graph : DependencyGraph,
     localName : String,
-    kind : NodeKind,
-    mutable : Mutability = true
+    kind : NodeKind
     ) : (ConcreteNode, DependencyGraph) =
-    graph.comment(s"Intro(g, $localName, $kind)").addConcreteNode(localName, kind, mutable)
+    graph.comment(s"Intro(g, $localName, $kind)").addConcreteNode(localName, kind)
 
   def typedNodeWithDef
   (graph : DependencyGraph,
    localName: String,
    kind : NodeKind,
-   typeNode : NodeId,
-   mutable : Mutability = true
-    )  : (ConcreteNode, ConcreteNode, DependencyGraph) =
-    nodeWithDef(graph, localName, kind, NamedType(typeNode), mutable)
+   typeNode : NodeId
+  )  : (ConcreteNode, ConcreteNode, DependencyGraph) =
+    nodeWithDef(graph, localName, kind, NamedType(typeNode))
 
   def nodeWithDef
   (graph : DependencyGraph,
    localName: String,
    kind : NodeKind,
-   typ : Type,
-   mutable : Mutability = true
-    )  : (ConcreteNode, ConcreteNode, DependencyGraph)
+   typ : Type)  : (ConcreteNode, ConcreteNode, DependencyGraph)
 
   def defaultConstructor
   ( g : DependencyGraph,

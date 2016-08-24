@@ -58,7 +58,7 @@ case object Param extends JavaNodeKind {
 
 object JavaNodeKind extends NodeKindKnowledge {
 
-  val root = ConcreteNode(rootId, rootName, JavaRoot, mutable = true)
+  val root = ConcreteNode(rootId, rootName, JavaRoot)
 
 
   def lightKind : NodeKind = Interface

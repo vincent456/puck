@@ -29,6 +29,7 @@ package puck.gui.menus
 import puck.actions.{RedirectAction0, RemoveEdgeAction}
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
+import puck.graph.transformations.MutabilitySet
 import puck.gui.svg.actions._
 import puck.gui._
 import puck.ignore
@@ -42,6 +43,7 @@ class EdgeMenu
   printingOptionsControl: PrintingOptionsControl,
   blurrySelection : Boolean,
   constraints: Option[ConstraintsMaps],
+  mutability : MutabilitySet.T,
   implicit val graph: DependencyGraph,
   implicit val graphUtils: GraphUtils,
   implicit val nodeKindIcons: NodeKindIcons)
@@ -58,7 +60,7 @@ class EdgeMenu
       if((graph, cm).isViolation(edge)){
         val targetNode = graph.getConcreteNode(target)
         //add(new ManualSolveAction(publisher, targetNode))
-        contents += new TargetedAutoSolveAction(publisher, cm, targetNode, printingOptionsControl)
+        contents += new TargetedAutoSolveAction(publisher, cm, mutability, targetNode, printingOptionsControl)
       }
   }
 

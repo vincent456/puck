@@ -35,10 +35,9 @@ object JavaIntro extends Intro {
   override def apply
   (graph: DependencyGraph,
    localName: String,
-   kind: NodeKind,
-   mutable: Mutability = true
-    ): (ConcreteNode, DependencyGraph) = {
-    val (n, g) = super.apply(graph, localName, kind, mutable)
+   kind: NodeKind
+   ): (ConcreteNode, DependencyGraph) = {
+    val (n, g) = super.apply(graph, localName, kind)
     kind match {
       case Class =>
         val (ctorDecl, _, g1) =
@@ -54,8 +53,7 @@ object JavaIntro extends Intro {
   (graph: DependencyGraph,
    localName: String,
    kind: NodeKind,
-   typ: Type,
-   mutable: Mutability = true
+   typ: Type
     ): (ConcreteNode, ConcreteNode, DependencyGraph) = {
 
     val (cn, g) = this.apply(graph, localName, kind)
@@ -74,7 +72,7 @@ object JavaIntro extends Intro {
     val (cn, _, g2)=
       intro.nodeWithDef(g,
         g.getConcreteNode(typeNode).name, Constructor,
-        NamedType(typeNode), mutable = true)
+        NamedType(typeNode))
     LoggedSuccess((cn, g2.addContains(typeNode, cn.id)))
   }
 }

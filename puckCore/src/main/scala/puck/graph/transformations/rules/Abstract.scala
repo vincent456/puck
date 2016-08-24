@@ -28,39 +28,12 @@ package puck.graph
 package transformations.rules
 
 import puck.graph.ShowDG._
-import puck.graph.constraints.ConstraintsMaps
 import puck.util.LoggedEither._
 
 import scalaz.std.list._
 import scalaz.std.set._
 
 abstract class Abstract {
-
-
-  def absIntroPredicate(impl : DGNode,
-                        absPolicy : AbstractionPolicy,
-                        absKind : NodeKind)
-                       (implicit constraints: ConstraintsMaps) : NodePredicate =
-
-
-    (absKind.kindType, absPolicy) match {
-      case (InstanceValueDecl, SupertypeAbstraction) =>
-        (graph, potentialHost) => {
-          val typeDecl = graph.container(impl.id).get
-          val potentialSuperType = potentialHost.id
-          val canExtends = !(graph, constraints).interloperOf(typeDecl, potentialSuperType)
-          canExtends && graph.nodeKindKnowledge.canContain(graph, potentialHost, absKind)
-        }
-      case (_, SupertypeAbstraction) =>
-        (graph, potentialHost) => !(graph, constraints).interloperOf(impl.id, potentialHost.id) &&
-          graph.nodeKindKnowledge.canContain(graph, potentialHost, absKind)
-
-      case (_, DelegationAbstraction) =>
-        (graph, potentialHost) => !(graph, constraints).interloperOf(potentialHost.id, impl.id) &&
-          graph.nodeKindKnowledge.canContain(graph, potentialHost, absKind)
-    }
-
-
 
   def abstractionName
   ( g: DependencyGraph,

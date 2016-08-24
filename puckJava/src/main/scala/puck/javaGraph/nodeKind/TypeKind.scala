@@ -123,7 +123,7 @@ case object GenericClass extends ClassLike with GenType {
 }
 
 case class Inner(t : TypeKind) extends TypeKind {
-  def canContain(k: NodeKind): Mutability = t.canContain(k)
+  def canContain(k: NodeKind): Boolean = t.canContain(k)
   def abstractionNodeKinds(p: AbstractionPolicy): Seq[NodeKind] = t.abstractionNodeKinds(p)
 
   override def kindType: KindType = InstanceTypeDecl

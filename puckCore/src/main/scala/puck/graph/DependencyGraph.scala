@@ -28,9 +28,8 @@ package puck.graph
 
 import puck.graph.DependencyGraph.AbstractionMap
 import puck.graph.comparison.RecordingComparatorControl
-import puck.search.{SearchEngine, DepthFirstSearchStrategy}
-import puck.util.{PuckNoopLogger, PuckLogger, PuckLog}
-
+import puck.search.{DepthFirstSearchStrategy, SearchEngine}
+import puck.util.{PuckLog, PuckLogger, PuckNoopLogger}
 import puck.graph.transformations.Transformation
 import puck.graph.transformations.Recording.RecordingOps
 
@@ -154,10 +153,9 @@ class DependencyGraph
 
   def addConcreteNode
   ( localName : String,
-    kind : NodeKind,
-    mutable : Mutability = true
+    kind : NodeKind
   ) : (ConcreteNode, DependencyGraph) = {
-    val(n, nIndex) = nodesIndex.addConcreteNode(localName, kind, mutable)
+    val(n, nIndex) = nodesIndex.addConcreteNode(localName, kind)
     (n, newGraph(nodesIndex = nIndex,
       recording = recording.addConcreteNode(n)))
   }
@@ -249,10 +247,6 @@ class DependencyGraph
       t => newGraph(edges = edges.removeType(id),
         recording = recording.removeType(id, t))
     } getOrElse this
-
-
-  def setMutability(id : NodeId, mutable : Boolean) =
-    newGraph(nodesIndex = nodesIndex.setMutability(id, mutable))
 
 
   def exists(e : DGEdge) : Boolean = edges.exists(e)
@@ -524,11 +518,6 @@ class DependencyGraph
   //
   //    aux(contentId, Set(contentId))
   //  }
-  def canContain(n : DGNode, cn : ConcreteNode) : Boolean =
-    nodeKindKnowledge.canContain(this, n,cn)
-
-  def canBe(n : DGNode, cn : ConcreteNode) : Boolean =
-    nodeKindKnowledge.canBe(this)(n,cn)
 
   def containerPath(id : NodeId)  : Seq[NodeId] = {
     def aux(current : NodeId, acc : Seq[NodeId]) : Seq[NodeId] = {

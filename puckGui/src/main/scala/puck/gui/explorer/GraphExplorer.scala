@@ -57,9 +57,9 @@ class GraphExplorer
   contents += new Label("DG Explorer")
   val treeWrapper = new ScrollPane()
 
-  this listenTo control.Bus
+  import control.Bus
 
-  import control.{Bus => bus, graphUtils, printingOptionsControl}
+  this listenTo Bus
 
   var dynamicTree : DynamicDGTree = _
 
@@ -74,17 +74,17 @@ class GraphExplorer
   contents += treeWrapper
 
   val menuBuilder : NodeMenu.Builder =
-    NodeMenu(bus, graphUtils, printingOptionsControl, _, _, _, _)(nodeKindIcons, control.constraints)
+    NodeMenu(control, _, _, _, _)(nodeKindIcons, control.constraints)
 
   reactions += {
     case GraphUpdate(graph) =>
       dynamicTree =
-        new DynamicDGTree(new MutableTreeModel(graph), bus, menuBuilder, nodeKindIcons, control.constraints)
+        new DynamicDGTree(new MutableTreeModel(graph), Bus, menuBuilder, nodeKindIcons, control.constraints)
       displayGraph(buttonVisible = false, Component.wrap(dynamicTree))
 
     case ConstraintsUpdate(graph, cm) =>
       dynamicTree =
-        new DynamicDGTree(new MutableTreeModel(graph), bus, menuBuilder, nodeKindIcons, Some(cm))
+        new DynamicDGTree(new MutableTreeModel(graph), Bus, menuBuilder, nodeKindIcons, Some(cm))
       displayGraph(buttonVisible = false, Component.wrap(dynamicTree))
 
 
@@ -120,14 +120,14 @@ class GraphExplorer
               val menu: JPopupMenu = new JPopupMenu(){
                 add(new AbstractAction("Node infos") {
                   def actionPerformed(e: ActionEvent): Unit =
-                    bus publish NodeClicked(node)
+                    Bus publish NodeClicked(node)
                 })
               }
 
               Swing.onEDT(menu.show(this, e.getX, e.getY))
             }
             else if(node.kind.kindType != NameSpace)
-              bus publish NodeClicked(node)
+              Bus publish NodeClicked(node)
         }
         GraphExplorer.expandAll(this)
       })

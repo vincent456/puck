@@ -52,6 +52,7 @@ class SVGController
     e =>
       new EdgeMenu(genControl.Bus, e, printingOptionsControl, blurrySelection = true,
         genControl.constraints,
+        genControl.mutabilitySet,
         graph, graphUtils, genControl.nodeKindIcons )
   }
 

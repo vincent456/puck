@@ -81,16 +81,16 @@ object ConstraintViolationExplorer {
 import ConstraintViolationExplorer._
 
 class ConstraintViolationExplorer
-(bus : Publisher,
+(control: PuckControl,
  allViolations : Seq[DGEdge],
- printingOptionsControl: PrintingOptionsControl,
  constraints : ConstraintsMaps)
-( implicit graph : DependencyGraph,
-  graphUtils : GraphUtils,
-  treeIcons : NodeKindIcons)
+(implicit graph : DependencyGraph,
+ nodeKindIcons : NodeKindIcons)
   extends SplitPane {
 
-  this listenTo bus
+  import control.Bus
+
+  this listenTo Bus
 
   def filterViolations
   ( sourceFilter : Option[NodeId],
@@ -121,7 +121,7 @@ class ConstraintViolationExplorer
 
   class ViolationTree(handle : ViolationTreeHandle) extends
     JTree(TreeModelAdapter.subGraph(graph, handle.extremities(allViolations))) with DGTree {
-    def icons : NodeKindIcons = treeIcons
+    def icons : NodeKindIcons = nodeKindIcons
 
     override def convertNodeToText(n : DGNode) : String = {
       val vsCount = allViolations.count (e => graph.contains_*(n.id, handle.exty(e)))
@@ -131,17 +131,16 @@ class ConstraintViolationExplorer
     addNodeClickedAction(
       (e, n) =>
       if(isRightClick(e)) Swing.onEDT {
-        val menu = NodeMenu(bus, graphUtils, printingOptionsControl,
-          ConstraintViolationExplorer.this.graph, n.id,
-          List(), None)(treeIcons, constraints)
+        val menu = NodeMenu(control, control.graph, n.id,
+          List(), None)(nodeKindIcons, constraints)
         menu.contents += new Action("Node infos") {
-          def apply() : Unit = bus publish NodeClicked(n)
+          def apply() : Unit = Bus publish NodeClicked(n)
         }
         menu.show(Component wrap ViolationTree.this, e.getX, e.getY)
       } else {
-        bus publish handle.event(n.id)
+        Bus publish handle.event(n.id)
         if(n.kind.kindType != NameSpace)
-          bus publish NodeClicked(n)
+          Bus publish NodeClicked(n)
       }
     )
 
@@ -273,9 +272,12 @@ class ConstraintViolationExplorer
             case mc @ MouseClicked(_,_,_,_,_) =>
               val evt = mc.peer
               if(isRightClick(evt)){
-                val menu : PopupMenu = new ViolationMenu(bus, edge.target, printingOptionsControl, constraints){
+                val menu : PopupMenu = new ViolationMenu(Bus, edge.target,
+                  control.printingOptionsControl, constraints,
+                  control.mutabilitySet)(
+                  graph, control.graphUtils, nodeKindIcons){
                   contents +=  new Action("Focus in graph explorer") {
-                    def apply() : Unit = bus publish GraphFocus(graph, edge)
+                    def apply() : Unit = Bus publish GraphFocus(graph, edge)
                   }
                 }
                 Swing.onEDT(menu.show(this, evt.getX, evt.getY))
@@ -284,7 +286,7 @@ class ConstraintViolationExplorer
                 self.foreground = Color.BLUE
                 focusedLabel foreach (_.foreground = Color.BLACK)
                 focusedLabel = Some(self)
-                bus publish GraphFocus(graph, edge)
+                Bus publish GraphFocus(graph, edge)
               }
           }
         }

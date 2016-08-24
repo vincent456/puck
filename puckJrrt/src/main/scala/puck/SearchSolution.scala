@@ -1,9 +1,9 @@
 package puck
 
 import puck.graph.constraints.ConstraintsMaps
-import puck.graph.constraints.search.{BlindControl, DecoratedGraphEvaluator}
+import puck.graph.constraints.search.BlindControl
 import puck.graph.transformations.Recording
-import puck.graph.{DecoratedGraph, DependencyGraph, LoggedSuccess, Metrics}
+import puck.graph.{DecoratedGraph, DependencyGraph, LoggedSuccess, Metrics, MutabilitySet}
 import puck.jastadd.ExtendJGraphUtils._
 import puck.search._
 import puck.util.{PuckLog, PuckLogger}
@@ -14,13 +14,13 @@ import puck.util.{PuckLog, PuckLogger}
 object SearchSolution {
 
   def apply
-    ( g : DependencyGraph, cm : ConstraintsMaps)
+    ( g : DependencyGraph, cm : ConstraintsMaps, mutabilitySet : MutabilitySet)
     ( implicit logger : PuckLogger)  : Seq[SearchState[DecoratedGraph[_]]] = {
         val f = Metrics.fitness1(_: DependencyGraph, cm, kViols = 1, kComplex = 1).toDouble
 
         //val strategy = new AStarSearchStrategy[DecoratedGraph[Any]](DecoratedGraphEvaluator.equalityByMapping(f))
         val strategy = new BreadthFirstSearchStrategy[DecoratedGraph[Any]]
-        val control = new BlindControl(Rules, g.mileStone, cm, violationsKindPriority).
+        val control = new BlindControl(Rules, g.mileStone, cm, mutabilitySet, violationsKindPriority).
           asInstanceOf[SearchControl[DecoratedGraph[Any]]]
 
         val engine = new SearchEngine(strategy, control, Some(1))
@@ -37,7 +37,8 @@ object SearchSolution {
 
     p.parseConstraints(dg2ast) match {
       case None => logger.writeln("no output constraints")
-      case Some(cm) => this.apply(dg2ast.initialGraph, cm) map (st => (st.uuid(), st.loggedResult)) foreach {
+      case Some(cm) =>
+        this.apply(dg2ast.initialGraph, cm, dg2ast.initialMutability) map (st => (st.uuid(), st.loggedResult)) foreach {
           case (id, LoggedSuccess(_, (g,_))) =>
             import puck.util.FileHelper.FileOps
             val recFile = p.workspace \  s"$baseName-solution$id.pck"

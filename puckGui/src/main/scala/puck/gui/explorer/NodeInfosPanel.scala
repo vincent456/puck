@@ -55,6 +55,7 @@ class NodeInfosPanel
           control.printingOptionsControl,
           blurrySelection = false,
           control.constraints,
+          control.mutabilitySet,
           graph,
           control.graphUtils,
           control.nodeKindIcons).show(c, evt.getX, evt.getY))

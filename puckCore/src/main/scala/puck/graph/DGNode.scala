@@ -31,7 +31,6 @@ sealed trait DGNode{
   val name : String
   val kind : NodeKind
   //def styp(g : DependencyGraph) : Option[Type]
-  val mutable : Boolean
 
   def mapConcrete[A](f : ConcreteNode => A, default : => A) : A
   def name(g : DependencyGraph) : String
@@ -59,15 +58,13 @@ object DGNode {
   def apply(id : NodeId,
             name : String,
             kind : NodeKind,
-            styp : Option[Type],
-            isMutable : Boolean) : DGNode = ConcreteNode(id, name, kind, isMutable)
+            styp : Option[Type]) : DGNode = ConcreteNode(id, name, kind)
 }
 
 case class VirtualNode
 (id : NodeId,
  potentialMatches : Set[NodeId],
  kind : NodeKind) extends DGNode {
-  val mutable = true
 
   def mapConcrete[A](f : ConcreteNode => A, default : => A) : A = default
 
@@ -83,18 +80,14 @@ case class VirtualNode
 case class ConcreteNode
 ( id : NodeId,
   name : String,
-  kind : NodeKind,
-  mutable : Boolean)  extends DGNode {
+  kind : NodeKind)  extends DGNode {
 
 
   def name(g : DependencyGraph) : String = name
 
 
-  override def toString = {
-    val non = if(mutable) ""
-    else "non-"
-    s"($id - $kind $name ${non}mutable)"
-  }
+  override def toString = s"($id - $kind $name)"
+
 
 
   def mapConcrete[A](f : ConcreteNode => A, default : => A) : A = f(this)

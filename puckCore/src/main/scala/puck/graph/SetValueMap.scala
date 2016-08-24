@@ -51,7 +51,7 @@ object CollectionValueMap {
 
     def remove[V](c: List[V], elt: V): List[V] = c filter (_ != elt)
 
-    def contains[V](c: List[V], elt: V): Mutability = c contains elt
+    def contains[V](c: List[V], elt: V): Boolean = c contains elt
 
     def add[V](c: List[V], elt: V): List[V] = elt :: c
 
@@ -69,7 +69,7 @@ object CollectionValueMap {
 
     def remove[V](c: Set[V], elt: V): Set[V] = c - elt
 
-    def contains[V](c: Set[V], elt: V): Mutability = c contains elt
+    def contains[V](c: Set[V], elt: V): Boolean = c contains elt
 
     def add[V](c: Set[V], elt: V): Set[V] = c + elt
 

@@ -28,13 +28,17 @@ package puck
 
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.constraints.search.AutomataState
-import puck.graph.transformations.Recordable
+import puck.graph.transformations.{MutabilitySet, Recordable}
+import puck.graph.transformations.MutabilitySet.MutabilitySetOps
 import puck.util.{Logged, LoggedEither}
 
 import scalaz.Scalaz._
 import scalaz._
 
 package object graph {
+
+  type MutabilitySet = transformations.MutabilitySet.T
+  val MutabilitySet = transformations.MutabilitySet
 
   type Try[+T] = PuckError \/ T
 
@@ -110,10 +114,6 @@ package object graph {
   type Recording = Seq[Recordable]
   val Recording = transformations.Recording
 
-  type Mutability = Boolean
-  val isMutable = true
-  val notMutable = false
-
   type DecoratedGraph[T] = (DependencyGraph, T)
   type SResult = DecoratedGraph[Option[(ConcreteNode, AutomataState)]]
 
@@ -127,6 +127,22 @@ package object graph {
   implicit class GOps(val g : DependencyGraph) extends AnyVal{
     def logComment(msg : String) : LoggedTG =
       LoggedSuccess(msg, g.comment(msg))
+
+    def canContain(container : DGNode, content : ConcreteNode)
+                  ( implicit ms : MutabilitySet.T): Boolean =
+      ms.isMutable(container.id) &&
+        g.nodeKindKnowledge.canContain(g, container, content)
+
+    def canContain(container : DGNode, contentKind : NodeKind)
+                  ( implicit ms : MutabilitySet.T): Boolean =
+      ms.isMutable(container.id) &&
+        g.nodeKindKnowledge.canContain(g, container, contentKind)
+
+    def canBe(sub : DGNode, sup : ConcreteNode)
+             ( implicit ms : MutabilitySet.T ): Boolean =
+      ms.isMutable(sub.id) &&
+        g.nodeKindKnowledge.canBe(g, sub, sup)
+
   }
 
   implicit class LoggedOps[A](val lg: Logged[A]) extends AnyVal {

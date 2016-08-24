@@ -34,7 +34,6 @@ import org.piccolo2d.util.PBounds
 import puck.graph.NodeId
 import puck.piccolo.util.{DecoratorGroup, IdIconTextNode}
 
-import scala.collection.mutable
 import scala.collection.JavaConversions._
 /**
   * Created by Loïc Girault on 31/05/16.
@@ -77,7 +76,7 @@ class DGExpandableNode
   super.addChild(titlePnode)
   super.addChild(body)
 
-  titlePnode.setOffset(margin, margin)
+  titlePnode.setOffset(margin.toDouble, margin.toDouble)
   body.setOffset(margin+padding, titlePnode.getFullBounds.getHeight + margin * 2)
 
 //  def addChilrenEventPropagator(propertyName : String,

@@ -27,7 +27,8 @@
 package puck
 
 import org.extendj.ast.JavaJastAddDG2AST
-import puck.graph.transformations.Recording
+import puck.graph.transformations.{MutabilitySet, Recording}
+import MutabilitySet.MutabilitySetOps
 import puck.graph.transformations.rules.CreateTypeMember
 import puck.jastadd.ExtendJGraphUtils.Rules
 import puck.graph._
@@ -37,11 +38,12 @@ import puck.javaGraph.nodeKind.{Field, Method}
 import puck.util.{PuckFileLogger, PuckLogger, PuckSystemLogger}
 import ShowDG._
 import puck.graph.ConstraintsOps
+
 import scala.util.Random
 
 object MutantGen {
 
-  def legalMoveCandidate(g : DependencyGraph, id : NodeId) = {
+  def legalMoveCandidate(g : DependencyGraph, id : NodeId, mutabilitySet : MutabilitySet.T) = {
 
     lazy val hostType = g container_! id
 
@@ -88,7 +90,7 @@ object MutantGen {
     }
 
 
-    if (n.mutable && (n.kind.kindType  match {
+    if (mutabilitySet.isMutable(n.id) && (n.kind.kindType  match {
       case TypeDecl  | StaticValueDecl => true
       case InstanceValueDecl => hasParameters &&
         ! overridesOrImplements &&
@@ -100,13 +102,16 @@ object MutantGen {
   }
 
 
-  def makeRandomMove(num : Int, g : DependencyGraph, forbiddenDependency : Int, cm : ConstraintsMaps)
-                    (implicit mutantLogger : PuckLogger): DependencyGraph  =
+  def makeRandomMove(num : Int, g : DependencyGraph,
+                     forbiddenDependency : Int,
+                     cm : ConstraintsMaps)
+                    (implicit mutantLogger : PuckLogger,
+                     mutabilitySet: MutabilitySet.T): DependencyGraph  =
     if (num == 0 ) g
     else {
-      var candidate = legalMoveCandidate(g,  Random.nextInt(g.numNodes))
+      var candidate = legalMoveCandidate(g,  Random.nextInt(g.numNodes), mutabilitySet)
       while(candidate.isEmpty)
-        candidate = legalMoveCandidate(g,  Random.nextInt(g.numNodes))
+        candidate = legalMoveCandidate(g,  Random.nextInt(g.numNodes), mutabilitySet)
 
       val n = candidate.get
 
@@ -182,7 +187,8 @@ object MutantGen {
 
     scm foreach {
       cm =>
-        val mutant = makeRandomMove(numberOfmove, initialGraph, (initialGraph, cm).violations.size, cm)(mutantLogger)
+        val mutant = makeRandomMove(numberOfmove, initialGraph,
+          (initialGraph, cm).violations.size, cm)(mutantLogger, dg2ast.initialMutability)
         mutantLogger.writeln((mutant,cm).violations.size + " violations")
 
         Recording.write(recFile.getAbsolutePath, dg2ast.nodesByName, mutant)

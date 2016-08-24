@@ -26,9 +26,9 @@
 
 package puck.graph
 package constraints.search
-
+import puck.graph.GOps
 import puck.graph.constraints.ConstraintsMaps
-import puck.graph.transformations.TransformationRules
+import puck.graph.transformations.{MutabilitySet, TransformationRules}
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, CreateVarStrategy}
 import puck.util.LoggedEither
 import puck.util.LoggedEither._
@@ -41,9 +41,38 @@ import ShowDG._
 /**
   * Created by Loïc Girault on 10/05/16.
   */
+
+object SolvingActions {
+  def absIntroPredicate
+  ( impl : DGNode,
+    absPolicy : AbstractionPolicy,
+    absKind : NodeKind)
+  ( implicit constraints: ConstraintsMaps,
+    ms : MutabilitySet.T) : NodePredicate =
+
+
+    (absKind.kindType, absPolicy) match {
+      case (InstanceValueDecl, SupertypeAbstraction) =>
+        (graph, potentialHost) => {
+          val typeDecl = graph.container(impl.id).get
+          val potentialSuperType = potentialHost.id
+          val canExtends = !(graph, constraints).interloperOf(typeDecl, potentialSuperType)
+          canExtends && graph.canContain(potentialHost, absKind)
+        }
+      case (_, SupertypeAbstraction) =>
+        (graph, potentialHost) => !(graph, constraints).interloperOf(impl.id, potentialHost.id) &&
+          graph.canContain(potentialHost, absKind)
+
+      case (_, DelegationAbstraction) =>
+        (graph, potentialHost) => !(graph, constraints).interloperOf(potentialHost.id, impl.id) &&
+          graph.canContain(potentialHost, absKind)
+    }
+}
+import SolvingActions.absIntroPredicate
 class SolvingActions
 (val rules : TransformationRules,
- implicit val constraints: ConstraintsMaps) {
+ implicit val constraints: ConstraintsMaps,
+ implicit val ms : MutabilitySet.T) {
 
   var newCterNumGen = 0
 
@@ -230,7 +259,7 @@ class SolvingActions
           val absNodeKind = abs.kind(g2)
 
           (hostIntro(g2.getConcreteNode(abs.nodes.head))(g2) ++
-            chooseNode(rules.abstracter.absIntroPredicate(impl,
+            chooseNode(absIntroPredicate(impl,
               abs.policy, absNodeKind))(g2)).map {
             lt => lt.flatMap {
               case (host, g3) =>

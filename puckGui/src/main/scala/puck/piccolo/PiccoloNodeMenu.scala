@@ -38,9 +38,10 @@ import scala.swing.{Action, PopupMenu, Publisher}
 object PiccoloNodeMenu {
   type Builder = (BasicGraphCanvas, DGExpandableNode) => PopupMenu
   def apply(controller: PuckControl,
+            graph : DependencyGraph,
             nodeKindIcons: NodeKindIcons) : Builder =
     (canvas: BasicGraphCanvas,  node: DGExpandableNode) =>
-      new PiccoloNodeMenu(controller, nodeKindIcons, canvas, node)
+      new PiccoloNodeMenu(controller, graph, nodeKindIcons, canvas, node)
 
   def readOnly(b : Publisher, g : DependencyGraph) : Builder =
      (c: BasicGraphCanvas,  n: DGExpandableNode) =>
@@ -146,24 +147,23 @@ trait PReadOnlyMenu {
 }
 
 class PiccoloNodeMenu
-(controller : PuckControl,
+(val controller : PuckControl,
+ g : DependencyGraph,
  nodeKindIcons: NodeKindIcons,
  val canvas : BasicGraphCanvas,
  val node : DGExpandableNode/*,
  selectedNodes : List[NodeId],
  selectedEdge: Option[NodeIdP]*/)
   extends ConcreteNodeMenu(
-    controller.Bus,
-    controller.graph,
-    controller.constraints,
-    controller.graphUtils,
+    controller, g,
     List(),//selectedNodes,
     None,//selectedEdge,
     blurryEdgeSelection = false,
     controller.graph getConcreteNode node.id,
-    controller.printingOptionsControl,
     nodeKindIcons
   ) with PReadOnlyMenu {
+
+  val bus = controller.Bus
 
   override def init() = {
     super.init()

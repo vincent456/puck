@@ -29,7 +29,7 @@ package puck.graph.io
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.{NodeKind, DependencyGraph, NodeId}
 
-trait Visibility{
+sealed abstract class Visibility{
   def opposite : Visibility
 }
 case object Hidden extends Visibility {
@@ -42,8 +42,6 @@ case object Visible extends Visibility {
 object VisibilitySet{
 
   type T = Set[NodeId]
-
-  //def apply() : T =
 
   def allVisible(graph : DependencyGraph) : T = Set[NodeId]()
 
@@ -113,10 +111,6 @@ object VisibilitySet{
     def visibility(id : NodeId) : Visibility =
       if(isVisible(id)) Visible
       else Hidden
-
-
-
-
 
   }
 

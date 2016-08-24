@@ -31,18 +31,19 @@ trait GraphBuilder {
   type NodeIdT = NodeId
   var nodesByName = Map[String, NodeIdT]()
 
+  var fromLibrary = Set[NodeId]()
+
   def getNodeByName( k : String) : NodeIdT = nodesByName(k) //java accessor
 
   def getFullName( id : NodeIdT) : String = g.fullName(id)
 
   def addNode(unambiguousFullName: String,
               localName: String,
-              kind: NodeKind,
-              mutable : Boolean)
+              kind: NodeKind)
              (onCreate : NodeId => Unit = _ => () ): NodeIdT = {
     nodesByName get unambiguousFullName match {
       case None =>
-        val (n, g2) = g.addConcreteNode(localName, kind, mutable)
+        val (n, g2) = g.addConcreteNode(localName, kind)
         //println(s"adding ${n.id} $unambiguousFullName ")
         this.nodesByName += (unambiguousFullName -> n.id)
         g = g2
@@ -50,10 +51,6 @@ trait GraphBuilder {
         n.id
       case Some(id) => id
     }
-  }
-
-  def setMutability(id : NodeIdT, mutable : Boolean): Unit ={
-    g = g.setMutability(id, mutable)
   }
 
   def setType(id : NodeIdT, typ : Type): Unit ={

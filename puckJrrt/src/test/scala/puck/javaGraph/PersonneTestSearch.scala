@@ -46,7 +46,8 @@ object PersonneTestSearch {
 
     implicit val ordering = AStarSearchStrategy.ordering(evaluator)
 
-    val res = solveAllBlind(scenario.graph, constraints, strategy, Some(1))
+    val res = solveAllBlind(scenario.graph, constraints,
+      scenario.initialMutability, strategy, Some(1))
 
     if (res.isEmpty) println("no results")
     else {

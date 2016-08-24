@@ -38,7 +38,7 @@ object JastaddGraphBuilder {
   //JavaAccessor
 
   def isa(n1 : NodeId, n2 : NodeId) =
-      new DGEdge(Isa, n1, n2)
+    new DGEdge(Isa, n1, n2)
 
   def classKind : JavaNodeKind = Class
   def interfaceKind : JavaNodeKind = Interface
@@ -71,14 +71,14 @@ object JastaddGraphBuilder {
     (!access.isQualified) &&
       access.decl().hostType() == access.hostType() ||
       access.isQualified &&
-      access.qualifier.isThisAccess
+        access.qualifier.isThisAccess
 
 
   def qualifierIsSuperAccess(access : TypeMemberAccess) : Boolean =
     (!access.isQualified) &&
       access.decl().hostType() != access.hostType() ||
       access.isQualified &&
-      access.qualifier.isSuperAccess
+        access.qualifier.isSuperAccess
 
 
   type JASTNode = ASTNode[_ <: ASTNode[_]]
@@ -113,11 +113,13 @@ object JastaddGraphBuilder {
 
 class JastaddGraphBuilder(val program : Program)
   extends JavaGraphBuilder
-  with TypeUsage
-  with GraphBuilderVisitor
-  with Registration
-  with NodeFactory {
+    with TypeUsage
+    with GraphBuilderVisitor
+    with Registration
+    with NodeFactory {
   var graph2ASTMap = Map[Int, ASTNodeLink]()
+
+  var synthetic = Set[NodeId]()
 
   def findTypeDecl(typ : String): TypeDecl ={
     val td = program findType typ
@@ -126,15 +128,24 @@ class JastaddGraphBuilder(val program : Program)
     td
   }
 
+  def onCreate(n : DGNamedElement) : NodeId => Unit = {
+    nid =>
+      if(!n.fromSource)
+        fromLibrary += nid
+      else if(n.isSynthetic)
+        synthetic += nid
+  }
+
   def getNode(n : DGNamedElement): NodeId =
-    super.addNode(n.dgFullName(), n.name(), nodeKind(n), n.fromSource && !n.isSynthetic){
+    super.addNode(n.dgFullName(), n.name(), nodeKind(n)){
       nid => n.registerNode(this, nid)
+      onCreate(n)(nid)
     }
 
   import JastaddGraphBuilder.definitionName
   def getDefNode(n : DGNamedElement): NodeId =
-    super.addNode(n.dgFullName() + "." + definitionName, definitionName, Definition, n.fromSource && !n.isSynthetic)()
-  
+    super.addNode(n.dgFullName() + "." + definitionName, definitionName, Definition)(onCreate(n))
+
 
   def attachOrphanNodes(fromId : Int = g.rootId) : Unit = {
     val lastId = g.numNodes - 1
@@ -155,8 +166,8 @@ class JastaddGraphBuilder(val program : Program)
               }
             case Some(tdh : TypedKindDeclHolder) => addApiTypeNode(tdh.decl)
             case Some(ParameterDeclHolder(d)) =>
-              //println("attaching " + d.dgFullName())
-              //addBodyDecl(d.hostBodyDecl())
+            //println("attaching " + d.dgFullName())
+            //addBodyDecl(d.hostBodyDecl())
             case sdh =>
               println( g.fullName(nodeId) + " " + sdh + " attach orphan nodes unhandled case")
               ()
@@ -194,15 +205,15 @@ class JastaddGraphBuilder(val program : Program)
   def astParamsToDGType(thisId : NodeId, c : Callable ) : Unit = {
     addParams(thisId,
       c.getParameterList.foldRight(SList[NodeId]()) {
-      case (pdecl, params) =>
+        case (pdecl, params) =>
 
-        val paramId = this buildNode pdecl
+          val paramId = this buildNode pdecl
 
-        pdecl.getTypeAccess.lock()
+          pdecl.getTypeAccess.lock()
 
-        setType(paramId, getType(pdecl.`type`()))
-        paramId :: params
-    })
+          setType(paramId, getType(pdecl.`type`()))
+          paramId :: params
+      })
   }
 
 
@@ -239,7 +250,7 @@ class JastaddGraphBuilder(val program : Program)
 
     val cterId =
       if(td.isTopLevelType)
-        addPackage(td.packageName(), mutable = false)
+        addPackage(td.packageName(), fromSource = false)
       else
         this buildNode td.getParentNamedNode
 

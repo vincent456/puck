@@ -68,6 +68,8 @@ class ScenarioFactory
   val fullName2id : Map[String, NodeId] = dg2ast.nodesByName
   val dg2astMap : Map[NodeId, ASTNodeLink] = dg2ast.graph2ASTMap
 
+  val initialMutability = dg2ast.initialMutability
+
   def this(code : String) = this {
 //    if(code endsWith ".java" )
 //      JavaJastAddDG2AST.fromFiles(List(code), List(), List(), List())
@@ -106,9 +108,6 @@ class ScenarioFactory
 
   def applyChanges(g: DependencyGraph,
                    outDir : File) : Unit = {
-    val dg2ast = new JavaJastAddDG2AST(program, graph, initialRecord, fullName2id, dg2astMap)
-
-
     dg2ast.apply(g)(logger)
 
     IO.delete(outDir)

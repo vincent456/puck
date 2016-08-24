@@ -98,8 +98,8 @@ object GenConstraintAndSearchSolutions {
     val baseName = genBaseName(i)
     val p = project("src.generated", baseName+".wld")
 
-    val(dg, names2id, cm) =  ConstraintGen(p, baseName, numConstraint)
-    SearchSolution(dg, cm) map (st => (st.uuid(), st.loggedResult)) foreach {
+    val(dg, names2id, cm, mutability) =  ConstraintGen(p, baseName, numConstraint)
+    SearchSolution(dg, cm, mutability) map (st => (st.uuid(), st.loggedResult)) foreach {
           case (id, LoggedSuccess(_, (g,_))) =>
             import puck.util.FileHelper.FileOps
             val recFile = p.workspace \  s"$baseName-solution$id.pck"

@@ -257,7 +257,7 @@ class SVGCanvasListener
         case txtElt: SVGTextElement =>
           checkIfNodeAndGetId(txtElt) foreach {
             nodeId =>
-              val menu: PopupMenu = SVGNodeMenu(controller, nodeId)(treeIcons)
+              val menu: PopupMenu = SVGNodeMenu(controller, controller.graph, nodeId)(treeIcons)
               menu.show(menuInvoker, evt.getClientX, evt.getClientY)
           }
         case _: SVGPathElement

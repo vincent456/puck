@@ -28,7 +28,7 @@ package puck.graph.constraints.search
 
 import puck.graph.{ConcreteNode, _}
 import puck.graph.constraints.ConstraintsMaps
-import puck.graph.transformations.TransformationRules
+import puck.graph.transformations.{MutabilitySet, TransformationRules}
 
 /**
   * Created by Loïc Girault on 10/05/16.
@@ -37,6 +37,7 @@ trait ActionGenerator {
   val rules: TransformationRules
   val initialGraph: DependencyGraph
   val constraints: ConstraintsMaps
+  val mutability : MutabilitySet.T
 
   def mapSeqLoggedTry[S, T](s : Seq[LoggedTry[S]], f : S => T) : Seq[LoggedTry[T]] =
     s map (_ map f)
@@ -44,7 +45,7 @@ trait ActionGenerator {
   def decorate[T](s: Seq[LoggedTry[DependencyGraph]], t : T): Seq[LoggedTry[DecoratedGraph[T]]] =
     mapSeqLoggedTry[DependencyGraph, DecoratedGraph[T]](s, (_, t))
 
-  val actionsGenerator = new SolvingActions(rules, constraints)
+  val actionsGenerator = new SolvingActions(rules, constraints, mutability)
 
   def toSeqLTG[T](s: Seq[LoggedTry[(T, DependencyGraph)]]): Seq[LoggedTry[DependencyGraph]] =
     mapSeqLoggedTry[(T, DependencyGraph), DependencyGraph](s, _._2)

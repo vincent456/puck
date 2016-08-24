@@ -36,9 +36,10 @@ import scala.swing.{Action, PopupMenu}
 object SVGNodeMenu{
 
   def apply(controller : SVGController,
+            graph : DependencyGraph,
             nodeId : NodeId)(implicit treeIcons: NodeKindIcons) : PopupMenu =
     controller.graph.getNode(nodeId) match {
-      case n : ConcreteNode => new SVGConcreteNodeMenu(controller, n, treeIcons)
+      case n : ConcreteNode => new SVGConcreteNodeMenu(controller,graph, n, treeIcons)
       case n : VirtualNode => new VirtualNodeMenu(controller,
         controller.graph,
         controller.graphUtils, n)
@@ -47,18 +48,18 @@ object SVGNodeMenu{
 
 class SVGConcreteNodeMenu
 (controller: SVGController,
+ graph : DependencyGraph,
  node : ConcreteNode,
  treeIcons: NodeKindIcons)
-  extends ConcreteNodeMenu(controller.genControl.Bus,
-    controller.graph,
-    controller.genControl.constraints,
-    controller.graphUtils,
+  extends ConcreteNodeMenu(controller.genControl,
+    graph,
     controller.selectedNodes,
     controller.selectedEdge,
     blurryEdgeSelection = true,
     node,
-    controller.printingOptionsControl,
     treeIcons) {
+
+  import controller.printingOptionsControl
 
   override def init() = {
     super.init()

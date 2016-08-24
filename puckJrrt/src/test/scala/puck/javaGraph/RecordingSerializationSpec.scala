@@ -56,7 +56,7 @@ class RecordingSerializationSpec extends AcceptanceSpec {
 
     scenario("one transformation - add node no type"){
 
-      val t = Transformation(Regular, CNode(ConcreteNode(1, "one", Class, mutable = true)))
+      val t = Transformation(Regular, CNode(ConcreteNode(1, "one", Class)))
       val r1 = t +: Recording()
       writeAndClose(tmpFile){
         Recording.write(_, r1)
@@ -71,8 +71,8 @@ class RecordingSerializationSpec extends AcceptanceSpec {
 
     scenario("two transformations - add node no type x 2"){
 
-      val t = Transformation(Regular, CNode(ConcreteNode(1, "one", Class, mutable = true)))
-      val t2 = Transformation(Regular, CNode(ConcreteNode(2, "two", Class, mutable = true)))
+      val t = Transformation(Regular, CNode(ConcreteNode(1, "one", Class)))
+      val t2 = Transformation(Regular, CNode(ConcreteNode(2, "two", Class)))
 
       val r = t +: t2 +: Recording()
       writeAndClose(tmpFile){
@@ -87,7 +87,7 @@ class RecordingSerializationSpec extends AcceptanceSpec {
 
     scenario("two transformations - add node with arrow type"){
 
-      val t = Transformation(Regular, CNode(ConcreteNode(1, "one", Method, mutable = true)))
+      val t = Transformation(Regular, CNode(ConcreteNode(1, "one", Method)))
       val t1 = Transformation(Regular, AType(1, Arrow(NamedType(0), NamedType(1))))
 
       val r1 = t1 +: t +: Recording()
@@ -102,9 +102,9 @@ class RecordingSerializationSpec extends AcceptanceSpec {
 
     scenario("four transformation - add node with param to form arrow type"){
 
-      val t = Transformation(Regular, CNode(ConcreteNode(1, "one", Method, mutable = true)))
+      val t = Transformation(Regular, CNode(ConcreteNode(1, "one", Method)))
       val t1 = Transformation(Regular, AType(1, NamedType(1)))
-      val t2 = Transformation(Regular, CNode(ConcreteNode(2, "p", Param,  mutable = true)))
+      val t2 = Transformation(Regular, CNode(ConcreteNode(2, "p", Param)))
       val t3 = Transformation(Regular, Edge(ContainsParam(1,2)))
 
 

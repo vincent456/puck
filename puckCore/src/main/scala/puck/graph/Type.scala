@@ -250,7 +250,7 @@ case class ParameterizedType(genType : NodeId, params : List[Type])
   extends Type {
   def makeClone(): Type = copy()
 
-  def uses(id: NodeId): Mutability = genType == id || params.exists(_.ids contains id)
+  def uses(id: NodeId): Boolean = genType == id || params.exists(_.ids contains id)
 
   def ids: List[NodeId] = genType :: params.flatMap(_.ids)
 

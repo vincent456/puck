@@ -29,7 +29,6 @@ package puck.piccolo
 import org.piccolo2d.PNode
 import org.piccolo2d.util.PBounds
 import puck.graph.NodeId
-import scala.collection.mutable
 
 
 /**

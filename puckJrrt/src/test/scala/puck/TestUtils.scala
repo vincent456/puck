@@ -4,7 +4,7 @@ import java.awt.event.WindowEvent
 
 import puck.actions.Choose
 import puck.graph.Metrics._
-import puck.graph.{ConcreteNode, DecoratedGraph, DependencyGraph, LoggedTG, NodeId, SResult}
+import puck.graph.{ConcreteNode, DecoratedGraph, DependencyGraph, LoggedTG, MutabilitySet, NodeId}
 import puck.graph.transformations.Recording
 import puck.jastadd.ExtendJGraphUtils.dotHelper
 import puck.search._
@@ -54,29 +54,11 @@ object TestUtils {
     g0
   }
 
-  def solveAllHeuristic(graph : DependencyGraph, constraints : ConstraintsMaps,
-                        strategyBuilder : StrategyBuilder[SResult],
-                        maxResultTotal : Option[Int]) : Seq[LoggedTG] = {
-    val control = new ControlWithHeuristic(Rules, graph, constraints, violationsKindPriority)
-    val engine = new SearchEngine(strategyBuilder(), control, maxResultTotal )
-    engine.explore()
-    engine.successes map (ss => ss.loggedResult map (_._1))
-  }
-
-  def solveAllBlind(graph : DependencyGraph, constraints : ConstraintsMaps,
+  def solveAllBlind(graph : DependencyGraph, constraints : ConstraintsMaps, mutabilitySet: MutabilitySet,
                        strategy : SearchStrategy[DecoratedGraph[Option[ConcreteNode]]],
                        maxResult : Option[Int]) : Seq[SearchState[DecoratedGraph[Option[ConcreteNode]]]] = {
-    val control = new BlindControl(Rules, graph, constraints, violationsKindPriority)
+    val control = new BlindControl(Rules, graph, constraints, mutabilitySet, violationsKindPriority)
     val engine = new SearchEngine(strategy, control, maxResult)
-    engine.explore()
-    engine.successes
-  }
-  def solveAllBlindEval(graph : DependencyGraph, constraints : ConstraintsMaps,
-                       strategy : SearchStrategy[DecoratedGraph[Option[ConcreteNode]]],
-                           evaluator : Option[Evaluator [DecoratedGraph[Option[ConcreteNode]]]],
-                       maxResult : Option[Int]) : Seq[SearchState[DecoratedGraph[Option[ConcreteNode]]]] = {
-    val control = new BlindControl(Rules, graph, constraints, violationsKindPriority)
-    val engine = new SearchEngine(strategy, control, maxResult, evaluator)
     engine.explore()
     engine.successes
   }

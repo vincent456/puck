@@ -28,6 +28,7 @@ package puck.gui
 package menus
 
 import puck.graph.constraints.ConstraintsMaps
+import puck.graph.transformations.MutabilitySet
 import puck.graph.{DependencyGraph, GraphUtils, NodeId}
 import puck.gui.svg.actions.TargetedAutoSolveAction
 
@@ -40,7 +41,8 @@ class ViolationMenu
 (publisher : Publisher,
  target : NodeId,
  printingOptionsControl: PrintingOptionsControl,
- constraints : ConstraintsMaps)
+ constraints : ConstraintsMaps,
+ mutability : MutabilitySet.T)
 (implicit graph : DependencyGraph,
   graphUtils : GraphUtils,
  nodeKindIcons: NodeKindIcons)
@@ -48,6 +50,7 @@ class ViolationMenu
 
   val targetNode = graph.getConcreteNode(target)
   //add(new ManualSolveAction(publisher, targetNode))
-  contents += new TargetedAutoSolveAction(publisher, constraints, targetNode, printingOptionsControl)
+  contents += new TargetedAutoSolveAction(publisher, constraints, mutability,
+    targetNode, printingOptionsControl)
 
 }

@@ -27,10 +27,11 @@
 package puck
 
 import java.io._
+
 import puck.config.{Config, ConfigParser}
 import puck.graph._
 import puck.graph.constraints.{ConstraintsMaps, ConstraintsParser}
-import puck.graph.transformations.Transformation
+import puck.graph.transformations.{MutabilitySet, Transformation}
 import puck.graph.{DependencyGraph, GraphBuilder}
 import puck.util._
 
@@ -49,6 +50,7 @@ trait DG2ASTBuilder{
 trait DG2AST {
   def apply(graph : DependencyGraph)(implicit logger : PuckLogger) : Unit
   def printCode(dir : File)(implicit logger : PuckLogger) : Unit
+  def initialMutability : MutabilitySet.T
   def initialGraph : DependencyGraph
   def initialRecord : Seq[Transformation]
   def nodesByName : Map[String, NodeId]

@@ -33,6 +33,7 @@ import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.constraints.search.TargetedControlWithHeuristic
 import puck.graph.io.VisibilitySet
+import puck.graph.transformations.MutabilitySet
 import puck.gui.{NodeKindIcons, PrintingOptionsControl}
 import puck.search._
 
@@ -124,6 +125,7 @@ class AutoSolveAction
 class TargetedAutoSolveAction
 (bus : Publisher,
  cm : ConstraintsMaps,
+ mutability : MutabilitySet.T,
  violationTarget : ConcreteNode,
  printingOptionsControl: PrintingOptionsControl)
 (implicit graph : DependencyGraph,
@@ -133,17 +135,17 @@ class TargetedAutoSolveAction
 
   override def apply(): Unit = {
     //val g = graph.mileStone
-    val g = graph.nodes.foldLeft(graph.mileStone) {
+    val g : DependencyGraph = ???/*graph.nodes.foldLeft(graph.mileStone) {
       case (g, n) => n.kind.kindType match {
         case TypeDecl => g.setMutability(n.id, false)
         case _ => g
       }
-    }
+    }*/
 
     val searchControlStrategy =
       new TargetedControlWithHeuristic(
         graphUtils.Rules,
-        g, cm, violationTarget)
+        g, cm, mutability, violationTarget)
 
     val engine =
       new SearchEngine(

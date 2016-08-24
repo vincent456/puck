@@ -111,9 +111,9 @@ object DGNodeWithViolationTreeCellRenderer
   def targetOfViolation(graph : DependencyGraph, constraints: ConstraintsMaps, nodeId : NodeId) : Boolean =
     (graph usersOfExcludingTypeUse nodeId) exists (user => (graph, constraints) isViolation ((user, nodeId)))
 
-  override def getTreeCellRendererComponent(tree: JTree, value: scala.Any, selected: Mutability,
-                                            expanded: Mutability, leaf: Mutability, row: NodeId,
-                                            hasFocus: Mutability): awt.Component = {
+  override def getTreeCellRendererComponent(tree: JTree, value: scala.Any, selected: Boolean,
+                                            expanded: Boolean, leaf: Boolean, row: NodeId,
+                                            hasFocus: Boolean): awt.Component = {
     val c = super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus)
     tree match {
       case dgTree : DGTree =>

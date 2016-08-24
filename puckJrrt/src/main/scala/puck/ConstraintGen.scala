@@ -3,7 +3,7 @@ package puck
 import java.io.{File, FileWriter}
 
 import org.extendj.ast.JavaJastAddDG2AST
-import puck.graph.{DependencyGraph, NodeId, NodeIdP, NodeIdPOps, ShowDG}
+import puck.graph.{DependencyGraph, MutabilitySet, NodeId, NodeIdP, NodeIdPOps, ShowDG}
 import puck.graph.constraints.{ConstraintMapBuilder, ConstraintsMaps, LiteralRangeSet, Scope}
 import puck.jastadd.JavaProject
 import puck.util.{PuckFileLogger, PuckLogger}
@@ -114,7 +114,8 @@ object ConstraintGen {
   }
 
   def apply(p : Project, baseName : String, numConstraint : Int)
-      ( implicit logger : PuckLogger) : (DependencyGraph, Map[String, NodeId], ConstraintsMaps) = {
+      ( implicit logger : PuckLogger) :
+      (DependencyGraph, Map[String, NodeId], ConstraintsMaps, MutabilitySet) = {
     val dg2ast: JavaJastAddDG2AST = p.loadGraph().asInstanceOf[JavaJastAddDG2AST]
 
     val g = dg2ast.initialGraph
@@ -140,6 +141,6 @@ object ConstraintGen {
     fw.close()
 
     logger writeln ((g,cm).violations.size + " violations")
-    (g, dg2ast.nodesByName, cm)
+    (g, dg2ast.nodesByName, cm, dg2ast.initialMutability)
   }
 }

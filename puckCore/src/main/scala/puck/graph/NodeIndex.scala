@@ -82,10 +82,8 @@ case class NodeIndex
 
   def addConcreteNode
   ( localName : String,
-    kind : NodeKind,
-    mutable : Mutability = true
-    ) : (ConcreteNode, NodeIndex) = {
-    val n = ConcreteNode(idSeed + 1, localName, kind, mutable)
+    kind : NodeKind) : (ConcreteNode, NodeIndex) = {
+    val n = ConcreteNode(idSeed + 1, localName, kind)
     (n, addConcreteNode(n))
   }
 
@@ -187,9 +185,4 @@ case class NodeIndex
   def removeRole(id : NodeId) : NodeIndex =
     copy(roles = roles - id)
 
-
-  def setMutability(id : NodeId, mutable : Boolean) : NodeIndex =  {
-    val (n, s) = getConcreteNodeWithStatus(id)
-    setNode(n.copy(mutable = mutable), s)
-  }
 }

@@ -158,7 +158,7 @@ class DGCanvas
 
   def graph = control.graph
 
-  override val menuBuilder = PiccoloNodeMenu(control, nodeKindIcons)
+  override val menuBuilder = PiccoloNodeMenu(control, control.graph, nodeKindIcons)
 
   getRoot.addAttribute("control", control)
 

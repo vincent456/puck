@@ -99,7 +99,7 @@ class MoveNodeDragEventHandler
       sp.foreach{ n =>
         val dgn = control.graph.getNode(n.id)
         val g = control.graph
-        if(g.canContain(dgn, g.getConcreteNode(copy.id)))
+        if(g.canContain(dgn, g.getConcreteNode(copy.id))(control.mutabilitySet))
           new MoveAction(control.Bus, dgn, List(copy.id))(g, control.graphUtils).apply()
         else
           control.logger write s"$dgn cannot contain ${copy.text.getText}"

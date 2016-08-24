@@ -41,6 +41,7 @@ import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scalaz.{-\/, \/-}
 import ShowDG._
+import puck.graph.transformations.MutabilitySet
 object PuckControl {
 
   def apply(graphUtils: GraphUtils, nodeKindIcons : NodeKindIcons, logger : PuckLogger) : PuckControl =
@@ -89,6 +90,7 @@ class PuckControl
   var dg2ast: DG2AST = _
   val graphStack: GraphStack = new GraphStack(Bus)
   var constraints : Option[ConstraintsMaps] = None
+  var mutabilitySet : MutabilitySet.T = Set()
 
   def loadConf(file : File) : Unit = {
     sProject = Some(new Project(ConfigParser(file),
@@ -131,6 +133,8 @@ class PuckControl
 
 
       printingOptionsControl0 = PrintingOptionsControl(dg2ast.initialGraph, Bus)
+
+      mutabilitySet = dg2ast.initialMutability
   } onComplete {
     case Success(_) =>
       logger writeln s"Graph builded : ${dg2ast.initialGraph.nodes.size} nodes"

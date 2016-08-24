@@ -1,7 +1,7 @@
 package puck.search
 
 import java.io.{File, FileWriter}
-
+import puck.ignore
 import puck.graph._
 import puck.Quick
 import puck.graph.constraints.ConstraintsMaps
@@ -19,7 +19,7 @@ object AStarSearchStrategyGraphDisplay {
     val dir = new File(name)
 
     if (!dir.exists())
-      dir.mkdirs()
+      ignore(dir.mkdirs())
     else {
       val files: Array[String] = dir.list()
       files foreach {
@@ -28,7 +28,7 @@ object AStarSearchStrategyGraphDisplay {
           import puck.util.FileHelper.FileOps
           (dir \ f).delete()
       }
-      dir.mkdirs()
+      ignore(dir.mkdirs())
     }
   }
 

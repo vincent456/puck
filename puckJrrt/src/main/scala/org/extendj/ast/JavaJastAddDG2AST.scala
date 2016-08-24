@@ -35,7 +35,7 @@ import puck.config.Config
 import puck.graph.ShowDG._
 import puck.graph._
 import puck.graph.comparison.NodeMappingInitialState
-import puck.graph.transformations._
+import puck.graph.transformations.{MutabilitySet => _, _}
 import puck.graph.transformations.Recording
 import puck.graph.transformations.Transformation._
 import puck.jastadd.concretize._
@@ -43,6 +43,8 @@ import puck.javaGraph.nodeKind._
 import puck.util.PuckLog._
 import puck.util.{PuckLog, PuckLogger}
 import puck.{DG2AST, DG2ASTBuilder, Project, PuckError}
+
+import puck.graph.MutabilitySet.MutabilitySetOps
 
 import scala.{List => SList}
 
@@ -64,6 +66,8 @@ object JavaJastAddDG2AST
 
     new JavaJastAddDG2AST(p, g,
       initialRecord,
+      builder.fromLibrary,
+      builder.synthetic,
       builder.nodesByName,
       builder.graph2ASTMap)
   }
@@ -218,8 +222,19 @@ class JavaJastAddDG2AST
 ( val program : Program,
   val initialGraph : DependencyGraph,
   val initialRecord : Seq[Transformation],
+  val fromLibrary : Set[NodeId],
+  val synthetic : Set[NodeId],
   val nodesByName : Map[String, NodeId],
   val graph2ASTMap : Map[NodeId, ASTNodeLink]) extends DG2AST {
+
+  def mutableNodes : Iterable[NodeId] =
+    initialGraph.nodesId.filterNot(nid => nid == 0 ||
+      (fromLibrary contains nid) ||
+      (synthetic contains nid)
+    )
+
+  def initialMutability : MutabilitySet =
+    MutabilitySet.allImmutable(initialGraph).setMutability(mutableNodes, Mutable)
 
   implicit val p = program
 
@@ -272,7 +287,7 @@ class JavaJastAddDG2AST
     }
 
     logger.writeln("change applied : ")
-    logger.writeln(program.prettyPrint())
+//    logger.writeln(program.prettyPrint())
 
     logger.writeln("unlocking")
     try {
@@ -284,8 +299,8 @@ class JavaJastAddDG2AST
     }
     logger.writeln("done")
 
-//    logger.writeln("Program after unlock : ")
-//    logger.writeln(program.prettyPrint())
+    logger.writeln("Program after unlock : ")
+    logger.writeln(program.prettyPrint())
     logger.writeln("Program after unlock end of print ")
 
 

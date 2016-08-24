@@ -97,9 +97,8 @@ class PuckMainPanel(graphUtils: GraphUtils,
         leftComponent = new BoxPanel(Orientation.Vertical) {
           contents += new Label("Constraints Violations")
           val constraintViolationExplorer =
-            new ConstraintViolationExplorer(control.Bus, violations,
-              control.printingOptionsControl, constraints.get)(graph,
-              control.graphUtils,
+            new ConstraintViolationExplorer(control,
+              violations, constraints.get)(graph,
               nodeKindIcons)
           contents += constraintViolationExplorer
         }

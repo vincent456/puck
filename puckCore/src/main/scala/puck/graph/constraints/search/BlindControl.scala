@@ -20,6 +20,7 @@ class TargetedBlindControl
 ( val rules: TransformationRules,
   val initialGraph: DependencyGraph,
   val constraints: ConstraintsMaps,
+  val mutability : MutabilitySet,
   val violationTarget : ConcreteNode
   ) extends SearchControl[DecoratedGraph[Unit]] //DecoratedGraph[Unit] let us share the DecoratedGraphEvalutaor
   with Blind
@@ -38,6 +39,7 @@ class BlindControl
 (val rules: TransformationRules,
  val initialGraph: DependencyGraph,
  val constraints: ConstraintsMaps,
+ val mutability : MutabilitySet,
  val violationsKindPriority : Seq[NodeKind]
 ) extends SearchControl[DecoratedGraph[Option[ConcreteNode]]]
   with Blind

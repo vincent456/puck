@@ -201,8 +201,8 @@ class MoveMethodSpec extends TransfoRulesSpec {
             |
             |public class B { }
             |"""),
-        bs => {
-          import bs.{graph, idOfFullName}
+        s => {
+          import s.{graph, idOfFullName}
           Move.typeMember(graph.mileStone, List("p1.A.ma(B)"), "p2.B").rvalue
         },
         Seq("""package p1;

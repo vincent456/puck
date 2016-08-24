@@ -40,27 +40,32 @@ trait JavaGraphBuilder extends GraphBuilder{
 
   nodesByName += (g.root.name -> g.rootId)
 
-  val arrayTypeId = addNode("@primitive.[]","[]", GenericClass,  mutable = false)()
+  val arrayTypeId = addNode("@primitive.[]","[]", GenericClass)()
+  fromLibrary += arrayTypeId
 
-  def addPackageNode(fullName: String, localName:String, mutable : Boolean) : NodeIdT =
-    addNode(fullName, localName, Package, mutable)()
+  def addPackageNode(fullName: String, localName:String, fromSource : Boolean) : NodeIdT =
+    addNode(fullName, localName, Package)(
+      pid =>
+        if(!fromSource)
+          fromLibrary += pid
+    )
 
   def definitionOf(nid : NodeId) =
     g.getConcreteNode(nid).definition(g)
 
 
 
-  def addPackage(p : String, mutable : Boolean): NodeIdT =
+  def addPackage(p : String, fromSource : Boolean): NodeIdT =
     nodesByName get p match {
       case None =>
         val fp = filterPackageName(p)
         val path = fp split "[.]"
-        if (path.isEmpty) addPackageNode(fp, fp, mutable)
+        if (path.isEmpty) addPackageNode(fp, fp, fromSource)
         else {
           val (_, n):(StringBuilder, NodeIdT) = path.foldLeft((new StringBuilder(), rootId)){
               case ((sb, nodeParent), p) =>
                 sb append p
-                val nId = addPackageNode(sb.toString(), p, mutable)
+                val nId = addPackageNode(sb.toString(), p, fromSource)
                 addEdge(Contains(nodeParent, nId))
                 sb append "."
                 (sb, nId)

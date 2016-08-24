@@ -32,9 +32,6 @@ import puck.graph.Type.OnImplemNotFound
 import puck.graph.transformations.rules._
 import puck.util.LoggedEither._
 import scalaz.std.list._
-import ShowDG._
-
-
 
 class TransformationRules
 ( mergingCandidatesFinder : MergingCandidatesFinder,
@@ -65,10 +62,6 @@ class TransformationRules
                    ( onImplemNotFound : OnImplemNotFound = Type.ignoreOnImplemNotFound): LoggedTG = {
     val subNode = g.getConcreteNode(sub)
     val supNode = g.getConcreteNode(sup)
-    if(!g.canBe(subNode, supNode))
-      LoggedError(s"${(g, sub).shows} cannot be ${(g, sup).shows}")
-    else {
-
       val subMethods = g.instanceValuesWithType(sub)
       val supMethods = g.instanceValuesWithType(sup)
 
@@ -93,6 +86,4 @@ class TransformationRules
       }
 
     }
-  }
-
 }

@@ -32,6 +32,7 @@ import java.io.File
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.io.VisibilitySet
+import puck.graph.transformations.Mutability
 
 import scala.swing.event.Event
 
@@ -75,6 +76,7 @@ case class GenCode(compareOutput : Boolean) extends PuckEvent
 
 case object PrintingOptionsUpdate extends PuckEvent
 
+case class SetMutability(nodeId: NodeId, mutability: Mutability) extends PuckEvent
 
 sealed abstract class PrintingOptionEvent extends PuckEvent {
   def apply(control : PrintingOptionsControl) : Unit

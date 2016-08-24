@@ -61,7 +61,7 @@ class AStarSearchStrategy[T]
     if (isSuccess(s) && (s.depth < maxDepth)) {
       remainingStates += s
       if (remainingStates.size > maxSize)
-        remainingStates.remove(remainingStates.last)
+        puck.ignore(remainingStates.remove(remainingStates.last))
     }
 
   def popState() : SearchState[T] = {

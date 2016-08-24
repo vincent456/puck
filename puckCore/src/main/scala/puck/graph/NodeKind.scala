@@ -133,19 +133,16 @@ trait NodeKindKnowledge {
   def canContain
   ( graph : DependencyGraph,
     n : DGNode,
-    otherKind : NodeKind) : Boolean =
-    (n.kind canContain otherKind) &&
-      n.mutable
-
-
+    otherKind : NodeKind): Boolean =
+    n.kind canContain otherKind
 
   def kindOfKindType(kindType: KindType) : Seq[NodeKind]
 
-  def canBe(graph : DependencyGraph)
-            (n : DGNode, other : ConcreteNode) : Boolean = {
+  def canBe
+  ( graph : DependencyGraph,
+    n : DGNode, other : ConcreteNode): Boolean = {
     !graph.isa_*(other.id, n.id) && // no cycle !
-      (n.kind canBe other.kind) &&
-      n.mutable
+      (n.kind canBe other.kind)
   }
 
   def writeType(graph : DependencyGraph) : Type

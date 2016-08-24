@@ -31,9 +31,8 @@ import scala.swing.Publisher
 import puck.graph._
 import puck.gui.PushGraph
 
-
 class AddIsaAction
-(controller : Publisher,
+(bus : Publisher,
  sub : ConcreteNode,
  sup : ConcreteNode)
 (implicit graph : DependencyGraph,
@@ -43,12 +42,10 @@ extends Action(s"Add ${sub.name} isa ${sup.name}") {
   import graphUtils.{Rules => TR}
 
   def apply() : Unit =
-    printErrOrPushGraph(controller, "Make SuperType Action failure") {
-      TR.makeSuperType(graph.mileStone, sub.id, sup.id)()
+    printErrOrPushGraph(bus, "Make SuperType Action failure") {
+        TR.makeSuperType(graph.mileStone, sub.id, sup.id)()
     }
 }
-
-
 
 class RemoveEdgeAction
 (controller : Publisher,
@@ -67,8 +64,8 @@ class RemoveEdgeAction
 
 class RemoveNodeAction
 (controller : Publisher,
- node : ConcreteNode)
-(implicit graph : DependencyGraph,
+ graph : DependencyGraph,
+ node : ConcreteNode,
  graphUtils: GraphUtils)
 extends Action(s"Delete node and children") {
 
@@ -83,8 +80,8 @@ extends Action(s"Delete node and children") {
 
 class RenameNodeAction
 (controller : Publisher,
- node : ConcreteNode )
-(implicit graph : DependencyGraph,
+ graph : DependencyGraph,
+ node : ConcreteNode,
  graphUtils: GraphUtils)
   extends Action("Rename") {
 
@@ -102,9 +99,9 @@ class RenameNodeAction
 
 class CreateInitalizerAction
 (controller : Publisher,
- node : ConcreteNode)
-(implicit graph : DependencyGraph,
- graphUtils: GraphUtils)
+graph : DependencyGraph,
+node : ConcreteNode,
+graphUtils: GraphUtils)
   extends Action(s"Create initializer of $node") {
 
   import graphUtils.{Rules => TR}
@@ -112,20 +109,6 @@ class CreateInitalizerAction
   def apply() : Unit =
     printErrOrPushGraph(controller, "Remove Node Action failure"){
       LoggedSuccess(TR.intro.initializer(graph.mileStone, node.id)._2)
-    }
-}
-
-class SetMutabilityAction
-(controller : Publisher,
- node : ConcreteNode,
- mutable : Boolean)
-(implicit graph : DependencyGraph,
- graphUtils: GraphUtils)
-  extends Action(s"Set $node " + (if(mutable) "mutable" else "immutable")) {
-
-  def apply() : Unit =
-    printErrOrPushGraph(controller, "Mutability Action failure"){
-      LoggedSuccess(graph.setMutability(node.id, mutable))
     }
 }
 

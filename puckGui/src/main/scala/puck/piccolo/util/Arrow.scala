@@ -26,7 +26,7 @@
 
 package puck.piccolo.util
 
-import java.awt.{Color, Font, Paint, Stroke}
+import java.awt.{Color, Font, Paint}
 import java.awt.geom.{Path2D, Point2D}
 
 import org.piccolo2d.extras.nodes.{PComposite, PLine}
