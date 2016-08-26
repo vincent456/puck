@@ -76,7 +76,7 @@ object MarauroaLoadRecordAndApplyStepByStep {
 
 object LoadAndSearchSolutions {
 
-  val baseName = "constraint-gen1-05"
+  val baseName = "constraint-gen1-10"
 
   def main(args : Array[String]) : Unit =
     //SearchSolution(project("src.mutant-03moves-02"))

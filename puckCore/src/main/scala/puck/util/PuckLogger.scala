@@ -49,9 +49,6 @@ object PuckLog{
   case object InJavaGraph extends Kind {
     def logString = "JavaGraph"
   }
-  case object Solver extends Kind{
-    def logString = "solver"
-  }
 
   case object GraphComparisonSearch extends Kind{
     def logString = "node mapping"

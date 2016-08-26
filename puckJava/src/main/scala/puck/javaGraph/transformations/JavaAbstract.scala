@@ -60,4 +60,29 @@ object JavaAbstract extends Abstract {
 
     }
 
+  override def createAbsNodeAndUse
+  ( g : DependencyGraph,
+    impl: ConcreteNode,
+    abskind : NodeKind,
+    policy : AbstractionPolicy
+    ) : (Abstraction, DependencyGraph) = {
+    val (abs, g2) = super.createAbsNodeAndUse(g,impl,abskind,policy)
+    val g3 = impl.kind match {
+      case Field =>
+        val ReadWriteAbstraction(Some(get), Some(set)) = abs
+        val clazz = g.container_!(impl.id)
+
+        val setDef = g2.definitionOf_!(set)
+        g2.addEdge(Contains(clazz, get))
+          .addEdge(Contains(clazz, set))
+          .addUses(clazz, clazz)
+          .addUses(setDef, impl.id, Some(Read))
+          // we define a setter that returns the new value to mimic the affectation value
+          // hence the value is also read
+          .addBinding((clazz, clazz), (g2.definitionOf_!(get), impl.id))
+            .addBinding((clazz, clazz), (setDef, impl.id))
+      case _ => g2
+    }
+    (abs, g3)
+  }
 }

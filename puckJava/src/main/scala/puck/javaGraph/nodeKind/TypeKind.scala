@@ -36,7 +36,7 @@ sealed abstract class TypeKind extends JavaNodeKind {
 case object Primitive extends TypeKind {
   def canContain(k: NodeKind) = false
   def abstractionNodeKinds(p : AbstractionPolicy) = Seq()
-    //throw new DGError("do not know how to abstract primitive kind")
+  //throw new DGError("do not know how to abstract primitive kind")
 }
 
 object TypeKind {
@@ -46,7 +46,8 @@ object TypeKind {
     def canContain(k : NodeKind) : Boolean = {
       k match {
         case AbstractMethod
-             | StaticMethod => true
+             | StaticMethod
+             | StaticField  => true
         case _ => false
       }
     }
@@ -77,12 +78,13 @@ object TypeKind {
         case Constructor
              | Field
              | Method
+             | AbstractMethod
              | StaticMethod
-             | AbstractMethod=> true
+             | StaticField => true
         case _ => false
       }
     }
-    
+
 
     def abstractionNodeKinds(p : AbstractionPolicy) : Seq[NodeKind] = p match {
       case SupertypeAbstraction => Seq[NodeKind](Interface, Class/*, GenericInterface, GenericClass*/)

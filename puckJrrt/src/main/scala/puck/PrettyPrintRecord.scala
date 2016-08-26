@@ -47,10 +47,15 @@ object PrettyPrintRecord {
 
   def main (args: Array[String]) : Unit = {
 
+    if(args.isEmpty)
+      println("PrintRecord recFile [projectConfFile]")
     val recFileName = args.head
     val recFile = new File(recFileName)
 
-    val fh = JavaProject()
+    val fh =
+      if(args.length >= 2)
+        JavaProject withConfig args(1)
+      else JavaProject()
     implicit val logger = new PuckSystemLogger(_ => true)
 
     val dg2ast = fh.loadGraph()

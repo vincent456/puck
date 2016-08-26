@@ -1,0 +1,11 @@
+
+aspect GetterSetter {
+    public void MethodDecl.addGetterBody(FieldDeclarator fd){
+        getBody().addStmt(new ReturnStmt(fd.createLockedAccess()));
+    }
+
+    public void MethodDecl.addSetterBody(FieldDeclarator fd){
+        Access a = this.getParameter(0).createLockedAccess();
+        getBody().addStmt(new ExprStmt(new AssignSimpleExpr(fd.createLockedAccess(), a)));
+    }
+}

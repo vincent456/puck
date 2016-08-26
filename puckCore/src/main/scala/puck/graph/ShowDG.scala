@@ -252,14 +252,14 @@ object ShowDG extends ShowConstraints{
 //      builder append print(usedMap, (user : NodeId, used : NodeId) =>
 //        s"$user - ${desambiguatedFullName(dg, user)} uses $used - ${desambiguatedFullName(dg, used)}")
 //
-//      builder.append("\ncontainer -> content\n")
-//      builder append print(contents, (container : NodeId, content : NodeId) =>
-//        s"$container - ${desambiguatedFullName(dg, container)} contains $content - ${desambiguatedFullName(dg, content)}")
-//      builder.append("\ncontent -> container\n")
-//      builder append containers.toList.map {
-//        case (content, container) =>
-//          s"$content - ${desambiguatedFullName(dg, content)} contained by $container - ${desambiguatedFullName(dg, container)}"
-//      }.mkString("\t",",\n\t ","\n")
+      builder.append("\ncontainer -> content\n")
+      builder append print(contents, (container : NodeId, content : NodeId) =>
+        s"$container - ${desambiguatedFullName(dg, container)} contains $content - ${desambiguatedFullName(dg, content)}")
+      builder.append("\ncontent -> container\n")
+      builder append containers.toList.map {
+        case (content, container) =>
+          s"$content - ${desambiguatedFullName(dg, content)} contained by $container - ${desambiguatedFullName(dg, container)}"
+      }.mkString("\t",",\n\t ","\n")
 //
 //      builder.append("\nmethod -> parameters\n")
 //      builder append print(parameters, (container : NodeId, content : NodeId) =>

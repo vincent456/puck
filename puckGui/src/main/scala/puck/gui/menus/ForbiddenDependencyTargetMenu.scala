@@ -27,30 +27,49 @@
 package puck.gui
 package menus
 
-import puck.graph.constraints.ConstraintsMaps
-import puck.graph.transformations.MutabilitySet
-import puck.graph.{DependencyGraph, GraphUtils, NodeId}
+import puck.actions.ChooseAbsAndRedirectMultiAction
+import puck.graph.{ConcreteNode, DependencyGraph, NodeId, NodeIdP}
 import puck.gui.svg.actions.TargetedAutoSolveAction
-
-import scala.swing.{PopupMenu, Publisher}
 
 /**
   * Created by Loïc Girault on 17/12/15.
   */
-class ViolationMenu
-(publisher : Publisher,
- target : NodeId,
- printingOptionsControl: PrintingOptionsControl,
- constraints : ConstraintsMaps,
- mutability : MutabilitySet.T)
-(implicit graph : DependencyGraph,
-  graphUtils : GraphUtils,
- nodeKindIcons: NodeKindIcons)
-  extends PopupMenu {
+object ForbiddenDependencyTargetMenu {
+  def apply(controller : PuckControl,
+            g : DependencyGraph,
+            target : ConcreteNode,
+            nodeKindIcons: NodeKindIcons) :  ForbiddenDependencyTargetMenu =
+    new ForbiddenDependencyTargetMenu(controller, g, List(), None, false, target, nodeKindIcons)
+}
+class ForbiddenDependencyTargetMenu
+(controller : PuckControl,
+ g : DependencyGraph,
+ selectedNodes: List[NodeId],
+  selectedEdge : Option[NodeIdP],
+  blurryEdgeSelection : Boolean,
+ target : ConcreteNode,
+  nodeKindIcons: NodeKindIcons)
+  extends ConcreteNodeMenu(controller, g,
+    selectedNodes,
+    selectedEdge,
+    blurryEdgeSelection,
+    target,
+    nodeKindIcons) {
 
-  val targetNode = graph.getConcreteNode(target)
+  import controller._
+
   //add(new ManualSolveAction(publisher, targetNode))
-  contents += new TargetedAutoSolveAction(publisher, constraints, mutability,
-    targetNode, printingOptionsControl)
+  controller.constraints foreach {
+   cts =>
+
+     val wu = (g,cts).wrongUsers(target.id)
+     contents += new ChooseAbsAndRedirectMultiAction(controller.Bus, g, wu,
+       target.id, graph.abstractions(target.id).toSeq)
+
+    contents += new TargetedAutoSolveAction(Bus,
+      cts, controller.mutabilitySet,
+      target, printingOptionsControl)(graph, graphUtils, nodeKindIcons)
+
+  }
 
 }

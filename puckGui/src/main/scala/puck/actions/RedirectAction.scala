@@ -29,7 +29,8 @@ package puck.actions
 import puck.graph.ShowDG._
 import puck.graph._
 import puck.graph.transformations.rules.Redirection
-
+import puck.util.LoggedEither.FoldLogSyntax
+import scalaz.std.list.listInstance
 import scala.swing.{Action, Publisher}
 
 class DisplayableAbstraction(val abs : Abstraction, graph : DependencyGraph) {
@@ -38,12 +39,11 @@ class DisplayableAbstraction(val abs : Abstraction, graph : DependencyGraph) {
 
 }
 
-class RedirectAction0
+class ChooseAbsAndRedirectAction
 ( controller : Publisher,
+  graph : DependencyGraph,
   edge : NodeIdP,
   abstractions : Seq[Abstraction])
-(implicit graph : DependencyGraph,
- graphUtils: GraphUtils)
   extends Action("Use abstraction instead"){
   def apply() : Unit = {
     println("Choose Abstraction !" + abstractions)
@@ -66,10 +66,9 @@ class RedirectAction0
 
 class RedirectAction
 (controller : Publisher,
+ graph : DependencyGraph,
  edge : NodeIdP,
  abs : Abstraction)
-(implicit graph : DependencyGraph,
- graphUtils: GraphUtils)
   extends Action(s"Use $abs instead of ${(graph, edge.target).shows}"){
 
   //TODO check keepOldUse and propagate redirection value
@@ -77,4 +76,36 @@ class RedirectAction
     printErrOrPushGraph(controller,"Redirection Action failure"){
       Redirection.redirectUsesAndPropagate(graph.mileStone, edge, abs)
     }
+}
+
+
+class ChooseAbsAndRedirectMultiAction
+( controller : Publisher,
+  graph : DependencyGraph,
+  users : List[NodeId],
+  used : NodeId,
+  abstractions : Seq[Abstraction])
+  extends Action("Use abstraction instead"){
+  def apply() : Unit = {
+    println("Choose Abstraction !" + abstractions)
+
+    val dAbstractions = abstractions map (new DisplayableAbstraction(_, graph))
+
+    Choose( "Redirect toward abtraction",
+      s"Choose which abstraction to use instead of ${(graph, used).shows}",
+      dAbstractions) match {
+      case None =>()
+      case Some(dAbs) =>
+        val abs = dAbs.abs
+        printErrOrPushGraph(controller,"Redirection Action failure"){
+          (for{ user <- users
+          } yield (user, used)).foldLoggedEither(graph.mileStone){
+            case (g, u) =>
+              if(g.uses(u.user, u.used))
+                Redirection.redirectUsesAndPropagate(graph.mileStone, u, abs)
+              else LoggedSuccess(g)//redirection might have happened in previous iteration
+          }
+        }
+    }
+  }
 }

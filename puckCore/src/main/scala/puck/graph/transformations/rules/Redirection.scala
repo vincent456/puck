@@ -109,7 +109,7 @@ object Redirection {
    oldUse : NodeIdP,
    newUsed : Abstraction) : LoggedTry[(DependencyGraph, Set[NodeIdP])] =
     try LoggedSuccess {
-      (newUsed, g getAccessKind oldUse ) match {
+      (newUsed, g usesAccessKind oldUse ) match {
         case (AccessAbstraction(absId, _), None) =>
           (oldUse.changeTarget(g, Uses, absId), Set((oldUse.user, absId)))
         case (ReadWriteAbstraction(Some(rid), _), Some(Read)) =>

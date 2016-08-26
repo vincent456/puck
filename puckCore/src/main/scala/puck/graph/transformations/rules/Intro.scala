@@ -56,8 +56,8 @@ abstract class Intro {
           n.kind.isWritable && n.hasDefinitionIn(graph)
       }
 
-    import graph.nodeKindKnowledge.{writeType, initializerKind}
-    val returnType = writeType(graph)
+    import graph.nodeKindKnowledge.{unitType, initializerKind}
+    val returnType = unitType(graph)
 
     val (cnDecl, defNode, g) =
       intro.nodeWithDef(graph, "init", initializerKind, returnType)

@@ -26,7 +26,7 @@
 
 package puck.javaGraph
 
-import puck.graph.{ConcreteNode, NodeId, DependencyGraph, DGNode}
+import puck.graph.{ConcreteNode, DGNode}
 import puck.graph.io.DotHelper
 import puck.javaGraph.nodeKind._
 

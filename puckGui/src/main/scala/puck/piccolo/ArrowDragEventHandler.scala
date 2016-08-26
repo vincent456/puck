@@ -64,7 +64,7 @@ class ArrowDragEventHandler
       case n : IdIconTextNode if uses.target.id != n.id =>
         control.graph.isAbstraction(uses.target.id, n.id) match {
           case Some(abs) =>
-            new RedirectAction(control.Bus, uses.toNodeIdP, abs)(control.graph, control.graphUtils).apply()
+            new RedirectAction(control.Bus, control.graph, uses.toNodeIdP, abs).apply()
           case None =>
             import puck.graph.ShowDG._
             control.Bus publish Log("redirection unhandled " + (control.graph, n.id).shows + " is not an abstraction")

@@ -26,7 +26,7 @@
 
 package puck.gui.menus
 
-import puck.actions.{RedirectAction0, RemoveEdgeAction}
+import puck.actions.{ChooseAbsAndRedirectAction, RemoveEdgeAction}
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.transformations.MutabilitySet
@@ -84,7 +84,7 @@ class EdgeMenu
 
       val abstractions = graph.abstractions(tgt)
       if(abstractions.nonEmpty)
-        ignore(contents += new RedirectAction0(publisher, (src, tgt), abstractions.toSeq))
+        ignore(contents += new ChooseAbsAndRedirectAction(publisher, graph, (src, tgt), abstractions.toSeq))
     }
 
 

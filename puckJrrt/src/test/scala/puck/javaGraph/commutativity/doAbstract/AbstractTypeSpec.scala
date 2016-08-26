@@ -1,40 +1,17 @@
-/*
- * Puck is a dependency analysis and refactoring tool.
- * Copyright (C) 2016 Loïc Girault loic.girault@gmail.com
- *               2016 Mikal Ziane  mikal.ziane@lip6.fr
- *               2016 Cédric Besse cedric.besse@lip6.fr
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License published
- * by the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- *   Additional Terms.
- * Author attributions in that material or in the Appropriate Legal
- * Notices displayed by works containing it is required.
- *
- * Author of this file : Loïc Girault
- */
+package puck.javaGraph.commutativity.doAbstract
 
-package puck.javaGraph.commutativity
-
-
-import puck.graph._
-import puck.graph.comparison.Mapping
-import puck.javaGraph.ScenarioFactory
-import puck.jastadd.ExtendJGraphUtils.Rules
-import puck.javaGraph.nodeKind.{Interface, StaticMethod}
+import puck.Settings._
 import puck.TransfoRulesSpec
-import puck.Settings.outDir
-class AbstractSpec extends TransfoRulesSpec {
+import puck.graph.{AccessAbstraction, SupertypeAbstraction}
+import puck.graph.comparison.Mapping
+import puck.jastadd.ExtendJGraphUtils._
+import puck.javaGraph.ScenarioFactory
+import puck.javaGraph.nodeKind.Interface
+
+/**
+  * Created by Loïc Girault on 26/08/16.
+  */
+class AbstractTypeSpec extends TransfoRulesSpec {
 
 
   feature("Abstract class into interface") {
@@ -76,10 +53,10 @@ class AbstractSpec extends TransfoRulesSpec {
           import bs.{graph, idOfFullName}
 
           val (AccessAbstraction(itc, _), g0) =
-          Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
-            Interface, SupertypeAbstraction).rvalue
+            Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
+              Interface, SupertypeAbstraction).rvalue
           g0.addContains("p", itc)
-      },
+        },
         """package p;
           |class B {}
           |interface A_SupertypeAbstraction { public void m(B b); }
@@ -121,12 +98,12 @@ class AbstractSpec extends TransfoRulesSpec {
         bs => {
           import bs.{graph, idOfFullName}
 
-        val (AccessAbstraction(itc, _), g0) =
-          Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
-            Interface, SupertypeAbstraction).rvalue
+          val (AccessAbstraction(itc, _), g0) =
+            Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
+              Interface, SupertypeAbstraction).rvalue
 
-        g0.addContains("p", itc)
-      },
+          g0.addContains("p", itc)
+        },
         """package p;
           |
           |interface A_SupertypeAbstraction {
@@ -215,10 +192,10 @@ class AbstractSpec extends TransfoRulesSpec {
         bs => {
           import bs.{graph, idOfFullName}
 
-        val (AccessAbstraction(itc, _), g0) =
-          Rules.abstracter.createAbstraction(graph, graph getConcreteNode "p.A",
-            Interface, SupertypeAbstraction).rvalue
-         g0.addContains("p", itc)
+          val (AccessAbstraction(itc, _), g0) =
+            Rules.abstracter.createAbstraction(graph, graph getConcreteNode "p.A",
+              Interface, SupertypeAbstraction).rvalue
+          g0.addContains("p", itc)
         },
         """package p;
           |
@@ -272,46 +249,4 @@ class AbstractSpec extends TransfoRulesSpec {
   }
 
 
-  feature("Abstract constructor") {
-    scenario("static factory method") {
-      compareWithExpectedAndGenerated(
-        """package p;
-           |class FactoryClass{}
-           |class A{}
-        """,
-        bs => {
-          import bs.{graph, idOfFullName}
-          val (AccessAbstraction(factoryMethod, _), g) =
-            Rules.abstracter.createAbstraction(graph, graph getConcreteNode "p.A.A()",
-            StaticMethod, DelegationAbstraction).rvalue
-          g.addContains("p.FactoryClass", factoryMethod)
-        },
-        """package p;
-          |class FactoryClass{ static A create(){return new A();}}
-          |class A{}
-        """)
-    }
-
-    scenario("static factory method with one arg") {
-      compareWithExpectedAndGenerated(
-        """package p;
-          |class FactoryClass{}
-          |class A{ int f; A(int f){this.f = f;} }
-        """,
-        bs => {
-          import bs.{graph, idOfFullName}
-          val (AccessAbstraction(factoryMethod, _), g) =
-            Rules.abstracter.createAbstraction(graph, graph getConcreteNode "p.A.A(int)",
-              StaticMethod, DelegationAbstraction).rvalue
-
-           g.addContains("p.FactoryClass", factoryMethod)
-        },
-        """package p;
-          |class FactoryClass{ static A create(int f){return new A(f);}}
-          |class A{ int f; A(int f){this.f = f;} }
-        """)
-    }
-  }
-
 }
-

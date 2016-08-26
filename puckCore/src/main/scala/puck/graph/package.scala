@@ -28,8 +28,7 @@ package puck
 
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.constraints.search.AutomataState
-import puck.graph.transformations.{MutabilitySet, Recordable}
-import puck.graph.transformations.MutabilitySet.MutabilitySetOps
+import puck.graph.transformations.Recordable
 import puck.util.{Logged, LoggedEither}
 
 import scalaz.Scalaz._
@@ -124,22 +123,24 @@ package object graph {
     def decoration : T = dg._2
   }
 
+  import MutabilitySet.MutabilitySetOps
+
   implicit class GOps(val g : DependencyGraph) extends AnyVal{
     def logComment(msg : String) : LoggedTG =
       LoggedSuccess(msg, g.comment(msg))
 
     def canContain(container : DGNode, content : ConcreteNode)
-                  ( implicit ms : MutabilitySet.T): Boolean =
+                  ( implicit ms : MutabilitySet): Boolean =
       ms.isMutable(container.id) &&
         g.nodeKindKnowledge.canContain(g, container, content)
 
     def canContain(container : DGNode, contentKind : NodeKind)
-                  ( implicit ms : MutabilitySet.T): Boolean =
+                  ( implicit ms : MutabilitySet): Boolean =
       ms.isMutable(container.id) &&
         g.nodeKindKnowledge.canContain(g, container, contentKind)
 
     def canBe(sub : DGNode, sup : ConcreteNode)
-             ( implicit ms : MutabilitySet.T ): Boolean =
+             ( implicit ms : MutabilitySet ): Boolean =
       ms.isMutable(sub.id) &&
         g.nodeKindKnowledge.canBe(g, sub, sup)
 

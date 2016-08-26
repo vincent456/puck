@@ -27,7 +27,7 @@
 package puck.gui
 
 import puck.graph.{DependencyGraph, GraphUtils}
-import puck.gui.explorer.{ConstraintViolationExplorer, NodeInfosPanel}
+import puck.gui.explorer.{ForbiddenDependenciesExplorer, NodeInfosPanel}
 import puck.util.PuckLog
 
 import scala.swing._
@@ -97,7 +97,7 @@ class PuckMainPanel(graphUtils: GraphUtils,
         leftComponent = new BoxPanel(Orientation.Vertical) {
           contents += new Label("Constraints Violations")
           val constraintViolationExplorer =
-            new ConstraintViolationExplorer(control,
+            new ForbiddenDependenciesExplorer(control,
               violations, constraints.get)(graph,
               nodeKindIcons)
           contents += constraintViolationExplorer

@@ -203,7 +203,7 @@ class ConcreteNodeMenu
       graph.abstractions(target).foreach {
         abs =>
           if (abs.nodes.contains(node.id))
-            contents += new RedirectAction(Bus, uses, abs)
+            contents += new RedirectAction(Bus, graph, uses, abs)
       }
 
     def addChangeInitUsesAction(ctorDef: NodeId) =

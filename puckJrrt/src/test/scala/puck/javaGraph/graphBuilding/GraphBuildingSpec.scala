@@ -336,6 +336,16 @@ class GraphBuildingSpec extends AcceptanceSpec {
       }
     }
 
+    scenario("static initializer declaring array list") {
+      val s = new ScenarioFactory(
+        """package p;
+          |
+          |class G<T> {};
+          |public class C {
+          |	  {	G<String> g = new G<String>(); }
+          |}""")
+    }
+
     scenario("anonymous class instanciated in field") {
       val _ = new ScenarioFactory(
         """package p;

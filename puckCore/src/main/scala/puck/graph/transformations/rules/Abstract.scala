@@ -51,7 +51,7 @@ abstract class Abstract {
     ) : Type =
     sUsesAccessKind match {
       case None | Some(Read) => (g styp impl).get
-      case Some(Write) => g.nodeKindKnowledge.writeType(g)
+      case Some(Write) => g.nodeKindKnowledge.writeType(g, impl)
       case Some(RW) => sys.error("should not happen")
   }
 
@@ -80,13 +80,21 @@ abstract class Abstract {
         val (pNode, g3) = g2.addConcreteNode(impl.name, paramKind)
         val g4 = g.styp(impl.id) map (g3.addType(pNode.id, _)) getOrElse g3
 
+        val abs = ReadWriteAbstraction(Some(rNode.id), Some(wNode.id))
+
+        val implTypeId = Type.mainId(g typ impl.id)
         val g5 =
-          g4.addContains(wNode.id, pNode.id)
+          g4.addEdge(ContainsParam(wNode.id, pNode.id))
+            .addAbstraction(impl.id, abs)
+            .addTypeUsesConstraint((impl.id, implTypeId), Sup((rNode.id, Type mainId rType)))
+            .addTypeUsesConstraint((impl.id, implTypeId), Sup((wNode.id, Type mainId wType)))
+            .addTypeUsesConstraint((impl.id, implTypeId), Sub((pNode.id, implTypeId)))
             .addUses(rDef.id, impl.id, Some(Read))
             .addUses(wDef.id, impl.id, Some(Write))
 
-        val abs = ReadWriteAbstraction(Some(rNode.id), Some(wNode.id))
-        (abs, g4.addAbstraction(impl.id, abs))
+
+
+        (abs, g5)
 
       case DelegationAbstraction =>
         val name = abstractionName(g, impl, abskind, policy, None)
@@ -332,9 +340,6 @@ abstract class Abstract {
 //          g2.setRole(absId, Some(Factory(impl.id)))
 //        }
 //        else g2
-//
-
-//
 //    }))
 //
 //  }

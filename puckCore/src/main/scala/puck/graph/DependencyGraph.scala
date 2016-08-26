@@ -601,9 +601,9 @@ class DependencyGraph
   def isaList  : List[(NodeId, NodeId)] = edges.superTypes.flatList
 
   def usesAccessKind(userId: NodeId, usedId: NodeId) : Option[UsesAccessKind] =
-    edges.accessKindMap.get((userId, usedId))
+    usesAccessKind((userId, usedId))
 
-  def getAccessKind(uses: NodeIdP)  : Option[UsesAccessKind] =
+  def usesAccessKind(uses: NodeIdP) : Option[UsesAccessKind] =
     edges getAccessKind uses
 
   def uses(userId: NodeId, usedId: NodeId) : Boolean =

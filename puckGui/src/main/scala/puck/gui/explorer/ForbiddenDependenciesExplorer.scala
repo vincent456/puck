@@ -32,10 +32,11 @@ import java.awt.Color
 import javax.swing.JTree
 
 import puck.graph._
+import puck.graph.ConstraintsOps
 import puck.graph.constraints.ConstraintsMaps
 
 
-import puck.gui.menus.{NodeMenu, ViolationMenu}
+import puck.gui.menus.{NodeMenu, ForbiddenDependencyTargetMenu}
 
 import scala.swing.BorderPanel.Position
 import scala.swing._
@@ -45,7 +46,7 @@ case class FilterSource(filter : NodeId) extends Event
 case class FilterTarget(filter : NodeId) extends Event
 
 
-object ConstraintViolationExplorer {
+object ForbiddenDependenciesExplorer {
   def idToNameString(dg : DependencyGraph, nid : NodeId) : String =
     dg.getNode(nid) match {
       case n : ConcreteNode =>
@@ -78,16 +79,16 @@ object ConstraintViolationExplorer {
   }
 
 }
-import ConstraintViolationExplorer._
+import ForbiddenDependenciesExplorer._
 
-class ConstraintViolationExplorer
+class ForbiddenDependenciesExplorer
 (control: PuckControl,
  allViolations : Seq[DGEdge],
  constraints : ConstraintsMaps)
 (implicit graph : DependencyGraph,
  nodeKindIcons : NodeKindIcons)
   extends SplitPane {
-
+  explorer =>
   import control.Bus
 
   this listenTo Bus
@@ -98,8 +99,8 @@ class ConstraintViolationExplorer
 
     val vs = sourceFilter map (srcId =>
       allViolations.filter(e =>
-      graph.contains_*(srcId, e.source)
-    )) getOrElse allViolations
+        graph.contains_*(srcId, e.source)
+      )) getOrElse allViolations
 
     targetFilter map (tgtId => vs.filter(e =>
       graph.contains_*(tgtId, e.target)
@@ -130,20 +131,23 @@ class ConstraintViolationExplorer
 
     addNodeClickedAction(
       (e, n) =>
-      if(isRightClick(e)) Swing.onEDT {
-        val menu = NodeMenu(control, control.graph, n.id,
-          List(), None)(nodeKindIcons, constraints)
-        menu.contents += new Action("Node infos") {
-          def apply() : Unit = Bus publish NodeClicked(n)
+        if(isRightClick(e)) Swing.onEDT {
+          val menu = if((explorer.graph, explorer.constraints).isWronglyUsed(n.id))
+            ForbiddenDependencyTargetMenu(control, explorer.graph,
+              n.asInstanceOf[ConcreteNode], nodeKindIcons)
+            else
+            NodeMenu(control, explorer.graph, n.id,
+            List(), None)(nodeKindIcons, constraints)
+          menu.contents += new Action("Node infos") {
+            def apply() : Unit = Bus publish NodeClicked(n)
+          }
+          menu.show(Component wrap ViolationTree.this, e.getX, e.getY)
+        } else {
+          Bus publish handle.event(n.id)
+          if(n.kind.kindType != NameSpace)
+            Bus publish NodeClicked(n)
         }
-        menu.show(Component wrap ViolationTree.this, e.getX, e.getY)
-      } else {
-        Bus publish handle.event(n.id)
-        if(n.kind.kindType != NameSpace)
-          Bus publish NodeClicked(n)
-      }
     )
-
   }
 
   val sourceTree = new ViolationTree(new ViolationTreeHandle {
@@ -223,10 +227,10 @@ class ConstraintViolationExplorer
     resizeWeight = 0.5
 
     this.leftComponent = new BorderPanel {
-        add( new Label("Sources"), Position.North)
-        add( new ScrollPane{
-           contents = wrap(sourceTree)
-          }, Position.Center)
+      add( new Label("Sources"), Position.North)
+      add( new ScrollPane{
+        contents = wrap(sourceTree)
+      }, Position.Center)
       add(sourceLabel, Position.South)
 
     }
@@ -272,14 +276,14 @@ class ConstraintViolationExplorer
             case mc @ MouseClicked(_,_,_,_,_) =>
               val evt = mc.peer
               if(isRightClick(evt)){
-                val menu : PopupMenu = new ViolationMenu(Bus, edge.target,
-                  control.printingOptionsControl, constraints,
-                  control.mutabilitySet)(
-                  graph, control.graphUtils, nodeKindIcons){
-                  contents +=  new Action("Focus in graph explorer") {
-                    def apply() : Unit = Bus publish GraphFocus(graph, edge)
-                  }
+                val menu : PopupMenu =
+                  ForbiddenDependencyTargetMenu(control, graph,
+                    graph getConcreteNode edge.target, nodeKindIcons)
+
+                menu.contents +=  new Action("Focus in graph explorer") {
+                  def apply() : Unit = Bus publish GraphFocus(graph, edge)
                 }
+
                 Swing.onEDT(menu.show(this, evt.getX, evt.getY))
               }
               else if(evt.getClickCount > 1) {

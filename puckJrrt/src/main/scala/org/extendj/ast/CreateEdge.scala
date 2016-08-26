@@ -104,8 +104,8 @@ object CreateEdge {
                 createUsesOfConstructor(resultGraph, reenactor, id2declMap, u)
 
 
-//              case (Definition, Field) => ()
-//                createUsesofField(resultGraph, reenactor, id2declMap, u)
+              case (Definition, Field) => ()
+                createUsesofField(resultGraph, reenactor, id2declMap, u)
               case (Definition, Method) if ensureIsInitalizerUseByCtor(reenactor, u)=>
                 createInitializerCall(reenactor, id2declMap, u)
 
@@ -209,26 +209,43 @@ object CreateEdge {
     }
   }
 
-//  def createUsesofField
-//  ( graph: DependencyGraph,
-//    reenactor : DependencyGraph,
-//    id2declMap : NodeId => ASTNodeLink,
-//    e : Uses)
-//  ( implicit logger : PuckLogger) : Unit = {
-//
+  def createUsesofField
+  (graph: DependencyGraph,
+   reenactor : DependencyGraph,
+   id2declMap : NodeId => ASTNodeLink,
+   use : Uses)
+  ( implicit logger : PuckLogger) : Unit = {
+
 //    val typesUsed = reenactor.usedBy(e.used).filter{
 //      id => reenactor.kindType(id) == TypeDecl
 //    }
 //
 //    if (typesUsed.size != 1)
 //      throw new puck.graph.Error(s"require ONE type use got ${typesUsed.size}")
-//
+
 //    val typeUse = Uses(e.used, typesUsed.head)
 //    val tmUses = reenactor.typeMemberUsesOf(typeUse).filter{_.user == e.user}
-//
-//    (id2declMap(e.user), id2declMap(e.used)) match {
-//      case (dh: DefHolder, FieldDeclHolder(newReceiverDecl)) =>
-//        val receiver = newReceiverDecl.createLockedAccess()
+
+    (id2declMap(use.user), id2declMap(use.used)) match {
+      case (dh: DefHolder, fd @ FieldDeclHolder(_, _)) =>
+        val abss = reenactor.abstractions(use.used)
+        val userCter = reenactor container_! use.user
+        if(abss.size == 1) abss.head match {
+          case ReadWriteAbstraction(Some(`userCter`), _) =>
+            val MethodDeclHolder(mdecl) = id2declMap(userCter)
+            mdecl.addGetterBody(fd.declarator)
+          case ReadWriteAbstraction(_, Some(`userCter`)) =>
+            val MethodDeclHolder(mdecl) = id2declMap(userCter)
+            use.accessKind match {
+              case Some(Write) => mdecl.addSetterBody(fd.declarator)
+              case Some(Read) =>  mdecl.addGetterBody(fd.declarator)
+              case _ => puck.error("uses create of field in setter requires an access kind")
+            }
+
+
+          case _ => ()
+        }
+
 //        tmUses.map { u =>
 //          id2declMap(u.used)}.foreach {
 //          case MethodDeclHolder(methUsedDecl) =>
@@ -238,10 +255,10 @@ object CreateEdge {
 //          case used =>
 //            logger.writeln(s"create receiver for $used ignored")
 //        }
-//
-//      case h => throw new puck.graph.Error(s"method decl and field decl expected, got $h")
-//    }
-//  }
+
+      case h => throw new puck.graph.Error(s"method decl and field decl expected, got $h")
+    }
+  }
 
 
   def setPackageDecl

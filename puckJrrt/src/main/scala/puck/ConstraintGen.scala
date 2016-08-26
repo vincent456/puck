@@ -3,7 +3,7 @@ package puck
 import java.io.{File, FileWriter}
 
 import org.extendj.ast.JavaJastAddDG2AST
-import puck.graph.{DependencyGraph, MutabilitySet, NodeId, NodeIdP, NodeIdPOps, ShowDG}
+import puck.graph.{DependencyGraph, MutabilitySet, NameSpace, NodeId, NodeIdP, NodeIdPOps, ShowDG}
 import puck.graph.constraints.{ConstraintMapBuilder, ConstraintsMaps, LiteralRangeSet, Scope}
 import puck.jastadd.JavaProject
 import puck.util.{PuckFileLogger, PuckLogger}
@@ -30,6 +30,25 @@ object ConstraintGen {
       interloper <-candidatesInContainers(use.user)
       if pairFilter(g, hidden, interloper)
     } yield (hidden, interloper)
+  }
+
+  def typeCandidatesInDifferentPackagesWithoutInnerOrSuperTypes
+  ( ignoredPackages : Seq[NodeId])
+  ( g : DependencyGraph, use : NodeIdP ) = {
+    def candidatesFilter(g : DependencyGraph, n : NodeId) =
+      g.getNode(n).kind match {
+        case Interface | Class =>
+          g.directSuperTypes(n).isEmpty && !ignoredPackages.exists(g.contains_*(_, n))
+
+        case _ => false
+      }
+    def rightPairCandidate(g : DependencyGraph, n : NodeId, n2 : NodeId) : Boolean = {
+      val nCter = g.container_!(n)
+      val n2Cter = g.container_!(n2)
+      n != n2 && ! g.contains_*(nCter, n2Cter) && ! g.contains_*(n2Cter, nCter)
+    }
+
+    candidates(g, use, candidatesFilter, rightPairCandidate)
   }
 
   def typeCandidatesInDifferentPackages(g : DependencyGraph, use : NodeIdP ) = {
@@ -73,6 +92,7 @@ object ConstraintGen {
     numConstraint : Int,
     builder : ConstraintMapBuilder) : ConstraintMapBuilder = {
 
+
     def aux(usesList : List[NodeIdP],
             numConstraint : Int,
             builder : ConstraintMapBuilder) : ConstraintMapBuilder =
@@ -104,7 +124,7 @@ object ConstraintGen {
     val projectFileName = root + "/original-puck-cfg.xml"
 
     val numConstraint = 1
-    val baseName = s"constraint-gen$numConstraint-07"
+    val baseName = s"constraint-gen$numConstraint-11"
 
     implicit val logger = new PuckFileLogger(_ => true,
       new File(root + File.separator + baseName + ".log"))
@@ -113,19 +133,27 @@ object ConstraintGen {
     puck.ignore(this.apply(p, baseName, numConstraint))
   }
 
+
   def apply(p : Project, baseName : String, numConstraint : Int)
       ( implicit logger : PuckLogger) :
       (DependencyGraph, Map[String, NodeId], ConstraintsMaps, MutabilitySet) = {
+
     val dg2ast: JavaJastAddDG2AST = p.loadGraph().asInstanceOf[JavaJastAddDG2AST]
 
     val g = dg2ast.initialGraph
 
     val usesList = Random.shuffle(g.usesList)
 
-
-
     logger writeln (usesList.size + " uses")
-    val builder = genConstraints(g, typeCandidatesInDifferentPackages,
+
+    val Some(javaPkg) = DependencyGraph.findElementByName(g, "java")
+    val Some(primPkg) = DependencyGraph.findElementByName(g, "@primitive")
+
+    val libraryPkgs = dg2ast.fromLibrary.toSeq filter (g.kindType(_) == NameSpace)
+    val genCandidates = typeCandidatesInDifferentPackagesWithoutInnerOrSuperTypes(
+      javaPkg.id +: primPkg.id +: libraryPkgs) _
+
+    val builder = genConstraints(g, genCandidates,
       usesList, numConstraint, ConstraintMapBuilder(dg2ast.nodesByName))
 
     val cm = ConstraintsMaps(builder.defs,

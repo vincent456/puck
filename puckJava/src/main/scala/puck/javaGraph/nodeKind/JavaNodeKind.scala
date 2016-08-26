@@ -156,11 +156,17 @@ object JavaNodeKind extends NodeKindKnowledge {
     }
   }
 
-  override def writeType(graph: DependencyGraph): Type = {
-    val sNode = graph.concreteNodes.find(_.name == "void")
-    if(sNode.isEmpty) error("void not loaded")
-    else NamedType(sNode.get.id)
-  }
+  override def unitType(graph: DependencyGraph): Type =
+  {
+   val sNode = DependencyGraph.findElementByName(graph, "@primitive.void")
+   if(sNode.isEmpty) error("void not loaded")
+   else NamedType(sNode.get.id)
+ }
+
+
+  override def writeType(graph: DependencyGraph, writtenValue : NodeId): Type =
+    (graph styp writtenValue).get
+
 
   override def structuredType(graph : DependencyGraph, id : NodeId, params : List[NodeId]) : Option[Type] =
     //assert node is a typed value

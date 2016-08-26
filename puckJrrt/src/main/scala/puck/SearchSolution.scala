@@ -1,9 +1,10 @@
 package puck
 
+import puck.graph.MutabilitySet.MutabilitySetOps
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.constraints.search.BlindControl
-import puck.graph.transformations.Recording
-import puck.graph.{DecoratedGraph, DependencyGraph, LoggedSuccess, Metrics, MutabilitySet}
+import puck.graph.transformations.{Immutable, Recording}
+import puck.graph.{DecoratedGraph, DependencyGraph, LoggedSuccess, Metrics, MutabilitySet, TypeDecl}
 import puck.jastadd.ExtendJGraphUtils._
 import puck.search._
 import puck.util.{PuckLog, PuckLogger}
@@ -35,10 +36,16 @@ object SearchSolution {
            (implicit logger : PuckLogger): Unit = {
     val dg2ast = p.loadGraph()
 
+     val mutability = dg2ast.initialGraph.nodes.foldLeft(dg2ast.initialMutability) {
+       case (s, n) => n.kind.kindType match {
+         case TypeDecl => s.setMutability(n.id, Immutable)
+         case _ => s
+       }
+     }
     p.parseConstraints(dg2ast) match {
       case None => logger.writeln("no output constraints")
       case Some(cm) =>
-        this.apply(dg2ast.initialGraph, cm, dg2ast.initialMutability) map (st => (st.uuid(), st.loggedResult)) foreach {
+        this.apply(dg2ast.initialGraph, cm, mutability) map (st => (st.uuid(), st.loggedResult)) foreach {
           case (id, LoggedSuccess(_, (g,_))) =>
             import puck.util.FileHelper.FileOps
             val recFile = p.workspace \  s"$baseName-solution$id.pck"

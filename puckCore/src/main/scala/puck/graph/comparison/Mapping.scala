@@ -140,10 +140,6 @@ object Mapping {
     }
   }
 
-
-
-
-
   def create
   ( m1 : Map[String, NodeId],
     m2 : Map[String, NodeId]

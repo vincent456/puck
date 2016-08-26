@@ -145,7 +145,8 @@ trait NodeKindKnowledge {
       (n.kind canBe other.kind)
   }
 
-  def writeType(graph : DependencyGraph) : Type
+  def unitType(graph : DependencyGraph) : Type // or void "type"
+  def writeType(graph : DependencyGraph, writtenValue : NodeId) : Type
 
   def defaultKindForNewReceiver : NodeKind
 

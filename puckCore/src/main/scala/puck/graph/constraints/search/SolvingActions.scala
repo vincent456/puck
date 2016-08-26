@@ -254,10 +254,13 @@ class SolvingActions
         case (absNodeKind, absPolicy) =>
           rules.abstracter.createAbstraction(g, impl, absNodeKind, absPolicy)
       } flatMap {
-        case LoggedEither(log, -\/(err)) => Stream(LoggedEither(log, -\/(err)))
-        case LoggedEither(log, \/-((abs, g2))) =>
+        case lt @ LoggedEither(log, -\/(err)) => Stream(lt)
+        case lt @ LoggedEither(log, \/-((abs, g2))) =>
           val absNodeKind = abs.kind(g2)
 
+          //fields abstractions introduced with container
+          if((g2 container abs.nodes.head).nonEmpty) Stream(lt)
+          else
           (hostIntro(g2.getConcreteNode(abs.nodes.head))(g2) ++
             chooseNode(absIntroPredicate(impl,
               abs.policy, absNodeKind))(g2)).map {
@@ -318,7 +321,7 @@ class SolvingActions
         val cannotUseAbstraction: Abstraction => NodeId => Boolean = {
           abs => userId =>
 
-            (abs,  g.getAccessKind((userId, used.id))) match {
+            (abs,  g.usesAccessKind(userId, used.id)) match {
               case (AccessAbstraction(absId, _), _) => (g, constraints).interloperOf(userId, absId)
               case (ReadWriteAbstraction(Some(rid), _), Some(Read)) => (g, constraints).interloperOf(userId, rid)
               case (ReadWriteAbstraction(_, Some(wid)), Some(Write)) => (g, constraints).interloperOf(userId, wid)
