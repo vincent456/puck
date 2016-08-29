@@ -131,7 +131,7 @@ class DependencyGraph
 
   //def withLogger(l : PuckLogger) = newGraph(nLogger = l)
   implicit val defaulVerbosity : PuckLog.Verbosity =
-    (PuckLog.InGraph, PuckLog.Debug)
+  (PuckLog.InGraph, PuckLog.Debug)
   import scala.language.implicitConversions
   implicit def logVerbosity(lvl : PuckLog.Level) : PuckLog.Verbosity =
     (PuckLog.InGraph, lvl)
@@ -460,21 +460,21 @@ class DependencyGraph
 
   //special case alias for readibility
   def declarationOf(defId : NodeId) : NodeId =
-    getNode(defId).kind.kindType match {
-      case ValueDef => container_!(defId)
-      case _ => defId
-    }
+  getNode(defId).kind.kindType match {
+    case ValueDef => container_!(defId)
+    case _ => defId
+  }
 
 
   //special cases of content
   def definitionOf(declId : NodeId) : Option[NodeId] =
-    edges.contents get declId flatMap { ctent =>
-      val s : Set[NodeId] = ctent filter (id =>
-        getNode(id).kind.kindType == ValueDef )
+  edges.contents get declId flatMap { ctent =>
+    val s : Set[NodeId] = ctent filter (id =>
+      getNode(id).kind.kindType == ValueDef )
 
-      //definition may be preceded by type variable decl with gen methods
-      s.headOption
-    }
+    //definition may be preceded by type variable decl with gen methods
+    s.headOption
+  }
 
   def definitionOf_!(declId : NodeId) : NodeId =
     definitionOf(declId).get
@@ -491,33 +491,17 @@ class DependencyGraph
 
   def containsList : List[(NodeId, NodeId)] = edges.contents.flatList
 
+
+  //heavily used by the solver need to be optimized
   def contains_*(containerId : NodeId, contentId : NodeId) : Boolean =
     containerId == contentId || {
-      container(contentId) match {
-        case None => false
-        case Some(id) =>
-          //import ShowDG._
-          //logger.writeln(ShowDG.showDG[NodeId](this).show(id))(PuckLog.Debug)
-          contains_*(containerId, id)
+      var scontent0 : Option[NodeId] = edges.containers get contentId
+      while(scontent0.nonEmpty && scontent0.get != containerId){
+        scontent0 = edges.containers get scontent0.get
       }
+      scontent0.nonEmpty
     }
 
-  //  def contains_*(containerId : NodeId, contentId : NodeId) : Boolean = {
-  //    def aux(nid: NodeId, visited: Set[NodeId]): Boolean =
-  //      containerId == nid || {
-  //        container(nid) match {
-  //          case None => false
-  //          case Some(id) =>
-  //            if(visited contains id)
-  //              error("cycle detected")
-  //            //import ShowDG._
-  //            //logger.writeln(ShowDG.showDG[NodeId](this).show(id))(PuckLog.Debug)
-  //            aux(id, visited + id)
-  //        }
-  //      }
-  //
-  //    aux(contentId, Set(contentId))
-  //  }
 
   def containerPath(id : NodeId)  : Seq[NodeId] = {
     def aux(current : NodeId, acc : Seq[NodeId]) : Seq[NodeId] = {

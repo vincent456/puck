@@ -79,6 +79,6 @@ trait TerminalStateWhenNoViolations[T] {
   val constraints: ConstraintsMaps
 
   override def isTerminalState(t : DecoratedGraph[T]) : Boolean =
-    (t.graph, constraints).violations.isEmpty
+    constraints.noForbiddenDependencies(t.graph)
 }
 

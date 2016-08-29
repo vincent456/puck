@@ -174,7 +174,7 @@ object MutantGen {
 
     val scm = p.parseConstraints(dg2ast)
 
-    val filePrefix = "mutant-01move-01"
+    val filePrefix = "mutant-01move-03"
     import puck.util.FileHelper.FileOps
     val recFile = p.workspace \ s"$filePrefix.pck"
     val logFile = p.workspace \ s"$filePrefix.log"

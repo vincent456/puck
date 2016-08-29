@@ -112,7 +112,7 @@ class SolvingActions
   def findHost
   (toBeContained: ConcreteNode): DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] =
     chooseNode((dg, cn) => dg.canContain(cn, toBeContained) &&
-      !(dg, constraints).isViolation(Contains(cn.id, toBeContained.id)) && {
+      !constraints.isForbidden(dg, cn.id, toBeContained.id) && {
       val dg1 : DependencyGraph =
         dg.container(toBeContained.id) map (dg.removeContains(_, toBeContained.id)) getOrElse dg
       val dg2 = dg1.addContains(cn.id, toBeContained.id)

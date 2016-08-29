@@ -87,22 +87,12 @@ package object graph {
         (graph.usesList filter isViolation map Uses.apply)
     }
 
-    def isViolation(e : NodeIdP) : Boolean = {
-      val (source, target) = e
-      constraints.isViolation(graph, source, target)
-    }
+    def isViolation(e : NodeIdP) : Boolean =
+      constraints.isForbidden(graph, e)
 
-    def isViolation(e : DGEdge) : Boolean = {
-      e.kind match {
-        case AbstractEdgeKind => false
-        case _ => /*Contains | ContainsDef | ContainsParam | Uses | Isa => */
-          constraints.isViolation(graph, e.source, e.target)
-
-      }
-    }
 
     def wrongUsers(id : NodeId) : List[NodeId] = constraints.wrongUsers(graph, id)
-    def interloperOf(id1 : NodeId, id2 :NodeId) = constraints.isViolation(graph, id1, id2)
+    def interloperOf(id1 : NodeId, id2 :NodeId) = constraints.isForbidden(graph, id1, id2)
     def isWronglyUsed(id : NodeId) = constraints.wrongUsers(graph, id).nonEmpty
     def isWronglyContained(id : NodeId) : Boolean = constraints.isWronglyContained(graph, id)
 

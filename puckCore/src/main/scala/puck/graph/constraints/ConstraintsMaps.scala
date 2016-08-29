@@ -32,7 +32,6 @@ import puck.graph.constraints.ConstraintsMaps._
 object ConstraintsMaps{
   type FriendConstraintMap = Map[Range, ConstraintSet]
   type HideConstraintMap = Map [Range, ConstraintSet]
-  type GraphT = DependencyGraph
 
   def apply() = new ConstraintsMaps(Map(), Map(), Map())
 
@@ -50,7 +49,7 @@ case class ConstraintsMaps
   friendConstraints : FriendConstraintMap,
   hideConstraints : HideConstraintMap ) {
 
-  def forAncestors(graph : GraphT, nid : NodeId)(f : Range => Boolean): Boolean ={
+  def forAncestors(graph : DependencyGraph, nid : NodeId)(f : Range => Boolean): Boolean ={
     //visited set in case virtual node introduce a contains loop
     def aux(nids : Seq[NodeId], visited : Set[NodeId]) : Boolean =
     nids match {
@@ -83,7 +82,7 @@ case class ConstraintsMaps
     copy(friendConstraints = addConstraintToMap(friendConstraints, ct))
 
 
-  def friendOf(graph : GraphT, node : NodeId, befriended : NodeId) : Boolean = {
+  def friendOf(graph : DependencyGraph, node : NodeId, befriended : NodeId) : Boolean = {
     forAncestors(graph, befriended){ befriended0 =>
       val frCtSet = friendConstraints.getOrElse(befriended0, ConstraintSet.empty)
       frCtSet.hasFriendRangeThatContains_*(graph, node)
@@ -106,7 +105,7 @@ case class ConstraintsMaps
     aux(usee0,List())
   }*/
 
-  def interloperOf(graph : GraphT, user : NodeId, used : NodeId) : Boolean = {
+  def interloperOf(graph : DependencyGraph, user : NodeId, used : NodeId) : Boolean = {
     val uses = Uses(user, used)
     forAncestors(graph, used){ used1 =>
       !graph.contains_*(used1.nid, user) &&
@@ -114,23 +113,41 @@ case class ConstraintsMaps
     }
   }
 
-  def isViolation(graph : GraphT, user : NodeId, used : NodeId) =
+
+  @inline
+  def isForbidden(graph : DependencyGraph, e : NodeIdP) : Boolean =
+    isForbidden(graph, e.source, e.target)
+
+  @inline
+  def isForbidden(graph : DependencyGraph, user : NodeId, used : NodeId) : Boolean  =
     interloperOf(graph, user, used) && !friendOf(graph, user, used)
 
 
-  def isWronglyContained(graph : GraphT, node : NodeId) : Boolean =
-    graph container node exists (isViolation(graph, _, node))
+  def forbiddenDependencies(graph : DependencyGraph) : Seq[DGEdge] =
+    (graph.containsList filter (isForbidden(graph,_)) map Contains.apply) ++:
+      (graph.usesList filter (isForbidden(graph,_)) map Uses.apply)
+
+  def noForbiddenDependencies(graph: DependencyGraph) : Boolean = {
+    val existForbiddenDependencies =
+      (graph.containsList exists (isForbidden(graph,_))) ||
+        (graph.usesList exists (isForbidden(graph,_)))
+
+    ! existForbiddenDependencies
+  }
+
+  def isWronglyContained(graph : DependencyGraph, node : NodeId) : Boolean =
+    graph container node exists (isForbidden(graph, _, node))
 
 
-  def wrongUsers(graph : GraphT, node : NodeId) : List[NodeId] = {
+  def wrongUsers(graph : DependencyGraph, node : NodeId) : List[NodeId] = {
     graph.usersOf(node).foldLeft(List[NodeId]()){ case(acc, user) =>
-      if( isViolation(graph, user, node) ) user +: acc
+      if( isForbidden(graph, user, node) ) user +: acc
       else acc
     }
   }
 
   // ! \\ do not change hideFrom
-  def addHideFromRootException(graph : GraphT, node : NodeId, friend : NodeId): ConstraintsMaps ={
+  def addHideFromRootException(graph : DependencyGraph, node : NodeId, friend : NodeId): ConstraintsMaps ={
 
     def aux(range : Range, constraintsMap : Map [Range, ConstraintSet]) :
     Map [Range, ConstraintSet] = {

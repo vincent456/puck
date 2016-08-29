@@ -76,13 +76,15 @@ object MarauroaLoadRecordAndApplyStepByStep {
 
 object LoadAndSearchSolutions {
 
-  val baseName = "constraint-gen1-10"
+  val path = "constraint-gen/1rule/10/"
+
+  import puck.util.FileHelper.FileOps
+  val dir = new File(root + File.separator + path)
+  dir.mkdirs()
 
   def main(args : Array[String]) : Unit =
-    //SearchSolution(project("src.mutant-03moves-02"))
-    SearchSolution(project("src.generated", baseName+".wld"),
-      baseName)(new PuckFileLogger(_ => true,
-      new File(root + File.separator + baseName + ".log")))
+    SearchSolution(project("src.generated", path+"decouple.wld"),
+      path)(new PuckFileLogger(_ => true, dir \ "log"))
 }
 
 object GenConstraintAndSearchSolutions {
