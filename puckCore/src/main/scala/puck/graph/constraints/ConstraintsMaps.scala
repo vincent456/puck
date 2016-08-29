@@ -49,31 +49,34 @@ case class ConstraintsMaps
   friendConstraints : FriendConstraintMap,
   hideConstraints : HideConstraintMap ) {
 
-  def forAncestors(graph : DependencyGraph, nid : NodeId)(f : Range => Boolean): Boolean ={
-    //visited set in case virtual node introduce a contains loop
-    def aux(nids : Seq[NodeId], visited : Set[NodeId]) : Boolean =
-    nids match {
-      case Nil => false
-      case id +: remainings =>
+  //heavily used by the solver need to be optimized
+  def forAncestors(graph : DependencyGraph, nid : NodeId)(f : Range => Boolean): Boolean =
+    f(Element(nid)) || {
+      var res = false
+      var toVisit : Seq[NodeId] = Seq(nid)
+      var visited : Set[NodeId] = Set()
+
+      while(!res && toVisit.nonEmpty) {
+        val id = toVisit.head
+        visited += id
+        toVisit = toVisit.tail
+
         graph getNode id match {
           case ConcreteNode(_,_,_) =>
-            f(Scope(id)) || (
-              graph.container(nid) match {
-                case None => false
-                case Some(cid) =>
-                  if(visited contains cid)
-                    aux(remainings, visited + id)
-                  else
-                    aux(cid +: remainings, visited + id)
-              })
+            res = f(Scope(id))
+            graph.edges.containers.get(nid) match {
+              case None => ()
+              case Some(cid) =>
+                if(!(visited contains cid))
+                  toVisit +:= cid
+            }
           case VirtualNode(_, ids, _) =>
-            val toVisit = ids diff visited
-            aux(ids ++: remainings, visited)
+            toVisit = (ids diff visited).toSeq ++: toVisit
         }
-    }
+      }
 
-    f(Element(nid)) || aux(Seq(nid), Set())
-  }
+      res
+    }
 
   def addHideConstraint(ct : Constraint) =
     copy(hideConstraints = addConstraintToMap(hideConstraints, ct))
