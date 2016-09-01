@@ -120,7 +120,7 @@ class Merge
     consumedId : NodeId,
     consumerId : NodeId
   ) : DependencyGraph ={
-    val it : Iterator[(NodeIdP, TypeUseConstraint)] =
+    val it : Iterator[(NodeIdP, TypeConstraint)] =
       g0.kindType(consumedId) match {
       case NameSpace => Iterator.empty
       case TypeDecl =>

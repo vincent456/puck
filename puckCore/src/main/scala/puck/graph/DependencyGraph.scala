@@ -335,7 +335,7 @@ class DependencyGraph private
     typeMemberUse : NodeIdP) : DependencyGraph =
     newGraph(edges = edges.removeUsesDependency(typeUse, typeMemberUse))
 
-  def addTypeUsesConstraint(typeUse : NodeIdP, constraint : TypeUseConstraint) : DependencyGraph =
+  def addTypeUsesConstraint(typeUse : NodeIdP, constraint : TypeConstraint) : DependencyGraph =
     newGraph(edges =
       constraint match {
         case Sub(subTypeUse) => edges.addTypeUsesConstraint(typeUse, subTypeUse)
@@ -344,7 +344,7 @@ class DependencyGraph private
       },
       recording = recording.addTypeUseConstraint(typeUse, constraint))
 
-  def removeTypeUsesConstraint(typeUse : NodeIdP, constraint : TypeUseConstraint) : DependencyGraph =
+  def removeTypeUsesConstraint(typeUse : NodeIdP, constraint : TypeConstraint) : DependencyGraph =
     newGraph(edges =  constraint match {
       case Sub(subTypeUse) => edges.removeTypeUsesConstraint(typeUse, subTypeUse)
       case Sup(supTypeUse) => edges.removeTypeUsesConstraint(supTypeUse, typeUse)
@@ -578,14 +578,17 @@ class DependencyGraph private
     dst.foldLeft(dst) { case (acc, id) => acc ++ subTypes(id) }
   }
 
-  def typeConstraints(typeUse : NodeIdP) : Set[TypeUseConstraint] = {
-    val tucs =  edges.typeUsesConstraints getFlat typeUse
+
+  def typeConstraints(typedNode : NodeId) : Set[TypeConstraint] = {
+    val tucs =  edges.typeConstraints getFlat typedNode
     //tucs foreach checkTypeUseExist
     tucs
   }
 
-  def typeConstraintsIterator : Iterator[(NodeIdP, TypeUseConstraint)] =
-    edges.typeUsesConstraints.iterator
+  def typeConstraintsIterator : Iterator[(NodeId, TypeConstraint)] =
+    edges.typeConstraints.iterator
+
+
 
   def isa(subId : NodeId, superId: NodeId): Boolean =
     edges.isa(subId, superId)

@@ -70,7 +70,7 @@ trait GraphBuilder {
 
 
   def addTypeUsesConstraint(superTypeUse : NodeIdP,
-                            constraint : TypeUseConstraint): Unit =
+                            constraint : TypeConstraint): Unit =
     g = g.addTypeUsesConstraint(superTypeUse, constraint)
 
 

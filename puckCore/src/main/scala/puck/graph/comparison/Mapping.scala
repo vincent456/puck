@@ -258,14 +258,14 @@ object Mapping {
       //        equalsCVM(mappinNodeIdP)(g1.edges.typeUses2typeMemberUsesMap,
       //          g2.edges.typeUses2typeMemberUsesMap)
 
-      def mappinTUC(tuc : TypeUseConstraint) : TypeUseConstraint =
+      def mappinTUC(tuc : TypeConstraint) : TypeConstraint =
         tuc.copyWith(user = mappinG1toG2(tuc.constrainedUser),
           used = mappinG1toG2(tuc.constrainedType))
 
 
       lazy val equalsTypeUseConstraints =
-        equalsCVM(mappinNodeIdP, mappinTUC)(g1.edges.typeUsesConstraints,
-          g2.edges.typeUsesConstraints)
+        equalsCVM(mappinNodeIdP, mappinTUC)(g1.edges.typeConstraints,
+          g2.edges.typeConstraints)
 
 
       println("###############################")

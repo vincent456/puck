@@ -43,7 +43,7 @@ object Operation {
       Seq(n1, n2, n3, n4)
     case RoleChange(id, _, _) => Seq(id)
     case TypeUseConstraintOp((id1, id2), ct) =>
-      val (id3, id4) = ct.constrainedUse
+      val (id3, id4) = ct.typedNode
       Seq(id1, id2, id3, id4)
   }
 }
@@ -196,7 +196,7 @@ case class TypeBinding
 
 case class TypeUseConstraintOp
 ( typeUse : NodeIdP,
-  constraint :  TypeUseConstraint)
+  constraint :  TypeConstraint)
   extends AddRmOperation {
   def execute(g: DependencyGraph , op : Direction) = op match {
     case Regular => g.addTypeUsesConstraint(typeUse, constraint)

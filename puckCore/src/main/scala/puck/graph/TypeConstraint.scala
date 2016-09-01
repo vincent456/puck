@@ -30,43 +30,34 @@ package puck.graph
   * Created by Loïc Girault on 15/04/16.
   */
 
-object TypeUseConstraint {
+object TypeConstraint {
 
-  def comply(g : DependencyGraph, tuc : TypeUseConstraint, t : NodeId) : Boolean = tuc match {
-    case Eq((_, constrainedType)) => constrainedType == t
-    case Sup((_, constrainedType)) => g.isa_*(t, constrainedType)
-    case Sub((_, constrainedType)) => g.isa_*(constrainedType, t)
+  def comply(g : DependencyGraph, tuc : TypeConstraint, n : NodeId) : Boolean = tuc match {
+    case Eq(other) => g.typ(n) == g.typ(other)
+    case Sup(other) =>  g.typ(n).subtypeOf(g, g.typ(other))
+
+    case Sub(other) => g.typ(other).subtypeOf(g, g.typ(n))
 
   }
 
   implicit class NodeIdOps(val gt : (DependencyGraph,NodeId)) extends AnyVal {
     def g = gt._1
     def t = gt._2
-    def complyWith(tuc : TypeUseConstraint) : Boolean = comply(g, tuc ,t)
+    def complyWith(tuc : TypeConstraint) : Boolean = comply(g, tuc ,t)
   }
 }
 
-sealed abstract class TypeUseConstraint {
-  def constrainedUser : NodeId = constrainedUse._1
-  def constrainedType : NodeId = constrainedUse._2
-
-  def constrainedUse : NodeIdP
-
-  def copyWith(user : NodeId = constrainedUser, used : NodeId = constrainedType) : TypeUseConstraint
+sealed abstract class TypeConstraint {
+  def typedNode : NodeId
 }
-
-case class Sup(constrainedUse : NodeIdP) extends TypeUseConstraint{
-
-  def copyWith(user : NodeId , used : NodeId) : Sup =
-    copy((user,used))
+case class Sup(typedNode : NodeId) extends TypeConstraint
+case class Sub(typedNode : NodeId) extends TypeConstraint
+case class Eq(typedNode : NodeId) extends TypeConstraint
+// constraint against the value of type parameter of another node
+sealed abstract class ParTypeConstraint extends TypeConstraint {
+  def typeArgIndex : Int
 }
-case class Sub(constrainedUse : NodeIdP) extends TypeUseConstraint{
+case class ParSup(typedNode : NodeId, typeArgIndex : Int) extends ParTypeConstraint
+case class ParSub(typedNode : NodeIdP, typeArgIndex : Int) extends ParTypeConstraint
+case class ParEq(typedNode : NodeId, typeArgIndex : Int) extends ParTypeConstraint
 
-  def copyWith(user : NodeId , used : NodeId) : Sub =
-    copy((user,used))
-}
-case class Eq(constrainedUse : NodeIdP) extends TypeUseConstraint{
-
-  def copyWith(user : NodeId , used : NodeId) : Eq =
-    copy((user,used))
-}

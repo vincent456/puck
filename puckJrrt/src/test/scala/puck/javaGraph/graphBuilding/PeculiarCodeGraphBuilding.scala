@@ -173,7 +173,7 @@ class PeculiarCodeGraphBuilding extends AcceptanceSpec {
       """package p;
         |import java.util.*;
         |class C {
-        |Map<String, Integer> m = Collections.unmodifiableSortedMap(new TreeMap<String, Integer>());
+        | Map<String, Integer> m = Collections.unmodifiableSortedMap(new TreeMap<String, Integer>());
         |}"""
     ){
       val _ = graph.structuredType("java.util.Collections.unmodifiableSortedMap(SortedMap)")

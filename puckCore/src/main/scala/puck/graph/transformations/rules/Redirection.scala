@@ -292,7 +292,7 @@ object Redirection {
     (log  + log2) <++: ( logTabsId flatMap {
       absId =>
 
-        def update(g : DependencyGraph, tuc : TypeUseConstraint) : DependencyGraph =
+        def update(g : DependencyGraph, tuc : TypeConstraint) : DependencyGraph =
           g.removeTypeUsesConstraint(oldTypeUse, tuc)
             .addTypeUsesConstraint((oldTypeUse.user, absId), tuc)
 
@@ -303,7 +303,7 @@ object Redirection {
 
         tucsToPropagate.foldLoggedEither(g1) {
           case (g0, tuc) =>
-            val (s, t) = tuc.constrainedUse
+            val (s, t) = tuc.typedNode
             //LoggedSuccess( update(g0, tuc) )
             val g1 = update(g0, tuc)
             log <++: (if( t == absId ) LoggedSuccess(g1)

@@ -186,17 +186,17 @@ object ShowDG extends ShowConstraints{
     case Reverse => "Remove"
   }
 
-  val tcOp : TypeUseConstraint => String = {
+  val tcOp : TypeConstraint => String = {
     case Sub(_) => ":>"
     case Eq(_) =>  ":="
     case Sup(_) => ":<"
   }
 
-  implicit def stringOfTypeUseConstraint : DGStringBuilder[TypeUseConstraint] =
-    (dg, tc) => s"${tcOp(tc)} ${stringOfNodeIdP(dg,tc.constrainedUse)}"
+  implicit def stringOfTypeUseConstraint : DGStringBuilder[TypeConstraint] =
+    (dg, tc) => s"${tcOp(tc)} ${stringOfNodeIdP(dg,tc.typedNode)}"
 
 
-  implicit def stringOfTypeConstraint : DGStringBuilder[(NodeIdP, TypeUseConstraint)] = {
+  implicit def stringOfTypeConstraint : DGStringBuilder[(NodeIdP, TypeConstraint)] = {
     case (dg, (tuse, tc)) =>
       val tu1 = stringOfNodeIdP(dg,tuse)
       s"$tu1 ${stringOfTypeUseConstraint(dg, tc)}"
@@ -293,7 +293,7 @@ object ShowDG extends ShowConstraints{
 
       builder.append("\ntypeUsesConstraints\n")
       builder append print(typeUsesConstraints,
-        (k : NodeIdP, v : TypeUseConstraint) => stringOfTypeConstraint(dg,(k,v)))
+        (k : NodeIdP, v : TypeConstraint) => stringOfTypeConstraint(dg,(k,v)))
 
 
       builder.toString()

@@ -27,47 +27,65 @@
 package puck.javaGraph.graphBuilding
 
 import puck.AcceptanceSpec
-import puck.graph._
+
+import puck.graph.{Uses, _}
 import puck.javaGraph.ScenarioFactory
 
 /**
   * Created by Loïc Girault on 06/04/16.
   */
-object TypeConstraintSpec {
-
+object TypeConstraintSpec{
   implicit class GraphTypeOps(val g : DependencyGraph) extends AnyVal {
+    //    private def checkTypeUseExist(tuc : TypeConstraint) : NodeIdP = {
+    //      val (s, t) = tuc.typedNode
+    //      import ShowDG._
+    //      if(g.edges.uses(s,t)) tuc.typedNode
+    //      else error((g,Uses(s,t)).shows + " does not exist")
+    //    }
 
-    private def checkTypeUseExist(tuc : TypeUseConstraint) : NodeIdP = {
-      val (s, t) = tuc.constrainedUse
-      import ShowDG._
-      if(g.edges.uses(s,t)) tuc.constrainedUse
-      else error((g, Uses(s,t)).shows + " does not exist")
-    }
-
-    private def typeUsesConstrained(typeUse: NodeIdP)(f: TypeUseConstraint => Boolean): Set[NodeIdP] =
-      g.edges.typeUsesConstraints getFlat typeUse filter f map checkTypeUseExist
+    private def typeUsesConstrained(typedNode: NodeId)(f: TypeConstraint => Boolean): Set[NodeId] =
+      g.edges.typeConstraints getFlat typedNode filter f map  (_.typedNode)//checkTypeUseExist
 
 
-    def usesThatShouldUsesASubtypeOf(typeUse: NodeIdP): Set[NodeIdP] =
-      typeUsesConstrained(typeUse) {
+    def nodesThatShouldBeASubtypeOf(typedNode: NodeId): Set[NodeId] =
+      typeUsesConstrained(typedNode) {
         case Sub(_) => true
         case _ => false
       }
 
-    def usesThatShouldUsesASuperTypeOf(typeUse: NodeIdP): Set[NodeIdP] =
-      typeUsesConstrained(typeUse) {
+    def nodesThatShouldBeASupertypeOf(typedNode: NodeId): Set[NodeId] =
+      typeUsesConstrained(typedNode) {
         case Sup(_) => true
         case _ => false
       }
 
-    def usesThatShouldUsesSameTypeAs(typeUse: NodeIdP): Set[NodeIdP] =
-      typeUsesConstrained(typeUse) {
+    def nodesThatShouldHaveSameTypeAs(typedNode: NodeId): Set[NodeId] =
+      typeUsesConstrained(typedNode) {
         case Eq(_) => true
+        case _ => false
+      }
+
+    def nodesThatShouldBeASubtypeOf(typedNode: NodeId, typeArgIdx : Int): Set[NodeId] =
+      typeUsesConstrained(typedNode) {
+        case ParSub(_, `typeArgIdx`) => true
+        case _ => false
+      }
+
+    def nodesThatShouldBeASupertypeOf(typedNode: NodeId, typeArgIdx : Int): Set[NodeId] =
+      typeUsesConstrained(typedNode) {
+        case ParSup(_, `typeArgIdx`) => true
+        case _ => false
+      }
+
+    def nodesThatShouldHaveSameTypeAs(typedNode: NodeId, typeArgIdx : Int): Set[NodeId] =
+      typeUsesConstrained(typedNode) {
+        case ParEq(_, `typeArgIdx`) => true
         case _ => false
       }
   }
 }
-import TypeConstraintSpec._
+import TypeConstraintSpec.GraphTypeOps
+
 class TypeConstraintSpec extends AcceptanceSpec {
 
   scenario("Field init") {
@@ -78,7 +96,7 @@ class TypeConstraintSpec extends AcceptanceSpec {
         |
         |class B {  A a = new A(); } """
     ) {
-      graph.usesThatShouldUsesASubtypeOf(("p.B.a", "p.A")) should contain ( ("p.A.A()", "p.A") : NodeIdP)
+      graph.nodesThatShouldBeASubtypeOf("p.B.a") should contain ( "p.A.A()" : NodeId)
     }
   }
 
@@ -90,7 +108,7 @@ class TypeConstraintSpec extends AcceptanceSpec {
         |
         |class B {  A a;  void m(){ a = new A(); }  } """
     ) {
-      graph.usesThatShouldUsesASubtypeOf(("p.B.a", "p.A")) should contain ( ("p.A.A()", "p.A") : NodeIdP)
+      graph.nodesThatShouldBeASubtypeOf("p.B.a") should contain ( "p.A.A()" : NodeId )
     }
   }
 
@@ -108,9 +126,9 @@ class TypeConstraintSpec extends AcceptanceSpec {
 
       graph.styp("p.B.wa").value should be (ParameterizedType("p.Wrapper", List(NamedType("p.A"))))
 
-      graph.usesThatShouldUsesSameTypeAs(("p.B.wa", "p.A")) should contain ( ("p.B.wa.Definition", "p.A") : NodeIdP )
-      graph.usesThatShouldUsesASuperTypeOf(("p.Wrapper.Wrapper()", "p.Wrapper")) should contain ( ("p.B.wa", "p.Wrapper") : NodeIdP )
-      graph.usesThatShouldUsesASubtypeOf(("p.B.wa", "p.Wrapper")) should contain (  ("p.Wrapper.Wrapper()", "p.Wrapper") : NodeIdP)
+      graph.nodesThatShouldHaveSameTypeAs("p.B.wa") should contain ( ??? : NodeId )
+      graph.nodesThatShouldBeASupertypeOf( ??? ) should contain ( "p.B.wa" : NodeId )
+      graph.nodesThatShouldBeASubtypeOf("p.B.wa") should contain (  ??? : NodeId)
 
     }
   }
@@ -145,7 +163,7 @@ class TypeConstraintSpec extends AcceptanceSpec {
         | void m(){ la1.add(la2.get(0)); }
         |} """
     ){
-      graph.usesThatShouldUsesASuperTypeOf(("p.B.la2", "p.A")) should contain (("p.B.la1", "p.A") : NodeIdP)
+      graph.nodesThatShouldBeASupertypeOf(("p.B.la2", "p.A")) should contain (("p.B.la1", "p.A") : NodeIdP)
     }
   }
 
@@ -182,7 +200,7 @@ class TypeConstraintSpec extends AcceptanceSpec {
 
     graph.typeMemberUsesOf(("p.B.assignA().Definition", "p.A")).size should be (1)
 
-    graph.usesThatShouldUsesASuperTypeOf(("p.B.wa", "p.A")) should contain (("p.B.assignA().Definition", "p.A") : NodeIdP)
+    graph.nodesThatShouldBeASupertypeOf(("p.B.wa", "p.A")) should contain (("p.B.assignA().Definition", "p.A") : NodeIdP)
   }
 
   scenario("generic - type uses  constraint between type parameter and variable declaration type - foreach case"){
@@ -215,7 +233,7 @@ class TypeConstraintSpec extends AcceptanceSpec {
       graph.typeMemberUsesOf(methodTypeUse) should contain (methodTypeMemberUse)
       graph.typeMemberUsesOf(methodTypeUse).size should be (1)
 
-      graph.usesThatShouldUsesASuperTypeOf(fieldParameterTypeUse) should contain (methodTypeUse)
+      graph.nodesThatShouldBeASupertypeOf(fieldParameterTypeUse) should contain (methodTypeUse)
 
     }
   }
