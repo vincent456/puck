@@ -30,12 +30,12 @@ import puck.graph._
 
 
 trait MethodKind extends JavaNodeKind {
-  def kindType : KindType = InstanceValueDecl
+  def kindType : KindType = InstanceValue
 }
 
 case object StaticMethod extends MethodKind {
   def canContain(k : NodeKind) = k == Definition
-  override def kindType : KindType = StaticValueDecl
+  override def kindType : KindType = StableValue
   def abstractionNodeKinds(p : AbstractionPolicy) = p match {
     case SupertypeAbstraction => Seq()
     case DelegationAbstraction => Seq(StaticMethod)

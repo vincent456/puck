@@ -27,7 +27,6 @@
 package puck
 
 import java.io.File
-import org.extendj.ast
 import org.extendj.ast.JavaJastAddDG2AST
 import puck.config.Config.Config
 import puck.config.{Config, ConfigParser}

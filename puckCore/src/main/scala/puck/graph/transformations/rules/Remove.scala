@@ -26,7 +26,7 @@
 
 package puck.graph.transformations.rules
 
-import puck.graph.{Contains, ContainsParam, InstanceValueDecl, NameSpace, Parameter, StaticValueDecl, TypeConstructor, TypeDecl, UnknownKindType, Uses, ValueDef, _}
+import puck.graph.{Contains, ContainsParam, InstanceValue, NameSpace, Parameter, StableValue, TypeConstructor, TypeDecl, UnknownKindType, Uses, ValueDef, _}
 import puck.util.LoggedEither._
 
 import scalaz.std.set._
@@ -87,7 +87,7 @@ object Remove{
   }
   def bindingsInvolving(g : DependencyGraph, n : ConcreteNode) : DependencyGraph = {
     val g1 = n.kind.kindType match {
-      case TypeDecl | TypeVariableKT =>
+      case TypeDecl | TypeVariableKT | InstanceTypeDecl =>
         g.typeUses2typeMemberUses.foldLeft(g) {
           case (g0, (tUses, typeMemberUses)) if tUses.used == n.id =>
             typeMemberUses.foldLeft(g0) { _.removeBinding(tUses, _)}
@@ -95,8 +95,10 @@ object Remove{
         }
 
       case NameSpace  => g // no type dependencies involved when removing namespaces
-      case InstanceValueDecl
-           | StaticValueDecl
+      case InstanceValue
+           | StableValue
+//           | InstanceVariable
+//           | StableVariable
            | TypeConstructor
            | Parameter
            | ValueDef =>

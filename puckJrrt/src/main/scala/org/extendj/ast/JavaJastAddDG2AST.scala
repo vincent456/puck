@@ -286,7 +286,7 @@ class JavaJastAddDG2AST
         acc
     }
 
-    logger.writeln("change applied : ")
+//    logger.writeln("change applied : ")
 //    logger.writeln(program.prettyPrint())
 
     logger.writeln("unlocking")
@@ -299,9 +299,9 @@ class JavaJastAddDG2AST
     }
     logger.writeln("done")
 
-    logger.writeln("Program after unlock : ")
-    logger.writeln(program.prettyPrint())
-    logger.writeln("Program after unlock end of print ")
+//    logger.writeln("Program after unlock : ")
+//    logger.writeln(program.prettyPrint())
+//    logger.writeln("Program after unlock end of print ")
 
 
   }

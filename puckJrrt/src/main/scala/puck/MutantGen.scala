@@ -37,7 +37,6 @@ import puck.jastadd.JavaProject
 import puck.javaGraph.nodeKind.{Field, Method}
 import puck.util.{PuckFileLogger, PuckLogger, PuckSystemLogger}
 import ShowDG._
-import puck.graph.ConstraintsOps
 
 import scala.util.Random
 
@@ -91,8 +90,8 @@ object MutantGen {
 
 
     if (mutabilitySet.isMutable(n.id) && (n.kind.kindType  match {
-      case TypeDecl  | StaticValueDecl => true
-      case InstanceValueDecl => hasParameters &&
+      case TypeDecl | StableValue => true
+      case InstanceValue => hasParameters &&
         ! overridesOrImplements &&
         ! isOverridenOrImplemented &&
         concrete && !superUses
@@ -116,7 +115,7 @@ object MutantGen {
       val n = candidate.get
 
       val (ltg, containerId) : (LoggedTG, NodeId) = n.kind.kindType match {
-        case TypeDecl | StaticValueDecl =>
+        case TypeDecl | StableValue =>
           // /!\ typeDecl not necessary static
           val candidateList =  g.nodes.filter(g.canContain(_, n)).toArray
           if(candidateList.isEmpty)
@@ -126,7 +125,7 @@ object MutantGen {
 
             (Rules.move.staticDecl(g, n.id, containerCandidate.id), containerCandidate.id)
           }
-        case InstanceValueDecl =>
+        case InstanceValue =>
           val p = g.content(n.id).filter(g.kindType(_) == Parameter)
           val candidateList0 =
             (p map (pid => Type.mainId(g.typ(pid))) filter ( tid =>
@@ -147,7 +146,7 @@ object MutantGen {
       ltg match {
         case LoggedSuccess((_,g1)) =>
 
-          val fd = (g1, cm).violations.size
+          val fd = (cm forbiddenDependencies g1).size
           if(fd > forbiddenDependency) {
             mutantLogger writeln ("num = " + num)
             mutantLogger writeln ("move candidate = " + (g, n.id).shows(desambiguatedFullName))
@@ -188,8 +187,8 @@ object MutantGen {
     scm foreach {
       cm =>
         val mutant = makeRandomMove(numberOfmove, initialGraph,
-          (initialGraph, cm).violations.size, cm)(mutantLogger, dg2ast.initialMutability)
-        mutantLogger.writeln((mutant,cm).violations.size + " violations")
+          (cm forbiddenDependencies initialGraph).size, cm)(mutantLogger, dg2ast.initialMutability)
+        mutantLogger.writeln((cm forbiddenDependencies mutant).size + " violations")
 
         Recording.write(recFile.getAbsolutePath, dg2ast.nodesByName, mutant)
         dg2ast(mutant)

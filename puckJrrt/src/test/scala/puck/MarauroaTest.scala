@@ -32,15 +32,14 @@ import puck.util.{PuckFileLogger, PuckLogger}
 import LoadAndApply._
 import puck.config.Config
 import puck.config.Config.{Keys, Root, SingleFile}
-import puck.graph.transformations.Recording
-import puck.graph.LoggedSuccess
+import puck.graph.constraints.search.WithVirtualNodes
 import puck.jastadd.JavaProject
 
 object MarauroaTest {
   implicit val logger : PuckLogger = new PuckFileLogger(_ => true,
     new File("/tmp/pucklog"))
 
-  val root = "/home/lorilan/projects/arianne-marauroa"
+    val root = "/home/lorilan/projects/arianne-marauroa"
 
   def project(srcFolder : String, constraint : String = "decouple.wld") : Project = {
     val cfg = (Config.empty
@@ -58,10 +57,10 @@ object MarauroaTest {
 import MarauroaTest.{logger, root, project}
 
 object MarauroaLoadRecordAndApply {
-
+  val path = "/constraint-gen/1rule/10/solutionWithHeuristic.pck"
   def main(args : Array[String]) : Unit =
     ignore(applyRecords(project("src.original"),
-      Seq(root + "/constraint-gen1-05-solution-manual-partial.pck")))
+      Seq(root + path )))
 
 }
 
@@ -78,38 +77,34 @@ object LoadAndSearchSolutions {
 
   val path = "constraint-gen/1rule/10/"
 
-  import puck.util.FileHelper.FileOps
-  val dir = new File(root + File.separator + path)
-  dir.mkdirs()
-
   def main(args : Array[String]) : Unit =
-    SearchSolution(project("src.generated", path+"decouple.wld"),
-      path)(new PuckFileLogger(_ => true, dir \ "log"))
+    SearchSolution(project("src.generated", path + "decouple.wld"), path,
+      StrategyChoice.DepthFirst, ControlChoice.Blind, WithVirtualNodes)
 }
 
-object GenConstraintAndSearchSolutions {
-
-  val numConstraint = 1
-  def genBaseName(id : Int) = s"constraint-gen$numConstraint-$id"
-
-  def main(args : Array[String]) : Unit = {
-    var i = 4
-    while(new File(root + File.separator + genBaseName(i)).exists())
-      i = i + 1
-
-    val baseName = genBaseName(i)
-    val p = project("src.generated", baseName+".wld")
-
-    val(dg, names2id, cm, mutability) =  ConstraintGen(p, baseName, numConstraint)
-    SearchSolution(dg, cm, mutability) map (st => (st.uuid(), st.loggedResult)) foreach {
-          case (id, LoggedSuccess(_, (g,_))) =>
-            import puck.util.FileHelper.FileOps
-            val recFile = p.workspace \  s"$baseName-solution$id.pck"
-            Recording.write(recFile.getAbsolutePath, names2id, g)
-        }
-
-  }
-}
+//object GenConstraintAndSearchSolutions {
+//
+//  val numConstraint = 1
+//  def genBaseName(id : Int) = s"constraint-gen$numConstraint-$id"
+//
+//  def main(args : Array[String]) : Unit = {
+//    var i = 4
+//    while(new File(root + File.separator + genBaseName(i)).exists())
+//      i = i + 1
+//
+//    val baseName = genBaseName(i)
+//    val p = project("src.generated", baseName+".wld")
+//
+//    val (dg, names2id, cm, mutability) =  ConstraintGen(p, baseName, numConstraint)
+//    SearchSolution(dg, cm, mutability) map (st => (st.uuid(), st.loggedResult)) foreach {
+//          case (id, LoggedSuccess(_, (g,_))) =>
+//            import puck.util.FileHelper.FileOps
+//            val recFile = p.workspace \  s"$baseName-solution$id.pck"
+//            Recording.write(recFile.getAbsolutePath, names2id, g)
+//        }
+//
+//  }
+//}
 
 
 

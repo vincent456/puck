@@ -161,7 +161,7 @@ abstract class Abstract {
 
         def extractMethod(typeDeclId : NodeId) : List[(ConcreteNode, Type)] =
           g1.content(typeDeclId).toList map g1.getConcreteNode filter { n =>
-            n.kind.kindType == InstanceValueDecl &&
+            n.kind.kindType == InstanceValue &&
               n.kind.abstractionNodeKinds(SupertypeAbstraction).nonEmpty
           } map (n => (n, g1.styp(n.id).get))
 
@@ -204,7 +204,7 @@ abstract class Abstract {
       g.comment(s"redirectTypeUseInParameters(g, $members, $clazz, $interface)")){
       (g0, child) =>
         child.kind.kindType match {
-          case InstanceValueDecl if g0.parametersOf(child.id).exists(g0.uses(_, clazz.id)) =>
+          case InstanceValue if g0.parametersOf(child.id).exists(g0.uses(_, clazz.id)) =>
             redirectTypeUseInParameters(g0, child, clazz, interface)
           case _ => LoggedSuccess(g0)
         }

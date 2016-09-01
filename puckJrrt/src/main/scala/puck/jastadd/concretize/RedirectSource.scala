@@ -174,7 +174,7 @@ object RedirectSource {
       else None
 
     val staticContent = reenactor.content(tDeclId) filter (id => reenactor.kindType(id) match {
-      case TypeConstructor | StaticValueDecl => true
+      case TypeConstructor | StableValue => true
       case _ => false})
 
     val impactedUsers =  (staticContent flatMap reenactor.usersOf) ++ (reenactor usersOf tDeclId)
@@ -324,7 +324,11 @@ object RedirectSource {
           reenactor.usersOf(target).foreach {
             id2declMap(_) match {
               case hn : HasNode =>
-                hn.node.handleQualifierOfAccessOfStaticMember(bdh.decl, newTdecl)
+                bdh match {
+                  case MethodDeclHolder(d) => hn.node.handleQualifierOfAccessOfStaticMember(d, newTdecl)
+                  case fdh @ FieldDeclHolder(_,_) =>
+                    hn.node.handleQualifierOfAccessOfStaticMember(fdh.declarator, newTdecl)
+                }
               case _ => puck.error()
             }
           }

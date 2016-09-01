@@ -100,7 +100,7 @@ class Merge
 
 
     g.kindType(consumedId) match {
-      case InstanceValueDecl =>
+      case InstanceValue =>
         val g1 = g.typeMemberUses2typeUses.foldLeft(g)(changeTypeMemberUseForTypeUses)
         g1.typeUses2typeMemberUses.foldLeft(g1)(changeTypeUseForTypeMemberUses)
 
@@ -108,8 +108,8 @@ class Merge
         | Parameter => g.typeUses2typeMemberUses.foldLeft(g)(changeTypeUseForTypeMemberUses)
 
       case NameSpace // no type dependencies involved when merging namespaces
-        | TypeConstructor
-        | StaticValueDecl => g
+           | TypeConstructor
+           | StableValue => g
 
       case _ => puck.error()
     }
@@ -179,9 +179,9 @@ class Merge
     val g = graph.comment(s"Merging ${(graph, consumedId).shows} into ${(graph, consumerId).shows}")
     val consumed = g.getConcreteNode(consumedId)
     consumed.kind.kindType match {
-      case InstanceValueDecl
-      | StaticValueDecl
-      | TypeConstructor =>
+      case InstanceValue
+           | StableValue
+           | TypeConstructor =>
         mergeInto0(g, consumedId, consumerId){
           (g, consumedId, consumerId) =>
             val ps = g.parametersOf(consumedId).zip(g.parametersOf(consumerId))

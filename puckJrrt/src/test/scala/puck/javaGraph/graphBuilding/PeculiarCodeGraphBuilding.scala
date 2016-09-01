@@ -29,7 +29,7 @@ package puck.javaGraph.graphBuilding
 
 import puck.javaGraph.ScenarioFactory
 import puck.AcceptanceSpec
-import puck.graph.InstanceValueDecl
+import puck.graph.InstanceValue
 
 /**
   * Created by Loïc Girault on 25/02/16.
@@ -193,7 +193,7 @@ class PeculiarCodeGraphBuilding extends AcceptanceSpec {
     ){
       graph.usesListExludingTypeUses.foreach {
         tmu =>
-          if (graph.kindType(tmu._2) == InstanceValueDecl)
+          if (graph.kindType(tmu._2) == InstanceValue)
             assert(graph.typeUsesOf(tmu).nonEmpty)
 
       }

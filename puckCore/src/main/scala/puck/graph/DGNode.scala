@@ -37,8 +37,8 @@ sealed trait DGNode{
 
   def definition(g : DependencyGraph) : Option[NodeId] = {
     kind.kindType match {
-      case InstanceValueDecl
-           | StaticValueDecl
+      case InstanceValue
+           | StableValue
            | TypeConstructor =>
         g definitionOf this.id
       case _ => None
@@ -66,6 +66,8 @@ case class VirtualNode
  potentialMatches : Set[NodeId],
  kind : NodeKind) extends DGNode {
 
+  override def hashCode(): NodeId = id
+
   def mapConcrete[A](f : ConcreteNode => A, default : => A) : A = default
 
   private def mkNameString(stringify : NodeId => String) =
@@ -82,6 +84,7 @@ case class ConcreteNode
   name : String,
   kind : NodeKind)  extends DGNode {
 
+  override def hashCode(): NodeId = id
 
   def name(g : DependencyGraph) : String = name
 

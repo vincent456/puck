@@ -224,7 +224,7 @@ object NodeInfosPanel {
           else
             sb.append(tmus.map { tmu => (graph, tmu).shows }.mkString("TM uses are :\n", "\n", "\n"))
 
-        case InstanceValueDecl =>
+        case InstanceValue =>
           sb append s"Type Member uses $ustr selected\n"
 
           val tus = graph.typeUsesOf(u)

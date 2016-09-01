@@ -28,10 +28,13 @@ package puck.graph
 
 import puck.graph.DependencyGraph.AbstractionMap
 import puck.graph.comparison.RecordingComparatorControl
+import puck.graph.constraints.ConstraintsMaps
 import puck.search.{DepthFirstSearchStrategy, SearchEngine}
 import puck.util.{PuckLog, PuckLogger, PuckNoopLogger}
 import puck.graph.transformations.Transformation
 import puck.graph.transformations.Recording.RecordingOps
+import puck.graph.transformations.Mutability
+import puck.graph.transformations.MutabilitySet.MutabilitySetOps
 
 object DependencyGraph {
 
@@ -65,8 +68,8 @@ object DependencyGraph {
   def subGraph(fullGraph : DependencyGraph,
                focus : Set[NodeId]): DependencyGraph = {
     val kw = fullGraph.nodeKindKnowledge
-    val g0 = new DependencyGraph(kw, NodeIndex(kw.root), EdgeMap(),
-      AbstractionMap(), Recording())
+    val g0 = DependencyGraph(kw, NodeIndex(kw.root), EdgeMap(),
+      AbstractionMap(), Recording(), Set())
 
     focus.foldLeft(g0){
       case (g, id) =>
@@ -108,34 +111,60 @@ object DependencyGraph {
     }
   }
 
+  private var idSeed : Int = 0
+
+  def apply( nodeKindKnowledge: NodeKindKnowledge,
+   nodesIndex : NodeIndex,
+   edges : EdgeMap,
+   abstractionsMap : AbstractionMap,
+   recording : Recording,
+   mutabilitySet: MutabilitySet) : DependencyGraph ={
+
+    idSeed +=1
+    new DependencyGraph(idSeed,
+      nodeKindKnowledge, nodesIndex,
+      edges, abstractionsMap,
+      recording,
+      mutabilitySet)
+  }
+
 }
 
 
-class DependencyGraph
-( //val logger : PuckLogger = PuckNoopLogger,
-  val nodeKindKnowledge: NodeKindKnowledge,
-  /*private [this]*/ val nodesIndex : NodeIndex,
-  /*private [this]*/ val edges : EdgeMap,
-  /*private [this]*/ val abstractionsMap : AbstractionMap,
-  val recording : Recording) {
+class DependencyGraph private
+ (val id : Int,
+  val nodeKindKnowledge : NodeKindKnowledge,
+  val nodesIndex : NodeIndex,
+  val edges : EdgeMap,
+  val abstractionsMap : AbstractionMap,
+  val recording : Recording,
+  val mutabilitySet: MutabilitySet) {
 
-  def newGraph(//nLogger : PuckLogger = logger,
-               nodesIndex : NodeIndex = nodesIndex,
+  override def hashCode(): NodeId = id
+
+  def newGraph(nodesIndex : NodeIndex = nodesIndex,
                edges : EdgeMap = edges,
                abstractionsMap : AbstractionMap = abstractionsMap,
-               recording : Recording = recording) : DependencyGraph =
-    new DependencyGraph(//nLogger,
+               recording : Recording = recording,
+               mutabilitySet: MutabilitySet = mutabilitySet) : DependencyGraph =
+    DependencyGraph(
       nodeKindKnowledge,
       nodesIndex, edges,
-      abstractionsMap, recording)
+      abstractionsMap, recording, mutabilitySet)
 
-  //def withLogger(l : PuckLogger) = newGraph(nLogger = l)
-  implicit val defaulVerbosity : PuckLog.Verbosity =
+   implicit val defaulVerbosity : PuckLog.Verbosity =
   (PuckLog.InGraph, PuckLog.Debug)
   import scala.language.implicitConversions
   implicit def logVerbosity(lvl : PuckLog.Level) : PuckLog.Verbosity =
     (PuckLog.InGraph, lvl)
 
+
+  def setMutability(nodeId: NodeId, mutability: Mutability) =
+    newGraph(mutabilitySet = mutabilitySet.setMutability(nodeId, mutability))
+  def setMutability(nodeId: Iterable[NodeId], mutability: Mutability) =
+    newGraph(mutabilitySet = mutabilitySet.setMutability(nodeId, mutability))
+
+  def mutableNodes : Set[NodeId] = mutabilitySet.mutableNodes(this)
 
   def comment(msg : String) = newGraph(recording = recording.comment(msg))
   def mileStone = newGraph(recording = recording.mileStone)
@@ -234,7 +263,7 @@ class DependencyGraph
   def instanceValuesWithType(typeId : NodeId) : List[TypedNode] =
     for {
       m <- (this content typeId).toList map getConcreteNode
-      if m.kind.kindType == InstanceValueDecl
+      if m.kind.kindType == InstanceValue
     } yield (m, this typ m.id)
 
   def addType(id : NodeId, t : Type) : DependencyGraph =
@@ -368,8 +397,8 @@ class DependencyGraph
 
   private def isChangeType(edge : DGEdge, newTarget : NodeId) : Boolean =
     edge.kind == Uses && (getNode(edge.user).kind.kindType match {
-      case InstanceValueDecl
-           | StaticValueDecl
+      case InstanceValue
+           | StableValue
            | Parameter =>
         val oldUsedKind = getNode(edge.used).kind.kindType
         val newUsedKind = getNode(newTarget).kind.kindType
@@ -693,4 +722,8 @@ class DependencyGraph
     if(tuses.size > 1) error()
     else typeVariableValue(tvid, tuses.head.user)
   }
+
+  var constraintsMapsCache : Option[(ConstraintsMaps, Set[NodeIdP])] = None
+
+
 }

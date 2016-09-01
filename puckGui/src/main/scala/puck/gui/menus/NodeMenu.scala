@@ -130,8 +130,8 @@ class ConcreteNodeMenu
 
     constraints foreach {
       cm =>
-        if ((graph, cm).isWronglyContained(node.id)
-          || (graph, cm).isWronglyUsed(node.id)) {
+        if (cm.isWronglyContained(graph, node.id)
+          || cm.isWronglyUsed(graph, node.id)) {
           contents +=
             new TargetedAutoSolveAction(Bus, cm, mutabilitySet, node,
               printingOptionsControl)(graph, graphUtils, nodeKindIcons)

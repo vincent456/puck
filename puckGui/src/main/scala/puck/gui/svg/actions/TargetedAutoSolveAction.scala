@@ -31,7 +31,7 @@ import java.awt.event.WindowEvent
 
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
-import puck.graph.constraints.search.TargetedControlWithHeuristic
+import puck.graph.constraints.search.{NoVirtualNodes, TargetedControlWithHeuristic}
 import puck.graph.io.VisibilitySet
 import puck.graph.transformations.MutabilitySet
 import puck.gui.{NodeKindIcons, PrintingOptionsControl}
@@ -145,7 +145,7 @@ class TargetedAutoSolveAction
     val searchControlStrategy =
       new TargetedControlWithHeuristic(
         graphUtils.Rules,
-        g, cm, mutability, violationTarget)
+        g, cm, NoVirtualNodes, violationTarget)
 
     val engine =
       new SearchEngine(

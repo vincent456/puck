@@ -57,7 +57,6 @@ object ScenarioFactory {
 
 }
 
-import ScenarioFactory.logger
 
 class ScenarioFactory
 (val dg2ast : JavaJastAddDG2AST ){
@@ -71,9 +70,6 @@ class ScenarioFactory
   val initialMutability = dg2ast.initialMutability
 
   def this(code : String) = this {
-//    if(code endsWith ".java" )
-//      JavaJastAddDG2AST.fromFiles(List(code), List(), List(), List())
-//    else
       JavaJastAddDG2AST.compile(code.stripMargin) match {
         case None => throw new DGBuildingError("Compilation error, no AST generated")
         case Some(p) => JavaJastAddDG2AST.buildGraph(p, null)
@@ -81,9 +77,10 @@ class ScenarioFactory
   }
 
 
+
   def this(filePathOrCode : String*) = this {
     if(filePathOrCode.head endsWith ".java" )
-      JavaJastAddDG2AST.fromFiles(filePathOrCode.toList, List(), List(), List())
+      JavaJastAddDG2AST.fromFiles(filePathOrCode.toList, List(), List(), List())(ScenarioFactory.logger)
     else
       JavaJastAddDG2AST.compile(filePathOrCode.toList map (_.stripMargin)) match {
         case None => throw new DGBuildingError("Compilation error, no AST generated")
@@ -91,8 +88,8 @@ class ScenarioFactory
       }
   }
 
-
   implicit val logger = ScenarioFactory.logger
+
 
   implicit def idOfFullName(fn : String) : NodeId = fullName2id apply fn
 

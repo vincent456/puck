@@ -29,7 +29,7 @@ package constraints.search
 
 
 import puck.graph.constraints.ConstraintsMaps
-import puck.graph.transformations.{MutabilitySet, TransformationRules}
+import puck.graph.transformations.TransformationRules
 import puck.search._
 
 
@@ -37,7 +37,7 @@ class ControlWithHeuristic
 (val rules: TransformationRules,
  val initialGraph: DependencyGraph,
  val constraints: ConstraintsMaps,
- val mutability : MutabilitySet.T,
+ val virtualNodePolicicy : VirtualNodePolicy,
  val violationsKindPriority : Seq[NodeKind]
 ) extends SearchControl[DecoratedGraph[Option[(ConcreteNode, AutomataState)]]]
   with Heuristic

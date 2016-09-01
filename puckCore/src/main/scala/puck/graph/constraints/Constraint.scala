@@ -40,13 +40,9 @@ class Constraint(
   def addFriend(friend : Range) =
     new Constraint(owners, facades, interlopers, friends + friend)
 
-  def isViolatedBy(graph : GraphT, edge : DGEdge): Boolean =
-    owners.hasRangeThatContains_*(graph, edge.target) &&
-      violated(graph, edge)
-
-  def violated(graph : GraphT, edge : DGEdge): Boolean =
-      interlopers.hasRangeThatContains_*(graph, edge.source) &&
-      !friends.hasRangeThatContains_*(graph, edge.source) &&
-      !facades.hasRangeThatContains_*(graph, edge.target)
+  def forbid(graph : GraphT, source : NodeId, target : NodeId): Boolean =
+      interlopers.hasRangeThatContains_*(graph, source) &&
+      !friends.hasRangeThatContains_*(graph, source) &&
+      !facades.hasRangeThatContains_*(graph, target)
 
 }

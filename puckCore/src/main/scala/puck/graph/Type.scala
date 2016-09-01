@@ -75,13 +75,13 @@ object Type {
     absMeths.foldLoggedEither((g, candidates) ){
       case ((g0, cs), (supMeth, supMethT)) =>
         supMeth.kind.kindType match {
-          case InstanceValueDecl =>
+          case InstanceValue =>
             findOverriddenIn(g0, supMeth.name, supMethT, cs) match {
               case Some(((subMeth, _), newCandidates)) =>
                 LoggedSuccess((g0.addAbstraction(subMeth.id, AccessAbstraction(supMeth.id, SupertypeAbstraction)), newCandidates))
               case None => onImplemNotFound(g0, supMeth, candidates)
             }
-          case TypeConstructor | StaticValueDecl => LoggedSuccess((g0,cs))
+          case TypeConstructor | StableValue => LoggedSuccess((g0,cs))
           case skt => LoggedError(s"findAndRegisterOverridedInList : ${(g, supMeth).shows} has an unexpected type kind ($skt)")
         }
     } map(_._1)

@@ -47,7 +47,9 @@ case class PUses(source : DGExpandableNode,
     val control = root.getAttribute("control").asInstanceOf[PuckControl]
 
     val forbidden = control.constraints exists {
-      cm => usesSet exists (control.graph, cm).isViolation
+      cm => usesSet exists {
+        case (user, used) => cm.isForbidden(control.graph, user, used)
+      }
     }
 
     val numUses = usesSet.size

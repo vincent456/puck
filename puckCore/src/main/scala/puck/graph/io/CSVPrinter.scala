@@ -29,7 +29,7 @@ package puck.graph.io
 import puck.error
 import java.io.{File, FileWriter}
 
-import puck.graph.{DGNode, DependencyGraph, InstanceValueDecl, NodeIdP, Parameter, StaticValueDecl, TypeConstructor}
+import puck.graph.{DGNode, DependencyGraph, InstanceValue, NodeIdP, Parameter, StableValue, TypeConstructor}
 
 object CSVPrinter{
 
@@ -44,8 +44,8 @@ object CSVPrinter{
       def sig(n : DGNode) : String =
         n.kind.kindType match {
           case TypeConstructor
-               | InstanceValueDecl
-               | StaticValueDecl
+               | InstanceValue
+               | StableValue
                | Parameter =>
             graph.structuredType(n.id) map (t => (graph, t).shows) getOrElse ""
           case _ => ""

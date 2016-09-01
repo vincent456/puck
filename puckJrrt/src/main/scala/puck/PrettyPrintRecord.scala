@@ -47,8 +47,10 @@ object PrettyPrintRecord {
 
   def main (args: Array[String]) : Unit = {
 
-    if(args.isEmpty)
+    if(args.isEmpty) {
       println("PrintRecord recFile [projectConfFile]")
+      System exit 1
+    }
     val recFileName = args.head
     val recFile = new File(recFileName)
 

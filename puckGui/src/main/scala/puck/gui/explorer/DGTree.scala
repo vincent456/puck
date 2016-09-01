@@ -99,17 +99,17 @@ object DGNodeWithViolationTreeCellRenderer
     val usedByDef =
       graph.kindType(nodeId) match {
         case TypeConstructor
-             | InstanceValueDecl
-             | StaticValueDecl =>
+             | InstanceValue
+             | StableValue =>
           graph.definitionOf(nodeId) map graph.usedByExcludingTypeUse getOrElse Set[NodeId]()
         case _ => Set[NodeId]()
       }
-    (graph usedByExcludingTypeUse nodeId) ++ usedByDef exists (used => (graph, constraints) isViolation ((nodeId, used)))
+    (graph usedByExcludingTypeUse nodeId) ++ usedByDef exists (used => constraints.isForbidden(graph, nodeId, used))
   }
 
 
   def targetOfViolation(graph : DependencyGraph, constraints: ConstraintsMaps, nodeId : NodeId) : Boolean =
-    (graph usersOfExcludingTypeUse nodeId) exists (user => (graph, constraints) isViolation ((user, nodeId)))
+    (graph usersOfExcludingTypeUse nodeId) exists (user => constraints.isForbidden(graph, user, nodeId))
 
   override def getTreeCellRendererComponent(tree: JTree, value: scala.Any, selected: Boolean,
                                             expanded: Boolean, leaf: Boolean, row: NodeId,

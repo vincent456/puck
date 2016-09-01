@@ -39,7 +39,7 @@ object Metrics {
 
   // ajouté par Mikal
   def numViolations(graph : DependencyGraph, cm : ConstraintsMaps) = {
-    (graph, cm).violations.size
+    (cm forbiddenDependencies graph).size
   }
 
   // ajouté par Mikal

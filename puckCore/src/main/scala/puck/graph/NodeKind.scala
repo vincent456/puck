@@ -55,14 +55,16 @@ object KindType {
   val isStatic : KindType => Boolean = {
     case NameSpace
          | TypeDecl
-         | StaticValueDecl
+         | StableValue
+         //| StableVariable
          | TypeConstructor => true
     case TypeVariableKT
-         | InstanceValueDecl
+         | InstanceValue
+         //| InstanceVariable
          | InstanceTypeDecl => false
-    case Parameter => ???
-    case ValueDef => ???
-    case UnknownKindType => ???
+    case Parameter
+         | ValueDef
+         | UnknownKindType => ???
   }
   def isInstance(kt : KindType) : Boolean = !isStatic(kt)
 }
@@ -72,14 +74,17 @@ sealed trait KindType
 case object UnknownKindType extends KindType
 case object NameSpace extends KindType
 
-case object TypeDecl extends KindType
+case object TypeDecl extends KindType //StableType
 case object TypeVariableKT extends KindType
 case object InstanceTypeDecl extends KindType
 
 case object TypeConstructor extends KindType
 
-case object InstanceValueDecl extends KindType
-case object StaticValueDecl extends KindType
+//case object InstanceVariable extends KindType
+//case object StableVariable extends KindType
+
+case object InstanceValue extends KindType
+case object StableValue extends KindType
 
 case object Parameter extends KindType
 case object ValueDef extends KindType

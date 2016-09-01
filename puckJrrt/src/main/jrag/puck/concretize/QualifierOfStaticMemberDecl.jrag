@@ -48,7 +48,8 @@ aspect HandleQualifier {
                 if(hostType() == newContainingType)
                     replace(parentDot()).with(this);
                 else
-                    replace(qualifier()).with(newContainingType.createLockedAccess());
+                    replace(parentDot()).with(new Dot(newContainingType.createLockedAccess(), this));
+                    //replace(qualifier()).with(newContainingType.createLockedAccess()); does not work ... why ??
             else if(hostType() != newContainingType){
                 this.qualifyWith(newContainingType.createLockedAccess());
                 parentDot().flushTreeCache();

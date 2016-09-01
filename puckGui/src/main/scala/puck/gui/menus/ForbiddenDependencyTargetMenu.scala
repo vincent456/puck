@@ -62,7 +62,7 @@ class ForbiddenDependencyTargetMenu
   controller.constraints foreach {
    cts =>
 
-     val wu = (g,cts).wrongUsers(target.id)
+     val wu = cts.wrongUsers(g,target.id)
      contents += new ChooseAbsAndRedirectMultiAction(controller.Bus, g, wu,
        target.id, graph.abstractions(target.id).toSeq)
 

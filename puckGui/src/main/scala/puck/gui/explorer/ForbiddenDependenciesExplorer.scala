@@ -32,7 +32,6 @@ import java.awt.Color
 import javax.swing.JTree
 
 import puck.graph._
-import puck.graph.ConstraintsOps
 import puck.graph.constraints.ConstraintsMaps
 
 
@@ -132,7 +131,7 @@ class ForbiddenDependenciesExplorer
     addNodeClickedAction(
       (e, n) =>
         if(isRightClick(e)) Swing.onEDT {
-          val menu = if((explorer.graph, explorer.constraints).isWronglyUsed(n.id))
+          val menu = if( explorer.constraints.isWronglyUsed(explorer.graph, n.id))
             ForbiddenDependencyTargetMenu(control, explorer.graph,
               n.asInstanceOf[ConcreteNode], nodeKindIcons)
             else

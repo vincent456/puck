@@ -57,7 +57,7 @@ class EdgeMenu
 
   constraints foreach {
     cm =>
-      if((graph, cm).isViolation(edge)){
+      if(cm.isForbidden(graph,edge)){
         val targetNode = graph.getConcreteNode(target)
         //add(new ManualSolveAction(publisher, targetNode))
         contents += new TargetedAutoSolveAction(publisher, cm, mutability, targetNode, printingOptionsControl)

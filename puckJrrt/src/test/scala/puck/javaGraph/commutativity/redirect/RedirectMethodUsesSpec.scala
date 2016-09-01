@@ -27,13 +27,13 @@
 package puck.javaGraph.commutativity.redirect
 
 import puck.TransfoRulesSpec
-import puck.graph.{AccessAbstraction, SupertypeAbstraction}
+import puck.graph.{AccessAbstraction, ReadWriteAbstraction, SupertypeAbstraction}
 import puck.graph.transformations.rules.Redirection
 
 /**
   * Created by Loïc Girault on 06/05/16.
   */
-class RedirectTypeMemberUsesSpec
+class RedirectMethodUsesSpec
   extends TransfoRulesSpec {
 
   info("From method to abstract method in superType")
@@ -52,7 +52,7 @@ class RedirectTypeMemberUsesSpec
           |    public void m2(){}
           |}
           |
-        |class A {
+          |class A {
           |    void m(){
           |        $tName b = new Bimpl();
           |        b.m1();
@@ -254,8 +254,6 @@ class RedirectTypeMemberUsesSpec
 
   }
 
-  ignore("From field to ??? delegate"){
-    //what should we do ?
-  }
+
 
 }

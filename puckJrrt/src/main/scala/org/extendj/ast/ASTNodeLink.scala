@@ -137,7 +137,7 @@ object ASTNodeLink{
           astNode.getModifiers.flushAttrCache()
         }
 
-      case InstanceValueDecl | StaticValueDecl
+      case InstanceValue | StableValue
         if astNode.getVisibility != VIS_PUBLIC =>
 
         val hostTypeDecl = g.hostTypeDecl(nid)
@@ -151,7 +151,7 @@ object ASTNodeLink{
         }
 
 
-      case InstanceValueDecl | StaticValueDecl => ()
+      case InstanceValue | StableValue => ()
       case kt => error(s"$kt not expected")
     }
 

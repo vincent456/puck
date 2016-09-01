@@ -59,6 +59,7 @@ def commonSettings(module: String) : Seq[Setting[_]] = Seq(
     "-language:postfixOps",
     "-unchecked",
     "-Xlint",
+    "-optimise",
     //"-Xfatal-warnings",
     "-Yno-adapted-args",
     "-Ywarn-dead-code",        // N.B. doesn't work well with the ??? hole

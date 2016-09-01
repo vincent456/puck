@@ -1,9 +1,9 @@
 package puck.javaGraph.commutativity.doAbstract
 
 import puck.TransfoRulesSpec
-import puck.graph.{AccessAbstraction, DelegationAbstraction, ReadWriteAbstraction}
+import puck.graph.DelegationAbstraction
 import puck.jastadd.ExtendJGraphUtils._
-import puck.javaGraph.nodeKind.{Method, StaticMethod}
+import puck.javaGraph.nodeKind.Method
 
 /**
   * Created by Loïc Girault on 26/08/16.

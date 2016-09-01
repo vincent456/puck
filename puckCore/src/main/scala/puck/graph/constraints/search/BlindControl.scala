@@ -20,9 +20,9 @@ class TargetedBlindControl
 ( val rules: TransformationRules,
   val initialGraph: DependencyGraph,
   val constraints: ConstraintsMaps,
-  val mutability : MutabilitySet,
+  val virtualNodePolicicy : VirtualNodePolicy,
   val violationTarget : ConcreteNode
-  ) extends SearchControl[DecoratedGraph[Unit]] //DecoratedGraph[Unit] let us share the DecoratedGraphEvalutaor
+) extends SearchControl[DecoratedGraph[Unit]] //DecoratedGraph[Unit] let us share the DecoratedGraphEvalutaor
   with Blind
   with CheckViolation
   with TerminalStateWhenTargetedViolationRemoved[Unit] {
@@ -35,11 +35,13 @@ class TargetedBlindControl
 
 }
 
+import scala.collection.mutable
+
 class BlindControl
 (val rules: TransformationRules,
  val initialGraph: DependencyGraph,
  val constraints: ConstraintsMaps,
- val mutability : MutabilitySet,
+ val virtualNodePolicicy : VirtualNodePolicy,
  val violationsKindPriority : Seq[NodeKind]
 ) extends SearchControl[DecoratedGraph[Option[ConcreteNode]]]
   with Blind
@@ -53,12 +55,29 @@ class BlindControl
     else if(!isViolationTarget(g, violationTarget.id)) Seq(LoggedSuccess((g, None)))
     else decorate(nextStates(violationTarget)(g.mileStone), Some(violationTarget))
 
+  private [this] val nextStates_ = mutable.Map[DecoratedGraph[Option[ConcreteNode]],
+    Seq[LoggedTry[DecoratedGraph[Option[ConcreteNode]]]]]()
 
-  def nextStates(state : DecoratedGraph[Option[ConcreteNode]]) : Seq[LoggedTry[DecoratedGraph[Option[ConcreteNode]]]] =
-  state match {
-    case (g, Some(violationTarget)) => nextStates(g)(violationTarget)
-    case (g, None) => findTargets(g) flatMap nextStates(g)
- }
+  def nextStates(state : DecoratedGraph[Option[ConcreteNode]]) : Seq[LoggedTry[DecoratedGraph[Option[ConcreteNode]]]] = {
+
+    nextStates_ get state match {
+      case None =>
+        val ns = state match {
+          case (g, Some(violationTarget)) => nextStates(g)(violationTarget)
+          case (g, None) => findTargets(g) flatMap nextStates(g)
+        }
+
+        nextStates_ += (state -> ns)
+
+        ns
+
+      case Some(ns) =>
+        println("nextStates cache hit !")
+        ns
+
+    }
+  }
+
 
 }
 

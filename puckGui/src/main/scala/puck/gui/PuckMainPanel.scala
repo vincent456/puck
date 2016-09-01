@@ -83,7 +83,7 @@ class PuckMainPanel(graphUtils: GraphUtils,
 
       val violations = constraints match {
         case None => Seq()
-        case Some(cm) => (graph, cm).violations
+        case Some(cm) => cm forbiddenDependencies graph
       }
 
       if (violations.isEmpty) {

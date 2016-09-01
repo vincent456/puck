@@ -26,7 +26,6 @@
 
 package puck
 
-import puck.graph.constraints.ConstraintsMaps
 import puck.graph.constraints.search.AutomataState
 import puck.graph.transformations.Recordable
 import puck.util.{Logged, LoggedEither}
@@ -78,25 +77,6 @@ package object graph {
       g.splitWithTargets(Uses(p._1, p._2), rTgt, wTgt)
   }
 
-  implicit class ConstraintsOps(val gc : (DependencyGraph, ConstraintsMaps)) extends AnyVal {
-    def graph = gc._1
-    def constraints = gc._2
-
-    def violations : Seq[DGEdge] = {
-      (graph.containsList filter isViolation map Contains.apply) ++:
-        (graph.usesList filter isViolation map Uses.apply)
-    }
-
-    def isViolation(e : NodeIdP) : Boolean =
-      constraints.isForbidden(graph, e)
-
-
-    def wrongUsers(id : NodeId) : List[NodeId] = constraints.wrongUsers(graph, id)
-    def interloperOf(id1 : NodeId, id2 :NodeId) = constraints.isForbidden(graph, id1, id2)
-    def isWronglyUsed(id : NodeId) = constraints.wrongUsers(graph, id).nonEmpty
-    def isWronglyContained(id : NodeId) : Boolean = constraints.isWronglyContained(graph, id)
-
-  }
 
   type TypedNode = (ConcreteNode, Type)
 
@@ -119,19 +99,16 @@ package object graph {
     def logComment(msg : String) : LoggedTG =
       LoggedSuccess(msg, g.comment(msg))
 
-    def canContain(container : DGNode, content : ConcreteNode)
-                  ( implicit ms : MutabilitySet): Boolean =
-      ms.isMutable(container.id) &&
+    def canContain(container : DGNode, content : ConcreteNode): Boolean =
+      g.mutabilitySet.isMutable(container.id) &&
         g.nodeKindKnowledge.canContain(g, container, content)
 
-    def canContain(container : DGNode, contentKind : NodeKind)
-                  ( implicit ms : MutabilitySet): Boolean =
-      ms.isMutable(container.id) &&
+    def canContain(container : DGNode, contentKind : NodeKind): Boolean =
+      g.mutabilitySet.isMutable(container.id) &&
         g.nodeKindKnowledge.canContain(g, container, contentKind)
 
-    def canBe(sub : DGNode, sup : ConcreteNode)
-             ( implicit ms : MutabilitySet ): Boolean =
-      ms.isMutable(sub.id) &&
+    def canBe(sub : DGNode, sup : ConcreteNode): Boolean =
+      g.mutabilitySet.isMutable(sub.id) &&
         g.nodeKindKnowledge.canBe(g, sub, sup)
 
   }

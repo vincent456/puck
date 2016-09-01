@@ -28,7 +28,7 @@ package puck.graph
 package constraints.search
 import puck.graph.GOps
 import puck.graph.constraints.ConstraintsMaps
-import puck.graph.transformations.{MutabilitySet, TransformationRules}
+import puck.graph.transformations.{Mutable, TransformationRules}
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, CreateVarStrategy}
 import puck.util.LoggedEither
 import puck.util.LoggedEither._
@@ -43,36 +43,52 @@ import ShowDG._
   */
 
 object SolvingActions {
-  def absIntroPredicate
+  //predicate for host of newly introduced abstraction
+  def newAbsFindHostPredicate
   ( impl : DGNode,
     absPolicy : AbstractionPolicy,
     absKind : NodeKind)
-  ( implicit constraints: ConstraintsMaps,
-    ms : MutabilitySet.T) : NodePredicate =
+  ( implicit constraints: ConstraintsMaps) : NodePredicate =
 
 
     (absKind.kindType, absPolicy) match {
-      case (InstanceValueDecl, SupertypeAbstraction) =>
+      case (InstanceValue, SupertypeAbstraction) =>
         (graph, potentialHost) => {
           val typeDecl = graph.container(impl.id).get
           val potentialSuperType = potentialHost.id
-          val canExtends = !(graph, constraints).interloperOf(typeDecl, potentialSuperType)
+          val canExtends = !constraints.isForbidden(graph, typeDecl, potentialSuperType)
           canExtends && graph.canContain(potentialHost, absKind)
         }
       case (_, SupertypeAbstraction) =>
-        (graph, potentialHost) => !(graph, constraints).interloperOf(impl.id, potentialHost.id) &&
+        (graph, potentialHost) => !constraints.isForbidden(graph, impl.id, potentialHost.id) &&
           graph.canContain(potentialHost, absKind)
 
       case (_, DelegationAbstraction) =>
-        (graph, potentialHost) => !(graph, constraints).interloperOf(potentialHost.id, impl.id) &&
+        (graph, potentialHost) => !constraints.isForbidden(graph, potentialHost.id, impl.id) &&
           graph.canContain(potentialHost, absKind)
     }
 }
-import SolvingActions.absIntroPredicate
+
+sealed abstract class VirtualNodePolicy {
+  def virtualizableKindFor(toBeContainedKind : NodeKind) : Set[KindType]
+}
+case object WithVirtualNodes extends VirtualNodePolicy {
+  override val toString = "Use virtual nodes"
+  def virtualizableKindFor(toBeContainedKind : NodeKind) : Set[KindType] =
+    if(toBeContainedKind.kindType == StableValue) Set(NameSpace, TypeDecl)
+    else Set(NameSpace)
+}
+case object NoVirtualNodes extends VirtualNodePolicy {
+  override val toString = "No virtual nodes"
+  def virtualizableKindFor(toBeContainedKind : NodeKind) : Set[KindType] =
+    Set()
+}
+
+import SolvingActions.newAbsFindHostPredicate
 class SolvingActions
 (val rules : TransformationRules,
- implicit val constraints: ConstraintsMaps,
- implicit val ms : MutabilitySet.T) {
+ val vnPolicicy : VirtualNodePolicy,
+ implicit val constraints : ConstraintsMaps) {
 
   var newCterNumGen = 0
 
@@ -82,69 +98,45 @@ class SolvingActions
   ): Stream[NodeKind] =
     g.nodeKinds.toStream.filter(_.canContain(toBeContainedKind))
 
-
-
-  def introNodes(nodeKinds: Seq[NodeKind], g: DependencyGraph): Stream[LoggedTry[(NodeId, DependencyGraph)]] =
-    nodeKinds.toStream map {
-      hostKind =>
-        newCterNumGen += 1
-        val hostName = s"extra${hostKind}Container$newCterNumGen"
-        rules.intro(g, hostName, hostKind)
-    } flatMap attribHost
-
-
   def hostIntro
   (toBeContained: ConcreteNode
   ): DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] =
-    g => containerKind(g, toBeContained.kind) map {
+    g0 => containerKind(g0, toBeContained.kind) map {
       hostKind =>
         newCterNumGen += 1
         val hostName = s"${toBeContained.name}_container$newCterNumGen"
-        rules.intro(g, hostName, hostKind)
+        rules.intro(g0, hostName, hostKind)
     } flatMap {
-      case (toBeCtedHost, g) =>
-        findHost(toBeCtedHost)(g) map (ltg => s"Searching host for $toBeCtedHost\n" <++: ltg map {
-          case (hid, g1) => (toBeCtedHost.id, g1.addContains(hid, toBeCtedHost.id))
+      case (toBeCtedHost, g1) =>
+        findHost(toBeCtedHost)(g1.setMutability(toBeCtedHost.id, Mutable)) map (ltg => s"Searching host for $toBeCtedHost\n" <++: ltg map {
+          case (hid, g2) => (toBeCtedHost.id, g2.addContains(hid, toBeCtedHost.id))
         })
     }
 
 
   def findHost
   (toBeContained: ConcreteNode): DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] =
-    chooseNode((dg, cn) => dg.canContain(cn, toBeContained) &&
+    chooseNode(
+      (dg, cn) => dg.canContain(cn, toBeContained) &&
       !constraints.isForbidden(dg, cn.id, toBeContained.id) && {
       val dg1 : DependencyGraph =
         dg.container(toBeContained.id) map (dg.removeContains(_, toBeContained.id)) getOrElse dg
       val dg2 = dg1.addContains(cn.id, toBeContained.id)
-      dg2.subTree(toBeContained.id).forall(!(dg2, constraints).isWronglyUsed(_)) //needed when moving violation host
-    }
-    )
+      dg2.subTree(toBeContained.id).forall(!constraints.isWronglyUsed(dg2, _)) //needed when moving violation host
+    }, vnPolicicy.virtualizableKindFor(toBeContained.kind))
 
-
-  val attribHost : ((ConcreteNode, DependencyGraph)) => Stream[LoggedTry[(NodeId, DependencyGraph)]] = {
-    case (n, g) =>
-      val hostStream = findHost(n)(g)
-      hostStream  map (ltg => s"Searching host for $n\n" <++: ltg map {
-        case (hid, g1) => (n.id, g1.addContains(hid, n.id))
-      })
-  }
-
-
-  def canBeVirtualized : KindType => Boolean = {
-    //case NameSpace => true
-    case _ => false
-  }
 
   def logNodeChosen(n : DGNode, graph : DependencyGraph) : LoggedTry[(NodeId, DependencyGraph)] =
     LoggedSuccess(s"node chosen is $n\n", (n.id, graph))
 
 
   def chooseNode
-  ( predicate : NodePredicate)
+  ( predicate : NodePredicate, virtualizableKind : Set[KindType] = Set(NameSpace))
   : DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] = {
     graph =>
 
-      val choices = graph.concreteNodes.filter(predicate(graph,_)).toList
+      val choices = graph.mutableNodes.toList map graph.getConcreteNode filter (predicate(graph,_))
+      //val choices = graph.concreteNodes.filter(predicate(graph,_)).toList
 
       if(choices.isEmpty) Stream(LoggedError(s"choose node, no choice"))
       else {
@@ -154,7 +146,7 @@ class SolvingActions
         s flatMap {
           nel =>
             if (nel.tail.isEmpty) Stream(logNodeChosen(nel.head, graph))
-            else if (canBeVirtualized(nel.head.kind.kindType)) {
+            else if ( virtualizableKind contains nel.head.kind.kindType ) {
               val (vn, g2) = graph.addVirtualNode(nel.map(_.id).toSet, nel.head.kind)
               Stream(logNodeChosen(vn, g2))
             }
@@ -178,7 +170,7 @@ class SolvingActions
 
   def createVarStrategies
   ( g: DependencyGraph ): Stream[CreateVarStrategy] = {
-    val tmKinds = g.nodeKindKnowledge.kindOfKindType(InstanceValueDecl)
+    val tmKinds = g.nodeKindKnowledge.kindOfKindType(InstanceValue)
     (CreateParameter +: (tmKinds map CreateTypeMember.apply)).toStream
   }
 
@@ -204,7 +196,7 @@ class SolvingActions
     newCter : NodeId
   ) :  Stream[LoggedTG] = {
     val stream: Stream[LoggedTG] = (wronglyContained.kind.kindType, g.styp(wronglyContained.id)) match {
-      case (InstanceValueDecl, Some(typ)) =>
+      case (InstanceValue, Some(typ)) =>
 
         val needNewReceiver = !(typ uses newCter)
 
@@ -231,7 +223,7 @@ class SolvingActions
 
       case (TypeDecl, _)
            | (NameSpace, _)
-           | (StaticValueDecl, _) =>
+           | (StableValue, _) =>
         Stream(rules.move.staticDecl(g, wronglyContained.id, newCter))
 
       case (TypeConstructor, _) =>
@@ -258,15 +250,18 @@ class SolvingActions
         case lt @ LoggedEither(log, \/-((abs, g2))) =>
           val absNodeKind = abs.kind(g2)
 
+          val g3 =  g2.setMutability(abs.nodes, Mutable)
+
           //fields abstractions introduced with container
-          if((g2 container abs.nodes.head).nonEmpty) Stream(lt)
+          if((g3 container abs.nodes.head).nonEmpty) Stream(LoggedEither(log, \/-((abs, g3))))
           else
-          (hostIntro(g2.getConcreteNode(abs.nodes.head))(g2) ++
-            chooseNode(absIntroPredicate(impl,
-              abs.policy, absNodeKind))(g2)).map {
+          (hostIntro(g3.getConcreteNode(abs.nodes.head))(g3) ++
+            chooseNode(newAbsFindHostPredicate(impl,
+              abs.policy, absNodeKind), vnPolicicy.virtualizableKindFor(abs.kind(g3)))(g3)).map {
             lt => lt.flatMap {
-              case (host, g3) =>
-                s"Searching host for $abs\n" <++: introAbsContainsAndIsa(abs, impl, g3, host)
+              case (host, g4) =>
+
+                s"Searching host for $abs\n" <++: introAbsContainsAndIsa(abs, impl, g4, host)
             }
           }
       }
@@ -301,7 +296,7 @@ class SolvingActions
   DependencyGraph => Stream[LoggedTG] =
     g =>
       redirectTowardExistingAbstractions(used,
-        (g, constraints) wrongUsers used.id,
+        constraints.wrongUsers(g, used.id),
         g abstractions used.id)(g)
 
 
@@ -322,11 +317,11 @@ class SolvingActions
           abs => userId =>
 
             (abs,  g.usesAccessKind(userId, used.id)) match {
-              case (AccessAbstraction(absId, _), _) => (g, constraints).interloperOf(userId, absId)
-              case (ReadWriteAbstraction(Some(rid), _), Some(Read)) => (g, constraints).interloperOf(userId, rid)
-              case (ReadWriteAbstraction(_, Some(wid)), Some(Write)) => (g, constraints).interloperOf(userId, wid)
+              case (AccessAbstraction(absId, _), _) => constraints.isForbidden(g, userId, absId)
+              case (ReadWriteAbstraction(Some(rid), _), Some(Read)) => constraints.isForbidden(g, userId, rid)
+              case (ReadWriteAbstraction(_, Some(wid)), Some(Write)) => constraints.isForbidden(g, userId, wid)
               case (ReadWriteAbstraction(Some(rid), Some(wid)), Some(RW)) =>
-                (g, constraints).interloperOf(userId, rid) || (g, constraints).interloperOf(userId, wid)
+                constraints.isForbidden(g, userId, rid) || constraints.isForbidden(g, userId, wid)
               case _ => sys.error("should not happen")
             }
 

@@ -55,6 +55,9 @@ object MutabilitySet {
       case Mutable => mutables ++ ids
     }
 
+    def mutableNodes(graph: DependencyGraph) : T = mutables
+    def immutableNodes(graph: DependencyGraph) : T = graph.nodesId.toSet -- mutables
+
     def toggle(id : NodeId): T =
       setMutability(id, mutability(id).opposite)
 

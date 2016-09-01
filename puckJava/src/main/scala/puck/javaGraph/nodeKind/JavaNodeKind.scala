@@ -70,9 +70,11 @@ object JavaNodeKind extends NodeKindKnowledge {
       case TypeConstructor => Seq(Constructor)
       case TypeDecl => Seq(Interface, Class)
       case TypeVariableKT => Seq(TypeVariable)
-      case InstanceValueDecl => Seq(Field, Method)
       case InstanceTypeDecl =>  Seq(Interface, Class) map Inner.apply
-      case StaticValueDecl => Seq(StaticField, StaticMethod)
+      case InstanceValue => Seq(Field, Method)
+      case StableValue => Seq(StaticField, StaticMethod)
+//      case InstanceVariable => Seq(Field)
+//      case StableVariable => Seq(StaticField )
       case Parameter => Seq(Param)
       case ValueDef => Seq(Definition)
       case UnknownKindType => sys.error("Unknown kind type")

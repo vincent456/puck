@@ -57,7 +57,8 @@ object TestUtils {
   def solveAllBlind(graph : DependencyGraph, constraints : ConstraintsMaps, mutabilitySet: MutabilitySet,
                        strategy : SearchStrategy[DecoratedGraph[Option[ConcreteNode]]],
                        maxResult : Option[Int]) : Seq[SearchState[DecoratedGraph[Option[ConcreteNode]]]] = {
-    val control = new BlindControl(Rules, graph, constraints, mutabilitySet, violationsKindPriority)
+    val control = new BlindControl(Rules, graph.newGraph(mutabilitySet = mutabilitySet),
+      constraints, WithVirtualNodes, violationsKindPriority)
     val engine = new SearchEngine(strategy, control, maxResult)
     engine.explore()
     engine.successes

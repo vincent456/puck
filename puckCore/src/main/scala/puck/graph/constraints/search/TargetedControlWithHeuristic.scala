@@ -68,7 +68,7 @@ class TargetedControlWithHeuristic
 (val rules: TransformationRules,
  val initialGraph: DependencyGraph,
  val constraints: ConstraintsMaps,
- val mutability : MutabilitySet,
+ val virtualNodePolicicy : VirtualNodePolicy,
  val violationTarget : ConcreteNode
 ) extends SearchControl[DecoratedGraph[AutomataState]]
   with Heuristic

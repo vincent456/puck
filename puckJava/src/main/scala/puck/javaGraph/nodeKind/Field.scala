@@ -41,12 +41,12 @@ case object StaticField extends JavaNodeKind{
   }
   override def abstractionPolicies = Seq(DelegationAbstraction)
 
-  override def kindType: KindType = StaticValueDecl
+  override def kindType: KindType = StableValue
 }
 
 case object Field extends JavaNodeKind {
 
-  override def kindType: KindType = InstanceValueDecl
+  override def kindType: KindType = InstanceValue
   override def isWritable = true
 
   def canContain(k : NodeKind) = k == Definition
@@ -73,5 +73,5 @@ case object EnumConstant extends JavaNodeKind{
   }
   override def abstractionPolicies = Seq(DelegationAbstraction)
 
-  override def kindType: KindType = StaticValueDecl
+  override def kindType: KindType = StableValue
 }

@@ -168,7 +168,7 @@ object ConstraintGen {
     fw write (g,cm).shows
     fw.close()
 
-    logger writeln ((g,cm).violations.size + " violations")
+    logger writeln ((cm forbiddenDependencies g).size + " violations")
     (g, dg2ast.nodesByName, cm, dg2ast.initialMutability)
   }
 }

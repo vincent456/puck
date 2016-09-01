@@ -289,7 +289,7 @@ object Move {
 
           def isReceiverTypeConstrainedIn(g : DependencyGraph, receiver : NodeId, ctxt : NodeId) : Boolean =
           g.kindType(receiver) match {
-            case Parameter | InstanceValueDecl =>
+            case Parameter | InstanceValue =>
             g.typ(receiver).ids.exists { tid =>
               g.typeConstraints((receiver, tid)).exists(ct => ct.constrainedUser == ctxt )
             }

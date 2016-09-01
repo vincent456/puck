@@ -173,7 +173,7 @@ class MoveTypeSpec
 
   }
 
-  scenario("Move top from different Packages - actual parameter") {
+  scenario("Move top between different Packages - actual parameter") {
     val _ = new ScenarioFactory(
       """package p1;
         |

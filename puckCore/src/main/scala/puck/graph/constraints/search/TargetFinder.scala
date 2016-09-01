@@ -37,7 +37,7 @@ trait CheckViolation {
   val constraints: ConstraintsMaps
 
   def isViolationTarget(g: DependencyGraph, nid: NodeId): Boolean =
-    (g, constraints).isWronglyUsed(nid) || (g, constraints).isWronglyContained(nid)
+    constraints.isWronglyUsed(g, nid) || constraints.isWronglyContained(g, nid)
 
 }
 
@@ -50,14 +50,14 @@ trait TargetFinder
                   l : Seq[NodeKind] = violationsKindPriority.toStream) : Seq[ConcreteNode] =  l match {
     case topPriority +: tl =>
       val tgts = graph.concreteNodes.toStream filter { n =>
-        n.kind == topPriority && ((graph, constraints).wrongUsers(n.id).nonEmpty ||
-          (graph, constraints).isWronglyContained(n.id))
+        n.kind == topPriority && (constraints.wrongUsers(graph, n.id).nonEmpty ||
+          constraints.isWronglyContained(graph, n.id))
       }
       if(tgts.nonEmpty) tgts
       else findTargets(graph, tl)
 
-    case Nil => graph.concreteNodes.toStream filter { n => (graph, constraints).wrongUsers(n.id).nonEmpty ||
-      (graph, constraints).isWronglyContained(n.id) }
+    case Nil => graph.concreteNodes.toStream filter { n => constraints.wrongUsers(graph, n.id).nonEmpty ||
+      constraints.isWronglyContained(graph, n.id) }
   }
 
 }
@@ -69,8 +69,8 @@ trait TerminalStateWhenTargetedViolationRemoved[T] {
   val violationTarget : ConcreteNode
 
   override def isTerminalState(t : DecoratedGraph[T]) : Boolean =
-    !(t.graph, constraints).isWronglyContained(violationTarget.id) &&
-      !(t.graph, constraints).isWronglyUsed(violationTarget.id)
+    !constraints.isWronglyContained(t.graph, violationTarget.id) &&
+      !constraints.isWronglyUsed(t.graph, violationTarget.id)
 }
 
 trait TerminalStateWhenNoViolations[T] {

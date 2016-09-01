@@ -184,7 +184,7 @@ class DotPrinter
 
   private val concreteViolations : Seq[DGEdge] = scm match {
     case None => Seq()
-    case Some(cm) => (graph,cm).violations map transformParamOrDefToDecl distinct
+    case Some(cm) => (cm forbiddenDependencies graph) map transformParamOrDefToDecl distinct
   }
 
 
@@ -262,7 +262,7 @@ class DotPrinter
             (graph typeMemberUsesOf selected).foldLeft(init){
               (map, tm) => map + (tm -> "TMember")
             }
-          case InstanceValueDecl
+          case InstanceValue
                | TypeConstructor =>
             val init = Map(selected -> "TMember")
             (graph typeUsesOf selected).foldLeft(init){
@@ -346,9 +346,9 @@ class DotPrinter
       val sig = n mapConcrete (cn => signatureString(graph.structuredType(cn.id)), "")
 
       val (itb, ite) = n.kind.kindType match {
-        case InstanceValueDecl if n.definition(g).isEmpty =>
+        case InstanceValue if n.definition(g).isEmpty =>
           ("<I>", "</I>")
-        case StaticValueDecl  =>
+        case StableValue  =>
           ("<I>&lt;&lt;static&gt;&gt;</I>", "")
         case _ => ("","")
       }

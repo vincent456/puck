@@ -78,7 +78,7 @@ object FreemindScenario {
     g.usesListExludingTypeUses.foreach {
       tmu =>
         try {
-          if (g.kindType(tmu._2) == InstanceValueDecl
+          if (g.kindType(tmu._2) == InstanceValue
               &&  g.typeUsesOf(tmu).isEmpty) {
 
             printUsageFullLocation(dG2AST, g, tmu)
@@ -109,11 +109,9 @@ object FreemindScenario {
 
     val constraints = project.parseConstraints(s.dg2ast).get
 
-    import puck.graph.ConstraintsOps
-
     import s._
 
-    println((graph, constraints).violations.size + " violations")
+    println((constraints forbiddenDependencies graph).size + " violations")
     val ctrlName = "freemind.controller.Controller"
     val controller : NodeId = fullName2id(ctrlName)
 
@@ -121,7 +119,7 @@ object FreemindScenario {
     val infoMsgMethod : NodeId = s"$ctrlName.informationMessage(Object)"
 
     def redirectWrongUsers(g : DependencyGraph, wronglyUsed : NodeId, abs : Abstraction) =
-      (g,constraints).wrongUsers(wronglyUsed).foldLoggedEither(g){
+      constraints.wrongUsers(g, wronglyUsed).foldLoggedEither(g){
         (g, user) =>
           if( g.uses(user, wronglyUsed) )
             redirection.redirectUsesAndPropagate(g, (user, wronglyUsed), abs)
@@ -130,7 +128,7 @@ object FreemindScenario {
 
       import puck.graph.ShowDG._/*++
       (graph,constraints).wrongUsers(infoMsgMethod)*/
-    (graph,constraints).wrongUsers(errorMsgMethod) foreach {
+    constraints.wrongUsers(graph,errorMsgMethod) foreach {
       println("(graph,constraints).wrongUsers(errorMsgMethod)")
       m =>
         (graph, m).println(desambiguatedFullName)
@@ -140,8 +138,8 @@ object FreemindScenario {
 
     val methods =
       inferUsage(graph,
-        (graph,constraints).wrongUsers(errorMsgMethod) ++
-        (graph,constraints).wrongUsers(infoMsgMethod),
+        constraints.wrongUsers(graph, errorMsgMethod) ++
+        constraints.wrongUsers(graph, infoMsgMethod),
         controller)
 
 
@@ -182,7 +180,7 @@ object FreemindScenario {
 
     ltg match {
       case LoggedSuccess(_, g) =>
-        println("success : " + (g, constraints).violations.size + " violations")
+        println("success : " + (constraints forbiddenDependencies g).size + " violations")
         Recording.write(planPath, dg2ast.nodesByName, g)
         project.outDirectory foreach {
           dir =>

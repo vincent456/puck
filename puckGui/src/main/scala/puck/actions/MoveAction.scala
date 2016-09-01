@@ -72,13 +72,13 @@ extends Action(MoveAction.label(graph, moved, newHost)){
     val g = graph.mileStone
     g.kindType(moved.head) match {
       case TypeDecl
-           | StaticValueDecl
+           | StableValue
            | NameSpace =>
         moved.foldLoggedEither(g) {
           (g, id) => TR.move.staticDecl(g, id, newHost.id)
         }
 
-      case InstanceValueDecl =>
+      case InstanceValue =>
         publisher.publish(Log(
           "/!\\/!\\ Method overriding unchecked (TODO !!!) /!\\/!\\"))
 
@@ -107,8 +107,8 @@ extends Action(MoveAction.label(graph, moved, newHost)){
 
           val choice =
             if (!isPullUp && !isPushDown && needNewReceiver) {
-              Some(MoveAction.getChoice(kindOfKindType(InstanceValueDecl)).
-                getOrElse(CreateTypeMember(kindOfKindType(InstanceValueDecl).head)))
+              Some(MoveAction.getChoice(kindOfKindType(InstanceValue)).
+                getOrElse(CreateTypeMember(kindOfKindType(InstanceValue).head)))
             }
             else None
 

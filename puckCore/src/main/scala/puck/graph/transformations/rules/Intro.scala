@@ -222,7 +222,7 @@ abstract class Intro {
     user : NodeId,
     used : NodeId) : DependencyGraph =
     (g.kindType(g.container_!(user)), g.kindType(used)) match {
-      case (InstanceValueDecl, InstanceValueDecl)
+      case (InstanceValue, InstanceValue)
       if g.hostTypeDecl(user) == g.hostTypeDecl(used) =>
         val cter = g.hostTypeDecl(user)
         val g1 =

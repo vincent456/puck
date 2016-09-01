@@ -34,9 +34,9 @@ import DependencyGraph._
 
 trait JavaGraphBuilder extends GraphBuilder{
 
-   g = new DependencyGraph(JavaNodeKind,
+   g = DependencyGraph(JavaNodeKind,
      NodeIndex(JavaNodeKind.root), EdgeMap(),
-     AbstractionMap(), Recording())
+     AbstractionMap(), Recording(), Set())
 
   nodesByName += (g.root.name -> g.rootId)
 

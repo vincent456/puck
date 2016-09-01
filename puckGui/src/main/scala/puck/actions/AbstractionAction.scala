@@ -138,7 +138,7 @@ class AbstractionAction
            node.kind.kindType match {
            case TypeDecl => graph.content(node.id).toList.
                 map(graph.getConcreteNode).filter(n =>
-                 n.kind.kindType == InstanceValueDecl &&
+                 n.kind.kindType == InstanceValue &&
                  n.kind.abstractionNodeKinds(policy).nonEmpty).
                 filter(TR.abstracter.canBeAbstracted(graph, _, node, policy))
            case _ => List()
