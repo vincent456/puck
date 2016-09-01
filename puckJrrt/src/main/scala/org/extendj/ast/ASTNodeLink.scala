@@ -187,8 +187,9 @@ case class ParameterDeclHolder(decl : ParameterDeclaration) extends HasNode {
 sealed trait HasBodyDecl extends HasNode{
   val decl : BodyDecl
   def node = decl.asInstanceOf[ASTNode[_]]
-
 }
+
+
 
 sealed trait HasMemberDecl extends HasBodyDecl{
   override val decl : MemberDecl
@@ -218,6 +219,10 @@ object CallableDeclHolder {
 
 case class FieldDeclHolder(decl : FieldDecl, declaratorIndex : Int) extends HasMemberDecl {
   def declarator = decl.getDeclarator(declaratorIndex)
+}
+
+case class LocalVarDeclHolder(decl : VariableDeclarator) extends HasNode {
+  def node = decl.asInstanceOf[ASTNode[_]]
 }
 
 case class EnumConstantHolder(decl : EnumConstant) extends HasBodyDecl

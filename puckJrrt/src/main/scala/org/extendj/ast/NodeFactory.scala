@@ -138,6 +138,7 @@ trait NodeFactory {
     case fd : FieldDeclarator =>
       if(fd.isStatic) StaticField
       else Field
+    case _ : VariableDeclarator => LocalVariable
     case md : MethodDecl =>
       if(md.isAbstract) AbstractMethod
       else if (md.isStatic) StaticMethod

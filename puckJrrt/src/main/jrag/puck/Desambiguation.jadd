@@ -39,6 +39,10 @@ aspect Desambiguation{
 		return getParent().getDGNamedNode();
 	}
 
+	public String ASTNode.dgFullName(){
+		throw new PuckError("dgFullName not defined for "+ this);
+	}
+
 	public String TypeDecl.dgFullName() {
 		if (isNestedType())
 			return getParentNamedNode().dgFullName() + "." + getID();
@@ -78,7 +82,16 @@ aspect Desambiguation{
 		return getParentNamedNode().dgFullName() + "." + name();
 	}
 
+	public String VariableDeclarator.dgFullName(){
+		return hostBodyDecl().dgFullName() +"."+name();
+	}
+	public String StaticInitializer.dgFullName(){
+		return hostType().dgFullName() + ".StaticInitializer"+ getChildIndex();
+	}
 
+	public String InstanceInitializer.dgFullName(){
+		return hostType().dgFullName() + ".InstanceInitializer"+ getChildIndex();
+	}
 
 	Callable extends TypeMember;
 

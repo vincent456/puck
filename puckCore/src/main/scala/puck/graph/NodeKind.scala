@@ -52,7 +52,7 @@ trait NodeKind {
 }
 
 object KindType {
-  val isStatic : KindType => Boolean = {
+  val isStable : KindType => Boolean = {
     case NameSpace
          | TypeDecl
          | StableValue
@@ -61,12 +61,13 @@ object KindType {
     case TypeVariableKT
          | InstanceValue
          //| InstanceVariable
-         | InstanceTypeDecl => false
+         | InstanceTypeDecl
+         | LocalValue => false
     case Parameter
          | ValueDef
          | UnknownKindType => ???
   }
-  def isInstance(kt : KindType) : Boolean = !isStatic(kt)
+  def isInstance(kt : KindType) : Boolean = !isStable(kt)
 }
 
 
@@ -85,6 +86,8 @@ case object TypeConstructor extends KindType
 
 case object InstanceValue extends KindType
 case object StableValue extends KindType
+case object LocalValue extends KindType
+
 
 case object Parameter extends KindType
 case object ValueDef extends KindType

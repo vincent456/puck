@@ -92,7 +92,11 @@ trait Registration {
 
   def registerDecl(n : NodeIdT, decl : FieldDeclarator) : Unit =
     register(n, Set[NodeKind](Field, StaticField),
-      FieldDeclHolder(decl.getParent.getParent().asInstanceOf[FieldDecl], decl.getChildIndex), "FieldDeclaration")
+      FieldDeclHolder(decl.getParent.getParent().asInstanceOf[FieldDecl], decl.getChildIndex), "FieldDeclarator")
+
+  def registerDecl(n : NodeIdT, decl : VariableDeclarator) : Unit =
+    register(n, LocalVariable,
+      FieldDeclHolder(decl.getParent.getParent().asInstanceOf[FieldDecl], decl.getChildIndex), "VariableDeclarator")
 
   def registerDecl(n : NodeIdT, decl : EnumConstant) : Unit =
     register(n, PuckEnumConstant, EnumConstantHolder(decl), "EnumConstant")

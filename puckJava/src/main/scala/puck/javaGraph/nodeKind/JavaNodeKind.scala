@@ -73,6 +73,7 @@ object JavaNodeKind extends NodeKindKnowledge {
       case InstanceTypeDecl =>  Seq(Interface, Class) map Inner.apply
       case InstanceValue => Seq(Field, Method)
       case StableValue => Seq(StaticField, StaticMethod)
+      case LocalValue => Seq(LocalVariable)
 //      case InstanceVariable => Seq(Field)
 //      case StableVariable => Seq(StaticField )
       case Parameter => Seq(Param)

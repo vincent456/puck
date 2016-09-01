@@ -97,6 +97,7 @@ object Remove{
       case NameSpace  => g // no type dependencies involved when removing namespaces
       case InstanceValue
            | StableValue
+           | LocalValue
 //           | InstanceVariable
 //           | StableVariable
            | TypeConstructor

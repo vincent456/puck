@@ -62,6 +62,21 @@ case object Field extends JavaNodeKind {
   override def abstractionPolicies = Seq(DelegationAbstraction)
 }
 
+case object LocalVariable extends JavaNodeKind {
+
+  override def kindType: KindType = LocalValue
+  override def isWritable = true
+
+  def canContain(k : NodeKind) = false
+
+  def abstractionNodeKinds(p : AbstractionPolicy) = p match {
+    case SupertypeAbstraction => Seq()
+    case DelegationAbstraction => Seq(Method)
+  }
+
+
+  override def abstractionPolicies = Seq(DelegationAbstraction)
+}
 
 case object EnumConstant extends JavaNodeKind{
 

@@ -88,6 +88,7 @@ aspect NamedElement {
     EnumConstant implements DGNamedElement;
     ParameterDeclaration implements DGNamedElement;
 	FieldDeclarator implements DGNamedElement;
+    VariableDeclarator implements DGNamedElement;
     Callable extends DGNamedElement;
 	MethodDecl implements DGNamedElement;
 	ConstructorDecl implements DGNamedElement;
@@ -146,6 +147,7 @@ aspect NamedElement {
     MethodDecl implements Registerable;
     TypeVariable implements Registerable;
     EnumConstant implements Registerable;
+    VariableDeclarator implements Registerable;
 //    Block implements Registerable;
 //    Expr implements Registerable;
 
