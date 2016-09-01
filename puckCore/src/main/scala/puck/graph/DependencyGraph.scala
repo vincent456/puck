@@ -566,14 +566,6 @@ class DependencyGraph private
     dst.foldLeft(dst) { case (acc, id) => acc ++ subTypes(id) }
   }
 
-
-  private def checkTypeUseExist(tuc : TypeUseConstraint) : NodeIdP = {
-    val (s, t) = tuc.constrainedUse
-    import ShowDG._
-    if(edges.uses(s,t)) tuc.constrainedUse
-    else error((this,Uses(s,t)).shows + " does not exist")
-  }
-
   def typeConstraints(typeUse : NodeIdP) : Set[TypeUseConstraint] = {
     val tucs =  edges.typeUsesConstraints getFlat typeUse
     //tucs foreach checkTypeUseExist
@@ -582,28 +574,6 @@ class DependencyGraph private
 
   def typeConstraintsIterator : Iterator[(NodeIdP, TypeUseConstraint)] =
     edges.typeUsesConstraints.iterator
-
-  private def typeUsesConstrained(typeUse : NodeIdP)(f: TypeUseConstraint => Boolean) : Set[NodeIdP]=
-    edges.typeUsesConstraints getFlat typeUse filter f map checkTypeUseExist
-
-
-  def usesThatShouldUsesASubtypeOf(typeUse : NodeIdP) : Set[NodeIdP]=
-    typeUsesConstrained(typeUse) {
-      case Sub(_) => true
-      case _ => false
-    }
-
-  def usesThatShouldUsesASuperTypeOf(typeUse : NodeIdP) : Set[NodeIdP]=
-    typeUsesConstrained(typeUse) {
-      case Sup(_) => true
-      case _ => false
-    }
-  def usesThatShouldUsesSameTypeAs(typeUse : NodeIdP) : Set[NodeIdP]=
-    typeUsesConstrained(typeUse) {
-      case Eq(_) => true
-      case _ => false
-    }
-
 
   def isa(subId : NodeId, superId: NodeId): Boolean =
     edges.isa(subId, superId)

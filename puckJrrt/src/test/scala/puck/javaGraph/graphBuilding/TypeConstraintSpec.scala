@@ -27,12 +27,47 @@
 package puck.javaGraph.graphBuilding
 
 import puck.AcceptanceSpec
-import puck.graph.{NamedType, NodeIdP, ParameterizedType}
+import puck.graph._
 import puck.javaGraph.ScenarioFactory
 
 /**
   * Created by Loïc Girault on 06/04/16.
   */
+object TypeConstraintSpec {
+
+  implicit class GraphTypeOps(val g : DependencyGraph) extends AnyVal {
+
+    private def checkTypeUseExist(tuc : TypeUseConstraint) : NodeIdP = {
+      val (s, t) = tuc.constrainedUse
+      import ShowDG._
+      if(g.edges.uses(s,t)) tuc.constrainedUse
+      else error((g, Uses(s,t)).shows + " does not exist")
+    }
+
+    private def typeUsesConstrained(typeUse: NodeIdP)(f: TypeUseConstraint => Boolean): Set[NodeIdP] =
+      g.edges.typeUsesConstraints getFlat typeUse filter f map checkTypeUseExist
+
+
+    def usesThatShouldUsesASubtypeOf(typeUse: NodeIdP): Set[NodeIdP] =
+      typeUsesConstrained(typeUse) {
+        case Sub(_) => true
+        case _ => false
+      }
+
+    def usesThatShouldUsesASuperTypeOf(typeUse: NodeIdP): Set[NodeIdP] =
+      typeUsesConstrained(typeUse) {
+        case Sup(_) => true
+        case _ => false
+      }
+
+    def usesThatShouldUsesSameTypeAs(typeUse: NodeIdP): Set[NodeIdP] =
+      typeUsesConstrained(typeUse) {
+        case Eq(_) => true
+        case _ => false
+      }
+  }
+}
+import TypeConstraintSpec._
 class TypeConstraintSpec extends AcceptanceSpec {
 
   scenario("Field init") {

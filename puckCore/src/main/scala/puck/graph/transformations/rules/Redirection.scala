@@ -270,9 +270,9 @@ object Redirection {
         case Some(abs@AccessAbstraction(absId, _)) => LoggedSuccess(absId)
         case Some(ReadWriteAbstraction(_, _)) => LoggedError("!!! type is not supposed to have a r/w abs !!!")
         case None =>
-          //if(oldTypeUsed != newTypeToUse)
+          if(oldTypeUsed != newTypeToUse)
             LoggedError(s"${(g, newTypeToUse).shows} is not an abstraction of ${(g, oldTypeUsed).shows} ")
-          //else LoggedSuccess(newTypeToUse)
+          else LoggedSuccess(newTypeToUse)
       }
 
     (log  + log2) <++: ( logTabsId flatMap {

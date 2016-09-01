@@ -10,6 +10,8 @@ import puck.graph.transformations.rules.Redirection
 class RedirectFieldUsesSpec
   extends TransfoRulesSpec {
 
+
+
   scenario("From field to method delegate"){
     def code(call : String) : String =
       s"""package p;
