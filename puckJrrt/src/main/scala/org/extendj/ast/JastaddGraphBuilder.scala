@@ -183,24 +183,15 @@ class JastaddGraphBuilder(val program : Program)
     setType(thisId,  getType(decl.getTypeAccess))
   }
 
-  def buildDGType(thisId : NodeId, decl : BodyDecl) : Unit = decl match {
-    case cDecl : ConstructorDecl =>
-      astParamsToDGType(thisId, cDecl)
-      setType(thisId, NamedType(this buildNode cDecl.hostType()))
-    case mDecl : MethodDecl =>
-      astParamsToDGType(thisId, mDecl)
-      setType(thisId, getType(mDecl.getTypeAccess))
-    case _ : SubstitutedBodyDecl =>
-      println("SubstitutedBodyDecl.buildDGType TODO !!!")
-    case _ : FieldDecl =>
-      throw new DGBuildingError("missing type for FieldDecl")
-    case _ : EnumConstant =>
-      throw new DGBuildingError("missing type for EnumConstant")
-    case _ => ()
+  def buildDGType(thisId : NodeId, decl : ConstructorDecl) : Unit =  {
+    astParamsToDGType(thisId, decl)
+    setType(thisId, NamedType(this buildNode decl.hostType()))
+  }
+  def buildDGType(thisId : NodeId, decl : MethodDecl) : Unit =  {
+    astParamsToDGType(thisId, decl)
+    setType(thisId, getType(decl.getTypeAccess))
 
   }
-
-
 
   def astParamsToDGType(thisId : NodeId, c : Callable ) : Unit = {
     addParams(thisId,

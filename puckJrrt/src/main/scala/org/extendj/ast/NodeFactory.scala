@@ -45,7 +45,7 @@ trait NodeFactory {
 
   def buildNode( a : Access) : NodeId = a match {
     case va : VarAccess if va.decl().isLocalVariable => // No lock
-      getDefinition(va.hostBodyDecl().getDGNamedNode())
+      getDefinition(va.hostBodyDecl.getDGNamedNode)
 
     case cie: ClassInstanceExpr =>
       if(!cie.hasTypeDecl)
@@ -59,15 +59,18 @@ trait NodeFactory {
       buildNode(ac.accessed().asInstanceOf[DGNamedElement])
   }
 
+  def checkSubstituteAndBuild(n : DGNamedElement) : NodeId =
+    if( n.isSubstitute )
+      getNode(n.asInstanceOf[Substitute].getOriginal.asInstanceOf[DGNamedElement])
+    else getNode( n )
+
   def buildNode(n : DGNamedElement) : NodeId = n match {
     case ad : ArrayDecl => arrayTypeId
     case ptd : ParTypeDecl => buildNode(ptd.genericDecl)
     case wc : AbstractWildcardType if wc.isNamedElement =>
       getNode(wc)
-    case _ =>
-      if( n.isSubstitute )
-        getNode(n.asInstanceOf[Substitute].getOriginal.asInstanceOf[DGNamedElement])
-      else getNode( n )
+    case _ => checkSubstituteAndBuild(n)
+
   }
 
 
@@ -75,13 +78,18 @@ trait NodeFactory {
     if (pd.getParent.isInstanceOf[CatchClause]) buildNode(pd.hostBodyDecl())
     else getNode(pd)
 
+  def buildNode(methodDecl: MethodDecl) : NodeId =
+    checkSubstituteAndBuild(methodDecl)
+  def buildNode(constructorDecl: ConstructorDecl) : NodeId =
+    checkSubstituteAndBuild(constructorDecl)
+
+
   def buildNode(bodyDecl: BodyDecl) : NodeId = bodyDecl match {
     case n : DGNamedElement => buildNode(n.asInstanceOf[DGNamedElement])
     case fd : FieldDecl =>
       if(fd.getNumDeclarator == 1) buildNode(fd.getDeclarator(0))
       else throw new DGBuildingError(s"FieldDecl with ${fd.getNumDeclarator} declarators not expected")
     case _ : StaticInitializer | _ : InstanceInitializer => buildNode(bodyDecl.hostType())
-
     case _ => throw new DGBuildingError(bodyDecl + " not expected")
   }
 

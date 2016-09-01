@@ -116,6 +116,41 @@ trait GraphBuilderVisitor {
       throw new DGBuildingError(s"ClassDecl or InterfaceDecl exptected, $td found");
   }
 
+  def buildDG(containerId : NodeId, constructorDecl: ConstructorDecl) : Unit = {
+    val n = buildNode(constructorDecl)
+    addEdge(Contains(containerId, n))
+    buildDGType(n, constructorDecl)
+    buildMethodOrConstructorDG(containerId, n, constructorDecl)
+  }
+
+  def buildDG(containerId : NodeId, methodDecl : MethodDecl) : Unit ={
+    val n = buildNode(methodDecl)
+    addEdge(Contains(containerId, n))
+    buildDGType(n, methodDecl)
+    buildMethodOrConstructorDG(containerId, n, methodDecl)
+  }
+
+  def buildMethodOrConstructorDG(containerId : NodeId, declId : NodeId, node : BodyDecl) : Unit = {
+    if(node.hasDefinition){
+      for( i <- 0 until node.getNumChild){
+
+        if( i != node.getDefIndex
+          && i != node.getParamIndex
+          && i != node.getReturnTypeIndex )
+          node.getChild(i).buildDG(this, declId)
+      }
+
+      node.asInstanceOf[DGNamedElement].buildDef(this, declId)
+    }
+    else {
+      for (i <- 0 until node.getNumChild) {
+        if (i != node.getParamIndex
+          && i != node.getReturnTypeIndex)
+          node.getChild(i).buildDG(this, declId)
+      }
+    }
+  }
+
   def buildDG(containerId : NodeId, pta : ParTypeAccess) : Unit = {
     getType(pta).ids.foreach(id => addEdge(Uses(containerId, id)))
     pta.buildDGInChildren(this, containerId)

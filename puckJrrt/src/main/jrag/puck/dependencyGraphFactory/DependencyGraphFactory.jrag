@@ -104,6 +104,8 @@ aspect DependencyGraphFactory {
 	ClassInstanceExpr implements Buildable;
 	EnhancedForStmt implements Buildable;
 	FieldDecl implements Buildable;
+	MethodDecl implements Buildable;
+	ConstructorDecl implements Buildable;
 	MethodAccess implements Buildable;
 	ParameterDeclaration implements Buildable;
 	ParTypeAccess implements Buildable;
@@ -120,29 +122,6 @@ aspect DependencyGraphFactory {
 		builder.setType(thisNode, builder.getType(this.hostType()));
 	}
 
-
-	public void DGNamedElement.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId ){
-		int declId = builder.buildNode((DGNamedElement)this);
-		builder.addContains(hostTypeDeclId, declId);
-
-		builder.buildDGType(declId, this);
-
-		if(hasDefinition()){
-			for(int i=0; i< getNumChild(); i++)
-				if( i != getDefIndex()
-						&& i != getParamIndex()
-						&& i != getReturnTypeIndex() )
-					getChild(i).buildDG(builder, declId);
-
-			buildDef(builder, declId);
-		}
-		else{
-			for(int i=0; i<getNumChild(); i++)
-				if( i !=getParamIndex()
-						&& i != getReturnTypeIndex() )
-					getChild(i).buildDG(builder, declId);
-		}
-	}
 
 	public void BodyDecl.buildDG(JastaddGraphBuilder builder, int hostTypeDeclId ){
 		if(this.getClass() == InstanceInitializer.class
