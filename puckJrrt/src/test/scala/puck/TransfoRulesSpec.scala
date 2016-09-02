@@ -26,10 +26,10 @@ class TransfoRulesSpec
                                       expectedResult: ScenarioFactory) : Unit = {
 
     def print(g : DependencyGraph, name : String) : Unit = {
-      import puck.graph.ShowDG._
-      println(s"graph $name")
-//      (g, g.nodesIndex).println
-      (g, g.edges).println
+//      import puck.graph.ShowDG._
+//      println(s"graph $name")
+////      (g, g.nodesIndex).println
+//      (g, g.edges).println
     }
 
 

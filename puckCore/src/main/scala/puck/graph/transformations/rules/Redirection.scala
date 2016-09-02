@@ -37,6 +37,49 @@ import ShowDG._
 
 object Redirection {
 
+  def redirectUsesAndPropagate
+  (graph : DependencyGraph,
+   oldUse : NodeIdP,
+   newUsed : Abstraction
+  ): LoggedTG = {
+
+    val g = graph.comment(s"Redirection.redirectUsesAndPropagate(g, ${(graph,oldUse).shows}, ${(graph, newUsed).shows})")
+
+    val oldUsed = g.getConcreteNode(oldUse.used)
+    val oldKindType = oldUsed.kind.kindType
+    val newKindType = newUsed.kindType(g)
+
+    val ltg : LoggedTG = (oldKindType, newKindType) match {
+      case (TypeDecl, TypeDecl) =>
+        val AccessAbstraction(newUsedId, _) = newUsed
+        redirectInstanceUsesTowardAbstractionInAnotherTypeAndPropagate(g, oldUse, newUsedId)
+
+      case (InstanceValue, InstanceValue) =>
+        if(oldUsed.kind.isWritable)
+          redirectFieldTowardGetterSetter(g, oldUse, newUsed)
+        else
+          redirectInstanceUsesTowardAbstractionInAnotherTypeAndPropagate(g, oldUse, newUsed.containerIn(g).get)
+
+      case (TypeConstructor, InstanceValue) =>
+        redirectTypeConstructorToInstanceValueDecl(g, oldUse, newUsed)()
+
+      case (StableValue, StableValue) =>
+        redirect(g, oldUse, newUsed).map(_._1)
+      case (TypeConstructor, StableValue) =>
+        redirect(g, oldUse, newUsed).flatMap {
+          case (g1, _) =>
+            val AccessAbstraction(absNode, _) = newUsed
+            updateTypeUseConstraint(g1, oldUse, absNode)
+        }
+
+      case (kt1, kt2) =>
+        LoggedError(s"redirection of type $kt1 to $kt2 unhandled")
+    }
+
+    val log = s"redirect uses and propagate from $oldKindType to $newKindType\n"
+    log <++: ltg
+  }
+
   def redirectSourceOfInitUseInFactory
   ( g: DependencyGraph,
     ctorDecl: NodeId,
@@ -89,7 +132,6 @@ object Redirection {
 
   }
 
-
   def tmAbstraction
   ( g : DependencyGraph,
     typeAbs : NodeId,
@@ -125,64 +167,25 @@ object Redirection {
     }
 
 
-  def redirectUsesAndPropagate
-  (graph : DependencyGraph,
-   oldUse : NodeIdP,
-   newUsed : Abstraction
-  ): LoggedTG = {
 
-    val g = graph.comment(s"Redirection.redirectUsesAndPropagate(g, ${(graph,oldUse).shows}, ${(graph, newUsed).shows})")
 
-    val oldUsed = g.getConcreteNode(oldUse.used)
-    val oldKindType = oldUsed.kind.kindType
-    val newKindType = newUsed.kindType(g)
-
-    val ltg : LoggedTG = (oldKindType, newKindType) match {
-      case (TypeDecl, TypeDecl) =>
-        val AccessAbstraction(newUsedId, _) = newUsed
-        redirectInstanceUsesAndPropagate(g, oldUse, newUsedId)
-
-      case (InstanceValue, InstanceValue) =>
-//        if(oldUsed.kind.isWritable)
-//          redirectUsesOfWritableNodeAndPropagate(g, oldUse, newUsed.containerIn(g).get)
-//        else
-          redirectInstanceUsesAndPropagate(g, oldUse, newUsed.containerIn(g).get)
-
-      case (TypeConstructor, InstanceValue) =>
-        redirectTypeConstructorToInstanceValueDecl(g, oldUse, newUsed)()
-
-      case (StableValue, StableValue) =>
-        redirect(g, oldUse, newUsed).map(_._1)
-      case (TypeConstructor, StableValue) =>
-        redirect(g, oldUse, newUsed).flatMap {
-          case (g1, _) =>
-            updateTypeUseConstraintForTypeConstructorRedirect(g1, oldUse, newUsed)
-        }
-
-      case (kt1, kt2) =>
-        LoggedError(s"redirection of type $kt1 to $kt2 unhandled")
-    }
-
-    val log = s"redirect uses and propagate from $oldKindType to $newKindType\n"
-    log <++: ltg
-  }
-
-  def updateTypeUseConstraintForTypeConstructorRedirect
+  //update type constraint when user change but type used remains the same
+  def updateTypeUseConstraint
   (g : DependencyGraph,
    ctorUse : NodeIdP,
-   newUsed : Abstraction ) : LoggedTG = {
+   newUsed : NodeId ) : LoggedTG = {
     val (userOfCtor, ctor)= ctorUse
     val ctorTypeUse = (ctor, g container_! ctor)
     val constrainedUseToChange =
       g.typeConstraints(ctorTypeUse) filter ( _.constrainedUser == userOfCtor )
-    val AccessAbstraction(absNode, _) = newUsed
 
-    g.typ(absNode) match {
+
+    g.typ(newUsed) match {
       case NamedType(tid) =>
         constrainedUseToChange.foldLoggedEither(g){
           (g0, ct) =>
             LoggedSuccess(g.removeTypeUsesConstraint(ctorTypeUse, ct)
-              .addTypeUsesConstraint((absNode, tid), ct))
+              .addTypeUsesConstraint((newUsed, tid), ct))
         }
       case _ => LoggedError("gen type factory type constraint change unhandled : TODO")
     }
@@ -221,7 +224,7 @@ object Redirection {
               userOfCtor, newTypeUse.user)
         }
     }
-    ltg flatMap (updateTypeUseConstraintForTypeConstructorRedirect(_, ctorUse, newUsed))
+    ltg flatMap (updateTypeUseConstraint(_, ctorUse, absNode))
 
 
   }
@@ -270,9 +273,7 @@ object Redirection {
         case Some(abs@AccessAbstraction(absId, _)) => LoggedSuccess(absId)
         case Some(ReadWriteAbstraction(_, _)) => LoggedError("!!! type is not supposed to have a r/w abs !!!")
         case None =>
-          if(oldTypeUsed != newTypeToUse)
-            LoggedError(s"${(g, newTypeToUse).shows} is not an abstraction of ${(g, oldTypeUsed).shows} ")
-          else LoggedSuccess(newTypeToUse)
+          LoggedError(s"${(g, newTypeToUse).shows} is not an abstraction of ${(g, oldTypeUsed).shows} ")
       }
 
     (log  + log2) <++: ( logTabsId flatMap {
@@ -293,7 +294,7 @@ object Redirection {
             //LoggedSuccess( update(g0, tuc) )
             val g1 = update(g0, tuc)
             log <++: (if( t == absId ) LoggedSuccess(g1)
-            else redirectInstanceUsesAndPropagate(g1, (s,t), absId))
+            else redirectInstanceUsesTowardAbstractionInAnotherTypeAndPropagate(g1, (s,t), absId))
         }
     })
   }
@@ -350,33 +351,51 @@ object Redirection {
       }
   }
 
-//  def redirectUsesOfWritableNodeAndPropagate
-//  (g : DependencyGraph,
-//   oldUse : NodeIdP,
-//   newTypeToUse : NodeId
-//  ) : LoggedTG = {
-//
-//    val log = s"redirectUsesOfWritableNodeAndPropagate(g, oldUse = ${(g, oldUse).shows},  " +
-//      s"newTypeToUse = ${(g, newTypeToUse).shows})\n"
-//
-//    val typeUses = g.typeUsesOf(oldUse)
-//
-//    val ltg : LoggedTG =
-//      typeUses.foldLoggedEither(g){
-//        case (g1, tu) =>
-//          redirectTypeMemberUses(g1, tu, Set((tu, oldUse)), newTypeToUse)
-//      } flatMap {
-//        g1 =>
-//          typeUses.toList.foldLoggedEither(g1) {
-//            propagateTypeConstraints(_,_, newTypeToUse)
-//          }
-//      }
-//    log <++: ltg
-//  }
+  def redirectFieldTowardGetterSetter // how much is this function general ?
+  (g : DependencyGraph,
+   oldUse : NodeIdP,
+   newUsed : Abstraction
+  ) : LoggedTG = {
+
+    val log = s"redirectUsesOfWritableNodeAndPropagate(g, oldUse = ${(g, oldUse).shows},  " +
+      s"newUsed = ${(g, newUsed).shows})\n"
+
+    val typeUses = g.typeUsesOf(oldUse)
+
+    val ltg : LoggedTG = redirect(g, oldUse, newUsed) map {
+      case (g1, newUses) =>
+
+        val g3 = typeUses.foldLeft(g1){
+          case (g2, tu) =>
+            g2.removeBinding(tu, oldUse)
+              .changeTypeUseForTypeMemberUseSet(tu, tu, newUses)
+        }
+
+        //retrieving type use of field
+        val tid = Type.mainId(g3.typ(oldUse.used))
+
+        val oldTypeUse = (oldUse.used, tid)
+        ( for {
+          newUse <- newUses.toList
+          //type use constraint between type use of field
+          tuc <- g3.typeConstraints( oldTypeUse )
+          //and user of field
+          if tuc.constrainedUser == oldUse.user
+        } yield (newUse, tuc) ).foldLeft(g3){
+          case (g4, (newUse, tuc)) =>
+            val newTid = Type.mainId(g4.typ(newUse.used))
+            val newTypeUse = (newUse.used, newTid)
+            g4.removeTypeUsesConstraint(oldTypeUse, tuc)
+              .addTypeUsesConstraint(newTypeUse, tuc)
+        }
+    }
+
+    log <++: ltg
+  }
 
 
 
-  def redirectInstanceUsesAndPropagate
+  def redirectInstanceUsesTowardAbstractionInAnotherTypeAndPropagate
   (g : DependencyGraph,
    oldUse : NodeIdP,
    newTypeToUse : NodeId

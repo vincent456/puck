@@ -102,7 +102,7 @@ object ReplaceInheritanceByDelegation {
            g0.usersOf(impl).foldLoggedEither(g0){
              case (g00, user) =>
                if(user != absDef &&
-                 g00.uses(user, impl)) rules.redirection.redirectInstanceUsesAndPropagate(g00, (user, impl), sup)
+                 g00.uses(user, impl)) rules.redirection.redirectInstanceUsesTowardAbstractionInAnotherTypeAndPropagate(g00, (user, impl), sup)
                else LoggedSuccess(g00)
            }
 

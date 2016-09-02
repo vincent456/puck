@@ -125,6 +125,14 @@ object RedirectTarget {
             throw new JavaAGError(k + " as user of Field, redirection unhandled !")
         }
 
+      case (oldF : FieldDeclHolder, MethodDeclHolder(mdecl)) =>
+        sourceInAST match {
+          case defHolder : DefHolder =>
+            if(mdecl.getNumParameter == 0) //assume it's a getter
+              defHolder.node.replaceFieldReadAccess(oldF.declarator, mdecl)
+          case k =>
+            throw new JavaAGError(k + " as user of Field, redirection unhandled !")
+        }
 
       case (oldk: MethodDeclHolder, newk: MethodDeclHolder) =>
         sourceInAST match {

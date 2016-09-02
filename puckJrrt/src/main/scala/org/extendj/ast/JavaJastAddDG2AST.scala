@@ -288,7 +288,6 @@ class JavaJastAddDG2AST
 
 //    logger.writeln("change applied : ")
 //    logger.writeln(program.prettyPrint())
-
     logger.writeln("unlocking")
     try {
       program.eliminateLockedNamesInSubtree()
@@ -298,7 +297,7 @@ class JavaJastAddDG2AST
         e.printStackTrace()
     }
     logger.writeln("done")
-
+//
 //    logger.writeln("Program after unlock : ")
 //    logger.writeln(program.prettyPrint())
 //    logger.writeln("Program after unlock end of print ")

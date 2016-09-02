@@ -27,6 +27,25 @@
 
 aspect ReplaceInstanceValueAccess {
 
+    public void ASTNode.replaceFieldReadAccess(FieldDeclarator fd, MethodDecl md) {
+        for (int i = 0; i < getNumChild(); i++)
+        getChild(i).replaceFieldReadAccess(fd, md);
+    }
+
+    public void VarAccess.replaceFieldReadAccess(FieldDeclarator fd, MethodDecl md) {
+        if( this.decl() == fd &&
+        this.usesAccessKind().equals(UsesAccessKind.read())){
+            MethodAccess macc = md.createLockedAccess(new List<>());
+            if(isQualified()){
+                Expr q = qualifier();
+                replace(parentDot()).with(new Dot(q, macc));
+            }
+            else {
+                replace(this).with(macc);
+            }
+        }
+    }
+
     public void ASTNode.replaceThisQualifierFor(MemberDecl method, Access byAccess){
         for(int i = 0; i < getNumChild(); i++)
             getChild(i).replaceThisQualifierFor(method, byAccess);
