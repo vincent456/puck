@@ -407,19 +407,23 @@ class DependencyGraph private
       case kt => false
     })
 
-  def splitWithTargets
-  (edge : Uses,
+  def splitUsesWithTargets
+  (edge : NodeIdP,
    readTarget : NodeId,
    writeTarget : NodeId
   ) : (DependencyGraph, Set[NodeIdP]) = {
-    val g1 = edge.deleteIn(this, register = false)
-    val readEdge : Uses = edge.copy(target = readTarget).withAccessKind(Some(Read))
-    val writeEdge : Uses = edge.copy(target = writeTarget).withAccessKind(Some(Write))
+    val u : DGEdge = Uses(edge)
+    val g1 = removeEdge(u, register = false)
+    val readEdge = Uses(edge.source, readTarget)
+    val writeEdge = Uses(edge.source, writeTarget)
 
     val newRecording =
-      recording.changeEdgeTarget(edge, readTarget, withMerge = readEdge.existsIn(this))
-        .changeEdgeTarget(edge, readTarget, withMerge = readEdge.existsIn(this))
-    (readEdge.createIn(g1, register = false).newGraph(recording = newRecording),
+      recording.changeEdgeTarget(u, readTarget, withMerge = readEdge.existsIn(this))
+        .changeEdgeTarget(u, readTarget, withMerge = readEdge.existsIn(this))
+
+    (g1.addEdge(readEdge, register = false)
+      .addEdge(writeEdge, register = false)
+      .newGraph(recording = newRecording),
       Set(readEdge, writeEdge) map DGEdge.toPair)
   }
 

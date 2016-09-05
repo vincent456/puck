@@ -159,7 +159,7 @@ object Redirection {
         case (ReadWriteAbstraction(_, Some(wid)), Some(Write)) =>
           (oldUse.changeTarget(g, Uses, wid), Set((oldUse.user, wid)))
         case (ReadWriteAbstraction(Some(rid), Some(wid)), Some(RW)) =>
-          oldUse.splitWithTargets(g, rid, wid)
+          g.splitUsesWithTargets(oldUse, rid, wid)
         case _ => throw new PuckError(s"error while redirecting ${(g,oldUse).shows} toward ${(g, newUsed).shows}")
       }
     } catch {

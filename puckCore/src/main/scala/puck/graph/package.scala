@@ -73,8 +73,6 @@ package object graph {
     def changeTarget(g : DependencyGraph, k : EKind, newTgt : NodeId) =
       g.changeTarget(k(p), newTgt)
 
-    def splitWithTargets(g :  DependencyGraph, rTgt : NodeId, wTgt : NodeId) =
-      g.splitWithTargets(Uses(p._1, p._2), rTgt, wTgt)
   }
 
 

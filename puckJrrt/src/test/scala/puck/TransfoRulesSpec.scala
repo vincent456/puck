@@ -26,10 +26,10 @@ class TransfoRulesSpec
                                       expectedResult: ScenarioFactory) : Unit = {
 
     def print(g : DependencyGraph, name : String) : Unit = {
-//      import puck.graph.ShowDG._
-//      println(s"graph $name")
-////      (g, g.nodesIndex).println
-//      (g, g.edges).println
+      import puck.graph.ShowDG._
+      println(s"graph $name")
+//      (g, g.nodesIndex).println
+      (g, g.edges).println
     }
 
 
@@ -47,16 +47,25 @@ class TransfoRulesSpec
         case t : Throwable => Right(t)
       }
 
-    assert(Mapping.equals(g, expectedResult.graph), "graph produced by transfo != expected")
+    def assertEqualityOrAssertFailureWithClue(g: DependencyGraph, other : DependencyGraph, otherName : String) = {
+      val clue = s"graph produced by transfo != $otherName"
+      try assert(Mapping.equals(g, other), clue)
+      catch {
+        case t : Throwable =>
+          println(clue)
+          t.printStackTrace()
+          assert(false, s"$clue : ${t.getMessage}")
+      }
+    }
 
+    assertEqualityOrAssertFailureWithClue(g, expectedResult.graph, "expected")
 
     someGenerated match {
-      case Left(generated) => assert(Mapping.equals(g, generated.graph), "graph produced by transfo != generated")
+      case Left(generated) =>
+        assertEqualityOrAssertFailureWithClue(g, generated.graph, "generated")
       case Right(t) => t.printStackTrace()
         assert(false, t.getMessage)
     }
-
-
   }
 
 }

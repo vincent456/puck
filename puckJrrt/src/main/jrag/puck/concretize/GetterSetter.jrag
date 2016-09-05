@@ -8,4 +8,52 @@ aspect GetterSetter {
         Access a = this.getParameter(0).createLockedAccess();
         getBody().addStmt(new ExprStmt(new AssignSimpleExpr(fd.createLockedAccess(), a)));
     }
+
+    public void ASTNode.replaceFieldReadAccess(FieldDeclarator fd, MethodDecl md) {
+        for (int i = 0; i < getNumChild(); i++)
+            getChild(i).replaceFieldReadAccess(fd, md);
+    }
+
+    public void VarAccess.replaceFieldReadAccess(FieldDeclarator fd, MethodDecl md) {
+        if( this.decl() == fd &&
+                this.usesAccessKind().equals(UsesAccessKind.read()) &&
+                !this.usesAccessKind().equals(UsesAccessKind.write()) ){
+            MethodAccess macc = md.createLockedAccess(new List<>());
+            if(isQualified()){
+                Expr q = qualifier();
+                replace(parentDot()).with(new Dot(q, macc));
+            }
+            else {
+                replace(this).with(macc);
+            }
+        }
+    }
+
+    public void ASTNode.replaceFieldWriteAccess(FieldDeclarator fd, MethodDecl md) {
+        for (int i = 0; i < getNumChild(); i++)
+            getChild(i).replaceFieldWriteAccess(fd, md);
+    }
+
+    public void VarAccess.replaceFieldWriteAccess(FieldDeclarator fd, MethodDecl md) {
+        if( this.decl() == fd &&
+                this.usesAccessKind().equals(UsesAccessKind.write()) &&
+                !this.usesAccessKind().equals(UsesAccessKind.read()) ){
+            AssignExpr ae = parentAssignExpr();
+            MethodAccess macc = md.createLockedAccess(new List<>(ae.getSource()));
+            if(isQualified()){
+                Expr q = qualifier();
+                replace(ae).with(new Dot(q, macc));
+            }
+            else {
+                replace(parentAssignExpr()).with(macc);
+            }
+        }
+    }
+
+    public AssignExpr ASTNode.parentAssignExpr(){
+        return getParent().parentAssignExpr();
+    }
+    public AssignExpr AssignExpr.parentAssignExpr(){
+        return this;
+    }
 }

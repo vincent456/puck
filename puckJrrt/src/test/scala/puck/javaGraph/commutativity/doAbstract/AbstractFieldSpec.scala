@@ -22,12 +22,10 @@ class AbstractFieldSpec extends TransfoRulesSpec {
         val (_,g2) =  Rules.abstracter.createAbstraction(graph, graph getConcreteNode "p.A.f",
             Method, DelegationAbstraction).rvalue
 
-//        import puck.graph.ShowDG._
-//        (g2, g2.edges).println
         g2
       },
       """package p;
-        |class A{
+        |class A {
         |     int f;
         |      public int getF(){ return f; }
         |      public int setF(int f){
