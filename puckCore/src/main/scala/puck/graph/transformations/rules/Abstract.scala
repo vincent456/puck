@@ -86,9 +86,9 @@ abstract class Abstract {
         val g5 =
           g4.addEdge(ContainsParam(wNode.id, pNode.id))
             .addAbstraction(impl.id, abs)
-            .addTypeUsesConstraint((impl.id, implTypeId), Sup((rNode.id, Type mainId rType)))
-            .addTypeUsesConstraint((impl.id, implTypeId), Sup((wNode.id, Type mainId wType)))
-            .addTypeUsesConstraint((impl.id, implTypeId), Sub((pNode.id, implTypeId)))
+            .addTypeConstraint(Sub(TypeOf(impl.id), TypeOf(rNode.id)))
+            .addTypeConstraint(Sub(TypeOf(impl.id), TypeOf(wNode.id)))
+            .addTypeConstraint(Sub(TypeOf(pNode.id), TypeOf(impl.id)))
             .addUses(rDef.id, impl.id)
             .addUses(wDef.id, impl.id)
 
@@ -106,7 +106,7 @@ abstract class Abstract {
             val typ = g container_! impl.id
             g1.setRole(absNode.id, Some(Factory(impl.id)))
               //type returned must be a subtype of the factory type
-                .addTypeUsesConstraint((impl.id, typ), Sup((absNode.id, typ)) )
+                .addTypeConstraint(Sub(TypeOf(impl.id), TypeOf(absNode.id)) )
           }
           else g1
 

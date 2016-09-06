@@ -26,8 +26,8 @@ class AbstractTypeSpec extends TransfoRulesSpec {
           |    private int f;
           |    public void m(){}
           |}""",
-        bs => {
-          import bs.{graph, idOfFullName}
+        s => {
+          import s.{graph, idOfFullName}
 
           val (AccessAbstraction(itc, _), g0) =
             Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
@@ -215,6 +215,40 @@ class AbstractTypeSpec extends TransfoRulesSpec {
           |    public void cannotBeInInterface(A a){ this.m(a.f); }
           |}"""
       )
+    }
+
+    ignore("use of type member sibling by local variable and parameter"){
+      val _ = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |
+          |    private int f;
+          |
+          |    public void m(int i){}
+          |
+          |    public void canBeInInterface(A a1){
+          |        A a2 = new A();
+          |        a1.m(a2.f);
+          |    }
+          |
+          |    public void cannotBeInInterface(A a1){
+          |        A a2 = new A();
+          |        a2.m(a1.f);
+          |    }
+          |}"""
+      ){
+
+        val (AccessAbstraction(itc, _), g) =
+          Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
+            Interface, SupertypeAbstraction).rvalue
+
+        assert( g.isa("p.A", itc))
+
+        assert( g.abstractions("p.A.cannotBeInInterface(A)").isEmpty)
+        assert( g.abstractions("p.A.canBeInInterface(A)").size == 1)
+
+      }
     }
 
     info("super type already present")

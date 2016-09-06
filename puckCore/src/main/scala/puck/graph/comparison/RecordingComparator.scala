@@ -175,7 +175,7 @@ object RecordingComparator{
         case _ : AType // TODO see if need to be compared
              | _ : TypeBinding
              | _ : ChangeTypeBindingOp
-             | _ : TypeUseConstraintOp
+             | _ : TypeConstraintOp
              | _ : AbstractionOp
              | _ : VNode
              | _ : CNode

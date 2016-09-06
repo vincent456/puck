@@ -210,8 +210,7 @@ trait GraphBuilderVisitor {
           typBinder =>
             val subTypeUser = this buildNode typBinder
 
-            addTypeUsesConstraint((superTypeUser, superTypeUsed),
-              Sub((subTypeUser, subTypeUsed)))
+            addTypeConstraint(Sub(TypeOf(subTypeUser), TypeOf(superTypeUser)))
         }
       case _ => println("type constraint in : " + stmt.prettyPrint() + " not handled")
     }

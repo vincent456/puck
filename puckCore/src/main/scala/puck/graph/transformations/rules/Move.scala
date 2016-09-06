@@ -290,8 +290,8 @@ object Move {
           def isReceiverTypeConstrainedIn(g : DependencyGraph, receiver : NodeId, ctxt : NodeId) : Boolean =
           g.kindType(receiver) match {
             case Parameter | InstanceValue =>
-            g.typ(receiver).ids.exists { tid =>
-              g.typeConstraints((receiver, tid)).exists(ct => ct.constrainedUser == ctxt )
+            g.typ(receiver).ids.exists { tid => ???
+              /*g.typeConstraints((receiver, tid)).exists(ct => ct.constrainedUser == ctxt )*/
             }
             case _ => //do not know but in doubt ...
               true
@@ -374,8 +374,7 @@ object Move {
                   g1.usersOf(g1 container_! movedDef).foldLoggedEither(g1) {
                     case (g00, user) =>
                       findReceiver(user) map { receiver =>
-                        g00.addTypeUsesConstraint((pnode.id, oldContainer),
-                          Sub((receiver, oldContainer)))}
+                        g00.addTypeConstraint(Sub(TypeOf(receiver), TypeOf(pnode.id)))}
                   }
             }
           }

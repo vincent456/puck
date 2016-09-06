@@ -29,6 +29,7 @@ package puck.graph.comparison
 import java.util.NoSuchElementException
 
 import puck.graph._
+import puck.graph.transformations._
 
 
 
@@ -118,6 +119,88 @@ object EqualityWithDebugPrint {
 }
 
 object Mapping {
+ mappin =>
+
+  def typeConstraintVariable(mappin : NodeId => NodeId)(tcv : TypeConstraintVariable) : TypeConstraintVariable=
+    tcv match {
+    case TypeOf(id) => TypeOf(mappin(id))
+    case ConstrainedType(NamedType(id)) => ConstrainedType(NamedType(mappin(id)))
+    case ParTypeProjection(tcv0, idx) =>
+      ParTypeProjection(typeConstraintVariable(mappin)(tcv0), idx)
+  }
+
+  def typeConstraint(mappin : NodeId => NodeId)(tuc : TypeConstraint) : TypeConstraint =
+    tuc match {
+      case Sub(left, right) => Sub(typeConstraintVariable(mappin)(left), typeConstraintVariable(mappin)(right))
+      case Eq(left, right) => Eq(typeConstraintVariable(mappin)(left), typeConstraintVariable(mappin)(right))
+    }
+
+  def nodeIdP(mappin : NodeId => NodeId) : NodeIdP => NodeIdP = {
+    case (n1, n2) => (mappin(n1), mappin(n2))
+  }
+
+  def operation(map : NodeId => NodeId, op : Operation) : Operation = {
+    val mappingOnType = mapType(map)
+
+    val mappingNodeIdP = mappin.nodeIdP(map)
+
+    val mappingOnRole : Role => Role = {
+      case Initializer(id) => Initializer(map(id))
+      case Factory(id) => Factory(map(id))
+    }
+
+    op match {
+      case CNode(n) =>
+        CNode(n.copy(id = map(n.id)))
+      case VNode(n) =>
+        val newId = map(n.id)
+        VNode(n.copy(id = newId))
+
+      case Edge(e) =>
+        Edge(e.kind(source = map(e.source), target = map(e.target)))
+
+      case tgt : RedirectionOp =>
+        val e = tgt.edge
+        val newEdge = e.kind(source = map(e.source), target = map(e.target))
+        val extyId = tgt.extremity.node
+        val newExty = tgt.extremity.create(map(extyId))
+        tgt.copy(edge = newEdge, extremity = newExty)
+      case AbstractionOp(impl, AccessAbstraction(abs, p)) =>
+        AbstractionOp(map(impl), AccessAbstraction(map(abs), p))
+
+      case AbstractionOp(impl, ReadWriteAbstraction(sRabs, sWabs)) =>
+        AbstractionOp(map(impl), ReadWriteAbstraction(sRabs map map, sWabs map map))
+
+
+      case AType(typed, t) =>
+        AType(map(typed), mappingOnType(t))
+
+      case cnn @ RenameOp(nid, _, _) =>
+        cnn.copy(nid = map(nid))
+      case ChangeTypeBindingOp((e1,e2), binding) =>
+        ChangeTypeBindingOp((mappingNodeIdP(e1),mappingNodeIdP(e2)),
+          binding.create(mappingNodeIdP(binding.edge)))
+      case TypeBinding(tUse, tmUse) =>
+        TypeBinding(mappingNodeIdP(tUse), mappingNodeIdP(tmUse))
+      case TypeConstraintOp(ct) =>
+        TypeConstraintOp(mappin.typeConstraint(map)(ct))
+      case RoleChange(id, sor, snr) =>
+        RoleChange(map(id), sor map mappingOnRole, snr map mappingOnRole)
+
+    }
+  }
+
+  def mapType(mappin : NodeId => NodeId): Type => Type = {
+    case NamedType(id) => NamedType(mappin(id))
+    case Tuple(lt) => Tuple(lt.map(mapType(mappin)))
+    case Arrow(i, o) => Arrow(mapType(mappin)(i), mapType(mappin)(o))
+    case ParameterizedType(gid, targs) =>
+      ParameterizedType(mappin(gid), targs.map(mapType(mappin)))
+    case Covariant(t) => Covariant(mapType(mappin)(t))
+    case Contravariant(t) => Contravariant(mapType(mappin)(t))
+  }
+
+
 
   def create
   ( g1 : DependencyGraph,
@@ -170,16 +253,7 @@ object Mapping {
     new CollectionValueMap(l.toMap, cvm.handler)
   }
 
-  def mapType(mappin : NodeId => NodeId): Type => Type = {
-    case NamedType(id) => NamedType(mappin(id))
-    case Tuple(lt) => Tuple(lt.map(mapType(mappin)))
-    case Arrow(i, o) => Arrow(mapType(mappin)(i), mapType(mappin)(o))
-    case ParameterizedType(gid, targs) =>
-      ParameterizedType(mappin(gid), targs.map(mapType(mappin)))
 
-    case Covariant(t) => Covariant(mapType(mappin)(t))
-    case Contravariant(t) => Contravariant(mapType(mappin)(t))
-  }
 
   def equalsMap[V]
   ( mappin : V => V)
@@ -195,7 +269,7 @@ object Mapping {
 
   import ShowDG._
   import EqualityWithDebugPrint._
-//  import Equality._
+  //  import Equality._
 
   def equals
   ( g1 : DependencyGraph,
@@ -205,8 +279,8 @@ object Mapping {
     assert(g2.virtualNodes.isEmpty)
 
     g1.nodesId.size >= g2.nodesId.size && {
-    val mappinG1toG2 : Map[NodeId, NodeId] = create(g1, g2)
-    implicit val gp = (g1, g2)
+      val mappinG1toG2 : Map[NodeId, NodeId] = create(g1, g2)
+      implicit val gp = (g1, g2)
 
       val mappinNodeIdP : NodeIdP => NodeIdP = {
         case (n1, n2) => (mappinG1toG2(n1), mappinG1toG2(n2))
@@ -254,17 +328,10 @@ object Mapping {
       lazy val equalsBR =
         equalsCVM(mappinNodeIdP)(g1.edges.typeMemberUses2typeUsesMap,
           g2.edges.typeMemberUses2typeUsesMap)
-      //      lazy val equalsTD2 =
-      //        equalsCVM(mappinNodeIdP)(g1.edges.typeUses2typeMemberUsesMap,
-      //          g2.edges.typeUses2typeMemberUsesMap)
-
-      def mappinTUC(tuc : TypeConstraint) : TypeConstraint =
-        tuc.copyWith(user = mappinG1toG2(tuc.constrainedUser),
-          used = mappinG1toG2(tuc.constrainedType))
 
 
       lazy val equalsTypeUseConstraints =
-        equalsCVM(mappinNodeIdP, mappinTUC)(g1.edges.typeConstraints,
+        equalsCVM(mappinG1toG2, mappin.typeConstraint(mappinG1toG2))(g1.edges.typeConstraints,
           g2.edges.typeConstraints)
 
 

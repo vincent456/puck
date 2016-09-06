@@ -75,7 +75,15 @@ aspect Desambiguation{
 		return getParentNamedNode().dgFullName()+"."+name();
 	}
 	public String AnonymousDecl.dgFullName(){
-		return getParentNamedNode().dgFullName() + "." + name();
+        DGNamedElement parentNamedNode = getParentNamedNode();
+
+        //in case of
+        // I localVar = new I(){ ... }
+        if(!(parentNamedNode instanceof BodyDecl ||
+                 parentNamedNode instanceof FieldDeclarator)) {
+            parentNamedNode = parentNamedNode.getParentNamedNode();
+        }
+        return parentNamedNode.dgFullName() + "." + name();
 	}
 
 	public String EnumConstant.dgFullName(){

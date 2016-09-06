@@ -260,17 +260,14 @@ trait TypeUsage {
             val tv = tms.getOriginalType.asInstanceOf[TypeVariable]
             findTypeVariableInstanciator(tv, tms.`type`(), rvalue) foreach {
               e =>
-                addTypeUsesConstraint((lvalue, buildNode(lvalueType)),
-                  Sub((e buildNode this, buildNode(tms.`type`())) ))
+                addTypeConstraint(Sub(TypeOf(e buildNode this), TypeOf(lvalue)))
             }
           case _ =>
-            addTypeUsesConstraint((lvalue, this buildNode lvalueType),
-              Sub((buildNode(rvalue.lastAccess()), buildNode(rvalue.lastAccess().`type`())) ))
+            addTypeConstraint(Sub(TypeOf(buildNode(rvalue.lastAccess())), TypeOf(lvalue)) )
         }
 
       case _ =>
-          addTypeUsesConstraint((lvalue, this buildNode lvalueType),
-            Sub((buildNode(rvalue.lastAccess()), buildNode(rvalue.lastAccess().`type`())) ))
+          addTypeConstraint(Sub(TypeOf(buildNode(rvalue.lastAccess())), TypeOf(lvalue)))
     }
 
   def constraintParTypeUses
@@ -290,9 +287,7 @@ trait TypeUsage {
           "rvalueType.getNumArgument() != lValueType.getNumArgument()  : TODO !!!")
       else {
         //Hypothesis : argument are in same order  C<B,A> extends I<A,B> kind of case not handled
-        val rvalueNode = this buildNode rvalue
-        addTypeUsesConstraint((lvalue, this buildNode lvalueType.genericDecl()),
-          Sub( (rvalueNode, this buildNode rvalueType.genericDecl()) ))
+        addTypeConstraint(Sub( TypeOf(this buildNode rvalue) , TypeOf(lvalue)))
 
         def normalizeTypeDecl(t : TypeDecl) : TypeDecl = t match {
           case _ : WildcardType => rvalue.program().typeObject()
@@ -303,30 +298,13 @@ trait TypeUsage {
           case _ => t
         }
 
-        Range(0, lvalueType.numTypeParameter()).foreach {
+        /*Range(0, lvalueType.numTypeParameter()).foreach {
           i =>
             val lvalueArg = normalizeTypeDecl(lvalueType.getParameterization.getArg(i))
             val rvalueArg = normalizeTypeDecl(rvalueType.getParameterization.getArg(i))
             if(lvalueArg.isObject)
               System.err.println(rvalue.fullLocation() + " lvalue object as type argument not constrained")
             else {
-//              val tvValueId = {
-//                val lid = buildNode(lvalueArg)
-//                val rid = buildNode(rvalueArg)
-//                if (lid != rid) {
-//                  println(lvalueType.asInstanceOf[DGNamedElement].dgFullName())
-//                  Range(0, lvalueType.numTypeParameter()).foreach {
-//                    i => println("->" + lvalueType.getParameterization.getArg(i).dgFullName())
-//                  }
-//                  println(rvalueType.asInstanceOf[DGNamedElement].dgFullName())
-//                  Range(0, lvalueType.numTypeParameter()).foreach {
-//                    i => println("->" + rvalueType.getParameterization.getArg(i).dgFullName())
-//                  }
-//                  puck.error(rvalue.prettyPrint()+ " " +rvalue.fullLocation() + " " + lvalueArg.getClass + " " +
-//                    (g, lid).shows(desambiguatedFullName) + " != " + (g, lid).shows(desambiguatedFullName))
-//                }
-//                lid
-//              }
               val tvValueId =  buildNode(lvalueArg)
 
               val tv: TypeVariable = rvalueArg match {
@@ -336,9 +314,9 @@ trait TypeUsage {
 
               findTypeVariableInstanciator(tv, lvalueArg, rvalue) foreach (
                 e =>
-                  addTypeUsesConstraint((lvalue, tvValueId), Eq((e buildNode this, tvValueId))))
+                  addTypeConstraint(Eq((e buildNode this, tvValueId), TypeOf(lvalue))))
             }
-        }
+        }*/
       }
     }
 

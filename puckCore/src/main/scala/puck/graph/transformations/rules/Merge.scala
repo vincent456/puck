@@ -33,6 +33,7 @@ import puck.graph.DependencyGraph.AbstractionMap
 import puck.graph.constraints.ConstraintsMaps
 import puck.util.LoggedEither._
 import ShowDG._
+import puck.graph.comparison.Mapping
 
 import scalaz.std.set._
 import scalaz.std.list._
@@ -120,25 +121,19 @@ class Merge
     consumedId : NodeId,
     consumerId : NodeId
   ) : DependencyGraph ={
-    val it : Iterator[(NodeIdP, TypeConstraint)] =
+    val it : Iterator[(NodeId, TypeConstraint)] =
       g0.kindType(consumedId) match {
       case NameSpace => Iterator.empty
-      case TypeDecl =>
+     case _ =>
         g0.typeConstraintsIterator.filter {
-          case ((user, used), ct) => user == consumedId || used == consumedId
-        }
-      case _ =>
-        g0.typeConstraintsIterator.filter {
-          case ((user, used), ct) => user == consumedId
+          case (node, ct) => node == consumedId
         }
     }
     val map : NodeId => NodeId = id => if (id == consumedId) consumerId else id
     it.foldLeft(g0){
-      case (g, ((user, used), tuc)) =>
-        g.removeTypeUsesConstraint((user, used), tuc).
-          addTypeUsesConstraint((map(user), map(used)),
-            tuc.copyWith(user = map(tuc.constrainedUser), used = map(tuc.constrainedType)))
-
+      case (g, (node, tuc)) =>
+        g.removeTypeConstraint(tuc).
+          addTypeConstraint(Mapping.typeConstraint(map)(tuc))
     }
 
   }

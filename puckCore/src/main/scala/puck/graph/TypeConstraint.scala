@@ -32,32 +32,57 @@ package puck.graph
 
 object TypeConstraint {
 
-  def comply(g : DependencyGraph, tuc : TypeConstraint, n : NodeId) : Boolean = tuc match {
-    case Eq(other) => g.typ(n) == g.typ(other)
-    case Sup(other) =>  g.typ(n).subtypeOf(g, g.typ(other))
-
-    case Sub(other) => g.typ(other).subtypeOf(g, g.typ(n))
-
+  def typeOf(g : DependencyGraph, tv : TypeConstraintVariable) : Type = tv match {
+    case TypeOf(id) => g typ id
+    case ConstrainedType(t) => t
+    case ParTypeProjection(tv1, idx) =>
+      val ParameterizedType(_, args) = typeOf(g, tv1)
+      args(idx)
   }
 
-  implicit class NodeIdOps(val gt : (DependencyGraph,NodeId)) extends AnyVal {
-    def g = gt._1
-    def t = gt._2
-    def complyWith(tuc : TypeConstraint) : Boolean = comply(g, tuc ,t)
+  def comply(g : DependencyGraph, tuc : TypeConstraint) : Boolean = tuc match {
+    case Eq(tv1, tv2) => typeOf(g, tv1) ==  typeOf(g, tv2)
+    case Sub(sub, sup) =>   typeOf(g, sub).subtypeOf(g, typeOf(g, sup))
   }
+}
+
+
+sealed abstract class TypeConstraintVariable {
+  def typedNode : Option[NodeId]
+}
+case class TypeOf(nodeId: NodeId) extends TypeConstraintVariable {
+  def typedNode : Option[NodeId] = Some(nodeId)
+}
+case class ConstrainedType(t : NamedType) extends TypeConstraintVariable {
+  def typedNode : Option[NodeId] = None
+}
+case class ParTypeProjection(tv : TypeConstraintVariable, typeArgIndex : Int) extends TypeConstraintVariable{
+  def typedNode : Option[NodeId] = tv.typedNode
 }
 
 sealed abstract class TypeConstraint {
-  def typedNode : NodeId
+  def typedNodes : List[NodeId] =
+    (left.typedNode, right.typedNode) match {
+      case (None, None) => List()
+      case (Some(id), None) => List(id)
+      case (None, Some(id)) => List(id)
+      case (Some(id1), Some(id2)) =>
+        if(id1 == id2) List(id1)
+        else List(id1, id2)
+    }
+  val left : TypeConstraintVariable
+  val right : TypeConstraintVariable
 }
-case class Sup(typedNode : NodeId) extends TypeConstraint
-case class Sub(typedNode : NodeId) extends TypeConstraint
-case class Eq(typedNode : NodeId) extends TypeConstraint
-// constraint against the value of type parameter of another node
-sealed abstract class ParTypeConstraint extends TypeConstraint {
-  def typeArgIndex : Int
+case class Sub(sub : TypeConstraintVariable, sup : TypeConstraintVariable) extends TypeConstraint{
+  val left : TypeConstraintVariable = sub
+  val right : TypeConstraintVariable = sup
 }
-case class ParSup(typedNode : NodeId, typeArgIndex : Int) extends ParTypeConstraint
-case class ParSub(typedNode : NodeIdP, typeArgIndex : Int) extends ParTypeConstraint
-case class ParEq(typedNode : NodeId, typeArgIndex : Int) extends ParTypeConstraint
+case class Eq(left : TypeConstraintVariable, right : TypeConstraintVariable) extends TypeConstraint
+//case class ParamaterizedAnd(arg : Type, tcs : List[TypeConstraint]) extends TypeConstraint
 
+
+//object TypeConstraint {
+//  def extendedForConstraint(graph : DependencyGraph, decl : NodeId, rightExpr : NodeId ) : TypeConstraint = {
+//
+//  }
+//}

@@ -327,33 +327,25 @@ class DependencyGraph private
       recording = recording.addTypeBinding(typeUse, typeMemberUse))
 
   def changeAccessKind(br : (NodeIdP, NodeIdP),
-                       accK : Option[UsesAccessKind]) =
+                       accK : Option[UsesAccessKind]) = {
+    println("/!\\ changeAccessKind is not recorded !!")
     newGraph(edges = edges.changeAccessKind(br, accK))
+  }
 
   def removeBinding
   ( typeUse : NodeIdP,
     typeMemberUse : NodeIdP) : DependencyGraph =
-    newGraph(edges = edges.removeUsesDependency(typeUse, typeMemberUse))
+    newGraph(edges = edges.removeUsesDependency(typeUse, typeMemberUse),
+      recording = recording.removeTypeBinding(typeUse, typeMemberUse))
 
-  def addTypeUsesConstraint(typeUse : NodeIdP, constraint : TypeConstraint) : DependencyGraph =
-    newGraph(edges =
-      constraint match {
-        case Sub(subTypeUse) => edges.addTypeUsesConstraint(typeUse, subTypeUse)
-        case Sup(supTypeUse) => edges.addTypeUsesConstraint(supTypeUse, typeUse)
-        case Eq(oTypeUse) => edges.addEqTypeUsesConstraint(typeUse, oTypeUse)
-      },
-      recording = recording.addTypeUseConstraint(typeUse, constraint))
+  def addTypeConstraint(constraint : TypeConstraint) : DependencyGraph =
+    newGraph(edges = edges addTypeConstraint constraint,
+      recording = recording addTypeConstraint constraint)
 
-  def removeTypeUsesConstraint(typeUse : NodeIdP, constraint : TypeConstraint) : DependencyGraph =
-    newGraph(edges =  constraint match {
-      case Sub(subTypeUse) => edges.removeTypeUsesConstraint(typeUse, subTypeUse)
-      case Sup(supTypeUse) => edges.removeTypeUsesConstraint(supTypeUse, typeUse)
-      case Eq(oTypeUse) => edges.removeEqTypeUsesConstraint(typeUse, oTypeUse)
-    },
-      recording = recording.removeTypeUseConstraint(typeUse, constraint))
+  def removeTypeConstraint(constraint : TypeConstraint) : DependencyGraph =
+    newGraph(edges = edges removeTypeConstraint constraint,
+      recording = recording removeTypeConstraint constraint)
 
-  def removeTypeUsesConstraint(typeUse : NodeIdP) : DependencyGraph =
-    typeConstraints(typeUse).foldLeft(this)(_.removeTypeUsesConstraint(typeUse, _))
 
   def changeTypeUseOfTypeMemberUse
   ( oldTypeUse : NodeIdP,
@@ -579,11 +571,8 @@ class DependencyGraph private
   }
 
 
-  def typeConstraints(typedNode : NodeId) : Set[TypeConstraint] = {
-    val tucs =  edges.typeConstraints getFlat typedNode
-    //tucs foreach checkTypeUseExist
-    tucs
-  }
+  def typeConstraints(typedNode : NodeId) : Set[TypeConstraint] =
+    edges.typeConstraints getFlat typedNode
 
   def typeConstraintsIterator : Iterator[(NodeId, TypeConstraint)] =
     edges.typeConstraints.iterator

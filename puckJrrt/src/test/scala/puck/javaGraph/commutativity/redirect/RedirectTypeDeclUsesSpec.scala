@@ -188,6 +188,7 @@ class RedirectTypeDeclUsesSpec
     compareWithExpectedAndGenerated(code("C"),
       bs => {
         import bs.{graph, idOfFullName}
+        bs.printFullNamesSortedByKey
         Redirection.redirectUsesAndPropagate(graph, ("p.A.getC()", "p.C"),
           AccessAbstraction("p.I", SupertypeAbstraction)).rvalue
       },code("I"))

@@ -187,20 +187,19 @@ object ShowDG extends ShowConstraints{
   }
 
   val tcOp : TypeConstraint => String = {
-    case Sub(_) => ":>"
-    case Eq(_) =>  ":="
-    case Sup(_) => ":<"
+    case Sub(_, _) => "<:"
+    case Eq(_, _) =>  ":="
   }
 
-  implicit def stringOfTypeUseConstraint : DGStringBuilder[TypeConstraint] =
-    (dg, tc) => s"${tcOp(tc)} ${stringOfNodeIdP(dg,tc.typedNode)}"
-
-
-  implicit def stringOfTypeConstraint : DGStringBuilder[(NodeIdP, TypeConstraint)] = {
-    case (dg, (tuse, tc)) =>
-      val tu1 = stringOfNodeIdP(dg,tuse)
-      s"$tu1 ${stringOfTypeUseConstraint(dg, tc)}"
+  def tcv(dg : DependencyGraph, tv : TypeConstraintVariable) : String = tv match {
+    case TypeOf(id) => s"typeOf(${desambiguatedFullName(dg, id)})"
+    case ConstrainedType(NamedType(id)) =>  desambiguatedFullName(dg, id)
+    case ParTypeProjection(v, idx) => s"Proj(${tcv(dg, v)}, $idx)"
   }
+
+  implicit def stringOfTypeConstraint : DGStringBuilder[TypeConstraint] =
+    (dg, tc) => s"${tcv(dg, tc.left)} ${tcOp(tc)} ${tcv(dg, tc.right)}"
+
 
   val desambiguatedLocalStringOfId : DGStringBuilder[NodeId] = {
     case (g, id) =>  desambiguatedLocalName(g, g getConcreteNode id)
@@ -293,7 +292,7 @@ object ShowDG extends ShowConstraints{
 
       builder.append("\ntypeUsesConstraints\n")
       builder append print(typeUsesConstraints,
-        (k : NodeIdP, v : TypeConstraint) => stringOfTypeConstraint(dg,(k,v)))
+        (k : NodeId, v : TypeConstraint) => stringOfTypeConstraint(dg, v))
 
 
       builder.toString()

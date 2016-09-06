@@ -69,20 +69,17 @@ object Remove{
             g.removeEdge(Uses(n.id, usedId))
         }
         val g03 = remove.bindingsInvolving(g02.removeType(n.id), n)
-        val g04 = remove.typeUseConstraintInvolving(g03, n)
+        val g04 = remove.typeConstraintInvolving(g03, n)
         LoggedSuccess(g04.removeConcreteNode(n))
       }
 
     } yield g2
   }
 
-  def typeUseConstraintInvolving(g : DependencyGraph, n : ConcreteNode) : DependencyGraph = {
-    val tcs = g.typeConstraintsIterator.filter {
-      case ((user, used), ct) =>
-        user == n.id || used == n.id
-    }
+  def typeConstraintInvolving(g : DependencyGraph, n : ConcreteNode) : DependencyGraph = {
+    val tcs = g.typeConstraintsIterator.filter { case (id, ct) => id == n.id }
     tcs.foldLeft(g){
-      case (g0, (use, tuc)) => g0.removeTypeUsesConstraint(use, tuc)
+      case (g0, (use, tuc)) => g0.removeTypeConstraint(tuc)
     }
   }
   def bindingsInvolving(g : DependencyGraph, n : ConcreteNode) : DependencyGraph = {

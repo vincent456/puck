@@ -96,7 +96,7 @@ object Type {
   }
 }
 
-sealed abstract class Type {
+abstract class Type {
 
   def makeClone() : Type
   def subtypeOf(graph : DependencyGraph,

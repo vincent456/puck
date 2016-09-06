@@ -66,6 +66,7 @@ aspect NamedElement {
 		String dgFullName();
 		String name();
 
+        DGNamedElement getParentNamedNode();
 		void registerNode(JastaddGraphBuilder builder, int thisId);
 
         boolean isSynthetic();

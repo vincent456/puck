@@ -153,7 +153,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
       g.concreteNodesId.count(g.fullName(_) == fullName)
 
 
-    scenario("generic method declaration"){
+    scenario("method of generic type declaration"){
       val _ = new ScenarioFactory(
         """package p;
           |
@@ -184,8 +184,8 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
         val userMethodDef = fullName2id("p.User.m().Definition")
 
-       numNodesWithFullname(graph, "p.GenColl") shouldBe 1
-       numNodesWithFullname(graph, "p.GenColl.put") shouldBe 1
+        numNodesWithFullname(graph, "p.GenColl") shouldBe 1
+        numNodesWithFullname(graph, "p.GenColl.put") shouldBe 1
 
         assert( ! graph.uses(genMethod, actualTypeParam) )
 
@@ -317,7 +317,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
   feature("anonymous class"){
 
     scenario("anonymous class instanciated in local variable") {
-      val _ = new ScenarioFactory(
+      val s = new ScenarioFactory(
         """package p;
           |
           |interface DoM { void m(); }
@@ -329,12 +329,11 @@ class GraphBuildingSpec extends AcceptanceSpec {
           |            public void m(){ System.out.println("also do m !"); }
           |        };
           |    }
-          |}""") {
-        val mDef = fullName2id(s"p.A.ma().Definition")
-        val anonymousClass = fullName2id(s"p.A.ma().Anonymous0")
+          |}""")
+      import s._
 
-        assert( graph.contains(mDef, anonymousClass) )
-      }
+      assert( graph.contains("p.A.ma().Definition", "p.A.ma().Anonymous0") )
+
     }
 
     scenario("static initializer declaring array list") {
@@ -348,7 +347,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
     }
 
     scenario("anonymous class instanciated in field") {
-      val _ = new ScenarioFactory(
+      val s = new ScenarioFactory(
         """package p;
           |
           |interface DoM { void m(); }
@@ -359,14 +358,11 @@ class GraphBuildingSpec extends AcceptanceSpec {
           |        public void m(){ System.out.println("do m !"); }
           |    };
           |
-          |}""") {
+          |}""")
 
-        val field = fullName2id(s"p.A.f.Definition")
-        val anonymousClass = fullName2id(s"p.A.f.Anonymous0")
-        assert( graph.contains(field, anonymousClass) )
+      import s._
 
-
-      }
+      assert( graph.contains("p.A.f.Definition", "p.A.f.Anonymous0") )
     }
   }
 }

@@ -124,60 +124,9 @@ object Recording {
    mappin : NodeId => NodeId) : Recording = {
 
 
-    val mappinNodeIdP : NodeIdP => NodeIdP = {
-      case (n1, n2) => (mappin(n1), mappin(n2))
-    }
-
-    val mappingOnType = Mapping.mapType(mappin)
-
-    val mappingOnRole : Role => Role = {
-      case Initializer(id) => Initializer(mappin(id))
-      case Factory(id) => Factory(mappin(id))
-    }
-
-    def mappingOnOperation : Operation => Operation = {
-      case CNode(n) =>
-        CNode(n.copy(id = mappin(n.id)))
-      case VNode(n) =>
-        val newId = mappin(n.id)
-        VNode(n.copy(id = newId))
-
-      case Edge(e) =>
-        Edge(e.kind(source = mappin(e.source), target = mappin(e.target)))
-
-      case tgt : RedirectionOp =>
-        val newEdge =
-          mappingOnOperation(Edge(tgt.edge)).asInstanceOf[Edge].edge
-        val extyId = tgt.extremity.node
-        val newExty = tgt.extremity.create(mappin(extyId))
-        tgt.copy(edge = newEdge, extremity = newExty)
-      case AbstractionOp(impl, AccessAbstraction(abs, p)) =>
-        AbstractionOp(mappin(impl), AccessAbstraction(mappin(abs), p))
-
-      case AbstractionOp(impl, ReadWriteAbstraction(sRabs, sWabs)) =>
-        AbstractionOp(mappin(impl), ReadWriteAbstraction(sRabs map mappin, sWabs map mappin))
-
-
-      case AType(typed, t) =>
-        AType(mappin(typed), mappingOnType(t))
-
-      case cnn @ RenameOp(nid, _, _) =>
-        cnn.copy(nid = mappin(nid))
-      case ChangeTypeBindingOp((e1,e2), binding) =>
-        ChangeTypeBindingOp((mappinNodeIdP(e1),mappinNodeIdP(e2)),
-          binding.create(mappinNodeIdP(binding.edge)))
-      case TypeBinding(tUse, tmUse) =>
-        TypeBinding(mappinNodeIdP(tUse), mappinNodeIdP(tmUse))
-      case TypeUseConstraintOp(tu, ct) =>
-        TypeUseConstraintOp(mappinNodeIdP(tu), ct.copyWith(mappin(ct.constrainedUser), mappin(ct.constrainedType)))
-      case RoleChange(id, sor, snr) =>
-        RoleChange(mappin(id), sor map mappingOnRole, snr map mappingOnRole)
-
-    }
-
     rec.mapTransformation {
         case Transformation(direction, op) =>
-          Transformation(direction, mappingOnOperation(op))
+          Transformation(direction, Mapping.operation(mappin, op))
       }
   }
 
@@ -311,13 +260,11 @@ object Recording {
                           typeMemberUse :  NodeIdP) : Recording =
       Transformation(Reverse, TypeBinding(typeUse, typeMemberUse)) +: record
 
-    def addTypeUseConstraint(typeUse : NodeIdP,
-                             constraint :  TypeConstraint) : Recording =
-      Transformation(Regular, TypeUseConstraintOp(typeUse, constraint)) +: record
+    def addTypeConstraint(constraint :  TypeConstraint) : Recording =
+      Transformation(Regular, TypeConstraintOp(constraint)) +: record
 
-    def removeTypeUseConstraint(typeUse : NodeIdP,
-                                constraint :  TypeConstraint) : Recording =
-      Transformation(Reverse, TypeUseConstraintOp(typeUse, constraint)) +: record
+    def removeTypeConstraint(constraint :  TypeConstraint) : Recording =
+      Transformation(Reverse, TypeConstraintOp(constraint)) +: record
 
     def changeTypeUseOfTypeMemberUse
     ( oldTypeUse : NodeIdP,

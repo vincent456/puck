@@ -94,6 +94,10 @@ class CollectionValueMap[K, C[_], V]
     new CollectionValueMap[K, C, V](content + (key -> vs), handler)
   }
 
+  def ++ (it : Iterable[(K,V)]) : CollectionValueMap[K, C, V] = it.foldLeft(this){
+    case (cvm, (k, v)) => cvm + (k,v)
+  }
+
   def - (key : K) : CollectionValueMap[K, C, V] =
     new CollectionValueMap[K, C, V](content - key, handler)
 
@@ -106,6 +110,10 @@ class CollectionValueMap[K, C[_], V]
     else
       new CollectionValueMap[K, C, V](content + (key -> newValues), handler)
 
+  }
+
+  def -- (it : Iterable[(K,V)]) : CollectionValueMap[K, C, V] = it.foldLeft(this){
+    case (cvm, (k, v)) => cvm - (k,v)
   }
 
   def mapValues[W](f : V => W) =

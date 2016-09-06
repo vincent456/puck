@@ -74,7 +74,7 @@ case class EdgeMap
  typeMemberUses2typeUsesMap : UseDependencyMap,
  typeUses2typeMemberUsesMap : UseDependencyMap,
  typeConstraints : SetValueMap.T[NodeId, TypeConstraint],
- // if ((a, t), Sub(a, s)) then constraint( t :> s )
+ // if (a, Sub(b)) then constraint( type(a) :> type(b) )
  // if ((a, t), Sup(a, s)) then constraint( t <: s )
  // if ((a, t), Eq(a, s)) then constraint( t =:= s )
 
@@ -183,7 +183,7 @@ case class EdgeMap
     }
 
 
-  def getAccessKind(br: (NodeIdP,NodeIdP))  : Option[UsesAccessKind] =
+  def getAccessKind(br: (NodeIdP, NodeIdP))  : Option[UsesAccessKind] =
     accessKindMap get br
 
   def uses(use : NodeIdP) : Boolean = uses(use.user, use.used)
@@ -222,29 +222,12 @@ case class EdgeMap
     copy(typeMemberUses2typeUsesMap = typeMemberUses2typeUsesMap - (typeMemberUse, typeUse),
       typeUses2typeMemberUsesMap = typeUses2typeMemberUsesMap - (typeUse, typeMemberUse))
 
-  def addTypeUsesConstraint(superTypeUse : NodeIdP, subTypeUse : NodeIdP) : EdgeMap =
-    copy(typeConstraints =
-      typeConstraints +
-      (subTypeUse, Sup(superTypeUse)) +
-        (superTypeUse, Sub(subTypeUse)))
+  def addTypeConstraint(tc : TypeConstraint) : EdgeMap =
+    copy(typeConstraints = typeConstraints ++ tc.typedNodes.map((_, tc)))
 
-  def removeTypeUsesConstraint(superTypeUse : NodeIdP, subTypeUse : NodeIdP) : EdgeMap =
-    copy(typeConstraints =
-      typeConstraints -
-        (subTypeUse, Sup(superTypeUse)) -
-        (superTypeUse, Sub(subTypeUse)))
+  def removeTypeConstraint(tc : TypeConstraint) : EdgeMap =
+    copy(typeConstraints = typeConstraints -- tc.typedNodes.map((_, tc)))
 
-  def addEqTypeUsesConstraint(typeUse : NodeIdP, otherTypeUse : NodeIdP) : EdgeMap =
-    copy(typeConstraints =
-      typeConstraints +
-        (otherTypeUse, Eq(typeUse)) +
-        (typeUse, Eq(otherTypeUse)))
-
-  def removeEqTypeUsesConstraint(typeUse : NodeIdP, otherTypeUse : NodeIdP) : EdgeMap =
-    copy(typeConstraints =
-      typeConstraints -
-        (otherTypeUse, Eq(typeUse)) -
-        (typeUse, Eq(otherTypeUse)))
 
 
   def redirectTypeUse(typed : NodeId, oldTypeUsed : NodeId, newTypeUsed : NodeId) : EdgeMap =

@@ -69,9 +69,8 @@ trait GraphBuilder {
     g = g.addIsa(subTypeId, superTypeId)
 
 
-  def addTypeUsesConstraint(superTypeUse : NodeIdP,
-                            constraint : TypeConstraint): Unit =
-    g = g.addTypeUsesConstraint(superTypeUse, constraint)
+  def addTypeConstraint(constraint : TypeConstraint): Unit =
+    g = g.addTypeConstraint(constraint)
 
 
 

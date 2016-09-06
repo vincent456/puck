@@ -211,7 +211,7 @@ abstract class Intro {
             (newTypeUse,
               g1.addContains(tmContainer, delegateDecl.id)
                 .addEdge(Uses(delegateDef.id, constructorId))
-                .addTypeUsesConstraint(newTypeUse, Sub((constructorId, typeNode))))
+                .addTypeConstraint(Sub(TypeOf(constructorId), TypeOf(delegateDecl.id))))
         }
         else LoggedError(s"$tmContainerKind cannot contain $kind")
 
