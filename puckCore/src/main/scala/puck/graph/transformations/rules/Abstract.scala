@@ -89,8 +89,8 @@ abstract class Abstract {
             .addTypeUsesConstraint((impl.id, implTypeId), Sup((rNode.id, Type mainId rType)))
             .addTypeUsesConstraint((impl.id, implTypeId), Sup((wNode.id, Type mainId wType)))
             .addTypeUsesConstraint((impl.id, implTypeId), Sub((pNode.id, implTypeId)))
-            .addUses(rDef.id, impl.id, Some(Read))
-            .addUses(wDef.id, impl.id, Some(Write))
+            .addUses(rDef.id, impl.id)
+            .addUses(wDef.id, impl.id)
 
 
 

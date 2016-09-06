@@ -313,25 +313,11 @@ class SolvingActions
       else if(choices.isEmpty) Stream(LoggedError("No abstractions"))
       else {
 
-        val cannotUseAbstraction: Abstraction => NodeId => Boolean = {
-          abs => userId =>
-
-            (abs,  g.usesAccessKind(userId, used.id)) match {
-              case (AccessAbstraction(absId, _), _) => constraints.isForbidden(g, userId, absId)
-              case (ReadWriteAbstraction(Some(rid), _), Some(Read)) => constraints.isForbidden(g, userId, rid)
-              case (ReadWriteAbstraction(_, Some(wid)), Some(Write)) => constraints.isForbidden(g, userId, wid)
-              case (ReadWriteAbstraction(Some(rid), Some(wid)), Some(RW)) =>
-                constraints.isForbidden(g, userId, rid) || constraints.isForbidden(g, userId, wid)
-              case _ => sys.error("should not happen")
-            }
-
-        }
-
-
         choices.toStream flatMap {
           abs =>
             val (remainingWus, wuToRedirect) =
-              wrongUsers.partition(cannotUseAbstraction(abs))
+              wrongUsers.partition( userId =>
+                abs.nodes exists (constraints.isForbidden(g, userId, _)))
 
 
             val ltg: LoggedTG =

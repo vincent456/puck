@@ -239,7 +239,7 @@ object Mapping {
         }
       lazy val equalsUsesAccessKind = g1.edges.accessKindMap.forall{
         case (k, v) =>
-          g2.edges.accessKindMap(mappinNodeIdP(k)) == v
+          g2.edges.accessKindMap((mappinNodeIdP(k._1), mappinNodeIdP(k._2))) == v
       }
 
       lazy val equalsContains1 =

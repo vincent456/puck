@@ -276,7 +276,8 @@ class GraphBuildingSpec extends AcceptanceSpec {
           |    public void decF1() { f--; }
           |}"""
       ) {
-        val field = fullName2id(s"p.A.f")
+        val a : NodeId = "p.A"
+        val field  : NodeId = "p.A.f"
         val getter = fullName2id(s"p.A.getF().Definition")
 
         val setter = fullName2id(s"p.A.setF(int).Definition")
@@ -289,25 +290,25 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
 
         assert( graph.uses(getter, field) )
-        graph.usesAccessKind(getter, field) shouldBe Some(Read)
+        graph.usesAccessKind( ((a,a), (getter, field)) ) shouldBe Some(Read)
 
         assert( graph.uses(setter, field) )
-        graph.usesAccessKind(setter, field) shouldBe Some(Write)
+        graph.usesAccessKind( ((a,a), (setter, field)) ) shouldBe Some(Write)
 
         assert( graph.uses(inc0, field) )
-        graph.usesAccessKind(inc0, field) shouldBe Some(RW)
+        graph.usesAccessKind( ((a,a), (inc0, field)) ) shouldBe Some(RW)
 
         assert( graph.uses(inc1, field) )
-        graph.usesAccessKind(inc1, field) shouldBe Some(RW)
+        graph.usesAccessKind( ((a,a), (inc1, field)) ) shouldBe Some(RW)
 
         assert( graph.uses(inc2, field) )
-        graph.usesAccessKind(inc2, field) shouldBe Some(RW)
+        graph.usesAccessKind( ((a,a), (inc2, field)) ) shouldBe Some(RW)
 
         assert( graph.uses(dec0, field) )
-        graph.usesAccessKind(dec0, field) shouldBe Some(RW)
+        graph.usesAccessKind( ((a,a), (dec0, field)) ) shouldBe Some(RW)
 
         assert( graph.uses(dec1, field) )
-        graph.usesAccessKind(dec1, field) shouldBe Some(RW)
+        graph.usesAccessKind( ((a,a), (dec1, field)) ) shouldBe Some(RW)
 
       }
     }

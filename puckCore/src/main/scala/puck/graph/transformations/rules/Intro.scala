@@ -80,8 +80,9 @@ abstract class Intro {
     (cnDecl.id,
       initializedContent.foldLeft(g3.addContains(typeInitialized, cnDecl.id)){
         (g, ic) =>
-          val g1 = g.addUses(defNode.id, ic, Some(Write))
+          val g1 = g.addUses(defNode.id, ic)
                     .addBinding((typeInitialized,typeInitialized), (defNode.id, ic))
+                      .changeAccessKind(((typeInitialized,typeInitialized), (defNode.id, ic)), Some(Write))
 
           val icDef = g definitionOf_! ic
 

@@ -128,21 +128,21 @@ object RedirectTarget {
       case (oldF : FieldDeclHolder, MethodDeclHolder(mdecl)) =>
         sourceInAST match {
           case defHolder : DefHolder =>
-//            if(mdecl.getNumParameter == 0) //assume it's a getter
-//              defHolder.node.replaceFieldReadAccess(oldF.declarator, mdecl)
-//            else
-//              defHolder.node.replaceFieldWriteAccess(oldF.declarator, mdecl)
-            reenactor.usesAccessKind(e) match {
-              case Some(Read) =>
-                defHolder.node.replaceFieldReadAccess(oldF.declarator, mdecl)
-              case Some(Write) =>
-                defHolder.node.replaceFieldWriteAccess(oldF.declarator, mdecl)
-              case Some(RW) =>
-                defHolder.node.replaceFieldReadAccess(oldF.declarator, mdecl)
-                defHolder.node.replaceFieldWriteAccess(oldF.declarator, mdecl)
-              case None =>
-                throw new JavaAGError("redirecting uses of field toward getter/setter access kind unknown")
-            }
+            if(mdecl.getNumParameter == 0) //assume it's a getter
+              defHolder.node.replaceFieldReadAccess(oldF.declarator, mdecl)
+            else
+              defHolder.node.replaceFieldWriteAccess(oldF.declarator, mdecl)
+//            reenactor.usesAccessKind(e) match {
+//              case Some(Read) =>
+//                defHolder.node.replaceFieldReadAccess(oldF.declarator, mdecl)
+//              case Some(Write) =>
+//                defHolder.node.replaceFieldWriteAccess(oldF.declarator, mdecl)
+//              case Some(RW) =>
+//                defHolder.node.replaceFieldReadAccess(oldF.declarator, mdecl)
+//                defHolder.node.replaceFieldWriteAccess(oldF.declarator, mdecl)
+//              case None =>
+//                throw new JavaAGError("redirecting uses of field toward getter/setter access kind unknown")
+//            }
 
 
           case k =>

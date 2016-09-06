@@ -114,11 +114,11 @@ object DependencyGraph {
   private var idSeed : Int = 0
 
   def apply( nodeKindKnowledge: NodeKindKnowledge,
-   nodesIndex : NodeIndex,
-   edges : EdgeMap,
-   abstractionsMap : AbstractionMap,
-   recording : Recording,
-   mutabilitySet: MutabilitySet) : DependencyGraph ={
+             nodesIndex : NodeIndex,
+             edges : EdgeMap,
+             abstractionsMap : AbstractionMap,
+             recording : Recording,
+             mutabilitySet: MutabilitySet) : DependencyGraph ={
 
     idSeed +=1
     new DependencyGraph(idSeed,
@@ -132,13 +132,13 @@ object DependencyGraph {
 
 
 class DependencyGraph private
- (val id : Int,
-  val nodeKindKnowledge : NodeKindKnowledge,
-  val nodesIndex : NodeIndex,
-  val edges : EdgeMap,
-  val abstractionsMap : AbstractionMap,
-  val recording : Recording,
-  val mutabilitySet: MutabilitySet) {
+(val id : Int,
+ val nodeKindKnowledge : NodeKindKnowledge,
+ val nodesIndex : NodeIndex,
+ val edges : EdgeMap,
+ val abstractionsMap : AbstractionMap,
+ val recording : Recording,
+ val mutabilitySet: MutabilitySet) {
 
   override def hashCode(): NodeId = id
 
@@ -152,8 +152,8 @@ class DependencyGraph private
       nodesIndex, edges,
       abstractionsMap, recording, mutabilitySet)
 
-   implicit val defaulVerbosity : PuckLog.Verbosity =
-  (PuckLog.InGraph, PuckLog.Debug)
+  implicit val defaulVerbosity : PuckLog.Verbosity =
+    (PuckLog.InGraph, PuckLog.Debug)
   import scala.language.implicitConversions
   implicit def logVerbosity(lvl : PuckLog.Level) : PuckLog.Verbosity =
     (PuckLog.InGraph, lvl)
@@ -308,9 +308,8 @@ class DependencyGraph private
     removeEdge(Contains(containerId, contentId), register)
 
   def addUses(userId: NodeId, useeId: NodeId,
-              sAccessKind : Option[UsesAccessKind] = None,
               register : Boolean = true): DependencyGraph =
-    addEdge(Uses(userId, useeId, sAccessKind))
+    addEdge(Uses(userId, useeId))
 
 
   def addIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : DependencyGraph=
@@ -327,11 +326,14 @@ class DependencyGraph private
     newGraph(edges = edges.addUsesDependency(typeUse, typeMemberUse),
       recording = recording.addTypeBinding(typeUse, typeMemberUse))
 
+  def changeAccessKind(br : (NodeIdP, NodeIdP),
+                       accK : Option[UsesAccessKind]) =
+    newGraph(edges = edges.changeAccessKind(br, accK))
+
   def removeBinding
   ( typeUse : NodeIdP,
     typeMemberUse : NodeIdP) : DependencyGraph =
-    newGraph(edges = edges.removeUsesDependency(typeUse, typeMemberUse),
-      recording = recording.removeTypeBinding(typeUse, typeMemberUse))
+    newGraph(edges = edges.removeUsesDependency(typeUse, typeMemberUse))
 
   def addTypeUsesConstraint(typeUse : NodeIdP, constraint : TypeUseConstraint) : DependencyGraph =
     newGraph(edges =
@@ -350,16 +352,18 @@ class DependencyGraph private
     },
       recording = recording.removeTypeUseConstraint(typeUse, constraint))
 
+  def removeTypeUsesConstraint(typeUse : NodeIdP) : DependencyGraph =
+    typeConstraints(typeUse).foldLeft(this)(_.removeTypeUsesConstraint(typeUse, _))
 
   def changeTypeUseOfTypeMemberUse
   ( oldTypeUse : NodeIdP,
     newTypeUse : NodeIdP,
-    tmUse : NodeIdP) : DependencyGraph = {
+    tmUse : NodeIdP) : DependencyGraph =
     newGraph(edges =
       edges.removeUsesDependency(oldTypeUse, tmUse).
         addUsesDependency(newTypeUse, tmUse),
       recording = recording.changeTypeUseOfTypeMemberUse(oldTypeUse, newTypeUse, tmUse))
-  }
+
 
   def changeTypeUseForTypeMemberUseSet
   ( oldTypeUse : NodeIdP,
@@ -371,12 +375,11 @@ class DependencyGraph private
   def changeTypeMemberUseOfTypeUse
   ( oldTmUse : NodeIdP,
     newTmUse : NodeIdP,
-    typeUse : NodeIdP) : DependencyGraph = {
+    typeUse : NodeIdP) : DependencyGraph =
     newGraph(edges =
       edges.removeUsesDependency(typeUse, oldTmUse).
         addUsesDependency(typeUse, newTmUse),
       recording = recording.changeTypeMemberUseOfTypeUse(oldTmUse, newTmUse, typeUse))
-  }
 
 
   def changeTypeMemberUseOfTypeUseSet
@@ -408,10 +411,11 @@ class DependencyGraph private
     })
 
   def splitUsesWithTargets
-  (edge : NodeIdP,
+  (tu : NodeIdP,
+   edge : NodeIdP,
    readTarget : NodeId,
    writeTarget : NodeId
-  ) : (DependencyGraph, Set[NodeIdP]) = {
+  ) : (DependencyGraph, List[NodeIdP]) = {
     val u : DGEdge = Uses(edge)
     val g1 = removeEdge(u, register = false)
     val readEdge = Uses(edge.source, readTarget)
@@ -423,8 +427,12 @@ class DependencyGraph private
 
     (g1.addEdge(readEdge, register = false)
       .addEdge(writeEdge, register = false)
-      .newGraph(recording = newRecording),
-      Set(readEdge, writeEdge) map DGEdge.toPair)
+      .newGraph(recording = newRecording)
+      .removeBinding(tu, edge)
+      .changeAccessKind((tu, edge), None)
+      .addBinding(tu, readEdge)
+      .addBinding(tu, writeEdge), List(readEdge, writeEdge))
+
   }
 
   def changeTarget(edge : DGEdge, newTarget : NodeId) : DependencyGraph = {
@@ -527,13 +535,13 @@ class DependencyGraph private
 
   //heavily used by the solver need to be optimized
   def contains_*(containerId : NodeId, contentId : NodeId) : Boolean =
-    containerId == contentId || {
-      var scontent0 : Option[NodeId] = edges.containers get contentId
-      while(scontent0.nonEmpty && scontent0.get != containerId){
-        scontent0 = edges.containers get scontent0.get
-      }
-      scontent0.nonEmpty
+  containerId == contentId || {
+    var scontent0 : Option[NodeId] = edges.containers get contentId
+    while(scontent0.nonEmpty && scontent0.get != containerId){
+      scontent0 = edges.containers get scontent0.get
     }
+    scontent0.nonEmpty
+  }
 
 
   def containerPath(id : NodeId)  : Seq[NodeId] = {
@@ -587,11 +595,8 @@ class DependencyGraph private
 
   def isaList  : List[(NodeId, NodeId)] = edges.superTypes.flatList
 
-  def usesAccessKind(userId: NodeId, usedId: NodeId) : Option[UsesAccessKind] =
-    usesAccessKind((userId, usedId))
-
-  def usesAccessKind(uses: NodeIdP) : Option[UsesAccessKind] =
-    edges getAccessKind uses
+  def usesAccessKind(br: (NodeIdP, NodeIdP)) : Option[UsesAccessKind] =
+    edges getAccessKind br
 
   def uses(userId: NodeId, usedId: NodeId) : Boolean =
     edges.uses(userId, usedId)

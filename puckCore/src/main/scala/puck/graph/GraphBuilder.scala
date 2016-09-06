@@ -76,12 +76,12 @@ trait GraphBuilder {
 
 
   def addBinding( typeUse : NodeIdP,
-                  typeMemberUse : NodeIdP): Unit =
-    g = g/*.addUses(typeUse.user, typeUse.used)*/
-      .addBinding(typeUse, typeMemberUse)
+                  typeMemberUse : Uses): Unit = {
+    g = g.addBinding(typeUse, typeMemberUse)
+      .changeAccessKind((typeUse, typeMemberUse), typeMemberUse.accessKind)
+  }
 
-
-  def addBinding(typeUser : NodeId, typeUsed:NodeId, typeMemberUse : NodeIdP) : Uses = {
+  def addBinding(typeUser : NodeId, typeUsed:NodeId, typeMemberUse : Uses) : Uses = {
     addBinding((typeUser, typeUsed), typeMemberUse)
     Uses(typeUser, typeUsed)
   }

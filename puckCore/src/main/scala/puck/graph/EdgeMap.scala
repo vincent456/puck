@@ -29,7 +29,7 @@ package puck.graph
 
 object EdgeMap {
 
-  type AccessKindMap = Map[(NodeId, NodeId), UsesAccessKind]
+  type AccessKindMap = Map[(NodeIdP, NodeIdP), UsesAccessKind]
   val AccessKindMap = Map
 
   type EdgeMapT = SetValueMap.T[NodeId, NodeId]
@@ -113,8 +113,7 @@ case class EdgeMap
     edge match {
       case Uses(user, used, accK) =>
         copy(userMap = userMap + (used, user),
-          usedMap = usedMap + (user, used),
-          accessKindMap = newAccessKindMapOnAdd(user, used, accK))
+          usedMap = usedMap + (user, used))
 
       case Isa(subType, superType) =>
         copy(subTypes = subTypes + (superType, subType),
@@ -133,15 +132,17 @@ case class EdgeMap
     }
 
   private def newAccessKindMapOnAdd
-  ( user : NodeId,
-    used : NodeId,
+  ( br : (NodeIdP, NodeIdP),
     accK : Option[UsesAccessKind]) : AccessKindMap =
-    (accK, accessKindMap get ((user, used))) match {
-      case (None, _) => accessKindMap - ((user, used))
-      case (Some(ak1), None) => accessKindMap + ((user, used) -> ak1)
-      case (Some(ak1), Some(ak2)) => accessKindMap + ((user, used) -> (ak1 && ak2))
+    (accK, accessKindMap get br) match {
+      case (Some(ak1), None) => accessKindMap + (br -> ak1)
+      case (Some(ak1), Some(ak2)) => accessKindMap + (br -> (ak1 && ak2))
+      case (None, _) => accessKindMap - br
     }
 
+  def changeAccessKind(br : (NodeIdP, NodeIdP),
+                    accK : Option[UsesAccessKind]) =
+    copy(accessKindMap = newAccessKindMapOnAdd(br, accK))
 
 
   def typedBy(nid : NodeId) = types.foldLeft(List[NodeId]()){
@@ -153,8 +154,7 @@ case class EdgeMap
     edge.kind match {
       case Uses =>
         copy(userMap = userMap - (edge.used, edge.user),
-          usedMap = usedMap - (edge.user, edge.used),
-          accessKindMap = accessKindMap - ((edge.user, edge.used)))
+          usedMap = usedMap - (edge.user, edge.used))
       case Isa =>
         copy(subTypes = subTypes - (edge.superType, edge.subType),
           superTypes = superTypes - (edge.subType, edge.superType))
@@ -183,15 +183,8 @@ case class EdgeMap
     }
 
 
-  def getAccessKind(uses: NodeIdP)  : Option[UsesAccessKind] =
-    accessKindMap get uses
-
-  def getUses(userId: NodeId, usedId: NodeId) : Option[Uses] = {
-    if(uses(userId, usedId))
-      Some(Uses(userId, usedId, accessKindMap get ((userId, usedId))))
-    else
-      None
-  }
+  def getAccessKind(br: (NodeIdP,NodeIdP))  : Option[UsesAccessKind] =
+    accessKindMap get br
 
   def uses(use : NodeIdP) : Boolean = uses(use.user, use.used)
 
@@ -214,6 +207,8 @@ case class EdgeMap
     case Uses => uses(e.source, e.target)
     case AbstractEdgeKind => false
   }
+
+
 
 
   def addUsesDependency(typeUse : NodeIdP,

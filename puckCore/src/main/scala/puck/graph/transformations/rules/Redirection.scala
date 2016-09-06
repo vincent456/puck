@@ -151,16 +151,29 @@ object Redirection {
    oldUse : NodeIdP,
    newUsed : Abstraction) : LoggedTry[(DependencyGraph, Set[NodeIdP])] =
     try LoggedSuccess {
-      (newUsed, g usesAccessKind oldUse ) match {
-        case (AccessAbstraction(absId, _), None) =>
+      newUsed match {
+        case AccessAbstraction(absId, _) =>
           (oldUse.changeTarget(g, Uses, absId), Set((oldUse.user, absId)))
-        case (ReadWriteAbstraction(Some(rid), _), Some(Read)) =>
-          (oldUse.changeTarget(g, Uses, rid), Set((oldUse.user, rid)))
-        case (ReadWriteAbstraction(_, Some(wid)), Some(Write)) =>
-          (oldUse.changeTarget(g, Uses, wid), Set((oldUse.user, wid)))
-        case (ReadWriteAbstraction(Some(rid), Some(wid)), Some(RW)) =>
-          g.splitUsesWithTargets(oldUse, rid, wid)
-        case _ => throw new PuckError(s"error while redirecting ${(g,oldUse).shows} toward ${(g, newUsed).shows}")
+        case _ => puck.error("blob")
+        //        case ReadWriteAbstraction(srid, swid) =>
+        //          g.typeUsesOf(oldUse).foldLeft((g, Set[NodeIdP]())) {
+        //            case ((g0, s), tu) =>
+        //              (srid, swid, g0.usesAccessKind((tu, oldUse))) match {
+        //                case (Some(rid), _, Some(Read)) =>
+        //                  (oldUse.changeTarget(g0, Uses, rid)
+        //                    .changeAccessKind((tu, oldUse), None),
+        //                    s + ((oldUse.user, rid)))
+        //                case (_, Some(wid), Some(Write)) =>
+        //                  (oldUse.changeTarget(g0, Uses, wid)
+        //                    .changeAccessKind((tu, oldUse), None), s + ((oldUse.user, wid)))
+        //                case  (Some(rid), Some(wid), Some(RW)) =>
+        //                  val (g1, s1) = g0.changeAccessKind((tu, oldUse), None)
+        //                    .splitUsesWithTargets(oldUse, rid, wid)
+        //                  (g1, s ++ s1)
+        //
+        //              }
+        //
+        //          }
       }
     } catch {
       case e : PuckError => LoggedError(e.getMessage)
@@ -357,40 +370,86 @@ object Redirection {
    newUsed : Abstraction
   ) : LoggedTG = {
 
-    val log = s"redirectUsesOfWritableNodeAndPropagate(g, oldUse = ${(g, oldUse).shows},  " +
-      s"newUsed = ${(g, newUsed).shows})\n"
+     val ReadWriteAbstraction(srid, swid) = newUsed
 
-    val typeUses = g.typeUsesOf(oldUse)
+    //retrieving type use of field
+    def typeUse(nodeId: NodeId) : NodeIdP = (nodeId, Type.mainId(g typ nodeId))
+    val oldTypeUse = typeUse(oldUse.used)
+    println("on entering :")
+    println( "oldTypeUse = "+ (g, oldTypeUse).shows)
+    println( "g1.typeConstraints( oldTypeUse ) = ")
+    g.typeConstraints( oldTypeUse ).foreach {
+      tuc =>
+        println((g, (oldTypeUse, tuc)).shows)
+    }
+    println("*********************")
 
-    val ltg : LoggedTG = redirect(g, oldUse, newUsed) map {
-      case (g1, newUses) =>
 
-        val g3 = typeUses.foldLeft(g1){
-          case (g2, tu) =>
-            g2.removeBinding(tu, oldUse)
-              .changeTypeUseForTypeMemberUseSet(tu, tu, newUses)
+
+
+    LoggedSuccess(s"redirectUsesOfWritableNodeAndPropagate(g, oldUse = ${(g, oldUse).shows},  " +
+      s"newUsed = ${(g, newUsed).shows})\n",
+      g.typeUsesOf(oldUse).foldLeft(g){
+      (g0, tu) =>
+        val (g1, newUses) =
+          (srid, swid, g0.usesAccessKind((tu, oldUse))) match {
+            case (Some(rid), _, Some(Read)) =>
+              (oldUse.changeTarget(g0, Uses, rid)
+                    .changeTypeMemberUseOfTypeUse(oldUse, (oldUse.user, rid), tu)
+                    .changeAccessKind((tu, oldUse), None), List((oldUse.user, rid)))
+
+            case (_, Some(wid), Some(Write)) =>
+              (oldUse.changeTarget(g0, Uses, wid)
+                .changeTypeMemberUseOfTypeUse(oldUse, (oldUse.user, wid), tu)
+                .changeAccessKind((tu, oldUse), None), List((oldUse.user, wid)))
+
+            case  (Some(rid), Some(wid), Some(RW)) =>
+                g0.splitUsesWithTargets(tu, oldUse, rid, wid)
+
+            case _ => puck.error("")
+          }
+//          g1
+//
+//        g1.typeConstraints(oldTypeUse)
+//          .contains(Sup(oldTypeUse))
+//
+//        val newReadTypeUse = typeUse(rid)
+//        val newWriteTypeUse = typeUse(g.parametersOf(wid).head)
+//
+//        g0.removeTypeUsesConstraint(oldTU, Sup(oldTU))
+//          .addTypeUsesConstraint(newWriteTypeUse, Sup(newReadTypeUse))
+
+
+        println( "oldTypeUse = "+ (g1, oldTypeUse).shows)
+        println( "g1.typeConstraints( oldTypeUse ) = ")
+        g1.typeConstraints( oldTypeUse ).foreach {
+          tuc =>
+            println((g1, (oldTypeUse, tuc)).shows)
         }
+        println("oldUse.user = " + (g1, oldUse.user).shows)
+        println( "g1.typeConstraints( oldTypeUse ) filtered = " +  g1.typeConstraints( oldTypeUse ).filter(_.constrainedUser == oldUse.user) )
+        println("*********************")
 
-        //retrieving type use of field
-        val tid = Type.mainId(g3.typ(oldUse.used))
-
-        val oldTypeUse = (oldUse.used, tid)
         ( for {
-          newUse <- newUses.toList
-          //type use constraint between type use of field
-          tuc <- g3.typeConstraints( oldTypeUse )
+          tuc <- g1.typeConstraints( oldTypeUse )
           //and user of field
           if tuc.constrainedUser == oldUse.user
-        } yield (newUse, tuc) ).foldLeft(g3){
+          newUse <- newUses
+          //type use constraint between type use of field
+
+        } yield (newUse, tuc) ).foldLeft(g1){
           case (g4, (newUse, tuc)) =>
             val newTid = Type.mainId(g4.typ(newUse.used))
             val newTypeUse = (newUse.used, newTid)
+
+            import ShowDG._
+            println("removing " + (g4, (oldTypeUse, tuc)).shows)
+            println("adding " + (g4, (newTypeUse, tuc)).shows)
+
             g4.removeTypeUsesConstraint(oldTypeUse, tuc)
               .addTypeUsesConstraint(newTypeUse, tuc)
         }
-    }
-
-    log <++: ltg
+    })
   }
 
 

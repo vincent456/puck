@@ -38,11 +38,17 @@ abstract class TypeVariableInstanciator {
 }
 case class TVIAccess(a : Access) extends TypeVariableInstanciator{
   def buildNode( builder : JastaddGraphBuilder) : NodeId =
-    builder.definitionOf(builder.buildNode(a.hostBodyDecl())) match {
-      case Some(d) => d
-      case None =>
-        puck.error(s"no def for ${a.hostBodyDecl().prettyPrint()} in ${a.hostBodyDecl().fullLocation()}")
+    a.hostBodyDecl() match {
+      case bd @ ( _ : StaticInitializer | _ : InstanceInitializer ) =>
+        builder.buildNode(bd)
+      case bd =>
+        builder.definitionOf(builder.buildNode(bd)) match {
+          case Some(d) => d
+          case None =>
+            puck.error(s"no def for ${a.hostBodyDecl().prettyPrint()} in ${a.hostBodyDecl().fullLocation()}")
+        }
     }
+
 
 }
 case class TVIVarDecl(d : Declarator) extends TypeVariableInstanciator{
@@ -105,12 +111,12 @@ trait TypeUsage {
 
   def bindTypeUse(exprId : NodeId,
                   expr : Expr,
-                  typeMemberUse : NodeIdP) : Unit =
+                  typeMemberUse : Uses) : Unit =
     bindTypeUse(exprId, expr.`type`(), typeMemberUse)
 
   def bindTypeUse(typeUser : NodeId,
                   typeUsed: TypeDecl,
-                  typeMemberUse : NodeIdP) : Unit = {
+                  typeMemberUse : Uses) : Unit = {
         val tid = Type.mainId(getType(typeUsed))
         puck.ignore(addBinding(typeUser, tid, typeMemberUse))
   }
@@ -152,7 +158,7 @@ trait TypeUsage {
 
   def bindParTypeUse(qualifier : Access,
                      qualifierDecl : TypeMemberSubstitute,
-                     typeMemberUse : NodeIdP) : Unit = {
+                     typeMemberUse : Uses) : Unit = {
     (qualifierDecl.getOriginalType, qualifier.`type`()) match {
       case ( tv : TypeVariable, _ ) =>
         findTypeVariableInstanciator(tv, qualifierDecl.`type`(), qualifier) foreach (

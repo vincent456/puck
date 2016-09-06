@@ -73,14 +73,17 @@ object JavaAbstract extends Abstract {
         val clazz = g.container_!(impl.id)
 
         val setDef = g2.definitionOf_!(set)
+        val getDef = g2.definitionOf_!(get)
+        val selfUse = (clazz, clazz)
         g2.addEdge(Contains(clazz, get))
           .addEdge(Contains(clazz, set))
           .addUses(clazz, clazz)
-          .addUses(setDef, impl.id, Some(Read))
           // we define a setter that returns the new value to mimic the affectation value
           // hence the value is also read
-          .addBinding((clazz, clazz), (g2.definitionOf_!(get), impl.id))
-            .addBinding((clazz, clazz), (setDef, impl.id))
+          .addBinding(selfUse, (getDef, impl.id))
+          .changeAccessKind((selfUse, (getDef, impl.id)), Some(Read))
+          .addBinding(selfUse, (setDef, impl.id))
+          .changeAccessKind((selfUse, (setDef, impl.id)), Some(RW))
       case _ => g2
     }
     (abs, g3)
