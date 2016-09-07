@@ -110,8 +110,8 @@ object Redirection {
 
     val g2 =  g1.removeTypeConstraint(returnTypeConstraint)
       .addTypeConstraint(Sub(TypeOf(factoryDef), TypeOf(factory)))
-      //constraint on newly extracted local variable
-//      .addTypeConstraint((factoryDef, st), returnTypeConstraint)
+    //constraint on newly extracted local variable
+    //      .addTypeConstraint((factoryDef, st), returnTypeConstraint)
     ???
 
     if(g2.typeMemberUsesOf(selfUse).isEmpty)
@@ -191,15 +191,15 @@ object Redirection {
     val (userOfCtor, ctor)= ctorUse
     val ctorTypeUse = (ctor, g container_! ctor)
     val constrainedUseToChange : Set[TypeConstraint]= ???
-      /*g.typeConstraints(ctorTypeUse) filter ( _.constrainedUser == userOfCtor )*/
+    /*g.typeConstraints(ctorTypeUse) filter ( _.constrainedUser == userOfCtor )*/
 
 
     g.typ(newUsed) match {
       case NamedType(tid) =>
         constrainedUseToChange.foldLoggedEither(g){
           (g0, ct) => ???
-//            LoggedSuccess( g.removeTypeConstraint(ctorTypeUse, ct)
-//              .addTypeConstraint((newUsed, tid), ct))
+          //            LoggedSuccess( g.removeTypeConstraint(ctorTypeUse, ct)
+          //              .addTypeConstraint((newUsed, tid), ct))
         }
       case _ => LoggedError("gen type factory type constraint change unhandled : TODO")
     }
@@ -243,75 +243,7 @@ object Redirection {
 
   }
 
-  //def propagateParameterTypeConstraints
 
-  def propagateTypeConstraints
-  (g : DependencyGraph,
-   oldTypeUse : NodeIdP,
-   newTypeToUse : NodeId) : LoggedTG = ???/*{
-    val log = s"propagateTypeConstraints old Type Use = ${(g, oldTypeUse).shows} new type to use = ${(g, newTypeToUse).shows}"
-    //    import puck.util.Debug._
-    //    println("propagateTypeConstraints")
-    //    (g, g.edges).println
-    val (oldTypeUser, oldTypeUsed) = oldTypeUse
-
-    val tucs  : Set[TypeConstraint] = ??? //g.typeConstraints(oldTypeUse)
-
-    val (tucsThatNeedPropagation, tucsThatNeedUpdate) =
-      if (g.isa_*(oldTypeUsed, newTypeToUse))
-        tucs.partition{
-          case Sup(_) | Eq(_) => true
-          case Sub(_) => false
-        }
-      else if (g.isa_*(newTypeToUse, oldTypeUsed))
-        tucs.partition{
-          case Sub(_) | Eq(_) => true
-          case Sup(_) => false
-        }
-      else
-        tucs.partition {
-          case Eq(_) => true
-          case Sub(_) | Sup(_) => false
-        }
-
-    val tucsString = (for{ ct <- tucs.toList } yield
-      (g,(oldTypeUser, ct)).shows) mkString "\n"
-    val tucsThatNeedPropagationString =
-      (for{ ct <- tucsThatNeedPropagation.toList } yield
-        (g,(oldTypeUser, ct)).shows) mkString ("\n", "\n", "")
-    val log2 = s"\nall constraints = {$tucsString}\ntucsThatNeedPropagation : {$tucsThatNeedPropagationString}\n"
-
-
-    val logTabsId =
-      g.abstractions(oldTypeUsed).find (abs => abs.nodes contains newTypeToUse) match {
-        case Some(abs@AccessAbstraction(absId, _)) => LoggedSuccess(absId)
-        case Some(ReadWriteAbstraction(_, _)) => LoggedError("!!! type is not supposed to have a r/w abs !!!")
-        case None =>
-          LoggedError(s"${(g, newTypeToUse).shows} is not an abstraction of ${(g, oldTypeUsed).shows} ")
-      }
-
-    (log  + log2) <++: ( logTabsId flatMap {
-      absId =>
-
-        def update(g : DependencyGraph, tuc : TypeConstraint) : DependencyGraph =
-          g.removeTypeConstraint(oldTypeUse, tuc)
-            .addTypeConstraint((oldTypeUse.user, absId), tuc)
-
-        val g1 = tucsThatNeedUpdate.foldLeft(g)(update)
-
-        val (tucsInvolvingTypeVariables, tucsToPropagate) =
-          tucsThatNeedPropagation.partition(tuc => g.kindType(tuc.typedNode) == TypeVariableKT)
-
-        tucsToPropagate.foldLoggedEither(g1) {
-          case (g0, tuc) => ???
-            val (s, t) = tuc.typedNode
-            val g1 = update(g0, tuc)
-
-            log <++: (if( t == absId ) LoggedSuccess(g1)
-            else redirectInstanceUsesTowardAbstractionInAnotherTypeAndPropagate(g1, (s,t), absId))
-        }
-    })
-  }*/
 
 
   def propagateParameterTypeConstraints
@@ -377,7 +309,7 @@ object Redirection {
    newUsed : Abstraction
   ) : LoggedTG = {
 
-     val ReadWriteAbstraction(srid, swid) = newUsed
+    val ReadWriteAbstraction(srid, swid) = newUsed
 
     //retrieving type use of field
     def typeUse(nodeId: NodeId) : NodeIdP = (nodeId, Type.mainId(g typ nodeId))
@@ -397,43 +329,43 @@ object Redirection {
     LoggedSuccess(s"redirectUsesOfWritableNodeAndPropagate(g, oldUse = ${(g, oldUse).shows},  " +
       s"newUsed = ${(g, newUsed).shows})\n",
       g.typeUsesOf(oldUse).foldLeft(g){
-      (g0, tu) =>
-        val (g1, newUses) =
-          (srid, swid, g0.usesAccessKind((tu, oldUse))) match {
-            case (Some(rid), _, Some(Read)) =>
-              (oldUse.changeTarget(g0, Uses, rid)
-                    .changeTypeMemberUseOfTypeUse(oldUse, (oldUse.user, rid), tu)
-                    .changeAccessKind((tu, oldUse), None), List((oldUse.user, rid)))
+        (g0, tu) =>
+          val (g1, newUses) =
+            (srid, swid, g0.usesAccessKind((tu, oldUse))) match {
+              case (Some(rid), _, Some(Read)) =>
+                (oldUse.changeTarget(g0, Uses, rid)
+                  .changeTypeMemberUseOfTypeUse(oldUse, (oldUse.user, rid), tu)
+                  .changeAccessKind((tu, oldUse), None), List((oldUse.user, rid)))
 
-            case (_, Some(wid), Some(Write)) =>
-              (oldUse.changeTarget(g0, Uses, wid)
-                .changeTypeMemberUseOfTypeUse(oldUse, (oldUse.user, wid), tu)
-                .changeAccessKind((tu, oldUse), None), List((oldUse.user, wid)))
+              case (_, Some(wid), Some(Write)) =>
+                (oldUse.changeTarget(g0, Uses, wid)
+                  .changeTypeMemberUseOfTypeUse(oldUse, (oldUse.user, wid), tu)
+                  .changeAccessKind((tu, oldUse), None), List((oldUse.user, wid)))
 
-            case  (Some(rid), Some(wid), Some(RW)) =>
+              case  (Some(rid), Some(wid), Some(RW)) =>
                 g0.splitUsesWithTargets(tu, oldUse, rid, wid)
 
-            case _ => puck.error("")
+              case _ => puck.error("")
+            }
+          //          g1
+          //
+          //        g1.typeConstraints(oldTypeUse)
+          //          .contains(Sup(oldTypeUse))
+          //
+          //        val newReadTypeUse = typeUse(rid)
+          //        val newWriteTypeUse = typeUse(g.parametersOf(wid).head)
+          //
+          //        g0.removeTypeUsesConstraint(oldTU, Sup(oldTU))
+          //          .addTypeUsesConstraint(newWriteTypeUse, Sup(newReadTypeUse))
+
+
+          println( "oldTypeUse = "+ (g1, oldTypeUse).shows)
+          println( "g1.typeConstraints( oldTypeUse ) = ")
+          g1.typeConstraints( oldUse.used ).foreach {
+            tuc =>
+              println((g1, tuc).shows)
           }
-//          g1
-//
-//        g1.typeConstraints(oldTypeUse)
-//          .contains(Sup(oldTypeUse))
-//
-//        val newReadTypeUse = typeUse(rid)
-//        val newWriteTypeUse = typeUse(g.parametersOf(wid).head)
-//
-//        g0.removeTypeUsesConstraint(oldTU, Sup(oldTU))
-//          .addTypeUsesConstraint(newWriteTypeUse, Sup(newReadTypeUse))
-
-
-        println( "oldTypeUse = "+ (g1, oldTypeUse).shows)
-        println( "g1.typeConstraints( oldTypeUse ) = ")
-        g1.typeConstraints( oldUse.used ).foreach {
-          tuc =>
-            println((g1, tuc).shows)
-        }
-        g1
+          g1
         /*( for {
           tuc <- g1.typeConstraints( oldUse.used )
           //and user of field
@@ -451,8 +383,9 @@ object Redirection {
             g4.removeTypeConstraint(oldUse.used, tuc)
               .addTypeConstraint(newUse.used, tuc)
         }*/
-    })
+      })
   }
+
 
 
 
@@ -465,41 +398,65 @@ object Redirection {
     val log = s"redirectInstanceUsesAndPropagate(g, oldUse = ${(g, oldUse).shows},  " +
       s"newTypeToUse = ${(g, newTypeToUse).shows})\n"
 
+
+
     lazy val qualifyingSet = cl(g, oldUse)
     val log2 = qualifyingSet map (n => (g,n).shows) mkString(" type members TRset = {", "\n", "}\n")
 
     val ltg : LoggedTG =
-      if(qualifyingSet.nonEmpty) {
+      if( qualifyingSet.nonEmpty ){
         val groupedByTypeUse = qualifyingSet.groupBy(_._1)
 
         groupedByTypeUse.toList.foldLoggedEither(g comment log) {
           case (g0, (tu, brSet)) =>
-            val g1 = tu.changeTarget(g0, Uses, newTypeToUse)
+            //val g1 = tu.changeTarget(g0, Uses, newTypeToUse)
+            val g1 = g0.changeType(tu, newTypeToUse)
             redirectTypeMemberUses(g1, tu, brSet, newTypeToUse)
-        } /*flatMap {
-          g1 =>
-            groupedByTypeUse.keys.toList.foldLoggedEither(g1) {
-              propagateTypeConstraints(_,_, newTypeToUse)
-            }
-        }*/
+        }
       }
       else // on redirige un type
         g.kindType(oldUse.used) match {
           case TypeDecl =>
-            val g2 = oldUse.changeTarget(g, Uses, newTypeToUse)
-            val tcs = g2.typeConstraints(oldUse.user)
-            if(tcs.forall(TypeConstraint.comply(g2, _)))
-                LoggedSuccess(g2)
-            else {
-              val pb = tcs.find(!TypeConstraint.comply(g2, _)).get
-              LoggedError(s"uncompliant type constraint : ${(g2,pb).shows}")
-            }
-            //propagateTypeConstraints(oldUse.changeTarget(g, Uses, newTypeToUse), oldUse, newTypeToUse)
+            //val g2 = oldUse.changeTarget(g, Uses, newTypeToUse)
+            val g2 = g.changeType(oldUse, newTypeToUse)
+            checkOrPropagateTypeConstraints(g2, oldUse.user, oldUse.used, newTypeToUse)
           case _ => LoggedError(s"${(g, oldUse).shows} empty qualyfing set, type redirection is expected")
         }
 
     (log + log2) <++: ltg
   }
 
+  def checkOrPropagateTypeConstraints
+  ( g : DependencyGraph,
+    typed : NodeId,
+    oldNamedTypeId : NodeId,
+    newNamedTypeId : NodeId) : LoggedTG = {
+    val tcs = g.typeConstraints(typed)
+    val toPropagate = tcs.filterNot(TypeConstraint.comply(g, _))
+    if(toPropagate.isEmpty) LoggedSuccess(g)
+    else {
+      toPropagate.foldLoggedEither(g){
+        case (g0, ct @ (BinaryTypeConstraint(op, Typed(typed1), Typed(typed2)))) =>
+          val t =
+            if(typed == typed1) typed2
+            else typed1
+
+          val canBePropagated = {
+            val g2 = g.changeType((t, oldNamedTypeId), newNamedTypeId)
+            TypeConstraint.comply(g2, ct)
+          }
+
+          if(canBePropagated)
+            redirectUsesAndPropagate(g0, (t, oldNamedTypeId),
+              AccessAbstraction(newNamedTypeId, SupertypeAbstraction))
+          else LoggedError(s"${(g0,ct).shows} cannot be propagated")
+        case (g0,ct) => LoggedError(s"propagation of ${(g0,ct).shows} not handled")
+      }
+
+
+
+
+    }
+  }
 
 }

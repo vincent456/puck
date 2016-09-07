@@ -91,7 +91,7 @@ aspect Desambiguation{
 	}
 
 	public String VariableDeclarator.dgFullName(){
-		return hostBodyDecl().dgFullName() +"."+name();
+		return hostBodyDecl().dgFullName() + ".Definition." + name();
 	}
 	public String StaticInitializer.dgFullName(){
 		return hostType().dgFullName() + ".StaticInitializer"+ getChildIndex();

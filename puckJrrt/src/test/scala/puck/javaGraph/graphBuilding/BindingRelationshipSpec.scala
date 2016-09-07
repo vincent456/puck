@@ -33,7 +33,7 @@ import puck.javaGraph.ScenarioFactory
 /**
   * Created by Loïc Girault on 11/04/16.
   */
-class BindingRelationship extends AcceptanceSpec {
+class BindingRelationshipSpec extends AcceptanceSpec {
 
   scenario("call on field") {
     val _ = new ScenarioFactory(
@@ -95,7 +95,7 @@ class BindingRelationship extends AcceptanceSpec {
 
 
 
-      val typeUse : NodeIdP = ("p.A.ma().Definition", "p.B")
+      val typeUse : NodeIdP = ("p.A.ma().Definition.b", "p.B")
       val typeMemberUse : NodeIdP = ("p.A.ma().Definition", "p.B.mb()")
 
       graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)

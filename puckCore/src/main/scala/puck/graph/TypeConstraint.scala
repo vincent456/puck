@@ -42,7 +42,9 @@ object TypeConstraint {
 
   def comply(g : DependencyGraph, tuc : TypeConstraint) : Boolean = tuc match {
     case Eq(tv1, tv2) => typeOf(g, tv1) ==  typeOf(g, tv2)
-    case Sub(sub, sup) =>   typeOf(g, sub).subtypeOf(g, typeOf(g, sup))
+    case Sub(sub, sup) => typeOf(g, sub).subtypeOf(g, typeOf(g, sup))
+    case AndTypeConstraint(tcs) =>
+      tcs.forall(comply(g,_))
   }
 }
 
@@ -53,14 +55,46 @@ sealed abstract class TypeConstraintVariable {
 case class TypeOf(nodeId: NodeId) extends TypeConstraintVariable {
   def typedNode : Option[NodeId] = Some(nodeId)
 }
-case class ConstrainedType(t : NamedType) extends TypeConstraintVariable {
+case class ConstrainedType(t : Type) extends TypeConstraintVariable {
   def typedNode : Option[NodeId] = None
 }
 case class ParTypeProjection(tv : TypeConstraintVariable, typeArgIndex : Int) extends TypeConstraintVariable{
   def typedNode : Option[NodeId] = tv.typedNode
 }
 
+object Typed {
+  def unapply(arg: TypeConstraintVariable): Option[NodeId] =
+    arg match {
+      case TypeOf(nid) => Some(nid)
+      case ConstrainedType(_) => None
+      case ParTypeProjection(tv, _) => unapply(tv)
+    }
+}
+
+sealed abstract class ConstraintOp
+case object Sub extends ConstraintOp {
+  def apply(sub : TypeConstraintVariable, sup : TypeConstraintVariable) : TypeConstraint =
+    BinaryTypeConstraint(Sub, sub, sup)
+
+  def unapply(tc: TypeConstraint): Option[(TypeConstraintVariable, TypeConstraintVariable)] = tc match {
+    case BinaryTypeConstraint(Sub, l, r) => Some((l,r))
+    case _ => None
+  }
+}
+case object Eq extends ConstraintOp {
+  def apply(l : TypeConstraintVariable, r : TypeConstraintVariable) : TypeConstraint =
+    BinaryTypeConstraint(Eq, l, r)
+
+  def unapply(tc: TypeConstraint): Option[(TypeConstraintVariable, TypeConstraintVariable)] = tc match {
+    case BinaryTypeConstraint(Eq, l, r) => Some((l,r))
+    case _ => None
+  }
+}
+
 sealed abstract class TypeConstraint {
+  def typedNodes : List[NodeId]
+}
+case class BinaryTypeConstraint(op : ConstraintOp, left : TypeConstraintVariable, right : TypeConstraintVariable) extends TypeConstraint {
   def typedNodes : List[NodeId] =
     (left.typedNode, right.typedNode) match {
       case (None, None) => List()
@@ -70,14 +104,15 @@ sealed abstract class TypeConstraint {
         if(id1 == id2) List(id1)
         else List(id1, id2)
     }
-  val left : TypeConstraintVariable
-  val right : TypeConstraintVariable
 }
-case class Sub(sub : TypeConstraintVariable, sup : TypeConstraintVariable) extends TypeConstraint{
-  val left : TypeConstraintVariable = sub
-  val right : TypeConstraintVariable = sup
+
+case class AndTypeConstraint(cts : List[TypeConstraint]) extends TypeConstraint {
+  def typedNodes : List[NodeId] =
+    cts.foldLeft(Set[NodeId]()) {
+      case (s, ct) => s ++ ct.typedNodes
+    }.toList
 }
-case class Eq(left : TypeConstraintVariable, right : TypeConstraintVariable) extends TypeConstraint
+
 //case class ParamaterizedAnd(arg : Type, tcs : List[TypeConstraint]) extends TypeConstraint
 
 

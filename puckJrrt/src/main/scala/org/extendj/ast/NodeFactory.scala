@@ -45,18 +45,19 @@ trait NodeFactory {
 
   def buildNode( a : Access) : NodeId = a match {
     case va : VarAccess if va.decl().isLocalVariable => // No lock
-      getDefinition(va.hostBodyDecl.getDGNamedNode)
+      buildNode(va.decl().asInstanceOf[DGNamedElement])
+      //getDefinition(va.hostBodyDecl.getDGNamedNode)
 
     case cie: ClassInstanceExpr =>
       if(!cie.hasTypeDecl)
         cie.lock()
-      buildNode(cie.accessed().asInstanceOf[DGNamedElement])
+      buildNode(cie.accessed().getDGNamedNode)
     case d : Dot => buildNode(d.getRight)
 
     case ac : Access =>
       if(!ac.isSubstitute /*&& !ac.accessed().isInstanceOf[TypeVariable]*/)
         ac.lock()
-      buildNode(ac.accessed().asInstanceOf[DGNamedElement])
+      buildNode(ac.accessed().getDGNamedNode)
   }
 
   def checkSubstituteAndBuild(n : DGNamedElement) : NodeId =
@@ -98,9 +99,7 @@ trait NodeFactory {
     def isAnonymousBlock(bd : BodyDecl) =
       bd.isInstanceOf[StaticInitializer] || bd.isInstanceOf[InstanceInitializer]
 
-    val n = buildNode(vd.hostBodyDecl())
-    if(isAnonymousBlock(vd.hostBodyDecl()))  n
-    else definitionOf(n).get
+    checkSubstituteAndBuild(vd)
   }
 
   def buildNode(n : Expr) : NodeId = n match {

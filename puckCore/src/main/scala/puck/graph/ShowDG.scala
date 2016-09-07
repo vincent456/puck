@@ -174,6 +174,13 @@ object ShowDG extends ShowConstraints{
         val tcord : String = stringOfType(dg, t)
         s"SetType($typedCord, $tcord)"
 
+      case ChangeTypeOp(typed, oldType, newType) =>
+        val typedCord = stringOfNodeId(dg, typed)
+        val oldTypeCord = stringOfNodeId(dg, oldType)
+        val newTypeCord = stringOfNodeId(dg, newType)
+
+        s"ChangeType($typedCord, $oldTypeCord, $newTypeCord)"
+
       case ChangeTypeBindingOp((tUse, tmUse), exty) =>
         val tUseCord = stringOfNodeIdP(dg, tUse)
         val tmUseCord = stringOfNodeIdP(dg, tmUse)
@@ -192,13 +199,26 @@ object ShowDG extends ShowConstraints{
   }
 
   def tcv(dg : DependencyGraph, tv : TypeConstraintVariable) : String = tv match {
-    case TypeOf(id) => s"typeOf(${desambiguatedFullName(dg, id)})"
-    case ConstrainedType(NamedType(id)) =>  desambiguatedFullName(dg, id)
+    case TypeOf(id) => s"(typeOf(${desambiguatedFullName(dg, id)}) = ${stringOfType(dg, dg.typ(id))})"
+    case ConstrainedType(t) =>  stringOfType(dg, t)
     case ParTypeProjection(v, idx) => s"Proj(${tcv(dg, v)}, $idx)"
   }
 
-  implicit def stringOfTypeConstraint : DGStringBuilder[TypeConstraint] =
+  def stringOfBinaryTypeConstraint : DGStringBuilder[BinaryTypeConstraint] =
     (dg, tc) => s"${tcv(dg, tc.left)} ${tcOp(tc)} ${tcv(dg, tc.right)}"
+
+  implicit def stringOfTypeConstraint : DGStringBuilder[TypeConstraint] = {
+    case (dg, btc : BinaryTypeConstraint) => stringOfBinaryTypeConstraint(dg, btc)
+    case (dg, AndTypeConstraint(cts)) =>
+    val strb = new StringBuilder()
+      strb append stringOfTypeConstraint(dg, cts.head)
+      cts.tail.foreach {
+        ct =>
+          strb append " /\\ "
+          strb append stringOfTypeConstraint(dg, ct)
+      }
+      strb.toString()
+  }
 
 
   val desambiguatedLocalStringOfId : DGStringBuilder[NodeId] = {
@@ -247,9 +267,9 @@ object ShowDG extends ShowConstraints{
 //      builder append print(userMap, (used : NodeId, user : NodeId) =>
 //        s"$used - ${desambiguatedFullName(dg, used)} used by $user - ${desambiguatedFullName(dg, user)}")
 
-//      builder.append("\nuser -> used\n")
-//      builder append print(usedMap, (user : NodeId, used : NodeId) =>
-//        s"$user - ${desambiguatedFullName(dg, user)} uses $used - ${desambiguatedFullName(dg, used)} ${accessKindMap get ((user, used)) }")
+      builder.append("\nuser -> used\n")
+      builder append print(usedMap, (user : NodeId, used : NodeId) =>
+        s"$user - ${desambiguatedFullName(dg, user)} uses $used - ${desambiguatedFullName(dg, used)}")
 
 
 
@@ -290,9 +310,9 @@ object ShowDG extends ShowConstraints{
 //      builder append print(typeUses2typeMemberUsesMap, (tUse : NodeIdP, tmUse : NodeIdP) =>
 //        s"${pToString(tUse)} -> ${pToString(tmUse)}")
 
-      builder.append("\ntypeUsesConstraints\n")
-      builder append print(typeUsesConstraints,
-        (k : NodeId, v : TypeConstraint) => stringOfTypeConstraint(dg, v))
+//      builder.append("\ntypeUsesConstraints\n")
+//      builder append print(typeUsesConstraints,
+//        (k : NodeId, v : TypeConstraint) => stringOfTypeConstraint(dg, v))
 
 
       builder.toString()

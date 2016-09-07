@@ -175,27 +175,20 @@ class GraphBuildingSpec extends AcceptanceSpec {
           |}"""
       ) {
 
-        val actualTypeParam = fullName2id("p.A")
-        val formalTypeParam = fullName2id("p.GenColl@T")
-        val genType = fullName2id("p.GenColl")
-        val genMethod = fullName2id("p.GenColl.put(T)")
-        val theParameter = fullName2id("p.GenColl.put(T).t")
-        val userClass = fullName2id("p.User")
-
-        val userMethodDef = fullName2id("p.User.m().Definition")
-
-        numNodesWithFullname(graph, "p.GenColl") shouldBe 1
+         numNodesWithFullname(graph, "p.GenColl") shouldBe 1
         numNodesWithFullname(graph, "p.GenColl.put") shouldBe 1
 
-        assert( ! graph.uses(genMethod, actualTypeParam) )
+        assert( ! graph.uses("p.GenColl.put(T).t", "p.A") )
 
-        assert( graph.uses(theParameter, formalTypeParam) )
+        assert( graph.uses("p.GenColl.put(T).t", "p.GenColl@T") )
 
-        assert( graph.uses(userMethodDef, genType) )
+        assert( ! graph.uses("p.User.m().Definition", "p.A") )
 
-        assert( graph.uses(userMethodDef, actualTypeParam) )
+        assert( graph.typ("p.User.m().Definition.colla") == ParameterizedType("p.GenColl", List(NamedType("p.A"))) )
 
-        assert( graph.uses(userMethodDef, genMethod) )
+
+
+        assert( graph.uses("p.User.m().Definition", "p.GenColl.put(T)") )
 
 
       }

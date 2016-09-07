@@ -111,6 +111,14 @@ object Transformation {
       }
   }
 
+  object ChangeType {
+    def unapply(t : Transformation) : Option[(NodeId, NodeId, NodeId)] =
+      t.operation match {
+        case ChangeTypeOp(typed, oldNamedTypeId, newNamedTypeId) =>
+          Some((typed, oldNamedTypeId, newNamedTypeId))
+        case _ => None
+      }
+  }
 
 
 

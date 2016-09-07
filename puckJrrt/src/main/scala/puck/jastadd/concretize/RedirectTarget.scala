@@ -66,6 +66,12 @@ object RedirectTarget {
 
       case FieldDeclHolder(decl,_) =>
         ignore(decl.replaceTypeAccess(oldTdecl, tdecl))
+      case LocalVarDeclHolder(declarator) =>
+        var n: ASTNode[_] = declarator.getParent
+        while(! n.isInstanceOf[VarDeclStmt]){
+          n = n.getParent
+        }
+        ignore(n.replaceTypeAccess(oldTdecl, tdecl))
       case holder : HasNode =>
         ignore(holder.node.replaceTypeAccess(oldTdecl, tdecl))
 

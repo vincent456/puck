@@ -27,6 +27,7 @@
 package puck.javaGraph.graphBuilding
 
 import puck.AcceptanceSpec
+import puck.graph.{NamedType, NodeIdP}
 import puck.javaGraph.ScenarioFactory
 
 /**
@@ -53,27 +54,19 @@ class UsesRegistration extends AcceptanceSpec{
         |}
       """
     ) {
-      val clazz = fullName2id("p.A")
-      val methM = fullName2id("p.A.m()")
-      val mUserViaThis = fullName2id("p.A.mUserViaThis()")
-      val mUserViaParameter = fullName2id("p.A.mUserViaParameter(A)")
-      val theParameter = fullName2id("p.A.mUserViaParameter(A).a")
-
-
-      val mUserViaThisDef = fullName2id("p.A.mUserViaThis().Definition")
-      val mUserViaParameterDef = fullName2id("p.A.mUserViaParameter(A).Definition")
 
       //methodUse
-      assert( graph.uses(mUserViaThisDef, methM) )
-      assert( ! graph.uses(mUserViaThis, methM) )
+      assert( graph.uses("p.A.mUserViaThis().Definition", "p.A.m()") )
+      assert( ! graph.uses("p.A.mUserViaThis()", "p.A.m()") )
 
       //typeUse
-      assert( graph.uses(clazz, clazz) )
+      assert( graph.uses("p.A", "p.A") )
 
-      assert( graph.uses(mUserViaParameterDef, methM) )
-      assert( !graph.uses(mUserViaParameter, methM) )
+      assert( graph.uses("p.A.mUserViaParameter(A).Definition", "p.A.m()") )
+      assert( !graph.uses("p.A.mUserViaParameter(A)", "p.A.m()") )
 
-      assert( graph.uses(theParameter, clazz) )
+      assert( graph.uses("p.A.mUserViaParameter(A).a", "p.A") )
+      assert( !graph.uses("p.A.mUserViaParameter(A)", "p.A") )
 
     }
   }
@@ -155,18 +148,32 @@ class UsesRegistration extends AcceptanceSpec{
 
 
   scenario("field type use") {
-    val _ = new ScenarioFactory(
-      """package p;
-        |
-        |interface I {}
-        |
-        |class A { I field; }
-      """) {
-      val itc = fullName2id("p.I")
-      val field = fullName2id("p.A.field")
+    val s = new ScenarioFactory(
+    """package p;
+      |
+      |interface I {}
+      |
+      |class A { I field; }
+    """)
+    import s._
 
-      assert( graph.uses(field, itc) )
+    assert( graph.uses("p.A.field", "p.I") )
 
-    }
   }
+
+  scenario("method return type use") {
+    val s = new ScenarioFactory(
+    """package p;
+      |
+      |class A { A get(){return this;} }
+    """)
+
+    import s._
+
+    assert( graph.uses("p.A.get()", "p.A") )
+    assert( graph.typ("p.A.get()") == NamedType("p.A") )
+    assert( ! (graph.usesListExludingTypeUses contains (("p.A.get()", "p.A") : NodeIdP) ))
+
+  }
+
 }

@@ -12,20 +12,29 @@ aspect TypeVariableExt {
 
 	}
 
-	public boolean GenericElement.ownTypeVariable(TypeVariable tv){
-		for(int i =0; i<getNumTypeParameter(); i++){
+	public int GenericElement.indexOfTypeVariable(TypeVariable tv){
+		for(int i = 0; i<getNumTypeParameter(); i++){
 			if(tv == getTypeParameter(i))
-				return true;
+				return i;
 		}
-		return false;
+		return -1;
 	}
 
-	public boolean GenericTypeDecl.ownTypeVariable(TypeVariable tv){
-		for(int i =0; i<getNumTypeParameter(); i++){
+	public int GenericTypeDecl.indexOfTypeVariable(TypeVariable tv){
+		for(int i = 0; i<getNumTypeParameter(); i++){
 			if(tv == getTypeParameter(i))
-				return true;
+				return i;
 		}
-		return false;
+		return -1;
+	}
+
+	public boolean GenericElement.ownTypeVariable(TypeVariable tv){
+		return indexOfTypeVariable(tv) != -1;
+	}
+
+
+	public boolean GenericTypeDecl.ownTypeVariable(TypeVariable tv){
+		return indexOfTypeVariable(tv) != -1;
 	}
 
 	GenericMethodDecl implements GenericElement;

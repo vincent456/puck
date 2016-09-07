@@ -199,6 +199,7 @@ object VariableDeclHolder {
   def unapply(nl : ASTNodeLink) : Option[Variable] = nl match {
     case FieldDeclHolder(decl, idx) => Some(decl.getDeclarator(idx))
     case ParameterDeclHolder(decl) => Some(decl)
+    case LocalVarDeclHolder(decl) => Some(decl)
     case _ => None
   }
 

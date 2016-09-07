@@ -141,8 +141,8 @@ class RedirectTypeDeclUsesSpec
         |abstract class A { abstract $typeUsed getC(); void user(){ getC().m(42); } }"""
 
     compareWithExpectedAndGenerated(code("C"),
-      bs => {
-        import bs.{graph, idOfFullName}
+      s => {
+        import s.{graph, idOfFullName}
         Redirection.redirectUsesAndPropagate(graph, ("p.A.user().Definition", "p.C.m(int)"),
           AccessAbstraction("p.I.m(int)", SupertypeAbstraction)).rvalue
       }, code("I"))
@@ -186,9 +186,9 @@ class RedirectTypeDeclUsesSpec
         |
         |abstract class A { abstract $typeUsed getC(); void user(){ $typeUsed c = getC(); } }"""
     compareWithExpectedAndGenerated(code("C"),
-      bs => {
-        import bs.{graph, idOfFullName}
-        bs.printFullNamesSortedByKey
+      s => {
+        import s.{graph, idOfFullName}
+        s.printFullNames()
         Redirection.redirectUsesAndPropagate(graph, ("p.A.getC()", "p.C"),
           AccessAbstraction("p.I", SupertypeAbstraction)).rvalue
       },code("I"))

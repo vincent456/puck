@@ -204,7 +204,7 @@ object JavaJastAddDG2AST
   (p : Project,
    logger : PuckLogger,
    ll : puck.LoadingListener = null
-    ) : JavaJastAddDG2AST = {
+  ) : JavaJastAddDG2AST = {
 
     import Config.Keys
 
@@ -297,7 +297,7 @@ class JavaJastAddDG2AST
         e.printStackTrace()
     }
     logger.writeln("done")
-//
+
     logger.writeln("Program after unlock : ")
     logger.writeln(program.prettyPrint())
     logger.writeln("Program after unlock end of print ")
@@ -310,8 +310,8 @@ class JavaJastAddDG2AST
 
   val discardedOp : Operation => Boolean = {
     case _ : Comment
-    | _ : TypeBinding
-    | _ : AbstractionOp => true
+         | _ : TypeBinding
+         | _ : AbstractionOp => true
     case _ => false
   }
 
@@ -346,7 +346,7 @@ class JavaJastAddDG2AST
           case Add(Edge(e)) => CreateEdge(e)
 
           case Add(AType(user, newType)) =>
-               CreateEdge.createTypeUse(safeGet(resultGraph, id2declMap), user, newType)
+            CreateEdge.createTypeUse(safeGet(resultGraph, id2declMap), user, newType)
 
           case ChangeSource(Contains(source, target), newSource) =>
             RedirectSource.move(source, target, newSource)
@@ -358,6 +358,9 @@ class JavaJastAddDG2AST
             RedirectSource.changeUser(source, target, newSource)
 
           case ChangeTarget(e, newTarget) => RedirectTarget(e, newTarget)
+
+          case ChangeType(typed, oldType, newType) =>
+            RedirectTarget.changeType(typed, oldType, newType)
 
           // TODO see if can be performed in add node instead
           case Add(AbstractionOp(impl, AccessAbstraction(abs, SupertypeAbstraction))) =>
@@ -394,17 +397,17 @@ class JavaJastAddDG2AST
             }
 
           case Rename(nid, newName) =>
-//            implicit val nodeLinks : NodeId => ASTNodeLink =
-//              safeGet(reenactor, id2declMap) _
+            //            implicit val nodeLinks : NodeId => ASTNodeLink =
+            //              safeGet(reenactor, id2declMap) _
             ASTNodeLink.setName(newName, reenactor, nid)
             mapping(nid) match {
               case decl : HasNode =>
                 reenactor.usersOf(nid) foreach {
-                    mapping(_) match {
-                      case user : HasNode =>
-                        user.node.rename(decl.node, newName)
-                      case _ => ()
-                    }
+                  mapping(_) match {
+                    case user : HasNode =>
+                      user.node.rename(decl.node, newName)
+                    case _ => ()
+                  }
 
                 }
               case PackageDeclHolder => ()
@@ -487,7 +490,7 @@ class JavaJastAddDG2AST
     methodUsed : NodeId,
     oldMessageReceiver : NodeId,
     newMessageReceiver : NodeId
-    )
+  )
   ( implicit logger : PuckLogger): Unit = {
 
     val mUser = id2declMap(methodUser) match {
@@ -502,7 +505,7 @@ class JavaJastAddDG2AST
         s" a field or a method as used but found $nodeHolder")
     }
 
-   id2declMap(newMessageReceiver) match {
+    id2declMap(newMessageReceiver) match {
       case VariableDeclHolder(newReceiver) =>
         id2declMap(oldMessageReceiver) match {
           case VariableDeclHolder(oldReceiver) =>
@@ -516,8 +519,8 @@ class JavaJastAddDG2AST
             s"(expr or block), a field or a parameter as old receiver but found $nodeHolder")
         }
       case ClassDeclHolder(_)=>
-         logger.writeln("ignore replaceMessageReceiver as new receiver beeing a class. " +
-           "Suppose merge is ongoing ")
+        logger.writeln("ignore replaceMessageReceiver as new receiver beeing a class. " +
+          "Suppose merge is ongoing ")
 
       case nodeHolder => error("replace message receiver, expect" +
         s" a field or a parameter as new receiver but found $nodeHolder")

@@ -266,16 +266,23 @@ class DependencyGraph private
       if m.kind.kindType == InstanceValue
     } yield (m, this typ m.id)
 
+
   def addType(id : NodeId, t : Type) : DependencyGraph =
     newGraph(edges = edges.setType(id, t),
       recording = recording.addType(id, t))
-
 
   def removeType(id : NodeId) : DependencyGraph =
     edges.types get id map {
       t => newGraph(edges = edges.removeType(id),
         recording = recording.removeType(id, t))
     } getOrElse this
+
+  def changeType(tu : NodeIdP, newTypeToUse : NodeId) : DependencyGraph = {
+    val (typed, oldType) = tu
+    val newType = typ(typed).changeNamedType(oldType, newTypeToUse)
+    newGraph(edges = edges.setType(typed, newType),
+      recording = recording.changeType(typed, oldType, newTypeToUse))
+  }
 
 
   def exists(e : DGEdge) : Boolean = edges.exists(e)

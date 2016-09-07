@@ -61,7 +61,8 @@ object CreateEdge {
       //explicit upcast shouldn't be needed, why the compiling error ?
       case dh @ (FieldDeclHolder(_,_)
         | ParameterDeclHolder(_)
-        | MethodDeclHolder(_)) =>
+        | MethodDeclHolder(_)
+        | LocalVarDeclHolder(_) ) =>
         dh.asInstanceOf[HasNode].node.setTypeAccess(createTypeAccess(id2declMap, typ))
 
       case ConstructorDeclHolder(_) => ()

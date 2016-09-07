@@ -86,25 +86,25 @@ trait TypeUsage {
           if(!qualifier.isSubstitute)
             bindTypeUse(this buildNode qualifier, qualifier, typeMemberUse)
           else {
-              val a = qualifier.asInstanceOf[Access]
-              a.accessed() match {
-                case tms : TypeMemberSubstitute =>
-                  bindParTypeUse(a, tms, typeMemberUse)
-                case cds : ConstructorDeclSubstituted =>
-                  bindTypeUse(getNode(cds.getOriginal), cds.getOriginal.hostType(), typeMemberUse)
+            val a = qualifier.asInstanceOf[Access]
+            a.accessed() match {
+              case tms : TypeMemberSubstitute =>
+                bindParTypeUse(a, tms, typeMemberUse)
+              case cds : ConstructorDeclSubstituted =>
+                bindTypeUse(getNode(cds.getOriginal), cds.getOriginal.hostType(), typeMemberUse)
 
-                case _ => error()
+              case _ => error()
 
-              }
+            }
 
           }
       }
       catch {
         case e: PuckError =>
           throw e
-//        case e =>
-//          throw new NoTypeUser(s"${access.prettyPrint()}($access) in " +
-//            s"${access.compilationUnit().pathName()} ${access.location()} (${e.getMessage})")
+        //        case e =>
+        //          throw new NoTypeUser(s"${access.prettyPrint()}($access) in " +
+        //            s"${access.compilationUnit().pathName()} ${access.location()} (${e.getMessage})")
       }
     }
   }
@@ -117,8 +117,8 @@ trait TypeUsage {
   def bindTypeUse(typeUser : NodeId,
                   typeUsed: TypeDecl,
                   typeMemberUse : Uses) : Unit = {
-        val tid = Type.mainId(getType(typeUsed))
-        puck.ignore(addBinding(typeUser, tid, typeMemberUse))
+    val tid = Type.mainId(getType(typeUsed))
+    puck.ignore(addBinding(typeUser, tid, typeMemberUse))
   }
 
 
@@ -140,7 +140,7 @@ trait TypeUsage {
     normaliseQualifier(qualifier) match {
       case ce: ConditionalExpr =>
         getQualifiers(ce.getFalseExpr) ++
-        getQualifiers(ce.getTrueExpr)
+          getQualifiers(ce.getTrueExpr)
 
       // findTypeUserAndBindUses term cases
       case e @ ( _ : AddExpr | _ : CastExpr | _ : Literal) =>
@@ -161,9 +161,10 @@ trait TypeUsage {
                      typeMemberUse : Uses) : Unit = {
     (qualifierDecl.getOriginalType, qualifier.`type`()) match {
       case ( tv : TypeVariable, _ ) =>
-        findTypeVariableInstanciator(tv, qualifierDecl.`type`(), qualifier) foreach (
-          e =>
-            bindTypeUse(e buildNode this, qualifierDecl.`type`(), typeMemberUse) )
+        findTypeVariableInstanciator(tv, qualifierDecl.`type`(), qualifier) foreach {
+          case (e, idx) =>
+            bindTypeUse(e buildNode this, qualifierDecl.`type`(), typeMemberUse)
+        }
 
       case (origType : ParTypeDecl,  usageType : ParTypeDecl)
         if origType.genericDecl() == usageType.genericDecl() =>
@@ -188,16 +189,16 @@ trait TypeUsage {
   def findTypeVariableInstanciator
   (tv : TypeVariable,
    tvValue : TypeDecl,
-   expr : Expr) : Option[TypeVariableInstanciator]= {
+   expr : Expr) : Option[(TypeVariableInstanciator, Int)]= {
 
     (expr, tv.owner()) match {
-      case (ca : ClassInstanceExpr, _ ) => Some(TVIAccess(ca))
+      case (ca : ClassInstanceExpr, _ ) => ??? //Some(TVIAccess(ca))
       case (d : AbstractDot, _ ) => findTypeVariableInstanciator(tv, tvValue, d.lastAccess())
       case (a : Access, gmd : GenericMethodDecl ) =>
-        if(a.accessed() == gmd) Some(TVIAccess(a))
+        if(a.accessed() == gmd) Some((TVIAccess(a), gmd indexOfTypeVariable tv))
         else {
           println("findTypeVariableInstanciator tv.owner() : GenericMethodDecl " +
-                      "a.accessed() != tv.owner() : TODO !!!")
+            "a.accessed() != tv.owner() : TODO !!!")
           None
         }
       case (a : Access, gtd : GenericTypeDecl) =>
@@ -209,11 +210,11 @@ trait TypeUsage {
           tvOwnerTd.childTypes() find subtype.instanceOf match {
             case Some(typUser) =>
               addEdge(Uses(buildNode(typUser), buildNode(tvValue)))
-              Some(TVITypeDecl(typUser))
+              Some((TVITypeDecl(typUser), gtd.indexOfTypeVariable(tv)))
 
             case None if subtype instanceOf tvOwnerTd =>
               addEdge(Uses(buildNode(subtype), buildNode(tvValue)))
-              Some(TVITypeDecl(subtype))
+              Some((TVITypeDecl(subtype), gtd.indexOfTypeVariable(tv)))
 
             case None =>
               println("findTVInstanciatiorInHierachy failure :" +
@@ -224,7 +225,7 @@ trait TypeUsage {
 
         (a.accessed(), a.`type`()) match {
           case (d : Declarator, ptd : ParTypeDecl) if ptd.genericDecl() == gtd =>
-              Some(TVIVarDecl(a.accessed().asInstanceOf[Declarator]))
+            Some((TVIVarDecl(a.accessed().asInstanceOf[Declarator]), gtd indexOfTypeVariable tv))
 
           case (d : Declarator, td) if td instanceOf tvOwnerTd =>
             findTVInstanciatiorInHierachy(td)
@@ -243,35 +244,39 @@ trait TypeUsage {
     }
   }
 
+
+
   def constraintTypeUses
-  ( lvalue : NodeId,
-    lvalueType : TypeDecl,
-    rvalue : Access): Unit =
+  (lvalueTCVar : TypeConstraintVariable,
+   lvalueType : TypeDecl,
+   rvalue : Access) : Unit =
     if(rvalue.`type`().isInstanceOf[AnonymousDecl])
       println("Access.constraintTypeUses with Anonymous Class not handled yet !")
+    else if(rvalue.isInstanceOf[ClassInstanceExpr]) ()
     else lvalueType match {
       case lvalueParType : ParTypeDecl =>
         if(lvalueParType.isRawType) println(s"Raw ParType at ${rvalue.fullLocation()} : no type constraint generated")
-        else constraintParTypeUses(lvalue, lvalueParType, rvalue.lastAccess())
+        else constraintParTypeUses(lvalueTCVar, lvalueParType, rvalue.lastAccess())
       case _  if rvalue.isSubstitute =>
 
         rvalue.accessed() match {
           case tms : TypeMemberSubstitute if tms.getOriginalType.isInstanceOf[TypeVariable] =>
             val tv = tms.getOriginalType.asInstanceOf[TypeVariable]
             findTypeVariableInstanciator(tv, tms.`type`(), rvalue) foreach {
-              e =>
-                addTypeConstraint(Sub(TypeOf(e buildNode this), TypeOf(lvalue)))
+              case (e, idx) =>
+                addTypeConstraint(Sub(ParTypeProjection(TypeOf(e buildNode this), idx),
+                  lvalueTCVar))
             }
           case _ =>
-            addTypeConstraint(Sub(TypeOf(buildNode(rvalue.lastAccess())), TypeOf(lvalue)) )
+            addTypeConstraint(Sub(TypeOf(buildNode(rvalue.lastAccess())), lvalueTCVar) )
         }
 
       case _ =>
-          addTypeConstraint(Sub(TypeOf(buildNode(rvalue.lastAccess())), TypeOf(lvalue)))
+        addTypeConstraint(Sub(TypeOf(buildNode(rvalue.lastAccess())), lvalueTCVar))
     }
 
   def constraintParTypeUses
-  ( lvalue : NodeId,
+  ( lvalueTCVar : TypeConstraintVariable,
     lvalueType : ParTypeDecl,
     rvalue : Access) : Unit =
     if(!rvalue.`type`().isInstanceOf[ParTypeDecl])
@@ -282,42 +287,42 @@ trait TypeUsage {
         println("raw rvalue type, type constraint not generated")
       case rvalueType : ParTypeDecl =>
 
-      if(rvalueType.numTypeParameter() != lvalueType.numTypeParameter())
-        println("Access.constraintTypeUses " +
-          "rvalueType.getNumArgument() != lValueType.getNumArgument()  : TODO !!!")
-      else {
-        //Hypothesis : argument are in same order  C<B,A> extends I<A,B> kind of case not handled
-        addTypeConstraint(Sub( TypeOf(this buildNode rvalue) , TypeOf(lvalue)))
+        if(rvalueType.numTypeParameter() != lvalueType.numTypeParameter())
+          println("Access.constraintTypeUses " +
+            "rvalueType.getNumArgument() != lValueType.getNumArgument()  : TODO !!!")
+        else {
+          //Hypothesis : argument are in same order  C<B,A> extends I<A,B> kind of case not handled
+          addTypeConstraint(Sub( TypeOf(this buildNode rvalue) , lvalueTCVar))
 
-        def normalizeTypeDecl(t : TypeDecl) : TypeDecl = t match {
-          case _ : WildcardType => rvalue.program().typeObject()
-          case wst : WildcardSuperType if wst.getAccess.isInstanceOf[TypeAccess] =>
-            wst.getAccess.asInstanceOf[TypeAccess].decl()
-          case wet : WildcardExtendsType if wet.getAccess.isInstanceOf[TypeAccess] =>
-            wet.getAccess.asInstanceOf[TypeAccess].decl()
-          case _ => t
-        }
+          def normalizeTypeDecl(t : TypeDecl) : TypeDecl = t match {
+            case _ : WildcardType => rvalue.program().typeObject()
+            case wst : WildcardSuperType if wst.getAccess.isInstanceOf[TypeAccess] =>
+              wst.getAccess.asInstanceOf[TypeAccess].decl()
+            case wet : WildcardExtendsType if wet.getAccess.isInstanceOf[TypeAccess] =>
+              wet.getAccess.asInstanceOf[TypeAccess].decl()
+            case _ => t
+          }
 
-        /*Range(0, lvalueType.numTypeParameter()).foreach {
-          i =>
-            val lvalueArg = normalizeTypeDecl(lvalueType.getParameterization.getArg(i))
-            val rvalueArg = normalizeTypeDecl(rvalueType.getParameterization.getArg(i))
-            if(lvalueArg.isObject)
-              System.err.println(rvalue.fullLocation() + " lvalue object as type argument not constrained")
-            else {
-              val tvValueId =  buildNode(lvalueArg)
+          /*Range(0, lvalueType.numTypeParameter()).foreach {
+            i =>
+              val lvalueArg = normalizeTypeDecl(lvalueType.getParameterization.getArg(i))
+              val rvalueArg = normalizeTypeDecl(rvalueType.getParameterization.getArg(i))
+              if(lvalueArg.isObject)
+                System.err.println(rvalue.fullLocation() + " lvalue object as type argument not constrained")
+              else {
+                val tvValueId =  buildNode(lvalueArg)
 
-              val tv: TypeVariable = rvalueArg match {
-                case tv: TypeVariable => tv
-                case _ => rvalueType.genericDecl().asInstanceOf[GenericTypeDecl].getTypeParameter(i)
+                val tv: TypeVariable = rvalueArg match {
+                  case tv: TypeVariable => tv
+                  case _ => rvalueType.genericDecl().asInstanceOf[GenericTypeDecl].getTypeParameter(i)
+                }
+
+                findTypeVariableInstanciator(tv, lvalueArg, rvalue) foreach (
+                  e =>
+                    addTypeConstraint(Eq((e buildNode this, tvValueId), TypeOf(lvalue))))
               }
-
-              findTypeVariableInstanciator(tv, lvalueArg, rvalue) foreach (
-                e =>
-                  addTypeConstraint(Eq((e buildNode this, tvValueId), TypeOf(lvalue))))
-            }
-        }*/
-      }
+          }*/
+        }
     }
 
 
@@ -357,8 +362,9 @@ trait TypeUsage {
     putConstraintOnArg_common[ParameterDeclaration] {
       case (param, arg: Access) =>
         val paramId = this buildNode param
-        constraintTypeUses(paramId, param.`type`(), arg)
-    } _
+        constraintTypeUses(TypeOf(paramId), param.`type`(), arg)
+    }
+
   protected def putConstraintOnSubstitutedArg(ma : MethodAccess): (((ParameterDeclaration,ParameterDeclaration), Expr)) => Unit =
     putConstraintOnArg_common[(ParameterDeclaration,ParameterDeclaration)] {
       case ((genParam, substituteParam), arg: Access) =>
@@ -366,15 +372,18 @@ trait TypeUsage {
 
         (genParam.`type`(), substituteParam.`type`()) match {
           case (tv : TypeVariable, tvValue) =>
-            findTypeVariableInstanciator(tv, tvValue, ma)  foreach (
-              e => constraintTypeUses(e buildNode this, tvValue, arg) )
+            findTypeVariableInstanciator(tv, tvValue, ma)  foreach {
+              case (e, idx) =>
+                constraintTypeUses(ParTypeProjection(TypeOf(e buildNode this), idx), tvValue, arg)
+            }
+
 
           case (genT, subT) if genT == subT =>
-            constraintTypeUses(paramId, genT, arg)
+            constraintTypeUses(TypeOf(paramId), genT, arg)
           case (genT, subT) =>
             System.err.println(s"(genT = ${genT.name()}, subT = ${subT.name()}) arg type constraint unhandled case")
         }
 
-    } _
+    }
 
 }

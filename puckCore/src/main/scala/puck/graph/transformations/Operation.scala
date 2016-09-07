@@ -143,6 +143,16 @@ case class AType(typed : NodeId, t : Type) extends AddRmOperation {
   }
 }
 
+case class ChangeTypeOp(typed : NodeId,
+                        oldNamedTypeId : NodeId,
+                        newNamedTypeId : NodeId) extends Operation {
+
+  override def execute(g: DependencyGraph, op: Direction) = op match {
+    case Regular => g.changeType((typed, oldNamedTypeId), newNamedTypeId)
+    case Reverse => g.changeType((typed, newNamedTypeId), oldNamedTypeId)
+  }
+}
+
 case class AbstractionOp
 (impl: NodeId,
  abs : Abstraction)

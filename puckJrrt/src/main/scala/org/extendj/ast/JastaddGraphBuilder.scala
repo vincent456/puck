@@ -209,7 +209,7 @@ class JastaddGraphBuilder(val program : Program)
 
 
   def addApiNode(nodeKind : String, typ : String, bodydeclName: String) : Unit = {
-    //println("trying to add type "+typ + " " + bodydeclName+ " ... ")
+    //println("trying to add type " + typ + " " + bodydeclName+ " ... ")
 
     val td = findTypeDecl(typ)
     val typeNodeId = addApiTypeNode(td)

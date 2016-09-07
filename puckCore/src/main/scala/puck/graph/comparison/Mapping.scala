@@ -212,7 +212,7 @@ object Mapping {
     import ShowDG._
     // g.nodesId map ( id => ((g, id).shows(sigFullName), id) ) toMap
     (g.nodesId map ( id => ((g, id).shows(desambiguatedFullName), id) )).foldLeft(Map[String, NodeId]()){
-      case (m, (k,id)) =>
+      case (m, (k, id)) =>
         if(m contains k) {
           val id0 = m(k)
           val n = g.getNode(id)
@@ -226,17 +226,8 @@ object Mapping {
   def create
   ( m1 : Map[String, NodeId],
     m2 : Map[String, NodeId]
-  ) : Map[NodeId, NodeId] =
+  ) : Map[NodeId, NodeId] = 
     swap(m1) mapValues m2.apply
-  //{
-  //   m1.foldLeft(Map[NodeId, NodeId]()){
-  //     case (m, (name, nid1)) =>
-  //       m2 get name match {
-  //         case None => throw new PuckError(s"$name not found while building mapping")
-  //         case Some(nid2) => m + (nid1 -> nid2)
-  //       }
-  //    }
-  //   }
 
 
   def swap[A,B]( m : Map[A, B]) : Map[B, A] =

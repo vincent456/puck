@@ -235,11 +235,18 @@ object Recording {
       else RedirectionOp(edge, Source(newTarget))
       Transformation(Regular, red) +: record
     }
+
     def addType( typed : NodeId, t : Type) : Recording =
       Transformation(Regular, AType(typed, t)) +: record
 
     def removeType( typed : NodeId, t : Type) : Recording =
       Transformation(Reverse, AType(typed, t)) +: record
+
+    def changeType( typed : NodeId,
+                    oldNamedTypeId : NodeId,
+                    newNamedTypeId : NodeId) : Recording =
+      Transformation(Regular, ChangeTypeOp(typed, oldNamedTypeId, newNamedTypeId)) +: record
+
 
     def addRoleChange( typed : NodeId,
                        oldRole: Option[Role],
