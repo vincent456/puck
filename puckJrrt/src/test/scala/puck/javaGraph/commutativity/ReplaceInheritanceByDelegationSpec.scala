@@ -50,18 +50,6 @@ class ReplaceInheritanceByDelegationSpec
         import puck.graph.ShowDG._
         (graph, graph.abstractionsMap).println
 
-//        Rules.rename(graph, "p.A", "ASubDelegate").
-//
-//        val (cn, g2) = Rules.intro(graph, "ASubDelegate", Class)
-//
-//
-//
-//        for {
-//          g3 : DependencyGraph <- Rules.move.typeMember(g2.addEdge(Contains("p",cn.id)) ,
-//            "p.A.m()", cn.id)
-//          //`g3.removeEdge(Isa())
-//        }
-
         ReplaceInheritanceByDelegation.subsToDelegate(graph, List("p.B", "p.C"),
           "p.A", "p", Interface)(Rules).rvalue
       },

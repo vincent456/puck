@@ -83,8 +83,8 @@ class AbstractAndRedirect extends AcceptanceSpec {
         Uses("fileSystem.Directory.files", "fileSystem.File"),
         AccessAbstraction(fsElement, SupertypeAbstraction)).rvalue
 
-      assert(g2.uses("fileSystem.Directory.display(String).Definition", "fileSystem.Directory"))
-      assert(g2.uses("fileSystem.Directory.display(String).Definition", (g2, "fileSystem.FSElement")))
+      assert(g2.uses("fileSystem.Directory.display(String).Definition.d", "fileSystem.Directory"))
+      assert(g2.uses("fileSystem.Directory.display(String).Definition.f", (g2, "fileSystem.FSElement")))
     }
   }
 }
