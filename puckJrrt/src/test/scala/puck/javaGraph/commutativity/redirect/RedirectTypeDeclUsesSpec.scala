@@ -65,28 +65,22 @@ class RedirectTypeDeclUsesSpec
   }
 
   scenario("From class to interface superType - with method with parameters") {
-    compareWithExpectedAndGenerated(
-      """package p;
+    def code(t : String) =
+      s"""package p;
         |
         |class C implements I{ public void m(int i){} }
         |
         |interface I { void m(int i); }
         |
-        |class A { int f = 42; void user(C c){ c.m(f); } }""",
+        |class A { int f = 42; void user($t c){ c.m(f); } }"""
+
+    compareWithExpectedAndGenerated( code("C"),
       bs => {
         import bs.{graph, idOfFullName}
 
         Redirection.redirectUsesAndPropagate(graph, ("p.A.user(C).c", "p.C"),
           AccessAbstraction("p.I", SupertypeAbstraction)).rvalue
-      },
-      """package p;
-        |
-        |class C implements I{ public void m(int i){} }
-        |
-        |interface I { void m(int i); }
-        |
-        |class A { int f = 42;  void user(I c){ c.m(f); } }"""
-    )
+      }, code("I") )
   }
 
   scenario("From class to interface superType - type parameter propagation") {

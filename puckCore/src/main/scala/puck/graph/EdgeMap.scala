@@ -178,6 +178,7 @@ case class EdgeMap
   def isa(subId : NodeId, superId: NodeId): Boolean = superTypes.bind(subId, superId)
 
   def isa_*(subId : NodeId, superId: NodeId): Boolean =
+    subId == superId ||
     isa(subId, superId) || {
       superTypes.getFlat(subId) exists (isa_*(_, superId))
     }

@@ -245,10 +245,18 @@ class JastaddGraphBuilder(val program : Program)
       else
         this buildNode td.getParentNamedNode
 
-    if(td.isInstanceOf[TypeVariable])
-      addEdge(ContainsParam(cterId, tdNode))
-    else
+    td match {
+      case cd : ClassDecl => buildExtendsImplementsAndTypeVariables(cd, tdNode)
+      case id : InterfaceDecl => buildExtendsImplementsAndTypeVariables(id, tdNode)
+      case _ => ()
+    }
+
+    if(!td.isInstanceOf[TypeVariable])
       addEdge(Contains(cterId, tdNode))
+    //if td is type variable, it will be attache in the right order
+    // when parent type will be build
+
+
     tdNode
   }
 

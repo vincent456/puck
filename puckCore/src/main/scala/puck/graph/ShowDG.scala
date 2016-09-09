@@ -199,8 +199,10 @@ object ShowDG extends ShowConstraints{
   }
 
   def tcv(dg : DependencyGraph, tv : TypeConstraintVariable) : String = tv match {
-    case TypeOf(id) => s"(typeOf(${desambiguatedFullName(dg, id)}) = ${stringOfType(dg, dg.typ(id))})"
-    case ConstrainedType(t) =>  stringOfType(dg, t)
+    case TypeOf(id) =>
+      if(dg.styp(id) == None) s"(${desambiguatedFullName(dg, id)}) should be typed !!"
+      else s"(typeOf(${desambiguatedFullName(dg, id)}) = ${stringOfType(dg, dg.typ(id))})"
+    case TypeVar(t) =>  stringOfType(dg, t)
     case ParTypeProjection(v, idx) => s"Proj(${tcv(dg, v)}, $idx)"
   }
 
@@ -259,7 +261,7 @@ object ShowDG extends ShowConstraints{
     contents, containers, superTypes, subTypes,
     typeMemberUses2typeUsesMap,
     typeUses2typeMemberUsesMap,
-    typeUsesConstraints,
+    typeConstraints,
     parameters, types, typedBy)) =>
       val builder = new StringBuilder(150)
 
@@ -310,9 +312,9 @@ object ShowDG extends ShowConstraints{
 //      builder append print(typeUses2typeMemberUsesMap, (tUse : NodeIdP, tmUse : NodeIdP) =>
 //        s"${pToString(tUse)} -> ${pToString(tmUse)}")
 
-//      builder.append("\ntypeUsesConstraints\n")
-//      builder append print(typeUsesConstraints,
-//        (k : NodeId, v : TypeConstraint) => stringOfTypeConstraint(dg, v))
+      builder.append("\ntypeConstraints\n")
+      builder append print(typeConstraints,
+        (k : NodeId, v : TypeConstraint) => stringOfTypeConstraint(dg, v))
 
 
       builder.toString()

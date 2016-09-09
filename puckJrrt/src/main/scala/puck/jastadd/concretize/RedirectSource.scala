@@ -191,6 +191,8 @@ object RedirectSource {
           diffTypeDecl(dh.decl.hostType())
         case tdh : TypedKindDeclHolder =>
           diffTypeDecl(tdh.decl)
+        case LocalVarDeclHolder(decl) =>
+          diffTypeDecl(decl.hostType())
 
         case dh => throw new DGError("should not happen, decl holder class is " + dh.getClass)
       }

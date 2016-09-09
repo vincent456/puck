@@ -42,12 +42,6 @@ object ConstraintsMaps{
         m + (owner -> (s + ct) )
     }
   }
-}
-
-case class ConstraintsMaps
-( namedSets : Map[String, NamedRangeSet],
-  friendConstraints : FriendConstraintMap,
-  hideConstraints : HideConstraintMap ) {
 
   //heavily used by the solver need to be optimized
   def forAncestors(graph : DependencyGraph, nid : NodeId)(f : Range => Boolean): Boolean =
@@ -77,6 +71,15 @@ case class ConstraintsMaps
 
     res
   }
+}
+
+import ConstraintsMaps.forAncestors
+case class ConstraintsMaps
+( namedSets : Map[String, NamedRangeSet],
+  friendConstraints : FriendConstraintMap,
+  hideConstraints : HideConstraintMap ) {
+
+
 
   def addHideConstraint(ct : Constraint) =
     copy(hideConstraints = addConstraintToMap(hideConstraints, ct))

@@ -115,7 +115,7 @@ class RedirectMethodUsesSpec
           |         d.display(npath);
           |   }
           |   private String    name;
-          |//   private List<FSElement> temoin;
+          |
           |   private List<$tName> directories = new ArrayList<$tName>();
           |}"""
 
@@ -123,7 +123,8 @@ class RedirectMethodUsesSpec
       s => {
         import s.{graph, idOfFullName}
 
-        Redirection.redirectUsesAndPropagate(graph, ("fileSystem.Directory.add(Directory).d", "fileSystem.Directory"),
+        Redirection.redirectUsesAndPropagate(graph,
+          ("fileSystem.Directory.add(Directory).d", "fileSystem.Directory"),
           AccessAbstraction("fileSystem.FSElement", SupertypeAbstraction)).rvalue
       },
       code("FSElement"))

@@ -667,20 +667,20 @@ class DependencyGraph private
         }
     }
 
-  def subTree(root : NodeId, includeRoot : Boolean = true) : Seq[NodeId] = {
+  def subTree(root : NodeId, includeRoot : Boolean = true) : List[NodeId] = {
 
-    def aux(acc : Seq[NodeId])( roots : Seq[NodeId]): Seq[NodeId] = roots match {
-      case Seq() => acc
+    def aux(acc : List[NodeId])( roots : List[NodeId]): List[NodeId] = roots match {
+      case List() => acc
       case r +: tail =>
         val children = content(r)
         aux(children ++: acc)(children ++: tail)
     }
 
     val seqInit =
-      if(includeRoot) Seq(root)
-      else Seq()
+      if(includeRoot) List(root)
+      else List()
 
-    aux(seqInit)(Seq(root))
+    aux(seqInit)(List(root))
   }
 
   def kindType(nid : NodeId) : KindType =

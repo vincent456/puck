@@ -222,9 +222,7 @@ class BindingRelationshipSpec extends AcceptanceSpec {
           |   }
           |}"""
     ){
-
       graph.typeMemberUsesOf(("fileSystem.Directory.directories", "java.util.List")) shouldBe empty
-
     }
   }
 

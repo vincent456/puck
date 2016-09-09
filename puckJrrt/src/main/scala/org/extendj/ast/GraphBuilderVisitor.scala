@@ -84,31 +84,37 @@ trait GraphBuilderVisitor {
       buildInheritanceUses(sub, wc.getAccess)
   }
 
+  def buildExtendsImplementsAndTypeVariables(cd : ClassDecl, typeNodeId : NodeId) : Unit = {
+    // addExtends
+    if(cd.hasSuperclass && cd.superclass().fullName() != "java.lang.Object"){
+      buildIsaEdge(typeNodeId, cd.getSuperClass)
+    }
+
+    cd.getImplementss foreach (buildIsaEdge(typeNodeId, _))
+
+    if(cd.isGenericType)
+      buildTypeVariables(typeNodeId, cd.asInstanceOf[GenericTypeDecl])
+  }
+  def buildExtendsImplementsAndTypeVariables(id : InterfaceDecl, typeNodeId : NodeId) : Unit = {
+    id.getSuperInterfaces foreach (buildIsaEdge(typeNodeId, _))
+    if(id.isGenericType)
+      buildTypeVariables(typeNodeId, id.asInstanceOf[GenericTypeDecl])
+  }
+
   def buildTypeDecl(td : TypeDecl) : NodeId = td match {
     case tv : TypeVariable => this buildNode tv
     case cd : ClassDecl =>
 
       val n = this buildNode cd
 
-      // addExtends
-      if(cd.hasSuperclass && cd.superclass().fullName() != "java.lang.Object"){
-        buildIsaEdge(n, cd.getSuperClass)
-      }
-
-      cd.getImplementss foreach (buildIsaEdge(n, _))
-
-      if(cd.isGenericType)
-        buildTypeVariables(n, cd.asInstanceOf[GenericTypeDecl])
-
+      buildExtendsImplementsAndTypeVariables(cd, n)
       if(cd.hasImplicitConstructor)
         cd.getImplicitConstructor.buildDG(this, n)
 
       n
     case id : InterfaceDecl =>
       val n = this buildNode id
-      id.getSuperInterfaces foreach (buildIsaEdge(n, _))
-      if(id.isGenericType)
-        buildTypeVariables(n, id.asInstanceOf[GenericTypeDecl])
+      buildExtendsImplementsAndTypeVariables(id, n)
 
       n
 
@@ -181,20 +187,20 @@ trait GraphBuilderVisitor {
   }
 
   def buildDG(containerId : NodeId, expr : ClassInstanceExpr) : Unit = {
-//    def onAccess(access : Access ) : Unit =
-//      access match {
-//        case _ :TypeAccess => ()
-//        case pta : ParTypeAccess =>
-//          pta.getTypeArguments.foreach {
-//            ta => ta.buildDG(this, containerId)
-//          }
-//        case d : AbstractDot => onAccess(d.getRight)
-//        case da : DiamondAccess => onAccess(da.getTypeAccess)
-//        case _ => throw new DGBuildingError(s"ClassInstanceExpr access kind ${access.getClass} not handled " +
-//          s"in ${access.compilationUnit().pathName()} line ${access.location()}")
-//      }
-//
-//    onAccess(expr.getAccess)
+    //    def onAccess(access : Access ) : Unit =
+    //      access match {
+    //        case _ :TypeAccess => ()
+    //        case pta : ParTypeAccess =>
+    //          pta.getTypeArguments.foreach {
+    //            ta => ta.buildDG(this, containerId)
+    //          }
+    //        case d : AbstractDot => onAccess(d.getRight)
+    //        case da : DiamondAccess => onAccess(da.getTypeAccess)
+    //        case _ => throw new DGBuildingError(s"ClassInstanceExpr access kind ${access.getClass} not handled " +
+    //          s"in ${access.compilationUnit().pathName()} line ${access.location()}")
+    //      }
+    //
+    //    onAccess(expr.getAccess)
 
     expr.getArgList.buildDG(this, containerId)
     expr.getTypeDeclOpt.buildDG(this, containerId)
@@ -208,7 +214,7 @@ trait GraphBuilderVisitor {
   }
 
   def buildDG(containerId : NodeId, stmt : EnhancedForStmt) : Unit = {
-    stmt.buildDGInChildren(this, containerId)
+    stmt.getExpr.buildDGInChildren(this, containerId)
     stmt.getExpr match {
       case access : Access =>
         val leftval = this buildNode stmt.getVariableDecl
@@ -233,9 +239,9 @@ trait GraphBuilderVisitor {
             val iterableParType = ParameterizedType(buildNode(iterable), SList(arg))
 
             id =>
-            AndTypeConstraint( SList(Sub(TypeOf(leftval),
-              ParTypeProjection(ConstrainedType(iterableParType), 0)),
-              Sub(ConstrainedType(iterableParType), TypeOf(id))))
+              AndTypeConstraint( SList(Sub(TypeOf(leftval),
+                ParTypeProjection(TypeVar(iterableParType), 0)),
+                Sub(TypeOf(id), TypeVar(iterableParType))))
 
         }
 
@@ -396,12 +402,11 @@ trait GraphBuilderVisitor {
         val methodNode = this buildNode rs.hostBodyDecl()
         val astType = rs.hostBodyDecl().asInstanceOf[MethodDecl].`type`()
         constraintTypeUses(TypeOf(methodNode), astType, a.lastAccess())},
-      {
-        case null =>()
-        // empty return. Since the code compiles, it is well typed and
-        // it means the return type is void and no constraint is needed
-        case e => throw new DGBuildingError(s"buildDG ReturnStmt case not expected : $e " +
-          rs.compilationUnit().pathName() + " line " + rs.location())
+      { case null =>()
+      // empty return. Since the code compiles, it is well typed and
+      // it means the return type is void and no constraint is needed
+      case e => throw new DGBuildingError(s"buildDG ReturnStmt case not expected : $e " +
+        rs.compilationUnit().pathName() + " line " + rs.location())
       }
 
     )(rs.getResult)

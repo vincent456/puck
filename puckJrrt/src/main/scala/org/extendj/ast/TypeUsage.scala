@@ -252,7 +252,13 @@ trait TypeUsage {
    rvalue : Access) : Unit =
     if(rvalue.`type`().isInstanceOf[AnonymousDecl])
       println("Access.constraintTypeUses with Anonymous Class not handled yet !")
-    else if(rvalue.isInstanceOf[ClassInstanceExpr]) ()
+    else if(rvalue.isInstanceOf[ClassInstanceExpr]) {
+      rvalue.`type`() match {
+        case ptd : ParTypeDecl => ()
+        case _ =>
+          addTypeConstraint(Sub(TypeOf(buildNode(rvalue.lastAccess())), lvalueTCVar) )
+      }
+    }
     else lvalueType match {
       case lvalueParType : ParTypeDecl =>
         if(lvalueParType.isRawType) println(s"Raw ParType at ${rvalue.fullLocation()} : no type constraint generated")

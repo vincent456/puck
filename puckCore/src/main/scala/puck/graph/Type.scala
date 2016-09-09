@@ -250,6 +250,20 @@ case class ParameterizedType(genType : NodeId, params : List[Type])
   extends Type {
   def makeClone(): Type = copy()
 
+  override def subtypeOf(graph : DependencyGraph,
+                        other : Type) : Boolean =
+    other match {
+        case NamedType(otherId) => graph.isa_*(genType, otherId)
+        case ParameterizedType(otherId, otherParams) =>
+          val b1 = graph.isa_*(genType, otherId)
+          val b2 = otherParams.size == params.size
+          val b3 =  params.zip(otherParams).forall{ case (p, op) => p == op }
+           b1 && b2 && b3
+
+        case _ => false
+    }
+
+
   def uses(id: NodeId): Boolean = genType == id || params.exists(_.ids contains id)
 
   def ids: List[NodeId] = genType :: params.flatMap(_.ids)

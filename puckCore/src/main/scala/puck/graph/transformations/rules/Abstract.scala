@@ -187,9 +187,10 @@ abstract class Abstract {
 
       val ltg = g.parametersOf(meth.id).foldLoggedEither(g){
         (g0, pid) =>
-          if (g0.uses(pid, clazz.id))
+          if (g0.uses(pid, clazz.id)) {
             Redirection.redirectUsesAndPropagate(g0, Uses(pid, clazz.id),
               AccessAbstraction(interface.id, SupertypeAbstraction))
+          }
           else
             LoggedSuccess(g0)
 
@@ -280,8 +281,8 @@ abstract class Abstract {
 
           val g1 = g0.addContains(interface.id, absMethodId)
             //is change type needed in case of delegation policy
-            .changeTarget(Uses(absMethodId, clazz.id), interface.id) //change return type
-            //.changeType(absMethodId, clazz.id, interface.id) //change return type
+            //.changeTarget(Uses(absMethodId, clazz.id), interface.id) //change return type
+            .changeType((absMethodId, clazz.id), interface.id) //change return type
           redirectTypeUseInParameters(g1, g1.getConcreteNode(absMethodId),
             clazz, interface)
 
@@ -322,27 +323,6 @@ abstract class Abstract {
       (interfaceAbs, g5)
     }
   }
-
-//  private def createAbsNodeAndUse
-//  ( g : DependencyGraph,
-//    impl: ConcreteNode,
-//    abskind : NodeKind ,
-//    policy : AbstractionPolicy
-//    ) : LoggedTry[(Abstraction, DependencyGraph)] = {
-//    val (abs, g1) = createAbsNode(g, impl, abskind, policy)
-//
-//    LoggedSuccess((abs, abs match {
-//      case AccessAbstraction(absId, SupertypeAbstraction) => g1
-//        //optional isa arc is added after insertion in type hierarchy
-//      case AccessAbstraction(absId, DelegationAbstraction) =>
-//        val g2 = g1.addUses(absId, impl.id)
-//        if(impl.kind.kindType == TypeConstructor){
-//          g2.setRole(absId, Some(Factory(impl.id)))
-//        }
-//        else g2
-//    }))
-//
-//  }
 
   def createAbstraction
   ( graph : DependencyGraph,

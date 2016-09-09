@@ -124,7 +124,7 @@ object Mapping {
   def typeConstraintVariable(mappin : NodeId => NodeId)(tcv : TypeConstraintVariable) : TypeConstraintVariable=
     tcv match {
     case TypeOf(id) => TypeOf(mappin(id))
-    case ConstrainedType(NamedType(id)) => ConstrainedType(NamedType(mappin(id)))
+    case TypeVar(t) => TypeVar(mapType(mappin)(t))
     case ParTypeProjection(tcv0, idx) =>
       ParTypeProjection(typeConstraintVariable(mappin)(tcv0), idx)
   }
@@ -133,6 +133,8 @@ object Mapping {
     tuc match {
       case Sub(left, right) => Sub(typeConstraintVariable(mappin)(left), typeConstraintVariable(mappin)(right))
       case Eq(left, right) => Eq(typeConstraintVariable(mappin)(left), typeConstraintVariable(mappin)(right))
+      case AndTypeConstraint(cts) =>
+        AndTypeConstraint(cts map typeConstraint(mappin))
     }
 
   def nodeIdP(mappin : NodeId => NodeId) : NodeIdP => NodeIdP = {

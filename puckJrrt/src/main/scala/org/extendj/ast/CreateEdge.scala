@@ -217,16 +217,6 @@ object CreateEdge {
    use : Uses)
   ( implicit logger : PuckLogger) : Unit = {
 
-//    val typesUsed = reenactor.usedBy(e.used).filter{
-//      id => reenactor.kindType(id) == TypeDecl
-//    }
-//
-//    if (typesUsed.size != 1)
-//      throw new puck.graph.Error(s"require ONE type use got ${typesUsed.size}")
-
-//    val typeUse = Uses(e.used, typesUsed.head)
-//    val tmUses = reenactor.typeMemberUsesOf(typeUse).filter{_.user == e.user}
-
     (id2declMap(use.user), id2declMap(use.used)) match {
       case (dh: DefHolder, fd @ FieldDeclHolder(_, _)) =>
         val abss = reenactor.abstractions(use.used)
@@ -237,26 +227,11 @@ object CreateEdge {
             mdecl.addGetterBody(fd.declarator)
           case ReadWriteAbstraction(_, Some(`userCter`)) =>
             val MethodDeclHolder(mdecl) = id2declMap(userCter)
-            use.accessKind match {
-              case Some(Write) => mdecl.addSetterBody(fd.declarator)
-              case Some(Read) =>  mdecl.addGetterBody(fd.declarator)
-              case _ => puck.error("uses create of field in setter requires an access kind")
-            }
-
+            mdecl.addSetterBody(fd.declarator)
+            mdecl.addGetterBody(fd.declarator)
 
           case _ => ()
         }
-
-//        tmUses.map { u =>
-//          id2declMap(u.used)}.foreach {
-//          case MethodDeclHolder(methUsedDecl) =>
-//            dh.node.addNewReceiver(methUsedDecl, receiver)
-//          case FieldDeclHolder(fieldUsedDecl) =>
-//            dh.node.addNewReceiver(fieldUsedDecl, receiver)
-//          case used =>
-//            logger.writeln(s"create receiver for $used ignored")
-//        }
-
       case h => throw new puck.graph.Error(s"method decl and field decl expected, got $h")
     }
   }

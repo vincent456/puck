@@ -237,29 +237,12 @@ object Move {
       new MoveTypeMember(g0, typeMembersMovedId, oldContainer, newContainer) {
 
 
-        def findReceiver(userOfMovedDecl : NodeId) = {
+        def findQualifier(userOfMovedDecl : NodeId) = {
           val log = s"\nsearching old receiver\n" +
             "userOfMovedDecl = " +  (g0, userOfMovedDecl ).shows(desambiguatedFullName)
 
           val candidates =
             (g0 usedBy userOfMovedDecl)  filter (g0.uses(_,oldContainer))
-
-//          import scala.collection.mutable
-//          val candidates =  mutable.Set[NodeId]()
-//
-//          val bounds = mutable.Set[NodeId]((g0 usedBy userOfMovedDecl).toSeq:_*)
-//          bounds remove movedDecl
-//          val visited = mutable.Set[NodeId]()
-//          while(bounds.nonEmpty) { //should'nt we limit the loop to 2 iterations ??
-//            val c = bounds.head
-//            bounds remove c
-//
-//            visited add c
-//            g0.usedBy(c) diff visited foreach bounds.add
-//
-//            if(g0.uses(c,typeOfReceiver) && c != typeOfReceiver)
-//              candidates add c
-//          }
 
           if (candidates.size != 1)
             LoggedError(s"$log\nfailure, candidates = " + (candidates map (c => (g0, c).shows)) )
@@ -269,30 +252,26 @@ object Move {
 
 
         import puck.util.LoggedEither, LoggedEither._
-        def useArgAsReceiver
-        ( g: DependencyGraph/*,
-          movedDeclWithArgUsableAsReceiver: Set[NodeId]*/
-        ) : LoggedTG = {
-
-
+        def useArgAsQualifier ( g: DependencyGraph ) : LoggedTG = {
 
           def findActualParameter(userOfMovedDecl : NodeId) = {
             val candidates =
               (g0 usedBy userOfMovedDecl) filter (g0.uses(_, newContainer))
             if (candidates.size != 1)
-              LoggedError(s"useArgAsReceiver searching actual parameter failure : ${candidates.size} candidates")
+              LoggedError(s"useArgAsQualifier searching actual parameter failure : ${candidates.size} candidates")
             else LoggedSuccess(candidates.head)
           }
 
-          val log = "use arg as receiver for " +
+          val log = "use arg as qualifier for " +
             (movedDeclWithArgUsableAsReceiver map (id => (g,id).shows(desambiguatedFullName)) mkString ("[ ", ", " ," ]"))
 
-          def isReceiverTypeConstrainedIn(g : DependencyGraph, receiver : NodeId, ctxt : NodeId) : Boolean =
-          g.kindType(receiver) match {
-            case Parameter | InstanceValue =>
-            g.typ(receiver).ids.exists { tid => ???
-              /*g.typeConstraints((receiver, tid)).exists(ct => ct.constrainedUser == ctxt )*/
-            }
+          def isQualifierTypeConstrainedIn(g : DependencyGraph, qualifier : NodeId, ctxt : NodeId) : Boolean =
+          g.kindType(qualifier) match {
+            case Parameter | InstanceValue | LocalValue =>
+              g.typeConstraints(qualifier).flatMap(_.typedNodes).filterNot(_==qualifier).exists(g.uses(ctxt,_))
+//            g.typ(qualifier).ids.exists { tid => ???
+//              /*g.typeConstraints((qualifier, tid)).exists(ct => ct.constrainedUser == ctxt )*/
+//            }
             case _ => //do not know but in doubt ...
               true
           }
@@ -316,15 +295,15 @@ object Move {
                   import LoggedEither.loggedEitherMonad
                   (g0 usersOf movedDecl).foldLoggedEither(ltg2){
                     (g2, user) =>
-                      Apply[LoggedTry].apply2(findReceiver(user),
-                        findActualParameter(user)){(receiver, actualParam) =>
+                      Apply[LoggedTry].apply2(findQualifier(user),
+                        findActualParameter(user)){(qualifier, actualParam) =>
 
-                        val g3 = g2.changeTypeUseOfTypeMemberUse((receiver, oldContainer),
+                        val g3 = g2.changeTypeUseOfTypeMemberUse((qualifier, oldContainer),
                           (actualParam, newContainer),
                           (user,movedDecl))
 
                         val otherUsesQualifiedByReceiver =
-                          g3.typeMemberUsesOf(receiver, oldContainer).filter(_.user == user)
+                          g3.typeMemberUsesOf(qualifier, oldContainer).filter(_.user == user)
 
 
                         val qualifierWillBeUsedAsArg = {
@@ -334,16 +313,16 @@ object Move {
                         }
 
                         val isTypedConstrained =
-                          isReceiverTypeConstrainedIn(g3, receiver, user)
+                          isQualifierTypeConstrainedIn(g3, qualifier, user)
                         // meaning it appears as plain ref, as rvalue, parameter or in return stmt
                         // use should not be deleted
 
                         if(otherUsesQualifiedByReceiver.isEmpty &&
                           ! qualifierWillBeUsedAsArg &&
                           ! isTypedConstrained)
-                          g3.typeUsesOf((user, receiver))
-                            .foldLeft(g3.removeEdge(Uses(user, receiver))){
-                              (g, tu) => g.removeBinding(tu, (user, receiver))
+                          g3.typeUsesOf((user, qualifier))
+                            .foldLeft(g3.removeEdge(Uses(user, qualifier))){
+                              (g, tu) => g.removeBinding(tu, (user, qualifier))
                             }
                         else g3
                       }
@@ -373,7 +352,7 @@ object Move {
                 case (pnode, g1) =>
                   g1.usersOf(g1 container_! movedDef).foldLoggedEither(g1) {
                     case (g00, user) =>
-                      findReceiver(user) map { receiver =>
+                      findQualifier(user) map { receiver =>
                         g00.addTypeConstraint(Sub(TypeOf(receiver), TypeOf(pnode.id)))}
                   }
             }
@@ -424,7 +403,7 @@ object Move {
         def apply() : LoggedTG = {
 
           for {
-            g2 <- useArgAsReceiver(g1/*, movedDeclWithArgUsableAsReceiver*/)
+            g2 <- useArgAsQualifier(g1/*, movedDeclWithArgUsableAsReceiver*/)
 
             g3 <- useReceiverAsArg(g2/*, usesOfSiblingViaThis*/)
 

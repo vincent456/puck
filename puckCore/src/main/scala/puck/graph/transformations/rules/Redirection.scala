@@ -70,7 +70,7 @@ object Redirection {
         redirect(g, oldUse, newUsed).flatMap {
           case (g1, _) =>
             val AccessAbstraction(absNode, _) = newUsed
-            updateTypeUseConstraint(g1, oldUse, absNode)
+            updateTypedNodesInTypeConstraint(g1, oldUse, absNode)
         }
 
       case (kt1, kt2) =>
@@ -184,22 +184,29 @@ object Redirection {
 
 
   //update type constraint when user change but type used remains the same
-  def updateTypeUseConstraint
+  def updateTypedNodesInTypeConstraint
   (g : DependencyGraph,
    ctorUse : NodeIdP,
    newUsed : NodeId ) : LoggedTG = {
     val (userOfCtor, ctor)= ctorUse
     val ctorTypeUse = (ctor, g container_! ctor)
-    val constrainedUseToChange : Set[TypeConstraint]= ???
-    /*g.typeConstraints(ctorTypeUse) filter ( _.constrainedUser == userOfCtor )*/
 
+    val constrainedUseToChange =
+      for{
+        n <- g subTree userOfCtor
+        tc <- g typeConstraints n
+        if tc.typedNodes contains ctor
+      } yield tc
 
     g.typ(newUsed) match {
       case NamedType(tid) =>
         constrainedUseToChange.foldLoggedEither(g){
-          (g0, ct) => ???
-          //            LoggedSuccess( g.removeTypeConstraint(ctorTypeUse, ct)
-          //              .addTypeConstraint((newUsed, tid), ct))
+          case (g0, btc @ BinaryTypeConstraint(op, Typed(_), Typed(_))) =>
+            val newBtc = TypeConstraint.changeTyped(btc, ctor, newUsed)
+            LoggedSuccess( g0.removeTypeConstraint(btc)
+              .addTypeConstraint(newBtc))
+          case (g0 ,tc) =>
+            LoggedError((g0,tc).shows + " type constraint change unhandled")
         }
       case _ => LoggedError("gen type factory type constraint change unhandled : TODO")
     }
@@ -238,7 +245,7 @@ object Redirection {
               userOfCtor, newTypeUse.user)
         }
     }
-    ltg flatMap (updateTypeUseConstraint(_, ctorUse, absNode))
+    ltg flatMap (updateTypedNodesInTypeConstraint(_, ctorUse, absNode))
 
 
   }
@@ -249,7 +256,7 @@ object Redirection {
   def propagateParameterTypeConstraints
   (g : DependencyGraph,
    typeMember : NodeId,
-   abs : Abstraction) = {
+   abs : Abstraction) : DependencyGraph = {
 
     val parameters = g parametersOf typeMember
     if(parameters.isEmpty) g
@@ -262,13 +269,26 @@ object Redirection {
         ct <- g.typeConstraints(pid)
       } yield (pid, absPid, ct)
 
-      val removeOldTypeConstraint = g.usersOf(typeMember).intersect(g.usersOf(absId)).isEmpty
+      val nodeConstrainedByTypeMemberParameters =
+        paramsConstraints.flatMap{
+          case (_,_,ct) => ct.typedNodes.filterNot(parameters.contains)
+        }
+
+      val userOfTmAndConstrainedNodes = for {
+        userOfTM <- g.usersOf(typeMember)
+        constrainedNode <- nodeConstrainedByTypeMemberParameters
+        if g.uses(userOfTM, constrainedNode)
+      } yield userOfTM
+
+      val removeOldTypeConstraint = userOfTmAndConstrainedNodes.isEmpty
+      //      val removeOldTypeConstraint = g.usersOf(typeMember).intersect(g.usersOf(absId)).isEmpty
 
       paramsConstraints.foldLeft(g) {
         case (g01, (pid, absPid, tc)) =>
           val tc2 = Mapping.typeConstraint(id =>
             if(id == pid) absPid
             else id)(tc)
+
 
           if(!TypeConstraint.comply(g01, tc2)) puck.error("new type constraint does not comply")
 
@@ -435,27 +455,60 @@ object Redirection {
     val toPropagate = tcs.filterNot(TypeConstraint.comply(g, _))
     if(toPropagate.isEmpty) LoggedSuccess(g)
     else {
-      toPropagate.foldLoggedEither(g){
-        case (g0, ct @ (BinaryTypeConstraint(op, Typed(typed1), Typed(typed2)))) =>
-          val t =
-            if(typed == typed1) typed2
-            else typed1
 
-          val canBePropagated = {
-            val g2 = g.changeType((t, oldNamedTypeId), newNamedTypeId)
-            TypeConstraint.comply(g2, ct)
-          }
+      def checkIfCanBePropagetedAndDoSo
+      ( g : DependencyGraph,
+        ct : TypeConstraint,
+        typed1 : NodeId,
+        typed2 : NodeId) : LoggedTG = {
+        val t =
+          if(typed == typed1) typed2
+          else typed1
 
-          if(canBePropagated)
-            redirectUsesAndPropagate(g0, (t, oldNamedTypeId),
-              AccessAbstraction(newNamedTypeId, SupertypeAbstraction))
-          else LoggedError(s"${(g0,ct).shows} cannot be propagated")
-        case (g0,ct) => LoggedError(s"propagation of ${(g0,ct).shows} not handled")
+        import ShowDG._
+        println("ct = " + (g, ct).shows)
+        println("typed = " + (g, typed).shows)
+        println("t = " + (g, t).shows)
+        println(s"change ${(g, oldNamedTypeId).shows} to ${(g, newNamedTypeId).shows}")
+
+
+        val canBePropagated = {
+          val g2 = g.changeType((t, oldNamedTypeId), newNamedTypeId)
+          println("typed = " + (g2, typed).shows)
+          println("t = " + (g2, t).shows)
+          println("ct = " + (g2, ct).shows)
+          TypeConstraint.comply(g2, ct)
+        }
+
+        if(canBePropagated)
+          redirectUsesAndPropagate(g, (t, oldNamedTypeId),
+            AccessAbstraction(newNamedTypeId, SupertypeAbstraction))
+        else LoggedError(s"${(g,ct).shows} cannot be propagated")
       }
 
+      toPropagate.foldLoggedEither(g){
+        case (g0, ct @ (BinaryTypeConstraint(op, Typed(typed1), Typed(typed2)))) =>
+          checkIfCanBePropagetedAndDoSo(g0, ct, typed1, typed2)
+        case (g0, ct) =>
+          import ShowDG._
+          println("***********************************************************")
+          println("ct = ")
+          (g0, ct).println
+          println(s"change ${(g0, oldNamedTypeId).shows} to ${(g0, newNamedTypeId).shows}")
 
+          val ct2 = TypeConstraint.changeNamedType(ct, oldNamedTypeId, newNamedTypeId)
+          println("ct2 = ")
 
+          (g0, ct2).println
 
+          if(ct2 == ct) LoggedError(s"propagation of ${(g0,ct).shows} not handled")
+          else {
+            val List(typed1, typed2) = ct.typedNodes
+            val g1 = g0.removeTypeConstraint(ct).addTypeConstraint(ct2)
+            checkIfCanBePropagetedAndDoSo(g1, ct2, typed1, typed2)
+          }
+
+      }
     }
   }
 

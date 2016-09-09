@@ -34,7 +34,7 @@ object TypeConstraint {
 
   def typeOf(g : DependencyGraph, tv : TypeConstraintVariable) : Type = tv match {
     case TypeOf(id) => g typ id
-    case ConstrainedType(t) => t
+    case TypeVar(t) => t
     case ParTypeProjection(tv1, idx) =>
       val ParameterizedType(_, args) = typeOf(g, tv1)
       args(idx)
@@ -46,48 +46,42 @@ object TypeConstraint {
     case AndTypeConstraint(tcs) =>
       tcs.forall(comply(g,_))
   }
-}
 
-
-sealed abstract class TypeConstraintVariable {
-  def typedNode : Option[NodeId]
-}
-case class TypeOf(nodeId: NodeId) extends TypeConstraintVariable {
-  def typedNode : Option[NodeId] = Some(nodeId)
-}
-case class ConstrainedType(t : Type) extends TypeConstraintVariable {
-  def typedNode : Option[NodeId] = None
-}
-case class ParTypeProjection(tv : TypeConstraintVariable, typeArgIndex : Int) extends TypeConstraintVariable{
-  def typedNode : Option[NodeId] = tv.typedNode
-}
-
-object Typed {
-  def unapply(arg: TypeConstraintVariable): Option[NodeId] =
-    arg match {
-      case TypeOf(nid) => Some(nid)
-      case ConstrainedType(_) => None
-      case ParTypeProjection(tv, _) => unapply(tv)
-    }
-}
-
-sealed abstract class ConstraintOp
-case object Sub extends ConstraintOp {
-  def apply(sub : TypeConstraintVariable, sup : TypeConstraintVariable) : TypeConstraint =
-    BinaryTypeConstraint(Sub, sub, sup)
-
-  def unapply(tc: TypeConstraint): Option[(TypeConstraintVariable, TypeConstraintVariable)] = tc match {
-    case BinaryTypeConstraint(Sub, l, r) => Some((l,r))
-    case _ => None
+  def changeTyped(tv : TypeConstraintVariable,
+                  oldTypedId : NodeId, newTypedId : NodeId) : TypeConstraintVariable = tv match {
+    case t @ TypeOf(id) =>
+      if(id == oldTypedId) TypeOf(newTypedId)
+      else t
+    case tv @ TypeVar(t) => tv
+    case ParTypeProjection(tv1, idx) =>
+      ParTypeProjection(changeTyped(tv1, oldTypedId, newTypedId), idx)
   }
-}
-case object Eq extends ConstraintOp {
-  def apply(l : TypeConstraintVariable, r : TypeConstraintVariable) : TypeConstraint =
-    BinaryTypeConstraint(Eq, l, r)
 
-  def unapply(tc: TypeConstraint): Option[(TypeConstraintVariable, TypeConstraintVariable)] = tc match {
-    case BinaryTypeConstraint(Eq, l, r) => Some((l,r))
-    case _ => None
+  def changeTyped(tv : TypeConstraint,
+                  oldTypedId : NodeId, newTypedId : NodeId) : TypeConstraint = tv match {
+    case BinaryTypeConstraint(op, left, right) =>
+      BinaryTypeConstraint(op,
+        changeTyped(left, oldTypedId, newTypedId),
+        changeTyped(right, oldTypedId, newTypedId))
+    case AndTypeConstraint(tcs) =>
+      AndTypeConstraint(tcs map (changeTyped(_, oldTypedId, newTypedId)))
+  }
+
+  def changeNamedType(tv : TypeConstraintVariable,
+                      oldNamedTypeId : NodeId, newNamedTypeId : NodeId) : TypeConstraintVariable = tv match {
+    case tv @ TypeOf(_) => tv
+    case TypeVar(t) => TypeVar( t.changeNamedType(oldNamedTypeId, newNamedTypeId) )
+    case ParTypeProjection(tv1, idx) =>
+      ParTypeProjection(changeNamedType(tv1, oldNamedTypeId, newNamedTypeId), idx)
+  }
+  def changeNamedType(tv : TypeConstraint,
+                      oldNamedTypeId : NodeId, newNamedTypeId : NodeId) : TypeConstraint = tv match {
+    case BinaryTypeConstraint(op, left, right) =>
+      BinaryTypeConstraint(op,
+        changeNamedType(left, oldNamedTypeId, newNamedTypeId),
+        changeNamedType(right, oldNamedTypeId, newNamedTypeId))
+    case AndTypeConstraint(tcs) =>
+        AndTypeConstraint(tcs map (changeNamedType(_, oldNamedTypeId, newNamedTypeId)))
   }
 }
 
@@ -113,11 +107,54 @@ case class AndTypeConstraint(cts : List[TypeConstraint]) extends TypeConstraint 
     }.toList
 }
 
-//case class ParamaterizedAnd(arg : Type, tcs : List[TypeConstraint]) extends TypeConstraint
 
+sealed abstract class TypeConstraintVariable {
+  def typedNode : Option[NodeId]
+}
+case class TypeOf(nodeId: NodeId) extends TypeConstraintVariable {
+  def typedNode : Option[NodeId] = Some(nodeId)
+}
+case class TypeVar(t : Type) extends TypeConstraintVariable {
+  def typedNode : Option[NodeId] = None
+}
+case class ParTypeProjection(tv : TypeConstraintVariable, typeArgIndex : Int) extends TypeConstraintVariable{
+  def typedNode : Option[NodeId] = tv.typedNode
+}
 
-//object TypeConstraint {
-//  def extendedForConstraint(graph : DependencyGraph, decl : NodeId, rightExpr : NodeId ) : TypeConstraint = {
-//
-//  }
-//}
+object Typed {
+  def unapply(arg: TypeConstraintVariable): Option[NodeId] =
+    arg match {
+      case TypeOf(nid) => Some(nid)
+      case TypeVar(_) => None
+      case ParTypeProjection(tv, _) => unapply(tv)
+    }
+}
+
+object ConstrainedType {
+  def unapply(arg: TypeConstraintVariable): Option[Type] =
+    arg match {
+      case TypeOf(_) => None
+      case TypeVar(t) => Some(t)
+      case ParTypeProjection(tv, _) => unapply(tv)
+    }
+}
+
+sealed abstract class ConstraintOp
+case object Sub extends ConstraintOp {
+  def apply(sub : TypeConstraintVariable, sup : TypeConstraintVariable) : TypeConstraint =
+    BinaryTypeConstraint(Sub, sub, sup)
+
+  def unapply(tc: TypeConstraint): Option[(TypeConstraintVariable, TypeConstraintVariable)] = tc match {
+    case BinaryTypeConstraint(Sub, l, r) => Some((l,r))
+    case _ => None
+  }
+}
+case object Eq extends ConstraintOp {
+  def apply(l : TypeConstraintVariable, r : TypeConstraintVariable) : TypeConstraint =
+    BinaryTypeConstraint(Eq, l, r)
+
+  def unapply(tc: TypeConstraint): Option[(TypeConstraintVariable, TypeConstraintVariable)] = tc match {
+    case BinaryTypeConstraint(Eq, l, r) => Some((l,r))
+    case _ => None
+  }
+}
