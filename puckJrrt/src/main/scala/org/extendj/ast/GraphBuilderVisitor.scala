@@ -222,8 +222,16 @@ trait GraphBuilderVisitor {
         setType(leftval, getType(stmt.getTypeAccess))
 
 
-        val tcBuilder : NodeId => TypeConstraint = stmt.getExpr.`type`() match {
-          case typUsed : ArrayDecl => ??? //this buildNode typUsed.elementType()
+        val tcBuilder : NodeId => TypeConstraint =
+          stmt.getExpr.`type`() match {
+          case typUsed : ArrayDecl =>
+
+            val arg = NamedType(buildNode(typUsed.elementType()))
+            val iterableParType = ParameterizedType(arrayTypeId, SList(arg))
+            id =>
+              AndTypeConstraint( SList(Sub(TypeOf(leftval),
+                ParTypeProjection(TypeVar(iterableParType), 0)),
+                Sub(TypeOf(id), TypeVar(iterableParType))))
 
           case t : TypeDecl =>
             val iterable : ParInterfaceDecl =
@@ -258,12 +266,14 @@ trait GraphBuilderVisitor {
 
     val astType = stmt.`type`()
 
-    stmt.getDeclarators filter(_.hasInit) foreach {
+    stmt.getDeclarators map {
       vd =>
         val vdId = this buildNode vd
         addEdge(Contains(containerId, vdId))
         setType(vdId, t)
-
+        (vd, vdId)
+    } filter(_._1.hasInit) foreach {
+      case (vd, vdId) =>
         vd.getInit.buildDG(this, containerId)
         vd.getInit match {
           case a: Access => constraintTypeUses(TypeOf(vdId), astType, a)
@@ -343,11 +353,11 @@ trait GraphBuilderVisitor {
   def buildDG(containerId : NodeId, va : VarAccess) : Unit =
     if(va. decl().isField){
       val nodeId = this buildNode va
-      val typeMemberUses = Uses(containerId, nodeId, va.usesAccessKind())
+      val typeMemberUses = Uses(containerId, nodeId)
       addEdge(typeMemberUses)
 
       if(!va.isDeclStatic)
-        buildTypeUse(va, typeMemberUses)
+        buildTypeUse(va, typeMemberUses, va.usesAccessKind())
     }
 
   def buildDG(containerId : NodeId, ta : TypeAccess) : Unit =
@@ -376,7 +386,7 @@ trait GraphBuilderVisitor {
         addEdge(typeMemberUses)
 
         if(!decl.isStatic)
-          buildTypeUse(ma, typeMemberUses)
+          buildTypeUse(ma, typeMemberUses, None)
 
         if(! decl.isSubstitute)
           decl.getParameterList.toList.zip(ma.getArgs.toList) foreach putConstraintOnArg

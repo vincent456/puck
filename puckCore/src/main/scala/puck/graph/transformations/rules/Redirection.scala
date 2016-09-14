@@ -187,24 +187,37 @@ object Redirection {
   def updateTypedNodesInTypeConstraint
   (g : DependencyGraph,
    ctorUse : NodeIdP,
-   newUsed : NodeId ) : LoggedTG = {
+   newUsed : NodeId,
+   removeOld : Boolean = true) : LoggedTG = {
     val (userOfCtor, ctor)= ctorUse
     val ctorTypeUse = (ctor, g container_! ctor)
 
-    val constrainedUseToChange =
+    val constraintsToUpdate =
       for{
         n <- g subTree userOfCtor
         tc <- g typeConstraints n
         if tc.typedNodes contains ctor
       } yield tc
 
+    println( "oldUse = "+ (g, ctorUse).shows)
+    println("constraintsToUpdate = " +constraintsToUpdate)
     g.typ(newUsed) match {
       case NamedType(tid) =>
-        constrainedUseToChange.foldLoggedEither(g){
+        constraintsToUpdate.foldLoggedEither(g){
           case (g0, btc @ BinaryTypeConstraint(op, Typed(_), Typed(_))) =>
             val newBtc = TypeConstraint.changeTyped(btc, ctor, newUsed)
-            LoggedSuccess( g0.removeTypeConstraint(btc)
-              .addTypeConstraint(newBtc))
+
+            println("old contraint = ")
+            println((g, btc).shows)
+            println("new contraint = ")
+            println((g, newBtc).shows)
+
+
+            val g1 =
+              if(removeOld) g0.removeTypeConstraint(btc)
+              else g0
+
+            LoggedSuccess(g1.addTypeConstraint(newBtc))
           case (g0 ,tc) =>
             LoggedError((g0,tc).shows + " type constraint change unhandled")
         }
@@ -344,66 +357,39 @@ object Redirection {
     println("*********************")
 
 
+    val log = s"redirectUsesOfWritableNodeAndPropagate(g, oldUse = ${(g, oldUse).shows},  " +
+      s"newUsed = ${(g, newUsed).shows})\n"
 
+    g.typeUsesOf(oldUse).foldLoggedEither(g){
+      (g0, tu) =>
+        val (g1, newUsed, sNewUsed2) =
+          (srid, swid, g0.usesAccessKind((tu, oldUse))) match {
+            case (Some(rid), _, Some(Read)) =>
+              (oldUse.changeTarget(g0, Uses, rid)
+                .changeTypeMemberUseOfTypeUse(oldUse, (oldUse.user, rid), tu)
+                .rmAccessKind((tu, oldUse)), rid, None)
 
-    LoggedSuccess(s"redirectUsesOfWritableNodeAndPropagate(g, oldUse = ${(g, oldUse).shows},  " +
-      s"newUsed = ${(g, newUsed).shows})\n",
-      g.typeUsesOf(oldUse).foldLeft(g){
-        (g0, tu) =>
-          val (g1, newUses) =
-            (srid, swid, g0.usesAccessKind((tu, oldUse))) match {
-              case (Some(rid), _, Some(Read)) =>
-                (oldUse.changeTarget(g0, Uses, rid)
-                  .changeTypeMemberUseOfTypeUse(oldUse, (oldUse.user, rid), tu)
-                  .changeAccessKind((tu, oldUse), None), List((oldUse.user, rid)))
+            case (_, Some(wid), Some(Write)) =>
+              (oldUse.changeTarget(g0, Uses, wid)
+                .changeTypeMemberUseOfTypeUse(oldUse, (oldUse.user, wid), tu)
+                .rmAccessKind((tu, oldUse)), wid, None)
 
-              case (_, Some(wid), Some(Write)) =>
-                (oldUse.changeTarget(g0, Uses, wid)
-                  .changeTypeMemberUseOfTypeUse(oldUse, (oldUse.user, wid), tu)
-                  .changeAccessKind((tu, oldUse), None), List((oldUse.user, wid)))
+            case  (Some(rid), Some(wid), Some(RW)) =>
+              (g0.splitUsesWithTargets(tu, oldUse, rid, wid), rid, Some(wid))
 
-              case  (Some(rid), Some(wid), Some(RW)) =>
-                g0.splitUsesWithTargets(tu, oldUse, rid, wid)
-
-              case _ => puck.error("")
-            }
-          //          g1
-          //
-          //        g1.typeConstraints(oldTypeUse)
-          //          .contains(Sup(oldTypeUse))
-          //
-          //        val newReadTypeUse = typeUse(rid)
-          //        val newWriteTypeUse = typeUse(g.parametersOf(wid).head)
-          //
-          //        g0.removeTypeUsesConstraint(oldTU, Sup(oldTU))
-          //          .addTypeUsesConstraint(newWriteTypeUse, Sup(newReadTypeUse))
-
-
-          println( "oldTypeUse = "+ (g1, oldTypeUse).shows)
-          println( "g1.typeConstraints( oldTypeUse ) = ")
-          g1.typeConstraints( oldUse.used ).foreach {
-            tuc =>
-              println((g1, tuc).shows)
+            case _ => puck.error("")
           }
-          g1
-        /*( for {
-          tuc <- g1.typeConstraints( oldUse.used )
-          //and user of field
-          if tuc.typedNode == oldUse.user
-          newUse <- newUses
-          //type use constraint between type use of field
 
-        } yield (newUse, tuc) ).foldLeft(g1){
-          case (g4, (newUse, tuc)) =>
+        val ltg0 =
+        sNewUsed2 map (newUsed2 => updateTypedNodesInTypeConstraint(g1, oldUse, newUsed2, removeOld = false)
+          ) getOrElse LoggedSuccess(g1)
+        ltg0 flatMap(updateTypedNodesInTypeConstraint(_, oldUse, newUsed))
 
-            import ShowDG._
-            println("removing " + (g4, (oldUse.used, tuc)).shows)
-            println("adding " + (g4, (newUse.used, tuc)).shows)
-
-            g4.removeTypeConstraint(oldUse.used, tuc)
-              .addTypeConstraint(newUse.used, tuc)
-        }*/
-      })
+      //        val ltg0 = updateTypedNodesInTypeConstraint(g1, oldUse, newUsed)
+//                sNewUsed2 map (newUsed2 =>
+//                  ltg0.flatMap(updateTypedNodesInTypeConstraint(_, oldUse, newUsed2, removeOld = false))) getOrElse ltg0
+//        //ltg0
+    }
   }
 
 

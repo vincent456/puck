@@ -111,7 +111,7 @@ case class EdgeMap
 
   def add(edge : DGEdge) : EdgeMap =
     edge match {
-      case Uses(user, used, accK) =>
+      case Uses(user, used) =>
         copy(userMap = userMap + (used, user),
           usedMap = usedMap + (user, used))
 

@@ -333,11 +333,21 @@ class DependencyGraph private
     newGraph(edges = edges.addUsesDependency(typeUse, typeMemberUse),
       recording = recording.addTypeBinding(typeUse, typeMemberUse))
 
-  def changeAccessKind(br : (NodeIdP, NodeIdP),
-                       accK : Option[UsesAccessKind]) = {
-    println("/!\\ changeAccessKind is not recorded !!")
-    newGraph(edges = edges.changeAccessKind(br, accK))
-  }
+  def addAccessKind(br : (NodeIdP, NodeIdP),
+                    accK : UsesAccessKind) =
+    newGraph(edges = edges.changeAccessKind(br, Some(accK)),
+      recording = recording.addAccessKind(br, accK))
+
+
+  def rmAccessKind(br : (NodeIdP, NodeIdP)) =
+    edges.getAccessKind(br) match {
+      case Some(accK) =>
+        newGraph(edges = edges.changeAccessKind(br, None),
+          recording = recording.removeAccessKind(br, accK))
+      case None => this
+    }
+
+
 
   def removeBinding
   ( typeUse : NodeIdP,
@@ -414,7 +424,7 @@ class DependencyGraph private
    edge : NodeIdP,
    readTarget : NodeId,
    writeTarget : NodeId
-  ) : (DependencyGraph, List[NodeIdP]) = {
+  ) : DependencyGraph = {
     val u : DGEdge = Uses(edge)
     val g1 = removeEdge(u, register = false)
     val readEdge = Uses(edge.source, readTarget)
@@ -424,13 +434,13 @@ class DependencyGraph private
       recording.changeEdgeTarget(u, readTarget, withMerge = readEdge.existsIn(this))
         .changeEdgeTarget(u, readTarget, withMerge = readEdge.existsIn(this))
 
-    (g1.addEdge(readEdge, register = false)
+    g1.addEdge(readEdge, register = false)
       .addEdge(writeEdge, register = false)
       .newGraph(recording = newRecording)
       .removeBinding(tu, edge)
-      .changeAccessKind((tu, edge), None)
+      .rmAccessKind((tu, edge))
       .addBinding(tu, readEdge)
-      .addBinding(tu, writeEdge), List(readEdge, writeEdge))
+      .addBinding(tu, writeEdge)
 
   }
 
@@ -635,8 +645,8 @@ class DependencyGraph private
   def typeUses2typeMemberUses : Seq[(NodeIdP, Set[NodeIdP])] =
     edges.typeUses2typeMemberUsesMap.toSeq
 
-  def bind(typeUse : Uses,
-           typeMemberUse : Uses) : Boolean =
+  def bind(typeUse : NodeIdP,
+           typeMemberUse : NodeIdP) : Boolean =
     typeMemberUsesOf( typeUse ) contains typeMemberUse
 
   def abstractions(id : NodeId) : Set[Abstraction] = {

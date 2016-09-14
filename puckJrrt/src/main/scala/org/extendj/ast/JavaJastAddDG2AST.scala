@@ -354,7 +354,7 @@ class JavaJastAddDG2AST
           case ChangeSource(Isa(source, target), newSource)  =>
             RedirectSource.redirectIsaSource(source, target, newSource)
 
-          case ChangeSource(Uses(source, target, _), newSource)  =>
+          case ChangeSource(Uses(source, target), newSource)  =>
             RedirectSource.changeUser(source, target, newSource)
 
           case ChangeTarget(e, newTarget) => RedirectTarget(e, newTarget)

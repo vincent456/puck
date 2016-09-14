@@ -81,9 +81,9 @@ object JavaAbstract extends Abstract {
           // we define a setter that returns the new value to mimic the affectation value
           // hence the value is also read
           .addBinding(selfUse, (getDef, impl.id))
-          .changeAccessKind((selfUse, (getDef, impl.id)), Some(Read))
+          .addAccessKind((selfUse, (getDef, impl.id)), Read)
           .addBinding(selfUse, (setDef, impl.id))
-          .changeAccessKind((selfUse, (setDef, impl.id)), Some(RW))
+          .addAccessKind((selfUse, (setDef, impl.id)), RW)
       case _ => g2
     }
     (abs, g3)

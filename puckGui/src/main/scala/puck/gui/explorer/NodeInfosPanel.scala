@@ -60,8 +60,8 @@ class NodeInfosPanel
           control.graphUtils,
           control.nodeKindIcons).show(c, evt.getX, evt.getY))
       else edge match {
-        case Uses(src,tgt,ak) =>
-          bus publish Log(NodeInfosPanel.useBindings(graph, Uses(src,tgt,ak)))
+        case Uses(src,tgt) =>
+          bus publish Log(NodeInfosPanel.useBindings(graph, (src, tgt)))
         case _ => ()
       }
     }
@@ -211,8 +211,8 @@ class NodeInfosPanel
 
 object NodeInfosPanel {
 
-  def useBindings(graph : DependencyGraph, u : Uses) : String = {
-    def print(sb : StringBuilder, u : Uses) : StringBuilder = {
+  def useBindings(graph : DependencyGraph, u : NodeIdP) : String = {
+    def print(sb : StringBuilder, u : NodeIdP) : StringBuilder = {
       val ustr = (graph, u).shows
       graph.getNode(u.used).kind.kindType match {
         case TypeDecl =>

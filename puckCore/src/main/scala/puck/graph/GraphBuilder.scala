@@ -75,15 +75,21 @@ trait GraphBuilder {
 
 
   def addBinding( typeUse : NodeIdP,
-                  typeMemberUse : Uses): Unit = {
+                  typeMemberUse : NodeIdP,
+                  typeMemberUseAccessKind : Option[UsesAccessKind]): Unit = {
     g = g.addBinding(typeUse, typeMemberUse)
-      .changeAccessKind((typeUse, typeMemberUse), typeMemberUse.accessKind)
+    typeMemberUseAccessKind foreach {
+      accK =>
+        g = g.addAccessKind((typeUse, typeMemberUse), accK)
+    }
   }
 
-  def addBinding(typeUser : NodeId, typeUsed:NodeId, typeMemberUse : Uses) : Uses = {
-    addBinding((typeUser, typeUsed), typeMemberUse)
-    Uses(typeUser, typeUsed)
-  }
+
+  def addBinding(typeUser : NodeId, typeUsed:NodeId,
+                 typeMemberUse : NodeIdP,
+                 typeMemberUseAccessKind : Option[UsesAccessKind]) : Unit =
+    addBinding((typeUser, typeUsed), typeMemberUse, typeMemberUseAccessKind)
+
 
   def addParams(decl : NodeId, params : List[Int]) : Unit = {
     params.reverseIterator.foreach{ //order matters

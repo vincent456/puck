@@ -190,7 +190,7 @@ aspect DependencyGraphFactory {
 
 	public void ArrayAccess.buildDG(JastaddGraphBuilder builder, int containerId){
 		int nodeId = builder.buildNode(this);
-		builder.addEdge(new Uses(containerId, nodeId, UsesAccessKind.none()));
+		builder.addUses(containerId, nodeId);
 		buildDGInChildren(builder, containerId);
 	}
 

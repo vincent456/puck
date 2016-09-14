@@ -40,8 +40,6 @@ object JastaddGraphBuilder {
   def isa(n1 : NodeId, n2 : NodeId) =
     new DGEdge(Isa, n1, n2)
 
-  def classKind : JavaNodeKind = Class
-  def interfaceKind : JavaNodeKind = Interface
   def genInterface(gid: GenericInterfaceDecl) : JavaNodeKind = GenericInterface
   def genClass(gid: GenericClassDecl) : JavaNodeKind = GenericClass
 
@@ -120,6 +118,9 @@ class JastaddGraphBuilder(val program : Program)
   var graph2ASTMap = Map[Int, ASTNodeLink]()
 
   var synthetic = Set[NodeId]()
+
+  def addUses(user : NodeId, used : NodeId) =
+    addEdge(Uses(user, used))
 
   def findTypeDecl(typ : String): TypeDecl ={
     val td = program findType typ

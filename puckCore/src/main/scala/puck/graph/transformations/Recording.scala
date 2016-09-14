@@ -267,6 +267,14 @@ object Recording {
                           typeMemberUse :  NodeIdP) : Recording =
       Transformation(Reverse, TypeBinding(typeUse, typeMemberUse)) +: record
 
+    def addAccessKind(binding : (NodeIdP, NodeIdP),
+                      accessKind: UsesAccessKind) : Recording =
+      Transformation(Regular, AccessKind(binding, accessKind)) +: record
+
+    def removeAccessKind(binding : (NodeIdP, NodeIdP),
+                      accessKind: UsesAccessKind) : Recording =
+      Transformation(Reverse, AccessKind(binding, accessKind)) +: record
+
     def addTypeConstraint(constraint :  TypeConstraint) : Recording =
       Transformation(Regular, TypeConstraintOp(constraint)) +: record
 

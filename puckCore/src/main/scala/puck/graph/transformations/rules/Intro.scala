@@ -82,7 +82,7 @@ abstract class Intro {
         (g, ic) =>
           val g1 = g.addUses(defNode.id, ic)
                     .addBinding((typeInitialized,typeInitialized), (defNode.id, ic))
-                      .changeAccessKind(((typeInitialized,typeInitialized), (defNode.id, ic)), Some(Write))
+                      .addAccessKind(((typeInitialized,typeInitialized), (defNode.id, ic)), Write)
 
           val icDef = g definitionOf_! ic
 

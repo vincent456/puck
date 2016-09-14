@@ -51,10 +51,11 @@ case class TVIAccess(a : Access) extends TypeVariableInstanciator{
 
 
 }
-case class TVIVarDecl(d : Declarator) extends TypeVariableInstanciator{
+case class TVIVarDecl(d : Variable) extends TypeVariableInstanciator{
   def buildNode( builder : JastaddGraphBuilder) : NodeId = d match {
     case fd : FieldDeclarator => builder.buildNode(fd)
     case vd : VariableDeclarator => builder.buildNode(vd)
+    case pd : ParameterDeclaration => builder.buildNode(pd)
   }
 
 }
@@ -68,15 +69,21 @@ trait TypeUsage {
   this : JastaddGraphBuilder =>
 
 
-  def buildTypeUse(tmAccess : TypeMemberAccess, typeMemberUse: Uses) : Unit = {
+  def buildTypeUse(tmAccess : TypeMemberAccess,
+                   typeMemberUse: NodeIdP,
+                   typeMemberUseAccessKind : Option[UsesAccessKind]) : Unit = {
     if(qualifierIsThisAccess(tmAccess)) {
       val thisTypeId = this buildNode tmAccess.hostType()
-      addEdge(addBinding(thisTypeId, thisTypeId, typeMemberUse))
+      val tu = Uses(thisTypeId, thisTypeId)
+      addEdge(tu)
+      addBinding(tu, typeMemberUse, typeMemberUseAccessKind)
     }
     else if(qualifierIsSuperAccess(tmAccess)){
       val thisTypeId = this buildNode tmAccess.hostType()
       val superTypeId = this buildNode tmAccess.hostType.asInstanceOf[ClassDecl].superclass()
-      addEdge(addBinding(thisTypeId, superTypeId, typeMemberUse))
+      val tu = Uses(thisTypeId, superTypeId)
+      addEdge(tu)
+      addBinding(tu, typeMemberUse, typeMemberUseAccessKind)
     }
     else {
       val access = tmAccess.asInstanceOf[Access]
@@ -84,14 +91,16 @@ trait TypeUsage {
         qualifier =>
           //if(qualifier.`type`() == access.accessed().hostType())
           if(!qualifier.isSubstitute)
-            bindTypeUse(this buildNode qualifier, qualifier, typeMemberUse)
+            bindTypeUse(this buildNode qualifier, qualifier,
+              typeMemberUse, typeMemberUseAccessKind)
           else {
             val a = qualifier.asInstanceOf[Access]
             a.accessed() match {
               case tms : TypeMemberSubstitute =>
-                bindParTypeUse(a, tms, typeMemberUse)
+                bindParTypeUse(a, tms, typeMemberUse, typeMemberUseAccessKind)
               case cds : ConstructorDeclSubstituted =>
-                bindTypeUse(getNode(cds.getOriginal), cds.getOriginal.hostType(), typeMemberUse)
+                bindTypeUse(getNode(cds.getOriginal), cds.getOriginal.hostType(),
+                  typeMemberUse, typeMemberUseAccessKind)
 
               case _ => error()
 
@@ -111,14 +120,16 @@ trait TypeUsage {
 
   def bindTypeUse(exprId : NodeId,
                   expr : Expr,
-                  typeMemberUse : Uses) : Unit =
-    bindTypeUse(exprId, expr.`type`(), typeMemberUse)
+                  typeMemberUse : NodeIdP,
+                  typeMemberUseAccessKind : Option[UsesAccessKind]) : Unit =
+    bindTypeUse(exprId, expr.`type`(), typeMemberUse, typeMemberUseAccessKind)
 
   def bindTypeUse(typeUser : NodeId,
                   typeUsed: TypeDecl,
-                  typeMemberUse : Uses) : Unit = {
+                  typeMemberUse : NodeIdP,
+                  typeMemberUseAccessKind : Option[UsesAccessKind]) : Unit = {
     val tid = Type.mainId(getType(typeUsed))
-    puck.ignore(addBinding(typeUser, tid, typeMemberUse))
+    addBinding(typeUser, tid, typeMemberUse, typeMemberUseAccessKind)
   }
 
 
@@ -158,18 +169,19 @@ trait TypeUsage {
 
   def bindParTypeUse(qualifier : Access,
                      qualifierDecl : TypeMemberSubstitute,
-                     typeMemberUse : Uses) : Unit = {
+                     typeMemberUse : NodeIdP,
+                     typeMemberUseAccessKind : Option[UsesAccessKind]) : Unit = {
     (qualifierDecl.getOriginalType, qualifier.`type`()) match {
       case ( tv : TypeVariable, _ ) =>
         findTypeVariableInstanciator(tv, qualifierDecl.`type`(), qualifier) foreach {
           case (e, idx) =>
-            bindTypeUse(e buildNode this, qualifierDecl.`type`(), typeMemberUse)
+            bindTypeUse(e buildNode this, qualifierDecl.`type`(), typeMemberUse, typeMemberUseAccessKind)
         }
 
       case (origType : ParTypeDecl,  usageType : ParTypeDecl)
         if origType.genericDecl() == usageType.genericDecl() =>
         //Type variable are ignored here
-        bindTypeUse(buildNode(qualifier), qualifier, typeMemberUse)
+        bindTypeUse(buildNode(qualifier), qualifier, typeMemberUse, typeMemberUseAccessKind)
 
 
       case (_ : ParTypeDecl, _)
@@ -179,7 +191,7 @@ trait TypeUsage {
 
 
       case (_, _) if qualifier.`type`().instanceOf(qualifierDecl.getOriginalType) =>
-        bindTypeUse(buildNode(qualifier), qualifier, typeMemberUse)
+        bindTypeUse(buildNode(qualifier), qualifier, typeMemberUse, typeMemberUseAccessKind)
 
 
       case _ => error()
@@ -224,8 +236,8 @@ trait TypeUsage {
           }
 
         (a.accessed(), a.`type`()) match {
-          case (d : Declarator, ptd : ParTypeDecl) if ptd.genericDecl() == gtd =>
-            Some((TVIVarDecl(a.accessed().asInstanceOf[Declarator]), gtd indexOfTypeVariable tv))
+          case (d : Variable, ptd : ParTypeDecl) if ptd.genericDecl() == gtd =>
+            Some((TVIVarDecl(a.accessed().asInstanceOf[Variable]), gtd indexOfTypeVariable tv))
 
           case (d : Declarator, td) if td instanceOf tvOwnerTd =>
             findTVInstanciatiorInHierachy(td)

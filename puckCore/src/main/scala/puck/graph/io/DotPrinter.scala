@@ -492,7 +492,7 @@ class DotPrinter
 
       reg.foreach {
         case Isa(s, t) => printArc(ColorThickness.violation,isaStyle)((s, t))
-        case Uses(s, t, _) => printArc(ColorThickness.violation,usesStyle)((s, t))
+        case Uses(s, t) => printArc(ColorThickness.violation,usesStyle)((s, t))
         case _ => ()
       }
 

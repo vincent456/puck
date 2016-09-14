@@ -313,8 +313,17 @@ object ShowDG extends ShowConstraints{
 //        s"${pToString(tUse)} -> ${pToString(tmUse)}")
 
       builder.append("\ntypeConstraints\n")
-      builder append print(typeConstraints,
-        (k : NodeId, v : TypeConstraint) => stringOfTypeConstraint(dg, v))
+      val typeConstraintsSet =
+        typeConstraints.content.iterator.foldLeft(Set[TypeConstraint]()) {
+        case (s, (_, stc)) => s ++ stc
+      }
+      typeConstraintsSet foreach {
+        tc =>
+          builder append stringOfTypeConstraint(dg, tc)
+          builder append "\n"
+      }
+//      builder append print(typeConstraints,
+//        (k : NodeId, v : TypeConstraint) => stringOfTypeConstraint(dg, v))
 
 
       builder.toString()
@@ -324,6 +333,7 @@ object ShowDG extends ShowConstraints{
   def mkMapStringSortedByKey[A,B](m : Map[A,B])(implicit ord: Ordering[A]) : String = {
     m.toList.sortBy(_._1).mkString("\t[",",\n\t ","]\n")
   }
+
   def mkMapStringSortedByFullName(g : DependencyGraph, m : Map[NodeId,DGNode]) : String = {
     m.toList.map{ case (id, n) =>  ((g, id).shows(desambiguatedFullName) +" - " + n.kind , id) }.
       sortBy(_._1).mkString("\t[",",\n\t ","]\n")
@@ -336,7 +346,7 @@ object ShowDG extends ShowConstraints{
     vNodes, removedVnodes,
     cNodes2vNodes,
     roles)) =>
-      "Concrete Nodes : " +
+      s"Concrete Nodes : (${cNodes.size})" +
         mkMapStringSortedByFullName(g, cNodes) +
         "Removed Concrete Nodes : " +
         mkMapStringSortedByFullName(g, removedCnodes) +

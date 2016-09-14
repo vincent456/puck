@@ -11,9 +11,9 @@ trait Blind extends ActionGenerator {
     redirectTowardAbstractions(violationTarget)(g) ++
       moveAction(violationTarget)(g) ++
       moveContainerAction(violationTarget)(g) ++
-      absIntro(violationTarget)(g) ++
+      abstractAction(violationTarget)(g) ++
       hostIntroAction(violationTarget)(g) ++
-      hostAbsIntro(violationTarget)(g)
+      abstractContainerAction(violationTarget)(g)
 }
 
 class TargetedBlindControl

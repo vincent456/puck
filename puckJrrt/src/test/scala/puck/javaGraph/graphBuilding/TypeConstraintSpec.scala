@@ -269,4 +269,30 @@ class TypeConstraintSpec extends AcceptanceSpec {
       //      graph.typeUsesOf(mDef, toString_) should contain (Uses(hasElement, obj))
     }
   }
+
+  scenario("2 types param"){
+    val s = new ScenarioFactory(
+      """package p;
+        |
+        |import java.util.Map;
+        |
+        |public class C {
+        |
+        |    public void m(Map<String, String> datas) {
+        |       String value = datas.get("key");
+        |    }
+        |}"""
+      )
+      import s._
+    graph.typeConstraints("p.C.m(Map).Definition.value") foreach {
+      tc =>
+        import ShowDG._
+        (graph, tc).println
+    }
+
+    graph.typeConstraints("p.C.m(Map).Definition.value") should contain (
+      BinaryTypeConstraint(Sub, ParTypeProjection(TypeOf("p.C.m(Map).datas"),1), TypeOf("p.C.m(Map).Definition.value"))
+    )
+
+  }
 }

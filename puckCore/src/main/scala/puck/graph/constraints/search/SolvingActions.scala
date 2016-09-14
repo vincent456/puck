@@ -98,13 +98,27 @@ class SolvingActions
   ): Stream[NodeKind] =
     g.nodeKinds.toStream.filter(_.canContain(toBeContainedKind))
 
-  def hostIntro
-  (toBeContained: ConcreteNode
-  ): DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] =
-    g0 => containerKind(g0, toBeContained.kind) map {
+  def abstractionHostKind
+  (g : DependencyGraph,
+   toBeAbstractedKind : NodeKind
+  ) : Stream[NodeKind] =
+    (for {
+      absK <- toBeAbstractedKind.abstractionChoices map (_._1)
+      cK <- g.nodeKinds
+      if cK canContain absK
+    } yield cK).toSet.toStream
+
+
+
+  def hostIntro0
+  (g0 : DependencyGraph,
+   toBeContained: Stream[NodeKind],
+   containerNameSeed : String
+  ) : Stream[LoggedTry[(NodeId, DependencyGraph)]] =
+    toBeContained map {
       hostKind =>
         newCterNumGen += 1
-        val hostName = s"${toBeContained.name}_container$newCterNumGen"
+        val hostName = s"${containerNameSeed}_container$newCterNumGen"
         rules.intro(g0, hostName, hostKind)
     } flatMap {
       case (toBeCtedHost, g1) =>
@@ -112,6 +126,18 @@ class SolvingActions
           case (hid, g2) => (toBeCtedHost.id, g2.addContains(hid, toBeCtedHost.id))
         })
     }
+
+  def absHostIntro
+  (g0 : DependencyGraph,
+    toBeAbstracted : ConcreteNode
+  ) : Stream[LoggedTry[(NodeId, DependencyGraph)]] =
+    hostIntro0(g0, abstractionHostKind(g0, toBeAbstracted.kind), toBeAbstracted.name + "Abs")
+
+  def hostIntro
+  (g0 :DependencyGraph,
+   toBeContained: ConcreteNode
+  ): Stream[LoggedTry[(NodeId, DependencyGraph)]] =
+    hostIntro0(g0, containerKind(g0, toBeContained.kind), toBeContained.name)
 
 
   def findHost
@@ -176,9 +202,9 @@ class SolvingActions
 
 
   def move
-  ( wronglyContained : ConcreteNode
-  ) : DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] = {
-    g0 =>
+  ( g0 : DependencyGraph,
+    wronglyContained : ConcreteNode
+  ) : Stream[LoggedTry[(NodeId, DependencyGraph)]] = {
       val lg = s"trying to move $wronglyContained, searching host\n"
       findHost(wronglyContained)(g0) flatMap {
         case LoggedEither(log, -\/(err)) => Stream(LoggedEither(lg + log, -\/(err)))
@@ -255,7 +281,7 @@ class SolvingActions
           //fields abstractions introduced with container
           if((g3 container abs.nodes.head).nonEmpty) Stream(LoggedEither(log, \/-((abs, g3))))
           else
-          (hostIntro(g3.getConcreteNode(abs.nodes.head))(g3) ++
+          (hostIntro(g3, g3.getConcreteNode(abs.nodes.head)) ++
             chooseNode(newAbsFindHostPredicate(impl,
               abs.policy, absNodeKind), vnPolicicy.virtualizableKindFor(abs.kind(g3)))(g3)).map {
             lt => lt.flatMap {

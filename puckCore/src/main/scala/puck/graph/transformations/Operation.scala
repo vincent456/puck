@@ -202,6 +202,16 @@ case class TypeBinding
   }
 }
 
+case class AccessKind
+( binding : (NodeIdP,NodeIdP),
+  accK : UsesAccessKind)
+extends AddRmOperation {
+  def execute(g: DependencyGraph , op : Direction) = op match {
+    case Regular => g.addAccessKind(binding, accK)
+    case Reverse => g.rmAccessKind(binding)
+  }
+}
+
 case class TypeConstraintOp
 (constraint :  TypeConstraint)
   extends AddRmOperation {

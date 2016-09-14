@@ -62,6 +62,9 @@ case object AbstractEdgeKind extends EKind {
 }
 
 case class DGEdge(kind : EKind, source : NodeId, target: NodeId) {
+//  extends  Product2[NodeId, NodeId]{
+//  def _1 = source
+//  def _2 = target
 
   def copy(source : NodeId = source, target : NodeId = target) : DGEdge =
     new DGEdge(kind, source, target)
@@ -105,33 +108,9 @@ case class DGEdge(kind : EKind, source : NodeId, target: NodeId) {
 
 }
 
-class Uses(source : NodeId, target: NodeId, val accessKind : Option[UsesAccessKind])
-  extends DGEdge(Uses, source, target){
-
-  override def toString : String =
-    accessKind match {
-      case None => super.toString
-      case Some(ac) =>
-        ac + "-" + kind + "( " + source + ", " + target + ")"
-    }
-
-  override def copy(source : NodeId = source, target : NodeId = target) : Uses =
-    new Uses(source, target, accessKind)
-
-  def withAccessKind(accessKind: Option[UsesAccessKind]) : Uses =
-    new Uses(source, target, accessKind)
-
-}
-
 case object Uses extends EKind {
-  override def apply(source: NodeId, target: NodeId) : Uses = apply(source, target, None)
-  def apply(source: NodeId, target: NodeId, accessKind : Option[UsesAccessKind]): Uses = new Uses(source, target, accessKind)
-
-  def unapply(e: DGEdge) : Option[(NodeId, NodeId, Option[UsesAccessKind])] =
-    e match {
-      case u : Uses => Some((e.source, e.target, u.accessKind))
-      case _ => None
-    }
+  def apply(source: NodeId, target: NodeId) : DGEdge = new DGEdge(Uses, source, target)
+  def unapply(e: DGEdge) : Option[(NodeId, NodeId)] = pairOfKind(e, Uses)
 }
 
 case object Isa extends EKind {

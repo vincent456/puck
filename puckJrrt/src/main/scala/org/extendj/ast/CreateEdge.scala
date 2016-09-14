@@ -96,19 +96,18 @@ object CreateEdge {
             createIsa(id2declMap(e.subType), id2declMap(e.superType))
 
           case Uses =>
-            val u = e.asInstanceOf[Uses]
             val (source, target ) = (resultGraph.getNode(e.source), resultGraph.getNode(e.target))
             (source.kind, target.kind) match {
               case (Class, Interface) =>
                 logger.writeln("do not create %s : assuming its an isa edge (TOCHECK)".format(e)) // class imple
               case (Definition, Constructor) =>
-                createUsesOfConstructor(resultGraph, reenactor, id2declMap, u)
+                createUsesOfConstructor(resultGraph, reenactor, id2declMap, e)
 
 
               case (Definition, Field) => ()
-                createUsesofField(resultGraph, reenactor, id2declMap, u)
-              case (Definition, Method) if ensureIsInitalizerUseByCtor(reenactor, u)=>
-                createInitializerCall(reenactor, id2declMap, u)
+                createUsesofField(resultGraph, reenactor, id2declMap, e)
+              case (Definition, Method) if ensureIsInitalizerUseByCtor(reenactor, e)=>
+                createInitializerCall(reenactor, id2declMap, e)
 
               case _ => logger.writeln(" =========> need to create " + e)
             }
@@ -119,14 +118,14 @@ object CreateEdge {
 
   }
 
-  def ensureIsInitalizerUseByCtor(graph: DependencyGraph, u : Uses) : Boolean =
+  def ensureIsInitalizerUseByCtor(graph: DependencyGraph, u : NodeIdP) : Boolean =
     graph.kindType(graph.container_!(u.user)) == TypeConstructor &&
       (graph.getRole(u.used) contains Initializer(graph.hostTypeDecl(u.user)))
 
   def createInitializerCall
     ( reenactor : DependencyGraph,
       id2declMap : NodeId => ASTNodeLink,
-      e : Uses)
+      e : NodeIdP)
     ( implicit program : Program, logger : PuckLogger) : Unit = {
     val sourceDecl = reenactor.container_!(e.user)
     (id2declMap(sourceDecl), id2declMap(e.used)) match {
@@ -193,7 +192,7 @@ object CreateEdge {
   ( graph: DependencyGraph,
     reenactor : DependencyGraph,
     id2declMap : NodeId => ASTNodeLink,
-    e : Uses)
+    e : NodeIdP)
   ( implicit logger : PuckLogger) : Unit = {
     val sourceDecl = reenactor declarationOf e.user
     val ConstructorDeclHolder(cdecl) = id2declMap(e.used)
@@ -214,7 +213,7 @@ object CreateEdge {
   (graph: DependencyGraph,
    reenactor : DependencyGraph,
    id2declMap : NodeId => ASTNodeLink,
-   use : Uses)
+   use : NodeIdP)
   ( implicit logger : PuckLogger) : Unit = {
 
     (id2declMap(use.user), id2declMap(use.used)) match {

@@ -32,7 +32,7 @@ import puck.util.{PuckFileLogger, PuckLogger}
 import LoadAndApply._
 import puck.config.Config
 import puck.config.Config.{Keys, Root, SingleFile}
-import puck.graph.constraints.search.WithVirtualNodes
+import puck.graph.constraints.search.{NoVirtualNodes, WithVirtualNodes}
 import puck.jastadd.JavaProject
 
 object MarauroaTest {
@@ -75,11 +75,11 @@ object MarauroaLoadRecordAndApplyStepByStep {
 
 object LoadAndSearchSolutions {
 
-  val path = "constraint-gen/1rule/10/"
+  val path = "constraint-gen/1rule/08/"
 
   def main(args : Array[String]) : Unit =
     SearchSolution(project("src.generated", path + "decouple.wld"), path,
-      StrategyChoice.DepthFirst, ControlChoice.Blind, WithVirtualNodes)
+      StrategyChoice.DepthFirst, ControlChoice.Heuristic, NoVirtualNodes)
 }
 
 //object GenConstraintAndSearchSolutions {
