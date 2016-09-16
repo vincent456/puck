@@ -70,9 +70,6 @@ package object graph {
 
     def selfUse = p._1 == p._2
 
-    def changeTarget(g : DependencyGraph, k : EKind, newTgt : NodeId) =
-      g.changeTarget(k(p), newTgt)
-
   }
 
 

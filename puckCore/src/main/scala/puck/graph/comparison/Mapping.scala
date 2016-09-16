@@ -188,7 +188,10 @@ object Mapping {
         TypeConstraintOp(mappin.typeConstraint(map)(ct))
       case RoleChange(id, sor, snr) =>
         RoleChange(map(id), sor map mappingOnRole, snr map mappingOnRole)
-
+      case AccessKind((tu, tmu), accK) =>
+        AccessKind((nodeIdP(map)(tu), nodeIdP(map)(tmu)), accK)
+      case ChangeTypeOp(typed, oldNamedTypeId, newNamedTypeId) =>
+        ChangeTypeOp(map(typed), map(oldNamedTypeId), map(newNamedTypeId))
     }
   }
 

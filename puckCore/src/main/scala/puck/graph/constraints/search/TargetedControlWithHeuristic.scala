@@ -46,59 +46,60 @@ trait Heuristic extends ActionGenerator {
   def nextStates
   (violationTarget : ConcreteNode )
   (g : DependencyGraph,
-   automataState : AutomataState) : Seq[LoggedTry[DecoratedGraph[AutomataState]]] = {
+   automataState : AutomataState) : Seq[LoggedTry[DecoratedGraph[AutomataState]]] =
     automataState match {
       case 0 =>
         assertNonEmpty(
-          decorate(epsilon(g) ++ abstractionHostIntroAction(violationTarget)(g), 4) ) ++
-          decorate(epsilon(g), 2) ++
-          decorate(epsilon(g) ++ hostIntroAction(violationTarget)(g), 1) ++
-          decorate(epsilon(g) ++ containerHostIntroAction(violationTarget)(g), 5)
+          decorate(moveAction(violationTarget)(g), 1) ++
+          decorate(epsilon(g), 1) ++
+          decorate(abstractAction(g, violationTarget), 2) ++
+          decorate(moveContainerAction(g, violationTarget), 3) )
 
       case 1 =>
-        assertNonEmpty(decorate(moveAction(violationTarget)(g), 2) )
+        assertNonEmpty(decorate(abstractContainerAction(g, violationTarget), 2) )
 
       case 2 =>
-        assertNonEmpty(decorate(abstractContainerAction(violationTarget)(g), 3))
+        assertNonEmpty(decorate(redirectTowardAbstractions(g, violationTarget),3))
 
-      case 3 =>
-        assertNonEmpty(decorate(redirectTowardAbstractions(violationTarget)(g),6))
+      case 3 => Seq()
 
-      case 4 =>
-        assertNonEmpty(decorate( abstractAction(violationTarget)(g), 3))
-
-      case 5 =>
-        assertNonEmpty(decorate(moveContainerAction(violationTarget)(g), 6))
-
-      case _ => Seq()
+      case _ => puck.error()
     }
-  }
 
+//
 //  def nextStates
 //  (violationTarget : ConcreteNode )
 //  (g : DependencyGraph,
-//   automataState : AutomataState) : Seq[LoggedTry[DecoratedGraph[AutomataState]]] = {
+//   automataState : AutomataState) : Seq[LoggedTry[DecoratedGraph[AutomataState]]] =
 //    automataState match {
 //      case 0 =>
-//        val s =
+//        assertNonEmpty(
+//          decorate(epsilon(g) ++ abstractionHostIntroAction(g, violationTarget), 4) ) ++
+//          decorate(epsilon(g), 2) ++
 //          decorate(epsilon(g) ++ hostIntroAction(violationTarget)(g), 1) ++
-//            decorate(hostAbsIntro(violationTarget)(g), 3) ++
-//            decorate(moveContainerAction(violationTarget)(g), 4)
-//        assert(s.nonEmpty)
-//        s
+//          decorate(epsilon(g) ++ containerHostIntroAction(g, violationTarget), 5)
 //
-//      case 1 => val s = decorate(moveAction(violationTarget)(g), 2)
-//        assert(s.nonEmpty)
-//        s
-//      case 2 => val s = decorate(epsilon(g) ++ absIntro(violationTarget)(g), 3)
-//        assert(s.nonEmpty)
-//        s
-//      case 3 => val s = decorate(redirectTowardAbstractions(violationTarget)(g),4)
-//        assert(s.nonEmpty)
-//        s
-//      case _ => Seq()
+//      case 1 =>
+//        assertNonEmpty(decorate(moveAction(violationTarget)(g), 2) )
+//
+//      case 2 =>
+//        assertNonEmpty(decorate(epsilon(g) ++
+//          abstractedContainerHostIntroAction(g, violationTarget), 7))
+//
+//      case 3 =>
+//        assertNonEmpty(decorate(redirectTowardAbstractions(g, violationTarget),6))
+//
+//      case 4 =>
+//        assertNonEmpty(decorate( abstractAction(g, violationTarget), 3))
+//
+//      case 5 =>
+//        assertNonEmpty(decorate(moveContainerAction(g, violationTarget), 6))
+//
+//      case 6 => Seq()
+//
+//      case 7 =>
+//        assertNonEmpty(decorate(abstractContainerAction(g, violationTarget), 3))
 //    }
-//  }
 }
 
 class TargetedControlWithHeuristic

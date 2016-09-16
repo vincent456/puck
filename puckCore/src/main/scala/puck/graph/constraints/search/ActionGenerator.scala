@@ -53,14 +53,6 @@ trait ActionGenerator {
   val epsilon: DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
     g => Seq(LoggedSuccess("Epsilon transition\n", g))
 
-
-  def hostIntroAction(node : ConcreteNode) : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-    dg => toSeqLTG(actionsGenerator.hostIntro(dg, node))
-
-  def moveAction(node : ConcreteNode) : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-    dg => toSeqLTG(actionsGenerator.move(dg, node))
-
-
   def ensureContainerIsConcrete
   (dg : DependencyGraph,
    contained : ConcreteNode,
@@ -71,29 +63,34 @@ trait ActionGenerator {
     }) getOrElse Seq(LoggedError(s"$contained has no container"))
 
 
-  def abstractionHostIntroAction(node : ConcreteNode) : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-    dg => toSeqLTG(actionsGenerator.absHostIntro(dg, node))
+  def moveAction(node : ConcreteNode) : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
+    dg => toSeqLTG(actionsGenerator.move(dg, node))
 
-  def containerHostIntroAction(node : ConcreteNode) : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-    dg =>
-      ensureContainerIsConcrete(dg, node, n => toSeqLTG(actionsGenerator.hostIntro(dg, n)))
+  def moveContainerAction(dg : DependencyGraph, node : ConcreteNode) : Seq[LoggedTry[DependencyGraph]] =
+    ensureContainerIsConcrete(dg, node, container => toSeqLTG(actionsGenerator.move(dg, container)))
 
+  def redirectTowardAbstractions(dg : DependencyGraph, node : ConcreteNode) : Seq[LoggedTry[DependencyGraph]] =
+    actionsGenerator.redirectTowardExistingAbstractions(dg, node)
 
-  def moveContainerAction(node : ConcreteNode) : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-    dg =>
-      ensureContainerIsConcrete(dg, node, n => toSeqLTG(actionsGenerator.move(dg, n)))
+  def abstractAction(dg : DependencyGraph, node : ConcreteNode) : Seq[LoggedTry[DependencyGraph]] =
+    toSeqLTG(actionsGenerator.absIntro(dg, node))
 
+  def abstractContainerAction(dg : DependencyGraph, node : ConcreteNode) : Seq[LoggedTry[DependencyGraph]] =
+    ensureContainerIsConcrete(dg, node,
+      container => toSeqLTG(actionsGenerator.absIntro(dg, container)))
 
-  def redirectTowardAbstractions(node : ConcreteNode) : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-    actionsGenerator.redirectTowardExistingAbstractions(node)
-
-  def abstractAction(node : ConcreteNode) : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-    actionsGenerator.absIntro(node) andThen toSeqLTG
-
-  def abstractContainerAction(node : ConcreteNode) : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-    dg =>
-      ensureContainerIsConcrete(dg, node, n => toSeqLTG(actionsGenerator.absIntro(n)(dg)))
-
+//  def hostIntroAction(node : ConcreteNode) : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
+//    dg => toSeqLTG(actionsGenerator.hostIntro(dg, node))
+//
+//  def abstractionHostIntroAction(dg : DependencyGraph, node : ConcreteNode) : Seq[LoggedTry[DependencyGraph]] =
+//    toSeqLTG(actionsGenerator.absHostIntro(dg, node))
+//
+//  def containerHostIntroAction(dg : DependencyGraph, node : ConcreteNode) : Seq[LoggedTry[DependencyGraph]] =
+//      ensureContainerIsConcrete(dg, node, n => toSeqLTG(actionsGenerator.hostIntro(dg, n)))
+//
+//  def abstractedContainerHostIntroAction(dg : DependencyGraph, node : ConcreteNode) :  Seq[LoggedTry[DependencyGraph]] =
+//      ensureContainerIsConcrete(dg, node,
+//        container => toSeqLTG(actionsGenerator.absHostIntro(dg, container)))
 
 
 }

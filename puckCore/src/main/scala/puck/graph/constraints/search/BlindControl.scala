@@ -8,12 +8,11 @@ import puck.search.SearchControl
 
 trait Blind extends ActionGenerator {
   def nextStates(violationTarget : ConcreteNode)(g: DependencyGraph) : Seq[LoggedTry[DependencyGraph]] =
-    redirectTowardAbstractions(violationTarget)(g) ++
+    redirectTowardAbstractions(g, violationTarget) ++
       moveAction(violationTarget)(g) ++
-      moveContainerAction(violationTarget)(g) ++
-      abstractAction(violationTarget)(g) ++
-      hostIntroAction(violationTarget)(g) ++
-      abstractContainerAction(violationTarget)(g)
+      moveContainerAction(g, violationTarget) ++
+      abstractAction(g, violationTarget) ++
+      abstractContainerAction(g, violationTarget)
 }
 
 class TargetedBlindControl

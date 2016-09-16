@@ -87,6 +87,7 @@ object TypeConstraint {
 
 sealed abstract class TypeConstraint {
   def typedNodes : List[NodeId]
+  def typeIds : List[NodeId]
 }
 case class BinaryTypeConstraint(op : ConstraintOp, left : TypeConstraintVariable, right : TypeConstraintVariable) extends TypeConstraint {
   def typedNodes : List[NodeId] =
@@ -98,6 +99,8 @@ case class BinaryTypeConstraint(op : ConstraintOp, left : TypeConstraintVariable
         if(id1 == id2) List(id1)
         else List(id1, id2)
     }
+
+  def typeIds : List[NodeId] = left.typeIds ++ right.typeIds
 }
 
 case class AndTypeConstraint(cts : List[TypeConstraint]) extends TypeConstraint {
@@ -105,20 +108,26 @@ case class AndTypeConstraint(cts : List[TypeConstraint]) extends TypeConstraint 
     cts.foldLeft(Set[NodeId]()) {
       case (s, ct) => s ++ ct.typedNodes
     }.toList
+
+  def typeIds : List[NodeId] = cts.flatMap(_.typeIds)
 }
 
 
 sealed abstract class TypeConstraintVariable {
   def typedNode : Option[NodeId]
+  def typeIds : List[NodeId]
 }
 case class TypeOf(nodeId: NodeId) extends TypeConstraintVariable {
   def typedNode : Option[NodeId] = Some(nodeId)
+  def typeIds : List[NodeId] = List()
 }
 case class TypeVar(t : Type) extends TypeConstraintVariable {
   def typedNode : Option[NodeId] = None
+  def typeIds : List[NodeId] = t.ids
 }
 case class ParTypeProjection(tv : TypeConstraintVariable, typeArgIndex : Int) extends TypeConstraintVariable{
   def typedNode : Option[NodeId] = tv.typedNode
+  def typeIds : List[NodeId] = tv.typeIds
 }
 
 object Typed {

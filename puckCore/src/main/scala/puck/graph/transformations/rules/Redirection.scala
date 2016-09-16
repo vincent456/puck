@@ -154,7 +154,7 @@ object Redirection {
     try LoggedSuccess {
       newUsed match {
         case AccessAbstraction(absId, _) =>
-          (oldUse.changeTarget(g, Uses, absId), Set((oldUse.user, absId)))
+          (g.changeTarget(Uses(oldUse), absId), Set((oldUse.user, absId)))
         case _ => puck.error("blob")
         //        case ReadWriteAbstraction(srid, swid) =>
         //          g.typeUsesOf(oldUse).foldLeft((g, Set[NodeIdP]())) {
@@ -233,7 +233,7 @@ object Redirection {
   ) : LoggedTG = {
     val AccessAbstraction(absNode, _) = newUsed
 
-    val g1 = ctorUse.changeTarget(g, Uses, absNode)
+    val g1 = g.changeTarget(Uses(ctorUse), absNode)
 
     import g.nodeKindKnowledge.intro
 
@@ -365,12 +365,12 @@ object Redirection {
         val (g1, newUsed, sNewUsed2) =
           (srid, swid, g0.usesAccessKind((tu, oldUse))) match {
             case (Some(rid), _, Some(Read)) =>
-              (oldUse.changeTarget(g0, Uses, rid)
+              (g0.changeTarget(Uses(oldUse), rid)
                 .changeTypeMemberUseOfTypeUse(oldUse, (oldUse.user, rid), tu)
                 .rmAccessKind((tu, oldUse)), rid, None)
 
             case (_, Some(wid), Some(Write)) =>
-              (oldUse.changeTarget(g0, Uses, wid)
+              (g0.changeTarget(Uses(oldUse), wid)
                 .changeTypeMemberUseOfTypeUse(oldUse, (oldUse.user, wid), tu)
                 .rmAccessKind((tu, oldUse)), wid, None)
 
@@ -381,14 +381,14 @@ object Redirection {
           }
 
         val ltg0 =
-        sNewUsed2 map (newUsed2 => updateTypedNodesInTypeConstraint(g1, oldUse, newUsed2, removeOld = false)
-          ) getOrElse LoggedSuccess(g1)
+          sNewUsed2 map (newUsed2 => updateTypedNodesInTypeConstraint(g1, oldUse, newUsed2, removeOld = false)
+            ) getOrElse LoggedSuccess(g1)
         ltg0 flatMap(updateTypedNodesInTypeConstraint(_, oldUse, newUsed))
 
       //        val ltg0 = updateTypedNodesInTypeConstraint(g1, oldUse, newUsed)
-//                sNewUsed2 map (newUsed2 =>
-//                  ltg0.flatMap(updateTypedNodesInTypeConstraint(_, oldUse, newUsed2, removeOld = false))) getOrElse ltg0
-//        //ltg0
+      //                sNewUsed2 map (newUsed2 =>
+      //                  ltg0.flatMap(updateTypedNodesInTypeConstraint(_, oldUse, newUsed2, removeOld = false))) getOrElse ltg0
+      //        //ltg0
     }
   }
 
@@ -415,9 +415,10 @@ object Redirection {
 
         groupedByTypeUse.toList.foldLoggedEither(g comment log) {
           case (g0, (tu, brSet)) =>
-            //val g1 = tu.changeTarget(g0, Uses, newTypeToUse)
+            //val g1 = g0.changeTarget(Uses(tu), newTypeToUse)
             val g1 = g0.changeType(tu, newTypeToUse)
             redirectTypeMemberUses(g1, tu, brSet, newTypeToUse)
+
         }
       }
       else // on redirige un type

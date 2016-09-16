@@ -35,13 +35,8 @@ import puck.config.Config.{Keys, Root, SingleFile}
 import puck.graph.constraints.search.{NoVirtualNodes, WithVirtualNodes}
 import puck.jastadd.JavaProject
 
-object MarauroaTest {
-  implicit val logger : PuckLogger = new PuckFileLogger(_ => true,
-    new File("/tmp/pucklog"))
-
-    val root = "/home/lorilan/projects/arianne-marauroa"
-
-  def project(srcFolder : String, constraint : String = "decouple.wld") : Project = {
+object Tests {
+  def project(root : String, srcFolder : String, constraint : String) : Project = {
     val cfg = (Config.empty
       put (Keys.workspace, SingleFile(root))
       put (Keys.srcs, List(Root(srcFolder, ".java", Seq())))
@@ -53,6 +48,35 @@ object MarauroaTest {
       )
     JavaProject.withConfig(cfg)
   }
+}
+
+object DistribTest {
+  implicit val logger : PuckLogger = new PuckFileLogger(_ => true,
+    new File("/tmp/pucklog"))
+
+  val root = "/home/lorilan/projects/constraintsSolver/test_resources/distrib/"
+
+  val path = "bridge/hannemann_simplified"
+
+  val project = Tests.project(root + path, "screen", "decouple.wld")
+
+  def main(args : Array[String]) : Unit = {
+//    SearchSolution(project, ".",
+//      StrategyChoice.DepthFirst, ControlChoice.Heuristic, NoVirtualNodes)
+
+    ignore(applyRecords(Tests.project(root + path, "screen", "decouple.wld"),
+      Seq(root + path +"/heuristic-depthFirst-solution-0_44_3_0_0_36_3_0_0_25_3_0_0_2_3_0.pck" )))
+  }
+}
+
+object MarauroaTest {
+  implicit val logger : PuckLogger = new PuckFileLogger(_ => true,
+    new File("/tmp/pucklog"))
+
+    val root = "/home/lorilan/projects/arianne-marauroa"
+
+  def project(srcFolder : String, constraint : String = "decouple.wld") : Project =
+    Tests.project(root, srcFolder, constraint)
 }
 import MarauroaTest.{logger, root, project}
 
@@ -75,7 +99,7 @@ object MarauroaLoadRecordAndApplyStepByStep {
 
 object LoadAndSearchSolutions {
 
-  val path = "constraint-gen/1rule/08/"
+  val path = "constraint-gen/1rule/10/"
 
   def main(args : Array[String]) : Unit =
     SearchSolution(project("src.generated", path + "decouple.wld"), path,

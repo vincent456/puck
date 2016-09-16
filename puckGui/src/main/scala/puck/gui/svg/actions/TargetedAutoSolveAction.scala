@@ -134,18 +134,8 @@ class TargetedAutoSolveAction
   extends Action("Solve [BETA - under development]") {
 
   override def apply(): Unit = {
-    //val g = graph.mileStone
-    val g : DependencyGraph = ???/*graph.nodes.foldLeft(graph.mileStone) {
-      case (g, n) => n.kind.kindType match {
-        case TypeDecl => g.setMutability(n.id, false)
-        case _ => g
-      }
-    }*/
-
     val searchControlStrategy =
-      new TargetedControlWithHeuristic(
-        graphUtils.Rules,
-        g, cm, NoVirtualNodes, violationTarget)
+      new TargetedControlWithHeuristic( graphUtils.Rules, graph, cm, NoVirtualNodes, violationTarget)
 
     val engine =
       new SearchEngine(

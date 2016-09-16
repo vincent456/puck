@@ -42,7 +42,10 @@ object Operation {
     case TypeBinding((n1, n2), (n3, n4)) =>
       Seq(n1, n2, n3, n4)
     case RoleChange(id, _, _) => Seq(id)
-    case TypeConstraintOp(ct) => ???
+    case TypeConstraintOp(tc) => tc.typedNodes ++ tc.typeIds
+    case AccessKind((tu, tmu),_) => Seq(tu.user, tu.used, tmu.user, tmu.used)
+    case ChangeTypeOp(id,id2,id3) => Seq(id,id2,id3)
+
   }
 }
 

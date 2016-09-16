@@ -203,7 +203,9 @@ object CreateEdge {
       case MethodDeclHolder(mdecl)
         if reenactor getRole sourceDecl contains Factory(e.used) =>
           mdecl.makeFactoryOf(cdecl)
-      case dh => error(s"createUsesOfConstructor ${dh.getClass} " +
+      case dh =>
+        import ShowDG._
+        error(s"createUsesOfConstructor (${(reenactor, e).shows}) ${dh.getClass} " +
         s"with role ${reenactor getRole sourceDecl} as user unhandled")
 
     }

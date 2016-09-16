@@ -50,7 +50,6 @@ object SolvingActions {
     absKind : NodeKind)
   ( implicit constraints: ConstraintsMaps) : NodePredicate =
 
-
     (absKind.kindType, absPolicy) match {
       case (InstanceValue, SupertypeAbstraction) =>
         (graph, potentialHost) => {
@@ -60,8 +59,14 @@ object SolvingActions {
           canExtends && graph.canContain(potentialHost, absKind)
         }
       case (_, SupertypeAbstraction) =>
-        (graph, potentialHost) => !constraints.isForbidden(graph, impl.id, potentialHost.id) &&
-          graph.canContain(potentialHost, absKind)
+        (graph, potentialHost) =>
+          val authorizedByContraint = !constraints.isForbidden(graph, impl.id, potentialHost.id)
+          val structuralyLegal =  graph.canContain(potentialHost, absKind)
+//          println(s"impl = $impl potentialHost = $potentialHost " +
+//            s"is authorized + $authorizedByContraint"+
+//            s"canContain = $structuralyLegal")
+          structuralyLegal && authorizedByContraint
+
 
       case (_, DelegationAbstraction) =>
         (graph, potentialHost) => !constraints.isForbidden(graph, potentialHost.id, impl.id) &&
@@ -110,15 +115,14 @@ class SolvingActions
 
 
 
-  def hostIntro0
+  def hostIntro
   (g0 : DependencyGraph,
-   toBeContained: Stream[NodeKind],
-   containerNameSeed : String
+   toBeContained: ConcreteNode
   ) : Stream[LoggedTry[(NodeId, DependencyGraph)]] =
-    toBeContained map {
+    containerKind(g0, toBeContained.kind) map {
       hostKind =>
         newCterNumGen += 1
-        val hostName = s"${containerNameSeed}_container$newCterNumGen"
+        val hostName = s"${toBeContained.name}_container$newCterNumGen"
         rules.intro(g0, hostName, hostKind)
     } flatMap {
       case (toBeCtedHost, g1) =>
@@ -126,18 +130,6 @@ class SolvingActions
           case (hid, g2) => (toBeCtedHost.id, g2.addContains(hid, toBeCtedHost.id))
         })
     }
-
-  def absHostIntro
-  (g0 : DependencyGraph,
-    toBeAbstracted : ConcreteNode
-  ) : Stream[LoggedTry[(NodeId, DependencyGraph)]] =
-    hostIntro0(g0, abstractionHostKind(g0, toBeAbstracted.kind), toBeAbstracted.name + "Abs")
-
-  def hostIntro
-  (g0 :DependencyGraph,
-   toBeContained: ConcreteNode
-  ): Stream[LoggedTry[(NodeId, DependencyGraph)]] =
-    hostIntro0(g0, containerKind(g0, toBeContained.kind), toBeContained.name)
 
 
   def findHost
@@ -161,10 +153,10 @@ class SolvingActions
   : DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] = {
     graph =>
 
-      val choices = graph.mutableNodes.toList map graph.getConcreteNode filter (predicate(graph,_))
+      val choices = graph.mutableNodes.toList map graph.getNode filter (predicate(graph,_))
       //val choices = graph.concreteNodes.filter(predicate(graph,_)).toList
 
-      if(choices.isEmpty) Stream(LoggedError(s"choose node, no choice"))
+      if(choices.isEmpty) Stream(LoggedError(s"chooseNode, choices is empty"))
       else {
 
         val s = partitionByKind(graph)(choices, List()).toStream
@@ -206,6 +198,7 @@ class SolvingActions
     wronglyContained : ConcreteNode
   ) : Stream[LoggedTry[(NodeId, DependencyGraph)]] = {
       val lg = s"trying to move $wronglyContained, searching host\n"
+    hostIntro(g0, wronglyContained) ++
       findHost(wronglyContained)(g0) flatMap {
         case LoggedEither(log, -\/(err)) => Stream(LoggedEither(lg + log, -\/(err)))
         case LoggedEither(log, \/-((newCter, g))) =>
@@ -265,9 +258,9 @@ class SolvingActions
   }
 
   def absIntro
-  (impl : ConcreteNode
-  ) : DependencyGraph => Stream[LoggedTry[(Abstraction, DependencyGraph)]] =
-    g =>
+  ( g : DependencyGraph,
+    impl : ConcreteNode
+  ) :  Stream[LoggedTry[(Abstraction, DependencyGraph)]] =
       impl.kind.abstractionChoices.toStream map {
         case (absNodeKind, absPolicy) =>
           rules.abstracter.createAbstraction(g, impl, absNodeKind, absPolicy)
@@ -283,11 +276,11 @@ class SolvingActions
           else
           (hostIntro(g3, g3.getConcreteNode(abs.nodes.head)) ++
             chooseNode(newAbsFindHostPredicate(impl,
-              abs.policy, absNodeKind), vnPolicicy.virtualizableKindFor(abs.kind(g3)))(g3)).map {
-            lt => lt.flatMap {
-              case (host, g4) =>
+              abs.policy, absNodeKind),
+              vnPolicicy.virtualizableKindFor(abs.kind(g3)))(g3)).map {
+            lt =>  s"Searching host for $abs\n" <++: lt.flatMap {
+              case (host, g4) => introAbsContainsAndIsa(abs, impl, g4, host)
 
-                s"Searching host for $abs\n" <++: introAbsContainsAndIsa(abs, impl, g4, host)
             }
           }
       }
@@ -318,9 +311,7 @@ class SolvingActions
 
 
   def redirectTowardExistingAbstractions
-  ( used : ConcreteNode) :
-  DependencyGraph => Stream[LoggedTG] =
-    g =>
+  (g : DependencyGraph,  used : ConcreteNode) : Stream[LoggedTG] =
       redirectTowardExistingAbstractions(used,
         constraints.wrongUsers(g, used.id),
         g abstractions used.id)(g)

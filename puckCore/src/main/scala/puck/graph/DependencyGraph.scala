@@ -255,6 +255,7 @@ class DependencyGraph private
   def styp(id : NodeId) : Option[Type] = edges.types get id
   def typ(id : NodeId) : Type = edges.types(id)
 
+
   def structuredType(id : NodeId) : Option[Type] = {
     //assert node is a typed value
     nodeKindKnowledge.structuredType(this, id, parametersOf(id))
@@ -277,12 +278,13 @@ class DependencyGraph private
         recording = recording.removeType(id, t))
     } getOrElse this
 
-  def changeType(tu : NodeIdP, newTypeToUse : NodeId) : DependencyGraph = {
-    val (typed, oldType) = tu
-    val newType = typ(typed).changeNamedType(oldType, newTypeToUse)
-    newGraph(edges = edges.setType(typed, newType),
-      recording = recording.changeType(typed, oldType, newTypeToUse))
-  }
+  def changeType(tu : NodeIdP, newTypeToUse : NodeId) : DependencyGraph =
+    tu match {
+      case  (typed, oldType) =>
+        //val newType = typ(typed).changeNamedType(oldType, newTypeToUse)
+        newGraph(edges = edges.redirectTypeUse(typed, oldType, newTypeToUse),
+          recording = recording.changeType(typed, oldType, newTypeToUse))
+    }
 
 
   def exists(e : DGEdge) : Boolean = edges.exists(e)
