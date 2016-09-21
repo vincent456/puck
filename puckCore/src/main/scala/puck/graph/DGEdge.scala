@@ -44,7 +44,7 @@ object DGEdge{
     }
     val concreteUses = graph.usesList filter includedInVirtual map Uses.apply
 
-    (graph.isaList filter includedInVirtual map Isa.apply) ++ concreteUses
+    (graph.isaList filter includedInVirtual map IsaEdge.apply) ++ concreteUses
 
   }
 
@@ -113,9 +113,9 @@ case object Uses extends EKind {
   def unapply(e: DGEdge) : Option[(NodeId, NodeId)] = pairOfKind(e, Uses)
 }
 
-case object Isa extends EKind {
-  def apply(source : NodeId, target: NodeId) : DGEdge = new DGEdge(Isa, source, target)
-  def unapply(e: DGEdge) : Option[NodeIdP] = pairOfKind(e, Isa)
+case object IsaEdge extends EKind {
+  def apply(source : NodeId, target: NodeId) : DGEdge = new DGEdge(IsaEdge, source, target)
+  def unapply(e: DGEdge) : Option[NodeIdP] = pairOfKind(e, IsaEdge)
 }
 
 

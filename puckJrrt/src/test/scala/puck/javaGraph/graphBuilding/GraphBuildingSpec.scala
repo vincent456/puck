@@ -47,6 +47,25 @@ class GraphBuildingSpec extends AcceptanceSpec {
         graph.abstractions("p.A.ma()") should contain ( AccessAbstraction("p.SuperType.ma()", SupertypeAbstraction) )
       }
     }
+
+    scenario("getter/setter") {
+      val s = new ScenarioFactory(
+        """package p;
+          |
+          |class A {
+          |
+          |    int f = 42;
+          |
+          |    void setF(int f){ this.f = f; }
+          |    int getF(){ return f; }
+          |
+          |}""")
+
+      import s._
+
+      graph.abstractions("p.A.f") should contain (ReadWriteAbstraction(Some("p.A.getF()"), Some("p.A.setF(int)")))
+
+    }
   }
 
 
@@ -358,4 +377,6 @@ class GraphBuildingSpec extends AcceptanceSpec {
       assert( graph.contains("p.A.f.Definition", "p.A.f.Anonymous0") )
     }
   }
+
+
 }

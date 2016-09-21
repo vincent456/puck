@@ -32,17 +32,20 @@ object EdgeMap {
   type AccessKindMap = Map[(NodeIdP, NodeIdP), UsesAccessKind]
   val AccessKindMap = Map
 
-  type EdgeMapT = SetValueMap.T[NodeId, NodeId]
+  type EdgeMapT = SetValueMap[NodeId, NodeId]
   val EdgeMapT = SetValueMap
 
-  type ParamMapT = ListValueMap.T[NodeId, NodeId]
+  type ParamMapT = ListValueMap[NodeId, NodeId]
   val ParamMapT = ListValueMap
+
+  type TypeMapT = SetValueMap[NodeId, Type]
+  val TypeMapT = SetValueMap
 
 
   type Node2NodeMap = Map[NodeId, NodeId]
   val Node2NodeMap = Map
 
-  type UseDependencyMap = SetValueMap.T[NodeIdP, NodeIdP]
+  type UseDependencyMap = SetValueMap[NodeIdP, NodeIdP]
   val UseDependencyMap = SetValueMap
 
 
@@ -68,12 +71,12 @@ case class EdgeMap
  contents  : EdgeMapT,
  containers : Node2NodeMap,
  //isa
- superTypes : EdgeMapT,
- subTypes : EdgeMapT,
+ superTypes : TypeMapT,
+ subTypes : TypeMapT,
  //BR
  typeMemberUses2typeUsesMap : UseDependencyMap,
  typeUses2typeMemberUsesMap : UseDependencyMap,
- typeConstraints : SetValueMap.T[NodeId, TypeConstraint],
+ typeConstraints : SetValueMap[NodeId, TypeConstraint],
  // if (a, Sub(b)) then constraint( type(a) :> type(b) )
  // if ((a, t), Sup(a, s)) then constraint( t <: s )
  // if ((a, t), Eq(a, s)) then constraint( t =:= s )
@@ -89,14 +92,20 @@ case class EdgeMap
     containers.toList map (_.swap)
 
 
-  def allUsesList : List[NodeIdP] = usedMap.flatList ++ typeUsesList
+  def allUsesList : List[NodeIdP] = usedMap.flatList ++ typeUsesList ++ hierarchyTypeUsesList
   def usesListExludingTypeUses : List[NodeIdP] = usedMap.flatList
   def typeUsesList : List[NodeIdP] =
     for {
-      nt <- types.toList
-      (n , t) = nt
+      (n , t) <- types.toList
       i <- t.ids
     } yield (n,i)
+
+  def hierarchyTypeUsesList : List[NodeIdP] =
+    for {
+      (n , ts) <- superTypes.toList
+      t <- ts
+      i <- t.ids
+    } yield (n, i)
 
 
   def usedByExcludingTypeUse(userId : NodeId) : Set[NodeId] = usedMap getFlat userId
@@ -114,10 +123,6 @@ case class EdgeMap
       case Uses(user, used) =>
         copy(userMap = userMap + (used, user),
           usedMap = usedMap + (user, used))
-
-      case Isa(subType, superType) =>
-        copy(subTypes = subTypes + (superType, subType),
-          superTypes = superTypes + (subType, superType))
 
       case Contains(container, content) =>
         copy(contents = contents + (container, content),
@@ -155,9 +160,7 @@ case class EdgeMap
       case Uses =>
         copy(userMap = userMap - (edge.used, edge.user),
           usedMap = usedMap - (edge.user, edge.used))
-      case Isa =>
-        copy(subTypes = subTypes - (edge.superType, edge.subType),
-          superTypes = superTypes - (edge.subType, edge.superType))
+
       case Contains =>
         copy(contents = contents - (edge.container, edge.content),
           containers = containers - edge.content)
@@ -175,12 +178,37 @@ case class EdgeMap
       case Some(id) => id == containerId
     }
 
-  def isa(subId : NodeId, superId: NodeId): Boolean = superTypes.bind(subId, superId)
+  def addIsa(subType : Type, superType : Type) = {
+    val subTypeId = Type.mainId(subType)
+    val superTypeId = Type.mainId(superType)
+    copy(subTypes = subTypes + (superTypeId, subType),
+      superTypes = superTypes + (subTypeId, superType))
+  }
+
+  def removeIsa(subType : Type, superType : Type) = {
+    val subTypeId = Type.mainId(subType)
+    val superTypeId = Type.mainId(superType)
+
+    copy(subTypes = subTypes - (superTypeId, subType),
+      superTypes = superTypes - (subTypeId, superType))
+  }
+
+  def isa(sub : Type, sup: Type): Boolean =
+    superTypes getFlat (Type mainId sub) contains sup
+
+  def isa_*(sub : Type, sup: Type): Boolean =
+    sub == sup ||
+      isa(sub, sup) || {
+      superTypes getFlat (Type mainId sub) exists (isa_*(_, sup))
+    }
+
+  def isa(subId : NodeId, superId: NodeId): Boolean =
+    superTypes getFlat subId map Type.mainId contains superId
 
   def isa_*(subId : NodeId, superId: NodeId): Boolean =
     subId == superId ||
     isa(subId, superId) || {
-      superTypes.getFlat(subId) exists (isa_*(_, superId))
+      superTypes getFlat subId map Type.mainId exists (isa_*(_, superId))
     }
 
 
@@ -195,7 +223,10 @@ case class EdgeMap
         case None => false
         case Some(t) => t uses usedId
       }
-    }
+    } || (superTypes get userId match {
+      case None => false
+      case Some(supTypes) => supTypes exists ( t => t.ids contains usedId)
+    })
 
   def exists(e : DGEdge) : Boolean = e.kind  match {
     case Contains => contains(e.source, e.target)
@@ -204,7 +235,7 @@ case class EdgeMap
       case None => false
     }
 
-    case Isa => isa(e.source, e.target)
+    //case Isa => isa(e.source, e.target)
     case Uses => uses(e.source, e.target)
     case AbstractEdgeKind => false
   }

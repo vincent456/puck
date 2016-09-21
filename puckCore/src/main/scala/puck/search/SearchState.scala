@@ -42,10 +42,10 @@ class SearchState[T]
 
   def success : Logged[T] = loggedResult.value match {
       case \/-(res) => res set loggedResult.log
-      case -\/(err) => error("state contains a failed result : " + err.getMessage)
+      case -\/(err) => error("state contains a failed result : " + err)
   }
 
-  def fail : Logged[PuckError] = loggedResult.value match {
+  def fail : Logged[String] = loggedResult.value match {
     case -\/(err) => err set loggedResult.log
     case _ => error("state contains a success")
   }

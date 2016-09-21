@@ -229,33 +229,75 @@ class ContainsSpec extends AcceptanceSpec {
   }
 
 
-  feature("find element by name"){
+  feature("find element by name") {
     val find = DependencyGraph.findElementByName _
 
-    scenario("find top package"){
-      val _ = new ScenarioFactory("package p;"){
+    scenario("find top package") {
+      val _ = new ScenarioFactory("package p;") {
         find(graph, "p").value.id shouldBe fullName2id("p")
       }
     }
 
-    scenario("find top class"){
+    scenario("find top class") {
       val _ = new ScenarioFactory(
         """package p;
           | class A{}
-        """.stripMargin){
+        """.stripMargin) {
 
         find(graph, "p.A").value.id shouldBe fullName2id("p.A")
       }
     }
 
-    scenario("find method"){
+    scenario("find method") {
       val _ = new ScenarioFactory(
         """package p;
           | class A{ void m(){} }
-        """.stripMargin){
+        """) {
 
         find(graph, "p.A.m()").value.id shouldBe fullName2id("p.A.m()")
       }
+    }
+
+
+    scenario("synchronized block") {
+      val s = new ScenarioFactory(
+        """package p;
+          |class A { void ma(){} }
+          |
+          |class B { void m(){
+          |   synchronized(this){
+          |     A a = new A();
+          |     a.ma();
+          |   }
+          | }
+          |}""")
+      import s._
+      find(graph, "p.B.m().Definition.a").value.id shouldBe fullName2id("p.B.m().Definition.a")
+
+    }
+
+    scenario("marauroa pb") {
+      val s = new ScenarioFactory(
+        """package p;
+          |import java.util.Map;
+          |
+          |class A { void ma(){} }
+          |
+          |class B {
+          |
+          |   Map<String,String> m;
+          |   void m(){
+          |     synchronized(this){
+          |       for(Map.Entry<String, String> val : m.entrySet()) {
+          |         A a = new A();
+          |         a.ma();
+          |       }
+          |     }
+          |   }
+          |}""")
+      import s._
+      find(graph, "p.B.m().Definition.a").value.id shouldBe fullName2id("p.B.m().Definition.a")
+
     }
   }
 }

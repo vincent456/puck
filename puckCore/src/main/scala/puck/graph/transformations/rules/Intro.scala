@@ -227,7 +227,7 @@ abstract class Intro {
       if g.hostTypeDecl(user) == g.hostTypeDecl(used) =>
         val cter = g.hostTypeDecl(user)
         val g1 =
-          if (Uses(cter, cter) existsIn g) g
+          if (g exists Uses(cter, cter)) g
           else g.addUses(cter, cter)
 
         g1.addUses(user, used)

@@ -43,14 +43,14 @@ trait Heuristic extends ActionGenerator {
     s
   }
 
-  def nextStates
-  (violationTarget : ConcreteNode )
+  def hNextStates
   (g : DependencyGraph,
+   violationTarget : ConcreteNode,
    automataState : AutomataState) : Seq[LoggedTry[DecoratedGraph[AutomataState]]] =
     automataState match {
       case 0 =>
         assertNonEmpty(
-          decorate(moveAction(violationTarget)(g), 1) ++
+          decorate(moveAction(g, violationTarget), 1) ++
           decorate(epsilon(g), 1) ++
           decorate(abstractAction(g, violationTarget), 2) ++
           decorate(moveContainerAction(g, violationTarget), 3) )
@@ -116,8 +116,8 @@ class TargetedControlWithHeuristic
   def initialState: DecoratedGraph[AutomataState] = (initialGraph, 0)
 
   def nextStates(state : DecoratedGraph[AutomataState]) : Seq[LoggedTry[DecoratedGraph[AutomataState]]] =
-    if(!isViolationTarget(state._1, violationTarget.id)) Seq()
-    else nextStates(violationTarget)(state._1, state._2)
+    if(!isViolationTarget(state.graph, violationTarget.id)) Seq()
+    else hNextStates(state.graph, violationTarget, state.decoration)
 
 
 }

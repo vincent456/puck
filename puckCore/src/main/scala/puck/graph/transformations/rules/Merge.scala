@@ -215,7 +215,7 @@ class Merge
   ( mergeChildren : MergeIntoFun ) : LoggedTG = {
 
     for {
-      g1 <- g.usersOfExcludingTypeUse(consumedId).foldLoggedEither[PuckError, DependencyGraph](g){
+      g1 <- g.usersOfExcludingTypeUse(consumedId).foldLoggedEither(g){
         (g0, userId) =>
           if(userId == consumedId) LoggedSuccess(g0.removeEdge(Uses(userId, userId)))
           else
@@ -231,17 +231,20 @@ class Merge
 
       g3 <- g2.directSuperTypes(consumedId).foldLoggedEither(g2){
         (g0, stId) =>
-          LoggedSuccess {
-            if (stId != consumerId) g0.changeSource(Isa(consumedId, stId), consumerId)
-            else g0.removeIsa(consumedId, stId)
+          LoggedSuccess { //g0.changeSource(Isa(consumedId, stId), consumerId)
+            val g1 = g0.removeIsa(NamedType(consumedId), stId)
+            if ((Type mainId stId) != consumerId)
+              g1.addIsa(NamedType(consumerId), stId)
+            else g1
           }
       }
 
       g4 <- g3.directSubTypes(consumedId).foldLoggedEither(g3) {
         (g0, stId) =>
-          LoggedSuccess {
-            if (stId != consumerId) g0.changeTarget(Isa(stId, consumedId), consumerId)
-            else g0.removeIsa(stId, consumedId)
+          LoggedSuccess { //g0.changeTarget(Isa(stId, consumedId), consumerId)
+            val g1 = g0.removeIsa(stId, NamedType(consumedId))
+            if ((Type mainId stId) != consumerId) g1.addIsa(stId, NamedType(consumerId))
+            else g1
           }
       }
 

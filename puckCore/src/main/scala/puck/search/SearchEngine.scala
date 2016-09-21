@@ -53,7 +53,7 @@ class SearchEngine[T]
   val control : SearchControl[T],
   val maxResult : Option[Int] = None,// default = all result
   val evaluator : Option[Evaluator[T]] = None
-  ) extends Search[T] {
+) extends Search[T] {
 
   val successes = mutable.ListBuffer[SearchState[T]]()
   val failures = mutable.ListBuffer[SearchState[T]]()
@@ -83,18 +83,28 @@ class SearchEngine[T]
   protected var numExploredStates = 0
 
   def addState(state : SearchState[T]) : Unit =
-    ignore(state.loggedResult.value match {
-    case \/-(t) if control isTerminalState t =>
-      storeSuccess(state)
-    case \/-(_) => searchStrategy addState state
-    case -\/(err) => failures += state // case added for completude but eliminated in oneStep
-  })
+    ignore(
+      try state.loggedResult.value match {
+        case \/-(t) if control isTerminalState t =>
+          storeSuccess(state)
+        case \/-(_) => searchStrategy addState state
+        case -\/(err) => failures += state // case added for completude but eliminated in oneStep
+      }catch {
+        case e :PuckError =>
+          println(state.loggedResult.log)
+          throw e
+      }
+    )
 
   def addChoicesStates(parent : SearchState[T], choices : Seq[LoggedTry[T]]) : Unit = {
     numExploredStates = numExploredStates + 1
-    choices.zipWithIndex.foreach{
-      case (c,i) => addState(new SearchState[T](i, Some(parent), c))
+    println("add children of " + parent.uuid())
+    choices.zipWithIndex.foreach {
+      case (c,i) =>
+        println("adding child " + i)
+        addState(new SearchState[T](i, Some(parent), c))
     }
+    println("children added")
   }
 
   def init() : Unit = ()
@@ -103,11 +113,12 @@ class SearchEngine[T]
 
   def oneStep() : Unit= {
     val state = searchStrategy.popState()
+    println("popping "+state.uuid())
     state.loggedResult.value match {
-        case \/-(cc) =>
-          addChoicesStates(state, control.nextStates(cc) map (ltnext => state.loggedResult.log <++: ltnext))
-        case _ => ignore(failures += state)
-      }
+      case \/-(cc) =>
+        addChoicesStates(state, control.nextStates(cc) map (ltnext => state.loggedResult.log <++: ltnext))
+      case _ => ignore(failures += state)
+    }
   }
 
   def explore() : Unit = {

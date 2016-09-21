@@ -70,7 +70,7 @@ class EdgeMenu
 
   if(graph.isa(source, target)) {
     isIsaEdge = true
-    contents += new RemoveEdgeAction(publisher, Isa(source, target))
+    contents += new RemoveEdgeAction(publisher, IsaEdge(source, target))
   }
 
   def addUsesActions(src : NodeId, tgt : NodeId) : Unit =

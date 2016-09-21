@@ -38,7 +38,7 @@ object ConstraintGen {
     def candidatesFilter(g : DependencyGraph, n : NodeId) =
       g.getNode(n).kind match {
         case Interface | Class =>
-          g.directSuperTypes(n).isEmpty && !ignoredPackages.exists(g.contains_*(_, n))
+          g.directSuperTypesId(n).isEmpty && !ignoredPackages.exists(g.contains_*(_, n))
 
         case _ => false
       }

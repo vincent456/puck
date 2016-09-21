@@ -125,7 +125,7 @@ object JavaNodeKind extends NodeKindKnowledge {
       (other.kind, graph.structuredType(other.id)) match {
         case (AbstractMethod, Some(absMethodType @ Arrow(Tuple(input), _))) =>
           graph.content(id).forall(noNameClash(input.length)) &&
-            graph.directSubTypes(id).forall {implementMethod(other.name, absMethodType)}
+            graph.directSubTypesId(id).forall {implementMethod(other.name, absMethodType)}
 
         /* cannot have two methods with same name and same type */
         case (Method | StaticMethod, Some(Arrow(Tuple(input), _))) =>

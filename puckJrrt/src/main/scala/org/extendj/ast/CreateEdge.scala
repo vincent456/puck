@@ -92,9 +92,6 @@ object CreateEdge {
                   "should be between a decl and a param")
             }
 
-          case Isa =>
-            createIsa(id2declMap(e.subType), id2declMap(e.superType))
-
           case Uses =>
             val (source, target ) = (resultGraph.getNode(e.source), resultGraph.getNode(e.target))
             (source.kind, target.kind) match {
@@ -103,6 +100,10 @@ object CreateEdge {
               case (Definition, Constructor) =>
                 createUsesOfConstructor(resultGraph, reenactor, id2declMap, e)
 
+              case (_: MethodKind, _ : TypeKind) =>
+                val MethodDeclHolder(mdecl) = id2declMap(e.user)
+                val TypedKindDeclHolder(tdecl) = id2declMap(e.target)
+                mdecl.addException(tdecl.createLockedAccess())
 
               case (Definition, Field) => ()
                 createUsesofField(resultGraph, reenactor, id2declMap, e)

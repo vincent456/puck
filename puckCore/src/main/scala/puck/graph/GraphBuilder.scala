@@ -65,8 +65,8 @@ trait GraphBuilder {
     g = g.addEdge(e)
 
 
-  def addIsa(subTypeId: NodeIdT, superTypeId: NodeIdT): Unit =
-    g = g.addIsa(subTypeId, superTypeId)
+  def addIsa(subType: Type, superType: Type): Unit =
+    g = g.addIsa(subType, superType)
 
 
   def addTypeConstraint(constraint : TypeConstraint): Unit =
@@ -102,12 +102,13 @@ trait GraphBuilder {
     val superTypesMap = g.edges.superTypes.content
     superTypesMap foreach {
       case (subId, directSuperTypes) =>
+        val directSuperTypesIds = directSuperTypes map Type.mainId
         val subMethIds = g instanceValuesWithType subId
-        g = directSuperTypes.foldLeft(g) {
+        g = directSuperTypesIds.foldLeft(g) {
           (g, supId) =>
             g.addAbstraction(subId, AccessAbstraction(supId, SupertypeAbstraction))
         }
-        g = registerMethodsDirectOverridingInTypeHierarchy(g, subMethIds, directSuperTypes)
+        g = registerMethodsDirectOverridingInTypeHierarchy(g, subMethIds, directSuperTypesIds)
     }
   }
 
@@ -118,7 +119,7 @@ trait GraphBuilder {
     directSuperTypes.foldLeft(g) {
       case (g0, superType) =>
         val (g1, remainings) = registerMethodsDirectOverridingInSuperType(g, subMethods, superType)
-        registerMethodsDirectOverridingInTypeHierarchy(g1, remainings, g directSuperTypes superType)
+        registerMethodsDirectOverridingInTypeHierarchy(g1, remainings, g directSuperTypesId superType)
     }
   }
 

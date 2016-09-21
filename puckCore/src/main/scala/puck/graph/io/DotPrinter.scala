@@ -491,7 +491,7 @@ class DotPrinter
       val (reg, virt) = filterEdgeBasedOnVisibleNodes(concreteViolations)
 
       reg.foreach {
-        case Isa(s, t) => printArc(ColorThickness.violation,isaStyle)((s, t))
+        case IsaEdge(s, t) => printArc(ColorThickness.violation,isaStyle)((s, t))
         case Uses(s, t) => printArc(ColorThickness.violation,usesStyle)((s, t))
         case _ => ()
       }
@@ -504,7 +504,7 @@ class DotPrinter
     }
     else {
       val (regularsIsa, virt0, virtualViolations0) =
-        filterAllEdgeBasedOnVisibleNodesAndFlagViolations(graph.isaList map Isa.apply)
+        filterAllEdgeBasedOnVisibleNodesAndFlagViolations(graph.isaList map IsaEdge.apply)
 
       regularsIsa.foreach {
         case (e, v) => printArc(violationStyle(v), isaStyle)(e)

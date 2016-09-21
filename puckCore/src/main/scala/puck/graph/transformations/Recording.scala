@@ -224,6 +224,8 @@ object Recording {
     def removeEdge(edge : DGEdge) : Recording=
       Transformation(Reverse, Edge(edge)) +: record
 
+
+
     def changeEdgeTarget(edge : DGEdge, newTarget : NodeId, withMerge : Boolean) : Recording = {
       val red = if(withMerge) new RedirectionWithMerge(edge, Target(newTarget))
       else RedirectionOp(edge, Target(newTarget))
@@ -235,6 +237,12 @@ object Recording {
       else RedirectionOp(edge, Source(newTarget))
       Transformation(Regular, red) +: record
     }
+
+    def addIsa(subType : Type, superType : Type) : Recording =
+      Transformation(Regular, Isa(subType, superType)) +: record
+
+    def removeIsa(subType : Type, superType : Type) : Recording=
+      Transformation(Reverse, Isa(subType, superType)) +: record
 
     def addType( typed : NodeId, t : Type) : Recording =
       Transformation(Regular, AType(typed, t)) +: record

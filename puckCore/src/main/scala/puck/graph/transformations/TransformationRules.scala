@@ -66,7 +66,7 @@ class TransformationRules
       val supMethods = g.instanceValuesWithType(sup)
 
       Type.findAndRegisterOverridedInList(g, supMethods, subMethods)(
-        onImplemNotFound) map ( _.addIsa(sub, sup).
+        onImplemNotFound) map ( _.addIsa(NamedType(sub), NamedType(sup)).
                 addAbstraction(sub, AccessAbstraction(sup, SupertypeAbstraction))
         ) flatMap {
         g =>

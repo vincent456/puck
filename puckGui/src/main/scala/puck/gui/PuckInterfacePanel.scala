@@ -249,17 +249,17 @@ class PuckInterfacePanel
     }.leftGlued
 
     contents += new ComboBox(List[ViewHandler](TreeViewHandler, SVGViewHandler, PiccoloViewHandler)) {
-        minimumSize = new Dimension(leftWidth, 30)
-        maximumSize = minimumSize
-        preferredSize = minimumSize
-        this listenTo selection
+      minimumSize = new Dimension(leftWidth, 30)
+      maximumSize = minimumSize
+      preferredSize = minimumSize
+      this listenTo selection
 
-        reactions += {
-          case SelectionChanged(_) =>
-            publisher publish SwitchView(selection.item)
-        }
-
+      reactions += {
+        case SelectionChanged(_) =>
+          publisher publish SwitchView(selection.item)
       }
+
+    }
 
 
     type ControlBuilder = (DependencyGraph, ConstraintsMaps, VirtualNodePolicy) => SearchControl[DecoratedGraph[Any]]
@@ -269,17 +269,17 @@ class PuckInterfacePanel
     import control.graphUtils
     val controlCB = new ComboBox[ControlBuilder](List(
       new ControlBuilder {
-        override val toString = "Blind control"
-        def apply(dg : DependencyGraph, cm : ConstraintsMaps, virtualNodePolicicy : VirtualNodePolicy) =
-          new BlindControl(graphUtils.Rules, dg, cm,
-            virtualNodePolicicy, graphUtils.violationsKindPriority).
-            asInstanceOf[SearchControl[DecoratedGraph[Any]]]
-      },
-      new ControlBuilder {
         override val toString = "Control with Heuristic"
         def apply(dg : DependencyGraph, cm : ConstraintsMaps, virtualNodePolicicy : VirtualNodePolicy) =
           new ControlWithHeuristic(graphUtils.Rules, dg, cm, virtualNodePolicicy,
             graphUtils.violationsKindPriority).
+            asInstanceOf[SearchControl[DecoratedGraph[Any]]]
+      },
+      new ControlBuilder {
+        override val toString = "Blind control"
+        def apply(dg : DependencyGraph, cm : ConstraintsMaps, virtualNodePolicicy : VirtualNodePolicy) =
+          new BlindControl(graphUtils.Rules, dg, cm,
+            virtualNodePolicicy, graphUtils.violationsKindPriority).
             asInstanceOf[SearchControl[DecoratedGraph[Any]]]
       }
     )) {
@@ -304,6 +304,10 @@ class PuckInterfacePanel
 
     val strategyCB =  new ComboBox(List[StrategyBuilder](
       new (() => SearchStrategy[DecoratedGraph[Any]]) {
+        override val toString = "Depth-first Strategy"
+        def apply() = new DepthFirstSearchStrategy()
+      },
+      new (() => SearchStrategy[DecoratedGraph[Any]]) {
         override val toString = "A* Strategy"
         def apply() = {
           Dialog.showConfirmation(message = ponderationPanel.peer)
@@ -317,11 +321,7 @@ class PuckInterfacePanel
 
 
       },
-    new (() => SearchStrategy[DecoratedGraph[Any]]) {
-        override val toString = "Depth-first Strategy"
-        def apply() = new DepthFirstSearchStrategy()
-      },
-    new (() => SearchStrategy[DecoratedGraph[Any]]) {
+      new (() => SearchStrategy[DecoratedGraph[Any]]) {
         override val toString = "Breadth-first Strategy"
         def apply() = new BreadthFirstSearchStrategy()
       }
@@ -331,7 +331,7 @@ class PuckInterfacePanel
       preferredSize = minimumSize
     }
 
-    val vnStrategyCB =  new ComboBox(List[VirtualNodePolicy](WithVirtualNodes,NoVirtualNodes)) {
+    val vnStrategyCB =  new ComboBox(List[VirtualNodePolicy](NoVirtualNodes, WithVirtualNodes)) {
       minimumSize = new Dimension(leftWidth, 30)
       maximumSize = minimumSize
       preferredSize = minimumSize

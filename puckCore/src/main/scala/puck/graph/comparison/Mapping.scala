@@ -81,7 +81,7 @@ object EqualityWithDebugPrint {
     val (g1, g2) = dgp
     def msg(g: DependencyGraph)(k: K, vs: C[V]): String = {
       val kmsg = (g, k).shows
-      cvm1.handler.toList(vs) map (v => kmsg + " " +(g, v).shows) mkString "\n"
+      cvm1.handler.toList(vs) map (v => kmsg + ", " +(g, v).shows) mkString "\n"
 
     }
 
@@ -265,7 +265,7 @@ object Mapping {
 
   import ShowDG._
   import EqualityWithDebugPrint._
-  //  import Equality._
+  //import Equality._
 
   def equals
   ( g1 : DependencyGraph,
@@ -318,7 +318,8 @@ object Mapping {
         equalsCVM(mappinG1toG2)(g1.edges.parameters, g2.edges.parameters)
 
       lazy val equalsIsa =
-        equalsCVM(mappinG1toG2)(g1.edges.superTypes, g2.edges.superTypes)
+        equalsCVM(mappinG1toG2,
+          mapType(mappinG1toG2))(g1.edges.superTypes, g2.edges.superTypes)
 
 
       lazy val equalsBR =

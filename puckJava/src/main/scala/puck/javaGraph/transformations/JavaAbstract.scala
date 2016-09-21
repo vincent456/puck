@@ -84,6 +84,13 @@ object JavaAbstract extends Abstract {
           .addAccessKind((selfUse, (getDef, impl.id)), Read)
           .addBinding(selfUse, (setDef, impl.id))
           .addAccessKind((selfUse, (setDef, impl.id)), RW)
+      case _ : MethodKind =>
+        //excludingTypeUse means exclude uses computed from type
+        //when a method trow exception types, it uses these outside of type uses
+        val AccessAbstraction(absId, _) = abs
+        g.usedByExcludingTypeUse(impl.id).foldLeft(g2) {
+          case (g0, thrownTypeId) => g0.addUses(absId, thrownTypeId)
+        }
       case _ => g2
     }
     (abs, g3)

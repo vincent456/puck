@@ -43,7 +43,6 @@ import puck.javaGraph.nodeKind._
 import puck.util.PuckLog._
 import puck.util.{PuckLog, PuckLogger}
 import puck.{DG2AST, DG2ASTBuilder, Project, PuckError}
-
 import puck.graph.MutabilitySet.MutabilitySetOps
 
 import scala.{List => SList}
@@ -344,6 +343,15 @@ class JavaJastAddDG2AST
 
         t match {
           case Add(Edge(e)) => CreateEdge(e)
+          case Add(Isa(sub, sup)) =>
+            CreateEdge.createIsa(id2declMap(Type mainId sub), id2declMap(Type mainId sup))
+          case Remove(Isa(sub, sup)) =>
+              (id2declMap(Type mainId sub), id2declMap(Type mainId sup)) match {
+                case (ClassDeclHolder(srcDecl), InterfaceDeclHolder(odlDecl)) =>
+                  srcDecl.removeSuperType(odlDecl)
+                case _ =>
+                  puck.error(s"${(resultGraph, t).shows} : application failure !")
+              }
 
           case Add(AType(user, newType)) =>
             CreateEdge.createTypeUse(safeGet(resultGraph, id2declMap), user, newType)
@@ -351,7 +359,7 @@ class JavaJastAddDG2AST
           case ChangeSource(Contains(source, target), newSource) =>
             RedirectSource.move(source, target, newSource)
 
-          case ChangeSource(Isa(source, target), newSource)  =>
+          case ChangeSource(IsaEdge(source, target), newSource)  =>
             RedirectSource.redirectIsaSource(source, target, newSource)
 
           case ChangeSource(Uses(source, target), newSource)  =>

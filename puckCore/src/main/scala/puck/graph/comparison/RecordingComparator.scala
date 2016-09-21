@@ -78,7 +78,7 @@ object RecordingComparator{
 
       case Left(kind) =>
         nodesToMap.getOrElse(kind, Seq()) match {
-          case Seq() => Seq(LoggedError(NoSolution))
+          case Seq() => Seq(LoggedError("NoSolution"))
           case l =>
             l.toStream  map {
               mapped =>
@@ -132,7 +132,7 @@ object RecordingComparator{
     case (resMap, nodesToMap, t1 +: ts1, ts2) =>
       def removeFirstAndCompareNext(tgt : Operation) : Seq[LoggedTry[Compared]]  =
         removeFirst(ts2, t1.direction, tgt) match {
-          case None => Seq(LoggedError(WrongMapping))
+          case None => Seq(LoggedError("WrongMapping"))
           //              println("Failure on mapping : ")
           //              println(map.mkString("\t", "\n\t", "\n"))
           //              println(ts1.head + " mapped as ")

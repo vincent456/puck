@@ -63,8 +63,9 @@ trait ActionGenerator {
     }) getOrElse Seq(LoggedError(s"$contained has no container"))
 
 
-  def moveAction(node : ConcreteNode) : DependencyGraph => Seq[LoggedTry[DependencyGraph]] =
-    dg => toSeqLTG(actionsGenerator.move(dg, node))
+  def moveAction(dg : DependencyGraph, node : ConcreteNode) :Seq[LoggedTry[DependencyGraph]] =
+    toSeqLTG(actionsGenerator.move(dg, node))
+
 
   def moveContainerAction(dg : DependencyGraph, node : ConcreteNode) : Seq[LoggedTry[DependencyGraph]] =
     ensureContainerIsConcrete(dg, node, container => toSeqLTG(actionsGenerator.move(dg, container)))

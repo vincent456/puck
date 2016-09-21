@@ -81,8 +81,8 @@ object WeightedDirectedGraph {
 }
 class WeightedDirectedGraph
 (val nodes : Set[NodeId],
- val target2src : SetValueMap.T[NodeId, NodeId] = SetValueMap(),
- val src2target  : SetValueMap.T[NodeId, NodeId] = SetValueMap(),
+ val target2src : SetValueMap[NodeId, NodeId] = SetValueMap(),
+ val src2target  : SetValueMap[NodeId, NodeId] = SetValueMap(),
  val edgesWeight : Map[NodeIdP, Weight] = Map()){
 
   def addEdge(e : NodeIdP)  : WeightedDirectedGraph = {

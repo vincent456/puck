@@ -61,7 +61,7 @@ object Remove{
           }
 
         val g01 = graph.directSuperTypes(n.id).foldLeft(g00) {
-          (g, supId) => g.removeIsa(n.id, supId)
+          (g, supId) => g.removeIsa(NamedType(n.id), supId)
         }
         val g02 = graph.usedByExcludingTypeUse(n.id).foldLeft(g01) {
           (g, usedId) =>

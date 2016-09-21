@@ -253,7 +253,7 @@ case class ParameterizedType(genType : NodeId, params : List[Type])
   override def subtypeOf(graph : DependencyGraph,
                         other : Type) : Boolean =
     other match {
-        case NamedType(otherId) => graph.isa_*(genType, otherId)
+        case NamedType(_) => graph.isa_*(this, other)
         case ParameterizedType(otherId, otherParams) =>
           val b1 = graph.isa_*(genType, otherId)
           val b2 = otherParams.size == params.size

@@ -33,72 +33,62 @@ import scala.collection.JavaConversions._
   * Created by Loïc Girault on 18/04/16.
   */
 trait GraphBuilderVisitor {
-  this : JastaddGraphBuilder =>
+  this: JastaddGraphBuilder =>
 
-  def buildDG(containerId : NodeId, td : TypeDecl) : Unit = td match {
-    case _ : WildcardExtendsType | _ : WildcardSuperType => ()
+  def buildDG(containerId: NodeId, td: TypeDecl): Unit = td match {
+    case _: WildcardExtendsType | _: WildcardSuperType => ()
     case _ =>
       val n = buildTypeDecl(td)
       addEdge(Contains(containerId, n))
-      if(td.isParameterizedType){
+      if (td.isParameterizedType) {
         val ptd = td.asInstanceOf[ParTypeDecl]
         println("[BUILD] parameterized type " + ptd.nameWithArgs())
       }
       td.getBodyDeclList foreach (_.buildDG(this, n))
   }
 
-  def buildTypeVariables(tid : NodeId, gtd : GenericTypeDecl) : Unit =
+  def buildTypeVariables(tid: NodeId, gtd: GenericTypeDecl): Unit =
     gtd.getTypeParameterList foreach (tv =>
       addEdge(ContainsParam(tid, this buildNode tv)))
 
 
-  def buildIsaEdge(sub : NodeId, supAccess : Access): Unit = supAccess match {
-    case ad : AbstractDot =>
-      buildIsaEdge(sub, ad.getRight)
+  def buildInheritence(tdecl: TypeDecl) : Type = {
+    val sub = getType(tdecl)
 
-    case ta : TypeAccess =>
-      addIsa(sub, this buildNode supAccess)
+    def aux(supAccess: Access) : Unit = addIsa(sub, getType(supAccess))
+//    def aux(supAccess: Access) : Unit =
+//    supAccess match {
+//      case ad: AbstractDot =>
+//        aux(ad.getRight)
+//
+//      case ta: TypeAccess =>
+//        addIsa(sub, NamedType(this buildNode supAccess))
+//
+//      case pta: ParTypeAccess =>
+//
+//        val params = pta.getTypeArguments map {
+//          a => buildTypeHierarchy(getTypeDecl(a))
+//        }
+//
+//        addIsa(sub, ParameterizedType( this buildNode pta.getTypeAccess, params.toList))
+//
+//
+//      case _ => puck.error(s"$supAccess : expected TypeAccess or ParTypeAccess")
+//    }
 
-    case pta : ParTypeAccess =>
-      addIsa(sub, this buildNode pta.getTypeAccess)
-      pta.getTypeArguments.foreach (buildInheritanceUses(sub, _))
+    tdecl match {
+      case cd : ClassDecl =>
+        // addExtends
+        if(cd.hasSuperclass && cd.superclass().fullName() != "java.lang.Object")
+          aux(cd.getSuperClass)
 
-    case _ => puck.error(s"$supAccess : expected TypeAccess or ParTypeAccess")
-  }
+        cd.getImplementss foreach aux
+      case id : InterfaceDecl =>
+        id.getSuperInterfaces foreach aux
 
-  def buildInheritanceUses(sub : NodeId, typArgAccess : Access) : Unit = typArgAccess match {
-    case ad : AbstractDot =>
-      buildInheritanceUses(sub, ad.getRight)
-    case ta : TypeAccess =>
-      addEdge(Uses(sub, this buildNode ta))
-
-    case pta : ParTypeAccess =>
-      addEdge(Uses(sub, this buildNode pta.getTypeAccess))
-      pta.getTypeArguments.foreach (buildInheritanceUses(sub, _))
-
-    case wc : Wildcard => ()
-
-    case wc : WildcardSuper =>
-      buildInheritanceUses(sub, wc.getAccess)
-    case wc : WildcardExtends =>
-      buildInheritanceUses(sub, wc.getAccess)
-  }
-
-  def buildExtendsImplementsAndTypeVariables(cd : ClassDecl, typeNodeId : NodeId) : Unit = {
-    // addExtends
-    if(cd.hasSuperclass && cd.superclass().fullName() != "java.lang.Object"){
-      buildIsaEdge(typeNodeId, cd.getSuperClass)
+      case _ => ()
     }
-
-    cd.getImplementss foreach (buildIsaEdge(typeNodeId, _))
-
-    if(cd.isGenericType)
-      buildTypeVariables(typeNodeId, cd.asInstanceOf[GenericTypeDecl])
-  }
-  def buildExtendsImplementsAndTypeVariables(id : InterfaceDecl, typeNodeId : NodeId) : Unit = {
-    id.getSuperInterfaces foreach (buildIsaEdge(typeNodeId, _))
-    if(id.isGenericType)
-      buildTypeVariables(typeNodeId, id.asInstanceOf[GenericTypeDecl])
+    sub
   }
 
   def buildTypeDecl(td : TypeDecl) : NodeId = td match {
@@ -107,14 +97,19 @@ trait GraphBuilderVisitor {
 
       val n = this buildNode cd
 
-      buildExtendsImplementsAndTypeVariables(cd, n)
+      buildInheritence(cd)
+      if(cd.isGenericType)
+        buildTypeVariables(n, cd.asInstanceOf[GenericTypeDecl])
+
       if(cd.hasImplicitConstructor)
         cd.getImplicitConstructor.buildDG(this, n)
 
       n
     case id : InterfaceDecl =>
       val n = this buildNode id
-      buildExtendsImplementsAndTypeVariables(id, n)
+      buildInheritence(id)
+      if(id.isGenericType)
+        buildTypeVariables(n, id.asInstanceOf[GenericTypeDecl])
 
       n
 
@@ -141,6 +136,10 @@ trait GraphBuilderVisitor {
     val declId = buildNode(methodDecl)
     addEdge(Contains(containerId, declId))
     buildDGType(declId, methodDecl)
+    methodDecl.getExceptions.foreach {
+      exc =>
+        addUses(declId, buildNode(exc))
+    }
 
     //buildMethodOrConstructorDG(containerId, declId, methodDecl)
 
@@ -215,6 +214,7 @@ trait GraphBuilderVisitor {
 
   def buildDG(containerId : NodeId, stmt : EnhancedForStmt) : Unit = {
     stmt.getExpr.buildDGInChildren(this, containerId)
+    stmt.getStmt.buildDGInChildren(this, containerId)
     stmt.getExpr match {
       case access : Access =>
         val leftval = this buildNode stmt.getVariableDecl
@@ -299,6 +299,30 @@ trait GraphBuilderVisitor {
     }
   }
 
+  def registerGetterSetter(fid : NodeId, fieldDeclarator: FieldDeclarator) : Unit = {
+    val smallName = fieldDeclarator.name().toLowerCase
+    val setterName = "set" + smallName
+    val getterName =
+      (if(fieldDeclarator.`type`() == program.typeBoolean()) "is"
+      else "get") + smallName
+
+    var getter : Option[NodeId] = None
+    var setter : Option[NodeId] = None
+
+    fieldDeclarator.hostType().methodsNameMap() foreach {
+      case (name, decls) =>
+        if(name.toLowerCase == setterName && decls.size() == 1){
+          setter = Some(getNode(decls.iterator().next()))
+        }
+        if(name.toLowerCase == getterName && decls.size() == 1){
+          getter = Some(getNode(decls.iterator().next()))
+        }
+    }
+
+    if(getter.nonEmpty || setter.nonEmpty)
+      g = g.addAbstraction(fid, ReadWriteAbstraction(getter, setter))
+  }
+
   def buildDG(containerId : NodeId, fieldDecl : FieldDecl) : Unit = {
     val t = getType(fieldDecl.getTypeAccess)
 
@@ -309,6 +333,8 @@ trait GraphBuilderVisitor {
         val fdId = this buildNode fd
         addEdge(Contains(containerId, fdId))
         setType(fdId, t)
+
+        registerGetterSetter(fdId, fd)
 
         if( fd.hasInit ) {
           puck.ignore(buildFieldInit(fdId, fd, fd.getInit))
@@ -342,8 +368,6 @@ trait GraphBuilderVisitor {
     val pid = buildNode(pd)
     val t = getType(pd.getTypeAccess)
     setType(pid, t)
-    //addEdge(ContainsParam(containerId, pid))
-    //pd.buildDGInChildren(this, containerId)
   }
 
   def buildDG(containerId : NodeId, va : ConstructorAccess) : Unit = {

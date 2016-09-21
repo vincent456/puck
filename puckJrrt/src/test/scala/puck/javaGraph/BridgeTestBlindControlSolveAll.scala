@@ -26,7 +26,7 @@ object BridgeTestBlindControlSolveAll {
       s"$path/screen/BridgeDemo.java",
       s"$path/screen/Screen.java")
 
-      val constraints = scenario.parseConstraints(s"$path/decouple.wld")
+      val constraints = scenario.parseConstraintsFile(s"$path/decouple.wld")
 
       //      val res = solveAll_targeted(graph, constraints, blindControlBuilder,
       //        () => new AStarSearchStrategy[(DependencyGraph, Int)](SResultEvaluator.equalityByMapping(_.numNodes)),

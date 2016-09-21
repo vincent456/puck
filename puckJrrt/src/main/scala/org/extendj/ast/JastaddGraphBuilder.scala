@@ -35,33 +35,6 @@ import scala.collection.JavaConversions._
 
 object JastaddGraphBuilder {
 
-  //JavaAccessor
-
-  def isa(n1 : NodeId, n2 : NodeId) =
-    new DGEdge(Isa, n1, n2)
-
-  def genInterface(gid: GenericInterfaceDecl) : JavaNodeKind = GenericInterface
-  def genClass(gid: GenericClassDecl) : JavaNodeKind = GenericClass
-
-  def field = Field
-  def staticField = StaticField
-  def constructor = Constructor
-  def abstractMethod = AbstractMethod
-  def method = Method
-  def staticMethod = StaticMethod
-
-  def enumConstant = PuckEnumConstant
-
-  def parameter = Param
-
-  def definition = Definition
-
-  def primitive = Primitive
-  def typeVariable = nodeKind.TypeVariable
-  def wildcardType = WildCardType
-
-
-
   def definitionName = DependencyGraph.definitionName
 
 
@@ -165,7 +138,8 @@ class JastaddGraphBuilder(val program : Program)
                 case Some(pid) => cdecl.buildDG(this, pid)
                 case _ => addBodyDecl(cdecl)
               }
-            case Some(tdh : TypedKindDeclHolder) => addApiTypeNode(tdh.decl)
+            case Some(TypedKindDeclHolder(decl)) =>
+              addApiTypeNode(decl)
             case Some(ParameterDeclHolder(d)) =>
             //println("attaching " + d.dgFullName())
             //addBodyDecl(d.hostBodyDecl())
@@ -246,11 +220,10 @@ class JastaddGraphBuilder(val program : Program)
       else
         this buildNode td.getParentNamedNode
 
-    td match {
-      case cd : ClassDecl => buildExtendsImplementsAndTypeVariables(cd, tdNode)
-      case id : InterfaceDecl => buildExtendsImplementsAndTypeVariables(id, tdNode)
-      case _ => ()
-    }
+    buildInheritence(td)
+
+    if(td.isGenericType)
+        buildTypeVariables(tdNode, td.asInstanceOf[GenericTypeDecl])
 
     if(!td.isInstanceOf[TypeVariable])
       addEdge(Contains(cterId, tdNode))
@@ -286,8 +259,6 @@ class JastaddGraphBuilder(val program : Program)
     case wet : WildcardExtendsType => Covariant(getType(wet.getAccess))
     case _ => NamedType(getNode(td))
   }
-
-
 
   def getType(a : Access) : Type = {
     a.lock()

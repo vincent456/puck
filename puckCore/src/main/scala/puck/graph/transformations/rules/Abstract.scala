@@ -125,9 +125,9 @@ abstract class Abstract {
 
       case SupertypeAbstraction =>
 
-        val name = abstractionName(g, impl, abskind, policy, None)
-        val (n, g1) = g.addConcreteNode(name, abskind)
-        val g2 = (g1 styp impl.id) map (g1.addType(n.id, _)) getOrElse g1
+        val absName = abstractionName(g, impl, abskind, policy, None)
+        val (absNode, g1) = g.addConcreteNode(absName, abskind)
+        val g2 = (g1 styp impl.id) map (g1.addType(absNode.id, _)) getOrElse g1
 
 
         val g3 = g2.parametersOf(impl.id).foldRight(g2) {
@@ -136,12 +136,10 @@ abstract class Abstract {
             val (pabs, g01) = g0.addConcreteNode(param.name, param.kind)
             val g02 = (g0 styp paramId) map (g01.addType(pabs.id, _)) getOrElse g01
 
-            g02.addEdge(ContainsParam(n.id, pabs.id))
-//            g02.usedByExcludingTypeUse(paramId).foldLeft(g02.addContains(n.id, pabs.id)) {
-//              (g00, tid) => g00.addUses(pabs.id, tid)
-//            }
+            g02.addEdge(ContainsParam(absNode.id, pabs.id))
+
         }
-        val abs = AccessAbstraction(n.id, policy)
+         val abs = AccessAbstraction(absNode.id, policy)
         (abs, g3.addAbstraction(impl.id, abs))
 
     }
@@ -154,10 +152,14 @@ abstract class Abstract {
     subTypeId : NodeId,
     newSuperTypeId : NodeId
     ) : LoggedTG =
-    g.directSuperTypes(subTypeId).foldLoggedEither(g){
+    g.directSuperTypesId(subTypeId).foldLoggedEither(g){
       (g0, oldSuperTypedId) =>
 
-        val g1 = g0.changeSource(Isa(subTypeId, oldSuperTypedId), newSuperTypeId)
+        println(s"removeIsa(${(g0,subTypeId).shows}, ${(g0,subTypeId).shows})")
+        println(s"addIsa(${(g0,newSuperTypeId).shows}, ${(g0,oldSuperTypedId).shows})")
+
+        val g1 = g0.removeIsa(NamedType(subTypeId), NamedType(oldSuperTypedId))
+          .addIsa(NamedType(newSuperTypeId), NamedType(oldSuperTypedId))
 
         def extractMethod(typeDeclId : NodeId) : List[(ConcreteNode, Type)] =
           g1.content(typeDeclId).toList map g1.getConcreteNode filter { n =>
@@ -309,9 +311,10 @@ abstract class Abstract {
       }
 
       g4 <- if(policy == SupertypeAbstraction)
-        redirectTypeUseInParameters(g3.addIsa(clazz.id, interface.id), members,
-          clazz, interface)
-      else LoggedSuccess[DependencyGraph](g3)
+        redirectTypeUseInParameters(
+          g3.addIsa(NamedType(clazz.id), NamedType(interface.id)),
+          members, clazz, interface)
+      else LoggedSuccess(g3)
 
 
       log = s"interface $interface created, contains : {" +

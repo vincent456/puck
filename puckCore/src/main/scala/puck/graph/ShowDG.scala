@@ -185,6 +185,8 @@ object ShowDG extends ShowConstraints{
         val tUseCord = stringOfNodeIdP(dg, tUse)
         val tmUseCord = stringOfNodeIdP(dg, tmUse)
         s"ChangeTypeBinding(($tUseCord, $tmUseCord),${exty.productPrefix}(${stringOfNodeIdP(dg, exty.edge)})"
+      case Isa(sub, sup) =>
+        s"Isa(${stringOfType(dg, sub)}, ${stringOfType(dg, sup)})"
       case _ => tgt.toString
     }
 
@@ -200,7 +202,7 @@ object ShowDG extends ShowConstraints{
 
   def tcv(dg : DependencyGraph, tv : TypeConstraintVariable) : String = tv match {
     case TypeOf(id) =>
-      if(dg.styp(id) == None) s"(${desambiguatedFullName(dg, id)}) should be typed !!"
+      if(dg.styp(id).isEmpty) s"(${desambiguatedFullName(dg, id)}) should be typed !!"
       else s"(typeOf(${desambiguatedFullName(dg, id)}) = ${stringOfType(dg, dg.typ(id))})"
     case TypeVar(t) =>  stringOfType(dg, t)
     case ParTypeProjection(v, idx) => s"Proj(${tcv(dg, v)}, $idx)"
@@ -269,9 +271,9 @@ object ShowDG extends ShowConstraints{
 //      builder append print(userMap, (used : NodeId, user : NodeId) =>
 //        s"$used - ${desambiguatedFullName(dg, used)} used by $user - ${desambiguatedFullName(dg, user)}")
 
-      builder.append("\nuser -> used\n")
-      builder append print(usedMap, (user : NodeId, used : NodeId) =>
-        s"$user - ${desambiguatedFullName(dg, user)} uses $used - ${desambiguatedFullName(dg, used)}")
+//      builder.append("\nuser -> used\n")
+//      builder append print(usedMap, (user : NodeId, used : NodeId) =>
+//        s"$user - ${desambiguatedFullName(dg, user)} uses $used - ${desambiguatedFullName(dg, used)}")
 
 
 
@@ -294,15 +296,15 @@ object ShowDG extends ShowConstraints{
 //        s"$nid - ${desambiguatedFullName(dg, nid)} : ${stringOfType(dg, t)}"
 //      } mkString("\t", "\n\t", "\n"))
 //
-//      builder.append("\nsub -> super\n")
-//      builder append print(superTypes, (sub : NodeId, sup : NodeId) =>
-//        s"${desambiguatedFullName(dg, sub)} is a ${desambiguatedFullName(dg, sup)}")
+      builder.append("\nsub -> super\n")
+      builder append print(superTypes, (sub : NodeId, sup : Type) =>
+        s"${desambiguatedFullName(dg, sub)} is a ${stringOfType(dg, sup)}")
 //      builder.append("\nsuper -> sub\n\t")
 //      builder.append(subTypes.toString)
 //
-      val pToString : NodeIdP => String = {
-        case (p1, p2) => s"($p1 - ${desambiguatedFullName(dg, p1)}, $p2 - ${desambiguatedFullName(dg, p2)})"
-      }
+//      val pToString : NodeIdP => String = {
+//        case (p1, p2) => s"($p1 - ${desambiguatedFullName(dg, p1)}, $p2 - ${desambiguatedFullName(dg, p2)})"
+//      }
 //
 //      builder append "\ntmUse -> tUse\n"
 //      builder append print(typeMemberUses2typeUsesMap, (tmUse : NodeIdP, tUses : NodeIdP) =>
@@ -312,16 +314,16 @@ object ShowDG extends ShowConstraints{
 //      builder append print(typeUses2typeMemberUsesMap, (tUse : NodeIdP, tmUse : NodeIdP) =>
 //        s"${pToString(tUse)} -> ${pToString(tmUse)}")
 
-      builder.append("\ntypeConstraints\n")
-      val typeConstraintsSet =
-        typeConstraints.content.iterator.foldLeft(Set[TypeConstraint]()) {
-        case (s, (_, stc)) => s ++ stc
-      }
-      typeConstraintsSet foreach {
-        tc =>
-          builder append stringOfTypeConstraint(dg, tc)
-          builder append "\n"
-      }
+//      builder.append("\ntypeConstraints\n")
+//      val typeConstraintsSet =
+//        typeConstraints.content.iterator.foldLeft(Set[TypeConstraint]()) {
+//        case (s, (_, stc)) => s ++ stc
+//      }
+//      typeConstraintsSet foreach {
+//        tc =>
+//          builder append stringOfTypeConstraint(dg, tc)
+//          builder append "\n"
+//      }
 //      builder append print(typeConstraints,
 //        (k : NodeId, v : TypeConstraint) => stringOfTypeConstraint(dg, v))
 

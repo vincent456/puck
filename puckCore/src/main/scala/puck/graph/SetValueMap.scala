@@ -140,13 +140,9 @@ class CollectionValueMap[K, C[_], V]
 }
 
 
-
-
 object SetValueMap {
-  type T[K,V] = CollectionValueMap[K,Set,V]
   def apply[K,V]() = new CollectionValueMap[K,Set,V](Map(), CollectionValueMap.setHandler)
 }
 object ListValueMap {
-  type T[K,V] = CollectionValueMap[K,List,V]
   def apply[K,V]() = new CollectionValueMap[K,List,V](Map(), CollectionValueMap.listHandler)
 }

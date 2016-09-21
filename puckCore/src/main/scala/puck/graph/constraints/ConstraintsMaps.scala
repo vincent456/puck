@@ -116,7 +116,7 @@ case class ConstraintsMaps
 
 
 
-  def checkOrCompute(graph: DependencyGraph) : Set[NodeIdP] = {
+  def violations(graph: DependencyGraph) : Set[NodeIdP] = {
     graph.constraintsMapsCache match {
       case Some((cm, s)) if cm eq this => s
       case _ =>
@@ -126,15 +126,17 @@ case class ConstraintsMaps
 
     }
   }
+
+
   @inline
   def isForbidden(graph : DependencyGraph, user : NodeId, used : NodeId) : Boolean  =
     isForbidden(graph, (user,used))
 
   def isForbidden(graph : DependencyGraph, e : NodeIdP) : Boolean =
-    checkOrCompute(graph) contains e
+    violations(graph) contains e
 
   def forbiddenDependencies(graph : DependencyGraph) : Seq[DGEdge] =
-    checkOrCompute(graph).toSeq flatMap {
+    violations(graph).toSeq flatMap {
       case (source, target) =>
         (graph.contains(source, target), graph.uses(source, target)) match {
           case (true, false) => Seq(Contains(source, target))
@@ -146,7 +148,7 @@ case class ConstraintsMaps
     }
 
   def noForbiddenDependencies(graph: DependencyGraph) : Boolean =
-    checkOrCompute(graph).isEmpty
+    violations(graph).isEmpty
 
 
   def isWronglyContained(graph : DependencyGraph, node : NodeId) : Boolean =

@@ -47,7 +47,7 @@ object DependencyGraph {
 
   val definitionName : String = "Definition"
 
-  type AbstractionMap = SetValueMap.T[NodeId, Abstraction]
+  type AbstractionMap = SetValueMap[NodeId, Abstraction]
   val AbstractionMap = SetValueMap
 
 
@@ -212,11 +212,6 @@ class DependencyGraph private
   def numNodes : Int = nodesIndex.numNodes
   def numRemovedNodes : Int = nodesIndex.numRemovedNodes
 
-  def isaEdges : List[DGEdge] = edges.superTypes.content.foldLeft(List[DGEdge]()){
-    case (acc, (sub, sups)) =>
-      sups.toList.map(sup => Isa(sub, sup)) ::: acc
-  }
-
   def getNode(id : NodeId): DGNode = nodesIndex.getNode(id)
 
   def getConcreteNode(id : NodeId): ConcreteNode =
@@ -287,7 +282,7 @@ class DependencyGraph private
     }
 
 
-  def exists(e : DGEdge) : Boolean = edges.exists(e)
+  def exists(e : DGEdge) : Boolean = edges exists e
 
   def addEdge(e : DGEdge, register : Boolean = true): DependencyGraph =
     newGraph(edges = edges.add(e),
@@ -321,11 +316,17 @@ class DependencyGraph private
     addEdge(Uses(userId, useeId))
 
 
-  def addIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : DependencyGraph=
-    addEdge(Isa(subTypeId, superTypeId))
+  def addIsa(subType: Type, superType: Type, register : Boolean = true) : DependencyGraph =
+    newGraph(edges = edges.addIsa(subType, superType),
+      recording =
+        if (register) recording.addIsa(subType, superType)
+        else recording)
 
-  def removeIsa(subTypeId: NodeId, superTypeId: NodeId, register : Boolean = true) : DependencyGraph=
-    removeEdge(Isa(subTypeId, superTypeId))
+  def removeIsa(subType: Type, superType: Type, register : Boolean = true) : DependencyGraph =
+    newGraph(edges = edges.removeIsa(subType, superType),
+      recording =
+        if (register) recording.removeIsa(subType, superType)
+        else recording)
 
 
 
@@ -433,8 +434,8 @@ class DependencyGraph private
     val writeEdge = Uses(edge.source, writeTarget)
 
     val newRecording =
-      recording.changeEdgeTarget(u, readTarget, withMerge = readEdge.existsIn(this))
-        .changeEdgeTarget(u, readTarget, withMerge = readEdge.existsIn(this))
+      recording.changeEdgeTarget(u, readTarget, withMerge = exists(readEdge))
+        .changeEdgeTarget(u, readTarget, withMerge = exists(readEdge))
 
     g1.addEdge(readEdge, register = false)
       .addEdge(writeEdge, register = false)
@@ -448,7 +449,7 @@ class DependencyGraph private
 
   def changeTarget(edge : DGEdge, newTarget : NodeId) : DependencyGraph = {
     val newEdge : DGEdge = edge.copy(target = newTarget)
-    val newRecording = recording.changeEdgeTarget(edge, newTarget, withMerge = newEdge.existsIn(this))
+    val newRecording = recording.changeEdgeTarget(edge, newTarget, withMerge = exists(newEdge))
 
     if (isChangeType(edge, newTarget))
       newGraph(
@@ -465,7 +466,7 @@ class DependencyGraph private
   def changeSource(edge : DGEdge, newSource : NodeId) : DependencyGraph = {
     val g1 = edge.deleteIn(this, register = false)
     val newEdge: DGEdge = edge.copy(source = newSource)
-    val newRecording = recording.changeEdgeSource(edge, newSource, withMerge = newEdge.existsIn(this))
+    val newRecording = recording.changeEdgeSource(edge, newSource, withMerge = exists(newEdge))
     newEdge.createIn(g1, register = false).newGraph(recording = newRecording)
   }
 
@@ -547,8 +548,12 @@ class DependencyGraph private
   //heavily used by the solver need to be optimized
   def contains_*(containerId : NodeId, contentId : NodeId) : Boolean =
   containerId == contentId || {
+    var visited = Set[NodeId]()
     var scontent0 : Option[NodeId] = edges.containers get contentId
     while(scontent0.nonEmpty && scontent0.get != containerId){
+      if(visited.contains(scontent0.get))
+        puck.error("loop !" + getNode(scontent0.get).name )
+      visited += scontent0.get
       scontent0 = edges.containers get scontent0.get
     }
     scontent0.nonEmpty
@@ -580,12 +585,14 @@ class DependencyGraph private
   }
 
 
+  def directSuperTypes(sub: NodeId) : Set[Type] = edges.superTypes getFlat sub
+  def directSubTypes(sup: NodeId) : Set[Type] = edges.subTypes getFlat sup
 
-  def directSuperTypes(sub: NodeId) : Set[NodeId] = edges.superTypes getFlat sub
-  def directSubTypes(sup: NodeId) : Set[NodeId] = edges.subTypes getFlat sup
+  def directSuperTypesId(sub: NodeId) : Set[NodeId] = this directSuperTypes sub map Type.mainId
+  def directSubTypesId(sup: NodeId) : Set[NodeId] = this directSubTypes sup map Type.mainId
 
   def subTypes(sup : NodeId) : Set[NodeId]= {
-    val dst = directSubTypes(sup)
+    val dst = directSubTypesId(sup)
     dst.foldLeft(dst) { case (acc, id) => acc ++ subTypes(id) }
   }
 
@@ -598,13 +605,17 @@ class DependencyGraph private
 
 
 
+  def isa(sub : Type, sup: Type): Boolean = edges.isa(sub, sup)
+
+  def isa_*(sub : Type, sup: Type): Boolean =  edges.isa_*(sub, sup)
+
   def isa(subId : NodeId, superId: NodeId): Boolean =
     edges.isa(subId, superId)
 
   def isa_*(subId : NodeId, superId: NodeId): Boolean =
     edges.isa_*(subId, superId)
 
-  def isaList  : List[(NodeId, NodeId)] = edges.superTypes.flatList
+  def isaList  : List[(NodeId, NodeId)] = edges.superTypes.flatList map (e => (e._1, Type.mainId(e._2)))
 
   def usesAccessKind(br: (NodeIdP, NodeIdP)) : Option[UsesAccessKind] =
     edges getAccessKind br

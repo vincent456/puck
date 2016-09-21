@@ -27,6 +27,7 @@
 package puck.javaGraph.commutativity
 
 import puck.TransfoRulesSpec
+import puck.graph.NamedType
 import puck.graph.transformations.rules.ReplaceInheritanceByDelegation
 import puck.jastadd.ExtendJGraphUtils.Rules
 import puck.javaGraph.nodeKind.Interface
@@ -50,8 +51,9 @@ class ReplaceInheritanceByDelegationSpec
         import puck.graph.ShowDG._
         (graph, graph.abstractionsMap).println
 
-        ReplaceInheritanceByDelegation.subsToDelegate(graph, List("p.B", "p.C"),
-          "p.A", "p", Interface)(Rules).rvalue
+        ReplaceInheritanceByDelegation.subsToDelegate(graph,
+          List(NamedType("p.B"), NamedType("p.C")),
+          NamedType("p.A"), "p", Interface)(Rules).rvalue
       },
       """package p;
         |

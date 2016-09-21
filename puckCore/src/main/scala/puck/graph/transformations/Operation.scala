@@ -33,6 +33,7 @@ object Operation {
     case VNode(n) => Seq(n.id)//n.id +: n.potentialMatches
     case CNode(cn) => Seq(cn.id)
     case Edge(e) => Seq(e.source, e.target)
+    case Isa(t1, t2) => t1.ids ++ t2.ids
     case RedirectionOp(e, exty) => Seq(e.source, e.target, exty.node)
     case RenameOp(id, _, _) => Seq(id)
     case AType(id, t) => id +: t.ids
@@ -74,8 +75,16 @@ case class VNode(n : VirtualNode) extends AddRmOperation {
 case class Edge(edge : DGEdge)
   extends AddRmOperation {
   def execute(g: DependencyGraph , op : Direction) = op match {
-    case Regular =>edge.createIn(g)
-    case Reverse => edge.deleteIn(g)
+    case Regular => g addEdge edge
+    case Reverse => g removeEdge edge
+  }
+}
+
+case class Isa(subType : Type, superType : Type)
+  extends AddRmOperation {
+  def execute(g: DependencyGraph , op : Direction) = op match {
+    case Regular => g.addIsa(subType, superType)
+    case Reverse => g.removeIsa(superType, subType)
   }
 }
 

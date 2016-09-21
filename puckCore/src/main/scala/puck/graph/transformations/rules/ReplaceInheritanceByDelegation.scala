@@ -62,15 +62,15 @@ object ReplaceInheritanceByDelegation {
     }
   }
   def subsToDelegate(g : DependencyGraph,
-                     subs : Seq[NodeId],
-                     sup : NodeId,
+                     subs : Seq[Type],
+                     sup : Type,
                      delegateContainer : NodeId,
                      delegateKind : NodeKind)
                     (rules : TransformationRules): LoggedTG = {
-    //
+    val supId = Type mainId sup
     val (present, absent) = subs.foldLeft(Set[NodeId](), List[NodeId]()) {
       case ((presentAcc, absentAcc), sub) =>
-        val (present0, absent0) = sortMethods(g, sub, sup)
+        val (present0, absent0) = sortMethods(g, Type mainId sub, supId)
         (presentAcc ++ present0, absentAcc ++ absent0)
     }
 
@@ -79,7 +79,7 @@ object ReplaceInheritanceByDelegation {
 
     if(presentConcrete.nonEmpty || absent.nonEmpty) LoggedError("presentConcrete.nonEmpty || absent.nonEmpty")
     else {
-      val supNode = g.getConcreteNode(sup)
+      val supNode = g getConcreteNode supId
         val (cn , g1) =  g.addConcreteNode(supNode.name + "SubDelegate", delegateKind)
         println("presentAbstract = " + presentAbstract)
         val (implAbs, g2) =
@@ -88,13 +88,13 @@ object ReplaceInheritanceByDelegation {
               val n = g0.getConcreteNode(nid)
               val (AccessAbstraction(mabs, _), g1) = rules.abstracter.createAbsNodeAndUse(g0, n, n.kind, DelegationAbstraction)
               ( (n.id, mabs) +: implAbsAcc,
-              g1.addEdge(Contains(sup, mabs)).
-                changeSource(Contains(sup, nid), cn.id))
+              g1.addEdge(Contains(supId, mabs)).
+                changeSource(Contains(supId, nid), cn.id))
           }
 
       val g3 = subs.foldLeft(g2){
         case (g0, sub) =>
-          g0.removeEdge(Isa(sub, sup)).addEdge(Isa(sub, cn.id))
+          g0.removeIsa(sub, sup).addIsa(sub, NamedType(cn.id))
       }
       implAbs.foldLoggedEither(g3){
         case (g0, (impl, abs)) =>
@@ -102,7 +102,7 @@ object ReplaceInheritanceByDelegation {
            g0.usersOf(impl).foldLoggedEither(g0){
              case (g00, user) =>
                if(user != absDef &&
-                 g00.uses(user, impl)) rules.redirection.redirectInstanceUsesTowardAbstractionInAnotherTypeAndPropagate(g00, (user, impl), sup)
+                 g00.uses(user, impl)) rules.redirection.redirectInstanceUsesTowardAbstractionInAnotherTypeAndPropagate(g00, (user, impl), supId)
                else LoggedSuccess(g00)
            }
 

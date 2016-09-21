@@ -49,7 +49,7 @@ class NodeInfosPanel
 
   def edgeClick(c : Component, mkEdge : NodeId => DGEdge)(evt : MouseEvent, n : DGNode) : Unit = {
     val edge = mkEdge(n.id)
-    if(edge existsIn graph) {
+    if(graph exists edge) {
       if (isRightClick(evt))
         Swing.onEDT(new EdgeMenu(control.Bus, edge,
           control.printingOptionsControl,
@@ -152,17 +152,17 @@ class NodeInfosPanel
         tooltip = "Number of strongly connected component divided by the number of children of this type node"
       }.leftGlued
 
-      val subTypes = graph.directSubTypes(node.id)
-      val superTypes = graph.directSuperTypes(node.id)
+      val subTypes = graph.directSubTypesId(node.id)
+      val superTypes = graph.directSuperTypesId(node.id)
 
       contents += new BoxPanel(Orientation.Horizontal) {
         contents += labelOrTreePane(subTypes, "No subtype",
           "Subtype(s) :", "Direct subtype(s)",
-          Some(edgeClick(this, Isa(_, node.id))))
+          Some(edgeClick(this, IsaEdge(_, node.id))))
 
         contents += labelOrTreePane(superTypes, "No super type",
           s"Super type(s)", "Direct super type(s)",
-          Some(edgeClick(this, Isa(node.id, _))))
+          Some(edgeClick(this, IsaEdge(node.id, _))))
 
       }
 

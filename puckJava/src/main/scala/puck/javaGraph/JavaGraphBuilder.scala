@@ -82,7 +82,7 @@ trait JavaGraphBuilder extends GraphBuilder{
   def typeEdge(typeUser : NodeId, typeUsed : NodeId) : DGEdge = {
     if(g.getConcreteNode(typeUser).kind.kindType == TypeDecl &&
       typeUser != typeUsed && g.isa_*(typeUser, typeUsed))
-      Isa(typeUser, typeUsed)
+      IsaEdge(typeUser, typeUsed)
     else
       Uses(typeUser, typeUsed)
   }

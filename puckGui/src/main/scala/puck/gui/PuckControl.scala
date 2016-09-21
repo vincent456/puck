@@ -33,7 +33,7 @@ import puck.config.{Config, ConfigParser}
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.io.{CSVPrinter, DotPrinter}
-import puck.util.{PuckLog, PuckLogger, PuckSystemLogger}
+import puck.util.{PuckLog, PuckLogger}
 
 import scala.concurrent.Future
 import scala.swing.{ProgressBar, Publisher, Reactor, Swing}
@@ -41,17 +41,12 @@ import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scalaz.{-\/, \/-}
 import ShowDG._
+import puck.config.Config.Config
 import puck.graph.transformations.MutabilitySet
 object PuckControl {
 
   def apply(graphUtils: GraphUtils, nodeKindIcons : NodeKindIcons, logger : PuckLogger) : PuckControl =
     new PuckControl(graphUtils, nodeKindIcons, logger)
-
-  def apply(graphUtils: GraphUtils, nodeKindIcons : NodeKindIcons) : PuckControl =
-    new PuckControl(graphUtils, nodeKindIcons, new PuckSystemLogger(_ => true))
-
-//  def apply(graphUtils: GraphUtils, f : String, logger : PuckLogger) : PuckControl  =
-//    this.apply(graphUtils, new File(f), logger )
 
   def apply(graphUtils: GraphUtils, nodeKindIcons : NodeKindIcons, f : File, logger : PuckLogger)  : PuckControl = {
     val pc = this apply (graphUtils, nodeKindIcons, logger)
@@ -92,9 +87,9 @@ class PuckControl
   var constraints : Option[ConstraintsMaps] = None
   var mutabilitySet : MutabilitySet.T = Set()
 
-  def loadConf(file : File) : Unit = {
-    sProject = Some(new Project(ConfigParser(file),
-      graphUtils.dg2astBuilder))
+  def loadConf(file : File) : Unit =  loadConf(ConfigParser(file))
+  def loadConf(cfg : Config) : Unit = {
+    sProject = Some(new Project(cfg, graphUtils.dg2astBuilder))
 
     sProject.foreach {
       p =>
@@ -215,7 +210,7 @@ class PuckControl
     case PrintErrOrPushGraph(msg, lgt) =>
       lgt.value match {
         case -\/(err) =>
-          logger.writeln(s"$msg\n${err.getMessage}\nLog : ${lgt.log}")
+          logger.writeln(s"$msg\n$err\nLog : ${lgt.log}")
         case \/-(g) =>
           logger.writeln(lgt.log)
           graphStack.pushGraph(g)

@@ -24,7 +24,7 @@
  * Author of this file : Loïc Girault
  */
 
-import puck.graph.Isa;
+import puck.graph.IsaEdge;
 import puck.graph.Uses;
 import puck.graph.UsesAccessKind;
 import puck.LoadingListener;

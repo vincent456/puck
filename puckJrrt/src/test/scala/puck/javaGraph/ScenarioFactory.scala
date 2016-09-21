@@ -26,7 +26,7 @@
 
 package puck.javaGraph
 
-import java.io.{File, FileReader}
+import java.io.{File, FileReader, StringReader}
 
 import puck.graph.transformations.{Recording, Transformation}
 import puck.graph.{DGBuildingError, DependencyGraph, NodeId}
@@ -131,7 +131,10 @@ class ScenarioFactory
   def printRecord(g : DependencyGraph) : Unit =
     Recording.write(Settings.tmpDir + "plan.pck", fullName2id, g)
 
-  def parseConstraints(path : String) : ConstraintsMaps =
+  def parseConstraintsFile(path : String) : ConstraintsMaps =
       ConstraintsParser(fullName2id, new FileReader(path))
+
+  def parseConstraint(constraint : String) =
+    ConstraintsParser(fullName2id, new StringReader(constraint))
 
 }

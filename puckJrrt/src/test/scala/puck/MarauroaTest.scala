@@ -50,6 +50,26 @@ object Tests {
   }
 }
 
+object ResourceTest {
+
+  implicit val logger : PuckLogger = new PuckFileLogger(_ => true,
+    new File("/tmp/pucklog"))
+
+  val root = "/home/lorilan/projects/constraintsSolver/puckJrrt/src/test/resources/"
+
+  val path = "nanoPersonne"
+
+  val project = Tests.project(root + path, "nano", "decouple.wld")
+
+  def main(args : Array[String]) : Unit = {
+//        SearchSolution(project, ".",
+//          StrategyChoice.DepthFirst, ControlChoice.Heuristic, NoVirtualNodes)
+
+    ignore(applyRecords(project,
+      Seq(root + path +"/heuristic-depthFirst-solution-0_6_0.pck" )))
+
+  }
+}
 object DistribTest {
   implicit val logger : PuckLogger = new PuckFileLogger(_ => true,
     new File("/tmp/pucklog"))
@@ -64,7 +84,7 @@ object DistribTest {
 //    SearchSolution(project, ".",
 //      StrategyChoice.DepthFirst, ControlChoice.Heuristic, NoVirtualNodes)
 
-    ignore(applyRecords(Tests.project(root + path, "screen", "decouple.wld"),
+    ignore(applyRecords(project,
       Seq(root + path +"/heuristic-depthFirst-solution-0_44_3_0_0_36_3_0_0_25_3_0_0_2_3_0.pck" )))
   }
 }

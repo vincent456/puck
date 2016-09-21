@@ -35,6 +35,8 @@ import puck.javaGraph._
 import puck.util.PuckLogger
 import ShowDG._
 
+import scala.collection.JavaConversions._
+
 object RedirectTarget {
 
   def changeType
@@ -156,15 +158,25 @@ object RedirectTarget {
             throw new JavaAGError(k + " as user of Field, redirection unhandled !")
         }
 
-      case (oldk: MethodDeclHolder, newk: MethodDeclHolder) =>
+      case (MethodDeclHolder(oldDecl), MethodDeclHolder(newDecl)) =>
         sourceInAST match {
           case defHolder : DefHolder =>
             //TODO find why !(block eq mdecl.getBlock)
             //logger.writeln(block eq mdecl.getBlock)
 
             val CallableDeclHolder(cdecl) = id2declMap(reenactor.container_!(e.source))
-            cdecl.replaceMethodCall(oldk.decl, newk.decl)
+            cdecl.replaceMethodCall(oldDecl, newDecl)
 
+          case ClassDeclHolder(decl) =>
+            decl.getBodyDeclList foreach {
+              case bd @ ( _ : StaticInitializer | _ : InstanceInitializer) =>
+                bd.replaceMethodCall(oldDecl, newDecl)
+              case _ => ()
+            }
+
+          case k : HasNode =>
+            throw new JavaAGError(s"${k.node.dgFullName()} as user of Method" +
+              s" ${oldDecl.dgFullName()}, redirection unhandled !")
           case k =>
             throw new JavaAGError(k + " as user of Method, redirection unhandled !")
         }
@@ -212,17 +224,6 @@ object RedirectTarget {
     logger.writeln(s"redirecting ${(reenactor, e).shows} " +
       s"target to ${(reenactor, newTargetId).shows}")
     if(e.target != newTargetId) {
-
-      if(e.kind == Isa) {
-        (id2declMap(e.source),
-          id2declMap(e.target), id2declMap(newTargetId)) match {
-          case (ClassDeclHolder(srcDecl),
-               InterfaceDeclHolder(odlDecl), InterfaceDeclHolder(newDecl)) =>
-            srcDecl.replaceImplements(odlDecl.createLockedAccess(), newDecl.createLockedAccess())
-          case _ =>
-            throw new JavaAGError("redirecting TARGET of %s to %s : application failure !".format(e, reenactor.getNode(newTargetId)))
-        }
-      } else {
         val target = reenactor.getNode(e.target)
         val newTarget = reenactor.getNode(newTargetId)
 
@@ -234,7 +235,5 @@ object RedirectTarget {
 
       }
 
-
-    }
   }
 }

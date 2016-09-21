@@ -26,10 +26,10 @@ class TransfoRulesSpec
                                       expectedResult: ScenarioFactory) : Unit = {
 
     def print(g : DependencyGraph, name : String) : Unit = {
-//      import puck.graph.ShowDG._
-//      println(s"graph $name")
+      import puck.graph.ShowDG._
+      println(s"graph $name")
 //      (g, g.nodesIndex).println
-//      (g, g.edges).println
+      (g, g.edges).println
     }
 
 
@@ -52,8 +52,8 @@ class TransfoRulesSpec
       try assert(Mapping.equals(g, other), clue)
       catch {
         case t : Throwable =>
-          println(clue)
-          t.printStackTrace()
+//          println(clue)
+//          t.printStackTrace()
           assert(false, s"$clue : ${t.getMessage}")
       }
     }

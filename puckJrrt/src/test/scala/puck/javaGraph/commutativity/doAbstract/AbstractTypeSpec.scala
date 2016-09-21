@@ -189,8 +189,8 @@ class AbstractTypeSpec extends TransfoRulesSpec {
           |
           |    public void cannotBeInInterface(A a){ this.m(a.f); }
           |}""",
-        bs => {
-          import bs.{graph, idOfFullName}
+        s => {
+          import s.{graph, idOfFullName}
 
           val (AccessAbstraction(itc, _), g0) =
             Rules.abstracter.createAbstraction(graph, graph getConcreteNode "p.A",
@@ -253,32 +253,63 @@ class AbstractTypeSpec extends TransfoRulesSpec {
 
     info("super type already present")
     scenario("existing supertype - simple case"){
-      val _ = new ScenarioFactory(
+      compareWithExpectedAndGenerated(
         """package p;
           |
-          |interface SuperA{
-          |    public void mInInterface();
+          |interface SuperA {
+          |    void m1();
           |}
           |
           |class A implements SuperA {
-          |    public void mInInterface(){}
-          |    public void mNotInInterface(){}
+          |    public void m1(){}
+          |    public void m2(){}
+          |}""",
+        s => {
+          import s.{graph, idOfFullName}
+
+          val (AccessAbstraction(itc, _), g0) =
+            Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
+              Interface, SupertypeAbstraction).rvalue
+
+          g0.addContains("p", itc)
+        },
+        """package p;
+          |
+          |interface SuperA {
+          |    void m1();
+          |}
+          |interface A_SupertypeAbstraction extends SuperA {
+          |    void m1();
+          |    void m2();
+          |}
+          |class A implements A_SupertypeAbstraction {
+          |    public void m1(){}
+          |    public void m2(){}
           |}"""
-      ) {
-        val packageP = fullName2id("p")
-        val classA = fullName2id("p.A")
+      )
+    }
 
-        val (AccessAbstraction(itc, _), g0) =
-          Rules.abstracter.createAbstraction(graph, graph.getConcreteNode(classA),
-            Interface, SupertypeAbstraction).rvalue
-        val g = g0.addContains(packageP, itc)
+    scenario("method throw exception"){
 
-        val recompiledEx = applyChangeAndMakeExample(g, outDir)
+      compareWithExpectedAndGenerated(
+        """package p;
+          |import java.io.IOException;
+          |
+          |class C { public void m() throws IOException { }  }""",
+        bs => {
+          import bs.{graph, idOfFullName}
 
-        //        QuickFrame(g, "g")
-        //        QuickFrame(recompiledEx.graph, "recompiled")
-        assert( Mapping.equals(g, recompiledEx.graph) )
-      }
+          val (AccessAbstraction(itc, _), g0) =
+            Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.C"),
+              Interface, SupertypeAbstraction).rvalue
+          g0.addContains("p", itc)
+        },
+        """package p;
+          |import java.io.IOException;
+          |
+          |interface C_SupertypeAbstraction { void m() throws IOException; }
+          |class C implements C_SupertypeAbstraction { public void m() throws IOException {  }  }""")
+
     }
   }
 

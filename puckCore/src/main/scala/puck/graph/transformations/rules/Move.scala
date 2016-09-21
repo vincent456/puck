@@ -101,7 +101,7 @@ object Move {
           usesBetweenMovedDefsViaThis)
 
       val g2 =
-        if(g1.typeMemberUsesOf(newSelfUse).nonEmpty && !(newSelfUse existsIn g1))
+        if(g1.typeMemberUsesOf(newSelfUse).nonEmpty && !(g1 exists newSelfUse))
           newSelfUse createIn g1
         else g1
 
@@ -152,7 +152,7 @@ object Move {
               val newSuperUse = Uses(newContainer, tuse.used)
 
               val g01 =
-                if (!(newSuperUse existsIn g00))
+                if (!(g00 exists newSuperUse))
                   g00.addEdge(newSuperUse)
                 else g00
 
@@ -174,7 +174,7 @@ object Move {
         def apply() : LoggedTG = {
 
           val g2 =
-            if (usesOfMovedViaThis.nonEmpty && !(newTypeUse existsIn g1))
+            if (usesOfMovedViaThis.nonEmpty && !(g1 exists newTypeUse))
               g1.addUses(oldContainer, newContainer)
             else g1
 
@@ -383,7 +383,7 @@ object Move {
                 createVarStrategy(g0, tu, newContainer, tmUses)
             }
           }catch {
-            case e : PuckError => LoggedError(e)
+            case e : PuckError => LoggedError(e.getMessage)
             case e : NoSuchElementException => LoggedError(e.getMessage)
           }
         }

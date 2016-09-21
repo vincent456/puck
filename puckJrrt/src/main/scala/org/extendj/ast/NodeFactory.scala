@@ -81,6 +81,7 @@ trait NodeFactory {
 
   def buildNode(methodDecl: MethodDecl) : NodeId =
     checkSubstituteAndBuild(methodDecl)
+
   def buildNode(constructorDecl: ConstructorDecl) : NodeId =
     checkSubstituteAndBuild(constructorDecl)
 

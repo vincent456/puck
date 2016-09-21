@@ -47,7 +47,7 @@ package object graph {
   def error() : Nothing = puck.error()
 
   type LoggedG = Logged[DependencyGraph]
-  type LoggedTry[+A] = LoggedEither[Error, A]
+  type LoggedTry[+A] = LoggedEither[String, A]
   type LoggedTG = LoggedTry[DependencyGraph]
 
   type NodePredicate = (DependencyGraph, DGNode) => Boolean
@@ -59,6 +59,8 @@ package object graph {
   type Parameterization = Map[NodeId, Type]
   type ParameterizationId = Int
 
+  type SetValueMap[K,V] = CollectionValueMap[K,Set,V]
+  type ListValueMap[K,V] = CollectionValueMap[K,List,V]
 
   implicit class NodeIdPOps( val p : NodeIdP) extends AnyVal{
 
@@ -110,20 +112,17 @@ package object graph {
 
   implicit class LoggedOps[A](val lg: Logged[A]) extends AnyVal {
     def toLoggedEither[E] : LoggedEither[E, A] = LoggedEither(lg.written, lg.value.right[E])
-    def toLoggedTry : LoggedTry[A] = toLoggedEither[Error]
+    def toLoggedTry : LoggedTry[A] = toLoggedEither[String]
   }
 
   object LoggedError{
     def apply[A]( e: String): LoggedTry[A] =
-      LoggedEither(e, -\/(new PuckError(e)))
+      LoggedEither(e, -\/(e))
 
-    def apply[A]( e: Error): LoggedTry[A] =
-      LoggedEither("", -\/(e))
-
-    def apply[A](msg : String, e: PuckError): LoggedTry[A] =
+    def apply[A](msg : String, e: String): LoggedTry[A] =
       LoggedEither(msg, -\/(e))
 
-    def unapply[A](arg: LoggedTry[A]): Option[(String, Error)] =
+    def unapply[A](arg: LoggedTry[A]): Option[(String, String)] =
       arg.value match {
         case -\/(err) => Some((arg.log, err))
         case _ => None

@@ -81,14 +81,14 @@ class InterfaceMergeMatcher(val node : ConcreteNode) extends MergeMatcher {
     g.content(interface2).size >= g.content(interface1).size &&
       (g.content(interface1) forall hasMatchingMethod) &&
       (g.content(interface2).size == g.content(interface1).size ||
-        { g.directSubTypes(interface1).forall(g.isa_*(_, interface2))
+        { g.directSubTypesId(interface1).forall(g.isa_*(_, interface2))
           //TODO structual type check
           /*val missingMethodsInThis =
             otherItc.content.filterNot{hasMatchingMethodIn(this)}*/
         }) ||
       //the two interfaces introduced an uneeded level of indirection
       g.isa(interface1, interface2) &&
-        g.directSubTypes(interface1).forall(g.isa_*(_,interface2))
+        g.directSubTypesId(interface1).forall(g.isa_*(_,interface2))
 
   }
 }

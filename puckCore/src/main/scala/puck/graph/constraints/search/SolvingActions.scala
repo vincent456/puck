@@ -114,34 +114,42 @@ class SolvingActions
     } yield cK).toSet.toStream
 
 
-
   def hostIntro
   (g0 : DependencyGraph,
    toBeContained: ConcreteNode
   ) : Stream[LoggedTry[(NodeId, DependencyGraph)]] =
-    containerKind(g0, toBeContained.kind) map {
-      hostKind =>
-        newCterNumGen += 1
-        val hostName = s"${toBeContained.name}_container$newCterNumGen"
-        rules.intro(g0, hostName, hostKind)
-    } flatMap {
-      case (toBeCtedHost, g1) =>
-        findHost(toBeCtedHost)(g1.setMutability(toBeCtedHost.id, Mutable)) map (ltg => s"Searching host for $toBeCtedHost\n" <++: ltg map {
-          case (hid, g2) => (toBeCtedHost.id, g2.addContains(hid, toBeCtedHost.id))
-        })
-    }
+      containerKind(g0, toBeContained.kind) map {
+        hostKind =>
+          newCterNumGen += 1
+          val hostName = s"${toBeContained.name}_container$newCterNumGen"
+          rules.intro(g0, hostName, hostKind)
+      } flatMap {
+        case (toBeCtedHost, g1) =>
+          findHost(g1.setMutability(toBeCtedHost.id, Mutable), toBeCtedHost) map {
+            _ flatMap {
+              case (hid, g2) =>
+                if(g2.contains_*(toBeContained.id, hid))
+                  LoggedError("Error : introducing contains loop")
+                else LoggedSuccess((toBeCtedHost.id, g2.addContains(hid, toBeCtedHost.id)))
+            }
+          }
+      }
+
+
 
 
   def findHost
-  (toBeContained: ConcreteNode): DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] =
-    chooseNode(
+  (graph : DependencyGraph,
+   toBeContained: ConcreteNode) : Stream[LoggedTry[(NodeId, DependencyGraph)]] =
+    chooseNode(graph,
       (dg, cn) => dg.canContain(cn, toBeContained) &&
       !constraints.isForbidden(dg, cn.id, toBeContained.id) && {
       val dg1 : DependencyGraph =
         dg.container(toBeContained.id) map (dg.removeContains(_, toBeContained.id)) getOrElse dg
       val dg2 = dg1.addContains(cn.id, toBeContained.id)
       dg2.subTree(toBeContained.id).forall(!constraints.isWronglyUsed(dg2, _)) //needed when moving violation host
-    }, vnPolicicy.virtualizableKindFor(toBeContained.kind))
+    }, vnPolicicy.virtualizableKindFor(toBeContained.kind)) map (
+      s"Searching host for $toBeContained\n" <++: _ )
 
 
   def logNodeChosen(n : DGNode, graph : DependencyGraph) : LoggedTry[(NodeId, DependencyGraph)] =
@@ -149,10 +157,9 @@ class SolvingActions
 
 
   def chooseNode
-  ( predicate : NodePredicate, virtualizableKind : Set[KindType] = Set(NameSpace))
-  : DependencyGraph => Stream[LoggedTry[(NodeId, DependencyGraph)]] = {
-    graph =>
-
+  ( graph : DependencyGraph,
+    predicate : NodePredicate, virtualizableKind : Set[KindType] = Set(NameSpace)
+  ) : Stream[LoggedTry[(NodeId, DependencyGraph)]] = {
       val choices = graph.mutableNodes.toList map graph.getNode filter (predicate(graph,_))
       //val choices = graph.concreteNodes.filter(predicate(graph,_)).toList
 
@@ -197,13 +204,14 @@ class SolvingActions
   ( g0 : DependencyGraph,
     wronglyContained : ConcreteNode
   ) : Stream[LoggedTry[(NodeId, DependencyGraph)]] = {
-      val lg = s"trying to move $wronglyContained, searching host\n"
+    val lg = s"trying to move $wronglyContained, searching host\n"
     hostIntro(g0, wronglyContained) ++
-      findHost(wronglyContained)(g0) flatMap {
-        case LoggedEither(log, -\/(err)) => Stream(LoggedEither(lg + log, -\/(err)))
-        case LoggedEither(log, \/-((newCter, g))) =>
-          val oldCter = g.container_!(wronglyContained.id)
-          doMove(g, wronglyContained, oldCter, newCter) map (ltg => (lg + log) <++: ltg.map((newCter, _)))
+      findHost(g0, wronglyContained) flatMap {
+        case LoggedError(log, err) =>
+          Stream(LoggedError(lg + log, err))
+        case LoggedSuccess(log, (newCter, g)) =>
+            val oldCter = g.container_!(wronglyContained.id)
+            doMove(g, wronglyContained, oldCter, newCter) map (ltg => (lg + log) <++: ltg.map((newCter, _)))
       }
   }
 
@@ -275,9 +283,9 @@ class SolvingActions
           if((g3 container abs.nodes.head).nonEmpty) Stream(LoggedEither(log, \/-((abs, g3))))
           else
           (hostIntro(g3, g3.getConcreteNode(abs.nodes.head)) ++
-            chooseNode(newAbsFindHostPredicate(impl,
+            chooseNode(g3, newAbsFindHostPredicate(impl,
               abs.policy, absNodeKind),
-              vnPolicicy.virtualizableKindFor(abs.kind(g3)))(g3)).map {
+              vnPolicicy.virtualizableKindFor(abs.kind(g3)))).map {
             lt =>  s"Searching host for $abs\n" <++: lt.flatMap {
               case (host, g4) => introAbsContainsAndIsa(abs, impl, g4, host)
 
@@ -300,7 +308,7 @@ class SolvingActions
           val graph5 = g2.addAbstraction(c, AccessAbstraction(host, abs.policy))
           val graph6 =
             if (abs.policy == SupertypeAbstraction)
-              graph5.addIsa(c, host).addUses(c, host)
+              graph5.addIsa(NamedType(c), NamedType(host)).addUses(c, host)
             else graph5
           LoggedSuccess((abs, graph6))
         }

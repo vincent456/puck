@@ -1,0 +1,76 @@
+original
+############################################
+############################################
+******	LCOM	******
+(screen.WelcomeCapital,6)
+(screen.BridgeDemo,2)
+(screen.InfoStar,6)
+(screen.Screen,2)
+(screen.WelcomeStar,6)
+(screen.InfoCapital,6)
+average = 4.666666666666667
+******	LCOM hs	******
+(screen.WelcomeCapital,NaN)
+(screen.BridgeDemo,NaN)
+(screen.InfoStar,NaN)
+(screen.Screen,NaN)
+(screen.WelcomeStar,NaN)
+(screen.InfoCapital,NaN)
+average = NaN
+******	LCOM4	******
+(screen.WelcomeCapital,2)
+(screen.BridgeDemo,2)
+(screen.InfoStar,2)
+(screen.Screen,2)
+(screen.WelcomeStar,2)
+(screen.InfoCapital,2)
+average = 2.0
+******	CBO	******
+(screen.WelcomeCapital,6)
+(screen.BridgeDemo,7)
+(screen.InfoStar,6)
+(screen.Screen,6)
+(screen.WelcomeStar,6)
+(screen.InfoCapital,6)
+average = 6.166666666666667
+
+transformed
+############################################
+############################################
+******	LCOM	******
+(screen.WelcomeScreen,2)
+(screen.BridgeDemo,30)
+(screen.Screen,8)
+(screen.Printer,0)
+(screen.StarPrinter,2)
+(screen.InfoScreen,2)
+(screen.CapitalPrinter,2)
+average = 6.571428571428571
+******	LCOM hs	******
+(screen.WelcomeScreen,NaN)
+(screen.BridgeDemo,NaN)
+(screen.Screen,1.3333333333333333)
+(screen.Printer,NaN)
+(screen.StarPrinter,NaN)
+(screen.InfoScreen,NaN)
+(screen.CapitalPrinter,NaN)
+average = NaN
+******	LCOM4	******
+(screen.WelcomeScreen,2)
+(screen.BridgeDemo,2)
+(screen.Screen,3)
+(screen.Printer,1)
+(screen.StarPrinter,2)
+(screen.InfoScreen,2)
+(screen.CapitalPrinter,2)
+average = 2.0
+******	CBO	******
+(screen.WelcomeScreen,4)
+(screen.BridgeDemo,6)
+(screen.Screen,8)
+(screen.Printer,5)
+(screen.StarPrinter,5)
+(screen.InfoScreen,4)
+(screen.CapitalPrinter,5)
+average = 5.285714285714286
+

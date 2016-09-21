@@ -56,7 +56,7 @@ class RemoveEdgeAction
   def apply() : Unit =
     printErrOrPushGraph(controller, "Remove Node Action failure"){
       edge.kind match {
-        case Isa => LoggedSuccess(edge.deleteIn(graph.mileStone))
+        case IsaEdge => LoggedSuccess(edge.deleteIn(graph.mileStone))
         case _ => LoggedError(s"cannot remove remove ${edge.kind} edge")
       }
     }
