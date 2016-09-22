@@ -157,10 +157,10 @@ object Mapping {
       case VNode(n) =>
         val newId = map(n.id)
         VNode(n.copy(id = newId))
-
       case Edge(e) =>
         Edge(e.kind(source = map(e.source), target = map(e.target)))
-
+      case Isa(sub, sup) =>
+        Isa(mappingOnType(sub), mappingOnType(sup))
       case tgt : RedirectionOp =>
         val e = tgt.edge
         val newEdge = e.kind(source = map(e.source), target = map(e.target))
@@ -169,14 +169,10 @@ object Mapping {
         tgt.copy(edge = newEdge, extremity = newExty)
       case AbstractionOp(impl, AccessAbstraction(abs, p)) =>
         AbstractionOp(map(impl), AccessAbstraction(map(abs), p))
-
       case AbstractionOp(impl, ReadWriteAbstraction(sRabs, sWabs)) =>
         AbstractionOp(map(impl), ReadWriteAbstraction(sRabs map map, sWabs map map))
-
-
       case AType(typed, t) =>
         AType(map(typed), mappingOnType(t))
-
       case cnn @ RenameOp(nid, _, _) =>
         cnn.copy(nid = map(nid))
       case ChangeTypeBindingOp((e1,e2), binding) =>
