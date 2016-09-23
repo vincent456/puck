@@ -63,8 +63,11 @@ class ForbiddenDependencyTargetMenu
    cts =>
 
      val wu = cts.wrongUsers(g,target.id)
-     contents += new ChooseAbsAndRedirectMultiAction(controller.Bus, g, wu,
-       target.id, graph.abstractions(target.id).toSeq)
+
+     val abstractions = graph.abstractions(target.id)
+     if (abstractions.nonEmpty)
+       contents += new ChooseAbsAndRedirectMultiAction(controller.Bus, g, wu,
+         target.id, abstractions.toSeq)
 
     contents += new TargetedAutoSolveAction(Bus,
       cts, controller.mutabilitySet,

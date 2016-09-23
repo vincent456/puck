@@ -362,33 +362,38 @@ object Redirection {
 
     g.typeUsesOf(oldUse).foldLoggedEither(g){
       (g0, tu) =>
-        val (g1, newUsed, sNewUsed2) =
-          (srid, swid, g0.usesAccessKind((tu, oldUse))) match {
-            case (Some(rid), _, Some(Read)) =>
-              (g0.changeTarget(Uses(oldUse), rid)
-                .changeTypeMemberUseOfTypeUse(oldUse, (oldUse.user, rid), tu)
-                .rmAccessKind((tu, oldUse)), rid, None)
 
-            case (_, Some(wid), Some(Write)) =>
-              (g0.changeTarget(Uses(oldUse), wid)
-                .changeTypeMemberUseOfTypeUse(oldUse, (oldUse.user, wid), tu)
-                .rmAccessKind((tu, oldUse)), wid, None)
+        ((srid, swid, g0.usesAccessKind((tu, oldUse))) match {
+          case (Some(rid), _, Some(Read)) =>
+            LoggedSuccess((g0.changeTarget(Uses(oldUse), rid)
+              .changeTypeMemberUseOfTypeUse(oldUse, (oldUse.user, rid), tu)
+              .rmAccessKind((tu, oldUse)), rid))
 
-            case  (Some(rid), Some(wid), Some(RW)) =>
-              (g0.splitUsesWithTargets(tu, oldUse, rid, wid), rid, Some(wid))
+          case (_, Some(wid), Some(Write)) =>
+            LoggedSuccess((g0.changeTarget(Uses(oldUse), wid)
+              .changeTypeMemberUseOfTypeUse(oldUse, (oldUse.user, wid), tu)
+              .rmAccessKind((tu, oldUse)), wid))
 
-            case _ => puck.error("")
-          }
+          case (Some(rid), Some(wid), Some(RW)) =>
+            //create write uses through abstraction, read uses will be created below
+            updateTypedNodesInTypeConstraint(
+              g0.splitUsesWithTargets(tu, oldUse, rid, wid),
+              oldUse, wid, removeOld = false).map (g => (g, rid) )
 
-        val ltg0 =
-          sNewUsed2 map (newUsed2 => updateTypedNodesInTypeConstraint(g1, oldUse, newUsed2, removeOld = false)
-            ) getOrElse LoggedSuccess(g1)
-        ltg0 flatMap(updateTypedNodesInTypeConstraint(_, oldUse, newUsed))
+          //these cases may happen with a previously existing abstraction that has been registered upon graph creation
+          case (_, _, Some(RW)) =>
+            LoggedError("Write uses, needs read and write abstraction, found : " + (g, newUsed).shows)
+          case (_, None, Some(Write)) =>
+            LoggedError("Write uses, needs a write abstraction, found : " + (g, newUsed).shows)
+          case (None, _, Some(Read)) =>
+            LoggedError("Read uses, needs a read abstraction, found : " + (g, newUsed).shows)
 
-      //        val ltg0 = updateTypedNodesInTypeConstraint(g1, oldUse, newUsed)
-      //                sNewUsed2 map (newUsed2 =>
-      //                  ltg0.flatMap(updateTypedNodesInTypeConstraint(_, oldUse, newUsed2, removeOld = false))) getOrElse ltg0
-      //        //ltg0
+
+          case pb => puck.error("redirect field uses toward getter and or setter case not handled : " +pb)
+        }) flatMap {
+          case (g1, newUsedNode) =>
+            updateTypedNodesInTypeConstraint(g1, oldUse, newUsedNode)
+        }
     }
   }
 
