@@ -55,36 +55,19 @@ trait GraphBuilderVisitor {
   def buildInheritence(tdecl: TypeDecl) : Type = {
     val sub = getType(tdecl)
 
-    def aux(supAccess: Access) : Unit = addIsa(sub, getType(supAccess))
-//    def aux(supAccess: Access) : Unit =
-//    supAccess match {
-//      case ad: AbstractDot =>
-//        aux(ad.getRight)
-//
-//      case ta: TypeAccess =>
-//        addIsa(sub, NamedType(this buildNode supAccess))
-//
-//      case pta: ParTypeAccess =>
-//
-//        val params = pta.getTypeArguments map {
-//          a => buildTypeHierarchy(getTypeDecl(a))
-//        }
-//
-//        addIsa(sub, ParameterizedType( this buildNode pta.getTypeAccess, params.toList))
-//
-//
-//      case _ => puck.error(s"$supAccess : expected TypeAccess or ParTypeAccess")
-//    }
+    //either super classes are in code and they will be visited and the type hierarchy completed
+    //either they are in libraries and type hierarchy will be completed upon "attach orphan nodes" phase
+    def add(supAccess: Access) : Unit = addIsa(sub, getType(supAccess))
 
     tdecl match {
       case cd : ClassDecl =>
         // addExtends
         if(cd.hasSuperclass && cd.superclass().fullName() != "java.lang.Object")
-          aux(cd.getSuperClass)
+          add(cd.getSuperClass)
 
-        cd.getImplementss foreach aux
+        cd.getImplementss foreach add
       case id : InterfaceDecl =>
-        id.getSuperInterfaces foreach aux
+        id.getSuperInterfaces foreach add
 
       case _ => ()
     }

@@ -26,18 +26,27 @@
 
 package puck
 
+import java.awt.Dimension
 import java.io.File
+import javax.swing.UIManager
 
 import puck.util.{PuckFileLogger, PuckLogger}
 import LoadAndApply._
 import puck.config.Config
 import puck.config.Config.{Keys, Root, SingleFile}
 import puck.graph.constraints.search.{NoVirtualNodes, WithVirtualNodes}
-import puck.jastadd.JavaProject
+import puck.gui.PuckMainPanel
+import puck.jastadd.{ExtendJGraphUtils, JavaProject}
+
+import scala.swing.MainFrame
 
 object Tests {
-  def project(root : String, srcFolder : String, constraint : String) : Project = {
-    val cfg = (Config.empty
+
+  def project(root : String, srcFolder : String, constraint : String) : Project =
+    JavaProject.withConfig(conf(root, srcFolder, constraint))
+
+  def conf(root : String, srcFolder : String, constraint : String) : Config.Config =
+    (Config.empty
       put (Keys.workspace, SingleFile(root))
       put (Keys.srcs, List(Root(srcFolder, ".java", Seq())))
       put (Keys.classpath, List(Root("libs", ".jar", Seq())))
@@ -46,8 +55,7 @@ object Tests {
       put (Keys.decouple, SingleFile(constraint))
       put (Keys.log, SingleFile("puck-log.txt"))
       )
-    JavaProject.withConfig(cfg)
-  }
+
 }
 
 object ResourceTest {
@@ -62,8 +70,8 @@ object ResourceTest {
   val project = Tests.project(root + path, "nano", "decouple.wld")
 
   def main(args : Array[String]) : Unit = {
-//        SearchSolution(project, ".",
-//          StrategyChoice.DepthFirst, ControlChoice.Heuristic, NoVirtualNodes)
+    //        SearchSolution(project, ".",
+    //          StrategyChoice.DepthFirst, ControlChoice.Heuristic, NoVirtualNodes)
 
     ignore(applyRecords(project,
       Seq(root + path +"/heuristic-depthFirst-solution-0_6_0.pck" )))
@@ -81,8 +89,8 @@ object DistribTest {
   val project = Tests.project(root + path, "screen", "decouple.wld")
 
   def main(args : Array[String]) : Unit = {
-//    SearchSolution(project, ".",
-//      StrategyChoice.DepthFirst, ControlChoice.Heuristic, NoVirtualNodes)
+    //    SearchSolution(project, ".",
+    //      StrategyChoice.DepthFirst, ControlChoice.Heuristic, NoVirtualNodes)
 
     ignore(applyRecords(project,
       Seq(root + path +"/heuristic-depthFirst-solution-0_44_3_0_0_36_3_0_0_25_3_0_0_2_3_0.pck" )))
@@ -93,7 +101,7 @@ object MarauroaTest {
   implicit val logger : PuckLogger = new PuckFileLogger(_ => true,
     new File("/tmp/pucklog"))
 
-    val root = "/home/lorilan/projects/arianne-marauroa"
+  val root = "/home/lorilan/projects/arianne-marauroa"
 
   def project(srcFolder : String, constraint : String = "decouple.wld") : Project =
     Tests.project(root, srcFolder, constraint)
@@ -119,11 +127,35 @@ object MarauroaLoadRecordAndApplyStepByStep {
 
 object LoadAndSearchSolutions {
 
-  val path = "constraint-gen/1rule/10/"
+  val path = "constraint-gen/1rule/01/"
 
   def main(args : Array[String]) : Unit =
     SearchSolution(project("src.generated", path + "decouple.wld"), path,
       StrategyChoice.DepthFirst, ControlChoice.Heuristic, NoVirtualNodes)
+}
+
+object LaunchUI {
+
+
+
+  //val root = "/home/lorilan/projects/constraintsSolver/puckJrrt/src/test/resources/bridge/hannemann_simplified"
+  // val srcPath = "screen"
+  //val constraintPath = "decouple.wld"
+
+  val constraintPath = "constraint-gen/1rule/01/decouple.wld"
+  import MarauroaTest.root
+  val srcPath = "src.generated"
+  def main(args : Array[String]) : Unit ={
+    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
+    val top = new MainFrame {
+      title = "Puck"
+      contents = new PuckMainPanel(ExtendJGraphUtils, JavaIcons) {
+        control.loadConf(Tests.conf(root, srcPath, constraintPath))
+      }
+    }
+    if (top.size == new Dimension(0,0)) top.pack()
+    top.visible = true
+  }
 }
 
 //object GenConstraintAndSearchSolutions {

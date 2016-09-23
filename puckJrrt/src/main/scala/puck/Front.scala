@@ -52,32 +52,19 @@ object Front extends SwingApplication {
 
   def startup(args: Array[String]) : Unit = {
 
-    //    val f0 =
-    //      if(args.isEmpty || ! new File(args(0)).exists()) new File(workspace)
-    //      else new File(args(0))
-    //
-    //    val f = f0.getAbsoluteFile
-    //
-    //    val sConf =
-    //      if (f.isDirectory && Config.defaultConfFile(f).exists())
-    //        Some(Config.defaultConfFile(f))
-    //      else if (f.isFile) Some(f)
-    //      else None
-    //
-    //    sConf foreach pmp.control.loadConf
+    val f0 =
+      if(args.isEmpty || ! new File(args(0)).exists()) new File(workspace)
+      else new File(args(0))
 
+    val f = f0.getAbsoluteFile
 
-    //val root = new File("/home/lorilan/projects/arianne-marauroa/")
-    //val constaintPath = "constraint-gen/1rule/08/decouple.wld"
-    //val srcPath = "src.original"
-    val root = new File("/home/lorilan/projects/constraintsSolver/puckJrrt/src/test/resources/bridge/hannemann_simplified")
-    val constaintPath = "decouple.wld"
-    val srcPath = "screen"
+    val sConf =
+      if (f.isDirectory && Config.defaultConfFile(f).exists())
+        Some(Config.defaultConfFile(f))
+      else if (f.isFile) Some(f)
+      else None
 
-    pmp.control loadConf Config.defautlConfig(root)
-      .put(Keys.srcs,  List(Root(srcPath, ".java", Seq())))
-      .put(Keys.classpath, List(Root("libs", ".jar", Seq())))
-      .put(Keys.decouple, SingleFile(constaintPath))
+    sConf foreach pmp.control.loadConf
 
 
     UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)

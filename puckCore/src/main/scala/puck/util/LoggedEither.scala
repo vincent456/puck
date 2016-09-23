@@ -45,7 +45,6 @@ case class LoggedEither[+L, +R](log : String, value : L\/R){
       case \/-(b) =>  this.log <++: g(b)
     }
 
-
 }
 
 /*sealed abstract class LoggedEither[L, R]{

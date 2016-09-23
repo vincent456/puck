@@ -72,7 +72,7 @@ class AbstractionPanel
     }, Position.North)
 
   this.add(new SplitPane(Orientation.Vertical) {
-     leftComponent = treePane
+    leftComponent = treePane
 
     if(abstractionChoices.isEmpty){
       dividerSize = 0
@@ -108,91 +108,88 @@ class AbstractionAction
  treeIcons: NodeKindIcons)
   extends Action(s"$abskind ($policy)"){
 
-     import graphUtils.{Rules => TR}
+  import graphUtils.{Rules => TR}
 
-     def getHost(absKind : NodeKind) : NodeId = {
-       def aux(id : NodeId) : Option[NodeId] =
-         graph.container(id).flatMap{ cterId =>
-           val n = graph.getConcreteNode(cterId)
-           if(n.kind.canContain(absKind))
-             Some(cterId)
-           else
-             aux(cterId)
-         }
+  def getHost(absKind : NodeKind) : NodeId = {
+    def aux(id : NodeId) : Option[NodeId] =
+      graph.container(id).flatMap{ cterId =>
+        val n = graph.getConcreteNode(cterId)
+        if(n.kind.canContain(absKind))
+          Some(cterId)
+        else
+          aux(cterId)
+      }
 
-       aux(node.id) match {
-         case Some(id) => id
-         case None =>
-           graph.nodes.find(_.kind.canContain(absKind)) match {
-             case Some(n) => n.id
-             case None =>
-               error(s"no available container for an abstraction of kind $absKind")
-           }
-       }
-     }
+    aux(node.id) match {
+      case Some(id) => id
+      case None =>
+        graph.nodes.find(_.kind.canContain(absKind)) match {
+          case Some(n) => n.id
+          case None =>
+            error(s"no available container for an abstraction of kind $absKind")
+        }
+    }
+  }
 
-     def apply() : Unit =
-       printErrOrPushGraph(bus,"Abstraction action failure") {
+  def apply() : Unit =
+    printErrOrPushGraph(bus,"Abstraction action failure") {
 
-         val contentToAbstract : List[ConcreteNode] =
-           node.kind.kindType match {
-           case TypeDecl => graph.content(node.id).toList.
-                map(graph.getConcreteNode).filter(n =>
-                 n.kind.kindType == InstanceValue &&
-                 n.kind.abstractionNodeKinds(policy).nonEmpty).
-                filter(TR.abstracter.canBeAbstracted(graph, _, node, policy))
-           case _ => List()
-         }
+      val contentToAbstract : List[ConcreteNode] =
+        node.kind.kindType match {
+          case TypeDecl => graph.content(node.id).toList.
+            map(graph.getConcreteNode).filter(n =>
+            n.kind.kindType == InstanceValue &&
+              n.kind.abstractionNodeKinds(policy).nonEmpty).
+            filter(TR.abstracter.canBeAbstracted(graph, _, node, policy))
+          case _ => List()
+        }
 
-         val absDefaultName = TR.abstracter.abstractionName(graph, node, abskind, policy, None)
+      val absDefaultName = TR.abstracter.abstractionName(graph, node, abskind, policy, None)
 
-         val title = "Abstraction options"
-         val potentialHosts = graph.nodes.filter(_.kind.canContain(abskind)).map(_.id).toSet
-         val panel = new AbstractionPanel(graph, absDefaultName, potentialHosts, contentToAbstract)
+      val title = "Abstraction options"
+      val potentialHosts = graph.nodes.filter(_.kind.canContain(abskind)).map(_.id).toSet
+      val panel = new AbstractionPanel(graph, absDefaultName, potentialHosts, contentToAbstract)
 
-         def setAbsName(arg : (Abstraction, DependencyGraph)) : (List[ConcreteNode], DependencyGraph) = {
-           val (abs, g) = arg
-           abs match {
-             case AccessAbstraction(nid, _) if absDefaultName != panel.absName  =>
-               val g1 = g.setName(nid, panel.absName)
-               (List(g1.getConcreteNode(nid)), g1)
-             case _ =>
-              (abs.nodes map g.getConcreteNode, g)
-           }
-         }
+      def addContainsAndSetAbsName(arg : (Abstraction, DependencyGraph)) : DependencyGraph = {
+        val (abs, g) = arg
+        val container = panel.selectedHost.head
+        abs match {
+          case AccessAbstraction(nid, _) if absDefaultName != panel.absName  =>
+            //add contains need to be done before set name for concretization purpose
+            g.addContains(container, nid)
+              .setName(nid, panel.absName)
+          case _ =>
+            abs.nodes.foldLeft(g){ _.addContains(container, _) }
+        }
+      }
 
-         def confirm() : LoggedTry[DependencyGraph] =
-         Dialog.showConfirmation(null, panel.peer, title,
-           Options.OkCancel, Message.Plain) match {
-           case Result.Cancel
-           | Result.Closed =>
-             LoggedError("Operation Canceled")
-           case Result.Ok =>
-             if(panel.selectedHost.isEmpty) {
-               Dialog.showMessage(null, "Select a host", messageType = Message.Error)
-               confirm()
-             }
-             else if(panel.selectedHost.size > 1 ){
-               Dialog.showMessage(null, "Select only one host", messageType = Message.Error)
-               confirm()
-             }
-             else {
-              val ltag : LoggedTry[(Abstraction, DependencyGraph)] =
-                node.kind.kindType match {
-                 case TypeDecl => TR.abstracter.
-                   abstractTypeDeclAndReplaceByAbstractionWherePossible(graph.mileStone,
-                     node, abskind, policy, panel.selectedNodes)
-                 case _ =>
-                   TR.abstracter.createAbstraction(graph.mileStone, node, abskind, policy)
-               }
-               ltag map setAbsName map { case (absNodes, g) =>
-                  absNodes.foldLeft(g){
-                   (g, n) => g.addContains(panel.selectedHost.head, n.id)
-                 }
-               }
-             }
-         }
+      def confirm() : LoggedTry[DependencyGraph] =
+        Dialog.showConfirmation(null, panel.peer, title,
+          Options.OkCancel, Message.Plain) match {
+          case Result.Cancel
+               | Result.Closed =>
+            LoggedError("Operation Canceled")
+          case Result.Ok =>
+            if(panel.selectedHost.isEmpty) {
+              Dialog.showMessage(null, "Select a host", messageType = Message.Error)
+              confirm()
+            }
+            else if(panel.selectedHost.size > 1 ){
+              Dialog.showMessage(null, "Select only one host", messageType = Message.Error)
+              confirm()
+            }
+            else
+              for {
+                absAndG <- node.kind.kindType match {
+                  case TypeDecl => TR.abstracter.
+                    abstractTypeDeclAndReplaceByAbstractionWherePossible(graph.mileStone,
+                      node, abskind, policy, panel.selectedNodes)
+                  case _ =>
+                    TR.abstracter.createAbstraction(graph.mileStone, node, abskind, policy)
+                }
+              } yield addContainsAndSetAbsName(absAndG)
+        }
 
-         confirm()
-     }
+      confirm()
+    }
 }

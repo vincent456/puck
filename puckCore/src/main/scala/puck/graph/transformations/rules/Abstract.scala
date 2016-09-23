@@ -155,9 +155,6 @@ abstract class Abstract {
     g.directSuperTypesId(subTypeId).foldLoggedEither(g){
       (g0, oldSuperTypedId) =>
 
-        println(s"removeIsa(${(g0,subTypeId).shows}, ${(g0,subTypeId).shows})")
-        println(s"addIsa(${(g0,newSuperTypeId).shows}, ${(g0,oldSuperTypedId).shows})")
-
         val g1 = g0.removeIsa(NamedType(subTypeId), NamedType(oldSuperTypedId))
           .addIsa(NamedType(newSuperTypeId), NamedType(oldSuperTypedId))
 
