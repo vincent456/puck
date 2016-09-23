@@ -221,8 +221,13 @@ object CreateEdge {
 
     (id2declMap(use.user), id2declMap(use.used)) match {
       case (dh: DefHolder, fd @ FieldDeclHolder(_, _)) =>
-        val abss = reenactor.abstractions(use.used)
         val userCter = reenactor container_! use.user
+        val abss = reenactor.abstractions(use.used).filter {
+          case ReadWriteAbstraction(rabs, wabs) =>
+            rabs.contains(userCter) || wabs.contains(userCter)
+          case _ => false
+        }
+
         if(abss.size == 1) abss.head match {
           case ReadWriteAbstraction(Some(`userCter`), _) =>
             val MethodDeclHolder(mdecl) = id2declMap(userCter)

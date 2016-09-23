@@ -55,52 +55,103 @@ abstract class Abstract {
       case Some(RW) => sys.error("should not happen")
   }
 
+    def completeReadWriteAbstraction
+    (g : DependencyGraph,
+     impl : ConcreteNode,
+     abs : ReadWriteAbstraction) : DependencyGraph =
+      abs  match {
+        case ReadWriteAbstraction(Some(r), None) =>
+
+          val absKind = g.getNode(r).kind
+          val (g1, wNodeId) = createWriteAbs(g, impl, absKind)
+          val setDef = g1.definitionOf_!(wNodeId)
+          val c = g.container_!(r)
+
+
+          g1.addContains(c, wNodeId)
+            .removeAbstraction(impl.id, ReadWriteAbstraction(Some(r), None))
+            .addAbstraction(impl.id, ReadWriteAbstraction(Some(r), Some(wNodeId)))
+            .addBinding((c,c), (setDef, impl.id))
+            .addAccessKind(((c,c), (setDef, impl.id)), RW)
+
+        case ReadWriteAbstraction(None, Some(w)) =>
+
+          val absKind = g.getNode(w).kind
+          val (g1, rNodeId) = createReadAbs(g, impl, absKind)
+          val getDef = g1.definitionOf_!(rNodeId)
+          val c = g.container_!(w)
+
+          g1.addContains(c, rNodeId)
+              .removeAbstraction(impl.id, ReadWriteAbstraction(None, Some(w)))
+            .addAbstraction(impl.id, ReadWriteAbstraction(Some(rNodeId), Some(w)))
+            .addBinding((c,c), (getDef, impl.id))
+            .addAccessKind(((c,c), (getDef, impl.id)), Read)
+
+        case ReadWriteAbstraction(Some(_), Some(_)) => g
+        case _ => puck.error()
+
+      }
+
+  private def createReadAbs
+  (g : DependencyGraph,
+   impl: ConcreteNode,
+   absKind : NodeKind) : (DependencyGraph, NodeId) = {
+    import g.nodeKindKnowledge.intro
+    val rName = abstractionName(g, impl, absKind, DelegationAbstraction, Some(Read))
+    val rType = absType(g, impl.id, Some(Read))
+    val (rNode, rDef, g1) = intro.nodeWithDef(g, rName, absKind, rType)
+
+    (g1.addAbstraction(impl.id, ReadWriteAbstraction(Some(rNode.id), None))
+      .addTypeConstraint(Sub(TypeOf(impl.id), TypeOf(rNode.id)))
+      .addUses(rDef.id, impl.id), rNode.id)
+  }
+
+  private def createWriteAbs
+  (g : DependencyGraph,
+   impl: ConcreteNode,
+   absKind : NodeKind) : (DependencyGraph, NodeId) = {
+    import g.nodeKindKnowledge.intro
+    val wName = abstractionName(g, impl, absKind, DelegationAbstraction, Some(Write))
+    val wType = absType(g, impl.id, Some(Write))
+    val (wNode, wDef, g1) = intro.nodeWithDef(g, wName, absKind, wType)
+
+    val paramKind = g.nodeKindKnowledge.kindOfKindType(Parameter).head
+    val (pNode, g2) = g1.addConcreteNode(impl.name, paramKind)
+    val g4 = g.styp(impl.id) map (g2.addType(pNode.id, _)) getOrElse g2
+    (g4.addAbstraction(impl.id, ReadWriteAbstraction(None, Some(wNode.id)))
+      .addEdge(ContainsParam(wNode.id, pNode.id))
+      .addTypeConstraint(Sub(TypeOf(impl.id), TypeOf(wNode.id)))
+      .addTypeConstraint(Sub(TypeOf(pNode.id), TypeOf(impl.id)))
+      .addUses(wDef.id, impl.id), wNode.id)
+
+  }
+
   def createAbsNodeAndUse
-  ( g : DependencyGraph,
-    impl: ConcreteNode,
-    abskind : NodeKind,
-    policy : AbstractionPolicy
-    ) : (Abstraction, DependencyGraph) = {
+  (g : DependencyGraph,
+   impl: ConcreteNode,
+   absKind : NodeKind,
+   policy : AbstractionPolicy
+  ) : (Abstraction, DependencyGraph) = {
     import g.nodeKindKnowledge.intro
 
     policy match {
       case DelegationAbstraction if impl.kind.isWritable =>
 
-        val rName = abstractionName(g, impl, abskind, DelegationAbstraction, Some(Read))
-        val rType = absType(g, impl.id, Some(Read))
-        val wName = abstractionName(g, impl, abskind, DelegationAbstraction, Some(Write))
-        val wType = absType(g, impl.id, Some(Write))
+        val (g1, rNodeId) = createReadAbs(g, impl, absKind)
+        val (g2, wNodeId) = createWriteAbs(g1, impl, absKind)
 
-        val paramKind = g.nodeKindKnowledge.kindOfKindType(Parameter).head
+        val abs = ReadWriteAbstraction(Some(rNodeId), Some(wNodeId))
 
-
-        val (rNode, rDef, g1) = intro.nodeWithDef(g, rName, abskind, rType)
-        val (wNode, wDef, g2) = intro.nodeWithDef(g1, wName, abskind, wType)
-
-        val (pNode, g3) = g2.addConcreteNode(impl.name, paramKind)
-        val g4 = g.styp(impl.id) map (g3.addType(pNode.id, _)) getOrElse g3
-
-        val abs = ReadWriteAbstraction(Some(rNode.id), Some(wNode.id))
-
-        val implTypeId = Type.mainId(g typ impl.id)
-        val g5 =
-          g4.addEdge(ContainsParam(wNode.id, pNode.id))
-            .addAbstraction(impl.id, abs)
-            .addTypeConstraint(Sub(TypeOf(impl.id), TypeOf(rNode.id)))
-            .addTypeConstraint(Sub(TypeOf(impl.id), TypeOf(wNode.id)))
-            .addTypeConstraint(Sub(TypeOf(pNode.id), TypeOf(impl.id)))
-            .addUses(rDef.id, impl.id)
-            .addUses(wDef.id, impl.id)
-
-
-
-        (abs, g5)
+        (abs,
+          g2.removeAbstraction(impl.id, ReadWriteAbstraction(Some(rNodeId), None))
+            .removeAbstraction(impl.id, ReadWriteAbstraction(None, Some(wNodeId)))
+            .addAbstraction(impl.id, abs))
 
       case DelegationAbstraction =>
-        val name = abstractionName(g, impl, abskind, policy, None)
+        val name = abstractionName(g, impl, absKind, policy, None)
 
         val (absNode, ndef, g1) =
-          intro.nodeWithDef(g, name, abskind, g typ impl.id)
+          intro.nodeWithDef(g, name, absKind, g typ impl.id)
         val g2 =
           if(impl.kind.kindType == TypeConstructor) {
             val typ = g container_! impl.id
@@ -125,8 +176,8 @@ abstract class Abstract {
 
       case SupertypeAbstraction =>
 
-        val absName = abstractionName(g, impl, abskind, policy, None)
-        val (absNode, g1) = g.addConcreteNode(absName, abskind)
+        val absName = abstractionName(g, impl, absKind, policy, None)
+        val (absNode, g1) = g.addConcreteNode(absName, absKind)
         val g2 = (g1 styp impl.id) map (g1.addType(absNode.id, _)) getOrElse g1
 
 

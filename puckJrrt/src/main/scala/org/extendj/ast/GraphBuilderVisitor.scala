@@ -56,7 +56,7 @@ trait GraphBuilderVisitor {
     val sub = getType(tdecl)
 
     //either super classes are in code and they will be visited and the type hierarchy completed
-    //either they are in libraries and type hierarchy will be completed upon "attach orphan nodes" phase
+    //either they are in libraries and type hierarchy will be completed upon "attach orphan nodes" pahe
     def add(supAccess: Access) : Unit = addIsa(sub, getType(supAccess))
 
     tdecl match {

@@ -28,7 +28,6 @@ package puck.graph
 package transformations
 package rules
 
-import puck.PuckError
 import puck.graph.DependencyGraph.AbstractionMap
 import puck.graph.constraints.ConstraintsMaps
 import puck.util.LoggedEither._

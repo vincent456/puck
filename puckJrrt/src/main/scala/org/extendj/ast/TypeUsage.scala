@@ -69,6 +69,8 @@ trait TypeUsage {
   this : JastaddGraphBuilder =>
 
 
+
+
   def buildTypeUse(tmAccess : TypeMemberAccess,
                    typeMemberUse: NodeIdP,
                    typeMemberUseAccessKind : Option[UsesAccessKind]) : Unit = {

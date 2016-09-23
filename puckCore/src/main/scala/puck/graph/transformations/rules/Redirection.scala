@@ -303,7 +303,8 @@ object Redirection {
             else id)(tc)
 
 
-          if(!TypeConstraint.comply(g01, tc2)) puck.error("new type constraint does not comply")
+          if(!TypeConstraint.comply(g01, tc2))
+            puck.error(s"${(g01, tc).shows} replaced by ${(g01, tc2).shows} : new type constraint does not comply")
 
           val g02 = g01.addTypeConstraint(tc2)
 

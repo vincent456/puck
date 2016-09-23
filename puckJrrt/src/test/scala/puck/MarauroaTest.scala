@@ -142,7 +142,7 @@ object LaunchUI {
   // val srcPath = "screen"
   //val constraintPath = "decouple.wld"
 
-  val constraintPath = "constraint-gen/1rule/07/decouple.wld"
+  val constraintPath = "constraint-gen/1rule/09/decouple.wld"
   import MarauroaTest.root
   val srcPath = "src.generated"
   def main(args : Array[String]) : Unit ={
