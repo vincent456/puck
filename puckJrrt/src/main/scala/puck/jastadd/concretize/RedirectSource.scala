@@ -382,14 +382,6 @@ object RedirectSource {
     }
   }
 
-  def redirectIsaSource(source : NodeId, target : NodeId, newSource : NodeId)
-                       ( implicit program : Program,
-                         logger : PuckLogger,
-                         id2declMap: NodeId => ASTNodeLink ) : Unit = {
-    removeIsa(id2declMap(source), id2declMap(target))
-    CreateEdge.createIsa(id2declMap(newSource), id2declMap(target))
-  }
-
   def changeUser(source : NodeId, target : NodeId, newSource : NodeId)
                 ( implicit program : Program,
                   logger : PuckLogger,

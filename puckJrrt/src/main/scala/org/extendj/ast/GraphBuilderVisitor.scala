@@ -100,7 +100,9 @@ trait GraphBuilderVisitor {
       throw new DGBuildingError(s"ClassDecl or InterfaceDecl exptected, $td found");
   }
 
+
   def buildDG(containerId : NodeId, constructorDecl: ConstructorDecl) : Unit = {
+    resetLocal()
     val declId = buildNode(constructorDecl)
     addEdge(Contains(containerId, declId))
     buildDGType(declId, constructorDecl)
@@ -116,6 +118,7 @@ trait GraphBuilderVisitor {
   }
 
   def buildDG(containerId : NodeId, methodDecl : MethodDecl) : Unit ={
+    resetLocal()
     val declId = buildNode(methodDecl)
     addEdge(Contains(containerId, declId))
     buildDGType(declId, methodDecl)
@@ -349,6 +352,7 @@ trait GraphBuilderVisitor {
 
   def buildDG(containerId : NodeId, pd : ParameterDeclaration) : Unit = {
     val pid = buildNode(pd)
+    addEdge(Contains(containerId, pid))
     val t = getType(pd.getTypeAccess)
     setType(pid, t)
   }

@@ -46,8 +46,8 @@ object JavaDotHelper extends DotHelper{
   override def fillColor(n: DGNode): String = {
     def aux(cn : ConcreteNode) : String = cn.kind match {
         case Package => "#FF9933" //Orange
-        case _ : TypeKind.InterfaceLike => "#FFFF99" // Light yellow
-        case _ : TypeKind.ClassLike | Constructor => "#FFFF33" //Yellow
+        case Interface => "#FFFF99" // Light yellow
+        case Class | Constructor => "#FFFF33" //Yellow
         case Method | Field | EnumConstant => "#FFFFFF" //White
         //case Literal => "#CCFFCC" //Very Light green
         case Primitive => "#FFFFFF"

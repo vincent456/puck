@@ -95,7 +95,7 @@ class BindingRelationshipSpec extends AcceptanceSpec {
 
 
 
-      val typeUse : NodeIdP = ("p.A.ma().Definition.b", "p.B")
+      val typeUse : NodeIdP = ("p.A.ma().Definition.0", "p.B")
       val typeMemberUse : NodeIdP = ("p.A.ma().Definition", "p.B.mb()")
 
       graph.typeMemberUsesOf(typeUse) should contain (typeMemberUse)

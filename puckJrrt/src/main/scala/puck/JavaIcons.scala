@@ -57,8 +57,8 @@ object JavaIcons extends NodeKindIcons {
   val unknownIcon : ImageIcon = new ImageIcon(getClass.getResource(s"$path/question-mark.gif"))
 
   def iconOfKind(k: NodeKind): ImageIcon = k match {
-    case _ : TypeKind.InterfaceLike => interfaceIcon
-    case _ : TypeKind.ClassLike => classIcon
+    case Interface => interfaceIcon
+    case Class => classIcon
 //    case InnerClass => innerClassIcon
 //    case InnerInterface => innerInterfaceIcon
     case AbstractMethod => abstractMethodIcon

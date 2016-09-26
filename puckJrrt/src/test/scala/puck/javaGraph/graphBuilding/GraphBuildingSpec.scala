@@ -173,7 +173,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
 
     scenario("method of generic type declaration"){
-      val _ = new ScenarioFactory(
+      val s = new ScenarioFactory(
         """package p;
           |
           |import java.util.List;
@@ -192,9 +192,9 @@ class GraphBuildingSpec extends AcceptanceSpec {
           |class GenColl<T> {
           |    public void put(T t){}
           |}"""
-      ) {
-
-         numNodesWithFullname(graph, "p.GenColl") shouldBe 1
+      )
+      import s._
+        numNodesWithFullname(graph, "p.GenColl") shouldBe 1
         numNodesWithFullname(graph, "p.GenColl.put") shouldBe 1
 
         assert( ! graph.uses("p.GenColl.put(T).t", "p.A") )
@@ -203,14 +203,15 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
         assert( ! graph.uses("p.User.m().Definition", "p.A") )
 
-        assert( graph.typ("p.User.m().Definition.colla") == ParameterizedType("p.GenColl", List(NamedType("p.A"))) )
+        printFullNames()
+        assert( graph.typ("p.User.m().Definition.0") == ParameterizedType("p.GenColl", List(NamedType("p.A"))) )
 
 
 
         assert( graph.uses("p.User.m().Definition", "p.GenColl.put(T)") )
 
 
-      }
+
     }
 
 

@@ -65,6 +65,7 @@ aspect NamedElement {
     public interface DGNamedElement {
 		String dgFullName();
 		String name();
+        ASTNode getParent();
 
         DGNamedElement getParentNamedNode();
 		void registerNode(JastaddGraphBuilder builder, int thisId);

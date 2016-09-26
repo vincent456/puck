@@ -30,7 +30,7 @@ package concretize
 
 import org.extendj.ast._
 import puck.graph._
-import puck.javaGraph.nodeKind._
+import puck.javaGraph.nodeKind.{TypeVariable => PuckTV, _}
 import org.extendj.ast
 
 object CreateNode {
@@ -39,13 +39,17 @@ object CreateNode {
   ( prog : ast.Program,
     resultGraph : DependencyGraph,
     id2decl : Map[NodeId, ASTNodeLink],
-    node : ConcreteNode
-    ) : Map[NodeId, ASTNodeLink] = {
+    node : ConcreteNode ): Map[NodeId, ASTNodeLink] = {
+
+    def isGeneric = resultGraph.parametersOf(node.id).nonEmpty
+
     val dh : ASTNodeLink =
       node.kind match {
         case Package => PackageDeclHolder
-        case Interface => createInterface(prog, resultGraph, node)
-        case Class => createClass(prog, resultGraph, node)
+        case Interface =>
+          createInterface(prog, resultGraph, node, isGeneric)
+        case Class =>
+          createClass(prog, resultGraph, node, isGeneric)
         case AbstractMethod =>
           MethodDeclHolder(createMethod(prog, resultGraph, id2decl, node, isAbstract = true))
         case StaticMethod =>
@@ -56,7 +60,10 @@ object CreateNode {
           createConstructor(prog, resultGraph, id2decl, node)
         case Field => createField(prog, resultGraph, id2decl, node)
         case Param => createParameter(prog, resultGraph, id2decl, node)
-
+        case PuckTV =>
+          val tv = new TypeVariable()
+          tv setID node.name
+          TypeVariableHolder(tv)
         case _ => throw new DeclarationCreationError(s"cannot create decl for kind ${node.kind}")
 
       }
@@ -73,7 +80,7 @@ object CreateNode {
     id2decl(container) match {
       case MethodDeclHolder(mdecl) =>
         val block = new ast.Block()
-        mdecl.setBlock(block)
+        mdecl setBlock block
         id2decl + (definition -> BlockHolder(block))
       case _ => id2decl
     }
@@ -82,19 +89,22 @@ object CreateNode {
   def createNewInstanceExpr
   ( field : ast.FieldDeclarator,
     cdecl : ast.ConstructorDecl
-    ) : Unit = {
+  ) : Unit = {
     val expr = new ast.ClassInstanceExpr()
-    expr.setAccess(cdecl.hostType().createLockedAccess())
+    expr setAccess cdecl.hostType().createLockedAccess()
     field.setInit(expr)
   }
 
 
   def createInterface
-  ( prog : ast.Program,
-    graph : DependencyGraph,
-    node : ConcreteNode
-    ) : InterfaceDeclHolder = {
-    val itc = InterfaceDeclHolder(new ast.InterfaceDecl())
+  (prog : ast.Program,
+   graph : DependencyGraph,
+   node : ConcreteNode,
+   generic : Boolean
+  ) : InterfaceDeclHolder = {
+    val itc =
+      if(generic) InterfaceDeclHolder(new ast.GenericInterfaceDecl())
+      else InterfaceDeclHolder(new ast.InterfaceDecl())
     createTypeDecl(itc.decl, prog, graph, node)
     itc
   }
@@ -102,9 +112,12 @@ object CreateNode {
   def createClass
   ( prog : ast.Program,
     graph : DependencyGraph,
-    node : ConcreteNode
-    ) : ClassDeclHolder = {
-    val cls = ClassDeclHolder(new ast.ClassDecl())
+    node : ConcreteNode,
+    generic : Boolean
+  ) : ClassDeclHolder = {
+    val cls =
+      if(generic) ClassDeclHolder(new ast.GenericClassDecl())
+      else ClassDeclHolder(new ast.ClassDecl())
     createTypeDecl(cls.decl, prog, graph, node)
     cls
   }
@@ -128,7 +141,7 @@ object CreateNode {
     node : ConcreteNode,
     isAbstract : Boolean = false,
     isStatic : Boolean = false
-    ) : ast.MethodDecl = {
+  ) : ast.MethodDecl = {
     val decl = new ast.MethodDecl()
     decl.setID(node.name)
     //decl.setTypeAccess(createTypeAccess(node.id, graph, id2Decl))
@@ -148,7 +161,7 @@ object CreateNode {
     graph : DependencyGraph,
     id2Decl : Map[NodeId, ASTNodeLink],
     node : ConcreteNode
-    ) : ConstructorDeclHolder = ConstructorDeclHolder {
+  ) : ConstructorDeclHolder = ConstructorDeclHolder {
     ast.ConstructorDecl.createConstructor(
       new ast.Modifiers("public"), node.name)
   }
@@ -158,7 +171,7 @@ object CreateNode {
     graph : DependencyGraph,
     id2decl : Map[NodeId, ASTNodeLink],
     node : ConcreteNode
-    ) : FieldDeclHolder = {
+  ) : FieldDeclHolder = {
     val declarator = new ast.FieldDeclarator()
     declarator.init$Children()
     declarator.setID(node.name)
@@ -176,7 +189,7 @@ object CreateNode {
     graph : DependencyGraph,
     id2decl : Map[NodeId, ASTNodeLink],
     node : ConcreteNode
-    ) : ParameterDeclHolder = ParameterDeclHolder {
+  ) : ParameterDeclHolder = ParameterDeclHolder {
     //val ta = createTypeAccess(node.id, graph, id2Decl)
     new ast.ParameterDeclaration(new ast.Modifiers, null, node.name)
   }

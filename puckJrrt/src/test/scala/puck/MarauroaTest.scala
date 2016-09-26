@@ -32,11 +32,17 @@ import javax.swing.UIManager
 
 import puck.util.{PuckFileLogger, PuckLogger}
 import LoadAndApply._
+import org.extendj.ast.JavaJastAddDG2AST
 import puck.config.Config
 import puck.config.Config.{Keys, Root, SingleFile}
+import puck.graph.{AccessAbstraction, LoggedSuccess, NodeId, NodeIdP, SupertypeAbstraction}
 import puck.graph.constraints.search.{NoVirtualNodes, WithVirtualNodes}
+import puck.graph.transformations.rules.Redirection
 import puck.gui.PuckMainPanel
+import puck.jastadd.ExtendJGraphUtils._
 import puck.jastadd.{ExtendJGraphUtils, JavaProject}
+import puck.javaGraph.ScenarioFactory
+import puck.javaGraph.nodeKind.Interface
 
 import scala.swing.MainFrame
 
@@ -134,15 +140,92 @@ object LoadAndSearchSolutions {
       StrategyChoice.DepthFirst, ControlChoice.Heuristic, NoVirtualNodes)
 }
 
+
+object Test08 {
+
+
+  import MarauroaTest.logger
+
+  def main(args : Array[String]) : Unit = {
+    val p = project("src.generated", "constraint-gen/1rule/08/decouple.wld")
+    val s = new ScenarioFactory(p.loadGraph().asInstanceOf[JavaJastAddDG2AST])
+    val Some(cts) = p.parseConstraints(s.dg2ast)
+    import s._
+
+    //fullName2id.toList map (_.swap) sortBy(_._1) foreach (e =>  MarauroaTest.logger.writeln(e))
+
+    val  used : NodeId = "marauroa.common.Logger"
+    val LoggedSuccess(_, (abs, g0)) =
+      Rules.abstracter.createAbstraction(graph, s.graph.getConcreteNode(used),
+        Interface, SupertypeAbstraction)
+    val AccessAbstraction(itc, _) = abs
+    val g1 = g0.addContains("marauroa.common", itc)
+
+    val orphanNodes = g1.nodesId filter (g1.container(_).isEmpty) filter(_ != 0)
+    if(orphanNodes.nonEmpty)
+      println("orphan nodes were introduced !")
+
+    import puck.util.LoggedEither.FoldLogSyntax
+    import scalaz.std.list.listInstance
+
+
+    cts.wrongUsers(g1, used).foldLoggedEither(g1.mileStone){
+      case (g0, user) =>
+        if(g0.uses(user, used))
+          Redirection.redirectUsesAndPropagate(g0.mileStone, (user, used), abs)
+        else LoggedSuccess(g0)
+    }
+
+  }
+
+}
+
+object Test03 {
+
+
+  import MarauroaTest.logger
+
+  def main(args : Array[String]) : Unit = {
+    val p = project("src.generated", "constraint-gen/1rule/03/decouple.wld")
+    val s = new ScenarioFactory(p.loadGraph().asInstanceOf[JavaJastAddDG2AST])
+    val Some(cts) = p.parseConstraints(s.dg2ast)
+    import s._
+
+    //fullName2id.toList map (_.swap) sortBy(_._1) foreach (e =>  MarauroaTest.logger.writeln(e))
+
+    val  used : NodeId = "marauroa.server.game.db.DAORegister"
+    val LoggedSuccess(_, (abs, g0)) =
+      Rules.abstracter.createAbstraction(graph, s.graph.getConcreteNode(used),
+        Interface, SupertypeAbstraction)
+    val AccessAbstraction(itc, _) = abs
+    val g1 = g0.addContains("marauroa.common", itc)
+
+    val orphanNodes = g1.nodesId filter (g1.container(_).isEmpty) filter(_ != 0)
+    if(orphanNodes.nonEmpty)
+      println("orphan nodes were introduced !")
+
+    import puck.util.LoggedEither.FoldLogSyntax
+    import scalaz.std.list.listInstance
+
+
+    cts.wrongUsers(g1, used).foldLoggedEither(g1.mileStone){
+      case (g0, user) =>
+        if(g0.uses(user, used))
+          Redirection.redirectUsesAndPropagate(g0.mileStone, (user, used), abs)
+        else LoggedSuccess(g0)
+    }
+
+  }
+
+}
+
 object LaunchUI {
-
-
 
   //val root = "/home/lorilan/projects/constraintsSolver/puckJrrt/src/test/resources/bridge/hannemann_simplified"
   // val srcPath = "screen"
   //val constraintPath = "decouple.wld"
 
-  val constraintPath = "constraint-gen/1rule/09/decouple.wld"
+  val constraintPath = "constraint-gen/1rule/03/decouple.wld"
   import MarauroaTest.root
   val srcPath = "src.generated"
   def main(args : Array[String]) : Unit ={

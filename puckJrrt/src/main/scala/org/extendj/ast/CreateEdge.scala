@@ -87,6 +87,8 @@ object CreateEdge {
                 mdecl.prependParameter(pdecl)
               case (ConstructorDeclHolder(cdecl), ParameterDeclHolder(pdecl)) =>
                 cdecl.prependParameter(pdecl)
+              case (TypedKindDeclHolder(tdecl), TypeVariableHolder(tvDecl)) =>
+                tdecl.asInstanceOf[GenericTypeDecl].addTypeParameter(tvDecl)
               case _ =>
                 error(s"ContainsParam(${reenactor.getNode(e.container)}, ${reenactor.getNode(e.content)}) " +
                   "should be between a decl and a param")
@@ -175,18 +177,28 @@ object CreateEdge {
     }
 
   def createIsa
-  (sub : ASTNodeLink, sup : ASTNodeLink)
-  ( implicit logger : PuckLogger) : Unit = (sub, sup) match {
-    case (ClassDeclHolder(sDecl), InterfaceDeclHolder(idecl)) =>
-      sDecl.addImplements(idecl.createLockedAccess())
-      sDecl.flushAttrCache()
-    case (InterfaceDeclHolder(ideclSub), InterfaceDeclHolder(ideclSup)) =>
-      ideclSub.addSuperInterface(ideclSup.createLockedAccess())
-      ideclSub.flushAttrCache()
-    case (ClassDeclHolder(subDecl), ClassDeclHolder(superDecl)) =>
-      subDecl.setSuperClass(superDecl.createLockedAccess())
-      subDecl.flushAttrCache()
-    case e => logger.writeln(s"isa($e) not created")
+  (id2declMap: Map[NodeId, ASTNodeLink],
+   subType : Type, supType : Type)
+  ( implicit logger : PuckLogger,
+    program : Program) : Unit = {
+
+    val sub = id2declMap(Type mainId subType)
+    val sup = id2declMap(Type mainId supType)
+
+    val supAccess= createTypeAccess(id2declMap, supType)
+
+    (sub, sup) match {
+      case (ClassDeclHolder(subDecl), InterfaceDeclHolder(supDecl)) =>
+        subDecl.addImplements(supAccess)
+        subDecl.flushAttrCache()
+      case (InterfaceDeclHolder(subDecl), InterfaceDeclHolder(supDecl)) =>
+        subDecl.addSuperInterface(supAccess)
+        subDecl.flushAttrCache()
+      case (ClassDeclHolder(subDecl), ClassDeclHolder(supDecl)) =>
+        subDecl.setSuperClass(supAccess)
+        subDecl.flushAttrCache()
+      case e => logger.writeln(s"isa($e) not created")
+    }
   }
 
   def createUsesOfConstructor

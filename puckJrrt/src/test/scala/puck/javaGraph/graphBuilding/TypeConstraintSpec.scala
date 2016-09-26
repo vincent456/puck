@@ -145,8 +145,8 @@ class TypeConstraintSpec extends AcceptanceSpec {
 
     graph.styp("p.B.wa").value should be (ParameterizedType("p.Wrapper", List(NamedType("p.A"))))
 
-    graph.typeConstraints("p.B.assignA().Definition.a") should contain (Sub(ParTypeProjection(TypeOf("p.B.wa"),0),
-      TypeOf("p.B.assignA().Definition.a")))
+    graph.typeConstraints("p.B.assignA().Definition.0") should contain (Sub(ParTypeProjection(TypeOf("p.B.wa"),0),
+      TypeOf("p.B.assignA().Definition.0")))
 
   }
 
@@ -284,14 +284,14 @@ class TypeConstraintSpec extends AcceptanceSpec {
         |}"""
       )
       import s._
-    graph.typeConstraints("p.C.m(Map).Definition.value") foreach {
-      tc =>
-        import ShowDG._
-        (graph, tc).println
-    }
+//    graph.typeConstraints("p.C.m(Map).Definition.0") foreach {
+//      tc =>
+//        import ShowDG._
+//        (graph, tc).println
+//    }
 
-    graph.typeConstraints("p.C.m(Map).Definition.value") should contain (
-      BinaryTypeConstraint(Sub, ParTypeProjection(TypeOf("p.C.m(Map).datas"),1), TypeOf("p.C.m(Map).Definition.value"))
+    graph.typeConstraints("p.C.m(Map).Definition.0") should contain (
+      BinaryTypeConstraint(Sub, ParTypeProjection(TypeOf("p.C.m(Map).datas"),1), TypeOf("p.C.m(Map).Definition.0"))
     )
 
   }

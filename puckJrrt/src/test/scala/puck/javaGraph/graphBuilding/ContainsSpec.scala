@@ -272,7 +272,7 @@ class ContainsSpec extends AcceptanceSpec {
           | }
           |}""")
       import s._
-      find(graph, "p.B.m().Definition.a").value.id shouldBe fullName2id("p.B.m().Definition.a")
+      find(graph, "p.B.m().Definition.0").value.id shouldBe fullName2id("p.B.m().Definition.0")
 
     }
 
@@ -296,7 +296,7 @@ class ContainsSpec extends AcceptanceSpec {
           |   }
           |}""")
       import s._
-      find(graph, "p.B.m().Definition.a").value.id shouldBe fullName2id("p.B.m().Definition.a")
+      find(graph, "p.B.m().Definition.1").value.id shouldBe fullName2id("p.B.m().Definition.1")
 
     }
   }

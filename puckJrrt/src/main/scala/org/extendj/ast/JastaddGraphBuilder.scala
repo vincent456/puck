@@ -94,15 +94,15 @@ class JastaddGraphBuilder(val program : Program)
   def addUses(user : NodeId, used : NodeId) =
     addEdge(Uses(user, used))
 
-//  override def addTypeConstraint(constraint : TypeConstraint): Unit = {
-////    val types : SList[NodeId] =
-////      constraint.typeIds ++ (constraint.typedNodes map g.typ map Type.mainId)
-////
-////    val constraintOnObject = types exists (id => g.getNode(id).name == "Object")
-////
-////    if(!constraintOnObject)
-//     super.addTypeConstraint(constraint)
-//  }
+  //  override def addTypeConstraint(constraint : TypeConstraint): Unit = {
+  ////    val types : SList[NodeId] =
+  ////      constraint.typeIds ++ (constraint.typedNodes map g.typ map Type.mainId)
+  ////
+  ////    val constraintOnObject = types exists (id => g.getNode(id).name == "Object")
+  ////
+  ////    if(!constraintOnObject)
+  //     super.addTypeConstraint(constraint)
+  //  }
 
   def findTypeDecl(typ : String): TypeDecl ={
     val td = program findType typ
@@ -119,11 +119,47 @@ class JastaddGraphBuilder(val program : Program)
         synthetic += nid
   }
 
-  def getNode(n : DGNamedElement): NodeId =
-    super.addNode(n.dgFullName(), n.name(), nodeKind(n)){
-      nid => n.registerNode(this, nid)
-      onCreate(n)(nid)
-    }
+  //to handle name clash between local variables scopes
+  //and keep a one level depth in methods we use a tmp localVarMap
+  var localVarMap : Map[DGNamedElement, NodeId] = _
+  var localVarCounter = 0
+  def resetLocal() = {
+    localVarMap = Map()
+    localVarCounter = 0
+  }
+  def localVarName() = {
+    val n = localVarCounter.toString
+    localVarCounter += 1
+    n
+  }
+  def getLocalVarNode(n : DGNamedElement) : NodeId =
+    localVarMap get n match {
+      case Some(id) => id
+      case None =>
+        val name = localVarName()
+        val parentName = n.getParentNamedNode.dgFullName()
+
+        val id = super.addNode (parentName + ".Definition." + name,
+          name, nodeKind(n)) {
+          nid => n.registerNode (this, nid)
+            onCreate (n) (nid)
+        }
+        localVarMap += (n -> id)
+        id
+  }
+
+  def getNode(n : DGNamedElement): NodeId = nodeKind(n) match {
+    case LocalVariable =>
+      getLocalVarNode(n)
+    case Param if n.getParent.isInstanceOf[CatchClause] =>
+      getLocalVarNode(n)
+    case k =>
+      super.addNode (n.dgFullName(), n.name (), k) {
+        nid => n.registerNode (this, nid)
+        onCreate (n) (nid)
+      }
+  }
+
 
   import JastaddGraphBuilder.definitionName
   def getDefNode(n : DGNamedElement): NodeId =
@@ -171,15 +207,14 @@ class JastaddGraphBuilder(val program : Program)
     astParamsToDGType(thisId, decl)
     setType(thisId, NamedType(this buildNode decl.hostType()))
   }
+
   def buildDGType(thisId : NodeId, decl : MethodDecl) : Unit =  {
     astParamsToDGType(thisId, decl)
     setType(thisId, getType(decl.getTypeAccess))
-
   }
 
-  def astParamsToDGType(thisId : NodeId, c : Callable ) : Unit = {
-    addParams(thisId,
-      c.getParameterList.foldRight(SList[NodeId]()) {
+  def astParamsToDGType(thisId : NodeId, c : Callable ) : Unit =
+    addParams(thisId, c.getParameterList.foldRight(SList[NodeId]()) {
         case (pdecl, params) =>
 
           val paramId = this buildNode pdecl
@@ -189,7 +224,7 @@ class JastaddGraphBuilder(val program : Program)
           setType(paramId, getType(pdecl.`type`()))
           paramId :: params
       })
-  }
+
 
 
   def addApiNode(nodeKind : String, typ : String, bodydeclName: String) : Unit = {
@@ -220,7 +255,7 @@ class JastaddGraphBuilder(val program : Program)
   //a is qualifier's qualifier
 
 
-  def addApiTypeNode(td: TypeDecl): NodeIdT = {
+  def addApiTypeNode(td: TypeDecl): NodeId = {
     val tdNode = getNode(td)
 
     val cterId =
@@ -232,7 +267,7 @@ class JastaddGraphBuilder(val program : Program)
     buildInheritence(td)
 
     if(td.isGenericType)
-        buildTypeVariables(tdNode, td.asInstanceOf[GenericTypeDecl])
+      buildTypeVariables(tdNode, td.asInstanceOf[GenericTypeDecl])
 
     if(!td.isInstanceOf[TypeVariable])
       addEdge(Contains(cterId, tdNode))

@@ -102,7 +102,7 @@ class ChooseAbsAndRedirectMultiAction
           } yield (user, used)).foldLoggedEither(graph.mileStone){
             case (g, u) =>
               if(g.uses(u.user, u.used))
-                Redirection.redirectUsesAndPropagate(graph.mileStone, u, abs)
+                Redirection.redirectUsesAndPropagate(g.mileStone, u, abs)
               else LoggedSuccess(g)//redirection might have happened in previous iteration
           }
         }

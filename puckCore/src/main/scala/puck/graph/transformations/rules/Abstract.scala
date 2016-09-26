@@ -41,56 +41,56 @@ abstract class Abstract {
     abskind : NodeKind,
     policy : AbstractionPolicy,
     sUsesAccessKind: Option[UsesAccessKind]
-    ) : String =
+  ) : String =
     impl.name + "_" + policy
 
   def absType
   ( g : DependencyGraph,
     impl : NodeId,
     sUsesAccessKind: Option[UsesAccessKind]
-    ) : Type =
+  ) : Type =
     sUsesAccessKind match {
       case None | Some(Read) => (g styp impl).get
       case Some(Write) => g.nodeKindKnowledge.writeType(g, impl)
       case Some(RW) => sys.error("should not happen")
-  }
+    }
 
-    def completeReadWriteAbstraction
-    (g : DependencyGraph,
-     impl : ConcreteNode,
-     abs : ReadWriteAbstraction) : DependencyGraph =
-      abs  match {
-        case ReadWriteAbstraction(Some(r), None) =>
+  def completeReadWriteAbstraction
+  (g : DependencyGraph,
+   impl : ConcreteNode,
+   abs : ReadWriteAbstraction) : DependencyGraph =
+    abs  match {
+      case ReadWriteAbstraction(Some(r), None) =>
 
-          val absKind = g.getNode(r).kind
-          val (g1, wNodeId) = createWriteAbs(g, impl, absKind)
-          val setDef = g1.definitionOf_!(wNodeId)
-          val c = g.container_!(r)
+        val absKind = g.getNode(r).kind
+        val (g1, wNodeId) = createWriteAbs(g, impl, absKind)
+        val setDef = g1.definitionOf_!(wNodeId)
+        val c = g.container_!(r)
 
 
-          g1.addContains(c, wNodeId)
-            .removeAbstraction(impl.id, ReadWriteAbstraction(Some(r), None))
-            .addAbstraction(impl.id, ReadWriteAbstraction(Some(r), Some(wNodeId)))
-            .addBinding((c,c), (setDef, impl.id))
-            .addAccessKind(((c,c), (setDef, impl.id)), RW)
+        g1.addContains(c, wNodeId)
+          .removeAbstraction(impl.id, ReadWriteAbstraction(Some(r), None))
+          .addAbstraction(impl.id, ReadWriteAbstraction(Some(r), Some(wNodeId)))
+          .addBinding((c,c), (setDef, impl.id))
+          .addAccessKind(((c,c), (setDef, impl.id)), RW)
 
-        case ReadWriteAbstraction(None, Some(w)) =>
+      case ReadWriteAbstraction(None, Some(w)) =>
 
-          val absKind = g.getNode(w).kind
-          val (g1, rNodeId) = createReadAbs(g, impl, absKind)
-          val getDef = g1.definitionOf_!(rNodeId)
-          val c = g.container_!(w)
+        val absKind = g.getNode(w).kind
+        val (g1, rNodeId) = createReadAbs(g, impl, absKind)
+        val getDef = g1.definitionOf_!(rNodeId)
+        val c = g.container_!(w)
 
-          g1.addContains(c, rNodeId)
-              .removeAbstraction(impl.id, ReadWriteAbstraction(None, Some(w)))
-            .addAbstraction(impl.id, ReadWriteAbstraction(Some(rNodeId), Some(w)))
-            .addBinding((c,c), (getDef, impl.id))
-            .addAccessKind(((c,c), (getDef, impl.id)), Read)
+        g1.addContains(c, rNodeId)
+          .removeAbstraction(impl.id, ReadWriteAbstraction(None, Some(w)))
+          .addAbstraction(impl.id, ReadWriteAbstraction(Some(rNodeId), Some(w)))
+          .addBinding((c,c), (getDef, impl.id))
+          .addAccessKind(((c,c), (getDef, impl.id)), Read)
 
-        case ReadWriteAbstraction(Some(_), Some(_)) => g
-        case _ => puck.error()
+      case ReadWriteAbstraction(Some(_), Some(_)) => g
+      case _ => puck.error()
 
-      }
+    }
 
   private def createReadAbs
   (g : DependencyGraph,
@@ -157,7 +157,7 @@ abstract class Abstract {
             val typ = g container_! impl.id
             g1.setRole(absNode.id, Some(Factory(impl.id)))
               //type returned must be a subtype of the factory type
-                .addTypeConstraint(Sub(TypeOf(impl.id), TypeOf(absNode.id)) )
+              .addTypeConstraint(Sub(TypeOf(impl.id), TypeOf(absNode.id)) )
           }
           else g1
 
@@ -190,7 +190,7 @@ abstract class Abstract {
             g02.addEdge(ContainsParam(absNode.id, pabs.id))
 
         }
-         val abs = AccessAbstraction(absNode.id, policy)
+        val abs = AccessAbstraction(absNode.id, policy)
         (abs, g3.addAbstraction(impl.id, abs))
 
     }
@@ -202,7 +202,7 @@ abstract class Abstract {
   ( g : DependencyGraph,
     subTypeId : NodeId,
     newSuperTypeId : NodeId
-    ) : LoggedTG =
+  ) : LoggedTG =
     g.directSuperTypesId(subTypeId).foldLoggedEither(g){
       (g0, oldSuperTypedId) =>
 
@@ -232,20 +232,20 @@ abstract class Abstract {
   ( g : DependencyGraph, meth : ConcreteNode,
     clazz : ConcreteNode, interface : ConcreteNode): LoggedTG = {
 
-      val log = "Abstract.redirectTypeUseInParameters : " +
-        s"redirecting Uses(${meth.name}, ${clazz.name}) target to $interface\n"
+    val log = "Abstract.redirectTypeUseInParameters : " +
+      s"redirecting Uses(${meth.name}, ${clazz.name}) target to $interface\n"
 
-      val ltg = g.parametersOf(meth.id).foldLoggedEither(g){
-        (g0, pid) =>
-          if (g0.uses(pid, clazz.id)) {
-            Redirection.redirectUsesAndPropagate(g0, Uses(pid, clazz.id),
-              AccessAbstraction(interface.id, SupertypeAbstraction))
-          }
-          else
-            LoggedSuccess(g0)
+    val ltg = g.parametersOf(meth.id).foldLoggedEither(g){
+      (g0, pid) =>
+        if (g0.uses(pid, clazz.id)) {
+          Redirection.redirectUsesAndPropagate(g0, Uses(pid, clazz.id),
+            AccessAbstraction(interface.id, SupertypeAbstraction))
+        }
+        else
+          LoggedSuccess(g0)
 
-      }
-      log <++: ltg
+    }
+    log <++: ltg
   }
 
   def redirectTypeUseInParameters
@@ -263,10 +263,10 @@ abstract class Abstract {
 
 
   def canBeAbstracted
-    (g : DependencyGraph,
-     memberDecl : ConcreteNode,
-     clazz : ConcreteNode,
-     policy : AbstractionPolicy) : Boolean = {
+  (g : DependencyGraph,
+   memberDecl : ConcreteNode,
+   clazz : ConcreteNode,
+   policy : AbstractionPolicy) : Boolean = {
     //the originSiblingDecl arg is needed in case of cyclic uses
     def aux(originSiblingDecl : ConcreteNode)(memberDecl: ConcreteNode): Boolean = {
 
@@ -278,7 +278,7 @@ abstract class Abstract {
 
       def usedOnlyViaSelf(user : NodeId, used : NodeId) : Boolean =
         g.typeUsesOf(user, used) forall { case (s, t) => s == t }
-      
+
 
       //TODO check if the right part of the and is valid for Delegation abstraction
       memberDecl.kind.canBeAbstractedWith(policy) && {
@@ -319,13 +319,13 @@ abstract class Abstract {
     abskind : NodeKind,
     policy : AbstractionPolicy,
     members : List[ConcreteNode]
-    ) : LoggedTry[(Abstraction, DependencyGraph)] = {
+  ) : LoggedTry[(Abstraction, DependencyGraph)] = {
 
     def createAbstractTypeMemberWithSuperSelfType
     ( g : DependencyGraph,
       meth : ConcreteNode,
       interface : ConcreteNode
-      ) : LoggedTG ={
+    ) : LoggedTG ={
       createAbstraction(g, meth, meth.kind.abstractionNodeKinds(policy).head, policy) flatMap {
         case (AccessAbstraction(absMethodId, _), g0) =>
 
@@ -349,7 +349,17 @@ abstract class Abstract {
     }
 
 
-    for{
+    def addIsa(g : DependencyGraph) : DependencyGraph = {
+      val ps = g.parametersOf(clazz.id)
+      if (ps.isEmpty) g.addIsa(NamedType(clazz.id), NamedType(interface.id))
+      else {
+        val l = ps.foldRight(List[Type]())(NamedType(_) :: _)
+        g.addIsa(NamedType(clazz.id), ParameterizedType(interface.id, l))
+      }
+    }
+
+
+    for {
 
       g2 <- members.foldLoggedEither(g1)(createAbstractTypeMemberWithSuperSelfType(_, _, interface))
 
@@ -359,20 +369,16 @@ abstract class Abstract {
       }
 
       g4 <- if(policy == SupertypeAbstraction)
-        redirectTypeUseInParameters(
-          g3.addIsa(NamedType(clazz.id), NamedType(interface.id)),
-          members, clazz, interface)
+        redirectTypeUseInParameters(addIsa(g3), members, clazz, interface)
       else LoggedSuccess(g3)
 
 
       log = s"interface $interface created, contains : {" +
-             g4.content(interface.id).map(nid => (g4, nid).shows).mkString("\n")+
-             "}"
+        g4.content(interface.id).map(nid => (g4, nid).shows).mkString("\n")+
+        "}"
       g5 <- LoggedSuccess(log, g4)
 
-    } yield {
-      (interfaceAbs, g5)
-    }
+    } yield (interfaceAbs, g5)
   }
 
   def createAbstraction
@@ -380,7 +386,7 @@ abstract class Abstract {
     impl: ConcreteNode,
     abskind : NodeKind ,
     policy : AbstractionPolicy
-    ) : LoggedTry[(Abstraction, DependencyGraph)] ={
+  ) : LoggedTry[(Abstraction, DependencyGraph)] ={
     val g = graph.comment(s"Abstract.createAbstraction(g, ${(graph,impl).shows}, $abskind, $policy)")
     (abskind.kindType, policy) match {
       case (TypeDecl, SupertypeAbstraction) =>
@@ -407,7 +413,7 @@ abstract class Abstract {
           impl, abskind, DelegationAbstraction, methods)
 
       case _ => LoggedSuccess(createAbsNodeAndUse(g, impl, abskind, policy))
-  }
+    }
   }
 
 

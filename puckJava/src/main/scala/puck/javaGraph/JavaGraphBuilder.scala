@@ -40,10 +40,10 @@ trait JavaGraphBuilder extends GraphBuilder{
 
   nodesByName += (g.root.name -> g.rootId)
 
-  val arrayTypeId = addNode("@primitive.[]","[]", GenericClass)()
+  val arrayTypeId = addNode("@primitive.[]","[]", Primitive)()
   fromLibrary += arrayTypeId
 
-  def addPackageNode(fullName: String, localName:String, fromSource : Boolean) : NodeIdT =
+  def addPackageNode(fullName: String, localName:String, fromSource : Boolean) : NodeId =
     addNode(fullName, localName, Package)(
       pid =>
         if(!fromSource)
@@ -55,14 +55,14 @@ trait JavaGraphBuilder extends GraphBuilder{
 
 
 
-  def addPackage(p : String, fromSource : Boolean): NodeIdT =
+  def addPackage(p : String, fromSource : Boolean): NodeId =
     nodesByName get p match {
       case None =>
         val fp = filterPackageName(p)
         val path = fp split "[.]"
         if (path.isEmpty) addPackageNode(fp, fp, fromSource)
         else {
-          val (_, n):(StringBuilder, NodeIdT) = path.foldLeft((new StringBuilder(), rootId)){
+          val (_, n):(StringBuilder, NodeId) = path.foldLeft((new StringBuilder(), rootId)){
               case ((sb, nodeParent), p) =>
                 sb append p
                 val nId = addPackageNode(sb.toString(), p, fromSource)

@@ -248,7 +248,15 @@ class DependencyGraph private
   def getRole(id: NodeId) : Option[Role] = nodesIndex.getRole(id)
 
   def styp(id : NodeId) : Option[Type] = edges.types get id
-  def typ(id : NodeId) : Type = edges.types(id)
+  def typ(id : NodeId) : Type =
+    try edges.types(id)
+    catch {
+      case e : NoSuchElementException =>
+        import ShowDG._
+        val nse = new NoSuchElementException(e.getMessage + " - " + (this, id).shows(desambiguatedFullName))
+        nse.setStackTrace(e.getStackTrace)
+        throw nse
+    }
 
 
   def structuredType(id : NodeId) : Option[Type] = {

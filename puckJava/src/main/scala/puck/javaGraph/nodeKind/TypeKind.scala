@@ -39,90 +39,65 @@ case object Primitive extends TypeKind {
   //throw new DGError("do not know how to abstract primitive kind")
 }
 
-object TypeKind {
-
-  trait InterfaceLike extends TypeKind with Serializable{
-
-    def canContain(k : NodeKind) : Boolean = {
-      k match {
-        case AbstractMethod
-             | StaticMethod
-             | StaticField  => true
-        case _ => false
-      }
-    }
-    override def canBe(k : NodeKind) : Boolean = {
-      k match {
-        case _ : InterfaceLike | Inner (_: InterfaceLike) => true
-        case _ => false
-      }
-    }
-
-    def abstractionNodeKinds(p : AbstractionPolicy) = p match {
-      case SupertypeAbstraction => Seq(Interface/*, GenericInterface*/)
-      case DelegationAbstraction => Seq()//Class)//also interface ?
-    }
-  }
-
-  trait ClassLike extends TypeKind with Serializable {
-
-    override def canBe(k : NodeKind) : Boolean = {
-      k match {
-        case _ : TypeKind => true
-        case _ => false
-      }
-    }
-
-    def canContain(k : NodeKind) : Boolean = {
-      k match {
-        case Constructor
-             | Field
-             | Method
-             | AbstractMethod
-             | StaticMethod
-             | StaticField => true
-        case _ => false
-      }
-    }
 
 
-    def abstractionNodeKinds(p : AbstractionPolicy) : Seq[NodeKind] = p match {
-      case SupertypeAbstraction => Seq[NodeKind](Interface, Class/*, GenericInterface, GenericClass*/)
-      case DelegationAbstraction => Seq[NodeKind]()//Class)//also interface ?
-    }
+case object Interface extends TypeKind {
 
-  }
-
-  trait GenType extends TypeKind with Serializable
-}
-import TypeKind._
-case object Interface extends InterfaceLike {
   override val toString : String = "Interface"
-  override def equals(a : Any) : Boolean =
-    a.isInstanceOf[InterfaceLike] && !a.isInstanceOf[GenType]
 
+  def canContain(k : NodeKind) : Boolean = {
+    k match {
+      case AbstractMethod
+           | StaticMethod
+           | StaticField  => true
+      case _ => false
+    }
+  }
+  override def canBe(k : NodeKind) : Boolean = {
+    k match {
+      case Interface | Inner (Interface) => true
+      case _ => false
+    }
+  }
+
+  def abstractionNodeKinds(p : AbstractionPolicy) = p match {
+    case SupertypeAbstraction => Seq(Interface/*, GenericInterface*/)
+    case DelegationAbstraction => Seq()//Class)//also interface ?
+  }
 }
 
-case object GenericInterface extends InterfaceLike with GenType {
-  override val toString : String = "GenericInterface"
-  override def equals(a : Any) : Boolean =
-    a.isInstanceOf[InterfaceLike] && a.isInstanceOf[GenType]
 
-}
+case object Class extends TypeKind {
 
-case object Class extends ClassLike {
   override val toString : String = "Class"
-  override def equals(a : Any) : Boolean =
-    a.isInstanceOf[ClassLike] && !a.isInstanceOf[GenType]
+
+  override def canBe(k : NodeKind) : Boolean = {
+    k match {
+      case _ : TypeKind => true
+      case _ => false
+    }
+  }
+
+  def canContain(k : NodeKind) : Boolean = {
+    k match {
+      case Constructor
+           | Field
+           | Method
+           | AbstractMethod
+           | StaticMethod
+           | StaticField => true
+      case _ => false
+    }
+  }
+
+
+  def abstractionNodeKinds(p : AbstractionPolicy) : Seq[NodeKind] = p match {
+    case SupertypeAbstraction => Seq[NodeKind](Interface, Class/*, GenericInterface, GenericClass*/)
+    case DelegationAbstraction => Seq[NodeKind]()//Class)//also interface ?
+  }
+
 }
 
-
-case object GenericClass extends ClassLike with GenType {
-  override def equals(a : Any) : Boolean =
-    a.isInstanceOf[ClassLike] && a.isInstanceOf[GenType]
-
-  override val toString : String = "GenericClass"
-}
 
 case class Inner(t : TypeKind) extends TypeKind {
   def canContain(k: NodeKind): Boolean = t.canContain(k)

@@ -75,9 +75,10 @@ trait NodeFactory {
   }
 
 
-  def buildNode(pd : ParameterDeclaration) : NodeId =
-    if (pd.getParent.isInstanceOf[CatchClause]) buildNode(pd.hostBodyDecl())
-    else getNode(pd)
+
+//  def buildNode(pd : ParameterDeclaration) : NodeId =
+//    if (pd.getParent.isInstanceOf[CatchClause]) buildNode(pd.hostBodyDecl())
+//    else getNode(pd)
 
   def buildNode(methodDecl: MethodDecl) : NodeId =
     checkSubstituteAndBuild(methodDecl)
@@ -95,13 +96,9 @@ trait NodeFactory {
     case _ => throw new DGBuildingError(bodyDecl + " not expected")
   }
 
-  def buildNode(vd : VariableDeclarator) : NodeId = {
-
-    def isAnonymousBlock(bd : BodyDecl) =
-      bd.isInstanceOf[StaticInitializer] || bd.isInstanceOf[InstanceInitializer]
-
+  def buildNode(vd : VariableDeclarator) : NodeId =
     checkSubstituteAndBuild(vd)
-  }
+
 
   def buildNode(n : Expr) : NodeId = n match {
     case a : Access => buildNode(a)
@@ -114,9 +111,9 @@ trait NodeFactory {
   def refTypeNodeKind(n : ReferenceType) : JavaNodeKind = {
 
     def aux(n : ReferenceType) : TypeKind = n match {
-      case gcd : GenericClassDecl => GenericClass
+//      case gcd : GenericClassDecl => GenericClass
+//      case gid : GenericInterfaceDecl => GenericInterface
       case cd : ClassDecl => Class
-      case gid : GenericInterfaceDecl => GenericInterface
       case id : InterfaceDecl => Interface
       case _ =>
         throw new DGBuildingError(s"${n.dgFullName()} - ${n.getClass} : Unkown nodekind")

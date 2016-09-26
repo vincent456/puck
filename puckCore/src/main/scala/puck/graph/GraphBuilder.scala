@@ -28,19 +28,19 @@ package puck.graph
 
 trait GraphBuilder {
   var g : DependencyGraph = _
-  type NodeIdT = NodeId
-  var nodesByName = Map[String, NodeIdT]()
+
+  var nodesByName = Map[String, NodeId]()
 
   var fromLibrary = Set[NodeId]()
 
-  def getNodeByName( k : String) : NodeIdT = nodesByName(k) //java accessor
+  def getNodeByName( k : String) : NodeId = nodesByName(k) //java accessor
 
-  def getFullName( id : NodeIdT) : String = g.fullName(id)
+  def getFullName( id : NodeId) : String = g.fullName(id)
 
   def addNode(unambiguousFullName: String,
               localName: String,
               kind: NodeKind)
-             (onCreate : NodeId => Unit = _ => () ): NodeIdT = {
+             (onCreate : NodeId => Unit = _ => () ) : NodeId = {
     nodesByName get unambiguousFullName match {
       case None =>
         val (n, g2) = g.addConcreteNode(localName, kind)
@@ -53,11 +53,11 @@ trait GraphBuilder {
     }
   }
 
-  def setType(id : NodeIdT, typ : Type): Unit ={
+  def setType(id : NodeId, typ : Type): Unit ={
     g = g.addType(id, typ)
   }
 
-  def addContains(containerId : NodeIdT, contentId : NodeIdT): Unit ={
+  def addContains(containerId : NodeId, contentId : NodeId): Unit ={
     g = g.addContains(containerId, contentId)
   }
 

@@ -28,7 +28,7 @@ class TransfoRulesSpec
     def print(g : DependencyGraph, name : String) : Unit = {
       import puck.graph.ShowDG._
       println(s"graph $name")
-//      (g, g.nodesIndex).println
+      //(g, g.nodesIndex).println
       (g, g.edges).println
     }
 

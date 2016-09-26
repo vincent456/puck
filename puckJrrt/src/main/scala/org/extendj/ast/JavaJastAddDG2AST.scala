@@ -56,6 +56,23 @@ object JavaJastAddDG2AST
     val builder = JastaddGraphBuilder(p, Option(ll))
     builder.addEdge(Contains(builder.nodesByName("@primitive"), builder.arrayTypeId))
     builder.attachOrphanNodes()
+
+    val orphanNodes = builder.g.nodesId filter (builder.g.container(_).isEmpty) filter (_ != 0)
+    if(orphanNodes.nonEmpty) {
+      builder.graph2ASTMap.get(orphanNodes.head) match {
+        case Some(ParameterDeclHolder(decl)) =>
+          println(decl.fullLocation())
+          puck.error(decl.hostBodyDecl().dgFullName() + " !!! ")
+        case Some(LocalVarDeclHolder(decl)) =>
+          println(decl.fullLocation())
+          puck.error(decl.hostBodyDecl().dgFullName() + " !!! ")
+        case Some( hn : HasNode) => puck.error("unregistred " + hn.node)
+        case None =>puck.error()
+      }
+    }
+
+
+
     builder.registerSuperTypeAbtractions()
 
     val (_, initialRecord) = NodeMappingInitialState.normalizeNodeTransfos(JavaNodeKind.root.kind,
@@ -344,7 +361,7 @@ class JavaJastAddDG2AST
         t match {
           case Add(Edge(e)) => CreateEdge(e)
           case Add(Isa(sub, sup)) =>
-            CreateEdge.createIsa(id2declMap(Type mainId sub), id2declMap(Type mainId sup))
+            CreateEdge.createIsa(id2declMap, sub, sup)
           case Remove(Isa(sub, sup)) =>
               (id2declMap(Type mainId sub), id2declMap(Type mainId sup)) match {
                 case (ClassDeclHolder(srcDecl), InterfaceDeclHolder(odlDecl)) =>
@@ -359,11 +376,10 @@ class JavaJastAddDG2AST
           case ChangeSource(Contains(source, target), newSource) =>
             RedirectSource.move(source, target, newSource)
 
-          case ChangeSource(IsaEdge(source, target), newSource)  =>
-            RedirectSource.redirectIsaSource(source, target, newSource)
-
           case ChangeSource(Uses(source, target), newSource)  =>
             RedirectSource.changeUser(source, target, newSource)
+
+          case ChangeSource(IsaEdge(source, target), newSource)  => puck.error()
 
           case ChangeTarget(e, newTarget) => RedirectTarget(e, newTarget)
 

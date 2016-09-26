@@ -102,11 +102,11 @@ class AbstractionAction
 (bus : Publisher,
  node : ConcreteNode,
  policy : AbstractionPolicy,
- abskind : NodeKind)
-(implicit graph : DependencyGraph,
- graphUtils: GraphUtils,
- treeIcons: NodeKindIcons)
-  extends Action(s"$abskind ($policy)"){
+ absKind : NodeKind)
+( implicit graph : DependencyGraph,
+  graphUtils: GraphUtils,
+  treeIcons: NodeKindIcons)
+  extends Action(s"$absKind ($policy)"){
 
   import graphUtils.{Rules => TR}
 
@@ -144,15 +144,15 @@ class AbstractionAction
           case _ => List()
         }
 
-      val absDefaultName = TR.abstracter.abstractionName(graph, node, abskind, policy, None)
+      val absDefaultName = TR.abstracter.abstractionName(graph, node, absKind, policy, None)
 
       val title = "Abstraction options"
-      val potentialHosts = graph.nodes.filter(_.kind.canContain(abskind)).map(_.id).toSet
+      val potentialHosts = graph.nodes.filter(_.kind.canContain(absKind)).map(_.id).toSet
       val panel = new AbstractionPanel(graph, absDefaultName, potentialHosts, contentToAbstract)
 
-      def addContainsAndSetAbsName(arg : (Abstraction, DependencyGraph)) : DependencyGraph = {
+      def addContainsAndSetAbsName(arg : (Abstraction, DependencyGraph), container : NodeId) : DependencyGraph = {
         val (abs, g) = arg
-        val container = panel.selectedHost.head
+
         abs match {
           case AccessAbstraction(nid, _) if absDefaultName != panel.absName  =>
             //add contains need to be done before set name for concretization purpose
@@ -163,6 +163,32 @@ class AbstractionAction
         }
       }
 
+      def defaultContainer() : Option[NodeId] = {
+        val c = graph container_! node.id
+        if(graph.getNode(c).kind canContain absKind) Some(c)
+        else None
+
+        Dialog.showConfirmation(null,
+          s"Uses ${(graph, c).shows(desambiguatedFullName)} as container for abstraction ?",
+          title,
+          Options.OkCancel, Message.Plain) match {
+          case Result.Cancel | Result.Closed => None
+          case Result.Ok => Some(c)
+        }
+
+      }
+
+      def doAbsract(container : NodeId) : LoggedTry[DependencyGraph] =
+        for {
+          absAndG <- node.kind.kindType match {
+            case TypeDecl => TR.abstracter.
+              abstractTypeDeclAndReplaceByAbstractionWherePossible(graph.mileStone,
+                node, absKind, policy, panel.selectedNodes)
+            case _ =>
+              TR.abstracter.createAbstraction(graph.mileStone, node, absKind, policy)
+          }
+        } yield addContainsAndSetAbsName(absAndG, container)
+
       def confirm() : LoggedTry[DependencyGraph] =
         Dialog.showConfirmation(null, panel.peer, title,
           Options.OkCancel, Message.Plain) match {
@@ -170,24 +196,18 @@ class AbstractionAction
                | Result.Closed =>
             LoggedError("Operation Canceled")
           case Result.Ok =>
-            if(panel.selectedHost.isEmpty) {
-              Dialog.showMessage(null, "Select a host", messageType = Message.Error)
-              confirm()
-            }
+            if(panel.selectedHost.isEmpty)
+              defaultContainer() match {
+                case Some(cid) => doAbsract(cid)
+                case None =>
+                  Dialog.showMessage(null, "Select a host", messageType = Message.Error)
+                  confirm()
+              }
             else if(panel.selectedHost.size > 1 ){
               Dialog.showMessage(null, "Select only one host", messageType = Message.Error)
               confirm()
             }
-            else
-              for {
-                absAndG <- node.kind.kindType match {
-                  case TypeDecl => TR.abstracter.
-                    abstractTypeDeclAndReplaceByAbstractionWherePossible(graph.mileStone,
-                      node, abskind, policy, panel.selectedNodes)
-                  case _ =>
-                    TR.abstracter.createAbstraction(graph.mileStone, node, abskind, policy)
-                }
-              } yield addContainsAndSetAbsName(absAndG)
+            else doAbsract(panel.selectedHost.head)
         }
 
       confirm()
