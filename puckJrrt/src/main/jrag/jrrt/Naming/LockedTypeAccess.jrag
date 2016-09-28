@@ -240,7 +240,8 @@ aspect LockedTypeAccess {
 		SimpleSet names = lookupName(target.name());
 		if(names.isEmpty()) return this;
 		if(!names.isSingleton(target))
-			throw new RefactoringException("cannot access shadowed/obscured type variable "+ this.name());
+			throw new RefactoringException("cannot access shadowed/obscured type variable "+
+                this.name() + " at " + this.fullLocation() );
 		setPackage("");
 		setID(target.name());
 		if (squal.nonEmpty()) {

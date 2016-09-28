@@ -40,10 +40,10 @@ object CreateEdge {
   (id2declMap: NodeId => ASTNodeLink,
    typ : Type)
   ( implicit program : Program): Access = (typ, id2declMap(Type.mainId(typ)) ) match {
+    case (NamedType(_), TypeVariableHolder(tvdecl)) => tvdecl.createLockedAccess()
     case (NamedType(_), TypedKindDeclHolder(tdecl)) => tdecl.createLockedAccess()
     case (ParameterizedType(_, args), TypedKindDeclHolder(gt : GenericTypeDecl)) =>
       val argsAccesses = args.map(createTypeAccess(id2declMap, _))
-
 
       val pta = ParTypeAccess.create(gt.createLockedAccess(), argsAccesses)
       pta.setParent(program)
@@ -54,15 +54,15 @@ object CreateEdge {
 
   def createTypeUse
   (id2declMap: NodeId => ASTNodeLink,
-    typed : NodeId,
-    typ : Type)
+   typed : NodeId,
+   typ : Type)
   ( implicit program : Program): Unit =
     id2declMap(typed)  match {
       //explicit upcast shouldn't be needed, why the compiling error ?
       case dh @ (FieldDeclHolder(_,_)
-        | ParameterDeclHolder(_)
-        | MethodDeclHolder(_)
-        | LocalVarDeclHolder(_) ) =>
+                 | ParameterDeclHolder(_)
+                 | MethodDeclHolder(_)
+                 | LocalVarDeclHolder(_) ) =>
         dh.asInstanceOf[HasNode].node.setTypeAccess(createTypeAccess(id2declMap, typ))
 
       case ConstructorDeclHolder(_) => ()
@@ -78,46 +78,48 @@ object CreateEdge {
     resultAndReenactor : (DependencyGraph, DependencyGraph),
     id2declMap: NodeId => ASTNodeLink ) = {
     val (resultGraph, reenactor) = resultAndReenactor
-        e.kind match {
-          case Contains =>
-            createContains(resultGraph, reenactor, id2declMap, e)
-          case ContainsParam =>
-            (id2declMap(e.container), id2declMap(e.content)) match {
-              case (MethodDeclHolder(mdecl), ParameterDeclHolder(pdecl)) =>
-                mdecl.prependParameter(pdecl)
-              case (ConstructorDeclHolder(cdecl), ParameterDeclHolder(pdecl)) =>
-                cdecl.prependParameter(pdecl)
-              case (TypedKindDeclHolder(tdecl), TypeVariableHolder(tvDecl)) =>
-                tdecl.asInstanceOf[GenericTypeDecl].addTypeParameter(tvDecl)
-              case _ =>
-                error(s"ContainsParam(${reenactor.getNode(e.container)}, ${reenactor.getNode(e.content)}) " +
-                  "should be between a decl and a param")
-            }
+    e.kind match {
+      case Contains =>
+        createContains(resultGraph, reenactor, id2declMap, e)
+      case ContainsParam =>
+        (id2declMap(e.container), id2declMap(e.content)) match {
+          case (MethodDeclHolder(mdecl), ParameterDeclHolder(pdecl)) =>
+            mdecl.prependParameter(pdecl)
+          case (ConstructorDeclHolder(cdecl), ParameterDeclHolder(pdecl)) =>
+            cdecl.prependParameter(pdecl)
+          case (TypedKindDeclHolder(tdecl), TypeVariableHolder(tvDecl)) =>
+            val genDecl = tdecl.asInstanceOf[GenericTypeDecl]
+            genDecl.addTypeParameter(tvDecl)
 
-          case Uses =>
-            val (source, target ) = (resultGraph.getNode(e.source), resultGraph.getNode(e.target))
-            (source.kind, target.kind) match {
-              case (Class, Interface) =>
-                logger.writeln("do not create %s : assuming its an isa edge (TOCHECK)".format(e)) // class imple
-              case (Definition, Constructor) =>
-                createUsesOfConstructor(resultGraph, reenactor, id2declMap, e)
-
-              case (_: MethodKind, _ : TypeKind) =>
-                val MethodDeclHolder(mdecl) = id2declMap(e.user)
-                val TypedKindDeclHolder(tdecl) = id2declMap(e.target)
-                mdecl.addException(tdecl.createLockedAccess())
-
-              case (Definition, Field) => ()
-                createUsesofField(resultGraph, reenactor, id2declMap, e)
-              case (Definition, Method) if ensureIsInitalizerUseByCtor(reenactor, e)=>
-                createInitializerCall(reenactor, id2declMap, e)
-
-              case _ => logger.writeln(" =========> need to create " + e)
-            }
-          case _  =>
-            logger.writeln(s"Creation of ${e.kind} ignored")
-
+          case _ =>
+            error(s"ContainsParam(${reenactor.getNode(e.container)}, ${reenactor.getNode(e.content)}) " +
+              "should be between a decl and a param")
         }
+
+      case Uses =>
+        val (source, target ) = (resultGraph.getNode(e.source), resultGraph.getNode(e.target))
+        (source.kind, target.kind) match {
+          case (Class, Interface) =>
+            logger.writeln("do not create %s : assuming its an isa edge (TOCHECK)".format(e)) // class imple
+          case (Definition, Constructor) =>
+            createUsesOfConstructor(resultGraph, reenactor, id2declMap, e)
+
+          case (_: MethodKind, _ : TypeKind) =>
+            val MethodDeclHolder(mdecl) = id2declMap(e.user)
+            val TypedKindDeclHolder(tdecl) = id2declMap(e.target)
+            mdecl.addException(tdecl.createLockedAccess())
+
+          case (Definition, Field) => ()
+            createUsesofField(resultGraph, reenactor, id2declMap, e)
+          case (Definition, Method) if ensureIsInitalizerUseByCtor(reenactor, e)=>
+            createInitializerCall(reenactor, id2declMap, e)
+
+          case _ => logger.writeln(" =========> need to create " + e)
+        }
+      case _  =>
+        logger.writeln(s"Creation of ${e.kind} ignored")
+
+    }
 
   }
 
@@ -126,10 +128,10 @@ object CreateEdge {
       (graph.getRole(u.used) contains Initializer(graph.hostTypeDecl(u.user)))
 
   def createInitializerCall
-    ( reenactor : DependencyGraph,
-      id2declMap : NodeId => ASTNodeLink,
-      e : NodeIdP)
-    ( implicit program : Program, logger : PuckLogger) : Unit = {
+  ( reenactor : DependencyGraph,
+    id2declMap : NodeId => ASTNodeLink,
+    e : NodeIdP)
+  ( implicit program : Program, logger : PuckLogger) : Unit = {
     val sourceDecl = reenactor.container_!(e.user)
     (id2declMap(sourceDecl), id2declMap(e.used)) match {
       case (ConstructorDeclHolder(cdecl), MethodDeclHolder(mdecl)) =>
@@ -215,11 +217,11 @@ object CreateEdge {
         CreateNode.createNewInstanceExpr(fdecl.getDeclarator(idx), cdecl)
       case MethodDeclHolder(mdecl)
         if reenactor getRole sourceDecl contains Factory(e.used) =>
-          mdecl.makeFactoryOf(cdecl)
+        mdecl.makeFactoryOf(cdecl)
       case dh =>
         import ShowDG._
         error(s"createUsesOfConstructor (${(reenactor, e).shows}) ${dh.getClass} " +
-        s"with role ${reenactor getRole sourceDecl} as user unhandled")
+          s"with role ${reenactor getRole sourceDecl} as user unhandled")
 
     }
   }

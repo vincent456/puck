@@ -47,19 +47,20 @@ object ShowDG extends ShowConstraints{
           if(tl.nonEmpty) sep.head
           else ""
         tailRecStringOfType(dg, sep, end,
+          //builder.append(desambiguatedFullName(dg, nid) + sep0),
           builder.append(dg.getNode(nid).name(dg) + sep0),
           tl :: lt.tail )
+      case ParameterizedType(genId, targs) :: tl =>
+        //val genName = desambiguatedFullName(dg, genId)
+        val genName = dg.getNode(genId).name(dg)
+        tailRecStringOfType(dg, "," :: sep, (">" + sep.head) :: end,
+          builder append s"$genName<", targs :: tl :: lt.tail )
+
       case Tuple(types) :: tl =>
         tailRecStringOfType(dg, "," :: sep, (")" + sep.head) :: end,
           builder append "(", types :: tl :: lt.tail )
       case Arrow(in, out) :: tl =>
         tailRecStringOfType(dg, " -> " :: sep, "" :: end, builder, List(in, out) :: tl :: lt.tail )
-
-      case ParameterizedType(genId, targs) :: tl =>
-        val genName = dg.getNode(genId).name(dg)
-        tailRecStringOfType(dg, "," :: sep, (">" + sep.head) :: end,
-          builder append s"$genName<", targs :: tl :: lt.tail )
-
       case Covariant(t) :: tl =>
         tailRecStringOfType(dg,  sep,  end,
           builder append s"+", (t :: tl) :: lt.tail )
@@ -172,7 +173,7 @@ object ShowDG extends ShowConstraints{
       case AType(typed, t) =>
         val typedCord = stringOfNodeId(dg, typed)
         val tcord : String = stringOfType(dg, t)
-        s"SetType($typedCord, $tcord)"
+        s"AType($typedCord, $tcord)"
 
       case ChangeTypeOp(typed, oldType, newType) =>
         val typedCord = stringOfNodeId(dg, typed)
@@ -291,14 +292,14 @@ object ShowDG extends ShowConstraints{
 //        s"$container - ${desambiguatedFullName(dg, container)} contains $content - ${desambiguatedFullName(dg, content)}")
 //
 //
-//      builder.append("\ntypes\n")
-//      builder.append( types.toList map { case (nid, t) =>
-//        s"$nid - ${desambiguatedFullName(dg, nid)} : ${stringOfType(dg, t)}"
-//      } mkString("\t", "\n\t", "\n"))
+      builder.append("\ntypes\n")
+      builder.append( types.toList map { case (nid, t) =>
+        s"$nid - ${desambiguatedFullName(dg, nid)} : ${stringOfType(dg, t)}"
+      } mkString("\t", "\n\t", "\n"))
 //
-      builder.append("\nsub -> super\n")
-      builder append print(superTypes, (sub : NodeId, sup : Type) =>
-        s"${desambiguatedFullName(dg, sub)} is a ${stringOfType(dg, sup)}")
+//      builder.append("\nsub -> super\n")
+//      builder append print(superTypes, (sub : NodeId, sup : Type) =>
+//        s"${desambiguatedFullName(dg, sub)} is a ${stringOfType(dg, sup)}")
 //      builder.append("\nsuper -> sub\n\t")
 //      builder.append(subTypes.toString)
 //

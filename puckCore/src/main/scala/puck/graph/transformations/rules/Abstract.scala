@@ -134,6 +134,16 @@ abstract class Abstract {
   ) : (Abstraction, DependencyGraph) = {
     import g.nodeKindKnowledge.intro
 
+    def copyParameters(g: DependencyGraph, absId : NodeId) =
+      g.parametersOf(impl.id).foldRight(g) {
+        (paramId, g0) =>
+          val param = g0.getConcreteNode(paramId)
+         val (pabs, g01) = g0.addConcreteNode(param.name, param.kind)
+          val g02 = (g0 styp paramId) map (g01.addType(pabs.id, _)) getOrElse g01
+          g02.addEdge(ContainsParam(absId, pabs.id))
+
+      }
+
     policy match {
       case DelegationAbstraction if impl.kind.isWritable =>
 
@@ -161,14 +171,7 @@ abstract class Abstract {
           }
           else g1
 
-        val g3 = g2.parametersOf(impl.id).foldRight(g2) {
-          (paramId, g0) =>
-            val param = g0.getConcreteNode(paramId)
-            val (pabs, g01) = g0.addConcreteNode(param.name, param.kind)
-            val g02 = (g0 styp paramId) map (g01.addType(pabs.id, _)) getOrElse g01
-            g02.addEdge(ContainsParam(absNode.id, pabs.id))
-
-        }
+        val g3 = copyParameters(g2, absNode.id)
         val g4 = g3.addUses(ndef.id, impl.id)
 
         val abs = AccessAbstraction(absNode.id, policy)
@@ -180,16 +183,7 @@ abstract class Abstract {
         val (absNode, g1) = g.addConcreteNode(absName, absKind)
         val g2 = (g1 styp impl.id) map (g1.addType(absNode.id, _)) getOrElse g1
 
-
-        val g3 = g2.parametersOf(impl.id).foldRight(g2) {
-          (paramId, g0) =>
-            val param = g0.getConcreteNode(paramId)
-            val (pabs, g01) = g0.addConcreteNode(param.name, param.kind)
-            val g02 = (g0 styp paramId) map (g01.addType(pabs.id, _)) getOrElse g01
-
-            g02.addEdge(ContainsParam(absNode.id, pabs.id))
-
-        }
+        val g3 = copyParameters(g2, absNode.id)
         val abs = AccessAbstraction(absNode.id, policy)
         (abs, g3.addAbstraction(impl.id, abs))
 
@@ -230,20 +224,20 @@ abstract class Abstract {
 
   def redirectTypeUseInParameters
   ( g : DependencyGraph, meth : ConcreteNode,
-    clazz : ConcreteNode, interface : ConcreteNode): LoggedTG = {
+    typeMapping : List[(ConcreteNode, ConcreteNode)]): LoggedTG = {
 
     val log = "Abstract.redirectTypeUseInParameters : " +
-      s"redirecting Uses(${meth.name}, ${clazz.name}) target to $interface\n"
+      s"redirecting type uses of ${meth.name} with $typeMapping\n"
+
 
     val ltg = g.parametersOf(meth.id).foldLoggedEither(g){
       (g0, pid) =>
-        if (g0.uses(pid, clazz.id)) {
-          Redirection.redirectUsesAndPropagate(g0, Uses(pid, clazz.id),
-            AccessAbstraction(interface.id, SupertypeAbstraction))
+        val typesUsed = typeMapping.filter {case (k, _) => g0.uses(pid, k.id)}
+        typesUsed.foldLoggedEither(g0) {
+          case (g1, (clazz, interface)) =>
+            Redirection.redirectUsesAndPropagate(g0, (pid, clazz.id),
+              AccessAbstraction(interface.id, SupertypeAbstraction))
         }
-        else
-          LoggedSuccess(g0)
-
     }
     log <++: ltg
   }
@@ -256,7 +250,7 @@ abstract class Abstract {
       (g0, child) =>
         child.kind.kindType match {
           case InstanceValue if g0.parametersOf(child.id).exists(g0.uses(_, clazz.id)) =>
-            redirectTypeUseInParameters(g0, child, clazz, interface)
+            redirectTypeUseInParameters(g0, child, List((clazz, interface)))
           case _ => LoggedSuccess(g0)
         }
     }
@@ -324,17 +318,24 @@ abstract class Abstract {
     def createAbstractTypeMemberWithSuperSelfType
     ( g : DependencyGraph,
       meth : ConcreteNode,
-      interface : ConcreteNode
+      interface : ConcreteNode,
+      typeMapping : List[(ConcreteNode, ConcreteNode)]
     ) : LoggedTG ={
       createAbstraction(g, meth, meth.kind.abstractionNodeKinds(policy).head, policy) flatMap {
         case (AccessAbstraction(absMethodId, _), g0) =>
 
-          val g1 = g0.addContains(interface.id, absMethodId)
-            //is change type needed in case of delegation policy
-            //.changeTarget(Uses(absMethodId, clazz.id), interface.id) //change return type
-            .changeType((absMethodId, clazz.id), interface.id) //change return type
-          redirectTypeUseInParameters(g1, g1.getConcreteNode(absMethodId),
-            clazz, interface)
+          val typesToRedirect =
+            typeMapping filter {case (k, _) => g0.uses(absMethodId, k.id)}
+
+          val g2 =
+            typesToRedirect.foldLeft(g0.addContains(interface.id, absMethodId)) {
+              case (g1, (classType, interfaceType)) =>
+              //is change type needed in case of delegation policy ?
+              g1.changeType((absMethodId, classType.id), interfaceType.id) //change return type
+            }
+
+          val absMeth = g2 getConcreteNode absMethodId
+          redirectTypeUseInParameters(g2, absMeth, typeMapping)
 
         case _ => LoggedError("unexpected type of abstraction")
       }
@@ -343,11 +344,18 @@ abstract class Abstract {
 
     val (interfaceAbs, g1) = createAbsNodeAndUse(g, clazz, abskind, policy)
 
+
     val interface = interfaceAbs match {
       case AccessAbstraction(id, _) => g1.getConcreteNode(id)
       case _ => sys.error("type should not have a RW abstraction")
     }
 
+    val typeVariablesMap =
+      g1.parametersOf(clazz.id).zip(g1.parametersOf(interface.id)) map {
+        case (id1, id2) => (g1 getConcreteNode id1, g1 getConcreteNode id2)
+      }
+
+    val typeMapping = (clazz, interface) :: typeVariablesMap
 
     def addIsa(g : DependencyGraph) : DependencyGraph = {
       val ps = g.parametersOf(clazz.id)
@@ -361,7 +369,8 @@ abstract class Abstract {
 
     for {
 
-      g2 <- members.foldLoggedEither(g1)(createAbstractTypeMemberWithSuperSelfType(_, _, interface))
+      g2 <- members.foldLoggedEither(g1)(
+        createAbstractTypeMemberWithSuperSelfType(_, _, interface, typeMapping))
 
       g3 <- policy match {
         case SupertypeAbstraction => insertInTypeHierarchy(g2, clazz.id, interface.id)

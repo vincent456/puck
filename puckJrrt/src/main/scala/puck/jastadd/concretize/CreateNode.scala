@@ -61,7 +61,7 @@ object CreateNode {
         case Field => createField(prog, resultGraph, id2decl, node)
         case Param => createParameter(prog, resultGraph, id2decl, node)
         case PuckTV =>
-          val tv = new TypeVariable()
+          val tv = new GeneratedTypeVariable()
           tv setID node.name
           TypeVariableHolder(tv)
         case _ => throw new DeclarationCreationError(s"cannot create decl for kind ${node.kind}")

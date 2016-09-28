@@ -46,6 +46,12 @@ aspect Concretize {
         out.print("/* EmptyReceiver */");
     }
 
+    public class GeneratedTypeVariable extends TypeVariable {
+        public boolean mayHaveRewrite() {
+            return false;
+        }
+    }
+
 
     private String CompilationUnit.containingDirectory(){
         int idx = pathName().lastIndexOf(File.separatorChar);
