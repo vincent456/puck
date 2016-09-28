@@ -87,10 +87,9 @@ object CreateEdge {
             mdecl.prependParameter(pdecl)
           case (ConstructorDeclHolder(cdecl), ParameterDeclHolder(pdecl)) =>
             cdecl.prependParameter(pdecl)
-          case (TypedKindDeclHolder(tdecl), TypeVariableHolder(tvDecl)) =>
-            val genDecl = tdecl.asInstanceOf[GenericTypeDecl]
+          case (HasNode(n), TypeVariableHolder(tvDecl)) =>
+            val genDecl = n.asInstanceOf[GenericElement]
             genDecl.addTypeParameter(tvDecl)
-
           case _ =>
             error(s"ContainsParam(${reenactor.getNode(e.container)}, ${reenactor.getNode(e.content)}) " +
               "should be between a decl and a param")

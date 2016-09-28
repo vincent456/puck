@@ -41,21 +41,26 @@ object CreateNode {
     id2decl : Map[NodeId, ASTNodeLink],
     node : ConcreteNode ): Map[NodeId, ASTNodeLink] = {
 
-    def isGeneric = resultGraph.parametersOf(node.id).nonEmpty
+    lazy val isGenericType = resultGraph.parametersOf(node.id).nonEmpty
+    lazy val isGenericMethod =
+      resultGraph.parametersOf(node.id).exists(n => resultGraph.kindType(n) == TypeVariableKT)
 
     val dh : ASTNodeLink =
       node.kind match {
         case Package => PackageDeclHolder
         case Interface =>
-          createInterface(prog, resultGraph, node, isGeneric)
+          createInterface(prog, resultGraph, node, isGenericType)
         case Class =>
-          createClass(prog, resultGraph, node, isGeneric)
+          createClass(prog, resultGraph, node, isGenericType)
         case AbstractMethod =>
-          MethodDeclHolder(createMethod(prog, resultGraph, id2decl, node, isAbstract = true))
+          MethodDeclHolder(createMethod(prog, resultGraph, id2decl, node,
+            isGenericMethod, isAbstract = true))
         case StaticMethod =>
-          MethodDeclHolder(createMethod(prog, resultGraph, id2decl, node, isStatic = true))
+          MethodDeclHolder(createMethod(prog, resultGraph, id2decl, node,
+            isGenericMethod, isStatic = true))
         case Method =>
-          MethodDeclHolder(createMethod(prog, resultGraph, id2decl, node))
+          MethodDeclHolder(createMethod(prog, resultGraph, id2decl, node,
+            isGenericMethod))
         case Constructor =>
           createConstructor(prog, resultGraph, id2decl, node)
         case Field => createField(prog, resultGraph, id2decl, node)
@@ -139,10 +144,13 @@ object CreateNode {
     graph : DependencyGraph,
     id2Decl : Map[NodeId, ASTNodeLink],
     node : ConcreteNode,
+    isGeneric : Boolean ,
     isAbstract : Boolean = false,
     isStatic : Boolean = false
   ) : ast.MethodDecl = {
-    val decl = new ast.MethodDecl()
+    val decl =
+      if(isGeneric) new ast.GenericMethodDecl()
+      else new ast.MethodDecl()
     decl.setID(node.name)
     //decl.setTypeAccess(createTypeAccess(node.id, graph, id2Decl))
     val mods = new ast.Modifiers("public")

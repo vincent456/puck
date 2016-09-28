@@ -161,6 +161,9 @@ object ASTNodeLink{
 sealed trait ASTNodeLink
 
 case object NoDecl extends ASTNodeLink
+object HasNode {
+  def unapply(arg: HasNode): Some[ASTNode[_]] = Some[ASTNode[_]](arg.node)
+}
 sealed abstract class HasNode extends ASTNodeLink {
   def node : ASTNode[_]
 }
