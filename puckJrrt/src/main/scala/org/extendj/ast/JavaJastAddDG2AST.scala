@@ -56,7 +56,6 @@ object JavaJastAddDG2AST
     val builder = JastaddGraphBuilder(p, Option(ll))
     builder.addEdge(Contains(builder.nodesByName("@primitive"), builder.arrayTypeId))
     builder.attachOrphanNodes()
-
     val orphanNodes = builder.g.nodesId filter (builder.g.container(_).isEmpty) filter (_ != 0)
     if(orphanNodes.nonEmpty) {
       builder.graph2ASTMap.get(orphanNodes.head) match {
@@ -66,7 +65,11 @@ object JavaJastAddDG2AST
         case Some(LocalVarDeclHolder(decl)) =>
           println(decl.fullLocation())
           puck.error(decl.hostBodyDecl().dgFullName() + " !!! ")
-        case Some( hn : HasNode) => puck.error("unregistred " + hn.node)
+        case Some( hn : HasNode) =>
+//          (builder.g.nodesId map (id => (id, builder.g.fullName(id))) toList) sortBy (_._1) foreach println
+//          println("------------------")
+//          builder.nodesByName.toList.sortBy(_._1) foreach println
+          puck.error("unregistred " + hn.node)
         case None =>puck.error()
       }
     }

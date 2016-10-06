@@ -258,6 +258,8 @@ class JastaddGraphBuilder(val program : Program)
   def addApiTypeNode(td: TypeDecl): NodeId = {
     val tdNode = getNode(td)
 
+    val n = g.getNode(tdNode)
+
     val cterId =
       if(td.isTopLevelType)
         addPackage(td.packageName(), fromSource = false)

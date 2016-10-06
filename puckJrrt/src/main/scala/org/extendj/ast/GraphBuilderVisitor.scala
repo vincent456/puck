@@ -47,10 +47,11 @@ trait GraphBuilderVisitor {
       td.getBodyDeclList foreach (_.buildDG(this, n))
   }
 
-  def buildTypeVariables(tid: NodeId, gtd: GenericTypeDecl): Unit =
-    gtd.getTypeParameterList foreach (tv =>
-      addEdge(ContainsParam(tid, this buildNode tv)))
-
+  def buildTypeVariables(tid: NodeId, gtd: GenericElement): Unit =
+    for (i <- (gtd.getNumTypeParameter -1).to(0, -1) ){ //reverse order as params are ordered and prepended
+        val tv = gtd getTypeParameter i
+        addEdge(ContainsParam(tid, this buildNode tv))
+    }
 
   def buildInheritence(tdecl: TypeDecl) : Type = {
     val sub = getType(tdecl)
@@ -82,7 +83,7 @@ trait GraphBuilderVisitor {
 
       buildInheritence(cd)
       if(cd.isGenericType)
-        buildTypeVariables(n, cd.asInstanceOf[GenericTypeDecl])
+        buildTypeVariables(n, cd.asInstanceOf[GenericElement])
 
       if(cd.hasImplicitConstructor)
         cd.getImplicitConstructor.buildDG(this, n)
@@ -92,7 +93,7 @@ trait GraphBuilderVisitor {
       val n = this buildNode id
       buildInheritence(id)
       if(id.isGenericType)
-        buildTypeVariables(n, id.asInstanceOf[GenericTypeDecl])
+        buildTypeVariables(n, id.asInstanceOf[GenericElement])
 
       n
 
@@ -121,7 +122,15 @@ trait GraphBuilderVisitor {
     resetLocal()
     val declId = buildNode(methodDecl)
     addEdge(Contains(containerId, declId))
+
     buildDGType(declId, methodDecl)
+
+    methodDecl match {
+      case pmd : ParMethodDecl => buildTypeVariables(declId, pmd.genericMethodDecl())
+      case gmd : GenericMethodDecl => buildTypeVariables(declId, gmd)
+      case _ => ()
+    }
+
     methodDecl.getExceptions.foreach {
       exc =>
         addUses(declId, buildNode(exc))
@@ -134,11 +143,6 @@ trait GraphBuilderVisitor {
     methodDecl.getExceptionList.buildDG(this, declId)
     if(methodDecl.hasBlock) {
       methodDecl.buildDef(this, declId)
-    }
-    methodDecl match {
-      case genMethodDecl : GenericMethodDecl =>
-        genMethodDecl.getTypeParameterList.buildDG(this,declId)
-      case _ => ()
     }
   }
 
