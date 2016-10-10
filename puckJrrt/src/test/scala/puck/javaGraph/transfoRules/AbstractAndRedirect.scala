@@ -26,65 +26,80 @@
 
 package puck.javaGraph.transfoRules
 
-import puck.AcceptanceSpec
+import puck.{TransfoRulesSpec}
 import puck.graph._
-import puck.jastadd.ExtendJGraphUtils.{Rules => Rules}
-import puck.javaGraph.ScenarioFactory
+import puck.jastadd.ExtendJGraphUtils.Rules
 import puck.javaGraph.nodeKind.Interface
 
 /**
   * Created by Loïc Girault on 20/04/16.
   */
-class AbstractAndRedirect extends AcceptanceSpec {
+class AbstractAndRedirect
+  extends TransfoRulesSpec {
 
   scenario("abstract File and redirect toward abstraction") {
-    val _ = new ScenarioFactory(
-      """package fileSystem;
-        |
-        |public class File {
-        |   public void display(String path){ System.out.println(path+name); }
-        |   private String name;
-        |}""",
-      """package fileSystem;
-        |
+
+    def code(inheritanceClause : String , fType : String) = Seq(
+      s"""package fileSystem;
+          |
+        |public class File $inheritanceClause{
+          |   public void display(String path){ System.out.println(path+name); }
+          |   private String name;
+          |}""",
+      s"""package fileSystem;
+          |
         |import java.util.ArrayList;
-        |import java.util.List;
-        |
+          |import java.util.List;
+          |
         |public class Directory {
-        |   public void display(String path) {
-        |      System.out.println(path + name);
-        |      String npath = path + name +"/";
-        |      for(File f: files)
-        |         f.display(npath);
-        |      for(Directory d: directories)
-        |         d.display(npath);
-        |   }
-        |   private String    name;
-        |   private List<File> files = new ArrayList<File>();
-        |   private List<Directory> directories = new ArrayList<Directory>();
-        |}"""
-    ) {
+          |   public void display(String path) {
+          |      System.out.println(path + name);
+          |      String npath = path + name +"/";
+          |      for($fType f: files)
+          |         f.display(npath);
+          |      for(Directory d: directories)
+          |         d.display(npath);
+          |   }
+          |   private String    name;
+          |   private List<$fType> files = new ArrayList<$fType>();
+          |   private List<Directory> directories = new ArrayList<Directory>();
+          |}"""
+    )
 
-      val g0 = graph
+    compareWithExpectedAndGenerated(
+      code("", "File"),
+      s => {
+        import s.idOfFullName
+        val g0 = s.graph
 
-      def abstractFile(g : DependencyGraph) : (NodeId, DependencyGraph) = {
-        val (AccessAbstraction(itcId, _), g1) =
-          Rules.abstracter.createAbstraction(g, g getConcreteNode "fileSystem.File",
-            Interface, SupertypeAbstraction).rvalue
+        def abstractFile(g : DependencyGraph) : (NodeId, DependencyGraph) = {
+          val (AccessAbstraction(itcId, _), g1) =
+            Rules.abstracter.createAbstraction(g, g getConcreteNode "fileSystem.File",
+              Interface, SupertypeAbstraction).rvalue
 
-        val g2 = g1.addContains("fileSystem", itcId)
+          val g2 = g1.addContains("fileSystem", itcId)
 
-        (itcId, Rules.rename(g2, itcId, "FSElement"))
-      }
+          (itcId, Rules.rename(g2, itcId, "FSElement"))
+        }
 
-      val (fsElement, g1) = abstractFile(g0)
+        val (fsElement, g1) = abstractFile(g0)
 
-      val g2 = Rules.redirection.redirectUsesAndPropagate(g1,
-        Uses("fileSystem.Directory.files", "fileSystem.File"),
-        AccessAbstraction(fsElement, SupertypeAbstraction)).rvalue
+        val g2 = Rules.redirection.redirectUsesAndPropagate(g1,
+          Uses("fileSystem.Directory.files", "fileSystem.File"),
+          AccessAbstraction(fsElement, SupertypeAbstraction)).rvalue
 
-      assert(g2.uses("fileSystem.Directory.display(String).Definition.d", "fileSystem.Directory"))
-      assert(g2.uses("fileSystem.Directory.display(String).Definition.f", (g2, "fileSystem.FSElement")))
-    }
+        //local variable named replaced by id in the order they appear hence npath is 0, f is 1 and d is 2
+        assert(g2.uses("fileSystem.Directory.display(String).Definition.1", (g2, "fileSystem.FSElement")))
+        assert(g2.uses("fileSystem.Directory.display(String).Definition.2", "fileSystem.Directory"))
+        g2
+      },
+      """package fileSystem;
+        |
+        |public interface FSElement {
+        |   void display(String path);
+        |}""" +:
+        code("implements FSElement ", "FSElement")
+    )
   }
+
 }
