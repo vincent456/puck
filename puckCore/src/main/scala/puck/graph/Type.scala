@@ -96,7 +96,7 @@ object Type {
   }
 }
 
-abstract class Type {
+sealed abstract class Type {
 
   def makeClone() : Type
   def subtypeOf(graph : DependencyGraph,
@@ -229,7 +229,7 @@ case class Arrow(input : Type, output : Type)
 
 sealed abstract class VariantType extends Type {
   def t : Type
-  protected val make : Type => VariantType
+  val make : Type => VariantType
 
   def uses(id: NodeId): Boolean= t uses id
   def ids: List[NodeId] = t.ids

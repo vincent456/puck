@@ -45,11 +45,11 @@ object RecordingComparator{
   type Compared = (ResMap, NodesToMap, Seq[Transformation], Seq[Transformation])
 
   def revAppend[T] (heads : Seq[T], tails : Seq[T]) : Seq[T] = {
-     def aux(hds: Seq[T], tls : Seq[T]) : Seq[T] =
+    def aux(hds: Seq[T], tls : Seq[T]) : Seq[T] =
       if(hds.isEmpty) tls
       else aux(hds.tail, hds.head +: tls)
 
-     aux(heads, tails)
+    aux(heads, tails)
   }
 
   def removeFirst[T](l : Seq[T], pred : T => Boolean) : Option[Seq[T]] = {
@@ -72,7 +72,7 @@ object RecordingComparator{
    nodesToMap : NodesToMap) :
   Seq[LoggedTry[(ResMap, NodesToMap)]] = {
 
-    currentResMap/*(node)*/ .getOrElse(node, Right(node)) match {
+    currentResMap.getOrElse(node, Right(node)) match {
       case Right(n) => //already attributed
         Seq(LoggedSuccess((currentResMap, nodesToMap)))
 
@@ -116,15 +116,52 @@ object RecordingComparator{
     aux(nodes, Seq(LoggedSuccess((currentResMap, nodesToMap))))
   }
 
+  def getMapping(id : NodeId, currentResMap : ResMap) : Option[NodeId] =
+    currentResMap.getOrElse(id, Right(id)) match {
+      case Left(_) => None
+      case Right(mapped) => Some(id)
+    }
+
+
+  def getMapping(t : Type, currentResMap : ResMap) : Option[Type] = {
+//    import scalaz.syntax.traverse._
+//    import scalaz.std.list._
+//    import scalaz.std.option._
+    t match {
+      case NamedType(id) => getMapping(id, currentResMap) map NamedType.apply
+
+      case ParameterizedType(id, ps) =>
+        val smps: Option[List[Type]] =
+          (ps map (t => getMapping(t, currentResMap))).sequence[Option, Type]
+        for {
+          mid <- getMapping(id, currentResMap)
+          mps <- smps
+        } yield ParameterizedType(mid, mps)
+
+      case Tuple(ts) =>
+        val sts: Option[List[Type]] =
+        (ts map (t => getMapping(t, currentResMap))).sequence[Option, Type]
+
+        sts map Tuple.apply
+
+      case puck.graph.Arrow(in, out) =>
+        for{
+          min <- getMapping(in, currentResMap)
+          mout <- getMapping(out, currentResMap)
+        } yield puck.graph.Arrow(min, mout)
+
+      case vt : VariantType =>
+        getMapping(vt.t, currentResMap) map vt.make
+    }
+  }
 
   def getMapping(nodes : Seq[NodeId],
                  currentResMap : ResMap) : Option[Seq[NodeId]] =
     nodes.reverse.foldLeft(Seq[NodeId]().some){
       case (None, _) => none
-      case (Some(acc),n) => currentResMap.getOrElse(n, Right(n)) match {
-        case Left(_) => None
-        case Right(mapped) => Some(mapped +: acc)
-      }
+      case (sacc, n) =>
+        val sn = getMapping(n, currentResMap)
+        sacc map (acc => sn map (_ +: acc) getOrElse acc)
     }
 
   val nextStates : Compared => Seq[LoggedTry[Compared]] = {
@@ -148,8 +185,39 @@ object RecordingComparator{
           getMapping(Seq(e.source, e.target), resMap) match {
             case Some(Seq(src, tgt)) =>
               removeFirstAndCompareNext(Edge(e.copy(src, tgt)))
-            case None =>
+            case _ => // no or partial map
               attribNodes(Seq(e.source, e.target), resMap, nodesToMap) map ( _ map {
+                case (rm, ntm) => (rm, ntm, t1 +: ts1, ts2)
+              })
+
+          }
+
+        case Isa(subType, superType) =>
+          val someIsaMapped = for {
+            subMapped <- getMapping(subType, resMap)
+            superMapped <- getMapping(superType, resMap)
+          } yield Isa(subMapped, superMapped)
+          someIsaMapped match {
+            case Some(isaMapped) =>
+              removeFirstAndCompareNext(isaMapped)
+            case None =>
+              attribNodes(subType.ids ::: superType.ids,
+                resMap, nodesToMap) map ( _ map {
+                case (rm, ntm) => (rm, ntm, t1 +: ts1, ts2)
+              })
+          }
+
+
+        case AccessKind((e1, e2), accK) =>
+
+          getMapping(Seq(e1.source, e1.target,
+                          e2.source, e2.target), resMap) match {
+            case Some(Seq(src1, tgt1, src2, tgt2)) =>
+              removeFirstAndCompareNext(
+                AccessKind(((src1, tgt1), (src2, tgt2)), accK))
+            case _ => // no or partial map
+              attribNodes(Seq(e1.source, e1.target,
+                e2.source, e2.target), resMap, nodesToMap) map ( _ map {
                 case (rm, ntm) => (rm, ntm, t1 +: ts1, ts2)
               })
 
@@ -161,8 +229,9 @@ object RecordingComparator{
               removeFirstAndCompareNext(
                 RedirectionOp(e.kind(src, tgt),
                   extremity.create(newExtyNode)))
-            case None =>
-              attribNodes(Seq(e.source, e.target, extremity.node), resMap, nodesToMap) map ( _ map {
+            case _ =>
+              attribNodes(Seq(e.source, e.target, extremity.node),
+                resMap, nodesToMap) map ( _ map {
                 case (rm, ntm) => (rm, ntm, t1 +: ts1, ts2)
               })
           }
