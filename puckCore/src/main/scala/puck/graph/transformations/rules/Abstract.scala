@@ -197,13 +197,17 @@ abstract class Abstract {
     subTypeId : NodeId,
     newSuperTypeId : NodeId
   ) : LoggedTG =
-    g.directSuperTypesId(subTypeId).foldLoggedEither(g){
+    s"insertInTypeHierarchy(g, ${(g, subTypeId).shows}, ${(g, newSuperTypeId).shows})" <++: {
+      g.directSuperTypesId(subTypeId).foldLoggedEither(g) {
       (g0, oldSuperTypedId) =>
+
+        val log = s"removeIsa(${(g0,subTypeId).shows}, ${(g0,subTypeId).shows})\n" +
+          s"addIsa(${(g0,newSuperTypeId).shows}, ${(g0,oldSuperTypedId).shows})"
 
         val g1 = g0.removeIsa(NamedType(subTypeId), NamedType(oldSuperTypedId))
           .addIsa(NamedType(newSuperTypeId), NamedType(oldSuperTypedId))
 
-        def extractMethod(typeDeclId : NodeId) : List[(ConcreteNode, Type)] =
+        def extractMethod(typeDeclId: NodeId): List[(ConcreteNode, Type)] =
           g1.content(typeDeclId).toList map g1.getConcreteNode filter { n =>
             n.kind.kindType == InstanceValue &&
               n.kind.abstractionNodeKinds(SupertypeAbstraction).nonEmpty
@@ -213,14 +217,15 @@ abstract class Abstract {
         val newSupTypeMeths = extractMethod(newSuperTypeId)
         val oldSupTypeMeths = extractMethod(oldSuperTypedId)
 
-        Type.findAndRegisterOverridedInList(g1, newSupTypeMeths, subTypeMeths){
+        log <++: (
+        Type.findAndRegisterOverridedInList(g1, newSupTypeMeths, subTypeMeths) {
           Type.ignoreOnImplemNotFound
         } flatMap (
-          Type.findAndRegisterOverridedInList(_, oldSupTypeMeths, newSupTypeMeths){
+          Type.findAndRegisterOverridedInList(_, oldSupTypeMeths, newSupTypeMeths) {
             Type.ignoreOnImplemNotFound
-          })
-
+          }))
     }
+  }
 
   def redirectTypeUseInParameters
   ( g : DependencyGraph, meth : ConcreteNode,
