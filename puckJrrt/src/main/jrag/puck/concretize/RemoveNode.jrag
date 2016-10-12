@@ -41,6 +41,17 @@ aspect RemoveNode {
         throw new PuckError("removeSuperType in " + this.getClass() +"not implemented");
     }
 
+    public void InterfaceDecl.removeSuperInterface(InterfaceDecl typeDecl){
+
+        List<Access> implementsList = getSuperInterfaceList();
+
+        for(int i = 0; i< implementsList.getNumChild(); i++)
+            if(implementsList.getChild(i).accessTo(typeDecl)) {
+                implementsList.removeChild(i);
+                break;
+            }
+    }
+
     public void ClassDecl.removeSuperType(TypeDecl typeDecl){
         if( !getSuperClassOpt().isEmpty() &&
                 getSuperClass().accessTo(typeDecl)){

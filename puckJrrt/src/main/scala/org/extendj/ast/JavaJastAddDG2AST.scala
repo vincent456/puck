@@ -367,8 +367,10 @@ class JavaJastAddDG2AST
             CreateEdge.createIsa(id2declMap, sub, sup)
           case Remove(Isa(sub, sup)) =>
               (id2declMap(Type mainId sub), id2declMap(Type mainId sup)) match {
-                case (ClassDeclHolder(srcDecl), InterfaceDeclHolder(odlDecl)) =>
-                  srcDecl.removeSuperType(odlDecl)
+                case (ClassDeclHolder(srcDecl), TypedKindDeclHolder(oldDecl)) =>
+                  srcDecl removeSuperType oldDecl
+                case (InterfaceDeclHolder(srcDecl), InterfaceDeclHolder(oldDecl)) =>
+                  srcDecl removeSuperInterface oldDecl
                 case _ =>
                   puck.error(s"${(resultGraph, t).shows} : application failure !")
               }
