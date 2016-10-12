@@ -273,7 +273,7 @@ class SolvingActions
         case (absNodeKind, absPolicy) =>
           rules.abstracter.createAbstraction(g, impl, absNodeKind, absPolicy)
       } flatMap {
-        case lt @ LoggedEither(log, -\/(err)) => Stream(lt)
+        case lt @ LoggedEither(_, -\/(_)) => Stream(lt)
         case lt @ LoggedEither(log, \/-((abs, g2))) =>
           val absNodeKind = abs.kind(g2)
 
@@ -286,7 +286,7 @@ class SolvingActions
             chooseNode(g3, newAbsFindHostPredicate(impl,
               abs.policy, absNodeKind),
               vnPolicicy.virtualizableKindFor(abs.kind(g3)))).map {
-            lt =>  s"Searching host for $abs\n" <++: lt.flatMap {
+            lt =>  s"$log\nSearching host for $abs\n" <++: lt.flatMap {
               case (host, g4) => introAbsContainsAndIsa(abs, impl, g4, host)
 
             }
