@@ -42,7 +42,12 @@ abstract class Abstract {
     policy : AbstractionPolicy,
     sUsesAccessKind: Option[UsesAccessKind]
   ) : String =
-    impl.name + "_" + policy
+    impl.name + "_" + policy +
+      "_" + (g.nodesIndex.idSeed + 1)
+  // hack to ensure "unique" name : when the search abstract two times the same class
+  // and the same container is used in both cases we have a name clash
+  // this choice is arguable : in one hand we could add in the container choice predicate a condition to prevent name clash
+  // on the other hand the abstraction creation should be able to create a "fresh" name unused
 
   def absType
   ( g : DependencyGraph,
