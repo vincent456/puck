@@ -34,11 +34,11 @@ class AbstractTypeSpec extends TransfoRulesSpec {
           val (AccessAbstraction(itc, _), g0) =
             Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
               Interface, SupertypeAbstraction).rvalue
-          g0.addContains("p", itc)
+          Rules.rename(g0.addContains("p", itc), itc, "I")
 
         }, code(
-          "interface A_SupertypeAbstraction { void m(); }",
-          "implements A_SupertypeAbstraction"))
+          "interface I { void m(); }",
+          "implements I"))
 
     }
 
@@ -53,12 +53,12 @@ class AbstractTypeSpec extends TransfoRulesSpec {
           val (AccessAbstraction(itc, _), g0) =
             Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
               Interface, SupertypeAbstraction).rvalue
-          g0.addContains("p", itc)
+          Rules.rename(g0.addContains("p", itc), itc, "I")
         },
         """package p;
           |class B {}
-          |interface A_SupertypeAbstraction { public void m(B b); }
-          |class A implements A_SupertypeAbstraction { public void m(B b){} } """)
+          |interface I { public void m(B b); }
+          |class A implements I { public void m(B b){} } """)
 
     }
 
@@ -75,13 +75,13 @@ class AbstractTypeSpec extends TransfoRulesSpec {
           val (AccessAbstraction(itc, _), g0) =
             Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.C"),
               Interface, SupertypeAbstraction).rvalue
-          g0.addContains("p", itc)
+          Rules.rename(g0.addContains("p", itc), itc, "I")
         },
         """package p;
           |import java.util.Enumeration;
           |
-          |interface C_SupertypeAbstraction { Enumeration<?> getThem(); }
-          |class C implements C_SupertypeAbstraction { public Enumeration<?> getThem(){ return null; }  }""")
+          |interface I { Enumeration<?> getThem(); }
+          |class C implements I { public Enumeration<?> getThem(){ return null; }  }""")
 
     }
 
@@ -100,17 +100,17 @@ class AbstractTypeSpec extends TransfoRulesSpec {
             Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
               Interface, SupertypeAbstraction).rvalue
 
-          g0.addContains("p", itc)
+          Rules.rename(g0.addContains("p", itc), itc, "I")
         },
         """package p;
           |
-          |interface A_SupertypeAbstraction {
+          |interface I {
           |    void m();
-          |    void methodUser(A_SupertypeAbstraction a);
+          |    void methodUser(I a);
           |}
-          |class A implements A_SupertypeAbstraction{
+          |class A implements I{
           |    public void m(){}
-          |    public void methodUser(A_SupertypeAbstraction a){ a.m(); }
+          |    public void methodUser(I a){ a.m(); }
           |}""")
     }
 
@@ -133,12 +133,12 @@ class AbstractTypeSpec extends TransfoRulesSpec {
           val (AccessAbstraction(itc, _), g0) =
             Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.B"),
               Interface, SupertypeAbstraction).rvalue
-          g0.addContains("p", itc)
+          Rules.rename(g0.addContains("p", itc), itc, "I")
         },
         """package p;
-          |interface B_SupertypeAbstraction {}
+          |interface I {}
           |
-          |class B implements B_SupertypeAbstraction{
+          |class B implements I {
           |
           |    private int f;
           |
@@ -165,12 +165,12 @@ class AbstractTypeSpec extends TransfoRulesSpec {
           val (AccessAbstraction(itc, _), g0) =
             Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.B"),
               Interface, SupertypeAbstraction).rvalue
-          g0.addContains("p", itc)
+          Rules.rename(g0.addContains("p", itc), itc, "I")
         },
         """package p;
-          |interface B_SupertypeAbstraction { void m(); }
+          |interface I { void m(); }
           |
-          |class B implements B_SupertypeAbstraction{
+          |class B implements I {
           |
           |    private int f;
           |
@@ -202,22 +202,22 @@ class AbstractTypeSpec extends TransfoRulesSpec {
           val (AccessAbstraction(itc, _), g0) =
             Rules.abstracter.createAbstraction(graph, graph getConcreteNode "p.A",
               Interface, SupertypeAbstraction).rvalue
-          g0.addContains("p", itc)
+          Rules.rename(g0.addContains("p", itc), itc, "I")
         },
         """package p;
           |
-          |interface A_SupertypeAbstraction {
+          |interface I {
           |    void m(int i);
-          |    void canBeInInterface(A_SupertypeAbstraction a);
+          |    void canBeInInterface(I a);
           |}
           |
-          |class A implements A_SupertypeAbstraction{
+          |class A implements I {
           |
           |    private int f;
           |
           |    public void m(int i){}
           |
-          |    public void canBeInInterface(A_SupertypeAbstraction a){ a.m(this.f); }
+          |    public void canBeInInterface(I a){ a.m(this.f); }
           |
           |    public void cannotBeInInterface(A a){ this.m(a.f); }
           |}"""
@@ -251,22 +251,22 @@ class AbstractTypeSpec extends TransfoRulesSpec {
           val (AccessAbstraction(itc, _), g0) =
             Rules.abstracter.createAbstraction(graph, graph getConcreteNode "p.A",
               Interface, SupertypeAbstraction).rvalue
-          g0.addContains("p", itc)
+          Rules.rename(g0.addContains("p", itc), itc, "I")
         },
         """package p;
           |
-          |interface A_SupertypeAbstraction {
+          |interface I {
           |    void m(int i);
-          |    void canBeInInterface(A_SupertypeAbstraction a);
+          |    void canBeInInterface(I a);
           |}
           |
-          |class A implements A_SupertypeAbstraction {
+          |class A implements I {
           |
           |    private int f;
           |
           |    public void m(int i){}
           |
-          |    public void canBeInInterface(A_SupertypeAbstraction a1){
+          |    public void canBeInInterface(I a1){
           |        A a2 = new A();
           |        a1.m(a2.f);
           |    }
@@ -299,18 +299,18 @@ class AbstractTypeSpec extends TransfoRulesSpec {
             Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
               Interface, SupertypeAbstraction).rvalue
 
-          g0.addContains("p", itc)
+          Rules.rename(g0.addContains("p", itc), itc, "I")
         },
         """package p;
           |
           |interface SuperA {
           |    void m1();
           |}
-          |interface A_SupertypeAbstraction extends SuperA {
+          |interface I extends SuperA {
           |    void m1();
           |    void m2();
           |}
-          |class A implements A_SupertypeAbstraction {
+          |class A implements I {
           |    public void m1(){}
           |    public void m2(){}
           |}"""
@@ -330,13 +330,13 @@ class AbstractTypeSpec extends TransfoRulesSpec {
           val (AccessAbstraction(itc, _), g0) =
             Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.C"),
               Interface, SupertypeAbstraction).rvalue
-          g0.addContains("p", itc)
+          Rules.rename(g0.addContains("p", itc), itc, "I")
         },
         """package p;
           |import java.io.IOException;
           |
-          |interface C_SupertypeAbstraction { void m() throws IOException; }
-          |class C implements C_SupertypeAbstraction { public void m() throws IOException {  }  }""")
+          |interface I { void m() throws IOException; }
+          |class C implements I { public void m() throws IOException {  }  }""")
 
     }
   }
@@ -360,11 +360,11 @@ class AbstractTypeSpec extends TransfoRulesSpec {
           val (AccessAbstraction(itc, _), g0) =
             Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
               Interface, SupertypeAbstraction).rvalue
-          g0.addContains("p", itc)
+          Rules.rename(g0.addContains("p", itc), itc, "I")
 
         },code(
-          "interface A_SupertypeAbstraction<T> { public void m(); }",
-          "implements A_SupertypeAbstraction<T>"
+          "interface I<T> { public void m(); }",
+          "implements I<T>"
         ))
     }
 
@@ -386,11 +386,11 @@ class AbstractTypeSpec extends TransfoRulesSpec {
           val (AccessAbstraction(itc, _), g0) =
             Rules.abstracter.createAbstraction(graph, graph.getConcreteNode("p.A"),
               Interface, SupertypeAbstraction).rvalue
-          g0.addContains("p", itc)
+          Rules.rename(g0.addContains("p", itc), itc, "I")
 
         },code(
-          "interface A_SupertypeAbstraction<T> { public T m(); }",
-          "implements A_SupertypeAbstraction<T>"
+          "interface I<T> { public T m(); }",
+          "implements I<T>"
         ))
     }
   }
