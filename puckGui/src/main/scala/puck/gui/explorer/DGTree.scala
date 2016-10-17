@@ -57,7 +57,7 @@ trait DGTree {
       case _ => ""
     }
 
-  this setCellRenderer DGNodeWithViolationTreeCellRenderer
+  this setCellRenderer DGNodeWithForbiddenDependencyTreeCellRenderer
 
 
   def addNodeClickedAction(action: (MouseEvent, DGNode) => Unit): Unit = {
@@ -91,7 +91,7 @@ trait DGTree {
 
 }
 
-object DGNodeWithViolationTreeCellRenderer
+object DGNodeWithForbiddenDependencyTreeCellRenderer
   extends DefaultTreeCellRenderer {
 
   def sourceOfViolation(graph : DependencyGraph, constraints: ConstraintsMaps, nodeId : NodeId) : Boolean = {

@@ -33,16 +33,16 @@ import puck.search.SearchControl
 /**
   * Created by Loïc Girault on 10/05/16.
   */
-trait CheckViolation {
+trait CheckForbiddenDependency {
   val constraints: ConstraintsMaps
 
-  def isViolationTarget(g: DependencyGraph, nid: NodeId): Boolean =
+  def isForbidden(g: DependencyGraph, nid: NodeId): Boolean =
     constraints.isWronglyUsed(g, nid) || constraints.isWronglyContained(g, nid)
 
 }
 
 trait TargetFinder
-  extends CheckViolation {
+  extends CheckForbiddenDependency {
 
   val violationsKindPriority: Seq[NodeKind]
 
@@ -62,7 +62,7 @@ trait TargetFinder
 
 }
 
-trait TerminalStateWhenTargetedViolationRemoved[T] {
+trait TerminalStateWhenTargetedForbiddenDependencyRemoved[T] {
   self : SearchControl[DecoratedGraph[T]] =>
 
   val constraints: ConstraintsMaps
@@ -73,7 +73,7 @@ trait TerminalStateWhenTargetedViolationRemoved[T] {
       !constraints.isWronglyUsed(t.graph, violationTarget.id)
 }
 
-trait TerminalStateWhenNoViolations[T] {
+trait TerminalStateWhenNoForbiddenDependencies[T] {
   self : SearchControl[DecoratedGraph[T]] =>
 
   val constraints: ConstraintsMaps

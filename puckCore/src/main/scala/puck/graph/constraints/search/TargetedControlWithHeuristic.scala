@@ -110,13 +110,13 @@ class TargetedControlWithHeuristic
  val violationTarget : ConcreteNode
 ) extends SearchControl[DecoratedGraph[AutomataState]]
   with Heuristic
-  with CheckViolation
-  with TerminalStateWhenTargetedViolationRemoved[AutomataState] {
+  with CheckForbiddenDependency
+  with TerminalStateWhenTargetedForbiddenDependencyRemoved[AutomataState] {
 
   def initialState: DecoratedGraph[AutomataState] = (initialGraph, 0)
 
   def nextStates(state : DecoratedGraph[AutomataState]) : Seq[LoggedTry[DecoratedGraph[AutomataState]]] =
-    if(!isViolationTarget(state.graph, violationTarget.id)) Seq()
+    if(!isForbidden(state.graph, violationTarget.id)) Seq()
     else hNextStates(state.graph, violationTarget, state.decoration)
 
 

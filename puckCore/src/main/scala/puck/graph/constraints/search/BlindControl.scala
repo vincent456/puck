@@ -23,12 +23,12 @@ class TargetedBlindControl
   val violationTarget : ConcreteNode
 ) extends SearchControl[DecoratedGraph[Unit]] //DecoratedGraph[Unit] let us share the DecoratedGraphEvalutaor
   with Blind
-  with CheckViolation
-  with TerminalStateWhenTargetedViolationRemoved[Unit] {
+  with CheckForbiddenDependency
+  with TerminalStateWhenTargetedForbiddenDependencyRemoved[Unit] {
   def initialState: DecoratedGraph[Unit] = (initialGraph, ())
 
   def nextStates(t: DecoratedGraph[Unit]): Seq[LoggedTry[DecoratedGraph[Unit]]] =
-    if(!isViolationTarget(t.graph, violationTarget.id)) Seq()
+    if(!isForbidden(t.graph, violationTarget.id)) Seq()
     else decorate(nextStates(violationTarget)(t.graph), ())
 
 
@@ -45,13 +45,13 @@ class BlindControl
 ) extends SearchControl[DecoratedGraph[Option[ConcreteNode]]]
   with Blind
   with TargetFinder
-  with TerminalStateWhenNoViolations[Option[ConcreteNode]] {
+  with TerminalStateWhenNoForbiddenDependencies[Option[ConcreteNode]] {
 
   def initialState: DecoratedGraph[Option[ConcreteNode]] = (initialGraph, None)
 
   def nextStates(g: DependencyGraph)(violationTarget : ConcreteNode) : Seq[LoggedTry[DecoratedGraph[Option[ConcreteNode]]]] =
     if(constraints.noForbiddenDependencies(g)) Seq()
-    else if(!isViolationTarget(g, violationTarget.id)) Seq(LoggedSuccess((g, None)))
+    else if(!isForbidden(g, violationTarget.id)) Seq(LoggedSuccess((g, None)))
     else decorate(nextStates(violationTarget)(g.mileStone), Some(violationTarget))
 
   private [this] val nextStates_ = mutable.Map[DecoratedGraph[Option[ConcreteNode]],

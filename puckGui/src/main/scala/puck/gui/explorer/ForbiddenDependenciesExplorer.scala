@@ -113,13 +113,13 @@ class ForbiddenDependenciesExplorer
     violations.foldLeft(Set[NodeId]())((s,e) => s + e.target)
 
 
-  trait ViolationTreeHandle {
+  trait ForbiddenDependenciesTreeHandle {
     def extremities(violations : Seq[DGEdge]) : Set[NodeId]
     def exty(edge : DGEdge) : NodeId
     def event(nodeId : NodeId) : Event
   }
 
-  class ViolationTree(handle : ViolationTreeHandle) extends
+  class ForbiddenDependenciesTree(handle : ForbiddenDependenciesTreeHandle) extends
     JTree(TreeModelAdapter.subGraph(graph, handle.extremities(allViolations))) with DGTree {
     def icons : NodeKindIcons = nodeKindIcons
 
@@ -140,7 +140,7 @@ class ForbiddenDependenciesExplorer
           menu.contents += new Action("Node infos") {
             def apply() : Unit = Bus publish NodeClicked(n)
           }
-          menu.show(Component wrap ViolationTree.this, e.getX, e.getY)
+          menu.show(Component wrap ForbiddenDependenciesTree.this, e.getX, e.getY)
         } else {
           Bus publish handle.event(n.id)
           if(n.kind.kindType != NameSpace)
@@ -149,7 +149,7 @@ class ForbiddenDependenciesExplorer
     )
   }
 
-  val sourceTree = new ViolationTree(new ViolationTreeHandle {
+  val sourceTree = new ForbiddenDependenciesTree(new ForbiddenDependenciesTreeHandle {
     def exty(edge: DGEdge): NodeId = edge.source
 
     def extremities(violations: Seq[DGEdge]): Set[NodeId] = sources(violations)
@@ -157,7 +157,7 @@ class ForbiddenDependenciesExplorer
     def event(nodeId: NodeId): Event = FilterSource(nodeId)
   })
 
-  val targetTree = new ViolationTree(new ViolationTreeHandle {
+  val targetTree = new ForbiddenDependenciesTree(new ForbiddenDependenciesTreeHandle {
     def exty(edge: DGEdge): NodeId = edge.target
 
     def extremities(violations: Seq[DGEdge]): Set[NodeId] = targets(violations)

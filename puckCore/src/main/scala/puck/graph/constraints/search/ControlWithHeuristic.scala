@@ -42,14 +42,14 @@ class ControlWithHeuristic
 ) extends SearchControl[DecoratedGraph[Option[(ConcreteNode, AutomataState)]]]
   with Heuristic
   with TargetFinder
-  with TerminalStateWhenNoViolations[Option[(ConcreteNode, AutomataState)]]{
+  with TerminalStateWhenNoForbiddenDependencies[Option[(ConcreteNode, AutomataState)]]{
 
   def initialState: DecoratedGraph[Option[(ConcreteNode, AutomataState)]] = (initialGraph, None)
 
   def nextStates(g : DependencyGraph,
                  violationTarget : ConcreteNode,
                  automataState: AutomataState) : Seq[LoggedTry[DecoratedGraph[Option[(ConcreteNode, AutomataState)]]]] =
-    if(!isViolationTarget(g, violationTarget.id)) Seq(LoggedSuccess((g, None)))
+    if(!isForbidden(g, violationTarget.id)) Seq(LoggedSuccess((g, None)))
     else mapSeqLoggedTry[DecoratedGraph[AutomataState], DecoratedGraph[Option[(ConcreteNode, AutomataState)]]](
       hNextStates(g, violationTarget, automataState),
       { case (g1, automataState1) => (g1, Some((violationTarget, automataState1)))})
