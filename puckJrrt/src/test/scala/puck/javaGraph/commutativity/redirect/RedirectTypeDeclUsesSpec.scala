@@ -278,7 +278,55 @@ class RedirectTypeDeclUsesSpec
       },code("I"))
   }
 
-  ignore("From class to class superType"){}
+  scenario("From class to class superType"){
+    def code(typeUsed : String) =
+      s"""package p;
+          |
+          |abstract class AC { public abstract void m(); }
+          |class C extends AC{ public void m(){} }
+          |
+          |class A {
+          |
+          |    public static void main(String[] args){
+          |        A a = new A();
+          |        a.user(new C());
+          |    }
+          |
+          |    void user($typeUsed c){ c.m(); }
+          |}"""
+
+    compareWithExpectedAndGenerated(
+      code("C"),
+      bs => {
+        import bs.{graph, idOfFullName}
+
+        Redirection.redirectUsesAndPropagate(graph,
+          ("p.A.user(C).c", "p.C"),
+          AccessAbstraction("p.AC", SupertypeAbstraction)).rvalue
+      }, code("AC"))
+  }
+
+  scenario("From class to class superType - usage of a not overrided method"){
+    def code(typeUsed : String) =
+      s"""package p;
+          |
+          |class AC { public void m(){} }
+          |class C extends AC{  }
+          |
+          |class A {
+          |    void user($typeUsed c){ c.m(); }
+          |}"""
+
+    compareWithExpectedAndGenerated(
+      code("C"),
+      bs => {
+        import bs.{graph, idOfFullName}
+
+        Redirection.redirectUsesAndPropagate(graph,
+          ("p.A.user(C).c", "p.C"),
+          AccessAbstraction("p.AC", SupertypeAbstraction)).rvalue
+      }, code("AC"))
+  }
 
   ignore("From interface to interface superType"){}
 

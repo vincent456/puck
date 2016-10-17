@@ -141,22 +141,4 @@ trait GraphBuilder {
     (g1, nonOverridingsMethods)
   }
 
-
-  //  def registerAbstraction(graph: DependencyGraph, implId : NodeId, abs: Abstraction) : DependencyGraph =
-  //    abs match {
-  //      case AccessAbstraction(absId, SupertypeAbstraction) =>
-  //        val impl = graph.getConcreteNode(implId)
-  //        val absNode = graph.getConcreteNode(absId)
-  //        val absMeths = g instanceValuesWithType absId
-  //        val candidates = g instanceValuesWithType impl.id
-  //        Type.findAndRegisterOverridedInList(graph, absMeths, candidates) {
-  //          Type.ignoreOnImplemNotFound
-  //          //errorOnImplemNotFound(graph.fullName(impl.id))
-  //        } match {
-  //          case LoggedSuccess(_, g) => g.addAbstraction(implId, abs)
-  //          case LoggedError(_, err) => throw err
-  //        }
-  //
-  //      case _ => g.addAbstraction(implId, abs)
-  //    }
 }

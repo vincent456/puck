@@ -76,7 +76,7 @@ object JavaJastAddDG2AST
 
 
 
-    builder.registerSuperTypeAbtractions()
+    //builder.registerSuperTypeAbtractions()
 
     val (_, initialRecord) = NodeMappingInitialState.normalizeNodeTransfos(JavaNodeKind.root.kind,
       builder.g.recording, Seq())

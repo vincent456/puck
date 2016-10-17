@@ -52,14 +52,17 @@ object Redirection {
 
     val ltg : LoggedTG = (oldKindType, newKindType) match {
       case (TypeDecl, TypeDecl) =>
-        val AccessAbstraction(newUsedId, _) = newUsed
-        redirectInstanceUsesTowardAbstractionInAnotherTypeAndPropagate(g, oldUse, newUsedId)
+        val AccessAbstraction(newUsedId, pol) = newUsed
+        redirectInstanceUsesTowardAbstractionInAnotherTypeAndPropagate(g, oldUse, newUsedId, pol)
 
       case (InstanceValue, InstanceValue) =>
         if(oldUsed.kind.isWritable)
           redirectFieldTowardGetterSetter(g, oldUse, newUsed)
-        else
-          redirectInstanceUsesTowardAbstractionInAnotherTypeAndPropagate(g, oldUse, newUsed.containerIn(g).get)
+        else {
+          redirectInstanceUsesTowardAbstractionInAnotherTypeAndPropagate(g, oldUse,
+            newUsed.containerIn(g).get, newUsed.policy)
+        }
+
 
       case (TypeConstructor, InstanceValue) =>
         redirectTypeConstructorToInstanceValueDecl(g, oldUse, newUsed)()
@@ -133,14 +136,72 @@ object Redirection {
 
   }
 
+  def tmOverriddenAbstraction
+  (g : DependencyGraph,
+   typeAbsId : NodeId,
+   tmImplsId : List[NodeId]
+  ) : LoggedTry[Map[NodeId, NodeId]] = {
+    /*precondition
+      hostType(tmImplId) <: typeAbs
+      \forall n \in tmImplsId => n is typed
+
+        /!\ case de A :< B et A :< C avec méthode surchargé présente dans B ET C non géré
+     */
+
+    val typedImpls = tmImplsId map (n => (g getConcreteNode n, g typ n))
+
+    //val log = s"tmAbstraction : searching an abstraction of ${(g, tmImpl).shows} in ${(g, typeAbsId).shows}\n"
+
+    def findAbsInOneType(superType : NodeId,
+            impls : List[TypedNode],
+            acc : Map[NodeId, NodeId]) : (List[TypedNode], Map[NodeId, NodeId]) = {
+      val candidates = g.content(superType).toList
+      val typedCandidates = candidates flatMap (c => g.styp(c) map ((g getConcreteNode c, _)))
+
+
+      val (remainingImps, _, map) = impls.foldLeft((List[(ConcreteNode, Type)](), typedCandidates, acc)){
+        case ((remainingSubs, remainingCandidates, map), typedMeth @ (subMeth, subMethSig)) =>
+          Type.findOverridingIn(g, subMeth.name, subMethSig, remainingCandidates) match {
+            case None => (typedMeth :: remainingSubs, remainingCandidates, acc)
+            case Some(((absM,_), remainingCandidates1)) =>
+              (remainingSubs, remainingCandidates1, acc + (subMeth.id -> absM.id) )
+          }
+      }
+
+      (remainingImps, map)
+    }
+
+    def searchTroughHierarchy(t : NodeId,
+                              impls : List[TypedNode],
+                              acc : Map[NodeId, NodeId]) : (List[TypedNode], Map[NodeId, NodeId]) = {
+      val (remainings, acc2)= findAbsInOneType(t, impls, acc)
+      if(remainings.isEmpty) (Nil, acc2)
+      else {
+        val superTypes = g.directSuperTypes(t).toList map Type.mainId
+        superTypes.foldLeft((remainings, acc2)){
+          case ((remainings2, acc3), superType) =>
+            searchTroughHierarchy(superType, remainings2, acc3)
+        }
+      }
+    }
+
+    val (remainings, map) = searchTroughHierarchy(typeAbsId, typedImpls, Map())
+
+    if(remainings.isEmpty) LoggedSuccess(map)
+    else {
+      val strs = remainings map {case (n, t) => (g,n).shows + " : " + (g, t).shows}
+      LoggedError( s"abtraction not found for :${strs.mkString("\n", "\n", "\n")}" )
+    }
+  }
+
   def tmAbstraction
-  ( g : DependencyGraph,
-    typeAbs : NodeId,
-    tmImpl : NodeId
+  (g : DependencyGraph,
+   typeAbsId : NodeId,
+   tmImplId : NodeId
   ) : LoggedTry[Abstraction] = {
-    val log = s"tmAbstraction : searching an abstraction of ${(g, tmImpl).shows} in ${(g, typeAbs).shows}\n"
-    val absSet = g.abstractions(tmImpl).filter { abs =>
-      abs.nodes.forall(g.contains(typeAbs,_))
+    val log = s"tmAbstraction : searching an abstraction of ${(g, tmImplId).shows} in ${(g, typeAbsId).shows}\n"
+    val absSet = g.abstractions(tmImplId).filter { abs =>
+      abs.nodes.forall(g.contains(typeAbsId,_))
     }
     if(absSet.size != 1)
       LoggedError(log + s" one abstraction required ${absSet.size} found")
@@ -199,18 +260,18 @@ object Redirection {
         if tc.typedNodes contains ctor
       } yield tc
 
-    println( "oldUse = "+ (g, ctorUse).shows)
-    println("constraintsToUpdate = " +constraintsToUpdate)
+//    println("oldUse = "+ (g, ctorUse).shows)
+//    println("constraintsToUpdate = " +constraintsToUpdate)
     g.typ(newUsed) match {
       case NamedType(tid) =>
         constraintsToUpdate.foldLoggedEither(g){
           case (g0, btc @ BinaryTypeConstraint(op, Typed(_), Typed(_))) =>
             val newBtc = TypeConstraint.changeTyped(btc, ctor, newUsed)
 
-            println("old contraint = ")
-            println((g, btc).shows)
-            println("new contraint = ")
-            println((g, newBtc).shows)
+//            println("old contraint = ")
+//            println((g, btc).shows)
+//            println("new contraint = ")
+//            println((g, newBtc).shows)
 
 
             val g1 =
@@ -269,12 +330,11 @@ object Redirection {
   def propagateParameterTypeConstraints
   (g : DependencyGraph,
    typeMember : NodeId,
-   abs : Abstraction) : DependencyGraph = {
+   absId : NodeId) : DependencyGraph = {
 
     val parameters = g parametersOf typeMember
     if(parameters.isEmpty) g
     else {
-      val AccessAbstraction(absId,_) = abs
       val absParameters = g parametersOf absId
       val paramsConstraints = for {
         pids <- parameters zip absParameters
@@ -318,21 +378,42 @@ object Redirection {
   ( g : DependencyGraph,
     oldTypeUses : NodeIdP,
     brSet : Set[(NodeIdP, NodeIdP)], // \forall p in brSet, p._1 == oldTypeUses
-    newTypeToUse : NodeId
+    newTypeToUse : NodeId,
+    abstractionPolicy: AbstractionPolicy
   ): LoggedTG = {
+
+    val getTMabs : (DependencyGraph, NodeId) => LoggedTry[NodeId] =
+        abstractionPolicy match {
+          case DelegationAbstraction =>
+            (g, id) =>
+              tmAbstraction(g, newTypeToUse, id) map (_.nodes.head)
+          case SupertypeAbstraction =>
+
+            val ltmap = tmOverriddenAbstraction(g,
+              newTypeToUse,
+              (brSet map (_._2._2)).toList)
+
+            (g, id) =>
+              ltmap flatMap  ( m => m get id match {
+                case Some(absId) => LoggedSuccess(absId)
+                case None => LoggedError("")
+              })
+        }
     val newTypeUse = (oldTypeUses.user, newTypeToUse)
     "redirectTypeMemberUses:\n" <++:
       brSet.foldLoggedEither(g) {
         case (g00, (_, tmu)) =>
 
           for {
-            abs <- tmAbstraction(g, newTypeToUse, tmu.used)
-            gNewTmus <- redirect(g00, tmu, abs)
-            (g01, nTmus) = gNewTmus
+            absId <- getTMabs(g, tmu.used)
+            g01 <-
+            LoggedSuccess(s"changing target of ${(g00, tmu).shows} for ${(g00, absId).shows(desambiguatedFullName)}",
+              g00.changeTarget(Uses(tmu), absId))
+            newTmu = (tmu.user, absId)
           } yield {
             val g02 = g01.removeBinding(oldTypeUses, tmu)
-              .changeTypeUseForTypeMemberUseSet(oldTypeUses, newTypeUse, nTmus)
-            propagateParameterTypeConstraints(g02, tmu.used, abs)
+              .changeTypeUseOfTypeMemberUse(oldTypeUses, newTypeUse, newTmu)
+            propagateParameterTypeConstraints(g02, tmu.used, absId)
           }
       }
   }
@@ -404,12 +485,12 @@ object Redirection {
   def redirectInstanceUsesTowardAbstractionInAnotherTypeAndPropagate
   (g : DependencyGraph,
    oldUse : NodeIdP,
-   newTypeToUse : NodeId
+   newTypeToUse : NodeId,
+   abstractionPolicy: AbstractionPolicy
   ) : LoggedTG = {
 
     val log = s"redirectInstanceUsesAndPropagate(g, oldUse = ${(g, oldUse).shows},  " +
       s"newTypeToUse = ${(g, newTypeToUse).shows})\n"
-
 
 
     lazy val qualifyingSet = cl(g, oldUse)
@@ -423,7 +504,7 @@ object Redirection {
           case (g0, (tu, brSet)) =>
             //val g1 = g0.changeTarget(Uses(tu), newTypeToUse)
             val g1 = g0.changeType(tu, newTypeToUse)
-            redirectTypeMemberUses(g1, tu, brSet, newTypeToUse)
+            redirectTypeMemberUses(g1, tu, brSet, newTypeToUse, abstractionPolicy)
 
         }
       }
