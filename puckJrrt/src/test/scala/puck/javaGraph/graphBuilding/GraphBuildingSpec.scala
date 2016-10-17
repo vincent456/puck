@@ -36,7 +36,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
 
   feature("Abstraction registration"){
-    scenario("one class one interface"){
+    ignore("one class one interface : ignore because now supertype abstraction are dinamcally computed"){
       val _ = new ScenarioFactory(
         """package p;
           |
