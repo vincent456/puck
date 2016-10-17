@@ -28,7 +28,7 @@ package puck.gui
 package menus
 
 import puck.actions.ChooseAbsAndRedirectMultiAction
-import puck.graph.{ConcreteNode, DependencyGraph, NodeId, NodeIdP}
+import puck.graph.{AccessAbstraction, ConcreteNode, DependencyGraph, NodeId, NodeIdP, SupertypeAbstraction, TypeDecl}
 import puck.gui.svg.actions.TargetedAutoSolveAction
 
 /**
@@ -42,12 +42,12 @@ object ForbiddenDependencyTargetMenu {
     new ForbiddenDependencyTargetMenu(controller, g, List(), None, false, target, nodeKindIcons)
 }
 class ForbiddenDependencyTargetMenu
-(controller : PuckControl,
- g : DependencyGraph,
- selectedNodes: List[NodeId],
+( controller : PuckControl,
+  g : DependencyGraph,
+  selectedNodes: List[NodeId],
   selectedEdge : Option[NodeIdP],
   blurryEdgeSelection : Boolean,
- target : ConcreteNode,
+  target : ConcreteNode,
   nodeKindIcons: NodeKindIcons)
   extends ConcreteNodeMenu(controller, g,
     selectedNodes,
@@ -64,7 +64,15 @@ class ForbiddenDependencyTargetMenu
 
      val wu = cts.wrongUsers(g,target.id)
 
-     val abstractions = graph.abstractions(target.id)
+     def superTypeAbstractions : Set[AccessAbstraction] =
+       target.kind.kindType match {
+         case TypeDecl =>
+           g.superTypes(target.id) map (AccessAbstraction(_, SupertypeAbstraction))
+         case _ => Set()
+       }
+
+     val abstractions = graph.abstractions(target.id) ++ superTypeAbstractions
+
      if (abstractions.nonEmpty)
        contents += new ChooseAbsAndRedirectMultiAction(controller.Bus, g, wu,
          target.id, abstractions.toSeq)

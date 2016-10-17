@@ -599,9 +599,14 @@ class DependencyGraph private
   def directSuperTypesId(sub: NodeId) : Set[NodeId] = this directSuperTypes sub map Type.mainId
   def directSubTypesId(sup: NodeId) : Set[NodeId] = this directSubTypes sup map Type.mainId
 
+  def superTypes(sub : NodeId) : Set[NodeId]= {
+    val dst = directSuperTypesId(sub)
+    dst.foldLeft(dst) { _ ++ superTypes(_) }
+  }
+
   def subTypes(sup : NodeId) : Set[NodeId]= {
     val dst = directSubTypesId(sup)
-    dst.foldLeft(dst) { case (acc, id) => acc ++ subTypes(id) }
+    dst.foldLeft(dst) {  _ ++ subTypes(_) }
   }
 
 
