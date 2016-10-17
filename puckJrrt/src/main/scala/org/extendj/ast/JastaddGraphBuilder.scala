@@ -28,7 +28,7 @@ package org.extendj.ast
 
 import puck.graph._
 import puck.javaGraph.nodeKind.{EnumConstant => PuckEnumConstant, _}
-import puck.javaGraph.{JavaGraphBuilder, nodeKind}
+import puck.javaGraph.JavaGraphBuilder
 
 import scala.{List => SList}
 import scala.collection.JavaConversions._

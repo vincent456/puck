@@ -26,7 +26,6 @@
 
 package puck.search
 
-import puck.PuckError
 import puck.graph.{LoggedTry, error}
 import puck.util.Logged
 
