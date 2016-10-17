@@ -203,7 +203,7 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
         assert( ! graph.uses("p.User.m().Definition", "p.A") )
 
-        printFullNames()
+        //printFullNames()
         assert( graph.typ("p.User.m().Definition.0") == ParameterizedType("p.GenColl", List(NamedType("p.A"))) )
 
 

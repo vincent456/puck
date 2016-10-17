@@ -26,11 +26,11 @@ class DependencyRulesSpec extends AcceptanceSpec {
     import s._
     val cts = s.parseConstraint("hide [p.A] from [p.B]")
 
-    import puck.graph.ShowDG._
-    cts.violations(graph).foreach {
-      u =>
-      (graph, u).println
-    }
+//    import puck.graph.ShowDG._
+//    cts.violations(graph).foreach {
+//      u =>
+//      (graph, u).println
+//    }
 
     cts.violations(graph) should not be empty
 

@@ -48,8 +48,8 @@ class ReplaceInheritanceByDelegationSpec
         |class C extends A { public void m(){ System.out.println("Yeah C !"); } }""",
       bs => {
         import bs.{graph, idOfFullName}
-        import puck.graph.ShowDG._
-        (graph, graph.abstractionsMap).println
+        //import puck.graph.ShowDG._
+        //(graph, graph.abstractionsMap).println
 
         ReplaceInheritanceByDelegation.subsToDelegate(graph,
           List(NamedType("p.B"), NamedType("p.C")),

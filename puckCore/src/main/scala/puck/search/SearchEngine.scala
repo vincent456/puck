@@ -98,13 +98,13 @@ class SearchEngine[T]
 
   def addChoicesStates(parent : SearchState[T], choices : Seq[LoggedTry[T]]) : Unit = {
     numExploredStates = numExploredStates + 1
-    println("add children of " + parent.uuid())
+    //println("add children of " + parent.uuid())
     choices.zipWithIndex.foreach {
       case (c,i) =>
-        println("adding child " + i)
+      //  println("adding child " + i)
         addState(new SearchState[T](i, Some(parent), c))
     }
-    println("children added")
+    //println("children added")
   }
 
   def init() : Unit = ()
@@ -113,7 +113,7 @@ class SearchEngine[T]
 
   def oneStep() : Unit= {
     val state = searchStrategy.popState()
-    println("popping "+state.uuid())
+    //println("popping "+state.uuid())
     state.loggedResult.value match {
       case \/-(cc) =>
         addChoicesStates(state, control.nextStates(cc) map (ltnext => state.loggedResult.log <++: ltnext))

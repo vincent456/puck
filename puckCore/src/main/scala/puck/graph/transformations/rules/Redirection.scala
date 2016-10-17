@@ -409,14 +409,14 @@ object Redirection {
     //retrieving type use of field
     def typeUse(nodeId: NodeId) : NodeIdP = (nodeId, Type.mainId(g typ nodeId))
     val oldTypeUse = typeUse(oldUse.used)
-    println("on entering :")
-    println( "oldTypeUse = "+ (g, oldTypeUse).shows)
-    println( "g1.typeConstraints( oldTypeUse ) = ")
-    g.typeConstraints( oldUse.used ).foreach {
-      tuc =>
-        println((g, tuc).shows)
-    }
-    println("*********************")
+//    println("on entering :")
+//    println( "oldTypeUse = "+ (g, oldTypeUse).shows)
+//    println( "g1.typeConstraints( oldTypeUse ) = ")
+//    g.typeConstraints( oldUse.used ).foreach {
+//      tuc =>
+//        println((g, tuc).shows)
+//    }
+//    println("*********************")
 
 
     val log = s"redirectUsesOfWritableNodeAndPropagate(g, oldUse = ${(g, oldUse).shows},  " +
@@ -519,18 +519,18 @@ object Redirection {
           if(typed == typed1) typed2
           else typed1
 
-        import ShowDG._
-        println("ct = " + (g, ct).shows)
-        println("typed = " + (g, typed).shows)
-        println("t = " + (g, t).shows)
-        println(s"change ${(g, oldNamedTypeId).shows} to ${(g, newNamedTypeId).shows}")
+//        import ShowDG._
+//        println("ct = " + (g, ct).shows)
+//        println("typed = " + (g, typed).shows)
+//        println("t = " + (g, t).shows)
+//        println(s"change ${(g, oldNamedTypeId).shows} to ${(g, newNamedTypeId).shows}")
 
 
         val canBePropagated = {
           val g2 = g.changeType((t, oldNamedTypeId), newNamedTypeId)
-          println("typed = " + (g2, typed).shows)
-          println("t = " + (g2, t).shows)
-          println("ct = " + (g2, ct).shows)
+//          println("typed = " + (g2, typed).shows)
+//          println("t = " + (g2, t).shows)
+//          println("ct = " + (g2, ct).shows)
           TypeConstraint.comply(g2, ct)
         }
 
@@ -544,16 +544,16 @@ object Redirection {
         case (g0, ct @ (BinaryTypeConstraint(op, Typed(typed1), Typed(typed2)))) =>
           checkIfCanBePropagetedAndDoSo(g0, ct, typed1, typed2)
         case (g0, ct) =>
-          import ShowDG._
-          println("***********************************************************")
-          println("ct = ")
-          (g0, ct).println
-          println(s"change ${(g0, oldNamedTypeId).shows} to ${(g0, newNamedTypeId).shows}")
+//          import ShowDG._
+//          println("***********************************************************")
+//          println("ct = ")
+//          (g0, ct).println
+//          println(s"change ${(g0, oldNamedTypeId).shows} to ${(g0, newNamedTypeId).shows}")
 
           val ct2 = TypeConstraint.changeNamedType(ct, oldNamedTypeId, newNamedTypeId)
-          println("ct2 = ")
-
-          (g0, ct2).println
+//          println("ct2 = ")
+//
+//          (g0, ct2).println
 
           if(ct2 == ct) LoggedError(s"propagation of ${(g0,ct).shows} not handled")
           else {

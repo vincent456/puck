@@ -762,7 +762,7 @@ class MoveMethodSpec extends TransfoRulesSpec {
             |class C { void m(){ D d = new D(A.get42()); } }"""),
         bs => {
           import bs.{graph, idOfFullName}
-          bs.printFullNamesSortedByKey()
+          //bs.printFullNamesSortedByKey()
           Move.staticDecl(graph, "p1.A.get42()", "p2.B").rvalue
         },
         Seq(
