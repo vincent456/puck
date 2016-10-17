@@ -131,24 +131,4 @@ class ExtendJSpec  extends AcceptanceSpec {
 
     }
   }
-
-  scenario("pretty print of method with label"){
-    val s = new ScenarioFactory(
-      """package p;
-        | public class C {
-        |   public int m(){
-        |     loops:
-        |     for(int i=0; i <10; i++){
-        |         for(int j=0; j <10; i++){
-        |             if(i + j == 5)
-        |                break loops;
-        |         }
-        |     }
-        |     return 42;
-        |   }
-        | }""")
-      import s._
-      program.prettyPrint(System.out)
-
-  }
 }
