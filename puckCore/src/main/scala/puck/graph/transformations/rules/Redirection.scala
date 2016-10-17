@@ -149,22 +149,21 @@ object Redirection {
      */
 
     val typedImpls = tmImplsId map (n => (g getConcreteNode n, g typ n))
-
     //val log = s"tmAbstraction : searching an abstraction of ${(g, tmImpl).shows} in ${(g, typeAbsId).shows}\n"
 
     def findAbsInOneType(superType : NodeId,
             impls : List[TypedNode],
-            acc : Map[NodeId, NodeId]) : (List[TypedNode], Map[NodeId, NodeId]) = {
+            map0 : Map[NodeId, NodeId]) : (List[TypedNode], Map[NodeId, NodeId]) = {
       val candidates = g.content(superType).toList
       val typedCandidates = candidates flatMap (c => g.styp(c) map ((g getConcreteNode c, _)))
 
-
-      val (remainingImps, _, map) = impls.foldLeft((List[(ConcreteNode, Type)](), typedCandidates, acc)){
-        case ((remainingSubs, remainingCandidates, map), typedMeth @ (subMeth, subMethSig)) =>
+      val (remainingImps, _, map) = impls.foldLeft((List[(ConcreteNode, Type)](), typedCandidates, map0)){
+        case ((remainingSubs, remainingCandidates, map1), typedMeth @ (subMeth, subMethSig)) =>
           Type.findOverridingIn(g, subMeth.name, subMethSig, remainingCandidates) match {
-            case None => (typedMeth :: remainingSubs, remainingCandidates, acc)
+            case None =>
+              (typedMeth :: remainingSubs, remainingCandidates, map1)
             case Some(((absM,_), remainingCandidates1)) =>
-              (remainingSubs, remainingCandidates1, acc + (subMeth.id -> absM.id) )
+              (remainingSubs, remainingCandidates1, map1 + (subMeth.id -> absM.id) )
           }
       }
 
