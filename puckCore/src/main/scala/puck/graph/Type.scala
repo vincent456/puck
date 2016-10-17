@@ -47,7 +47,6 @@ object Type {
   ( g : DependencyGraph,
     implName : String, implSig : Type,
     candidates : List[TypedNode]) : Option[(TypedNode, List[TypedNode])] = {
-    //println(s"searching for abstraction of $absName $absSig in $candidates")
     import puck.util.Collections.SelectList
     candidates.select {
       case (c, t) => c.name == implName && t.canOverride(g, implSig)

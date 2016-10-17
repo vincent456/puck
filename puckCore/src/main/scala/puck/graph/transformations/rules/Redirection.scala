@@ -215,26 +215,7 @@ object Redirection {
       newUsed match {
         case AccessAbstraction(absId, _) =>
           (g.changeTarget(Uses(oldUse), absId), Set((oldUse.user, absId)))
-        case _ => puck.error("blob")
-        //        case ReadWriteAbstraction(srid, swid) =>
-        //          g.typeUsesOf(oldUse).foldLeft((g, Set[NodeIdP]())) {
-        //            case ((g0, s), tu) =>
-        //              (srid, swid, g0.usesAccessKind((tu, oldUse))) match {
-        //                case (Some(rid), _, Some(Read)) =>
-        //                  (oldUse.changeTarget(g0, Uses, rid)
-        //                    .changeAccessKind((tu, oldUse), None),
-        //                    s + ((oldUse.user, rid)))
-        //                case (_, Some(wid), Some(Write)) =>
-        //                  (oldUse.changeTarget(g0, Uses, wid)
-        //                    .changeAccessKind((tu, oldUse), None), s + ((oldUse.user, wid)))
-        //                case  (Some(rid), Some(wid), Some(RW)) =>
-        //                  val (g1, s1) = g0.changeAccessKind((tu, oldUse), None)
-        //                    .splitUsesWithTargets(oldUse, rid, wid)
-        //                  (g1, s ++ s1)
-        //
-        //              }
-        //
-        //          }
+        case _ => puck.error("redirect toward read / write abs should not be handled here")
       }
     } catch {
       case e : PuckError => LoggedError(e.getMessage)
@@ -488,7 +469,7 @@ object Redirection {
    abstractionPolicy: AbstractionPolicy
   ) : LoggedTG = {
 
-    val log = s"redirectInstanceUsesAndPropagate(g, oldUse = ${(g, oldUse).shows},  " +
+    val log = s"redirect instance uses and propagate: oldUse = ${(g, oldUse).shows},  " +
       s"newTypeToUse = ${(g, newTypeToUse).shows})\n"
 
 
