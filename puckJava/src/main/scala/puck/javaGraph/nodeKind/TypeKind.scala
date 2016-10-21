@@ -71,12 +71,12 @@ case object Class extends TypeKind {
 
   override val toString : String = "Class"
 
-  override def canBe(k : NodeKind) : Boolean = {
+  override def canBe(k : NodeKind) : Boolean =
     k match {
       case _ : TypeKind => true
       case _ => false
     }
-  }
+
 
   def canContain(k : NodeKind) : Boolean = {
     k match {
@@ -95,6 +95,15 @@ case object Class extends TypeKind {
     case SupertypeAbstraction => Seq[NodeKind](Interface, Class/*, GenericInterface, GenericClass*/)
     case DelegationAbstraction => Seq[NodeKind]()//Class)//also interface ?
   }
+
+}
+
+case object Enum extends TypeKind {
+
+  override val toString : String = "Enum"
+  override def canBe(k : NodeKind) : Boolean = false
+  def canContain(k : NodeKind) : Boolean = false
+  def abstractionNodeKinds(p : AbstractionPolicy) : Seq[NodeKind] = Seq()
 
 }
 

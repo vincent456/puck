@@ -63,6 +63,9 @@ trait Registration {
     if(decl.isInnerType) Inner(tk)
     else tk
 
+  def registerDecl(n : NodeId, decl : EnumDecl) =
+    register(n, wrapInner(Enum, decl), EnumDeclHolder(decl), "ClassDecl")
+
   def registerDecl(n : NodeId, decl : InterfaceDecl) =
     register(n, wrapInner(Interface, decl), InterfaceDeclHolder(decl), "InterfaceDecl")
 

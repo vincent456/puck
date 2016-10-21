@@ -245,6 +245,7 @@ object TypedKindDeclHolder {
 }
 
 case class InterfaceDeclHolder(decl : InterfaceDecl) extends TypedKindDeclHolder
+case class EnumDeclHolder(decl : EnumDecl) extends TypedKindDeclHolder
 case class ClassDeclHolder(decl : ClassDecl) extends TypedKindDeclHolder
 case class WildCardTypeHolder(decl : AbstractWildcardType) extends TypedKindDeclHolder
 case class TypeVariableHolder(decl : TypeVariable) extends TypedKindDeclHolder

@@ -125,6 +125,7 @@ trait NodeFactory {
 
   def nodeKind(n : DGNamedElement) : JavaNodeKind = n match {
     case _ : TypeVariable => PTypeVariable
+    case _ : EnumDecl => Enum
     case rt : ReferenceType => refTypeNodeKind(rt)
     case _ : AbstractWildcardType => WildCardType
     case _ : PrimitiveType

@@ -157,6 +157,9 @@ aspect NamedElement {
       builder.registerDecl(thisId, this);
   	}
 //duplication needed for overloaded static resolution
+    public void EnumDecl.registerNode(JastaddGraphBuilder builder, int thisId){
+        builder.registerDecl(thisId, this);
+    }
     public void GenericInterfaceDecl.registerNode(JastaddGraphBuilder builder, int thisId){
         builder.registerDecl(thisId, this);
     }

@@ -41,6 +41,7 @@ object JavaIcons extends NodeKindIcons {
 
   val classIcon : ImageIcon = new ImageIcon(getClass.getResource(s"$path/class.gif"))
   val interfaceIcon : ImageIcon = new ImageIcon(getClass.getResource(s"$path/interface.gif"))
+  val enumIcon : ImageIcon = new ImageIcon(getClass.getResource(s"$path/enum.gif"))
 
   val rootIcon : ImageIcon = new ImageIcon(getClass.getResource(s"$path/root.gif"))
 
@@ -59,8 +60,7 @@ object JavaIcons extends NodeKindIcons {
   def iconOfKind(k: NodeKind): ImageIcon = k match {
     case Interface => interfaceIcon
     case Class => classIcon
-//    case InnerClass => innerClassIcon
-//    case InnerInterface => innerInterfaceIcon
+    case Enum => enumIcon
     case AbstractMethod => abstractMethodIcon
     case StaticMethod => staticMethodIcon
     case Method => methodIcon
