@@ -64,14 +64,7 @@ class ForbiddenDependencyTargetMenu
 
      val wu = cts.wrongUsers(g,target.id)
 
-     def superTypeAbstractions : Set[AccessAbstraction] =
-       target.kind.kindType match {
-         case TypeDecl =>
-           g.superTypes(target.id) map (AccessAbstraction(_, SupertypeAbstraction))
-         case _ => Set()
-       }
-
-     val abstractions = graph.abstractions(target.id) ++ superTypeAbstractions
+     val abstractions = graph.abstractions(target.id)
 
      if (abstractions.nonEmpty)
        contents += new ChooseAbsAndRedirectMultiAction(controller.Bus, g, wu,

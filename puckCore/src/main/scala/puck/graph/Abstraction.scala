@@ -29,6 +29,7 @@ package puck.graph
 import scalaz.std.list._
 import scalaz.std.option._
 import scalaz.syntax.traverse._
+import ShowDG._
 
 sealed abstract class AbstractionPolicy
 
@@ -36,6 +37,96 @@ case object DelegationAbstraction extends AbstractionPolicy
 
 case object SupertypeAbstraction extends AbstractionPolicy
 
+
+object Abstraction {
+
+  def typeMemberOverridenAbstractions
+  (g : DependencyGraph,
+   tmImplId : NodeId) : Set[NodeId] = {
+
+    val impl = g getConcreteNode tmImplId
+    val implType = g typ tmImplId
+    //val typedImpl = (, )
+
+    def searchTroughHierarchy(t : NodeId,
+                              acc : Set[NodeId]) : Set[NodeId] = {
+
+      val candidates = g.content(t).toList
+
+      val sabs = candidates find (cid => (g getConcreteNode cid).name == impl.name &&
+        (g.styp(cid) exists (_.canOverride(g, implType)) ))
+
+      val acc2 = sabs map (acc + _) getOrElse acc
+
+      val superTypes = g.directSuperTypes(t).toList map Type.mainId
+
+      superTypes.foldLeft(acc2){
+        (acc3, superType) => searchTroughHierarchy(superType, acc3)
+      }
+
+    }
+
+    searchTroughHierarchy(g container_! tmImplId, Set.empty) - tmImplId
+  }
+
+  def typeMembersFirstOverriddenAbstraction
+  (g : DependencyGraph,
+   typeAbsId : NodeId,
+   tmImplsId : List[NodeId]
+  ) : LoggedTry[Map[NodeId, NodeId]] = {
+    /*precondition
+      hostType(tmImplId) <: typeAbs
+      \forall n \in tmImplsId => n is typed
+
+        /!\ case de A :< B et A :< C avec méthode surchargé présente dans B ET C non géré
+     */
+
+    val typedImpls = tmImplsId map (n => (g getConcreteNode n, g typ n))
+    //val log = s"tmAbstraction : searching an abstraction of ${(g, tmImpl).shows} in ${(g, typeAbsId).shows}\n"
+
+    def findAbsInOneType(superType : NodeId,
+                         impls : List[TypedNode],
+                         map0 : Map[NodeId, NodeId]) : (List[TypedNode], Map[NodeId, NodeId]) = {
+      val candidates = g.content(superType).toList
+      val typedCandidates = candidates flatMap (c => g.styp(c) map ((g getConcreteNode c, _)))
+
+      val (remainingImps, _, map) = impls.foldLeft((List[(ConcreteNode, Type)](), typedCandidates, map0)){
+        case ((remainingSubs, remainingCandidates, map1), typedMeth @ (subMeth, subMethSig)) =>
+          Type.findOverridingIn(g, subMeth.name, subMethSig, remainingCandidates) match {
+            case None =>
+              (typedMeth :: remainingSubs, remainingCandidates, map1)
+            case Some(((absM,_), remainingCandidates1)) =>
+              (remainingSubs, remainingCandidates1, map1 + (subMeth.id -> absM.id) )
+          }
+      }
+
+      (remainingImps, map)
+    }
+
+    def searchTroughHierarchy(t : NodeId,
+                              impls : List[TypedNode],
+                              acc : Map[NodeId, NodeId]) : (List[TypedNode], Map[NodeId, NodeId]) = {
+      val (remainings, acc2)= findAbsInOneType(t, impls, acc)
+      if(remainings.isEmpty) (Nil, acc2)
+      else {
+        val superTypes = g.directSuperTypes(t).toList map Type.mainId
+        superTypes.foldLeft((remainings, acc2)){
+          case ((remainings2, acc3), superType) =>
+            searchTroughHierarchy(superType, remainings2, acc3)
+        }
+      }
+    }
+
+    val (remainings, map) = searchTroughHierarchy(typeAbsId, typedImpls, Map())
+
+    if(remainings.isEmpty) LoggedSuccess(map)
+    else {
+      val strs = remainings map {case (n, t) => (g,n).shows + " : " + (g, t).shows}
+      LoggedError( s"abtraction not found for :${strs.mkString("\n", "\n", "\n")}" )
+    }
+  }
+
+}
 
 sealed abstract class Abstraction {
   def policy: AbstractionPolicy
@@ -48,7 +139,7 @@ sealed abstract class Abstraction {
 case class AccessAbstraction
 ( nodeId : NodeId,
   policy: AbstractionPolicy
-  ) extends Abstraction {
+) extends Abstraction {
   def nodes : List[NodeId] = List(nodeId)
   def kindType(g : DependencyGraph) : KindType = g.kindType(nodeId)
   def kind(g : DependencyGraph) : NodeKind = g.getNode(nodeId).kind
@@ -58,7 +149,7 @@ case class AccessAbstraction
 case class ReadWriteAbstraction
 ( readAbsNode : Option[NodeId],
   writeAbsNode : Option[NodeId]
-  ) extends Abstraction {
+) extends Abstraction {
   def policy = DelegationAbstraction
   def nodes : List[NodeId] =
     List(readAbsNode, writeAbsNode).filter(_.nonEmpty).sequence.getOrElse(List())

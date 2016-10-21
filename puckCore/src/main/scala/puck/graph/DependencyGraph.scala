@@ -686,7 +686,17 @@ class DependencyGraph private
       toVisit = toVisit.tail ++ (newlyReached diff visited)
     }
 
-    visited
+    val target = getNode(id)
+    def superTypeAbstractions : Set[AccessAbstraction] =
+      (target.kind.kindType match {
+        case TypeDecl =>
+          superTypes(target.id)
+        case InstanceValue =>
+          Abstraction.typeMemberOverridenAbstractions(this, id)
+        case _ => Set()
+      }) map (AccessAbstraction(_, SupertypeAbstraction))
+
+    visited ++ superTypeAbstractions
   }
 
 
@@ -694,14 +704,12 @@ class DependencyGraph private
     isAbstraction(implId, absId).exists{_.policy == pol}
 
   def isAbstraction(implId : NodeId, absId : NodeId) : Option[Abstraction] =
-    abstractionsMap get implId flatMap {
-      absSet =>
-        absSet find {
-          case AccessAbstraction(id, _) => id == absId
-          case ReadWriteAbstraction(rId, wId) =>
-            rId.contains(absId) || wId.contains(absId)
-        }
+    abstractions(implId) find {
+      case AccessAbstraction(id, _) => id == absId
+      case ReadWriteAbstraction(rId, wId) =>
+        rId.contains(absId) || wId.contains(absId)
     }
+
 
   def subTree(root : NodeId, includeRoot : Boolean = true) : List[NodeId] = {
 
