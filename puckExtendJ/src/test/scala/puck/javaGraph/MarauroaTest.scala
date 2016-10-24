@@ -24,25 +24,28 @@
  * Author of this file : Loïc Giraul
  */
 
-package puck
+package puck.javaGraph
 
 import java.awt.Dimension
 import java.io.File
 import javax.swing.UIManager
 
-import puck.util.{PuckFileLogger, PuckLogger}
-import LoadAndApply._
 import org.extendj.ast.JavaJastAddDG2AST
+import puck.LoadAndApply._
+import puck._
 import puck.config.Config
 import puck.config.Config.{Keys, Root, SingleFile}
-import puck.graph.{AccessAbstraction, LoggedSuccess, NodeId, NodeIdP, SupertypeAbstraction}
-import puck.graph.constraints.search.{NoVirtualNodes, WithVirtualNodes}
+import puck.graph.constraints.search.NoVirtualNodes
 import puck.graph.transformations.rules.Redirection
+import puck.graph.{AccessAbstraction, LoggedSuccess, NodeId, SupertypeAbstraction}
 import puck.gui.PuckMainPanel
 import puck.jastadd.ExtendJGraphUtils._
 import puck.jastadd.{ExtendJGraphUtils, JavaProject}
-import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.nodeKind.Interface
+import puck.util.{PuckFileLogger, PuckLogger}
+import MarauroaTest._
+import puck.util.LoggedEither.FoldLogSyntax
+import scalaz.std.list.listInstance
 
 import scala.swing.MainFrame
 
@@ -112,7 +115,8 @@ object MarauroaTest {
   def project(srcFolder : String, constraint : String = "decouple.wld") : Project =
     Tests.project(root, srcFolder, constraint)
 }
-import MarauroaTest.{logger, root, project}
+
+
 
 object MarauroaLoadRecordAndApply {
   val path = "/constraint-gen/1rule/10/solutionWithHeuristic.pck"
@@ -143,9 +147,6 @@ object LoadAndSearchSolutions {
 
 object Test08 {
 
-
-  import MarauroaTest.logger
-
   def main(args : Array[String]) : Unit = {
     val p = project("src.generated", "constraint-gen/1rule/08/decouple.wld")
     val s = new ScenarioFactory(p.loadGraph().asInstanceOf[JavaJastAddDG2AST])
@@ -165,9 +166,6 @@ object Test08 {
     if(orphanNodes.nonEmpty)
       println("orphan nodes were introduced !")
 
-    import puck.util.LoggedEither.FoldLogSyntax
-    import scalaz.std.list.listInstance
-
 
     cts.wrongUsers(g1, used).foldLoggedEither(g1.mileStone){
       case (g0, user) =>
@@ -181,9 +179,6 @@ object Test08 {
 }
 
 object Test03 {
-
-
-  import MarauroaTest.logger
 
   def main(args : Array[String]) : Unit = {
     val p = project("src.generated", "constraint-gen/1rule/03/decouple.wld")
@@ -203,9 +198,6 @@ object Test03 {
     val orphanNodes = g1.nodesId filter (g1.container(_).isEmpty) filter(_ != 0)
     if(orphanNodes.nonEmpty)
       println("orphan nodes were introduced !")
-
-    import puck.util.LoggedEither.FoldLogSyntax
-    import scalaz.std.list.listInstance
 
 
     cts.wrongUsers(g1, used).foldLoggedEither(g1.mileStone){

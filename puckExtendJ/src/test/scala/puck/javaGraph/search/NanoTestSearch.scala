@@ -1,32 +1,33 @@
-package puck.javaGraph
-
+package puck.javaGraph.search
 
 import java.io.File
 
-import puck.{Quick, Settings}
 import puck.TestUtils._
 import puck.graph.constraints.search.DecoratedGraphEvaluator
 import puck.graph.transformations.Recording
 import puck.graph.{ConcreteNode, _}
-import puck.search.{AStarSearchStrategy, AStarSearchStrategyGraphDisplayOnly}
 import puck.jastadd.ExtendJGraphUtils.dotHelper
+import puck.javaGraph.ScenarioFactory
+import puck.search.{AStarSearchStrategy, AStarSearchStrategyGraphDisplayOnly}
+import puck.{Quick, Settings}
+
 import scala.language.reflectiveCalls
 import scalaz.\/-
 
 
 /**
-  * Created by cedric on 18/05/2016.
+  * Created by Mikal on 09/06/2016.
   */
 
-object PersonneTestSearch {
-  val path = getClass.getResource("/projetPersonne/").getPath
+object NanoTestSearch {
+  val path = getClass.getResource("/nanoPersonne/").getPath
 
   val outDir = Settings.tmpDir + File.separator + "DG-Imgs"
 
   def main(args : Array[String]) : Unit = {
     val scenario = new ScenarioFactory(
-      s"$path/personne/Personne.java",
-      s"$path/personne/Client.java")
+      s"$path/nano/Personne.java",
+      s"$path/nano/Client.java")
 
 
     val constraints = scenario.parseConstraintsFile(s"$path/decouple.wld")
@@ -61,13 +62,15 @@ object PersonneTestSearch {
           Recording.write(result,
             scenario.fullName2id, dg.graph)
           val s = new ScenarioFactory(
-            s"$path/personne/Personne.java",
-            s"$path/personne/Client.java")
+            s"$path/nano/Personne.java",
+            s"$path/nano/Client.java")
           val r = Recording.load(s"$result", s.fullName2id)(s.logger)
           import Recording.RecordingOps
           val resdir = new File( Settings.tmpDir + File.separator+"testPuck"+fit)
           val sf = s.applyChangeAndMakeExample(r.redo(s.graph),resdir )
           Quick.svg(sf.graph, resdir + File.separator + "nano.svg", Some(constraints))
+//          println("Graphs equality? "+Mapping.equals(sf.graph, s.graph))
+
       }
     }
   }

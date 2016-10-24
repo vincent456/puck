@@ -24,15 +24,15 @@
  * Author of this file : Loïc Girault
  */
 
-package puck.javaGraph
-
+package puck.javaGraph.stories
 
 import org.scalatest.{EitherValues, FeatureSpec, OptionValues}
-import puck.Settings.outDir
-import puck.graph.{AccessAbstraction, DependencyGraph, NodeId, SupertypeAbstraction, Uses}
-import puck.graph.comparison.Mapping
-import puck.jastadd.ExtendJGraphUtils.Rules
 import puck.LoggedEitherValues
+import puck.Settings.outDir
+import puck.graph.comparison.Mapping
+import puck.graph.{AccessAbstraction, DependencyGraph, NodeId, SupertypeAbstraction, Uses}
+import puck.jastadd.ExtendJGraphUtils.Rules
+import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.nodeKind._
 
 /**
@@ -43,7 +43,7 @@ object CompositeScenario {
   def apply() : CompositeScenario = new CompositeScenario()
 }
 
-import CompositeScenario.path
+import puck.javaGraph.stories.CompositeScenario.path
 class CompositeScenario private ()
   extends ScenarioFactory(
   s"$path/FSClient.java",

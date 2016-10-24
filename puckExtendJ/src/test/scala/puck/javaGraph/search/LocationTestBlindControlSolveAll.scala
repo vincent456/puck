@@ -1,15 +1,16 @@
-package puck.javaGraph
-
+package puck.javaGraph.search
 
 import java.io.File
 
-import puck.{Quick, Settings}
 import puck.TestUtils._
 import puck.graph.constraints.search.DecoratedGraphEvaluator
 import puck.graph.transformations.Recording
 import puck.graph.{ConcreteNode, _}
-import puck.search.{AStarSearchStrategy, AStarSearchStrategyGraphDisplay}
 import puck.jastadd.ExtendJGraphUtils.dotHelper
+import puck.javaGraph.ScenarioFactory
+import puck.search.{AStarSearchStrategy, AStarSearchStrategyGraphDisplay}
+import puck.{Quick, Settings}
+
 import scala.language.reflectiveCalls
 import scalaz.\/-
 

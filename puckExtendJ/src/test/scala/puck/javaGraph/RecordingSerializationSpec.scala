@@ -26,14 +26,15 @@
 
 package puck.javaGraph
 
-import java.io.{FileInputStream, ObjectInputStream, FileOutputStream, ObjectOutputStream}
+import java.io.{FileInputStream, FileOutputStream, ObjectInputStream, ObjectOutputStream}
 
 import puck.graph._
 import puck.graph.transformations._
 import puck.graph.transformations.Recording
 import Recording.RecordingOps
-import puck.{Settings, AcceptanceSpec}
+import puck.{AcceptanceSpec, Settings}
 import nodeKind._
+import puck.javaGraph.stories.BridgeScenario
 
 class RecordingSerializationSpec extends AcceptanceSpec {
 

@@ -24,14 +24,15 @@
  * Author of this file : Loïc Girault
  */
 
-package puck.javaGraph
+package puck.javaGraph.stories
 
 import org.scalatest.{EitherValues, FeatureSpec, OptionValues}
-import puck.jastadd.ExtendJGraphUtils.{Rules => Rules}
+import puck.graph.comparison.Mapping
+import puck.graph.{Uses, _}
+import puck.jastadd.ExtendJGraphUtils.Rules
+import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.nodeKind._
 import puck.{LoggedEitherValues, Settings}
-import puck.graph._
-import puck.graph.comparison.Mapping
 
 /**
   * Created by Loïc Girault on 14/04/16.
@@ -40,7 +41,7 @@ object CompositeScenarioKeepLog {
   val path = getClass.getResource("/composite/").getPath
   def apply() : CompositeScenarioKeepLog = new CompositeScenarioKeepLog()
 }
-import CompositeScenarioKeepLog.path
+import puck.javaGraph.stories.CompositeScenarioKeepLog.path
 
 
 class CompositeScenarioKeepLog private ()

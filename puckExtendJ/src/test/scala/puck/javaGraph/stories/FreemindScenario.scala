@@ -24,19 +24,20 @@
  * Author of this file : Loïc Girault
  */
 
-package puck.javaGraph
+package puck.javaGraph.stories
 
 import java.io.File
 
 import org.extendj.ast.{HasNode, JavaJastAddDG2AST}
-import puck.{NonExistentEdge, Project}
 import puck.config.ConfigParser
 import puck.graph._
 import puck.graph.transformations.rules.Redirection
 import puck.jastadd.ExtendJGraphUtils.Rules._
+import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.nodeKind.Interface
 import puck.util.LoggedEither._
 import puck.util.PuckFileLogger
+import puck.{NonExistentEdge, Project}
 
 import scalaz.std.list._
 

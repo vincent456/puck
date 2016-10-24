@@ -5,6 +5,7 @@ import org.piccolo2d.extras.PFrame
 import piccolo.{PiccoloDynamicSquareZoomTest, PiccoloTest}
 import puck.JavaIcons
 import puck.gui.PuckControl
+import puck.javaGraph.stories.BridgeScenario
 import puck.piccolo.DGCanvas
 
 

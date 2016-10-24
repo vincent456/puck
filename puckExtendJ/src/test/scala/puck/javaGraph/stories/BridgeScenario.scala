@@ -24,22 +24,22 @@
  * Author of this file : Loïc Girault
  */
 
-package puck.javaGraph
+package puck.javaGraph.stories
 
-import puck.graph.DependencyGraph
-import puck.graph.transformations.rules.CreateTypeMember
-import puck.graph._
-import puck.javaGraph.nodeKind._
 import puck.LoggedEitherValues
-import puck.jastadd.ExtendJGraphUtils.Rules
 import puck.graph.transformations.Recording
+import puck.graph.transformations.rules.CreateTypeMember
+import puck.graph.{DependencyGraph, _}
+import puck.jastadd.ExtendJGraphUtils.Rules
+import puck.javaGraph.ScenarioFactory
+import puck.javaGraph.nodeKind._
 
 object BridgeScenario {
   val path = getClass.getResource("/bridge/hannemann_simplified").getPath
   def apply() = new BridgeScenario()
 }
 
-import BridgeScenario.path
+import puck.javaGraph.stories.BridgeScenario.path
 
 class BridgeScenario private()
   extends ScenarioFactory(
