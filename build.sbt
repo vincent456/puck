@@ -139,12 +139,12 @@ lazy val puckJava : Project = project.
 
 val timeFormat = new SimpleDateFormat("yyyy-MM-dd-HHmmss")
 
-lazy val puckJrrt : Project = project.
-  settings(commonSettings("jrrt"):_*).
+lazy val puckExtendJ : Project = project.
+  settings(commonSettings("extendj"):_*).
 
   settings (libraryDependencies += "org.apache.ant" % "ant" % "1.9.6").
 
-  settings(PuckJrrtBuild.settings(extendj):_*).
+  settings(PuckExtendJBuild.settings(extendj):_*).
 
   enablePlugins(JavaAppPackaging).
 
@@ -163,7 +163,7 @@ lazy val puckJrrt : Project = project.
 
 
 lazy val root = (project in file(".")
-  aggregate (puckCore, puckGui, puckJava, puckJrrt, extendj/*, puckScala*/)
+  aggregate (puckCore, puckGui, puckJava, puckExtendJ, extendj/*, puckScala*/)
   )
 
 //  val puckScala : Project = (project.

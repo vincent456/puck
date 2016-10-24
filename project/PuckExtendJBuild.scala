@@ -28,7 +28,7 @@ import sbt.Keys._
 import sbt._
 import scala.language.postfixOps
 
-object PuckJrrtBuild {
+object PuckExtendJBuild {
 
   //TODO make a beaver plugin that allow to pass arguments !
   def beaverTask(srcFile : File){
