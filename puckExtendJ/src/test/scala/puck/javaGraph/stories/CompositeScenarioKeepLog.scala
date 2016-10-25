@@ -29,7 +29,7 @@ package puck.javaGraph.stories
 import org.scalatest.{EitherValues, FeatureSpec, OptionValues}
 import puck.graph.comparison.Mapping
 import puck.graph.{Uses, _}
-import puck.jastadd.ExtendJGraphUtils.Rules
+import org.extendj.ExtendJGraphUtils.Rules
 import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.nodeKind._
 import puck.{LoggedEitherValues, Settings}

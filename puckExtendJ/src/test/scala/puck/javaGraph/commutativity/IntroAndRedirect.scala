@@ -29,7 +29,7 @@ package puck.javaGraph.commutativity
 import puck.TransfoRulesSpec
 import puck.graph.{AccessAbstraction, SupertypeAbstraction}
 import puck.graph.transformations.rules.Redirection
-import puck.jastadd.ExtendJGraphUtils.Rules.abstracter
+import org.extendj.ExtendJGraphUtils.Rules.abstracter
 import puck.javaGraph.nodeKind.Interface
 /**
   * Created by Loïc Girault on 30/06/16.

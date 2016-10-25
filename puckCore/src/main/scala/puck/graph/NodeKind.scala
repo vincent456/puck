@@ -90,7 +90,7 @@ case object LocalValue extends KindType
 
 
 case object Parameter extends KindType
-case object ValueDef extends KindType
+case object ValueDef extends KindType //Method body or Field initialization expr
 
 object Role{
   def isFactory(dg : DependencyGraph, cn : ConcreteNode) : Boolean =

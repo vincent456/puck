@@ -37,12 +37,11 @@ import java.awt.Dimension
 import java.io.File
 import javax.swing.UIManager
 
+import org.extendj.ExtendJGraphUtils
 import puck.config.Config
-import puck.config.Config._
 import puck.gui.PuckMainPanel
 
 import scala.swing.{MainFrame, SwingApplication}
-import jastadd._
 
 object Front extends SwingApplication {
 

@@ -26,9 +26,10 @@
 
 package puck.javaGraph.transfoRules
 
-import puck.{TransfoRulesSpec}
+
+import org.extendj.ExtendJGraphUtils.Rules
+import puck.TransfoRulesSpec
 import puck.graph._
-import puck.jastadd.ExtendJGraphUtils.Rules
 import puck.javaGraph.nodeKind.Interface
 
 /**

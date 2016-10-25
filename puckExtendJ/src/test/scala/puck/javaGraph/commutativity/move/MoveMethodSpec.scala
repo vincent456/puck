@@ -26,11 +26,11 @@
 
 package puck.javaGraph.commutativity.move
 
+import org.extendj.ExtendJGraphUtils.Rules
 import puck.Settings._
 import puck.graph._
 import puck.graph.comparison.Mapping
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, Move}
-import puck.jastadd.ExtendJGraphUtils.Rules
 import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.nodeKind.{Class, Field}
 import puck.TransfoRulesSpec

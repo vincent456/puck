@@ -24,15 +24,17 @@
  * Author of this file : Loïc Girault
  */
 
-package puck
+package org
 
 import java.io.File
+
 import org.extendj.ast.JavaJastAddDG2AST
 import puck.config.Config.Config
 import puck.config.{Config, ConfigParser}
 import puck.javaGraph.JGraphUtils
+import puck.{DG2ASTBuilder, Project}
 
-package object jastadd {
+package object extendj {
 
   object JavaProject {
     def apply() : Project = JavaProject(new File("."))

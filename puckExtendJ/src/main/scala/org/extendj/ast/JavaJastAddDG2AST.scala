@@ -38,7 +38,7 @@ import puck.graph.comparison.NodeMappingInitialState
 import puck.graph.transformations.{MutabilitySet => _, _}
 import puck.graph.transformations.Recording
 import puck.graph.transformations.Transformation._
-import puck.jastadd.concretize._
+import org.extendj.concretize._
 import puck.javaGraph.nodeKind._
 import puck.util.PuckLog._
 import puck.util.{PuckLog, PuckLogger}
@@ -266,7 +266,7 @@ class JavaJastAddDG2AST
     try id2declMap(id)
     catch {
       case e : NoSuchElementException =>
-        val n = graph.getNode(id)
+        val n = graph getNode id
         if(n.kind == Package)
           PackageDeclHolder
         else NoDecl

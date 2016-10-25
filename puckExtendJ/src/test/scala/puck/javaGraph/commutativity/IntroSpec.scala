@@ -1,7 +1,7 @@
 package puck.javaGraph.commutativity
 
 import puck.TransfoRulesSpec
-import puck.jastadd.ExtendJGraphUtils._
+import org.extendj.ExtendJGraphUtils._
 
 /**
   * Created by lorilan on 5/7/16.

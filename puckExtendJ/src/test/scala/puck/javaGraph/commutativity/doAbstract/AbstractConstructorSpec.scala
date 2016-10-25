@@ -2,7 +2,7 @@ package puck.javaGraph.commutativity.doAbstract
 
 import puck.TransfoRulesSpec
 import puck.graph.{AccessAbstraction, DelegationAbstraction}
-import puck.jastadd.ExtendJGraphUtils._
+import org.extendj.ExtendJGraphUtils._
 import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.nodeKind.StaticMethod
 

@@ -142,7 +142,7 @@ trait GraphBuilderVisitor {
     //methodDecl.getParameterList.buildDG(this, declId)
     methodDecl.getExceptionList.buildDG(this, declId)
     if(methodDecl.hasBlock) {
-      methodDecl.buildDef(this, declId)
+      puck.ignore(methodDecl.buildDef(this, declId))
     }
   }
 

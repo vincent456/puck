@@ -32,7 +32,6 @@ import puck.graph.transformations._
 import puck.util.{PuckLogger, PuckLog}
 
 import scala.collection.immutable.HashSet
-import scalaz._, Scalaz._
 
 object NodeTransfoStatus {
   def apply( i : Int) = i match {
@@ -59,9 +58,10 @@ object NodeMappingInitialState{
     case _ => false
   }
 
-  def normalizeNodeTransfos(rootKind : NodeKind,
-                             l : Recording,
-                            init : Seq[Transformation] = Seq()) : (Map[NodeId, (Int, NodeKind)], Seq[Transformation])= {
+  def normalizeNodeTransfos
+  ( rootKind : NodeKind,
+    l : Recording,
+    init : Seq[Transformation] = Seq()) : (Map[NodeId, (Int, NodeKind)], Seq[Transformation])= {
     val (map, rl) = l.foldLeft( (Map[NodeId, (Int, NodeKind)](), init) ){
       case ((m,l1), Transformation(Regular, CNode(n))) =>
         val (i, _) = m.getOrElse(n.id, (0, rootKind) )
@@ -107,18 +107,18 @@ object RecordingComparatorInitialState {
             graph2: DependencyGraph,
             logger: PuckLogger): Compared = {
 
-    logger.writeln("*********************************** ")
-    logger.writeln("*********************************** ")
-    logger.writeln("*********************************** ")
+    logger writeln "***********************************"
+    logger writeln "***********************************"
+    logger writeln "***********************************"
     logger.writeln("untouched recording 1 : ")
     graph1.recording foreach { t => logger.writeln(t.toString) }
-    logger.writeln("*********************************** ")
-    logger.writeln("*********************************** ")
+    logger writeln "***********************************"
+    logger writeln "***********************************"
 
     logger.writeln("untouched recording 2 : ")
     graph2.recording foreach { t => logger.writeln(t.toString) }
-    logger.writeln("*********************************** ")
-    logger.writeln("*********************************** ")
+    logger writeln "***********************************"
+    logger writeln "***********************************"
 
     val (nodeStatuses, remainingTransfos1) = normalizeNodeTransfos(graph1.root.kind, graph1.recording, initialTransfos)
 
@@ -137,14 +137,8 @@ object RecordingComparatorInitialState {
       }
 
 
-    val loggedResult = initialMapping.set("")
-    var triedAll0 = false
-
-    def writelnNode(graph: DependencyGraph)(nid: NodeId): Unit = {
-      logger.writeln(s"$nid = ${graph.getNode(nid)}")
-    }
-
-
+    def writelnNode(graph: DependencyGraph)(nid: NodeId): Unit =
+      logger writeln s"$nid = ${graph.getNode(nid)}"
 
 
     if (numCreatedNodes != numCreatedNodes2 ||
@@ -164,9 +158,9 @@ object RecordingComparatorInitialState {
       logger.writeln("neuter nodes : ")
       neuterNodes foreach writelnNode(graph1)
 
-      logger.writeln("*******************************************************")
-      logger.writeln("")
-      logger.writeln("")
+      logger writeln "*******************************************************"
+      logger writeln ""
+      logger writeln ""
 
       logger.writeln("nodes to map : %s, %d remaining transfo".format(nodesToMap, remainingTransfos2.size))
 
@@ -178,9 +172,9 @@ object RecordingComparatorInitialState {
       logger.writeln("recording1")
       graph1.recording foreach { t => logger.writeln(t.toString) }
 
-      logger.writeln("*******************************************************")
-      logger.writeln("")
-      logger.writeln("")
+      logger writeln "*******************************************************"
+      logger writeln ""
+      logger writeln ""
 
       logger.writeln("recording2")
       graph2.recording foreach { t => logger.writeln(t.toString) }
@@ -197,53 +191,53 @@ object RecordingComparatorInitialState {
       logger.writeln("neuter nodes : ")
       neuterNodes foreach writelnNode(graph1)
 
-      logger.writeln("")
-      logger.writeln("")
+      logger writeln ""
+      logger writeln ""
       remainingTransfos1 foreach { t => logger.writeln(t.toString) }
 
-      logger.writeln("*******************************************************")
+      logger writeln "*******************************************************"
       logger.writeln("***************** filtering 1 *************************")
-      logger.writeln("*******************************************************")
+      logger writeln "*******************************************************"
 
       val filteredTransfos1 = if (neuterNodes.nonEmpty) FilterNoise(remainingTransfos1, logger)
       else remainingTransfos1
 
-      logger.writeln("*******************************************************")
-      logger.writeln("*******************************************************")
+      logger writeln "*******************************************************"
+      logger writeln "*******************************************************"
 
       filteredTransfos1 foreach { t => logger.writeln(t.toString) }
 
-      logger.writeln("")
-      logger.writeln("")
-      logger.writeln("*******************************************************")
-      logger.writeln("*******************************************************")
+      logger writeln ""
+      logger writeln ""
+      logger writeln "*******************************************************"
+      logger writeln "*******************************************************"
       logger.writeln("************************* and *************************")
-      logger.writeln("*******************************************************")
-      logger.writeln("*******************************************************")
-      logger.writeln("")
-      logger.writeln("")
+      logger writeln "*******************************************************"
+      logger writeln "*******************************************************"
+      logger writeln ""
+      logger writeln ""
 
-      logger.writeln("nodes to map : %s, %d remaining transfo".format(nodesToMap, remainingTransfos2.size, logger))
+      logger writeln s"nodes to map : $nodesToMap, ${remainingTransfos2.size} remaining transfo"
 
-      logger.writeln("created nodes :")
+      logger writeln "created nodes :"
       nodesToMap foreach { case (_, s) => s foreach writelnNode(graph2) }
-      logger.writeln("neuter nodes : ")
+      logger writeln "neuter nodes : "
       otherNeuterNodes foreach writelnNode(graph2)
 
-      logger.writeln("")
-      logger.writeln("")
+      logger writeln ""
+      logger writeln ""
       remainingTransfos2 foreach { t => logger.writeln(t.toString) }
 
 
-      logger.writeln("*******************************************************")
+      logger writeln "*******************************************************"
       logger.writeln("***************** filtering 2 *************************")
-      logger.writeln("*******************************************************")
+      logger writeln "*******************************************************"
 
       val filteredTransfos2 = if (otherNeuterNodes.nonEmpty) FilterNoise(remainingTransfos2, logger)
       else remainingTransfos2
 
-      logger.writeln("*******************************************************")
-      logger.writeln("*******************************************************")
+      logger writeln "*******************************************************"
+      logger writeln "*******************************************************"
 
       filteredTransfos2 foreach { t => logger.writeln(t.toString) }
 

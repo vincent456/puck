@@ -2,7 +2,7 @@ package puck.javaGraph.commutativity.doAbstract
 
 import puck.TransfoRulesSpec
 import puck.graph.{DelegationAbstraction, ReadWriteAbstraction}
-import puck.jastadd.ExtendJGraphUtils._
+import org.extendj.ExtendJGraphUtils._
 import puck.javaGraph.nodeKind.Method
 
 /**

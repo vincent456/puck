@@ -1,13 +1,12 @@
 package puck.javaGraph.search
 
-import java.io.{File, FileWriter}
+import java.io.File
 
 import puck.{Settings, TestUtils}
 import puck.graph._
 import puck.graph.transformations.Recording
 import puck.javaGraph.ScenarioFactory
 import puck.search.{AStarSearchOrdering, SearchState}
-import puck.util.LoggedEither
 
 import scalaz.\/-
 

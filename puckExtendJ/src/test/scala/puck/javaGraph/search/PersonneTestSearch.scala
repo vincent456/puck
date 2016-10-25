@@ -6,11 +6,8 @@ import puck.TestUtils._
 import puck.graph.constraints.search.DecoratedGraphEvaluator
 import puck.graph.{ConcreteNode, _}
 import puck.javaGraph.ScenarioFactory
-import puck.Settings
 import puck.search.AStarSearchOrdering
-import puck.jastadd.ExtendJGraphUtils.dotHelper
-
-import scala.language.reflectiveCalls
+import org.extendj.ExtendJGraphUtils.dotHelper
 
 /**
   * Created by cedric on 18/05/2016.

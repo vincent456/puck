@@ -3,9 +3,9 @@ package puck
 import java.io.{File, FileWriter}
 
 import org.extendj.ast.JavaJastAddDG2AST
+import org.extendj.JavaProject
 import puck.graph.{DependencyGraph, MutabilitySet, NameSpace, NodeId, NodeIdP, NodeIdPOps, ShowDG}
 import puck.graph.constraints.{ConstraintMapBuilder, ConstraintsMaps, LiteralRangeSet, Scope}
-import puck.jastadd.JavaProject
 import puck.util.{PuckFileLogger, PuckLogger}
 import puck.javaGraph.nodeKind._
 

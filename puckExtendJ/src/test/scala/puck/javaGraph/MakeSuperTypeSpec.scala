@@ -28,7 +28,7 @@ package puck.javaGraph
 
 import puck.graph.{AccessAbstraction, SupertypeAbstraction, Type}
 import puck.AcceptanceSpec
-import puck.jastadd.ExtendJGraphUtils.{Rules => TR}
+import org.extendj.ExtendJGraphUtils.Rules
 
 class MakeSuperTypeSpec extends AcceptanceSpec {
   //info("We are testing behavior of the abstraction rule, i.e. we check that the structure of the graph after rule application")
@@ -53,7 +53,7 @@ class MakeSuperTypeSpec extends AcceptanceSpec {
         val methNotInInterface = fullName2id("p.A.mNotInInterface()")
         val abstractMethInInterface = fullName2id("p.SuperA.mInInterface()")
 
-        val g2 = TR.makeSuperType(graph, classA, superA)().rvalue
+        val g2 = Rules.makeSuperType(graph, classA, superA)().rvalue
 
         assert(g2.isa(classA, superA))
 
@@ -73,7 +73,7 @@ class MakeSuperTypeSpec extends AcceptanceSpec {
         val classA = fullName2id("p.A")
         val superA = fullName2id("p.SuperA")
 
-        TR.makeSuperType(graph, classA, superA)(Type.errorOnImplemNotFound("A")).lvalue
+        Rules.makeSuperType(graph, classA, superA)(Type.errorOnImplemNotFound("A")).lvalue
 
       }
     }

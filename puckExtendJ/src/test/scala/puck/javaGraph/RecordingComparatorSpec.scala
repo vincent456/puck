@@ -30,7 +30,7 @@ package puck.javaGraph
 import puck.graph._
 import puck.javaGraph.nodeKind._
 import puck.{PuckError, AcceptanceSpec}
-import puck.jastadd.ExtendJGraphUtils.{Rules => TR}
+import org.extendj.ExtendJGraphUtils.Rules
 
 import scalaz._
 
@@ -44,7 +44,7 @@ class RecordingComparatorSpec extends AcceptanceSpec {
   type GraphT = DependencyGraph
 
   def introInterface(g : GraphT, clazz : ConcreteNode, pcontainer : NodeId) : LoggedTry[(GraphT, ConcreteNode)]= {
-    TR.abstracter.createAbstraction(g, clazz, Interface, SupertypeAbstraction)
+    Rules.abstracter.createAbstraction(g, clazz, Interface, SupertypeAbstraction)
       .map {case (AccessAbstraction(classAbs, _), g) =>
         (g.addContains(pcontainer, classAbs), g.getConcreteNode(classAbs))
         case _ =>
@@ -55,7 +55,7 @@ class RecordingComparatorSpec extends AcceptanceSpec {
   }
 
   def introPackage(g : GraphT, pname : String, pcontainer : NodeId) : (GraphT, ConcreteNode) = {
-    val (p, g2) = TR.intro(g, pname, Package)
+    val (p, g2) = Rules.intro(g, pname, Package)
     (g2.addContains(pcontainer, p.id), p)
   }
 
@@ -67,7 +67,7 @@ class RecordingComparatorSpec extends AcceptanceSpec {
 
           .map { case (g, itc) => (introPackage(g, pname, pcontainer), itc)}
 
-          .flatMap { case ((g, p), itc) => TR.move.staticDecl(g, itc.id, p.id) map ((_, p.id, itc.id))}
+          .flatMap { case ((g, p), itc) => Rules.move.staticDecl(g, itc.id, p.id) map ((_, p.id, itc.id))}
     }
 
   val methodUsesViaThisField = {
@@ -143,7 +143,7 @@ class RecordingComparatorSpec extends AcceptanceSpec {
     scenario("Same transformations, intro Interface") {
       import methodUsesViaThisField._
 
-      def seq() = TR.abstracter.createAbstraction(graph, classBNode, Interface, SupertypeAbstraction)
+      def seq() = Rules.abstracter.createAbstraction(graph, classBNode, Interface, SupertypeAbstraction)
         .map { case (AccessAbstraction(classBAbs, _), g) => g.addContains(rootPackage, classBAbs)
               case _ =>
                 assert(false)
@@ -180,8 +180,8 @@ class RecordingComparatorSpec extends AcceptanceSpec {
     scenario("Same merge, same result ") {
       import needToMergeInterfaces._
 
-      val t1 = TR.merge.mergeInto(graph, itcC, itcB)
-      val t2 = TR.merge.mergeInto(graph, itcC, itcB)
+      val t1 = Rules.merge.mergeInto(graph, itcC, itcB)
+      val t2 = Rules.merge.mergeInto(graph, itcC, itcB)
 
       liftAssert(needToMergeInterfaces, t1, t2, expected = true)
     }
@@ -194,14 +194,14 @@ class RecordingComparatorSpec extends AcceptanceSpec {
           .flatMap{ case (g, pid, itcId) =>
           introItcPackageAndMove(g, classBNode, "p2", graph.rootId)
             .flatMap {case (g2, pid2, itcId2) =>
-            TR.merge.mergeInto(g2, itcId2, itcId)}
+            Rules.merge.mergeInto(g2, itcId2, itcId)}
         }
       val t2 =
         introItcPackageAndMove(graph, classBNode, "p3", graph.rootId)
           .flatMap{ case (g, pid, itcId) =>
           introItcPackageAndMove(g, classBNode, "p4", rootPackage)
             .flatMap {case (g2, pid2, itcId2) =>
-            TR.merge.mergeInto(g2, itcId, itcId2)}
+            Rules.merge.mergeInto(g2, itcId, itcId2)}
         }
 
       liftAssert(methodUsesViaThisField, t1, t2, expected = true)

@@ -29,7 +29,7 @@ package puck.javaGraph.commutativity
 import puck.TransfoRulesSpec
 import puck.graph.NamedType
 import puck.graph.transformations.rules.ReplaceInheritanceByDelegation
-import puck.jastadd.ExtendJGraphUtils.Rules
+import org.extendj.ExtendJGraphUtils.Rules
 import puck.javaGraph.nodeKind.Interface
 
 /**

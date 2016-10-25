@@ -1,13 +1,10 @@
 package puck.javaGraph.search
 
-import java.io.{File, FileWriter}
-
-import puck.{Quick, TestUtils}
+import puck.TestUtils
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.io.DotHelper
 import puck.graph.{DecoratedGraphOps, _}
 import puck.search.{AStarSearchStrategy, Evaluator, SearchState}
-import puck.util.LoggedEither
 
 import scalaz.\/-
 

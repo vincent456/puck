@@ -39,8 +39,8 @@ import puck.graph.constraints.search.NoVirtualNodes
 import puck.graph.transformations.rules.Redirection
 import puck.graph.{AccessAbstraction, LoggedSuccess, NodeId, SupertypeAbstraction}
 import puck.gui.PuckMainPanel
-import puck.jastadd.ExtendJGraphUtils._
-import puck.jastadd.{ExtendJGraphUtils, JavaProject}
+import org.extendj.ExtendJGraphUtils._
+import org.extendj.{ExtendJGraphUtils, JavaProject}
 import puck.javaGraph.nodeKind.Interface
 import puck.util.{PuckFileLogger, PuckLogger}
 import MarauroaTest._
@@ -221,7 +221,7 @@ object LaunchUI {
   val constraintPath = "constraint-gen/1rule/03/decouple.wld"
   import MarauroaTest.root
   val srcPath = "src.generated"
-  def main(args : Array[String]) : Unit ={
+  def main(args : Array[String]) : Unit = {
     UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
     val top = new MainFrame {
       title = "Puck"

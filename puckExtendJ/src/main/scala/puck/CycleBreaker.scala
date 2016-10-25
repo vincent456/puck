@@ -26,9 +26,9 @@
 
 package puck
 
+import org.extendj.JavaProject
 import org.extendj.ast.JavaJastAddDG2AST
-import puck.jastadd._
-import puck.javaGraph.{JavaDotHelper, JGraphUtils}
+import puck.javaGraph.{JGraphUtils, JavaDotHelper}
 import puck.util.PuckSystemLogger
 
 /**

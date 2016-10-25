@@ -3,16 +3,15 @@ package puck
 import java.awt.event.WindowEvent
 import java.io.{File, FileWriter}
 
+import org.extendj.ExtendJGraphUtils.{dotHelper, Rules, violationsKindPriority}
 import puck.actions.Choose
 import puck.graph.Metrics._
 import puck.graph.{ConcreteNode, DecoratedGraph, DependencyGraph, LoggedTG, MutabilitySet, NodeId}
 import puck.graph.transformations.Recording
-import puck.jastadd.ExtendJGraphUtils.dotHelper
 import puck.search._
 import puck.util.LoggedEither
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.constraints.search._
-import puck.jastadd.ExtendJGraphUtils.{Rules, violationsKindPriority}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success

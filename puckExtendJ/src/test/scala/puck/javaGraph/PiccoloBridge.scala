@@ -29,7 +29,7 @@ object PiccoloDynamicBridge {
 object ExpanseBridge {
   def main(args : Array[String]) : Unit =  {
     val bs = BridgeScenario()
-    val ctrl = new PuckControl(puck.jastadd.ExtendJGraphUtils, JavaIcons, bs.logger)
+    val ctrl = new PuckControl(org.extendj.ExtendJGraphUtils, JavaIcons, bs.logger)
     ctrl.graphStack setInitialGraph bs.graph
     ignore(new PFrame("ExpanseBridge", false,
       new DGCanvas(ctrl, JavaIcons)))

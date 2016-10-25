@@ -27,7 +27,7 @@
 package org.extendj.ast
 
 import puck.graph.{TypeDecl => PTypeDecl, _}
-import puck.jastadd.concretize.RedirectSource
+import org.extendj.concretize.RedirectSource
 import puck.util.PuckLogger
 
 object ASTNodeLink{

@@ -27,13 +27,13 @@
 package puck
 
 import org.extendj.ast.JavaJastAddDG2AST
+import org.extendj.ExtendJGraphUtils.Rules
+import org.extendj.JavaProject
 import puck.graph.transformations.{MutabilitySet, Recording}
 import MutabilitySet.MutabilitySetOps
 import puck.graph.transformations.rules.CreateTypeMember
-import puck.jastadd.ExtendJGraphUtils.Rules
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
-import puck.jastadd.JavaProject
 import puck.javaGraph.nodeKind.{Field, Method}
 import puck.util.{PuckFileLogger, PuckLogger, PuckSystemLogger}
 import ShowDG._

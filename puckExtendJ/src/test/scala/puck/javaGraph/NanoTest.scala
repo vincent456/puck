@@ -4,7 +4,7 @@ import java.io.File
 
 import puck.util.{PuckFileLogger, PuckLogger}
 import puck._
-import puck.graph.constraints.search.{NoVirtualNodes, WithVirtualNodes}
+import puck.graph.constraints.search.NoVirtualNodes
 
 /**
   * Created by cedric on 22/09/2016.

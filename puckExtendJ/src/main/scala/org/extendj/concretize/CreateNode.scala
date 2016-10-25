@@ -24,8 +24,7 @@
  * Author of this file : Loïc Girault
  */
 
-package puck.jastadd
-package concretize
+package org.extendj.concretize
 
 
 import org.extendj.ast._

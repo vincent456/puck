@@ -2,16 +2,12 @@ package puck.javaGraph.search
 
 import java.io.File
 
+import org.extendj.ExtendJGraphUtils.dotHelper
 import puck.TestUtils._
 import puck.graph.constraints.search.DecoratedGraphEvaluator
 import puck.graph.{ConcreteNode, _}
 import puck.javaGraph.ScenarioFactory
-import puck.Settings
 import puck.search.AStarSearchOrdering
-import puck.jastadd.ExtendJGraphUtils.dotHelper
-
-import scala.language.reflectiveCalls
-
 
 /**
   * Created by cedric on 23/05/2016.

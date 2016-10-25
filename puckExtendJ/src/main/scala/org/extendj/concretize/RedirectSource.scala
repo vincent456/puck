@@ -24,9 +24,7 @@
  * Author of this file : Loïc Girault
  */
 
-package puck
-package jastadd
-package concretize
+package org.extendj.concretize
 
 import puck.graph.{TypeDecl => PTypeDecl, _}
 import puck.javaGraph._
@@ -34,6 +32,7 @@ import puck.util.{PuckLog, PuckLogger}
 import org.extendj.ast.{TypedKindDeclHolder, List => _, _}
 import org.extendj.ast.JavaJastAddDG2AST.verbosity
 import ShowDG._
+import puck.PuckError
 
 object RedirectSource {
 

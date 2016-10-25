@@ -30,7 +30,7 @@ import puck.LoggedEitherValues
 import puck.graph.transformations.Recording
 import puck.graph.transformations.rules.CreateTypeMember
 import puck.graph.{DependencyGraph, _}
-import puck.jastadd.ExtendJGraphUtils.Rules
+import org.extendj.ExtendJGraphUtils.Rules
 import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.nodeKind._
 

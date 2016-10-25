@@ -27,10 +27,11 @@
 package puck
 
 import java.io.File
+
+import org.extendj.JavaProject
 import puck.graph.ShowDG
 import puck.graph.transformations.Recording
 import puck.util.PuckSystemLogger
-import jastadd._
 //object PrettyPrintRecord {
 //  def main (args: Array[String]) : Unit = {
 //

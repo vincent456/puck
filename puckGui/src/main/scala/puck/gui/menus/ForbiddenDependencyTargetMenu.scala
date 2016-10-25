@@ -28,7 +28,7 @@ package puck.gui
 package menus
 
 import puck.actions.ChooseAbsAndRedirectMultiAction
-import puck.graph.{AccessAbstraction, ConcreteNode, DependencyGraph, NodeId, NodeIdP, SupertypeAbstraction, TypeDecl}
+import puck.graph.{ConcreteNode, DependencyGraph, NodeId, NodeIdP}
 import puck.gui.svg.actions.TargetedAutoSolveAction
 
 /**

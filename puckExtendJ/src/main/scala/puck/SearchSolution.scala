@@ -1,11 +1,11 @@
 package puck
 
+import org.extendj.ExtendJGraphUtils._
 import puck.graph.MutabilitySet.MutabilitySetOps
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.constraints.search._
 import puck.graph.transformations.{Immutable, Recording}
 import puck.graph.{DecoratedGraph, DependencyGraph, InstanceTypeDecl, InstanceValue, LoggedSuccess, Metrics, Parameter, StableValue, TypeDecl, ValueDef}
-import puck.jastadd.ExtendJGraphUtils._
 import puck.search._
 import puck.util.{PuckFileLogger, PuckLog, PuckLogger}
 

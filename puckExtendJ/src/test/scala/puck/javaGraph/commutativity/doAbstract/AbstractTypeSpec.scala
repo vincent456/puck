@@ -1,11 +1,8 @@
 package puck.javaGraph.commutativity.doAbstract
 
-import puck.Settings._
 import puck.TransfoRulesSpec
 import puck.graph.{AccessAbstraction, SupertypeAbstraction}
-import puck.graph.comparison.Mapping
-import puck.jastadd.ExtendJGraphUtils._
-import puck.javaGraph.ScenarioFactory
+import org.extendj.ExtendJGraphUtils._
 import puck.javaGraph.nodeKind.Interface
 
 /**

@@ -30,10 +30,9 @@ import java.io.File
 
 import puck.graph.comparison.Mapping
 import puck.graph.transformations.{Recordable, Recording}
-import puck.jastadd.JavaProject
 import puck.util.{PuckLogger, PuckSystemLogger}
-import sbt.IO
 import Recording.RecordingOps
+import org.extendj.JavaProject
 import org.extendj.ast.JavaJastAddDG2AST
 import puck.graph.DependencyGraph
 

@@ -27,7 +27,7 @@
 package org.extendj.ast
 
 import puck.graph._
-import puck.jastadd.concretize.CreateNode
+import org.extendj.concretize.CreateNode
 import puck.javaGraph._
 import puck.javaGraph.nodeKind._
 import puck.util.PuckLogger

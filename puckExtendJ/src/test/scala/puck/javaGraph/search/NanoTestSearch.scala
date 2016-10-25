@@ -1,20 +1,11 @@
 package puck.javaGraph.search
 
-import java.io.File
-
 import puck.graph.constraints.ConstraintsMapsUtils._
-import puck.graph.constraints.search.{BlindControl, ControlWithHeuristic, DecoratedGraphEvaluator, WithVirtualNodes}
-import puck.graph.transformations.Recording
-import puck.graph.{ConcreteNode, _}
+import puck.graph.constraints.search.{ControlWithHeuristic, DecoratedGraphEvaluator, WithVirtualNodes}
 import puck.javaGraph.{ScenarioFactory, SearchEngineWithLoggedFitness}
-import puck.Settings
 import puck.graph._
 import puck.search._
-import puck.jastadd.ExtendJGraphUtils.{Rules, dotHelper, violationsKindPriority}
-
-import scala.language.reflectiveCalls
-import scalaz.\/-
-
+import org.extendj.ExtendJGraphUtils.{Rules, dotHelper, violationsKindPriority}
 
 /**
   * Created by Mikal on 09/06/2016.

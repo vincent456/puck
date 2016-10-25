@@ -29,10 +29,10 @@ package puck.javaGraph.stories
 import java.io.File
 
 import org.extendj.ast.{HasNode, JavaJastAddDG2AST}
+import org.extendj.ExtendJGraphUtils.Rules._
 import puck.config.ConfigParser
 import puck.graph._
 import puck.graph.transformations.rules.Redirection
-import puck.jastadd.ExtendJGraphUtils.Rules._
 import puck.javaGraph.ScenarioFactory
 import puck.javaGraph.nodeKind.Interface
 import puck.util.LoggedEither._
