@@ -33,32 +33,32 @@ import scala.collection.mutable
   * Created by Loïc Girault on 16/11/15.
   */
 
-object AStarSearchStrategy {
-  def ordering[T](evaluator: Evaluator [T])= new Ordering[SearchState[T]]{
+class AStarSearchOrdering[T](evaluator: Evaluator [T]) extends Ordering[SearchState[T]]{
 
-    def evaluateWithDepthPenalty(x: SearchState[T]) : Int =
-      Math.max(evaluator.evaluateInt(x) + x.depth, 0)
+  def evaluateWithDepthPenalty(x: SearchState[T]) : Int =
+    Math.max(evaluator.evaluateInt(x) + x.depth, 0)
 
-    override def compare(sx: SearchState[T], sy: SearchState[T]): Int =
-      evaluateWithDepthPenalty(sx) compareTo evaluateWithDepthPenalty(sy)
-  }
+  override def compare(sx: SearchState[T], sy: SearchState[T]): Int =
+    evaluateWithDepthPenalty(sx) compareTo evaluateWithDepthPenalty(sy)
 }
+
+
 class AStarSearchStrategy[T]
 ( evaluator: Evaluator [T],
   maxDepth : Int = 100, // ajouté par Mikal
   maxSize : Int = 1000
   ) extends SearchStrategy[T] {
 
-  implicit val SearchStateOrdering = AStarSearchStrategy.ordering(evaluator)
+  implicit val SearchStateOrdering : AStarSearchOrdering[T] =
+    new AStarSearchOrdering(evaluator)
 
   // var remainingStates = new mutable.PriorityQueue[SearchState[T]]()(SearchStateOrdering.reverse)
   var remainingStates : mutable.SortedSet[SearchState[T]] = new mutable.TreeSet[SearchState[T]]()(SearchStateOrdering)
 
-  def isSuccess(s: SearchState[T]) =
-    s.loggedResult.value.isRight
+
 
   def addState(s: SearchState[T]): Unit =
-    if (isSuccess(s) && (s.depth < maxDepth)) {
+    if (s.isSuccess && (s.depth < maxDepth)) {
       remainingStates += s
       if (remainingStates.size > maxSize)
         puck.ignore(remainingStates.remove(remainingStates.last))
@@ -67,8 +67,10 @@ class AStarSearchStrategy[T]
   def popState() : SearchState[T] = {
     val res = remainingStates.head
     remainingStates.remove(remainingStates.head)
-    return res
+    res
   }
 
-  def canContinue: Boolean = remainingStates.nonEmpty
+  def canContinue: Boolean =
+    remainingStates.nonEmpty
+
 }

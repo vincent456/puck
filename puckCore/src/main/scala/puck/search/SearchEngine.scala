@@ -96,13 +96,15 @@ class SearchEngine[T]
       }
     )
 
+  def createState(i : Int, parent : SearchState[T], c : LoggedTry[T]) = new SearchState[T](i, Some(parent), c)
+
   def addChoicesStates(parent : SearchState[T], choices : Seq[LoggedTry[T]]) : Unit = {
     numExploredStates = numExploredStates + 1
     //println("add children of " + parent.uuid())
     choices.zipWithIndex.foreach {
       case (c,i) =>
       //  println("adding child " + i)
-        addState(new SearchState[T](i, Some(parent), c))
+        addState(createState(i, parent, c))
     }
     //println("children added")
   }

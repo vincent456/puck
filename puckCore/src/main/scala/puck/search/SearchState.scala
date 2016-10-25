@@ -39,6 +39,7 @@ class SearchState[T]
 
   import scalaz.syntax.writer._
 
+  def isSuccess = loggedResult.value.isRight
   def success : Logged[T] = loggedResult.value match {
       case \/-(res) => res set loggedResult.log
       case -\/(err) => error("state contains a failed result : " + err)

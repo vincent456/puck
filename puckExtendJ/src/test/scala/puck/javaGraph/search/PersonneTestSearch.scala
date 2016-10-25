@@ -4,16 +4,13 @@ import java.io.File
 
 import puck.TestUtils._
 import puck.graph.constraints.search.DecoratedGraphEvaluator
-import puck.graph.transformations.Recording
 import puck.graph.{ConcreteNode, _}
-import puck.jastadd.ExtendJGraphUtils.dotHelper
 import puck.javaGraph.ScenarioFactory
-import puck.search.{AStarSearchStrategy, AStarSearchStrategyGraphDisplayOnly}
-import puck.{Quick, Settings}
+import puck.Settings
+import puck.search.AStarSearchOrdering
+import puck.jastadd.ExtendJGraphUtils.dotHelper
 
 import scala.language.reflectiveCalls
-import scalaz.\/-
-
 
 /**
   * Created by cedric on 18/05/2016.
@@ -22,13 +19,13 @@ import scalaz.\/-
 object PersonneTestSearch {
   val path = getClass.getResource("/projetPersonne/").getPath
 
-  val outDir = Settings.tmpDir + File.separator + "DG-Imgs"
+  val outDir = SearchTest.outDir + File.separator + "DG-Imgs"
 
   def main(args : Array[String]) : Unit = {
-    val scenario = new ScenarioFactory(
+    val filePaths = Seq(
       s"$path/personne/Personne.java",
       s"$path/personne/Client.java")
-
+    val scenario = new ScenarioFactory(filePaths:_*)
 
     val constraints = scenario.parseConstraintsFile(s"$path/decouple.wld")
 
@@ -45,31 +42,12 @@ object PersonneTestSearch {
       evaluator, Some(constraints),
       10, 1000, outDir)
 
-    implicit val ordering = AStarSearchStrategy.ordering(evaluator)
+    implicit val ordering = new AStarSearchOrdering(evaluator)
 
     val res = solveAllBlind(scenario.graph, constraints,
       scenario.initialMutability, strategy, Some(1))
 
-    if (res.isEmpty) println("no results")
-    else {
-      println(res.size + " result(s)")
-      res foreach {
-        ss =>
-          val fit = ordering.evaluateWithDepthPenalty(ss)
-          strategy.printSuccessState("result#" + fit, ss)
-          val \/-(dg) = ss.loggedResult.value
-          val result = outDir + File.separator +"result#" + fit + ".pck"
-          Recording.write(result,
-            scenario.fullName2id, dg.graph)
-          val s = new ScenarioFactory(
-            s"$path/personne/Personne.java",
-            s"$path/personne/Client.java")
-          val r = Recording.load(s"$result", s.fullName2id)(s.logger)
-          import Recording.RecordingOps
-          val resdir = new File( Settings.tmpDir + File.separator+"testPuck"+fit)
-          val sf = s.applyChangeAndMakeExample(r.redo(s.graph),resdir )
-          Quick.svg(sf.graph, resdir + File.separator + "nano.svg", Some(constraints))
-      }
-    }
+    SearchTest.printResult(res, ordering, scenario.fullName2id, filePaths:_*)
+
   }
 }

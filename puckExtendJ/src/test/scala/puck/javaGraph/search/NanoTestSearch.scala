@@ -2,14 +2,15 @@ package puck.javaGraph.search
 
 import java.io.File
 
-import puck.TestUtils._
-import puck.graph.constraints.search.DecoratedGraphEvaluator
+import puck.graph.constraints.ConstraintsMapsUtils._
+import puck.graph.constraints.search.{BlindControl, ControlWithHeuristic, DecoratedGraphEvaluator, WithVirtualNodes}
 import puck.graph.transformations.Recording
 import puck.graph.{ConcreteNode, _}
-import puck.jastadd.ExtendJGraphUtils.dotHelper
-import puck.javaGraph.ScenarioFactory
-import puck.search.{AStarSearchStrategy, AStarSearchStrategyGraphDisplayOnly}
-import puck.{Quick, Settings}
+import puck.javaGraph.{ScenarioFactory, SearchEngineWithLoggedFitness}
+import puck.Settings
+import puck.graph._
+import puck.search._
+import puck.jastadd.ExtendJGraphUtils.{Rules, dotHelper, violationsKindPriority}
 
 import scala.language.reflectiveCalls
 import scalaz.\/-
@@ -18,60 +19,52 @@ import scalaz.\/-
 /**
   * Created by Mikal on 09/06/2016.
   */
-
 object NanoTestSearch {
+
+
+
   val path = getClass.getResource("/nanoPersonne/").getPath
 
-  val outDir = Settings.tmpDir + File.separator + "DG-Imgs"
+  import SearchTest.solsDir
 
   def main(args : Array[String]) : Unit = {
-    val scenario = new ScenarioFactory(
+    val filePaths = Seq(
       s"$path/nano/Personne.java",
       s"$path/nano/Client.java")
+    val scenario = new ScenarioFactory(filePaths:_*)
 
 
     val constraints = scenario.parseConstraintsFile(s"$path/decouple.wld")
 
-    //      val res = solveAll_targeted(graph, constraints, blindControlBuilder,
-    //        () => new AStarSearchStrategy[(DependencyGraph, Int)](SResultEvaluator.equalityByMapping(_.numNodes)),
-    //        Some(100),Some(5))
+//    val fitness1: DependencyGraph => Double =
+//      Metrics.fitness1(_, constraints, 1, 1).toDouble
 
+    val nodesSet = scenario.graph nodesIn constraints
 
-    val fitness1: DependencyGraph => Double =
-      Metrics.fitness1(_, constraints, 1, 1).toDouble
+    val fitness2: DependencyGraph => Double =
+      Metrics.fitness2(_, nodesSet).toDouble
 
-    val evaluator = DecoratedGraphEvaluator.equalityByMapping[Option[ConcreteNode]](fitness1)
-    val strategy = new AStarSearchStrategyGraphDisplayOnly[Option[ConcreteNode]](
+//    val evaluator = DecoratedGraphEvaluator.equalityByMapping[Option[ConcreteNode]](fitness1)
+    val evaluator = DecoratedGraphEvaluator.equalityByMapping[Any](fitness2)
+    val strategy = new AStarSearchStrategyGraphDisplayOnly[Any](
       evaluator, Some(constraints),
-      10, 1000, outDir)
+      10, 1000, solsDir)
 
-    implicit val ordering = AStarSearchStrategy.ordering(evaluator)
 
-    val res = solveAllBlind(scenario.graph, constraints,
-      scenario.initialMutability, strategy, Some(1))
+//    val control = new BlindControl(Rules, scenario.graph.newGraph(mutabilitySet = scenario.initialMutability),
+//      constraints, WithVirtualNodes, violationsKindPriority).asInstanceOf[SearchControl[DecoratedGraph[Any]]]
 
-    if (res.isEmpty) println("no results")
-    else {
-      println(res.size + " result(s)")
-      res foreach {
-        ss =>
-          val fit = ordering.evaluateWithDepthPenalty(ss)
-          strategy.printSuccessState("result#" + fit, ss)
-          val \/-(dg) = ss.loggedResult.value
-          val result = outDir + File.separator +"result#" + fit + ".pck"
-          Recording.write(result,
-            scenario.fullName2id, dg.graph)
-          val s = new ScenarioFactory(
-            s"$path/nano/Personne.java",
-            s"$path/nano/Client.java")
-          val r = Recording.load(s"$result", s.fullName2id)(s.logger)
-          import Recording.RecordingOps
-          val resdir = new File( Settings.tmpDir + File.separator+"testPuck"+fit)
-          val sf = s.applyChangeAndMakeExample(r.redo(s.graph),resdir )
-          Quick.svg(sf.graph, resdir + File.separator + "nano.svg", Some(constraints))
-//          println("Graphs equality? "+Mapping.equals(sf.graph, s.graph))
+    val control = new ControlWithHeuristic(Rules, scenario.graph.newGraph(mutabilitySet = scenario.initialMutability),
+      constraints, WithVirtualNodes, violationsKindPriority).asInstanceOf[SearchControl[DecoratedGraph[Any]]]
 
-      }
-    }
+    // SearchEngine(strategy, control, Some(1)) :  Some(n) => n sol(s), None => all sols
+    val engine = new SearchEngineWithLoggedFitness(strategy, control, constraints)
+    engine.explore()
+
+    SearchTest.printResult(engine.successes,
+      engine.searchStrategy.SearchStateOrdering,
+      scenario.fullName2id, filePaths:_*)
+
+
   }
 }
