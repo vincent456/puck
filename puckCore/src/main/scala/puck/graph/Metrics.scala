@@ -47,6 +47,16 @@ object Metrics {
     kViols*numViolations(graph, cm)  + kComplex*graph.numNodes
   }
 
+  // ajouté par Cédric
+
+  def fitness2(graph : DependencyGraph, nodesSet: Set[NodeId]): Int = {
+    val filtered = graph.edges.typeMemberUses2typeUsesMap.content.filter{
+      case ((_, used), _) => nodesSet contains used
+    }
+    filtered map {
+      case (_, typeUses) => typeUses.size
+    } sum
+  }
 
   //prerequis : \forall n in nodes, graph.contains*(root, n)
   def outgoingDependencies(graph: DependencyGraph, root : NodeId, nodes: Seq[NodeId]): Set[NodeIdP] =
