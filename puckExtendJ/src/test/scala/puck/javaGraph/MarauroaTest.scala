@@ -72,18 +72,19 @@ object ResourceTest {
   implicit val logger : PuckLogger = new PuckFileLogger(_ => true,
     new File("/tmp/pucklog"))
 
-  val root = "/home/lorilan/projects/constraintsSolver/puckJrrt/src/test/resources/"
+  val root = getClass.getResource("/nanoPersonne/").getPath
 
-  val path = "nanoPersonne"
-
-  val project = Tests.project(root + path, "nano", "decouple.wld")
+  val project = Tests.project(root, "nano", "decouple.wld")
 
   def main(args : Array[String]) : Unit = {
-    //        SearchSolution(project, ".",
-    //          StrategyChoice.DepthFirst, ControlChoice.Heuristic, NoVirtualNodes)
+    //val dg2ast = project.loadGraph()
+    //val scm = project.parseConstraints(dg2ast)
+
+   //     SearchSolution(project, ".",
+   //       StrategyChoice.DepthFirst, ControlChoice.Heuristic, NoVirtualNodes)
 
     ignore(applyRecords(project,
-      Seq(root + path +"/heuristic-depthFirst-solution-0_6_0.pck" )))
+      Seq(root +"/heuristic-depthFirst-solution-0_6_0.pck" )))
 
   }
 }

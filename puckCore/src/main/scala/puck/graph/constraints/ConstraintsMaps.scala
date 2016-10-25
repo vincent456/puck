@@ -29,7 +29,7 @@ package constraints
 
 import puck.graph.constraints.ConstraintsMaps._
 
-object ConstraintsMaps{
+object ConstraintsMaps {
   type FriendConstraintMap = Map[Range, ConstraintSet]
   type HideConstraintMap = Map [Range, ConstraintSet]
 

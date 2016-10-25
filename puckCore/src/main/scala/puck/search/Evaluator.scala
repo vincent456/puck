@@ -54,7 +54,7 @@ abstract class Evaluator[T]{
   def evaluate(r : StateT) : Double
   def equals(r1 : StateT, r2 : StateT) : Boolean
 
-  private var precision = 100
+  private var precision = 10000
   def evaluateInt(r : StateT) : Int = (evaluate(r) * precision).toInt
 
   def evaluatedDifferentStatesMap(l : Seq[StateT]) :  Map[Int, Seq[StateT]] =
