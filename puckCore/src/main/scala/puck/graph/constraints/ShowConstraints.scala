@@ -33,7 +33,7 @@ trait ShowConstraints {
 
   implicit def stringOfRange : DGStringBuilder[Range] = { (dg, r) =>
     val prefix = r match { case Scope(id) => "'" case Element(id) => "r:'" }
-      prefix + dg.fullName(r.nid) + "'"
+    prefix + ShowDG.desambiguatedFullName(dg, r.nid) + "'"
   }
 
   def stringOfNamedRangeSetDef : DGStringBuilder[NamedRangeSet] = (dg, nrs) =>
