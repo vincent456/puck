@@ -44,6 +44,6 @@ object BridgeTestBlindControlSolveAll {
     val res = solveAllBlind(scenario.graph, constraints,
       scenario.initialMutability, strategy, Some(1))
 
-    SearchTest.printResult(res, ordering, scenario.fullName2id, filePaths:_*)
+    SearchTest.printResult(res, ordering, scenario.fullName2id, constraints, filePaths:_*)
   }
 }

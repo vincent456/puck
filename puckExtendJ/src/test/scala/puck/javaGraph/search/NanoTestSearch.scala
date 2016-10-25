@@ -54,7 +54,7 @@ object NanoTestSearch {
 
     SearchTest.printResult(engine.successes,
       engine.searchStrategy.SearchStateOrdering,
-      scenario.fullName2id, filePaths:_*)
+      scenario.fullName2id, constraints, filePaths:_*)
 
 
   }

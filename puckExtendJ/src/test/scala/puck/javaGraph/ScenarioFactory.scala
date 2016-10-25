@@ -26,10 +26,10 @@
 
 package puck.javaGraph
 
-import java.io.{File, FileReader, StringReader}
+import java.io.{File, FileReader, FileWriter, StringReader}
 
 import puck.graph.transformations.{Recording, Transformation}
-import puck.graph.{DGBuildingError, DependencyGraph, NodeId}
+import puck.graph.{DGBuildingError, DependencyGraph, NodeId, ShowDG}
 import puck.util.{FileHelper, PuckFileLogger}
 import sbt.IO
 import org.extendj.ast.{ASTNodeLink, JavaJastAddDG2AST, Program}
@@ -37,7 +37,7 @@ import FileHelper.FileOps
 import puck.{Project, Settings}
 import puck.config.ConfigParser
 import puck.graph.constraints.{ConstraintsMaps, ConstraintsParser}
-
+import puck.graph.ShowDG._
 
 
 
@@ -110,8 +110,19 @@ class ScenarioFactory
     IO.delete(outDir)
     dg2ast.printCode(outDir)
   }
-  def applyChangeAndMakeExample ( g: DependencyGraph, outDir : String) : ScenarioFactory =
-    applyChangeAndMakeExample(g, new File(outDir))
+  def applyChangeAndMakeExample
+  ( g: DependencyGraph,
+    outDir : File,
+    cm : ConstraintsMaps) : ScenarioFactory = {
+    val sf = this.applyChangeAndMakeExample(g, outDir)
+
+    import puck.util.FileHelper.FileOps
+    val fw = new FileWriter(outDir \ "decouple.wld")
+    fw write (g,cm).shows
+    fw.close()
+
+    sf
+  }
 
   def applyChangeAndMakeExample
   ( g: DependencyGraph,
