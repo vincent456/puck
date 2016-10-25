@@ -1,6 +1,7 @@
 package puck
 
 import java.awt.event.WindowEvent
+import java.io.{File, FileWriter}
 
 import puck.actions.Choose
 import puck.graph.Metrics._
@@ -21,9 +22,36 @@ import scalaz.\/-
   * Created by cedric on 26/04/2016.
   */
 object TestUtils {
+
+  def initDir(name: String): Unit = {
+    val dir = new File(name)
+
+    if (!dir.exists())
+      ignore(dir.mkdirs())
+    else {
+      val files: Array[String] = dir.list()
+      files foreach {
+        case f: String =>
+          //println(f)
+          import puck.util.FileHelper.FileOps
+          (dir \ f).delete()
+      }
+      ignore(dir.mkdirs())
+    }
+  }
+
   def showSuccess[T](ss : SearchState[DecoratedGraph[T]]) = {
     val LoggedEither(_, \/-(dg)) = ss.loggedResult
     Quick.frame(dg.graph, "G")
+  }
+
+  def printSuccessState[T](outDir : String, name : String,
+                           ss : SearchState[DecoratedGraph[T]]) : Unit = {
+    val LoggedEither(log, \/-(dg)) = ss.loggedResult
+    //    Quick.svg(dg.graph, dir + File.separator + name + ".svg", scm)
+    val fw = new FileWriter(outDir + File.separator + name + ".transfos")
+    fw.write(log)
+    fw.close()
   }
 
   def showEngineSuccesses[T](engine : SearchEngine[DecoratedGraph[T]]) =

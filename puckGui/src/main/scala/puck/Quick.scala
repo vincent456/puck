@@ -80,8 +80,10 @@ object Quick {
   }
   def svg ( graph : DependencyGraph, path : String, scm : Option[ConstraintsMaps] = None)
           ( implicit dotHelper : DotHelper): Unit = {
+    val fos = new FileOutputStream(path)
     val opts = PrintingOptions(VisibilitySet.allVisible(graph), printId=true, printSignatures= true)
-    DotPrinter.genImage(graph, dotHelper, scm, opts, Svg, new FileOutputStream(path))()
+    DotPrinter.genImage(graph, dotHelper, scm, opts, Svg, fos)()
+    fos.close()
   }
 
 }
