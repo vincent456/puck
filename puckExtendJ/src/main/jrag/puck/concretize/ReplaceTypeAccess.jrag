@@ -162,6 +162,7 @@ aspect ReplaceTypeAccess {
             for(Declarator d : getDeclaratorList()){
                 d.getTypeAccessReset();
             }
+            this.flushTreeCache();// [TODO] be more selective in the flush -- find what is needed preciseley
             return true;
         }
         return false;
