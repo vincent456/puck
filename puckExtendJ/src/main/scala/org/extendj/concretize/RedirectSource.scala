@@ -157,8 +157,6 @@ object RedirectSource {
   }
 
 
-
-
   def fixImportForUsersOfMovedTypeDecl
   ( reenactor : DependencyGraph,
     tDecl : TypeDecl,
@@ -180,19 +178,10 @@ object RedirectSource {
 
     puck.ignore(impactedUsers.foldLeft(Set[String]()){ (cus, userId) =>
       val scu = id2declMap(userId) match {
-        case ParameterDeclHolder(decl) =>
-          diffTypeDecl(decl.hostType())
-        case BlockHolder(blk) =>
-          diffTypeDecl(blk.hostType())
-        case ExprHolder(expr) =>
-          diffTypeDecl(expr.hostType())
-        case dh : HasBodyDecl =>
-          diffTypeDecl(dh.decl.hostType())
+        case holder : CanAccessHostType =>
+          diffTypeDecl(holder.hostType)
         case tdh : TypedKindDeclHolder =>
           diffTypeDecl(tdh.decl)
-        case LocalVarDeclHolder(decl) =>
-          diffTypeDecl(decl.hostType())
-
         case dh => throw new DGError("should not happen, decl holder class is " + dh.getClass)
       }
 

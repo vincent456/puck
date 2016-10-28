@@ -159,6 +159,9 @@ object ASTNodeLink{
 }
 
 sealed trait ASTNodeLink
+sealed trait CanAccessHostType extends ASTNodeLink {
+  def hostType : TypeDecl
+}
 
 case object NoDecl extends ASTNodeLink
 object HasNode {
@@ -175,26 +178,35 @@ sealed abstract class HasNode extends ASTNodeLink {
 //}
 case object PackageDeclHolder extends ASTNodeLink
 
+
 sealed abstract class DefHolder extends HasNode
-case class ExprHolder(expr : Expr) extends DefHolder{
+case class ExprHolder(expr : Expr)
+  extends DefHolder with CanAccessHostType {
   def node = expr.asInstanceOf[ASTNode[_]]
+  def hostType : TypeDecl = expr.hostType()
 }
-case class BlockHolder(block : Block) extends DefHolder{
+case class BlockHolder(block : Block)
+  extends DefHolder with CanAccessHostType {
   def node = block.asInstanceOf[ASTNode[_]]
+  def hostType : TypeDecl = block.hostType()
 }
 
-case class ParameterDeclHolder(decl : ParameterDeclaration) extends HasNode {
+case class ParameterDeclHolder(decl : ParameterDeclaration)
+  extends HasNode with CanAccessHostType {
   def node = decl.asInstanceOf[ASTNode[_]]
+  def hostType : TypeDecl = decl.hostType()
 }
 
-sealed trait HasBodyDecl extends HasNode{
+sealed trait HasBodyDecl
+  extends HasNode with CanAccessHostType {
   val decl : BodyDecl
   def node = decl.asInstanceOf[ASTNode[_]]
+  def hostType : TypeDecl = decl.hostType()
 }
 
 
 
-sealed trait HasMemberDecl extends HasBodyDecl{
+sealed trait HasMemberDecl extends HasBodyDecl {
   override val decl : MemberDecl
 }
 
@@ -225,8 +237,10 @@ case class FieldDeclHolder(decl : FieldDecl, declaratorIndex : Int) extends HasM
   def declarator = decl.getDeclarator(declaratorIndex)
 }
 
-case class LocalVarDeclHolder(decl : VariableDeclarator) extends HasNode {
+case class LocalVarDeclHolder(decl : VariableDeclarator)
+  extends HasNode with CanAccessHostType {
   def node = decl.asInstanceOf[ASTNode[_]]
+  def hostType : TypeDecl = decl.hostType()
 }
 
 case class EnumConstantHolder(decl : EnumConstant) extends HasBodyDecl
