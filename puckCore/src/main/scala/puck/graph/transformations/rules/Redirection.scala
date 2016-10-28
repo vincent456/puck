@@ -166,9 +166,6 @@ object Redirection {
       case e : PuckError => LoggedError(e.getMessage)
     }
 
-
-
-
   //update type constraint when user change but type used remains the same
   def updateTypedNodesInTypeConstraint
   (g : DependencyGraph,

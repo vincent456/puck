@@ -125,9 +125,9 @@ object LoadAndApply  {
   }
 
 
-  def main (args: Array[String]) : Unit = {
+  def main (args: Array[String]) : Unit = puck.ignore (
     this.applyRecords(JavaProject(), args.toSeq)(new PuckSystemLogger(_ => true))
-  }
+  )
 
 
 

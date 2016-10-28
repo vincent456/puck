@@ -221,7 +221,7 @@ object RedirectTarget {
     val (resultGraph, reenactor) = resultAndReenactor
 
     logger.writeln(s"redirecting ${(reenactor, e).shows} " +
-      s"target to ${(reenactor, newTargetId).shows}")
+      s"target to ${(reenactor, newTargetId).shows(desambiguatedFullName)}")
     if(e.target != newTargetId) {
         val target = reenactor.getNode(e.target)
         val newTarget = reenactor.getNode(newTargetId)
