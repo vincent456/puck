@@ -367,7 +367,7 @@ object Move {
             case (g0, (movedDef, siblingUses)) =>
               val decl = g0.container_!(movedDef)
 
-              addParamOfTypeAndSetTypeDependency(g0, decl,
+              Intro.paramOfTypeAndSetTypeDependency(g0, decl,
                 oldContainer, oldSelfUse, siblingUses) flatMap  {
                 case (pnode, g1) =>
                   g1.usersOf(g1 container_! movedDef).foldLoggedEither(g1) {
@@ -443,77 +443,6 @@ object Move {
 
 
 
-  def addParamOfTypeAndSetTypeDependency
-  (g: DependencyGraph,
-   declId : NodeId,
-   pType : NodeId,
-   oldTypeUse : NodeIdP,
-   tmUses : Set[NodeIdP]
-  ) : LoggedTry[(ConcreteNode, DependencyGraph)]  = {
-    import g.nodeKindKnowledge.intro
-    intro.parameter(g, pType, declId) map {
-      case (pNode, g2) =>
-        val newTypeUse = (pNode.id, pType)
-        (pNode, g2.changeTypeUseForTypeMemberUseSet(oldTypeUse, newTypeUse, tmUses))
-    }
-  }
-
-
-
-
-  def createParam
-  (g : DependencyGraph,
-   oldTypeUse : NodeIdP,
-   newTypeUsed : NodeId,
-   tmUses : Set[NodeIdP]
-  ): LoggedTG ={
-
-    val usesByUser = tmUses.groupBy(_.user)
-    //introduce one parameter by user even with several uses
-    //these were all previously this use so it makes sens to keep one reference
-    val tmUsesStr = tmUses.map(u => (g,u).shows).mkString("[",", ","]")
-    usesByUser.toList.foldLoggedEither(g.comment(s"createParam(g,${(g, oldTypeUse).shows}, ${(g,newTypeUsed).shows}, $tmUsesStr)")) {
-      case (g0, (impl, typeMemberUses)) =>
-        val user = g0.getConcreteNode(impl)
-
-        assert(g0.getConcreteNode(impl).kind.kindType == ValueDef)
-
-        val decl = g0.getConcreteNode(g0.container_!(impl))
-
-        addParamOfTypeAndSetTypeDependency(g0, decl.id,
-          newTypeUsed, oldTypeUse, typeMemberUses) map (_._2)
-
-    }
-  }
-
-  def createTypeMember
-  (g : DependencyGraph,
-   oldTypeUse : NodeIdP,
-   newTypeUsed : NodeId,
-   tmUses : Set[NodeIdP],
-   kind : NodeKind
-  ): LoggedTG ={
-
-    val tmContainer =
-      if (oldTypeUse.selfUse) oldTypeUse.user
-      else g.container(oldTypeUse.user).get
-
-    // assert forall user in tmUses, container(user) = tmContainer
-    import g.nodeKindKnowledge.intro
-    for {
-      ug <- intro.typeMember(g, newTypeUsed, tmContainer, kind)
-    } yield {
-      val (newTypeUse, g2) = ug
-      val delegateId = newTypeUse.user
-
-      tmUses.foldLeft(g2) {
-        case (g0, typeMemberUse) =>
-          intro.addUsesAndSelfDependency(
-            g0.changeTypeUseOfTypeMemberUse(oldTypeUse, newTypeUse, typeMemberUse),
-            typeMemberUse.user, delegateId) // replace this.m by this.delegate.m
-      }
-    }
-  }
 
 
 }

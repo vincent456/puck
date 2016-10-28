@@ -25,21 +25,95 @@
  */
 
 package puck.graph.transformations.rules
-
 import puck.graph._
+import puck.util.LoggedEither._
 import ShowDG._
+
+import scalaz.std.list._
 
 sealed trait CreateVarStrategy {
   def apply ( g : DependencyGraph, oldTu : NodeIdP, newTu : NodeId, tmUses : Set[NodeIdP] ) : LoggedTG
 }
 case object CreateParameter extends CreateVarStrategy {
   def apply ( g : DependencyGraph, oldTu : NodeIdP, newTu : NodeId, tmUses : Set[NodeIdP] ) : LoggedTG =
-    Move.createParam(g,oldTu, newTu, tmUses)
+    Intro.param(g,oldTu, newTu, tmUses)
 
 }
 case class CreateTypeMember(kind : NodeKind) extends CreateVarStrategy {
   def apply ( g : DependencyGraph, oldTu : NodeIdP, newTu : NodeId, tmUses : Set[NodeIdP] ) : LoggedTG =
-    Move.createTypeMember(g, oldTu, newTu, tmUses, kind)
+    Intro.typeMember(g, oldTu, newTu, tmUses, kind)
+}
+
+object Intro {
+
+  def param
+  (g : DependencyGraph,
+   oldTypeUse : NodeIdP,
+   newTypeUsed : NodeId,
+   tmUses : Set[NodeIdP]
+  ): LoggedTG ={
+
+    val usesByUser = tmUses.groupBy(_.user)
+    //introduce one parameter by user even with several uses
+    //these were all previously this use so it makes sens to keep one reference
+    val tmUsesStr = tmUses.map(u => (g,u).shows).mkString("[",", ","]")
+    usesByUser.toList.foldLoggedEither(g.comment(s"createParam(g,${(g, oldTypeUse).shows}, ${(g,newTypeUsed).shows}, $tmUsesStr)")) {
+      case (g0, (impl, typeMemberUses)) =>
+        val user = g0.getConcreteNode(impl)
+
+        assert(g0.getConcreteNode(impl).kind.kindType == ValueDef)
+
+        val decl = g0.getConcreteNode(g0.container_!(impl))
+
+        paramOfTypeAndSetTypeDependency(g0, decl.id,
+          newTypeUsed, oldTypeUse, typeMemberUses) map (_._2)
+
+    }
+  }
+
+  def paramOfTypeAndSetTypeDependency
+  (g: DependencyGraph,
+   declId : NodeId,
+   pType : NodeId,
+   oldTypeUse : NodeIdP,
+   tmUses : Set[NodeIdP]
+  ) : LoggedTry[(ConcreteNode, DependencyGraph)]  = {
+    import g.nodeKindKnowledge.intro
+    intro.parameter(g, pType, declId) map {
+      case (pNode, g2) =>
+        val newTypeUse = (pNode.id, pType)
+        (pNode, g2.changeTypeUseForTypeMemberUseSet(oldTypeUse, newTypeUse, tmUses))
+    }
+  }
+
+  def typeMember
+  (g : DependencyGraph,
+   oldTypeUse : NodeIdP,
+   newTypeUsed : NodeId,
+   tmUses : Set[NodeIdP],
+   kind : NodeKind
+  ): LoggedTG ={
+
+    val tmContainer =
+      if (oldTypeUse.selfUse) oldTypeUse.user
+      else g.container(oldTypeUse.user).get
+
+    // assert forall user in tmUses, container(user) = tmContainer
+    import g.nodeKindKnowledge.intro
+    for {
+      ug <- intro.typeMember(g, newTypeUsed, tmContainer, kind)
+    } yield {
+      val (newTypeUse, g2) = ug
+      val delegateId = newTypeUse.user
+
+      tmUses.foldLeft(g2) {
+        case (g0, typeMemberUse) =>
+          intro.addUsesAndSelfDependency(
+            g0.changeTypeUseOfTypeMemberUse(oldTypeUse, newTypeUse, typeMemberUse),
+            typeMemberUse.user, delegateId) // replace this.m by this.delegate.m
+      }
+    }
+  }
 }
 
 abstract class Intro {
