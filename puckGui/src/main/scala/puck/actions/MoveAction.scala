@@ -120,7 +120,7 @@ extends Action(MoveAction.label(graph, moved, newHost)){
   }
 
   override def apply() : Unit =
-    printErrOrPushGraph(publisher, "Abstraction creation failure" )( doMove )
+    printErrOrPushGraph(publisher, "Move action failure" )( doMove )
 
 
 }

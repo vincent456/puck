@@ -34,17 +34,29 @@ import scalaz.std.set._
 import ShowDG._
 import puck.PuckError
 
-import scalaz._
+import scalaz.Apply
 
 
 object Move {
+
+
+  def checkMutability[T]
+  (g : DependencyGraph,
+   nodes : List[NodeId])
+  (res : => LoggedTry[T]) : LoggedTry[T] =
+  nodes find (!g.isMutable(_)) match {
+    case Some(nid) =>
+      LoggedError(s"${(g, nid).shows} is not mutable")
+    case None => res
+  }
 
   def staticDecl
   ( g : DependencyGraph,
     movedId : NodeId,
     newContainer : NodeId
   ) : LoggedTG =
-    g.container(movedId) match {
+  checkMutability(g, List(movedId, newContainer)){
+  g.container(movedId) match {
       case None =>
         LoggedError(s"${(g, movedId).shows} has no container !!!")
       case Some(oldContainer) =>
@@ -52,9 +64,12 @@ object Move {
           s"from ${(g, oldContainer).shows} " +
           s"to ${(g, newContainer).shows}"
 
-        g.comment(s"Move.staticDecl(g, ${(g, movedId).shows}, ${(g, newContainer).shows})").
-          changeSource(Contains(oldContainer, movedId), newContainer) logComment log
+        LoggedSuccess(log,
+          g.comment(log)
+           .changeSource(Contains(oldContainer, movedId), newContainer))
+
     }
+  }
 
   def usesBetween(g : DependencyGraph, sources :  Set[NodeId], targets : Set[NodeId]): Set[NodeIdP] =
     for{
@@ -117,7 +132,8 @@ object Move {
   (g0 : DependencyGraph,
    typeMembersMovedId : List[NodeId],
    oldContainer : NodeId,
-   newContainer : NodeId) : LoggedTG = {
+   newContainer : NodeId) : LoggedTG =
+    checkMutability(g0, oldContainer :: newContainer :: typeMembersMovedId){
 
     val worker : MoveTypeMember =
       new MoveTypeMember(g0, typeMembersMovedId, oldContainer, newContainer) {
@@ -202,26 +218,29 @@ object Move {
     typeMembersMovedId : List[NodeId],
     newContainer : NodeId,
     createVarStrategy: Option[CreateVarStrategy] = None) : LoggedTG = {
+    val oldContainer = graph container_! typeMembersMovedId.head
 
-    val typeMembersMovedStr = typeMembersMovedId.map(nid => (graph, nid).shows ).mkString("[",", ", "]")
-    val g0 = graph.comment(s"Move.typeMember(g, $typeMembersMovedStr, ${(graph,newContainer).shows}, $createVarStrategy)")
-    /** PRECONDITION all typeMembersMoved have same host */
-    val oldContainer = g0 container_! typeMembersMovedId.head
+    checkMutability(graph, oldContainer :: newContainer :: typeMembersMovedId) {
 
-    val isPullUp = g0.isa_*(oldContainer, newContainer)
-    val isPushDown = g0.isa_*(newContainer, oldContainer)
+      val typeMembersMovedStr = typeMembersMovedId.map(nid => (graph, nid).shows).mkString("[", ", ", "]")
+      val g0 = graph.comment(s"Move.typeMember(g, $typeMembersMovedStr, ${(graph, newContainer).shows}, $createVarStrategy)")
+      /** PRECONDITION all typeMembersMoved have same host */
 
-    if(isPullUp && isPushDown) {
-      assert(oldContainer == newContainer)
-      LoggedSuccess(graph)
+      val isPullUp = g0.isa_*(oldContainer, newContainer)
+      val isPushDown = g0.isa_*(newContainer, oldContainer)
+
+      if (isPullUp && isPushDown) {
+        assert(oldContainer == newContainer)
+        LoggedSuccess(graph)
+      }
+      else if (isPullUp)
+        pullUp(g0, typeMembersMovedId, oldContainer, newContainer)
+      else if (isPushDown)
+        pushDown(g0, typeMembersMovedId, oldContainer, newContainer)
+      else
+        typeMemberBetweenUnrelatedTypeDecl(g0, typeMembersMovedId, oldContainer, newContainer, createVarStrategy)
+
     }
-    else if(isPullUp)
-      pullUp(g0, typeMembersMovedId, oldContainer, newContainer)
-    else if(isPushDown)
-      pushDown(g0, typeMembersMovedId, oldContainer, newContainer)
-    else
-      typeMemberBetweenUnrelatedTypeDecl(g0, typeMembersMovedId, oldContainer, newContainer, createVarStrategy)
-
   }
 
 
@@ -231,9 +250,10 @@ object Move {
     typeMembersMovedId : List[NodeId],
     oldContainer : NodeId,
     newContainer : NodeId,
-    createVarStrategy: Option[CreateVarStrategy] = None) : LoggedTG = {
+    createVarStrategy: Option[CreateVarStrategy] = None) : LoggedTG =
+    checkMutability(g0, oldContainer :: newContainer :: typeMembersMovedId) {
 
-    val worker : MoveTypeMember =
+      val worker : MoveTypeMember =
       new MoveTypeMember(g0, typeMembersMovedId, oldContainer, newContainer) {
 
 
