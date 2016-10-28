@@ -45,7 +45,7 @@ object Abstraction {
    tmImplId : NodeId) : Set[NodeId] = {
 
     val impl = g getConcreteNode tmImplId
-    val implType = g typ tmImplId
+    val Some(implType) = g structuredType tmImplId
     //val typedImpl = (, )
 
     def searchTroughHierarchy(t : NodeId,
@@ -54,7 +54,7 @@ object Abstraction {
       val candidates = g.content(t).toList
 
       val sabs = candidates find (cid => (g getConcreteNode cid).name == impl.name &&
-        (g.styp(cid) exists (_.canOverride(g, implType)) ))
+        (g.structuredType(cid) exists (_.canOverride(g, implType)) ))
 
       val acc2 = sabs map (acc + _) getOrElse acc
 
@@ -81,14 +81,14 @@ object Abstraction {
         /!\ case de A :< B et A :< C avec méthode surchargé présente dans B ET C non géré
      */
 
-    val typedImpls = tmImplsId map (n => (g getConcreteNode n, g typ n))
+    val typedImpls = tmImplsId map (n => (g getConcreteNode n, (g structuredType n).get))
     //val log = s"tmAbstraction : searching an abstraction of ${(g, tmImpl).shows} in ${(g, typeAbsId).shows}\n"
 
     def findAbsInOneType(superType : NodeId,
                          impls : List[TypedNode],
                          map0 : Map[NodeId, NodeId]) : (List[TypedNode], Map[NodeId, NodeId]) = {
       val candidates = g.content(superType).toList
-      val typedCandidates = candidates flatMap (c => g.styp(c) map ((g getConcreteNode c, _)))
+      val typedCandidates = candidates flatMap (c => g.structuredType(c) map ((g getConcreteNode c, _)))
 
       val (remainingImps, _, map) = impls.foldLeft((List[(ConcreteNode, Type)](), typedCandidates, map0)){
         case ((remainingSubs, remainingCandidates, map1), typedMeth @ (subMeth, subMethSig)) =>
