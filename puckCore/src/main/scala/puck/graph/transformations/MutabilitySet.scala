@@ -40,30 +40,30 @@ object MutabilitySet {
         }
     }
 
-  implicit class MutabilitySetOps(val mutables: T) extends AnyVal {
+  implicit class MutabilitySetOps(val immutables: T) extends AnyVal {
 
     def setMutability(graph : DependencyGraph, name : Seq[String], m : Mutability) : T =
-      MutabilitySet.setMutableWithName(graph, mutables, graph.rootId, name, m)
+      MutabilitySet.setMutableWithName(graph, immutables, graph.rootId, name, m)
 
     def setMutability(id : NodeId, v : Mutability) : T = v match {
-      case Immutable => mutables - id
-      case Mutable => mutables + id
+      case Immutable => immutables + id
+      case Mutable => immutables - id
     }
 
     def setMutability(ids : Iterable[NodeId], v : Mutability) : T = v match {
-      case Immutable => mutables -- ids
-      case Mutable => mutables ++ ids
+      case Immutable => immutables ++ ids
+      case Mutable => immutables -- ids
     }
 
-    def mutableNodes(graph: DependencyGraph) : T = mutables
-    def immutableNodes(graph: DependencyGraph) : T = graph.nodesId.toSet -- mutables
+    def mutableNodes(graph: DependencyGraph) : T = graph.nodesId.toSet -- immutables
+    def immutableNodes(graph: DependencyGraph) : T = immutables
 
     def toggle(id : NodeId): T =
       setMutability(id, mutability(id).opposite)
 
 
-    def isImmutable : NodeId => Boolean = id => !isMutable(id)
-    def isMutable : NodeId => Boolean = mutables.contains
+    def isImmutable : NodeId => Boolean = immutables.contains
+    def isMutable : NodeId => Boolean = id => !isImmutable(id)
 
     def mutability(id : NodeId) : Mutability =
       if(isImmutable(id)) Immutable
