@@ -131,6 +131,38 @@ class RedirectMethodUsesSpec
   }
 
 
+
+  scenario("overloading resolution"){
+    def code(tName : String) : String =
+      s"""package p;
+          |
+          |interface I {
+          |    void m(String s1, String s2);
+          |    void m(String s1);
+          |}
+          |
+          |class B implements I {
+          |   public void m(String s1, String s2){}
+          |   public void m(String s1){}
+          |}
+          |
+          |class A {
+          |    $tName b = new B();
+          |    void m(){
+          |        b.m("toto");
+          |    }
+          |}"""
+
+    compareWithExpectedAndGenerated( code("B"),
+      bs => {
+        import bs.{graph, idOfFullName}
+
+        Redirection.redirectUsesAndPropagate(graph, ("p.A.b", "p.B"),
+          AccessAbstraction("p.I", SupertypeAbstraction)).rvalue
+      },
+      code("I"))
+
+  }
   def genCode(hasAgetA : String, usesA : String, cGetA : String) : String =
     s"""package p;
       |

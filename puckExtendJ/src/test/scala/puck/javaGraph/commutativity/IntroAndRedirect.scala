@@ -72,4 +72,57 @@ class IntroAndRedirect
     )
   }
 
+  scenario("From class to interface superType - bug correction") {
+    compareWithExpectedAndGenerated(
+      """package p;
+        |class Singleton{
+        | private static Singleton instance = new Singleton();
+        | public static Singleton getIt(){
+        |   return instance;
+        | }
+        | public void m(){}
+        |}
+        |class User {
+        | private static Singleton s;
+        | static {
+        |   s = Singleton.getIt();
+        |   s.m();
+        | }
+        |}
+      """
+      ,
+      bs => {
+        import bs.{graph, idOfFullName}
+        (for {
+          absG <- abstracter.createAbstraction(graph,
+            graph getConcreteNode "p.Singleton",
+            Interface,
+            SupertypeAbstraction)
+          (abs, g) = absG
+          AccessAbstraction(itId, _) = abs
+          g2 = g.addContains("p", itId) .setName(itId, "I")
+          g3 <- Redirection.redirectUsesAndPropagate(g2, ("p.User.s", "p.Singleton"),
+            AccessAbstraction((g2, "p.I"), SupertypeAbstraction))
+        } yield g3).rvalue
+      },
+      """package p;
+        |interface I { void m();}
+        |
+        |class Singleton implements I {
+        | private static Singleton instance = new Singleton();
+        | public static Singleton getIt(){
+        |   return instance;
+        | }
+        | public void m(){}
+        |}
+        |class User {
+        | private static I s;
+        | static {
+        |   s = Singleton.getIt();
+        |   s.m();
+        | }
+        |}
+      """
+    )
+  }
 }

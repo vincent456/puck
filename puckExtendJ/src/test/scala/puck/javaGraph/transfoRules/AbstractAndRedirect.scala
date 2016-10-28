@@ -43,16 +43,16 @@ class AbstractAndRedirect
     def code(inheritanceClause : String , fType : String) = Seq(
       s"""package fileSystem;
           |
-        |public class File $inheritanceClause{
+          |public class File $inheritanceClause{
           |   public void display(String path){ System.out.println(path+name); }
           |   private String name;
           |}""",
       s"""package fileSystem;
           |
-        |import java.util.ArrayList;
+          |import java.util.ArrayList;
           |import java.util.List;
           |
-        |public class Directory {
+          |public class Directory {
           |   public void display(String path) {
           |      System.out.println(path + name);
           |      String npath = path + name +"/";
