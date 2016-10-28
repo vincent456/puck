@@ -36,7 +36,9 @@ import puck.PuckError
 
 object RedirectSource {
 
-  def typesUsedInSubtree(graph : DependencyGraph, root : NodeId) : Seq[NodeId] =
+  def typesUsedInSubtree
+  ( graph : DependencyGraph,
+    root : NodeId ) : List[NodeId] =
     for {
       nid <- graph subTree root
       id <- graph usedBy nid
@@ -68,10 +70,12 @@ object RedirectSource {
 
   def moveMemberDecl
   ( reenactor : DependencyGraph,
+    tDeclFromId : NodeId,
     tDeclFrom : TypeDecl,
+    tDeclDestId : NodeId,
     tDeclDest : TypeDecl,
-    hmd : HasMemberDecl,
-    mDeclId : NodeId)
+    mDeclId : NodeId,
+    hmd : HasMemberDecl)
   ( implicit id2declMap: NodeId => ASTNodeLink,
     logger : PuckLogger): Unit = {
 
@@ -89,6 +93,7 @@ object RedirectSource {
       reenactor, hmd.decl.asInstanceOf[Visible],
       mDeclId )
 
+    //add import need by method in new host
     if(tDeclFrom.compilationUnit() != tDeclDest.compilationUnit()){
       val typesUsed = typesUsedInSubtree(reenactor, mDeclId)
 
@@ -96,18 +101,57 @@ object RedirectSource {
       val cu = tDeclDest.compilationUnit()
       val imports = tDeclDest.compilationUnit().getImportDecls.toList
 
-      typesUsed.toSet[NodeId].foreach {
-        tid =>
-          typeDecl(reenactor, id2declMap, tid){
+      typesUsed.toSet[NodeId].foreach (
+          typeDecl(reenactor, id2declMap, _){
             t =>
               if(!isAutoImported(t))
                 addImport(cu, t)
-          }
-      }
+          })
     }
+
+    fixImportForUsersOfMovedStaticTypeMember(reenactor,
+      tDeclFromId, tDeclFrom,
+      tDeclDestId, tDeclDest,
+      mDeclId, hmd )
+//    println(s"moveMemberDecl ${(reenactor, mDeclId).shows(desambiguatedFullName)} " +
+//      s"from ${(reenactor, tDeclFromId).shows(desambiguatedFullName)}" +
+//      s"from ${(reenactor, tDeclDestId).shows(desambiguatedFullName)}")
   }
 
 
+  def fixImportForUsersOfMovedStaticTypeMember
+  ( reenactor : DependencyGraph,
+    tDeclFromId : NodeId,
+    tDeclFrom : TypeDecl,
+    tDeclDestId : NodeId,
+    tDeclDest : TypeDecl,
+    movedId : NodeId,
+    movedHolder : HasMemberDecl
+  )
+  ( implicit id2declMap: NodeId => ASTNodeLink,
+    logger : PuckLogger): Unit = {
+
+    val oldPackage = reenactor.fullName(reenactor container_! tDeclFromId)
+    val newPackage = reenactor.fullName(reenactor container_! tDeclDestId)
+
+    val impactedUsers = reenactor.usersOf(movedId).flatMap(id =>
+      reenactor.containerOfKindType(PTypeDecl,id))
+
+    puck.ignore(impactedUsers.foldLeft(Set[String]()){ (cus, userId) =>
+      id2declMap(userId) match {
+        case TypedKindDeclHolder(tDecl) =>
+          val cu = tDecl.compilationUnit()
+          if( cus contains cu.pathName() ) cus
+          else {
+            if(cu.packageName() != newPackage)
+              addImport(cu, tDeclDest)
+            cus + cu.pathName
+          }
+        case dh => throw new DGError("should not happen, decl holder class is " + dh.getClass)
+      }
+    })
+
+  }
 
 
   def typeDecl
@@ -309,7 +353,7 @@ object RedirectSource {
       case (TypedKindDeclHolder(oldTdecl),
       TypedKindDeclHolder(newTdecl),
       bdh : HasMemberDecl) =>
-        moveMemberDecl(reenactor, oldTdecl, newTdecl, bdh, target)
+        moveMemberDecl(reenactor, source, oldTdecl, newSource, newTdecl, target, bdh)
         if(bdh.decl.isStatic) {
           reenactor.usersOf(target).foreach {
             id2declMap(_) match {
