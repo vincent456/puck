@@ -26,7 +26,6 @@
 
 package puck.graph
 package constraints.search
-import puck.graph.GOps
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.transformations.{Mutable, TransformationRules}
 import puck.graph.transformations.rules.{CreateParameter, CreateTypeMember, CreateVarStrategy}

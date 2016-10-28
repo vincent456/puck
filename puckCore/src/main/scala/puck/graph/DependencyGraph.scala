@@ -34,7 +34,7 @@ import puck.util.{PuckLog, PuckLogger, PuckNoopLogger}
 import puck.graph.transformations.Transformation
 import puck.graph.transformations.Recording.RecordingOps
 import puck.graph.transformations.Mutability
-import puck.graph.transformations.MutabilitySet.MutabilitySetOps
+import MutabilitySet.MutabilitySetOps
 
 object DependencyGraph {
 
@@ -165,6 +165,8 @@ class DependencyGraph private
     newGraph(mutabilitySet = mutabilitySet.setMutability(nodeId, mutability))
 
   def mutableNodes : Set[NodeId] = mutabilitySet.mutableNodes(this)
+
+  def isMutable(n : NodeId) : Boolean = mutabilitySet isMutable n
 
   def comment(msg : String) = newGraph(recording = recording.comment(msg))
   def mileStone = newGraph(recording = recording.mileStone)
@@ -315,6 +317,19 @@ class DependencyGraph private
     }
   }
 
+
+  def logComment(msg : String) : LoggedTG =
+    LoggedSuccess(msg, comment(msg))
+
+  def canContain(container : DGNode, content : ConcreteNode): Boolean =
+    nodeKindKnowledge.canContain(this, container, content)
+
+  def canContain(container : DGNode, contentKind : NodeKind): Boolean =
+    nodeKindKnowledge.canContain(this, container, contentKind)
+
+  def canBe(sub : DGNode, sup : ConcreteNode): Boolean =
+    mutabilitySet.isMutable(sub.id) &&
+      nodeKindKnowledge.canBe(this, sub, sup)
 
   def removeContains(containerId: NodeId, contentId :NodeId, register : Boolean = true): DependencyGraph =
     removeEdge(Contains(containerId, contentId), register)

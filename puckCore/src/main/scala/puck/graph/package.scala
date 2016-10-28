@@ -90,25 +90,6 @@ package object graph {
     def decoration : T = dg._2
   }
 
-  import MutabilitySet.MutabilitySetOps
-
-  implicit class GOps(val g : DependencyGraph) extends AnyVal{
-    def logComment(msg : String) : LoggedTG =
-      LoggedSuccess(msg, g.comment(msg))
-
-    def canContain(container : DGNode, content : ConcreteNode): Boolean =
-      g.mutabilitySet.isMutable(container.id) &&
-        g.nodeKindKnowledge.canContain(g, container, content)
-
-    def canContain(container : DGNode, contentKind : NodeKind): Boolean =
-      g.mutabilitySet.isMutable(container.id) &&
-        g.nodeKindKnowledge.canContain(g, container, contentKind)
-
-    def canBe(sub : DGNode, sup : ConcreteNode): Boolean =
-      g.mutabilitySet.isMutable(sub.id) &&
-        g.nodeKindKnowledge.canBe(g, sub, sup)
-
-  }
 
   implicit class LoggedOps[A](val lg: Logged[A]) extends AnyVal {
     def toLoggedEither[E] : LoggedEither[E, A] = LoggedEither(lg.written, lg.value.right[E])
