@@ -93,33 +93,32 @@ object Redirection {
 
     val clazz = g.container_!(ctorDecl)
     val factoryDef = g.definitionOf_!(factory)
-    val selfUse = Uses(clazz,clazz)
-    val g1 = g.changeSource(Uses(ctorDef, initializer), factoryDef)
-      .addUses(factoryDef, clazz)
+    val selfUse = Uses(clazz, clazz)
+    val localValueKind = g.nodeKindKnowledge.kindOfKindType(LocalValue).head
+    val (lv, g1) = g.addConcreteNode("0", localValueKind)
+    val g2 = g1.addContains(factoryDef, lv.id)
+      .changeSource(Uses(ctorDef, initializer), factoryDef)
+      .addType(lv.id, NamedType(clazz))
       .removeBinding(selfUse, (ctorDef, initializer))
-      .addBinding((factoryDef, clazz), (factoryDef, initializer))
+      .addBinding((lv.id, clazz), (factoryDef, initializer))
 
     val returnTypeConstraint = {
-      val tucs =  g1.typeConstraints(factory).filter{
+      val tucs =  g2.typeConstraints(factory).filter{
         case Sub(_, TypeOf(`factory`)) => true
         case _ => false
       }
       if(tucs.size > 1) error()
       tucs.head
     }
-    //type constraint on factory return type
-    ???
-    //val Sub((_, st)) = returnTypeConstraint
+    val g3 =  g2.removeTypeConstraint(returnTypeConstraint)
+      // contrainte entre la variable locale et le type de retour de la factory
+      .addTypeConstraint(Sub(TypeOf(lv.id), TypeOf(factory)))
+      //contraintee entre la variable locale et le constructeur qui sert à l'instancier
+      .addTypeConstraint(Sub(TypeOf(ctorDecl), TypeOf(lv.id)))
 
-    val g2 =  g1.removeTypeConstraint(returnTypeConstraint)
-      .addTypeConstraint(Sub(TypeOf(factoryDef), TypeOf(factory)))
-    //constraint on newly extracted local variable
-    //      .addTypeConstraint((factoryDef, st), returnTypeConstraint)
-    ???
-
-    if(g2.typeMemberUsesOf(selfUse).isEmpty)
-      g2.removeEdge(selfUse)
-    else g2
+    if(g3.typeMemberUsesOf(selfUse).isEmpty)
+      g3.removeEdge(selfUse)
+    else g3
   }
 
   def cl(g: DependencyGraph, u : NodeIdP) : Set[(NodeIdP, NodeIdP)] = {

@@ -376,7 +376,7 @@ class JavaJastAddDG2AST
               }
 
           case Add(AType(user, newType)) =>
-            CreateEdge.createTypeUse(safeGet(resultGraph, id2declMap), user, newType)
+            CreateEdge.createTypeUse(resultGraph, safeGet(resultGraph, id2declMap), user, newType)
 
           case ChangeSource(Contains(source, target), newSource) =>
             RedirectSource.move(source, target, newSource)
@@ -454,7 +454,8 @@ class JavaJastAddDG2AST
               replaceMessageReceiver(reenactor, safeGet(reenactor, id2declMap), tmUser, tmUsed, tUser, ntUser)
 
           case Add(TypeBinding(typeUse@(tUser, tUsed), tmUse)) =>
-            if (tUser != tUsed && tUser != tmUse.user)
+            if (tUser != tUsed && tUser != tmUse.user &&
+              resultGraph.getConcreteNode(tUser).kind != LocalVariable)
               createVarAccess(reenactor, safeGet(reenactor, id2declMap), tmUse, typeUse,
                 introVarAccess)
 

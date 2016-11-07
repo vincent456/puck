@@ -53,22 +53,24 @@ object CreateEdge {
   }
 
   def createTypeUse
-  (id2declMap: NodeId => ASTNodeLink,
+  (resultGraph : DependencyGraph,
+   id2declMap: NodeId => ASTNodeLink,
    typed : NodeId,
    typ : Type)
   ( implicit program : Program): Unit =
-    id2declMap(typed)  match {
-      //explicit upcast shouldn't be needed, why the compiling error ?
-      case dh @ (FieldDeclHolder(_,_)
-                 | ParameterDeclHolder(_)
-                 | MethodDeclHolder(_)
-                 | LocalVarDeclHolder(_) ) =>
-        dh.asInstanceOf[HasNode].node.setTypeAccess(createTypeAccess(id2declMap, typ))
+    if(resultGraph.getConcreteNode(typed).kind != LocalVariable) // local variable creation happens when redirecting use of initiailizaion in factory
+      id2declMap(typed)  match {
+        //explicit upcast shouldn't be needed, why the compiling error ?
+        case dh @ (FieldDeclHolder(_,_)
+                   | ParameterDeclHolder(_)
+                   | MethodDeclHolder(_)
+                   | LocalVarDeclHolder(_) ) =>
+          dh.asInstanceOf[HasNode].node.setTypeAccess(createTypeAccess(id2declMap, typ))
 
-      case ConstructorDeclHolder(_) => ()
+        case ConstructorDeclHolder(_) => ()
 
-      case k => throw new JavaAGError(s"CreateEdge.createTypeUse: $k as user of TypeKind, set type unhandled !")
-    }
+        case k => throw new JavaAGError(s"CreateEdge.createTypeUse: $k as user of TypeKind, set type unhandled !")
+      }
 
 
   def apply

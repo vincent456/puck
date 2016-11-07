@@ -44,35 +44,35 @@ object CreateNode {
     lazy val isGenericMethod =
       resultGraph.parametersOf(node.id).exists(n => resultGraph.kindType(n) == TypeVariableKT)
 
-    val dh : ASTNodeLink =
+    val sdh : Option[ASTNodeLink] =
       node.kind match {
-        case Package => PackageDeclHolder
+        case Package => Some(PackageDeclHolder)
         case Interface =>
-          createInterface(prog, resultGraph, node, isGenericType)
+          Some(createInterface(prog, resultGraph, node, isGenericType))
         case Class =>
-          createClass(prog, resultGraph, node, isGenericType)
+          Some(createClass(prog, resultGraph, node, isGenericType))
         case AbstractMethod =>
-          MethodDeclHolder(createMethod(prog, resultGraph, id2decl, node,
-            isGenericMethod, isAbstract = true))
+          Some(MethodDeclHolder(createMethod(prog, resultGraph, id2decl, node,
+            isGenericMethod, isAbstract = true)))
         case StaticMethod =>
-          MethodDeclHolder(createMethod(prog, resultGraph, id2decl, node,
-            isGenericMethod, isStatic = true))
+          Some(MethodDeclHolder(createMethod(prog, resultGraph, id2decl, node,
+            isGenericMethod, isStatic = true)))
         case Method =>
-          MethodDeclHolder(createMethod(prog, resultGraph, id2decl, node,
-            isGenericMethod))
+          Some(MethodDeclHolder(createMethod(prog, resultGraph, id2decl, node,
+            isGenericMethod)))
         case Constructor =>
-          createConstructor(prog, resultGraph, id2decl, node)
-        case Field => createField(prog, resultGraph, id2decl, node)
-        case Param => createParameter(prog, resultGraph, id2decl, node)
+          Some(createConstructor(prog, resultGraph, id2decl, node))
+        case Field => Some(createField(prog, resultGraph, id2decl, node))
+        case Param => Some(createParameter(prog, resultGraph, id2decl, node))
         case PuckTV =>
           val tv = new GeneratedTypeVariable()
           tv setID node.name
-          TypeVariableHolder(tv)
+          Some(TypeVariableHolder(tv))
+        case LocalVariable => None
         case _ => throw new DeclarationCreationError(s"cannot create decl for kind ${node.kind}")
 
       }
-    id2decl + (node.id -> dh)
-
+    sdh map ( dh => id2decl + (node.id -> dh)) getOrElse id2decl
   }
 
   def addDef
