@@ -62,6 +62,7 @@ class TransfoRulesSpec
 
     someGenerated match {
       case Left(generated) =>
+        print(generated.graph, "expected")
         assertEqualityOrAssertFailureWithClue(g, generated.graph, "generated")
       case Right(t) => t.printStackTrace()
         assert(false, t.getMessage)

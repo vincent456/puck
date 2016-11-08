@@ -298,6 +298,7 @@ object ShowDG extends ShowConstraints{
       builder.append("\nsub -> super\n")
       builder append print(superTypes, (sub : NodeId, sup : Type) =>
         s"${desambiguatedFullName(dg, sub)} is a ${stringOfType(dg, sup)}")
+
       builder.append("\nsuper -> sub\n\t")
       builder.append(subTypes.toString)
 
