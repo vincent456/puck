@@ -199,36 +199,18 @@ abstract class Abstract {
 
   def insertInTypeHierarchy
   ( g : DependencyGraph,
-    subTypeId : NodeId,
-    newSuperTypeId : NodeId
+    subType : ConcreteNode,
+    newSuperType : ConcreteNode
   ) : LoggedTG =
-    s"insertInTypeHierarchy(g, ${(g, subTypeId).shows}, ${(g, newSuperTypeId).shows})" <++: {
-      g.directSuperTypesId(subTypeId).foldLoggedEither(g) {
+    s"insertInTypeHierarchy(g, ${(g, subType).shows}, ${(g, newSuperType).shows})" <++: {
+      g.directSuperTypesId(subType.id).foldLoggedEither(g) {
       (g0, oldSuperTypedId) =>
 
-        val log = s"removeIsa(${(g0,subTypeId).shows}, ${(g0,subTypeId).shows})\n" +
-          s"addIsa(${(g0,newSuperTypeId).shows}, ${(g0,oldSuperTypedId).shows})"
+        val log = s"removeIsa(${(g0,subType).shows}, ${(g0,oldSuperTypedId).shows})\n" +
+          s"addIsa(${(g0,newSuperType).shows}, ${(g0,oldSuperTypedId).shows})"
 
-        val g1 = g0.removeIsa(NamedType(subTypeId), NamedType(oldSuperTypedId))
-          .addIsa(NamedType(newSuperTypeId), NamedType(oldSuperTypedId))
-
-        def extractMethod(typeDeclId: NodeId): List[(ConcreteNode, Type)] =
-          g1.content(typeDeclId).toList map g1.getConcreteNode filter { n =>
-            n.kind.kindType == InstanceValue &&
-              n.kind.abstractionNodeKinds(SupertypeAbstraction).nonEmpty
-          } map (n => (n, g1.styp(n.id).get))
-
-        val subTypeMeths = extractMethod(subTypeId)
-        val newSupTypeMeths = extractMethod(newSuperTypeId)
-        val oldSupTypeMeths = extractMethod(oldSuperTypedId)
-
-        log <++: (
-        Type.findAndRegisterOverridedInList(g1, newSupTypeMeths, subTypeMeths) {
-          Type.ignoreOnImplemNotFound
-        } flatMap (
-          Type.findAndRegisterOverridedInList(_, oldSupTypeMeths, newSupTypeMeths) {
-            Type.ignoreOnImplemNotFound
-          }))
+        LoggedSuccess(log, g0.removeIsa(NamedType(subType.id), NamedType(oldSuperTypedId))
+          .addIsa(NamedType(newSuperType.id), NamedType(oldSuperTypedId)))
     }
   }
 
@@ -383,7 +365,7 @@ abstract class Abstract {
         createAbstractTypeMemberWithSuperSelfType(_, _, interface, typeMapping))
 
       g3 <- policy match {
-        case SupertypeAbstraction => insertInTypeHierarchy(g2, clazz.id, interface.id)
+        case SupertypeAbstraction => insertInTypeHierarchy(g2, clazz, interface)
         case DelegationAbstraction => LoggedSuccess(g2)
       }
 

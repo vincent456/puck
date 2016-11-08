@@ -30,6 +30,10 @@ package transformations
 import nodeKind._
 import puck.graph._
 import puck.graph.transformations.rules.Abstract
+import puck.graph.ShowDG._
+import puck.util.LoggedEither._
+
+import scalaz.std.set._
 
 object JavaAbstract extends Abstract {
 
@@ -95,4 +99,29 @@ object JavaAbstract extends Abstract {
     }
     (abs, g3)
   }
+
+  override def insertInTypeHierarchy
+  ( g : DependencyGraph,
+    subType : ConcreteNode,
+    newSuperType : ConcreteNode
+    ) : LoggedTG = {
+    val objectId = DependencyGraph.findElementByName(g, "java.lang.Object").get.id
+    s"insertInTypeHierarchy(g, ${(g, subType).shows}, ${(g, newSuperType).shows})" <++: {
+      g.directSuperTypesId(subType.id).foldLoggedEither(g) {
+        (g0, oldSuperTypedId) =>
+
+          lazy val rmlog = s"removeIsa(${(g0, subType).shows}, ${(g0, oldSuperTypedId).shows})"
+          lazy val addlog = s"addIsa(${(g0, newSuperType.id).shows}, ${(g0, oldSuperTypedId).shows})"
+          lazy val g1 = g0.removeIsa(NamedType(subType.id), NamedType(oldSuperTypedId))
+          def add(g : DependencyGraph) = g.addIsa(NamedType(newSuperType.id), NamedType(oldSuperTypedId))
+
+          (oldSuperTypedId, newSuperType.kind) match {
+            case (`objectId`, Interface) => LoggedSuccess(g0)
+            case (`objectId`, _) => LoggedSuccess(rmlog, g1)
+            case _ => LoggedSuccess(rmlog +"\n"+addlog, add(g1))
+          }
+      }
+    }
+  }
+
 }

@@ -57,14 +57,19 @@ trait GraphBuilderVisitor {
     val sub = getType(tdecl)
 
     //either super classes are in code and they will be visited and the type hierarchy completed
-    //either they are in libraries and type hierarchy will be completed upon "attach orphan nodes" pahe
+    //either they are in libraries and type hierarchy will be completed upon "attach orphan nodes"
     def add(supAccess: Access) : Unit = addIsa(sub, getType(supAccess))
 
     tdecl match {
       case cd : ClassDecl =>
         // addExtends
-        if(cd.hasSuperclass && cd.superclass().fullName() != "java.lang.Object")
-          add(cd.getSuperClass)
+        if(cd.hasSuperclass){
+          //getType first lock access which causes a NullPointerException with Object
+          if(cd.superclass().isObject)
+            addIsa(sub, NamedType(getNode(cd.superclass())))
+          else
+            add(cd.getSuperClass)
+        }
 
         cd.getImplementss foreach add
       case id : InterfaceDecl =>

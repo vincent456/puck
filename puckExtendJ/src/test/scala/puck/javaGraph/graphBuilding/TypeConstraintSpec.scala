@@ -295,4 +295,39 @@ class TypeConstraintSpec extends AcceptanceSpec {
     )
 
   }
+
+  import ShowDG._
+
+  scenario("type constraint involves Object"){
+    val s = new ScenarioFactory(
+      """package p;
+        |
+        |public class C {
+        |   Object o = new C();
+        |}"""
+    )
+    import s._
+    assert( graph.edges.typeConstraints.content.nonEmpty )
+    graph.edges.typeConstraints.iterator.foreach {
+      case (_, tc) =>
+        assert(TypeConstraint.comply(graph, tc), (graph, tc).shows + " should comply")
+    }
+  }
+
+  ignore("type constraint involves Object and interfaces"){
+    val s = new ScenarioFactory(
+      """package p;
+        |
+        |public interface I {
+        |   public static Object o = new I(){};
+        |}"""
+    )
+    import s._
+
+    assert( graph.edges.typeConstraints.content.nonEmpty )
+    graph.edges.typeConstraints.iterator.foreach {
+      case (_, tc) =>
+        assert(TypeConstraint.comply(graph, tc), (graph, tc).shows + " should comply")
+    }
+  }
 }
