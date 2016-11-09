@@ -97,48 +97,4 @@ trait GraphBuilder {
         g = g.addEdge(ContainsParam(decl, param))
     }
   }
-
-  def registerSuperTypeAbtractions() = {
-    val superTypesMap = g.edges.superTypes.content
-    superTypesMap foreach {
-      case (subId, directSuperTypes) =>
-        val directSuperTypesIds = directSuperTypes map Type.mainId
-        val subMethIds = g instanceValuesWithType subId
-        g = directSuperTypesIds.foldLeft(g) {
-          (g, supId) =>
-            g.addAbstraction(subId, AccessAbstraction(supId, SupertypeAbstraction))
-        }
-        g = registerMethodsDirectOverridingInTypeHierarchy(g, subMethIds, directSuperTypesIds)
-    }
-  }
-
-  def registerMethodsDirectOverridingInTypeHierarchy
-  (g : DependencyGraph,
-   subMethods : List[(ConcreteNode, Type)],
-   directSuperTypes : Set[NodeId]) : DependencyGraph = {
-    directSuperTypes.foldLeft(g) {
-      case (g0, superType) =>
-        val (g1, remainings) = registerMethodsDirectOverridingInSuperType(g, subMethods, superType)
-        registerMethodsDirectOverridingInTypeHierarchy(g1, remainings, g directSuperTypesId superType)
-    }
-  }
-
-  def registerMethodsDirectOverridingInSuperType
-  (g : DependencyGraph,
-   subMethods : List[(ConcreteNode, Type)],
-   superType : NodeId) : (DependencyGraph, List[(ConcreteNode, Type)]) = {
-    val overriddenCandidates = g instanceValuesWithType superType
-
-    val (g1, nonOverridingsMethods, _) = subMethods.foldLeft((g, List[(ConcreteNode, Type)](), overriddenCandidates)){
-      case ((g0, remainingSubs, remainingCandidates), typedMeth @ (subMeth, subMethSig)) =>
-        Type.findOverridingIn(g0, subMeth.name, subMethSig, remainingCandidates) match {
-          case None => (g0, typedMeth :: remainingSubs, remainingCandidates)
-          case Some(((absM,_), remainingCandidates1)) =>
-            (g0.addAbstraction(subMeth.id, AccessAbstraction(absM.id, SupertypeAbstraction)),
-              remainingSubs, remainingCandidates1)
-        }
-    }
-    (g1, nonOverridingsMethods)
-  }
-
 }
