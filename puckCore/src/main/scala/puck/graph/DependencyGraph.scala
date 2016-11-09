@@ -424,15 +424,6 @@ class DependencyGraph private
     tus.foldLeft(this)(_.changeTypeMemberUseOfTypeUse(oldTmUse, newTmUse, _))
 
 
-  def addAbstraction(id : NodeId, abs : Abstraction) : DependencyGraph =
-    newGraph(abstractionsMap = abstractionsMap + (id, abs),
-      recording = recording.addAbstraction(id, abs))
-
-  def removeAbstraction(id : NodeId, abs : Abstraction) : DependencyGraph =
-    newGraph(abstractionsMap = abstractionsMap - (id, abs),
-      recording = recording.removeAbstraction(id, abs))
-
-
   private def isChangeType(edge : DGEdge, newTarget : NodeId) : Boolean =
     edge.kind == Uses && (getNode(edge.user).kind.kindType match {
       case InstanceValue
@@ -689,6 +680,14 @@ class DependencyGraph private
   def bind(typeUse : NodeIdP,
            typeMemberUse : NodeIdP) : Boolean =
     typeMemberUsesOf( typeUse ) contains typeMemberUse
+
+  def addAbstraction(id : NodeId, abs : Abstraction) : DependencyGraph =
+    newGraph(abstractionsMap = abstractionsMap + (id, abs),
+      recording = recording.addAbstraction(id, abs))
+
+  def removeAbstraction(id : NodeId, abs : Abstraction) : DependencyGraph =
+    newGraph(abstractionsMap = abstractionsMap - (id, abs),
+      recording = recording.removeAbstraction(id, abs))
 
   def abstractions(id : NodeId) : Set[Abstraction] = {
 

@@ -179,39 +179,6 @@ object Test08 {
 
 }
 
-object Test03 {
-
-  def main(args : Array[String]) : Unit = {
-    val p = project("src.generated", "constraint-gen/1rule/03/decouple.wld")
-    val s = new ScenarioFactory(p.loadGraph().asInstanceOf[JavaJastAddDG2AST])
-    val Some(cts) = p.parseConstraints(s.dg2ast)
-    import s._
-
-    //fullName2id.toList map (_.swap) sortBy(_._1) foreach (e =>  MarauroaTest.logger.writeln(e))
-
-    val  used : NodeId = "marauroa.server.game.db.DAORegister"
-    val LoggedSuccess(_, (abs, g0)) =
-      Rules.abstracter.createAbstraction(graph, s.graph.getConcreteNode(used),
-        Interface, SupertypeAbstraction)
-    val AccessAbstraction(itc, _) = abs
-    val g1 = g0.addContains("marauroa.common", itc)
-
-    val orphanNodes = g1.nodesId filter (g1.container(_).isEmpty) filter(_ != 0)
-    if(orphanNodes.nonEmpty)
-      println("orphan nodes were introduced !")
-
-
-    cts.wrongUsers(g1, used).foldLoggedEither(g1.mileStone){
-      case (g0, user) =>
-        if(g0.uses(user, used))
-          Redirection.redirectUsesAndPropagate(g0.mileStone, (user, used), abs)
-        else LoggedSuccess(g0)
-    }
-
-  }
-
-}
-
 object LaunchUI {
 
   //val root = "/home/lorilan/projects/constraintsSolver/puckJrrt/src/test/resources/bridge/hannemann_simplified"

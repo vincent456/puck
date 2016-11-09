@@ -44,54 +44,7 @@ case class LoggedEither[+L, +R](log : String, value : L\/R){
       case a @ -\/(_) => this.copy(value = a)
       case \/-(b) =>  this.log <++: g(b)
     }
-
 }
-
-/*sealed abstract class LoggedEither[L, R]{
-
-  val log : String
-  val value : L\/R
-
-  def :++>(lg : String) : LoggedEither[L, R] = Return(this.log + lg, this.value)
-  def <++:(lg : String) : LoggedEither[L, R] = Return(lg + this.log, this.value)
-  //def >>[M<:L, S<:R](a : M\/S) : LoggedEither[M, S] = Return(this.log, a)
-
-  def right_>>[S <: R](s : S) : LoggedEither[L, S] = Return(this.log, \/-(s))
-  def left_>>[M <: L](m : M): LoggedEither[M, R] = Return(this.log, -\/(m))
-
-
-  /** Map on the right of the disjunction. */
-  def map[D](g: R => D): LoggedEither[L, D] =
-    Return(this.log, this.value map g)
-    //flatMap[L, D](a => Return("", \/-(g(a))))
-
-  def flatMap[LL >: L, S](g: R => LoggedEither[LL, S]): LoggedEither[LL, S]=
-    Suspend(this, g)
-
-
-
-  def valueOr(x: L => R): Logged[R] =
-    Writer(log, value valueOr x)
-}
-
-case class Return[L, R](log : String, value : L\/R) extends LoggedEither[L, R]
-case class Suspend[L, LL>:L, R, S]
-( lge0 : LoggedEither[L, R],
-  f : R => LoggedEither[LL, S])
-  extends LoggedEither[LL, S]{
-
-  lazy val (log, value) = {
-    val lge1 : LoggedEither[LL, S] = lge0.value match {
-      case a @ -\/(_) => Return(lge0.log, a)
-      case \/-(b) => lge0.log <++: f(b)
-    }
-
-    (lge1.log, lge1.value)
-  }
-}*/
-
-
-
 
 
 object LoggedEither {
