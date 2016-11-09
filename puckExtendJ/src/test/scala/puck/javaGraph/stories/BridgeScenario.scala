@@ -93,7 +93,7 @@ class BridgeScenario private()
 
     val g3 = Rules.rename(g2.addContains("screen", printerInterface), printerInterface, "Printer")
 
-    Rules.makeSuperType(g3.mileStone, class2, printerInterface)().rvalue
+    Rules.makeSuperType(g3.mileStone, class2, printerInterface).rvalue
   }
 
   val g3 = abstractPrinters(g2, starPrinter, capitalPrinter)

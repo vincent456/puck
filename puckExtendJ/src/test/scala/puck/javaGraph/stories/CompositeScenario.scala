@@ -76,7 +76,7 @@ class CompositeScenario private ()
 
 
 
-  val g3 = Rules.makeSuperType(g2, "fileSystem.Directory", (g2, "fileSystem.FSElement"))().rvalue
+  val g3 = Rules.makeSuperType(g2, "fileSystem.Directory", (g2, "fileSystem.FSElement")).rvalue
 
   val g4 = Rules.redirection.redirectUsesAndPropagate(g3,
     Uses("fileSystem.Directory.directories", "fileSystem.Directory"),

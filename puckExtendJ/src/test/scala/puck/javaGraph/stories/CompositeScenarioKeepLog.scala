@@ -69,7 +69,7 @@ class CompositeScenarioKeepLog private ()
     g2 <- Rules.redirection.redirectUsesAndPropagate(g1,
       Uses("fileSystem.Directory.files", "fileSystem.File"),
       AccessAbstraction((g1, "fileSystem.FSElement"), SupertypeAbstraction))
-    g3 <- Rules.makeSuperType(g2, "fileSystem.Directory", (g2, "fileSystem.FSElement"))()
+    g3 <- Rules.makeSuperType(g2, "fileSystem.Directory", (g2, "fileSystem.FSElement"))
     g4 <- Rules.redirection.redirectUsesAndPropagate(g3,
       Uses("fileSystem.Directory.directories", "fileSystem.Directory"),
       AccessAbstraction((g3, "fileSystem.FSElement"), SupertypeAbstraction))

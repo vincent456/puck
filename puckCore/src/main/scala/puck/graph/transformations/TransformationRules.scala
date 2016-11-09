@@ -41,7 +41,6 @@ class TransformationRules
 
 
 
-  //def findMergingCandidate = mergingCandidatesFinder.find _
   def mergeMatcherInstances = mergingCandidatesFinder.mergeMatcherInstances
 
   lazy val merge = new Merge(mergingCandidatesFinder)
@@ -49,41 +48,17 @@ class TransformationRules
   val redirection = Redirection
   val move = Move
 
-//  def addHideFromRootException(g : DependencyGraph, node : NodeId, friend : NodeId): DependencyGraph =
-//    g.newGraph(constraints = g.constraints.addHideFromRootException(g, node, friend))
-  /*def addHideFromRootException(node : NIdT, friend : NIdT): GraphT = {
-    constraints.printConstraints(g, logger, (PuckLog.InGraph, PuckLog.Debug))
-    val ng = newGraph(nConstraints = constraints.addHideFromRootException(g, node,friend))
-    ng.printConstraints(ng, logger, (PuckLog.InGraph, PuckLog.Debug))
-    ng
-  }*/
-
-  def makeSuperType(g: DependencyGraph, sub : NodeId, sup : NodeId)
-                   ( onImplemNotFound : OnImplemNotFound = Type.ignoreOnImplemNotFound): LoggedTG = {
+  def makeSuperType( g: DependencyGraph, sub : NodeId, sup : NodeId,
+                     failOnImplemNotFound : Boolean = false): LoggedTG =
+  if(!failOnImplemNotFound) LoggedSuccess(g.addIsa(NamedType(sub), NamedType(sup)))
+  else {
     val subNode = g.getConcreteNode(sub)
     val supNode = g.getConcreteNode(sup)
-      val subMethods = g.instanceValuesWithType(sub)
-      val supMethods = g.instanceValuesWithType(sup)
+    val subMethods = g.instanceValuesWithType(sub)
+    val supMethods = g.instanceValuesWithType(sup)
 
-      Type.findAndRegisterOverridedInList(g, supMethods, subMethods)(
-        onImplemNotFound) map ( _.addIsa(NamedType(sub), NamedType(sup)).
-                addAbstraction(sub, AccessAbstraction(sup, SupertypeAbstraction))
-        ) flatMap {
-        g =>
-          val overloadedMethod =
-            subMethods filter {
-              case ((m, _)) => g.abstractions(m.id) exists {
-                case AccessAbstraction(supMethId, SupertypeAbstraction)
-                  if g.contains(sup, supMethId) => true
-                case _ => false
-
-              }
-            }
-          overloadedMethod.foldLoggedEither(g){
-            case (g0, (m, _)) =>
-              abstracter.redirectTypeUseInParameters(g0, m, List((subNode, supNode)))
-          }
-      }
-
+    Type.everyMethodIsOverridedIn(g, supMethods, subMethods) map {
+      _ => g.addIsa(NamedType(sub), NamedType(sup))
     }
+  }
 }

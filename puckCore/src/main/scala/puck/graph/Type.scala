@@ -30,6 +30,7 @@ import puck.util.LoggedEither._
 
 import scalaz.std.list._
 import ShowDG._
+import puck.util.LoggedEither
 
 object Type {
   def findOverriddenIn
@@ -66,24 +67,23 @@ object Type {
     (g, _, cs) => LoggedSuccess((g,cs))
   }
 
-  def findAndRegisterOverridedInList
+  def everyMethodIsOverridedIn
   ( g : DependencyGraph,
     absMeths : List[TypedNode],
-    candidates : List[TypedNode])
-  ( onImplemNotFound : OnImplemNotFound ): LoggedTG =
-    absMeths.foldLoggedEither((g, candidates) ){
-      case ((g0, cs), (supMeth, supMethT)) =>
+    candidates : List[TypedNode]): LoggedTry[Unit] =
+    absMeths.foldLoggedEither(candidates){
+      case (cs, (supMeth, supMethT)) =>
         supMeth.kind.kindType match {
           case InstanceValue =>
-            findOverriddenIn(g0, supMeth.name, supMethT, cs) match {
-              case Some(((subMeth, _), newCandidates)) =>
-                LoggedSuccess((g0.addAbstraction(subMeth.id, AccessAbstraction(supMeth.id, SupertypeAbstraction)), newCandidates))
-              case None => onImplemNotFound(g0, supMeth, candidates)
+            findOverriddenIn(g, supMeth.name, supMethT, cs) match {
+              case Some((_, newCandidates)) =>
+                LoggedSuccess(newCandidates)
+              case None => LoggedError((g, supMeth).shows + " is not overridden")
             }
-          case TypeConstructor | StableValue => LoggedSuccess((g0,cs))
+          case TypeConstructor | StableValue => LoggedSuccess(cs)
           case skt => LoggedError(s"findAndRegisterOverridedInList : ${(g, supMeth).shows} has an unexpected type kind ($skt)")
         }
-    } map(_._1)
+    } map ( _ => ())
 
 
   def mainId(t : Type) : NodeId = t match {
@@ -243,7 +243,7 @@ case class Contravariant(t : Type) extends VariantType {
   val make = Contravariant apply _
 }
 //case class Invariant(t : Type) extends TypeParameter {
-//  val make = Invariant _
+//  val make = Invariant apply _
 //}
 case class ParameterizedType(genType : NodeId, params : List[Type])
   extends Type {

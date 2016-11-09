@@ -53,7 +53,7 @@ class MakeSuperTypeSpec extends AcceptanceSpec {
         val methNotInInterface = fullName2id("p.A.mNotInInterface()")
         val abstractMethInInterface = fullName2id("p.SuperA.mInInterface()")
 
-        val g2 = Rules.makeSuperType(graph, classA, superA)().rvalue
+        val g2 = Rules.makeSuperType(graph, classA, superA).rvalue
 
         assert(g2.isa(classA, superA))
 
@@ -73,7 +73,8 @@ class MakeSuperTypeSpec extends AcceptanceSpec {
         val classA = fullName2id("p.A")
         val superA = fullName2id("p.SuperA")
 
-        Rules.makeSuperType(graph, classA, superA)(Type.errorOnImplemNotFound("A")).lvalue
+        Rules.makeSuperType(graph, classA, superA,
+          failOnImplemNotFound = true).lvalue
 
       }
     }

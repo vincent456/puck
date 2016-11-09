@@ -43,7 +43,7 @@ extends Action(s"Add ${sub.name} isa ${sup.name}") {
 
   def apply() : Unit =
     printErrOrPushGraph(bus, "Make SuperType Action failure") {
-        TR.makeSuperType(graph.mileStone, sub.id, sup.id)()
+        TR.makeSuperType(graph.mileStone, sub.id, sup.id)
     }
 }
 
