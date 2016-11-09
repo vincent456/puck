@@ -1,7 +1,7 @@
 package puck.javaGraph.commutativity.doAbstract
 
 import puck.TransfoRulesSpec
-import puck.graph.{DelegationAbstraction, ReadWriteAbstraction}
+import puck.graph.{Contains, DelegationAbstraction, ReadWriteAbstraction}
 import org.extendj.ExtendJGraphUtils._
 import puck.javaGraph.nodeKind.Method
 
@@ -26,9 +26,11 @@ class AbstractFieldSpec extends TransfoRulesSpec {
     compareWithExpectedAndGenerated(code(),
       bs => {
         import bs.{graph, idOfFullName}
-        val (_,g2) =  Rules.abstracter.createAbstraction(graph, graph getConcreteNode "p.A.f",
+        val (ReadWriteAbstraction(Some(gid), Some(sid)),g2) =  Rules.abstracter.createAbstraction(graph, graph getConcreteNode "p.A.f",
             Method, DelegationAbstraction).rvalue
-        g2
+
+        g2.addEdge(Contains("p.A", gid))
+          .addEdge(Contains("p.A", sid))
       },code(getter, setter))
   }
   scenario("field not used with getter abstracted") {

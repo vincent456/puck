@@ -79,9 +79,7 @@ object JavaAbstract extends Abstract {
         val setDef = g2.definitionOf_!(set)
         val getDef = g2.definitionOf_!(get)
         val selfUse = (clazz, clazz)
-        g2.addEdge(Contains(clazz, get))
-          .addEdge(Contains(clazz, set))
-          .addUses(clazz, clazz)
+        g2.addUses(clazz, clazz)
           // we define a setter that returns the new value to mimic the affectation value
           // hence the value is also read
           .addBinding(selfUse, (getDef, impl.id))
