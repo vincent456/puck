@@ -4,7 +4,7 @@ import java.io.{File, FileWriter}
 
 import org.extendj.ast.JavaJastAddDG2AST
 import org.extendj.JavaProject
-import puck.graph.{DependencyGraph, MutabilitySet, NameSpace, NodeId, NodeIdP, NodeIdPOps, ShowDG}
+import puck.graph.{DependencyGraph, MutabilitySet, NameSpace, NodeId, NodeIdP, NodeIdPOps, ShowDG, TypeDecl}
 import puck.graph.constraints.{ConstraintMapBuilder, ConstraintsMaps, LiteralRangeSet, Scope}
 import puck.util.{PuckFileLogger, PuckLogger}
 import puck.javaGraph.nodeKind._
@@ -19,27 +19,34 @@ object ConstraintGen {
 
   def candidates(g : DependencyGraph, use : NodeIdP,
                  nodeFilter : (DependencyGraph,NodeId) => Boolean,
-                 pairFilter : (DependencyGraph,NodeId, NodeId) => Boolean) = {
+                 pairFilter : (DependencyGraph,NodeId, NodeId) => Boolean) : Seq[NodeIdP] = {
 
     def candidatesInContainers( n : NodeId): Seq[NodeId] = {
-      val containers = g.containerPath(n).tail// tail to exclude root
+      val containers = g.containerPath(n).tail // tail to exclude root
       Random.shuffle(containers filter (nodeFilter(g, _)))
+    }
+    def noInterloperIsaHidden(hidden : NodeId, interloper: NodeId) : Boolean =
+    {
+      val hs = g.subTree(hidden).withFilter(h => g.kindType(h) == TypeDecl)
+      (for {
+        i <- g.subTree(interloper)
+        if g.kindType(i) == TypeDecl
+        h <- hs
+      } yield (i, h)).forall { case (i, h) => ! g.isa_*(i, h) }
     }
     for{
       hidden <- candidatesInContainers(use.used)
       interloper <-candidatesInContainers(use.user)
-      if pairFilter(g, hidden, interloper)
+      if pairFilter(g, hidden, interloper) && noInterloperIsaHidden(hidden, interloper)
     } yield (hidden, interloper)
   }
 
   def typeCandidatesInDifferentPackagesWithoutInnerOrSuperTypes
   ( ignoredPackages : Seq[NodeId])
-  ( g : DependencyGraph, use : NodeIdP ) = {
+  ( g : DependencyGraph, use : NodeIdP ) : Seq[NodeIdP] = {
     def candidatesFilter(g : DependencyGraph, n : NodeId) =
       g.getNode(n).kind match {
-        case Interface | Class =>
-          g.directSuperTypesId(n).isEmpty && !ignoredPackages.exists(g.contains_*(_, n))
-
+        case Interface | Class => !ignoredPackages.exists(g.contains_*(_, n))
         case _ => false
       }
     def rightPairCandidate(g : DependencyGraph, n : NodeId, n2 : NodeId) : Boolean = {
