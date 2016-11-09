@@ -105,8 +105,13 @@ object ConstraintGen {
         println(s"hide ${(g, hidden).shows(desambiguatedFullName)} " +
           s"from ${(g, interloper).shows(desambiguatedFullName)}")
 
+        //do not hide enums
+        val facades = g.subTree(hidden, includeRoot = false).filter {
+          id => g.getConcreteNode(id).kind == Enum
+        } map Scope.apply
+
         val newBuilder = builder.addHideConstraint(LiteralRangeSet(Scope(hidden)),
-          LiteralRangeSet(),
+          LiteralRangeSet(facades),
           LiteralRangeSet(Scope(interloper)),
           LiteralRangeSet())
         aux(usesList.tail, numConstraint - 1, newBuilder)
