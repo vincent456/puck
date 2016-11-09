@@ -41,7 +41,17 @@ object ConstraintGen {
     } yield (hidden, interloper)
   }
 
-  def typeCandidatesInDifferentPackagesWithoutInnerOrSuperTypes
+
+  def oneNodeDoesNotContainsAnother(g : DependencyGraph, n : NodeId, n2 : NodeId) : Boolean =
+    ! g.contains_*(n, n2) && ! g.contains_*(n2, n)
+
+  def nodeInDifferentPackages(g : DependencyGraph, n : NodeId, n2 : NodeId) : Boolean = {
+    val Some(nCter) = g.containerOfKindType(NameSpace, n)
+    val Some(n2Cter) = g.containerOfKindType(NameSpace,n2)
+    n != n2 && ! g.contains_*(nCter, n2Cter) && ! g.contains_*(n2Cter, nCter)
+  }
+
+  def typeCandidatesInDifferentPackages
   ( ignoredPackages : Seq[NodeId])
   ( g : DependencyGraph, use : NodeIdP ) : Seq[NodeIdP] = {
     def candidatesFilter(g : DependencyGraph, n : NodeId) =
@@ -49,13 +59,8 @@ object ConstraintGen {
         case Interface | Class => !ignoredPackages.exists(g.contains_*(_, n))
         case _ => false
       }
-    def rightPairCandidate(g : DependencyGraph, n : NodeId, n2 : NodeId) : Boolean = {
-      val nCter = g.container_!(n)
-      val n2Cter = g.container_!(n2)
-      n != n2 && ! g.contains_*(nCter, n2Cter) && ! g.contains_*(n2Cter, nCter)
-    }
 
-    candidates(g, use, candidatesFilter, rightPairCandidate)
+    candidates(g, use, candidatesFilter, nodeInDifferentPackages)
   }
 
   def typeCandidatesInDifferentPackages(g : DependencyGraph, use : NodeIdP ) = {
@@ -64,13 +69,9 @@ object ConstraintGen {
         case Interface | Class => true
         case _ => false
       }
-    def rightPairCandidate(g : DependencyGraph, n : NodeId, n2 : NodeId) : Boolean = {
-        val nCter = g.container_!(n)
-        val n2Cter = g.container_!(n2)
-        n != n2 && ! g.contains_*(nCter, n2Cter) && ! g.contains_*(n2Cter, nCter)
-      }
 
-    candidates(g, use, candidatesFilter, rightPairCandidate)
+
+    candidates(g, use, candidatesFilter, nodeInDifferentPackages)
   }
 
 
@@ -81,10 +82,8 @@ object ConstraintGen {
         case _ => false
       }
 
-    def rightPairCandidate(g : DependencyGraph, n : NodeId, n2 : NodeId) : Boolean =
-      ! g.contains_*(n, n2) && ! g.contains_*(n2, n)
 
-    candidates(g, use, candidatesFilter, rightPairCandidate)
+    candidates(g, use, candidatesFilter, oneNodeDoesNotContainsAnother)
   }
 
 
@@ -162,7 +161,7 @@ object ConstraintGen {
     val Some(primPkg) = DependencyGraph.findElementByName(g, "@primitive")
 
     val libraryPkgs = dg2ast.fromLibrary.toSeq filter (g.kindType(_) == NameSpace)
-    val genCandidates = typeCandidatesInDifferentPackagesWithoutInnerOrSuperTypes(
+    val genCandidates = typeCandidatesInDifferentPackages(
       javaPkg.id +: primPkg.id +: libraryPkgs) _
 
     val builder = genConstraints(g, genCandidates,
