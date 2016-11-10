@@ -313,6 +313,32 @@ class MoveStaticMemberSpec
 
 
     }
+
+    scenario("Move static method used as qualifier") {
+
+      val geta = "static A getA(){ return new A(); }"
+      def code(bodyA : String, bodyC : String, qualifier : String) =
+        s"""package p;
+          |
+          |class A { $bodyA
+          | void m(){}
+          |}
+          |
+          |class B {
+          |    public static void m(){
+          |         $qualifier.getA().m();
+          |    }
+          |}
+          |
+          |class C { $bodyC } """
+
+      compareWithExpectedAndGenerated(code(geta, "", "A"),
+        s => {
+          import s.{graph, idOfFullName}
+          Move.staticDecl(graph, "p.A.getA()", "p.C").rvalue
+        },
+        code("", geta, "C"))
+    }
   }
 
 }

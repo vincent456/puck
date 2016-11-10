@@ -44,16 +44,23 @@ aspect HandleQualifier {
 
     public void TypeMemberAccess.handleQualifierOfAccessOfStaticMember(ASTNode staticMemberDecl, TypeDecl newContainingType){
         if(accessed() == staticMemberDecl){
-            if(isQualified())
-                if(hostType() == newContainingType)
-                    replace(parentDot()).with(this);
-                else
-                    replace(parentDot()).with(new Dot(newContainingType.createLockedAccess(), this));
-                    //replace(qualifier()).with(newContainingType.createLockedAccess()); does not work ... why ??
-            else if(hostType() != newContainingType){
-                this.qualifyWith(newContainingType.createLockedAccess());
-                parentDot().flushTreeCache();
-            }
+             if(isQualified()) {
+                  Access replacement;
+                  if (isRightChildOfDot() && parentDot() != qualifier().parentDot())
+                        replacement = parentDot();
+                  else
+                        replacement = this;
+
+                  if (hostType() == newContainingType)
+                        replace(qualifier().parentDot()).with(replacement);
+                  else
+                        replace(qualifier().parentDot()).with(new Dot(newContainingType.createLockedAccess(), replacement));
+                  //replace(qualifier()).with(newContainingType.createLockedAccess()); does not work ... why ??
+             }
+             else if(hostType() != newContainingType){
+                  this.qualifyWith(newContainingType.createLockedAccess());
+                  qualifier().parentDot().flushTreeCache();
+             }
 
         }
         super.handleQualifierOfAccessOfStaticMember(staticMemberDecl, newContainingType);

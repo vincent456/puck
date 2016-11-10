@@ -140,17 +140,6 @@ object RedirectTarget {
               defHolder.node.replaceFieldReadAccess(oldF.declarator, mdecl)
             else
               defHolder.node.replaceFieldWriteAccess(oldF.declarator, mdecl)
-//            reenactor.usesAccessKind(e) match {
-//              case Some(Read) =>
-//                defHolder.node.replaceFieldReadAccess(oldF.declarator, mdecl)
-//              case Some(Write) =>
-//                defHolder.node.replaceFieldWriteAccess(oldF.declarator, mdecl)
-//              case Some(RW) =>
-//                defHolder.node.replaceFieldReadAccess(oldF.declarator, mdecl)
-//                defHolder.node.replaceFieldWriteAccess(oldF.declarator, mdecl)
-//              case None =>
-//                throw new JavaAGError("redirecting uses of field toward getter/setter access kind unknown")
-//            }
 
 
           case k =>

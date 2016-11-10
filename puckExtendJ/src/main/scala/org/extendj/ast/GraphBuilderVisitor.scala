@@ -141,10 +141,6 @@ trait GraphBuilderVisitor {
         addUses(declId, buildNode(exc))
     }
 
-    //buildMethodOrConstructorDG(containerId, declId, methodDecl)
-
-    //methodDecl.getTypeAccess.buildDG(this, declId) //return type
-    //methodDecl.getParameterList.buildDG(this, declId)
     methodDecl.getExceptionList.buildDG(this, declId)
     if(methodDecl.hasBlock) {
       puck.ignore(methodDecl.buildDef(this, declId))
@@ -181,21 +177,6 @@ trait GraphBuilderVisitor {
   }
 
   def buildDG(containerId : NodeId, expr : ClassInstanceExpr) : Unit = {
-    //    def onAccess(access : Access ) : Unit =
-    //      access match {
-    //        case _ :TypeAccess => ()
-    //        case pta : ParTypeAccess =>
-    //          pta.getTypeArguments.foreach {
-    //            ta => ta.buildDG(this, containerId)
-    //          }
-    //        case d : AbstractDot => onAccess(d.getRight)
-    //        case da : DiamondAccess => onAccess(da.getTypeAccess)
-    //        case _ => throw new DGBuildingError(s"ClassInstanceExpr access kind ${access.getClass} not handled " +
-    //          s"in ${access.compilationUnit().pathName()} line ${access.location()}")
-    //      }
-    //
-    //    onAccess(expr.getAccess)
-
     expr.getArgList.buildDG(this, containerId)
     expr.getTypeDeclOpt.buildDG(this, containerId)
 
@@ -257,7 +238,6 @@ trait GraphBuilderVisitor {
   }
   def buildDG(containerId : NodeId, stmt : VarDeclStmt) : Unit = {
     val t = getType(stmt.getTypeAccess)
-    //t.ids.foreach (id => addEdge(Uses(containerId, id)))
 
     val astType = stmt.`type`()
 
@@ -380,8 +360,12 @@ trait GraphBuilderVisitor {
         buildTypeUse(va, typeMemberUses, va.usesAccessKind())
     }
 
-  def buildDG(containerId : NodeId, ta : TypeAccess) : Unit =
-    addEdge(Uses(containerId, this buildNode ta))
+  def buildDG(containerId : NodeId, ta : TypeAccess) : Unit = {
+    if(!ta.isLeftChildOfDot)
+      addEdge(Uses(containerId, this buildNode ta))
+    // if m uses T.a, uses of a will be explicit and uses of T implicit
+  }
+
 
   def buildDG(containerId : NodeId, ma : MethodAccess) : Unit = if(ma.fromSource()){
     if(!(ma.decl().hostType().isEnumDecl  && ma.decl().location() == "0"))

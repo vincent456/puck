@@ -94,16 +94,6 @@ class JastaddGraphBuilder(val program : Program)
   def addUses(user : NodeId, used : NodeId) =
     addEdge(Uses(user, used))
 
-  //  override def addTypeConstraint(constraint : TypeConstraint): Unit = {
-  ////    val types : SList[NodeId] =
-  ////      constraint.typeIds ++ (constraint.typedNodes map g.typ map Type.mainId)
-  ////
-  ////    val constraintOnObject = types exists (id => g.getNode(id).name == "Object")
-  ////
-  ////    if(!constraintOnObject)
-  //     super.addTypeConstraint(constraint)
-  //  }
-
   def findTypeDecl(typ : String): TypeDecl ={
     val td = program findType typ
     if(td == null)

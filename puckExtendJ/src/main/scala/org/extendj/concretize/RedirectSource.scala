@@ -340,9 +340,6 @@ object RedirectSource {
     }
   }
 
-
-
-
   def move(source : NodeId, target : NodeId, newSource : NodeId)
           ( implicit program : Program,
             logger : PuckLogger,
