@@ -96,7 +96,7 @@ object ASTNodeLink{
       graph.getConcreteNode(typeDeclId).name + ".java"
 
 
-  def enlargeVisibility
+  def enlargeVisibilityOfNidIfNeeded
   ( g : DependencyGraph,
     astNode : Visible,
     nid : NodeId)

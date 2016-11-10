@@ -506,7 +506,7 @@ class JavaJastAddDG2AST
     f(user, usedAsMemberDecl, newAccess)
 
 
-    ASTNodeLink.enlargeVisibility(
+    ASTNodeLink.enlargeVisibilityOfNidIfNeeded(
       reenactor, usedAsVisible,
       typeMemberUse.used)(id2declMap)
 

@@ -89,7 +89,7 @@ object RedirectSource {
         tDeclDest.introduceMethod(mdecl)
     }
 
-    ASTNodeLink.enlargeVisibility(
+    ASTNodeLink.enlargeVisibilityOfNidIfNeeded(
       reenactor, hmd.decl.asInstanceOf[Visible],
       mDeclId )
 
@@ -317,7 +317,7 @@ object RedirectSource {
   ( implicit program : Program,
     id2declMap: NodeId => ASTNodeLink,
     logger : PuckLogger) : Unit= {
-    ASTNodeLink.enlargeVisibility(resultGraph, tDecl, tDeclId)
+    ASTNodeLink.enlargeVisibilityOfNidIfNeeded(resultGraph, tDecl, tDeclId)
     tDecl.flushCache()
     //val oldFullName = resultGraph.fullName(oldPackage) + "." + tDecl.name()
     val oldFullName = reenactor.fullName(tDeclId)
@@ -368,6 +368,14 @@ object RedirectSource {
           }
 
           val usedBy = ((reenactor.content(target) + target) flatMap reenactor.usedBy) - target
+
+          usedBy foreach { used =>
+            id2declMap(used) match {
+              case v  : Visible =>
+                ASTNodeLink.enlargeVisibilityOfNidIfNeeded(reenactor, v, used)
+              case _ =>()
+            }
+          }
 
           ( usedBy intersect reenactor.content(source)).foreach {
             id2declMap(_) match {
