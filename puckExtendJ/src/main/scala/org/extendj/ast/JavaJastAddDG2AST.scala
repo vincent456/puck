@@ -288,8 +288,8 @@ class JavaJastAddDG2AST
     logger.writeln("applying change !")
     val record = graph.recording
 
-    logger.writeln("before applying change : ")
-    logger.writeln(program.prettyPrint())
+//    logger.writeln("before applying change : ")
+//    logger.writeln(program.prettyPrint())
 
     record.reverse.foldLeft((graph, initialGraph, graph2ASTMap)) {
       case ((resultGraph, reenactor, g2AST), t : Transformation) =>
@@ -305,8 +305,8 @@ class JavaJastAddDG2AST
         acc
     }
 
-    logger.writeln("change applied : ")
-    logger.writeln(program.prettyPrint())
+//    logger.writeln("change applied : ")
+//    logger.writeln(program.prettyPrint())
     logger.writeln("unlocking")
     try {
       program.eliminateLockedNamesInSubtree()
@@ -317,9 +317,9 @@ class JavaJastAddDG2AST
     }
     logger.writeln("done")
 
-    logger.writeln("Program after unlock : ")
-    logger.writeln(program.prettyPrint())
-    logger.writeln("Program after unlock end of print ")
+//    logger.writeln("Program after unlock : ")
+//    logger.writeln(program.prettyPrint())
+//    logger.writeln("Program after unlock end of print ")
 
 
   }

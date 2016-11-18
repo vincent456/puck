@@ -214,7 +214,6 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
     }
 
-
     scenario("upper bounded wildcard"){
       val _ = new ScenarioFactory(
         """package p;
@@ -264,11 +263,12 @@ class GraphBuildingSpec extends AcceptanceSpec {
 
       }
     }
+
   }
 
   feature("Read/Write uses"){
 
-    scenario("generic type declaration"){
+    scenario("access kinds"){
       val _ = new ScenarioFactory(
         """package p;
           |

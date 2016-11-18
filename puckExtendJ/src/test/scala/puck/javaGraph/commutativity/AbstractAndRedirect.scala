@@ -24,8 +24,7 @@
  * Author of this file : Loïc Girault
  */
 
-package puck.javaGraph.transfoRules
-
+package puck.javaGraph.commutativity
 
 import org.extendj.ExtendJGraphUtils.Rules
 import puck.TransfoRulesSpec

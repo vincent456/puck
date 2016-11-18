@@ -33,7 +33,7 @@ import puck.util.FileHelper.FileOps
 /**
   * Created by Loïc Girault on 12/02/16.
   */
-class ConfigUnitSpec extends UnitSpec{
+class UtilsUnitSpec extends UnitSpec{
 
   "ConfigWriter" should "write correctly the config" in {
     val f = new File(".")
@@ -72,7 +72,7 @@ class ConfigUnitSpec extends UnitSpec{
 
 
 
-  "FileOps" should "compute relative path" in {
+  it should "compute relative path" in {
 
     val f1 = new File(tmpDir + "/a/b/c")
     f1.mkdirs()
