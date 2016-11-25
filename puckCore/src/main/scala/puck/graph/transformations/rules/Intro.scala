@@ -309,4 +309,8 @@ abstract class Intro {
       case _ => g.addUses(user, used)
 
   }
+
+  def constructorByCopy
+  ( g : DependencyGraph,
+    classId : NodeId) : LoggedTry[(ConcreteNode, DependencyGraph)]
 }

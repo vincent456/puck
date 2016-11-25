@@ -64,10 +64,12 @@ object Move {
           s"from ${(g, oldContainer).shows} " +
           s"to ${(g, newContainer).shows}"
 
+        if(g.canContain(g.getConcreteNode(newContainer), g.getConcreteNode(movedId)))
         LoggedSuccess(log,
           g.comment(log)
            .changeSource(Contains(oldContainer, movedId), newContainer))
-
+        else
+          LoggedError("invalid container !", "some log infos")
     }
   }
 

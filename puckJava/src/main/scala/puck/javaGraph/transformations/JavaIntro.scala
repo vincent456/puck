@@ -75,4 +75,26 @@ object JavaIntro extends Intro {
         NamedType(typeNode))
     LoggedSuccess((cn, g2.addContains(typeNode, cn.id)))
   }
+
+  override def constructorByCopy
+  ( g : DependencyGraph,
+    classId : NodeId) : LoggedTry[(ConcreteNode, DependencyGraph)] = {
+    val n = g.getConcreteNode(classId)
+    n.kind match {
+      case Class =>
+        for {
+          (ctorNode, g2) <- intro.defaultConstructor(g, classId)
+          (_, g3) <- intro.parameter(g2, classId, ctorNode.id)
+        } yield (ctorNode, g3)
+
+//        intro.defaultConstructor(g, classId).flatMap {
+//          case (ctorNode, g2) =>
+//              intro.parameter(g2, classId, ctorNode.id) map {
+//                case (_, g3) => (ctorNode, g3)
+//              }
+//        }
+
+      case _ => LoggedError("rule only work with class")
+    }
+  }
 }

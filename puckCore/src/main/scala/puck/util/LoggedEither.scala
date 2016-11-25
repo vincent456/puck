@@ -44,6 +44,14 @@ case class LoggedEither[+L, +R](log : String, value : L\/R){
       case a @ -\/(_) => this.copy(value = a)
       case \/-(b) =>  this.log <++: g(b)
     }
+
+  def withFilter(p : R => Boolean) : LoggedEither[L, R] =
+    this.value match {
+      case a @ -\/(_) => this
+      case \/-(b) =>
+        if(p(b)) this
+        else throw new Error("with filter matching error")
+    }
 }
 
 

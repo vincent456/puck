@@ -27,7 +27,7 @@
 package puck.javaGraph.commutativity
 
 import puck.graph.transformations.rules.{Move, Redirection}
-import puck.graph.{AccessAbstraction, DelegationAbstraction, Factory, LoggedTG}
+import puck.graph.{AccessAbstraction, DelegationAbstraction, DependencyGraph, Factory, LoggedTG}
 import puck.TransfoRulesSpec
 
 /**
@@ -41,7 +41,7 @@ class MoveAndRedirect
     val initialCode =
       """package p;
         |
-        |class Factory{ }
+        |class Factory{ void m(){} }
         |
         |class B { static B createB(){ return new B(); } }
         |
@@ -59,22 +59,43 @@ class MoveAndRedirect
 
     scenario("move factory then redirect") {
       compareWithExpectedAndGenerated(initialCode,
-        bs => {
-          import bs.{graph, idOfFullName}
+        s => {
+          import s.{graph, idOfFullName}
 
-          val g =
+          val g : DependencyGraph =
             graph.addAbstraction("p.B.B()", AccessAbstraction("p.B.createB()", DelegationAbstraction))
               .setRole("p.B.createB()", Some(Factory("p.B.B()")))
 
-          val ltg : LoggedTG =
-            for{
-              g0 <- Move.staticDecl(g, "p.B.createB()", "p.Factory")
+          // 1ère manière
+          val g0 = Move.staticDecl(g, "p.B.createB()", "p.Factory").rvalue
 
-              g1 <- Redirection.redirectUsesAndPropagate(g0, ("p.A.m().Definition", "p.B.B()"),
-                AccessAbstraction("p.B.createB()", DelegationAbstraction))
-            } yield g1
+          Redirection.redirectUsesAndPropagate(g0, ("p.A.m().Definition", "p.B.B()"),
+            AccessAbstraction("p.B.createB()", DelegationAbstraction)).rvalue
 
-          ltg.rvalue
+          // 2ème manière
+//          val ltg : LoggedTG =
+//            Move.staticDecl(g, "p.B.createB()", "p.Factory").flatMap{
+//              g0 =>
+//                Redirection.redirectUsesAndPropagate(g0, ("p.A.m().Definition", "p.B.B()"),
+//                  AccessAbstraction("p.B.createB()", DelegationAbstraction)) map {
+//                  g1 => g1
+//                }
+//            }
+//          ltg.rvalue
+
+          // 3ème manière
+//          val ltg : LoggedTG =
+//            for {
+//              g0 <- Move.staticDecl(g, "p.B.createB()", "p.Factory")
+//
+//              g1 <- Redirection.redirectUsesAndPropagate(g0, ("p.A.m().Definition", "p.B.B()"),
+//                AccessAbstraction("p.B.createB()", DelegationAbstraction))
+//            } yield g1
+//          ltg.rvalue
+
+
+
+
         }, expectedCode)
     }
 
