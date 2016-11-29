@@ -209,8 +209,9 @@ class DotPrinter
     def dotId(nid: NodeId) : String = {
       val n = graph.getNode(nid)
       n.kind.kindType match {
-        case NameSpace =>  nodeSubGraphId(n.id.toString)
-        case ValueDef | Parameter | TypeVariableKT => dotId(graph.container_!(nid))
+        case NameSpace => nodeSubGraphId(n.id.toString)
+        case ValueDef | Parameter | TypeVariableKT | LocalValue =>
+          dotId(graph.container_!(nid))
         case TypeDecl => n.id + ":" + n.id
         case _ =>
           graph.container(nid) match {
