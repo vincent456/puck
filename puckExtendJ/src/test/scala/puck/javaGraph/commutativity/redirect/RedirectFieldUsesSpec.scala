@@ -93,4 +93,34 @@ class RedirectFieldUsesSpec
       },
       code("b1.setF(b2.getF())"))
   }
+
+  //la transformation exposée dans ce test ne me semble pas pertinante:
+  //if faudrait plutôt un getteur du type int getF(int indice){return f[indice]; }
+  //néanmoins il permet d'exposer une erreur observé dans les cas d'étude de Marauroa
+  scenario("From array field to getter"){
+    def code(call : String) : String =
+      s"""package p;
+          |
+          |class B {
+          |    int[] f;
+          |    int[] getF(){ return f; }
+          |}
+          |
+          |class A {
+          |    void m(B b){
+          |        int i = $call;
+          |    }
+          |}"""
+
+    compareWithExpectedAndGenerated( code("b.f[3]"),
+      bs => {
+        import bs.{graph, idOfFullName}
+
+        val abs = ReadWriteAbstraction(Some("p.B.getF()"), None)
+
+        Redirection.redirectUsesAndPropagate(graph.addAbstraction("p.B.f", abs),
+          ("p.A.m(B).Definition", "p.B.f"), abs).rvalue
+      },
+      code("b.getF()[3]"))
+  }
 }
