@@ -178,7 +178,7 @@ class AbstractionAction
 
       }
 
-      def doAbsract(container : NodeId) : LoggedTry[DependencyGraph] =
+      def doAbstract(container : NodeId) : LoggedTry[DependencyGraph] =
         for {
           absAndG <- node.kind.kindType match {
             case TypeDecl => TR.abstracter.
@@ -198,7 +198,7 @@ class AbstractionAction
           case Result.Ok =>
             if(panel.selectedHost.isEmpty)
               defaultContainer() match {
-                case Some(cid) => doAbsract(cid)
+                case Some(cid) => doAbstract(cid)
                 case None =>
                   Dialog.showMessage(null, "Select a host", messageType = Message.Error)
                   confirm()
@@ -207,7 +207,7 @@ class AbstractionAction
               Dialog.showMessage(null, "Select only one host", messageType = Message.Error)
               confirm()
             }
-            else doAbsract(panel.selectedHost.head)
+            else doAbstract(panel.selectedHost.head)
         }
 
       confirm()

@@ -28,10 +28,7 @@ package puck
 package graph
 package transformations
 
-import puck.graph.Type.OnImplemNotFound
 import puck.graph.transformations.rules._
-import puck.util.LoggedEither._
-import scalaz.std.list._
 
 class TransformationRules
 ( mergingCandidatesFinder : MergingCandidatesFinder,

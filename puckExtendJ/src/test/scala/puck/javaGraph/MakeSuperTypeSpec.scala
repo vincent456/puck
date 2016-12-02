@@ -26,7 +26,7 @@
 
 package puck.javaGraph
 
-import puck.graph.{AccessAbstraction, SupertypeAbstraction, Type}
+import puck.graph.{AccessAbstraction, SupertypeAbstraction}
 import puck.AcceptanceSpec
 import org.extendj.ExtendJGraphUtils.Rules
 

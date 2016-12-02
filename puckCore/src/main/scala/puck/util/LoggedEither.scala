@@ -46,7 +46,6 @@ case class LoggedEither[+L, +R](log : String, value : L\/R){
     }
 }
 
-
 object LoggedEither {
 
   def flatten[A](le : LoggedEither[Error, LoggedEither[Error, A]]): LoggedEither[Error, A] = le.value match {

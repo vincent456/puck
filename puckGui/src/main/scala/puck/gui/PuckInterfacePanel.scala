@@ -33,10 +33,11 @@ import javax.swing.filechooser.FileNameExtensionFilter
 
 import puck.Project
 import puck.config.{Config, ConfigWriter}
-import puck.graph.{DecoratedGraph, DependencyGraph, Metrics}
+import puck.graph.{DecoratedGraph, DependencyGraph}
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.constraints.search._
 import puck.graph.io.{DotPrinter, VisibilitySet}
+import puck.gui.search.MetricChoice
 import puck.gui.svg.SVGViewHandler
 import puck.gui.svg.actions.AutoSolveAction
 import puck.piccolo.PiccoloViewHandler
@@ -288,19 +289,7 @@ class PuckInterfacePanel
       preferredSize = minimumSize
     }
 
-    val kViolTextField = new TextField("1", 5)
-    val kComplexTextField = new TextField("1", 5)
 
-    val ponderationPanel = new BoxPanel(Orientation.Vertical) {
-      contents += new BoxPanel(Orientation.Horizontal) {
-        contents += new Label("Violation weight")
-        contents += kViolTextField
-      }
-      contents += new BoxPanel(Orientation.Horizontal) {
-        contents += new Label("Complexity weight")
-        contents += kComplexTextField
-      }
-    }
 
     val strategyCB =  new ComboBox(List[StrategyBuilder](
       new (() => SearchStrategy[DecoratedGraph[Any]]) {
@@ -310,13 +299,21 @@ class PuckInterfacePanel
       new (() => SearchStrategy[DecoratedGraph[Any]]) {
         override val toString = "A* Strategy"
         def apply() = {
-          Dialog.showConfirmation(message = ponderationPanel.peer)
+
           //function is called in search button action only if constraints is non empty
           val cm = control.constraints.get
-          val kViol = kViolTextField.text.toInt
-          val kComplex = kComplexTextField.text.toInt
-          val f = Metrics.fitness1(_ : DependencyGraph , cm, kViol, kComplex).toDouble
-          new AStarSearchStrategy(DecoratedGraphEvaluator.equalityByMapping(f))
+          val m1 = MetricChoice.metric1(cm)
+          val m2 = MetricChoice.metric2(control.graph, cm)
+
+          val f = MetricChoice.dialog(m1, m2) match {
+            case Some(f) => f
+            case None => ()
+              control.Bus publish Log(m1 + " selected by default")
+              m1.metric
+          }
+
+          new AStarSearchStrategy(DecoratedGraphEvaluator.equalityByMapping(x => f(x).toDouble))
+
         }
 
 
