@@ -42,6 +42,8 @@ object Metrics {
     (cm forbiddenDependencies graph).size
   }
 
+  def fitness0(graph : DependencyGraph) = graph.numNodes
+
   // ajouté par Mikal
   def fitness1(graph : DependencyGraph, cm : ConstraintsMaps, kViols : Int = 10, kComplex : Int = 1) = {
     kViols*numViolations(graph, cm)  + kComplex*graph.numNodes

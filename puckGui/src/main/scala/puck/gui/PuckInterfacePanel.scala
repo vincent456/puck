@@ -299,24 +299,9 @@ class PuckInterfacePanel
       new (() => SearchStrategy[DecoratedGraph[Any]]) {
         override val toString = "A* Strategy"
         def apply() = {
-
-          //function is called in search button action only if constraints is non empty
-          val cm = control.constraints.get
-          val m1 = MetricChoice.metric1(cm)
-          val m2 = MetricChoice.metric2(control.graph, cm)
-
-          val f = MetricChoice.dialog(m1, m2) match {
-            case Some(f) => f
-            case None => ()
-              control.Bus publish Log(m1 + " selected by default")
-              m1.metric
-          }
-
+          val f = control.chooseMetric
           new AStarSearchStrategy(DecoratedGraphEvaluator.equalityByMapping(x => f(x).toDouble))
-
         }
-
-
       },
       new (() => SearchStrategy[DecoratedGraph[Any]]) {
         override val toString = "Breadth-first Strategy"

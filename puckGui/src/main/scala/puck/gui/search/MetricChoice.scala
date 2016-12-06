@@ -47,8 +47,9 @@ object MetricChoice {
   }
 
   def metric1(cm : ConstraintsMaps) = new MetricChoice {
+    mc =>
 
-    override def toString = "Metric 1"
+    override val toString = "Metric 1"
 
     val kViolTextField = new TextField("1", 5)
     val kComplexTextField = new TextField("1", 5)
@@ -69,15 +70,22 @@ object MetricChoice {
     def metric : (DependencyGraph) => Int = {
       val kViol = kViolTextField.text.toInt
       val kComplex = kComplexTextField.text.toInt
-      Metrics.fitness1(_ : DependencyGraph , cm, kViol, kComplex)
+
+      new ((DependencyGraph) => Int) {
+        override val toString : String = mc.toString
+        def apply( g : DependencyGraph) =
+          Metrics.fitness1(g, cm, kViol, kComplex)
+      }
+
     }
   }
 
 
   def metric2(dependencyGraph: DependencyGraph, constraintsMaps: ConstraintsMaps) =
     new MetricChoice {
+      mc =>
 
-      override def toString = "Metric 2"
+      override val toString = "Metric 2"
 
       val kViolTextField = new TextField("1", 5)
       val kComplexTextField = new TextField("1", 5)
@@ -87,7 +95,11 @@ object MetricChoice {
       def metric : (DependencyGraph) => Int = {
         val nodesSet = dependencyGraph nodesIn constraintsMaps
 
-        Metrics.fitness2(_, nodesSet)
+        new ((DependencyGraph) => Int) {
+          override val toString : String = mc.toString
+          def apply( g : DependencyGraph) =
+            Metrics.fitness2(g, nodesSet)
+        }
       }
     }
 

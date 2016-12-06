@@ -43,6 +43,7 @@ import scalaz.{-\/, \/-}
 import ShowDG._
 import puck.config.Config.Config
 import puck.graph.transformations.MutabilitySet
+import puck.gui.search.MetricChoice
 object PuckControl {
 
   def apply(graphUtils: GraphUtils, nodeKindIcons : NodeKindIcons, logger : PuckLogger) : PuckControl =
@@ -86,6 +87,33 @@ class PuckControl
   val graphStack: GraphStack = new GraphStack(Bus)
   var constraints : Option[ConstraintsMaps] = None
   var mutabilitySet : MutabilitySet.T = Set()
+
+  var currentMetric : DependencyGraph => Int =
+    new (DependencyGraph => Int) {
+      override def toString = "Number of nodes"
+      def apply(g : DependencyGraph) = Metrics.fitness0(g)
+    }
+
+
+  def metricChoices : Seq[MetricChoice] = {
+    val cm = constraints.get
+    val m1 = MetricChoice.metric1(cm)
+    val m2 = MetricChoice.metric2(graph, cm)
+
+    Seq(m1, m2)
+  }
+
+
+  def chooseMetric = {
+    val cs = metricChoices
+    MetricChoice.dialog(cs:_*) match {
+      case Some(f) => f
+      case None => ()
+        Bus publish Log(cs.head + " selected by default")
+        cs.head.metric
+    }
+  }
+
 
   def loadConf(file : File) : Unit =  loadConf(ConfigParser(file))
   def loadConf(cfg : Config) : Unit = {

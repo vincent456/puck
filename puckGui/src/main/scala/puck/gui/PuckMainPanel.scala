@@ -26,7 +26,7 @@
 
 package puck.gui
 
-import puck.graph.{DependencyGraph, GraphUtils}
+import puck.graph.{DependencyGraph, GraphUtils, Metrics}
 import puck.gui.explorer.{ForbiddenDependenciesExplorer, NodeInfosPanel}
 import puck.util.PuckLog
 
@@ -68,7 +68,40 @@ class PuckMainPanel(graphUtils: GraphUtils,
     def setGraphView(c : Component) : Unit = {
       rightComponent = new SplitPane(Orientation.Vertical) {
         resizeWeight = 0.25
-        leftComponent = c
+        leftComponent = new SplitPane(Orientation.Horizontal){
+          resizeWeight = 0.95
+          dividerSize = 0
+          enabled = false
+          topComponent = c
+
+          bottomComponent = new SplitPane(Orientation.Vertical) {
+            resizeWeight = 0.95
+            dividerSize = 0
+            enabled = false
+
+            val lbl =  new Label("Metric : "){
+              this listenTo control.Bus
+
+              def updateText(g : DependencyGraph) = {
+                val m = control.currentMetric(g)
+                text = s"${control.currentMetric} : $m"
+              }
+
+              reactions += {
+                case Pushed(newG, _) =>
+                  updateText(newG)
+                case GraphUpdate(g) =>
+                  updateText(g)
+              }
+            }
+            leftComponent = lbl
+            rightComponent = Button("conf"){
+              control.currentMetric = control.chooseMetric
+              lbl.updateText(control.graph)
+            }
+          }
+
+        }
         rightComponent = nodeInfos
       }
     }
@@ -110,8 +143,8 @@ class PuckMainPanel(graphUtils: GraphUtils,
     }
   }
 
-  leftComponent = upPanel
-  rightComponent = downPanel
+  topComponent = upPanel
+  bottomComponent = downPanel
 
   this listenTo control.Bus
 

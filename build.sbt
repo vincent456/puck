@@ -19,15 +19,17 @@ val srcJarFileName = settingKey[String]("name of the jar containing source files
 def classPathFileNameTask(cfg : Configuration): Def.Initialize[Task[File]] = Def.task {
   val f = baseDirectory.value / "target" / classPathFileName.value
 
-  val writter = new FileWriter(f)
+  val writer = new FileWriter(f)
   val fcp = (fullClasspath in cfg).value.map(_.data.absolutePath)
-  writter write "#!/bin/bash\n"
-  writter write fcp.mkString("export CLASSPATH=", ":", "")
+  writer write "#!/bin/bash\n"
+  writer write fcp.mkString("export CLASSPATH=", ":", "")
   // fish style :
-  //writter.write(fcp.mkString("set CLASSPATH ", ":", ""))
-  writter.close()
+  //writer.write(fcp.mkString("set CLASSPATH ", ":", ""))
+  writer.close()
   f
 }
+
+
 
 def commonSettings(module: String) : Seq[Setting[_]] = Seq(
   organization := "fr.lip6",
@@ -121,6 +123,9 @@ lazy val puckGui =  project.
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-swing" % "2.11.0-M7",
       "org.scala-lang" % "scala-parser-combinators" % "2.11.0-M4",
+//      "org.piccolo2d" % "piccolo2d-core" % "3.0",
+//      "org.piccolo2d" % "piccolo2d-swt" % "3.0",
+//      "org.piccolo2d" % "piccolo2d-extras" % "3.0",
       "org.apache.xmlgraphics" % "xmlgraphics-commons" % "2.0.1",
       "org.apache.xmlgraphics" % "batik-util" % "1.8",
       "org.apache.xmlgraphics" % "batik-svg-dom" % "1.8",
