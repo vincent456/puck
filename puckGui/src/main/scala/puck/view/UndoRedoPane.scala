@@ -1,6 +1,6 @@
 package puck.view
 
-import puck.control.{GraphStack, GraphStackEvent}
+import puck.control.{GraphStack, GraphChangeEvent}
 
 import scala.swing._
 
@@ -8,8 +8,8 @@ import scala.swing._
   * Created by Loïc Girault on 12/8/16.
   */
 class UndoRedoPane
-(graphStack: GraphStack,
- bus : Publisher
+( bus : Publisher,
+  graphStack: GraphStack
 ) extends BoxPanel(Orientation.Horizontal){
 
   contents +=
@@ -20,7 +20,7 @@ class UndoRedoPane
       def apply() = graphStack.undoAll()
 
       reactions += {
-        case _ : GraphStackEvent =>
+        case _ : GraphChangeEvent =>
           enabled = graphStack.canUndo
       }
       listenTo(bus)
@@ -34,7 +34,7 @@ class UndoRedoPane
       def apply() = graphStack.undo()
 
       reactions += {
-        case _ : GraphStackEvent =>
+        case _ : GraphChangeEvent =>
           enabled = graphStack.canUndo
       }
       listenTo(bus)
@@ -48,7 +48,7 @@ class UndoRedoPane
       def apply() = graphStack.redo()
 
       reactions += {
-        case _ : GraphStackEvent =>
+        case _ : GraphChangeEvent =>
           enabled = graphStack.canRedo
       }
       listenTo(bus)

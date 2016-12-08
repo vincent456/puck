@@ -46,14 +46,14 @@ case class NodeClicked(node : DGNode) extends PuckEvent
 
 case class ConstraintsUpdate(graph : DependencyGraph, cm : ConstraintsMaps) extends PuckEvent
 
-sealed abstract class GraphStackEvent extends PuckEvent {
+sealed abstract class GraphChangeEvent extends PuckEvent {
   def graph : DependencyGraph
 }
-case class GraphUpdate(graph : DependencyGraph) extends GraphStackEvent
-case class Pushed(pushedGraph : DependencyGraph, previousHead : DependencyGraph) extends GraphStackEvent {
+case class GraphUpdate(graph : DependencyGraph) extends GraphChangeEvent
+case class Pushed(pushedGraph : DependencyGraph, previousHead : DependencyGraph) extends GraphChangeEvent {
   def graph : DependencyGraph = pushedGraph
 }
-case class Popped(poppedGraph : DependencyGraph, newHead : DependencyGraph) extends GraphStackEvent {
+case class Popped(poppedGraph : DependencyGraph, newHead : DependencyGraph) extends GraphChangeEvent {
   def graph : DependencyGraph = newHead
 }
 

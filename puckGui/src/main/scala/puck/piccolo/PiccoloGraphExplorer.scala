@@ -51,7 +51,7 @@ class PiccoloGraphExplorer
     //setModel(new MutableTreeModel(newHead))
     case Pushed(pushedGraph, previousHead) =>
       canvas.pushEvent(pushedGraph, previousHead)
-    case evt : GraphStackEvent =>
+    case evt : GraphChangeEvent =>
       canvas = new DGCanvas(control, nodeKindIcons)
       setViewportView(canvas)
 

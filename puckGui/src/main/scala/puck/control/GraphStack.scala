@@ -114,5 +114,5 @@ class GraphStack(val bus : Publisher) extends HistoryHandler {
     bus publish GraphUpdate(graph)
   }
 
-  def view() : Component = new UndoRedoPane(this, bus)
+  def view() : Component = new UndoRedoPane(bus, this)
 }

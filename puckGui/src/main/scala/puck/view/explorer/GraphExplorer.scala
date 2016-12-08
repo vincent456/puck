@@ -93,6 +93,8 @@ class GraphExplorer
     case VisibilityEvent(g, v) =>
       import puck.graph.io.VisibilitySet.VisibilitySetOps
       displayGraph(buttonVisible = true,  filteredTree(g, Right(v.visibleNodes(g))))
+    case SwitchView(_) =>
+      this deafTo Bus
   }
 
   def displayGraph(buttonVisible : Boolean, tree : Component) : Unit = {

@@ -29,7 +29,7 @@ package puck.view.svg
 import java.io.{File, FileWriter}
 
 import puck._
-import puck.control.{ConstraintsUpdate, GraphStackEvent, PrintingOptionsControl, PrintingOptionsUpdate}
+import puck.control.{ConstraintsUpdate, GraphChangeEvent, PrintingOptionsControl, PrintingOptionsUpdate}
 import puck.control.actions.AddNodeAction
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.{DependencyGraph, GraphUtils, NameSpace}
@@ -60,7 +60,7 @@ class SVGViewHandler
 
   this listenTo mainPanel.control.Bus
   reactions += {
-    case ge : GraphStackEvent =>
+    case ge : GraphChangeEvent =>
       this.displayGraph(ge.graph, control.constraints)
 
     case PrintingOptionsUpdate =>

@@ -27,7 +27,7 @@
 package puck.view
 
 
-import puck.control.{ConstraintsUpdate, GraphStackEvent}
+import puck.control.{ConstraintsUpdate, GraphChangeEvent}
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
 import puck.view.explorer.GraphExplorer
@@ -59,7 +59,7 @@ class TreeViewHandler
   this listenTo control.Bus
 
   reactions += {
-    case _: GraphStackEvent => update(control.graph, control.constraints)
+    case _ : GraphChangeEvent => update(control.graph, control.constraints)
     case ConstraintsUpdate(g, cm) => update(g, Some(cm))
   }
 

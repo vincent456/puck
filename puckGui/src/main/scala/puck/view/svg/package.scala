@@ -62,8 +62,7 @@ package object svg {
   ( graph: DependencyGraph,
     graphUtils : GraphUtils,
     scm : Option[ConstraintsMaps],
-    printingOptions: PrintingOptions,
-    fail : Boolean = false)
+    printingOptions: PrintingOptions)
   ( onDotConversionResult: scala.util.Try[Int] => Unit)
   ( onDocBuildingSuccess : PartialFunction[SVGDocument, Unit])
   ( implicit executor: ExecutionContext ) : Unit = {

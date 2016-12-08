@@ -85,7 +85,8 @@ class PuckControl
 
 
   var dg2ast: DG2AST = _
-  val historyHandler: HistoryHandler = new GraphStack(Bus)
+  //val historyHandler: HistoryHandler = new GraphStack(Bus)
+  val historyHandler: HistoryHandler = new SearchSpace(this)
   var constraints : Option[ConstraintsMaps] = None
   var mutabilitySet : MutabilitySet.T = Set()
 
