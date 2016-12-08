@@ -27,27 +27,27 @@
 package puck
 
 import puck.graph.transformations.MileStone
-import puck.graph.{Recording, DependencyGraph}
+import puck.graph.{DependencyGraph, Recording}
 import Recording.RecordingOps
 import puck.gui._
 
 import scala.collection.mutable
-import scala.swing.Publisher
+import scala.swing.{Component, Publisher}
 
 /**
   * Created by Loïc Girault on 15/12/15.
   */
 
-class GraphStack(val bus : Publisher) {
+class GraphStack(val bus : Publisher) extends HistoryHandler {
 
-  def graph = undoStack.head
+  override def graph = undoStack.head
 
   def graphOption = undoStack.headOption
 
   protected val undoStack = mutable.Stack[DependencyGraph]()
   protected val redoStack = mutable.Stack[DependencyGraph]()
 
-  def setInitialGraph(g : DependencyGraph) : Unit = {
+  override def setInitialGraph(g : DependencyGraph) : Unit = {
     undoStack.clear()
     redoStack.clear()
     ignore(undoStack push g)
@@ -97,19 +97,19 @@ class GraphStack(val bus : Publisher) {
     firePushEvent(oldHead)
   }
 
-  def pushGraph(graph: DependencyGraph) = {
+  override def pushGraph(graph: DependencyGraph) = {
     val oldHead = undoStack.head
     undoStack.push(graph)
     redoStack.clear()
     firePushEvent(oldHead)
   }
 
-  def rewriteHistory(rec : Recording): Unit ={
-      undoStack.pop()
-      pushGraph(rec.redo(graph))
+  override def rewriteHistory(rec : Recording): Unit ={
+    undoStack.pop()
+    pushGraph(rec.redo(graph))
   }
 
-  def load(rec : Recording): Unit = {
+  override def load(rec : Recording): Unit = {
     val g = rec.reverse.foldLeft(graph) {
       case (g, MileStone) =>
         undoStack.push(g)
@@ -122,4 +122,5 @@ class GraphStack(val bus : Publisher) {
     bus publish GraphUpdate(graph)
   }
 
+  def view() : Component = new UndoRedoPane(this, bus)
 }

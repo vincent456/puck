@@ -163,51 +163,6 @@ class PuckInterfacePanel
   addAlwaysVisibleButtons()
 
 
-  def addUndoRedoButton(c : Wrapper) : Unit = {
-    import control.graphStack
-    c.contents +=
-      new Button(new Action("Undo all") {
-
-        enabled = false
-
-        def apply() = graphStack.undoAll()
-
-        reactions += {
-          case _ : GraphStackEvent =>
-            enabled = graphStack.canUndo
-        }
-        listenTo(control.Bus)
-      })
-
-    c.contents +=
-      new Button(new Action("Undo") {
-
-        enabled = false
-
-        def apply() = graphStack.undo()
-
-        reactions += {
-          case _ : GraphStackEvent =>
-            enabled = graphStack.canUndo
-        }
-        listenTo(control.Bus)
-      })
-
-    ignore(c.contents +=
-      new Button(new Action("Redo") {
-
-        enabled = false
-
-        def apply() = graphStack.redo()
-
-        reactions += {
-          case _ : GraphStackEvent =>
-            enabled = graphStack.canRedo
-        }
-        listenTo(control.Bus)
-      }))
-  }
-
   def addLoadedGraphButtons(): Unit= {
     contents += makeButton("(Re)load constraints",
       "Decorate the graph with the constraints of the selected decouple file"){
@@ -218,9 +173,7 @@ class PuckInterfacePanel
       () => publisher publish ConstraintDisplayRequest(control.graph)
     }
 
-    val p = new BoxPanel(Orientation.Horizontal)
-    addUndoRedoButton(p)
-    contents += p
+    contents += control.historyHandler.view()
 
     contents += new BoxPanel(Orientation.Horizontal) {
       contents += new Button() {

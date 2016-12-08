@@ -84,7 +84,7 @@ class PuckControl
 
 
   var dg2ast: DG2AST = _
-  val graphStack: GraphStack = new GraphStack(Bus)
+  val historyHandler: HistoryHandler = new GraphStack(Bus)
   var constraints : Option[ConstraintsMaps] = None
   var mutabilitySet : MutabilitySet.T = Set()
 
@@ -133,7 +133,7 @@ class PuckControl
 
   }
 
-  def graph: DependencyGraph = graphStack.graph
+  def graph: DependencyGraph = historyHandler.graph
 
   import PuckLog.defaultVerbosity
 
@@ -193,7 +193,7 @@ class PuckControl
         logger write " done :"
 
         if(setInitialGraph)
-          graphStack.setInitialGraph(dg2ast.initialGraph)
+          historyHandler.setInitialGraph(dg2ast.initialGraph)
 
         constraints match {
           case None =>
@@ -219,7 +219,7 @@ class PuckControl
   }
 
   def loadRecord(file : File) : Unit = {
-    try graphStack.load(Recording.load(file.getAbsolutePath, dg2ast.nodesByName))
+    try historyHandler.load(Recording.load(file.getAbsolutePath, dg2ast.nodesByName))
     catch {
       case e @ Recording.LoadError(msg, m) =>
         println(e.printStackTrace())
@@ -234,7 +234,7 @@ class PuckControl
   reactions += {
 
     case PushGraph(g) =>
-      graphStack.pushGraph(g)
+      historyHandler.pushGraph(g)
 
     case PrintErrOrPushGraph(msg, lgt) =>
       lgt.value match {
@@ -242,11 +242,11 @@ class PuckControl
           logger.writeln(s"$msg\n$err\nLog : ${lgt.log}")
         case \/-(g) =>
           logger.writeln(lgt.log)
-          graphStack.pushGraph(g)
+          historyHandler.pushGraph(g)
       }
 
     case RewriteHistory(r) =>
-      graphStack.rewriteHistory(r)
+      historyHandler.rewriteHistory(r)
 
     case Log(msg) =>
       logger.writeln(msg)
@@ -283,9 +283,9 @@ class PuckControl
     case GenCode(compareOutput) =>
       sProject foreach { p =>
         import ProjectDG2ASTControllerOps._
-        deleteOutDirAndApplyOnCode(dg2ast,p, graphStack.graph, constraints)
+        deleteOutDirAndApplyOnCode(dg2ast,p, historyHandler.graph, constraints)
         if (compareOutput)
-          compareOutputGraph(p, graphStack.graph)
+          compareOutputGraph(p, historyHandler.graph)
       }
     case PrintCode(nodeId) =>
         logger writeln ("Code :\n" + dg2ast.code(graph, nodeId))
