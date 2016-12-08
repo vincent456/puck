@@ -114,6 +114,7 @@ class PuckControl
     }
   }
 
+  def search() : Unit = SearchDialog(this)
 
   def loadConf(file : File) : Unit =  loadConf(ConfigParser(file))
   def loadConf(cfg : Config) : Unit = {

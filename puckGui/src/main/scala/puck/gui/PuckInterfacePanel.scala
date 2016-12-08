@@ -262,77 +262,8 @@ class PuckInterfacePanel
 
     }
 
-
-    type ControlBuilder = (DependencyGraph, ConstraintsMaps, VirtualNodePolicy) => SearchControl[DecoratedGraph[Any]]
-    type StrategyBuilder = () => SearchStrategy[DecoratedGraph[Any]]
-
-
-    import control.graphUtils
-    val controlCB = new ComboBox[ControlBuilder](List(
-      new ControlBuilder {
-        override val toString = "Control with Heuristic"
-        def apply(dg : DependencyGraph, cm : ConstraintsMaps, virtualNodePolicicy : VirtualNodePolicy) =
-          new ControlWithHeuristic(graphUtils.Rules, dg, cm, virtualNodePolicicy,
-            graphUtils.violationsKindPriority).
-            asInstanceOf[SearchControl[DecoratedGraph[Any]]]
-      },
-      new ControlBuilder {
-        override val toString = "Blind control"
-        def apply(dg : DependencyGraph, cm : ConstraintsMaps, virtualNodePolicicy : VirtualNodePolicy) =
-          new BlindControl(graphUtils.Rules, dg, cm,
-            virtualNodePolicicy, graphUtils.violationsKindPriority).
-            asInstanceOf[SearchControl[DecoratedGraph[Any]]]
-      }
-    )) {
-      minimumSize = new Dimension(leftWidth, 30)
-      maximumSize = minimumSize
-      preferredSize = minimumSize
-    }
-
-
-
-    val strategyCB =  new ComboBox(List[StrategyBuilder](
-      new (() => SearchStrategy[DecoratedGraph[Any]]) {
-        override val toString = "Depth-first Strategy"
-        def apply() = new DepthFirstSearchStrategy()
-      },
-      new (() => SearchStrategy[DecoratedGraph[Any]]) {
-        override val toString = "A* Strategy"
-        def apply() = {
-          val f = control.chooseMetric
-          new AStarSearchStrategy(DecoratedGraphEvaluator.equalityByMapping(x => f(x).toDouble))
-        }
-      },
-      new (() => SearchStrategy[DecoratedGraph[Any]]) {
-        override val toString = "Breadth-first Strategy"
-        def apply() = new BreadthFirstSearchStrategy()
-      }
-    )) {
-      minimumSize = new Dimension(leftWidth, 30)
-      maximumSize = minimumSize
-      preferredSize = minimumSize
-    }
-
-    val vnStrategyCB =  new ComboBox(List[VirtualNodePolicy](NoVirtualNodes, WithVirtualNodes)) {
-      minimumSize = new Dimension(leftWidth, 30)
-      maximumSize = minimumSize
-      preferredSize = minimumSize
-    }
-
-    contents += controlCB
-    contents += strategyCB
-    contents += vnStrategyCB
     contents += makeButton("Search", ""){
-      () =>
-        control.constraints foreach {
-          cm =>
-            val s = strategyCB.selection.item()
-            val vns = vnStrategyCB.selection.item
-            val c = controlCB.selection.item(control.graph.newGraph(mutabilitySet = control.mutabilitySet), cm, vns)
-            Swing onEDT new AutoSolveAction(control.Bus, cm, control.printingOptionsControl,
-              s, c)(control.graphUtils, control.nodeKindIcons).apply()
-        }
-
+      () => control.search()
     }
 
     contents += makeButton("Show recording", ""){
