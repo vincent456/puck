@@ -28,7 +28,8 @@ package puck.piccolo
 
 import org.piccolo2d.PCanvas
 import org.piccolo2d.extras.swing.PScrollPane
-import puck.gui.{GraphFocus, GraphStackEvent, NodeKindIcons, Popped, PuckControl, PuckMainPanel, Pushed, TreeViewHandler, ViewHandler}
+import puck.control._
+import puck.view.{NodeKindIcons, PuckMainPanel, TreeViewHandler, ViewHandler}
 
 import scala.swing.Publisher
 

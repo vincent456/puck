@@ -32,7 +32,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.module.Module
 import puck.graph.GraphUtils
 import puck.graph.io.{DG2AST, PrintingOptions}
-import puck.gui.svg.{SVGPanel, SVGController}
+import puck.view.svg.{SVGPanel, SVGController}
 
 /**
   * Created by Loïc Girault on 17/11/15.

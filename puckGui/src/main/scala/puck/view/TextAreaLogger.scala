@@ -24,29 +24,26 @@
  * Author of this file : Loïc Girault
  */
 
-package puck
+package puck.view
 
-import java.awt.Dimension
-import javax.swing.UIManager
+import puck.util.{PuckLogger, PuckLog}
 
-import puck.graph.GraphUtils
-import puck.view.{NodeKindIcons, PuckMainPanel}
+import scala.swing.TextArea
 
-import scala.swing.{MainFrame, SwingApplication}
+class TextAreaLogger
+( val console : TextArea,
+  val askPrint : PuckLog.Verbosity => Boolean
+  ) extends PuckLogger {
 
-class PuckApplication
-  (gu : GraphUtils,
-   treeIcons : NodeKindIcons)
-  extends SwingApplication{
-
-  def startup(args: Array[String]) : Unit = {
-    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
-    if (top.size == new Dimension(0,0)) top.pack()
-    top.visible = true
+  def writeln(msg : => Any)(implicit v : PuckLog.Verbosity) : Unit = {
+    if(mustPrint(v)) {
+      console.append(preMsg(v) + msg)
+      console.append(System.lineSeparator())
+    }
   }
-
-  val top = new MainFrame {
-    title = "Puck"
-    contents  = new PuckMainPanel(gu, treeIcons)
+  def write(msg : => Any)(implicit v : PuckLog.Verbosity) : Unit = {
+    if(mustPrint(v)) {
+      console.append(preMsg(v) + msg)
+    }
   }
 }

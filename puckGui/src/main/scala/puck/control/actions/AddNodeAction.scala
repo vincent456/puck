@@ -24,29 +24,30 @@
  * Author of this file : Loïc Girault
  */
 
-package puck
+package puck.control.actions
 
-import java.awt.Dimension
-import javax.swing.UIManager
 
-import puck.graph.GraphUtils
-import puck.view.{NodeKindIcons, PuckMainPanel}
+import puck.control.PushGraph
+import puck.graph.{ConcreteNode, DependencyGraph, GraphUtils, NodeKind}
 
-import scala.swing.{MainFrame, SwingApplication}
+import scala.swing.{Action, Publisher}
 
-class PuckApplication
-  (gu : GraphUtils,
-   treeIcons : NodeKindIcons)
-  extends SwingApplication{
+class AddNodeAction
+(bus : Publisher,
+ host : ConcreteNode,
+ childKind : NodeKind)
+(implicit graph : DependencyGraph,
+ graphUtils: GraphUtils)
+extends Action(s"Add $childKind")
+{
 
-  def startup(args: Array[String]) : Unit = {
-    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
-    if (top.size == new Dimension(0,0)) top.pack()
-    top.visible = true
-  }
+  import graphUtils.{Rules => TR}
 
-  val top = new MainFrame {
-    title = "Puck"
-    contents  = new PuckMainPanel(gu, treeIcons)
+  def apply(): Unit = {
+    showInputDialog(s"New $childKind name:").foreach {
+      childName =>
+        val (n, g) = TR.intro(graph.mileStone, childName, childKind)
+        bus publish PushGraph(g.addContains(host.id, n.id))
+    }
   }
 }

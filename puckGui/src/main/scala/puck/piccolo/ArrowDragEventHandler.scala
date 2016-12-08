@@ -27,8 +27,8 @@
 package puck.piccolo
 
 import org.piccolo2d.event.{PDragEventHandler, PInputEvent}
-import puck.actions.RedirectAction
-import puck.gui.{Log, PuckControl}
+import puck.control.{Log, PuckControl}
+import puck.control.actions.RedirectAction
 import puck.piccolo.util.IdIconTextNode
 
 /**
@@ -57,9 +57,6 @@ class ArrowDragEventHandler
     val pos = event.getPosition
     val path = canvas.getCamera.pick(pos.getX, pos.getY, 1)
     val uses = event.getPickedNode.asInstanceOf[PUses]
-//    println( path.getPickedNode())
-//    println( path.nextPickedNode())
-//    println()
     path.getPickedNode match {
       case n : IdIconTextNode if uses.target.id != n.id =>
         control.graph.isAbstraction(uses.target.id, n.id) match {

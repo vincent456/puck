@@ -24,29 +24,34 @@
  * Author of this file : Loïc Girault
  */
 
-package puck
+package puck.control.actions
 
-import java.awt.Dimension
-import javax.swing.UIManager
+import puck.graph.{GraphUtils, DependencyGraph, ConcreteNode, DGNode}
 
-import puck.graph.GraphUtils
-import puck.view.{NodeKindIcons, PuckMainPanel}
+import scala.swing.{Action, Publisher}
 
-import scala.swing.{MainFrame, SwingApplication}
+case class MergeAction
+(controller : Publisher,
+ consumed : DGNode,
+ consumer : ConcreteNode)
+(implicit graph : DependencyGraph,
+ graphUtils: GraphUtils)
+  extends Action(s"Merge $consumed into this") {
 
-class PuckApplication
-  (gu : GraphUtils,
-   treeIcons : NodeKindIcons)
-  extends SwingApplication{
+  import graphUtils.{Rules => TR}
 
-  def startup(args: Array[String]) : Unit = {
-    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
-    if (top.size == new Dimension(0,0)) top.pack()
-    top.visible = true
-  }
+  def apply(): Unit =
+    printErrOrPushGraph(controller,"Merge action failure") {
 
-  val top = new MainFrame {
-    title = "Puck"
-    contents  = new PuckMainPanel(gu, treeIcons)
-  }
+      val sConsumerHost= graph.container(consumer.id)
+      val tg =
+        if(graph.container(consumed.id) != sConsumerHost) {
+          val ma = new MoveAction(controller, graph.getConcreteNode(sConsumerHost.get), List(consumed.id))
+          ma.doMove
+        }
+        else puck.graph.LoggedSuccess(graph.mileStone)
+
+      tg flatMap (TR.merge.mergeInto(_, consumed.id, consumer.id))
+    }
+
 }

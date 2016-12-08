@@ -24,47 +24,50 @@
  * Author of this file : Loïc Girault
  */
 
-package puck
+package puck.view
 
-import java.awt.geom.Rectangle2D
 
-import org.piccolo2d.util.PBounds
-import puck.graph.{DependencyGraph, NodeId}
-import puck.view.NodeKindIcons
-import puck.piccolo.util.IdIconTextNode
+import puck.control.{ConstraintsUpdate, GraphStackEvent}
+import puck.graph._
+import puck.graph.constraints.ConstraintsMaps
+import puck.view.explorer.GraphExplorer
+
+import scala.swing._
 
 /**
-  * Created by Loïc Girault on 31/05/16.
+  * Created by Loïc Girault on 26/01/16.
   */
-package object piccolo {
 
-  val PROPERTY_GLOBAL_COORDONATE = "global_coordonate"
-  val PROPERTY_CODE_GLOBAL_COORDONATE : Int = 1 << 11
+object TreeViewHandler extends ViewHandler {
+  override def toString = "Tree View"
 
-  implicit class BoundsOp(val b: PBounds) extends AnyVal {
-    def copy(x: Double = b.getX, y: Double = b.getY,
-             width: Double = b.getWidth,
-             height: Double = b.getHeight) = new PBounds(x, y, width, height)
+  def installView(mainPanel: PuckMainPanel, treeIcons: NodeKindIcons) : Publisher = {
+    new TreeViewHandler(mainPanel,
+      new GraphExplorer(mainPanel.control, treeIcons))
 
-    def rectangle : Rectangle2D =
-      new Rectangle2D.Double(b.getX, b.getY, b.getWidth, b.getHeight)
-  }
-
-  def squareSide(numChild : Int ) : Int = {
-
-    def aux(i : Int) : Int =
-      if(i * i >= numChild) i
-      else aux(i + 1)
-
-    aux(1)
-  }
-
-  def DGTitleNode
-  (g : DependencyGraph, nid : NodeId, icons : NodeKindIcons): IdIconTextNode = {
-    val n = g.getNode(nid)
-    import puck.graph.ShowDG._
-    IdIconTextNode(nid,
-      (g, n).shows(desambiguatedLocalName),
-      icons.iconOfKind(n.kind).getImage)
   }
 }
+
+class TreeViewHandler
+  (mainPanel : PuckMainPanel,
+   graphExplorer : Component)
+  extends Publisher {
+
+  import mainPanel.control
+
+
+  this listenTo control.Bus
+
+  reactions += {
+    case _: GraphStackEvent => update(control.graph, control.constraints)
+    case ConstraintsUpdate(g, cm) => update(g, Some(cm))
+  }
+
+
+  mainPanel.upPanel.setGraphView(graphExplorer)
+
+  def update(graph : DependencyGraph, constraints : Option[ConstraintsMaps]) : Unit =
+    mainPanel.downPanel.setConstraintViolationExplorer(graph, constraints)
+
+}
+

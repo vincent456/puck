@@ -38,7 +38,7 @@ import com.intellij.psi.search.FilenameIndex
 import com.intellij.ui.content.ContentManager
 import puck.graph.ConcreteNode
 import puck.graph.io._
-import puck.gui.svg.{SVGPanel, SVGController}
+import puck.view.svg.{SVGPanel, SVGController}
 import puck.intellij.graphBuilding.IntellijGraphBuilder
 import puck.javaGraph._
 

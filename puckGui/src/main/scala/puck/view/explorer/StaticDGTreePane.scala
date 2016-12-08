@@ -24,47 +24,47 @@
  * Author of this file : Loïc Girault
  */
 
-package puck
+package puck.view.explorer
 
-import java.awt.geom.Rectangle2D
+import javax.swing.JTree
 
-import org.piccolo2d.util.PBounds
-import puck.graph.{DependencyGraph, NodeId}
+import puck.graph.{DGNode, DependencyGraph, NodeId}
 import puck.view.NodeKindIcons
-import puck.piccolo.util.IdIconTextNode
 
+import scala.swing.{BorderPanel, Component, Label, ScrollPane}
+import scala.swing.BorderPanel.Position
 /**
-  * Created by Loïc Girault on 31/05/16.
+  * Created by Loïc Girault on 01/02/16.
   */
-package object piccolo {
+class StaticDGTreePane
+( graph : DependencyGraph,
+  focus : Set[NodeId],
+  header : Label)
+(implicit treeIcons : NodeKindIcons)
+  extends  BorderPanel {
 
-  val PROPERTY_GLOBAL_COORDONATE = "global_coordonate"
-  val PROPERTY_CODE_GLOBAL_COORDONATE : Int = 1 << 11
+  def this(graph : DependencyGraph,
+      focus : Set[NodeId],
+      title : String,
+      sTooltipText : Option[String] = None)(
+    implicit treeIcons : NodeKindIcons) =
+    this(graph, focus, new Label(title) {
+      sTooltipText foreach (this.tooltip = _)
+    })
 
-  implicit class BoundsOp(val b: PBounds) extends AnyVal {
-    def copy(x: Double = b.getX, y: Double = b.getY,
-             width: Double = b.getWidth,
-             height: Double = b.getHeight) = new PBounds(x, y, width, height)
+  add(header, Position.North)
 
-    def rectangle : Rectangle2D =
-      new Rectangle2D.Double(b.getX, b.getY, b.getWidth, b.getHeight)
+  val tree =
+    new JTree(TreeModelAdapter.subGraph(graph, focus)) with DGTree {
+
+    override def convertNodeToText(n : DGNode) : String =
+      n.name + (if (focus contains n.id) " *" else "")
+    def icons : NodeKindIcons = treeIcons
+
   }
 
-  def squareSide(numChild : Int ) : Int = {
+  def selecteNodes = tree.selectedNodes
 
-    def aux(i : Int) : Int =
-      if(i * i >= numChild) i
-      else aux(i + 1)
+  add(new ScrollPane (Component.wrap(tree)), Position.Center)
 
-    aux(1)
-  }
-
-  def DGTitleNode
-  (g : DependencyGraph, nid : NodeId, icons : NodeKindIcons): IdIconTextNode = {
-    val n = g.getNode(nid)
-    import puck.graph.ShowDG._
-    IdIconTextNode(nid,
-      (g, n).shows(desambiguatedLocalName),
-      icons.iconOfKind(n.kind).getImage)
-  }
 }

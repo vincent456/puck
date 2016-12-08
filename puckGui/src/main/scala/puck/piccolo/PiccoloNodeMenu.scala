@@ -26,9 +26,10 @@
 
 package puck.piccolo
 
+import puck.control._
 import puck.graph.DependencyGraph
-import puck.gui.menus.ConcreteNodeMenu
-import puck.gui.{Collapse, ExpandAll, FocusExpand, Hide, NodeClicked, NodeKindIcons, PrintCode, PuckControl, actionToMenuItem}
+import puck.view.menus.ConcreteNodeMenu
+import puck.view.{NodeKindIcons, actionToMenuItem}
 
 import scala.swing.{Action, PopupMenu, Publisher}
 

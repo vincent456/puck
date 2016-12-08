@@ -24,29 +24,15 @@
  * Author of this file : Loïc Girault
  */
 
-package puck
+package puck.view
 
-import java.awt.Dimension
-import javax.swing.UIManager
+import javax.swing.ImageIcon
 
-import puck.graph.GraphUtils
-import puck.view.{NodeKindIcons, PuckMainPanel}
+import puck.graph.NodeKind
 
-import scala.swing.{MainFrame, SwingApplication}
-
-class PuckApplication
-  (gu : GraphUtils,
-   treeIcons : NodeKindIcons)
-  extends SwingApplication{
-
-  def startup(args: Array[String]) : Unit = {
-    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
-    if (top.size == new Dimension(0,0)) top.pack()
-    top.visible = true
-  }
-
-  val top = new MainFrame {
-    title = "Puck"
-    contents  = new PuckMainPanel(gu, treeIcons)
-  }
+/**
+  * Created by Loïc Girault on 29/01/16.
+  */
+trait NodeKindIcons {
+  def iconOfKind(k: NodeKind ) : ImageIcon
 }

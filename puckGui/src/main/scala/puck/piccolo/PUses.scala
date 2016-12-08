@@ -6,8 +6,8 @@ import java.beans.{PropertyChangeEvent, PropertyChangeListener}
 
 import org.piccolo2d.{PLayer, PNode}
 import org.piccolo2d.extras.nodes.PComposite
+import puck.control.PuckControl
 import puck.graph.NodeIdP
-import puck.gui.PuckControl
 import puck.piccolo.util.{Arrow, Circle, FullTriangle}
 
 import scala.collection.mutable

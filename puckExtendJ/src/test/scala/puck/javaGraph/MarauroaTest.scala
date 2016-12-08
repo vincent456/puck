@@ -38,7 +38,7 @@ import puck.config.Config.{Keys, Root, SingleFile}
 import puck.graph.constraints.search.NoVirtualNodes
 import puck.graph.transformations.rules.Redirection
 import puck.graph.{AccessAbstraction, LoggedSuccess, NodeId, SupertypeAbstraction}
-import puck.gui.PuckMainPanel
+import puck.view.PuckMainPanel
 import org.extendj.ExtendJGraphUtils._
 import org.extendj.{ExtendJGraphUtils, JavaProject}
 import puck.javaGraph.nodeKind.Interface

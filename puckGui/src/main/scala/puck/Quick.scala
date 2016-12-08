@@ -56,7 +56,7 @@ object Quick {
 
     val f = Future {
       val canvas = new JSVGCanvas()
-      canvas.setDocument(gui.svg.documentFromStream(pipedInput))
+      canvas.setDocument(view.svg.documentFromStream(pipedInput))
       new JFrame(title) {
         val screenSize = Toolkit.getDefaultToolkit.getScreenSize
         screenSize.height = screenSize.height - 40

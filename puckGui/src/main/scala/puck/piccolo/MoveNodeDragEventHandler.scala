@@ -30,8 +30,8 @@ import java.{util => jutil}
 
 import org.piccolo2d.{PLayer, PNode, PRoot}
 import org.piccolo2d.event.{PDragEventHandler, PInputEvent}
-import puck.actions.MoveAction
-import puck.gui.PuckControl
+import puck.control.PuckControl
+import puck.control.actions.MoveAction
 import puck.piccolo.util.IdIconTextNode
 
 

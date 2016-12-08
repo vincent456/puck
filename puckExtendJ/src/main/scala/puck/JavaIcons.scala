@@ -29,7 +29,7 @@ package puck
 import javax.swing.ImageIcon
 
 import puck.graph.{AGRoot, NodeKind}
-import puck.gui.NodeKindIcons
+import puck.view.NodeKindIcons
 import puck.javaGraph.nodeKind._
 
 /**

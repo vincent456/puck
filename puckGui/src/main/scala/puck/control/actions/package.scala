@@ -24,29 +24,29 @@
  * Author of this file : Loïc Girault
  */
 
-package puck
+package puck.control
 
-import java.awt.Dimension
-import javax.swing.UIManager
+import javax.swing.JOptionPane
 
-import puck.graph.GraphUtils
-import puck.view.{NodeKindIcons, PuckMainPanel}
+import puck.graph._
 
-import scala.swing.{MainFrame, SwingApplication}
+import scala.swing.Publisher
 
-class PuckApplication
-  (gu : GraphUtils,
-   treeIcons : NodeKindIcons)
-  extends SwingApplication{
+/**
+  * Created by Loïc Girault on 15/12/15.
+  */
+package object actions {
 
-  def startup(args: Array[String]) : Unit = {
-    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
-    if (top.size == new Dimension(0,0)) top.pack()
-    top.visible = true
+  def showInputDialog(msg : String, initialValue: String = "") : Option[String] = {
+    val childName = JOptionPane.showInputDialog(msg, initialValue)
+    if (childName == null || childName.isEmpty) None
+    else Some(childName)
   }
 
-  val top = new MainFrame {
-    title = "Puck"
-    contents  = new PuckMainPanel(gu, treeIcons)
-  }
+  def printErrOrPushGraph
+  (publisher : Publisher, msg : String )
+  ( lgt : LoggedTry[DependencyGraph]) : Unit =
+    publisher publish PrintErrOrPushGraph(msg, lgt)
+
+
 }

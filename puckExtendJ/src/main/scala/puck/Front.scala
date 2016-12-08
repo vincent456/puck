@@ -39,7 +39,7 @@ import javax.swing.UIManager
 
 import org.extendj.ExtendJGraphUtils
 import puck.config.Config
-import puck.gui.PuckMainPanel
+import puck.view.PuckMainPanel
 
 import scala.swing.{MainFrame, SwingApplication}
 

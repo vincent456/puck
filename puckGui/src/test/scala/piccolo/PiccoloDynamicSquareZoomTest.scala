@@ -33,7 +33,7 @@ import org.piccolo2d.util.PBounds
 import org.piccolo2d.{PCanvas, PNode, PRoot}
 import puck._
 import puck.graph._
-import puck.gui.NodeKindIcons
+import puck.view.NodeKindIcons
 import puck.piccolo.util.{TitledGridSquareNode, ViewCommands}
 import puck.piccolo.{DGPNode, squareSide}
 

@@ -25,9 +25,10 @@
  */
 
 package puck.piccolo
-import puck.gui.{NodeKindIcons, PuckControl}
+import puck.view.NodeKindIcons
 import org.piccolo2d.event.{PBasicInputEventHandler, PInputEvent}
 import org.piccolo2d.{PCanvas, PLayer, PNode}
+import puck.control.PuckControl
 import puck.graph._
 import puck.graph.transformations.Transformation.ChangeSource
 import puck.graph.transformations.{Edge, RenameOp, Transformation}

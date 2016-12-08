@@ -4,7 +4,7 @@ import java.awt.event.WindowEvent
 import java.io.{File, FileWriter}
 
 import org.extendj.ExtendJGraphUtils.{dotHelper, Rules, violationsKindPriority}
-import puck.actions.Choose
+import puck.control.actions.Choose
 import puck.graph.Metrics._
 import puck.graph.{ConcreteNode, DecoratedGraph, DependencyGraph, LoggedTG, MutabilitySet, NodeId}
 import puck.graph.transformations.Recording
