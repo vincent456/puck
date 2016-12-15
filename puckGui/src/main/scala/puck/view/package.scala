@@ -29,10 +29,12 @@ package puck
 import java.awt.MouseInfo
 import java.awt.event.MouseEvent
 import java.io.File
+import java.net.URL
 import javax.swing._
 
 import scala.swing.Action
 import scala.swing._
+import scala.swing.event.MouseClicked
 
 /**
   * Created by Loïc Girault on 17/12/15.
@@ -79,5 +81,17 @@ package object view {
     new Button(new Action(name){
       def apply() = action()
     })
+
+  val addimg = getClass.getResource("/icons/add.png")
+  val deleteimg = getClass.getResource("/icons/delete.png")
+  val editimg = getClass.getResource("/icons/edit.png")
+
+  def buttonLabel(img : URL)(action : => Unit) = new Label {
+    icon = new ImageIcon(img)
+    listenTo(mouse.clicks)
+    reactions += {
+      case mc@MouseClicked(_, _, _, _, _) => action
+    }
+  }
 
 }

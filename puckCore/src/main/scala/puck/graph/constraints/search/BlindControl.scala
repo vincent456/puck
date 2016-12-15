@@ -37,8 +37,6 @@ class TargetedBlindControl
 
 }
 
-import scala.collection.mutable
-
 class BlindControl
 (val rules: TransformationRules,
  val initialGraph: DependencyGraph,
@@ -57,29 +55,12 @@ class BlindControl
     else if(!isForbidden(g, violationTarget.id)) Seq(LoggedSuccess((g, None)))
     else decorate(nextStates(violationTarget)(g.mileStone), Some(violationTarget))
 
-  private [this] val nextStates_ = mutable.Map[DecoratedGraph[Option[ConcreteNode]],
-    Seq[LoggedTry[DecoratedGraph[Option[ConcreteNode]]]]]()
 
-  def nextStates(state : DecoratedGraph[Option[ConcreteNode]]) : Seq[LoggedTry[DecoratedGraph[Option[ConcreteNode]]]] = {
-
-    nextStates_ get state match {
-      case None =>
-        val ns = state match {
-          case (g, Some(violationTarget)) => nextStates(g)(violationTarget)
-          case (g, None) => findTargets(g) flatMap nextStates(g)
-        }
-
-        nextStates_ += (state -> ns)
-
-        ns
-
-      case Some(ns) =>
-        println("nextStates cache hit !")
-        ns
-
+  def nextStates(state : DecoratedGraph[Option[ConcreteNode]]) : Seq[LoggedTry[DecoratedGraph[Option[ConcreteNode]]]] =
+    state match {
+      case (g, Some(violationTarget)) => nextStates(g)(violationTarget)
+      case (g, None) => findTargets(g) flatMap nextStates(g)
     }
-  }
-
 
 }
 

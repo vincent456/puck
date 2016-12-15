@@ -26,9 +26,7 @@
 
 package puck.view
 import puck._
-import java.awt.geom.{Area, RoundRectangle2D}
-import java.awt.{Color, RenderingHints, BasicStroke}
-import javax.swing.border.AbstractBorder
+import java.awt.Color
 import javax.swing.ImageIcon
 
 import puck.Project
@@ -37,28 +35,10 @@ import puck.config.Config._
 
 import scala.swing._
 import scala.swing.event.MouseClicked
-
 import puck.util.FileHelper.FileOps
-abstract class SettingLinePanel(val text : String, img : java.net.URL)
-  extends BoxPanel(Orientation.Horizontal){
-  def action(mc : MouseClicked) : Unit
-  contents += new Label(text)
-  contents += Swing.HGlue
-  contents += new Label {
-    icon = new ImageIcon(img)
-    listenTo(mouse.clicks)
-    reactions += {
-      case mc@MouseClicked(_, _, _, _, _) => action(mc)
-    }
-  }
-}
+import puck.view.util.{BubbleBorder, LabelImageHGlued}
 
-object SettingsPanel {
-  val addimg = getClass.getResource("/icons/add.png")
-  val deleteimg = getClass.getResource("/icons/delete.png")
-  val editimg = getClass.getResource("/icons/edit.png")
-}
-import SettingsPanel._
+
 class FileKeyPanel(project : Project, k : FileKey)
   extends BoxPanel(Orientation.Vertical) {
 
@@ -68,7 +48,7 @@ class FileKeyPanel(project : Project, k : FileKey)
   })
 
   border = new BubbleBorder(Color.BLACK, 1, 8)
-  val line = new SettingLinePanel(k.v, editimg) {
+  val line = new LabelImageHGlued(k.v, editimg) {
     def action(mc : MouseClicked) : Unit = {
       val fc = new FileChooser(project.workspace){
         title = k.v
@@ -114,7 +94,7 @@ class FileListSelectionPanel(project : Project, k : FileListKey)
       entries = Seq("Directory", ".java", ".jar"),
       initial = ".java")
 
-  contents += new SettingLinePanel(k.v, addimg) {
+  contents += new LabelImageHGlued(k.v, addimg) {
     def action(mc : MouseClicked) : Unit =
       if(!isRightClick(mc.peer)){
         val fc = new FileChooser(project.workspace)
@@ -146,7 +126,7 @@ class FileListSelectionPanel(project : Project, k : FileListKey)
   contents += new Separator()
 
   def add(ff : FileFinder) : Unit =
-    ignore(contents += new SettingLinePanel(ff.path, deleteimg) {
+    ignore(contents += new LabelImageHGlued(ff.path, deleteimg) {
       def action(mc : MouseClicked) : Unit =
         if(!isRightClick(mc.peer)){
           project.remove(k, ff)
@@ -171,64 +151,5 @@ class SettingsPanel(project : Project)
 
 }
 
-import java.awt.{Component, Graphics}
-
-class BubbleBorder
-( color: Color,
-  thickness : Double,
-  radii : Double ) extends AbstractBorder {
-
-  val stroke = new BasicStroke(thickness.toFloat)
-  val strokePad : Double = thickness / 2d
-  val hints = new RenderingHints (
-    RenderingHints.KEY_ANTIALIASING,
-    RenderingHints.VALUE_ANTIALIAS_ON)
-
-  val insets : Insets = {
-    val pad = radii.toInt + strokePad.toInt
-    new Insets(pad, pad, pad, pad)
-  }
 
 
-  def this(color : Color) =  this(color, 4, 8)
-
-  override def getBorderInsets(c : Component) : Insets= insets
-
-  override def getBorderInsets(c : Component, insets: Insets) : Insets =
-    getBorderInsets(c)
-
-  override def paintBorder(c : Component, g : Graphics,
-                           x : Int, y : Int, width : Int, height : Int) = {
-
-    val g2 = g.asInstanceOf[Graphics2D]
-
-    val bottomLineY = height - thickness
-
-    val bubble = new RoundRectangle2D.Double(
-      0d + strokePad,
-      0d + strokePad,
-      width.toDouble - thickness,
-      bottomLineY,
-      radii,
-      radii)
-
-    g2.setRenderingHints(hints)
-
-    // Paint the BG color of the parent, everywhere outside the clip
-    // of the text bubble.
-    Option(c.getParent).foreach {
-      parent =>
-        val bg = parent.getBackground
-        val rect = new Rectangle(0,0,width, height)
-        val borderRegion = new Area(rect)
-        g2.setClip(borderRegion)
-        g2.setColor(bg)
-        g2.fillRect(0, 0, width, height)
-        g2.setClip(null)
-    }
-
-    g2.setColor(color)
-    g2.setStroke(stroke)
-    g2.draw(bubble)
-  }
-}

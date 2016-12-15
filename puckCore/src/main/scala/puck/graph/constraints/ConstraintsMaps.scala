@@ -75,22 +75,36 @@ object ConstraintsMaps {
 
 import ConstraintsMaps.forAncestors
 case class ConstraintsMaps
-( namedSets : Map[String, NamedRangeSet],
-  friendConstraints : FriendConstraintMap,
-  hideConstraints : HideConstraintMap ) {
+(namedSets : Map[String, NamedRangeSet],
+ friendConstraintsMap : FriendConstraintMap,
+ hideConstraintsMap : HideConstraintMap ) {
 
+
+  private def constraintSet( m : Map [Range, ConstraintSet]) : List[Constraint] =
+    m.foldLeft(List.empty[Constraint]){
+      case (acc0, (k, cs)) =>
+        cs.foldLeft(acc0){
+          case (acc1, c) =>
+            if(c.owners.head == k) c :: acc1
+            else acc1
+        }
+    }
+
+  def hideConstraints = constraintSet(hideConstraintsMap)
+
+  def friendConstraints = constraintSet(friendConstraintsMap)
 
 
   def addHideConstraint(ct : Constraint) =
-    copy(hideConstraints = addConstraintToMap(hideConstraints, ct))
+    copy(hideConstraintsMap = addConstraintToMap(hideConstraintsMap, ct))
 
   def addFriendConstraint(ct : Constraint) =
-    copy(friendConstraints = addConstraintToMap(friendConstraints, ct))
+    copy(friendConstraintsMap = addConstraintToMap(friendConstraintsMap, ct))
 
 
   def friendOf(graph : DependencyGraph, node : NodeId, befriended : NodeId) : Boolean =
     forAncestors(graph, befriended){ befriended0 =>
-      val frCtSet = friendConstraints.getOrElse(befriended0, ConstraintSet.empty)
+      val frCtSet = friendConstraintsMap.getOrElse(befriended0, ConstraintSet.empty)
       frCtSet.hasFriendRangeThatContains_*(graph, node)
     }
 
@@ -98,7 +112,7 @@ case class ConstraintsMaps
   def interloperOf(graph : DependencyGraph, user : NodeId, used : NodeId) : Boolean =
     forAncestors(graph, used){ used1 =>
       !graph.contains_*(used1.nid, user) &&
-        hideConstraints.getOrElse(used1, Iterable.empty).exists(_.forbid(graph, user, used))
+        hideConstraintsMap.getOrElse(used1, Iterable.empty).exists(_.forbid(graph, user, used))
     }
 
 
@@ -198,7 +212,7 @@ case class ConstraintsMaps
     }
 
 
-    this.copy(hideConstraints = aux(Element(node), aux(Scope(node), hideConstraints)))
+    this.copy(hideConstraintsMap = aux(Element(node), aux(Scope(node), hideConstraintsMap)))
     ???
   }
 

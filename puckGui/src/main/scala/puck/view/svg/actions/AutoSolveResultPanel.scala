@@ -28,10 +28,10 @@ package puck.view.svg
 package actions
 
 import java.awt.Dimension
-import javax.swing.SwingUtilities
+import javax.swing.{JTree, SwingUtilities}
 
 import puck.control
-import puck.control.{PrintingOptionEvent, PrintingOptionsControl, PrintingOptionsUpdate}
+import puck.control.{NodeClicked, PrintingOptionEvent, PrintingOptionsControl, PrintingOptionsUpdate}
 import puck.graph._
 import puck.graph.constraints.ConstraintsMaps
 import puck.graph.io.VisibilitySet._
@@ -41,6 +41,7 @@ import puck.view.search.{SimpleElementSelector, SortedElementSelector, StateSele
 import puck.piccolo.BasicGraphCanvas
 import puck.search.{Search, SearchState}
 import puck.util._
+import puck.view.explorer.{DGTree, GraphTreeModel, NodeInfosPanel, TreeModelAdapter}
 
 import scala.concurrent.ExecutionContext
 import scala.swing.BorderPanel.Position
@@ -90,10 +91,29 @@ trait GraphPanelResultPanel extends ResultPanel {
     visibilitySet: VisibilitySet.T) : Component =
     new ScrollPane() {
       viewportView =
-        Component.wrap(
-          new BasicGraphCanvas(bus, nodeKindIcons) {
-            def graph: DependencyGraph = g
-        })
+//        Component.wrap(
+//          //[VIEW DISPLAYED]
+//          new BasicGraphCanvas(bus, nodeKindIcons) {
+//            def graph: DependencyGraph = g
+//        })
+          new SplitPane(Orientation.Vertical) {
+            self =>
+            resizeWeight = 0.5
+
+            leftComponent =
+              Component.wrap (
+              new JTree(TreeModelAdapter(g)) with DGTree {
+              def icons: NodeKindIcons = nodeKindIcons
+              addNodeClickedAction {
+                (_, n) =>
+                  self publish NodeClicked(n)
+              }
+            })
+
+            rightComponent = new NodeInfosPanel(self, g)(nodeKindIcons)
+          }
+
+
     }
 
   def selectedResultGraphPanel = {

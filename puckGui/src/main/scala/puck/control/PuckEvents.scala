@@ -70,6 +70,7 @@ case class ExportGraph(f: File) extends PuckEvent
 
 case class SwitchView(handler : ViewHandler) extends PuckEvent
 case class ConstraintDisplayRequest(graph : DependencyGraph) extends PuckEvent
+case object EditConstraints extends PuckEvent
 
 case class GenCode(compareOutput : Boolean) extends PuckEvent
 

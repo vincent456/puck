@@ -26,15 +26,18 @@
 
 package puck.view
 
-import puck.graph.{DependencyGraph, GraphUtils}
+import puck.graph.{DGEdge, DependencyGraph, GraphUtils, Uses}
 import puck.view.explorer.{ForbiddenDependenciesExplorer, NodeInfosPanel}
 import puck.util.PuckLog
 
 import scala.swing._
 import java.awt.Dimension
+import java.awt.event.MouseEvent
 
-import puck.control.{GraphUpdate, PuckControl, Pushed, SwitchView}
+import puck.control._
 import puck.graph.constraints.ConstraintsMaps
+import puck.view.menus.EdgeMenu
+
 import scala.language.reflectiveCalls
 
 object PuckMainPanel{
@@ -62,7 +65,25 @@ class PuckMainPanel(graphUtils: GraphUtils,
 
   val interface = new PuckInterfacePanel(control)
 
-  val nodeInfos = new NodeInfosPanel(control.Bus, control)(nodeKindIcons)
+  val nodeInfos = new NodeInfosPanel(control.Bus,
+                        control.graph)(nodeKindIcons) {
+    override def onEdgeClick(c : Component, evt : MouseEvent, edge : DGEdge) : Unit = {
+      if (isRightClick(evt))
+        Swing.onEDT(new EdgeMenu(control.Bus, edge,
+          control.printingOptionsControl,
+          blurrySelection = false,
+          control.constraints,
+          control.mutabilitySet,
+          control.graph,
+          control.graphUtils,
+          control.nodeKindIcons).show(c, evt.getX, evt.getY))
+      else edge match {
+        case Uses(src,tgt) =>
+          control.Bus publish Log(NodeInfosPanel.useBindings(control.graph, (src, tgt)))
+        case _ => ()
+      }
+    }
+  }
 
 
   object upPanel extends SplitPane(Orientation.Vertical) {

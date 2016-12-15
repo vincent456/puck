@@ -26,6 +26,7 @@
 
 package puck.control
 
+import java.awt.event.WindowEvent
 import java.io.File
 
 import puck._
@@ -42,7 +43,7 @@ import puck.util.{PuckLog, PuckLogger}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.swing.{ProgressBar, Publisher, Reactor, Swing}
+import scala.swing._
 import scala.util.{Failure, Success}
 import scalaz.{-\/, \/-}
 object PuckControl {
@@ -295,6 +296,23 @@ class PuckControl
     case ExportGraph(f) =>
       Swing onEDT CSVPrinter(graph, f)
 
+    case EditConstraints => constraints.foreach {
+      cm =>
+      Swing onEDT puck.ignore{
+        new Frame() {
+          frame =>
+          title = "Search Result"
+          visible = true
+          minimumSize = new Dimension(640, 480)
+          preferredSize = new Dimension(1920, 1084)
+
+          override def close(): Unit =
+            frame.peer.dispatchEvent(new WindowEvent(frame.peer, WindowEvent.WINDOW_CLOSING))
+
+          contents = new puck.view.constraints.ConstraintsMapsPane(graph, cm)(nodeKindIcons)
+        }
+      }
+    }
   }
 
 

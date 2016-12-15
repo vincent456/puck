@@ -98,7 +98,7 @@ case class ConstraintMapBuilder
     ) : ConstraintMapBuilder = {
 
       val ct =
-        new Constraint(befriended, RangeSet.empty(), RangeSet.empty(), friends)
+        new Constraint(befriended, RangeSet.empty, RangeSet.empty, friends)
 
       copy(friendCtsMap = addConstraintToMap(friendCtsMap, ct))
 
@@ -146,7 +146,7 @@ object ConstraintsParser
       case ((nsAcc, litAcc), l : LiteralRangeSet) => (nsAcc, litAcc ++ l)
       case ((nsAcc, litAcc), ns) => (ns +: nsAcc, litAcc)
     }
-    new RangeSetUnion(namedSets, lit)
+    RangeSetUnion(namedSets, lit)
   }
   
   def declarationEnd
@@ -157,7 +157,7 @@ object ConstraintsParser
          cm.addDef( new NamedRangeSetUnion(ident, normalize(list map cm.defs)))
       }
       | rangeList ^^ {
-       list => cm.addDef(new NamedRangeSet(ident,
+       list => cm.addDef(NamedRangeSet(ident,
         LiteralRangeSet(list flatMap cm.findNode)))
     })
 

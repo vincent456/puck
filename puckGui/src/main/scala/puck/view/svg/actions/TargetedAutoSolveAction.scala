@@ -54,11 +54,9 @@ object ResultFrame{
 
     implicit val LoggedSuccess(_, (graph,_)) = res.initialState.loggedResult
 
-    val title = "Solve"
-
     new Frame(){
       frame =>
-
+      title = "Search Result"
       visible = true
       minimumSize = new Dimension(640, 480)
       preferredSize = new Dimension(1920,1084)

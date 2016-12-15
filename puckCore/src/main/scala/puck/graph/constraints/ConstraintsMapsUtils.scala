@@ -46,8 +46,8 @@ object ConstraintsMapsUtils {
   }
 
   def nodesIn(graph: DependencyGraph, cm : ConstraintsMaps): Set[NodeId] = {
-    val s1 = nodesIn(graph, cm.friendConstraints)
-    nodesIn(graph, cm.hideConstraints, s1)
+    val s1 = nodesIn(graph, cm.friendConstraintsMap)
+    nodesIn(graph, cm.hideConstraintsMap, s1)
   }
 
   implicit class GraphOps(val g : DependencyGraph) extends AnyVal {

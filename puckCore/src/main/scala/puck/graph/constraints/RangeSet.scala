@@ -28,7 +28,7 @@ package puck.graph
 package constraints
 
 object RangeSet {
-  def empty() = LiteralRangeSet()
+  val empty = LiteralRangeSet.empty
 }
 
 object RangeBuilder {
@@ -48,7 +48,9 @@ sealed trait Range{
   //def productPrefix : String
   def contains_*(graph: DependencyGraph, other : NodeId) : Boolean
 
+  def toggle : Range
   def toElement : Range
+  def toScope : Range
 }
 case class Scope(nid : NodeId) extends Range {
 
@@ -56,15 +58,19 @@ case class Scope(nid : NodeId) extends Range {
     graph.contains_*(nid, other)
 
   def toElement : Range = Element(nid)
+  def toScope : Range = this
+  def toggle : Range = toElement
 }
 case class Element(nid : NodeId) extends Range {
   def contains_*(graph: DependencyGraph, other : NodeId) =
     nid == other
 
   def toElement : Range = this
+  def toScope : Range = Scope(nid)
+  def toggle : Range = toScope
 }
 
-sealed trait RangeSet extends Iterable[Range] {
+abstract class RangeSet extends Iterable[Range] {
   type GraphT = DependencyGraph
   def +(n : Range) : RangeSet
   def -(n : Range) : RangeSet
@@ -76,6 +82,7 @@ sealed trait RangeSet extends Iterable[Range] {
     this exists (_.contains_*(graph, elem))
 
   def literalCopy() : LiteralRangeSet
+  def setDef : RangeSetDef
 }
 
 case class RootedRangeSet(rs : RangeSet) extends RangeSet {
@@ -85,6 +92,7 @@ case class RootedRangeSet(rs : RangeSet) extends RangeSet {
   def iterator : Iterator[Range] = rs.iterator map (_.toElement)
 
   def literalCopy() : LiteralRangeSet = LiteralRangeSet(this.iterator)
+  def setDef : RangeSetDef = rs.setDef
 }
 
 case class NamedRangeSet private[constraints]
@@ -97,8 +105,8 @@ case class NamedRangeSet private[constraints]
   val declare_post : String = ""
 
   def iterator : Iterator[Range] = setDef.iterator
-  def +(n : Range) = new NamedRangeSet(id, setDef + n)
-  def -(n : Range) = new NamedRangeSet(id, setDef - n)
+  def +(n : Range) = copy(setDef = setDef + n)
+  def -(n : Range) = copy(setDef = setDef - n)
   def literalCopy() = LiteralRangeSet(setDef)
 }
 
@@ -113,6 +121,7 @@ class NamedRangeSetUnion(id0 : String,
 sealed trait RangeSetDef extends RangeSet{
   def +(n : Range) : RangeSetDef
   def -(n : Range) : RangeSetDef
+  def setDef : RangeSetDef = this
 }
 
 case class RangeSetUnion private[constraints]

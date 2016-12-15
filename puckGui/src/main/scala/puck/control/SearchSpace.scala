@@ -68,7 +68,7 @@ class SearchSpace
 
   def toDot(fit : DependencyGraph => Int) : String = {
     val g = sroot map (_.toDot(top.graph.id, fit)) getOrElse """0 [label = "no graph"]"""
-    println(g)
+    //println(g)
     s"digraph G{ rankdir=LR; ranksep=equally; $g }"
   }
 

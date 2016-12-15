@@ -42,31 +42,20 @@ import puck.view._
 
 class NodeInfosPanel
 (bus : Publisher,
- control : PuckControl)
-(implicit treeIcons : NodeKindIcons)
+ graph : => DependencyGraph)
+( implicit treeIcons : NodeKindIcons)
   extends ScrollPane {
 
   this listenTo bus
-  import control.graph
+
+ // def graph = getGraph()
+
+  def onEdgeClick(c : Component, evt : MouseEvent, edge : DGEdge) : Unit = ()
 
   def edgeClick(c : Component, mkEdge : NodeId => DGEdge)(evt : MouseEvent, n : DGNode) : Unit = {
     val edge = mkEdge(n.id)
-    if(graph exists edge) {
-      if (isRightClick(evt))
-        Swing.onEDT(new EdgeMenu(control.Bus, edge,
-          control.printingOptionsControl,
-          blurrySelection = false,
-          control.constraints,
-          control.mutabilitySet,
-          graph,
-          control.graphUtils,
-          control.nodeKindIcons).show(c, evt.getX, evt.getY))
-      else edge match {
-        case Uses(src,tgt) =>
-          bus publish Log(NodeInfosPanel.useBindings(graph, (src, tgt)))
-        case _ => ()
-      }
-    }
+    if(graph exists edge)
+      onEdgeClick(c, evt, edge)
   }
 
   def labelOrTreePane(s : Set[NodeId],

@@ -27,18 +27,18 @@
 package puck.graph
 package constraints
 
-class Constraint(
-  val owners : RangeSet,
-  val facades : RangeSet,
-  val interlopers : RangeSet,
-  val friends : RangeSet ){
+case class Constraint(
+  owners : RangeSet,
+  facades : RangeSet,
+  interlopers : RangeSet,
+  friends : RangeSet ){
 
   type GraphT = DependencyGraph
   
   val predicate : String = "hide"
 
-  def addFriend(friend : Range) =
-    new Constraint(owners, facades, interlopers, friends + friend)
+  def addFriend(friend : Range) = copy(friends = friends + friend)
+
 
   def forbid(graph : GraphT, source : NodeId, target : NodeId): Boolean =
       interlopers.hasRangeThatContains_*(graph, source) &&

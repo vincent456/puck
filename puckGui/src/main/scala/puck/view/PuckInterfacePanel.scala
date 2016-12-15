@@ -167,6 +167,11 @@ class PuckInterfacePanel
       () => publisher publish ConstraintDisplayRequest(control.graph)
     }
 
+    contents += makeButton("Edit constraints",
+      "Edit the constraint"){
+      () => publisher publish EditConstraints
+    }
+
     contents += control.historyHandler.view()
 
     contents += new BoxPanel(Orientation.Horizontal) {
@@ -203,7 +208,7 @@ class PuckInterfacePanel
       this listenTo selection
 
       reactions += {
-        case SelectionChanged(_) =>
+        case SelectionChanged(x) =>
           publisher publish SwitchView(selection.item)
       }
 

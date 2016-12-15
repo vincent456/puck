@@ -59,27 +59,27 @@ object ConstraintsPlParser{
                           facades : RangeSet,
                           interlopers : RangeSet,
                           friends : RangeSet) = {
-      val ct = new Constraint(owners, facades, interlopers, friends)
+      val ct = Constraint(owners, facades, interlopers, friends)
 
-      val hideConstraintsMap = owners.foldLeft(constraintsMap.hideConstraints){
+      val hideConstraintsMap = owners.foldLeft(constraintsMap.hideConstraintsMap){
         case (map, owner) =>
           val s = map.getOrElse(owner, new ConstraintSet())
           map + (owner -> (s + ct) )
       }
-      constraintsMap = constraintsMap.copy(hideConstraints = hideConstraintsMap)
+      constraintsMap = constraintsMap.copy(hideConstraintsMap = hideConstraintsMap)
     }
 
     def addFriendConstraint( friends : RangeSet,
                              befriended : RangeSet) = {
-      val ct = new Constraint(befriended, RangeSet.empty(), RangeSet.empty(), friends)
+      val ct = Constraint(befriended, RangeSet.empty, RangeSet.empty, friends)
 
-      val friendCtsMap = befriended.foldLeft(constraintsMap.friendConstraints){
+      val friendCtsMap = befriended.foldLeft(constraintsMap.friendConstraintsMap){
         case (map, owner) =>
           val s = map.getOrElse(owner, new ConstraintSet())
           map + (owner -> (s + ct) )
       }
 
-      constraintsMap = constraintsMap.copy(friendConstraints = friendCtsMap)
+      constraintsMap = constraintsMap.copy(friendConstraintsMap = friendCtsMap)
     }
   }
 
