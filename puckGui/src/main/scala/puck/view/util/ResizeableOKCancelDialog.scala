@@ -20,13 +20,13 @@ class ResizeableOKCancelDialog
 
     add(new BoxPanel(Orientation.Horizontal) {
       contents += Swing.HGlue
-      contents += Button("OK"){
-        res = JOptionPane.YES_OPTION
+      contents += Button("Cancel"){
+        res = JOptionPane.CANCEL_OPTION
         close()
       }
       contents += Swing.HGlue
-      contents += Button("Cancel"){
-        res = JOptionPane.CANCEL_OPTION
+      contents += Button("OK"){
+        res = JOptionPane.YES_OPTION
         close()
       }
       contents += Swing.HGlue
