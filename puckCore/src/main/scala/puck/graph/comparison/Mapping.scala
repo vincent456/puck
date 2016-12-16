@@ -29,6 +29,7 @@ package puck.graph.comparison
 import java.util.NoSuchElementException
 
 import puck.graph._
+import puck.graph.constraints._
 import puck.graph.transformations._
 
 
@@ -119,15 +120,15 @@ object EqualityWithDebugPrint {
 }
 
 object Mapping {
- mappin =>
+  mappin =>
 
   def typeConstraintVariable(mappin : NodeId => NodeId)(tcv : TypeConstraintVariable) : TypeConstraintVariable=
     tcv match {
-    case TypeOf(id) => TypeOf(mappin(id))
-    case TypeVar(t) => TypeVar(mapType(mappin)(t))
-    case ParTypeProjection(tcv0, idx) =>
-      ParTypeProjection(typeConstraintVariable(mappin)(tcv0), idx)
-  }
+      case TypeOf(id) => TypeOf(mappin(id))
+      case TypeVar(t) => TypeVar(mapType(mappin)(t))
+      case ParTypeProjection(tcv0, idx) =>
+        ParTypeProjection(typeConstraintVariable(mappin)(tcv0), idx)
+    }
 
   def typeConstraint(mappin : NodeId => NodeId)(tuc : TypeConstraint) : TypeConstraint =
     tuc match {
@@ -189,6 +190,35 @@ object Mapping {
       case ChangeTypeOp(typed, oldNamedTypeId, newNamedTypeId) =>
         ChangeTypeOp(map(typed), map(oldNamedTypeId), map(newNamedTypeId))
     }
+  }
+
+  def range(map : NodeId => NodeId, r : Range) : Range = r match {
+    case Scope(nid) => Scope(map(nid))
+    case Element(nid) => Element(map(nid))
+  }
+
+  def rangeSet(map : NodeId => NodeId, rs : NamedRangeSet) : NamedRangeSet =
+    rs match {
+      case NamedRangeSet(id, rsu @ RangeSetUnion(_, _)) =>
+        new NamedRangeSetUnion(id, rangeSet(map, rsu).asInstanceOf[RangeSetUnion])
+      case NamedRangeSet(id, rs0) => NamedRangeSet(id, rangeSet(map, rs0).setDef)
+    }
+
+  def rangeSet(map : NodeId => NodeId, rs : RangeSet) : RangeSet = rs match {
+    case RootedRangeSet(rs0) => RootedRangeSet(rangeSet(map, rs0))
+    case nrs @ NamedRangeSet(_,_) => rangeSet(map, nrs)
+    case RangeSetUnion(sets, set) =>
+      RangeSetUnion(sets map (rangeSet(map,_)),
+        rangeSet(map, set).asInstanceOf[LiteralRangeSet])
+    case RangeSetDiff(p, m) => RangeSetDiff(rangeSet(map, p),rangeSet(map, m))
+    case LiteralRangeSet(rs0) => LiteralRangeSet(rs0 map (range(map,_)))
+  }
+
+  def constraint(map : NodeId => NodeId, ct : Constraint) : Constraint = {
+    Constraint(rangeSet(map, ct.owners),
+      rangeSet(map, ct.facades),
+      rangeSet(map, ct.interlopers),
+      rangeSet(map, ct.friends))
   }
 
   def mapType(mappin : NodeId => NodeId): Type => Type = {

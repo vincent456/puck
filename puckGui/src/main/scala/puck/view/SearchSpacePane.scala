@@ -11,11 +11,11 @@ import puck.control.{GraphChangeEvent, PuckControl, SearchSpace}
 import puck.graph.io.{DotPrinter, Svg}
 import puck.view
 import puck.view.svg.actions.DefaultSwingService
-import puck.view.svg.{PUCKSVGCanvas, SVGNodeMenu}
+import puck.view.svg.PUCKSVGCanvas
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.swing.{Component, FlowPanel, PopupMenu, Swing}
+import scala.swing.{Component, FlowPanel, Swing}
 
 
 /**

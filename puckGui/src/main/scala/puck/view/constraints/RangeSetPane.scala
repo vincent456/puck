@@ -16,10 +16,11 @@ import puck.graph.ShowDG._
   */
 class RangeSetPane
 (graph : DependencyGraph,
- setNames : Seq[String],
- namedSets : Map[String, NamedRangeSet],
+ setNames : => Seq[String],
+ namedSets : String => NamedRangeSet,
  title : String,
- var rangeSet: RangeSet)
+ var rangeSet: RangeSet,
+ namedRangeSetAvailable : Boolean = true)
 (implicit nodeKindIcons : NodeKindIcons)
   extends BorderPanel {
 
@@ -95,7 +96,7 @@ class RangeSetPane
         case NamedRangeSet(_, _) =>
           Dialog.showMessage(message = "Cannot add range to Named Range Set")
         case LiteralRangeSet(_) =>
-            if(setNames.isEmpty) Literal()
+            if(setNames.isEmpty || !namedRangeSetAvailable ) Literal()
             else Dialog.showInput[Choice](
               message = "NamedSet or Literal Set ?",
               entries = Seq(Named, Literal),

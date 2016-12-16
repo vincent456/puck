@@ -28,7 +28,7 @@ package puck.graph
 
 import puck.graph.DependencyGraph.AbstractionMap
 import puck.graph.comparison.RecordingComparatorControl
-import puck.graph.constraints.ConstraintsMaps
+import puck.graph.constraints.{Constraint, ConstraintsMaps, NamedRangeSet}
 import puck.search.{DepthFirstSearchStrategy, SearchEngine}
 import puck.util.{PuckLog, PuckLogger, PuckNoopLogger}
 import puck.graph.transformations.Transformation
@@ -169,6 +169,17 @@ class DependencyGraph private
   def isMutable(n : NodeId) : Boolean = mutabilitySet isMutable n
 
   def comment(msg : String) = newGraph(recording = recording.comment(msg))
+
+  def constraintChange
+  ( constraintsMaps : ConstraintsMaps) : DependencyGraph =
+    newGraph(recording = recording.constraintChange(constraintsMaps))
+
+  def constraintChange
+  (namedSets : Map[String, NamedRangeSet],
+   friendConstraints : List[Constraint],
+   hideConstraints : List[Constraint]) : DependencyGraph  =
+    newGraph(recording = recording.constraintChange(namedSets, friendConstraints, hideConstraints))
+
   def mileStone = newGraph(recording = recording.mileStone)
 
   val rootId : NodeId = 0

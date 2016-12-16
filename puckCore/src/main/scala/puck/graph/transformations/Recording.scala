@@ -27,9 +27,10 @@
 package puck.graph
 package transformations
 
-import java.io.{FileInputStream, ObjectInputStream, FileOutputStream, ObjectOutputStream}
+import java.io.{FileInputStream, FileOutputStream, ObjectInputStream, ObjectOutputStream}
 
 import puck.graph.comparison.Mapping
+import puck.graph.constraints.{Constraint, ConstraintsMaps, NamedRangeSet}
 import puck.util.PuckLogger
 
 
@@ -123,26 +124,41 @@ object Recording {
   (rec : Recording,
    mappin : NodeId => NodeId) : Recording = {
 
-
-    rec.mapTransformation {
+    rec map {
         case Transformation(direction, op) =>
           Transformation(direction, Mapping.operation(mappin, op))
+        case ConstraintsChange(namedSets, frCts, hideCts ) =>
+          ConstraintsChange(
+            namedSets mapValues (Mapping.rangeSet(mappin,_)) ,
+            frCts map  (Mapping.constraint(mappin,_)),
+            hideCts map  (Mapping.constraint(mappin,_))
+          )
+        case r => r
       }
   }
+
 
   implicit class RecordingOps(val record : Recording) extends AnyVal {
 
     def redo(g : DependencyGraph) : DependencyGraph =
       record.reverse.foldLeft(g)((g0, t) => t.redo(g0))
 
-    def mapTransformation(f : Transformation => Transformation) : Recording =
-      record map {
-        case t : Transformation => f(t)
-        case r => r
-      }
-
     def comment(msg : String) : Recording =
       Comment(msg) +: record
+
+    def constraintChange
+    ( constraintsMaps : ConstraintsMaps) : Recording =
+      constraintChange(constraintsMaps.namedSets,
+        constraintsMaps.friendConstraints,
+        constraintsMaps.hideConstraints)
+
+    def constraintChange
+    (namedSets : Map[String, NamedRangeSet],
+     friendConstraints : List[Constraint],
+     hideConstraints : List[Constraint]) : Recording =
+      ConstraintsChange(namedSets,
+        friendConstraints,
+        hideConstraints) +: record
 
     def mileStone : Recording = MileStone +: record
 

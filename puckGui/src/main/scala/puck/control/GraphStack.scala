@@ -28,7 +28,8 @@ package puck.control
 
 import puck._
 import puck.graph.Recording.RecordingOps
-import puck.graph.transformations.MileStone
+import puck.graph.constraints.ConstraintsMaps
+import puck.graph.transformations.{ConstraintsChange, MileStone}
 import puck.graph.{DependencyGraph, Recording}
 import puck.view._
 
@@ -89,6 +90,11 @@ class GraphStack(val bus : Publisher) extends HistoryHandler {
     firePushEvent(oldHead)
   }
 
+  def pushConstraints(cm: ConstraintsMaps ) = {
+    undoStack.push(graph.mileStone.constraintChange(cm))
+    redoStack.clear()
+    bus publish ConstraintsUpdateRequest(cm)
+  }
   override def pushGraph(graph: DependencyGraph) = {
     val oldHead = undoStack.head
     undoStack.push(graph)
@@ -102,16 +108,25 @@ class GraphStack(val bus : Publisher) extends HistoryHandler {
   }
 
   override def load(rec : Recording): Unit = {
+    var newConstraint : Option[ConstraintsChange] = None
+
     val g = rec.reverse.foldLeft(graph) {
       case (g, MileStone) =>
         undoStack.push(g)
         MileStone.redo(g)
+      case (g, ch : ConstraintsChange) =>
+        newConstraint = Some(ch)
+        ch.redo(g)
       case (g, t) => t.redo(g)
     }
     if(!(g eq graph))
       undoStack push g
 
-    bus publish GraphUpdate(graph)
+    newConstraint match {
+      case Some(ct) => bus publish ConstraintsUpdateRequest(ct.toConstraintsMaps)
+      case None => bus publish GraphUpdate(graph)
+
+    }
   }
 
   def view() : Component = new UndoRedoPane(bus, this)

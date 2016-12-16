@@ -1,5 +1,6 @@
 package puck.control
 import puck.graph.Recording.RecordingOps
+import puck.graph.constraints.ConstraintsMaps
 import puck.graph.transformations.MileStone
 import puck.graph.{DependencyGraph, Recording}
 import puck.view.SearchSpacePane
@@ -39,6 +40,11 @@ class SearchSpace
       val oldTop = parent.children.remove(idx)
       top = parent
       oldTop
+  }
+
+  def pushConstraints(cm: ConstraintsMaps ) = {
+    push(graph.mileStone.constraintChange(cm))
+    bus publish ConstraintsUpdateRequest(cm)
   }
 
   def pushGraph(graph: DependencyGraph): Unit = {

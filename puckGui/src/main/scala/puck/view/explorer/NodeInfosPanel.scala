@@ -31,8 +31,7 @@ import java.awt.event.MouseEvent
 
 import puck.graph._
 import ShowDG._
-import puck.control.{Log, NodeClicked, PuckControl}
-import puck.view.menus.EdgeMenu
+import puck.control.NodeClicked
 import puck.util.PuckLog
 
 import scala.swing._

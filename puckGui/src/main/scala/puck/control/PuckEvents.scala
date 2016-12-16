@@ -44,6 +44,7 @@ case class PrintErrOrPushGraph(msg : String, lgt : LoggedTry[DependencyGraph]) e
 case class RewriteHistory(rec : Recording) extends PuckEvent
 case class NodeClicked(node : DGNode) extends PuckEvent
 
+case class ConstraintsUpdateRequest(cm : ConstraintsMaps) extends PuckEvent
 case class ConstraintsUpdate(graph : DependencyGraph, cm : ConstraintsMaps) extends PuckEvent
 
 sealed abstract class GraphChangeEvent extends PuckEvent {

@@ -13,10 +13,11 @@ object ConstraintEditorDialog{
   type RangeName = String
   def apply
   ( graph : DependencyGraph,
-    namedSets : Map[String, NamedRangeSet],
+    setNames : => Seq[String],
+    namedSets : String => NamedRangeSet,
     constraint : Constraint )
   ( implicit nodeKindIcons : NodeKindIcons )  : Option[Constraint] = {
-    val cep = new ConstraintEditorPane(graph, namedSets, constraint)
+    val cep = new ConstraintEditorPane(graph, setNames, namedSets, constraint)
     ResizeableOKCancelDialog(cep) match {
       case Result.Ok => Some(cep.constraint)
       case _ => None
@@ -26,15 +27,14 @@ object ConstraintEditorDialog{
 
 class ConstraintEditorPane
 (graph : DependencyGraph,
- namedSets : Map[String, NamedRangeSet],
+ setNames : => Seq[String],
+ namedSets : String => NamedRangeSet,
  constraintIn : Constraint)
 (implicit nodeKindIcons : NodeKindIcons)
   extends BoxPanel (Orientation.Vertical){
   ctPane =>
 
-  val setNames = namedSets.keys.toSeq
-
-  val hideRangePane = new RangeSetPane(graph, setNames, namedSets, "hide", constraintIn.owners)
+  val hideRangePane = new RangeSetPane(graph, setNames, namedSets, "hide",  constraintIn.owners)
   val facadeRangePane = new RangeSetPane(graph, setNames, namedSets, "except", constraintIn.facades)
   val interlopersRangePane =  new RangeSetPane(graph, setNames, namedSets, "from (everything if empty)", constraintIn.interlopers)
   val friendsRangePane = new RangeSetPane(graph, setNames, namedSets, "but-not-from", constraintIn.friends)

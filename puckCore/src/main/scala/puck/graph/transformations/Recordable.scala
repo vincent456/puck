@@ -27,6 +27,7 @@
 package puck.graph.transformations
 
 import puck.graph._
+import puck.graph.constraints.{Constraint, ConstraintSet, ConstraintsMaps, NamedRangeSet, Range}
 
 abstract class Recordable extends Serializable {
   def redo(g: DependencyGraph) : DependencyGraph
@@ -141,4 +142,20 @@ case object MileStone extends Recordable {
 }
 case class Comment(msg : String) extends Recordable {
   def redo(g: DependencyGraph) = g.comment(msg)
+}
+
+//ideally should be finer grained
+case class ConstraintsChange(namedSets : Map[String, NamedRangeSet],
+                             friendConstraints : List[Constraint],
+                             hideConstraints : List[Constraint]) extends Recordable {
+
+  private def toMap(constraints : List[Constraint]) =
+      constraints.foldLeft(Map.empty[Range, ConstraintSet])(ConstraintsMaps.addConstraintToMap)
+
+  def toConstraintsMaps : ConstraintsMaps =
+    ConstraintsMaps(namedSets, toMap(friendConstraints), toMap(hideConstraints))
+
+  def redo(g: DependencyGraph) =
+    g.constraintChange(namedSets, friendConstraints, hideConstraints)
+
 }

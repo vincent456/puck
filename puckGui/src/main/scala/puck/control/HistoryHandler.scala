@@ -1,5 +1,6 @@
 package puck.control
 
+import puck.graph.constraints.ConstraintsMaps
 import puck.graph.{DependencyGraph, Recording}
 
 import scala.swing.{Component, Publisher}
@@ -24,6 +25,7 @@ trait HistoryHandler {
 
   def setInitialGraph(g: DependencyGraph): Unit
 
+  def pushConstraints(cm: ConstraintsMaps ) : Unit
   def pushGraph(graph: DependencyGraph) : Unit
 
   def rewriteHistory(rec: Recording): Unit

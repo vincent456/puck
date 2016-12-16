@@ -38,10 +38,9 @@ import puck.graph.io.VisibilitySet._
 import puck.graph.io.{PrintingOptions, VisibilitySet, Visible}
 import puck.view._
 import puck.view.search.{SimpleElementSelector, SortedElementSelector, StateSelected}
-import puck.piccolo.BasicGraphCanvas
 import puck.search.{Search, SearchState}
 import puck.util._
-import puck.view.explorer.{DGTree, GraphTreeModel, NodeInfosPanel, TreeModelAdapter}
+import puck.view.explorer.{DGTree, NodeInfosPanel, TreeModelAdapter}
 
 import scala.concurrent.ExecutionContext
 import scala.swing.BorderPanel.Position

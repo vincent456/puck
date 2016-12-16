@@ -13,10 +13,11 @@ object LoosenerEditorDialog{
   type RangeName = String
   def apply
   ( graph : DependencyGraph,
-    namedSets : Map[String, NamedRangeSet],
+    setNames : => Seq[String],
+    namedSets : String => NamedRangeSet,
     constraint : Constraint )
   ( implicit nodeKindIcons : NodeKindIcons )  : Option[Constraint] = {
-    val cep = new ConstraintEditorPane(graph, namedSets, constraint)
+    val cep = new LoosenerEditorPane(graph, setNames, namedSets, constraint)
     ResizeableOKCancelDialog(cep) match {
       case Result.Ok => Some(cep.constraint)
       case _ => None
@@ -26,15 +27,13 @@ object LoosenerEditorDialog{
 
 class LoosenerEditorPane
 (graph : DependencyGraph,
- namedSets : Map[String, NamedRangeSet],
+ setNames : => Seq[String],
+ namedSets : String => NamedRangeSet,
  constraintIn : Constraint)
 (implicit nodeKindIcons : NodeKindIcons)
   extends BoxPanel (Orientation.Vertical){
-  ctPane =>
 
-  val setNames = namedSets.keys.toSeq
-
-  val friendsRangePane = new RangeSetPane(graph, setNames, namedSets, "", constraintIn.owners)
+  val friendsRangePane = new RangeSetPane(graph, setNames, namedSets, "", constraintIn.owners )
   val ownersRangePane  = new RangeSetPane(graph, setNames, namedSets, "friend-of", constraintIn.friends)
 
   contents += ownersRangePane

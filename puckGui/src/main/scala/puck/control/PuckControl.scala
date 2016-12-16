@@ -26,7 +26,6 @@
 
 package puck.control
 
-import java.awt.event.WindowEvent
 import java.io.File
 
 import puck._
@@ -40,6 +39,7 @@ import puck.graph.transformations.MutabilitySet
 import puck.view.search.MetricChoice
 import puck.view.{NodeKindIcons, SearchDialog}
 import puck.util.{PuckLog, PuckLogger}
+import puck.view.constraints.ConstraintsMapsDialog
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -86,8 +86,8 @@ class PuckControl
 
 
   var dg2ast: DG2AST = _
-  //val historyHandler: HistoryHandler = new GraphStack(Bus)
-  val historyHandler: HistoryHandler = new SearchSpace(this)
+  val historyHandler: HistoryHandler = new GraphStack(Bus)
+  //val historyHandler: HistoryHandler = new SearchSpace(this)
   var constraints : Option[ConstraintsMaps] = None
   var mutabilitySet : MutabilitySet.T = Set()
 
@@ -239,6 +239,10 @@ class PuckControl
     case PushGraph(g) =>
       historyHandler.pushGraph(g)
 
+    case ConstraintsUpdateRequest(cm) =>
+      constraints = Some(cm)
+      Bus publish ConstraintsUpdate(graph, cm)
+
     case PrintErrOrPushGraph(msg, lgt) =>
       lgt.value match {
         case -\/(err) =>
@@ -299,17 +303,10 @@ class PuckControl
     case EditConstraints => constraints.foreach {
       cm =>
       Swing onEDT puck.ignore{
-        new Frame() {
-          frame =>
-          title = "Search Result"
-          visible = true
-          minimumSize = new Dimension(640, 480)
-          preferredSize = new Dimension(1920, 1084)
-
-          override def close(): Unit =
-            frame.peer.dispatchEvent(new WindowEvent(frame.peer, WindowEvent.WINDOW_CLOSING))
-
-          contents = new puck.view.constraints.ConstraintsMapsPane(graph, cm)(nodeKindIcons)
+        ConstraintsMapsDialog(graph, cm)(nodeKindIcons) match {
+          case None =>()
+          case Some(cm1) =>
+            historyHandler.pushConstraints(cm1)
         }
       }
     }
