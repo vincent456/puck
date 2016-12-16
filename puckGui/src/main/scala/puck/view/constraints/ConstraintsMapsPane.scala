@@ -88,8 +88,11 @@ class ConstraintsMapsPane
 object EditLabel extends Label {
   icon = new ImageIcon(editimg)
 }
+object RemoveLabel extends Label {
+  icon = new ImageIcon(deleteimg)
+}
 
-case class NamedSetUpdate(oldName : String, newNamedRangeSet : NamedRangeSet) extends Event {
+case class NamedSetUpdate(oldName : String, newRangeSet : RangeSet) extends Event {
   def update(ct : Constraint) : Constraint =
     Constraint(
       update(ct.owners),
@@ -98,7 +101,7 @@ case class NamedSetUpdate(oldName : String, newNamedRangeSet : NamedRangeSet) ex
       update(ct.friends))
 
   def update(rs : RangeSet) : RangeSet = rs match {
-    case NamedRangeSet(`oldName`, _) => newNamedRangeSet
+    case NamedRangeSet(`oldName`, _) => newRangeSet
     case NamedRangeSet(_, _) => rs
     case RootedRangeSet(rs0) => RootedRangeSet(update(rs0))
     case LiteralRangeSet(_) => rs
@@ -116,11 +119,12 @@ class NamedSetsPanel
 
   val tableModel = new AbstractTableModel {
 
-    override def isCellEditable(row : Int, col : Int) : Boolean = col == 2
+    override def isCellEditable(row : Int, col : Int) : Boolean =
+      col == 2 || col == 3
 
     def getRowCount: Int = mapKeys.length
 
-    def getColumnCount: Int = 3
+    def getColumnCount: Int = 4
 
     def getValueAt(rowIndex: Int, columnIndex: Int): AnyRef =
       if(columnIndex == 0) mapKeys(rowIndex)
@@ -159,8 +163,9 @@ class NamedSetsPanel
       }
     }
 
-    val buttonEditor = new AbstractCellEditor with TableCellEditor {
+    val edit = new AbstractCellEditor with TableCellEditor {
       def getCellEditorValue: AnyRef = None
+
       def getTableCellEditorComponent(tab: JTable, value: AnyRef, isSelected: Boolean,
                                       row: Int, col: Int): AWTComponent = {
         Swing onEDT {
@@ -170,9 +175,9 @@ class NamedSetsPanel
             namedSets, k) match {
             case None => ()
             case Some(newRs) =>
-              if(k == newRs.id)
+              if (k == newRs.id)
                 namedSets.update(k, newRs)
-              else{
+              else {
                 namedSets.remove(k)
                 mapKeys(row) = newRs.id
                 namedSets.update(newRs.id, newRs)
@@ -187,6 +192,22 @@ class NamedSetsPanel
       }
     }
 
+    val removeEditor =  new AbstractCellEditor with TableCellEditor {
+      def getCellEditorValue: AnyRef = None
+
+      def getTableCellEditorComponent(tab: JTable, value: AnyRef, isSelected: Boolean,
+                                      row: Int, col: Int): AWTComponent = {
+        Swing onEDT {
+          val k = mapKeys(row)
+          mapKeys.remove(row)
+          namedSets.remove(k)
+          tableModel.fireTableRowsDeleted(row, row)
+          namedSetsPanel publish NamedSetUpdate(k, LiteralRangeSet.empty)
+        }
+        RemoveLabel.peer
+      }
+    }
+
     override def rendererComponent(isSelected: Boolean, focused: Boolean, row: Int, column: Int): Component =
       column match {
         case 1 =>
@@ -196,17 +217,18 @@ class NamedSetsPanel
 
         namedRangedSetRenderer.componentFor(this, isSelected, focused, v, row, 1)
         case 2 => EditLabel
+        case 3 => RemoveLabel
         case _ => super.rendererComponent(isSelected, focused, row, column)
       }
 
     override def editor(row: Int, col: Int): TableCellEditor =
-      if (col == 2) buttonEditor else super.editor(row, col)
-
+      col match {
+        case 2 => edit
+        case 3 => removeEditor
+        case _ => super.editor(row, col)
+      }
 
     model = tableModel
-    peer.getColumnModel.getColumn(2).setPreferredWidth(EditLabel.preferredSize.width)
-
-
   }, Position.Center)
 
 
@@ -235,11 +257,11 @@ class ConstraintsPanel
 
   val tableModel = new AbstractTableModel {
 
-    override def isCellEditable(row : Int, col : Int) : Boolean = col == 1
+    override def isCellEditable(row : Int, col : Int) : Boolean = col == 1 || col == 2
 
     def getRowCount: Int = constraints.length
 
-    def getColumnCount: Int = 2
+    def getColumnCount: Int = 3
 
     def getValueAt(rowIndex: Int, columnIndex: Int): AnyRef =
       constraints(rowIndex)
@@ -270,7 +292,7 @@ class ConstraintsPanel
         component.prepare(o)
     }
 
-    val buttonEditor = new AbstractCellEditor with TableCellEditor {
+    val edit = new AbstractCellEditor with TableCellEditor {
       def getCellEditorValue: AnyRef = None
       def getTableCellEditorComponent(tab: JTable, value: AnyRef, isSelected: Boolean,
                                       row: Int, col: Int): AWTComponent = {
@@ -286,23 +308,41 @@ class ConstraintsPanel
       }
     }
 
+    val removeEditor =  new AbstractCellEditor with TableCellEditor {
+      def getCellEditorValue: AnyRef = None
+
+      def getTableCellEditorComponent(tab: JTable, value: AnyRef, isSelected: Boolean,
+                                      row: Int, col: Int): AWTComponent = {
+        Swing onEDT {
+          constraints.remove(row)
+          tableModel.fireTableRowsDeleted(row, row)
+        }
+        RemoveLabel.peer
+      }
+    }
 
     override def rendererComponent(isSelected: Boolean, focused: Boolean, row: Int, column: Int): Component =
-      if(column == 0) {
+      column match {
+        case 0 =>
         val v = model.getValueAt(
           peer.convertRowIndexToModel(row),
           peer.convertColumnIndexToModel(column)).asInstanceOf[Constraint]
 
         constraintRenderer.componentFor(this, isSelected, focused, v, row, column)
+        case 1 => EditLabel
+        case 2 => RemoveLabel
+        case _ => super.rendererComponent(isSelected, focused, row, column)
       }
-      else EditLabel
 
 
     override def editor(row: Int, col: Int): TableCellEditor =
-      if (col == 1) buttonEditor else super.editor(row, col)
+      col match {
+        case 1 => edit
+        case 2 => removeEditor
+        case _ => super.editor(row, col)
+      }
 
     model = tableModel
-    peer.getColumnModel.getColumn(1).setPreferredWidth(EditLabel.preferredSize.width)
   }, Position.Center)
 
   def constraintMap =
