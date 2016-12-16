@@ -41,12 +41,11 @@ class ConstraintsMapsPane
   minimumSize = new Dimension(640,480)
   preferredSize = minimumSize
   val namedSets = mutable.Map[String, NamedRangeSet](cm.namedSets.toSeq:_*)
-
   val namedSetsPanel = new NamedSetsPanel(graph, namedSets)
 
   val hideConstraintsPanel =
     new ConstraintsPanel(graph, ArrayBuffer(cm.hideConstraints:_*), "Constraints",
-      stringOfConstraint, ConstraintEditorDialog(graph, namedSets.keys.toSeq, cm.namedSets,_),
+      stringOfConstraint, ConstraintEditorDialog(graph, namedSets.keys.toSeq, namedSets,_),
       canFriendBeEmpty = true)
 
   hideConstraintsPanel listenTo namedSetsPanel
