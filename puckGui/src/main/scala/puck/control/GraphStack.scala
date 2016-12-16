@@ -91,8 +91,8 @@ class GraphStack(val bus : Publisher) extends HistoryHandler {
   }
 
   def pushConstraints(cm: ConstraintsMaps ) = {
-    undoStack.push(graph.mileStone.constraintChange(cm))
-    redoStack.clear()
+    pushGraph(graph.mileStone.constraintChange(cm))
+      //redoStack.clear()
     bus publish ConstraintsUpdateRequest(cm)
   }
   override def pushGraph(graph: DependencyGraph) = {
