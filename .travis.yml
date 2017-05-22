@@ -1,0 +1,26 @@
+install: true
+
+# language: scala
+
+#scala : 
+#  - 2.10.6
+
+jdk: oraclejdk8
+
+script : 
+ - touch puck.jar
+ - cp puck.jar website/
+ - ls -R
+
+# - tar resul.tgz
+# -   
+
+
+deploy:
+  provider: pages
+  skip_cleanup: true
+  github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
+  local_dir: website/
+  on:
+    branch: master
+
