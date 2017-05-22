@@ -30,7 +30,12 @@ package search
 import scala.collection.mutable
 
 /**
-  * Created by Loïc Girault on 16/11/15.
+  * Created
+  * by
+  * Loïc Girault
+  * on
+  * 16/11/15.
+  *
   */
 
 class AStarSearchOrdering[T](evaluator: Evaluator [T]) extends Ordering[SearchState[T]]{
