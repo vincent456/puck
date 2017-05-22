@@ -8,12 +8,12 @@ scala :
 jdk: oraclejdk8
 
 script : 
- - touch puck.jar
- - cp puck.jar website/
+ - sbt clean
+ - sbt compile
+ - sbt universal:packageZipTarball
+ - cd puckExtendJ/target/universal
+ - cp `ls -rt | tail -1` ../../../website/puck.tgz
  - ls -R
-
-# - tar resul.tgz
-# -   
 
 
 deploy:
