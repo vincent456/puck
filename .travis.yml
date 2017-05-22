@@ -15,7 +15,6 @@ script :
  - cp `ls -rt | tail -1` ../../../website/puck.tgz
  - ls -R
 
-
 deploy:
   provider: pages
   skip_cleanup: true
