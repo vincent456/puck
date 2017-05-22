@@ -6,7 +6,7 @@ How to compile:
 
 Once you've installed <a href="http://www.scala-sbt.org/">sbt</a>,
 you can run from the root of the project 'sbt universal:packageZipTarball'
-which will produce an a zipped version of the program in puckJrrt/target/universal/puck-distrib-<current-time>.tgz
+which will produce an a zipped version of the program in puckExtendJ/target/universal/puck-distrib-<current-time>.tgz
 
 alternatively you can run 'sbt printClassPathFile' which will compile the source and generate a file
 puckJrrt/target/CLASSPATH that define a bash script that create a CLASSPATH variable with the classpath of the project.
