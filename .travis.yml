@@ -9,7 +9,6 @@ jdk: oraclejdk8
 
 script :
  - sbt clean
- - sbt compile
  - sbt 'universal:packageZipTarball'
  - cd puckExtendJ/target/universal
  - cp `ls -rt | tail -1` ../../../website/puck.tgz
