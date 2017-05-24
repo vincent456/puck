@@ -2,8 +2,8 @@ install: true
 
 language: scala
 
- scala :
-  - 2.10.6
+scala:
+   - 2.10.6
 
 jdk: oraclejdk8
 
