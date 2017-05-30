@@ -10,10 +10,9 @@ jdk: oraclejdk8
 script :
 # - sbt clean
 # - sbt 'universal:packageZipTarball'
-# - cd puckExtendJ/target/universal
- - ls -l ../
-# - cp `ls -rt | tail -1` ../../../website/puck.tgz
- - ls -R
+ - cd puckExtendJ/target/universal
+ - cp `ls -rt | tail -1` ../../../website/puck.tgz
+# - ls -R
 
 deploy:
   provider: pages
