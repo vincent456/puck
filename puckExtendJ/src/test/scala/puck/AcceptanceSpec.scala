@@ -34,3 +34,4 @@ class AcceptanceSpec
   with OptionValues
   with EitherValues
   with LoggedEitherValues
+
