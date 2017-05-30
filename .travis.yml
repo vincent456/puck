@@ -11,7 +11,7 @@ script :
 # - sbt clean
 # - sbt 'universal:packageZipTarball'
 # - cd puckExtendJ/target/universal
- - ls -l ../../..
+ - ls -l ../
 # - cp `ls -rt | tail -1` ../../../website/puck.tgz
  - ls -R
 
