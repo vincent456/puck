@@ -12,14 +12,14 @@ script :
  - sbt 'universal:packageZipTarball'
  - cd puckExtendJ/target/universal
  - cp `ls -rt | tail -1` ../../../website/puck.tgz
- - cd ../../../website
+ - cd ../../..
  - ls -R
 
 deploy:
   provider: pages
   skip_cleanup: true
   github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
-  local_dir: website
+  local_dir: website/
   on:
     branch: master
 
