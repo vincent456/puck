@@ -10,7 +10,7 @@ jdk: oraclejdk8
 script :
  - sbt clean
  - sbt 'universal:packageZipTarball'
- - cp `ls -rt puckExtendJ/target/universal/* | tail -1` ../../../website/puck.tgz
+ - cp `ls -rt puckExtendJ/target/universal/ | tail -1` ../../../website/puck.tgz
  - ls -R
 
 deploy:
