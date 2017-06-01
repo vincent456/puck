@@ -12,6 +12,7 @@ script :
  - sbt 'universal:packageZipTarball'
  - cd puckExtendJ/target/universal
  - cp `ls -rt | tail -1` ../../../website/puck.tgz
+ - cd ../../../website
  - ls -R
 
 deploy:
