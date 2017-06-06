@@ -25,6 +25,7 @@ public class DisplayUsesMenu extends PNode {
     private ArrowNodesHolder ANH;
     private HashMap<Object,PiccoloCustomNode> idNodeMap;
     private PNode target;
+    ShowNodeUses SNU;
 
     //endregion
 
@@ -39,8 +40,8 @@ public class DisplayUsesMenu extends PNode {
         this.DG=DG;
         this.ANH=ANH;
         this.idNodeMap=idNodeMap;
-
-        MenuItem showusedby=new MenuItem("Show used by",new ShowNodeUses(DG,ANH,idNodeMap));
+        SNU=new ShowNodeUses(DG,ANH,idNodeMap);
+        MenuItem showusedby=new MenuItem("Show used by",SNU);
         menu.add(showusedby);
 
         //endregion
@@ -63,6 +64,7 @@ public class DisplayUsesMenu extends PNode {
 
     public void setTarget(PNode target){
         this.target=target;
+        SNU.setTarget((PiccoloCustomNode)target);
         menu.setTarget(target);
     }
 }

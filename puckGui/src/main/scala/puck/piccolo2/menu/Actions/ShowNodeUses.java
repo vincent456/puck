@@ -32,7 +32,7 @@ public class ShowNodeUses extends MenuItemEventHandler {
 
     @Override
     public void mouseClicked(PInputEvent e) {
-;
+
         int nodeId=target.getidNode();
 
         Set<Object> usedby=DG.usedBy(nodeId);
@@ -41,5 +41,9 @@ public class ShowNodeUses extends MenuItemEventHandler {
             arrowNodesHolder.addArrow(new Parrow(target, idNodeMap.get(O), new Triangle(Color.BLACK), 5, Color.BLACK));
             System.out.println("used by : "+O.toString()+" "+idNodeMap.get(O).getidNode());
         }
+    }
+
+    public void setTarget(PiccoloCustomNode target){
+        this.target=target;
     }
 }
