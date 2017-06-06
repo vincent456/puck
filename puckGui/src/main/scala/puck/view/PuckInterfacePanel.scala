@@ -36,7 +36,7 @@ import puck.config.{Config, ConfigWriter}
 import puck.control._
 import puck.graph.io.{DotPrinter, VisibilitySet}
 import puck.view.svg.SVGViewHandler
-import puck.piccolo.PiccoloViewHandler
+import puck.piccolo2.PiccoloViewHandler
 
 import scala.swing._
 import scala.swing.event.SelectionChanged
@@ -201,7 +201,7 @@ class PuckInterfacePanel
       }
     }.leftGlued
 
-    contents += new ComboBox(List[ViewHandler](TreeViewHandler, SVGViewHandler, PiccoloViewHandler)) {
+    contents += new ComboBox(List[ViewHandler](TreeViewHandler, SVGViewHandler, piccolo.PiccoloViewHandler,new PiccoloViewHandler())) {
       minimumSize = new Dimension(leftWidth, 30)
       maximumSize = minimumSize
       preferredSize = minimumSize
