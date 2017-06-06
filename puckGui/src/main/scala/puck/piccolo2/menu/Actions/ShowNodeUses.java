@@ -22,6 +22,7 @@ public class ShowNodeUses extends MenuItemEventHandler {
     private DependencyGraph DG;
     private ArrowNodesHolder arrowNodesHolder;
     private HashMap<Object,PiccoloCustomNode> idNodeMap;
+    private PiccoloCustomNode target;
 
     public ShowNodeUses( DependencyGraph DG, ArrowNodesHolder arrowNodesHolder, HashMap<Object,PiccoloCustomNode> idNodeMap){
         this.DG=DG;
@@ -31,15 +32,13 @@ public class ShowNodeUses extends MenuItemEventHandler {
 
     @Override
     public void mouseClicked(PInputEvent e) {
-        PText picked= (PText) e.getPickedNode();
-
-        PiccoloCustomNode PCN=(PiccoloCustomNode) picked.getParent().getParent();
-        int nodeId=PCN.getidNode();
+;
+        int nodeId=target.getidNode();
 
         Set<Object> usedby=DG.usedBy(nodeId);
         for(Iterator<Object> iterator = usedby.toIterator(); iterator.hasNext();) {
             Object O=iterator.next();
-            arrowNodesHolder.addArrow(new Parrow(PCN, idNodeMap.get(O), new Triangle(Color.BLACK), 5, Color.BLACK));
+            arrowNodesHolder.addArrow(new Parrow(target, idNodeMap.get(O), new Triangle(Color.BLACK), 5, Color.BLACK));
             System.out.println("used by : "+O.toString()+" "+idNodeMap.get(O).getidNode());
         }
     }

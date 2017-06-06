@@ -24,6 +24,7 @@ public class DisplayUsesMenu extends PNode {
     private DependencyGraph DG;
     private ArrowNodesHolder ANH;
     private HashMap<Object,PiccoloCustomNode> idNodeMap;
+    private PNode target;
 
     //endregion
 
@@ -55,12 +56,13 @@ public class DisplayUsesMenu extends PNode {
             menu.translate(t.getTranslateX(), t.getTranslateY());
         }
         catch (Exception e){
-            System.err.println("DisplayUsesMenu(32)"+e.getMessage());
+            System.err.println(e.getMessage());
         }
         removeAllChildren();
     }
 
     public void setTarget(PNode target){
+        this.target=target;
         menu.setTarget(target);
     }
 }

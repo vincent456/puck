@@ -3,6 +3,7 @@ package puck.piccolo2.node;
 import org.piccolo2d.event.PBasicInputEventHandler;
 import org.piccolo2d.event.PInputEvent;
 import org.piccolo2d.event.PInputEventFilter;
+import org.piccolo2d.nodes.PText;
 import puck.piccolo2.menu.DisplayUsesMenu;
 import puck.piccolo2.node.PiccoloCustomNode;
 
@@ -32,7 +33,8 @@ public class PCustomInputEventHandler extends PBasicInputEventHandler {
             menu.clear();
         }
         if(e.isRightMouseButton()){
-            menu.setTarget(e.getPickedNode());
+            if(e.getPickedNode() instanceof PText)
+            menu.setTarget(e.getPickedNode().getParent().getParent());
             menu.draw(new Point2D.Double(e.getPosition().getX(),e.getPosition().getY()));
         }
     }
