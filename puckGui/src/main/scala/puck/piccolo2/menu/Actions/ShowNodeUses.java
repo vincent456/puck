@@ -40,7 +40,7 @@ public class ShowNodeUses extends MenuItemEventHandler {
         for(Iterator<Object> iterator = usersof.toIterator(); iterator.hasNext();) {
             Object O=iterator.next();
             arrowNodesHolder.addArrow(new Parrow(new Point2D.Double(target.getContent().getX(),target.getContent().getY()), new Point2D.Double(idNodeMap.get(O).getContent().getX(),idNodeMap.get(O).getContent().getY()), new Triangle(Color.BLACK), 5, Color.BLACK));
-            System.out.println("user of : "+O.toString()+" "+idNodeMap.get(O).getidNode());
+            System.out.println("user of "+nodeId+" : "+O.toString());
         }
     }
 

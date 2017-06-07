@@ -29,7 +29,10 @@ public class Parrow extends PNode{
 
     }
 
+
     /*
+    TODO: exploiter cette section
+
     private PNode from;
     private PNode to;
 
@@ -41,8 +44,8 @@ public class Parrow extends PNode{
         return to;
     }
 
-    public Parrow(NodeContent from, NodeContent to, PNode head, float width, Color color){
-        this(from.getPosition(),to.getPosition(),head,width,color);
+    public Parrow(PNode from,PNode to, PNode head, float width, Color color){
+        this(from.getBounds().getCenter2D().getX(),to.getBounds().getCenter2D().getY(),head,width,color);
         this.from=from;
         this.to=to;
     }
