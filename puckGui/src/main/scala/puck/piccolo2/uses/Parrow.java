@@ -3,7 +3,7 @@ package puck.piccolo2.uses;
 import org.piccolo2d.PNode;
 import org.piccolo2d.nodes.PPath;
 import puck.piccolo2.Util;
-import puck.piccolo2.node.PiccoloCustomNode;
+import puck.piccolo2.node.NodeContent;
 
 import java.awt.*;
 import java.awt.geom.Point2D;
@@ -29,6 +29,7 @@ public class Parrow extends PNode{
 
     }
 
+    /*
     private PNode from;
     private PNode to;
 
@@ -40,9 +41,10 @@ public class Parrow extends PNode{
         return to;
     }
 
-    public Parrow(PiccoloCustomNode from, PiccoloCustomNode to, PNode head, float width, Color color){
-        this(from.getContent().getGlobalBounds().getCenter2D(),to.getContent().getGlobalBounds().getCenter2D(),head,width,color);
+    public Parrow(NodeContent from, NodeContent to, PNode head, float width, Color color){
+        this(from.getPosition(),to.getPosition(),head,width,color);
         this.from=from;
         this.to=to;
     }
+    */
 }

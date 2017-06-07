@@ -12,6 +12,7 @@ import scala.collection.Iterator;
 import scala.collection.immutable.Set;
 
 import java.awt.*;
+import java.awt.geom.Point2D;
 import java.util.HashMap;
 
 /**
@@ -38,7 +39,7 @@ public class ShowNodeUses extends MenuItemEventHandler {
         Set<Object> usersof=DG.usersOf(nodeId);
         for(Iterator<Object> iterator = usersof.toIterator(); iterator.hasNext();) {
             Object O=iterator.next();
-            arrowNodesHolder.addArrow(new Parrow(target, idNodeMap.get(O), new Triangle(Color.BLACK), 5, Color.BLACK));
+            arrowNodesHolder.addArrow(new Parrow(new Point2D.Double(target.getContent().getX(),target.getContent().getY()), new Point2D.Double(idNodeMap.get(O).getContent().getX(),idNodeMap.get(O).getContent().getY()), new Triangle(Color.BLACK), 5, Color.BLACK));
             System.out.println("user of : "+O.toString()+" "+idNodeMap.get(O).getidNode());
         }
     }

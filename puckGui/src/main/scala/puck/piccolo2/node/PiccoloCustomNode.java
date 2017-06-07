@@ -10,7 +10,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 public class PiccoloCustomNode extends PNode {
-    private PNode content;
+    private NodeContent content;
     private PPath rect;
 
     private int idNode;
@@ -21,7 +21,7 @@ public class PiccoloCustomNode extends PNode {
         return rect;
     }
 
-    public PNode getContent() {
+    public NodeContent getContent() {
         return content;
     }
 
@@ -127,7 +127,7 @@ public class PiccoloCustomNode extends PNode {
             return;
         }
 
-        PNode content=this.content;
+        NodeContent content=this.content;
         Collection<PiccoloCustomNode> children=getChildren();
 
         double x=margin;

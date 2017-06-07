@@ -12,6 +12,7 @@ import puck.piccolo2.uses.Triangle;
 import puck.view.NodeKindIcons;
 
 import java.awt.*;
+import java.awt.geom.Point2D;
 import java.util.HashMap;
 
 /**
@@ -55,7 +56,7 @@ public class PiccoloCanvas extends PScrollPane {
         Triangle t=new Triangle(Color.GREEN);
 
         canvas.getLayer().addChild(arrowNodesHolder);
-        arrowNodesHolder.addArrow(new Parrow(node,node,t,2,Color.BLUE));
+        arrowNodesHolder.addArrow(new Parrow(new Point2D.Double(0,0),new Point2D.Double(0,0),t,2,Color.BLUE));
         //endregion
 
         //region menu
