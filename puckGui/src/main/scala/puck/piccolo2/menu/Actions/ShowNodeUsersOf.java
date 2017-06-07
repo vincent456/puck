@@ -12,18 +12,20 @@ import scala.collection.Iterator;
 import scala.collection.immutable.Set;
 
 import java.awt.*;
+import java.awt.geom.Point2D;
 import java.util.HashMap;
 
 /**
  * Created by Vincent Hudry on 02/06/2017.
  */
-public class ShowNodeUses extends MenuItemEventHandler {
+public class ShowNodeUsersOf extends MenuItemEventHandler {
 
     private DependencyGraph DG;
     private ArrowNodesHolder arrowNodesHolder;
     private HashMap<Object,PiccoloCustomNode> idNodeMap;
+    private PiccoloCustomNode target;
 
-    public ShowNodeUses( DependencyGraph DG, ArrowNodesHolder arrowNodesHolder, HashMap<Object,PiccoloCustomNode> idNodeMap){
+    public ShowNodeUsersOf(DependencyGraph DG, ArrowNodesHolder arrowNodesHolder, HashMap<Object,PiccoloCustomNode> idNodeMap){
         this.DG=DG;
         this.arrowNodesHolder=arrowNodesHolder;
         this.idNodeMap=idNodeMap;
@@ -31,16 +33,18 @@ public class ShowNodeUses extends MenuItemEventHandler {
 
     @Override
     public void mouseClicked(PInputEvent e) {
-        PText picked= (PText) e.getPickedNode();
 
-        PiccoloCustomNode PCN=(PiccoloCustomNode) picked.getParent().getParent();
-        int nodeId=PCN.getidNode();
+        int nodeId=target.getidNode();
 
-        Set<Object> usedby=DG.usedBy(nodeId);
-        for(Iterator<Object> iterator = usedby.toIterator(); iterator.hasNext();) {
+        Set<Object> usersof=DG.usersOf(nodeId);
+        for(Iterator<Object> iterator = usersof.toIterator(); iterator.hasNext();) {
             Object O=iterator.next();
-            arrowNodesHolder.addArrow(new Parrow(PCN, idNodeMap.get(O), new Triangle(Color.BLACK), 5, Color.BLACK));
-            System.out.println("used by : "+O.toString()+" "+idNodeMap.get(O).getidNode());
+            arrowNodesHolder.addArrow(new Parrow(target.getContent(), idNodeMap.get(O).getContent(), new Triangle(Color.YELLOW), 5, Color.YELLOW));
+            System.out.println("user of "+nodeId+" : "+O.toString());
         }
+    }
+
+    public void setTarget(PiccoloCustomNode target){
+        this.target=target;
     }
 }

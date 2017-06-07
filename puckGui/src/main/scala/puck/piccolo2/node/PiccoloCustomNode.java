@@ -1,16 +1,18 @@
 package puck.piccolo2.node;
 
+import org.piccolo2d.PCanvas;
 import org.piccolo2d.PNode;
 import org.piccolo2d.nodes.PPath;
 import org.piccolo2d.nodes.PText;
 
 import java.awt.*;
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
 public class PiccoloCustomNode extends PNode {
-    private PNode content;
+    private NodeContent content;
     private PPath rect;
 
     private int idNode;
@@ -21,7 +23,7 @@ public class PiccoloCustomNode extends PNode {
         return rect;
     }
 
-    public PNode getContent() {
+    public NodeContent getContent() {
         return content;
     }
 
@@ -127,7 +129,7 @@ public class PiccoloCustomNode extends PNode {
             return;
         }
 
-        PNode content=this.content;
+        NodeContent content=this.content;
         Collection<PiccoloCustomNode> children=getChildren();
 
         double x=margin;
@@ -145,7 +147,7 @@ public class PiccoloCustomNode extends PNode {
                 PCN.translate(PCN.getTransform().createInverse().getTranslateX(), PCN.getTransform().createInverse().getTranslateY());
             }
             catch (Exception e){
-                System.err.println("error PiccoloCustomNode:111 : "+e.getMessage());
+                System.err.println(e.getMessage());
             }
 
             PCN.setGridLayoutH();
@@ -209,7 +211,7 @@ public class PiccoloCustomNode extends PNode {
                 PCN.translate(PCN.getTransform().createInverse().getTranslateX(), PCN.getTransform().createInverse().getTranslateY());
             }
             catch (Exception e){
-                System.err.println("error PiccoloCustomNode:111 : "+e.getMessage());
+                System.err.println(e.getMessage());
             }
 
             PCN.setGridLayoutV();
@@ -287,5 +289,22 @@ public class PiccoloCustomNode extends PNode {
         background.addChild(borderBottom);
 
         return background;
+    }
+
+    public void updateContentBoundingBoxes(boolean debug, PCanvas canvas){
+
+        Point2D GLobalTranslation=content.getGlobalTranslation();
+
+        double x=GLobalTranslation.getX();
+        double y= GLobalTranslation.getY();
+        double w=content.getBounds().getWidth();
+        double h=content.getBounds().getHeight();
+        content.setBounds(x,y,w,h);
+
+        if(debug)
+            canvas.getLayer().addChild(PPath.createRectangle(x,y,w,h));
+
+        for(PiccoloCustomNode PCN:getChildren())
+            PCN.updateContentBoundingBoxes(debug,canvas);
     }
 }

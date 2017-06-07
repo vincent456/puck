@@ -1,8 +1,10 @@
 package puck.piccolo2.node;
 
+import org.piccolo2d.PCanvas;
 import org.piccolo2d.event.PBasicInputEventHandler;
 import org.piccolo2d.event.PInputEvent;
 import org.piccolo2d.event.PInputEventFilter;
+import org.piccolo2d.nodes.PText;
 import puck.piccolo2.menu.DisplayUsesMenu;
 import puck.piccolo2.node.PiccoloCustomNode;
 
@@ -15,12 +17,16 @@ public class PCustomInputEventHandler extends PBasicInputEventHandler {
 
     private static DisplayUsesMenu menu;
 
-    public PCustomInputEventHandler(PiccoloCustomNode node,PiccoloCustomNode tree, DisplayUsesMenu menu){
+    private PCanvas canvas;
+
+    public PCustomInputEventHandler(PiccoloCustomNode node,PiccoloCustomNode tree, DisplayUsesMenu menu,PCanvas canvas){
         setEventFilter(new PInputEventFilter(InputEvent.BUTTON1_MASK & InputEvent.BUTTON2_MASK));
         this.node=node;
         this.tree=tree;
 
         PCustomInputEventHandler.menu=menu;
+
+        this.canvas=canvas;
     }
 
     @Override
@@ -28,11 +34,13 @@ public class PCustomInputEventHandler extends PBasicInputEventHandler {
         if(e.isLeftMouseButton()) {
             node.toggleChildren();
             tree.setGridLayoutV();
+            tree.updateContentBoundingBoxes(false,canvas);
             //optional
             menu.clear();
         }
         if(e.isRightMouseButton()){
-            menu.setTarget(e.getPickedNode());
+            if(e.getPickedNode() instanceof PText)
+            menu.setTarget(e.getPickedNode().getParent().getParent());
             menu.draw(new Point2D.Double(e.getPosition().getX(),e.getPosition().getY()));
         }
     }

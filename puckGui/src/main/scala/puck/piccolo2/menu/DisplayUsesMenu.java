@@ -3,7 +3,7 @@ package puck.piccolo2.menu;
 import org.piccolo2d.PNode;
 import puck.graph.DependencyGraph;
 import puck.piccolo2.menu.Actions.CloseMenu;
-import puck.piccolo2.menu.Actions.ShowNodeUses;
+import puck.piccolo2.menu.Actions.ShowNodeUsersOf;
 import puck.piccolo2.node.PiccoloCustomNode;
 import puck.piccolo2.uses.ArrowNodesHolder;
 
@@ -24,7 +24,8 @@ public class DisplayUsesMenu extends PNode {
     private DependencyGraph DG;
     private ArrowNodesHolder ANH;
     private HashMap<Object,PiccoloCustomNode> idNodeMap;
-
+    private PNode target;
+    ShowNodeUsersOf SNUO;
     //endregion
 
     public DisplayUsesMenu(DependencyGraph DG, ArrowNodesHolder ANH,HashMap<Object,PiccoloCustomNode> idNodeMap){
@@ -33,14 +34,14 @@ public class DisplayUsesMenu extends PNode {
         MenuItem closes=new MenuItem("Close Menu",new CloseMenu(this));
         menu.add(closes);
 
-        //region for showusedby
+        //region for showuses
 
         this.DG=DG;
         this.ANH=ANH;
         this.idNodeMap=idNodeMap;
-
-        MenuItem showusedby=new MenuItem("Show used by",new ShowNodeUses(DG,ANH,idNodeMap));
-        menu.add(showusedby);
+        SNUO =new ShowNodeUsersOf(DG,ANH,idNodeMap);
+        MenuItem showusersof=new MenuItem("Show users of", SNUO);
+        menu.add(showusersof);
 
         //endregion
     }
@@ -55,12 +56,14 @@ public class DisplayUsesMenu extends PNode {
             menu.translate(t.getTranslateX(), t.getTranslateY());
         }
         catch (Exception e){
-            System.err.println("DisplayUsesMenu(32)"+e.getMessage());
+            System.err.println(e.getMessage());
         }
         removeAllChildren();
     }
 
     public void setTarget(PNode target){
+        this.target=target;
+        SNUO.setTarget((PiccoloCustomNode)target);
         menu.setTarget(target);
     }
 }

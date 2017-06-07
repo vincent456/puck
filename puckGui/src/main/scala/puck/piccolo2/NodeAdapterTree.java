@@ -1,11 +1,10 @@
 package puck.piccolo2;
 
-import org.piccolo2d.PNode;
 import org.piccolo2d.nodes.PImage;
 import org.piccolo2d.nodes.PText;
-import org.piccolo2d.util.PBounds;
 import puck.control.PuckControl;
 import puck.graph.DependencyGraph;
+import puck.piccolo2.node.NodeContent;
 import puck.piccolo2.node.Tree;
 import puck.view.NodeKindIcons;
 import scala.Tuple2;
@@ -55,16 +54,9 @@ public class NodeAdapterTree implements Tree {
     }
 
     @Override
-    public PNode getContent() {
-        PNode out=new PNode();
-        PText text=new PText(toString());
-        PImage icon=new PImage(icons.iconOfKind(DG.getNode(nodeId).kind()).getImage());
-        out.addChild(text);
-        out.addChild(icon);
-        text.translate(icon.getBounds().getWidth()+10,0);
-        PBounds bounds=out.getUnionOfChildrenBounds(null);
-        out.setBounds(bounds.getX(),bounds.getY(),bounds.getWidth(),bounds.getHeight());
-        return out;
+    public NodeContent getContent() {
+        return new NodeContent(new PText(toString()),new PImage(icons.iconOfKind(DG.getNode(nodeId).kind()).getImage()));
+
     }
 
     @Override

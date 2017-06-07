@@ -23,8 +23,7 @@ public class Menu extends PNode {
     //region getters/setters
     public void setTarget(PNode target){
         this.target=target;
-        PiccoloCustomNode PCN=(PiccoloCustomNode) target.getParent().getParent();
-        
+
     }
     //endregion
 
@@ -42,7 +41,7 @@ public class Menu extends PNode {
                 m.transformBy(m.getTransform().createInverse());
             }
             catch (Exception e){
-                System.err.println("Menu 33" + e.getMessage());
+                System.err.println(e.getMessage());
             }
             m.translate(x,y);
             addChild(m);

@@ -12,6 +12,7 @@ import puck.piccolo2.uses.Triangle;
 import puck.view.NodeKindIcons;
 
 import java.awt.*;
+import java.awt.geom.Point2D;
 import java.util.HashMap;
 
 /**
@@ -41,7 +42,10 @@ public class PiccoloCanvas extends PScrollPane {
         nta=null;
 
         canvas.getLayer().addChild(node);
+
         node.setGridLayoutV();
+        // node.updateContentBoundingBoxes(true,canvas);
+
         //endregion
 
         //region idNodeMap
@@ -52,10 +56,10 @@ public class PiccoloCanvas extends PScrollPane {
         //region ArrowNodesHolder
 
         ArrowNodesHolder arrowNodesHolder=new ArrowNodesHolder();
-        Triangle t=new Triangle(Color.GREEN);
+        //Triangle t=new Triangle(Color.GREEN);
 
         canvas.getLayer().addChild(arrowNodesHolder);
-        arrowNodesHolder.addArrow(new Parrow(node,node,t,2,Color.BLUE));
+        //arrowNodesHolder.addArrow(new Parrow(new Point2D.Double(0,0),new Point2D.Double(10,15),t,2,Color.BLUE));
         //endregion
 
         //region menu
@@ -70,7 +74,7 @@ public class PiccoloCanvas extends PScrollPane {
     }
 
     private void addEvent(PiccoloCustomNode node, PiccoloCustomNode tree,DisplayUsesMenu menu){
-        node.getContent().addInputEventListener(new PCustomInputEventHandler(node,tree,menu));
+        node.getContent().addInputEventListener(new PCustomInputEventHandler(node,tree,menu,canvas));
         if(node.getAllChildren().size()!=0)
             for(PiccoloCustomNode PCN:node.getAllChildren()){
                 addEvent(PCN,tree,menu);
