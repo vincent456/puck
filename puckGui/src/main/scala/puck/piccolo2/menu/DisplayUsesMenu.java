@@ -41,7 +41,7 @@ public class DisplayUsesMenu extends PNode {
         this.ANH=ANH;
         this.idNodeMap=idNodeMap;
         SNU=new ShowNodeUses(DG,ANH,idNodeMap);
-        MenuItem showusedby=new MenuItem("Show used by",SNU);
+        MenuItem showusedby=new MenuItem("Show users of",SNU);
         menu.add(showusedby);
 
         //endregion

@@ -41,7 +41,7 @@ public class Parrow extends PNode{
     }
 
     public Parrow(PiccoloCustomNode from, PiccoloCustomNode to, PNode head, float width, Color color){
-        this(from.getContent().getBounds().getCenter2D(),to.getContent().getBounds().getCenter2D(),head,width,color);
+        this(from.getContent().getGlobalBounds().getCenter2D(),to.getContent().getGlobalBounds().getCenter2D(),head,width,color);
         this.from=from;
         this.to=to;
     }

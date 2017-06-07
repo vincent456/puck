@@ -145,7 +145,7 @@ public class PiccoloCustomNode extends PNode {
                 PCN.translate(PCN.getTransform().createInverse().getTranslateX(), PCN.getTransform().createInverse().getTranslateY());
             }
             catch (Exception e){
-                System.err.println("error PiccoloCustomNode:111 : "+e.getMessage());
+                System.err.println(e.getMessage());
             }
 
             PCN.setGridLayoutH();
@@ -209,7 +209,7 @@ public class PiccoloCustomNode extends PNode {
                 PCN.translate(PCN.getTransform().createInverse().getTranslateX(), PCN.getTransform().createInverse().getTranslateY());
             }
             catch (Exception e){
-                System.err.println("error PiccoloCustomNode:111 : "+e.getMessage());
+                System.err.println(e.getMessage());
             }
 
             PCN.setGridLayoutV();
