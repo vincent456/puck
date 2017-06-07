@@ -20,10 +20,10 @@ import java.util.HashMap;
  */
 public class ShowNodeUsersOf extends MenuItemEventHandler {
 
-    private DependencyGraph DG;
-    private ArrowNodesHolder arrowNodesHolder;
-    private HashMap<Object,PiccoloCustomNode> idNodeMap;
-    private PiccoloCustomNode target;
+    protected DependencyGraph DG;
+    protected ArrowNodesHolder arrowNodesHolder;
+    protected HashMap<Object,PiccoloCustomNode> idNodeMap;
+    protected PiccoloCustomNode target;
 
     public ShowNodeUsersOf(DependencyGraph DG, ArrowNodesHolder arrowNodesHolder, HashMap<Object,PiccoloCustomNode> idNodeMap){
         this.DG=DG;
@@ -39,8 +39,9 @@ public class ShowNodeUsersOf extends MenuItemEventHandler {
         Set<Object> usersof=DG.usersOf(nodeId);
         for(Iterator<Object> iterator = usersof.toIterator(); iterator.hasNext();) {
             Object O=iterator.next();
-            arrowNodesHolder.addArrow(new Parrow(target.getContent(), idNodeMap.get(O).getContent(), new Triangle(Color.YELLOW), 5, Color.YELLOW));
-            System.out.println("user of "+nodeId+" : "+O.toString());
+            PNode from=target.getContent();
+            PNode to = idNodeMap.get(O).getContent();
+            arrowNodesHolder.addArrow(new Parrow(from,to, new Triangle(Color.YELLOW), 5, Color.YELLOW));
         }
     }
 

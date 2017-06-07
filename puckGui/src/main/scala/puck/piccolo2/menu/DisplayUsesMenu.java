@@ -3,6 +3,7 @@ package puck.piccolo2.menu;
 import org.piccolo2d.PNode;
 import puck.graph.DependencyGraph;
 import puck.piccolo2.menu.Actions.CloseMenu;
+import puck.piccolo2.menu.Actions.HideNodeUsersOf;
 import puck.piccolo2.menu.Actions.ShowNodeUsersOf;
 import puck.piccolo2.node.PiccoloCustomNode;
 import puck.piccolo2.uses.ArrowNodesHolder;
@@ -26,6 +27,7 @@ public class DisplayUsesMenu extends PNode {
     private HashMap<Object,PiccoloCustomNode> idNodeMap;
     private PNode target;
     ShowNodeUsersOf SNUO;
+    HideNodeUsersOf HNUO;
     //endregion
 
     public DisplayUsesMenu(DependencyGraph DG, ArrowNodesHolder ANH,HashMap<Object,PiccoloCustomNode> idNodeMap){
@@ -42,6 +44,10 @@ public class DisplayUsesMenu extends PNode {
         SNUO =new ShowNodeUsersOf(DG,ANH,idNodeMap);
         MenuItem showusersof=new MenuItem("Show users of", SNUO);
         menu.add(showusersof);
+
+        HNUO=new HideNodeUsersOf(DG,ANH,idNodeMap);
+        MenuItem hideusersof=new MenuItem("Hide users of",HNUO);
+        menu.add((hideusersof));
 
         //endregion
     }
@@ -64,6 +70,7 @@ public class DisplayUsesMenu extends PNode {
     public void setTarget(PNode target){
         this.target=target;
         SNUO.setTarget((PiccoloCustomNode)target);
+        HNUO.setTarget((PiccoloCustomNode)target);
         menu.setTarget(target);
     }
 }
