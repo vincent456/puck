@@ -18,14 +18,14 @@ import java.util.HashMap;
 /**
  * Created by Vincent Hudry on 02/06/2017.
  */
-public class ShowNodeUses extends MenuItemEventHandler {
+public class ShowNodeUsersOf extends MenuItemEventHandler {
 
     private DependencyGraph DG;
     private ArrowNodesHolder arrowNodesHolder;
     private HashMap<Object,PiccoloCustomNode> idNodeMap;
     private PiccoloCustomNode target;
 
-    public ShowNodeUses( DependencyGraph DG, ArrowNodesHolder arrowNodesHolder, HashMap<Object,PiccoloCustomNode> idNodeMap){
+    public ShowNodeUsersOf(DependencyGraph DG, ArrowNodesHolder arrowNodesHolder, HashMap<Object,PiccoloCustomNode> idNodeMap){
         this.DG=DG;
         this.arrowNodesHolder=arrowNodesHolder;
         this.idNodeMap=idNodeMap;
@@ -39,7 +39,7 @@ public class ShowNodeUses extends MenuItemEventHandler {
         Set<Object> usersof=DG.usersOf(nodeId);
         for(Iterator<Object> iterator = usersof.toIterator(); iterator.hasNext();) {
             Object O=iterator.next();
-            arrowNodesHolder.addArrow(new Parrow(new Point2D.Double(target.getContent().getX(),target.getContent().getY()), new Point2D.Double(idNodeMap.get(O).getContent().getX(),idNodeMap.get(O).getContent().getY()), new Triangle(Color.BLACK), 5, Color.BLACK));
+            arrowNodesHolder.addArrow(new Parrow(target.getContent(), idNodeMap.get(O).getContent(), new Triangle(Color.YELLOW), 5, Color.YELLOW));
             System.out.println("user of "+nodeId+" : "+O.toString());
         }
     }

@@ -1,10 +1,12 @@
 package puck.piccolo2.node;
 
+import org.piccolo2d.PCanvas;
 import org.piccolo2d.PNode;
 import org.piccolo2d.nodes.PPath;
 import org.piccolo2d.nodes.PText;
 
 import java.awt.*;
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -287,5 +289,22 @@ public class PiccoloCustomNode extends PNode {
         background.addChild(borderBottom);
 
         return background;
+    }
+
+    public void updateContentBoundingBoxes(boolean debug, PCanvas canvas){
+
+        Point2D GLobalTranslation=content.getGlobalTranslation();
+
+        double x=GLobalTranslation.getX();
+        double y= GLobalTranslation.getY();
+        double w=content.getBounds().getWidth();
+        double h=content.getBounds().getHeight();
+        content.setBounds(x,y,w,h);
+
+        if(debug)
+            canvas.getLayer().addChild(PPath.createRectangle(x,y,w,h));
+
+        for(PiccoloCustomNode PCN:getChildren())
+            PCN.updateContentBoundingBoxes(debug,canvas);
     }
 }

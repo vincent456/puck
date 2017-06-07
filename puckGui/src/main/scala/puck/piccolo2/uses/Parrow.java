@@ -25,13 +25,10 @@ public class Parrow extends PNode{
         head.rotate(theta);
         addChild(head);
 
-        //addChild(PPath.createLine(from.getX(),from.getY(),to.getX(),to.getY()));
+        addChild(PPath.createLine(from.getX(),from.getY(),to.getX(),to.getY()));
 
     }
 
-
-    /*
-    TODO: exploiter cette section
 
     private PNode from;
     private PNode to;
@@ -45,9 +42,9 @@ public class Parrow extends PNode{
     }
 
     public Parrow(PNode from,PNode to, PNode head, float width, Color color){
-        this(from.getBounds().getCenter2D().getX(),to.getBounds().getCenter2D().getY(),head,width,color);
+        this(new Point2D.Double(from.getBounds().getCenter2D().getX(),from.getBounds().getCenter2D().getY()),new Point2D.Double(to.getBounds().getCenter2D().getX(),to.getBounds().getCenter2D().getY()),head,width,color);
         this.from=from;
         this.to=to;
     }
-    */
+
 }

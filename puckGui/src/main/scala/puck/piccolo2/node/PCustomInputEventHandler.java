@@ -1,5 +1,6 @@
 package puck.piccolo2.node;
 
+import org.piccolo2d.PCanvas;
 import org.piccolo2d.event.PBasicInputEventHandler;
 import org.piccolo2d.event.PInputEvent;
 import org.piccolo2d.event.PInputEventFilter;
@@ -16,12 +17,16 @@ public class PCustomInputEventHandler extends PBasicInputEventHandler {
 
     private static DisplayUsesMenu menu;
 
-    public PCustomInputEventHandler(PiccoloCustomNode node,PiccoloCustomNode tree, DisplayUsesMenu menu){
+    private PCanvas canvas;
+
+    public PCustomInputEventHandler(PiccoloCustomNode node,PiccoloCustomNode tree, DisplayUsesMenu menu,PCanvas canvas){
         setEventFilter(new PInputEventFilter(InputEvent.BUTTON1_MASK & InputEvent.BUTTON2_MASK));
         this.node=node;
         this.tree=tree;
 
         PCustomInputEventHandler.menu=menu;
+
+        this.canvas=canvas;
     }
 
     @Override
@@ -29,6 +34,7 @@ public class PCustomInputEventHandler extends PBasicInputEventHandler {
         if(e.isLeftMouseButton()) {
             node.toggleChildren();
             tree.setGridLayoutV();
+            tree.updateContentBoundingBoxes(false,canvas);
             //optional
             menu.clear();
         }

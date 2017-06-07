@@ -55,17 +55,6 @@ public class NodeAdapterTree implements Tree {
 
     @Override
     public NodeContent getContent() {
-        /*
-        PNode out=new PNode();
-        PText text=new PText(toString());
-        PImage icon=new PImage(icons.iconOfKind(DG.getNode(nodeId).kind()).getImage());
-        out.addChild(text);
-        out.addChild(icon);
-        text.translate(icon.getBounds().getWidth()+10,0);
-        PBounds bounds=out.getUnionOfChildrenBounds(null);
-        out.setBounds(bounds.getX(),bounds.getY(),bounds.getWidth(),bounds.getHeight());
-        return out;
-        */
         return new NodeContent(new PText(toString()),new PImage(icons.iconOfKind(DG.getNode(nodeId).kind()).getImage()));
 
     }

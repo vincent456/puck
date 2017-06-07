@@ -1,15 +1,17 @@
 package puck.piccolo2.uses;
 
 import org.piccolo2d.PNode;
+import sbt.Hash;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 
 /**
  * Created by Vincent Hudry on 05/06/2017.
  */
 public class ArrowNodesHolder extends PNode {
-    private Collection<PNode> hiddenArrows;
+    private Collection<Parrow> hiddenArrows;
     public ArrowNodesHolder(){
         hiddenArrows=new HashSet<>();
     }
@@ -26,5 +28,14 @@ public class ArrowNodesHolder extends PNode {
     public void showArrow(Parrow arrow){
         addArrow(arrow);
         hiddenArrows.remove(arrow);
+    }
+    public boolean isHidden(Parrow arrow){
+        return hiddenArrows.contains(arrow);
+    }
+    public Collection<Parrow> getVisibleArrows(){
+        HashSet<Parrow> set = new HashSet<>();
+        for(Iterator<PNode> iterator=getChildrenIterator();iterator.hasNext();)
+            set.add((Parrow) iterator.next());
+        return set;
     }
 }
