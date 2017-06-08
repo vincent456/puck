@@ -25,7 +25,6 @@ public class DisplayUsesMenu extends PNode {
     private DependencyGraph DG;
     private ArrowNodesHolder ANH;
     private HashMap<Object,PiccoloCustomNode> idNodeMap;
-    private PNode target;
     ShowNodeUsersOf SNUO;
     HideNodeUsersOf HNUO;
     //endregion
@@ -51,26 +50,14 @@ public class DisplayUsesMenu extends PNode {
 
         //endregion
     }
-    public void draw(Point2D position){
+    public void draw(PNode target){
         clear();
         addChild(menu);
-        menu.draw(position);
+        menu.draw(target);
     }
     public void clear(){
-        try {
-            AffineTransform t= menu.getTransform().createInverse();
-            menu.translate(t.getTranslateX(), t.getTranslateY());
-        }
-        catch (Exception e){
-            System.err.println(e.getMessage());
-        }
-        removeAllChildren();
-    }
+        menu.setTransform(AffineTransform.getTranslateInstance(0,0));
 
-    public void setTarget(PNode target){
-        this.target=target;
-        SNUO.setTarget((PiccoloCustomNode)target);
-        HNUO.setTarget((PiccoloCustomNode)target);
-        menu.setTarget(target);
+        removeAllChildren();
     }
 }

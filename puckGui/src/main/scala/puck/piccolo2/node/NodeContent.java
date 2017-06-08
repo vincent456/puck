@@ -11,8 +11,8 @@ import java.awt.geom.Point2D;
  * Created by Vincent Hudry on 07/06/2017.
  */
 public class NodeContent extends PNode {
-    private PText Text;
-    private PImage Icon;
+    private PText text;
+    private PImage icon;
     private int margin;
     private Point2D Position;
 
@@ -32,14 +32,23 @@ public class NodeContent extends PNode {
     public void updatePosition(Point2D position) {
         Position = position;
     }
+
+    public PText getText(){
+        return text;
+    }
+
+    public PImage getIcon(){
+        return icon;
+    }
+
     //endregion
     
-    public NodeContent(PText Text, PImage Icon){
-        this.Text=Text;
-        this.Icon=Icon;
-        addChild(Text);
+    public NodeContent(PText text, PImage Icon){
+        this.text=text;
+        this.icon=Icon;
+        addChild(this.text);
         addChild(Icon);
-        Text.translate(Icon.getBounds().getWidth()+10,0);
+        text.setBounds(Icon.getBounds().getWidth()+margin,0,text.getWidth(),text.getHeight());
         PBounds bounds=this.getUnionOfChildrenBounds(null);
         this.setBounds(bounds.getX(),bounds.getY(),bounds.getWidth(),bounds.getHeight());
     }

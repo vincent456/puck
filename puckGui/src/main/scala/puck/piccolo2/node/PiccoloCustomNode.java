@@ -6,6 +6,7 @@ import org.piccolo2d.nodes.PPath;
 import org.piccolo2d.nodes.PText;
 
 import java.awt.*;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -143,12 +144,7 @@ public class PiccoloCustomNode extends PNode {
         for(PiccoloCustomNode PCN:children){
             lastChild=PCN;
 
-            try {
-                PCN.translate(PCN.getTransform().createInverse().getTranslateX(), PCN.getTransform().createInverse().getTranslateY());
-            }
-            catch (Exception e){
-                System.err.println(e.getMessage());
-            }
+            PCN.setTransform(AffineTransform.getTranslateInstance(0,0));
 
             PCN.setGridLayoutH();
 
@@ -207,12 +203,7 @@ public class PiccoloCustomNode extends PNode {
         for(PiccoloCustomNode PCN:children){
             lastChild=PCN;
 
-            try {
-                PCN.translate(PCN.getTransform().createInverse().getTranslateX(), PCN.getTransform().createInverse().getTranslateY());
-            }
-            catch (Exception e){
-                System.err.println(e.getMessage());
-            }
+            PCN.setTransform(AffineTransform.getTranslateInstance(0,0));
 
             PCN.setGridLayoutV();
 
@@ -293,6 +284,8 @@ public class PiccoloCustomNode extends PNode {
 
     public void updateContentBoundingBoxes(boolean debug, PCanvas canvas){
 
+        updateTextBoundingBoxes(false);
+
         Point2D GLobalTranslation=content.getGlobalTranslation();
 
         double x=GLobalTranslation.getX();
@@ -306,6 +299,25 @@ public class PiccoloCustomNode extends PNode {
 
         for(PiccoloCustomNode PCN:getChildren())
             PCN.updateContentBoundingBoxes(debug,canvas);
+    }
+
+    public void updateTextBoundingBoxes(boolean debug){
+
+        Point2D globalTranslation=content.getText().getGlobalTranslation();
+        Point2D contentGlobalTranslation=content.getGlobalTranslation();
+
+        double x=globalTranslation.getX()-contentGlobalTranslation.getX();
+        double y= globalTranslation.getY()-contentGlobalTranslation.getY();
+        double w=content.getText().getBounds().getWidth();
+        double h=content.getText().getBounds().getHeight();
+
+        content.getText().setBounds(x+content.getIcon().getWidth()+content.getMargin(),y,w,h);
+
+        if(debug)
+            content.addChild(PPath.createRectangle(x,y,w,h));
+
+        //for(PiccoloCustomNode PCN:getChildren())
+        //    PCN.updateContentBoundingBoxes(debug,canvas);
     }
 
     //TODO implement setGridLayout to display items into a grid

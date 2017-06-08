@@ -14,6 +14,8 @@ public class MenuItem extends PNode {
     private PPath rect;
     private PText text;
 
+    private MenuItemEventHandler e;
+
     //region getters/setters
         public double getHeight(){
             return rect.getHeight();
@@ -21,6 +23,7 @@ public class MenuItem extends PNode {
     //endregion
 
     public MenuItem(String name,MenuItemEventHandler e){
+        this.e=e;
         text=new PText(name);
         rect=PPath.createRectangle(0,0,text.getWidth(),text.getHeight());
         rect.setPaint(Color.GRAY);
@@ -28,9 +31,10 @@ public class MenuItem extends PNode {
         addChild(text);
         this.addInputEventListener(e);
     }
-    public void draw(){
-        addChild(rect);
-        addChild(text);
+    public void draw(PNode target){
+        e.setTarget(target);
+        //addChild(rect);
+        //addChild(text);
     }
 
     @Override

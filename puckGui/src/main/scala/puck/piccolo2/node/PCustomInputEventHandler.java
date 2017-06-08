@@ -40,9 +40,7 @@ public class PCustomInputEventHandler extends PBasicInputEventHandler {
         }
         if(e.isRightMouseButton()){
             if(e.getPickedNode() instanceof PText)
-                //TODO rearrange code so that setTarget is no more needed
-            menu.setTarget(e.getPickedNode().getParent().getParent());
-            menu.draw(new Point2D.Double(e.getPosition().getX(),e.getPosition().getY()));
+            menu.draw(e.getPickedNode());
         }
     }
 }

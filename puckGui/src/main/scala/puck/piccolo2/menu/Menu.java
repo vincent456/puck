@@ -1,9 +1,9 @@
 package puck.piccolo2.menu;
 
 import org.piccolo2d.PNode;
-import puck.piccolo2.node.PiccoloCustomNode;
+import org.piccolo2d.nodes.PPath;
 
-import java.awt.geom.Point2D;
+import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,35 +14,24 @@ public class Menu extends PNode {
 
     private List<MenuItem> items;
 
-    private PNode target;
-
     public Menu(){
         items=new ArrayList<>();
     }
-
-    //region getters/setters
-    public void setTarget(PNode target){
-        this.target=target;
-
-    }
-    //endregion
 
     public void add(MenuItem item){
         items.add(item);
     }
 
-    public void draw(Point2D position){
+    public void draw(PNode target){
 
-        double x=position.getX();
-        double y = position.getY();
+        double x= target.getGlobalTranslation().getX()+target.getBounds().getCenterX();
+        double y = target.getGlobalTranslation().getY()+target.getBounds().getCenterY();
 
         for(MenuItem m:items) {
-            try {
-                m.transformBy(m.getTransform().createInverse());
-            }
-            catch (Exception e){
-                System.err.println(e.getMessage());
-            }
+            m.draw(target);
+
+            m.setTransform(AffineTransform.getTranslateInstance(0,0));
+
             m.translate(x,y);
             addChild(m);
             y+=m.getHeight();

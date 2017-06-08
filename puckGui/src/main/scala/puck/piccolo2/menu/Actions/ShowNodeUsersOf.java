@@ -23,7 +23,6 @@ public class ShowNodeUsersOf extends MenuItemEventHandler {
     protected DependencyGraph DG;
     protected ArrowNodesHolder arrowNodesHolder;
     protected HashMap<Object,PiccoloCustomNode> idNodeMap;
-    protected PiccoloCustomNode target;
 
     public ShowNodeUsersOf(DependencyGraph DG, ArrowNodesHolder arrowNodesHolder, HashMap<Object,PiccoloCustomNode> idNodeMap){
         this.DG=DG;
@@ -34,6 +33,8 @@ public class ShowNodeUsersOf extends MenuItemEventHandler {
     @Override
     public void mouseClicked(PInputEvent e) {
 
+        PiccoloCustomNode target=(PiccoloCustomNode) this.target.getParent().getParent();
+
         int nodeId=target.getidNode();
 
         Set<Object> usersof=DG.usersOf(nodeId);
@@ -43,9 +44,5 @@ public class ShowNodeUsersOf extends MenuItemEventHandler {
             PNode to=target.getContent();
             arrowNodesHolder.addArrow(new Parrow(from,to, new Triangle(Color.YELLOW), 5, Color.YELLOW));
         }
-    }
-
-    public void setTarget(PiccoloCustomNode target){
-        this.target=target;
     }
 }

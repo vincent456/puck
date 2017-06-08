@@ -23,6 +23,8 @@ public class HideNodeUsersOf extends ShowNodeUsersOf {
     @Override
     public void mouseClicked(PInputEvent e) {
 
+        PiccoloCustomNode target=(PiccoloCustomNode) this.target.getParent().getParent();
+
         int nodeId=target.getidNode();
 
         Set<Object> usersof=DG.usersOf(nodeId);
