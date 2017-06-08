@@ -13,7 +13,7 @@ import java.awt.geom.Point2D;
 public class NodeContent extends PNode {
     private PText text;
     private PImage icon;
-    private int margin;
+    private int margin=10;
     private Point2D Position;
 
     //region getters/setters

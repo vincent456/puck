@@ -15,18 +15,17 @@ public class Parrow extends PNode{
         PPath rect=PPath.createRectangle(0,0,width,dist-head.getBounds().height/2);
         rect.setPaint(color);
         double theta=Math.atan2(to.getY()-from.getY(),to.getX()-from.getX())+Math.toRadians(90+180);
+        rect.translate(from.getX(),from.getY());
         rect.rotate(theta);
         rect.translate(-width/2,0);
-        rect.translate(from.getX(),from.getY());
-        //TODO fix translation problem on constructor with node parameters
-        //addChild(rect);
+        addChild(rect);
 
         theta=Math.atan2(to.getY()-from.getY(),to.getX()-from.getX())+Math.toRadians(90);
         head.translate(to.getX(),to.getY());
         head.rotate(theta);
         addChild(head);
 
-        addChild(PPath.createLine(from.getX(),from.getY(),to.getX(),to.getY()));
+        //addChild(PPath.createLine(from.getX(),from.getY(),to.getX(),to.getY()));
 
     }
 
@@ -43,7 +42,7 @@ public class Parrow extends PNode{
     }
 
     public Parrow(PNode from,PNode to, PNode head, float width, Color color){
-        this(new Point2D.Double(from.getBounds().getCenter2D().getX(),from.getBounds().getCenter2D().getY()),new Point2D.Double(to.getBounds().getCenter2D().getX(),to.getBounds().getCenter2D().getY()),head,width,color);
+        this(from.getBounds().getCenter2D(),to.getBounds().getCenter2D(),head,width,color);
         this.from=from;
         this.to=to;
     }
