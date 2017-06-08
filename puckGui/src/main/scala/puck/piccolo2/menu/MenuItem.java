@@ -22,11 +22,11 @@ public class MenuItem extends PNode {
         }
     //endregion
 
-    public MenuItem(String name,MenuItemEventHandler e){
+    public MenuItem(String name,MenuItemEventHandler e,Color color){
         this.e=e;
         text=new PText(name);
         rect=PPath.createRectangle(0,0,text.getWidth(),text.getHeight());
-        rect.setPaint(Color.GRAY);
+        rect.setPaint(color);
         addChild(rect);
         addChild(text);
         this.addInputEventListener(e);

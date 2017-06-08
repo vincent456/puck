@@ -1,7 +1,8 @@
-package puck.piccolo2.menu.Actions;
+package puck.piccolo2.menu.Actions.Extemds;
 
 import org.piccolo2d.event.PInputEvent;
 import puck.graph.DependencyGraph;
+import puck.piccolo2.menu.Actions.ShowNodeUsersOf;
 import puck.piccolo2.node.PiccoloCustomNode;
 import puck.piccolo2.uses.ArrowNodesHolder;
 import puck.piccolo2.uses.Parrow;
@@ -14,8 +15,8 @@ import java.util.HashMap;
 /**
  * Created by Vincent Hudry on 08/06/2017.
  */
-public class HideNodeUsedBy extends ShowNodeUsersOf {
-    public HideNodeUsedBy(DependencyGraph DG, ArrowNodesHolder arrowNodesHolder, HashMap<Object, PiccoloCustomNode> idNodeMap) {
+public class HideChildrenNode extends ShowNodeUsersOf {
+    public HideChildrenNode(DependencyGraph DG, ArrowNodesHolder arrowNodesHolder, HashMap<Object, PiccoloCustomNode> idNodeMap) {
         super(DG, arrowNodesHolder, idNodeMap);
     }
 
@@ -26,17 +27,16 @@ public class HideNodeUsedBy extends ShowNodeUsersOf {
 
         int nodeId=target.getidNode();
 
-        Set<Object> usersof=DG.usedBy(nodeId);
+        Set<Object> parent=DG.subTypes(nodeId);
         Collection<Parrow> quiver=arrowNodesHolder.getVisibleArrows();
         for(Parrow A:quiver){
             PiccoloCustomNode from= (PiccoloCustomNode) A.getFrom().getParent();
             PiccoloCustomNode to= (PiccoloCustomNode) A.getTo().getParent();
-            for(Iterator<Object> iterator = usersof.iterator(); iterator.hasNext();)
-                if(to.getidNode()==(int)iterator.next()){
+            for(Iterator<Object> iterator = parent.iterator(); iterator.hasNext();)
+                if(from.getidNode()==(int)iterator.next()){
                     arrowNodesHolder.removeArrow(A);
                 }
         }
 
     }
-
 }

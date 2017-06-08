@@ -1,8 +1,9 @@
-package puck.piccolo2.menu.Actions;
+package puck.piccolo2.menu.Actions.Uses;
 
 import org.piccolo2d.PNode;
 import org.piccolo2d.event.PInputEvent;
 import puck.graph.DependencyGraph;
+import puck.piccolo2.menu.Actions.ShowNodeUsersOf;
 import puck.piccolo2.node.PiccoloCustomNode;
 import puck.piccolo2.uses.*;
 import scala.collection.Iterator;
@@ -12,18 +13,12 @@ import java.awt.*;
 import java.util.HashMap;
 
 /**
- * Created by Vincent Hudry on 02/06/2017.
+ * Created by Vincent Hudry on 08/06/2017.
  */
-public class ShowNodeUsersOf extends MenuItemEventHandler {
+public class ShowNodeUsedBy extends ShowNodeUsersOf {
 
-    protected DependencyGraph DG;
-    protected ArrowNodesHolder arrowNodesHolder;
-    protected HashMap<Object,PiccoloCustomNode> idNodeMap;
-
-    public ShowNodeUsersOf(DependencyGraph DG, ArrowNodesHolder arrowNodesHolder, HashMap<Object,PiccoloCustomNode> idNodeMap){
-        this.DG=DG;
-        this.arrowNodesHolder=arrowNodesHolder;
-        this.idNodeMap=idNodeMap;
+    public ShowNodeUsedBy(DependencyGraph DG, ArrowNodesHolder arrowNodesHolder, HashMap<Object, PiccoloCustomNode> idNodeMap) {
+        super(DG, arrowNodesHolder, idNodeMap);
     }
 
     @Override
@@ -33,11 +28,11 @@ public class ShowNodeUsersOf extends MenuItemEventHandler {
 
         int nodeId=target.getidNode();
 
-        Set<Object> usersof=DG.usersOf(nodeId);
+        Set<Object> usersof=DG.usedBy(nodeId);
         for(Iterator<Object> iterator = usersof.toIterator(); iterator.hasNext();) {
             Object O=iterator.next();
-            PNode from=target.getContent();
-            PNode to=idNodeMap.get(O).getContent();
+            PNode from = idNodeMap.get(O).getContent();
+            PNode to=target.getContent();
             arrowNodesHolder.addArrow(new ParrowFat(from,to, new Triangle(Color.YELLOW),5,Color.YELLOW));
         }
     }
