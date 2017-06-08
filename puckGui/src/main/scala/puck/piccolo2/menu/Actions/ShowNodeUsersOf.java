@@ -39,8 +39,8 @@ public class ShowNodeUsersOf extends MenuItemEventHandler {
         Set<Object> usersof=DG.usersOf(nodeId);
         for(Iterator<Object> iterator = usersof.toIterator(); iterator.hasNext();) {
             Object O=iterator.next();
-            PNode from=target.getContent();
-            PNode to = idNodeMap.get(O).getContent();
+            PNode from = idNodeMap.get(O).getContent();
+            PNode to=target.getContent();
             arrowNodesHolder.addArrow(new Parrow(from,to, new Triangle(Color.YELLOW), 5, Color.YELLOW));
         }
     }

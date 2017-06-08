@@ -18,7 +18,8 @@ public class Parrow extends PNode{
         rect.rotate(theta);
         rect.translate(-width/2,0);
         rect.translate(from.getX(),from.getY());
-        addChild(rect);
+        //TODO fix translation problem on constructor with node parameters
+        //addChild(rect);
 
         theta=Math.atan2(to.getY()-from.getY(),to.getX()-from.getX())+Math.toRadians(90);
         head.translate(to.getX(),to.getY());

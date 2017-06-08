@@ -307,4 +307,6 @@ public class PiccoloCustomNode extends PNode {
         for(PiccoloCustomNode PCN:getChildren())
             PCN.updateContentBoundingBoxes(debug,canvas);
     }
+
+    //TODO implement setGridLayout to display items into a grid
 }

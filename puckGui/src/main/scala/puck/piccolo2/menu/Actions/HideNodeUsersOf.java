@@ -5,7 +5,6 @@ import puck.graph.DependencyGraph;
 import puck.piccolo2.node.PiccoloCustomNode;
 import puck.piccolo2.uses.ArrowNodesHolder;
 import puck.piccolo2.uses.Parrow;
-import scala.Int;
 import scala.collection.Iterator;
 import scala.collection.immutable.Set;
 
@@ -29,8 +28,8 @@ public class HideNodeUsersOf extends ShowNodeUsersOf {
         Set<Object> usersof=DG.usersOf(nodeId);
         Collection<Parrow> quiver=arrowNodesHolder.getVisibleArrows();
         for(Parrow A:quiver){
-            PiccoloCustomNode from= (PiccoloCustomNode) A.getFrom().getParent();
-            PiccoloCustomNode to= (PiccoloCustomNode) A.getTo().getParent();
+            PiccoloCustomNode from= (PiccoloCustomNode) A.getTo().getParent();
+            PiccoloCustomNode to= (PiccoloCustomNode) A.getFrom().getParent();
             for(Iterator<Object> iterator = usersof.iterator(); iterator.hasNext();)
             if(to.getidNode()==(int)iterator.next()){
                 arrowNodesHolder.removeArrow(A);
