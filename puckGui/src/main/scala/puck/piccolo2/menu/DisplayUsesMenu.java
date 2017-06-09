@@ -82,7 +82,7 @@ public class DisplayUsesMenu extends PNode {
 
         //region refactoring
 
-        Rename rename=new Rename(control);
+        Rename rename=new Rename(control,idNodeMap);
         MenuItem renam=new MenuItem("Rename",rename,Color.GRAY);
         menu.add(renam);
         //endregion

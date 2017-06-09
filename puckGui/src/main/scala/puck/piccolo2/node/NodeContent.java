@@ -37,6 +37,10 @@ public class NodeContent extends PNode {
         return text;
     }
 
+    public void setText(String text){
+        this.text = new PText(text);
+    }
+
     public PImage getIcon(){
         return icon;
     }

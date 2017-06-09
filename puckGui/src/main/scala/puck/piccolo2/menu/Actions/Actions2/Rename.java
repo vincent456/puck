@@ -8,6 +8,7 @@ import puck.piccolo2.menu.Actions.MenuItemEventHandler;
 import puck.piccolo2.node.PiccoloCustomNode;
 
 import javax.swing.*;
+import java.util.HashMap;
 
 
 /**
@@ -18,11 +19,13 @@ public class Rename extends MenuItemEventHandler{
     private DependencyGraph DG;
     private TransformationRules TR;
     private PuckControl control;
+    HashMap<Object,PiccoloCustomNode> nodeByID;
 
-    public Rename(PuckControl control){
+    public Rename(PuckControl control,HashMap<Object,PiccoloCustomNode> nodeByID){
         DG=control.graph();
         TR=control.graphUtils().Rules();
         this.control=control;
+        this.nodeByID=nodeByID;
     }
 
     @Override
@@ -32,8 +35,8 @@ public class Rename extends MenuItemEventHandler{
 
         int nodeId=((PiccoloCustomNode)(target.getParent().getParent())).getidNode();
         DependencyGraph DG2 = TR.rename().apply(DG,nodeId,dialout);
-
-        System.out.println(DG.getNode(nodeId));
-        System.out.println(DG2.getNode(nodeId));
+        control.historyHandler().pushGraph(DG2);
+        DG=control.graph();
+        nodeByID.get(nodeId).getContent().setText(dialout);
     }
 }
