@@ -1,9 +1,6 @@
-package puck.piccolo2.uses;
+package puck.piccolo2.Parrows;
 
 import org.piccolo2d.PNode;
-import org.piccolo2d.nodes.PPath;
-import puck.piccolo2.Util;
-import puck.piccolo2.node.NodeContent;
 
 import java.awt.*;
 import java.awt.geom.Point2D;

@@ -4,8 +4,8 @@ import org.piccolo2d.event.PInputEvent;
 import puck.graph.DependencyGraph;
 import puck.piccolo2.menu.Actions.ShowNodeUsersOf;
 import puck.piccolo2.node.PiccoloCustomNode;
-import puck.piccolo2.uses.ArrowNodesHolder;
-import puck.piccolo2.uses.Parrow;
+import puck.piccolo2.Parrows.ArrowNodesHolder;
+import puck.piccolo2.Parrows.Parrow;
 import scala.collection.Iterator;
 import scala.collection.immutable.Set;
 

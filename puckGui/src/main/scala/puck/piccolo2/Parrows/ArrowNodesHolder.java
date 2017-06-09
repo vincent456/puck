@@ -1,7 +1,6 @@
-package puck.piccolo2.uses;
+package puck.piccolo2.Parrows;
 
 import org.piccolo2d.PNode;
-import sbt.Hash;
 
 import java.util.Collection;
 import java.util.HashSet;

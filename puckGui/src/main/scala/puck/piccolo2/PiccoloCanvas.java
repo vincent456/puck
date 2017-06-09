@@ -6,13 +6,9 @@ import puck.control.PuckControl;
 import puck.piccolo2.menu.DisplayUsesMenu;
 import puck.piccolo2.node.PCustomInputEventHandler;
 import puck.piccolo2.node.PiccoloCustomNode;
-import puck.piccolo2.uses.ArrowNodesHolder;
-import puck.piccolo2.uses.Parrow;
-import puck.piccolo2.uses.Triangle;
+import puck.piccolo2.Parrows.ArrowNodesHolder;
 import puck.view.NodeKindIcons;
 
-import java.awt.*;
-import java.awt.geom.Point2D;
 import java.util.HashMap;
 
 /**

@@ -1,9 +1,7 @@
-package puck.piccolo2.uses;
+package puck.piccolo2.Parrows;
 
 import org.piccolo2d.PNode;
 import org.piccolo2d.nodes.PPath;
-
-import java.awt.*;
 
 public class TriangleHollow extends PNode{
     public TriangleHollow(){

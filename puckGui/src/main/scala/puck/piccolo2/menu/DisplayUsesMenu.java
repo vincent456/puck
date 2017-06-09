@@ -12,7 +12,7 @@ import puck.piccolo2.menu.Actions.Uses.HideNodeUsersOf;
 import puck.piccolo2.menu.Actions.Uses.ShowNodeUsedBy;
 import puck.piccolo2.menu.Actions.ShowNodeUsersOf;
 import puck.piccolo2.node.PiccoloCustomNode;
-import puck.piccolo2.uses.ArrowNodesHolder;
+import puck.piccolo2.Parrows.ArrowNodesHolder;
 
 import java.awt.*;
 import java.awt.geom.AffineTransform;
