@@ -1,6 +1,7 @@
 package puck.piccolo2;
 
 import org.piccolo2d.PCanvas;
+import org.piccolo2d.extras.pswing.PSwingCanvas;
 import org.piccolo2d.extras.swing.PScrollPane;
 import puck.control.PuckControl;
 import puck.piccolo2.menu.DisplayUsesMenu;
@@ -9,13 +10,14 @@ import puck.piccolo2.node.PiccoloCustomNode;
 import puck.piccolo2.Parrows.ArrowNodesHolder;
 import puck.view.NodeKindIcons;
 
+import javax.swing.*;
 import java.util.HashMap;
 
 /**
  * Created by Vincent Hudry on 29/05/2017.
  */
 public class PiccoloCanvas extends PScrollPane {
-    private PCanvas canvas;
+    private PSwingCanvas canvas;
     private PuckControl control;
 
     private PiccoloCustomNode node;
@@ -26,10 +28,9 @@ public class PiccoloCanvas extends PScrollPane {
     private HashMap<Object,PiccoloCustomNode> idNodeMap;
 
     public PiccoloCanvas(PuckControl control,NodeKindIcons icons){
-        canvas=new PCanvas();
+        canvas=new PSwingCanvas();
         this.control=control;
         setViewportView(canvas);
-
 
         //region piccoloCustomNode
         NodeAdapterTree nta=new NodeAdapterTree(control,0,icons);
@@ -52,10 +53,8 @@ public class PiccoloCanvas extends PScrollPane {
         //region ArrowNodesHolder
 
         ArrowNodesHolder arrowNodesHolder=new ArrowNodesHolder();
-        //Triangle t=new Triangle(Color.GREEN);
 
         canvas.getLayer().addChild(arrowNodesHolder);
-        //arrowNodesHolder.addArrow(new Parrow(new Point2D.Double(0,0),new Point2D.Double(10,15),t,2,Color.BLUE));
         //endregion
 
         //region menu

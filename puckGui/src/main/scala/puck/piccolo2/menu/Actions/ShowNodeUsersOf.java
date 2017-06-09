@@ -38,6 +38,7 @@ public class ShowNodeUsersOf extends MenuItemEventHandler {
             Object O=iterator.next();
             PNode from=target.getContent();
             PNode to=idNodeMap.get(O).getContent();
+            if((to.getParent().getParent() instanceof  PiccoloCustomNode)&&!((PiccoloCustomNode) to.getParent().getParent()).isHidden())
             arrowNodesHolder.addArrow(new ParrowFat(from,to, new Triangle(Color.YELLOW),5,Color.YELLOW));
         }
     }

@@ -10,16 +10,18 @@ import puck.piccolo2.menu.Actions.MenuItemEventHandler;
  */
 public class Rename extends MenuItemEventHandler{
 
-    DependencyGraph DG;
-    TransformationRules TR;
+    private DependencyGraph DG;
+    private TransformationRules TR;
+    private int nodeId;
 
-    public Rename(DependencyGraph DG,TransformationRules TR){
+    public Rename(DependencyGraph DG,TransformationRules TR,int nodeId){
         this.DG=DG;
         this.TR=TR;
+        this.nodeId=nodeId;
     }
 
     @Override
     public void mouseClicked(PInputEvent e) {
-
+        TR.rename();
     }
 }

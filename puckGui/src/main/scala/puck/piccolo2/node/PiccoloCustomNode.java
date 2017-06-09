@@ -320,5 +320,22 @@ public class PiccoloCustomNode extends PNode {
         //    PCN.updateContentBoundingBoxes(debug,canvas);
     }
 
+    public boolean isHidden(){
+        PNode parent=getParent();
+        if(parent==null)
+            return false;
+        if(parent instanceof PiccoloCustomNode){
+            PiccoloCustomNode PCNparent=(PiccoloCustomNode) parent;
+            if(PCNparent.getChildren().contains(this))
+                return false;
+            else
+                return true;
+        }
+        else {
+            System.err.println("error");
+            return false;
+        }
+    }
+
     //TODO implement setGridLayout to display items into a grid
 }
