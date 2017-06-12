@@ -41,7 +41,7 @@ public class PiccoloCanvas extends PScrollPane {
 
         canvas.getLayer().addChild(node);
 
-        node.setGridLayoutV();
+        node.setLayout();
         // node.updateContentBoundingBoxes(true,canvas);
 
         //endregion

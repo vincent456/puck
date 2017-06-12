@@ -44,6 +44,8 @@ public class PiccoloCustomNode extends PNode {
         return ((PText)(content.getChild(0))).getText();
     }
 
+    public void setLayout(){setGridLayoutV();}
+
     //endregion
 
     private Collection<PiccoloCustomNode> hiddenchildren;

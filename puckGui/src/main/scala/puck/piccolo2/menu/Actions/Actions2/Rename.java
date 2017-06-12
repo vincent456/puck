@@ -42,6 +42,6 @@ public class Rename extends MenuItemEventHandler{
         control.historyHandler().pushGraph(DG2);
         DG=control.graph();
         nodeByID.get(nodeId).getContent().setText(nodeId+"-"+dialout);
-        nodeByID.get(0).setGridLayoutV();
+        nodeByID.get(0).setLayout();
     }
 }

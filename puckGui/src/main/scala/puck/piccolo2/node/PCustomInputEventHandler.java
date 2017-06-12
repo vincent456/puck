@@ -33,7 +33,7 @@ public class PCustomInputEventHandler extends PBasicInputEventHandler {
     public void mouseClicked(PInputEvent e){
         if(e.isLeftMouseButton()) {
             node.toggleChildren();
-            tree.setGridLayoutV();
+            tree.setLayout();
             tree.updateContentBoundingBoxes(false,canvas);
             //optional
             menu.clear();
