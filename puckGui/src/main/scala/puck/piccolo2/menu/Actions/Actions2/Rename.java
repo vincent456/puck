@@ -19,6 +19,8 @@ public class Rename extends MenuItemEventHandler{
     private DependencyGraph DG;
     private TransformationRules TR;
     private PuckControl control;
+    private int nodeId;
+
     HashMap<Object,PiccoloCustomNode> nodeByID;
 
     public Rename(PuckControl control,HashMap<Object,PiccoloCustomNode> nodeByID){
@@ -32,11 +34,14 @@ public class Rename extends MenuItemEventHandler{
     public void mouseClicked(PInputEvent e) {
 
         String dialout = JOptionPane.showInputDialog("Rename","");
-
-        int nodeId=((PiccoloCustomNode)(target.getParent().getParent())).getidNode();
+        if(dialout==null||dialout.equals(""))
+            return;
+        if(target.getParent()!=null)
+        nodeId=((PiccoloCustomNode)(target.getParent().getParent())).getidNode();
         DependencyGraph DG2 = TR.rename().apply(DG,nodeId,dialout);
         control.historyHandler().pushGraph(DG2);
         DG=control.graph();
-        nodeByID.get(nodeId).getContent().setText(dialout);
+        nodeByID.get(nodeId).getContent().setText(nodeId+"-"+dialout);
+        nodeByID.get(0).setGridLayoutV();
     }
 }

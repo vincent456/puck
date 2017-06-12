@@ -14,7 +14,6 @@ public class NodeContent extends PNode {
     private PText text;
     private PImage icon;
     private int margin=10;
-    private Point2D Position;
 
     //region getters/setters
     public int getMargin() {
@@ -25,20 +24,17 @@ public class NodeContent extends PNode {
         this.margin = margin;
     }
 
-    public Point2D getPosition() {
-        return Position;
-    }
-
-    public void updatePosition(Point2D position) {
-        Position = position;
-    }
-
     public PText getText(){
         return text;
     }
 
     public void setText(String text){
+        removeChild(this.text);
         this.text = new PText(text);
+        addChild(this.text);
+        this.text.setBounds(icon.getBounds().getWidth()+margin,0,this.text.getWidth(),this.text.getHeight());
+        PBounds bounds=this.getUnionOfChildrenBounds(null);
+        this.setBounds(bounds.getX(),bounds.getY(),bounds.getWidth(),bounds.getHeight());
     }
 
     public PImage getIcon(){
