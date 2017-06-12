@@ -3,8 +3,10 @@ package puck.piccolo2.menu;
 import org.piccolo2d.PNode;
 import puck.control.PuckControl;
 import puck.graph.DependencyGraph;
+import puck.graph.NodeKind;
 import puck.graph.transformations.TransformationRules;
 import puck.piccolo2.menu.Actions.*;
+import puck.piccolo2.menu.Actions.Actions2.AddChildKind;
 import puck.piccolo2.menu.Actions.Actions2.Rename;
 import puck.piccolo2.menu.Actions.Extemds.HideChildrenNode;
 import puck.piccolo2.menu.Actions.Extemds.HideParentNode;
@@ -19,7 +21,8 @@ import puck.piccolo2.Parrows.ArrowNodesHolder;
 
 import java.awt.*;
 import java.awt.geom.AffineTransform;
-import java.util.HashMap;
+import java.util.*;
+import java.util.List;
 
 /**
  * Created by Vincent Hudry on 02/06/2017.
@@ -28,9 +31,7 @@ public class DisplayUsesMenu extends PNode {
 
     private Menu menu;
 
-    //region for showusedby
-
-    //endregion
+    private PuckControl control;
 
     public DisplayUsesMenu(PuckControl control, ArrowNodesHolder ANH, HashMap<Object,PiccoloCustomNode> idNodeMap){
         menu=new Menu();
@@ -80,17 +81,53 @@ public class DisplayUsesMenu extends PNode {
 
         //endregion
 
-        //region refactoring
+        //region rename
 
         Rename rename=new Rename(control,idNodeMap);
         MenuItem renam=new MenuItem("Rename",rename,Color.GRAY);
         menu.add(renam);
+
+        //endregion
+
+        //region AddChildKind
+
+        this.control=control;
+        dynamicItems=new LinkedList<>();
+
         //endregion
 
     }
+
+    private List<MenuItem> dynamicItems;
+
     public void draw(PNode target){
+        for(MenuItem item:dynamicItems){
+            menu.remove(item);
+        }
+
+        dynamicItems=new LinkedList<>();
+
         clear();
         addChild(menu);
+
+        //region AddChildKind
+        PiccoloCustomNode PCN= (PiccoloCustomNode) target.getParent().getParent();
+        DependencyGraph DG = control.graph();
+        //java.util.List<NodeKind> list=new LinkedList<>();
+        for(scala.collection.Iterator<NodeKind> iterator = DG.nodeKinds().iterator(); iterator.hasNext();){
+            NodeKind nk=iterator.next();
+            if(DG.getNode(PCN.getidNode()).kind().canContain(nk)){
+                //list.add(nk);
+                AddChildKind ACK=new AddChildKind(control);
+
+                MenuItem menuItem=new MenuItem("Add "+ nk.toString(),ACK,Color.GRAY);
+                    dynamicItems.add(menuItem);
+                    menu.add(menuItem);
+                }
+        }
+
+        //endregion
+
         menu.draw(target);
     }
     public void clear(){

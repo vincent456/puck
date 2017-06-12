@@ -22,6 +22,11 @@ public class Menu extends PNode {
         items.add(item);
     }
 
+    public void remove(MenuItem item){
+        items.remove(item);
+        removeChild(item);
+    }
+
     public void draw(PNode target){
 
         double x= target.getGlobalTranslation().getX()+target.getBounds().getCenterX();
