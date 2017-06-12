@@ -4,6 +4,7 @@ import org.piccolo2d.PCanvas;
 import org.piccolo2d.extras.pswing.PSwingCanvas;
 import org.piccolo2d.extras.swing.PScrollPane;
 import puck.control.PuckControl;
+import puck.graph.GraphUtils;
 import puck.piccolo2.menu.DisplayUsesMenu;
 import puck.piccolo2.node.PCustomInputEventHandler;
 import puck.piccolo2.node.PiccoloCustomNode;
@@ -17,7 +18,7 @@ import java.util.HashMap;
  * Created by Vincent Hudry on 29/05/2017.
  */
 public class PiccoloCanvas extends PScrollPane {
-    private PSwingCanvas canvas;
+    private PCanvas canvas;
     private PuckControl control;
 
     private PiccoloCustomNode node;
@@ -28,7 +29,7 @@ public class PiccoloCanvas extends PScrollPane {
     private HashMap<Object,PiccoloCustomNode> idNodeMap;
 
     public PiccoloCanvas(PuckControl control,NodeKindIcons icons){
-        canvas=new PSwingCanvas();
+        canvas=new PCanvas();
         this.control=control;
         setViewportView(canvas);
 
@@ -58,7 +59,7 @@ public class PiccoloCanvas extends PScrollPane {
         //endregion
 
         //region menu
-        menu=new DisplayUsesMenu(control.graph(),arrowNodesHolder,idNodeMap);
+        menu=new DisplayUsesMenu(control,arrowNodesHolder,idNodeMap);
 
         addEvent(node,node,menu);
 

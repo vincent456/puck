@@ -1,8 +1,11 @@
 package puck.piccolo2.menu;
 
 import org.piccolo2d.PNode;
+import puck.control.PuckControl;
 import puck.graph.DependencyGraph;
+import puck.graph.transformations.TransformationRules;
 import puck.piccolo2.menu.Actions.*;
+import puck.piccolo2.menu.Actions.Actions2.Rename;
 import puck.piccolo2.menu.Actions.Extemds.HideChildrenNode;
 import puck.piccolo2.menu.Actions.Extemds.HideParentNode;
 import puck.piccolo2.menu.Actions.Extemds.ShowChildrenNode;
@@ -29,11 +32,14 @@ public class DisplayUsesMenu extends PNode {
 
     //endregion
 
-    public DisplayUsesMenu(DependencyGraph DG, ArrowNodesHolder ANH,HashMap<Object,PiccoloCustomNode> idNodeMap){
+    public DisplayUsesMenu(PuckControl control, ArrowNodesHolder ANH, HashMap<Object,PiccoloCustomNode> idNodeMap){
         menu=new Menu();
 
         MenuItem closes=new MenuItem("Close Menu",new CloseMenu(this), Color.GRAY);
         menu.add(closes);
+
+        DependencyGraph DG=control.graph();
+        TransformationRules TR=control.graphUtils().Rules();
 
         //region for showuses
 
@@ -72,6 +78,13 @@ public class DisplayUsesMenu extends PNode {
         MenuItem hidechildrennode=new MenuItem("Hide children",HCN,Color.RED);
         menu.add(hidechildrennode);
 
+        //endregion
+
+        //region refactoring
+
+        Rename rename=new Rename(control,idNodeMap);
+        MenuItem renam=new MenuItem("Rename",rename,Color.GRAY);
+        menu.add(renam);
         //endregion
 
     }
