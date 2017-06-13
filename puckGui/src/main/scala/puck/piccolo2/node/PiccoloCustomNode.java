@@ -4,6 +4,7 @@ import org.piccolo2d.PCanvas;
 import org.piccolo2d.PNode;
 import org.piccolo2d.nodes.PPath;
 import org.piccolo2d.nodes.PText;
+import puck.piccolo2.PiccoloCanvas;
 
 import java.awt.*;
 import java.awt.geom.AffineTransform;
@@ -78,6 +79,9 @@ public class PiccoloCustomNode extends PNode {
 
     public void addChildNode(Tree t){
         PiccoloCustomNode PCN=new PiccoloCustomNode(t);
+
+        PCN.getContent().addInputEventListener(new PCustomInputEventHandler(PCN, PiccoloCanvas.getRoot(),PiccoloCanvas.getMenu(),PiccoloCanvas.getCanvas()));
+
         boolean isHiddingChildren=hiddenchildren.size()!=0;
         if(isHiddingChildren)
             hiddenchildren.add(PCN);

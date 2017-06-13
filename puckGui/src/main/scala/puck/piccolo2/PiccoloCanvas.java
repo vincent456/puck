@@ -19,15 +19,26 @@ import java.util.HashMap;
  * Created by Vincent Hudry on 29/05/2017.
  */
 public class PiccoloCanvas extends PScrollPane {
-    private PCanvas canvas;
+    private static PCanvas canvas;
     private PuckControl control;
 
     private PiccoloCustomNode node;
     private NodeKindIcons icons;
 
-    private DisplayUsesMenu menu;
+    private static DisplayUsesMenu menu;
 
     private HashMap<Object,PiccoloCustomNode> idNodeMap;
+
+    private static PiccoloCustomNode root;
+
+
+    public static PiccoloCustomNode getRoot() {
+        return root;
+    }
+
+    public static PCanvas getCanvas() {
+        return canvas;
+    }
 
     public PiccoloCanvas(PuckControl control,NodeKindIcons icons){
         canvas=new PCanvas();
@@ -62,6 +73,8 @@ public class PiccoloCanvas extends PScrollPane {
         //region menu
         menu=new DisplayUsesMenu(control,arrowNodesHolder,idNodeMap);
 
+        root=node;
+
         addEvent(node,node,menu);
 
         canvas.getLayer().addChild(menu);
@@ -82,5 +95,9 @@ public class PiccoloCanvas extends PScrollPane {
         idNodeMap.put(node.getidNode(),node);
         for(PiccoloCustomNode PCN:node.getAllChildren())
             fillIdNodeMap(PCN);
+    }
+
+    public static DisplayUsesMenu getMenu() {
+        return menu;
     }
 }
