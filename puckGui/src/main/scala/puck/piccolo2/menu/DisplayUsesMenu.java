@@ -118,7 +118,7 @@ public class DisplayUsesMenu extends PNode {
             NodeKind nk=iterator.next();
             if(DG.getNode(PCN.getidNode()).kind().canContain(nk)){
                 //list.add(nk);
-                AddChildKind ACK=new AddChildKind(control);
+                AddChildKind ACK=new AddChildKind(control,nk);
 
                 MenuItem menuItem=new MenuItem("Add "+ nk.toString(),ACK,Color.GRAY);
                     dynamicItems.add(menuItem);
