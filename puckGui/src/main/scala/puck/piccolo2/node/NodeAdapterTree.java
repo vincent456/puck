@@ -1,11 +1,9 @@
-package puck.piccolo2;
+package puck.piccolo2.node;
 
 import org.piccolo2d.nodes.PImage;
 import org.piccolo2d.nodes.PText;
 import puck.control.PuckControl;
 import puck.graph.DependencyGraph;
-import puck.piccolo2.node.NodeContent;
-import puck.piccolo2.node.Tree;
 import puck.view.NodeKindIcons;
 import scala.Tuple2;
 import scala.collection.Iterator;
@@ -74,7 +72,7 @@ public class NodeAdapterTree implements Tree {
                 return sb.toString();
             }
         }
-        return "Error";
+        return "Error NodeAdapterTree.toString()";
     }
 
 }

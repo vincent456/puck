@@ -33,6 +33,8 @@ public class DisplayUsesMenu extends PNode {
 
     private PuckControl control;
 
+    private HashMap<Object,PiccoloCustomNode> idNodeMap;
+
     public DisplayUsesMenu(PuckControl control, ArrowNodesHolder ANH, HashMap<Object,PiccoloCustomNode> idNodeMap){
         menu=new Menu();
 
@@ -94,6 +96,8 @@ public class DisplayUsesMenu extends PNode {
         this.control=control;
         dynamicItems=new LinkedList<>();
 
+        this.idNodeMap=idNodeMap;
+
         //endregion
 
     }
@@ -118,7 +122,7 @@ public class DisplayUsesMenu extends PNode {
             NodeKind nk=iterator.next();
             if(DG.getNode(PCN.getidNode()).kind().canContain(nk)){
                 //list.add(nk);
-                AddChildKind ACK=new AddChildKind(control,nk);
+                AddChildKind ACK=new AddChildKind(control,nk,idNodeMap.get(0));
 
                 MenuItem menuItem=new MenuItem("Add "+ nk.toString(),ACK,Color.GRAY);
                     dynamicItems.add(menuItem);

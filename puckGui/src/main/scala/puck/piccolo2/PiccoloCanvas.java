@@ -6,6 +6,7 @@ import org.piccolo2d.extras.swing.PScrollPane;
 import puck.control.PuckControl;
 import puck.graph.GraphUtils;
 import puck.piccolo2.menu.DisplayUsesMenu;
+import puck.piccolo2.node.NodeAdapterTree;
 import puck.piccolo2.node.PCustomInputEventHandler;
 import puck.piccolo2.node.PiccoloCustomNode;
 import puck.piccolo2.Parrows.ArrowNodesHolder;

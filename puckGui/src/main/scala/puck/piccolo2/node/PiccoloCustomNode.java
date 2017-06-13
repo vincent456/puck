@@ -16,6 +16,9 @@ public class PiccoloCustomNode extends PNode {
     private NodeContent content;
     private PPath rect;
 
+    private Collection<PiccoloCustomNode> hiddenchildren;
+    private double margin=10;
+
     private int idNode;
 
     //region getters/setters
@@ -48,8 +51,6 @@ public class PiccoloCustomNode extends PNode {
 
     //endregion
 
-    private Collection<PiccoloCustomNode> hiddenchildren;
-    private double margin=10;
 
     public PiccoloCustomNode(Tree tree){
 
@@ -73,6 +74,16 @@ public class PiccoloCustomNode extends PNode {
         }
     }
 
+    private PiccoloCustomNode(){}
+
+    public void addChildNode(Tree t){
+        PiccoloCustomNode PCN=new PiccoloCustomNode(t);
+        boolean isHiddingChildren=hiddenchildren.size()!=0;
+        if(isHiddingChildren)
+            hiddenchildren.add(PCN);
+        else
+            addChild(PCN);
+    }
 
     public Collection<PiccoloCustomNode> getChildren(){
         ArrayList<PiccoloCustomNode> children=new ArrayList<>();
