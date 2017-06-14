@@ -14,18 +14,29 @@ public class MenuItem extends PNode {
     private PPath rect;
     private PText text;
 
+    private int margin=5;
+
     private MenuItemEventHandler e;
 
     //region getters/setters
         public double getHeight(){
             return rect.getHeight();
         }
+
+    public int getMargin() {
+        return margin;
+    }
+
+    public void setMargin(int margin) {
+        this.margin = margin;
+    }
     //endregion
 
     public MenuItem(String name,MenuItemEventHandler e,Color color){
         this.e=e;
         text=new PText(name);
-        rect=PPath.createRectangle(0,0,text.getWidth(),text.getHeight());
+        rect=PPath.createRectangle(0,0,margin+text.getWidth()+margin,margin+text.getHeight()+margin);
+        text.translate(margin,margin);
         rect.setPaint(color);
         addChild(rect);
         addChild(text);
@@ -41,5 +52,4 @@ public class MenuItem extends PNode {
     public String toString(){
         return text.getText();
     }
-
 }
