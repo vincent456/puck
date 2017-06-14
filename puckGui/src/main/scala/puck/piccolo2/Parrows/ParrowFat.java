@@ -8,8 +8,9 @@ import java.awt.*;
 import java.awt.geom.Point2D;
 
 public class ParrowFat extends Parrow{
-    public ParrowFat(Point2D from, Point2D to, PNode head, float width, Color color){
-        super(from,to,head);
+    public ParrowFat(Point2D from, Point2D to, float width, Color color){
+        super(from,to);
+        Triangle head=new Triangle(color);
         double dist= Util.distance(from.getX(),from.getY(),to.getX(),to.getY());
         PPath rect=PPath.createRectangle(0,0,width,dist-head.getBounds().height/2);
         rect.setPaint(color);
@@ -27,7 +28,7 @@ public class ParrowFat extends Parrow{
     }
 
     public ParrowFat(PNode from, PNode to, PNode head, float width, Color color){
-        this(from.getBounds().getCenter2D(),to.getBounds().getCenter2D(),head,width,color);
+        this(from.getBounds().getCenter2D(),to.getBounds().getCenter2D(),width,color);
         this.from=from;
         this.to=to;
     }

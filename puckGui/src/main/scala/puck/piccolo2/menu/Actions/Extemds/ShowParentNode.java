@@ -33,7 +33,7 @@ public class ShowParentNode extends ShowNodeUsersOf {
             PNode from=target.getContent();
             PNode to = idNodeMap.get(O).getContent();
             if((to.getParent().getParent() instanceof PiccoloCustomNode)&&(!((PiccoloCustomNode) to.getParent().getParent()).isHidden()))
-            arrowNodesHolder.addArrow(new ParrowFat(from,to, new Triangle(Color.RED),5,Color.RED));
+            arrowNodesHolder.addArrow(new ParrowExtends(from,to));
 
         }
     }

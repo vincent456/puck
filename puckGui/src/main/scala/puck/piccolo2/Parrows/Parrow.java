@@ -1,14 +1,11 @@
 package puck.piccolo2.Parrows;
 
 import org.piccolo2d.PNode;
-
-import java.awt.*;
 import java.awt.geom.Point2D;
 
 public abstract class Parrow extends PNode{
-    public Parrow(Point2D from, Point2D to, PNode head){
+    public Parrow(Point2D from, Point2D to){
     }
-
 
     protected PNode from;
     protected PNode to;
@@ -21,10 +18,10 @@ public abstract class Parrow extends PNode{
         return to;
     }
 
-    public Parrow(PNode from,PNode to, PNode head, float width, Color color){
-        this(from.getBounds().getCenter2D(),to.getBounds().getCenter2D(),head);
+    public Parrow(PNode from,PNode to){
+        this(from.getBounds().getCenter2D(),to.getBounds().getCenter2D());
         this.from=from;
         this.to=to;
     }
-    //TODO implement use and extend arrows à-la UML
+    //TODO implement use arrows à-la UML
 }

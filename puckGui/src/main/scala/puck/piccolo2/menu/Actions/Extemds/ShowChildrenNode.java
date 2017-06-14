@@ -3,6 +3,7 @@ package puck.piccolo2.menu.Actions.Extemds;
 import org.piccolo2d.PNode;
 import org.piccolo2d.event.PInputEvent;
 import puck.graph.DependencyGraph;
+import puck.piccolo2.Parrows.ParrowExtends;
 import puck.piccolo2.menu.Actions.ShowNodeUsersOf;
 import puck.piccolo2.node.PiccoloCustomNode;
 import puck.piccolo2.Parrows.ArrowNodesHolder;
@@ -36,7 +37,7 @@ public class ShowChildrenNode extends ShowNodeUsersOf {
             PNode from=idNodeMap.get(O).getContent();
             PNode to=target.getContent();
             if((from.getParent().getParent() instanceof PiccoloCustomNode)&&(!((PiccoloCustomNode) from.getParent().getParent()).isHidden()))
-            arrowNodesHolder.addArrow(new ParrowFat(from,to, new Triangle(Color.RED), 5, Color.RED));
+            arrowNodesHolder.addArrow(new ParrowExtends(from,to));
         }
     }
 
