@@ -34,7 +34,7 @@ public class ShowNodeUsedBy extends ShowNodeUsersOf {
             PNode from = idNodeMap.get(O).getContent();
             PNode to=target.getContent();
             if((from.getParent().getParent() instanceof  PiccoloCustomNode)&&!((PiccoloCustomNode) from.getParent().getParent()).isHidden())
-            arrowNodesHolder.addArrow(new ParrowFat(from,to, new Triangle(Color.YELLOW),5,Color.YELLOW));
+            arrowNodesHolder.addArrow(new ParrowUses(from,to,10));
         }
     }
 }
