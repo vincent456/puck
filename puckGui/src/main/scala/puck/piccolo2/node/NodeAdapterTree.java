@@ -3,6 +3,7 @@ package puck.piccolo2.node;
 import org.piccolo2d.nodes.PImage;
 import org.piccolo2d.nodes.PText;
 import puck.control.PuckControl;
+import puck.graph.DGNode;
 import puck.graph.DependencyGraph;
 import puck.view.NodeKindIcons;
 import scala.Tuple2;
@@ -59,20 +60,16 @@ public class NodeAdapterTree implements Tree {
 
     @Override
     public String toString(){
-        Map<String,Object> map=control.dg2ast().nodesByName();
-        //optimize search map for String by Object
-        for(Iterator<Tuple2<String, Object>> iterator = map.toIterator(); iterator.hasNext();){
-            Tuple2 entry=iterator.next();
-            if((int)entry._2()==nodeId){
-                StringBuilder sb=new StringBuilder();
-                String entrylast=DG.getNode(nodeId).name();
-                sb.append(nodeId);
-                sb.append("-");
-                sb.append(entrylast);
-                return sb.toString();
-            }
-        }
-        return "Error NodeAdapterTree.toString()";
+        DependencyGraph DG=control.graph();
+        DGNode DGN=DG.getNode(nodeId);
+        String name=DGN.name();
+        StringBuilder sb=new StringBuilder();
+        sb.append(nodeId);
+        sb.append("-");
+        sb.append(name);
+        return sb.toString();
+
     }
+
 
 }

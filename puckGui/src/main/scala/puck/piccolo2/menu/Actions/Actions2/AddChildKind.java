@@ -1,19 +1,18 @@
 package puck.piccolo2.menu.Actions.Actions2;
 
 import org.piccolo2d.event.PInputEvent;
-import org.piccolo2d.nodes.PImage;
-import org.piccolo2d.nodes.PText;
 import puck.control.PuckControl;
+import puck.control.PushGraph;
 import puck.graph.ConcreteNode;
 import puck.graph.DependencyGraph;
 import puck.graph.NodeKind;
 import puck.graph.transformations.TransformationRules;
 import puck.piccolo2.menu.Actions.MenuItemEventHandler;
 import puck.piccolo2.node.NodeAdapterTree;
-import puck.piccolo2.node.NodeContent;
 import puck.piccolo2.node.PiccoloCustomNode;
 import puck.view.NodeKindIcons;
 import scala.Tuple2;
+import scala.swing.event.Event;
 
 import javax.swing.*;
 
@@ -51,9 +50,10 @@ public class AddChildKind extends MenuItemEventHandler{
         ConcreteNode n = (ConcreteNode) ng._1();
         DependencyGraph g = (DependencyGraph) ng._2();
         DependencyGraph DG2=g.addContains(host.id(),n.id(),false);
-        control.historyHandler().pushGraph(DG2);
 
-        //TODO these commands break the PiccoloCustomNode model display
+        control.historyHandler().pushGraph(DG2);
+        //control.historyHandler().bus().publish(new PushGraph(DG2));
+
         //region create children PCN node
 
         NodeAdapterTree NTA=new NodeAdapterTree(control,(int)n.id(),icons);
