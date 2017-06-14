@@ -23,5 +23,4 @@ public abstract class Parrow extends PNode{
         this.from=from;
         this.to=to;
     }
-    //TODO implement use arrows à-la UML
 }
