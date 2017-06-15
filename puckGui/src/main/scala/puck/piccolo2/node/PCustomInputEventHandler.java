@@ -44,7 +44,6 @@ public class PCustomInputEventHandler extends PBasicInputEventHandler {
             menu.clear();
 
             //arrows
-            //TODO make the arrows (dis)appear when the node is toggled
             //you can use the ArrowNodeHolder ANH
 
             Collection<PiccoloCustomNode> hierarchy = node.getHierarchy();
