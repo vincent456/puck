@@ -335,8 +335,7 @@ public class PiccoloCustomNode extends PNode {
     }
 
     public Collection<PiccoloCustomNode> getHierarchy(){
-        //Collection<PiccoloCustomNode> out=new HashSet<>();
-        Collection<PiccoloCustomNode> out=new ArrayList<>();
+        Collection<PiccoloCustomNode> out=new HashSet<>();
         getHierarchy_Rec(out);
         return out;
     }
@@ -349,33 +348,4 @@ public class PiccoloCustomNode extends PNode {
     }
 
     //TODO implement setGridLayout to display items into a grid
-
-    /*
-    public void setGridLayout(int cap){
-        Collection<PiccoloCustomNode> chidren=getChildren();
-        if(chidren.size()==0){
-            double x=0;
-            double y=0;
-            double w = margin+content.getWidth()+margin;
-            double h= margin+content.getHeight()+margin;
-
-            removeChild(rect);
-            rect=PPath.createRectangle(x,y,w,h);
-            rect=bevelOut(rect,2);
-            addChild(rect);
-            addChild(content);
-
-            return;
-        }
-        else{
-            double x=0;
-            double y=margin+content.getHeight()+margin;
-            double w = 0;
-            double h = 0;
-
-            PiccoloCustomNode child=chidren.;
-
-        }
-    }
-    */
 }
