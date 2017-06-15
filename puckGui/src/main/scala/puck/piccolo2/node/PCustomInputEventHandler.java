@@ -49,10 +49,10 @@ public class PCustomInputEventHandler extends PBasicInputEventHandler {
             //TODO make the arrows (dis)appear when the node is toggled
             //you can use the ArrowNodeHolder ANH
 
-            //region hide arrows
             Collection<PiccoloCustomNode> hierarchy = node.getHierarchy();
+
+            //region hide arrows
             for(PiccoloCustomNode PCN:hierarchy) {
-                //System.out.println(PCN.toString()+PCN.isHidden());
                 if (PCN.isHidden())
                     for (Parrow arrow : ANH.getVisibleArrows()) {
 
@@ -62,8 +62,20 @@ public class PCustomInputEventHandler extends PBasicInputEventHandler {
                         if(PCN==PCNF||PCN==PCNT)
                             ANH.hideArrow(arrow);
                     }
+                else
+                    for(Parrow arrow:ANH.getHiddenArrows()){
+                        PiccoloCustomNode PCNF=(PiccoloCustomNode) arrow.getFrom().getParent();
+                        PiccoloCustomNode PCNT=(PiccoloCustomNode) arrow.getTo().getParent();
+
+
+                    }
             }
             //endregion
+
+            //region show arrows
+
+            //endregion
+
         }
         if(e.isRightMouseButton()){
             if(e.getPickedNode() instanceof PText)

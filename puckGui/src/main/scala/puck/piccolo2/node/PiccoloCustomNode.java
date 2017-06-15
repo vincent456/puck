@@ -49,10 +49,9 @@ public class PiccoloCustomNode extends PNode {
         return ((PText)(content.getChild(0))).getText();
     }
 
-    public void setLayout(){setGridLayoutV();}
-
     //endregion
 
+    public void setLayout(){setGridLayoutV();}
 
     public PiccoloCustomNode(Tree tree){
 
@@ -156,11 +155,11 @@ public class PiccoloCustomNode extends PNode {
         double w=margin+content.getBounds().getWidth()+margin;
         double h=margin+content.getBounds().getHeight()+margin;
 
-        PiccoloCustomNode lastChild=null;
+        PiccoloCustomNode lastChild=children.iterator().next();
+        double maxHeight=lastChild.getRect().getHeight();
 
         //region horizontal layout
         for(PiccoloCustomNode PCN:children){
-            lastChild=PCN;
 
             PCN.setTransform(AffineTransform.getTranslateInstance(0,0));
 
@@ -170,15 +169,11 @@ public class PiccoloCustomNode extends PNode {
 
             x+=PCN.getRect().getWidth()+margin;
             w+=PCN.getRect().getWidth()+margin;
-        }
 
-        double maxHeight=lastChild.getRect().getHeight();
-        for(PiccoloCustomNode PCN:children)
             if(PCN.getRect().getHeight()>maxHeight)
                 maxHeight=PCN.getRect().getHeight();
-        h+=maxHeight+margin;
-
-
+        }
+            h+=maxHeight+margin;
         //endregion
 
         removeChild(rect);
@@ -215,11 +210,11 @@ public class PiccoloCustomNode extends PNode {
         double w=margin+content.getBounds().getWidth()+margin;
         double h=margin+content.getBounds().getHeight()+margin;
 
-        PiccoloCustomNode lastChild=null;
+        PiccoloCustomNode lastChild=children.iterator().next();
+        double maxWidth=lastChild.getRect().getWidth();
 
         //region vertical layout
         for(PiccoloCustomNode PCN:children){
-            lastChild=PCN;
 
             PCN.setTransform(AffineTransform.getTranslateInstance(0,0));
 
@@ -229,15 +224,12 @@ public class PiccoloCustomNode extends PNode {
 
             y+=PCN.getRect().getHeight()+margin;
             h+=PCN.getRect().getHeight()+margin;
-        }
 
-        double maxWidth=lastChild.getRect().getWidth();
-        for(PiccoloCustomNode PCN:children)
             if(PCN.getRect().getWidth()>maxWidth)
                 maxWidth=PCN.getRect().getWidth();
-        w+=maxWidth+margin;
 
-
+        }
+            w+=maxWidth+margin;
         //endregion
 
         removeChild(rect);
