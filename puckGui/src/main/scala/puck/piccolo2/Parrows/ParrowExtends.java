@@ -29,4 +29,10 @@ public class ParrowExtends extends Parrow{
         this.to=to;
     }
 
+    @Override
+    public Parrow redraw() {
+        removeAllChildren();
+        return new ParrowExtends(from,to);
+    }
+
 }

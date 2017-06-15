@@ -1,6 +1,7 @@
 package puck.piccolo2.node;
 
 import org.piccolo2d.PCanvas;
+import org.piccolo2d.PNode;
 import org.piccolo2d.event.PBasicInputEventHandler;
 import org.piccolo2d.event.PInputEvent;
 import org.piccolo2d.event.PInputEventFilter;
@@ -11,6 +12,7 @@ import puck.piccolo2.menu.DisplayUsesMenu;
 
 import java.awt.event.InputEvent;
 import java.util.Collection;
+import java.util.Iterator;
 
 public class PCustomInputEventHandler extends PBasicInputEventHandler {
     private PiccoloCustomNode node;
@@ -48,6 +50,14 @@ public class PCustomInputEventHandler extends PBasicInputEventHandler {
 
             Collection<PiccoloCustomNode> hierarchy = node.getHierarchy();
 
+            //region update all positions
+            for(Parrow arrow:ANH.getVisibleArrows()){
+                PNode from=arrow.getFrom();
+                PNode to = arrow.getTo();
+                Parrow ar2=arrow.redraw();
+                ANH.addArrow(ar2);
+            }
+            //endregion
 
             //region hide/show arrows
             for(PiccoloCustomNode PCN:hierarchy) {
@@ -60,17 +70,17 @@ public class PCustomInputEventHandler extends PBasicInputEventHandler {
                         if(PCN==PCNF||PCN==PCNT)
                             ANH.hideArrow(arrow);
                     }
-                else
-                    for(Parrow arrow:ANH.getHiddenArrows()){
-                        PiccoloCustomNode PCNF=(PiccoloCustomNode) arrow.getFrom().getParent();
-                        PiccoloCustomNode PCNT=(PiccoloCustomNode) arrow.getTo().getParent();
-                        if((!PCNT.isHidden()||!PCNF.isHidden())
-                            &&(PCN==PCNF||PCN==PCNT))
+                else {
+                    for (Parrow arrow : ANH.getHiddenArrows()) {
+                        PiccoloCustomNode PCNF = (PiccoloCustomNode) arrow.getFrom().getParent();
+                        PiccoloCustomNode PCNT = (PiccoloCustomNode) arrow.getTo().getParent();
+                        if ((!PCNT.isHidden() || !PCNF.isHidden())
+                                && (PCN == PCNF || PCN == PCNT))
                             ANH.showArrow(arrow);
                     }
+                }
             }
             //endregion
-
 
         }
         if(e.isRightMouseButton()){

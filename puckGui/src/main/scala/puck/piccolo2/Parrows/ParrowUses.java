@@ -7,6 +7,9 @@ import puck.piccolo2.Util;
 import java.awt.geom.Point2D;
 
 public class ParrowUses extends Parrow{
+
+    private double spacing;
+
     public ParrowUses(Point2D from, Point2D to, double spacing){
         super(from,to);
         TriangleHollow head=new TriangleHollow();
@@ -46,6 +49,8 @@ public class ParrowUses extends Parrow{
         addChild(head);
         addChild(lines);
 
+        this.spacing=spacing;
+
     }
 
     public ParrowUses(PNode from, PNode to,double spacing){
@@ -54,4 +59,9 @@ public class ParrowUses extends Parrow{
         this.to=to;
     }
 
+    @Override
+    public Parrow redraw() {
+        removeAllChildren();
+        return new ParrowUses(from,to,spacing);
+    }
 }

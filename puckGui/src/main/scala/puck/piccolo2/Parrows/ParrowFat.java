@@ -8,6 +8,10 @@ import java.awt.*;
 import java.awt.geom.Point2D;
 
 public class ParrowFat extends Parrow{
+
+    private float width;
+    private Color color;
+
     public ParrowFat(Point2D from, Point2D to, float width, Color color){
         super(from,to);
         Triangle head=new Triangle(color);
@@ -25,12 +29,21 @@ public class ParrowFat extends Parrow{
         head.rotate(theta);
         addChild(head);
 
+        this.width=width;
+        this.color=color;
+
     }
 
-    public ParrowFat(PNode from, PNode to, PNode head, float width, Color color){
+    public ParrowFat(PNode from, PNode to, float width, Color color){
         this(from.getBounds().getCenter2D(),to.getBounds().getCenter2D(),width,color);
         this.from=from;
         this.to=to;
     }
 
+    @Override
+    public Parrow redraw() {
+        removeAllChildren();
+        ParrowFat arrow=new ParrowFat(from,to,width,color);
+        return arrow;
+    }
 }

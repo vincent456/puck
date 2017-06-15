@@ -10,7 +10,7 @@ import java.util.Iterator;
 /**
  * Created by Vincent Hudry on 05/06/2017.
  */
-public class ArrowNodesHolder extends PNode {
+public class ArrowNodesHolder extends PNode{
     private Collection<Parrow> hiddenArrows;
     public ArrowNodesHolder(){
         hiddenArrows=new HashSet<>();
@@ -41,6 +41,9 @@ public class ArrowNodesHolder extends PNode {
         return set;
     }
     public Collection<Parrow> getHiddenArrows(){
-        return hiddenArrows;
+        Collection<Parrow> set = new HashSet<>();
+        for(Iterator<Parrow> iterator=hiddenArrows.iterator();iterator.hasNext();)
+            set.add(iterator.next());
+        return set;
     }
 }

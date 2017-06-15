@@ -23,4 +23,6 @@ public abstract class Parrow extends PNode{
         this.from=from;
         this.to=to;
     }
+
+    public abstract Parrow redraw();
 }
