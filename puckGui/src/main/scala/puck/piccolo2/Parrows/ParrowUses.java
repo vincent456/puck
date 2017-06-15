@@ -25,7 +25,7 @@ public class ParrowUses extends Parrow{
         double dsty=toy-fromy;
 
         int j=1;
-        for(double i=0;i<num;i++){
+        for(double i=0;i<num-1;i++){
             PPath line= PPath.createLine(fromx,fromy,tox,toy);
             j++;
             if(j%2==0){

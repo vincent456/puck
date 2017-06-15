@@ -38,7 +38,7 @@ public class DisplayUsesMenu extends PNode {
     public DisplayUsesMenu(PuckControl control, ArrowNodesHolder ANH, HashMap<Object,PiccoloCustomNode> idNodeMap){
         menu=new Menu();
 
-        MenuItem closes=new MenuItem("Close Menu",new CloseMenu(this), Color.GRAY);
+        MenuItem closes=new MenuItem("Close Menu",new CloseMenu(this), Color.WHITE);
         menu.add(closes);
 
         DependencyGraph DG=control.graph();
@@ -47,38 +47,38 @@ public class DisplayUsesMenu extends PNode {
         //region for showuses
 
         ShowNodeUsersOf SNUO =new ShowNodeUsersOf(DG,ANH,idNodeMap);
-        MenuItem showusersof=new MenuItem("Show users of", SNUO,Color.YELLOW);
+        MenuItem showusersof=new MenuItem("Show users of", SNUO,Color.WHITE);
         menu.add(showusersof);
 
         HideNodeUsersOf HNUO=new HideNodeUsersOf(DG,ANH,idNodeMap);
-        MenuItem hideusersof=new MenuItem("Hide users of",HNUO,Color.YELLOW);
+        MenuItem hideusersof=new MenuItem("Hide users of",HNUO,Color.WHITE);
         menu.add(hideusersof);
 
         ShowNodeUsedBy SNOB = new ShowNodeUsedBy(DG,ANH,idNodeMap);
-        MenuItem shownodeusedby=new MenuItem("Show used by",SNOB,Color.YELLOW);
+        MenuItem shownodeusedby=new MenuItem("Show used by",SNOB,Color.WHITE);
         menu.add(shownodeusedby);
 
         HideNodeUsedBy HNUB=new HideNodeUsedBy(DG,ANH,idNodeMap);
-        MenuItem hidenodeusedby=new MenuItem("Hide used by",HNUB,Color.YELLOW);
+        MenuItem hidenodeusedby=new MenuItem("Hide used by",HNUB,Color.WHITE);
         menu.add(hidenodeusedby);
 
         //endregion
 
         //region for Extends
         ShowParentNode SPN=new ShowParentNode(DG,ANH,idNodeMap);
-        MenuItem showparentnode=new MenuItem("Show parents",SPN,Color.RED);
+        MenuItem showparentnode=new MenuItem("Show parents",SPN,Color.WHITE);
         menu.add(showparentnode);
 
         HideParentNode HPN=new HideParentNode(DG,ANH,idNodeMap);
-        MenuItem hideparentnode=new MenuItem("Hide parents",HPN,Color.RED);
+        MenuItem hideparentnode=new MenuItem("Hide parents",HPN,Color.WHITE);
         menu.add(hideparentnode);
 
         ShowChildrenNode SCN=new ShowChildrenNode(DG,ANH,idNodeMap);
-        MenuItem showchildrennode=new MenuItem("Show children",SCN,Color.RED);
+        MenuItem showchildrennode=new MenuItem("Show children",SCN,Color.WHITE);
         menu.add(showchildrennode);
 
         HideChildrenNode HCN=new HideChildrenNode(DG,ANH,idNodeMap);
-        MenuItem hidechildrennode=new MenuItem("Hide children",HCN,Color.RED);
+        MenuItem hidechildrennode=new MenuItem("Hide children",HCN,Color.WHITE);
         menu.add(hidechildrennode);
 
         //endregion
@@ -86,7 +86,7 @@ public class DisplayUsesMenu extends PNode {
         //region rename
 
         Rename rename=new Rename(control,idNodeMap);
-        MenuItem renam=new MenuItem("Rename",rename,Color.GRAY);
+        MenuItem renam=new MenuItem("Rename",rename,Color.WHITE);
         menu.add(renam);
 
         //endregion
@@ -124,7 +124,7 @@ public class DisplayUsesMenu extends PNode {
                 //list.add(nk);
                 AddChildKind ACK=new AddChildKind(control,nk,idNodeMap.get(0));
 
-                MenuItem menuItem=new MenuItem("Add "+ nk.toString(),ACK,Color.GRAY);
+                MenuItem menuItem=new MenuItem("Add "+ nk.toString(),ACK,Color.WHITE);
                     dynamicItems.add(menuItem);
                     menu.add(menuItem);
                 }

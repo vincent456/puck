@@ -11,6 +11,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 
 public class PiccoloCustomNode extends PNode {
@@ -80,7 +81,7 @@ public class PiccoloCustomNode extends PNode {
     public void addChildNode(Tree t){
         PiccoloCustomNode PCN=new PiccoloCustomNode(t);
 
-        PCN.getContent().addInputEventListener(new PCustomInputEventHandler(PCN, PiccoloCanvas.getRoot(),PiccoloCanvas.getMenu(),PiccoloCanvas.getCanvas()));
+        PCN.getContent().addInputEventListener(new PCustomInputEventHandler(PCN, PiccoloCanvas.getRoot(),PiccoloCanvas.getMenu(),PiccoloCanvas.getCanvas(),PiccoloCanvas.getANH()));
 
         boolean isHiddingChildren=hiddenchildren.size()!=0;
         if(isHiddingChildren)
@@ -338,21 +339,51 @@ public class PiccoloCustomNode extends PNode {
     }
 
     public boolean isHidden(){
-        PNode parent=getParent();
-        if(parent==null)
-            return false;
-        if(parent instanceof PiccoloCustomNode){
-            PiccoloCustomNode PCNparent=(PiccoloCustomNode) parent;
-            if(PCNparent.getChildren().contains(this))
-                return false;
-            else
-                return true;
-        }
-        else {
-            System.err.println("error");
-            return false;
+        return getParent()==null;
+    }
+
+    public Collection<PiccoloCustomNode> getHierarchy(){
+        //Collection<PiccoloCustomNode> out=new HashSet<>();
+        Collection<PiccoloCustomNode> out=new ArrayList<>();
+        getHierarchy_Rec(out);
+        return out;
+    }
+
+    private void getHierarchy_Rec(Collection<PiccoloCustomNode> out){
+        for(PiccoloCustomNode PCN:getAllChildren()){
+            out.add(PCN);
+            PCN.getHierarchy_Rec(out);
         }
     }
 
     //TODO implement setGridLayout to display items into a grid
+
+    /*
+    public void setGridLayout(int cap){
+        Collection<PiccoloCustomNode> chidren=getChildren();
+        if(chidren.size()==0){
+            double x=0;
+            double y=0;
+            double w = margin+content.getWidth()+margin;
+            double h= margin+content.getHeight()+margin;
+
+            removeChild(rect);
+            rect=PPath.createRectangle(x,y,w,h);
+            rect=bevelOut(rect,2);
+            addChild(rect);
+            addChild(content);
+
+            return;
+        }
+        else{
+            double x=0;
+            double y=margin+content.getHeight()+margin;
+            double w = 0;
+            double h = 0;
+
+            PiccoloCustomNode child=chidren.;
+
+        }
+    }
+    */
 }

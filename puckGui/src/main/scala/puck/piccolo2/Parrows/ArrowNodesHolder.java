@@ -31,10 +31,15 @@ public class ArrowNodesHolder extends PNode {
     public boolean isHidden(Parrow arrow){
         return hiddenArrows.contains(arrow);
     }
+
+    @SuppressWarnings("unchecked")
     public Collection<Parrow> getVisibleArrows(){
         HashSet<Parrow> set = new HashSet<>();
         for(Iterator<PNode> iterator=getChildrenIterator();iterator.hasNext();)
             set.add((Parrow) iterator.next());
         return set;
+    }
+    public Collection<Parrow> getHiddenArrows(){
+        return hiddenArrows;
     }
 }
