@@ -52,7 +52,7 @@ public class PCustomInputEventHandler extends PBasicInputEventHandler {
 
             //region hide/show arrows
             for(PiccoloCustomNode PCN:hierarchy) {
-                if (!PCN.isHidden())
+                if (PCN.isHidden())
                     for (Parrow arrow : ANH.getVisibleArrows()) {
 
                         PiccoloCustomNode PCNF=(PiccoloCustomNode) arrow.getFrom().getParent();
@@ -65,7 +65,7 @@ public class PCustomInputEventHandler extends PBasicInputEventHandler {
                     for(Parrow arrow:ANH.getHiddenArrows()){
                         PiccoloCustomNode PCNF=(PiccoloCustomNode) arrow.getFrom().getParent();
                         PiccoloCustomNode PCNT=(PiccoloCustomNode) arrow.getTo().getParent();
-                        if((!PCNT.isHidden()&&!PCNF.isHidden())
+                        if((!PCNT.isHidden()||!PCNF.isHidden())
                             &&(PCN==PCNF||PCN==PCNT))
                             ANH.showArrow(arrow);
                     }

@@ -331,7 +331,23 @@ public class PiccoloCustomNode extends PNode {
     }
 
     public boolean isHidden(){
-        return getParent()==null;
+        PNode parent=getParent();
+        if(parent==null)
+            return true;
+        if(parent instanceof PiccoloCustomNode){
+            PiccoloCustomNode PCNparent=(PiccoloCustomNode) parent;
+            if(PCNparent.isHidden()){
+                return true;
+            }
+            if(PCNparent.getChildren().contains(this))
+                return false;
+            else
+                return true;
+        }
+        else {
+            //System.err.println("error PiccoloCustomNode.isHidden()");
+            return false;
+        }
     }
 
     public Collection<PiccoloCustomNode> getHierarchy(){
