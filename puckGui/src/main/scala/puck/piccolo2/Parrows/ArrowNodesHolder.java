@@ -2,6 +2,7 @@ package puck.piccolo2.Parrows;
 
 import org.piccolo2d.PNode;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -31,10 +32,15 @@ public class ArrowNodesHolder extends PNode {
     public boolean isHidden(Parrow arrow){
         return hiddenArrows.contains(arrow);
     }
+
+    @SuppressWarnings("unchecked")
     public Collection<Parrow> getVisibleArrows(){
-        HashSet<Parrow> set = new HashSet<>();
+        Collection<Parrow> set = new HashSet<>();
         for(Iterator<PNode> iterator=getChildrenIterator();iterator.hasNext();)
             set.add((Parrow) iterator.next());
         return set;
+    }
+    public Collection<Parrow> getHiddenArrows(){
+        return hiddenArrows;
     }
 }

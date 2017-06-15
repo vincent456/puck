@@ -33,6 +33,8 @@ public class Rename extends MenuItemEventHandler{
     @Override
     public void mouseClicked(PInputEvent e) {
 
+        //TODO : breaks if renaming a created node (already broken)
+
         String dialout = JOptionPane.showInputDialog("Rename","");
         if(dialout==null||dialout.equals(""))
             return;

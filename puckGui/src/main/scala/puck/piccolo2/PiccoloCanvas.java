@@ -31,6 +31,11 @@ public class PiccoloCanvas extends PScrollPane {
 
     private static PiccoloCustomNode root;
 
+    private static ArrowNodesHolder ANH;
+
+    public static ArrowNodesHolder getANH(){
+        return ANH;
+    }
 
     public static PiccoloCustomNode getRoot() {
         return root;
@@ -65,13 +70,13 @@ public class PiccoloCanvas extends PScrollPane {
 
         //region ArrowNodesHolder
 
-        ArrowNodesHolder arrowNodesHolder=new ArrowNodesHolder();
+        ANH=new ArrowNodesHolder();
 
-        canvas.getLayer().addChild(arrowNodesHolder);
+        canvas.getLayer().addChild(ANH);
         //endregion
 
         //region menu
-        menu=new DisplayUsesMenu(control,arrowNodesHolder,idNodeMap);
+        menu=new DisplayUsesMenu(control,ANH,idNodeMap);
 
         root=node;
 
@@ -84,7 +89,7 @@ public class PiccoloCanvas extends PScrollPane {
     }
 
     private void addEvent(PiccoloCustomNode node, PiccoloCustomNode tree,DisplayUsesMenu menu){
-        node.getContent().addInputEventListener(new PCustomInputEventHandler(node,tree,menu,canvas));
+        node.getContent().addInputEventListener(new PCustomInputEventHandler(node,tree,menu,canvas,ANH));
         if(node.getAllChildren().size()!=0)
             for(PiccoloCustomNode PCN:node.getAllChildren()){
                 addEvent(PCN,tree,menu);

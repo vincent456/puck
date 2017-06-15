@@ -11,6 +11,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 
 public class PiccoloCustomNode extends PNode {
@@ -48,10 +49,9 @@ public class PiccoloCustomNode extends PNode {
         return ((PText)(content.getChild(0))).getText();
     }
 
-    public void setLayout(){setGridLayoutV();}
-
     //endregion
 
+    public void setLayout(){setGridLayoutV();}
 
     public PiccoloCustomNode(Tree tree){
 
@@ -80,7 +80,7 @@ public class PiccoloCustomNode extends PNode {
     public void addChildNode(Tree t){
         PiccoloCustomNode PCN=new PiccoloCustomNode(t);
 
-        PCN.getContent().addInputEventListener(new PCustomInputEventHandler(PCN, PiccoloCanvas.getRoot(),PiccoloCanvas.getMenu(),PiccoloCanvas.getCanvas()));
+        PCN.getContent().addInputEventListener(new PCustomInputEventHandler(PCN, PiccoloCanvas.getRoot(),PiccoloCanvas.getMenu(),PiccoloCanvas.getCanvas(),PiccoloCanvas.getANH()));
 
         boolean isHiddingChildren=hiddenchildren.size()!=0;
         if(isHiddingChildren)
@@ -155,11 +155,11 @@ public class PiccoloCustomNode extends PNode {
         double w=margin+content.getBounds().getWidth()+margin;
         double h=margin+content.getBounds().getHeight()+margin;
 
-        PiccoloCustomNode lastChild=null;
+        PiccoloCustomNode lastChild=children.iterator().next();
+        double maxHeight=lastChild.getRect().getHeight();
 
         //region horizontal layout
         for(PiccoloCustomNode PCN:children){
-            lastChild=PCN;
 
             PCN.setTransform(AffineTransform.getTranslateInstance(0,0));
 
@@ -169,15 +169,11 @@ public class PiccoloCustomNode extends PNode {
 
             x+=PCN.getRect().getWidth()+margin;
             w+=PCN.getRect().getWidth()+margin;
-        }
 
-        double maxHeight=lastChild.getRect().getHeight();
-        for(PiccoloCustomNode PCN:children)
             if(PCN.getRect().getHeight()>maxHeight)
                 maxHeight=PCN.getRect().getHeight();
-        h+=maxHeight+margin;
-
-
+        }
+            h+=maxHeight+margin;
         //endregion
 
         removeChild(rect);
@@ -214,11 +210,11 @@ public class PiccoloCustomNode extends PNode {
         double w=margin+content.getBounds().getWidth()+margin;
         double h=margin+content.getBounds().getHeight()+margin;
 
-        PiccoloCustomNode lastChild=null;
+        PiccoloCustomNode lastChild=children.iterator().next();
+        double maxWidth=lastChild.getRect().getWidth();
 
         //region vertical layout
         for(PiccoloCustomNode PCN:children){
-            lastChild=PCN;
 
             PCN.setTransform(AffineTransform.getTranslateInstance(0,0));
 
@@ -228,15 +224,12 @@ public class PiccoloCustomNode extends PNode {
 
             y+=PCN.getRect().getHeight()+margin;
             h+=PCN.getRect().getHeight()+margin;
-        }
 
-        double maxWidth=lastChild.getRect().getWidth();
-        for(PiccoloCustomNode PCN:children)
             if(PCN.getRect().getWidth()>maxWidth)
                 maxWidth=PCN.getRect().getWidth();
-        w+=maxWidth+margin;
 
-
+        }
+            w+=maxWidth+margin;
         //endregion
 
         removeChild(rect);
@@ -340,17 +333,33 @@ public class PiccoloCustomNode extends PNode {
     public boolean isHidden(){
         PNode parent=getParent();
         if(parent==null)
-            return false;
+            return true;
         if(parent instanceof PiccoloCustomNode){
             PiccoloCustomNode PCNparent=(PiccoloCustomNode) parent;
+            if(PCNparent.isHidden()){
+                return true;
+            }
             if(PCNparent.getChildren().contains(this))
                 return false;
             else
                 return true;
         }
         else {
-            System.err.println("error");
+            //System.err.println("error PiccoloCustomNode.isHidden()");
             return false;
+        }
+    }
+
+    public Collection<PiccoloCustomNode> getHierarchy(){
+        Collection<PiccoloCustomNode> out=new HashSet<>();
+        getHierarchy_Rec(out);
+        return out;
+    }
+
+    private void getHierarchy_Rec(Collection<PiccoloCustomNode> out){
+        for(PiccoloCustomNode PCN:getAllChildren()){
+            out.add(PCN);
+            PCN.getHierarchy_Rec(out);
         }
     }
 
