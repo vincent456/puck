@@ -75,9 +75,8 @@ public class PiccoloCustomNode extends PNode {
         }
     }
 
-    private PiccoloCustomNode(){}
-
     public void addChildNode(Tree t){
+        //TODO try to get rid of the statics
         PiccoloCustomNode PCN=new PiccoloCustomNode(t);
 
         PCN.getContent().addInputEventListener(new PCustomInputEventHandler(PCN, PiccoloCanvas.getRoot(),PiccoloCanvas.getMenu(),PiccoloCanvas.getCanvas(),PiccoloCanvas.getANH()));
@@ -361,6 +360,22 @@ public class PiccoloCustomNode extends PNode {
             out.add(PCN);
             PCN.getHierarchy_Rec(out);
         }
+    }
+
+    public void expandAll() {
+        if(hiddenchildren.size()!=0){
+            toggleChildren();
+        }
+        for(PiccoloCustomNode PCN:getChildren())
+            PCN.expandAll();
+    }
+
+    public void collapseAll() {
+        if(hiddenchildren.size()==0){
+            toggleChildren();
+        }
+        for(PiccoloCustomNode PCN:getAllChildren())
+            PCN.collapseAll();
     }
 
     //TODO implement setGridLayout to display items into a grid

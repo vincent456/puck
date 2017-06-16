@@ -41,6 +41,10 @@ public class PiccoloCanvas extends PScrollPane {
         return root;
     }
 
+    public static void setRoot(PiccoloCustomNode root){
+        PiccoloCanvas.root=root;
+    }
+
     public static PCanvas getCanvas() {
         return canvas;
     }

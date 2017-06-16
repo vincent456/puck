@@ -1,8 +1,7 @@
-package puck.piccolo2.menu.Actions.Actions2;
+package puck.piccolo2.menu.Actions.Refactorings;
 
 import org.piccolo2d.event.PInputEvent;
 import puck.control.PuckControl;
-import puck.control.PushGraph;
 import puck.graph.ConcreteNode;
 import puck.graph.DependencyGraph;
 import puck.graph.NodeKind;
@@ -12,7 +11,6 @@ import puck.piccolo2.node.NodeAdapterTree;
 import puck.piccolo2.node.PiccoloCustomNode;
 import puck.view.NodeKindIcons;
 import scala.Tuple2;
-import scala.swing.event.Event;
 
 import javax.swing.*;
 

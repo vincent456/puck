@@ -1,6 +1,7 @@
 package puck.view
 
-import puck.control.{GraphStack, GraphChangeEvent}
+import puck.control.{GraphChangeEvent, GraphStack}
+import puck.graph.DependencyGraph
 
 import scala.swing._
 

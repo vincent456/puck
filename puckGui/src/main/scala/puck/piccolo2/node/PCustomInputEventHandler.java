@@ -12,7 +12,6 @@ import puck.piccolo2.menu.DisplayUsesMenu;
 
 import java.awt.event.InputEvent;
 import java.util.Collection;
-import java.util.Iterator;
 
 public class PCustomInputEventHandler extends PBasicInputEventHandler {
     private PiccoloCustomNode node;

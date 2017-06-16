@@ -6,8 +6,8 @@ import puck.graph.DependencyGraph;
 import puck.graph.NodeKind;
 import puck.graph.transformations.TransformationRules;
 import puck.piccolo2.menu.Actions.*;
-import puck.piccolo2.menu.Actions.Actions2.AddChildKind;
-import puck.piccolo2.menu.Actions.Actions2.Rename;
+import puck.piccolo2.menu.Actions.Refactorings.AddChildKind;
+import puck.piccolo2.menu.Actions.Refactorings.Rename;
 import puck.piccolo2.menu.Actions.Extemds.HideChildrenNode;
 import puck.piccolo2.menu.Actions.Extemds.HideParentNode;
 import puck.piccolo2.menu.Actions.Extemds.ShowChildrenNode;
@@ -38,7 +38,7 @@ public class DisplayUsesMenu extends PNode {
     public DisplayUsesMenu(PuckControl control, ArrowNodesHolder ANH, HashMap<Object,PiccoloCustomNode> idNodeMap){
         menu=new Menu();
 
-        MenuItem closes=new MenuItem("Close Menu",new CloseMenu(this), Color.WHITE);
+        MenuItem closes=new MenuItem("Close Menu",new CloseMenu(this));
         menu.add(closes);
 
         DependencyGraph DG=control.graph();
@@ -47,38 +47,38 @@ public class DisplayUsesMenu extends PNode {
         //region for showuses
 
         ShowNodeUsersOf SNUO =new ShowNodeUsersOf(DG,ANH,idNodeMap);
-        MenuItem showusersof=new MenuItem("Show users of", SNUO,Color.WHITE);
+        MenuItem showusersof=new MenuItem("Show users of", SNUO);
         menu.add(showusersof);
 
         HideNodeUsersOf HNUO=new HideNodeUsersOf(DG,ANH,idNodeMap);
-        MenuItem hideusersof=new MenuItem("Hide users of",HNUO,Color.WHITE);
+        MenuItem hideusersof=new MenuItem("Hide users of",HNUO);
         menu.add(hideusersof);
 
         ShowNodeUsedBy SNOB = new ShowNodeUsedBy(DG,ANH,idNodeMap);
-        MenuItem shownodeusedby=new MenuItem("Show used by",SNOB,Color.WHITE);
+        MenuItem shownodeusedby=new MenuItem("Show used by",SNOB);
         menu.add(shownodeusedby);
 
         HideNodeUsedBy HNUB=new HideNodeUsedBy(DG,ANH,idNodeMap);
-        MenuItem hidenodeusedby=new MenuItem("Hide used by",HNUB,Color.WHITE);
+        MenuItem hidenodeusedby=new MenuItem("Hide used by",HNUB);
         menu.add(hidenodeusedby);
 
         //endregion
 
         //region for Extends
         ShowParentNode SPN=new ShowParentNode(DG,ANH,idNodeMap);
-        MenuItem showparentnode=new MenuItem("Show parents",SPN,Color.WHITE);
+        MenuItem showparentnode=new MenuItem("Show parents",SPN);
         menu.add(showparentnode);
 
         HideParentNode HPN=new HideParentNode(DG,ANH,idNodeMap);
-        MenuItem hideparentnode=new MenuItem("Hide parents",HPN,Color.WHITE);
+        MenuItem hideparentnode=new MenuItem("Hide parents",HPN);
         menu.add(hideparentnode);
 
         ShowChildrenNode SCN=new ShowChildrenNode(DG,ANH,idNodeMap);
-        MenuItem showchildrennode=new MenuItem("Show children",SCN,Color.WHITE);
+        MenuItem showchildrennode=new MenuItem("Show children",SCN);
         menu.add(showchildrennode);
 
         HideChildrenNode HCN=new HideChildrenNode(DG,ANH,idNodeMap);
-        MenuItem hidechildrennode=new MenuItem("Hide children",HCN,Color.WHITE);
+        MenuItem hidechildrennode=new MenuItem("Hide children",HCN);
         menu.add(hidechildrennode);
 
         //endregion
@@ -86,7 +86,7 @@ public class DisplayUsesMenu extends PNode {
         //region rename
 
         Rename rename=new Rename(control,idNodeMap);
-        MenuItem renam=new MenuItem("Rename",rename,Color.WHITE);
+        MenuItem renam=new MenuItem("Rename",rename);
         menu.add(renam);
 
         //endregion
@@ -99,6 +99,14 @@ public class DisplayUsesMenu extends PNode {
         this.idNodeMap=idNodeMap;
 
         //endregion
+
+        ExpandAll expandall=new ExpandAll(idNodeMap.get(0));
+        MenuItem expandal=new MenuItem("Expand All",expandall);
+        menu.add(expandal);
+
+        CollapseAll collapseall=new CollapseAll(idNodeMap.get(0));
+        MenuItem collapseal=new MenuItem("Collapse All",collapseall);
+        menu.add(collapseal);
 
     }
 
@@ -124,7 +132,7 @@ public class DisplayUsesMenu extends PNode {
                 //list.add(nk);
                 AddChildKind ACK=new AddChildKind(control,nk,idNodeMap.get(0));
 
-                MenuItem menuItem=new MenuItem("Add "+ nk.toString(),ACK,Color.WHITE);
+                MenuItem menuItem=new MenuItem("Add "+ nk.toString(),ACK);
                     dynamicItems.add(menuItem);
                     menu.add(menuItem);
                 }

@@ -1,4 +1,4 @@
-package puck.piccolo2.menu.Actions.Actions2;
+package puck.piccolo2.menu.Actions.Refactorings;
 
 import org.piccolo2d.event.PInputEvent;
 import puck.control.PuckControl;

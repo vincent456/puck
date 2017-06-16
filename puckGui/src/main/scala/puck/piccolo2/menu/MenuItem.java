@@ -32,12 +32,12 @@ public class MenuItem extends PNode {
     }
     //endregion
 
-    public MenuItem(String name,MenuItemEventHandler e,Color color){
+    public MenuItem(String name,MenuItemEventHandler e){
         this.e=e;
         text=new PText(name);
         rect=PPath.createRectangle(0,0,margin+text.getWidth()+margin,margin+text.getHeight()+margin);
         text.translate(margin,margin);
-        rect.setPaint(color);
+        rect.setPaint(Color.WHITE);
         addChild(rect);
         addChild(text);
         this.addInputEventListener(e);
