@@ -444,5 +444,4 @@ public class PiccoloCustomNode extends PNode {
         }
     }
 
-    //TODO implement setGridLayout to display items into a grid
 }
