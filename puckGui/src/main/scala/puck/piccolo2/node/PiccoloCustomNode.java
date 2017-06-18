@@ -4,6 +4,7 @@ import org.piccolo2d.PCanvas;
 import org.piccolo2d.PNode;
 import org.piccolo2d.nodes.PPath;
 import org.piccolo2d.nodes.PText;
+import org.piccolo2d.util.PBounds;
 import puck.piccolo2.PiccoloCanvas;
 
 import java.awt.*;
@@ -51,7 +52,9 @@ public class PiccoloCustomNode extends PNode {
 
     //endregion
 
-    public void setLayout(){setGridLayoutV();}
+    public void setLayout(){
+        //setGridLayoutV();
+        setGridLayout(3);}
 
     public PiccoloCustomNode(Tree tree){
 
@@ -376,6 +379,69 @@ public class PiccoloCustomNode extends PNode {
         }
         for(PiccoloCustomNode PCN:getAllChildren())
             PCN.collapseAll();
+    }
+
+    public void setGridLayout(int cap){
+
+        if(getChildren().size()==0) {
+            double x = 0;
+            double y = 0;
+            double w = margin + content.getBounds().getWidth() + margin;
+            double h = margin + content.getBounds().getHeight() + margin;
+
+            removeChild(rect);
+            rect = PPath.createRectangle(x, y, w, h);
+            rect = bevelOut(rect, 2);
+            addChild(rect);
+            addChild(content);
+        }
+        else {
+            double x = margin;
+            double y = margin + content.getHeight() + margin;
+            double w=margin + content.getWidth() + margin;
+            double h=margin + content.getHeight() + margin;
+
+            PiccoloCustomNode firstChild = getChildren().iterator().next();
+            double maxHeight = firstChild.getContent().getHeight();
+            double maxWidth= firstChild.getContent().getWidth();
+            int i = 0;
+            for (PiccoloCustomNode PCN : getChildren()) {
+                PCN.setGridLayout(cap);
+
+                if (PCN.getRect().getHeight() > maxHeight)
+                    maxHeight = PCN.getRect().getHeight();
+
+                double mw;
+                if(i!=cap)
+                    mw = x + margin + PCN.getRect().getWidth();
+                else
+                    mw=x;
+
+                if(mw>maxWidth)
+                    maxWidth=mw;
+
+                if (i == cap) {
+                    i = 0;
+                    x = margin;
+                    y += margin + maxHeight;
+                    h+= margin + PCN.getRect().getHeight();
+                } else
+                    i++;
+
+                PCN.setTransform(AffineTransform.getTranslateInstance(0, 0));
+                PCN.translate(x, y);
+                x += margin + PCN.getRect().getWidth();
+            }
+
+
+            removeChild(rect);
+            rect = PPath.createRectangle(x, y, maxWidth,h+maxHeight+margin);
+            rect = bevelIn(rect,2);
+
+            addChild(rect);
+            addChild(content);
+            addChildren(getChildren());
+        }
     }
 
     //TODO implement setGridLayout to display items into a grid
