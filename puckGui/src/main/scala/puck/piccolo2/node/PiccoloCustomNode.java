@@ -411,26 +411,22 @@ public class PiccoloCustomNode extends PNode {
                 if (PCN.getRect().getHeight() > maxHeight)
                     maxHeight = PCN.getRect().getHeight();
 
-                double mw;
-                if(i!=cap)
-                    mw = x + margin + PCN.getRect().getWidth();
-                else
-                    mw=x;
-
-                if(mw>maxWidth)
-                    maxWidth=mw;
-
                 if (i == cap) {
                     i = 1;
                     x = margin;
                     y += margin + maxHeight;
                     h+= margin + PCN.getRect().getHeight();
-                } else
+                } else {
+                    w = x + PCN.getRect().getWidth() + margin;
                     i++;
+                }
+
+                if(w>maxWidth)
+                    maxWidth=w;
 
                 PCN.setTransform(AffineTransform.getTranslateInstance(0, 0));
                 PCN.translate(x, y);
-                x += margin + PCN.getRect().getWidth();
+                x += PCN.getRect().getWidth() + margin;
             }
 
 
