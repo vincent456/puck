@@ -421,7 +421,7 @@ public class PiccoloCustomNode extends PNode {
                     maxWidth=mw;
 
                 if (i == cap) {
-                    i = 0;
+                    i = 1;
                     x = margin;
                     y += margin + maxHeight;
                     h+= margin + PCN.getRect().getHeight();
