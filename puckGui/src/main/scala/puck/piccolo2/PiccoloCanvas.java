@@ -4,6 +4,7 @@ import org.piccolo2d.PCanvas;
 import org.piccolo2d.extras.pswing.PSwingCanvas;
 import org.piccolo2d.extras.swing.PScrollPane;
 import puck.control.PuckControl;
+import puck.graph.DependencyGraph;
 import puck.graph.GraphUtils;
 import puck.piccolo2.menu.DisplayUsesMenu;
 import puck.piccolo2.node.NodeAdapterTree;
@@ -108,5 +109,13 @@ public class PiccoloCanvas extends PScrollPane {
 
     public static DisplayUsesMenu getMenu() {
         return menu;
+    }
+
+    public void popEvent(DependencyGraph newGraph,DependencyGraph oldGraph){
+        System.out.println("popEvent");
+    }
+
+    public void pushEvent(DependencyGraph newGraph,DependencyGraph oldGraph){
+        System.out.println("pushedEvent");
     }
 }
