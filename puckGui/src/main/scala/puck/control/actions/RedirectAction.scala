@@ -47,7 +47,7 @@ class ChooseAbsAndRedirectAction
   abstractions : Seq[Abstraction])
   extends Action("Use abstraction instead"){
   def apply() : Unit = {
-    println("Choose Abstraction !" + abstractions)
+    println("Choose Abstraction_idee1 !" + abstractions)
 
     val dAbstractions = abstractions map (new DisplayableAbstraction(_, graph))
 
@@ -88,7 +88,7 @@ class ChooseAbsAndRedirectMultiAction
   abstractions : Seq[Abstraction])
   extends Action("Use abstraction instead"){
   def apply() : Unit = {
-    println("Choose Abstraction !" + abstractions)
+    println("Choose Abstraction_idee1 !" + abstractions)
 
     val dAbstractions = abstractions map (new DisplayableAbstraction(_, graph))
 

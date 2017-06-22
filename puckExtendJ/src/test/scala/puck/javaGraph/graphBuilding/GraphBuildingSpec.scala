@@ -35,7 +35,7 @@ import puck.AcceptanceSpec
 class GraphBuildingSpec extends AcceptanceSpec {
 
 
-  feature("Abstraction registration"){
+  feature("Abstraction_idee1 registration"){
     ignore("one class one interface : ignore because now supertype abstraction are dinamcally computed"){
       val _ = new ScenarioFactory(
         """package p;

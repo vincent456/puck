@@ -2,24 +2,24 @@ package puck.piccolo2.menu;
 
 import org.piccolo2d.PNode;
 import puck.control.PuckControl;
-import puck.graph.DependencyGraph;
-import puck.graph.NodeKind;
+import puck.graph.*;
 import puck.graph.transformations.TransformationRules;
 import puck.piccolo2.menu.Actions.*;
 import puck.piccolo2.menu.Actions.Refactorings.AddChildKind;
 import puck.piccolo2.menu.Actions.Refactorings.Rename;
-import puck.piccolo2.menu.Actions.Extemds.HideChildrenNode;
-import puck.piccolo2.menu.Actions.Extemds.HideParentNode;
-import puck.piccolo2.menu.Actions.Extemds.ShowChildrenNode;
-import puck.piccolo2.menu.Actions.Extemds.ShowParentNode;
+import puck.piccolo2.menu.Actions.Extends.HideChildrenNode;
+import puck.piccolo2.menu.Actions.Extends.HideParentNode;
+import puck.piccolo2.menu.Actions.Extends.ShowChildrenNode;
+import puck.piccolo2.menu.Actions.Extends.ShowParentNode;
 import puck.piccolo2.menu.Actions.Uses.HideNodeUsedBy;
 import puck.piccolo2.menu.Actions.Uses.HideNodeUsersOf;
 import puck.piccolo2.menu.Actions.Uses.ShowNodeUsedBy;
 import puck.piccolo2.menu.Actions.ShowNodeUsersOf;
 import puck.piccolo2.node.PiccoloCustomNode;
 import puck.piccolo2.Parrows.ArrowNodesHolder;
+import scala.Tuple2;
+import scala.collection.*;
 
-import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.util.*;
 import java.util.List;
@@ -125,17 +125,33 @@ public class DisplayUsesMenu extends PNode {
         //region AddChildKind
         PiccoloCustomNode PCN= (PiccoloCustomNode) target.getParent().getParent();
         DependencyGraph DG = control.graph();
-        //java.util.List<NodeKind> list=new LinkedList<>();
         for(scala.collection.Iterator<NodeKind> iterator = DG.nodeKinds().iterator(); iterator.hasNext();){
             NodeKind nk=iterator.next();
             if(DG.getNode(PCN.getidNode()).kind().canContain(nk)){
-                //list.add(nk);
                 AddChildKind ACK=new AddChildKind(control,nk,idNodeMap.get(0));
 
                 MenuItem menuItem=new MenuItem("Add "+ nk.toString(),ACK);
                     dynamicItems.add(menuItem);
                     menu.add(menuItem);
                 }
+        }
+
+        //endregion
+
+        //region abstraction
+
+        ConcreteNode node= DG.getConcreteNode(PCN.getidNode());
+
+        Seq<Tuple2<NodeKind,AbstractionPolicy>> abstractionChoices = node.kind().abstractionChoices();
+
+        for(scala.collection.Iterator<Tuple2<NodeKind,AbstractionPolicy>> iterator=abstractionChoices.iterator();iterator.hasNext();){
+            Tuple2<NodeKind,AbstractionPolicy> tuple = iterator.next();
+
+            //Abstraction_idee1 abstraction=new Abstraction_idee1(control,node,tuple._2(),tuple._1(),control.graph(),control.graphUtils());
+
+            AbstractionAction abstraction = new AbstractionAction(control.historyHandler().bus(),node,tuple._2(),tuple._1(),control.graph(),control.graphUtils(),control.nodeKindIcons());
+            MenuItem menuItem = new MenuItem("Abstract "+node.name()+" as "+tuple._1().toString()+" "+tuple._2().toString(),abstraction);
+            menu.add(menuItem);
         }
 
         //endregion

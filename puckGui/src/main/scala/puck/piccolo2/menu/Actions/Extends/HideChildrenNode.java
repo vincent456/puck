@@ -1,4 +1,4 @@
-package puck.piccolo2.menu.Actions.Extemds;
+package puck.piccolo2.menu.Actions.Extends;
 
 import org.piccolo2d.event.PInputEvent;
 import puck.graph.DependencyGraph;
