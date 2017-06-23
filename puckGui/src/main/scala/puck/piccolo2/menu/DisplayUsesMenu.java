@@ -41,6 +41,9 @@ public class DisplayUsesMenu extends PNode {
         MenuItem closes=new MenuItem("Close Menu",new CloseMenu(this));
         menu.add(closes);
 
+        MenuItem infos=new MenuItem("Infos",new Infos(control));
+        menu.add(infos);
+
         DependencyGraph DG=control.graph();
         TransformationRules TR=control.graphUtils().Rules();
 
