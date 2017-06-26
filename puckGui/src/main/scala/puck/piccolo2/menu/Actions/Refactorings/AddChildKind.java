@@ -54,11 +54,11 @@ public class AddChildKind extends MenuItemEventHandler{
 
         //region create children PCN node
 
-        NodeAdapterTree NTA=new NodeAdapterTree(control,(int)n.id(),icons);
-
-        PCN.addChildNode(NTA);
-
-        root.setLayout();
+       // NodeAdapterTree NTA=new NodeAdapterTree(control,(int)n.id(),icons);
+        //
+       // PCN.addChildNode(NTA);
+        //
+       // root.setLayout();
         //endregion
     }
 }
