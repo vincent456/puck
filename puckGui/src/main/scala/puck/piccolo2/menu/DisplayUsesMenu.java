@@ -6,6 +6,7 @@ import puck.graph.*;
 import puck.graph.transformations.TransformationRules;
 import puck.piccolo2.menu.Actions.*;
 import puck.piccolo2.menu.Actions.Refactorings.AddChildKind;
+import puck.piccolo2.menu.Actions.Refactorings.Remove;
 import puck.piccolo2.menu.Actions.Refactorings.Rename;
 import puck.piccolo2.menu.Actions.Extends.HideChildrenNode;
 import puck.piccolo2.menu.Actions.Extends.HideParentNode;
@@ -111,6 +112,10 @@ public class DisplayUsesMenu extends PNode {
         MenuItem collapseal=new MenuItem("Collapse All",collapseall);
         menu.add(collapseal);
 
+        Remove remove=new Remove(control);
+        MenuItem remov=new MenuItem("Remove node and children",remove);
+        menu.add(remov);
+
     }
 
     private List<MenuItem> dynamicItems;
@@ -150,7 +155,6 @@ public class DisplayUsesMenu extends PNode {
         for(scala.collection.Iterator<Tuple2<NodeKind,AbstractionPolicy>> iterator=abstractionChoices.iterator();iterator.hasNext();){
             Tuple2<NodeKind,AbstractionPolicy> tuple = iterator.next();
 
-            //Abstraction_idee1 abstraction=new Abstraction_idee1(control,node,tuple._2(),tuple._1(),control.graph(),control.graphUtils());
 
             AbstractionAction abstraction = new AbstractionAction(control.historyHandler().bus(),node,tuple._2(),tuple._1(),control.graph(),control.graphUtils(),control.nodeKindIcons());
             MenuItem menuItem = new MenuItem("Abstract "+node.name()+" as "+tuple._1().toString()+" "+tuple._2().toString(),abstraction);
