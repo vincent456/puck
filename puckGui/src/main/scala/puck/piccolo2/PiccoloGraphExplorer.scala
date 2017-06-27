@@ -51,13 +51,9 @@ class PiccoloGraphExplorer
 
   reactions += {
     case Popped(poppedGraph, newHead) =>
-      //canvas = new PiccoloCanvas(control,nodeKindIcons)
       canvas.popEvent(newHead,poppedGraph)
-      //setViewportView(PiccoloCanvas.getCanvas)
     case Pushed(pushedGraph, previousHead) =>
-      //canvas = new PiccoloCanvas(control,nodeKindIcons)
       canvas.pushEvent(pushedGraph, previousHead)
-      //setViewportView(PiccoloCanvas.getCanvas)
     case evt : GraphChangeEvent =>
       canvas = new PiccoloCanvas(control, nodeKindIcons)
       canvas.evt();

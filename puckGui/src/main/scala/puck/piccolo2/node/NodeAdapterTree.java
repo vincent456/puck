@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
  */
 public class NodeAdapterTree implements Tree {
 
-    private PuckControl control;
     private int nodeId;
 
     public int getNodeId() {
@@ -32,17 +31,16 @@ public class NodeAdapterTree implements Tree {
     private NodeKindIcons icons;
     private DependencyGraph DG;
 
-    public NodeAdapterTree(PuckControl control, int nodeId,NodeKindIcons icons){
+    public NodeAdapterTree(DependencyGraph DG, int nodeId,NodeKindIcons icons){
         this.children=new ArrayList<>();
-        this.control=control;
+        this.DG=DG;
         this.nodeId=nodeId;
 
         this.icons=icons;
-        DG=control.graph();
 
-        Set<Object> childrenObjects = control.graph().content(nodeId);
+        Set<Object> childrenObjects = DG.content(nodeId);
         for (Iterator<Object> iterator=childrenObjects.toIterator();iterator.hasNext();){
-            NodeAdapterTree NTA=new NodeAdapterTree(control,(int)iterator.next(),icons);
+            NodeAdapterTree NTA=new NodeAdapterTree(DG,(int)iterator.next(),icons);
             this.children.add(NTA);
         }
     }
@@ -60,7 +58,6 @@ public class NodeAdapterTree implements Tree {
 
     @Override
     public String toString(){
-        DependencyGraph DG=control.graph();
         DGNode DGN=DG.getNode(nodeId);
         String name=DGN.name();
         StringBuilder sb=new StringBuilder();

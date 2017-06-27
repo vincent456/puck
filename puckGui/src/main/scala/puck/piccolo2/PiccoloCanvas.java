@@ -45,7 +45,7 @@ public class PiccoloCanvas extends PScrollPane {
         setViewportView(canvas);
 
         //region piccoloCustomNode
-        NodeAdapterTree nta=new NodeAdapterTree(control,0,icons);
+        NodeAdapterTree nta=new NodeAdapterTree(control.graph(),0,icons);
 
         node = new PiccoloCustomNode(nta);
         nta=null;

@@ -16,7 +16,6 @@ public class LayoutStack {
 
     public void push(LayoutState layoutState){
         states.push(layoutState);
-        System.out.println("DEBUG");
     }
 
     public LayoutState peek(){
