@@ -5,6 +5,7 @@ import org.piccolo2d.extras.swing.PScrollPane;
 import puck.control.PuckControl;
 import puck.graph.DependencyGraph;
 import puck.piccolo2.LayoutStack.LayoutStack;
+import puck.piccolo2.LayoutStack.LayoutState;
 import puck.piccolo2.menu.DisplayUsesMenu;
 import puck.piccolo2.node.NodeAdapterTree;
 import puck.piccolo2.node.PCustomInputEventHandler;
@@ -43,6 +44,7 @@ public class PiccoloCanvas extends PScrollPane {
         canvas=new PCanvas();
         this.control=control;
         setViewportView(canvas);
+        this.icons=icons;
 
         //region piccoloCustomNode
         NodeAdapterTree nta=new NodeAdapterTree(control.graph(),0,icons);
@@ -108,12 +110,17 @@ public class PiccoloCanvas extends PScrollPane {
     }
 
     public void pushEvent(DependencyGraph newGraph,DependencyGraph oldGraph){
+        LayoutState oldstate=new LayoutState(root);
+        layoutStack.push(new LayoutState(root));
+
+        NodeAdapterTree NTA=new NodeAdapterTree(newGraph,0,icons);
+        root=new PiccoloCustomNode(NTA);
 
         System.out.println("pushedEvent");
     }
 
     public void evt(){
-        System.out.println("evt");
+        //System.out.println("evt");
     }
 
     //endregion
