@@ -1,0 +1,27 @@
+package puck.piccolo2.LayoutStack;
+
+import puck.piccolo2.node.PiccoloCustomNode;
+
+import java.util.Collection;
+import java.util.HashSet;
+
+/**
+ * Created by Vincent Hudry on 26/06/2017.
+ */
+public class LayoutState {
+
+   private Collection<NodeState> states;
+
+   public LayoutState(PiccoloCustomNode PCN){
+       states=new HashSet<>();
+       getLayout(PCN);
+   }
+
+   public void getLayout(PiccoloCustomNode PCN){
+      NodeState nodeState=new NodeState(PCN);
+      states.add(nodeState);
+      for(PiccoloCustomNode PCNchild:PCN.getAllChildren()){
+         getLayout(PCNchild);
+      }
+   }
+}

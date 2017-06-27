@@ -4,6 +4,7 @@ import org.piccolo2d.PCanvas;
 import org.piccolo2d.extras.swing.PScrollPane;
 import puck.control.PuckControl;
 import puck.graph.DependencyGraph;
+import puck.piccolo2.LayoutStack.LayoutStack;
 import puck.piccolo2.menu.DisplayUsesMenu;
 import puck.piccolo2.node.NodeAdapterTree;
 import puck.piccolo2.node.PCustomInputEventHandler;
@@ -24,18 +25,14 @@ public class PiccoloCanvas extends PScrollPane {
 
     private HashMap<Object,PiccoloCustomNode> idNodeMap;
 
-    //region statics
+    private ArrowNodesHolder ANH;
 
+    //region statics
     private static PCanvas canvas;
+
     private static DisplayUsesMenu menu;
 
     private static PiccoloCustomNode root;
-
-    private static ArrowNodesHolder ANH;
-
-    public static ArrowNodesHolder getANH(){
-        return ANH;
-    }
 
     public static PiccoloCustomNode getRoot() {
         return root;
@@ -54,6 +51,8 @@ public class PiccoloCanvas extends PScrollPane {
     }
 
     //endregion
+
+    private LayoutStack layoutStack;
 
     public PiccoloCanvas(PuckControl control,NodeKindIcons icons){
         canvas=new PCanvas();
@@ -95,6 +94,11 @@ public class PiccoloCanvas extends PScrollPane {
         canvas.getLayer().addChild(menu);
         //endregion
 
+        //region LayoutStack
+
+        layoutStack=new LayoutStack();
+
+        //endregion
 
     }
 
@@ -122,5 +126,10 @@ public class PiccoloCanvas extends PScrollPane {
 
         System.out.println("pushedEvent");
     }
+
+    public void evt(){
+        System.out.println("evt");
+    }
+
     //endregion
 }

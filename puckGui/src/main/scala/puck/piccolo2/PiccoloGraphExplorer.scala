@@ -29,6 +29,7 @@ package puck.piccolo2
 import org.piccolo2d.PCanvas
 import org.piccolo2d.extras.swing.PScrollPane
 import puck.control._
+import puck.piccolo2.LayoutStack.LayoutState
 import puck.view.{NodeKindIcons, PuckMainPanel, TreeViewHandler, ViewHandler}
 
 import scala.swing.Publisher
@@ -50,15 +51,16 @@ class PiccoloGraphExplorer
 
   reactions += {
     case Popped(poppedGraph, newHead) =>
-      //canvas.popEvent(newHead, poppedGraph)
-      canvas = new PiccoloCanvas(control,nodeKindIcons)
-      setViewportView(PiccoloCanvas.getCanvas)
+      //canvas = new PiccoloCanvas(control,nodeKindIcons)
+      canvas.popEvent(newHead,poppedGraph)
+      //setViewportView(PiccoloCanvas.getCanvas)
     case Pushed(pushedGraph, previousHead) =>
-      //canvas.pushEvent(pushedGraph, previousHead)
-      canvas = new PiccoloCanvas(control,nodeKindIcons)
-      setViewportView(PiccoloCanvas.getCanvas)
+      //canvas = new PiccoloCanvas(control,nodeKindIcons)
+      canvas.pushEvent(pushedGraph, previousHead)
+      //setViewportView(PiccoloCanvas.getCanvas)
     case evt : GraphChangeEvent =>
       canvas = new PiccoloCanvas(control, nodeKindIcons)
+      canvas.evt();
       setViewportView(PiccoloCanvas.getCanvas())
   }
 }

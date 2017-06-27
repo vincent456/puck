@@ -94,6 +94,7 @@ public class PiccoloCustomNode extends PNode {
         }
     }
 
+    /*
     public void addChildNode(Tree t){
         //TODO try to get rid of the statics
         PiccoloCustomNode PCN=new PiccoloCustomNode(t);
@@ -106,6 +107,7 @@ public class PiccoloCustomNode extends PNode {
         else
             addChild(PCN);
     }
+    */
 
     public Collection<PiccoloCustomNode> getChildren(){
         ArrayList<PiccoloCustomNode> children=new ArrayList<>();
