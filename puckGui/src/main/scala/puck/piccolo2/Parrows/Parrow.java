@@ -18,6 +18,14 @@ public abstract class Parrow extends PNode{
         return to;
     }
 
+    public void setFrom(PNode from){
+        this.from=from;
+    }
+
+    public void setTo(PNode to){
+        this.to=to;
+    }
+
     public Parrow(PNode from,PNode to){
         this(from.getBounds().getCenter2D(),to.getBounds().getCenter2D());
         this.from=from;

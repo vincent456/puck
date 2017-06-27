@@ -3,10 +3,7 @@ package puck.piccolo2.Parrows;
 import org.piccolo2d.PNode;
 import puck.piccolo2.node.PiccoloCustomNode;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.*;
 
 /**
  * Created by Vincent Hudry on 05/06/2017.
@@ -47,11 +44,22 @@ public class ArrowNodesHolder extends PNode{
             set.add(iterator.next());
         return set;
     }
+
+    public Collection<Parrow>getAllArrows(){
+        Collection<Parrow> set = new HashSet<>();
+        for(Iterator<PNode> iterator=getChildrenIterator();iterator.hasNext();)
+            set.add((Parrow) iterator.next());
+        for(Iterator<Parrow> iterator=hiddenArrows.iterator();iterator.hasNext();)
+            set.add(iterator.next());
+        return set;
+    }
+
     public void updatePositions() {
         for (Parrow arrow : getVisibleArrows()) {
             PNode from = arrow.getFrom();
             PNode to = arrow.getTo();
             Parrow ar2 = arrow.redraw();
+            removeArrow(arrow);
             addArrow(ar2);
         }
     }
@@ -76,6 +84,20 @@ public class ArrowNodesHolder extends PNode{
                         showArrow(arrow);
                 }
             }
+        }
+    }
+
+    public void rebind(HashMap<Object, PiccoloCustomNode> idNodeMap) {
+        Collection<Parrow> arrows = getAllArrows();
+        for(Parrow arrow:arrows){
+            PiccoloCustomNode from=(PiccoloCustomNode) arrow.getFrom().getParent().getParent();
+            PiccoloCustomNode to=(PiccoloCustomNode) arrow.getTo().getParent().getParent();
+            int fromI=from.getidNode();
+            int toI=to.getidNode();
+            PNode newFrom=idNodeMap.get(fromI);
+            PNode newTo=idNodeMap.get(toI);
+            arrow.setFrom(newFrom);
+            arrow.setTo(newTo);
         }
     }
 }

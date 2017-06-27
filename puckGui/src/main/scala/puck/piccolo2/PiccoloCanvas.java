@@ -6,6 +6,7 @@ import puck.control.PuckControl;
 import puck.graph.DependencyGraph;
 import puck.piccolo2.LayoutStack.LayoutStack;
 import puck.piccolo2.LayoutStack.LayoutState;
+import puck.piccolo2.LayoutStack.NodeState;
 import puck.piccolo2.menu.DisplayUsesMenu;
 import puck.piccolo2.node.NodeAdapterTree;
 import puck.piccolo2.node.PCustomInputEventHandler;
@@ -105,19 +106,21 @@ public class PiccoloCanvas extends PScrollPane {
 
     //region events
     public void popEvent(DependencyGraph newGraph,DependencyGraph oldGraph){
-
+/*
         pushEvent(newGraph,oldGraph);
         System.out.println("popEvent");
-    }
+  */  }
 
     public void pushEvent(DependencyGraph newGraph,DependencyGraph oldGraph){
 
+        /*
         LayoutState oldstate=new LayoutState(root);
         layoutStack.push(new LayoutState(root));
 
         //region reset
         NodeAdapterTree NTA=new NodeAdapterTree(newGraph,0,icons);
         root=new PiccoloCustomNode(NTA);
+        NTA=null;
         fillIdNodeMap(root);
         //endregion
 
@@ -126,13 +129,26 @@ public class PiccoloCanvas extends PScrollPane {
         root.setLayout();
         addEvent(root,root,menu);
 
-        //ANH.
+        //ANH=new ArrowNodesHolder();
+
+        //TODO fix rebind
+        //ANH.rebind(idNodeMap);
+        //ANH.updatePositions();
+        //ANH.hide_show_arrows(root);
+
         canvas.getLayer().addChild(root);
         canvas.getLayer().addChild(ANH);
         canvas.getLayer().addChild(menu);
         //endregion
 
+        //TODO fix me
+        //region resetLayout
+       // LayoutState LS=layoutStack.peek();
+       // LS.setLayout(root,idNodeMap);
+        //endregion
+
         System.out.println("pushedEvent");
+    */
     }
 
     public void evt(){

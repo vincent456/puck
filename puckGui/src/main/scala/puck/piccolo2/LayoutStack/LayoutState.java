@@ -3,6 +3,7 @@ package puck.piccolo2.LayoutStack;
 import puck.piccolo2.node.PiccoloCustomNode;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 
 /**
@@ -24,4 +25,14 @@ public class LayoutState {
          getLayout(PCNchild);
       }
    }
+
+    public void setLayout(PiccoloCustomNode layout,HashMap<Object,PiccoloCustomNode> idNodeMap) {
+        for(NodeState NS:states){
+            PiccoloCustomNode PCN=idNodeMap.get(NS.getNodeId());
+            if(NS.AreChildrenIHidden())
+            {
+                PCN.toggleChildren();
+            }
+        }
+    }
 }

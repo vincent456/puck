@@ -14,4 +14,12 @@ public class NodeState {
         nodeId=PCN.getidNode();
         areChildrenIHidden=PCN.getChildren().size()==0;
     }
+
+    public int getNodeId() {
+        return nodeId;
+    }
+
+    public boolean AreChildrenIHidden() {
+        return areChildrenIHidden;
+    }
 }

@@ -94,21 +94,6 @@ public class PiccoloCustomNode extends PNode {
         }
     }
 
-    /*
-    public void addChildNode(Tree t){
-        //TODO try to get rid of the statics
-        PiccoloCustomNode PCN=new PiccoloCustomNode(t);
-
-        PCN.getContent().addInputEventListener(new PCustomInputEventHandler(PCN, PiccoloCanvas.getRoot(),PiccoloCanvas.getMenu(),PiccoloCanvas.getCanvas(),PiccoloCanvas.getANH()));
-
-        boolean isHiddingChildren=hiddenchildren.size()!=0;
-        if(isHiddingChildren)
-            hiddenchildren.add(PCN);
-        else
-            addChild(PCN);
-    }
-    */
-
     public Collection<PiccoloCustomNode> getChildren(){
         ArrayList<PiccoloCustomNode> children=new ArrayList<>();
         for(Iterator<PNode> childrenIterator=getChildrenIterator();childrenIterator.hasNext();){

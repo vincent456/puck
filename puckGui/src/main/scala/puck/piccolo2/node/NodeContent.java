@@ -52,4 +52,8 @@ public class NodeContent extends PNode {
         PBounds bounds=this.getUnionOfChildrenBounds(null);
         this.setBounds(bounds.getX(),bounds.getY(),bounds.getWidth(),bounds.getHeight());
     }
+
+    public String toString(){
+        return text.getText();
+    }
 }
