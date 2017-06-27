@@ -47,39 +47,8 @@ public class PCustomInputEventHandler extends PBasicInputEventHandler {
             //arrows
             //you can use the ArrowNodeHolder ANH
 
-            Collection<PiccoloCustomNode> hierarchy = node.getHierarchy();
-
-            //region update all positions
-            for(Parrow arrow:ANH.getVisibleArrows()){
-                PNode from=arrow.getFrom();
-                PNode to = arrow.getTo();
-                Parrow ar2=arrow.redraw();
-                ANH.addArrow(ar2);
-            }
-            //endregion
-
-            //region hide/show arrows
-            for(PiccoloCustomNode PCN:hierarchy) {
-                if (PCN.isHidden())
-                    for (Parrow arrow : ANH.getVisibleArrows()) {
-
-                        PiccoloCustomNode PCNF=(PiccoloCustomNode) arrow.getFrom().getParent();
-                        PiccoloCustomNode PCNT=(PiccoloCustomNode) arrow.getTo().getParent();
-
-                        if(PCN==PCNF||PCN==PCNT)
-                            ANH.hideArrow(arrow);
-                    }
-                else {
-                    for (Parrow arrow : ANH.getHiddenArrows()) {
-                        PiccoloCustomNode PCNF = (PiccoloCustomNode) arrow.getFrom().getParent();
-                        PiccoloCustomNode PCNT = (PiccoloCustomNode) arrow.getTo().getParent();
-                        if ((!PCNT.isHidden() || !PCNF.isHidden())
-                                && (PCN == PCNF || PCN == PCNT))
-                            ANH.showArrow(arrow);
-                    }
-                }
-            }
-            //endregion
+            ANH.updatePositions();
+            ANH.hide_show_arrows(node);
 
         }
         if(e.isRightMouseButton()){

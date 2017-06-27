@@ -1,6 +1,7 @@
 package puck.piccolo2.Parrows;
 
 import org.piccolo2d.PNode;
+import puck.piccolo2.node.PiccoloCustomNode;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -45,5 +46,36 @@ public class ArrowNodesHolder extends PNode{
         for(Iterator<Parrow> iterator=hiddenArrows.iterator();iterator.hasNext();)
             set.add(iterator.next());
         return set;
+    }
+    public void updatePositions() {
+        for (Parrow arrow : getVisibleArrows()) {
+            PNode from = arrow.getFrom();
+            PNode to = arrow.getTo();
+            Parrow ar2 = arrow.redraw();
+            addArrow(ar2);
+        }
+    }
+    public void hide_show_arrows(PiccoloCustomNode node) {
+        Collection<PiccoloCustomNode> hierarchy=node.getHierarchy();
+        for (PiccoloCustomNode PCN : hierarchy) {
+            if (PCN.isHidden())
+                for (Parrow arrow : getVisibleArrows()) {
+
+                    PiccoloCustomNode PCNF = (PiccoloCustomNode) arrow.getFrom().getParent();
+                    PiccoloCustomNode PCNT = (PiccoloCustomNode) arrow.getTo().getParent();
+
+                    if (PCN == PCNF || PCN == PCNT)
+                        hideArrow(arrow);
+                }
+            else {
+                for (Parrow arrow : getHiddenArrows()) {
+                    PiccoloCustomNode PCNF = (PiccoloCustomNode) arrow.getFrom().getParent();
+                    PiccoloCustomNode PCNT = (PiccoloCustomNode) arrow.getTo().getParent();
+                    if ((!PCNT.isHidden() || !PCNF.isHidden())
+                            && (PCN == PCNF || PCN == PCNT))
+                        showArrow(arrow);
+                }
+            }
+        }
     }
 }

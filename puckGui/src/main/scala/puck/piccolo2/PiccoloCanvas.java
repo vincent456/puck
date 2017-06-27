@@ -106,15 +106,31 @@ public class PiccoloCanvas extends PScrollPane {
     //region events
     public void popEvent(DependencyGraph newGraph,DependencyGraph oldGraph){
 
+        pushEvent(newGraph,oldGraph);
         System.out.println("popEvent");
     }
 
     public void pushEvent(DependencyGraph newGraph,DependencyGraph oldGraph){
+
         LayoutState oldstate=new LayoutState(root);
         layoutStack.push(new LayoutState(root));
 
+        //region reset
         NodeAdapterTree NTA=new NodeAdapterTree(newGraph,0,icons);
         root=new PiccoloCustomNode(NTA);
+        fillIdNodeMap(root);
+        //endregion
+
+        //region redraw
+        canvas.getLayer().removeAllChildren();
+        root.setLayout();
+        addEvent(root,root,menu);
+
+        //ANH.
+        canvas.getLayer().addChild(root);
+        canvas.getLayer().addChild(ANH);
+        canvas.getLayer().addChild(menu);
+        //endregion
 
         System.out.println("pushedEvent");
     }
