@@ -61,7 +61,7 @@ class PiccoloGraphExplorer
     case evt : GraphChangeEvent =>
       canvas = new PiccoloCanvas(control, nodeKindIcons)
       canvas.evt();
-      setViewportView(PiccoloCanvas.getCanvas())
+      setViewportView(canvas.getCanvas());
   }
 }
 

@@ -27,32 +27,17 @@ public class PiccoloCanvas extends PScrollPane {
 
     private ArrowNodesHolder ANH;
 
-    //region statics
-    private static PCanvas canvas;
+    private PCanvas canvas;
 
-    private static DisplayUsesMenu menu;
+    private DisplayUsesMenu menu;
 
-    private static PiccoloCustomNode root;
-
-    public static PiccoloCustomNode getRoot() {
-        return root;
-    }
-
-    public static void setRoot(PiccoloCustomNode root){
-        PiccoloCanvas.root=root;
-    }
-
-    public static PCanvas getCanvas() {
-        return canvas;
-    }
-
-    public static DisplayUsesMenu getMenu() {
-        return menu;
-    }
-
-    //endregion
+    private PiccoloCustomNode root;
 
     private LayoutStack layoutStack;
+
+    public PCanvas getCanvas(){
+        return canvas;
+    }
 
     public PiccoloCanvas(PuckControl control,NodeKindIcons icons){
         canvas=new PCanvas();
