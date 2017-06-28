@@ -115,12 +115,8 @@ public class PiccoloCustomNode extends PNode {
         return out;
     }
 
-    public void setLayout(){setGridLayout(3);}
-
-    //region avaliable layouts
-
     public void toggleChildren(){
-        
+
         Collection<PiccoloCustomNode> children=getChildren();
         if(children.size()!=0){
             for(PiccoloCustomNode PCN:children)
@@ -135,8 +131,11 @@ public class PiccoloCustomNode extends PNode {
                 addChild(PCN);
             hiddenchildren.clear();
         }
-
     }
+
+    public void setLayout(){setGridLayout(3);}
+
+    //region avaliable layouts
 
     public void setGridLayoutH(){
         if(getChildren().size()==0){
@@ -247,6 +246,7 @@ public class PiccoloCustomNode extends PNode {
         addChildren(children);
     }
 
+    //TODO this function breaks the layout when ckick on the last line of children
     public void setGridLayout(int cap){
 
         if(getChildren().size()==0) {
