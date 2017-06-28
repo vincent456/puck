@@ -26,13 +26,14 @@ public class LayoutState {
       }
    }
 
-    public void setLayout(PiccoloCustomNode layout,HashMap<Object,PiccoloCustomNode> idNodeMap) {
+    public void setLayout(HashMap<Object,PiccoloCustomNode> idNodeMap) {
         for(NodeState NS:states){
             PiccoloCustomNode PCN=idNodeMap.get(NS.getNodeId());
             if(NS.AreChildrenIHidden())
-            {
-                PCN.toggleChildren();
-            }
+                PCN.hideChildren();
+            else
+                PCN.showChildren();
         }
+        idNodeMap.get(0).setLayout();
     }
 }

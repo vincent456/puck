@@ -92,6 +92,9 @@ public class PiccoloCustomNode extends PNode {
             PiccoloCustomNode node = new PiccoloCustomNode(T);
             hiddenchildren.add(node);
         }
+
+        setLayout();
+
     }
 
     public Collection<PiccoloCustomNode> getChildren(){
@@ -115,12 +118,36 @@ public class PiccoloCustomNode extends PNode {
         return out;
     }
 
-    public void setLayout(){setGridLayout(3);}
+    public Collection<PiccoloCustomNode> getHierarchy(){
+        Collection<PiccoloCustomNode> out=new HashSet<>();
+        getHierarchy_Rec(out);
+        return out;
+    }
 
-    //region avaliable layouts
+    private void getHierarchy_Rec(Collection<PiccoloCustomNode> out){
+        for(PiccoloCustomNode PCN:getAllChildren()){
+            out.add(PCN);
+            PCN.getHierarchy_Rec(out);
+        }
+    }
 
-    public void toggleChildren(){
-        
+   public void showChildren(){
+        for(PiccoloCustomNode PCN:hiddenchildren)
+            addChild(PCN);
+        hiddenchildren.clear();
+   }
+
+   public void hideChildren(){
+       for(PiccoloCustomNode PCN:getChildren())
+           hiddenchildren.add(PCN);
+       removeAllChildren();
+
+       addChild(rect);
+       addChild(content);
+   }
+
+    public void toggleChildren() {
+/*
         Collection<PiccoloCustomNode> children=getChildren();
         if(children.size()!=0){
             for(PiccoloCustomNode PCN:children)
@@ -135,8 +162,17 @@ public class PiccoloCustomNode extends PNode {
                 addChild(PCN);
             hiddenchildren.clear();
         }
-
+        */
+        Collection<PiccoloCustomNode> children = getChildren();
+        if (children.size() != 0)
+            hideChildren();
+        else
+            showChildren();
     }
+
+    public void setLayout(){setGridLayout(3);}
+
+    //region avaliable layouts
 
     public void setGridLayoutH(){
         if(getChildren().size()==0){
@@ -247,6 +283,7 @@ public class PiccoloCustomNode extends PNode {
         addChildren(children);
     }
 
+    //TODO this function breaks the layout when ckick on the last line of children
     public void setGridLayout(int cap){
 
         if(getChildren().size()==0) {
@@ -396,19 +433,6 @@ public class PiccoloCustomNode extends PNode {
 
         //for(PiccoloCustomNode PCN:getChildren())
         //    PCN.updateContentBoundingBoxes(debug,canvas);
-    }
-
-    public Collection<PiccoloCustomNode> getHierarchy(){
-        Collection<PiccoloCustomNode> out=new HashSet<>();
-        getHierarchy_Rec(out);
-        return out;
-    }
-
-    private void getHierarchy_Rec(Collection<PiccoloCustomNode> out){
-        for(PiccoloCustomNode PCN:getAllChildren()){
-            out.add(PCN);
-            PCN.getHierarchy_Rec(out);
-        }
     }
 
     public void expandAll() {
