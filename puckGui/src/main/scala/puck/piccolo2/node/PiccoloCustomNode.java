@@ -92,6 +92,9 @@ public class PiccoloCustomNode extends PNode {
             PiccoloCustomNode node = new PiccoloCustomNode(T);
             hiddenchildren.add(node);
         }
+
+        setLayout();
+
     }
 
     public Collection<PiccoloCustomNode> getChildren(){
@@ -115,8 +118,36 @@ public class PiccoloCustomNode extends PNode {
         return out;
     }
 
-    public void toggleChildren(){
+    public Collection<PiccoloCustomNode> getHierarchy(){
+        Collection<PiccoloCustomNode> out=new HashSet<>();
+        getHierarchy_Rec(out);
+        return out;
+    }
 
+    private void getHierarchy_Rec(Collection<PiccoloCustomNode> out){
+        for(PiccoloCustomNode PCN:getAllChildren()){
+            out.add(PCN);
+            PCN.getHierarchy_Rec(out);
+        }
+    }
+
+   public void showChildren(){
+        for(PiccoloCustomNode PCN:hiddenchildren)
+            addChild(PCN);
+        hiddenchildren.clear();
+   }
+
+   public void hideChildren(){
+       for(PiccoloCustomNode PCN:getChildren())
+           hiddenchildren.add(PCN);
+       removeAllChildren();
+
+       addChild(rect);
+       addChild(content);
+   }
+
+    public void toggleChildren() {
+/*
         Collection<PiccoloCustomNode> children=getChildren();
         if(children.size()!=0){
             for(PiccoloCustomNode PCN:children)
@@ -131,6 +162,12 @@ public class PiccoloCustomNode extends PNode {
                 addChild(PCN);
             hiddenchildren.clear();
         }
+        */
+        Collection<PiccoloCustomNode> children = getChildren();
+        if (children.size() != 0)
+            hideChildren();
+        else
+            showChildren();
     }
 
     public void setLayout(){setGridLayout(3);}
@@ -396,19 +433,6 @@ public class PiccoloCustomNode extends PNode {
 
         //for(PiccoloCustomNode PCN:getChildren())
         //    PCN.updateContentBoundingBoxes(debug,canvas);
-    }
-
-    public Collection<PiccoloCustomNode> getHierarchy(){
-        Collection<PiccoloCustomNode> out=new HashSet<>();
-        getHierarchy_Rec(out);
-        return out;
-    }
-
-    private void getHierarchy_Rec(Collection<PiccoloCustomNode> out){
-        for(PiccoloCustomNode PCN:getAllChildren()){
-            out.add(PCN);
-            PCN.getHierarchy_Rec(out);
-        }
     }
 
     public void expandAll() {

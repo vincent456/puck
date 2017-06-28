@@ -29,7 +29,7 @@ public class LayoutState {
     public void setLayout(PiccoloCustomNode layout,HashMap<Object,PiccoloCustomNode> idNodeMap) {
         for(NodeState NS:states){
             PiccoloCustomNode PCN=idNodeMap.get(NS.getNodeId());
-            if(NS.AreChildrenIHidden())
+            if(!NS.AreChildrenIHidden())
             {
                 PCN.toggleChildren();
             }

@@ -164,6 +164,9 @@ public class PiccoloCanvas extends PScrollPane {
 
         //endregion
 
+        LayoutState LS=layoutStack.peek();
+        LS.setLayout(root,idNodeMap);
+
         //region draw
         canvas.getLayer().removeAllChildren();
         canvas.getLayer().addChild(root);
