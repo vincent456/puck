@@ -54,15 +54,14 @@ public class ArrowNodesHolder extends PNode{
         return set;
     }
 
-    public void updatePositions() {
-        for (Parrow arrow : getVisibleArrows()) {
+    public void updatePosition(Parrow arrow) {
             PNode from = arrow.getFrom();
             PNode to = arrow.getTo();
             Parrow ar2 = arrow.redraw();
             removeArrow(arrow);
             addArrow(ar2);
-        }
     }
+
     public void hide_show_arrows(PiccoloCustomNode node) {
         Collection<PiccoloCustomNode> hierarchy=node.getHierarchy();
         for (PiccoloCustomNode PCN : hierarchy) {
@@ -86,8 +85,8 @@ public class ArrowNodesHolder extends PNode{
             }
         }
     }
-
-    public void rebind(HashMap<Object, PiccoloCustomNode> idNodeMap) {
+/*
+    public void rebind(PiccoloCustomNode oldLayout,PiccoloCustomNode newLayout) {
         Collection<Parrow> arrows = getAllArrows();
         for(Parrow arrow:arrows){
             PiccoloCustomNode from=(PiccoloCustomNode) arrow.getFrom().getParent().getParent();
@@ -100,4 +99,5 @@ public class ArrowNodesHolder extends PNode{
             arrow.setTo(newTo);
         }
     }
+    */
 }

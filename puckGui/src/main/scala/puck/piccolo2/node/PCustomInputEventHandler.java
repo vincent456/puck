@@ -47,7 +47,8 @@ public class PCustomInputEventHandler extends PBasicInputEventHandler {
             //arrows
             //you can use the ArrowNodeHolder ANH
 
-            ANH.updatePositions();
+            for(Parrow arrow:ANH.getAllArrows())
+                ANH.updatePosition(arrow);
             ANH.hide_show_arrows(node);
 
         }
