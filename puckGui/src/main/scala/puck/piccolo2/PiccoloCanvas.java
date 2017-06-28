@@ -113,31 +113,11 @@ public class PiccoloCanvas extends PScrollPane {
 
     public void pushEvent(DependencyGraph newGraph,DependencyGraph oldGraph){
 
-        /*
-
-        
-        //region redraw
-        canvas.getLayer().removeAllChildren();
-        root.setLayout();
-        addEvent(root,root,menu);
-
-        //ANH=new ArrowNodesHolder();
-
-        //TODO fix rebind
-        //ANH.rebind(idNodeMap);
-        //ANH.updatePositions();
-        //ANH.hide_show_arrows(root);
-
-        canvas.getLayer().addChild(root);
-        canvas.getLayer().addChild(ANH);
-        canvas.getLayer().addChild(menu);
-        //endregion
-
-        System.out.println("pushedEvent");
-    */
-
         layoutStack.push(new LayoutState(root));
         //region reset
+
+        //TODO: rebind the old arrows instead of deleting them
+        ANH=new ArrowNodesHolder();
 
         NodeAdapterTree NTA=new NodeAdapterTree(newGraph,0,icons);
         root=new PiccoloCustomNode(NTA);
@@ -158,6 +138,7 @@ public class PiccoloCanvas extends PScrollPane {
         canvas.getLayer().addChild(root);
         root.setLayout();
         canvas.getLayer().addChild(menu);
+        canvas.getLayer().addChild(ANH);
         //endregion
 
     }
