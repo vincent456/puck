@@ -114,16 +114,8 @@ public class PiccoloCanvas extends PScrollPane {
     public void pushEvent(DependencyGraph newGraph,DependencyGraph oldGraph){
 
         /*
-        LayoutState oldstate=new LayoutState(root);
-        layoutStack.push(new LayoutState(root));
 
-        //region reset
-        NodeAdapterTree NTA=new NodeAdapterTree(newGraph,0,icons);
-        root=new PiccoloCustomNode(NTA);
-        NTA=null;
-        fillIdNodeMap(root);
-        //endregion
-
+        
         //region redraw
         canvas.getLayer().removeAllChildren();
         root.setLayout();
@@ -139,12 +131,6 @@ public class PiccoloCanvas extends PScrollPane {
         canvas.getLayer().addChild(root);
         canvas.getLayer().addChild(ANH);
         canvas.getLayer().addChild(menu);
-        //endregion
-
-        //TODO fix me
-        //region resetLayout
-       // LayoutState LS=layoutStack.peek();
-       // LS.setLayout(root,idNodeMap);
         //endregion
 
         System.out.println("pushedEvent");
