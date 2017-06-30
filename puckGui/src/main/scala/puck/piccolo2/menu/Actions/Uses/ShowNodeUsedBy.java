@@ -2,6 +2,7 @@ package puck.piccolo2.menu.Actions.Uses;
 
 import org.piccolo2d.PNode;
 import org.piccolo2d.event.PInputEvent;
+import puck.control.PuckControl;
 import puck.graph.DependencyGraph;
 import puck.piccolo2.menu.Actions.ShowNodeUsersOf;
 import puck.piccolo2.node.PiccoloCustomNode;
@@ -17,8 +18,8 @@ import java.util.HashMap;
  */
 public class ShowNodeUsedBy extends ShowNodeUsersOf {
 
-    public ShowNodeUsedBy(DependencyGraph DG, ArrowNodesHolder arrowNodesHolder, HashMap<Object, PiccoloCustomNode> idNodeMap) {
-        super(DG, arrowNodesHolder, idNodeMap);
+    public ShowNodeUsedBy(PuckControl control, DependencyGraph DG, ArrowNodesHolder arrowNodesHolder, HashMap<Object, PiccoloCustomNode> idNodeMap) {
+        super(control,DG, arrowNodesHolder, idNodeMap);
     }
 
     @Override

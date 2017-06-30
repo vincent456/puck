@@ -50,38 +50,38 @@ public class DisplayUsesMenu extends PNode {
 
         //region for showuses
 
-        ShowNodeUsersOf SNUO =new ShowNodeUsersOf(DG,ANH,idNodeMap);
+        ShowNodeUsersOf SNUO =new ShowNodeUsersOf(control,DG,ANH,idNodeMap);
         MenuItem showusersof=new MenuItem("Show users of", SNUO);
         menu.add(showusersof);
 
-        HideNodeUsersOf HNUO=new HideNodeUsersOf(DG,ANH,idNodeMap);
+        HideNodeUsersOf HNUO=new HideNodeUsersOf(control,DG,ANH,idNodeMap);
         MenuItem hideusersof=new MenuItem("Hide users of",HNUO);
         menu.add(hideusersof);
 
-        ShowNodeUsedBy SNOB = new ShowNodeUsedBy(DG,ANH,idNodeMap);
+        ShowNodeUsedBy SNOB = new ShowNodeUsedBy(control,DG,ANH,idNodeMap);
         MenuItem shownodeusedby=new MenuItem("Show used by",SNOB);
         menu.add(shownodeusedby);
 
-        HideNodeUsedBy HNUB=new HideNodeUsedBy(DG,ANH,idNodeMap);
+        HideNodeUsedBy HNUB=new HideNodeUsedBy(control,DG,ANH,idNodeMap);
         MenuItem hidenodeusedby=new MenuItem("Hide used by",HNUB);
         menu.add(hidenodeusedby);
 
         //endregion
 
         //region for Extends
-        ShowParentNode SPN=new ShowParentNode(DG,ANH,idNodeMap);
+        ShowParentNode SPN=new ShowParentNode(control,DG,ANH,idNodeMap);
         MenuItem showparentnode=new MenuItem("Show parents",SPN);
         menu.add(showparentnode);
 
-        HideParentNode HPN=new HideParentNode(DG,ANH,idNodeMap);
+        HideParentNode HPN=new HideParentNode(control,DG,ANH,idNodeMap);
         MenuItem hideparentnode=new MenuItem("Hide parents",HPN);
         menu.add(hideparentnode);
 
-        ShowChildrenNode SCN=new ShowChildrenNode(DG,ANH,idNodeMap);
+        ShowChildrenNode SCN=new ShowChildrenNode(control,DG,ANH,idNodeMap);
         MenuItem showchildrennode=new MenuItem("Show children",SCN);
         menu.add(showchildrennode);
 
-        HideChildrenNode HCN=new HideChildrenNode(DG,ANH,idNodeMap);
+        HideChildrenNode HCN=new HideChildrenNode(control,DG,ANH,idNodeMap);
         MenuItem hidechildrennode=new MenuItem("Hide children",HCN);
         menu.add(hidechildrennode);
 
