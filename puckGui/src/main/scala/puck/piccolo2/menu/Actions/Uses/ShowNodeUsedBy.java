@@ -34,8 +34,18 @@ public class ShowNodeUsedBy extends ShowNodeUsersOf {
             Object O=iterator.next();
             PNode from = idNodeMap.get(O).getContent();
             PNode to=target.getContent();
-            if((from.getParent().getParent() instanceof  PiccoloCustomNode)&&!((PiccoloCustomNode) from.getParent().getParent()).isHidden())
-            arrowNodesHolder.addArrow(new ParrowUses(from,to,10));
+            if((from.getParent().getParent() instanceof  PiccoloCustomNode)&&!((PiccoloCustomNode) from.getParent().getParent()).isHidden()){
+
+                int user = target.getidNode();
+                int used = (int)O;
+
+                boolean forbidden = control.constraints().get().isForbidden(DG,user,used);
+
+                if(forbidden)
+                    arrowNodesHolder.addArrow(new ParrowFat(from,to,5, Color.RED));
+                else
+                    arrowNodesHolder.addArrow(new ParrowUses(from, to, 10));
+            }
         }
     }
 }

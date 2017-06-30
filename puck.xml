@@ -1,7 +1,7 @@
 <puck-config>
-	<out>out</out>
 	<decouple>C:\Users\Vincent Hudry\Desktop\stage\monPuck\puck\puckExtendJ\src\test\resources\nanoPersonne\decouple.wld</decouple>
+	<out>out</out>
+	<log>puck-log.txt</log>
 	<src rec=".java">C:\Users\Vincent Hudry\Desktop\stage\monPuck\puck\puckExtendJ\src\test\resources\nanoPersonne\nano</src>
 	<workspace>.</workspace>
-	<log>puck-log.txt</log>
 </puck-config>

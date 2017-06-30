@@ -1,0 +1,8 @@
+<puck-config>
+	<decouple>decouple.wld</decouple>
+	<out>out</out>
+	<classpath rec=".jar">lib</classpath>
+	<log>puck-log.txt</log>
+	<src rec=".java">src</src>
+	<workspace>C:\Users\Vincent Hudry\Desktop\stage\monPuck\puck\puckExtendJ\src\test\resources\nanoPersonne\nano</workspace>
+</puck-config>
