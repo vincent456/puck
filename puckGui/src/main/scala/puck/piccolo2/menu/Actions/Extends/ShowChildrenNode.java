@@ -34,7 +34,7 @@ public class ShowChildrenNode extends ShowNodeUsersOf {
             Object O=iterator.next();
             PNode from=idNodeMap.get(O).getContent();
             PNode to=target.getContent();
-            if((from.getParent().getParent() instanceof PiccoloCustomNode)&&(!((PiccoloCustomNode) from.getParent().getParent()).isHidden()))
+            if((from.getParent() instanceof PiccoloCustomNode)&&(!((PiccoloCustomNode) from.getParent()).isHidden()))
             arrowNodesHolder.addArrow(new ParrowExtends(from,to));
         }
     }

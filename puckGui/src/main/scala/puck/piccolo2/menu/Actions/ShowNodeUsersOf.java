@@ -44,7 +44,6 @@ public class ShowNodeUsersOf extends MenuItemEventHandler {
             Object O=iterator.next();
             PNode from=target.getContent();
             PNode to=idNodeMap.get(O).getContent();
-          //if((to.getParent().getParent() instanceof  PiccoloCustomNode)&&!((PiccoloCustomNode) to.getParent().getParent()).isHidden()) {
             if(to.getParent() instanceof  PiccoloCustomNode &&!((PiccoloCustomNode)to.getParent()).isHidden()){
 
                 int user = (int)O;
@@ -67,7 +66,8 @@ public class ShowNodeUsersOf extends MenuItemEventHandler {
 
                     if(forbidden) {
                         NodeContent virtualTo=((PiccoloCustomNode)to.getParent()).getHigherParent().getContent();
-                        arrowNodesHolder.addArrow(new ParrowDottedFat(from,virtualTo,10,5,Color.RED));
+                        ParrowDottedFat arrow=new ParrowDottedFat(from,virtualTo,10,5,Color.RED,from,to);
+                        arrowNodesHolder.addArrow(arrow);
                     }
                 }
             }

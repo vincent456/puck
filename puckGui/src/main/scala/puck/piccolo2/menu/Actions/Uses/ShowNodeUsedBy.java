@@ -57,7 +57,8 @@ public class ShowNodeUsedBy extends ShowNodeUsersOf {
 
                 if(forbidden){
                     NodeContent virtualFrom=((PiccoloCustomNode)from.getParent()).getHigherParent().getContent();
-                    arrowNodesHolder.addArrow(new ParrowDottedFat(from,to,10,5,Color.RED));
+                    ParrowDottedFat arrow=new ParrowDottedFat(virtualFrom,to,10,5,Color.RED,from,to);
+                    arrowNodesHolder.addArrow(arrow);
                 }
 
                 }

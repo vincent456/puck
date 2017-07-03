@@ -3,6 +3,7 @@ package puck.piccolo2.Parrows;
 import org.piccolo2d.PNode;
 import org.piccolo2d.nodes.PPath;
 import puck.piccolo2.Util;
+import puck.piccolo2.node.PiccoloCustomNode;
 
 import java.awt.*;
 import java.awt.geom.Point2D;
@@ -15,6 +16,9 @@ public class ParrowDottedFat extends Parrow {
     private double spacing;
     private float width;
     private  Color color;
+
+    private PNode virtualFrom;
+    private PNode virtualTo;
 
     public ParrowDottedFat(Point2D from,Point2D to, double spacing, float width,Color color){
         super(from,to);
@@ -61,15 +65,34 @@ public class ParrowDottedFat extends Parrow {
 
     }
 
-    public ParrowDottedFat(PNode from,PNode to,double spacing,float width,Color color){
+    public ParrowDottedFat(PNode from,PNode to,double spacing,float width,Color color,PNode virtualFrom,PNode virtualTo){
         this(from.getBounds().getCenter2D(),to.getBounds().getCenter2D(),spacing,width,color);
         this.from=from;
         this.to=to;
+
+        this.virtualFrom=virtualFrom;
+        this.virtualTo=virtualTo;
+
     }
 
     @Override
     public Parrow redraw() {
         removeAllChildren();
-        return new ParrowDottedFat(from,to,spacing,width,color);
+            PiccoloCustomNode vpfrom=(PiccoloCustomNode) this.getVirtualFrom().getParent();
+            PiccoloCustomNode vpto = (PiccoloCustomNode) this.getVirtualTo().getParent();
+            PNode vphf=vpfrom.getHigherParent().getContent();
+            PNode vpht=vpto.getHigherParent().getContent();
+            if(vphf==vpfrom.getContent()&&vpht==vpto.getContent())
+            return (new ParrowFat(vphf,vpht,width,color));
+                else
+            return (new ParrowDottedFat(vphf,vpht,spacing,width, color,vpfrom.getContent(),vpto.getContent()));
+    }
+
+    public PNode getVirtualFrom() {
+        return virtualFrom;
+    }
+
+    public PNode getVirtualTo() {
+        return virtualTo;
     }
 }
