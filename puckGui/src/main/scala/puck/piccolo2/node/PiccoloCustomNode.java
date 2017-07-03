@@ -24,6 +24,8 @@ public class PiccoloCustomNode extends PNode {
 
     private int idNode;
 
+    private PiccoloCustomNode parent;
+
     //region getters/setters
 
     public PPath getRect() {
@@ -69,6 +71,14 @@ public class PiccoloCustomNode extends PNode {
         }
     }
 
+    public void setParentNode(PiccoloCustomNode parent){
+        this.parent=parent;
+    }
+
+    public PiccoloCustomNode getParentNode(){
+        return parent;
+    }
+
     //endregion
 
     public PiccoloCustomNode(Tree tree){
@@ -86,9 +96,12 @@ public class PiccoloCustomNode extends PNode {
         addChild(content);
         content.translate(margin,margin);
 
+        this.parent=null;
+
         if(tree.getChildren()!=null)
         for(Tree T:tree.getChildren()) {
             PiccoloCustomNode node = new PiccoloCustomNode(T);
+            node.setParentNode(this);
             hiddenchildren.add(node);
         }
 
@@ -266,7 +279,7 @@ public class PiccoloCustomNode extends PNode {
         addChildren(children);
     }
 
-    //TODO this function breaks the layout when ckick on the last line of children
+    //TODO this function breaks the layout when ckick on the first child of the last line
     public void setGridLayout(int cap){
 
         if(getChildren().size()==0) {
@@ -294,9 +307,6 @@ public class PiccoloCustomNode extends PNode {
             for (PiccoloCustomNode PCN : getChildren()) {
                 PCN.setGridLayout(cap);
 
-                if (PCN.getRect().getHeight() > maxHeight)
-                    maxHeight = PCN.getRect().getHeight();
-
                 if (i == cap) {
                     i = 1;
                     x = margin;
@@ -306,6 +316,9 @@ public class PiccoloCustomNode extends PNode {
                     w = x + PCN.getRect().getWidth() + margin;
                     i++;
                 }
+
+                if (PCN.getRect().getHeight() > maxHeight)
+                    maxHeight = PCN.getRect().getHeight();
 
                 if(w>maxWidth)
                     maxWidth=w;
@@ -433,12 +446,10 @@ public class PiccoloCustomNode extends PNode {
     }
 
     public PiccoloCustomNode getHigherParent(){
-        if(this.getParent()==null)
+        if(getParentNode()==null)
             return this;
-        if(!(this.getParent() instanceof PiccoloCustomNode))
-            return this;
-        if(this.isHidden())
-            return ((PiccoloCustomNode)getParent()).getHigherParent();
+        if(isHidden())
+            return getParentNode().getHigherParent();
         return this;
     }
 
