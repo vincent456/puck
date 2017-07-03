@@ -91,10 +91,6 @@ public class PiccoloCanvas extends PScrollPane {
 
         //endregion
 
-        //region test
-        ANH.addArrow(new ParrowDottedFat(new Point2D.Double(0,0),new Point2D.Double(100,150),10,5, Color.RED));
-        //endregion
-
     }
 
     private void addEvent(PiccoloCustomNode node, PiccoloCustomNode tree,DisplayUsesMenu menu){

@@ -65,7 +65,6 @@ public class PiccoloCustomNode extends PNode {
                 return true;
         }
         else {
-            //System.err.println("error PiccoloCustomNode.isHidden()");
             return false;
         }
     }
@@ -147,22 +146,6 @@ public class PiccoloCustomNode extends PNode {
    }
 
     public void toggleChildren() {
-/*
-        Collection<PiccoloCustomNode> children=getChildren();
-        if(children.size()!=0){
-            for(PiccoloCustomNode PCN:children)
-                hiddenchildren.add(PCN);
-            removeAllChildren();
-
-            addChild(rect);
-            addChild(content);
-        }
-        else {
-            for (PiccoloCustomNode PCN:hiddenchildren)
-                addChild(PCN);
-            hiddenchildren.clear();
-        }
-        */
         Collection<PiccoloCustomNode> children = getChildren();
         if (children.size() != 0)
             hideChildren();
@@ -431,8 +414,6 @@ public class PiccoloCustomNode extends PNode {
         if(debug)
             content.addChild(PPath.createRectangle(x,y,w,h));
 
-        //for(PiccoloCustomNode PCN:getChildren())
-        //    PCN.updateContentBoundingBoxes(debug,canvas);
     }
 
     public void expandAll() {
@@ -449,6 +430,16 @@ public class PiccoloCustomNode extends PNode {
         }
         for(PiccoloCustomNode PCN:getAllChildren())
             PCN.collapseAll();
+    }
+
+    public PiccoloCustomNode getHigherParent(){
+        if(this.getParent()==null)
+            return this;
+        if(!(this.getParent() instanceof PiccoloCustomNode))
+            return this;
+        if(this.isHidden())
+            return ((PiccoloCustomNode)getParent()).getHigherParent();
+        return this;
     }
 
 }
