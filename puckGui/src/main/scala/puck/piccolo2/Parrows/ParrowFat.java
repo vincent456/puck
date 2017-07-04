@@ -3,6 +3,7 @@ package puck.piccolo2.Parrows;
 import org.piccolo2d.PNode;
 import org.piccolo2d.nodes.PPath;
 import puck.piccolo2.Util;
+import puck.piccolo2.node.PiccoloCustomNode;
 
 import java.awt.*;
 import java.awt.geom.Point2D;
@@ -43,7 +44,17 @@ public class ParrowFat extends Parrow{
     @Override
     public Parrow redraw() {
         removeAllChildren();
-        ParrowFat arrow=new ParrowFat(from,to,width,color);
-        return arrow;
+        PiccoloCustomNode vpfrom=(PiccoloCustomNode) from.getParent();
+        PiccoloCustomNode vpto = (PiccoloCustomNode) to.getParent();
+        PNode vphf=vpfrom.getHigherParent().getContent();
+        PNode vpht=vpto.getHigherParent().getContent();
+        if(vphf==vpfrom.getContent()&&vpht==vpto.getContent())
+            return new ParrowFat(vphf,vpht,width,color);
+        else
+            return new ParrowDottedFat(vphf,vpht,10,width,color,vpfrom.getContent(),vpto.getContent());
+
+
+        //ParrowFat arrow=new ParrowFat(from,to,width,color);
+        //return arrow;
     }
 }
