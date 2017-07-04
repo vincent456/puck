@@ -15,6 +15,10 @@ public class ArrowNodesHolder extends PNode{
         hiddenArrows=new HashSet<>();
     }
     public void addArrow(Parrow arrow){
+        for(Parrow arr:getAllArrows()){
+            if(arr.equals(arrow))
+                removeArrow(arr);
+        }
         addChild(arrow);
     }
     public void removeArrow(Parrow arrow){
@@ -72,33 +76,22 @@ public class ArrowNodesHolder extends PNode{
                     PiccoloCustomNode PCNF = (PiccoloCustomNode) arrow.getFrom().getParent();
                     PiccoloCustomNode PCNT = (PiccoloCustomNode) arrow.getTo().getParent();
 
-                    if (PCN == PCNF || PCN == PCNT)
+                    if (PCN == PCNF || PCN == PCNT) {
                         hideArrow(arrow);
+                   // System.out.println("hide "+getVisibleArrows().size()+"-"+getHiddenArrows().size());
+                    }
                 }
             else {
                 for (Parrow arrow : getHiddenArrows()) {
                     PiccoloCustomNode PCNF = (PiccoloCustomNode) arrow.getFrom().getParent();
                     PiccoloCustomNode PCNT = (PiccoloCustomNode) arrow.getTo().getParent();
                     if ((!PCNT.isHidden() || !PCNF.isHidden())
-                            && (PCN == PCNF || PCN == PCNT))
-                        showArrow(arrow);
+                            && (PCN == PCNF || PCN == PCNT)) {
+                    showArrow(arrow);
+                   // System.out.println("show "+getVisibleArrows().size()+"-"+getHiddenArrows().size());
+                    }
                 }
             }
         }
     }
-/*
-    public void rebind(PiccoloCustomNode oldLayout,PiccoloCustomNode newLayout) {
-        Collection<Parrow> arrows = getAllArrows();
-        for(Parrow arrow:arrows){
-            PiccoloCustomNode from=(PiccoloCustomNode) arrow.getFrom().getParent().getParent();
-            PiccoloCustomNode to=(PiccoloCustomNode) arrow.getTo().getParent().getParent();
-            int fromI=from.getidNode();
-            int toI=to.getidNode();
-            PNode newFrom=idNodeMap.get(fromI);
-            PNode newTo=idNodeMap.get(toI);
-            arrow.setFrom(newFrom);
-            arrow.setTo(newTo);
-        }
-    }
-    */
 }
