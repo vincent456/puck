@@ -33,4 +33,12 @@ public abstract class Parrow extends PNode{
     }
 
     public abstract Parrow redraw();
+
+    @Override
+    public boolean equals(Object arrow){
+        if(!(arrow instanceof Parrow))
+            return false;
+        return this.from==((Parrow) arrow).getFrom()
+                &&this.to==((Parrow) arrow).getTo();
+    }
 }
