@@ -6,8 +6,6 @@ import puck.control.PuckControl;
 import puck.graph.DependencyGraph;
 import puck.piccolo2.LayoutStack.LayoutStack;
 import puck.piccolo2.LayoutStack.LayoutState;
-import puck.piccolo2.LayoutStack.NodeState;
-import puck.piccolo2.Parrows.ParrowDottedFat;
 import puck.piccolo2.menu.DisplayUsesMenu;
 import puck.piccolo2.node.NodeAdapterTree;
 import puck.piccolo2.node.PCustomInputEventHandler;
@@ -15,8 +13,6 @@ import puck.piccolo2.node.PiccoloCustomNode;
 import puck.piccolo2.Parrows.ArrowNodesHolder;
 import puck.view.NodeKindIcons;
 
-import java.awt.*;
-import java.awt.geom.Point2D;
 import java.util.HashMap;
 
 /**
@@ -89,10 +85,6 @@ public class PiccoloCanvas extends PScrollPane {
 
         layoutStack=new LayoutStack();
 
-        //endregion
-
-        //region test
-        ANH.addArrow(new ParrowDottedFat(new Point2D.Double(0,0),new Point2D.Double(100,150),10,5, Color.RED));
         //endregion
 
     }

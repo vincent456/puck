@@ -2,8 +2,10 @@ package puck.piccolo2.menu.Actions;
 
 import org.piccolo2d.PNode;
 import org.piccolo2d.event.PInputEvent;
+import puck.control.Node;
 import puck.control.PuckControl;
 import puck.graph.DependencyGraph;
+import puck.piccolo2.node.NodeContent;
 import puck.piccolo2.node.PiccoloCustomNode;
 import puck.piccolo2.Parrows.*;
 import scala.collection.Iterator;
@@ -42,7 +44,7 @@ public class ShowNodeUsersOf extends MenuItemEventHandler {
             Object O=iterator.next();
             PNode from=target.getContent();
             PNode to=idNodeMap.get(O).getContent();
-            if((to.getParent().getParent() instanceof  PiccoloCustomNode)&&!((PiccoloCustomNode) to.getParent().getParent()).isHidden()) {
+            if(to.getParent() instanceof  PiccoloCustomNode &&!((PiccoloCustomNode)to.getParent()).isHidden()){
 
                 int user = (int)O;
                 int used = target.getidNode();
@@ -53,6 +55,21 @@ public class ShowNodeUsersOf extends MenuItemEventHandler {
                     arrowNodesHolder.addArrow(new ParrowFat(from,to,5, Color.RED));
                 else
                     arrowNodesHolder.addArrow(new ParrowUses(from, to, 10));
+            }
+            else {
+                if(to.getParent() instanceof  PiccoloCustomNode){
+
+                    int user=(int)O;
+                    int used= target.getidNode();
+
+                    boolean forbidden=control.constraints().get().isForbidden(DG,user,used);
+
+                    if(forbidden) {
+                        NodeContent virtualTo=((PiccoloCustomNode)to.getParent()).getHigherParent().getContent();
+                        ParrowDottedFat arrow=new ParrowDottedFat(from,virtualTo,10,5,Color.RED,from,to);
+                        arrowNodesHolder.addArrow(arrow);
+                    }
+                }
             }
         }
     }

@@ -24,6 +24,8 @@ public class PiccoloCustomNode extends PNode {
 
     private int idNode;
 
+    private PiccoloCustomNode parent;
+
     //region getters/setters
 
     public PPath getRect() {
@@ -65,9 +67,16 @@ public class PiccoloCustomNode extends PNode {
                 return true;
         }
         else {
-            //System.err.println("error PiccoloCustomNode.isHidden()");
             return false;
         }
+    }
+
+    public void setParentNode(PiccoloCustomNode parent){
+        this.parent=parent;
+    }
+
+    public PiccoloCustomNode getParentNode(){
+        return parent;
     }
 
     //endregion
@@ -87,9 +96,12 @@ public class PiccoloCustomNode extends PNode {
         addChild(content);
         content.translate(margin,margin);
 
+        this.parent=null;
+
         if(tree.getChildren()!=null)
         for(Tree T:tree.getChildren()) {
             PiccoloCustomNode node = new PiccoloCustomNode(T);
+            node.setParentNode(this);
             hiddenchildren.add(node);
         }
 
@@ -147,22 +159,6 @@ public class PiccoloCustomNode extends PNode {
    }
 
     public void toggleChildren() {
-/*
-        Collection<PiccoloCustomNode> children=getChildren();
-        if(children.size()!=0){
-            for(PiccoloCustomNode PCN:children)
-                hiddenchildren.add(PCN);
-            removeAllChildren();
-
-            addChild(rect);
-            addChild(content);
-        }
-        else {
-            for (PiccoloCustomNode PCN:hiddenchildren)
-                addChild(PCN);
-            hiddenchildren.clear();
-        }
-        */
         Collection<PiccoloCustomNode> children = getChildren();
         if (children.size() != 0)
             hideChildren();
@@ -283,7 +279,7 @@ public class PiccoloCustomNode extends PNode {
         addChildren(children);
     }
 
-    //TODO this function breaks the layout when ckick on the last line of children
+    //TODO this function breaks the layout when ckick on the first child of the last line
     public void setGridLayout(int cap){
 
         if(getChildren().size()==0) {
@@ -311,9 +307,6 @@ public class PiccoloCustomNode extends PNode {
             for (PiccoloCustomNode PCN : getChildren()) {
                 PCN.setGridLayout(cap);
 
-                if (PCN.getRect().getHeight() > maxHeight)
-                    maxHeight = PCN.getRect().getHeight();
-
                 if (i == cap) {
                     i = 1;
                     x = margin;
@@ -323,6 +316,9 @@ public class PiccoloCustomNode extends PNode {
                     w = x + PCN.getRect().getWidth() + margin;
                     i++;
                 }
+
+                if (PCN.getRect().getHeight() > maxHeight)
+                    maxHeight = PCN.getRect().getHeight();
 
                 if(w>maxWidth)
                     maxWidth=w;
@@ -431,8 +427,6 @@ public class PiccoloCustomNode extends PNode {
         if(debug)
             content.addChild(PPath.createRectangle(x,y,w,h));
 
-        //for(PiccoloCustomNode PCN:getChildren())
-        //    PCN.updateContentBoundingBoxes(debug,canvas);
     }
 
     public void expandAll() {
@@ -449,6 +443,14 @@ public class PiccoloCustomNode extends PNode {
         }
         for(PiccoloCustomNode PCN:getAllChildren())
             PCN.collapseAll();
+    }
+
+    public PiccoloCustomNode getHigherParent(){
+        if(getParentNode()==null)
+            return this;
+        if(isHidden())
+            return getParentNode().getHigherParent();
+        return this;
     }
 
 }
