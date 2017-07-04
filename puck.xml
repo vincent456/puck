@@ -1,8 +1,0 @@
-<puck-config>
-	<src rec=".java">C:\Users\Vincent Hudry\Desktop\stage\monPuck\puck\puckExtendJ\src\test\resources\nanoPersonne\nano</src>
-	<out>out</out>
-	<log>puck-log.txt</log>
-	<decouple>C:\Users\Vincent Hudry\Desktop\stage\monPuck\puck\puckExtendJ\src\test\resources\nanoPersonne\decouple.wld</decouple>
-	<workspace>.</workspace>
-	<dot-path>C:\Program Files (x86)\Graphviz2.38\bin\dot.exe</dot-path>
-</puck-config>
