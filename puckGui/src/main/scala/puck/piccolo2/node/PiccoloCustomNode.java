@@ -453,4 +453,26 @@ public class PiccoloCustomNode extends PNode {
         return this;
     }
 
+    public Collection<PiccoloCustomNode> getAscendency(){
+        Collection<PiccoloCustomNode> out=new HashSet<>();
+        getAcendency_REC(out);
+        return out;
+    }
+
+    private void getAcendency_REC(Collection<PiccoloCustomNode> out){
+        if(getParentNode()==null) {
+            out.add(this);
+            return;
+        }
+        out.add(this);
+        getParentNode().getAcendency_REC(out);
+    }
+
+    public void focus(){
+        Collection<PiccoloCustomNode> ascendency=getAscendency();
+        for(PiccoloCustomNode PCN:ascendency){
+            PCN.showChildren();
+        }
+    }
+
 }

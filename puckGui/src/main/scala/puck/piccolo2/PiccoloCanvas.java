@@ -3,9 +3,11 @@ package puck.piccolo2;
 import org.piccolo2d.PCanvas;
 import org.piccolo2d.extras.swing.PScrollPane;
 import puck.control.PuckControl;
+import puck.graph.DGEdge;
 import puck.graph.DependencyGraph;
 import puck.piccolo2.LayoutStack.LayoutStack;
 import puck.piccolo2.LayoutStack.LayoutState;
+import puck.piccolo2.Parrows.ParrowFat;
 import puck.piccolo2.menu.DisplayUsesMenu;
 import puck.piccolo2.node.NodeAdapterTree;
 import puck.piccolo2.node.PCustomInputEventHandler;
@@ -13,6 +15,8 @@ import puck.piccolo2.node.PiccoloCustomNode;
 import puck.piccolo2.Parrows.ArrowNodesHolder;
 import puck.view.NodeKindIcons;
 
+import java.awt.*;
+import java.util.Collection;
 import java.util.HashMap;
 
 /**
@@ -144,6 +148,24 @@ public class PiccoloCanvas extends PScrollPane {
 
     public void evt(){
         //System.out.println("evt");
+    }
+
+    public void focus(DGEdge edge){
+
+       //System.out.println("focus");
+       //System.out.println(edge.source());
+       //System.out.println(edge.target());
+
+        PiccoloCustomNode Psrc=idNodeMap.get(edge.source());
+        PiccoloCustomNode Pdst=idNodeMap.get(edge.target());
+
+        Psrc.focus();
+        Pdst.focus();
+        node.showChildren();
+        node.setLayout();
+        node.updateContentBoundingBoxes(false,canvas);
+
+        ANH.addArrow(new ParrowFat(Pdst.getContent(),Psrc.getContent(),5, Color.RED));
     }
 
     //endregion

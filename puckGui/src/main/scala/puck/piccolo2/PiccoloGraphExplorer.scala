@@ -56,8 +56,10 @@ class PiccoloGraphExplorer
       canvas.pushEvent(pushedGraph, previousHead)
     case evt : GraphChangeEvent =>
       canvas = new PiccoloCanvas(control, nodeKindIcons)
-      canvas.evt();
-      setViewportView(canvas.getCanvas());
+      canvas.evt()
+      setViewportView(canvas.getCanvas())
+    case GraphFocus(_,edge) =>
+      canvas.focus(edge)
   }
 }
 
