@@ -2,7 +2,9 @@ package puck.piccolo2;
 
 import org.piccolo2d.PCanvas;
 import org.piccolo2d.extras.swing.PScrollPane;
+import org.piccolo2d.nodes.PPath;
 import puck.control.PuckControl;
+import puck.graph.Contains;
 import puck.graph.DGEdge;
 import puck.graph.DependencyGraph;
 import puck.piccolo2.LayoutStack.LayoutStack;
@@ -10,6 +12,7 @@ import puck.piccolo2.LayoutStack.LayoutState;
 import puck.piccolo2.Parrows.ParrowFat;
 import puck.piccolo2.menu.DisplayUsesMenu;
 import puck.piccolo2.node.NodeAdapterTree;
+import puck.piccolo2.node.NodeContent;
 import puck.piccolo2.node.PCustomInputEventHandler;
 import puck.piccolo2.node.PiccoloCustomNode;
 import puck.piccolo2.Parrows.ArrowNodesHolder;
@@ -159,12 +162,25 @@ public class PiccoloCanvas extends PScrollPane {
         PiccoloCustomNode Psrc=idNodeMap.get(edge.source());
         PiccoloCustomNode Pdst=idNodeMap.get(edge.target());
 
+
         Psrc.focus();
         Pdst.focus();
         node.showChildren();
         node.setLayout();
         node.updateContentBoundingBoxes(false,canvas);
 
+            NodeContent content=idNodeMap.get(edge.target()).getContent();
+        if(edge.kind().toString().equals("Contains")&&content.getText().getTextPaint()==Color.RED){
+            return;
+        }
+            if(edge.kind().toString().equals("Contains")&&content.getText().getTextPaint()!=Color.RED)
+        {
+            content.getText().setTextPaint(Color.RED);
+            PPath line=PPath.createLine(0,content.getBounds().getHeight(),content.getBounds().getWidth(),content.getBounds().getHeight());
+            line.setPaint(Color.RED);
+            content.addChild(line);
+        }
+        else
         ANH.addArrow(new ParrowFat(Pdst.getContent(),Psrc.getContent(),5, Color.RED));
     }
 
