@@ -104,11 +104,11 @@ public class DisplayUsesMenu extends PNode {
 
         //endregion
 
-        ExpandAll expandall=new ExpandAll(idNodeMap.get(0));
+        ExpandAll expandall=new ExpandAll(idNodeMap.get(0),ANH);
         MenuItem expandal=new MenuItem("Expand All",expandall);
         menu.add(expandal);
 
-        CollapseAll collapseall=new CollapseAll(idNodeMap.get(0));
+        CollapseAll collapseall=new CollapseAll(idNodeMap.get(0),ANH);
         MenuItem collapseal=new MenuItem("Collapse All",collapseall);
         menu.add(collapseal);
 
