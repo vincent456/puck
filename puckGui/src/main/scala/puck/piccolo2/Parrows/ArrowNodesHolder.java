@@ -118,7 +118,7 @@ public class ArrowNodesHolder extends PNode{
     private int margin=10;
 
     public void updateCount(ParrowDottedFat parrow) {
-        int i=1;
+        int i=0;
             for(Parrow parrow1:getVisibleArrows())
                 if (parrow1 instanceof ParrowDottedFat
                         && parrow.getFrom() == parrow1.getFrom()
