@@ -48,6 +48,12 @@ public class DisplayUsesMenu extends PNode {
         DependencyGraph DG=control.graph();
         TransformationRules TR=control.graphUtils().Rules();
 
+        //region for ShowViolations
+        ShowViolations SV=new ShowViolations(control,control.graph(),ANH,idNodeMap);
+        MenuItem showviolations=new MenuItem("Show violations",SV);
+        menu.add(showviolations);
+        //endregion
+
         //region for showuses
 
         ShowNodeUsersOf SNUO =new ShowNodeUsersOf(control,DG,ANH,idNodeMap);

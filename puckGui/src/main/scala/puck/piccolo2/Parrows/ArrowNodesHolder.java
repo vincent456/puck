@@ -94,4 +94,15 @@ public class ArrowNodesHolder extends PNode{
             }
         }
     }
+
+    public void updateCount(ParrowDottedFat parrow) {
+        int i=1;
+            for(Parrow parrow1:getVisibleArrows())
+                if(parrow1 instanceof ParrowDottedFat
+                        && parrow.getFrom()==parrow1.getFrom()
+                        &&parrow.getTo()==parrow1.getTo())
+                    i++;
+
+
+    }
 }

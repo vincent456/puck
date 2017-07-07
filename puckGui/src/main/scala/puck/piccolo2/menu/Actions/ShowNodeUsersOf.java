@@ -75,22 +75,5 @@ public class ShowNodeUsersOf extends MenuItemEventHandler {
             }
         }
         //endregion
-
-        //region for hierarchy nodes
-        Collection<PiccoloCustomNode> hierarchy1 = target.getHierarchy();
-        Collection<PiccoloCustomNode> hierarchy2 = target.getHierarchy();
-
-        for(PiccoloCustomNode PCN1:hierarchy1)
-            for(PiccoloCustomNode PCN2:hierarchy2){
-                int nodeId1=PCN1.getidNode();
-                int nodeId2=PCN2.getidNode();
-                if(PCN1.isHidden()&&PCN2.isHidden())
-                if(DG.usersOf(nodeId1).contains(nodeId2)){
-                    if(control.constraints().get().isForbidden(DG,nodeId2,nodeId1)){
-                        arrowNodesHolder.addArrow(new ParrowDottedFat(PCN1.getHigherParent().getContent(),PCN2.getHigherParent().getContent(),10,5,Color.RED,PCN1.getContent(),PCN2.getContent()));
-                    }
-                }
-            }
-        //endregion
     }
 }
