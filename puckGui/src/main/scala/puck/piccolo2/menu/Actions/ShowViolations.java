@@ -19,17 +19,21 @@ import java.util.HashMap;
  */
 public class ShowViolations extends MenuItemEventHandler {
 
-    protected DependencyGraph DG;
-    protected ArrowNodesHolder arrowNodesHolder;
-    protected HashMap<Object,PiccoloCustomNode> idNodeMap;
+    private DependencyGraph DG;
+    private ArrowNodesHolder arrowNodesHolder;
+    private HashMap<Object,PiccoloCustomNode> idNodeMap;
 
-    protected PuckControl control;
+    private PuckControl control;
 
+    private PiccoloCustomNode root;
+    
+    
     public ShowViolations(PuckControl control, DependencyGraph DG, ArrowNodesHolder arrowNodesHolder, HashMap<Object,PiccoloCustomNode> idNodeMap){
         this.DG=DG;
         this.arrowNodesHolder=arrowNodesHolder;
         this.idNodeMap=idNodeMap;
         this.control=control;
+        this.root=idNodeMap.get(0);
     }
 
     @Override
@@ -38,16 +42,18 @@ public class ShowViolations extends MenuItemEventHandler {
         PiccoloCustomNode target=(PiccoloCustomNode) this.target.getParent().getParent();
 
         //region for hierarchy nodes
-        Collection<PiccoloCustomNode> hierarchy1 = target.getHierarchy();
-        Collection<PiccoloCustomNode> hierarchy2 = target.getHierarchy();
+        Collection<PiccoloCustomNode> hierarchy1 = root.getHierarchy();
+        Collection<PiccoloCustomNode> hierarchy2 = root.getHierarchy();
 
         for(PiccoloCustomNode PCN1:hierarchy1)
             for(PiccoloCustomNode PCN2:hierarchy2){
                 int nodeId1=PCN1.getidNode();
                 int nodeId2=PCN2.getidNode();
-                if(PCN1.isHidden()&&PCN2.isHidden())
                 if(DG.usersOf(nodeId1).contains(nodeId2)){
                     if(control.constraints().get().isForbidden(DG,nodeId2,nodeId1)){
+                        if(!PCN1.isHidden()&&!PCN2.isHidden())
+                            arrowNodesHolder.addArrow(new ParrowFat(PCN1.getContent(),PCN2.getContent(),5,Color.RED));
+                        if(PCN1.isHidden()||PCN2.isHidden())
                         arrowNodesHolder.addArrow(new ParrowDottedFat(PCN1.getHigherParent().getContent(),PCN2.getHigherParent().getContent(),10,5,Color.RED,PCN1.getContent(),PCN2.getContent()));
                     }
                 }
