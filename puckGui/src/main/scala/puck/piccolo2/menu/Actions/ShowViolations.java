@@ -42,6 +42,7 @@ public class ShowViolations extends MenuItemEventHandler {
         PiccoloCustomNode target=(PiccoloCustomNode) this.target.getParent().getParent();
 
         //region for hierarchy nodes
+
         Collection<PiccoloCustomNode> hierarchy1 = root.getHierarchy();
         Collection<PiccoloCustomNode> hierarchy2 = root.getHierarchy();
 
@@ -61,6 +62,7 @@ public class ShowViolations extends MenuItemEventHandler {
         //endregion
 
         //region count arrows
+        arrowNodesHolder.clearCounters();
         for(Parrow parrow:arrowNodesHolder.getVisibleArrows())
             if(parrow instanceof ParrowDottedFat)
                 arrowNodesHolder.updateCount((ParrowDottedFat) parrow);

@@ -10,6 +10,7 @@ import puck.graph.DependencyGraph;
 import puck.piccolo2.LayoutStack.LayoutStack;
 import puck.piccolo2.LayoutStack.LayoutState;
 import puck.piccolo2.Parrows.Parrow;
+import puck.piccolo2.Parrows.ParrowDottedFat;
 import puck.piccolo2.Parrows.ParrowFat;
 import puck.piccolo2.menu.DisplayUsesMenu;
 import puck.piccolo2.node.NodeAdapterTree;
@@ -171,6 +172,12 @@ public class PiccoloCanvas extends PScrollPane {
         node.updateContentBoundingBoxes(false,canvas);
         for(Parrow parrow:ANH.getVisibleArrows())
         ANH.updatePosition(parrow);
+        ANH.clearCounters();
+        for(Parrow ar:ANH.getVisibleArrows()){
+            if(ar instanceof ParrowDottedFat){
+                ANH.updateCount((ParrowDottedFat) ar);
+            }
+        }
 
             NodeContent content=idNodeMap.get(edge.target()).getContent();
         if(edge.kind().toString().equals("Contains")&&content.getText().getTextPaint()==Color.RED){

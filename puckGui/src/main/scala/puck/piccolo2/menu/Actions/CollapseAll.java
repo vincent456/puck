@@ -4,6 +4,7 @@ import org.piccolo2d.PCanvas;
 import org.piccolo2d.event.PInputEvent;
 import puck.piccolo2.Parrows.ArrowNodesHolder;
 import puck.piccolo2.Parrows.Parrow;
+import puck.piccolo2.Parrows.ParrowDottedFat;
 import puck.piccolo2.node.PiccoloCustomNode;
 
 /**
@@ -26,5 +27,9 @@ public class CollapseAll extends MenuItemEventHandler{
         root.updateContentBoundingBoxes(false,null);
         for(Parrow p:ANH.getVisibleArrows())
         ANH.updatePosition(p);
+        ANH.clearCounters();
+        for(Parrow ar:ANH.getVisibleArrows())
+            if(ar instanceof ParrowDottedFat)
+                ANH.updateCount((ParrowDottedFat) ar);
     }
 }

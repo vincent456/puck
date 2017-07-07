@@ -1,6 +1,7 @@
 package puck.piccolo2.Parrows;
 
 import org.piccolo2d.PNode;
+import org.piccolo2d.util.PBounds;
 import puck.piccolo2.node.PiccoloCustomNode;
 
 import java.awt.*;
@@ -39,8 +40,11 @@ public class ArrowNodesHolder extends PNode{
     @SuppressWarnings("unchecked")
     public Collection<Parrow> getVisibleArrows(){
         Collection<Parrow> set = new HashSet<>();
-        for(Iterator<PNode> iterator=getChildrenIterator();iterator.hasNext();)
-            set.add((Parrow) iterator.next());
+        for(Iterator<PNode> iterator=getChildrenIterator();iterator.hasNext();) {
+            PNode n=iterator.next();
+            if(n instanceof Parrow)
+            set.add((Parrow) n);
+        }
         return set;
     }
     public Collection<Parrow> getHiddenArrows(){
@@ -52,8 +56,11 @@ public class ArrowNodesHolder extends PNode{
 
     public Collection<Parrow>getAllArrows(){
         Collection<Parrow> set = new HashSet<>();
-        for(Iterator<PNode> iterator=getChildrenIterator();iterator.hasNext();)
-            set.add((Parrow) iterator.next());
+        for(Iterator<PNode> iterator=getChildrenIterator();iterator.hasNext();) {
+         PNode n=iterator.next();
+            if(n instanceof Parrow)
+            set.add((Parrow) n);
+        }
         for(Iterator<Parrow> iterator=hiddenArrows.iterator();iterator.hasNext();)
             set.add(iterator.next());
         return set;
@@ -95,14 +102,33 @@ public class ArrowNodesHolder extends PNode{
         }
     }
 
+    public void clearCounters(){
+        Collection<PNode> out=new HashSet<>();
+        for(Iterator<PNode> pNodeIterator=getChildrenIterator();pNodeIterator.hasNext();){
+            PNode node=pNodeIterator.next();
+            if(node instanceof ArrowCounter){
+                out.add(node);
+            }
+        }
+        for(PNode node:out){
+            removeChild(node);
+        }
+    }
+
+    private int margin=10;
+
     public void updateCount(ParrowDottedFat parrow) {
         int i=1;
             for(Parrow parrow1:getVisibleArrows())
-                if(parrow1 instanceof ParrowDottedFat
-                        && parrow.getFrom()==parrow1.getFrom()
-                        &&parrow.getTo()==parrow1.getTo())
-                    i++;
-
+                if (parrow1 instanceof ParrowDottedFat
+                        && parrow.getFrom() == parrow1.getFrom()
+                        && parrow.getTo() == parrow1.getTo())
+                i++;
+        ArrowCounter AC=new ArrowCounter(String.valueOf(i));
+        addChild(AC);
+        PBounds bounds=parrow.getUnionOfChildrenBounds(null);
+        parrow.setBounds(bounds);
+        AC.translate(parrow.getBounds().getCenterX()+margin,parrow.getBounds().getCenterY()+margin);
 
     }
 }

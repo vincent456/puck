@@ -1,6 +1,8 @@
 package puck.piccolo2.Parrows;
 
 import org.piccolo2d.PNode;
+import org.piccolo2d.util.PBounds;
+
 import java.awt.geom.Point2D;
 
 public abstract class Parrow extends PNode{

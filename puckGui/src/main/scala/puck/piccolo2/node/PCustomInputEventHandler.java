@@ -8,6 +8,7 @@ import org.piccolo2d.event.PInputEventFilter;
 import org.piccolo2d.nodes.PText;
 import puck.piccolo2.Parrows.ArrowNodesHolder;
 import puck.piccolo2.Parrows.Parrow;
+import puck.piccolo2.Parrows.ParrowDottedFat;
 import puck.piccolo2.menu.DisplayUsesMenu;
 
 import java.awt.event.InputEvent;
@@ -49,6 +50,10 @@ public class PCustomInputEventHandler extends PBasicInputEventHandler {
 
             for(Parrow arrow:ANH.getVisibleArrows())
                 ANH.updatePosition(arrow);
+            ANH.clearCounters();
+            for(Parrow ar:ANH.getVisibleArrows())
+                if(ar instanceof ParrowDottedFat)
+                    ANH.updateCount((ParrowDottedFat) ar);
             ANH.hide_show_arrows(node);
 
         }
