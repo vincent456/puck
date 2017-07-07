@@ -95,4 +95,19 @@ public class ParrowDottedFat extends Parrow {
     public PNode getVirtualTo() {
         return virtualTo;
     }
+
+    @Override
+    public boolean equals(Object arrow){
+        if(arrow instanceof ParrowDottedFat){
+            if(getFrom()==((ParrowDottedFat) arrow).getFrom()
+                    &&getTo()==((ParrowDottedFat) arrow).getTo()
+                    &&getVirtualFrom()==((ParrowDottedFat) arrow).getVirtualFrom()
+                    &&getVirtualTo()==((ParrowDottedFat) arrow).getVirtualTo())
+                return true;
+            else
+                return false;
+        }
+        else
+            return false;
+    }
 }

@@ -15,11 +15,11 @@ public class ArrowNodesHolder extends PNode{
         hiddenArrows=new HashSet<>();
     }
     public void addArrow(Parrow arrow){
-        for(Parrow arr:getAllArrows()){
-            if(arr.equals(arrow))
-                removeArrow(arr);
-        }
-        addChild(arrow);
+            for (Parrow arr : getAllArrows()) {
+                if (arr.equals(arrow))
+                    removeArrow(arr);
+            }
+            addChild(arrow);
     }
     public void removeArrow(Parrow arrow){
         removeChild(arrow);

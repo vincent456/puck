@@ -9,6 +9,7 @@ import puck.graph.DGEdge;
 import puck.graph.DependencyGraph;
 import puck.piccolo2.LayoutStack.LayoutStack;
 import puck.piccolo2.LayoutStack.LayoutState;
+import puck.piccolo2.Parrows.Parrow;
 import puck.piccolo2.Parrows.ParrowFat;
 import puck.piccolo2.menu.DisplayUsesMenu;
 import puck.piccolo2.node.NodeAdapterTree;
@@ -168,6 +169,8 @@ public class PiccoloCanvas extends PScrollPane {
         node.showChildren();
         node.setLayout();
         node.updateContentBoundingBoxes(false,canvas);
+        for(Parrow parrow:ANH.getVisibleArrows())
+        ANH.updatePosition(parrow);
 
             NodeContent content=idNodeMap.get(edge.target()).getContent();
         if(edge.kind().toString().equals("Contains")&&content.getText().getTextPaint()==Color.RED){
@@ -183,6 +186,4 @@ public class PiccoloCanvas extends PScrollPane {
         else
         ANH.addArrow(new ParrowFat(Pdst.getContent(),Psrc.getContent(),5, Color.RED));
     }
-
-    //endregion
 }
