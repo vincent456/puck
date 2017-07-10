@@ -164,6 +164,7 @@ public class PiccoloCanvas extends PScrollPane {
         PiccoloCustomNode Psrc=idNodeMap.get(edge.source());
         PiccoloCustomNode Pdst=idNodeMap.get(edge.target());
 
+        node.collapseAll();
 
         Psrc.focus();
         Pdst.focus();
