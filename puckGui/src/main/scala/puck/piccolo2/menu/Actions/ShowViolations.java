@@ -39,6 +39,12 @@ public class ShowViolations extends MenuItemEventHandler {
         this.root=idNodeMap.get(0);
     }
 
+    private boolean fullSearch=true;
+
+    public void setFullSearch(boolean b){
+        fullSearch=b;
+    }
+
     @Override
     public void mouseClicked(PInputEvent e) {
 
@@ -46,9 +52,16 @@ public class ShowViolations extends MenuItemEventHandler {
 
         //region for hierarchy nodes
 
-        Collection<PiccoloCustomNode> hierarchy1 = root.getHierarchy();
-        Collection<PiccoloCustomNode> hierarchy2 = root.getHierarchy();
-
+        Collection<PiccoloCustomNode> hierarchy1;
+        Collection<PiccoloCustomNode> hierarchy2;
+                if(fullSearch) {
+                    hierarchy1 = root.getHierarchy();
+                    hierarchy2 = root.getHierarchy();
+                }
+                else{
+                    hierarchy1=target.getHierarchy();
+                    hierarchy2=target.getHierarchy();
+                }
         for(PiccoloCustomNode PCN1:hierarchy1)
             for(PiccoloCustomNode PCN2:hierarchy2){
                 int nodeId1=PCN1.getidNode();

@@ -49,8 +49,15 @@ public class DisplayUsesMenu extends PNode {
         TransformationRules TR=control.graphUtils().Rules();
 
         //region for Violations
+
+        ShowViolations SV2=new ShowViolations(control,control.graph(),ANH,idNodeMap);
+        SV2.setFullSearch(false);
+        MenuItem sv2mi=new MenuItem("Show violations in hierarchy",SV2);
+        menu.add(sv2mi);
+
         ShowViolations SV=new ShowViolations(control,control.graph(),ANH,idNodeMap);
-        MenuItem showviolations=new MenuItem("Show violations",SV);
+        SV.setFullSearch(true);
+        MenuItem showviolations=new MenuItem("Show All violations",SV);
         menu.add(showviolations);
 
         HideViolations HV=new HideViolations(ANH);
