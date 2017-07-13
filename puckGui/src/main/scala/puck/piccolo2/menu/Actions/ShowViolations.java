@@ -3,6 +3,7 @@ package puck.piccolo2.menu.Actions;
 import org.piccolo2d.event.PInputEvent;
 import puck.control.PuckControl;
 import puck.graph.DependencyGraph;
+import puck.graph.Type;
 import puck.piccolo2.Parrows.*;
 import puck.piccolo2.node.PiccoloCustomNode;
 
@@ -64,7 +65,7 @@ public class ShowViolations extends MenuItemEventHandler {
                         if(!PCN1.isHidden()&&!PCN2.isHidden())
                             arrowNodesHolder.addArrow(new ParrowFat(PCN1.getContent(),PCN2.getContent(),5,Color.RED));
                         if(PCN1.isHidden()||PCN2.isHidden())
-                        arrowNodesHolder.addArrow(new ParrowDottedFat(PCN1.getHigherParent().getContent(),PCN2.getHigherParent().getContent(),10,5,Color.RED,PCN1.getContent(),PCN2.getContent()));
+                        arrowNodesHolder.addArrow(new ParrowDottedFat(PCN1.getHigherParent().getContent(),PCN2.getHigherParent().getContent(),10,5,Color.RED,PCN1.getContent(),PCN2.getContent(), ParrowDottedFat.Type.Uses));
                     }
                 }
                 else if(DG.contains(nodeId1,nodeId2)){
@@ -72,7 +73,7 @@ public class ShowViolations extends MenuItemEventHandler {
                         if(!PCN1.isHidden()&&!PCN2.isHidden())
                         arrowNodesHolder.addArrow(new ParrowContainsViolations(PCN1.getContent(),PCN2.getContent()));
                         else
-                            arrowNodesHolder.addArrow(new ParrowDottedFat(PCN1.getHigherParent().getContent(),PCN2.getHigherParent().getContent(),10,5,Color.RED,PCN1.getContent(),PCN2.getContent()));
+                            arrowNodesHolder.addArrow(new ParrowDottedFat(PCN1.getHigherParent().getContent(),PCN2.getHigherParent().getContent(),10,5,Color.RED,PCN1.getContent(),PCN2.getContent(), ParrowDottedFat.Type.Contains));
                     }
                 }
             }

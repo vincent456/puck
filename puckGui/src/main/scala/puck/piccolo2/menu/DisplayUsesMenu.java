@@ -86,7 +86,7 @@ public class DisplayUsesMenu extends PNode {
 
         //endregion
 
-        //region for Extends
+        //region for Uses
         ShowParentNode SPN=new ShowParentNode(control,DG,ANH,idNodeMap);
         MenuItem showparentnode=new MenuItem("Show parents",SPN);
         menu.add(showparentnode);

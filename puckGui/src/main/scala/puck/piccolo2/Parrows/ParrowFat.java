@@ -51,7 +51,7 @@ public class ParrowFat extends Parrow{
         if(vphf==vpfrom.getContent()&&vpht==vpto.getContent())
             return new ParrowFat(vphf,vpht,width,color);
         else
-            return new ParrowDottedFat(vphf,vpht,10,width,color,vpfrom.getContent(),vpto.getContent());
+            return new ParrowDottedFat(vphf,vpht,10,width,color,vpfrom.getContent(),vpto.getContent(), ParrowDottedFat.Type.Uses);
 
 
         //ParrowFat arrow=new ParrowFat(from,to,width,color);

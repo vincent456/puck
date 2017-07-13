@@ -2,7 +2,6 @@ package puck.piccolo2.menu.Actions;
 
 import org.piccolo2d.PNode;
 import org.piccolo2d.event.PInputEvent;
-import puck.control.Node;
 import puck.control.PuckControl;
 import puck.graph.DependencyGraph;
 import puck.piccolo2.node.NodeContent;
@@ -12,7 +11,6 @@ import scala.collection.Iterator;
 import scala.collection.immutable.Set;
 
 import java.awt.*;
-import java.util.Collection;
 import java.util.HashMap;
 
 /**
@@ -68,7 +66,7 @@ public class ShowNodeUsersOf extends MenuItemEventHandler {
 
                     if(forbidden) {
                         NodeContent virtualTo=((PiccoloCustomNode)to.getParent()).getHigherParent().getContent();
-                        ParrowDottedFat arrow=new ParrowDottedFat(from,virtualTo,10,5,Color.RED,from,to);
+                        ParrowDottedFat arrow=new ParrowDottedFat(from,virtualTo,10,5,Color.RED,from,to, ParrowDottedFat.Type.Uses);
                         arrowNodesHolder.addArrow(arrow);
                     }
                 }

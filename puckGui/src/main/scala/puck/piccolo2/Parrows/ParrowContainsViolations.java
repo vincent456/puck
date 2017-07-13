@@ -33,6 +33,6 @@ public class ParrowContainsViolations extends  ParrowFat{
         if(vphf==vpfrom.getContent()&&vpht==vpto.getContent())
             return new ParrowContainsViolations(vphf,vpht);
         else
-            return new ParrowDottedFat(vphf,vpht,10,5,Color.RED,vpfrom.getContent(),vpto.getContent());
+            return new ParrowDottedFat(vphf,vpht,10,5,Color.RED,vpfrom.getContent(),vpto.getContent(), ParrowDottedFat.Type.Contains);
     }
 }

@@ -17,8 +17,11 @@ public class ParrowDottedFat extends Parrow {
     private float width;
     private  Color color;
 
-    protected PNode virtualFrom;
-    protected PNode virtualTo;
+    private PNode virtualFrom;
+    private PNode virtualTo;
+
+    public enum Type {Uses,Contains}
+    private Type type;
 
     public ParrowDottedFat(Point2D from,Point2D to, double spacing, float width,Color color){
         super(from,to);
@@ -65,7 +68,7 @@ public class ParrowDottedFat extends Parrow {
 
     }
 
-    public ParrowDottedFat(PNode from,PNode to,double spacing,float width,Color color,PNode virtualFrom,PNode virtualTo){
+    public ParrowDottedFat(PNode from,PNode to,double spacing,float width,Color color,PNode virtualFrom,PNode virtualTo,Type type){
         this(from.getBounds().getCenter2D(),to.getBounds().getCenter2D(),spacing,width,color);
         this.from=from;
         this.to=to;
@@ -73,6 +76,7 @@ public class ParrowDottedFat extends Parrow {
         this.virtualFrom=virtualFrom;
         this.virtualTo=virtualTo;
 
+        this.type=type;
     }
 
     @Override
@@ -82,10 +86,15 @@ public class ParrowDottedFat extends Parrow {
             PiccoloCustomNode vpto = (PiccoloCustomNode) this.getVirtualTo().getParent();
             PNode vphf=vpfrom.getHigherParent().getContent();
             PNode vpht=vpto.getHigherParent().getContent();
-            if(vphf==vpfrom.getContent()&&vpht==vpto.getContent())
-            return (new ParrowFat(vphf,vpht,width,color));
+            if(vphf==vpfrom.getContent()&&vpht==vpto.getContent()) {
+                if (type == Type.Uses)
+                    return (new ParrowFat(vphf, vpht, width, color));
+                else if (type==Type.Contains)
+                    return (new ParrowContainsViolations(vphf,vpht));
+                else return null;
+            }
                 else
-            return (new ParrowDottedFat(vphf,vpht,spacing,width, color,vpfrom.getContent(),vpto.getContent()));
+            return (new ParrowDottedFat(vphf,vpht,spacing,width, color,vpfrom.getContent(),vpto.getContent(),type));
     }
 
     public PNode getVirtualFrom() {
