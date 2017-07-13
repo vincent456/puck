@@ -9,15 +9,12 @@ import puck.graph.DGEdge;
 import puck.graph.DependencyGraph;
 import puck.piccolo2.LayoutStack.LayoutStack;
 import puck.piccolo2.LayoutStack.LayoutState;
-import puck.piccolo2.Parrows.Parrow;
-import puck.piccolo2.Parrows.ParrowDottedFat;
-import puck.piccolo2.Parrows.ParrowFat;
+import puck.piccolo2.Parrows.*;
 import puck.piccolo2.menu.DisplayUsesMenu;
 import puck.piccolo2.node.NodeAdapterTree;
 import puck.piccolo2.node.NodeContent;
 import puck.piccolo2.node.PCustomInputEventHandler;
 import puck.piccolo2.node.PiccoloCustomNode;
-import puck.piccolo2.Parrows.ArrowNodesHolder;
 import puck.view.NodeKindIcons;
 
 import java.awt.*;
@@ -180,17 +177,8 @@ public class PiccoloCanvas extends PScrollPane {
             }
         }
 
-            NodeContent content=idNodeMap.get(edge.target()).getContent();
-        if(edge.kind().toString().equals("Contains")&&content.getText().getTextPaint()==Color.RED){
-            return;
-        }
-            if(edge.kind().toString().equals("Contains")&&content.getText().getTextPaint()!=Color.RED)
-        {
-            content.getText().setTextPaint(Color.RED);
-            PPath line=PPath.createLine(0,content.getBounds().getHeight(),content.getBounds().getWidth(),content.getBounds().getHeight());
-            line.setPaint(Color.RED);
-            content.addChild(line);
-        }
+        if(edge.kind().toString().equals("Contains"))
+            ANH.addArrow(new ParrowContainsViolations(Pdst.getContent(),Psrc.getContent()));
         else
         ANH.addArrow(new ParrowFat(Pdst.getContent(),Psrc.getContent(),5, Color.RED));
     }

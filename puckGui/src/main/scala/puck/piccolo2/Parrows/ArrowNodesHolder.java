@@ -4,7 +4,6 @@ import org.piccolo2d.PNode;
 import org.piccolo2d.util.PBounds;
 import puck.piccolo2.node.PiccoloCustomNode;
 
-import java.awt.*;
 import java.util.*;
 
 /**
@@ -102,6 +101,7 @@ public class ArrowNodesHolder extends PNode{
         }
     }
 
+    @SuppressWarnings("unckecked")
     public void clearCounters(){
         Collection<PNode> out=new HashSet<>();
         for(Iterator<PNode> pNodeIterator=getChildrenIterator();pNodeIterator.hasNext();){

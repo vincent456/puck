@@ -1,17 +1,10 @@
 package puck.piccolo2.menu.Actions;
 
-import org.piccolo2d.PNode;
 import org.piccolo2d.event.PInputEvent;
-import org.piccolo2d.nodes.PPath;
-import org.piccolo2d.nodes.PText;
-import org.piccolo2d.util.PBounds;
 import puck.control.PuckControl;
 import puck.graph.DependencyGraph;
 import puck.piccolo2.Parrows.*;
-import puck.piccolo2.node.NodeContent;
 import puck.piccolo2.node.PiccoloCustomNode;
-import scala.collection.Iterator;
-import scala.collection.immutable.Set;
 
 import java.awt.*;
 import java.util.Collection;
@@ -77,15 +70,8 @@ public class ShowViolations extends MenuItemEventHandler {
                 else if(DG.contains(nodeId1,nodeId2)){
                     if(control.constraints().get().isForbidden(DG,nodeId1,nodeId2)){
                         if(!PCN1.isHidden()&&!PCN2.isHidden())
-                        if(PCN2.getContent().getText().getTextPaint()!=Color.RED){
-                            PCN2.getContent().getText().setTextPaint(Color.RED);
-                            PBounds bounds;
-                            bounds=PCN2.getContent().getUnionOfChildrenBounds(null);
-                            PPath line=PPath.createLine(0,bounds.getHeight(),bounds.getWidth(),bounds.getHeight());
-                            line.setPaint(Color.RED);
-                            PCN2.getContent().addChild(line);
-                        }
-                        if(PCN1.isHidden()||PCN2.isHidden())
+                        arrowNodesHolder.addArrow(new ParrowContainsViolations(PCN1.getContent(),PCN2.getContent()));
+                        else
                             arrowNodesHolder.addArrow(new ParrowDottedFat(PCN1.getHigherParent().getContent(),PCN2.getHigherParent().getContent(),10,5,Color.RED,PCN1.getContent(),PCN2.getContent()));
                     }
                 }

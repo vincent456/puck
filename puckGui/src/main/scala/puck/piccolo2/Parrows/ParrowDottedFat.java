@@ -17,8 +17,8 @@ public class ParrowDottedFat extends Parrow {
     private float width;
     private  Color color;
 
-    private PNode virtualFrom;
-    private PNode virtualTo;
+    protected PNode virtualFrom;
+    protected PNode virtualTo;
 
     public ParrowDottedFat(Point2D from,Point2D to, double spacing, float width,Color color){
         super(from,to);
